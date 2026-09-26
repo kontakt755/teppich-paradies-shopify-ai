@@ -74,3 +74,152 @@ TP-006 belegt auseinanderfallende Dezimalrechnung/Ganzzentimeterproperties und z
 `package-contracts-2026-09-20.json`, Script `reproduce-package-contracts.mjs`, lesbare `package-contracts-summary-2026-09-20.md`. 17 Fälle, drei Liquid-Gates, 14 abgefangene Requests, 28 Cart-Renderings; zusätzlich drei Klassifikationskontrollen/fünf Templatezuordnungen. Elf Quellhashes stimmen mit historischem Live-Snapshot überein. Vollständiger Paketblock und seine JS-IIFE, ursprüngliche Verkaufsart-/Preis-/Inhalts-/Cart-Snippets. Alle IDs synthetisch; Quadra-Referenz aus historischen Repositorybelegen, Klebe- und Präzisionspreise ausdrücklich lokale Rechenfixtures.
 
 LiquidJS-Geldfilter adaptiert, CSS/doc/schema nur beim Lesen entfernt. Separate Cart-Engine bildet ausschließlich `divided_by:100` als Ganzzahldivision ab; das verhindert einen sonst künstlichen LiquidJS-Formatfehler. TP-008 ist dagegen die echte vorangehende feste Hundertstelrundung: 30,272 → 30,27 m². Menge/Preis unverändert. Responses/Events/Redirect lokal; keine Liveannahme, echtes Layout oder Shopify-Liquid-Abnahme. PVC-/Fixpreiswege nur kartiert, PR-023b.2 weiterhin offen. S01–S05 und deren Evidence unverändert; keine alten Diagnosen erneut ausgeführt.
+
+## S07 – PR-023b.2 PVC-/Stückverträge
+
+`roll-fixed-contracts-2026-09-21.json`, Script `reproduce-roll-fixed-contracts.mjs`, lesbare `roll-fixed-contracts-summary-2026-09-21.md`: 30 Fälle (10 PVC, 20 Stück/Zubehör), 26 Requests (acht/18), neun historische Hashvergleiche. `roll-fixed-unit-tests-2026-09-21.log`: sieben bestehende Mengenhilfe-Tests PASS.
+
+TP-009 ist ein lokal bedingter Mehrbreitenfehler: Optionen in Metern werden nicht als Breitenoption erkannt, erste Metafeldbreite wird dann auch bei anderer ausgewählter Variante genutzt. Originale Initialisierung und syncArtUi mit ausgeführt; keine bloße nachgebaute Formel. 4 m × 250 cm → fünf statt zehn Einheiten, Property 200 cm. Aktuelle Produktkonfiguration H-011 offen. Historische Optionslabels aus Ausschlussliste, Leistenlängen aus belegter JSON; alle IDs/Preise und PVC-Metafeldpaarung synthetisch. Optional vorbereitete Zubehörmetafelder nicht als live behauptet.
+
+Mengenhilfe komplett per LiquidJS/Original-JS; Standardform-Klasse plus originales fetchConfig serialisieren dasselbe modellierte Eingabefeld. FormData/DOM und Max-Guard-Rückgabe adaptiert. Response bleibt ausstehend, daher keine Aussage über Cart-Aktualisierung/Serverannahme/Checkout. Rollenlayout, echte Picker-/Formevents und Service-UI offen. PASS ist Diagnose einschließlich TP-009. Keine S01–S06-Testwiederholung oder Änderung ihrer Evidence. S07-Integrität/Secret-Scan separat dokumentiert.
+
+## S08 – CART-002a
+
+`cart-core-2026-09-21.json`, `cart-core-summary-2026-09-21.md`, Script `reproduce-cart-core.mjs`: 43 Fälle (20 Liquidzustände, 13 Cartaktionen, zehn Zuschnittabläufe), 35 Zeilen, 28 Mengenklammern, 34 abgefangene Requests, zehn historische Quellenhashvergleiche. `cart-core-unit-tests-2026-09-21.log`: vier bestehende Suiten, 47/47 PASS.
+
+Originale Liquid-Snippets/JS-Klassen und Zuschnittqueue; minimale DOM/Refs/Morph/Animation/Response-Adapter, alle Fixtureprodukte/Antworten synthetisch. Sechs TP-010-Fehlerfälle lassen entfernte Zeilen nach gescheiterter Mutation unsichtbar; auch verzögerte Animation geprüft. Kein heutiger Browser-/Shopify-Ausfall behauptet. Erfolgreiche UI-Sperre ist kein Nachweis einer Shopify-Servervalidierung. H-012 und CART-002b halten native Events/Section-/Browsergrenzen offen. Keine Preisdiagnosen S01–S07 erneut ausgeführt, alte Evidence unverändert. PASS ist Diagnose, kein behobener Fehler. S08-Integritäts-/Secretprotokolle separat.
+
+## S09 – CART-002b.1
+
+`cart-events-2026-09-21.json`, `cart-events-summary-2026-09-21.md`, Script `reproduce-cart-events.mjs`: zwölf Originalereignisfälle/elf Requests/fünf Quellhashvergleiche. TP-011 in fünf Fällen: ein gemeinsamer Timer verwirft andere gültige Ziele, Eigentumsprüfung kommt zu spät. Gleiche Zeile korrekt zusammengefasst. Native Node-Events, explizite DOM/Bubbling- und virtuelle Timeradapter; alle Responses ausstehend. Kein Browser-/Server-/Lifecyclebeweis und kein S01–S08-Replay. PASS bedeutet Diagnose, nicht Fehlerbehebung. S09-Integritäts-/Secretprotokolle separat.
+
+
+## S10 – Section-Antworten und Fehler-Retry
+
+S10 / CART-002b.2a lokal abgeschlossen: fünf Original-SectionRenderer-Fälle, zwei Defektfälle TP-012/P2, ein historischer Hashvergleich. Nach Fetch-/Bodyfehler starten drei Retries derselben URL keinen neuen Request. Andere Section funktioniert. Erfolgs-Deduplizierung, Cache/Forced Refresh und Schutz gegen alte Antworten bei beiden Antwortreihenfolgen bestanden. DOM/Parser/Morph adaptiert; kein Browser-/Livebeleg, keine Shopreparatur. Nächster Schritt CART-002b.2b: direkte Cartantworten, Zeilenidentität und Zusammenspiel mit SectionRenderer, danach Drawer/Dialog-Lifecycle. Keine bisherigen Diagnosen ohne Quelländerung wiederholen.
+
+Evidence: `audit/evidence/section-responses-2026-09-21.json`; Script: `audit/scripts/reproduce-section-responses.mjs`. Route TASK-72075157B1A8, B/STATIC, kein Executor gestartet. Renderer ist gemeinsamer Abhängigkeitspunkt: TP-012 separat planen, Cart-Aufruferkonflikte mit TP-010/011 beachten.
+
+
+## S11
+
+`cart-responses-2026-09-21.json` und `cart-responses-summary-2026-09-21.md`: acht Originalantwortfälle/vier Quellhashes. Script `audit/scripts/reproduce-cart-responses.mjs`. Integritäts-/Secretprotokolle mit S11-Präfix. PASS bedeutet Diagnose bestanden, keine Reparatur oder Browserabnahme.
+
+
+## S12
+
+`drawer-lifecycle-2026-09-21.json` und gleichnamige Summary: elf Originalcodefälle/fünf Hashvergleiche. Script `audit/scripts/reproduce-drawer-lifecycle.mjs`. Syntax und Diagnose PASS; native Dialog-/History-/Fokusprüfung offen. Integritäts-/Secretprotokolle mit S12-Kennung.
+
+
+## S13 (22.09.2026)
+
+Checkout-contracts JSON/Summary: neun Fälle, vier Hashes. browser-access JSON: aktuelle Berechtigungsablehnung, kein DNSbeweis. Integritäts-/Secretprotokolle S13. Keine Liveabnahme, keine Shopänderung.
+
+
+## S14
+
+`discount-errors-2026-09-22.json`: sechs Fälle, drei TP-013-Defektfälle, vier Hashvergleiche. Script `audit/scripts/reproduce-discount-errors.mjs`. Lokale Diagnose, keine Browser-/Liveabnahme. Integritäts-/Secretprotokolle S14.
+
+
+## S15
+
+`discount-concurrency-2026-09-22.json`: sechs Fälle/vier Hashes, zwei TP-014-Defektfälle und TP-013-Remove-Erweiterung. Script `audit/scripts/reproduce-discount-concurrency.mjs`. Lokales Abortmodell, keine Shopify-Reihenfolgeabnahme. Integritäts-/Secretprotokolle S15.
+
+
+## S16
+
+`cart-note-2026-09-22.json`: sieben Fälle, fünf Hashes davon vier historische Matches; Konfigurationsdrift ausdrücklich erfasst. Script `audit/scripts/reproduce-cart-note.mjs`. Lokaler Notizschalter false, kein heutiger Livebeleg. Integritäts-/Secretprotokolle S16.
+
+
+## S18
+
+`roll-extra-transitions-2026-09-22.json`: neun Fälle, zwei historische Hashvergleiche; Script `audit/scripts/reproduce-roll-extra-transitions.mjs`. Lokale Auswahl-/Zubehörfunktionen mit persistenten Feldern, keine vollständige Picker-/Submitintegration. Integritäts-/Secretprotokolle S18.
+
+
+## S19
+
+`roll-state-submit-2026-09-22.json`: vier zusammenhängende Übergänge/Submits, zwei Quellhashes, ID-/Art-/Gruppe-/Zubehör-/Gesamtpreisassertions. Script `audit/scripts/reproduce-roll-state-submit.mjs`. Native Picker-/Morphprüfung offen. Integritäts-/Secretprotokolle S19.
+
+
+## S20
+
+`color-picker-2026-09-22.json`: sechs Original-IIFE-Fälle, drei TP-015-Defektfälle, zwei Hashes. Script `audit/scripts/reproduce-color-picker.mjs`; synthetische DOM-/Variantenkonstellation, aktuelle Reichweite offen. Integritäts-/Secretprotokolle S20.
+
+
+## S21
+
+`color-consumers-2026-09-22.json`: acht Fälle, vier TP-016-Reconnectfälle, drei Quellhashes. Script `audit/scripts/reproduce-color-consumers.mjs`; echte Node-EventTarget/AbortController, modellierter DOM. Integritäts-/Secretprotokolle S21.
+
+## S22 – Variantenantworten
+
+Evidence: audit/evidence/variant-responses-2026-09-22.json; Script: audit/scripts/reproduce-variant-responses.mjs. Syntax und Erstlauf PASS. Route TASK-02650F0E1B12 klassifizierte den lokalen Audit fälschlich als D/SHOPIFY_WRITE/HUMAN_GATE; keine externe Aktion, kein Executor und keine Reparatur ausgeführt.
+
+S22 / VAR-001a.2b.1: sechs lokale Original-Picker-Requestfälle PASS, drei historische Quellhashes gleich. Erfolg sendet variant:selected und variant:update; fehlende Metadaten, ungültiges JSON und Netzwerkfehler senden nur variant:selected. Bei ungültigem JSON erfolgt der adaptierte Picker-Morph vor dem Parsefehler. Überholter Request wird abgebrochen; nächste erfolgreiche Auswahl liefert wieder variant:update. DOM-Auswahl und Morph sind adaptiert, keine Liveprüfung. Product-Form-Verbraucher nur gelesen; mögliche hängenbleibende Submit-Queue ist H-017, kein bestätigtes Issue.
+
+## S23 – Product-Form-Queue
+
+S23 / VAR-001a.2b.2: vier Original-Product-Form-Verbraucherfälle PASS, drei Quellhashes gegen S22 unverändert. S22-Ereignisspuren am Section-EventTarget wiedergegeben, keine Pickerdiagnose wiederholt. Erfolg gibt einen wartenden Kaufklick frei. Nach fehlenden Metadaten, ungültigem JSON oder Netzwerkfehler bleiben zwei Kaufklicks ohne Cart-Request in der Queue. Späteres Variantenupdate für ID 3 sendet beide gespeicherten Klicks für ID 2. H-017 damit lokal als TP-017/P2 bestätigt; echte Browser-/Shopreichweite offen.
+
+Evidence: audit/evidence/variant-form-queue-2026-09-22.json; Script: audit/scripts/reproduce-variant-form-queue.mjs. Vollständige Original-ProductFormComponent und Originalevents, DOM/Refs adaptiert; nur abgefangene Requests, keine Browser-/Shopaktionen. Erstlauf und nach präzisierter Recovery-ID erneut Syntax/Diagnose PASS. Route TASK-CF85944395D0 B/STATIC, kein Executor.
+
+## S24 – Formular-Reconnect
+
+Script audit/scripts/reproduce-form-reconnect.mjs; Evidence audit/evidence/form-reconnect-2026-09-22.json. Syntax und Erstlauf PASS. Route TASK-B005090B4D3F B/STATIC, kein Executor.
+
+Originalevents und native EventTarget/AbortController; Component-Basisklasse/Refs adaptiert, Lifecycle manuell. Kein tatsächlicher DOM-Morph, Submit oder Browserlauf. component.js erneuert nur eigene Refs/Observer, nicht privaten Formularcontroller. morph.js:523 verschiebt passende alte Knoten mit insertBefore; konkrete betroffene Produktstruktur offen. quick-add.js:228–237 ordnet geparste Quellknoten vor dem Morph um und beweist keinen Reconnect einer bereits verbundenen Instanz.
+
+## S25 – VariantPicker-Reconnect
+
+`audit/scripts/reproduce-picker-reconnect.mjs` führt vier neue Lifecycle-Beobachtungen an Original-VariantPicker/-Events aus. `audit/evidence/picker-reconnect-2026-09-22.json` belegt doppelten Listener/Request nach Reconnect und den beim Disconnect nicht abgebrochenen Request. DOM/Morph adaptiert; keine Live- oder Browseraussage.
+
+## S26 – Morph-/Mehrprodukt-Reichweite
+
+`audit/scripts/audit-variant-morph-reach.mjs` erfasst acht Produkt-Templates, lokale Quick-add-Einstellung und sechs verbundene Quellhashes. `audit/evidence/variant-morph-reach-2026-09-22.json` grenzt H-016 auf eine bedingte globale Kopplung ein. Statische Quelle/Konfiguration, kein Browser oder Livebeleg.
+
+## S27 – JavaScript-Runtime-Inventar
+
+`audit/scripts/audit-js-runtime-inventory.mjs` inventarisiert 96 JS-Assets samt Hash, Größe, Lifecycle-/Listener-/Fetch-Metriken und markiert bereits geprüfte Kernquellen. `audit/evidence/js-runtime-inventory-2026-09-22.json` enthält 37 heuristische Prüfkandidaten. Flags sind Priorisierung, keine Fehlerbelege.
+
+## S28 – QuickAddComponent-Reconnect
+
+`audit/scripts/reproduce-quick-add-reconnect.mjs` führt vier Lifecycle-Fälle am vollständigen QuickAddComponent aus. `audit/evidence/quick-add-reconnect-2026-09-22.json` belegt Geister-/Doppellistener für VariantSelected und ausfallenden CartUpdate nach Reconnect. Kein Modal/Morph/Browser/Livepfad.
+
+## S29 – QuickAddDialog-Reconnect
+
+`audit/scripts/reproduce-quick-add-dialog-reconnect.mjs` führt vier Lifecycle-Fälle an der vollständigen Dialogklasse aus. `audit/evidence/quick-add-dialog-reconnect-2026-09-22.json` belegt ausfallenden CartUpdate, fortbestehenden VariantUpdate und korrekt verwalteten DialogClose. Kein UI-/Browser-/Livepfad.
+
+## S30 – Sticky-Add-to-Cart-Reconnect
+
+`audit/scripts/reproduce-sticky-cart-reconnect.mjs` führt vier Lifecycle-Fälle am vollständigen StickyAddToCartComponent aus und prüft acht lokale Produkttemplates. `audit/evidence/sticky-cart-reconnect-2026-09-22.json` belegt ausfallende Varianten-/Mengenlistener nach Reconnect. Kein UI-/Browser-/Livepfad.
+
+## S31 – PricePerItem-Reconnect
+
+`audit/scripts/reproduce-price-per-item-reconnect.mjs` führt vier Lifecycle-Fälle am vollständigen PricePerItemComponent aus und erfasst die Quantity-Block-Reichweite. `audit/evidence/price-per-item-reconnect-2026-09-22.json` belegt den ausfallenden Staffelsprung nach Reconnect. Keine aktuellen Produkt-/Browser-/Livedaten.
+
+## S32 – MediaGallery-Reconnect
+
+`audit/scripts/reproduce-media-gallery-reconnect.mjs` führt vier Lifecycle-Fälle an der vollständigen MediaGallery aus und erfasst alle acht Produkttemplates. `audit/evidence/media-gallery-reconnect-2026-09-22.json` belegt ausfallende VariantUpdate-/ZoomMediaSelected-Listener nach Reconnect. DOM/Slideshow adaptiert; kein Browser-/Livepfad.
+
+## S33 – Media-Runtime-Reconnect
+
+`audit/scripts/reproduce-media-runtime-reconnect.mjs` führt je vier Lifecycle-Fälle an vollständigem DeferredMedia und ProductModel aus. `audit/evidence/media-runtime-reconnect-2026-09-22.json` belegt ausfallende globale Pause- und Model-Pointer-Listener nach Reconnect samt statischer Quellreichweite. DOM/Video/ModelViewer adaptiert; keine realen Produkt-/Browser-/Livedaten.
+
+## S34 – LayeredSlideshow-Lifecycle
+
+`audit/scripts/reproduce-layered-slideshow-lifecycle.mjs` führt vier normale Reconnect- und zwei aktive Drag-Fälle am vollständigen LayeredSlideshowComponent aus. `audit/evidence/layered-slideshow-lifecycle-2026-09-22.json` belegt gesunden Normal-Reconnect, aber fortwirkenden dokumentweiten Pointermove nach Disconnect während Drag. Kein lokales Template weist die optionale Section zu; kein Browser-/Livepfad.
+
+## S35 – AccordionCustom-Reconnect
+
+`audit/scripts/reproduce-accordion-reconnect.mjs` führt vier Lifecycle-Fälle am vollständigen AccordionCustom aus. `audit/evidence/accordion-reconnect-2026-09-22.json` belegt ausgefallene Klick-, Escape- und Breakpoint-Listener nach Reconnect sowie sechs statische Aufrufer. Details/MediaQuery adaptiert; kein Browser-/Livepfad.
+
+## S36 – PredictiveSearch-Reconnect
+
+`audit/scripts/reproduce-predictive-search-reconnect.mjs` führt vier Lifecycle-Fälle am vollständigen PredictiveSearchComponent aus. `audit/evidence/predictive-search-reconnect-2026-09-22.json` belegt ausgefallenes CMD+K und Fokus-Rückführung nach Reconnect sowie Header-/Modal-/Custom-Results-Reichweite. Fetch/Morph nicht ausgeführt; kein Browser-/Livepfad.
+
+## S37 – DragZoomWrapper-Reconnect
+
+`audit/scripts/reproduce-drag-zoom-reconnect.mjs` führt vier Lifecycle-Fälle am vollständigen DragZoomWrapper aus. `audit/evidence/drag-zoom-reconnect-2026-09-22.json` belegt ausgefallene Touchlistener bei gesundem Dialogreset/Observer nach Reconnect und acht bedingte Galerietemplates. Gesten/Layout adaptiert; kein Browser-/Livepfad.
+
+## S38 – ProductCard-Lifecycle
+
+`audit/scripts/reproduce-product-card-lifecycle.mjs` führt vier ProductCard- und zwei Swatches-Fälle am vollständigen Originalcode aus. `audit/evidence/product-card-lifecycle-2026-09-22.json` belegt Geisterlistener und 31 Templatezuweisungen. Variant-Fetch/Morph/Navigation adaptiert; kein Browser-/Livepfad.

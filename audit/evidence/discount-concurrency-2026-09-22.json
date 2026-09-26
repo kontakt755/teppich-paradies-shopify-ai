@@ -1,0 +1,65 @@
+{
+  "session": "S15",
+  "task": "CART-003b.2",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/cart-discount.js",
+      "sha256": "7b911591eac2a6ec8a70eb043214bb7f4e3ae56cd2706400ab30f37ea2586a7e"
+    },
+    {
+      "file": "assets/events.js",
+      "sha256": "1290bc43167daaa1166e4d3acf0b423f1d30f119347d2873ebb18001c12d2056"
+    },
+    {
+      "file": "assets/utilities.js",
+      "sha256": "1b0c4926e32f6df743161c714d37def14b404a5bc1b2298171f7e5411085cde6"
+    },
+    {
+      "file": "snippets/cart-summary.liquid",
+      "sha256": "25c2205eda3d8d6521e44fa185d9c4eba6b47dcabeb8a91c4b0f27a62098a195"
+    }
+  ],
+  "cases": [
+    {
+      "name": "remove-2",
+      "discount": "B",
+      "eventAndMorph": true
+    },
+    {
+      "name": "remove-1",
+      "discount": "",
+      "eventAndMorph": true
+    },
+    {
+      "name": "remove-network-failure",
+      "defect": "TP-013 extension",
+      "feedbackVisible": false
+    },
+    {
+      "name": "apply-apply-apply",
+      "defect": "TP-014",
+      "firstAborted": true,
+      "secondAbortedByThird": false,
+      "morphOrder": [
+        "newest",
+        "older"
+      ]
+    },
+    {
+      "name": "remove-apply-apply",
+      "defect": "TP-014",
+      "firstAborted": true,
+      "secondAbortedByThird": false,
+      "morphOrder": [
+        "newest",
+        "older"
+      ]
+    },
+    {
+      "name": "sequential-success-control",
+      "events": 2
+    }
+  ],
+  "limits": "Original classes/fetchConfig; modeled DOM and abort-aware fetch. Client controller loss proven; final snapshots synthetic, no server ordering or live browser proof. Native keyboard activation not tested; template binds remove to button click."
+}

@@ -1,0 +1,4692 @@
+{
+  "status": "PASS",
+  "session": "S08",
+  "matrix": "CART-002a",
+  "generatedAt": "2026-09-21T08:31:27.279Z",
+  "renderCases": 20,
+  "lineRenders": 35,
+  "quantityLocks": 28,
+  "actionCases": 13,
+  "syncCases": 10,
+  "interceptedRequests": 34,
+  "sourceIntegrity": [
+    {
+      "file": "assets/tp-cart-gruppen.js",
+      "sha256": "ce2a6e2e57ccd4096adbec83a6577984f57c07dc2d686fe054ddf4ca29b8323a",
+      "historicalLiveSha256": "ce2a6e2e57ccd4096adbec83a6577984f57c07dc2d686fe054ddf4ca29b8323a"
+    },
+    {
+      "file": "snippets/tp-cart-gruppe.liquid",
+      "sha256": "395dca970f7943fe3198cb7d908e45afbed62af222076e9896fdae84179f90af",
+      "historicalLiveSha256": "395dca970f7943fe3198cb7d908e45afbed62af222076e9896fdae84179f90af"
+    },
+    {
+      "file": "assets/component-cart-items.js",
+      "sha256": "e3c4066bf5afe88b89b8c4cb03ba095166541e1fabf2ea2db6a521b7ab5ea6ef",
+      "historicalLiveSha256": "e3c4066bf5afe88b89b8c4cb03ba095166541e1fabf2ea2db6a521b7ab5ea6ef"
+    },
+    {
+      "file": "assets/component.js",
+      "sha256": "3798455f28383ddc9df6f01ca7f20652abef5ffcaace1f32f098b83a2e5c6e56",
+      "historicalLiveSha256": "3798455f28383ddc9df6f01ca7f20652abef5ffcaace1f32f098b83a2e5c6e56"
+    },
+    {
+      "file": "assets/tp-zuschnitt-abgleich.js",
+      "sha256": "9f40aaad06a6314c892bd4fbaed5f89c91da0be98a649aa027105b2631521d91",
+      "historicalLiveSha256": "9f40aaad06a6314c892bd4fbaed5f89c91da0be98a649aa027105b2631521d91"
+    },
+    {
+      "file": "snippets/quantity-selector.liquid",
+      "sha256": "3d78bd94857487ca97d60049a13d15ae55c18d1d9ea5cf7c4d60591d3bdd4f84",
+      "historicalLiveSha256": "3d78bd94857487ca97d60049a13d15ae55c18d1d9ea5cf7c4d60591d3bdd4f84"
+    },
+    {
+      "file": "assets/component-quantity-selector.js",
+      "sha256": "37e2bd5e160d762fc7177dcf11cf8dbecd43c004c77633d6c782311fe08ded7f",
+      "historicalLiveSha256": "37e2bd5e160d762fc7177dcf11cf8dbecd43c004c77633d6c782311fe08ded7f"
+    },
+    {
+      "file": "assets/component-cart-quantity-selector.js",
+      "sha256": "abd5813bc8b0f87093feaded826a3cb0217edd297465c9ebf2b8ab6840c190d1",
+      "historicalLiveSha256": "abd5813bc8b0f87093feaded826a3cb0217edd297465c9ebf2b8ab6840c190d1"
+    },
+    {
+      "file": "snippets/cart-products.liquid",
+      "sha256": "fee4ccac79b38fb09857438904683ab79c4780e1c7950371aed9feda19a23c5d",
+      "historicalLiveSha256": "fee4ccac79b38fb09857438904683ab79c4780e1c7950371aed9feda19a23c5d"
+    },
+    {
+      "file": "assets/utilities.js",
+      "sha256": "1b0c4926e32f6df743161c714d37def14b404a5bc1b2298171f7e5411085cde6",
+      "historicalLiveSha256": "1b0c4926e32f6df743161c714d37def14b404a5bc1b2298171f7e5411085cde6"
+    }
+  ],
+  "confirmedIssues": [
+    "TP-010"
+  ],
+  "limitations": [
+    "All fixture products, groups and network responses synthetic; no real cart or checkout mutation.",
+    "LiquidJS renders original snippets with only doc/stylesheet removed and icon/translation/item-count filters adapted. Not a current Shopify Liquid proof.",
+    "Original cart/quantity classes executed; DOM, Component refs, imports for rendering/animation/performance modeled. Reduced motion and delayed animation callbacks exercised; real CSS timing, pointer and MutationObserver behavior not tested.",
+    "Cart successful section morphs and DOMParser modeled. Rejected removal is observed before any reload or unrelated later refresh; server cart unchanged is the explicit failure fixture.",
+    "Full cut-sync source with stateful intercepted responses, queue and own-event suppression. Liquid lock is rendered HTML/UI, not a server-side Shopify validation guarantee.",
+    "No S01-S07 rerun, no production repairs, no current live asset/product/browser validation."
+  ],
+  "renderObservations": [
+    {
+      "name": "piece plus package remain editable",
+      "rows": [
+        {
+          "key": "piece",
+          "quantity": 2,
+          "titel": "Audit accessory",
+          "properties": {},
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Zubehör"
+        },
+        {
+          "key": "package",
+          "quantity": 2,
+          "titel": "Audit accessory",
+          "properties": {
+            "_pakete": "2",
+            "_qm_gesamt": "4,16"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Zubehör"
+        }
+      ],
+      "attributes": {},
+      "blocked": false,
+      "lockText": "",
+      "retryButton": false,
+      "views": [
+        {
+          "key": "piece",
+          "calculated": false,
+          "orphan": false,
+          "quantity": "",
+          "hint": "",
+          "help": "",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "2",
+            "data-cart-quantity": "2",
+            "min": "1",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "1",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            false,
+            false
+          ]
+        },
+        {
+          "key": "package",
+          "calculated": false,
+          "orphan": false,
+          "quantity": "",
+          "hint": "",
+          "help": "",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "2",
+            "data-cart-quantity": "2",
+            "min": "1",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "2",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ungrouped meterware locked quantity",
+      "rows": [
+        {
+          "key": "roll",
+          "quantity": 8,
+          "titel": "Audit roll",
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Teppichboden"
+        }
+      ],
+      "attributes": {},
+      "blocked": false,
+      "lockText": "",
+      "retryButton": false,
+      "views": [
+        {
+          "key": "roll",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:8,00 m²",
+          "hint": "",
+          "help": "Menge ergibt sich aus dem Maß. Zum Produkt",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "8",
+            "data-cart-quantity": "8",
+            "min": "8",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "1",
+            "max": "8",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "complete roll group and accessory",
+      "rows": [
+        {
+          "key": "roll",
+          "quantity": 8,
+          "titel": "Audit roll",
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²",
+            "_Gruppe": "T-audit"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Teppichboden"
+        },
+        {
+          "key": "service",
+          "quantity": 12,
+          "titel": "Audit accessory",
+          "properties": {
+            "Zu Teppichboden": "Audit roll",
+            "Höhe": "5 cm",
+            "Länge": "12 m",
+            "_Gruppe": "T-audit"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Service"
+        },
+        {
+          "key": "piece",
+          "quantity": 2,
+          "titel": "Audit accessory",
+          "properties": {},
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Zubehör"
+        }
+      ],
+      "attributes": {},
+      "blocked": false,
+      "lockText": "",
+      "retryButton": false,
+      "views": [
+        {
+          "key": "roll",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:8,00 m²",
+          "hint": "",
+          "help": "Menge ergibt sich aus dem Maß. Zum Produkt",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "8",
+            "data-cart-quantity": "8",
+            "min": "8",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "1",
+            "max": "8",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        },
+        {
+          "key": "service",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:12 m Fußleiste",
+          "hint": "Gehört zu Audit roll; wird gemeinsam entfernt",
+          "help": "Menge ergibt sich aus dem Maß des zugehörigen Teppichs.",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "12",
+            "data-cart-quantity": "12",
+            "min": "12",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "2",
+            "max": "12",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        },
+        {
+          "key": "piece",
+          "calculated": false,
+          "orphan": false,
+          "quantity": "",
+          "hint": "",
+          "help": "",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "2",
+            "data-cart-quantity": "2",
+            "min": "1",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "3",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "services ordered before main",
+      "rows": [
+        {
+          "key": "service",
+          "quantity": 12,
+          "titel": "Audit accessory",
+          "properties": {
+            "Zu Teppichboden": "Audit roll",
+            "Höhe": "5 cm",
+            "Länge": "12 m",
+            "_Gruppe": "T-audit"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Service"
+        },
+        {
+          "key": "roll",
+          "quantity": 8,
+          "titel": "Audit roll",
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²",
+            "_Gruppe": "T-audit"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Teppichboden"
+        }
+      ],
+      "attributes": {},
+      "blocked": false,
+      "lockText": "",
+      "retryButton": false,
+      "views": [
+        {
+          "key": "service",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:12 m Fußleiste",
+          "hint": "Gehört zu Audit roll; wird gemeinsam entfernt",
+          "help": "Menge ergibt sich aus dem Maß des zugehörigen Teppichs.",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "12",
+            "data-cart-quantity": "12",
+            "min": "12",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "1",
+            "max": "12",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        },
+        {
+          "key": "roll",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:8,00 m²",
+          "hint": "",
+          "help": "Menge ergibt sich aus dem Maß. Zum Produkt",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "8",
+            "data-cart-quantity": "8",
+            "min": "8",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "2",
+            "max": "8",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "orphaned service group",
+      "rows": [
+        {
+          "key": "service",
+          "quantity": 12,
+          "titel": "Audit accessory",
+          "properties": {
+            "Zu Teppichboden": "Audit roll",
+            "Höhe": "5 cm",
+            "Länge": "12 m",
+            "_Gruppe": "T-audit"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Service"
+        },
+        {
+          "key": "piece",
+          "quantity": 2,
+          "titel": "Audit accessory",
+          "properties": {},
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Zubehör"
+        }
+      ],
+      "attributes": {},
+      "blocked": true,
+      "lockText": "Bestellung nicht möglich: Dieser Service gehört zu einem Artikel, der nicht mehr im Warenkorb ist – bitte entfernen.",
+      "retryButton": false,
+      "views": [
+        {
+          "key": "service",
+          "calculated": true,
+          "orphan": true,
+          "quantity": "Menge:12 m Fußleiste",
+          "hint": "Dieser Service gehört zu einem Artikel, der nicht mehr im Warenkorb ist – bitte entfernen",
+          "help": "",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "12",
+            "data-cart-quantity": "12",
+            "min": "12",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "1",
+            "max": "12",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        },
+        {
+          "key": "piece",
+          "calculated": false,
+          "orphan": false,
+          "quantity": "",
+          "hint": "",
+          "help": "",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "2",
+            "data-cart-quantity": "2",
+            "min": "1",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "2",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "service without group",
+      "rows": [
+        {
+          "key": "service",
+          "quantity": 12,
+          "titel": "Audit accessory",
+          "properties": {
+            "Zu Teppichboden": "Audit roll",
+            "Höhe": "5 cm",
+            "Länge": "12 m"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Service"
+        }
+      ],
+      "attributes": {},
+      "blocked": true,
+      "lockText": "Bestellung nicht möglich: Dieser Artikel braucht eine Maßangabe – bitte über die Produktseite konfigurieren.",
+      "retryButton": false,
+      "views": [
+        {
+          "key": "service",
+          "calculated": true,
+          "orphan": true,
+          "quantity": "Menge:12 m Fußleiste",
+          "hint": "Dieser Artikel braucht eine Maßangabe – bitte über die Produktseite konfigurieren",
+          "help": "",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "12",
+            "data-cart-quantity": "12",
+            "min": "12",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "1",
+            "max": "12",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "raw service without properties",
+      "rows": [
+        {
+          "key": "piece",
+          "quantity": 2,
+          "titel": "Audit accessory",
+          "properties": {},
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Service"
+        }
+      ],
+      "attributes": {},
+      "blocked": true,
+      "lockText": "Bestellung nicht möglich: Dieser Artikel braucht eine Maßangabe – bitte über die Produktseite konfigurieren.",
+      "retryButton": false,
+      "views": [
+        {
+          "key": "piece",
+          "calculated": true,
+          "orphan": true,
+          "quantity": "Menge:2 Stück",
+          "hint": "Dieser Artikel braucht eine Maßangabe – bitte über die Produktseite konfigurieren",
+          "help": "",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "2",
+            "data-cart-quantity": "2",
+            "min": "2",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "1",
+            "max": "2",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "area units without measures",
+      "rows": [
+        {
+          "key": "piece",
+          "quantity": 2,
+          "titel": "Audit accessory",
+          "properties": {},
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Zubehör",
+          "preisPro001Qm": true
+        }
+      ],
+      "attributes": {},
+      "blocked": true,
+      "lockText": "Bestellung nicht möglich: Dieser Artikel braucht eine Maßangabe – bitte über die Produktseite konfigurieren.",
+      "retryButton": false,
+      "views": [
+        {
+          "key": "piece",
+          "calculated": true,
+          "orphan": true,
+          "quantity": "Menge:2 Stück",
+          "hint": "Dieser Artikel braucht eine Maßangabe – bitte über die Produktseite konfigurieren",
+          "help": "",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "2",
+            "data-cart-quantity": "2",
+            "min": "2",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "1",
+            "max": "2",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "wish option without measures",
+      "rows": [
+        {
+          "key": "piece",
+          "quantity": 2,
+          "titel": "Audit accessory",
+          "properties": {},
+          "optionen": [
+            "Sand",
+            "Wunschmaß"
+          ],
+          "typ": "Zubehör"
+        }
+      ],
+      "attributes": {},
+      "blocked": true,
+      "lockText": "Bestellung nicht möglich: Dieser Artikel braucht eine Maßangabe – bitte über die Produktseite konfigurieren.",
+      "retryButton": false,
+      "views": [
+        {
+          "key": "piece",
+          "calculated": true,
+          "orphan": true,
+          "quantity": "Menge:2 Stück",
+          "hint": "Dieser Artikel braucht eine Maßangabe – bitte über die Produktseite konfigurieren",
+          "help": "",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "2",
+            "data-cart-quantity": "2",
+            "min": "2",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "1",
+            "max": "2",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "room measurements present",
+      "rows": [
+        {
+          "key": "roll",
+          "quantity": 8,
+          "titel": "Audit roll",
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "350 cm",
+            "Fläche": "7,00 m²"
+          },
+          "optionen": [
+            "Sand",
+            "Wunschmaß"
+          ],
+          "typ": "Teppichboden"
+        }
+      ],
+      "attributes": {},
+      "blocked": false,
+      "lockText": "",
+      "retryButton": false,
+      "views": [
+        {
+          "key": "roll",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:7,00 m²",
+          "hint": "",
+          "help": "Menge ergibt sich aus dem Maß. Zum Produkt",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "8",
+            "data-cart-quantity": "8",
+            "min": "8",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "1",
+            "max": "8",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "complete rug group attributes match",
+      "rows": [
+        {
+          "key": "rug",
+          "quantity": 600,
+          "titel": "Audit accessory",
+          "properties": {
+            "_Gruppe": "K-audit",
+            "_Zuschnitt": "Audit rug · 200 × 300 cm",
+            "Einfassung": "Gekettelt",
+            "Maße": "200 × 300 cm",
+            "Fläche (abgerechnet)": "6,00 m²",
+            "Kante umlaufend": "10,00 m"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Zubehör",
+          "preisPro001Qm": true
+        },
+        {
+          "key": "edge",
+          "quantity": 1000,
+          "titel": "Audit accessory",
+          "properties": {
+            "_Gruppe": "K-audit",
+            "Zu Teppich": "Audit rug",
+            "Kante umlaufend": "10,00 m"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Service"
+        }
+      ],
+      "attributes": {
+        "Zuschnitt K-audit": "Audit rug · 200 × 300 cm"
+      },
+      "blocked": false,
+      "lockText": "",
+      "retryButton": false,
+      "views": [
+        {
+          "key": "rug",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:6,00 m²",
+          "hint": "",
+          "help": "Menge ergibt sich aus dem Maß. Zum Produkt",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "600",
+            "data-cart-quantity": "600",
+            "min": "600",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "1",
+            "max": "600",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        },
+        {
+          "key": "edge",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:10,00 m Kettelkante",
+          "hint": "Gehört zu Audit accessory; wird gemeinsam entfernt",
+          "help": "Menge ergibt sich aus dem Maß des zugehörigen Teppichs.",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "1000",
+            "data-cart-quantity": "1000",
+            "min": "1000",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "2",
+            "max": "1000",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "rug missing attribute",
+      "rows": [
+        {
+          "key": "rug",
+          "quantity": 600,
+          "titel": "Audit accessory",
+          "properties": {
+            "_Gruppe": "K-audit",
+            "_Zuschnitt": "Audit rug · 200 × 300 cm",
+            "Einfassung": "Gekettelt",
+            "Maße": "200 × 300 cm",
+            "Fläche (abgerechnet)": "6,00 m²",
+            "Kante umlaufend": "10,00 m"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Zubehör",
+          "preisPro001Qm": true
+        },
+        {
+          "key": "edge",
+          "quantity": 1000,
+          "titel": "Audit accessory",
+          "properties": {
+            "_Gruppe": "K-audit",
+            "Zu Teppich": "Audit rug",
+            "Kante umlaufend": "10,00 m"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Service"
+        }
+      ],
+      "attributes": {},
+      "blocked": true,
+      "lockText": "Bestellung nicht möglich: Die Zuschnittangaben werden noch mit dem Warenkorb abgeglichen. Erneut abgleichen",
+      "retryButton": true,
+      "views": [
+        {
+          "key": "rug",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:6,00 m²",
+          "hint": "",
+          "help": "Menge ergibt sich aus dem Maß. Zum Produkt",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "600",
+            "data-cart-quantity": "600",
+            "min": "600",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "1",
+            "max": "600",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        },
+        {
+          "key": "edge",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:10,00 m Kettelkante",
+          "hint": "Gehört zu Audit accessory; wird gemeinsam entfernt",
+          "help": "Menge ergibt sich aus dem Maß des zugehörigen Teppichs.",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "1000",
+            "data-cart-quantity": "1000",
+            "min": "1000",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "2",
+            "max": "1000",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "rug wrong attribute",
+      "rows": [
+        {
+          "key": "rug",
+          "quantity": 600,
+          "titel": "Audit accessory",
+          "properties": {
+            "_Gruppe": "K-audit",
+            "_Zuschnitt": "Audit rug · 200 × 300 cm",
+            "Einfassung": "Gekettelt",
+            "Maße": "200 × 300 cm",
+            "Fläche (abgerechnet)": "6,00 m²",
+            "Kante umlaufend": "10,00 m"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Zubehör",
+          "preisPro001Qm": true
+        },
+        {
+          "key": "edge",
+          "quantity": 1000,
+          "titel": "Audit accessory",
+          "properties": {
+            "_Gruppe": "K-audit",
+            "Zu Teppich": "Audit rug",
+            "Kante umlaufend": "10,00 m"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Service"
+        }
+      ],
+      "attributes": {
+        "Zuschnitt K-audit": "wrong"
+      },
+      "blocked": true,
+      "lockText": "Bestellung nicht möglich: Die Zuschnittangaben werden noch mit dem Warenkorb abgeglichen. Erneut abgleichen",
+      "retryButton": true,
+      "views": [
+        {
+          "key": "rug",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:6,00 m²",
+          "hint": "",
+          "help": "Menge ergibt sich aus dem Maß. Zum Produkt",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "600",
+            "data-cart-quantity": "600",
+            "min": "600",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "1",
+            "max": "600",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        },
+        {
+          "key": "edge",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:10,00 m Kettelkante",
+          "hint": "Gehört zu Audit accessory; wird gemeinsam entfernt",
+          "help": "Menge ergibt sich aus dem Maß des zugehörigen Teppichs.",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "1000",
+            "data-cart-quantity": "1000",
+            "min": "1000",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "2",
+            "max": "1000",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "stale cut attribute with ordinary item",
+      "rows": [
+        {
+          "key": "piece",
+          "quantity": 2,
+          "titel": "Audit accessory",
+          "properties": {},
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Zubehör"
+        }
+      ],
+      "attributes": {
+        "Zuschnitt old": "old",
+        "Sonstiges": "keep"
+      },
+      "blocked": true,
+      "lockText": "Bestellung nicht möglich: Die Zuschnittangaben werden noch mit dem Warenkorb abgeglichen. Erneut abgleichen",
+      "retryButton": true,
+      "views": [
+        {
+          "key": "piece",
+          "calculated": false,
+          "orphan": false,
+          "quantity": "",
+          "hint": "",
+          "help": "",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "2",
+            "data-cart-quantity": "2",
+            "min": "1",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "1",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "empty stale cut attribute allowed",
+      "rows": [
+        {
+          "key": "piece",
+          "quantity": 2,
+          "titel": "Audit accessory",
+          "properties": {},
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Zubehör"
+        }
+      ],
+      "attributes": {
+        "Zuschnitt old": ""
+      },
+      "blocked": false,
+      "lockText": "",
+      "retryButton": false,
+      "views": [
+        {
+          "key": "piece",
+          "calculated": false,
+          "orphan": false,
+          "quantity": "",
+          "hint": "",
+          "help": "",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "2",
+            "data-cart-quantity": "2",
+            "min": "1",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "1",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            false,
+            false
+          ]
+        }
+      ]
+    },
+    {
+      "name": "legacy rug requires reconfiguration",
+      "rows": [
+        {
+          "key": "rug",
+          "quantity": 600,
+          "titel": "Audit accessory",
+          "properties": {
+            "_Gruppe": "K-audit",
+            "Einfassung": "Gekettelt",
+            "Maße": "200 × 300 cm",
+            "Fläche (abgerechnet)": "6,00 m²",
+            "Kante umlaufend": "10,00 m"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Zubehör",
+          "preisPro001Qm": true
+        },
+        {
+          "key": "edge",
+          "quantity": 1000,
+          "titel": "Audit accessory",
+          "properties": {
+            "_Gruppe": "K-audit",
+            "Zu Teppich": "Audit rug",
+            "Kante umlaufend": "10,00 m"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Service"
+        }
+      ],
+      "attributes": {},
+      "blocked": true,
+      "lockText": "Bestellung nicht möglich: Ein konfigurierter Teppich hat keine Zuschnittangabe – bitte entfernen und neu konfigurieren.",
+      "retryButton": false,
+      "views": [
+        {
+          "key": "rug",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:6,00 m²",
+          "hint": "",
+          "help": "Menge ergibt sich aus dem Maß. Zum Produkt",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "600",
+            "data-cart-quantity": "600",
+            "min": "600",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "1",
+            "max": "600",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        },
+        {
+          "key": "edge",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:10,00 m Kettelkante",
+          "hint": "Gehört zu Audit accessory; wird gemeinsam entfernt",
+          "help": "Menge ergibt sich aus dem Maß des zugehörigen Teppichs.",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "1000",
+            "data-cart-quantity": "1000",
+            "min": "1000",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "2",
+            "max": "1000",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "cut property without group",
+      "rows": [
+        {
+          "key": "rug",
+          "quantity": 600,
+          "titel": "Audit accessory",
+          "properties": {
+            "_Gruppe": "",
+            "_Zuschnitt": "Audit rug · 200 × 300 cm",
+            "Einfassung": "Gekettelt",
+            "Maße": "200 × 300 cm",
+            "Fläche (abgerechnet)": "6,00 m²",
+            "Kante umlaufend": "10,00 m"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Zubehör",
+          "preisPro001Qm": true
+        }
+      ],
+      "attributes": {},
+      "blocked": true,
+      "lockText": "Bestellung nicht möglich: Die Zuschnittangaben werden noch mit dem Warenkorb abgeglichen. Erneut abgleichen",
+      "retryButton": true,
+      "views": [
+        {
+          "key": "rug",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:6,00 m²",
+          "hint": "",
+          "help": "Menge ergibt sich aus dem Maß. Zum Produkt",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "600",
+            "data-cart-quantity": "600",
+            "min": "600",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "1",
+            "max": "600",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "minimum price unit wording",
+      "rows": [
+        {
+          "key": "rug",
+          "quantity": 600,
+          "titel": "Audit accessory",
+          "properties": {
+            "_Gruppe": "K-audit",
+            "_Zuschnitt": "Audit rug · 200 × 300 cm",
+            "Einfassung": "Gekettelt",
+            "Maße": "200 × 300 cm",
+            "Fläche (abgerechnet)": "6,00 m²",
+            "Kante umlaufend": "10,00 m",
+            "Mindestpreis": "angewendet"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Zubehör",
+          "preisPro001Qm": true
+        },
+        {
+          "key": "edge",
+          "quantity": 1000,
+          "titel": "Audit accessory",
+          "properties": {
+            "_Gruppe": "K-audit",
+            "Zu Teppich": "Audit rug",
+            "Kante umlaufend": "10,00 m"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Service"
+        }
+      ],
+      "attributes": {
+        "Zuschnitt K-audit": "Audit rug · 200 × 300 cm"
+      },
+      "blocked": false,
+      "lockText": "",
+      "retryButton": false,
+      "views": [
+        {
+          "key": "rug",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:6,00 m² (Mindestpreis)",
+          "hint": "",
+          "help": "Menge ergibt sich aus dem Maß. Zum Produkt",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "600",
+            "data-cart-quantity": "600",
+            "min": "600",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "1",
+            "max": "600",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        },
+        {
+          "key": "edge",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:10,00 m Kettelkante",
+          "hint": "Gehört zu Audit accessory; wird gemeinsam entfernt",
+          "help": "Menge ergibt sich aus dem Maß des zugehörigen Teppichs.",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "1000",
+            "data-cart-quantity": "1000",
+            "min": "1000",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "2",
+            "max": "1000",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "underlay running metre unit",
+      "rows": [
+        {
+          "key": "roll",
+          "quantity": 8,
+          "titel": "Audit roll",
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²",
+            "_Gruppe": "T-audit"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Teppichboden"
+        },
+        {
+          "key": "underlay",
+          "quantity": 5,
+          "titel": "Audit accessory",
+          "properties": {
+            "_Gruppe": "T-audit",
+            "Zu Teppichboden": "Audit roll",
+            "Bahnen": "2"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Service"
+        }
+      ],
+      "attributes": {},
+      "blocked": false,
+      "lockText": "",
+      "retryButton": false,
+      "views": [
+        {
+          "key": "roll",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:8,00 m²",
+          "hint": "",
+          "help": "Menge ergibt sich aus dem Maß. Zum Produkt",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "8",
+            "data-cart-quantity": "8",
+            "min": "8",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "1",
+            "max": "8",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        },
+        {
+          "key": "underlay",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:5 lfm (2 Bahnen)",
+          "hint": "Gehört zu Audit roll; wird gemeinsam entfernt",
+          "help": "Menge ergibt sich aus dem Maß des zugehörigen Teppichs.",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "5",
+            "data-cart-quantity": "5",
+            "min": "5",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "2",
+            "max": "5",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        }
+      ]
+    },
+    {
+      "name": "two intact groups and plain item",
+      "rows": [
+        {
+          "key": "service",
+          "quantity": 12,
+          "titel": "Audit accessory",
+          "properties": {
+            "Zu Teppichboden": "Audit roll",
+            "Höhe": "5 cm",
+            "Länge": "12 m",
+            "_Gruppe": "T-audit"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Service"
+        },
+        {
+          "key": "rug",
+          "quantity": 600,
+          "titel": "Audit accessory",
+          "properties": {
+            "_Gruppe": "K-audit",
+            "_Zuschnitt": "Audit rug · 200 × 300 cm",
+            "Einfassung": "Gekettelt",
+            "Maße": "200 × 300 cm",
+            "Fläche (abgerechnet)": "6,00 m²",
+            "Kante umlaufend": "10,00 m"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Zubehör",
+          "preisPro001Qm": true
+        },
+        {
+          "key": "piece",
+          "quantity": 2,
+          "titel": "Audit accessory",
+          "properties": {},
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Zubehör"
+        },
+        {
+          "key": "edge",
+          "quantity": 1000,
+          "titel": "Audit accessory",
+          "properties": {
+            "_Gruppe": "K-audit",
+            "Zu Teppich": "Audit rug",
+            "Kante umlaufend": "10,00 m"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Service"
+        },
+        {
+          "key": "roll",
+          "quantity": 8,
+          "titel": "Audit roll",
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²",
+            "_Gruppe": "T-audit"
+          },
+          "optionen": [
+            "Standard"
+          ],
+          "typ": "Teppichboden"
+        }
+      ],
+      "attributes": {
+        "Zuschnitt K-audit": "Audit rug · 200 × 300 cm"
+      },
+      "blocked": false,
+      "lockText": "",
+      "retryButton": false,
+      "views": [
+        {
+          "key": "service",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:12 m Fußleiste",
+          "hint": "Gehört zu Audit roll; wird gemeinsam entfernt",
+          "help": "Menge ergibt sich aus dem Maß des zugehörigen Teppichs.",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "12",
+            "data-cart-quantity": "12",
+            "min": "12",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "1",
+            "max": "12",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        },
+        {
+          "key": "rug",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:6,00 m²",
+          "hint": "",
+          "help": "Menge ergibt sich aus dem Maß. Zum Produkt",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "600",
+            "data-cart-quantity": "600",
+            "min": "600",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "2",
+            "max": "600",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        },
+        {
+          "key": "piece",
+          "calculated": false,
+          "orphan": false,
+          "quantity": "",
+          "hint": "",
+          "help": "",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "2",
+            "data-cart-quantity": "2",
+            "min": "1",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "3",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            false,
+            false
+          ]
+        },
+        {
+          "key": "edge",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:10,00 m Kettelkante",
+          "hint": "Gehört zu Audit accessory; wird gemeinsam entfernt",
+          "help": "Menge ergibt sich aus dem Maß des zugehörigen Teppichs.",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "1000",
+            "data-cart-quantity": "1000",
+            "min": "1000",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "4",
+            "max": "1000",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        },
+        {
+          "key": "roll",
+          "calculated": true,
+          "orphan": false,
+          "quantity": "Menge:8,00 m²",
+          "hint": "",
+          "help": "Menge ergibt sich aus dem Maß. Zum Produkt",
+          "inputAttributes": {
+            "type": "number",
+            "name": "updates[]",
+            "value": "8",
+            "data-cart-quantity": "8",
+            "min": "8",
+            "data-min": "1",
+            "blur": "/setQuantity",
+            "focus": "/selectInputValue",
+            "ref": "quantityInput",
+            "aria-live": "polite",
+            "aria-label": "accessibility.quantity",
+            "data-cart-line": "5",
+            "max": "8",
+            "step": "1"
+          },
+          "buttonsDisabled": [
+            true,
+            true
+          ]
+        }
+      ]
+    }
+  ],
+  "actionObservations": [
+    {
+      "name": "remove roll group from main",
+      "options": {},
+      "request": {
+        "url": "/cart/update.js",
+        "body": {
+          "updates": {
+            "roll": 0,
+            "service": 0
+          },
+          "sections": "audit-cart",
+          "sections_url": "/cart"
+        }
+      },
+      "removedBeforeResponse": [
+        "roll",
+        "service"
+      ],
+      "removedAfterResponse": [
+        "roll",
+        "service"
+      ],
+      "emptyShown": false,
+      "errorVisibleBeforeAnimation": false,
+      "inlineErrorVisibleFinally": false,
+      "errors": [],
+      "inlineErrorText": "",
+      "morphCount": 1,
+      "refreshCount": 0,
+      "eventCount": 1,
+      "issue": null,
+      "limitation": "Successful morph/DOMParser modeled, not full server DOM. Error branch retains refs to detached nodes; real MutationObserver refresh is not simulated."
+    },
+    {
+      "name": "remove roll group from service",
+      "options": {
+        "line": 2
+      },
+      "request": {
+        "url": "/cart/update.js",
+        "body": {
+          "updates": {
+            "roll": 0,
+            "service": 0
+          },
+          "sections": "audit-cart",
+          "sections_url": "/cart"
+        }
+      },
+      "removedBeforeResponse": [
+        "roll",
+        "service"
+      ],
+      "removedAfterResponse": [
+        "roll",
+        "service"
+      ],
+      "emptyShown": false,
+      "errorVisibleBeforeAnimation": false,
+      "inlineErrorVisibleFinally": false,
+      "errors": [],
+      "inlineErrorText": "",
+      "morphCount": 1,
+      "refreshCount": 0,
+      "eventCount": 1,
+      "issue": null,
+      "limitation": "Successful morph/DOMParser modeled, not full server DOM. Error branch retains refs to detached nodes; real MutationObserver refresh is not simulated."
+    },
+    {
+      "name": "remove ordinary item alone",
+      "options": {
+        "line": 3
+      },
+      "request": {
+        "url": "/cart/change.js",
+        "body": {
+          "line": 3,
+          "quantity": 0,
+          "sections": "audit-cart",
+          "sections_url": "/cart"
+        }
+      },
+      "removedBeforeResponse": [
+        "piece"
+      ],
+      "removedAfterResponse": [
+        "piece"
+      ],
+      "emptyShown": false,
+      "errorVisibleBeforeAnimation": false,
+      "inlineErrorVisibleFinally": false,
+      "errors": [],
+      "inlineErrorText": "",
+      "morphCount": 1,
+      "refreshCount": 0,
+      "eventCount": 1,
+      "issue": null,
+      "limitation": "Successful morph/DOMParser modeled, not full server DOM. Error branch retains refs to detached nodes; real MutationObserver refresh is not simulated."
+    },
+    {
+      "name": "change ordinary quantity",
+      "options": {
+        "line": 3,
+        "change": true
+      },
+      "request": {
+        "url": "/cart/change.js",
+        "body": {
+          "line": 3,
+          "quantity": 3,
+          "sections": "audit-cart",
+          "sections_url": "/cart"
+        }
+      },
+      "removedBeforeResponse": [],
+      "removedAfterResponse": [],
+      "emptyShown": false,
+      "errorVisibleBeforeAnimation": false,
+      "inlineErrorVisibleFinally": false,
+      "errors": [],
+      "inlineErrorText": "",
+      "morphCount": 1,
+      "refreshCount": 0,
+      "eventCount": 1,
+      "issue": null,
+      "limitation": "Successful morph/DOMParser modeled, not full server DOM. Error branch retains refs to detached nodes; real MutationObserver refresh is not simulated."
+    },
+    {
+      "name": "ordinary quantity rejected",
+      "options": {
+        "line": 3,
+        "change": true,
+        "response": "422"
+      },
+      "request": {
+        "url": "/cart/change.js",
+        "body": {
+          "line": 3,
+          "quantity": 3,
+          "sections": "audit-cart",
+          "sections_url": "/cart"
+        }
+      },
+      "removedBeforeResponse": [],
+      "removedAfterResponse": [],
+      "emptyShown": false,
+      "errorVisibleBeforeAnimation": true,
+      "inlineErrorVisibleFinally": true,
+      "errors": [],
+      "inlineErrorText": "Synthetic rejected mutation",
+      "morphCount": 0,
+      "refreshCount": 0,
+      "eventCount": 0,
+      "issue": null,
+      "limitation": "Successful morph/DOMParser modeled, not full server DOM. Error branch retains refs to detached nodes; real MutationObserver refresh is not simulated."
+    },
+    {
+      "name": "group removal rejected by server",
+      "options": {
+        "line": 2,
+        "response": "422"
+      },
+      "request": {
+        "url": "/cart/update.js",
+        "body": {
+          "updates": {
+            "roll": 0,
+            "service": 0
+          },
+          "sections": "audit-cart",
+          "sections_url": "/cart"
+        }
+      },
+      "removedBeforeResponse": [
+        "roll",
+        "service"
+      ],
+      "removedAfterResponse": [
+        "roll",
+        "service"
+      ],
+      "emptyShown": false,
+      "errorVisibleBeforeAnimation": false,
+      "inlineErrorVisibleFinally": false,
+      "errors": [],
+      "inlineErrorText": "Synthetic rejected mutation",
+      "morphCount": 0,
+      "refreshCount": 0,
+      "eventCount": 0,
+      "issue": "TP-010",
+      "limitation": "Successful morph/DOMParser modeled, not full server DOM. Error branch retains refs to detached nodes; real MutationObserver refresh is not simulated."
+    },
+    {
+      "name": "group removal network failure",
+      "options": {
+        "response": "network"
+      },
+      "request": {
+        "url": "/cart/update.js",
+        "body": {
+          "updates": {
+            "roll": 0,
+            "service": 0
+          },
+          "sections": "audit-cart",
+          "sections_url": "/cart"
+        }
+      },
+      "removedBeforeResponse": [
+        "roll",
+        "service"
+      ],
+      "removedAfterResponse": [
+        "roll",
+        "service"
+      ],
+      "emptyShown": false,
+      "errorVisibleBeforeAnimation": false,
+      "inlineErrorVisibleFinally": false,
+      "errors": [
+        "Error: Synthetic network failure before mutation"
+      ],
+      "inlineErrorText": "",
+      "morphCount": 0,
+      "refreshCount": 0,
+      "eventCount": 0,
+      "issue": "TP-010",
+      "limitation": "Successful morph/DOMParser modeled, not full server DOM. Error branch retains refs to detached nodes; real MutationObserver refresh is not simulated."
+    },
+    {
+      "name": "ordinary removal network failure",
+      "options": {
+        "line": 3,
+        "response": "network"
+      },
+      "request": {
+        "url": "/cart/change.js",
+        "body": {
+          "line": 3,
+          "quantity": 0,
+          "sections": "audit-cart",
+          "sections_url": "/cart"
+        }
+      },
+      "removedBeforeResponse": [
+        "piece"
+      ],
+      "removedAfterResponse": [
+        "piece"
+      ],
+      "emptyShown": false,
+      "errorVisibleBeforeAnimation": false,
+      "inlineErrorVisibleFinally": false,
+      "errors": [
+        "Error: Synthetic network failure before mutation"
+      ],
+      "inlineErrorText": "",
+      "morphCount": 0,
+      "refreshCount": 0,
+      "eventCount": 0,
+      "issue": "TP-010",
+      "limitation": "Successful morph/DOMParser modeled, not full server DOM. Error branch retains refs to detached nodes; real MutationObserver refresh is not simulated."
+    },
+    {
+      "name": "last group removal network failure",
+      "options": {
+        "onlyGroup": true,
+        "response": "network"
+      },
+      "request": {
+        "url": "/cart/update.js",
+        "body": {
+          "updates": {
+            "roll": 0,
+            "service": 0
+          },
+          "sections": "audit-cart",
+          "sections_url": "/cart"
+        }
+      },
+      "removedBeforeResponse": [
+        "roll",
+        "service"
+      ],
+      "removedAfterResponse": [
+        "roll",
+        "service"
+      ],
+      "emptyShown": true,
+      "errorVisibleBeforeAnimation": false,
+      "inlineErrorVisibleFinally": false,
+      "errors": [
+        "Error: Synthetic network failure before mutation"
+      ],
+      "inlineErrorText": "",
+      "morphCount": 0,
+      "refreshCount": 0,
+      "eventCount": 0,
+      "issue": "TP-010",
+      "limitation": "Successful morph/DOMParser modeled, not full server DOM. Error branch retains refs to detached nodes; real MutationObserver refresh is not simulated."
+    },
+    {
+      "name": "normal animation completes after rejected deletion",
+      "options": {
+        "line": 2,
+        "response": "422",
+        "delayedAnimation": true
+      },
+      "request": {
+        "url": "/cart/update.js",
+        "body": {
+          "updates": {
+            "roll": 0,
+            "service": 0
+          },
+          "sections": "audit-cart",
+          "sections_url": "/cart"
+        }
+      },
+      "removedBeforeResponse": [],
+      "removedAfterResponse": [
+        "roll",
+        "service"
+      ],
+      "emptyShown": false,
+      "errorVisibleBeforeAnimation": true,
+      "inlineErrorVisibleFinally": false,
+      "errors": [],
+      "inlineErrorText": "Synthetic rejected mutation",
+      "morphCount": 0,
+      "refreshCount": 0,
+      "eventCount": 0,
+      "issue": "TP-010",
+      "limitation": "Successful morph/DOMParser modeled, not full server DOM. Error branch retains refs to detached nodes; real MutationObserver refresh is not simulated."
+    },
+    {
+      "name": "normal animation completes after network failure",
+      "options": {
+        "response": "network",
+        "delayedAnimation": true
+      },
+      "request": {
+        "url": "/cart/update.js",
+        "body": {
+          "updates": {
+            "roll": 0,
+            "service": 0
+          },
+          "sections": "audit-cart",
+          "sections_url": "/cart"
+        }
+      },
+      "removedBeforeResponse": [],
+      "removedAfterResponse": [
+        "roll",
+        "service"
+      ],
+      "emptyShown": false,
+      "errorVisibleBeforeAnimation": false,
+      "inlineErrorVisibleFinally": false,
+      "errors": [
+        "Error: Synthetic network failure before mutation"
+      ],
+      "inlineErrorText": "",
+      "morphCount": 0,
+      "refreshCount": 0,
+      "eventCount": 0,
+      "issue": "TP-010",
+      "limitation": "Successful morph/DOMParser modeled, not full server DOM. Error branch retains refs to detached nodes; real MutationObserver refresh is not simulated."
+    },
+    {
+      "name": "drawer group removal request",
+      "options": {
+        "drawer": true,
+        "line": 2
+      },
+      "request": {
+        "url": "/cart/update.js",
+        "body": {
+          "updates": {
+            "roll": 0,
+            "service": 0
+          },
+          "sections": "audit-cart",
+          "sections_url": "/products/audit"
+        }
+      },
+      "removedBeforeResponse": [
+        "roll",
+        "service"
+      ],
+      "removedAfterResponse": [
+        "roll",
+        "service"
+      ],
+      "emptyShown": false,
+      "errorVisibleBeforeAnimation": false,
+      "inlineErrorVisibleFinally": false,
+      "errors": [],
+      "inlineErrorText": "",
+      "morphCount": 1,
+      "refreshCount": 0,
+      "eventCount": 1,
+      "issue": null,
+      "limitation": "Successful morph/DOMParser modeled, not full server DOM. Error branch retains refs to detached nodes; real MutationObserver refresh is not simulated."
+    },
+    {
+      "name": "checkout marker lock and release",
+      "options": {
+        "checkoutLocked": true
+      },
+      "request": {
+        "url": "/cart/update.js",
+        "body": {
+          "updates": {
+            "roll": 0,
+            "service": 0
+          },
+          "sections": "audit-cart",
+          "sections_url": "/cart"
+        }
+      },
+      "removedBeforeResponse": [
+        "roll",
+        "service"
+      ],
+      "removedAfterResponse": [
+        "roll",
+        "service"
+      ],
+      "emptyShown": false,
+      "errorVisibleBeforeAnimation": false,
+      "inlineErrorVisibleFinally": false,
+      "errors": [],
+      "inlineErrorText": "",
+      "morphCount": 2,
+      "refreshCount": 0,
+      "eventCount": 1,
+      "issue": null,
+      "limitation": "Successful morph/DOMParser modeled, not full server DOM. Error branch retains refs to detached nodes; real MutationObserver refresh is not simulated."
+    }
+  ],
+  "syncObservations": [
+    {
+      "name": "missing cut attribute populated",
+      "options": {},
+      "initial": {
+        "items": [
+          {
+            "key": "rug",
+            "quantity": 600,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "_Zuschnitt": "Audit rug · 200 × 300 cm",
+              "Einfassung": "Gekettelt",
+              "Maße": "200 × 300 cm",
+              "Fläche (abgerechnet)": "6,00 m²",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Zubehör",
+            "preisPro001Qm": true,
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Zubehör",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": true
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "rug",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          },
+          {
+            "key": "edge",
+            "quantity": 1000,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "Zu Teppich": "Audit rug",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Service",
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Service",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": false
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "edge",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          }
+        ],
+        "attributes": {
+          "Sonstiges": "keep"
+        },
+        "item_count": 1600
+      },
+      "requests": [
+        {
+          "url": "/cart.js",
+          "method": "GET",
+          "body": null
+        },
+        {
+          "url": "/cart/update.js",
+          "method": "POST",
+          "body": {
+            "attributes": {
+              "Zuschnitt K-audit": "Audit rug · 200 × 300 cm"
+            }
+          }
+        }
+      ],
+      "finalCart": {
+        "items": [
+          {
+            "key": "rug",
+            "quantity": 600,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "_Zuschnitt": "Audit rug · 200 × 300 cm",
+              "Einfassung": "Gekettelt",
+              "Maße": "200 × 300 cm",
+              "Fläche (abgerechnet)": "6,00 m²",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Zubehör",
+            "preisPro001Qm": true,
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Zubehör",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": true
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "rug",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          },
+          {
+            "key": "edge",
+            "quantity": 1000,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "Zu Teppich": "Audit rug",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Service",
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Service",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": false
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "edge",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          }
+        ],
+        "attributes": {
+          "Sonstiges": "keep",
+          "Zuschnitt K-audit": "Audit rug · 200 × 300 cm"
+        },
+        "item_count": 1600
+      },
+      "outcomes": [
+        {
+          "ok": true,
+          "changed": true
+        }
+      ],
+      "events": [
+        {
+          "resource": {
+            "items": [
+              {
+                "key": "rug",
+                "quantity": 600,
+                "titel": "Audit accessory",
+                "properties": {
+                  "_Gruppe": "K-audit",
+                  "_Zuschnitt": "Audit rug · 200 × 300 cm",
+                  "Einfassung": "Gekettelt",
+                  "Maße": "200 × 300 cm",
+                  "Fläche (abgerechnet)": "6,00 m²",
+                  "Kante umlaufend": "10,00 m"
+                },
+                "optionen": [
+                  "Standard"
+                ],
+                "typ": "Zubehör",
+                "preisPro001Qm": true,
+                "url": "/products/audit-fixture",
+                "product": {
+                  "title": "Audit accessory",
+                  "type": "Zubehör",
+                  "metafields": {
+                    "custom": {
+                      "preis_pro_001_qm": {
+                        "value": true
+                      }
+                    }
+                  }
+                },
+                "variant": {
+                  "id": "rug",
+                  "available": true,
+                  "options": [
+                    "Standard"
+                  ],
+                  "quantity_rule": {
+                    "min": 1,
+                    "increment": 1
+                  }
+                }
+              },
+              {
+                "key": "edge",
+                "quantity": 1000,
+                "titel": "Audit accessory",
+                "properties": {
+                  "_Gruppe": "K-audit",
+                  "Zu Teppich": "Audit rug",
+                  "Kante umlaufend": "10,00 m"
+                },
+                "optionen": [
+                  "Standard"
+                ],
+                "typ": "Service",
+                "url": "/products/audit-fixture",
+                "product": {
+                  "title": "Audit accessory",
+                  "type": "Service",
+                  "metafields": {
+                    "custom": {
+                      "preis_pro_001_qm": {
+                        "value": false
+                      }
+                    }
+                  }
+                },
+                "variant": {
+                  "id": "edge",
+                  "available": true,
+                  "options": [
+                    "Standard"
+                  ],
+                  "quantity_rule": {
+                    "min": 1,
+                    "increment": 1
+                  }
+                }
+              }
+            ],
+            "attributes": {
+              "Sonstiges": "keep",
+              "Zuschnitt K-audit": "Audit rug · 200 × 300 cm"
+            },
+            "item_count": 1600
+          },
+          "sourceId": "tp-zuschnitt-abgleich",
+          "data": {
+            "source": "tp-zuschnitt-abgleich",
+            "itemCount": 1600
+          }
+        }
+      ],
+      "maxActiveRequests": 1,
+      "finalLiquidBlocked": false
+    },
+    {
+      "name": "matching cut attributes no write",
+      "options": {},
+      "initial": {
+        "items": [
+          {
+            "key": "rug",
+            "quantity": 600,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "_Zuschnitt": "Audit rug · 200 × 300 cm",
+              "Einfassung": "Gekettelt",
+              "Maße": "200 × 300 cm",
+              "Fläche (abgerechnet)": "6,00 m²",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Zubehör",
+            "preisPro001Qm": true,
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Zubehör",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": true
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "rug",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          },
+          {
+            "key": "edge",
+            "quantity": 1000,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "Zu Teppich": "Audit rug",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Service",
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Service",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": false
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "edge",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          }
+        ],
+        "attributes": {
+          "Zuschnitt K-audit": "Audit rug · 200 × 300 cm"
+        },
+        "item_count": 1600
+      },
+      "requests": [
+        {
+          "url": "/cart.js",
+          "method": "GET",
+          "body": null
+        }
+      ],
+      "finalCart": {
+        "items": [
+          {
+            "key": "rug",
+            "quantity": 600,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "_Zuschnitt": "Audit rug · 200 × 300 cm",
+              "Einfassung": "Gekettelt",
+              "Maße": "200 × 300 cm",
+              "Fläche (abgerechnet)": "6,00 m²",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Zubehör",
+            "preisPro001Qm": true,
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Zubehör",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": true
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "rug",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          },
+          {
+            "key": "edge",
+            "quantity": 1000,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "Zu Teppich": "Audit rug",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Service",
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Service",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": false
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "edge",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          }
+        ],
+        "attributes": {
+          "Zuschnitt K-audit": "Audit rug · 200 × 300 cm"
+        },
+        "item_count": 1600
+      },
+      "outcomes": [
+        {
+          "ok": true,
+          "changed": false
+        }
+      ],
+      "events": [],
+      "maxActiveRequests": 1,
+      "finalLiquidBlocked": false
+    },
+    {
+      "name": "removed rug attribute cleared",
+      "options": {},
+      "initial": {
+        "items": [
+          {
+            "key": "piece",
+            "quantity": 2,
+            "titel": "Audit accessory",
+            "properties": {},
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Zubehör",
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Zubehör",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": false
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "piece",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          }
+        ],
+        "attributes": {
+          "Zuschnitt old": "old",
+          "Sonstiges": "keep"
+        },
+        "item_count": 2
+      },
+      "requests": [
+        {
+          "url": "/cart.js",
+          "method": "GET",
+          "body": null
+        },
+        {
+          "url": "/cart/update.js",
+          "method": "POST",
+          "body": {
+            "attributes": {
+              "Zuschnitt old": ""
+            }
+          }
+        }
+      ],
+      "finalCart": {
+        "items": [
+          {
+            "key": "piece",
+            "quantity": 2,
+            "titel": "Audit accessory",
+            "properties": {},
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Zubehör",
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Zubehör",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": false
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "piece",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          }
+        ],
+        "attributes": {
+          "Sonstiges": "keep"
+        },
+        "item_count": 2
+      },
+      "outcomes": [
+        {
+          "ok": true,
+          "changed": true
+        }
+      ],
+      "events": [
+        {
+          "resource": {
+            "items": [
+              {
+                "key": "piece",
+                "quantity": 2,
+                "titel": "Audit accessory",
+                "properties": {},
+                "optionen": [
+                  "Standard"
+                ],
+                "typ": "Zubehör",
+                "url": "/products/audit-fixture",
+                "product": {
+                  "title": "Audit accessory",
+                  "type": "Zubehör",
+                  "metafields": {
+                    "custom": {
+                      "preis_pro_001_qm": {
+                        "value": false
+                      }
+                    }
+                  }
+                },
+                "variant": {
+                  "id": "piece",
+                  "available": true,
+                  "options": [
+                    "Standard"
+                  ],
+                  "quantity_rule": {
+                    "min": 1,
+                    "increment": 1
+                  }
+                }
+              }
+            ],
+            "attributes": {
+              "Sonstiges": "keep"
+            },
+            "item_count": 2
+          },
+          "sourceId": "tp-zuschnitt-abgleich",
+          "data": {
+            "source": "tp-zuschnitt-abgleich",
+            "itemCount": 2
+          }
+        }
+      ],
+      "maxActiveRequests": 1,
+      "finalLiquidBlocked": false
+    },
+    {
+      "name": "reconfigured rug replaces old attribute",
+      "options": {},
+      "initial": {
+        "items": [
+          {
+            "key": "rug",
+            "quantity": 600,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "_Zuschnitt": "Audit rug · 200 × 300 cm",
+              "Einfassung": "Gekettelt",
+              "Maße": "200 × 300 cm",
+              "Fläche (abgerechnet)": "6,00 m²",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Zubehör",
+            "preisPro001Qm": true,
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Zubehör",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": true
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "rug",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          },
+          {
+            "key": "edge",
+            "quantity": 1000,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "Zu Teppich": "Audit rug",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Service",
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Service",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": false
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "edge",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          }
+        ],
+        "attributes": {
+          "Zuschnitt old": "old"
+        },
+        "item_count": 1600
+      },
+      "requests": [
+        {
+          "url": "/cart.js",
+          "method": "GET",
+          "body": null
+        },
+        {
+          "url": "/cart/update.js",
+          "method": "POST",
+          "body": {
+            "attributes": {
+              "Zuschnitt K-audit": "Audit rug · 200 × 300 cm",
+              "Zuschnitt old": ""
+            }
+          }
+        }
+      ],
+      "finalCart": {
+        "items": [
+          {
+            "key": "rug",
+            "quantity": 600,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "_Zuschnitt": "Audit rug · 200 × 300 cm",
+              "Einfassung": "Gekettelt",
+              "Maße": "200 × 300 cm",
+              "Fläche (abgerechnet)": "6,00 m²",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Zubehör",
+            "preisPro001Qm": true,
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Zubehör",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": true
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "rug",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          },
+          {
+            "key": "edge",
+            "quantity": 1000,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "Zu Teppich": "Audit rug",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Service",
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Service",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": false
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "edge",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          }
+        ],
+        "attributes": {
+          "Zuschnitt K-audit": "Audit rug · 200 × 300 cm"
+        },
+        "item_count": 1600
+      },
+      "outcomes": [
+        {
+          "ok": true,
+          "changed": true
+        }
+      ],
+      "events": [
+        {
+          "resource": {
+            "items": [
+              {
+                "key": "rug",
+                "quantity": 600,
+                "titel": "Audit accessory",
+                "properties": {
+                  "_Gruppe": "K-audit",
+                  "_Zuschnitt": "Audit rug · 200 × 300 cm",
+                  "Einfassung": "Gekettelt",
+                  "Maße": "200 × 300 cm",
+                  "Fläche (abgerechnet)": "6,00 m²",
+                  "Kante umlaufend": "10,00 m"
+                },
+                "optionen": [
+                  "Standard"
+                ],
+                "typ": "Zubehör",
+                "preisPro001Qm": true,
+                "url": "/products/audit-fixture",
+                "product": {
+                  "title": "Audit accessory",
+                  "type": "Zubehör",
+                  "metafields": {
+                    "custom": {
+                      "preis_pro_001_qm": {
+                        "value": true
+                      }
+                    }
+                  }
+                },
+                "variant": {
+                  "id": "rug",
+                  "available": true,
+                  "options": [
+                    "Standard"
+                  ],
+                  "quantity_rule": {
+                    "min": 1,
+                    "increment": 1
+                  }
+                }
+              },
+              {
+                "key": "edge",
+                "quantity": 1000,
+                "titel": "Audit accessory",
+                "properties": {
+                  "_Gruppe": "K-audit",
+                  "Zu Teppich": "Audit rug",
+                  "Kante umlaufend": "10,00 m"
+                },
+                "optionen": [
+                  "Standard"
+                ],
+                "typ": "Service",
+                "url": "/products/audit-fixture",
+                "product": {
+                  "title": "Audit accessory",
+                  "type": "Service",
+                  "metafields": {
+                    "custom": {
+                      "preis_pro_001_qm": {
+                        "value": false
+                      }
+                    }
+                  }
+                },
+                "variant": {
+                  "id": "edge",
+                  "available": true,
+                  "options": [
+                    "Standard"
+                  ],
+                  "quantity_rule": {
+                    "min": 1,
+                    "increment": 1
+                  }
+                }
+              }
+            ],
+            "attributes": {
+              "Zuschnitt K-audit": "Audit rug · 200 × 300 cm"
+            },
+            "item_count": 1600
+          },
+          "sourceId": "tp-zuschnitt-abgleich",
+          "data": {
+            "source": "tp-zuschnitt-abgleich",
+            "itemCount": 1600
+          }
+        }
+      ],
+      "maxActiveRequests": 1,
+      "finalLiquidBlocked": false
+    },
+    {
+      "name": "wrong text replaced",
+      "options": {},
+      "initial": {
+        "items": [
+          {
+            "key": "rug",
+            "quantity": 600,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "_Zuschnitt": "Audit rug · 200 × 300 cm",
+              "Einfassung": "Gekettelt",
+              "Maße": "200 × 300 cm",
+              "Fläche (abgerechnet)": "6,00 m²",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Zubehör",
+            "preisPro001Qm": true,
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Zubehör",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": true
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "rug",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          },
+          {
+            "key": "edge",
+            "quantity": 1000,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "Zu Teppich": "Audit rug",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Service",
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Service",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": false
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "edge",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          }
+        ],
+        "attributes": {
+          "Zuschnitt K-audit": "wrong"
+        },
+        "item_count": 1600
+      },
+      "requests": [
+        {
+          "url": "/cart.js",
+          "method": "GET",
+          "body": null
+        },
+        {
+          "url": "/cart/update.js",
+          "method": "POST",
+          "body": {
+            "attributes": {
+              "Zuschnitt K-audit": "Audit rug · 200 × 300 cm"
+            }
+          }
+        }
+      ],
+      "finalCart": {
+        "items": [
+          {
+            "key": "rug",
+            "quantity": 600,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "_Zuschnitt": "Audit rug · 200 × 300 cm",
+              "Einfassung": "Gekettelt",
+              "Maße": "200 × 300 cm",
+              "Fläche (abgerechnet)": "6,00 m²",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Zubehör",
+            "preisPro001Qm": true,
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Zubehör",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": true
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "rug",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          },
+          {
+            "key": "edge",
+            "quantity": 1000,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "Zu Teppich": "Audit rug",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Service",
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Service",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": false
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "edge",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          }
+        ],
+        "attributes": {
+          "Zuschnitt K-audit": "Audit rug · 200 × 300 cm"
+        },
+        "item_count": 1600
+      },
+      "outcomes": [
+        {
+          "ok": true,
+          "changed": true
+        }
+      ],
+      "events": [
+        {
+          "resource": {
+            "items": [
+              {
+                "key": "rug",
+                "quantity": 600,
+                "titel": "Audit accessory",
+                "properties": {
+                  "_Gruppe": "K-audit",
+                  "_Zuschnitt": "Audit rug · 200 × 300 cm",
+                  "Einfassung": "Gekettelt",
+                  "Maße": "200 × 300 cm",
+                  "Fläche (abgerechnet)": "6,00 m²",
+                  "Kante umlaufend": "10,00 m"
+                },
+                "optionen": [
+                  "Standard"
+                ],
+                "typ": "Zubehör",
+                "preisPro001Qm": true,
+                "url": "/products/audit-fixture",
+                "product": {
+                  "title": "Audit accessory",
+                  "type": "Zubehör",
+                  "metafields": {
+                    "custom": {
+                      "preis_pro_001_qm": {
+                        "value": true
+                      }
+                    }
+                  }
+                },
+                "variant": {
+                  "id": "rug",
+                  "available": true,
+                  "options": [
+                    "Standard"
+                  ],
+                  "quantity_rule": {
+                    "min": 1,
+                    "increment": 1
+                  }
+                }
+              },
+              {
+                "key": "edge",
+                "quantity": 1000,
+                "titel": "Audit accessory",
+                "properties": {
+                  "_Gruppe": "K-audit",
+                  "Zu Teppich": "Audit rug",
+                  "Kante umlaufend": "10,00 m"
+                },
+                "optionen": [
+                  "Standard"
+                ],
+                "typ": "Service",
+                "url": "/products/audit-fixture",
+                "product": {
+                  "title": "Audit accessory",
+                  "type": "Service",
+                  "metafields": {
+                    "custom": {
+                      "preis_pro_001_qm": {
+                        "value": false
+                      }
+                    }
+                  }
+                },
+                "variant": {
+                  "id": "edge",
+                  "available": true,
+                  "options": [
+                    "Standard"
+                  ],
+                  "quantity_rule": {
+                    "min": 1,
+                    "increment": 1
+                  }
+                }
+              }
+            ],
+            "attributes": {
+              "Zuschnitt K-audit": "Audit rug · 200 × 300 cm"
+            },
+            "item_count": 1600
+          },
+          "sourceId": "tp-zuschnitt-abgleich",
+          "data": {
+            "source": "tp-zuschnitt-abgleich",
+            "itemCount": 1600
+          }
+        }
+      ],
+      "maxActiveRequests": 1,
+      "finalLiquidBlocked": false
+    },
+    {
+      "name": "get HTTP failure keeps block",
+      "options": {
+        "failAt": "get"
+      },
+      "initial": {
+        "items": [
+          {
+            "key": "rug",
+            "quantity": 600,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "_Zuschnitt": "Audit rug · 200 × 300 cm",
+              "Einfassung": "Gekettelt",
+              "Maße": "200 × 300 cm",
+              "Fläche (abgerechnet)": "6,00 m²",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Zubehör",
+            "preisPro001Qm": true,
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Zubehör",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": true
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "rug",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          },
+          {
+            "key": "edge",
+            "quantity": 1000,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "Zu Teppich": "Audit rug",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Service",
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Service",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": false
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "edge",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          }
+        ],
+        "attributes": {
+          "Sonstiges": "keep"
+        },
+        "item_count": 1600
+      },
+      "requests": [
+        {
+          "url": "/cart.js",
+          "method": "GET",
+          "body": null
+        }
+      ],
+      "finalCart": {
+        "items": [
+          {
+            "key": "rug",
+            "quantity": 600,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "_Zuschnitt": "Audit rug · 200 × 300 cm",
+              "Einfassung": "Gekettelt",
+              "Maße": "200 × 300 cm",
+              "Fläche (abgerechnet)": "6,00 m²",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Zubehör",
+            "preisPro001Qm": true,
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Zubehör",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": true
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "rug",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          },
+          {
+            "key": "edge",
+            "quantity": 1000,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "Zu Teppich": "Audit rug",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Service",
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Service",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": false
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "edge",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          }
+        ],
+        "attributes": {
+          "Sonstiges": "keep"
+        },
+        "item_count": 1600
+      },
+      "outcomes": [
+        {
+          "ok": false,
+          "message": "Error: HTTP 503"
+        }
+      ],
+      "events": [],
+      "maxActiveRequests": 1,
+      "finalLiquidBlocked": true
+    },
+    {
+      "name": "post HTTP failure keeps block",
+      "options": {
+        "failAt": "post"
+      },
+      "initial": {
+        "items": [
+          {
+            "key": "rug",
+            "quantity": 600,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "_Zuschnitt": "Audit rug · 200 × 300 cm",
+              "Einfassung": "Gekettelt",
+              "Maße": "200 × 300 cm",
+              "Fläche (abgerechnet)": "6,00 m²",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Zubehör",
+            "preisPro001Qm": true,
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Zubehör",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": true
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "rug",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          },
+          {
+            "key": "edge",
+            "quantity": 1000,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "Zu Teppich": "Audit rug",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Service",
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Service",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": false
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "edge",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          }
+        ],
+        "attributes": {
+          "Sonstiges": "keep"
+        },
+        "item_count": 1600
+      },
+      "requests": [
+        {
+          "url": "/cart.js",
+          "method": "GET",
+          "body": null
+        },
+        {
+          "url": "/cart/update.js",
+          "method": "POST",
+          "body": {
+            "attributes": {
+              "Zuschnitt K-audit": "Audit rug · 200 × 300 cm"
+            }
+          }
+        }
+      ],
+      "finalCart": {
+        "items": [
+          {
+            "key": "rug",
+            "quantity": 600,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "_Zuschnitt": "Audit rug · 200 × 300 cm",
+              "Einfassung": "Gekettelt",
+              "Maße": "200 × 300 cm",
+              "Fläche (abgerechnet)": "6,00 m²",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Zubehör",
+            "preisPro001Qm": true,
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Zubehör",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": true
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "rug",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          },
+          {
+            "key": "edge",
+            "quantity": 1000,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "Zu Teppich": "Audit rug",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Service",
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Service",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": false
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "edge",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          }
+        ],
+        "attributes": {
+          "Sonstiges": "keep"
+        },
+        "item_count": 1600
+      },
+      "outcomes": [
+        {
+          "ok": false,
+          "message": "Error: HTTP 503"
+        }
+      ],
+      "events": [],
+      "maxActiveRequests": 1,
+      "finalLiquidBlocked": true
+    },
+    {
+      "name": "HTTP success without applied attribute rejected",
+      "options": {
+        "ignoreWrite": true
+      },
+      "initial": {
+        "items": [
+          {
+            "key": "rug",
+            "quantity": 600,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "_Zuschnitt": "Audit rug · 200 × 300 cm",
+              "Einfassung": "Gekettelt",
+              "Maße": "200 × 300 cm",
+              "Fläche (abgerechnet)": "6,00 m²",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Zubehör",
+            "preisPro001Qm": true,
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Zubehör",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": true
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "rug",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          },
+          {
+            "key": "edge",
+            "quantity": 1000,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "Zu Teppich": "Audit rug",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Service",
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Service",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": false
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "edge",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          }
+        ],
+        "attributes": {
+          "Sonstiges": "keep"
+        },
+        "item_count": 1600
+      },
+      "requests": [
+        {
+          "url": "/cart.js",
+          "method": "GET",
+          "body": null
+        },
+        {
+          "url": "/cart/update.js",
+          "method": "POST",
+          "body": {
+            "attributes": {
+              "Zuschnitt K-audit": "Audit rug · 200 × 300 cm"
+            }
+          }
+        }
+      ],
+      "finalCart": {
+        "items": [
+          {
+            "key": "rug",
+            "quantity": 600,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "_Zuschnitt": "Audit rug · 200 × 300 cm",
+              "Einfassung": "Gekettelt",
+              "Maße": "200 × 300 cm",
+              "Fläche (abgerechnet)": "6,00 m²",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Zubehör",
+            "preisPro001Qm": true,
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Zubehör",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": true
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "rug",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          },
+          {
+            "key": "edge",
+            "quantity": 1000,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "Zu Teppich": "Audit rug",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Service",
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Service",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": false
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "edge",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          }
+        ],
+        "attributes": {
+          "Sonstiges": "keep"
+        },
+        "item_count": 1600
+      },
+      "outcomes": [
+        {
+          "ok": false,
+          "message": "Error: Abgleich nicht uebernommen"
+        }
+      ],
+      "events": [],
+      "maxActiveRequests": 1,
+      "finalLiquidBlocked": true
+    },
+    {
+      "name": "failed update then explicit retry",
+      "options": {
+        "failAt": "post",
+        "retry": true
+      },
+      "initial": {
+        "items": [
+          {
+            "key": "rug",
+            "quantity": 600,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "_Zuschnitt": "Audit rug · 200 × 300 cm",
+              "Einfassung": "Gekettelt",
+              "Maße": "200 × 300 cm",
+              "Fläche (abgerechnet)": "6,00 m²",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Zubehör",
+            "preisPro001Qm": true,
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Zubehör",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": true
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "rug",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          },
+          {
+            "key": "edge",
+            "quantity": 1000,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "Zu Teppich": "Audit rug",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Service",
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Service",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": false
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "edge",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          }
+        ],
+        "attributes": {
+          "Sonstiges": "keep"
+        },
+        "item_count": 1600
+      },
+      "requests": [
+        {
+          "url": "/cart.js",
+          "method": "GET",
+          "body": null
+        },
+        {
+          "url": "/cart/update.js",
+          "method": "POST",
+          "body": {
+            "attributes": {
+              "Zuschnitt K-audit": "Audit rug · 200 × 300 cm"
+            }
+          }
+        },
+        {
+          "url": "/cart.js",
+          "method": "GET",
+          "body": null
+        },
+        {
+          "url": "/cart/update.js",
+          "method": "POST",
+          "body": {
+            "attributes": {
+              "Zuschnitt K-audit": "Audit rug · 200 × 300 cm"
+            }
+          }
+        }
+      ],
+      "finalCart": {
+        "items": [
+          {
+            "key": "rug",
+            "quantity": 600,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "_Zuschnitt": "Audit rug · 200 × 300 cm",
+              "Einfassung": "Gekettelt",
+              "Maße": "200 × 300 cm",
+              "Fläche (abgerechnet)": "6,00 m²",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Zubehör",
+            "preisPro001Qm": true,
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Zubehör",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": true
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "rug",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          },
+          {
+            "key": "edge",
+            "quantity": 1000,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "Zu Teppich": "Audit rug",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Service",
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Service",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": false
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "edge",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          }
+        ],
+        "attributes": {
+          "Sonstiges": "keep",
+          "Zuschnitt K-audit": "Audit rug · 200 × 300 cm"
+        },
+        "item_count": 1600
+      },
+      "outcomes": [
+        {
+          "ok": false,
+          "message": "Error: HTTP 503"
+        },
+        {
+          "ok": true,
+          "changed": true
+        }
+      ],
+      "events": [
+        {
+          "resource": {
+            "items": [
+              {
+                "key": "rug",
+                "quantity": 600,
+                "titel": "Audit accessory",
+                "properties": {
+                  "_Gruppe": "K-audit",
+                  "_Zuschnitt": "Audit rug · 200 × 300 cm",
+                  "Einfassung": "Gekettelt",
+                  "Maße": "200 × 300 cm",
+                  "Fläche (abgerechnet)": "6,00 m²",
+                  "Kante umlaufend": "10,00 m"
+                },
+                "optionen": [
+                  "Standard"
+                ],
+                "typ": "Zubehör",
+                "preisPro001Qm": true,
+                "url": "/products/audit-fixture",
+                "product": {
+                  "title": "Audit accessory",
+                  "type": "Zubehör",
+                  "metafields": {
+                    "custom": {
+                      "preis_pro_001_qm": {
+                        "value": true
+                      }
+                    }
+                  }
+                },
+                "variant": {
+                  "id": "rug",
+                  "available": true,
+                  "options": [
+                    "Standard"
+                  ],
+                  "quantity_rule": {
+                    "min": 1,
+                    "increment": 1
+                  }
+                }
+              },
+              {
+                "key": "edge",
+                "quantity": 1000,
+                "titel": "Audit accessory",
+                "properties": {
+                  "_Gruppe": "K-audit",
+                  "Zu Teppich": "Audit rug",
+                  "Kante umlaufend": "10,00 m"
+                },
+                "optionen": [
+                  "Standard"
+                ],
+                "typ": "Service",
+                "url": "/products/audit-fixture",
+                "product": {
+                  "title": "Audit accessory",
+                  "type": "Service",
+                  "metafields": {
+                    "custom": {
+                      "preis_pro_001_qm": {
+                        "value": false
+                      }
+                    }
+                  }
+                },
+                "variant": {
+                  "id": "edge",
+                  "available": true,
+                  "options": [
+                    "Standard"
+                  ],
+                  "quantity_rule": {
+                    "min": 1,
+                    "increment": 1
+                  }
+                }
+              }
+            ],
+            "attributes": {
+              "Sonstiges": "keep",
+              "Zuschnitt K-audit": "Audit rug · 200 × 300 cm"
+            },
+            "item_count": 1600
+          },
+          "sourceId": "tp-zuschnitt-abgleich",
+          "data": {
+            "source": "tp-zuschnitt-abgleich",
+            "itemCount": 1600
+          }
+        }
+      ],
+      "maxActiveRequests": 1,
+      "finalLiquidBlocked": false
+    },
+    {
+      "name": "two calls serialize and avoid duplicate write",
+      "options": {
+        "queued": true
+      },
+      "initial": {
+        "items": [
+          {
+            "key": "rug",
+            "quantity": 600,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "_Zuschnitt": "Audit rug · 200 × 300 cm",
+              "Einfassung": "Gekettelt",
+              "Maße": "200 × 300 cm",
+              "Fläche (abgerechnet)": "6,00 m²",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Zubehör",
+            "preisPro001Qm": true,
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Zubehör",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": true
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "rug",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          },
+          {
+            "key": "edge",
+            "quantity": 1000,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "Zu Teppich": "Audit rug",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Service",
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Service",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": false
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "edge",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          }
+        ],
+        "attributes": {
+          "Sonstiges": "keep"
+        },
+        "item_count": 1600
+      },
+      "requests": [
+        {
+          "url": "/cart.js",
+          "method": "GET",
+          "body": null
+        },
+        {
+          "url": "/cart/update.js",
+          "method": "POST",
+          "body": {
+            "attributes": {
+              "Zuschnitt K-audit": "Audit rug · 200 × 300 cm"
+            }
+          }
+        },
+        {
+          "url": "/cart.js",
+          "method": "GET",
+          "body": null
+        }
+      ],
+      "finalCart": {
+        "items": [
+          {
+            "key": "rug",
+            "quantity": 600,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "_Zuschnitt": "Audit rug · 200 × 300 cm",
+              "Einfassung": "Gekettelt",
+              "Maße": "200 × 300 cm",
+              "Fläche (abgerechnet)": "6,00 m²",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Zubehör",
+            "preisPro001Qm": true,
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Zubehör",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": true
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "rug",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          },
+          {
+            "key": "edge",
+            "quantity": 1000,
+            "titel": "Audit accessory",
+            "properties": {
+              "_Gruppe": "K-audit",
+              "Zu Teppich": "Audit rug",
+              "Kante umlaufend": "10,00 m"
+            },
+            "optionen": [
+              "Standard"
+            ],
+            "typ": "Service",
+            "url": "/products/audit-fixture",
+            "product": {
+              "title": "Audit accessory",
+              "type": "Service",
+              "metafields": {
+                "custom": {
+                  "preis_pro_001_qm": {
+                    "value": false
+                  }
+                }
+              }
+            },
+            "variant": {
+              "id": "edge",
+              "available": true,
+              "options": [
+                "Standard"
+              ],
+              "quantity_rule": {
+                "min": 1,
+                "increment": 1
+              }
+            }
+          }
+        ],
+        "attributes": {
+          "Sonstiges": "keep",
+          "Zuschnitt K-audit": "Audit rug · 200 × 300 cm"
+        },
+        "item_count": 1600
+      },
+      "outcomes": [
+        {
+          "ok": true,
+          "changed": true
+        },
+        {
+          "ok": true,
+          "changed": false
+        }
+      ],
+      "events": [
+        {
+          "resource": {
+            "items": [
+              {
+                "key": "rug",
+                "quantity": 600,
+                "titel": "Audit accessory",
+                "properties": {
+                  "_Gruppe": "K-audit",
+                  "_Zuschnitt": "Audit rug · 200 × 300 cm",
+                  "Einfassung": "Gekettelt",
+                  "Maße": "200 × 300 cm",
+                  "Fläche (abgerechnet)": "6,00 m²",
+                  "Kante umlaufend": "10,00 m"
+                },
+                "optionen": [
+                  "Standard"
+                ],
+                "typ": "Zubehör",
+                "preisPro001Qm": true,
+                "url": "/products/audit-fixture",
+                "product": {
+                  "title": "Audit accessory",
+                  "type": "Zubehör",
+                  "metafields": {
+                    "custom": {
+                      "preis_pro_001_qm": {
+                        "value": true
+                      }
+                    }
+                  }
+                },
+                "variant": {
+                  "id": "rug",
+                  "available": true,
+                  "options": [
+                    "Standard"
+                  ],
+                  "quantity_rule": {
+                    "min": 1,
+                    "increment": 1
+                  }
+                }
+              },
+              {
+                "key": "edge",
+                "quantity": 1000,
+                "titel": "Audit accessory",
+                "properties": {
+                  "_Gruppe": "K-audit",
+                  "Zu Teppich": "Audit rug",
+                  "Kante umlaufend": "10,00 m"
+                },
+                "optionen": [
+                  "Standard"
+                ],
+                "typ": "Service",
+                "url": "/products/audit-fixture",
+                "product": {
+                  "title": "Audit accessory",
+                  "type": "Service",
+                  "metafields": {
+                    "custom": {
+                      "preis_pro_001_qm": {
+                        "value": false
+                      }
+                    }
+                  }
+                },
+                "variant": {
+                  "id": "edge",
+                  "available": true,
+                  "options": [
+                    "Standard"
+                  ],
+                  "quantity_rule": {
+                    "min": 1,
+                    "increment": 1
+                  }
+                }
+              }
+            ],
+            "attributes": {
+              "Sonstiges": "keep",
+              "Zuschnitt K-audit": "Audit rug · 200 × 300 cm"
+            },
+            "item_count": 1600
+          },
+          "sourceId": "tp-zuschnitt-abgleich",
+          "data": {
+            "source": "tp-zuschnitt-abgleich",
+            "itemCount": 1600
+          }
+        }
+      ],
+      "maxActiveRequests": 1,
+      "finalLiquidBlocked": false
+    }
+  ]
+}

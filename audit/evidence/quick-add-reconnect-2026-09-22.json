@@ -1,0 +1,42 @@
+{
+  "session": "S28",
+  "task": "JS-001b",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/quick-add.js",
+      "sha256": "f7f1c8496cb32e099d380178fdbf7ae5b708cc53c2f11da0aaa9cf75d7fbd5f6"
+    },
+    {
+      "file": "assets/events.js",
+      "sha256": "1290bc43167daaa1166e4d3acf0b423f1d30f119347d2873ebb18001c12d2056"
+    },
+    {
+      "file": "assets/component.js",
+      "sha256": "3798455f28383ddc9df6f01ca7f20652abef5ffcaace1f32f098b83a2e5c6e56"
+    }
+  ],
+  "cases": [
+    {
+      "name": "initial-connect",
+      "variantWrites": 1,
+      "cartClears": 1
+    },
+    {
+      "name": "disconnected-ghost-variant-listener",
+      "variantWrites": 1,
+      "cartClears": 0
+    },
+    {
+      "name": "same-instance-reconnect",
+      "variantWrites": 2,
+      "cartClears": 0
+    },
+    {
+      "name": "fresh-instance",
+      "variantWrites": 1,
+      "cartClears": 1
+    }
+  ],
+  "limits": "Original complete QuickAddComponent and original events; Component/DOM/dialog/media dependencies adapted, native EventTarget and AbortController. Event target proxied because Node EventTarget has no DOM bubbling. No modal/morph/fetch/browser/live execution. Repository quick_add is false and live setting unknown."
+}

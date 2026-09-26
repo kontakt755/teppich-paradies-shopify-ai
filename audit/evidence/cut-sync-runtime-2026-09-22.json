@@ -1,0 +1,67 @@
+{
+  "session": "S48",
+  "task": "JS-001v",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/tp-zuschnitt-abgleich.js",
+      "sha256": "9f40aaad06a6314c892bd4fbaed5f89c91da0be98a649aa027105b2631521d91"
+    },
+    {
+      "file": "snippets/cart-products.liquid",
+      "sha256": "fee4ccac79b38fb09857438904683ab79c4780e1c7950371aed9feda19a23c5d"
+    },
+    {
+      "file": "snippets/tp-cart-gruppe.liquid",
+      "sha256": "395dca970f7943fe3198cb7d908e45afbed62af222076e9896fdae84179f90af"
+    },
+    {
+      "file": "blocks/tp-einfass-konfigurator.liquid",
+      "sha256": "0fac94ed78ae213540718cd38b8930f16855bd74b60b9ac6184bf30a00014094"
+    }
+  ],
+  "cases": [
+    {
+      "name": "initial-start-and-global-listeners",
+      "requests": 1,
+      "appCartUpdateListeners": 1,
+      "clickListeners": 1
+    },
+    {
+      "name": "duplicate-script-guard",
+      "requests": 1,
+      "appCartUpdateListeners": 1,
+      "clickListeners": 1
+    },
+    {
+      "name": "external-update-queued-behind-start",
+      "requestsBeforeStartCompletes": 1
+    },
+    {
+      "name": "write-verified-and-self-event-not-requeued",
+      "emittedSelfEvents": 1,
+      "nextQueuedRequest": "/cart.js"
+    },
+    {
+      "name": "consistent-cart-needs-no-write-or-redraw",
+      "requests": 3,
+      "emittedSelfEvents": 1
+    },
+    {
+      "name": "queue-recovers-after-failed-request",
+      "requests": 5
+    }
+  ],
+  "existingRegressionSuite": {
+    "tests": 10,
+    "passed": 10,
+    "failed": 0
+  },
+  "sourceReach": {
+    "cartProductsGlobalPath": true,
+    "configuratorTemplates": [
+      "product.einfassung.json"
+    ]
+  },
+  "limits": "Original complete IIFE; document events, CustomEvent and deferred cart fetch/update responses adapted with native EventTarget. Startup, duplicate execution, serialized external update, verified write, self-event suppression, no-op cart and failure recovery executed. Real Shopify cart endpoints, multi-tab timing, Liquid rerender, browser navigation and current live source not tested."
+}

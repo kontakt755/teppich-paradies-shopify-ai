@@ -1,0 +1,84 @@
+{
+  "session": "S37",
+  "task": "JS-001k",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/drag-zoom-wrapper.js",
+      "sha256": "ba81e1175abe6eb52b909969df5e9d87a5fe35417a417aaf7699f8b6e3078871"
+    },
+    {
+      "file": "snippets/product-media-gallery-content.liquid",
+      "sha256": "eb1411debff7f0179929f29e9b74a10d725d2c3a9584b53965d51cd0a383fc53"
+    },
+    {
+      "file": "snippets/product-media-gallery-content-styles.liquid",
+      "sha256": "a4bb64e88d6cb355ff0458a0a3dca5f8b33682cdbcda6d08fd223cd70dc9a0d8"
+    }
+  ],
+  "cases": [
+    {
+      "name": "initial-connect",
+      "touchPreventCalls": 1,
+      "dialogResetScale": "1.5",
+      "observerActive": true
+    },
+    {
+      "name": "disconnected",
+      "touchPreventCalls": 0,
+      "dialogResetScale": "9",
+      "observerActive": false
+    },
+    {
+      "name": "same-instance-reconnect",
+      "touchPreventCalls": 0,
+      "dialogResetScale": "1.5",
+      "observerActive": true
+    },
+    {
+      "name": "fresh-instance",
+      "touchPreventCalls": 1,
+      "dialogResetScale": "1.5",
+      "observerActive": true
+    }
+  ],
+  "templateSource": [
+    {
+      "template": "product.einfassung.json",
+      "enabledMediaGallery": true
+    },
+    {
+      "template": "product.fixpreis.json",
+      "enabledMediaGallery": true
+    },
+    {
+      "template": "product.fliese.json",
+      "enabledMediaGallery": true
+    },
+    {
+      "template": "product.json",
+      "enabledMediaGallery": true
+    },
+    {
+      "template": "product.planken.json",
+      "enabledMediaGallery": true
+    },
+    {
+      "template": "product.rolle.json",
+      "enabledMediaGallery": true
+    },
+    {
+      "template": "product.teppich.json",
+      "enabledMediaGallery": true
+    },
+    {
+      "template": "product.zubehoer.json",
+      "enabledMediaGallery": true
+    }
+  ],
+  "sourceReach": {
+    "scriptConditionalOnGalleryImages": true,
+    "wrapperRenderedInZoomDialog": true
+  },
+  "limits": "Original complete DragZoomWrapper; Component/image/style/ResizeObserver and animation frame adapted, native EventTarget/AbortController. Mobile touchstart listener, dialog-close reset, observer and reconnect lifecycle tested. Pinch/drag math, double-tap timing, bounds, real image layout, zoom dialog browser behavior and live product media not tested. Eight gallery templates are static potential reach; wrapper rendering remains conditional on image media."
+}

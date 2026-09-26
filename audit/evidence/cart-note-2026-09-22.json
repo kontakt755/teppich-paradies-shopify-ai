@@ -1,0 +1,77 @@
+{
+  "session": "S16",
+  "task": "CART-003b.3",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/cart-note.js",
+      "sha256": "fa5c7f2db0b81a3c87077cae54f80b7209857ea6af19de3f46b80891fb713a5f",
+      "historicalMatch": true
+    },
+    {
+      "file": "assets/utilities.js",
+      "sha256": "1b0c4926e32f6df743161c714d37def14b404a5bc1b2298171f7e5411085cde6",
+      "historicalMatch": true
+    },
+    {
+      "file": "assets/component.js",
+      "sha256": "3798455f28383ddc9df6f01ca7f20652abef5ffcaace1f32f098b83a2e5c6e56",
+      "historicalMatch": true
+    },
+    {
+      "file": "snippets/cart-summary.liquid",
+      "sha256": "25c2205eda3d8d6521e44fa185d9c4eba6b47dcabeb8a91c4b0f27a62098a195",
+      "historicalMatch": true
+    },
+    {
+      "file": "config/settings_data.json",
+      "sha256": "10574846de9a268e706d501ec3147ac320b58292e504f6a297e0f22449900a3b",
+      "historicalMatch": false
+    }
+  ],
+  "cases": [
+    {
+      "name": "200ms-burst",
+      "requests": 1,
+      "lastValue": "B"
+    },
+    {
+      "name": "payload",
+      "value": ""
+    },
+    {
+      "name": "payload",
+      "value": "Bitte klingeln: Größe 2 × 3 m"
+    },
+    {
+      "name": "network",
+      "measurementStillRuns": true,
+      "inputPreserved": true,
+      "explicitEditRetries": true,
+      "boundary": "No persistence assertion; form fallback exists, note locally disabled."
+    },
+    {
+      "name": "http500",
+      "measurementStillRuns": true,
+      "inputPreserved": true,
+      "explicitEditRetries": true,
+      "boundary": "No persistence assertion; form fallback exists, note locally disabled."
+    },
+    {
+      "name": "controller-ownership",
+      "defect": "TP-014 conditional note extension",
+      "secondAbortedByThird": false
+    },
+    {
+      "name": "disconnect-before-timer",
+      "requestStillRuns": true,
+      "boundary": "Base disconnect modeled; real morph/attachment not exercised."
+    }
+  ],
+  "contract": {
+    "localShowCartNote": false,
+    "form": "cart-form",
+    "name": "note"
+  },
+  "limits": "Original note/fetchConfig/debounce with virtual timers and abort-aware fetch; Component/textarea modeled. No live setting, server persistence, checkout or native form test. No new confirmed issue; TP-014 conditional extension."
+}

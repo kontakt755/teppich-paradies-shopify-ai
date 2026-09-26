@@ -1,0 +1,99 @@
+{
+  "session": "S23",
+  "task": "VAR-001a.2b.2",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/variant-picker.js",
+      "sha256": "4357c80adaf5e6715cc48b4c48a1d2a3d92cde479f8d6c7960f9ff6e95111fce"
+    },
+    {
+      "file": "assets/events.js",
+      "sha256": "1290bc43167daaa1166e4d3acf0b423f1d30f119347d2873ebb18001c12d2056"
+    },
+    {
+      "file": "assets/product-form.js",
+      "sha256": "7ab6933aa4244ef12ed8e735418ffe8d8c8599fe49f9d3ae93225dca1e2135dc"
+    }
+  ],
+  "cases": [
+    {
+      "outcome": "success",
+      "trace": [
+        "variant:selected",
+        "variant:update"
+      ],
+      "requestsBeforeRecovery": 1,
+      "releasedPayload": {
+        "items": [
+          {
+            "id": 2,
+            "quantity": 1
+          }
+        ],
+        "sections": ""
+      }
+    },
+    {
+      "outcome": "missing",
+      "trace": [
+        "variant:selected"
+      ],
+      "requestsBeforeRecovery": 0,
+      "releasedPayload": {
+        "items": [
+          {
+            "id": 2,
+            "quantity": 1
+          },
+          {
+            "id": 2,
+            "quantity": 1
+          }
+        ],
+        "sections": ""
+      }
+    },
+    {
+      "outcome": "malformed",
+      "trace": [
+        "variant:selected"
+      ],
+      "requestsBeforeRecovery": 0,
+      "releasedPayload": {
+        "items": [
+          {
+            "id": 2,
+            "quantity": 1
+          },
+          {
+            "id": 2,
+            "quantity": 1
+          }
+        ],
+        "sections": ""
+      }
+    },
+    {
+      "outcome": "network",
+      "trace": [
+        "variant:selected"
+      ],
+      "requestsBeforeRecovery": 0,
+      "releasedPayload": {
+        "items": [
+          {
+            "id": 2,
+            "quantity": 1
+          },
+          {
+            "id": 2,
+            "quantity": 1
+          }
+        ],
+        "sections": ""
+      }
+    }
+  ],
+  "limits": "Original complete ProductFormComponent and events, native EventTarget; S22 picker event transcripts replayed at section boundary. DOM/refs adapted, no button animations or actual picker rerun, no browser or live requests. Recovery event resource and URL use id 3; retained queue still submits id 2. Combined picker DOM selection not executed."
+}

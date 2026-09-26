@@ -1,0 +1,55 @@
+{
+  "session": "S40",
+  "task": "JS-001n",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/gift-card-recipient-form.js",
+      "sha256": "30ffc3be483c2da1bcd3ff02898da89217ed41e152614a61ea8fb71ee0c2ea4a"
+    },
+    {
+      "file": "snippets/gift-card-recipient-form.liquid",
+      "sha256": "d990ef84b30ac439aa56bf5aca09fad1c838449a57193aa44ac1f260efee2d39"
+    },
+    {
+      "file": "blocks/buy-buttons.liquid",
+      "sha256": "bbcd51b48018705fdcabdd3b50a578a880975b562a183bf7c15bd925ad96b4cb"
+    }
+  ],
+  "cases": [
+    {
+      "name": "initial-connect-clears-liquid-prefill",
+      "email": "",
+      "selfChecked": true
+    },
+    {
+      "name": "disconnect-removes-input-listener",
+      "characterCount": "5/200"
+    },
+    {
+      "name": "same-instance-reconnect-stale-private-mode",
+      "fieldsHiddenAfterRecipientToggle": true,
+      "emailDisabled": true
+    },
+    {
+      "name": "fresh-instance-recipient-toggle",
+      "fieldsHidden": false,
+      "emailDisabled": false
+    }
+  ],
+  "sourceReach": {
+    "conditionalRender": "block_settings.gift_card_form and product.gift_card?",
+    "enabledProductTemplateCount": 7,
+    "enabledProductTemplates": [
+      "product.einfassung.json",
+      "product.fixpreis.json",
+      "product.fliese.json",
+      "product.json",
+      "product.planken.json",
+      "product.rolle.json",
+      "product.zubehoer.json"
+    ],
+    "note": "The setting is enabled in templates, but runtime markup additionally requires a gift-card product. Current catalog assignment and live settings were not queried."
+  },
+  "limits": "Original complete GiftCardRecipientForm; Component/DOM/refs/document adapted, native EventTarget used. Listener cleanup, initial Liquid-prefill handling and recipient-mode reconnect state executed. Real browser form submission, Shopify validation response, timezone/date UI, multiple forms and live catalog not tested."
+}

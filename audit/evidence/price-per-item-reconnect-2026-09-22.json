@@ -1,0 +1,72 @@
+{
+  "session": "S31",
+  "task": "JS-001e",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/price-per-item.js",
+      "sha256": "566045aac57f01199c4caac84b778722357d97b5f2cbd0731610adaa71f89cc5"
+    },
+    {
+      "file": "assets/events.js",
+      "sha256": "1290bc43167daaa1166e4d3acf0b423f1d30f119347d2873ebb18001c12d2056"
+    },
+    {
+      "file": "snippets/quantity-selector.liquid",
+      "sha256": "3d78bd94857487ca97d60049a13d15ae55c18d1d9ea5cf7c4d60591d3bdd4f84"
+    }
+  ],
+  "cases": [
+    {
+      "name": "initial-connect",
+      "text": "ab 8,00 €/Stk."
+    },
+    {
+      "name": "disconnected-ignores-cart",
+      "text": "ab 10,00 €/Stk."
+    },
+    {
+      "name": "same-instance-reconnect-stale",
+      "text": "ab 10,00 €/Stk."
+    },
+    {
+      "name": "fresh-instance",
+      "text": "ab 8,00 €/Stk."
+    }
+  ],
+  "templateSource": [
+    {
+      "template": "product.einfassung.json",
+      "enabledQuantityBlock": false
+    },
+    {
+      "template": "product.fixpreis.json",
+      "enabledQuantityBlock": true
+    },
+    {
+      "template": "product.fliese.json",
+      "enabledQuantityBlock": true
+    },
+    {
+      "template": "product.json",
+      "enabledQuantityBlock": true
+    },
+    {
+      "template": "product.planken.json",
+      "enabledQuantityBlock": true
+    },
+    {
+      "template": "product.rolle.json",
+      "enabledQuantityBlock": false
+    },
+    {
+      "template": "product.teppich.json",
+      "enabledQuantityBlock": true
+    },
+    {
+      "template": "product.zubehoer.json",
+      "enabledQuantityBlock": true
+    }
+  ],
+  "limits": "Original complete PricePerItemComponent and original events; Component/form/input adapted, native EventTarget/AbortController. CartUpdate lifecycle and volume-tier display tested; quantity event targeting, actual Shopify volume-pricing data, product assignment, browser and live theme not tested. Quantity block presence is static template reach; price-per-item renders only when a variant has quantity price breaks."
+}

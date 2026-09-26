@@ -174,10 +174,567 @@ Route `TASK-B75BBE82CD31`: A / SCRIPT_FIRST / STATIC, keine geschützte Aktion, 
 
 **Grenzen / offene Aufgaben:** Nur PR-023b.1 abgeschlossen. PVC-/Fixpreis-/Stückpayloads PR-023b.2 noch offen; deren Klassifikation/Dateikartierung ist kein Integrationstest. Adapter beweist keine echte Browsersanitierung, Pickerereignisse, Cart-Ajaxbedienung, Drawer/Checkout, Layout oder heutige Liveprodukte. Keine Serverantwort oder neue Bestellung. S01–S05-Evidence unverändert.
 
-**Sicherung / Prüfprotokolle:** Auditdokumente/Progress aktualisiert, neue Script-/JSON-/Summary-Dateien. Integrität und Secret-Scan in evidence/audit-integrity-s06-2026-09-20.json und secret-scan-s06-2026-09-20.log; git diff --check. Keine Shopquelle oder TASK.md/CONTINUE_PROMPT.md verändert. S05/S06 lokal uncommitted, HEAD 840b883, kein neuer Git-Commit behauptet; unverändert schreibgeschütztes .git, letzter normaler Stagingversuch S05 scheiterte.
+**Sicherung / Prüfprotokolle:** Auditdokumente/Progress aktualisiert, neue Script-/JSON-/Summary-Dateien. Integrität und Secret-Scan in evidence/audit-integrity-s06-2026-09-21.json und secret-scan-s06-2026-09-21.log; git diff --check. Keine Shopquelle oder TASK.md/CONTINUE_PROMPT.md verändert. S05/S06 lokal uncommitted, HEAD 840b883, kein neuer Git-Commit behauptet; unverändert schreibgeschütztes .git, letzter normaler Stagingversuch S05 scheiterte.
 
 **Exakter nächster Schritt:** PR-023b.2: Terracora Eiche Braun (marano-eiche-braun-vinylboden-von-der-rolle, historisch 2/4 m) und Stück-/Sockelleistenreferenz. Vorhandene Hersteller-/Shopdaten zur Einheit verwenden; aktuelle Preise/Varianten ohne Beleg synthetisch. Rollen-Datenvertrag und Mengenhilfe→Standardformular→abgefangener Payload prüfen. Startdateien im Master/S06-Summary. Danach CART-002. Keine b.1-/S01–S05-Replays ohne Quellenänderung. Bei regulär beschreibbarem .git geprüften S05/S06-Auditstand zuerst sichern.
 
 **Status:** WORKING, grob 22 % Auditabdeckung, Phase 1. FINAL_REPORT.md ausstehend, Gesamtauftrag unvollständig.
 
 **S06 – späte externe Änderung und erneuter Sicherungsversuch:** Während der Abschlussprüfung wurde CONTINUE_PROMPT.md von außen um den Hinweis ergänzt, `.git` sei jetzt durch `--add-dir .git` schreibbar. Die erste Integritätsprüfung stoppte korrekt wegen dieser neuen Datei außerhalb des erwarteten Audit-Diffs. Änderung gelesen, erhalten und nicht übernommen/verworfen. Aufgrund dieses neuen Hinweises normaler `git add CODEX_PROGRESS.md audit` erneut versucht: weiterhin Exit 128, `.git/index.lock: Operation not permitted`. Deshalb kein Commit möglich, keine Umgehung. Die abschließende Integritätsprüfung unterscheidet Audit-Dateien und diese eine externe Änderung ausdrücklich; Preis-/Integrationsdiagnosen nicht erneut ausgeführt.
+
+## 21.09.2026 – S06-Abschluss und Übernahme des behobenen Git-Profils
+
+Erneute Nutzerfortsetzung während der Sicherung: .git jetzt ausdrücklich im schreibbaren Profil. Bei Prüfung ist S05/S06 bereits durch Commit 9682ab7 gesichert; einzige externe Änderung CONTINUE_PROMPT.md bleibt erhalten. Der noch fehlende letzte S06-Konsistenz-/Secretlauf wird nachgetragen, keine Preistests erneut ausgeführt. Protokolle tragen das tatsächliche Abschlussdatum 21.09. Die frühere Aussage „Git gesperrt, S05/S06 uncommitted“ ist historisch und wird nicht als heutiger Blocker übernommen. Nächster Fachschritt bleibt PR-023b.2, Phase 1, sequenziell.
+
+## 21.09.2026 – S07 / PR-023b.2 PVC- und Stückpayloads
+
+**Übernahme:** S06-Abschluss regulär mit `git add`/`git commit` als **6b92861** gesichert, .git damit tatsächlich beschreibbar. TASK/Override, Regeln und Auditstand übernommen; keine alten Preisaufgaben neu gestartet. Externe Änderung CONTINUE_PROMPT.md erhalten und nicht gestaged. Routing TASK-677473AF97F6: B/STATIC, keine geschützte Aktion; keine Executor-/Agentenausführung.
+
+**Scope / Quellen:** ausschließlich nächster Preisvertrag PR-023b.2, sequenziell. Historischer Merchant-Report und Rollen-Ausschlussliste (Terracora 2,00/4,00 m), Rechnerzuordnung, belegte Leistenlängen; keine aktuellen Preise aus diesen Quellen ableitbar. Alle Preis-/IDfixtures synthetisch, PVC-Variantenmetafeldzuordnung modelliert. Keine Shopify-Writes/Produktänderung.
+
+**Durchgeführt / Ergebnis:** zehn PVC-Verträge durch Original-Liquid, Rolleninitialisierung, syncArtUi, Rechnen und Submit; acht Requests. Zwanzig Stück-/Zubehörfälle über vollständigen Mengenhilfeblock/JS und Standardform-Klasse mit originalem fetchConfig; 18 Requests. Richtige ganze Mengen und ID in diesen Stückfällen, fehlende/mehrdeutige Reichweite erzeugt bewusst keine Hilfe. Neun Quellhashes historisch gleich.
+
+**Neuer Befund TP-009/P2:** Meteroptionen werden nicht als Breitenoption erkannt. Globaler erster Metafeldfallback liefert auch für gewählte 4-m-Variante 200 cm; 250 cm Länge → fünf statt zehn m², Property 200 cm, bei korrekter ID. Preisbox entspricht dem falschen Payload. Umgekehrte Reihenfolge kann Übermenge erzeugen. Einzelbreitenfallback und cm-Optionen korrekt. Vollständiger Implementation Brief; H-011 aktuelle Datenreichweite offen. Bestätigte Issues jetzt neun (P2=3, P3=6), kein P0/P1. Kein Reparaturauftrag und kein neues READY-Pack.
+
+**Tests:** Syntax/erster Diagnoseversuch erfolgreich, keine fehlgeschlagene Produktroutine. Zweiter Lauf nach Aufnahme originaler syncArtUi und zusätzlicher Propertyassertion ebenfalls PASS: 30 Fälle/26 Requests. `node --test --test-concurrency=1 qa/tests/zubehoer-menge.test.mjs` **7/7 PASS**, 0 fail/skip. S01–S06-Diagnosen nicht erneut ausgeführt. Dokument-/Quellenintegrität, git diff --check und Secret-Scan in S07-Protokollen.
+
+**Grenzen:** nur lokale LiquidJS-/DOM-/FormData-Adapter; originale Formel-/Submitquellen unverändert. Echte Browserzahleneingabe, Picker/Lifecycle, Live-Theme/-Produktdaten und Serverannahme offen. Standardform-Response absichtlich ausstehend, nur erster Request erfasst; Max-Guard als Rückgabewert vorgegeben. Keine Cart-/Checkoutbedienung als bestanden behauptet. S01-Infrastrukturgrenzen nicht erneut getestet.
+
+**Sicherung:** Script, JSON, Summary, Unitlog und Auditkontrollen/Progress aktualisiert. Nur Auditdateien und CODEX_PROGRESS in den Abschlusscommit; CONTINUE_PROMPT bleibt extern. Git-Sperrnotizen S05/S06 sind historische Zustände, heute kein Hindernis.
+
+**Exakter nächster Schritt:** CART-002a – Originalgruppen/Mengensperren/Entfernen/Zuschnittabgleich und vorhandene Tests lesen, sequenziell testen, Lücken bis abgefangene Cartmutationen gezielt ergänzen. `tp-cart-gruppen.js`, `tp-cart-gruppe.liquid`, `tp-zuschnitt-abgleich.js`; Testdateien cart-gruppen/cart-mengensperre/cart-waisen/zuschnitt-abgleich. Echte Drawer-/Cart-/Checkout-Integration gesondert offen halten. Kein erneuter PR-001–023b.2-Lauf ohne Quelländerung.
+
+**Status:** WORKING, grob 24 % Abdeckung, Phase 1. Gesamtauftrag und FINAL_REPORT.md weiterhin offen.
+
+**S07-Abschlusskontrolle:** Erster Integritätslauf stoppte an einer währenddessen extern geänderten docs/ai-dashboard/issues.json. Direkt danach zeigte git status/git diff diese Datei wieder unverändert bei gleichem HEAD 6b92861. Datei nicht angefasst oder gestaged; kein Produkt-/Diagnosetestfehler. Abschließender Integritätslauf prüft erneut den tatsächlichen Diff; CONTINUE_PROMPT.md bleibt die bekannte externe Änderung. Secret-Scan PASS ohne Befunde.
+
+**S07 tatsächlich committed:** `4b8e49d` – audit: PR-023b.2 abschliessen und PVC-Breitenfehler TP-009 belegen. Normaler git add/commit erfolgreich, 15 Audit-/Progressdateien. Commitreferenz anschließend in Master/Progress nachgetragen; keine Produktdiagnose erneut ausgeführt. Nächster Schritt unverändert CART-002a, Status WORKING.
+
+## 21.09.2026 – S08 / CART-002a
+
+**Übernahme:** TASK mit SEQUENTIAL-Override, sechs Auditsteuerdateien, AGENTS/Git gelesen. HEAD 0d887b5, S07 abgeschlossen. Nur externe CONTINUE_PROMPT.md beim Start; docs/ai-dashboard/issues.json während Arbeit zeitweise extern geändert. Beide nicht bearbeitet/gestaged. Keine Agenten/parallel bearbeiteten Auditbereiche. Route TASK-DFF6F29D83E5 B/STATIC, keine geschützte Aktion/Executor.
+
+**Untersucht:** Gruppen, Mengensperren, verwaiste Services, Gruppen-/Stücklöschung und Zuschnittabgleich. Zehn Originalquellen: Gruppenscript/-snippet, Cartklasse, Component-Basis, Zuschnittasset, Quantity-Snippet/-Basisklasse/-Cartklasse, Cartmarkup, Utilities. Alle hashgleich zur historischen Evidence. Keine neue Live-Seite geöffnet oder Shopify-Mutation.
+
+**Tests:** vier vorhandene Suiten cart-gruppen/cart-mengensperre/cart-waisen/zuschnitt-abgleich 47/47 PASS. Neues Script reproduce-cart-core.mjs: Syntax/erster Lauf PASS. Zweiter Lauf nach genauer Fehlercontainer-Zeilenhierarchie und zwei Fällen mit Animation nach Fehlerantwort ebenfalls PASS. 20 Cartzustände/35 Zeilen/28 Mengenklammern, 13 Cartaktionen, zehn Abgleichabläufe: insgesamt 43 Fälle/34 Requests. Keine S01–S07-Wiederholung. Report und Summary neu, Integritäts-/Secretchecks separat.
+
+**Befunde:** TP-010/P2 bestätigt, sechs Fälle ohne Wiederherstellung nach abgelehnter/netzwerkfehlgeschlagener Löschung. Gruppen-/Einzel-/letzte Gruppe; richtige Requestkeys, aber entfernte Zeilen/Leeransicht bleiben trotz modelliert unverändertem Servercart. Inlinefehler abgetrennt oder nur Console. Verzögerte Animation entfernt auch nach Fehlerantwort. Vollständiger Implementation Brief, NOT READY-Vormerkung, kein Fix.
+
+**Positive Kontrollen / eingegrenzt:** JS/Liquid-Klassifikation und Kundeneinheiten stimmen im geprüften Fixtureumfang; normale Stück-/Paketware bleibt editierbar. Original-Quantity min=max sperrt beide Buttons. Gruppen von beiden Seiten vollständig per Key im Request. Reguläre Mengenablehnung setzt Feld und Fehler korrekt. Zuschnittabgleich erhält andere Attribute, prüft zurückgegebenen Zustand, bleibt bei Fehler gesperrt, erholt Queue bei explizitem Retry und verhindert eigene Eventschleife. Kein zusätzliches Issue daraus.
+
+**Grenzen:** LiquidJS/DOM/Refs/Animation/Responses adaptiert, erfolgreiche Morphs und DOMParser modelliert. Echte MutationObserver-/Pointer-/Keyboard-/CSS-Timing-/Formular-/Drawerabläufe offen; keine serverseitige Shopify Validation Function nachgewiesen. Alle Produkte/Antworten synthetisch. H-012 neue Browser-/Cart-Hypothese; aktuelle Live-Betroffenheit TP-010 offen. Zehn bestätigte Issues (P2=4/P3=6), kein P0/P1 behauptet.
+
+**Fortsetzungshinweise während Arbeit:** Wiederholte Nutzerfortsetzungen übernommen, laufenden S08-Abschluss fortgesetzt statt Tests neu zu starten. .git weiterhin beschreibbar, tatsächlicher Abschlusscommit nach Checks; nur Auditdateien und CODEX_PROGRESS stagen. Externe Dateien erhalten.
+
+**Nächster konkreter Schritt:** CART-002b: Mengenereignis vom Originalselektor über Debounce; schnelle Aktionen/Antwortreihenfolge und Section-/Drawerzustand. Quellen component-quantity-selector, component-cart-quantity-selector, component-cart-items, section-renderer, cart-drawer, events. Echte Wiederöffnung/Reload/Checkout danach separat nachholen. Abgeschlossene Preis-/CART-002a-Tests nur bei betroffener Quelländerung wiederholen.
+
+**Status:** WORKING, grob 27 %, Phase 1. Keine Reparaturen, FINAL_REPORT und Gesamtauftrag weiterhin offen.
+
+**S08 tatsächlich committed:** `67ee9bc`, 15 Audit-/Progressdateien nach bestandener Integrität, Secret-Scan und git diff --check. Commit auf `audit/shop-audit`; dieser Branch wurde außerhalb meiner Befehle bereitgestellt, Parent bleibt 0d887b5. Externe CONTINUE_PROMPT.md und docs/ai-dashboard/issues.json weiterhin unverändert belassen. Commitreferenz in Master/Progress nachtragen und sichern; keine erneute Produktdiagnose. Status WORKING, nächster Schritt CART-002b.
+
+## 21.09.2026 – S09 / CART-002b.1
+
+**Übernahme:** TASK/Override, Auditstatus, relevante neue Issues/Matrix/Abhängigkeiten und Git gelesen; TASK/AGENTS seit letztem Abschluss unverändert. HEAD 1bf1d1a, externe CONTINUE_PROMPT.md und Dashboarddatei erhalten. Sequenziell, keine Agenten. Route TASK-401D094F14CB B/STATIC, keine geschützte Aktion/Executor.
+
+**Scope:** nächster Ereignispfad aus CART-002b, als abgeschlossener Teil b.1 abgegrenzt. Originale Selektor-/Cart-/Eventklassen plus debounce/fetchConfig/parseIntOrDefault. SectionRenderer und Drawer zusätzlich gelesen, deren Antwort-/Lifecycleprüfung b.2 bleibt offen. Keine S01–S08-Diagnose erneut ausgeführt.
+
+**Tests / Ergebnis:** Syntax und erster Lauf reproduce-cart-events.mjs PASS. Zwölf Fälle, elf abgefangene Requests, fünf historische Quellhashvergleiche. Native Node Event/EventTarget mit explizitem Bubbling-/DOM-Modell, virtuelle Timer. Gleiche Zeile mehrfach → letzter Wert korrekt; einzelne fremde Events ignoriert. Zwei verschiedene Zeilen bei 0/100 oder 0/299 ms verlieren erste Änderung; nachfolgendes fremdes Ereignis verdrängt geplanten Cartrequest vollständig. Zwei modellierte Cart-Komponenten zeigen denselben Fehler. TP-011/P2 in fünf Fällen bestätigt, vollständiger Implementation Brief.
+
+**Grenzen:** Responses bleiben ausstehend, keine Serverannahme/Morph-/Preis-/Drawerabnahme. Handler direkt aufgerufen; 301-ms-Kontrolle beweist keine Pointerbedienung durch cart-items-disabled. Reale Browser-/PDP-/Cross-Komponenten-Erreichbarkeit H-012. Kein allgemeiner Utility-Debounce-Defekt und keine neue Issue zu bloß gelesenen Response-/Drawerpfaden.
+
+**Dokumente / Sicherung:** neue Script-/JSON-/Summary-Dateien und Auditkontrollen/Progress. Integrität/Secret-Scan vor normalem Git-Commit. Externe Dateien nicht stagen. Elf bestätigte Issues: P2=5, P3=6; kein P0/P1. Cartblock TP-010/011 weiterhin NOT READY, kein Shopfix.
+
+**Nächster konkreter Schritt:** CART-002b.2 – Antwortreihenfolge/Zeilenidentität, SectionRenderer vs. direkter Morph, Drawer-Event-/Dialog-Lifecycle. Quellen component-cart-items, section-renderer, cart-drawer, events, gegebenenfalls dialog. Echte Browser-Wiederöffnung/Reload/Checkout separat, keine fertigen Preis-/Gruppen-/Debouncefälle ohne Quellenänderung wiederholen.
+
+**Status:** WORKING, grob 28 %, Phase 1, FINAL_REPORT/Gesamtauftrag offen.
+
+**S09 tatsächlich committed:** `53ad666`, 14 Audit-/Progressdateien, Branch audit/shop-audit. Integrität, Secret-Scan und git diff --check bestanden. Commitreferenz anschließend nachgetragen; keine Produktdiagnose erneut ausgeführt. Externe CONTINUE_PROMPT.md/Dashboarddatei bleiben außerhalb. Status WORKING, nächster Schritt CART-002b.2.
+
+
+## S10 – Section-Antworten und Fehler-Retry
+
+S10 / CART-002b.2a lokal abgeschlossen: fünf Original-SectionRenderer-Fälle, zwei Defektfälle TP-012/P2, ein historischer Hashvergleich. Nach Fetch-/Bodyfehler starten drei Retries derselben URL keinen neuen Request. Andere Section funktioniert. Erfolgs-Deduplizierung, Cache/Forced Refresh und Schutz gegen alte Antworten bei beiden Antwortreihenfolgen bestanden. DOM/Parser/Morph adaptiert; kein Browser-/Livebeleg, keine Shopreparatur. Nächster Schritt CART-002b.2b: direkte Cartantworten, Zeilenidentität und Zusammenspiel mit SectionRenderer, danach Drawer/Dialog-Lifecycle. Keine bisherigen Diagnosen ohne Quelländerung wiederholen.
+
+Evidence: `audit/evidence/section-responses-2026-09-21.json`; Script: `audit/scripts/reproduce-section-responses.mjs`. Route TASK-72075157B1A8, B/STATIC, kein Executor gestartet. Renderer ist gemeinsamer Abhängigkeitspunkt: TP-012 separat planen, Cart-Aufruferkonflikte mit TP-010/011 beachten.
+
+S10 gesichert in `3a17b5f`: fünf Diagnosefälle, Syntax-/Integritäts-/Secretcheck PASS. Initiale Integritätsassertion erwartete versehentlich zehn statt neun vorgeschriebener Fortschrittsabschnitte; korrigiert und erfolgreich geprüft. Nächster Schritt CART-002b.2b. Externe Prompt-/Dashboardänderungen nicht committed.
+
+
+## S11 – Direkte Cartantworten und Zeilenidentität
+
+S11 / CART-002b.2b lokal abgeschlossen: acht Originalcode-Antwortfälle, vier historische SHA-256-Vergleiche, Syntax und Erstlauf PASS. Direkte Erfolgsantworten auf Cartseite/Drawer verwenden full/hydration korrekt; stabiler Fehlerindex setzt Eingabe zurück und zeigt Feedback. Bei zwei programmatisch gestarteten Mutationen entsperrt schon die erste Antwort; verspätete ältere Antwort kann jüngere überschreiben. Ein durch Original-DiscountEvent gestarteter Section-Request kann nach neuer direkter Cartantwort noch morphieren. Bei manuell verschobenen Refs landet Fehlerfeedback am früheren Index und damit anderer Zeile. Diese Überschneidungen sind H-013, keine zusätzlich bestätigten Shopissues: Pointer-/Debounce-Erreichbarkeit, Server-Snapshotreihenfolge, echte MutationObserver-/Morphabläufe fehlen. Keine Shopänderung, keine S01–S10-Replays.
+
+Evidence: `audit/evidence/cart-responses-2026-09-21.json`; Script: `audit/scripts/reproduce-cart-responses.mjs`. Route TASK-6FFC7626F671, B/STATIC; kein Executor/Agent gestartet.
+
+Nächster konkreter Schritt: CART-002b.2c: assets/cart-drawer.js und assets/dialog.js mit events.js auf Eventtypen, Öffnen/Schließen, History-/Disconnect-Lifecycle prüfen. Danach H-012/H-013 im echten Browser bei verfügbarem Runner; keine abgeschlossenen lokalen Response-/Retry-/Debouncefälle ohne Quellenänderung wiederholen.
+
+S11 tatsächlich gesichert in `36a875e` (14 Dateien). Acht Diagnosefälle, Syntax, Integrität, Secret-Scan und git diff --check bestanden. Externe Prompt-/Dashboardänderungen erhalten und nicht committed. Nächster Schritt CART-002b.2c Drawer/Dialog; Status WORKING.
+
+
+## S12 – Drawer-/Dialog-Lifecycle
+
+S12 / CART-002b.2c lokal abgeschlossen: elf Originalcode-Lifecyclefälle, fünf historische Quellhashvergleiche, Syntax/Erstlauf PASS. Desktop/Mobile öffnen und schließen, Scrollstil/-position, modelliertes Back ohne doppelten Rücksprung, Disconnect/Reconnect der Listener und Sticky-Schwellen funktionieren in den Fixtures. Allgemeines CartUpdateEvent öffnet ebenfalls bei auto-open; die erste Zählansage bleibt leer, weil Öffnen erst im RAF erfolgt. Close/Disconnect vor diesem RAF verhindert dessen spätere Ausführung nicht. Letztere Beobachtungen bleiben H-014: natives Dialog-/Fokus-/Attach-/Historyverhalten und reale Erreichbarkeit nicht belegt. Keine neue bestätigte Issue-ID, keine Reparatur, keine früheren Diagnosen wiederholt.
+
+Evidence: `audit/evidence/drawer-lifecycle-2026-09-21.json`; Script: `audit/scripts/reproduce-drawer-lifecycle.mjs`. Originale Klassen und Utilityfunktionen; modellierte Element-/History-/RAF-Umgebung, leere Animationsliste. Keine Native-Dialog-/Fokusabnahme. Route TASK-EECCC76EC036 B/STATIC; kein Executor.
+
+Nächster konkreter Schritt: CART-003: Browserfähigkeit einmal neu prüfen (S01-Sperre ist historisch). Verfügbaren Browser nach Skill verwenden, öffentlichen Shop ohne Kaufabschluss zunächst rein lesend auf Drawer-Öffnen/Schließen, Fokus/Escape, Mobile Back/Reload und H-014 prüfen; Live-Theme vor livebezogenen Schlussfolgerungen aktuell verifizieren. Falls Browserzugriff weiterhin blockiert, Grenze konkret dokumentieren und sequenziell lokale Checkout-/Express-/Formularverträge prüfen. Keine S08–S12-Replays ohne Quelländerung.
+
+S12 tatsächlich in `6726c3d` gesichert (14 Dateien). Elf Fälle, Syntax-/Integritäts-/Secretcheck und git diff --check PASS. Externe Prompt-/Dashboardänderungen nicht committed. Nächster Schritt CART-003 Browserfähigkeit und native Cartintegration; Status WORKING.
+
+
+## S13 – Checkoutvertrag und Browserberechtigung (22.09.2026)
+
+S13 / CART-003a: Browserzugang neu geprüft. Chrome-Verbindung verfügbar, Navigation zum öffentlichen Shop jedoch durch Browser-Sicherheitsprüfung wegen verweigerter Zugriffsberechtigung abgelehnt. Kein alternativer Zugriff versucht, keine Live-Theme-Verifikation. Anschließend neun lokale Checkout-Vertragsfälle bestanden (acht Original-CTA-Liquidrenderings, ein statischer Formular-/Header-/CSS-Vertrag), vier historische Quellhashvergleiche. Normale CTA verweist auf cart-form; Pflichtsperrfeld innerhalb POST-Formular; Drawer auf Carttemplate ausgeschlossen. Express erfordert Plattformflag und Themeeinstellung. Sperr-CSS setzt pointer-events:none und opacity:0.4, versteckt/deaktiviert Express nicht semantisch. Tastatur-/Expressumgehung bleibt H-015, kein neuer bestätigter Fehler.
+
+Evidence: `audit/evidence/checkout-contracts-2026-09-22.json`, `browser-access-2026-09-22.json`; Script `audit/scripts/reproduce-checkout-contracts.mjs`. Route TASK-56DE810ED955 B/STATIC; kein Executor. Erster Lauf scheiterte an falscher Diagnoseannahme display:none; nach Lesen des CSS wurde ausschließlich die Auditassertion auf pointer-events/opacity korrigiert, zweiter Lauf PASS. Keine Shopreparatur.
+
+Nächster konkreter Schritt: CART-003b: lokale Rabatt-/Cart-Notiz-Verträge in assets/cart-discount.js und assets/cart-note.js sowie snippets/cart-summary.liquid prüfen (Fehler, mehrfaches Absenden, Persistenz/Sections). Browserprüfung H-012–015 erst nach geänderter Zugriffsberechtigung fortsetzen; keine alternative Browser-/HTTP-/CDP-Umgehung oder wiederholte Zugriffsversuche. Vorhandene S08–S13-Diagnosen ohne Quelländerung nicht wiederholen.
+
+S13 tatsächlich in `d9a0529` gesichert (15 Dateien). Neun Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen nicht committed. Weiter CART-003b Rabatt/Notiz, Browserberechtigung bleibt Grenze. Status WORKING.
+
+
+## S14 – Rabattfehler (22.09.2026)
+
+S14 / CART-003b.1: sechs Original-Rabattfälle, drei stille Fehlerfälle TP-013/P3, vier historische Quellhashvergleiche. Erfolgreicher Rabatt dispatcht DiscountUpdateEvent und morphiert; nicht anwendbarer Code und Versandrabatt-Sonderfall zeigen vorhandene Fehlermeldung. Netzwerk-, HTTP-Fehler-JSON ohne discount_codes und ungültiges JSON enden ohne sichtbares Feedback. Eingabe bleibt erhalten, expliziter Retry funktioniert. Originalklassen/Utility, DOM/fetch adaptiert; keine Live-Rabattprüfung oder Shopreparatur.
+
+Evidence: `audit/evidence/discount-errors-2026-09-22.json`; Script: `audit/scripts/reproduce-discount-errors.mjs`. Syntax/Erstlauf PASS; Route TASK-70BD752F5C44 B/STATIC, kein Executor. Kein Replay früherer Tests.
+
+Nächster Schritt: CART-003b.2: cart-discount.js Entfernen und überlappende Requests/#activeFetch prüfen; anschließend cart-note.js Debounce/Abbruch/Fehler-/Persistenzvertrag mit cart-summary.liquid. Browser H-012–015 weiterhin berechtigungsbedingt offen; keine Umgehung oder erneute Anfrage ohne geänderte Berechtigung. S01–S14 ohne Quellenänderung nicht wiederholen.
+
+S14 in `e26c6bd` tatsächlich gesichert: sechs Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen nicht committed. Weiter CART-003b.2; Status WORKING.
+
+
+## S15 – Rabattentfernung und Abbruch
+
+S15 / CART-003b.2 lokal abgeschlossen: sechs Originalcodefälle, vier historische Hashvergleiche. Entfernen eines von zwei bzw. des letzten Rabattcodes sendet korrekte verbleibende Codeliste und aktualisiert Event/Section. Netzwerkfehler beim Entfernen erweitert TP-013 (kein Feedback). TP-014/P3: nach Abbruch von Request A durch B löscht A.finally die Referenz auf B; Aktion C bricht B nicht mehr ab. In zwei kontrollierten Folgen (Apply→Apply→Apply und Remove→Apply→Apply) reproduziert. Synthetische Antwortfolge zeigt älteren Morph nach neuem; reale Serverreihenfolge nicht behauptet. Sequentielle Erfolgskontrolle bestanden. Keine Shopreparatur/Liveanfrage.
+
+Evidence: `audit/evidence/discount-concurrency-2026-09-22.json`; Script `audit/scripts/reproduce-discount-concurrency.mjs`. Syntax/Erstlauf PASS, keine S14-Replays. Route TASK-BF056AE4656F B/STATIC; kein Executor. Gemeinsame cart-discount.js für TP-013/014: FILE CONFLICT, kleine abgestimmte Schritte. Native Tastaturaktivierung nicht getestet; Template bindet echten Buttonclick, daher kein Keyboardfehler allein aus KeyboardEvent-Guard behauptet.
+
+Nächster Schritt: CART-003b.3: assets/cart-note.js mit Original-debounce/fetchConfig und snippets/cart-summary.liquid prüfen: Notiz-Debounce, Request-Abbruch/Ownership, HTTP-/Netzfehler, Formular-Persistenz und Disconnect. Rabattfälle S14/S15 ohne Quellenänderung nicht wiederholen. Danach Cart-Audit lokal konsolidieren und offene Browser-/Checkoutabnahme getrennt halten. Browserzugriff bleibt seit S13 berechtigungsbedingt blockiert, keine Umgehung.
+
+S15 in `93f1eef` tatsächlich gesichert. Sechs Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen erhalten. Weiter CART-003b.3 Cartnotiz; Status WORKING.
+
+
+## S16 – Warenkorbnotiz
+
+S16 / CART-003b.3: sieben lokale Notizfälle PASS. Original-debounce bündelt Eingaben nach 200 ms; leere und Unicode-Notiz korrekt im Payload. Netzwerk-/HTTP500-Antworten ohne Fehlermeldung, erneute Eingabe startet neuen Request. TP-014 um bedingten Notizpfad erweitert: alter finally löscht neuere Controllerreferenz. Pending Timer läuft nach modelliertem Disconnect weiter; echte DOM-/Serverwirkung offen. Textarea ist name=note mit form=cart-form, daher kein bewiesener Bestellnotizverlust aus Ajaxfehler allein. Lokale Einstellung show_cart_note=false. Vier Code-/Markuphashes historisch identisch; settings_data.json weicht vom historischen Livehash ab, heutige Liveeinstellung nicht verifiziert. Keine Shopänderung.
+
+Evidence: `audit/evidence/cart-note-2026-09-22.json`; Script `audit/scripts/reproduce-cart-note.mjs`. Route TASK-1E9C956DD1CD B/STATIC; kein Executor. Diagnosescript zweimal korrigiert: Konfigurationshash nicht als gleich voraussetzen; Shopify-Kommentar vor JSON-Parsing entfernen. Danach Syntax/Diagnose PASS. Keine alten Diagnosen wiederholt.
+
+Nächster Schritt: CART-004: bisherigen lokalen Cart-Audit konsolidieren, Testmatrix auf offene statt abgeschlossene Fälle reduzieren und passende kleine Cart-/Rabatt-Fix-Packs anhand vollständiger Briefs vorbereiten (weiter Phase 1/2, keine Reparaturen). Browser-/Livegrenzen H-012–015 und Konfigurationsdrift ausdrücklich offen halten. Danach nächsten ungeprüften Rechner-/Variantenvertrag aus TEST_MATRIX auswählen. Keine fertigen Diagnosen wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S16 in `8636ca5` tatsächlich gesichert. Sieben Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen erhalten. Weiter CART-004 Konsolidierung; Status WORKING.
+
+
+## S17 – Cart-Konsolidierung (22.09.2026)
+
+S17 / CART-004 abgeschlossen: Cart-Testmatrix S08–S16 konsolidiert, veraltete OFFEN-Einträge korrigiert, Browser-/Livegrenzen separat geführt. FIX_PACK_03_CART_REQUEST_FEEDBACK für TP-013/014 READY zur späteren lokalen Übergabe (inklusive minimaler Ownershipkorrektur der deaktivierten Notiz, keine Aktivierung). Cartkern TP-010/011 und Renderer TP-012 bleiben NOT READY wegen offener Integrations-/Aufrufergrenzen. Keine neuen Issues, Tests nicht erneut ausgeführt, keine Reparatur.
+
+Route TASK-516D83336635 B/STATIC, kein Executor. Reine Dokument-/Link-/Scope-/Secretprüfung, keine alten Produktdiagnosen wiederholt. FILE CONFLICT: Paket 03 bündelt cart-discount.js und begrenzte cart-note.js-Ownership. Keine globale Renderer-/Cartqueueänderung. Paket 02 separat, aber keine Parallelfreigabe.
+
+Nächster Schritt: CALC-001a / H-003: verbleibende Rollenrechner-Zustandswechsel lokal prüfen: Farb-/Artwechsel bei bereits gewählter Fußleiste/Haftunterlage, aktiver Varianten-ID und Preisbasis. Einstieg blocks/tp-rollware-rechner.liquid (change-Handler um 1756/1778), assets/tp-rollware-art.js und anschließender Variantenvertrag. Keine PR-020–023-Mathematik erneut ausführen; echte Picker-/Reload-/Browsernachweise getrennt offen halten.
+
+S17 tatsächlich in `75f66e9` gesichert. Paket-/Link-/Integritätsprüfung und Secret-Scan PASS; keine alten Produktdiagnosen wiederholt. Zwei READY-Pakete, keines umgesetzt. Weiter CALC-001a/H-003; Status WORKING.
+
+
+## S18 – Farb-/Art-/Zubehörzustand
+
+S18 / CALC-001a.1: neun neue Übergangs-/Ereignisverträge PASS, zwei historische Quellhashvergleiche. Original-baseOptions/findVariant/rateOf/updateExtras über persistenten Feldern: Rot Meter→Rot Raum→Blau ohne Zubehörfreigabe→Blau Meter→Rot zurück. ID/Preis folgt gewählter Farbe/Art, Zubehör bei fehlender Freigabe ohne Items, eigene Leistenlänge 7 bleibt erhalten und wird beim Zurückwechseln wieder verwendet. Formular-ID hat Vorrang vor URL (synthetische Kombination); Farbchange plant 120 ms, Formularchange 100 ms, fremder Change nichts. Kein neuer bestätigter Fehler; H-003 nur teilweise geklärt.
+
+Evidence: `audit/evidence/roll-extra-transitions-2026-09-22.json`; Script `audit/scripts/reproduce-roll-extra-transitions.mjs`. Originalfunktionen und document-change-Handler, synthetische Varianten/DOM, artMode gesteuert; Timerplanung erfasst, calculate nicht aus diesem Event ausgeführt. Kein vollständiger Picker-/Morph-/Submitnachweis. Syntax/Erstlauf PASS. Route TASK-E36D4BE4A434 B/STATIC; kein Executor/alte Diagnosen.
+
+Nächster Schritt: CALC-001a.2: syncArtUi + calculate + Submit als zusammenhängende lokale Zustandsfolge prüfen: Wechsel zu Farbe ohne gewählte Rollenbreite bzw. ohne kaufbare Wunschmaßvariante, Art-Rückschaltung und Zubehör/ID im nachfolgenden Payload. Reale Farb-Picker-/Formular-/URL-Synchronisation anschließend VAR-001; keine Browserumgehung, keine fertigen Preisraster erneut ausführen.
+
+S18 in `b4f010d` tatsächlich gesichert. Neun Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen erhalten. Weiter CALC-001a.2; Status WORKING.
+
+
+## S19 – Rollen-Zustand bis Submit
+
+S19 / CALC-001a.2 lokal abgeschlossen: vier aufeinanderfolgende Wechsel mit vier abgefangenen Submits, zwei historische Hashvergleiche. Original-syncArtUi/calculate/Extras/Submit: initial Raummaß, Farbe ohne Wunschmaß/500er-Breite, Rückkehr und Farbe mit nicht kaufbarer Wunschmaßvariante. Rückschaltung auf Meter/400 cm korrekt, ID/Art/Gruppe/Zubehör im Payload passend; eigene Leistenlänge 7 erhalten. Angezeigte Summe entspricht jeweils Variantenpreis × Payloadmenge einschließlich Zubehör. Kein neuer bestätigter Fehler. Native Radioexklusivität modelliert, Picker/URL/Morph und Serviceanzeige nicht vollständig ausgeführt.
+
+Evidence: `audit/evidence/roll-state-submit-2026-09-22.json`; Script `audit/scripts/reproduce-roll-state-submit.mjs`. Baseline aus Original-Liquid, synthetische Zusatzfarben; Darstellungs-/Service-/Einfasschip-Helfer adaptiert. Erster Lauf PASS, nach ergänzter Gesamtpreis-/Breitenassertion zweiter Lauf PASS. Keine alten Diagnosen ausgeführt. Route TASK-67D370DD36E8 B/STATIC; kein Executor.
+
+Nächster Schritt: VAR-001a / H-003: blocks/color-swatch-picker.liquid, assets/variant-picker.js und relevante tp-farbe-Schnittstelle lesen; tatsächlichen Vertrag Farbchange→Formular-ID/URL→Rechnernachlauf lokal prüfen. Schnelle Auswahl/fehlende Variante/Verfügbarkeit und mehrere Formulare abgrenzen. Keine Wiederholung fertiger Preis-/Extras-/Submitfälle. Browserzugriff bleibt seit S13 berechtigungsbedingt blockiert; keine Umgehung.
+
+S19 in `9324ec8` tatsächlich gesichert. Vier Übergänge/Submits, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen erhalten. Weiter VAR-001a; Status WORKING.
+
+
+## S20 – Farbpicker-Kombinationsvertrag
+
+S20 / VAR-001a.1: sechs Fälle am vollständigen ersten Original-Farbpicker-IIFE, zwei historische Hashvergleiche. Gemeinsame Breite funktioniert mit initialem Zustand und Formular. Drei fehlende Kombinationsfälle (500 cm initial/Formular, Wunschmaß aus URL) bestätigen TP-015/P2: Radio zeigt neue Farbe, Label/ID/URL bleiben alt, kein tp:farbe-wechsel. Globale Formular-ID-Schreibweise verändert auch zweites synthetisches Formular; reale Fremdformularreichweite H-016 offen. Keine Shopänderung oder Liveabnahme.
+
+Evidence: `audit/evidence/color-picker-2026-09-22.json`; Script `audit/scripts/reproduce-color-picker.mjs`. Erstlauf scheiterte am Zahlenwert im Formmock; natives String-Coercion-Verhalten im Adapter ergänzt, danach Syntax/Diagnose PASS. Keine Produktquelle geändert. Route TASK-A6785D897266 B/STATIC; kein Executor/alte Diagnosen.
+
+Nächster Schritt: VAR-001a.2: native Optionsfelder/variant-picker.js Antwortvertrag und tp-farbe.js Verbraucher prüfen: Farbänderung→native Events→Formular-/URL-/Sectionzustand, Verfügbarkeit und mehrere Produktbereiche (H-016). TP-015 nicht durch frei geratene Breitenwahl reparieren. Keine fertigen Picker-/Rechnerfälle wiederholen; Browserberechtigung seit S13 nicht umgehen.
+
+S20 in `79d438e` tatsächlich gesichert. Sechs Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen erhalten. Weiter VAR-001a.2; Status WORKING.
+
+
+## S21 – Farbverbraucher und Reconnect
+
+S21 / VAR-001a.2a: acht Original-Farbverbraucherfälle PASS, vier Reconnect-Defektfälle TP-016/P3, drei historische Hashvergleiche. Native VariantUpdateEvent-Produktprüfung funktioniert, Farbnummern werden getrimmt. Globales fremdes tp:farbe-wechsel leert Properties bei fehlender ID, Anzeige behält alten Namen (H-016, reale Mehrproduktreichweite offen). Nach Disconnect/Connect derselben Instanz reagieren beide Klassen auf keinen der beiden Eventtypen; abgebrochener Controller wird wiederverwendet. Keine heutige Browser-/Morphreichweite oder Bestellfolge behauptet.
+
+Evidence: `audit/evidence/color-consumers-2026-09-22.json`; Script `audit/scripts/reproduce-color-consumers.mjs`. Syntax/Erstlauf PASS, keine alten Replays. Route TASK-02EB9023E44A B/STATIC; kein Executor. FILE CONFLICT: beide Verbraucher in tp-farbe.js, keine parallelen Fixes.
+
+Nächster Schritt: VAR-001a.2b: assets/variant-picker.js vollständig auf native Optionswahl, buildRequestUrl/fetchUpdatedSection, Abbruch/Antwortreihenfolge und VariantUpdateEvent prüfen. Anschließend product-form-/tp-farbe-Verbraucherbindung sowie H-016 Mehrproduktbereiche abgrenzen. S20/S21 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S21 in `467021f` tatsächlich gesichert. Acht Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen erhalten. Weiter VAR-001a.2b; Status WORKING.
+
+
+## S22 – Nativer Picker-Antwortvertrag
+
+S22 / VAR-001a.2b.1: sechs lokale Original-Picker-Requestfälle PASS, drei historische Quellhashes gleich. Erfolg sendet variant:selected und variant:update; fehlende Metadaten, ungültiges JSON und Netzwerkfehler senden nur variant:selected. Bei ungültigem JSON erfolgt der adaptierte Picker-Morph vor dem Parsefehler. Überholter Request wird abgebrochen; nächste erfolgreiche Auswahl liefert wieder variant:update. DOM-Auswahl und Morph sind adaptiert, keine Liveprüfung. Product-Form-Verbraucher nur gelesen; mögliche hängenbleibende Submit-Queue ist H-017, kein bestätigtes Issue.
+
+Evidence: audit/evidence/variant-responses-2026-09-22.json; Script: audit/scripts/reproduce-variant-responses.mjs. Syntax und Erstlauf PASS. Route TASK-02650F0E1B12 klassifizierte den lokalen Audit fälschlich als D/SHOPIFY_WRITE/HUMAN_GATE; keine externe Aktion, kein Executor und keine Reparatur ausgeführt.
+
+Nächster Schritt: VAR-001a.2b.2: Original-Product-Form-Verbraucher an Picker-Fehlervertrag anbinden und Auswahl→Submit-Queue→Recovery lokal ausführen (H-017). Danach native DOM-/Lifecycle- und Mehrproduktabgrenzung H-016 fortsetzen. Fertige S20–S22-Fälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S22 tatsächlich in `f0020fe` gesichert. Sechs Fälle, Syntax-/Integritäts-/Secretcheck und git diff --check PASS. Keine Shopänderung. Weiter VAR-001a.2b.2 / H-017; Status WORKING.
+
+
+## S23 – Product-Form-Queue nach Variantenfehler (22.09.2026)
+
+S23 / VAR-001a.2b.2: vier Original-Product-Form-Verbraucherfälle PASS, drei Quellhashes gegen S22 unverändert. S22-Ereignisspuren am Section-EventTarget wiedergegeben, keine Pickerdiagnose wiederholt. Erfolg gibt einen wartenden Kaufklick frei. Nach fehlenden Metadaten, ungültigem JSON oder Netzwerkfehler bleiben zwei Kaufklicks ohne Cart-Request in der Queue. Späteres Variantenupdate für ID 3 sendet beide gespeicherten Klicks für ID 2. H-017 damit lokal als TP-017/P2 bestätigt; echte Browser-/Shopreichweite offen.
+
+Evidence: audit/evidence/variant-form-queue-2026-09-22.json; Script: audit/scripts/reproduce-variant-form-queue.mjs. Vollständige Original-ProductFormComponent und Originalevents, DOM/Refs adaptiert; nur abgefangene Requests, keine Browser-/Shopaktionen. Erstlauf und nach präzisierter Recovery-ID erneut Syntax/Diagnose PASS. Route TASK-CF85944395D0 B/STATIC, kein Executor.
+
+CORE/SHARED FILE, HIGH RISK: variant-picker.js → events.js → product-form.js → Cart. Fehlender Abschluss und Queue-Recovery gemeinsam behandeln; kein globaler Eventumbau.
+
+Nächster Schritt: VAR-001a.2c: native Picker-/Product-Form-Lifecycle-Aufrufer und Reconnect/Morphgrenzen lokal abgrenzen, danach Mehrprodukt-Ereigniszuordnung H-016. S20–S23 nicht wiederholen. Browserberechtigung S13 nicht umgehen.
+
+S23 in `b49b709` tatsächlich gesichert. Vier Verbraucherfälle, Syntax-/Integritäts-/Secret-/Diffcheck PASS. Weiter VAR-001a.2c, keine Shopänderung, Status WORKING.
+
+
+## S24 – Formular-Reconnect (22.09.2026)
+
+S24 / VAR-001a.2c.1: vier Lifecycle-Beobachtungen am vollständigen Original-ProductFormComponent PASS. Erstverbindung aktualisiert ID, Disconnect ignoriert Update wie erwartet; dieselbe Instanz bleibt nach Reconnect auf alter ID, frische Instanz verarbeitet Update korrekt. Wiederverwendeter abgebrochener Controller bestätigt dieselbe Fehlerklasse wie TP-016; dessen Scope erweitert, keine neue Issue-ID. Sechs aktuelle Quellhashes gespeichert, keine historische Livegleichheit daraus behauptet.
+
+Originalevents und native EventTarget/AbortController; Component-Basisklasse/Refs adaptiert, Lifecycle manuell. Kein tatsächlicher DOM-Morph, Submit oder Browserlauf. component.js erneuert nur eigene Refs/Observer, nicht privaten Formularcontroller. morph.js:523 verschiebt passende alte Knoten mit insertBefore; konkrete betroffene Produktstruktur offen. quick-add.js:228–237 ordnet geparste Quellknoten vor dem Morph um und beweist keinen Reconnect einer bereits verbundenen Instanz.
+
+Script audit/scripts/reproduce-form-reconnect.mjs; Evidence audit/evidence/form-reconnect-2026-09-22.json. Syntax und Erstlauf PASS. Route TASK-B005090B4D3F B/STATIC, kein Executor.
+
+CORE/SHARED FILE, HIGH RISK: product-form.js gemeinsam mit TP-017 koordinieren; kein pauschaler Morphumbau.
+
+Nächster Schritt: VAR-001a.2c.2: native VariantPicker-Lifecycle (change-Listener, Radiozustand, Request nach Disconnect) isoliert prüfen; anschließend konkrete Morph-/Mehrproduktzuordnung H-016 abgrenzen. S20–S24 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S24 in `e381aac` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, Syntax-/Integritäts-/Secret-/Diffcheck PASS. Weiter VAR-001a.2c.2. Keine Shopänderung, Status WORKING.
+
+## S25 – VariantPicker-Reconnect (22.09.2026)
+
+S25 / VAR-001a.2c.2: vier Lifecycle-Beobachtungen am vollständigen Original-VariantPicker PASS. Erstverbindung verarbeitet einen Change einmal. Nach Disconnect/Connect derselben Instanz bleiben zwei gebundene Change-Listener aktiv: ein Change sendet zweimal `variant:selected` und startet zwei Requests; der zweite bricht den ersten ab. Disconnect beendet einen bereits laufenden Request nicht. Eine frische Instanz verarbeitet genau einmal. TP-016 um den nativen Picker erweitert, keine neue Issue-ID.
+
+Script `audit/scripts/reproduce-picker-reconnect.mjs`; Evidence `audit/evidence/picker-reconnect-2026-09-22.json`. Originalklasse und Originalevents, native EventTarget/AbortController; DOM/Refs, Optionsupdate und Antwort-Morph adaptiert. Erster Lauf scheiterte ausschließlich an fehlenden neutralen Component-Lifecycle-Methoden im Adapter; ergänzt, danach Syntax/Diagnose PASS. Route TASK-91B1228B1311 B/STATIC, kein Executor.
+
+Grenze: kein echter DOM-Morph, keine Response-Fertigstellung und keine Browser-/Liveanfrage. Die Quellarrays `#radios`/`#checkedIndices` werden beim Reconnect nicht geleert; mögliche Darstellungsfolge nicht separat behauptet. Reale Morph-/Quick-add-Reichweite bleibt offen.
+
+Nächster Schritt: VAR-001a.2c.3: konkrete Morph-/Quick-add-Aufrufer und Mehrprodukt-Ereigniszuordnung H-016 abgrenzen. Picker-/Formular-Reconnectfälle S21–S25 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S25 in `b8e16c5` tatsächlich gesichert. Vier Picker-Lifecycle-Beobachtungen, Syntax-/Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter VAR-001a.2c.3, Status WORKING.
+
+## S26 – Morph-/Mehrprodukt-Reichweite (22.09.2026)
+
+S26 / VAR-001a.2c.3 lokal abgeschlossen: acht Produkt-Templates und sechs verbundene Quellen statisch geprüft. `tp:farbe-wechsel` wird dokumentweit gesendet und von beiden Farbverbrauchern dokumentweit ohne Produktprüfung verarbeitet; native `variant:update`-Events bleiben dagegen auf Section/Dialog/Product-Card und Produkt-ID begrenzt. Drei Templates (`product.einfassung`, `product.rolle`, `product.teppich`) haben aktiven Custom-Farbpicker plus Farbanzeige, aber deaktivierte normale Buy-Buttons. Alle acht Produkttemplates enthalten Empfehlungen. Das Quick-add-Snippet kann fremde Farbproperties rendern, lokale `settings_data.json` setzt `quick_add: false`.
+
+H-016 bleibt bedingt: Bei aktiviertem Quick Add oder einem weiteren gleichzeitigen Farbverbraucher kann das globale Event fremde Properties leeren, doch der aktuelle lokale Konfigurationsstand belegt diesen Kundenpfad nicht; `settings_data.json` ist außerdem nicht historisch live-hashgleich. Kein neues bestätigtes Issue. Morph kann alte Knoten erhalten/verschieben und Quick-add-Inhalt morphen; reine Quellen belegen keine konkrete Browser-Callbackfolge. TP-016 bleibt lokal bestätigt, Live-Reichweite offen.
+
+Script `audit/scripts/audit-variant-morph-reach.mjs`; Evidence `audit/evidence/variant-morph-reach-2026-09-22.json`. Erster und zweiter Versuch stoppten vor Auswertung an Shopify-Kommentarvorspannen in Template- beziehungsweise Settings-JSON; Parser jeweils ab erster JSON-Klammer korrigiert. Danach Syntax/Matrix PASS. Keine alten Lifecycle-Diagnosen, kein Browser und keine Liveanfrage. Route TASK-07C162F822FA B/STATIC, kein Executor.
+
+Nächster Schritt: JS-001a: JavaScript-Runtime-Inventar ab aktuellem Quellstand erstellen und ungeprüfte globale Listener, Controller-/Reconnect- und Promise-Fehlerpfade priorisieren. S20–S26 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S26 in `98906eb` tatsächlich gesichert. Matrix-, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001a, Status WORKING.
+
+## S27 – JavaScript-Runtime-Inventar (22.09.2026)
+
+JS-001a abgeschlossen: 96 lokale JavaScript-Assets mit zusammen 25.206 Zeilen und aktuellen SHA-256-Werten inventarisiert. Gefunden wurden 77 Custom-Element-Definitionen, 56 Dateien mit `connectedCallback`, 47 mit globalen Document-/Window-Listenern und 16 mit `fetch`. Eine konservative Regex-Heuristik markiert 37 Dateien wegen einmalig erzeugter/abgebrochener Controller, gebundener Listener, globaler Listenerhäufung oder Fetch ohne lokalen Catch. Diese Flags priorisieren nur; sie sind ausdrücklich keine bestätigten Fehler.
+
+Bereits in S08–S26 geprüfte Kernquellen sind im Report markiert, damit sie nicht blind wiederholt werden. Nächster neuer Ausführungskandidat ist `assets/quick-add.js`: `#cartUpdateAbortController` wird als Feld einmal erzeugt und bei Disconnect abgebrochen, während VariantSelected mit jeweils neuem `bind(this)` registriert/entfernt wird. S26 las bereits Modal-/Morphgrenzen, führte den Lifecycle aber nicht aus. Lokales Quick Add ist deaktiviert und Live-Reichweite unbekannt.
+
+Script `audit/scripts/audit-js-runtime-inventory.mjs`; Evidence `audit/evidence/js-runtime-inventory-2026-09-22.json`. Erster Lauf stoppte an einer zu groben Controller-Gesamtzählung, die den erneuerten Fetch-Controller mit dem einmaligen Event-Controller vermischte. Feldbezogene Erkennung ergänzt; danach Syntax/Inventar PASS. Route TASK-6E453FC0AD72 B/STATIC, kein Executor, kein Browser/Netzwerk.
+
+Nächster Schritt: JS-001b vollständigen Original-QuickAddComponent-Lifecycle Connect→Disconnect→Reconnect für CartUpdate/VariantSelected lokal ausführen. Modal-/Morphprüfung S26 nicht wiederholen.
+
+S27 in `2242374` tatsächlich gesichert. Inventar-, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001b, Status WORKING.
+
+## S28 – QuickAddComponent-Reconnect (22.09.2026)
+
+JS-001b: vier Lifecycle-Beobachtungen am vollständigen Original-QuickAddComponent PASS. Initial reagieren VariantSelected und CartUpdate je einmal. Nach Disconnect reagiert der VariantSelected-Listener weiterhin, während CartUpdate korrekt nicht mehr reagiert. Nach Reconnect reagiert VariantSelected doppelt und CartUpdate gar nicht. Eine frische Instanz verarbeitet beide Ereignisse einmal.
+
+Ursachen: `this.#updateQuickAddButtonState.bind(this)` erzeugt bei add/remove verschiedene Funktionsobjekte, sodass der dokumentweite Listener nicht entfernt wird. `#cartUpdateAbortController` wird als Feld einmal erzeugt, beim Disconnect abgebrochen und beim Reconnect mit bereits abgebrochenem Signal wiederverwendet. TP-016 um QuickAddComponent erweitert, keine neue Issue-ID. Lokale Repository-Einstellung Quick Add aus; Live-/Browserreichweite unbekannt.
+
+Script `audit/scripts/reproduce-quick-add-reconnect.mjs`; Evidence `audit/evidence/quick-add-reconnect-2026-09-22.json`. Vollständige Originalklasse/Events, native EventTarget/AbortController; Component, DOM, Dialog und Media adaptiert, Eventtarget wegen fehlendem Node-DOM-Bubbling per Proxy. Erster Lauf stoppte vor Beobachtung an lexikalem VM-Zugriff auf ThemeEvents; Original-Ereignisnamen verwendet, danach Syntax/Diagnose PASS. Kein Modal/Morph/Fetch/Browser/Livezugriff. Route TASK-46ED4B67391A B/STATIC, kein Executor.
+
+Nächster Schritt: JS-001c QuickAddDialog derselben Datei separat auf CartUpdate/VariantUpdate/DialogClose-Reconnect prüfen. Fertigen Component-/Morphpfad nicht wiederholen.
+
+S28 in `7f3274c` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001c, Status WORKING.
+
+## S29 – QuickAddDialog-Reconnect (22.09.2026)
+
+JS-001c: vier Lifecycle-Beobachtungen am vollständigen Original-QuickAddDialog PASS. Initial schließen CartUpdate, VariantUpdate-Linkabgleich und DialogClose-iOS-Nachlauf jeweils einmal korrekt an. Nach Disconnect ist CartUpdate entfernt und DialogClose entfernt, VariantUpdate bleibt jedoch aktiv. Nach Reconnect bleibt CartUpdate ausgefallen, VariantUpdate läuft einmal und DialogClose wieder einmal. Frische Instanz funktioniert vollständig.
+
+Ursachen: Der einmal erzeugte `#abortController` wird beim Disconnect abgebrochen und für CartUpdate nicht erneuert. VariantUpdate wird ohne Signal registriert und nie entfernt; da die private Pfeilfunktion identisch bleibt, ignoriert EventTarget die erneute Doppelregistrierung, sodass ein Geisterlistener, aber kein Doppelaufruf entsteht. DialogClose verwendet eine stabile Referenz und wird korrekt entfernt. TP-016 erweitert, keine neue Issue-ID. Quick Add lokal deaktiviert, Livezustand unbekannt.
+
+Script `audit/scripts/reproduce-quick-add-dialog-reconnect.mjs`; Evidence `audit/evidence/quick-add-dialog-reconnect-2026-09-22.json`. Vollständige Originalklasse/Events, native EventTarget/AbortController; Dialog-/DOM-/iOS-Layout adaptiert. Erster Lauf erwartete fälschlich eine Verdopplung identischer Listener; anhand des echten EventTarget-Verhaltens auf einen Aufruf korrigiert, danach Syntax/Diagnose PASS. Kein Modal/Morph/Fetch/Browser/Livezugriff. Route TASK-DB4E130DA403 B/STATIC, kein Executor.
+
+Nächster Schritt: JS-001d `sticky-add-to-cart.js` als kaufnahen ungeprüften Runtime-Kandidaten lesen und Lifecycle ausführen. Quick-add-/Variantenfälle nicht wiederholen.
+
+S29 in `0e710dd` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001d, Status WORKING.
+
+## S30 – Sticky-Add-to-Cart-Reconnect (22.09.2026)
+
+JS-001d: vier Lifecycle-Beobachtungen am vollständigen Original-StickyAddToCartComponent PASS. Initial aktualisieren VariantSelected und QuantitySelectorUpdate Varianten-ID und sichtbare Menge. Nach Disconnect werden beide ignoriert. Nach Reconnect derselben Instanz bleiben beide wirkungslos; frische Instanz verarbeitet sie korrekt. Ursache ist der einmal als Feld erzeugte `#abortController`, der beim Disconnect abgebrochen und beim Connect nicht erneuert wird.
+
+Alle acht lokalen Produkt-Templates setzen `enable_sticky_add_to_cart: true`; die lokale Quellreichweite ist damit stärker als bei Quick Add. Ein realer Browser-Reconnect derselben Instanz ist weiterhin nicht belegt. TP-016 um StickyAddToCartComponent erweitert, keine neue Issue-ID. Eventpfade CartUpdate/CartError nutzen dasselbe Signal und sind quellseitig ebenfalls betroffen; der Lauf assertiert gezielt VariantSelected und QuantitySelectorUpdate. Intersection-/MutationObserver, Klick, Cart, Morph und UI nicht ausgeführt.
+
+Script `audit/scripts/reproduce-sticky-cart-reconnect.mjs`; Evidence `audit/evidence/sticky-cart-reconnect-2026-09-22.json`. Originalklasse/Events, native EventTarget/AbortController; Component/DOM/Observer adaptiert. Syntax/Erstlauf PASS. Route TASK-B239BED3DED7 B/STATIC, kein Executor, Browser oder Livezugriff.
+
+Nächster Schritt: JS-001e `price-per-item.js` als nächsten kaufnahen Einmal-Controller-Kandidaten lesen, Reichweite bestimmen und Lifecycle ausführen. Fertige Lifecyclefälle nicht wiederholen.
+
+S30 in `6d4ed1a` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, acht Templateaktivierungen, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001e, Status WORKING.
+
+## S31 – PricePerItem-Reconnect (22.09.2026)
+
+JS-001e: vier Lifecycle-Beobachtungen am vollständigen Original-PricePerItemComponent PASS. Initial wechselt CartUpdate bei synthetischer Gesamtmenge fünf korrekt vom Basispreis 10,00 € auf Staffelpreis 8,00 €. Nach Disconnect bleibt Basispreis stehen. Nach Reconnect derselben Instanz bleibt CartUpdate wirkungslos; frische Instanz wechselt korrekt. Ursache ist der einmal erzeugte und nach Abort wiederverwendete `#abortController`.
+
+Sechs von acht lokalen Produkttemplates haben einen aktiven Quantity-Block. `price-per-item` rendert laut Snippet nur, wenn die konkrete Variante `quantity_price_breaks` besitzt; aktuelle Produktzuordnung und Livehash sind nicht belegt. TP-016 erweitert, keine neue Issue-ID. Der Lauf prüft CartUpdate und Preisstaffel; QuantitySelector-Zielabgrenzung teilt denselben Controller, wurde nicht separat wiederholt.
+
+Script `audit/scripts/reproduce-price-per-item-reconnect.mjs`; Evidence `audit/evidence/price-per-item-reconnect-2026-09-22.json`. Originalklasse/Events, native EventTarget/AbortController; Component/Form/Input adaptiert. Syntax/Erstlauf PASS. Route TASK-41E86B722185 B/STATIC, kein Executor, Browser oder Livezugriff.
+
+Nächster Schritt: JS-001f `media-gallery.js` als sichtbaren ungeprüften Einmal-Controller-Kandidaten lesen, Reichweite bestimmen und Lifecycle ausführen. Fertige Fälle nicht wiederholen.
+
+S31 in `f9713f5` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, Template-Matrix, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001f, Status WORKING.
+
+## S32 – MediaGallery-Reconnect (22.09.2026)
+
+JS-001f: vier Lifecycle-Beobachtungen an der vollständigen Original-MediaGallery PASS. Initial ersetzen VariantUpdate und ZoomMediaSelected die Galerie beziehungsweise wählen Index 3. Nach Disconnect werden beide Ereignisse ignoriert. Nach Reconnect derselben Instanz bleiben beide wirkungslos; eine frische Instanz funktioniert. Ursache ist der einmal erzeugte und nach Abort wiederverwendete `#controller`.
+
+Alle acht lokalen Produkttemplates enthalten einen aktiven `_product-media-gallery`-Block. Diese statische Reichweite belegt keinen tatsächlichen Reconnect derselben DOM-Instanz. Reales Replace/Morph-Verhalten, Quick-add-Dialog, Browser und Live-Theme blieben ungeprüft. TP-016 erweitert, keine neue Issue-ID; Issuezahl 17 unverändert.
+
+Script `audit/scripts/reproduce-media-gallery-reconnect.mjs`; Evidence `audit/evidence/media-gallery-reconnect-2026-09-22.json`. Erster Lauf erreichte die Beobachtung, scheiterte aber wegen VM-fremder Objektprototypen an `deepStrictEqual`; Optionsbeobachtung auf primitiven Boolean normalisiert, danach Diagnose PASS. Route TASK-FE7225BF7A8F B/STATIC, kein Executor.
+
+Nächster Schritt: JS-001g `assets/media.js` vollständig lesen, seine Klassen-/Aufruferreichweite bestimmen und Lifecycle lokal ausführen. Fertige S20–S32-Fälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S32 in `55ffd1e` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, acht Templateaktivierungen, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001g, Status WORKING.
+
+## S33 – Media-Runtime-Reconnect (22.09.2026)
+
+JS-001g: je vier Lifecycle-Beobachtungen an vollständigem Original-DeferredMedia und ProductModel PASS. DeferredMedia pausiert initial bei `media:started-playing` und `dialog:close`; nach Disconnect erwartungsgemäß nicht, nach Reconnect derselben Instanz weiterhin nicht, frische Instanz wieder korrekt. ProductModel registriert initial Pointerdown/Click und pausiert bei einem Tap; nach Disconnect/Reconnect bleiben die Listener aus, frische Instanz funktioniert. Beide Ursachen sind einmal erzeugte und nach Abort wiederverwendete Controller.
+
+`media.js` wird global eingebunden. `product-media.liquid` erzeugt ProductModel für Modelle und DeferredMedia für Video/externe Videos; das allgemeine `video.liquid` erzeugt ebenfalls DeferredMedia. Alle acht Produkttemplates stellen die Galerie bereit, doch aktuelle Produktzuweisungen zu Video/3D und Livegleichheit sind nicht belegt. TP-016 erweitert, keine neue Issue-ID; 17 Issues unverändert.
+
+Script `audit/scripts/reproduce-media-runtime-reconnect.mjs`; Evidence `audit/evidence/media-runtime-reconnect-2026-09-22.json`. Erster Lauf stoppte vor Beobachtung an fehlendem `querySelector` im neutralen Buttonadapter; API ergänzt, danach Syntax/Diagnose PASS. Originalklassen/-events, native EventTarget/AbortController; DOM, Video, ModelViewerUI adaptiert. Route TASK-54DABA996853 B/STATIC, kein Executor.
+
+Nächster Schritt: JS-001h `assets/layered-slideshow.js` vollständig lesen, Reichweite bestimmen und Lifecycle lokal ausführen. Fertige Fälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S33 in `5baed72` tatsächlich gesichert. Acht Lifecycle-Beobachtungen, statische Reichweite, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001h, Status WORKING.
+
+## S34 – LayeredSlideshow-Lifecycle (22.09.2026)
+
+JS-001h: vier normale Lifecycle-Beobachtungen und zwei aktive Drag-Beobachtungen am vollständigen Original-LayeredSlideshowComponent PASS. Initial und nach Reconnect derselben Instanz aktiviert ein Tabklick den zweiten Tab; getrennt wird er ignoriert und alle Observer sind beendet; frische Instanz funktioniert. Der Komponentencontroller wird in `#setupEventListeners` korrekt erneuert.
+
+Separat bestätigt: Ein Desktop-Pointerdown erzeugt dokumentweite Move/Up/Cancel-Listener mit lokalem Controller. Disconnect beendet diesen Controller nicht. Ein anschließender Pointermove setzt am bereits getrennten Container `data-dragging`; erst Pointerup räumt Listener und Zustand auf. Das ist eine weitere TP-016-Lifecycle-Ausprägung, kein allgemeiner Reconnect-Ausfall.
+
+Script und Section werden global beziehungsweise optional bereitgestellt, Theme Editor unterstützt die Auswahl. Kein lokales JSON-Template weist `layered-slideshow` zu; heutige Live-Nutzung unbekannt. Priorität P3 bleibt, keine neue Issue-ID, 17 Issues unverändert. Script `audit/scripts/reproduce-layered-slideshow-lifecycle.mjs`; Evidence `audit/evidence/layered-slideshow-lifecycle-2026-09-22.json`. Erster Lauf stoppte am nicht neutralisierten `export`; VM-Transformation ergänzt, danach Syntax/Diagnose PASS. Route TASK-19B9096A8140 B/STATIC, kein Executor.
+
+Nächster Schritt: JS-001i `assets/accordion-custom.js` vollständig lesen, Reichweite bestimmen und Lifecycle lokal ausführen. Fertige Fälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S34 in `74d1df5` tatsächlich gesichert. Sechs Lifecycle-Beobachtungen, statische Reichweite, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001i, Status WORKING.
+
+## S35 – AccordionCustom-Reconnect (22.09.2026)
+
+JS-001i: vier Lifecycle-Beobachtungen am vollständigen Original-AccordionCustom PASS. Initial setzt Desktop-Default offen, verhindert bei deaktiviertem Desktopmodus den Summary-Klick, schließt/fokussiert bei Escape und schließt nach mobilem Breakpointwechsel. Nach Disconnect reagieren die Ereignisse erwartungsgemäß nicht. Nach Reconnect derselben Instanz wird der Defaultzustand direkt erneut gesetzt, aber Klick-, Keydown- und MediaQuery-Listener bleiben aus; frische Instanz funktioniert. Ursache ist der einmal erzeugte und nach Abort wiederverwendete Controller.
+
+`accordion-custom.js` wird global geladen. Sechs statische Aufruferdateien umfassen Accordionzeile, Menü, Cart Summary, Listen-/Preisfilter und Sortierung; Header Drawer integriert den Selektor zusätzlich. Konkrete gerenderte Einstellungen und Livegleichheit offen. TP-016 erweitert, Priorität P3 und 17 Issues unverändert.
+
+Script `audit/scripts/reproduce-accordion-reconnect.mjs`; Evidence `audit/evidence/accordion-reconnect-2026-09-22.json`. Erster Lauf stoppte vor Beobachtung an einer zu engen HTMLElement-Typzuordnung im Adapter; gemeinsame Basisklasse für Host/Summary eingesetzt, danach Syntax/Diagnose PASS. Route TASK-70D806E91EF0 B/STATIC, kein Executor.
+
+Nächster Schritt: JS-001j `assets/predictive-search.js` vollständig lesen, Reichweite bestimmen und Lifecycle lokal ausführen. Fertige Fälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S35 in `71dadfa` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, statische Reichweite, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001j, Status WORKING.
+
+## S36 – PredictiveSearch-Reconnect (22.09.2026)
+
+JS-001j: vier Lifecycle-Beobachtungen am vollständigen Original-PredictiveSearchComponent PASS. Initial öffnet/toggelt dokumentweites CMD+K den zugehörigen Dialog und ein Klick auf eine nichtinteraktive Modalfläche fokussiert das Suchfeld. Nach Disconnect reagieren beide Pfade erwartungsgemäß nicht. Nach Reconnect derselben Instanz bleiben beide wirkungslos; frische Instanz funktioniert. Ursache ist der einmal erzeugte und nach Abort wiederverwendete `#controller`.
+
+Header rendert die Suchstyles, `search-modal.liquid` lädt Script und Custom Element, und `predictive-search.liquid` bindet die angepassten TP-Suchergebnisse ein. Damit ist aktive Quellreichweite stärker als bei optionalen Sections; tatsächlicher Browser-Reconnect und Livegleichheit bleiben offen. Dialog-Close/Reset, Recently Viewed, Fetch/Abort/Morph und Ergebnisnavigation wurden nicht ausgeführt. TP-016 erweitert, P3 und 17 Issues unverändert.
+
+Script `audit/scripts/reproduce-predictive-search-reconnect.mjs`; Evidence `audit/evidence/predictive-search-reconnect-2026-09-22.json`. Erster Lauf stoppte an schreibgeschütztem Node-Event-Target; unnötige manuelle Target-Zuweisung entfernt, danach Syntax/Diagnose PASS. Route TASK-BEC7831DF5A4 B/STATIC, kein Executor.
+
+Nächster Schritt: JS-001k `assets/drag-zoom-wrapper.js` vollständig lesen, Reichweite bestimmen und Lifecycle lokal ausführen. Fertige Fälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S36 in `cab41f8` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, statische Reichweite, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001k, Status WORKING.
+
+## S37 – DragZoomWrapper-Reconnect (22.09.2026)
+
+JS-001k: vier Lifecycle-Beobachtungen am vollständigen Original-DragZoomWrapper PASS. Initial sind mobile Touchlistener, Dialog-Close-Reset und ResizeObserver aktiv. Nach Disconnect sind alle inaktiv. Nach Reconnect derselben Instanz funktionieren Dialog-Reset und erneut beobachtender ResizeObserver, Touchstart bleibt wirkungslos; frische Instanz funktioniert vollständig. Ursache: einmal erzeugter/abgebrochener Controller plus dauerhaft `true` bleibendes `#initialized`; Window-Listener und Observer werden dagegen korrekt neu verbunden.
+
+Alle acht Produkttemplates enthalten eine aktive Mediengalerie. Das Galerie-Snippet lädt Script und Wrapper nur, wenn Bildmedien vorliegen, und rendert ihn im Zoomdialog. Aktuelle Produkt-/Browser-/Live-Reichweite bleibt offen. TP-016 erweitert, P3 und 17 Issues unverändert. Pinch-/Dragmathematik, Double-Tap, echte Bildgeometrie und Browserdialog wurden nicht ausgeführt.
+
+Script `audit/scripts/reproduce-drag-zoom-reconnect.mjs`; Evidence `audit/evidence/drag-zoom-reconnect-2026-09-22.json`. Syntax/Erstlauf PASS. Route TASK-DD335467889B B/STATIC, kein Executor.
+
+Nächster Schritt: JS-001l `assets/product-card.js` vollständig lesen, Reichweite bestimmen und Lifecycle lokal ausführen. Fertige Fälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S37 in `72ca58d` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, bedingte Galeriereichweite, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001l, Status WORKING.
+
+## S38 – ProductCard-Lifecycle (22.09.2026)
+
+JS-001l: vier ProductCard- und zwei Swatches-Beobachtungen am vollständigen Originalcode PASS. ProductCard entfernt beim Disconnect nur Navigation, nicht Variant-/Slideshow-/Breakpoint- oder Quick-add-Preload-Listener. Daher preladet eine getrennte Karte bei Pointerenter weiter; Reconnect verdoppelt die identische Handlerreferenz nicht. SwatchesVariantPicker registriert pro Connect eine neue gebundene URL-Update-Funktion und entfernt sie nicht; getrennt aktualisiert er weiterhin die Karten-URL. Beim Reconnect entstehen mehrere Listener, im Fixture wirkt wegen sofortigem Leeren von `pendingVariantId` nur der erste sichtbar.
+
+Das Script wird global geladen; 31 lokale JSON-Templates enthalten `_product-card`. TP-016 erweitert, P3 und 17 Issues unverändert. Variant-Fetch/Morph, Preise, Slides, Navigation/History und Browser wurden nicht wiederholt. Script `audit/scripts/reproduce-product-card-lifecycle.mjs`; Evidence `audit/evidence/product-card-lifecycle-2026-09-22.json`. Syntax/Erstlauf PASS. Route TASK-34B69A1891FF B/STATIC, kein Executor.
+
+Nächster Schritt: JS-001m `assets/product-title-truncation.js` vollständig lesen, Reichweite bestimmen und Lifecycle lokal ausführen. Browserberechtigung S13 nicht umgehen.
+
+S38 in `b868b49` tatsächlich gesichert. Sechs Lifecycle-Beobachtungen, 31 Templatezuweisungen und Abschlusschecks PASS. Keine Shopänderung. Weiter JS-001m, Status WORKING.
+
+## S39 – ProductTitle-Truncation-Lifecycle (22.09.2026)
+
+JS-001m: vier Fallback-Beobachtungen und ein ResizeObserver-Reconnect am vollständigen Original-ProductTitle PASS. Im üblichen Pfad wird der Observer beim Disconnect getrennt und beim Reconnect neu erzeugt. Fehlt ResizeObserver, registriert jeder Connect `this.#handleResize.bind(this)`; der Disconnect entfernt die ungebundene Methode und trifft deshalb keinen registrierten Listener. Eine getrennte Instanz berechnet weiter, Reconnect führt zu zwei Berechnungen pro Resize, frische Instanz zu einer.
+
+Das Modul wird global geladen, das Custom-Element-Markup existiert lokal aber ausschließlich im Galerie-Platzhalter für Produkte ohne Medien. Die acht Templates mit dem normalen `product-title`-Block sind keine direkte Laufzeitreichweite, weil dieser Block kein `<product-title>` rendert. Browserpopulation ohne ResizeObserver, aktueller Katalogbestand ohne Medien, echtes Layout und Livegleichheit bleiben offen. TP-016 nur bedingt erweitert; P3 und 17 Issues unverändert.
+
+Script `audit/scripts/reproduce-product-title-truncation-lifecycle.mjs`; Evidence `audit/evidence/product-title-truncation-lifecycle-2026-09-22.json`. Syntax/Erstlauf PASS. Route TASK-1220674F9B85 B/STATIC, kein Executor. Keine Shopänderung.
+
+Nächster Schritt: JS-001n `assets/gift-card-recipient-form.js` vollständig lesen, Reichweite bestimmen und Lifecycle lokal ausführen. Fertige Fälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S39 in `4a5b5c4` tatsächlich gesichert. Fünf Lifecycle-Beobachtungen, bedingte Markupreichweite sowie Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001n, Status WORKING.
+
+## S40 – GiftCardRecipientForm-Reconnect (22.09.2026)
+
+JS-001n: vier Beobachtungen am vollständigen Original-GiftCardRecipientForm PASS. Input-, CartError- und CartUpdate-Listener besitzen stabile gespeicherte Referenzen und werden beim Disconnect symmetrisch entfernt. Der Formzustand ist dennoch nicht reconnectfähig: Nach Empfängermodus und Reconnect leert `#initializeForm()` alle Felder und setzt Buttons, Sichtbarkeit und Disabled-Zustand auf Selbstversand, aktualisiert aber `#currentMode` nicht. Der erneute Empfänger-Toggle kehrt deshalb früh zurück und lässt die Felder verborgen/deaktiviert. Eine frische Instanz funktioniert.
+
+Auch beim ersten Connect werden aus Liquid vorbelegte Empfängerwerte geleert; das widerspricht den vorhandenen `form.email/name/message/send_on`-Werten im Snippet. Reale Shopify-Fehler-Rerendering-Erreichbarkeit bleibt offen. Sieben Produkttemplates setzen `gift_card_form: true`; gerendert wird nur zusätzlich bei `product.gift_card?`. Aktuelle Produktzuweisung, Browser, Quick-add und Livegleichheit offen. TP-016 bedingt erweitert, P3 und 17 Issues unverändert.
+
+Script `audit/scripts/reproduce-gift-card-recipient-reconnect.mjs`; Evidence `audit/evidence/gift-card-recipient-reconnect-2026-09-22.json`. Syntax/Erstlauf PASS. Route TASK-01DEE636D63D B/STATIC, kein Executor. Keine Shopänderung.
+
+Nächster Schritt: JS-001o `assets/cart-icon.js` vollständig lesen, Reichweite bestimmen und Ereignis-/Lifecyclepfade lokal ausführen. Fertige Fälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S40 in `57dfa85` tatsächlich gesichert. Vier Gift-Card-Beobachtungen, sieben bedingte Templateaktivierungen sowie Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001o, Status WORKING.
+
+## S41 – CartIcon-Ereignisvertrag (22.09.2026)
+
+JS-001o: fünf Beobachtungen am vollständigen Original-CartIcon PASS. Erfolgreiches ProductForm-Update addiert 2+3→5, CartItems setzt absolut 7→4, aktuelle Sessionzahl wird wiederhergestellt und Disconnect/Reconnect bindet exakt wieder. Der Fehlerpfad bestätigt TP-018/P2: `{source: product-form-component, itemCount: 9, didError: true}` erhöht Startzahl 2 auf 11 und speichert 11 in der Session.
+
+`product-form.js` besitzt zwei serverseitige Fehlerpfade mit genau diesem Ereignisvertrag. Der Einzelpfad kommentiert ausdrücklich eine mögliche Backendbegrenzung auf die maximal erlaubte Menge, sendet aber die angeforderte Menge; CartIcon prüft `didError` nicht. Der tatsächliche neue Cartstand fehlt, daher wäre bloßes Ignorieren ebenfalls nicht allgemein korrekt. Header rendert CartIcon global. Backendantwort, Teiladd, Animation, bfcache, Browser und Livegleichheit offen.
+
+Script `audit/scripts/reproduce-cart-icon-events.mjs`; Evidence `audit/evidence/cart-icon-events-2026-09-22.json`. Syntax/Erstlauf PASS. Route TASK-FC911657BB2D B/STATIC, kein Executor. TP-018 mit Implementation Brief angelegt; nun P2=9/P3=9, 18 Issues. Keine Shopänderung.
+
+Nächster Schritt: JS-001p `assets/facets.js` vollständig lesen, Reichweite bestimmen und Lifecycle lokal ausführen. Fertige Cart-/Runtimefälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S41 in `3a075ae` tatsächlich gesichert. Fünf CartIcon-Beobachtungen, zwei Fehler-Senderpfade sowie Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001p, Status WORKING.
+
+## S42 – FacetClear-Lifecycle (22.09.2026)
+
+JS-001p: fünf Beobachtungen am vollständigen Original-`facets.js` PASS. FacetClear verarbeitet initial Enter und löst ein Filterupdate aus. Nach Disconnect bleibt derselbe lokale Keyup-Handler aktiv, weil `disconnectedCallback()` ausschließlich den dokumentweiten FilterUpdate-Listener entfernt. Reconnect derselben Instanz erzeugt wegen identischer Handlerreferenz keine Doppelwirkung; frische Instanz funktioniert. Der dokumentweite Listener ist getrennt tatsächlich inaktiv.
+
+Die übrigen expliziten Lifecycleklassen PriceFacet und FacetRemove entfernen ihre registrierten Listener symmetrisch; FacetsForm, FacetInputs, Sorting und FacetStatus nutzen öffentliche/deklarative Handler ohne eigenen Connect-Listener. Filterblock lädt das Script, und 20 Collection-/Search-Templates weisen `filters` zu. SectionRenderer/Fetch, URL/History, Preisparser, Prefetch, Sortierfokus, Browser und Livegleichheit wurden nicht erneut ausgeführt. TP-016 erweitert, P3 und 18 Issues unverändert.
+
+Script `audit/scripts/reproduce-facet-clear-lifecycle.mjs`; Evidence `audit/evidence/facet-clear-lifecycle-2026-09-22.json`. Syntax/Erstlauf PASS. Route TASK-975C5D38778C B/STATIC, kein Executor. Keine Shopänderung.
+
+Nächster Schritt: JS-001q `assets/slideshow.js` vollständig lesen, Reichweite bestimmen und Lifecycle lokal ausführen. Fertige Runtimefälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S42 in `b8305d9` tatsächlich gesichert. Fünf FacetClear-Beobachtungen, 20 Filtertemplates sowie Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001q, Status WORKING.
+
+## S43 – Standard-Slideshow aktiver Drag (22.09.2026)
+
+JS-001q: fünf Drag-Lifecycle-Beobachtungen am vollständigen Original-`slideshow.js` PASS. Normaler Disconnect entfernt Mousedown-/Autoplay-/Visibilitylistener, zerstört Scroller und Observer; normaler Reconnect stellt Drag wieder her. Wird jedoch während eines aktiven Drags getrennt, bleiben die dokumentweiten Pointerlistener des nur lokal erreichbaren Controllers aktiv. Ein Pointermove setzt am getrennten Element weiter `dragging`; erst Pointerup räumt auf. Sofortiger Reconnect ändert die Ownership des alten Dragcontrollers nicht.
+
+Das Script wird global geladen, das Custom Element über `snippets/slideshow.liquid` erzeugt. 31 Templates weisen Product Card, Product Media Gallery oder Slideshow zu; statische Reichweite ist breit. Reale Pointercapture-/Browserwirkung, Auswahlgeometrie, Autoplay, Infinite-Reorder und Fokus-Synchronisierung bleiben offen. TP-016 erweitert, P3 und 18 Issues unverändert.
+
+Script `audit/scripts/reproduce-slideshow-drag-lifecycle.mjs`; Evidence `audit/evidence/slideshow-drag-lifecycle-2026-09-22.json`. Erster Lauf blieb vor Dragwirkung, weil der Adapter ohne Parent das optionale `isNested` als wahr modellierte; neutralen Parent ergänzt, danach Syntax/Diagnose PASS. Route TASK-DEACC096ADB6 B/STATIC, kein Executor. Keine Shopänderung.
+
+Nächster Schritt: JS-001r `assets/tp-leisten-farbwahl.js` vollständig lesen, Reichweite bestimmen und Lifecycle lokal ausführen. Fertige Runtimefälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S43 in `316a705` tatsächlich gesichert. Fünf Standard-Slideshow-Drag-Beobachtungen, 31 Templatezuweisungen sowie Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001r, Status WORKING.
+
+## S44 – Leisten-Farbwahl-Lifecycle (22.09.2026)
+
+JS-001r: fünf Beobachtungen am vollständigen Original-IIFE/Custom Element PASS. Initial findet die Komponente Radios, synchronisiert die aktive Kachel und startet ihren ResizeObserver. Nach Disconnect wird sie korrekt aus dem singletonweiten Instanz-Set entfernt und der Observer getrennt. Der lokale Klicklistener bleibt jedoch registriert; ein direktes Klickereignis an der getrennten Komponente löst weiterhin das passende Variantenradio aus. Reconnect erzeugt Observer neu und verdoppelt den Klickhandler wegen `tpGebunden` nicht.
+
+Der Block lädt das Script selbst und ist lokal nur `templates/product.fixpreis.json` zugewiesen. Horizon-Morph, echtes Eventbubbling, VariantPicker/ProductForm, Cart, Browser und heutige Produkt-/Livezuweisung bleiben offen. TP-016 bedingt erweitert, P3 und 18 Issues unverändert.
+
+Script `audit/scripts/reproduce-leisten-farbwahl-lifecycle.mjs`; Evidence `audit/evidence/leisten-farbwahl-lifecycle-2026-09-22.json`. Erster Lauf synchronisierte wegen fehlender Radio-Gruppensemantik im Adapter weiterhin Rot; Peer-Uncheck ergänzt, danach Syntax/Diagnose PASS. Route TASK-6A3B909EE2A5 B/STATIC, kein Executor. Keine Shopänderung.
+
+Nächster Schritt: JS-001s `assets/tp-suche.js` vollständig lesen, Reichweite bestimmen und Lifecycle lokal ausführen. Fertige Runtimefälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S44 in `4db3e00` tatsächlich gesichert. Fünf Leisten-Farbwahl-Lifecycle-Beobachtungen, eine Templatezuweisung sowie Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001s, Status WORKING.
+
+## S45 – TP-Suche-Lifecycle (22.09.2026)
+
+JS-001s: fünf Beobachtungen am vollständigen Originalcode PASS. Frisch verbunden öffnet Fokus das Desktop-Panel und Escape schließt es korrekt. Disconnect bricht Listener, Timer und Fetch ab, schließt ein bereits offenes Panel aber nicht. Beim Reconnect wird `offen` auf `false` gesetzt, ohne `hidden` und `aria-expanded` zu normalisieren. Das weiterhin sichtbare Panel reagiert deshalb weder auf Escape noch auf dokumentweiten Außenklick.
+
+`sections/header-group.json` weist `tp-header-suche` einmal zu; die Section lädt das Asset und rendert das Custom Element. Mobile delegiert an `#search-modal` und ist von diesem Desktopzustand getrennt. Fetch/Ergebnisse, native Fokusfolge, Layout, aktuelle Live-Section-Einstellungen und Trackingverbraucher bleiben offen. TP-016 bedingt erweitert, P3 und 18 Issues unverändert.
+
+Script `audit/scripts/reproduce-tp-search-lifecycle.mjs`; Evidence `audit/evidence/tp-search-lifecycle-2026-09-22.json`. Der erste Lauf scheiterte nur am Shopify-Kommentar vor dem Header-Gruppen-JSON; der Adapter entfernt diesen Präfix, danach Syntax/Diagnose PASS. Route TASK-A2CCFA7999C1 B/STATIC, kein Executor. Keine Shopänderung.
+
+Nächster Schritt: JS-001t `assets/tp-unterkategorien-leiste.js` vollständig lesen, Reichweite und globale Listener lokal diagnostizieren. Fertige Runtimefälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S45 in `6563501` tatsächlich gesichert. Fünf TP-Suche-Lifecycle-Beobachtungen, eine Header-Gruppen-Zuweisung sowie Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001t, Status WORKING.
+
+## S46 – Unterkategorienleisten-Lifecycle (22.09.2026)
+
+JS-001t: sechs Beobachtungen am vollständigen Original-IIFE PASS. Initialzustand und Scrollaktualisierung funktionieren. Nach simulierter Section-Ersetzung initialisiert `shopify:section:load` die neue Leiste mit einem zweiten ResizeObserver; der alte Observer ist nicht erreichbar und wird nicht getrennt. Sein Callback sowie der alte Scrolllistener mutieren die getrennte Leiste weiterhin. Im Pfad ohne ResizeObserver bleibt entsprechend der anonyme Window-Resize-Listener aktiv.
+
+Das Snippet rendert über `blocks/tp-unterkategorien.liquid` oder `sections/hero_split.liquid`; zwölf lokale Templates weisen mindestens einen Pfad zu. Tatsächliches Markup verlangt zusätzlich eine passende Menühierarchie. Reales Layout/Scroll-Snap, Theme-Editor-Entsorgung, Browser-GC und heutige Livezuweisung bleiben offen. TP-016 bedingt erweitert, P3 und 18 Issues unverändert.
+
+Script `audit/scripts/reproduce-subcategory-bar-lifecycle.mjs`; Evidence `audit/evidence/subcategory-bar-lifecycle-2026-09-22.json`. Syntax/Erstlauf PASS. Route TASK-D97C3192D3E5 B/STATIC, kein Executor. Keine Shopänderung.
+
+Nächster Schritt: JS-001u `assets/tp-verlegegebiet.js` vollständig lesen, Reichweite sowie globale Listener/Fetch lokal diagnostizieren. Fertige Runtimefälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S46 in `929d094` tatsächlich gesichert. Sechs Unterkategorienleisten-Lifecycle-Beobachtungen, zwölf Templatezuweisungen sowie Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001u, Status WORKING.
+
+## S47 – Verlegegebiets-Lifecycle (22.09.2026)
+
+JS-001u: sechs Beobachtungen am vollständigen Original-IIFE PASS. Die Window-Wache verhindert doppelte globale Section-Listener; `data-tp-vg-bereit` verhindert doppelte Formularlistener. Eine neue Section wird korrekt verdrahtet. Für den alten entfernten Formularbaum existiert jedoch kein Cleanup: Ein bereits laufender Ortsdaten-Fetch wird nicht abgebrochen und rendert nach seiner Auflösung weiter in das getrennte Ergebnis. Der alte Inputlistener mutiert den getrennten Zustand ebenfalls weiter.
+
+Fünf Templates weisen `tp-verlegegebiet` zu. Die vier vorhandenen Verlegegebiet-/Verlegeservice-Suites bestanden mit 66/66 Tests; Preis-, Zonen-, PLZ-, Race- und Textverträge wurden damit als Regression ausgeführt, nicht neu auditiert. Native DOM-Entfernung/GC, Netzwerkabbruch, Browsernavigation und heutige Liveeinstellungen bleiben offen. TP-016 bedingt erweitert, P3 und 18 Issues unverändert.
+
+Script `audit/scripts/reproduce-installation-area-lifecycle.mjs`; Evidence `audit/evidence/installation-area-lifecycle-2026-09-22.json`. Syntax/Erstlauf PASS. Route TASK-2B702B2EFE8B B/STATIC, kein Executor. Keine Shopänderung.
+
+Nächster Schritt: JS-001v `assets/tp-zuschnitt-abgleich.js` vollständig lesen, Reichweite sowie globale Listener/Fetch lokal diagnostizieren. Fertige Runtimefälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S47 in `0752efb` tatsächlich gesichert. Sechs Verlegegebiets-Lifecycle-Beobachtungen, fünf Templatezuweisungen, 66 bestehende Regressionstests sowie Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001v, Status WORKING.
+
+## S48 – Zuschnitt-Abgleich-Runtime (22.09.2026)
+
+JS-001v: sechs Beobachtungen am vollständigen Original-IIFE PASS. Der Startabgleich startet einmal; `window.TPZuschnitt` verhindert bei erneuter Scriptausführung weitere Listener und Requests. Ein während des Starts eintreffendes externes CartUpdate wartet in der Promise-Kette. Ein nötiger Attributschreibvorgang wird am zurückgegebenen Cart gegengeprüft, sendet genau ein eigenes CartUpdate und löst wegen Quellenfilter keinen weiteren Abgleich aus. Ein bereits konsistenter Cart erzeugt weder Write noch Redraw. Nach Requestfehler verarbeitet die Kette den nächsten Aufruf wieder.
+
+`snippets/cart-products.liquid` lädt das Asset im globalen Cart-Pfad; zusätzlich lädt der Einfasskonfigurator es in `product.einfassung.json`. Die vorhandene Zuschnitt-Suite bestand mit 10/10 Tests. Reale Shopify-Endpunkte, mehrere Tabs, Liquid-Rerender, Navigation und heutige Livequelle bleiben offen. Kein neues Issue und keine TP-016-Erweiterung; 18 Issues unverändert.
+
+Script `audit/scripts/reproduce-cut-sync-runtime.mjs`; Evidence `audit/evidence/cut-sync-runtime-2026-09-22.json`. Der erste Lauf prüfte vor dem absichtlich asynchronen Promise-Kettenstart; Microtask-Flush ergänzt, danach Syntax/Diagnose PASS. Route TASK-44BA8326E8AE B/STATIC, kein Executor. Keine Shopänderung.
+
+Nächster Schritt: JS-001w `assets/dialog.js` vollständig lesen, Reichweite bestimmen und Lifecycle lokal ausführen. Fertige Runtimefälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S48 in `19d0ad4` tatsächlich gesichert. Sechs Zuschnitt-Abgleich-Runtime-Beobachtungen, 10 bestehende Regressionstests sowie Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001w, Status WORKING.
+
+## S49 – Dialog-Lifecycle (22.09.2026)
+
+JS-001w: vier Beobachtungen am vollständigen Original-`DialogComponent` PASS. Öffnen setzt den Body global auf `position: fixed`, öffnet den nativen Dialog und bindet Klick/Keydown lokal. Normaler Close entfernt beide Listener, schließt den Dialog, leert die Body-Stile und stellt die Scrollposition wieder her. Disconnect einer offenen Instanz entfernt dagegen nur den optionalen Window-Resize-Listener: Dialog, Body-Sperre und lokale Listener bleiben aktiv. Reconnect und erneutes `showDialog()` normalisieren den bereits offenen Zustand nicht.
+
+Fünf direkte Markupquellen (`buy-buttons`, Filter, Popup, Passwort, Search Modal) sowie zwei Unterklassen (Cart Drawer, Quick Add Dialog) sind statisch belegt; Predictive Search konsumiert Dialog-Events. Native Top-Layer-Entfernung, Fokus, parallele Dialoge, Animation, echter Morph/Theme Editor, Browser und Livegleichheit bleiben offen. TP-016 erweitert, P3 und 18 Issues unverändert.
+
+Script `audit/scripts/reproduce-dialog-lifecycle.mjs`; Evidence `audit/evidence/dialog-lifecycle-2026-09-22.json`. Erster Lauf traf nur einen VM-Realm-Vergleich; primitive Scrollassertions ergänzt. Danach korrigierte die statische Prüfung die erwartete Unterklassenzahl von drei auf zwei, weil Predictive Search DialogComponent konsumiert, aber nicht erweitert. Syntax/Diagnose PASS. Route TASK-67A183736ECC B/STATIC, kein Executor. Keine Shopänderung.
+
+Nächster Schritt: JS-001x `assets/focus.js` vollständig lesen, globale Fokuslistener und Dialog-/Drawer-Abhängigkeiten lokal diagnostizieren. Fertige Runtimefälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S49 in `5fde0bb` tatsächlich gesichert. Vier Dialog-Lifecycle-Beobachtungen, fünf direkte Markupquellen, zwei Unterklassen sowie Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001x, Status WORKING.
+
+## S50 – Fokusfang-Lifecycle (22.09.2026)
+
+JS-001x: sechs Beobachtungen am vollständigen Original-`focus.js` PASS. Ein Trap installiert genau ein Keydown-/Focusin-Paar, zyklisiert Tab und fängt Außenfokus ab. Ein zweiter Trap entfernt das erste Paar und ersetzt es; explizites `removeTrapFocus()` entfernt beide Listener. `cycleFocus()` arbeitet als positive Kontrolle korrekt.
+
+Der einzige Trap-Verbraucher `header-drawer.js` aktiviert den Fokusfang nach Open-Animation und entfernt ihn nur im Close-Animationscallback. Sein `disconnectedCallback()` entfernt nur Keyup. Wird ein offener Drawer getrennt, bleibt der globale Trap aktiv und lenkt Außenfokus weiter auf den getrennten ersten Fokuspunkt. `collection-links.js` ist der einzige direkte `cycleFocus`-Verbraucher. Native Fokuspropagation, Animation, Inert/Top-Layer, Browser und Live-Markup bleiben offen. TP-016 erweitert, P3 und 18 Issues unverändert.
+
+Script `audit/scripts/reproduce-focus-trap-lifecycle.mjs`; Evidence `audit/evidence/focus-trap-lifecycle-2026-09-22.json`. Syntax/Erstlauf PASS. Route TASK-4F0464B54D4F B/STATIC, kein Executor. Keine Shopänderung.
+
+Nächster Schritt: JS-001y `assets/header-drawer.js` vollständig lesen, offenen Disconnect/Reconnect sowie Animationslistener lokal ausführen. Fokus-API-Fälle S50 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S50 in `2fa6f52` tatsächlich gesichert. Sechs Fokus-Lifecycle-Beobachtungen, zwei direkte Verbraucher sowie Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001y, Status WORKING.
+
+## S51 – HeaderDrawer-Lifecycle (22.09.2026)
+
+JS-001y: fünf Beobachtungen am vollständigen Original-`HeaderDrawer` PASS. Connect bindet Keyup und die Descendant-Animationslistener. Der normale Root-Close setzt Details/ARIA zurück und entfernt den Fokusfang. Disconnect entfernt dagegen nur Keyup: Ein bereits registrierter Open-Animationscallback kann danach noch `trapFocus()` auf dem getrennten Drawer ausführen. Ein alter Close-Callback kann nach einem zwischenzeitlich gesetzten neuen Trap das globale `removeTrapFocus()` ausführen. Auch der 100-ms-Klassentimer und die Descendant-Listener bleiben am alten Baum aktiv.
+
+Beim Reconnect derselben Knoten wird der stabile `removeWillChangeOnAnimationEnd`-Handler trotz erneutem Add-Aufruf durch EventTarget dedupliziert; ein Event führt nur einen Callback aus. Native Details-Toggle-Reihenfolge, reale CSS-Animationen, DOM-Entfernung/GC, Browser und aktuelle Live-Reichweite bleiben offen. TP-016 erweitert, P3 und 18 Issues unverändert.
+
+Script `audit/scripts/reproduce-header-drawer-lifecycle.mjs`; Evidence `audit/evidence/header-drawer-lifecycle-2026-09-22.json`. Syntax/Erstlauf PASS. Route TASK-702896438E87 B/STATIC, kein Executor. Keine Shopänderung.
+
+Nächster Schritt: JS-001z `assets/collection-links.js` vollständig lesen, eigenen Lifecycle und Slideshow-/Fokusabhängigkeiten lokal ausführen. Fokus-API-Fälle S50 und HeaderDrawer-Fälle S51 nicht wiederholen; Browserberechtigung S13 nicht umgehen.

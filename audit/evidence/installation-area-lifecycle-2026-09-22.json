@@ -1,0 +1,69 @@
+{
+  "session": "S47",
+  "task": "JS-001u",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/tp-verlegegebiet.js",
+      "sha256": "bf7da7a0f26cae288c4b36c3e0b58a792d63ba732891ba3928c79d20c3e911a6"
+    },
+    {
+      "file": "sections/tp-verlegegebiet.liquid",
+      "sha256": "873532ec689b58dc2fda2fa003f1f7aad7cd4967fe49f110222d6d775702cfd6"
+    },
+    {
+      "file": "assets/tp-verlegegebiet-orte.json",
+      "sha256": "f69aa8141ec3bcf277cccd09957f5f2e779bddf89b855c7d6988e6a5f1bd7fd5"
+    },
+    {
+      "file": "templates/page.verlegeservice.json",
+      "sha256": "4813b80cac0f886ecb64c22b9d08f686211ac12ee75621698f0398ed951c1db0"
+    }
+  ],
+  "cases": [
+    {
+      "name": "initial-form-wired-once",
+      "hidden": false,
+      "submitListeners": 1
+    },
+    {
+      "name": "duplicate-script-guard",
+      "sectionLoadListeners": 1,
+      "submitListeners": 1
+    },
+    {
+      "name": "initial-submit-starts-one-fetch",
+      "fetches": 1
+    },
+    {
+      "name": "replacement-form-wired",
+      "hidden": false,
+      "submitListeners": 1
+    },
+    {
+      "name": "detached-old-fetch-still-renders",
+      "status": "innen"
+    },
+    {
+      "name": "detached-old-input-listener-still-mutates",
+      "text": ""
+    }
+  ],
+  "existingRegressionSuite": {
+    "tests": 66,
+    "passed": 66,
+    "failed": 0
+  },
+  "sourceReach": {
+    "assignedTemplateCount": 5,
+    "assignedTemplates": [
+      "index.json",
+      "page.teppichboden-verlegen.json",
+      "page.treppenverlegung.json",
+      "page.verlegeservice.json",
+      "page.vinylboden-verlegen.json"
+    ],
+    "dataAsset": "assets/tp-verlegegebiet-orte.json"
+  },
+  "limits": "Original complete IIFE; section/form/input/result/CTA, section-load and deferred fetch adapted. Duplicate script guard, replacement binding, detached in-flight response and detached input listener executed. Native DOM removal/GC, AbortSignal/network cancellation, real layout, live settings and browser navigation not tested."
+}
