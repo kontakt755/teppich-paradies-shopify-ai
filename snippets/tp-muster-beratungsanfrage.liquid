@@ -26,8 +26,10 @@
       if tpm_item.sku != blank
         assign tpm_zeile = tpm_zeile | append: ' (' | append: tpm_item.sku | append: ')'
       endif
-      assign tpm_muster = tpm_muster | append: '- ' | append: tpm_zeile | append: '
-'
+      if tpm_muster != blank
+        assign tpm_muster = tpm_muster | append: ' · '
+      endif
+      assign tpm_muster = tpm_muster | append: tpm_zeile
     else
       assign tpm_ware = tpm_ware | plus: 1
     endif
