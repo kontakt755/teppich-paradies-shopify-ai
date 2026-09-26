@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-26T08:30:16.838Z",
+  "generated_at": "2026-09-26T08:34:51.357Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 154,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-26T08:30:16.838Z",
+    "fetchedAt": "2026-09-26T08:34:51.357Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -69,7 +69,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/664",
       "labels": [
-        "status:eingang",
+        "status:review",
         "type:technik",
         "priority:p3",
         "area:technik"
@@ -78,14 +78,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Aus #361. Grundlast je Sitzung ~72k Tokens. Beeinflussbar sind nur zwei Posten:\n1. Connectors Gmail (30 Tools), Dropbox (19), Google Drive (11), Google Calendar (9) sind in jeder Code-Sitzung geladen, werden fuer den Shop-Code nie gebraucht. Ersparnis gering (~2-4k: Toolnamen + Server-Anweisungen), weil die Tools verzoegert geladen werden. Abschalten wirkt kontoweit als Standard fuer neue Sitzungen (Composer + > Connectors) - deshalb Entscheidung Ahmet. Am 26.09. war zusaetzlich ein Video-/Bild-Generator (90 Tools) aktiv; heute nicht mehr.\n2. Memory-Index MEMORY.md ~13k Tokens, >120 Zeilen. Kuerzen per Skill consolidate-memory, Ziel ~6k.\nSystem-Tools (~30k) und Systemprompt sind nicht abschaltbar.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-26T08:27:45Z",
-      "updated_at": "2026-09-26T08:27:46Z",
+      "updated_at": "2026-09-26T08:34:49Z",
       "closed_at": null
     },
     {
@@ -1191,7 +1191,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 5,
+      "comments": 6,
       "nextStep": null,
       "fields": {
         "goal": "Den Verbrauch von Claude Code auf beiden Macs senken, ohne Regeln oder Qualitaet zu verlieren. Reihenfolge: Kontext → Messung → Pilot → gezielte Skills.\n\n## Phasen\n\n- [x] **Phase 1 — Startkontext kuerzen:** CLAUDE.md 34,2 KB → 19,9 KB, Vorfallgeschichten nach `docs/lessons/`, Hook-Ausgabe 46 → 30 Zeilen. PR #360.\n- [ ] **Phase 0 — Baseline (lokal, beide Macs):** bei 5–10 normalen Aufgaben am Ende `/cost` notieren (Klasse, Modell, Tokens, Cache-Anteil, Dauer). Einmal pro Mac: leere Session + `/cost` als reiner Startkontext-Preis — **vor dem Merge von #360**, sonst fehlt der Vorher-Wert. Einmal `npm run ai:usage` fuer den Router-/Codex-Anteil.\n- [ ] **Phase 2 — Verhaltensregeln:** ein Modell pro Session (in CLAUDE.md/AGENTS.md mit #360), eine Session pro Aufgabe, Zwischenstand als Issue-Notiz.\n- [ ] **Phase 3 — Vergleich:** 5–10 Aufgaben nach dem Merge erneut messen. Erst danach Ponytail-Pilot auf 5 Klasse-A/B-Aufgaben mit demselben Modell wie die Baseline.\n\n## Offen (Entscheidung Inhaber)\n\nCLAUDE.md liegt bei 19,9 KB statt der angepeilten 15 KB. Der Rest sind Befehle, Guard-Tabelle, Sicherheitsgrenzen und Modell-Matrix. Kandidaten fuer weitere ~2 KB: `theme:diff`-Manifest-Block und …",
@@ -1219,7 +1219,7 @@
         }
       },
       "created_at": "2026-09-18T17:26:32Z",
-      "updated_at": "2026-09-26T08:30:15Z",
+      "updated_at": "2026-09-26T08:30:16Z",
       "closed_at": "2026-09-26T08:30:01Z"
     },
     {
