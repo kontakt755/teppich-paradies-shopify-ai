@@ -174,6 +174,16 @@ bezahlt jede Runde erneut. Er waechst durch Rohdumps, nicht durch Prosa.
   zweimal der ganze Baum. Ergebnis einmal holen und weiterverwenden.
 - `live-theme.json` nicht ganz lesen (Retired-Liste ~10k): `jq '{live,preview,fallback,arbeit}'`.
 
+## Gedaechtnis auf mehreren Macs (#665)
+
+Claudes Gedaechtnis-Ordner (`~/.claude/projects/<projekt>/memory`) ist ein
+Checkout des **privaten** Repos `tp-claude-gedaechtnis`. `gedaechtnis-sync.sh`
+zieht beim Sitzungsstart und schiebt beim Stop; ohne `.git` oder Netz tut er
+still nichts. Obsidian oeffnet denselben Ordner als Vault. Neuer Mac:
+`git clone git@github.com:<konto>/tp-claude-gedaechtnis.git <pfad>/memory`.
+Das Repo bleibt privat - es enthaelt Lieferanten-Interna. Zweiter Speicher
+verboten: dauerhafte Erkenntnisse gehoeren nach `docs/lessons/`, nicht doppelt.
+
 ## Context Mode (grosse Ausgaben aus dem Kontext halten)
 
 `.mcp.json` bindet Context Mode **nur als MCP-Server** ein, Version gepinnt,
