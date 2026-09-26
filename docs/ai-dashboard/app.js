@@ -3668,14 +3668,31 @@ Beispiel:
 - [Online-Shop] Produktbilder ergaenzen :: 45 Produkte haben noch kein Bild. Ohne Bild bricht die Kaufentscheidung ab. Fertig, wenn die Liste im Dashboard leer ist.
 - [Kunden] Frau Meier zurueckrufen :: Sie fragt nach Mustern in Beige. Nummer steht im Angebot. Fertig, wenn Muster raus sind.`;
 
-const ORG_GRUPPEN = [
-  ['kunden', 'Kunden & Aufträge'], ['rest', 'Übriges'], ['', 'Alles'],
-];
+/**
+ * Gruppen nach Art der Arbeit. Die Liste kommt vom Server mit (ARBEITSGRUPPEN
+ * in operations/lib/organisation.mjs) - hier stehen nur die Schluessel, damit
+ * ein Wert aus der Adresszeile geprueft werden kann, bevor Daten da sind.
+ */
+const ORG_GRUPPEN_KEYS = ['kunden', 'geld', 'fragen', 'shop', 'werbung', 'betrieb', 'technik', 'alles'];
 const ORG_STATUS_LABEL = {
   INBOX: 'Eingang', PLANNED: 'Geplant', IN_PROGRESS: 'In Arbeit', REVIEW: 'Prüfung',
   WAITING: 'Warten auf', DEFERRED: 'Zurückgestellt', DONE: 'Erledigt',
 };
-const ORG_PRIO_LABEL = { URGENT: 'dringend', HIGH: 'hoch', NORMAL: 'normal', LOW: 'niedrig' };
+/**
+ * Dringlichkeit in Worten, die etwas heissen. "dringend/hoch/normal/niedrig"
+ * klang nach einer Skala, also stand am Ende alles auf "normal" (40 von 45) -
+ * und die Stufe sagte nichts mehr. Jetzt benennt sie den Grund:
+ *
+ *   URGENT  Kostet Geld, wenn es liegen bleibt (Mahnung, unversandte Ware,
+ *           nicht abgerechnete Arbeit)
+ *   HIGH    Hat ein Datum (Aktion endet, Frist laeuft)
+ *   NORMAL  Kann warten
+ *
+ * LOW bleibt lesbar, weil es in alten Eintraegen steht, wird aber nicht mehr
+ * zur Auswahl angeboten - vier Stufen waren genau das Problem.
+ */
+const ORG_PRIO_LABEL = { URGENT: 'kostet Geld', HIGH: 'hat ein Datum', NORMAL: 'kann warten', LOW: 'kann warten' };
+const ORG_PRIO_WAHL = { URGENT: 'Kostet Geld, wenn es liegen bleibt', HIGH: 'Hat ein Datum', NORMAL: 'Kann warten' };
 const ORG_WIEDERHOLUNG_LABEL = {
   '': 'einmalig', taeglich: 'täglich', woechentlich: 'wöchentlich', zweiwoechentlich: 'alle zwei Wochen',
   vierwoechentlich: 'alle vier Wochen', monatlich: 'monatlich', vierteljaehrlich: 'vierteljährlich', jaehrlich: 'jährlich',
@@ -3692,7 +3709,8 @@ function orgParams() {
   const oa = p.get('oa');
   const ansicht = (oa === 'alle' || ORG_ANSICHTEN.map(a => a[0]).includes(oa)) ? oa : 'offen';
   const og = p.get('og');
-  const gruppe = ORG_GRUPPEN.map(g => g[0]).includes(og) ? og : 'kunden';
+  // Standard ist 'alles': eine Aufgabe, die keiner sieht, wird nicht erledigt.
+  const gruppe = ORG_GRUPPEN_KEYS.includes(og) ? og : 'alles';
   return { bereich, ansicht, gruppe, person: p.get('op') || '', q: p.get('oq') || '', id: p.get('oid') || '' };
 }
 
@@ -4215,7 +4233,7 @@ function orgDetailAnsicht(id) {
     <section class="card" style="margin-bottom:14px">
       <div class="bq-weitere">
         ${feld('Status', d.darfAendern ? auswahl('status', Object.entries(ORG_STATUS_LABEL), e.status) : esc(ORG_STATUS_LABEL[e.status]))}
-        ${feld('Priorität', d.darfAendern ? auswahl('prioritaet', Object.entries(ORG_PRIO_LABEL), e.prioritaet) : esc(ORG_PRIO_LABEL[e.prioritaet]))}
+        ${feld('Dringlichkeit', d.darfAendern ? auswahl('prioritaet', Object.entries(ORG_PRIO_WAHL), e.prioritaet) : esc(ORG_PRIO_LABEL[e.prioritaet]))}
         ${feld('Verantwortlich', d.darfAendern
           ? auswahl('verantwortlich', [['', 'unzugewiesen'], ...team.map(t => [t.kuerzel, t.name])], e.verantwortlich || '')
           : esc(e.verantwortlich || 'unzugewiesen'))}
@@ -4308,9 +4326,14 @@ function viewOrganisation() {
 
   // Das Team sucht hier Kunden, Bestellungen und kleine Auftraege - alles
   // andere Geschaeftliche steht daneben, aber nicht im Weg.
-  const gruppen = bereich === 'team-aufgaben'
+  // Gruppen mit 0 Treffern bleiben weg - ein Reiter, hinter dem nie etwas ist,
+  // kostet am Handy eine Zeile und traegt nichts bei. Die gewaehlte Gruppe
+  // bleibt immer stehen, sonst verschwindet der Reiter unter den eigenen Fuessen.
+  const gruppenListe = (d?.gruppen || []).filter(g => g.anzahl > 0 || g.key === gruppe);
+  const gruppen = gruppenListe.length
     ? `<div class="chips" style="margin:0 0 8px"><span class="small muted chip-label">Worum:</span>
-        ${ORG_GRUPPEN.map(([k, l]) => `<button type="button" class="chip" data-param="og" data-value="${k}" aria-pressed="${gruppe === k}">${esc(l)}</button>`).join('')}
+        <button type="button" class="chip" data-param="og" data-value="alles" aria-pressed="${gruppe === 'alles'}">Alles<span class="chip-zahl">${(d?.gruppen || []).reduce((n, g) => n + g.anzahl, 0)}</span></button>
+        ${gruppenListe.map(g => `<button type="button" class="chip" data-param="og" data-value="${esc(g.key)}" aria-pressed="${gruppe === g.key}">${esc(g.label)}<span class="chip-zahl">${g.anzahl}</span></button>`).join('')}
       </div>` : '';
 
   const personen = bereich === 'team-aufgaben'
@@ -4398,7 +4421,7 @@ function openOrgSchnell(vorbelegt = '', verknuepft = null) {
           <option value="">keiner</option>
           ${bereiche.map(b => `<option value="${esc(b)}"${v.bereich === b ? ' selected' : ''}>${esc(b)}</option>`).join('')}</select></div></div>
         <div><span class="small muted">Dringlichkeit</span><div><select id="orgPrio">
-          ${Object.entries(ORG_PRIO_LABEL).map(([k, l]) => `<option value="${k}"${v.prioritaet === k ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></div></div>
+          ${Object.entries(ORG_PRIO_WAHL).map(([k, l]) => `<option value="${k}"${v.prioritaet === k ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></div></div>
         <div><span class="small muted">Fällig</span><div><input type="date" id="orgFaellig" value="${esc(v.faellig || '')}"></div></div>
         <div><span class="small muted">Sichtbar</span><div><select id="orgSicht">
           <option value="PRIVAT"${v.sichtbarkeit === 'PRIVAT' ? ' selected' : ''}>nur ich</option>

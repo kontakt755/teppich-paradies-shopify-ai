@@ -28,7 +28,7 @@ import { faelle as kundenFaelle } from '../operations/lib/kundenfaelle.mjs';
 import { fallmarkenPfad, leseAlle as leseFallmarken, setzeMarke as setzeFallmarke, teileAuf as teileFaelleAuf, juengsterPunkt, FALL_GRUND } from '../operations/lib/fallmarken.mjs';
 import {
   sortiere as orgSortiere, passtZuAnsicht, darfSehen, darfAendern, findeDoppelgaenger,
-  istUeberfaellig, tageBis, istPerson, istTechnisch, istTeamarbeit,
+  istUeberfaellig, tageBis, istPerson, istTechnisch, istTeamarbeit, gruppeVon, ARBEITSGRUPPEN,
 } from '../operations/lib/organisation.mjs';
 import { analysiere as orgAnalysiere, ausListe as orgAusListe } from '../operations/lib/organisation-analyse.mjs';
 import {
@@ -1062,7 +1062,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     },
 
     /** bereich: meine-aufgaben | meine-notizen | team-aufgaben | team-notizen | archiv */
-    orgListe({ bereich = 'meine-aufgaben', ansicht = 'fokus', person = '', gruppe = 'kunden', q = '', benutzer = null } = {}) {
+    orgListe({ bereich = 'meine-aufgaben', ansicht = 'fokus', person = '', gruppe = '', q = '', benutzer = null } = {}) {
+      let gruppenZaehlung = {};
       const datei = this._orgDatei();
       const daten = orgLies(datei);
       const jetzt = new Date();
@@ -1087,8 +1088,6 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         liste = liste.filter(e => e.typ === 'TASK' && e.sichtbarkeit !== 'PRIVAT' && !istTechnisch(e.bereich));
         // Ohne Bereich bleibt ein Eintrag sichtbar - sonst verschwindet er
         // genau dort, wo ihn jemand einsortieren muesste.
-        if (gruppe === 'kunden') liste = liste.filter(e => !e.bereich || istTeamarbeit(e.bereich));
-        else if (gruppe === 'rest') liste = liste.filter(e => e.bereich && !istTeamarbeit(e.bereich));
         if (person === 'unzugewiesen') liste = liste.filter(e => !e.verantwortlich);
         else if (person) liste = liste.filter(e => istPerson(e.verantwortlich, person));
         if (ansicht && ansicht !== 'alle') liste = liste.filter(e => passtZuAnsicht(e, ansicht, jetzt));
@@ -1103,9 +1102,18 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           ...(e.kommentare ?? []).map(k => k.text)].filter(Boolean)
           .some(f => String(f).toLowerCase().includes(suchtext)));
       }
+
+      // Gruppen nach Art der Arbeit (ARBEITSGRUPPEN) - fuer jeden Bereich,
+      // nicht nur fuer die Teamliste. Die Zahl an jeder Gruppe zaehlt den Stand
+      // NACH allen anderen Filtern, aber VOR der Gruppenwahl: sonst zeigte die
+      // gewaehlte Gruppe ihre eigene Zahl und alle anderen eine Null.
+      for (const e of liste) gruppenZaehlung[gruppeVon(e)] = (gruppenZaehlung[gruppeVon(e)] || 0) + 1;
+      if (gruppe && gruppe !== 'alles') liste = liste.filter(e => gruppeVon(e) === gruppe);
+
       return {
         verfuegbar: true, quelle: datei, bereiche: daten.bereiche, team: this.orgTeam(), ich,
         anzahl: liste.length,
+        gruppen: ARBEITSGRUPPEN.map(([key, label]) => ({ key, label, anzahl: gruppenZaehlung[key] || 0 })),
         eintraege: orgSortiere(liste, jetzt).slice(0, 200)
           .map(e => ({ ...e, darfAendern: darfAendern(e, benutzer) })),
       };

@@ -577,6 +577,9 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
 .fall-sofort { border-left: 3px solid var(--crit); }
 .fall-punkte { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 /* Knopfzeile der Fallkarte. Am Handy umbrechen statt herauslaufen. */
+/* Zahl am Gruppen-Reiter: zeigt, wo Arbeit liegt, ohne ihn anzuklicken. */
+.chip-zahl { margin-left: 6px; padding: 0 6px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); font-size: .74rem; font-variant-numeric: tabular-nums; }
+.chip[aria-pressed="true"] .chip-zahl { background: rgba(255,255,255,.22); color: inherit; }
 .fall-aktionen { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .fall-punkt { padding: 10px 12px; background: var(--surface-2); border-radius: var(--radius); display: flex; flex-direction: column; gap: 3px; }
 /* Hier steht im Etikett ein ganzer Satz ("Beim Lieferanten bestellen - bezahlt,
