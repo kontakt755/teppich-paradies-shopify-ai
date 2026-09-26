@@ -228,6 +228,18 @@ node workflow/cli.mjs preview --theme-id <id> --approve-preview
 node workflow/cli.mjs live --theme-id <id> --approve-live --approval-text "PUBLISH LIVE" --execute
 ```
 
+**Pro Arbeitskopie laeuft nur ein Deploy.** `preview`, `live` und die volle
+`validate` nehmen eine Sperre (`.workflow/lock.json`), QA ebenfalls; der
+Kindprozess des Workflows erkennt die eigene und laeuft durch. Ein zweiter Lauf
+bricht mit `WORKTREE_BUSY` ab und nennt, wer blockiert. Grund: am 2026-09-26
+arbeiteten zwei Sitzungen gleichzeitig im selben Worktree — die
+Theme-Check-Baseline wurde zwischen Schreiben und Lesen ueberschrieben, HEAD
+sprang mitten im Lauf weg, und das freigegebene Preview-Theme wurde von der
+anderen Sitzung publiziert. Eine verwaiste Sperre uebernimmt der naechste Lauf
+selbst; sofort geht es mit Loeschen der Datei. `doctor`, `route` und
+`validate --static` sind absichtlich frei und geben auch waehrend eines Deploys
+Auskunft.
+
 Bricht ein Gate ab, ist das ein echter Befund — Ursache beheben, niemals das
 Gate ausbauen. Ein abgelehnter Push mit „fetch first" ist meist nur der
 Dashboard-Bot (`dashboard-data.yml` committet stuendlich nach `main`):
