@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { buildModelPlan } from '../model-matrix.mjs';
 import { sessionModelDirective, sitzungsZugriff } from '../session-model.mjs';
 
@@ -25,9 +25,10 @@ test('CLI bekommt /model, ohne Sitzung nur Ausgabe', () => {
   assert.match(sessionModelDirective(buildModelPlan('C', { env: {} }), {}).lines[1], /keine Sitzung/);
 });
 
+// Kein Prozessstart: route braucht origin/main, das im CI-Checkout fehlt.
 test('route gibt SESSION_MODEL aus', () => {
-  const r = spawnSync(process.execPath, ['workflow/cli.mjs', 'route', 'Kleine Doku-Korrektur im README'], { encoding: 'utf8', env: { ...process.env, CLAUDECODE: '', CLAUDE_CODE_ENTRYPOINT: '' } });
-  assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, /^SESSION_MODEL: \S+/m);
-  assert.match(r.stdout, /SESSION_MODEL_ACTION: - \(keine Sitzung/);
+  const src = readFileSync(new URL('../cli.mjs', import.meta.url), 'utf8');
+  const block = src.slice(src.indexOf("if (mode === 'route')"), src.indexOf('return route;'));
+  assert.match(block, /formatRouterOutput\(route/);
+  assert.match(block, /sessionModelDirective\(route\.modelPlan\)\.lines/);
 });
