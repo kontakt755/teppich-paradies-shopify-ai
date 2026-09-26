@@ -25,6 +25,7 @@
     "shopify:token": "node scripts/shopify-oauth.mjs",
     "menu:guard": "node qa/run-menu-link-guard.mjs",
     "farbcode:guard": "node scripts/farbcode-guard.mjs",
+    "lighthouse:messen": "node scripts/lighthouse-messung.mjs",
     "masstepich:plan": "node scripts/masstepich/plan.mjs",
     "masstepich:guard": "node scripts/masstepich/guard.mjs",
     "unmerged:guard": "node qa/unmerged-changes-guard.mjs",
