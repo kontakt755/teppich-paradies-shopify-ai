@@ -41,7 +41,7 @@ const HANDY_ANSICHTEN = ALLE_ANSICHTEN.map(v => v.split('?')[0]);
 // Grosse Exporte, die das Dashboard nur liest: verlinken statt kopieren.
 const NUR_LESEN = ['einkauf-dryrun', 'einkauf-klaerung', 'lexikon'];
 // Klein oder beschreibbar: kopieren, damit Klicktests nie die echten Dateien treffen.
-const KOPIEREN = ['bestelluebersicht', 'kennzahlen', 'aktualisierung.json', 'auftragsstatus.json'];
+const KOPIEREN = ['bestelluebersicht', 'kennzahlen', 'organisation', 'aktualisierung.json', 'auftragsstatus.json'];
 
 function argumente(argv) {
   const a = { ansichten: null, aus: null, offen: false };
