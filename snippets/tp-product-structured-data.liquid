@@ -107,6 +107,7 @@
     endif
   endfor
 
+  assign tp_sd_description = product_resource.description | strip_html | strip_newlines | truncate: 5000
   assign tp_sd_product_url = request.origin | append: product_resource.url
 -%}
 
@@ -142,6 +143,48 @@
         assign tp_sd_price = tp_sd_cents | times: 1.0 | divided_by: 100 | round: 2
         assign tp_sd_variant_url = tp_sd_product_url | append: '?variant=' | append: tp_sd_variant.id
         assign tp_sd_image = tp_sd_variant.featured_image | default: product_resource.featured_image
+
+        assign tp_sd_gtin = tp_sd_variant.barcode | default: '' | strip
+        assign tp_sd_gtin_length = tp_sd_gtin.size
+        assign tp_sd_gtin_numeric_check = tp_sd_gtin | remove: '0' | remove: '1' | remove: '2' | remove: '3' | remove: '4' | remove: '5' | remove: '6' | remove: '7' | remove: '8' | remove: '9'
+        assign tp_sd_gtin_nonzero_check = tp_sd_gtin | remove: '0'
+        assign tp_sd_gtin_valid = false
+        if tp_sd_gtin_length == 8 or tp_sd_gtin_length == 12 or tp_sd_gtin_length == 13 or tp_sd_gtin_length == 14
+          if tp_sd_gtin_numeric_check == blank and tp_sd_gtin_nonzero_check != blank
+            assign tp_sd_gtin_body_length = tp_sd_gtin_length | minus: 1
+            assign tp_sd_gtin_last_index = tp_sd_gtin_length | minus: 1
+            assign tp_sd_gtin_check_digit = tp_sd_gtin | slice: tp_sd_gtin_last_index, 1 | plus: 0
+            assign tp_sd_gtin_sum = 0
+            for tp_sd_gtin_index in (0..13)
+              if tp_sd_gtin_index < tp_sd_gtin_body_length
+                assign tp_sd_gtin_digit = tp_sd_gtin | slice: tp_sd_gtin_index, 1 | plus: 0
+                assign tp_sd_gtin_places_from_right = tp_sd_gtin_body_length | minus: tp_sd_gtin_index | minus: 1
+                assign tp_sd_gtin_weight_parity = tp_sd_gtin_places_from_right | modulo: 2
+                assign tp_sd_gtin_weight = 1
+                if tp_sd_gtin_weight_parity == 0
+                  assign tp_sd_gtin_weight = 3
+                endif
+                assign tp_sd_gtin_digit_value = tp_sd_gtin_digit | times: tp_sd_gtin_weight
+                assign tp_sd_gtin_sum = tp_sd_gtin_sum | plus: tp_sd_gtin_digit_value
+              endif
+            endfor
+            assign tp_sd_gtin_remainder = tp_sd_gtin_sum | modulo: 10
+            assign tp_sd_gtin_expected_check_digit = 10 | minus: tp_sd_gtin_remainder | modulo: 10
+            if tp_sd_gtin_expected_check_digit == tp_sd_gtin_check_digit
+              assign tp_sd_gtin_valid = true
+            endif
+          endif
+        endif
+        assign tp_sd_gtin_property = 'gtin'
+        if tp_sd_gtin_length == 8
+          assign tp_sd_gtin_property = 'gtin8'
+        elsif tp_sd_gtin_length == 12
+          assign tp_sd_gtin_property = 'gtin12'
+        elsif tp_sd_gtin_length == 13
+          assign tp_sd_gtin_property = 'gtin13'
+        elsif tp_sd_gtin_length == 14
+          assign tp_sd_gtin_property = 'gtin14'
+        endif
       -%}
       {%- if tp_sd_include -%}
         {%- unless tp_sd_first -%},{%- endunless -%}
@@ -156,6 +199,12 @@
           {%- endif -%}
           {%- if tp_sd_variant.sku != blank -%},
           "sku": {{ tp_sd_variant.sku | json }}
+          {%- endif -%}
+          {%- if tp_sd_description != blank -%},
+          "description": {{ tp_sd_description | json }}
+          {%- endif -%}
+          {%- if tp_sd_gtin_valid -%},
+          {{ tp_sd_gtin_property | json }}: {{ tp_sd_gtin | json }}
           {%- endif -%}
           {%- if tp_sd_color_index >= 0 -%},
           "color": {{ tp_sd_variant.options[tp_sd_color_index] | json }}
@@ -198,7 +247,9 @@
         "@id": {{ tp_sd_product_url | append: '#product' | json }},
         "productGroupID": {{ product_resource.id | json }},
         "name": {{ product_resource.title | json }},
-        "description": {{ product_resource.description | strip_html | strip_newlines | truncate: 5000 | json }},
+        {%- if tp_sd_description != blank -%}
+        "description": {{ tp_sd_description | json }},
+        {%- endif -%}
         "url": {{ tp_sd_product_url | json }},
         "brand": {
           "@type": "Brand",
