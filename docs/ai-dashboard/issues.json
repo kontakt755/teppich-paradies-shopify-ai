@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-26T08:28:12.400Z",
+  "generated_at": "2026-09-26T08:30:16.838Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 154,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-26T08:28:12.400Z",
+    "fetchedAt": "2026-09-26T08:30:16.838Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -1179,10 +1179,10 @@
     {
       "number": 361,
       "title": "Claude-Code-Verbrauch senken: Startkontext kuerzen, Baseline messen",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/361",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p2",
         "area:backend"
@@ -1219,8 +1219,8 @@
         }
       },
       "created_at": "2026-09-18T17:26:32Z",
-      "updated_at": "2026-09-26T08:27:53Z",
-      "closed_at": null
+      "updated_at": "2026-09-26T08:30:15Z",
+      "closed_at": "2026-09-26T08:30:01Z"
     },
     {
       "number": 358,
