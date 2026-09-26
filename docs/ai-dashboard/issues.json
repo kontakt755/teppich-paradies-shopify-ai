@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-26T01:11:15.678Z",
+  "generated_at": "2026-09-26T06:05:52.270Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 147,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-26T01:11:15.678Z",
+    "fetchedAt": "2026-09-26T06:05:52.270Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -90,17 +90,17 @@
     {
       "number": 637,
       "title": "Dashboard als modernen Betriebsleitstand gestalten",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/637",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:ux",
         "priority:p2",
         "area:design"
       ],
       "assignee": null,
       "assignees": [],
-      "comments": 3,
+      "comments": 4,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "goal": "Das funktionale Control Center erhält eine ruhigere, hochwertigere visuelle Hierarchie. Die wichtigsten Tagesaufgaben sollen schneller erfassbar sein, während Kunden-, Einkaufs-, Organisations- und Fotoansichten wie ein zusammengehöriges System wirken.",
@@ -137,16 +137,16 @@
         }
       },
       "created_at": "2026-09-25T12:29:23Z",
-      "updated_at": "2026-09-25T12:45:58Z",
-      "closed_at": null
+      "updated_at": "2026-09-26T06:05:50Z",
+      "closed_at": "2026-09-26T06:05:37Z"
     },
     {
       "number": 634,
       "title": "Dashboard-Datenstand und Handybreite korrigieren",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/634",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:bug",
         "priority:p1",
         "area:technik"
@@ -182,8 +182,8 @@
         }
       },
       "created_at": "2026-09-25T12:21:19Z",
-      "updated_at": "2026-09-25T12:23:14Z",
-      "closed_at": null
+      "updated_at": "2026-09-26T06:05:49Z",
+      "closed_at": "2026-09-26T06:05:36Z"
     },
     {
       "number": 615,
