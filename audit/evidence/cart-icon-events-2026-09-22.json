@@ -1,0 +1,54 @@
+{
+  "session": "S41",
+  "task": "JS-001o",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/cart-icon.js",
+      "sha256": "66f8ee19fae4dfa48982abd5e4cb35a9ab4bc46bc644e5ece526d31e7451eb9b"
+    },
+    {
+      "file": "assets/product-form.js",
+      "sha256": "7ab6933aa4244ef12ed8e735418ffe8d8c8599fe49f9d3ae93225dca1e2135dc"
+    },
+    {
+      "file": "assets/events.js",
+      "sha256": "1290bc43167daaa1166e4d3acf0b423f1d30f119347d2873ebb18001c12d2056"
+    },
+    {
+      "file": "snippets/header-actions.liquid",
+      "sha256": "3f33aa06de29b0ce95c0055398ca9c8c777d6a7b77e99b39160de1775acf8c97"
+    }
+  ],
+  "cases": [
+    {
+      "name": "successful-product-form-add-is-additive",
+      "count": 5
+    },
+    {
+      "name": "cart-items-update-is-absolute",
+      "count": 4
+    },
+    {
+      "name": "failed-product-form-add-still-increments",
+      "didErrorIgnored": true,
+      "count": 11,
+      "storedCount": "11"
+    },
+    {
+      "name": "disconnect-reconnect-listeners-healthy",
+      "disconnectedCount": 2,
+      "reconnectCount": 5
+    },
+    {
+      "name": "recent-session-count-restored",
+      "count": 6
+    }
+  ],
+  "sourceContract": {
+    "productFormFailedCartUpdatePaths": 2,
+    "cartIconChecksDidError": false,
+    "headerRendersCartIcon": true
+  },
+  "limits": "Original complete CartIcon; Component/DOM/window/document/sessionStorage/animation adapted with native EventTarget. Additive product-form, absolute cart, didError, reconnect and recent-session paths executed. ProductForm was source-checked for failed CartAddEvent contracts, not refetched or submitted. Real backend partial-add quantity, animation, bfcache, browser and live theme not tested."
+}

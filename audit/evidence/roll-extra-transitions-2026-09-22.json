@@ -1,0 +1,79 @@
+{
+  "session": "S18",
+  "task": "CALC-001a.1",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "blocks/tp-rollware-rechner.liquid",
+      "sha256": "c7bbab2e15d0c020e46a8f1960eb8652be0d13c3f39651d09324f58dee4e3ad5"
+    },
+    {
+      "file": "assets/tp-rollware-art.js",
+      "sha256": "cbf7cdd7837db5be9ff9f1f1ec060afcce20828d34f1fd6141feb3b3e9dbe2f2"
+    }
+  ],
+  "cases": [
+    {
+      "name": "red-meter",
+      "id": "1",
+      "rate": 10,
+      "extraCount": 2,
+      "skirtInputPreserved": true,
+      "extrasHidden": false
+    },
+    {
+      "name": "red-room",
+      "id": "2",
+      "rate": 15,
+      "extraCount": 2,
+      "skirtInputPreserved": true,
+      "extrasHidden": false
+    },
+    {
+      "name": "blue-room-blocked-extras",
+      "id": "4",
+      "rate": 25,
+      "extraCount": 0,
+      "skirtInputPreserved": true,
+      "extrasHidden": true
+    },
+    {
+      "name": "blue-meter-blocked-extras",
+      "id": "3",
+      "rate": 20,
+      "extraCount": 0,
+      "skirtInputPreserved": true,
+      "extrasHidden": true
+    },
+    {
+      "name": "return-red",
+      "id": "1",
+      "rate": 10,
+      "extraCount": 2,
+      "skirtInputPreserved": true,
+      "extrasHidden": false
+    },
+    {
+      "name": "form-priority-over-url",
+      "id": "3",
+      "boundary": "Synthetic simultaneous form/URL; real scoped picker contract still open."
+    },
+    {
+      "name": "change-swatch",
+      "scheduled": [
+        120
+      ]
+    },
+    {
+      "name": "change-form",
+      "scheduled": [
+        100
+      ]
+    },
+    {
+      "name": "change-irrelevant",
+      "scheduled": []
+    }
+  ],
+  "limits": "Original selection/extras functions and original document change handler. Synthetic variant data, persistent DOM fields; artMode controlled, calculate scheduling recorded, not executed by native picker. No full syncArtUi/submit/morph test. H-003 partly covered only; historical pricing math not rerun."
+}

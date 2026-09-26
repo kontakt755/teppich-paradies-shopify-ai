@@ -1,0 +1,52 @@
+{
+  "session": "S36",
+  "task": "JS-001j",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/predictive-search.js",
+      "sha256": "50bdc4a90bd32d9e71f4cd1356779e747d75e7d7a7058112e2b21d11e2f3d098"
+    },
+    {
+      "file": "snippets/search-modal.liquid",
+      "sha256": "047d4b2f94f898878009bbcc423938c5d22be6afdcd1554e8cb34849e9b47d2b"
+    },
+    {
+      "file": "sections/predictive-search.liquid",
+      "sha256": "f4c68bd419061263ec9309ffa24c33b7de2a0c046c411c2d6e3fea1db5b7819e"
+    },
+    {
+      "file": "snippets/tp-suche-ergebnisse.liquid",
+      "sha256": "64f27e19d85fd8fc08be210cd4db1fb6bcffcecb023b0cb7e3186407a84267b8"
+    }
+  ],
+  "cases": [
+    {
+      "name": "initial-connect",
+      "dialogToggles": 1,
+      "inputFocuses": 1
+    },
+    {
+      "name": "disconnected-ignores-events",
+      "dialogToggles": 0,
+      "inputFocuses": 0
+    },
+    {
+      "name": "same-instance-reconnect-stale",
+      "dialogToggles": 0,
+      "inputFocuses": 0
+    },
+    {
+      "name": "fresh-instance",
+      "dialogToggles": 1,
+      "inputFocuses": 1
+    }
+  ],
+  "sourceReach": {
+    "headerRendersPredictiveSearchStyles": true,
+    "searchModalLoadsScript": true,
+    "searchModalRendersComponent": true,
+    "customResultsIntegration": true
+  },
+  "limits": "Original complete PredictiveSearchComponent; Component/dialog/input/results/DOM and imported utilities adapted, native EventTarget/AbortController. Document CMD+K and noninteractive modal-click focus lifecycle tested. Dialog close/reset, open/recently viewed, debounce, fetch, abort ordering, morph, keyboard result navigation, browser rendering and live theme not tested. Header/search-modal reach is static source evidence."
+}

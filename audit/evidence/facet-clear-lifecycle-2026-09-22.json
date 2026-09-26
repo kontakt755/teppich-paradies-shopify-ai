@@ -1,0 +1,72 @@
+{
+  "session": "S42",
+  "task": "JS-001p",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/facets.js",
+      "sha256": "914e75241e4fb9d0b3e611e567ea75b9dc9fdcaa76f307adb2d196dbac5fbdf3"
+    },
+    {
+      "file": "blocks/filters.liquid",
+      "sha256": "d5f6995d0b4572f43c665078d70eb39a5bd02d3e07e8d691f3b6bf31e1dcaf9a"
+    },
+    {
+      "file": "snippets/filter-remove-buttons.liquid",
+      "sha256": "a3e19fc59e8577d7f165115907ef15117bda9863f7e4b28b0d4d589f92481bd8"
+    },
+    {
+      "file": "snippets/list-filter.liquid",
+      "sha256": "2695c7aaeaae10cb1a1272e8c257349adbd035eb30ebcd800f502d3fd1abf4dc"
+    }
+  ],
+  "cases": [
+    {
+      "name": "initial-connect-clears",
+      "updates": 1
+    },
+    {
+      "name": "disconnected-still-clears",
+      "updates": 1
+    },
+    {
+      "name": "same-instance-reconnect-no-duplicate",
+      "updates": 1
+    },
+    {
+      "name": "document-filter-listener-cleaned",
+      "active": false
+    },
+    {
+      "name": "fresh-instance",
+      "updates": 1
+    }
+  ],
+  "sourceReach": {
+    "filterTemplateCount": 20,
+    "filterTemplates": [
+      "collection.bodenleisten.json",
+      "collection.json",
+      "collection.teppichboden-hochflor.json",
+      "collection.teppichboden-kurzflor.json",
+      "collection.teppichboden-nadelvlies.json",
+      "collection.teppichboden-schlinge.json",
+      "collection.teppichboden-velours.json",
+      "collection.teppichboden-wolle.json",
+      "collection.teppichboden.json",
+      "collection.teppiche.json",
+      "collection.teppichfliesen.json",
+      "collection.vinyl.json",
+      "collection.vinylboden-klebevinyl.json",
+      "collection.vinylboden-klickvinyl.json",
+      "collection.vinylboden-rollenvinyl.json",
+      "collection.vinylboden.json",
+      "collection.zubehoer-profile.json",
+      "collection.zubehoer-unterkategorie.json",
+      "collection.zubehoer.json",
+      "search.json"
+    ],
+    "scriptLoadedByFilterBlock": true
+  },
+  "limits": "Original complete facets.js; FacetClear runtime executed with Component/DOM/FormData/renderer/money adapters and native EventTarget. Self keyup and document FilterUpdate cleanup tested. Form URL construction, fetch/SectionRenderer, price parsing, prefetch, sorting/focus, actual Collection/Search DOM, browser and live theme not executed."
+}

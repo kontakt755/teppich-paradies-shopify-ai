@@ -1,0 +1,73 @@
+{
+  "session": "S46",
+  "task": "JS-001t",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/tp-unterkategorien-leiste.js",
+      "sha256": "178105d79a2922c8a01a1a01319cdf5e67487755d92ab011396c06673bc5d992"
+    },
+    {
+      "file": "snippets/tp-unterkategorien-leiste.liquid",
+      "sha256": "cc8aab660005b8bb48d7e9bbda32ad1677c019e3cd984adc71d7a0debf97ffe5"
+    },
+    {
+      "file": "blocks/tp-unterkategorien.liquid",
+      "sha256": "e09666a006a9ddb2ce41ae023a5cce599217229b9c86c12e4bd5f34c3c966220"
+    },
+    {
+      "file": "sections/hero_split.liquid",
+      "sha256": "aaada7f0fe34c79f50378219ef3d84ffeed825d0060e10b1c73d64dda1b91b2c"
+    }
+  ],
+  "cases": [
+    {
+      "name": "initial-section-load",
+      "right": "true",
+      "observers": 1
+    },
+    {
+      "name": "connected-scroll-updates-state",
+      "left": "true"
+    },
+    {
+      "name": "replacement-adds-observer-without-old-disconnect",
+      "observers": 2,
+      "oldTargets": 1
+    },
+    {
+      "name": "detached-old-resize-observer-still-mutates",
+      "right": "false"
+    },
+    {
+      "name": "detached-old-scroll-listener-still-mutates",
+      "left": "false"
+    },
+    {
+      "name": "fallback-detached-window-resize-still-mutates",
+      "right": "false"
+    }
+  ],
+  "sourceReach": {
+    "assignedTemplateCount": 12,
+    "assignedTemplates": [
+      "collection.teppichboden-hochflor.json",
+      "collection.teppichboden-kurzflor.json",
+      "collection.teppichboden-nadelvlies.json",
+      "collection.teppichboden-schlinge.json",
+      "collection.teppichboden-velours.json",
+      "collection.teppichboden-wolle.json",
+      "collection.teppichboden.json",
+      "collection.teppichfliesen.json",
+      "collection.vinylboden-klebevinyl.json",
+      "collection.vinylboden-klickvinyl.json",
+      "collection.vinylboden-rollenvinyl.json",
+      "collection.vinylboden.json"
+    ],
+    "renderSources": [
+      "blocks/tp-unterkategorien.liquid",
+      "sections/hero_split.liquid"
+    ]
+  },
+  "limits": "Original complete IIFE; nav/list/button, document section-load, scroll, ResizeObserver and fallback window resize adapted with native EventTarget. Detached old nodes were retained deliberately to execute cleanup behavior. Menu matching, real layout/scroll snap, Theme Editor disposal, browser GC and current live assignments not tested."
+}

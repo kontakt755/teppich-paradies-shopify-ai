@@ -1,0 +1,91 @@
+{
+  "session": "S21",
+  "task": "VAR-001a.2a",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/tp-farbe.js",
+      "sha256": "6a823cdc36a446664ca8c3570406ca709ff63b0e72d6cb21c8ca032d9cd005c6"
+    },
+    {
+      "file": "assets/events.js",
+      "sha256": "1290bc43167daaa1166e4d3acf0b423f1d30f119347d2873ebb18001c12d2056"
+    },
+    {
+      "file": "snippets/tp-farbe-properties.liquid",
+      "sha256": "3c2ad7bbea2fabc48f6552658a693783951a02f558467f32b1403cb88420a056"
+    }
+  ],
+  "cases": [
+    {
+      "name": "native-product-scope",
+      "state": {
+        "number": "222",
+        "disabled": false,
+        "name": ""
+      }
+    },
+    {
+      "name": "global-foreign-custom-event",
+      "state": {
+        "number": "",
+        "disabled": true,
+        "name": ""
+      },
+      "boundary": "H-016 synthetic multi-product reach; no confirmed live order loss."
+    },
+    {
+      "name": "display-unknown-id",
+      "state": {
+        "number": "",
+        "disabled": false,
+        "name": "Red"
+      }
+    },
+    {
+      "name": "tp-farbe-properties-reconnect-native",
+      "defect": "TP-016",
+      "state": {
+        "number": "111",
+        "disabled": false,
+        "name": ""
+      }
+    },
+    {
+      "name": "tp-farbe-properties-reconnect-custom",
+      "defect": "TP-016",
+      "state": {
+        "number": "111",
+        "disabled": false,
+        "name": ""
+      }
+    },
+    {
+      "name": "tp-farbe-anzeige-reconnect-native",
+      "defect": "TP-016",
+      "state": {
+        "number": "",
+        "disabled": false,
+        "name": "Red"
+      }
+    },
+    {
+      "name": "tp-farbe-anzeige-reconnect-custom",
+      "defect": "TP-016",
+      "state": {
+        "number": "",
+        "disabled": false,
+        "name": "Red"
+      }
+    },
+    {
+      "name": "disconnect-removes-listener-control",
+      "state": {
+        "number": "111",
+        "disabled": false,
+        "name": ""
+      }
+    }
+  ],
+  "limits": "Full original tp-farbe classes and VariantUpdateEvent; native Node EventTarget/AbortController, modeled host/querySelector/section. Reconnect invoked on same instance; actual browser morph/reinsert reach not verified. No shop request."
+}

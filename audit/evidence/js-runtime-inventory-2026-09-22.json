@@ -1,0 +1,3031 @@
+{
+  "session": "S27",
+  "task": "JS-001a",
+  "status": "PASS",
+  "totals": {
+    "javascriptFiles": 96,
+    "lines": 25206,
+    "customElementDefinitions": 77,
+    "filesWithConnectedCallback": 56,
+    "filesWithGlobalListeners": 47,
+    "filesWithFetch": 16,
+    "flaggedFiles": 37
+  },
+  "nextCandidate": {
+    "file": "assets/quick-add.js",
+    "reason": "Source shows a field AbortController aborted on disconnect but not renewed, plus add/remove calls using fresh bind(this) functions. Execute original lifecycle before confirming any issue.",
+    "scope": "JS-001b QuickAddComponent connect/disconnect/reconnect event behavior; do not repeat its already reviewed modal/morph source boundary."
+  },
+  "candidates": [
+    {
+      "file": "assets/gift-card-recipient-form.js",
+      "sha256": "30ffc3be483c2da1bcd3ff02898da89217ed41e152614a61ea8fb71ee0c2ea4a",
+      "lines": 415,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 1,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "bound-listener-registration",
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/layered-slideshow.js",
+      "sha256": "ae67490c432b97229df04d1a966f3209e1c3a3ad48d1064424ecbccb81543d4c",
+      "lines": 603,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 1,
+        "abortAssignments": 1,
+        "abortCalls": 2,
+        "oneShotControllerFields": [
+          "abort"
+        ],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 3,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "field-controller-created-once",
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/media.js",
+      "sha256": "3355a7d400b9e1ebf91a6994b8582aa082310d63051db96ca5a360d236822f31",
+      "lines": 249,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 6,
+        "disconnected": 4,
+        "abortFields": 2,
+        "abortAssignments": 0,
+        "abortCalls": 2,
+        "oneShotControllerFields": [],
+        "addBound": 2,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 2
+      },
+      "candidateFlags": [
+        "bound-listener-registration",
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/price-per-item.js",
+      "sha256": "566045aac57f01199c4caac84b778722357d97b5f2cbd0731610adaa71f89cc5",
+      "lines": 135,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 1,
+        "abortAssignments": 0,
+        "abortCalls": 1,
+        "oneShotControllerFields": [
+          "abortController"
+        ],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "field-controller-created-once",
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/sticky-add-to-cart.js",
+      "sha256": "f7152a1a031273bb1fc99b86db18c0baf3a56f5fb616057df3e56935752d12c8",
+      "lines": 529,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 1,
+        "abortAssignments": 0,
+        "abortCalls": 1,
+        "oneShotControllerFields": [
+          "abortController"
+        ],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 3,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "field-controller-created-once",
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/accordion-custom.js",
+      "sha256": "54fe7ceb1f102e6659eb7b227223620354104bf17c13bf4f0b59e46c2b3731ec",
+      "lines": 108,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 2,
+        "disconnected": 1,
+        "abortFields": 1,
+        "abortAssignments": 0,
+        "abortCalls": 1,
+        "oneShotControllerFields": [
+          "controller"
+        ],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "field-controller-created-once"
+      ]
+    },
+    {
+      "file": "assets/cart-icon.js",
+      "sha256": "66f8ee19fae4dfa48982abd5e4cb35a9ab4bc46bc644e5ece526d31e7451eb9b",
+      "lines": 135,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 1,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/component-cart-items.js",
+      "sha256": "e3c4066bf5afe88b89b8c4cb03ba095166541e1fabf2ea2db6a521b7ab5ea6ef",
+      "lines": 396,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 3,
+        "fetches": 1,
+        "catches": 1,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/dialog.js",
+      "sha256": "29e81ab767bd2dfa087023be7a26e69d7ade88e62e7c089c69dfb6a3754f9526",
+      "lines": 194,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/drag-zoom-wrapper.js",
+      "sha256": "ba81e1175abe6eb52b909969df5e9d87a5fe35417a417aaf7699f8b6e3078871",
+      "lines": 513,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 1,
+        "abortAssignments": 0,
+        "abortCalls": 2,
+        "oneShotControllerFields": [
+          "controller"
+        ],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "field-controller-created-once"
+      ]
+    },
+    {
+      "file": "assets/facets.js",
+      "sha256": "914e75241e4fb9d0b3e611e567ea75b9dc9fdcaa76f307adb2d196dbac5fbdf3",
+      "lines": 844,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 12,
+        "disconnected": 6,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 7
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/focus.js",
+      "sha256": "0234bc60da5d3a92aae53f9213c141189fc49f2bfcd32c8ca525d8286bf78013",
+      "lines": 105,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/live-chat-widget.js",
+      "sha256": "9aad645550998ad5c374a69a7f65452aea3b4b3a8425903b5f4edfa39e8c6066",
+      "lines": 355,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 3,
+        "fetches": 0,
+        "catches": 2,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/media-gallery.js",
+      "sha256": "0dd60c2c1f2c6919922bfc7bb88e40f2600f73421834806b0953f886e897172c",
+      "lines": 96,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 1,
+        "abortAssignments": 0,
+        "abortCalls": 1,
+        "oneShotControllerFields": [
+          "controller"
+        ],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "field-controller-created-once"
+      ]
+    },
+    {
+      "file": "assets/predictive-search.js",
+      "sha256": "50bdc4a90bd32d9e71f4cd1356779e747d75e7d7a7058112e2b21d11e2f3d098",
+      "lines": 431,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 1,
+        "abortAssignments": 0,
+        "abortCalls": 1,
+        "oneShotControllerFields": [
+          "controller"
+        ],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 0,
+        "catches": 1,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "field-controller-created-once"
+      ]
+    },
+    {
+      "file": "assets/product-card.js",
+      "sha256": "534d6fa7868c5bfdf22d9eac381935daa58181dab9d2ea27b888a0fcb01066c1",
+      "lines": 622,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 6,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 1,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 3
+      },
+      "candidateFlags": [
+        "bound-listener-registration"
+      ]
+    },
+    {
+      "file": "assets/product-title-truncation.js",
+      "sha256": "232e189de28ef153d0fdfc7da31d90e0420d3f518f27d06f77ceeea65b5e905c",
+      "lines": 87,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 1,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "bound-listener-registration"
+      ]
+    },
+    {
+      "file": "assets/slideshow.js",
+      "sha256": "a63cd717cf83968dec13a419282d4b3df801144764652f6142b06b5bff8e1fa2",
+      "lines": 980,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 7,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/theme-editor.js",
+      "sha256": "f1d1cd778663a393077f164313c71adadcd82012684beb54f712419166858ecc",
+      "lines": 419,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 5,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/tp-arbeiten.js",
+      "sha256": "63a3f92afabf5f4e32161cdf6b52c2df343fe38054da76a353fe1b8285f574bf",
+      "lines": 270,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 1,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/tp-compare.js",
+      "sha256": "eb39b843f557bf935397bbf75746eb2812a9ccb4eb28e2073ab675c83e077d0b",
+      "lines": 271,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 3,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/tp-einfass-konfigurator.js",
+      "sha256": "cb052828a311f30f145b26536a0883d37ee4f6746938c1847b202f3bb0bf9f55",
+      "lines": 813,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 7,
+        "fetches": 1,
+        "catches": 2,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/tp-groessen.js",
+      "sha256": "8868d03f0a36b49f07a1d27ae4f4b81443215e7609d69889b7fb0b87e4e1e9c8",
+      "lines": 76,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 4,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/tp-laufband.js",
+      "sha256": "6b367857695159fd13a19ef16be07a9b16e33e160655936533cd8d7607e304c5",
+      "lines": 62,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 3,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/tp-leisten-farbwahl.js",
+      "sha256": "390de8449954619df1c2c5a30f55af314d858606395b08ece83a793f91084fd2",
+      "lines": 179,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 2,
+        "disconnected": 1,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/tp-suche.js",
+      "sha256": "1f9b9b11566b60ea1f00505cff3761ee7f0155cdd50659e975af20a979efe9cd",
+      "lines": 489,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 2,
+        "disconnected": 1,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 1,
+        "catches": 1,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/tp-unterkategorien-leiste.js",
+      "sha256": "178105d79a2922c8a01a1a01319cdf5e67487755d92ab011396c06673bc5d992",
+      "lines": 99,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 3,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/tp-verlegegebiet.js",
+      "sha256": "bf7da7a0f26cae288c4b36c3e0b58a792d63ba732891ba3928c79d20c3e911a6",
+      "lines": 318,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 1,
+        "catches": 1,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/tp-zuschnitt-abgleich.js",
+      "sha256": "9f40aaad06a6314c892bd4fbaed5f89c91da0be98a649aa027105b2631521d91",
+      "lines": 140,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 3,
+        "fetches": 2,
+        "catches": 4,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/utilities.js",
+      "sha256": "1b0c4926e32f6df743161c714d37def14b404a5bc1b2298171f7e5411085cde6",
+      "lines": 800,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/view-transitions.js",
+      "sha256": "77a36aaa2a974ced0d544a989cf94514c6dd2f808cceb16a8deb7744c0d3773e",
+      "lines": 106,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 3,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/quick-add.js",
+      "sha256": "f7f1c8496cb32e099d380178fdbf7ae5b708cc53c2f11da0aaa9cf75d7fbd5f6",
+      "lines": 344,
+      "auditedPreviously": true,
+      "metrics": {
+        "connected": 8,
+        "disconnected": 4,
+        "abortFields": 3,
+        "abortAssignments": 1,
+        "abortCalls": 4,
+        "oneShotControllerFields": [
+          "cartUpdateAbortController"
+        ],
+        "addBound": 2,
+        "removeBound": 1,
+        "globalListeners": 2,
+        "fetches": 1,
+        "catches": 1,
+        "customElements": 2
+      },
+      "candidateFlags": [
+        "field-controller-created-once",
+        "bound-listener-registration",
+        "bound-listener-removal",
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/cart-drawer.js",
+      "sha256": "c6ec4200ae19ed2a0a1c1ec85ed805b2913854417e381767a8da963daead21e9",
+      "lines": 132,
+      "auditedPreviously": true,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 1,
+        "abortAssignments": 1,
+        "abortCalls": 2,
+        "oneShotControllerFields": [
+          "historyAbortController"
+        ],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "field-controller-created-once",
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/section-renderer.js",
+      "sha256": "f7c0fd37fbf25ce9ceb9eb7125a1e20a3a6582a8c823e79da09d5a5f5c39b047",
+      "lines": 214,
+      "auditedPreviously": true,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 1,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 1,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "bound-listener-registration",
+        "fetch-without-local-catch"
+      ]
+    },
+    {
+      "file": "assets/variant-picker.js",
+      "sha256": "4357c80adaf5e6715cc48b4c48a1d2a3d92cde479f8d6c7960f9ff6e95111fce",
+      "lines": 506,
+      "auditedPreviously": true,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 1,
+        "abortAssignments": 1,
+        "abortCalls": 1,
+        "oneShotControllerFields": [
+          "abortController"
+        ],
+        "addBound": 1,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 1,
+        "catches": 1,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "field-controller-created-once",
+        "bound-listener-registration"
+      ]
+    },
+    {
+      "file": "assets/product-form.js",
+      "sha256": "7ab6933aa4244ef12ed8e735418ffe8d8c8599fe49f9d3ae93225dca1e2135dc",
+      "lines": 805,
+      "auditedPreviously": true,
+      "metrics": {
+        "connected": 8,
+        "disconnected": 4,
+        "abortFields": 1,
+        "abortAssignments": 0,
+        "abortCalls": 1,
+        "oneShotControllerFields": [
+          "abortController"
+        ],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 3,
+        "catches": 3,
+        "customElements": 2
+      },
+      "candidateFlags": [
+        "field-controller-created-once"
+      ]
+    },
+    {
+      "file": "assets/tp-farbe.js",
+      "sha256": "6a823cdc36a446664ca8c3570406ca709ff63b0e72d6cb21c8ca032d9cd005c6",
+      "lines": 148,
+      "auditedPreviously": true,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 2,
+        "abortAssignments": 0,
+        "abortCalls": 2,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 1,
+        "customElements": 2
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    }
+  ],
+  "inventory": [
+    {
+      "file": "assets/accordion-custom.js",
+      "sha256": "54fe7ceb1f102e6659eb7b227223620354104bf17c13bf4f0b59e46c2b3731ec",
+      "lines": 108,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 2,
+        "disconnected": 1,
+        "abortFields": 1,
+        "abortAssignments": 0,
+        "abortCalls": 1,
+        "oneShotControllerFields": [
+          "controller"
+        ],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "field-controller-created-once"
+      ]
+    },
+    {
+      "file": "assets/anchored-popover.js",
+      "sha256": "f021076d8321d95b9940782843873eaa6cab56a286c00fef08fe95bc177df170",
+      "lines": 133,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/announcement-bar.js",
+      "sha256": "9aedef562165209bf53fa92df9dc28b5802dec3930ff6efc7a2f70bc658faab7",
+      "lines": 131,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 2,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/auto-close-details.js",
+      "sha256": "ad1346312bafa09a7bdba7cd6f5efff577e41466ff7b8725b180cdc7dcc98e7f",
+      "lines": 16,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/blog-posts-list.js",
+      "sha256": "43f079c8eb38352558012990ea2cc7060b1dc6cd92211b41c3861133fd298ae4",
+      "lines": 11,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/cart-discount.js",
+      "sha256": "7b911591eac2a6ec8a70eb043214bb7f4e3ae56cd2706400ab30f37ea2586a7e",
+      "lines": 204,
+      "auditedPreviously": true,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 2,
+        "catches": 2,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/cart-drawer.js",
+      "sha256": "c6ec4200ae19ed2a0a1c1ec85ed805b2913854417e381767a8da963daead21e9",
+      "lines": 132,
+      "auditedPreviously": true,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 1,
+        "abortAssignments": 1,
+        "abortCalls": 2,
+        "oneShotControllerFields": [
+          "historyAbortController"
+        ],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "field-controller-created-once",
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/cart-icon.js",
+      "sha256": "66f8ee19fae4dfa48982abd5e4cb35a9ab4bc46bc644e5ece526d31e7451eb9b",
+      "lines": 135,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 1,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/cart-note.js",
+      "sha256": "fa5c7f2db0b81a3c87077cae54f80b7209857ea6af19de3f46b80891fb713a5f",
+      "lines": 47,
+      "auditedPreviously": true,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 1,
+        "catches": 1,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/collection-links.js",
+      "sha256": "d22a877a9e7bd733519dead5ee64814f3c2e6a8403c7a2dccb03a836285666ba",
+      "lines": 233,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/comparison-slider.js",
+      "sha256": "cf5e5e660851597e2073510450dfd81dfdbd7bacfdb1c3e3fbc1b61f53b44b50",
+      "lines": 158,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 3,
+        "disconnected": 1,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/component-cart-items.js",
+      "sha256": "e3c4066bf5afe88b89b8c4cb03ba095166541e1fabf2ea2db6a521b7ab5ea6ef",
+      "lines": 396,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 3,
+        "fetches": 1,
+        "catches": 1,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/component-cart-quantity-selector.js",
+      "sha256": "abd5813bc8b0f87093feaded826a3cb0217edd297465c9ebf2b8ab6840c190d1",
+      "lines": 39,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/component-quantity-selector.js",
+      "sha256": "37e2bd5e160d762fc7177dcf11cf8dbecd43c004c77633d6c782311fe08ded7f",
+      "lines": 298,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/component.js",
+      "sha256": "3798455f28383ddc9df6f01ca7f20652abef5ffcaace1f32f098b83a2e5c6e56",
+      "lines": 349,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 1,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 0,
+        "catches": 1,
+        "customElements": 0
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/copy-to-clipboard.js",
+      "sha256": "afbfeedf77b83409694a6179c5af906fba1ac6a8d9db5943c5ba65b3d42243ac",
+      "lines": 27,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/dialog.js",
+      "sha256": "29e81ab767bd2dfa087023be7a26e69d7ade88e62e7c089c69dfb6a3754f9526",
+      "lines": 194,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/drag-zoom-wrapper.js",
+      "sha256": "ba81e1175abe6eb52b909969df5e9d87a5fe35417a417aaf7699f8b6e3078871",
+      "lines": 513,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 1,
+        "abortAssignments": 0,
+        "abortCalls": 2,
+        "oneShotControllerFields": [
+          "controller"
+        ],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "field-controller-created-once"
+      ]
+    },
+    {
+      "file": "assets/events.js",
+      "sha256": "1290bc43167daaa1166e4d3acf0b423f1d30f119347d2873ebb18001c12d2056",
+      "lines": 291,
+      "auditedPreviously": true,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/facets.js",
+      "sha256": "914e75241e4fb9d0b3e611e567ea75b9dc9fdcaa76f307adb2d196dbac5fbdf3",
+      "lines": 844,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 12,
+        "disconnected": 6,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 7
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/floating-panel.js",
+      "sha256": "9f49b96b5dfdadaa3453120dbc50d09a328d03a1e1be6ac417c968516026d156",
+      "lines": 64,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/fly-to-cart.js",
+      "sha256": "c32ac9fd6265ec8f315e49d68e2e10c8f7a5ca736b512f21ef442c5d39db6ca9",
+      "lines": 81,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 2,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/focus.js",
+      "sha256": "0234bc60da5d3a92aae53f9213c141189fc49f2bfcd32c8ca525d8286bf78013",
+      "lines": 105,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/gift-card-recipient-form.js",
+      "sha256": "30ffc3be483c2da1bcd3ff02898da89217ed41e152614a61ea8fb71ee0c2ea4a",
+      "lines": 415,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 1,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "bound-listener-registration",
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/header-actions.js",
+      "sha256": "1c9ec8d156f3154f2adc5fcfc5dd62e6ba18063c1812da8fb1733a293f409c10",
+      "lines": 40,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/header-drawer.js",
+      "sha256": "1b3b60391c5d60fdc7d0f4f4129ae933ead38d6d0827f52579639aeab85768d0",
+      "lines": 189,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/header-menu.js",
+      "sha256": "81cf70d5df86ccfe89e8f459f1d2bc2e9b9344d5059e592000be226303c843ab",
+      "lines": 408,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/header.js",
+      "sha256": "d629f22bf3d302bf848b1b7bd41540dc61e74c7d9122edf805b0e6d3b71bd505",
+      "lines": 275,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/jumbo-text.js",
+      "sha256": "dcfff1bbfefcf37ff55f9c2d1f11d582aba0993154ba2fe91ce740230eb13d94",
+      "lines": 200,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/layered-slideshow.js",
+      "sha256": "ae67490c432b97229df04d1a966f3209e1c3a3ad48d1064424ecbccb81543d4c",
+      "lines": 603,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 1,
+        "abortAssignments": 1,
+        "abortCalls": 2,
+        "oneShotControllerFields": [
+          "abort"
+        ],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 3,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "field-controller-created-once",
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/live-chat-widget.js",
+      "sha256": "9aad645550998ad5c374a69a7f65452aea3b4b3a8425903b5f4edfa39e8c6066",
+      "lines": 355,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 3,
+        "fetches": 0,
+        "catches": 2,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/local-pickup.js",
+      "sha256": "8faeba02146d2325dfa0bcab81c0b037641bca7377696a4e485affd4fbc156a2",
+      "lines": 80,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 2,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 1,
+        "catches": 1,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/localization.js",
+      "sha256": "a91ed232f7ebcbb559b622a1ec2dc692ad6173945638b72a5fdf2ddfc6aa0980",
+      "lines": 553,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 3
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/marquee.js",
+      "sha256": "2f0a9e09220c53acc02f1f60053011684048b9b80336d9a7f0bb70472386cab6",
+      "lines": 277,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/media-gallery.js",
+      "sha256": "0dd60c2c1f2c6919922bfc7bb88e40f2600f73421834806b0953f886e897172c",
+      "lines": 96,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 1,
+        "abortAssignments": 0,
+        "abortCalls": 1,
+        "oneShotControllerFields": [
+          "controller"
+        ],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "field-controller-created-once"
+      ]
+    },
+    {
+      "file": "assets/media.js",
+      "sha256": "3355a7d400b9e1ebf91a6994b8582aa082310d63051db96ca5a360d236822f31",
+      "lines": 249,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 6,
+        "disconnected": 4,
+        "abortFields": 2,
+        "abortAssignments": 0,
+        "abortCalls": 2,
+        "oneShotControllerFields": [],
+        "addBound": 2,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 2
+      },
+      "candidateFlags": [
+        "bound-listener-registration",
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/money-formatting.js",
+      "sha256": "d50fd6b1b844f5513aadd7354e0dbecc1f209d00ea6204b9af3e35774b752c12",
+      "lines": 207,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/morph.js",
+      "sha256": "a198d7b71c44ba79a46e53edd680dc18a76fb3c335b71f8494cb9171d182ec1f",
+      "lines": 572,
+      "auditedPreviously": true,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/overflow-list.js",
+      "sha256": "460d7740e69b64fcd372f3263ae93e672b53dec2329e427270f06e6fded56651",
+      "lines": 387,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 3,
+        "disconnected": 1,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/paginated-list-aspect-ratio.js",
+      "sha256": "e7e077509bf3d61cac15b81e3969e579cf49e18f92d47721d47931d82e7449de",
+      "lines": 172,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/paginated-list.js",
+      "sha256": "e7287e33145082e35b15b46e50be8e21b98cec16c3280116978e7608d07336bd",
+      "lines": 356,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/performance.js",
+      "sha256": "45537124b25b6fa54a945f8e56f9b93dbd5e546b8d4f484f6a7f49debdcd641b",
+      "lines": 63,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/popover-polyfill.js",
+      "sha256": "70ad95f196dbe03fc4dd6b38d37f75630c5ae058a0055fae903169c325d6b0f7",
+      "lines": 786,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/predictive-search.js",
+      "sha256": "50bdc4a90bd32d9e71f4cd1356779e747d75e7d7a7058112e2b21d11e2f3d098",
+      "lines": 431,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 1,
+        "abortAssignments": 0,
+        "abortCalls": 1,
+        "oneShotControllerFields": [
+          "controller"
+        ],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 0,
+        "catches": 1,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "field-controller-created-once"
+      ]
+    },
+    {
+      "file": "assets/price-per-item.js",
+      "sha256": "566045aac57f01199c4caac84b778722357d97b5f2cbd0731610adaa71f89cc5",
+      "lines": 135,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 1,
+        "abortAssignments": 0,
+        "abortCalls": 1,
+        "oneShotControllerFields": [
+          "abortController"
+        ],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "field-controller-created-once",
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/product-card.js",
+      "sha256": "534d6fa7868c5bfdf22d9eac381935daa58181dab9d2ea27b888a0fcb01066c1",
+      "lines": 622,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 6,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 1,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 3
+      },
+      "candidateFlags": [
+        "bound-listener-registration"
+      ]
+    },
+    {
+      "file": "assets/product-custom-property.js",
+      "sha256": "aa8eda1e6d81ae64c1d898ac98ee90141faf6d023b9f6ea6101be4b5f3657e69",
+      "lines": 34,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/product-form.js",
+      "sha256": "7ab6933aa4244ef12ed8e735418ffe8d8c8599fe49f9d3ae93225dca1e2135dc",
+      "lines": 805,
+      "auditedPreviously": true,
+      "metrics": {
+        "connected": 8,
+        "disconnected": 4,
+        "abortFields": 1,
+        "abortAssignments": 0,
+        "abortCalls": 1,
+        "oneShotControllerFields": [
+          "abortController"
+        ],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 3,
+        "catches": 3,
+        "customElements": 2
+      },
+      "candidateFlags": [
+        "field-controller-created-once"
+      ]
+    },
+    {
+      "file": "assets/product-hotspot.js",
+      "sha256": "8d0079339b08bf9921c4e8efd8bb52f0f40b75b3bf666983bd241a9621e94abb",
+      "lines": 339,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/product-inventory.js",
+      "sha256": "737fbe846406c39fee01bc297b709ec5e1185bd088615c20b3958d1cf5204156",
+      "lines": 40,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/product-price.js",
+      "sha256": "897c9a44ab49831b9f96d851621da79dd7c4895abcec0bae88bb7b70e9167e1f",
+      "lines": 83,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/product-recommendations.js",
+      "sha256": "4325b93280df4202e3d7e61b3de6e0fdf250d039d4313430e97807855bd81031",
+      "lines": 156,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 2,
+        "catches": 1,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/product-sku.js",
+      "sha256": "1eaf00b480796b7997590ede2a523f193f6206c7ac8e9412ac014a2364718d23",
+      "lines": 68,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/product-title-truncation.js",
+      "sha256": "232e189de28ef153d0fdfc7da31d90e0420d3f518f27d06f77ceeea65b5e905c",
+      "lines": 87,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 1,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "bound-listener-registration"
+      ]
+    },
+    {
+      "file": "assets/qr-code-generator.js",
+      "sha256": "a32a8f0ca1db47ebc96f37524d4bb7d5dc70ba22ca8b0895a0e14376571c3119",
+      "lines": 1664,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/qr-code-image.js",
+      "sha256": "c10aba53d8ab5cef319d4fbcc20fbbe21c837707d9c4efc6e75ddf2c186a5cac",
+      "lines": 36,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 2,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/quick-add.js",
+      "sha256": "f7f1c8496cb32e099d380178fdbf7ae5b708cc53c2f11da0aaa9cf75d7fbd5f6",
+      "lines": 344,
+      "auditedPreviously": true,
+      "metrics": {
+        "connected": 8,
+        "disconnected": 4,
+        "abortFields": 3,
+        "abortAssignments": 1,
+        "abortCalls": 4,
+        "oneShotControllerFields": [
+          "cartUpdateAbortController"
+        ],
+        "addBound": 2,
+        "removeBound": 1,
+        "globalListeners": 2,
+        "fetches": 1,
+        "catches": 1,
+        "customElements": 2
+      },
+      "candidateFlags": [
+        "field-controller-created-once",
+        "bound-listener-registration",
+        "bound-listener-removal",
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/quick-order-list.js",
+      "sha256": "1ce51fed028571412dde9f5c1cce4208d8f0ddd234e7dada44d01762a1e12055",
+      "lines": 557,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 4,
+        "abortAssignments": 4,
+        "abortCalls": 5,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 2,
+        "catches": 2,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/recently-viewed-products.js",
+      "sha256": "e9e2d9475c0ca2422a40d82d0d2938fa1aee5b2c983bd76142ca0658176fde0b",
+      "lines": 36,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/results-list.js",
+      "sha256": "865be9c00b20fd5d0c38ac3fe39f823ea080a2dc3fcdb2ceab7bde6bf7b72b3b",
+      "lines": 79,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 3,
+        "disconnected": 1,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/rte-formatter.js",
+      "sha256": "39057b63bc6ffe44e4fc8be3b8461debb6f2606f4e163c4c202c8774e5ae1dab",
+      "lines": 30,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 2,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/scrolling.js",
+      "sha256": "e486398862852eea1c3a434292fa46642b779603b1d3110467501bfa8640d936",
+      "lines": 423,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 2,
+        "disconnected": 1,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/search-page-input.js",
+      "sha256": "ce69d896f4a27663613d9c31f9b8bbbc20f6dda45870a75bbab57e1b58697c27",
+      "lines": 50,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/section-hydration.js",
+      "sha256": "213b99ed940dfb48ed759eff849aa50b3674613df29263b4c4811d5d0037b457",
+      "lines": 36,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/section-renderer.js",
+      "sha256": "f7c0fd37fbf25ce9ceb9eb7125a1e20a3a6582a8c823e79da09d5a5f5c39b047",
+      "lines": 214,
+      "auditedPreviously": true,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 1,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 1,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "bound-listener-registration",
+        "fetch-without-local-catch"
+      ]
+    },
+    {
+      "file": "assets/show-more.js",
+      "sha256": "03cbeab23333bbcdb8031e552abcac3a4ce9ac14a16af9e8bc1dc149d3401b7e",
+      "lines": 163,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 2,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/slideshow.js",
+      "sha256": "a63cd717cf83968dec13a419282d4b3df801144764652f6142b06b5bff8e1fa2",
+      "lines": 980,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 7,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/sticky-add-to-cart.js",
+      "sha256": "f7152a1a031273bb1fc99b86db18c0baf3a56f5fb616057df3e56935752d12c8",
+      "lines": 529,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 1,
+        "abortAssignments": 0,
+        "abortCalls": 1,
+        "oneShotControllerFields": [
+          "abortController"
+        ],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 3,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "field-controller-created-once",
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/theme-editor.js",
+      "sha256": "f1d1cd778663a393077f164313c71adadcd82012684beb54f712419166858ecc",
+      "lines": 419,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 5,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/tp-arbeiten.js",
+      "sha256": "63a3f92afabf5f4e32161cdf6b52c2df343fe38054da76a353fe1b8285f574bf",
+      "lines": 270,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 1,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/tp-carpet-navigation.js",
+      "sha256": "d9e45fa1c7fe23f03f064a11ea83ca0cd2f7b3713c3762fd6f4f5a73d22e8f91",
+      "lines": 66,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/tp-cart-gruppen.js",
+      "sha256": "ce2a6e2e57ccd4096adbec83a6577984f57c07dc2d686fe054ddf4ca29b8323a",
+      "lines": 241,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/tp-compare.js",
+      "sha256": "eb39b843f557bf935397bbf75746eb2812a9ccb4eb28e2073ab675c83e077d0b",
+      "lines": 271,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 3,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/tp-einfass-konfigurator.js",
+      "sha256": "cb052828a311f30f145b26536a0883d37ee4f6746938c1847b202f3bb0bf9f55",
+      "lines": 813,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 7,
+        "fetches": 1,
+        "catches": 2,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/tp-farbe.js",
+      "sha256": "6a823cdc36a446664ca8c3570406ca709ff63b0e72d6cb21c8ca032d9cd005c6",
+      "lines": 148,
+      "auditedPreviously": true,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 2,
+        "abortAssignments": 0,
+        "abortCalls": 2,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 1,
+        "customElements": 2
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/tp-groessen.js",
+      "sha256": "8868d03f0a36b49f07a1d27ae4f4b81443215e7609d69889b7fb0b87e4e1e9c8",
+      "lines": 76,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 4,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/tp-laufband.js",
+      "sha256": "6b367857695159fd13a19ef16be07a9b16e33e160655936533cd8d7607e304c5",
+      "lines": 62,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 3,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/tp-leisten-farbwahl.js",
+      "sha256": "390de8449954619df1c2c5a30f55af314d858606395b08ece83a793f91084fd2",
+      "lines": 179,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 2,
+        "disconnected": 1,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/tp-leisten-filter.js",
+      "sha256": "f49409b7dc065194255ce581738831e80de3bd25c4abd4bda038f9c1ce22c5ac",
+      "lines": 173,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 0,
+        "catches": 2,
+        "customElements": 0
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/tp-leisten-vorschau.js",
+      "sha256": "cb6c8df2b9f8dee6fd4cd63522adf8ab815e88a3a0dff040840d87ae0cedc149",
+      "lines": 79,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 2,
+        "disconnected": 1,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 1,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/tp-masstepich-rechnung.js",
+      "sha256": "d79f2cc7eaace8e7a4e299b4d06cdaed36ab9da29a92d305b8bd1cec9d604492",
+      "lines": 136,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/tp-rollware-art.js",
+      "sha256": "cbf7cdd7837db5be9ff9f1f1ec060afcce20828d34f1fd6141feb3b3e9dbe2f2",
+      "lines": 149,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/tp-sample-checkout-core.js",
+      "sha256": "c35b57bc32202d7682249b63409477be66837fa93a7f7f23d744547bad6adb0b",
+      "lines": 200,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/tp-sample-checkout.js",
+      "sha256": "db671ef640959bc466d3f6f74d4169ca4b69d03b4fde19180a1d73e28a1c9ef0",
+      "lines": 255,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 2,
+        "catches": 3,
+        "customElements": 0
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/tp-sample-request.js",
+      "sha256": "4b5380684634980460ca121058bf6a9f4d3a493875ffe0c1456403d11c757a4d",
+      "lines": 64,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 1,
+        "catches": 1,
+        "customElements": 0
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/tp-suche.js",
+      "sha256": "1f9b9b11566b60ea1f00505cff3761ee7f0155cdd50659e975af20a979efe9cd",
+      "lines": 489,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 2,
+        "disconnected": 1,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 1,
+        "catches": 1,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/tp-unterkategorien-leiste.js",
+      "sha256": "178105d79a2922c8a01a1a01319cdf5e67487755d92ab011396c06673bc5d992",
+      "lines": 99,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 3,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/tp-verlegegebiet.js",
+      "sha256": "bf7da7a0f26cae288c4b36c3e0b58a792d63ba732891ba3928c79d20c3e911a6",
+      "lines": 318,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 1,
+        "catches": 1,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/tp-zuschnitt-abgleich.js",
+      "sha256": "9f40aaad06a6314c892bd4fbaed5f89c91da0be98a649aa027105b2631521d91",
+      "lines": 140,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 3,
+        "fetches": 2,
+        "catches": 4,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/utilities.js",
+      "sha256": "1b0c4926e32f6df743161c714d37def14b404a5bc1b2298171f7e5411085cde6",
+      "lines": 800,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 2,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/variant-picker.js",
+      "sha256": "4357c80adaf5e6715cc48b4c48a1d2a3d92cde479f8d6c7960f9ff6e95111fce",
+      "lines": 506,
+      "auditedPreviously": true,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 1,
+        "abortAssignments": 1,
+        "abortCalls": 1,
+        "oneShotControllerFields": [
+          "abortController"
+        ],
+        "addBound": 1,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 1,
+        "catches": 1,
+        "customElements": 1
+      },
+      "candidateFlags": [
+        "field-controller-created-once",
+        "bound-listener-registration"
+      ]
+    },
+    {
+      "file": "assets/video-background.js",
+      "sha256": "99d24369ebd0a179069b3b74488a9db75d2adb706f6683f67b08520ef96cd5cf",
+      "lines": 33,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 2,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/view-transitions.js",
+      "sha256": "77a36aaa2a974ced0d544a989cf94514c6dd2f808cceb16a8deb7744c0d3773e",
+      "lines": 106,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 3,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 0
+      },
+      "candidateFlags": [
+        "multiple-global-listeners"
+      ]
+    },
+    {
+      "file": "assets/volume-pricing-info.js",
+      "sha256": "16f5e02eba761cdbf25931a1ab0f90c78ee7df08404aac85ab2f6936a08fe7d1",
+      "lines": 70,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 2,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 2,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/volume-pricing.js",
+      "sha256": "4d83981b1106303a46f1b48f5d4ebb0c35e08817b273c13f015b87d5b7523968",
+      "lines": 21,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 0,
+        "disconnected": 0,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    },
+    {
+      "file": "assets/zoom-dialog.js",
+      "sha256": "372c5d38c934c5c62c9f5f8a6fd7838c13bbe6c5abeae883a95e6f81c563ea3f",
+      "lines": 290,
+      "auditedPreviously": false,
+      "metrics": {
+        "connected": 4,
+        "disconnected": 2,
+        "abortFields": 0,
+        "abortAssignments": 0,
+        "abortCalls": 0,
+        "oneShotControllerFields": [],
+        "addBound": 0,
+        "removeBound": 0,
+        "globalListeners": 0,
+        "fetches": 0,
+        "catches": 0,
+        "customElements": 1
+      },
+      "candidateFlags": []
+    }
+  ],
+  "limits": "Static regex inventory for prioritization, not defect proof. Existing audited files are marked to avoid replay. Minified/vendor scripts remain counted if present. No browser, network, live theme or runtime execution."
+}

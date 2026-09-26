@@ -1,0 +1,102 @@
+{
+  "session": "S26",
+  "task": "VAR-001a.2c.3",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/morph.js",
+      "sha256": "a198d7b71c44ba79a46e53edd680dc18a76fb3c335b71f8494cb9171d182ec1f"
+    },
+    {
+      "file": "assets/quick-add.js",
+      "sha256": "f7f1c8496cb32e099d380178fdbf7ae5b708cc53c2f11da0aaa9cf75d7fbd5f6"
+    },
+    {
+      "file": "assets/tp-farbe.js",
+      "sha256": "6a823cdc36a446664ca8c3570406ca709ff63b0e72d6cb21c8ca032d9cd005c6"
+    },
+    {
+      "file": "blocks/color-swatch-picker.liquid",
+      "sha256": "3e0deb6eff729baf4da3d8eef68f872b2ed0b8b099c6e639d530422f58bb16b2"
+    },
+    {
+      "file": "snippets/quick-add.liquid",
+      "sha256": "e772482c57047393bfc35fa00818f800273452b7fe07a90d9d35ae93126ecb46"
+    },
+    {
+      "file": "snippets/tp-farbe-properties.liquid",
+      "sha256": "3c2ad7bbea2fabc48f6552658a693783951a02f558467f32b1403cb88420a056"
+    }
+  ],
+  "localSettings": {
+    "quickAdd": false,
+    "mobileQuickAdd": null,
+    "warning": "settings_data.json is not historically live-hash-equal; these are repository settings, not current live proof."
+  },
+  "templateMatrix": [
+    {
+      "template": "product.einfassung.json",
+      "colorSwatchPicker": true,
+      "colorDisplay": true,
+      "buyButtons": false,
+      "recommendations": true
+    },
+    {
+      "template": "product.fixpreis.json",
+      "colorSwatchPicker": false,
+      "colorDisplay": false,
+      "buyButtons": true,
+      "recommendations": true
+    },
+    {
+      "template": "product.fliese.json",
+      "colorSwatchPicker": false,
+      "colorDisplay": true,
+      "buyButtons": false,
+      "recommendations": true
+    },
+    {
+      "template": "product.json",
+      "colorSwatchPicker": false,
+      "colorDisplay": true,
+      "buyButtons": true,
+      "recommendations": true
+    },
+    {
+      "template": "product.planken.json",
+      "colorSwatchPicker": false,
+      "colorDisplay": true,
+      "buyButtons": false,
+      "recommendations": true
+    },
+    {
+      "template": "product.rolle.json",
+      "colorSwatchPicker": true,
+      "colorDisplay": true,
+      "buyButtons": false,
+      "recommendations": true
+    },
+    {
+      "template": "product.teppich.json",
+      "colorSwatchPicker": true,
+      "colorDisplay": true,
+      "buyButtons": false,
+      "recommendations": true
+    },
+    {
+      "template": "product.zubehoer.json",
+      "colorSwatchPicker": false,
+      "colorDisplay": true,
+      "buyButtons": true,
+      "recommendations": true
+    }
+  ],
+  "conclusions": [
+    "Custom tp:farbe-wechsel is emitted on document and both tp-farbe consumers listen on document without product-id filtering for that custom event.",
+    "Native variant:update listeners are scoped to nearest section, dialog or product-card and retain product-id filtering.",
+    "Quick-add markup can render tp-farbe-properties for another product and modal content is morphed, but repository current.quick_add is false.",
+    "Product templates with the custom color picker and recommendations exist; static template presence alone does not prove a simultaneous foreign tp-farbe consumer.",
+    "Morph can preserve or reorder old nodes; source inspection identifies a reconnect-capable boundary but does not prove a browser callback sequence."
+  ],
+  "limits": "Static source/config contract only. No old lifecycle reproduction rerun, DOM implementation, browser, live settings or product data. H-016 remains conditional rather than a new confirmed issue."
+}

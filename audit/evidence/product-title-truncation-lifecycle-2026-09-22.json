@@ -1,0 +1,59 @@
+{
+  "session": "S39",
+  "task": "JS-001m",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/product-title-truncation.js",
+      "sha256": "232e189de28ef153d0fdfc7da31d90e0420d3f518f27d06f77ceeea65b5e905c"
+    },
+    {
+      "file": "snippets/card-gallery.liquid",
+      "sha256": "d8963f7b0ec460e2d06529f27cb904225fd052adb49761b18a3524037c5bb3b6"
+    },
+    {
+      "file": "snippets/scripts.liquid",
+      "sha256": "a04e3cf446f339eb5e50c3f495a3abd5a8ec3b390f550b7489d3bd722ce73883"
+    }
+  ],
+  "fallbackCases": [
+    {
+      "name": "initial-connect",
+      "resizeCalculations": 1,
+      "lineClamp": "3"
+    },
+    {
+      "name": "disconnected-still-listens",
+      "resizeCalculations": 1,
+      "lineClamp": "3"
+    },
+    {
+      "name": "same-instance-reconnect-duplicates",
+      "resizeCalculations": 2,
+      "lineClamp": "3"
+    },
+    {
+      "name": "fresh-instance",
+      "resizeCalculations": 1,
+      "lineClamp": "3"
+    }
+  ],
+  "observerCases": [
+    {
+      "name": "observer-reconnect",
+      "created": 2,
+      "firstDisconnected": true,
+      "secondObserved": true
+    }
+  ],
+  "sourceReach": {
+    "scriptLoadedGlobally": true,
+    "customElementMarkupFiles": [
+      "snippets/card-gallery.liquid"
+    ],
+    "renderedOnlyForProductsWithoutMedia": true,
+    "productTitleBlockTemplateCount": 8,
+    "note": "The product-title block itself does not render the custom element; its template assignments are adjacent title usage, not direct runtime reach."
+  },
+  "limits": "Original complete ProductTitle class; Component, element geometry/styles, window and ResizeObserver adapted. Both ResizeObserver and fallback lifecycle paths executed with native EventTarget. No real layout, font metrics, product catalog/media census, browser fallback population or live theme tested."
+}

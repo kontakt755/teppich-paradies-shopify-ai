@@ -1,0 +1,64 @@
+{
+  "session": "S49",
+  "task": "JS-001w",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/dialog.js",
+      "sha256": "29e81ab767bd2dfa087023be7a26e69d7ade88e62e7c089c69dfb6a3754f9526"
+    },
+    {
+      "file": "assets/cart-drawer.js",
+      "sha256": "c6ec4200ae19ed2a0a1c1ec85ed805b2913854417e381767a8da963daead21e9"
+    },
+    {
+      "file": "assets/predictive-search.js",
+      "sha256": "50bdc4a90bd32d9e71f4cd1356779e747d75e7d7a7058112e2b21d11e2f3d098"
+    },
+    {
+      "file": "assets/quick-add.js",
+      "sha256": "f7f1c8496cb32e099d380178fdbf7ae5b708cc53c2f11da0aaa9cf75d7fbd5f6"
+    }
+  ],
+  "cases": [
+    {
+      "name": "connected-open-locks-body",
+      "open": true,
+      "bodyPosition": "fixed",
+      "clickListeners": 1,
+      "keydownListeners": 1
+    },
+    {
+      "name": "disconnect-open-leaves-dialog-body-and-local-listeners",
+      "open": true,
+      "bodyPosition": "fixed",
+      "clickRemoves": 0,
+      "keydownRemoves": 0
+    },
+    {
+      "name": "reconnect-open-show-is-noop",
+      "open": true,
+      "clickListenerAdds": 1
+    },
+    {
+      "name": "normal-close-unlocks-and-removes-listeners",
+      "open": false,
+      "bodyPosition": "",
+      "scrollCalls": 1
+    }
+  ],
+  "sourceReach": {
+    "directMarkupFiles": [
+      "blocks/buy-buttons.liquid",
+      "blocks/filters.liquid",
+      "blocks/popup-link.liquid",
+      "layout/password.liquid",
+      "snippets/search-modal.liquid"
+    ],
+    "dialogSubclasses": [
+      "assets/cart-drawer.js",
+      "assets/quick-add.js"
+    ]
+  },
+  "limits": "Original complete DialogComponent and global details toggle listener; Component, dialog, animation end, debounce, body/window and custom events adapted. Open, open-disconnect, reconnect and normal close executed. Native top-layer removal, focus restoration, concurrent dialogs, real animations, Morph/Theme Editor triggers, browser and live reach not tested."
+}

@@ -1,0 +1,58 @@
+{
+  "session": "S44",
+  "task": "JS-001r",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/tp-leisten-farbwahl.js",
+      "sha256": "390de8449954619df1c2c5a30f55af314d858606395b08ece83a793f91084fd2"
+    },
+    {
+      "file": "blocks/tp-leisten-farbwahl.liquid",
+      "sha256": "6e5a414e8dc972185c5bca59c11a85efcec81e078779e1cd343d374266e15f68"
+    },
+    {
+      "file": "snippets/tp-leisten-farbkachel.liquid",
+      "sha256": "b8dd491498cbe7df5864a965fc70d022f24f10f01b08a5edd36a94fbdfa1b419"
+    },
+    {
+      "file": "templates/product.fixpreis.json",
+      "sha256": "87ba9b88fbda7e8afde248837cab1ca943421ed8b153ea1d98b1d2b6e6ad95f8"
+    }
+  ],
+  "cases": [
+    {
+      "name": "initial-connect",
+      "visible": true,
+      "observers": 1
+    },
+    {
+      "name": "connected-click-selects-radio",
+      "radioClicks": 1
+    },
+    {
+      "name": "disconnected-still-selects-radio",
+      "radioClicks": 1
+    },
+    {
+      "name": "reconnect-observer-healthy-click-deduplicated",
+      "observers": 2,
+      "radioClicks": 1
+    },
+    {
+      "name": "disconnected-removed-from-global-sync-set",
+      "redPressedRemains": true
+    }
+  ],
+  "sourceReach": {
+    "assignedTemplates": [
+      "templates/product.fixpreis.json"
+    ],
+    "scriptLoadedByBlock": true,
+    "globalSyncEvents": [
+      "variant:update",
+      "change"
+    ]
+  },
+  "limits": "Original complete IIFE/custom element; DOM, picker radios, tiles, ResizeObserver and layout adapted with native EventTarget. Local click, observer reconnect and global connected-instance Set executed. Native bubbling from tile/radio, Horizon morph, actual variant update, ProductForm/cart, browser and live product assignment not tested."
+}

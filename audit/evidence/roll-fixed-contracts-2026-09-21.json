@@ -1,0 +1,1122 @@
+{
+  "status": "PASS",
+  "session": "S07",
+  "matrix": "PR-023b.2",
+  "generatedAt": "2026-09-21T08:15:47.378Z",
+  "cases": 30,
+  "requests": 26,
+  "confirmedIssues": [
+    "TP-009"
+  ],
+  "sourceIntegrity": [
+    {
+      "file": "blocks/tp-rollware-rechner.liquid",
+      "sha256": "c7bbab2e15d0c020e46a8f1960eb8652be0d13c3f39651d09324f58dee4e3ad5",
+      "historicalLiveSha256": "c7bbab2e15d0c020e46a8f1960eb8652be0d13c3f39651d09324f58dee4e3ad5"
+    },
+    {
+      "file": "assets/tp-rollware-art.js",
+      "sha256": "cbf7cdd7837db5be9ff9f1f1ec060afcce20828d34f1fd6141feb3b3e9dbe2f2",
+      "historicalLiveSha256": "cbf7cdd7837db5be9ff9f1f1ec060afcce20828d34f1fd6141feb3b3e9dbe2f2"
+    },
+    {
+      "file": "snippets/tp-farbe-daten.liquid",
+      "sha256": "b78343484c5c3a92dd5fb9396cb561e2db8db62a26b70a72da1622e2d1eeadbe",
+      "historicalLiveSha256": "b78343484c5c3a92dd5fb9396cb561e2db8db62a26b70a72da1622e2d1eeadbe"
+    },
+    {
+      "file": "blocks/tp-zubehoer-menge.liquid",
+      "sha256": "f3bc411eb77704f0f2698c68ff2f441798822e096b57f9a9b04fdbdd003cb3b1",
+      "historicalLiveSha256": "f3bc411eb77704f0f2698c68ff2f441798822e096b57f9a9b04fdbdd003cb3b1"
+    },
+    {
+      "file": "assets/product-form.js",
+      "sha256": "7ab6933aa4244ef12ed8e735418ffe8d8c8599fe49f9d3ae93225dca1e2135dc",
+      "historicalLiveSha256": "7ab6933aa4244ef12ed8e735418ffe8d8c8599fe49f9d3ae93225dca1e2135dc"
+    },
+    {
+      "file": "assets/utilities.js",
+      "sha256": "1b0c4926e32f6df743161c714d37def14b404a5bc1b2298171f7e5411085cde6",
+      "historicalLiveSha256": "1b0c4926e32f6df743161c714d37def14b404a5bc1b2298171f7e5411085cde6"
+    },
+    {
+      "file": "templates/product.rolle.json",
+      "sha256": "e480c7aaed078e72fa0315f334af49f0737ecc976a60eea54ae3de3fca63460e",
+      "historicalLiveSha256": "e480c7aaed078e72fa0315f334af49f0737ecc976a60eea54ae3de3fca63460e"
+    },
+    {
+      "file": "templates/product.fixpreis.json",
+      "sha256": "87ba9b88fbda7e8afde248837cab1ca943421ed8b153ea1d98b1d2b6e6ad95f8",
+      "historicalLiveSha256": "87ba9b88fbda7e8afde248837cab1ca943421ed8b153ea1d98b1d2b6e6ad95f8"
+    },
+    {
+      "file": "templates/product.zubehoer.json",
+      "sha256": "b9f23ba46f1ffd8d64558444c822450c07694dfb345edc948dbea903526e142d",
+      "historicalLiveSha256": "b9f23ba46f1ffd8d64558444c822450c07694dfb345edc948dbea903526e142d"
+    }
+  ],
+  "fixture": {
+    "allIdsSynthetic": true,
+    "allPricesSynthetic": true,
+    "currentLiveData": false,
+    "pvc": "Historical title and two metre labels from GOOGLE_ROLLENWARE_EXCLUSION_LIST.csv:84; metafield pairing 2/4m modeled, not a current product read. Prices 2490/2790c per m² synthetic.",
+    "fixed": "Historical rod lengths read from stangenlaenge.json. Accessory title rules from rechner-zuordnung/block; optional metafields are prepared-only test configurations. Prices 1295/1695c synthetic."
+  },
+  "limitations": [
+    "Original Liquid via LiquidJS, not current Shopify rendering.",
+    "Roll initial width selection, syncArtUi, calculation/submit functions executed. Drawing, service UI, lifecycle and real picker events excluded. Isolated URL-selected variant.",
+    "Accessory full original class writes shared modeled input; complete product-form class and original fetchConfig serialize it. FormData and DOM mocked, quantity validation return supplied.",
+    "Fixed form response deliberately stays pending; no server/cart response, real cart price rendering, sections/queue/morph, browser number sanitization, layout or checkout proof.",
+    "TP-009 is a local conditional multi-width fallback defect; historical metre labels do not prove current live product configuration.",
+    "No shop changes, no S01-S06 replay."
+  ],
+  "rollCases": [
+    {
+      "name": "metre labels first width",
+      "labels": [
+        "2,00 m",
+        "4,00 m"
+      ],
+      "selectedVariant": "audit-pvc-200",
+      "lengthCm": 201,
+      "recognizedWidthIndex": -1,
+      "initializedWidths": [
+        200
+      ],
+      "fallbackWidthCm": 200,
+      "display": {
+        "total": "124,50 €",
+        "area": "200 cm × 201 cm = 4,02 m²",
+        "round": "Rollenware wird in vollen m² zugeschnitten und berechnet – aufgerundet auf 5 m².",
+        "ariaDisabled": "false",
+        "widthCm": 200
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-pvc-200",
+          "quantity": 5,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "200 cm",
+            "Gewünschte Länge": "201 cm",
+            "Fläche (aufgerundet)": "5,00 m²"
+          }
+        }
+      },
+      "expectedQuantity": 5,
+      "expectedCents": 12450,
+      "actualQuantity": 5,
+      "actualCents": 12450,
+      "quantityMatchesSelectedWidth": true
+    },
+    {
+      "name": "metre labels second width",
+      "labels": [
+        "2,00 m",
+        "4,00 m"
+      ],
+      "selectedVariant": "audit-pvc-400",
+      "lengthCm": 201,
+      "recognizedWidthIndex": -1,
+      "initializedWidths": [
+        200
+      ],
+      "fallbackWidthCm": 200,
+      "display": {
+        "total": "139,50 €",
+        "area": "200 cm × 201 cm = 4,02 m²",
+        "round": "Rollenware wird in vollen m² zugeschnitten und berechnet – aufgerundet auf 5 m².",
+        "ariaDisabled": "false",
+        "widthCm": 200
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-pvc-400",
+          "quantity": 5,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "200 cm",
+            "Gewünschte Länge": "201 cm",
+            "Fläche (aufgerundet)": "5,00 m²"
+          }
+        }
+      },
+      "expectedQuantity": 9,
+      "expectedCents": 25110,
+      "actualQuantity": 5,
+      "actualCents": 13950,
+      "quantityMatchesSelectedWidth": false,
+      "issue": "TP-009"
+    },
+    {
+      "name": "metre labels second width exact area",
+      "labels": [
+        "2,00 m",
+        "4,00 m"
+      ],
+      "selectedVariant": "audit-pvc-400",
+      "lengthCm": 250,
+      "recognizedWidthIndex": -1,
+      "initializedWidths": [
+        200
+      ],
+      "fallbackWidthCm": 200,
+      "display": {
+        "total": "139,50 €",
+        "area": "200 cm × 250 cm = 5,00 m²",
+        "round": "",
+        "ariaDisabled": "false",
+        "widthCm": 200
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-pvc-400",
+          "quantity": 5,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "200 cm",
+            "Gewünschte Länge": "250 cm",
+            "Fläche (aufgerundet)": "5,00 m²"
+          }
+        }
+      },
+      "expectedQuantity": 10,
+      "expectedCents": 27900,
+      "actualQuantity": 5,
+      "actualCents": 13950,
+      "quantityMatchesSelectedWidth": false,
+      "issue": "TP-009"
+    },
+    {
+      "name": "metre labels reordered variants",
+      "labels": [
+        "4,00 m",
+        "2,00 m"
+      ],
+      "selectedVariant": "audit-pvc-200",
+      "lengthCm": 250,
+      "recognizedWidthIndex": -1,
+      "initializedWidths": [
+        400
+      ],
+      "fallbackWidthCm": 400,
+      "display": {
+        "total": "279,00 €",
+        "area": "400 cm × 250 cm = 10,00 m²",
+        "round": "",
+        "ariaDisabled": "false",
+        "widthCm": 400
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-pvc-200",
+          "quantity": 10,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "250 cm",
+            "Fläche (aufgerundet)": "10,00 m²"
+          }
+        }
+      },
+      "expectedQuantity": 5,
+      "expectedCents": 13950,
+      "actualQuantity": 10,
+      "actualCents": 27900,
+      "quantityMatchesSelectedWidth": false,
+      "issue": "TP-009"
+    },
+    {
+      "name": "single metre-label width fallback",
+      "labels": [
+        "4,00 m"
+      ],
+      "selectedVariant": "audit-pvc-400",
+      "lengthCm": 250,
+      "recognizedWidthIndex": -1,
+      "initializedWidths": [
+        400
+      ],
+      "fallbackWidthCm": 400,
+      "display": {
+        "total": "249,00 €",
+        "area": "400 cm × 250 cm = 10,00 m²",
+        "round": "",
+        "ariaDisabled": "false",
+        "widthCm": 400
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-pvc-400",
+          "quantity": 10,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "250 cm",
+            "Fläche (aufgerundet)": "10,00 m²"
+          }
+        }
+      },
+      "expectedQuantity": 10,
+      "expectedCents": 24900,
+      "actualQuantity": 10,
+      "actualCents": 24900,
+      "quantityMatchesSelectedWidth": true
+    },
+    {
+      "name": "centimetre labels first width",
+      "labels": [
+        "200 cm",
+        "400 cm"
+      ],
+      "selectedVariant": "audit-pvc-200",
+      "lengthCm": 201,
+      "recognizedWidthIndex": 0,
+      "initializedWidths": [
+        200,
+        400
+      ],
+      "fallbackWidthCm": 200,
+      "display": {
+        "total": "124,50 €",
+        "area": "200 cm × 201 cm = 4,02 m²",
+        "round": "Rollenware wird in vollen m² zugeschnitten und berechnet – aufgerundet auf 5 m².",
+        "ariaDisabled": "false",
+        "widthCm": 200
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-pvc-200",
+          "quantity": 5,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "200 cm",
+            "Gewünschte Länge": "201 cm",
+            "Fläche (aufgerundet)": "5,00 m²"
+          }
+        }
+      },
+      "expectedQuantity": 5,
+      "expectedCents": 12450,
+      "actualQuantity": 5,
+      "actualCents": 12450,
+      "quantityMatchesSelectedWidth": true
+    },
+    {
+      "name": "centimetre labels second width",
+      "labels": [
+        "200 cm",
+        "400 cm"
+      ],
+      "selectedVariant": "audit-pvc-400",
+      "lengthCm": 201,
+      "recognizedWidthIndex": 0,
+      "initializedWidths": [
+        200,
+        400
+      ],
+      "fallbackWidthCm": 200,
+      "display": {
+        "total": "251,10 €",
+        "area": "400 cm × 201 cm = 8,04 m²",
+        "round": "Rollenware wird in vollen m² zugeschnitten und berechnet – aufgerundet auf 9 m².",
+        "ariaDisabled": "false",
+        "widthCm": 400
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-pvc-400",
+          "quantity": 9,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "201 cm",
+            "Fläche (aufgerundet)": "9,00 m²"
+          }
+        }
+      },
+      "expectedQuantity": 9,
+      "expectedCents": 25110,
+      "actualQuantity": 9,
+      "actualCents": 25110,
+      "quantityMatchesSelectedWidth": true
+    },
+    {
+      "name": "centimetre labels second width exact area",
+      "labels": [
+        "200 cm",
+        "400 cm"
+      ],
+      "selectedVariant": "audit-pvc-400",
+      "lengthCm": 250,
+      "recognizedWidthIndex": 0,
+      "initializedWidths": [
+        200,
+        400
+      ],
+      "fallbackWidthCm": 200,
+      "display": {
+        "total": "279,00 €",
+        "area": "400 cm × 250 cm = 10,00 m²",
+        "round": "",
+        "ariaDisabled": "false",
+        "widthCm": 400
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-pvc-400",
+          "quantity": 10,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "250 cm",
+            "Fläche (aufgerundet)": "10,00 m²"
+          }
+        }
+      },
+      "expectedQuantity": 10,
+      "expectedCents": 27900,
+      "actualQuantity": 10,
+      "actualCents": 27900,
+      "quantityMatchesSelectedWidth": true
+    },
+    {
+      "name": "unavailable selected PVC variant",
+      "labels": [
+        "200 cm",
+        "400 cm"
+      ],
+      "selectedVariant": "audit-pvc-400",
+      "lengthCm": 201,
+      "recognizedWidthIndex": 0,
+      "initializedWidths": [
+        200,
+        400
+      ],
+      "fallbackWidthCm": 200,
+      "display": {
+        "total": "–",
+        "area": "– cm × – cm = –",
+        "round": "",
+        "ariaDisabled": "true",
+        "widthCm": 400
+      },
+      "request": null,
+      "expectedQuantity": 9,
+      "expectedCents": 25110
+    },
+    {
+      "name": "empty PVC length",
+      "labels": [
+        "200 cm",
+        "400 cm"
+      ],
+      "selectedVariant": "audit-pvc-200",
+      "lengthCm": "",
+      "recognizedWidthIndex": 0,
+      "initializedWidths": [
+        200,
+        400
+      ],
+      "fallbackWidthCm": 200,
+      "display": {
+        "total": "–",
+        "area": "– cm × – cm = –",
+        "round": "",
+        "ariaDisabled": "true",
+        "widthCm": 200
+      },
+      "request": null,
+      "expectedQuantity": 0,
+      "expectedCents": 0
+    }
+  ],
+  "fixedCases": [
+    {
+      "name": "Feldwin 2.5m rods",
+      "input": {
+        "stange": 2.5,
+        "input": "12",
+        "mode": "stange",
+        "expected": 5
+      },
+      "renderedMap": {
+        "audit-fixed-0": {
+          "m": "stange",
+          "w": 0,
+          "a": 2.5,
+          "n": "stange"
+        }
+      },
+      "selectedVariant": "audit-fixed-0",
+      "quantity": "5",
+      "helperText": "5 Stangen bestellen (ergibt 12,5 m). Die Menge ist eingetragen.",
+      "helperUnit": "m",
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "headers": {
+          "Accept": "text/html",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        "body": {
+          "id": "audit-fixed-0",
+          "quantity": "5"
+        }
+      },
+      "modeledCartCents": 6475
+    },
+    {
+      "name": "Skarven 5.15m rods exact",
+      "input": {
+        "stange": 5.15,
+        "input": "10,3",
+        "mode": "stange",
+        "expected": 2
+      },
+      "renderedMap": {
+        "audit-fixed-0": {
+          "m": "stange",
+          "w": 0,
+          "a": 5.15,
+          "n": "stange"
+        }
+      },
+      "selectedVariant": "audit-fixed-0",
+      "quantity": "2",
+      "helperText": "2 Stangen bestellen (ergibt 10,3 m). Die Menge ist eingetragen.",
+      "helperUnit": "m",
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "headers": {
+          "Accept": "text/html",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        "body": {
+          "id": "audit-fixed-0",
+          "quantity": "2"
+        }
+      },
+      "modeledCartCents": 2590
+    },
+    {
+      "name": "Cortessa 2.4m floating boundary",
+      "input": {
+        "stange": 2.4,
+        "input": "7.2",
+        "mode": "stange",
+        "expected": 3
+      },
+      "renderedMap": {
+        "audit-fixed-0": {
+          "m": "stange",
+          "w": 0,
+          "a": 2.4,
+          "n": "stange"
+        }
+      },
+      "selectedVariant": "audit-fixed-0",
+      "quantity": "3",
+      "helperText": "3 Stangen bestellen (ergibt 7,2 m). Die Menge ist eingetragen.",
+      "helperUnit": "m",
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "headers": {
+          "Accept": "text/html",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        "body": {
+          "id": "audit-fixed-0",
+          "quantity": "3"
+        }
+      },
+      "modeledCartCents": 3885
+    },
+    {
+      "name": "profile cm first variant",
+      "input": {
+        "variants": [
+          {
+            "title": "270 cm",
+            "options": [
+              "270 cm"
+            ]
+          },
+          {
+            "title": "100 cm",
+            "options": [
+              "100 cm"
+            ]
+          }
+        ],
+        "optionName": "Länge",
+        "input": "5",
+        "mode": "stange",
+        "expected": 2
+      },
+      "renderedMap": {
+        "audit-fixed-0": {
+          "m": "stange",
+          "w": 0,
+          "a": 2.7,
+          "n": "profil"
+        },
+        "audit-fixed-1": {
+          "m": "stange",
+          "w": 0,
+          "a": 1,
+          "n": "profil"
+        }
+      },
+      "selectedVariant": "audit-fixed-0",
+      "quantity": "2",
+      "helperText": "2 Profile bestellen (ergibt 5,4 m). Die Menge ist eingetragen.",
+      "helperUnit": "m",
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "headers": {
+          "Accept": "text/html",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        "body": {
+          "id": "audit-fixed-0",
+          "quantity": "2"
+        }
+      },
+      "modeledCartCents": 2590
+    },
+    {
+      "name": "profile cm changed form ID",
+      "input": {
+        "variants": [
+          {
+            "title": "270 cm",
+            "options": [
+              "270 cm"
+            ]
+          },
+          {
+            "title": "100 cm",
+            "options": [
+              "100 cm"
+            ]
+          }
+        ],
+        "optionName": "Länge",
+        "input": "5",
+        "selected": 1,
+        "mode": "stange",
+        "expected": 5
+      },
+      "renderedMap": {
+        "audit-fixed-0": {
+          "m": "stange",
+          "w": 0,
+          "a": 2.7,
+          "n": "profil"
+        },
+        "audit-fixed-1": {
+          "m": "stange",
+          "w": 0,
+          "a": 1,
+          "n": "profil"
+        }
+      },
+      "selectedVariant": "audit-fixed-1",
+      "quantity": "5",
+      "helperText": "5 Profile bestellen (ergibt 5 m). Die Menge ist eingetragen.",
+      "helperUnit": "m",
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "headers": {
+          "Accept": "text/html",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        "body": {
+          "id": "audit-fixed-1",
+          "quantity": "5"
+        }
+      },
+      "modeledCartCents": 8475
+    },
+    {
+      "name": "profile metre comma",
+      "input": {
+        "title": "2,7 m",
+        "optionName": "Laenge",
+        "input": "5.5",
+        "mode": "stange",
+        "expected": 3
+      },
+      "renderedMap": {
+        "audit-fixed-0": {
+          "m": "stange",
+          "w": 0,
+          "a": 2.7,
+          "n": "profil"
+        }
+      },
+      "selectedVariant": "audit-fixed-0",
+      "quantity": "3",
+      "helperText": "3 Profile bestellen (ergibt 8,1 m). Die Menge ist eingetragen.",
+      "helperUnit": "m",
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "headers": {
+          "Accept": "text/html",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        "body": {
+          "id": "audit-fixed-0",
+          "quantity": "3"
+        }
+      },
+      "modeledCartCents": 3885
+    },
+    {
+      "name": "metafield tape length prepared data only",
+      "input": {
+        "band": 50,
+        "input": "51",
+        "mode": "stange",
+        "expected": 2
+      },
+      "renderedMap": {
+        "audit-fixed-0": {
+          "m": "stange",
+          "w": 0,
+          "a": 50,
+          "n": "rolle"
+        }
+      },
+      "selectedVariant": "audit-fixed-0",
+      "quantity": "2",
+      "helperText": "2 Rollen bestellen (ergibt 100 m). Die Menge ist eingetragen.",
+      "helperUnit": "m",
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "headers": {
+          "Accept": "text/html",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        "body": {
+          "id": "audit-fixed-0",
+          "quantity": "2"
+        }
+      },
+      "modeledCartCents": 2590
+    },
+    {
+      "name": "tape title length",
+      "input": {
+        "title": "Rolle 70 mm × 25 m",
+        "input": "26",
+        "mode": "stange",
+        "expected": 2
+      },
+      "renderedMap": {
+        "audit-fixed-0": {
+          "m": "stange",
+          "w": 0,
+          "a": 25,
+          "n": "rolle"
+        }
+      },
+      "selectedVariant": "audit-fixed-0",
+      "quantity": "2",
+      "helperText": "2 Rollen bestellen (ergibt 50 m). Die Menge ist eingetragen.",
+      "helperUnit": "m",
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "headers": {
+          "Accept": "text/html",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        "body": {
+          "id": "audit-fixed-0",
+          "quantity": "2"
+        }
+      },
+      "modeledCartCents": 2590
+    },
+    {
+      "name": "underlay per running metre",
+      "input": {
+        "title": "1 mm, 80 cm breit (je lfm)",
+        "input": "20.1",
+        "mode": "lfm",
+        "expected": 26
+      },
+      "renderedMap": {
+        "audit-fixed-0": {
+          "m": "lfm",
+          "w": 80,
+          "a": 0,
+          "n": ""
+        }
+      },
+      "selectedVariant": "audit-fixed-0",
+      "quantity": "26",
+      "helperText": "26 lfd. Meter bestellen (deckt 20,8 m²). Die Menge ist eingetragen.",
+      "helperUnit": "m²",
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "headers": {
+          "Accept": "text/html",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        "body": {
+          "id": "audit-fixed-0",
+          "quantity": "26"
+        }
+      },
+      "modeledCartCents": 33670
+    },
+    {
+      "name": "underlay per square metre",
+      "input": {
+        "title": "Unterlage (je m²)",
+        "input": "20.1",
+        "mode": "qm",
+        "expected": 21
+      },
+      "renderedMap": {
+        "audit-fixed-0": {
+          "m": "qm",
+          "w": 0,
+          "a": 0,
+          "n": ""
+        }
+      },
+      "selectedVariant": "audit-fixed-0",
+      "quantity": "21",
+      "helperText": "21 m² bestellen. Die Menge ist eingetragen.",
+      "helperUnit": "m²",
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "headers": {
+          "Accept": "text/html",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        "body": {
+          "id": "audit-fixed-0",
+          "quantity": "21"
+        }
+      },
+      "modeledCartCents": 27195
+    },
+    {
+      "name": "roll area comma",
+      "input": {
+        "title": "Rolle 30,14 m²",
+        "input": "60.28",
+        "mode": "gebinde",
+        "expected": 2
+      },
+      "renderedMap": {
+        "audit-fixed-0": {
+          "m": "gebinde",
+          "w": 0,
+          "a": 30.14,
+          "n": ""
+        }
+      },
+      "selectedVariant": "audit-fixed-0",
+      "quantity": "2",
+      "helperText": "2 Gebinde bestellen (deckt 60,28 m²). Die Menge ist eingetragen.",
+      "helperUnit": "m²",
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "headers": {
+          "Accept": "text/html",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        "body": {
+          "id": "audit-fixed-0",
+          "quantity": "2"
+        }
+      },
+      "modeledCartCents": 2590
+    },
+    {
+      "name": "folded plate area",
+      "input": {
+        "title": "Faltplatte 15 m²",
+        "input": "15.1",
+        "mode": "gebinde",
+        "expected": 2
+      },
+      "renderedMap": {
+        "audit-fixed-0": {
+          "m": "gebinde",
+          "w": 0,
+          "a": 15,
+          "n": ""
+        }
+      },
+      "selectedVariant": "audit-fixed-0",
+      "quantity": "2",
+      "helperText": "2 Gebinde bestellen (deckt 30 m²). Die Menge ist eingetragen.",
+      "helperUnit": "m²",
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "headers": {
+          "Accept": "text/html",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        "body": {
+          "id": "audit-fixed-0",
+          "quantity": "2"
+        }
+      },
+      "modeledCartCents": 2590
+    },
+    {
+      "name": "roll dimensions",
+      "input": {
+        "title": "Rolle 50 m x 100 cm",
+        "input": "50.1",
+        "mode": "gebinde",
+        "expected": 2
+      },
+      "renderedMap": {
+        "audit-fixed-0": {
+          "m": "gebinde",
+          "w": 0,
+          "a": 50,
+          "n": ""
+        }
+      },
+      "selectedVariant": "audit-fixed-0",
+      "quantity": "2",
+      "helperText": "2 Gebinde bestellen (deckt 100 m²). Die Menge ist eingetragen.",
+      "helperUnit": "m²",
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "headers": {
+          "Accept": "text/html",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        "body": {
+          "id": "audit-fixed-0",
+          "quantity": "2"
+        }
+      },
+      "modeledCartCents": 2590
+    },
+    {
+      "name": "adhesive set explicit qm",
+      "input": {
+        "title": "Set - 125 qm, 16 kg",
+        "input": "125.1",
+        "mode": "gebinde",
+        "expected": 2
+      },
+      "renderedMap": {
+        "audit-fixed-0": {
+          "m": "gebinde",
+          "w": 0,
+          "a": 125,
+          "n": ""
+        }
+      },
+      "selectedVariant": "audit-fixed-0",
+      "quantity": "2",
+      "helperText": "2 Gebinde bestellen (deckt 250 m²). Die Menge ist eingetragen.",
+      "helperUnit": "m²",
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "headers": {
+          "Accept": "text/html",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        "body": {
+          "id": "audit-fixed-0",
+          "quantity": "2"
+        }
+      },
+      "modeledCartCents": 2590
+    },
+    {
+      "name": "coverage metafield prepared data only",
+      "input": {
+        "coverage": 40,
+        "input": "40.1",
+        "mode": "gebinde",
+        "expected": 2
+      },
+      "renderedMap": {
+        "audit-fixed-0": {
+          "m": "gebinde",
+          "w": 0,
+          "a": 40,
+          "n": "reichweite"
+        }
+      },
+      "selectedVariant": "audit-fixed-0",
+      "quantity": "2",
+      "helperText": "2 Gebinde bestellen (reicht laut Herstellerangabe für etwa 80 m²). Die Menge ist eingetragen.",
+      "helperUnit": "m²",
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "headers": {
+          "Accept": "text/html",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        "body": {
+          "id": "audit-fixed-0",
+          "quantity": "2"
+        }
+      },
+      "modeledCartCents": 2590
+    },
+    {
+      "name": "ambiguous adhesive no helper",
+      "input": {
+        "title": "RollFix 10 kg",
+        "noHelper": true,
+        "manualQuantity": 3
+      },
+      "renderedMap": null,
+      "selectedVariant": "audit-fixed-0",
+      "quantity": "3",
+      "helperText": "",
+      "helperUnit": "",
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "headers": {
+          "Accept": "text/html",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        "body": {
+          "id": "audit-fixed-0",
+          "quantity": "3"
+        }
+      },
+      "modeledCartCents": 3885
+    },
+    {
+      "name": "contradictory roll area no helper",
+      "input": {
+        "title": "Rolle 75 cm x 25 m (20 m²)",
+        "noHelper": true,
+        "manualQuantity": 2
+      },
+      "renderedMap": null,
+      "selectedVariant": "audit-fixed-0",
+      "quantity": "2",
+      "helperText": "",
+      "helperUnit": "",
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "headers": {
+          "Accept": "text/html",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        "body": {
+          "id": "audit-fixed-0",
+          "quantity": "2"
+        }
+      },
+      "modeledCartCents": 2590
+    },
+    {
+      "name": "fixed size mat no helper",
+      "input": {
+        "title": "Sauberlaufmatte 60 x 90 cm",
+        "noHelper": true,
+        "manualQuantity": 4
+      },
+      "renderedMap": null,
+      "selectedVariant": "audit-fixed-0",
+      "quantity": "4",
+      "helperText": "",
+      "helperUnit": "",
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "headers": {
+          "Accept": "text/html",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        "body": {
+          "id": "audit-fixed-0",
+          "quantity": "4"
+        }
+      },
+      "modeledCartCents": 5180
+    },
+    {
+      "name": "disabled buy button blocks submit",
+      "input": {
+        "title": "Stück",
+        "noHelper": true,
+        "manualQuantity": 1,
+        "disabled": true
+      },
+      "renderedMap": null,
+      "selectedVariant": "audit-fixed-0",
+      "quantity": "1",
+      "helperText": "",
+      "helperUnit": "",
+      "request": null,
+      "modeledCartCents": null
+    },
+    {
+      "name": "standard maximum guard result blocks submit",
+      "input": {
+        "stange": 2.5,
+        "input": "12",
+        "mode": "stange",
+        "expected": 5,
+        "maxBlocked": true
+      },
+      "renderedMap": {
+        "audit-fixed-0": {
+          "m": "stange",
+          "w": 0,
+          "a": 2.5,
+          "n": "stange"
+        }
+      },
+      "selectedVariant": "audit-fixed-0",
+      "quantity": "5",
+      "helperText": "5 Stangen bestellen (ergibt 12,5 m). Die Menge ist eingetragen.",
+      "helperUnit": "m",
+      "request": null,
+      "modeledCartCents": null
+    }
+  ]
+}
