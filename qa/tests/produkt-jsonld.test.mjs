@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { Liquid } from 'liquidjs';
 
-// Product-JSON-LD der Flaechenware. Merchant Center liest die Produktseite
+// Product-JSON-LD fuer Kaufprodukte. Merchant Center liest die Produktseite
 // ("automatische Artikelaktualisierung") und verwirft jedes Angebot ohne
 // offers.price - es erscheint dann als "Produkt wird nicht angezeigt".
 // Geprueft wird deshalb: jedes Angebot hat einen Preis, er ist der m2-Preis
@@ -36,13 +36,13 @@ eng.registerTag('doc', {
   render: () => '',
 });
 eng.registerFilter('image_url', v => (typeof v === 'string' ? v : '//cdn/bild.jpg'));
-eng.registerFilter('structured_data', () => '{"@type":"Product","name":"nativ"}');
 eng.registerFilter('json', v => JSON.stringify(v ?? null));
 
 const variante = (o = {}) => ({
   id: o.id ?? 1,
   title: o.title ?? '400 cm / Sand',
   price: o.price ?? 2390,
+  compare_at_price: o.compare_at_price ?? null,
   sku: o.sku ?? 'CVX_333',
   barcode: o.barcode ?? '',
   available: o.available ?? true,
@@ -168,10 +168,23 @@ test('Serviceprodukte bekommen weiterhin gar kein JSON-LD', async () => {
   }
 });
 
-test('Produkte ohne Flaechenpreis behalten Shopifys natives JSON-LD', async () => {
-  const p = produkt({ type: 'Klickvinyl', variants: [variante({ rollenbreite: 0 })] });
-  const html = await rendern(p);
-  assert.match(html, /"nativ"/);
+test('Standardprodukte nutzen dasselbe ProductGroup mit Einzelpreisen und Variantenbeschreibungen', async () => {
+  const p = produkt({ type: 'Sockelleisten', options: ['Farbe'], description: '<p>Vorhandene <strong>Sockelleistenbeschreibung</strong>.</p>', variants: [
+    variante({ id: 1, price: 903, compare_at_price: 950, sku: 'SOCKEL-1', barcode: '4002245718333', rollenbreite: 0 }),
+    variante({ id: 2, price: 1080, compare_at_price: 1200, sku: 'SOCKEL-2', barcode: 'SOCKEL-2', available: false, rollenbreite: 0 }),
+  ] });
+  const d = gruppe(await rendern(p));
+  assert.equal(d['@type'], 'ProductGroup');
+  assert.equal(d.hasVariant.length, 2);
+  assert.equal(d.description, 'Vorhandene Sockelleistenbeschreibung.');
+  assert.equal(d.hasVariant[0].description, 'Vorhandene Sockelleistenbeschreibung.');
+  assert.deepEqual(d.hasVariant.map(v => v.offers.price), [9.03, 10.8]);
+  assert.deepEqual(d.hasVariant.map(v => v.offers.priceCurrency), ['EUR', 'EUR']);
+  assert.deepEqual(d.hasVariant.map(v => v.offers.availability), ['https://schema.org/InStock', 'https://schema.org/OutOfStock']);
+  assert.equal(d.hasVariant[0].gtin13, '4002245718333');
+  assert.equal(d.hasVariant[1].gtin, undefined);
+  assert.equal(d.hasVariant[1].sku, 'SOCKEL-2');
+  assert.equal(d.hasVariant[0].offers.priceSpecification, undefined, 'Einzelpreis darf keine m2-Referenz erhalten');
 });
 
 test('Merkmale stehen als additionalProperty im ProductGroup-Knoten', async () => {

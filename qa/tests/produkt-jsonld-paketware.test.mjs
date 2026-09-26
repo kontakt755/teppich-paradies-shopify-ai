@@ -37,7 +37,6 @@ eng.registerTag('doc', {
   render: () => '',
 });
 eng.registerFilter('image_url', v => (typeof v === 'string' ? v : '//cdn/bild.jpg'));
-eng.registerFilter('structured_data', () => '{"@type":"Product","name":"nativ"}');
 eng.registerFilter('json', v => JSON.stringify(v ?? null));
 
 const variante = (o = {}) => ({
@@ -113,5 +112,7 @@ test('Paketware gewinnt gegen eine Rollenbreite an der Variante', async () => {
 
 test('Ohne qm_pro_paket bleibt alles wie bisher', async () => {
   const html = await rendern(produkt({ qm: null, variants: [variante({ rollenbreite: null })] }));
-  assert.ok(html.includes('"nativ"'), 'nicht-Paketware muss Shopifys nativen Block behalten');
+  assert.ok(!html.includes('"nativ"'), 'nicht-Paketware muss dieselbe ProductGroup-Quelle nutzen');
+  assert.ok(preise(html).includes(218.46), 'normale Ware muss den aktuellen Variantenpreis behalten');
+  assert.ok(!html.includes('UnitPriceSpecification'), 'Stueckware darf keine m2-Referenz erhalten');
 });
