@@ -17,9 +17,10 @@ const lies = (name) => JSON.parse(stripHeader(readFileSync(new URL(name, TEMPLAT
 // 2026-09-11). Die Vorlage muss exakt so heissen, sonst greift page.json.
 const B2B_SUFFIXE = ['firmenkunden', 'fuer-geschaeftskunden'];
 
-// Verwaist: kein Seiten-Suffix zeigt auf diese Dateien, und ihre Knoepfe
-// haben leere Links. Bewusst nicht geloescht - das entscheidet der Inhaber.
-const VERWAIST = ['page.fimenkunden.json', 'page.geschaeftskunden.json'];
+// Bis 2026-09-26 stand hier eine Ausnahmeliste fuer page.fimenkunden.json und
+// page.geschaeftskunden.json - Tippfehler-Leichen ohne Seiten-Suffix und mit
+// leeren Knopf-Links. Auf Freigabe des Inhabers geloescht (Z-07, #187), damit
+// faellt die Liste weg: Test B prueft jetzt AUSNAHMSLOS jede Seitenvorlage.
 
 // Werte aus dem Schema einer Section bzw. eines Blocks. Fehlt eine
 // Einstellung im Template, rendert Shopify den Default; ohne Default bleibt
@@ -115,7 +116,7 @@ test('A: page.json ist die neutrale Standardseite ohne B2B-Kopf', () => {
 });
 
 test('B: kein Knopf in einer Seitenvorlage hat einen leeren Link', () => {
-  const dateien = readdirSync(TEMPLATES).filter((f) => /^page(\..+)?\.json$/.test(f) && !VERWAIST.includes(f));
+  const dateien = readdirSync(TEMPLATES).filter((f) => /^page(\..+)?\.json$/.test(f));
   assert.ok(dateien.includes('page.json'));
   const funde = dateien.flatMap((f) => leereKnopfLinks(lies(f), PRUEFUNG).map((x) => `${f}: ${x}`));
   assert.deepEqual(funde, []);
@@ -165,12 +166,4 @@ test('D3: einen Link, den die Section selbst mit != blank absichert, zaehlt nich
   }
   // Ungeschuetzte Knoepfe bleiben ein Fund, z. B. der B2B-Kopf.
   assert.ok(!geschuetztOf('sections', 'b2b-hero-bereich').has('primary_btn_link'));
-});
-
-test('E: die Ausnahmeliste nennt nur Dateien, die es gibt und die sie noch brauchen', () => {
-  for (const f of VERWAIST) {
-    assert.ok(existsSync(new URL(f, TEMPLATES)), `${f} existiert nicht mehr - aus VERWAIST streichen`);
-    assert.ok(!B2B_SUFFIXE.some((s) => f === `page.${s}.json`), `${f} ist eine echte Suffix-Vorlage, keine verwaiste`);
-    assert.ok(leereKnopfLinks(lies(f), PRUEFUNG).length > 0, `${f} hat keine leeren Links mehr - aus VERWAIST streichen`);
-  }
 });
