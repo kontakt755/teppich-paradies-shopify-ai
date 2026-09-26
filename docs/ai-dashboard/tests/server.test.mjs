@@ -207,3 +207,29 @@ test('der Fotoeingang nimmt mehr als 64 KB an', async () => withServer(async bas
   assert.notEqual(r.status, 413, `Upload wurde mit 413 abgewiesen: ${r.text.slice(0, 120)}`);
   assert.notEqual(r.status, 0, 'Verbindung wurde abgebrochen - Groessengrenze greift noch');
 }));
+
+// --- Pfadliste ------------------------------------------------------------
+// handleApi filtert alle Pfade ueber eine Whitelist; fehlt einer dort, gibt es
+// 404, obwohl Route und API-Methode existieren. Genau das ist beim Markieren
+// von Faellen passiert und faellt sonst erst im Browser auf.
+
+test('jede Route im Dispatcher steht auch in der Pfadliste', () => {
+  const quelle = fs.readFileSync(new URL('../../../scripts/serve-dashboard.mjs', import.meta.url), 'utf8');
+  const liste = quelle.match(/const m = pathname\.match\(([\s\S]*?)\);/);
+  assert.ok(liste, 'Pfadliste nicht gefunden');
+  const erlaubt = new Set([...liste[1].matchAll(/([a-z-]+(?:\\\/[a-z-]+)*)/g)].map(x => x[1].replace(/\\\//g, '/')));
+  const benutzt = [...quelle.matchAll(/simple === '([a-z0-9/-]+)'/g)].map(x => x[1]);
+  assert.ok(benutzt.length > 20, `zu wenige Zweige gefunden (${benutzt.length}) - Muster veraltet?`);
+  for (const pfad of new Set(benutzt)) {
+    assert.ok(erlaubt.has(pfad), `Pfad "${pfad}" wird im Dispatcher benutzt, fehlt aber in der Pfadliste - der Server antwortet 404`);
+  }
+});
+
+test('POST /api/kunden/fall-marke kommt an und verlangt einen Fall', async () => withServer(async base => {
+  const r = await fetch(`${base}/api/kunden/fall-marke`, {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({}),
+  });
+  assert.notEqual(r.status, 404, 'Route fehlt in der Pfadliste');
+  assert.equal(r.status, 400);
+  assert.match((await r.json()).error, /Kein Fall angegeben/);
+}));
