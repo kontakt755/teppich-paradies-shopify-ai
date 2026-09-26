@@ -1,10 +1,6 @@
 extends: :default
 
 ignore:
-  # Sisal-Prototyp, wird nicht ausgeliefert (siehe .shopifyignore).
-  - theme/**
-  - theme/*
-  - theme/**/*
   # domains/ ist Dokumentation und Vorlagen fuer den Shopify-Admin, kein
   # Theme-Liquid. Die Bestellmail-Vorlage laeuft in einer
   # Benachrichtigungsvorlage und benutzt deren Objekte (name, line_items,
