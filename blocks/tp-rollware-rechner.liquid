@@ -134,7 +134,7 @@
           <path d="M8 20h22" stroke="var(--tp-rwc-accent)" stroke-width="3.5" stroke-dasharray="5 4" stroke-linecap="round"/>
         </svg>
         <span class="tp-rwc-art-text">
-          <span class="tp-rwc-art-title">Meterware</span>
+          <span class="tp-rwc-art-title" data-art-title-meter>Meterware</span>
           <span class="tp-rwc-art-sub" data-art-sub-meter>volle Rollenbreite</span>
         </span>
       </label>
@@ -148,7 +148,7 @@
           <text x="25" y="30" font-size="8" font-weight="700" fill="currentColor">L</text>
         </svg>
         <span class="tp-rwc-art-text">
-          <span class="tp-rwc-art-title">Raummaß</span>
+          <span class="tp-rwc-art-title" data-art-title-raum>Raummaß</span>
           <span class="tp-rwc-art-sub" data-art-sub-raum>eigene Breite, zentimetergenau</span>
         </span>
       </label>
@@ -1150,6 +1150,8 @@ function tpRwcInit{{ tp_rc_id }}() {
   var artRadios = root.querySelectorAll('input[name="tp-rwc-art-{{ tp_rc_id }}"]');
   var artSubMeter = root.querySelector('[data-art-sub-meter]');
   var artSubRaum = root.querySelector('[data-art-sub-raum]');
+  var artTitleMeter = root.querySelector('[data-art-title-meter]');
+  var artTitleRaum = root.querySelector('[data-art-title-raum]');
   var widthField = root.querySelector('[data-width-field]');
   var widthStep = root.querySelector('[data-width-step]');
   var widthLabel = root.querySelector('[data-width-label]');
@@ -1435,8 +1437,11 @@ function tpRwcInit{{ tp_rc_id }}() {
     // Preise auf den Karten kommen aus den echten Variantenpreisen - die
     // Meterware-Karte von der gewaehlten Rolle, nicht immer von der kleinsten.
     var meterV = variantFor(t, byWidth(selectedMeterWidth()));
-    if (artSubMeter) artSubMeter.textContent = 'volle Rollenbreite' + (rateOf(meterV) > 0 ? ' · ' + fmt(rateOf(meterV)) + ' €/m²' : '');
-    if (artSubRaum) artSubRaum.textContent = 'eigene Breite, zentimetergenau' + (raumOk ? ' · ' + fmt(rateOf(rv)) + ' €/m²' : '');
+    // D2: Preis steht im Titel der Karte ("Meterware · 29,95 €/m²"), die Unterzeile erklaert nur
+    if (artTitleMeter) artTitleMeter.textContent = 'Meterware' + (rateOf(meterV) > 0 ? ' · ' + fmt(rateOf(meterV)) + ' €/m²' : '');
+    if (artTitleRaum) artTitleRaum.textContent = 'Raummaß' + (raumOk && rateOf(rv) > 0 ? ' · ' + fmt(rateOf(rv)) + ' €/m²' : '');
+    if (artSubMeter) artSubMeter.textContent = 'volle Rollenbreite';
+    if (artSubRaum) artSubRaum.textContent = 'eigene Breite, zentimetergenau';
 
     var multi = farbBreiten.length > 1;
     if (artField) artField.hidden = !raumOk;
