@@ -171,18 +171,21 @@ test('kostenlos steht nur zusammen mit Schwelle und erster Zone', () => {
   }
 });
 
-test('der Aktionshinweis steht nur innerhalb von Berechtigung UND aktiver Aktion', () => {
+test('der Aktionshinweis steht unter dem Preis, nur bei Berechtigung UND aktiver Aktion (D2)', () => {
   const block = lesen('blocks', 'tp-verlegeservice-hinweis.liquid');
   assert.match(block, /render 'tp-aktion-aktiv'/, 'Die Aktion wird nicht ueber das gemeinsame Snippet gefragt.');
   const gilt = block.search(/{%-?\s*if vsh_gilt == 'ja'\s*-?%}/);
   const aktion = block.search(/{%-?\s*if vsh_aktion == 'ja'\s*-?%}/);
-  const hinweis = block.indexOf('Kostenlose Lieferung bis Bordsteinkante');
-  assert.equal(block.lastIndexOf('Kostenlose Lieferung bis Bordsteinkante'), hinweis, 'Der Aktionshinweis steht mehrfach im Block.');
   const sonst = block.indexOf('{%- else -%}', aktion);
   assert.ok(gilt > -1 && aktion > gilt, 'Die Aktionsabfrage liegt nicht innerhalb der Berechtigung.');
-  assert.ok(hinweis > aktion && hinweis < sonst, 'Der Aktionshinweis steht ausserhalb des Aktionszweigs.');
-  // Das Kostenlos-Versprechen darf im Aktionszweig nicht vorkommen.
-  assert.doesNotMatch(block.slice(aktion, sonst), /vsh_schwelle|vsh_nah/);
+  // Im Aktionszweig weder Kostenlos-Versprechen noch doppelter Hinweis.
+  assert.doesNotMatch(block.slice(aktion, sonst), /vsh_schwelle|vsh_nah|Bordsteinkante/);
+  const preis = lesen('snippets', 'price.liquid');
+  const bedingung = preis.indexOf('nicht mit kostenloser Verlegung kombinierbar');
+  assert.ok(bedingung > -1, 'Die Aktionsbedingung fehlt unter dem Preis.');
+  const davor = preis.slice(0, bedingung);
+  assert.match(davor, /render 'tp-aktion-aktiv'/, 'Die Bedingung fragt die befristete Aktion nicht ab.');
+  assert.match(davor, /render 'tp-vs-berechtigt'/, 'Die Bedingung fragt die Service-Berechtigung nicht ab.');
 });
 
 test('der Produkthinweis erscheint nur bei Rollenware der freigegebenen Typen', () => {
