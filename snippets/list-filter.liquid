@@ -37,6 +37,11 @@
   if filter.param_name == 'filter.v.m.custom.rollenbreite'
     assign tp_is_roll_width_filter = true
   endif
+  # C2: "Kleinste Bestellmenge" heisst im Filter "Mindestmenge", Erklaerung im Panel
+  assign tp_is_mindestmenge = false
+  if filter.param_name contains 'kleinste_bestellmenge'
+    assign tp_is_mindestmenge = true
+  endif
 -%}
 {% capture accordion_children %}
   <details
@@ -51,7 +56,7 @@
   >
     <summary class="facets__summary">
       <span class="facets__label">
-        {%- if tp_is_roll_width_filter -%}Rollenbreite{%- else -%}{{ filter.label }}{%- endif -%}
+        {%- if tp_is_roll_width_filter -%}Rollenbreite{%- elsif tp_is_mindestmenge -%}Mindestmenge{%- else -%}{{ filter.label }}{%- endif -%}
       </span>
 
       <div class="facets__status-wrapper">
@@ -167,6 +172,9 @@
           endif
         %}
 
+        {%- if tp_is_mindestmenge -%}
+          <p class="tp-filter-hinweis" role="note">Kleinste Menge, die Sie von einem Artikel bestellen können – z. B. ein ganzes Paket oder ein laufender Meter.</p>
+        {%- endif -%}
         <div
           class="facets__inputs-wrapper{% if is_swatch or is_image or should_use_pills %} facets__inputs-wrapper--row{% endif %}"
           ref="showMoreContent"
@@ -461,6 +469,8 @@
 %}
 
 {% stylesheet %}
+  .tp-filter-hinweis { margin: 0 0 10px; font-size: 13px; line-height: 1.45; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72); }
+
   .facets input:checked + label {
     font-weight: 500;
   }
