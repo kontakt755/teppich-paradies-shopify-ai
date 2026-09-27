@@ -82,6 +82,19 @@
     margin-bottom: 8px;
   }
 
+  /* Anfrage von der Produktseite (#163): Thema und Produkt sichtbar machen,
+     damit der Kunde sieht, worauf sich seine Nachricht bezieht. */
+  .tp-anfrage-hinweis {
+    margin: 0 0 12px;
+    font-size: 17px;
+    font-weight: 600;
+    color: #222;
+  }
+
+  .tp-anfrage-hinweis[hidden] {
+    display: none;
+  }
+
   [data-tp-sample-request][data-mode="sample"] .tp-sample-intro {
     display: block;
   }
@@ -200,6 +213,8 @@
       </div>
       <p class="tp-sample-intro__text" data-tp-intro>Wir senden Ihnen gerne ein kostenloses Muster zu.</p>
     </div>
+
+    <p class="tp-anfrage-hinweis" data-tp-anfrage-hinweis hidden></p>
 
     {%- form 'contact', id: 'ContactForm-sample', class: 'contact-form' -%}
       <input type="hidden" name="contact[id]" value="ContactForm-sample">
