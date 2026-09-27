@@ -531,13 +531,15 @@
           "type": "tp-vorteile",
           "name": "TP Vorteile",
           "settings": {},
-          "blocks": {}
+          "blocks": {},
+          "disabled": true
         },
         "tp_vertrauen_sales1": {
           "type": "tp-vertrauen",
           "name": "TP Vertrauen",
           "settings": {},
-          "blocks": {}
+          "blocks": {},
+          "disabled": true
         },
         "tp_produkt_akkordeon": {
           "type": "accordion",
@@ -717,12 +719,14 @@
                     "tp_verlegen_lassen": {
                       "type": "tp-verlegen-lassen",
                       "settings": {
-                        "titel": "Unsicher bei den Maßen? Wir messen für Sie auf.",
+                        "titel": "Aufmaß & Verlegung",
                         "text": "Sie müssen nicht selbst messen. Wir kommen vorbei, nehmen das Aufmaß kostenlos und liefern und verlegen auf Wunsch gleich mit – in Oranienburg und 50 km Umkreis, weiter auf Anfrage.",
                         "cta": "Verlegung anfragen",
                         "ziel": "/pages/kontakt",
-                        "telefon": "+4933015733720",
-                        "telefon_label": "oder anrufen: 03301 573 37 20"
+                        "telefon": "",
+                        "telefon_label": "",
+                        "angebot_label": "",
+                        "beratung_label": ""
                       }
                     },
                     "tp_verlegeservice_hinweis": {
@@ -756,7 +760,8 @@
                   "type": "tp-service-links",
                   "name": "TP Service-Links",
                   "settings": {
-                    "delivery_time": "5–7 Werktage"
+                    "delivery_time": "5–7 Werktage",
+                    "kontakt_ausblenden": true
                   },
                   "blocks": {}
                 }
