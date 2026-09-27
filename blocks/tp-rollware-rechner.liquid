@@ -836,7 +836,7 @@
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-note-mess { color: var(--tp-rwc-muted); }
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-infozeile { display: flex; flex-wrap: wrap; gap: 2px 0; margin: 12px 0; font-size: 13px; line-height: 1.5; color: #595959; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-infozeile span + span::before { content: '\00b7'; margin: 0 6px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-infozeile span:not(:last-child)::after { content: '\00b7'; margin: 0 6px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-skizze { margin: 0 0 10px; font-size: 13px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-skizze summary { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 
