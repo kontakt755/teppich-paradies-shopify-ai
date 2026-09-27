@@ -511,7 +511,8 @@
                 "padding-inline-start": 0,
                 "padding-inline-end": 0
               },
-              "blocks": {}
+              "blocks": {},
+              "disabled": true
             },
             "product_list_button_MWeP9V": {
               "type": "_product-list-button",
@@ -721,7 +722,8 @@
                 "padding-inline-start": 0,
                 "padding-inline-end": 0
               },
-              "blocks": {}
+              "blocks": {},
+              "disabled": true
             },
             "product_list_button_MWeP9V": {
               "type": "_product-list-button",
@@ -931,7 +933,8 @@
                 "padding-inline-start": 0,
                 "padding-inline-end": 0
               },
-              "blocks": {}
+              "blocks": {},
+              "disabled": true
             },
             "product_list_button_MWeP9V": {
               "type": "_product-list-button",
@@ -1141,7 +1144,8 @@
                 "padding-inline-start": 0,
                 "padding-inline-end": 0
               },
-              "blocks": {}
+              "blocks": {},
+              "disabled": true
             },
             "product_list_button_MWeP9V": {
               "type": "_product-list-button",
