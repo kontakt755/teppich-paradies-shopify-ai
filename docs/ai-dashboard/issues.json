@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-27T17:08:12.516Z",
+  "generated_at": "2026-09-27T17:41:03.819Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 160,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-27T17:08:12.516Z",
+    "fetchedAt": "2026-09-27T17:41:03.819Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -253,13 +253,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 6,
+      "comments": 7,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-26T08:09:53Z",
-      "updated_at": "2026-09-26T10:48:09Z",
+      "updated_at": "2026-09-27T17:33:51Z",
       "closed_at": null
     },
     {
@@ -1003,13 +1003,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 1,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-22T10:09:50Z",
-      "updated_at": "2026-09-22T10:10:03Z",
+      "updated_at": "2026-09-27T17:38:43Z",
       "closed_at": null
     },
     {
@@ -2753,10 +2753,11 @@
     {
       "number": 163,
       "title": "Zweiter Weg neben dem Warenkorb: Angebot anfordern und Beratungstermin",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/163",
       "labels": [
-        "status:geplant",
+        "status:in-arbeit",
+        "status:fertig",
         "type:verbesserung",
         "priority:p1",
         "area:produktseite"
@@ -2765,14 +2766,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 5,
+      "comments": 6,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T20:09:33Z",
-      "updated_at": "2026-09-21T08:22:19Z",
-      "closed_at": null
+      "updated_at": "2026-09-27T17:40:47Z",
+      "closed_at": "2026-09-27T17:40:47Z"
     },
     {
       "number": 162,
