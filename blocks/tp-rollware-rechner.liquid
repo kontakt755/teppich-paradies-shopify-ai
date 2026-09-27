@@ -98,6 +98,12 @@
     render 'tp-aktion-laufend', product: product
   endcapture
   assign tp_rc_aktion_prozent = tp_rc_aktion_raw | strip | split: '|' | first | plus: 0
+  # K1: Streichpreis auf den Art-Karten nur, wenn das gemeinsame Snippet ihn
+  # freigibt (Dauerrabatt oder laufende Aktion) - wie auf Karte und Preisblock.
+  capture tp_rc_rabatt
+    render 'tp-rabatt-sichtbar', product: product
+  endcapture
+  assign tp_rc_rabatt = tp_rc_rabatt | strip
 -%}
 <div class="tp-rwc-{{ tp_rc_id }} tp-kaufweg" id="tp-rwc-{{ tp_rc_id }}" data-product-id="{{ product.id }}" data-max-laenge-cm="{{ tp_rc_max_laenge_cm }}" {{ block.shopify_attributes }}>
 
@@ -532,7 +538,7 @@
           "farbnummer": {{ tp_rc_v_farbnummer | strip | json }},
           "farbe_intern": {{ tp_rc_v_farbe_intern | strip | json }},
           "price": {{ variant.price | json }},
-          "compare_at_price": {{ variant.compare_at_price | default: 0 | json }},
+          "compare_at_price": {% if tp_rc_rabatt == 'ja' %}{{ variant.compare_at_price | default: 0 | json }}{% else %}0{% endif %},
           "available": {{ variant.available | json }},
           {%- comment -%}
             Zwei Saetze nebeneinander, bewusst. service.* gehoert zu diesem
@@ -1314,8 +1320,10 @@ function tpRwcInit{{ tp_rc_id }}() {
   // derselben Einheit wie rateOf(). Nur wenn er wirklich hoeher ist - ein
   // gleich hoher oder fehlender Vergleichspreis ist kein Streichpreis.
   function compareRateOf(v) {
-    if (!v || !(parseFloat(v.compare_at_price) > parseFloat(v.price))) return 0;
-    return cmExact ? parseFloat(v.compare_at_price) : parseFloat(v.compare_at_price) / 100;
+    // compare_at_price ist hier schon 0, wenn tp-rabatt-sichtbar nicht "ja" sagt.
+    var alt = v ? parseFloat(v.compare_at_price) || 0 : 0;
+    if (!v || !(alt > parseFloat(v.price))) return 0;
+    return cmExact ? alt : alt / 100;
   }
 
   // K1: Titel "Meterware · 65,90 55,90 €/m²" - der Streichpreis steht wie
