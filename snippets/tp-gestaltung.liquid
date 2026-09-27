@@ -133,6 +133,14 @@
     }
   }
 
+  /* V6: Leere Flaechen. Solange ein Kartenbild laedt (gedrosseltes Netz,
+     Karussell, Reihe 3 und tiefer), steht eine ruhige Flaeche statt Weiss da,
+     und das Rabatt-Badge erscheint erst mit dem Bild - vorher schwebte es
+     ueber einer leeren Karte. Ohne JavaScript bleibt das Badge sichtbar. */
+  .product-media-container { background: #f3f0eb; }
+  .tp-rabatt-badge--karte { transition: opacity 0.2s ease; }
+  html.tp-bild-warten :is(product-card, product-card-component, li):not([data-tp-bild-da]) .tp-rabatt-badge--karte { opacity: 0; }
+
   {%- if request.page_type == 'product' or request.page_type == 'collection' -%}
     /* V5: Rich-Text in Produkt- und Kategoriebeschreibungen - klare
        Hierarchie und eine lesbare Zeilenlaenge. */
@@ -147,3 +155,27 @@
     main .text-block.rte li { display: list-item; }
   {%- endif -%}
 </style>
+
+<script>
+  (function () {
+    document.documentElement.classList.add('tp-bild-warten');
+    function markiere(img) {
+      var karte = img.closest('product-card, product-card-component, li');
+      if (karte) karte.setAttribute('data-tp-bild-da', '');
+    }
+    function istKartenbild(el) {
+      return el && el.tagName === 'IMG' && el.classList.contains('product-media__image');
+    }
+    // load/error blubbern nicht - deshalb in der Capture-Phase am Dokument.
+    ['load', 'error'].forEach(function (typ) {
+      document.addEventListener(typ, function (e) { if (istKartenbild(e.target)) markiere(e.target); }, true);
+    });
+    function schonDa() {
+      document.querySelectorAll('img.product-media__image').forEach(function (img) {
+        if (img.complete) markiere(img);
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', schonDa);
+    else schonDa();
+  })();
+</script>
