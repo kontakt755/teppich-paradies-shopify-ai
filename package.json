@@ -90,7 +90,8 @@
     "aufgaben:pruefen": "node operations/scripts/aufgaben-pruefen.mjs",
     "daten:bulk": "node operations/scripts/bulk-zu-eingabe.mjs",
     "kurz": "node scripts/kurz.mjs",
-    "handoff": "node scripts/handoff.mjs"
+    "handoff": "node scripts/handoff.mjs",
+    "gedaechtnis:sync": "bash .claude/hooks/gedaechtnis-sync.sh"
   },
   "devDependencies": {
     "liquidjs": "^10.29.0",
