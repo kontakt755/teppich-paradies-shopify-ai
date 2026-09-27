@@ -338,6 +338,26 @@
   <p class="tp-rwc-note tp-rwc-cta-hint" data-cta-hint aria-live="polite" hidden data-rwc-body></p>
   <a href="{{ routes.cart_url }}" class="tp-rwc-cart-link" data-cart-link hidden>Warenkorb ansehen</a>
 
+  {%- comment -%}
+    K7: Muster als Outline-Knopf direkt unter dem Kauf, mit dem Namen der
+    gewaehlten Farbe. Ziel allein aus snippets/tp-musteroption; die
+    Beschriftung ist eine Block-Einstellung, {farbe} setzt das Skript bei
+    jedem Farbwechsel neu ein.
+  {%- endcomment -%}
+  {%- liquid
+    capture tp_rc_muster_url
+      render 'tp-musteroption', product: product
+    endcapture
+    assign tp_rc_muster_url = tp_rc_muster_url | strip
+    assign tp_rc_muster_vorlage = block.settings.muster_label | default: 'Kostenloses Muster in {farbe}'
+    assign tp_rc_start_farbe = product.selected_or_first_available_variant.options | first
+  -%}
+  {%- if block.settings.muster_anzeigen and tp_rc_muster_url != blank -%}
+    <a class="tp-rwc-muster" href="{{ tp_rc_muster_url }}" data-muster-link data-muster-vorlage="{{ tp_rc_muster_vorlage | escape }}" data-rwc-body>
+      {{- tp_rc_muster_vorlage | replace: '{farbe}', tp_rc_start_farbe | escape -}}
+    </a>
+  {%- endif -%}
+
   <ul class="tp-rwc-trust" data-rwc-body>
     <li>Bis zu 3 Muster kostenlos</li>
     <li>Versandkostenfrei in Deutschland ab 50 €</li>
@@ -930,6 +950,13 @@
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cart-link { display: block; margin-top: 10px; text-align: center; font-size: .85rem; text-decoration: underline; text-underline-offset: 3px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cart-link[hidden] { display: none; }
+  /* K7/V2: Nebenaktion als Schwarz-Outline. */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-muster {
+    display: flex; align-items: center; justify-content: center; min-height: 48px; margin-top: 10px; padding: 10px 16px;
+    border: 1.5px solid var(--tp-rwc-ink); border-radius: var(--style-border-radius-buttons-primary, 8px);
+    color: var(--tp-rwc-ink); background: transparent; font-size: 15px; font-weight: 600; text-align: center; text-decoration: none;
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-muster:hover { background: rgb(0 0 0 / 0.04); }
 
   .tp-rwc-{{ tp_rc_id }} [hidden] { display: none !important; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-select {
@@ -1180,6 +1207,13 @@ function tpRwcInit{{ tp_rc_id }}() {
   var ctaHint = root.querySelector('[data-cta-hint]');
   var messRaum = root.querySelector('[data-mess-raum]');
   var cartLink = root.querySelector('[data-cart-link]');
+  var musterLink = root.querySelector('[data-muster-link]');
+  // K7: Farbname (alle Optionen ausser der Breite) in die Musterbeschriftung.
+  function updateMuster() {
+    if (!musterLink || !target) return;
+    var name = target.options.filter(function (_, i) { return i !== wIdx; }).join(' ');
+    musterLink.textContent = (musterLink.getAttribute('data-muster-vorlage') || '').replace('{farbe}', name);
+  }
   var widthSeg = root.querySelector('[data-width-seg]');
 
   // Rot markiert wird erst, wenn der Kunde den Kauf versucht hat - nicht schon
@@ -1828,6 +1862,7 @@ function tpRwcInit{{ tp_rc_id }}() {
     target = findVariant(w);
     var ok = !!(target && target.available) && (!raum || ART.wunschOk(target, wIdx));
     updateEinfassChips();
+    updateMuster();
 
     if (blocked) {
       errStock.hidden = true;
@@ -2209,6 +2244,23 @@ else { document.addEventListener('DOMContentLoaded', tpRwcInit{{ tp_rc_id }}); }
       "id": "haftunterlage_produkt",
       "label": "Haftunterlage (Varianten = Breiten, Preis je laufendem Meter)",
       "info": "Die Breite muss im Variantentitel stehen, z. B. \"1 mm, 180 cm breit (je lfm)\"."
+    },
+    {
+      "type": "header",
+      "content": "Muster"
+    },
+    {
+      "type": "checkbox",
+      "id": "muster_anzeigen",
+      "label": "Muster-Knopf unter dem Warenkorb-Knopf",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "muster_label",
+      "label": "Beschriftung",
+      "info": "{farbe} wird durch die gewaehlte Farbe ersetzt.",
+      "default": "Kostenloses Muster in {farbe}"
     },
     {
       "type": "header",

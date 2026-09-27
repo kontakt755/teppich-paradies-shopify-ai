@@ -271,7 +271,9 @@
               "settings": {
                 "kettelleisten_produkt": "teppich-fussleiste-gekettelt",
                 "haftunterlage_produkt": "antirutsch-unterlage-fuer-teppiche-rollenware",
-                "messen_link": "/blogs/ratgeber-teppichboden/teppichboden-richtig-ausmessen"
+                "messen_link": "/blogs/ratgeber-teppichboden/teppichboden-richtig-ausmessen",
+                "muster_anzeigen": true,
+                "muster_label": "Kostenloses Muster in {farbe}"
               },
               "blocks": {}
             },
@@ -315,6 +317,7 @@
             },
             "tp_muster_cta_1": {
               "type": "tp-muster-cta",
+              "disabled": true,
               "settings": {
                 "label": "Kostenloses Muster anfragen",
                 "hinweis": "Bis zu 3 Farben, versandkostenfrei"
