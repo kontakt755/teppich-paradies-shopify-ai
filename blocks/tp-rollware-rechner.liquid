@@ -276,32 +276,22 @@
     ueber data-Attribute, die Reihenfolge im Markup spielt fuer die Rechnung
     keine Rolle.
   {%- endcomment -%}
+  {%- comment -%}
+    K5: Live-Zusammenfassung - Teppich (m2 x Preis), gewaehltes Zubehoer,
+    Gesamt. Alle Zeilen kommen aus derselben Rechnung wie die Summe
+    (calculate/updateExtras); hier wird nichts neu gerechnet. Das fruehere
+    Preisbeispiel vor der ersten Eingabe ist entfallen.
+  {%- endcomment -%}
   <div class="tp-rwc-calc" aria-live="polite" data-calc hidden data-rwc-body>
-    <div class="tp-rwc-calc-formula">
+    <div class="tp-rwc-calc-formula" hidden>
       <div class="tp-rwc-calc-step" data-formula-area>– cm × – cm = –</div>
-      {%- comment -%}
-        Aufrundungshinweis steht zwischen Flaeche und Preiszeile, weil genau
-        dort der Sprung passiert. Ohne ihn zeigte die Preiszeile die
-        ungerundete Flaeche mal dem Quadratmeterpreis, nannte aber die
-        gerundete Summe - die Gleichung ging fuer den Kunden nicht auf.
-      {%- endcomment -%}
-      <div class="tp-rwc-calc-round" data-formula-round hidden></div>
       <div class="tp-rwc-calc-step" data-formula-price>–</div>
       <div class="tp-rwc-calc-extras" data-formula-extras hidden></div>
     </div>
-    {%- comment -%}
-      Zusammenfassung direkt ueber dem Preis: was ist Breite, was Laenge, in
-      welcher Einheit, welche Flaeche, welcher Preis. Die Werte kommen aus
-      derselben Rechnung wie die Summe (calculate) - hier wird nichts neu
-      gerechnet.
-    {%- endcomment -%}
-    <div class="tp-rwc-stueck" data-stueck hidden>
-      <p class="tp-rwc-stueck-mass" data-stueck-mass></p>
-      <p class="tp-rwc-stueck-preis" data-stueck-preis></p>
-    </div>
-    <p class="tp-rwc-aktion" data-aktion-zeile hidden></p>
+    <dl class="tp-rwc-summe" data-summe-zeilen></dl>
+    <p class="tp-rwc-calc-round" data-formula-round hidden></p>
     <div class="tp-rwc-calc-total">
-      <span class="tp-rwc-calc-total-label">Gesamtpreis</span>
+      <span class="tp-rwc-calc-total-label">Gesamt</span>
       <span class="tp-rwc-calc-total-value" data-total>–</span>
     </div>
   </div>
@@ -794,7 +784,7 @@
     border: 1px solid transparent;
     border-radius: 10px;
   }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-total-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--tp-rwc-muted); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-total-label { font-size: 15px; font-weight: 600; color: var(--tp-rwc-ink); }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-total-value { font-size: 1.6rem; font-weight: 800; color: var(--tp-rwc-ink); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-service-line { margin: 0 0 4px; font-size: 13px; font-weight: 600; }
@@ -981,11 +971,13 @@
   /* Gegenprobe unter dem Massfeld: derselbe Wert in cm und m. */
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-gegen { font-weight: 700; font-variant-numeric: tabular-nums; color: #1d6b47; }
 
-  /* Zusammenfassung ueber dem Preis. */
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-stueck { margin: 0 0 6px; font-variant-numeric: tabular-nums; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-stueck p { margin: 0; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-stueck-mass { font-size: .9rem; font-weight: 700; line-height: 1.35; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-stueck-preis { font-size: .8rem; line-height: 1.4; color: var(--tp-rwc-muted); }
+  /* K5: Zusammenfassung als Zeilen, Gesamt darunter. */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-summe { display: grid; gap: 4px; margin: 0 0 8px; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-summe > div { display: flex; justify-content: space-between; gap: 12px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-summe dt { color: #595959; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-summe dd { margin: 0; font-weight: 600; white-space: nowrap; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-round { margin: 0 0 8px; }
+
 
   /* K4: Zubehoer eingeklappt, Tooltip statt Aufklapptext. */
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer { margin: 4px 0 12px; border-top: 1px solid var(--tp-rwc-line); border-bottom: 1px solid var(--tp-rwc-line); }
@@ -1134,9 +1126,22 @@ function tpRwcInit{{ tp_rc_id }}() {
   var lengthInput = root.querySelector('[data-length-input]');
   var lengthEcho = root.querySelector('[data-length-echo]');
   var wunschEcho = root.querySelector('[data-wunsch-echo]');
-  var stueckBox = root.querySelector('[data-stueck]');
-  var stueckMass = root.querySelector('[data-stueck-mass]');
-  var stueckPreis = root.querySelector('[data-stueck-preis]');
+  var summeZeilen = root.querySelector('[data-summe-zeilen]');
+  // K5: Zeilen der Zusammenfassung schreiben - [Text, Betrag in EUR].
+  function zeigeSumme(zeilen) {
+    if (!summeZeilen) return;
+    while (summeZeilen.firstChild) summeZeilen.removeChild(summeZeilen.firstChild);
+    zeilen.forEach(function (z) {
+      var row = document.createElement('div');
+      var dt = document.createElement('dt');
+      var dd = document.createElement('dd');
+      dt.textContent = z[0];
+      dd.textContent = (z[1] < 0 ? '−' : '') + fmt(Math.abs(z[1])) + ' €';
+      row.appendChild(dt);
+      row.appendChild(dd);
+      summeZeilen.appendChild(row);
+    });
+  }
 
   // Eingabe-Einheit der Massfelder: immer cm (K3). ART.parseMass liest eine
   // Zahl ohne Einheit damit als Zentimeter.
@@ -1154,13 +1159,10 @@ function tpRwcInit{{ tp_rc_id }}() {
   }
   var errMin = root.querySelector('[data-error-min]');
   var errMax = root.querySelector('[data-error-max]');
-  var beispielNote = root.querySelector('[data-beispiel]');
   var errComma = root.querySelector('[data-error-comma]');
   // Wert aus Liquid (tp_rc_max_laenge_cm), damit der Hinweis in
   // snippets/tp-formular dieselbe Zahl nennt.
   var MAX_LENGTH_CM = {{ tp_rc_max_laenge_cm }};
-  // Issue 162: Laenge des Preisbeispiels vor der ersten Eingabe.
-  var BEISPIEL_LAENGE_CM = 500;
   var errStock = root.querySelector('[data-error-stock]');
   var piece = root.querySelector('[data-piece]');
   var tagW = root.querySelector('[data-tag-width]');
@@ -1238,18 +1240,6 @@ function tpRwcInit{{ tp_rc_id }}() {
   // Wert rundet - ist dieser Wert exakt darstellbar, ist das Ergebnis exakt.
   function roundedHundredthsQty(wCm, lenCm) {
     return Math.round((wCm * lenCm) / 100);
-  }
-
-  // Issue 162: Preisbeispiel vor der ersten Eingabe. Rechnet mit denselben
-  // Ausdruecken wie calculate() (Flaeche, Menge, abgerechnete Flaeche, Satz),
-  // aendert dort aber nichts. qa/tests/tp-rollware-preisbeispiel.test.mjs
-  // haelt beide Wege zusammen.
-  function preisBeispiel(wCm, lenCm, priceCents, exakt) {
-    var area = (wCm * lenCm) / 10000;
-    var rate = exakt ? parseFloat(priceCents) : parseFloat(priceCents) / 100;
-    var qty = exakt ? roundedHundredthsQty(wCm, lenCm) : Math.ceil(area);
-    var billedArea = exakt ? qty / 100 : qty;
-    return { area: area, billedArea: billedArea, total: billedArea * rate };
   }
 
   // Im Raummass-Modus ist die Breite die eigene Eingabe, sonst die Rolle.
@@ -1614,7 +1604,7 @@ function tpRwcInit{{ tp_rc_id }}() {
     // nicht gewählt" und darf die Bestellung nicht als reinen Teppichkauf
     // durchlassen. calculate() und der Klick-Handler sperren damit den
     // Warenkorb-Request, statt das Zubehör kommentarlos wegzulassen.
-    var res = { items: [], sum: 0, lines: [], leisteInvalid: false };
+    var res = { items: [], sum: 0, lines: [], rows: [], leisteInvalid: false };
     var allowed = extrasAllowed();
     if (leisteBox) {
       var showL = allowed && leisteVarianten.length > 0;
@@ -1672,6 +1662,7 @@ function tpRwcInit{{ tp_rc_id }}() {
           }
         });
         res.sum += m * lPreis;
+        res.rows.push(['Fußleiste ' + lv.title + ' · ' + m + ' m', m * lPreis]);
         res.lines.push('+ Fußleiste ' + lv.title + ': ' + m + ' m × ' + fmt(lPreis) + ' € = ' + fmt(m * lPreis) + ' €');
         if (lHint) {
           lHint.textContent = (m !== eingabe ? fmt(eingabe) + ' m werden als ' + m + ' volle Meter berechnet. ' : '') +
@@ -1719,6 +1710,7 @@ function tpRwcInit{{ tp_rc_id }}() {
           }
         });
         res.sum += beste.summe;
+        res.rows.push(['Haftunterlage · ' + beste.meter + ' m', beste.summe]);
         res.lines.push('+ Haftunterlage: ' + beste.meter + ' m × ' + fmt(beste.v.price / 100) + ' € = ' + fmt(beste.summe) + ' €');
       }
     }
@@ -1858,25 +1850,6 @@ function tpRwcInit{{ tp_rc_id }}() {
     calcBox.hidden = !hasLength;
     drawFigure.hidden = !hasLength;
 
-    // Issue 162: Preisbeispiel nur, solange das Laengenfeld leer ist und
-    // Breite samt Variante feststehen.
-    if (beispielNote) {
-      var zeigeBeispiel = !lenEingegeben && !badInput && !wErr && w > 0 && ok;
-      if (zeigeBeispiel) {
-        var bsp = preisBeispiel(w, BEISPIEL_LAENGE_CM, target.price, cmExact);
-        // Wird aufgerundet, muss das dastehen - sonst geht die Gleichung
-        // fuer den Kunden nicht auf (derselbe Grund wie beim Aufrundungshinweis).
-        var gerundet = bsp.billedArea > bsp.area + 0.0001;
-        // Masse in der Einheit, die der Kunde gerade gewaehlt hat (cm oder m).
-        var bspMasse = einheitAktiv === 'm'
-          ? fmt(w / 100) + ' × ' + fmt(BEISPIEL_LAENGE_CM / 100) + ' m'
-          : w + ' × ' + BEISPIEL_LAENGE_CM + ' cm';
-        beispielNote.textContent = 'Preisbeispiel: ' + bspMasse + ' = ' + fmtArea(bsp.area) + ' m²'
-          + (gerundet ? ', berechnet ' + fmtArea(bsp.billedArea) + ' m²' : '') + ' = ' + fmt(bsp.total) + ' €';
-      }
-      beispielNote.hidden = !zeigeBeispiel;
-    }
-
     var extras;
     if (valid && target && ok) {
       var area = (w * len) / 10000;
@@ -1904,15 +1877,6 @@ function tpRwcInit{{ tp_rc_id }}() {
       }
       formulaPrice.textContent = fmt(billedArea) + ' m² × ' + fmt(rate) + ' €/m² = ' + fmt(total) + ' €';
 
-      // Zusammenfassung ueber dem Preis - dieselben Werte und derselbe
-      // Wortlaut wie die Rechenzeilen oben, nichts wird neu gerechnet.
-      if (stueckBox) {
-        var gerundet = !!(formulaRound && !formulaRound.hidden);
-        if (stueckMass) stueckMass.textContent = 'Ihr Stück: Breite ' + w + ' cm' + (raum ? '' : ' (volle Rolle)') + ' × Länge ' + len + ' cm = ' + fmt(area) + ' m²';
-        if (stueckPreis) stueckPreis.textContent = (gerundet ? formulaRound.textContent + ' ' : '') + formulaPrice.textContent;
-        stueckBox.hidden = false;
-      }
-
       extras = updateExtras(w, len, billedArea);
       // Eine Summe auf der Seite: Teppichboden plus gewaehlte Zusaetze. Die
       // Aufteilung in Zeilen sieht der Kunde im Warenkorb.
@@ -1929,6 +1893,9 @@ function tpRwcInit{{ tp_rc_id }}() {
         aktionZeile.hidden = !(aktionAbzug > 0);
         if (aktionAbzug > 0) aktionZeile.textContent = 'Aktion −' + aktionProzent + ' %: −' + fmt(aktionAbzug) + ' € (wird im Warenkorb abgezogen)';
       }
+      var summe = [['Teppich · ' + fmtArea(billedArea) + ' m² × ' + fmt(rate) + ' €', total]];
+      if (aktionAbzug > 0) summe.push(['Aktion −' + aktionProzent + ' % (im Warenkorb)', -aktionAbzug]);
+      zeigeSumme(summe.concat(extras.rows));
       outTotal.textContent = fmt(total - aktionAbzug + extras.sum) + ' €';
       if (!inFlight) {
         // TP-003: angehakte, aber unvollstaendige Fussleiste haelt den Kauf
@@ -1943,7 +1910,7 @@ function tpRwcInit{{ tp_rc_id }}() {
       updateMeterTipp(false);
       formulaArea.textContent = '– cm × – cm = –';
       formulaPrice.textContent = '–';
-      if (stueckBox) stueckBox.hidden = true;
+      zeigeSumme([]);
       if (formulaRound) formulaRound.hidden = true;
       outTotal.textContent = '–';
       // Die Beschriftung nennt das naechste fehlende Feld statt pauschal
