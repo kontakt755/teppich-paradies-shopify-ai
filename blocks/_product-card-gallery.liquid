@@ -65,11 +65,12 @@
 {% render 'card-gallery', children: children, card_index: tp_card_index %}
 
 {% # Title and price for the zoomed out grid view %}
-<div class="product-grid-view-zoom-out--details">
+{%- comment -%} C1: nur fuer die Zoom-Out-Ansicht; fuer Screenreader kein zweiter Titel {%- endcomment -%}
+<div class="product-grid-view-zoom-out--details" aria-hidden="true">
   {% if product == blank %}
-    <h3 class="h4">{{ 'content.product_card_placeholder' | t }}</h3>
+    <p class="h4">{{ 'content.product_card_placeholder' | t }}</p>
   {% else %}
-    <h3 class="h4">{{ product.title }}</h3>
+    <p class="h4">{{ product.title }}</p>
   {% endif %}
 </div>
 
