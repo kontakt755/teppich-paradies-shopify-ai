@@ -329,8 +329,13 @@
     disabled waere genauso stumm: ein Klick darauf loest kein Event aus. Statt
     dessen traegt er aria-disabled und meldet beim Klick, welches Feld fehlt.
   {%- endcomment -%}
-  <button type="button" class="tp-rwc-cta is-incomplete" data-cta data-add-to-cart aria-disabled="true" data-rwc-body>Breite und Länge eingeben</button>
-  <p class="tp-rwc-note tp-rwc-note-error tp-rwc-cta-hint" data-cta-hint role="alert" hidden data-rwc-body></p>
+  <button type="button" class="tp-rwc-cta is-incomplete" data-cta data-add-to-cart aria-disabled="true" data-rwc-body>In den Warenkorb</button>
+  {%- comment -%}
+    K6: Der Knopf heisst immer "In den Warenkorb". Solange etwas fehlt, ist er
+    sichtbar gedaempft (aria-disabled, weiter fokussierbar) und die Zeile
+    darunter sagt, was fehlt - nicht erst nach dem Klick.
+  {%- endcomment -%}
+  <p class="tp-rwc-note tp-rwc-cta-hint" data-cta-hint aria-live="polite" hidden data-rwc-body></p>
   <a href="{{ routes.cart_url }}" class="tp-rwc-cart-link" data-cart-link hidden>Warenkorb ansehen</a>
 
   <ul class="tp-rwc-trust" data-rwc-body>
@@ -795,21 +800,17 @@
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta {
     display: block; width: 100%; min-height: 54px; padding: 16px 18px; border: 0;
     border-radius: var(--style-border-radius-buttons-primary, 8px);
-    background: #1d6b47; color: #fff; font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer;
+    background: #B0303F; color: #fff; font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer;
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta[hidden] { display: none; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:hover:not(:disabled) { background: #185a3b; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:hover:not(:disabled) { background: #962836; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:disabled { background: var(--tp-rwc-surface); color: var(--tp-rwc-muted); border: 1px solid var(--tp-rwc-line); cursor: not-allowed; }
 
   /* Unvollstaendig heisst gedaempft, nicht unsichtbar: der Button bleibt als
      Ziel erkennbar und sagt beim Klick, was fehlt. */
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-incomplete {
-    background: var(--tp-rwc-surface);
-    color: var(--tp-rwc-muted);
-    border: 1px solid var(--tp-rwc-line);
-  }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-incomplete:hover { background: var(--tp-rwc-surface); }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta-hint { margin-top: 6px; font-weight: 600; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-incomplete,
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-incomplete:hover { background: #B0303F; opacity: .45; cursor: not-allowed; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta-hint { margin-top: 6px; font-size: 13px; font-weight: 600; text-align: center; color: #595959; }
 
   /* Grenzen (1 m bis 50 m) bleiben vorlesbar, sichtbar nennen sie die Fehlertexte */
   .tp-rwc-{{ tp_rc_id }} .tp-formular-hinweis { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -924,7 +925,7 @@
     border-radius: 8px;
     box-shadow: 0 0 0 2px rgba(166, 32, 32, 0.35);
   }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-done { background: #145c38; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-done { background: #8a2532; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-error { background: #a62020; }
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cart-link { display: block; margin-top: 10px; text-align: center; font-size: .85rem; text-decoration: underline; text-underline-offset: 3px; }
@@ -1900,9 +1901,7 @@ function tpRwcInit{{ tp_rc_id }}() {
       if (!inFlight) {
         // TP-003: angehakte, aber unvollstaendige Fussleiste haelt den Kauf
         // an - der Button darf dann nicht so aussehen, als waere alles bereit.
-        cta.textContent = extras.leisteInvalid
-          ? 'Bitte Fußleisten-Länge angeben'
-          : fmtArea(billedArea) + ' m² in den Warenkorb' + (extras.items.length ? ' (mit Zubehör)' : '');
+        cta.textContent = 'In den Warenkorb';
       }
       updateMeterTipp(raum, w, len, rate);
     } else {
@@ -1916,14 +1915,7 @@ function tpRwcInit{{ tp_rc_id }}() {
       // Die Beschriftung nennt das naechste fehlende Feld statt pauschal
       // "Laenge eingeben" - im Raummass-Modus fehlt oft zuerst die Breite.
       // Waehrend eines laufenden Warenkorb-Aufrufs bleibt "Wird hinzugefuegt" stehen.
-      if (inFlight) {
-        // Beschriftung nicht anfassen.
-      } else if (blocked || tooLong) {
-        cta.textContent = 'Bitte beraten lassen';
-      } else {
-        var fehlt = fehlendesFeld();
-        cta.textContent = (fehlt && fehlt.feld === 'breite') ? 'Breite eingeben' : 'Länge eingeben';
-      }
+      if (!inFlight) cta.textContent = 'In den Warenkorb';
     }
 
     renumberSteps();
@@ -1943,6 +1935,16 @@ function tpRwcInit{{ tp_rc_id }}() {
     // Sobald die Eingabe stimmt, verschwindet die rote Markierung von selbst -
     // der Kunde soll nicht erst erneut klicken muessen, um sie loszuwerden.
     if (ctaReady) clearInvalid();
+    // K6: Statuszeile unter dem gedaempften Knopf - was fehlt als Naechstes.
+    if (!ctaReady && !inFlight && ctaHint) {
+      var fehltJetzt = fehlendesFeld();
+      if (extras && extras.leisteInvalid) ctaHint.textContent = 'Bitte Fußleisten-Länge angeben';
+      else if (blocked || tooLong) ctaHint.textContent = 'Bitte Länge prüfen';
+      else if (fehltJetzt && fehltJetzt.feld === 'breite') ctaHint.textContent = 'Bitte Breite eingeben';
+      else if (fehltJetzt) ctaHint.textContent = 'Bitte Länge eingeben';
+      else ctaHint.textContent = 'Diese Farbe ist in dieser Breite derzeit nicht lieferbar';
+      ctaHint.hidden = false;
+    }
 
 
     applyServiceState();
