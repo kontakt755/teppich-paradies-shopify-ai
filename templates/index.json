@@ -296,7 +296,8 @@
         "f2",
         "f3",
         "f4"
-      ]
+      ],
+      "disabled": true
     },
     "tp_start_bewertungen": {
       "type": "tp-start-bewertungen",
@@ -315,8 +316,48 @@
         "text": "Welcher Boden passt, wie viel Sie brauchen, ob wir bei Ihnen verlegen – fragen Sie einfach.",
         "telefon": "03301 573 37 20",
         "zeiten": "Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr.",
-        "whatsapp": "https://wa.me/4917657931322"
-      }
+        "whatsapp": "https://wa.me/4917657931322",
+        "fh_bild": "shopify://shop_images/PHOTO-2025-06-13-09-30-06.jpg",
+        "fh_eyebrow": "Warum Teppich Paradies",
+        "fh_heading": "Ein echtes Fachgeschäft – kein anonymer Online-Shop",
+        "fh_text": "<p>Wir beraten in der Saarlandstraße in Oranienburg. Wer online bestellt, spricht mit denselben Menschen, die hier täglich Böden zuschneiden und verlegen. Im Laden stehen über 1.000 m² Sonderposten und Lagerware, sofort verfügbar – was gerade da ist, zeigen wir Ihnen vor Ort.</p>"
+      },
+      "blocks": {
+        "f1": {
+          "type": "fakt",
+          "settings": {
+            "wert": "400+",
+            "label": "Bodenbeläge online, Muster kostenlos"
+          }
+        },
+        "f2": {
+          "type": "fakt",
+          "settings": {
+            "wert": "Mo–Sa",
+            "label": "Geöffnet, Beratung vor Ort"
+          }
+        },
+        "f3": {
+          "type": "fakt",
+          "settings": {
+            "wert": "Eigenes Team",
+            "label": "Aufmaß bis Verlegung"
+          }
+        },
+        "f4": {
+          "type": "fakt",
+          "settings": {
+            "wert": "Bis 50 km",
+            "label": "Verlegeservice um Oranienburg"
+          }
+        }
+      },
+      "block_order": [
+        "f1",
+        "f2",
+        "f3",
+        "f4"
+      ]
     },
     "tp_start_faq": {
       "type": "tp-start-faq",
