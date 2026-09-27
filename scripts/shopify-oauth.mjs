@@ -317,6 +317,7 @@ function parseArgs(argv) {
     else if (arg === '--port') options.port = Number.parseInt(next(), 10);
     else if (arg === '--redirect-uri') options.redirectUri = next();
     else if (arg === '--write-env') options.writeEnv = true;
+    else if (arg === '--github-env') options.githubEnv = true;
     else if (arg === '--help' || arg === '-h') options.help = true;
     else throw new Error(`Unbekanntes Flag: ${arg}`);
   }
@@ -341,6 +342,8 @@ const USAGE = `Admin-API-Token (shpat_) ueber OAuth holen.
   --port           Standard ${DEFAULT_PORT} (nur bei authorization-code)
   --redirect-uri   Standard http://127.0.0.1:<port>/callback
   --write-env      ${TOKEN_ENV_KEY} in .env.local schreiben (chmod 600)
+  --github-env     nur in GitHub Actions: Token maskieren und als ${TOKEN_ENV_KEY}
+                   an die folgenden Schritte weitergeben (\$GITHUB_ENV)
 
 Voraussetzung: SHOPIFY_CLIENT_ID und SHOPIFY_CLIENT_SECRET stehen in .env.local.
 Bei authorization-code muss die Redirect-URL in den App-Einstellungen stehen.`;
@@ -359,6 +362,14 @@ function loadCredentials() {
       process.env.SHOPIFY_CLIENT_SECRET || fromFile.SHOPIFY_CLIENT_SECRET,
     ),
   };
+}
+
+/** Maske zuerst: ab dann ersetzt der Runner den Wert in jedem Log durch ***. */
+export function exportToGithubEnv(token, githubEnvPath, log = console.log) {
+  if (!githubEnvPath) throw new Error('--github-env laeuft nur in GitHub Actions ($GITHUB_ENV fehlt).');
+  if (/[\r\n]/.test(token)) throw new Error('Token enthaelt Zeilenumbrueche und wuerde $GITHUB_ENV zerlegen.');
+  log(`::add-mask::${token}`);
+  fs.appendFileSync(githubEnvPath, `${TOKEN_ENV_KEY}=${token}\n`);
 }
 
 function writeToken(envPath, token) {
@@ -420,6 +431,7 @@ async function main(argv) {
   }
 
   const token = payload.access_token;
+  if (options.githubEnv) exportToGithubEnv(token, process.env.GITHUB_ENV);
   console.log(`\n🎟️  Token: ${maskToken(token)}`);
   console.log(`   Scopes: ${payload.scope || '(keine gemeldet)'}`);
   if (payload.expires_in) {
@@ -435,6 +447,10 @@ async function main(argv) {
   const shopData = await verifyToken({ shop, token });
   console.log(`✅ Admin API antwortet: ${shopData.name} (${shopData.myshopifyDomain})`);
 
+  if (options.githubEnv) {
+    console.log(`📤 ${TOKEN_ENV_KEY} an die folgenden Workflow-Schritte weitergegeben (maskiert).`);
+    return;
+  }
   if (options.writeEnv) {
     writeToken(envPath, token);
     console.log(`💾 ${TOKEN_ENV_KEY} in .env.local geschrieben (chmod 600, gitignored).`);
