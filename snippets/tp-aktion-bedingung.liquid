@@ -1,0 +1,20 @@
+{%- doc -%}
+  D2: Aktionsbedingung direkt unter dem Preis der Produktseite, mit Info-Tooltip.
+  Nur bei befristeter Aktion (tp-aktion-aktiv) und nur, wo der kostenlose
+  Verlegeservice ueberhaupt gilt (tp-vs-berechtigt). Der Service-Block
+  (blocks/tp-verlegeservice-hinweis) zeigt den Satz dafuer nicht mehr.
+
+  @param {object} product - das Produkt
+  @param {string} id - eindeutiger Schluessel fuer die Tooltip-ID
+{%- enddoc -%}
+{%- capture tp_ab_befristet -%}{% render 'tp-aktion-aktiv', product: product %}{%- endcapture -%}
+{%- capture tp_ab_vs -%}{% render 'tp-vs-berechtigt', product: product %}{%- endcapture -%}
+{%- if tp_ab_befristet contains 'ja' and tp_ab_vs contains 'ja' -%}
+  <p class="tp-aktion-bedingung">
+    Aktionspreis, nicht mit kostenloser Verlegung kombinierbar
+    <span class="tp-tip" tabindex="0" role="button" aria-label="Mehr zur Aktionsbedingung" aria-describedby="tp-tip-{{ id }}">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 7v4.5M8 4.6v.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <span class="tp-tip__text" role="tooltip" id="tp-tip-{{ id }}">Kostenlose Lieferung bis Bordsteinkante ist inklusive. Den kostenlosen Vor-Ort-Liefer- und Verlegeservice gibt es nur zum regulären Preis.</span>
+    </span>
+  </p>
+{%- endif -%}

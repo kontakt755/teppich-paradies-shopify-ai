@@ -180,7 +180,8 @@ test('der Aktionshinweis steht unter dem Preis, nur bei Berechtigung UND aktiver
   assert.ok(gilt > -1 && aktion > gilt, 'Die Aktionsabfrage liegt nicht innerhalb der Berechtigung.');
   // Im Aktionszweig weder Kostenlos-Versprechen noch doppelter Hinweis.
   assert.doesNotMatch(block.slice(aktion, sonst), /vsh_schwelle|vsh_nah|Bordsteinkante/);
-  const preis = lesen('snippets', 'price.liquid');
+  const preis = lesen('snippets', 'tp-aktion-bedingung.liquid');
+  assert.match(lesen('blocks', 'price_custom.liquid'), /render 'tp-aktion-bedingung'/, 'Der Preisblock der Produktseite zeigt die Bedingung nicht.');
   const bedingung = preis.indexOf('nicht mit kostenloser Verlegung kombinierbar');
   assert.ok(bedingung > -1, 'Die Aktionsbedingung fehlt unter dem Preis.');
   const davor = preis.slice(0, bedingung);

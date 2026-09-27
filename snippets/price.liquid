@@ -306,24 +306,6 @@
       {% render 'tp-paketinhalt', product: product_resource, sqm_per_package: sqm_per_package, prefix: '', nur_flaeche: true %}
     </div>
   {%- endif -%}
-  {%- if product.handle == product_resource.handle and show_compare_price -%}
-    {%- comment -%}
-      D2: Aktionsbedingung direkt unter dem Preis statt im Service-Block
-      (blocks/tp-verlegeservice-hinweis zeigt sie dafuer nicht mehr). Nur bei
-      befristeter Aktion und nur, wo der Verlegeservice ueberhaupt gilt.
-    {%- endcomment -%}
-    {%- capture tp_pr_befristet -%}{% render 'tp-aktion-aktiv', product: product_resource %}{%- endcapture -%}
-    {%- capture tp_pr_vs -%}{% render 'tp-vs-berechtigt', product: product_resource %}{%- endcapture -%}
-    {%- if tp_pr_befristet contains 'ja' and tp_pr_vs contains 'ja' -%}
-      <p class="tp-aktion-bedingung">
-        Aktionspreis, nicht mit kostenloser Verlegung kombinierbar
-        <span class="tp-tip" tabindex="0" role="button" aria-label="Mehr zur Aktionsbedingung" aria-describedby="tp-tip-aktion">
-          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 7v4.5M8 4.6v.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-          <span class="tp-tip__text" role="tooltip" id="tp-tip-aktion">Kostenlose Lieferung bis Bordsteinkante ist inklusive. Den kostenlosen Vor-Ort-Liefer- und Verlegeservice gibt es nur zum regulären Preis.</span>
-        </span>
-      </p>
-    {%- endif -%}
-  {%- endif -%}
   {%- if selected_variant.unit_price and show_unit_price %}
     {%- liquid
       if use_currency
@@ -345,10 +327,6 @@
 {%- endif -%}
 
 {% stylesheet %}
-  .tp-aktion-bedingung { display: flex; align-items: center; gap: 6px; margin: 6px 0 0; font-size: 13px; line-height: 1.4; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.75); }
-  .tp-tip { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 24px; min-height: 24px; cursor: help; }
-  .tp-tip__text { position: absolute; bottom: calc(100% + 6px); right: -8px; z-index: 20; width: 260px; padding: 10px 12px; border-radius: 6px; background: #1d1a17; color: #fff; font-size: 13px; line-height: 1.45; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .15s; }
-  .tp-tip:hover .tp-tip__text, .tp-tip:focus .tp-tip__text, .tp-tip:focus-within .tp-tip__text { opacity: 1; visibility: visible; }
 
   .price-card-per-unit {
     font-size: 0.82em;
