@@ -69,7 +69,19 @@
 
   function getUniqueColors(product) {
     var position = colorPosition(product);
-    if (!position) return [];
+    if (!position) {
+      // C3: Einzeldekor ohne Farboption (z. B. Vinyl, je Dekor ein Produkt) -
+      // das Produkt selbst ist das eine Muster, benannt nach dem Titel vor " – ".
+      var einzel = (product.variants || []).find(function (variant) { return variant.available; });
+      if (!einzel) return [];
+      var dekor = String(product.title || '').split(' – ')[0].trim();
+      return [{
+        value: dekor || String(product.title || ''),
+        variantId: einzel.id,
+        image: product.featured_image || '',
+        exactImage: '',
+      }];
+    }
     var seen = Object.create(null);
     return (product.variants || []).reduce(function (colors, variant) {
       var value = variant['option' + position];
