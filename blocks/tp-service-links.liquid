@@ -84,10 +84,13 @@
   </div>
 
   <div class="tp-service-links__secondary-{{ tp_sl_id }}">
+    {%- comment -%} D8: aus, wenn der Kaufbereich schon eine Kontaktbox hat (Rollenware-Rechner) {%- endcomment -%}
+    {%- unless block.settings.kontakt_ausblenden -%}
     <a href="tel:+4933015733720">Beratung: 03301 573 37 20</a>
     <span aria-hidden="true">·</span>
     <a href="https://wa.me/4917657931322" target="_blank" rel="noopener">WhatsApp</a>
     <span aria-hidden="true">·</span>
+    {%- endunless -%}
     {%- comment -%}
       Ziel nach Produktart: Rollenware mit Service (snippets/tp-vs-berechtigt)
       auf die Serviceseite, Klick- und Klebevinyl auf "Vinylboden verlegen",
@@ -192,6 +195,13 @@
   "name": "TP Service-Links",
   "tag": null,
   "settings": [
+    {
+      "type": "checkbox",
+      "id": "kontakt_ausblenden",
+      "label": "Telefon und WhatsApp ausblenden",
+      "info": "Einschalten, wenn der Kaufbereich schon eine Kontaktbox hat.",
+      "default": false
+    },
     {
       "type": "text",
       "id": "delivery_time",
