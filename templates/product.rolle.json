@@ -531,13 +531,15 @@
           "type": "tp-vorteile",
           "name": "TP Vorteile",
           "settings": {},
-          "blocks": {}
+          "blocks": {},
+          "disabled": true
         },
         "tp_vertrauen_sales1": {
           "type": "tp-vertrauen",
           "name": "TP Vertrauen",
           "settings": {},
-          "blocks": {}
+          "blocks": {},
+          "disabled": true
         },
         "tp_produkt_akkordeon": {
           "type": "accordion",
