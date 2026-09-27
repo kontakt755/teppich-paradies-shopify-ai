@@ -206,6 +206,23 @@
     {%- if block.settings.messen_link != blank %} <a href="{{ block.settings.messen_link }}">Richtig messen</a>{%- endif -%}
   </p>
   <p class="tp-rwc-note tp-rwc-note-tipp" data-meter-tipp hidden data-rwc-body></p>
+  {%- comment -%}
+    Die Skizze bleibt, steht aber eingeklappt - sie erklaert das Mass, ist
+    fuer den Kauf aber kein Schritt (Design-Runde 3). Beim Aufklappen wird
+    neu gezeichnet, weil die Buehne vorher keine Breite hat.
+  {%- endcomment -%}
+  <details class="tp-rwc-skizze" data-draw hidden data-rwc-body>
+    <summary>Skizze Ihres Stücks</summary>
+  <figure class="tp-rwc-draw" aria-hidden="true">
+    <svg class="tp-rwc-rolle" viewBox="0 0 340 214" data-rolle-svg hidden></svg>
+    <div class="tp-rwc-stage" data-stage>
+      <div class="tp-rwc-piece" data-piece>
+        <span class="tp-rwc-tag tp-rwc-tag-w" data-tag-width>–</span>
+        <span class="tp-rwc-tag tp-rwc-tag-l" data-tag-length>–</span>
+      </div>
+    </div>
+  </figure>
+  </details>
 
   <p class="tp-rwc-note tp-rwc-note-error" data-error-stock hidden></p>
 
@@ -358,28 +375,20 @@
     </a>
   {%- endif -%}
 
-  <ul class="tp-rwc-trust" data-rwc-body>
-    <li>Bis zu 3 Muster kostenlos</li>
-    <li>Versandkostenfrei in Deutschland ab 50 €</li>
-    <li>Persönliche Fachberatung</li>
-  </ul>
-
-  <figure class="tp-rwc-draw" aria-hidden="true" data-draw hidden data-rwc-body>
-    <svg class="tp-rwc-rolle" viewBox="0 0 340 214" data-rolle-svg hidden></svg>
-    <div class="tp-rwc-stage" data-stage>
-      <div class="tp-rwc-piece" data-piece>
-        <span class="tp-rwc-tag tp-rwc-tag-w" data-tag-width>–</span>
-        <span class="tp-rwc-tag tp-rwc-tag-l" data-tag-length>–</span>
-      </div>
-    </div>
-  </figure>
-
-
-
-  <p class="tp-rwc-liefern" data-rwc-body>
-    Lieferung per Spedition frei Bordsteinkante – wir rufen vor der Lieferung an.
-    Verlegeservice und Aufmaß finden Sie weiter unten auf dieser Seite.
+  {%- comment -%}
+    K8: Eine Infozeile statt Vorteilsliste und Lieferabsatz. Lieferzeit ist
+    eine Block-Einstellung, die Versandschwelle die Theme-Einstellung
+    tp_versand_frei_ab, die Aktion kommt aus snippets/tp-aktion-laufend.
+  {%- endcomment -%}
+  <p class="tp-rwc-infozeile" data-rwc-body>
+    {%- if block.settings.lieferzeit != blank -%}<span>Lieferzeit {{ block.settings.lieferzeit | escape }}</span>{%- endif -%}
+    <span>Spedition frei Bordsteinkante</span>
+    {%- if settings.tp_versand_frei_ab != blank -%}<span>versandkostenfrei ab {{ settings.tp_versand_frei_ab }} €</span>{%- endif -%}
+    {%- if tp_rc_aktion_prozent > 0 -%}<span class="tp-rwc-infozeile__aktion">Aktion −{{ tp_rc_aktion_prozent }} % im Warenkorb</span>{%- endif -%}
   </p>
+
+
+
 
   {%- comment -%}
     Zweiter Weg neben dem Warenkorb (Inhaberentscheidung 2026-09-16:
@@ -748,7 +757,7 @@
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-note[hidden] { display: none; }
 
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-draw { margin: 10px 0; padding: 10px 8px 4px; border-top: 1px solid var(--tp-rwc-line); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-draw { margin: 6px 0 0; padding: 4px 8px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-stage {
     display: flex;
     justify-content: center;
@@ -841,38 +850,12 @@
     color: var(--tp-rwc-muted);
   }
 
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-trust {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px 14px;
-    margin: 0 0 10px;
-    padding: 0;
-    list-style: none;
-    font-size: 13px;
-    line-height: 1.45;
-    color: var(--tp-rwc-muted);
-  }
-  /* Der Mittelpunkt ist Dekoration und gehoert nicht in den Vorlesefluss. */
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-trust li + li::before {
-    content: '\00b7';
-    margin-right: 14px;
-    speak: never;
-  }
-  @media (max-width: 480px) {
-    /* Auf dem Handy untereinander: drei umbrechende Halbzeilen mit
-       wandernden Trennpunkten sind schlechter lesbar als drei Zeilen. */
-    .tp-rwc-{{ tp_rc_id }} .tp-rwc-trust { display: block; }
-    .tp-rwc-{{ tp_rc_id }} .tp-rwc-trust li + li::before { content: none; margin: 0; }
-  }
-
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-note-mess { color: var(--tp-rwc-muted); }
 
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-liefern {
-    margin: 0 0 12px;
-    font-size: 12.5px;
-    line-height: 1.5;
-    color: var(--tp-rwc-muted);
-  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-infozeile { display: flex; flex-wrap: wrap; gap: 2px 0; margin: 12px 0; font-size: 13px; line-height: 1.5; color: #595959; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-infozeile span + span::before { content: '\00b7'; margin: 0 6px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-skizze { margin: 0 0 10px; font-size: 13px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-skizze summary { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 
   /* Beratungsweg: bewusst ruhiger als der Kaufknopf. Er ist die Alternative,
      nicht die Einladung - wer kaufen will, soll nicht abgelenkt werden. */
@@ -2034,6 +2017,10 @@ function tpRwcInit{{ tp_rc_id }}() {
     });
   }
 
+  if (drawFigure) drawFigure.addEventListener('toggle', function () {
+    var len = getEffectiveLengthCm();
+    draw(selectedWidth(), len >= 100 ? len : 0);
+  });
   window.addEventListener('resize', function () {
     var w = selectedWidth();
     var len = getEffectiveLengthCm();
@@ -2244,6 +2231,13 @@ else { document.addEventListener('DOMContentLoaded', tpRwcInit{{ tp_rc_id }}); }
       "id": "haftunterlage_produkt",
       "label": "Haftunterlage (Varianten = Breiten, Preis je laufendem Meter)",
       "info": "Die Breite muss im Variantentitel stehen, z. B. \"1 mm, 180 cm breit (je lfm)\"."
+    },
+    {
+      "type": "text",
+      "id": "lieferzeit",
+      "label": "Lieferzeit in der Infozeile",
+      "info": "Leer = ohne Lieferzeit. Versandschwelle kommt aus den Theme-Einstellungen.",
+      "default": "5–7 Werktage"
     },
     {
       "type": "header",
