@@ -36,8 +36,9 @@
     --cp-border-strong: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
     --cp-muted: rgb(var(--color-foreground-rgb, 34 34 34) / 0.68);
     --cp-success: #008a2e;
-    --cp-button-bg: var(--color-foreground, #111111);
-    --cp-button-text: var(--color-background, #ffffff);
+    /* V2: Hauptaktion aus der Theme-Einstellung (snippets/tp-gestaltung) */
+    --cp-button-bg: var(--tp-hauptaktion, var(--color-foreground, #111111));
+    --cp-button-text: #ffffff;
 
     width: 100%;
     max-width: 440px;

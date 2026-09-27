@@ -1,0 +1,27 @@
+{% doc %}
+  Seitenweite Gestaltungsregeln der Design-Runde 3 (Audit V2, V5, V9).
+  Eingebunden ueber eine Zeile in layout/theme.liquid; die Zeile zu
+  entfernen nimmt alles zurueck.
+
+  Farben kommen aus den Theme-Einstellungen (TP Gestaltung), nicht aus
+  festen Werten in einzelnen Bausteinen.
+{% enddoc %}
+
+<style>
+  :root {
+    --tp-hauptaktion: {{ settings.tp_hauptaktion_farbe | default: '#B0303F' }};
+    --tp-hauptaktion-hover: {{ settings.tp_hauptaktion_hover | default: '#962836' }};
+  }
+
+  /* V2: "In den Warenkorb" ist die Hauptaktion - ueberall dieselbe Farbe,
+     auch in der Kaufleiste am Telefon. Die Variablen speisen die Horizon-
+     Regeln fuer .button, Hover und Fokus bleiben dadurch intakt. */
+  .add-to-cart-button {
+    --color-primary-button-background: var(--tp-hauptaktion);
+    --color-primary-button-border: var(--tp-hauptaktion);
+    --color-primary-button-text: #ffffff;
+    --color-primary-button-hover-background: var(--tp-hauptaktion-hover);
+    --color-primary-button-hover-border: var(--tp-hauptaktion-hover);
+    --color-primary-button-hover-text: #ffffff;
+  }
+</style>

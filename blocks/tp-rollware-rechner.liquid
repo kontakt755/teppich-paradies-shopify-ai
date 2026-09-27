@@ -812,16 +812,16 @@
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta {
     display: block; width: 100%; min-height: 54px; padding: 16px 18px; border: 0;
     border-radius: var(--style-border-radius-buttons-primary, 8px);
-    background: #B0303F; color: #fff; font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer;
+    background: var(--tp-hauptaktion, #B0303F); color: #fff; font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer;
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta[hidden] { display: none; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:hover:not(:disabled) { background: #962836; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:hover:not(:disabled) { background: var(--tp-hauptaktion-hover, #962836); }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:disabled { background: var(--tp-rwc-surface); color: var(--tp-rwc-muted); border: 1px solid var(--tp-rwc-line); cursor: not-allowed; }
 
   /* Unvollstaendig heisst gedaempft, nicht unsichtbar: der Button bleibt als
      Ziel erkennbar und sagt beim Klick, was fehlt. */
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-incomplete,
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-incomplete:hover { background: #B0303F; opacity: .45; cursor: not-allowed; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-incomplete:hover { background: var(--tp-hauptaktion, #B0303F); opacity: .45; cursor: not-allowed; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta-hint { margin-top: 6px; font-size: 13px; font-weight: 600; text-align: center; color: #595959; }
 
   /* Grenzen (1 m bis 50 m) bleiben vorlesbar, sichtbar nennen sie die Fehlertexte */
@@ -938,8 +938,8 @@
     background: var(--tp-rwc-surface); cursor: pointer; transition: border-color .15s, background-color .15s;
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte:hover { border-color: var(--tp-rwc-ink); }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte:has(input:checked) { border-color: #1d6b47; box-shadow: inset 0 0 0 1px #1d6b47; background: rgb(29 107 71 / 0.05); }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte input { width: 20px; height: 20px; margin: 0; accent-color: #1d6b47; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte:has(input:checked) { border-color: var(--tp-rwc-ink); box-shadow: inset 0 0 0 1px var(--tp-rwc-ink); background: rgb(0 0 0 / 0.03); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte input { width: 20px; height: 20px; margin: 0; accent-color: var(--tp-rwc-ink); }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-text { display: grid; gap: 2px; min-width: 0; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-text b { font-size: .9rem; line-height: 1.25; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-text small { font-size: 13px; color: #595959; }

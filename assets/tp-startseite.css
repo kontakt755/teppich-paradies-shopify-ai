@@ -2,7 +2,7 @@
    Wird von den tp-start-* Sections eingebunden. Rot = Logo-Rot (gemessen),
    warme Neutraltoene, eine Schriftfamilie aus dem Theme (var(--font-body--family)). */
 :root {
-  --tp-red: #b73740;
+  --tp-red: #b0303f;
   --tp-red-dark: #96262f;
   --tp-red-soft: #fbeeef;
   --tp-ink: #1d1a17;
