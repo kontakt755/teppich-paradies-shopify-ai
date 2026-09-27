@@ -97,6 +97,12 @@
         # Create an array from the list items to be used in the carousel
         assign slide_content = list_items | strip
         assign slides = slide_content | split: '<!--@list/split-->'
+      %}
+      {%- comment -%} D6: nach dem Laden leer - Sektion samt Ueberschrift ausblenden {%- endcomment -%}
+      {%- if recommendations.performed and slide_content == blank -%}
+        <style>#shopify-section-{{ section.id }} { display: none; }</style>
+      {%- endif -%}
+      {% liquid
 
         if products != blank and products.size > 0
           assign has_recommendations = 'true'
