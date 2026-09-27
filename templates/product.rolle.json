@@ -229,7 +229,8 @@
                     "label": "Farbe wählen",
                     "nur_mit_farboption": true
                   },
-                  "blocks": {}
+                  "blocks": {},
+                  "disabled": true
                 },
                 "tp_farbanzeige_tp1": {
                   "type": "tp-farbanzeige",
@@ -245,7 +246,9 @@
                 "color_swatch_picker_f7EyBF": {
                   "type": "color-swatch-picker",
                   "name": "Farb-Swatches",
-                  "settings": {},
+                  "settings": {
+                    "darstellung": "kreise"
+                  },
                   "blocks": {}
                 }
               },

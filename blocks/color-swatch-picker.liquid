@@ -19,6 +19,14 @@
 {% endfor %}
 
 {% assign selected_variant = product.selected_or_first_available_variant %}
+{%- comment -%}
+  K2 (Design-Runde 3): Darstellung "kreise" - runde 40-px-Swatches direkt
+  sichtbar, die ersten 7 plus "+N weitere", Farbname neben der Ueberschrift.
+  Liegt die gewaehlte Farbe hinter Platz 7, steht die Liste gleich offen.
+{%- endcomment -%}
+{%- assign tp_cs_kreise = false -%}
+{%- if block.settings.darstellung == 'kreise' -%}{%- assign tp_cs_kreise = true -%}{%- endif -%}
+{%- assign tp_cs_sichtbar = 7 -%}
 {% assign selected_color = blank %}
 
 {% if color_option != blank %}
@@ -229,6 +237,58 @@
   .color-swatch-picker-{{ color_picker_id }} [hidden] {
     display: none !important;
   }
+
+  /* K2: runde Swatches */
+  .color-swatch-picker__kopf-{{ color_picker_id }} {
+    margin: 0 0 10px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .color-swatch-picker__kopf-{{ color_picker_id }} span {
+    margin-left: 6px;
+    font-weight: 400;
+    color: #595959;
+  }
+  .color-swatch-picker-{{ color_picker_id }}[data-darstellung='kreise'] .color-swatch-picker__list-{{ color_picker_id }} {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+  .color-swatch-picker-{{ color_picker_id }}[data-darstellung='kreise'] .color-swatch-picker__button-{{ color_picker_id }} {
+    width: 40px;
+    height: 40px;
+    min-height: 0;
+    aspect-ratio: 1;
+    padding: 2px;
+    border-radius: 50%;
+  }
+  .color-swatch-picker-{{ color_picker_id }}[data-darstellung='kreise'] .color-swatch-picker__image-{{ color_picker_id }},
+  .color-swatch-picker-{{ color_picker_id }}[data-darstellung='kreise'] .color-swatch-picker__color-{{ color_picker_id }} {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+  }
+  .color-swatch-picker-{{ color_picker_id }}[data-darstellung='kreise'] .color-swatch-picker__name-{{ color_picker_id }} {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .color-swatch-picker__mehr-{{ color_picker_id }} {
+    min-height: 40px;
+    padding: 0 12px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.3);
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
 {% endstyle %}
 
 {% if color_option != blank %}
@@ -245,6 +305,21 @@
       Farbwechsel neu beschriftet - eine Live-Region fuer Screenreader.
     {%- endcomment -%}
     <p class="color-swatch-picker__active-{{ color_picker_id }}" data-active-color aria-live="polite">{{ selected_color }}</p>
+    {%- liquid
+      assign tp_cs_offen = true
+      if tp_cs_kreise and color_option.values.size > tp_cs_sichtbar
+        assign tp_cs_offen = false
+        for tp_cs_v in color_option.values
+          assign tp_cs_vn = tp_cs_v | append: ''
+          if tp_cs_vn == selected_color and forloop.index > tp_cs_sichtbar
+            assign tp_cs_offen = true
+          endif
+        endfor
+      endif
+    -%}
+    {%- if tp_cs_kreise -%}
+      <p class="color-swatch-picker__kopf-{{ color_picker_id }}" aria-hidden="true">{{ color_option.name }}<span data-active-sichtbar>{{ selected_color }}</span></p>
+    {%- endif -%}
 
     {%- comment -%}
       Werkzeugleiste erst ab 8 Farben. Darunter sieht man alles auf einen Blick,
@@ -253,7 +328,7 @@
       blendet nur Eintraege aus. Ohne JavaScript bleibt sie unsichtbar
       (hidden wird erst vom Skript entfernt), dann sind schlicht alle Farben da.
     {%- endcomment -%}
-    {%- if color_option.values.size >= 8 -%}
+    {%- if color_option.values.size >= 8 and tp_cs_kreise == false -%}
       <div class="color-swatch-picker__werkzeuge-{{ color_picker_id }}" data-farb-werkzeuge hidden>
         <label class="color-swatch-picker__suche-wrap-{{ color_picker_id }}">
           <span class="color-swatch-picker__suche-label-{{ color_picker_id }}">Farbe suchen</span>
@@ -384,6 +459,7 @@
         -%}
         <label
           class="color-swatch-picker__item-{{ color_picker_id }}"
+          {% if tp_cs_offen == false and forloop.index > tp_cs_sichtbar %}hidden data-farb-mehr{% endif %}
           data-farb-item
           data-farb-name="{{ value_name | downcase | escape }}"
           data-farb-familie="{{ tp_cs_familie }}"
@@ -430,6 +506,10 @@
           <span class="color-swatch-picker__name-{{ color_picker_id }}">{{ value_name }}</span>
         </label>
       {% endfor %}
+      {%- if tp_cs_offen == false -%}
+        {%- assign tp_cs_rest = color_option.values.size | minus: tp_cs_sichtbar -%}
+        <button type="button" class="color-swatch-picker__mehr-{{ color_picker_id }}" data-farb-mehr-knopf aria-label="{{ tp_cs_rest }} weitere Farben zeigen">+{{ tp_cs_rest }} weitere</button>
+      {%- endif -%}
     </div>
   </color-swatch-picker-{{ color_picker_id }}>
 
@@ -562,6 +642,8 @@
         if (activeColorLabel) {
           activeColorLabel.textContent = colorValue;
         }
+        var sichtbar = picker.querySelector('[data-active-sichtbar]');
+        if (sichtbar) sichtbar.textContent = colorValue;
       }
 
       // Nur den variant-Parameter ersetzen, alle anderen Parameter (z. B.
@@ -611,6 +693,15 @@
             image.removeAttribute('srcset');
           });
         }
+      }
+
+      // K2: "+N weitere" klappt die restlichen Farben auf.
+      const mehrKnopf = picker.querySelector('[data-farb-mehr-knopf]');
+      if (mehrKnopf) {
+        mehrKnopf.addEventListener('click', function() {
+          picker.querySelectorAll('[data-farb-mehr]').forEach(function(el) { el.hidden = false; });
+          mehrKnopf.remove();
+        });
       }
 
       picker.addEventListener('change', function(event) {
@@ -810,7 +901,8 @@
       "label": "Darstellung",
       "options": [
         { "value": "raster", "label": "Raster" },
-        { "value": "dropdown", "label": "Dropdown" }
+        { "value": "dropdown", "label": "Dropdown" },
+        { "value": "kreise", "label": "Runde Swatches (7 sichtbar)" }
       ],
       "default": "dropdown"
     }
