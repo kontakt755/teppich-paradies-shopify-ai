@@ -368,10 +368,12 @@
     assign tp_rc_muster_url = tp_rc_muster_url | strip
     assign tp_rc_muster_vorlage = block.settings.muster_label | default: 'Kostenloses Muster in {farbe}'
     assign tp_rc_start_farbe = product.selected_or_first_available_variant.options | first
+    assign tp_rc_muster_platzhalter = '{farbe}'
+    assign tp_rc_muster_text = tp_rc_muster_vorlage | replace: tp_rc_muster_platzhalter, tp_rc_start_farbe
   -%}
   {%- if block.settings.muster_anzeigen and tp_rc_muster_url != blank -%}
     <a class="tp-rwc-muster" href="{{ tp_rc_muster_url }}" data-muster-link data-muster-vorlage="{{ tp_rc_muster_vorlage | escape }}" data-rwc-body>
-      {{- tp_rc_muster_vorlage | replace: '{farbe}', tp_rc_start_farbe | escape -}}
+      {{- tp_rc_muster_text | escape -}}
     </a>
   {%- endif -%}
 
