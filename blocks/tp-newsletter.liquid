@@ -6,6 +6,10 @@
   (z. B. {% render 'tp-newsletter', quelle: 'ratgeber' %}).
 
   Das gesamte CSS steht hier im {% stylesheet %}
+  /* A5: Newsletter nur einmal pro Seite - steht schon eine Anmeldung im Inhalt
+     (Startseiten-Sektion, Kachel im Raster, Ratgeber), entfaellt die im Footer. */
+  body:has(main .tp-nl, .tp-nv, .tp-nk) .tp-nl-footer { display: none; }
+
   /* Footer auf Tablet-Breite: die drei Linkspalten bekommen eine eigene
      Zeile, Newsletter und Zahlungsarten teilen sich die naechste. Ohne das
      quetscht das Drittel-Raster die Linkspalten auf ~180 px. */
@@ -25,7 +29,7 @@
   Snippet gerendert wird.
 {% enddoc %}
 
-<div {{ block.shopify_attributes }}>
+<div{% if block.settings.quelle == 'footer' %} class="tp-nl-footer"{% endif %} {{ block.shopify_attributes }}>
   {%- render 'tp-newsletter',
     ueberschrift: block.settings.ueberschrift,
     text: block.settings.text,
