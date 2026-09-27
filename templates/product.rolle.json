@@ -270,7 +270,8 @@
               "name": "TP Rollenware-Rechner",
               "settings": {
                 "kettelleisten_produkt": "teppich-fussleiste-gekettelt",
-                "haftunterlage_produkt": "antirutsch-unterlage-fuer-teppiche-rollenware"
+                "haftunterlage_produkt": "antirutsch-unterlage-fuer-teppiche-rollenware",
+                "messen_link": "/blogs/ratgeber-teppichboden/teppichboden-richtig-ausmessen"
               },
               "blocks": {}
             },
