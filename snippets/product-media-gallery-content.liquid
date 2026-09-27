@@ -376,6 +376,15 @@
               else
                 assign media_sizes = sizes
               endif
+              # TP (#662): Die Galerie zeigt jedes Bild mit object-fit: contain in
+              # einer quadratischen Box. Ein Hochformat (Piumera 2:3) ist am Handy
+              # also nur Seitenverhaeltnis x 100vw breit - sizes behauptete 100vw,
+              # geladen wurden 832 statt ~500 px (262 KB, LCP 7,1 s).
+              assign tp_ratio = block_settings.aspect_ratio | append: ''
+              if tp_ratio == '1' and media.preview_image.aspect_ratio < 1
+                assign tp_mobil_vw = media.preview_image.aspect_ratio | times: 100 | ceil | append: 'vw'
+                assign media_sizes = media_sizes | replace_last: '100vw', tp_mobil_vw
+              endif
               assign media_loading = 'lazy'
               if forloop.first
                 assign media_loading = 'eager'
@@ -495,6 +504,15 @@
                 assign media_sizes = sizes_single
               else
                 assign media_sizes = sizes
+              endif
+              # TP (#662): Die Galerie zeigt jedes Bild mit object-fit: contain in
+              # einer quadratischen Box. Ein Hochformat (Piumera 2:3) ist am Handy
+              # also nur Seitenverhaeltnis x 100vw breit - sizes behauptete 100vw,
+              # geladen wurden 832 statt ~500 px (262 KB, LCP 7,1 s).
+              assign tp_ratio = block_settings.aspect_ratio | append: ''
+              if tp_ratio == '1' and media.preview_image.aspect_ratio < 1
+                assign tp_mobil_vw = media.preview_image.aspect_ratio | times: 100 | ceil | append: 'vw'
+                assign media_sizes = media_sizes | replace_last: '100vw', tp_mobil_vw
               endif
             -%}
             {% if block_settings.aspect_ratio != 'adapt' and block_settings.constrain_to_viewport %}
