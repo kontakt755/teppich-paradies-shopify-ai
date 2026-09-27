@@ -326,16 +326,16 @@
           "block_order": [
             "group_icgrde",
             "tp_aktion_hinweis",
-            "tp_bewertungsbeleg_zubehoer",
             "divider_VJhene",
             "tp_groessen_auswahl",
             "ai_gen_block_b888d9b_CJbJ8X",
             "tp_farb_dropdown",
             "variant_picker_R3rGDr",
             "tp_farbanzeige_tp1",
-            "tp_muster_cta_1",
             "tp_zubehoer_menge",
             "buy_buttons_eYQEYi",
+            "tp_muster_cta_1",
+            "tp_bewertungsbeleg_zubehoer",
             "tp_service_links_sales1",
             "text_aEtTtq"
           ]

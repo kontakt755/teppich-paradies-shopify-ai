@@ -323,11 +323,11 @@
           "block_order": [
             "group_icgrde",
             "tp_aktion_hinweis",
-            "tp_bewertungsbeleg_night1",
             "divider_VJhene",
             "group_farbwahl",
-            "tp_muster_cta_1",
             "tp_rollware_rechner_sales1",
+            "tp_muster_cta_1",
+            "tp_bewertungsbeleg_night1",
             "buy_buttons_eYQEYi"
           ]
         }
