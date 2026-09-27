@@ -573,6 +573,7 @@
           "farbnummer": {{ tp_rc_v_farbnummer | strip | json }},
           "farbe_intern": {{ tp_rc_v_farbe_intern | strip | json }},
           "price": {{ variant.price | json }},
+          "compare_at_price": {{ variant.compare_at_price | default: 0 | json }},
           "available": {{ variant.available | json }},
           {%- comment -%}
             Zwei Saetze nebeneinander, bewusst. service.* gehoert zu diesem
@@ -1005,6 +1006,7 @@
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-wunsch { margin: 0 0 10px; padding: 10px; border: 1px solid var(--tp-rwc-line); border-radius: 8px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-preis { white-space: nowrap; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-streich { font-weight: 400; color: var(--tp-rwc-muted); }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-wunsch-preis { margin: 10px 0 0; font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-rolle { display: block; width: 100%; height: auto; max-height: 280px; color: var(--tp-rwc-ink); }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-extras-link { display: block; margin: 0 0 8px; font-size: .85rem; color: inherit; text-decoration: underline; text-underline-offset: 2px; }
@@ -1405,8 +1407,17 @@ function tpRwcInit{{ tp_rc_id }}() {
   //   Raummass moeglich      -> Art-Karten als Schritt 2, Laenge ist 3
   //   nur Meterware, >1 Breite -> "Waehlen Sie Ihre Breite" als Schritt 2
   //   nur Meterware, 1 Breite  -> Chip mit Label "Rollenbreite", Laenge ist 2
-  // Titel "Meterware · 55,90 €/m²"; der Preis bricht nicht in sich um
-  function artTitel(el, name, rate) {
+  // Vergleichspreis je m² aus compare_at_price derselben Variante, in
+  // derselben Einheit wie rateOf(). Nur wenn er wirklich hoeher ist - ein
+  // gleich hoher oder fehlender Vergleichspreis ist kein Streichpreis.
+  function compareRateOf(v) {
+    if (!v || !(parseFloat(v.compare_at_price) > parseFloat(v.price))) return 0;
+    return cmExact ? parseFloat(v.compare_at_price) : parseFloat(v.compare_at_price) / 100;
+  }
+
+  // K1: Titel "Meterware · 65,90 55,90 €/m²" - der Streichpreis steht wie
+  // bei der Meterware auch beim Raummass, beide aus der Variante selbst.
+  function artTitel(el, name, rate, cmpRate) {
     if (!el) return;
     while (el.firstChild) el.removeChild(el.firstChild);
     el.appendChild(document.createTextNode(name));
@@ -1414,7 +1425,14 @@ function tpRwcInit{{ tp_rc_id }}() {
       el.appendChild(document.createTextNode(' · '));
       var preis = document.createElement('span');
       preis.className = 'tp-rwc-art-preis';
-      preis.textContent = fmt(rate) + '\u00a0€/m²';
+      if (cmpRate > rate) {
+        var alt = document.createElement('s');
+        alt.className = 'tp-rwc-art-streich';
+        alt.textContent = fmt(cmpRate);
+        preis.appendChild(alt);
+        preis.appendChild(document.createTextNode(' '));
+      }
+      preis.appendChild(document.createTextNode(fmt(rate) + '\u00a0€/m²'));
       el.appendChild(preis);
     }
   }
@@ -1453,8 +1471,8 @@ function tpRwcInit{{ tp_rc_id }}() {
     // Meterware-Karte von der gewaehlten Rolle, nicht immer von der kleinsten.
     var meterV = variantFor(t, byWidth(selectedMeterWidth()));
     // D2: Preis steht im Titel der Karte ("Meterware · 29,95 €/m²"), die Unterzeile erklaert nur
-    artTitel(artTitleMeter, 'Meterware', rateOf(meterV));
-    artTitel(artTitleRaum, 'Raummaß', raumOk ? rateOf(rv) : 0);
+    artTitel(artTitleMeter, 'Meterware', rateOf(meterV), compareRateOf(meterV));
+    artTitel(artTitleRaum, 'Raummaß', raumOk ? rateOf(rv) : 0, raumOk ? compareRateOf(rv) : 0);
     if (artSubMeter) artSubMeter.textContent = 'volle Rollenbreite';
     if (artSubRaum) artSubRaum.textContent = 'eigene Breite, zentimetergenau';
 
