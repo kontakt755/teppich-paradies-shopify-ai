@@ -24,4 +24,14 @@
     --color-primary-button-hover-border: var(--tp-hauptaktion-hover);
     --color-primary-button-hover-text: #ffffff;
   }
+
+  {%- if request.page_type == 'product' or request.page_type == 'collection' -%}
+    /* V5: Rich-Text in Produkt- und Kategoriebeschreibungen - klare
+       Hierarchie und eine lesbare Zeilenlaenge. */
+    main .text-block.rte { max-width: 680px; }
+    main .text-block.rte h2 { font-size: 22px; line-height: 1.3; margin: 1.4em 0 0.5em; }
+    main .text-block.rte h3 { font-size: 18px; line-height: 1.35; margin: 1.3em 0 0.4em; }
+    main .text-block.rte h4 { font-size: 16px; font-weight: 600; line-height: 1.4; margin: 1.2em 0 0.3em; }
+    main .text-block.rte > :first-child { margin-top: 0; }
+  {%- endif -%}
 </style>
