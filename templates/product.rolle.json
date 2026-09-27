@@ -546,7 +546,7 @@
               "type": "_accordion-row",
               "settings": {
                 "heading": "Beschreibung",
-                "open_by_default": true
+                "open_by_default": false
               },
               "blocks": {
                 "text_aEtTtq": {
