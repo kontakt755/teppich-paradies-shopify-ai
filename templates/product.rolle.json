@@ -169,16 +169,6 @@
               "settings": {},
               "blocks": {}
             },
-            "tp_bewertungsbeleg_night1": {
-              "type": "tp-bewertungsbeleg",
-              "name": "TP Bewertungsbeleg",
-              "settings": {
-                "rating": "",
-                "review_count": "",
-                "review_link": ""
-              },
-              "blocks": {}
-            },
             "divider_VJhene": {
               "type": "_divider",
               "name": "t:names.divider",
@@ -332,7 +322,6 @@
             "group_farbwahl",
             "tp_rollware_rechner_sales1",
             "tp_muster_cta_1",
-            "tp_bewertungsbeleg_night1",
             "buy_buttons_eYQEYi"
           ]
         }
@@ -782,13 +771,24 @@
             "tp_row_bestellen",
             "tp_row_lieferung"
           ]
+        },
+        "tp_bewertungsbeleg_night1": {
+          "type": "tp-bewertungsbeleg",
+          "name": "TP Bewertungsbeleg",
+          "settings": {
+            "rating": "",
+            "review_count": "",
+            "review_link": ""
+          },
+          "blocks": {}
         }
       },
       "block_order": [
         "tp_rolle_info_titel",
         "tp_produkt_akkordeon",
         "tp_vorteile_sales1",
-        "tp_vertrauen_sales1"
+        "tp_vertrauen_sales1",
+        "tp_bewertungsbeleg_night1"
       ],
       "settings": {
         "content_direction": "column",
