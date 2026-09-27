@@ -86,6 +86,18 @@
     width: 100%;
   }
 
+  /* B4: vier Spalten brauchen die volle Footer-Breite; Newsletter und
+     Zahlarten ruecken in die Zeile darunter. */
+  .footer-content > .tp-footer-links {
+    grid-column: 1 / -1;
+  }
+
+  @media screen and (min-width: 750px) and (max-width: 989px) {
+    .tp-footer-links {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
   .tp-footer-links__heading {
     margin: 0 0 10px;
     font: inherit;
