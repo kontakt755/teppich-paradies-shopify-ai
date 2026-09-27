@@ -74,6 +74,42 @@
         </ul>
       {%- endif -%}
 
+      {%- if section.settings.plz_pruefung -%}
+        {%- comment -%}
+          A2: PLZ-Pruefung direkt in der Verlegeservice-Spalte. Dieselbe Logik wie
+          die Section tp-verlegegebiet (assets/tp-verlegegebiet.js liest data-radius
+          und data-orte vom naechsten Vorfahren mit data-radius).
+        {%- endcomment -%}
+        {{ 'tp-verlegegebiet.css' | asset_url | stylesheet_tag }}
+        <div
+          class="tp-zw__plz"
+          data-radius="{{ settings.tp_vs_radius_premium | default: 50 }}"
+          data-versand-frei-ab="{{ settings.tp_versand_frei_ab }}"
+          data-orte="{{ 'tp-verlegegebiet-orte.json' | asset_url }}"
+        >
+          <form
+            class="tp-vg__check"
+            data-tp-verlegegebiet-form
+            data-cta-url="{{ section.settings.service_link | default: '/pages/liefer-verlegeservice' }}"
+            data-cta-text="{{ section.settings.service_cta | escape }}"
+            data-versand-url="/collections/all"
+            data-versand-text="Online bestellen – Versand deutschlandweit"
+            hidden
+          >
+            <label class="tp-vg__sub" for="tp-zw-plz-{{ section.id }}">Liegt Ihr Wohnort in unserem Verlegegebiet?</label>
+            <div class="tp-vg__check-zeile">
+              <input id="tp-zw-plz-{{ section.id }}" class="tp-vg__input" type="text" name="ort" inputmode="text" autocomplete="postal-code" maxlength="40" placeholder="PLZ oder Ort" data-tp-verlegegebiet-input>
+              <button class="tp-vg__btn tp-vg__btn--check" type="submit">Prüfen</button>
+            </div>
+            <div class="tp-vg__ergebnis-box" role="status" aria-live="polite">
+              <p class="tp-vg__ergebnis" data-tp-verlegegebiet-result></p>
+              <p class="tp-vg__ergebnis-weg" data-tp-verlegegebiet-cta hidden></p>
+            </div>
+          </form>
+        </div>
+        <script src="{{ 'tp-verlegegebiet.js' | asset_url }}" defer></script>
+      {%- endif -%}
+
       <a href="{{ section.settings.service_link | default: '/pages/liefer-verlegeservice' }}" class="tp-zw__cta tp-zw__cta--primary">
         {{ section.settings.service_cta }}
       </a>
@@ -237,6 +273,7 @@
       font-size: 21px;
     }
   }
+  .tp-zw__plz { margin: 4px 0 16px; }
 {% endstylesheet %}
 
 {% schema %}
@@ -366,6 +403,12 @@
     {
       "type": "header",
       "content": "Darstellung"
+    },
+    {
+      "type": "checkbox",
+      "id": "plz_pruefung",
+      "label": "PLZ-Pruefung in der Service-Spalte",
+      "default": false
     },
     {
       "type": "color_scheme",
