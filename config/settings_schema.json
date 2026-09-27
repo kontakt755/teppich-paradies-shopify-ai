@@ -2515,6 +2515,22 @@
     ]
   },
   {
+    "name": "TP Rabatt-Badge",
+    "settings": [
+      {
+        "type": "range",
+        "id": "tp_rabatt_badge_ab",
+        "label": "Prozent-Badge ab Rabatt von",
+        "info": "Darunter erscheint nur der Streichpreis ohne -X %-Badge (Produktkarten und Produktseite).",
+        "min": 0,
+        "max": 50,
+        "step": 1,
+        "unit": "%",
+        "default": 10
+      }
+    ]
+  },
+  {
     "name": "TP Google-Bewertung",
     "settings": [
       {

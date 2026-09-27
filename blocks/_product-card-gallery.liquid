@@ -20,7 +20,8 @@
         {%- assign tp_pcg_sale = true -%}
         {%- assign tp_pcg_prozent = tp_pcg_v.compare_at_price | minus: tp_pcg_v.price | times: 100.0 | divided_by: tp_pcg_v.compare_at_price | round -%}
       {%- endif -%}
-      {%- if tp_pcg_sale and product.available -%}
+      {%- assign tp_pcg_badge_ab = settings.tp_rabatt_badge_ab | default: 10 -%}
+      {%- if tp_pcg_sale and product.available and tp_pcg_prozent >= tp_pcg_badge_ab -%}
         {%- comment -%} Rabattbadge statt weissem "Angebot"-Kasten (2026-09-24), Prozent dynamisch {%- endcomment -%}
         <span class="tp-rabatt-badge tp-rabatt-badge--karte">−{{ tp_pcg_prozent }}&nbsp;%</span>
       {%- elsif product.available == false -%}

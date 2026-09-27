@@ -212,7 +212,8 @@
   endif
   # Prozent-Chip nur auf der Produktseite; die Karte zeigt ihn im Bild (_product-card-gallery)
   assign tp_pr_chip = false
-  if show_compare_price and product.handle == product_resource.handle and tp_pr_prozent > 0
+  assign tp_pr_badge_ab = settings.tp_rabatt_badge_ab | default: 10
+  if show_compare_price and product.handle == product_resource.handle and tp_pr_prozent > 0 and tp_pr_prozent >= tp_pr_badge_ab
     assign tp_pr_chip = true
   endif
 
