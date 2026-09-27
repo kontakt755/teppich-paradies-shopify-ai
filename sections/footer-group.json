@@ -33,7 +33,13 @@
         "menu_dbJFAF": {
           "type": "tp-footer-links",
           "name": "TP Footer-Links",
-          "settings": {},
+          "settings": {
+            "sortiment_menu": "main-menu",
+            "adresse": "Teppich Paradies Oranienburg GmbH\nSaarlandstraße 73–81\n16515 Oranienburg",
+            "zeiten": "Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr",
+            "telefon": "03301 573 37 20",
+            "rechtliches_menu": "footer"
+          },
           "blocks": {}
         },
         "payment_icons_LaADL7": {

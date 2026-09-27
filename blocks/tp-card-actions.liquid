@@ -129,10 +129,13 @@
       data-tp-compare-toggle
       data-tp-compare-handle="{{ tp_ca_product.handle }}"
       data-tp-compare-snapshot="{{ tp_ca_snapshot | strip | escape }}"
-      data-tp-compare-compact
+      data-tp-compare-icon
       aria-pressed="false"
+      aria-label="Zum Vergleich hinzufügen"
+      title="Zum Vergleich hinzufügen"
     >
-      Vergleichen
+      {%- comment -%} C1: Symbol statt Text; Beschriftung per aria-label (assets/tp-compare.js) {%- endcomment -%}
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="2.5" y="4" width="6" height="12" rx="1.2"/><rect x="11.5" y="4" width="6" height="12" rx="1.2"/><path d="M10 2v16"/></svg>
     </button>
   </div>
 
@@ -170,6 +173,14 @@
     text-align: center;
   }
 
+  .tp-card-actions__compare[data-tp-compare-icon] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    padding: 0;
+  }
+  .tp-card-actions__compare[data-tp-compare-icon]:only-child { flex: 0 0 44px; }
   .tp-card-actions__compare[aria-pressed='true'] {
     background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
     border-color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.4);

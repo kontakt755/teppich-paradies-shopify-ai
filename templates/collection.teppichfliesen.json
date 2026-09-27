@@ -16,7 +16,7 @@
         "feature_aX4kLp": {
           "type": "feature",
           "settings": {
-            "marker_type": "emoji",
+            "marker_type": "icon",
             "emoji": "◻",
             "text": "Einzeln austauschbar bei Verschleiß"
           }
@@ -24,7 +24,7 @@
         "feature_bY7nQw": {
           "type": "feature",
           "settings": {
-            "marker_type": "emoji",
+            "marker_type": "icon",
             "emoji": "✂",
             "text": "Ohne Verschnitt verlegbar"
           }
@@ -32,7 +32,7 @@
         "feature_cZ2mVs": {
           "type": "feature",
           "settings": {
-            "marker_type": "emoji",
+            "marker_type": "icon",
             "emoji": "⌂",
             "text": "Für Wohn- und Objektbereiche geeignet"
           }

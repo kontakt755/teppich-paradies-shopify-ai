@@ -110,6 +110,8 @@
     flex-shrink: 0;
   }
 
+  .hero-feature-split__icon-{{ hero_id }} { display: inline-flex; width: 18px; height: 18px; color: currentColor; }
+  .hero-feature-split__icon-{{ hero_id }} svg { width: 100%; height: 100%; }
   .hero-feature-split__emoji-{{ hero_id }} {
     font-size: 28px;
     line-height: 1;
@@ -252,7 +254,10 @@
             {% for block in section.blocks %}
               <li class="hero-feature-split__feature-{{ hero_id }}" {{ block.shopify_attributes }}>
                 <span class="hero-feature-split__marker-{{ hero_id }}">
-                  {% if block.settings.marker_type == 'emoji' and block.settings.emoji != blank %}
+                  {% if block.settings.marker_type == 'icon' %}
+                    {%- comment -%} C4: Theme-Symbol statt Schriftzeichen {%- endcomment -%}
+                    <span class="hero-feature-split__icon-{{ hero_id }}">{%- render 'tp-vs-icon', name: 'check' -%}</span>
+                  {% elsif block.settings.marker_type == 'emoji' and block.settings.emoji != blank %}
                     <span class="hero-feature-split__emoji-{{ hero_id }}">{{ block.settings.emoji }}</span>
                   {% else %}
                     <span class="hero-feature-split__dot-{{ hero_id }}"></span>
@@ -445,8 +450,12 @@
           "type": "select",
           "id": "marker_type",
           "label": "Marker",
-          "default": "emoji",
+          "default": "icon",
           "options": [
+            {
+              "value": "icon",
+              "label": "Symbol (Haken)"
+            },
             {
               "value": "emoji",
               "label": "Emoji"

@@ -323,11 +323,11 @@
           "block_order": [
             "group_icgrde",
             "tp_aktion_hinweis",
-            "tp_bewertungsbeleg_night1",
             "divider_VJhene",
             "group_farbwahl",
-            "tp_muster_cta_1",
             "tp_rollware_rechner_sales1",
+            "tp_muster_cta_1",
+            "tp_bewertungsbeleg_night1",
             "buy_buttons_eYQEYi"
           ]
         }
@@ -527,159 +527,6 @@
           },
           "blocks": {}
         },
-        "tp_roll_order_help_sales1": {
-          "type": "tp-roll-order-help",
-          "name": "TP Rollenware-Hilfe",
-          "settings": {},
-          "blocks": {}
-        },
-        "tp_service_links_sales1": {
-          "type": "tp-service-links",
-          "name": "TP Service-Links",
-          "settings": {
-            "delivery_time": "5–7 Werktage"
-          },
-          "blocks": {}
-        },
-        "tp_rolle_service_titel": {
-          "type": "text",
-          "settings": {
-            "text": "<h2>Service vor Ort: Aufmaß, Lieferung, Verlegung</h2>",
-            "width": "100%",
-            "max_width": "normal",
-            "alignment": "left",
-            "type_preset": "h4",
-            "font": "var(--font-primary--family)",
-            "font_size": "",
-            "line_height": "normal",
-            "letter_spacing": "normal",
-            "case": "none",
-            "wrap": "pretty",
-            "color": "",
-            "background": false,
-            "background_color": "#00000026",
-            "corner_radius": 0,
-            "padding-block-start": 0,
-            "padding-block-end": 0,
-            "padding-inline-start": 0,
-            "padding-inline-end": 0
-          },
-          "blocks": {}
-        },
-        "tp_rolle_service_intro": {
-          "type": "text",
-          "settings": {
-            "text": "<p>Wenn Sie bei den Maßen unsicher sind, müssen Sie nicht raten: Wir nehmen das Aufmaß bei Ihnen vor Ort kostenlos auf und sagen Ihnen vorab, was Lieferung und Verlegung kosten.</p>",
-            "width": "100%",
-            "max_width": "normal",
-            "alignment": "left",
-            "type_preset": "paragraph",
-            "font": "var(--font-body--family)",
-            "font_size": "0.9375rem",
-            "line_height": "normal",
-            "letter_spacing": "normal",
-            "case": "none",
-            "wrap": "pretty",
-            "color": "",
-            "background": false,
-            "background_color": "#00000026",
-            "corner_radius": 0,
-            "padding-block-start": 0,
-            "padding-block-end": 0,
-            "padding-inline-start": 0,
-            "padding-inline-end": 0
-          },
-          "blocks": {}
-        },
-        "tp_rolle_service_duo": {
-          "type": "group",
-          "name": "Service-Karten",
-          "settings": {
-            "content_direction": "column",
-            "vertical_on_mobile": true,
-            "horizontal_alignment": "flex-start",
-            "vertical_alignment": "flex-start",
-            "align_baseline": false,
-            "horizontal_alignment_flex_direction_column": "flex-start",
-            "vertical_alignment_flex_direction_column": "flex-start",
-            "gap": 14,
-            "width": "fill",
-            "custom_width": 100,
-            "width_mobile": "fill",
-            "custom_width_mobile": 100,
-            "height": "fit",
-            "custom_height": 100,
-            "inherit_color_scheme": true,
-            "color_scheme": "",
-            "background_media": "none",
-            "video_position": "cover",
-            "background_image_position": "cover",
-            "border": "none",
-            "border_width": 1,
-            "border_opacity": 100,
-            "border_radius": 0,
-            "toggle_overlay": false,
-            "overlay_color": "#00000026",
-            "overlay_style": "solid",
-            "gradient_direction": "to top",
-            "link": "",
-            "open_in_new_tab": false,
-            "placeholder": "",
-            "padding-block-start": 0,
-            "padding-block-end": 0,
-            "padding-inline-start": 0,
-            "padding-inline-end": 0
-          },
-          "blocks": {
-            "tp_verlegen_lassen": {
-              "type": "tp-verlegen-lassen",
-              "settings": {
-                "titel": "Unsicher bei den Maßen? Wir messen für Sie auf.",
-                "text": "Sie müssen nicht selbst messen. Wir kommen vorbei, nehmen das Aufmaß kostenlos und liefern und verlegen auf Wunsch gleich mit – in Oranienburg und 50 km Umkreis, weiter auf Anfrage.",
-                "cta": "Verlegung anfragen",
-                "ziel": "/pages/kontakt",
-                "telefon": "+4933015733720",
-                "telefon_label": "oder anrufen: 03301 573 37 20"
-              }
-            },
-            "tp_verlegeservice_hinweis": {
-              "type": "tp-verlegeservice-hinweis",
-              "name": "TP Verlegehinweis",
-              "settings": {},
-              "blocks": {}
-            }
-          },
-          "block_order": [
-            "tp_verlegen_lassen",
-            "tp_verlegeservice_hinweis"
-          ]
-        },
-        "text_aEtTtq": {
-          "type": "text",
-          "name": "Product description",
-          "settings": {
-            "text": "{{ closest.product.description }}",
-            "width": "100%",
-            "max_width": "normal",
-            "alignment": "left",
-            "type_preset": "rte",
-            "font": "var(--font-primary--family)",
-            "font_size": "",
-            "line_height": "normal",
-            "letter_spacing": "normal",
-            "case": "none",
-            "wrap": "pretty",
-            "color": "",
-            "background": false,
-            "background_color": "#00000026",
-            "corner_radius": 0,
-            "padding-block-start": 0,
-            "padding-block-end": 0,
-            "padding-inline-start": 0,
-            "padding-inline-end": 0
-          },
-          "blocks": {}
-        },
         "tp_vorteile_sales1": {
           "type": "tp-vorteile",
           "name": "TP Vorteile",
@@ -692,36 +539,246 @@
           "settings": {},
           "blocks": {}
         },
-        "ai_gen_block_b888d9b_CJbJ8X": {
-          "type": "tp-produktinfo-tabelle",
-          "settings": {
-            "desktop_width_percent": 100,
-            "key_column_width": 35,
-            "cell_padding": 16,
-            "border_radius": 8,
-            "row_border_width": 1,
-            "background_color": "#ffffff",
-            "border_color": "#e6e6e6",
-            "key_text_color": "#000000",
-            "value_text_color": "#000000",
-            "key_font_size": 14,
-            "key_font_weight": "600",
-            "value_font_size": 14
+        "tp_produkt_akkordeon": {
+          "type": "accordion",
+          "settings": {},
+          "blocks": {
+            "tp_row_beschreibung": {
+              "type": "_accordion-row",
+              "settings": {
+                "heading": "Beschreibung",
+                "open_by_default": true
+              },
+              "blocks": {
+                "text_aEtTtq": {
+                  "type": "text",
+                  "name": "Product description",
+                  "settings": {
+                    "text": "{{ closest.product.description }}",
+                    "width": "100%",
+                    "max_width": "normal",
+                    "alignment": "left",
+                    "type_preset": "rte",
+                    "font": "var(--font-primary--family)",
+                    "font_size": "",
+                    "line_height": "normal",
+                    "letter_spacing": "normal",
+                    "case": "none",
+                    "wrap": "pretty",
+                    "color": "",
+                    "background": false,
+                    "background_color": "#00000026",
+                    "corner_radius": 0,
+                    "padding-block-start": 0,
+                    "padding-block-end": 0,
+                    "padding-inline-start": 0,
+                    "padding-inline-end": 0
+                  },
+                  "blocks": {}
+                }
+              },
+              "block_order": [
+                "text_aEtTtq"
+              ]
+            },
+            "tp_row_technik": {
+              "type": "_accordion-row",
+              "settings": {
+                "heading": "Technische Daten",
+                "open_by_default": false
+              },
+              "blocks": {
+                "ai_gen_block_b888d9b_CJbJ8X": {
+                  "type": "tp-produktinfo-tabelle",
+                  "settings": {
+                    "desktop_width_percent": 100,
+                    "key_column_width": 35,
+                    "cell_padding": 16,
+                    "border_radius": 8,
+                    "row_border_width": 1,
+                    "background_color": "#ffffff",
+                    "border_color": "#e6e6e6",
+                    "key_text_color": "#000000",
+                    "value_text_color": "#000000",
+                    "key_font_size": 14,
+                    "key_font_weight": "600",
+                    "value_font_size": 14
+                  },
+                  "blocks": {}
+                }
+              },
+              "block_order": [
+                "ai_gen_block_b888d9b_CJbJ8X"
+              ]
+            },
+            "tp_row_bestellen": {
+              "type": "_accordion-row",
+              "settings": {
+                "heading": "Bestellen & Messen",
+                "open_by_default": false
+              },
+              "blocks": {
+                "tp_roll_order_help_sales1": {
+                  "type": "tp-roll-order-help",
+                  "name": "TP Rollenware-Hilfe",
+                  "settings": {},
+                  "blocks": {}
+                },
+                "tp_rolle_service_titel": {
+                  "type": "text",
+                  "settings": {
+                    "text": "<h2>Service vor Ort: Aufmaß, Lieferung, Verlegung</h2>",
+                    "width": "100%",
+                    "max_width": "normal",
+                    "alignment": "left",
+                    "type_preset": "h4",
+                    "font": "var(--font-primary--family)",
+                    "font_size": "",
+                    "line_height": "normal",
+                    "letter_spacing": "normal",
+                    "case": "none",
+                    "wrap": "pretty",
+                    "color": "",
+                    "background": false,
+                    "background_color": "#00000026",
+                    "corner_radius": 0,
+                    "padding-block-start": 0,
+                    "padding-block-end": 0,
+                    "padding-inline-start": 0,
+                    "padding-inline-end": 0
+                  },
+                  "blocks": {}
+                },
+                "tp_rolle_service_intro": {
+                  "type": "text",
+                  "settings": {
+                    "text": "<p>Wenn Sie bei den Maßen unsicher sind, müssen Sie nicht raten: Wir nehmen das Aufmaß bei Ihnen vor Ort kostenlos auf und sagen Ihnen vorab, was Lieferung und Verlegung kosten.</p>",
+                    "width": "100%",
+                    "max_width": "normal",
+                    "alignment": "left",
+                    "type_preset": "paragraph",
+                    "font": "var(--font-body--family)",
+                    "font_size": "0.9375rem",
+                    "line_height": "normal",
+                    "letter_spacing": "normal",
+                    "case": "none",
+                    "wrap": "pretty",
+                    "color": "",
+                    "background": false,
+                    "background_color": "#00000026",
+                    "corner_radius": 0,
+                    "padding-block-start": 0,
+                    "padding-block-end": 0,
+                    "padding-inline-start": 0,
+                    "padding-inline-end": 0
+                  },
+                  "blocks": {}
+                },
+                "tp_rolle_service_duo": {
+                  "type": "group",
+                  "name": "Service-Karten",
+                  "settings": {
+                    "content_direction": "column",
+                    "vertical_on_mobile": true,
+                    "horizontal_alignment": "flex-start",
+                    "vertical_alignment": "flex-start",
+                    "align_baseline": false,
+                    "horizontal_alignment_flex_direction_column": "flex-start",
+                    "vertical_alignment_flex_direction_column": "flex-start",
+                    "gap": 14,
+                    "width": "fill",
+                    "custom_width": 100,
+                    "width_mobile": "fill",
+                    "custom_width_mobile": 100,
+                    "height": "fit",
+                    "custom_height": 100,
+                    "inherit_color_scheme": true,
+                    "color_scheme": "",
+                    "background_media": "none",
+                    "video_position": "cover",
+                    "background_image_position": "cover",
+                    "border": "none",
+                    "border_width": 1,
+                    "border_opacity": 100,
+                    "border_radius": 0,
+                    "toggle_overlay": false,
+                    "overlay_color": "#00000026",
+                    "overlay_style": "solid",
+                    "gradient_direction": "to top",
+                    "link": "",
+                    "open_in_new_tab": false,
+                    "placeholder": "",
+                    "padding-block-start": 0,
+                    "padding-block-end": 0,
+                    "padding-inline-start": 0,
+                    "padding-inline-end": 0
+                  },
+                  "blocks": {
+                    "tp_verlegen_lassen": {
+                      "type": "tp-verlegen-lassen",
+                      "settings": {
+                        "titel": "Unsicher bei den Maßen? Wir messen für Sie auf.",
+                        "text": "Sie müssen nicht selbst messen. Wir kommen vorbei, nehmen das Aufmaß kostenlos und liefern und verlegen auf Wunsch gleich mit – in Oranienburg und 50 km Umkreis, weiter auf Anfrage.",
+                        "cta": "Verlegung anfragen",
+                        "ziel": "/pages/kontakt",
+                        "telefon": "+4933015733720",
+                        "telefon_label": "oder anrufen: 03301 573 37 20"
+                      }
+                    },
+                    "tp_verlegeservice_hinweis": {
+                      "type": "tp-verlegeservice-hinweis",
+                      "name": "TP Verlegehinweis",
+                      "settings": {},
+                      "blocks": {}
+                    }
+                  },
+                  "block_order": [
+                    "tp_verlegen_lassen",
+                    "tp_verlegeservice_hinweis"
+                  ]
+                }
+              },
+              "block_order": [
+                "tp_roll_order_help_sales1",
+                "tp_rolle_service_titel",
+                "tp_rolle_service_intro",
+                "tp_rolle_service_duo"
+              ]
+            },
+            "tp_row_lieferung": {
+              "type": "_accordion-row",
+              "settings": {
+                "heading": "Lieferung",
+                "open_by_default": false
+              },
+              "blocks": {
+                "tp_service_links_sales1": {
+                  "type": "tp-service-links",
+                  "name": "TP Service-Links",
+                  "settings": {
+                    "delivery_time": "5–7 Werktage"
+                  },
+                  "blocks": {}
+                }
+              },
+              "block_order": [
+                "tp_service_links_sales1"
+              ]
+            }
           },
-          "blocks": {}
+          "block_order": [
+            "tp_row_beschreibung",
+            "tp_row_technik",
+            "tp_row_bestellen",
+            "tp_row_lieferung"
+          ]
         }
       },
       "block_order": [
         "tp_rolle_info_titel",
-        "tp_roll_order_help_sales1",
-        "tp_service_links_sales1",
-        "tp_rolle_service_titel",
-        "tp_rolle_service_intro",
-        "tp_rolle_service_duo",
-        "text_aEtTtq",
+        "tp_produkt_akkordeon",
         "tp_vorteile_sales1",
-        "tp_vertrauen_sales1",
-        "ai_gen_block_b888d9b_CJbJ8X"
+        "tp_vertrauen_sales1"
       ],
       "settings": {
         "content_direction": "column",

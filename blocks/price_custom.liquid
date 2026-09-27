@@ -90,6 +90,7 @@
     </span>
     {% endunless %}
   </div>
+  {%- render 'tp-aktion-bedingung', product: product_resource, id: block.id -%}
 
   {% if block_settings.show_tax_info %}
     <div class="tax-note">
@@ -142,6 +143,10 @@
     font-weight: 700;
   }
 
+  .tp-aktion-bedingung { display: flex; align-items: center; gap: 6px; margin: 6px 0 0; font-size: 13px; line-height: 1.4; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.75); }
+  .tp-tip { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 24px; min-height: 24px; cursor: help; }
+  .tp-tip__text { position: absolute; bottom: calc(100% + 6px); right: -8px; z-index: 20; width: 260px; padding: 10px 12px; border-radius: 6px; background: #1d1a17; color: #fff; font-size: 13px; line-height: 1.45; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .15s; }
+  .tp-tip:hover .tp-tip__text, .tp-tip:focus .tp-tip__text, .tp-tip:focus-within .tp-tip__text { opacity: 1; visibility: visible; }
   .price-with-unit__compare {
     color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.58);
     font-size: 0.82em;

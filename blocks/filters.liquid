@@ -251,7 +251,13 @@
                         else
                           assign should_render_clear = false
                         endif
-                        render 'list-filter', filter: filter, filter_style: block_settings.filter_style, active_value_count: active_value_count, should_render_clear: should_render_clear, show_swatch_label: block_settings.show_swatch_label, sectionId: section.id
+                        capture tp_filter_aus
+                          render 'tp-filter-sichtbar', filter: filter
+                        endcapture
+
+                        unless tp_filter_aus contains 'nein'
+                          render 'list-filter', filter: filter, filter_style: block_settings.filter_style, active_value_count: active_value_count, should_render_clear: should_render_clear, show_swatch_label: block_settings.show_swatch_label, sectionId: section.id
+                        endunless
                       %}
                   {% endcase %}
                 {%- endfor -%}
@@ -522,7 +528,13 @@
 
                         assign active_value_count = filter.active_values | size
                         assign total_active_values = total_active_values | plus: active_value_count
-                        render 'list-filter', filter: filter, filter_style: 'vertical', active_value_count: active_value_count, should_render_clear: false, in_drawer: true, sectionId: section.id
+                        capture tp_filter_aus
+                          render 'tp-filter-sichtbar', filter: filter
+                        endcapture
+
+                        unless tp_filter_aus contains 'nein'
+                          render 'list-filter', filter: filter, filter_style: 'vertical', active_value_count: active_value_count, should_render_clear: false, in_drawer: true, sectionId: section.id
+                        endunless
                       %}
                   {% endcase %}
                 {%- endfor -%}

@@ -16,7 +16,7 @@
         "feature_G9VPtX": {
           "type": "feature",
           "settings": {
-            "marker_type": "emoji",
+            "marker_type": "icon",
             "emoji": "☺",
             "text": "Im Raummaß konfigurierbar"
           }
@@ -24,7 +24,7 @@
         "feature_REk6eM": {
           "type": "feature",
           "settings": {
-            "marker_type": "emoji",
+            "marker_type": "icon",
             "emoji": "★",
             "text": "Bewertet von echten Kunden bei Google"
           }
@@ -32,7 +32,7 @@
         "feature_jHCLp9": {
           "type": "feature",
           "settings": {
-            "marker_type": "emoji",
+            "marker_type": "icon",
             "emoji": "⌁",
             "text": "Musterservice für alle Produkte"
           }
