@@ -7,8 +7,8 @@
   --tp-red-soft: #fbeeef;
   --tp-ink: #1d1a17;
   --tp-ink-2: #4a443f;
-  /* 5,7:1 auf --tp-bg-2 (vorher #7a726a mit 4,2:1 - unter WCAG AA) */
-  --tp-muted: #655e57;
+  /* V9 (Design-Runde 3): kein Grau heller als #595959 (vorher #655e57) */
+  --tp-muted: #595959;
   --tp-line: #e6e0d8;
   --tp-line-2: #d5cec4;
   --tp-bg-2: #f6f2ec;

@@ -25,6 +25,114 @@
     --color-primary-button-hover-text: #ffffff;
   }
 
+  /* V9: Versal-Labels werden normal geschriebene, halbfette Labels in
+     14 px. Badges und Marken bleiben, wie sie sind. */
+    html body .tp-br__label,
+    html body .tp-bp__ursachen-label,
+    html body .tp-bw-suche__art,
+    html body .tp-category-copy__label,
+    html body .tp-ek__mass-label,
+    html body .tp-ek__summe span,
+    html body .tp-ew__titel,
+    html body .tp-farbanzeige__label,
+    html body .tp-lb__tipp-label,
+    html body .tp-le__label,
+    html body .tp-lhero__eyebrow,
+    html body .tp-lex-nav__gruppe,
+    html body .menu-drawer .tp-dn__label,
+    html body .tp-nav-group,
+    html body .tp-rg-fakten__punkt dt,
+    html body .tp-rg-kopf__art,
+    html body .tp-rg-kurz__label,
+    html body .tp-rg-toc__titel,
+    html body .tp-rg-karte__art,
+    html body .tp-ra-calc-total-label,
+    html body .tp-seo__h4,
+    html body .tp-step-heading__label,
+    html body .tp-se__artikel-art,
+    html body .tp-se__h,
+    html body [class*="tp-teppich-aeb__label-"],
+    html body [class*="tp-teppich-pd__key-"],
+    html body .tp-tep-kicker,
+    html body .tp-vs-tabelle thead th,
+    html body [class*="eyebrow"],
+    html body [class*="carpet-package__results-title"],
+    html body .details__header {
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  /* V9: kein Grau heller als #595959. Deaktivierte Filteroptionen bleiben
+     bewusst blasser. */
+  html body .tp-bc__link,
+  html body .tp-bc__stufe,
+  html body .tp-product-breadcrumb,
+  html body .tp-product-breadcrumb :is(a, span),
+  html body .facets__disabled-hint,
+  html body .facets .checkbox__label-text,
+  html body .price-with-unit__compare,
+  html body .tp-price-per-sqm__compare,
+  html body .tp-card-product-kind,
+  html body .tp-roll-order-help__measure-note,
+  html body .compare-at-price {
+    color: #595959;
+    opacity: 1;
+  }
+  html body .facets .checkbox__input:disabled ~ .checkbox__label .checkbox__label-text,
+  html body .facets .checkbox--disabled .checkbox__label-text {
+    color: rgb(0 0 0 / 0.4);
+  }
+
+  /* V9: Akkordeon-Kopfzeilen (Beschreibung, Technische Daten ...) standen
+     bei 12 px - sie sind Ueberschriften, keine Fussnoten. */
+  html body .accordion .details__header {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  /* V9: kein Text unter 12 px, am Telefon nicht unter 13 px. */
+  html body .tp-card-product-kind,
+  html body .tp-card-roll-widths__label,
+  html body .tp-card-roll-widths__values,
+  html body [class*="tp-pit-lexikon__titel"],
+  html body .tp-lex-inline__link {
+    font-size: 12px;
+  }
+  @media screen and (max-width: 749px) {
+    html body .tp-kat__n,
+    html body .tp-card-product-kind,
+    html body .tp-card-roll-widths__label,
+    html body .tp-card-roll-widths__values,
+    html body .tp-card-title__linie,
+    html body .tp-card-actions__sample,
+    html body .tp-price-card-package,
+    html body .tp-muster__hinweis,
+    html body .tp-s-note,
+    html body .tp-bc,
+    html body .tp-bc__link,
+    html body .tp-price-per-sqm__label,
+    html body [class*="tp-service-links"],
+    html body [class*="tp-service-links"] :is(a, p, span, strong, summary),
+    html body [class*="tp-muster-cta__hinweis"],
+    html body .tp-preisangabe,
+    html body .tp-preisangabe a,
+    html body [class*="tp-pit-lexikon__titel"],
+    html body .tp-lex-inline__link,
+    html body .tp-roll-order-help__measure-note,
+    html body [class*="tp-rwc-"] .tp-rwc-art-sub,
+    html body [class*="tp-newsletter"] :is(p, a, small),
+    html body [class*="tp-nl"] :is(p, a, small),
+    html body .tp-hero small,
+    html body .tp-trust .tp-trust__rating small,
+    html body .tp-product-breadcrumb,
+    html body .tp-product-breadcrumb :is(a, span),
+    html body main small {
+      font-size: 13px;
+    }
+  }
+
   {%- if request.page_type == 'product' or request.page_type == 'collection' -%}
     /* V5: Rich-Text in Produkt- und Kategoriebeschreibungen - klare
        Hierarchie und eine lesbare Zeilenlaenge. */
@@ -33,5 +141,9 @@
     main .text-block.rte h3 { font-size: 18px; line-height: 1.35; margin: 1.3em 0 0.4em; }
     main .text-block.rte h4 { font-size: 16px; font-weight: 600; line-height: 1.4; margin: 1.2em 0 0.3em; }
     main .text-block.rte > :first-child { margin-top: 0; }
+    /* V9: Listen in Beschreibungen immer mit Punkt bzw. Nummer. */
+    main .text-block.rte ul { list-style: disc; padding-left: 1.25em; }
+    main .text-block.rte ol { list-style: decimal; padding-left: 1.4em; }
+    main .text-block.rte li { display: list-item; }
   {%- endif -%}
 </style>
