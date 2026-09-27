@@ -210,6 +210,65 @@
   <p class="tp-rwc-note tp-rwc-note-error" data-error-stock hidden></p>
 
   {%- comment -%}
+    K4: Zubehoer als eingeklappter Abschnitt direkt unter den Massen. Jede
+    Zeile ist eine Checkbox mit dem fuer dieses Stueck berechneten Preis
+    (Fussleiste: Umfang, Haftunterlage: Bahnen x Laenge). "Mehr dazu" ist ein
+    Tooltip statt eines aufklappenden Absatzes. Sichtbar nur, wenn der Rechner
+    fuer diese Farbe mindestens einen Zusatz anbietet (updateExtras).
+  {%- endcomment -%}
+  {%- if tp_rc_leiste != blank or tp_rc_haft != blank -%}
+    <details class="tp-rwc-zubehoer" id="tp-rwc-extras-{{ tp_rc_id }}" data-zubehoer hidden data-rwc-body>
+      <summary class="tp-rwc-zubehoer__kopf">Zubehör <span>(optional)</span></summary>
+      {%- if tp_rc_leiste != blank -%}
+        <div class="tp-rwc-extra" data-extra="leiste" hidden>
+          <label class="tp-rwc-karte">
+            <input type="checkbox" data-leiste-an>
+            <span class="tp-rwc-karte-text">
+              <b>Passende Fußleiste, gekettelt</b>
+              <small data-leiste-umfang></small>
+            </span>
+            <span class="tp-rwc-karte-preis" data-leiste-preis></span>
+          </label>
+          <span class="tp-rwc-tip">
+            <button type="button" class="tp-rwc-tip__knopf" aria-describedby="tp-rwc-tip-l-{{ tp_rc_id }}">Mehr dazu</button>
+            <span class="tp-rwc-tip__text" role="tooltip" id="tp-rwc-tip-l-{{ tp_rc_id }}">Aus dem passenden Teppichmaterial fertigen wir eine gekettelte Fußleiste in Ihrer Höhe. Berechnet wird je laufendem Meter, Vorschlag ist der Umfang Ihres Stücks.</span>
+          </span>
+          <div class="tp-rwc-extra-felder" data-leiste-felder hidden>
+            <div>
+              <label class="tp-rwc-label" for="tp-rwc-lh-{{ tp_rc_id }}">Höhe</label>
+              <select id="tp-rwc-lh-{{ tp_rc_id }}" class="tp-rwc-select" data-leiste-hoehe></select>
+            </div>
+            <div>
+              <label class="tp-rwc-label" for="tp-rwc-lm-{{ tp_rc_id }}">Länge in Metern</label>
+              <div class="tp-rwc-input-wrap">
+                <input type="number" id="tp-rwc-lm-{{ tp_rc_id }}" class="tp-rwc-input" inputmode="decimal" min="0.5" step="0.1" placeholder="z. B. 18,5" data-leiste-meter>
+                <span class="tp-rwc-unit">m</span>
+              </div>
+            </div>
+            <p class="tp-rwc-note" data-leiste-hint></p>
+          </div>
+        </div>
+      {%- endif -%}
+      {%- if tp_rc_haft != blank -%}
+        <div class="tp-rwc-extra" data-extra="haft" hidden>
+          <label class="tp-rwc-karte">
+            <input type="checkbox" data-haft-an>
+            <span class="tp-rwc-karte-text">
+              <b>Haftunterlage (Antirutsch)</b>
+              <small data-haft-hint></small>
+            </span>
+            <span class="tp-rwc-karte-preis" data-haft-preis></span>
+          </label>
+          <span class="tp-rwc-tip">
+            <button type="button" class="tp-rwc-tip__knopf" aria-describedby="tp-rwc-tip-h-{{ tp_rc_id }}">Mehr dazu</button>
+            <span class="tp-rwc-tip__text" role="tooltip" id="tp-rwc-tip-h-{{ tp_rc_id }}" data-haft-text>Wird unter dem Teppichboden ausgelegt und hält ihn auf glatten Böden an Ort und Stelle – ohne den Untergrund zu verkleben. Mit der Schere zuschneidbar.</span>
+          </span>
+        </div>
+      {%- endif -%}
+    </details>
+  {%- endif -%}
+
+  {%- comment -%}
     Reihenfolge der Kaufstrecke (Inhaberauftrag 2026-09-21): nach den Massen
     sofort Preis und Kaufknopf. Visualisierer, Zusatzoptionen, Vertrauenszeile,
     Lieferhinweis und Beratung folgen darunter - alles bleibt erhalten, nur
@@ -240,12 +299,6 @@
       <p class="tp-rwc-stueck-mass" data-stueck-mass></p>
       <p class="tp-rwc-stueck-preis" data-stueck-preis></p>
     </div>
-    {%- comment -%}
-      Fussleiste und Haftunterlage stehen unter dem Kaufknopf. Der Verweis
-      erscheint nur, wenn der Rechner sie fuer diese Farbe anbietet
-      (updateExtras), und verschwindet, sobald eine gewaehlt ist.
-    {%- endcomment -%}
-    <a class="tp-rwc-calc-extras-link" href="#tp-rwc-extras-{{ tp_rc_id }}" data-extras-link hidden>+ Fußleiste oder Haftunterlage dazu? Weiter unten wählen</a>
     <p class="tp-rwc-aktion" data-aktion-zeile hidden></p>
     <div class="tp-rwc-calc-total">
       <span class="tp-rwc-calc-total-label">Gesamtpreis</span>
@@ -306,51 +359,6 @@
     </div>
   </figure>
 
-
-
-  {%- if tp_rc_leiste != blank -%}
-    <div id="tp-rwc-extras-{{ tp_rc_id }}"></div>
-    <div class="tp-rwc-field tp-rwc-extra" data-extra="leiste" hidden data-rwc-body>
-      {% render 'tp-step-heading', number: 4, label: 'Passende Teppich-Fußleiste' %}
-      <label class="tp-rwc-karte">
-        <input type="checkbox" data-leiste-an>
-        <span class="tp-rwc-karte-text"><b>Gekettelte Fußleiste aus Ihrem Teppich</b></span>
-        <span class="tp-rwc-karte-preis" data-leiste-preis></span>
-      </label>
-      <details class="tp-rwc-info">
-        <summary>Mehr dazu</summary>
-        <p>Auf Wunsch fertigen wir aus dem passenden Teppichmaterial eine gekettelte Fußleiste in Ihrer Höhe.</p>
-      </details>
-      <div class="tp-rwc-extra-felder" data-leiste-felder hidden>
-        <div>
-          <label class="tp-rwc-label" for="tp-rwc-lh-{{ tp_rc_id }}">Höhe</label>
-          <select id="tp-rwc-lh-{{ tp_rc_id }}" class="tp-rwc-select" data-leiste-hoehe></select>
-        </div>
-        <div>
-          <label class="tp-rwc-label" for="tp-rwc-lm-{{ tp_rc_id }}">Länge der Fußleiste in Metern</label>
-          <div class="tp-rwc-input-wrap">
-            <input type="number" id="tp-rwc-lm-{{ tp_rc_id }}" class="tp-rwc-input" inputmode="decimal" min="0.5" step="0.1" placeholder="z. B. 18,5" data-leiste-meter>
-            <span class="tp-rwc-unit">m</span>
-          </div>
-        </div>
-        <p class="tp-rwc-note" data-leiste-hint></p>
-      </div>
-    </div>
-  {%- endif -%}
-  {%- if tp_rc_haft != blank -%}
-    <div class="tp-rwc-field tp-rwc-extra" data-extra="haft" hidden data-rwc-body>
-      {% render 'tp-step-heading', number: 5, label: 'Haftunterlage für Teppichboden' %}
-      <label class="tp-rwc-karte">
-        <input type="checkbox" data-haft-an>
-        <span class="tp-rwc-karte-text"><b>Dünne Antirutsch-Unterlage von der Rolle</b><small data-haft-hint></small></span>
-        <span class="tp-rwc-karte-preis" data-haft-preis></span>
-      </label>
-      <details class="tp-rwc-info">
-        <summary>Mehr dazu</summary>
-        <p data-haft-text>Wird unter dem Teppichboden ausgelegt und hält ihn auf glatten Böden an Ort und Stelle – ohne den Untergrund zu verkleben. Mit der Schere zuschneidbar.</p>
-      </details>
-    </div>
-  {%- endif -%}
 
 
   <p class="tp-rwc-liefern" data-rwc-body>
@@ -954,8 +962,8 @@
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte input { width: 20px; height: 20px; margin: 0; accent-color: #1d6b47; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-text { display: grid; gap: 2px; min-width: 0; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-text b { font-size: .9rem; line-height: 1.25; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-text small { font-size: .8rem; color: var(--tp-rwc-muted); }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-preis { font-size: .85rem; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-text small { font-size: 13px; color: #595959; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-preis { font-size: 15px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; align-items: end; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder .tp-rwc-select,
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder .tp-rwc-input-wrap { max-width: none; }
@@ -978,6 +986,24 @@
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-stueck p { margin: 0; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-stueck-mass { font-size: .9rem; font-weight: 700; line-height: 1.35; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-stueck-preis { font-size: .8rem; line-height: 1.4; color: var(--tp-rwc-muted); }
+
+  /* K4: Zubehoer eingeklappt, Tooltip statt Aufklapptext. */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer { margin: 4px 0 12px; border-top: 1px solid var(--tp-rwc-line); border-bottom: 1px solid var(--tp-rwc-line); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer__kopf { display: flex; align-items: center; justify-content: space-between; min-height: 44px; cursor: pointer; font-size: 15px; font-weight: 600; list-style: none; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer__kopf::-webkit-details-marker { display: none; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer__kopf span { font-weight: 400; color: #595959; margin-right: auto; margin-left: 6px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer__kopf::after { content: '+'; font-size: 20px; font-weight: 400; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer[open] > .tp-rwc-zubehoer__kopf::after { content: '\2212'; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer .tp-rwc-extra { margin: 0 0 10px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-tip { position: relative; display: inline-block; margin: 4px 0 0 30px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-tip__knopf { padding: 4px 0; border: 0; background: none; color: var(--tp-rwc-ink); font: inherit; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; cursor: help; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-tip__text {
+    position: absolute; left: 0; bottom: calc(100% + 6px); z-index: 5; width: min(280px, 80vw);
+    padding: 10px 12px; border-radius: 6px; background: #1d1d1d; color: #fff; font-size: 13px; line-height: 1.45;
+    opacity: 0; visibility: hidden; transition: opacity .15s;
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-tip:hover .tp-rwc-tip__text,
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-tip:focus-within .tp-rwc-tip__text { opacity: 1; visibility: visible; }
 
   /* Eingeklappte Erklaertexte in der Kaufstrecke. */
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-info { margin: 4px 0 0; font-size: .8rem; color: var(--tp-rwc-muted); }
@@ -1560,7 +1586,7 @@ function tpRwcInit{{ tp_rc_id }}() {
   var leisteBox = root.querySelector('[data-extra="leiste"]');
   var haftBox = root.querySelector('[data-extra="haft"]');
   var formulaExtras = root.querySelector('[data-formula-extras]');
-  var extrasLink = root.querySelector('[data-extras-link]');
+  var zubehoerBox = root.querySelector('[data-zubehoer]');
   var leisteVarianten = (data.leiste || []).filter(function (v) { return v && parseFloat(v.price) > 0; });
   // Breite der Haftunterlage steht im Variantentitel ("1 mm, 180 cm breit
   // (je lfm)"). Ohne erkennbare Breite faellt die Variante weg - lieber keine
@@ -1618,8 +1644,20 @@ function tpRwcInit{{ tp_rc_id }}() {
       var lv = leisteVarianten.filter(function (v) { return sel && String(v.id) === String(sel.value); })[0];
       var lHint = leisteBox.querySelector('[data-leiste-hint]');
       var lPreisEl = leisteBox.querySelector('[data-leiste-preis]');
-      if (lPreisEl && leisteVarianten.length) {
-        lPreisEl.textContent = fmt(Math.min.apply(null, leisteVarianten.map(function (v) { return parseFloat(v.price); })) / 100) + ' € / m';
+      // K4: Preis fuer dieses Stueck - Umfang in vollen Metern mal Preis der
+      // gewaehlten (sonst der ersten) Hoehe. Ohne Masse der Meterpreis.
+      var lUmfangEl = leisteBox.querySelector('[data-leiste-umfang]');
+      var lPreisV = leisteVarianten.filter(function (v) { return sel && String(v.id) === String(sel.value); })[0] || leisteVarianten[0];
+      var lMeterVorschlag = an ? m : (w > 0 && len > 0 ? Math.ceil((2 * (w + len)) / 100 - 1e-9) : 0);
+      if (lPreisEl && lPreisV) {
+        lPreisEl.textContent = lMeterVorschlag > 0
+          ? fmt(lMeterVorschlag * parseFloat(lPreisV.price) / 100) + ' €'
+          : fmt(parseFloat(lPreisV.price) / 100) + ' € / m';
+      }
+      if (lUmfangEl) {
+        lUmfangEl.textContent = lMeterVorschlag > 0
+          ? (an ? lMeterVorschlag + ' m' : 'Umfang ' + lMeterVorschlag + ' m') + ' × ' + fmt(parseFloat(lPreisV.price) / 100) + ' €'
+          : 'Preis je laufendem Meter';
       }
       if (an && lv && m > 0) {
         var lPreis = parseFloat(lv.price) / 100;
@@ -1652,6 +1690,7 @@ function tpRwcInit{{ tp_rc_id }}() {
       if (hPreisEl && haftVarianten.length) {
         hPreisEl.textContent = 'ab ' + fmt(Math.min.apply(null, haftVarianten.map(function (v) { return v.price; })) / 100) + ' € / m';
       }
+      var hPreisSetzen = function (b) { if (hPreisEl && b) hPreisEl.textContent = fmt(b.summe) + ' €'; };
       // Bahnen nebeneinander, jede in voller Laenge; abgerechnet je laufendem
       // Meter. Von den vorhandenen Breiten gewinnt die guenstigste Variante.
       var beste = null;
@@ -1663,6 +1702,7 @@ function tpRwcInit{{ tp_rc_id }}() {
           if (!beste || summe < beste.summe) beste = { v: v, bahnen: bahnen, meter: meter, summe: summe };
         });
       }
+      hPreisSetzen(beste);
       if (hHint) {
         hHint.textContent = beste
           ? beste.v.breite + ' cm breit · ' + beste.bahnen + (beste.bahnen === 1 ? ' Bahn' : ' Bahnen') + ' = ' + beste.meter + ' lfm'
@@ -1691,9 +1731,8 @@ function tpRwcInit{{ tp_rc_id }}() {
       });
       formulaExtras.hidden = !res.lines.length;
     }
-    if (typeof extrasLink !== 'undefined' && extrasLink) {
-      var angeboten = (leisteBox && !leisteBox.hidden) || (haftBox && !haftBox.hidden);
-      extrasLink.hidden = !angeboten || res.lines.length > 0;
+    if (typeof zubehoerBox !== 'undefined' && zubehoerBox) {
+      zubehoerBox.hidden = !((leisteBox && !leisteBox.hidden) || (haftBox && !haftBox.hidden));
     }
     return res;
   }
