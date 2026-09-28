@@ -3641,6 +3641,15 @@ const ORG_ANSICHTEN = [
 // Am Handy nahmen elf Chips den halben Bildschirm ein, bevor die erste
 // Aufgabe kam. Vier reichen fuer den Alltag, der Rest steht einen Klick weiter.
 const ORG_ANSICHTEN_HAUPT = ['offen', 'heute', 'ueberfaellig', 'erledigt'];
+const ORG_DRINGLICHKEIT = [
+  ['ueberfaellig', 'Überfällig', 'Frist bereits verstrichen'],
+  ['jetzt', 'Jetzt wichtig', 'Dringend oder heute fällig'],
+  ['demnaechst', 'Als Nächstes', 'Hohe Priorität oder diese Woche fällig'],
+  ['weitere', 'Weitere offene Aufgaben', 'Ohne unmittelbare Frist'],
+  ['wartet', 'Wartet auf andere', 'Im Moment nicht selbst abschließbar'],
+  ['zurueckgestellt', 'Zurückgestellt', 'Für später vorgemerkt'],
+  ['erledigt', 'Erledigt', 'Bereits abgeschlossen'],
+];
 /**
  * Der Stand als Text: was schon offen ist, damit ChatGPT nicht dieselben
  * Punkte noch einmal liefert. Zusammen mit der Anweisung ergibt das den
@@ -3804,8 +3813,6 @@ function orgZeile(e, { bereich = '' } = {}) {
   // Der Server liefert je Eintrag mit, ob man ihn aendern darf. Ohne das
   // standen Knoepfe da, die in einer Fehlermeldung endeten.
   const darf = e.darfAendern !== false && !istNurLesend();
-  const istMeine = e.verantwortlich && org.liste?.ich
-    && String(e.verantwortlich).toLowerCase() === String(org.liste.ich).toLowerCase();
   const prioKlasse = e.prioritaet === 'URGENT' ? 'crit' : e.prioritaet === 'HIGH' ? 'gap' : 'plain';
   const merkmale = [
     e.verknuepft?.art === 'kunde' && e.verknuepft.id
@@ -3831,11 +3838,6 @@ function orgZeile(e, { bereich = '' } = {}) {
       ${e.typ === 'TASK' ? `<span class="badge status ${esc(e.status.toLowerCase())}">${esc(ORG_STATUS_LABEL[e.status] || e.status)}</span>` : ''}
       ${darf && e.typ === 'TASK' && e.status !== 'DONE' && !e.verantwortlich
         ? `<button type="button" class="btn btn-sm" data-org-uebernehmen="${esc(e.id)}" onclick="event.stopPropagation()" title="Diese Aufgabe auf deinen Namen setzen">Ich mache das</button>` : ''}
-      ${darf && e.typ === 'TASK' && e.status !== 'DONE' && istMeine
-        ? `<button type="button" class="btn btn-sm" data-org-abgeben="${esc(e.id)}" onclick="event.stopPropagation()" title="Zurück ins Team legen">Abgeben</button>` : ''}
-      ${darf && e.typ === 'TASK' && e.status !== 'DONE' && !e.faellig
-        ? `<button type="button" class="btn btn-sm" data-org-faellig="${esc(e.id)}" data-tag="${esc(heuteTag())}" onclick="event.stopPropagation()" title="Fällig heute">Heute</button>
-           <button type="button" class="btn btn-sm" data-org-faellig="${esc(e.id)}" data-tag="${esc(heuteTag(1))}" onclick="event.stopPropagation()" title="Fällig morgen">Morgen</button>` : ''}
       ${darf && e.typ === 'TASK' && e.status !== 'DONE' ? `<button type="button" class="btn btn-sm" data-org-fertig="${esc(e.id)}" onclick="event.stopPropagation()" title="Aufgabe abhaken">✓ Abhaken</button>` : ''}
       ${darf && e.typ === 'NOTE' ? `<button type="button" class="btn btn-sm" data-org-zuaufgabe="${esc(e.id)}" onclick="event.stopPropagation()" title="Aus dieser Notiz eine Aufgabe machen">In Aufgabe umwandeln</button>` : ''}
     </div>
@@ -4387,12 +4389,21 @@ function viewOrganisation() {
   if (!d && org.loading) return kopf + reiter + `<div class="empty">Lade …</div>`;
   if (!d || !d.verfuegbar) return kopf + reiter + emptyState('Noch nichts erfasst.', 'Mit „+ Schnell erfassen" anfangen.');
 
+  const sindAufgaben = ['meine-aufgaben', 'team-aufgaben'].includes(bereich);
   const liste = d.eintraege.length
-    ? `<div class="rows">${d.eintraege.map(e => orgZeile(e, { bereich })).join('')}</div>`
+    ? sindAufgaben
+      ? ORG_DRINGLICHKEIT.map(([key, titel, hinweis]) => {
+        const eintraege = d.eintraege.filter(e => (e.dringlichkeit || 'weitere') === key);
+        return eintraege.length ? `<section class="org-dringlichkeit org-dringlichkeit-${key}" aria-label="${esc(titel)}">
+          <div class="org-dringlichkeit-kopf"><h2>${esc(titel)} <span class="org-dringlichkeit-zahl">${eintraege.length}</span></h2><span>${esc(hinweis)}</span></div>
+          <div class="rows">${eintraege.map(e => orgZeile(e, { bereich })).join('')}</div>
+        </section>` : '';
+      }).join('')
+      : `<div class="rows">${d.eintraege.map(e => orgZeile(e, { bereich })).join('')}</div>`
     : emptyState(bereich === 'meine-aufgaben' ? 'Nichts offen in dieser Ansicht.' : 'Nichts vorhanden.', 'Mit „+ Schnell erfassen" etwas anlegen.');
 
   return kopf + reiter + suche + ansichten + gruppen + personen +
-    `<p class="small muted" style="margin:0 0 8px">${d.anzahl} ${d.anzahl === 1 ? 'Eintrag' : 'Einträge'}</p>` + liste;
+    `<p class="small muted" style="margin:0 0 8px">${d.anzahl} ${d.anzahl === 1 ? 'Eintrag' : 'Einträge'}${sindAufgaben ? ' · nach Dringlichkeit geordnet' : ''}</p>` + liste;
 }
 
 /**
@@ -4847,27 +4858,11 @@ function bindEvents() {
         { art: 'kunde', id: ka.dataset.kundeAufgabe, titel: ka.dataset.kundeName });
       return;
     }
-    const fae = e.target.closest('[data-org-faellig]');
-    if (fae) {
-      e.preventDefault(); e.stopPropagation();
-      orgSchreiben('/api/org/aendern', { id: fae.dataset.orgFaellig, felder: { faellig: fae.dataset.tag } })
-        .then(() => { toast('Termin gesetzt'); orgFrisch(); render(); })
-        .catch(err => toast(`Fehler: ${err.message}`, 'crit'));
-      return;
-    }
     const ueb = e.target.closest('[data-org-uebernehmen]');
     if (ueb) {
       e.preventDefault(); e.stopPropagation();
       orgSchreiben('/api/org/aendern', { id: ueb.dataset.orgUebernehmen, felder: { verantwortlich: org.liste?.ich || null } })
         .then(() => { toast('Steht jetzt auf deinem Namen'); orgFrisch(); render(); })
-        .catch(err => toast(`Fehler: ${err.message}`, 'crit'));
-      return;
-    }
-    const abg = e.target.closest('[data-org-abgeben]');
-    if (abg) {
-      e.preventDefault(); e.stopPropagation();
-      orgSchreiben('/api/org/aendern', { id: abg.dataset.orgAbgeben, felder: { verantwortlich: null } })
-        .then(() => { toast('Zurück ins Team gelegt'); orgFrisch(); render(); })
         .catch(err => toast(`Fehler: ${err.message}`, 'crit'));
       return;
     }
