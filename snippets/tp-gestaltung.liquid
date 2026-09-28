@@ -72,13 +72,31 @@
   html body .tp-product-breadcrumb :is(a, span),
   html body .facets__disabled-hint,
   html body .facets .checkbox__label-text,
-  html body .price-with-unit__compare,
-  html body .tp-price-per-sqm__compare,
   html body .tp-card-product-kind,
-  html body .tp-roll-order-help__measure-note,
-  html body .compare-at-price {
+  html body .tp-roll-order-help__measure-note {
     color: #595959;
     opacity: 1;
+  }
+
+  /* Inhaber 2026-09-28: Aktion auffaellig. Der alte Preis bleibt grau
+     durchgestrichen, der neue Preis - den der Kunde zahlt - steht rot und
+     fett daneben, dazu das Schild "-X %". #c8102e hat 5,9:1 Kontrast. */
+  html body .compare-at-price,
+  html body .price-with-unit__compare,
+  html body .tp-price-per-sqm__compare {
+    color: #595959;
+    opacity: 1;
+    font-weight: 400;
+  }
+  html body .price__sale .price-item--sale,
+  html body .price__sale .price-item--sale :is(.price-card-per-unit, .price-card-from),
+  html body .price-with-unit__compare ~ .price-with-unit__current,
+  html body .tp-price-per-sqm:has(.tp-price-per-sqm__compare) .tp-price-per-sqm__amount,
+  html body .tp-ab-preis:has(.tp-ab-preis__alt) .tp-ab-preis__betrag,
+  html body .tp-ek__summe-werte:has(.tp-ek__summe-alt:not([hidden])) [data-summe],
+  html body .tp-preis-neu {
+    color: #c8102e;
+    font-weight: 700;
   }
   html body .facets .checkbox__input:disabled ~ .checkbox__label .checkbox__label-text,
   html body .facets .checkbox--disabled .checkbox__label-text {
@@ -139,7 +157,9 @@
      ueber einer leeren Karte. Ohne JavaScript bleibt das Badge sichtbar. */
   .product-media-container { background: #f3f0eb; }
   .tp-rabatt-badge--karte { transition: opacity 0.2s ease; }
-  html.tp-bild-warten :is(product-card, product-card-component, li):not([data-tp-bild-da]) .tp-rabatt-badge--karte { opacity: 0; }
+  html.tp-bild-warten :is(product-card, product-card-component, li):not([data-tp-bild-da]):not(:has([data-tp-bild-da])) .tp-rabatt-badge--karte { opacity: 0; }
+  /* 2026-09-28: ohne :not(:has(...)) blieb das Badge im Kollektionsraster
+     immer unsichtbar - das Raster-li wird nie markiert, nur die Karte darin. */
 
   {%- if request.page_type == 'product' or request.page_type == 'collection' -%}
     /* V5: Rich-Text in Produkt- und Kategoriebeschreibungen - klare

@@ -1336,8 +1336,14 @@ function tpRwcInit{{ tp_rc_id }}() {
         alt.textContent = fmt(cmpRate);
         preis.appendChild(alt);
         preis.appendChild(document.createTextNode(' '));
+        // Neuer Preis rot (Inhaber 2026-09-28), Farbe in snippets/tp-gestaltung
+        var neu = document.createElement('span');
+        neu.className = 'tp-preis-neu';
+        neu.textContent = fmt(rate) + '\u00a0€/m²';
+        preis.appendChild(neu);
+      } else {
+        preis.appendChild(document.createTextNode(fmt(rate) + '\u00a0€/m²'));
       }
-      preis.appendChild(document.createTextNode(fmt(rate) + '\u00a0€/m²'));
       el.appendChild(preis);
     }
   }
