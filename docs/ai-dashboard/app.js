@@ -3752,6 +3752,12 @@ function orgParams() {
   return { bereich, ansicht, gruppe, person: p.get('op') || '', q: p.get('oq') || '', id: p.get('oid') || '' };
 }
 
+function orgEintragOeffnen(id) {
+  const p = new URLSearchParams(state.route.params);
+  p.set('oid', id);
+  location.hash = `#/organisation?${p}`;
+}
+
 function ensureOrgListe() {
   const { bereich, ansicht, gruppe, person, q } = orgParams();
   const key = `${bereich}|${ansicht}|${gruppe}|${person}|${q}`;
@@ -3824,6 +3830,8 @@ function orgZeile(e, { bereich = '' } = {}) {
     e.wartetAuf ? `wartet auf ${esc(e.wartetAuf)}` : '',
   ].filter(Boolean);
   const inNotizAnsicht = bereich === 'meine-notizen' || bereich === 'team-notizen';
+  // Die Aktionen haengen am document-Klickhandler. Inline stopPropagation wuerde
+  // Abhaken, Uebernehmen und Umwandeln vor diesem Handler abschneiden.
   return `<div class="row org-zeile${e.status === 'DONE' ? ' fertig' : ''}" data-org-open="${esc(e.id)}" tabindex="0" role="button" aria-label="${esc(e.titel)}">
     <div>
       <div class="t">${esc(e.titel)}
@@ -3837,9 +3845,9 @@ function orgZeile(e, { bereich = '' } = {}) {
     <div class="r">
       ${e.typ === 'TASK' ? `<span class="badge status ${esc(e.status.toLowerCase())}">${esc(ORG_STATUS_LABEL[e.status] || e.status)}</span>` : ''}
       ${darf && e.typ === 'TASK' && e.status !== 'DONE' && !e.verantwortlich
-        ? `<button type="button" class="btn btn-sm" data-org-uebernehmen="${esc(e.id)}" onclick="event.stopPropagation()" title="Diese Aufgabe auf deinen Namen setzen">Ich mache das</button>` : ''}
-      ${darf && e.typ === 'TASK' && e.status !== 'DONE' ? `<button type="button" class="btn btn-sm" data-org-fertig="${esc(e.id)}" onclick="event.stopPropagation()" title="Aufgabe abhaken">✓ Abhaken</button>` : ''}
-      ${darf && e.typ === 'NOTE' ? `<button type="button" class="btn btn-sm" data-org-zuaufgabe="${esc(e.id)}" onclick="event.stopPropagation()" title="Aus dieser Notiz eine Aufgabe machen">In Aufgabe umwandeln</button>` : ''}
+        ? `<button type="button" class="btn btn-sm" data-org-uebernehmen="${esc(e.id)}" title="Diese Aufgabe auf deinen Namen setzen">Ich mache das</button>` : ''}
+      ${darf && e.typ === 'TASK' && e.status !== 'DONE' ? `<button type="button" class="btn btn-sm" data-org-fertig="${esc(e.id)}" title="Aufgabe abhaken">✓ Abhaken</button>` : ''}
+      ${darf && e.typ === 'NOTE' ? `<button type="button" class="btn btn-sm" data-org-zuaufgabe="${esc(e.id)}" title="Aus dieser Notiz eine Aufgabe machen">In Aufgabe umwandeln</button>` : ''}
     </div>
   </div>`;
 }
@@ -4919,9 +4927,7 @@ function bindEvents() {
     const orgOpen = e.target.closest('[data-org-open]');
     if (orgOpen && !e.target.closest('button, a, select, input')) {
       e.preventDefault();
-      const p = new URLSearchParams(state.route.params);
-      p.set('oid', orgOpen.dataset.orgOpen);
-      location.hash = `#/organisation?${p}`;
+      orgEintragOeffnen(orgOpen.dataset.orgOpen);
       return;
     }
     const sortKopf = e.target.closest('[data-bq-sort-toggle]');
@@ -5034,6 +5040,13 @@ function bindEvents() {
     if (e.key === '/') { e.preventDefault(); openPalette(); return; }
     // "n" wie neu: Schnellerfassung von jeder Seite aus.
     if (e.key === 'n' && state.capabilities.mode === 'local') { e.preventDefault(); openOrgSchnell(); return; }
+    const orgRow = document.activeElement;
+    if ((e.key === 'Enter' || e.key === ' ') && orgRow?.dataset?.orgOpen) {
+      e.preventDefault(); orgEintragOeffnen(orgRow.dataset.orgOpen); return;
+    }
+    if ((e.key === 'Enter' || e.key === ' ') && orgRow?.dataset?.orgZuKunde) {
+      e.preventDefault(); navigate('organisation', { oid: orgRow.dataset.orgZuKunde }); return;
+    }
     const rows = [...document.querySelectorAll('#main [data-open][tabindex]')];
     if (!rows.length) return;
     // Solange eine Aufgabe offen ist, gehoert die Tastatur dem Panel. Vorher
