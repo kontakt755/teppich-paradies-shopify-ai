@@ -69,6 +69,12 @@ test('Regression: Quadra-Preisfixture (4 Pakete, 80 Fliesen, 20,00 m²)', async 
   assert.match(result.html, /80 Fliesen/);
 });
 
+test('Eine Teppichfliese wird im Warenkorb im Singular benannt', async () => {
+  const result = await render({ qmProPaket: 0.25, menge: 1, stueckProPaket: 1, stueckBezeichnung: 'Fliesen' });
+  assert.match(result.html, /1 Fliese/);
+  assert.doesNotMatch(result.html, /1 Fliesen/);
+});
+
 test('Regression: Klebevinyl-Fixture (6 Pakete, 20,04 m²)', async () => {
   const result = await render({ qmProPaket: 3.34, menge: 6 });
   assert.equal(result.flaeche, '20,04');

@@ -379,6 +379,8 @@
     assign tp_rc_start_farbe = product.selected_or_first_available_variant.options | first
     assign tp_rc_muster_platzhalter = '{farbe}'
     assign tp_rc_muster_text = tp_rc_muster_vorlage | replace: tp_rc_muster_platzhalter, tp_rc_start_farbe
+    assign tp_rc_muster_farbe = tp_rc_start_farbe | url_encode
+    assign tp_rc_muster_url = tp_rc_muster_url | append: '&farbe=' | append: tp_rc_muster_farbe
   -%}
   {%- if block.settings.muster_anzeigen and tp_rc_muster_url != blank -%}
     <a class="tp-rwc-muster" href="{{ tp_rc_muster_url }}" data-muster-link data-muster-vorlage="{{ tp_rc_muster_vorlage | escape }}" data-rwc-body>
@@ -1154,6 +1156,7 @@ function tpRwcInit{{ tp_rc_id }}() {
   var tagW = root.querySelector('[data-tag-width]');
   var tagL = root.querySelector('[data-tag-length]');
   var calcBox = root.querySelector('[data-calc]');
+  var headlinePrice = document.querySelector('product-price[data-tp-rollware-headline][data-product-id="' + pid + '"]');
   var drawFigure = root.querySelector('[data-draw]');
   var formulaArea = root.querySelector('[data-formula-area]');
   var formulaRound = root.querySelector('[data-formula-round]');
@@ -1171,6 +1174,9 @@ function tpRwcInit{{ tp_rc_id }}() {
     if (!musterLink || !target) return;
     var name = target.options.filter(function (_, i) { return i !== wIdx; }).join(' ');
     musterLink.textContent = (musterLink.getAttribute('data-muster-vorlage') || '').replace('{farbe}', name);
+    var musterUrl = new URL(musterLink.href, window.location.origin);
+    musterUrl.searchParams.set('farbe', name);
+    musterLink.href = musterUrl.toString();
   }
   var widthSeg = root.querySelector('[data-width-seg]');
 
@@ -1319,6 +1325,22 @@ function tpRwcInit{{ tp_rc_id }}() {
     var alt = v ? parseFloat(v.compare_at_price) || 0 : 0;
     if (!v || !(alt > parseFloat(v.price))) return 0;
     return cmExact ? alt : alt / 100;
+  }
+
+  // Der Kopfpreis muss denselben Zuschnitt wie die Rechnung zeigen. Der
+  // Theme-Preisblock aktualisiert sich sonst nur beim Varianten-Picker, nicht
+  // beim Wechsel zwischen Meterware und Raummaß in diesem Rechner.
+  function syncHeadlinePrice(v) {
+    if (!headlinePrice || !v) return;
+    var current = headlinePrice.querySelector('.price-with-unit__current');
+    var compare = headlinePrice.querySelector('.price-with-unit__compare');
+    var rate = rateOf(v);
+    var oldRate = compareRateOf(v);
+    if (current) current.textContent = fmt(rate) + '\u00a0€/m²';
+    if (compare) {
+      compare.hidden = !(oldRate > rate);
+      if (!compare.hidden) compare.textContent = fmt(oldRate) + '\u00a0€/m²';
+    }
   }
 
   // K1: Titel "Meterware · 65,90 55,90 €/m²" - der Streichpreis steht wie
@@ -1820,6 +1842,7 @@ function tpRwcInit{{ tp_rc_id }}() {
     }
 
     target = findVariant(w);
+    syncHeadlinePrice(target);
     var ok = !!(target && target.available) && (!raum || ART.wunschOk(target, wIdx));
     updateEinfassChips();
     updateMuster();
@@ -1934,7 +1957,11 @@ function tpRwcInit{{ tp_rc_id }}() {
     if (!ctaReady && !inFlight && ctaHint) {
       var fehltJetzt = fehlendesFeld();
       if (extras && extras.leisteInvalid) ctaHint.textContent = 'Bitte Fußleisten-Länge angeben';
-      else if (blocked || tooLong) ctaHint.textContent = 'Bitte Länge prüfen';
+      else if (wErr && wErr !== 'leer') ctaHint.textContent = wErr;
+      else if (lenFehler === 'ungueltig' || lenFehler === 'negativ') ctaHint.textContent = errComma ? errComma.textContent : 'Bitte Länge prüfen';
+      else if (!errMin.hidden) ctaHint.textContent = errMin.textContent;
+      else if (tooLong && errMax) ctaHint.textContent = errMax.textContent;
+      else if (blocked) ctaHint.textContent = 'Bitte Länge prüfen';
       else if (fehltJetzt && fehltJetzt.feld === 'breite') ctaHint.textContent = 'Bitte Breite eingeben';
       else if (fehltJetzt) ctaHint.textContent = 'Bitte Länge eingeben';
       else ctaHint.textContent = 'Diese Farbe ist in dieser Breite derzeit nicht lieferbar';
@@ -2032,9 +2059,11 @@ function tpRwcInit{{ tp_rc_id }}() {
         var breiteFehlt = fehlt.feld === 'breite';
         // Sind beide Felder leer, nennt die Meldung auch beide - sonst tippt
         // der Kunde die Breite ein und stoesst sofort auf die naechste Huerde.
-        ctaHint.textContent = (breiteFehlt && !lenRaw)
+        var fehlerText = breiteFehlt ? (wunschError && !wunschError.hidden ? wunschError.textContent : '')
+          : (!errMin.hidden ? errMin.textContent : (errMax && !errMax.hidden ? errMax.textContent : ''));
+        ctaHint.textContent = fehlerText || ((breiteFehlt && !lenRaw)
           ? 'Bitte Breite und Länge eingeben.'
-          : (breiteFehlt ? 'Bitte Breite eingeben.' : 'Bitte Länge eingeben.');
+          : (breiteFehlt ? 'Bitte Breite eingeben.' : 'Bitte Länge eingeben.'));
         ctaHint.hidden = false;
       }
       if (fehlt.el && typeof fehlt.el.focus === 'function') {
@@ -2108,7 +2137,9 @@ function tpRwcInit{{ tp_rc_id }}() {
       var gruppe = 'T' + Date.now().toString(36);
       properties['_Gruppe'] = gruppe;
       extras.items.forEach(function (it) { it.properties['_Gruppe'] = gruppe; });
-      payload = { items: [{ id: target.id, quantity: qty, properties: properties }].concat(extras.items) };
+      // Shopify stellt neue Zeilen im Warenkorb in umgekehrter Request-Reihenfolge
+      // dar. Hauptprodukt zuletzt senden, damit es im Dialog vor Zubehoer steht.
+      payload = { items: extras.items.concat([{ id: target.id, quantity: qty, properties: properties }]) };
     }
     var addedCount = qty + extras.items.reduce(function (sum, it) { return sum + it.quantity; }, 0);
 
@@ -2179,6 +2210,19 @@ function tpRwcInit{{ tp_rc_id }}() {
       });
   });
 
+  // Eine direkt geoeffnete Varianten-URL ist eine ausdrueckliche Auswahl:
+  // Wunschmaß startet im Raummaß, eine Rollenvariante mit ihrer Rollenbreite.
+  // Sonst fiel der Rechner stets auf Meterware/erste Breite zurueck, waehrend
+  // der serverseitige Kopfpreis bereits die URL-Variante zeigte.
+  if (wIdx !== -1) {
+    var initialOptions = baseOptions();
+    if (ART.isWunsch(initialOptions[wIdx])) {
+      setArt('raum');
+    } else {
+      var initialWidth = ART.toCm(initialOptions[wIdx]);
+      if (chipByWidth[initialWidth]) chipByWidth[initialWidth].input.checked = true;
+    }
+  }
   calculate();
 }
 if (window.TPRollwareArt) { tpRwcInit{{ tp_rc_id }}(); }

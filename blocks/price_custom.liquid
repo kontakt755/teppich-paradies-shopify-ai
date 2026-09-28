@@ -30,6 +30,14 @@
   if product_resource.metafields.custom.preis_pro_001_qm.value == true and product_resource.metafields.service.einfassung.value != blank
     assign tp_pc_teppich = true
   endif
+  capture tp_pc_verkaufseinheit
+    render 'tp-verkaufseinheit', product: product_resource
+  endcapture
+  assign tp_pc_verkaufseinheit = tp_pc_verkaufseinheit | strip
+  assign tp_pc_rollware = false
+  if tp_pc_verkaufseinheit == 'rolle' and tp_pc_teppich == false and product_resource.handle == product.handle
+    assign tp_pc_rollware = true
+  endif
 -%}
 
 {% liquid
@@ -69,6 +77,7 @@
   class="text-block {{ text_block_classes }} text-{{ block_settings.alignment }} {{ block_settings.type_preset | default: 'paragraph' }} spacing-style price-with-unit"
   data-block-id="{{ block.id }}"
   data-product-id="{{ product_resource.id }}"
+  {% if tp_pc_rollware %}data-tp-rollware-headline{% endif %}
   style="
     {% render 'typography-style', settings: block_settings %}
     {% render 'spacing-style', settings: block_settings %}
@@ -79,8 +88,8 @@
   <div class="price-with-unit__wrapper" ref="priceContainer">
     {% if tp_pc_teppich %}
       {% render 'tp-teppich-ab-preis', product: product_resource, variant: selected_variant %}
-    {% elsif show_compare_price %}
-      <span class="price-with-unit__compare">
+    {% elsif show_compare_price or tp_pc_rollware %}
+      <span class="price-with-unit__compare"{% unless show_compare_price %} hidden{% endunless %}>
         {{ compare_at_price | money_without_currency }}{% if unit_label == 'm²' %}&nbsp;€/m²{% elsif unit_label != blank %} {{ block_settings.unit_separator }} {{ unit_label }}{% endif %}
       </span>
     {% endif %}

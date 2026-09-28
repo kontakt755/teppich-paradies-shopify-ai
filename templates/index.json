@@ -32,7 +32,7 @@
       "type": "tp-start-kategorien",
       "settings": {
         "heading": "Womit möchten Sie starten?",
-        "text": "Sieben Kategorien, direkt zur Auswahl. Alle Preise pro m², Muster kostenlos.",
+        "text": "Sieben Kategorien, direkt zur Auswahl. Preise und Verkaufseinheiten stehen am Produkt. Muster kostenlos.",
         "link_label": "Alle Produkte ansehen",
         "link": "shopify://collections/all"
       },

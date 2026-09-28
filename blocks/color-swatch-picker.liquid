@@ -660,39 +660,49 @@
         if (!variant) return;
 
         const featuredMediaId = variant.featured_media ? String(variant.featured_media.id) : null;
-        const featuredImageSrc = variant.featured_image ? variant.featured_image.src : null;
-
+        const gallery = document.querySelector('media-gallery');
+        // Sofort zum passenden Bild springen, solange die neue Galerie laedt.
         if (featuredMediaId) {
-          document.querySelectorAll('[data-media-id], [data-product-media-id], [data-media-item]').forEach(function(item) {
-            const mediaId =
-              item.getAttribute('data-media-id') ||
-              item.getAttribute('data-product-media-id') ||
-              item.getAttribute('data-media-item');
+          const slides = Array.from(gallery ? gallery.querySelectorAll('slideshow-slide') : []);
+          const index = slides.findIndex(function(slide) {
+            return !!slide.querySelector('[data-media-id="' + featuredMediaId + '"]');
+          });
+          if (index >= 0 && gallery.slideshow) {
+            gallery.slideshow.select(index, undefined, { animate: false });
+          }
+        }
 
-            if (!mediaId) return;
-
-            const normalizedId = String(mediaId).replace(/^.+-/, '');
-
-            if (normalizedId === featuredMediaId || String(mediaId) === featuredMediaId) {
-              const trigger = item.querySelector('button, [role="button"], img') || item;
-
-              if (trigger && typeof trigger.click === 'function') {
-                trigger.click();
-              }
+        // Ein einzelnes src fuer alle Galeriebilder zu setzen machte aus der
+        // Galerie mehrere Kopien derselben Farbe, mit alten Alt-Texten. Statt
+        // dessen die fuer die gewaehlte Variante gerenderte Section laden.
+        const section = gallery && gallery.closest('.shopify-section');
+        if (!section || !section.id.startsWith('shopify-section-')) return;
+        const sectionId = section.id.slice('shopify-section-'.length);
+        // Vorschau- und Kampagnenparameter behalten: sonst kaeme die
+        // Section in einer Theme-Vorschau unbemerkt aus dem Live-Theme.
+        const requestUrl = new URL(window.location.href);
+        requestUrl.searchParams.set('variant', String(variant.id));
+        requestUrl.searchParams.set('section_id', sectionId);
+        fetch(requestUrl.toString())
+          .then(function(response) { if (!response.ok) throw new Error('gallery response'); return response.text(); })
+          .then(function(htmlText) {
+            if (new URLSearchParams(window.location.search).get('variant') !== String(variant.id)) return;
+            const html = new DOMParser().parseFromString(htmlText, 'text/html');
+            const replacement = html.querySelector('media-gallery');
+            const current = document.querySelector('media-gallery');
+            if (replacement && current) {
+              current.replaceWith(replacement);
+              document.dispatchEvent(new CustomEvent('tp:galerie-aktualisiert', {
+                detail: {
+                  productId: {{ product.id | json }},
+                  variantId: String(variant.id),
+                  color: variant.options[colorOptionIndex],
+                  available: variant.available
+                }
+              }));
             }
-          });
-        }
-
-        if (featuredImageSrc) {
-          const mainImages = document.querySelectorAll(
-            '.product__media img, .product-media img, media-gallery img'
-          );
-
-          mainImages.forEach(function(image) {
-            image.src = featuredImageSrc;
-            image.removeAttribute('srcset');
-          });
-        }
+          })
+          .catch(function(error) { console.warn('Galerie konnte nicht aktualisiert werden', error); });
       }
 
       // K2: "+N weitere" klappt die restlichen Farben auf.

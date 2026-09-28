@@ -202,7 +202,7 @@
                     Ausgegraute Optionen sind mit der aktuellen Auswahl nicht kombinierbar.
                     Filter zur&uuml;cksetzen, um alle Optionen zu sehen.
                   {%- else -%}
-                    Ausgegraute Optionen gibt es in dieser Kategorie nicht.
+                    Ausgegraute Optionen gibt es {% if request.page_type == 'search' %}in diesen Suchergebnissen{% else %}in dieser Kategorie{% endif %} nicht.
                   {%- endif -%}
                 </p>
               {%- endif -%}
@@ -222,7 +222,7 @@
                         technisch nicht ohne Metafeld-Filterung sauber
                         loesbar). Alle anderen Filter bleiben unveraendert.
                       {%- endcomment -%}
-                      {%- unless collection.handle == 'vinylboden-1' or collection.handle == 'vinylboden-klickvinyl' or collection.handle == 'vinylboden-klebevinyl' -%}
+                      {%- unless request.page_type == 'search' or collection.handle == 'vinylboden-1' or collection.handle == 'vinylboden-klickvinyl' or collection.handle == 'vinylboden-klebevinyl' -%}
                         {%- liquid
                           if filter.min_value.value != null or filter.max_value.value != null
                             assign total_active_values = total_active_values | plus: 1
@@ -498,7 +498,7 @@
                       Ausgegraute Optionen sind mit der aktuellen Auswahl nicht kombinierbar.
                       Filter zur&uuml;cksetzen, um alle Optionen zu sehen.
                     {%- else -%}
-                      Ausgegraute Optionen gibt es in dieser Kategorie nicht.
+                      Ausgegraute Optionen gibt es {% if request.page_type == 'search' %}in diesen Suchergebnissen{% else %}in dieser Kategorie{% endif %} nicht.
                     {%- endif -%}
                   </p>
                 {%- endif -%}
@@ -510,7 +510,7 @@
                 {%- for filter in filters -%}
                   {% case filter.type %}
                     {% when 'price_range' %}
-                      {%- unless collection.handle == 'vinylboden-1' or collection.handle == 'vinylboden-klickvinyl' or collection.handle == 'vinylboden-klebevinyl' -%}
+                      {%- unless request.page_type == 'search' or collection.handle == 'vinylboden-1' or collection.handle == 'vinylboden-klickvinyl' or collection.handle == 'vinylboden-klebevinyl' -%}
                         {%- liquid
                           if filter.min_value.value != null or filter.max_value.value != null
                             assign total_active_values = total_active_values | plus: 1

@@ -257,7 +257,7 @@
     Zusatzprodukt, nicht zum Rechner des Teppichs.
   {%- endcomment -%}
   {%- if tp_gz_service -%}
-    <p class="tp-cart-mengenhinweis">Menge ergibt sich aus dem Maß des zugehörigen Teppichs.</p>
+    {%- comment -%}Die berechnete Menge steht bereits in dieser Zeile; der Zugehörigkeitshinweis folgt darunter.{%- endcomment -%}
   {%- else -%}
     <p class="tp-cart-mengenhinweis">
       Menge ergibt sich aus dem Maß.
