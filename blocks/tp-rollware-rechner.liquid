@@ -1334,12 +1334,18 @@ function tpRwcInit{{ tp_rc_id }}() {
     if (!headlinePrice || !v) return;
     var current = headlinePrice.querySelector('.price-with-unit__current');
     var compare = headlinePrice.querySelector('.price-with-unit__compare');
+    var badge = headlinePrice.querySelector('[data-tp-rollware-rabatt]');
     var rate = rateOf(v);
     var oldRate = compareRateOf(v);
     if (current) current.textContent = fmt(rate) + '\u00a0€/m²';
     if (compare) {
       compare.hidden = !(oldRate > rate);
       if (!compare.hidden) compare.textContent = fmt(oldRate) + '\u00a0€/m²';
+    }
+    if (badge) {
+      var prozent = oldRate > rate ? Math.round((oldRate - rate) * 100 / oldRate) : 0;
+      badge.hidden = prozent <= 0 || prozent < (Number(badge.dataset.minProzent) || 10);
+      if (!badge.hidden) badge.textContent = '−' + prozent + '\u00a0%';
     }
   }
 
@@ -1358,8 +1364,14 @@ function tpRwcInit{{ tp_rc_id }}() {
         alt.textContent = fmt(cmpRate);
         preis.appendChild(alt);
         preis.appendChild(document.createTextNode(' '));
+        // Neuer Preis rot (Inhaber 2026-09-28), Farbe in snippets/tp-gestaltung
+        var neu = document.createElement('span');
+        neu.className = 'tp-preis-neu';
+        neu.textContent = fmt(rate) + '\u00a0€/m²';
+        preis.appendChild(neu);
+      } else {
+        preis.appendChild(document.createTextNode(fmt(rate) + '\u00a0€/m²'));
       }
-      preis.appendChild(document.createTextNode(fmt(rate) + '\u00a0€/m²'));
       el.appendChild(preis);
     }
   }
