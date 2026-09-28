@@ -93,7 +93,12 @@
         gemeinsam (hier, tp-rollware-rechner, tp-teppich-versand,
         tp-shipping-delivery).
       {%- endcomment -%}
-      <p>Rollen und große Pakete kommen per Spedition frei Bordsteinkante. Wir rufen vor der Lieferung an.</p>
+      {%- comment -%}
+        Nacharbeit 2026-09-28: Der Satz zum Weitertransport steht jetzt direkt
+        bei der Spedition, damit er nicht der eigenen Anlieferung darunter
+        zugeordnet wird (die traegt ausdruecklich in die Wohnung).
+      {%- endcomment -%}
+      <p>Rollen und große Pakete kommen per Spedition frei Bordsteinkante. Wir rufen vor der Lieferung an. Bei Spedition endet die Lieferung an der Bordsteinkante; der Weitertransport in die Wohnung ist dort nicht enthalten.</p>
       {%- comment -%}
         E3 (Inhaber 2026-09-28): zweite Lieferart klar getrennt nennen. Nur
         wenn der Liefer- und Verlegeservice gilt (tp_sl_vs oben).
@@ -112,7 +117,7 @@
       <p>
         Frei Bordsteinkante bedeutet: Die Spedition bringt die Ware bis zur nächstmöglichen, für das
         Lieferfahrzeug erreichbaren Stelle an Ihrer Lieferadresse. Der Weitertransport ins Gebäude oder in die
-        Wohnung ist nicht Bestandteil der Lieferung.
+        Wohnung ist bei Speditionslieferung nicht enthalten.
       </p>
       {%- if tp_sl_shipping_page != blank -%}
         <a href="{{ tp_sl_shipping_page.url }}">Alle Versanddetails</a>
