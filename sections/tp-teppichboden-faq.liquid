@@ -1,0 +1,32 @@
+{{ 'tp-teppichboden-kampagne.css' | asset_url | stylesheet_tag }}
+
+<div class="tp-tbk-faq" aria-labelledby="tp-tbk-faq-title-{{ section.id }}">
+  <h2 id="tp-tbk-faq-title-{{ section.id }}">Häufige Fragen zu Teppichboden</h2>
+  {%- for block in section.blocks -%}
+    <details class="tp-tbk-faq__item" {{ block.shopify_attributes }}>
+      <summary>{{ block.settings.question | escape }}</summary>
+      <div class="tp-tbk-faq__answer rte">{{ block.settings.answer }}</div>
+    </details>
+  {%- endfor -%}
+</div>
+
+{% schema %}
+{
+  "name": "TP Teppichboden FAQ",
+  "tag": "section",
+  "class": "tp-tbk-faq-section",
+  "settings": [],
+  "blocks": [
+    {
+      "type": "frage",
+      "name": "Frage",
+      "settings": [
+        { "type": "text", "id": "question", "label": "Frage" },
+        { "type": "richtext", "id": "answer", "label": "Antwort" }
+      ]
+    }
+  ],
+  "max_blocks": 8,
+  "presets": [{ "name": "TP Teppichboden FAQ" }]
+}
+{% endschema %}

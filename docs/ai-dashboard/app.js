@@ -1304,15 +1304,22 @@ function ensureAktualisierung() {
 function aktualisierenButton() {
   if (state.capabilities.mode !== 'local') return '';
   const laeuft = einkauf.aktualisierungLaeuft;
-  return `<button class="btn" type="button" data-action="aktualisieren" ${laeuft ? 'disabled' : ''}>${laeuft ? 'Wird aktualisiert …' : 'Jetzt aktualisieren'}</button>`;
+  const bereit = einkauf.aktualisierung?.manuellVerfuegbar === true;
+  const hinweis = einkauf.aktualisierung && !bereit
+    ? '<span class="small muted" role="status">Manueller Abruf ohne Shopify-Zugang nicht verfügbar. Geplanten Export prüfen.</span>'
+    : '';
+  return `<button class="btn" type="button" data-action="aktualisieren" ${laeuft || !bereit ? 'disabled' : ''}>${laeuft ? 'Wird aktualisiert …' : 'Jetzt aktualisieren'}</button>${hinweis}`;
 }
 
 /** Systemgesundheit-Zeilen fuer die lokalen Datenquellen (Lexikon, Bestellübersicht, Kennzahlen). */
 function aktualisierungHealth() {
   const a = einkauf.aktualisierung;
   if (!a) return [];
+  const aktualisierungHinweis = a.manuellVerfuegbar
+    ? 'Bitte „Jetzt aktualisieren“ verwenden.'
+    : 'Manueller Abruf ohne Shopify-Zugang nicht verfügbar. Geplanten Export prüfen.';
   if (!a.verfuegbar) {
-    return [{ level: 'warn', title: 'Lokale Datenquellen noch nie aktualisiert', detail: `${a.hinweis || ''} Befehl: ${a.befehl || 'npm run daten:aktualisieren'}` }];
+    return [{ level: 'warn', title: 'Lokale Datenquellen noch nie aktualisiert', detail: `${a.hinweis || ''} ${aktualisierungHinweis}` }];
   }
   return Object.entries(a.teile || {}).map(([teil, stand]) => {
     const label = AKTUALISIERUNG_TEIL_LABEL[teil] || teil;
@@ -1325,7 +1332,7 @@ function aktualisierungHealth() {
       return {
         level: 'warn',
         title: keinZugang ? `${label}: Kein Zugang hinterlegt` : `${label}: letzter Lauf fehlgeschlagen`,
-        detail: `${stand.meldung || ''} · Versuch ${versuch} – die vorhandenen (älteren) Daten bleiben unverändert stehen · Befehl: npm run daten:aktualisieren -- --nur ${teil}`,
+        detail: `${stand.meldung || ''} · Versuch ${versuch} – die vorhandenen (älteren) Daten bleiben unverändert stehen · ${aktualisierungHinweis}`,
       };
     }
     if (stand.letzterFehler) {
@@ -1339,7 +1346,7 @@ function aktualisierungHealth() {
         detail: `${stand.anzahl ?? '?'} Datensätze · Versuch ${f.zeitpunkt ? fmtDateTime(f.zeitpunkt) : 'unbekannt'}: ${f.meldung || ''}${keinZugang ? ' · Auf diesem Rechner aktualisiert der geplante Export-Lauf die Daten.' : ''}`,
       };
     }
-    if (stand.veraltet) return { level: 'warn', title: `${label}: Stand ${fmtDateTime(stand.zeitpunkt)} – Daten veraltet`, detail: 'Bitte `npm run daten:aktualisieren` ausführen.' };
+    if (stand.veraltet) return { level: 'warn', title: `${label}: Stand ${fmtDateTime(stand.zeitpunkt)} – Daten veraltet`, detail: aktualisierungHinweis };
     return { level: 'ok', title: `${label}: Stand ${fmtDateTime(stand.zeitpunkt)}`, detail: stand.anzahl !== null && stand.anzahl !== undefined ? `${stand.anzahl} Datensätze${stand.meldung ? ` · ${stand.meldung}` : ''}` : (stand.meldung || '') };
   });
 }
@@ -3373,6 +3380,7 @@ async function syncNow() {
 async function aktualisierenNow() {
   if (istNurLesend()) { toast('Rolle "lesen" darf keine Aktualisierung anstossen.', 'crit'); return; }
   if (einkauf.aktualisierungLaeuft) { toast('Aktualisierung läuft bereits.'); return; }
+  if (einkauf.aktualisierung?.manuellVerfuegbar !== true) { toast('Manueller Abruf ohne Shopify-Zugang nicht verfügbar.', 'crit'); return; }
   try {
     const r = await fetch('/api/aktualisierung/start', { method: 'POST' });
     const j = await r.json().catch(() => ({}));

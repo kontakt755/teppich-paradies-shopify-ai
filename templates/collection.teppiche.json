@@ -16,7 +16,7 @@
         "kicker": "Teppiche nach Maß",
         "heading": "Ihr Teppich, auf den Zentimeter",
         "text": "Aus unserem Teppichboden zugeschnitten und rundum gekettelt. Breite und Länge bestimmen Sie – der Preis steht sofort.",
-        "usps": "14 Farben\nBis 400 × 600 cm\nPreis sofort sichtbar",
+        "usps": "Farben je Qualität\nBis 500 × 600 cm je nach Produkt\nPreis sofort sichtbar",
         "card_title": "Rundum gekettelt",
         "card_text": "Kante mit Garn eingefasst, franst nicht aus",
         "btn1_label": "Jetzt konfigurieren",
@@ -179,14 +179,14 @@
           "type": "step",
           "settings": {
             "title": "Farbe wählen",
-            "text": "14 Farbtöne, jeder mit echtem Foto. Bis zu drei Muster schicken wir kostenlos."
+            "text": "Farbtöne je Qualität ansehen. Bis zu drei Muster schicken wir kostenlos."
           }
         },
         "s2": {
           "type": "step",
           "settings": {
             "title": "Maße eingeben",
-            "text": "Breite und Länge zentimetergenau, bis 400 × 600 cm."
+            "text": "Breite und Länge zentimetergenau. Die mögliche Breite hängt von Qualität und Farbe ab."
           }
         },
         "s3": {
@@ -277,7 +277,7 @@
           "type": "frage",
           "settings": {
             "question": "Welche Größen sind möglich?",
-            "answer": "<p>Breite und Länge geben Sie zentimetergenau an. Die eine Seite darf bis 400 cm, die andere bis 600 cm messen. Größere Teppiche fragen Sie bitte telefonisch an.</p>"
+            "answer": "<p>Breite und Länge geben Sie zentimetergenau an. Je nach Qualität und Farbe sind bis zu 400 oder 500 cm Breite und bis zu 600 cm Länge möglich. Der Konfigurator zeigt die zulässigen Maße für das gewählte Produkt.</p>"
           }
         },
         "f3": {

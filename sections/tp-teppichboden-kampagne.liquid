@@ -1,0 +1,29 @@
+{{ 'tp-teppichboden-kampagne.css' | asset_url | stylesheet_tag }}
+
+<div class="tp-tbk" role="region" aria-label="Muster und Versand für Teppichboden">
+  <div class="tp-tbk__inner">
+    <div class="tp-tbk__copy">
+      <p class="tp-tbk__eyebrow">Erst ansehen, dann entscheiden</p>
+      <h2>Teppichboden-Farbe zu Hause prüfen</h2>
+      <p>Bestellen Sie bis zu drei Muster kostenlos und vergleichen Sie die Farben bei Ihrem Licht.</p>
+    </div>
+    <a class="tp-tbk__button" href="/pages/muster">Kostenlose Muster bestellen <span aria-hidden="true">→</span></a>
+    <div class="tp-tbk__facts">
+      <span>Deutschlandweit ab 50 € versandkostenfrei</span>
+      <a href="/pages/versand-lieferung">Versand und Lieferung ansehen</a>
+      {%- if settings.tp_google_wert != blank and settings.tp_google_link != blank -%}
+        <a href="{{ settings.tp_google_link | escape }}" target="_blank" rel="noopener">{{ settings.tp_google_wert | escape }} ★ bei Google · Bewertungen ansehen</a>
+      {%- endif -%}
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "TP Teppichboden Muster",
+  "tag": "section",
+  "class": "tp-tbk-section",
+  "settings": [],
+  "presets": [{ "name": "TP Teppichboden Muster" }]
+}
+{% endschema %}

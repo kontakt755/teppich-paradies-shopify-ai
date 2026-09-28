@@ -894,6 +894,10 @@
         "padding-block-end": 48
       }
     },
+    "tbk_muster": {
+      "type": "tp-teppichboden-kampagne",
+      "settings": {}
+    },
     "main": {
       "type": "main-collection",
       "blocks": {
@@ -1047,11 +1051,48 @@
         "padding-block-start": 0,
         "padding-block-end": 32
       }
+    },
+    "tbk_faq": {
+      "type": "tp-teppichboden-faq",
+      "blocks": {
+        "menge": {
+          "type": "frage",
+          "settings": {
+            "question": "Wie bestelle ich die richtige Menge?",
+            "answer": "<p>Auf der Produktseite wählen Sie die Rollenbreite und geben die gewünschte Länge ein. Preis pro Quadratmeter und Gesamtpreis sehen Sie vor dem Warenkorb.</p>"
+          }
+        },
+        "muster": {
+          "type": "frage",
+          "settings": {
+            "question": "Kann ich die Farbe vorher zu Hause prüfen?",
+            "answer": "<p>Ja. Bis zu drei Muster sind kostenlos. Wählen Sie Ihre Wunschfarbe am Produkt oder auf der <a href=\"/pages/muster\">Musterseite</a>.</p>"
+          }
+        },
+        "versand": {
+          "type": "frage",
+          "settings": {
+            "question": "Wie wird Teppichboden geliefert?",
+            "answer": "<p>Wir liefern deutschlandweit. Rollenware kommt per Spedition frei Bordsteinkante. Die Versandkosten sehen Sie vor dem Kauf; in Deutschland liefern wir ab 50 € Bestellwert versandkostenfrei. <a href=\"/pages/versand-lieferung\">Mehr zu Versand und Lieferung</a>.</p>"
+          }
+        },
+        "verlegung": {
+          "type": "frage",
+          "settings": {
+            "question": "Kann ich den Teppichboden auch verlegen lassen?",
+            "answer": "<p>Rund um Oranienburg bieten wir Aufmaß und Verlegung an. <a href=\"/pages/teppichboden-verlegen-lassen\">Verlegeservice ansehen</a>.</p>"
+          }
+        }
+      },
+      "block_order": ["menge", "muster", "versand", "verlegung"],
+      "settings": {}
     }
   },
   "order": [
     "section",
+    "tbk_muster",
     "main",
-    "carousel_UKqxXW"
+    "carousel_UKqxXW",
+    "tbk_faq"
   ]
 }
