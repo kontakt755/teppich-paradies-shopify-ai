@@ -1,0 +1,51 @@
+.tp-tbk-section, .tp-tbk-faq-section { padding-inline: max(20px, calc((100vw - 1200px) / 2)); }
+.tp-tbk-section { padding-block: 0 28px; }
+.tp-tbk {
+  border: 1px solid #e8ddd7;
+  border-radius: 16px;
+  background: #fbf7f4;
+  color: #27211f;
+}
+.tp-tbk__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px 32px;
+  padding: 24px 28px;
+}
+.tp-tbk__eyebrow { margin: 0 0 6px; color: #8a3040; font-size: 13px; font-weight: 700; }
+.tp-tbk h2 { margin: 0 0 6px; font-size: clamp(21px, 2.3vw, 27px); line-height: 1.2; }
+.tp-tbk__copy > p:last-child { margin: 0; }
+.tp-tbk__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 12px 20px;
+  border-radius: 9px;
+  background: #8f2638;
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+.tp-tbk__button:hover, .tp-tbk__button:focus-visible { background: #71202e; color: #fff; }
+.tp-tbk__facts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px 22px; padding-top: 12px; border-top: 1px solid #e8ddd7; font-size: 13px; }
+.tp-tbk__facts > * { color: #554a46; }
+.tp-tbk__facts a { text-underline-offset: 3px; }
+.tp-tbk-faq-section { padding-block: 26px 60px; }
+.tp-tbk-faq { max-width: 820px; margin-inline: auto; }
+.tp-tbk-faq h2 { margin: 0 0 16px; font-size: clamp(23px, 2.5vw, 30px); }
+.tp-tbk-faq__item { border-top: 1px solid #ded8d4; }
+.tp-tbk-faq__item:last-child { border-bottom: 1px solid #ded8d4; }
+.tp-tbk-faq__item summary { cursor: pointer; padding: 17px 4px; font-weight: 700; }
+.tp-tbk-faq__item summary:focus-visible, .tp-tbk__button:focus-visible { outline: 3px solid #633bd4; outline-offset: 3px; }
+.tp-tbk-faq__answer { padding: 0 4px 16px; color: #554a46; }
+.tp-tbk-faq__answer p { margin: 0; }
+@media (max-width: 700px) {
+  .tp-tbk-section, .tp-tbk-faq-section { padding-inline: 16px; }
+  .tp-tbk__inner { grid-template-columns: 1fr; gap: 16px; padding: 20px; }
+  .tp-tbk__button { width: 100%; }
+  .tp-tbk__facts { gap: 8px 14px; }
+}
