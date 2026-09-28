@@ -152,6 +152,7 @@ Gute Konkurrenzseiten dürfen als UX-Benchmark untersucht werden. Keine Texte, B
 ## Bilder
 
 - Vorhandene echte Produkt- und Herstellerbilder bevorzugen.
+- Wenn die Bildlizenz eine Herstellerangabe am Bild verlangt, diese unmittelbar am Bild sichtbar machen. Die genaue JOKA-Quellenangabe ist dafür im Theme-Guard eng begrenzt freigegeben; andere Lieferantennamen bleiben gesperrt.
 - Keine Produkteigenschaften durch erfundene Bilder falsch darstellen.
 - Erklärende Kategorievisuals dürfen verwendet werden, wenn sie technisch korrekt sind.
 - Above-the-fold-Bilder beim ersten Laden sinnvoll priorisieren.
