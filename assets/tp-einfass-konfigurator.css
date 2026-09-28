@@ -117,7 +117,7 @@
 .tp-ek__summe { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-top: 10px; }
 .tp-ek__summe span { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--tp-ek-muted); }
 .tp-ek__summe .tp-ek__summe-werte { display: inline-flex; align-items: baseline; gap: 10px; text-transform: none; letter-spacing: 0; }
-.tp-ek__summe .tp-ek__summe-alt { font-size: 1rem; font-weight: 600; color: #c8102e; text-decoration: line-through; font-variant-numeric: tabular-nums; }
+.tp-ek__summe .tp-ek__summe-alt { font-size: 1rem; font-weight: 400; color: var(--tp-ek-muted); text-decoration: line-through; font-variant-numeric: tabular-nums; }
 .tp-ek__summe .tp-ek__summe-alt[hidden] { display: none; }
 .tp-ek__summe strong { font-size: 1.6rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
 .tp-ek__preishinweis { margin: 6px 0 0; font-size: .82rem; line-height: 1.45; color: var(--tp-ek-muted); }

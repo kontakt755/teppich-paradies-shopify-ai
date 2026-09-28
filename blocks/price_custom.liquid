@@ -80,6 +80,12 @@
     {% if tp_pc_teppich %}
       {% render 'tp-teppich-ab-preis', product: product_resource, variant: selected_variant %}
     {% elsif show_compare_price %}
+      {%- comment -%} Rabattschild wie in snippets/price.liquid, Schwelle aus den Theme-Einstellungen {%- endcomment -%}
+      {%- assign tp_pc_prozent = compare_at_price | minus: current_price | times: 100.0 | divided_by: compare_at_price | round -%}
+      {%- assign tp_pc_badge_ab = settings.tp_rabatt_badge_ab | default: 10 -%}
+      {%- if tp_pc_prozent > 0 and tp_pc_prozent >= tp_pc_badge_ab -%}
+        {% render 'tp-rabatt-badge-styles' %}<span class="tp-rabatt-badge">−{{ tp_pc_prozent }}&nbsp;%</span>
+      {%- endif -%}
       <span class="price-with-unit__compare">
         {{ compare_at_price | money_without_currency }}{% if unit_label == 'm²' %}&nbsp;€/m²{% elsif unit_label != blank %} {{ block_settings.unit_separator }} {{ unit_label }}{% endif %}
       </span>
@@ -135,7 +141,7 @@
   .price-with-unit .tp-ab-preis__haupt { display: flex; align-items: baseline; gap: 8px; line-height: 1.15; }
   .price-with-unit .tp-ab-preis__ab { font-size: 15px; font-weight: 400; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72); }
   .price-with-unit .tp-ab-preis__betrag { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; }
-  .price-with-unit .tp-ab-preis__alt { font-size: 14px; font-weight: 600; color: #c8102e; text-decoration: line-through; }
+  .price-with-unit .tp-ab-preis__alt { font-size: 14px; font-weight: 400; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62); text-decoration: line-through; }
   .price-with-unit .tp-ab-preis__grund { font-size: 13px; font-weight: 400; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62); }
 
   .price-with-unit__current {
