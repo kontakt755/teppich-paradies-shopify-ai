@@ -33,21 +33,6 @@
     assign variant_images = selected_product.images | where: 'attached_to_variant?', true | map: 'src'
   endif
 
-  # TP: Bilder, die keiner Variante zugeordnet sind, aber im Alt-Text eine Farbe nennen,
-  # gehoeren nur zu dieser Farbe (Raumbild + Musterbild je Farbe). Alt ohne Farbnamen bleibt fuer alle.
-  assign tp_farbe_gewaehlt = blank
-  assign tp_farben = '' | split: ','
-  if block_settings.hide_variants
-    for tp_option in selected_product.options_with_values
-      assign tp_option_name = tp_option.name | downcase
-      if tp_option_name == 'farbe' or tp_option_name == 'color' or tp_option_name == 'dekor'
-        assign tp_farben = tp_option.values
-        assign tp_farbe_index = tp_option.position | minus: 1
-        assign tp_farbe_gewaehlt = selected_product.selected_or_first_available_variant.options[tp_farbe_index]
-      endif
-    endfor
-  endif
-
   if block_settings.slideshow_controls_style == 'thumbnails'
     assign controls_on_media = false
   else
@@ -125,19 +110,12 @@
         continue
       endif
 
-      if tp_farbe_gewaehlt != blank and media.alt != blank
-        assign tp_fremde_farbe = false
-        if media.alt contains tp_farbe_gewaehlt
-          assign tp_fremde_farbe = false
-        else
-          for tp_farbe in tp_farben
-            if media.alt contains tp_farbe
-              assign tp_fremde_farbe = true
-              break
-            endif
-          endfor
-        endif
-        if tp_fremde_farbe
+      # TP: nicht zugeordnete Bilder mit anderem Farbnamen im Alt-Text ausblenden
+      if block_settings.hide_variants and media.alt != blank
+        capture tp_fremde_farbe
+          render 'tp-galerie-fremde-farbe', product: selected_product, alt: media.alt
+        endcapture
+        if tp_fremde_farbe contains 'ja'
           continue
         endif
       endif
