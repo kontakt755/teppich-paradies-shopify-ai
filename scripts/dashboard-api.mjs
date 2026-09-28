@@ -48,6 +48,7 @@ import { protokollPfad, protokolliere } from '../operations/lib/protokoll.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { rollenware, paketware, stueck as stueckware, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
+import { ladeEnvLocal } from '../operations/sync/zugang.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -377,7 +378,7 @@ function stammKontakte(dir) {
   return index;
 }
 
-export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null } = {}) {
+export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env } = {}) {
   let userCache = null;
   let labelCache = { at: 0, names: [] };
   // Prozesszustand des Knopfs "Jetzt aktualisieren" - genau ein Lauf gleichzeitig,
@@ -385,6 +386,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
   // noch laufenden Kindprozess, der aber unabhaengig weiterlaeuft und sein Ergebnis
   // ohnehin nur in aktualisierung.json schreibt).
   let aktualisierungLauf = null; // { seit, fehler, fertig } waehrend ein Lauf aktiv ist, sonst null
+
+  function manuellerZugangVorhanden() {
+    const zugang = { ...ladeEnvLocal(path.join(root, '.env.local')), ...env };
+    return Boolean(zugang.SHOPIFY_ADMIN_TOKEN || (zugang.SHOPIFY_CLIENT_ID && zugang.SHOPIFY_CLIENT_SECRET));
+  }
 
   const auditPath = path.join(root, '.router', 'control-center-audit.jsonl');
   function audit(entry) {
@@ -1685,6 +1691,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (aktualisierungLauf) {
         return { gestartet: false, laeuft: true, seit: aktualisierungLauf.seit, hinweis: 'Aktualisierung läuft bereits.' };
       }
+      if (!manuellerZugangVorhanden()) {
+        throw new ApiError(503, 'Manueller Abruf nicht eingerichtet: Shopify-Zugang fehlt. Bitte den geplanten Export prüfen.');
+      }
       const seit = now().toISOString();
       const skript = path.join(root, 'operations', 'scripts', 'aktualisieren.mjs');
       const lauf = { seit, fehler: null, fertig: false };
@@ -1713,8 +1722,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     const dir = privatDirPath || privatDir();
     const file = path.join(dir, 'aktualisierung.json');
     const daten = readJsonIfExists(file);
+    const manuellVerfuegbar = manuellerZugangVorhanden();
     if (!daten || !daten.teile) {
-      return { verfuegbar: false, quelle: file, hinweis: 'Noch kein Lauf von daten:aktualisieren vorhanden.', befehl: 'npm run daten:aktualisieren' };
+      return { verfuegbar: false, quelle: file, hinweis: 'Noch kein Lauf von daten:aktualisieren vorhanden.', befehl: 'npm run daten:aktualisieren', manuellVerfuegbar };
     }
     const jetzt = now().getTime();
     const SCHWELLE_MS = 24 * 60 * 60 * 1000;
@@ -1723,7 +1733,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const alterMs = stand?.zeitpunkt ? jetzt - new Date(stand.zeitpunkt).getTime() : null;
       teile[teil] = { ...stand, alterMs, veraltet: alterMs === null ? null : alterMs > SCHWELLE_MS };
     }
-    return { verfuegbar: true, quelle: file, aktualisiertAm: daten.aktualisiertAm || null, teile };
+    return { verfuegbar: true, quelle: file, aktualisiertAm: daten.aktualisiertAm || null, teile, manuellVerfuegbar };
   }
 }
 
