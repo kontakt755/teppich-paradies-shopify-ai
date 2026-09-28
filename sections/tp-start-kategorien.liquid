@@ -85,10 +85,12 @@
   .tp-kat__card { position: relative; border-radius: 14px; overflow: hidden; background: #ede7de; aspect-ratio: 4 / 5; display: block; color: #fff; text-decoration: none; }
   .tp-kat__img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s; }
   .tp-kat__card:hover .tp-kat__img { transform: scale(1.05); }
-  .tp-kat__card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(20, 16, 12, 0.78) 0%, rgba(20, 16, 12, 0.25) 45%, rgba(20, 16, 12, 0) 70%); }
+  /* V8 (Design-Runde 3): dunklerer Verlauf, damit Titel und Unterzeile auch
+     auf hellen Bildern (Bodenleisten, Zubehoer) sicher lesbar sind. */
+  .tp-kat__card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(20, 16, 12, 0.9) 0%, rgba(20, 16, 12, 0.6) 35%, rgba(20, 16, 12, 0) 65%); }
   .tp-kat__t { position: absolute; left: 14px; right: 14px; bottom: 14px; z-index: 1; }
   .tp-kat__t strong { display: block; font-size: 17px; font-weight: 600; line-height: 1.15; }
-  .tp-kat__t small { display: block; font-size: 13px; opacity: 0.85; margin-top: 3px; }
+  .tp-kat__t small { display: block; font-size: 13px; opacity: 0.92; margin-top: 3px; }
   .tp-kat__n { position: absolute; top: 12px; right: 12px; z-index: 1; background: rgba(255, 255, 255, 0.92); color: #1d1a17; font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: 999px; }
   .tp-kat__dots { display: none; }
   @media (max-width: 1279px) { .tp-kat__list { grid-template-columns: repeat(4, 1fr); } }

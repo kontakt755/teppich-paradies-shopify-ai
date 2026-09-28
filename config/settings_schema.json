@@ -2566,5 +2566,26 @@
         "default": "2026-09-12"
       }
     ]
+    },
+  {
+    "name": "TP Gestaltung",
+    "settings": [
+      {
+        "type": "paragraph",
+        "content": "Design-Runde 3: eine Farbe fuer die Hauptaktion (In den Warenkorb) auf allen Produktseiten. Nebenaktionen sind Schwarz-Outline, Preise schwarz, Rot sonst nur im Rabatt-Badge."
+      },
+      {
+        "type": "color",
+        "id": "tp_hauptaktion_farbe",
+        "label": "Hauptaktion",
+        "default": "#B0303F"
+      },
+      {
+        "type": "color",
+        "id": "tp_hauptaktion_hover",
+        "label": "Hauptaktion beim Darueberfahren",
+        "default": "#962836"
+      }
+    ]
   }
 ]

@@ -169,16 +169,6 @@
               "settings": {},
               "blocks": {}
             },
-            "tp_bewertungsbeleg_night1": {
-              "type": "tp-bewertungsbeleg",
-              "name": "TP Bewertungsbeleg",
-              "settings": {
-                "rating": "",
-                "review_count": "",
-                "review_link": ""
-              },
-              "blocks": {}
-            },
             "divider_VJhene": {
               "type": "_divider",
               "name": "t:names.divider",
@@ -239,7 +229,8 @@
                     "label": "Farbe wählen",
                     "nur_mit_farboption": true
                   },
-                  "blocks": {}
+                  "blocks": {},
+                  "disabled": true
                 },
                 "tp_farbanzeige_tp1": {
                   "type": "tp-farbanzeige",
@@ -255,7 +246,9 @@
                 "color_swatch_picker_f7EyBF": {
                   "type": "color-swatch-picker",
                   "name": "Farb-Swatches",
-                  "settings": {},
+                  "settings": {
+                    "darstellung": "kreise"
+                  },
                   "blocks": {}
                 }
               },
@@ -270,7 +263,11 @@
               "name": "TP Rollenware-Rechner",
               "settings": {
                 "kettelleisten_produkt": "teppich-fussleiste-gekettelt",
-                "haftunterlage_produkt": "antirutsch-unterlage-fuer-teppiche-rollenware"
+                "haftunterlage_produkt": "antirutsch-unterlage-fuer-teppiche-rollenware",
+                "messen_link": "/blogs/ratgeber-teppichboden/teppichboden-richtig-ausmessen",
+                "muster_anzeigen": true,
+                "lieferzeit": "5–7 Werktage",
+                "muster_label": "Kostenloses Muster in {farbe}"
               },
               "blocks": {}
             },
@@ -314,6 +311,7 @@
             },
             "tp_muster_cta_1": {
               "type": "tp-muster-cta",
+              "disabled": true,
               "settings": {
                 "label": "Kostenloses Muster anfragen",
                 "hinweis": "Bis zu 3 Farben, versandkostenfrei"
@@ -327,7 +325,6 @@
             "group_farbwahl",
             "tp_rollware_rechner_sales1",
             "tp_muster_cta_1",
-            "tp_bewertungsbeleg_night1",
             "buy_buttons_eYQEYi"
           ]
         }
@@ -549,7 +546,7 @@
               "type": "_accordion-row",
               "settings": {
                 "heading": "Beschreibung",
-                "open_by_default": true
+                "open_by_default": false
               },
               "blocks": {
                 "text_aEtTtq": {
@@ -777,13 +774,24 @@
             "tp_row_bestellen",
             "tp_row_lieferung"
           ]
+        },
+        "tp_bewertungsbeleg_night1": {
+          "type": "tp-bewertungsbeleg",
+          "name": "TP Bewertungsbeleg",
+          "settings": {
+            "rating": "",
+            "review_count": "",
+            "review_link": ""
+          },
+          "blocks": {}
         }
       },
       "block_order": [
         "tp_rolle_info_titel",
         "tp_produkt_akkordeon",
         "tp_vorteile_sales1",
-        "tp_vertrauen_sales1"
+        "tp_vertrauen_sales1",
+        "tp_bewertungsbeleg_night1"
       ],
       "settings": {
         "content_direction": "column",

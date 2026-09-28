@@ -14,7 +14,7 @@
 .tp-rg-kopf__meta span::before { content: "\00B7"; position: absolute; left: 6px; top: 0; }
 .tp-rg-kopf__meta--pruefung { margin-top: 2px; }
 
-.tp-rg-kurz { margin: 0 0 28px; padding: 18px 20px 20px; background: var(--tp-red-soft, #fbeeef); border-left: 4px solid var(--tp-red, #b73740); border-radius: 0 var(--tp-r, 10px) var(--tp-r, 10px) 0; }
+.tp-rg-kurz { margin: 0 0 28px; padding: 18px 20px 20px; background: var(--tp-red-soft, #fbeeef); border-left: 4px solid var(--tp-red, #b0303f); border-radius: 0 var(--tp-r, 10px) var(--tp-r, 10px) 0; }
 .tp-rg-kurz__label { margin: 0 0 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--tp-red-dark, #96262f); }
 .tp-rg-kurz__text { margin: 0; font-size: 18px; line-height: 1.6; color: var(--tp-ink, #1d1a17); }
 
@@ -43,7 +43,7 @@
 .tp-rg-body li { margin: 0 0 0.45em; padding-left: 0.2em; }
 .tp-rg-body li > ul, .tp-rg-body li > ol { margin: 0.45em 0 0; }
 .tp-rg-body ol > li::marker { font-weight: 600; color: var(--tp-red-dark, #96262f); }
-.tp-rg-body ul > li::marker { color: var(--tp-red, #b73740); }
+.tp-rg-body ul > li::marker { color: var(--tp-red, #b0303f); }
 .tp-rg-body a { color: var(--tp-red-dark, #96262f); text-decoration: underline; text-underline-offset: 3px; }
 .tp-rg-body a:hover { color: var(--tp-ink, #1d1a17); }
 .tp-rg-body strong { color: var(--tp-ink, #1d1a17); }
@@ -64,7 +64,7 @@
 .tp-rg-video__rahmen { position: relative; aspect-ratio: 16 / 9; background: var(--tp-ink, #1d1a17); border-radius: var(--tp-r-lg, 16px); overflow: hidden; }
 .tp-rg-video__start { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; text-decoration: none; }
 .tp-rg-video__bild { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.tp-rg-video__play { position: relative; display: flex; align-items: center; justify-content: center; width: 72px; height: 72px; border-radius: 50%; background: var(--tp-red, #b73740); color: #fff; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3); }
+.tp-rg-video__play { position: relative; display: flex; align-items: center; justify-content: center; width: 72px; height: 72px; border-radius: 50%; background: var(--tp-red, #b0303f); color: #fff; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3); }
 .tp-rg-video__start:hover .tp-rg-video__play, .tp-rg-video__start:focus-visible .tp-rg-video__play { background: var(--tp-red-dark, #96262f); }
 .tp-rg-video__start:focus-visible { outline: 3px solid #fff; outline-offset: -6px; }
 .tp-rg-video__iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
@@ -73,7 +73,7 @@
 .tp-rg-video__transkript { margin: 14px 0 0; border-top: 1px solid var(--tp-line, #e6e0d8); border-bottom: 1px solid var(--tp-line, #e6e0d8); }
 .tp-rg-video__transkript summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 48px; cursor: pointer; list-style: none; font-weight: 600; font-size: 16px; color: var(--tp-ink, #1d1a17); }
 .tp-rg-video__transkript summary::-webkit-details-marker { display: none; }
-.tp-rg-video__transkript summary::after { content: "+"; flex: none; width: 28px; text-align: center; font-size: 24px; font-weight: 400; color: var(--tp-red, #b73740); }
+.tp-rg-video__transkript summary::after { content: "+"; flex: none; width: 28px; text-align: center; font-size: 24px; font-weight: 400; color: var(--tp-red, #b0303f); }
 .tp-rg-video__transkript[open] summary::after { content: "\2013"; }
 .tp-rg-video__transkript-text { padding: 0 0 16px; font-size: 16px; line-height: 1.65; }
 
@@ -98,7 +98,7 @@
 .tp-rg-produkt__mehr { display: block; margin-top: auto; padding: 0 14px 14px; font-size: 14px; color: var(--tp-red-dark, #96262f); }
 
 .tp-rg-naechster { margin-top: 56px; padding-top: 40px; border-top: 1px solid var(--tp-line, #e6e0d8); }
-.tp-rg-naechster__karte { position: relative; display: flex; flex-direction: column; gap: 4px; margin-top: 16px; padding: 20px 52px 20px 22px; background: var(--tp-red-soft, #fbeeef); border: 1px solid var(--tp-red, #b73740); border-radius: var(--tp-r-lg, 16px); color: var(--tp-ink, #1d1a17); text-decoration: none; }
+.tp-rg-naechster__karte { position: relative; display: flex; flex-direction: column; gap: 4px; margin-top: 16px; padding: 20px 52px 20px 22px; background: var(--tp-red-soft, #fbeeef); border: 1px solid var(--tp-red, #b0303f); border-radius: var(--tp-r-lg, 16px); color: var(--tp-ink, #1d1a17); text-decoration: none; }
 .tp-rg-naechster__karte:hover { border-color: var(--tp-red-dark, #96262f); }
 .tp-rg-naechster__karte:focus-visible { outline: 3px solid var(--tp-ink, #1d1a17); outline-offset: 2px; }
 .tp-rg-naechster__titel { font-size: 18px; font-weight: 700; line-height: 1.3; }
