@@ -5,7 +5,7 @@
   "vendor": "TeppichParadies",
   "product_type": "Dekofell",
   "category_id": "gid://shopify/TaxonomyCategory/hg-3-57",
-  "template_suffix": "teppich",
+  "template_suffix": "fixpreis",
   "publish": false,
   "description_html": "<p>Weiches Dekofell aus 100 % Polyester für den Innenbereich. Als runde Sitzauflage oder in Fellform in zwei Größen erhältlich. In sechs Farben verfügbar; bei 30 °C waschbar.</p>",
   "seo_title": "Fellara Dekofell – 6 Farben, 3 Größen | Teppich Paradies",
@@ -81,7 +81,7 @@
       "option_color": "Silber",
       "option_size": "40 × 60 cm Fellform",
       "price_eur": "11.99",
-      "image_alt": "Fellara Dekofell, Silber, 40 × 60 cm Fellform",
+      "image_alt": "Fellara Dekofell, Silber, Fellform",
       "source_row": 502,
       "image_filename": "6924_230_004_Elda.png"
     },
@@ -91,7 +91,7 @@
       "option_color": "Grau",
       "option_size": "40 × 60 cm Fellform",
       "price_eur": "11.99",
-      "image_alt": "Fellara Dekofell, Grau, 40 × 60 cm Fellform",
+      "image_alt": "Fellara Dekofell, Grau, Fellform",
       "source_row": 503,
       "image_filename": "6924_230_005_Elda.png"
     },
@@ -101,7 +101,7 @@
       "option_color": "Beige",
       "option_size": "40 × 60 cm Fellform",
       "price_eur": "11.99",
-      "image_alt": "Fellara Dekofell, Beige, 40 × 60 cm Fellform",
+      "image_alt": "Fellara Dekofell, Beige, Fellform",
       "source_row": 504,
       "image_filename": "6924_230_006_Elda.png"
     },
@@ -111,7 +111,7 @@
       "option_color": "Gold",
       "option_size": "40 × 60 cm Fellform",
       "price_eur": "11.99",
-      "image_alt": "Fellara Dekofell, Gold, 40 × 60 cm Fellform",
+      "image_alt": "Fellara Dekofell, Gold, Fellform",
       "source_row": 505,
       "image_filename": "6924_230_008_Elda.png"
     },
@@ -121,7 +121,7 @@
       "option_color": "Bordeaux",
       "option_size": "40 × 60 cm Fellform",
       "price_eur": "11.99",
-      "image_alt": "Fellara Dekofell, Bordeaux, 40 × 60 cm Fellform",
+      "image_alt": "Fellara Dekofell, Bordeaux, Fellform",
       "source_row": 506,
       "image_filename": "6924_230_017_Elda.png"
     },
@@ -131,7 +131,7 @@
       "option_color": "Schwarz",
       "option_size": "40 × 60 cm Fellform",
       "price_eur": "11.99",
-      "image_alt": "Fellara Dekofell, Schwarz, 40 × 60 cm Fellform",
+      "image_alt": "Fellara Dekofell, Schwarz, Fellform",
       "source_row": 507,
       "image_filename": "6924_230_044_Elda.png"
     },
@@ -141,7 +141,7 @@
       "option_color": "Silber",
       "option_size": "55 × 80 cm Fellform",
       "price_eur": "19.99",
-      "image_alt": "Fellara Dekofell, Silber, 55 × 80 cm Fellform",
+      "image_alt": "Fellara Dekofell, Silber, Fellform",
       "source_row": 508,
       "image_filename": "6924_230_004_Elda.png"
     },
@@ -151,7 +151,7 @@
       "option_color": "Grau",
       "option_size": "55 × 80 cm Fellform",
       "price_eur": "19.99",
-      "image_alt": "Fellara Dekofell, Grau, 55 × 80 cm Fellform",
+      "image_alt": "Fellara Dekofell, Grau, Fellform",
       "source_row": 509,
       "image_filename": "6924_230_005_Elda.png"
     },
@@ -161,7 +161,7 @@
       "option_color": "Beige",
       "option_size": "55 × 80 cm Fellform",
       "price_eur": "19.99",
-      "image_alt": "Fellara Dekofell, Beige, 55 × 80 cm Fellform",
+      "image_alt": "Fellara Dekofell, Beige, Fellform",
       "source_row": 510,
       "image_filename": "6924_230_006_Elda.png"
     },
@@ -171,7 +171,7 @@
       "option_color": "Gold",
       "option_size": "55 × 80 cm Fellform",
       "price_eur": "19.99",
-      "image_alt": "Fellara Dekofell, Gold, 55 × 80 cm Fellform",
+      "image_alt": "Fellara Dekofell, Gold, Fellform",
       "source_row": 511,
       "image_filename": "6924_230_008_Elda.png"
     },
@@ -181,7 +181,7 @@
       "option_color": "Bordeaux",
       "option_size": "55 × 80 cm Fellform",
       "price_eur": "19.99",
-      "image_alt": "Fellara Dekofell, Bordeaux, 55 × 80 cm Fellform",
+      "image_alt": "Fellara Dekofell, Bordeaux, Fellform",
       "source_row": 512,
       "image_filename": "6924_230_017_Elda.png"
     },
@@ -191,7 +191,7 @@
       "option_color": "Schwarz",
       "option_size": "55 × 80 cm Fellform",
       "price_eur": "19.99",
-      "image_alt": "Fellara Dekofell, Schwarz, 55 × 80 cm Fellform",
+      "image_alt": "Fellara Dekofell, Schwarz, Fellform",
       "source_row": 513,
       "image_filename": "6924_230_044_Elda.png"
     }
