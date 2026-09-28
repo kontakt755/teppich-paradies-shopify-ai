@@ -76,7 +76,7 @@
       endfor
     -%}
     {%- if tp_sl_is_flooring -%}
-      <p><strong>Versandkostenfrei in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert</strong></p>
+      <p><strong>Paket und Spedition deutschlandweit: versandkostenfrei ab {{ settings.tp_versand_frei_ab }} € Bestellwert</strong></p>
       {%- comment -%}
         "Bis vor die Haustuer" stand hier im Widerspruch zur Erklaerung direkt
         darunter, die frei Bordsteinkante definiert - "Weitertransport ins
@@ -94,6 +94,14 @@
         tp-shipping-delivery).
       {%- endcomment -%}
       <p>Rollen und große Pakete kommen per Spedition frei Bordsteinkante. Wir rufen vor der Lieferung an.</p>
+      {%- comment -%}
+        E3 (Inhaber 2026-09-28): zweite Lieferart klar getrennt nennen. Nur
+        wenn der Liefer- und Verlegeservice gilt (tp_sl_vs oben).
+      {%- endcomment -%}
+      {%- if tp_sl_vs contains 'ja' and settings.tp_vs_schwelle != blank and settings.tp_vs_radius_basis != blank -%}
+        <p><strong>Oder: eigene Anlieferung durch unser Team</strong></p>
+        <p>Bis {{ settings.tp_vs_radius_basis }}&nbsp;km ab {{ settings.tp_vs_schwelle }}&nbsp;€ Warenwert kostenlos, inklusive Hereintragen in die Wohnung.</p>
+      {%- endif -%}
     {%- else -%}
       <p><strong>Versand in Deutschland {{ settings.tp_versand_preis }}, ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos</strong></p>
     {%- endif -%}
