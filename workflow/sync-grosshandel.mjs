@@ -225,7 +225,7 @@ export function checkSafetyRules(newArticles, existingToUpdate) {
     // Der Katalog fuehrt das Feld `preis_eur`. Bis 2026-09-23 stand hier
     // `update.artikel.price` - undefined, damit newPrice 0 und die Sperre
     // unten dauerhaft wirkungslos.
-    const oldPrice = parseFloat(update.shopify.variants[0]?.price ?? '0');
+    const oldPrice = parseFloat(ersterVariantenPreis(update.shopify) ?? '0');
     const newPrice = parseFloat(update.artikel.preis_eur ?? '0');
 
     if (newPrice > 0 && newPrice < oldPrice * 0.8) {
@@ -269,7 +269,7 @@ function generateReport(newArticles, existingToUpdate) {
       shopifyHandle: u.shopify.handle,
       changes: {
         preis: {
-          alt: u.shopify.variants[0]?.price,
+          alt: ersterVariantenPreis(u.shopify),
           neu: u.artikel.preis_eur,
         },
       },
@@ -331,10 +331,21 @@ async function createProductDraft(article) {
   return data.productCreate.product;
 }
 
+// Die Admin API liefert variants als { nodes: [...] }, aeltere Aufrufer als Array.
+export function ersterVariantenPreis(shopifyProduct) {
+  const variants = shopifyProduct?.variants;
+  const liste = Array.isArray(variants) ? variants : variants?.nodes;
+  return liste?.[0]?.price;
+}
+
+export function nurAbweichungen(matches) {
+  return matches.filter((match) => preisAbweichung(match) !== null);
+}
+
 export function preisAbweichung(match) {
   // Shopify liefert den Preis als String, der Katalog als Zahl.
   // Ungeprueft verglichen ('12.90' !== 12.9) meldete jeder Artikel eine Aenderung.
-  const alt = parseFloat(match.shopify?.variants?.[0]?.price ?? 'NaN');
+  const alt = parseFloat(ersterVariantenPreis(match.shopify) ?? 'NaN');
   const neu = parseFloat(match.artikel?.preis_eur ?? 'NaN');
   if (!Number.isFinite(alt) || !Number.isFinite(neu)) return null;
   if (Math.abs(alt - neu) < 0.005) return null;
@@ -397,7 +408,8 @@ async function main() {
 
   // Step 4: Diff
   const newArticles = findNewArticles(catalogData, shopifyProducts);
-  const existingToUpdate = findExistingMatches(catalogData, shopifyProducts);
+  const gefunden = findExistingMatches(catalogData, shopifyProducts);
+  const existingToUpdate = nurAbweichungen(gefunden);
 
   // Step 5: Safety checks
   const isSafe = checkSafetyRules(newArticles, existingToUpdate);
@@ -412,7 +424,8 @@ async function main() {
 📊 SYNC REPORT (DRY-RUN)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✨ Neue Artikel:      ${newArticles.length}
-🔄 Zu aktualisieren:  ${existingToUpdate.length}
+🔄 Zu aktualisieren:  ${existingToUpdate.length} (Preis weicht ab)
+＝ Unveraendert:      ${gefunden.length - existingToUpdate.length}
 🛑 Zu löschen:        0 (NIEMALS)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📄 Report:            ${reportPath}
