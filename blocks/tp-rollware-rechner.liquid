@@ -206,10 +206,13 @@
     entscheidet nur die Rolle; berechnet wird das angegebene Mass) und
     erscheint deshalb nur dort. Der Link kommt aus der Block-Einstellung.
   {%- endcomment -%}
+  {%- comment -%}
+    Messhinweis und Link "Richtig messen" entfernt (Inhaber 2026-09-28):
+    kein Ablenken vom Kauf. Die Zeile traegt nur noch den Wunschmass-Hinweis
+    und ist unsichtbar, solange der verborgen ist.
+  {%- endcomment -%}
   <p class="tp-rwc-hinweis" data-rwc-body>
     <span data-wunsch-hint hidden></span>
-    An der längsten Stelle messen<span data-mess-raum hidden> – wir schneiden 5 cm breiter zu, berechnet wird Ihr Maß</span>.
-    {%- if block.settings.messen_link != blank %} <a href="{{ block.settings.messen_link }}">Richtig messen</a>{%- endif -%}
   </p>
   <p class="tp-rwc-note tp-rwc-note-tipp" data-meter-tipp hidden data-rwc-body></p>
   {%- comment -%}
@@ -435,18 +438,13 @@
     weiterhin nur, wenn die gewaehlte Variante service.einfassen exakt
     "Verfuegbar" traegt (updateEinfassChips).
   {%- endcomment -%}
-  {%- if tp_rc_tel != blank or tp_rc_wa != blank or tp_rc_einfass_gruppe != blank -%}
+  {%- if tp_rc_tel != blank or tp_rc_wa != blank -%}
     <div class="tp-rwc-beratung" data-rwc-body>
-      <p class="tp-rwc-beratung__frage">Unsicher beim Maß?</p>
       {%- comment -%}
-        E2 (Inhaber 2026-09-28): Hinweis auf die eigene Anlieferung. Nur wenn
-        der Liefer- und Verlegeservice fuer das Produkt gilt
-        (snippets/tp-vs-berechtigt), Werte aus den Theme-Einstellungen.
+        Inhaber 2026-09-28: keine Frage "Unsicher beim Mass?", kein
+        Liefertext, kein Link zum Teppich nach Mass - nur eine leise
+        Kontaktzeile, damit nichts vom Kauf wegfuehrt.
       {%- endcomment -%}
-      {%- capture tp_rc_vs_ok -%}{% render 'tp-vs-berechtigt', product: product %}{%- endcapture -%}
-      {%- if tp_rc_vs_ok contains 'ja' and settings.tp_vs_schwelle != blank and settings.tp_vs_radius_basis != blank -%}
-        <p class="tp-rwc-beratung__liefer">Bis {{ settings.tp_vs_radius_basis }}&nbsp;km bringen wir ab {{ settings.tp_vs_schwelle }}&nbsp;€ Warenwert kostenlos und tragen die Ware in die Wohnung.</p>
-      {%- endif -%}
       {%- if tp_rc_tel != blank or tp_rc_wa != blank -%}
       <div class="tp-rwc-beratung__wege">
         {%- if tp_rc_tel != blank -%}
@@ -462,26 +460,6 @@
           </a>
         {%- endif -%}
       </div>
-      {%- endif -%}
-      {%- if tp_rc_einfass_gruppe != blank -%}
-        <p class="tp-rwc-einfass" data-einfass-box hidden>
-          {%- assign tp_rc_arten = 'cover,ketteln,einfassband,paspelband' | split: ',' -%}
-          {%- for tp_rc_art in tp_rc_arten -%}
-            {%- for tp_rc_ep in tp_rc_einfass_gruppe -%}
-              {%- assign tp_rc_ea = tp_rc_ep.metafields.service.einfassung.value | strip | downcase -%}
-              {%- if tp_rc_ea == tp_rc_art and tp_rc_ep.available -%}
-                {%- case tp_rc_ea -%}
-                  {%- when 'cover' -%}{%- assign tp_rc_el = 'Lieber mit Cover? Teppich nach Maß →' -%}
-                  {%- when 'ketteln' -%}{%- assign tp_rc_el = 'Lieber gekettelt? Teppich nach Maß →' -%}
-                  {%- when 'einfassband' -%}{%- assign tp_rc_el = 'Lieber mit Einfassband? Teppich nach Maß →' -%}
-                  {%- when 'paspelband' -%}{%- assign tp_rc_el = 'Lieber mit Paspelband? Teppich nach Maß →' -%}
-                {%- endcase -%}
-                <a class="tp-rwc-einfass-chip" href="{{ tp_rc_ep.url }}" data-einfass-ziel="{{ tp_rc_ep.id }}" hidden>{{ tp_rc_el }}</a>
-                {%- break -%}
-              {%- endif -%}
-            {%- endfor -%}
-          {%- endfor -%}
-        </p>
       {%- endif -%}
     </div>
   {%- endif -%}
@@ -859,12 +837,15 @@
   /* Beratungsweg: bewusst ruhiger als der Kaufknopf. Er ist die Alternative,
      nicht die Einladung - wer kaufen will, soll nicht abgelenkt werden. */
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-beratung {
-    margin: 0 0 12px;
-    padding: 12px 14px;
-    border: 1px solid var(--tp-rwc-line, #e6e0d8);
-    border-radius: 10px;
-    background: var(--tp-rwc-bg-2, #faf7f3);
+    margin: 4px 0 12px;
+    font-size: 13px;
+    color: #595959;
   }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-beratung .tp-rwc-beratung__wege::before {
+    content: "Fragen?";
+    align-self: center;
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-hinweis:has(> [data-wunsch-hint][hidden]) { display: none; }
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-beratung__frage {
     margin: 0 0 8px;
@@ -892,14 +873,12 @@
     gap: 7px;
     /* 44 px wie die uebrigen Bedienelemente seit 2026-09-15. */
     min-height: 44px;
-    padding: 0 14px;
-    border: 1.5px solid var(--tp-rwc-ink, #1d1a17);
-    border-radius: 999px;
-    background: #fff;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--tp-rwc-ink, #1d1a17);
-    text-decoration: none;
+    padding: 0 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #595959;
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-beratung__weg svg {
