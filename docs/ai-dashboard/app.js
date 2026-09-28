@@ -16,6 +16,7 @@ import {
 } from './lib/model.mjs';
 import { ratgeberStatus, pipelineRows, statusLabel, suchleistungHinweis } from './lib/bodenwissen.mjs';
 import { merkeEingabe, stelleEingabeWiederHer, darfUebernehmen } from './lib/eingabe.mjs';
+import { gruppierePositionenNachKunde } from './lib/einkauf-kundengruppen.mjs';
 
 const CONFIG = {
   owner: 'kontakt755',
@@ -1416,6 +1417,8 @@ function einkaufGruppeKarte(g, i, praefix) {
   // Ohne Filter zeigt die Liste alles, was noch Arbeit macht - "Erledigt" nur auf Wunsch.
   const positionen = g.positionen.filter(p => { const gr = afFilterGruppe(afEintragFuer(p)?.status); return af ? gr === af : gr !== 'erledigt'; });
   if (!positionen.length) return '';
+  const kundengruppen = gruppierePositionenNachKunde(positionen, einkauf.bestellungen?.auftraege || []);
+  const sortiertePositionen = kundengruppen.flatMap(gruppe => gruppe.positionen);
   const unbekannt = g.lieferant === 'UNGEKLAERT';
   const luecken = positionen.filter(positionUnvollstaendig).length;
   const titel = unbekannt ? 'Lieferant nicht zugeordnet' : `Lieferant ${esc(g.lieferant)}`;
@@ -1443,34 +1446,29 @@ function einkaufGruppeKarte(g, i, praefix) {
   // data-l traegt die Spaltenueberschrift in die Zelle. Am Handy wird die
   // Tabelle damit zu Karten (app.css) - vorher musste man 390 px seitwaerts
   // schieben, um Artikelnummer und Stand zu sehen.
-  const zeilen = positionen.map(p => `<tr class="${positionUnvollstaendig(p) ? 'row-gap' : ''}">
+  const zeile = p => `<tr class="${positionUnvollstaendig(p) ? 'row-gap' : ''}">
       <td data-l="Artikel"><div class="cell-title">${esc(anzeigeWert(p.titel))}</div><div class="small muted">${esc(p.farbe)}${p.sku && p.sku !== 'UNGEKLAERT' ? ` · unsere SKU: <span class="mono">${esc(p.sku)}</span>` : ''}</div></td>
-      <td data-l="Auftrag" class="nowrap"><a href="${esc(adminAuftragUrl(p.orderId))}" target="_blank" rel="noopener" title="Bestellung in Shopify öffnen">${esc(p.orderName)} ↗</a>${auftragKundeHtml(p.orderId)}<div class="small muted">${fmtDate(p.orderDatum)}</div></td>
+      <td data-l="Auftrag" class="nowrap"><a href="${esc(adminAuftragUrl(p.orderId))}" target="_blank" rel="noopener" title="Bestellung in Shopify öffnen">${esc(p.orderName)} ↗</a><div class="small muted">${fmtDate(p.orderDatum)}</div></td>
       <td data-l="Zu bestellen">${p.bestellmenge.menge === 'UNGEKLAERT' ? `${ungeklaert(p.bestellmenge.grund)}<div class="small muted">${esc(p.bestellmenge.grund || '')}</div>` : `<b>${esc(p.bestellmenge.text)}</b>`}${kundenmengeWeicht(p) ? `<div class="small muted">Kunde: ${esc(p.kundenmenge)}</div>` : ''}</td>
       <td data-l="Artikelnummer beim Lieferanten">${p.grosshaendlerId === 'UNGEKLAERT' ? `${ungeklaert(p.idGrund)}<div class="small muted">${esc(p.idGrund || '')}</div>` : `<code class="mono" data-kopiertext="${esc(p.grosshaendlerId)}" title="Klicken zum Kopieren">${esc(p.grosshaendlerId)}</code>`}</td>
       <td data-l="Lieferant">${lieferantLinkZelle(p)}</td>
       <td data-l="Stand">${afStatusZelle(p)}</td>
-    </tr>`).join('');
+    </tr>`;
+  const zeilen = kundengruppen.map(gruppe => `<tbody class="einkauf-kundengruppe">
+    <tr class="einkauf-kundenkopf"><th colspan="6" scope="rowgroup"><span class="einkauf-kundenname">${esc(gruppe.name)}${gruppe.ort ? ` <span class="muted small">· ${esc(gruppe.ort)}</span>` : ''}</span><span class="small muted">${plural(gruppe.auftragsAnzahl, 'Auftrag', 'Aufträge')} · ${plural(gruppe.positionen.length, praefix === 'muster' ? 'Muster' : 'Artikel', praefix === 'muster' ? 'Muster' : 'Artikel')}</span></th></tr>
+    ${gruppe.positionen.map(zeile).join('')}
+  </tbody>`).join('');
   return `<section class="card group-card${luecken ? ' has-gap' : ''}">
-    <div class="card-head"><h3>${titel}${route} <span class="muted small">${plural(positionen.length, 'Artikel', 'Artikel')}</span></h3><div class="head-actions">${sammel}${kopierbutton(id)}</div></div>
-    <p class="small muted" style="margin:-6px 0 10px">Diese Artikel sind beim Lieferanten zu bestellen. Nach dem Bestellen auf „Als bestellt markieren" klicken.</p>
+    <div class="card-head"><h3>${titel}${route} <span class="muted small">${plural(positionen.length, praefix === 'muster' ? 'Muster' : 'Artikel', praefix === 'muster' ? 'Muster' : 'Artikel')}</span></h3><div class="head-actions">${sammel}${kopierbutton(id)}</div></div>
+    <p class="small muted" style="margin:-6px 0 10px">Nach Kunden sortiert. Nach dem Bestellen auf „Als bestellt markieren" klicken.</p>
     ${unterzeile}
     <div class="table-scroll"><table class="tasks compact"><thead><tr><th>Artikel</th><th>Auftrag</th><th>Zu bestellen</th><th>Artikelnummer beim Lieferanten</th><th>Lieferant</th><th>Stand</th></tr></thead>
-    <tbody>${zeilen}</tbody></table></div>
-    <textarea id="${id}" class="visually-hidden" aria-hidden="true" tabindex="-1">${esc(kopierTextFuer(g, positionen))}</textarea>
+    ${zeilen}</table></div>
+    <textarea id="${id}" class="visually-hidden" aria-hidden="true" tabindex="-1">${esc(kopierTextFuer(g, sortiertePositionen))}</textarea>
   </section>`;
 }
 /** Shopify-Link eines Auftrags aus der Auftragsliste (Positionen tragen ihn nicht selbst). */
 const adminAuftragUrl = id => (einkauf.bestellungen?.auftraege || []).find(a => a.id === id)?.adminUrl || '#';
-
-/** Kunde (und Ort) unter der Auftragsnummer - bei Mustern und Bestellungen sieht man sofort, fuer wen. */
-function auftragKundeHtml(orderId) {
-  const a = (einkauf.bestellungen?.auftraege || []).find(x => x.id === orderId);
-  const kunde = a?.details?.kunde?.name;
-  const ort = a?.details?.lieferadresse?.ort;
-  if (!kunde || kunde === '–') return '';
-  return `<div class="small muted">${esc(kunde)}${ort && ort !== '–' ? ` · ${esc(ort)}` : ''}</div>`;
-}
 
 function geldText(g) {
   if (!g || g.betrag === null || g.betrag === undefined) return '–';
