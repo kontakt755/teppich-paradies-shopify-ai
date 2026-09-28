@@ -19,7 +19,41 @@
 
   if tp_gewaehlt != blank
     assign tp_supplier_collection = product.metafields.grosshandel.sku.value | default: ''
-    if alt contains ' | Farbe: '
+    assign tp_hat_originalbild = false
+    if tp_supplier_collection contains 'Sprint 027'
+      assign tp_original_marker = ' | Farbe: ' | append: tp_gewaehlt | append: ' |'
+      for tp_media in product.media
+        if tp_media.alt contains tp_original_marker and tp_media.alt contains 'Sprint 027 ('
+          unless tp_media.alt contains ' · Raumbild'
+            assign tp_hat_originalbild = true
+            break
+          endunless
+        endif
+      endfor
+    endif
+    assign tp_legacy_swatch = false
+    assign tp_gew_code_text = ''
+    for tp_variant in product.variants
+      if tp_variant.options[tp_index] == tp_gewaehlt and tp_variant.sku != blank
+        assign tp_gew_code_text = tp_variant.sku | split: '_' | last
+        assign tp_gew_code_num = tp_gew_code_text | plus: 0
+        if tp_gew_code_num > 0
+          break
+        endif
+      endif
+    endfor
+    assign tp_legacy_code_marker = '(' | append: tp_gew_code_text | append: ')'
+    assign tp_legacy_code_kurz = '(' | append: tp_gew_code_num | append: ')'
+    if tp_gew_code_num > 0 and alt contains ' Teppichboden '
+      if alt contains tp_legacy_code_marker or alt contains tp_legacy_code_kurz
+        unless alt contains ' | Farbe: ' or alt contains 'Farbnr. ' or alt contains 'Raumbild' or alt contains 'Detail'
+          assign tp_legacy_swatch = true
+        endunless
+      endif
+    endif
+    if tp_hat_originalbild and tp_legacy_swatch
+      echo 'ja'
+    elsif alt contains ' | Farbe: '
       assign tp_marker = ' | Farbe: ' | append: tp_gewaehlt | append: ' |'
       unless alt contains tp_marker
         echo 'ja'
