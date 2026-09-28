@@ -379,6 +379,7 @@ function viewHeute() {
   const health = systemHealth();
   const worst = health.some(h => h.level === 'crit') ? 'crit' : health.some(h => h.level === 'warn') ? 'warn' : 'ok';
   const localMode = state.capabilities.mode === 'local';
+  const datenWarnungen = localMode ? aktualisierungHealth().filter(h => h.level !== 'ok') : [];
   if (localMode) { ensureEinkaufBestellungen(); ensureEinkaufAuftragsstatus(); ensureEinkaufKennzahlen(); ensureAktualisierung(); ensureKundenRueckrufe(); }
 
   // Interne Arbeit: Kacheln mit 0 sind Rauschen und fallen weg; "erledigt" bleibt als
@@ -394,6 +395,7 @@ function viewHeute() {
   return `
     <div class="page-head"><div><h1>Heute</h1><p class="sub">${esc(today)}</p></div>
       <div class="head-actions">${aktualisierenButton()}${state.capabilities.sync ? '<button class="btn" data-action="sync" data-nur-inhaber title="Entwicklungsaufgaben frisch von GitHub holen">GitHub synchronisieren</button>' : ''}<a class="btn btn-ghost" data-nur-inhaber href="${newIssueUrl({ template: 'feature.yml' })}" target="_blank" rel="noopener">Neues GitHub-Issue ↗</a></div></div>
+    ${datenWarnungen.length ? `<div class="notice warn" role="status" style="margin-bottom:12px"><strong>Datenaktualisierung prüfen:</strong> ${plural(datenWarnungen.length, 'Datenquelle meldet', 'Datenquellen melden')} einen Fehler oder einen veralteten Stand. <a href="#/insights">Datenstand ansehen →</a></div>` : ''}
 
     ${localMode ? heuteFaelle() : ''}
     <h2 class="section-title">Kundengeschäft</h2>
