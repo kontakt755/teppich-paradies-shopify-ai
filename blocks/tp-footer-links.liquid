@@ -1,35 +1,79 @@
+{%- comment -%}
+  B4 / Rechtliches: Spalten aus Menues statt fest codiert. Sortiment nimmt nur
+  Kollektions-Links des gewaehlten Menues (Hauptmenue enthaelt auch Service und
+  Kontakt). Rechtliches kommt aus dem Menue "footer" - dort steht Widerrufsrecht.
+  Ohne Service-Menue greift die feste Liste darunter.
+{%- endcomment -%}
 {%- liquid
   assign tp_footer_shipping_page = pages['versand-lieferung']
+  assign tp_fl_sortiment = block.settings.sortiment_menu
+  assign tp_fl_service = block.settings.service_menu
+  assign tp_fl_recht = block.settings.rechtliches_menu
 -%}
 
 <div class="tp-footer-links" {{ block.shopify_attributes }}>
   <nav aria-labelledby="tp-footer-assortment-{{ block.id }}">
     <h2 id="tp-footer-assortment-{{ block.id }}" class="tp-footer-links__heading">Sortiment</h2>
     <ul role="list">
-      <li><a href="{{ collections['teppichboden'].url }}">Teppichboden</a></li>
-      <li><a href="{{ collections['vinylboden-klickvinyl'].url }}">Klickvinyl</a></li>
-      <li><a href="{{ collections['vinylboden-klebevinyl'].url }}">Klebevinyl</a></li>
-      <li><a href="{{ collections['vinylboden-vinyl-von-der-rolle'].url }}">Vinyl von der Rolle</a></li>
+      {%- if tp_fl_sortiment != blank and tp_fl_sortiment.links.size > 0 -%}
+        {%- for link in tp_fl_sortiment.links -%}
+          {%- if link.url contains '/collections/' -%}
+            <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
+          {%- endif -%}
+        {%- endfor -%}
+      {%- else -%}
+        <li><a href="{{ collections['teppichboden'].url }}">Teppichboden</a></li>
+        <li><a href="{{ collections['vinylboden-1'].url }}">Vinylboden</a></li>
+        <li><a href="{{ collections['linoleumboden-1'].url }}">Linoleum</a></li>
+      {%- endif -%}
     </ul>
   </nav>
 
   <nav aria-labelledby="tp-footer-service-{{ block.id }}">
     <h2 id="tp-footer-service-{{ block.id }}" class="tp-footer-links__heading">Service</h2>
     <ul role="list">
-      {%- if tp_footer_shipping_page != blank -%}
-        <li><a href="{{ tp_footer_shipping_page.url }}">Versand &amp; Lieferung</a></li>
+      {%- if tp_fl_service != blank and tp_fl_service.links.size > 0 -%}
+        {%- for link in tp_fl_service.links -%}
+          <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
+        {%- endfor -%}
+      {%- else -%}
+        <li><a href="/pages/muster">Kostenlose Muster</a></li>
+        <li><a href="/pages/liefer-verlegeservice">Verlegeservice</a></li>
+        {%- if tp_footer_shipping_page != blank -%}
+          <li><a href="{{ tp_footer_shipping_page.url }}">Versand &amp; Lieferung</a></li>
+        {%- endif -%}
+        <li><a href="/pages/ratgeber">Ratgeber</a></li>
+        <li><a href="/pages/kontakt">Kontakt</a></li>
       {%- endif -%}
-      <li><a href="/pages/kontakt">Kontakt</a></li>
     </ul>
   </nav>
+
+  <div class="tp-footer-links__laden" aria-labelledby="tp-footer-shop-{{ block.id }}" role="group">
+    <h2 id="tp-footer-shop-{{ block.id }}" class="tp-footer-links__heading">Fachgeschäft</h2>
+    {%- if block.settings.adresse != blank -%}
+      <p>{{ block.settings.adresse | escape | newline_to_br }}</p>
+    {%- endif -%}
+    {%- if block.settings.zeiten != blank -%}
+      <p>{{ block.settings.zeiten | escape | newline_to_br }}</p>
+    {%- endif -%}
+    {%- if block.settings.telefon != blank -%}
+      <p><a href="tel:{{ block.settings.telefon | remove: ' ' | remove: '/' }}">{{ block.settings.telefon | escape }}</a></p>
+    {%- endif -%}
+  </div>
 
   <nav aria-labelledby="tp-footer-legal-{{ block.id }}">
     <h2 id="tp-footer-legal-{{ block.id }}" class="tp-footer-links__heading">Rechtliches</h2>
     <ul role="list">
-      <li><a href="/pages/impressum">Impressum</a></li>
-      <li><a href="/pages/datenschutzerklarung">Datenschutz</a></li>
-      <li><a href="/pages/agbs">AGB</a></li>
-      <li><a href="/pages/karriere">Karriere</a></li>
+      {%- if tp_fl_recht != blank and tp_fl_recht.links.size > 0 -%}
+        {%- for link in tp_fl_recht.links -%}
+          <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
+        {%- endfor -%}
+      {%- else -%}
+        <li><a href="/pages/impressum">Impressum</a></li>
+        <li><a href="/pages/datenschutzerklarung">Datenschutz</a></li>
+        <li><a href="/pages/agbs">AGB</a></li>
+        <li><a href="/policies/refund-policy">Widerrufsrecht</a></li>
+      {%- endif -%}
     </ul>
   </nav>
 </div>
@@ -37,9 +81,21 @@
 {% stylesheet %}
   .tp-footer-links {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 28px;
     width: 100%;
+  }
+
+  /* B4: vier Spalten brauchen die volle Footer-Breite; Newsletter und
+     Zahlarten ruecken in die Zeile darunter. */
+  .footer-content > .tp-footer-links {
+    grid-column: 1 / -1;
+  }
+
+  @media screen and (min-width: 750px) and (max-width: 989px) {
+    .tp-footer-links {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 
   .tp-footer-links__heading {
@@ -62,6 +118,8 @@
      er unsicher ist (gemessen 2026-09-16, alle Seiten, Handy und Desktop).
      Die Hoehe kommt aus min-height, nicht aus Abstand: der Zeilenabstand der
      Liste bleibt optisch gleich, weil der Listen-gap darunter kleiner wird. */
+  .tp-footer-links__laden p { margin: 0 0 8px; line-height: 1.5; }
+
   .tp-footer-links a {
     display: inline-flex;
     align-items: center;
@@ -91,7 +149,14 @@
 {
   "name": "TP Footer-Links",
   "tag": null,
-  "settings": [],
+  "settings": [
+    { "type": "link_list", "id": "sortiment_menu", "label": "Sortiment (nur Kollektions-Links)", "default": "main-menu" },
+    { "type": "link_list", "id": "service_menu", "label": "Service", "info": "Leer: Muster, Verlegeservice, Versand, Ratgeber, Kontakt" },
+    { "type": "textarea", "id": "adresse", "label": "Fachgeschaeft Adresse", "default": "Teppich Paradies Oranienburg GmbH\nSaarlandstraße 73–81\n16515 Oranienburg" },
+    { "type": "text", "id": "zeiten", "label": "Oeffnungszeiten", "default": "Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr" },
+    { "type": "text", "id": "telefon", "label": "Telefon", "default": "03301 573 37 20" },
+    { "type": "link_list", "id": "rechtliches_menu", "label": "Rechtliches", "default": "footer" }
+  ],
   "presets": [
     {
       "name": "TP Footer-Links"

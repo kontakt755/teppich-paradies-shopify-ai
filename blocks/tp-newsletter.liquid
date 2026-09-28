@@ -6,6 +6,7 @@
   (z. B. {% render 'tp-newsletter', quelle: 'ratgeber' %}).
 
   Das gesamte CSS steht hier im {% stylesheet %}
+
   /* Footer auf Tablet-Breite: die drei Linkspalten bekommen eine eigene
      Zeile, Newsletter und Zahlungsarten teilen sich die naechste. Ohne das
      quetscht das Drittel-Raster die Linkspalten auf ~180 px. */
@@ -25,7 +26,7 @@
   Snippet gerendert wird.
 {% enddoc %}
 
-<div {{ block.shopify_attributes }}>
+<div{% if block.settings.quelle == 'footer' %} class="tp-nl-footer"{% endif %} {{ block.shopify_attributes }}>
   {%- render 'tp-newsletter',
     ueberschrift: block.settings.ueberschrift,
     text: block.settings.text,
@@ -36,6 +37,21 @@
     instanz: block.id
   -%}
 </div>
+{%- if block.settings.quelle == 'footer' -%}
+  {%- comment -%}
+    A5: Newsletter nur einmal pro Seite. Steht im Inhalt schon eine Anmeldung
+    (Startseiten-Sektion, Kachel im Raster, Ratgeber), entfaellt die im Footer.
+    Skript statt :has()-Regel: die CSS-Buendelung von Shopify verwarf die Regel.
+    Der Footer steht nach main, der Inhalt ist hier also schon im DOM.
+  {%- endcomment -%}
+  <script>
+    (function () {
+      if (document.querySelector('main .tp-nl, .tp-nv, .tp-nk')) {
+        document.querySelectorAll('.tp-nl-footer').forEach(function (el) { el.hidden = true; el.style.display = 'none'; });
+      }
+    })();
+  </script>
+{%- endif -%}
 
 {% stylesheet %}
   .tp-nl {
@@ -137,7 +153,7 @@
     padding: 0 20px;
     border: 0;
     border-radius: var(--tp-r, 10px);
-    background: var(--tp-red, #b73740);
+    background: var(--tp-red, #b0303f);
     color: #fff;
     font-size: 15px;
     font-weight: 600;
@@ -172,7 +188,7 @@
   }
 
   .tp-nl__hinweis a:hover {
-    color: var(--tp-red, #b73740);
+    color: var(--tp-red, #b0303f);
   }
 
   .tp-nl__hinweis a:focus-visible {
@@ -195,7 +211,7 @@
   }
 
   .tp-nl__status--fehler {
-    border: 1px solid var(--tp-red, #b73740);
+    border: 1px solid var(--tp-red, #b0303f);
     color: var(--tp-red-dark, #96262f);
   }
 {% endstylesheet %}

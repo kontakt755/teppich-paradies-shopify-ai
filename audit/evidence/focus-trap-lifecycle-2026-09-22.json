@@ -1,0 +1,63 @@
+{
+  "session": "S50",
+  "task": "JS-001x",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/focus.js",
+      "sha256": "0234bc60da5d3a92aae53f9213c141189fc49f2bfcd32c8ca525d8286bf78013"
+    },
+    {
+      "file": "assets/header-drawer.js",
+      "sha256": "1b3b60391c5d60fdc7d0f4f4129ae933ead38d6d0827f52579639aeab85768d0"
+    },
+    {
+      "file": "assets/collection-links.js",
+      "sha256": "d22a877a9e7bd733519dead5ee64814f3c2e6a8403c7a2dccb03a836285666ba"
+    },
+    {
+      "file": "snippets/header-drawer.liquid",
+      "sha256": "515687f89ec99a23ebd194e1b9056056000d70068a73371aaf6050e48e065fcb"
+    }
+  ],
+  "cases": [
+    {
+      "name": "trap-installs-one-global-pair",
+      "keydownHandlers": 1,
+      "focusinHandlers": 1,
+      "containerFocus": 1
+    },
+    {
+      "name": "tab-cycle-and-outside-focus-redirect",
+      "firstFocus": 2,
+      "prevented": 1,
+      "stopped": 1
+    },
+    {
+      "name": "second-trap-replaces-first",
+      "keydownHandlers": 1,
+      "focusinHandlers": 1,
+      "priorPairsRemoved": 1
+    },
+    {
+      "name": "explicit-remove-clears-global-pair",
+      "keydownHandlers": 0,
+      "focusinHandlers": 0
+    },
+    {
+      "name": "open-drawer-disconnect-leaves-trap-on-detached-tree",
+      "detachedContainer": true,
+      "redirectedToDetachedFirst": true
+    },
+    {
+      "name": "collection-link-cycle-positive-control",
+      "lastFocus": 1
+    }
+  ],
+  "sourceReach": {
+    "trapConsumer": "assets/header-drawer.js",
+    "cycleConsumer": "assets/collection-links.js",
+    "globalImportMap": "snippets/scripts.liquid"
+  },
+  "limits": "Original complete focus.js; document listener registry, focusable nodes and activeElement adapted. Trap, Tab/focusin redirect, replacement, explicit remove, detached-container persistence and cycleFocus executed. HeaderDrawer disconnect omission verified from current source. Native focus event propagation, animation timing, inert/top-layer, browser and live markup not tested."
+}

@@ -1,0 +1,46 @@
+{
+  "session": "S29",
+  "task": "JS-001c",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/quick-add.js",
+      "sha256": "f7f1c8496cb32e099d380178fdbf7ae5b708cc53c2f11da0aaa9cf75d7fbd5f6"
+    },
+    {
+      "file": "assets/events.js",
+      "sha256": "1290bc43167daaa1166e4d3acf0b423f1d30f119347d2873ebb18001c12d2056"
+    },
+    {
+      "file": "assets/dialog.js",
+      "sha256": "29e81ab767bd2dfa087023be7a26e69d7ade88e62e7c089c69dfb6a3754f9526"
+    }
+  ],
+  "cases": [
+    {
+      "name": "initial-connect",
+      "closes": 1,
+      "linkQueries": 2,
+      "animationFrames": 2
+    },
+    {
+      "name": "disconnected-variant-listener-remains",
+      "closes": 0,
+      "linkQueries": 2,
+      "animationFrames": 0
+    },
+    {
+      "name": "same-instance-reconnect",
+      "closes": 0,
+      "linkQueries": 2,
+      "animationFrames": 2
+    },
+    {
+      "name": "fresh-instance",
+      "closes": 1,
+      "linkQueries": 2,
+      "animationFrames": 2
+    }
+  ],
+  "limits": "Original complete QuickAddDialog and original events; DialogComponent/DOM/iOS layout dependencies adapted, native EventTarget/AbortController. Tests listener lifecycle only, not dialog UI, modal morph, fetch, browser or live shop. Repository quick_add is false and live setting unknown."
+}

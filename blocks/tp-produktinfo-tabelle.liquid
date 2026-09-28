@@ -317,7 +317,7 @@ Rückenausstattung::ruecken
     {% if tp_pit_paket_qm != blank %}
       <tr class="ai-product-info-table__row-{{ ai_gen_id }}">
         <td class="ai-product-info-table__key-{{ ai_gen_id }}">m² pro Paket</td>
-        <td class="ai-product-info-table__value-{{ ai_gen_id }}">{{ tp_pit_paket_qm }} m²</td>
+        <td class="ai-product-info-table__value-{{ ai_gen_id }}">{{ tp_pit_paket_qm | replace: '.', ',' }} m²</td>
       </tr>
     {% endif %}
   </table>

@@ -116,6 +116,20 @@ falsche Problem — der MCP-Server braucht gar keinen.
 ### Theme-IDs altern schneller als Notizen
 Eine Theme-ID aus einem älteren Chat, Report oder Commit kann inzwischen eine andere Rolle haben. `domains/shopify/live-theme.json` ist die einzige Quelle; bei Zweifel die Rollen direkt per Admin-API prüfen (`themes(first: 20) { nodes { id name role } }`) und die Datei angleichen.
 
+### `npm run -s kurz -- push` bricht mit "is not valid JSON" ab
+
+Symptom: `SyntaxError: Unexpected token '<', "<claude-co"...` oder `Unexpected token 'U', "Uploading "...` aus `scripts/kurz.mjs`.
+Ursache: `shopify theme push --json` schreibt neben der JSON-Zeile weitere Zeilen auf stdout/stderr
+(Plugin-Hinweis `<claude-code-hint ...>`, Fortschritt `Uploading files ...`). Der Filter erwartet reines JSON.
+Fix: Ausgabe in eine Datei leiten und nur die JSON-Zeile weiterreichen:
+
+```bash
+shopify theme push --theme <id> --only <datei> --nodelete --json > /tmp/push.out 2>&1
+grep -E '^\{' /tmp/push.out | npm run -s kurz -- push || tail -8 /tmp/push.out
+```
+
+Mehrere `--only` in der zsh nie aus einer String-Variable expandieren (wird ein Argument, "Nonexistent flag"), sondern als Array: `args=(); while read f; do args+=(--only "$f"); done < liste.txt`.
+
 ## Funktionierender Ablauf (Stand 2026-09-04)
 
 ```bash

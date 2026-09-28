@@ -202,7 +202,7 @@
                     Ausgegraute Optionen sind mit der aktuellen Auswahl nicht kombinierbar.
                     Filter zur&uuml;cksetzen, um alle Optionen zu sehen.
                   {%- else -%}
-                    Ausgegraute Optionen gibt es in dieser Kategorie nicht.
+                    Ausgegraute Optionen gibt es {% if request.page_type == 'search' %}in diesen Suchergebnissen{% else %}in dieser Kategorie{% endif %} nicht.
                   {%- endif -%}
                 </p>
               {%- endif -%}
@@ -222,7 +222,7 @@
                         technisch nicht ohne Metafeld-Filterung sauber
                         loesbar). Alle anderen Filter bleiben unveraendert.
                       {%- endcomment -%}
-                      {%- unless collection.handle == 'vinylboden-1' or collection.handle == 'vinylboden-klickvinyl' or collection.handle == 'vinylboden-klebevinyl' -%}
+                      {%- unless request.page_type == 'search' or collection.handle == 'vinylboden-1' or collection.handle == 'vinylboden-klickvinyl' or collection.handle == 'vinylboden-klebevinyl' -%}
                         {%- liquid
                           if filter.min_value.value != null or filter.max_value.value != null
                             assign total_active_values = total_active_values | plus: 1
@@ -251,7 +251,13 @@
                         else
                           assign should_render_clear = false
                         endif
-                        render 'list-filter', filter: filter, filter_style: block_settings.filter_style, active_value_count: active_value_count, should_render_clear: should_render_clear, show_swatch_label: block_settings.show_swatch_label, sectionId: section.id
+                        capture tp_filter_aus
+                          render 'tp-filter-sichtbar', filter: filter
+                        endcapture
+
+                        unless tp_filter_aus contains 'nein'
+                          render 'list-filter', filter: filter, filter_style: block_settings.filter_style, active_value_count: active_value_count, should_render_clear: should_render_clear, show_swatch_label: block_settings.show_swatch_label, sectionId: section.id
+                        endunless
                       %}
                   {% endcase %}
                 {%- endfor -%}
@@ -492,7 +498,7 @@
                       Ausgegraute Optionen sind mit der aktuellen Auswahl nicht kombinierbar.
                       Filter zur&uuml;cksetzen, um alle Optionen zu sehen.
                     {%- else -%}
-                      Ausgegraute Optionen gibt es in dieser Kategorie nicht.
+                      Ausgegraute Optionen gibt es {% if request.page_type == 'search' %}in diesen Suchergebnissen{% else %}in dieser Kategorie{% endif %} nicht.
                     {%- endif -%}
                   </p>
                 {%- endif -%}
@@ -504,7 +510,7 @@
                 {%- for filter in filters -%}
                   {% case filter.type %}
                     {% when 'price_range' %}
-                      {%- unless collection.handle == 'vinylboden-1' or collection.handle == 'vinylboden-klickvinyl' or collection.handle == 'vinylboden-klebevinyl' -%}
+                      {%- unless request.page_type == 'search' or collection.handle == 'vinylboden-1' or collection.handle == 'vinylboden-klickvinyl' or collection.handle == 'vinylboden-klebevinyl' -%}
                         {%- liquid
                           if filter.min_value.value != null or filter.max_value.value != null
                             assign total_active_values = total_active_values | plus: 1
@@ -522,7 +528,13 @@
 
                         assign active_value_count = filter.active_values | size
                         assign total_active_values = total_active_values | plus: active_value_count
-                        render 'list-filter', filter: filter, filter_style: 'vertical', active_value_count: active_value_count, should_render_clear: false, in_drawer: true, sectionId: section.id
+                        capture tp_filter_aus
+                          render 'tp-filter-sichtbar', filter: filter
+                        endcapture
+
+                        unless tp_filter_aus contains 'nein'
+                          render 'list-filter', filter: filter, filter_style: 'vertical', active_value_count: active_value_count, should_render_clear: false, in_drawer: true, sectionId: section.id
+                        endunless
                       %}
                   {% endcase %}
                 {%- endfor -%}

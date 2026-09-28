@@ -151,8 +151,10 @@
      gerendert wurden - eine Produktseite ohne Karten bekam den Preis dann
      in Grundschrift statt in der Preisgroesse. */
 
+  /* V2: Preise schwarz - Rot nur im Rabatt-Badge (vorher #c4392c als
+     zweites Rot neben dem Badge-Rot). */
   .price-item--sale {
-    color: #c4392c;
+    color: var(--color-foreground, #000);
   }
 
   .compare-at-price {

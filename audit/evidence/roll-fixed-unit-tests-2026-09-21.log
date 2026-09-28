@@ -1,0 +1,15 @@
+✔ A: Reichweite laut Hersteller rundet auf und nennt ihre Quelle (0.888334ms)
+✔ B: Gebinde mit Flaeche aus der Bezeichnung rechnet wie bisher (0.146375ms)
+✔ C: Klebeband rechnet in Metern je Rolle (0.135583ms)
+✔ D: Gleitkomma bestellt keine Stange zu viel (0.093958ms)
+✔ E: Variante ohne belegte Einheit zeigt nichts und laesst die Menge stehen (0.063ms)
+✔ F: Block liest genau die vorbereiteten Metafelder am richtigen Traeger (0.349125ms)
+✔ G: Zielfelder der Quelldaten tragen nur belegte, abgeschriebene Werte (0.65275ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 67.513791

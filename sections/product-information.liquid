@@ -59,6 +59,16 @@
     >
       {% liquid
         assign image_to_show = current_variant.featured_image | default: product.featured_image
+        if current_variant.featured_media == blank
+          capture tp_sticky_color_media_id
+            render 'tp-galerie-farbmedium', product: product, variant: current_variant
+          endcapture
+          assign tp_sticky_color_media_id = tp_sticky_color_media_id | strip | plus: 0
+          assign tp_sticky_color_media = product.media | where: 'id', tp_sticky_color_media_id | first
+          if tp_sticky_color_media != blank
+            assign image_to_show = tp_sticky_color_media.preview_image
+          endif
+        endif
       %}
       {% if image_to_show %}
         <div

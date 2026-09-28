@@ -1,0 +1,49 @@
+{
+  "session": "S25",
+  "task": "VAR-001a.2c.2",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/variant-picker.js",
+      "sha256": "4357c80adaf5e6715cc48b4c48a1d2a3d92cde479f8d6c7960f9ff6e95111fce"
+    },
+    {
+      "file": "assets/events.js",
+      "sha256": "1290bc43167daaa1166e4d3acf0b423f1d30f119347d2873ebb18001c12d2056"
+    },
+    {
+      "file": "assets/component.js",
+      "sha256": "3798455f28383ddc9df6f01ca7f20652abef5ffcaace1f32f098b83a2e5c6e56"
+    },
+    {
+      "file": "assets/morph.js",
+      "sha256": "a198d7b71c44ba79a46e53edd680dc18a76fb3c335b71f8494cb9171d182ec1f"
+    }
+  ],
+  "cases": [
+    {
+      "name": "initial-connect",
+      "selected": 1,
+      "requests": 1,
+      "observerStarts": 1
+    },
+    {
+      "name": "same-instance-reconnect-duplicates-change",
+      "selected": 2,
+      "requests": 2,
+      "firstRequestAbortedByDuplicate": true,
+      "observerStarts": 2,
+      "observerDisconnects": 1
+    },
+    {
+      "name": "disconnect-does-not-abort-request",
+      "abortedAfterDisconnect": false
+    },
+    {
+      "name": "fresh-instance-single-change",
+      "selected": 1,
+      "requests": 1
+    }
+  ],
+  "limits": "Original complete VariantPicker and events with native EventTarget/AbortController. Refs/DOM, option update and response morph adapted; lifecycle invoked manually. Confirms duplicate bound change listeners and non-aborted pending request on same-instance disconnect. No real DOM morph, response completion, browser or live request; radio-array accumulation is source-observed but not asserted here."
+}

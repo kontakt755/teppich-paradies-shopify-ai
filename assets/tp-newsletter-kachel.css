@@ -22,7 +22,7 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #b73740;
+  color: #b0303f;
 }
 
 .tp-nk__titel {
@@ -63,4 +63,12 @@
   .tp-nk__titel {
     font-size: 19px;
   }
+}
+
+/* V10 (Design-Runde 3): Desktop nach Produkt 6, Telefon nach Produkt 8 */
+@media screen and (max-width: 749px) {
+  .tp-nk--desktop { display: none !important; }
+}
+@media screen and (min-width: 750px) {
+  .tp-nk--mobil { display: none !important; }
 }

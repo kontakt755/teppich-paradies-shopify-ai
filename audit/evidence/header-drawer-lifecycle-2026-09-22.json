@@ -1,0 +1,80 @@
+{
+  "session": "S51",
+  "task": "JS-001y",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/header-drawer.js",
+      "sha256": "1b3b60391c5d60fdc7d0f4f4129ae933ead38d6d0827f52579639aeab85768d0"
+    },
+    {
+      "file": "assets/focus.js",
+      "sha256": "0234bc60da5d3a92aae53f9213c141189fc49f2bfcd32c8ca525d8286bf78013"
+    },
+    {
+      "file": "snippets/header-drawer.liquid",
+      "sha256": "515687f89ec99a23ebd194e1b9056056000d70068a73371aaf6050e48e065fcb"
+    },
+    {
+      "file": "blocks/_header-menu.liquid",
+      "sha256": "7126fd58b2be0a4b7a760347e0afbe17d992caaf6ec28da6f66b4c347bfd3515"
+    }
+  ],
+  "cases": [
+    {
+      "name": "connect-installs-local-and-descendant-listeners",
+      "keyupListeners": 1,
+      "animatedListeners": [
+        1,
+        1
+      ]
+    },
+    {
+      "name": "open-disconnect-does-not-cancel-animation-or-timer",
+      "keyupListenersAfterDisconnect": 0,
+      "descendantAnimationListenersAfterDisconnect": 1,
+      "focusAfterDetachedAnimation": [
+        {
+          "type": "trap",
+          "target": "root-details"
+        }
+      ],
+      "timerMutatedDetachedContent": true
+    },
+    {
+      "name": "same-node-reconnect-deduplicates-stable-animation-listener",
+      "animationListenerAddCalls": 2,
+      "activeAnimationListeners": 1,
+      "callbackRunsPerEvent": 1
+    },
+    {
+      "name": "normal-close-resets-root-and-removes-focus-trap",
+      "detailsOpen": false,
+      "ariaExpanded": "false",
+      "focusSequence": [
+        "trap",
+        "remove"
+      ]
+    },
+    {
+      "name": "detached-close-callback-can-remove-later-global-trap",
+      "focusSequence": [
+        {
+          "type": "trap",
+          "target": "new-drawer"
+        },
+        {
+          "type": "remove"
+        }
+      ],
+      "callbackCancelledOnDisconnect": false
+    }
+  ],
+  "sourceReach": {
+    "component": "assets/header-drawer.js",
+    "focusApi": "assets/focus.js",
+    "directMarkup": "snippets/header-drawer.liquid",
+    "headerComposition": "blocks/_header-menu.liquid"
+  },
+  "limits": "Original complete HeaderDrawer; Component lifecycle, DOM nodes, requestAnimationFrame, timer queue, animation completion, focus API and custom-elements registry adapted. Connect, open-disconnect with delayed callbacks, same-node reconnect, normal close and detached close callback executed. Native details toggle order, real CSS animation events, DOM removal semantics, browser and live reach not tested."
+}

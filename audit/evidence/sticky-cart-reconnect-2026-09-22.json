@@ -1,0 +1,76 @@
+{
+  "session": "S30",
+  "task": "JS-001d",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/sticky-add-to-cart.js",
+      "sha256": "f7152a1a031273bb1fc99b86db18c0baf3a56f5fb616057df3e56935752d12c8"
+    },
+    {
+      "file": "assets/events.js",
+      "sha256": "1290bc43167daaa1166e4d3acf0b423f1d30f119347d2873ebb18001c12d2056"
+    },
+    {
+      "file": "sections/product-information.liquid",
+      "sha256": "2d7362ff38c27b0fc01d6959f91b508c669eb1c43d74c2107310b9316b3884d4"
+    }
+  ],
+  "cases": [
+    {
+      "name": "initial-connect",
+      "variantId": "2",
+      "quantity": "4"
+    },
+    {
+      "name": "disconnected-ignores-events",
+      "variantId": "1",
+      "quantity": "1"
+    },
+    {
+      "name": "same-instance-reconnect-stale",
+      "variantId": "1",
+      "quantity": "1"
+    },
+    {
+      "name": "fresh-instance",
+      "variantId": "5",
+      "quantity": "7"
+    }
+  ],
+  "templateSource": [
+    {
+      "template": "product.einfassung.json",
+      "stickyEnabled": true
+    },
+    {
+      "template": "product.fixpreis.json",
+      "stickyEnabled": true
+    },
+    {
+      "template": "product.fliese.json",
+      "stickyEnabled": true
+    },
+    {
+      "template": "product.json",
+      "stickyEnabled": true
+    },
+    {
+      "template": "product.planken.json",
+      "stickyEnabled": true
+    },
+    {
+      "template": "product.rolle.json",
+      "stickyEnabled": true
+    },
+    {
+      "template": "product.teppich.json",
+      "stickyEnabled": true
+    },
+    {
+      "template": "product.zubehoer.json",
+      "stickyEnabled": true
+    }
+  ],
+  "limits": "Original complete StickyAddToCartComponent and original events; Component/DOM/observers adapted, native EventTarget/AbortController. Tests section variant:selected and document quantity-selector:update lifecycle. Does not assert IntersectionObserver, target MutationObserver, click/cart, morph, browser or live behavior. All eight repository product templates enable sticky add-to-cart; live theme equality remains unverified."
+}

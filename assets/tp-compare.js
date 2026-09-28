@@ -55,7 +55,11 @@
       // damit der Button auf Mobile nicht umbricht/abgeschnitten wird. Der
       // Button auf der Produktseite ist davon nicht betroffen und behaelt
       // seinen vollen Text.
-      if (btn.hasAttribute('data-tp-compare-compact')) {
+      if (btn.hasAttribute('data-tp-compare-icon')) {
+        // C1: Symbol-Knopf auf der Karte - Inhalt (SVG) bleibt, nur Beschriftung wechselt
+        btn.setAttribute('title', active ? 'Aus dem Vergleich entfernen' : NUTZEN_TEXT);
+        btn.setAttribute('aria-label', active ? 'Aus dem Vergleich entfernen' : NUTZEN_TEXT);
+      } else if (btn.hasAttribute('data-tp-compare-compact')) {
         btn.textContent = active ? 'Verglichen' : 'Vergleichen';
         // "Vergleichen" allein sagt nicht, was verglichen wird. Auf der Karte
         // ist kein Platz fuer den ganzen Satz - er steht deshalb als Titel und

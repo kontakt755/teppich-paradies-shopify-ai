@@ -1,0 +1,9 @@
+{
+  "session": "S13",
+  "status": "BLOCKED_PERMISSION",
+  "selectedBrowser": "Chrome extension",
+  "target": "https://www.teppich-paradies.net/",
+  "result": "Navigation rejected: user denied permission. No workaround or alternate access attempted.",
+  "liveThemeVerified": false,
+  "fallback": "Local repository checkout contract only"
+}

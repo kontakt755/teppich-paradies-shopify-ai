@@ -1,0 +1,89 @@
+{
+  "session": "S13",
+  "task": "CART-003a",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "snippets/cart-summary.liquid",
+      "sha256": "25c2205eda3d8d6521e44fa185d9c4eba6b47dcabeb8a91c4b0f27a62098a195"
+    },
+    {
+      "file": "snippets/cart-products.liquid",
+      "sha256": "fee4ccac79b38fb09857438904683ab79c4780e1c7950371aed9feda19a23c5d"
+    },
+    {
+      "file": "snippets/header-actions.liquid",
+      "sha256": "3f33aa06de29b0ce95c0055398ca9c8c777d6a7b77e99b39160de1775acf8c97"
+    },
+    {
+      "file": "snippets/tp-cart-gruppe.liquid",
+      "sha256": "395dca970f7943fe3198cb7d908e45afbed62af222076e9896fdae84179f90af"
+    }
+  ],
+  "cases": [
+    {
+      "name": "cta-render",
+      "platform": false,
+      "setting": false,
+      "vertical": false,
+      "expressRendered": false
+    },
+    {
+      "name": "cta-render",
+      "platform": false,
+      "setting": false,
+      "vertical": true,
+      "expressRendered": false
+    },
+    {
+      "name": "cta-render",
+      "platform": false,
+      "setting": true,
+      "vertical": false,
+      "expressRendered": false
+    },
+    {
+      "name": "cta-render",
+      "platform": false,
+      "setting": true,
+      "vertical": true,
+      "expressRendered": false
+    },
+    {
+      "name": "cta-render",
+      "platform": true,
+      "setting": false,
+      "vertical": false,
+      "expressRendered": false
+    },
+    {
+      "name": "cta-render",
+      "platform": true,
+      "setting": false,
+      "vertical": true,
+      "expressRendered": false
+    },
+    {
+      "name": "cta-render",
+      "platform": true,
+      "setting": true,
+      "vertical": false,
+      "expressRendered": true
+    },
+    {
+      "name": "cta-render",
+      "platform": true,
+      "setting": true,
+      "vertical": true,
+      "expressRendered": true
+    },
+    {
+      "name": "static-form-contract",
+      "lockInsidePostForm": true,
+      "drawerExcludedOnCartTemplate": true,
+      "requiredEmptyTextGuard": true,
+      "expressPointerBlockedByCSS": true
+    }
+  ],
+  "limitations": "Eight original CTA fragment Liquid renders plus static form/guard/header/CSS contract. Does not execute browser constraint validation or accelerated checkout. S08 classification not rerun. No live-theme verification or server validation proof."
+}

@@ -24,6 +24,20 @@ export function buildRoutingLine(routing) {
   return `Routing-Matrix: Klasse ${taskClass} → Implementer ${describe(plan.primary)}, Review ${describe(plan.reviewer)}${plan.securityReviewer ? `, Security-Review ${describe(plan.securityReviewer)}` : ''}, Corrector = Implementer, erwartete Modellaufrufe ${plan.expectedModelCalls[0]}-${plan.expectedModelCalls[1]}, Haiku erlaubt: ${plan.haikuAllowed}.`;
 }
 
+// Verbrauch II (#670): Die Voranalyse eines Drittmodells stand bei jedem
+// gerouteten Prompt im Kontext und wurde in jeder Folgerunde erneut bezahlt
+// (393 Voranalysen in 30 Tagen, ungeprueft). Sie lohnt nur bei komplexen und
+// kritischen Aufgaben; bei A/B wird sie weder erzeugt noch eingeblendet.
+export function voranalyseEinblenden(taskClass) {
+  return taskClass === 'C' || taskClass === 'D';
+}
+
+// Ersatz fuer den Drittmodell-Aufruf bei Klasse B: der Handoff fuer das
+// Review entsteht trotzdem, nur ohne Voranalyse.
+export async function ohneVoranalyse() {
+  return { text: '', route: { model: '-' }, usage: null, attempts: 0 };
+}
+
 export function buildClaudeHookContext(result) {
   if (result.status === 'HUMAN_GATE') {
     return 'Router-Sicherheitsentscheidung: HIGH-Risk. Analysiere den Auftrag, aber führe keine geschäftskritische oder irreversible Änderung aus. Frage vor Live-Theme-, Preis-, Produkt-, Checkout-, Zahlungs-, Versand-, DNS- oder Löschoperationen ausdrücklich nach Freigabe.';
@@ -36,5 +50,9 @@ export function buildClaudeHookContext(result) {
   // sieht. Am 2026-09-11 empfahl sie "Auf Claude 3 Opus umschalten" und stand
   // als verbindlich wirkender Plan im Kontext - deshalb hier ausdruecklich als
   // ungepruefter Hinweis.
-  return `${routingLine ? `${routingLine}\n` : ''}Router-Voranalyse (${result.classified.risk}/${result.policy.modelRequirement.class}, ${result.route.model}) - ungeprüfter Hinweis eines Drittmodells, das nur den Prompt kennt, nicht das Repository. Nicht verbindlich; Fakten daraus (Modellnamen, Versionen, Pfade) vor Verwendung prüfen:\n${result.analysis}\n\nVerbindlicher Fertigstellungszyklus:\n1. Lies AGENTS.md und untersuche den bestehenden Code.\n2. Implementiere die kleinste vollständige Änderung.\n3. Führe passende Tests aus, behebe Fehler und teste erneut.\n4. Beim Abschluss startet der Stop-Hook automatisch eine unabhängige read-only Codex-Prüfung mit dem Reviewer-Modell der Matrix. Starte deshalb nicht selbst einen zweiten Review-Aufruf.\n5. Bei CHANGES_REQUIRED erhältst du die Befunde automatisch: korrigiere sie, teste erneut und schließe erneut ab (höchstens 3 Review-Runden).\n6. Stoppe nur bei PASS oder einem echten Human Gate; berichte dann kompakt Belege und offene Punkte.\nManuelle Prüfung bei Bedarf: npm run agents:review -- --task-file "${result.reviewTaskPath ?? result.handoffPath}"\nKeine Live-Veröffentlichung oder geschützte Shopify-Änderung ohne ausdrückliche Freigabe.`;
+  const mitVoranalyse = voranalyseEinblenden(result.routing?.taskClass ?? 'C') && Boolean(result.analysis);
+  const voranalyse = mitVoranalyse
+    ? `Router-Voranalyse (${result.classified.risk}/${result.policy.modelRequirement.class}, ${result.route.model}) - ungeprüfter Hinweis eines Drittmodells, das nur den Prompt kennt, nicht das Repository. Nicht verbindlich; Fakten daraus (Modellnamen, Versionen, Pfade) vor Verwendung prüfen:\n${result.analysis}\n\n`
+    : '';
+  return `${routingLine ? `${routingLine}\n` : ''}${voranalyse}Verbindlicher Fertigstellungszyklus:\n1. Lies AGENTS.md und untersuche den bestehenden Code.\n2. Implementiere die kleinste vollständige Änderung.\n3. Führe passende Tests aus, behebe Fehler und teste erneut.\n4. Beim Abschluss startet der Stop-Hook automatisch eine unabhängige read-only Codex-Prüfung mit dem Reviewer-Modell der Matrix. Starte deshalb nicht selbst einen zweiten Review-Aufruf.\n5. Bei CHANGES_REQUIRED erhältst du die Befunde automatisch: korrigiere sie, teste erneut und schließe erneut ab (höchstens 3 Review-Runden).\n6. Stoppe nur bei PASS oder einem echten Human Gate; berichte dann kompakt Belege und offene Punkte.\nManuelle Prüfung bei Bedarf: npm run agents:review -- --task-file "${result.reviewTaskPath ?? result.handoffPath}"\nKeine Live-Veröffentlichung oder geschützte Shopify-Änderung ohne ausdrückliche Freigabe.`;
 }

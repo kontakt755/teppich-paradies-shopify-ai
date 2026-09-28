@@ -1,0 +1,82 @@
+{
+  "session": "S22",
+  "task": "VAR-001a.2b.1",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/variant-picker.js",
+      "sha256": "4357c80adaf5e6715cc48b4c48a1d2a3d92cde479f8d6c7960f9ff6e95111fce"
+    },
+    {
+      "file": "assets/events.js",
+      "sha256": "1290bc43167daaa1166e4d3acf0b423f1d30f119347d2873ebb18001c12d2056"
+    },
+    {
+      "file": "assets/product-form.js",
+      "sha256": "7ab6933aa4244ef12ed8e735418ffe8d8c8599fe49f9d3ae93225dca1e2135dc"
+    }
+  ],
+  "cases": [
+    {
+      "name": "success",
+      "events": [
+        "variant:selected",
+        "variant:update"
+      ],
+      "morphs": [
+        "picker"
+      ],
+      "logs": []
+    },
+    {
+      "name": "missing",
+      "events": [
+        "variant:selected"
+      ],
+      "morphs": [],
+      "logs": []
+    },
+    {
+      "name": "malformed",
+      "events": [
+        "variant:selected"
+      ],
+      "morphs": [
+        "picker"
+      ],
+      "logs": [
+        "Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+      ]
+    },
+    {
+      "name": "network",
+      "events": [
+        "variant:selected"
+      ],
+      "morphs": [],
+      "logs": [
+        "synthetic-network"
+      ]
+    },
+    {
+      "name": "abort-then-success",
+      "events": [
+        "variant:selected",
+        "variant:selected",
+        "variant:update"
+      ],
+      "logs": [
+        "Fetch aborted by user"
+      ]
+    },
+    {
+      "name": "explicit-next-selection-recovers",
+      "events": [
+        "variant:selected",
+        "variant:selected",
+        "variant:update"
+      ]
+    }
+  ],
+  "limits": "Original VariantPicker class/events with original variantChanged/buildRequestUrl/fetchUpdatedSection; selected-option DOM, updateSelectedOption and updateVariantPicker/morph adapted. Product-form queue only source-read, not executed. No live requests or UI. Missing completion is H-017 pending consumer integration."
+}

@@ -1,0 +1,30 @@
+{%- comment -%}
+  Wunschmaß-Varianten besitzen teils kein eigenes featured_media. Gib die
+  Medien-ID einer anderen Variante derselben Farbe zurück. So kann die
+  Galerie beim direkten Laden einer Wunschmaß-URL das richtige Farbbild
+  zuerst zeigen und der Warenkorb die richtige Farbe abbilden.
+
+  @param {object} product - Produkt
+  @param {object} [variant] - Zielvariante; Standard ist die gewählte Variante
+{%- endcomment -%}
+{%- liquid
+  assign tp_color_index = -1
+  for tp_option in product.options_with_values
+    assign tp_name = tp_option.name | downcase
+    if tp_name == 'farbe' or tp_name == 'color' or tp_name == 'dekor'
+      assign tp_color_index = tp_option.position | minus: 1
+      break
+    endif
+  endfor
+
+  if tp_color_index >= 0
+    assign tp_target_variant = variant | default: product.selected_or_first_available_variant
+    assign tp_color = tp_target_variant.options[tp_color_index]
+    for tp_variant in product.variants
+      if tp_variant.options[tp_color_index] == tp_color and tp_variant.featured_media != blank
+        echo tp_variant.featured_media.id
+        break
+      endif
+    endfor
+  endif
+-%}

@@ -1,0 +1,85 @@
+{
+  "session": "S35",
+  "task": "JS-001i",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/accordion-custom.js",
+      "sha256": "54fe7ceb1f102e6659eb7b227223620354104bf17c13bf4f0b59e46c2b3731ec"
+    },
+    {
+      "file": "snippets/accordion-custom-component.liquid",
+      "sha256": "3eda30d2fd0d22d29f12af54fcb6e4c10b60c9a669e08c3408b1a9e0e44c9afa"
+    },
+    {
+      "file": "snippets/cart-summary.liquid",
+      "sha256": "25c2205eda3d8d6521e44fa185d9c4eba6b47dcabeb8a91c4b0f27a62098a195"
+    },
+    {
+      "file": "snippets/list-filter.liquid",
+      "sha256": "2695c7aaeaae10cb1a1272e8c257349adbd035eb30ebcd800f502d3fd1abf4dc"
+    },
+    {
+      "file": "blocks/menu.liquid",
+      "sha256": "0cd57a4d265edd7256bb5debeee5c05a62a5d169e406bbfa0d12f02ca4094de8"
+    }
+  ],
+  "cases": [
+    {
+      "name": "initial-connect",
+      "defaultOpen": true,
+      "clickPrevented": true,
+      "escape": {
+        "prevented": true,
+        "open": false,
+        "focuses": 1
+      },
+      "openAfterMobileChange": false
+    },
+    {
+      "name": "disconnected-ignores-events",
+      "clickPrevented": false,
+      "escape": {
+        "prevented": false,
+        "open": true,
+        "focuses": 0
+      },
+      "openAfterMobileChange": true
+    },
+    {
+      "name": "same-instance-reconnect-stale",
+      "defaultOpen": true,
+      "clickPrevented": false,
+      "escape": {
+        "prevented": false,
+        "open": true,
+        "focuses": 0
+      },
+      "openAfterMobileChange": true
+    },
+    {
+      "name": "fresh-instance",
+      "defaultOpen": true,
+      "clickPrevented": true,
+      "escape": {
+        "prevented": true,
+        "open": false,
+        "focuses": 1
+      },
+      "openAfterMobileChange": false
+    }
+  ],
+  "sourceReach": {
+    "scriptLoadedGlobally": true,
+    "callers": [
+      "blocks/_accordion-row.liquid",
+      "blocks/menu.liquid",
+      "snippets/cart-summary.liquid",
+      "snippets/list-filter.liquid",
+      "snippets/price-filter.liquid",
+      "snippets/sorting.liquid"
+    ],
+    "headerDrawerIntegration": true
+  },
+  "limits": "Original complete AccordionCustom; HTMLElement/details/summary and breakpoint MediaQueryList adapted, native EventTarget/AbortController. Desktop-disabled click, Escape close/focus and breakpoint default-open lifecycle tested. Native details toggle animation, actual responsive browser behavior, concrete rendered section/settings combinations and live theme not tested. Caller list is static source reach."
+}

@@ -1,0 +1,21 @@
+{%- doc -%}
+  C2: Soll ein Listenfilter erscheinen? Gibt "nein" aus, sonst nichts.
+  "Arten" entfaellt, wenn in der Kollektion hoechstens eine Art Treffer hat -
+  auf einer Unterart wie Klickvinyl ist der Filter eine Auswahl ohne Wahl.
+  Ist ein Wert aktiv, bleibt der Filter stehen, damit er abwaehlbar ist.
+
+  @param {object} filter - der Filter
+{%- enddoc -%}
+{%- liquid
+  if filter.param_name == 'filter.p.m.custom.arten' and filter.active_values.size == 0
+    assign tp_fs_treffer = 0
+    for tp_fs_wert in filter.values
+      if tp_fs_wert.count > 0
+        assign tp_fs_treffer = tp_fs_treffer | plus: 1
+      endif
+    endfor
+    if tp_fs_treffer <= 1
+      echo 'nein'
+    endif
+  endif
+-%}

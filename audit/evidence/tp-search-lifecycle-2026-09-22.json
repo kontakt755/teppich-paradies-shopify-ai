@@ -1,0 +1,55 @@
+{
+  "session": "S45",
+  "task": "JS-001s",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/tp-suche.js",
+      "sha256": "1f9b9b11566b60ea1f00505cff3761ee7f0155cdd50659e975af20a979efe9cd"
+    },
+    {
+      "file": "sections/tp-header-suche.liquid",
+      "sha256": "3beea17c2a94ec14a48ae09faa9135fc745bb7f9c3f0c9562eea5c809b396c15"
+    },
+    {
+      "file": "sections/header-group.json",
+      "sha256": "2e5a377aa93f85d316eac41388b319477f1cd99913c02a50e19c9c2aafdbe838"
+    },
+    {
+      "file": "sections/predictive-search.liquid",
+      "sha256": "f4c68bd419061263ec9309ffa24c33b7de2a0c046c411c2d6e3fea1db5b7819e"
+    }
+  ],
+  "cases": [
+    {
+      "name": "initial-focus-opens-panel",
+      "hidden": false,
+      "expanded": "true"
+    },
+    {
+      "name": "disconnect-leaves-panel-visible",
+      "hidden": false,
+      "expanded": "true"
+    },
+    {
+      "name": "reconnect-escape-cannot-close-stale-panel",
+      "hidden": false,
+      "expanded": "true"
+    },
+    {
+      "name": "reconnect-outside-pointer-cannot-close-stale-panel",
+      "hidden": false
+    },
+    {
+      "name": "fresh-connected-escape-closes-panel",
+      "hidden": true,
+      "expanded": "false"
+    }
+  ],
+  "sourceReach": {
+    "headerGroupAssignments": 1,
+    "desktopBreakpoint": "min-width: 768px",
+    "mobileDelegatesTo": "#search-modal"
+  },
+  "limits": "Original complete tp-suche.js custom element; DOM, panel, input, MediaQueryList and document/window adapted with native EventTarget. Open, disconnect, same-instance reconnect, Escape and outside-pointer paths executed. Fetch/results, native focus transitions, mobile dialog, browser layout, current live section settings and analytics consumers not tested."
+}

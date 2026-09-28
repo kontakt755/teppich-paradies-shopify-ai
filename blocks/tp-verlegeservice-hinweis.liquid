@@ -36,15 +36,7 @@
 
 {%- if vsh_gilt == 'ja' -%}
 {%- if vsh_aktion == 'ja' -%}
-  <div class="tp-vsh tp-vsh--aktion" {{ block.shopify_attributes }}>
-    <div class="tp-vsh__kopf">
-      {%- render 'tp-vs-icon', name: 'truck' -%}
-      <span class="tp-vsh__titel">
-        Aktionspreis
-        <span class="tp-vsh__unter">Kostenlose Lieferung bis Bordsteinkante inklusive. Nicht kombinierbar mit unserem kostenlosen Vor-Ort-Liefer- und Verlegeservice.</span>
-      </span>
-    </div>
-  </div>
+  {%- comment -%} D2: Aktionsbedingung steht jetzt unter dem Preis (snippets/price.liquid) {%- endcomment -%}
 {%- else -%}
   <details class="tp-vsh" {{ block.shopify_attributes }}>
     <summary class="tp-vsh__kopf">

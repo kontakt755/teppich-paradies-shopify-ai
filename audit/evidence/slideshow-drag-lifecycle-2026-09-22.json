@@ -1,0 +1,82 @@
+{
+  "session": "S43",
+  "task": "JS-001q",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/slideshow.js",
+      "sha256": "a63cd717cf83968dec13a419282d4b3df801144764652f6142b06b5bff8e1fa2"
+    },
+    {
+      "file": "snippets/slideshow.liquid",
+      "sha256": "fb8ebf20e733e8df21f88f0db0e12b49ec55005895e47779078de964d86a01e6"
+    },
+    {
+      "file": "snippets/scripts.liquid",
+      "sha256": "a04e3cf446f339eb5e50c3f495a3abd5a8ec3b390f550b7489d3bd722ce73883"
+    }
+  ],
+  "cases": [
+    {
+      "name": "active-drag",
+      "dragging": true
+    },
+    {
+      "name": "disconnect-during-drag-still-handles-document-move",
+      "dragging": true
+    },
+    {
+      "name": "normal-disconnect-removes-mousedown",
+      "dragging": false
+    },
+    {
+      "name": "normal-reconnect-restores-drag",
+      "dragging": true
+    },
+    {
+      "name": "reconnect-during-active-drag-remains-owned-by-old-controller",
+      "dragging": true
+    }
+  ],
+  "sourceReach": {
+    "scriptLoadedGlobally": true,
+    "customElementMarkupFiles": [
+      "snippets/slideshow.liquid"
+    ],
+    "assignedTemplateCount": 31,
+    "assignedTemplates": [
+      "404.json",
+      "cart.json",
+      "collection.bodenleisten.json",
+      "collection.json",
+      "collection.teppichboden-hochflor.json",
+      "collection.teppichboden-kurzflor.json",
+      "collection.teppichboden-nadelvlies.json",
+      "collection.teppichboden-schlinge.json",
+      "collection.teppichboden-velours.json",
+      "collection.teppichboden-wolle.json",
+      "collection.teppichboden.json",
+      "collection.teppiche.json",
+      "collection.teppichfliesen.json",
+      "collection.vinyl.json",
+      "collection.vinylboden-klebevinyl.json",
+      "collection.vinylboden-klickvinyl.json",
+      "collection.vinylboden-rollenvinyl.json",
+      "collection.vinylboden.json",
+      "collection.zubehoer-profile.json",
+      "collection.zubehoer-unterkategorie.json",
+      "collection.zubehoer.json",
+      "index.json",
+      "product.einfassung.json",
+      "product.fixpreis.json",
+      "product.fliese.json",
+      "product.json",
+      "product.planken.json",
+      "product.rolle.json",
+      "product.teppich.json",
+      "product.zubehoer.json",
+      "search.json"
+    ]
+  },
+  "limits": "Original complete Slideshow; Component/DOM/Scroller/observers/layout/scheduler adapted, native EventTarget/AbortController used. Active pointer-drag disconnect and normal disconnect/reconnect executed. Slide selection geometry, autoplay timing, infinite reorder, focus synchronization, real pointer capture, browser and live theme not tested."
+}

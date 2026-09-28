@@ -1,0 +1,51 @@
+{
+  "session": "S24",
+  "task": "VAR-001a.2c.1",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/product-form.js",
+      "sha256": "7ab6933aa4244ef12ed8e735418ffe8d8c8599fe49f9d3ae93225dca1e2135dc"
+    },
+    {
+      "file": "assets/events.js",
+      "sha256": "1290bc43167daaa1166e4d3acf0b423f1d30f119347d2873ebb18001c12d2056"
+    },
+    {
+      "file": "assets/component.js",
+      "sha256": "3798455f28383ddc9df6f01ca7f20652abef5ffcaace1f32f098b83a2e5c6e56"
+    },
+    {
+      "file": "assets/morph.js",
+      "sha256": "a198d7b71c44ba79a46e53edd680dc18a76fb3c335b71f8494cb9171d182ec1f"
+    },
+    {
+      "file": "assets/quick-add.js",
+      "sha256": "f7f1c8496cb32e099d380178fdbf7ae5b708cc53c2f11da0aaa9cf75d7fbd5f6"
+    },
+    {
+      "file": "assets/variant-picker.js",
+      "sha256": "4357c80adaf5e6715cc48b4c48a1d2a3d92cde479f8d6c7960f9ff6e95111fce"
+    }
+  ],
+  "cases": [
+    {
+      "name": "initial-connect",
+      "id": 2
+    },
+    {
+      "name": "disconnected-ignores-event",
+      "id": 2
+    },
+    {
+      "name": "same-instance-reconnect-stale",
+      "id": 2
+    },
+    {
+      "name": "fresh-instance-works-old-instance-stale",
+      "freshId": 5,
+      "oldId": 2
+    }
+  ],
+  "limits": "Original full ProductFormComponent and events; base Component callbacks and refs adapted, native EventTarget/AbortController. Manual lifecycle sequence, no real DOM morph or browser. Morph reorder insertBefore is a source-level candidate only; quick-add mobile rearranges parsed source before morph, not proof of live reconnect."
+}

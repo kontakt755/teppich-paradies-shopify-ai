@@ -7,6 +7,10 @@
 | `settings.json` | registriert die Hooks und die Freigaben (`permissions.allow`) |
 | `hooks/session-start.sh` | installiert Abhängigkeiten und zeigt den Projektzustand |
 | `skills/control-center/SKILL.md` | Regeln, Gestaltung, Ablauf und Fallstricke für das Control Center |
+| `skills/produktimport/SKILL.md` | Ablauf für neue Produkte aus Lieferantenquellen (verweist auf `domains/shopify/produktimport-arbeitsweise.md`) |
+| `skills/lieferant-a-recherche/SKILL.md` | Artikel- und Farbnummern bei Lieferant A belegt klären |
+| `skills/shopify-massendaten/SKILL.md` | viele Metafelder/Tags auf einmal schreiben, mit Plan und Rollback |
+| `hooks/context-mode-guard.mjs` | Sperren für Shell-Code in Context Mode (`ctx_execute`) |
 | `agents/control-center.md` | Dashboard-Mitarbeiter (Subagent), arbeitet nach dem Skill oben |
 
 ## Berechtigungen: warum es keine `ask`-Liste gibt

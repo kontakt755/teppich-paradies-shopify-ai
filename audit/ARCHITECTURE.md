@@ -55,3 +55,187 @@ Paketware wird über das positive Flächenmetafeld erkannt, vor Rollenbreite/Pro
 TP-008 entsteht erst beim Anzeigen der Gesamtfläche im Cart: `tp-cart-paketzeile` formatiert immer zwei Stellen, während Rechner und Inhaltssnippet Metafeldpräzision bis drei Stellen übernehmen. Aktuelle Zeilenmenge wird korrekt verwendet; Preis-/Mengenquelle muss nicht geändert werden.
 
 PVC und Fixpreis wurden nur kartiert: Rollenrechner eigener Request, Stück-/Zubehörmengenhilfe ausschließlich Eingabe ins Standardformular, welches `product-form.js` serialisiert. PR-023b.2 prüft diesen Übergang als Nächstes. Historische Datenberichte ersetzen weiterhin keine aktuelle Shopify-Abfrage.
+
+## Ergänzung PR-023b.2
+
+S07 schließt lokale PVC-/Stückvertragsprüfung mit 30 Fällen/26 Requests ab. TP-009 sitzt zwischen globalem Liquid-Fallback, cm-exklusiver Breitenoptionserkennung und variantenbezogener ID-Auswahl. Originale Initialisierung, syncArtUi, calculate und Submit bestätigen: richtige ID bei falscher erster Breite. Einzelbreitenfallback und cm-Optionen bestehen. Historische Meterlabels sind belegt, aktueller Produkt-/Metafeldstand bleibt H-011.
+
+Stück-/Zubehörpfad: vollständiger Mengenhilfeblock bestimmt Modus aus belegten Produktlängen, Variantenoption/Reichweite oder Titel. JS schreibt die ganze Einheitenmenge in das bestehende Standardfeld; vollständige Produktform-Klasse serialisiert ID/quantity, ohne Preis zu senden. 20 Fälle/18 Requests belegen den lokalen Übergang. Native DOM-/FormData-/Section-Lifecycles und Antwortverarbeitung sind ausdrücklich nicht mitgeprüft. Alle Preise synthetisch; kein zusätzlicher Kaufweg.
+
+Neun Rollen-/Mengenhilfe-/Formular-/Templatequellen hashgleich mit historischem Live-Snapshot. Nächster Bereich CART-002a, keine Reparatur oder erneute Preisgrundprüfung.
+
+## Ergänzung S08 / CART-002a
+
+Originale Servermarkup-Regeln und Browsergruppenfunktionen für 20 Cartzustände/35 Zeilen abgeglichen. Berechnete Mengen bleiben als updates[] im Formular, native Selector-Grenzen min=max liefern auch nach Original-JS-Initialisierung gesperrte Buttons (28 Zeilen). Stück-/Paketware bleibt normal änderbar. Pflichtfeld und Checkoutmarker sind eine UI-Regel, keine Shopify Cart/Checkout Validation Function.
+
+Cartklasse entfernt Gruppen per Keys im update-Request und einzelne Zeilen per change. Darstellung wird bereits vor Antwort entfernt/leer ersetzt. Fehlerpfad stellt sie nicht wieder her (TP-010); Fehlercontainer gehört zur entfernten Zeile. Erfolgreiche Section-Morphs im Adapter nur modelliert; echte Refs-/Event-/Drawerabläufe CART-002b offen.
+
+Zuschnittasset nutzt serialisierte GET/POST/Gegenprobe, setzt nur den Attribute-Unterschied, behält sonstige Attribute und ignoriert eigene Events. Zehn lokale Abläufe einschließlich ausbleibender Übernahme und explizitem Retry bestanden. Zehn Quellhashes historisch gleich. Keine neuen Live-/Produktdaten und keine produktiven Änderungen.
+
+## Ergänzung S09 / CART-002b.1
+
+Die Menge wird im Originalselektor vor Eventversand lokal gesetzt. Das originale QuantitySelectorUpdateEvent wird am document von jeder Cartklasse empfangen. Ein Timer pro kompletter Komponente bündelt alle Ziele; die Eigentums-/Zeilenprüfung liegt erst im verzögerten Handler. TP-011: anderer Zeilenwert oder fremdes Ereignis ersetzt dadurch den noch gültigen geplanten Wert. Gleiche Zeile wird korrekt zusammengefasst.
+
+Zwölf Originalcodefälle mit nativen Node-Events, explizitem Bubbling-/DOM- und virtuellem Timeradapter. Elf Requests abgefangen, Responses bleiben ausstehend. SectionRenderer und Drawer nur gelesen: eigener SectionRenderer kann Morphs abbrechen, direkte Cartantwort nutzt einen anderen Aufrufpfad; noch kein neuer Fehler daraus abgeleitet. CART-002b.2 folgt.
+
+
+## S10 – Section-Antworten und Fehler-Retry
+
+S10 / CART-002b.2a lokal abgeschlossen: fünf Original-SectionRenderer-Fälle, zwei Defektfälle TP-012/P2, ein historischer Hashvergleich. Nach Fetch-/Bodyfehler starten drei Retries derselben URL keinen neuen Request. Andere Section funktioniert. Erfolgs-Deduplizierung, Cache/Forced Refresh und Schutz gegen alte Antworten bei beiden Antwortreihenfolgen bestanden. DOM/Parser/Morph adaptiert; kein Browser-/Livebeleg, keine Shopreparatur. Nächster Schritt CART-002b.2b: direkte Cartantworten, Zeilenidentität und Zusammenspiel mit SectionRenderer, danach Drawer/Dialog-Lifecycle. Keine bisherigen Diagnosen ohne Quelländerung wiederholen.
+
+Evidence: `audit/evidence/section-responses-2026-09-21.json`; Script: `audit/scripts/reproduce-section-responses.mjs`. Route TASK-72075157B1A8, B/STATIC, kein Executor gestartet. Renderer ist gemeinsamer Abhängigkeitspunkt: TP-012 separat planen, Cart-Aufruferkonflikte mit TP-010/011 beachten.
+
+
+## S11 – Direkte Cartantworten und Zeilenidentität
+
+S11 / CART-002b.2b lokal abgeschlossen: acht Originalcode-Antwortfälle, vier historische SHA-256-Vergleiche, Syntax und Erstlauf PASS. Direkte Erfolgsantworten auf Cartseite/Drawer verwenden full/hydration korrekt; stabiler Fehlerindex setzt Eingabe zurück und zeigt Feedback. Bei zwei programmatisch gestarteten Mutationen entsperrt schon die erste Antwort; verspätete ältere Antwort kann jüngere überschreiben. Ein durch Original-DiscountEvent gestarteter Section-Request kann nach neuer direkter Cartantwort noch morphieren. Bei manuell verschobenen Refs landet Fehlerfeedback am früheren Index und damit anderer Zeile. Diese Überschneidungen sind H-013, keine zusätzlich bestätigten Shopissues: Pointer-/Debounce-Erreichbarkeit, Server-Snapshotreihenfolge, echte MutationObserver-/Morphabläufe fehlen. Keine Shopänderung, keine S01–S10-Replays.
+
+Evidence: `audit/evidence/cart-responses-2026-09-21.json`; Script: `audit/scripts/reproduce-cart-responses.mjs`. Route TASK-6FFC7626F671, B/STATIC; kein Executor/Agent gestartet.
+
+Nächster konkreter Schritt: CART-002b.2c: assets/cart-drawer.js und assets/dialog.js mit events.js auf Eventtypen, Öffnen/Schließen, History-/Disconnect-Lifecycle prüfen. Danach H-012/H-013 im echten Browser bei verfügbarem Runner; keine abgeschlossenen lokalen Response-/Retry-/Debouncefälle ohne Quellenänderung wiederholen.
+
+
+## S12 – Drawer-/Dialog-Lifecycle
+
+S12 / CART-002b.2c lokal abgeschlossen: elf Originalcode-Lifecyclefälle, fünf historische Quellhashvergleiche, Syntax/Erstlauf PASS. Desktop/Mobile öffnen und schließen, Scrollstil/-position, modelliertes Back ohne doppelten Rücksprung, Disconnect/Reconnect der Listener und Sticky-Schwellen funktionieren in den Fixtures. Allgemeines CartUpdateEvent öffnet ebenfalls bei auto-open; die erste Zählansage bleibt leer, weil Öffnen erst im RAF erfolgt. Close/Disconnect vor diesem RAF verhindert dessen spätere Ausführung nicht. Letztere Beobachtungen bleiben H-014: natives Dialog-/Fokus-/Attach-/Historyverhalten und reale Erreichbarkeit nicht belegt. Keine neue bestätigte Issue-ID, keine Reparatur, keine früheren Diagnosen wiederholt.
+
+Evidence: `audit/evidence/drawer-lifecycle-2026-09-21.json`; Script: `audit/scripts/reproduce-drawer-lifecycle.mjs`. Originale Klassen und Utilityfunktionen; modellierte Element-/History-/RAF-Umgebung, leere Animationsliste. Keine Native-Dialog-/Fokusabnahme. Route TASK-EECCC76EC036 B/STATIC; kein Executor.
+
+Nächster konkreter Schritt: CART-003: Browserfähigkeit einmal neu prüfen (S01-Sperre ist historisch). Verfügbaren Browser nach Skill verwenden, öffentlichen Shop ohne Kaufabschluss zunächst rein lesend auf Drawer-Öffnen/Schließen, Fokus/Escape, Mobile Back/Reload und H-014 prüfen; Live-Theme vor livebezogenen Schlussfolgerungen aktuell verifizieren. Falls Browserzugriff weiterhin blockiert, Grenze konkret dokumentieren und sequenziell lokale Checkout-/Express-/Formularverträge prüfen. Keine S08–S12-Replays ohne Quelländerung.
+
+
+## S13 – Checkoutvertrag und Browserberechtigung (22.09.2026)
+
+S13 / CART-003a: Browserzugang neu geprüft. Chrome-Verbindung verfügbar, Navigation zum öffentlichen Shop jedoch durch Browser-Sicherheitsprüfung wegen verweigerter Zugriffsberechtigung abgelehnt. Kein alternativer Zugriff versucht, keine Live-Theme-Verifikation. Anschließend neun lokale Checkout-Vertragsfälle bestanden (acht Original-CTA-Liquidrenderings, ein statischer Formular-/Header-/CSS-Vertrag), vier historische Quellhashvergleiche. Normale CTA verweist auf cart-form; Pflichtsperrfeld innerhalb POST-Formular; Drawer auf Carttemplate ausgeschlossen. Express erfordert Plattformflag und Themeeinstellung. Sperr-CSS setzt pointer-events:none und opacity:0.4, versteckt/deaktiviert Express nicht semantisch. Tastatur-/Expressumgehung bleibt H-015, kein neuer bestätigter Fehler.
+
+Evidence: `audit/evidence/checkout-contracts-2026-09-22.json`, `browser-access-2026-09-22.json`; Script `audit/scripts/reproduce-checkout-contracts.mjs`. Route TASK-56DE810ED955 B/STATIC; kein Executor. Erster Lauf scheiterte an falscher Diagnoseannahme display:none; nach Lesen des CSS wurde ausschließlich die Auditassertion auf pointer-events/opacity korrigiert, zweiter Lauf PASS. Keine Shopreparatur.
+
+Nächster konkreter Schritt: CART-003b: lokale Rabatt-/Cart-Notiz-Verträge in assets/cart-discount.js und assets/cart-note.js sowie snippets/cart-summary.liquid prüfen (Fehler, mehrfaches Absenden, Persistenz/Sections). Browserprüfung H-012–015 erst nach geänderter Zugriffsberechtigung fortsetzen; keine alternative Browser-/HTTP-/CDP-Umgehung oder wiederholte Zugriffsversuche. Vorhandene S08–S13-Diagnosen ohne Quelländerung nicht wiederholen.
+
+
+## S14 – Rabattfehler (22.09.2026)
+
+S14 / CART-003b.1: sechs Original-Rabattfälle, drei stille Fehlerfälle TP-013/P3, vier historische Quellhashvergleiche. Erfolgreicher Rabatt dispatcht DiscountUpdateEvent und morphiert; nicht anwendbarer Code und Versandrabatt-Sonderfall zeigen vorhandene Fehlermeldung. Netzwerk-, HTTP-Fehler-JSON ohne discount_codes und ungültiges JSON enden ohne sichtbares Feedback. Eingabe bleibt erhalten, expliziter Retry funktioniert. Originalklassen/Utility, DOM/fetch adaptiert; keine Live-Rabattprüfung oder Shopreparatur.
+
+Evidence: `audit/evidence/discount-errors-2026-09-22.json`; Script: `audit/scripts/reproduce-discount-errors.mjs`. Syntax/Erstlauf PASS; Route TASK-70BD752F5C44 B/STATIC, kein Executor. Kein Replay früherer Tests.
+
+Nächster Schritt: CART-003b.2: cart-discount.js Entfernen und überlappende Requests/#activeFetch prüfen; anschließend cart-note.js Debounce/Abbruch/Fehler-/Persistenzvertrag mit cart-summary.liquid. Browser H-012–015 weiterhin berechtigungsbedingt offen; keine Umgehung oder erneute Anfrage ohne geänderte Berechtigung. S01–S14 ohne Quellenänderung nicht wiederholen.
+
+
+## S15 – Rabattentfernung und Abbruch
+
+S15 / CART-003b.2 lokal abgeschlossen: sechs Originalcodefälle, vier historische Hashvergleiche. Entfernen eines von zwei bzw. des letzten Rabattcodes sendet korrekte verbleibende Codeliste und aktualisiert Event/Section. Netzwerkfehler beim Entfernen erweitert TP-013 (kein Feedback). TP-014/P3: nach Abbruch von Request A durch B löscht A.finally die Referenz auf B; Aktion C bricht B nicht mehr ab. In zwei kontrollierten Folgen (Apply→Apply→Apply und Remove→Apply→Apply) reproduziert. Synthetische Antwortfolge zeigt älteren Morph nach neuem; reale Serverreihenfolge nicht behauptet. Sequentielle Erfolgskontrolle bestanden. Keine Shopreparatur/Liveanfrage.
+
+Evidence: `audit/evidence/discount-concurrency-2026-09-22.json`; Script `audit/scripts/reproduce-discount-concurrency.mjs`. Syntax/Erstlauf PASS, keine S14-Replays. Route TASK-BF056AE4656F B/STATIC; kein Executor. Gemeinsame cart-discount.js für TP-013/014: FILE CONFLICT, kleine abgestimmte Schritte. Native Tastaturaktivierung nicht getestet; Template bindet echten Buttonclick, daher kein Keyboardfehler allein aus KeyboardEvent-Guard behauptet.
+
+Nächster Schritt: CART-003b.3: assets/cart-note.js mit Original-debounce/fetchConfig und snippets/cart-summary.liquid prüfen: Notiz-Debounce, Request-Abbruch/Ownership, HTTP-/Netzfehler, Formular-Persistenz und Disconnect. Rabattfälle S14/S15 ohne Quellenänderung nicht wiederholen. Danach Cart-Audit lokal konsolidieren und offene Browser-/Checkoutabnahme getrennt halten. Browserzugriff bleibt seit S13 berechtigungsbedingt blockiert, keine Umgehung.
+
+
+## S16 – Warenkorbnotiz
+
+S16 / CART-003b.3: sieben lokale Notizfälle PASS. Original-debounce bündelt Eingaben nach 200 ms; leere und Unicode-Notiz korrekt im Payload. Netzwerk-/HTTP500-Antworten ohne Fehlermeldung, erneute Eingabe startet neuen Request. TP-014 um bedingten Notizpfad erweitert: alter finally löscht neuere Controllerreferenz. Pending Timer läuft nach modelliertem Disconnect weiter; echte DOM-/Serverwirkung offen. Textarea ist name=note mit form=cart-form, daher kein bewiesener Bestellnotizverlust aus Ajaxfehler allein. Lokale Einstellung show_cart_note=false. Vier Code-/Markuphashes historisch identisch; settings_data.json weicht vom historischen Livehash ab, heutige Liveeinstellung nicht verifiziert. Keine Shopänderung.
+
+Evidence: `audit/evidence/cart-note-2026-09-22.json`; Script `audit/scripts/reproduce-cart-note.mjs`. Route TASK-1E9C956DD1CD B/STATIC; kein Executor. Diagnosescript zweimal korrigiert: Konfigurationshash nicht als gleich voraussetzen; Shopify-Kommentar vor JSON-Parsing entfernen. Danach Syntax/Diagnose PASS. Keine alten Diagnosen wiederholt.
+
+Nächster Schritt: CART-004: bisherigen lokalen Cart-Audit konsolidieren, Testmatrix auf offene statt abgeschlossene Fälle reduzieren und passende kleine Cart-/Rabatt-Fix-Packs anhand vollständiger Briefs vorbereiten (weiter Phase 1/2, keine Reparaturen). Browser-/Livegrenzen H-012–015 und Konfigurationsdrift ausdrücklich offen halten. Danach nächsten ungeprüften Rechner-/Variantenvertrag aus TEST_MATRIX auswählen. Keine fertigen Diagnosen wiederholen; Browserberechtigung S13 nicht umgehen.
+## S27 – JavaScript-Runtime-Inventar (22.09.2026)
+
+Der aktuelle `assets/`-Stand umfasst 96 JavaScript-Dateien mit 25.206 Zeilen, 77 Custom-Element-Definitionen, 56 Dateien mit `connectedCallback`, 47 mit globalen Document-/Window-Listenern und 16 mit Fetch-Aufrufen. Vollständige Hash-/Metrikliste: `evidence/js-runtime-inventory-2026-09-22.json`.
+
+Die statischen Flags sind Suchhilfen, keine Defekte. Lifecycle-/Listenerprobleme müssen am vollständigen Originalcode reproduziert werden. Als nächster Kandidat folgt `quick-add.js`; es verbindet Product Cards, Modal, VariantPicker, ProductForm und globale Events. Bereits geprüfte Cart-/Variantenquellen sind im Inventar markiert und werden nicht erneut pauschal getestet.
+
+## S28 – QuickAddComponent
+
+Der Lifecycle-Test bestätigt asymmetrisches Reconnect-Verhalten: VariantSelected-Listener bleiben bestehen und vervielfachen sich, CartUpdate-Listener werden nach dem ersten Disconnect nicht wiederhergestellt. `quick-add.js` ist damit Teil des gemeinsamen TP-016-Lifecyclebereichs. Die Dialogklasse derselben Datei bleibt separat offen; Quick Add ist lokal deaktiviert und die Live-Reichweite unbekannt.
+
+## S29 – QuickAddDialog
+
+Die Dialogklasse zeigt denselben einmaligen Controllerfehler für CartUpdate; VariantUpdate bleibt mangels Entfernung während Disconnect aktiv, wird aber nicht vervielfacht. DialogClose ist korrekt symmetrisch. `quick-add.js` ist damit vollständig als gemeinsamer TP-016-Lifecyclebereich kartiert.
+
+## S30 – Sticky-Add-to-Cart
+
+Der in allen acht lokalen Produkt-Templates aktive Sticky-Kaufbalken verwendet einen einmaligen Controller für Varianten-, Mengen- und Cart-Ereignisse. Nach Reconnect derselben Instanz werden diese Listener nicht wiederhergestellt. Die Komponente verbindet Standardformular, Paket-/Rollen-/Einfass-Kaufwege, VariantPicker, QuantitySelector und Cart; sie gehört zum gemeinsamen TP-016-Lifecyclebereich.
+
+## S31 – PricePerItem
+
+PricePerItem verbindet ProductForm-Menge, Cartmenge und Shopify-Staffelpreise. Sein einmaliger Controller fällt nach Reconnect aus; sechs Templates führen aktive Mengenblöcke, das Element selbst erscheint nur bei Varianten mit Staffelpreisen. Bestandteil des gemeinsamen TP-016-Lifecyclebereichs.
+
+## S32 – MediaGallery
+
+MediaGallery verbindet section-/dialoggebundene Variantenupdates mit dem Ersetzen der Galerie und ZoomDialog-Auswahl mit der Slideshow. Der einmalige Controller fällt nach Reconnect aus. Alle acht Produkttemplates führen den Galerieblock; die Komponente gehört zum gemeinsamen TP-016-Lifecyclebereich. Tatsächliche DOM-Reconnect-Ursache und Browserreichweite bleiben offen.
+
+## S33 – DeferredMedia / ProductModel
+
+Das global geladene `media.js` koordiniert Video-/3D-Wiedergabe über dokumentweite MediaStartedPlaying- und DialogClose-Ereignisse sowie ModelViewer-Pointerevents. Die einmaligen Controller beider Klassen fallen nach Reconnect aus. Bestandteil des gemeinsamen TP-016-Lifecyclebereichs; reale Katalogmedien und Browser-Reconnect bleiben offen.
+
+## S34 – LayeredSlideshow
+
+Der normale Listenercontroller und Resize-/MutationObserver sind reconnectfähig. Der dokumentweite Drag-Controller lebt nur lokal und übersteht einen Disconnect bis Pointerup/-cancel. Dieser eng begrenzte Pfad gehört zu TP-016. Der optionale Abschnitt ist keinem lokalen Template zugewiesen; Theme Editor und globales Script bilden nur potenzielle Reichweite.
+
+## S35 – AccordionCustom
+
+Das global geladene Accordion ist eine Shared-Komponente für Menü/Header Drawer, Cart, Facets, Sortierung und Contentblöcke. Der direkte Defaultzustand läuft bei jedem Connect, sein einmaliger Controller stellt die Ereignisbindung nach Reconnect jedoch nicht wieder her. Bestandteil von TP-016; konkrete Liveflags und Browser-Reconnect bleiben offen.
+
+## S36 – PredictiveSearch
+
+Die Header-Suche koppelt Dialog, globale Tastatursteuerung, Fokus, Recently Viewed, SectionRenderer/Morph und eigene TP-Ergebnisse. Der einmalige Lifecyclecontroller fällt nach Reconnect aus, während der separate Fetchcontroller pro Request erneuert wird. Bestandteil von TP-016; dieser Schritt belegt nur Shortcut/Fokus, nicht Fetch- oder Ergebnisfehler.
+
+## S37 – DragZoomWrapper
+
+Der mobile Zoomwrapper koppelt Touchgesten an Galerie/Zoomdialog. Window-Reset und ResizeObserver werden reconnectfähig verwaltet; Touchcontroller und Initialisierungsflag nicht. Bestandteil von TP-016. Alle Produkttemplates bieten die Galerie, konkrete Wrapperreichweite bleibt an vorhandene Bildmedien und Browser-Reconnect gebunden.
+
+## S38 – ProductCard / Swatches
+
+Die globale Produktkarte verbindet QuickAdd, VariantPicker, Morph, Slideshow und Navigation über 31 Templates. Mehrere Card-Listener bleiben getrennt aktiv; Swatches bindet bei jedem Connect neu. Bestandteil von TP-016 mit breiter statischer Reichweite.
+
+## S39 – ProductTitle-Truncation
+
+Das Modul wird global geladen, `<product-title>` entsteht lokal aber nur im Galerie-Platzhalter für Produkte ohne Medien. Der ResizeObserver-Pfad ist reconnectfähig. Nur der Fallback ohne ResizeObserver behält gebundene Window-Listener nach Disconnect und vervielfacht sie beim Reconnect. TP-016 bedingt; tatsächliche Browser- und Katalogreichweite offen.
+
+## S40 – GiftCardRecipientForm
+
+Die Empfängerform sitzt innerhalb ProductForm und verbindet Gift-Card-Line-Item-Properties, serverseitige Fehler, CartEvents und Quick-add-Modal. Listener werden reconnectfähig verwaltet, der private Liefermodus hingegen nicht mit dem beim Connect zurückgesetzten sichtbaren Formularzustand synchronisiert. Sieben Templates aktivieren die Form bedingt; tatsächliches Markup erfordert ein Gift-Card-Produkt.
+
+## S41 – CartIcon
+
+Der globale Headerverbraucher unterscheidet ProductForm-Events als additive Mengen und andere Cartupdates als absolute Bestände. Seine Listener sind reconnectfähig. ProductForm sendet jedoch auch bei zwei Fehlerpfaden additive Events mit angeforderter Menge; CartIcon prüft `didError` nicht. TP-018 liegt damit im gemeinsamen Eventvertrag, nicht nur in der Darstellungsklasse.
+
+## S42 – Facets
+
+Die Shared-Datei verbindet Filterform, URL/History, SectionRenderer, Preisformatierung, Prefetch, Sortierung und Status in sieben Custom Elements. PriceFacet und FacetRemove verwalten explizite Listener symmetrisch. FacetClear entfernt beim Disconnect nur seinen dokumentweiten Listener, nicht den lokalen Keyup-Handler. 20 Collection-/Search-Templates aktivieren den Filterblock.
+
+## S43 – Standard-Slideshow
+
+Die globale Standardkomponente verbindet Product Cards, Produktmedien, Zoom und Inhaltssections über Scroller, gemeinsame Viewportbeobachtung, eigene Observer, Autoplay und Pointerdrag. Der normale Lifecycle ist symmetrisch. Nur der während Mousedown lokal erzeugte dokumentweite Dragcontroller bleibt beim Disconnect unerreichbar aktiv. 31 Templates weisen angrenzende Slideshow-Nutzer zu.
+
+## S44 – Leisten-Farbwahl
+
+Das Custom Element ist eine bildbasierte Oberfläche über dem Horizon-VariantPicker. Ein singletonweites Set synchronisiert nur verbundene Instanzen nach VariantUpdate/Radio-Change; Observer werden reconnectfähig erneuert. Der einmal gebundene lokale Klickhandler bleibt dagegen nach Disconnect aktiv. Lokale Template-Reichweite: ausschließlich `product.fixpreis.json`.
+
+## S45 – TP-Suche
+
+Die Header-Gruppen-Section lädt ein eigenes Desktop-Custom-Element und delegiert Mobile an den Horizon-Suchdialog. Listener, Timer und Fetch sind reconnectfähig; sichtbarer Panel-, ARIA- und privater Offenzustand werden beim Disconnect/Reconnect jedoch nicht gemeinsam normalisiert. Predictive-Search-Section und TP-Ergebnissnippet bleiben gemeinsame Abhängigkeiten.
+
+## S46 – Unterkategorienleiste
+
+Ein globales IIFE initialisiert bedingt gerenderte Navigationsleisten aus Block oder Hero-Section und reagiert auf Theme-Editor-Section-Loads. Pro Leiste entstehen Scroll-/Klicklistener und ein ResizeObserver beziehungsweise globaler Resize-Fallback, jedoch ohne korrespondierende Entsorgung. Zwölf Templates enthalten einen der Renderpfade; die tatsächliche Ausgabe hängt vom Hauptmenü ab.
+
+## S47 – Verlegegebiet
+
+Das einmalig geschützte IIFE verdrahtet bis zu mehrere Sectionformulare und lädt die lokale Ortstabelle lazy, mit Promise-Cache je Section und laufender Nummer je Formular. Neue Theme-Editor-Sections werden unterstützt; ein korrespondierender Unload-/Abortpfad für alte Formularlistener und laufende Fetches fehlt. Fünf Templates weisen die Section zu.
+
+## S48 – Zuschnitt-Abgleich
+
+Das einmalig geschützte globale IIFE spiegelt zeilenbasierte `_Zuschnitt`-/`_Gruppe`-Properties seriell in Cartattribute, verifiziert jeden Write am Antwortcart und zeichnet nur nach Änderungen neu. Der Quellenfilter verhindert eine Eventschleife. Cart-Products lädt es global; der Einfasskonfigurator besitzt eine zweite, durch die Window-Wache sichere Einbindung.
+
+## S49 – DialogComponent
+
+Die Shared-Basisklasse steuert nativen Dialog, globale Body-/Scrollsperre, Außenklick, Escape, Breakpoint-Close und Open/Close-Events. Fünf direkte Markupquellen sowie CartDrawer und QuickAdd leiten davon ab. Normaler Close ist symmetrisch; ein offener Disconnect besitzt keinen Cleanup und hinterlässt globalen sowie lokalen Zustand.
+
+## S50 – Focus
+
+Das Modul verwaltet genau einen dokumentweiten Fokusfang und bietet zusätzlich Link-Zyklisierung. Die API ersetzt und entfernt Handler symmetrisch. HeaderDrawer ist der einzige Trap-Verbraucher; dort fehlt beim offenen Disconnect der Remove-Aufruf. CollectionLinks nutzt nur den unabhängigen Zyklushelfer.
+
+## S51 – HeaderDrawer
+
+Die Headerkomponente koppelt native Details-Bäume, Root-/Submenu-Animationen, Accordion-Klassentimer und den globalen Fokusfang. Der normale Close-Pfad ist symmetrisch. Bereits registrierte Animationsabschlüsse und Timer besitzen jedoch keine Instanz-/Verbindungsprüfung; Disconnect entfernt ausschließlich Keyup. Descendant-Animationshandler haben stabile Identität und werden auf denselben Knoten dedupliziert, aber nicht beim Disconnect entfernt.

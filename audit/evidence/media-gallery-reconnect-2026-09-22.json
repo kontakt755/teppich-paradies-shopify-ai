@@ -1,0 +1,86 @@
+{
+  "session": "S32",
+  "task": "JS-001f",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/media-gallery.js",
+      "sha256": "0dd60c2c1f2c6919922bfc7bb88e40f2600f73421834806b0953f886e897172c"
+    },
+    {
+      "file": "assets/events.js",
+      "sha256": "1290bc43167daaa1166e4d3acf0b423f1d30f119347d2873ebb18001c12d2056"
+    },
+    {
+      "file": "snippets/product-media-gallery-content.liquid",
+      "sha256": "eb1411debff7f0179929f29e9b74a10d725d2c3a9584b53965d51cd0a383fc53"
+    }
+  ],
+  "cases": [
+    {
+      "name": "initial-connect",
+      "replacements": 1,
+      "selections": [
+        {
+          "index": 3,
+          "animate": false
+        }
+      ]
+    },
+    {
+      "name": "disconnected-ignores-events",
+      "replacements": 0,
+      "selections": []
+    },
+    {
+      "name": "same-instance-reconnect-stale",
+      "replacements": 0,
+      "selections": []
+    },
+    {
+      "name": "fresh-instance",
+      "replacements": 1,
+      "selections": [
+        {
+          "index": 3,
+          "animate": false
+        }
+      ]
+    }
+  ],
+  "templateSource": [
+    {
+      "template": "product.einfassung.json",
+      "enabledMediaGallery": true
+    },
+    {
+      "template": "product.fixpreis.json",
+      "enabledMediaGallery": true
+    },
+    {
+      "template": "product.fliese.json",
+      "enabledMediaGallery": true
+    },
+    {
+      "template": "product.json",
+      "enabledMediaGallery": true
+    },
+    {
+      "template": "product.planken.json",
+      "enabledMediaGallery": true
+    },
+    {
+      "template": "product.rolle.json",
+      "enabledMediaGallery": true
+    },
+    {
+      "template": "product.teppich.json",
+      "enabledMediaGallery": true
+    },
+    {
+      "template": "product.zubehoer.json",
+      "enabledMediaGallery": true
+    }
+  ],
+  "limits": "Original complete MediaGallery and original events; Component, section, zoom dialog, slideshow and replacement DOM adapted, native EventTarget/AbortController. Variant replacement and zoom-selection listener lifecycle tested. Actual DOM replacement/morphing, browser custom-element reactions, rendered product assignments, quick-add dialog and live theme not tested. Product-template presence is static source reach."
+}

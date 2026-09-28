@@ -1,16 +1,20 @@
 # Fix-Pack-Index
 
-Stand: 20.09.2026. Phase 1 läuft; nur ausreichend belegte Teilpakete werden vorbereitet. **READY ist Übergabereife, keine Umsetzungs-, Merge- oder Live-Freigabe.** Kein Paket umgesetzt.
+Stand: 21.09.2026. Phase 1 läuft; nur ausreichend belegte Teilpakete werden vorbereitet. **READY ist Übergabereife, keine Umsetzungs-, Merge- oder Live-Freigabe.** Kein Paket umgesetzt.
 
 | FIX_PACK | STATUS | PRIORITÄT | ISSUES | PARALLEL SAFE | ABHÄNGIGKEITEN | ZUSTÄNDIGER AGENT |
 | --- | --- | --- | --- | --- | --- | --- |
 | [FIX_PACK_02_PRICING_INPUTS](fix-packs/FIX_PACK_02_PRICING_INPUTS.md) | READY | P2/P3 | TP-001, TP-002 | NO | ein gemeinsamer Paketparser/Submit; aktuelle Live-Quelle vor Fix verifizieren | Später Claude Code, noch nicht beauftragt |
-| Rollenrechnerpaket, Dateiname noch offen | NOT READY | P2/P3 | TP-003, TP-004 | NO | PR-020/022 lokal abgeschlossen; H-005/H-008, echte Cart-/Variantenabläufe und gemeinsame Kern-Datei beachten | Nicht zugewiesen |
+| [FIX_PACK_03_CART_REQUEST_FEEDBACK](fix-packs/FIX_PACK_03_CART_REQUEST_FEEDBACK.md) | READY | P3 | TP-013, TP-014 | NO | gemeinsame Rabattklasse, bedingte Notizownership; aktuelle Quellen vor Fix, Browser-QA offen | Später Claude Code, nicht beauftragt |
+| SectionRenderer-Retry, Dateiname noch offen | NOT READY | P2 | TP-012 | NO | weitere Aufrufer und H-012/013 vor Freigabe | Nicht zugewiesen |
+| Rollenrechnerpaket, Dateiname noch offen | NOT READY | P2/P3 | TP-003, TP-004, TP-009 | NO | PR-020/022/023b.2 lokal abgeschlossen; H-011 PVC-Breitenvertrag; H-005/H-008, echte Cart-/Variantenabläufe und gemeinsame Kern-Datei beachten | Nicht zugewiesen |
 | Wunschmaßpaket, Dateiname noch offen | NOT READY | P3 | TP-006, TP-007 | NO | H-009 aktive Nutzung/Maßvertrag, H-010/Browserintegration; gemeinsame Blockdatei | Nicht zugewiesen |
 | Paket-Cartdarstellung, Dateiname noch offen | NOT READY | P3 | TP-008 | NO | H-011 aktuelle dreistellige Paketgrößen, CART-002 und gemeinsame Cartdatei | Nicht zugewiesen |
+| Cart-Fehlerwiederherstellung, Dateiname noch offen | NOT READY | P2 | TP-010, TP-011 | NO | lokale b.2-Prüfung fertig; H-012/013, Zeilenidentität/Refs/Animation offen | Nicht zugewiesen |
 | Einfass-Servicepaket, Dateiname noch offen | NOT READY | P3 | TP-005 | NO | PR-021 lokal abgeschlossen; H-006, Datenvertrag und verbleibende Cart-/Abgleichprüfung | Nicht zugewiesen |
+| CartIcon-Fehlervertrag, Dateiname noch offen | NOT READY | P2 | TP-018 | NO | tatsächliche Teiladd-/Backendmenge, ProductForm/Events/Cartverbraucher und Browser-QA offen | Nicht zugewiesen |
 
-Ready: 1 · Done: 0 · QA Passed: 0 · QA Failed: 0.
+Ready: 2 · Done: 0 · QA Passed: 0 · QA Failed: 0.
 
 Das erste Paket enthält bewusst nur zwei eng zusammenhängende Issues: beide betreffen dieselben Zahlenparser-/Submit-Grenzen und sollten gemeinsam gelöst werden. Keine unabhängigen UX-/Cart-/Architekturaufgaben angehängt, um eine Mindestzahl zu erreichen. Kein P0-Blockerpaket ohne bestätigten Blocker.
 
@@ -25,3 +29,94 @@ S04: PR-022 lokal bestanden, kein zusätzliches Issue oder Fix-Pack. 61 Integrat
 S05: TP-006/007 besitzen vollständige Implementation Briefs. Kein sofortiges Pack für den historisch ruhenden Pfad: heutige Produktnutzung und Maßvertrag H-009 zuerst belegen, dann gemeinsam planen. 46 Diagnosefälle bieten gezielte Preis-/Payloadregression; bestehende Defektassertions sind vor Fix-QA auf Sollverhalten umzustellen. Kein bestehendes Pack ausgeführt, Ready/Done/QA unverändert.
 
 S06: TP-008 mit vollständigem Brief, noch kein zusätzliches Fix-Pack. Der einzelne Präzisionsverlust gehört nach der anstehenden Cart-Prüfung in einen kleinen passenden Darstellungsblock; nicht künstlich mit Parser-/Preisreparaturen vermischen. 17 Datenintegrationen/28 Cart-Renderings ergänzen die Übergabeevidence. Keine Freigabe/Umsetzung, Ready/Done/QA unverändert.
+
+S07: TP-009/P2 mit vollständigem Implementation Brief. Bestehenden vorgemerkten Rollenblock um Breitenvertrag/Art-Asset ergänzen; weiterhin NOT READY wegen aktueller Daten-/Cart-/Variantenabhängigkeiten. Keine Packdatei angelegt oder umgesetzt. Stück-/Zubehörvertrag lokal ohne weiteren bestätigten Fehler; vorbereitete Metafelder bleiben unangetastet. Ready/Done/QA unverändert.
+
+S08: TP-010 mit vollständigem Implementation Brief. Eigenen möglichen Fehlerwiederherstellungsblock vorgemerkt, NOT READY bis CART-002b/H-012; keine Packdatei vorschnell erstellt. Kein bestehendes Pack ausgeführt, keine Freigabe/Shopreparatur. 43 lokale Cartfälle und 47 bestehende Tests als spätere gezielte Regression dokumentiert. Ready=1, Done/QA=0.
+
+S09: TP-011 mit vollständigem Implementation Brief. Mit TP-010 an derselben Cartklasse koordinieren; vorgemerkter Cartblock weiterhin NOT READY bis CART-002b.2/H-012. Zwölf Ereignisdiagnosen ergänzen die Evidence, keine Packumsetzung/Shopänderung. Ready=1, Done/QA=0.
+
+
+S10: TP-012/P2 mit vollständigem Implementation Brief. SectionRenderer-Retry als separater Kandidat NOT READY bis CART-002b.2b/H-012 und Prüfung weiterer Aufrufer. Keine Packdatei/Umsetzung. Ready=1, Done/QA=0.
+
+S11: H-013 konkretisiert Antwort-/Identitätsrisiken ohne neues bestätigtes Issue. Cartblock und Section-Retry weiterhin NOT READY; TP-010/011/012 anhand realer Ablaufgrenzen koordinieren. Ready=1, Done/QA=0. Keine Packumsetzung.
+
+S12: keine neuen bestätigten Issues/Packdateien. H-014 ist Browsernachweisbedarf, keine Freigabe zum globalen Event-/Dialogumbau. Cartblock/Section-Retry weiterhin NOT READY; Ready=1, Done/QA=0.
+
+S13: keine neue bestätigte Issue-ID oder Packfreigabe. H-015 ist offener Express-/Keyboardnachweis; Browserberechtigung blockiert Liveabnahme. Ready=1, Done/QA=0.
+
+S14: TP-013/P3 mit vollständigem Brief. Rabattfeedback-Kandidat NOT READY bis CART-003b.2; gemeinsame cart-discount.js zuerst vollständig prüfen. Keine Packdatei/Umsetzung. Ready=1, Done/QA=0.
+
+S15: Rabattfeedback/-Abbruch-Kandidat umfasst TP-013/014, NOT READY bis Notizvergleich/CART-003b.3 und Konsolidierung. Beide gleiche Klasse, keine Parallelumsetzung. Ready=1, Done/QA=0; keine Reparatur.
+
+S16: Notizvergleich abgeschlossen; TP-014 betrifft bedingt auch cart-note.js (lokal deaktiviert). Vor Packzuweisung aktive Rabattklasse und ruhende Notizänderung getrennt abgrenzen; keine Notizaktivierung. CART-004 konsolidiert kleine Pakete. Ready=1, Done/QA=0.
+
+S17 maßgeblicher Stand: Ready=2, Done/QA=0. Paket 03 ist Übergabereife, keine Umsetzung. Frühere Ready=1-Sessionnotizen bleiben historisch. TP-014 umfasst im neuen Paket beide Klassen; Notizfunktion bleibt deaktiviert. Cartkern/Renderer weiterhin NOT READY, keine vorschnellen Packdateien.
+
+S18: kein neues bestätigtes Issue/Pack. Rollenblock weiter NOT READY; H-003 durch Auswahl-/Zubehörfunktionen teilweise belegt, vollständiger Zustands-/Submitvertrag offen. Ready=2, Done/QA=0.
+
+S19: Rollen-Zustands-/Submitvertrag lokal geprüft, kein neues Issue/Pack. Rollenblock weiterhin NOT READY wegen VAR-001a/H-003 und Live-/Datenreichweite. Ready=2, Done/QA=0.
+
+S20: TP-015/P2 vollständiger Brief, Farbpicker-Kandidat NOT READY bis VAR-001a.2 und belegter Auswahlregel. Kein Pack vorschnell erstellt. READY=2, Done/QA=0. Konflikte Rollen-/Pickerintegration beachten.
+
+S21: TP-016/P3 vollständiger Brief; Farbverbraucher-Lifecycle-Kandidat NOT READY bis native Lifecycle-/Aufruferabgrenzung VAR-001a.2b. Kein Pack vorschnell erstellt. Ready=2, Done/QA=0.
+
+S22: H-017 neu, kein bestätigtes Issue und kein neues Pack. Picker-/Verbraucherintegration weiterhin NOT READY; gemeinsame variant-picker.js/product-form.js-Abhängigkeit erst prüfen. Ready=2, Done/QA=0.
+
+S23: TP-017/P2 mit Implementation Brief; Variantenfehlerabschluss/Queue-Kandidat NOT READY bis Lifecycle-/Mehrproduktabgrenzung. FILE CONFLICT variant-picker.js/product-form.js. Ready=2, Done/QA=0; keine Umsetzung.
+
+S24: TP-016 umfasst zusätzlich product-form.js; FILE CONFLICT mit TP-017. Lifecyclepaket weiterhin NOT READY bis Picker-/Morphabgrenzung. Ready=2, Done/QA=0. Keine Umsetzung.
+
+S25: TP-016 umfasst zusätzlich variant-picker.js (doppelter Change-Listener, Request bleibt bei Disconnect aktiv). Gemeinsames Lifecyclepaket weiterhin NOT READY bis Morph-/Mehrprodukt-Aufruferabgrenzung. FILE CONFLICT mit TP-017; Ready=2, Done/QA=0. Keine Umsetzung.
+
+S26: Morph-/Mehrprodukt-Aufrufer lokal abgegrenzt. H-016 bleibt wegen deaktiviertem lokalen Quick Add und unbekanntem Livezustand bedingt. TP-015–017 könnten später einen gemeinsamen Variantenblock bilden, bleiben bis Browser-/Live-Reichweite und Phase-2-Konsolidierung NOT READY. Ready=2, Done/QA=0; keine Umsetzung.
+
+S27: reines Runtime-Inventar, keine Issue-/Packänderung. Quick-add-Lifecycle ist nur Kandidat und wird vor Zuordnung ausgeführt. Ready=2, Done/QA=0; keine Umsetzung.
+
+S28: TP-016 umfasst zusätzlich QuickAddComponent. Varianten-Lifecycleblock bleibt NOT READY bis QuickAddDialog und spätere Phase-2-Konsolidierung; Quick Add lokal deaktiviert, Livezustand offen. FILE CONFLICT `quick-add.js`/TP-016/017. Ready=2, Done/QA=0; keine Umsetzung.
+
+S29: QuickAddDialog ergänzt TP-016; `quick-add.js` lifecycleweit lokal geprüft. Varianten-Lifecycleblock bleibt wegen deaktivierter lokaler Funktion, unbekannter Live-Reichweite und später Phase-2-Konsolidierung NOT READY. Ready=2, Done/QA=0; keine Umsetzung.
+
+S30: TP-016 umfasst zusätzlich den in allen acht lokalen Produkttemplates aktivierten Sticky-Kaufbalken. Gemeinsames Lifecyclepaket bleibt bis weiterer Runtime-Abgrenzung und Phase-2-Konsolidierung NOT READY; FILE CONFLICT zu Varianten-/Formularpfaden. Ready=2, Done/QA=0; keine Umsetzung.
+
+S31: TP-016 umfasst zusätzlich PricePerItem; sechs Templates mit aktivem Mengenblock, tatsächliche Staffelpreisprodukte offen. Lifecyclepaket bleibt bis Runtime-Abgrenzung/Phase 2 NOT READY. Ready=2, Done/QA=0; keine Umsetzung.
+
+S32: TP-016 umfasst zusätzlich MediaGallery; alle acht Produkttemplates enthalten den aktiven Block, tatsächlicher Browser-Reconnect bleibt offen. Gemeinsames Lifecyclepaket bleibt bis Runtime-Abgrenzung/Phase 2 NOT READY; FILE CONFLICT Varianten-/Morph-/Quick-add-Pfade. Ready=2, Done/QA=0; keine Umsetzung.
+
+S33: TP-016 umfasst zusätzlich DeferredMedia/ProductModel; globale Quellreichweite belegt, tatsächliche Video-/3D-Katalog- und Browserreichweite offen. Lifecyclepaket bleibt bis Runtime-Abgrenzung/Phase 2 NOT READY; FILE CONFLICT Galerie-/Slideshow-/Dialogpfade. Ready=2, Done/QA=0; keine Umsetzung.
+
+S34: TP-016 umfasst zusätzlich den aktiven Drag-Pfad der LayeredSlideshow; normaler Reconnect ist gesund, lokale Templates nutzen die optionale Section nicht. Lifecyclepaket bleibt bis Runtime-Abgrenzung/Phase 2 NOT READY. Ready=2, Done/QA=0; keine Umsetzung.
+
+S35: TP-016 umfasst zusätzlich AccordionCustom mit globaler Nutzung in Menü, Cart und Facets. Lifecyclepaket bleibt bis Runtime-Abgrenzung/Phase 2 NOT READY; FILE CONFLICT Header-/Facet-/Cartpfade. Ready=2, Done/QA=0; keine Umsetzung.
+
+S36: TP-016 umfasst zusätzlich PredictiveSearch mit statischer Header-/Modalintegration. Lifecyclepaket bleibt bis Runtime-Abgrenzung/Phase 2 NOT READY; FILE CONFLICT Dialog-/SectionRenderer-/TP-Suche-Pfade. Ready=2, Done/QA=0; keine Umsetzung.
+
+S37: TP-016 umfasst zusätzlich den mobilen DragZoomWrapper; Reset/Observer sind reconnectfähig, Touchgesten nicht. Lifecyclepaket bleibt bis Runtime-Abgrenzung/Phase 2 NOT READY; FILE CONFLICT Galerie-/Zoom-/Mobilepfade. Ready=2, Done/QA=0; keine Umsetzung.
+
+S38: TP-016 umfasst zusätzlich ProductCard/Swatches mit 31 Templatezuweisungen. Lifecyclepaket bleibt bis Runtime-Abgrenzung/Phase 2 NOT READY; FILE CONFLICT QuickAdd-/VariantPicker-/Morphpfade. Ready=2, Done/QA=0; keine Umsetzung.
+
+S39: TP-016 umfasst bedingt den ResizeObserver-Fallback von ProductTitle. Der normale Observerpfad ist gesund; direktes Markup betrifft nur Produktkarten ohne Medien, konkrete Browser-/Katalogreichweite offen. Kein eigenes Pack; in Phase 2 nur bei belegter Fallbackreichweite mit ProductCard/Galerie koordinieren. Ready=2, Done/QA=0; keine Umsetzung.
+
+S40: TP-016 umfasst bedingt den inkonsistenten GiftCardRecipientForm-Reconnect und das Leeren vorbelegter Werte. Gift-Card-Produkt-/Live-Reichweite und Shopify-Fehlerrückgabe bleiben offen; kein eigenes Pack. Später mit ProductForm/QuickAdd/Morph koordinieren. Ready=2, Done/QA=0; keine Umsetzung.
+
+S41: TP-018/P2 mit vollständigem Brief; CartIcon-Fehlervertrag als eigener Kandidat NOT READY bis tatsächliche Backend-/Teiladdmenge und alle Cartverbraucher geprüft sind. FILE CONFLICT ProductForm/Events/TP-017. Ready=2, Done/QA=0; keine Umsetzung.
+
+S42: TP-016 umfasst zusätzlich den während Disconnect aktiven FacetClear-Keyup-Pfad. 20 Templates belegen breite statische Reichweite, echter Reinsert offen. Lifecyclepaket bleibt bis Runtime-Abgrenzung/Phase 2 NOT READY; FILE CONFLICT Facets/Accordion/SectionRenderer. Ready=2, Done/QA=0; keine Umsetzung.
+
+S43: TP-016 umfasst zusätzlich den aktiven Dragcontroller der Standard-Slideshow. Normaler Lifecycle ist gesund, 31 Templates belegen breite statische Reichweite. Gemeinsames Lifecyclepaket bleibt bis Runtime-Abgrenzung/Phase 2 NOT READY; FILE CONFLICT ProductCard/MediaGallery/Zoom/LayeredSlideshow. Ready=2, Done/QA=0; keine Umsetzung.
+
+S44: TP-016 umfasst bedingt den während Disconnect aktiven Klickpfad der Leisten-Farbwahl. Instanz-Set und Observer sind gesund; nur ein Template und unbekannte Produkt-/Live-Reichweite. Kein eigenes Pack; später mit VariantPicker/ProductForm koordinieren. Ready=2, Done/QA=0; keine Umsetzung.
+
+S45: TP-016 umfasst bedingt den inkonsistenten offenen Panelzustand der Desktop-TP-Suche nach Disconnect/Reconnect. Eine Header-Gruppen-Zuweisung, echter Morph und Livezustand offen. Kein eigenes Pack; später mit PredictiveSearch/Header/Dialog koordinieren. Ready=2, Done/QA=0; keine Umsetzung.
+
+S46: TP-016 umfasst bedingt nicht getrennte Observer/Listener der Unterkategorienleiste nach Section-Replacement. Zwölf Templatepfade, tatsächliches Menümarkup und Browser-GC offen. Kein eigenes Pack; später mit ThemeEditor/Hero/Collection-Navigation koordinieren. Ready=2, Done/QA=0; keine Umsetzung.
+
+S47: TP-016 umfasst bedingt den nicht abgebrochenen alten Verlegegebiets-Fetch und lokale Listener nach Section-Replacement. Fünf Templates, echter Editorablauf und Browser-GC offen. Kein eigenes Pack; später mit ThemeEditor/Verlegeservice-Daten koordinieren. Ready=2, Done/QA=0; keine Umsetzung.
+
+S48: Zuschnitt-Abgleich-Runtime einschließlich Queue, Gegenprobe, Quellenfilter und Fehlererholung ohne neues Issue. Bestehende Cart-/Einfass-Pakete bleiben unverändert; reale Endpoint-/Multi-Tab-QA offen. Ready=2, Done/QA=0; keine Umsetzung.
+
+S49: TP-016 umfasst zusätzlich offenen Dialogzustand, lokale Listener und globale Body-Sperre nach Disconnect. Breite Shared-Reichweite, echter offener Morph und Top-Layer-Wirkung offen. Lifecyclepaket bleibt NOT READY; FILE CONFLICT Dialog/Focus/CartDrawer/QuickAdd/PredictiveSearch. Ready=2, Done/QA=0; keine Umsetzung.
+
+S50: TP-016 umfasst zusätzlich den global verbleibenden HeaderDrawer-Fokusfang nach offenem Disconnect. Fokus-API selbst gesund, echter Header-Morph offen. Lifecyclepaket bleibt NOT READY; FILE CONFLICT HeaderDrawer/Focus/Dialog/Accordion. Ready=2, Done/QA=0; keine Umsetzung.
+
+S51: TP-016 umfasst zusätzlich nicht abbrechbare HeaderDrawer-Open-/Close-Animationscallbacks, Klassentimer und am alten Baum verbleibende Descendant-Listener. Ein alter Callback kann einen späteren globalen Trap setzen oder entfernen. Lifecyclepaket bleibt NOT READY; FILE CONFLICT HeaderDrawer/Focus/Accordion/Dialog. Ready=2, Done/QA=0; keine Umsetzung.

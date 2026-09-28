@@ -1,0 +1,173 @@
+{
+  "session": "S19",
+  "task": "CALC-001a.2",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "blocks/tp-rollware-rechner.liquid",
+      "sha256": "c7bbab2e15d0c020e46a8f1960eb8652be0d13c3f39651d09324f58dee4e3ad5"
+    },
+    {
+      "file": "assets/tp-rollware-art.js",
+      "sha256": "cbf7cdd7837db5be9ff9f1f1ec060afcce20828d34f1fd6141feb3b3e9dbe2f2"
+    }
+  ],
+  "cases": [
+    {
+      "totalCents": 59645,
+      "name": "initial-room",
+      "id": "audit-main-Wunschmaß",
+      "mode": "raum",
+      "selectedWidth": 250,
+      "items": [
+        {
+          "id": "audit-main-Wunschmaß",
+          "quantity": 5,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "250 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "5,00 m²",
+            "Farbnummer": "TEST",
+            "_Farbe intern": "Auditfarbe – TEST",
+            "_Gruppe": "Tmuc4mylx"
+          }
+        },
+        {
+          "id": "audit-leiste",
+          "quantity": 7,
+          "properties": {
+            "Zu Teppichboden": "Synthetic roll fixture",
+            "Farbe wie Teppichboden": "Auditfarbe (TEST)",
+            "Höhe": "5 cm",
+            "Länge": "7 m",
+            "_Gruppe": "Tmuc4mylx"
+          }
+        },
+        {
+          "id": "audit-haft-0",
+          "quantity": 8,
+          "properties": {
+            "Zu Teppichboden": "Synthetic roll fixture",
+            "Ausführung": "1 mm, 80 cm breit (je lfm)",
+            "Bahnen": "4",
+            "_Gruppe": "Tmuc4mylx"
+          }
+        }
+      ],
+      "displayTotal": "596,45 €"
+    },
+    {
+      "totalCents": 24000,
+      "name": "blue-no-room-or-500",
+      "id": "blue-400",
+      "mode": "meter",
+      "selectedWidth": 400,
+      "items": [
+        {
+          "id": "blue-400",
+          "quantity": 8,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²",
+            "Farbnummer": "TEST",
+            "_Farbe intern": "Auditfarbe – TEST"
+          }
+        }
+      ],
+      "displayTotal": "240,00 €"
+    },
+    {
+      "totalCents": 69735,
+      "name": "return-original",
+      "id": "audit-main-400",
+      "mode": "meter",
+      "selectedWidth": 400,
+      "items": [
+        {
+          "id": "audit-main-400",
+          "quantity": 8,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²",
+            "Farbnummer": "TEST",
+            "_Farbe intern": "Auditfarbe – TEST",
+            "_Gruppe": "Tmuc4mylz"
+          }
+        },
+        {
+          "id": "audit-leiste",
+          "quantity": 7,
+          "properties": {
+            "Zu Teppichboden": "Synthetic roll fixture",
+            "Farbe wie Teppichboden": "Auditfarbe (TEST)",
+            "Höhe": "5 cm",
+            "Länge": "7 m",
+            "_Gruppe": "Tmuc4mylz"
+          }
+        },
+        {
+          "id": "audit-haft-0",
+          "quantity": 10,
+          "properties": {
+            "Zu Teppichboden": "Synthetic roll fixture",
+            "Ausführung": "1 mm, 80 cm breit (je lfm)",
+            "Bahnen": "5",
+            "_Gruppe": "Tmuc4mylz"
+          }
+        }
+      ],
+      "displayTotal": "697,35 €"
+    },
+    {
+      "totalCents": 69735,
+      "name": "green-unavailable-room",
+      "id": "green-audit-main-400",
+      "mode": "meter",
+      "selectedWidth": 400,
+      "items": [
+        {
+          "id": "green-audit-main-400",
+          "quantity": 8,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²",
+            "Farbnummer": "TEST",
+            "_Farbe intern": "Auditfarbe – TEST",
+            "_Gruppe": "Tmuc4mym0"
+          }
+        },
+        {
+          "id": "audit-leiste",
+          "quantity": 7,
+          "properties": {
+            "Zu Teppichboden": "Synthetic roll fixture",
+            "Farbe wie Teppichboden": "Green (TEST)",
+            "Höhe": "5 cm",
+            "Länge": "7 m",
+            "_Gruppe": "Tmuc4mym0"
+          }
+        },
+        {
+          "id": "audit-haft-0",
+          "quantity": 10,
+          "properties": {
+            "Zu Teppichboden": "Synthetic roll fixture",
+            "Ausführung": "1 mm, 80 cm breit (je lfm)",
+            "Bahnen": "5",
+            "_Gruppe": "Tmuc4mym0"
+          }
+        }
+      ],
+      "displayTotal": "697,35 €"
+    }
+  ],
+  "limits": "Original Liquid baseline, selection/syncArtUi/calculate/extras/submit; synthetic color variants added. Radio exclusivity modeled, draw/service UI/einfass chips and timing adapted. No native picker/URL/morph or live request. Four sequential captured submits; no old diagnostic replay."
+}

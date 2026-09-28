@@ -32,7 +32,7 @@
       "type": "tp-start-kategorien",
       "settings": {
         "heading": "Womit möchten Sie starten?",
-        "text": "Sieben Kategorien, direkt zur Auswahl. Alle Preise pro m², Muster kostenlos.",
+        "text": "Sieben Kategorien, direkt zur Auswahl. Preise und Verkaufseinheiten stehen am Produkt. Muster kostenlos.",
         "link_label": "Alle Produkte ansehen",
         "link": "shopify://collections/all"
       },
@@ -84,7 +84,7 @@
           "type": "kategorie",
           "settings": {
             "collection": "linoleumboden-1",
-            "bild": "shopify://shop_images/1127866-8FXC-prod.jpg",
+            "bild": "shopify://shop_images/1160176-8FXC-prod.jpg",
             "titel": "Linoleum",
             "untertitel": "Natürlich, strapazierfähig",
             "zahl_zeigen": true,
@@ -164,665 +164,6 @@
         "t4"
       ]
     },
-    "tp_start_tabs": {
-      "type": "tp-start-tabs",
-      "settings": {
-        "heading": "Beliebte Bodenbeläge",
-        "text": "Meterware wird nach Ihrem Maß zugeschnitten, Paketware nach Fläche berechnet. Der Preis pro m² ist immer die Leitgröße."
-      },
-      "blocks": {
-        "r1": {
-          "type": "tab",
-          "settings": {
-            "label": "Teppichboden",
-            "section_id": "product_list_fa6P9H"
-          }
-        },
-        "r2": {
-          "type": "tab",
-          "settings": {
-            "label": "Vinylboden",
-            "section_id": "product_list_8rDkXg"
-          }
-        },
-        "r3": {
-          "type": "tab",
-          "settings": {
-            "label": "Linoleum",
-            "section_id": "product_list_linoleum_DxYpK2"
-          }
-        }
-      },
-      "block_order": [
-        "r1",
-        "r2",
-        "r3"
-      ]
-    },
-    "product_list_fa6P9H": {
-      "type": "product-list",
-      "blocks": {
-        "static-header": {
-          "type": "_product-list-content",
-          "name": "t:names.header",
-          "static": true,
-          "settings": {
-            "content_direction": "row",
-            "vertical_on_mobile": false,
-            "horizontal_alignment": "space-between",
-            "vertical_alignment": "flex-end",
-            "align_baseline": true,
-            "horizontal_alignment_flex_direction_column": "flex-start",
-            "vertical_alignment_flex_direction_column": "center",
-            "gap": 12,
-            "width": "fill",
-            "custom_width": 100,
-            "width_mobile": "fill",
-            "custom_width_mobile": 100,
-            "height": "fit",
-            "custom_height": 100,
-            "inherit_color_scheme": true,
-            "color_scheme": "",
-            "background_media": "none",
-            "video_position": "cover",
-            "background_image_position": "cover",
-            "border": "none",
-            "border_width": 1,
-            "border_opacity": 100,
-            "border_radius": 0,
-            "padding-block-start": 0,
-            "padding-block-end": 0,
-            "padding-inline-start": 0,
-            "padding-inline-end": 0
-          },
-          "blocks": {
-            "product_list_text_YFtzcL": {
-              "type": "_product-list-text",
-              "name": "t:names.collection_title",
-              "settings": {
-                "text": "<h3>{{ closest.collection.title }}</h3>",
-                "width": "fit-content",
-                "max_width": "normal",
-                "alignment": "left",
-                "type_preset": "h3",
-                "font": "var(--font-body--family)",
-                "font_size": "",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "wrap": "pretty",
-                "color": "var(--color-foreground)",
-                "background": false,
-                "background_color": "#00000026",
-                "corner_radius": 0,
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "product_list_button_MWeP9V": {
-              "type": "_product-list-button",
-              "name": "t:names.product_list_button",
-              "settings": {
-                "label": "Alle ansehen",
-                "open_in_new_tab": false,
-                "style_class": "link",
-                "width": "fit-content",
-                "custom_width": 100,
-                "width_mobile": "fit-content",
-                "custom_width_mobile": 100
-              },
-              "blocks": {}
-            }
-          },
-          "block_order": [
-            "product_list_text_YFtzcL",
-            "product_list_button_MWeP9V"
-          ]
-        },
-        "static-product-card": {
-          "type": "_product-card",
-          "name": "t:names.product_card",
-          "static": true,
-          "settings": {
-            "product_card_gap": 4,
-            "inherit_color_scheme": true,
-            "color_scheme": "",
-            "border": "none",
-            "border_width": 1,
-            "border_opacity": 100,
-            "border_radius": 0,
-            "padding-block-start": 0,
-            "padding-block-end": 0,
-            "padding-inline-start": 0,
-            "padding-inline-end": 0
-          },
-          "blocks": {
-            "product_card_gallery_677WP3": {
-              "type": "_product-card-gallery",
-              "name": "t:names.product_card_media",
-              "settings": {
-                "image_ratio": "square",
-                "border": "none",
-                "border_width": 1,
-                "border_opacity": 100,
-                "border_radius": 0,
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "product_title_YXxMTj": {
-              "type": "tp-card-title",
-              "name": "t:names.product_title",
-              "settings": {
-                "width": "100%",
-                "max_width": "normal",
-                "alignment": "left",
-                "type_preset": "rte",
-                "font": "var(--font-body--family)",
-                "font_size": "1rem",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "wrap": "pretty",
-                "color": "var(--color-foreground)",
-                "background": false,
-                "background_color": "#00000026",
-                "corner_radius": 0,
-                "padding-block-start": 4,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "price_JQzVV4": {
-              "type": "price",
-              "name": "t:names.product_price",
-              "settings": {
-                "show_sale_price_first": true,
-                "show_installments": false,
-                "show_tax_info": false,
-                "type_preset": "h6",
-                "width": "100%",
-                "alignment": "left",
-                "font": "var(--font-body--family)",
-                "font_size": "1rem",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "color": "var(--color-foreground)",
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "tp_card_specs_home_teppich": {
-              "type": "tp-card-specs",
-              "name": "TP Card-Merkmale",
-              "settings": {},
-              "blocks": {}
-            },
-            "tp_card_actions_home_teppich": {
-              "type": "tp-card-actions",
-              "name": "TP Card-Aktionen",
-              "settings": {},
-              "blocks": {}
-            }
-          },
-          "block_order": [
-            "product_card_gallery_677WP3",
-            "product_title_YXxMTj",
-            "price_JQzVV4",
-            "tp_card_specs_home_teppich",
-            "tp_card_actions_home_teppich"
-          ]
-        }
-      },
-      "name": "Featured collection",
-      "settings": {
-        "collection": "teppichboden",
-        "layout_type": "grid",
-        "carousel_on_mobile": false,
-        "max_products": 4,
-        "columns": 4,
-        "mobile_columns": "2",
-        "mobile_card_size": "60cqw",
-        "columns_gap": 8,
-        "rows_gap": 24,
-        "icons_style": "arrow",
-        "icons_shape": "none",
-        "section_width": "page-width",
-        "horizontal_alignment": "flex-start",
-        "gap": 28,
-        "color_scheme": "scheme-1",
-        "padding-block-start": 48,
-        "padding-block-end": 48
-      }
-    },
-    "product_list_8rDkXg": {
-      "type": "product-list",
-      "blocks": {
-        "static-header": {
-          "type": "_product-list-content",
-          "name": "t:names.header",
-          "static": true,
-          "settings": {
-            "content_direction": "row",
-            "vertical_on_mobile": false,
-            "horizontal_alignment": "space-between",
-            "vertical_alignment": "flex-end",
-            "align_baseline": true,
-            "horizontal_alignment_flex_direction_column": "flex-start",
-            "vertical_alignment_flex_direction_column": "center",
-            "gap": 12,
-            "width": "fill",
-            "custom_width": 100,
-            "width_mobile": "fill",
-            "custom_width_mobile": 100,
-            "height": "fit",
-            "custom_height": 100,
-            "inherit_color_scheme": true,
-            "color_scheme": "",
-            "background_media": "none",
-            "video_position": "cover",
-            "background_image_position": "cover",
-            "border": "none",
-            "border_width": 1,
-            "border_opacity": 100,
-            "border_radius": 0,
-            "padding-block-start": 0,
-            "padding-block-end": 0,
-            "padding-inline-start": 0,
-            "padding-inline-end": 0
-          },
-          "blocks": {
-            "product_list_text_HkT37C": {
-              "type": "_product-list-text",
-              "name": "t:names.collection_title",
-              "settings": {
-                "text": "<h3>{{ closest.collection.title }}</h3>",
-                "width": "fit-content",
-                "max_width": "normal",
-                "alignment": "left",
-                "type_preset": "h3",
-                "font": "var(--font-body--family)",
-                "font_size": "",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "wrap": "pretty",
-                "color": "var(--color-foreground)",
-                "background": false,
-                "background_color": "#00000026",
-                "corner_radius": 0,
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "product_list_button_RiwqEU": {
-              "type": "_product-list-button",
-              "name": "t:names.product_list_button",
-              "settings": {
-                "label": "Alle ansehen",
-                "open_in_new_tab": false,
-                "style_class": "link",
-                "width": "fit-content",
-                "custom_width": 100,
-                "width_mobile": "fit-content",
-                "custom_width_mobile": 100
-              },
-              "blocks": {}
-            }
-          },
-          "block_order": [
-            "product_list_text_HkT37C",
-            "product_list_button_RiwqEU"
-          ]
-        },
-        "static-product-card": {
-          "type": "_product-card",
-          "name": "t:names.product_card",
-          "static": true,
-          "settings": {
-            "product_card_gap": 4,
-            "inherit_color_scheme": true,
-            "color_scheme": "",
-            "border": "none",
-            "border_width": 1,
-            "border_opacity": 100,
-            "border_radius": 0,
-            "padding-block-start": 0,
-            "padding-block-end": 0,
-            "padding-inline-start": 0,
-            "padding-inline-end": 0
-          },
-          "blocks": {
-            "product_card_gallery_BhkWFR": {
-              "type": "_product-card-gallery",
-              "name": "t:names.product_card_media",
-              "settings": {
-                "image_ratio": "square",
-                "border": "none",
-                "border_width": 1,
-                "border_opacity": 100,
-                "border_radius": 0,
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "product_title_LR6n8c": {
-              "type": "tp-card-title",
-              "name": "t:names.product_title",
-              "settings": {
-                "width": "100%",
-                "max_width": "normal",
-                "alignment": "left",
-                "type_preset": "rte",
-                "font": "var(--font-body--family)",
-                "font_size": "1rem",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "wrap": "pretty",
-                "color": "var(--color-foreground)",
-                "background": false,
-                "background_color": "#00000026",
-                "corner_radius": 0,
-                "padding-block-start": 4,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "price_LfCqzt": {
-              "type": "price",
-              "name": "t:names.product_price",
-              "settings": {
-                "show_sale_price_first": true,
-                "show_installments": false,
-                "show_tax_info": false,
-                "type_preset": "h6",
-                "width": "100%",
-                "alignment": "left",
-                "font": "var(--font-body--family)",
-                "font_size": "1rem",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "color": "var(--color-foreground)",
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "tp_card_specs_home_vinyl": {
-              "type": "tp-card-specs",
-              "name": "TP Card-Merkmale",
-              "settings": {},
-              "blocks": {}
-            },
-            "tp_card_actions_home_vinyl": {
-              "type": "tp-card-actions",
-              "name": "TP Card-Aktionen",
-              "settings": {},
-              "blocks": {}
-            }
-          },
-          "block_order": [
-            "product_card_gallery_BhkWFR",
-            "product_title_LR6n8c",
-            "price_LfCqzt",
-            "tp_card_specs_home_vinyl",
-            "tp_card_actions_home_vinyl"
-          ]
-        }
-      },
-      "name": "Featured collection",
-      "settings": {
-        "collection": "vinylboden-1",
-        "layout_type": "grid",
-        "carousel_on_mobile": false,
-        "max_products": 4,
-        "columns": 4,
-        "mobile_columns": "2",
-        "mobile_card_size": "60cqw",
-        "columns_gap": 8,
-        "rows_gap": 24,
-        "icons_style": "arrow",
-        "icons_shape": "none",
-        "section_width": "page-width",
-        "horizontal_alignment": "flex-start",
-        "gap": 28,
-        "color_scheme": "scheme-1",
-        "padding-block-start": 48,
-        "padding-block-end": 48
-      }
-    },
-    "product_list_linoleum_DxYpK2": {
-      "type": "product-list",
-      "blocks": {
-        "static-header": {
-          "type": "_product-list-content",
-          "name": "t:names.header",
-          "static": true,
-          "settings": {
-            "content_direction": "row",
-            "vertical_on_mobile": false,
-            "horizontal_alignment": "space-between",
-            "vertical_alignment": "flex-end",
-            "align_baseline": true,
-            "horizontal_alignment_flex_direction_column": "flex-start",
-            "vertical_alignment_flex_direction_column": "center",
-            "gap": 12,
-            "width": "fill",
-            "custom_width": 100,
-            "width_mobile": "fill",
-            "custom_width_mobile": 100,
-            "height": "fit",
-            "custom_height": 100,
-            "inherit_color_scheme": true,
-            "color_scheme": "",
-            "background_media": "none",
-            "video_position": "cover",
-            "background_image_position": "cover",
-            "border": "none",
-            "border_width": 1,
-            "border_opacity": 100,
-            "border_radius": 0,
-            "padding-block-start": 0,
-            "padding-block-end": 0,
-            "padding-inline-start": 0,
-            "padding-inline-end": 0
-          },
-          "blocks": {
-            "product_list_text_linoleum": {
-              "type": "_product-list-text",
-              "name": "t:names.collection_title",
-              "settings": {
-                "text": "<h3>Unsere Linoleumböden</h3>",
-                "width": "fit-content",
-                "max_width": "normal",
-                "alignment": "left",
-                "type_preset": "h3",
-                "font": "var(--font-body--family)",
-                "font_size": "",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "wrap": "pretty",
-                "color": "var(--color-foreground)",
-                "background": false,
-                "background_color": "#00000026",
-                "corner_radius": 0,
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "product_list_button_linoleum": {
-              "type": "_product-list-button",
-              "name": "t:names.product_list_button",
-              "settings": {
-                "label": "Alle ansehen",
-                "open_in_new_tab": false,
-                "style_class": "link",
-                "width": "fit-content",
-                "custom_width": 100,
-                "width_mobile": "fit-content",
-                "custom_width_mobile": 100
-              },
-              "blocks": {}
-            }
-          },
-          "block_order": [
-            "product_list_text_linoleum",
-            "product_list_button_linoleum"
-          ]
-        },
-        "static-product-card": {
-          "type": "_product-card",
-          "name": "t:names.product_card",
-          "static": true,
-          "settings": {
-            "product_card_gap": 4,
-            "inherit_color_scheme": true,
-            "color_scheme": "",
-            "border": "none",
-            "border_width": 1,
-            "border_opacity": 100,
-            "border_radius": 0,
-            "padding-block-start": 0,
-            "padding-block-end": 0,
-            "padding-inline-start": 0,
-            "padding-inline-end": 0
-          },
-          "blocks": {
-            "product_card_gallery_linoleum": {
-              "type": "_product-card-gallery",
-              "name": "t:names.product_card_media",
-              "settings": {
-                "image_ratio": "square",
-                "border": "none",
-                "border_width": 1,
-                "border_opacity": 100,
-                "border_radius": 0,
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "product_title_linoleum": {
-              "type": "tp-card-title",
-              "name": "t:names.product_title",
-              "settings": {
-                "width": "100%",
-                "max_width": "normal",
-                "alignment": "left",
-                "type_preset": "rte",
-                "font": "var(--font-body--family)",
-                "font_size": "1rem",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "wrap": "pretty",
-                "color": "var(--color-foreground)",
-                "background": false,
-                "background_color": "#00000026",
-                "corner_radius": 0,
-                "padding-block-start": 4,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "price_linoleum": {
-              "type": "price",
-              "name": "t:names.product_price",
-              "settings": {
-                "show_sale_price_first": true,
-                "show_installments": false,
-                "show_tax_info": false,
-                "type_preset": "h6",
-                "width": "100%",
-                "alignment": "left",
-                "font": "var(--font-body--family)",
-                "font_size": "1rem",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "color": "var(--color-foreground)",
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "tp_card_specs_home_linoleum": {
-              "type": "tp-card-specs",
-              "name": "TP Card-Merkmale",
-              "settings": {},
-              "blocks": {}
-            },
-            "tp_card_actions_home_linoleum": {
-              "type": "tp-card-actions",
-              "name": "TP Card-Aktionen",
-              "settings": {},
-              "blocks": {}
-            }
-          },
-          "block_order": [
-            "product_card_gallery_linoleum",
-            "product_title_linoleum",
-            "price_linoleum",
-            "tp_card_specs_home_linoleum",
-            "tp_card_actions_home_linoleum"
-          ]
-        }
-      },
-      "name": "Featured collection",
-      "settings": {
-        "collection": "linoleumboden-1",
-        "layout_type": "grid",
-        "carousel_on_mobile": false,
-        "max_products": 4,
-        "columns": 4,
-        "mobile_columns": "2",
-        "mobile_card_size": "60cqw",
-        "columns_gap": 8,
-        "rows_gap": 24,
-        "icons_style": "arrow",
-        "icons_shape": "none",
-        "section_width": "page-width",
-        "horizontal_alignment": "flex-start",
-        "gap": 28,
-        "color_scheme": "scheme-1",
-        "padding-block-start": 48,
-        "padding-block-end": 48
-      }
-    },
     "tp_zwei_wege_home": {
       "type": "tp-zwei-wege",
       "settings": {
@@ -841,21 +182,8 @@
         "service_punkte": "Beratung im Fachgeschäft oder bei Ihnen zu Hause, Fester Ansprechpartner und transparentes Angebot, Bis 50 km regulär – weiter entfernt auf Anfrage",
         "service_cta": "Verlegung anfragen",
         "service_telefon": "03301 573 37 20",
-        "service_telefon_label": "03301 573 37 20"
-      }
-    },
-    "tp_verlegegebiet_home": {
-      "type": "tp-verlegegebiet",
-      "settings": {
-        "eyebrow": "Wo wir hinkommen",
-        "heading": "Unser Liefer- und Verlegegebiet",
-        "intro": "Geben Sie Ihre Postleitzahl ein – Sie sehen sofort, ob Ihr Ort in unserem Verlegegebiet liegt. Regulär verlegen wir bis 50 km um Oranienburg, weiter entfernt auf Anfrage.",
-        "karte_zeigen": true,
-        "radius": 50,
-        "pruefung_zeigen": true,
-        "cta_zeigen": true,
-        "cta_label": "Verlegung anfragen",
-        "cta_link": "#tp-kontakt"
+        "service_telefon_label": "03301 573 37 20",
+        "plz_pruefung": true
       }
     },
     "tp_start_projekte": {
@@ -968,7 +296,8 @@
         "f2",
         "f3",
         "f4"
-      ]
+      ],
+      "disabled": true
     },
     "tp_start_bewertungen": {
       "type": "tp-start-bewertungen",
@@ -987,8 +316,48 @@
         "text": "Welcher Boden passt, wie viel Sie brauchen, ob wir bei Ihnen verlegen – fragen Sie einfach.",
         "telefon": "03301 573 37 20",
         "zeiten": "Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr.",
-        "whatsapp": "https://wa.me/4917657931322"
-      }
+        "whatsapp": "https://wa.me/4917657931322",
+        "fh_bild": "shopify://shop_images/PHOTO-2025-06-13-09-30-06.jpg",
+        "fh_eyebrow": "Warum Teppich Paradies",
+        "fh_heading": "Ein echtes Fachgeschäft – kein anonymer Online-Shop",
+        "fh_text": "<p>Wir beraten in der Saarlandstraße in Oranienburg. Wer online bestellt, spricht mit denselben Menschen, die hier täglich Böden zuschneiden und verlegen. Im Laden stehen über 1.000 m² Sonderposten und Lagerware, sofort verfügbar – was gerade da ist, zeigen wir Ihnen vor Ort.</p>"
+      },
+      "blocks": {
+        "f1": {
+          "type": "fakt",
+          "settings": {
+            "wert": "400+",
+            "label": "Bodenbeläge online, Muster kostenlos"
+          }
+        },
+        "f2": {
+          "type": "fakt",
+          "settings": {
+            "wert": "Mo–Sa",
+            "label": "Geöffnet, Beratung vor Ort"
+          }
+        },
+        "f3": {
+          "type": "fakt",
+          "settings": {
+            "wert": "Eigenes Team",
+            "label": "Aufmaß bis Verlegung"
+          }
+        },
+        "f4": {
+          "type": "fakt",
+          "settings": {
+            "wert": "Bis 50 km",
+            "label": "Verlegeservice um Oranienburg"
+          }
+        }
+      },
+      "block_order": [
+        "f1",
+        "f2",
+        "f3",
+        "f4"
+      ]
     },
     "tp_start_faq": {
       "type": "tp-start-faq",
@@ -1183,13 +552,14 @@
                 "padding-inline-start": 0,
                 "padding-inline-end": 0
               },
-              "blocks": {}
+              "blocks": {},
+              "disabled": true
             },
             "product_list_button_MWeP9V": {
               "type": "_product-list-button",
               "name": "t:names.product_list_button",
               "settings": {
-                "label": "Alle ansehen",
+                "label": "Alle Angebote ansehen",
                 "open_in_new_tab": false,
                 "style_class": "link",
                 "width": "fit-content",
@@ -1314,7 +684,7 @@
         "collection": "angebote-teppichboden",
         "layout_type": "carousel",
         "carousel_on_mobile": true,
-        "max_products": 12,
+        "max_products": 4,
         "columns": 4,
         "mobile_columns": "2",
         "mobile_card_size": "60cqw",
@@ -1328,7 +698,8 @@
         "color_scheme": "scheme-1",
         "padding-block-start": 48,
         "padding-block-end": 48,
-        "tp_leer_ausblenden": true
+        "tp_leer_ausblenden": true,
+        "tp_je_linie_eins": true
       }
     },
     "angebote_vinyl": {
@@ -1392,13 +763,14 @@
                 "padding-inline-start": 0,
                 "padding-inline-end": 0
               },
-              "blocks": {}
+              "blocks": {},
+              "disabled": true
             },
             "product_list_button_MWeP9V": {
               "type": "_product-list-button",
               "name": "t:names.product_list_button",
               "settings": {
-                "label": "Alle ansehen",
+                "label": "Alle Angebote ansehen",
                 "open_in_new_tab": false,
                 "style_class": "link",
                 "width": "fit-content",
@@ -1523,7 +895,7 @@
         "collection": "angebote-vinylboden",
         "layout_type": "carousel",
         "carousel_on_mobile": true,
-        "max_products": 12,
+        "max_products": 4,
         "columns": 4,
         "mobile_columns": "2",
         "mobile_card_size": "60cqw",
@@ -1537,7 +909,8 @@
         "color_scheme": "scheme-1",
         "padding-block-start": 48,
         "padding-block-end": 48,
-        "tp_leer_ausblenden": true
+        "tp_leer_ausblenden": true,
+        "tp_je_linie_eins": true
       }
     },
     "angebote_linoleum": {
@@ -1601,13 +974,14 @@
                 "padding-inline-start": 0,
                 "padding-inline-end": 0
               },
-              "blocks": {}
+              "blocks": {},
+              "disabled": true
             },
             "product_list_button_MWeP9V": {
               "type": "_product-list-button",
               "name": "t:names.product_list_button",
               "settings": {
-                "label": "Alle ansehen",
+                "label": "Alle Angebote ansehen",
                 "open_in_new_tab": false,
                 "style_class": "link",
                 "width": "fit-content",
@@ -1732,7 +1106,7 @@
         "collection": "angebote-linoleum",
         "layout_type": "carousel",
         "carousel_on_mobile": true,
-        "max_products": 12,
+        "max_products": 4,
         "columns": 4,
         "mobile_columns": "2",
         "mobile_card_size": "60cqw",
@@ -1746,7 +1120,8 @@
         "color_scheme": "scheme-1",
         "padding-block-start": 48,
         "padding-block-end": 48,
-        "tp_leer_ausblenden": true
+        "tp_leer_ausblenden": true,
+        "tp_je_linie_eins": true
       }
     },
     "angebote_leisten": {
@@ -1810,13 +1185,14 @@
                 "padding-inline-start": 0,
                 "padding-inline-end": 0
               },
-              "blocks": {}
+              "blocks": {},
+              "disabled": true
             },
             "product_list_button_MWeP9V": {
               "type": "_product-list-button",
               "name": "t:names.product_list_button",
               "settings": {
-                "label": "Alle ansehen",
+                "label": "Alle Angebote ansehen",
                 "open_in_new_tab": false,
                 "style_class": "link",
                 "width": "fit-content",
@@ -1941,7 +1317,7 @@
         "collection": "angebote-leisten-zubehoer",
         "layout_type": "carousel",
         "carousel_on_mobile": true,
-        "max_products": 12,
+        "max_products": 4,
         "columns": 4,
         "mobile_columns": "2",
         "mobile_card_size": "60cqw",
@@ -1955,7 +1331,8 @@
         "color_scheme": "scheme-1",
         "padding-block-start": 48,
         "padding-block-end": 48,
-        "tp_leer_ausblenden": true
+        "tp_leer_ausblenden": true,
+        "tp_je_linie_eins": true
       }
     },
     "tp_angebote_tabs": {
@@ -2004,26 +1381,21 @@
   },
   "order": [
     "tp_start_hero",
+    "tp_start_trust",
     "tp_start_kategorien",
+    "tp_start_projekte",
     "tp_angebote_tabs",
     "angebote_teppichboden",
     "angebote_vinyl",
     "angebote_linoleum",
     "angebote_leisten",
-    "tp_start_trust",
-    "tp_start_tabs",
-    "product_list_fa6P9H",
-    "product_list_8rDkXg",
-    "product_list_linoleum_DxYpK2",
-    "tp_start_muster",
-    "tp_newsletter_vorteil",
     "tp_zwei_wege_home",
-    "tp_verlegegebiet_home",
-    "tp_start_projekte",
-    "tp_start_fachhandel",
+    "tp_start_muster",
     "tp_start_bewertungen",
-    "tp_start_kontakt",
+    "tp_newsletter_vorteil",
+    "tp_start_fachhandel",
     "tp_start_faq",
+    "tp_start_kontakt",
     "tp_start_seo"
   ]
 }

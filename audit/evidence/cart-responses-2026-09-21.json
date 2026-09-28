@@ -1,0 +1,119 @@
+{
+  "session": "S11",
+  "task": "CART-002b.2b",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/component-cart-items.js",
+      "sha256": "e3c4066bf5afe88b89b8c4cb03ba095166541e1fabf2ea2db6a521b7ab5ea6ef",
+      "historicalMatch": true
+    },
+    {
+      "file": "assets/section-renderer.js",
+      "sha256": "f7c0fd37fbf25ce9ceb9eb7125a1e20a3a6582a8c823e79da09d5a5f5c39b047",
+      "historicalMatch": true
+    },
+    {
+      "file": "assets/events.js",
+      "sha256": "1290bc43167daaa1166e4d3acf0b423f1d30f119347d2873ebb18001c12d2056",
+      "historicalMatch": true
+    },
+    {
+      "file": "assets/utilities.js",
+      "sha256": "1b0c4926e32f6df743161c714d37def14b404a5bc1b2298171f7e5411085cde6",
+      "historicalMatch": true
+    }
+  ],
+  "cases": [
+    {
+      "name": "page-direct-success",
+      "morphs": [
+        {
+          "html": "current",
+          "hydration": false
+        }
+      ]
+    },
+    {
+      "name": "drawer-direct-success",
+      "morphs": [
+        {
+          "html": "current",
+          "hydration": true
+        }
+      ]
+    },
+    {
+      "name": "two-direct-new-first",
+      "morphs": [
+        {
+          "html": "new",
+          "hydration": false
+        },
+        {
+          "html": "old",
+          "hydration": false
+        }
+      ],
+      "unlockedWithPendingRequest": true,
+      "boundary": "Two direct method calls bypass pointer/debounce reachability; conditional H-013."
+    },
+    {
+      "name": "two-direct-old-first",
+      "morphs": [
+        {
+          "html": "old",
+          "hydration": false
+        },
+        {
+          "html": "new",
+          "hydration": false
+        }
+      ],
+      "unlockedWithPendingRequest": true,
+      "boundary": "Two direct method calls bypass pointer/debounce reachability; conditional H-013."
+    },
+    {
+      "name": "section-first",
+      "morphs": [
+        {
+          "html": "older-section",
+          "hydration": false
+        },
+        {
+          "html": "new-cart",
+          "hydration": false
+        }
+      ],
+      "boundary": "Original discount listener, but response snapshots and timing synthetic; H-013."
+    },
+    {
+      "name": "cart-first",
+      "morphs": [
+        {
+          "html": "new-cart",
+          "hydration": false
+        },
+        {
+          "html": "older-section",
+          "hydration": false
+        }
+      ],
+      "boundary": "Original discount listener, but response snapshots and timing synthetic; H-013."
+    },
+    {
+      "name": "error-stable-refs",
+      "requestedKey": "A",
+      "feedbackKey": "A",
+      "boundary": "Stable-row control."
+    },
+    {
+      "name": "error-after-ref-shift",
+      "requestedKey": "A",
+      "feedbackKey": "B",
+      "boundary": "Refs replaced manually; real MutationObserver/morph reachability open H-013."
+    }
+  ],
+  "confirmedNewIssues": 0,
+  "limitations": "Full original CartItems/SectionRenderer/events, original fetchConfig/debounce. Synthetic fetch snapshots, minimal DOM/Component/refs and morph recorder. No browser, server mutation ordering or real DOM morph. Conditional concurrency results H-013, not confirmed live defects."
+}

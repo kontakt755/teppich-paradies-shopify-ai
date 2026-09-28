@@ -2515,6 +2515,22 @@
     ]
   },
   {
+    "name": "TP Rabatt-Badge",
+    "settings": [
+      {
+        "type": "range",
+        "id": "tp_rabatt_badge_ab",
+        "label": "Prozent-Badge ab Rabatt von",
+        "info": "Darunter erscheint nur der Streichpreis ohne -X %-Badge (Produktkarten und Produktseite).",
+        "min": 0,
+        "max": 50,
+        "step": 1,
+        "unit": "%",
+        "default": 10
+      }
+    ]
+  },
+  {
     "name": "TP Google-Bewertung",
     "settings": [
       {
@@ -2548,6 +2564,27 @@
         "label": "Zuletzt abgelesen am",
         "info": "Datum im Format 2026-09-16. Nur zur eigenen Erinnerung, erscheint nicht im Shop.",
         "default": "2026-09-12"
+      }
+    ]
+    },
+  {
+    "name": "TP Gestaltung",
+    "settings": [
+      {
+        "type": "paragraph",
+        "content": "Design-Runde 3: eine Farbe fuer die Hauptaktion (In den Warenkorb) auf allen Produktseiten. Nebenaktionen sind Schwarz-Outline, Preise schwarz, Rot sonst nur im Rabatt-Badge."
+      },
+      {
+        "type": "color",
+        "id": "tp_hauptaktion_farbe",
+        "label": "Hauptaktion",
+        "default": "#B0303F"
+      },
+      {
+        "type": "color",
+        "id": "tp_hauptaktion_hover",
+        "label": "Hauptaktion beim Darueberfahren",
+        "default": "#962836"
       }
     ]
   }

@@ -15,7 +15,8 @@
       "TaskList",
       "mcp__claude-in-chrome",
       "mcp__Claude_Browser",
-      "mcp__87afcfe9-ad55-49fd-b364-c250eb5ccf31"
+      "mcp__87afcfe9-ad55-49fd-b364-c250eb5ccf31",
+      "mcp__context-mode"
     ]
   },
   "hooks": {
@@ -35,6 +36,14 @@
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/openrouter-user-prompt.mjs\""
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/kontext-waechter.mjs\""
+          }
+        ]
       }
     ],
     "Stop": [
@@ -46,6 +55,14 @@
             "timeout": 900
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/gedaechtnis-sync.sh\" push"
+          }
+        ]
       }
     ],
     "SessionStart": [
@@ -54,6 +71,14 @@
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/gedaechtnis-sync.sh\" pull"
           }
         ]
       }
@@ -99,6 +124,20 @@
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/record-bash-write.mjs\""
           }
         ]
+      },
+      {
+        "matcher": "mcp__context-mode__ctx_(execute|execute_file|batch_execute)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/context-mode-guard.mjs\"",
+            "statusMessage": "Context-Mode-Befehl pruefen"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/record-bash-write.mjs\""
+          }
+        ]
       }
     ],
     "PostToolUseFailure": [
@@ -124,6 +163,15 @@
       },
       {
         "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/record-bash-write.mjs\""
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__context-mode__ctx_(execute|execute_file|batch_execute)",
         "hooks": [
           {
             "type": "command",

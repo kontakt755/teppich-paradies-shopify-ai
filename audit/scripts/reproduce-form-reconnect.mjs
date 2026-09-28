@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import {createHash} from 'node:crypto';
+const read=p=>fs.readFileSync(p,'utf8');
+const files=['assets/product-form.js','assets/events.js','assets/component.js','assets/morph.js','assets/quick-add.js','assets/variant-picker.js'];
+const hashes=files.map(file=>({file,sha256:createHash('sha256').update(read(file)).digest('hex')}));
+const scope=new EventTarget(),registry=new Map();
+class Component extends EventTarget {constructor(){super();this.dataset={productId:'P'};this.refs={variantId:{value:'1'},liveRegion:{}};}connectedCallback(){}disconnectedCallback(){}closest(){return scope;}}
+const ctx=vm.createContext({Component,Event,AbortController,document:new EventTarget(),scope,customElements:{get:n=>registry.get(n),define:(n,c)=>registry.set(n,c)}});
+vm.runInContext(read('assets/events.js').replace(/^export /gm,''),ctx);
+const source=read('assets/product-form.js');vm.runInContext(source.slice(source.indexOf('class ProductFormComponent extends Component')),ctx);
+const form=new(registry.get('product-form-component'))();
+const update=id=>{ctx.id=id;vm.runInContext("scope.dispatchEvent(new VariantUpdateEvent({id,available:true},'opt',{productId:'P',html:{querySelector:()=>null}}))",ctx);};
+const cases=[];
+form.connectedCallback();update(2);assert.equal(form.refs.variantId.value,2);cases.push({name:'initial-connect',id:2});
+form.disconnectedCallback();update(3);assert.equal(form.refs.variantId.value,2);cases.push({name:'disconnected-ignores-event',id:2});
+form.connectedCallback();update(4);assert.equal(form.refs.variantId.value,2);cases.push({name:'same-instance-reconnect-stale',id:2});
+const fresh=new(registry.get('product-form-component'))();fresh.connectedCallback();update(5);assert.equal(fresh.refs.variantId.value,5);assert.equal(form.refs.variantId.value,2);cases.push({name:'fresh-instance-works-old-instance-stale',freshId:5,oldId:2});
+fs.writeFileSync('audit/evidence/form-reconnect-2026-09-22.json',JSON.stringify({session:'S24',task:'VAR-001a.2c.1',status:'PASS',hashes,cases,limits:'Original full ProductFormComponent and events; base Component callbacks and refs adapted, native EventTarget/AbortController. Manual lifecycle sequence, no real DOM morph or browser. Morph reorder insertBefore is a source-level candidate only; quick-add mobile rearranges parsed source before morph, not proof of live reconnect.'},null,2)+'\n');
+console.log('PASS: 4 lifecycle observations');

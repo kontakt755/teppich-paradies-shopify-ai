@@ -1,6 +1,6 @@
 {% comment %}
   Mobiler Musterkonfigurator: laedt Quellprodukt, kostenlosen Musterartikel
-  und Warenkorb ueber die Shopify Ajax APIs und baut bis zu drei eindeutige
+  und Warenkorb ueber die Shopify Ajax APIs und baut bis zu vier eindeutige
   Farbauswahlen als getrennte Warenkorbpositionen. Reine Domainlogik lebt in
   assets/tp-sample-checkout-core.js.
 
@@ -44,7 +44,7 @@
       Produkt; liefert es das Kontaktformular, bleibt es hier aussen vor,
       damit kein Link ein Muster verspricht, das der Konfigurator nicht kennt.
     {%- endcomment -%}
-    <p class="tp-sample__empty-intro"><strong>Wählen Sie einen Belag</strong> – danach suchen Sie bis zu drei Farben aus.</p>
+    <p class="tp-sample__empty-intro"><strong>Wählen Sie einen Belag</strong> – danach suchen Sie bis zu <span data-sample-max>3</span> Farben aus.</p>
 
     {%- assign tp_sample_links = section.settings.kategorien | newline_to_br | split: '<br />' -%}
     {%- for tp_sample_line in tp_sample_links -%}

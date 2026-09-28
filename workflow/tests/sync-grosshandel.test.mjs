@@ -4,6 +4,8 @@ import test from 'node:test';
 import {
   checkSafetyRules,
   getShopifyProducts,
+  ersterVariantenPreis,
+  nurAbweichungen,
   preisAbweichung,
   PRODUCT_PAGE_SIZE,
 } from '../sync-grosshandel.mjs';
@@ -108,4 +110,21 @@ test('Produktabfrage bricht statt Endlosschleife ab', async () => {
     execute: async () => ({ products: { nodes: [{ id: 'x' }], pageInfo: { hasNextPage: true, endCursor: 'c' } } }),
   };
   await assert.rejects(() => getShopifyProducts(proxy), /nicht am Ende/);
+});
+
+test('ersterVariantenPreis liest die nodes-Form der Admin API und das Array', () => {
+  assert.equal(ersterVariantenPreis({ variants: { nodes: [{ price: '8.08' }] } }), '8.08');
+  assert.equal(ersterVariantenPreis({ variants: [{ price: '9.03' }] }), '9.03');
+  assert.equal(ersterVariantenPreis({ variants: { nodes: [] } }), undefined);
+});
+
+test('nurAbweichungen zaehlt nur Artikel mit anderem Preis', () => {
+  const gleich = { artikel: { preis_eur: 8.08 }, shopify: { variants: { nodes: [{ price: '8.08' }] } } };
+  const anders = { artikel: { preis_eur: 8.5 }, shopify: { variants: { nodes: [{ price: '23.24' }] } } };
+  assert.deepEqual(nurAbweichungen([gleich, anders]), [anders]);
+});
+
+test('checkSafetyRules erkennt den Preisruecksturz auch in der nodes-Form', () => {
+  const sturz = { artikel: { titel: 'Leiste', preis_eur: 8.5 }, shopify: { variants: { nodes: [{ price: '23.24' }] } } };
+  assert.equal(checkSafetyRules([], [sturz]), false);
 });

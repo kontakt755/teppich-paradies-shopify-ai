@@ -1,0 +1,82 @@
+{
+  "session": "S20",
+  "task": "VAR-001a.1",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "blocks/color-swatch-picker.liquid",
+      "sha256": "3e0deb6eff729baf4da3d8eef68f872b2ed0b8b099c6e639d530422f58bb16b2"
+    },
+    {
+      "file": "blocks/tp-rollware-rechner.liquid",
+      "sha256": "c7bbab2e15d0c020e46a8f1960eb8652be0d13c3f39651d09324f58dee4e3ad5"
+    }
+  ],
+  "cases": [
+    {
+      "name": "common-width-initial",
+      "initialId": 1,
+      "selectedRadio": "Blue",
+      "label": "Blue",
+      "effectiveId": "4",
+      "events": 1,
+      "formIds": []
+    },
+    {
+      "name": "missing-500-initial",
+      "initialId": 2,
+      "selectedRadio": "Blue",
+      "label": "Red",
+      "effectiveId": "2",
+      "events": 0,
+      "formIds": [],
+      "defect": "TP-015"
+    },
+    {
+      "name": "missing-room-url",
+      "initialId": 3,
+      "selectedRadio": "Blue",
+      "label": "Red",
+      "effectiveId": "3",
+      "events": 0,
+      "formIds": [],
+      "defect": "TP-015"
+    },
+    {
+      "name": "missing-500-form",
+      "initialId": 2,
+      "selectedRadio": "Blue",
+      "label": "Red",
+      "effectiveId": "2",
+      "events": 0,
+      "formIds": [
+        "2"
+      ],
+      "defect": "TP-015"
+    },
+    {
+      "name": "common-width-form",
+      "initialId": 1,
+      "selectedRadio": "Blue",
+      "label": "Blue",
+      "effectiveId": "4",
+      "events": 1,
+      "formIds": [
+        "4"
+      ]
+    },
+    {
+      "name": "two-forms-global-write",
+      "initialId": 1,
+      "selectedRadio": "Blue",
+      "label": "Blue",
+      "effectiveId": "4",
+      "events": 1,
+      "formIds": [
+        "4",
+        "4"
+      ]
+    }
+  ],
+  "limits": "Full original first picker IIFE rendered via Liquid; synthetic variants and radio/DOM/forms. Native radio check modeled before change. No browser or Shopify writes. Missing combination leaves old variant locally; current product reach unknown. Multi-form crosswrite conditional, native picker/media/tp-farbe consumers not run."
+}

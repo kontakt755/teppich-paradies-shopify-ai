@@ -12,6 +12,7 @@
   CSS: assets/tp-newsletter-kachel.css (eigene Datei, per stylesheet_tag).
 
   @param {string} [instanz] - eindeutiger Suffix fuer die Formular-ID.
+  @param {string} [ansicht] - 'desktop' oder 'mobil': nur ab bzw. unter 750 px sichtbar (V10).
 {% enddoc %}
 
 {%- liquid
@@ -21,7 +22,7 @@
 -%}
 
 {{ 'tp-newsletter-kachel.css' | asset_url | stylesheet_tag }}
-<li class="product-grid__item tp-nk" role="listitem">
+<li class="product-grid__item tp-nk{% if ansicht != blank %} tp-nk--{{ ansicht }}{% endif %}" role="listitem">
   <div class="tp-nk__inner">
     <div class="tp-nk__text">
       <p class="tp-nk__eyebrow">Noch unsicher?</p>

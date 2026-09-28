@@ -11,6 +11,7 @@ import { sanitizeDeep, sanitizeText, sanitizeUrl } from '../automation/core/url-
 import { parseJsonProcessOutput, runProcess, shopifyInvocations } from './process-runner.mjs';
 import { qaImpactSummary, selectImpactedPages } from './impact-router.mjs';
 import { hasCartPurchasePath } from './cart-readiness.mjs';
+import { acquireWorktreeLock, releaseOnProcessExit } from '../workflow/worktree-lock.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const qaDir = path.join(root, 'qa');
@@ -32,6 +33,20 @@ const updateBaseline = args.has('--update-baseline');
 const startedAt = new Date();
 const started = Date.now();
 const hardTimeout = installHardProcessTimeout({ timeoutMs: 15 * 60_000, label: 'QA-Gesamtlauf' });
+
+// QA schreibt Artefakte, Ergebnisse und mit --update-baseline die
+// Theme-Check-Baseline. Zwei Laeufe im selben Worktree ueberschreiben sich
+// dabei - am 2026-09-26 sah genau das wie ein Skriptdefekt aus. Als
+// Kindprozess des Workflows erkennt der Lauf die eigene Sperre und laeuft
+// durch (siehe workflow/worktree-lock.mjs).
+let worktreeLock;
+try {
+  worktreeLock = acquireWorktreeLock({ root, label: updateBaseline ? 'qa --update-baseline' : 'qa' });
+} catch (error) {
+  console.error(`${error.code ?? error.name}: ${error.message}`);
+  process.exit(1);
+}
+releaseOnProcessExit(worktreeLock);
 
 fs.mkdirSync(resultsDir, { recursive: true });
 if (workflowReportDir) fs.mkdirSync(workflowReportDir, { recursive: true });

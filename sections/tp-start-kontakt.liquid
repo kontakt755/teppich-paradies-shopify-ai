@@ -5,6 +5,78 @@
 {%- endcomment -%}
 {{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 {%- assign tel_raw = section.settings.telefon | remove: ' ' | remove: '/' -%}
+{%- capture tp_kon_formular -%}
+      <div class="tp-kon__card tp-kon__card--form" id="tp-anfrage">
+        <h3 class="tp-s-h3">Anfrage senden</h3>
+        <p>Für Aufmaß, Verlegung oder ein Angebot. Wir melden uns am nächsten Werktag.</p>
+        <button class="tp-s-btn tp-s-btn--primary tp-kon__toggle" type="button" aria-expanded="false" data-tp-kon-toggle>Anfrage schreiben</button>
+        {%- form 'contact', id: 'tp-start-anfrage', class: 'tp-kon__form' -%}
+          <input type="hidden" name="contact[Betreff]" value="Anfrage von der Startseite">
+          {%- if form.posted_successfully? -%}
+            <p class="tp-kon__ok" role="status"><b>Danke, Ihre Anfrage ist angekommen.</b> Wir melden uns am nächsten Werktag.</p>
+          {%- elsif form.errors -%}
+            <p class="tp-kon__err" role="alert">Bitte prüfen Sie Name und E-Mail-Adresse.</p>
+          {%- endif -%}
+          <label>Name<input type="text" name="contact[name]" autocomplete="name" required value="{{ form.name }}"></label>
+          <label>PLZ<input type="text" name="contact[PLZ]" inputmode="numeric" maxlength="5" autocomplete="postal-code"></label>
+          <label>E-Mail<input type="email" name="contact[email]" autocomplete="email" required value="{{ form.email }}"></label>
+          <label>Telefon (optional)<input type="tel" name="contact[Telefon]" autocomplete="tel"></label>
+          <label class="tp-kon__full">Ich möchte<select name="contact[Anliegen]"><option>Boden verlegen lassen</option><option>Aufmaß und Angebot</option><option>Beratung zum Produkt</option><option>Muster bestellen</option><option>Rückruf</option></select></label>
+          <label class="tp-kon__full">Nachricht (Raum, Fläche, Wunschboden)<textarea name="contact[body]" rows="3">{{ form.body }}</textarea></label>
+          <p class="tp-s-note tp-kon__full">Fotos oder Grundrisse schicken Sie uns am einfachsten per WhatsApp. Mit dem Absenden stimmen Sie der Verarbeitung Ihrer Angaben zur Bearbeitung der Anfrage zu.</p>
+          <button class="tp-s-btn tp-s-btn--primary tp-kon__full" type="submit">Anfrage senden</button>
+        {%- endform -%}
+      </div>
+{%- endcapture -%}
+
+{%- comment -%}
+  V7 (Design-Runde 3): Mit gefuellter Ueberschrift "Fachgeschaeft" wird die
+  Section zu EINER Sektion aus "Ein echtes Fachgeschaeft" und "Eine Frage?":
+  links Foto, Text und Fakten (Bloecke), rechts Anrufen, WhatsApp und das
+  Formular. Ohne diese Ueberschrift bleibt alles wie bisher.
+{%- endcomment -%}
+{%- if section.settings.fh_heading != blank -%}
+<section class="tp-s-sec tp-s-sec--band tp-kon tp-kon--fh" id="tp-kontakt" aria-labelledby="tp-kon-fh-h2">
+  <div class="tp-s-wrap tp-kon__fh-wrap">
+    <div class="tp-kon__fh">
+      {%- if section.settings.fh_bild != blank -%}
+        {%- assign tp_kon_alt = section.settings.fh_bild.alt | default: section.settings.fh_heading -%}
+        <div class="tp-kon__fh-media">
+          {{ section.settings.fh_bild | image_url: width: 1000 | image_tag: loading: 'lazy', widths: '500, 750, 1000', sizes: '(max-width: 1023px) 100vw, 45vw', alt: tp_kon_alt, class: 'tp-kon__fh-img' }}
+        </div>
+      {%- endif -%}
+      {%- if section.settings.fh_eyebrow != blank -%}<span class="tp-s-eyebrow">{{ section.settings.fh_eyebrow | escape }}</span>{%- endif -%}
+      <h2 id="tp-kon-fh-h2" class="tp-s-h2">{{ section.settings.fh_heading | escape }}</h2>
+      {%- if section.settings.fh_text != blank -%}<div class="tp-kon__fh-text">{{ section.settings.fh_text }}</div>{%- endif -%}
+      {%- if section.blocks.size > 0 -%}
+        <div class="tp-kon__fakten">
+          {%- for block in section.blocks -%}
+            <div class="tp-kon__fakt" {{ block.shopify_attributes }}><b>{{ block.settings.wert | escape }}</b><span>{{ block.settings.label | escape }}</span></div>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+    </div>
+    <div class="tp-kon__rechts">
+      <h3 class="tp-s-h3">{{ section.settings.heading | escape }}</h3>
+      {%- if section.settings.text != blank -%}<p class="tp-kon__rechts-text">{{ section.settings.text | escape }}</p>{%- endif -%}
+      <div class="tp-kon__wege">
+        <a class="tp-s-btn tp-s-btn--ghost tp-s-btn--sm" href="tel:{{ tel_raw }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>
+          {{ section.settings.telefon | escape }}
+        </a>
+        {%- if section.settings.whatsapp != blank -%}
+          <a class="tp-s-btn tp-s-btn--wa tp-s-btn--sm" href="{{ section.settings.whatsapp }}" rel="noopener" target="_blank">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20l1.3-3.8A8 8 0 1 1 8 19.2z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a4 4 0 0 1-2-2l1-1-1-2z"/></svg>
+            WhatsApp
+          </a>
+        {%- endif -%}
+      </div>
+      {%- if section.settings.zeiten != blank -%}<p class="tp-s-note">{{ section.settings.zeiten | escape }}</p>{%- endif -%}
+      {{ tp_kon_formular }}
+    </div>
+  </div>
+</section>
+{%- else -%}
 
 <section class="tp-s-sec tp-s-sec--band tp-kon" id="tp-kontakt" aria-labelledby="tp-kon-h2">
   <div class="tp-s-wrap">
@@ -27,30 +99,10 @@
         <p>Foto vom Raum schicken, Frage stellen – wir antworten in den Öffnungszeiten.</p>
         <a class="tp-s-btn tp-s-btn--wa" href="{{ section.settings.whatsapp }}" rel="noopener" target="_blank">WhatsApp schreiben</a>
       </div>
-      <div class="tp-kon__card tp-kon__card--form" id="tp-anfrage">
-        <h3 class="tp-s-h3">Anfrage senden</h3>
-        <p>Für Aufmaß, Verlegung oder ein Angebot. Wir melden uns am nächsten Werktag.</p>
-        <button class="tp-s-btn tp-s-btn--primary tp-kon__toggle" type="button" aria-expanded="false" data-tp-kon-toggle>Anfrage schreiben</button>
-        {%- form 'contact', id: 'tp-start-anfrage', class: 'tp-kon__form' -%}
-          <input type="hidden" name="contact[Betreff]" value="Anfrage von der Startseite">
-          {%- if form.posted_successfully? -%}
-            <p class="tp-kon__ok" role="status"><b>Danke, Ihre Anfrage ist angekommen.</b> Wir melden uns am nächsten Werktag.</p>
-          {%- elsif form.errors -%}
-            <p class="tp-kon__err" role="alert">Bitte prüfen Sie Name und E-Mail-Adresse.</p>
-          {%- endif -%}
-          <label>Name<input type="text" name="contact[name]" autocomplete="name" required value="{{ form.name }}"></label>
-          <label>PLZ<input type="text" name="contact[PLZ]" inputmode="numeric" maxlength="5" autocomplete="postal-code"></label>
-          <label>E-Mail<input type="email" name="contact[email]" autocomplete="email" required value="{{ form.email }}"></label>
-          <label>Telefon (optional)<input type="tel" name="contact[Telefon]" autocomplete="tel"></label>
-          <label class="tp-kon__full">Ich möchte<select name="contact[Anliegen]"><option>Boden verlegen lassen</option><option>Aufmaß und Angebot</option><option>Beratung zum Produkt</option><option>Muster bestellen</option><option>Rückruf</option></select></label>
-          <label class="tp-kon__full">Nachricht (Raum, Fläche, Wunschboden)<textarea name="contact[body]" rows="3">{{ form.body }}</textarea></label>
-          <p class="tp-s-note tp-kon__full">Fotos oder Grundrisse schicken Sie uns am einfachsten per WhatsApp. Mit dem Absenden stimmen Sie der Verarbeitung Ihrer Angaben zur Bearbeitung der Anfrage zu.</p>
-          <button class="tp-s-btn tp-s-btn--primary tp-kon__full" type="submit">Anfrage senden</button>
-        {%- endform -%}
-      </div>
-    </div>
+{{ tp_kon_formular }}    </div>
   </div>
 </section>
+{%- endif -%}
 
 {% stylesheet %}
   /* Desktop: Anrufen und WhatsApp uebereinander links, Formular rechts ueber beide
@@ -61,7 +113,7 @@
   .tp-kon__card { border: 1px solid var(--tp-line, #e6e0d8); border-radius: 14px; padding: 24px; background: #fff; display: flex; flex-direction: column; gap: 10px; }
   .tp-kon__card p { color: var(--tp-ink-2, #4a443f); font-size: 15px; margin: 0; }
   .tp-kon__card > .tp-s-btn { margin-top: auto; align-self: flex-start; }
-  .tp-kon__ico { width: 44px; height: 44px; border-radius: 12px; background: var(--tp-red-soft, #fbeeef); color: var(--tp-red, #b73740); display: grid; place-items: center; }
+  .tp-kon__ico { width: 44px; height: 44px; border-radius: 12px; background: var(--tp-red-soft, #fbeeef); color: var(--tp-red, #b0303f); display: grid; place-items: center; }
   .tp-kon__ico svg { width: 22px; height: 22px; }
   .tp-kon__ico--wa { background: #e6f6ec; color: #1f9d55; }
   .tp-kon__toggle { display: none; }
@@ -83,6 +135,24 @@
     .tp-kon__card--form.tp-kon__card--offen .tp-kon__form { display: grid; }
     .tp-kon__card--form.tp-kon__card--offen .tp-kon__toggle { display: none; }
   }
+  /* V7: Fachgeschaeft + Kontakt in einer Sektion */
+  .tp-kon__fh-wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 48px; align-items: start; }
+  .tp-kon__fh-media { border-radius: 14px; overflow: hidden; aspect-ratio: 16 / 9; margin-bottom: 20px; background: var(--tp-bg-3, #ede7de); }
+  .tp-kon__fh-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .tp-kon__fh-text { color: var(--tp-ink-2, #4a443f); margin-top: 10px; }
+  .tp-kon__fakten { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; margin-top: 20px; }
+  .tp-kon__fakt b { display: block; font-size: 22px; font-weight: 700; line-height: 1.1; color: var(--tp-ink, #1d1a17); }
+  .tp-kon__fakt span { font-size: 14px; color: var(--tp-muted, #595959); }
+  .tp-kon__rechts { border: 1px solid var(--tp-line, #e6e0d8); border-radius: 14px; padding: 24px; background: #fff; display: grid; gap: 12px; }
+  .tp-kon__rechts-text { margin: 0; color: var(--tp-ink-2, #4a443f); }
+  .tp-kon__wege { display: flex; flex-wrap: wrap; gap: 10px; }
+  .tp-kon--fh .tp-kon__card--form { border: 0; padding: 0; grid-column: auto; grid-row: auto; }
+  /* "Anfrage schreiben" klappt nur am Telefon auf; am Desktop steht das
+     Formular offen da - .tp-s-btn setzte den Knopf dort bisher sichtbar. */
+  @media (min-width: 768px) { .tp-kon .tp-kon__toggle { display: none; } }
+  .tp-kon--fh .tp-kon__card--form > .tp-s-h3 { display: none; }
+  @media (max-width: 1023px) { .tp-kon__fh-wrap { grid-template-columns: 1fr; gap: 28px; } }
+  @media (max-width: 767px) { .tp-kon__fakt b { font-size: 19px; } .tp-kon__rechts { padding: 18px; } }
 {% endstylesheet %}
 
 {% javascript %}
@@ -109,7 +179,24 @@
     { "type": "text", "id": "text", "label": "Unterzeile", "default": "Welcher Boden passt, wie viel Sie brauchen, ob wir bei Ihnen verlegen – fragen Sie einfach." },
     { "type": "text", "id": "telefon", "label": "Telefon", "default": "03301 573 37 20" },
     { "type": "text", "id": "zeiten", "label": "Zeiten", "default": "Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr." },
-    { "type": "url", "id": "whatsapp", "label": "WhatsApp-Link (wa.me/…)" }
+    { "type": "url", "id": "whatsapp", "label": "WhatsApp-Link (wa.me/…)" },
+    { "type": "header", "content": "Fachgeschäft (links)" },
+    { "type": "paragraph", "content": "Mit Ueberschrift wird die Section zweispaltig: links Foto, Text und Fakten, rechts Kontakt und Formular. Leer = drei Kontaktkarten wie bisher." },
+    { "type": "image_picker", "id": "fh_bild", "label": "Echtes Foto (Laden, Team)" },
+    { "type": "text", "id": "fh_eyebrow", "label": "Kleine Zeile" },
+    { "type": "text", "id": "fh_heading", "label": "Ueberschrift" },
+    { "type": "richtext", "id": "fh_text", "label": "Text" }
+  ],
+  "blocks": [
+    {
+      "type": "fakt",
+      "name": "Fakt",
+      "limit": 4,
+      "settings": [
+        { "type": "text", "id": "wert", "label": "Wert", "default": "Mo–Sa" },
+        { "type": "text", "id": "label", "label": "Beschreibung", "default": "Geöffnet, Beratung vor Ort" }
+      ]
+    }
   ],
   "presets": [ { "name": "TP Kontakt (3 Wege)" } ]
 }

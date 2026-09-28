@@ -1,0 +1,59 @@
+{
+  "session": "S34",
+  "task": "JS-001h",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/layered-slideshow.js",
+      "sha256": "ae67490c432b97229df04d1a966f3209e1c3a3ad48d1064424ecbccb81543d4c"
+    },
+    {
+      "file": "sections/layered-slideshow.liquid",
+      "sha256": "c1c9596ca801dde5d1617695f692fb4593d6f779c033f361e4ed6b364764cd99"
+    },
+    {
+      "file": "blocks/_layered-slide.liquid",
+      "sha256": "8f81ba82c770fb24d9272a7c279a68fd8b8a41f4c078d324c6864cc535658a38"
+    },
+    {
+      "file": "assets/theme-editor.js",
+      "sha256": "f1d1cd778663a393077f164313c71adadcd82012684beb54f712419166858ecc"
+    }
+  ],
+  "reconnectCases": [
+    {
+      "name": "initial-connect",
+      "selected": 1
+    },
+    {
+      "name": "disconnected-ignores-tab",
+      "selected": 0,
+      "observersDisconnected": true
+    },
+    {
+      "name": "same-instance-reconnect-works",
+      "selected": 1
+    },
+    {
+      "name": "fresh-instance",
+      "selected": 1
+    }
+  ],
+  "dragCases": [
+    {
+      "name": "disconnect-during-drag-keeps-document-listener",
+      "mutatedAfterDisconnect": true
+    },
+    {
+      "name": "pointerup-eventually-cleans-drag-listener",
+      "draggingAfterPointerUp": false
+    }
+  ],
+  "sourceReach": {
+    "scriptLoadedGlobally": true,
+    "sectionExists": true,
+    "assignedTemplates": [],
+    "themeEditorIntegration": true
+  },
+  "limits": "Original complete LayeredSlideshowComponent; Component, DOM elements, observers, styles, media query and animation frames adapted, native EventTarget/AbortController. Tab connect/disconnect/reconnect and disconnect during an active desktop drag tested. Keyboard focus edges, responsive layout calculations, content height, video playback, touch/mobile and browser rendering not tested. No local JSON template assigns the optional section; global script and theme-editor support are source reach only."
+}

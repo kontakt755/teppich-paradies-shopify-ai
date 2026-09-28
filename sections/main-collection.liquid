@@ -147,11 +147,18 @@
             {% # theme-check-enable %}
           </li>
           {%- comment -%}
-            TP: Newsletter-Kachel als ganze Rasterzeile nach dem sechsten
-            Produkt, nur auf Seite 1 und nur bei mehr als sechs Produkten.
+            TP: Newsletter-Kachel als ganze Rasterzeile, nur auf Seite 1.
+            Desktop nach dem sechsten Produkt (zwei volle Dreierreihen), am
+            Telefon erst nach dem achten (V10, Design-Runde 3) - dort steht
+            sonst schon nach wenigen Wischern Werbung statt Ware.
           {%- endcomment -%}
           {%- if forloop.index == 6 and paginate.current_page == 1 and collection.products_count > 6 -%}
-            {%- render 'tp-newsletter-kachel', instanz: section.id -%}
+            {%- assign tp_nk_instanz = section.id | append: '-d' -%}
+            {%- render 'tp-newsletter-kachel', instanz: tp_nk_instanz, ansicht: 'desktop' -%}
+          {%- endif -%}
+          {%- if forloop.index == 8 and paginate.current_page == 1 and collection.products_count > 8 -%}
+            {%- assign tp_nk_instanz = section.id | append: '-m' -%}
+            {%- render 'tp-newsletter-kachel', instanz: tp_nk_instanz, ansicht: 'mobil' -%}
           {%- endif -%}
         {% endfor %}
       {% endcapture %}

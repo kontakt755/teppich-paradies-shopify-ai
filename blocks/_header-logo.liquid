@@ -20,7 +20,9 @@
     endif
   endif
 
-  assign alt_text_fallback = 'accessibility.home_logo_alt' | t: store_name: shop.name
+  # M1: Markenname einheitlich mit Leerzeichen, wie im Titel-Pattern (snippets/meta-tags)
+  assign tp_marke = shop.name | replace: 'TeppichParadies', 'Teppich Paradies'
+  assign alt_text_fallback = 'accessibility.home_logo_alt' | t: store_name: tp_marke
 %}
 
 {% comment %}
@@ -60,7 +62,7 @@
       class: 'header-logo__image',
       height: settings.logo_height,
       alt_text_fallback: alt_text_fallback,
-      text_fallback: shop.name,
+      text_fallback: tp_marke,
       style: logo_style
     %}
   </span>
@@ -75,7 +77,7 @@
         class: 'header-logo__image',
         height: settings.logo_height,
         alt_text_fallback: alt_text_fallback,
-        text_fallback: shop.name,
+        text_fallback: tp_marke,
         style: inverse_logo_style
       %}
     </span>

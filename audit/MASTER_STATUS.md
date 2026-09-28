@@ -1,44 +1,93 @@
 # Teppich-Paradies – Auditstatus
 
-AUDIT FORTSCHRITT: 22 %
+AUDIT FORTSCHRITT: 51 %
 
-Stand: 20.09.2026. Phase 1 – ausschließlich Analyse. Sequenziell; keine Subagenten. Keine Shopdateien oder Produktdaten geändert. Prozentwert ist eine grobe Abdeckungsschätzung, kein Anteil bestandener Tests.
+Stand: 22.09.2026. Phase 1, Analyse und vorbereitende Übergabepakete. Sequenziell, keine Subagenten, keine Shopänderungen. Prozentwert grobe Abdeckung, kein Testpass-Anteil.
 
 Abgeschlossen:
-- [x] Historischer Einstieg übernommen: Repository und Live-Theme am 19.09. identifiziert; Source-Manifest vorhanden. Keine erneute Vollkartierung.
-- [x] Alle 32 Einträge in der übernommenen Runtime-Evidence ausgewertet; Desktop 1440 und Mobile 390.
-- [x] Paket-Referenzpreis und Rollenware-Referenzpreis gegen historische Warenkorbantworten geprüft.
-- [x] Paket-Eingabevalidierung und leere ausgewählte Fußleiste lokal am Originalcode reproduziert; drei Issues dokumentiert.
-- [x] Audit-Grundstruktur und ein zusammenhängendes Übergabepaket erstellt.
-- [x] PR-020 lokal abgeschlossen: Raummaß-Rundung, Preisbox/Cart-Payload und interne Maßprüfung; 35 Integrationsfälle und vollständiges Ganzzahlraster. TP-004 als bedingter Codefehler, aktuelle Live-Reichweite offen.
-- [x] PR-021 lokal abgeschlossen: Liquid-Datenvertrag und Einfass-Originalfunktionen in 47 Fällen geprüft, 29 Requests abgefangen. Material/Kante/Mindestpreis/Properties stimmen im gültigen Referenzpfad; TP-005 als bedingter Service-Ausfallfehler, Live-Reichweite offen.
-- [x] PR-022 lokal abgeschlossen: 61 Haftunterlagen-Integrationsfälle und 198.468 Auswahl-/Rundungsvergleiche. Günstigste einzelne Variante für gleich breite Bahnen in fester Richtung, Preis/Properties/Gruppe bis Payload korrekt. Kein neuer bestätigter Fehler; Live-Produktvertrag/andere Verlegeweisen H-008 offen.
 
-- [x] PR-023a lokal abgeschlossen: 46 Fälle am vollständigen Wunschmaß-Liquid/JS, 31 abgefangene Requests. Echte Formflächen/Mindestpreis/Zuschlag korrekt; TP-006/007 bedingt lokal bestätigt. Historisch keine aktiven Produkte auf diesem Template, heute H-009 offen.
-
-- [x] PR-023b.1 lokal abgeschlossen: Klebevinyl-/Teppichfliesen-Paketvertrag über Original-Liquid, Preisansichten und JS bis Payload/Cartzeile; 17 Fälle, 14 Requests, 28 Cart-Renderings. TP-008/P3: dritte Flächennachkommastelle wird nur im Cart verkürzt.
+- [x] Historischen Einstieg/Runtime vom 19.09. übernommen; Preisreferenzen und PR-001–011 lokal geprüft.
+- [x] PR-020–023b.2: Raummaß, Einfassung, Haftunterlage, ruhender Wunschmaßpfad, Paket-/PVC-/Stückverträge lokal abgeschlossen (S02–S07).
+- [x] CART-002a/b: Gruppen/Sperren/Löschung/Abgleich, Mengenereignisse, Antworten/SectionRenderer und Drawer lokal abgeschlossen (S08–S12).
+- [x] CART-003: Checkout-Markup, Rabatt und Notiz lokal abgeschlossen (S13–S16). Keine native Checkoutabnahme.
+- [x] CART-004: Testmatrix und Übergaben konsolidiert (S17); zwei READY-Pakete, keines umgesetzt.
 
 In Arbeit:
-- [~] Preisberechnung: nächster Teil sind PVC- und Stück-/Fixpreis-Payloads (PR-023b.2); nur dieser Bereich wird als Nächstes bearbeitet.
+
+- [~] Nächster Bereich JavaScript-Runtime; Varianten-/Farbpickervertrag VAR-001a lokal abgeschlossen, Live-/Browserreichweite getrennt offen.
 
 Noch offen:
-- [ ] Restliche Preisfälle: PVC-/Stück-/Fixpreisverträge (PR-023b.2); offene Live-Reichweite/-Produktfreigaben H-005–011 klären.
-- [ ] Warenkorb bearbeiten, Gruppen, Kombinationen, Checkout vertiefen.
-- [ ] Vollständige Rechner-/Grenzfall-, Varianten- und Runtime-Prüfung.
-- [ ] Mobile, Suche/Navigation, Performance, SEO, UX, Cross-Feature-Tests und finaler Regressionstest.
-- [ ] Architekturkarte vervollständigen; Phase 2 abschließen; spätere freigegebene Fixes und QA.
-- [ ] FINAL_REPORT.md und belegte Abschlussbewertungen.
 
-Anzahl bestätigter Issues: P0: 0 · P1: 0 · P2: 2 · P3: 6 · P4: 0. Davon TP-004–007 ausschließlich lokal bestätigte bedingte Codefehler; TP-006/007 historisch ruhender Pfad, aktuelle Live-Betroffenheit nicht belegt. TP-008 lokal bestätigter Cart-Anzeigeverlust, keine falsche Menge/Geldabrechnung.
+- [ ] Heutige Live-/Produktverträge H-004–011 und Browser-/Cart-/Checkoutintegration H-012–015.
+- [ ] Restliche Rechnerzustände, Varianten, Runtime, Mobile, Navigation/Suche, SEO, Performance, UX, Cross-Feature-/Finalregression.
+- [ ] Phase 2 insgesamt, freigegebene Implementierung/Fix-QA und vollständiger FINAL_REPORT.
 
-Aktuell untersuchter Bereich: Preisberechnung, Phase 1.
-Letzte abgeschlossene Aufgabe: PR-023b.1. 17 neue Paket-Datenintegrationen, 14 Requests abgefangen, 28 Cart-Renderings. Quadra-Paketvorrang, zwei-/dreistellige Paketflächen, Stückdaten, €/m² und Cent-Summen; elf Quellenhashes historisch gleich. TP-008: Rechner 30,272 m², Cart 30,27 m²; Menge und Preis korrekt. PVC/Fixpreis nur kartiert, deren Payloads noch nicht abgeschlossen. Keine produktiven Änderungen.
-Nächste Aufgabe: **PR-023b.2**: PVC Terracora Eiche Braun (`marano-eiche-braun-vinylboden-von-der-rolle`, dokumentierte 2-/4-m-Breiten) sowie Fixpreis-/Sockelleisten-/Stückreferenz. Zuerst verlässliche vorhandene Einheit-/Preisdaten lesen; fehlende aktuelle Werte synthetisch kennzeichnen. Original-Rollen-Datenvertrag und Standardformular-/Mengenhilfeübergang bis abgefangenen Payload prüfen. Einstieg: `qa/MERCHANT_READINESS_REPORT.md`, `domains/shopify/rechner-zuordnung.md`, `domains/shopify/leisten-stangenlaenge/stangenlaenge.json`, Rollenblock, `tp-zubehoer-menge` und `assets/product-form.js`. Danach CART-002. Abgeschlossene S01–S06-Paket-/Mathematiktests ohne Quellenänderung nicht wiederholen. Live-Hypothesen H-005/006/008/009/011 getrennt nachholen, wenn verfügbar.
-Wichtige offene Hypothesen: siehe ISSUES.md H-001, H-003–H-011. H-002 (unterschiedliche Rundungsregeln) lokal geschlossen. H-007 betrifft Oval-Näherung; H-008 heutige Haftunterlagendaten und zulässige Alternativverlegung. Keine dieser offenen Fach-/Datenfragen als zusätzlicher Fehler gezählt.
-Fix-Packs Ready: 1 · Done: 0 · QA Passed: 0 · QA Failed: 0
+Anzahl bestätigter Issues: P0: 0 · P1: 0 · P2: 9 · P3: 9 · P4: 0 (18 insgesamt). Alle offen, Details/bedingte Reichweite in ISSUES.md. TP-014 Notizpfad lokal deaktiviert; kein belegter Bestellnotizverlust.
 
-Live-Testgrenze: Browser-/DNS-Zugriff war in S01 blockiert; S02–S06 ausschließlich lokale Schritte, keine erneuten Infrastrukturversuche. Live-Theme seit dem 19.09. nicht neu verifiziert; maßgebliche Registry: `domains/shopify/live-theme.json`. Kein aktueller Live-Beleg für cmExact im Rollenrechner, einen ausgefallenen Kettelservice, aktuelle Form-/Unterlagenfreigaben oder die eingesetzte Mail-Vorlage. Lokale Reproduktion ersetzt keine neue Live-Freigabe. Details in SESSION_LOG.md und evidence/README.md.
+Aktuell untersuchter Bereich: JavaScript-Runtime, Phase 1; Varianten-/Farbpicker lokal abgeschlossen.
+Letzte abgeschlossene Aufgabe: S51 / JS-001y: fünf HeaderDrawer-Lifecycle-Beobachtungen am vollständigen Originalcode PASS. Der normale Close bereinigt den Fokusfang. Disconnect entfernt Keyup, bricht aber bereits registrierte Animationscallbacks und den 100-ms-Timer nicht ab: ein alter Open-Callback kann Fokus in den getrennten Baum setzen, ein alter Close-Callback einen späteren globalen Fokusfang entfernen. Stabile Descendant-Handler werden auf denselben Knoten nicht dupliziert, bleiben getrennt aber aktiv. TP-016 erweitert, 18 Issues unverändert.
+Nächste Aufgabe: JS-001z: `assets/collection-links.js` vollständig lesen, eigenen Lifecycle und Slideshow-/Fokusabhängigkeiten lokal ausführen. Fertige S20–S51-Fälle nicht wiederholen.
+Wichtige offene Hypothesen: H-001, H-003–H-016; H-017 lokal in TP-017 überführt.
+Fix-Packs Ready: 2 · Done: 0 · QA Passed: 0 · QA Failed: 0.
 
-Historische Evidence-Basis: `66729099c4122385e19172a1f5ba14a7524c3bfb`. Aktueller übernommener Repository-HEAD: `840b883` (S01–S04-Audit zwischenzeitlich gesichert). Geprüfte Rechnerquellen sind SHA-256-identisch zum historischen Live-Snapshot; S03 ergänzt sechs Hashvergleiche für Einfassung, S05 Block und Template des separaten Wunschmaßpfads. S06 ergänzt elf Paket-/Preissnippet-/Templatevergleiche. Remote nicht erneut gelesen, kein Pull/Merge; ältere Remoteangaben im Sessionlog sind historisch. Das Audit liegt tatsächlich in `audit/` im Repository; alte Verweise auf `outputs/audit/` sind überholt.
+Aktuelle Zugriffsgrenze: S13 Chrome verbunden, Shopnavigation wegen verweigerter Berechtigung abgelehnt. Keine alternative Browser-/HTTP-/CDP-Umgehung, kein erneuter Versuch ohne geänderte Berechtigung. Alte S01-DNS-/Runnernotizen sind historisch. MAIN seit 19.09. nicht neu verifiziert; Registry domains/shopify/live-theme.json. settings_data.json ist nicht historisch live-hashgleich; heutige Liveeinstellungen unbekannt.
 
-Git-Sicherung: S01–S04 liegen im übernommenen Commit `840b883`. S05/S06 sind nur in Auditdateien/Progress gespeichert. Aktuelles Berechtigungsprofil führt `.git` wieder nur lesbar; normale S05-/S06-Stagingversuche scheiterten mit Exit 128 an `.git/index.lock` (Operation not permitted). S05/S06 lokal gespeichert, uncommitted; S06 erneut versucht, nachdem CONTINUE_PROMPT.md von außen einen behobenen Zugriff meldete, tatsächlicher Versuch weiter gesperrt; keine Umgehung/kein neuer Commit behauptet. `TASK.md` unverändert; externe Ergänzung in `CONTINUE_PROMPT.md` nicht ändern oder mit dem Audit committen.
+Evidence-Basis 66729099c4122385e19172a1f5ba14a7524c3bfb; einzelne Quellhashes und Grenzen je Diagnose in audit/evidence. Chronologie/Commitreferenzen S01–S16 bleiben in SESSION_LOG.md; keine alten Evidences entfernt oder erneut ausgeführt.
+
+Git: Branch audit/shop-audit, .git schreibbar. Letzter Fachcommit S16 8636ca5, Sicherungsnotiz 5875ef0. Externe CONTINUE_PROMPT.md und docs/ai-dashboard/issues.json nicht stagen. Kein Merge/Push.
+
+S17 tatsächlich in `75f66e9` gesichert. Paket-/Link-/Integritätsprüfung und Secret-Scan PASS; keine alten Produktdiagnosen wiederholt. Zwei READY-Pakete, keines umgesetzt. Weiter CALC-001a/H-003; Status WORKING.
+
+S18: 14 Issues unverändert, Phase 1, grob 28 %. H-003 lokal teilweise geklärt, keine neue Shopdiagnose/Livefreigabe.
+
+S18 in `b4f010d` tatsächlich gesichert. Neun Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen erhalten. Weiter CALC-001a.2; Status WORKING.
+
+S19 in `9324ec8` tatsächlich gesichert. Vier Übergänge/Submits, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen erhalten. Weiter VAR-001a; Status WORKING.
+
+S20 in `79d438e` tatsächlich gesichert. Sechs Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen erhalten. Weiter VAR-001a.2; Status WORKING.
+
+S21 in `467021f` tatsächlich gesichert. Acht Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen erhalten. Weiter VAR-001a.2b; Status WORKING.
+
+S22 tatsächlich in `f0020fe` gesichert. Sechs Fälle, Syntax-/Integritäts-/Secretcheck und git diff --check PASS. Keine Shopänderung. Weiter VAR-001a.2b.2 / H-017; Status WORKING.
+
+S23 in `b49b709` tatsächlich gesichert. Vier Verbraucherfälle, Syntax-/Integritäts-/Secret-/Diffcheck PASS. Weiter VAR-001a.2c, keine Shopänderung, Status WORKING.
+
+S24 in `e381aac` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, Syntax-/Integritäts-/Secret-/Diffcheck PASS. Weiter VAR-001a.2c.2. Keine Shopänderung, Status WORKING.
+
+S25 in `b8e16c5` tatsächlich gesichert. Vier Picker-Lifecycle-Beobachtungen, Syntax-/Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter VAR-001a.2c.3, Status WORKING.
+
+S26 in `98906eb` tatsächlich gesichert. Statische Morph-/Mehrproduktmatrix sowie Integritäts-/Secret-/Diffcheck PASS; 17 Issues unverändert. Keine Shopänderung. Weiter JS-001a, Status WORKING.
+
+S27 in `2242374` tatsächlich gesichert. 96 Dateien/37 heuristische Kandidaten; Inventar-, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001b, Status WORKING.
+
+S28 in `7f3274c` tatsächlich gesichert. Vier QuickAddComponent-Lifecycle-Beobachtungen sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001c, Status WORKING.
+
+S29 in `0e710dd` tatsächlich gesichert. Vier QuickAddDialog-Lifecycle-Beobachtungen sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001d, Status WORKING.
+
+S30 in `6d4ed1a` tatsächlich gesichert. Vier Sticky-Lifecycle-Beobachtungen, acht Templateaktivierungen sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001e, Status WORKING.
+
+S31 in `f9713f5` tatsächlich gesichert. Vier Stückpreis-Lifecycle-Beobachtungen, Template-Matrix sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001f, Status WORKING.
+
+S32 in `55ffd1e` tatsächlich gesichert. Vier MediaGallery-Lifecycle-Beobachtungen, acht Templateaktivierungen sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001g, Status WORKING.
+
+S33 in `5baed72` tatsächlich gesichert. Acht Media-Runtime-Lifecycle-Beobachtungen sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001h, Status WORKING.
+
+S34 in `74d1df5` tatsächlich gesichert. Sechs LayeredSlideshow-Lifecycle-Beobachtungen sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001i, Status WORKING.
+
+S35 in `71dadfa` tatsächlich gesichert. Vier Accordion-Lifecycle-Beobachtungen, sechs statische Aufrufer sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001j, Status WORKING.
+
+S36 in `cab41f8` tatsächlich gesichert. Vier PredictiveSearch-Lifecycle-Beobachtungen, statische Reichweite sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001k, Status WORKING.
+
+S37 in `72ca58d` tatsächlich gesichert. Vier DragZoom-Lifecycle-Beobachtungen, bedingte Galeriereichweite sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001l, Status WORKING.
+
+S38 in `b868b49` tatsächlich gesichert. Sechs ProductCard-/Swatches-Beobachtungen, 31 Templatezuweisungen und Abschlusschecks PASS. Keine Shopänderung. Weiter JS-001m, Status WORKING.
+
+S39 in `4a5b5c4` tatsächlich gesichert. Fünf ProductTitle-Lifecycle-Beobachtungen, bedingte Markupreichweite und Abschlusschecks PASS. Keine Shopänderung. Weiter JS-001n, Status WORKING.
+
+S40 in `57dfa85` tatsächlich gesichert. Vier GiftCardRecipientForm-Beobachtungen, sieben bedingte Templateaktivierungen und Abschlusschecks PASS. Keine Shopänderung. Weiter JS-001o, Status WORKING.
+
+S41 in `3a075ae` tatsächlich gesichert. Fünf CartIcon-Beobachtungen, zwei ProductForm-Fehlersender und Abschlusschecks PASS. TP-018/P2 neu. Keine Shopänderung. Weiter JS-001p, Status WORKING.
+
+S42 in `b8305d9` tatsächlich gesichert. Fünf FacetClear-Beobachtungen, 20 Filtertemplates und Abschlusschecks PASS. Keine Shopänderung. Weiter JS-001q, Status WORKING.
+
+S43 in `316a705` tatsächlich gesichert. Fünf Standard-Slideshow-Drag-Beobachtungen, 31 Templatezuweisungen und Abschlusschecks PASS. Keine Shopänderung. Weiter JS-001r, Status WORKING.

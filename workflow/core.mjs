@@ -240,6 +240,7 @@ export const GATE_REMEDIATION = {
   MISSING_SHOPIFY_AUTH: { fix: 'Shopify-Login fehlt. Anmeldung im eigenen Terminal durchfuehren - das ist interaktiv und nicht automatisierbar.', command: 'npx shopify auth login' },
   ORDER_COMPLETED: { fix: 'Ein abgeschlossener Bestellvorgang wird behauptet, aber nicht belegt. Sales-Evidence frisch erzeugen.', command: 'npm run sales:check' },
   PREVIEW_APPROVAL: { fix: 'Preview verlangt eine ausdrueckliche Freigabe im Aufruf.', command: '--approve-preview' },
+  WORKTREE_BUSY: { fix: 'In dieser Arbeitskopie laeuft bereits ein Workflow- oder QA-Lauf. Warten, bis er fertig ist - gleichzeitige Laeufe ueberschreiben Evidence, Baseline und HEAD. Gehoert die Sperre zu einem abgestuerzten Lauf, meldet der naechste Aufruf sie nach einer Stunde selbst als verwaist; sofort geht es mit Loeschen von .workflow/lock.json.' },
   PREVIEW_DIFF: { fix: 'Die Dateien auf dem Preview-Theme weichen von origin/main ab. Preview erneut pushen, statt den Unterschied zu ignorieren.' },
   PREVIEW_DRIFT: { fix: 'Das Preview-Theme wurde seit der Evidence veraendert - vermutlich durch einen Scratch- oder Handpush. Preview neu erzeugen.', command: 'npm run workflow:preview -- --theme-id <PREVIEW_ID> --p0 0 --p1 0 --approve-preview' },
   PREVIEW_EVIDENCE: { fix: 'Live verlangt eine bestandene Preview fuer exakt diesen origin/main-Commit. Erst Preview laufen lassen, dann Live. --local-runner umgeht das nicht.', command: 'npm run workflow:preview -- --theme-id <PREVIEW_ID> --p0 0 --p1 0 --approve-preview' },

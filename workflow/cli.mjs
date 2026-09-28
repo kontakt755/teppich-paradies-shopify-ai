@@ -7,7 +7,9 @@ import {
   commandName, compareThemeMaps, createDryRunSummary, createPreviewTempDir, deriveWorkflowState, fileSha256, findingsAreClear, livePublishArgs, parseArgs, parseThemeList,
   previewPushArgs, requireSuccess, runBounded, runValidation, selectThemeTargets, themeFileMap, TRACKED_EVIDENCE_PATH, verifyPreviewPayload, verifyPreviewSnapshot, writeRuntimeReport, writeTrackedEvidence,
 } from './core.mjs';
+import { sessionModelDirective } from './session-model.mjs';
 import { deriveHandoffState, formatRouterOutput, normalizeTaskText, planContinue, routeTask } from './router.mjs';
+import { acquireWorktreeLock, releaseOnProcessExit } from './worktree-lock.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const [mode = 'validate', ...rawArgs] = process.argv.slice(2);
@@ -324,7 +326,36 @@ function themeList(store) {
   return parseThemeList(result);
 }
 
+/**
+ * Laeufe, die den Worktree veraendern: sie pushen, schreiben Evidence und
+ * lassen QA die Theme-Check-Baseline fortschreiben. Zwei davon gleichzeitig im
+ * selben Verzeichnis ueberschreiben sich (siehe workflow/worktree-lock.mjs).
+ * doctor, route und die uebrigen Leselaeufe bleiben absichtlich frei - sie
+ * duerfen auch waehrend eines Deploys Auskunft geben.
+ */
+const LOCKED_MODES = new Set(['preview', 'live', 'validate']);
+function needsWorktreeLock() {
+  if (!LOCKED_MODES.has(mode)) return false;
+  if (dryRun) return false;
+  // Der statische Lauf ruft weder Shopify noch den Browser und schreibt keine
+  // Evidence - er darf neben einem Deploy laufen.
+  if (mode === 'validate' && args.static === true) return false;
+  return true;
+}
+
 async function main() {
+  if (!needsWorktreeLock()) return runMode();
+  const lock = acquireWorktreeLock({ root, label: `workflow ${mode}` });
+  const aufraeumen = releaseOnProcessExit(lock);
+  if (lock.tookOver) console.error(`Hinweis: verwaiste Sperre uebernommen (${lock.tookOver.label ?? 'Lauf'}, PID ${lock.tookOver.pid ?? '?'}).`);
+  try {
+    return await runMode();
+  } finally {
+    aufraeumen();
+  }
+}
+
+async function runMode() {
   if (mode === 'doctor') return doctor();
   if (mode === 'validate') return validate({ staticOnly: args.static === true });
 
@@ -335,6 +366,8 @@ async function main() {
     writeRuntimeReport(root, 'task.json', route);
     const state = currentHandoffState();
     console.log(formatRouterOutput(route, state.nextAllowedAction));
+    // Modell der Matrix fuer die Sitzung (#670); Rueckfall auf Ausgabe.
+    console.log(sessionModelDirective(route.modelPlan).lines.join('\n'));
     return route;
   }
 

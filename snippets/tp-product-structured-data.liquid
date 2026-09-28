@@ -1,16 +1,18 @@
 {% comment %}
   Product-JSON-LD (Google Product Snippets / Merchant Listings).
 
-  Drei Faelle, alle datengetrieben (keine Titel-/Tag-Heuristik fuer Preise):
+  Zwei Ausschluesse und ein gemeinsames ProductGroup fuer Kaufprodukte:
 
   1. Service- und Hilfsprodukte (Typ "Service"/"Musterservice" oder Tag
      "service": Kettelservice, Fussleiste, kostenloses Muster) bekommen
      KEIN JSON-LD. Ihre Variantenpreise sind Rechengroessen (0,19 EUR je
      0,01 lfm, 0,00 EUR) und duerfen nie als Angebot erscheinen.
 
-  2. Flaechenware wird als ProductGroup mit einem Offer je Variante
-     ausgegeben, Preis als UnitPriceSpecification je Quadratmeter
-     (referenceQuantity 1 MTK) - so, wie die Seite ihn zeigt (EUR/m2).
+  2. Kaufprodukte werden als ProductGroup mit einem Offer je Variante
+     ausgegeben. Beschreibung, Preis, SKU und nur validierte GTIN kommen aus
+     den vorhandenen Shopify-Produkt- und Variantendaten.
+     Flaechenware fuehrt zusaetzlich eine UnitPriceSpecification je m2
+     (referenceQuantity 1 MTK), wie auf der Seite angezeigt.
      Erkannt wird sie an
      - custom.preis_pro_001_qm == true (Variantenpreis gilt je 0,01 m2,
        z. B. Teppich nach Mass: 0,89 -> 89,00 EUR/m2), oder
@@ -37,8 +39,6 @@
      auf den Quadratmeter heruntergerechnet, mit derselben Rundung wie
      snippets/price.liquid.
 
-  3. Alle anderen Produkte behalten Shopifys natives structured_data.
-
   Ausgegeben werden nur Shop-Daten: Titel, Beschreibung, Bilder, Vendor als
   Marke, SKU (nur wenn vorhanden), Farbe und - im ProductGroup-Zweig - die
   technischen Merkmale als additionalProperty aus
@@ -48,11 +48,10 @@
   Antwortmaschine sie nicht aus dem Fliesstext raten muss.
   Keine lieferant.*- oder einkauf.*-Metafelder.
 
-  Fall 3 (Shopifys natives structured_data) bleibt bewusst unangetastet: dort
-  haengt der Preis dran, und ein zweiter Product-Knoten mit derselben @id
-  laesst sich ohne Live-Pruefung im Rich-Results-Test nicht verantworten.
-  Diese Produkte tragen ihre Merkmale in der serverseitig gerenderten
-  Tabelle - fuer Crawler lesbar, nur eben nicht als JSON-LD.
+  Alle Kaufprodukte verwenden dieselbe Quelle, damit Variantenbeschreibung,
+  SKU und GTIN nicht zwischen Theme- und Shopify-Ausgabe auseinanderlaufen.
+  Preise bleiben Variantenpreise; nur bei Flaechenware wird die vorhandene
+  m2-Logik angewendet. So wird kein zweiter Product-Knoten erzeugt.
 {% endcomment %}
 
 {%- liquid
@@ -107,12 +106,13 @@
     endif
   endfor
 
+  assign tp_sd_description = product_resource.description | strip_html | strip_newlines | truncate: 5000
   assign tp_sd_product_url = request.origin | append: product_resource.url
 -%}
 
 {%- if tp_sd_skip -%}
   {%- comment -%} Service-/Hilfsprodukt: bewusst kein JSON-LD {%- endcomment -%}
-{%- elsif tp_sd_per_001 or tp_sd_is_roll or tp_sd_is_paket -%}
+{%- elsif tp_sd_per_001 or tp_sd_is_roll or tp_sd_is_paket or tp_sd_is_wunschmass_legacy == false -%}
   {%- capture tp_sd_offers -%}
     {%- assign tp_sd_first = true -%}
     {%- for tp_sd_variant in product_resource.variants -%}
@@ -142,6 +142,48 @@
         assign tp_sd_price = tp_sd_cents | times: 1.0 | divided_by: 100 | round: 2
         assign tp_sd_variant_url = tp_sd_product_url | append: '?variant=' | append: tp_sd_variant.id
         assign tp_sd_image = tp_sd_variant.featured_image | default: product_resource.featured_image
+
+        assign tp_sd_gtin = tp_sd_variant.barcode | default: '' | strip
+        assign tp_sd_gtin_length = tp_sd_gtin.size
+        assign tp_sd_gtin_numeric_check = tp_sd_gtin | remove: '0' | remove: '1' | remove: '2' | remove: '3' | remove: '4' | remove: '5' | remove: '6' | remove: '7' | remove: '8' | remove: '9'
+        assign tp_sd_gtin_nonzero_check = tp_sd_gtin | remove: '0'
+        assign tp_sd_gtin_valid = false
+        if tp_sd_gtin_length == 8 or tp_sd_gtin_length == 12 or tp_sd_gtin_length == 13 or tp_sd_gtin_length == 14
+          if tp_sd_gtin_numeric_check == blank and tp_sd_gtin_nonzero_check != blank
+            assign tp_sd_gtin_body_length = tp_sd_gtin_length | minus: 1
+            assign tp_sd_gtin_last_index = tp_sd_gtin_length | minus: 1
+            assign tp_sd_gtin_check_digit = tp_sd_gtin | slice: tp_sd_gtin_last_index, 1 | plus: 0
+            assign tp_sd_gtin_sum = 0
+            for tp_sd_gtin_index in (0..13)
+              if tp_sd_gtin_index < tp_sd_gtin_body_length
+                assign tp_sd_gtin_digit = tp_sd_gtin | slice: tp_sd_gtin_index, 1 | plus: 0
+                assign tp_sd_gtin_places_from_right = tp_sd_gtin_body_length | minus: tp_sd_gtin_index | minus: 1
+                assign tp_sd_gtin_weight_parity = tp_sd_gtin_places_from_right | modulo: 2
+                assign tp_sd_gtin_weight = 1
+                if tp_sd_gtin_weight_parity == 0
+                  assign tp_sd_gtin_weight = 3
+                endif
+                assign tp_sd_gtin_digit_value = tp_sd_gtin_digit | times: tp_sd_gtin_weight
+                assign tp_sd_gtin_sum = tp_sd_gtin_sum | plus: tp_sd_gtin_digit_value
+              endif
+            endfor
+            assign tp_sd_gtin_remainder = tp_sd_gtin_sum | modulo: 10
+            assign tp_sd_gtin_expected_check_digit = 10 | minus: tp_sd_gtin_remainder | modulo: 10
+            if tp_sd_gtin_expected_check_digit == tp_sd_gtin_check_digit
+              assign tp_sd_gtin_valid = true
+            endif
+          endif
+        endif
+        assign tp_sd_gtin_property = 'gtin'
+        if tp_sd_gtin_length == 8
+          assign tp_sd_gtin_property = 'gtin8'
+        elsif tp_sd_gtin_length == 12
+          assign tp_sd_gtin_property = 'gtin12'
+        elsif tp_sd_gtin_length == 13
+          assign tp_sd_gtin_property = 'gtin13'
+        elsif tp_sd_gtin_length == 14
+          assign tp_sd_gtin_property = 'gtin14'
+        endif
       -%}
       {%- if tp_sd_include -%}
         {%- unless tp_sd_first -%},{%- endunless -%}
@@ -157,6 +199,12 @@
           {%- if tp_sd_variant.sku != blank -%},
           "sku": {{ tp_sd_variant.sku | json }}
           {%- endif -%}
+          {%- if tp_sd_description != blank -%},
+          "description": {{ tp_sd_description | json }}
+          {%- endif -%}
+          {%- if tp_sd_gtin_valid -%},
+          {{ tp_sd_gtin_property | json }}: {{ tp_sd_gtin | json }}
+          {%- endif -%}
           {%- if tp_sd_color_index >= 0 -%},
           "color": {{ tp_sd_variant.options[tp_sd_color_index] | json }}
           {%- endif -%},
@@ -166,6 +214,7 @@
             "url": {{ tp_sd_variant_url | json }},
             "price": {{ tp_sd_price }},
             "priceCurrency": {{ cart.currency.iso_code | json }},
+            {%- if tp_sd_per_001 or tp_sd_is_roll or tp_sd_is_paket -%}
             "priceSpecification": {
               "@type": "UnitPriceSpecification",
               "price": {{ tp_sd_price }},
@@ -176,6 +225,7 @@
                 "unitCode": "MTK"
               }
             },
+            {%- endif -%}
             "itemCondition": "https://schema.org/NewCondition",
             "availability": {% if tp_sd_variant.available %}"https://schema.org/InStock"{% else %}"https://schema.org/OutOfStock"{% endif %},
             "seller": {
@@ -198,7 +248,12 @@
         "@id": {{ tp_sd_product_url | append: '#product' | json }},
         "productGroupID": {{ product_resource.id | json }},
         "name": {{ product_resource.title | json }},
-        "description": {{ product_resource.description | strip_html | strip_newlines | truncate: 5000 | json }},
+        {%- if product_resource.type != blank -%}
+        "category": {{ product_resource.type | json }},
+        {%- endif -%}
+        {%- if tp_sd_description != blank -%}
+        "description": {{ tp_sd_description | json }},
+        {%- endif -%}
         "url": {{ tp_sd_product_url | json }},
         "brand": {
           "@type": "Brand",

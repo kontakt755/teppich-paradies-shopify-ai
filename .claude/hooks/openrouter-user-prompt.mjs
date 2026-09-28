@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { prepareClaudeBridge } from '../../automation/core/claude-bridge.mjs';
-import { buildClaudeHookContext, shouldRouteClaudePrompt } from '../../automation/core/claude-hook-policy.mjs';
+import { buildClaudeHookContext, ohneVoranalyse, shouldRouteClaudePrompt, voranalyseEinblenden } from '../../automation/core/claude-hook-policy.mjs';
 import { loadLocalOpenRouterEnvironment } from '../../automation/core/local-openrouter-env.mjs';
 import { clearClaudeSessionState, ensureClaudeSessionBaseline, writeClaudeSessionState } from '../../automation/core/claude-session-state.mjs';
 import { captureWorkingTreeSnapshot, currentCommit, resolveReviewDir } from '../../automation/core/review-scope.mjs';
@@ -71,7 +71,9 @@ try {
   // aus .env.local vollstaendig - fast jede Vorabanalyse wurde deshalb mitten im
   // Satz abgeschnitten (stopReason max_tokens/length in .router/*.jsonl).
   const maxTokens = Number(process.env.OPENROUTER_MAX_OUTPUT_TOKENS ?? 256);
-  const result = await prepareClaudeBridge({ taskId: `CLAUDE-HOOK-${digest}`, task: prompt, outputDir: path.join(projectDir, '.router/claude-handoffs'), maxTokens });
+  // Klasse B: kein Drittmodell-Aufruf, keine Voranalyse im Kontext (#670).
+  const execute = voranalyseEinblenden(taskClass) ? undefined : ohneVoranalyse;
+  const result = await prepareClaudeBridge({ taskId: `CLAUDE-HOOK-${digest}`, task: prompt, outputDir: path.join(projectDir, '.router/claude-handoffs'), maxTokens, ...(execute ? { execute } : {}) });
   if (result.status === 'READY' && result.classified.taskType === 'IMPLEMENTATION') {
     // HEAD bei Task-Start: der Stop-Hook prueft damit nur noch, was seit
     // diesem Moment entstand - nicht jeden Commit gegenueber origin/main, der

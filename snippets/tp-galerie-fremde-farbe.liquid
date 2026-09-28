@@ -1,0 +1,30 @@
+{%- comment -%}
+  Gibt "ja" aus, wenn der Alt-Text eines Galeriebildes eine andere Farbe des
+  Produkts nennt als die gewaehlte Variante. So gehoeren Raumbild und
+  Musterbild einer Farbe zusammen, ohne dass beide einer Variante zugeordnet
+  sein muessen. Alt-Texte ohne Farbnamen gelten fuer alle Farben.
+  Parameter: product, alt
+{%- endcomment -%}
+{%- liquid
+  assign tp_gewaehlt = blank
+  assign tp_farben = blank
+  for tp_option in product.options_with_values
+    assign tp_name = tp_option.name | downcase
+    if tp_name == 'farbe' or tp_name == 'color' or tp_name == 'dekor'
+      assign tp_farben = tp_option.values
+      assign tp_index = tp_option.position | minus: 1
+      assign tp_gewaehlt = product.selected_or_first_available_variant.options[tp_index]
+    endif
+  endfor
+
+  if tp_gewaehlt != blank
+    unless alt contains tp_gewaehlt
+      for tp_farbe in tp_farben
+        if alt contains tp_farbe
+          echo 'ja'
+          break
+        endif
+      endfor
+    endunless
+  endif
+-%}

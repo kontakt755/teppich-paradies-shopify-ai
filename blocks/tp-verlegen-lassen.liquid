@@ -26,6 +26,12 @@
 {%- liquid
   assign tp_vl_ziel = block.settings.ziel | default: '/pages/kontakt'
   assign tp_vl_variante = product.selected_or_first_available_variant
+  assign tp_vl_produkt_enc = product.title | url_encode
+  assign tp_vl_variante_enc = tp_vl_variante.title | url_encode
+  assign tp_vl_query = 'produkt=' | append: tp_vl_produkt_enc | append: '&handle=' | append: product.handle
+  if tp_vl_variante.title != 'Default Title'
+    assign tp_vl_query = tp_vl_query | append: '&variante=' | append: tp_vl_variante_enc
+  endif
 -%}
 
 <div class="tp-vl" {{ block.shopify_attributes }} data-tp-vl>
@@ -36,7 +42,7 @@
     <a
       class="tp-vl__cta"
       data-tp-vl-link
-      href="{{ tp_vl_ziel }}?produkt={{ product.title | url_encode }}{% if tp_vl_variante.title != 'Default Title' %}&variante={{ tp_vl_variante.title | url_encode }}{% endif %}"
+      href="{{ tp_vl_ziel }}?thema=verlegung&{{ tp_vl_query }}"
     >
       {{ block.settings.cta }}
     </a>
@@ -47,6 +53,23 @@
       </a>
     {%- endif -%}
   </div>
+
+  {%- comment -%}
+    Zweiter Weg neben dem Warenkorb (#163): Angebot fuer groessere Flaechen
+    und Beratungstermin. Beide fuehren auf dieselbe Anfrageseite; das Thema
+    setzt dort Betreff und einen Nachrichtenanfang (assets/tp-sample-request.js).
+    Bewusst als Textlinks: Warenkorb und Verlegung bleiben die Hauptwege.
+  {%- endcomment -%}
+  {%- if block.settings.angebot_label != blank or block.settings.beratung_label != blank -%}
+    <p class="tp-vl__weitere">
+      {%- if block.settings.angebot_label != blank -%}
+        <a data-tp-vl-link href="{{ tp_vl_ziel }}?thema=angebot&{{ tp_vl_query }}">{{ block.settings.angebot_label | escape }}</a>
+      {%- endif -%}
+      {%- if block.settings.beratung_label != blank -%}
+        <a data-tp-vl-link href="{{ tp_vl_ziel }}?thema=beratung&{{ tp_vl_query }}">{{ block.settings.beratung_label | escape }}</a>
+      {%- endif -%}
+    </p>
+  {%- endif -%}
 </div>
 
 <script>
@@ -57,8 +80,7 @@
     }
     if (!band) return;
 
-    var link = band.querySelector('[data-tp-vl-link]');
-    if (!link) return;
+    band.querySelectorAll('[data-tp-vl-link]').forEach(function (link) {
 
     // Erst beim Klick lesen: vorher sind die Felder oft noch leer, und ein
     // Listener auf jedem Tastendruck waere Aufwand ohne Nutzen.
@@ -79,6 +101,7 @@
         /* Vorbefuellung ist Komfort, kein Muss: im Zweifel geht der Link
            ohne Masse auf die Anfrageseite. */
       }
+    });
     });
   })();
 </script>
@@ -126,6 +149,22 @@
     font-weight: 600;
     text-decoration: none;
     color: var(--color-foreground);
+  }
+
+  .tp-vl__weitere {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    margin: 8px 0 0;
+    font-size: 14px;
+  }
+
+  .tp-vl__weitere a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--color-foreground);
+    text-underline-offset: 3px;
   }
 
   .tp-vl__tel {
@@ -178,6 +217,20 @@
       "id": "telefon_label",
       "label": "Beschriftung der Telefonzeile",
       "default": "oder anrufen: 03301 573 37 20"
+    },
+    {
+      "type": "text",
+      "id": "angebot_label",
+      "label": "Textlink Angebot",
+      "info": "Leer lassen blendet den Link aus.",
+      "default": "Angebot für Ihre Fläche anfordern"
+    },
+    {
+      "type": "text",
+      "id": "beratung_label",
+      "label": "Textlink Beratungstermin",
+      "info": "Leer lassen blendet den Link aus.",
+      "default": "Beratungstermin vereinbaren"
     }
   ],
   "presets": [

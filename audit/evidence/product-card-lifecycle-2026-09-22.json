@@ -1,0 +1,89 @@
+{
+  "session": "S38",
+  "task": "JS-001l",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/product-card.js",
+      "sha256": "534d6fa7868c5bfdf22d9eac381935daa58181dab9d2ea27b888a0fcb01066c1"
+    },
+    {
+      "file": "snippets/product-card.liquid",
+      "sha256": "8c1c8bf6195e45fe942bc26a81e94eb7fc783a04a67a604dc32a36da421331e2"
+    },
+    {
+      "file": "snippets/card-gallery.liquid",
+      "sha256": "d8963f7b0ec460e2d06529f27cb904225fd052adb49761b18a3524037c5bb3b6"
+    },
+    {
+      "file": "snippets/variant-swatches.liquid",
+      "sha256": "927e21f4cedeea131ddce8f988b41668d685f32e4048372ad9e4acc9d3991d52"
+    }
+  ],
+  "cardCases": [
+    {
+      "name": "initial-connect",
+      "quickAddFetches": 1
+    },
+    {
+      "name": "disconnected-still-preloads",
+      "quickAddFetches": 1
+    },
+    {
+      "name": "same-instance-reconnect-no-duplicate",
+      "quickAddFetches": 1
+    },
+    {
+      "name": "fresh-instance",
+      "quickAddFetches": 1
+    }
+  ],
+  "swatchCases": [
+    {
+      "name": "disconnected-picker-still-updates-card-url",
+      "href": "https://example.test/products/demo?variant=22"
+    },
+    {
+      "name": "reconnect-registers-new-bound-listener",
+      "pendingCleared": true
+    }
+  ],
+  "sourceReach": {
+    "scriptLoadedGlobally": true,
+    "assignedTemplateCount": 31,
+    "assignedTemplates": [
+      "404.json",
+      "cart.json",
+      "collection.bodenleisten.json",
+      "collection.json",
+      "collection.teppichboden-hochflor.json",
+      "collection.teppichboden-kurzflor.json",
+      "collection.teppichboden-nadelvlies.json",
+      "collection.teppichboden-schlinge.json",
+      "collection.teppichboden-velours.json",
+      "collection.teppichboden-wolle.json",
+      "collection.teppichboden.json",
+      "collection.teppiche.json",
+      "collection.teppichfliesen.json",
+      "collection.vinyl.json",
+      "collection.vinylboden-klebevinyl.json",
+      "collection.vinylboden-klickvinyl.json",
+      "collection.vinylboden-rollenvinyl.json",
+      "collection.vinylboden.json",
+      "collection.zubehoer-profile.json",
+      "collection.zubehoer-unterkategorie.json",
+      "collection.zubehoer.json",
+      "index.json",
+      "product.einfassung.json",
+      "product.fixpreis.json",
+      "product.fliese.json",
+      "product.json",
+      "product.planken.json",
+      "product.rolle.json",
+      "product.teppich.json",
+      "product.zubehoer.json",
+      "search.json"
+    ]
+  },
+  "limits": "Original complete ProductCardLink, ProductCard and SwatchesVariantPickerComponent; Component/VariantPicker/DOM/QuickAdd/media query and navigation dependencies adapted, native EventTarget. Quick-add preload listener lifecycle and swatch URL-update ghost listener tested. Variant fetch/update, price morph, image slideshow, navigation/history, view transitions, real browser cards and live theme not tested. Template count is static source reach."
+}

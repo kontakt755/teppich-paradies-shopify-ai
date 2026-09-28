@@ -117,7 +117,14 @@ Final CTA Block – wiederverwendbare Section (für Theme Editor)
   ("Eine Frage? Wir antworten persoenlich.") - dort doppelte sich der
   Abschnitt drei Sections spaeter. Abschaltbar in den Einstellungen.
 {%- endcomment -%}
-{%- unless section.settings.hide_on_home and template.name == 'index' -%}
+{%- comment -%}
+  D8: Auf Produktseiten gibt es Kontaktbox im Kaufbereich und den Block
+  "Aufmass & Verlegung" - der generische Aufruf waere der dritte Weg.
+{%- endcomment -%}
+{%- assign tp_fc_aus = false -%}
+{%- if section.settings.hide_on_home and template.name == 'index' -%}{%- assign tp_fc_aus = true -%}{%- endif -%}
+{%- if section.settings.hide_on_product and template.name == 'product' -%}{%- assign tp_fc_aus = true -%}{%- endif -%}
+{%- unless tp_fc_aus -%}
 <section class="final-cta">
   <div class="final-cta-container">
     <h2>{{ section.settings.heading }}</h2>
@@ -216,6 +223,13 @@ Final CTA Block – wiederverwendbare Section (für Theme Editor)
       "id": "hide_on_home",
       "label": "Auf der Startseite ausblenden",
       "info": "Die Startseite hat eine eigene Kontakt-Section; ohne diese Einstellung stuende die Aufforderung dort doppelt.",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_on_product",
+      "label": "Auf Produktseiten ausblenden",
+      "info": "Produktseiten haben eine Kontaktbox im Kaufbereich und den Block Aufmaß & Verlegung.",
       "default": true
     }
   ],

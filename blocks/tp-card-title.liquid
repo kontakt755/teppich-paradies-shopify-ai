@@ -23,6 +23,35 @@
   </span>
 {% else %}
   {% assign tp_card_title_display = closest.product.title | split: ' – ' | first | split: ' Teppichboden' | first %}
+  {%- liquid
+    # C1: Vinyl-Dekore als Zeile "Linie · Verlegeart" plus grosser Dekorname,
+    # z. B. "Lyon Eiche Mandel Fischgraet" -> "Lyon · Fischgraet" / "Eiche Mandel".
+    # Nur bei Produkttyp mit "vinyl": dort ist das erste Wort belegt die Linie.
+    assign tp_ct_typ = closest.product.type | downcase
+    assign tp_ct_linie = ''
+    assign tp_ct_woerter = tp_card_title_display | split: ' '
+    if tp_ct_typ contains 'vinyl' and tp_ct_woerter.size > 1
+      assign tp_ct_linie = tp_ct_woerter | first
+      assign tp_ct_art = closest.product.type
+      assign tp_ct_dekor = ''
+      for tp_ct_w in tp_ct_woerter offset: 1
+        if tp_ct_w == 'Fischgrät' or tp_ct_w == 'Chevron' or tp_ct_w == 'Landhausdiele'
+          assign tp_ct_art = tp_ct_w
+        else
+          assign tp_ct_dekor = tp_ct_dekor | append: ' ' | append: tp_ct_w
+        endif
+      endfor
+      assign tp_ct_dekor = tp_ct_dekor | strip
+      if tp_ct_dekor != blank
+        assign tp_card_title_display = tp_ct_dekor
+      else
+        assign tp_ct_linie = ''
+      endif
+    endif
+  -%}
+  {%- if tp_ct_linie != blank -%}
+    <p class="tp-card-title__linie">{{ tp_ct_linie }} · {{ tp_ct_art }}</p>
+  {%- endif -%}
   {% assign product_title = '<p role="heading" aria-level="3">' | append: tp_card_title_display | append: '</p>' %}
   <a
     class="contents user-select-text tp-card-title__link"
@@ -43,6 +72,7 @@
   weiter gewinnt.
 {% endcomment %}
 {% stylesheet %}
+  .tp-card-title__linie { margin: 0 0 2px; font-size: 12px; line-height: 1.3; letter-spacing: .02em; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.65); }
   :where(.tp-card-title__link) [role='heading'] {
     margin: 0;
     line-height: 1.4;

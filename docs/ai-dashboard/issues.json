@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-26T07:16:40.911Z",
+  "generated_at": "2026-09-28T08:13:04.474Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 151,
+  "count": 160,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-26T07:16:40.911Z",
+    "fetchedAt": "2026-09-28T08:13:04.474Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -64,12 +64,235 @@
   },
   "issues": [
     {
+      "number": 675,
+      "title": "Verbrauch III: Handoff bei task done, Gedaechtnis-Notizen zu Lessons, Abfrage-Cache",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/675",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p3",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "Vorschlaege 3, 5, 6 aus der #361-Sitzung, gebuendelt (Freigabe Inhaber 2026-09-26). Reine Technik, keine Inhaberentscheidung noetig. Nach #670 angehen, weil beide CLAUDE.md und die Hooks beruehren.\n\n1. Handoff bei task done: Wenn npm run task -- done laeuft, schreibt scripts/task.mjs den Text von npm run -s handoff als Issue-Kommentar und der Stop-Hook schlaegt den Sitzungswechsel vor. Baut auf .claude/hooks/kontext-waechter.mjs und scripts/handoff.mjs (#361) auf. Test.\n\n2. Gedaechtnis-Notizen (Typ feedback) aelter als 14 Tage werden entweder eine Lesson unter docs/lessons/ oder geloescht. Skript npm run gedaechtnis:pruefen listet die Kandidaten mit Alter und Verweisen; nichts loescht automatisch. Ziel: eine Quelle (docs/lessons/), Gedaechtnis bleibt klein, Obsidian zeigt beides. Gedaechtnis liegt im privaten Repo tp-claude-gedaechtnis (#665), Lieferantennamen duerfen nicht in Lessons wandern (Pseudonyme, AGENTS.md).\n\n3. Abfrage-Cache unter .router/cache/ (gitignored), 10 Minuten gueltig, fuer Theme-Rollen, Menuebaum und Kollektionszahlen. npm run -s kurz -- themes|... liest zuerst den Cache; --frisch erzwingt die Abfrage. Vor Deploy-Schritten nie aus dem Cache (Theme-Rollen im Mom…",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-26T09:29:14Z",
+      "updated_at": "2026-09-26T09:29:15Z",
+      "closed_at": null
+    },
+    {
+      "number": 673,
+      "title": "Woechentlicher Rueckblick als Routine: was lief schief, was war teuer, was fehlt",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/673",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p3",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "Vorschlag 9 aus der #361-Sitzung (2026-09-26). Anlass: Der Inhaber fragte, warum ein naheliegendes Werkzeug (Obsidian, #665) nie vorgeschlagen wurde. Antwort: weil Sitzungen die Aufgabe abarbeiten und nie gefragt werden, was fehlt.\n\nVorschlag: eine geplante Routine (Skill schedule), einmal pro Woche, z. B. Montag frueh. Sie liest: geschlossene und blockierte Issues der Woche, Groesse der Transkripte, .router/ai-usage.jsonl, neue docs/lessons/ und Gedaechtnis-Notizen (tp-claude-gedaechtnis). Sie schreibt genau einen Issue-Kommentar an ein festes Sammel-Issue: drei Punkte, was schiefging; drei, was teuer war; drei Vorschlaege mit Aufwand. Keine Aenderungen am Code, keine neuen Issues ohne Freigabe.\n\nOffen fuer Ahmet: Wochentag, ob der Kommentar zusaetzlich als Mail kommen soll, und ob die Routine in der Cloud oder auf dem Mac laeuft (Cloud sieht Transkripte und Gedaechtnis nicht, nur GitHub).",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-26T09:22:30Z",
+      "updated_at": "2026-09-26T09:22:30Z",
+      "closed_at": null
+    },
+    {
+      "number": 672,
+      "title": "Rohdaten nur ueber Subagent oder ctx_execute: Regel + Guard fuer Ausgaben ueber 50 Zeilen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/672",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p3",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "Vorschlag 8 aus der #361-Sitzung (2026-09-26). Entscheidung Ahmet noetig, weil es die Arbeitsweise aller Sitzungen aendert.\n\nBefund: Der Verlauf von Langsitzungen waechst durch Rohdumps, nicht Prosa: 100 Vinylprodukte vollstaendig geholt, um eine Abdeckung zu zaehlen; Menuebaum zweimal fuer einen Link; ein Push-JSON mit tausenden Offenses. Jede dieser Ausgaben wird bis zum Sitzungsende in jeder Runde erneut bezahlt.\n\nDer Context-Mode-Server ist eingebunden (.mcp.json, Guard in .claude/hooks/context-mode-guard.mjs) und wird kaum genutzt.\n\nVorschlag: (1) Regel in CLAUDE.md: Rohausgaben ueber ~50 Zeilen laufen durch ctx_execute/ctx_batch_execute oder einen Subagenten, der nur das Ergebnis zurueckgibt. (2) PostToolUse-Hook, der bei Bash-/MCP-Ausgaben ueber einer Schwelle einen Hinweis mit dem passenden kurz-/ctx-Befehl einblendet, nie blockiert (Muster: kontext-waechter.mjs). (3) Zaehlen statt holen: productsCount(query:) und first+pageInfo als Beispiele im Skill shopify-massendaten. Mit Tests.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-26T09:22:27Z",
+      "updated_at": "2026-09-26T09:22:28Z",
+      "closed_at": null
+    },
+    {
+      "number": 671,
+      "title": "Verbrauchs-Kachel im Control Center: Sitzungen, Langsitzungen, Tokens je Aufgabe, Modell je Klasse",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/671",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p3",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "Vorschlag 7 aus der #361-Sitzung (2026-09-26). Entscheidung Ahmet noetig, weil es das Dashboard aendert.\n\nBefund: Es gibt ein Control Center fuer Aufgaben, aber keinen Blick auf den Claude-Verbrauch. Ob #361/#670 wirken, glaubt man heute, statt es zu sehen.\n\nDatenquellen, beide vorhanden: get_usage (Kontext je Sitzung) und .router/ai-usage.jsonl (jeder Provider-Aufruf; Achtung: das Feld model ist nicht das benutzte Modell, siehe docs/lessons/router-belege.md). Transkripte unter ~/.claude/projects/<projekt>/*.jsonl liefern Groesse je Sitzung (Stand 26.09.: 45 von 121 ueber 5 MB).\n\nKachel: Sitzungen diese Woche, davon Langsitzungen, Tokens je Aufgabe (Issue-Nummer aus Branch/Handoff), Modell je Klasse gegen die Matrix. Daten schreibt ein lokales Skript nach docs/ai-dashboard/ (Schema wie issues.json, Bot-Datei nicht anfassen); das Frontend liest nur die Datei. Vorher docs/control-center/ und den Skill control-center lesen.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-26T09:22:25Z",
+      "updated_at": "2026-09-26T09:22:26Z",
+      "closed_at": null
+    },
+    {
+      "number": 670,
+      "title": "Verbrauch II: Voranalyse nur C/D, Modell per Route setzen, CLAUDE.md halbieren",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/670",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "Folge von #361, Freigabe Inhaber 2026-09-26. Belege: 45 von 121 Sitzungen >5 MB; 393 Gemini-Voranalysen in 30 Tagen, ungeprueft, in jeder Folgerunde im Kontext; nur 2 Fable-Aufrufe trotz Route; CLAUDE.md 25 KB in jeder Runde.\n\n1. Gemini-Voranalyse (.claude/hooks/openrouter-user-prompt.mjs) nur bei Klasse C/D einblenden, bei A/B weglassen. Test.\n2. workflow:route setzt das Modell der Matrix selbst (Session-Modell), statt es nur auszugeben; Rueckfall auf reine Ausgabe, wenn kein Sitzungszugriff. Test.\n3. CLAUDE.md halbieren: Produktimport, Deploy-Kette, Dashboard, Orchestrator als Skills unter .claude/skills/ (Muster: produktimport, #658). Kern bleibt: Regeln, Guards, Sicherheitsgrenzen, Werkzeugtabelle. theme:guard und Tests muessen gruen bleiben.\n\nEigener Worktree von origin/main, vor Commit alle Guards + validate --static, PR gegen main.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-26T09:20:22Z",
+      "updated_at": "2026-09-26T09:30:12Z",
+      "closed_at": "2026-09-26T09:29:58Z"
+    },
+    {
+      "number": 665,
+      "title": "Obsidian als Leseoberflaeche fuer Claude-Gedaechtnis und Lessons",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/665",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p3",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 5,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "Vorschlag aus #361 (2026-09-26), wartet auf Entscheidung des Inhabers.\n\nPlan (kein zweiter Speicher):\n- Vault-Ort: der bestehende Claude-Gedaechtnisordner dieses Projekts auf dem Mac (~/.claude/projects/<projekt>/memory), optional docs/lessons/ als zweiter Vault. Keine Kopie.\n- Struktur: bleibt wie sie ist - eine Datei je Fakt mit Frontmatter, MEMORY.md als Index, Querverweise [[name]] (Obsidian-Format).\n- Claude-Zugriff: unveraendert per Dateisystem; kein Obsidian-Plugin, kein MCP.\n- Datenschutz: nur lokal auf diesem Mac, nicht in iCloud/Dropbox (docs/MULTI_MAC_WORKFLOW.md); .obsidian/ bleibt im Gedaechtnisordner, nicht im oeffentlichen Repo. Keine Lieferantennamen oder Rabattcodes hineinschreiben.\n- Nutzungstest: Vault oeffnen, Graph zeigt deploy_lehren.md mit Links; eine Notiz in Obsidian aendern, naechste Claude-Sitzung liest die Aenderung.\n\nOffene Entscheidungen Inhaber:\n1. Obsidian installieren (Download von obsidian.md)?\n2. Nur dieser Mac, oder Sync auf weitere Geraete (dann eigene Loesung, kein Cloud-Ordner)?",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-26T08:37:51Z",
+      "updated_at": "2026-09-26T09:13:22Z",
+      "closed_at": "2026-09-26T09:13:22Z"
+    },
+    {
+      "number": 664,
+      "title": "Claude-Konto: projektfremde Connectors abschalten + Memory-Index kuerzen",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/664",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p3",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 4,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "Aus #361. Grundlast je Sitzung ~72k Tokens. Beeinflussbar sind nur zwei Posten:\n1. Connectors Gmail (30 Tools), Dropbox (19), Google Drive (11), Google Calendar (9) sind in jeder Code-Sitzung geladen, werden fuer den Shop-Code nie gebraucht. Ersparnis gering (~2-4k: Toolnamen + Server-Anweisungen), weil die Tools verzoegert geladen werden. Abschalten wirkt kontoweit als Standard fuer neue Sitzungen (Composer + > Connectors) - deshalb Entscheidung Ahmet. Am 26.09. war zusaetzlich ein Video-/Bild-Generator (90 Tools) aktiv; heute nicht mehr.\n2. Memory-Index MEMORY.md ~13k Tokens, >120 Zeilen. Kuerzen per Skill consolidate-memory, Ziel ~6k.\nSystem-Tools (~30k) und Systemprompt sind nicht abschaltbar.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-26T08:27:45Z",
+      "updated_at": "2026-09-26T08:34:59Z",
+      "closed_at": "2026-09-26T08:34:59Z"
+    },
+    {
+      "number": 662,
+      "title": "Performance-Sprint: Lighthouse auf Live, vier perf-Entwicklungsthemes zusammenfuehren",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/662",
+      "labels": [
+        "status:review",
+        "type:technik",
+        "priority:p2",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 8,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-26T08:09:53Z",
+      "updated_at": "2026-09-27T17:59:37Z",
+      "closed_at": null
+    },
+    {
+      "number": 661,
+      "title": "Vinyl-Metafelder: Nutzschicht fehlt als Definition, neuere Linie ohne Fussbodenheizung",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/661",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 5,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-26T08:09:49Z",
+      "updated_at": "2026-09-26T08:52:18Z",
+      "closed_at": "2026-09-26T08:52:18Z"
+    },
+    {
       "number": 653,
       "title": "Deploy-Worktree deploy-main wird von mehreren Sessions gleichzeitig benutzt",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/653",
       "labels": [
-        "status:in-arbeit",
+        "status:fertig",
         "type:technik",
         "priority:p1",
         "area:technik"
@@ -78,14 +301,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 1,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-26T07:16:01Z",
-      "updated_at": "2026-09-26T07:16:15Z",
-      "closed_at": null
+      "updated_at": "2026-09-26T07:36:59Z",
+      "closed_at": "2026-09-26T07:36:40Z"
     },
     {
       "number": 650,
@@ -114,10 +337,10 @@
     {
       "number": 647,
       "title": "qa/run-qa.mjs --update-baseline schreibt die Baseline nicht dauerhaft",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/647",
       "labels": [
-        "status:blockiert",
+        "status:fertig",
         "type:technik",
         "priority:p1",
         "area:technik"
@@ -126,14 +349,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 4,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-26T06:56:45Z",
-      "updated_at": "2026-09-26T07:15:50Z",
-      "closed_at": null
+      "updated_at": "2026-09-26T07:37:33Z",
+      "closed_at": "2026-09-26T07:37:33Z"
     },
     {
       "number": 644,
@@ -311,7 +534,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/613",
       "labels": [
-        "status:blockiert",
+        "status:review",
         "type:technik",
         "priority:p2",
         "area:seo"
@@ -320,11 +543,11 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 5,
       "nextStep": null,
       "fields": {},
       "created_at": "2026-09-25T09:15:30Z",
-      "updated_at": "2026-09-26T06:15:11Z",
+      "updated_at": "2026-09-26T07:44:02Z",
       "closed_at": null
     },
     {
@@ -768,10 +991,10 @@
     {
       "number": 465,
       "title": "OAuth-Weg zum shpat_-Admin-Token aufgesetzt",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/465",
       "labels": [
-        "status:in-arbeit",
+        "status:fertig",
         "type:technik",
         "priority:p2",
         "area:backend"
@@ -780,14 +1003,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 1,
+      "comments": 9,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-22T10:09:50Z",
-      "updated_at": "2026-09-22T10:10:03Z",
-      "closed_at": null
+      "updated_at": "2026-09-28T06:21:15Z",
+      "closed_at": "2026-09-27T19:07:39Z"
     },
     {
       "number": 458,
@@ -1106,10 +1329,10 @@
     {
       "number": 361,
       "title": "Claude-Code-Verbrauch senken: Startkontext kuerzen, Baseline messen",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/361",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p2",
         "area:backend"
@@ -1118,7 +1341,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 4,
+      "comments": 6,
       "nextStep": null,
       "fields": {
         "goal": "Den Verbrauch von Claude Code auf beiden Macs senken, ohne Regeln oder Qualitaet zu verlieren. Reihenfolge: Kontext → Messung → Pilot → gezielte Skills.\n\n## Phasen\n\n- [x] **Phase 1 — Startkontext kuerzen:** CLAUDE.md 34,2 KB → 19,9 KB, Vorfallgeschichten nach `docs/lessons/`, Hook-Ausgabe 46 → 30 Zeilen. PR #360.\n- [ ] **Phase 0 — Baseline (lokal, beide Macs):** bei 5–10 normalen Aufgaben am Ende `/cost` notieren (Klasse, Modell, Tokens, Cache-Anteil, Dauer). Einmal pro Mac: leere Session + `/cost` als reiner Startkontext-Preis — **vor dem Merge von #360**, sonst fehlt der Vorher-Wert. Einmal `npm run ai:usage` fuer den Router-/Codex-Anteil.\n- [ ] **Phase 2 — Verhaltensregeln:** ein Modell pro Session (in CLAUDE.md/AGENTS.md mit #360), eine Session pro Aufgabe, Zwischenstand als Issue-Notiz.\n- [ ] **Phase 3 — Vergleich:** 5–10 Aufgaben nach dem Merge erneut messen. Erst danach Ponytail-Pilot auf 5 Klasse-A/B-Aufgaben mit demselben Modell wie die Baseline.\n\n## Offen (Entscheidung Inhaber)\n\nCLAUDE.md liegt bei 19,9 KB statt der angepeilten 15 KB. Der Rest sind Befehle, Guard-Tabelle, Sicherheitsgrenzen und Modell-Matrix. Kandidaten fuer weitere ~2 KB: `theme:diff`-Manifest-Block und …",
@@ -1146,8 +1369,8 @@
         }
       },
       "created_at": "2026-09-18T17:26:32Z",
-      "updated_at": "2026-09-23T08:51:48Z",
-      "closed_at": null
+      "updated_at": "2026-09-26T08:30:16Z",
+      "closed_at": "2026-09-26T08:30:01Z"
     },
     {
       "number": 358,
@@ -2243,10 +2466,10 @@
     {
       "number": 187,
       "title": "Audit Konzept C: 49 Befunde verifizieren, bestaetigte Fehler im Entwurf 204100600142 beheben",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/187",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:verbesserung",
         "priority:p1",
         "area:design"
@@ -2255,14 +2478,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 4,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T08:40:45Z",
-      "updated_at": "2026-09-11T10:23:01Z",
-      "closed_at": null
+      "updated_at": "2026-09-26T08:09:31Z",
+      "closed_at": "2026-09-26T08:09:15Z"
     },
     {
       "number": 184,
@@ -2530,10 +2753,10 @@
     {
       "number": 163,
       "title": "Zweiter Weg neben dem Warenkorb: Angebot anfordern und Beratungstermin",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/163",
       "labels": [
-        "status:geplant",
+        "status:fertig",
         "type:verbesserung",
         "priority:p1",
         "area:produktseite"
@@ -2542,14 +2765,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 5,
+      "comments": 7,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T20:09:33Z",
-      "updated_at": "2026-09-21T08:22:19Z",
-      "closed_at": null
+      "updated_at": "2026-09-27T17:41:04Z",
+      "closed_at": "2026-09-27T17:40:47Z"
     },
     {
       "number": 162,

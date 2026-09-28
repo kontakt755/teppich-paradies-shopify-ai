@@ -20,7 +20,7 @@ const extrasEnd = rollSource.indexOf('\n  var einfassBox', extrasStart);
 const missingStart = rollSource.indexOf('  function fehlendesFeld() {');
 const missingEnd = rollSource.indexOf('\n  var target =', missingStart);
 const clickStart = rollSource.indexOf("  cta.addEventListener('click', function () {");
-const clickEnd = rollSource.indexOf('\n\n  calculate();\n}', clickStart);
+const clickEnd = rollSource.indexOf('\n\n  // Eine direkt geoeffnete Varianten-URL', clickStart);
 assert.ok([extrasStart, extrasEnd, missingStart, missingEnd, clickStart, clickEnd].every((n) => n >= 0),
   'Funktionsgrenzen nicht gefunden - Quelltext hat sich strukturell verändert');
 
@@ -95,8 +95,8 @@ test('Regression: gültige Fußleistenlänge bleibt kaufbar (2 Positionen)', asy
   const result = await rollCase('12');
   assert.equal(result.requestCount, 1);
   assert.equal(result.payload.body.items.length, 2);
-  assert.equal(result.payload.body.items[0].quantity, 8);
-  assert.equal(result.payload.body.items[1].quantity, 12);
+  assert.equal(result.payload.body.items[0].quantity, 12);
+  assert.equal(result.payload.body.items[1].quantity, 8);
   assert.equal(result.leisteInvalid, false);
 });
 
@@ -110,7 +110,7 @@ test('Regression: Checkbox aus -> nur Hauptware, kein Block', async () => {
 test('Regression: "2,5" wird weiterhin auf 3 volle Meter aufgerundet', async () => {
   const result = await rollCase('2,5');
   assert.equal(result.requestCount, 1);
-  assert.equal(result.payload.body.items[1].quantity, 3);
+  assert.equal(result.payload.body.items[0].quantity, 3);
   assert.equal(result.leisteInvalid, false);
 });
 
