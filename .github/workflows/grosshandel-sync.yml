@@ -66,5 +66,7 @@ jobs:
         with:
           name: sync-reports
           path: .sync-reports/
+          # Ordner beginnt mit Punkt; v4 laesst versteckte Dateien sonst weg.
+          include-hidden-files: true
           retention-days: 30
 
