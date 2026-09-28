@@ -926,6 +926,19 @@ test('"Meine Aufgaben" zeigt nur Zugewiesenes - Unzugewiesenes bleibt im Team', 
   assert.equal(team2.eintraege.some(e => e.titel === 'Produktseite reparieren'), false);
 });
 
+test('Aufgabenliste liefert die Dringlichkeitsabschnitte in derselben Reihenfolge wie die Einträge', () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat-dringlichkeit');
+  const ich = { kuerzel: 'ahmet', rolle: 'inhaber' };
+  const api = orgApi(root, dir);
+  api.orgNeu({ titel: 'Später prüfen', verantwortlich: 'ahmet', prioritaet: 'LOW' }, { benutzer: ich });
+  api.orgNeu({ titel: 'Heute entscheiden', verantwortlich: 'ahmet', prioritaet: 'URGENT' }, { benutzer: ich });
+  const liste = api.orgListe({ bereich: 'meine-aufgaben', ansicht: 'offen', benutzer: ich });
+  assert.deepEqual(liste.eintraege.map(e => [e.titel, e.dringlichkeit]), [
+    ['Heute entscheiden', 'jetzt'], ['Später prüfen', 'weitere'],
+  ]);
+});
+
 test('Stand für ChatGPT: offene Aufgaben mit Zuständigkeit und Erklärung, Erledigtes nicht', () => {
   const root = tmpRoot();
   const dir = path.join(root, 'privat-org7');

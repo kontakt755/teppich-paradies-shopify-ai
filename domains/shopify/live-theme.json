@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204438208846",
-    "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-09-28T11:02:39Z",
-    "verifiedBy": "Shopify CLI, role live (workflow:live nach #707, #708 und #711)"
-  },
-  "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-09-28T11:02:39Z",
-    "verifiedBy": "Shopify CLI, role unpublished nach Rollentausch; Rueckfall-Theme"
+    "verifiedAt": "2026-09-28T12:05:11.247Z",
+    "verifiedBy": "Shopify CLI, role live (workflow:live nach #713, #714 und #715)"
+  },
+  "preview": {
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-09-28T12:05:11.247Z",
+    "verifiedBy": "Shopify CLI, role unpublished nach Rollentausch; naechstes Preview-Ziel"
   },
   "fallback": {
     "themeId": "204440699214",
@@ -254,6 +254,12 @@
       "name": "Kopie von preview-main-2026-09-04",
       "retiredNoticedAt": "2026-09-27",
       "note": "Per workflow:live abgeloest durch 204438208846 (#686 Design-Audit, #687 PDP-Bildgroesse). Bleibt unpublished als naechstes Preview-Ziel, nicht loeschen."
+    },
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-09-28",
+      "note": "Per workflow:live abgeloest durch das bisherige Preview-Theme (#714 und #715). Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",

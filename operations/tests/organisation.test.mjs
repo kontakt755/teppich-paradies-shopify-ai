@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
-  sortiere, rang, passtZuAnsicht, darfSehen, darfAendern, istUeberfaellig,
+  sortiere, rang, dringlichkeitsGruppe, passtZuAnsicht, darfSehen, darfAendern, istUeberfaellig,
   aehnlichkeit, findeDoppelgaenger, alsTag, STATUS_LABEL, istPerson, istTechnisch, istTeamarbeit,
 } from '../lib/organisation.mjs';
 import { analysiere, erkenneFaelligkeit, erkennePerson, teileAuf, ausListe } from '../lib/organisation-analyse.mjs';
@@ -34,6 +34,18 @@ test('Reihenfolge: überfällig, dringend, heute, hoch, diese Woche, normal, sp�
   ];
   assert.deepEqual(sortiere(liste, JETZT).map(t => t.id),
     ['ueberfaellig', 'dringend', 'heute', 'hoch', 'woche', 'normal', 'spaeter']);
+});
+
+test('Anzeigeabschnitte folgen der fachlichen Dringlichkeitsreihenfolge', () => {
+  const liste = sortiere([
+    aufgabe({ id: 'spaeter', prioritaet: 'LOW' }),
+    aufgabe({ id: 'warten', status: 'WAITING', prioritaet: 'URGENT' }),
+    aufgabe({ id: 'morgen', faellig: tag(1) }),
+    aufgabe({ id: 'heute', faellig: tag(0) }),
+    aufgabe({ id: 'ueberfaellig', faellig: tag(-1) }),
+  ], JETZT);
+  assert.deepEqual(liste.map(e => dringlichkeitsGruppe(e, JETZT)),
+    ['ueberfaellig', 'jetzt', 'demnaechst', 'weitere', 'wartet']);
 });
 
 test('Warten-auf mischt sich nicht in den Fokus', () => {

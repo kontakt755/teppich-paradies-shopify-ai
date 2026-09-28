@@ -618,6 +618,20 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
 /* Aufgaben & Organisation */
 .org-zeile.fertig { opacity: .6; }
 .chip-label { align-self: center; margin-right: 2px; }
+.org-dringlichkeit { margin: 0 0 22px; }
+.org-dringlichkeit-kopf {
+  display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap;
+  gap: 4px 12px; margin: 0 0 8px; padding: 0 2px;
+}
+.org-dringlichkeit-kopf h2 { margin: 0; font-size: 1rem; }
+.org-dringlichkeit-kopf > span { color: var(--text-2); font-size: .8rem; }
+.org-dringlichkeit-zahl {
+  display: inline-block; min-width: 1.5em; margin-left: 5px; padding: 1px 6px;
+  border-radius: 99px; background: var(--surface-2); color: var(--text-2);
+  font-size: .75rem; text-align: center;
+}
+.org-dringlichkeit-ueberfaellig .org-zeile { border-left: 3px solid var(--crit); }
+.org-dringlichkeit-jetzt .org-zeile { border-left: 3px solid var(--warn); }
 
 /* Beschreibung in der Aufgabenzeile: erklaert die Zeile, ohne sie zu dominieren. */
 .org-zeile .org-was {

@@ -29,6 +29,7 @@ import { fallmarkenPfad, leseAlle as leseFallmarken, setzeMarke as setzeFallmark
 import {
   sortiere as orgSortiere, passtZuAnsicht, darfSehen, darfAendern, findeDoppelgaenger,
   istUeberfaellig, tageBis, istPerson, istTechnisch, istTeamarbeit, gruppeVon, ARBEITSGRUPPEN,
+  dringlichkeitsGruppe,
 } from '../operations/lib/organisation.mjs';
 import { analysiere as orgAnalysiere, ausListe as orgAusListe } from '../operations/lib/organisation-analyse.mjs';
 import {
@@ -1121,7 +1122,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         anzahl: liste.length,
         gruppen: ARBEITSGRUPPEN.map(([key, label]) => ({ key, label, anzahl: gruppenZaehlung[key] || 0 })),
         eintraege: orgSortiere(liste, jetzt).slice(0, 200)
-          .map(e => ({ ...e, darfAendern: darfAendern(e, benutzer) })),
+          .map(e => ({ ...e, dringlichkeit: e.typ === 'TASK' ? dringlichkeitsGruppe(e, jetzt) : null,
+            darfAendern: darfAendern(e, benutzer) })),
       };
     },
 

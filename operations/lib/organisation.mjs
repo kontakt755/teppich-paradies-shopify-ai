@@ -144,6 +144,18 @@ export function rang(t, jetzt = new Date()) {
   return 5;
 }
 
+/** Anzeigeabschnitt zur bestehenden Sortierung; die Reihenfolge bleibt durch rang() bestimmt. */
+export function dringlichkeitsGruppe(t, jetzt = new Date()) {
+  const r = rang(t, jetzt);
+  if (r === 0) return 'ueberfaellig';
+  if (r <= 2) return 'jetzt';
+  if (r <= 4) return 'demnaechst';
+  if (r <= 6) return 'weitere';
+  if (r === 80) return 'wartet';
+  if (r === 85) return 'zurueckgestellt';
+  return 'erledigt';
+}
+
 export function sortiere(liste, jetzt = new Date()) {
   return [...liste].sort((a, b) => {
     const r = rang(a, jetzt) - rang(b, jetzt);

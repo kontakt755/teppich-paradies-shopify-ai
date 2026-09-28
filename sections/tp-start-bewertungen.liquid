@@ -1,8 +1,8 @@
 {%- comment -%}
   TP Kundenstimmen: Ueberschrift, Link zum Google-Profil und das Elfsight-Widget
   mit echten Rezensionen. Das Widget laedt erst nach Marketing-Einwilligung
-  (Shopify Customer Privacy API) - wie in sections/google.liquid. Ohne
-  Einwilligung steht statt leerer Flaeche ein Hinweis mit Link zu Google.
+  (Shopify Customer Privacy API) - wie in sections/google.liquid. Bis das
+  Widget tatsaechlich sichtbar ist, bleibt ein direkter Weg zu Google stehen.
   Keine eingetippten Bewertungen, keine hartcodierte Zahl.
 {%- endcomment -%}
 {{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
@@ -14,21 +14,40 @@
         <h2 id="tp-bew-h2" class="tp-s-h2">{{ section.settings.heading | escape }}</h2>
         {%- if section.settings.text != blank -%}<p>{{ section.settings.text | escape }}</p>{%- endif -%}
       </div>
-      {%- if section.settings.link != blank -%}<a class="tp-s-link" href="{{ section.settings.link }}" rel="noopener" target="_blank">{{ section.settings.link_label | default: 'Alle Bewertungen bei Google' | escape }}</a>{%- endif -%}
+      {%- if section.settings.elfsight_id == blank and section.settings.link != blank -%}<a class="tp-s-link" href="{{ section.settings.link }}" rel="noopener noreferrer" target="_blank">{{ section.settings.link_label | default: 'Alle Bewertungen bei Google' | escape }}</a>{%- endif -%}
     </div>
     {%- if section.settings.elfsight_id != blank -%}
       <div class="tp-bew__widget">
         <div class="elfsight-app-{{ section.settings.elfsight_id | escape }}" data-elfsight-app-lazy></div>
-        <p class="tp-bew__hinweis tp-s-note" data-tp-bew-hinweis>Die Rezensionen laden, sobald Sie im Cookie-Hinweis Marketing-Cookies zulassen.{% if section.settings.link != blank %} Oder direkt bei <a href="{{ section.settings.link }}" rel="noopener" target="_blank">Google ansehen</a>.{% endif %}</p>
+        <div class="tp-bew__fallback" data-tp-bew-hinweis>
+          <p>Lesen Sie echte Erfahrungen mit unserem Fachgeschäft direkt bei Google. Die eingebetteten Bewertungen laden wir hier erst nach Ihrer Einwilligung.</p>
+          {%- if section.settings.link != blank -%}
+            <a class="tp-bew__fallback-link" href="{{ section.settings.link }}" rel="noopener noreferrer" target="_blank">{{ section.settings.link_label | default: 'Bewertungen bei Google ansehen' | escape }} <span aria-hidden="true">↗</span></a>
+          {%- endif -%}
+        </div>
+        {%- if section.settings.link != blank -%}
+          <a class="tp-bew__widget-link tp-s-link" href="{{ section.settings.link }}" rel="noopener noreferrer" target="_blank" hidden>{{ section.settings.link_label | default: 'Alle Bewertungen bei Google' | escape }}</a>
+        {%- endif -%}
       </div>
       <script>
         (function () {
           var loaded = false;
-          var hinweis = document.querySelector('[data-tp-bew-hinweis]');
+          var hinweis = document.querySelector('#tp-bewertungen [data-tp-bew-hinweis]');
+          var widget = document.querySelector('#tp-bewertungen [data-elfsight-app-lazy]');
+          var googleLink = document.querySelector('#tp-bewertungen .tp-bew__widget-link');
           function loadElfsight() {
             if (loaded) return;
             loaded = true;
-            if (hinweis) hinweis.hidden = true;
+            if (widget && hinweis) {
+              var observer = new MutationObserver(function () {
+                if (widget.childElementCount > 0) {
+                  hinweis.hidden = true;
+                  if (googleLink) googleLink.hidden = false;
+                  observer.disconnect();
+                }
+              });
+              observer.observe(widget, { childList: true });
+            }
             var s = document.createElement('script');
             s.src = 'https://static.elfsight.com/platform/platform.js';
             s.async = true;
@@ -53,8 +72,14 @@
 
 {% stylesheet %}
   .tp-bew__widget { min-height: 120px; }
-  .tp-bew__hinweis { padding: 18px 20px; border: 1.5px dashed #d5cec4; border-radius: 12px; }
-  .tp-bew__hinweis a { color: #b0303f; }
+  .tp-bew__fallback { display: flex; align-items: center; justify-content: space-between; gap: 28px; padding: 26px 30px; border: 1px solid var(--tp-line); border-radius: var(--tp-r-lg); background: var(--tp-bg-2); }
+  .tp-bew__fallback[hidden] { display: none; }
+  .tp-bew__widget-link[hidden] { display: none; }
+  .tp-bew__widget-link { margin-top: 16px; }
+  .tp-bew__fallback p { max-width: 60ch; margin: 0; color: var(--tp-ink-2); font-size: 15px; line-height: 1.5; }
+  .tp-bew__fallback-link { flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 16px; border: 1px solid var(--tp-line-2); border-radius: var(--tp-r); color: var(--tp-ink); background: #fff; font-weight: 600; text-decoration: none; }
+  .tp-bew__fallback-link:hover, .tp-bew__fallback-link:focus-visible { border-color: var(--tp-red); }
+  @media (max-width: 767px) { .tp-bew__fallback { align-items: stretch; flex-direction: column; gap: 16px; padding: 20px; } .tp-bew__fallback-link { flex: auto; } }
 {% endstylesheet %}
 
 {% schema %}
