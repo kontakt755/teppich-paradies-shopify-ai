@@ -262,6 +262,28 @@
     </p>
   {%- endif -%}
 
+  {%- comment -%}
+    Eigene Anlieferung (Inhaber 2026-09-28): stand vorher im Rollware-Rechner
+    auf der Produktseite und lenkte dort vom Kauf ab. Nur wenn mindestens ein
+    Artikel unter den Liefer- und Verlegeservice faellt (tp-vs-berechtigt),
+    Werte aus den Theme-Einstellungen "TP Verlegeservice".
+  {%- endcomment -%}
+  {%- if settings.tp_vs_schwelle != blank and settings.tp_vs_radius_basis != blank -%}
+    {%- assign tp_cart_vs_ok = false -%}
+    {%- for tp_cart_vs_item in cart.items -%}
+      {%- capture tp_cart_vs_ja -%}{% render 'tp-vs-berechtigt', product: tp_cart_vs_item.product %}{%- endcapture -%}
+      {%- if tp_cart_vs_ja contains 'ja' -%}
+        {%- assign tp_cart_vs_ok = true -%}
+        {%- break -%}
+      {%- endif -%}
+    {%- endfor -%}
+    {%- if tp_cart_vs_ok -%}
+      <p class="tp-cart-shipping-note tp-cart-vs-note">
+        Bis {{ settings.tp_vs_radius_basis }}&nbsp;km bringen wir ab {{ settings.tp_vs_schwelle }}&nbsp;€ Warenwert kostenlos und tragen die Ware in die Wohnung.
+      </p>
+    {%- endif -%}
+  {%- endif -%}
+
   <div class="cart-totals__container">
     <span
       class="cart-totals__item cart-totals__total"
