@@ -149,10 +149,16 @@
     }
   }
 
-  search-page-input-component .search__reset-button {
+  search-page-input-component .search__reset-button,
+  search-page-input-component .search__reset-button:hover {
     border-radius: 100%;
     color: var(--color-input-text);
     right: var(--margin-lg);
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
     opacity: 0;
     visibility: hidden;
@@ -162,6 +168,12 @@
 
     @media screen and (max-width: 749px) {
       right: var(--margin-md);
+    }
+  }
+
+  @media screen and (max-width: 749px) {
+    .search-page-input {
+      padding-right: calc(var(--margin-md) + 44px + var(--padding-sm));
     }
   }
 

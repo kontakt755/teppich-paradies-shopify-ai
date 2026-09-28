@@ -158,8 +158,19 @@
                   -%}
                   {% if tp_ist_musterzeile %}
                     {%- render 'tp-cart-muster-bild', line_item: item -%}
-                  {% elsif item.image -%}
+                  {% else -%}
                     {% liquid
+                      assign tp_cart_image = item.image
+                      if item.variant.featured_media == blank
+                        capture tp_cart_color_media_id
+                          render 'tp-galerie-farbmedium', product: item.product, variant: item.variant
+                        endcapture
+                        assign tp_cart_color_media_id = tp_cart_color_media_id | strip | plus: 0
+                        assign tp_cart_color_media = item.product.media | where: 'id', tp_cart_color_media_id | first
+                        if tp_cart_color_media != blank
+                          assign tp_cart_image = tp_cart_color_media.preview_image
+                        endif
+                      endif
                       assign ratio = 1
                       assign border_opacity = settings.cart_thumbnail_border_opacity | divided_by: 100.0
                       assign border_override = '--border-width: [cart_thumbnail_border_width]px; --border-style: [cart_thumbnail_border_style]; --border-color: rgb(var(--color-border-rgb) / [cart_thumbnail_border_opacity]); --border-radius: [cart_thumbnail_border_radius]px;' | replace: '[cart_thumbnail_border_width]', settings.cart_thumbnail_border_width | replace: '[cart_thumbnail_border_style]', settings.cart_thumbnail_border | replace: '[cart_thumbnail_border_opacity]', border_opacity | replace: '[cart_thumbnail_border_radius]', settings.cart_thumbnail_border_radius
@@ -170,18 +181,20 @@
                       if block_settings.image_ratio == 'portrait'
                         assign ratio = 0.8
                       elsif block_settings.image_ratio == 'adapt'
-                        assign ratio = item.image.aspect_ratio
+                        assign ratio = tp_cart_image.aspect_ratio
                       endif
                     %}
+                  {% if tp_cart_image %}
                     <a
                       href="{{ item.url }}"
                       class="cart-items__media-container"
                       style="--ratio:{{ ratio }};"
                     >
                       {%- liquid
-                        echo item.image | image_url: width: 250 | image_tag: class: 'cart-items__media-image border-style', style: border_override
+                        echo tp_cart_image | image_url: width: 250 | image_tag: class: 'cart-items__media-image border-style', style: border_override
                       -%}
                     </a>
+                    {% endif %}
                   {%- endif %}
                 </td>
                 <td
@@ -201,6 +214,7 @@
                         {{- item.product.title -}}
                       </a>
                     </p>
+                    {%- render 'tp-cart-gruppe', line_item: item, teil: 'hinweis' -%}
                     {% if item.product.vendor and block_settings.vendor %}
                       <p>
                         {{ item.product.vendor }}
@@ -246,7 +260,19 @@
                         assign has_visible_properties = false
                         for property in item.properties
                           assign property_first_char = property.first | slice: 0
-                          if property.last != blank and property_first_char != '_'
+                          assign tp_cart_duplicate = false
+                          if item.properties._Gruppe != blank
+                            if property.first == 'Zu Teppichboden' or property.first == 'Zu Teppich'
+                              assign tp_cart_duplicate = true
+                            endif
+                          endif
+                          for option in item.options_with_values
+                            if option.value == property.last
+                              assign tp_cart_duplicate = true
+                              break
+                            endif
+                          endfor
+                          if property.last != blank and property_first_char != '_' and tp_cart_duplicate == false
                             assign has_visible_properties = true
                             break
                           endif
@@ -256,7 +282,19 @@
                         <dl class="cart-items__properties">
                           {%- for property in item.properties -%}
                             {%- assign property_first_char = property.first | slice: 0 -%}
-                            {%- if property.last != blank and property_first_char != '_' -%}
+                            {%- assign tp_cart_duplicate = false -%}
+                            {%- if item.properties._Gruppe != blank -%}
+                              {%- if property.first == 'Zu Teppichboden' or property.first == 'Zu Teppich' -%}
+                                {%- assign tp_cart_duplicate = true -%}
+                              {%- endif -%}
+                            {%- endif -%}
+                            {%- for option in item.options_with_values -%}
+                              {%- if option.value == property.last -%}
+                                {%- assign tp_cart_duplicate = true -%}
+                                {%- break -%}
+                              {%- endif -%}
+                            {%- endfor -%}
+                            {%- if property.last != blank and property_first_char != '_' and tp_cart_duplicate == false -%}
                               <div class="cart-items__property">
                                 <dt>{{ property.first }}:</dt>
                                 <dd>
@@ -288,8 +326,6 @@
                       {%- endif -%}
                     {%- endif -%}
                   </div>
-
-                  {%- render 'tp-cart-gruppe', line_item: item, teil: 'hinweis' -%}
 
                   <div class="cart-items__unit-price-wrapper">
                     <div>
@@ -480,6 +516,12 @@
     align-items: start;
     padding-bottom: var(--cart-items-gap);
     margin-bottom: var(--margin-lg);
+  }
+
+  .cart-items__table-row:has(.tp-cart-menge[data-tp-service='1']) {
+    margin-inline-start: 8px;
+    padding-inline-start: 10px;
+    border-inline-start: 2px solid var(--color-border);
   }
 
   /* Cart drawer: separate grid areas for variants and unit price */

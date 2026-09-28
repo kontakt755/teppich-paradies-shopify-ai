@@ -90,7 +90,7 @@
   }
   html body .price__sale .price-item--sale,
   html body .price__sale .price-item--sale :is(.price-card-per-unit, .price-card-from),
-  html body .price-with-unit__compare ~ .price-with-unit__current,
+  html body .price-with-unit__compare:not([hidden]) ~ .price-with-unit__current,
   html body .tp-price-per-sqm:has(.tp-price-per-sqm__compare) .tp-price-per-sqm__amount,
   html body .tp-ab-preis:has(.tp-ab-preis__alt) .tp-ab-preis__betrag,
   html body .tp-ek__summe-werte:has(.tp-ek__summe-alt:not([hidden])) [data-summe],
