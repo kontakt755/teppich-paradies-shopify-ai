@@ -18,13 +18,35 @@
   endfor
 
   if tp_gewaehlt != blank
-    unless alt contains tp_gewaehlt
-      for tp_farbe in tp_farben
-        if alt contains tp_farbe
-          echo 'ja'
-          break
+    assign tp_supplier_collection = product.metafields.grosshandel.sku.value | default: ''
+    if alt contains ' | Farbe: '
+      assign tp_marker = ' | Farbe: ' | append: tp_gewaehlt | append: ' |'
+      unless alt contains tp_marker
+        echo 'ja'
+      endunless
+    elsif alt contains 'Farbnr. ' and tp_supplier_collection contains 'Sprint 027'
+      assign tp_bild_code = alt | split: 'Farbnr. ' | last | split: ')' | first | plus: 0
+      assign tp_gew_code = 0
+      for tp_variant in product.variants
+        if tp_variant.options[tp_index] == tp_gewaehlt and tp_variant.sku != blank
+          assign tp_gew_code = tp_variant.sku | split: '_' | last | plus: 0
+          if tp_gew_code > 0
+            break
+          endif
         endif
       endfor
-    endunless
+      if tp_gew_code == 0 or tp_bild_code != tp_gew_code
+        echo 'ja'
+      endif
+    else
+      unless alt contains tp_gewaehlt
+        for tp_farbe in tp_farben
+          if alt contains tp_farbe
+            echo 'ja'
+            break
+          endif
+        endfor
+      endunless
+    endif
   endif
 -%}
