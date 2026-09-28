@@ -405,18 +405,24 @@ async function sampleConfiguratorChecks({ page, result }) {
   const productName = (await root.locator('[data-sample-product-name]').textContent())?.trim();
   const colorCount = await root.locator('[data-sample-color]').count();
   const submit = root.locator('[data-sample-submit]');
+  // Der Produktlink uebergibt seit QA-05 die aktive Farbe. Sie ist beim Laden
+  // bereits ausgewaehlt, deshalb ist der Warenkorb-Knopf sofort bedienbar.
+  const linkFarbe = new URL(page.url()).searchParams.get('farbe');
+  const vorgewaehlt = await root.locator('[data-sample-color] input[type="checkbox"]:checked').evaluateAll(inputs =>
+    inputs.map(input => input.closest('[data-sample-color]')?.getAttribute('data-sample-color')));
   const submitDisabledBefore = await submit.isDisabled();
-  const firstCheckbox = root.locator('[data-sample-color] input[type="checkbox"]:not([disabled])').first();
-  await firstCheckbox.check({ timeout: 10_000 });
+  const weitereFarbe = root.locator('[data-sample-color] input[type="checkbox"]:not([disabled]):not(:checked)').first();
+  await weitereFarbe.check({ timeout: 10_000 });
   await page.waitForFunction(() => !document.querySelector('[data-sample-submit]')?.disabled, null, { timeout: 10_000 });
   const countText = (await root.locator('[data-sample-count]').textContent())?.trim();
   const errorText = (await root.locator('[data-sample-error]').textContent())?.trim();
   result.health = await pageHealth(page);
-  result.sample = { mode: 'konfigurator', productName, colorCount, submitDisabledBefore, countText, errorText };
+  result.sample = { mode: 'konfigurator', productName, colorCount, linkFarbe, vorgewaehlt, submitDisabledBefore, countText, errorText };
   return /Piumera Teppichboden/.test(productName || '')
-    && colorCount > 0
-    && submitDisabledBefore
-    && /1 von/.test(countText || '')
+    && colorCount > 1
+    && linkFarbe && vorgewaehlt.length === 1 && vorgewaehlt[0] === linkFarbe
+    && !submitDisabledBefore
+    && /2 von/.test(countText || '')
     && !errorText
     && !result.health.overflow
     && result.health.brokenImages.length === 0;
