@@ -438,6 +438,15 @@
   {%- if tp_rc_tel != blank or tp_rc_wa != blank or tp_rc_einfass_gruppe != blank -%}
     <div class="tp-rwc-beratung" data-rwc-body>
       <p class="tp-rwc-beratung__frage">Unsicher beim Maß?</p>
+      {%- comment -%}
+        E2 (Inhaber 2026-09-28): Hinweis auf die eigene Anlieferung. Nur wenn
+        der Liefer- und Verlegeservice fuer das Produkt gilt
+        (snippets/tp-vs-berechtigt), Werte aus den Theme-Einstellungen.
+      {%- endcomment -%}
+      {%- capture tp_rc_vs_ok -%}{% render 'tp-vs-berechtigt', product: product %}{%- endcapture -%}
+      {%- if tp_rc_vs_ok contains 'ja' and settings.tp_vs_schwelle != blank and settings.tp_vs_radius_basis != blank -%}
+        <p class="tp-rwc-beratung__liefer">Bis {{ settings.tp_vs_radius_basis }}&nbsp;km bringen wir ab {{ settings.tp_vs_schwelle }}&nbsp;€ Warenwert kostenlos und tragen die Ware in die Wohnung.</p>
+      {%- endif -%}
       {%- if tp_rc_tel != blank or tp_rc_wa != blank -%}
       <div class="tp-rwc-beratung__wege">
         {%- if tp_rc_tel != blank -%}
@@ -861,6 +870,13 @@
     margin: 0 0 8px;
     font-size: 15px;
     font-weight: 600;
+    color: var(--tp-rwc-ink, #1d1a17);
+  }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-beratung__liefer {
+    margin: -4px 0 10px;
+    font-size: 14px;
+    line-height: 1.45;
     color: var(--tp-rwc-ink, #1d1a17);
   }
 
