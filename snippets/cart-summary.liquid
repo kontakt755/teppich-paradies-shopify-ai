@@ -279,7 +279,17 @@
     {%- endfor -%}
     {%- if tp_cart_vs_ok -%}
       <p class="tp-cart-shipping-note tp-cart-vs-note">
-        Bis {{ settings.tp_vs_radius_basis }}&nbsp;km bringen wir ab {{ settings.tp_vs_schwelle }}&nbsp;€ Warenwert kostenlos und tragen die Ware in die Wohnung.
+        {%- comment -%}
+          Unter der Schwelle nennt die Zeile den Rest bis zur kostenlosen
+          Lieferung, darueber bestaetigt sie sie - wie der Versandhinweis oben.
+        {%- endcomment -%}
+        {%- assign tp_cart_vs_schwelle_cent = settings.tp_vs_schwelle | times: 100 -%}
+        {%- if cart.total_price >= tp_cart_vs_schwelle_cent -%}
+          <strong>Kostenlose Lieferung bis {{ settings.tp_vs_radius_basis }}&nbsp;km</strong> – wir tragen die Ware in die Wohnung.
+        {%- else -%}
+          {%- assign tp_cart_vs_rest = tp_cart_vs_schwelle_cent | minus: cart.total_price -%}
+          <strong>Noch {{ tp_cart_vs_rest | money }} bis zur kostenlosen Lieferung</strong> bis {{ settings.tp_vs_radius_basis }}&nbsp;km (ab {{ settings.tp_vs_schwelle }}&nbsp;€ Warenwert) – wir tragen die Ware in die Wohnung.
+        {%- endif %}
       </p>
     {%- endif -%}
   {%- endif -%}
