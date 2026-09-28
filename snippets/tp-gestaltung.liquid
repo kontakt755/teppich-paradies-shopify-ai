@@ -72,13 +72,28 @@
   html body .tp-product-breadcrumb :is(a, span),
   html body .facets__disabled-hint,
   html body .facets .checkbox__label-text,
-  html body .price-with-unit__compare,
-  html body .tp-price-per-sqm__compare,
   html body .tp-card-product-kind,
-  html body .tp-roll-order-help__measure-note,
-  html body .compare-at-price {
+  html body .tp-roll-order-help__measure-note {
     color: #595959;
     opacity: 1;
+  }
+
+  /* Inhaber 2026-09-28: Streichpreise rot und gut sichtbar - sie sollen
+     locken. Eine Stelle fuer alle alten Preise (Produktseite, Rechner,
+     Karten, Suche, Warenkorb, Teppich, Einfassung). #c8102e hat 5,9:1
+     Kontrast auf Weiss. Ausverkaufte Groessen und Filter bleiben grau. */
+  html body .compare-at-price,
+  html body .price-with-unit__compare,
+  html body .tp-price-per-sqm__compare,
+  html body .tp-ab-preis__alt,
+  html body .tp-rwc-art-streich,
+  html body .tp-ek__summe-alt {
+    color: #c8102e;
+    opacity: 1;
+    text-decoration-line: line-through;
+    text-decoration-color: #c8102e;
+    text-decoration-thickness: 2px;
+    font-weight: 600;
   }
   html body .facets .checkbox__input:disabled ~ .checkbox__label .checkbox__label-text,
   html body .facets .checkbox--disabled .checkbox__label-text {
