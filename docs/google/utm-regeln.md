@@ -5,7 +5,7 @@ Stand 2026-09-29. Gilt fuer jeden Link, der von aussen in den Shop fuehrt.
 ## Grundsatz
 
 **Google Ads bekommt keine UTM-Parameter.** Google Ads markiert jeden Klick
-automatisch (`gclid`, „Automatische Tag-Kennzeichnung\" im Ads-Konto, muss
+automatisch (`gclid`, „Automatische Tag-Kennzeichnung" im Ads-Konto, muss
 **an** sein). GA4 liest daraus Kampagne, Anzeigengruppe und Suchbegriff.
 Manuelle UTMs an Ads-Links liefern weniger Daten und koennen die automatische
 Zuordnung ueberschreiben.
@@ -63,9 +63,9 @@ https://www.teppich-paradies.net/pages/muster?utm_source=flyer&utm_medium=offlin
 ## Auswertung in GA4
 
 Berichte → Akquisition → Traffic-Akquisition, Dimension
-„Sitzung – Quelle/Medium\" bzw. „Sitzung – Kampagne\". Eine eigene Segmentierung
+„Sitzung – Quelle/Medium" bzw. „Sitzung – Kampagne". Eine eigene Segmentierung
 ist erst sinnvoll, wenn Zugriffe da sind; die Werte oben sind so gewaehlt, dass
-die GA4-Standardgruppen (Email, Organic Search, Organic Social, Paid Social, Referral) greifen; `offline` landet dort unter „Unassigned\" und wird ueber utm_source gefiltert.
+die GA4-Standardgruppen (Email, Organic Search, Organic Social, Paid Social, Referral) greifen; `offline` landet dort unter „Unassigned" und wird ueber utm_source gefiltert.
 
-Offen, braucht das Ads-Konto (Inhaber): „Automatische Tag-Kennzeichnung\"
+Offen, braucht das Ads-Konto (Inhaber): „Automatische Tag-Kennzeichnung"
 eingeschaltet? Doppelte Kauf-Conversion bereinigt? (#52)
