@@ -1098,6 +1098,11 @@ table.tasks td { padding-top: 13px; padding-bottom: 13px; }
   .sheet { border-radius: 0; }
 }
 
+/* Auf 320-px-Geraeten braucht die Navigation den Platz des Markentexts. */
+@media (max-width: 350px) {
+  .topbar .brand-text { display: none; }
+}
+
 @media (max-width: 390px) {
   .band { grid-template-columns: 1fr; }
 }
