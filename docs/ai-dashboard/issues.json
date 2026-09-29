@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-29T02:09:36.329Z",
+  "generated_at": "2026-09-29T08:26:31.950Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 161,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-29T02:09:36.329Z",
+    "fetchedAt": "2026-09-29T08:26:31.950Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -76,13 +76,13 @@
       ],
       "assignee": null,
       "assignees": [],
-      "comments": 0,
+      "comments": 1,
       "nextStep": null,
       "fields": {
         "description": "## Befund aus dem 18-Punkte-Shop-Audit (QA-08)\nDer Shopify-Checkout zeigt „35 Artikel“, obwohl der geprüfte Warenkorb drei Positionen enthält. Für Rollenware wird die echte Fläche als Shopify-Menge übergeben; Shopify summiert diese Mengen für den Zähler. Im Theme zählt `snippets/tp-cart-artikelzahl.liquid` bereits die Warenkorbzeilen, der von Shopify gehostete Checkout verwendet diesen Theme-Zähler nicht.\n\n## Kundenauswirkung\n„35 Artikel“ klingt nach 35 verschiedenen Produkten und widerspricht den drei sichtbaren Positionen. Preise und Mengenlogik dürfen nicht zur kosmetischen Korrektur verändert werden.\n\n## Nächster sicherer Schritt\n1. Die betreffende Formulierung im Shopify-Admin unter Einstellungen → Checkout → Checkout-Sprache rein lesend identifizieren.\n2. Einen genauen Textentwurf für den Zähler vorlegen; er muss auch für m², Pakete, Muster und Stückware verständlich sein.\n3. Für die konkrete Checkout-Einstellungsänderung Inhaberfreigabe einholen (AGENTS.md).\n4. Danach mit gemischtem Testwarenkorb bis zum Checkout prüfen, ohne Kaufabschluss.\n\nShopify beschreibt die Änderung der Checkout-Texte im Admin: https://help.shopify.com/en/manual/checkout-settings/checkout-language"
       },
       "created_at": "2026-09-28T11:41:00Z",
-      "updated_at": "2026-09-28T11:41:00Z",
+      "updated_at": "2026-09-29T08:24:41Z",
       "closed_at": null
     },
     {
@@ -2715,13 +2715,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 4,
+      "comments": 5,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T20:09:42Z",
-      "updated_at": "2026-09-21T08:21:27Z",
+      "updated_at": "2026-09-29T08:24:42Z",
       "closed_at": null
     },
     {
@@ -2751,7 +2751,7 @@
     {
       "number": 164,
       "title": "Verschnitt-Option mit Erklaerung im Rollenware-Rechner",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/164",
       "labels": [
         "status:blockiert",
@@ -2763,14 +2763,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 9,
+      "comments": 10,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T20:09:36Z",
-      "updated_at": "2026-09-21T11:05:21Z",
-      "closed_at": null
+      "updated_at": "2026-09-29T08:26:17Z",
+      "closed_at": "2026-09-29T08:26:17Z"
     },
     {
       "number": 163,
