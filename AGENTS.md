@@ -104,6 +104,18 @@ Horizon 4.1.3 existiert als separates Update. Keine Migration durchführen, sola
 
 ## Preislogik
 
+Bei Teppichboden mit Meterware (Rollenbreiten) und Raummaß (Wunschmaß-Variante)
+gilt für jede Farbe und Breite dieselbe Produktaktion mit demselben
+Rabattprozentsatz. Der normale Raummaß-Aufschlag bleibt im regulären Preis;
+der Rabatt wird anschließend auf beide Zuschnittarten gleichermaßen angewandt.
+Raummaß allein ist keine Aktion. Streichpreise und Rabattkennzeichen dürfen
+nur bei einer tatsächlich aktiven Produktaktion erscheinen, wenn beide
+Zuschnittarten reduziert sind und die Vergleichspreise belegte Vorpreise sind.
+Rundung auf Cent darf zu kleinen rechnerischen Prozentabweichungen führen.
+Vor einer Änderung der Shopify-Variantenpreise oder Vergleichspreise ist eine
+konkrete Produkttabelle zu prüfen und die ausdrückliche Freigabe des Inhabers
+einzuholen. Produkttexte dürfen keinen abweichenden Rabatt versprechen.
+
 Bei Paketprodukten:
 
 - €/m² ist die primäre Kundendarstellung.
