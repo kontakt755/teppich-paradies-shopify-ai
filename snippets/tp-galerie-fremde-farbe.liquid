@@ -1,0 +1,86 @@
+{%- comment -%}
+  Gibt "ja" aus, wenn der Alt-Text eines Galeriebildes eine andere Farbe des
+  Produkts nennt als die gewaehlte Variante. So gehoeren Raumbild und
+  Musterbild einer Farbe zusammen, ohne dass beide einer Variante zugeordnet
+  sein muessen. Alt-Texte ohne Farbnamen gelten fuer alle Farben.
+  Parameter: product, alt
+{%- endcomment -%}
+{%- liquid
+  assign tp_gewaehlt = blank
+  assign tp_farben = blank
+  for tp_option in product.options_with_values
+    assign tp_name = tp_option.name | downcase
+    if tp_name == 'farbe' or tp_name == 'color' or tp_name == 'dekor'
+      assign tp_farben = tp_option.values
+      assign tp_index = tp_option.position | minus: 1
+      assign tp_gewaehlt = product.selected_or_first_available_variant.options[tp_index]
+    endif
+  endfor
+
+  if tp_gewaehlt != blank
+    assign tp_supplier_collection = product.metafields.grosshandel.sku.value | default: ''
+    assign tp_hat_originalbild = false
+    if tp_supplier_collection contains 'Sprint 027'
+      assign tp_original_marker = ' | Farbe: ' | append: tp_gewaehlt | append: ' |'
+      for tp_media in product.media
+        if tp_media.alt contains tp_original_marker and tp_media.alt contains 'Sprint 027 ('
+          unless tp_media.alt contains ' · Raumbild'
+            assign tp_hat_originalbild = true
+            break
+          endunless
+        endif
+      endfor
+    endif
+    assign tp_legacy_swatch = false
+    assign tp_gew_code_text = ''
+    for tp_variant in product.variants
+      if tp_variant.options[tp_index] == tp_gewaehlt and tp_variant.sku != blank
+        assign tp_gew_code_text = tp_variant.sku | split: '_' | last
+        assign tp_gew_code_num = tp_gew_code_text | plus: 0
+        if tp_gew_code_num > 0
+          break
+        endif
+      endif
+    endfor
+    assign tp_legacy_code_marker = '(' | append: tp_gew_code_text | append: ')'
+    assign tp_legacy_code_kurz = '(' | append: tp_gew_code_num | append: ')'
+    if tp_gew_code_num > 0 and alt contains ' Teppichboden '
+      if alt contains tp_legacy_code_marker or alt contains tp_legacy_code_kurz
+        unless alt contains ' | Farbe: ' or alt contains 'Farbnr. ' or alt contains 'Raumbild' or alt contains 'Detail'
+          assign tp_legacy_swatch = true
+        endunless
+      endif
+    endif
+    if tp_hat_originalbild and tp_legacy_swatch
+      echo 'ja'
+    elsif alt contains ' | Farbe: '
+      assign tp_marker = ' | Farbe: ' | append: tp_gewaehlt | append: ' |'
+      unless alt contains tp_marker
+        echo 'ja'
+      endunless
+    elsif alt contains 'Farbnr. ' and tp_supplier_collection contains 'Sprint 027'
+      assign tp_bild_code = alt | split: 'Farbnr. ' | last | split: ')' | first | plus: 0
+      assign tp_gew_code = 0
+      for tp_variant in product.variants
+        if tp_variant.options[tp_index] == tp_gewaehlt and tp_variant.sku != blank
+          assign tp_gew_code = tp_variant.sku | split: '_' | last | plus: 0
+          if tp_gew_code > 0
+            break
+          endif
+        endif
+      endfor
+      if tp_gew_code == 0 or tp_bild_code != tp_gew_code
+        echo 'ja'
+      endif
+    else
+      unless alt contains tp_gewaehlt
+        for tp_farbe in tp_farben
+          if alt contains tp_farbe
+            echo 'ja'
+            break
+          endif
+        endfor
+      endunless
+    endif
+  endif
+-%}

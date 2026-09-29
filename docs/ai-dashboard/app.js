@@ -16,6 +16,8 @@ import {
 } from './lib/model.mjs';
 import { ratgeberStatus, pipelineRows, statusLabel, suchleistungHinweis } from './lib/bodenwissen.mjs';
 import { merkeEingabe, stelleEingabeWiederHer, darfUebernehmen } from './lib/eingabe.mjs';
+import { gruppierePositionenNachKunde } from './lib/einkauf-kundengruppen.mjs';
+import { bestellKundenKey, gruppiereBestellzeilenNachKunde, sortKundenname } from './lib/kunden-bestellgruppen.mjs';
 
 const CONFIG = {
   owner: 'kontakt755',
@@ -377,6 +379,7 @@ function viewHeute() {
   const health = systemHealth();
   const worst = health.some(h => h.level === 'crit') ? 'crit' : health.some(h => h.level === 'warn') ? 'warn' : 'ok';
   const localMode = state.capabilities.mode === 'local';
+  const datenWarnungen = localMode ? aktualisierungHealth().filter(h => h.level !== 'ok') : [];
   if (localMode) { ensureEinkaufBestellungen(); ensureEinkaufAuftragsstatus(); ensureEinkaufKennzahlen(); ensureAktualisierung(); ensureKundenRueckrufe(); }
 
   // Interne Arbeit: Kacheln mit 0 sind Rauschen und fallen weg; "erledigt" bleibt als
@@ -392,6 +395,7 @@ function viewHeute() {
   return `
     <div class="page-head"><div><h1>Heute</h1><p class="sub">${esc(today)}</p></div>
       <div class="head-actions">${aktualisierenButton()}${state.capabilities.sync ? '<button class="btn" data-action="sync" data-nur-inhaber title="Entwicklungsaufgaben frisch von GitHub holen">GitHub synchronisieren</button>' : ''}<a class="btn btn-ghost" data-nur-inhaber href="${newIssueUrl({ template: 'feature.yml' })}" target="_blank" rel="noopener">Neues GitHub-Issue ↗</a></div></div>
+    ${datenWarnungen.length ? `<div class="notice warn" role="status" style="margin-bottom:12px"><strong>Datenaktualisierung prüfen:</strong> ${plural(datenWarnungen.length, 'Datenquelle meldet', 'Datenquellen melden')} einen Fehler oder einen veralteten Stand. <a href="#/insights">Datenstand ansehen →</a></div>` : ''}
 
     ${localMode ? heuteFaelle() : ''}
     <h2 class="section-title">Kundengeschäft</h2>
@@ -1300,15 +1304,22 @@ function ensureAktualisierung() {
 function aktualisierenButton() {
   if (state.capabilities.mode !== 'local') return '';
   const laeuft = einkauf.aktualisierungLaeuft;
-  return `<button class="btn" type="button" data-action="aktualisieren" ${laeuft ? 'disabled' : ''}>${laeuft ? 'Wird aktualisiert …' : 'Jetzt aktualisieren'}</button>`;
+  const bereit = einkauf.aktualisierung?.manuellVerfuegbar === true;
+  const hinweis = einkauf.aktualisierung && !bereit
+    ? '<span class="small muted" role="status">Manueller Abruf ohne Shopify-Zugang nicht verfügbar. Geplanten Export prüfen.</span>'
+    : '';
+  return `<button class="btn" type="button" data-action="aktualisieren" ${laeuft || !bereit ? 'disabled' : ''}>${laeuft ? 'Wird aktualisiert …' : 'Jetzt aktualisieren'}</button>${hinweis}`;
 }
 
 /** Systemgesundheit-Zeilen fuer die lokalen Datenquellen (Lexikon, Bestellübersicht, Kennzahlen). */
 function aktualisierungHealth() {
   const a = einkauf.aktualisierung;
   if (!a) return [];
+  const aktualisierungHinweis = a.manuellVerfuegbar
+    ? 'Bitte „Jetzt aktualisieren“ verwenden.'
+    : 'Manueller Abruf ohne Shopify-Zugang nicht verfügbar. Geplanten Export prüfen.';
   if (!a.verfuegbar) {
-    return [{ level: 'warn', title: 'Lokale Datenquellen noch nie aktualisiert', detail: `${a.hinweis || ''} Befehl: ${a.befehl || 'npm run daten:aktualisieren'}` }];
+    return [{ level: 'warn', title: 'Lokale Datenquellen noch nie aktualisiert', detail: `${a.hinweis || ''} ${aktualisierungHinweis}` }];
   }
   return Object.entries(a.teile || {}).map(([teil, stand]) => {
     const label = AKTUALISIERUNG_TEIL_LABEL[teil] || teil;
@@ -1321,7 +1332,7 @@ function aktualisierungHealth() {
       return {
         level: 'warn',
         title: keinZugang ? `${label}: Kein Zugang hinterlegt` : `${label}: letzter Lauf fehlgeschlagen`,
-        detail: `${stand.meldung || ''} · Versuch ${versuch} – die vorhandenen (älteren) Daten bleiben unverändert stehen · Befehl: npm run daten:aktualisieren -- --nur ${teil}`,
+        detail: `${stand.meldung || ''} · Versuch ${versuch} – die vorhandenen (älteren) Daten bleiben unverändert stehen · ${aktualisierungHinweis}`,
       };
     }
     if (stand.letzterFehler) {
@@ -1335,7 +1346,7 @@ function aktualisierungHealth() {
         detail: `${stand.anzahl ?? '?'} Datensätze · Versuch ${f.zeitpunkt ? fmtDateTime(f.zeitpunkt) : 'unbekannt'}: ${f.meldung || ''}${keinZugang ? ' · Auf diesem Rechner aktualisiert der geplante Export-Lauf die Daten.' : ''}`,
       };
     }
-    if (stand.veraltet) return { level: 'warn', title: `${label}: Stand ${fmtDateTime(stand.zeitpunkt)} – Daten veraltet`, detail: 'Bitte `npm run daten:aktualisieren` ausführen.' };
+    if (stand.veraltet) return { level: 'warn', title: `${label}: Stand ${fmtDateTime(stand.zeitpunkt)} – Daten veraltet`, detail: aktualisierungHinweis };
     return { level: 'ok', title: `${label}: Stand ${fmtDateTime(stand.zeitpunkt)}`, detail: stand.anzahl !== null && stand.anzahl !== undefined ? `${stand.anzahl} Datensätze${stand.meldung ? ` · ${stand.meldung}` : ''}` : (stand.meldung || '') };
   });
 }
@@ -1416,6 +1427,8 @@ function einkaufGruppeKarte(g, i, praefix) {
   // Ohne Filter zeigt die Liste alles, was noch Arbeit macht - "Erledigt" nur auf Wunsch.
   const positionen = g.positionen.filter(p => { const gr = afFilterGruppe(afEintragFuer(p)?.status); return af ? gr === af : gr !== 'erledigt'; });
   if (!positionen.length) return '';
+  const kundengruppen = gruppierePositionenNachKunde(positionen, einkauf.bestellungen?.auftraege || []);
+  const sortiertePositionen = kundengruppen.flatMap(gruppe => gruppe.positionen);
   const unbekannt = g.lieferant === 'UNGEKLAERT';
   const luecken = positionen.filter(positionUnvollstaendig).length;
   const titel = unbekannt ? 'Lieferant nicht zugeordnet' : `Lieferant ${esc(g.lieferant)}`;
@@ -1443,34 +1456,29 @@ function einkaufGruppeKarte(g, i, praefix) {
   // data-l traegt die Spaltenueberschrift in die Zelle. Am Handy wird die
   // Tabelle damit zu Karten (app.css) - vorher musste man 390 px seitwaerts
   // schieben, um Artikelnummer und Stand zu sehen.
-  const zeilen = positionen.map(p => `<tr class="${positionUnvollstaendig(p) ? 'row-gap' : ''}">
+  const zeile = p => `<tr class="${positionUnvollstaendig(p) ? 'row-gap' : ''}">
       <td data-l="Artikel"><div class="cell-title">${esc(anzeigeWert(p.titel))}</div><div class="small muted">${esc(p.farbe)}${p.sku && p.sku !== 'UNGEKLAERT' ? ` · unsere SKU: <span class="mono">${esc(p.sku)}</span>` : ''}</div></td>
-      <td data-l="Auftrag" class="nowrap"><a href="${esc(adminAuftragUrl(p.orderId))}" target="_blank" rel="noopener" title="Bestellung in Shopify öffnen">${esc(p.orderName)} ↗</a>${auftragKundeHtml(p.orderId)}<div class="small muted">${fmtDate(p.orderDatum)}</div></td>
+      <td data-l="Auftrag" class="nowrap"><a href="${esc(adminAuftragUrl(p.orderId))}" target="_blank" rel="noopener" title="Bestellung in Shopify öffnen">${esc(p.orderName)} ↗</a><div class="small muted">${fmtDate(p.orderDatum)}</div></td>
       <td data-l="Zu bestellen">${p.bestellmenge.menge === 'UNGEKLAERT' ? `${ungeklaert(p.bestellmenge.grund)}<div class="small muted">${esc(p.bestellmenge.grund || '')}</div>` : `<b>${esc(p.bestellmenge.text)}</b>`}${kundenmengeWeicht(p) ? `<div class="small muted">Kunde: ${esc(p.kundenmenge)}</div>` : ''}</td>
       <td data-l="Artikelnummer beim Lieferanten">${p.grosshaendlerId === 'UNGEKLAERT' ? `${ungeklaert(p.idGrund)}<div class="small muted">${esc(p.idGrund || '')}</div>` : `<code class="mono" data-kopiertext="${esc(p.grosshaendlerId)}" title="Klicken zum Kopieren">${esc(p.grosshaendlerId)}</code>`}</td>
       <td data-l="Lieferant">${lieferantLinkZelle(p)}</td>
       <td data-l="Stand">${afStatusZelle(p)}</td>
-    </tr>`).join('');
+    </tr>`;
+  const zeilen = kundengruppen.map(gruppe => `<tbody class="einkauf-kundengruppe">
+    <tr class="einkauf-kundenkopf"><th colspan="6" scope="rowgroup"><span class="einkauf-kundenname">${esc(gruppe.name)}${gruppe.ort ? ` <span class="muted small">· ${esc(gruppe.ort)}</span>` : ''}</span><span class="small muted">${plural(gruppe.auftragsAnzahl, 'Auftrag', 'Aufträge')} · ${plural(gruppe.positionen.length, praefix === 'muster' ? 'Muster' : 'Artikel', praefix === 'muster' ? 'Muster' : 'Artikel')}</span></th></tr>
+    ${gruppe.positionen.map(zeile).join('')}
+  </tbody>`).join('');
   return `<section class="card group-card${luecken ? ' has-gap' : ''}">
-    <div class="card-head"><h3>${titel}${route} <span class="muted small">${plural(positionen.length, 'Artikel', 'Artikel')}</span></h3><div class="head-actions">${sammel}${kopierbutton(id)}</div></div>
-    <p class="small muted" style="margin:-6px 0 10px">Diese Artikel sind beim Lieferanten zu bestellen. Nach dem Bestellen auf „Als bestellt markieren" klicken.</p>
+    <div class="card-head"><h3>${titel}${route} <span class="muted small">${plural(positionen.length, praefix === 'muster' ? 'Muster' : 'Artikel', praefix === 'muster' ? 'Muster' : 'Artikel')}</span></h3><div class="head-actions">${sammel}${kopierbutton(id)}</div></div>
+    <p class="small muted" style="margin:-6px 0 10px">Nach Kunden sortiert. Nach dem Bestellen auf „Als bestellt markieren" klicken.</p>
     ${unterzeile}
     <div class="table-scroll"><table class="tasks compact"><thead><tr><th>Artikel</th><th>Auftrag</th><th>Zu bestellen</th><th>Artikelnummer beim Lieferanten</th><th>Lieferant</th><th>Stand</th></tr></thead>
-    <tbody>${zeilen}</tbody></table></div>
-    <textarea id="${id}" class="visually-hidden" aria-hidden="true" tabindex="-1">${esc(kopierTextFuer(g, positionen))}</textarea>
+    ${zeilen}</table></div>
+    <textarea id="${id}" class="visually-hidden" aria-hidden="true" tabindex="-1">${esc(kopierTextFuer(g, sortiertePositionen))}</textarea>
   </section>`;
 }
 /** Shopify-Link eines Auftrags aus der Auftragsliste (Positionen tragen ihn nicht selbst). */
 const adminAuftragUrl = id => (einkauf.bestellungen?.auftraege || []).find(a => a.id === id)?.adminUrl || '#';
-
-/** Kunde (und Ort) unter der Auftragsnummer - bei Mustern und Bestellungen sieht man sofort, fuer wen. */
-function auftragKundeHtml(orderId) {
-  const a = (einkauf.bestellungen?.auftraege || []).find(x => x.id === orderId);
-  const kunde = a?.details?.kunde?.name;
-  const ort = a?.details?.lieferadresse?.ort;
-  if (!kunde || kunde === '–') return '';
-  return `<div class="small muted">${esc(kunde)}${ort && ort !== '–' ? ` · ${esc(ort)}` : ''}</div>`;
-}
 
 function geldText(g) {
   if (!g || g.betrag === null || g.betrag === undefined) return '–';
@@ -2533,8 +2541,8 @@ function bqFeldTreffer(felder, q) { return felder.some(f => typeof f === 'string
 function bestellzeileGefiltert(zeilen, params) {
   const filter = params.get('bfilter') || 'nicht_fertig';
   const q = (params.get('bq') || '').trim().toLowerCase();
-  const sort = params.get('bsort') || 'datum';
-  const dir = params.get('bdir') || 'desc';
+  const sort = params.get('bsort') || 'kundenname';
+  const dir = params.get('bdir') || (sort === 'kundenname' ? 'asc' : 'desc');
   let liste = zeilen.filter(z => filter === 'nicht_fertig' ? (!z.fertig && !z.testbestellung)
     : filter === 'fertig' ? (z.fertig && !z.testbestellung)
     : filter === 'offen' ? (z.offen && !z.testbestellung)
@@ -2552,7 +2560,17 @@ function bestellzeileGefiltert(zeilen, params) {
     fortschritt: z => z.fortschritt?.minStufe ?? 0,
   }[sort] || (z => z.datum || '');
   const vz = dir === 'asc' ? 1 : -1;
-  liste = [...liste].sort((a, b) => { const av = cmp(a), bv = cmp(b); return av < bv ? -vz : av > bv ? vz : 0; });
+  const namen = new Intl.Collator('de', { sensitivity: 'base', numeric: true });
+  liste = [...liste].sort((a, b) => {
+    if (sort === 'kundenname') {
+      if (!a.kundenname || !b.kundenname) return Number(!a.kundenname) - Number(!b.kundenname);
+      return namen.compare(sortKundenname(a.kundenname), sortKundenname(b.kundenname)) * vz
+        || namen.compare(bestellKundenKey(a), bestellKundenKey(b))
+        || String(b.datum || '').localeCompare(String(a.datum || ''));
+    }
+    const av = cmp(a), bv = cmp(b);
+    return av < bv ? -vz : av > bv ? vz : 0;
+  });
   return liste;
 }
 
@@ -2642,11 +2660,11 @@ function bestellzeileHtml(z) {
     ${kunden.erweitert.has(z.orderId) ? `<tr class="bq-detail"><td colspan="9">${weitereAngaben(z, tagListe)}${kundenAuftragKarte(z.auftrag)}${bestellzeileAktionen(z)}</td></tr>` : ''}`;
 }
 
-function bestellzeileKarte(z) {
+function bestellzeileKarte(z, gruppiert = false) {
   const pk = fortschrittKlasse(z.fortschritt?.stufe);
-  return `<div class="row bq-karte" data-bq-toggle="${esc(z.orderId)}" tabindex="0" role="button" aria-expanded="${kunden.erweitert.has(z.orderId)}">
+  return `<div class="row bq-karte" data-bq-toggle="${esc(z.orderId)}" tabindex="0" role="button" aria-expanded="${kunden.erweitert.has(z.orderId)}" aria-label="Bestellung ${esc(z.orderName)} von ${esc(z.kundenname || 'unbekannt')} auf- oder zuklappen">
     <div>
-      <div class="t">${esc(z.orderName)} · ${wertText(z.kundenname)}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</div>
+      <div class="t">${esc(z.orderName)}${gruppiert ? '' : ` · ${wertText(z.kundenname)}`}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</div>
       <div class="m">${geldText({ betrag: z.gesamtbetrag, waehrung: z.waehrung })} · ${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)} · ${fmtDate(z.datum)}</div>
       <div class="m"><span class="bq-fortschritt ${pk}">${esc(z.fortschritt?.text || '–')}</span></div>
       ${z.wasFehlt?.length ? `<div class="m bq-fehlt">${z.wasFehlt.map(esc).join(' · ')}</div>` : ''}
@@ -2664,9 +2682,10 @@ function viewKundenBestellungen() {
   if (!d || !d.verfuegbar) return emptyState('Keine Bestelldaten verfügbar.', d?.hinweis || 'Bestellübersicht noch nicht exportiert.');
   const params = state.route.params;
   const filter = params.get('bfilter') || 'nicht_fertig';
-  const sort = params.get('bsort') || 'datum';
-  const dir = params.get('bdir') || 'desc';
+  const sort = params.get('bsort') || 'kundenname';
+  const dir = params.get('bdir') || (sort === 'kundenname' ? 'asc' : 'desc');
   const zeilen = bestellzeileGefiltert(d.zeilen, params);
+  const gruppen = sort === 'kundenname' ? gruppiereBestellzeilenNachKunde(zeilen) : null;
   const chips = `<div class="chips" style="margin:8px 0">
     ${FILTERCHIPS_KUNDEN.map(f => `<button type="button" class="chip" data-param="bfilter" data-value="${f === 'nicht_fertig' ? '' : f}" aria-pressed="${filter === f}">${esc(BQ_FILTER_LABEL[f])}</button>`).join('')}
   </div>`;
@@ -2674,14 +2693,23 @@ function viewKundenBestellungen() {
   // die Spalte setzen - die Richtung liesse sich dann nie umschalten.
   const sortHead = (feld, label) => `<th><button type="button" class="th-sort" data-bq-sort-toggle="${feld}" aria-label="Nach ${esc(label)} sortieren${sort === feld ? (dir === 'asc' ? ', aktuell aufsteigend' : ', aktuell absteigend') : ''}">${esc(label)}${sort === feld ? (dir === 'asc' ? ' ↑' : ' ↓') : ''}</button></th>`;
   const kopf = `<tr>${sortHead('orderName', 'Bestellnr.')}${sortHead('datum', 'Datum')}${sortHead('kundenname', 'Kunde')}<th>Kontakt</th>${sortHead('gesamtbetrag', 'Betrag')}${sortHead('zahlungsstatus', 'Zahlung')}${sortHead('fulfillmentstatus', 'Versand')}${sortHead('fortschritt', 'Fortschritt')}<th>Was fehlt</th></tr>`;
+  const gruppenkopf = g => `<tr class="bq-gruppenkopf"><th colspan="9" scope="rowgroup"><span>${esc(g.name)}</span><span class="small muted">${plural(g.zeilen.length, 'Bestellung', 'Bestellungen')}</span></th></tr>`;
+  const tabelle = zeilen.length ? gruppen
+    ? gruppen.map(g => `<tbody class="bq-tbody-desktop bq-kundengruppe">${gruppenkopf(g)}${g.zeilen.map(bestellzeileHtml).join('')}</tbody>`).join('')
+    : `<tbody class="bq-tbody-desktop">${zeilen.map(bestellzeileHtml).join('')}</tbody>`
+    : `<tbody><tr><td colspan="9">${emptyState('Keine Treffer.', '')}</td></tr></tbody>`;
+  const karten = zeilen.length ? gruppen
+    ? gruppen.map(g => `<section class="bq-kundengruppe-mobil"><h3>${esc(g.name)} <span class="small muted">· ${plural(g.zeilen.length, 'Bestellung', 'Bestellungen')}</span></h3>${g.zeilen.map(z => bestellzeileKarte(z, true)).join('')}</section>`).join('')
+    : zeilen.map(bestellzeileKarte).join('')
+    : emptyState('Keine Treffer.', '');
   return `
     <div class="toolbar search-hero"><input type="search" placeholder="Suchen – Kunde, E-Mail, Telefon, Bestellnummer, Kunden-ID, Kanal, Tags …" value="${esc(params.get('bq') || '')}" data-param="bq" aria-label="Bestellungen durchsuchen"></div>
     ${chips}
-    <p class="small muted" style="margin:0 0 8px">${zeilen.length} ${zeilen.length === 1 ? 'Bestellung' : 'Bestellungen'} · Sortiert nach ${esc(BQ_SORT_LABEL[sort] || 'Datum')} ${dir === 'asc' ? 'aufsteigend' : 'absteigend'} · Zeile anklicken zeigt Positionen, Kanal, Tags und die Aktionen</p>
+    <p class="small muted" style="margin:0 0 8px">${zeilen.length} ${zeilen.length === 1 ? 'Bestellung' : 'Bestellungen'} · Sortiert nach ${esc(BQ_SORT_LABEL[sort] || 'Kunde')} ${dir === 'asc' ? 'aufsteigend' : 'absteigend'} · Zeile anklicken zeigt Positionen, Kanal, Tags und die Aktionen</p>
     <div class="table-wrap kunden-table bq-table"><table><thead>${kopf}</thead>
-    <tbody class="bq-tbody-desktop">${zeilen.length ? zeilen.map(bestellzeileHtml).join('') : `<tr><td colspan="9">${emptyState('Keine Treffer.', '')}</td></tr>`}</tbody>
+    ${tabelle}
     </table></div>
-    <div class="rows bq-karten">${zeilen.length ? zeilen.map(bestellzeileKarte).join('') : emptyState('Keine Treffer.', '')}</div>
+    <div class="rows bq-karten">${karten}</div>
   `;
 }
 
@@ -3352,6 +3380,7 @@ async function syncNow() {
 async function aktualisierenNow() {
   if (istNurLesend()) { toast('Rolle "lesen" darf keine Aktualisierung anstossen.', 'crit'); return; }
   if (einkauf.aktualisierungLaeuft) { toast('Aktualisierung läuft bereits.'); return; }
+  if (einkauf.aktualisierung?.manuellVerfuegbar !== true) { toast('Manueller Abruf ohne Shopify-Zugang nicht verfügbar.', 'crit'); return; }
   try {
     const r = await fetch('/api/aktualisierung/start', { method: 'POST' });
     const j = await r.json().catch(() => ({}));
@@ -3605,13 +3634,22 @@ const ORG_BEREICHE = [
   ['archiv', 'Archiv'],
 ];
 const ORG_ANSICHTEN = [
-  ['offen', 'Alles Offene'], ['fokus', 'Fokus'], ['heute', 'Heute'], ['dringend', 'Dringend'],
+  ['offen', 'Alles Offene'], ['fokus', 'Wichtig'], ['heute', 'Heute'], ['dringend', 'Dringend'],
   ['woche', 'Diese Woche'], ['spaeter', 'Später'], ['warten', 'Warten auf'], ['pruefung', 'In Prüfung'],
   ['ueberfaellig', 'Überfällig'], ['erledigt', 'Erledigt'],
 ];
 // Am Handy nahmen elf Chips den halben Bildschirm ein, bevor die erste
 // Aufgabe kam. Vier reichen fuer den Alltag, der Rest steht einen Klick weiter.
-const ORG_ANSICHTEN_HAUPT = ['offen', 'heute', 'ueberfaellig', 'erledigt'];
+const ORG_ANSICHTEN_HAUPT = ['offen', 'fokus', 'woche', 'erledigt'];
+const ORG_DRINGLICHKEIT = [
+  ['ueberfaellig', 'Überfällig', 'Frist bereits verstrichen'],
+  ['jetzt', 'Jetzt wichtig', 'Dringend oder heute fällig'],
+  ['demnaechst', 'Als Nächstes', 'Hohe Priorität oder diese Woche fällig'],
+  ['weitere', 'Weitere offene Aufgaben', 'Ohne unmittelbare Frist'],
+  ['wartet', 'Wartet auf andere', 'Im Moment nicht selbst abschließbar'],
+  ['zurueckgestellt', 'Zurückgestellt', 'Für später vorgemerkt'],
+  ['erledigt', 'Erledigt', 'Bereits abgeschlossen'],
+];
 /**
  * Der Stand als Text: was schon offen ist, damit ChatGPT nicht dieselben
  * Punkte noch einmal liefert. Zusammen mit der Anweisung ergibt das den
@@ -3711,15 +3749,22 @@ function orgParams() {
   const og = p.get('og');
   // Standard ist 'alles': eine Aufgabe, die keiner sieht, wird nicht erledigt.
   const gruppe = ORG_GRUPPEN_KEYS.includes(og) ? og : 'alles';
-  return { bereich, ansicht, gruppe, person: p.get('op') || '', q: p.get('oq') || '', id: p.get('oid') || '' };
+  const prioritaet = ['URGENT', 'HIGH', 'REST'].includes(p.get('opf')) ? p.get('opf') : '';
+  return { bereich, ansicht, gruppe, prioritaet, person: p.get('op') || '', q: p.get('oq') || '', id: p.get('oid') || '' };
+}
+
+function orgEintragOeffnen(id) {
+  const p = new URLSearchParams(state.route.params);
+  p.set('oid', id);
+  location.hash = `#/organisation?${p}`;
 }
 
 function ensureOrgListe() {
-  const { bereich, ansicht, gruppe, person, q } = orgParams();
-  const key = `${bereich}|${ansicht}|${gruppe}|${person}|${q}`;
+  const { bereich, ansicht, gruppe, prioritaet, person, q } = orgParams();
+  const key = `${bereich}|${ansicht}|${gruppe}|${prioritaet}|${person}|${q}`;
   if (org.key === key && (org.liste || org.loading)) return;
   org.key = key; org.loading = true;
-  fetchEinkauf(`/api/org/liste?${new URLSearchParams({ bereich, ansicht, gruppe, person, q })}`).then(d => {
+  fetchEinkauf(`/api/org/liste?${new URLSearchParams({ bereich, ansicht, gruppe, prioritaet, person, q })}`).then(d => {
     if (org.key !== key) return;            // Antwort einer aelteren Eingabe
     org.liste = d; org.loading = false;
     if (state.route.view === 'organisation') render();
@@ -3775,8 +3820,6 @@ function orgZeile(e, { bereich = '' } = {}) {
   // Der Server liefert je Eintrag mit, ob man ihn aendern darf. Ohne das
   // standen Knoepfe da, die in einer Fehlermeldung endeten.
   const darf = e.darfAendern !== false && !istNurLesend();
-  const istMeine = e.verantwortlich && org.liste?.ich
-    && String(e.verantwortlich).toLowerCase() === String(org.liste.ich).toLowerCase();
   const prioKlasse = e.prioritaet === 'URGENT' ? 'crit' : e.prioritaet === 'HIGH' ? 'gap' : 'plain';
   const merkmale = [
     e.verknuepft?.art === 'kunde' && e.verknuepft.id
@@ -3788,6 +3831,8 @@ function orgZeile(e, { bereich = '' } = {}) {
     e.wartetAuf ? `wartet auf ${esc(e.wartetAuf)}` : '',
   ].filter(Boolean);
   const inNotizAnsicht = bereich === 'meine-notizen' || bereich === 'team-notizen';
+  // Die Aktionen haengen am document-Klickhandler. Inline stopPropagation wuerde
+  // Abhaken, Uebernehmen und Umwandeln vor diesem Handler abschneiden.
   return `<div class="row org-zeile${e.status === 'DONE' ? ' fertig' : ''}" data-org-open="${esc(e.id)}" tabindex="0" role="button" aria-label="${esc(e.titel)}">
     <div>
       <div class="t">${esc(e.titel)}
@@ -3801,14 +3846,9 @@ function orgZeile(e, { bereich = '' } = {}) {
     <div class="r">
       ${e.typ === 'TASK' ? `<span class="badge status ${esc(e.status.toLowerCase())}">${esc(ORG_STATUS_LABEL[e.status] || e.status)}</span>` : ''}
       ${darf && e.typ === 'TASK' && e.status !== 'DONE' && !e.verantwortlich
-        ? `<button type="button" class="btn btn-sm" data-org-uebernehmen="${esc(e.id)}" onclick="event.stopPropagation()" title="Diese Aufgabe auf deinen Namen setzen">Ich mache das</button>` : ''}
-      ${darf && e.typ === 'TASK' && e.status !== 'DONE' && istMeine
-        ? `<button type="button" class="btn btn-sm" data-org-abgeben="${esc(e.id)}" onclick="event.stopPropagation()" title="Zurück ins Team legen">Abgeben</button>` : ''}
-      ${darf && e.typ === 'TASK' && e.status !== 'DONE' && !e.faellig
-        ? `<button type="button" class="btn btn-sm" data-org-faellig="${esc(e.id)}" data-tag="${esc(heuteTag())}" onclick="event.stopPropagation()" title="Fällig heute">Heute</button>
-           <button type="button" class="btn btn-sm" data-org-faellig="${esc(e.id)}" data-tag="${esc(heuteTag(1))}" onclick="event.stopPropagation()" title="Fällig morgen">Morgen</button>` : ''}
-      ${darf && e.typ === 'TASK' && e.status !== 'DONE' ? `<button type="button" class="btn btn-sm" data-org-fertig="${esc(e.id)}" onclick="event.stopPropagation()" title="Aufgabe abhaken">✓ Abhaken</button>` : ''}
-      ${darf && e.typ === 'NOTE' ? `<button type="button" class="btn btn-sm" data-org-zuaufgabe="${esc(e.id)}" onclick="event.stopPropagation()" title="Aus dieser Notiz eine Aufgabe machen">In Aufgabe umwandeln</button>` : ''}
+        ? `<button type="button" class="btn btn-sm" data-org-uebernehmen="${esc(e.id)}" title="Diese Aufgabe auf deinen Namen setzen">Ich mache das</button>` : ''}
+      ${darf && e.typ === 'TASK' && e.status !== 'DONE' ? `<button type="button" class="btn btn-sm" data-org-fertig="${esc(e.id)}" title="Aufgabe abhaken">✓ Abhaken</button>` : ''}
+      ${darf && e.typ === 'NOTE' ? `<button type="button" class="btn btn-sm" data-org-zuaufgabe="${esc(e.id)}" title="Aus dieser Notiz eine Aufgabe machen">In Aufgabe umwandeln</button>` : ''}
     </div>
   </div>`;
 }
@@ -4299,7 +4339,7 @@ function viewOrganisation() {
     return `<div class="page-head"><div><h1>Aufgaben &amp; Organisation</h1></div></div>
       ${emptyState('Nur lokal im Betrieb verfügbar.', 'Dieser Bereich enthält interne Aufgaben und Notizen, die nie öffentlich werden. Auf dem Mac starten: npm run dashboard')}`;
   }
-  const { bereich, ansicht, gruppe, person, q, id } = orgParams();
+  const { bereich, ansicht, gruppe, prioritaet, person, q, id } = orgParams();
   if (id) return orgDetailAnsicht(id);
 
   ensureOrgListe();
@@ -4314,7 +4354,7 @@ function viewOrganisation() {
     ? `<div class="chips" style="margin:8px 0"><span class="small muted chip-label">Zeigen:</span>
         ${ORG_ANSICHTEN.filter(([k]) => ORG_ANSICHTEN_HAUPT.includes(k))
           .map(([k, l]) => `<button type="button" class="chip" data-param="oa" data-value="${k === 'offen' ? '' : k}" aria-pressed="${ansicht === k}">${esc(l)}</button>`).join('')}
-        <details class="chip-mehr"${ORG_ANSICHTEN_HAUPT.includes(ansicht) || ansicht === 'alle' ? '' : ' open'}>
+        <details class="chip-mehr"${ORG_ANSICHTEN_HAUPT.includes(ansicht) ? '' : ' open'}>
           <summary class="chip">Mehr …</summary>
           <div class="chips">
             ${ORG_ANSICHTEN.filter(([k]) => !ORG_ANSICHTEN_HAUPT.includes(k))
@@ -4322,6 +4362,13 @@ function viewOrganisation() {
             <button type="button" class="chip" data-param="oa" data-value="alle" aria-pressed="${ansicht === 'alle'}">Alle</button>
           </div>
         </details>
+      </div>
+      <div class="org-filterzeile"><label for="orgPrioritaet" class="small muted">Priorität</label>
+        <select id="orgPrioritaet" data-param="opf" aria-label="Aufgaben nach Priorität filtern">
+          <option value="">Alle Prioritäten</option>
+          ${[['URGENT', 'Kostet Geld'], ['HIGH', 'Hat ein Datum'], ['REST', 'Kann warten']]
+            .map(([wert, label]) => `<option value="${wert}" ${prioritaet === wert ? 'selected' : ''}>${esc(label)}</option>`).join('')}
+        </select>
       </div>` : '';
 
   // Das Team sucht hier Kunden, Bestellungen und kleine Auftraege - alles
@@ -4358,12 +4405,33 @@ function viewOrganisation() {
   if (!d && org.loading) return kopf + reiter + `<div class="empty">Lade …</div>`;
   if (!d || !d.verfuegbar) return kopf + reiter + emptyState('Noch nichts erfasst.', 'Mit „+ Schnell erfassen" anfangen.');
 
+  const sindAufgaben = ['meine-aufgaben', 'team-aufgaben'].includes(bereich);
+  const filterAktiv = gruppe !== 'alles' || Boolean(q) || (sindAufgaben && (ansicht !== 'offen' || Boolean(person || prioritaet)));
   const liste = d.eintraege.length
-    ? `<div class="rows">${d.eintraege.map(e => orgZeile(e, { bereich })).join('')}</div>`
-    : emptyState(bereich === 'meine-aufgaben' ? 'Nichts offen in dieser Ansicht.' : 'Nichts vorhanden.', 'Mit „+ Schnell erfassen" etwas anlegen.');
+    ? sindAufgaben
+      ? ORG_DRINGLICHKEIT.map(([key, titel, hinweis]) => {
+        const eintraege = d.eintraege.filter(e => (e.dringlichkeit || 'weitere') === key);
+        if (!eintraege.length) return '';
+        const sichtbar = eintraege.slice(0, 8);
+        const rest = eintraege.slice(8);
+        const zeilen = `<div class="rows">${sichtbar.map(e => orgZeile(e, { bereich })).join('')}</div>
+          ${rest.length ? `<details class="org-mehr"><summary>${rest.length} weitere ${rest.length === 1 ? 'Aufgabe' : 'Aufgaben'} anzeigen</summary>
+            <div class="rows">${rest.map(e => orgZeile(e, { bereich })).join('')}</div></details>` : ''}`;
+        const weitereEinklappen = key === 'weitere' && ansicht === 'offen' && !q && gruppe === 'alles'
+          && !person && !prioritaet && eintraege.length > 8;
+        return `<section class="org-dringlichkeit org-dringlichkeit-${key}" aria-label="${esc(titel)}">
+          <div class="org-dringlichkeit-kopf"><h2>${esc(titel)} <span class="org-dringlichkeit-zahl">${eintraege.length}</span></h2><span>${esc(hinweis)}</span></div>
+          ${weitereEinklappen ? `<details class="org-mehr org-gruppe-zu"><summary>Aufgaben anzeigen</summary>${zeilen}</details>` : zeilen}
+        </section>`;
+      }).join('')
+      : `<div class="rows">${d.eintraege.map(e => orgZeile(e, { bereich })).join('')}</div>`
+    : filterAktiv
+      ? emptyState('Keine passenden Einträge.', 'Suche oder Filter anpassen.')
+        + '<button type="button" class="btn btn-sm" data-org-reset>Filter zurücksetzen</button>'
+      : emptyState(bereich === 'meine-aufgaben' ? 'Nichts offen in dieser Ansicht.' : 'Nichts vorhanden.', 'Mit „+ Schnell erfassen" etwas anlegen.');
 
   return kopf + reiter + suche + ansichten + gruppen + personen +
-    `<p class="small muted" style="margin:0 0 8px">${d.anzahl} ${d.anzahl === 1 ? 'Eintrag' : 'Einträge'}</p>` + liste;
+    `<p class="small muted" style="margin:0 0 8px">${d.anzahl} ${d.anzahl === 1 ? 'Eintrag' : 'Einträge'}${sindAufgaben ? ' · nach Dringlichkeit geordnet' : ''}</p>` + liste;
 }
 
 /**
@@ -4752,6 +4820,11 @@ function bindEvents() {
     if (sammelBtn) { openSammelBestelltDialog(sammelBtn.dataset.afSammel); return; }
     const abschl = e.target.closest('[data-auftrag-erledigt]');
     if (abschl) { openAuftragAbschliessenDialog(abschl.dataset.auftragErledigt); return; }
+    if (e.target.closest('[data-org-reset]')) {
+      const bereich = orgParams().bereich;
+      location.hash = bereich === 'meine-aufgaben' ? '#/organisation' : `#/organisation?ob=${encodeURIComponent(bereich)}`;
+      return;
+    }
     const p = e.target.closest('button[data-param]');
     if (p) { setParam(p.dataset.param, p.dataset.value); return; }
     const kop = e.target.closest('[data-kopieren]');
@@ -4818,27 +4891,11 @@ function bindEvents() {
         { art: 'kunde', id: ka.dataset.kundeAufgabe, titel: ka.dataset.kundeName });
       return;
     }
-    const fae = e.target.closest('[data-org-faellig]');
-    if (fae) {
-      e.preventDefault(); e.stopPropagation();
-      orgSchreiben('/api/org/aendern', { id: fae.dataset.orgFaellig, felder: { faellig: fae.dataset.tag } })
-        .then(() => { toast('Termin gesetzt'); orgFrisch(); render(); })
-        .catch(err => toast(`Fehler: ${err.message}`, 'crit'));
-      return;
-    }
     const ueb = e.target.closest('[data-org-uebernehmen]');
     if (ueb) {
       e.preventDefault(); e.stopPropagation();
       orgSchreiben('/api/org/aendern', { id: ueb.dataset.orgUebernehmen, felder: { verantwortlich: org.liste?.ich || null } })
         .then(() => { toast('Steht jetzt auf deinem Namen'); orgFrisch(); render(); })
-        .catch(err => toast(`Fehler: ${err.message}`, 'crit'));
-      return;
-    }
-    const abg = e.target.closest('[data-org-abgeben]');
-    if (abg) {
-      e.preventDefault(); e.stopPropagation();
-      orgSchreiben('/api/org/aendern', { id: abg.dataset.orgAbgeben, felder: { verantwortlich: null } })
-        .then(() => { toast('Zurück ins Team gelegt'); orgFrisch(); render(); })
         .catch(err => toast(`Fehler: ${err.message}`, 'crit'));
       return;
     }
@@ -4895,9 +4952,7 @@ function bindEvents() {
     const orgOpen = e.target.closest('[data-org-open]');
     if (orgOpen && !e.target.closest('button, a, select, input')) {
       e.preventDefault();
-      const p = new URLSearchParams(state.route.params);
-      p.set('oid', orgOpen.dataset.orgOpen);
-      location.hash = `#/organisation?${p}`;
+      orgEintragOeffnen(orgOpen.dataset.orgOpen);
       return;
     }
     const sortKopf = e.target.closest('[data-bq-sort-toggle]');
@@ -4907,10 +4962,11 @@ function bindEvents() {
       e.preventDefault();
       const feld = sortKopf.dataset.bqSortToggle;
       const p = new URLSearchParams(state.route.params);
-      const warSortiert = (p.get('bsort') || 'datum') === feld;
-      const richtung = warSortiert ? ((p.get('bdir') || 'desc') === 'desc' ? 'asc' : 'desc') : 'desc';
+      const vorherigesFeld = p.get('bsort') || 'kundenname';
+      const warSortiert = vorherigesFeld === feld;
+      const richtung = warSortiert ? ((p.get('bdir') || (feld === 'kundenname' ? 'asc' : 'desc')) === 'desc' ? 'asc' : 'desc') : (feld === 'kundenname' ? 'asc' : 'desc');
       p.set('bsort', feld);
-      if (richtung === 'desc') p.delete('bdir'); else p.set('bdir', richtung);
+      if (richtung === (feld === 'kundenname' ? 'asc' : 'desc')) p.delete('bdir'); else p.set('bdir', richtung);
       location.hash = `#/${state.route.view}?${p}`;
       return;
     }
@@ -5009,6 +5065,13 @@ function bindEvents() {
     if (e.key === '/') { e.preventDefault(); openPalette(); return; }
     // "n" wie neu: Schnellerfassung von jeder Seite aus.
     if (e.key === 'n' && state.capabilities.mode === 'local') { e.preventDefault(); openOrgSchnell(); return; }
+    const orgRow = document.activeElement;
+    if ((e.key === 'Enter' || e.key === ' ') && orgRow?.dataset?.orgOpen) {
+      e.preventDefault(); orgEintragOeffnen(orgRow.dataset.orgOpen); return;
+    }
+    if ((e.key === 'Enter' || e.key === ' ') && orgRow?.dataset?.orgZuKunde) {
+      e.preventDefault(); navigate('organisation', { oid: orgRow.dataset.orgZuKunde }); return;
+    }
     const rows = [...document.querySelectorAll('#main [data-open][tabindex]')];
     if (!rows.length) return;
     // Solange eine Aufgabe offen ist, gehoert die Tastatur dem Panel. Vorher

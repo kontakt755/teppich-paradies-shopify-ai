@@ -41,9 +41,40 @@
 
   # Logic to determine which variant URL to use (matching swatch selection logic)
   assign variant_to_link = product.selected_or_first_available_variant
+  if product.selected_variant == blank
+    capture tp_raumdaten
+      render 'tp-sprint-raumdaten', product: product
+    endcapture
+    assign tp_raumteile = tp_raumdaten | strip | split: '|'
+    if tp_raumteile.size == 2
+      assign tp_raumfarbe = tp_raumteile | first
+      for tp_option in product.options_with_values
+        assign tp_optionsname = tp_option.name | downcase
+        if tp_optionsname == 'farbe' or tp_optionsname == 'color' or tp_optionsname == 'dekor'
+          assign tp_farbindex = tp_option.position | minus: 1
+          for tp_variant in product.variants
+            if tp_variant.options[tp_farbindex] == tp_raumfarbe and tp_variant.available
+              assign variant_to_link = tp_variant
+              break
+            endif
+          endfor
+          break
+        endif
+      endfor
+    endif
+  endif
 
   if settings.transition_to_main_product
     assign featured_image = variant_to_link.featured_image
+    if tp_raumteile.size == 2 and product.selected_variant == blank
+      assign tp_raumdatei = tp_raumteile | last
+      for tp_media in product.media
+        if tp_media.preview_image.src contains tp_raumdatei
+          assign featured_image = tp_media.preview_image
+          break
+        endif
+      endfor
+    endif
     if featured_image == blank
       assign featured_image = product.featured_media.preview_image
     endif
@@ -151,8 +182,10 @@
      gerendert wurden - eine Produktseite ohne Karten bekam den Preis dann
      in Grundschrift statt in der Preisgroesse. */
 
+  /* V2: Preise schwarz - Rot nur im Rabatt-Badge (vorher #c4392c als
+     zweites Rot neben dem Badge-Rot). */
   .price-item--sale {
-    color: #c4392c;
+    color: var(--color-foreground, #000);
   }
 
   .compare-at-price {

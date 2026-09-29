@@ -52,12 +52,31 @@ npm run shopify:token -- --grant client-credentials --write-env
 Ein POST an `/admin/oauth/access_token` mit `grant_type=client_credentials`. Keine
 Redirect-URL, keine Zustimmung, keine Merchant-Interaktion.
 
-**Der Haken:** Der Token ist 24 Stunden gültig (`expires_in: 86399`). Als statisches
-Repository-Secret taugt er damit nicht — er wäre beim nächsten nächtlichen Lauf abgelaufen.
-Für diesen Weg müsste `grosshandel-sync.yml` stattdessen `SHOPIFY_CLIENT_ID` und
-`SHOPIFY_CLIENT_SECRET` als Secrets bekommen und den Token **in jedem Lauf selbst holen**.
-Diese Umstellung ist bewusst **nicht** Teil des Werkzeugs; sie gehört als eigene Aufgabe
-entschieden.
+Der Token ist nur 24 Stunden gültig (`expires_in: 86399`) und taugt deshalb nicht als
+statisches Secret. Seit #465 holt `grosshandel-sync.yml` ihn **in jedem Lauf selbst**:
+
+```
+node scripts/shopify-oauth.mjs --grant client-credentials --github-env
+```
+
+`--github-env` maskiert den Token (`::add-mask::`) und reicht ihn über `$GITHUB_ENV`
+als `SHOPIFY_ADMIN_TOKEN` an die folgenden Schritte weiter. Der Schritt läuft nur, wenn
+das Secret `SHOPIFY_CLIENT_ID` existiert; sonst gilt weiter `SHOPIFY_ADMIN_TOKEN`.
+
+**Das ist der Weg für neue Apps.** Im Shopify-Admin lassen sich unter „Apps entwickeln"
+keine neuen Custom Apps mehr anlegen; neue Apps entstehen im Dev Dashboard.
+
+### Klickfolge für den Inhaber (einmalig)
+
+1. `dev.shopify.com` → **Apps** → **App erstellen** → „Manuell erstellen", Name z. B.
+   `TP Grosshandel-Sync`. Die App muss in **derselben Organisation** wie der Store liegen.
+2. In der App → **Versionen** → neue Version: **Scopes** `read_products,write_products`,
+   App-URL beliebig (z. B. `https://www.teppich-paradies.net`), Embedded aus → **Freigeben**.
+3. **Home** der App → **Installieren** → Store `sjjyq1-6w` wählen → zustimmen.
+4. **Einstellungen** der App → **Client-ID** und **Secret** kopieren.
+5. Beide als Repository-Secrets hinterlegen (fragt den Wert jeweils ab):
+   `gh secret set SHOPIFY_CLIENT_ID` und `gh secret set SHOPIFY_CLIENT_SECRET`.
+6. Workflow *Grosshandel-Sync* manuell starten.
 
 ---
 

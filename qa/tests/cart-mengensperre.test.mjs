@@ -73,10 +73,10 @@ test('die Hauptzeile zeigt den Hinweis mit Link zurueck zur Produktseite', () =>
 
 // line_item.url einer Zusatzzeile (Kettelservice, Fussleiste, Haftunterlage) fuehrt zum
 // Zusatzprodukt, nicht zum Rechner des Teppichs - dort darf kein Link stehen.
-test('Zusatzzeilen bekommen den Hinweis ohne Link', () => {
+test('Zusatzzeilen wiederholen die bereits sichtbare Mengenangabe nicht', () => {
   const zusatz = hinweis[0].match(/if tp_gz_service -%\}[\s\S]*?\{%- else -%\}/);
   assert.ok(zusatz, 'Zweig fuer Zusatzzeilen fehlt');
-  assert.match(zusatz[0], /Menge ergibt sich aus dem Maß des zugehörigen Teppichs/);
+  assert.doesNotMatch(zusatz[0], /Menge ergibt sich aus dem Maß des zugehörigen Teppichs/);
   assert.doesNotMatch(zusatz[0], /<a\s|line_item\.url/);
 });
 

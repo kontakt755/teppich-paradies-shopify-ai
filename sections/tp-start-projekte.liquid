@@ -12,7 +12,6 @@
         <h2 id="tp-proj-h2" class="tp-s-h2">{{ section.settings.heading | escape }}</h2>
         {%- if section.settings.text != blank -%}<p>{{ section.settings.text | escape }}</p>{%- endif -%}
       </div>
-      {%- if section.settings.link_label != blank -%}<a class="tp-s-link" href="{{ section.settings.link | default: '/pages/unsere-arbeit' }}">{{ section.settings.link_label | escape }}</a>{%- endif -%}
     </div>
     <div class="tp-proj__grid">
       {%- for block in section.blocks limit: 5 -%}

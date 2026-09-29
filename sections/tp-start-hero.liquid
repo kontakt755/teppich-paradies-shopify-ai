@@ -74,8 +74,15 @@
           sizes folgt dem Raster: mobil volle Breite minus 2x16px Rand, darueber
           die rechte Spalte (1fr von 2.05fr abzueglich Luecke), gedeckelt durch
           --tp-container (1240px, ab 1600px 1360px).
+
+          Perf (#662): 700 ergaenzt, weil das die naechste Kandidatengroesse
+          nach dem gemessenen Bedarf ist - mobil 380 CSS-px x 1,75 DPR (Lighthouse-
+          Emulation) ergeben rund 665px Bedarf; ohne 700 in der Liste sprang der
+          Browser auf 800 (132 KB), mit 700 auf rund 102 KB (-23%). Breitere
+          Bildschirme/hoehere DPR erreichen weiter 1000-1600, das aendert sich
+          nicht - die Liste bekommt nur eine feinere Stufe im mobilen Bereich.
         {%- endcomment -%}
-        {{ section.settings.bild | image_url: width: 1200 | image_tag: loading: 'eager', fetchpriority: 'high', widths: '400, 600, 800, 1000, 1200, 1600', sizes: '(max-width: 767px) calc(100vw - 32px), (max-width: 1239px) calc(48vw - 37px), (min-width: 1600px) 620px, 560px', alt: hero_alt, class: 'tp-hero__img' }}
+        {{ section.settings.bild | image_url: width: 1200 | image_tag: loading: 'eager', fetchpriority: 'high', widths: '400, 600, 700, 800, 1000, 1200, 1600', sizes: '(max-width: 767px) calc(100vw - 32px), (max-width: 1239px) calc(48vw - 37px), (min-width: 1600px) 620px, 560px', alt: hero_alt, class: 'tp-hero__img' }}
       {%- else -%}
         <div class="tp-hero__platzhalter">{{ 'image' | placeholder_svg_tag }}</div>
       {%- endif -%}
@@ -91,7 +98,7 @@
   .tp-hero__wrap { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 48px; align-items: center; min-height: 480px; padding-top: 40px; padding-bottom: 40px; }
   .tp-hero__eyebrow { color: #4a443f; }
   .tp-hero__h1 { font-size: clamp(30px, 3.4vw, 46px); font-weight: 700; line-height: 1.12; letter-spacing: -0.01em; margin: 0; color: #1d1a17; text-wrap: balance; }
-  .tp-hero__h1 em { font-style: normal; color: #b73740; }
+  .tp-hero__h1 em { font-style: normal; color: #b0303f; }
   .tp-hero__sub { font-size: 18px; color: #4a443f; max-width: 52ch; margin: 16px 0 26px; line-height: 1.5; }
   /* Die Absaetze kommen aus dem Richtext-Feld; der aeussere Abstand steht oben. */
   .tp-hero__sub p { margin: 0; }

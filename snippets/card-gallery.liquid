@@ -125,6 +125,38 @@
       assign other_media = product.media | reject: 'src', product.featured_media
       assign media_list_to_show = product.featured_media | concat: other_media
 
+      assign tp_card_variant = product.selected_or_first_available_variant
+      if product.selected_variant == blank
+        capture tp_raumdaten
+          render 'tp-sprint-raumdaten', product: product
+        endcapture
+        assign tp_raumteile = tp_raumdaten | strip | split: '|'
+        if tp_raumteile.size == 2
+          assign tp_raumfarbe = tp_raumteile | first
+          assign tp_raumdatei = tp_raumteile | last
+          for tp_option in product.options_with_values
+            assign tp_optionsname = tp_option.name | downcase
+            if tp_optionsname == 'farbe' or tp_optionsname == 'color' or tp_optionsname == 'dekor'
+              assign tp_farbindex = tp_option.position | minus: 1
+              for tp_variant in product.variants
+                if tp_variant.options[tp_farbindex] == tp_raumfarbe and tp_variant.available
+                  assign tp_card_variant = tp_variant
+                  break
+                endif
+              endfor
+              break
+            endif
+          endfor
+          for tp_media in product.media
+            if tp_media.preview_image.src contains tp_raumdatei
+              assign other_media = product.media | reject: 'src', tp_media.src
+              assign media_list_to_show = tp_media | concat: other_media
+              break
+            endif
+          endfor
+        endif
+      endif
+
       if product.media.size > 2 and generic_media_size > 0
         assign show_arrows = true
       endif
@@ -224,7 +256,7 @@
     <a
       class="contents"
       ref="cardGalleryLink"
-      href="{{ product.selected_or_first_available_variant.url }}"
+      href="{{ tp_card_variant.url }}"
       aria-label="{{- product.title -}}"
     >
       {% render 'slideshow',

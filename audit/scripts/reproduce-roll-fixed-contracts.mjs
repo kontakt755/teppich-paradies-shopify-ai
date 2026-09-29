@@ -208,7 +208,7 @@ async function fixedCase(name, o = {}) {
     request: requests[0] ?? null, modeledCartCents: requests.length ? Number(qty.value) * variants[o.selected ?? 0].price : null });
 }
 await fixedCase('Feldwin 2.5m rods', { stange: lengthOf('feldwin-sockelleiste-40mm'), input: '12', mode: 'stange', expected: 5 });
-await fixedCase('Skarven 5.15m rods exact', { stange: lengthOf('skarven-sockelleiste-60mm'), input: '10,3', mode: 'stange', expected: 2 });
+await fixedCase('Leistenlinie 1 5.15m rods exact', { stange: lengthOf('skarven-sockelleiste-60mm'), input: '10,3', mode: 'stange', expected: 2 });
 await fixedCase('Cortessa 2.4m floating boundary', { stange: lengthOf('cortessa-sockelleiste'), input: '7.2', mode: 'stange', expected: 3 });
 const profiles = [{ title: '270 cm', options: ['270 cm'] }, { title: '100 cm', options: ['100 cm'] }];
 await fixedCase('profile cm first variant', { variants: profiles, optionName: 'Länge', input: '5', mode: 'stange', expected: 2 });

@@ -129,10 +129,13 @@
       data-tp-compare-toggle
       data-tp-compare-handle="{{ tp_ca_product.handle }}"
       data-tp-compare-snapshot="{{ tp_ca_snapshot | strip | escape }}"
-      data-tp-compare-compact
+      data-tp-compare-icon
       aria-pressed="false"
+      aria-label="Zum Vergleich hinzufügen"
+      title="Zum Vergleich hinzufügen"
     >
-      Vergleichen
+      {%- comment -%} C1: Symbol statt Text; Beschriftung per aria-label (assets/tp-compare.js) {%- endcomment -%}
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="2.5" y="4" width="6" height="12" rx="1.2"/><rect x="11.5" y="4" width="6" height="12" rx="1.2"/><path d="M10 2v16"/></svg>
     </button>
   </div>
 
@@ -170,6 +173,14 @@
     text-align: center;
   }
 
+  .tp-card-actions__compare[data-tp-compare-icon] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    padding: 0;
+  }
+  .tp-card-actions__compare[data-tp-compare-icon]:only-child { flex: 0 0 44px; }
   .tp-card-actions__compare[aria-pressed='true'] {
     background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
     border-color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.4);
@@ -181,10 +192,8 @@
     flex: 1 1 auto;
   }
 
-  /* Das Muster ist die Hauptaktion der Karte. Dasselbe Braun wie der
-     Muster-Knopf der Produktseite (blocks/tp-service-links.liquid), damit der
-     Weg ueber den ganzen Shop dieselbe Farbe hat. Kontrast Weiss auf #8c6d43
-     ist 4,79:1 und damit ueber der Grenze von 4,5:1 (Audit B-26). */
+  /* V2 (Design-Runde 3): Muster ist eine Nebenaktion - Schwarz-Outline statt
+     brauner Flaeche. Rot bleibt der Hauptaktion und dem Rabatt-Badge. */
   .tp-card-actions__sample {
     display: inline-flex;
     align-items: center;
@@ -193,12 +202,12 @@
     min-width: 0;
     min-height: 44px;
     padding: 8px 10px;
-    background: #8c6d43;
-    border: 1px solid #8c6d43;
+    background: transparent;
+    border: 1.5px solid var(--color-foreground, #000);
     border-radius: 6px;
-    color: #ffffff;
+    color: var(--color-foreground, #000);
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 600;
     text-decoration: none;
     white-space: nowrap;
     overflow: hidden;
@@ -206,8 +215,7 @@
   }
 
   .tp-card-actions__sample:hover {
-    background: #7a5e3a;
-    border-color: #7a5e3a;
+    background: rgb(0 0 0 / 0.05);
   }
 
   /* Sehr schmale Geraete: Beschriftung nicht abschneiden. Weniger Innenabstand
@@ -235,7 +243,7 @@
 
   /* Teppich nach Mass: Hinweis, Hauptknopf, darunter zwei ruhige Textlinks. */
   .tp-card-actions--teppich { flex-wrap: wrap; gap: 6px 14px; }
-  .tp-card-actions__hinweis { flex: 0 1 auto; display: inline-flex; align-items: center; gap: 6px; margin: 0 auto 2px 0; padding: 5px 10px; border-radius: 6px; background: rgb(140 109 67 / 0.14); color: #5f4826; font-size: 13px; font-weight: 600; line-height: 1.3; }
+  .tp-card-actions__hinweis { flex: 0 1 auto; display: inline-flex; align-items: center; gap: 6px; margin: 0 auto 2px 0; padding: 5px 10px; border-radius: 6px; background: rgb(0 0 0 / 0.05); color: var(--color-foreground, #000); font-size: 13px; font-weight: 600; line-height: 1.3; }
   .tp-card-actions__hinweis-icon { flex: none; }
   .tp-card-actions__konfig {
     flex: 1 0 100%;
@@ -245,15 +253,16 @@
     min-height: 44px;
     padding: 8px 10px;
     border-radius: 6px;
-    background: #8c6d43;
-    color: #fff;
+    border: 1.5px solid var(--color-foreground, #000);
+    background: transparent;
+    color: var(--color-foreground, #000);
     font-size: 14px;
     font-weight: 600;
     line-height: 1.2;
     text-decoration: none;
     text-align: center;
   }
-  .tp-card-actions__konfig:hover { background: #7a5e3a; }
+  .tp-card-actions__konfig:hover { background: rgb(0 0 0 / 0.05); }
   .tp-card-actions__konfig:focus-visible { outline: 2px solid var(--color-foreground); outline-offset: 2px; }
   .tp-card-actions--teppich .tp-card-actions__sample,
   .tp-card-actions--teppich .tp-card-actions__compare,

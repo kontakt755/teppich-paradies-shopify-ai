@@ -20,7 +20,8 @@
         {%- assign tp_pcg_sale = true -%}
         {%- assign tp_pcg_prozent = tp_pcg_v.compare_at_price | minus: tp_pcg_v.price | times: 100.0 | divided_by: tp_pcg_v.compare_at_price | round -%}
       {%- endif -%}
-      {%- if tp_pcg_sale and product.available -%}
+      {%- assign tp_pcg_badge_ab = settings.tp_rabatt_badge_ab | default: 10 -%}
+      {%- if tp_pcg_sale and product.available and tp_pcg_prozent >= tp_pcg_badge_ab -%}
         {%- comment -%} Rabattbadge statt weissem "Angebot"-Kasten (2026-09-24), Prozent dynamisch {%- endcomment -%}
         <span class="tp-rabatt-badge tp-rabatt-badge--karte">−{{ tp_pcg_prozent }}&nbsp;%</span>
       {%- elsif product.available == false -%}
@@ -62,19 +63,34 @@
   endif
 -%}
 {% render 'card-gallery', children: children, card_index: tp_card_index %}
+{%- assign tp_supplier_collection = product.metafields.grosshandel.sku.value | default: '' -%}
+{%- if tp_supplier_collection contains 'Sprint 027' -%}
+  <small class="tp-source-card-credit">© JOKA / W. & L. Jordan GmbH</small>
+{%- endif -%}
 
 {% # Title and price for the zoomed out grid view %}
-<div class="product-grid-view-zoom-out--details">
+{%- comment -%} C1: nur fuer die Zoom-Out-Ansicht; fuer Screenreader kein zweiter Titel {%- endcomment -%}
+<div class="product-grid-view-zoom-out--details" aria-hidden="true">
   {% if product == blank %}
-    <h3 class="h4">{{ 'content.product_card_placeholder' | t }}</h3>
+    <p class="h4">{{ 'content.product_card_placeholder' | t }}</p>
   {% else %}
-    <h3 class="h4">{{ product.title }}</h3>
+    <p class="h4">{{ product.title }}</p>
   {% endif %}
 </div>
 
 {% render 'product-badges-styles' %}
 
 {% render 'tp-rabatt-badge-styles' %}
+
+{% stylesheet %}
+  .tp-source-card-credit {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.3;
+    color: inherit;
+  }
+{% endstylesheet %}
 
 {% schema %}
 {

@@ -3,14 +3,14 @@
   "live": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-09-26T07:14:05Z",
-    "verifiedBy": "Shopify Admin API, role MAIN (workflow:live #646)"
+    "verifiedAt": "2026-09-28T12:05:11.247Z",
+    "verifiedBy": "Shopify CLI, role live (workflow:live nach #713, #714 und #715)"
   },
   "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-09-26T07:14:05Z",
-    "verifiedBy": "Shopify Admin API, role UNPUBLISHED nach Rollentausch"
+    "verifiedAt": "2026-09-28T12:05:11.247Z",
+    "verifiedBy": "Shopify CLI, role unpublished nach Rollentausch; naechstes Preview-Ziel"
   },
   "fallback": {
     "themeId": "204440699214",
@@ -236,6 +236,30 @@
       "name": "Kopie von preview-main-2026-09-04",
       "retiredNoticedAt": "2026-09-25",
       "note": "Per workflow:live abgeloest durch 204438208846 (main d3f0288). Rollentausch am 2026-09-25 um 11:29:00Z per Admin API gegengeprueft. Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-09-27",
+      "note": "Per workflow:live abgeloest durch 204438208846 (#679 fetchpriority Kategoriekarten, #677/#680 Structured Data). Bleibt unpublished als naechstes Preview-Ziel, nicht loeschen."
+    },
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-09-27",
+      "note": "Per workflow:live abgeloest durch 204436144462 (#683 Angebot/Beratung auf der PDP). Bleibt unpublished als naechstes Preview-Ziel, nicht loeschen."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-09-27",
+      "note": "Per workflow:live abgeloest durch 204438208846 (#686 Design-Audit, #687 PDP-Bildgroesse). Bleibt unpublished als naechstes Preview-Ziel, nicht loeschen."
+    },
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-09-28",
+      "note": "Per workflow:live abgeloest durch das bisherige Preview-Theme (#714 und #715). Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",

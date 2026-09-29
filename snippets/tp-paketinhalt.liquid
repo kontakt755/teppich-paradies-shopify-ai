@@ -51,6 +51,9 @@
   assign tp_pi_stueck = product.metafields.custom.stueck_pro_paket.value | times: 1
   assign tp_pi_format = product.metafields.custom.format_cm.value | strip
   assign tp_pi_einheit = product.metafields.custom.stueck_bezeichnung.value | strip | default: 'Stück'
+  if tp_pi_stueck == 1 and tp_pi_einheit == 'Fliesen'
+    assign tp_pi_einheit = 'Fliese'
+  endif
 -%}
 {%- if tp_pi_prefix != blank %}{{ tp_pi_prefix }} {% endif -%}
 {{- tp_pi_flaeche_text }}&nbsp;m²

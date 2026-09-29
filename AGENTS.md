@@ -152,6 +152,7 @@ Gute Konkurrenzseiten dürfen als UX-Benchmark untersucht werden. Keine Texte, B
 ## Bilder
 
 - Vorhandene echte Produkt- und Herstellerbilder bevorzugen.
+- Wenn die Bildlizenz eine Herstellerangabe am Bild verlangt, diese unmittelbar am Bild sichtbar machen. Die genaue JOKA-Quellenangabe ist dafür im Theme-Guard eng begrenzt freigegeben; andere Lieferantennamen bleiben gesperrt.
 - Keine Produkteigenschaften durch erfundene Bilder falsch darstellen.
 - Erklärende Kategorievisuals dürfen verwendet werden, wenn sie technisch korrekt sind.
 - Above-the-fold-Bilder beim ersten Laden sinnvoll priorisieren.
@@ -201,6 +202,13 @@ Abschlussberichte kompakt halten:
 - offene echte Probleme
 
 ## AI Router und Handoff
+
+### Gemeinsame Übergaben in Obsidian
+
+- Wenn der Benutzer Zusammenarbeit oder eine Übergabe zwischen Claude und Codex beauftragt, den aktiven Vault aus `~/Library/Application Support/obsidian/obsidian.json` ermitteln und `Zusammenarbeit/Start.md` lesen.
+- Jede Übergabe bekommt eine eigene Datei unter `Zusammenarbeit/Aufgaben/`; die Inbox verlinkt aktive Aufgaben. Ein Eintrag startet keine andere Session und ersetzt keine Freigabe.
+- Die bestehenden Sync-, Datenschutz- und Freigaberegeln dieses Repositories gelten weiter. Keine Secrets oder Kundendaten in Übergaben speichern.
+- Der Vault enthält unter `Projektwissen/` eine Nur-Lese-Kopie von `CLAUDE.md`, `AGENTS.md`, `docs/lessons/` und den Skills; `.claude/hooks/gedaechtnis-sync.sh` erneuert sie bei SessionStart und Stop. Codex ruft dasselbe über `npm run gedaechtnis:sync -- pull|push` auf. Dauerhafte Erkenntnisse beider Assistenten liegen als einzelne Notizen im Vault-Stamm (Format wie in `MEMORY.md` verzeichnet); Regeln dagegen gehören ins Repository, nie in die Kopie.
 
 Neue Aufgaben zuerst mit `npm run workflow:route -- "Neue Aufgabe: ..."` routen. `npm run workflow:status`, `workflow:next` und `workflow:continue` leiten den nächsten sicheren Schritt aus Task, Git-Diff und commitgebundener Evidence ab. `.workflow/state.json` ist nur eine generierte Momentaufnahme; `CURRENT_STATE.md` und `NEXT_ACTION.md` sind keine Workflow-Wahrheit.
 

@@ -119,6 +119,17 @@
         assign tp_crumb_2 = tp_crumb_fallback[1]
       endif
 
+      # Teppichfliesen sind eine eigene sichtbare Kategorie. Produkte, die
+      # dort gelistet sind, bekommen diese Collection als direkte Rueckspur,
+      # auch wenn product.type allgemeiner "Teppichboden" lautet.
+      for tp_c in product.collections
+        if tp_c.handle == 'teppichfliesen'
+          assign tp_crumb_1 = tp_c
+          assign tp_crumb_2 = null
+          break
+        endif
+      endfor
+
       # Anzeige-Label fuer Level 2: nur optisch gekuerzt (z.B. "Vinylboden -
       # Klickvinyl" -> "Klickvinyl"), Link/href bleibt unveraendert auf der
       # echten Collection. Faellt auf den vollen Titel zurueck, falls kein
@@ -138,8 +149,8 @@
         <a href="{{ tp_crumb_1.url }}">{{ tp_crumb_1.title }}</a>
       {%- endif -%}
       {%- if tp_crumb_2 != blank and tp_crumb_2 != tp_crumb_1 -%}
-        <span aria-hidden="true">/</span>
-        <a href="{{ tp_crumb_2.url }}">{{ tp_crumb_2_label }}</a>
+        <span class="tp-product-breadcrumb__sub" aria-hidden="true">/</span>
+        <a class="tp-product-breadcrumb__sub" href="{{ tp_crumb_2.url }}">{{ tp_crumb_2_label }}</a>
       {%- endif -%}
       <span aria-hidden="true">/</span>
       <span aria-current="page">{{ product.title }}</span>
@@ -221,14 +232,22 @@
     .tp-product-breadcrumb {
       margin-bottom: 8px;
       font-size: 12px;
-      overflow-x: auto;
       flex-wrap: nowrap;
       white-space: nowrap;
-      -ms-overflow-style: none;
-      scrollbar-width: none;
+      overflow: hidden;
     }
 
-    .tp-product-breadcrumb::-webkit-scrollbar {
+    .tp-product-breadcrumb > :not([aria-current='page']) {
+      flex-shrink: 0;
+    }
+
+    .tp-product-breadcrumb [aria-current='page'] {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tp-product-breadcrumb .tp-product-breadcrumb__sub {
       display: none;
     }
   }
@@ -325,6 +344,42 @@
 
     .product-details {
       grid-column: 2 / 3;
+    }
+
+    /* Inhaber 2026-09-28: am Telefon Titel, Preis und Aktionshinweis ueber
+       die Galerie, darunter Farbwahl und Rechner - so sieht der Kunde die
+       gewaehlte Farbe im Bild, ohne wieder hochzuscrollen. Die Huellen der
+       Detailspalte loesen sich dafuer auf (display: contents), ihre Kinder
+       werden Rasterzeilen; order stellt die erste Gruppe (die mit dem h1)
+       und den Aktionshinweis vor die Galerie. Kein zweiter Titel im DOM. */
+    .product-information__grid:has(.product-details .group-block h1) {
+      row-gap: 0;
+
+      .product-details,
+      .product-details > .group-block,
+      .product-details > .group-block > .group-block-content {
+        display: contents;
+      }
+
+      .product-details > .group-block > .group-block-content > * {
+        grid-column: 2 / 3;
+        order: 2;
+        margin-block-start: var(--gap);
+      }
+
+      .product-details > .group-block > .group-block-content > .group-block:has(h1) {
+        order: -2;
+        margin-block-start: 0;
+      }
+
+      .product-details > .group-block > .group-block-content > .tp-aktion-hinweis {
+        order: -1;
+      }
+
+      .product-information__media {
+        order: 0;
+        margin-block: 12px 0;
+      }
     }
   }
 

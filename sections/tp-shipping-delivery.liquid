@@ -18,13 +18,28 @@
 
     <article>
       <h2>Speditionslieferung</h2>
-      <p>Sperrige Bodenbeläge und Rollenware werden frei Bordsteinkante geliefert.</p>
+      <p>Sperrige Bodenbeläge und Rollenware werden deutschlandweit per Spedition frei Bordsteinkante geliefert, ab {{ settings.tp_versand_frei_ab }} € Bestellwert versandkostenfrei.</p>
       <p>
         Frei Bordsteinkante bedeutet: Die Spedition bringt die Ware bis zur nächstmöglichen, für das
         Lieferfahrzeug erreichbaren Stelle an Ihrer Lieferadresse. Der Weitertransport ins Gebäude oder in die
         Wohnung ist nicht Bestandteil der Lieferung.
       </p>
     </article>
+
+    {%- comment -%}
+      E3 (Inhaber 2026-09-28): zweite Lieferart neben Paket/Spedition. Werte
+      aus den Theme-Einstellungen (TP Verlegeservice).
+    {%- endcomment -%}
+    {%- if settings.tp_vs_schwelle != blank and settings.tp_vs_radius_basis != blank -%}
+    <article>
+      <h2>Eigene Anlieferung durch unser Team</h2>
+      <p>
+        Für Rollenware mit Liefer- und Verlegeservice: Bis {{ settings.tp_vs_radius_basis }}&nbsp;km liefern wir ab
+        {{ settings.tp_vs_schwelle }}&nbsp;€ Warenwert kostenlos selbst an und tragen die Ware in die Wohnung.
+      </p>
+      <p><a href="{{ pages['liefer-verlegeservice'].url | default: '/pages/liefer-verlegeservice' }}">Liefer- &amp; Verlegeservice</a></p>
+    </article>
+    {%- endif -%}
 
     <article>
       <h2>Lieferzeiten</h2>

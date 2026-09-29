@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
 
 import {
@@ -8,6 +11,7 @@ import {
   buildAuthorizeUrl,
   callbackHmacMessages,
   exchangeAuthorizationCode,
+  exportToGithubEnv,
   maskToken,
   parseEnvFile,
   requestClientCredentialsToken,
@@ -273,4 +277,17 @@ test('startCallbackServer lehnt eine unsignierte Rueckleitung ab', async () => {
   const antwort = await rueckleitung(port, '?code=abc123&shop=sjjyq1-6w.myshopify.com&state=nonce-value&hmac=00');
   assert.equal(antwort.status, 400);
   assert.match((await fehler).message, /HMAC ungueltig/);
+});
+
+test('exportToGithubEnv maskiert zuerst und haengt genau eine Zeile an', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gh-env-'));
+  const file = path.join(dir, 'env');
+  fs.writeFileSync(file, 'VORHER=1\n');
+  const logs = [];
+  exportToGithubEnv('shpat_abc123', file, (line) => logs.push(line));
+  assert.deepEqual(logs, ['::add-mask::shpat_abc123']);
+  assert.equal(fs.readFileSync(file, 'utf8'), 'VORHER=1\nSHOPIFY_ADMIN_TOKEN=shpat_abc123\n');
+  assert.throws(() => exportToGithubEnv('shpat_x', undefined, () => {}), /GITHUB_ENV/);
+  assert.throws(() => exportToGithubEnv('shpat_x\nBOESE=1', file, () => {}), /Zeilenumbrueche/);
+  fs.rmSync(dir, { recursive: true, force: true });
 });

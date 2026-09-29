@@ -97,6 +97,16 @@ class StickyAddToCartComponent extends Component {
     // Rechner-Seiten haben keinen variant-picker: der Farbwaehler meldet den
     // Wechsel ueber tp:farbe-wechsel (blocks/color-swatch-picker.liquid).
     document.addEventListener('tp:farbe-wechsel', () => this.#syncTargetState(), { signal });
+    document.addEventListener('tp:galerie-aktualisiert', (event) => {
+      if (String(event.detail?.productId) !== this.dataset.productId) return;
+      this.#syncGalleryImage();
+      this.dataset.currentVariantId = event.detail.variantId;
+      this.dataset.variantAvailable = String(event.detail.available);
+      if (!this.closest('.shopify-section')?.querySelector('.tp-kaufweg')) {
+        const label = this.querySelector('.sticky-add-to-cart__variant');
+        if (label) label.textContent = event.detail.color;
+      }
+    }, { signal });
 
     document.addEventListener(ThemeEvents.cartUpdate, this.#handleCartAddComplete, { signal });
     document.addEventListener(ThemeEvents.cartError, this.#handleCartAddComplete, { signal });
@@ -289,6 +299,7 @@ class StickyAddToCartComponent extends Component {
     }
 
     this.#syncRechnerVariantLine(target);
+    this.#syncGalleryImage();
 
     this.#targetUsable = usable;
     if (!usable) {
@@ -336,6 +347,16 @@ class StickyAddToCartComponent extends Component {
     variantElement.style.whiteSpace = 'nowrap';
     variantElement.style.overflow = 'hidden';
     variantElement.style.textOverflow = 'ellipsis';
+  }
+
+  #syncGalleryImage() {
+    const section = this.closest('.shopify-section');
+    const galleryImage = section?.querySelector('media-gallery slideshow-slide img');
+    const stickyImage = this.querySelector('.sticky-add-to-cart__image img');
+    if (!galleryImage || !stickyImage) return;
+    stickyImage.src = galleryImage.currentSrc || galleryImage.src;
+    stickyImage.alt = galleryImage.alt;
+    stickyImage.removeAttribute('srcset');
   }
 
   /**

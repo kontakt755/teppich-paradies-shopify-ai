@@ -1,0 +1,19 @@
+{%- assign tp_fremd = false -%}
+{%- if raumteile.size == 4 and media.alt contains ' Teppichboden ' and media.alt contains ' (' -%}
+  {%- unless media.alt contains ' | Farbe: ' or media.alt contains 'Farbnr. ' -%}
+    {%- assign tp_gew_code = raumteile[2] | plus: 0 -%}
+    {%- assign tp_med_code = media.alt | split: '(' | last | split: ')' | first | plus: 0 -%}
+    {%- if tp_gew_code > 0 and tp_med_code > 0 and tp_med_code != tp_gew_code -%}
+      {%- assign tp_fremd = true -%}
+    {%- endif -%}
+  {%- endunless -%}
+{%- endif -%}
+{%- if tp_fremd == false and media.alt != blank -%}
+  {%- if raumteile.size == 4 or hide_variants -%}
+    {%- capture tp_alt_fremd -%}{% render 'tp-galerie-fremde-farbe', product: product, alt: media.alt %}{%- endcapture -%}
+    {%- if tp_alt_fremd contains 'ja' -%}
+      {%- assign tp_fremd = true -%}
+    {%- endif -%}
+  {%- endif -%}
+{%- endif -%}
+{%- if tp_fremd -%}ja{%- endif -%}

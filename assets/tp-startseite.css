@@ -2,13 +2,13 @@
    Wird von den tp-start-* Sections eingebunden. Rot = Logo-Rot (gemessen),
    warme Neutraltoene, eine Schriftfamilie aus dem Theme (var(--font-body--family)). */
 :root {
-  --tp-red: #b73740;
+  --tp-red: #b0303f;
   --tp-red-dark: #96262f;
   --tp-red-soft: #fbeeef;
   --tp-ink: #1d1a17;
   --tp-ink-2: #4a443f;
-  /* 5,7:1 auf --tp-bg-2 (vorher #7a726a mit 4,2:1 - unter WCAG AA) */
-  --tp-muted: #655e57;
+  /* V9 (Design-Runde 3): kein Grau heller als #595959 (vorher #655e57) */
+  --tp-muted: #595959;
   --tp-line: #e6e0d8;
   --tp-line-2: #d5cec4;
   --tp-bg-2: #f6f2ec;
@@ -45,13 +45,15 @@
 .tp-s-btn--primary:hover { background: var(--tp-red-dark); color: #fff; }
 .tp-s-btn--dark { background: var(--tp-ink); color: #fff; }
 .tp-s-btn--dark:hover { background: #000; color: #fff; }
-.tp-s-btn--ghost { background: #fff; color: var(--tp-ink); border: 1.5px solid var(--tp-line-2); }
+.tp-s-btn--ghost { background: #fff; color: var(--tp-ink); border: 1.5px solid var(--tp-ink); }
 .tp-s-btn--ghost:hover { border-color: var(--tp-ink); }
 .tp-s-btn--light { background: rgba(255, 255, 255, 0.14); color: #fff; border: 1.5px solid rgba(255, 255, 255, 0.55); }
 .tp-s-btn--light:hover { background: rgba(255, 255, 255, 0.24); color: #fff; }
-/* WhatsApp-Gruen mit weisser Schrift: #0e7a5f = 5,3:1, Hover 7,1:1 (vorher 3,5:1) */
-.tp-s-btn--wa { background: #0e7a5f; color: #fff; }
-.tp-s-btn--wa:hover { background: #0b6450; color: #fff; }
+/* V2 (Design-Runde 3): WhatsApp ist eine Nebenaktion - Schwarz-Outline, nur
+   das Icon traegt das WhatsApp-Gruen. */
+.tp-s-btn--wa { background: #fff; color: var(--tp-ink); border: 1.5px solid var(--tp-ink); }
+.tp-s-btn--wa svg { color: #1a8d4a; }
+.tp-s-btn--wa:hover { background: #f5f5f5; color: var(--tp-ink); }
 .tp-s-btn--sm { min-height: 42px; padding: 0 16px; font-size: 15px; }
 /* Das Attribut hidden blendet sonst nicht aus: display aus .tp-s-btn gewinnt gegen
    das display:none des Browsers. Ohne diese Regel bleibt z. B. der Nachladeknopf

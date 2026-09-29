@@ -615,10 +615,11 @@ test('lexikonMengenhilfe meldet ehrlich UNGEKLAERT statt zu schaetzen, wenn eine
 
 test('aktualisierung meldet fehlende Datei mit Befehl statt erfundenem Stand', () => {
   const root = tmpRoot();
-  const api = createApi({ gh: async () => '', root, privatDirPath: path.join(root, 'nirgends') });
+  const api = createApi({ gh: async () => '', root, privatDirPath: path.join(root, 'nirgends'), env: {} });
   const r = api.aktualisierung();
   assert.equal(r.verfuegbar, false);
   assert.ok(r.befehl.includes('daten:aktualisieren'));
+  assert.equal(r.manuellVerfuegbar, false);
 });
 
 test('aktualisierung berechnet Alter und Veraltet-Flag je Teil (Schwelle 24h)', () => {
@@ -678,11 +679,21 @@ function fakeAktualisierenSkript(root, privatDir, { verzoegerungMs = 150, wirftF
   return datei;
 }
 
+test('aktualisierungStarten: ohne Zugang kein leerer Lauf, alter Datenstand bleibt erhalten', () => {
+  const root = tmpRoot();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  fs.writeFileSync(path.join(dir, 'aktualisierung.json'), JSON.stringify({ teile: { lexikon: { erfolg: true, anzahl: 3 } } }));
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir, env: {} });
+  assert.equal(api.aktualisierungStatus().manuellVerfuegbar, false);
+  assert.throws(() => api.aktualisierungStarten(), e => e instanceof ApiError && e.status === 503);
+  assert.equal(api.aktualisierungStatus().teile.lexikon.anzahl, 3);
+});
+
 test('aktualisierungStarten: startet den Kindprozess und meldet gestartet:true', async () => {
   const root = tmpRoot();
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
   fakeAktualisierenSkript(root, dir, { verzoegerungMs: 100 });
-  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir, env: { SHOPIFY_ADMIN_TOKEN: 'test-only' } });
   const r = api.aktualisierungStarten();
   assert.equal(r.gestartet, true);
   assert.equal(r.laeuft, true);
@@ -693,7 +704,7 @@ test('aktualisierungStarten: zweiter Aufruf waehrend eines Laufs startet nichts 
   const root = tmpRoot();
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
   fakeAktualisierenSkript(root, dir, { verzoegerungMs: 300 });
-  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir, env: { SHOPIFY_ADMIN_TOKEN: 'test-only' } });
   const erster = api.aktualisierungStarten();
   assert.equal(erster.gestartet, true);
   const zweiter = api.aktualisierungStarten();
@@ -706,9 +717,10 @@ test('aktualisierungStatus: laeuft waehrend des Laufs, danach fertig mit neuem S
   const root = tmpRoot();
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
   fakeAktualisierenSkript(root, dir, { verzoegerungMs: 150 });
-  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir, env: { SHOPIFY_ADMIN_TOKEN: 'test-only' } });
   const vorher = api.aktualisierungStatus();
   assert.equal(vorher.laeuft, false);
+  assert.equal(vorher.manuellVerfuegbar, true);
   api.aktualisierungStarten();
   const waehrend = api.aktualisierungStatus();
   assert.equal(waehrend.laeuft, true);
@@ -912,6 +924,37 @@ test('"Meine Aufgaben" zeigt nur Zugewiesenes - Unzugewiesenes bleibt im Team', 
   assert.ok(nachher.eintraege.some(e => e.titel === 'Produktseite reparieren'));
   const team2 = api.orgListe({ bereich: 'team-aufgaben', ansicht: 'offen', gruppe: '', benutzer: ich });
   assert.equal(team2.eintraege.some(e => e.titel === 'Produktseite reparieren'), false);
+});
+
+test('Aufgabenliste liefert die Dringlichkeitsabschnitte in derselben Reihenfolge wie die Einträge', () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat-dringlichkeit');
+  const ich = { kuerzel: 'ahmet', rolle: 'inhaber' };
+  const api = orgApi(root, dir);
+  api.orgNeu({ titel: 'Später prüfen', verantwortlich: 'ahmet', prioritaet: 'LOW' }, { benutzer: ich });
+  api.orgNeu({ titel: 'Heute entscheiden', verantwortlich: 'ahmet', prioritaet: 'URGENT' }, { benutzer: ich });
+  const liste = api.orgListe({ bereich: 'meine-aufgaben', ansicht: 'offen', benutzer: ich });
+  assert.deepEqual(liste.eintraege.map(e => [e.titel, e.dringlichkeit]), [
+    ['Heute entscheiden', 'jetzt'], ['Später prüfen', 'weitere'],
+  ]);
+});
+
+test('Prioritätsfilter fasst normale und alte niedrige Aufgaben zusammen und zählt Gruppen korrekt', () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat-prioritaetsfilter');
+  const ich = { kuerzel: 'ahmet', rolle: 'inhaber' };
+  const api = orgApi(root, dir);
+  api.orgNeu({ titel: 'Sofortiger Shop-Fix', bereich: 'Online-Shop', verantwortlich: 'ahmet', prioritaet: 'URGENT' }, { benutzer: ich });
+  api.orgNeu({ titel: 'Shop-Fix mit Termin', bereich: 'Online-Shop', verantwortlich: 'ahmet', prioritaet: 'HIGH' }, { benutzer: ich });
+  api.orgNeu({ titel: 'Normale Shop-Aufgabe', bereich: 'Online-Shop', verantwortlich: 'ahmet', prioritaet: 'NORMAL' }, { benutzer: ich });
+  api.orgNeu({ titel: 'Alte niedrige Aufgabe', bereich: 'Website & KI', verantwortlich: 'ahmet', prioritaet: 'LOW' }, { benutzer: ich });
+
+  const dringend = api.orgListe({ bereich: 'meine-aufgaben', ansicht: 'offen', prioritaet: 'URGENT', benutzer: ich });
+  assert.deepEqual(dringend.eintraege.map(e => e.titel), ['Sofortiger Shop-Fix']);
+  const rest = api.orgListe({ bereich: 'meine-aufgaben', ansicht: 'offen', prioritaet: 'REST', benutzer: ich });
+  assert.deepEqual(rest.eintraege.map(e => e.titel), ['Normale Shop-Aufgabe', 'Alte niedrige Aufgabe']);
+  assert.equal(rest.anzahl, 2);
+  assert.equal(rest.gruppen.reduce((summe, g) => summe + g.anzahl, 0), 2);
 });
 
 test('Stand für ChatGPT: offene Aufgaben mit Zuständigkeit und Erklärung, Erledigtes nicht', () => {

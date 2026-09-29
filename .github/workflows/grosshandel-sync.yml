@@ -1,12 +1,10 @@
-name: Grosshandel-Sync (Dry-Run, manuell)
+name: Grosshandel-Sync (Dry-Run)
 
 on:
-  # Der Nachtlauf ist ausgesetzt: das Repository-Secret SHOPIFY_ADMIN_TOKEN ist
-  # ein atkn_-Token, die Admin GraphQL API braucht shpat_. Der Job scheiterte
-  # deshalb jede Nacht am selben Punkt (graphql-proxy.mjs) und erzeugte nur
-  # Rauschen. Zeitplan wieder einschalten, sobald #34 den shpat_-Token liefert.
-  #  schedule:
-  #    - cron: '0 2 * * *'
+  # Nachtlauf seit #465 wieder aktiv: Token je Lauf per client_credentials.
+  # Ohne Eingaben ist SYNC_APPROVED false, der Nachtlauf bleibt ein Dry-Run.
+  schedule:
+    - cron: '0 2 * * *'
   # Manuell triggern
   workflow_dispatch:
     inputs:
@@ -20,6 +18,9 @@ jobs:
   sync:
     name: Grosshandel → Shopify Sync
     runs-on: ubuntu-latest
+    env:
+      # Secrets sind in einem Schritt-if nicht lesbar, nur ueber Job-env.
+      HAT_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID != '' }}
 
     steps:
       - name: ⬇️ Checkout repo
@@ -39,9 +40,19 @@ jobs:
           npm run syncpath:guard
           npm run theme:guard
 
+      # Dev-Dashboard-App: client_credentials liefert einen shpat_-Token fuer 24 h,
+      # deshalb wird er in jedem Lauf frisch geholt statt als Secret abgelegt.
+      # Ohne SHOPIFY_CLIENT_ID bleibt es beim Secret SHOPIFY_ADMIN_TOKEN.
+      - name: 🔑 Admin-Token holen (client_credentials)
+        if: ${{ env.HAT_CLIENT_ID == 'true' }}
+        env:
+          SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
+          SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
+        run: node scripts/shopify-oauth.mjs --grant client-credentials --github-env
+
       - name: 📡 Grosshandel-Sync (Dry-Run)
         env:
-          SHOPIFY_ADMIN_TOKEN: ${{ secrets.SHOPIFY_ADMIN_TOKEN }}
+          SHOPIFY_ADMIN_TOKEN: ${{ env.SHOPIFY_ADMIN_TOKEN || secrets.SHOPIFY_ADMIN_TOKEN }}
           SYNC_APPROVED: ${{ github.event.inputs.approve_sync == 'true' && 'true' || 'false' }}
         run: |
           node workflow/sync-grosshandel.mjs
@@ -52,5 +63,7 @@ jobs:
         with:
           name: sync-reports
           path: .sync-reports/
+          # Ordner beginnt mit Punkt; v4 laesst versteckte Dateien sonst weg.
+          include-hidden-files: true
           retention-days: 30
 

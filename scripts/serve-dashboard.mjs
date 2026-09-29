@@ -265,6 +265,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
       bereich: url.searchParams.get('bereich') || 'meine-aufgaben',
       ansicht: url.searchParams.get('ansicht') || 'offen',
       gruppe: url.searchParams.get('gruppe') ?? 'kunden',
+      prioritaet: url.searchParams.get('prioritaet') || '',
       person: url.searchParams.get('person') || '',
       q: url.searchParams.get('q') || '',
       benutzer,

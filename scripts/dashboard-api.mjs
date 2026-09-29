@@ -29,6 +29,7 @@ import { fallmarkenPfad, leseAlle as leseFallmarken, setzeMarke as setzeFallmark
 import {
   sortiere as orgSortiere, passtZuAnsicht, darfSehen, darfAendern, findeDoppelgaenger,
   istUeberfaellig, tageBis, istPerson, istTechnisch, istTeamarbeit, gruppeVon, ARBEITSGRUPPEN,
+  dringlichkeitsGruppe,
 } from '../operations/lib/organisation.mjs';
 import { analysiere as orgAnalysiere, ausListe as orgAusListe } from '../operations/lib/organisation-analyse.mjs';
 import {
@@ -48,6 +49,7 @@ import { protokollPfad, protokolliere } from '../operations/lib/protokoll.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { rollenware, paketware, stueck as stueckware, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
+import { ladeEnvLocal } from '../operations/sync/zugang.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -377,7 +379,7 @@ function stammKontakte(dir) {
   return index;
 }
 
-export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null } = {}) {
+export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env } = {}) {
   let userCache = null;
   let labelCache = { at: 0, names: [] };
   // Prozesszustand des Knopfs "Jetzt aktualisieren" - genau ein Lauf gleichzeitig,
@@ -385,6 +387,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
   // noch laufenden Kindprozess, der aber unabhaengig weiterlaeuft und sein Ergebnis
   // ohnehin nur in aktualisierung.json schreibt).
   let aktualisierungLauf = null; // { seit, fehler, fertig } waehrend ein Lauf aktiv ist, sonst null
+
+  function manuellerZugangVorhanden() {
+    const zugang = { ...ladeEnvLocal(path.join(root, '.env.local')), ...env };
+    return Boolean(zugang.SHOPIFY_ADMIN_TOKEN || (zugang.SHOPIFY_CLIENT_ID && zugang.SHOPIFY_CLIENT_SECRET));
+  }
 
   const auditPath = path.join(root, '.router', 'control-center-audit.jsonl');
   function audit(entry) {
@@ -1062,7 +1069,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     },
 
     /** bereich: meine-aufgaben | meine-notizen | team-aufgaben | team-notizen | archiv */
-    orgListe({ bereich = 'meine-aufgaben', ansicht = 'fokus', person = '', gruppe = '', q = '', benutzer = null } = {}) {
+    orgListe({ bereich = 'meine-aufgaben', ansicht = 'fokus', person = '', gruppe = '', prioritaet = '', q = '', benutzer = null } = {}) {
       let gruppenZaehlung = {};
       const datei = this._orgDatei();
       const daten = orgLies(datei);
@@ -1103,6 +1110,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           .some(f => String(f).toLowerCase().includes(suchtext)));
       }
 
+      if (['meine-aufgaben', 'team-aufgaben'].includes(bereich)) {
+        if (prioritaet === 'REST') liste = liste.filter(e => ['NORMAL', 'LOW'].includes(e.prioritaet));
+        else if (['URGENT', 'HIGH'].includes(prioritaet)) liste = liste.filter(e => e.prioritaet === prioritaet);
+      }
+
       // Gruppen nach Art der Arbeit (ARBEITSGRUPPEN) - fuer jeden Bereich,
       // nicht nur fuer die Teamliste. Die Zahl an jeder Gruppe zaehlt den Stand
       // NACH allen anderen Filtern, aber VOR der Gruppenwahl: sonst zeigte die
@@ -1115,7 +1127,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         anzahl: liste.length,
         gruppen: ARBEITSGRUPPEN.map(([key, label]) => ({ key, label, anzahl: gruppenZaehlung[key] || 0 })),
         eintraege: orgSortiere(liste, jetzt).slice(0, 200)
-          .map(e => ({ ...e, darfAendern: darfAendern(e, benutzer) })),
+          .map(e => ({ ...e, dringlichkeit: e.typ === 'TASK' ? dringlichkeitsGruppe(e, jetzt) : null,
+            darfAendern: darfAendern(e, benutzer) })),
       };
     },
 
@@ -1685,6 +1698,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (aktualisierungLauf) {
         return { gestartet: false, laeuft: true, seit: aktualisierungLauf.seit, hinweis: 'Aktualisierung läuft bereits.' };
       }
+      if (!manuellerZugangVorhanden()) {
+        throw new ApiError(503, 'Manueller Abruf nicht eingerichtet: Shopify-Zugang fehlt. Bitte den geplanten Export prüfen.');
+      }
       const seit = now().toISOString();
       const skript = path.join(root, 'operations', 'scripts', 'aktualisieren.mjs');
       const lauf = { seit, fehler: null, fertig: false };
@@ -1713,8 +1729,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     const dir = privatDirPath || privatDir();
     const file = path.join(dir, 'aktualisierung.json');
     const daten = readJsonIfExists(file);
+    const manuellVerfuegbar = manuellerZugangVorhanden();
     if (!daten || !daten.teile) {
-      return { verfuegbar: false, quelle: file, hinweis: 'Noch kein Lauf von daten:aktualisieren vorhanden.', befehl: 'npm run daten:aktualisieren' };
+      return { verfuegbar: false, quelle: file, hinweis: 'Noch kein Lauf von daten:aktualisieren vorhanden.', befehl: 'npm run daten:aktualisieren', manuellVerfuegbar };
     }
     const jetzt = now().getTime();
     const SCHWELLE_MS = 24 * 60 * 60 * 1000;
@@ -1723,7 +1740,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const alterMs = stand?.zeitpunkt ? jetzt - new Date(stand.zeitpunkt).getTime() : null;
       teile[teil] = { ...stand, alterMs, veraltet: alterMs === null ? null : alterMs > SCHWELLE_MS };
     }
-    return { verfuegbar: true, quelle: file, aktualisiertAm: daten.aktualisiertAm || null, teile };
+    return { verfuegbar: true, quelle: file, aktualisiertAm: daten.aktualisiertAm || null, teile, manuellVerfuegbar };
   }
 }
 

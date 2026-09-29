@@ -27,6 +27,23 @@
 {%- liquid
   assign selected_product = closest.product
   assign selected_variant_media = selected_product.selected_or_first_available_variant.featured_media
+  capture tp_raumstart
+    render 'tp-sprint-raumstart', product: selected_product
+  endcapture
+  assign tp_raumteile = tp_raumstart | strip | split: '|'
+  if tp_raumteile.size == 4
+    assign tp_raum_medium_id = tp_raumteile | last | plus: 0
+    if tp_raum_medium_id > 0
+      assign selected_variant_media = selected_product.media | where: 'id', tp_raum_medium_id | first
+    endif
+  endif
+  if selected_variant_media == blank
+    capture tp_gallery_media_id
+      render 'tp-galerie-farbmedium', product: selected_product
+    endcapture
+    assign tp_gallery_media_id = tp_gallery_media_id | strip | plus: 0
+    assign selected_variant_media = selected_product.media | where: 'id', tp_gallery_media_id | first
+  endif
   assign first_3d_model = selected_product.media | where: 'media_type', 'model' | first
 
   if block_settings.hide_variants
@@ -110,6 +127,14 @@
         continue
       endif
 
+      # TP: nicht zugeordnete Bilder mit anderem Farbnamen im Alt-Text ausblenden
+      capture tp_fremde_farbe
+        render 'tp-sprint-galerie-ausblenden', product: selected_product, media: media, raumteile: tp_raumteile, hide_variants: block_settings.hide_variants
+      endcapture
+      if tp_fremde_farbe contains 'ja'
+        continue
+      endif
+
       if media.id != selected_variant_media.id
         assign found_media = selected_product.media | where: 'id', media.id
         assign sorted_media = sorted_media | concat: found_media
@@ -188,6 +213,7 @@
     endfor
   endif
 -%}
+{% render 'tp-sprint-raumredirect', product: selected_product, section: section, raumteile: tp_raumteile %}
 {%- if has_image_drop -%}
   <script
     src="{{ 'drag-zoom-wrapper.js' | asset_url }}"
@@ -376,6 +402,15 @@
               else
                 assign media_sizes = sizes
               endif
+              # TP (#662): Die Galerie zeigt jedes Bild mit object-fit: contain in
+              # einer quadratischen Box. Ein Hochformat (Piumera 2:3) ist am Handy
+              # also nur Seitenverhaeltnis x 100vw breit - sizes behauptete 100vw,
+              # geladen wurden 832 statt ~500 px (262 KB, LCP 7,1 s).
+              assign tp_ratio = block_settings.aspect_ratio | append: ''
+              if tp_ratio == '1' and media.preview_image.aspect_ratio < 1
+                assign tp_mobil_vw = media.preview_image.aspect_ratio | times: 100 | ceil | append: 'vw'
+                assign media_sizes = media_sizes | replace_last: '100vw', tp_mobil_vw
+              endif
               assign media_loading = 'lazy'
               if forloop.first
                 assign media_loading = 'eager'
@@ -495,6 +530,15 @@
                 assign media_sizes = sizes_single
               else
                 assign media_sizes = sizes
+              endif
+              # TP (#662): Die Galerie zeigt jedes Bild mit object-fit: contain in
+              # einer quadratischen Box. Ein Hochformat (Piumera 2:3) ist am Handy
+              # also nur Seitenverhaeltnis x 100vw breit - sizes behauptete 100vw,
+              # geladen wurden 832 statt ~500 px (262 KB, LCP 7,1 s).
+              assign tp_ratio = block_settings.aspect_ratio | append: ''
+              if tp_ratio == '1' and media.preview_image.aspect_ratio < 1
+                assign tp_mobil_vw = media.preview_image.aspect_ratio | times: 100 | ceil | append: 'vw'
+                assign media_sizes = media_sizes | replace_last: '100vw', tp_mobil_vw
               endif
             -%}
             {% if block_settings.aspect_ratio != 'adapt' and block_settings.constrain_to_viewport %}
@@ -653,11 +697,22 @@
       </script>
     {%- endif -%}
   </media-gallery>
+  {%- assign tp_supplier_collection = selected_product.metafields.grosshandel.sku.value | default: '' -%}
+  {%- if tp_supplier_collection contains 'Sprint 027' -%}
+    <p class="tp-source-media-credit">JOKA® Sprint 027 · Bildmaterial: © JOKA / W. & L. Jordan GmbH</p>
+  {%- endif -%}
 {% endif %}
 
 {% render 'product-media-gallery-content-styles' %}
 
 {% stylesheet %}
+  .tp-source-media-credit {
+    margin: 8px 0 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: inherit;
+  }
+
   .dialog-thumbnails-list-container {
     position: fixed;
     width: 100%;

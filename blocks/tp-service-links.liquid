@@ -21,6 +21,36 @@
     Diese Zone behaelt Lieferzeit und Versandhinweis.
   {%- endcomment -%}
 
+  {%- comment -%} Kontaktzeile zuerst: sie soll direkt unter dem Warenkorb-Knopf stehen, Lieferinfo danach (Inhaber 2026-09-27) {%- endcomment -%}
+  <div class="tp-service-links__secondary-{{ tp_sl_id }}">
+    {%- comment -%} D8: aus, wenn der Kaufbereich schon eine Kontaktbox hat (Rollenware-Rechner) {%- endcomment -%}
+    {%- unless block.settings.kontakt_ausblenden -%}
+    <a href="tel:+4933015733720">Beratung: 03301 573 37 20</a>
+    <span aria-hidden="true">·</span>
+    <a href="https://wa.me/4917657931322" target="_blank" rel="noopener">WhatsApp</a>
+    <span aria-hidden="true">·</span>
+    {%- endunless -%}
+    {%- comment -%}
+      Ziel nach Produktart: Rollenware mit Service (snippets/tp-vs-berechtigt)
+      auf die Serviceseite, Klick- und Klebevinyl auf "Vinylboden verlegen",
+      alles andere wie bisher. Vorher fuehrte der Link bei jedem Produkt auf
+      die Gewerbeseite "Boden & Malerarbeiten".
+    {%- endcomment -%}
+    {%- liquid
+      capture tp_sl_vs
+        render 'tp-vs-berechtigt', product: product
+      endcapture
+      if tp_sl_vs contains 'ja'
+        assign tp_sl_verlegen_url = pages['liefer-verlegeservice'].url | default: '/pages/liefer-verlegeservice'
+      elsif product.template_suffix == 'planken'
+        assign tp_sl_verlegen_url = pages['vinylboden-verlegen'].url | default: '/pages/vinylboden-verlegen'
+      else
+        assign tp_sl_verlegen_url = pages['boden-malerarbeiten'].url | default: '/pages/boden-malerarbeiten'
+      endif
+    -%}
+    <a href="{{ tp_sl_verlegen_url }}">Verlegeservice</a>
+  </div>
+
   <div class="tp-service-links__shipping-{{ tp_sl_id }}" aria-label="Lieferung und Versand">
     {%- if tp_sl_delivery_time != blank -%}
       <p><strong>Lieferzeit:</strong> {{ tp_sl_delivery_time | escape }}</p>
@@ -46,7 +76,7 @@
       endfor
     -%}
     {%- if tp_sl_is_flooring -%}
-      <p><strong>Versandkostenfrei in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert</strong></p>
+      <p><strong>Paket und Spedition deutschlandweit: versandkostenfrei ab {{ settings.tp_versand_frei_ab }} € Bestellwert</strong></p>
       {%- comment -%}
         "Bis vor die Haustuer" stand hier im Widerspruch zur Erklaerung direkt
         darunter, die frei Bordsteinkante definiert - "Weitertransport ins
@@ -63,7 +93,20 @@
         gemeinsam (hier, tp-rollware-rechner, tp-teppich-versand,
         tp-shipping-delivery).
       {%- endcomment -%}
-      <p>Rollen und große Pakete kommen per Spedition frei Bordsteinkante. Wir rufen vor der Lieferung an.</p>
+      {%- comment -%}
+        Nacharbeit 2026-09-28: Der Satz zum Weitertransport steht jetzt direkt
+        bei der Spedition, damit er nicht der eigenen Anlieferung darunter
+        zugeordnet wird (die traegt ausdruecklich in die Wohnung).
+      {%- endcomment -%}
+      <p>Rollen und große Pakete kommen per Spedition frei Bordsteinkante. Wir rufen vor der Lieferung an. Bei Spedition endet die Lieferung an der Bordsteinkante; der Weitertransport in die Wohnung ist dort nicht enthalten.</p>
+      {%- comment -%}
+        E3 (Inhaber 2026-09-28): zweite Lieferart klar getrennt nennen. Nur
+        wenn der Liefer- und Verlegeservice gilt (tp_sl_vs oben).
+      {%- endcomment -%}
+      {%- if tp_sl_vs contains 'ja' and settings.tp_vs_schwelle != blank and settings.tp_vs_radius_basis != blank -%}
+        <p><strong>Oder: eigene Anlieferung durch unser Team</strong></p>
+        <p>Bis {{ settings.tp_vs_radius_basis }}&nbsp;km ab {{ settings.tp_vs_schwelle }}&nbsp;€ Warenwert kostenlos, inklusive Hereintragen in die Wohnung.</p>
+      {%- endif -%}
     {%- else -%}
       <p><strong>Versand in Deutschland {{ settings.tp_versand_preis }}, ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos</strong></p>
     {%- endif -%}
@@ -74,7 +117,7 @@
       <p>
         Frei Bordsteinkante bedeutet: Die Spedition bringt die Ware bis zur nächstmöglichen, für das
         Lieferfahrzeug erreichbaren Stelle an Ihrer Lieferadresse. Der Weitertransport ins Gebäude oder in die
-        Wohnung ist nicht Bestandteil der Lieferung.
+        Wohnung ist bei Speditionslieferung nicht enthalten.
       </p>
       {%- if tp_sl_shipping_page != blank -%}
         <a href="{{ tp_sl_shipping_page.url }}">Alle Versanddetails</a>
@@ -83,31 +126,6 @@
     {%- endif -%}
   </div>
 
-  <div class="tp-service-links__secondary-{{ tp_sl_id }}">
-    <a href="tel:+4933015733720">Beratung: 03301 573 37 20</a>
-    <span aria-hidden="true">·</span>
-    <a href="https://wa.me/4917657931322" target="_blank" rel="noopener">WhatsApp</a>
-    <span aria-hidden="true">·</span>
-    {%- comment -%}
-      Ziel nach Produktart: Rollenware mit Service (snippets/tp-vs-berechtigt)
-      auf die Serviceseite, Klick- und Klebevinyl auf "Vinylboden verlegen",
-      alles andere wie bisher. Vorher fuehrte der Link bei jedem Produkt auf
-      die Gewerbeseite "Boden & Malerarbeiten".
-    {%- endcomment -%}
-    {%- liquid
-      capture tp_sl_vs
-        render 'tp-vs-berechtigt', product: product
-      endcapture
-      if tp_sl_vs contains 'ja'
-        assign tp_sl_verlegen_url = pages['liefer-verlegeservice'].url | default: '/pages/liefer-verlegeservice'
-      elsif product.template_suffix == 'planken'
-        assign tp_sl_verlegen_url = pages['vinylboden-verlegen'].url | default: '/pages/vinylboden-verlegen'
-      else
-        assign tp_sl_verlegen_url = pages['boden-malerarbeiten'].url | default: '/pages/boden-malerarbeiten'
-      endif
-    -%}
-    <a href="{{ tp_sl_verlegen_url }}">Verlegeservice</a>
-  </div>
 </div>
 
 <style>
@@ -168,7 +186,7 @@
     align-items: center;
     flex-wrap: wrap;
     gap: 5px 8px;
-    margin-top: 10px;
+    margin-bottom: 10px;
     font-size: 13px;
     color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
   }
@@ -192,6 +210,13 @@
   "name": "TP Service-Links",
   "tag": null,
   "settings": [
+    {
+      "type": "checkbox",
+      "id": "kontakt_ausblenden",
+      "label": "Telefon und WhatsApp ausblenden",
+      "info": "Einschalten, wenn der Kaufbereich schon eine Kontaktbox hat.",
+      "default": false
+    },
     {
       "type": "text",
       "id": "delivery_time",

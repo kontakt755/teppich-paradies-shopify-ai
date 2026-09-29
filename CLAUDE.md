@@ -138,6 +138,7 @@ lokal auf dem Mac. Unbekannte Flags brechen ab.
 | `npm run pr:doctor:melden` | dasselbe als idempotenter PR-Kommentar (CI: Push auf `main`, alle 6 h) |
 | `npm run farbcode:guard` | Farbvarianten, deren Codes durchgezaehlt statt abgeschrieben wurden |
 | `npm run bewertung:guard` | Google-Bewertung, die wieder einzeln im Template steht statt in der Theme-Einstellung |
+| `npm run lighthouse:messen` | **bevor jemand "schneller/langsamer" sagt**: Lighthouse gegen Live, 3 Seiten mit und ohne Cookie-Banner, 5 Runden reihum (rund 25 min); `-- --pruefen` nur Vorpruefung |
 | `npm run -s kurz -- <art>` | Theme-Rollen, Push-Ergebnis, Worktrees gefiltert statt als Rohdump |
 | `npm run -s handoff` | Uebergabetext fuer die naechste Sitzung aus dem Git-Stand |
 | `npm run theme:diff -- --manifest <datei>` | Theme gegen Repository abgleichen |
