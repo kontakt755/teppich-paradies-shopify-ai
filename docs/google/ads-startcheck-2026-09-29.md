@@ -56,17 +56,17 @@ Für spätere Shopping-Anzeigen Feed-Preis gegen Landingpage und Versandangaben 
 ## Lokaler Search-Entwurf (nur Planung, keine Aktivierung)
 
 Anzeigen, Suchbegriffe, Ausschlüsse und Freigabekriterien sind in `docs/google/search-ads-entwurf-2026-09-29.md` vollständig als pausierter Entwurf ausgearbeitet.
-Zusätzlich liegen unter `docs/google/search-ads-editor-import-2026-09-29/` vier CSV-Vorlagen für drei pausierte Kampagnen, Anzeigengruppen, 18 Exact-/Phrase-Keywords und drei pausierte Responsive Search Ads. Die drei Zielseiten antworteten am 29.09. mit HTTP 200; Headline- und Beschreibungslängen wurden geprüft. Die Dateien wurden nicht ins Konto importiert oder in Google Ads Editor validiert.
+Zusätzlich liegen unter `docs/google/search-ads-editor-import-2026-09-29/` vier CSV-Vorlagen für drei pausierte Kampagnen, Anzeigengruppen, 18 Exact-/Phrase-Keywords und drei pausierte Responsive Search Ads sowie eine Einfügeliste für zwölf negative Phrase-Begriffe. Die drei Zielseiten antworteten am 29.09. mit HTTP 200; Headline- und Beschreibungslängen wurden geprüft. Die Dateien wurden nicht ins Konto importiert oder in Google Ads Editor validiert. Ein öffentlicher Vergleich von vier lokalen Anbietern ist in `docs/google/lokale-konkurrenz-search-2026-09-29.md` dokumentiert; tatsächliche Konkurrenzanzeigen, Suchvolumen und Klickpreise wurden nicht erhoben.
 
 | Kampagne | Landingpage | Exact / Phrase Startbegriffe | Startbudget-Entwurf |
 |---|---|---|---:|
 | Bodenleger lokal | `/pages/liefer-verlegeservice` | `[bodenleger oranienburg]`, `"bodenleger in der nähe"`, `"boden verlegen lassen oranienburg"` | 15 €/Tag |
-| Teppichboden-Verlegung | `/pages/teppichboden-verlegen-lassen` | `[teppichboden verlegen lassen]`, `"teppichboden verlegung berlin"`, `"teppich verlegen lassen oranienburg"` | 10 €/Tag |
-| Vinyl-Verlegung | `/pages/vinylboden-verlegen` | `[vinylboden verlegen lassen]`, `"vinyl verlegen lassen berlin"`, `"klickvinyl verlegen lassen"` | 10 €/Tag |
+| Teppichboden-Verlegung | `/pages/teppichboden-verlegen-lassen` | `[teppichboden verlegen lassen]`, `[teppichboden verlegung oranienburg]`, `"teppich verlegen lassen"` | 10 €/Tag |
+| Vinyl-Verlegung | `/pages/vinylboden-verlegen` | `[vinylboden verlegen lassen]`, `[vinyl verlegen lassen oranienburg]`, `"klebevinyl verlegen lassen"` | 10 €/Tag |
 
 Gesamt: **35 €/Tag als unverbindlicher Entwurf**, keine Ausgabe. Standortausrichtung Oranienburg plus tatsächlich bedienter Umkreis (laut Website regulär 50 km), Präsenz im Zielgebiet statt bloßes Interesse; Sprache Deutsch. Anzeigentexte: eigenes Verlegeteam, Untergrundprüfung, Aufmaß, Angebot anfragen, lokale Rufnummer. Assets: Sitelinks zu Leistungen, Kontakt und Referenzen, Anruf-Asset nur während erreichbarer Zeiten, Standort-Asset erst nach Kontoprüfung. Vor Veröffentlichung Leistungs- und Reichweitenaussagen mit dem Betrieb abgleichen. Keine Preisversprechen ohne Beleg.
 
-Gemeinsame Negativliste als Startentwurf: `jobs`, `stellenangebote`, `ausbildung`, `gehalt`, `selber verlegen`, `anleitung`, `tutorial`, `youtube`, `kostenlos`, `gebraucht`, `pdf`. Suchbegriffsbericht nach Start eng prüfen; Negative nur nach tatsächlichem Kontext auf Kampagnenebene ergänzen. **AI Max, Broad Match, Display und Performance Max bleiben aus.**
+Gemeinsame Negativliste als Startentwurf: `jobs`, `stellenangebote`, `ausbildung`, `gehalt`, `selber verlegen`, `anleitung`, `tutorial`, `video`, `youtube`, `pdf`, `gebraucht`, `kostenlos`. Suchbegriffsbericht nach Start eng prüfen; weitere Negative nur nach tatsächlichem Kontext auf Kampagnenebene ergänzen. **AI Max, Broad Match, Display und Performance Max bleiben aus.**
 
 ## Startampel
 
