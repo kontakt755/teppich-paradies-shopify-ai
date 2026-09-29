@@ -34,7 +34,11 @@
   # "TeppichParadies" gegen einen ausformulierten <title> (gemessen 2026-09-23).
   assign tp_startseite_titel = 'Teppichboden, Vinyl & Verlegeservice Oranienburg | Teppich Paradies'
   assign og_title = page_title | default: tp_marke
-  assign og_url = canonical_url | default: request.origin
+  assign tp_canonical_url = canonical_url | default: request.origin
+  if request.page_type == 'collection' and collection.handle == 'teppiche'
+    assign tp_canonical_url = request.origin | append: '/collections/teppich-nach-mass'
+  endif
+  assign og_url = tp_canonical_url
   assign og_type = 'website'
   assign og_description = page_description | default: shop.description | default: tp_marke
   assign optimized_page_title = page_title
@@ -284,7 +288,7 @@
 
 <link
   rel="canonical"
-  href="{{ canonical_url }}"
+  href="{{ tp_canonical_url }}"
 >
 
 {%- comment -%}

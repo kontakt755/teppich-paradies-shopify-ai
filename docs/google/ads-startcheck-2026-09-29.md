@@ -6,6 +6,7 @@
 
 - `snippets/tp-lead-events.liquid`: `tp_lead_form_submit` wird erst nach einer von Shopify bestätigten Kontaktanfrage veröffentlicht. Der vorherige `submit`-Listener zählte auch ungültige und abgewiesene Formulare. Musterformulare melden stattdessen `tp_sample_form_submit`.
 - Bestätigungsmarker ergänzt in `blocks/contact-form.liquid`, `sections/tp-start-kontakt.liquid`, `sections/contact-form.liquid` und `snippets/tp-muster-beratungsanfrage.liquid`. Keine Formulardaten werden an das Theme-Ereignis gehängt.
+- `snippets/meta-tags.liquid`: `/collections/teppiche` erhält den Canonical und `og:url` der Hauptadresse `/collections/teppich-nach-mass`. Bekannte Menüliste und Such-Chip zeigen nun auf die Hauptadresse (`sections/header-group.json`, `sections/tp-header-suche.liquid`).
 - Noch **nicht live**: Der Branch muss erst durch die Projekt-Review- und Deploy-Gates.
 
 ## Website und Shopify
@@ -14,7 +15,7 @@
 |---|---|
 | Vinyl-Verlegeseite | Live HTTP 200. Das Seiten-Template zeigt Vinyl-Kategorie-CTAs. Die gefundenen Linoleum- und Teppich-Produktlinks stammen aus dem globalen Menü bzw. der Suchvorschau, nicht aus dem Seiteninhalt; deshalb keine Produktentfernung. |
 | `/collections/vinylboden` | Live HTTP 404. Shopify-URL-Redirect auf `/collections/vinylboden-1` im Admin anlegen und danach HTTP 301 + Ziel 200 prüfen. Der Adminzugang war in dieser Sitzung nicht verfügbar. |
-| Teppich nach Maß | `/collections/teppich-nach-mass` ist HTTP 200 und ihr eigener Canonical. Diese URL als Hauptadresse verwenden. Keine zweite funktionierende URL belegt; `/collections/teppiche-nach-mass` ist 404. Erst bei belegter Doppel-URL einen 301-Redirect einrichten; keinen spekulativen Redirect. |
+| Teppich nach Maß | `/collections/teppich-nach-mass` und `/collections/teppiche` sind HTTP 200, führen dieselben 50 Produkte und hatten je einen eigenen Canonical. Hauptadresse ist jetzt im Arbeitszweig `/collections/teppich-nach-mass`; die zweite URL zeigt per Canonical darauf. Ein 301-Redirect kann für die noch aktive Collection nicht einfach als Shopify-URL-Redirect angelegt werden. Nach Adminprüfung über Deaktivierung/Umbenennung der doppelten Collection entscheiden und dann 301 einrichten; die Datenänderung bleibt offen. |
 | Treppenverlegung | Live HTTP 200. Für die drei geplanten lokalen Search-Kampagnen keine Treppen-Anzeigengruppe vorgesehen; daher keine Änderung. |
 
 ## Tracking: Sollzustand und Prüfprotokoll
@@ -50,7 +51,7 @@ Gemeinsame Negativliste als Startentwurf: `jobs`, `stellenangebote`, `ausbildung
 
 ## Startampel
 
-- **Erledigt:** Live-URL- und Seitentest; Canonical-Hauptadresse für Teppich nach Maß bestätigt; Vinyl-Seitenbefund geklärt; Formularzählfehler im Branch behoben; lokale Search-Struktur entworfen.
+- **Erledigt:** Live-URL- und Seitentest; Doppel-Collection identifiziert, Hauptadresse im Branch per Canonical und internen Links festgelegt; Vinyl-Seitenbefund geklärt; Formularzählfehler im Branch behoben; lokale Search-Struktur entworfen.
 - **Offen:** Branch prüfen/deployen; Vinyl-Redirect im Admin; Ads/GA4/Google-&-YouTube-Verknüpfung, Conversion- und Consent-Konfiguration; Merchant-Center-Diagnose; Tag-Assistant-Test.
 - **Blockiert:** Kontoeinstellungen und Redirect erfordern authentifizierten Adminzugang; Kaufprüfung erfordert eine genehmigte Testbestellung. Der Browser erreichte nur die öffentliche Google-Ads-Einstiegsseite.
 
