@@ -14,13 +14,15 @@
 | Punkt | Befund / nächster Schritt |
 |---|---|
 | Vinyl-Verlegeseite | Live HTTP 200. Das Seiten-Template zeigt Vinyl-Kategorie-CTAs. Die gefundenen Linoleum- und Teppich-Produktlinks stammen aus dem globalen Menü bzw. der Suchvorschau, nicht aus dem Seiteninhalt; deshalb keine Produktentfernung. |
-| `/collections/vinylboden` | Live HTTP 404. Shopify-URL-Redirect auf `/collections/vinylboden-1` im Admin anlegen und danach HTTP 301 + Ziel 200 prüfen. Der Adminzugang war in dieser Sitzung nicht verfügbar. |
+| `/collections/vinylboden` | **Erledigt im Shopify Admin:** URL-Redirect auf `/collections/vinylboden-1` angelegt. Öffentlicher HTTP-Test: 301 mit `Location: /collections/vinylboden-1`, Ziel 200. |
 | Teppich nach Maß | `/collections/teppich-nach-mass` und `/collections/teppiche` sind HTTP 200, führen dieselben 50 Produkte und hatten je einen eigenen Canonical. Hauptadresse ist jetzt im Arbeitszweig `/collections/teppich-nach-mass`; die zweite URL zeigt per Canonical darauf. Ein 301-Redirect kann für die noch aktive Collection nicht einfach als Shopify-URL-Redirect angelegt werden. Nach Adminprüfung über Deaktivierung/Umbenennung der doppelten Collection entscheiden und dann 301 einrichten; die Datenänderung bleibt offen. |
 | Treppenverlegung | Live HTTP 200. Für die drei geplanten lokalen Search-Kampagnen keine Treppen-Anzeigengruppe vorgesehen; daher keine Änderung. |
 
 ## Tracking: Sollzustand und Prüfprotokoll
 
-Der öffentliche HTML-Code zeigt ein Shopify-Custom-Pixel namens „GTM-KRXFFDSL Checkout Tracking“ und ein Shopify-App-Pixel. Das beweist **nicht**, welche Tags und Ziele in GTM, Google & YouTube, GA4 und Ads tatsächlich aktiv sind. Der ältere Bericht `docs/google/tracking-und-feed-validierung-2026-09-11.md` ist für diese Pixel-Frage überholt. Keine doppelten Tags auf Verdacht löschen.
+Shopify Admin wurde am 29.09.2026 geprüft: Die Google-&-YouTube-App ist mit Ads, GA4 und Merchant Center verbunden; das App-Pixel läuft mit Datenzugriff „Optimiert“, Enhanced Conversions ist in der App aktiviert. Zusätzlich existiert das Custom Pixel „GTM-KRXFFDSL Checkout Tracking“. Es lädt den GTM-Container **erst beim Ereignis `checkout_completed`** und schiebt dabei ein `purchase` mit Transaktions-ID, Wert und Währung in dessen dataLayer; `begin_checkout` wird ebenfalls gepusht. Der GTM-Container enthält ein altes Ads-Tag „Kontaktformular“ mit Trigger `form_submit` und weitere Google-/Meta-/Consent-Tags. Diese Konstruktion ist für normale Service-Leads nicht geeignet: Der Container wird auf der Kontaktseite durch dieses Pixel nicht geladen. Die Kaufaktion der Google-App ist bereits separat verbunden. Das Custom Pixel darf nicht pauschal entfernt werden, bevor abhängige Tags geprüft sind.
+
+Im Ads-Konto sind aktuell **eine primäre App-Kaufaktion** und sekundäre App-Aktionen für Add to cart und Begin checkout vorhanden. Daneben sind zwei Anrufaktionen, fünf Kontaktaktionen und eine von Google gehostete Website-Besuchsaktion primär; die Ziele Anruf, Kontakt und Seitenaufruf gelten derzeit als Kontostandard für alle drei vorhandenen pausierten Kampagnen. Eine Kontaktformular-Aktion meldet „Überprüfung erforderlich“, mehrere andere melden keine kürzlich erfassten Conversions. GA4 zeigt `form_start`, `form_submit`, `purchase`, `kontakt_WA` und `ads_conversion_Kontakt_1` als Schlüsselereignisse; die letzten beiden hatten keine Streamdaten. **Vor Gebotsoptimierung müssen die nicht belastbaren Mikroziele aus der Primärzählung herausgenommen und ein nach Erfolg ausgelöster Lead nachweislich angebunden werden.**
 
 | Ziel | Einstellung vor Start | Beleg fehlt |
 |---|---|---|
@@ -35,7 +37,7 @@ Der öffentliche HTML-Code zeigt ein Shopify-Custom-Pixel namens „GTM-KRXFFDSL
 
 ## Merchant Center
 
-Keine aktuelle Merchant-Center-Diagnose zugänglich; der Bericht vom 11.09. nennt damals 225 Produkte im Review und GTIN-Lücken. Diesen alten Stand **nicht** als aktuellen Genehmigungsstatus verwenden. Vor Shopping: Diagnose für Genehmigung je Produkt, Feed-Preis gegen Landingpage und Versandangaben prüfen. Beispielprodukte je Produktart im öffentlichen HTML auf `offers.price`, Beschreibung und validierte GTIN prüfen. Das Theme-Snippet `snippets/tp-product-structured-data.liquid` enthält bereits Beschreibungs-, Preis- und GTIN-Logik. Keine GTIN erfinden und `identifier_exists=false` nur für nachweislich ohne Kennung hergestellte Produkte setzen. Versandkosten nicht ohne Freigabe ändern.
+Die Google-&-YouTube-App zeigt am 29.09.2026 **1.631 von 1.633 Varianten genehmigt**, zwei in Prüfung, keine eingeschränkt oder abgelehnt. Der Bericht vom 11.09. (damals 225 im Review) ist damit überholt. Für Shopping weiterhin Feed-Preis gegen Landingpage und Versandangaben an Beispielprodukten prüfen. Das Theme-Snippet `snippets/tp-product-structured-data.liquid` enthält Beschreibungs-, Preis- und GTIN-Logik. Keine GTIN erfinden und `identifier_exists=false` nur für nachweislich ohne Kennung hergestellte Produkte setzen. Versandkosten nicht ohne Freigabe ändern.
 
 **Konkreter Prüffall für Produktanzeigen:** Beim öffentlich erreichbaren Produkt `solenta-schiefer-grau` beträgt der Shopify-Variantenpreis 87,86 € pro Paket; das JSON-LD meldet `offers.price` 26,31 € pro m². Die Seite zeigt beide Preisarten. Googles Merchant-Center-Hilfe erklärt, dass der Feed-Preis mit Landingpage beziehungsweise strukturierten Daten abgeglichen wird. Deshalb im Merchant Center genau diesen Artikel und weitere Paketartikel auf Preisabweichungen prüfen, bevor Paket-JSON-LD oder Feed geändert wird. Ohne den tatsächlichen Feed- und Diagnoseeintrag ist die Ursache einer möglichen Ablehnung nicht sicher genug belegt. Für reine lokale Search-Anzeigen ohne Produktfeed ist dies kein Startblocker.
 
@@ -55,8 +57,8 @@ Gemeinsame Negativliste als Startentwurf: `jobs`, `stellenangebote`, `ausbildung
 
 ## Startampel
 
-- **Erledigt:** Live-URL- und Seitentest; Doppel-Collection identifiziert, Hauptadresse im Branch per Canonical und internen Links festgelegt; Vinyl-Seitenbefund geklärt; Formularzählfehler im Branch behoben; lokale Search-Struktur entworfen.
-- **Offen:** Branch prüfen/deployen; Vinyl-Redirect im Admin; Ads/GA4/Google-&-YouTube-Verknüpfung, Conversion- und Consent-Konfiguration; Merchant-Center-Diagnose; Tag-Assistant-Test.
-- **Blockiert:** Kontoeinstellungen und Redirect erfordern authentifizierten Adminzugang; Kaufprüfung erfordert eine genehmigte Testbestellung. Der Browser erreichte nur die öffentliche Google-Ads-Einstiegsseite.
+- **Erledigt:** Vinyl-Redirect live; Google-&-YouTube-Kontoverknüpfung und Feed-Freigabestand geprüft; bestehende Ads-/GA4-/GTM-Ziele inventarisiert; Doppel-Collection identifiziert, Hauptadresse im Branch per Canonical und internen Links festgelegt; Formularzählfehler im Branch behoben; lokale Search-Struktur entworfen.
+- **Offen:** Branch prüfen/deployen; belastbaren Formular-Lead an Ads anbinden; primäre Ads-Mikroziele bereinigen; Consent mit Tag Assistant und Kauf-/Lead-Datenfluss prüfen; Produktpreis-Prüffall im Merchant Center nachsehen.
+- **Blockiert:** Die neue Lead-Quelle ist noch nicht live; Kaufprüfung erfordert eine genehmigte Testbestellung. Im verwendeten Browser meldet Google Ads zudem einen Werbeblocker und die Bearbeitung der Zielvorhaben öffnete keinen nutzbaren Dialog. Ohne Live-Ereignisse und diese Kontoprüfung wäre eine Aussage zu genau einer gezählten Kauf- und Lead-Conversion unbegründet.
 
 **GO erst dann:** Redirect 301, Tracking ohne Doppelzählung samt Consent nachweislich korrekt, erfolgreiche Lead-Probe, Ads-Ziele sauber auf primär/sekundär gesetzt, Kampagnen pausiert geprüft und Tagesbudget ausdrücklich freigegeben. Shopping/PMax benötigt zusätzlich einen freigegebenen Feed. Bis dahin **NO-GO**.
