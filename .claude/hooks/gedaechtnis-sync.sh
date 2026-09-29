@@ -46,7 +46,7 @@ spiegeln() {
   cat > "$ziel/README.md" <<EOF
 # Projektwissen (Spiegel, nur lesen)
 
-Kopie aus dem Repository \`teppich-paradies-shopify-ai\`, Stand $(date +%Y-%m-%d\ %H:%M) auf $(hostname -s).
+Kopie aus dem Repository \`teppich-paradies-shopify-ai\`; erneuert bei jedem Gedaechtnis-Sync.
 Aenderungen gehoeren ins Repository (Branch, PR, main) — nicht hierher; der naechste
 Sync ueberschreibt diesen Ordner.
 
