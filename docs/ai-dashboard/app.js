@@ -3634,13 +3634,13 @@ const ORG_BEREICHE = [
   ['archiv', 'Archiv'],
 ];
 const ORG_ANSICHTEN = [
-  ['offen', 'Alles Offene'], ['fokus', 'Fokus'], ['heute', 'Heute'], ['dringend', 'Dringend'],
+  ['offen', 'Alles Offene'], ['fokus', 'Wichtig'], ['heute', 'Heute'], ['dringend', 'Dringend'],
   ['woche', 'Diese Woche'], ['spaeter', 'Später'], ['warten', 'Warten auf'], ['pruefung', 'In Prüfung'],
   ['ueberfaellig', 'Überfällig'], ['erledigt', 'Erledigt'],
 ];
 // Am Handy nahmen elf Chips den halben Bildschirm ein, bevor die erste
 // Aufgabe kam. Vier reichen fuer den Alltag, der Rest steht einen Klick weiter.
-const ORG_ANSICHTEN_HAUPT = ['offen', 'heute', 'ueberfaellig', 'erledigt'];
+const ORG_ANSICHTEN_HAUPT = ['offen', 'fokus', 'woche', 'erledigt'];
 const ORG_DRINGLICHKEIT = [
   ['ueberfaellig', 'Überfällig', 'Frist bereits verstrichen'],
   ['jetzt', 'Jetzt wichtig', 'Dringend oder heute fällig'],
@@ -3749,7 +3749,8 @@ function orgParams() {
   const og = p.get('og');
   // Standard ist 'alles': eine Aufgabe, die keiner sieht, wird nicht erledigt.
   const gruppe = ORG_GRUPPEN_KEYS.includes(og) ? og : 'alles';
-  return { bereich, ansicht, gruppe, person: p.get('op') || '', q: p.get('oq') || '', id: p.get('oid') || '' };
+  const prioritaet = ['URGENT', 'HIGH', 'REST'].includes(p.get('opf')) ? p.get('opf') : '';
+  return { bereich, ansicht, gruppe, prioritaet, person: p.get('op') || '', q: p.get('oq') || '', id: p.get('oid') || '' };
 }
 
 function orgEintragOeffnen(id) {
@@ -3759,11 +3760,11 @@ function orgEintragOeffnen(id) {
 }
 
 function ensureOrgListe() {
-  const { bereich, ansicht, gruppe, person, q } = orgParams();
-  const key = `${bereich}|${ansicht}|${gruppe}|${person}|${q}`;
+  const { bereich, ansicht, gruppe, prioritaet, person, q } = orgParams();
+  const key = `${bereich}|${ansicht}|${gruppe}|${prioritaet}|${person}|${q}`;
   if (org.key === key && (org.liste || org.loading)) return;
   org.key = key; org.loading = true;
-  fetchEinkauf(`/api/org/liste?${new URLSearchParams({ bereich, ansicht, gruppe, person, q })}`).then(d => {
+  fetchEinkauf(`/api/org/liste?${new URLSearchParams({ bereich, ansicht, gruppe, prioritaet, person, q })}`).then(d => {
     if (org.key !== key) return;            // Antwort einer aelteren Eingabe
     org.liste = d; org.loading = false;
     if (state.route.view === 'organisation') render();
@@ -4338,7 +4339,7 @@ function viewOrganisation() {
     return `<div class="page-head"><div><h1>Aufgaben &amp; Organisation</h1></div></div>
       ${emptyState('Nur lokal im Betrieb verfügbar.', 'Dieser Bereich enthält interne Aufgaben und Notizen, die nie öffentlich werden. Auf dem Mac starten: npm run dashboard')}`;
   }
-  const { bereich, ansicht, gruppe, person, q, id } = orgParams();
+  const { bereich, ansicht, gruppe, prioritaet, person, q, id } = orgParams();
   if (id) return orgDetailAnsicht(id);
 
   ensureOrgListe();
@@ -4353,7 +4354,7 @@ function viewOrganisation() {
     ? `<div class="chips" style="margin:8px 0"><span class="small muted chip-label">Zeigen:</span>
         ${ORG_ANSICHTEN.filter(([k]) => ORG_ANSICHTEN_HAUPT.includes(k))
           .map(([k, l]) => `<button type="button" class="chip" data-param="oa" data-value="${k === 'offen' ? '' : k}" aria-pressed="${ansicht === k}">${esc(l)}</button>`).join('')}
-        <details class="chip-mehr"${ORG_ANSICHTEN_HAUPT.includes(ansicht) || ansicht === 'alle' ? '' : ' open'}>
+        <details class="chip-mehr"${ORG_ANSICHTEN_HAUPT.includes(ansicht) ? '' : ' open'}>
           <summary class="chip">Mehr …</summary>
           <div class="chips">
             ${ORG_ANSICHTEN.filter(([k]) => !ORG_ANSICHTEN_HAUPT.includes(k))
@@ -4361,6 +4362,13 @@ function viewOrganisation() {
             <button type="button" class="chip" data-param="oa" data-value="alle" aria-pressed="${ansicht === 'alle'}">Alle</button>
           </div>
         </details>
+      </div>
+      <div class="org-filterzeile"><label for="orgPrioritaet" class="small muted">Priorität</label>
+        <select id="orgPrioritaet" data-param="opf" aria-label="Aufgaben nach Priorität filtern">
+          <option value="">Alle Prioritäten</option>
+          ${[['URGENT', 'Kostet Geld'], ['HIGH', 'Hat ein Datum'], ['REST', 'Kann warten']]
+            .map(([wert, label]) => `<option value="${wert}" ${prioritaet === wert ? 'selected' : ''}>${esc(label)}</option>`).join('')}
+        </select>
       </div>` : '';
 
   // Das Team sucht hier Kunden, Bestellungen und kleine Auftraege - alles
@@ -4398,17 +4406,29 @@ function viewOrganisation() {
   if (!d || !d.verfuegbar) return kopf + reiter + emptyState('Noch nichts erfasst.', 'Mit „+ Schnell erfassen" anfangen.');
 
   const sindAufgaben = ['meine-aufgaben', 'team-aufgaben'].includes(bereich);
+  const filterAktiv = gruppe !== 'alles' || Boolean(q) || (sindAufgaben && (ansicht !== 'offen' || Boolean(person || prioritaet)));
   const liste = d.eintraege.length
     ? sindAufgaben
       ? ORG_DRINGLICHKEIT.map(([key, titel, hinweis]) => {
         const eintraege = d.eintraege.filter(e => (e.dringlichkeit || 'weitere') === key);
-        return eintraege.length ? `<section class="org-dringlichkeit org-dringlichkeit-${key}" aria-label="${esc(titel)}">
+        if (!eintraege.length) return '';
+        const sichtbar = eintraege.slice(0, 8);
+        const rest = eintraege.slice(8);
+        const zeilen = `<div class="rows">${sichtbar.map(e => orgZeile(e, { bereich })).join('')}</div>
+          ${rest.length ? `<details class="org-mehr"><summary>${rest.length} weitere ${rest.length === 1 ? 'Aufgabe' : 'Aufgaben'} anzeigen</summary>
+            <div class="rows">${rest.map(e => orgZeile(e, { bereich })).join('')}</div></details>` : ''}`;
+        const weitereEinklappen = key === 'weitere' && ansicht === 'offen' && !q && gruppe === 'alles'
+          && !person && !prioritaet && eintraege.length > 8;
+        return `<section class="org-dringlichkeit org-dringlichkeit-${key}" aria-label="${esc(titel)}">
           <div class="org-dringlichkeit-kopf"><h2>${esc(titel)} <span class="org-dringlichkeit-zahl">${eintraege.length}</span></h2><span>${esc(hinweis)}</span></div>
-          <div class="rows">${eintraege.map(e => orgZeile(e, { bereich })).join('')}</div>
-        </section>` : '';
+          ${weitereEinklappen ? `<details class="org-mehr org-gruppe-zu"><summary>Aufgaben anzeigen</summary>${zeilen}</details>` : zeilen}
+        </section>`;
       }).join('')
       : `<div class="rows">${d.eintraege.map(e => orgZeile(e, { bereich })).join('')}</div>`
-    : emptyState(bereich === 'meine-aufgaben' ? 'Nichts offen in dieser Ansicht.' : 'Nichts vorhanden.', 'Mit „+ Schnell erfassen" etwas anlegen.');
+    : filterAktiv
+      ? emptyState('Keine passenden Einträge.', 'Suche oder Filter anpassen.')
+        + '<button type="button" class="btn btn-sm" data-org-reset>Filter zurücksetzen</button>'
+      : emptyState(bereich === 'meine-aufgaben' ? 'Nichts offen in dieser Ansicht.' : 'Nichts vorhanden.', 'Mit „+ Schnell erfassen" etwas anlegen.');
 
   return kopf + reiter + suche + ansichten + gruppen + personen +
     `<p class="small muted" style="margin:0 0 8px">${d.anzahl} ${d.anzahl === 1 ? 'Eintrag' : 'Einträge'}${sindAufgaben ? ' · nach Dringlichkeit geordnet' : ''}</p>` + liste;
@@ -4800,6 +4820,11 @@ function bindEvents() {
     if (sammelBtn) { openSammelBestelltDialog(sammelBtn.dataset.afSammel); return; }
     const abschl = e.target.closest('[data-auftrag-erledigt]');
     if (abschl) { openAuftragAbschliessenDialog(abschl.dataset.auftragErledigt); return; }
+    if (e.target.closest('[data-org-reset]')) {
+      const bereich = orgParams().bereich;
+      location.hash = bereich === 'meine-aufgaben' ? '#/organisation' : `#/organisation?ob=${encodeURIComponent(bereich)}`;
+      return;
+    }
     const p = e.target.closest('button[data-param]');
     if (p) { setParam(p.dataset.param, p.dataset.value); return; }
     const kop = e.target.closest('[data-kopieren]');

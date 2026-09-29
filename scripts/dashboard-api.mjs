@@ -1069,7 +1069,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     },
 
     /** bereich: meine-aufgaben | meine-notizen | team-aufgaben | team-notizen | archiv */
-    orgListe({ bereich = 'meine-aufgaben', ansicht = 'fokus', person = '', gruppe = '', q = '', benutzer = null } = {}) {
+    orgListe({ bereich = 'meine-aufgaben', ansicht = 'fokus', person = '', gruppe = '', prioritaet = '', q = '', benutzer = null } = {}) {
       let gruppenZaehlung = {};
       const datei = this._orgDatei();
       const daten = orgLies(datei);
@@ -1108,6 +1108,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         liste = liste.filter(e => [e.titel, e.beschreibung, e.bereich, e.verantwortlich,
           ...(e.kommentare ?? []).map(k => k.text)].filter(Boolean)
           .some(f => String(f).toLowerCase().includes(suchtext)));
+      }
+
+      if (['meine-aufgaben', 'team-aufgaben'].includes(bereich)) {
+        if (prioritaet === 'REST') liste = liste.filter(e => ['NORMAL', 'LOW'].includes(e.prioritaet));
+        else if (['URGENT', 'HIGH'].includes(prioritaet)) liste = liste.filter(e => e.prioritaet === prioritaet);
       }
 
       // Gruppen nach Art der Arbeit (ARBEITSGRUPPEN) - fuer jeden Bereich,

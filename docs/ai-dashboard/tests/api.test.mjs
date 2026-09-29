@@ -939,6 +939,24 @@ test('Aufgabenliste liefert die Dringlichkeitsabschnitte in derselben Reihenfolg
   ]);
 });
 
+test('Prioritätsfilter fasst normale und alte niedrige Aufgaben zusammen und zählt Gruppen korrekt', () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat-prioritaetsfilter');
+  const ich = { kuerzel: 'ahmet', rolle: 'inhaber' };
+  const api = orgApi(root, dir);
+  api.orgNeu({ titel: 'Sofortiger Shop-Fix', bereich: 'Online-Shop', verantwortlich: 'ahmet', prioritaet: 'URGENT' }, { benutzer: ich });
+  api.orgNeu({ titel: 'Shop-Fix mit Termin', bereich: 'Online-Shop', verantwortlich: 'ahmet', prioritaet: 'HIGH' }, { benutzer: ich });
+  api.orgNeu({ titel: 'Normale Shop-Aufgabe', bereich: 'Online-Shop', verantwortlich: 'ahmet', prioritaet: 'NORMAL' }, { benutzer: ich });
+  api.orgNeu({ titel: 'Alte niedrige Aufgabe', bereich: 'Website & KI', verantwortlich: 'ahmet', prioritaet: 'LOW' }, { benutzer: ich });
+
+  const dringend = api.orgListe({ bereich: 'meine-aufgaben', ansicht: 'offen', prioritaet: 'URGENT', benutzer: ich });
+  assert.deepEqual(dringend.eintraege.map(e => e.titel), ['Sofortiger Shop-Fix']);
+  const rest = api.orgListe({ bereich: 'meine-aufgaben', ansicht: 'offen', prioritaet: 'REST', benutzer: ich });
+  assert.deepEqual(rest.eintraege.map(e => e.titel), ['Normale Shop-Aufgabe', 'Alte niedrige Aufgabe']);
+  assert.equal(rest.anzahl, 2);
+  assert.equal(rest.gruppen.reduce((summe, g) => summe + g.anzahl, 0), 2);
+});
+
 test('Stand für ChatGPT: offene Aufgaben mit Zuständigkeit und Erklärung, Erledigtes nicht', () => {
   const root = tmpRoot();
   const dir = path.join(root, 'privat-org7');
