@@ -37,7 +37,11 @@ Der öffentliche HTML-Code zeigt ein Shopify-Custom-Pixel namens „GTM-KRXFFDSL
 
 Keine aktuelle Merchant-Center-Diagnose zugänglich; der Bericht vom 11.09. nennt damals 225 Produkte im Review und GTIN-Lücken. Diesen alten Stand **nicht** als aktuellen Genehmigungsstatus verwenden. Vor Shopping: Diagnose für Genehmigung je Produkt, Feed-Preis gegen Landingpage und Versandangaben prüfen. Beispielprodukte je Produktart im öffentlichen HTML auf `offers.price`, Beschreibung und validierte GTIN prüfen. Das Theme-Snippet `snippets/tp-product-structured-data.liquid` enthält bereits Beschreibungs-, Preis- und GTIN-Logik. Keine GTIN erfinden und `identifier_exists=false` nur für nachweislich ohne Kennung hergestellte Produkte setzen. Versandkosten nicht ohne Freigabe ändern.
 
+**Konkreter Prüffall für Produktanzeigen:** Beim öffentlich erreichbaren Produkt `solenta-schiefer-grau` beträgt der Shopify-Variantenpreis 87,86 € pro Paket; das JSON-LD meldet `offers.price` 26,31 € pro m². Die Seite zeigt beide Preisarten. Googles Merchant-Center-Hilfe erklärt, dass der Feed-Preis mit Landingpage beziehungsweise strukturierten Daten abgeglichen wird. Deshalb im Merchant Center genau diesen Artikel und weitere Paketartikel auf Preisabweichungen prüfen, bevor Paket-JSON-LD oder Feed geändert wird. Ohne den tatsächlichen Feed- und Diagnoseeintrag ist die Ursache einer möglichen Ablehnung nicht sicher genug belegt. Für reine lokale Search-Anzeigen ohne Produktfeed ist dies kein Startblocker.
+
 ## Lokaler Search-Entwurf (nur Planung, keine Aktivierung)
+
+Anzeigen, Suchbegriffe, Ausschlüsse und Freigabekriterien sind in `docs/google/search-ads-entwurf-2026-09-29.md` vollständig als pausierter Entwurf ausgearbeitet.
 
 | Kampagne | Landingpage | Exact / Phrase Startbegriffe | Startbudget-Entwurf |
 |---|---|---|---:|
