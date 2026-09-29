@@ -362,5 +362,13 @@
         }
       }
     }
+  },
+  "customer_accounts": {
+    "order_details": {
+      "subtotal_label_with_quantity": {
+        "one": "Zwischensumme",
+        "other": "Zwischensumme"
+      }
+    }
   }
 }
