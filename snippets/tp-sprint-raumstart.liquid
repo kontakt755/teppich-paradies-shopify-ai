@@ -1,0 +1,26 @@
+{%- comment -%}Ausgabe: Raumfarbe|Farboption-Index|gewaehlter Farbcode|Startmedium-ID.{%- endcomment -%}
+{%- capture tp_daten -%}{% render 'tp-sprint-raumdaten', product: product %}{%- endcapture -%}
+{%- assign tp_teile = tp_daten | strip | split: '|' -%}
+{%- if tp_teile.size == 2 -%}
+  {%- assign tp_farbe = tp_teile | first -%}
+  {%- assign tp_datei = tp_teile | last -%}
+  {%- assign tp_index = -1 -%}
+  {%- assign tp_medium_id = 0 -%}
+  {%- assign tp_code = product.selected_or_first_available_variant.sku | split: '_' | last | plus: 0 -%}
+  {%- for tp_option in product.options_with_values -%}
+    {%- assign tp_name = tp_option.name | downcase -%}
+    {%- if tp_name == 'farbe' or tp_name == 'color' or tp_name == 'dekor' -%}
+      {%- assign tp_index = tp_option.position | minus: 1 -%}
+      {%- break -%}
+    {%- endif -%}
+  {%- endfor -%}
+  {%- if tp_index >= 0 and product.selected_or_first_available_variant.options[tp_index] == tp_farbe -%}
+    {%- for tp_media in product.media -%}
+      {%- if tp_media.preview_image.src contains tp_datei -%}
+        {%- assign tp_medium_id = tp_media.id -%}
+        {%- break -%}
+      {%- endif -%}
+    {%- endfor -%}
+  {%- endif -%}
+  {{- tp_farbe -}}|{{- tp_index -}}|{{- tp_code -}}|{{- tp_medium_id -}}
+{%- endif -%}
