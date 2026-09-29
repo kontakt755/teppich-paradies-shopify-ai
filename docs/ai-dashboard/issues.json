@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-29T09:01:13.863Z",
+  "generated_at": "2026-09-29T15:21:34.270Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 161,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-29T09:01:13.863Z",
+    "fetchedAt": "2026-09-29T15:21:34.270Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -69,20 +69,20 @@
       "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/716",
       "labels": [
-        "status:in-arbeit",
+        "status:fertig",
         "type:ux",
         "priority:p1",
         "area:checkout"
       ],
       "assignee": null,
       "assignees": [],
-      "comments": 2,
+      "comments": 4,
       "nextStep": null,
       "fields": {
         "description": "## Befund aus dem 18-Punkte-Shop-Audit (QA-08)\nDer Shopify-Checkout zeigt „35 Artikel“, obwohl der geprüfte Warenkorb drei Positionen enthält. Für Rollenware wird die echte Fläche als Shopify-Menge übergeben; Shopify summiert diese Mengen für den Zähler. Im Theme zählt `snippets/tp-cart-artikelzahl.liquid` bereits die Warenkorbzeilen, der von Shopify gehostete Checkout verwendet diesen Theme-Zähler nicht.\n\n## Kundenauswirkung\n„35 Artikel“ klingt nach 35 verschiedenen Produkten und widerspricht den drei sichtbaren Positionen. Preise und Mengenlogik dürfen nicht zur kosmetischen Korrektur verändert werden.\n\n## Nächster sicherer Schritt\n1. Die betreffende Formulierung im Shopify-Admin unter Einstellungen → Checkout → Checkout-Sprache rein lesend identifizieren.\n2. Einen genauen Textentwurf für den Zähler vorlegen; er muss auch für m², Pakete, Muster und Stückware verständlich sein.\n3. Für die konkrete Checkout-Einstellungsänderung Inhaberfreigabe einholen (AGENTS.md).\n4. Danach mit gemischtem Testwarenkorb bis zum Checkout prüfen, ohne Kaufabschluss.\n\nShopify beschreibt die Änderung der Checkout-Texte im Admin: https://help.shopify.com/en/manual/checkout-settings/checkout-language"
       },
       "created_at": "2026-09-28T11:41:00Z",
-      "updated_at": "2026-09-29T09:00:59Z",
+      "updated_at": "2026-09-29T09:17:20Z",
       "closed_at": "2026-09-29T09:00:59Z"
     },
     {
@@ -275,13 +275,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 13,
+      "comments": 15,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-26T08:09:53Z",
-      "updated_at": "2026-09-29T08:55:45Z",
+      "updated_at": "2026-09-29T10:18:24Z",
       "closed_at": "2026-09-29T08:37:00Z"
     },
     {
