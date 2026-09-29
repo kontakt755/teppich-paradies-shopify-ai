@@ -136,11 +136,11 @@
       if tp_dn_kind != 'kontakt'
         if tp_dn_hit == 0 and link.links != blank
           capture tp_dn_img
-            render 'tp-menu-bild', link: link.links.first, kacheln: kacheln, class: 'tp-dn-row__img', sizes: '56px'
+            render 'tp-menu-bild', link: link.links.first, kacheln: kacheln, class: 'tp-dn-row__img', sizes: '56px', widths: '80,120,160'
           endcapture
         else
           capture tp_dn_img
-            render 'tp-menu-bild', link: link, kacheln: kacheln, class: 'tp-dn-row__img', sizes: '56px'
+            render 'tp-menu-bild', link: link, kacheln: kacheln, class: 'tp-dn-row__img', sizes: '56px', widths: '80,120,160'
           endcapture
         endif
       endif
