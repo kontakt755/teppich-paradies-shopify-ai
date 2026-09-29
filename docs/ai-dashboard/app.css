@@ -632,6 +632,16 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
 }
 .org-dringlichkeit-ueberfaellig .org-zeile { border-left: 3px solid var(--crit); }
 .org-dringlichkeit-jetzt .org-zeile { border-left: 3px solid var(--warn); }
+.org-filterzeile { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+.org-filterzeile select { max-width: 100%; min-height: 38px; }
+.org-mehr { margin-top: 8px; }
+.org-mehr > summary {
+  width: fit-content; max-width: 100%; cursor: pointer; color: var(--accent);
+  font-weight: 600; padding: 9px 2px;
+}
+.org-mehr > summary:hover { text-decoration: underline; }
+.org-mehr > .rows { margin-top: 6px; }
+.org-gruppe-zu { margin-top: 0; }
 
 /* Beschreibung in der Aufgabenzeile: erklaert die Zeile, ohne sie zu dominieren. */
 .org-zeile .org-was {

@@ -63,6 +63,10 @@
   endif
 -%}
 {% render 'card-gallery', children: children, card_index: tp_card_index %}
+{%- assign tp_supplier_collection = product.metafields.grosshandel.sku.value | default: '' -%}
+{%- if tp_supplier_collection contains 'Sprint 027' -%}
+  <small class="tp-source-card-credit">© JOKA / W. & L. Jordan GmbH</small>
+{%- endif -%}
 
 {% # Title and price for the zoomed out grid view %}
 {%- comment -%} C1: nur fuer die Zoom-Out-Ansicht; fuer Screenreader kein zweiter Titel {%- endcomment -%}
@@ -77,6 +81,16 @@
 {% render 'product-badges-styles' %}
 
 {% render 'tp-rabatt-badge-styles' %}
+
+{% stylesheet %}
+  .tp-source-card-credit {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.3;
+    color: inherit;
+  }
+{% endstylesheet %}
 
 {% schema %}
 {

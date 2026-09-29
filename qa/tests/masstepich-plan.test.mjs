@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { erstellePlan, hundertstelPreis } from '../../scripts/masstepich/plan.mjs';
 import { pruefeDaten, pruefeTheme } from '../../scripts/masstepich/guard.mjs';
 import { ladeLieferantenNamen, namenSet, woerter } from '../../scripts/masstepich/lib.mjs';
@@ -145,4 +148,33 @@ test('H: Namen kommen aus einer Liste, auch mit Bindestrich, nie als Teilwort', 
 
 test('I: ausgeliefertes Theme ohne Lieferantennamen und ohne einkauf.*', () => {
   assert.deepEqual(pruefeTheme(), []);
+});
+
+test('J: ausschliesslich die genaue JOKA-Bildquellenangabe ist im Theme erlaubt', () => {
+  const root = mkdtempSync(join(tmpdir(), 'tp-joka-credit-'));
+  const card = join(root, 'blocks', '_product-card-gallery.liquid');
+  const credit = '<small class="tp-source-card-credit">© JOKA / W. & L. Jordan GmbH</small>';
+  const gallery = join(root, 'snippets', 'product-media-gallery-content.liquid');
+  const galleryCredit = '<p class="tp-source-media-credit">JOKA® Sprint 027 · Bildmaterial: © JOKA / W. & L. Jordan GmbH</p>';
+  const other = join(root, 'snippets', 'other.liquid');
+  const hersteller = namenSet(['JOKA', 'Jordan']);
+  try {
+    mkdirSync(join(root, 'blocks'));
+    mkdirSync(join(root, 'snippets'));
+    writeFileSync(card, credit);
+    writeFileSync(gallery, galleryCredit);
+    assert.deepEqual(pruefeTheme(root, hersteller), []);
+    writeFileSync(card, `${credit}\n${credit}`);
+    assert.match(pruefeTheme(root, hersteller).join(' '), /Lieferantenname/);
+    writeFileSync(card, `${credit}\n<p>Andere JOKA-Werbung</p>`);
+    assert.match(pruefeTheme(root, hersteller).join(' '), /Lieferantenname/);
+    writeFileSync(card, credit);
+    writeFileSync(other, galleryCredit);
+    assert.match(pruefeTheme(root, hersteller).join(' '), /other\.liquid: Lieferantenname/);
+    rmSync(other);
+    writeFileSync(gallery, `${galleryCredit}\n${galleryCredit}`);
+    assert.match(pruefeTheme(root, hersteller).join(' '), /product-media-gallery-content\.liquid: Lieferantenname/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });

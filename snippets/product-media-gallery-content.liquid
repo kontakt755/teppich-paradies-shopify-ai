@@ -688,11 +688,22 @@
       </script>
     {%- endif -%}
   </media-gallery>
+  {%- assign tp_supplier_collection = selected_product.metafields.grosshandel.sku.value | default: '' -%}
+  {%- if tp_supplier_collection contains 'Sprint 027' -%}
+    <p class="tp-source-media-credit">JOKA® Sprint 027 · Bildmaterial: © JOKA / W. & L. Jordan GmbH</p>
+  {%- endif -%}
 {% endif %}
 
 {% render 'product-media-gallery-content-styles' %}
 
 {% stylesheet %}
+  .tp-source-media-credit {
+    margin: 8px 0 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: inherit;
+  }
+
   .dialog-thumbnails-list-container {
     position: fixed;
     width: 100%;
