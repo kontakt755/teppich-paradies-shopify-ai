@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-29T08:31:34.113Z",
+  "generated_at": "2026-09-29T08:35:31.572Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 161,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-29T08:31:34.113Z",
+    "fetchedAt": "2026-09-29T08:35:31.572Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -1808,7 +1808,7 @@
       "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/282",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p1",
         "area:produktseite"
@@ -1817,13 +1817,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 3,
+      "comments": 4,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-14T08:44:27Z",
-      "updated_at": "2026-09-29T08:31:20Z",
+      "updated_at": "2026-09-29T08:31:34Z",
       "closed_at": "2026-09-29T08:31:20Z"
     },
     {
@@ -3652,7 +3652,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/53",
       "labels": [
-        "status:geplant",
+        "status:review",
         "type:technik",
         "priority:p2",
         "area:google"
@@ -3661,7 +3661,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 2,
       "nextStep": "GA4 Custom Reports erstellen",
       "fields": {
         "description": "Definiere und dokumentiere UTM Parameter für Tracking\nFormat: ?utm_source=google&utm_medium=cpc&utm_campaign=teppichboden\n\n- [ ] UTM Strategy dokumentiert\n- [ ] Parameter für jede Kampagne definiert\n- [ ] Google Analytics Segments erstellt\n- [ ] Dashboard-Filter konfiguriert",
@@ -3690,7 +3690,7 @@
         }
       },
       "created_at": "2026-09-03T09:40:38Z",
-      "updated_at": "2026-09-08T14:23:03Z",
+      "updated_at": "2026-09-29T08:34:33Z",
       "closed_at": null
     },
     {
@@ -3796,7 +3796,7 @@
     {
       "number": 50,
       "title": "[Google Ads] Phase 3.2 – Teppiche Seite optimieren",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/50",
       "labels": [
         "status:review",
@@ -3808,7 +3808,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "QA-Test & Performance Check",
       "fields": {
         "description": "Optimiere Landing Page für Teppiche Kampagne\n- [ ] Stilberatung-Link prominent\n- [ ] Filter-Funktionen testen\n- [ ] Orientteppiche Kategorie sichtbar\n- [ ] Mobile Navigation OK\n- [ ] Versandkosten klar",
@@ -3841,13 +3841,13 @@
         }
       },
       "created_at": "2026-09-03T09:40:34Z",
-      "updated_at": "2026-09-28T11:50:36Z",
-      "closed_at": null
+      "updated_at": "2026-09-29T08:35:17Z",
+      "closed_at": "2026-09-29T08:35:17Z"
     },
     {
       "number": 49,
       "title": "[Google Ads] Phase 3.1 – Teppichboden Seite optimieren",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/49",
       "labels": [
         "status:review",
@@ -3859,7 +3859,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "QA-Test & Screenshot vergleich",
       "fields": {
         "description": "Optimiere Landing Page für Teppichboden Kampagne\n- [ ] CTA-Button prominent (Musterbestellung)\n- [ ] Mobile Responsive Test\n- [ ] Versand-Info sichtbar\n- [ ] Qualitätssiegel hinzufügen\n- [ ] FAQ ausklappbar",
@@ -3892,8 +3892,8 @@
         }
       },
       "created_at": "2026-09-03T09:40:32Z",
-      "updated_at": "2026-09-28T11:50:19Z",
-      "closed_at": null
+      "updated_at": "2026-09-29T08:35:15Z",
+      "closed_at": "2026-09-29T08:35:15Z"
     },
     {
       "number": 48,
