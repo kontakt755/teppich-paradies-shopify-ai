@@ -52,6 +52,7 @@ Für spätere Shopping-Anzeigen Feed-Preis gegen Landingpage und Versandangaben 
 ## Lokaler Search-Entwurf (nur Planung, keine Aktivierung)
 
 Anzeigen, Suchbegriffe, Ausschlüsse und Freigabekriterien sind in `docs/google/search-ads-entwurf-2026-09-29.md` vollständig als pausierter Entwurf ausgearbeitet.
+Zusätzlich liegen unter `docs/google/search-ads-editor-import-2026-09-29/` vier CSV-Vorlagen für drei pausierte Kampagnen, Anzeigengruppen, 18 Exact-/Phrase-Keywords und drei pausierte Responsive Search Ads. Die drei Zielseiten antworteten am 29.09. mit HTTP 200; Headline- und Beschreibungslängen wurden geprüft. Die Dateien wurden nicht ins Konto importiert oder in Google Ads Editor validiert.
 
 | Kampagne | Landingpage | Exact / Phrase Startbegriffe | Startbudget-Entwurf |
 |---|---|---|---:|
