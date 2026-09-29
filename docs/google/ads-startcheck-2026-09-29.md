@@ -4,7 +4,7 @@
 
 ## Änderungen in diesem Arbeitszweig
 
-- `snippets/tp-lead-events.liquid`: `tp_lead_form_submit` wird erst nach einer von Shopify bestätigten Kontaktanfrage veröffentlicht. Der vorherige `submit`-Listener zählte auch ungültige und abgewiesene Formulare. Musterformulare melden stattdessen `tp_sample_form_submit`.
+- `snippets/tp-lead-events.liquid`: `tp_lead_form_submit` wird erst nach einer von Shopify bestätigten Kontaktanfrage veröffentlicht. Der vorherige `submit`-Listener zählte auch ungültige und abgewiesene Formulare. Musterformulare sowie die Auswahl „Muster bestellen“ im Startseitenformular melden stattdessen `tp_sample_form_submit`.
 - Bestätigungsmarker ergänzt in `blocks/contact-form.liquid`, `sections/tp-start-kontakt.liquid`, `sections/contact-form.liquid` und `snippets/tp-muster-beratungsanfrage.liquid`. Keine Formulardaten werden an das Theme-Ereignis gehängt.
 - `snippets/meta-tags.liquid`: `/collections/teppiche` erhält den Canonical und `og:url` der Hauptadresse `/collections/teppich-nach-mass`. Bekannte Menüliste und Such-Chip zeigen nun auf die Hauptadresse (`sections/header-group.json`, `sections/tp-header-suche.liquid`).
 - Noch **nicht live**: Der Branch muss erst durch die Projekt-Review- und Deploy-Gates.
@@ -24,6 +24,8 @@ Shopify Admin wurde am 29.09.2026 geprüft: Die Google-&-YouTube-App ist mit Ads
 
 Im Ads-Konto sind aktuell **eine primäre App-Kaufaktion** und sekundäre App-Aktionen für Add to cart und Begin checkout vorhanden. Daneben sind zwei Anrufaktionen, fünf Kontaktaktionen und eine von Google gehostete Website-Besuchsaktion primär; die Ziele Anruf, Kontakt und Seitenaufruf gelten derzeit als Kontostandard für alle drei vorhandenen pausierten Kampagnen. Eine Kontaktformular-Aktion meldet „Überprüfung erforderlich“, mehrere andere melden keine kürzlich erfassten Conversions. GA4 zeigt `form_start`, `form_submit`, `purchase`, `kontakt_WA` und `ads_conversion_Kontakt_1` als Schlüsselereignisse; die letzten beiden hatten keine Streamdaten. **Vor Gebotsoptimierung müssen die nicht belastbaren Mikroziele aus der Primärzählung herausgenommen und ein nach Erfolg ausgelöster Lead nachweislich angebunden werden.**
 
+Ein Tag-Assistant-Debugversuch für `/pages/kontakt` ließ sich am 29.09. im eingebetteten Browser nicht mit dem geöffneten Shopfenster verbinden („Nicht verbunden“, null Tags). Das ist **kein** Befund über die tatsächliche Consent-Konfiguration. Der Test muss in einer unterstützten Browsersitzung mit beobachteten Zuständen vor und nach Einwilligung wiederholt werden.
+
 | Ziel | Einstellung vor Start | Beleg fehlt |
 |---|---|---|
 | Kauf | Genau **eine** primäre Ads-Kaufaktion. Wert in EUR und eindeutige Transaktions-ID aus bestätigter Bestellung. 0-Euro-Muster ausschließen oder sekundär halten. | Google Ads: Conversion-Übersicht und Testbestellung; Shopify: Kundenereignisse; GA4: DebugView. |
@@ -37,7 +39,9 @@ Im Ads-Konto sind aktuell **eine primäre App-Kaufaktion** und sekundäre App-Ak
 
 ## Merchant Center
 
-Die Google-&-YouTube-App zeigt am 29.09.2026 **1.631 von 1.633 Varianten genehmigt**, zwei in Prüfung, keine eingeschränkt oder abgelehnt. Der Bericht vom 11.09. (damals 225 im Review) ist damit überholt. Für Shopping weiterhin Feed-Preis gegen Landingpage und Versandangaben an Beispielprodukten prüfen. Das Theme-Snippet `snippets/tp-product-structured-data.liquid` enthält Beschreibungs-, Preis- und GTIN-Logik. Keine GTIN erfinden und `identifier_exists=false` nur für nachweislich ohne Kennung hergestellte Produkte setzen. Versandkosten nicht ohne Freigabe ändern.
+Die Google-&-YouTube-App zeigt am 29.09.2026 **1.631 von 1.633 Varianten genehmigt**, zwei in Prüfung, keine eingeschränkt oder abgelehnt. Im Merchant Center selbst sind **2.214 Produkte** gelistet: 1.634 bereitgestellte Produkte und 580 zusätzlich von Google auf der Website gefundene Produkte. Dort sind 2.189 genehmigt, 22 nicht genehmigt und drei in Prüfung. Die unterschiedlichen Zähler beziehen sich also nicht auf denselben Produktbestand. Unter „Überprüfung erforderlich“ entfallen die 22 Ablehnungen auf **17 Fälle „Einfarbiges Bild“ und fünf Fälle „Produktpreis fehlt“**. Ein geprüfter Preisfall („Turku Eiche Chalet – Klickvinyl 7mm“) stammt aus der automatisch gefundenen Website-Quelle, nicht aus der Shopify App API. Keine pauschale Preis- oder Bildänderung daraus ableiten; erst die fünf betroffenen URLs und ihre Shopify-Feed-Dubletten einzeln abgleichen. Für die geplanten lokalen Search-Kampagnen ohne Produktfeed ist dies kein Startblocker. Der Bericht vom 11.09. (damals 225 im Review) ist überholt.
+
+Für spätere Shopping-Anzeigen Feed-Preis gegen Landingpage und Versandangaben an Beispielprodukten prüfen. Das Theme-Snippet `snippets/tp-product-structured-data.liquid` enthält Beschreibungs-, Preis- und GTIN-Logik. Keine GTIN erfinden und `identifier_exists=false` nur für nachweislich ohne Kennung hergestellte Produkte setzen. Versandkosten nicht ohne Freigabe ändern.
 
 **Konkreter Prüffall für Produktanzeigen:** Beim öffentlich erreichbaren Produkt `solenta-schiefer-grau` beträgt der Shopify-Variantenpreis 87,86 € pro Paket; das JSON-LD meldet `offers.price` 26,31 € pro m². Die Seite zeigt beide Preisarten. Googles Merchant-Center-Hilfe erklärt, dass der Feed-Preis mit Landingpage beziehungsweise strukturierten Daten abgeglichen wird. Deshalb im Merchant Center genau diesen Artikel und weitere Paketartikel auf Preisabweichungen prüfen, bevor Paket-JSON-LD oder Feed geändert wird. Ohne den tatsächlichen Feed- und Diagnoseeintrag ist die Ursache einer möglichen Ablehnung nicht sicher genug belegt. Für reine lokale Search-Anzeigen ohne Produktfeed ist dies kein Startblocker.
 
