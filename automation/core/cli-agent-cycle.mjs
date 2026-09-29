@@ -6,7 +6,7 @@ import { appendUsageRecord } from './openrouter-executor.mjs';
 import { runReviewCorrectionCycle } from './review-cycle.mjs';
 import { diffSinceSnapshot, evaluateDashboardGuards, loadDashboardRiskMap, snapshotWorkingTree } from './dashboard-guards.mjs';
 import { classifyTask } from '../../workflow/router.mjs';
-import { buildModelPlan, claudeArgsForStep, codexArgsForStep, describeStep, escalateStep, failureSignature, isRateLimitError, rateLimitFallback, resolveCodexBinary } from '../../workflow/model-matrix.mjs';
+import { PROVIDER, buildModelPlan, claudeArgsForStep, codexArgsForStep, describeStep, escalateStep, failureSignature, isRateLimitError, rateLimitFallback, resolveCodexBinary } from '../../workflow/model-matrix.mjs';
 
 const REVIEW_SCHEMA = path.resolve('automation/schemas/review-result.schema.json');
 const REVIEW_SCHEMA_TEXT = fs.existsSync(REVIEW_SCHEMA) ? fs.readFileSync(REVIEW_SCHEMA, 'utf8') : '{"status":"PASS|CHANGES_REQUIRED|HUMAN_GATE","summary":"","findings":[]}';
@@ -635,7 +635,9 @@ export function createCorrectExecutor({ gateway, cwd, timeoutMs, budgetUsd, reco
   };
 }
 
-export async function runCliAgentCycle({ task, taskId = `AGENT-${Date.now()}`, cwd = process.cwd(), maxReviewRounds = 3, timeoutMs = 30 * 60_000, budgetUsd = Number(process.env.AGENT_LOOP_CLAUDE_MAX_BUDGET_USD ?? 1), spawn = null, review = runCodexReview, recordUsage = appendUsageRecord, onState = null, io = fs, declaredTaskType = null, forceTaskType = null, previousRisk = null, guardsEnabled = process.env.DASHBOARD_GUARDS !== 'off' }) {
+const SECURITY_REVIEW_FOCUS = 'SECURITY-REVIEW: Pruefe ausschliesslich Sicherheitsfolgen - Secrets und Tokens im Code oder Log, Authentifizierung und Rechte, Injection, unsichere Shell-Aufrufe, Datenabfluss an fremde Hosts, Lieferantennamen im oeffentlichen Repository. Stil und Funktion sind bereits geprueft.';
+
+export async function runCliAgentCycle({ task, taskId = `AGENT-${Date.now()}`, cwd = process.cwd(), maxReviewRounds = 3, timeoutMs = 30 * 60_000, budgetUsd = Number(process.env.AGENT_LOOP_CLAUDE_MAX_BUDGET_USD ?? 1), spawn = null, review = runCodexReview, claudeReview = runClaudeReview, recordUsage = appendUsageRecord, onState = null, io = fs, declaredTaskType = null, forceTaskType = null, previousRisk = null, guardsEnabled = process.env.DASHBOARD_GUARDS !== 'off' }) {
   const classified = classifyClaudeRequest({ taskId, task, declaredTaskType, forceTaskType, previousRisk });
   // Modellwahl je Klasse aus einer Quelle (workflow/model-matrix.mjs). Vorher
   // lief jeder Worker mit dem Account-Default und jede Korrektur mit demselben
@@ -710,7 +712,23 @@ export async function runCliAgentCycle({ task, taskId = `AGENT-${Date.now()}`, c
         return { status: 'REVIEW_INFRA_FAILED', reviewError: error.message };
       }
       if (result.status === 'HUMAN_GATE') return { status: 'SECURITY_STOP' };
-      return { status: result.status === 'PASS' ? 'PASS' : 'REVIEW_FINDINGS', findings: result.findings };
+      if (result.status !== 'PASS') return { status: 'REVIEW_FINDINGS', findings: result.findings };
+      // Klasse D: zusaetzlich das Security-Review aus der Modellmatrix (OPS-014).
+      // Vorher war es geplant und angezeigt, lief aber nie.
+      if (!plan.securityReviewer) return { status: 'PASS', findings: result.findings };
+      let security;
+      try {
+        onState?.({ status: 'SECURITY_REVIEW', reviewer: describeStep(plan.securityReviewer) });
+        const securityOptions = { reviewStep: plan.securityReviewer, taskText: `${SECURITY_REVIEW_FOCUS}\n\n${classified.task}`, taskType: classified.taskType, candidateText: classified.taskType === 'ANALYSIS' ? (candidate.result ?? '') : '', taskId: `${classified.id}-S${metadata.reviewRound}`, cwd, sinceRef: reviewSinceRef, baseline: reviewBaseline, timeoutMs, spawn: spawn ?? spawnSync, recordUsage };
+        security = plan.securityReviewer.provider === PROVIDER.CODEX
+          ? runReviewStep({ ...securityOptions, review, claudeReview, authorModel: currentStep?.model ?? plan.primary.model, onState })
+          : claudeReview(securityOptions);
+      } catch (error) {
+        onState?.({ status: 'REVIEW_INFRA_FAILED', reviewError: `Security-Review: ${error.message}` });
+        return { status: 'REVIEW_INFRA_FAILED', reviewError: `Security-Review: ${error.message}` };
+      }
+      if (security.status === 'HUMAN_GATE') return { status: 'SECURITY_STOP' };
+      return { status: security.status === 'PASS' ? 'PASS' : 'REVIEW_FINDINGS', findings: security.findings };
     },
     correct: async (_task, candidate, findings, metadata) => {
       // Kostenbremse: Solange Claude Code Pro laeuft, sind Korrekturrunden

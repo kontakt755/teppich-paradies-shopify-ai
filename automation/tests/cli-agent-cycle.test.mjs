@@ -537,3 +537,33 @@ test('ohne sinceRef und baseline bleibt der Pruefbereich unveraendert', () => {
   assert.equal(aufrufe[0].sinceRef, null);
   assert.equal(aufrufe[0].baseline, null);
 });
+
+// OPS-014: Klasse D plante ein Security-Review, der Zyklus rief es aber nie auf.
+test('class D runs the planned security review after a passing review, class B does not', async () => {
+  const spawn = (_command, args) => {
+    if (args[0] === 'auth') return { status: 0, stdout: JSON.stringify({ loggedIn: true, authMethod: 'oauth' }), stderr: '' };
+    return { status: 0, stdout: JSON.stringify({ result: 'Fertig', usage: {}, total_cost_usd: 0 }), stderr: '' };
+  };
+  const securityCalls = [];
+  const claudeReview = options => { securityCalls.push(options); return { status: 'PASS', findings: [] }; };
+  const passed = await runCliAgentCycle({ cwd: scratch, task: 'Haerte die Token-Pruefung im Dashboard-Server', spawn, recordUsage: () => {}, guardsEnabled: false,
+    review: () => ({ status: 'PASS', findings: [] }), claudeReview });
+  assert.equal(passed.taskClass, 'D');
+  assert.equal(passed.status, 'PASS');
+  assert.equal(securityCalls.length, 1);
+  assert.equal(securityCalls[0].reviewStep.model, 'fable');
+  assert.match(securityCalls[0].taskText, /^SECURITY-REVIEW/);
+
+  const finding = { priority: 'P1', file: 'scripts/x.mjs', problem: 'Token im Log', reason: 'Leck', recommendedFix: 'entfernen' };
+  let rounds = 0;
+  const blocked = await runCliAgentCycle({ cwd: scratch, task: 'Haerte die Token-Pruefung im Dashboard-Server', spawn, recordUsage: () => {}, guardsEnabled: false, maxReviewRounds: 1,
+    review: () => ({ status: 'PASS', findings: [] }), claudeReview: () => { rounds += 1; return { status: 'CHANGES_REQUIRED', findings: [finding] }; } });
+  assert.notEqual(blocked.status, 'PASS');
+  assert.ok(rounds >= 1);
+
+  securityCalls.length = 0;
+  const classB = await runCliAgentCycle({ cwd: scratch, task: 'Repariere einen kleinen lokalen Testfehler', spawn, recordUsage: () => {}, guardsEnabled: false,
+    review: () => ({ status: 'PASS', findings: [] }), claudeReview });
+  assert.notEqual(classB.taskClass, 'D');
+  assert.equal(securityCalls.length, 0);
+});
