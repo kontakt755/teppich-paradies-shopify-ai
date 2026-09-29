@@ -364,6 +364,14 @@
     }
   },
   "customer_accounts": {
+    "orders": {
+      "order_list": {
+        "items": {
+          "one": "Bestellung",
+          "other": "Bestellung"
+        }
+      }
+    },
     "order_details": {
       "subtotal_label_with_quantity": {
         "one": "Zwischensumme",
