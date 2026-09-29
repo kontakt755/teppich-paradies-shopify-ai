@@ -1,8 +1,24 @@
 # Wohnteppiche aus Lieferant-B-Daten: Importvorbereitung
 
-Stand: 2026-09-28. Dieser Plan erzeugt keine Shopify-Schreibaktion.
+Stand: 2026-09-29. Dieser Plan erzeugt keine Shopify-Schreibaktion.
 
-## Quellen und Umfang
+## Nachtrag: beide Excel-Dateien und vollständiges Bildarchiv
+
+- Die zuvor übersehene Datei `Datenliste_Teppiche_Online_E26.xltx` enthält **148 zusätzliche, nicht überlappende Stückartikel**: 108 ASTRA und 40 SCHÖNER WOHNEN-Kollektion. Beide Teppich-Tabellen zusammen enthalten **660 eindeutige SKUs und 660 eindeutige EANs**: 592 Stückartikel und 68 m²-Wunschmaßzeilen. Türmatten bleiben separat.
+- Der geprüfte, verkaufspreisbezogene Snapshot `import-snapshot-2026-09.json` enthält je Zeile SKU, EAN, UVP, Maße, Material, Herstellungsart, Herkunft, Beschreibung und Eigenschaften. Er enthält **keine Einkaufspreise** und löst keine Shop-Schreibaktion aus. Jede Bildreferenz ist relativ zum gelieferten Archiv und mit Marke, Reihe, Design und Farbe verknüpft.
+- Das gelieferte Archiv enthält 379 exakt codezuordenbare Bilddateien für 18 Design-/Farbpaare, die 58 Artikelzeilen abdecken: Elda (18 Zeilen) und sieben Reihen der SCHÖNER WOHNEN-Kollektion (40 Zeilen). Für 602 Artikelzeilen bzw. 140 weitere Design-/Farbpaare enthält es **kein** exakt passendes Original. Die vier anderen ASTRA-Bildordner betreffen nicht die Teppichzeilen dieser zwei Tabellen. Auch die ZIP-Einträge wurden auf die fehlenden Modellnamen gegengeprüft.
+- Alle 379 zugeordneten Dateien sind lesbar. 243 überschreiten 20 MP oder 20 MB und brauchen für Shopify eine maß- und farbtreue proportionale Verkleinerung. Eine KI-Veränderung der Produktdarstellung ist durch die mitgelieferten Bildregeln nicht gedeckt.
+- Die im Archiv enthaltenen Nutzungsbedingungen für beide Marken verlangen vor der öffentlichen Nutzung eine **nachweisbare Freigabe der konkreten Shop-Darstellung in Textform** und einen Copyright-Vermerk, der der jeweiligen Aufnahme zugeordnet werden kann. ASTRA-Bilder dürfen darüber hinaus nur proportional skaliert oder beschnitten werden; für SCHÖNER WOHNEN sind auch heruntergerechnete Online-Bilder erlaubt. Die aktuelle Freigabe für `teppich-paradies.net` liegt in den geprüften Dateien noch nicht vor. Daher keine zusätzliche öffentliche Bildverwendung, bevor diese Freigabe belegt und die Theme-Kennzeichnung umgesetzt ist.
+- Die neue, bereits veröffentlichte manuelle Kollektion `wohnteppiche` ist von der Altbestands-Kollektion `teppiche` getrennt. Die zwei vorhandenen Testprodukte bleiben DRAFT; neue Daten werden zunächst ebenfalls als Entwurf geplant. Die zusätzlichen 148 SKU/EANs müssen vor Shopify-Schreibaktionen noch adminseitig gegen alle Produktstatus abgeglichen werden.
+
+## Importreihenfolge
+
+1. Die 40 bildgedeckten SCHÖNER WOHNEN-Artikel in sieben Designlinien als vollständige, nicht veröffentlichte Produktentwürfe vorbereiten; Elda mit 18 Varianten ist bereits als Entwurf vorhanden. Lizenzgerechten Copyright-Hinweis und Markenpräsentation zuerst im Arbeitstheme prüfen.
+2. Die übrigen 602 Zeilen mit eindeutigen Produktdaten als separate Entwurfs-Batches vorbereiten. Fehlende Originalbilder je exaktem Design-/Farbcode beim Händlerzugang beschaffen; keine Katalogabbildung oder ähnliche Farbe als Ersatz nehmen.
+3. Für jedes neue Produkt genau einen vollständigen Anlagevorgang aus dem Snapshot erzeugen und nachher Variantenanzahl, SKU, EAN, UVP, Maße, Medien und Collection-Zuordnung gegenlesen. Bestehende Testprodukte nur feldgenau aktualisieren.
+4. Festgrößen- und Wunschmaß-Checkout getrennt abnehmen. Erst mit aktueller Bestands-/Lieferregel, schriftlicher Bildfreigabe, konkreter Commit-Freigabe und bestandenem öffentlichen Theme-Test Produkte chargenweise veröffentlichen.
+
+## Erste Datenliste: Umfang
 
 - Excel-Blatt `Teppiche`: 512 Artikelzeilen in 14 Modellreihen. Das separate Blatt `Türmatten` (812 Zeilen) gehört nicht zu diesem Import.
 - 444 Zeilen werden je Stück verkauft; 68 Wunschmaßzeilen haben die Verkaufseinheit m².
