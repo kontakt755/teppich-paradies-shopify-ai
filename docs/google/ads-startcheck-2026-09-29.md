@@ -55,7 +55,7 @@ Für spätere Shopping-Anzeigen Feed-Preis gegen Landingpage und Versandangaben 
 
 ## Lokaler Search-Entwurf (nur Planung, keine Aktivierung)
 
-Anzeigen, Suchbegriffe, Ausschlüsse und Freigabekriterien sind in `docs/google/search-ads-entwurf-2026-09-29.md` vollständig als pausierter Entwurf ausgearbeitet.
+Anzeigen, Suchbegriffe, Ausschlüsse und Freigabekriterien sind in `docs/google/search-ads-entwurf-2026-09-29.md` vollständig als pausierter Entwurf ausgearbeitet. Die allgemeine Zielseite `/pages/liefer-verlegeservice` beschränkt den konkret beschriebenen Verlegeservice auf bei Teppich Paradies gekaufte Rollenware; der Entwurf für die allgemeine Bodenleger-Kampagne wurde deshalb sprachlich eingegrenzt. Die Teppichboden- und Vinylseiten zeigen jeweils eine Angebotsanfrage, Telefon und WhatsApp; die allgemeine Seite verlinkt ebenfalls auf das Kontaktformular. Ein erfolgreicher Formularabschluss ist weiterhin ungetestet.
 Zusätzlich liegen unter `docs/google/search-ads-editor-import-2026-09-29/` vier CSV-Vorlagen für drei pausierte Kampagnen, Anzeigengruppen, 18 Exact-/Phrase-Keywords und drei pausierte Responsive Search Ads sowie eine Einfügeliste für zwölf negative Phrase-Begriffe. Die drei Zielseiten antworteten am 29.09. mit HTTP 200; Headline- und Beschreibungslängen wurden geprüft. Die Dateien wurden nicht ins Konto importiert oder in Google Ads Editor validiert. Ein öffentlicher Vergleich von vier lokalen Anbietern ist in `docs/google/lokale-konkurrenz-search-2026-09-29.md` dokumentiert; tatsächliche Konkurrenzanzeigen, Suchvolumen und Klickpreise wurden nicht erhoben.
 
 | Kampagne | Landingpage | Exact / Phrase Startbegriffe | Startbudget-Entwurf |
