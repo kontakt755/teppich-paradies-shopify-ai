@@ -30,6 +30,8 @@ Im Ads-Konto sind aktuell **eine primäre App-Kaufaktion** und sekundäre App-Ak
 
 Ein Tag-Assistant-Debugversuch für `/pages/kontakt` ließ sich am 29.09. im eingebetteten Browser nicht mit dem geöffneten Shopfenster verbinden („Nicht verbunden“, null Tags). Das ist **kein** Befund über die tatsächliche Consent-Konfiguration. Der Test muss in einer unterstützten Browsersitzung mit beobachteten Zuständen vor und nach Einwilligung wiederholt werden.
 
+**Erneute Sichtprüfung am 29.09.:** Shopify → Kundendatenschutz zeigt den automatisierten Cookie-Banner als „sichtbar in Deutschland“. Seine Vorschau bietet „Akzeptieren“, „Ablehnen“ und „Einstellungen verwalten“; der Text nennt Werbung und Analyse nur mit Zustimmung. Das verbundene Custom Pixel „Google Ads Lead Erfolg“ verlangt Marketing- **und** Analyse-Einwilligung und respektiert den Datenverkaufs-Widerspruch. Shopify zeigt in der Code-Ansicht zugleich den Hinweis, das Pixel habe keine abonnierten Events, obwohl der Code `analytics.subscribe('tp_lead_form_submit', …)` enthält. [Shopify dokumentiert benannte Custom-Event-Abonnements als zulässig](https://shopify.dev/docs/api/web-pixels-api/emitting-data); der Hinweis ist daher kein abschließender Fehlerbeleg. Ein tatsächlicher Test mit bestätigtem Formularabschluss und beobachteter Pixel-/Ads-Übertragung bleibt zwingend.
+
 | Ziel | Einstellung vor Start | Beleg fehlt |
 |---|---|---|
 | Kauf | Genau **eine** primäre Ads-Kaufaktion. Wert in EUR und eindeutige Transaktions-ID aus bestätigter Bestellung. 0-Euro-Muster ausschließen oder sekundär halten. | Google Ads: Conversion-Übersicht und Testbestellung; Shopify: Kundenereignisse; GA4: DebugView. |
