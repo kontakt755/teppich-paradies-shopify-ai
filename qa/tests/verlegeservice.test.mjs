@@ -163,7 +163,7 @@ test('kostenlos steht nur zusammen mit Schwelle und erster Zone', () => {
     // Ausnahme seit 2026-09-20: der Aktionshinweis. "Kostenlose Lieferung bis
     // Bordsteinkante" ist eine andere Zusage als die kostenlose Verlegung und gilt
     // ohne Zone; dieselbe Zeile schliesst den kostenlosen Vor-Ort-Service gerade aus.
-    const pruefbar = (z) => /kostenlos/i.test(z) && !/tp-vs-gratis/.test(z) && !/Bordsteinkante.*Nicht kombinierbar/.test(z);
+    const pruefbar = (z) => /kostenlos/i.test(z) && !/tp-vs-gratis/.test(z) && !/Bordsteinkante.*nur zum regulären Preis/.test(z);
     for (const zeile of code.split('\n').filter(pruefbar)) {
       assert.match(zeile, /tp_vs_radius_basis|vs_nah|vss_nah|vsh_nah|kostenlose Zone/,
         `${teile.join('/')}: "kostenlos" ohne die erste Zone: ${zeile.trim()}`);
@@ -182,7 +182,7 @@ test('der Aktionshinweis steht unter dem Preis, nur bei Berechtigung UND aktiver
   assert.doesNotMatch(block.slice(aktion, sonst), /vsh_schwelle|vsh_nah|Bordsteinkante/);
   const preis = lesen('snippets', 'tp-aktion-bedingung.liquid');
   assert.match(lesen('blocks', 'price_custom.liquid'), /render 'tp-aktion-bedingung'/, 'Der Preisblock der Produktseite zeigt die Bedingung nicht.');
-  const bedingung = preis.indexOf('nicht mit kostenloser Verlegung kombinierbar');
+  const bedingung = preis.indexOf('Verlegeservice nur zum regulären Preis');
   assert.ok(bedingung > -1, 'Die Aktionsbedingung fehlt unter dem Preis.');
   const davor = preis.slice(0, bedingung);
   assert.match(davor, /render 'tp-aktion-aktiv'/, 'Die Bedingung fragt die befristete Aktion nicht ab.');
