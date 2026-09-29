@@ -685,3 +685,12 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
 :root[scroll-lock] .shopify-pc__banner__dialog {
   display: none !important;
 }
+
+/* Vorab-Hauptebene, bis die Hydration den vollen Drawer einsetzt (snippets/header-drawer.liquid) */
+.tp-dn--vorab .tp-dn-vorab__link {
+  display: block;
+  padding: 14px 20px;
+  font-size: 1rem;
+  color: inherit;
+  text-decoration: none;
+}

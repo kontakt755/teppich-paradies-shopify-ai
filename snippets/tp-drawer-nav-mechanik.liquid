@@ -1,0 +1,66 @@
+{%- doc -%}
+  Styles und Skripte des Handy-Menues (tp-drawer-nav), immer im ersten Render.
+
+  Der Menueinhalt selbst kommt erst mit der Hydration (siehe header-drawer). Die
+  Hydration morpht header-drawer neu und kann data-tp-bilder dabei wieder
+  entfernen - deshalb zeigt ein offenes Menue die Bilder auch ohne das Attribut.
+{%- enddoc -%}
+
+{%- comment -%}
+  Muss vor dem Menue stehen: assets/tp-nav.css kommt im Seitenkopf erst nach dem
+  Drawer, bis dahin hatte der Browser schon drei Menuebilder geladen (gemessen
+  2026-09-11). Aufgehoben wird die Regel durch data-tp-bilder (Script unten).
+{%- endcomment -%}
+{% style %}
+  header-drawer:not([data-tp-bilder]) .menu-drawer-container:not([open]) .tp-dn img,
+  header-drawer:not([data-tp-bilder]) .menu-drawer-container:not([open]) .tp-dn-foot img {
+    display: none;
+  }
+{% endstyle %}
+
+<script>
+  // Menuebilder erst bei der ersten Absicht laden (Regel in assets/tp-nav.css).
+  //
+  // BEIM TESTEN: Das Attribut data-tp-bilder setzen nur echte Zeigeereignisse.
+  // Ein programmatischer element.click() oeffnet das Menue, feuert aber weder
+  // pointerdown noch touchstart - die Bilder bleiben dann display:none, und der
+  // Screenshot zeigt leere graue Kaesten. Am 2026-09-12 haben zwei Sitzungen das
+  // unabhaengig voneinander als Live-Defekt gemeldet; beide hatten ihre eigene
+  // Automatisierung gemessen. Richtig ist page.tap() bzw. ein echter Tipp, dann
+  // laden alle sechs Kacheln.
+  if (!window.tpDrawerBilder) {
+    window.tpDrawerBilder = true;
+    var tpDrawerAbsicht = function (event) {
+      if (!(event.target instanceof Element) || !event.target.closest('.header__icon--menu, #Details-menu-drawer-container')) return;
+      document.querySelectorAll('header-drawer:not([data-tp-bilder])').forEach(function (drawer) {
+        drawer.setAttribute('data-tp-bilder', '');
+      });
+    };
+    ['pointerdown', 'touchstart', 'mouseover', 'focusin'].forEach(function (type) {
+      document.addEventListener(type, tpDrawerAbsicht, { passive: true, capture: true });
+    });
+  }
+
+  // Sprungziel auf derselben Seite (Bodenleisten: #leisten:material=...) laedt die
+  // Seite nicht neu. Das Menue schliesst deshalb selbst, sonst verdeckt es das
+  // gefilterte Ergebnis.
+  if (!window.tpDrawerHashClose) {
+    window.tpDrawerHashClose = true;
+    document.addEventListener('click', function (event) {
+      var anchor = event.target instanceof Element ? event.target.closest('.tp-dn a[href*="#"]') : null;
+      if (!anchor) return;
+      var target = new URL(anchor.href, location.href);
+      if (!target.hash || target.pathname !== location.pathname) return;
+      var drawer = anchor.closest('header-drawer');
+      if (drawer && typeof drawer.close === 'function') {
+        drawer.close();
+        // Solange das Menue schliesst, ist die Seite gesperrt, und die Sperre setzt
+        // die Scrollposition danach zurueck - das Ergebnis blieb unter dem Hero
+        // unsichtbar. Nach dem Schliessen das Sprungziel deshalb erneut melden.
+        setTimeout(function () {
+          window.dispatchEvent(new HashChangeEvent('hashchange'));
+        }, 500);
+      }
+    });
+  }
+</script>

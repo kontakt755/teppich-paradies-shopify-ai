@@ -97,7 +97,22 @@
           Die Horizon-Schleifen (Akkordeon oder flach, bis drei Ebenen) zeigten jeden
           Bereich anders und Vinyl ohne Bilder. Siehe snippets/tp-drawer-nav.liquid.
         {%- endcomment -%}
-        {% render 'tp-drawer-nav', linklist: linklist, kacheln: kacheln %}
+        {%- comment -%}
+          Der volle Drawer (~80 KB mit Bildern und Unterebenen) stand vor dem Hero im
+          HTML. Er kommt jetzt erst mit der Hydration (sections/header.liquid, gleicher
+          Mechanismus wie eager_loading im Megamenue). Bis dahin eine schlanke
+          Hauptebene mit echten Links, falls jemand sehr frueh tippt.
+        {%- endcomment -%}
+        {% render 'tp-drawer-nav-mechanik' %}
+        {% if eager_loading %}
+          {% render 'tp-drawer-nav', linklist: linklist, kacheln: kacheln %}
+        {% else %}
+          <ul class="tp-dn tp-dn--vorab" role="list">
+            {%- for link in linklist.links -%}
+              <li><a class="tp-dn-vorab__link" href="{{ link.url }}">{{ link.title }}</a></li>
+            {%- endfor -%}
+          </ul>
+        {% endif %}
       </nav>
       <div
         class="menu-drawer__utility-links menu-drawer__animated-element"
