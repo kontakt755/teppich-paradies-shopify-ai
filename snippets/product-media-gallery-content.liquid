@@ -27,6 +27,16 @@
 {%- liquid
   assign selected_product = closest.product
   assign selected_variant_media = selected_product.selected_or_first_available_variant.featured_media
+  capture tp_raumstart
+    render 'tp-sprint-raumstart', product: selected_product
+  endcapture
+  assign tp_raumteile = tp_raumstart | strip | split: '|'
+  if tp_raumteile.size == 4
+    assign tp_raum_medium_id = tp_raumteile | last | plus: 0
+    if tp_raum_medium_id > 0
+      assign selected_variant_media = selected_product.media | where: 'id', tp_raum_medium_id | first
+    endif
+  endif
   if selected_variant_media == blank
     capture tp_gallery_media_id
       render 'tp-galerie-farbmedium', product: selected_product
@@ -118,13 +128,11 @@
       endif
 
       # TP: nicht zugeordnete Bilder mit anderem Farbnamen im Alt-Text ausblenden
-      if block_settings.hide_variants and media.alt != blank
-        capture tp_fremde_farbe
-          render 'tp-galerie-fremde-farbe', product: selected_product, alt: media.alt
-        endcapture
-        if tp_fremde_farbe contains 'ja'
-          continue
-        endif
+      capture tp_fremde_farbe
+        render 'tp-sprint-galerie-ausblenden', product: selected_product, media: media, raumteile: tp_raumteile, hide_variants: block_settings.hide_variants
+      endcapture
+      if tp_fremde_farbe contains 'ja'
+        continue
       endif
 
       if media.id != selected_variant_media.id
@@ -205,6 +213,7 @@
     endfor
   endif
 -%}
+{% render 'tp-sprint-raumredirect', product: selected_product, section: section, raumteile: tp_raumteile %}
 {%- if has_image_drop -%}
   <script
     src="{{ 'drag-zoom-wrapper.js' | asset_url }}"
