@@ -4,6 +4,7 @@
   @param {object} link - The link to render
   @param {string} [class] - The class to apply to the image
   @param {string} [sizes] - The sizes to apply to the image
+  @param {string} [widths] - srcset-Stufen (Standard 120, 200, 300, 400, 480)
 
   @example
   {% render 'menu-featured-image', link: link %}
@@ -17,7 +18,7 @@
   sodass jedes Bild rund 56 KB kostete - auf jeder Seite, fuer ein zugeklapptes
   Menue. Kleinere Stufen liefern dieselbe Darstellung fuer einen Bruchteil.
 {%- endcomment -%}
-{%- assign menu_image_widths = '120, 200, 300, 400, 480' -%}
+{%- assign menu_image_widths = widths | default: '120, 200, 300, 400, 480' -%}
 
 {% if link.type == 'collection_link' %}
   {% if link.object.featured_image %}
