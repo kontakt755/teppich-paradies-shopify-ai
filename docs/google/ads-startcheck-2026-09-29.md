@@ -1,13 +1,13 @@
 # Google Ads: Vorbereitung und Startcheck, 29.09.2026
 
-**Status: NO-GO für Search Ads.** Keine Kampagne erstellt oder aktiviert, kein Budget ausgegeben. Diese Datei trennt geprüfte Fakten von Einstellungen, für die der Zugang zu Ads, GA4, Merchant Center oder Shopify Admin fehlt.
+**Status: NO-GO für Search Ads.** Keine Kampagne erstellt oder aktiviert, kein Budget ausgegeben. Der Theme-PR #739 wurde am 29.09.2026 gemergt und nach bestandener Preview über `workflow:live` veröffentlicht. Die Tracking- und Conversion-Prüfung ist noch nicht abgeschlossen.
 
 ## Änderungen in diesem Arbeitszweig
 
 - `snippets/tp-lead-events.liquid`: `tp_lead_form_submit` wird erst nach einer von Shopify bestätigten Kontaktanfrage veröffentlicht. Der vorherige `submit`-Listener zählte auch ungültige und abgewiesene Formulare. Musterformulare sowie die Auswahl „Muster bestellen“ im Startseitenformular melden stattdessen `tp_sample_form_submit`.
 - Bestätigungsmarker ergänzt in `blocks/contact-form.liquid`, `sections/tp-start-kontakt.liquid`, `sections/contact-form.liquid` und `snippets/tp-muster-beratungsanfrage.liquid`. Keine Formulardaten werden an das Theme-Ereignis gehängt.
 - `snippets/meta-tags.liquid`: `/collections/teppiche` erhält den Canonical und `og:url` der Hauptadresse `/collections/teppich-nach-mass`. Bekannte Menüliste und Such-Chip zeigen nun auf die Hauptadresse (`sections/header-group.json`, `sections/tp-header-suche.liquid`).
-- Noch **nicht live**: Der Branch muss erst durch die Projekt-Review- und Deploy-Gates.
+- **Live seit 29.09.2026:** Preview- und Live-Gates bestanden (Compare, SEO, Full QA, Sales ohne Bestellabschluss, P0/P1 = 0). Öffentlicher Nachtest: Kontaktseite enthält Erfolgssignal und beide getrennten Formularevents; `/collections/teppiche` liefert Canonical auf `/collections/teppich-nach-mass`; Vinyl-Redirect bleibt HTTP 301, Ziel HTTP 200.
 
 ## Website und Shopify
 
@@ -15,7 +15,7 @@
 |---|---|
 | Vinyl-Verlegeseite | Live HTTP 200. Das Seiten-Template zeigt Vinyl-Kategorie-CTAs. Die gefundenen Linoleum- und Teppich-Produktlinks stammen aus dem globalen Menü bzw. der Suchvorschau, nicht aus dem Seiteninhalt; deshalb keine Produktentfernung. |
 | `/collections/vinylboden` | **Erledigt im Shopify Admin:** URL-Redirect auf `/collections/vinylboden-1` angelegt. Öffentlicher HTTP-Test: 301 mit `Location: /collections/vinylboden-1`, Ziel 200. |
-| Teppich nach Maß | `/collections/teppich-nach-mass` und `/collections/teppiche` sind HTTP 200, führen dieselben 50 Produkte und hatten je einen eigenen Canonical. Hauptadresse ist jetzt im Arbeitszweig `/collections/teppich-nach-mass`; die zweite URL zeigt per Canonical darauf. Ein 301-Redirect kann für die noch aktive Collection nicht einfach als Shopify-URL-Redirect angelegt werden. Nach Adminprüfung über Deaktivierung/Umbenennung der doppelten Collection entscheiden und dann 301 einrichten; die Datenänderung bleibt offen. |
+| Teppich nach Maß | `/collections/teppich-nach-mass` und `/collections/teppiche` sind HTTP 200 und führen dieselben 50 Produkte. Hauptadresse ist jetzt live `/collections/teppich-nach-mass`; die zweite URL zeigt per Canonical darauf. Ein 301-Redirect kann für die noch aktive Collection nicht einfach als Shopify-URL-Redirect angelegt werden. Eine spätere Deaktivierung/Umbenennung der doppelten Collection ist eine gesonderte Datenentscheidung und für lokale Search nicht nötig. |
 | Treppenverlegung | Live HTTP 200. Für die drei geplanten lokalen Search-Kampagnen keine Treppen-Anzeigengruppe vorgesehen; daher keine Änderung. |
 
 ## Tracking: Sollzustand und Prüfprotokoll
@@ -61,8 +61,8 @@ Gemeinsame Negativliste als Startentwurf: `jobs`, `stellenangebote`, `ausbildung
 
 ## Startampel
 
-- **Erledigt:** Vinyl-Redirect live; Google-&-YouTube-Kontoverknüpfung und Feed-Freigabestand geprüft; bestehende Ads-/GA4-/GTM-Ziele inventarisiert; Doppel-Collection identifiziert, Hauptadresse im Branch per Canonical und internen Links festgelegt; Formularzählfehler im Branch behoben; lokale Search-Struktur entworfen.
-- **Offen:** Branch prüfen/deployen; belastbaren Formular-Lead an Ads anbinden; primäre Ads-Mikroziele bereinigen; Consent mit Tag Assistant und Kauf-/Lead-Datenfluss prüfen; Produktpreis-Prüffall im Merchant Center nachsehen.
-- **Blockiert:** Die neue Lead-Quelle ist noch nicht live; Kaufprüfung erfordert eine genehmigte Testbestellung. Im verwendeten Browser meldet Google Ads zudem einen Werbeblocker und die Bearbeitung der Zielvorhaben öffnete keinen nutzbaren Dialog. Ohne Live-Ereignisse und diese Kontoprüfung wäre eine Aussage zu genau einer gezählten Kauf- und Lead-Conversion unbegründet.
+- **Erledigt:** Vinyl-Redirect live; Google-&-YouTube-Kontoverknüpfung und Feed-Freigabestand geprüft; bestehende Ads-/GA4-/GTM-Ziele inventarisiert; Haupt-Canonical für Teppich nach Maß live; Formularzählfehler im Live-Theme behoben; lokale Search-Struktur entworfen.
+- **Offen:** Belastbaren Formular-Lead an Ads anbinden und mit erlaubter Testanfrage prüfen; primäre Ads-Mikroziele bereinigen; Consent mit Tag Assistant und Kauf-/Lead-Datenfluss prüfen; Produktpreis-Prüffall im Merchant Center nachsehen.
+- **Blockiert:** Kaufprüfung erfordert eine echte Bestellung, die der Nutzer ausdrücklich ausgeschlossen hat. Im verwendeten Browser meldet Google Ads zudem einen Werbeblocker und die Bearbeitung der Zielvorhaben öffnete keinen nutzbaren Dialog. Ohne diese Belege wäre eine Aussage zu genau einer gezählten Kauf- und Lead-Conversion unbegründet.
 
 **GO erst dann:** Redirect 301, Tracking ohne Doppelzählung samt Consent nachweislich korrekt, erfolgreiche Lead-Probe, Ads-Ziele sauber auf primär/sekundär gesetzt, Kampagnen pausiert geprüft und Tagesbudget ausdrücklich freigegeben. Shopping/PMax benötigt zusätzlich einen freigegebenen Feed. Bis dahin **NO-GO**.
