@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const file = path.join(root, 'domains/lieferanten/teppiche/import-snapshot-2026-09.json');
 const snapshot = JSON.parse(fs.readFileSync(file, 'utf8'));
+const groupsFile = path.join(root, 'domains/lieferanten/teppiche/draft-product-groups-2026-09.json');
 const fail = (message) => { throw new Error(`Import snapshot: ${message}`); };
 
 if (snapshot.write_status !== 'dry-run snapshot; no Shopify mutation') fail('unexpected write status');
@@ -56,4 +57,16 @@ for (const image of imageFiles) {
   if (path.isAbsolute(image) || image.split(/[\\/]/).includes('..')) fail(`unsafe image path ${image}`);
 }
 
-console.log(JSON.stringify({ status: 'PASS', items: snapshot.items.length, sourceCounts, unitCounts, fixedSizeRows, customSizeRows, ambiguousCustomRows, imageRows, imageFiles: imageFiles.length }));
+if (fs.existsSync(groupsFile)) {
+  const groups = JSON.parse(fs.readFileSync(groupsFile, 'utf8')).products;
+  if (groups.length !== 76) fail(`product groups ${groups.length}`);
+  const fixedSkus = new Set(snapshot.items.filter(item => item.unit === 'stk' && !/Wunschmaß/i.test(item.source_name)).map(item => item.sku));
+  const groupedSkus = groups.flatMap(group => group.variant_skus);
+  if (groupedSkus.length !== 584 || new Set(groupedSkus).size !== 584) fail('grouped variant count or duplicate');
+  if (groupedSkus.some(sku => !fixedSkus.has(sku))) fail('unknown grouped SKU');
+  if (groups.filter(group => group.existing_product_id).length !== 2) fail('existing product reuse');
+  if (groups.filter(group => group.matched_image_count).length !== 8) fail('image-covered product groups');
+  if (groups.some(group => group.status !== 'DRAFT' || group.publish !== false)) fail('group publication status');
+}
+
+console.log(JSON.stringify({ status: 'PASS', items: snapshot.items.length, sourceCounts, unitCounts, fixedSizeRows, customSizeRows, ambiguousCustomRows, imageRows, imageFiles: imageFiles.length, groupedProducts: 76 }));
