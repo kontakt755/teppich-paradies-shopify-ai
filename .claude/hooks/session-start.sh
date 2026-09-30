@@ -17,10 +17,17 @@ if ! node qa/run-sync-path-guard.mjs; then
   echo ""
 fi
 
-# Laeuft IMMER: Zustand des Control Centers (docs/ai-dashboard/issues.json, liegt
-# im Repo, braucht weder gh noch Netz). Jede Session sieht damit offene Arbeit,
-# Blocker und Freigaben, bevor sie den ersten Befehl tippt - und weiss, dass
-# eigene Arbeit ueber `npm run task` als Aufgabe gefuehrt wird.
+# Laeuft IMMER: Zustand des Control Centers (docs/ai-dashboard/issues.json). Jede
+# Session sieht damit offene Arbeit, Blocker und Freigaben, bevor sie den ersten
+# Befehl tippt - und weiss, dass eigene Arbeit ueber `npm run task` als Aufgabe
+# gefuehrt wird. Die Datei ist seit 2026-09-30 nicht mehr im Git (vorher
+# committete ein Workflow sie alle 30 Minuten auf main): fehlt sie oder ist sie
+# aelter als eine Stunde, wird sie im Hintergrund per gh neu erzeugt (~8 s), ohne
+# den Sitzungsstart aufzuhalten. Die Kurzfassung zeigt den vorhandenen Stand.
+DATEN=docs/ai-dashboard/issues.json
+if command -v gh >/dev/null 2>&1 && { [ ! -f "$DATEN" ] || [ -n "$(find "$DATEN" -mmin +60 2>/dev/null)" ]; }; then
+  (node scripts/build-dashboard-data.mjs >/dev/null 2>&1 &)
+fi
 node scripts/dashboard-brief.mjs 2>/dev/null | sed 's/^/  /' || true
 
 # Lokal laeuft die Umgebung ohnehin; der Rest des Hooks ist fuer Claude Code on the web.

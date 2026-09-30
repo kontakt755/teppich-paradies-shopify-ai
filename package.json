@@ -48,7 +48,7 @@
     "sync:categories:activate": "echo 'Edit data/grosshandel-categories.json und setze active: true'",
     "hooks:test": "node --test .claude/hooks/*.test.mjs",
     "dashboard:data": "node scripts/build-dashboard-data.mjs",
-    "dashboard": "node scripts/build-dashboard-data.mjs && node scripts/serve-dashboard.mjs",
+    "dashboard": "node scripts/build-dashboard-data.mjs && node scripts/build-bodenwissen-data.mjs && node scripts/serve-dashboard.mjs",
     "dashboard:serve": "node scripts/serve-dashboard.mjs",
     "dashboard:test": "node --test docs/ai-dashboard/tests/*.test.mjs",
     "dashboard:pruefen": "node scripts/dashboard-pruefen.mjs",
