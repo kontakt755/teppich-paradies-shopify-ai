@@ -97,14 +97,14 @@ eine Facebook-Seite ansteuern, mit der das Instagram-Konto verknüpft ist.
 | Muster | so funktioniert die Musterbestellung |
 | Bewertungen | Google-Bewertungen (4,9 bei über 240) |
 
-Die Titelbilder liefert die Vorlage `tipp` im Format `story` – sobald die
-Highlights angelegt werden sollen, genügt ein Auftrag an die Redaktion.
+Die Titelbilder liegen fertig bereit: `npm run social -- highlights` (Vorlage
+`highlight`) legt alle fünf unter `$TP_PRIVAT_DIR/social/highlights` ab.
 
 ### Im Shop (eigener kleiner Auftrag, läuft über die Deploy-Kette)
 
-- Instagram und Facebook im Footer verlinken (Theme-Einstellung „Social Media").
-- `sameAs` im Organisations-Schema um beide Profile ergänzen – das verbindet
-  Website, Google-Unternehmensprofil und Social-Kanäle für die lokale Suche.
+- ~~Instagram im Footer verlinken und `sameAs` ergänzen~~ – erledigt am
+  30.09.2026 (Theme-Einstellungen „TP Firmendaten“: Instagram, Facebook).
+  Facebook dort eintragen, sobald die eigene Seite existiert.
 - Im Google-Unternehmensprofil beide Profile unter „Social-Media-Profile" eintragen.
 
 ### Läuft ab jetzt über das System

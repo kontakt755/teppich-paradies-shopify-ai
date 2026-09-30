@@ -22,6 +22,10 @@ ist; die Beschriftung kann abweichen.
 1. `developers.facebook.com` → **App erstellen** → Anwendungsfall „Sonstiges" →
    Typ **Business** → Name z. B. „TP Social". Eine App-Prüfung durch Meta ist
    nicht nötig, solange die App nur die eigenen Konten verwaltet.
+   **Wichtig:** unter Einstellungen → Allgemein die Datenschutzrichtlinie
+   `https://www.teppich-paradies.net/policies/privacy-policy` eintragen und die
+   App auf **Live** stellen. Beiträge einer App im Entwicklungsmodus sieht nur,
+   wer eine Rolle in der App hat – nicht die Öffentlichkeit.
 2. `business.facebook.com` → **Unternehmenseinstellungen** → Nutzer →
    **Systemnutzer** → hinzufügen (Rolle Admin) → dem Systemnutzer die Seite und
    das Instagram-Konto zuweisen (volle Kontrolle) und die App zuweisen.
@@ -36,25 +40,28 @@ ist; die Beschriftung kann abweichen.
 
    Der Token eines Systemnutzers läuft nicht ab. (Ein Token aus dem Graph API
    Explorer ginge auch, hält aber nur 60 Tage.)
-4. **IDs nachschlagen** – im Graph API Explorer mit diesem Token:
-   `me/accounts?fields=id,name,instagram_business_account` liefert die
-   Seiten-ID und darunter die ID des Instagram-Kontos.
 
 ## Eintragen
 
-Datei `~/teppich-paradies-analyse/social/zugang.env` anlegen (liegt außerhalb
-des Repositorys und gilt für jede Arbeitskopie):
+Den Token **nicht in einen Chat oder eine Datei im Repository kopieren**. Im
+Terminal auf dem Betriebsrechner – die Eingabe bleibt verdeckt und landet nur
+in `~/teppich-paradies-analyse/social/zugang.env` (außerhalb des Repositorys):
 
 ```
-META_PAGE_TOKEN=…
-META_PAGE_ID=…
-META_IG_USER_ID=…
+read -rs "T?Systemnutzer-Token einfügen und Enter: " && printf '\nMETA_SYSTEM_TOKEN=%s\n' "$T" >> ~/teppich-paradies-analyse/social/zugang.env && unset T && chmod 600 ~/teppich-paradies-analyse/social/zugang.env && echo " gespeichert"
 ```
 
+Dann leitet das System alles Weitere selbst ab – Seiten-ID, den dauerhaften
+Seiten-Token und das verknüpfte Instagram-Konto – und trägt es ein, ohne einen
+Token anzuzeigen:
+
 ```
-chmod 600 ~/teppich-paradies-analyse/social/zugang.env
+npm run social -- meta-einrichten
 npm run social -- meta-pruefen
 ```
+
+Gehören dem Systemnutzer mehrere Seiten, nennt `meta-einrichten` sie; dann
+`SOCIAL_META_SEITE=<Name oder ID>` in `zugang.env` setzen und erneut ausführen.
 
 Die Prüfung nennt Seite, Instagram-Konto und Followerzahlen. Stimmt beides,
 zeigt die Zentrale „Meta verbunden".
@@ -76,7 +83,8 @@ selbst. Erscheint sie auf beiden Kanälen, läuft der Rest über den Takt.
 
 | Anzeige | Bedeutung | Abhilfe |
 |---|---|---|
-| Beitrag im Status „Fehler": „Code 190" | Token ungültig oder entzogen | neuen Token erzeugen, in `zugang.env` eintragen, Beitrag erneut freigeben |
+| Beitrag im Status „Fehler": „Code 190" | Token ungültig oder entzogen | neuen Systemnutzer-Token erzeugen, `META_SYSTEM_TOKEN` in `zugang.env` ersetzen, `meta-einrichten`, Beitrag erneut freigeben |
+| Beitrag erschienen, aber öffentlich nicht sichtbar | App im Entwicklungsmodus | App auf **Live** stellen (Schritt 1) |
 | „Code 10" / „Code 200" | Berechtigung fehlt | Berechtigungen aus Schritt 3 prüfen, Seite und Instagram dem Systemnutzer zugewiesen? |
 | „Instagram-Konto nicht verknüpft" | `META_IG_USER_ID` fehlt oder Konto nicht Business | Voraussetzungen 2 und 3 |
 | „verarbeitet das Medium noch" | Instagram braucht länger | nichts – der nächste Takt versucht es erneut |
