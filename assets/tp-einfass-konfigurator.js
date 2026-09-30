@@ -849,6 +849,18 @@
     document.addEventListener('variant:update', function () { setTimeout(rechnen, 60); });
     window.addEventListener('popstate', function () { gewaehlt = null; rechnen(); });
 
+    // Mass von der Kategorieseite (Mass-Rechner, ?breite=&laenge=, assets/tp-teppich-rechner.js):
+    // vorbelegen, solange die Felder leer sind. Nur ganze Zentimeter im erlaubten Bereich;
+    // alles andere bleibt leer wie bisher. Grenzen je Farbe prueft rechnen() wie bei Eingabe.
+    (function () {
+      var sp = new URLSearchParams(window.location.search);
+      var uw = parseInt(sp.get('breite'), 10);
+      var ul = parseInt(sp.get('laenge'), 10);
+      if (!(uw >= 50 && uw <= 2000) || !inBreite || inBreite.value) return;
+      inBreite.value = String(uw);
+      if (inLaenge && !inLaenge.value && ul >= 50 && ul <= 2000) inLaenge.value = String(ul);
+    })();
+
     // Nach dem Absenden des Anfrageformulars laedt die Seite neu - die
     // Erfolgs- oder Fehlermeldung steht im Anfragebereich, also dorthin.
     if (root.querySelector('[data-anfrage-status]')) {
