@@ -18,6 +18,8 @@
  *   npm run social -- referenzen --input export.json
  *   npm run social -- zugang anlegen "Name" | liste | sperren "Name"
  *   npm run social -- meta-pruefen
+ *   npm run social -- highlights            (Titelbilder der fuenf Instagram-Highlights nach $TP_PRIVAT_DIR/social/highlights)
+ *   npm run social -- meta-einrichten       (aus META_SYSTEM_TOKEN Seiten-ID, Seiten-Token und Instagram-Konto ableiten und eintragen)
  *   npm run social -- whatsapp [--pruefen]   (Fotos aus der WhatsApp-Gruppe uebernehmen bzw. nur zeigen, was da ist)
  *   npm run social -- lauf            (taeglich: Eingang pruefen, Shop abgleichen, planen, Kennzahlen holen)
  *   npm run social -- takt            (alle 15 Minuten: Eingang pruefen, Faelliges veroeffentlichen)
@@ -28,6 +30,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { clientAus, holeKennzahlen, importiereReferenzen, planeOffene, shopAbgleich, sichereDatenbank, veroeffentlicheFaellige } from '../lib/ablauf.mjs';
 import { oeffne } from '../lib/db.mjs';
+import { seitenZugang } from '../lib/meta.mjs';
+import { baue, HIGHLIGHTS } from '../lib/vorlagen.mjs';
 import { findeZugang, liesZugaenge, zugangAnlegen, zugangSperren } from '../lib/eingang.mjs';
 import { freigeben, holeGeplanteZurueck, verwerfen } from '../lib/freigabe.mjs';
 import { medienPfad, socialDir } from '../lib/pfade.mjs';
@@ -38,7 +42,7 @@ import { INHALT_STATUS, STATUS_LABEL, TYPEN } from '../lib/status.mjs';
 import { STILREGELN } from '../lib/texte.mjs';
 import { erstelleEntwurf } from '../lib/werkstatt.mjs';
 import { leseGruppe, liesStand, standardQuelle, uebernimmWhatsApp } from '../lib/whatsapp.mjs';
-import { ladeUmgebung } from '../lib/zugang.mjs';
+import { ladeUmgebung, setzeEnvWerte, zugangDatei } from '../lib/zugang.mjs';
 
 export function argumente(argv) {
   const pos = []; const flags = {};
@@ -238,6 +242,24 @@ async function main(argv) {
           if (!liste.length) console.log('Noch keine Zugänge. Anlegen: npm run social -- zugang anlegen "Name"');
           for (const z of liste) console.log(`${z.aktiv ? 'aktiv   ' : 'gesperrt'} ${z.name} (seit ${new Date(z.angelegt).toLocaleDateString('de-DE')})`);
         }
+        break;
+      }
+
+      case 'highlights': {
+        const ziel = path.join(dir, 'highlights');
+        fs.mkdirSync(ziel, { recursive: true });
+        const auftraege = HIGHLIGHTS.map((titel, i) => ({ ...baue('highlight', { titel }, 'story'), datei: path.join(ziel, `${i + 1}-${titel.toLowerCase().replace(/[^a-z]+/g, '-')}.jpg`) }));
+        await rendere(auftraege);
+        for (const a of auftraege) console.log(a.datei);
+        break;
+      }
+
+      case 'meta-einrichten': {
+        const z = await seitenZugang({ systemToken: env.META_SYSTEM_TOKEN, seite: env.SOCIAL_META_SEITE || null, version: env.META_GRAPH_VERSION || undefined });
+        setzeEnvWerte(zugangDatei(dir), { META_PAGE_TOKEN: z.pageToken, META_PAGE_ID: z.pageId, ...(z.igUserId ? { META_IG_USER_ID: z.igUserId } : {}) });
+        console.log(`Facebook-Seite: ${z.name} (${z.pageId}) – Seiten-Token eingetragen`);
+        console.log(z.igUserId ? `Instagram: @${z.igName} (${z.igUserId}) – eingetragen` : 'Instagram: KEIN Konto mit der Seite verknüpft – erst in der Instagram-App verknüpfen, dann erneut ausführen');
+        console.log('Weiter: npm run social -- meta-pruefen');
         break;
       }
 
