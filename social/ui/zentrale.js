@@ -60,7 +60,7 @@ function karteFreigabe(b, darf) {
   const knoepfe = !darf ? '<p class="leise">Freigeben und Ändern macht der Inhaber.</p>'
     : offen
       ? `<button class="knopf haupt" data-tat="speichern" data-id="${b.id}">Speichern</button><button class="knopf still" data-tat="abbrechen" data-id="${b.id}">Abbrechen</button>`
-      : `<button class="knopf haupt" data-tat="freigeben" data-id="${b.id}" ${b.sperren.length ? 'disabled' : ''}>Freigeben</button>
+      : `${b.inhalt.einwilligung ? '' : `<button class="knopf" data-tat="beitrag-einwilligung" data-id="${b.id}" data-inhalt="${b.inhalt.id}">Einwilligung liegt vor</button>`}<button class="knopf haupt" data-tat="freigeben" data-id="${b.id}" ${b.sperren.length ? 'disabled' : ''}>Freigeben</button>
          <button class="knopf" data-tat="bearbeiten" data-id="${b.id}">Bearbeiten</button>
          <button class="knopf still" data-tat="verwerfen" data-id="${b.id}">Verwerfen</button>`;
   return `<article class="karte beitrag" id="b${b.id}"><div>${bilder(b)}</div><div>${kopf}${hinweise(b)}${inhalt}<div class="knoepfe">${knoepfe}</div></div></article>`;
@@ -119,7 +119,8 @@ function ansichtVorrat(d) {
   <div class="liste">${d.vorrat.map(i => `<div class="karte"><div class="zeile"><span class="marke rot">${esc(i.typLabel)}</span><span class="marke">${esc(i.status)}</span><span class="marke">${esc({ baustelle: 'Baustelle', shopify: 'Shop', referenz: 'Referenz', laden: 'Laden', wissen: 'Wissen' }[i.quelle] || i.quelle)}</span></div>
     <h3>${esc(i.titel)}</h3><p class="leise">${esc([i.grund, i.eingereichtVon && `von ${i.eingereichtVon}`].filter(Boolean).join(' · '))}</p>
     <div class="daumen">${i.medien.map(m => (m.art === 'video' ? '<span class="marke">Video</span>' : `<img src="${esc(m.bild)}" alt="" loading="lazy">`)).join('')}</div>
-    ${d.darfFreigeben ? `<div class="knoepfe"><button class="knopf klein" data-tat="entwurf" data-id="${i.id}">Entwurf erstellen</button><button class="knopf klein still" data-tat="inhalt-verwerfen" data-id="${i.id}">Nicht verwenden</button></div>` : ''}</div>`).join('')}</div>`;
+    ${i.einwilligung ? '' : '<div class="hinweis sperre">Keine Einwilligung hinterlegt – vor dem Veröffentlichen den Auftragszettel prüfen.</div>'}
+    ${d.darfFreigeben ? `<div class="knoepfe">${i.einwilligung ? '' : `<button class="knopf klein" data-tat="einwilligung" data-id="${i.id}">Einwilligung liegt vor</button>`}<button class="knopf klein" data-tat="entwurf" data-id="${i.id}">Entwurf erstellen</button><button class="knopf klein still" data-tat="inhalt-verwerfen" data-id="${i.id}">Nicht verwenden</button></div>` : ''}</div>`).join('')}</div>`;
 }
 
 function ansichtAuswertung(d) {
@@ -164,6 +165,10 @@ async function tat(knopf) {
     else if (art === 'verwerfen') { if (!confirm('Diesen Entwurf verwerfen?')) return; await api(`/api/beitrag/${id}/verwerfen`, { grund: '' }); melde('Verworfen'); }
     else if (art === 'zurueck') { await api(`/api/beitrag/${id}/zurueck`, {}); melde('Zurück in der Freigabe'); }
     else if (art === 'entwurf') { melde('Entwurf wird gebaut …'); await api(`/api/inhalt/${id}/entwurf`, {}); melde('Entwurf liegt in der Freigabe'); }
+    else if (art === 'einwilligung' || art === 'beitrag-einwilligung') {
+      if (!confirm('Liegt die Einwilligung des Kunden schriftlich vor (Auftragszettel)?')) return;
+      await api(`/api/inhalt/${art === 'einwilligung' ? id : Number(knopf.dataset.inhalt)}/einwilligung`, {}); melde('Einwilligung vermerkt');
+    }
     else if (art === 'inhalt-verwerfen') { if (!confirm('Dieses Material nicht verwenden?')) return; await api(`/api/inhalt/${id}/verwerfen`, {}); }
     await lade();
   } catch (e) { melde(e.message, true); } finally { knopf.disabled = false; }

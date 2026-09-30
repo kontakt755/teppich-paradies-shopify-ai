@@ -88,6 +88,14 @@ test('Zentrale: Host-Pruefung, Anmeldung und Rollen', async (t) => {
 
   rolle.wert = 'mitarbeiter';
   assert.equal((await fetch(`${basis}/api/inhalt/${id}/entwurf`, mit(json({})))).status, 403);
+  assert.equal((await fetch(`${basis}/api/inhalt/${id}/einwilligung`, mit(json({})))).status, 403);
+  rolle.wert = 'inhaber';
+  db.inhaltAendern(id, { einwilligung: false });
+  assert.equal((await (await fetch(`${basis}/api/stand`, mit())).json()).vorrat[0].einwilligung, false);
+  assert.equal((await fetch(`${basis}/api/inhalt/${id}/einwilligung`, mit(json({})))).status, 200);
+  assert.equal(db.inhalt(id).einwilligung, 1);
+  assert.equal((await fetch(`${basis}/api/inhalt/999/einwilligung`, mit(json({})))).status, 404);
+  rolle.wert = 'mitarbeiter';
   rolle.wert = 'inhaber';
   const entwurf = await (await fetch(`${basis}/api/inhalt/${id}/entwurf`, mit(json({ format: 'feed' })))).json();
   assert.equal(entwurf.beitrag.status, 'FREIGABE'); assert.ok(entwurf.beitrag.geplantAm, 'der Planer schlaegt gleich einen Termin vor');

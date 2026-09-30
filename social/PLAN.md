@@ -79,7 +79,12 @@ Originalqualität, Videos bis 400 MB, Wiederholung bei schlechtem Netz,
 sofortige Rückmeldung. Kein Konto, kein Passwort – geht ein Handy verloren,
 wird genau dieser eine Link gesperrt.
 
-**Erreichbarkeit** (offene Inhaberentscheidung, siehe Abschnitt 6): im Laden-WLAN
+**Auffangnetz WhatsApp** (Entscheidung 30.09.2026): was trotzdem nur in der
+Firmengruppe landet, übernimmt der Takt aus der WhatsApp-App auf dem
+Betriebsrechner – ohne Einwilligung, die bestätigt der Inhaber in der Zentrale
+(`WHATSAPP.md`).
+
+**Erreichbarkeit** (Entscheidung 30.09.2026: Funnel nur für den Upload-Port): im Laden-WLAN
 und über Tailscale funktioniert der Link sofort. Für Handys ohne Tailscale
 stellt `tailscale funnel` ausschließlich den Upload-Port (8021) öffentlich
 bereit – mit HTTPS, ohne Domain- oder DNS-Änderung. Die Zentrale und das
@@ -116,7 +121,7 @@ Control Center bleiben privat.
 ## 6. Offene Entscheidungen des Inhabers
 
 1. **Meta-Zugang einrichten** – ohne ihn veröffentlicht nichts (rund 20 Minuten, `META-EINRICHTUNG.md`).
-2. **Upload von unterwegs**: Tailscale auf den Monteur-Handys oder Funnel für den Upload-Port.
+2. **Upload von unterwegs**: entschieden – Upload-Link als Abgabe über Funnel (Port 8443 → 8021), dazu die WhatsApp-Gruppe als Auffangnetz. Offen: Funnel in der Tailscale-Verwaltung freischalten, Festplattenvollzugriff für node, Gruppenname in `zugang.env`.
 3. **Einwilligung auf dem Auftragszettel**: eine Zeile zum Ankreuzen („Fotos der fertigen Arbeit dürfen für Website und Social Media verwendet werden"). Das System verlangt das Häkchen – der Zettel ist der Beleg dahinter.
 4. ~~Redaktion einschalten und ffmpeg installieren~~ – erledigt am 30.09.2026 (Redaktion werktags gegen 8 Uhr).
 5. **Automatische Freigabe**: frühestens nach vier Wochen Betrieb und nur für Shop-Inhalte ohne Preis.

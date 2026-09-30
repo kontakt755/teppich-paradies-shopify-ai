@@ -39,6 +39,13 @@ Dabei gleich mit erledigen:
 - erkannte Angaben nachtragen, die der Monteur nicht gemacht hat – nur was das
   Bild eindeutig zeigt: `npm run -s social -- inhalt <id> --bodenart Klebevinyl --raum Flur`
 
+**Material aus der WhatsApp-Gruppe** (Titel „WhatsApp · Name · Datum“) hat
+keine Angaben und keine Einwilligung. Genauso sichten; Bodenart und Raum nur
+nachtragen, wenn das Bild sie eindeutig zeigt, den Ort nie raten. Die
+Einwilligung setzt ausschließlich der Inhaber – Entwürfe daraus bleiben bis
+dahin gesperrt, das ist gewollt. Bilder, die nichts mit einer Baustelle zu tun
+haben (Lieferscheine, Selfies, Werkzeug), mit `--aussortieren` herausnehmen.
+
 ### 2. Auswählen
 
 Nicht aus allem wird ein Beitrag. Verwerfen (`inhalt <id> --verwerfen`), wenn
