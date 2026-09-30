@@ -10,20 +10,36 @@
 
 {
   "sections": {
-    "tp_teppiche_hero": {
-      "type": "tp-teppiche-hero",
+    "tp_teppiche_wege": {
+      "type": "tp-teppiche-wege",
+      "blocks": {
+        "weg_standard": {
+          "type": "weg",
+          "settings": {
+            "collection": "teppiche-standardgroessen",
+            "image": "shopify://shop_images/teppiche-standardgroessen-wohnzimmer.jpg",
+            "title": "Teppiche in Standardgrößen",
+            "text": "Feste Größen, z. B. 160 × 230 cm"
+          }
+        },
+        "weg_mass": {
+          "type": "weg",
+          "settings": {
+            "collection": "teppich-nach-mass",
+            "image": "shopify://shop_images/teppich-nach-mass-kante-massband.jpg",
+            "title": "Teppich nach Maß",
+            "text": "Wunschmaß, rundum gekettelt"
+          }
+        }
+      },
+      "block_order": [
+        "weg_standard",
+        "weg_mass"
+      ],
       "settings": {
-        "kicker": "Zentimetergenau zugeschnitten",
-        "heading": "Teppich nach Maß",
-        "text": "Qualität und Farbe wählen, Breite und Länge eingeben – wir schneiden zu und ketteln rundum. Der Preis steht sofort.",
-        "usps": "Bis 500 × 600 cm je nach Qualität\nRundum gekettelt\n3 Muster kostenlos",
-        "card_title": "",
-        "card_text": "",
-        "btn1_label": "Jetzt konfigurieren",
-        "btn1_url": "",
-        "btn2_label": "Muster bestellen",
-        "btn2_url": "shopify://pages/muster",
-        "image": "shopify://shop_images/teppich-nach-mass-muster-massband-kante.jpg"
+        "kicker": "",
+        "heading": "Teppiche",
+        "text": "In festen Größen wie 160 × 230 cm oder zentimetergenau nach Maß."
       }
     },
     "main": {
@@ -173,52 +189,6 @@
         "padding-block-end": 32
       }
     },
-    "tp_teppiche_schritte": {
-      "type": "tp-teppiche-schritte",
-      "blocks": {
-        "s1": {
-          "type": "step",
-          "settings": {
-            "title": "Farbe wählen",
-            "text": "Farbtöne je Qualität ansehen. Bis zu drei Muster schicken wir kostenlos."
-          }
-        },
-        "s2": {
-          "type": "step",
-          "settings": {
-            "title": "Maße eingeben",
-            "text": "Breite und Länge zentimetergenau. Die mögliche Breite hängt von Qualität und Farbe ab."
-          }
-        },
-        "s3": {
-          "type": "step",
-          "settings": {
-            "title": "Preis sehen",
-            "text": "Der Preis erscheint sofort – keine Anfrage, kein Warten."
-          }
-        },
-        "s4": {
-          "type": "step",
-          "settings": {
-            "title": "Bestellen",
-            "text": "Wir schneiden zu, ketteln die Kante rundum und liefern."
-          }
-        }
-      },
-      "block_order": [
-        "s1",
-        "s2",
-        "s3",
-        "s4"
-      ],
-      "settings": {
-        "heading": "In vier Schritten zu Ihrem Teppich",
-        "text": "Sie sehen jederzeit, was Sie gewählt haben – und was es kostet.",
-        "cta": "",
-        "cta_url": "",
-        "sand": true
-      }
-    },
     "tp_teppiche_service": {
       "type": "tp-teppiche-vertrauen",
       "blocks": {
@@ -263,63 +233,11 @@
         "whatsapp": "4917657931322",
         "sand": false
       }
-    },
-    "tp_teppiche_fragen": {
-      "type": "tp-teppiche-faq",
-      "blocks": {
-        "f1": {
-          "type": "frage",
-          "settings": {
-            "question": "Was bedeutet „gekettelt“?",
-            "answer": "<p>Die Schnittkante wird rundum mit Garn umnäht. So franst der Teppich nicht aus und hat einen sauberen, flachen Abschluss – die klassische Einfassung für Teppiche aus Auslegware.</p>"
-          }
-        },
-        "f2": {
-          "type": "frage",
-          "settings": {
-            "question": "Welche Größen sind möglich?",
-            "answer": "<p>Breite und Länge geben Sie zentimetergenau an. Je nach Qualität und Farbe sind bis zu 400 oder 500 cm Breite und bis zu 600 cm Länge möglich. Der Konfigurator zeigt die zulässigen Maße für das gewählte Produkt.</p>"
-          }
-        },
-        "f3": {
-          "type": "frage",
-          "settings": {
-            "question": "Wie messe ich richtig?",
-            "answer": "<p>Messen Sie die Fläche, die der Teppich bedecken soll, an zwei Stellen und nehmen Sie das kleinere Maß. Rechnen Sie zu Möbeln rund 20 cm Abstand ein, damit der Teppich frei liegt. Berechnet wird genau das Maß, das Sie eingeben.</p>"
-          }
-        },
-        "f4": {
-          "type": "frage",
-          "settings": {
-            "question": "Kann ich die Farbe vorher sehen?",
-            "answer": "<p>Ja. Bis zu drei Muster schicken wir kostenlos – die Farbe wirkt im eigenen Licht oft anders als am Bildschirm.</p>"
-          }
-        },
-        "f5": {
-          "type": "frage",
-          "settings": {
-            "question": "Was ist der Unterschied zum Teppichboden?",
-            "answer": "<p>Der Teppichboden wird als Bahn von der Rolle verlegt und deckt den ganzen Raum. Der Teppich nach Maß wird aus demselben Material zugeschnitten, an der Kante gekettelt und liegt frei im Raum – wie ein fertiger Teppich.</p>"
-          }
-        }
-      },
-      "block_order": [
-        "f1",
-        "f2",
-        "f3",
-        "f4",
-        "f5"
-      ],
-      "settings": {
-        "heading": "Häufige Fragen zu Teppichen nach Maß"
-      }
     }
   },
   "order": [
-    "tp_teppiche_hero",
+    "tp_teppiche_wege",
     "main",
-    "tp_teppiche_schritte",
-    "tp_teppiche_service",
-    "tp_teppiche_fragen"
+    "tp_teppiche_service"
   ]
 }

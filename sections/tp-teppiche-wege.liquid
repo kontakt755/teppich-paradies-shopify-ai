@@ -1,0 +1,77 @@
+{%- comment -%}
+  Einstieg der Kollektion "Alle Teppiche": Ueberschrift und zwei Wege - Teppiche in
+  Standardgroessen oder Teppich nach Mass. Darunter folgt das Raster mit allen Teppichen.
+
+  Warum ein eigener Einstieg: Bis 2026-09-30 zeigten "Alle Teppiche" und "Teppich nach
+  Mass" denselben Kopf "Teppich nach Mass - rundum gekettelt", obwohl "Alle Teppiche" auch
+  die Teppiche in festen Groessen enthaelt. Kunden sollen die beiden Arten sofort trennen
+  koennen (Inhaberfreigabe 2026-09-30, Vorschlag E).
+
+  Je Weg: Kollektion (Pflicht, liefert Ziel und Produktanzahl), Bild (sonst Kollektionsbild),
+  Titel (sonst Kollektionstitel), Kurztext. Gestaltung: assets/tp-teppiche.css, Praefix tp-tep-wege.
+{%- endcomment -%}
+{{ 'tp-teppiche.css' | asset_url | stylesheet_tag }}
+{%- assign s = section.settings -%}
+<section class="tp-tep tp-tep-wege" aria-labelledby="tp-tw-{{ section.id }}">
+  <div class="tp-tep-wrap tp-tep-wege__inner">
+    <div class="tp-tep-wege__kopf">
+      {%- if s.kicker != blank -%}<p class="tp-tep-kicker">{{ s.kicker | escape }}</p>{%- endif -%}
+      <h1 class="tp-tep-h1" id="tp-tw-{{ section.id }}">{{ s.heading | default: collection.title | escape }}</h1>
+      {%- if s.text != blank -%}<p class="tp-tep-lead">{{ s.text | escape }}</p>{%- endif -%}
+    </div>
+    <ul class="tp-tep-wege__liste" role="list">
+      {%- for block in section.blocks -%}
+        {%- liquid
+          assign tp_tw_col = block.settings.collection
+          if tp_tw_col == blank
+            continue
+          endif
+          assign tp_tw_bild = block.settings.image | default: tp_tw_col.image
+          assign tp_tw_titel = block.settings.title | default: tp_tw_col.title
+        -%}
+        <li class="tp-tep-wege__weg" {{ block.shopify_attributes }}>
+          <a class="tp-tep-wege__link" href="{{ tp_tw_col.url }}">
+            <span class="tp-tep-wege__bild">
+              {%- if tp_tw_bild != blank -%}
+                {{ tp_tw_bild | image_url: width: 1200 | image_tag: loading: 'eager', fetchpriority: 'high', widths: '400, 600, 800, 1000, 1200', sizes: '(min-width: 900px) 44vw, 100vw', alt: '' }}
+              {%- endif -%}
+            </span>
+            <span class="tp-tep-wege__text">
+              <span class="tp-tep-wege__titel">{{ tp_tw_titel | escape }}</span>
+              {%- if block.settings.text != blank -%}<span class="tp-tep-wege__kurz">{{ block.settings.text | escape }}</span>{%- endif -%}
+              <span class="tp-tep-wege__zahl">{% render 'tp-produktzahl', anzahl: tp_tw_col.all_products_count %}</span>
+            </span>
+            <span class="tp-tep-wege__pfeil" aria-hidden="true">{% render 'tp-teppiche-icon', name: 'pfeil', size: 20 %}</span>
+          </a>
+        </li>
+      {%- endfor -%}
+    </ul>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "TP Teppiche Wege",
+  "tag": "div",
+  "class": "tp-tep-section",
+  "settings": [
+    { "type": "text", "id": "kicker", "label": "Dachzeile" },
+    { "type": "text", "id": "heading", "label": "Überschrift (sonst Kollektionstitel)", "default": "Teppiche" },
+    { "type": "textarea", "id": "text", "label": "Text", "default": "In festen Größen wie 160 × 230 cm oder zentimetergenau nach Maß." }
+  ],
+  "blocks": [
+    {
+      "type": "weg",
+      "name": "Weg",
+      "settings": [
+        { "type": "collection", "id": "collection", "label": "Kollektion" },
+        { "type": "image_picker", "id": "image", "label": "Bild (sonst Kollektionsbild)" },
+        { "type": "text", "id": "title", "label": "Titel (sonst Kollektionstitel)" },
+        { "type": "text", "id": "text", "label": "Kurztext" }
+      ]
+    }
+  ],
+  "max_blocks": 3,
+  "presets": [{ "name": "TP Teppiche Wege" }]
+}
+{% endschema %}

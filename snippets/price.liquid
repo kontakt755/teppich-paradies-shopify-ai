@@ -7,6 +7,17 @@
   @param {boolean} [show_sale_price_first] - Whether to show the sale price first
 {%- enddoc -%}
 
+{%- comment -%}
+  Teppich nach Mass (Variantenpreis je 0,01 m2 plus service.einfassung) ausserhalb der
+  eigenen Produktseite: Einstiegspreis "ab XX EUR" aus snippets/tp-teppich-ab-preis -
+  dieselbe Regel wie im Kategorieraster (blocks/price.liquid). Ohne diesen Zweig zeigten
+  Suchfeld-Vorschlaege und "Zuletzt angesehen" (snippets/resource-card) den Preis je
+  0,01 m2: 0,48 EUR statt ab 145 EUR (Befund Inhaber 2026-09-30). Auf der eigenen
+  Produktseite (Sticky-Leiste) bleibt die bisherige Ausgabe unveraendert.
+{%- endcomment -%}
+{%- if product_resource.metafields.custom.preis_pro_001_qm.value == true and product_resource.metafields.service.einfassung.value != blank and product.handle != product_resource.handle -%}
+  {% render 'tp-teppich-ab-preis', product: product_resource %}
+{%- else -%}
 {%- liquid
   assign show_unit_price = show_unit_price | default: false
   assign show_sale_price_first = show_sale_price_first | default: false
@@ -324,6 +335,8 @@
   >
     {{- 'content.volume_pricing_available' | t -}}
   </small>
+{%- endif -%}
+
 {%- endif -%}
 
 {% stylesheet %}
