@@ -34,7 +34,7 @@ test('buildBrief markiert veraltete Daten und meldet Ruhe ohne dringende Aufgabe
 });
 
 test('readBrief bricht bei fehlender oder kaputter Datei nie ab', () => {
-  assert.match(readBrief({ file: '/nirgends/issues.json' })[0], /nicht lesbar/);
+  assert.match(readBrief({ file: '/nirgends/issues.json' })[0], /noch nicht erzeugt/);
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'brief-'));
   const bad = path.join(dir, 'issues.json');
   fs.writeFileSync(bad, '{ kaputt');

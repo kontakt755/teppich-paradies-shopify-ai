@@ -1,5 +1,7 @@
 # Beim Rebase ist `--ours` der Server, nicht die eigene Arbeit
 
+> **Stand 2026-09-30:** erledigt — `issues.json` und `bodenwissen.json` sind nicht mehr im Git, den Workflow `dashboard-data.yml` gibt es nicht mehr. Die Lehre bleibt als Vorgeschichte stehen.
+
 **Regel:** Wer in einem Rebase einen Konflikt zugunsten der *eigenen*, gerade
 wiedergespielten Fassung aufloest, nimmt `--theirs`. `--ours` nimmt den
 Upstream. Beim Merge ist es genau umgekehrt.

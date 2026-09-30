@@ -38,9 +38,9 @@ selbst; sofort geht es mit Loeschen der Datei. `doctor`, `route` und
 Auskunft.
 
 Bricht ein Gate ab, ist das ein echter Befund — Ursache beheben, niemals das
-Gate ausbauen. Ein abgelehnter Push mit „fetch first" ist meist nur der
-Dashboard-Bot (`dashboard-data.yml` committet stuendlich nach `main`):
-`git pull --rebase origin main`, dann erneut pushen.
+Gate ausbauen. Ein abgelehnter Push mit „fetch first" heisst: jemand hat
+parallel nach `main` gepusht (einen Dashboard-Bot gibt es seit 2026-09-30 nicht
+mehr) — `git pull --rebase origin main`, dann erneut pushen.
 
 ### In Remote-Sessions (claude.ai/code)
 

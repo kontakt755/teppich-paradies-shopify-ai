@@ -14,7 +14,7 @@ funktionieren** – im Browser, am Handy, mit echten Daten (als Kopie).
 - `docs/control-center/ARCHITEKTUR.md` (Betriebsarten, Netzmodus mit Passwort,
   Einkauf, Heute, Datenaktualisierung) und die letzten Eintraege in
   `docs/control-center/CHANGELOG.md`.
-- `AGENTS.md` Abschnitt "Arbeitskopien" (issues.json gehoert dem Bot) und Punkt 8
+- `AGENTS.md` Abschnitt "Arbeitskopien" (issues.json/bodenwissen.json sind erzeugt, nicht im Git) und Punkt 8
   (Lieferanten nur als Pseudonym A-D).
 
 ## Harte Regeln
@@ -195,9 +195,11 @@ Vor dem Umsetzen als Aufgabe anlegen und mit dem Inhaber abstimmen:
 ## Regeln aus CLAUDE.md (ausgelagert, #670)
 
 `docs/ai-dashboard/` ist das Control Center; Konzept in `docs/control-center/`
-(**vor Aenderungen am Dashboard lesen**). `dashboard-data.yml` schreibt
-`docs/ai-dashboard/issues.json` (Schema 2); das Frontend liest **nur** diese
-Datei; lokal (`npm run dashboard`, `:8001`) kommt `/api/*` aus
+(**vor Aenderungen am Dashboard lesen**). `scripts/build-dashboard-data.mjs`
+erzeugt `docs/ai-dashboard/issues.json` (Schema 2) lokal per `gh`,
+`scripts/build-bodenwissen-data.mjs` die `bodenwissen.json` aus `content/`;
+`npm run dashboard` baut beide beim Start, „Jetzt synchronisieren" erneut.
+Das Frontend liest **nur** diese Dateien; lokal (`:8001`) kommt `/api/*` aus
 `scripts/dashboard-api.mjs` dazu. Keinen GitHub-API-Aufruf mit Token ins
 Frontend bauen. GitHub Issues sind die einzige Aufgabenquelle.
 
@@ -209,18 +211,16 @@ lesen (oder den Subagenten `control-center` beauftragen). Sichtpruefung im Brows
 mit Datenkopie: `npm run dashboard:pruefen` (Desktop + Handy, JS-Fehler, seitliches
 Scrollen; `--offen` fuer Klicktests).
 
-`issues.json` gehoert dem Bot: **nicht mitcommitten**, Dateien gezielt mit
-`git add <datei>` stagen, nie `git add -A`. Zuruecksetzen ist fuer genau diesen
-Pfad erlaubt — die einzige Ausnahme im Verwerfen-Verbot von
-`.claude/hooks/git-gh-guard.mjs`, der sonst jede Stelle im Befehl prueft und
-fail-closed blockiert (Fliesstext mit Git-Befehlen per Heredoc).
-→ `docs/lessons/dashboard-issues-json.md`
+`issues.json` und `bodenwissen.json` sind seit 2026-09-30 **nicht mehr im Git**
+(`.gitignore`); bis dahin committete `dashboard-data.yml` sie alle 30 Minuten
+auf `main` — 29 % aller Commits und die Ursache der „fetch first"-Pushfehler.
+Dateien trotzdem gezielt mit `git add <datei>` stagen, nie `git add -A`.
+→ `docs/lessons/dashboard-issues-json.md` (Vorgeschichte)
 
 **Beim Rebase ist `--ours` der Upstream, nicht die eigene Arbeit.** Genau
 umgekehrt zum Merge. Wer den eigenen, gerade wiedergespielten Stand behalten
-will — etwa der Bot mit seinen frisch erzeugten Dateien — nimmt `--theirs`.
-`dashboard-data.yml` nahm seit dem 2026-09-03 `--ours` und verwarf damit die
-Datei, die es im selben Lauf erzeugt hatte.
+will, nimmt `--theirs`. Der fruehere Dashboard-Bot nahm seit dem 2026-09-03
+`--ours` und verwarf damit die Datei, die er im selben Lauf erzeugt hatte.
 → `docs/lessons/rebase-ours-ist-der-upstream.md`
 
 **Aufgaben pflegen sich ueber Ereignisse selbst** (`task-automation.yml`):

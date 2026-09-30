@@ -22,13 +22,10 @@ tote Links, Problem-Finder-Sperre) kommt **importiert** aus
 abweichende Kopie. Wenn sich das Gate aendert, aendert sich dieser Bereich mit,
 ohne dass hier etwas angepasst werden muss.
 
-Die Datei wird vom Workflow `.github/workflows/dashboard-data.yml` erzeugt und
-mitcommittet — im selben Lauf wie `issues.json`. Ausgeloest wird er von Pushes
-auf `main`, die `content/ratgeber/`, `content/lexikon/`, `content/probleme/`,
-`scripts/build-bodenwissen-data.mjs` oder `scripts/bodenwissen-guard.mjs`
-anfassen, dazu alle 30 Minuten als Sicherheitsnetz. Ein Handlauf
-(`npm run bodenwissen:daten`) ist damit nur noch fuer die lokale Ansicht
-noetig — fuer Inhalte, die noch nicht auf `main` liegen. Die Zeile am
+Die Datei ist seit 2026-09-30 nicht mehr im Git. Sie entsteht lokal aus dem
+ausgecheckten `content/`: `npm run dashboard` baut sie beim Start,
+„Jetzt synchronisieren" erneut, von Hand `npm run bodenwissen:daten` (0,1 s,
+kein Netz). Die Zeile am
 Seitenende („Stand: …") zeigt `erzeugtAm` aus dem Lauf, der die Datei zuletzt
 geschrieben hat.
 
@@ -86,6 +83,5 @@ zweite, abweichende zu ersetzen.
   `docs/ai-dashboard/tests/bodenwissen.test.mjs` — Muster: `lib/model.mjs`
 - `docs/ai-dashboard/app.js` — `viewRatgeber()` und `ensureBodenwissen()`,
   Navigationspunkt „Ratgeber" in `index.html`, eingebunden ueber `#/ratgeber`
-- `.github/workflows/dashboard-data.yml` — baut `bodenwissen.json` und
-  `issues.json` im selben Lauf und committet nur die Datei, die sich
-  tatsaechlich geaendert hat
+- `scripts/serve-dashboard.mjs` — `rebuild()` baut `issues.json` und
+  `bodenwissen.json` beim Synchronisieren neu

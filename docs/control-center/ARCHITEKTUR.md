@@ -164,10 +164,10 @@ Admin-Konto oder einen Admin-Token.** Bis dahin bleibt `https://kontakt755.githu
 technisch erreichbar; als Kompensation zeigt `app.js` dort keine Aufgabendaten mehr (siehe oben) –
 das entfernt die Sichtbarkeit, nicht die URL.
 
-`dashboard-data.yml` schreibt `issues.json` weiterhin nach `main`, weil die Datei die Datenquelle für
-den lokalen Betrieb bleibt (der lokale Server kann sie auch selbst per `npm run dashboard`/`gh` frisch
-erzeugen). Es findet dadurch **keine zusätzliche Veröffentlichung** mehr statt – das Committen war schon
-vorher notwendig und ist von der Pages-Frage unabhängig.
+Seit 2026-09-30 gibt es `dashboard-data.yml` nicht mehr: `issues.json` und `bodenwissen.json` sind
+nicht mehr im Git und entstehen nur noch lokal (`npm run dashboard` baut beide beim Start,
+„Jetzt synchronisieren" erneut; der SessionStart-Hook frischt `issues.json` im Hauptcheckout höchstens
+stündlich im Hintergrund auf). Damit liegen auch unter der Pages-URL keine Aufgabendaten mehr.
 
 ## 1d. Mitarbeiterzugänge (seit 2026-09-24)
 

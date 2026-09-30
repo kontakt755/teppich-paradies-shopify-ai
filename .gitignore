@@ -101,3 +101,8 @@ venv/
 # scripts/build-verlegegebiet-orte.py. Die fertigen Dateien liegen in assets/
 # und snippets/; der Cache gehoert nicht ins Repository.
 .cache/
+
+# Control Center: erzeugte Daten, nicht im Git (seit 2026-09-30).
+# Lokal: npm run dashboard (erzeugt beide) bzw. npm run dashboard:data / bodenwissen:daten.
+docs/ai-dashboard/issues.json
+docs/ai-dashboard/bodenwissen.json
