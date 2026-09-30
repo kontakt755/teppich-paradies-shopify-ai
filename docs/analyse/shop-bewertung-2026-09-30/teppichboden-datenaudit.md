@@ -1,6 +1,6 @@
 # Datenaudit Teppichboden: 111 Produkte der Kollektion `teppichboden`
 
-Stand 2026-09-30, rein lesend über die Shopify Admin API. Gehört zu [README.md](README.md), dort stehen Methode, Auswertung und Vorschlag.
+Stand 2026-09-30 **vor** der Datenkorrektur vom selben Tag (siehe Nachtrag im Bericht), gelesen über die Shopify Admin API. Gehört zu [README.md](README.md), dort stehen Methode, Auswertung und Vorschlag.
 
 **Lesehilfe**
 

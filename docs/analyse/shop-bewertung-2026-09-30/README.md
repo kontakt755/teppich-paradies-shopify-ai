@@ -1,6 +1,6 @@
 # Shop-Bewertung 2026-09-30: Struktur, Produktdaten, Kundenfreundlichkeit, Wettbewerb
 
-Stand 2026-09-30. Rein lesend: keine Shopify-Daten geändert, keine Preise angefasst, kein Deploy.
+Stand 2026-09-30. Die Analyse selbst war rein lesend. Nach Freigabe des Inhabers wurde am selben Tag Schritt 1 umgesetzt (84 belegte Ergänzungen in `custom.arten`); was dabei geschah, steht im [Nachtrag](#9-nachtrag-umsetzung-von-schritt-1). Alle Zahlen in den Abschnitten 1 bis 8 beschreiben den Stand **vor** dieser Korrektur. Preise wurden nicht angefasst, es gab keinen Deploy.
 Schwerpunkt ist die Zuordnung der Teppichböden. Die Einzeltabelle aller 111 Teppichboden-Produkte steht in
 [teppichboden-datenaudit.md](teppichboden-datenaudit.md).
 
@@ -51,7 +51,7 @@ Schwerpunkt ist die Zuordnung der Teppichböden. Die Einzeltabelle aller 111 Tep
 
 ### 2.3 Abweichungen zwischen Ist und Beleg
 
-77 der 111 Produkte haben mindestens eine Abweichung. Zusammengefasst:
+77 der 111 Produkte haben mindestens eine Abweichung; bei 60 davon fehlt ein Wert in `custom.arten`, bei den übrigen weicht nur `shopify.pile-type` ab. Zusammengefasst:
 
 | Abweichung | Produkte | davon Rollenware |
 |---|---|---|
@@ -119,7 +119,7 @@ Weg A löst das sichtbare Problem sofort und ist als erster Schritt sinnvoll. We
 
 ### 3.2 Schritt 1: Datenkorrektur im bestehenden Feld (Weg A)
 
-84 Ergänzungen an 77 Produkten, alle belegt: 58 × Kurzflor, 15 × Velours, 11 × Schlinge. Nichts wird entfernt. Umsetzung über den Skill `shopify-massendaten` mit Plan und Rollback-Datei, Gegenprüfung über die Kollektionszahlen aus Abschnitt 2.3. Vorher zu entscheiden sind die Kurzflor-Schwelle und die Frage, ob Fliesen in die Unterkategorien gehören ([Abschnitt 7](#7-entscheidungen-für-den-inhaber)).
+84 Ergänzungen an 60 Produkten, alle belegt: 58 × Kurzflor, 15 × Velours, 11 × Schlinge. Nichts wird entfernt. Umsetzung über den Skill `shopify-massendaten` mit Plan und Rollback-Datei, Gegenprüfung über die Kollektionszahlen aus Abschnitt 2.3. Vorher zu entscheiden sind die Kurzflor-Schwelle und die Frage, ob Fliesen in die Unterkategorien gehören ([Abschnitt 7](#7-entscheidungen-für-den-inhaber)).
 
 ### 3.3 Schritt 2: getrennte Felder (Weg B)
 
@@ -310,3 +310,20 @@ Weitere Ausschnitte im Ordner `screenshots/`: W1 Kopf und mobil, W2 mobil, W3 un
 5. Weg B: getrennte Felder, Kollektionsregeln, Filter, Theme-Anpassung.
 6. Optional: gemeinsames Unterkategorie-Template mit eigenem Text und Kollektionsbildern.
 7. Tag-Bereinigung in einem Zug über `shopify-massendaten`, nachdem feststeht, welche Tags das Theme künftig noch liest.
+
+## 9. Nachtrag: Umsetzung von Schritt 1
+
+Am 2026-09-30 hat der Inhaber entschieden: **Kurzflor gilt bis 5,0 mm, Fliesen und Planken gehören in die Unterkategorien.** Daraufhin wurde die Datenkorrektur aus Abschnitt 3.2 ausgeführt.
+
+| | |
+|---|---|
+| Geschrieben | 84 Werte an 60 aktiven Produkten im Feld `custom.arten`: 58 × Kurzflor, 15 × Velours, 11 × Schlinge. Bestehende Werte blieben erhalten, die Konstruktion steht vor der Florhöhe (Kontura: „Velours · Kurzflor“). |
+| Gegenprobe | Frischer Lesestand nach dem Schreiben: 60 von 60 Produkten tragen exakt den geplanten Wert, 0 fehlend, 0 abweichend. |
+| Kollektionen | Kurzflor 1 → 59, Velours 25 → 40, Schlinge 42 → 53. Hochflor 9, Wolle 11, Nadelvlies 6 unverändert. Die Storefront zeigt dieselben Zahlen. Das Feld `productsCount` der Admin API hinkte zum Zeitpunkt der Prüfung nach (45 / 37 / 50), die Mitgliederlisten waren vollständig. |
+| Beleglage | Bei 54 der 58 Kurzflor-Ergänzungen stimmt die Florhöhe mit dem Lieferantendatenblatt überein. Bei Kalvea, Lanetta, Lanova und Merinda gibt es nur den Shopwert; sie sind im Plan als Sicherheit „mittel“ markiert. |
+| Nicht geschrieben | Callista, Wovena, Rubira und Ombra bleiben trotz Werten bis 5 mm draußen, weil ihre Florhöhe nicht gegenprüfbar ist oder die Gesamtstärke wiedergibt. Alle offenen Fälle aus Abschnitt 2.6 sind unverändert. |
+| Rollback | Plan, Altwerte, fertige Rollback-Mutation und Schreibprotokoll liegen lokal unter `~/teppich-paradies-analyse/teppichboden-arten-2026-09-30/` (nicht im Repository). |
+
+![Kurzflor nach der Korrektur: 59 Artikel](screenshots/eigen-kurzflor-desktop-nachher.jpg)
+
+**Weiter offen:** der Preis der vier Vinyl-Altprodukte (Abschnitt 4.1), die getrennten Felder nach Weg B (Abschnitt 3.3), `shopify.pile-type`, die Menü-Doppelungen und die Tag-Bereinigung. Nichts davon wurde angefasst.
