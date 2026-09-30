@@ -13,6 +13,7 @@ import { medienDir, medienPfad, socialDir } from './pfade.mjs';
 import { autoFreigabeMoeglich, pruefe } from './freigabe.mjs';
 import { INHALT_STATUS, PLATTFORMEN } from './status.mjs';
 import { grundtext, hashtags, pruefeText, shopLink } from './texte.mjs';
+import { baueReel, reelReihenfolge } from './reel.mjs';
 import { RenderFehler } from './rendern.mjs';
 import { baue, dezenterFilter } from './vorlagen.mjs';
 import { BETRIEB } from './konfig.mjs';
@@ -41,8 +42,33 @@ function brauchbar(m) {
 
 const ref = (m, extra = {}) => ({ medium: m.id, ...extra });
 
+const ROLLE_ZEILE = { vorher: 'Vorher', arbeit: 'Bei der Arbeit', detail: 'Im Detail', nachher: 'Fertig' };
+
+function storyTitel(inhalt) {
+  return [inhalt.bodenart || 'Neuer Boden', inhalt.raum ? `im ${inhalt.raum}` : null].filter(Boolean).join(' ');
+}
+
+/**
+ * Reel aus eigenen Fotos: Hochkant-Standbilder in der Reihenfolge vorher -> Arbeit -> nachher.
+ * Das erste Bild traegt Titel und Ort, die folgenden nur ihre Rolle.
+ */
+export function reelBauplan(inhalt, medien) {
+  if (inhalt.quelle === 'shopify') throw new WerkstattFehler('Reels entstehen nur aus eigenen Fotos (Baustelle, Referenz, Laden)');
+  const bilder = reelReihenfolge(medien.filter(brauchbar)).slice(0, 8);
+  if (bilder.length < 3) throw new WerkstattFehler('Ein Reel braucht mindestens drei taugliche Bilder');
+  const ort = inhalt.daten?.ortBekannt === false ? null : inhalt.ort;
+  return {
+    format: 'reel',
+    folien: bilder.map((m, i) => ({
+      vorlage: 'story_foto',
+      daten: i === 0 ? { bild: ref(m), marke: 'Von uns verlegt', markeRot: true, titel: storyTitel(inhalt), zeile: ort } : { bild: ref(m), titel: ROLLE_ZEILE[m.rolle] ?? '' },
+    })),
+  };
+}
+
 /** Vorschlag fuer die Folien eines Beitrags, wenn die Redaktion nichts vorgibt. */
 export function standardBauplan(inhalt, medien, format = 'feed') {
+  if (format === 'reel') return reelBauplan(inhalt, medien);
   const d = inhalt.daten ?? {};
 
   if (inhalt.quelle === 'shopify') {
@@ -88,7 +114,7 @@ export function standardBauplan(inhalt, medien, format = 'feed') {
   const zeile = [inhalt.daten?.ortBekannt === false ? null : inhalt.ort, inhalt.bodenart].filter(Boolean).join(' · ') || null;
 
   if (format === 'story') {
-    const titel = [inhalt.bodenart || 'Neuer Boden', inhalt.raum ? `im ${inhalt.raum}` : null].filter(Boolean).join(' ');
+    const titel = storyTitel(inhalt);
     return { format, folien: [{ vorlage: 'story_foto', daten: { bild: ref(sortiert[0]), marke: 'Von uns verlegt', markeRot: true, titel, zeile: inhalt.daten?.ortBekannt === false ? null : inhalt.ort } }] };
   }
 
@@ -126,9 +152,10 @@ function loeseAuf(wert, medienNachId, inhalt, quellen, dir) {
 
 /**
  * Rendert die Folien und legt den Beitrag in der Freigabe an.
- * @param rendere  Renderfunktion (rendern.rendere) - als Argument, damit Tests ohne Browser laufen
+ * @param rendere   Renderfunktion (rendern.rendere) - als Argument, damit Tests ohne Browser laufen
+ * @param schneide  setzt die Einzelbilder eines Reels zum Video zusammen (reel.baueReel, braucht ffmpeg)
  */
-export async function erstelleEntwurf(db, { inhaltId, format = null, folien = null, text = null, textFacebook = null, plattformen = PLATTFORMEN, von = 'system' }, { rendere, dir = socialDir(), env = process.env } = {}) {
+export async function erstelleEntwurf(db, { inhaltId, format = null, folien = null, text = null, textFacebook = null, plattformen = PLATTFORMEN, von = 'system' }, { rendere, schneide = baueReel, dir = socialDir(), env = process.env } = {}) {
   let inhalt = db.inhalt(inhaltId);
   if (!inhalt) throw new WerkstattFehler(`Inhalt ${inhaltId} gibt es nicht`);
   const medien = db.medien(inhaltId);
@@ -136,7 +163,8 @@ export async function erstelleEntwurf(db, { inhaltId, format = null, folien = nu
   if (!plan.folien.length) throw new WerkstattFehler('Bauplan ohne Folien');
   if (plan.format === 'karussell' && plan.folien.length < 2) plan.format = 'feed';
   if (plan.format === 'feed' || plan.format === 'story') plan.folien = plan.folien.slice(0, 1);
-  if (plan.format === 'reel') throw new WerkstattFehler('Reels entstehen über social/lib/reel.mjs');
+  const reel = plan.format === 'reel';
+  if (reel && plan.folien.length < 3) throw new WerkstattFehler('Ein Reel braucht mindestens drei Bilder');
 
   const wechsel = db.beitraegeZuInhalt(inhaltId).length + inhaltId;
   const beitragText = (text ?? grundtext(inhalt, wechsel)).trim();
@@ -147,15 +175,16 @@ export async function erstelleEntwurf(db, { inhaltId, format = null, folien = nu
 
   const nummer = db.beitraegeZuInhalt(inhaltId).length + 1;
   const ordner = path.join(medienDir(dir), String(inhaltId), `beitrag-${nummer}`);
-  const groesse = plan.format === 'story' ? 'story' : 'feed';
+  const groesse = plan.format === 'story' || reel ? 'story' : 'feed';
   const medienNachId = new Map(medien.map(m => [m.id, m]));
   const auftraege = []; const eintraege = [];
   plan.folien.forEach((folie, i) => {
     const quellen = new Set();
     const daten = loeseAuf(folie.daten, medienNachId, inhalt, quellen, dir);
-    const datei = path.join(ordner, `${String(i + 1).padStart(2, '0')}.jpg`);
+    // Die Einzelbilder eines Reels ('rahmen') werden nie selbst veroeffentlicht, nur geschnitten.
+    const datei = path.join(ordner, `${reel ? 'rahmen-' : ''}${String(i + 1).padStart(2, '0')}.jpg`);
     auftraege.push({ ...baue(folie.vorlage, daten, groesse), datei });
-    eintraege.push({ pfad: path.relative(dir, datei), art: 'bild', vorlage: folie.vorlage, quellen: [...quellen] });
+    eintraege.push({ pfad: path.relative(dir, datei), art: reel ? 'rahmen' : 'bild', vorlage: folie.vorlage, quellen: [...quellen] });
   });
   try {
     await rendere(auftraege);
@@ -168,11 +197,16 @@ export async function erstelleEntwurf(db, { inhaltId, format = null, folien = nu
     }
     throw e;
   }
+  if (reel) {
+    const video = path.join(ordner, 'reel.mp4');
+    await schneide(auftraege.map(a => a.datei), video);
+    eintraege.unshift({ pfad: path.relative(dir, video), art: 'video', vorlage: 'reel', quellen: [...new Set(eintraege.flatMap(e => e.quellen))] });
+  }
 
   const ziel = inhalt.daten?.url ?? (inhalt.produkt_handle ? `${BETRIEB.shop}/products/${inhalt.produkt_handle}` : null);
   const id = db.beitragAnlegen({
     inhalt_id: inhaltId, format: plan.format, plattformen: plattformen.filter(p => PLATTFORMEN.includes(p)),
-    vorlage: plan.folien[0].vorlage, text: beitragText, text_facebook: textFacebook,
+    vorlage: reel ? 'reel' : plan.folien[0].vorlage, text: beitragText, text_facebook: textFacebook,
     hashtags: tags.join(' '), medien: eintraege,
   });
   const link = ziel ? shopLink(ziel, { beitragId: id, plattform: 'facebook' }) : null;

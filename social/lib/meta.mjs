@@ -9,8 +9,8 @@
  * Instagram nimmt Bilder nur von einer oeffentlichen Adresse entgegen. Statt
  * dafuer einen eigenen Server ins Netz zu stellen, laedt der Publisher jedes
  * Bild zuerst als unveroeffentlichtes Foto auf die Facebook-Seite und reicht
- * Instagram dessen CDN-Adresse. Videos brauchen eine eigene oeffentliche
- * Adresse (SOCIAL_MEDIEN_BASIS_URL).
+ * Instagram dessen CDN-Adresse. Videos (Reels) gehen per "resumable upload"
+ * direkt an Instagram - auch dafuer braucht es keine oeffentliche Adresse.
  */
 
 import fs from 'node:fs';
@@ -42,7 +42,7 @@ export function ordneFehler(status, body) {
 
 const warte = ms => new Promise(r => setTimeout(r, ms));
 
-export function erstelleClient({ token, pageId, igUserId = null, version = 'v24.0', medienBasis = null, holen = globalThis.fetch, trocken = false, protokoll = () => {}, pause = warte } = {}) {
+export function erstelleClient({ token, pageId, igUserId = null, version = 'v24.0', holen = globalThis.fetch, trocken = false, protokoll = () => {}, pause = warte } = {}) {
   const basis = `https://graph.facebook.com/${version}`;
   let zaehler = 0;
 
@@ -92,6 +92,21 @@ export function erstelleClient({ token, pageId, igUserId = null, version = 'v24.
     throw new MetaFehler('Instagram verarbeitet das Medium noch – späterer Versuch', { voruebergehend: true });
   }
 
+  /** Laedt eine Videodatei in einen Instagram-Container (resumable upload, in einem Stueck). */
+  async function igVideoHochladen(container, datei) {
+    const groesse = fs.statSync(datei).size;
+    const ziel = container.uri || `https://rupload.facebook.com/ig-api-upload/${version}/${container.id}`;
+    if (trocken) { protokoll(`[trocken] POST ${ziel} ${path.basename(datei)} (${groesse} Bytes)`); return; }
+    let antwort;
+    try {
+      antwort = await holen(ziel, { method: 'POST', headers: { Authorization: `OAuth ${token}`, offset: '0', file_size: String(groesse) }, body: fs.readFileSync(datei) });
+    } catch (e) {
+      throw new MetaFehler(`Instagram-Upload nicht erreichbar: ${e.message}`, { voruebergehend: true });
+    }
+    const body = await antwort.json().catch(() => ({}));
+    if (!antwort.ok || body.error || body.success === false) throw ordneFehler(antwort.status, body.error ? body : { error: { message: body.debug_info?.message ?? body.message } });
+  }
+
   const client = {
     trocken,
     graph,
@@ -128,13 +143,15 @@ export function erstelleClient({ token, pageId, igUserId = null, version = 'v24.
       return { id: r.id, permalink: info.permalink_url ?? null };
     },
 
-    async instagram({ format, text, fotos, videoUrl = null }) {
+    async instagram({ format, text, fotos, videoDatei = null }) {
       if (!igUserId) throw new MetaFehler('Instagram-Konto nicht verknüpft (META_IG_USER_ID fehlt)', { zugang: true });
       let container;
       if (format === 'reel') {
-        if (!videoUrl) throw new MetaFehler('Reel braucht eine öffentliche Videoadresse (SOCIAL_MEDIEN_BASIS_URL)');
-        container = await graph('POST', `/${igUserId}/media`, { media_type: 'REELS', video_url: videoUrl, caption: text });
-        await igWarte(container.id);
+        if (!videoDatei) throw new MetaFehler('Reel ohne Videodatei');
+        container = await graph('POST', `/${igUserId}/media`, { media_type: 'REELS', upload_type: 'resumable', caption: text });
+        await igVideoHochladen(container, videoDatei);
+        // Videos brauchen bei Instagram Minuten; bis zu zehn Minuten warten, dann spaeterer Versuch.
+        await igWarte(container.id, { versuche: 120 });
       } else if (format === 'story') {
         container = await graph('POST', `/${igUserId}/media`, { media_type: 'STORIES', image_url: fotos[0].url });
         await igWarte(container.id, { versuche: 12 });
@@ -194,7 +211,6 @@ export function erstelleClient({ token, pageId, igUserId = null, version = 'v24.
       return werte;
     },
 
-    medienUrl: (relativ) => (medienBasis ? `${medienBasis.replace(/\/$/, '')}/${relativ}` : null),
   };
   return client;
 }
@@ -214,7 +230,8 @@ export async function veroeffentliche(client, { beitrag, dateien, texte, bisher 
   const offen = beitrag.plattformen.filter(p => !ergebnis[p]?.id);
   if (!offen.length) return { ergebnis, fehler, fertig: true };
 
-  const bilder = dateien.filter(d => d.art !== 'video');
+  // Nur echte Beitragsbilder hochladen - die Einzelbilder eines Reels ('rahmen') bleiben lokal.
+  const bilder = dateien.filter(d => d.art === 'bild');
   const video = dateien.find(d => d.art === 'video') ?? null;
   const fotos = [];
   try {
@@ -229,7 +246,7 @@ export async function veroeffentliche(client, { beitrag, dateien, texte, bisher 
       if (plattform === 'facebook') {
         ergebnis.facebook = await client.facebook({ format: beitrag.format, text: texte.facebook, fotos, videoDatei: video?.datei ?? null });
       } else if (plattform === 'instagram') {
-        ergebnis.instagram = await client.instagram({ format: beitrag.format, text: texte.instagram, fotos, videoUrl: video ? client.medienUrl(video.relativ) : null });
+        ergebnis.instagram = await client.instagram({ format: beitrag.format, text: texte.instagram, fotos, videoDatei: video?.datei ?? null });
       }
       // Sofort festhalten, nicht erst am Ende: stirbt der Lauf danach, weiss der naechste, was schon draussen ist.
       merke({ ...ergebnis });

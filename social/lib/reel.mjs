@@ -9,8 +9,8 @@
  * Braucht ffmpeg (`brew install ffmpeg`). Fehlt es, meldet `ffmpegPfad` null,
  * und der Aufrufer laesst das Reel aus - der Rest des Systems laeuft weiter.
  *
- * STAND: Der Aufbau der ffmpeg-Argumente ist getestet, ein echter Lauf steht
- * aus, weil ffmpeg auf dem Betriebsrechner noch nicht installiert ist.
+ * STAND: mit ffmpeg 9 auf dem Betriebsrechner gegen echte Fotos geprueft
+ * (30.09.2026): H.264/AAC, 1080 x 1920, 30 fps, jedes Bild 2,4 s.
  */
 
 import { execFile, execFileSync } from 'node:child_process';
@@ -41,7 +41,10 @@ export function ffmpegArgumente(bilder, ziel, { sekunden = 2.4, fps = 30 } = {})
   if (bilder.length < 2) throw new Error('Ein Reel braucht mindestens zwei Bilder');
   const frames = Math.round(sekunden * fps);
   const args = ['-y'];
-  for (const b of bilder) args.push('-loop', '1', '-t', String(sekunden), '-i', b);
+  // Jedes Bild genau einmal einlesen: zoompan erzeugt je EINGANGSbild d Ausgabebilder.
+  // Mit "-loop 1" kaemen pro Foto Dutzende Eingangsbilder an - das erste Foto fuellte
+  // dann das ganze Video und der Zoom wuechse ohne Grenze (so im ersten echten Lauf gesehen).
+  for (const b of bilder) args.push('-i', b);
   // Stumme Tonspur: manche Player zeigen Videos ohne Audiospur nicht an.
   args.push('-f', 'lavfi', '-t', String(sekunden * bilder.length), '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100');
   const teile = bilder.map((_, i) => `[${i}:v]scale=1188:2112,zoompan=z='1+0.05*on/${frames}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${frames}:s=1080x1920:fps=${fps},setsar=1[v${i}]`);
