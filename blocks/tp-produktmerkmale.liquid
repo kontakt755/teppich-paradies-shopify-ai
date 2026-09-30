@@ -1,0 +1,87 @@
+{% doc %}
+  Kurze Merkmalliste direkt unter Titel und Preis. Quelle ist allein das
+  Produkt-Metafeld custom.merkmale (Liste, ein Merkmal je Eintrag) - dort
+  stehen nur belegte Herstellerangaben wie "Waschbar bei 30 °C". Der Block
+  erfindet nichts und leitet nichts ab; ohne Metafeld rendert er still nichts.
+  Gedacht fuer Wohnteppiche und Dekofelle, bei denen Pflege und Material die
+  Kaufentscheidung tragen und nicht Florhoehe oder Nutzungsklasse.
+{% enddoc %}
+{%- liquid
+  assign tp_pm_product = closest.product | default: product
+  assign tp_pm_liste = tp_pm_product.metafields.custom.merkmale.value
+  assign tp_pm_max = block.settings.max | default: 4
+-%}
+{%- if tp_pm_liste != blank and tp_pm_liste.size > 0 -%}
+  <ul class="tp-pm" {{ block.shopify_attributes }}>
+    {%- for tp_pm_eintrag in tp_pm_liste limit: tp_pm_max -%}
+      {%- assign tp_pm_text = tp_pm_eintrag | strip -%}
+      {%- if tp_pm_text != blank -%}
+        <li class="tp-pm__eintrag">
+          <svg class="tp-pm__haken" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+            <path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>{{ tp_pm_text | escape }}</span>
+        </li>
+      {%- endif -%}
+    {%- endfor -%}
+  </ul>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-pm {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 16px;
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-pm__eintrag {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 14.5px;
+    line-height: 1.4;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.85);
+  }
+
+  .tp-pm__haken {
+    flex: 0 0 auto;
+    margin-top: 2px;
+    color: #1e7a3c;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-pm {
+      gap: 6px 12px;
+    }
+
+    .tp-pm__eintrag {
+      font-size: 13.5px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Produktmerkmale",
+  "tag": null,
+  "settings": [
+    {
+      "type": "range",
+      "id": "max",
+      "label": "Hoechstens anzeigen",
+      "min": 2,
+      "max": 8,
+      "step": 1,
+      "default": 4
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Produktmerkmale"
+    }
+  ]
+}
+{% endschema %}

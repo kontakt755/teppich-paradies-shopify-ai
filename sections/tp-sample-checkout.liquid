@@ -63,7 +63,7 @@
             <ul class="tp-sample__produkte">
               {%- for tp_sample_p in tp_sample_coll.products limit: 12 -%}
                 {%- if tp_sample_gezeigt >= 4 -%}{%- break -%}{%- endif -%}
-                {%- unless tp_sample_p.tags contains 'zubehoer' -%}
+                {%- unless tp_sample_p.tags contains 'zubehoer' or tp_sample_p.tags contains 'ohne-muster' -%}
                   {%- capture tp_sample_ziel -%}{%- render 'tp-musteroption', product: tp_sample_p -%}{%- endcapture -%}
                   {%- assign tp_sample_ziel = tp_sample_ziel | strip -%}
                   {%- if tp_sample_ziel contains '/pages/muster' -%}
