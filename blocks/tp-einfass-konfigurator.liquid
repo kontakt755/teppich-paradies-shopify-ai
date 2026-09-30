@@ -240,7 +240,7 @@
       {%- endcomment -%}
       <div class="tp-ek__preis" aria-live="polite" data-rechnung hidden>
         <div class="tp-ek__summe"><span>{% if product.handle == 'serena-teppich-nach-mass' %}Gesamtpreis für Ihr Maß{% else %}Ihr Preis{% endif %}</span><span class="tp-ek__summe-werte"><s class="tp-ek__summe-alt" data-summe-alt hidden></s><strong data-summe>–</strong></span></div>
-        {% if product.handle == 'serena-teppich-nach-mass' %}<p class="tp-ek__preishinweis">Inklusive Zuschnitt und Kettelung rundum. Inkl. MwSt.; <a href="{{ pages['versand-lieferung'].url | default: '/pages/versand-lieferung' }}">Versand</a> in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos.</p>{% endif %}
+        {% if product.handle == 'serena-teppich-nach-mass' %}<p class="tp-ek__preishinweis">Inklusive Zuschnitt und Kettelung rundum. Inkl. MwSt.; <a href="{{ pages['versand-lieferung'].url | default: '/pages/versand-lieferung' }}">Versand</a> in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos.<br>Lieferzeit: ca. 4–8 Werktage.</p>{% endif %}
         {%- comment -%}
           Keine Rechenaufschluesselung in der Kundenansicht (Entscheidung 2026-09-20):
           sichtbar sind Endpreis und die zwei Hinweise, die den Preis erklaeren muessen.
