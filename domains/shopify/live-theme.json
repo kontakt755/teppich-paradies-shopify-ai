@@ -1,15 +1,15 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-09-30T13:45:52Z",
-    "verifiedBy": "Shopify CLI role live und oeffentliche Wovena-Produktseite nach workflow:live fuer PR #776"
-  },
-  "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-09-30T13:45:52Z",
+    "verifiedAt": "2026-09-30T17:11:13Z",
+    "verifiedBy": "Shopify CLI role live nach workflow:live (#783, main 2ea9c950)"
+  },
+  "preview": {
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-09-30T17:11:13Z",
     "verifiedBy": "Shopify CLI role unpublished nach Rollentausch; naechstes Preview-Ziel"
   },
   "fallback": {
@@ -290,6 +290,12 @@
       "name": "preview-main-2026-09-15",
       "retiredNoticedAt": "2026-09-30",
       "note": "Per workflow:live abgeloest durch 204436144462 (PR #776, main 78e50df9: universelle Mass-Produktseite). Rollentausch per Shopify CLI und oeffentliche Wovena-Produktseite gegengeprueft. Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-09-30",
+      "note": "Per workflow:live abgeloest durch 204438208846 (PR #783, main 2ea9c950: Teppich-Bereich - ab-Preis im Suchfeld, Menuebilder, Untertitel im Handy-Menue, Seitenkoepfe Teppich nach Mass und Alle Teppiche). Rollentausch per Shopify CLI gegengeprueft. Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
