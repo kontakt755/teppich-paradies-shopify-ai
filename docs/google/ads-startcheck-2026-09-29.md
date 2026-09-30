@@ -9,6 +9,13 @@
 - `snippets/meta-tags.liquid`: `/collections/teppiche` erhält den Canonical und `og:url` der Hauptadresse `/collections/teppich-nach-mass`. Bekannte Menüliste und Such-Chip zeigen nun auf die Hauptadresse (`sections/header-group.json`, `sections/tp-header-suche.liquid`).
 - **Live seit 29.09.2026:** Preview- und Live-Gates bestanden (Compare, SEO, Full QA, Sales ohne Bestellabschluss, P0/P1 = 0). Öffentlicher Nachtest: Kontaktseite enthält Erfolgssignal und beide getrennten Formularevents; `/collections/teppiche` liefert Canonical auf `/collections/teppich-nach-mass`; Vinyl-Redirect bleibt HTTP 301, Ziel HTTP 200.
 
+## Nachtrag 30.09.2026
+
+- **Consent-Test bestanden (Live-Theme, `/pages/kontakt`):** Bei abgelehnter Einwilligung kein Request an Google oder Meta, auch nicht beim Ausfüllen des Formulars. Nach Zustimmung laden Ads-Tag `AW-10991759596`, GA4 `G-3KKWHJHS0D` und die Sandbox des Custom Pixels „Google Ads Lead Erfolg“ (332661070).
+- **Lead-Test weiterhin offen:** Das Captcha muss der Shopbetreiber im eigenen Browser lösen; erst danach Eingang bei „Kontaktformular“ prüfen.
+- **Ads-Konto gelesen, nicht geändert:** Bestehende Kampagnen „Auf der Suche?“ (Smart, entfernt), „Teppichboden verlegen“, „Vinylboden verlegen“, „Lagerware“ (pausiert, jeweils „Alle Anzeigen wurden abgelehnt“), „Teppichboden verlegen #2“ (entfernt); keine Namenskollision mit `TP | Search | …`. Der Ablehnungsgrund der alten Anzeigen ist noch zu prüfen, bevor neue Anzeigen gestartet werden. Kontostandard-Ziele: Kauf (1 primär), Anruf-Lead (2), Kontakt (5), Seitenaufruf (1); Warenkorb, Bezahlvorgang und Download „falsch konfiguriert“.
+- **Web-Upload vorbereitet:** [`search-ads-web-upload-2026-09-30/`](search-ads-web-upload-2026-09-30/README.md). Anlegen der Kampagnen, des Ziels „Nur Kontaktformular“ und die Aktivierung bleiben manuelle Freigabeschritte des Betreibers.
+
 ## Website und Shopify
 
 | Punkt | Befund / nächster Schritt |
