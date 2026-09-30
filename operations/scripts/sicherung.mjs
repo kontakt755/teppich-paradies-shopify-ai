@@ -46,6 +46,11 @@ export const SICHERUNGSPFADE = Object.freeze([
   'einkauf-hersteller',
   'einkauf-kollektion',
   'aktualisierung.json',
+  // Social-Media-Modul: taeglicher, in sich stimmiger Abzug der Datenbank
+  // (social/lib/ablauf.mjs, sichereDatenbank) und die Upload-Zugaenge. Die
+  // Fotos selbst (social/medien) sind zu gross fuer das Tagesarchiv.
+  'social/sicherung.db',
+  'social/upload-zugaenge.json',
 ]);
 
 function parseArgs(argv) {
