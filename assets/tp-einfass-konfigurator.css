@@ -69,21 +69,21 @@
 .tp-ek__bandname:empty { display: none; }
 
 .tp-ek__vorschau { margin: 0 0 14px; padding: 12px 12px 10px; border-radius: 10px; background: var(--tp-ek-soft); }
-.tp-ek--serena .tp-ek__vorschau{margin:12px 0 0;padding:9px 12px;border:1px solid var(--tp-ek-line);background:var(--tp-ek-surface)}
-.tp-ek--serena .tp-ek__vorschau:not([open]){border-color:var(--tp-ek-green)}
-.tp-ek--serena .tp-ek__vorschau summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;cursor:pointer;font-size:.88rem;list-style:none}
-.tp-ek--serena .tp-ek__vorschau summary::-webkit-details-marker{display:none}
-.tp-ek--serena .tp-ek__vorschau summary:focus-visible{outline:2px solid var(--tp-ek-green);outline-offset:3px}
-.tp-ek--serena .tp-ek__vorschau-titel{display:flex;flex-direction:column;gap:2px;min-width:0;font-weight:700}
-.tp-ek--serena .tp-ek__vorschau-titel span{font-size:.78rem;font-weight:400;color:var(--tp-ek-muted)}
-.tp-ek--serena .tp-ek__vorschau-aktion{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;color:var(--tp-ek-green);font-weight:700;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
-.tp-ek--serena .tp-ek__vorschau-aktion-offen,.tp-ek--serena .tp-ek__vorschau[open] .tp-ek__vorschau-aktion-zu{display:none}
-.tp-ek--serena .tp-ek__vorschau[open] .tp-ek__vorschau-aktion-offen{display:inline}
-.tp-ek--serena .tp-ek__vorschau[open] .tp-ek__vorschau-aktion svg{transform:rotate(180deg)}
-.tp-ek--serena .tp-ek__schema{margin:8px 0 0}
-.tp-ek--serena .tp-ek__svg{max-height:190px}
-.tp-ek--serena .tp-ek__legende{font-size:.75rem}
-[data-tp-serena-startpreis][hidden]{display:none!important}
+.tp-ek--mass .tp-ek__vorschau{margin:12px 0 0;padding:9px 12px;border:1px solid var(--tp-ek-line);background:var(--tp-ek-surface)}
+.tp-ek--mass .tp-ek__vorschau:not([open]){border-color:var(--tp-ek-green)}
+.tp-ek--mass .tp-ek__vorschau summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;cursor:pointer;font-size:.88rem;list-style:none}
+.tp-ek--mass .tp-ek__vorschau summary::-webkit-details-marker{display:none}
+.tp-ek--mass .tp-ek__vorschau summary:focus-visible{outline:2px solid var(--tp-ek-green);outline-offset:3px}
+.tp-ek--mass .tp-ek__vorschau-titel{display:flex;flex-direction:column;gap:2px;min-width:0;font-weight:700}
+.tp-ek--mass .tp-ek__vorschau-titel span{font-size:.78rem;font-weight:400;color:var(--tp-ek-muted)}
+.tp-ek--mass .tp-ek__vorschau-aktion{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;color:var(--tp-ek-green);font-weight:700;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.tp-ek--mass .tp-ek__vorschau-aktion-offen,.tp-ek--mass .tp-ek__vorschau[open] .tp-ek__vorschau-aktion-zu{display:none}
+.tp-ek--mass .tp-ek__vorschau[open] .tp-ek__vorschau-aktion-offen{display:inline}
+.tp-ek--mass .tp-ek__vorschau[open] .tp-ek__vorschau-aktion svg{transform:rotate(180deg)}
+.tp-ek--mass .tp-ek__schema{margin:8px 0 0}
+.tp-ek--mass .tp-ek__svg{max-height:190px}
+.tp-ek--mass .tp-ek__legende{font-size:.75rem}
+[data-tp-mass-startpreis][hidden]{display:none!important}
 .tp-ek__svg { display: block; width: 100%; height: auto; max-height: 320px; }
 
 .tp-ek__vorschau .is-aus { display: none !important; }
@@ -139,10 +139,10 @@
 .tp-ek__summe .tp-ek__summe-alt { font-size: 1rem; font-weight: 400; color: var(--tp-ek-muted); text-decoration: line-through; font-variant-numeric: tabular-nums; }
 .tp-ek__summe .tp-ek__summe-alt[hidden] { display: none; }
 .tp-ek__summe strong { font-size: 1.6rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
-.tp-ek--serena .tp-ek__summe{align-items:center;gap:6px}
-.tp-ek--serena .tp-ek__summe .tp-ek__summe-werte{gap:5px;white-space:nowrap}
-.tp-ek--serena .tp-ek__summe strong{font-size:1.45rem;white-space:nowrap}
-.tp-ek--serena .tp-ek__summe .tp-ek__summe-alt{font-size:.88rem}
+.tp-ek--mass .tp-ek__summe{align-items:center;gap:6px}
+.tp-ek--mass .tp-ek__summe .tp-ek__summe-werte{gap:5px;white-space:nowrap}
+.tp-ek--mass .tp-ek__summe strong{font-size:1.45rem;white-space:nowrap}
+.tp-ek--mass .tp-ek__summe .tp-ek__summe-alt{font-size:.88rem}
 .tp-ek__preishinweis { margin: 6px 0 0; font-size: .82rem; line-height: 1.45; color: var(--tp-ek-muted); }
 
 .tp-ek__cta {

@@ -95,7 +95,6 @@
     if (mitBand && !baender.length) return;
 
     var q = function (s) { return root.querySelector(s); };
-    var serena = root.getAttribute('data-tp-serena') === '1';
     var konfig = q('[data-konfig]');
     var anfrage = q('[data-anfrage]');
     var inBreite = q('[data-breite]');
@@ -107,7 +106,7 @@
     var grenzen = q('[data-grenzen]');
     var fehler = q('[data-fehler]');
     var vorschau = q('[data-vorschau]');
-    if (serena && vorschau && window.innerWidth > 749) vorschau.open = true;
+    if (vorschau && window.innerWidth > 749) vorschau.open = true;
     var svg = q('[data-svg]');
     var buehne = q('[data-buehne]');
     var raumbild = q('[data-raumbild]');
@@ -452,7 +451,7 @@
 
     function zeichnen(f, w, l, beispiel) {
       leeren(svg);
-      if (serena) {
+      if (art === 'ketteln') {
         // Eine neutrale Draufsicht statt eines vergroesserten Kantenfotos.
         // Erst gueltige Eingaben duerfen eine konkrete Form und Masse zeigen.
         if (beispiel) { vorschau.hidden = true; return; }
@@ -467,7 +466,7 @@
         else svgEl('rect', Object.assign({ x: xSchema, y: ySchema, width: pwSchema, height: phSchema, rx: 2 }, outline), svg);
         masslinie(xSchema, 32, xSchema + pwSchema, 32, f === 'rund' ? 'Ø ' + w + ' cm' : l + ' cm');
         if (f !== 'rund') masslinie(54, ySchema, 54, ySchema + phSchema, w + ' cm');
-        legende.textContent = 'Ihr Maß · ' + (f === 'rund' ? 'Ø ' + w : w + ' × ' + l) + ' cm · Kante rundum gekettelt';
+        legende.textContent = 'Ihr Maß · ' + (f === 'rund' ? 'Ø ' + w : w + ' × ' + l) + ' cm · ' + ART[art] + ' rundum' + (band ? ' · ' + band.name : '');
         vorschau.hidden = false;
         return;
       }
@@ -632,10 +631,8 @@
       // bleiben verborgen, hinzufuegen() kann also nicht auslösen.
       var gueltig = eingegeben && !fehlerListe.length && !!target && target.available &&
         parseInt(target.price, 10) > 0 && !kettelServiceFailed;
-      if (serena) {
-        var startpreis = document.querySelector('[data-tp-serena-startpreis]');
-        if (startpreis) startpreis.hidden = gueltig;
-      }
+      var startpreis = document.querySelector('[data-tp-mass-startpreis]');
+      if (startpreis) startpreis.hidden = gueltig;
       zeichnen(f, gueltig ? b.wert : BEISPIEL.w, gueltig ? l.wert : (rund ? BEISPIEL.w : BEISPIEL.l), !gueltig);
 
       var bandFehlt = mitBand && !band;
