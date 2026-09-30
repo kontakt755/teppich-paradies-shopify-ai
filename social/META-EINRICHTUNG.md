@@ -1,0 +1,92 @@
+# Meta-Zugang einrichten (Instagram und Facebook)
+
+Einmalig, rund 20 Minuten, am Rechner des Inhabers. Danach veröffentlicht der
+Publisher freigegebene Beiträge von selbst. Ohne diesen Zugang arbeitet alles
+andere weiter – nur hinaus geht nichts.
+
+## Voraussetzungen
+
+1. **Eine verwaltete Facebook-Seite** für Teppich Paradies. Gibt es nur die
+   inoffizielle Ortsseite: diese über „Ist das dein Unternehmen?" beanspruchen
+   oder eine Seite anlegen und die Ortsseite zusammenführen lassen.
+2. **Instagram als Business-Konto**: in der Instagram-App unter Einstellungen →
+   „Kontotyp und Tools" → „Zu professionellem Konto wechseln" → Unternehmen.
+3. **Verknüpfung**: Meta Business Suite → Einstellungen → Konten → Instagram-Konto
+   mit der Seite verbinden.
+
+## Zugang anlegen
+
+Meta benennt Menüpunkte häufig um – die Wege unten beschreiben, was zu tun
+ist; die Beschriftung kann abweichen.
+
+1. `developers.facebook.com` → **App erstellen** → Anwendungsfall „Sonstiges" →
+   Typ **Business** → Name z. B. „TP Social". Eine App-Prüfung durch Meta ist
+   nicht nötig, solange die App nur die eigenen Konten verwaltet.
+2. `business.facebook.com` → **Unternehmenseinstellungen** → Nutzer →
+   **Systemnutzer** → hinzufügen (Rolle Admin) → dem Systemnutzer die Seite und
+   das Instagram-Konto zuweisen (volle Kontrolle) und die App zuweisen.
+3. Beim Systemnutzer **Token generieren**, App auswählen, Ablauf „nie",
+   Berechtigungen:
+
+   ```
+   pages_show_list  pages_read_engagement  pages_manage_posts  read_insights
+   instagram_basic  instagram_content_publish  instagram_manage_insights
+   business_management
+   ```
+
+   Der Token eines Systemnutzers läuft nicht ab. (Ein Token aus dem Graph API
+   Explorer ginge auch, hält aber nur 60 Tage.)
+4. **IDs nachschlagen** – im Graph API Explorer mit diesem Token:
+   `me/accounts?fields=id,name,instagram_business_account` liefert die
+   Seiten-ID und darunter die ID des Instagram-Kontos.
+
+## Eintragen
+
+Datei `~/teppich-paradies-analyse/social/zugang.env` anlegen (liegt außerhalb
+des Repositorys und gilt für jede Arbeitskopie):
+
+```
+META_PAGE_TOKEN=…
+META_PAGE_ID=…
+META_IG_USER_ID=…
+```
+
+```
+chmod 600 ~/teppich-paradies-analyse/social/zugang.env
+npm run social -- meta-pruefen
+```
+
+Die Prüfung nennt Seite, Instagram-Konto und Followerzahlen. Stimmt beides,
+zeigt die Zentrale „Meta verbunden".
+
+## Der erste Beitrag
+
+Der Publisher ist gegen einen Nachbau der Meta-API getestet, nicht gegen die
+echte. Deshalb beim ersten Mal zusehen:
+
+```
+npm run social -- veroeffentlichen --trocken   # zeigt, was er täte
+npm run social -- veroeffentlichen             # veröffentlicht, was fällig ist
+```
+
+Am besten mit einer Story beginnen – sie verschwindet nach 24 Stunden von
+selbst. Erscheint sie auf beiden Kanälen, läuft der Rest über den Takt.
+
+## Token erneuern / Störungen
+
+| Anzeige | Bedeutung | Abhilfe |
+|---|---|---|
+| Beitrag im Status „Fehler": „Code 190" | Token ungültig oder entzogen | neuen Token erzeugen, in `zugang.env` eintragen, Beitrag erneut freigeben |
+| „Code 10" / „Code 200" | Berechtigung fehlt | Berechtigungen aus Schritt 3 prüfen, Seite und Instagram dem Systemnutzer zugewiesen? |
+| „Instagram-Konto nicht verknüpft" | `META_IG_USER_ID` fehlt oder Konto nicht Business | Voraussetzungen 2 und 3 |
+| „verarbeitet das Medium noch" | Instagram braucht länger | nichts – der nächste Takt versucht es erneut |
+
+`META_GRAPH_VERSION` (Standard `v24.0`) lässt sich in `zugang.env` überschreiben,
+wenn Meta die Version abkündigt.
+
+## Reels und Video-Storys
+
+Instagram holt Videos nur von einer öffentlichen Adresse ab. Dafür ist
+`SOCIAL_MEDIEN_BASIS_URL` vorgesehen (z. B. die Funnel-Adresse des
+Upload-Dienstes); die Auslieferung freigegebener Videos ist der letzte offene
+Baustein und folgt zusammen mit dem Reel-Schnitt.

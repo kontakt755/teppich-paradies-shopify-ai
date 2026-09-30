@@ -33,9 +33,9 @@
         <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">{{ block.settings.hinweis | escape }}</small>
       {%- endif -%}
     </a>
-    {% if product.handle == 'serena-teppich-nach-mass' %}
-      <p class="tp-serena-beratung">Fragen zu Ihrem Maß? <a href="tel:+4933015733720">Beratung: 03301 573 37 20</a></p>
-      <style>.tp-serena-beratung{margin:8px 0 0;font-size:.83rem;line-height:1.4;color:rgb(var(--color-foreground-rgb,34 34 34)/.72)}.tp-serena-beratung a{color:inherit;text-decoration:underline;text-underline-offset:2px}</style>
+    {% if product.template_suffix == 'einfassung' %}
+      <p class="tp-mass-beratung">Fragen zu Ihrem Maß? <a href="tel:+4933015733720">Beratung: 03301 573 37 20</a></p>
+      <style>.tp-mass-beratung{margin:8px 0 0;font-size:.83rem;line-height:1.4;color:rgb(var(--color-foreground-rgb,34 34 34)/.72)}.tp-mass-beratung a{color:inherit;text-decoration:underline;text-underline-offset:2px}</style>
     {% endif %}
   </div>
 

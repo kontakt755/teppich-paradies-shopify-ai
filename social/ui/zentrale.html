@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Social-Zentrale · Teppich Paradies</title>
+<link rel="stylesheet" href="/zentrale.css">
+</head>
+<body>
+<header class="kopf">
+  <div>
+    <h1>Social-Zentrale</h1>
+    <p class="leise" id="unterzeile">Instagram &amp; Facebook · Teppich Paradies</p>
+  </div>
+  <div class="kopf-rechts">
+    <span class="marke" id="metaStatus"></span>
+    <button class="knopf klein still" id="abmelden" hidden>Abmelden</button>
+  </div>
+</header>
+
+<nav class="reiter" id="reiter" aria-label="Bereiche">
+  <button data-reiter="heute" aria-current="page">Übersicht</button>
+  <button data-reiter="freigabe">Freigabe <span class="zahl" id="zFreigabe"></span></button>
+  <button data-reiter="plan">Plan</button>
+  <button data-reiter="vorrat">Vorrat <span class="zahl" id="zVorrat"></span></button>
+  <button data-reiter="auswertung">Auswertung</button>
+</nav>
+
+<main id="inhalt" aria-live="polite"><p class="leise">Lädt …</p></main>
+<div id="meldung" class="meldung" role="status" hidden></div>
+
+<script src="/zentrale.js"></script>
+</body>
+</html>

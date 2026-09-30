@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Anmelden · Social-Zentrale</title>
+<link rel="stylesheet" href="/zentrale.css">
+</head>
+<body>
+<form class="karte anmelden" id="form">
+  <h1>Social-Zentrale</h1>
+  <p class="leise">Anmeldung mit dem Zugang aus dem Control Center.</p>
+  <label for="name">Name oder Kürzel</label>
+  <input type="text" id="name" autocomplete="username" autocapitalize="none">
+  <label for="passwort">Passwort</label>
+  <input type="password" id="passwort" autocomplete="current-password" required>
+  <div class="knoepfe"><button class="knopf haupt" type="submit">Anmelden</button></div>
+  <p class="hinweis sperre" id="fehler" hidden></p>
+</form>
+<script>
+document.getElementById('form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fehler = document.getElementById('fehler'); fehler.hidden = true;
+  const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: document.getElementById('name').value, passwort: document.getElementById('passwort').value }) });
+  if (r.ok) { location.reload(); return; }
+  const d = await r.json().catch(() => ({}));
+  fehler.textContent = d.error || 'Anmeldung fehlgeschlagen'; fehler.hidden = false;
+});
+</script>
+</body>
+</html>

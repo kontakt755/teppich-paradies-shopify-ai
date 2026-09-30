@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Taeglich 06:40: Shop abgleichen, Termine vorschlagen, Kennzahlen holen
+  (npm run social - lauf). Laeuft vor der Redaktion, damit sie frischen Vorrat
+  vorfindet. War der Rechner aus, holt launchd den Lauf beim Aufwachen nach.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>net.teppich-paradies.social-lauf</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>__NODE_PFAD__</string>
+    <string>__REPO_PFAD__/social/scripts/social.mjs</string>
+    <string>lauf</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>__REPO_PFAD__</string>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>6</integer>
+    <key>Minute</key>
+    <integer>40</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>__HOME__/teppich-paradies-analyse/social/lauf.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/teppich-paradies-analyse/social/lauf.log</string>
+</dict>
+</plist>

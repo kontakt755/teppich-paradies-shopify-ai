@@ -25,11 +25,14 @@
   -%}
   {% assign product_title = '<h1>' | append: tp_h1_display | append: '</h1>' %}
   {% render 'text', fallback_text: product_title, block: block %}
-  {% if closest.product.handle == 'serena-teppich-nach-mass' and closest.product.metafields.service.einfassung.value == 'Ketteln' %}
-    <p class="tp-serena-nutzen">Weicher Velours in Ihrem Wunschmaß – rundum gekettelt.</p>
-    <style>.tp-serena-nutzen{margin:2px 0 0;color:rgb(var(--color-foreground-rgb,34 34 34)/.76);font-size:.95rem;line-height:1.45}</style>
+  {% if closest.product.template_suffix == 'einfassung' and closest.product.metafields.service.einfassung.value != blank %}
+    <p class="tp-mass-nutzen">Ihr Teppich nach Maß – mit rundum verarbeiteter Kante.</p>
   {% endif %}
 {% endif %}
+
+{% stylesheet %}
+.tp-mass-nutzen{margin:2px 0 0;color:rgb(var(--color-foreground-rgb,34 34 34)/.76);font-size:.95rem;line-height:1.45}
+{% endstylesheet %}
 
 {% schema %}
 {
