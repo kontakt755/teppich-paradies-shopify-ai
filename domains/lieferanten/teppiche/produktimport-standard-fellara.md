@@ -67,12 +67,45 @@ Artikel umgelegt, damit eine Einzelbestellung dieselbe Marge wie beim UVP ohne G
 
 `VK = UVP + (Gebuehr netto − Versandertrag netto) × 1,19`, auf ,99 aufgerundet.
 
-Fellara: +9,29 € auf UVP (5,99 → 15,99; 11,99 → 21,99; 19,99 → 29,99). Ab 50 € ist der
-Versand frei, dann faellt der Versandertrag weg. Vor dem naechsten Import die Regel fuer
-Artikel ab 50 € mit dem Inhaber bestaetigen.
+Fellara: +9,29 € auf UVP (5,99 → 15,99; 11,99 → 21,99; 19,99 → 29,99).
+
+**Bestaetigt 2026-09-30 fuer alle Artikel von Lieferant B:** unter 50 € Endpreis +9,29 €,
+ab 50 € Endpreis (Versand frei, kein Versandertrag) +14,28 €, jeweils auf ,99 aufrunden.
+Die Schwelle richtet sich nach dem **Endpreis**: UVP 49 → 58,29 waere ≥ 50, also 49 + 14,28
+→ 63,99; UVP 39 → 48,99.
+
+## Groessen (Inhaber 2026-09-30)
+
+Paketversand nur bis 200 cm Laenge und 30 kg. Ein Teppich wird ueber die kurze Seite
+gerollt: anlegen, wenn die **kurze Seite ≤ 200 cm** und das Gewicht ≤ 30 kg ist
+(200 × 300 cm ja, 240 × 330 cm nein).
+
+## Lizenzmarke von Lieferant B (erste Umsetzung 2026-09-30, 7 Produkte)
+
+Fuer die Lizenzmarke gelten eigene Bild- und Markenbedingungen (Dokumente lokal):
+- Titel mit Marke in der vorgeschriebenen Schreibweise, Produktname in Versalien;
+  Vendor = Markenname. Bewusste Ausnahme von #753 (Inhaberentscheidung).
+- Bilder nur proportional skalieren/beschneiden, keine Logos auf Produktbildern, keine
+  Empfehlungen fremder Produkte auf der Seite (Template `dekofell` erfuellt das).
+- Bildvermerk laut Bedingungen im Metafeld `custom.bildnachweis`.
+- Template `dekofell` ohne Aenderung auch fuer rechteckige Wohnteppiche (bis 4 Groessen).
+
+## Bildarchiv – Befunde
+
+- Motive mit Suffix `_KI` tragen den Vermerk „AI generated“ und zeigen die Form teils
+  abweichend: nicht verwenden, nur echte Fotos.
+- Falsch beschriftete Raumdetails kommen vor (Farbe B zeigte Farbe A) – jedes Bild ansehen,
+  am einfachsten per Kontaktbogen je Linie und Farbe.
+- Nicht jede Farbe hat Raumbilder; dann Draufsicht, Perspektive, Ecke, Detail, Kante.
+- Alt-Texte: die Galerie vergleicht mit Liquid-`contains`, das Gross-/Kleinschreibung
+  unterscheidet („Hellblau“ enthaelt nicht „Blau“). Farben, die Teilwort einer anderen in
+  gleicher Schreibung waeren, vermeiden.
 
 ## Technik, die funktioniert hat
 
+- Anlage in einem Schritt: `productSet` mit `files` (resourceUrl aus dem Staged Upload) und
+  `variants[].file` (dieselbe Quelle) legt Bilder und Variantenbilder mit an.
+- `shopify store execute` hat kein `write_publications`: `publishablePublish` ueber den MCP.
 - Bilder: `stagedUploadsCreate` (PUT) → `curl -X PUT -H "Content-Type: image/jpeg"`
   (**kein** `x-goog-acl`-Header, sonst 400) → `productCreateMedia` je 15 Bilder.
 - Skriptbare Schreibvorgaenge: `shopify store execute -s <store> --query-file … --variable-file … -j --allow-mutations --output-file …`.
