@@ -14,6 +14,14 @@ auf dem Betriebsrechner (`lib/whatsapp.mjs`).
   beginnt eine neue. Übernommen wird drei Stunden nach dem letzten Bild –
   vielleicht kommen noch weitere.
 - Beim ersten Lauf nur die letzten 14 Tage, nicht das ganze Archiv der Gruppe.
+- Übernommen wird nur, was WhatsApp auf dem Mac **heruntergeladen** hat. Ein
+  frisch verknüpfter Mac holt ältere Fotos erst, wenn jemand die Gruppe dort
+  öffnet und durchscrollt. Auf fehlende Dateien wartet das System drei Tage
+  (ab der Nachricht bzw. ab dem ersten Lauf), danach werden sie übersprungen.
+- Absender: WhatsApp zeigt Gruppenmitglieder heute nur noch über anonyme
+  Kennungen. Einen Namen gibt es, wenn der Kontakt im Adressbuch des
+  verknüpften Handys steht; sonst erscheint „Mitglied …1234“ (letzte Ziffern
+  der Kennung).
 - Doppelte Bilder (dasselbe Foto per Link und per WhatsApp) sortiert die
   Bildprüfung aus.
 
@@ -69,7 +77,8 @@ drücken, wenn der Auftragszettel das Kreuz trägt.
 | „macOS verweigert den Zugriff“ | Schritt 2, auch nach einem Node-Update |
 | „Gruppe … nicht gefunden“ | Name in `zugang.env` genau wie in der App (Groß-/Kleinschreibung, Emojis) |
 | „Keine WhatsApp-Daten“ | WhatsApp für Mac starten und anmelden |
-| Fotos fehlen | automatisches Herunterladen in WhatsApp einschalten; Fotos, die nach einer Stunde noch nicht geladen sind, werden übersprungen |
+| „noch nicht heruntergeladen“ bei `--pruefen` | Gruppe in WhatsApp auf dem Mac öffnen und durchscrollen; automatisches Herunterladen einschalten. Nach drei Tagen ohne Datei wird ein Foto übersprungen |
+| Absender „Mitglied …1234“ | Kontakt im Adressbuch des verknüpften Handys anlegen – wirkt für künftige Übernahmen |
 
 `whatsapp-stand.json` im Datenverzeichnis merkt sich, was übernommen ist. Wer
 es löscht, bekommt beim nächsten Lauf die letzten 14 Tage noch einmal –

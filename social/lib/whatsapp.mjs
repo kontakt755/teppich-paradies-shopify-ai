@@ -38,8 +38,17 @@ const zuApple = datum => datum.getTime() / 1000 - APPLE_EPOCHE;
 
 const TYP = { 1: 'bild', 2: 'video' };
 
-function spalten(sql, tabelle) {
-  return new Set(sql.prepare(`PRAGMA table_info(${tabelle})`).all().map(s => s.name));
+function spalten(sql, tabelle, schema = 'main') {
+  return new Set(sql.prepare(`PRAGMA ${schema}.table_info(${tabelle})`).all().map(s => s.name));
+}
+
+/** Kennung ohne Namen: "4917011@s.whatsapp.net" -> "4917011", anonyme "…@lid" -> "Mitglied …1234". */
+export function anzeigeName(wert) {
+  const w = String(wert ?? '').trim();
+  if (!w) return 'unbekannt';
+  const lid = /^(\d+)@lid$/.exec(w);
+  if (lid) return `Mitglied …${lid[1].slice(-4)}`;
+  return w.replace(/@s\.whatsapp\.net$/, '');
 }
 
 /**
@@ -60,22 +69,37 @@ export function leseGruppe({ quelle = standardQuelle(), gruppe, abPk = 0, seit =
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-wa-'));
   let sql;
   try {
-    for (const endung of ['', '-wal', '-shm']) {
-      if (fs.existsSync(original + endung)) fs.copyFileSync(original + endung, path.join(tmp, `c.sqlite${endung}`));
-    }
+    const kopiere = (name, ziel) => {
+      for (const endung of ['', '-wal', '-shm']) {
+        const q = path.join(quelle, name + endung);
+        if (fs.existsSync(q)) fs.copyFileSync(q, path.join(tmp, ziel + endung));
+      }
+      return fs.existsSync(path.join(tmp, ziel));
+    };
+    kopiere('ChatStorage.sqlite', 'c.sqlite');
     sql = new DatabaseSync(path.join(tmp, 'c.sqlite'));
+    // Adressbuch des verknuepften Handys: loest die anonymen "@lid"-Kennungen in Namen auf.
+    const mitKontakten = kopiere('ContactsV2.sqlite', 'k.sqlite');
+    if (mitKontakten) sql.exec(`ATTACH DATABASE '${path.join(tmp, 'k.sqlite').replace(/'/g, "''")}' AS k`);
     const sitzungen = sql.prepare("SELECT Z_PK AS pk FROM ZWACHATSESSION WHERE ZPARTNERNAME = ? AND ZCONTACTJID LIKE '%@g.us'").all(gruppe);
     if (!sitzungen.length) throw new WhatsAppFehler(`WhatsApp-Gruppe „${gruppe}“ nicht gefunden (Name genau wie in der App)`);
     if (sitzungen.length > 1) throw new WhatsAppFehler(`Mehrere WhatsApp-Gruppen heißen „${gruppe}“ – bitte eine umbenennen`);
 
     // Die App aendert ihr Schema gelegentlich: Namensquellen nur verwenden, wenn es sie gibt.
+    // WhatsApp fuer Mac 26 (geprueft 30.09.2026): Mitglieder tragen anonyme "@lid"-Kennungen,
+    // die Namensfelder am Mitglied sind leere Texte, ZWAMESSAGE.ZPUSHNAME ist kodiert (kein
+    // Name). Namen gibt es nur ueber das Adressbuch (ContactsV2, Spalte ZLID) - nicht fuer jeden.
+    // Unterabfragen statt Joins: ein doppelter Kontakt darf keine Nachricht verdoppeln.
     const mitglied = spalten(sql, 'ZWAGROUPMEMBER');
     const pushname = sql.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'ZWAPROFILEPUSHNAME'").get();
+    const kontakt = mitKontakten ? spalten(sql, 'ZWAADDRESSBOOKCONTACT', 'k') : new Set();
+    const leer = n => `NULLIF(TRIM(${n}), '')`;
     const namen = [
-      mitglied.has('ZCONTACTNAME') && 'gm.ZCONTACTNAME',
-      mitglied.has('ZFIRSTNAME') && 'gm.ZFIRSTNAME',
-      pushname && 'pn.ZPUSHNAME',
-      mitglied.has('ZMEMBERJID') && 'gm.ZMEMBERJID',
+      mitglied.has('ZCONTACTNAME') && leer('gm.ZCONTACTNAME'),
+      mitglied.has('ZFIRSTNAME') && leer('gm.ZFIRSTNAME'),
+      kontakt.has('ZLID') && kontakt.has('ZFULLNAME') && `(SELECT COALESCE(${leer('kc.ZFULLNAME')}${kontakt.has('ZGIVENNAME') ? `, ${leer('kc.ZGIVENNAME')}` : ''}) FROM k.ZWAADDRESSBOOKCONTACT kc WHERE kc.ZLID = gm.ZMEMBERJID AND COALESCE(${leer('kc.ZFULLNAME')}${kontakt.has('ZGIVENNAME') ? `, ${leer('kc.ZGIVENNAME')}` : ''}) IS NOT NULL LIMIT 1)`,
+      pushname && `(SELECT ${leer('pn.ZPUSHNAME')} FROM ZWAPROFILEPUSHNAME pn WHERE pn.ZJID = gm.ZMEMBERJID AND ${leer('pn.ZPUSHNAME')} IS NOT NULL LIMIT 1)`,
+      mitglied.has('ZMEMBERJID') && leer('gm.ZMEMBERJID'),
     ].filter(Boolean);
     const zeilen = sql.prepare(`
       SELECT m.Z_PK AS pk, m.ZMESSAGEDATE AS datum, m.ZMESSAGETYPE AS typ, m.ZISFROMME AS vonMir,
@@ -83,7 +107,6 @@ export function leseGruppe({ quelle = standardQuelle(), gruppe, abPk = 0, seit =
         FROM ZWAMESSAGE m
         JOIN ZWAMEDIAITEM mi ON mi.Z_PK = m.ZMEDIAITEM
         LEFT JOIN ZWAGROUPMEMBER gm ON gm.Z_PK = m.ZGROUPMEMBER
-        ${pushname ? 'LEFT JOIN ZWAPROFILEPUSHNAME pn ON pn.ZJID = gm.ZMEMBERJID' : ''}
        WHERE m.ZCHATSESSION = ? AND m.ZMESSAGETYPE IN (1, 2) AND m.Z_PK > ? AND m.ZMESSAGEDATE >= ?
        ORDER BY m.Z_PK`).all(sitzungen[0].pk, abPk, zuApple(seit));
     return zeilen.map(z => {
@@ -91,7 +114,7 @@ export function leseGruppe({ quelle = standardQuelle(), gruppe, abPk = 0, seit =
       const kandidaten = z.pfad ? [path.join(quelle, 'Message', z.pfad), path.join(quelle, z.pfad)] : [];
       return {
         pk: z.pk, datum: zuDatum(z.datum), art: TYP[z.typ],
-        absender: z.vonMir ? 'Büro' : String(z.absender ?? 'unbekannt').replace(/@s\.whatsapp\.net$/, ''),
+        absender: z.vonMir ? 'Büro' : anzeigeName(z.absender),
         datei: kandidaten.find(k => fs.existsSync(k)) ?? null,
       };
     });
@@ -142,18 +165,22 @@ function rueckeVor(stand, gelesen, erledigt, jetzt) {
  * plus die einzeln erledigten danach. So ueberholt kein Absender einen anderen,
  * dessen Bilder noch warten. Eine Baustelle wartet, bis ihre letzte Nachricht
  * `ruheMs` alt ist (vielleicht kommen noch Bilder) und solange eine Datei
- * fehlt, die WhatsApp in der letzten Stunde noch nicht heruntergeladen hat.
- * Fehlt sie laenger, wird sie uebersprungen und gezaehlt.
+ * fehlt, die WhatsApp noch nicht heruntergeladen hat - hoechstens `downloadMs`
+ * ab der Nachricht bzw. ab dem ersten Lauf. Ein frisch verknuepfter Mac holt
+ * aeltere Fotos erst, wenn jemand die Gruppe dort oeffnet; die Frist ab dem
+ * ersten Lauf laesst dafuer Zeit. Danach wird die Datei uebersprungen und gezaehlt.
  *
  * @returns null, wenn keine Gruppe eingestellt ist, sonst ein Bericht
  */
-export function uebernimmWhatsApp(db, { env = process.env, dir = socialDir(), jetzt = new Date(), lese = leseGruppe, pruefe = verarbeiteEingang, ruheMs = 3 * 60 * 60 * 1000 } = {}) {
+export function uebernimmWhatsApp(db, { env = process.env, dir = socialDir(), jetzt = new Date(), lese = leseGruppe, pruefe = verarbeiteEingang, ruheMs = 3 * 60 * 60 * 1000, downloadMs = 3 * 24 * 60 * 60 * 1000 } = {}) {
   const gruppe = env.SOCIAL_WHATSAPP_GRUPPE;
   if (!gruppe) return null;
   const stand = liesStand(dir);
   const bericht = { neu: [], dateien: 0, fehlend: 0, wartet: 0, fehler: null, neuerFehler: false };
   // Beim ersten Lauf nur die letzten 14 Tage - nicht das ganze Archiv der Gruppe.
-  const seit = stand.letzterPk ? new Date(0) : new Date(jetzt.getTime() - 14 * 24 * 60 * 60 * 1000);
+  // Gerechnet ab dem ersten Lauf, damit wartende Bilder nicht aus dem Fenster rutschen.
+  const beginn = new Date(stand.beginn ?? jetzt);
+  const seit = stand.letzterPk ? new Date(0) : new Date(beginn.getTime() - 14 * 24 * 60 * 60 * 1000);
 
   let gelesen;
   try {
@@ -166,10 +193,11 @@ export function uebernimmWhatsApp(db, { env = process.env, dir = socialDir(), je
     return bericht;
   }
 
+  stand.beginn = beginn.toISOString();
   const erledigt = new Set(stand.erledigt ?? []);
   const nachrichten = gelesen.filter(n => !erledigt.has(n.pk));
   for (const g of gruppiere(nachrichten)) {
-    const zuFrisch = g.nachrichten.some(n => !n.datei && jetzt - n.datum < 60 * 60 * 1000);
+    const zuFrisch = g.nachrichten.some(n => !n.datei && jetzt - Math.max(n.datum, beginn) < downloadMs);
     if (jetzt - g.bis < ruheMs || zuFrisch) { bericht.wartet += g.nachrichten.length; continue; }
     const vorhanden = g.nachrichten.filter(n => n.datei);
     bericht.fehlend += g.nachrichten.length - vorhanden.length;
