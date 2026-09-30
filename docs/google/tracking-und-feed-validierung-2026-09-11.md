@@ -50,7 +50,7 @@ weitergibt. Die Lead-Ereignisse wirken nur, wenn ein Custom Pixel sie abonniert
 | Bestellungen gesamt | 3: 16.02. 0,00 €, 25.02. 5,99 €, 25.08. 0,00 € (drei Muster) |
 
 Der letzte Laufzeitbeleg bleibt der öffentliche Test vom 12.08.
-(`TRACKING_REPORT.md`): nach Zustimmung ein App-Pixel und ein Custom Pixel, vor
+(`docs/archiv/2026/TRACKING_REPORT.md`): nach Zustimmung ein App-Pixel und ein Custom Pixel, vor
 Zustimmung keine Google-Endpunkte.
 
 ### 1.3 Event-Abdeckung und Stand der Checkliste in #44
