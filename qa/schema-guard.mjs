@@ -23,6 +23,15 @@
  */
 export const MAX_SCHEMA_NAME = 25;
 
+/**
+ * Shopify begrenzt das "label" eines Settings auf 70 Zeichen und lehnt sonst den
+ * Push der ganzen Datei ab ("label ist zu lang (maximal 70 Zeichen)"). Die
+ * Deploy-Kette meldete das am 2026-09-30 nur als PREVIEW_DIFF - die Section blieb
+ * auf dem Vortagsstand, der Grund stand erst in einem Einzelpush. Uebersetzungs-
+ * schluessel (t:...) prueft Shopify gegen die Locale-Datei, hier nicht.
+ */
+export const MAX_SETTING_LABEL = 70;
+
 export const SCHEMA_RX = /\{%-?\s*schema\s*-?%\}([\s\S]*?)\{%-?\s*endschema\s*-?%\}/;
 
 // Von Shopify dokumentierte Top-Level-Keys. Sections duerfen mehr als Bloecke.
@@ -108,9 +117,26 @@ export function analyzeSchemaSource({ source, dir, name }) {
     add('warn', 'SCHEMA_NO_PRESETS', 'Kein "presets" - der Block wird deployed, erscheint aber nicht in der Block-Auswahl des Editors.');
   }
 
+  const labelPruefen = (setting, wo) => {
+    const label = setting && setting.label;
+    if (typeof label === 'string' && !label.startsWith('t:') && label.length > MAX_SETTING_LABEL) {
+      add(
+        'error',
+        'SETTING_LABEL_TOO_LONG',
+        `${wo}Setting "${setting.id ?? setting.type ?? '?'}": label hat ${label.length} Zeichen, Shopify erlaubt ${MAX_SETTING_LABEL} - der Push der Datei bricht ab. Erklaerung ins "info" verschieben.`
+      );
+    }
+  };
+  for (const block of Array.isArray(schema.blocks) ? schema.blocks : []) {
+    for (const setting of Array.isArray(block && block.settings) ? block.settings : []) {
+      labelPruefen(setting, `Block "${block.type ?? '?'}", `);
+    }
+  }
+
   const seen = new Set();
   for (const setting of Array.isArray(schema.settings) ? schema.settings : []) {
     if (!setting || typeof setting !== 'object') continue;
+    labelPruefen(setting, '');
     if (ID_LESS_SETTING_TYPES.has(setting.type)) continue;
     if (!setting.id) {
       add('error', 'SETTING_WITHOUT_ID', `Setting vom Typ "${setting.type ?? '?'}" hat keine id - der Wert laesst sich nicht auslesen.`);
