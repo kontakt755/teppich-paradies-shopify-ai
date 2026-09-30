@@ -17,7 +17,8 @@ test('Das Ergebnis steht am Ende', () => {
 
 test('ffmpeg-Aufruf: jedes Bild als Eingang, Hochkant, stumme Tonspur, streamingfaehig', () => {
   const a = ffmpegArgumente(['/a.jpg', '/b.jpg', '/c.jpg'], '/aus.mp4');
-  assert.equal(a.filter(x => x === '-loop').length, 3);
+  assert.equal(a.filter(x => x === '-i').length, 4, 'drei Bilder und die stumme Tonspur');
+  assert.equal(a.includes('-loop'), false, 'zoompan braucht genau ein Eingangsbild je Foto');
   const filter = a[a.indexOf('-filter_complex') + 1];
   assert.match(filter, /concat=n=3:v=1:a=0,format=yuv420p\[v\]$/);
   assert.match(filter, /s=1080x1920/);

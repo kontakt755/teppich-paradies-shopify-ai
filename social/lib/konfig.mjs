@@ -77,9 +77,6 @@ export function metaKonfig(env = process.env) {
     token: env.META_PAGE_TOKEN || null,
     pageId: env.META_PAGE_ID || null,
     igUserId: env.META_IG_USER_ID || null,
-    // Oeffentliche Adresse, unter der freigegebene Videos fuer den Abruf durch
-    // Meta liegen (Reels, Video-Storys). Bilder brauchen sie nicht.
-    medienBasis: env.SOCIAL_MEDIEN_BASIS_URL || null,
   };
 }
 

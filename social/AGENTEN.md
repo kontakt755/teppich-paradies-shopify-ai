@@ -77,9 +77,9 @@ Code: `lib/texte.mjs` (Regeln, Hashtags, Handlungsaufruf, Prüfung), `REDAKTION.
 |---|---|
 | **Aufgabe** | Aus Bauplan und Bildern fertige Beitragsbilder rendern – im Designsystem, in den richtigen Formaten. |
 | **Input** | Bauplan: Liste von Folien, je Vorlage und Daten; Bilder als Medium-ID oder Shop-Adresse. |
-| **Output** | JPEG 1080 × 1350 (Beitrag, Karussell) bzw. 1080 × 1920 (Story, Reel-Standbild) unter `medien/<inhalt>/beitrag-<n>/`; ein Beitrag im Status `FREIGABE`. |
+| **Output** | JPEG 1080 × 1350 (Beitrag, Karussell) bzw. 1080 × 1920 (Story, Reel-Standbild) unter `medien/<inhalt>/beitrag-<n>/`; bei Reels zusätzlich `reel.mp4` (H.264/AAC, 30 fps), die Standbilder heißen dort `rahmen-*.jpg` und werden nie einzeln veröffentlicht; ein Beitrag im Status `FREIGABE`. |
 | **Trigger** | jeder `entwurf`-Aufruf (Redaktion, Zentrale). |
-| **Schnittstellen** | Headless-Chrome über das vorhandene `puppeteer`; `ffmpeg` für Reels (noch zu installieren). |
+| **Schnittstellen** | Headless-Chrome über das vorhandene `puppeteer`; `ffmpeg` für Reels (`brew install ffmpeg`). |
 | **Regeln** | Baustellenfotos: nur Zuschnitt, kleine Signatur und eine Helligkeitskorrektur von höchstens 10 % – nie Sättigung, Farbton oder KI-Bearbeitung; Herstellerbilder bleiben ganz unberührt. Text im Bild nur, wo er etwas sagt (Farbname, „Vorher", Preis). Preis im Bild nur als Euro je Quadratmeter, nie der Paketpreis. Fertige Bilder tragen keine Metadaten (kein GPS aus dem Handyfoto). Ein Bild mit Datenschutz-Bedenken lässt sich nicht verbauen. |
 | **Fehlerbehandlung** | Lädt ein Bild nicht, entsteht kein Beitrag (nie ein Bild mit Lücke). Bei ausgetauschten Shop-Bildern → siehe Shop-Scout. |
 | **Mensch nötig** | nein. |

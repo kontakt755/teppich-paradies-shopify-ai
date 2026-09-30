@@ -72,6 +72,39 @@ test('Entwurf: rendert, legt den Beitrag in die Freigabe und merkt sich die benu
   assert.equal(beitrag.auto_freigabe, 0);
 });
 
+test('Reel: Hochkant-Standbilder vorher -> nachher, geschnitten zum Video, Einzelbilder bleiben Rahmen', async (t) => {
+  const db = testDb(t); const dir = tmpDir(t);
+  const { id } = db.inhaltAnlegen({ quelle: 'baustelle', typ: 'vorher_nachher', titel: 'Velten', ort: 'Velten', bodenart: 'Klebevinyl', raum: 'Flur', einwilligung: true, daten: { ortBekannt: true } });
+  const bild = (rolle, reihenfolge, extra = {}) => db.mediumAnlegen(id, { art: 'bild', pfad: `medien/${id}/original/${reihenfolge}.jpg`, rolle, pruefung: 'ok', datenschutz: 'ok', reihenfolge, ...extra });
+  const n = bild('nachher', 0); const v = bild('vorher', 1); const w = bild('arbeit', 2);
+  bild(null, 3, { datenschutz: 'bedenken' });
+  const plan = standardBauplan(db.inhalt(id), db.medien(id), 'reel');
+  assert.equal(plan.format, 'reel');
+  assert.deepEqual(plan.folien.map(f => f.daten.bild.medium), [v, w, n], 'Ergebnis zum Schluss, Bedenken-Bild fehlt');
+  assert.equal(plan.folien[0].daten.titel, 'Klebevinyl im Flur'); assert.equal(plan.folien[0].daten.zeile, 'Velten');
+  assert.deepEqual(plan.folien.slice(1).map(f => f.daten.titel), ['Bei der Arbeit', 'Fertig']);
+
+  let geschnitten;
+  const schneide = async (bilder, ziel) => { geschnitten = { bilder, ziel }; fs.writeFileSync(ziel, 'mp4'); return ziel; };
+  const beitrag = await erstelleEntwurf(db, { inhaltId: id, format: 'reel', text: 'Neuer Klebevinyl im Flur in Velten, vom alten Belag bis zur fertigen Fläche.' }, { rendere: scheinRendern, schneide, dir, env: {} });
+  assert.equal(beitrag.format, 'reel'); assert.equal(beitrag.vorlage, 'reel');
+  assert.deepEqual(beitrag.medien.map(m => m.art), ['video', 'rahmen', 'rahmen', 'rahmen']);
+  assert.match(beitrag.medien[0].pfad, /reel\.mp4$/);
+  assert.deepEqual(geschnitten.bilder.map(b => path.basename(b)), ['rahmen-01.jpg', 'rahmen-02.jpg', 'rahmen-03.jpg']);
+  assert.deepEqual([...beitrag.medien[0].quellen].sort(), [n, v, w].sort());
+  assert.ok(beitrag.hashtags.length > 0, 'Reels tragen Hashtags');
+  assert.equal(beitrag.auto_freigabe, 0, 'Reels nie automatisch');
+});
+
+test('Reel nur aus eigenen Fotos und ab drei Bildern', (t) => {
+  const db = testDb(t);
+  const { id } = db.inhaltAnlegen({ quelle: 'baustelle', typ: 'kundenprojekt', titel: 'x', einwilligung: true });
+  db.mediumAnlegen(id, { art: 'bild', pfad: 'medien/1/a.jpg', rolle: 'vorher', pruefung: 'ok', datenschutz: 'ok' });
+  db.mediumAnlegen(id, { art: 'bild', pfad: 'medien/1/b.jpg', rolle: 'nachher', pruefung: 'ok', datenschutz: 'ok' });
+  assert.throws(() => standardBauplan(db.inhalt(id), db.medien(id), 'reel'), /mindestens drei/);
+  assert.throws(() => standardBauplan({ quelle: 'shopify', daten: {} }, [], 'reel'), WerkstattFehler);
+});
+
 test('Entwurf lehnt Floskeltext, fremde und bedenkliche Medien ab', async (t) => {
   const db = testDb(t); const dir = tmpDir(t);
   const { id } = db.inhaltAnlegen({ quelle: 'baustelle', typ: 'kundenprojekt', titel: 'x', einwilligung: true });

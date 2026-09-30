@@ -78,7 +78,11 @@ Wenn nicht: `verwerfen <beitragId>` und neu bauen.
 Zu jeder Baustelle zusätzlich prüfen:
 
 - **Story** (`--format story`) – fast immer sinnvoll, mit dem stärksten Bild.
-- **Reel** – wenn `reelMoeglich: true` (vorher, Arbeit, nachher vorhanden).
+- **Reel** – wenn `reelMoeglich: true` (vorher, Arbeit, nachher vorhanden):
+  `entwurf <inhaltId> --format reel --text-datei <pfad>`. Die Werkstatt setzt die
+  Bilder in die Reihenfolge vorher → Arbeit → nachher (höchstens acht, je 2,4 s),
+  ffmpeg schneidet sie zum Video. Das fertige `reel.mp4` einmal ansehen, etwa
+  über Einzelbilder: `ffmpeg -ss 3 -i reel.mp4 -frames:v 1 /tmp/bild.jpg`.
 
 ### 4. Texte
 

@@ -13,6 +13,10 @@ function scheinMeta({ igFehler = null } = {}) {
   const aufrufe = []; let n = 0;
   const holen = async (url, init) => {
     const u = new URL(url); const pfad = u.pathname.replace(/^\/v[\d.]+/, '');
+    if (u.hostname === 'rupload.facebook.com') {
+      aufrufe.push({ methode: init.method, pfad: u.pathname, kopf: init.headers, bytes: init.body.length });
+      return { ok: true, status: 200, json: async () => ({ success: true }) };
+    }
     const body = init.body instanceof URLSearchParams ? Object.fromEntries(init.body) : (init.body ? Object.fromEntries([...init.body.entries()].filter(([, v]) => typeof v === 'string')) : Object.fromEntries(u.searchParams));
     aufrufe.push({ methode: init.method, pfad, body });
     const ok = daten => ({ ok: true, status: 200, json: async () => daten });
@@ -85,7 +89,21 @@ test('Trockenlauf und fehlender Zugang rufen Meta nie auf', async () => {
   await c.fotoAblegen('/nicht/da.jpg');
   assert.equal(meta.aufrufe.length, 0);
   await assert.rejects(erstelleClient({ token: null, pageId: 'P', holen: meta.holen }).graph('GET', '/me'), MetaFehler);
-  await assert.rejects(client(meta).instagram({ format: 'reel', text: 'x', fotos: [] }), /öffentliche Videoadresse/);
+  await assert.rejects(client(meta).instagram({ format: 'reel', text: 'x', fotos: [] }), /ohne Videodatei/);
+});
+
+test('Reel: Video geht direkt an Instagram (resumable) und an die Seite, die Einzelbilder bleiben lokal', async (t) => {
+  const dir = tmpDir(t); const video = path.join(dir, 'reel.mp4'); fs.writeFileSync(video, Buffer.alloc(2048));
+  const rahmen = path.join(dir, 'rahmen-01.jpg'); fs.writeFileSync(rahmen, 'x');
+  const meta = scheinMeta();
+  const r = await veroeffentliche(client(meta), { beitrag: { format: 'reel', plattformen: ['instagram', 'facebook'] }, dateien: [{ datei: video, art: 'video' }, { datei: rahmen, art: 'rahmen' }], texte: { instagram: 'IG', facebook: 'FB' } });
+  assert.equal(r.fertig, true, JSON.stringify(r.fehler));
+  assert.deepEqual(meta.posts(), ['/IG/media', '/ig-api-upload/v24.0/id1', '/IG/media_publish', '/PAGE/videos']);
+  const container = meta.aufrufe.find(a => a.pfad === '/IG/media');
+  assert.equal(container.body.media_type, 'REELS'); assert.equal(container.body.upload_type, 'resumable'); assert.equal(container.body.caption, 'IG');
+  const upload = meta.aufrufe.find(a => a.pfad.startsWith('/ig-api-upload/'));
+  assert.equal(upload.kopf.Authorization, 'OAuth t'); assert.equal(upload.kopf.offset, '0'); assert.equal(upload.kopf.file_size, '2048'); assert.equal(upload.bytes, 2048);
+  assert.equal(meta.aufrufe.find(a => a.pfad === '/PAGE/videos').body.description, 'FB');
 });
 
 test('Publisher ohne Zugang: nichts veroeffentlicht, nichts veraendert', async (t) => {
