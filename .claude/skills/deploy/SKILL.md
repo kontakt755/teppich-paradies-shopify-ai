@@ -5,7 +5,7 @@ description: Theme-Aenderungen von main ueber Preview ins Live-Theme bringen (wo
 
 # Deploy-Kette
 
-Ausgelagert aus CLAUDE.md (#670). Die Stolpersteine 4 und 5 dort gelten weiter; Live-Theme nur ueber `domains/shopify/live-theme.json` bestimmen.
+Ausgelagert aus CLAUDE.md (#670). Die Punkte 4 und 5 aus `AGENTS.md` („Was hier immer wieder schiefging“) gelten weiter; Live-Theme nur ueber `domains/shopify/live-theme.json` bestimmen.
 
 ## Deploy-Kette
 

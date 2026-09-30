@@ -10,7 +10,7 @@ Was nicht belegt ist, bleibt `UNKLAR` und kommt mit Grund in `offen.json`.
 
 ## Vorher
 
-- `CLAUDE.md` Punkt 7 und 8, `domains/shopify/produktimport-arbeitsweise.md`.
+- `AGENTS.md` Punkt 7 und 8, `domains/shopify/produktimport-arbeitsweise.md`.
 - **Klarnamen und echte Domains nie ins Repository**, nie in Commits, PRs,
   Issues oder `npm run task`-Notizen. Die echte Basis-URL steht nur lokal in
   `~/teppich-paradies-analyse/lieferantendaten/lieferant-a.env`

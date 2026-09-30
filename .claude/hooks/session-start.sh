@@ -17,12 +17,6 @@ if ! node qa/run-sync-path-guard.mjs; then
   echo ""
 fi
 
-# Laeuft IMMER: In einer Remote- oder Worktree-Kopie fehlen .env.local und .router/
-# (beide bewusst nicht im Git), damit auch die Voranalyse. Ohne diese Zeile faellt
-# das niemandem auf - am 2026-09-06 wurde daraus der falsche Schluss, der Router
-# sei defekt, waehrend er lokal einwandfrei lief.
-node automation/scripts/router-status.mjs --kurz 2>/dev/null | sed 's/^/  /' || true
-
 # Laeuft IMMER: Zustand des Control Centers (docs/ai-dashboard/issues.json, liegt
 # im Repo, braucht weder gh noch Netz). Jede Session sieht damit offene Arbeit,
 # Blocker und Freigaben, bevor sie den ersten Befehl tippt - und weiss, dass
@@ -67,10 +61,6 @@ if printf '%s\n' "$template_out" | grep -q 'BLOCK_DRIFT'; then
 else
   echo "  Produktkarten-Bloecke: keine Drift ueber die Templates."
 fi
-
-echo ""
-echo "  Router-Klassifizierung (Fehler-Datenbank):"
-node automation/scripts/session-start-router.mjs 2>/dev/null | sed 's/^/    /' || true
 
 echo ""
 echo "  Remote-Session Fehler-Check:"

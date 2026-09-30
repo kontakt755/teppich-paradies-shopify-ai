@@ -36,17 +36,10 @@ Sitzung ueber `.claude/hooks/session-start.sh`).
 3. `npm run syncpath:guard` laeuft grün, bevor mit Git gearbeitet wird.
 4. `git pull --ff-only` vor Arbeitsbeginn - kein stiller Merge-Commit, der
    Abweichungen verschleiert.
-5. `npm run router:setup` legt `.env.local` aus `.env.example` an und nennt die
-   Werte, die noch fehlen. Alle Einstellungen (Modelle, Budgets, Ledger-Pfad)
-   kommen aus dem Repository — von Hand einzutragen sind nur die beiden
-   Provider-Keys. Sie gehoeren in einen Passwortmanager: `.env.local` wird nie
-   kopiert, nie synchronisiert, nie committet. Danach `npm run router:status`,
-   das den ersten echten Provider-Aufruf belegt.
-
-   > Warum die Keys nicht ins Repository duerfen: Git behaelt sie in der History,
-   > auch nach dem Loeschen. Jeder Repo-Zugriff und jeder Fork haette sie, und
-   > GitHub sperrt automatisch erkannte Keys. Der Rest der Konfiguration ist
-   > bewusst versioniert, damit ein neuer Rechner genau zwei Werte braucht.
+5. `.env.local` von Hand aus `.env.local.example` anlegen (Shopify-Token). Die
+   Werte gehoeren in einen Passwortmanager: `.env.local` wird nie kopiert, nie
+   synchronisiert, nie committet. **Kein `ANTHROPIC_API_KEY` in `~/.zshrc`** —
+   er ersetzt das Claude-Abo und rechnet ueber die API ab.
 6. `npm run secret:scan` vor jedem Commit, wenn neue Config-Dateien dazukommen.
 7. Gleiche Node-Version (`.nvmrc` falls vorhanden, sonst in der README
    dokumentieren).
@@ -68,7 +61,6 @@ Nicht direkt mergen. Reihenfolge (bestaetigt durch Codex-Review 2026-09-04):
 
 ## Vor jeder groesseren Architekturentscheidung
 
-`npm run workflow:route` zur Einstufung, danach Codex als unabhaengiger
-Pruefer (`codex exec --sandbox workspace-write ...`) - nicht nur wenn der
-Router ein Review verlangt, sondern auch bei Entscheidungen mit echtem
-Gewicht wie dieser hier.
+Erst analysieren und berichten (AGENTS.md). Ein zweiter Blick lohnt sich bei
+Entscheidungen mit echtem Gewicht: `/code-review` auf den PR oder Codex als
+unabhaengiger Pruefer auf den PR-Diff — gezielt, nicht nach jeder Antwort.

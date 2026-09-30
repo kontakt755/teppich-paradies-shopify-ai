@@ -6,12 +6,25 @@
 |---|---|
 | `settings.json` | registriert die Hooks und die Freigaben (`permissions.allow`) |
 | `hooks/session-start.sh` | installiert Abhängigkeiten und zeigt den Projektzustand |
+| `hooks/gedaechtnis-sync.sh` | Gedächtnis-Ordner (Obsidian-Vault) per Git: pull bei SessionStart, push bei SessionEnd |
+| `hooks/git-gh-guard.mjs`, `theme-delete-guard.mjs`, `deploy-command-guard.mjs` | harte Grenzen (`deny`) und Deploy-Hinweise für Bash-Befehle |
+| `skills/deploy/SKILL.md` | Deploy-Kette main → Preview → Live, Gates, Wegwerf-Themes |
 | `skills/control-center/SKILL.md` | Regeln, Gestaltung, Ablauf und Fallstricke für das Control Center |
 | `skills/produktimport/SKILL.md` | Ablauf für neue Produkte aus Lieferantenquellen (verweist auf `domains/shopify/produktimport-arbeitsweise.md`) |
 | `skills/lieferant-a-recherche/SKILL.md` | Artikel- und Farbnummern bei Lieferant A belegt klären |
 | `skills/shopify-massendaten/SKILL.md` | viele Metafelder/Tags auf einmal schreiben, mit Plan und Rollback |
-| `hooks/context-mode-guard.mjs` | Sperren für Shell-Code in Context Mode (`ctx_execute`) |
 | `agents/control-center.md` | Dashboard-Mitarbeiter (Subagent), arbeitet nach dem Skill oben |
+
+## Was bewusst nicht mehr hier liegt
+
+Bis 2026-09-30 hingen an jedem Prompt und jedem Stop ein Modell-Router
+(Klassen A–D), eine Voranalyse durch ein Drittmodell, ein Codex-Pflichtreview,
+ein Kontext-Wächter und Context Mode. Gemessen brachte das wenig (Klassifizierung
+fast immer B, Voranalyse zu 76 % abgeschnitten, 84 % der Reviews mit P1/P2,
+rund zwei Drittel davon Scope-Rauschen aus dem geteilten Checkout) und kostete
+Stunden Wartezeit. Entfernt;
+ein Modell pro Sitzung (Standard aus `~/.claude/settings.json`), Review gezielt
+per `/code-review` oder Codex auf den PR-Diff.
 
 ## Berechtigungen: warum es keine `ask`-Liste gibt
 
