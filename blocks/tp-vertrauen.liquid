@@ -8,7 +8,7 @@
   assign tp_t_id = block.id | replace: '_', '' | downcase
 -%}
 
-{% unless product.handle == 'serena-teppich-nach-mass' %}<ul class="tp-vertrauen-{{ tp_t_id }}" {{ block.shopify_attributes }}>
+{% unless product.template_suffix == 'einfassung' %}<ul class="tp-vertrauen-{{ tp_t_id }}" {{ block.shopify_attributes }}>
   <li>Muster vor dem Kauf möglich</li>
   <li>Persönliche Fachberatung</li>
   <li>Google-Bewertungen und echte Projekterfahrungen</li>

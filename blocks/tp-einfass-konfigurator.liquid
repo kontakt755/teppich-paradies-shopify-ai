@@ -137,7 +137,7 @@
     {%- capture tp_ek_baender -%}{% render 'tp-bandfarben' %}{%- endcapture -%}
   {%- endif -%}
 
-  <div class="tp-ek tp-kaufweg{% if product.handle == 'serena-teppich-nach-mass' %} tp-ek--serena{% endif %}" id="tp-ek-{{ tp_ek_id }}" data-tp-ek{% if product.handle == 'serena-teppich-nach-mass' %} data-tp-serena="1"{% endif %} {{ block.shopify_attributes }}>
+  <div class="tp-ek tp-kaufweg tp-ek--mass" id="tp-ek-{{ tp_ek_id }}" data-tp-ek {{ block.shopify_attributes }}>
     <div class="tp-ek__schritt" data-schritt="form"{% if tp_ek_formen.size < 2 %} hidden{% endif %}>
       {% render 'tp-step-heading', number: 2, label: 'Form' %}
       <div class="tp-ek__formen" role="radiogroup" aria-label="Form">
@@ -235,7 +235,7 @@
         <svg class="tp-ek__svg is-aus" viewBox="0 0 360 250" role="img" aria-label="Vorschau Ihres Teppichs" data-svg></svg>
         <figcaption class="tp-ek__legende" data-legende></figcaption>
       {%- endcapture -%}
-      {%- unless product.handle == 'serena-teppich-nach-mass' -%}<figure class="tp-ek__vorschau" data-vorschau hidden>{{ tp_ek_vorschau_inhalt }}</figure>{%- endunless -%}
+
 
       {%- comment -%}
         Der Kunde sieht eine Zahl: seinen Preis. Die fruehere Aufschluesselung
@@ -243,8 +243,8 @@
         Inhabers 2026-09-20); gerechnet wird unveraendert im Skript.
       {%- endcomment -%}
       <div class="tp-ek__preis" aria-live="polite" data-rechnung hidden>
-        <div class="tp-ek__summe"><span>{% if product.handle == 'serena-teppich-nach-mass' %}Gesamtpreis für Ihr Maß{% else %}Ihr Preis{% endif %}</span><span class="tp-ek__summe-werte"><s class="tp-ek__summe-alt" data-summe-alt hidden></s><strong data-summe>–</strong></span></div>
-        {% if product.handle == 'serena-teppich-nach-mass' %}<p class="tp-ek__preishinweis">Inklusive Zuschnitt und Kettelung rundum. Inkl. MwSt.; <a href="{{ pages['versand-lieferung'].url | default: '/pages/versand-lieferung' }}">Versand</a> in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos.<br>Lieferzeit: ca. 4–8 Werktage.</p>{% endif %}
+        <div class="tp-ek__summe"><span>Gesamtpreis für Ihr Maß</span><span class="tp-ek__summe-werte"><s class="tp-ek__summe-alt" data-summe-alt hidden></s><strong data-summe>–</strong></span></div>
+        <p class="tp-ek__preishinweis">Inklusive Zuschnitt und Einfassung rundum. Inkl. MwSt.; <a href="{{ pages['versand-lieferung'].url | default: '/pages/versand-lieferung' }}">Versand</a> in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos.{% if product.handle == 'serena-teppich-nach-mass' %}<br>Lieferzeit: ca. 4–8 Werktage.{% endif %}</p>
         {%- comment -%}
           Keine Rechenaufschluesselung in der Kundenansicht (Entscheidung 2026-09-20):
           sichtbar sind Endpreis und die zwei Hinweise, die den Preis erklaeren muessen.
@@ -256,15 +256,13 @@
 
       {% render 'tp-widerruf-massanfertigung', art: 'teppich' %}
       <button type="button" class="tp-ek__cta" data-cta data-add-to-cart disabled hidden>In den Warenkorb</button>
-      {%- if product.handle == 'serena-teppich-nach-mass' -%}
-        <details class="tp-ek__vorschau" data-vorschau hidden>
+      <details class="tp-ek__vorschau" data-vorschau hidden>
           <summary>
             <span class="tp-ek__vorschau-titel">Ihr Maß <span>Schematische Darstellung</span></span>
             <span class="tp-ek__vorschau-aktion"><span class="tp-ek__vorschau-aktion-zu">Skizze ansehen</span><span class="tp-ek__vorschau-aktion-offen">Skizze schließen</span><svg viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true"><path d="m3 6 5 5 5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
           </summary>
           <figure class="tp-ek__schema">{{ tp_ek_vorschau_inhalt }}</figure>
         </details>
-      {%- endif -%}
       <a href="{{ routes.cart_url }}" class="tp-ek__warenkorb" data-warenkorb hidden>Warenkorb ansehen</a>
     </div>
 

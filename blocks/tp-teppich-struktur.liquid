@@ -16,7 +16,7 @@
   assign tts_start_gesetzt = false
   assign tts_anzahl = 0
 -%}
-{%- if tts_basis != blank and product.handle != 'serena-teppich-nach-mass' -%}
+{%- if tts_basis != blank and product.template_suffix != 'einfassung' -%}
   {%- capture tts_karte -%}
     {%- for tts_v in product.variants -%}
       {%- comment -%} Merker statt nil-Zuweisung: eindeutig in jeder Liquid-Engine. {%- endcomment -%}
