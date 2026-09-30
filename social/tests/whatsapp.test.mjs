@@ -4,7 +4,7 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
 import { pruefe } from '../lib/freigabe.mjs';
-import { gruppiere, leseGruppe, liesStand, uebernimmWhatsApp, WhatsAppFehler, zuDatum } from '../lib/whatsapp.mjs';
+import { findeExport, gruppiere, leseExportText, leseGruppe, liesStand, uebernimmExport, uebernimmWhatsApp, WhatsAppFehler, zuDatum } from '../lib/whatsapp.mjs';
 import { testDb, tmpDir } from './_hilfe.mjs';
 
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 16, 0x4a, 0x46, 0x49, 0x46, 0, 1, 1, 0, 0, 1]);
@@ -163,4 +163,64 @@ test('Fehlender Zugriff wird einmal gemeldet, ohne Gruppe passiert nichts', (t) 
   const erster = uebernimmWhatsApp(db, { env: env('/x'), dir, lese });
   assert.equal(erster.neuerFehler, true); assert.match(erster.fehler, /verweigert/);
   assert.equal(uebernimmWhatsApp(db, { env: env('/x'), dir, lese }).neuerFehler, false, 'dieselbe Meldung nicht alle 15 Minuten');
+});
+
+// --- Chat-Export vom Handy -------------------------------------------------------
+
+test('Export lesen: iPhone deutsch mit Steuerzeichen, nur vorhandene Foto-/Videodateien', () => {
+  const text = [
+    '[25.09.26, 12:25:31] Ricardo: ‎<Anhang: 00000012-PHOTO-2026-09-25-12-25-31.jpg>',
+    '[25.09.26, 12:25:40] Ricardo: Lindenring 25 endschliff fertig',
+    '[25.09.26, 12:26:02] Thomas Verleger: ‎<Anhang: 00000013-VIDEO-2026-09-25-12-26-02.mp4>',
+    'zweite Zeile einer Nachricht',
+    '[25.09.26, 12:27:00] Ricardo: ‎<Anhang: 00000014-PHOTO-fehlt.jpg>',
+    '[25.09.26, 12:28:00] Ricardo: ‎<Anhang: 00000015-Angebot.pdf>',
+  ].join('\n');
+  const n = leseExportText(text, ['00000012-PHOTO-2026-09-25-12-25-31.jpg', '00000013-VIDEO-2026-09-25-12-26-02.mp4', '00000015-Angebot.pdf']);
+  assert.deepEqual(n.map(x => [x.absender, x.art, x.datei]), [['Ricardo', 'bild', '00000012-PHOTO-2026-09-25-12-25-31.jpg'], ['Thomas Verleger', 'video', '00000013-VIDEO-2026-09-25-12-26-02.mp4']]);
+  assert.equal(n[0].datum.getFullYear(), 2026); assert.equal(n[0].datum.getMonth(), 8); assert.equal(n[0].datum.getHours(), 12); assert.equal(n[0].datum.getSeconds(), 31);
+});
+
+test('Export lesen: Android deutsch und amerikanisches Datum', () => {
+  const android = '25.09.26, 12:25 - Jonas: IMG-20260925-WA0001.jpg (Datei angehängt)\n25.09.26, 12:26 - Jonas: Text';
+  assert.deepEqual(leseExportText(android, ['IMG-20260925-WA0001.jpg']).map(x => [x.absender, x.datei, x.datum.getDate()]), [['Jonas', 'IMG-20260925-WA0001.jpg', 25]]);
+  const us = '[9/25/26, 1:05:00 PM] Ben: <attached: 00000001-PHOTO.jpg>';
+  const [x] = leseExportText(us, ['00000001-PHOTO.jpg']);
+  assert.equal(x.datum.getMonth(), 8); assert.equal(x.datum.getDate(), 25); assert.equal(x.datum.getHours(), 13);
+});
+
+test('Export uebernehmen: je Absender eine Baustelle, ZIP oder Ordner, kein zweites Mal', (t) => {
+  const db = testDb(t); const dir = tmpDir(t); const quelle = tmpDir(t);
+  const ordner = path.join(quelle, 'WhatsApp Chat - Baustellen-Team'); fs.mkdirSync(ordner);
+  fs.writeFileSync(path.join(ordner, '_chat.txt'), [
+    '[25.09.26, 08:00:00] Ricardo: <Anhang: a.jpg>', '[25.09.26, 08:01:00] Ricardo: <Anhang: b.jpg>',
+    '[25.09.26, 08:02:00] Jonas: <Anhang: c.jpg>', '[26.09.26, 15:00:00] Ricardo: <Anhang: d.jpg>',
+    '[26.09.26, 15:01:00] Ricardo: <Anhang: kein-foto.jpg>',
+  ].join('\n'));
+  for (const f of ['a.jpg', 'b.jpg', 'c.jpg', 'd.jpg']) fs.writeFileSync(path.join(ordner, f), JPEG);
+  fs.writeFileSync(path.join(ordner, 'kein-foto.jpg'), 'nur Text');
+  const geprueft = [];
+  const r = uebernimmExport(db, ordner, { dir, pruefe: (_db, o) => { geprueft.push(o.nur); return []; } });
+  assert.equal(r.nachrichten, 5);
+  assert.deepEqual(r.neu.map(b => [b.absender, b.dateien]), [['Ricardo', 2], ['Jonas', 1], ['Ricardo', 2 - 1]]);
+  assert.equal(r.fehlend, 1, 'die Textdatei mit .jpg-Endung bleibt draussen');
+  assert.deepEqual(geprueft, r.neu.map(b => b.id));
+  const inhalt = db.inhalt(r.neu[0].id);
+  assert.equal(inhalt.einwilligung, 0); assert.match(inhalt.titel, /^WhatsApp · Ricardo · 25\.09\.2026$/);
+  assert.equal(inhalt.schluessel, 'whatsapp-export:a.jpg');
+
+  // Derselbe Export noch einmal, diesmal als ZIP: nichts Neues
+  const zweiter = uebernimmExport(db, path.join(quelle, 'export.zip'), { dir, pruefe: ohnePruefung, entpacke: (_zip, ziel) => fs.cpSync(ordner, path.join(ziel, 'x'), { recursive: true }) });
+  assert.equal(zweiter.neu.length, 0); assert.equal(zweiter.schonDa, 3);
+  assert.equal(db.inhalte({ quelle: 'baustelle' }).length, 3);
+});
+
+test('Export ohne Chatverlauf ist ein klarer Fehler, Export in Downloads wird gefunden', (t) => {
+  const db = testDb(t); const leer = tmpDir(t);
+  assert.throws(() => uebernimmExport(db, leer, { dir: tmpDir(t) }), /_chat\.txt/);
+  const downloads = tmpDir(t);
+  fs.writeFileSync(path.join(downloads, 'WhatsApp Chat - Baustellen-Team.zip'), 'zip');
+  fs.writeFileSync(path.join(downloads, 'WhatsApp Chat - Andere Gruppe.zip'), 'zip');
+  assert.equal(path.basename(findeExport('Baustellen-Team', downloads)), 'WhatsApp Chat - Baustellen-Team.zip');
+  assert.equal(findeExport('Gibt es nicht', downloads), null);
 });

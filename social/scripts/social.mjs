@@ -21,6 +21,7 @@
  *   npm run social -- highlights            (Titelbilder der fuenf Instagram-Highlights nach $TP_PRIVAT_DIR/social/highlights)
  *   npm run social -- meta-einrichten       (aus META_SYSTEM_TOKEN Seiten-ID, Seiten-Token und Instagram-Konto ableiten und eintragen)
  *   npm run social -- whatsapp [--pruefen]   (Fotos aus der WhatsApp-Gruppe uebernehmen bzw. nur zeigen, was da ist)
+ *   npm run social -- whatsapp-export [datei.zip|ordner]   (Chat-Export vom Handy uebernehmen; ohne Angabe: neuester in Downloads)
  *   npm run social -- lauf            (taeglich: Eingang pruefen, Shop abgleichen, planen, Kennzahlen holen)
  *   npm run social -- takt            (alle 15 Minuten: Eingang pruefen, Faelliges veroeffentlichen)
  */
@@ -41,7 +42,7 @@ import { rendere } from '../lib/rendern.mjs';
 import { INHALT_STATUS, STATUS_LABEL, TYPEN } from '../lib/status.mjs';
 import { STILREGELN } from '../lib/texte.mjs';
 import { erstelleEntwurf } from '../lib/werkstatt.mjs';
-import { leseGruppe, liesStand, standardQuelle, uebernimmWhatsApp } from '../lib/whatsapp.mjs';
+import { findeExport, leseGruppe, liesStand, standardQuelle, uebernimmExport, uebernimmWhatsApp } from '../lib/whatsapp.mjs';
 import { ladeUmgebung, setzeEnvWerte, zugangDatei } from '../lib/zugang.mjs';
 
 export function argumente(argv) {
@@ -288,6 +289,18 @@ async function main(argv) {
         if (r.fehler) throw new Error(r.fehler);
         for (const b of r.neu) console.log(`#${b.id} von ${b.absender}: ${b.dateien} Datei(en)`);
         console.log(`${r.neu.length} neue Baustelle(n), ${r.dateien} Dateien${r.wartet ? `, ${r.wartet} warten noch` : ''}${r.fehlend ? `, ${r.fehlend} übersprungen (nicht heruntergeladen oder kein Foto)` : ''}`);
+        break;
+      }
+
+      case 'whatsapp-export': {
+        const quelle = rest[0] ?? findeExport(env.SOCIAL_WHATSAPP_GRUPPE || '');
+        if (!quelle) { console.log('Kein Export gefunden. Am Handy: Gruppe → Chat exportieren → Medien anhängen → AirDrop an diesen Mac (landet in Downloads).'); break; }
+        console.log(`Export: ${path.basename(quelle)}`);
+        const r = uebernimmExport(db, quelle, { dir });
+        for (const b of r.neu) console.log(`#${b.id} von ${b.absender}: ${b.dateien} Datei(en)`);
+        console.log(`${r.nachrichten} Fotos/Videos im Export → ${r.neu.length} neue Baustelle(n), ${r.dateien} Dateien${r.schonDa ? `, ${r.schonDa} schon übernommen` : ''}${r.fehlend ? `, ${r.fehlend} keine Foto-/Videodatei` : ''}`);
+        const dubletten = r.neu.reduce((n, b) => n + db.medien(b.id).filter(m => m.pruefung === 'dublette').length, 0);
+        if (dubletten) console.log(`${dubletten} Bilder waren schon da (Dublette) und bleiben draußen.`);
         break;
       }
 
