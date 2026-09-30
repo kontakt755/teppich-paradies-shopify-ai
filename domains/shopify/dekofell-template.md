@@ -60,7 +60,9 @@ Inhaberentscheidung 2026-09-30: Fellara geht **mit** Vermerk live. Der Name steh
 Metafeld `custom.bildnachweis` am Produkt, nicht im Theme; der Block rendert ohne Metafeld
 nichts und wird nur in Templates gesetzt, deren Bildgeber ihn verlangt.
 
-## Offen
+## Stand 2026-09-30 (nach Livegang)
 
-- Schriftliche Freigabe der konkreten Shop-Darstellung durch den Bildgeber liegt nicht vor
-  (`domains/lieferanten/teppiche/importplan-2026-09.md`).
+- Bildfreigabe des Bildgebers laut Inhaber erhalten (2026-09-30).
+- Preise mit Umlage der Dropship-Gebuehr: 15,99 / 21,99 / 29,99 € (Regel in
+  `domains/lieferanten/teppiche/produktimport-standard-fellara.md`).
+- Folgeimporte: Standard und Checkliste ebenda.
