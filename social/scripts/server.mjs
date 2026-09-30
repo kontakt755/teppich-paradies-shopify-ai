@@ -164,7 +164,7 @@ function beitragAnsicht(db, b) {
     bilder: (b.medien ?? []).filter(m => m.art !== 'video').map(m => `/medien/${m.pfad.split(path.sep).join('/')}`),
     video: (b.medien ?? []).filter(m => m.art === 'video').map(m => `/medien/${m.pfad.split(path.sep).join('/')}`)[0] ?? null,
     sperren: urteil.sperren, hinweise: urteil.hinweise,
-    inhalt: { id: inhalt.id, titel: inhalt.titel, quelle: inhalt.quelle, typ: inhalt.typ, typLabel: TYPEN[inhalt.typ]?.label ?? inhalt.typ, ort: inhalt.ort, bodenart: inhalt.bodenart, grund: inhalt.notiz, eingereichtVon: inhalt.eingereicht_von },
+    inhalt: { id: inhalt.id, einwilligung: Boolean(inhalt.einwilligung), titel: inhalt.titel, quelle: inhalt.quelle, typ: inhalt.typ, typLabel: TYPEN[inhalt.typ]?.label ?? inhalt.typ, ort: inhalt.ort, bodenart: inhalt.bodenart, grund: inhalt.notiz, eingereichtVon: inhalt.eingereicht_von },
   };
 }
 
@@ -180,7 +180,7 @@ function stand(db, env, dir) {
     veroeffentlicht: db.letzteVeroeffentlichte(30).map(b => ({ ...beitragAnsicht(db, b), kennzahlen: kennzahlen.get(b.id) ?? [] })),
     vorrat: db.inhalte({ status: [INHALT_STATUS.NEU, INHALT_STATUS.IN_PRUEFUNG] }).map(i => ({
       id: i.id, titel: i.titel, quelle: i.quelle, typLabel: TYPEN[i.typ]?.label ?? i.typ, status: STATUS_LABEL[i.status], grund: i.notiz, ort: i.ort, bodenart: i.bodenart,
-      erstellt: i.erstellt, eingereichtVon: i.eingereicht_von,
+      erstellt: i.erstellt, eingereichtVon: i.eingereicht_von, einwilligung: Boolean(i.einwilligung),
       medien: db.medien(i.id).filter(m => ['ok', 'unsicher'].includes(m.pruefung)).slice(0, 6).map(m => ({ id: m.id, art: m.art, bild: m.pfad ? `/medien/${m.pfad.split(path.sep).join('/')}` : m.url, datenschutz: m.datenschutz, pruefung: m.pruefung })),
     })),
     lernstand: ladeLernstand(dir),
@@ -206,9 +206,11 @@ export function erstelleZentrale({ db, env = process.env, dir = socialDir(), anm
       if (m[2] === 'zurueck') zurueckholen(db, id, { von: wer });
       return sende(res, 200, { ok: true, beitrag: beitragAnsicht(db, db.beitrag(id)) });
     }
-    if ((m = /^\/api\/inhalt\/(\d+)\/(entwurf|verwerfen)$/.exec(pfad)) && schreibend) {
+    if ((m = /^\/api\/inhalt\/(\d+)\/(entwurf|verwerfen|einwilligung)$/.exec(pfad)) && schreibend) {
       if (!darfFreigeben) throw new HttpFehler(403, 'Das macht der Inhaber.');
       const id = Number(m[1]); const body = await liesJson(req);
+      if (!db.inhalt(id)) throw new HttpFehler(404, 'Unbekannter Inhalt');
+      if (m[2] === 'einwilligung') { db.inhaltAendern(id, { einwilligung: true }); db.ereignis(wer, 'einwilligung-bestaetigt', `inhalt:${id}`); return sende(res, 200, { ok: true }); }
       if (m[2] === 'verwerfen') { db.inhaltAendern(id, { status: INHALT_STATUS.VERWORFEN }); db.ereignis(wer, 'inhalt-verworfen', `inhalt:${id}`); holeGeplanteZurueck(db, id, 'Das Material wurde verworfen.', { von: wer }); return sende(res, 200, { ok: true }); }
       const b = await erstelleEntwurf(db, { inhaltId: id, format: body.format ?? null, von: wer }, { rendere: renderer, dir, env });
       planeOffene(db, { dir });

@@ -8,7 +8,7 @@
  *   npm run social -- eingang-pruefen
  *   npm run social -- offen [--json]
  *   npm run social -- sichtung <mediumId> --datenschutz ok|bedenken [--rolle vorher|nachher|arbeit|detail] [--notiz "…"] [--aussortieren "Grund"]
- *   npm run social -- inhalt <id> [--typ …] [--bodenart …] [--raum …] [--ort …] [--notiz …] [--verwerfen]
+ *   npm run social -- inhalt <id> [--typ …] [--bodenart …] [--raum …] [--ort …] [--notiz …] [--verwerfen] [--einwilligung]
  *   npm run social -- entwurf <inhaltId> [--format feed|karussell|story] [--text "…" | --text-datei pfad] [--bauplan pfad.json] [--plattformen instagram,facebook]
  *   npm run social -- planen
  *   npm run social -- freigeben <beitragId> [--am 2026-10-06T18:00]
@@ -18,6 +18,7 @@
  *   npm run social -- referenzen --input export.json
  *   npm run social -- zugang anlegen "Name" | liste | sperren "Name"
  *   npm run social -- meta-pruefen
+ *   npm run social -- whatsapp [--pruefen]   (Fotos aus der WhatsApp-Gruppe uebernehmen bzw. nur zeigen, was da ist)
  *   npm run social -- lauf            (taeglich: Eingang pruefen, Shop abgleichen, planen, Kennzahlen holen)
  *   npm run social -- takt            (alle 15 Minuten: Eingang pruefen, Faelliges veroeffentlichen)
  */
@@ -36,6 +37,7 @@ import { rendere } from '../lib/rendern.mjs';
 import { INHALT_STATUS, STATUS_LABEL, TYPEN } from '../lib/status.mjs';
 import { STILREGELN } from '../lib/texte.mjs';
 import { erstelleEntwurf } from '../lib/werkstatt.mjs';
+import { leseGruppe, liesStand, standardQuelle, uebernimmWhatsApp } from '../lib/whatsapp.mjs';
 import { ladeUmgebung } from '../lib/zugang.mjs';
 
 export function argumente(argv) {
@@ -149,6 +151,8 @@ async function main(argv) {
         for (const k of ['typ', 'bodenart', 'raum', 'ort', 'notiz', 'taetigkeit', 'besonderheit']) if (typeof flags[k] === 'string') felder[k] = flags[k];
         if (felder.typ && !TYPEN[felder.typ]) throw new Error(`Unbekannter Typ (${Object.keys(TYPEN).join(', ')})`);
         if (flags.verwerfen) felder.status = INHALT_STATUS.VERWORFEN;
+        // Einwilligung liegt schriftlich vor (Auftragszettel) - nur fuer Material ohne Haekchen, etwa aus WhatsApp.
+        if (flags.einwilligung === true) felder.einwilligung = true;
         const i = db.inhaltAendern(id, felder);
         db.ereignis('redaktion', 'inhalt-geaendert', `inhalt:${id}`, felder);
         if (flags.verwerfen) holeGeplanteZurueck(db, id, 'Das Material wurde verworfen.', { von: 'redaktion' });
@@ -247,6 +251,24 @@ async function main(argv) {
         break;
       }
 
+      case 'whatsapp': {
+        if (!env.SOCIAL_WHATSAPP_GRUPPE) { console.log('Keine Gruppe eingestellt: SOCIAL_WHATSAPP_GRUPPE in zugang.env (social/WHATSAPP.md).'); break; }
+        if (flags.pruefen) {
+          const stand = liesStand(dir);
+          const n = leseGruppe({ quelle: env.SOCIAL_WHATSAPP_DIR || standardQuelle(), gruppe: env.SOCIAL_WHATSAPP_GRUPPE, abPk: stand.letzterPk ?? 0, seit: stand.letzterPk ? new Date(0) : new Date(Date.now() - 14 * 86400000) });
+          const je = {};
+          for (const x of n) { je[x.absender] ??= { bilder: 0, videos: 0, fehlt: 0 }; je[x.absender][x.art === 'video' ? 'videos' : 'bilder'] += 1; if (!x.datei) je[x.absender].fehlt += 1; }
+          console.log(`Gruppe „${env.SOCIAL_WHATSAPP_GRUPPE}“ lesbar – ${n.length} neue Fotos/Videos${stand.letzterPk ? '' : ' (letzte 14 Tage)'}`);
+          for (const [wer, z] of Object.entries(je)) console.log(`  ${wer}: ${z.bilder} Fotos, ${z.videos} Videos${z.fehlt ? `, ${z.fehlt} noch nicht heruntergeladen` : ''}`);
+          break;
+        }
+        const r = uebernimmWhatsApp(db, { env, dir });
+        if (r.fehler) throw new Error(r.fehler);
+        for (const b of r.neu) console.log(`#${b.id} von ${b.absender}: ${b.dateien} Datei(en)`);
+        console.log(`${r.neu.length} neue Baustelle(n), ${r.dateien} Dateien${r.wartet ? `, ${r.wartet} warten noch` : ''}${r.fehlend ? `, ${r.fehlend} übersprungen (nicht heruntergeladen oder kein Foto)` : ''}`);
+        break;
+      }
+
       case 'lauf': {
         for (const b of verarbeiteEingang(db, { dir })) console.log(`Eingang #${b.inhalt}: ${b.brauchbar}/${b.gesamt} brauchbar`);
         try {
@@ -266,10 +288,12 @@ async function main(argv) {
       // Alle 15 Minuten: neue Uploads pruefen und Faelliges veroeffentlichen.
       case 'takt': {
         // 20 Minuten Abstand: ein Upload, der gerade laeuft, wird nicht halb geprueft.
+        const wa = uebernimmWhatsApp(db, { env, dir });
+        if (wa?.neuerFehler) console.log(`${new Date().toISOString()} whatsapp: ${wa.fehler}`);
         const eingang = verarbeiteEingang(db, { dir, mindestAlterMs: 20 * 60 * 1000 });
         const r = await veroeffentlicheFaellige(db, { env, dir });
-        const zeile = `${new Date().toISOString()} eingang=${eingang.length} faellig=${r.faellig} veroeffentlicht=${r.veroeffentlicht.length} fehler=${r.fehler.length}${r.hinweis ? ` hinweis="${r.hinweis}"` : ''}`;
-        if (eingang.length || r.faellig) console.log(zeile);
+        const zeile = `${new Date().toISOString()} whatsapp=${wa?.neu.length ?? '-'} eingang=${eingang.length} faellig=${r.faellig} veroeffentlicht=${r.veroeffentlicht.length} fehler=${r.fehler.length}${r.hinweis ? ` hinweis="${r.hinweis}"` : ''}`;
+        if (eingang.length || r.faellig || wa?.neu.length) console.log(zeile);
         break;
       }
 

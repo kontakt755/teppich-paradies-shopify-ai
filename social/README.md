@@ -12,6 +12,7 @@ veröffentlicht und misst.
 | [`DESIGNSYSTEM.md`](DESIGNSYSTEM.md) | Bildsprache und Vorlagen |
 | [`META-EINRICHTUNG.md`](META-EINRICHTUNG.md) | Zugang zu Instagram und Facebook einrichten |
 | [`REDAKTION.md`](REDAKTION.md) | Arbeitsanweisung für die Redaktion (Claude) |
+| [`WHATSAPP.md`](WHATSAPP.md) | WhatsApp-Gruppe als Auffangnetz für Baustellenfotos |
 
 ## Grenzen
 
@@ -49,6 +50,8 @@ Alle Befehle stehen im Kopf von `scripts/social.mjs`. Die wichtigsten:
 | `zugang anlegen "Name"` | persönlichen Upload-Link für einen Bodenleger erzeugen |
 | `veroeffentlichen --trocken` | zeigen, was der Publisher täte |
 | `meta-pruefen` | Meta-Zugang prüfen |
+| `whatsapp --pruefen` | zeigen, was in der WhatsApp-Gruppe neu ist (übernimmt nichts) |
+| `inhalt <id> --einwilligung` | Einwilligung vom Auftragszettel vermerken |
 
 ## Einstellungen
 
@@ -62,6 +65,8 @@ Umgebung, `$TP_PRIVAT_DIR/social/zugang.env` oder `.env.local` (in dieser Reihen
 | `TP_SOCIAL_UPLOAD_HOST` / `TP_SOCIAL_UPLOAD_PORT` | Upload | `127.0.0.1` / `8021` |
 | `TP_DASHBOARD_EXTRA_HOSTS` | zusätzliche Hostnamen (Tailscale) | – |
 | `SOCIAL_UPLOAD_BASIS_URL` | Adresse, die `zugang anlegen` in den Link schreibt | Platzhalter |
+| `SOCIAL_WHATSAPP_GRUPPE` | Name der Firmengruppe, deren Fotos übernommen werden (`WHATSAPP.md`) | – (aus) |
+| `SOCIAL_WHATSAPP_DIR` | Datenordner der WhatsApp-Mac-App | `~/Library/Group Containers/group.net.whatsapp.WhatsApp.shared` |
 | `SOCIAL_AUTO_FREIGABE` | `1` schaltet die automatische Freigabe für eindeutige Shop-Inhalte ein | aus |
 | `TP_SOCIAL_DIR` | abweichendes Datenverzeichnis (Tests, Probeläufe) | `$TP_PRIVAT_DIR/social` |
 
@@ -77,6 +82,7 @@ lib/       pfade · konfig · status · db            Grundlagen
            vorlagen · rendern · werkstatt · reel   Bild-Werkstatt
            texte · planer · freigabe               Regeln
            meta · auswertung · ablauf · zugang     Veröffentlichen, Messen, Abläufe
+           whatsapp                                Auffangnetz aus der Firmengruppe
 scripts/   social.mjs (Kommandozeile) · server.mjs (Zentrale + Upload) · dienste-einrichten.sh
 ui/        zentrale.* · anmelden.html · upload.html
 tests/     node --test, ohne Netz und ohne Browser
