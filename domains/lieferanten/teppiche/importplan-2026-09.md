@@ -2,6 +2,8 @@
 
 Stand: 2026-09-29. Dieser Plan erzeugt keine Shopify-Schreibaktion.
 
+**Nachtrag 2026-09-30:** Fellara Dekofell ist live (Template `dekofell`, Preise mit Umlage der Dropship-Gebuehr, Bildfreigabe laut Inhaber erhalten). Verbindlicher Standard fuer alle weiteren Produkte: `produktimport-standard-fellara.md`.
+
 ## Nachtrag: beide Excel-Dateien und vollständiges Bildarchiv
 
 - Die zuvor übersehene Datei `Datenliste_Teppiche_Online_E26.xltx` enthält **148 zusätzliche, nicht überlappende Stückartikel**: 108 ASTRA und 40 SCHÖNER WOHNEN-Kollektion. Beide Teppich-Tabellen zusammen enthalten **660 eindeutige SKUs und 660 eindeutige EANs**. Die Einheitenspalte nennt 592 Stückartikel und 68 m²-Zeilen. Acht der Stückzeilen heißen jedoch „Wunschmaß“ und haben weder Breite noch Länge. Für den Import sind daher **584 eindeutige Festgrößen** und **76 getrennt zu klärende Wunschmaßzeilen** maßgeblich. Die acht widersprüchlichen Zeilen werden nicht als Festgröße importiert. Türmatten bleiben separat.
