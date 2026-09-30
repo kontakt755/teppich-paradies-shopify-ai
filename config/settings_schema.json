@@ -2305,6 +2305,19 @@
         "label": "Google-Unternehmensprofil (sameAs)",
         "info": "Verknuepft den Shop mit dem Profil. Die Sternebewertung selbst wird bewusst nicht ausgezeichnet, sie stammt nicht von dieser Seite.",
         "default": "https://maps.google.com/?cid=787042219843486388"
+      },
+      {
+        "type": "text",
+        "id": "tp_instagram_url",
+        "label": "Instagram-Profil",
+        "info": "Erscheint im Footer (Spalte Fachgeschaeft) und als sameAs im Organisations-Schema. Leer = ausgeblendet.",
+        "default": "https://www.instagram.com/teppich.paradies/"
+      },
+      {
+        "type": "text",
+        "id": "tp_facebook_url",
+        "label": "Facebook-Seite",
+        "info": "Nur die eigene, verwaltete Seite eintragen - nicht die inoffizielle Ortsseite. Leer = ausgeblendet."
       }
     ]
   },
