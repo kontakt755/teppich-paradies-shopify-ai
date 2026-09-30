@@ -16,7 +16,8 @@ Arbeite immer im aktuellen Repository Root und verlasse dich nicht auf fest codi
 
 - Repositorys, Worktrees, Dashboard-Code, Laufzustände und Protokolle nur lokal speichern — nie in iCloud Drive, Schreibtisch/Documents oder anderen synchronisierten Ordnern. Vor dem Anlegen einer Arbeitskopie den aufgelösten Pfad prüfen.
 - **Eine Aufgabe = eine Arbeitskopie.** Neue Worktrees unter `.claude/worktrees/<thema>` (Claude-App) oder `~/Developer/tp-<thema>`; keine neuen `~/tp-wt-*`. Nach dem Merge wird der Worktree entfernt.
-- **Den Hauptcheckout nie bearbeiten.** Er steht auf `main` und wird nur per `git pull --ff-only` aktualisiert; von dort laufen die Hooks aller Sitzungen. Zwischenstände gehören auf einen Branch, nicht in den Working Tree oder den Stash.
+- **Den Hauptcheckout nie bearbeiten.** Er steht losgelöst auf `origin/main` (aktualisieren: `git fetch origin && git checkout --detach origin/main`); von dort laufen die Hooks aller Sitzungen. Zwischenstände gehören auf einen Branch, nicht in den Working Tree oder den Stash.
+- **Der Branch `main` gehört dem Deploy-Worktree.** `workflow:preview` und `workflow:live` verlangen `branch === main`, und git erlaubt jeden Branch nur in einer Arbeitskopie. Deploys laufen deshalb in einem eigenen Worktree auf `main` (z. B. `~/Developer/tp-deploy`), nie im Hauptcheckout.
 - `docs/ai-dashboard/issues.json` und `bodenwissen.json` sind erzeugte Dateien und seit 2026-09-30 nicht mehr im Git (lokal: `npm run dashboard`). Nie `git add -A`. KI-Sitzungen führen ihre Aufgabe per `npm run task`.
 
 ## Welches Theme ist live?
