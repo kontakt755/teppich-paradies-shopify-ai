@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Social-Zentrale (Port 8020) und Monteur-Upload (Port 8021) als Dauerdienst.
+  Platzhalter ersetzt social/scripts/dienste-einrichten.sh:
+    __HOME__  __REPO_PFAD__  __NODE_PFAD__  __EXTRA_HOSTS__
+  Beide Ports sind im Firmennetz und im Tailnet erreichbar. Die Zentrale
+  verlangt die Anmeldung des Control Centers; der Upload-Port nimmt nur mit
+  persoenlichem Link entgegen und liefert nichts aus.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>net.teppich-paradies.social</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>__NODE_PFAD__</string>
+    <string>__REPO_PFAD__/social/scripts/server.mjs</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>__REPO_PFAD__</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>TP_SOCIAL_HOST</key>
+    <string>0.0.0.0</string>
+    <key>TP_SOCIAL_UPLOAD_HOST</key>
+    <string>0.0.0.0</string>
+    <key>TP_DASHBOARD_EXTRA_HOSTS</key>
+    <string>__EXTRA_HOSTS__</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+  <key>ThrottleInterval</key>
+  <integer>30</integer>
+  <key>StandardOutPath</key>
+  <string>__HOME__/teppich-paradies-analyse/social/dienst.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/teppich-paradies-analyse/social/dienst.log</string>
+</dict>
+</plist>

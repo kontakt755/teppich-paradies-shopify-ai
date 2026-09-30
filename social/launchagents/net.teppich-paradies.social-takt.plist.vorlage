@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Alle 15 Minuten: neue Baustellen-Uploads pruefen und freigegebene, faellige
+  Beitraege veroeffentlichen (npm run social - takt). Ohne Meta-Zugang
+  veroeffentlicht der Lauf nichts und veraendert nichts.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>net.teppich-paradies.social-takt</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>__NODE_PFAD__</string>
+    <string>__REPO_PFAD__/social/scripts/social.mjs</string>
+    <string>takt</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>__REPO_PFAD__</string>
+  <key>StartInterval</key>
+  <integer>900</integer>
+  <key>StandardOutPath</key>
+  <string>__HOME__/teppich-paradies-analyse/social/takt.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/teppich-paradies-analyse/social/takt.log</string>
+</dict>
+</plist>

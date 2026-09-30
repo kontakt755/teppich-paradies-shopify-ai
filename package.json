@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "test": "npm run qa:unit:test && npm run dashboard:test && npm run operations:test && npm run automation:test && npm run workflow:test && npm run hooks:test",
+    "test": "npm run qa:unit:test && npm run dashboard:test && npm run operations:test && npm run automation:test && npm run workflow:test && npm run hooks:test && npm run social:test",
     "qa": "node qa/run-qa.mjs",
     "qa:visual": "node qa/run-qa.mjs --visual-evidence",
     "qa:unit:test": "node --test qa/tests/*.test.mjs",
@@ -78,7 +78,11 @@
     "daten:bulk": "node operations/scripts/bulk-zu-eingabe.mjs",
     "kurz": "node scripts/kurz.mjs",
     "handoff": "node scripts/handoff.mjs",
-    "gedaechtnis:sync": "bash .claude/hooks/gedaechtnis-sync.sh"
+    "gedaechtnis:sync": "bash .claude/hooks/gedaechtnis-sync.sh",
+    "social": "node social/scripts/social.mjs",
+    "social:test": "node --test social/tests/*.test.mjs",
+    "social:zentrale": "node social/scripts/server.mjs",
+    "social:einrichten": "bash social/scripts/dienste-einrichten.sh"
   },
   "devDependencies": {
     "liquidjs": "^10.29.0",

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Baustellenfotos">
+<meta name="theme-color" content="#b0303f">
+<title>Baustellenfotos · Teppich Paradies</title>
+<style>
+  :root { --rot: #b0303f; --tinte: #1d1a17; --leise: #6b645d; --grund: #f6f2ec; --flaeche: #fff; --linie: #e0d9cf; --gruen: #2f7a4c; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--grund); color: var(--tinte); font: 17px/1.45 -apple-system, 'Helvetica Neue', Arial, sans-serif; padding: 0 16px 120px; max-width: 560px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 20px 0 2px; }
+  h2 { font-size: 15px; margin: 22px 0 8px; color: var(--leise); text-transform: uppercase; letter-spacing: .06em; }
+  .leise { color: var(--leise); font-size: 15px; margin: 0; }
+  .fotoknopf { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 120px; margin-top: 16px; background: var(--flaeche); border: 2px dashed var(--rot); border-radius: 16px; color: var(--rot); font-size: 19px; font-weight: 700; cursor: pointer; }
+  .fotoknopf small { font-weight: 500; color: var(--leise); font-size: 14px; }
+  input[type=file] { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .vorschau { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
+  .vorschau div { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: #ddd; }
+  .vorschau img, .vorschau video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .vorschau button { position: absolute; top: 3px; right: 3px; width: 26px; height: 26px; border-radius: 50%; border: 0; background: rgba(0,0,0,.65); color: #fff; font-size: 16px; line-height: 1; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chips button { font: inherit; font-size: 16px; padding: 10px 14px; min-height: 44px; border-radius: 999px; border: 1.5px solid var(--linie); background: var(--flaeche); color: var(--tinte); }
+  .chips button[aria-pressed=true] { background: var(--rot); border-color: var(--rot); color: #fff; font-weight: 700; }
+  input[type=text], textarea { width: 100%; font: inherit; padding: 12px 14px; border-radius: 12px; border: 1.5px solid var(--linie); background: var(--flaeche); color: var(--tinte); }
+  textarea { min-height: 72px; }
+  .zustimmung { display: flex; gap: 12px; align-items: flex-start; background: var(--flaeche); border: 1.5px solid var(--linie); border-radius: 14px; padding: 14px; margin-top: 22px; font-weight: 600; }
+  .zustimmung input { width: 26px; height: 26px; flex: none; accent-color: var(--rot); }
+  .zustimmung small { display: block; font-weight: 400; color: var(--leise); margin-top: 2px; }
+  .senden { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--grund); border-top: 1px solid var(--linie); }
+  .senden button { width: 100%; max-width: 528px; display: block; margin: 0 auto; min-height: 56px; border: 0; border-radius: 14px; background: var(--rot); color: #fff; font: inherit; font-size: 19px; font-weight: 700; }
+  .senden button:disabled { opacity: .45; }
+  .fehler { background: #fbeeef; color: var(--rot); padding: 12px 14px; border-radius: 12px; margin-top: 14px; font-weight: 600; }
+  .balken { height: 10px; border-radius: 999px; background: var(--linie); overflow: hidden; margin: 14px 0 6px; }
+  .balken i { display: block; height: 100%; width: 0; background: var(--rot); transition: width .2s; }
+  .fertig { text-align: center; padding-top: 18vh; }
+  .fertig .haken { width: 84px; height: 84px; border-radius: 50%; background: var(--gruen); color: #fff; font-size: 46px; line-height: 84px; margin: 0 auto 18px; }
+  details { margin-top: 18px; } summary { color: var(--rot); font-weight: 700; padding: 8px 0; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div id="formular">
+  <h1>Baustellenfotos</h1>
+  <p class="leise">Hallo __NAME__ – Fotos auswählen, kurz antippen, senden. Den Rest machen wir im Büro.</p>
+
+  <label class="fotoknopf" for="dateien"><span>Fotos oder Videos auswählen</span><small id="anzahl">vorher, während der Arbeit, fertig</small></label>
+  <input type="file" id="dateien" accept="image/*,video/*" multiple>
+  <div class="vorschau" id="vorschau"></div>
+
+  <h2>Ort</h2>
+  <input type="text" id="ort" list="orte" placeholder="z. B. Oranienburg" autocomplete="off" enterkeyhint="done">
+  <datalist id="orte"></datalist>
+  <p class="leise" style="margin-top:6px">Nur der Ort – keine Straße, kein Name.</p>
+
+  <h2>Boden</h2><div class="chips" id="bodenart" data-einzel></div>
+  <h2>Raum</h2><div class="chips" id="raum" data-einzel></div>
+  <h2>Was wurde gemacht?</h2><div class="chips" id="taetigkeit"></div>
+  <h2>Die Fotos zeigen</h2>
+  <div class="chips" id="vorherNachher" data-einzel>
+    <button type="button" data-wert="beides">Vorher und nachher</button>
+    <button type="button" data-wert="nachher">Nur fertig</button>
+    <button type="button" data-wert="vorher">Nur vorher</button>
+  </div>
+
+  <details>
+    <summary>Mehr angeben (freiwillig)</summary>
+    <h2>Produkt / Bodenname</h2><input type="text" id="produkt" placeholder="wie auf dem Auftragszettel">
+    <h2>Auftragsnummer</h2><input type="text" id="auftrag" inputmode="numeric">
+    <h2>Besonderheit</h2><textarea id="besonderheit" placeholder="z. B. Treppe mit 14 Stufen, alter Kleber musste runter"></textarea>
+  </details>
+
+  <label class="zustimmung"><input type="checkbox" id="einwilligung"><span>Der Kunde ist mit den Fotos einverstanden<small>Ohne Zustimmung dürfen wir die Bilder nicht verwenden.</small></span></label>
+  <div class="fehler" id="fehler" hidden></div>
+  <div class="senden"><button id="senden" disabled>Senden</button></div>
+</div>
+
+<div id="laeuft" hidden class="fertig">
+  <h1>Wird gesendet …</h1>
+  <div class="balken"><i id="fortschritt"></i></div>
+  <p class="leise" id="stand">Bitte die Seite offen lassen.</p>
+</div>
+
+<div id="fertig" hidden class="fertig">
+  <div class="haken">✓</div>
+  <h1>Danke, ist angekommen.</h1>
+  <p class="leise" id="ergebnis"></p>
+  <p style="margin-top:28px"><button onclick="location.reload()" style="font:inherit;font-weight:700;color:#b0303f;background:none;border:0;padding:12px">Weitere Baustelle senden</button></p>
+</div>
+
+<script>
+'use strict';
+const LISTEN = "__LISTEN__";
+const $ = id => document.getElementById(id);
+const gewaehlt = [];
+
+for (const o of LISTEN.orte) { const e = document.createElement('option'); e.value = o; $('orte').append(e); }
+for (const [id, werte] of [['bodenart', LISTEN.bodenarten], ['raum', LISTEN.raeume], ['taetigkeit', LISTEN.taetigkeiten]]) {
+  for (const w of werte) { const b = document.createElement('button'); b.type = 'button'; b.dataset.wert = w; b.textContent = w; $(id).append(b); }
+}
+document.querySelectorAll('.chips').forEach(gruppe => gruppe.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  const an = b.getAttribute('aria-pressed') === 'true';
+  if (gruppe.hasAttribute('data-einzel')) gruppe.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', 'false'));
+  b.setAttribute('aria-pressed', an ? 'false' : 'true');
+}));
+const wahl = id => [...$(id).querySelectorAll('[aria-pressed=true]')].map(b => b.dataset.wert);
+
+function zeigeVorschau() {
+  const v = $('vorschau'); v.textContent = '';
+  gewaehlt.forEach((f, i) => {
+    const d = document.createElement('div');
+    const m = document.createElement(f.type.startsWith('video') ? 'video' : 'img');
+    m.src = URL.createObjectURL(f); if (m.tagName === 'VIDEO') m.muted = true;
+    const x = document.createElement('button'); x.type = 'button'; x.textContent = '×'; x.setAttribute('aria-label', 'Entfernen');
+    x.onclick = () => { gewaehlt.splice(i, 1); zeigeVorschau(); };
+    d.append(m, x); v.append(d);
+  });
+  $('anzahl').textContent = gewaehlt.length ? gewaehlt.length + ' ausgewählt – antippen für mehr' : 'vorher, während der Arbeit, fertig';
+  pruefe();
+}
+$('dateien').addEventListener('change', (e) => {
+  for (const f of e.target.files) if (gewaehlt.length < LISTEN.maxDateien) gewaehlt.push(f);
+  e.target.value = ''; zeigeVorschau();
+});
+function pruefe() { $('senden').disabled = !(gewaehlt.length && $('einwilligung').checked); }
+$('einwilligung').addEventListener('change', pruefe);
+
+function zeigeFehler(t) { $('fehler').textContent = t; $('fehler').hidden = false; $('formular').hidden = false; $('laeuft').hidden = true; window.scrollTo(0, document.body.scrollHeight); }
+
+/** Eine Datei senden - mit zwei Wiederholungen, weil das Netz auf Baustellen selten gut ist. */
+function sendeDatei(url, datei, beiFortschritt) {
+  const einmal = () => new Promise((ok, fehler) => {
+    const x = new XMLHttpRequest(); x.open('PUT', url);
+    x.upload.onprogress = e => beiFortschritt(e.loaded);
+    x.onload = () => (x.status === 200 ? ok() : fehler(new Error((() => { try { return JSON.parse(x.responseText).error; } catch { return 'Fehler ' + x.status; } })())));
+    x.onerror = () => fehler(new Error('Keine Verbindung'));
+    x.send(datei);
+  });
+  return einmal().catch(() => einmal()).catch(() => einmal());
+}
+
+$('senden').addEventListener('click', async () => {
+  $('fehler').hidden = true; $('formular').hidden = true; $('laeuft').hidden = false; window.scrollTo(0, 0);
+  try {
+    const start = await fetch(location.pathname + '/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+      einwilligung: $('einwilligung').checked, ort: $('ort').value, bodenart: wahl('bodenart')[0] || '', raum: wahl('raum')[0] || '',
+      taetigkeit: wahl('taetigkeit'), vorherNachher: wahl('vorherNachher')[0] || '', produkt: $('produkt').value, auftrag: $('auftrag').value, besonderheit: $('besonderheit').value,
+    }) });
+    const s = await start.json();
+    if (!start.ok) throw new Error(s.error || 'Start fehlgeschlagen');
+    const gesamt = gewaehlt.reduce((a, f) => a + f.size, 0); let erledigt = 0;
+    for (let i = 0; i < gewaehlt.length; i += 1) {
+      $('stand').textContent = 'Datei ' + (i + 1) + ' von ' + gewaehlt.length + ' – bitte die Seite offen lassen.';
+      await sendeDatei(location.pathname + '/datei/' + s.upload, gewaehlt[i], geladen => { $('fortschritt').style.width = Math.round(((erledigt + geladen) / gesamt) * 100) + '%'; });
+      erledigt += gewaehlt[i].size;
+    }
+    const ende = await fetch(location.pathname + '/fertig/' + s.upload, { method: 'POST' });
+    const e = await ende.json().catch(() => ({}));
+    $('laeuft').hidden = true; $('fertig').hidden = false;
+    $('ergebnis').textContent = gewaehlt.length + (gewaehlt.length === 1 ? ' Datei' : ' Dateien') + ' gesendet.' + (s.ortVerworfen ? ' Die Adresse haben wir nicht gespeichert – nur der Ort zählt.' : '');
+  } catch (e) { zeigeFehler(e.message + ' – bitte noch einmal senden.'); }
+});
+</script>
+</body>
+</html>
