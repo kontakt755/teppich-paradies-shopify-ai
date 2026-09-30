@@ -15,6 +15,7 @@ Lieferant B, Stueckware in festen Groessen, Dropshipping per Paket).
 | `tp-service-links` | Lieferzeit 5–7 Werktage, ohne Link „Verlegeservice“ | Blockeinstellung |
 | `tp-bewertungsbeleg` | Google-Bewertung | Theme-Einstellung |
 | `text` (Beschreibung) | `pd-card` mit Kurztext, Badges, Tabelle | Produktbeschreibung |
+| `tp-bildnachweis` (2×) | Pflicht-Urhebervermerk der Herstellerbilder: am Handy direkt unter der Galerie, am Desktop am Ende der Details | `custom.bildnachweis` |
 
 Keine Produktempfehlungen: Die Shopify-Empfehlungen zeigten Profile und Kleber.
 Kein Muster-Link: Produkte mit dem Tag `ohne-muster` bekommen weder auf der
@@ -51,10 +52,15 @@ zurueck. Jetzt werden die Knoepfe dieses Produkts in derselben Section gefunden.
 Alle Werte stammen aus der Lieferanten-Datenliste; Rohdaten liegen nur lokal unter
 `~/teppich-paradies-analyse/lieferantendaten/`.
 
+## Bildnachweis – bewusste Ausnahme von #753
+
+Seit #753 zeigt der Shop keine Lieferantennamen. Die Bildnutzungsbedingungen von
+Lieferant B verlangen aber einen zuordenbaren Urhebervermerk mit Markennamen.
+Inhaberentscheidung 2026-09-30: Fellara geht **mit** Vermerk live. Der Name steht nur im
+Metafeld `custom.bildnachweis` am Produkt, nicht im Theme; der Block rendert ohne Metafeld
+nichts und wird nur in Templates gesetzt, deren Bildgeber ihn verlangt.
+
 ## Offen
 
-- Die Bildnutzungsbedingungen von Lieferant B verlangen einen Urhebervermerk mit
-  Markennamen und eine schriftliche Freigabe der Shop-Darstellung
-  (`domains/lieferanten/teppiche/importplan-2026-09.md`). Seit #753 zeigt der Shop keine
-  Lieferantennamen mehr; ein Vermerk ist deshalb bewusst nicht eingebaut. Entscheidung
-  Inhaber: Freigabe/Ausnahme beim Lieferanten klaeren oder eigene Fotos.
+- Schriftliche Freigabe der konkreten Shop-Darstellung durch den Bildgeber liegt nicht vor
+  (`domains/lieferanten/teppiche/importplan-2026-09.md`).

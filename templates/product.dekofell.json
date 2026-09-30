@@ -298,9 +298,28 @@
                 "padding-inline-end": 0
               },
               "blocks": {}
+            },
+            "tp_bildnachweis_mobil": {
+              "type": "tp-bildnachweis",
+              "name": "TP Bildnachweis (Handy)",
+              "settings": {
+                "label": "Produktbilder:",
+                "sichtbarkeit": "mobil"
+              },
+              "blocks": {}
+            },
+            "tp_bildnachweis_desktop": {
+              "type": "tp-bildnachweis",
+              "name": "TP Bildnachweis (Desktop)",
+              "settings": {
+                "label": "Produktbilder:",
+                "sichtbarkeit": "desktop"
+              },
+              "blocks": {}
             }
           },
           "block_order": [
+            "tp_bildnachweis_mobil",
             "group_icgrde",
             "tp_aktion_hinweis",
             "tp_produktmerkmale",
@@ -311,7 +330,8 @@
             "buy_buttons_eYQEYi",
             "tp_service_links_sales1",
             "tp_bewertungsbeleg_dekofell",
-            "text_aEtTtq"
+            "text_aEtTtq",
+            "tp_bildnachweis_desktop"
           ]
         }
       },
