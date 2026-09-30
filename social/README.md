@@ -33,6 +33,11 @@ bash social/scripts/dienste-einrichten.sh entfernen
 npm run social:test
 ```
 
+Die Dienste laufen aus der Arbeitskopie, in der `social:einrichten` aufgerufen
+wurde (Stand 30.09.2026: der Worktree des Branches `feature/social-media-os`).
+**Vor dem Entfernen dieses Worktrees** – etwa nach dem Merge – das Skript in der
+dauerhaften Arbeitskopie erneut ausführen, sonst zeigen die Dienste ins Leere.
+
 Alle Befehle stehen im Kopf von `scripts/social.mjs`. Die wichtigsten:
 
 | Befehl | Zweck |
