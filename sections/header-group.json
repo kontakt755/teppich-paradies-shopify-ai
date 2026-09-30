@@ -130,7 +130,7 @@
           "type": "_tp-menu-kachel",
           "settings": {
             "menu_match": "Teppichfliesen",
-            "image": "shopify://shop_images/teppichfliesen-arbeitszimmer.jpg",
+            "image": "shopify://shop_images/teppichfliesen-einzeln-austauschen.jpg",
             "subtitle": ""
           }
         },
@@ -138,7 +138,7 @@
           "type": "_tp-menu-kachel",
           "settings": {
             "menu_match": "Alle Teppichfliesen",
-            "image": "shopify://shop_images/teppichfliesen-arbeitszimmer.jpg",
+            "image": "shopify://shop_images/teppichfliesen-einzeln-austauschen.jpg",
             "subtitle": ""
           }
         },
