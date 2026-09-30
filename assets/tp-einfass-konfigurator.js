@@ -95,6 +95,7 @@
     if (mitBand && !baender.length) return;
 
     var q = function (s) { return root.querySelector(s); };
+    var serena = root.getAttribute('data-tp-serena') === '1';
     var konfig = q('[data-konfig]');
     var anfrage = q('[data-anfrage]');
     var inBreite = q('[data-breite]');
@@ -105,6 +106,7 @@
     var grenzen = q('[data-grenzen]');
     var fehler = q('[data-fehler]');
     var vorschau = q('[data-vorschau]');
+    if (serena && vorschau && window.innerWidth > 749) vorschau.open = true;
     var svg = q('[data-svg]');
     var buehne = q('[data-buehne]');
     var raumbild = q('[data-raumbild]');
@@ -448,6 +450,25 @@
 
     function zeichnen(f, w, l, beispiel) {
       leeren(svg);
+      if (serena) {
+        // Eine neutrale Draufsicht statt eines vergroesserten Kantenfotos.
+        // Erst gueltige Eingaben duerfen eine konkrete Form und Masse zeigen.
+        if (beispiel) { vorschau.hidden = true; return; }
+        var breit = f === 'rund' ? w : l;
+        var massstab = Math.min(240 / breit, 140 / w);
+        var pwSchema = breit * massstab, phSchema = w * massstab;
+        var xSchema = 78 + (240 - pwSchema) / 2;
+        var ySchema = 52 + (140 - phSchema) / 2;
+        var outline = { fill: '#d8d2c7', stroke: '#777168', 'stroke-width': 2.2, 'stroke-dasharray': '1 2' };
+        if (f === 'rund') svgEl('circle', Object.assign({ cx: xSchema + pwSchema / 2, cy: ySchema + phSchema / 2, r: pwSchema / 2 }, outline), svg);
+        else if (f === 'oval') svgEl('ellipse', Object.assign({ cx: xSchema + pwSchema / 2, cy: ySchema + phSchema / 2, rx: pwSchema / 2, ry: phSchema / 2 }, outline), svg);
+        else svgEl('rect', Object.assign({ x: xSchema, y: ySchema, width: pwSchema, height: phSchema, rx: 2 }, outline), svg);
+        masslinie(xSchema, 32, xSchema + pwSchema, 32, f === 'rund' ? 'Ø ' + w + ' cm' : l + ' cm');
+        if (f !== 'rund') masslinie(54, ySchema, 54, ySchema + phSchema, w + ' cm');
+        legende.textContent = 'Ihr Maß · ' + (f === 'rund' ? 'Ø ' + w : w + ' × ' + l) + ' cm · Kante rundum gekettelt';
+        vorschau.hidden = false;
+        return;
+      }
       var horiz = f === 'rund' ? w : l;
       var s = Math.min(270 / horiz, 170 / w);
       var pw = horiz * s, ph = w * s;
@@ -609,6 +630,10 @@
       // bleiben verborgen, hinzufuegen() kann also nicht auslösen.
       var gueltig = eingegeben && !fehlerListe.length && !!target && target.available &&
         parseInt(target.price, 10) > 0 && !kettelServiceFailed;
+      if (serena) {
+        var startpreis = document.querySelector('[data-tp-serena-startpreis]');
+        if (startpreis) startpreis.hidden = gueltig;
+      }
       zeichnen(f, gueltig ? b.wert : BEISPIEL.w, gueltig ? l.wert : (rund ? BEISPIEL.w : BEISPIEL.l), !gueltig);
 
       var bandFehlt = mitBand && !band;

@@ -1,0 +1,13 @@
+{%- comment -%}
+  Medien-ID des echten Materialfotos der gleichfarbigen Serena-Meterware.
+  Die eigentliche Galerie bleibt fuer alle anderen Produkte unveraendert.
+{%- endcomment -%}
+{%- if product.handle == 'serena-teppich-nach-mass' -%}
+  {%- assign basis = product.metafields.service.einfass_basis.value -%}
+  {%- for basis_variant in basis.variants -%}
+    {%- if basis_variant.option1 == product.selected_or_first_available_variant.option1 and basis_variant.featured_media != blank -%}
+      {{- basis_variant.featured_media.id -}}
+      {%- break -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endif -%}

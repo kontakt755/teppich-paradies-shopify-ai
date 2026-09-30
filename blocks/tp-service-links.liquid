@@ -10,7 +10,7 @@
   assign tp_sl_shipping_page = pages['versand-lieferung']
 -%}
 
-<div class="tp-service-links-{{ tp_sl_id }}" {{ block.shopify_attributes }}>
+{% unless product.handle == 'serena-teppich-nach-mass' %}<div class="tp-service-links-{{ tp_sl_id }}" {{ block.shopify_attributes }}>
   {%- comment -%}
     Der Muster-Aufruf ist am 2026-09-15 von hier nach blocks/tp-muster-cta
     gewandert und steht jetzt direkt unter dem Kaufknopf. Grund: Hier sass er
@@ -131,7 +131,7 @@
     {%- endif -%}
   </div>
 
-</div>
+</div>{% endunless %}
 
 <style>
   .tp-service-links-{{ tp_sl_id }} {

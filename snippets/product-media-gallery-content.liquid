@@ -18,12 +18,7 @@
     block_shopify_attributes: block.shopify_attributes,
   %}
 {% enddoc %}
-{%- if block_settings.zoom -%}
-  <script
-    src="{{ 'zoom-dialog.js' | asset_url }}"
-    type="module"
-  ></script>
-{%- endif -%}
+{% render 'tp-gallery-zoom-script', enabled: block_settings.zoom %}
 {%- liquid
   assign selected_product = closest.product
   assign selected_variant_media = selected_product.selected_or_first_available_variant.featured_media
@@ -144,6 +139,20 @@
     assign sorted_media = selected_product.media
   endif
 
+  # Serena: Das echte Materialfoto der gleichfarbigen Meterware als dritte
+  # Galerieaufnahme zeigen. Es bleibt ein eigenes Medium, kein dupliziertes
+  # Kantenbeispiel. Andere Produkte und ihre Galerien bleiben unveraendert.
+  capture tp_serena_material_id
+    render 'tp-serena-material-id', product: selected_product
+  endcapture
+  assign tp_serena_material_id = tp_serena_material_id | strip | plus: 0
+  assign tp_serena_basis = selected_product.metafields.service.einfass_basis.value
+  assign tp_serena_material = tp_serena_basis.media | where: 'id', tp_serena_material_id
+  assign tp_serena_exists = sorted_media | where: 'id', tp_serena_material_id
+  if tp_serena_material.size > 0 and tp_serena_exists.size == 0
+    assign sorted_media = sorted_media | concat: tp_serena_material
+  endif
+
   # Variant-specific media can reduce the visible gallery to one item.
   if sorted_media.size <= 1
     assign render_slideshow_arrows = false
@@ -214,12 +223,10 @@
   endif
 -%}
 {% render 'tp-sprint-raumredirect', product: selected_product, section: section, raumteile: tp_raumteile %}
-{%- if has_image_drop -%}
-  <script
-    src="{{ 'drag-zoom-wrapper.js' | asset_url }}"
-    type="module"
-  ></script>
-{%- endif -%}
+  <style>
+    .tp-serena-galerie-label{position:absolute;z-index:2;left:12px;bottom:12px;padding:5px 9px;border-radius:5px;background:rgb(255 255 255/.92);color:#333;font-size:12px;font-weight:600;line-height:1.3;pointer-events:none}
+  </style>
+{% render 'tp-gallery-drag-script', enabled: has_image_drop %}
 
 {% style %}
   {% unless block_settings.aspect_ratio == 'adapt' %}
@@ -427,6 +434,7 @@
           {% else %}
             {%- render 'product-media', media: media, sizes: media_sizes, widths: tp_gallery_widths, loading: media_loading, is_main_product_media: forloop.first -%}
           {% endif %}
+          {% render 'tp-serena-galerie-label', product: selected_product, media: media, material_id: tp_serena_material_id %}
         {% endcapture %}
         {% capture class %}
           {{ product_media_container_class }} product-media-container--{{ media.media_type }}{% if block_settings.zoom %} product-media-container--zoomable{% endif %}{% if forloop.index0 == lowest_aspect_ratio_index and block_settings.aspect_ratio == 'adapt' %} product-media-container--tallest{% endif %}
