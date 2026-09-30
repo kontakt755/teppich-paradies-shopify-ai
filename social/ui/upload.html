@@ -136,11 +136,18 @@ function sendeDatei(url, datei, beiFortschritt) {
   const einmal = () => new Promise((ok, fehler) => {
     const x = new XMLHttpRequest(); x.open('PUT', url);
     x.upload.onprogress = e => beiFortschritt(e.loaded);
-    x.onload = () => (x.status === 200 ? ok() : fehler(new Error((() => { try { return JSON.parse(x.responseText).error; } catch { return 'Fehler ' + x.status; } })())));
+    x.onload = () => {
+      if (x.status === 200) return ok();
+      const e = new Error((() => { try { return JSON.parse(x.responseText).error; } catch { return 'Fehler ' + x.status; } })());
+      // Eine Ablehnung (falscher Dateityp, zu gross) wird durch Wiederholen nicht besser.
+      e.endgueltig = x.status >= 400 && x.status < 500 && x.status !== 409;
+      fehler(e);
+    };
     x.onerror = () => fehler(new Error('Keine Verbindung'));
     x.send(datei);
   });
-  return einmal().catch(() => einmal()).catch(() => einmal());
+  const nochmal = e => (e.endgueltig ? Promise.reject(e) : new Promise(r => setTimeout(r, 1500)).then(einmal));
+  return einmal().catch(nochmal).catch(nochmal);
 }
 
 $('senden').addEventListener('click', async () => {

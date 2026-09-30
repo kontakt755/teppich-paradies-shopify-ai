@@ -12,11 +12,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { erkenntnisse, lernstand as berechneLernstand, punkte, vereinheitliche } from './auswertung.mjs';
+import { medienZuBeitrag, pruefe } from './freigabe.mjs';
 import { metaBereit, metaKonfig } from './konfig.mjs';
 import { erstelleClient, veroeffentliche } from './meta.mjs';
 import { lernstandPfad, medienPfad, socialDir } from './pfade.mjs';
 import { plane } from './planer.mjs';
-import { findeKandidaten, standAus } from './produkt-auswahl.mjs';
+import { findeKandidaten, REGELN, standAus } from './produkt-auswahl.mjs';
 import { ladeLexikonPreise, ladeMusterNachfrage, ladeProdukte, normalisiere } from './shop-quelle.mjs';
 import { BEITRAG_STATUS, INHALT_STATUS, TYPEN } from './status.mjs';
 import { fertigerText } from './texte.mjs';
@@ -33,7 +34,11 @@ export async function shopAbgleich(db, { holen = globalThis.fetch, jetzt = new D
   const kandidaten = findeKandidaten({ produkte, stand, preise, nachfrage, jetzt });
 
   const neu = [];
+  const ruhe = new Date(jetzt.getTime() - REGELN.ruheTage * 24 * STUNDE);
   for (const k of kandidaten) {
+    // Der Schluessel traegt den Monat - am Monatswechsel kaeme derselbe Anlass sonst
+    // ein zweites Mal, solange der erste noch in der Freigabe liegt.
+    if (db.shopAnlassSeit(k.familie, k.art, ruhe)) continue;
     const { id, neu: angelegt } = db.inhaltAnlegen({
       quelle: 'shopify', typ: k.art, schluessel: k.schluessel,
       titel: `${TYPEN[k.art]?.label ?? k.art}: ${k.serie ? k.familienName : k.titel}`,
@@ -46,11 +51,20 @@ export async function shopAbgleich(db, { holen = globalThis.fetch, jetzt = new D
       art: 'bild', rolle: b.rolle, url: b.src, beschriftung: b.farbe ?? null, breite: b.breite, hoehe: b.hoehe,
       pruefung: 'ok', datenschutz: 'ok', reihenfolge: i,
     }));
-    neu.push({ id, art: k.art, titel: k.titel, punkte: k.punkte, grund: k.grund });
+    neu.push({ id, art: k.art, titel: k.titel, punkte: k.punkte, grund: k.grund, handle: k.hauptHandle, neueFarben: Boolean(k.neueFarben) });
   }
-  // Stand erst nach der Auswahl fortschreiben - sonst saehe der naechste Lauf keine "neue Farbe" mehr.
+  // Stand erst nach der Auswahl fortschreiben. Eine neue Farbe gilt erst als
+  // bekannt, wenn daraus ein Anlass wurde - sonst ginge sie verloren, nur weil
+  // der Vorrat dieses Laufs schon voll war.
+  const gemeldet = new Set(neu.filter(n => n.neueFarben).map(n => n.handle));
   db.sql.exec('BEGIN');
-  for (const p of produkte) db.produktStandSetzen(p.handle, standAus(p, stand.get(p.handle), jetzt));
+  for (const p of produkte) {
+    const alt = stand.get(p.handle);
+    const felder = standAus(p, alt, jetzt);
+    const hatNeueFarbe = Array.isArray(alt?.farben) && alt.farben.length && p.farben.some(f => !alt.farben.includes(f));
+    if (hatNeueFarbe && !gemeldet.has(p.handle)) felder.farben = alt.farben;
+    db.produktStandSetzen(p.handle, felder);
+  }
   db.sql.exec('COMMIT');
   db.ereignis('shop-scout', 'shop-abgleich', null, { produkte: produkte.length, kandidaten: kandidaten.length, neu: neu.length });
   return { produkte: produkte.length, kandidaten: kandidaten.length, neu };
@@ -103,7 +117,14 @@ export function planeOffene(db, { jetzt = new Date(), dir = socialDir() } = {}) 
   const mitInhalt = b => { const i = db.inhalt(b.inhalt_id); return { id: b.id, format: b.format, typ: i.typ, quelle: i.quelle, punkte: i.punkte, erstellt: b.erstellt, geplantAm: b.geplant_am }; };
   const entwuerfe = db.beitraege({ status: BEITRAG_STATUS.FREIGABE }).map(mitInhalt);
   const offen = entwuerfe.filter(b => !b.geplantAm || new Date(b.geplantAm) <= jetzt);
-  const belegt = [...db.beitraege({ status: BEITRAG_STATUS.GEPLANT }).map(mitInhalt), ...entwuerfe.filter(b => !offen.includes(b))];
+  // Auch was schon erschienen ist, belegt seinen Tag und zaehlt fuer die Woche -
+  // sonst plant der Planer ein zweites Angebot in dieselbe Woche.
+  const erschienen = db.veroeffentlichtSeit(new Date(jetzt.getTime() - 8 * 24 * STUNDE)).map(b => ({ ...mitInhalt(b), geplantAm: b.veroeffentlicht_am }));
+  const belegt = [
+    ...db.beitraege({ status: [BEITRAG_STATUS.GEPLANT, BEITRAG_STATUS.IN_ARBEIT] }).map(mitInhalt),
+    ...entwuerfe.filter(b => !offen.includes(b)),
+    ...erschienen,
+  ];
   const plan = plane({ offen, belegt, jetzt, lernstand: ladeLernstand(dir) });
   for (const [id, zeit] of plan) db.beitragAendern(id, { geplant_am: zeit.toISOString() });
   return [...plan].map(([id, zeit]) => ({ id, geplantAm: zeit.toISOString() }));
@@ -128,14 +149,33 @@ function texteFuer(beitrag) {
 /**
  * Veroeffentlicht, was faellig und freigegeben ist.
  *
- * Schutzregeln: hoechstens ein Feed-Beitrag je Lauf (kein Schwall nach einem
- * Ausfall), und was laenger als 36 Stunden ueberfaellig ist, geht zurueck in
- * die Freigabe statt unbemerkt zur falschen Zeit zu erscheinen.
+ * Schutzregeln:
+ *   - Beanspruchen vor dem ersten Aufruf (IN_ARBEIT): von zwei gleichzeitigen
+ *     Laeufen postet genau einer, und die Zentrale kann den Beitrag waehrenddessen
+ *     nicht veraendern.
+ *   - Noch einmal pruefen: eine Freigabe von gestern gilt nicht, wenn heute ein
+ *     Bild Bedenken bekommen hat oder das Material verworfen wurde.
+ *   - Das Ergebnis jeder Plattform wird sofort gespeichert.
+ *   - Unklare Fehler (Antwort nie gesehen) werden nie automatisch wiederholt.
+ *   - Hoechstens ein Feed-Beitrag je Lauf; was laenger als 36 Stunden
+ *     ueberfaellig ist, geht zurueck in die Freigabe.
  */
 export async function veroeffentlicheFaellige(db, { env = process.env, jetzt = new Date(), trocken = false, dir = socialDir(), client = null, melde = () => {} } = {}) {
   const meta = client ? { client, bereit: true } : clientAus(env, { trocken, protokoll: melde });
+  const bericht = { faellig: 0, veroeffentlicht: [], fehler: [], zurueck: [], uebersprungen: [], trocken };
+
+  // Ein Lauf, der mitten im Veroeffentlichen abgebrochen ist, hinterlaesst IN_ARBEIT.
+  // Ob der Beitrag erschienen ist, weiss dann nur ein Mensch.
+  if (!trocken) {
+    for (const b of db.haengende(new Date(jetzt.getTime() - 20 * 60 * 1000))) {
+      db.beitragAendern(b.id, { status: BEITRAG_STATUS.FEHLER, fehler: 'Veröffentlichung wurde unterbrochen. Bitte auf Instagram und Facebook nachsehen, ob der Beitrag erschienen ist – dann verwerfen, sonst erneut freigeben.' });
+      db.ereignis('publisher', 'fehler', `beitrag:${b.id}`, { meldungen: 'Lauf unterbrochen' });
+      bericht.fehler.push({ id: b.id, meldung: 'Lauf unterbrochen', endgueltig: true });
+    }
+  }
+
   const faellig = db.faellige(jetzt);
-  const bericht = { faellig: faellig.length, veroeffentlicht: [], fehler: [], zurueck: [], uebersprungen: [], trocken };
+  bericht.faellig = faellig.length;
   if (!faellig.length) return bericht;
   if (!meta.bereit && !trocken) {
     bericht.uebersprungen = faellig.map(b => b.id);
@@ -155,6 +195,20 @@ export async function veroeffentlicheFaellige(db, { env = process.env, jetzt = n
       if (feedErledigt) { bericht.uebersprungen.push(beitrag.id); continue; }
       feedErledigt = true;
     }
+
+    // Zweite Pruefung unmittelbar vor dem Veroeffentlichen.
+    const inhalt = db.inhalt(beitrag.inhalt_id);
+    const { sperren } = pruefe({ beitrag, inhalt, medien: medienZuBeitrag(db, beitrag) });
+    if (inhalt.status === INHALT_STATUS.VERWORFEN) sperren.push('Das Material wurde nach der Freigabe verworfen.');
+    if (sperren.length) {
+      if (!trocken) {
+        db.beitragAendern(beitrag.id, { status: BEITRAG_STATUS.FREIGABE, fehler: `Nach der Freigabe gesperrt: ${sperren.join(' · ')}` });
+        db.ereignis('publisher', 'gesperrt', `beitrag:${beitrag.id}`, { sperren });
+      }
+      bericht.zurueck.push(beitrag.id);
+      continue;
+    }
+
     const dateien = beitrag.medien.map(m => ({ datei: medienPfad(m.pfad, dir), relativ: m.pfad, art: m.art }));
     const fehlt = dateien.find(d => !fs.existsSync(d.datei));
     if (fehlt) {
@@ -162,21 +216,32 @@ export async function veroeffentlicheFaellige(db, { env = process.env, jetzt = n
       bericht.fehler.push({ id: beitrag.id, meldung: 'Bilddatei fehlt' });
       continue;
     }
-    const { ergebnis, fehler, fertig } = await veroeffentliche(meta.client, { beitrag, dateien, texte: texteFuer(beitrag), bisher: beitrag.ergebnis ?? {} });
-    if (trocken) { bericht.veroeffentlicht.push({ id: beitrag.id, trocken: true, plattformen: beitrag.plattformen }); continue; }
+    if (trocken) {
+      await veroeffentliche(meta.client, { beitrag, dateien, texte: texteFuer(beitrag), bisher: beitrag.ergebnis ?? {} });
+      bericht.veroeffentlicht.push({ id: beitrag.id, trocken: true, plattformen: beitrag.plattformen });
+      continue;
+    }
+
+    // Ab hier gehoert der Beitrag diesem Lauf - oder einem anderen, dann Finger weg.
+    if (!db.beanspruche(beitrag.id)) { bericht.uebersprungen.push(beitrag.id); continue; }
+    const { ergebnis, fehler, fertig } = await veroeffentliche(meta.client, {
+      beitrag, dateien, texte: texteFuer(beitrag), bisher: beitrag.ergebnis ?? {},
+      merke: stand => db.beitragAendern(beitrag.id, { ergebnis: stand }),
+    });
 
     if (fertig) {
       db.beitragAendern(beitrag.id, { status: BEITRAG_STATUS.VEROEFFENTLICHT, veroeffentlicht_am: jetzt.toISOString(), ergebnis, fehler: null });
-      const inhalt = db.inhalt(beitrag.inhalt_id);
       for (const handle of inhalt.daten?.produkte ?? [inhalt.produkt_handle].filter(Boolean)) db.produktStandSetzen(handle, { zuletzt_beworben: jetzt.toISOString() });
       db.ereignis('publisher', 'veroeffentlicht', `beitrag:${beitrag.id}`, ergebnis);
       bericht.veroeffentlicht.push({ id: beitrag.id, ergebnis });
       continue;
     }
-    const meldungen = Object.entries(fehler).map(([p, e]) => `${p}: ${e.message}`).join(' · ');
+    const unklar = Object.values(fehler).some(e => e.unklar);
+    const meldungen = Object.entries(fehler).map(([p, e]) => `${p}: ${e.message}`).join(' · ')
+      + (unklar ? ' – Unklar, ob der Beitrag erschienen ist: bitte auf der Plattform nachsehen, bevor er erneut freigegeben wird.' : '');
     const versuche = beitrag.versuche + 1;
-    const endgueltig = versuche >= 3 || Object.values(fehler).some(e => !e.voruebergehend);
-    db.beitragAendern(beitrag.id, { ergebnis, versuche, fehler: meldungen, ...(endgueltig ? { status: BEITRAG_STATUS.FEHLER } : {}) });
+    const endgueltig = unklar || versuche >= 3 || Object.values(fehler).some(e => !e.voruebergehend);
+    db.beitragAendern(beitrag.id, { status: endgueltig ? BEITRAG_STATUS.FEHLER : BEITRAG_STATUS.GEPLANT, ergebnis, versuche, fehler: meldungen });
     db.ereignis('publisher', endgueltig ? 'fehler' : 'neuer-versuch', `beitrag:${beitrag.id}`, { meldungen, versuche });
     bericht.fehler.push({ id: beitrag.id, meldung: meldungen, endgueltig });
     // Ein abgelaufener Token trifft jeden weiteren Beitrag genauso - abbrechen statt alle zu verbrennen.

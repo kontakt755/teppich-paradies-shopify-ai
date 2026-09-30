@@ -91,6 +91,7 @@ export function bearbeiten(db, id, { text, textFacebook, geplantAm, plattformen,
   const beitrag = db.beitrag(id);
   if (!beitrag) throw new FreigabeFehler('Beitrag nicht gefunden');
   if ([BEITRAG_STATUS.VEROEFFENTLICHT, BEITRAG_STATUS.ARCHIV].includes(beitrag.status)) throw new FreigabeFehler('Veröffentlichte Beiträge lassen sich hier nicht mehr ändern');
+  if (beitrag.status === BEITRAG_STATUS.IN_ARBEIT) throw new FreigabeFehler('Der Beitrag wird gerade veröffentlicht');
   const felder = {};
   if (typeof text === 'string') {
     const p = pruefeText(text);
@@ -111,6 +112,23 @@ export function bearbeiten(db, id, { text, textFacebook, geplantAm, plattformen,
   const aus = db.beitragAendern(id, felder);
   db.ereignis(von, 'beitrag-bearbeitet', `beitrag:${id}`, { felder: Object.keys(felder) });
   return aus;
+}
+
+/**
+ * Holt alle geplanten Beitraege eines Inhalts zurueck in die Freigabe - wenn
+ * nachtraeglich ein Bild Bedenken bekommt oder das Material verworfen wird
+ * (etwa weil ein Kunde seine Zustimmung zurueckzieht). Der Publisher prueft
+ * zwar selbst noch einmal; hier geschieht es sofort und sichtbar.
+ */
+export function holeGeplanteZurueck(db, inhaltId, grund, { von = null } = {}) {
+  const zurueck = [];
+  for (const b of db.beitraegeZuInhalt(inhaltId)) {
+    if (b.status !== BEITRAG_STATUS.GEPLANT) continue;
+    db.beitragAendern(b.id, { status: BEITRAG_STATUS.FREIGABE, fehler: grund });
+    db.ereignis(von, 'beitrag-zurueckgeholt', `beitrag:${b.id}`, { grund });
+    zurueck.push(b.id);
+  }
+  return zurueck;
 }
 
 /** Die Quellmedien, aus denen ein Beitrag gebaut wurde (fuer die Datenschutzpruefung). */

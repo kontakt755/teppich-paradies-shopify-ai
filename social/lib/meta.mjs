@@ -17,9 +17,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 export class MetaFehler extends Error {
-  constructor(meldung, { code = null, status = null, voruebergehend = false, zugang = false } = {}) {
+  constructor(meldung, { code = null, status = null, voruebergehend = false, zugang = false, unklar = false } = {}) {
     super(meldung);
     this.code = code; this.status = status; this.voruebergehend = voruebergehend; this.zugang = zugang;
+    // unklar: der Aufruf kann angekommen sein, ohne dass wir die Antwort sahen.
+    // So etwas darf nie automatisch wiederholt werden - sonst steht der Beitrag doppelt da.
+    this.unklar = unklar;
   }
 }
 
@@ -43,7 +46,8 @@ export function erstelleClient({ token, pageId, igUserId = null, version = 'v24.
   const basis = `https://graph.facebook.com/${version}`;
   let zaehler = 0;
 
-  async function graph(methode, pfad, params = {}, { datei = null } = {}) {
+  /** `heikel` kennzeichnet die Aufrufe, die etwas sichtbar veroeffentlichen. */
+  async function graph(methode, pfad, params = {}, { datei = null, heikel = false } = {}) {
     if (trocken) {
       zaehler += 1;
       protokoll(`[trocken] ${methode} ${pfad} ${JSON.stringify({ ...params, ...(datei ? { datei: path.basename(datei) } : {}) }).slice(0, 300)}`);
@@ -65,10 +69,15 @@ export function erstelleClient({ token, pageId, igUserId = null, version = 'v24.
     }
     let antwort;
     try { antwort = await holen(url, init); } catch (e) {
-      throw new MetaFehler(`Meta nicht erreichbar: ${e.message}`, { voruebergehend: true });
+      throw new MetaFehler(`Meta nicht erreichbar: ${e.message}`, heikel ? { unklar: true } : { voruebergehend: true });
     }
     const body = await antwort.json().catch(() => ({}));
-    if (!antwort.ok || body.error) throw ordneFehler(antwort.status, body);
+    if (!antwort.ok || body.error) {
+      const fehler = ordneFehler(antwort.status, body);
+      // Ein Serverfehler beim Veroeffentlichen sagt nicht, ob der Beitrag draussen ist.
+      if (heikel && antwort.status >= 500) { fehler.unklar = true; fehler.voruebergehend = false; }
+      throw fehler;
+    }
     return body;
   }
 
@@ -104,17 +113,17 @@ export function erstelleClient({ token, pageId, igUserId = null, version = 'v24.
 
     async facebook({ format, text, fotos, videoDatei = null }) {
       if (format === 'story') {
-        const r = await graph('POST', `/${pageId}/photo_stories`, { photo_id: fotos[0].id });
+        const r = await graph('POST', `/${pageId}/photo_stories`, { photo_id: fotos[0].id }, { heikel: true });
         return { id: r.post_id ?? r.id, permalink: null };
       }
       if (format === 'reel') {
         if (!videoDatei) throw new MetaFehler('Reel ohne Videodatei');
-        const r = await graph('POST', `/${pageId}/videos`, { description: text }, { datei: videoDatei });
+        const r = await graph('POST', `/${pageId}/videos`, { description: text }, { datei: videoDatei, heikel: true });
         return { id: r.id, permalink: null };
       }
       const params = { message: text };
       fotos.forEach((f, i) => { params[`attached_media[${i}]`] = JSON.stringify({ media_fbid: f.id }); });
-      const r = await graph('POST', `/${pageId}/feed`, params);
+      const r = await graph('POST', `/${pageId}/feed`, params, { heikel: true });
       const info = await graph('GET', `/${r.id}`, { fields: 'permalink_url' }).catch(() => ({}));
       return { id: r.id, permalink: info.permalink_url ?? null };
     },
@@ -141,7 +150,7 @@ export function erstelleClient({ token, pageId, igUserId = null, version = 'v24.
         container = await graph('POST', `/${igUserId}/media`, { image_url: fotos[0].url, caption: text });
         await igWarte(container.id, { versuche: 12 });
       }
-      const r = await graph('POST', `/${igUserId}/media_publish`, { creation_id: container.id });
+      const r = await graph('POST', `/${igUserId}/media_publish`, { creation_id: container.id }, { heikel: true });
       const info = await graph('GET', `/${r.id}`, { fields: 'permalink' }).catch(() => ({}));
       return { id: r.id, permalink: info.permalink ?? null };
     },
@@ -195,10 +204,11 @@ export function erstelleClient({ token, pageId, igUserId = null, version = 'v24.
  *
  * Wichtig ist die Wiederholbarkeit: gelingt Facebook und scheitert Instagram,
  * darf der naechste Versuch Facebook nicht noch einmal posten. `bisher`
- * enthaelt, was schon draussen ist; zurueck kommt der ergaenzte Stand samt
+ * enthaelt, was schon draussen ist; `merke` wird nach jeder gelungenen
+ * Plattform mit dem Stand aufgerufen. Zurueck kommt der ergaenzte Stand samt
  * Fehlern je Plattform.
  */
-export async function veroeffentliche(client, { beitrag, dateien, texte, bisher = {} }) {
+export async function veroeffentliche(client, { beitrag, dateien, texte, bisher = {}, merke = () => {} }) {
   const ergebnis = { ...bisher };
   const fehler = {};
   const offen = beitrag.plattformen.filter(p => !ergebnis[p]?.id);
@@ -221,6 +231,8 @@ export async function veroeffentliche(client, { beitrag, dateien, texte, bisher 
       } else if (plattform === 'instagram') {
         ergebnis.instagram = await client.instagram({ format: beitrag.format, text: texte.instagram, fotos, videoUrl: video ? client.medienUrl(video.relativ) : null });
       }
+      // Sofort festhalten, nicht erst am Ende: stirbt der Lauf danach, weiss der naechste, was schon draussen ist.
+      merke({ ...ergebnis });
     } catch (e) {
       fehler[plattform] = e;
     }

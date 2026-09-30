@@ -58,7 +58,7 @@ eine Facebook-Seite ansteuern, mit der das Instagram-Konto verknüpft ist.
 
 1. **Instagram auf „Business" stellen** und mit der Facebook-Seite verknüpfen
    (Voraussetzung für alles Weitere, siehe `META-EINRICHTUNG.md`).
-2. **Bio ersetzen** (142 Zeichen, passt in die 150):
+2. **Bio ersetzen** (143 Zeichen, passt in die 150):
 
    ```
    Bodenbeläge vom Fachhandel in Oranienburg

@@ -52,11 +52,21 @@ export function bereinigeOrt(eingabe, orte = ORTE) {
   const roh = kurz(eingabe, 80);
   if (!roh) return { ort: null, bekannt: false, verworfen: false };
   const norm = s => s.toLowerCase().replace(/ß/g, 'ss').replace(/[^a-zäöü]+/g, ' ').trim();
-  const gesucht = norm(roh);
+  const strasse = /(stra(ss|ß)e|str\.?|weg|allee|platz|gasse|ring|damm|chaussee|ufer)\b/i;
+  const adresse = /\d/.test(roh) || strasse.test(roh);
+  // Als ganzes Wort suchen: "Oranienburger Str." ist eine Strasse, kein Ort.
   // Laengere Namen zuerst: "Berlin-Pankow" soll nicht als "Berlin" enden.
-  const treffer = [...orte].sort((a, b) => b.length - a.length).find(o => gesucht.includes(norm(o)));
-  if (treffer) return { ort: treffer, bekannt: true, verworfen: false };
-  const adresse = /\d/.test(roh) || /(stra(ss|ß)e|str\.|weg|allee|platz|gasse|ring|damm|chaussee|ufer)\b/i.test(roh);
+  const finde = (text) => {
+    const gesucht = ` ${norm(text)} `;
+    return [...orte].sort((a, b) => b.length - a.length).find(o => gesucht.includes(` ${norm(o)} `));
+  };
+  // Bei einer Adresse steht der Ort hinten ("Berliner Straße 3, Nauen") - die
+  // Teile mit Strassenwort oder Hausnummer scheiden aus.
+  const teile = adresse ? roh.split(/[,;]/).map(t => t.trim()).filter(t => t && !/\d/.test(t) && !strasse.test(t)) : [roh];
+  for (const teil of teile.reverse()) {
+    const treffer = finde(teil);
+    if (treffer) return { ort: treffer, bekannt: true, verworfen: false };
+  }
   if (adresse) return { ort: null, bekannt: false, verworfen: true };
   return { ort: roh.replace(/[^\p{L} ./-]/gu, '').trim() || null, bekannt: false, verworfen: false };
 }
@@ -104,6 +114,8 @@ export function erkenneTyp(kopf) {
     const marke = kopf.toString('latin1', 8, 12);
     if (/^(heic|heix|hevc|hevx|mif1|msf1|heim|heis)$/.test(marke)) return 'image/heic';
     if (marke === 'qt  ') return 'video/quicktime';
+    // Nicht jede ftyp-Datei ist ein Video: AVIF-Bilder und reine Tonspuren bleiben draussen.
+    if (/^(avif|avis|M4A |M4B |f4a )$/.test(marke)) return null;
     return 'video/mp4';
   }
   return null;

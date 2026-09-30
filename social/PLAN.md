@@ -110,7 +110,7 @@ Control Center bleiben privat.
 | 4 | Monteur-Upload | **fertig und mit echten Dateien geprüft** (JPG, HEIC, Dublette, unscharf). Offen: Erreichbarkeit von unterwegs, Links für die Monteure. |
 | 5 | Content-Agenten | **fertig**: Eingang, Shop-Scout, Werkstatt mit sieben Vorlagen, Planer, Textregeln. Redaktion als Arbeitsanweisung vorbereitet; der erste Schwung (9 Beiträge, 3 Storys) liegt in der Freigabe. Offen: Reel-Schnitt (braucht ffmpeg). |
 | 6 | Freigabesystem | **fertig**: Zentrale mit Freigeben, Bearbeiten, Verwerfen, Sperren und Hinweisen. |
-| 7 | Meta-Veröffentlichung | **gebaut und gegen einen Meta-Nachbau getestet.** Wartet auf den Zugang (`META-EINRICHTUNG.md`); der erste echte Beitrag sollte beobachtet werden. |
+| 7 | Meta-Veröffentlichung | **gebaut, gegen einen Meta-Nachbau getestet und unabhängig gegengelesen** (Doppelpost, Prüfung beim Veröffentlichen, Upload-Härtung – 15 Befunde, alle behoben und mit Tests belegt). Wartet auf den Zugang (`META-EINRICHTUNG.md`); der erste echte Beitrag sollte beobachtet werden. |
 | 8 | Analytics und Optimierung | **gebaut**: Messwerte, Punkte, Lernstand, Rückkopplung in den Planer. Füllt sich mit den ersten veröffentlichten Beiträgen. |
 
 ## 6. Offene Entscheidungen des Inhabers

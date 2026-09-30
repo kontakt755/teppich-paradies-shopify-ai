@@ -20,6 +20,14 @@ import { INHALT_STATUS } from './status.mjs';
 export function verarbeiteEingang(db, { dir = socialDir(), messe = messeBild, zuJpeg = wandleZuJpeg, nur = null, mindestAlterMs = 0, jetzt = new Date() } = {}) {
   const bericht = [];
   // Auch IN_PRUEFUNG: kommt eine Datei nach, waehrend die Baustelle schon geprueft ist, darf sie nicht liegen bleiben.
+  // Kommt nach einem sehr langen Upload noch eine Datei, nachdem der Takt die
+  // Baustelle schon als leer verworfen hat, lebt sie wieder auf.
+  if (nur) {
+    const i = db.inhalt(nur);
+    if (i?.quelle === 'baustelle' && i.status === INHALT_STATUS.VERWORFEN && db.medien(nur).some(m => m.pruefung === 'offen')) {
+      db.inhaltAendern(nur, { status: INHALT_STATUS.NEU, notiz: null });
+    }
+  }
   const kandidaten = db.inhalte({ status: [INHALT_STATUS.NEU, INHALT_STATUS.IN_PRUEFUNG], quelle: 'baustelle' })
     .filter(i => (nur ? i.id === nur : mindestAlterMs <= 0 || jetzt.getTime() - new Date(i.erstellt).getTime() >= mindestAlterMs))
     .filter(i => i.status === INHALT_STATUS.NEU || db.medien(i.id).some(m => m.pruefung === 'offen'))

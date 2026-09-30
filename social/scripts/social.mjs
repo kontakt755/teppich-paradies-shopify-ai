@@ -28,7 +28,7 @@ import { fileURLToPath } from 'node:url';
 import { clientAus, holeKennzahlen, importiereReferenzen, planeOffene, shopAbgleich, sichereDatenbank, veroeffentlicheFaellige } from '../lib/ablauf.mjs';
 import { oeffne } from '../lib/db.mjs';
 import { findeZugang, liesZugaenge, zugangAnlegen, zugangSperren } from '../lib/eingang.mjs';
-import { freigeben, verwerfen } from '../lib/freigabe.mjs';
+import { freigeben, holeGeplanteZurueck, verwerfen } from '../lib/freigabe.mjs';
 import { medienPfad, socialDir } from '../lib/pfade.mjs';
 import { verarbeiteEingang } from '../lib/pruefung.mjs';
 import { reelMoeglich } from '../lib/reel.mjs';
@@ -134,6 +134,10 @@ async function main(argv) {
         if (flags.aussortieren) { felder.pruefung = 'aussortiert'; felder.pruef_grund = typeof flags.aussortieren === 'string' ? flags.aussortieren : 'von der Redaktion aussortiert'; }
         db.mediumAendern(id, felder);
         db.ereignis('redaktion', 'sichtung', `medium:${id}`, felder);
+        if (felder.datenschutz === 'bedenken') {
+          const z = holeGeplanteZurueck(db, m.inhalt_id, 'Ein Bild hat nachträglich Datenschutz-Bedenken bekommen.', { von: 'redaktion' });
+          if (z.length) console.log(`Geplante Beiträge zurück in die Freigabe: ${z.map(x => `#${x}`).join(', ')}`);
+        }
         console.log(`Medium ${id}: ${Object.entries(felder).map(([k, v]) => `${k}=${v}`).join(', ')}`);
         break;
       }
@@ -147,6 +151,7 @@ async function main(argv) {
         if (flags.verwerfen) felder.status = INHALT_STATUS.VERWORFEN;
         const i = db.inhaltAendern(id, felder);
         db.ereignis('redaktion', 'inhalt-geaendert', `inhalt:${id}`, felder);
+        if (flags.verwerfen) holeGeplanteZurueck(db, id, 'Das Material wurde verworfen.', { von: 'redaktion' });
         console.log(`Inhalt ${id}: ${STATUS_LABEL[i.status]} – ${i.titel}`);
         break;
       }

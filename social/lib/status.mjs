@@ -18,6 +18,9 @@ export const INHALT_STATUS = Object.freeze({
 export const BEITRAG_STATUS = Object.freeze({
   FREIGABE: 'FREIGABE',
   GEPLANT: 'GEPLANT',
+  // Der Publisher hat den Beitrag gerade in der Hand. Nur er kommt hier heraus -
+  // so kann kein zweiter Lauf und kein Klick in der Zentrale dazwischenfunken.
+  IN_ARBEIT: 'IN_ARBEIT',
   VEROEFFENTLICHT: 'VEROEFFENTLICHT',
   ARCHIV: 'ARCHIV',
   VERWORFEN: 'VERWORFEN',
@@ -30,6 +33,7 @@ export const STATUS_LABEL = Object.freeze({
   CONTENT_ERSTELLT: 'Content erstellt',
   FREIGABE: 'Freigabe',
   GEPLANT: 'Geplant',
+  IN_ARBEIT: 'Wird veröffentlicht',
   VEROEFFENTLICHT: 'Veröffentlicht',
   ARCHIV: 'Archiv',
   VERWORFEN: 'Verworfen',
@@ -46,7 +50,8 @@ const INHALT_WEGE = {
 
 const BEITRAG_WEGE = {
   FREIGABE: ['GEPLANT', 'VERWORFEN'],
-  GEPLANT: ['VEROEFFENTLICHT', 'FREIGABE', 'VERWORFEN', 'FEHLER'],
+  GEPLANT: ['IN_ARBEIT', 'FREIGABE', 'VERWORFEN', 'FEHLER'],
+  IN_ARBEIT: ['VEROEFFENTLICHT', 'GEPLANT', 'FREIGABE', 'FEHLER'],
   FEHLER: ['GEPLANT', 'FREIGABE', 'VERWORFEN'],
   VEROEFFENTLICHT: ['ARCHIV'],
   ARCHIV: [],

@@ -158,7 +158,9 @@ export function grundtext(inhalt, wechsel = 0) {
     const boden = inhalt.bodenart ? `${inhalt.bodenart} verlegt` : 'den neuen Boden verlegt';
     if (!schritte.includes('die Treppe belegt')) schritte.push(boden);
     const reihe = schritte.length > 1 ? `${schritte.slice(0, -1).join(', ')} und ${schritte.at(-1)}` : schritte[0];
-    const wo = inhalt.ort ? `In ${inhalt.ort} haben wir` : 'Bei diesem Projekt haben wir';
+    // Wie im Bild und in den Hashtags: ein Ort, den wir nicht kennen, wird nicht genannt.
+    const ort = inhalt.daten?.ortBekannt === false ? null : inhalt.ort;
+    const wo = ort ? `In ${ort} haben wir` : 'Bei diesem Projekt haben wir';
     const raum = inhalt.raum ? ` – hier im ${inhalt.raum === 'Küche' ? 'Bereich Küche' : inhalt.raum}` : '';
     const extra = inhalt.besonderheit ? ` ${inhalt.besonderheit.replace(/\s*$/, '').replace(/([^.!?])$/, '$1.')}` : '';
     return `${wo} ${reihe}${raum}.${extra}\n\n${cta(inhalt.typ, wechsel)}`;

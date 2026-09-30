@@ -61,7 +61,7 @@ test('Zentrale: Host-Pruefung, Anmeldung und Rollen', async (t) => {
 
   const { id } = db.inhaltAnlegen({ quelle: 'shopify', typ: 'raumidee', titel: 'Raumidee: Amara', produkt_titel: 'Amara Eiche', bodenart: 'Klebevinyl', einwilligung: true, daten: { gruppe: 'Klebevinyl', url: 'https://www.teppich-paradies.net/products/amara', bilder: [{ src: 'https://cdn.shopify.com/a.jpg' }] } });
   const rolle = { wert: 'inhaber' };
-  const anmeldung = { noetig: () => true, benutzer: sid => (sid === 'ok' ? { name: 'Test', rolle: rolle.wert } : null), gesperrt: () => false, fehlversuch() {}, pruefe: () => null, neueSitzung: () => 'ok', beenden() {} };
+  const anmeldung = { noetig: () => true, benutzer: sid => (sid === 'ok' ? { name: 'Test', rolle: rolle.wert } : null), gesperrt: () => false, fehlversuch() {}, erfolg() {}, pruefe: () => null, neueSitzung: () => 'ok', beenden() {} };
   const basis = await starte(t, erstelleZentrale({ db, env: {}, dir, anmeldung, renderer: scheinRendern }));
   const sitzung = ['tp_social_sid', 'ok'].join('=');
   const mit = (init = {}) => ({ ...init, headers: [...Object.entries(init.headers ?? {}), ['cookie', sitzung]] });

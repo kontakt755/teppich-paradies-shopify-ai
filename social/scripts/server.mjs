@@ -20,12 +20,14 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { createServer } from 'node:http';
 import path from 'node:path';
+import { Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
 import { authentifiziere, benutzerDateiExistiert, leseBenutzer } from '../../operations/lib/benutzer.mjs';
 import { clientAus, ladeLernstand, planeOffene } from '../lib/ablauf.mjs';
 import { oeffne } from '../lib/db.mjs';
 import { DATEITYPEN, EingangFehler, erkenneTyp, findeZugang, GRENZEN, legeBaustelleAn, pruefeAngaben, trageDateiEin } from '../lib/eingang.mjs';
-import { bearbeiten, freigeben, FreigabeFehler, pruefe, medienZuBeitrag, verwerfen, zurueckholen } from '../lib/freigabe.mjs';
+import { bearbeiten, freigeben, FreigabeFehler, holeGeplanteZurueck, pruefe, medienZuBeitrag, verwerfen, zurueckholen } from '../lib/freigabe.mjs';
 import { BODENARTEN, ORTE, RAEUME, TAETIGKEITEN } from '../lib/konfig.mjs';
 import { medienDir, privatDir, sitzungenPfad, socialDir } from '../lib/pfade.mjs';
 import { verarbeiteEingang } from '../lib/pruefung.mjs';
@@ -96,6 +98,7 @@ export function erstelleAnmeldung({ env = process.env, datei = sitzungenPfad(), 
       f.n += 1; if (f.n >= 5) { f.bis = jetzt() + 5 * 60 * 1000; f.n = 0; }
       fehlversuche.set(schluessel, f);
     },
+    erfolg(schluessel) { fehlversuche.delete(schluessel); },
     pruefe({ name = '', passwort: eingabe = '' } = {}) {
       if (benutzerDateiExistiert()) {
         const b = authentifiziere(leseBenutzer(), name, eingabe);
@@ -117,7 +120,12 @@ export function erstelleAnmeldung({ env = process.env, datei = sitzungenPfad(), 
       if (!sid) return null;
       const s = sitzungen.get(sha(sid).toString('hex'));
       if (!s || s.bis <= jetzt()) return null;
-      return s.benutzer;
+      // Notzugang (ohne Kuerzel) bleibt, wie er ist. Alle anderen bei jedem Zugriff
+      // frisch aus benutzer.json: wer deaktiviert oder herabgestuft wird, verliert
+      // seine Rechte sofort - nicht erst, wenn die Sitzung nach 30 Tagen ablaeuft.
+      if (!s.benutzer.kuerzel) return s.benutzer;
+      const aktuell = benutzerDateiExistiert() ? leseBenutzer().find(b => b.kuerzel === s.benutzer.kuerzel && b.aktiv !== false) : null;
+      return aktuell ? { name: aktuell.name, kuerzel: aktuell.kuerzel, rolle: aktuell.rolle } : null;
     },
     beenden(sid) { if (sid) { sitzungen.delete(sha(sid).toString('hex')); speichere(); } },
   };
@@ -150,9 +158,9 @@ function stand(db, env, dir) {
   return {
     uebersicht: db.uebersicht(),
     freigabe: ansicht(BEITRAG_STATUS.FREIGABE),
-    geplant: ansicht(BEITRAG_STATUS.GEPLANT),
+    geplant: ansicht([BEITRAG_STATUS.GEPLANT, BEITRAG_STATUS.IN_ARBEIT]),
     fehler: ansicht(BEITRAG_STATUS.FEHLER),
-    veroeffentlicht: db.beitraege({ status: [BEITRAG_STATUS.VEROEFFENTLICHT, BEITRAG_STATUS.ARCHIV] }).slice(-30).reverse().map(b => ({ ...beitragAnsicht(db, b), kennzahlen: kennzahlen.get(b.id) ?? [] })),
+    veroeffentlicht: db.letzteVeroeffentlichte(30).map(b => ({ ...beitragAnsicht(db, b), kennzahlen: kennzahlen.get(b.id) ?? [] })),
     vorrat: db.inhalte({ status: [INHALT_STATUS.NEU, INHALT_STATUS.IN_PRUEFUNG] }).map(i => ({
       id: i.id, titel: i.titel, quelle: i.quelle, typLabel: TYPEN[i.typ]?.label ?? i.typ, status: STATUS_LABEL[i.status], grund: i.notiz, ort: i.ort, bodenart: i.bodenart,
       erstellt: i.erstellt, eingereichtVon: i.eingereicht_von,
@@ -184,7 +192,7 @@ export function erstelleZentrale({ db, env = process.env, dir = socialDir(), anm
     if ((m = /^\/api\/inhalt\/(\d+)\/(entwurf|verwerfen)$/.exec(pfad)) && schreibend) {
       if (!darfFreigeben) throw new HttpFehler(403, 'Das macht der Inhaber.');
       const id = Number(m[1]); const body = await liesJson(req);
-      if (m[2] === 'verwerfen') { db.inhaltAendern(id, { status: INHALT_STATUS.VERWORFEN }); db.ereignis(wer, 'inhalt-verworfen', `inhalt:${id}`); return sende(res, 200, { ok: true }); }
+      if (m[2] === 'verwerfen') { db.inhaltAendern(id, { status: INHALT_STATUS.VERWORFEN }); db.ereignis(wer, 'inhalt-verworfen', `inhalt:${id}`); holeGeplanteZurueck(db, id, 'Das Material wurde verworfen.', { von: wer }); return sende(res, 200, { ok: true }); }
       const b = await erstelleEntwurf(db, { inhaltId: id, format: body.format ?? null, von: wer }, { rendere: renderer, dir, env });
       planeOffene(db, { dir });
       return sende(res, 200, { ok: true, beitrag: beitragAnsicht(db, db.beitrag(b.id)) });
@@ -203,11 +211,15 @@ export function erstelleZentrale({ db, env = process.env, dir = socialDir(), anm
       const sid = cookies(req)[SITZUNG];
       if (pfad === '/api/login' && req.method === 'POST') {
         const body = await liesJson(req);
-        const schluessel = `${req.socket?.remoteAddress}::${String(body.name ?? '').toLowerCase()}`;
-        if (anmeldung.gesperrt(schluessel)) throw new HttpFehler(429, 'Zu viele Fehlversuche – bitte fünf Minuten warten.');
+        // Zwei Zaehler: je Adresse und je Adresse+Name. Das Notpasswort gilt mit
+        // jedem Namen - nur nach Namen zu zaehlen liesse es unbegrenzt raten.
+        const adresse = String(req.socket?.remoteAddress);
+        const schluessel = `${adresse}::${String(body.name ?? '').toLowerCase()}`;
+        if (anmeldung.gesperrt(schluessel) || anmeldung.gesperrt(adresse)) throw new HttpFehler(429, 'Zu viele Fehlversuche – bitte fünf Minuten warten.');
         const b = anmeldung.pruefe(body);
         await new Promise(r => setTimeout(r, 300));
-        if (!b) { anmeldung.fehlversuch(schluessel); throw new HttpFehler(401, 'Name oder Passwort falsch'); }
+        if (!b) { anmeldung.fehlversuch(schluessel); anmeldung.fehlversuch(adresse); throw new HttpFehler(401, 'Name oder Passwort falsch'); }
+        anmeldung.erfolg(schluessel); anmeldung.erfolg(adresse);
         return sende(res, 200, { ok: true }, undefined, { 'Set-Cookie': `${SITZUNG}=${anmeldung.neueSitzung(b)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${SITZUNG_MS / 1000}` });
       }
       if (pfad === '/api/logout' && req.method === 'POST') {
@@ -217,6 +229,7 @@ export function erstelleZentrale({ db, env = process.env, dir = socialDir(), anm
       const benutzer = anmeldung.noetig() ? anmeldung.benutzer(sid) : null;
       if (anmeldung.noetig() && !benutzer) {
         if (pfad.startsWith('/api/') || pfad.startsWith('/medien/')) throw new HttpFehler(401, 'Anmeldung erforderlich');
+        if (pfad === '/zentrale.css') return sende(res, 200, fs.readFileSync(path.join(UI, 'zentrale.css')), TYPEN_STATISCH['.css']);
         return sende(res, 200, fs.readFileSync(path.join(UI, 'anmelden.html')), TYPEN_STATISCH['.html']);
       }
 
@@ -246,43 +259,42 @@ export function erstelleZentrale({ db, env = process.env, dir = socialDir(), anm
 // --- Upload ---------------------------------------------------------------------
 
 export function erstelleUpload({ db, dir = socialDir(), jetzt = () => Date.now(), nachUpload = inhaltId => verarbeiteEingang(db, { dir, nur: inhaltId }) } = {}) {
-  const laufend = new Map();       // uploadId -> { inhaltId, ordner, name, dateien, bis }
-  const fehlversuche = new Map();  // ip -> { n, bis }
+  const laufend = new Map();       // uploadId -> { inhaltId, ordner, name, dateien, bytes, belegt, bis }
   const jeTag = new Map();         // name|tag -> Anzahl Uploads
 
-  function zugang(req, token) {
-    const ip = req.socket?.remoteAddress ?? '?';
-    const f = fehlversuche.get(ip);
-    if (f && f.bis > jetzt()) throw new HttpFehler(429, 'Zu viele Versuche – bitte später noch einmal.');
+  // Bewusst keine Sperre nach Fehlversuchen: der Link hat 144 Bit Zufall und ist
+  // nicht zu erraten. Eine Sperre je Adresse wuerde hinter einem Proxy (Funnel)
+  // alle Monteure gemeinsam treffen - zehn Aufrufe eines Fremden genuegten.
+  function zugang(token) {
     const z = findeZugang(token);
-    if (!z) {
-      const neu = f ?? { n: 0, bis: 0 };
-      neu.n += 1; if (neu.n >= 10) { neu.bis = jetzt() + 15 * 60 * 1000; neu.n = 0; }
-      fehlversuche.set(ip, neu);
-      throw new HttpFehler(404, 'Dieser Link ist nicht (mehr) gültig. Bitte im Büro einen neuen geben lassen.');
-    }
+    if (!z) throw new HttpFehler(404, 'Dieser Link ist nicht (mehr) gültig. Bitte im Büro einen neuen geben lassen.');
     return z;
   }
 
-  /** Schreibt den Anfragekoerper direkt auf die Platte - ein 300-MB-Video darf nicht im Speicher landen. */
-  function speichere(req, ziel, max) {
-    return new Promise((ok, fehler) => {
-      const aus = fs.createWriteStream(ziel, { mode: 0o600 });
-      let groesse = 0; let kopf = Buffer.alloc(0); let erledigt = false;
-      const abbruch = (e) => { if (erledigt) return; erledigt = true; aus.destroy(); fs.rmSync(ziel, { force: true }); fehler(e); };
-      req.on('data', (c) => {
-        if (erledigt) return;
-        groesse += c.length;
-        if (kopf.length < 16) kopf = Buffer.concat([kopf, c]).subarray(0, 16);
-        if (groesse > max) { abbruch(new HttpFehler(413, 'Datei zu groß')); req.resume(); return; }
-        aus.write(c);
-      });
-      req.on('end', () => { if (!erledigt) { erledigt = true; aus.end(() => ok({ groesse, kopf })); } });
-      req.on('error', abbruch);
-      // Bricht die Verbindung mitten im Upload ab (Funkloch), kommt kein "end" -
-      // die halbe Datei darf dann nicht liegen bleiben.
-      req.on('close', () => abbruch(new HttpFehler(400, 'Verbindung abgebrochen')));
+  /**
+   * Schreibt den Anfragekoerper direkt auf die Platte - ein 300-MB-Video darf
+   * nicht im Speicher landen. pipeline kuemmert sich um Rueckstau (langsame
+   * Platte) und um jeden Fehler auf beiden Seiten: volle Platte, abgerissene
+   * Verbindung. Ohne das beendete ein Schreibfehler den ganzen Dienst.
+   */
+  async function speichere(req, ziel, max) {
+    let groesse = 0; let kopf = Buffer.alloc(0);
+    const waechter = new Transform({
+      transform(stueck, _kodierung, weiter) {
+        groesse += stueck.length;
+        if (kopf.length < 16) kopf = Buffer.concat([kopf, stueck]).subarray(0, 16);
+        weiter(groesse > max ? new HttpFehler(413, 'Datei zu groß') : null, stueck);
+      },
     });
+    try {
+      await pipeline(req, waechter, fs.createWriteStream(ziel, { mode: 0o600 }));
+    } catch (e) {
+      fs.rmSync(ziel, { force: true });
+      if (e instanceof HttpFehler) { req.resume(); throw e; }
+      if (e?.code === 'ENOSPC') throw new HttpFehler(507, 'Der Speicher im Büro ist voll – bitte Bescheid geben.');
+      throw new HttpFehler(400, 'Verbindung abgebrochen – bitte noch einmal senden.');
+    }
+    return { groesse, kopf };
   }
 
   return async function upload(req, res) {
@@ -292,7 +304,7 @@ export function erstelleUpload({ db, dir = socialDir(), jetzt = () => Date.now()
       const m = /^\/u\/([A-Za-z0-9_-]{16,64})(?:\/(start|datei|fertig)(?:\/([a-f0-9]{16}))?)?$/.exec(pfad);
       if (!m) throw new HttpFehler(404, 'Nicht gefunden');
       const [, token, aktion, uploadId] = m;
-      const z = zugang(req, token);
+      const z = zugang(token);
 
       if (!aktion && req.method === 'GET') {
         const seite = fs.readFileSync(path.join(UI, 'upload.html'), 'utf8')
@@ -307,7 +319,7 @@ export function erstelleUpload({ db, dir = socialDir(), jetzt = () => Date.now()
         const angaben = pruefeAngaben(await liesJson(req));
         const { id, ordner } = legeBaustelleAn(db, angaben, { von: z.name, jetzt: new Date(jetzt()), dir });
         const neu = crypto.randomBytes(8).toString('hex');
-        laufend.set(neu, { inhaltId: id, ordner, name: z.name, dateien: 0, bytes: 0, bis: jetzt() + 2 * 60 * 60 * 1000 });
+        laufend.set(neu, { inhaltId: id, ordner, name: z.name, dateien: 0, bytes: 0, belegt: false, bis: jetzt() + 2 * 60 * 60 * 1000 });
         jeTag.set(tag, (jeTag.get(tag) ?? 0) + 1);
         return sende(res, 200, { upload: neu, ortVerworfen: angaben.ortVerworfen });
       }
@@ -317,23 +329,30 @@ export function erstelleUpload({ db, dir = socialDir(), jetzt = () => Date.now()
 
       if (aktion === 'datei' && req.method === 'PUT') {
         if (lauf.dateien >= GRENZEN.maxDateien) throw new HttpFehler(413, `Höchstens ${GRENZEN.maxDateien} Dateien auf einmal`);
-        const nummer = String(lauf.dateien + 1).padStart(2, '0');
-        const tmp = path.join(lauf.ordner, `${nummer}.teil`);
         const rest = GRENZEN.maxGesamtBytes - lauf.bytes;
         if (rest <= 0) throw new HttpFehler(413, 'Zu viel auf einmal – bitte in zwei Uploads aufteilen');
-        const { groesse, kopf } = await speichere(req, tmp, Math.min(GRENZEN.maxVideoBytes, rest));
-        const typ = erkenneTyp(kopf);
-        const info = DATEITYPEN[typ];
-        if (!info || (info.art === 'bild' && groesse > GRENZEN.maxBildBytes)) {
-          fs.rmSync(tmp, { force: true });
-          throw new HttpFehler(415, info ? 'Bild zu groß' : 'Nur Fotos und Videos (JPG, HEIC, PNG, MP4, MOV)');
+        // Eine Datei nach der anderen: zwei gleichzeitige Sendungen wuerden sich
+        // Nummer und Groessenzaehler teilen. Die Seite sendet ohnehin der Reihe nach.
+        if (lauf.belegt) throw new HttpFehler(409, 'Es läuft noch eine Übertragung – bitte kurz warten.');
+        lauf.belegt = true;
+        try {
+          const tmp = path.join(lauf.ordner, `${crypto.randomBytes(6).toString('hex')}.teil`);
+          const { groesse, kopf } = await speichere(req, tmp, Math.min(GRENZEN.maxVideoBytes, rest));
+          const typ = erkenneTyp(kopf);
+          const info = DATEITYPEN[typ];
+          if (!info || (info.art === 'bild' && groesse > GRENZEN.maxBildBytes)) {
+            fs.rmSync(tmp, { force: true });
+            throw new HttpFehler(415, info ? 'Bild zu groß' : 'Nur Fotos und Videos (JPG, HEIC, PNG, MP4, MOV)');
+          }
+          const ziel = path.join(lauf.ordner, `${String(lauf.dateien + 1).padStart(2, '0')}.${info.endung}`);
+          fs.renameSync(tmp, ziel);
+          lauf.dateien += 1;
+          lauf.bytes += groesse;
+          trageDateiEin(db, lauf.inhaltId, { datei: ziel, typ, dir });
+          return sende(res, 200, { ok: true, art: info.art, nummer: lauf.dateien });
+        } finally {
+          lauf.belegt = false;
         }
-        const ziel = path.join(lauf.ordner, `${nummer}.${info.endung}`);
-        fs.renameSync(tmp, ziel);
-        lauf.dateien += 1;
-        lauf.bytes += groesse;
-        trageDateiEin(db, lauf.inhaltId, { datei: ziel, typ, dir });
-        return sende(res, 200, { ok: true, art: info.art, nummer: lauf.dateien });
       }
 
       if (aktion === 'fertig' && req.method === 'POST') {
@@ -369,5 +388,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   }
   const extraHosts = String(env.TP_DASHBOARD_EXTRA_HOSTS ?? '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
   createServer(erstelleZentrale({ db, env, dir, anmeldung, extraHosts })).listen(port, host, () => console.log(`Social-Zentrale: http://${host}:${port}${anmeldung.noetig() ? ' (Anmeldung wie im Control Center)' : ''}`));
-  createServer(erstelleUpload({ db, dir })).listen(uploadPort, uploadHost, () => console.log(`Monteur-Upload:  http://${uploadHost}:${uploadPort}/u/<persönlicher Link>`));
+  // Nodes Standard bricht jede Anfrage nach fuenf Minuten ab - ein 150-MB-Video
+  // ueber schwaches Netz braucht laenger. Dafuer endet eine Verbindung, auf der
+  // zwei Minuten lang gar nichts kommt.
+  const uploadServer = createServer({ requestTimeout: 60 * 60 * 1000 }, erstelleUpload({ db, dir }));
+  uploadServer.on('connection', socket => socket.setTimeout(2 * 60 * 1000, () => socket.destroy()));
+  uploadServer.listen(uploadPort, uploadHost, () => console.log(`Monteur-Upload:  http://${uploadHost}:${uploadPort}/u/<persönlicher Link>`));
 }

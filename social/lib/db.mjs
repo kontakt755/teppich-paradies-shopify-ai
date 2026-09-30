@@ -237,6 +237,28 @@ export function oeffne(datei = dbPfad(), { jetzt = () => new Date() } = {}) {
       aendern('beitrag', id, { ...felder, aktualisiert: iso(jetzt()) });
       return db.beitrag(id);
     },
+    /**
+     * Nimmt einen geplanten Beitrag in Arbeit - in einer einzigen Anweisung, damit
+     * von zwei gleichzeitigen Laeufen genau einer gewinnt. true = dieser Lauf hat ihn.
+     */
+    beanspruche(id) {
+      const r = sql.prepare('UPDATE beitrag SET status = ?, aktualisiert = ? WHERE id = ? AND status = ?').run(BEITRAG_STATUS.IN_ARBEIT, iso(jetzt()), id, BEITRAG_STATUS.GEPLANT);
+      return Number(r.changes) === 1;
+    },
+    /** Beitraege, die seit `seit` in Arbeit haengen - ein abgebrochener Lauf. */
+    haengende(seit) {
+      return lies('beitrag', 'WHERE status = ? AND aktualisiert < ?', BEITRAG_STATUS.IN_ARBEIT, iso(seit));
+    },
+    letzteVeroeffentlichte(grenze = 30) {
+      return lies('beitrag', 'WHERE status IN (?, ?) ORDER BY veroeffentlicht_am DESC LIMIT ?', BEITRAG_STATUS.VEROEFFENTLICHT, BEITRAG_STATUS.ARCHIV, grenze);
+    },
+    veroeffentlichtSeit(seit) {
+      return lies('beitrag', 'WHERE veroeffentlicht_am IS NOT NULL AND veroeffentlicht_am >= ?', iso(seit));
+    },
+    /** Shop-Anlaesse einer Familie und Art, die seit `seit` angelegt wurden (ausser wegen veralteter Bilder verworfene). */
+    shopAnlassSeit(familie, typ, seit) {
+      return sql.prepare("SELECT COUNT(*) n FROM inhalt WHERE quelle = 'shopify' AND typ = ? AND json_extract(daten, '$.familie') = ? AND erstellt >= ? AND (schluessel IS NULL OR schluessel NOT LIKE '%:veraltet:%')").get(typ, familie, iso(seit)).n > 0;
+    },
     /** Faellige, freigegebene Beitraege - die Arbeitsliste des Publishers. */
     faellige(zeitpunkt = jetzt()) {
       return lies('beitrag', 'WHERE status = ? AND geplant_am IS NOT NULL AND geplant_am <= ? ORDER BY geplant_am', BEITRAG_STATUS.GEPLANT, iso(zeitpunkt));
@@ -263,7 +285,7 @@ export function oeffne(datei = dbPfad(), { jetzt = () => new Date() } = {}) {
     uebersicht() {
       const zahl = (q, ...w) => sql.prepare(q).get(...w).n;
       const offen = "('NEU','IN_PRUEFUNG')";
-      const geplant = lies('beitrag', 'WHERE status = ? ORDER BY geplant_am LIMIT 20', BEITRAG_STATUS.GEPLANT).map(b => {
+      const geplant = lies('beitrag', 'WHERE status IN (?, ?) ORDER BY geplant_am LIMIT 20', BEITRAG_STATUS.GEPLANT, BEITRAG_STATUS.IN_ARBEIT).map(b => {
         const i = db.inhalt(b.inhalt_id);
         return { id: b.id, geplantAm: b.geplant_am, format: b.format, typ: i?.typ ?? null, typLabel: TYPEN[i?.typ]?.label ?? i?.typ ?? 'Beitrag', titel: i?.titel ?? '' };
       });
