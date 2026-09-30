@@ -1,5 +1,18 @@
 # Raummaß und Meterware: Katalogaudit 2026-09-29
 
+## Nachprüfung 2026-09-30
+
+Der öffentliche Katalog enthält jetzt 526 Produkte. Weiterhin haben 50 Produkte
+beide Zuschnittarten: 19 nur mit rechnerischem Raummaß-Streichpreis und 31 mit
+Streichpreisen bei beiden Zuschnittarten. Das auf der Produktseite als „Serena“
+bezeichnete Produkt hat noch den Handle `verano-teppichboden-400cm-500cm` und
+gehört zu den 19 Fällen. Nach dem erneuten Einspielen der Schutzregel in das
+aktuelle Live-Theme wurden alle 50 öffentlichen Produktseiten geprüft: Bei
+den 19 einseitigen Fällen wird kein Streichpreis mehr ausgegeben; bei den 31
+beidseitigen Fällen bleibt die Ausgabe erhalten. Keine Liquid-Fehler. In den
+öffentlichen `body_html`-Beschreibungen dieser 50 Produkte wurden keine
+Rabattversprechen gefunden. Shopify-Variantenpreise wurden nicht geändert.
+
 Quelle: öffentlicher Shopify-Produktfeed (`/products.json`, 3 Seiten, 507 veröffentlichte Produkte). Die Prüfung erfasst Variantenpreise, Vergleichspreise und `body_html`. Aktions-Metafelder sind im öffentlichen Feed nicht enthalten; ob eine Produktaktion gerade aktiv ist, muss vor jeder Preisfreigabe im Admin geprüft werden.
 
 ## Ergebnis
