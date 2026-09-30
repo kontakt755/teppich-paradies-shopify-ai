@@ -32,7 +32,9 @@
   # Onlineshop-Einstellungen liefert Shopify nur den Shopnamen; <title> hatte
   # dafuer schon einen Fallback, og:title nicht - dort stand weiter
   # "TeppichParadies" gegen einen ausformulierten <title> (gemessen 2026-09-23).
-  assign tp_startseite_titel = 'Teppichboden, Vinyl & Verlegeservice Oranienburg | Teppich Paradies'
+  # Bundesweit statt lokal ausgerichtet (SEO-Audit 2026-09-30, QW 1): das
+  # lokale Ranking haengt am Google-Unternehmensprofil, nicht an diesem Titel.
+  assign tp_startseite_titel = 'Teppichboden & Vinylboden online kaufen | Teppich Paradies'
   assign og_title = page_title | default: tp_marke
   assign tp_canonical_url = canonical_url | default: request.origin
   if request.page_type == 'collection' and collection.handle == 'teppiche'
@@ -301,6 +303,30 @@
     name="robots"
     content="noindex,follow"
   >
+{%- endif %}
+
+{%- comment -%}
+  Angebots-Kollektionen spiegeln die Hauptkategorien fast vollstaendig
+  (gezaehlt am 2026-09-30 ueber /collections/<handle>/products.json):
+  angebote-teppichboden 110 von 113 in teppichboden, angebote-vinylboden
+  281 von 281 in vinylboden-1, angebote-linoleum 9 von 9 in linoleumboden-1,
+  angebote-leisten-zubehoer 69 von 69 in zubehoer/bodenleisten. Als eigene
+  indexierbare Seiten konkurrieren sie mit "Teppichboden kaufen" usw.
+  Verfolgt werden sie weiter, indexiert nicht (SEO-Audit 2026-09-30, 4.3).
+  Echte Aktionsware (stark-reduziert) bleibt bewusst indexierbar.
+  Wird eine Angebotskollektion auf echte Aktionsware begrenzt, Handle hier
+  herausnehmen.
+{%- endcomment -%}
+{%- if request.page_type == 'collection' -%}
+  {%- liquid
+    assign tp_noindex_handles = 'angebote-teppichboden,angebote-vinylboden,angebote-linoleum,angebote-leisten-zubehoer' | split: ','
+  -%}
+  {%- if tp_noindex_handles contains collection.handle -%}
+    <meta
+      name="robots"
+      content="noindex,follow"
+    >
+  {%- endif -%}
 {%- endif %}
 
 {% if page_description %}
