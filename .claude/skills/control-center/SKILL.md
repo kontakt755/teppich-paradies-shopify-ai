@@ -14,7 +14,7 @@ funktionieren** – im Browser, am Handy, mit echten Daten (als Kopie).
 - `docs/control-center/ARCHITEKTUR.md` (Betriebsarten, Netzmodus mit Passwort,
   Einkauf, Heute, Datenaktualisierung) und die letzten Eintraege in
   `docs/control-center/CHANGELOG.md`.
-- `CLAUDE.md` Abschnitt "Dashboard" (issues.json gehoert dem Bot) und Punkt 8
+- `AGENTS.md` Abschnitt "Arbeitskopien" (issues.json gehoert dem Bot) und Punkt 8
   (Lieferanten nur als Pseudonym A-D).
 
 ## Harte Regeln

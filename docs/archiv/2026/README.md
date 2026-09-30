@@ -30,3 +30,13 @@ kostet nichts. Wird eine Datei doch wieder gebraucht, ist sie ein `git mv` entfe
 | `TEPPICHBODEN_MENU_AUDIT.md` | 2026-09-03 | Teppichboden-Menü Audit (#39 – SHP-012) |
 | `WINDOWS_FINAL_RECONCILIATION_READY.md` | 2026-08-14 | — |
 | `api_cost_analysis_report.md` | 2026-08-28 | Claude API: Kostenmodell und Grenzen |
+
+## Nachtrag 2026-09-30 (Workflow-Aufraeumen)
+
+Mit dem Entfernen von Router, Voranalyse und Codex-Pflichtreview hierher verschoben:
+Router-Doku (`AI_ROUTER.md`, `AI_WORKFLOW.md`, `QUICK_START.md` = Claude-API-Router,
+`ONBOARDING_NEW_COLLEAGUE.md`, `CLAUDE_MD_PROPOSAL.md`, `kosten-baseline.md`),
+Status-Zeiger (`NEXT_ACTION.md`, `CURRENT_STATE.md`, `NEXT_AUTONOMOUS_BLOCK.md`) und
+Einmal-Berichte aus August (`MORNING_REPORT.md`, `NIGHT_SHIFT_REPORT.md`,
+`EVENING_INFRASTRUCTURE_REPORT.md`, `WINDOWS_SYNC_REPORT.md`,
+`FIRST_SUPERVISED_TEST_PLAN.md`, `GOOGLE_SHOPPING_SAFETY_REPORT.md`, `TRACKING_REPORT.md`).

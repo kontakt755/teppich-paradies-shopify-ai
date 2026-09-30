@@ -39,7 +39,7 @@ export function handoffText({ branch, pfad, commits, status, issue, basis }) {
   z.push('');
   z.push(issue
     ? `Vor dem Start: gh issue view ${issue} --comments | tail -30 (letzte Notiz lesen), dann weiter in derselben Arbeitskopie.`
-    : 'Vor dem Start: npm run workflow:route -- "<Kurzbeschreibung>".');
+    : 'Vor dem Start: neue Sitzung im Repository oeffnen und diesen Text als ersten Auftrag einfuegen.');
   return z.join('\n');
 }
 

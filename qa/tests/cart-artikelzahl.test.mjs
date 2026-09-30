@@ -114,7 +114,7 @@ test('K: Header-Blase, Warenkorbtitel und Drawer zaehlen nicht mehr cart.item_co
   for (const datei of ['snippets/cart-bubble.liquid', 'snippets/cart-products.liquid']) {
     const code = ohneKommentare(lies(datei));
     assert.doesNotMatch(code, /cart\.item_count/, `${datei} zaehlt wieder Mengen`);
-    // capture um render - "render ... as var" verwirft Shopify still (CLAUDE.md Punkt 3).
+    // capture um render - "render ... as var" verwirft Shopify still (AGENTS.md Punkt 3).
     assert.match(code, /\{%-?\s*capture \w+\s*-?%\}\{%-?\s*render 'tp-cart-artikelzahl'\s*-?%\}\{%-?\s*endcapture\s*-?%\}/, datei);
   }
 });

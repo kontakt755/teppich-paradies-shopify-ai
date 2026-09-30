@@ -11,7 +11,7 @@
  * Neue Artikel → DRAFT-Status
  * Bestehende → Idempotente Feldänderungen (nie productSet mit unvollständigen Listen)
  *
- * Guards vor Ausführung: syncpath:guard, workflow:route, theme:guard
+ * Guards vor Ausführung: syncpath:guard, theme:guard
  * Regeln: Keine Löschungen, keine SKU-Änderungen, <10 neue ohne Freigabe
  */
 

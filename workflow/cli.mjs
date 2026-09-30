@@ -7,8 +7,6 @@ import {
   commandName, compareThemeMaps, createDryRunSummary, createPreviewTempDir, deriveWorkflowState, fileSha256, findingsAreClear, livePublishArgs, parseArgs, parseThemeList,
   previewPushArgs, requireSuccess, runBounded, runValidation, selectThemeTargets, themeFileMap, TRACKED_EVIDENCE_PATH, verifyPreviewPayload, verifyPreviewSnapshot, writeRuntimeReport, writeTrackedEvidence,
 } from './core.mjs';
-import { sessionModelDirective } from './session-model.mjs';
-import { deriveHandoffState, formatRouterOutput, normalizeTaskText, planContinue, routeTask } from './router.mjs';
 import { acquireWorktreeLock, releaseOnProcessExit } from './worktree-lock.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -265,62 +263,6 @@ function readRuntimeJson(name) {
   try { return fs.existsSync(target) ? JSON.parse(fs.readFileSync(target, 'utf8')) : null; } catch { return null; }
 }
 
-function changedFilesSince(commit) {
-  const files = new Set();
-  const collect = result => {
-    if (result.exitCode !== 0) return;
-    result.stdout.split('\n').map(line => line.trim()).filter(Boolean).filter(file => file !== TRACKED_EVIDENCE_PATH).forEach(file => files.add(file));
-  };
-  if (commit) collect(run('git', ['diff', '--name-only', commit, 'HEAD'], { timeoutMs: 60_000 }));
-  collect(run('git', ['diff', '--name-only'], { timeoutMs: 60_000 }));
-  collect(run('git', ['diff', '--name-only', '--cached'], { timeoutMs: 60_000 }));
-  collect(run('git', ['ls-files', '--others', '--exclude-standard'], { timeoutMs: 60_000 }));
-  return [...files].sort();
-}
-
-function currentHandoffState() {
-  const repo = context();
-  const route = readRuntimeJson('task.json');
-  const latest = readRuntimeJson('latest.json');
-  const review = readRuntimeJson('review.json');
-  const state = deriveHandoffState({
-    route, repo, latest, review,
-    changedFiles: changedFilesSince(route?.routedAtHead),
-    latestChangedFiles: latest?.commit ? changedFilesSince(latest.commit) : null,
-    pr: latest?.pr ?? null,
-  });
-  writeRuntimeReport(root, 'state.json', state);
-  return state;
-}
-
-function printHandoffState(state) {
-  console.log([
-    `TASK_ID: ${state.taskId ?? '-'}`,
-    `TASK_CLASS: ${state.taskClass ?? '-'}`,
-    `BRANCH: ${state.branch ?? '-'}`,
-    `IMPLEMENTER: ${state.implementer ?? '-'}`,
-    `COMMIT: ${state.commit ?? '-'}`,
-    `PR: ${state.pr?.number ?? state.pr?.url ?? state.pr ?? '-'}`,
-    `VALIDATION_STATUS: ${state.validationStatus}`,
-    `P0: ${state.p0 ?? '-'}`,
-    `P1: ${state.p1 ?? '-'}`,
-    `REVIEW_REQUIRED: ${state.reviewRequired ? 'JA' : 'NEIN'}`,
-    `REVIEW_RECOMMENDED: ${state.reviewRecommended ? 'JA' : 'NEIN'}`,
-    `REVIEWER: ${state.reviewer ?? '-'}`,
-    `REVIEW_STATUS: ${state.reviewStatus}`,
-    `EXTERNAL_BLOCK: ${state.externalBlock ?? '-'}`,
-    `NEXT_AGENT: ${state.nextAgent ?? '-'}`,
-    `LOCAL_RUNNER_REQUIRED: ${state.localRunnerRequired ? 'JA' : 'NEIN'}`,
-    `VALIDATION_SCOPE: ${state.requiredValidationScope ?? 'STATIC'}`,
-    `SHOPIFY_WRITE_REQUIRED: ${state.shopifyWriteRequired ? 'JA' : 'NEIN'}`,
-    `PROTECTED_ACTIONS: ${state.protectedActions?.length ? state.protectedActions.join(',') : '-'}`,
-    `HUMAN_GATE: ${state.humanGate}`,
-    `HUMAN_APPROVAL_STORED: NEIN`,
-    `NEXT_ALLOWED_ACTION: ${state.nextAllowedAction}`,
-    `UPDATED_AT: ${state.updatedAt}`,
-  ].join('\n'));
-}
-
 function themeList(store) {
   const result = run(commandName('shopify'), ['theme', 'list', '--store', store, '--json'], { timeoutMs: 60_000 });
   return parseThemeList(result);
@@ -330,7 +272,7 @@ function themeList(store) {
  * Laeufe, die den Worktree veraendern: sie pushen, schreiben Evidence und
  * lassen QA die Theme-Check-Baseline fortschreiben. Zwei davon gleichzeitig im
  * selben Verzeichnis ueberschreiben sich (siehe workflow/worktree-lock.mjs).
- * doctor, route und die uebrigen Leselaeufe bleiben absichtlich frei - sie
+ * doctor und die uebrigen Leselaeufe bleiben absichtlich frei - sie
  * duerfen auch waehrend eines Deploys Auskunft geben.
  */
 const LOCKED_MODES = new Set(['preview', 'live', 'validate']);
@@ -359,41 +301,7 @@ async function runMode() {
   if (mode === 'doctor') return doctor();
   if (mode === 'validate') return validate({ staticOnly: args.static === true });
 
-  if (mode === 'route') {
-    const current = context();
-    const taskText = normalizeTaskText(rawArgs.filter(token => !token.startsWith('--')).join(' '));
-    const route = routeTask({ text: taskText, branch: current.branch, head: current.head });
-    writeRuntimeReport(root, 'task.json', route);
-    const state = currentHandoffState();
-    console.log(formatRouterOutput(route, state.nextAllowedAction));
-    // Modell der Matrix fuer die Sitzung (#670); Rueckfall auf Ausgabe.
-    console.log(sessionModelDirective(route.modelPlan).lines.join('\n'));
-    return route;
-  }
-
-  if (mode === 'state' || mode === 'status' || mode === 'next' || mode === 'continue') {
-    const routedTask = readRuntimeJson('task.json');
-    if (routedTask) {
-      const state = currentHandoffState();
-      if (mode === 'next') {
-        console.log(`NEXT_ALLOWED_ACTION: ${state.nextAllowedAction}`);
-        return state;
-      }
-      if (mode === 'continue') {
-        const decision = planContinue(state, { localRunner: args['local-runner'] === true || process.platform === 'darwin', retryNow: args['retry-now'] === true });
-        if (decision.kind === 'VALIDATE_STATIC') return validate({ staticOnly: true });
-        if (decision.kind === 'VALIDATE_FULL') return validate();
-        if (decision.kind === 'STOP' && decision.reason === 'NEEDS_LOCAL_RUNNER') console.log('NEEDS_LOCAL_RUNNER: Lokalen Mac-Runner verwenden; Storefront-Browserchecks nicht in der Cloud erzwingen.');
-        else if (decision.kind === 'STOP' && decision.reason === 'BLOCKED_EXTERNAL') console.log('BLOCKED_EXTERNAL: Später mit npm run workflow:continue -- --retry-now erneut versuchen; kein Agenten-Retry.');
-        else printHandoffState(state);
-        if (decision.kind === 'STOP') process.exitCode = 2;
-        if (decision.kind === 'STOP') return state;
-        printHandoffState(state);
-        return state;
-      }
-      printHandoffState(state);
-      return state;
-    }
+  if (mode === 'state' || mode === 'status' || mode === 'next') {
     const current = context();
     const latest = readRuntimeJson('latest.json');
     const state = deriveWorkflowState({ ...current, latest });

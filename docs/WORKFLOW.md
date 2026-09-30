@@ -6,7 +6,7 @@
 
 1. Ahmet gibt Codex eine Aufgabe.
 2. Codex erstellt `feature/<name>`, `fix/<name>` oder `chore/<name>` – nie Arbeit direkt auf `main`.
-3. Codex ändert und führt die vom Router verlangte Testtiefe aus: normalerweise `npm run workflow:validate -- --static`, bei ausdrücklicher Storefront-/Browser-Prüfung `npm run workflow:validate`.
+3. Codex ändert und testet: normalerweise `npm run workflow:validate -- --static`, bei Storefront-/Browser-Änderungen `npm run workflow:validate`.
 4. Ein empfohlenes Review darf parallel oder später erfolgen und blockiert die lokale Umsetzung nicht. Nach P0=0/P1=0, Commit und Branch-Push führt `npm run workflow:pr -- --p0 0 --p1 0 --title "Titel"` die sicheren statischen Checks erneut für den gepushten HEAD aus und erstellt höchstens einen Draft-PR gegen `main`.
 5. Ahmet prüft und gibt den Merge ausdrücklich frei. Es gibt keinen Auto-Merge.
 6. Nach dem Merge wird lokales `main` auf `origin/main` aktualisiert. Ein vorhandenes, eindeutig unpublished Preview-Theme kann nach separater Freigabe mit `npm run workflow:preview -- --theme-id ID --p0 0 --p1 0 --approve-preview` aktualisiert werden.
@@ -14,10 +14,7 @@
 
 ## Befehle
 
-- `npm run workflow:route -- "Neue Aufgabe: ..."`: klassifiziert Aufwand A–D und ermittelt davon getrennt Testtiefe, Review-Empfehlung und echte Protected Actions. Startet keine externe KI.
-- `npm run workflow:status`: erzeugt den maschinenlesbaren Handoff-State neu aus Task, Git-Diff und commitgebundener Evidence.
-- `npm run workflow:next`: nennt genau die nächste erlaubte Aktion.
-- `npm run workflow:continue`: führt den nächsten Testschritt aus oder nennt die nächste Arbeitsaktion. Auf macOS startet erforderliche Full-QA automatisch; ein späterer externer Retry ist explizit mit `-- --retry-now` möglich.
+- `npm run workflow:status` / `npm run workflow:next`: leiten Zustand und nächste erlaubte Aktion aus Git und commitgebundener Evidence ab.
 - `npm run workflow:validate`: Unit, Automation, Workflow-Tests, QA Evidence, Secret Scan, Compare, SEO, Full QA und Sales nacheinander. Sales muss 6/6 PASS und `orderCompleted: false` liefern.
 - `npm run workflow:validate -- --dry-run`: zeigt den Ablauf, führt nichts aus und meldet niemals PASS.
 - `npm run workflow:pr -- --p0 0 --p1 0 --title "..."`: nur auf erlaubtem Branch, sauberem und vollständig gepushtem HEAD; wiederholt statische Checks und erstellt höchstens einen Draft-PR. Ein Draft-PR ist noch keine Preview- oder Live-Freigabe.
@@ -25,7 +22,7 @@
 - `npm run workflow:live`: ist standardmäßig gesperrt. Selbst eine freigegebene Preview reicht nicht.
 - `npm run workflow:state`: leitet den aktuellen Zustand aus Git und commitgebundener lokaler Evidence ab. Veraltete oder unklare Evidence führt zu `STOP_REVIEW`; Freigaben werden nie gespeichert.
 
-Review-Empfehlungen und Human Gates stoppen keine lokale Implementierung. Die harten Schutzregeln greifen in den konkreten PR-, Preview-, Live- oder Shopify-Write-Befehlen. Details stehen in `docs/AI_ROUTER.md`.
+Human Gates stoppen keine lokale Implementierung. Die harten Schutzregeln greifen in den konkreten PR-, Preview-, Live- oder Shopify-Write-Befehlen und in den Hooks (`.claude/hooks/git-gh-guard.mjs`, `theme-delete-guard.mjs`).
 
 ## Live-Gate
 
@@ -52,7 +49,7 @@ Alle Guards laufen in der PR-Validierung und im SessionStart-Hook für Remote-Se
 
 ## GitHub Actions
 
-PRs gegen `main` führen ohne Shopify-Secrets sichere statische Checks aus: Unit, Automation, Workflow-Tests, QA Evidence, Secret Scan und alle vier Guards. Compare, SEO, Full QA und Sales werden vom Router nur für passende Storefront-Aufgaben verlangt und laufen spätestens bei Preview-/Live-Vorbereitung lokal, weil sie Browser, öffentliche Storefront und stabile Netzwerkbedingungen benötigen.
+PRs gegen `main` führen ohne Shopify-Secrets sichere statische Checks aus: Unit, Automation, Workflow-Tests, QA Evidence, Secret Scan und alle vier Guards. Compare, SEO, Full QA und Sales laufen bei Storefront-Aufgaben und spätestens bei Preview-/Live-Vorbereitung lokal, weil sie Browser, öffentliche Storefront und stabile Netzwerkbedingungen benötigen.
 
 ## iPhone / Remote
 
@@ -64,6 +61,6 @@ Standardweg: **iPhone → ChatGPT Remote → Mac-Codex-Session**. Kurze Aufträg
 - „Preview erstellen“
 - „Live freigeben“
 
-Codex liest `AGENTS.md`, diese Datei, `CURRENT_STATE.md` und `NEXT_ACTION.md`. „Live freigeben“ ist nur die Absicht; vor dem tatsächlichen Publish müssen Theme-ID, Preview-Evidence und der explizite Live-Befehl weiterhin eindeutig bestätigt sein.
+Codex liest `AGENTS.md` und diese Datei. „Live freigeben“ ist nur die Absicht; vor dem tatsächlichen Publish müssen Theme-ID, Preview-Evidence und der explizite Live-Befehl weiterhin eindeutig bestätigt sein.
 
-Der normale Kurzdialog ist damit: „Neue Aufgabe: …“ → „Weiter“ → bei einem echten Gate „Freigeben“. Der Nutzer muss nicht zwischen Claude und Codex vermitteln; der Router nennt die benötigte Rolle, ohne sie per API zu starten.
+Der normale Kurzdialog ist damit: „Neue Aufgabe: …“ → „Weiter“ → bei einem echten Gate „Freigeben“. Claude-Sitzungen arbeiten nach denselben Regeln; es gibt keinen automatischen Router und kein Pflicht-Review zwischen den beiden (entfernt 2026-09-30).
