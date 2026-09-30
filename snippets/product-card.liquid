@@ -67,9 +67,9 @@
   if settings.transition_to_main_product
     assign featured_image = variant_to_link.featured_image
     if tp_raumteile.size == 2 and product.selected_variant == blank
-      assign tp_raumdatei = tp_raumteile | last
+      assign tp_raumdatei = tp_raumteile | last | plus: 0
       for tp_media in product.media
-        if tp_media.preview_image.src contains tp_raumdatei
+        if tp_media.id == tp_raumdatei
           assign featured_image = tp_media.preview_image
           break
         endif
