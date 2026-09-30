@@ -348,5 +348,35 @@
       "success_moderated": "Kommentar gepostet, Moderation ausstehend",
       "success": "Kommentar gepostet"
     }
+  },
+  "shopify": {
+    "checkout": {
+      "order_summary": {
+        "number_items": {
+          "one": "Warenkorb",
+          "other": "Warenkorb"
+        },
+        "subtotal_label_with_quantity": {
+          "one": "Zwischensumme",
+          "other": "Zwischensumme"
+        }
+      }
+    }
+  },
+  "customer_accounts": {
+    "orders": {
+      "order_list": {
+        "items": {
+          "one": "Bestellung",
+          "other": "Bestellung"
+        }
+      }
+    },
+    "order_details": {
+      "subtotal_label_with_quantity": {
+        "one": "Zwischensumme",
+        "other": "Zwischensumme"
+      }
+    }
   }
 }

@@ -13,7 +13,7 @@ niemand, ob die Daten wirklich im Shop stehen.
 ## Die vier Dateien
 
 Alles Lokale liegt unter `~/teppich-paradies-analyse/<vorhaben>/` – nie im
-Repository, weil dort Lieferanten- und Kundendaten stehen (CLAUDE.md Punkt 8).
+Repository, weil dort Lieferanten- und Kundendaten stehen (AGENTS.md Punkt 8).
 
 | Datei | Inhalt |
 |---|---|

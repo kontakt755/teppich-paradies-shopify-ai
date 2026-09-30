@@ -77,6 +77,7 @@
   class="text-block {{ text_block_classes }} text-{{ block_settings.alignment }} {{ block_settings.type_preset | default: 'paragraph' }} spacing-style price-with-unit"
   data-block-id="{{ block.id }}"
   data-product-id="{{ product_resource.id }}"
+  {% if product_resource.handle == 'serena-teppich-nach-mass' %}data-tp-serena-startpreis{% endif %}
   {% if tp_pc_rollware %}data-tp-rollware-headline{% endif %}
   style="
     {% render 'typography-style', settings: block_settings %}

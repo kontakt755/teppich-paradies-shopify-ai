@@ -1,0 +1,81 @@
+{% doc %}
+  Urhebervermerk fuer Herstellerbilder. Manche Bildgeber verlangen in ihren
+  Nutzungsbedingungen einen Copyright-Vermerk, der sich den Aufnahmen
+  zuordnen laesst. Der Wortlaut steht im Produkt-Metafeld custom.bildnachweis
+  und wird unveraendert ausgegeben; ohne Metafeld rendert der Block nichts.
+
+  Seit #753 zeigt der Shop grundsaetzlich keine Lieferantennamen. Dieser Block
+  ist die bewusste Ausnahme dafuer (Inhaberentscheidung 2026-09-30): Er steht
+  nur in Templates, deren Bildgeber den Vermerk verlangt, und der Name kommt
+  allein aus dem Metafeld - das Theme selbst nennt keinen Lieferanten.
+
+  "sichtbarkeit": Im Produktlayout steht die Galerie auf dem Handy ueber den
+  Details, am Desktop daneben. Fuer die Zuordnung zur Aufnahme steht deshalb
+  eine Instanz als erster Block (nur Handy, direkt unter der Galerie) und eine
+  als letzter Block (nur Desktop).
+{% enddoc %}
+{%- liquid
+  assign tp_bn_product = closest.product | default: product
+  assign tp_bn_text = tp_bn_product.metafields.custom.bildnachweis.value | strip
+  assign tp_bn_sicht = block.settings.sichtbarkeit | default: 'beide'
+-%}
+{%- if tp_bn_text != blank -%}
+  <p class="tp-bn tp-bn--{{ tp_bn_sicht }}" {{ block.shopify_attributes }}>
+    {%- if block.settings.label != blank -%}
+      {{ block.settings.label | escape }}&nbsp;
+    {%- endif -%}
+    {{- tp_bn_text | escape -}}
+  </p>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-bn {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #595959;
+  }
+
+  @media screen and (min-width: 750px) {
+    .tp-bn--mobil {
+      display: none;
+    }
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-bn--desktop {
+      display: none;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Bildnachweis",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "label",
+      "label": "Vorsatz",
+      "default": "Produktbilder:"
+    },
+    {
+      "type": "select",
+      "id": "sichtbarkeit",
+      "label": "Sichtbar auf",
+      "options": [
+        { "value": "beide", "label": "Handy und Desktop" },
+        { "value": "mobil", "label": "Nur Handy" },
+        { "value": "desktop", "label": "Nur Desktop" }
+      ],
+      "default": "beide"
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Bildnachweis"
+    }
+  ]
+}
+{% endschema %}

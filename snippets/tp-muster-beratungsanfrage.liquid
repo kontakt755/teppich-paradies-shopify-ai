@@ -40,7 +40,7 @@
 {%- if tpm_muster != blank and tpm_ware == 0 -%}
   {%- form 'contact', id: tpm_id, class: 'tp-mba' -%}
     {%- if form.posted_successfully? -%}
-      <p class="tp-mba__ok" role="status" data-tp-mba-ok>
+      <p class="tp-mba__ok" role="status" data-tp-mba-ok data-tp-sample-success>
         <b>Danke, Ihre Anfrage ist angekommen.</b>
         Wir rufen Sie kurz an, beraten Sie und schicken Ihnen dann die passenden Muster.
       </p>

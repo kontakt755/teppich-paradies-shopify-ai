@@ -82,7 +82,7 @@
           Bildschirme/hoehere DPR erreichen weiter 1000-1600, das aendert sich
           nicht - die Liste bekommt nur eine feinere Stufe im mobilen Bereich.
         {%- endcomment -%}
-        {{ section.settings.bild | image_url: width: 1200 | image_tag: loading: 'eager', fetchpriority: 'high', widths: '400, 600, 700, 800, 1000, 1200, 1600', sizes: '(max-width: 767px) calc(100vw - 32px), (max-width: 1239px) calc(48vw - 37px), (min-width: 1600px) 620px, 560px', alt: hero_alt, class: 'tp-hero__img' }}
+        {{ section.settings.bild | image_url: width: 1200 | image_tag: loading: 'eager', fetchpriority: 'high', preload: true, widths: '400, 600, 700, 800, 1000, 1200, 1600', sizes: '(max-width: 767px) calc(100vw - 32px), (max-width: 1239px) calc(48vw - 37px), (min-width: 1600px) 620px, 560px', alt: hero_alt, class: 'tp-hero__img' }}
       {%- else -%}
         <div class="tp-hero__platzhalter">{{ 'image' | placeholder_svg_tag }}</div>
       {%- endif -%}

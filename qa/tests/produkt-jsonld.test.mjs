@@ -111,6 +111,13 @@ test('HTML-Beschreibung wird bereinigt und vorhandene Variantenpreise bleiben ei
   assert.deepEqual(d.hasVariant.map(variant => variant.offers.priceCurrency), ['EUR', 'EUR']);
 });
 
+test('Absatz- und Ueberschriftengrenzen werden zu Leerzeichen, keine verklebten Woerter (SEO-Audit 2026-09-30)', async () => {
+  const description = '<h2>Zafira Teppichboden</h2><p>Zafira ist <strong>weich</strong>.</p>\n<ul><li>Samtweicher Flor</li><li>Stuhlrollengeeignet</li></ul>Zeile eins<br>Zeile zwei';
+  const p = produkt({ description });
+  const d = gruppe(await rendern(p));
+  assert.equal(d.description, 'Zafira Teppichboden Zafira ist weich. Samtweicher Flor Stuhlrollengeeignet Zeile eins Zeile zwei');
+});
+
 test('nur GTINs mit gültiger Länge, nur Ziffern und korrekter Prüfziffer werden ausgegeben', async () => {
   const p = produkt({ variants: [
     variante({ id: 1, barcode: '12345670' }),
@@ -134,7 +141,8 @@ test('nur GTINs mit gültiger Länge, nur Ziffern und korrekter Prüfziffer werd
     assert.equal(variant.gtin13, undefined);
     assert.equal(variant.gtin14, undefined);
   }
-  assert.equal(d.hasVariant[4].sku, 'LINARTMOON_4129');
+  // Die SKU (Grosshaendler-Artikelnummer) steht bewusst nicht im Markup.
+  for (const variant of d.hasVariant) assert.equal(variant.sku, undefined);
 });
 
 test('leere Produktbeschreibung erzeugt keinen leeren Description-Wert', async () => {
@@ -183,7 +191,7 @@ test('Standardprodukte nutzen dasselbe ProductGroup mit Einzelpreisen und Varian
   assert.deepEqual(d.hasVariant.map(v => v.offers.availability), ['https://schema.org/InStock', 'https://schema.org/OutOfStock']);
   assert.equal(d.hasVariant[0].gtin13, '4002245718333');
   assert.equal(d.hasVariant[1].gtin, undefined);
-  assert.equal(d.hasVariant[1].sku, 'SOCKEL-2');
+  assert.equal(d.hasVariant[1].sku, undefined);
   assert.equal(d.hasVariant[0].offers.priceSpecification, undefined, 'Einzelpreis darf keine m2-Referenz erhalten');
 });
 

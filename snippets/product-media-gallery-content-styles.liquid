@@ -147,4 +147,81 @@
       gap: 0.5rem;
     }
   }
+  /*
+    TP Galerie-Leiste (Handy): Hauptbild wischen, Nachbarbild blitzt rechts an,
+    darunter eine Vorschauleiste statt Pfeilen und Zaehler. Jedes Bild ist mit
+    einem Tipp erreichbar, das aktive Bild ist hervorgehoben.
+  */
+  @media screen and (max-width: 749px) {
+    media-gallery.tp-galerie-leiste {
+      --slideshow-gap: 8px;
+    }
+
+    media-gallery.tp-galerie-leiste slideshow-slide.product-media-container:not(:only-child) {
+      width: 86%;
+      flex: 0 0 86%;
+    }
+
+    media-gallery.tp-galerie-leiste .product-media-gallery__arrows {
+      display: none;
+    }
+
+    media-gallery.tp-galerie-leiste slideshow-controls[thumbnails] {
+      --thumbnail-width: 60px;
+
+      margin-block-start: 10px;
+    }
+
+    media-gallery.tp-galerie-leiste slideshow-controls[thumbnails] .slideshow-controls__thumbnails-container {
+      scroll-behavior: smooth;
+      scroll-padding-inline: 16px;
+      mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 20px), transparent 100%);
+    }
+
+    media-gallery.tp-galerie-leiste slideshow-controls[thumbnails] .slideshow-controls__thumbnails {
+      gap: 8px;
+      padding: 4px 16px 6px;
+      margin-inline: 0;
+    }
+
+    media-gallery.tp-galerie-leiste slideshow-controls[thumbnails] .slideshow-controls__thumbnail {
+      flex: 0 0 auto;
+      width: var(--thumbnail-width);
+      aspect-ratio: 1;
+      overflow: hidden;
+      border: 0;
+      border-radius: 10px;
+      outline: 0;
+      background: rgb(var(--color-foreground-rgb) / 0.04);
+      box-shadow: inset 0 0 0 1px rgb(var(--color-foreground-rgb) / 0.08);
+      opacity: 0.55;
+      transform: scale(0.92);
+      transition:
+        opacity 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+    }
+
+    media-gallery.tp-galerie-leiste slideshow-controls[thumbnails] .slideshow-controls__thumbnail img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: inherit;
+    }
+
+    media-gallery.tp-galerie-leiste slideshow-controls[thumbnails] .slideshow-controls__thumbnail[aria-selected='true'] {
+      opacity: 1;
+      transform: scale(1);
+      outline: 0;
+      box-shadow:
+        0 0 0 2px var(--color-background),
+        0 0 0 4px var(--color-foreground);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    media-gallery.tp-galerie-leiste slideshow-controls[thumbnails] .slideshow-controls__thumbnail {
+      transition: none;
+    }
+  }
 {% endstylesheet %}

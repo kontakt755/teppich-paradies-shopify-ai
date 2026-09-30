@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { EXTERNAL_BLOCKS, runWithExternalRetry } from './router.mjs';
+import { EXTERNAL_BLOCKS, runWithExternalRetry } from './retry.mjs';
 
 export const OFFICIAL_BASE = 'main';
 export const BRANCH_PATTERN = /^(feature|fix|chore)\/[a-z0-9][a-z0-9._-]*$/;

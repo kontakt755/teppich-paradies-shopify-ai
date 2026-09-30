@@ -39,7 +39,7 @@ sind (`setup-dashboard.sh`), gilt: `status:blockiert` + `reviewer:mensch` = Wart
 
 | | statisch (Pages, PWA) | lokal (`npm run dashboard`) |
 |---|---|---|
-| Datenquelle | `issues.json` (Workflow `dashboard-data`) | `issues.json`, auf Wunsch frisch über `gh` |
+| Datenquelle | keine mehr (seit 2026-09-30 nur lokal) | `issues.json` + `bodenwissen.json`, beim Start und auf Wunsch frisch über `gh` |
 | Aktionen | keine – Links nach GitHub | Statuswechsel, Owner, Kommentar, Freigabe über `gh` |
 | Verlauf | Zeitpunkte aus `issues.json` | Issue-Events und Kommentare |
 | KI-Läufe | nicht sichtbar | Steuerzentrale + Provider-Ledger, read-only |
@@ -52,9 +52,9 @@ Das Frontend erkennt die Betriebsart über `GET /api/capabilities`.
 docs/ai-dashboard/
   index.html, app.js, app.css   Oberfläche (kein Build, keine Abhängigkeiten)
   lib/model.mjs                 Regeln: Status, Body-Parser, Dringlichkeit, Übergänge – Browser UND Server
-  issues.json                   generierte Daten (Schema 2), nie von Hand ändern
+  issues.json, bodenwissen.json generierte Daten, nicht im Git (.gitignore)
   tests/                        node --test (npm run dashboard:test)
-scripts/build-dashboard-data.mjs  erzeugt issues.json (lokal und in Actions)
+scripts/build-dashboard-data.mjs  erzeugt issues.json (lokal, gh)
 scripts/serve-dashboard.mjs       lokaler Server + /api
 scripts/dashboard-api.mjs         Aktions-API (gh), serverseitige Validierung
 ```
@@ -62,16 +62,15 @@ scripts/dashboard-api.mjs         Aktions-API (gh), serverseitige Validierung
 ## Datenfluss
 
 ```
-GitHub Issues ──(Issue-Event, stündlich)──> .github/workflows/dashboard-data.yml
-   │                                              │
-   │                                    scripts/build-dashboard-data.mjs
-   │                                              ▼
-   │                                  docs/ai-dashboard/issues.json  (Commit nach main)
-   │                                              │
-   └──(lokal: gh, nach jeder Aktion)──────────────┴──> index.html / app.js
+GitHub Issues ──(gh: Start, „Jetzt synchronisieren", nach jeder Aktion)──> scripts/build-dashboard-data.mjs
+content/      ──────────────────────────────────────────────────────────> scripts/build-bodenwissen-data.mjs
+                                                                                   │
+                                          docs/ai-dashboard/issues.json + bodenwissen.json (lokal, nicht im Git)
+                                                                                   ▼
+                                                                         index.html / app.js
 ```
 
-Der Browser braucht keinen Token. Der Workflow nutzt den kurzlebigen `GITHUB_TOKEN` (issues: read).
+Der Browser braucht keinen Token.
 Lokal läuft alles über das im Keychain angemeldete `gh`-Konto; jede Aktion ist damit auf GitHub
 auditierbar (Kommentar `## Control Center: …`) und zusätzlich in `.router/control-center-audit.jsonl`.
 

@@ -24,7 +24,6 @@ const CONFIG = {
   repo: 'teppich-paradies-shopify-ai',
   dataUrl: './issues.json',
   refreshMs: 120_000,
-  workflowFile: 'dashboard-data.yml',
 };
 const REPO_URL = `https://github.com/${CONFIG.owner}/${CONFIG.repo}`;
 const THEME_KEY = 'tp-theme';
@@ -61,7 +60,6 @@ const state = {
   capabilities: { mode: 'static' },
   session: { required: false, authenticated: true },
   me: null,
-  workflowRun: null,    // letzter Actions-Lauf (oeffentliche API, optional)
   agentRuns: null,      // nur lokal
   route: { view: 'heute', params: new URLSearchParams() },
   selectedRow: -1,
@@ -160,18 +158,6 @@ async function loadData() {
   }
 }
 
-/** Letzter Lauf des Sync-Workflows – oeffentliche API, ohne Token. Scheitert leise. */
-async function loadWorkflowRun() {
-  if (state.capabilities.mode === 'local') return;
-  try {
-    const r = await fetch(`https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/actions/workflows/${CONFIG.workflowFile}/runs?per_page=1`, { headers: { Accept: 'application/vnd.github+json' } });
-    if (!r.ok) throw new Error(String(r.status));
-    const j = await r.json();
-    const run = j.workflow_runs?.[0];
-    state.workflowRun = run ? { status: run.status, conclusion: run.conclusion, at: run.updated_at, url: run.html_url } : { unavailable: true };
-  } catch (e) { state.workflowRun = { unavailable: true, reason: e.message }; }
-}
-
 async function loadAgentRuns() {
   if (!state.capabilities.agentRuns) { state.agentRuns = null; return; }
   try {
@@ -183,7 +169,7 @@ async function loadAgentRuns() {
 async function refresh({ silent = false } = {}) {
   const vorher = silent ? datenKennung() : null;
   await loadData();
-  await Promise.all([loadWorkflowRun(), loadAgentRuns()]);
+  await loadAgentRuns();
   renderSyncChip();
   // Der stille 2-Minuten-Lauf zeichnet nur neu, wenn sich wirklich etwas
   // geaendert hat. Sonst klappten aufgeklappte Listen zu, Tabellen sprangen
@@ -315,13 +301,7 @@ function systemHealth() {
   const items = [];
   const fr = freshness(state.raw?.generated_at);
   if (state.loadError) items.push({ level: 'crit', title: 'Aufgabendaten nicht ladbar', detail: state.loadError });
-  else items.push({ level: fr.level === 'frisch' ? 'ok' : fr.level === 'alt' ? 'warn' : 'crit', title: `Aufgabendaten aus GitHub Issues · Stand ${fmtDateTime(state.raw?.generated_at)} (${fr.text})`, detail: state.capabilities.mode === 'local' ? 'Lokaler Modus: „Jetzt synchronisieren" holt frische Daten über gh.' : 'Stand = letzter Commit von issues.json. Der Sync-Workflow committet nur bei Änderungen; ein alter Stand kann auch „nichts passiert" heißen – siehe nächste Zeile.' });
-  const wr = state.workflowRun;
-  if (state.capabilities.mode !== 'local') {
-    if (!wr) items.push({ level: 'warn', title: 'Sync-Workflow: Status wird geladen', detail: '' });
-    else if (wr.unavailable) items.push({ level: 'warn', title: 'Sync-Workflow: Status nicht abrufbar', detail: 'GitHub-API ohne Token nicht erreichbar (privates Repo oder Rate-Limit). Der Datenstand oben bleibt maßgeblich.' });
-    else items.push({ level: wr.conclusion === 'success' ? 'ok' : wr.status !== 'completed' ? 'warn' : 'crit', title: `Sync-Workflow „dashboard-data": ${wr.status === 'completed' ? (wr.conclusion === 'success' ? 'erfolgreich' : `fehlgeschlagen (${wr.conclusion})`) : wr.status} · ${ago(wr.at)}`, detail: wr.conclusion === 'success' ? 'Läuft bei jedem Issue-Event und stündlich.' : 'Letzter Lauf ohne Erfolg – Daten können veraltet sein.', link: wr.url });
-  }
+  else items.push({ level: fr.level === 'frisch' ? 'ok' : fr.level === 'alt' ? 'warn' : 'crit', title: `Aufgabendaten aus GitHub Issues · Stand ${fmtDateTime(state.raw?.generated_at)} (${fr.text})`, detail: state.capabilities.mode === 'local' ? 'Lokaler Modus: „Jetzt synchronisieren" holt frische Daten über gh.' : 'Die Daten entstehen seit 2026-09-30 nur noch lokal. Für aktuelle Aufgaben `npm run dashboard` starten.' });
   const cap = state.capabilities;
   items.push(cap.mode === 'local'
     ? { level: 'ok', title: `Lokaler Aktionsmodus aktiv${cap.user ? ` · angemeldet als @${cap.user}` : ''}`, detail: 'Statuswechsel, Zuweisung und Kommentare laufen über gh unter diesem Konto und sind auf GitHub auditierbar.' }
@@ -4722,7 +4702,7 @@ function render() {
     return;
   }
   if (state.loadError && !state.raw) {
-    main.innerHTML = `<div class="page-head"><h1>Daten nicht verfügbar</h1></div><div class="notice crit">${esc(state.loadError)}</div><p class="small muted" style="margin-top:10px">issues.json wird vom Workflow „dashboard-data" erzeugt. Lokal: <span class="mono">npm run dashboard</span>. <button class="btn btn-sm" data-action="refresh" style="margin-left:8px">Erneut versuchen</button></p>`;
+    main.innerHTML = `<div class="page-head"><h1>Daten nicht verfügbar</h1></div><div class="notice crit">${esc(state.loadError)}</div><p class="small muted" style="margin-top:10px">issues.json entsteht lokal: <span class="mono">npm run dashboard</span>. <button class="btn btn-sm" data-action="refresh" style="margin-left:8px">Erneut versuchen</button></p>`;
     return;
   }
   main.innerHTML = (state.loadError ? `<div class="notice crit" style="margin-bottom:12px">Aktualisierung fehlgeschlagen: ${esc(state.loadError)} – es wird der letzte geladene Stand gezeigt.</div>` : '') + VIEWS[state.route.view]();
@@ -5119,7 +5099,6 @@ async function init() {
   if (state.route.view === 'aktivitaet') { activityCache = await loadActivity(); protokollCache = await loadProtokoll(); benutzerCache = await loadBenutzer(); }
   render();
   if (state.route.view === 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus();
-  loadWorkflowRun().then(() => { renderSyncChip(); if (['heute', 'insights'].includes(state.route.view)) render(); });
   loadAgentRuns().then(() => { if (state.agentRuns) render(); });
   setInterval(() => refresh({ silent: true }), CONFIG.refreshMs);
 }

@@ -285,10 +285,10 @@
         {%- endcomment -%}
         {%- assign tp_cart_vs_schwelle_cent = settings.tp_vs_schwelle | times: 100 -%}
         {%- if cart.total_price >= tp_cart_vs_schwelle_cent -%}
-          <strong>Kostenlose Lieferung bis {{ settings.tp_vs_radius_basis }}&nbsp;km</strong> – wir tragen die Ware in die Wohnung.
+          <strong>Kostenlose Lieferung bis {{ settings.tp_vs_radius_basis }}&nbsp;km</strong>
         {%- else -%}
           {%- assign tp_cart_vs_rest = tp_cart_vs_schwelle_cent | minus: cart.total_price -%}
-          <strong>Noch {{ tp_cart_vs_rest | money }} bis zur kostenlosen Lieferung</strong> bis {{ settings.tp_vs_radius_basis }}&nbsp;km (ab {{ settings.tp_vs_schwelle }}&nbsp;€ Warenwert) – wir tragen die Ware in die Wohnung.
+          <strong>Noch {{ tp_cart_vs_rest | money }} bis zur kostenlosen Lieferung</strong> bis {{ settings.tp_vs_radius_basis }}&nbsp;km (ab {{ settings.tp_vs_schwelle }}&nbsp;€ Warenwert)
         {%- endif %}
       </p>
     {%- endif -%}

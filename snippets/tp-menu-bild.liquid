@@ -18,6 +18,9 @@
   @param {string} [kacheln] - Datensaetze aus content_for 'blocks' (siehe tp-menu-kachel-index)
   @param {string} [class] - CSS-Klasse fuer das img
   @param {string} [sizes] - sizes-Attribut
+  @param {string} [widths] - srcset-Stufen, kommagetrennt (Standard 200,300,400,600,800).
+    Die kleinste Stufe ist zugleich src. Drawer-Zeilen (56 px) geben '80,120,160' - sonst
+    traegt jede Zeile fuenf Quellen bis 800 px ins Header-HTML vor dem Hero.
   @param {string} [match_title] - Kacheltitel statt link.title (siehe tp-menu-kachel-index)
 {%- enddoc -%}
 
@@ -37,7 +40,7 @@
   endif
 
   if tp_mb_src != blank
-    assign tp_mb_widths = '200,300,400,600,800' | split: ','
+    assign tp_mb_widths = widths | default: '200,300,400,600,800' | split: ','
     assign tp_mb_srcset = ''
     for tp_mb_w in tp_mb_widths
       assign tp_mb_url = tp_mb_src | replace: 'width=800', 'width=' | append: tp_mb_w
@@ -46,8 +49,9 @@
         assign tp_mb_srcset = tp_mb_srcset | append: ', '
       endunless
     endfor
-    echo '<img src="' | append: tp_mb_src | append: '" srcset="' | append: tp_mb_srcset | append: '" sizes="' | append: tp_mb_sizes | append: '" alt="" loading="lazy" fetchpriority="low" class="' | append: class | append: '">'
+    assign tp_mb_src_klein = tp_mb_src | replace: 'width=800', 'width=' | append: tp_mb_widths.first
+    echo '<img src="' | append: tp_mb_src_klein | append: '" srcset="' | append: tp_mb_srcset | append: '" sizes="' | append: tp_mb_sizes | append: '" alt="" loading="lazy" fetchpriority="low" class="' | append: class | append: '">'
   else
-    render 'link-featured-image', link: link, class: class, sizes: tp_mb_sizes
+    render 'link-featured-image', link: link, class: class, sizes: tp_mb_sizes, widths: widths
   endif
 -%}

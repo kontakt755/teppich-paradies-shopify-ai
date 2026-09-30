@@ -1,8 +1,0 @@
-Die verbindlichen Projektregeln stehen ausschließlich in AGENTS.md.
-
-Codex muss AGENTS.md vollständig lesen und befolgen, bevor irgendeine Änderung an diesem Repository vorgenommen wird. Diese Datei enthält keine eigenen, abweichenden fachlichen Regeln mehr und dient nur noch als kurzer Codex-spezifischer Zusatzhinweis.
-
-Codex-spezifische Hinweise:
-
-- Codex läuft hier typischerweise mit weitreichenden lokalen Ausführungsrechten (Terminal/Browser/Shopify-CLI), damit normale Entwicklungsschritte nicht einzeln bestätigt werden müssen. Die inhaltlichen Grenzen aus AGENTS.md ("NIEMALS ohne ausdrückliche Freigabe" etc.) gelten davon vollständig unberührt.
-- Für automatisierte/autonome Läufe zusätzlich AUTONOMOUS_RUN_RULES.md beachten, sofern vorhanden.

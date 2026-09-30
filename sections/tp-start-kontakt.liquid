@@ -13,7 +13,7 @@
         {%- form 'contact', id: 'tp-start-anfrage', class: 'tp-kon__form' -%}
           <input type="hidden" name="contact[Betreff]" value="Anfrage von der Startseite">
           {%- if form.posted_successfully? -%}
-            <p class="tp-kon__ok" role="status"><b>Danke, Ihre Anfrage ist angekommen.</b> Wir melden uns am nächsten Werktag.</p>
+            <p class="tp-kon__ok" role="status" data-tp-lead-success><b>Danke, Ihre Anfrage ist angekommen.</b> Wir melden uns am nächsten Werktag.</p>
           {%- elsif form.errors -%}
             <p class="tp-kon__err" role="alert">Bitte prüfen Sie Name und E-Mail-Adresse.</p>
           {%- endif -%}

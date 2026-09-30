@@ -8,13 +8,13 @@
   assign tp_t_id = block.id | replace: '_', '' | downcase
 -%}
 
-<ul class="tp-vertrauen-{{ tp_t_id }}" {{ block.shopify_attributes }}>
+{% unless product.handle == 'serena-teppich-nach-mass' %}<ul class="tp-vertrauen-{{ tp_t_id }}" {{ block.shopify_attributes }}>
   <li>Muster vor dem Kauf möglich</li>
   <li>Persönliche Fachberatung</li>
   <li>Google-Bewertungen und echte Projekterfahrungen</li>
   <li>Wunschmaß möglich</li>
   <li>Liefer- & Verlegeservice in Oranienburg, Berlin & Umgebung</li>
-</ul>
+</ul>{% endunless %}
 {%- comment -%} D8: Telefon steht in der Kontaktbox im Kaufbereich, hier nicht noch einmal {%- endcomment -%}
 
 <style>

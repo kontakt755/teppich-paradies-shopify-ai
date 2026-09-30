@@ -68,5 +68,5 @@ Skill `shopify-massendaten` (Plan, Rollback, Batchdateien).
 - Keine Produkteigenschaften erfinden oder aus Bildern ableiten (ausser dem Farbnamen
   nach Abschnitt 7). Im Zweifel als offenen Fall dokumentieren.
 - Keine Preise, SKUs bestehender Varianten oder Produkte loeschen/aendern ohne
-  ausdrueckliche Freigabe (CLAUDE.md, Sicherheitsgrenzen).
+  ausdrueckliche Freigabe (AGENTS.md, „NIEMALS ohne ausdrückliche Freigabe“).
 - Nicht ueber den Shopify-Admin im Browser anlegen - der Shopify-MCP ist authentifiziert.

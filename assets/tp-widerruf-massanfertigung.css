@@ -1,0 +1,11 @@
+.tp-widerruf-massanfertigung {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-left: 3px solid #9b8060;
+  background: #f8f6f2;
+  color: #34312e;
+  font-size: .82rem;
+  line-height: 1.45;
+}
+.tp-widerruf-massanfertigung strong { font-weight: 650; }
+.tp-widerruf-massanfertigung a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }

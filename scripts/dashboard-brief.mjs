@@ -44,6 +44,9 @@ export function readBrief({ file = DATA_FILE, now = new Date() } = {}) {
   try {
     return buildBrief(JSON.parse(fs.readFileSync(file, 'utf8')), { now });
   } catch (error) {
+    // Seit 2026-09-30 nicht mehr im Git: fehlt die Datei, erzeugt der
+    // SessionStart-Hook sie gerade im Hintergrund.
+    if (error?.code === 'ENOENT') return ['Control Center: issues.json noch nicht erzeugt (laeuft im Hintergrund, ab der naechsten Sitzung sichtbar; sofort: npm run dashboard:data)'];
     return [`Control Center: issues.json nicht lesbar (${String(error?.message ?? error).split('\n')[0].slice(0, 80)}) - npm run dashboard:data`];
   }
 }

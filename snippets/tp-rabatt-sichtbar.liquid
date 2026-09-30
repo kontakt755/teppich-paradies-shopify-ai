@@ -9,14 +9,54 @@
     2. Befristete Aktion: snippets/tp-aktion-aktiv. Schliesst den kostenlosen
        Vor-Ort-Service aus (tp-verlegeservice-hinweis fragt nur dort).
   Ohne einen der beiden zeigt ein stehen gebliebener compare_at_price nichts (S-20).
+  Rollenware mit Raummaß: Streichpreise nur, wenn beide Zuschnittarten über
+  alle regulären Varianten reduziert sind. Ein allein reduziertes Raummaß
+  darf das Produkt nicht als Aktionsprodukt erscheinen lassen.
 
   @param {object} product - das Produkt
 {% enddoc %}
 {%- liquid
+  assign trs_aktiv = false
   if product.metafields.aktion.klasse.value == 'preisanker'
-    echo 'ja'
+    assign trs_aktiv = true
   else
-    render 'tp-aktion-aktiv', product: product
+    capture trs_aktion
+      render 'tp-aktion-aktiv', product: product
+    endcapture
+    assign trs_aktion = trs_aktion | strip
+    if trs_aktion == 'ja'
+      assign trs_aktiv = true
+    endif
+  endif
+
+  assign trs_roll = false
+  assign trs_raum = false
+  assign trs_alle_reduziert = true
+  for trs_v in product.variants
+    assign trs_titel = trs_v.title | downcase
+    if trs_titel contains 'opc-'
+      continue
+    endif
+    assign trs_breite = trs_v.option1 | append: ' ' | append: trs_v.option2 | append: ' ' | append: trs_v.option3 | downcase
+    if trs_breite contains 'wunschmaß' or trs_breite contains 'wunschmass'
+      assign trs_raum = true
+    elsif trs_breite contains ' cm'
+      assign trs_roll = true
+    else
+      continue
+    endif
+    if trs_v.compare_at_price <= trs_v.price
+      assign trs_alle_reduziert = false
+    endif
+  endfor
+
+  if trs_aktiv
+    if trs_roll and trs_raum
+      if trs_alle_reduziert
+        echo 'ja'
+      endif
+    else
+      echo 'ja'
+    endif
   endif
 -%}
-

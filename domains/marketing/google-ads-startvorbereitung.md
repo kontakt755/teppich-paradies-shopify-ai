@@ -45,7 +45,7 @@ JSON-LD der Produktseiten fehlen `shippingDetails` und
 Shopifys `structured_data`-Filter erzeugt das Product-Schema als Ganzes,
 und es zu ersetzen, um zwei Felder anzuhängen, wäre ein Eingriff mit
 Merchant-Center-Folgen an genau der Stelle, die das Repository als
-Schutzschicht führt (`GOOGLE_SHOPPING_SAFETY_REPORT.md`). Für
+Schutzschicht führt (`docs/archiv/2026/GOOGLE_SHOPPING_SAFETY_REPORT.md`). Für
 Shopping-Anzeigen zieht Google diese Daten ohnehin aus den
 Kontoeinstellungen, nicht aus dem Seiten-Schema – dort gehören sie hin.
 Das Seiten-Schema beeinflusst nur organische Rich Results.

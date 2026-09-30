@@ -1,5 +1,7 @@
 # `docs/ai-dashboard/issues.json` gehoert dem Bot
 
+> **Stand 2026-09-30:** erledigt — `issues.json` und `bodenwissen.json` sind nicht mehr im Git, den Workflow `dashboard-data.yml` gibt es nicht mehr. Die Lehre bleibt als Vorgeschichte stehen.
+
 **Regel:** Nie mitcommitten; Dateien gezielt mit `git add <datei>` stagen.
 Zuruecksetzen ist fuer genau diesen Pfad erlaubt — die einzige Ausnahme im
 Verwerfen-Verbot von `.claude/hooks/git-gh-guard.mjs`.

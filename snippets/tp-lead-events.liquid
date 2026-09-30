@@ -58,12 +58,45 @@
       }
     }, true);
 
+    function publishSuccessfulForms() {
+      document.querySelectorAll('[data-tp-lead-success]').forEach(function (marker) {
+        var form = marker.closest('form');
+        if (!form) return;
+        var pending = '';
+        try {
+          pending = sessionStorage.getItem('tp_contact_pending_' + form.id) || '';
+          sessionStorage.removeItem('tp_contact_pending_' + form.id);
+        } catch (error) { pending = 'lead'; }
+        if (!pending) return;
+        var name = pending === 'sample' ? 'tp_sample_form_submit' : 'tp_lead_form_submit';
+        publish(name, { form: form.id || '' });
+      });
+      document.querySelectorAll('[data-tp-sample-success]').forEach(function (marker) {
+        var form = marker.closest('form');
+        if (!form) return;
+        var pending = '';
+        try {
+          pending = sessionStorage.getItem('tp_contact_pending_' + form.id) || '';
+          sessionStorage.removeItem('tp_contact_pending_' + form.id);
+        } catch (error) { pending = 'sample'; }
+        if (pending) publish('tp_sample_form_submit', { form: form.id || '' });
+      });
+    }
     document.addEventListener('submit', function (event) {
       var form = event.target;
-      if (!form || typeof form.matches !== 'function') return;
-      if (form.matches('form[action*="/contact"]')) {
-        publish('tp_lead_form_submit', { form: form.id || '' });
-      }
+      if (!form || !form.matches('form[action*="/contact"]')) return;
+      try {
+        var request = form.querySelector('select[name="contact[Anliegen]"]');
+        var selectedSample = request && request.value === 'Muster bestellen';
+        var sampleRequest = form.closest('[data-tp-sample-request][data-mode="sample"]');
+        sessionStorage.setItem('tp_contact_pending_' + form.id,
+          sampleRequest || selectedSample ? 'sample' : 'lead');
+      } catch (error) {}
     }, true);
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', publishSuccessfulForms, { once: true });
+    } else {
+      publishSuccessfulForms();
+    }
   })();
 </script>

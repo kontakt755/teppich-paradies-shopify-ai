@@ -71,10 +71,10 @@ test('jede Ausnahme nennt ein Verzeichnis, das es noch gibt', () => {
   }
 });
 
-test('npm test deckt die sieben bekannten Suiten ab', () => {
+test('npm test deckt die sechs bekannten Suiten ab', () => {
   const abgedeckt = abgedeckteVerzeichnisse();
   for (const dir of ['qa/tests', 'docs/ai-dashboard/tests', 'operations/tests',
-    'automation/tests', 'workflow/tests', 'control-center/tests', '.claude/hooks']) {
+    'automation/tests', 'workflow/tests', '.claude/hooks']) {
     assert.ok(abgedeckt.has(dir), `${dir} fehlt in der Kette von "npm test"`);
   }
 });

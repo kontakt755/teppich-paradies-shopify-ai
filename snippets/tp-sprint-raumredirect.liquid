@@ -1,0 +1,22 @@
+{%- if request.page_type == 'product' and section.id contains '__main' and product.selected_variant == blank and raumteile.size == 4 -%}
+  {%- assign tp_raumfarbe = raumteile | first -%}
+  {%- assign tp_farbindex = raumteile[1] | plus: 0 -%}
+  {%- assign tp_raumvariante = blank -%}
+  {%- for tp_variant in product.variants -%}
+    {%- if tp_variant.options[tp_farbindex] == tp_raumfarbe and tp_variant.available -%}
+      {%- assign tp_raumvariante = tp_variant -%}
+      {%- break -%}
+    {%- endif -%}
+  {%- endfor -%}
+  {%- if tp_raumvariante != blank and tp_raumvariante.id != product.selected_or_first_available_variant.id -%}
+    <script>
+      (() => {
+        const url = new URL(window.location.href);
+        if (!url.searchParams.has('variant')) {
+          url.searchParams.set('variant', '{{ tp_raumvariante.id }}');
+          window.location.replace(url.href);
+        }
+      })();
+    </script>
+  {%- endif -%}
+{%- endif -%}

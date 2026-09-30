@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-09-28T12:05:11.247Z",
-    "verifiedBy": "Shopify CLI, role live (workflow:live nach #713, #714 und #715)"
-  },
-  "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-09-28T12:05:11.247Z",
-    "verifiedBy": "Shopify CLI, role unpublished nach Rollentausch; naechstes Preview-Ziel"
+    "verifiedAt": "2026-09-30T13:13:56Z",
+    "verifiedBy": "Shopify CLI role live und oeffentliche Storefront nach workflow:live fuer PR #774"
+  },
+  "preview": {
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-09-30T13:13:56Z",
+    "verifiedBy": "Shopify CLI role unpublished nach Rollentausch; naechstes Preview-Ziel"
   },
   "fallback": {
     "themeId": "204440699214",
@@ -260,6 +260,30 @@
       "name": "preview-main-2026-09-15",
       "retiredNoticedAt": "2026-09-28",
       "note": "Per workflow:live abgeloest durch das bisherige Preview-Theme (#714 und #715). Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
+    },
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-09-30",
+      "note": "Per workflow:live abgeloest durch 204436144462 (PR #762, main ab3df7d4: Serena Produktseite). Rollentausch per Shopify CLI und Storefront gegengeprueft. Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-09-30",
+      "note": "Per workflow:live abgeloest durch 204438208846 (PR #765, main 2337fa7e: Serena Lieferzeit). Rollentausch per Shopify CLI und Storefront gegengeprueft. Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
+    },
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-09-30",
+      "note": "Per workflow:live abgeloest durch 204436144462 (PR #768, main d60f5098: erkennbare Serena-Massskizze). Rollentausch per Shopify CLI und Storefront gegengeprueft. Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-09-30",
+      "note": "Per workflow:live abgeloest durch 204438208846 (PR #774, main 13edd4c2: Massvorschlaege und Widerrufshinweise). Rollentausch per Shopify CLI und oeffentliche Storefront gegengeprueft. Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",

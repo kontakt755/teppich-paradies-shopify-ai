@@ -3,6 +3,26 @@
 .product-grid .tp-nk {
   grid-column: 1 / -1;
   list-style: none;
+  container-type: inline-size;
+}
+
+/* Desktop: Kachel wie eine Doppel-Produktkarte (2 Spalten) statt ganzer
+   Zeile - sonst endet eine halbe Reihe abrupt und die Galerie wirkt zu Ende.
+   dense: passt die Kachel nicht mehr in die angebrochene Reihe (z. B. bei
+   3 Spalten nach Produkt 6), rueckt das naechste Produkt in die Luecke. */
+@media screen and (min-width: 750px) {
+  .product-grid[product-grid-view='default']:has(> .tp-nk--desktop) {
+    grid-auto-flow: row dense;
+  }
+
+  .product-grid[product-grid-view='default'] > .tp-nk--desktop {
+    grid-column: span 2;
+  }
+
+  .product-grid[product-grid-view='default'] > .tp-nk--desktop .tp-nk__inner {
+    height: 100%;
+    box-sizing: border-box;
+  }
 }
 
 .tp-nk__inner {
@@ -51,6 +71,14 @@
    ab 560 px, sonst gewinnt die. */
 .tp-nk__form .tp-nl:not(.tp-nl--kompakt) .tp-nl__row {
   flex-direction: column;
+}
+
+/* Schmale Kachel (Doppelkarte): Text ueber dem Formular */
+@container (max-width: 899px) {
+  .tp-nk__inner {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+  }
 }
 
 @media screen and (max-width: 749px) {

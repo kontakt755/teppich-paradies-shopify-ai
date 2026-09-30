@@ -35,10 +35,6 @@ import {
 const ROOT = resolve(import.meta.dirname, '../..');
 const THEME_DIRS = ['assets', 'blocks', 'layout', 'sections', 'snippets', 'templates'];
 const TEXT = /\.(liquid|json|js|css|svg)$/;
-const ERLAUBTE_BILDQUELLEN = new Map([
-  ['blocks/_product-card-gallery.liquid', '<small class="tp-source-card-credit">© JOKA / W. & L. Jordan GmbH</small>'],
-  ['snippets/product-media-gallery-content.liquid', '<p class="tp-source-media-credit">JOKA® Sprint 027 · Bildmaterial: © JOKA / W. & L. Jordan GmbH</p>'],
-]);
 
 function dateien(dir) {
   if (!existsSync(dir)) return [];
@@ -54,9 +50,7 @@ export function pruefeTheme(root = ROOT, namen = ladeLieferantenNamen()) {
     for (const f of dateien(join(root, d))) {
       const rel = f.slice(root.length + 1).replaceAll('\\', '/');
       const text = readFileSync(f, 'utf8');
-      const bildquelle = ERLAUBTE_BILDQUELLEN.get(rel);
-      const gepruefterText = bildquelle ? text.replace(bildquelle, '') : text;
-      if (lieferantenTreffer(gepruefterText, namen).length) fehler.push(`${rel}: Lieferantenname im ausgelieferten Theme`);
+      if (lieferantenTreffer(text, namen).length) fehler.push(`${rel}: Lieferantenname im ausgelieferten Theme`);
       if (/metafields\.einkauf\b/.test(text)) fehler.push(`${rel}: liest den internen Namespace einkauf.*`);
       for (const m of text.matchAll(/service\.(einfassen|raummass)(?:\.value)?\s*(==|!=|contains)\s*'([^']*)'/g)) {
         if (m[2] !== '==' || m[3] !== VERFUEGBAR) fehler.push(`${rel}: service.${m[1]} nicht als exakter Vergleich mit "${VERFUEGBAR}" gelesen`);

@@ -2,7 +2,7 @@
 /**
  * Lokaler Server des Control Centers.
  *
- *   npm run dashboard          # issues.json erzeugen + Server
+ *   npm run dashboard          # issues.json + bodenwissen.json erzeugen + Server
  *   npm run dashboard:serve    # nur Server (nutzt vorhandene issues.json)
  *
  * Liefert docs/ai-dashboard statisch (noetig, weil fetch() unter file://
@@ -81,8 +81,11 @@ const TYPES = {
 };
 
 const execFileP = promisify(execFile);
+// Beide Datendateien entstehen seit 2026-09-30 nur noch lokal (nicht mehr per
+// Workflow auf main): issues.json aus GitHub (gh), bodenwissen.json aus content/.
 async function rebuild() {
   await execFileP(process.execPath, [join(HERE, 'build-dashboard-data.mjs')], { cwd: REPO_ROOT, timeout: 120_000, maxBuffer: 8 * 1024 * 1024 });
+  await execFileP(process.execPath, [join(HERE, 'build-bodenwissen-data.mjs')], { cwd: REPO_ROOT, timeout: 60_000, maxBuffer: 8 * 1024 * 1024 });
 }
 
 // sitzungenVerwerfen reicht das Auth-Objekt hinein, statt es zu importieren -
