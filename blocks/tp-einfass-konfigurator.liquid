@@ -253,7 +253,10 @@
       <button type="button" class="tp-ek__cta" data-cta data-add-to-cart disabled hidden>In den Warenkorb</button>
       {%- if product.handle == 'serena-teppich-nach-mass' -%}
         <details class="tp-ek__vorschau" data-vorschau hidden>
-          <summary>Ihr Maß <span>· Schematische Darstellung</span></summary>
+          <summary>
+            <span class="tp-ek__vorschau-titel">Ihr Maß <span>Schematische Darstellung</span></span>
+            <span class="tp-ek__vorschau-aktion"><span class="tp-ek__vorschau-aktion-zu">Skizze ansehen</span><span class="tp-ek__vorschau-aktion-offen">Skizze schließen</span><svg viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true"><path d="m3 6 5 5 5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </summary>
           <figure class="tp-ek__schema">{{ tp_ek_vorschau_inhalt }}</figure>
         </details>
       {%- endif -%}
