@@ -3,7 +3,7 @@
 {%- assign tp_teile = tp_daten | strip | split: '|' -%}
 {%- if tp_teile.size == 2 -%}
   {%- assign tp_farbe = tp_teile | first -%}
-  {%- assign tp_datei = tp_teile | last -%}
+  {%- assign tp_datei = tp_teile | last | plus: 0 -%}
   {%- assign tp_index = -1 -%}
   {%- assign tp_medium_id = 0 -%}
   {%- assign tp_code = product.selected_or_first_available_variant.sku | split: '_' | last | plus: 0 -%}
@@ -16,7 +16,7 @@
   {%- endfor -%}
   {%- if tp_index >= 0 and product.selected_or_first_available_variant.options[tp_index] == tp_farbe -%}
     {%- for tp_media in product.media -%}
-      {%- if tp_media.preview_image.src contains tp_datei -%}
+      {%- if tp_media.id == tp_datei -%}
         {%- assign tp_medium_id = tp_media.id -%}
         {%- break -%}
       {%- endif -%}

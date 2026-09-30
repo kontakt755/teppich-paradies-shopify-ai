@@ -133,7 +133,7 @@
         assign tp_raumteile = tp_raumdaten | strip | split: '|'
         if tp_raumteile.size == 2
           assign tp_raumfarbe = tp_raumteile | first
-          assign tp_raumdatei = tp_raumteile | last
+          assign tp_raumdatei = tp_raumteile | last | plus: 0
           for tp_option in product.options_with_values
             assign tp_optionsname = tp_option.name | downcase
             if tp_optionsname == 'farbe' or tp_optionsname == 'color' or tp_optionsname == 'dekor'
@@ -148,7 +148,7 @@
             endif
           endfor
           for tp_media in product.media
-            if tp_media.preview_image.src contains tp_raumdatei
+            if tp_media.id == tp_raumdatei
               assign other_media = product.media | reject: 'src', tp_media.src
               assign media_list_to_show = tp_media | concat: other_media
               break
