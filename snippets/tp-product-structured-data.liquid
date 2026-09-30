@@ -106,7 +106,14 @@
     endif
   endfor
 
-  assign tp_sd_description = product_resource.description | strip_html | strip_newlines | truncate: 5000
+  # Blockgrenzen (Absatz, Listenpunkt, Ueberschrift, Zeilenumbruch) werden
+  # vor strip_html zu Leerzeichen, sonst klebt strip_html sie zusammen:
+  # "TeppichbodenZafira ist", "FlorStuhlrollengeeignet" (SEO-Audit
+  # 2026-09-30, 4.2). Inline-Tags wie <strong> bleiben unberuehrt, damit
+  # vor Satzzeichen kein Leerzeichen entsteht. Die replace-Kette am Ende
+  # fasst Mehrfach-Leerzeichen zusammen (split/join verhaelt sich in
+  # Shopify und LiquidJS unterschiedlich).
+  assign tp_sd_description = product_resource.description | newline_to_br | replace: '<br', ' <br' | replace: '</p>', ' </p>' | replace: '</li>', ' </li>' | replace: '</div>', ' </div>' | replace: '</td>', ' </td>' | replace: '</h1>', ' </h1>' | replace: '</h2>', ' </h2>' | replace: '</h3>', ' </h3>' | replace: '</h4>', ' </h4>' | replace: '</h5>', ' </h5>' | replace: '</h6>', ' </h6>' | strip_html | strip_newlines | replace: '  ', ' ' | replace: '  ', ' ' | replace: '  ', ' ' | replace: '  ', ' ' | strip | truncate: 5000
   assign tp_sd_product_url = request.origin | append: product_resource.url
 -%}
 

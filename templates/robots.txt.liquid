@@ -1,0 +1,29 @@
+{%- comment -%}
+  robots.txt auf Shopify-Standard plus Suchseiten-Sperre.
+
+  Shopify liefert seine Standardgruppen (robots.default_groups) inzwischen
+  ohne "Disallow: /search" aus. /search?q=... antwortete am 2026-09-30 mit
+  200, ohne noindex und mit selbstreferenzierendem Canonical - jede
+  Suchanfrage war damit eine indexierbare Seite (SEO-Audit 2026-09-30, 4.1).
+
+  Die Standardregeln werden unveraendert durchgereicht, damit spaetere
+  Aenderungen von Shopify weiter ankommen. Ergaenzt wird nur die Gruppe
+  "User-agent: *" um die Suchseite, auch mit Sprachpraefix.
+{%- endcomment -%}
+{%- for group in robots.default_groups -%}
+  {{- group.user_agent }}
+
+  {%- for rule in group.rules %}
+{{ rule }}
+  {%- endfor -%}
+
+  {%- if group.user_agent.value == '*' %}
+{{ 'Disallow: /search' }}
+{{ 'Disallow: /*/search' }}
+  {%- endif -%}
+
+  {%- if group.sitemap != blank %}
+{{ group.sitemap }}
+  {%- endif %}
+
+{% endfor -%}

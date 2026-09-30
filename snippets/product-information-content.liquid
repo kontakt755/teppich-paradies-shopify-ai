@@ -95,7 +95,15 @@
       assign tp_crumb_1 = null
       assign tp_crumb_2 = null
 
+      # Angebots-Kollektionen sind keine Hierarchieebene: "Angebote
+      # Teppichboden" enthaelt "Teppichboden" und ist laenger, gewann also die
+      # Suche nach der spezifischsten Kollektion (SEO-Audit 2026-09-30, 4.2:
+      # Start > Teppichboden > Angebote Teppichboden > Zafira). Sie werden in
+      # beiden Stufen uebersprungen.
       for tp_c in product.collections
+        if tp_c.handle contains 'angebote-'
+          continue
+        endif
         if product.type != blank and tp_c.title contains product.type
           if tp_crumb_2 == null or tp_c.title.size > tp_crumb_2.title.size
             assign tp_crumb_2 = tp_c
@@ -105,6 +113,9 @@
 
       if tp_crumb_2
         for tp_c in product.collections
+          if tp_c.handle contains 'angebote-'
+            continue
+          endif
           if tp_c.handle != tp_crumb_2.handle and tp_crumb_2.title contains tp_c.title
             if tp_crumb_1 == null or tp_c.title.size < tp_crumb_1.title.size
               assign tp_crumb_1 = tp_c
@@ -115,8 +126,17 @@
         # Fallback nur falls product.type keiner Collection zugeordnet werden
         # kann (z.B. leerer product.type): alte, weniger praezise Heuristik.
         assign tp_crumb_fallback = product.collections | sort: 'all_products_count' | reverse
-        assign tp_crumb_1 = tp_crumb_fallback[0]
-        assign tp_crumb_2 = tp_crumb_fallback[1]
+        for tp_c in tp_crumb_fallback
+          if tp_c.handle contains 'angebote-'
+            continue
+          endif
+          if tp_crumb_1 == null
+            assign tp_crumb_1 = tp_c
+          elsif tp_crumb_2 == null
+            assign tp_crumb_2 = tp_c
+            break
+          endif
+        endfor
       endif
 
       # Teppichfliesen sind eine eigene sichtbare Kategorie. Produkte, die

@@ -111,6 +111,13 @@ test('HTML-Beschreibung wird bereinigt und vorhandene Variantenpreise bleiben ei
   assert.deepEqual(d.hasVariant.map(variant => variant.offers.priceCurrency), ['EUR', 'EUR']);
 });
 
+test('Absatz- und Ueberschriftengrenzen werden zu Leerzeichen, keine verklebten Woerter (SEO-Audit 2026-09-30)', async () => {
+  const description = '<h2>Zafira Teppichboden</h2><p>Zafira ist <strong>weich</strong>.</p>\n<ul><li>Samtweicher Flor</li><li>Stuhlrollengeeignet</li></ul>Zeile eins<br>Zeile zwei';
+  const p = produkt({ description });
+  const d = gruppe(await rendern(p));
+  assert.equal(d.description, 'Zafira Teppichboden Zafira ist weich. Samtweicher Flor Stuhlrollengeeignet Zeile eins Zeile zwei');
+});
+
 test('nur GTINs mit gültiger Länge, nur Ziffern und korrekter Prüfziffer werden ausgegeben', async () => {
   const p = produkt({ variants: [
     variante({ id: 1, barcode: '12345670' }),
