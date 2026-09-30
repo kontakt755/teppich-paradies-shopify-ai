@@ -86,7 +86,7 @@
     {%- liquid
       assign tp_fw_host = '#shopify-section-' | append: section.id | append: ' variant-picker'
       assign tp_fw_muster_url = ''
-      unless tp_fw_product.tags contains 'zubehoer'
+      unless tp_fw_product.tags contains 'zubehoer' or tp_fw_product.tags contains 'ohne-muster'
         capture tp_fw_muster_url
           render 'tp-musteroption', product: tp_fw_product
         endcapture

@@ -28,14 +28,18 @@
     <a href="tel:+4933015733720">Beratung: 03301 573 37 20</a>
     <span aria-hidden="true">·</span>
     <a href="https://wa.me/4917657931322" target="_blank" rel="noopener">WhatsApp</a>
+    {%- unless block.settings.verlegeservice_ausblenden -%}
     <span aria-hidden="true">·</span>
+    {%- endunless -%}
     {%- endunless -%}
     {%- comment -%}
       Ziel nach Produktart: Rollenware mit Service (snippets/tp-vs-berechtigt)
       auf die Serviceseite, Klick- und Klebevinyl auf "Vinylboden verlegen",
       alles andere wie bisher. Vorher fuehrte der Link bei jedem Produkt auf
-      die Gewerbeseite "Boden & Malerarbeiten".
+      die Gewerbeseite "Boden & Malerarbeiten". Wohnaccessoires wie Dekofelle
+      werden nicht verlegt - dort blendet die Einstellung den Link aus.
     {%- endcomment -%}
+    {%- unless block.settings.verlegeservice_ausblenden -%}
     {%- liquid
       capture tp_sl_vs
         render 'tp-vs-berechtigt', product: product
@@ -49,6 +53,7 @@
       endif
     -%}
     <a href="{{ tp_sl_verlegen_url }}">Verlegeservice</a>
+    {%- endunless -%}
   </div>
 
   <div class="tp-service-links__shipping-{{ tp_sl_id }}" aria-label="Lieferung und Versand">
@@ -215,6 +220,13 @@
       "id": "kontakt_ausblenden",
       "label": "Telefon und WhatsApp ausblenden",
       "info": "Einschalten, wenn der Kaufbereich schon eine Kontaktbox hat.",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "verlegeservice_ausblenden",
+      "label": "Link Verlegeservice ausblenden",
+      "info": "Fuer Produkte, die nicht verlegt werden (z. B. Dekofelle).",
       "default": false
     },
     {

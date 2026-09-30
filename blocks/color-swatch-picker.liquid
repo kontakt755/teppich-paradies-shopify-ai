@@ -547,6 +547,24 @@
           return radioInputs;
         }
 
+        // Horizon-Knoepfe (variant_style "buttons") heissen nicht options[...],
+        // sondern "<Option>-<Block-ID>-<Produkt-ID>". Ohne diesen Zweig fand
+        // der Waehler sie nie: Die Farbe landete nur im Formular, Horizon
+        // kannte weiter die alte - und ein anschliessender Groessenwechsel
+        // holte die alte Farbe zurueck (Sauberlaufmatte: Grau, dann groessere
+        // Groesse, ergab Schwarz). Nur Felder dieses Produkts in dieser Section.
+        const bereich = picker.closest('.shopify-section') || document;
+        const knopfSuffix = '-' + {{ product.id | json }};
+        const buttonInputs = Array.from(
+          bereich.querySelectorAll('variant-picker input[type="radio"]')
+        ).filter(function(input) {
+          return input.name.indexOf(optionName + '-') === 0 && input.name.slice(-knopfSuffix.length) === knopfSuffix;
+        });
+
+        if (buttonInputs.length > 0) {
+          return buttonInputs;
+        }
+
         const selectInput = document.querySelector('select[name="options[' + optionName + ']"]');
         return selectInput ? [selectInput] : [];
       }
@@ -747,7 +765,7 @@
   {%- if block.settings.darstellung == 'dropdown' and color_option.values.size > 1 -%}
     {%- liquid
       assign tp_cs_muster_url = ''
-      unless product.tags contains 'zubehoer'
+      unless product.tags contains 'zubehoer' or product.tags contains 'ohne-muster'
         capture tp_cs_muster_url
           render 'tp-musteroption', product: product
         endcapture

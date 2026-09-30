@@ -1,0 +1,486 @@
+{% doc %}
+  Groessen- und Formauswahl mit massstabsgetreuen Produktbildern.
+  Fuer Produkte, deren Groessenoption Mass UND Form traegt - etwa
+  "Ø 35 cm rund" und "40 × 60 cm Fellform" beim Dekofell, "80 × 150 cm" und
+  "Ø 160 cm rund" bei Wohnteppichen. Neben der Beschriftung zeigt jede Karte
+  das echte Variantenbild in der gewaehlten Farbe, im gemeinsamen Massstab:
+  Das groesste Mass fuellt die Buehne, alle anderen schrumpfen im selben
+  Verhaeltnis. So sieht man den Groessenunterschied, statt ihn aus Zahlen
+  abzuleiten.
+
+  Form wird aus dem Optionswert gelesen, nichts wird geraten:
+    "rund" oder "Ø"  -> Kreis, Durchmesser = erste Zahl
+    "Fell"           -> Fellform, Breite × Laenge = erste und zweite Zahl
+    sonst            -> Rechteck, Breite × Laenge = erste und zweite Zahl
+  Werte ohne Zahl bekommen eine normale Karte ohne Buehne.
+
+  Bedienung: Die Karten sind Radio-Felder. Ein Wechsel setzt das native Feld
+  im Horizon-variant-picker und loest dort "change" aus - derselbe Codepfad
+  wie color-swatch-picker. Variante, URL, Preis, Galerie und Warenkorb kommen
+  damit weiter allein vom Theme; dieser Block baut keine Variantenlogik nach.
+  Die native Groessenzeile blendet der Block per CSS aus, nur in dieser
+  Section und nur, solange der Block da ist.
+
+  Faellt still aus, wenn das Produkt keine passende Option hat.
+{% enddoc %}
+{%- liquid
+  assign tp_gf_id = block.id | replace: '_', '' | downcase
+  assign tp_gf_product = closest.product | default: product
+  assign tp_gf_variant = tp_gf_product.selected_or_first_available_variant
+
+  assign tp_gf_option = blank
+  assign tp_gf_index = -1
+  assign tp_gf_farb_index = -1
+  for tp_gf_opt in tp_gf_product.options_with_values
+    assign tp_gf_oname = tp_gf_opt.name | downcase
+    if tp_gf_oname == 'größe' or tp_gf_oname == 'groesse' or tp_gf_oname == 'format' or tp_gf_oname == 'form'
+      assign tp_gf_option = tp_gf_opt
+      assign tp_gf_index = tp_gf_opt.position | minus: 1
+    elsif tp_gf_oname == 'farbe' or tp_gf_oname == 'color' or tp_gf_oname == 'dekor'
+      assign tp_gf_farb_index = tp_gf_opt.position | minus: 1
+    endif
+  endfor
+
+  if tp_gf_option != blank
+    assign tp_gf_gewaehlt = tp_gf_variant.options[tp_gf_index]
+    if tp_gf_farb_index >= 0
+      assign tp_gf_farbe = tp_gf_variant.options[tp_gf_farb_index]
+    endif
+
+    # Erster Durchlauf: groesstes Mass als gemeinsamer Massstab
+    assign tp_gf_max = 0
+    for tp_gf_wert in tp_gf_option.values
+      assign tp_gf_roh = tp_gf_wert | append: '' | replace: '×', ' x ' | replace: 'x', ' x ' | replace: 'Ø', ' ' | replace: ',', '.'
+      assign tp_gf_teile = tp_gf_roh | split: ' '
+      for tp_gf_teil in tp_gf_teile
+        assign tp_gf_zahl = tp_gf_teil | plus: 0
+        if tp_gf_zahl > tp_gf_max
+          assign tp_gf_max = tp_gf_zahl
+        endif
+      endfor
+    endfor
+
+    assign tp_gf_zoom = block.settings.rund_zoom | default: 100 | divided_by: 100.0
+  endif
+-%}
+
+{%- if tp_gf_option != blank and tp_gf_option.values.size > 1 -%}
+  {% style %}
+    #shopify-section-{{ section.id }} variant-picker fieldset:has(input[name^="{{ tp_gf_option.name | escape }}-"]),
+    #shopify-section-{{ section.id }} variant-picker .variant-option:has(select[name="options[{{ tp_gf_option.name | escape }}]"]) {
+      display: none;
+    }
+    {%- if block.settings.native_ausblenden %}
+      {%- comment -%}
+        Uebernehmen Farb-Swatches und dieser Block alle Optionen, bleibt vom
+        variant-picker nur ein leeres Element, das im Flex-Layout trotzdem
+        einen Abstand erzeugt. Die Felder bleiben im DOM und funktionieren.
+      {%- endcomment -%}
+      #shopify-section-{{ section.id }} variant-picker {
+        display: none;
+      }
+    {%- endif %}
+  {% endstyle %}
+
+  <tp-groessen-form
+    class="tp-gf"
+    data-option-name="{{ tp_gf_option.name | escape }}"
+    style="--tp-gf-rund-zoom: {{ tp_gf_zoom }};"
+    {{ block.shopify_attributes }}
+  >
+    <fieldset class="tp-gf__set">
+      <legend class="tp-gf__kopf">
+        {{- block.settings.label | default: tp_gf_option.name | escape -}}
+        <span class="tp-gf__aktuell" data-tp-gf-aktuell>{{ tp_gf_gewaehlt | escape }}</span>
+      </legend>
+
+      <div class="tp-gf__raster">
+        {%- for tp_gf_wert in tp_gf_option.values -%}
+          {%- liquid
+            assign tp_gf_wert_text = tp_gf_wert | append: ''
+            assign tp_gf_klein = tp_gf_wert_text | downcase
+
+            assign tp_gf_form = 'rechteck'
+            if tp_gf_klein contains 'rund' or tp_gf_wert_text contains 'Ø'
+              assign tp_gf_form = 'rund'
+            elsif tp_gf_klein contains 'fell'
+              assign tp_gf_form = 'fellform'
+            endif
+
+            assign tp_gf_roh = tp_gf_wert_text | replace: '×', ' x ' | replace: 'x', ' x ' | replace: 'Ø', ' ' | replace: ',', '.'
+            assign tp_gf_teile = tp_gf_roh | split: ' '
+            assign tp_gf_b = 0
+            assign tp_gf_l = 0
+            for tp_gf_teil in tp_gf_teile
+              assign tp_gf_zahl = tp_gf_teil | plus: 0
+              if tp_gf_zahl > 0
+                if tp_gf_b == 0
+                  assign tp_gf_b = tp_gf_zahl
+                elsif tp_gf_l == 0
+                  assign tp_gf_l = tp_gf_zahl
+                endif
+              endif
+            endfor
+            if tp_gf_form == 'rund' or tp_gf_l == 0
+              assign tp_gf_l = tp_gf_b
+            endif
+
+            # Variante in der gewaehlten Farbe fuer Bild, Preis, Verfuegbarkeit
+            assign tp_gf_treffer = blank
+            for tp_gf_v in tp_gf_product.variants
+              if tp_gf_v.options[tp_gf_index] == tp_gf_wert_text
+                if tp_gf_farb_index < 0 or tp_gf_v.options[tp_gf_farb_index] == tp_gf_farbe
+                  assign tp_gf_treffer = tp_gf_v
+                  break
+                endif
+              endif
+            endfor
+
+            if tp_gf_form == 'rund'
+              assign tp_gf_masse = 'Ø ' | append: tp_gf_b | append: ' cm'
+              assign tp_gf_formname = 'rund'
+            elsif tp_gf_form == 'fellform' and tp_gf_b > 0
+              assign tp_gf_masse = tp_gf_b | append: ' × ' | append: tp_gf_l | append: ' cm'
+              assign tp_gf_formname = 'Fellform'
+            else
+              assign tp_gf_masse = tp_gf_wert_text
+              assign tp_gf_formname = ''
+            endif
+          -%}
+          <label class="tp-gf__karte{% if tp_gf_treffer.available == false %} tp-gf__karte--aus{% endif %}">
+            <input
+              class="tp-gf__feld"
+              type="radio"
+              name="tp-gf-{{ tp_gf_id }}"
+              value="{{ tp_gf_wert_text | escape }}"
+              data-tp-gf-wert
+              {% if tp_gf_wert_text == tp_gf_gewaehlt %}checked{% endif %}
+            >
+            {%- if tp_gf_max > 0 and tp_gf_b > 0 -%}
+              {%- liquid
+                assign tp_gf_w = tp_gf_b | times: 100.0 | divided_by: tp_gf_max | round: 2
+                assign tp_gf_h = tp_gf_l | times: 100.0 | divided_by: tp_gf_max | round: 2
+                assign tp_gf_bild = tp_gf_treffer.featured_image
+              -%}
+              <span class="tp-gf__buehne" aria-hidden="true">
+                <span
+                  class="tp-gf__form tp-gf__form--{{ tp_gf_form }}{% if tp_gf_bild == blank %} tp-gf__form--leer{% endif %}"
+                  style="--tp-gf-w: {{ tp_gf_w }}; --tp-gf-h: {{ tp_gf_h }};"
+                >
+                  {%- if tp_gf_bild != blank -%}
+                    {{ tp_gf_bild | image_url: width: 240 | image_tag: alt: '', loading: 'lazy', width: 120, height: 120, class: 'tp-gf__bild' }}
+                  {%- endif -%}
+                </span>
+              </span>
+            {%- endif -%}
+            <span class="tp-gf__text">
+              <span class="tp-gf__masse">{{ tp_gf_masse }}</span>
+              {%- if tp_gf_formname != blank -%}
+                <span class="tp-gf__formname">{{ tp_gf_formname }}</span>
+              {%- endif -%}
+              {%- if tp_gf_treffer != blank -%}
+                <span class="tp-gf__preis">
+                  {%- if tp_gf_treffer.available == false -%}
+                    ausverkauft
+                  {%- else -%}
+                    {{ tp_gf_treffer.price | money }}
+                  {%- endif -%}
+                </span>
+              {%- endif -%}
+            </span>
+          </label>
+        {%- endfor -%}
+      </div>
+
+      {%- if block.settings.hinweis != blank -%}
+        <p class="tp-gf__hinweis">{{ block.settings.hinweis | escape }}</p>
+      {%- endif -%}
+    </fieldset>
+  </tp-groessen-form>
+{%- endif -%}
+
+{% javascript %}
+  if (!customElements.get('tp-groessen-form')) {
+    class TpGroessenForm extends HTMLElement {
+      connectedCallback() {
+        this.tpAbbruch = new AbortController();
+        const { signal } = this.tpAbbruch;
+        this.addEventListener(
+          'change',
+          (event) => {
+            const feld = event.target;
+            if (!(feld instanceof HTMLInputElement) || !feld.hasAttribute('data-tp-gf-wert')) return;
+            this.waehle(feld.value);
+          },
+          { signal }
+        );
+
+        // Horizon rendert bei einem Variantenwechsel nicht den ganzen Block
+        // neu, sondern schickt das frische Section-HTML per variant:update.
+        // Daraus wird der Inhalt uebernommen - Farbe der Bilder, Preise und
+        // Auswahl kommen so weiter vom Server, nicht aus diesem Skript.
+        const bereich = this.closest('.shopify-section, dialog');
+        bereich?.addEventListener(
+          'variant:update',
+          (event) => {
+            const html = event.detail?.data?.html;
+            const neu = html?.querySelector('tp-groessen-form');
+            if (neu) this.innerHTML = neu.innerHTML;
+          },
+          { signal }
+        );
+      }
+
+      disconnectedCallback() {
+        this.tpAbbruch?.abort();
+      }
+
+      waehle(wert) {
+        const aktuell = this.querySelector('[data-tp-gf-aktuell]');
+        if (aktuell) aktuell.textContent = wert;
+
+        const name = this.dataset.optionName || '';
+        const bereich = this.closest('.shopify-section') || document;
+        const radios = Array.from(bereich.querySelectorAll('variant-picker input[type="radio"]')).filter(
+          (feld) => feld.name.indexOf(name + '-') === 0
+        );
+        const ziel = radios.find((feld) => feld.value === wert);
+        if (ziel) {
+          if (ziel.checked) return;
+          radios.forEach((feld) => {
+            feld.checked = feld === ziel;
+          });
+          ziel.dispatchEvent(new Event('change', { bubbles: true }));
+          return;
+        }
+
+        const auswahl = Array.from(bereich.querySelectorAll('variant-picker select')).find(
+          (feld) => feld.name === 'options[' + name + ']'
+        );
+        if (auswahl && auswahl.value !== wert) {
+          auswahl.value = wert;
+          auswahl.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+    }
+
+    customElements.define('tp-groessen-form', TpGroessenForm);
+  }
+{% endjavascript %}
+
+{% stylesheet %}
+  .tp-gf {
+    display: block;
+    width: 100%;
+    --tp-gf-buehne: 84px;
+  }
+
+  .tp-gf__set {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+
+  .tp-gf__kopf {
+    margin: 0 0 10px;
+    padding: 0;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .tp-gf__aktuell {
+    margin-left: 6px;
+    font-weight: 400;
+    color: #595959;
+  }
+
+  .tp-gf__raster {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+    gap: 10px;
+  }
+
+  .tp-gf__karte {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 12px 11px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.14);
+    border-radius: var(--style-border-radius-md, 8px);
+    background: var(--color-background);
+    cursor: pointer;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+  }
+
+  .tp-gf__karte:hover {
+    border-color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.45);
+  }
+
+  .tp-gf__karte:has(.tp-gf__feld:checked) {
+    border-color: var(--color-foreground);
+    box-shadow: inset 0 0 0 1px var(--color-foreground);
+  }
+
+  .tp-gf__karte:has(.tp-gf__feld:focus-visible) {
+    outline: var(--focus-outline-width, 2px) solid currentcolor;
+    outline-offset: 2px;
+  }
+
+  .tp-gf__karte--aus {
+    opacity: 0.55;
+  }
+
+  .tp-gf__feld {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .tp-gf__buehne {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    height: var(--tp-gf-buehne);
+    pointer-events: none;
+  }
+
+  .tp-gf__form {
+    display: block;
+    width: calc(var(--tp-gf-buehne) * var(--tp-gf-w) / 100);
+    height: calc(var(--tp-gf-buehne) * var(--tp-gf-h) / 100);
+  }
+
+  .tp-gf__bild {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .tp-gf__form--rund {
+    overflow: hidden;
+    border-radius: 50%;
+  }
+
+  .tp-gf__form--rund .tp-gf__bild {
+    object-fit: cover;
+    transform: scale(var(--tp-gf-rund-zoom, 1));
+  }
+
+  .tp-gf__form--leer {
+    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.12);
+    border-radius: 4px;
+  }
+
+  .tp-gf__form--leer.tp-gf__form--rund {
+    border-radius: 50%;
+  }
+
+  .tp-gf__form--leer.tp-gf__form--fellform {
+    border-radius: 44% 44% 40% 40% / 32% 32% 46% 46%;
+  }
+
+  .tp-gf__text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    line-height: 1.3;
+  }
+
+  .tp-gf__masse {
+    font-size: 14.5px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .tp-gf__formname,
+  .tp-gf__preis {
+    font-size: 13px;
+    color: #595959;
+  }
+
+  .tp-gf__preis {
+    margin-top: 4px;
+    color: var(--color-foreground);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tp-gf__hinweis {
+    margin: 8px 0 0;
+    font-size: 12.5px;
+    color: #595959;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-gf {
+      --tp-gf-buehne: 68px;
+    }
+
+    .tp-gf__raster {
+      grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+      gap: 8px;
+    }
+
+    .tp-gf__karte {
+      padding: 10px 8px 9px;
+    }
+
+    .tp-gf__masse {
+      font-size: 13.5px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tp-gf__karte {
+      transition: none;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Groesse und Form",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "label",
+      "label": "Ueberschrift",
+      "default": "Größe"
+    },
+    {
+      "type": "text",
+      "id": "hinweis",
+      "label": "Hinweis unter den Karten",
+      "default": "Alle Maße ca."
+    },
+    {
+      "type": "range",
+      "id": "rund_zoom",
+      "label": "Zoom fuer runde Produktbilder",
+      "info": "Gleicht den weissen Rand runder Freisteller aus. 100 = kein Zoom.",
+      "min": 100,
+      "max": 140,
+      "step": 2,
+      "unit": "%",
+      "default": 100
+    },
+    {
+      "type": "checkbox",
+      "id": "native_ausblenden",
+      "label": "Native Variantenauswahl ganz ausblenden",
+      "info": "Nur einschalten, wenn alle uebrigen Optionen von eigenen Bloecken (z. B. Farb-Swatches) bedient werden.",
+      "default": false
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Groesse und Form"
+    }
+  ]
+}
+{% endschema %}
