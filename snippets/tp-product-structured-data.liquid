@@ -9,8 +9,11 @@
      0,01 lfm, 0,00 EUR) und duerfen nie als Angebot erscheinen.
 
   2. Kaufprodukte werden als ProductGroup mit einem Offer je Variante
-     ausgegeben. Beschreibung, Preis, SKU und nur validierte GTIN kommen aus
-     den vorhandenen Shopify-Produkt- und Variantendaten.
+     ausgegeben. Beschreibung, Preis und nur validierte GTIN kommen aus
+     den vorhandenen Shopify-Produkt- und Variantendaten. Die SKU bleibt
+     bewusst draussen: Sie ist die Artikelnummer des Grosshaendlers und
+     wuerde ueber die Suchmaschine den Preisvergleich ermoeglichen
+     (Inhaber, 2026-09-30). Fuer Google ist sie kein Pflichtfeld.
      Flaechenware fuehrt zusaetzlich eine UnitPriceSpecification je m2
      (referenceQuantity 1 MTK), wie auf der Seite angezeigt.
      Erkannt wird sie an
@@ -202,9 +205,6 @@
           "url": {{ tp_sd_variant_url | json }}
           {%- if tp_sd_image -%},
           "image": {{ tp_sd_image | image_url: width: 1920 | prepend: 'https:' | json }}
-          {%- endif -%}
-          {%- if tp_sd_variant.sku != blank -%},
-          "sku": {{ tp_sd_variant.sku | json }}
           {%- endif -%}
           {%- if tp_sd_description != blank -%},
           "description": {{ tp_sd_description | json }}
