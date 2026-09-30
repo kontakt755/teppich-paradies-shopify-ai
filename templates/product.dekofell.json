@@ -298,14 +298,6 @@
                 "padding-inline-end": 0
               },
               "blocks": {}
-            },
-            "tp_bildnachweis": {
-              "type": "tp-bildnachweis",
-              "name": "TP Bildnachweis",
-              "settings": {
-                "label": "Produktbilder:"
-              },
-              "blocks": {}
             }
           },
           "block_order": [
@@ -319,8 +311,7 @@
             "buy_buttons_eYQEYi",
             "tp_service_links_sales1",
             "tp_bewertungsbeleg_dekofell",
-            "text_aEtTtq",
-            "tp_bildnachweis"
+            "text_aEtTtq"
           ]
         }
       },

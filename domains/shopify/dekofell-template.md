@@ -15,7 +15,6 @@ Lieferant B, Stueckware in festen Groessen, Dropshipping per Paket).
 | `tp-service-links` | Lieferzeit 5–7 Werktage, ohne Link „Verlegeservice“ | Blockeinstellung |
 | `tp-bewertungsbeleg` | Google-Bewertung | Theme-Einstellung |
 | `text` (Beschreibung) | `pd-card` mit Kurztext, Badges, Tabelle | Produktbeschreibung |
-| `tp-bildnachweis` | Pflicht-Urhebervermerk der Herstellerbilder | `custom.bildnachweis` |
 
 Keine Produktempfehlungen: Die Shopify-Empfehlungen zeigten Profile und Kleber.
 Kein Muster-Link: Produkte mit dem Tag `ohne-muster` bekommen weder auf der
@@ -54,5 +53,8 @@ Alle Werte stammen aus der Lieferanten-Datenliste; Rohdaten liegen nur lokal unt
 
 ## Offen
 
-- Schriftliche Freigabe des Bildgebers fuer die konkrete Shop-Darstellung liegt nicht vor
-  (siehe `domains/lieferanten/teppiche/importplan-2026-09.md`). Der Urhebervermerk ist umgesetzt.
+- Die Bildnutzungsbedingungen von Lieferant B verlangen einen Urhebervermerk mit
+  Markennamen und eine schriftliche Freigabe der Shop-Darstellung
+  (`domains/lieferanten/teppiche/importplan-2026-09.md`). Seit #753 zeigt der Shop keine
+  Lieferantennamen mehr; ein Vermerk ist deshalb bewusst nicht eingebaut. Entscheidung
+  Inhaber: Freigabe/Ausnahme beim Lieferanten klaeren oder eigene Fotos.
