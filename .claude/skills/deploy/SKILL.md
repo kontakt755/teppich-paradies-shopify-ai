@@ -25,8 +25,8 @@ Freigabe-Flags sind Teil des Befehls, keine zweite Bestaetigung:
 
 ```
 npm run workflow:doctor                     # zuerst - meldet alle Blocker auf einmal
-node workflow/cli.mjs preview --theme-id <id> --approve-preview
-node workflow/cli.mjs live --theme-id <id> --approve-live --approval-text "PUBLISH LIVE" --execute
+node workflow/cli.mjs preview --theme-id <id> --approve-preview --p0 0 --p1 0
+node workflow/cli.mjs live --theme-id <id> --approve-live --approval-text "PUBLISH LIVE" --execute --p0 0 --p1 0
 ```
 
 **Pro Arbeitskopie laeuft nur ein Deploy.** `preview`, `live` und die volle
@@ -40,6 +40,8 @@ anderen Sitzung publiziert. Eine verwaiste Sperre uebernimmt der naechste Lauf
 selbst; sofort geht es mit Loeschen der Datei. `doctor`, `route` und
 `validate --static` sind absichtlich frei und geben auch waehrend eines Deploys
 Auskunft.
+
+`--p0`/`--p1` sind die Zahl offener P0/P1-Befunde und haben bewusst keinen Standardwert – ohne sie bricht Preview wie Live mit `FINDINGS_BLOCK` ab. Wird zwischen Preview und Live ein fremder PR nach `main` gemergt, bricht Live mit `LIVE_SOURCE` ab: `main` nachziehen, Preview neu, dann Live.
 
 Bricht ein Gate ab, ist das ein echter Befund — Ursache beheben, niemals das
 Gate ausbauen. Ein abgelehnter Push mit „fetch first" heisst: jemand hat
