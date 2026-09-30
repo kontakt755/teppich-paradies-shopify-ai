@@ -2,6 +2,7 @@
 
 | Datum | Entscheidung | Quelle |
 |---|---|---|
+| 2026-09-29 | Bei Teppichboden mit Meterware und Raummaß gilt ein Produktrabatt für beide Zuschnittarten mit demselben Prozentsatz. Raummaß allein darf keinen Streichpreis tragen; Streichpreise erscheinen nur bei aktiver Produktaktion und belegtem Vorpreis. | Inhaber, Raummaß-Preissenkung |
 | 2026-09-20 | Teppiche (fertig/konfigurierbar) zeigen primaer "ab XX EUR"; der Preis muss real kaufbar sein (Pflichtbestandteile eingerechnet, Extras nicht). | Ahmet |
 | 2026-09-20 | Teppichboden/Rollenware zeigt weiter "XX EUR/m2". Beide Gruppen technisch getrennt, keine globale Preisaenderung. | Ahmet |
 | 2026-09-20 | Aktionspreis ist nicht kombinierbar mit dem kostenlosen Vor-Ort-Liefer-/Verlegeservice; kostenlose Lieferung bis Bordsteinkante bleibt. | Ahmet |
