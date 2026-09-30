@@ -45,7 +45,11 @@
 .tp-ek__eingabe input:focus { outline: none; border-color: var(--tp-ek-ink); }
 .tp-ek__eingabe > span { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: .85rem; color: var(--tp-ek-muted); pointer-events: none; }
 
-.tp-ek__groessen { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.tp-ek__groessen-wrap { margin-top: 10px; }
+.tp-ek__groessen-wrap[hidden] { display: none; }
+.tp-ek__groessen-label { margin: 0 0 6px; font-size: .84rem; font-weight: 650; }
+.tp-ek__groessen { display: flex; flex-wrap: wrap; gap: 6px; }
+.tp-ek__groessen-hinweis { margin: 6px 0 0; font-size: .78rem; line-height: 1.4; color: var(--tp-ek-muted); }
 .tp-ek__groesse {
   min-height: 34px; padding: 6px 12px; border: 1px solid var(--tp-ek-line); border-radius: 999px;
   background: var(--tp-ek-surface); color: var(--tp-ek-ink); font: inherit; font-size: .82rem; font-weight: 600;

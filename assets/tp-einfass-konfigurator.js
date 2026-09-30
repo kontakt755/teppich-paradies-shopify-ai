@@ -103,6 +103,7 @@
     var laengeTeile = root.querySelectorAll('[data-feld-laenge]');
     var labelBreite = q('[data-label-breite]');
     var groessen = q('[data-groessen]');
+    var groessenWrap = q('[data-groessen-wrap]');
     var grenzen = q('[data-grenzen]');
     var fehler = q('[data-fehler]');
     var vorschau = q('[data-vorschau]');
@@ -183,6 +184,7 @@
       var liste = f === 'rund'
         ? GROESSEN.rund.filter(function (x) { return x <= maxW; }).map(function (x) { return [x, x]; })
         : GROESSEN.eckig.filter(function (p) { return Math.min(p[0], p[1]) <= maxW && Math.max(p[0], p[1]) <= maxL; });
+      if (groessenWrap) groessenWrap.hidden = liste.length === 0;
       liste.forEach(function (p) {
         var b = document.createElement('button');
         b.type = 'button';

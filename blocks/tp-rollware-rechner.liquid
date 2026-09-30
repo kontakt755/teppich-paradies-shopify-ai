@@ -355,6 +355,7 @@
     disabled waere genauso stumm: ein Klick darauf loest kein Event aus. Statt
     dessen traegt er aria-disabled und meldet beim Klick, welches Feld fehlt.
   {%- endcomment -%}
+  {% render 'tp-widerruf-massanfertigung', art: 'zuschnitt', extra_attributes: 'data-rwc-body' %}
   <button type="button" class="tp-rwc-cta is-incomplete" data-cta data-add-to-cart aria-disabled="true" data-rwc-body>In den Warenkorb</button>
   {%- comment -%}
     K6: Der Knopf heisst immer "In den Warenkorb". Solange etwas fehlt, ist er
