@@ -11,18 +11,31 @@ const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 16, 0x4a, 0x46, 0x49, 0x46,
 const APPLE = d => new Date(d).getTime() / 1000 - 978307200;
 
 /** Nachbau der Chat-Datenbank der WhatsApp-Mac-App - nur die Spalten, die gelesen werden. */
-function waNachbau(t, { gruppen = [['Baustellen-Team', 'g1@g.us']], nachrichten = [], ohnePushname = false } = {}) {
+function waNachbau(t, { gruppen = [['Baustellen-Team', 'g1@g.us']], nachrichten = [], ohnePushname = false, mac26 = false } = {}) {
   const quelle = tmpDir(t);
   const sql = new DatabaseSync(path.join(quelle, 'ChatStorage.sqlite'));
   sql.exec(`CREATE TABLE ZWACHATSESSION (Z_PK INTEGER PRIMARY KEY, ZPARTNERNAME TEXT, ZCONTACTJID TEXT);
-    CREATE TABLE ZWAMESSAGE (Z_PK INTEGER PRIMARY KEY, ZCHATSESSION INTEGER, ZMESSAGEDATE REAL, ZMESSAGETYPE INTEGER, ZISFROMME INTEGER, ZMEDIAITEM INTEGER, ZGROUPMEMBER INTEGER);
+    CREATE TABLE ZWAMESSAGE (Z_PK INTEGER PRIMARY KEY, ZCHATSESSION INTEGER, ZMESSAGEDATE REAL, ZMESSAGETYPE INTEGER, ZISFROMME INTEGER, ZMEDIAITEM INTEGER, ZGROUPMEMBER INTEGER${mac26 ? ', ZPUSHNAME TEXT' : ''});
     CREATE TABLE ZWAMEDIAITEM (Z_PK INTEGER PRIMARY KEY, ZMEDIALOCALPATH TEXT);
     CREATE TABLE ZWAGROUPMEMBER (Z_PK INTEGER PRIMARY KEY, ZMEMBERJID TEXT, ZCONTACTNAME TEXT);
     ${ohnePushname ? '' : 'CREATE TABLE ZWAPROFILEPUSHNAME (ZJID TEXT, ZPUSHNAME TEXT);'}`);
   gruppen.forEach(([name, jid], i) => sql.prepare('INSERT INTO ZWACHATSESSION VALUES (?, ?, ?)').run(i + 1, name, jid));
   sql.prepare('INSERT INTO ZWACHATSESSION VALUES (?, ?, ?)').run(99, 'Mehmet privat', '49170@s.whatsapp.net');
-  sql.prepare('INSERT INTO ZWAGROUPMEMBER VALUES (1, ?, ?)').run('4917011@s.whatsapp.net', 'Mehmet');
-  sql.prepare('INSERT INTO ZWAGROUPMEMBER VALUES (2, ?, NULL)').run('4917022@s.whatsapp.net');
+  if (mac26) {
+    // WhatsApp fuer Mac 26: anonyme Kennungen, leere Namensfelder am Mitglied, Namen nur im Adressbuch
+    sql.prepare("INSERT INTO ZWAGROUPMEMBER VALUES (1, ?, '')").run('1110001@lid');
+    sql.prepare("INSERT INTO ZWAGROUPMEMBER VALUES (2, ?, '')").run('2220002@lid');
+    const k = new DatabaseSync(path.join(quelle, 'ContactsV2.sqlite'));
+    k.exec('CREATE TABLE ZWAADDRESSBOOKCONTACT (Z_PK INTEGER PRIMARY KEY, ZFULLNAME TEXT, ZGIVENNAME TEXT, ZLID TEXT)');
+    // derselbe Kontakt doppelt: darf keine Nachricht verdoppeln
+    k.prepare('INSERT INTO ZWAADDRESSBOOKCONTACT VALUES (1, ?, NULL, ?)').run('Mehmet K.', '1110001@lid');
+    k.prepare('INSERT INTO ZWAADDRESSBOOKCONTACT VALUES (2, ?, NULL, ?)').run('Mehmet K.', '1110001@lid');
+    k.prepare("INSERT INTO ZWAADDRESSBOOKCONTACT VALUES (3, '', '', ?)").run('2220002@lid');
+    k.close();
+  } else {
+    sql.prepare('INSERT INTO ZWAGROUPMEMBER VALUES (1, ?, ?)').run('4917011@s.whatsapp.net', 'Mehmet');
+    sql.prepare('INSERT INTO ZWAGROUPMEMBER VALUES (2, ?, NULL)').run('4917022@s.whatsapp.net');
+  }
   if (!ohnePushname) sql.prepare('INSERT INTO ZWAPROFILEPUSHNAME VALUES (?, ?)').run('4917022@s.whatsapp.net', 'Jonas');
   for (const n of nachrichten) {
     let medium = null;
@@ -36,7 +49,9 @@ function waNachbau(t, { gruppen = [['Baustellen-Team', 'g1@g.us']], nachrichten 
         fs.writeFileSync(ziel, n.inhalt ?? JPEG);
       }
     }
-    sql.prepare('INSERT INTO ZWAMESSAGE VALUES (?, ?, ?, ?, ?, ?, ?)').run(n.pk, n.chat ?? 1, APPLE(n.zeit), n.typ ?? 1, n.vonMir ? 1 : 0, medium, n.vonMir ? null : (n.wer ?? 1));
+    const werte = [n.pk, n.chat ?? 1, APPLE(n.zeit), n.typ ?? 1, n.vonMir ? 1 : 0, medium, n.vonMir ? null : (n.wer ?? 1)];
+    if (mac26) werte.push(n.name ?? '');
+    sql.prepare(`INSERT INTO ZWAMESSAGE VALUES (${werte.map(() => '?').join(', ')})`).run(...werte);
   }
   sql.close();
   return quelle;
@@ -69,6 +84,14 @@ test('Lesen: ohne Push-Namen-Tabelle bleibt die Nummer, falsche Gruppe und fehle
   assert.throws(() => leseGruppe({ quelle, gruppe: 'Gibt es nicht' }), /nicht gefunden/);
   assert.throws(() => leseGruppe({ quelle, gruppe: 'Doppelt' }), /Mehrere/);
   assert.throws(() => leseGruppe({ quelle: path.join(quelle, 'leer'), gruppe: 'x' }), WhatsAppFehler);
+});
+
+test('WhatsApp fuer Mac 26: Name aus dem Adressbuch ueber die @lid-Kennung, sonst "Mitglied …1234"', (t) => {
+  const quelle = waNachbau(t, { mac26: true, nachrichten: [
+    { pk: 1, zeit: '2026-09-30T08:00:00Z', wer: 1, name: 'IAA=' },
+    { pk: 2, zeit: '2026-09-30T08:01:00Z', wer: 2, name: 'IAA=' },
+  ] });
+  assert.deepEqual(leseGruppe({ quelle, gruppe: 'Baustellen-Team' }).map(x => [x.pk, x.absender]), [[1, 'Mehmet K.'], [2, 'Mitglied …0002']]);
 });
 
 test('Gruppieren: je Absender, neue Baustelle nach mehr als drei Stunden Pause', () => {
@@ -111,11 +134,12 @@ test('Uebernahme wartet auf weitere Bilder und auf den Download, ohne andere Abs
     { pk: 2, zeit: '2026-09-30T11:50:00Z', wer: 2 },
     { pk: 3, zeit: '2026-09-30T06:00:00Z', wer: 2, datei: false },
   ] });
-  // 12:00: Mehmet schickte vor zwei Stunden - wartet noch (drei Stunden Ruhe). Jonas' Bild von 11:50 wartet auch.
+  // 12:00: Mehmet schickte vor zwei Stunden - wartet noch (drei Stunden Ruhe). Jonas' Bild von 11:50 wartet auch,
+  // ebenso sein Bild von 06:00, das WhatsApp noch nicht heruntergeladen hat: die Frist laeuft ab dem ersten Lauf.
   let r = uebernimmWhatsApp(db, { env: env(quelle), dir, jetzt: new Date('2026-09-30T12:00:00Z'), pruefe: ohnePruefung });
-  assert.equal(r.neu.length, 0); assert.equal(r.fehlend, 1, 'altes Bild ohne Datei wird uebersprungen');
-  assert.equal(liesStand(dir).letzterPk, 0, 'Nachricht 1 wartet - der Stand darf nicht an ihr vorbei');
-  assert.deepEqual(liesStand(dir).erledigt, [3]);
+  assert.equal(r.neu.length, 0); assert.equal(r.fehlend, 0); assert.equal(r.wartet, 3);
+  assert.equal(liesStand(dir).letzterPk, 0, 'alles wartet - der Stand darf nicht vorbei');
+  assert.equal(liesStand(dir).beginn, '2026-09-30T12:00:00.000Z');
 
   // 13:30: Mehmets Baustelle ist ruhig, Jonas noch nicht.
   r = uebernimmWhatsApp(db, { env: env(quelle), dir, jetzt: new Date('2026-09-30T13:30:00Z'), pruefe: ohnePruefung });
@@ -123,7 +147,12 @@ test('Uebernahme wartet auf weitere Bilder und auf den Download, ohne andere Abs
   assert.equal(liesStand(dir).letzterPk, 1);
 
   r = uebernimmWhatsApp(db, { env: env(quelle), dir, jetzt: new Date('2026-09-30T15:00:00Z'), pruefe: ohnePruefung });
-  assert.deepEqual(r.neu.map(x => x.absender), ['Jonas']);
+  assert.deepEqual(r.neu.map(x => x.absender), ['Jonas'], 'das geladene Bild von 11:50 kommt, das fehlende von 06:00 wartet weiter');
+  assert.equal(liesStand(dir).letzterPk, 2, 'bis Nachricht 2 ist alles erledigt, 3 wartet'); assert.deepEqual(liesStand(dir).erledigt, []);
+
+  // Drei Tage nach dem ersten Lauf ist die Frist um: das nie geladene Bild wird uebersprungen.
+  r = uebernimmWhatsApp(db, { env: env(quelle), dir, jetzt: new Date('2026-10-03T12:01:00Z'), pruefe: ohnePruefung });
+  assert.equal(r.neu.length, 0); assert.equal(r.fehlend, 1);
   assert.equal(liesStand(dir).letzterPk, 3); assert.deepEqual(liesStand(dir).erledigt, []);
 });
 

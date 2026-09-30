@@ -14,7 +14,11 @@ Branch → PR → main → workflow:preview (unpublished Theme) → workflow:liv
 ```
 
 Preview und Live verlangen `branch === main && head === origin/main` und einen
-sauberen Working Tree. Live zusaetzlich passende Preview-Evidence und explizite
+sauberen Working Tree. Dafuer gibt es **einen** Deploy-Worktree, der `main`
+ausgecheckt hat (vor dem Lauf `git pull --ff-only`); vorhandenen nutzen
+(`git worktree list | grep '\[main\]'`), sonst
+`git worktree add ~/Developer/tp-deploy main`. Nie im Hauptcheckout deployen:
+der steht losgelöst auf `origin/main`, und der Lauf schreibt Evidence-Dateien. Live zusaetzlich passende Preview-Evidence und explizite
 Freigabe. **Die Kette darf der Agent eigenstaendig durchlaufen**, sobald der
 Nutzer einen Deploy verlangt („deploy", „live stellen", „push das raus") — die
 Freigabe-Flags sind Teil des Befehls, keine zweite Bestaetigung:

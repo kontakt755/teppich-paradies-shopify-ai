@@ -78,6 +78,38 @@
 .tp-tep-usps li { display: inline-flex; align-items: center; gap: 8px; }
 .tp-tep-usps .tp-tep-icon { color: var(--tp-ok); }
 
+/* Alle Teppiche: zwei Wege (sections/tp-teppiche-wege.liquid) */
+.tp-tep-wege { padding: clamp(24px, 3.5vw, 48px) 0 clamp(28px, 4vw, 52px); background: linear-gradient(180deg, var(--tp-sand) 0%, #fff 100%); }
+.tp-tep-wege__inner { display: grid; gap: clamp(18px, 2.6vw, 30px); }
+.tp-tep-wege__kopf { display: grid; gap: 10px; }
+.tp-tep-wege__liste { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(12px, 2vw, 24px); }
+.tp-tep-wege__link {
+  position: relative; display: grid; grid-template-rows: auto 1fr; height: 100%; border-radius: 20px; overflow: hidden;
+  background: #fff; border: 1px solid var(--tp-line); box-shadow: var(--tp-shadow); text-decoration: none;
+  transition: border-color .2s ease, transform .2s ease;
+}
+.tp-tep-wege__link:hover { border-color: var(--tp-ink); }
+.tp-tep-wege__bild { display: block; aspect-ratio: 3 / 2; background: var(--tp-sand-2); overflow: hidden; }
+.tp-tep-wege__bild img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .4s ease; }
+.tp-tep-wege__link:hover .tp-tep-wege__bild img { transform: scale(1.03); }
+.tp-tep-wege__text { display: grid; gap: 4px; align-content: start; padding: 16px 64px 18px 20px; }
+.tp-tep-wege__titel { font-size: clamp(19px, 2vw, 23px); font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
+.tp-tep-wege__kurz { font-size: 15px; color: var(--tp-ink-2); }
+.tp-tep-wege__zahl { font-size: 13px; color: var(--tp-ink-3); }
+.tp-tep-wege__zahl:empty { display: none; }
+.tp-tep-wege__pfeil {
+  position: absolute; right: 18px; bottom: 18px; display: grid; place-items: center; width: 40px; height: 40px;
+  border-radius: 50%; background: var(--tp-ink); color: #fff;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tp-tep-wege__link, .tp-tep-wege__bild img { transition: none; }
+  .tp-tep-wege__link:hover .tp-tep-wege__bild img { transform: none; }
+}
+@media (max-width: 699px) {
+  .tp-tep-wege__liste { grid-template-columns: minmax(0, 1fr); }
+  .tp-tep-wege__bild { aspect-ratio: 16 / 9; }
+}
+
 /* Schritte */
 .tp-tep-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 .tp-tep-step { position: relative; display: grid; gap: 8px; align-content: start; padding: 20px; border-radius: var(--tp-r); background: #fff; border: 1px solid var(--tp-line); }

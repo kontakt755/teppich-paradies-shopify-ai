@@ -13,16 +13,17 @@
     "tp_teppiche_hero": {
       "type": "tp-teppiche-hero",
       "settings": {
-        "kicker": "Ihr Teppich, auf den Zentimeter",
-        "heading": "Teppich nach Maß – rundum gekettelt",
-        "text": "Aus unserem Teppichboden zugeschnitten und rundum gekettelt. Breite und Länge bestimmen Sie – der Preis steht sofort.",
-        "usps": "Farben je Qualität\nBis 500 × 600 cm je nach Produkt\nPreis sofort sichtbar",
-        "card_title": "Rundum gekettelt",
-        "card_text": "Kante mit Garn eingefasst, franst nicht aus",
+        "kicker": "Zentimetergenau zugeschnitten",
+        "heading": "Teppich nach Maß",
+        "text": "Qualität und Farbe wählen, Breite und Länge eingeben – wir schneiden zu und ketteln rundum. Der Preis steht sofort.",
+        "usps": "Bis 500 × 600 cm je nach Qualität\nRundum gekettelt\n3 Muster kostenlos",
+        "card_title": "",
+        "card_text": "",
         "btn1_label": "Jetzt konfigurieren",
         "btn1_url": "",
-        "btn2_label": "So funktioniert es",
-        "btn2_url": "#so-funktioniert-es"
+        "btn2_label": "Muster bestellen",
+        "btn2_url": "shopify://pages/muster",
+        "image": "shopify://shop_images/teppich-nach-mass-muster-massband-kante.jpg"
       }
     },
     "main": {

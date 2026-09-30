@@ -124,6 +124,20 @@
         endcapture
         assign tp_dn_hit = tp_dn_hit | strip | plus: 0
       endif
+
+      # Kurztext der eigenen Bildkachel schlaegt die Aufzaehlung der Unterpunkte. So steht
+      # unter "Teppichboden" "Meterware, von Wand zu Wand verlegt" und unter "Teppiche"
+      # "Standardgroessen oder nach Mass" - genau die beiden Bereiche, die Kunden im Laden
+      # verwechseln (Inhaber 2026-09-30). Kachel ohne Kurztext: Aufzaehlung wie bisher.
+      if tp_dn_hit > 0
+        capture tp_dn_kurz
+          render 'tp-menu-kurztext', link: link, kacheln: kacheln
+        endcapture
+        assign tp_dn_kurz = tp_dn_kurz | strip
+        if tp_dn_kurz != blank
+          assign tp_dn_sub = tp_dn_kurz
+        endif
+      endif
       assign tp_dn_img = ''
       if tp_dn_kind != 'kontakt'
         if tp_dn_hit == 0 and link.links != blank
