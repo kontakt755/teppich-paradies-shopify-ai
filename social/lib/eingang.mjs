@@ -32,6 +32,7 @@ export const GRENZEN = Object.freeze({
   maxDateien: 25,
   maxBildBytes: 40 * 1024 * 1024,
   maxVideoBytes: 400 * 1024 * 1024,
+  maxGesamtBytes: 1536 * 1024 * 1024,   // je Upload - ein verlorener Link soll die Platte nicht fuellen koennen
 });
 
 const VORHER_NACHHER = ['', 'vorher', 'nachher', 'beides'];

@@ -268,16 +268,20 @@ export function erstelleUpload({ db, dir = socialDir(), jetzt = () => Date.now()
   function speichere(req, ziel, max) {
     return new Promise((ok, fehler) => {
       const aus = fs.createWriteStream(ziel, { mode: 0o600 });
-      let groesse = 0; let kopf = Buffer.alloc(0); let abgebrochen = false;
+      let groesse = 0; let kopf = Buffer.alloc(0); let erledigt = false;
+      const abbruch = (e) => { if (erledigt) return; erledigt = true; aus.destroy(); fs.rmSync(ziel, { force: true }); fehler(e); };
       req.on('data', (c) => {
-        if (abgebrochen) return;
+        if (erledigt) return;
         groesse += c.length;
         if (kopf.length < 16) kopf = Buffer.concat([kopf, c]).subarray(0, 16);
-        if (groesse > max) { abgebrochen = true; aus.destroy(); fs.rmSync(ziel, { force: true }); fehler(new HttpFehler(413, 'Datei zu groß')); req.resume(); return; }
+        if (groesse > max) { abbruch(new HttpFehler(413, 'Datei zu groß')); req.resume(); return; }
         aus.write(c);
       });
-      req.on('end', () => { if (!abgebrochen) aus.end(() => ok({ groesse, kopf })); });
-      req.on('error', (e) => { aus.destroy(); fs.rmSync(ziel, { force: true }); fehler(e); });
+      req.on('end', () => { if (!erledigt) { erledigt = true; aus.end(() => ok({ groesse, kopf })); } });
+      req.on('error', abbruch);
+      // Bricht die Verbindung mitten im Upload ab (Funkloch), kommt kein "end" -
+      // die halbe Datei darf dann nicht liegen bleiben.
+      req.on('close', () => abbruch(new HttpFehler(400, 'Verbindung abgebrochen')));
     });
   }
 
@@ -303,7 +307,7 @@ export function erstelleUpload({ db, dir = socialDir(), jetzt = () => Date.now()
         const angaben = pruefeAngaben(await liesJson(req));
         const { id, ordner } = legeBaustelleAn(db, angaben, { von: z.name, jetzt: new Date(jetzt()), dir });
         const neu = crypto.randomBytes(8).toString('hex');
-        laufend.set(neu, { inhaltId: id, ordner, name: z.name, dateien: 0, bis: jetzt() + 2 * 60 * 60 * 1000 });
+        laufend.set(neu, { inhaltId: id, ordner, name: z.name, dateien: 0, bytes: 0, bis: jetzt() + 2 * 60 * 60 * 1000 });
         jeTag.set(tag, (jeTag.get(tag) ?? 0) + 1);
         return sende(res, 200, { upload: neu, ortVerworfen: angaben.ortVerworfen });
       }
@@ -315,7 +319,9 @@ export function erstelleUpload({ db, dir = socialDir(), jetzt = () => Date.now()
         if (lauf.dateien >= GRENZEN.maxDateien) throw new HttpFehler(413, `Höchstens ${GRENZEN.maxDateien} Dateien auf einmal`);
         const nummer = String(lauf.dateien + 1).padStart(2, '0');
         const tmp = path.join(lauf.ordner, `${nummer}.teil`);
-        const { groesse, kopf } = await speichere(req, tmp, GRENZEN.maxVideoBytes);
+        const rest = GRENZEN.maxGesamtBytes - lauf.bytes;
+        if (rest <= 0) throw new HttpFehler(413, 'Zu viel auf einmal – bitte in zwei Uploads aufteilen');
+        const { groesse, kopf } = await speichere(req, tmp, Math.min(GRENZEN.maxVideoBytes, rest));
         const typ = erkenneTyp(kopf);
         const info = DATEITYPEN[typ];
         if (!info || (info.art === 'bild' && groesse > GRENZEN.maxBildBytes)) {
@@ -325,6 +331,7 @@ export function erstelleUpload({ db, dir = socialDir(), jetzt = () => Date.now()
         const ziel = path.join(lauf.ordner, `${nummer}.${info.endung}`);
         fs.renameSync(tmp, ziel);
         lauf.dateien += 1;
+        lauf.bytes += groesse;
         trageDateiEin(db, lauf.inhaltId, { datei: ziel, typ, dir });
         return sende(res, 200, { ok: true, art: info.art, nummer: lauf.dateien });
       }
