@@ -89,12 +89,51 @@
   assign tp_rw_sorted_entries = tp_rw_entries | split: ',' | sort
 
   # Optionale, bereits strukturierte Produktart fuer die visuelle Card-Hierarchie.
-  # Maximal zwei vorhandene custom.arten-Werte, keine Ableitung oder Ergaenzung.
+  # Erste Quelle ist custom.konstruktion (Velours, Schlinge, Nadelvlies); dahinter
+  # Wolle aus custom.arten oder die Florklasse aus custom.florhoehe_mm
+  # (Kurzflor bis 5,0 mm, Hochflor ab 10 mm - Regel des Inhabers 2026-09-30).
+  # Ohne Konstruktion wie bisher: maximal zwei custom.arten-Werte, keine Ableitung.
   assign tp_rw_kind_text = ''
   assign tp_rw_kind_metafield = product_resource.metafields.custom.arten
   assign tp_rw_kind_value = tp_rw_kind_metafield.value
 
-  if tp_rw_kind_value != blank
+  assign tp_rw_kon_value = product_resource.metafields.custom.konstruktion.value
+  if tp_rw_kon_value != blank
+    for tp_rw_kon_item in tp_rw_kon_value limit: 1
+      capture tp_rw_kind_text
+        echo tp_rw_kon_item.name.value | default: tp_rw_kon_item.name
+      endcapture
+    endfor
+    assign tp_rw_kind_text = tp_rw_kind_text | strip
+  endif
+
+  if tp_rw_kind_text != blank
+    assign tp_rw_kind_zusatz = ''
+    if tp_rw_kind_value != blank and tp_rw_kind_metafield.type contains 'list.'
+      for tp_rw_art_item in tp_rw_kind_value
+        capture tp_rw_art_name
+          echo tp_rw_art_item.name.value | default: tp_rw_art_item.name
+        endcapture
+        assign tp_rw_art_name = tp_rw_art_name | strip
+        if tp_rw_art_name == 'Wolle'
+          assign tp_rw_kind_zusatz = 'Wolle'
+        endif
+      endfor
+    endif
+    if tp_rw_kind_zusatz == blank
+      assign tp_rw_flor_mm = product_resource.metafields.custom.florhoehe_mm.value
+      if tp_rw_flor_mm != blank
+        if tp_rw_flor_mm <= 5.0
+          assign tp_rw_kind_zusatz = 'Kurzflor'
+        elsif tp_rw_flor_mm >= 10.0
+          assign tp_rw_kind_zusatz = 'Hochflor'
+        endif
+      endif
+    endif
+    if tp_rw_kind_zusatz != blank
+      assign tp_rw_kind_text = tp_rw_kind_text | append: ' · ' | append: tp_rw_kind_zusatz
+    endif
+  elsif tp_rw_kind_value != blank
     if tp_rw_kind_metafield.type contains 'list.'
       for tp_rw_kind_item in tp_rw_kind_value limit: 2
         capture tp_rw_kind_name
