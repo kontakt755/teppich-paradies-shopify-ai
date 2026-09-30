@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204438208846",
-    "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-09-30T10:12:00Z",
-    "verifiedBy": "MCP role MAIN und Storefront Shopify.theme role main (workflow:live nach #758)"
-  },
-  "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-09-30T10:12:00Z",
-    "verifiedBy": "role UNPUBLISHED nach Rollentausch; naechstes Preview-Ziel"
+    "verifiedAt": "2026-09-30T11:05:11Z",
+    "verifiedBy": "Shopify CLI role live und Storefront Shopify.theme role main (workflow:live nach #762)"
+  },
+  "preview": {
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-09-30T11:05:11Z",
+    "verifiedBy": "Shopify CLI role unpublished nach Rollentausch; naechstes Preview-Ziel"
   },
   "fallback": {
     "themeId": "204440699214",
@@ -260,6 +260,12 @@
       "name": "preview-main-2026-09-15",
       "retiredNoticedAt": "2026-09-28",
       "note": "Per workflow:live abgeloest durch das bisherige Preview-Theme (#714 und #715). Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
+    },
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-09-30",
+      "note": "Per workflow:live abgeloest durch 204436144462 (PR #762, main ab3df7d4: Serena Produktseite). Rollentausch per Shopify CLI und Storefront gegengeprueft. Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
