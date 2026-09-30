@@ -59,6 +59,18 @@
     {%- if block.settings.telefon != blank -%}
       <p><a href="tel:{{ block.settings.telefon | remove: ' ' | remove: '/' }}">{{ block.settings.telefon | escape }}</a></p>
     {%- endif -%}
+    {%- comment -%} Profile aus den Theme-Einstellungen (TP Firmendaten), dieselbe Quelle wie sameAs im Schema {%- endcomment -%}
+    {%- if settings.tp_instagram_url != blank or settings.tp_facebook_url != blank -%}
+      <p class="tp-footer-links__profile">
+        {%- if settings.tp_instagram_url != blank -%}
+          <a href="{{ settings.tp_instagram_url | escape }}" target="_blank" rel="noopener">Instagram</a>
+        {%- endif -%}
+        {%- if settings.tp_instagram_url != blank and settings.tp_facebook_url != blank %} · {% endif -%}
+        {%- if settings.tp_facebook_url != blank -%}
+          <a href="{{ settings.tp_facebook_url | escape }}" target="_blank" rel="noopener">Facebook</a>
+        {%- endif -%}
+      </p>
+    {%- endif -%}
   </div>
 
   <nav aria-labelledby="tp-footer-legal-{{ block.id }}">

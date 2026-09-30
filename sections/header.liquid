@@ -394,8 +394,27 @@
       Massnahme ausloesen. Sichtbar steht der Wert mit Quelle und Link zum
       Profil auf der Startseite - das ist der erlaubte Weg (Audit B-15).
     {%- endcomment -%}
-    {%- assign tp_schema_profil = settings.tp_google_profil -%}
-    {% if tp_schema_profil != blank %}"sameAs": [{{ tp_schema_profil | json }}],{% endif %}
+    {%- liquid
+      assign tp_schema_profile = ''
+      for tp_profil in (1..3)
+        case tp_profil
+          when 1
+            assign tp_profil_url = settings.tp_google_profil
+          when 2
+            assign tp_profil_url = settings.tp_instagram_url
+          when 3
+            assign tp_profil_url = settings.tp_facebook_url
+        endcase
+        if tp_profil_url != blank
+          if tp_schema_profile != ''
+            assign tp_schema_profile = tp_schema_profile | append: ','
+          endif
+          assign tp_profil_json = tp_profil_url | strip | json
+          assign tp_schema_profile = tp_schema_profile | append: tp_profil_json
+        endif
+      endfor
+    -%}
+    {% if tp_schema_profile != '' %}"sameAs": [{{ tp_schema_profile }}],{% endif %}
     "priceRange": "€€"
   }
 </script>

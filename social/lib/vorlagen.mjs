@@ -180,6 +180,22 @@ function vStoryFoto(d, f) {
 </div>`);
 }
 
+/**
+ * Titelbild eines Instagram-Highlights. Instagram zeigt davon nur einen Kreis
+ * aus der Bildmitte - alles Wesentliche steht deshalb in einem Kreis von
+ * 760 px, ohne Logo und ohne Rand, damit es auch winzig lesbar bleibt.
+ */
+function vHighlight(d, f) {
+  const titel = String(d.titel || '');
+  // Eine Groesse fuer alle Highlights - nebeneinander im Profil faellt jeder Sprung auf.
+  return grund(f, `
+<div style="position:absolute;left:50%;top:50%;width:760px;height:760px;margin:-380px 0 0 -380px;border-radius:50%;background:${FARBEN.rot};display:flex;align-items:center;justify-content:center;text-align:center;padding:0 90px">
+  <div style="color:#fff;font-weight:700;font-size:${titel.length > 12 ? 84 : 102}px;line-height:1.05;letter-spacing:-.01em">${esc(titel)}</div>
+</div>`);
+}
+
+export const HIGHLIGHTS = Object.freeze(['Verlegung', 'Referenzen', 'Im Laden', 'Muster', 'Bewertungen']);
+
 export const VORLAGEN = Object.freeze({
   foto: { bau: vFoto, formate: ['feed', 'quadrat', 'story'], zweck: 'Baustelle, Referenz, Einblick – Foto mit kleiner Signatur' },
   vorher_nachher: { bau: vVorherNachher, formate: ['feed', 'story'], zweck: 'Vorher und Nachher in einem Bild' },
@@ -188,6 +204,7 @@ export const VORLAGEN = Object.freeze({
   farbe: { bau: vFarbe, formate: ['feed', 'quadrat', 'story'], zweck: 'Einzelne Farbe im Karussell' },
   tipp: { bau: vTipp, formate: ['feed', 'quadrat', 'story'], zweck: 'Tipp, Bodenwissen, Hinweis' },
   story_foto: { bau: vStoryFoto, formate: ['story'], zweck: 'Story und Reel-Standbild: Foto mit einer Zeile' },
+  highlight: { bau: vHighlight, formate: ['story'], zweck: 'Titelbild eines Instagram-Highlights (Kreis in der Mitte)' },
 });
 
 export function baue(name, daten, format = 'feed') {

@@ -26,6 +26,23 @@ export function liesEnvDatei(datei) {
 
 export const zugangDatei = (dir = socialDir()) => path.join(dir, 'zugang.env');
 
+/**
+ * Setzt Werte in einer env-Datei: vorhandene Zeilen werden ersetzt (auch
+ * auskommentierte bleiben unberuehrt), neue angehaengt. Nur fuer den Besitzer lesbar.
+ */
+export function setzeEnvWerte(datei, werte) {
+  let zeilen = [];
+  try { zeilen = fs.readFileSync(datei, 'utf8').split(/\r?\n/); } catch { /* neu */ }
+  if (zeilen.at(-1) === '') zeilen.pop();
+  for (const [k, v] of Object.entries(werte)) {
+    if (!/^[A-Z0-9_]+$/.test(k) || /[\r\n]/.test(String(v))) throw new Error(`Ungueltiger Eintrag ${k}`);
+    const i = zeilen.findIndex(z => new RegExp(`^\\s*(?:export\\s+)?${k}\\s*=`).test(z));
+    if (i >= 0) zeilen[i] = `${k}=${v}`; else zeilen.push(`${k}=${v}`);
+  }
+  fs.writeFileSync(datei, `${zeilen.join('\n')}\n`, { mode: 0o600 });
+  fs.chmodSync(datei, 0o600);
+}
+
 /** Umgebung samt Dateien - frueher Genanntes gewinnt. */
 export function ladeUmgebung(env = process.env, { dir = socialDir(), repo = REPO } = {}) {
   return { ...liesEnvDatei(path.join(repo, '.env.local')), ...liesEnvDatei(zugangDatei(dir)), ...env };

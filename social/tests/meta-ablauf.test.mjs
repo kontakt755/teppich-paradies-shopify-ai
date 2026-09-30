@@ -5,7 +5,8 @@ import test from 'node:test';
 import { holeKennzahlen, importiereReferenzen, planeOffene, shopAbgleich, sichereDatenbank, veroeffentlicheFaellige } from '../lib/ablauf.mjs';
 import { oeffne } from '../lib/db.mjs';
 import { erkenntnisse, lernstand, punkte, vereinheitliche } from '../lib/auswertung.mjs';
-import { erstelleClient, MetaFehler, ordneFehler, veroeffentliche } from '../lib/meta.mjs';
+import { erstelleClient, MetaFehler, ordneFehler, seitenZugang, veroeffentliche } from '../lib/meta.mjs';
+import { setzeEnvWerte } from '../lib/zugang.mjs';
 import { feedProdukt, testDb, tmpDir } from './_hilfe.mjs';
 
 /** Meta-Ersatz: beantwortet Graph-Aufrufe und merkt sie sich. */
@@ -214,4 +215,30 @@ test('Sicherung: der Abzug ist eine vollstaendige, eigenstaendige Datenbank', (t
   sichereDatenbank(db, { dir });   // zweiter Lauf ueberschreibt, statt zu scheitern
   const kopie = oeffne(ziel); t.after(() => kopie.schliessen());
   assert.equal(kopie.inhalte()[0].titel, 'Amara');
+});
+
+test('Meta einrichten: Seiten-Token und IDs aus dem Systemnutzer-Token, Tokens nie in Meldungen', async () => {
+  const antwort = (daten, ok = true, status = 200) => async (url) => { antwort.url = url; return { ok, status, json: async () => daten }; };
+  const seite = { id: 'P1', name: 'Teppich Paradies Oranienburg', access_token: 'SEITEN-GEHEIM', instagram_business_account: { id: 'IG1', username: 'teppich.paradies' } };
+  const z = await seitenZugang({ systemToken: 'SYS', holen: antwort({ data: [seite] }) });
+  assert.deepEqual(z, { pageId: 'P1', name: 'Teppich Paradies Oranienburg', pageToken: 'SEITEN-GEHEIM', igUserId: 'IG1', igName: 'teppich.paradies' });
+  assert.match(antwort.url, /\/me\/accounts\?/);
+
+  const zwei = antwort({ data: [seite, { ...seite, id: 'P2', name: 'Alte Seite', access_token: 'X-GEHEIM' }] });
+  await assert.rejects(seitenZugang({ systemToken: 'SYS', holen: zwei }), (e) => /Mehrere Seiten/.test(e.message) && !/GEHEIM/.test(e.message));
+  assert.equal((await seitenZugang({ systemToken: 'SYS', seite: 'P2', holen: zwei })).pageToken, 'X-GEHEIM');
+  await assert.rejects(seitenZugang({ systemToken: 'SYS', holen: antwort({ data: [] }) }), /keine Facebook-Seite/);
+  await assert.rejects(seitenZugang({ systemToken: 'SYS', holen: antwort({ error: { code: 190, message: 'Invalid OAuth access token' } }, false, 400) }), (e) => e.zugang === true);
+  await assert.rejects(seitenZugang({ systemToken: null }), /META_SYSTEM_TOKEN fehlt/);
+  const ohneIg = await seitenZugang({ systemToken: 'SYS', holen: antwort({ data: [{ ...seite, instagram_business_account: undefined }] }) });
+  assert.equal(ohneIg.igUserId, null);
+});
+
+test('Einstellungsdatei: Werte ersetzen oder anhaengen, Kommentare bleiben, nur fuer den Besitzer lesbar', (t) => {
+  const dir = tmpDir(t); const datei = path.join(dir, 'zugang.env');
+  fs.writeFileSync(datei, '# Kopf\nMETA_SYSTEM_TOKEN=abc\n#PAUSE META_PAGE_ID=alt\nMETA_PAGE_ID=alt\n', { mode: 0o644 });
+  setzeEnvWerte(datei, { META_PAGE_ID: '123', META_PAGE_TOKEN: 'tok' });
+  assert.equal(fs.readFileSync(datei, 'utf8'), '# Kopf\nMETA_SYSTEM_TOKEN=abc\n#PAUSE META_PAGE_ID=alt\nMETA_PAGE_ID=123\nMETA_PAGE_TOKEN=tok\n');
+  assert.equal(fs.statSync(datei).mode & 0o777, 0o600);
+  assert.throws(() => setzeEnvWerte(datei, { META_PAGE_ID: 'a\nBOESE=1' }), /Ungueltig/);
 });

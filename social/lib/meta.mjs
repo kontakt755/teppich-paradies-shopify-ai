@@ -216,6 +216,31 @@ export function erstelleClient({ token, pageId, igUserId = null, version = 'v24.
 }
 
 /**
+ * Leitet aus dem Token des Systemnutzers alles ab, was der Publisher braucht:
+ * Seiten-ID, den Seiten-Token (vom nie ablaufenden Systemnutzer-Token abgeleitet,
+ * laeuft ebenfalls nicht ab) und das verknuepfte Instagram-Konto.
+ * Tokens werden nur zurueckgegeben, nie in Fehlermeldungen genannt.
+ *
+ * @param seite  Name oder ID, falls dem Systemnutzer mehrere Seiten gehoeren
+ */
+export async function seitenZugang({ systemToken, seite = null, version = 'v24.0', holen = globalThis.fetch }) {
+  if (!systemToken) throw new MetaFehler('META_SYSTEM_TOKEN fehlt in zugang.env (social/META-EINRICHTUNG.md)', { zugang: true });
+  const url = `https://graph.facebook.com/${version}/me/accounts?${new URLSearchParams({ fields: 'id,name,access_token,instagram_business_account{id,username}', limit: '100', access_token: systemToken })}`;
+  let antwort;
+  try { antwort = await holen(url, { method: 'GET' }); } catch (e) { throw new MetaFehler(`Meta nicht erreichbar: ${e.message}`, { voruebergehend: true }); }
+  const body = await antwort.json().catch(() => ({}));
+  if (!antwort.ok || body.error) throw ordneFehler(antwort.status, body);
+  let seiten = body.data ?? [];
+  if (seite) seiten = seiten.filter(s => s.id === String(seite) || s.name === seite);
+  if (!seiten.length) throw new MetaFehler(seite ? `Keine Seite „${seite}“ – dem Systemnutzer zugewiesen?` : 'Der Systemnutzer sieht keine Facebook-Seite – Seite in den Business-Einstellungen zuweisen (volle Kontrolle)', { zugang: true });
+  if (seiten.length > 1) throw new MetaFehler(`Mehrere Seiten (${seiten.map(s => s.name).join(', ')}) – SOCIAL_META_SEITE in zugang.env auf eine davon setzen`);
+  const [s] = seiten;
+  if (!s.access_token) throw new MetaFehler('Meta liefert keinen Seiten-Token – fehlt pages_show_list oder die volle Kontrolle über die Seite?', { zugang: true });
+  const ig = s.instagram_business_account ?? null;
+  return { pageId: s.id, name: s.name, pageToken: s.access_token, igUserId: ig?.id ?? null, igName: ig?.username ?? null };
+}
+
+/**
  * Veroeffentlicht einen Beitrag auf allen gewaehlten Plattformen.
  *
  * Wichtig ist die Wiederholbarkeit: gelingt Facebook und scheitert Instagram,
