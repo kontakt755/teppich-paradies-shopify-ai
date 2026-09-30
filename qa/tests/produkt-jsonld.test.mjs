@@ -141,7 +141,8 @@ test('nur GTINs mit gültiger Länge, nur Ziffern und korrekter Prüfziffer werd
     assert.equal(variant.gtin13, undefined);
     assert.equal(variant.gtin14, undefined);
   }
-  assert.equal(d.hasVariant[4].sku, 'LINARTMOON_4129');
+  // Die SKU (Grosshaendler-Artikelnummer) steht bewusst nicht im Markup.
+  for (const variant of d.hasVariant) assert.equal(variant.sku, undefined);
 });
 
 test('leere Produktbeschreibung erzeugt keinen leeren Description-Wert', async () => {
@@ -190,7 +191,7 @@ test('Standardprodukte nutzen dasselbe ProductGroup mit Einzelpreisen und Varian
   assert.deepEqual(d.hasVariant.map(v => v.offers.availability), ['https://schema.org/InStock', 'https://schema.org/OutOfStock']);
   assert.equal(d.hasVariant[0].gtin13, '4002245718333');
   assert.equal(d.hasVariant[1].gtin, undefined);
-  assert.equal(d.hasVariant[1].sku, 'SOCKEL-2');
+  assert.equal(d.hasVariant[1].sku, undefined);
   assert.equal(d.hasVariant[0].offers.priceSpecification, undefined, 'Einzelpreis darf keine m2-Referenz erhalten');
 });
 
