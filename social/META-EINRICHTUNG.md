@@ -84,9 +84,12 @@ selbst. Erscheint sie auf beiden Kanälen, läuft der Rest über den Takt.
 `META_GRAPH_VERSION` (Standard `v24.0`) lässt sich in `zugang.env` überschreiben,
 wenn Meta die Version abkündigt.
 
-## Reels und Video-Storys
+## Reels
 
-Instagram holt Videos nur von einer öffentlichen Adresse ab. Dafür ist
-`SOCIAL_MEDIEN_BASIS_URL` vorgesehen (z. B. die Funnel-Adresse des
-Upload-Dienstes); die Auslieferung freigegebener Videos ist der letzte offene
-Baustein und folgt zusammen mit dem Reel-Schnitt.
+Reels brauchen keine öffentliche Adresse: der Publisher lädt das Video direkt
+zu Instagram hoch („resumable upload“ an `rupload.facebook.com`) und als
+Seitenvideo zu Facebook. Instagram verarbeitet ein Video einige Minuten; der
+Publisher wartet bis zu zehn Minuten, sonst versucht es der nächste Takt.
+
+Wie beim ersten Bildbeitrag: das erste Reel beobachtet veröffentlichen. Der
+Upload-Weg ist nur gegen einen Nachbau der API getestet.

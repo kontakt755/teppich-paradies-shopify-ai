@@ -73,6 +73,16 @@ test('Zentrale: Host-Pruefung, Anmeldung und Rollen', async (t) => {
   assert.equal((await fetch(`${basis}/upload.html`, mit())).status, 404);
   assert.equal((await fetch(`${basis}/medien/medien/..%2f..%2fsocial.db`, mit())).status, 404);
 
+  // Videos: Safari verlangt Teilabrufe
+  fs.mkdirSync(path.join(dir, 'medien', '9'), { recursive: true }); fs.writeFileSync(path.join(dir, 'medien', '9', 'reel.mp4'), Buffer.from('0123456789'));
+  const teil = await fetch(`${basis}/medien/medien/9/reel.mp4`, mit({ headers: { Range: 'bytes=2-5' } }));
+  assert.equal(teil.status, 206); assert.equal(teil.headers.get('content-range'), 'bytes 2-5/10'); assert.equal(teil.headers.get('content-type'), 'video/mp4');
+  assert.equal(await teil.text(), '2345');
+  assert.equal(await (await fetch(`${basis}/medien/medien/9/reel.mp4`, mit({ headers: { Range: 'bytes=-3' } }))).text(), '789');
+  assert.equal((await fetch(`${basis}/medien/medien/9/reel.mp4`, mit({ headers: { Range: 'bytes=20-' } }))).status, 416);
+  const ganz = await fetch(`${basis}/medien/medien/9/reel.mp4`, mit());
+  assert.equal(ganz.status, 200); assert.equal(ganz.headers.get('accept-ranges'), 'bytes');
+
   const stand = await (await fetch(`${basis}/api/stand`, mit())).json();
   assert.equal(stand.vorrat.length, 1); assert.equal(stand.meta.bereit, false); assert.equal(stand.darfFreigeben, true);
 

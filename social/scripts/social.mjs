@@ -168,7 +168,8 @@ async function main(argv) {
         }, { rendere, dir, env });
         planeOffene(db, { dir });
         const fertig = db.beitrag(b.id);
-        console.log(`Entwurf #${fertig.id} (${fertig.format}, ${fertig.medien.length} Bild/er) liegt in der Freigabe – Vorschlag: ${zeit(fertig.geplant_am)}`);
+        const umfang = fertig.format === 'reel' ? `Video aus ${fertig.medien.filter(m => m.art === 'rahmen').length} Bildern` : `${fertig.medien.length} Bild/er`;
+        console.log(`Entwurf #${fertig.id} (${fertig.format}, ${umfang}) liegt in der Freigabe – Vorschlag: ${zeit(fertig.geplant_am)}`);
         for (const m of fertig.medien) console.log(`  ${medienPfad(m.pfad, dir)}`);
         for (const s of fertig.hinweise?.sperren ?? []) console.log(`  SPERRE: ${s}`);
         for (const h of fertig.hinweise?.hinweise ?? []) console.log(`  Hinweis: ${h}`);

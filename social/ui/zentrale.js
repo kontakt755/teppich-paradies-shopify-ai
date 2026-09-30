@@ -33,6 +33,7 @@ function plattformMarken(b) {
 }
 
 function bilder(b) {
+  if (b.video) return `<div class="bilder story"><video src="${esc(b.video)}" poster="${esc(b.bilder[0] ?? '')}" controls playsinline preload="metadata"></video></div>`;
   const klasse = ['bilder', b.format === 'story' ? 'story' : '', b.bilder.length > 1 ? 'mehr' : ''].join(' ');
   return `<div class="${klasse}">${b.bilder.map(u => `<img src="${esc(u)}" alt="" loading="lazy">`).join('')}</div>`;
 }

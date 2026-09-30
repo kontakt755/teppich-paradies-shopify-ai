@@ -108,9 +108,9 @@ Control Center bleiben privat.
 | 2 | Content-Datenbank | **fertig**, in Betrieb. |
 | 3 | Shopify-Schnittstelle | **fertig**: Shop-Scout liest 534 Produkte, bildet Familien, legt den Vorrat an. Offen: Webhooks. |
 | 4 | Monteur-Upload | **fertig und mit echten Dateien geprüft** (JPG, HEIC, Dublette, unscharf). Offen: Erreichbarkeit von unterwegs, Links für die Monteure. |
-| 5 | Content-Agenten | **fertig**: Eingang, Shop-Scout, Werkstatt mit sieben Vorlagen, Planer, Textregeln. Redaktion als Arbeitsanweisung vorbereitet; der erste Schwung (9 Beiträge, 3 Storys) liegt in der Freigabe. Offen: Reel-Schnitt (braucht ffmpeg). |
+| 5 | Content-Agenten | **fertig**: Eingang, Shop-Scout, Werkstatt mit sieben Vorlagen, Planer, Textregeln. Redaktion als Arbeitsanweisung vorbereitet; der erste Schwung (9 Beiträge, 3 Storys) liegt in der Freigabe. Reel-Schnitt mit ffmpeg gegen echte Fotos geprüft (`entwurf <id> --format reel`). |
 | 6 | Freigabesystem | **fertig**: Zentrale mit Freigeben, Bearbeiten, Verwerfen, Sperren und Hinweisen. |
-| 7 | Meta-Veröffentlichung | **gebaut, gegen einen Meta-Nachbau getestet und unabhängig gegengelesen** (Doppelpost, Prüfung beim Veröffentlichen, Upload-Härtung – 15 Befunde, alle behoben und mit Tests belegt). Wartet auf den Zugang (`META-EINRICHTUNG.md`); der erste echte Beitrag sollte beobachtet werden. |
+| 7 | Meta-Veröffentlichung | **gebaut, gegen einen Meta-Nachbau getestet und unabhängig gegengelesen** (Doppelpost, Prüfung beim Veröffentlichen, Upload-Härtung – 15 Befunde, alle behoben und mit Tests belegt). Reels gehen per direktem Upload zu Instagram, ohne öffentliche Videoadresse. Wartet auf den Zugang (`META-EINRICHTUNG.md`); der erste echte Beitrag sollte beobachtet werden. |
 | 8 | Analytics und Optimierung | **gebaut**: Messwerte, Punkte, Lernstand, Rückkopplung in den Planer. Füllt sich mit den ersten veröffentlichten Beiträgen. |
 
 ## 6. Offene Entscheidungen des Inhabers
@@ -118,7 +118,7 @@ Control Center bleiben privat.
 1. **Meta-Zugang einrichten** – ohne ihn veröffentlicht nichts (rund 20 Minuten, `META-EINRICHTUNG.md`).
 2. **Upload von unterwegs**: Tailscale auf den Monteur-Handys oder Funnel für den Upload-Port.
 3. **Einwilligung auf dem Auftragszettel**: eine Zeile zum Ankreuzen („Fotos der fertigen Arbeit dürfen für Website und Social Media verwendet werden"). Das System verlangt das Häkchen – der Zettel ist der Beleg dahinter.
-4. **Redaktion einschalten** (geplante Claude-Aufgabe, werktags) und **ffmpeg installieren** (für Reels).
+4. ~~Redaktion einschalten und ffmpeg installieren~~ – erledigt am 30.09.2026 (Redaktion werktags gegen 8 Uhr).
 5. **Automatische Freigabe**: frühestens nach vier Wochen Betrieb und nur für Shop-Inhalte ohne Preis.
 
 ## 7. Nicht gebaut – bewusst

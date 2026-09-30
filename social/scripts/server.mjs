@@ -42,13 +42,29 @@ const UI = path.resolve(HIER, '..', 'ui');
 const SITZUNG = 'tp_social_sid';
 const SITZUNG_MS = 30 * 24 * 60 * 60 * 1000;
 
-const TYPEN_STATISCH = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml' };
+const TYPEN_STATISCH = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.mp4': 'video/mp4' };
 
 class HttpFehler extends Error { constructor(status, meldung) { super(meldung); this.status = status; } }
 
 function sende(res, status, body, typ = 'application/json; charset=utf-8', kopf = {}) {
   res.writeHead(status, { 'Content-Type': typ, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'X-Frame-Options': 'DENY', ...kopf });
   res.end(typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body));
+}
+
+/** Mediendatei ausliefern. Videos spielt Safari (iPhone) nur mit Teilabrufen (Range) ab. */
+function sendeMedium(req, res, datei) {
+  const typ = TYPEN_STATISCH[path.extname(datei).toLowerCase()] ?? 'application/octet-stream';
+  const kopf = { 'Cache-Control': 'private, max-age=300', 'Accept-Ranges': 'bytes' };
+  const groesse = fs.statSync(datei).size;
+  const bereich = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range ?? '');
+  if (!bereich || (!bereich[1] && !bereich[2])) return sende(res, 200, fs.readFileSync(datei), typ, kopf);
+  let start = bereich[1] ? Number(bereich[1]) : Math.max(0, groesse - Number(bereich[2]));
+  let ende = bereich[1] && bereich[2] ? Math.min(Number(bereich[2]), groesse - 1) : groesse - 1;
+  if (start >= groesse || start > ende) return sende(res, 416, '', typ, { ...kopf, 'Content-Range': `bytes */${groesse}` });
+  const puffer = Buffer.alloc(ende - start + 1);
+  const fd = fs.openSync(datei, 'r');
+  try { fs.readSync(fd, puffer, 0, puffer.length, start); } finally { fs.closeSync(fd); }
+  return sende(res, 206, puffer, typ, { ...kopf, 'Content-Range': `bytes ${start}-${ende}/${groesse}` });
 }
 
 function liesJson(req, max = 64 * 1024) {
@@ -145,7 +161,8 @@ function beitragAnsicht(db, b) {
     id: b.id, status: b.status, statusLabel: STATUS_LABEL[b.status], format: b.format, plattformen: b.plattformen,
     text: b.text, textFacebook: b.text_facebook, hashtags: b.hashtags, link: b.link,
     geplantAm: b.geplant_am, veroeffentlichtAm: b.veroeffentlicht_am, fehler: b.fehler, ergebnis: b.ergebnis,
-    bilder: (b.medien ?? []).map(m => `/medien/${m.pfad.split(path.sep).join('/')}`),
+    bilder: (b.medien ?? []).filter(m => m.art !== 'video').map(m => `/medien/${m.pfad.split(path.sep).join('/')}`),
+    video: (b.medien ?? []).filter(m => m.art === 'video').map(m => `/medien/${m.pfad.split(path.sep).join('/')}`)[0] ?? null,
     sperren: urteil.sperren, hinweise: urteil.hinweise,
     inhalt: { id: inhalt.id, titel: inhalt.titel, quelle: inhalt.quelle, typ: inhalt.typ, typLabel: TYPEN[inhalt.typ]?.label ?? inhalt.typ, ort: inhalt.ort, bodenart: inhalt.bodenart, grund: inhalt.notiz, eingereichtVon: inhalt.eingereicht_von },
   };
@@ -239,7 +256,7 @@ export function erstelleZentrale({ db, env = process.env, dir = socialDir(), anm
         const wurzel = medienDir(dir);
         const datei = path.resolve(wurzel, pfad.slice('/medien/medien/'.length));
         if (!pfad.startsWith('/medien/medien/') || !datei.startsWith(wurzel + path.sep) || !fs.existsSync(datei)) throw new HttpFehler(404, 'Nicht gefunden');
-        return sende(res, 200, fs.readFileSync(datei), TYPEN_STATISCH[path.extname(datei).toLowerCase()] ?? 'application/octet-stream', { 'Cache-Control': 'private, max-age=300' });
+        return sendeMedium(req, res, datei);
       }
 
       const name = pfad === '/' ? 'zentrale.html' : pfad.slice(1);
