@@ -326,4 +326,6 @@ Am 2026-09-30 hat der Inhaber entschieden: **Kurzflor gilt bis 5,0 mm, Fliesen u
 
 ![Kurzflor nach der Korrektur: 59 Artikel](screenshots/eigen-kurzflor-desktop-nachher.jpg)
 
-**Weiter offen:** der Preis der vier Vinyl-Altprodukte (Abschnitt 4.1), die getrennten Felder nach Weg B (Abschnitt 3.3), `shopify.pile-type`, die Menü-Doppelungen und die Tag-Bereinigung. Nichts davon wurde angefasst.
+**Vinyl-Altprodukte:** Der Inhaber hat entschieden, die vier Produkte aus Abschnitt 4.1 nicht mehr anzubieten. Sie stehen seit 2026-09-30 auf Entwurf (Status `DRAFT`, Produktseiten liefern 404), nicht gelöscht; Preise, Typ und Tags sind unverändert. Altzustand und Rückweg liegen lokal unter `~/teppich-paradies-analyse/vinyl-altprodukte-entwurf-2026-09-30/`.
+
+**Weiter offen:** die getrennten Felder nach Weg B (Abschnitt 3.3, vom Inhaber freigegeben, eigener PR), `shopify.pile-type`, die Menü-Doppelungen und die Tag-Bereinigung.
