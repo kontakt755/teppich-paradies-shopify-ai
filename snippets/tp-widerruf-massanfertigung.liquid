@@ -1,0 +1,6 @@
+{{ 'tp-widerruf-massanfertigung.css' | asset_url | stylesheet_tag }}
+<p class="tp-widerruf-massanfertigung" {{ extra_attributes }}>
+  <strong>Individuell für Sie {% if art == 'zuschnitt' %}zugeschnitten{% else %}angefertigt{% endif %}.</strong>
+  Für diesen Artikel besteht kein gesetzliches Widerrufsrecht. Ihre gesetzlichen Rechte bei Mängeln bleiben bestehen.
+  <a href="{{ shop.refund_policy.url | default: '/policies/refund-policy' }}">Details zum Widerruf</a>
+</p>

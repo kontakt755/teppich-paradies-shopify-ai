@@ -188,7 +188,11 @@
             </span>
           </label>
         </div>
-        <div class="tp-ek__groessen" data-groessen></div>
+        <div class="tp-ek__groessen-wrap" data-groessen-wrap hidden>
+          <p class="tp-ek__groessen-label">Beliebte Maßvorschläge</p>
+          <div class="tp-ek__groessen" data-groessen></div>
+          <p class="tp-ek__groessen-hinweis">Ein Klick übernimmt die Maße. Auch diese Teppiche fertigen wir erst nach Ihrer Bestellung.</p>
+        </div>
         <p class="tp-ek__grenzen" data-grenzen></p>
         <p class="tp-ek__fehler" role="alert" data-fehler hidden></p>
       </div>
@@ -250,6 +254,7 @@
         <p class="tp-ek__preishinweis" data-mindest-hinweis hidden></p>
       </div>
 
+      {% render 'tp-widerruf-massanfertigung', art: 'teppich' %}
       <button type="button" class="tp-ek__cta" data-cta data-add-to-cart disabled hidden>In den Warenkorb</button>
       {%- if product.handle == 'serena-teppich-nach-mass' -%}
         <details class="tp-ek__vorschau" data-vorschau hidden>
