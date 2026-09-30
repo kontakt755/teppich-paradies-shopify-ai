@@ -6,6 +6,11 @@
 
   Bild: Foto aus dem Editor; sonst das Bild des ersten Produkts der Kollektion
   (die gerenderten Teppichbilder). Kein Platzhalter, keine Illustration.
+
+  Mass-Rechner (Einstellung "rechner", Inhaber 2026-09-30): Breite und Laenge statt
+  Knopf 1. Darunter erscheinen alle Teppiche der Kollektion mit dem Preis fuer genau
+  dieses Mass, guenstigste zuerst (assets/tp-teppich-rechner.js, Daten aus
+  snippets/tp-teppich-rechner-daten). Knopf 1 wird dann zum Textlink.
 {%- endcomment -%}
 {{ 'tp-teppiche.css' | asset_url | stylesheet_tag }}
 {%- liquid
@@ -26,15 +31,41 @@
     assign tp_th_label1 = tp_th_label1 | replace: '[anzahl]', collection.products_count
   endif
 -%}
-<section class="tp-tep tp-tep-hero" aria-labelledby="tp-th-{{ section.id }}">
+{%- assign tp_th_rechner = false -%}
+{%- if s.rechner and collection != blank -%}{%- assign tp_th_rechner = true -%}{%- endif -%}
+<section class="tp-tep tp-tep-hero" aria-labelledby="tp-th-{{ section.id }}"{% if tp_th_rechner %} data-tp-rechner-root{% endif %}>
   <div class="tp-tep-wrap tp-tep-hero__grid">
     <div class="tp-tep-hero__text">
       {%- if s.kicker != blank -%}<p class="tp-tep-kicker">{{ s.kicker | escape }}</p>{%- endif -%}
       <h1 class="tp-tep-h1" id="tp-th-{{ section.id }}">{{ s.heading | escape }}</h1>
       {%- if s.text != blank -%}<p class="tp-tep-lead">{{ s.text | escape }}</p>{%- endif -%}
+      {%- if tp_th_rechner -%}
+        <form class="tp-tep-rechner" data-tp-rechner novalidate>
+          <p class="tp-tep-rechner__label" id="tp-tr-{{ section.id }}">Ihr Maß in Zentimetern</p>
+          <div class="tp-tep-rechner__zeile" role="group" aria-labelledby="tp-tr-{{ section.id }}">
+            <label class="tp-tep-rechner__feld">
+              <span>Breite</span>
+              <input type="text" inputmode="numeric" autocomplete="off" name="breite" placeholder="z. B. 170" data-tp-rechner-breite>
+            </label>
+            <span class="tp-tep-rechner__mal" aria-hidden="true">×</span>
+            <label class="tp-tep-rechner__feld">
+              <span>Länge</span>
+              <input type="text" inputmode="numeric" autocomplete="off" name="laenge" placeholder="z. B. 240" data-tp-rechner-laenge>
+            </label>
+            <button type="submit" class="tp-tep-btn tp-tep-btn--primary tp-tep-rechner__los">Preise für mein Maß</button>
+          </div>
+          <p class="tp-tep-rechner__fehler" data-tp-rechner-fehler role="alert" hidden></p>
+          <p class="tp-tep-rechner__hinweis">Reihenfolge egal · ab 50 × 50 cm · Preis je Qualität sofort</p>
+        </form>
+      {%- endif -%}
       <div class="tp-tep-actions">
-        {%- if s.btn1_label != blank and tp_th_ziel1 != blank -%}<a class="tp-tep-btn tp-tep-btn--primary" href="{{ tp_th_ziel1 }}">{{ tp_th_label1 | escape }}</a>{%- endif -%}
-        {%- if s.btn2_label != blank and s.btn2_url != blank -%}<a class="tp-tep-btn tp-tep-btn--ghost" href="{{ s.btn2_url }}">{{ s.btn2_label | escape }}</a>{%- endif -%}
+        {%- if tp_th_rechner -%}
+          {%- if s.btn2_label != blank and s.btn2_url != blank -%}<a class="tp-tep-btn tp-tep-btn--ghost" href="{{ s.btn2_url }}">{{ s.btn2_label | escape }}</a>{%- endif -%}
+          {%- if s.btn1_label != blank and tp_th_ziel1 != blank -%}<a class="tp-tep-rechner__alle" href="{{ tp_th_ziel1 }}" data-tp-rechner-alle>oder {{ tp_th_label1 | escape }}</a>{%- endif -%}
+        {%- else -%}
+          {%- if s.btn1_label != blank and tp_th_ziel1 != blank -%}<a class="tp-tep-btn tp-tep-btn--primary" href="{{ tp_th_ziel1 }}">{{ tp_th_label1 | escape }}</a>{%- endif -%}
+          {%- if s.btn2_label != blank and s.btn2_url != blank -%}<a class="tp-tep-btn tp-tep-btn--ghost" href="{{ s.btn2_url }}">{{ s.btn2_label | escape }}</a>{%- endif -%}
+        {%- endif -%}
       </div>
       {%- if s.usps != blank -%}
         {%- assign tp_th_usps = s.usps | newline_to_br | split: '<br />' -%}
@@ -58,6 +89,18 @@
       </div>
     {%- endif -%}
   </div>
+  {%- if tp_th_rechner -%}
+    <div class="tp-tep-wrap tp-tep-rechner__ergebnis" data-tp-rechner-ergebnis hidden>
+      <div class="tp-tep-rechner__kopf">
+        <p class="tp-tep-rechner__summe" data-tp-rechner-summe></p>
+        <button type="button" class="tp-tep-rechner__loeschen" data-tp-rechner-loeschen>Maß löschen</button>
+      </div>
+      <ul class="tp-tep-rechner__liste" role="list" data-tp-rechner-liste></ul>
+    </div>
+    <script type="application/json" data-tp-rechner-daten>{% render 'tp-teppich-rechner-daten', collection: collection %}</script>
+    <script src="{{ 'tp-masstepich-rechnung.js' | asset_url }}" defer></script>
+    <script src="{{ 'tp-teppich-rechner.js' | asset_url }}" defer></script>
+  {%- endif -%}
 </section>
 
 {% schema %}
@@ -73,6 +116,7 @@
     { "type": "image_picker", "id": "image", "label": "Bild (sonst das erste Produkt der Kollektion)" },
     { "type": "text", "id": "card_title", "label": "Bildkarte, Titel", "default": "Rundum gekettelt" },
     { "type": "text", "id": "card_text", "label": "Bildkarte, Text", "default": "Kante mit Garn eingefasst, franst nicht aus" },
+    { "type": "checkbox", "id": "rechner", "label": "Maß-Rechner statt Knopf 1", "info": "Breite und Länge eingeben, darunter alle Teppiche der Kollektion mit Preis für dieses Maß. Nur auf Kollektionsseiten.", "default": false },
     { "type": "header", "content": "Knöpfe" },
     { "type": "text", "id": "btn1_label", "label": "Knopf 1", "info": "[anzahl] wird durch die Produktzahl der Kollektion ersetzt.", "default": "[anzahl] Qualitäten ansehen" },
     { "type": "url", "id": "btn1_url", "label": "Ziel Knopf 1", "info": "Zum Beispiel #ResultsList für die Auswahl darunter. Leer = erstes Produkt der Kollektion." },

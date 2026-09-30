@@ -23,7 +23,8 @@
         "btn1_url": "#ResultsList",
         "btn2_label": "Muster bestellen",
         "btn2_url": "shopify://pages/muster",
-        "image": "shopify://shop_images/teppich-nach-mass-muster-massband-kante.jpg"
+        "image": "shopify://shop_images/teppich-nach-mass-muster-massband-kante.jpg",
+        "rechner": true
       }
     },
     "main": {

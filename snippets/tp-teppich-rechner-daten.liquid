@@ -1,0 +1,66 @@
+{%- doc -%}
+  Daten fuer den Mass-Rechner auf der Kategorieseite Teppich nach Mass
+  (assets/tp-teppich-rechner.js) als JSON-Objekt.
+
+  Je Teppich dieselben Groessen, mit denen Konfigurator (blocks/tp-einfass-konfigurator)
+  und Einstiegspreis (snippets/tp-teppich-ab-preis) rechnen: Preis je 0,01 m2 je Farbe,
+  groesste Breite je Farbe (snippets/tp-teppich-max-breite, einzige Quelle), groesste
+  Laenge, Mindestpreis, Einfassart. Nur Farben mit service.einfassen = "Verfuegbar",
+  Preis > 0 und lieferbar - dieselbe Auswahl wie beim Einstiegspreis. Den Streichpreis
+  gibt es nur bei aktiver Aktion (snippets/tp-rabatt-sichtbar), wie ueberall im Shop.
+
+  Kettelung: Preis je 0,01 lfm Kante aus dem Kettelservice-Produkt (Handle kettelservice,
+  wie in tp-teppich-ab-preis). Ist es nicht kaufbar, bleibt "kettel" null - der Rechner
+  nennt fuer gekettelte Teppiche dann keinen Preis statt eines zu niedrigen.
+
+  Rechnet nichts selbst; die Formel steht allein in assets/tp-masstepich-rechnung.js.
+
+  @param {object} collection - Kollektion, deren Teppiche (bis 50) ausgegeben werden
+{%- enddoc -%}
+{%- liquid
+  assign tpr_kettel_v = all_products['kettelservice'].selected_or_first_available_variant
+  assign tpr_kettel = 'null'
+  if tpr_kettel_v.available and tpr_kettel_v.price > 0
+    assign tpr_kettel = tpr_kettel_v.price
+  endif
+-%}
+{"kettel": {{ tpr_kettel }}, "teppiche": [
+{%- for tpr_p in collection.products limit: 50 -%}
+  {%- liquid
+    assign tpr_art = tpr_p.metafields.service.einfassung.value | strip | downcase
+    assign tpr_ok = false
+    if tpr_p.metafields.custom.preis_pro_001_qm.value == true and tpr_art != blank
+      assign tpr_ok = true
+    endif
+    assign tpr_max_l = tpr_p.metafields.service.max_laenge_cm.value | times: 1
+    assign tpr_mp = tpr_p.metafields.service.mindestpreis.value
+    if tpr_mp.amount
+      assign tpr_mindest = tpr_mp.amount | times: 100 | round
+    else
+      assign tpr_mindest = tpr_mp | times: 100 | round
+    endif
+    capture tpr_aktion
+      render 'tp-rabatt-sichtbar', product: tpr_p
+    endcapture
+    assign tpr_aktion = tpr_aktion | strip
+    capture tpr_qualitaet
+      render 'tp-teppich-qualitaet', product: tpr_p
+    endcapture
+  -%}
+  {%- if tpr_ok -%}
+  {"id": {{ tpr_p.id | json }}, "titel": {{ tpr_p.title | json }}, "url": {{ tpr_p.url | json }},
+   "bild": {% if tpr_p.featured_image %}{{ tpr_p.featured_image | image_url: width: 600 | json }}{% else %}null{% endif %},
+   "qualitaet": {{ tpr_qualitaet | strip | json }}, "art": {{ tpr_art | json }},
+   "max_l": {{ tpr_max_l | json }}, "mindest": {{ tpr_mindest | json }},
+   "farben": [
+    {%- for tpr_v in tpr_p.variants -%}
+      {%- if tpr_v.available and tpr_v.price > 0 and tpr_v.metafields.service.einfassen.value == 'Verfügbar' -%}
+        {%- capture tpr_v_max -%}{% render 'tp-teppich-max-breite', product: tpr_p, farbe: tpr_v.option1 %}{%- endcapture -%}
+        {%- assign tpr_v_max = tpr_v_max | strip | times: 1 -%}
+        {"id": {{ tpr_v.id | json }}, "p": {{ tpr_v.price | json }}, "alt": {% if tpr_aktion == 'ja' and tpr_v.compare_at_price > tpr_v.price %}{{ tpr_v.compare_at_price | json }}{% else %}0{% endif %}, "w": {{ tpr_v_max | json }}},
+      {%- endif -%}
+    {%- endfor -%}
+    null]},
+  {%- endif -%}
+{%- endfor -%}
+null]}
