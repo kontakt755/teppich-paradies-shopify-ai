@@ -65,6 +65,13 @@
 .tp-ek__bandname:empty { display: none; }
 
 .tp-ek__vorschau { margin: 0 0 14px; padding: 12px 12px 10px; border-radius: 10px; background: var(--tp-ek-soft); }
+.tp-ek--serena .tp-ek__vorschau{margin:12px 0 0;padding:9px 12px;border:1px solid var(--tp-ek-line);background:var(--tp-ek-surface)}
+.tp-ek--serena .tp-ek__vorschau summary{cursor:pointer;font-size:.88rem;font-weight:700;list-style-position:inside}
+.tp-ek--serena .tp-ek__vorschau summary span{font-weight:400;color:var(--tp-ek-muted)}
+.tp-ek--serena .tp-ek__schema{margin:8px 0 0}
+.tp-ek--serena .tp-ek__svg{max-height:190px}
+.tp-ek--serena .tp-ek__legende{font-size:.75rem}
+[data-tp-serena-startpreis][hidden]{display:none!important}
 .tp-ek__svg { display: block; width: 100%; height: auto; max-height: 320px; }
 
 .tp-ek__vorschau .is-aus { display: none !important; }
@@ -120,6 +127,10 @@
 .tp-ek__summe .tp-ek__summe-alt { font-size: 1rem; font-weight: 400; color: var(--tp-ek-muted); text-decoration: line-through; font-variant-numeric: tabular-nums; }
 .tp-ek__summe .tp-ek__summe-alt[hidden] { display: none; }
 .tp-ek__summe strong { font-size: 1.6rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.tp-ek--serena .tp-ek__summe{align-items:center;gap:6px}
+.tp-ek--serena .tp-ek__summe .tp-ek__summe-werte{gap:5px;white-space:nowrap}
+.tp-ek--serena .tp-ek__summe strong{font-size:1.45rem;white-space:nowrap}
+.tp-ek--serena .tp-ek__summe .tp-ek__summe-alt{font-size:.88rem}
 .tp-ek__preishinweis { margin: 6px 0 0; font-size: .82rem; line-height: 1.45; color: var(--tp-ek-muted); }
 
 .tp-ek__cta {
