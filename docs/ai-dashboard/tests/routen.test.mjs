@@ -4,8 +4,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// app.js laeuft im Browser und laesst sich hier nicht importieren (DOM, fetch).
-// Diese Pruefungen lesen deshalb den Quelltext. Anlass: beim Umbenennen des
+// Die Oberflaeche laeuft im Browser und laesst sich hier nicht importieren (DOM,
+// fetch). Diese Pruefungen lesen deshalb den Quelltext - seit der Zerlegung in
+// Module den aller Dateien zusammen (app.js, ereignisse.mjs, kern/, bausteine/,
+// ansichten/), denn die Stellen, die zusammenpassen muessen, liegen jetzt in
+// verschiedenen Dateien. Anlass: beim Umbenennen des
 // Routenparameters von "key" auf "kunde" (secret:scan zaehlt "key" zu den
 // sensiblen URL-Parametern) blieb eine Stelle stehen - navigate('kunden',
 // { key: ... }) in der Schnellsuche. Ergebnis: Cmd+K fand den Kunden, aber die
@@ -13,7 +16,19 @@ import { fileURLToPath } from 'node:url';
 // dass etwas ihn zusammenhaelt, bricht genau so.
 
 const HIER = path.dirname(fileURLToPath(import.meta.url));
-const APP = fs.readFileSync(path.join(HIER, '..', 'app.js'), 'utf8');
+const WURZEL = path.join(HIER, '..');
+function quelltexte(dir) {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap(e => {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) return quelltexte(p);
+    return /\.m?js$/.test(e.name) ? [fs.readFileSync(p, 'utf8')] : [];
+  });
+}
+const APP = [
+  fs.readFileSync(path.join(WURZEL, 'app.js'), 'utf8'),
+  fs.readFileSync(path.join(WURZEL, 'ereignisse.mjs'), 'utf8'),
+  ...['kern', 'bausteine', 'ansichten'].flatMap(o => quelltexte(path.join(WURZEL, o))),
+].join('\n');
 
 test('die Kundenakte wird ueberall mit demselben Parameternamen geoeffnet', () => {
   const liest = [...APP.matchAll(/params\.get\('([a-z]+)'\)/g)].map(m => m[1]);

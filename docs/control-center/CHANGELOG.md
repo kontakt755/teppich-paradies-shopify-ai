@@ -314,3 +314,36 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   nacheinander (je ein Request); bricht einer ab, meldet der Hinweis „nur N von M".
 - **Nächste Stufe:** Vortagesstand der Ampeln sichern, damit „Seit gestern neu" auch neu rot
   gewordene ältere Aufträge zeigt; Einkauf-Suche nach Auftrag/Kunde.
+
+## 2026-10-01 · Oberfläche in Module zerlegt (reiner Umbau)
+
+- **Geändert:** `docs/ai-dashboard/app.js` (5100 Zeilen) ist jetzt der Einstieg in 44 ES-Module:
+  `kern/` (9), `bausteine/` (7), `ansichten/` (26, davon 11 Teilmodule für Einkauf, Kunden und
+  Aufgaben), `ereignisse.mjs`, `app.js`. Kein Build-Schritt, keine neue Abhängigkeit. Jede
+  Top-Level-Anweisung des Monolithen steht unverändert in genau einem Modul; dazu kamen nur
+  `import`/`export`. Vorab in einem eigenen Commit: `bindEvents()` ruft je Ansicht eine Funktion
+  (`…Klick(e)`, `…Aenderung(e)`) in der bisherigen Reihenfolge auf, die Zwischenspeicher der
+  Ansicht „Aktivität" werden an einer Stelle beschrieben, `render()` bekommt die Ansichten über
+  `registriereAnsichten()`. `geldText`, `fmtPreis`, `NICHT_HINTERLEGT` liegen in `kern/helfer.mjs`.
+  Server unverändert (liefert schon jede Datei unter `docs/ai-dashboard/` mit `no-store`).
+  Neu: `tests/aufbau.test.mjs`; `tests/routen.test.mjs` liest alle Moduldateien;
+  `tests/server.test.mjs` hält MIME-Typ und `no-store` je Modul fest. README, `ARCHITEKTUR.md`
+  (Abschnitt 12) und Skill `control-center` nachgezogen.
+- **Getestet:** `npm run dashboard:test` 152 grün (vorher 146, +6 neue), `npm run operations:test`
+  399 grün (wie vorher), `npm run dashboard:pruefen` 38× `OK` (wie vorher), Seitenhöhe aller 38
+  Ansichten identisch zum Stand davor. Zusätzlich DOM-Vergleich alter gegen neuer Stand, je mit
+  eigener Datenkopie und angehaltener Browser-Uhr: 35 Adressen und 13 Klickstrecken (Palette,
+  Aufgaben-Panel, Dialoge, Filter, Suche, Tastatur, Mengenhilfe, Foto-Formular, Auftragsfluss
+  setzen, Aufgabe kommentieren/ändern/erledigen, Fall markieren) auf Desktop und Handy – 354
+  Vergleiche, 353 gleich; die eine Abweichung ist die Minutenangabe „Stand der Bestellungen"
+  (Dateizeit der zweiten Datenkopie). Namensprüfung der Module mit TypeScript (`checkJs`): kein
+  ungebundener Name, kein fehlender Export.
+- **Risiken/Annahmen:** Ein vergessener Import fällt nicht beim Laden auf, sondern erst, wenn die
+  Stelle läuft. Im Vergleich nicht ausgelöst, weil die Datenkopie kein passendes Element hatte:
+  „Wieder öffnen" im Einkauf, Rückruf-Dialog, Passwort eines Zugangs setzen, ruhendes Projekt
+  aufklappen, „Filter zurücksetzen" bei Aufgaben, Kanban-Drag-and-drop, Auftragsfluss aus dem
+  Reiter Kunden/Bestellungen, Foto-Upload, Schnellerfassung absenden. Statt einer Anfrage lädt der
+  Browser rund 50 kleine Dateien.
+- **Nächste Stufe:** `no-undef`-Prüfung als Test (braucht einen Parser als Entwicklungsabhängigkeit –
+  Entscheidung offen); bei spürbarer Ladezeit am Handy `modulepreload`; die Tabelle der Seitentitel
+  aus `kern/render.mjs` an die Ansichten geben, damit eine neue Ansicht eine Datei weniger anfasst.
