@@ -909,6 +909,12 @@ async function loadBenutzer() {
   if (state.session?.benutzer?.rolle !== 'inhaber') return null;
   try { const r = await fetch('/api/benutzer', { cache: 'no-store' }); return r.ok ? await r.json() : null; } catch { return null; }
 }
+/** Laedt alles, was die Ansicht "Aktivitaet" zeigt - nacheinander, wie bisher beim Betreten der Ansicht. */
+async function ladeAktivitaetsdaten() {
+  activityCache = await loadActivity();
+  protokollCache = await loadProtokoll();
+  benutzerCache = await loadBenutzer();
+}
 
 const EREIGNIS_LABEL = { labeled: 'Label', unlabeled: 'Label entfernt', assigned: 'zugewiesen', unassigned: 'Zuweisung entfernt', closed: 'geschlossen', reopened: 'wieder geöffnet', referenced: 'verknüpft', commented: 'Kommentar', renamed: 'umbenannt', angelegt: 'angelegt', geschlossen: 'geschlossen', aktualisiert: 'aktualisiert' };
 
@@ -4668,6 +4674,11 @@ const VIEWS = { heute: viewHeute, fotos: viewFotos, team: viewTeam, hilfe: viewH
 
 let letzteAnsicht = null;
 
+// Die Tabelle der Ansichten kommt vom Einstieg (registriereAnsichten), damit
+// das Zeichnen keine einzelne Ansicht kennen muss.
+let ansichten = {};
+function registriereAnsichten(tabelle) { ansichten = tabelle; }
+
 function render() {
   const main = $('#main');
   const eingabe = merkeEingabe(document.activeElement, (el) => main.contains(el));
@@ -4705,7 +4716,7 @@ function render() {
     main.innerHTML = `<div class="page-head"><h1>Daten nicht verfügbar</h1></div><div class="notice crit">${esc(state.loadError)}</div><p class="small muted" style="margin-top:10px">issues.json entsteht lokal: <span class="mono">npm run dashboard</span>. <button class="btn btn-sm" data-action="refresh" style="margin-left:8px">Erneut versuchen</button></p>`;
     return;
   }
-  main.innerHTML = (state.loadError ? `<div class="notice crit" style="margin-bottom:12px">Aktualisierung fehlgeschlagen: ${esc(state.loadError)} – es wird der letzte geladene Stand gezeigt.</div>` : '') + VIEWS[state.route.view]();
+  main.innerHTML = (state.loadError ? `<div class="notice crit" style="margin-bottom:12px">Aktualisierung fehlgeschlagen: ${esc(state.loadError)} – es wird der letzte geladene Stand gezeigt.</div>` : '') + ansichten[state.route.view]();
   document.title = `${{ heute: 'Heute', arbeit: 'Entwicklung', freigaben: 'Freigaben', bereiche: 'Bereiche', insights: 'Insights', aktivitaet: 'Aktivität', einkauf: 'Einkauf', kunden: 'Kunden', lexikon: 'Lexikon', ratgeber: 'Ratgeber', hilfe: 'Hilfe', shopwache: 'Shop-Wache', organisation: 'Aufgaben & Organisation' }[state.route.view] || 'Teppich Paradies'} · Teppich Dashboard`;
   renderSheet();
   $('#mainnav').classList.remove('open'); $('#navToggle').setAttribute('aria-expanded', 'false');
@@ -4722,13 +4733,8 @@ function render() {
   }
 }
 
-function bindEvents() {
-  // Aufklappbare Startseiten-Abschnitte merken sich Auf/Zu je Abschnitt (nicht je Aufgabe).
-  document.addEventListener('toggle', e => {
-    const d = e.target.closest?.('details[data-collapsible]');
-    if (!d) return;
-    try { localStorage.setItem(`tp-heute-${d.dataset.collapsible}`, d.open ? '1' : '0'); } catch {}
-  }, true);
+/** Fotoeingang: Formular abschicken und Eingaben merken (eigene Listener, Reihenfolge wie bisher vor dem Klick-Listener). */
+function fotosEreignisseBinden() {
   document.addEventListener('submit', e => {
     if (!e.target.closest('#fotoForm')) return;
     e.preventDefault();
@@ -4756,6 +4762,307 @@ function bindEvents() {
       } catch { /* Vorschlag ist Beiwerk - eine Stoerung darf das Formular nicht blockieren */ }
     }, 300);
   });
+}
+
+/** Einkauf: Auftragsfluss-Knopf an einer Position. Gibt true zurueck, wenn der Klick damit erledigt ist. */
+function einkaufKlickStatus(e) {
+  const afBtn = e.target.closest('[data-af-set]');
+  if (afBtn) {
+    // Anzeige-Angaben fuer den Dialog stehen als data-Attribute am Knopf - nicht aus den
+    // Tabellenspalten lesen, deren Reihenfolge sich mit dem Layout aendert.
+    const ds = afBtn.dataset;
+    const pos = { orderId: ds.afOrder, lineItemId: ds.afItem, orderName: ds.afName || '', titel: anzeigeWert(ds.afTitel || ''), farbe: ds.afFarbe || '' };
+    const status = afBtn.dataset.afStatus;
+    if (status === 'bestellt') openAuftragsstatusDialog(pos, status);
+    else setzeAuftragsstatus(pos, status);
+    return true;
+  }
+  return false;
+}
+
+/** Entwicklung: ruhendes Projekt auf- und zuklappen. Gibt true zurueck, wenn der Klick damit erledigt ist. */
+function arbeitKlick(e) {
+  const proj = e.target.closest('[data-toggle-projekt]');
+  if (proj) { const k = proj.dataset.toggleProjekt; if (state.offeneProjekte.has(k)) state.offeneProjekte.delete(k); else state.offeneProjekte.add(k); render(); return true; }
+  return false;
+}
+
+/** Einkauf: wieder oeffnen, Sammelbestellung, Auftrag abschliessen. Gibt true zurueck, wenn der Klick damit erledigt ist. */
+function einkaufKlickDialoge(e) {
+  const reopen = e.target.closest('[data-af-reopen]');
+  if (reopen) { openWiederOeffnenDialog(reopen.dataset.afReopen, reopen.dataset.afItem || null); return true; }
+  const sammelBtn = e.target.closest('[data-af-sammel]');
+  if (sammelBtn) { openSammelBestelltDialog(sammelBtn.dataset.afSammel); return true; }
+  const abschl = e.target.closest('[data-auftrag-erledigt]');
+  if (abschl) { openAuftragAbschliessenDialog(abschl.dataset.auftragErledigt); return true; }
+  return false;
+}
+
+/** Aufgaben: Filter zuruecksetzen. Gibt true zurueck, wenn der Klick damit erledigt ist. */
+function orgKlickZuruecksetzen(e) {
+  if (e.target.closest('[data-org-reset]')) {
+    const bereich = orgParams().bereich;
+    location.hash = bereich === 'meine-aufgaben' ? '#/organisation' : `#/organisation?ob=${encodeURIComponent(bereich)}`;
+    return true;
+  }
+  return false;
+}
+
+/** Lexikon: Produkt oeffnen, Mengenhilfe rechnen, zurueck zur Liste. Gibt true zurueck, wenn der Klick damit erledigt ist. */
+function lexikonKlick(e) {
+  const lexOpen = e.target.closest('[data-lex-open]');
+  if (lexOpen) { e.preventDefault(); const p = new URLSearchParams(); p.set('handle', lexOpen.dataset.lexOpen); location.hash = `#/lexikon?${p}`; return true; }
+  const mhGo = e.target.closest('[data-mh-go]');
+  if (mhGo) {
+    e.preventDefault();
+    const wrap = mhGo.closest('[data-mh-wrap]');
+    const out = wrap?.querySelector('[data-mh-ergebnis]');
+    if (!wrap || !out) return true;
+    const handle = wrap.dataset.mhWrap;
+    const variantenId = wrap.dataset.mhDefaultVariant;
+    const menge = wrap.querySelector('[data-mh-menge]')?.value || '';
+    out.textContent = 'Rechne …';
+    fetchEinkauf(`/api/lexikon/mengenhilfe?${new URLSearchParams({ handle, variantenId, kundenmengeM2: menge })}`).then((d) => {
+      if (!d.verfuegbar) { out.textContent = d.hinweis || 'Fehler bei der Berechnung.'; return; }
+      out.textContent = d.ergebnis ? d.ergebnis.text : (d.grund || 'Bestellmenge ungeklärt.');
+    });
+    return true;
+  }
+  const lexZurueck = e.target.closest('[data-lex-zurueck]');
+  if (lexZurueck) { e.preventDefault(); location.hash = `#/lexikon${state.route.params.get('lq') ? `?${new URLSearchParams({ lq: state.route.params.get('lq') })}` : ''}`; return true; }
+  return false;
+}
+
+/** Kunden: Akte oeffnen/schliessen, Fall markieren, Rueckruf-Dialog. Gibt true zurueck, wenn der Klick damit erledigt ist. */
+function kundenKlickAkte(e) {
+  const kundenOpen = e.target.closest('[data-kunden-open]');
+  if (kundenOpen) { e.preventDefault(); const p = new URLSearchParams(); p.set('kunde', kundenOpen.dataset.kundenOpen); location.hash = `#/kunden?${p}`; return true; }
+  const kundenZurueck = e.target.closest('[data-kunden-zurueck]');
+  if (kundenZurueck) { e.preventDefault(); location.hash = `#/kunden${state.route.params.get('kq') ? `?${new URLSearchParams({ kq: state.route.params.get('kq') })}` : ''}`; return true; }
+  const fallMarke = e.target.closest('[data-fall-marke]');
+  if (fallMarke) { e.preventDefault(); fallMarkeSetzen(fallMarke.dataset.fallMarke, fallMarke.dataset.grund); return true; }
+  const rueckrufBtn = e.target.closest('[data-rueckruf-open]');
+  if (rueckrufBtn) { e.preventDefault(); openRueckrufDialog(rueckrufBtn.dataset.rueckrufOpen, rueckrufBtn.dataset.rueckrufStatus); return true; }
+  return false;
+}
+
+/** Aufgaben: Schnellerfassung (Knopf in der Kopfzeile). Gibt true zurueck, wenn der Klick damit erledigt ist. */
+function orgKlickSchnell(e) {
+  if (e.target.closest('[data-org-schnell]')) { e.preventDefault(); openOrgSchnell(); return true; }
+  return false;
+}
+
+/** Team: Zugang anlegen, Passwort setzen, sperren/entsperren. Gibt true zurueck, wenn der Klick damit erledigt ist. */
+function teamKlick(e) {
+  const tn = e.target.closest('[data-team-neu]');
+  if (tn) { e.preventDefault(); openTeamNeu(); return true; }
+  const tp = e.target.closest('[data-team-passwort]');
+  if (tp) { e.preventDefault(); openTeamPasswort(tp.dataset.teamPasswort); return true; }
+  const ts = e.target.closest('[data-team-sperren]');
+  if (ts) {
+    e.preventDefault();
+    const aktiv = ts.dataset.aktiv === 'true';
+    teamSchreiben({ was: aktiv ? 'sperren' : 'entsperren', kuerzel: ts.dataset.teamSperren },
+      aktiv ? 'Zugang gesperrt' : 'Zugang wieder frei');
+    return true;
+  }
+  return false;
+}
+
+/** Aufgaben: alles in Liste und Detail. Gibt true zurueck, wenn der Klick damit erledigt ist. */
+function orgKlick(e) {
+  const zk = e.target.closest('[data-org-zu-kunde]');
+  if (zk) { e.preventDefault(); navigate('organisation', { oid: zk.dataset.orgZuKunde }); return true; }
+  const ka = e.target.closest('[data-kunde-aufgabe]');
+  if (ka) {
+    e.preventDefault();
+    // Am Telefon notiert man mitten im Gespraech. Der Kundenname steht
+    // schon da, und die Aufgabe findet spaeter zum Kunden zurueck.
+    openOrgSchnell(`${ka.dataset.kundeName}: `,
+      { art: 'kunde', id: ka.dataset.kundeAufgabe, titel: ka.dataset.kundeName });
+    return true;
+  }
+  const ueb = e.target.closest('[data-org-uebernehmen]');
+  if (ueb) {
+    e.preventDefault(); e.stopPropagation();
+    orgSchreiben('/api/org/aendern', { id: ueb.dataset.orgUebernehmen, felder: { verantwortlich: org.liste?.ich || null } })
+      .then(() => { toast('Steht jetzt auf deinem Namen'); orgFrisch(); render(); })
+      .catch(err => toast(`Fehler: ${err.message}`, 'crit'));
+    return true;
+  }
+  if (e.target.closest('[data-org-fuer-chatgpt]')) { e.preventDefault(); openOrgFuerChatGPT(); return true; }
+  if (e.target.closest('[data-org-liste]')) { e.preventDefault(); openOrgListe(); return true; }
+  const orgPruef = e.target.closest('[data-org-pruefen]');
+  if (orgPruef) {
+    e.preventDefault();
+    orgPruef.disabled = true; orgPruef.textContent = 'Prüfe …';
+    orgSchreiben('/api/org/pruefen', {})
+      .then(r => {
+        toast(r.geprueft
+          ? `${r.geprueft} geprüft · ${r.erfuellt} erfüllt · ${r.offen} offen · ${r.unklar} unklar`
+          : 'Keine Aufgabe mit hinterlegter Prüfvorgabe');
+        orgFrisch(); render();
+      })
+      .catch(err => { toast(`Fehler: ${err.message}`, 'crit'); orgPruef.disabled = false; orgPruef.textContent = 'Jetzt prüfen'; });
+    return true;
+  }
+  const orgZurueck = e.target.closest('[data-org-zurueck]');
+  if (orgZurueck) { e.preventDefault(); const p = new URLSearchParams(state.route.params); p.delete('oid'); location.hash = `#/organisation?${p}`; return true; }
+  const orgFertig = e.target.closest('[data-org-fertig]');
+  if (orgFertig) {
+    e.preventDefault(); e.stopPropagation();
+    orgFertig.disabled = true;
+    orgSchreiben('/api/org/aendern', { id: orgFertig.dataset.orgFertig, felder: { status: 'DONE' } })
+      .then(() => { toast('Erledigt'); orgFrisch(); render(); })
+      .catch(err => { toast(`Fehler: ${err.message}`, 'crit'); orgFertig.disabled = false; });
+    return true;
+  }
+  const zuAufgabe = e.target.closest('[data-org-zuaufgabe]');
+  if (zuAufgabe) {
+    e.preventDefault(); e.stopPropagation();
+    zuAufgabe.disabled = true;
+    // Aus der Notiz wird eine Aufgabe: derselbe Eintrag, neuer Typ - so
+    // bleiben Text, Kommentare und Verlauf erhalten.
+    orgSchreiben('/api/org/aendern', { id: zuAufgabe.dataset.orgZuaufgabe, felder: { typ: 'TASK', status: 'INBOX' } })
+      .then(() => { toast('In eine Aufgabe umgewandelt'); orgFrisch(); render(); })
+      .catch(err => { toast(`Fehler: ${err.message}`, 'crit'); zuAufgabe.disabled = false; });
+    return true;
+  }
+  const orgKomm = e.target.closest('[data-org-kommentar]');
+  if (orgKomm) {
+    e.preventDefault();
+    const feld = document.querySelector('[data-org-kommentar-text]');
+    const text = feld?.value.trim();
+    if (!text) { toast('Bitte etwas schreiben', 'crit'); return true; }
+    orgKomm.disabled = true;
+    orgSchreiben('/api/org/kommentar', { id: orgKomm.dataset.orgKommentar, text })
+      .then(() => { toast('Kommentar gespeichert'); org.detail = null; org.detailId = null; render(); })
+      .catch(err => { toast(`Fehler: ${err.message}`, 'crit'); orgKomm.disabled = false; });
+    return true;
+  }
+  const orgOpen = e.target.closest('[data-org-open]');
+  if (orgOpen && !e.target.closest('button, a, select, input')) {
+    e.preventDefault();
+    orgEintragOeffnen(orgOpen.dataset.orgOpen);
+    return true;
+  }
+  return false;
+}
+
+/** Kunden, Reiter Bestellungen: sortieren, aufklappen, Auftragsfluss, fertig. Gibt true zurueck, wenn der Klick damit erledigt ist. */
+function kundenKlickBestellungen(e) {
+  const sortKopf = e.target.closest('[data-bq-sort-toggle]');
+  if (sortKopf) {
+    // Zweiter Klick auf dieselbe Spalte dreht die Richtung - vorher war
+    // aufsteigend nur ueber die Adresszeile erreichbar.
+    e.preventDefault();
+    const feld = sortKopf.dataset.bqSortToggle;
+    const p = new URLSearchParams(state.route.params);
+    const vorherigesFeld = p.get('bsort') || 'kundenname';
+    const warSortiert = vorherigesFeld === feld;
+    const richtung = warSortiert ? ((p.get('bdir') || (feld === 'kundenname' ? 'asc' : 'desc')) === 'desc' ? 'asc' : 'desc') : (feld === 'kundenname' ? 'asc' : 'desc');
+    p.set('bsort', feld);
+    if (richtung === (feld === 'kundenname' ? 'asc' : 'desc')) p.delete('bdir'); else p.set('bdir', richtung);
+    location.hash = `#/${state.route.view}?${p}`;
+    return true;
+  }
+  const bqToggle = e.target.closest('[data-bq-toggle]');
+  // Klicks auf Links, Schaltflaechen oder Kopierfelder gehoeren diesen
+  // Elementen - vorher hingen dort inline-stopPropagation-Aufrufe, die
+  // genau die Handler abgeschnitten haben, die am document warten.
+  if (bqToggle && !e.target.closest('a, button, [data-kopiertext], [data-kunden-open]')) {
+    const id = bqToggle.dataset.bqToggle;
+    if (kunden.erweitert.has(id)) kunden.erweitert.delete(id); else kunden.erweitert.add(id);
+    render();
+    return true;
+  }
+  const bqAf = e.target.closest('[data-bq-af]');
+  if (bqAf) { e.preventDefault(); e.stopPropagation(); setzeAuftragsstatusFuerBestellung(bqAf.dataset.bqAf, bqAf.dataset.bqAfStatus); return true; }
+  const bqFertig = e.target.closest('[data-bq-fertig]');
+  if (bqFertig) { e.preventDefault(); e.stopPropagation(); kundeFertigSetzen(bqFertig.dataset.bqFertig); return true; }
+  return false;
+}
+
+/** Fotoeingang: Einwilligung und Bildauswahl. Gibt true zurueck, wenn die Aenderung damit erledigt ist. */
+function fotosAenderung(e) {
+  if (e.target.id === 'fotoEinwilligung') { fotos.einwilligung = e.target.checked; return true; }
+  const bilder = e.target.closest('#fotoDateien');
+  if (bilder) {
+    const zuGross = [...bilder.files].filter(f => f.size > 10 * 1024 * 1024);
+    if (zuGross.length) toast(`${zuGross.length} ${zuGross.length === 1 ? 'Bild ist' : 'Bilder sind'} größer als 10 MB und bleiben draußen`, 'crit');
+    fotos.gewaehlt = [...bilder.files].filter(f => f.size <= 10 * 1024 * 1024).slice(0, 20);
+    const zeile = $('#fotoGewaehlt');
+    if (zeile) zeile.textContent = fotos.gewaehlt.length
+      ? `${fotos.gewaehlt.length} ${fotos.gewaehlt.length === 1 ? 'Bild' : 'Bilder'} ausgewählt`
+      : 'Noch nichts ausgewählt';
+    return true;
+  }
+  return false;
+}
+
+/** Aufgaben: Anhang hochladen. Gibt true zurueck, wenn eine Datei gewaehlt wurde (das Hochladen laeuft dann weiter). */
+function orgAenderungAnhang(e) {
+  const datei = e.target.closest('[data-org-anhang]');
+  if (!datei?.files?.length) return false;
+  orgAnhangHochladen(datei);
+  return true;
+}
+async function orgAnhangHochladen(datei) {
+  const f = datei.files[0];
+  if (f.size > 10 * 1024 * 1024) { toast('Datei ist größer als 10 MB', 'crit'); datei.value = ''; return; }
+  toast('Lade hoch …');
+  try {
+    const daten = await new Promise((fertig, schief) => {
+      const leser = new FileReader();
+      leser.onload = () => fertig(String(leser.result).split(',')[1] || '');
+      leser.onerror = () => schief(new Error('Datei nicht lesbar'));
+      leser.readAsDataURL(f);
+    });
+    await orgSchreiben('/api/org/anhang', { id: datei.dataset.orgAnhang, name: f.name, typ: f.type, daten });
+    toast('Angehängt');
+    org.detail = null; org.detailId = null; render();
+  } catch (err) { toast(`Fehler: ${err.message}`, 'crit'); }
+  datei.value = '';
+}
+
+/** Team: Rolle aendern. */
+function teamAenderung(e) {
+  const tr = e.target.closest('select[data-team-rolle]');
+  if (tr) { teamSchreiben({ was: 'rolle', kuerzel: tr.dataset.teamRolle, rolle: tr.value }, 'Rolle geändert'); return true; }
+  return false;
+}
+
+/** Aufgaben: Feld im Detail geaendert (Status, Verantwortlich, Termin ...). */
+function orgAenderungFeld(e) {
+  const org1 = e.target.closest('[data-org-feld]');
+  if (org1) {
+    const wert = org1.value === '' ? null : org1.value;
+    orgSchreiben('/api/org/aendern', { id: org1.dataset.orgId, felder: { [org1.dataset.orgFeld]: wert } })
+      .then(() => { toast('Gespeichert'); org.detail = null; org.detailId = null; org.liste = null; org.key = null; render(); })
+      .catch(err => toast(`Fehler: ${err.message}`, 'crit'));
+  }
+}
+
+/** Aufgaben: Enter/Leertaste auf einer fokussierten Zeile. Gibt true zurueck, wenn die Taste damit erledigt ist. */
+function orgTaste(e) {
+  const orgRow = document.activeElement;
+  if ((e.key === 'Enter' || e.key === ' ') && orgRow?.dataset?.orgOpen) {
+    e.preventDefault(); orgEintragOeffnen(orgRow.dataset.orgOpen); return true;
+  }
+  if ((e.key === 'Enter' || e.key === ' ') && orgRow?.dataset?.orgZuKunde) {
+    e.preventDefault(); navigate('organisation', { oid: orgRow.dataset.orgZuKunde }); return true;
+  }
+  return false;
+}
+
+function bindEvents() {
+  // Aufklappbare Startseiten-Abschnitte merken sich Auf/Zu je Abschnitt (nicht je Aufgabe).
+  document.addEventListener('toggle', e => {
+    const d = e.target.closest?.('details[data-collapsible]');
+    if (!d) return;
+    try { localStorage.setItem(`tp-heute-${d.dataset.collapsible}`, d.open ? '1' : '0'); } catch {}
+  }, true);
+  fotosEreignisseBinden();
   document.addEventListener('click', e => {
     const more = $('#navMore');
     if (more?.open && !e.target.closest('#navMore')) more.open = false;
@@ -4781,30 +5088,10 @@ function bindEvents() {
     if (act) { const t = state.tasks.find(x => x.number === Number(act.dataset.task)); if (t) openActionDialog(t, act.dataset.act); return; }
     const dec = e.target.closest('[data-decide]');
     if (dec) { const t = state.tasks.find(x => x.number === Number(dec.dataset.task)); if (t) openActionDialog(t, dec.dataset.decide); return; }
-    const afBtn = e.target.closest('[data-af-set]');
-    if (afBtn) {
-      // Anzeige-Angaben fuer den Dialog stehen als data-Attribute am Knopf - nicht aus den
-      // Tabellenspalten lesen, deren Reihenfolge sich mit dem Layout aendert.
-      const ds = afBtn.dataset;
-      const pos = { orderId: ds.afOrder, lineItemId: ds.afItem, orderName: ds.afName || '', titel: anzeigeWert(ds.afTitel || ''), farbe: ds.afFarbe || '' };
-      const status = afBtn.dataset.afStatus;
-      if (status === 'bestellt') openAuftragsstatusDialog(pos, status);
-      else setzeAuftragsstatus(pos, status);
-      return;
-    }
-    const proj = e.target.closest('[data-toggle-projekt]');
-    if (proj) { const k = proj.dataset.toggleProjekt; if (state.offeneProjekte.has(k)) state.offeneProjekte.delete(k); else state.offeneProjekte.add(k); render(); return; }
-    const reopen = e.target.closest('[data-af-reopen]');
-    if (reopen) { openWiederOeffnenDialog(reopen.dataset.afReopen, reopen.dataset.afItem || null); return; }
-    const sammelBtn = e.target.closest('[data-af-sammel]');
-    if (sammelBtn) { openSammelBestelltDialog(sammelBtn.dataset.afSammel); return; }
-    const abschl = e.target.closest('[data-auftrag-erledigt]');
-    if (abschl) { openAuftragAbschliessenDialog(abschl.dataset.auftragErledigt); return; }
-    if (e.target.closest('[data-org-reset]')) {
-      const bereich = orgParams().bereich;
-      location.hash = bereich === 'meine-aufgaben' ? '#/organisation' : `#/organisation?ob=${encodeURIComponent(bereich)}`;
-      return;
-    }
+    if (einkaufKlickStatus(e)) return;
+    if (arbeitKlick(e)) return;
+    if (einkaufKlickDialoge(e)) return;
+    if (orgKlickZuruecksetzen(e)) return;
     const p = e.target.closest('button[data-param]');
     if (p) { setParam(p.dataset.param, p.dataset.value); return; }
     const kop = e.target.closest('[data-kopieren]');
@@ -4816,154 +5103,14 @@ function bindEvents() {
       }
       return;
     }
-    const lexOpen = e.target.closest('[data-lex-open]');
-    if (lexOpen) { e.preventDefault(); const p = new URLSearchParams(); p.set('handle', lexOpen.dataset.lexOpen); location.hash = `#/lexikon?${p}`; return; }
-    const mhGo = e.target.closest('[data-mh-go]');
-    if (mhGo) {
-      e.preventDefault();
-      const wrap = mhGo.closest('[data-mh-wrap]');
-      const out = wrap?.querySelector('[data-mh-ergebnis]');
-      if (!wrap || !out) return;
-      const handle = wrap.dataset.mhWrap;
-      const variantenId = wrap.dataset.mhDefaultVariant;
-      const menge = wrap.querySelector('[data-mh-menge]')?.value || '';
-      out.textContent = 'Rechne …';
-      fetchEinkauf(`/api/lexikon/mengenhilfe?${new URLSearchParams({ handle, variantenId, kundenmengeM2: menge })}`).then((d) => {
-        if (!d.verfuegbar) { out.textContent = d.hinweis || 'Fehler bei der Berechnung.'; return; }
-        out.textContent = d.ergebnis ? d.ergebnis.text : (d.grund || 'Bestellmenge ungeklärt.');
-      });
-      return;
-    }
-    const lexZurueck = e.target.closest('[data-lex-zurueck]');
-    if (lexZurueck) { e.preventDefault(); location.hash = `#/lexikon${state.route.params.get('lq') ? `?${new URLSearchParams({ lq: state.route.params.get('lq') })}` : ''}`; return; }
-    const kundenOpen = e.target.closest('[data-kunden-open]');
-    if (kundenOpen) { e.preventDefault(); const p = new URLSearchParams(); p.set('kunde', kundenOpen.dataset.kundenOpen); location.hash = `#/kunden?${p}`; return; }
-    const kundenZurueck = e.target.closest('[data-kunden-zurueck]');
-    if (kundenZurueck) { e.preventDefault(); location.hash = `#/kunden${state.route.params.get('kq') ? `?${new URLSearchParams({ kq: state.route.params.get('kq') })}` : ''}`; return; }
-    const fallMarke = e.target.closest('[data-fall-marke]');
-    if (fallMarke) { e.preventDefault(); fallMarkeSetzen(fallMarke.dataset.fallMarke, fallMarke.dataset.grund); return; }
-    const rueckrufBtn = e.target.closest('[data-rueckruf-open]');
-    if (rueckrufBtn) { e.preventDefault(); openRueckrufDialog(rueckrufBtn.dataset.rueckrufOpen, rueckrufBtn.dataset.rueckrufStatus); return; }
+    if (lexikonKlick(e)) return;
+    if (kundenKlickAkte(e)) return;
     const druckBtn = e.target.closest('[data-drucken]');
     if (druckBtn) { e.preventDefault(); window.print(); return; }
-    // Aufgaben & Organisation
-    if (e.target.closest('[data-org-schnell]')) { e.preventDefault(); openOrgSchnell(); return; }
-    const tn = e.target.closest('[data-team-neu]');
-    if (tn) { e.preventDefault(); openTeamNeu(); return; }
-    const tp = e.target.closest('[data-team-passwort]');
-    if (tp) { e.preventDefault(); openTeamPasswort(tp.dataset.teamPasswort); return; }
-    const ts = e.target.closest('[data-team-sperren]');
-    if (ts) {
-      e.preventDefault();
-      const aktiv = ts.dataset.aktiv === 'true';
-      teamSchreiben({ was: aktiv ? 'sperren' : 'entsperren', kuerzel: ts.dataset.teamSperren },
-        aktiv ? 'Zugang gesperrt' : 'Zugang wieder frei');
-      return;
-    }
-    const zk = e.target.closest('[data-org-zu-kunde]');
-    if (zk) { e.preventDefault(); navigate('organisation', { oid: zk.dataset.orgZuKunde }); return; }
-    const ka = e.target.closest('[data-kunde-aufgabe]');
-    if (ka) {
-      e.preventDefault();
-      // Am Telefon notiert man mitten im Gespraech. Der Kundenname steht
-      // schon da, und die Aufgabe findet spaeter zum Kunden zurueck.
-      openOrgSchnell(`${ka.dataset.kundeName}: `,
-        { art: 'kunde', id: ka.dataset.kundeAufgabe, titel: ka.dataset.kundeName });
-      return;
-    }
-    const ueb = e.target.closest('[data-org-uebernehmen]');
-    if (ueb) {
-      e.preventDefault(); e.stopPropagation();
-      orgSchreiben('/api/org/aendern', { id: ueb.dataset.orgUebernehmen, felder: { verantwortlich: org.liste?.ich || null } })
-        .then(() => { toast('Steht jetzt auf deinem Namen'); orgFrisch(); render(); })
-        .catch(err => toast(`Fehler: ${err.message}`, 'crit'));
-      return;
-    }
-    if (e.target.closest('[data-org-fuer-chatgpt]')) { e.preventDefault(); openOrgFuerChatGPT(); return; }
-    if (e.target.closest('[data-org-liste]')) { e.preventDefault(); openOrgListe(); return; }
-    const orgPruef = e.target.closest('[data-org-pruefen]');
-    if (orgPruef) {
-      e.preventDefault();
-      orgPruef.disabled = true; orgPruef.textContent = 'Prüfe …';
-      orgSchreiben('/api/org/pruefen', {})
-        .then(r => {
-          toast(r.geprueft
-            ? `${r.geprueft} geprüft · ${r.erfuellt} erfüllt · ${r.offen} offen · ${r.unklar} unklar`
-            : 'Keine Aufgabe mit hinterlegter Prüfvorgabe');
-          orgFrisch(); render();
-        })
-        .catch(err => { toast(`Fehler: ${err.message}`, 'crit'); orgPruef.disabled = false; orgPruef.textContent = 'Jetzt prüfen'; });
-      return;
-    }
-    const orgZurueck = e.target.closest('[data-org-zurueck]');
-    if (orgZurueck) { e.preventDefault(); const p = new URLSearchParams(state.route.params); p.delete('oid'); location.hash = `#/organisation?${p}`; return; }
-    const orgFertig = e.target.closest('[data-org-fertig]');
-    if (orgFertig) {
-      e.preventDefault(); e.stopPropagation();
-      orgFertig.disabled = true;
-      orgSchreiben('/api/org/aendern', { id: orgFertig.dataset.orgFertig, felder: { status: 'DONE' } })
-        .then(() => { toast('Erledigt'); orgFrisch(); render(); })
-        .catch(err => { toast(`Fehler: ${err.message}`, 'crit'); orgFertig.disabled = false; });
-      return;
-    }
-    const zuAufgabe = e.target.closest('[data-org-zuaufgabe]');
-    if (zuAufgabe) {
-      e.preventDefault(); e.stopPropagation();
-      zuAufgabe.disabled = true;
-      // Aus der Notiz wird eine Aufgabe: derselbe Eintrag, neuer Typ - so
-      // bleiben Text, Kommentare und Verlauf erhalten.
-      orgSchreiben('/api/org/aendern', { id: zuAufgabe.dataset.orgZuaufgabe, felder: { typ: 'TASK', status: 'INBOX' } })
-        .then(() => { toast('In eine Aufgabe umgewandelt'); orgFrisch(); render(); })
-        .catch(err => { toast(`Fehler: ${err.message}`, 'crit'); zuAufgabe.disabled = false; });
-      return;
-    }
-    const orgKomm = e.target.closest('[data-org-kommentar]');
-    if (orgKomm) {
-      e.preventDefault();
-      const feld = document.querySelector('[data-org-kommentar-text]');
-      const text = feld?.value.trim();
-      if (!text) { toast('Bitte etwas schreiben', 'crit'); return; }
-      orgKomm.disabled = true;
-      orgSchreiben('/api/org/kommentar', { id: orgKomm.dataset.orgKommentar, text })
-        .then(() => { toast('Kommentar gespeichert'); org.detail = null; org.detailId = null; render(); })
-        .catch(err => { toast(`Fehler: ${err.message}`, 'crit'); orgKomm.disabled = false; });
-      return;
-    }
-    const orgOpen = e.target.closest('[data-org-open]');
-    if (orgOpen && !e.target.closest('button, a, select, input')) {
-      e.preventDefault();
-      orgEintragOeffnen(orgOpen.dataset.orgOpen);
-      return;
-    }
-    const sortKopf = e.target.closest('[data-bq-sort-toggle]');
-    if (sortKopf) {
-      // Zweiter Klick auf dieselbe Spalte dreht die Richtung - vorher war
-      // aufsteigend nur ueber die Adresszeile erreichbar.
-      e.preventDefault();
-      const feld = sortKopf.dataset.bqSortToggle;
-      const p = new URLSearchParams(state.route.params);
-      const vorherigesFeld = p.get('bsort') || 'kundenname';
-      const warSortiert = vorherigesFeld === feld;
-      const richtung = warSortiert ? ((p.get('bdir') || (feld === 'kundenname' ? 'asc' : 'desc')) === 'desc' ? 'asc' : 'desc') : (feld === 'kundenname' ? 'asc' : 'desc');
-      p.set('bsort', feld);
-      if (richtung === (feld === 'kundenname' ? 'asc' : 'desc')) p.delete('bdir'); else p.set('bdir', richtung);
-      location.hash = `#/${state.route.view}?${p}`;
-      return;
-    }
-    const bqToggle = e.target.closest('[data-bq-toggle]');
-    // Klicks auf Links, Schaltflaechen oder Kopierfelder gehoeren diesen
-    // Elementen - vorher hingen dort inline-stopPropagation-Aufrufe, die
-    // genau die Handler abgeschnitten haben, die am document warten.
-    if (bqToggle && !e.target.closest('a, button, [data-kopiertext], [data-kunden-open]')) {
-      const id = bqToggle.dataset.bqToggle;
-      if (kunden.erweitert.has(id)) kunden.erweitert.delete(id); else kunden.erweitert.add(id);
-      render();
-      return;
-    }
-    const bqAf = e.target.closest('[data-bq-af]');
-    if (bqAf) { e.preventDefault(); e.stopPropagation(); setzeAuftragsstatusFuerBestellung(bqAf.dataset.bqAf, bqAf.dataset.bqAfStatus); return; }
-    const bqFertig = e.target.closest('[data-bq-fertig]');
-    if (bqFertig) { e.preventDefault(); e.stopPropagation(); kundeFertigSetzen(bqFertig.dataset.bqFertig); return; }
+    if (orgKlickSchnell(e)) return;
+    if (teamKlick(e)) return;
+    if (orgKlick(e)) return;
+    if (kundenKlickBestellungen(e)) return;
     const kt = e.target.closest('[data-kopiertext]');
     if (kt) {
       const text = kt.dataset.kopiertext;
@@ -4974,48 +5121,12 @@ function bindEvents() {
     const a = e.target.closest('[data-action]');
     if (a) { if (a.dataset.action === 'sync') syncNow(); if (a.dataset.action === 'refresh') refresh(); if (a.dataset.action === 'aktualisieren') aktualisierenNow(); if (a.dataset.action === 'reload') location.reload(); if (a.dataset.action === 'clear-filters') navigate('arbeit', { mode: state.route.params.get('mode') || '' }); }
   });
-  document.addEventListener('change', async e => {
-    if (e.target.id === 'fotoEinwilligung') { fotos.einwilligung = e.target.checked; return; }
-    const bilder = e.target.closest('#fotoDateien');
-    if (bilder) {
-      const zuGross = [...bilder.files].filter(f => f.size > 10 * 1024 * 1024);
-      if (zuGross.length) toast(`${zuGross.length} ${zuGross.length === 1 ? 'Bild ist' : 'Bilder sind'} größer als 10 MB und bleiben draußen`, 'crit');
-      fotos.gewaehlt = [...bilder.files].filter(f => f.size <= 10 * 1024 * 1024).slice(0, 20);
-      const zeile = $('#fotoGewaehlt');
-      if (zeile) zeile.textContent = fotos.gewaehlt.length
-        ? `${fotos.gewaehlt.length} ${fotos.gewaehlt.length === 1 ? 'Bild' : 'Bilder'} ausgewählt`
-        : 'Noch nichts ausgewählt';
-      return;
-    }
-    const datei = e.target.closest('[data-org-anhang]');
-    if (datei?.files?.length) {
-      const f = datei.files[0];
-      if (f.size > 10 * 1024 * 1024) { toast('Datei ist größer als 10 MB', 'crit'); datei.value = ''; return; }
-      toast('Lade hoch …');
-      try {
-        const daten = await new Promise((fertig, schief) => {
-          const leser = new FileReader();
-          leser.onload = () => fertig(String(leser.result).split(',')[1] || '');
-          leser.onerror = () => schief(new Error('Datei nicht lesbar'));
-          leser.readAsDataURL(f);
-        });
-        await orgSchreiben('/api/org/anhang', { id: datei.dataset.orgAnhang, name: f.name, typ: f.type, daten });
-        toast('Angehängt');
-        org.detail = null; org.detailId = null; render();
-      } catch (err) { toast(`Fehler: ${err.message}`, 'crit'); }
-      datei.value = '';
-      return;
-    }
-    const tr = e.target.closest('select[data-team-rolle]');
-    if (tr) { teamSchreiben({ was: 'rolle', kuerzel: tr.dataset.teamRolle, rolle: tr.value }, 'Rolle geändert'); return; }
+  document.addEventListener('change', e => {
+    if (fotosAenderung(e)) return;
+    if (orgAenderungAnhang(e)) return;
+    if (teamAenderung(e)) return;
     const el = e.target.closest('select[data-param]'); if (el) { setParam(el.dataset.param, el.value); return; }
-    const org1 = e.target.closest('[data-org-feld]');
-    if (org1) {
-      const wert = org1.value === '' ? null : org1.value;
-      orgSchreiben('/api/org/aendern', { id: org1.dataset.orgId, felder: { [org1.dataset.orgFeld]: wert } })
-        .then(() => { toast('Gespeichert'); org.detail = null; org.detailId = null; org.liste = null; org.key = null; render(); })
-        .catch(err => toast(`Fehler: ${err.message}`, 'crit'));
-    }
+    orgAenderungFeld(e);
   });
   let qTimer;
   document.addEventListener('input', e => {
@@ -5045,13 +5156,7 @@ function bindEvents() {
     if (e.key === '/') { e.preventDefault(); openPalette(); return; }
     // "n" wie neu: Schnellerfassung von jeder Seite aus.
     if (e.key === 'n' && state.capabilities.mode === 'local') { e.preventDefault(); openOrgSchnell(); return; }
-    const orgRow = document.activeElement;
-    if ((e.key === 'Enter' || e.key === ' ') && orgRow?.dataset?.orgOpen) {
-      e.preventDefault(); orgEintragOeffnen(orgRow.dataset.orgOpen); return;
-    }
-    if ((e.key === 'Enter' || e.key === ' ') && orgRow?.dataset?.orgZuKunde) {
-      e.preventDefault(); navigate('organisation', { oid: orgRow.dataset.orgZuKunde }); return;
-    }
+    if (orgTaste(e)) return;
     const rows = [...document.querySelectorAll('#main [data-open][tabindex]')];
     if (!rows.length) return;
     // Solange eine Aufgabe offen ist, gehoert die Tastatur dem Panel. Vorher
@@ -5084,11 +5189,12 @@ function bindEvents() {
   // also fuehrt er sie auf die Startseite statt in eine leere Umleitung.
   $('#syncChip').addEventListener('click', () => navigate(darfAnsicht('insights') ? 'insights' : 'heute'));
   $('#navToggle').addEventListener('click', () => { const nav = $('#mainnav'); const open = nav.classList.toggle('open'); $('#navToggle').setAttribute('aria-expanded', String(open)); });
-  window.addEventListener('hashchange', async () => { clearTimeout(qTimer); const prev = state.route.view; parseRoute(); state.selectedRow = -1; if (state.route.view === 'aktivitaet' && prev !== 'aktivitaet') { activityCache = await loadActivity(); protokollCache = await loadProtokoll(); benutzerCache = await loadBenutzer(); } render(); if (state.route.view === 'lexikon' && prev !== 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus(); });
+  window.addEventListener('hashchange', async () => { clearTimeout(qTimer); const prev = state.route.view; parseRoute(); state.selectedRow = -1; if (state.route.view === 'aktivitaet' && prev !== 'aktivitaet') { await ladeAktivitaetsdaten(); } render(); if (state.route.view === 'lexikon' && prev !== 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh({ silent: true }); });
 }
 
 async function init() {
+  registriereAnsichten(VIEWS);
   parseRoute();
   bindEvents();
   renderThemeButton();
@@ -5096,7 +5202,7 @@ async function init() {
   await loadCapabilities();
   await loadData();
   renderSyncChip();
-  if (state.route.view === 'aktivitaet') { activityCache = await loadActivity(); protokollCache = await loadProtokoll(); benutzerCache = await loadBenutzer(); }
+  if (state.route.view === 'aktivitaet') { await ladeAktivitaetsdaten(); }
   render();
   if (state.route.view === 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus();
   loadAgentRuns().then(() => { if (state.agentRuns) render(); });
