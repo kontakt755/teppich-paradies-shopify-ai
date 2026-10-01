@@ -482,3 +482,12 @@ test('preisJeEinheit: Ware nach Maß rechnet von 0,01 m² auf den m2-Preis hoch'
   const modell = aufbereiten({ produkte: [nachMass] }, { jetzt: JETZT });
   assert.deepEqual(modell.produkte[0].varianten[0].preisJeEinheit, { betrag: 85, einheit: 'm2' });
 });
+
+test('Produktgruppe: productType geht vor templateSuffix (Live-Abruf und Handexport liefern dasselbe)', () => {
+  const basis = { id: 'gid://shopify/Product/1', handle: 'x', title: 'X', variants: [] };
+  const gruppe = (p) => aufbereiten({ produkte: [{ ...basis, ...p }] }).produkte[0].produktgruppe;
+  assert.equal(gruppe({ productType: 'Klickvinyl', templateSuffix: 'paketware' }), 'Klickvinyl');
+  assert.equal(gruppe({ productType: 'Klickvinyl' }), 'Klickvinyl');
+  assert.equal(gruppe({ productType: '', templateSuffix: 'paketware' }), 'paketware');
+  assert.equal(gruppe({}), null);
+});

@@ -194,17 +194,49 @@ fehlend) - `userErrors: []` beim Schreiben gilt nicht als Beleg.
 
 ## Zugang einrichten (einmalig)
 
-```
-npm run operations:einrichten
-```
+Rechte vergeben, App installieren und Schluessel eintragen macht **nur der
+Inhaber** - kein Agent, weder per CLI noch per Browser.
 
-Setzt die Zugriffsbereiche der App "TP Operations", veroeffentlicht die Version,
-oeffnet die Installationsadresse und legt Client-ID und geheimen Schluessel in
-`.env.local` ab (chmod 600, gitignored). Danach holt es den Token und prueft die
-Verbindung. Der Schluessel wird verdeckt eingegeben und nie ausgegeben.
+1. `dev.shopify.com` → App "TP Operations" → **Versionen** → neue Version.
+   Ins Feld **Bereiche (Scopes)** genau diese Zeile, dann freigeben:
 
-Jeder Schritt ist wiederholbar; bricht einer ab, nennt die Meldung den Weg von
-Hand. Hintergrund zu den Token-Wegen: `domains/shopify/admin-token-oauth.md`.
+   ```
+   read_orders,read_all_orders,write_orders,read_customers,read_draft_orders,read_inventory,read_locations,read_products,write_products,read_fulfillments,write_fulfillments,read_merchant_managed_fulfillment_orders,write_merchant_managed_fulfillment_orders,read_metaobjects,write_metaobjects,read_metaobject_definitions
+   ```
+
+   Fuer die Datenquellen des Control Centers genuegen die Lese-Bereiche
+   (`LESE_BEREICHE` in `sync/zugang.mjs`): `read_orders,read_all_orders,read_customers,read_draft_orders,read_products,read_metaobjects,read_inventory,read_locations`.
+   Die Schreib-Bereiche braucht nur das Auftragsband (`ops.*`-Metafelder) und
+   `daten:anreichern -- --schreiben`. Ohne `read_all_orders` laesst Shopify
+   Bestellungen, die aelter als 60 Tage sind, stillschweigend weg.
+2. App im Shop installieren bzw. die geaenderten Bereiche im Shop bestaetigen.
+3. Im Ordner, aus dem der Dienst laeuft (Betrieb: `~/tp-dashboard`), die Datei
+   `.env.local` anlegen (`chmod 600`, gitignored) mit zwei Zeilen:
+
+   ```
+   SHOPIFY_CLIENT_ID=...
+   SHOPIFY_CLIENT_SECRET=...
+   ```
+
+   **Keine** Zeile `SHOPIFY_ADMIN_TOKEN` dazu: der Token aus
+   `npm run shopify:token -- --grant client-credentials` gilt nur 24 Stunden.
+   Mit Client-ID und Schluessel holt `sync/zugang.mjs` ihn selbst und erneuert
+   ihn vor Ablauf. (Steht doch ein abgelaufener Token daneben, wechselt der
+   Proxy beim ersten HTTP 401 auf die Client-Credentials.)
+4. Pruefen: `npm run operations:verbindung` - fragt jede Datenquelle einmal an
+   und nennt je Quelle `OK` oder was fehlt (Exit 0 = alles lesbar, 2 = kein
+   Zugang hinterlegt, 3 = Zugang steht, aber eine Quelle oder ein Bereich fehlt).
+5. Dauerdienst einschalten: `bash operations/scripts/dienste-einrichten.sh`.
+
+`npm run operations:einrichten` (`scripts/app-einrichten.sh`) fuehrt die
+Schritte 1-4 gefuehrt ueber die Shopify-CLI aus; der Schluessel wird dabei
+verdeckt eingegeben und nie ausgegeben. Hintergrund zu den Token-Wegen:
+`domains/shopify/admin-token-oauth.md`.
+
+Jede Arbeitskopie hat ihre eigene `.env.local` - ein Zugang im Hauptcheckout
+gilt nicht fuer `~/tp-dashboard`. Fehlermeldungen der Aktualisierung nennen
+den naechsten Schritt (`wasTun` in `sync/zugang.mjs`): fehlender Zugang,
+fehlender Bereich, abgelaufener Token, nicht installierte App.
 
 ## Aktualisierung (alle Datenquellen in einem Lauf)
 
@@ -295,6 +327,13 @@ laufende Sitzung (z. B. per geplanter Aufgabe). Für den MCP-Weg ohne Token
 bleiben die einzelnen `--input`-Varianten von `lexikon:export`,
 `kennzahlen:export` und `ops:bestelluebersicht`.
 
+**Massenabfragen fuer den MCP-Weg** liegen neben den Seitenabfragen und
+werden nicht mehr von Hand gebaut: `npm run lexikon:export -- --bulk-query`
+(Ergebnis per `--jsonl`) und `npm run daten:bulk -- --query
+kunden|angebote|warenkoerbe|bestand` (Ergebnis per `daten:bulk -- --teil ...`,
+dann `daten:aktualisieren -- --input ...`). Die Lexikon-Abfrage traegt bewusst
+kein `templateSuffix`: Produktgruppe ist der `productType`.
+
 **Von Hand starten:** einfach `npm run daten:aktualisieren` in einem Terminal
 mit Repository als Arbeitsverzeichnis, Token in `.env.local`.
 
@@ -323,6 +362,10 @@ täglich:
 npm run daten:sync-dienst
 TP_SYNC_INTERVALL_MINUTEN=5 npm run daten:sync-dienst   # Standard 10
 ```
+
+Das Lexikon (Massenabfrage ueber alle Produkte) laeuft nur alle
+`TP_SYNC_LEXIKON_MINUTEN` (Standard 60) mit, nach einem Fehlschlag gleich im
+naechsten Intervall wieder; alle anderen Teile laufen in jedem Intervall.
 
 Ablauf: sofortiger erster Lauf, danach ein Lauf je Intervall (die Wartezeit
 beginnt erst, wenn der vorherige Lauf fertig ist - kein Überlappen). Ein

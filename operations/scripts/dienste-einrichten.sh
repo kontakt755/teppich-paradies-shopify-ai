@@ -65,19 +65,24 @@ fi
 # --- 2. Sync-Dienst -------------------------------------------------------
 schritt "2/2  Sync-Dienst (${SYNC_LABEL})"
 
+# Dieselbe Pruefung wie der Dienst selbst (operations/sync/zugang.mjs) - kein
+# eigenes grep: .env.local darf `KEY=wert` oder `export KEY='wert'` enthalten,
+# und Platzhalter zaehlen nicht. Gibt nur ja/nein aus, nie einen Wert.
 ZUGANG_VORHANDEN=0
 ZUGANG_GRUND=""
-if [[ -f "${ENV_DATEI}" ]]; then
-  if grep -qE '^\s*SHOPIFY_ADMIN_TOKEN\s*=\s*shpat_' "${ENV_DATEI}"; then
-    ZUGANG_VORHANDEN=1
-    ZUGANG_GRUND="SHOPIFY_ADMIN_TOKEN (shpat_) in .env.local"
-  elif grep -qE '^\s*SHOPIFY_ADMIN_TOKEN\s*=\s*atkn_' "${ENV_DATEI}"; then
-    ZUGANG_GRUND="SHOPIFY_ADMIN_TOKEN in .env.local beginnt mit atkn_ - das ist ein Automatisierungstoken OHNE Admin-GraphQL-Zugriff, zaehlt nicht als Zugang."
-  elif grep -qE '^\s*SHOPIFY_CLIENT_ID\s*=\s*\S+' "${ENV_DATEI}" && grep -qE '^\s*SHOPIFY_CLIENT_SECRET\s*=\s*\S+' "${ENV_DATEI}"; then
-    ZUGANG_VORHANDEN=1
-    ZUGANG_GRUND="SHOPIFY_CLIENT_ID/SHOPIFY_CLIENT_SECRET in .env.local"
-  fi
-fi
+ZUGANG_ART="$(cd "${REPO}" && "${NODE_PFAD}" --input-type=module -e '
+import { ladeEnvLocal } from "./operations/sync/zugang.mjs";
+const e = ladeEnvLocal();
+if (/^atkn_/.test(e.SHOPIFY_ADMIN_TOKEN || "") && !(e.SHOPIFY_CLIENT_ID && e.SHOPIFY_CLIENT_SECRET)) console.log("atkn");
+else if (e.SHOPIFY_CLIENT_ID && e.SHOPIFY_CLIENT_SECRET) console.log("client");
+else if (e.SHOPIFY_ADMIN_TOKEN) console.log("token");
+else console.log("keiner");
+' 2>/dev/null || echo keiner)"
+case "${ZUGANG_ART}" in
+  client) ZUGANG_VORHANDEN=1; ZUGANG_GRUND="SHOPIFY_CLIENT_ID/SHOPIFY_CLIENT_SECRET in .env.local" ;;
+  token)  ZUGANG_VORHANDEN=1; ZUGANG_GRUND="SHOPIFY_ADMIN_TOKEN in .env.local" ;;
+  atkn)   ZUGANG_GRUND="SHOPIFY_ADMIN_TOKEN in .env.local beginnt mit atkn_ - das ist ein Automatisierungstoken OHNE Admin-GraphQL-Zugriff, zaehlt nicht als Zugang." ;;
+esac
 
 if [[ "${ZUGANG_VORHANDEN}" -eq 0 ]]; then
   fehlt "Kein Shopify-Zugang gefunden (.env.local: SHOPIFY_ADMIN_TOKEN oder SHOPIFY_CLIENT_ID/SHOPIFY_CLIENT_SECRET)."
@@ -86,13 +91,22 @@ if [[ "${ZUGANG_VORHANDEN}" -eq 0 ]]; then
   hinweis "Der Sync-Dienst wird deshalb NICHT installiert - ohne Zugang wuerde er"
   hinweis "alle 60 Sekunden neu starten und immer dieselbe Fehlermeldung loggen."
   hinweis ""
-  hinweis "So richtest du den Zugang ein:"
-  hinweis "  1. domains/shopify/admin-token-oauth.md lesen (shpat_-Token, Scopes)."
-  hinweis "  2. Token in ${ENV_DATEI} eintragen: SHOPIFY_ADMIN_TOKEN=shpat_..."
+  hinweis "So richtest du den Zugang ein (einmalig, nur der Inhaber):"
+  hinweis "  1. Im Dev Dashboard die App oeffnen, Bereiche setzen, im Shop installieren"
+  hinweis "     (Schritte: operations/README.md, Abschnitt \"Zugang einrichten\")."
+  hinweis "  2. In ${ENV_DATEI} zwei Zeilen eintragen:"
+  hinweis "       SHOPIFY_CLIENT_ID=..."
+  hinweis "       SHOPIFY_CLIENT_SECRET=..."
   hinweis "  3. Pruefen: npm run operations:verbindung"
   hinweis "  4. Dieses Skript erneut ausfuehren: bash operations/scripts/dienste-einrichten.sh"
 else
   ok "Zugang gefunden (${ZUGANG_GRUND})."
+  # Erst pruefen, dann installieren: ein Dienst mit falschem Schluessel oder
+  # fehlenden Bereichen liefe an, ohne je Daten zu liefern.
+  if ! (cd "${REPO}" && "${NODE_PFAD}" operations/scripts/verbindung-pruefen.mjs); then
+    fehlt "Die Verbindungspruefung meldet ein Problem (siehe oben). Der Sync-Dienst wird trotzdem eingerichtet -"
+    hinweis "lesbare Quellen bleiben frisch, die uebrigen melden im Dashboard, was fehlt."
+  fi
   if [[ -f "${SYNC_PLIST}" ]] && launchctl list "${SYNC_LABEL}" >/dev/null 2>&1; then
     ok "Sync-Dienst laeuft bereits (launchctl list ${SYNC_LABEL})."
   else

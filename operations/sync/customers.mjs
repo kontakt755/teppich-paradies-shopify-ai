@@ -56,3 +56,28 @@ export async function fetchCustomers(proxy, { first = SEITENGROESSE, warten } = 
   }
   return { customers, seiten, gesammelt: false };
 }
+
+/**
+ * Dieselben Felder als Massenabfrage (bulkOperationRunQuery) - Ausweichweg
+ * ohne Zugang ueber den Shopify-MCP: `npm run daten:bulk -- --query kunden`
+ * gibt sie aus, das JSONL wandelt `npm run daten:bulk -- --teil kunden` um.
+ * Muss dieselben Felder tragen wie CUSTOMERS_QUERY (Test prueft das).
+ */
+export const CUSTOMERS_BULK_QUERY = `
+{
+  customers {
+    edges {
+      node {
+        id displayName firstName lastName note createdAt updatedAt
+        numberOfOrders
+        amountSpent { amount currencyCode }
+        tags
+        verifiedEmail
+        defaultEmailAddress { emailAddress marketingState marketingOptInLevel }
+        defaultPhoneNumber { phoneNumber marketingState }
+        defaultAddress { name address1 address2 zip city country countryCodeV2 phone }
+        addressesV2 { edges { node { name address1 address2 zip city country countryCodeV2 phone } } }
+      }
+    }
+  }
+}`;

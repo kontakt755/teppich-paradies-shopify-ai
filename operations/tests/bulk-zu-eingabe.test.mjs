@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { argumente, typVon, baue, umwandeln, TEILE } from '../scripts/bulk-zu-eingabe.mjs';
+import { argumente, typVon, baue, umwandeln, bulkQuery, TEILE } from '../scripts/bulk-zu-eingabe.mjs';
+import { CUSTOMERS_QUERY } from '../sync/customers.mjs';
+import { DRAFT_ORDERS_QUERY } from '../sync/draftOrders.mjs';
+import { ABANDONED_CHECKOUTS_QUERY } from '../sync/abandonedCheckouts.mjs';
 
 const zeilen = (...o) => o.map(x => JSON.stringify(x)).join('\n');
 
@@ -95,4 +98,30 @@ test('alle Teile haben Wurzel und Knotentyp', () => {
     assert.ok(spec.wurzel, `${name} ohne Wurzel`);
     assert.ok(spec.knoten, `${name} ohne Knotentyp`);
   }
+});
+
+/** Feldnamen einer Abfrage, ohne die Bausteine, die sich zwischen Seiten- und Massenabfrage unterscheiden. */
+function felder(query) {
+  const ohne = new Set(['query', 'first', 'after', 'sortKey', 'reverse', 'pageInfo', 'hasNextPage', 'endCursor', 'nodes', 'edges', 'node', 'Int', 'String', 'UPDATED_AT', 'CREATED_AT', 'true']);
+  const rumpf = query.slice(query.indexOf('{'));
+  return [...new Set(rumpf.replace(/"[^"]*"/g, '').match(/[A-Za-z_][A-Za-z0-9_]*/g))].filter(f => !ohne.has(f) && !/^Ops/.test(f)).sort();
+}
+
+test('Massenabfragen tragen dieselben Felder wie die Seitenabfragen des Live-Abrufs', () => {
+  assert.deepEqual(felder(bulkQuery('kunden')), felder(CUSTOMERS_QUERY));
+  assert.deepEqual(felder(bulkQuery('angebote')), felder(DRAFT_ORDERS_QUERY));
+  assert.deepEqual(felder(bulkQuery('warenkoerbe')), felder(ABANDONED_CHECKOUTS_QUERY));
+});
+
+test('Massenabfragen kommen ohne Variablen und Seitengroesse aus; Bestand passt zur Umwandlung', () => {
+  for (const teil of Object.keys(TEILE)) {
+    const q = bulkQuery(teil);
+    assert.ok(!/\$|first:/.test(q), `${teil}: Massenabfrage darf keine Variablen/first enthalten`);
+    assert.match(q, /edges/);
+  }
+  assert.match(bulkQuery('bestand'), /inventoryItems[\s\S]*inventoryLevels[\s\S]*location \{ id name \}/);
+  assert.match(bulkQuery('warenkoerbe'), /created_at:>=/);
+  assert.throws(() => bulkQuery('lexikon'), /lexikon:export -- --bulk-query/);
+  assert.equal(argumente(['--query', 'kunden']).query, 'kunden');
+  assert.throws(() => argumente(['--query', 'unsinn']), /unbekannter Teil/);
 });

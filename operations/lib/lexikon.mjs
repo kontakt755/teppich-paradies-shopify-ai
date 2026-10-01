@@ -108,12 +108,19 @@ function numerischeId(gid) {
   return m ? m[1] : String(gid);
 }
 
-/** Produktgruppe: templateSuffix, sonst productType, sonst nichts (nie geraten). */
+/**
+ * Produktgruppe: productType ("Klickvinyl", "Teppichboden"), sonst
+ * templateSuffix, sonst nichts (nie geraten). Der productType geht vor, weil
+ * er der Name ist, den Mitarbeiter kennen und nach dem das Control Center
+ * filtert; der Vorlagenname ist nur der Notbehelf fuer Produkte ohne Typ.
+ * So liefern Live-Abruf und Handexport dieselbe Gruppe, egal ob die Abfrage
+ * templateSuffix mitbringt.
+ */
 function produktgruppe(produkt) {
-  const suffix = text(produkt.templateSuffix);
-  if (suffix) return suffix;
   const typ = text(produkt.productType);
   if (typ) return typ;
+  const suffix = text(produkt.templateSuffix);
+  if (suffix) return suffix;
   return null;
 }
 

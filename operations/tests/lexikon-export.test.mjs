@@ -6,7 +6,7 @@ import {
 
 test('argumente: --jsonl ist ein gueltiger Weg neben --input/--live, --metaobjekte optional', () => {
   assert.deepEqual(argumente(['--jsonl', 'bulk.jsonl']), {
-    input: null, ziel: STANDARD_ZIEL, live: false, jsonl: 'bulk.jsonl', metaobjekte: null, hilfe: false,
+    input: null, ziel: STANDARD_ZIEL, live: false, jsonl: 'bulk.jsonl', metaobjekte: null, bulkQuery: false, hilfe: false,
   });
   const mit = argumente(['--jsonl', 'bulk.jsonl', '--metaobjekte', 'gids.json', '--ziel', 'x.json']);
   assert.equal(mit.jsonl, 'bulk.jsonl');
@@ -124,4 +124,47 @@ test('Metaobjekt-Namen werden auch beim MCP-Weg (--input) aufgeloest', async () 
     ['gid://shopify/Metaobject/2', 'Flur'],
   ]));
   assert.deepEqual(produkte[0].metafields[0].value, ['Wohnzimmer', 'Flur']);
+});
+
+test('Massenabfrage: ohne templateSuffix, mit custom je Variante, per --bulk-query abrufbar', async () => {
+  const { BULK_QUERY } = await import('../scripts/lexikon-export.mjs');
+  assert.ok(!/templateSuffix/.test(BULK_QUERY), 'templateSuffix verfaelscht die Produktgruppe');
+  assert.match(BULK_QUERY, /productType/);
+  assert.match(BULK_QUERY, /custom: metafields\(namespace: "custom"/);
+  assert.equal(argumente(['--bulk-query']).bulkQuery, true);
+});
+
+test('ladeLive fragt den Status ueber die ID der eigenen Operation ab und baut die Produkte', async (t) => {
+  const { ladeLive } = await import('../scripts/lexikon-export.mjs');
+  const alt = { fetch: globalThis.fetch, id: process.env.SHOPIFY_CLIENT_ID, secret: process.env.SHOPIFY_CLIENT_SECRET, token: process.env.SHOPIFY_ADMIN_TOKEN, datei: process.env.TP_ENV_LOCAL };
+  t.after(() => {
+    globalThis.fetch = alt.fetch;
+    for (const [k, v] of [['SHOPIFY_CLIENT_ID', alt.id], ['SHOPIFY_CLIENT_SECRET', alt.secret], ['SHOPIFY_ADMIN_TOKEN', alt.token], ['TP_ENV_LOCAL', alt.datei]]) {
+      if (v === undefined) delete process.env[k]; else process.env[k] = v;
+    }
+  });
+  process.env.TP_ENV_LOCAL = '/nicht/vorhanden/.env.local';
+  delete process.env.SHOPIFY_ADMIN_TOKEN;
+  process.env.SHOPIFY_CLIENT_ID = 'cid';
+  process.env.SHOPIFY_CLIENT_SECRET = 'geheim';
+  const json = (body) => ({ ok: true, status: 200, json: async () => body, text: async () => JSON.stringify(body) });
+  const abfragen = [];
+  globalThis.fetch = async (url, init) => {
+    if (String(url).endsWith('/admin/oauth/access_token')) return json({ access_token: 'tok', scope: 'read_products', expires_in: 86399 });
+    if (String(url) === 'https://download.example/bulk.jsonl') {
+      return { ok: true, status: 200, text: async () => [
+        JSON.stringify({ id: 'gid://shopify/Product/1', handle: 'a', title: 'A', status: 'ACTIVE', productType: 'Klickvinyl' }),
+        JSON.stringify({ id: 'gid://shopify/ProductVariant/11', title: 'Eiche', sku: 'S1', price: '10.00', __parentId: 'gid://shopify/Product/1' }),
+      ].join('\n') };
+    }
+    const { query, variables } = JSON.parse(init.body);
+    abfragen.push({ query, variables });
+    if (/bulkOperationRunQuery/.test(query)) return json({ data: { bulkOperationRunQuery: { bulkOperation: { id: 'gid://shopify/BulkOperation/7', status: 'CREATED' }, userErrors: [] } } });
+    return json({ data: { node: { id: 'gid://shopify/BulkOperation/7', status: 'COMPLETED', url: 'https://download.example/bulk.jsonl' } } });
+  };
+  const roh = await ladeLive({ pollMs: 1 });
+  assert.equal(roh.produkte.length, 1);
+  assert.equal(roh.produkte[0].variants.length, 1);
+  assert.deepEqual(abfragen[1].variables, { id: 'gid://shopify/BulkOperation/7' });
+  assert.ok(!/currentBulkOperation/.test(abfragen[1].query));
 });
