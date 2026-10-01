@@ -48,7 +48,7 @@
       "lieferzeitWerktage": null,
       "mindestmenge": "",
       "hinweise": "",
-      "mail": { "anrede": "", "gruss": "" }
+      "mail": { "anrede": "", "gruss": "", "duzen": false }
     }
   }
 }

@@ -163,6 +163,7 @@ function pruefeLieferant(id, roh, fehler) {
     mail: {
       anrede: p.text(ml.anrede, 'mail.anrede', 200),
       gruss: p.text(ml.gruss, 'mail.gruss', 400),
+      duzen: ml.duzen === true,
     },
   };
   l.fehlend = fehlendeAngaben(l);
@@ -474,7 +475,7 @@ function hinweiseFuer(aufgenommen) {
 
 function rahmen({ st, absender, anredeStandard }) {
   const anrede = st.mail.anrede ?? anredeStandard;
-  const gruss = st.mail.gruss ?? ['Mit freundlichen Grüßen', absender?.kontaktName, absender?.firma ?? 'Teppich Paradies'].filter(Boolean).join('\n');
+  const gruss = st.mail.gruss ?? [st.mail.duzen ? 'Viele Grüße' : 'Mit freundlichen Grüßen', absender?.kontaktName, absender?.firma ?? 'Teppich Paradies'].filter(Boolean).join('\n');
   return { anrede, gruss };
 }
 
@@ -572,14 +573,15 @@ function musterMail(gruppen, { st, absender, statusAlle, adressen, jetzt, ziel }
   }
   const person = st.muster.ansprechperson;
   const { anrede, gruss } = rahmen({ st, absender, anredeStandard: person ? `Guten Tag ${person},` : 'Sehr geehrte Damen und Herren,' });
-  const zeilen = [anrede, '', 'bitte senden Sie uns folgende Muster:', ''];
+  const du = st.mail.duzen;
+  const zeilen = [anrede, '', du ? 'bitte schick uns folgende Muster:' : 'bitte senden Sie uns folgende Muster:', ''];
   if (st.kundennummer) zeilen.push(`Unsere Kundennummer: ${st.kundennummer}`, '');
   const musterZeile = (p, nr) => {
     const z = positionsZeilen({ ...p, mengeText: `${p.menge} Muster` }, nr);
     return lieferung === 'kunde' ? z.filter(t => !t.startsWith('   Kommission:')) : z;
   };
   if (lieferung === 'kunde') {
-    zeilen[2] = 'bitte senden Sie folgende Muster direkt an unsere Kunden:';
+    zeilen[2] = du ? 'bitte schick folgende Muster direkt an unsere Kunden:' : 'bitte senden Sie folgende Muster direkt an unsere Kunden:';
     const jeAuftrag = new Map();
     for (const p of aufgenommen) { if (!jeAuftrag.has(p.orderId)) jeAuftrag.set(p.orderId, []); jeAuftrag.get(p.orderId).push(p); }
     let nr = 0;
@@ -589,17 +591,17 @@ function musterMail(gruppen, { st, absender, statusAlle, adressen, jetzt, ziel }
       zeilen.push('');
     }
   } else {
-    // An den Laden: bewusst kurz - eine Zeile je Muster, ohne Kommission und ohne
-    // Anschrift (der Lieferant kennt uns; Inhaberentscheidung 2026-10-01).
+    // An den Laden: bewusst kurz - eine Zeile je Muster, ohne Kommission, ohne
+    // Anschrift und ohne unsere Shop-Namen, die der Lieferant nicht kennt
+    // (Inhaberentscheidung 2026-10-01). Der Farbname steht nur, wenn die Nummer fehlt.
     for (const p of aufgenommen) {
-      const bezeichnung = [p.titel?.replace(/^Muster:\s*/i, ''), p.farbe].filter(Boolean).join(', ');
-      zeilen.push([`${p.menge}× Art.-Nr. ${p.artikelnummer}`, p.farbnummer ? `Farb-Nr. ${p.farbnummer}` : null, bezeichnung].filter(Boolean).join(' · '));
+      zeilen.push([`${p.menge}× Art.-Nr. ${p.artikelnummer}`, p.farbnummer ? `Farb-Nr. ${p.farbnummer}` : p.farbe].filter(Boolean).join(' · '));
     }
     zeilen.push('');
   }
   zeilen.push('Vielen Dank.', '', gruss);
   const stueck = aufgenommen.reduce((s, p) => s + Number(p.menge || 0), 0);
-  const betreff = ['Musterbestellung', st.kundennummer ? `Kd.-Nr. ${st.kundennummer}` : null, `${stueck} Muster`, kurzListe(aufgenommen.map(p => p.orderName))].filter(Boolean).join(' – ');
+  const betreff = lieferung !== 'kunde' ? 'Musterbestellung' : ['Musterbestellung', st.kundennummer ? `Kd.-Nr. ${st.kundennummer}` : null, `${stueck} Muster`, kurzListe(aufgenommen.map(p => p.orderName))].filter(Boolean).join(' – ');
   return fertigeMail({
     st, art: 'muster', an: st.muster.mail, betreff, zeilen, aufgenommen, fehlt,
     extra: { gruppe: null, route: 'MUSTER', lieferziel: lieferung ?? null, bereitsBestellt: alle.length - offen.length, ohneBestellung },
