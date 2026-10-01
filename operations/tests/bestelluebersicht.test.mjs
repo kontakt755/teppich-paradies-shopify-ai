@@ -271,3 +271,18 @@ test('Jede Position traegt den Produkt-Handle fuers Lexikon', () => {
   assert.ok(musterListe.length > 0);
   assert.equal(musterListe.find(p => p.sku === 'M-TESTROLLE_1').handle, 'muster-testboden');
 });
+
+test('Variante "je lfm": Stueckzahl ist die Laenge, Breite aus dem Variantentitel', async () => {
+  const { ausVariantentitel } = await import('../lib/resolve.mjs');
+  const { einkaufsmenge } = await import('../lib/bestelluebersicht.mjs');
+  assert.deepEqual(ausVariantentitel('2,5 mm, 80 cm breit (je lfm)'), { jeLfm: true, variantBreiteCm: 80 });
+  assert.deepEqual(ausVariantentitel('Natur'), { jeLfm: false, variantBreiteCm: null });
+  const item = { einkauf: { bestelleinheit: 'lfm' }, produkt: { rollenbreite: 'UNGEKLAERT', qm_pro_paket: 'UNGEKLAERT' }, eingaben: ausVariantentitel('2,5 mm, 80 cm breit (je lfm)') };
+  const r = einkaufsmenge(item, 25);
+  assert.equal(r.menge, 25);
+  assert.equal(r.einheit, 'lfm');
+  assert.equal(r.text, '25 lfm · 80 cm breit');
+  assert.equal(r.grund, null);
+  // Ohne "je lfm" bleibt es ungeklaert - geraten wird nichts.
+  assert.equal(einkaufsmenge({ ...item, eingaben: ausVariantentitel('Natur') }, 25).menge, 'UNGEKLAERT');
+});
