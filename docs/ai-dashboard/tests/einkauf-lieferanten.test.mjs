@@ -141,3 +141,14 @@ test('lieferzeiten: Werktage bestellt -> geliefert, gleiche Lieferung zaehlt ein
   assert.equal(r.schnitt, 5);
   assert.deepEqual(lieferzeiten([]), { anzahl: 0, schnitt: null, werte: [] });
 });
+
+test('gmailLink: fertige Nachricht in Gmail, lange Texte ohne body, ohne Empfaenger kein Link', async () => {
+  const { gmailLink, GMAIL_MAX } = await import('../lib/einkauf-lieferanten.mjs');
+  const g = gmailLink({ an: 'muster@lieferant-a.example', betreff: 'Musterbestellung', text: 'Hallo,\n1× Art.-Nr. A-1 · Farb-Nr. 2' });
+  assert.equal(g.gekuerzt, false);
+  assert.equal(g.url, 'https://mail.google.com/mail/?view=cm&fs=1&to=muster%40lieferant-a.example&su=Musterbestellung&body=Hallo%2C%0A1%C3%97%20Art.-Nr.%20A-1%20%C2%B7%20Farb-Nr.%202');
+  const lang = gmailLink({ an: 'a@lieferant-a.example', betreff: 'x', text: 'z'.repeat(GMAIL_MAX) });
+  assert.equal(lang.gekuerzt, true);
+  assert.equal(lang.url.includes('&body='), false);
+  assert.deepEqual(gmailLink({ an: null, text: 'x' }), { url: null, gekuerzt: false });
+});
