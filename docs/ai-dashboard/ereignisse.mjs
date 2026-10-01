@@ -13,7 +13,8 @@ import { state } from './kern/zustand.mjs';
 import { $, toast } from './kern/helfer.mjs';
 import { logout } from './kern/sitzung.mjs';
 import { darfAnsicht, parseRoute, navigate, openTask, closeTask, setParam } from './kern/router.mjs';
-import { toggleTheme } from './kern/thema.mjs';
+import { toggleTheme, folgeGeraet } from './kern/thema.mjs';
+import { bindeNavigation, mehrOffen, schliesseMehr } from './kern/navigation.mjs';
 import { refresh } from './kern/daten.mjs';
 import { render } from './kern/render.mjs';
 import { openActionDialog } from './bausteine/aktions-dialog.mjs';
@@ -42,8 +43,7 @@ export function bindEvents() {
   }, true);
   fotosEreignisseBinden();
   document.addEventListener('click', e => {
-    const more = $('#navMore');
-    if (more?.open && !e.target.closest('#navMore')) more.open = false;
+    if (e.target.closest('[data-abmelden]')) { logout(); return; }
     const open = e.target.closest('[data-open]');
     if (open && !e.target.closest('[data-decide]')) { e.preventDefault(); openTask(Number(open.dataset.open)); if (open.dataset.primary) { setTimeout(() => $('#sheetRoot [data-act]')?.focus(), 50); } return; }
     if (e.target.closest('[data-close-sheet]')) { closeTask(); return; }
@@ -130,7 +130,7 @@ export function bindEvents() {
   document.addEventListener('keydown', e => {
     const inField = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '');
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); $('#paletteRoot').children.length ? closePalette() : openPalette(); return; }
-    if (e.key === 'Escape') { if ($('#paletteRoot').children.length) closePalette(); else if ($('#dialogRoot').children.length) $('#dialogRoot').innerHTML = ''; else if (state.route.params.get('task')) closeTask(); return; }
+    if (e.key === 'Escape') { if (mehrOffen()) schliesseMehr(); else if ($('#paletteRoot').children.length) closePalette(); else if ($('#dialogRoot').children.length) $('#dialogRoot').innerHTML = ''; else if (state.route.params.get('task')) closeTask(); return; }
     if (inField || $('#dialogRoot').children.length || $('#paletteRoot').children.length) return;
     if (e.key === '/') { e.preventDefault(); openPalette(); return; }
     // "n" wie neu: Schnellerfassung von jeder Seite aus.
@@ -167,7 +167,8 @@ export function bindEvents() {
   // Der Chip fuehrt in den Systemzustand - fuer Mitarbeiter gibt es dort nichts,
   // also fuehrt er sie auf die Startseite statt in eine leere Umleitung.
   $('#syncChip').addEventListener('click', () => navigate(darfAnsicht('insights') ? 'insights' : 'heute'));
-  $('#navToggle').addEventListener('click', () => { const nav = $('#mainnav'); const open = nav.classList.toggle('open'); $('#navToggle').setAttribute('aria-expanded', String(open)); });
+  bindeNavigation();
+  folgeGeraet();
   window.addEventListener('hashchange', async () => { clearTimeout(qTimer); const prev = state.route.view; parseRoute(); state.selectedRow = -1; if (state.route.view === 'aktivitaet' && prev !== 'aktivitaet') { await ladeAktivitaetsdaten(); } render(); if (state.route.view === 'lexikon' && prev !== 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh({ silent: true }); });
 }

@@ -1,5 +1,5 @@
 /**
- * Zeichnet die aktuelle Ansicht in #main: Navigation markieren, Sonderzustaende
+ * Zeichnet die aktuelle Ansicht in #main: Navigation nachfuehren (kern/navigation.mjs), Sonderzustaende
  * (abgemeldet, nicht lokal, Daten fehlen), Seitentitel, Eingabe und Fokus erhalten.
  *
  * Die Tabelle der Ansichten kommt vom Einstieg (app.js) ueber registriereAnsichten() -
@@ -10,6 +10,7 @@ import { merkeEingabe, stelleEingabeWiederHer } from '../lib/eingabe.mjs';
 import { state } from './zustand.mjs';
 import { $, esc } from './helfer.mjs';
 import { istNurLesend } from './sitzung.mjs';
+import { aktualisiereNavigation, aktualisiereSeitentitel } from './navigation.mjs';
 import { renderSheet } from '../bausteine/aufgaben-panel.mjs';
 
 let letzteAnsicht = null;
@@ -20,25 +21,14 @@ let ansichten = {};
 export function registriereAnsichten(tabelle) { ansichten = tabelle; }
 
 export function render() {
+  zeichne();
+  aktualisiereSeitentitel();
+}
+
+function zeichne() {
   const main = $('#main');
   const eingabe = merkeEingabe(document.activeElement, (el) => main.contains(el));
-  // aria-current braucht den Wert "page". toggleAttribute setzte nur einen
-  // leeren Wert und gab true zurueck - der zweite Zweig lief nie, der aktive
-  // Reiter war nirgends hervorgehoben.
-  document.querySelectorAll('.mainnav a').forEach(a => {
-    if (a.dataset.nav === state.route.view) a.setAttribute('aria-current', 'page');
-    else a.removeAttribute('aria-current');
-  });
-  const nf = $('#navFreigaben'); const approvals = state.tasks.filter(t => t.status === 'freigabe').length;
-  nf.hidden = !approvals; nf.textContent = approvals;
-  // "Mehr" traegt die Freigaben-Zahl mit, damit sie im eingeklappten Menue nicht untergeht,
-  // und ist markiert, solange eine seiner Ansichten offen ist.
-  const more = $('#navMore');
-  if (more) {
-    const mc = $('#navMoreCount'); mc.hidden = !approvals; mc.textContent = approvals;
-    more.querySelector('summary').classList.toggle('current', ['arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet'].includes(state.route.view));
-    more.open = false;
-  }
+  aktualisiereNavigation();
   // Ein Satz oben ist ehrlicher als lauter fehlende Knoepfe ohne Erklaerung.
   const lesenHinweis = $('#lesenHinweis');
   if (lesenHinweis) lesenHinweis.hidden = !istNurLesend();
@@ -59,7 +49,6 @@ export function render() {
   main.innerHTML = (state.loadError ? `<div class="notice crit" style="margin-bottom:12px">Aktualisierung fehlgeschlagen: ${esc(state.loadError)} – es wird der letzte geladene Stand gezeigt.</div>` : '') + ansichten[state.route.view]();
   document.title = `${{ heute: 'Heute', arbeit: 'Entwicklung', freigaben: 'Freigaben', bereiche: 'Bereiche', insights: 'Insights', aktivitaet: 'Aktivität', einkauf: 'Einkauf', kunden: 'Kunden', lexikon: 'Lexikon', ratgeber: 'Ratgeber', hilfe: 'Hilfe', shopwache: 'Shop-Wache', organisation: 'Aufgaben & Organisation' }[state.route.view] || 'Teppich Paradies'} · Teppich Dashboard`;
   renderSheet();
-  $('#mainnav').classList.remove('open'); $('#navToggle').setAttribute('aria-expanded', 'false');
   // Zuerst weitertippen lassen, wo jemand gerade tippt.
   if (eingabe && stelleEingabeWiederHer(main.querySelector(`input[data-param="${eingabe.param}"]`), eingabe)) return;
   // Kundensuche: Feld soll beim Öffnen sofort tippbereit sein (Telefon-Arbeitsplatz)

@@ -93,7 +93,8 @@ kern/
   sitzung.mjs     Betriebsart, Anmeldung, Rolle „lesen", Abmelden
   router.mjs      ANSICHT_ROLLEN, darfAnsicht, parseRoute, navigate, openTask, closeTask, setParam
   daten.mjs       issues.json und KI-Läufe laden, refresh, Datenstand-Chip
-  thema.mjs       hell/dunkel
+  thema.mjs       hell/dunkel (folgt dem Gerät, bis jemand selbst wählt)
+  navigation.mjs  Seitenleiste, untere Leiste und „Mehr“ am Handy, Seitentitel, Zähler
   render.mjs      render(): Ansicht zeichnen, Sonderzustände, Titel, Fokus
 bausteine/
   karten.mjs            emptyState, stoerungState, collapsibleCard, bandItem
@@ -125,7 +126,7 @@ ansichten/
 | Vorhaben | Dateien |
 |---|---|
 | Knopf, Filter, Dialog in einer bestehenden Ansicht | nur das Modul der Ansicht: Markup mit `data-…`-Attribut, Behandlung in deren `…Klick(e)` / `…Aenderung(e)` |
-| Neue Ansicht | `ansichten/<route>.mjs` mit `export function view…()`; dann je eine Zeile in `app.js` (`VIEWS`), `kern/router.mjs` (`parseRoute`, bei Inhaber-Ansichten `ANSICHT_ROLLEN`), `kern/render.mjs` (Seitentitel) und `index.html` (Link). Braucht sie eigene Klicks: `export function <route>Klick(e)` und eine Zeile in `ereignisse.mjs` |
+| Neue Ansicht | `ansichten/<route>.mjs` mit `export function view…()`; dann je eine Zeile in `app.js` (`VIEWS`), `kern/router.mjs` (`parseRoute`, bei Inhaber-Ansichten `ANSICHT_ROLLEN`), `kern/render.mjs` (Seitentitel) und `index.html` (Link in der Seitenleiste, `data-nav="<route>"`; Inhaber-Ansichten zusätzlich `data-nur-inhaber` und in die Gruppe „Büro“ – `tests/navigation.test.mjs` prüft beides). Braucht sie eigene Klicks: `export function <route>Klick(e)` und eine Zeile in `ereignisse.mjs` |
 | Block auf „Heute" | Funktion `heute…()` im Modul des Bereichs, Aufruf in `ansichten/heute.mjs` |
 | Neuer Zwischenspeicher, der nach „Jetzt aktualisieren" veraltet | zusätzlich in `verwirfDatenspeicher()` (`bausteine/aktualisierung.mjs`) leeren |
 | Etwas, das zwei Ansichten brauchen | nach `bausteine/` (mit DOM) oder `kern/helfer.mjs` (ohne), nicht quer aus einer Ansicht importieren, wenn es sich vermeiden lässt |
@@ -133,6 +134,17 @@ ansichten/
 Die Reihenfolge der Prüfungen im Klick-Listener (`ereignisse.mjs`) ist Verhalten: der erste Treffer
 gewinnt. Deshalb ruft der Listener die Funktionen der Ansichten in fester Reihenfolge auf, und manche
 Ansicht hat zwei davon (z. B. `einkaufKlickStatus` und `einkaufKlickDialoge`).
+
+**Gerüst und Handy** (`index.html`, `app.css`): Am Rechner steht die Navigation als Seitenleiste
+links (oben Heute, Kunden & Aufträge, Einkauf, Lexikon; darunter „Seltener“ und der Sammelpunkt
+„Büro“ für die Inhaber-Ansichten). Die Kopfzeile trägt nur Seitentitel, Suche (Befehlspalette),
+„+ Erfassen“, Sitzung und Hell/Dunkel. Bis 860 px wird daraus eine feste Leiste unten (Heute,
+Aufträge, Lexikon, Einkauf, Mehr); „Mehr“ öffnet die Seitenleiste als Blatt. Der Seitentitel kommt
+aus dem ersten `<h1>` im `.page-head` der Ansicht – dort bleibt es für Vorleseprogramme stehen, sichtbar
+ist es nur oben. Ein Zähler am Menüpunkt wird in `app.js` über `registriereNavZaehler({ route: () => zahl })`
+angemeldet. Breite Tabellen (`.table-scroll > table.tasks.compact`, Zellen mit `data-l`) werden unter
+1100 px zu Karten. `npm run dashboard:pruefen` misst 360, 390, 800, 1024 und 1440 px und schlägt fehl,
+sobald eine Seite seitlich scrollt.
 
 **Zwischenspeicher des Browsers:** Der Server liefert jede Datei mit `Cache-Control: no-store` aus, und
 es gibt keinen Service Worker. Nach einem Update holt der Browser also beim nächsten Laden alle Module
