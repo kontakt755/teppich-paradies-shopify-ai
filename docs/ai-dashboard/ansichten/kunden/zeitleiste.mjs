@@ -13,7 +13,7 @@ import { $, esc, fmtDate, toast } from '../../kern/helfer.mjs';
 import { fetchEinkauf, orgSchreiben } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
-import { einkauf } from '../einkauf/auftragsfluss.mjs';
+import { einkauf, setzeZurueckAufOffen, setzeMusterHerkunft, kundeUndOrt, ladeStandNeu, MUSTER_HERKUNFT_LABEL } from '../einkauf/auftragsfluss.mjs';
 import { kunden } from './gemeinsam.mjs';
 
 const WER_TEXT = { wir: 'wir', lieferant: 'Lieferant', kunde: 'Kunde' };
@@ -63,9 +63,11 @@ function naechsterKarte(a, kunde, lesend) {
   const tel = gesetzt(kunde?.telefon) ? String(kunde.telefon).replace(/[^0-9+]/g, '') : '';
   // Beim Nachfassen ist der Anruf die eigentliche Arbeit - der Knopf dafuer steht direkt daneben.
   const anruf = n.aktion === 'nachgefasst' && n.stufe === 'faellig' && tel ? `<a class="btn" href="tel:${esc(tel)}">Kunden anrufen</a>` : '';
+  // Muster noch beim Lieferanten zu bestellen? Oft liegen sie hier - dann gar nicht bestellen.
+  const haben = a.auftragsart === 'muster' && n.aktion === 'bestellt' ? `<button type="button" class="btn" data-muster-herkunft="${esc(a.id)}" title="Muster/Katalog selbst vorrätig: verschicken oder vorbeibringen">Haben wir da…</button>` : '';
   const knoepfe = lesend ? '' : `
     ${n.aktion ? `<div class="zl-knoepfe no-print">
-      <button type="button" class="btn ${n.stufe === 'warten' ? '' : 'btn-primary'}" data-zl-schritt="${esc(n.aktion)}" data-zl-order="${esc(a.id)}">${esc(n.knopf)}</button>${anruf}
+      <button type="button" class="btn ${n.stufe === 'warten' ? '' : 'btn-primary'}" data-zl-schritt="${esc(n.aktion)}" data-zl-order="${esc(a.id)}">${esc(n.knopf)}</button>${anruf}${haben}
     </div>` : ''}
     <button type="button" class="zl-anders no-print" data-zl-anders="${esc(a.id)}">Etwas anderes ist passiert …</button>`;
   return `<div class="zl-next ${esc(n.stufe)}">
@@ -186,6 +188,12 @@ function oeffneDialog(orderId, { nurErgebnis = false } = {}) {
     && (['kunde_hat_muster', 'nachgefasst'].includes(s.schritt) || (s.schritt === 'ergebnis' && ['kunde_hat_bestellt', 'kein_interesse'].includes(s.ergebnis))));
   const letzterWert = letzter ? (letzter.schritt === 'ergebnis' ? letzter.ergebnis : letzter.schritt) : null;
   const wahl = nurErgebnis ? ERGEBNIS_WAHL : WAHL[art];
+  // "Zurueck auf offen" nur, wenn eine Position schon einen Schritt hat.
+  const positionen = (a.positionen || []).filter(p => p.lineItemId);
+  const hatSchritte = positionen.some(p => einkauf.auftragsstatus?.positionen?.[`${a.id}::${p.lineItemId}`]?.status)
+    || (a.verlauf || []).some(s => ['bestellt', 'geliefert', 'raus', 'erledigt'].includes(s.schritt) && (s.zustand === 'erledigt' && !s.automatisch || s.teil));
+  const ort = kundeUndOrt(a.id);
+  const herkunftJetzt = (a.positionen || []).find(p => p.istMuster)?.musterHerkunft || 'lieferant';
   const radio = (wert, text, extra = '') => `<label${extra}><input type="radio" name="schritt" value="${esc(wert)}" required> ${esc(text)}</label>`;
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="zlTitel" data-dialog>
     <h2 id="zlTitel">${nurErgebnis ? 'Ergebnis eintragen' : 'Etwas anderes ist passiert'} · ${esc(a.name)}</h2>
@@ -193,7 +201,11 @@ function oeffneDialog(orderId, { nurErgebnis = false } = {}) {
       ${wahl.map(([w, t]) => radio(w, t)).join('')}
       ${nurErgebnis ? '' : radio('notiz', 'Nur eine Notiz festhalten', ' class="zl-wahl-trenner"')}
       ${!nurErgebnis && letzterWert ? radio(`zurueck:${letzterWert}`, `„${letzter.label}“ zurücknehmen (war ein Versehen)`) : ''}
+      ${!nurErgebnis && hatSchritte ? radio('zurueckAufOffen', 'Alles zurück auf „noch zu bestellen“ (z. B. versehentlich „bestellt“ geklickt)') : ''}
     </fieldset>
+    ${!nurErgebnis && art === 'muster' ? `<fieldset class="zl-wahl"><legend>Woher kommen die Muster?${ort.name || ort.ort ? ` <span class="muted small">${esc([ort.name, ort.ort].filter(Boolean).join(' · '))}</span>` : ''}</legend>
+      ${Object.entries(MUSTER_HERKUNFT_LABEL).map(([w, t]) => radio(`herkunft:${w}`, `${t}${w === herkunftJetzt ? ' (aktuell)' : ''}`)).join('')}
+    </fieldset>` : ''}
     <div class="field"><label for="zlNotiz">Notiz (optional)</label><textarea id="zlNotiz" name="notiz" maxlength="2000" placeholder="z. B. Kunde meldet sich nach dem Urlaub"></textarea></div>
     <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Eintragen</button></div>
   </form></div>`;
@@ -207,6 +219,17 @@ function oeffneDialog(orderId, { nurErgebnis = false } = {}) {
     if (wert === 'notiz' && !notiz) { toast('Bitte die Notiz eintragen', 'warn'); form.querySelector('textarea').focus(); return; }
     const knopf = form.querySelector('[type=submit]');
     knopf.disabled = true;
+    if (wert === 'zurueckAufOffen' || wert.startsWith('herkunft:')) {
+      let fertig;
+      if (wert === 'zurueckAufOffen') {
+        const n = await setzeZurueckAufOffen(positionen.map(p => ({ orderId: a.id, lineItemId: p.lineItemId })), notiz);
+        toast(n ? `${n} Artikel zurück auf offen` : 'Nichts zurückzusetzen – alles ist schon offen.');
+        fertig = n > 0;
+        if (fertig) await ladeStandNeu();
+      } else fertig = await setzeMusterHerkunft({ orderId, herkunft: wert.slice('herkunft:'.length), notiz });
+      if (fertig) $('#dialogRoot').innerHTML = ''; else knopf.disabled = false;
+      return;
+    }
     const ok = wert.startsWith('zurueck:')
       ? await setzeSchritt(orderId, 'zurueck', { bezug: wert.slice('zurueck:'.length), notiz })
       : await setzeSchritt(orderId, wert, { notiz });

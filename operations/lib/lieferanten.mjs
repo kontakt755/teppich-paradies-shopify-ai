@@ -27,6 +27,7 @@ import os from 'node:os';
 import { UNGEKLAERT } from './umrechnung.mjs';
 import { ROUTE } from './route.mjs';
 import { positionKey, filterGruppe } from './auftragsstatus.mjs';
+import { musterOhneLieferant, HERKUNFT } from './musterherkunft.mjs';
 
 export const BESTELLWEGE = Object.freeze(['portal', 'mail', 'telefon']);
 export const MUSTER_LIEFERUNG = Object.freeze(['kunde', 'laden']);
@@ -314,6 +315,9 @@ function schlankePosition(pos, statusAlle, jetzt) {
     kundenmenge: pos.kundenmenge ?? null,
     route: geklaert(pos.route),
     istMuster: !!pos.istMuster,
+    // Additiv: Muster aus dem eigenen Bestand (musterherkunft.mjs) - nicht beim Lieferanten bestellen.
+    musterHerkunft: pos.musterHerkunft ?? null,
+    ohneLieferant: !!pos.istMuster && musterOhneLieferant(pos),
     lieferantUrl: geklaert(pos.lieferantUrl),
     status,
     gruppe: GRUPPE_FELD[filterGruppe(status)] ?? 'erledigt',
@@ -326,7 +330,8 @@ function schlankePosition(pos, statusAlle, jetzt) {
 }
 
 function leereStufen() {
-  return { zuBestellen: [], bestellt: [], unterwegs: [] };
+  // eigenerBestand: Muster, die wir selbst da haben - weder "zu bestellen" noch beim Lieferanten.
+  return { zuBestellen: [], bestellt: [], unterwegs: [], eigenerBestand: [] };
 }
 
 function sammle(modell, statusAlle, jetzt) {
@@ -342,6 +347,7 @@ function sammle(modell, statusAlle, jetzt) {
       for (const pos of g.positionen ?? []) {
         const s = schlankePosition(pos, statusAlle, jetzt);
         if (!ziel[art][s.gruppe]) continue; // erledigt
+        if (s.gruppe === 'zuBestellen' && s.ohneLieferant) { ziel[art].eigenerBestand.push(s); continue; }
         ziel[art][s.gruppe].push(s);
         if (s.gruppe === 'zuBestellen') zuBestellen += 1;
       }
@@ -370,6 +376,8 @@ function eintragFuer(id, daten, stammdaten, { mitPositionen = false } = {}) {
     stammdaten: st,
     positionen: anzahl(d.ware),
     muster: anzahl(d.muster),
+    // Additiv: offene Muster, die wir selbst da haben (nicht beim Lieferanten zu bestellen).
+    musterEigenerBestand: d.muster.eigenerBestand.length,
     // Aelteste Bestellung beim Lieferanten, die noch nicht bei uns ist.
     aeltesteOffeneBestellungTage: maxOderNull([...d.ware.bestellt, ...d.muster.bestellt].map(p => p.wartetage)),
     // Aelteste Kundenbestellung, fuer die noch gar nichts bestellt wurde.
@@ -555,6 +563,12 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt }) {
 /** Muster, die nicht beim Lieferanten bestellt werden (eigenes Musterlager, Zuschnitt aus der Rolle). */
 const MUSTER_OHNE_LIEFERANT = new Set([ROUTE.SAMPLE_STOCK, ROUTE.SAMPLE_CUT]);
 
+function ohneBestellungGrund(p) {
+  if (p.musterHerkunft === HERKUNFT.VORBEI) return 'aus eigenem Bestand – wird persönlich vorbeigebracht';
+  if (p.musterHerkunft === HERKUNFT.VERSAND) return 'aus eigenem Bestand – wird von uns verschickt';
+  return p.route === ROUTE.SAMPLE_CUT ? 'Muster wird selbst zugeschnitten' : 'Muster aus dem eigenen Musterlager';
+}
+
 function musterMail(gruppen, { st, absender, statusAlle, adressen, jetzt, ziel }) {
   const alle = gruppen.flatMap(g => g.positionen ?? []).map(p => schlankePosition(p, statusAlle, jetzt));
   const offen = alle.filter(p => p.gruppe === 'zuBestellen');
@@ -563,7 +577,7 @@ function musterMail(gruppen, { st, absender, statusAlle, adressen, jetzt, ziel }
   const fehlt = [];
   const ohneBestellung = [];
   for (const p of offen) {
-    if (MUSTER_OHNE_LIEFERANT.has(p.route)) { ohneBestellung.push(fehltEintrag(p, [p.route === ROUTE.SAMPLE_STOCK ? 'Muster aus dem eigenen Musterlager' : 'Muster wird selbst zugeschnitten'])); continue; }
+    if (p.ohneLieferant || MUSTER_OHNE_LIEFERANT.has(p.route)) { ohneBestellung.push(fehltEintrag(p, [ohneBestellungGrund(p)])); continue; }
     const gruende = [];
     if (!p.artikelnummer) gruende.push('Artikelnummer beim Lieferanten fehlt');
     if (!(p.menge > 0)) gruende.push('Anzahl fehlt');

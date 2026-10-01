@@ -263,3 +263,22 @@ test('Wer wartet auf was: jede laufende Bestellung genau einmal, in der Spalte d
   assert.equal(w.wir[0].href, `#/kunden?kunde=${encodeURIComponent(rot.kundenSchluessel)}`);
   assert.equal(w.kunde[1].href, '#/kunden?tab=angebote');
 });
+
+test('Muster "haben wir da": kein "bei Lieferant bestellen", sondern "vorbeibringen"/"verschicken" mit Ort und Ein-Klick-Knopf', () => {
+  const vorbei = zeile({ name: 'Kunde Nah', tage: 1, positionen: [{ istMuster: true, titel: 'Muster: Testvelours', musterHerkunft: 'eigen_vorbei' }] });
+  vorbei.auftrag.details = { lieferadresse: { ort: 'Musterstadt' } };
+  const versand = zeile({ name: 'Kunde Fern', tage: 2, positionen: [{ istMuster: true, route: 'SAMPLE_STOCK' }] });
+  const lieferant = zeile({ name: 'Kunde Drei', tage: 1, positionen: [{ istMuster: true, musterHerkunft: 'lieferant' }] });
+  const todos = leiteTodosAb({ bestellzeilen: [vorbei, versand, lieferant] }, { sicht: 'laden', jetzt: JETZT });
+  assert.deepEqual(arten(todos).sort(), ['bestellen', 'muster_eigen', 'muster_eigen']);
+  const v = todos.find(t => t.id === `muster-eigen:${vorbei.orderId}`);
+  assert.equal(v.titel, 'Muster vorbeibringen bei Kunde Nah');
+  assert.match(v.kontext, /^Musterstadt · #T\d+ · /);
+  assert.deepEqual(v.knopf.schritt, { orderId: vorbei.orderId, aktion: 'kunde_hat_muster' });
+  assert.equal(v.knopf.text, 'Erledigt – Kunde hat Muster');
+  assert.equal(todos.find(t => t.id === `muster-eigen:${versand.orderId}`).titel, 'Muster verschicken an Kunde Fern');
+  assert.match(todos.find(t => t.art === 'bestellen').kontext, /Kunde Drei/, 'nur das Muster ohne Wahl "haben wir da" ist zu bestellen');
+  // Wer wartet auf was: wir - vorbeibringen, nicht bestellen
+  const ww = werWartet({ bestellzeilen: [vorbei] }, { jetzt: JETZT });
+  assert.equal(ww.wir[0].schritt, 'Muster vorbeibringen');
+});
