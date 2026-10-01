@@ -9,8 +9,7 @@
  */
 import {
   lieferantenKarten, karteImFilter, ueberfaelligText, hauptAktion, bestellwegText, feldKlartext,
-  telLink, verlauf, lieferzeiten, SCHWELLEN_STANDARD,
-} from '../../lib/einkauf-lieferanten.mjs';
+  telLink, verlauf, lieferzeiten, SCHWELLEN_STANDARD, gmailLink } from '../../lib/einkauf-lieferanten.mjs';
 import { state } from '../../kern/zustand.mjs';
 import { $, esc, fmtDate, plural, NICHT_HINTERLEGT } from '../../kern/helfer.mjs';
 import { fetchEinkauf } from '../../kern/api.mjs';
@@ -185,6 +184,11 @@ function mailAbschnitt(m, i, mehrere) {
   const reihenfolge = m.weg === 'portal' ? ['portal', 'mail', 'telefon'] : m.weg === 'telefon' ? ['telefon', 'mail', 'portal'] : ['mail', 'portal', 'telefon'];
   for (const weg of reihenfolge) {
     if (weg === 'mail' && m.mailto) oeffnen.push(`<a class="${haupt()}" href="${esc(m.mailto)}" data-lf-geoeffnet="${i}">Im Mailprogramm öffnen</a>`);
+    if (weg === 'mail') {
+      // Zweiter Weg fuer Rechner ohne eingerichtetes Mailprogramm: neue Nachricht in Gmail im Browser.
+      const g = gmailLink({ an: m.an, betreff: m.betreff, text: m.text });
+      if (g.url) oeffnen.push(`<a class="${haupt()}" href="${esc(g.url)}" target="_blank" rel="noopener" data-lf-geoeffnet="${i}" title="${g.gekuerzt ? 'Text zu lang für den Link – bitte „Text kopieren" und einfügen' : 'Neue Nachricht in Gmail, fertig ausgefüllt'}">In Gmail öffnen ↗</a>`);
+    }
     if (weg === 'portal' && m.portalUrl && (m.weg === 'portal' || !m.mailto)) oeffnen.push(`<a class="${haupt()}" href="${esc(m.portalUrl)}" target="_blank" rel="noopener" data-lf-geoeffnet="${i}">Portal öffnen ↗</a>`);
     if (weg === 'telefon' && m.telefon && (m.weg === 'telefon' || !m.mailto)) oeffnen.push(`<a class="${haupt()}" href="${esc(telLink(m.telefon))}" data-lf-geoeffnet="${i}">Anrufen ${esc(m.telefon)}</a>`);
   }
