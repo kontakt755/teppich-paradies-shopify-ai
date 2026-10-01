@@ -39,7 +39,7 @@ const ALLE_ANSICHTEN = ['heute', 'einkauf', 'einkauf?tab=produktdaten', 'kunden'
 // Aufgabenliste, der Fotoeingang und die Zugangsverwaltung waren nie dabei.
 const HANDY_ANSICHTEN = ALLE_ANSICHTEN.map(v => v.split('?')[0]);
 // Grosse Exporte, die das Dashboard nur liest: verlinken statt kopieren.
-const NUR_LESEN = ['einkauf-dryrun', 'einkauf-klaerung', 'lexikon'];
+const NUR_LESEN = ['einkauf-dryrun', 'einkauf-klaerung', 'lexikon', 'lieferanten'];
 // Klein oder beschreibbar: kopieren, damit Klicktests nie die echten Dateien treffen.
 const KOPIEREN = ['bestelluebersicht', 'kennzahlen', 'organisation', 'aktualisierung.json', 'auftragsstatus.json'];
 
