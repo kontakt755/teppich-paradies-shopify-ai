@@ -8,9 +8,12 @@ Laden und Social Media wie ein Betrieb aussehen. Umgesetzt als HTML-Vorlagen in
 
 1. **Das Bild trägt den Beitrag.** Text im Bild nur, wo er etwas sagt, das das
    Bild nicht sagen kann: ein Farbname, „Vorher", ein Preis.
-2. **Baustellenfotos bleiben echt.** Zuschnitt, kleine Signatur, höchstens
-   10 % Helligkeit. Keine Sättigung, kein Farbton, keine KI – die Bodenfarbe
-   muss stimmen, sonst ist die Referenz keine.
+2. **Der Boden bleibt echt.** Baustellenfotos dürfen per KI aufgewertet werden
+   (Inhaberentscheidung 01.10.2026, „cinematic“: helles Licht, aufgeräumt) –
+   Wände, Licht, Geländer und Deko dürfen sich dabei ändern. Material, Farbe und
+   Struktur des Bodens nicht: die Bodenfarbe muss stimmen, sonst ist die
+   Referenz keine. Ablauf: `REDAKTION.md`, Abschnitt 2b. Herstellerbilder
+   bleiben unberührt.
 3. **Ruhe vor Lautstärke.** Eine Schrift, zwei Farben, viel Fläche. Keine
    Sticker, keine Verläufe, keine Ausrufezeichen.
 4. **Wiederverwendbar.** Jede Vorlage ist eine Funktion: Daten hinein, Bild

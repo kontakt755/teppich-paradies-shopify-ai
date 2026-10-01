@@ -9,10 +9,12 @@ import { esc, fmtDate, fmtDateTime, plural, geldText } from '../../kern/helfer.m
 import { emptyState, stoerungState, bandItem } from '../../bausteine/karten.mjs';
 import {
   einkaufPositionenMitStand, auftragOffenePositionen, aktiveAuftraege, einkauf, AF_STATUS_LABEL,
-  afNaechsterStatus, afFilterGruppe, LIEFERWEG_LABEL, afWartetage, afWarteText, afWarteKlasse,
+  afNaechsterStatus, LIEFERWEG_LABEL, afWartetage, afWarteText, afWarteKlasse,
   ensureEinkaufBestellungen, ensureEinkaufAuftragsstatus, alleAuftraege, erledigtePositionen,
   sammelGruppen, anzeigeWert, afEintragFuer, hatLieferantLink, positionUnvollstaendig,
+  positionsGruppe, musterEigen, MUSTER_HERKUNFT_KURZ, zurueckGruppen,
 } from './auftragsfluss.mjs';
+import { istNurLesend } from '../../kern/sitzung.mjs';
 import { lieferantenKartenHtml } from './lieferanten.mjs';
 
 function kopierbutton(id, label = 'Liste kopieren') {
@@ -49,6 +51,14 @@ function afStatusZelle(p) {
   const warte = tage === null ? '' : `<div class="small ${afWarteKlasse(tage)}" title="${esc(AF_STATUS_LABEL[status])} am ${esc(fmtDate(eintrag[`${status}Am`]))}">${esc(afWarteText(tage))}</div>`;
   const grund = status === 'erledigt' && eintrag.erledigtNotiz ? `<div class="small muted">Grund: ${esc(eintrag.erledigtNotiz)}</div>` : '';
   const nr = eintrag?.lieferantBestellnummer ? `<div class="small muted">Bestellnr. ${esc(eintrag.lieferantBestellnummer)}</div>` : '';
+  const lesend = istNurLesend();
+  const daten = `data-af-item="${esc(p.lineItemId)}" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}"`;
+  // Muster, die wir selbst da haben: kein "Als bestellt markieren", sondern die Wahl, woher sie kommen.
+  const eigen = !status && musterEigen(p);
+  if (eigen) {
+    const wahl = lesend ? '' : `<div style="margin-top:6px"><button type="button" class="btn btn-sm btn-ghost" data-muster-herkunft="${esc(p.orderId)}" ${daten}>Woher? ändern…</button></div>`;
+    return `<div class="small muted">Stand: ${esc(MUSTER_HERKUNFT_KURZ[p.musterHerkunft] || 'aus dem eigenen Musterlager')}</div><div class="small muted">Nicht beim Lieferanten bestellen</div>${wahl}`;
+  }
   const naechster = afNaechsterStatus(status);
   const btn = naechster ? `<button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="${naechster}" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}">${esc(AF_AKTIONS_LABEL[naechster])}</button>`
     : status === 'erledigt' ? `<button type="button" class="btn btn-sm btn-ghost" data-af-reopen="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" title="Abschluss rückgängig machen">Wieder öffnen…</button>` : '';
@@ -56,7 +66,14 @@ function afStatusZelle(p) {
   const zusatz = status ? ` · ${fmtDateTime(eintrag.aktualisiertAm)} · @${esc(eintrag.aktualisiertVon)}`
     : eintrag?.wiederGeoeffnetAm ? ` · wieder geöffnet ${fmtDateTime(eintrag.wiederGeoeffnetAm)} · @${esc(eintrag.wiederGeoeffnetVon)}` : '';
   const stand = `<div class="small muted">Stand: ${esc(status ? AF_STATUS_LABEL[status] : 'Noch nicht bestellt')}${zusatz}</div>`;
-  return `${stand}${warte}${grund}${nr}${btn ? `<div style="margin-top:6px">${btn}</div>` : ''}`;
+  // Zusatzknoepfe: "Zurueck auf offen" ab jedem Schritt (Versehen), "Haben wir da" bei offenen Mustern.
+  const extra = lesend ? [] : [
+    status ? `<button type="button" class="btn btn-sm btn-ghost" data-af-zurueck="${esc(p.orderId)}" ${daten} title="Versehentlich gesetzt? Zurück auf „Noch zu bestellen"">Zurück auf offen…</button>` : '',
+    !status && p.istMuster ? `<button type="button" class="btn btn-sm btn-ghost" data-muster-herkunft="${esc(p.orderId)}" ${daten} title="Muster selbst vorrätig? Dann nicht beim Lieferanten bestellen">Haben wir da…</button>` : '',
+  ].filter(Boolean);
+  const zurueck = !status && eintrag?.zurueckGesetztAm ? `<div class="small muted">zurück auf offen ${esc(fmtDateTime(eintrag.zurueckGesetztAm))} · @${esc(eintrag.zurueckGesetztVon)}</div>` : '';
+  const knoepfe = [btn, ...extra].filter(Boolean);
+  return `${stand}${zurueck}${warte}${grund}${nr}${knoepfe.length ? `<div class="af-knoepfe" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">${knoepfe.join('')}</div>` : ''}`;
 }
 
 /**
@@ -67,7 +84,7 @@ function einkaufGruppeKarte(g, i, praefix, { eingebettet = false } = {}) {
   const id = `ek-${praefix}-${i}`;
   const af = state.route.params.get('af') || '';
   // Ohne Filter zeigt die Liste alles, was noch Arbeit macht - "Erledigt" nur auf Wunsch.
-  const positionen = g.positionen.filter(p => { const gr = afFilterGruppe(afEintragFuer(p)?.status); return af ? gr === af : gr !== 'erledigt'; });
+  const positionen = g.positionen.filter(p => { const gr = positionsGruppe(p); return af ? gr === af : gr !== 'erledigt'; });
   if (!positionen.length) return '';
   const kundengruppen = gruppierePositionenNachKunde(positionen, einkauf.bestellungen?.auftraege || []);
   const sortiertePositionen = kundengruppen.flatMap(gruppe => gruppe.positionen);
@@ -80,11 +97,16 @@ function einkaufGruppeKarte(g, i, praefix, { eingebettet = false } = {}) {
     ? `<p class="small warnc" style="margin:-6px 0 10px">${plural(luecken, 'Artikel kann', 'Artikel können')} so nicht bestellt werden – Angaben fehlen (siehe markierte Felder).</p>`
     : unbekannt ? '<p class="small muted" style="margin:-6px 0 10px">Großhändler-ID und Produktseite sind je Artikel hinterlegt – über „Öffnen" beim Lieferanten bestellen.</p>' : '';
   const ungeklaert = grund => `<span class="badge gap" title="${esc(grund || 'Nicht in Shopify hinterlegt')}">fehlt</span>`;
-  const zuBestellen = positionen.filter(p => p.lineItemId && !afEintragFuer(p)?.status);
+  const zuBestellen = positionen.filter(p => p.lineItemId && !afEintragFuer(p)?.status && !musterEigen(p));
   // Ab zwei Artikeln lohnt die Sammelaktion; fuer einen reicht der Knopf in der Zeile.
   const sammel = zuBestellen.length >= 2 ? `<button type="button" class="btn btn-sm" data-af-sammel="${esc(id)}">Alle als bestellt markieren…</button>` : '';
   if (sammel) sammelGruppen.set(id, { titel: unbekannt ? 'Lieferant nicht zugeordnet' : `Lieferant ${g.lieferant}`, positionen: zuBestellen });
   else sammelGruppen.delete(id);
+  // Gegenstueck: alles, was in dieser Tabelle schon einen Schritt hat, zurueck auf offen.
+  const gesetzt = positionen.filter(p => p.lineItemId && afEintragFuer(p)?.status);
+  const zurueckBtn = gesetzt.length >= 2 && !istNurLesend() ? `<button type="button" class="btn btn-sm btn-ghost" data-af-zurueck data-af-zurueck-gruppe="${esc(id)}">Alle zurück auf offen…</button>` : '';
+  if (zurueckBtn) zurueckGruppen.set(id, { titel: `${praefix === 'muster' ? 'Muster' : 'Ware'} · ${unbekannt ? 'Lieferant nicht zugeordnet' : `Lieferant ${g.lieferant}`}`, positionen: gesetzt });
+  else zurueckGruppen.delete(id);
   // Kundenmenge nur zeigen, wenn sie vom Wortlaut der Bestellmenge abweicht -
   // sonst stehen zwei Zeilen da, die dasselbe sagen (Inhaber-Feedback).
   // Vergleich ueber die Zahl selbst, nicht ueber Teilstrings: "1 Stk." steckt
@@ -111,7 +133,7 @@ function einkaufGruppeKarte(g, i, praefix, { eingebettet = false } = {}) {
     ${gruppe.positionen.map(zeile).join('')}
   </tbody>`).join('');
   return `<section class="${eingebettet ? 'lf-gruppe' : 'card'} group-card${luecken ? ' has-gap' : ''}">
-    <div class="card-head"><h3>${titel}${route} <span class="muted small">${plural(positionen.length, praefix === 'muster' ? 'Muster' : 'Artikel', praefix === 'muster' ? 'Muster' : 'Artikel')}</span></h3><div class="head-actions">${sammel}${kopierbutton(id)}</div></div>
+    <div class="card-head"><h3>${titel}${route} <span class="muted small">${plural(positionen.length, praefix === 'muster' ? 'Muster' : 'Artikel', praefix === 'muster' ? 'Muster' : 'Artikel')}</span></h3><div class="head-actions">${sammel}${zurueckBtn}${kopierbutton(id)}</div></div>
     <p class="small muted" style="margin:-6px 0 10px">Nach Kunden sortiert. Nach dem Bestellen auf „Als bestellt markieren" klicken.</p>
     ${unterzeile}
     <div class="table-scroll"><table class="tasks compact"><thead><tr><th>Artikel</th><th>Auftrag</th><th>Zu bestellen</th><th>Artikelnummer beim Lieferanten</th><th>Lieferant</th><th>Stand</th></tr></thead>
@@ -196,10 +218,10 @@ const AF_FILTER_LABEL = { offen: 'Noch zu bestellen', bestellt: 'Bestellt', unte
 
 /** Filter nach Auftragsfluss-Schritt. Ohne Auswahl: alles ausser "Erledigt". */
 function afFilterChips(allePositionen) {
-  const zaehler = { offen: 0, bestellt: 0, unterwegs: 0, erledigt: 0 };
-  for (const p of allePositionen) zaehler[afFilterGruppe(afEintragFuer(p)?.status)] += 1;
+  const zaehler = { offen: 0, bestellt: 0, unterwegs: 0, erledigt: 0, eigen: 0 };
+  for (const p of allePositionen) zaehler[positionsGruppe(p)] += 1;
   const af = state.route.params.get('af') || '';
-  const offenGesamt = zaehler.offen + zaehler.bestellt + zaehler.unterwegs;
+  const offenGesamt = zaehler.offen + zaehler.bestellt + zaehler.unterwegs + zaehler.eigen;
   return `<div class="chips" role="group" aria-label="Nach Auftragsfluss filtern">
     <button type="button" class="chip" data-param="af" data-value="" aria-pressed="${!af}">Alle offenen<span class="c">${offenGesamt}</span></button>
     ${Object.keys(AF_FILTER_LABEL).map(k => `<button type="button" class="chip" data-param="af" data-value="${k}" aria-pressed="${af === k}">${esc(AF_FILTER_LABEL[k])}<span class="c">${zaehler[k]}</span></button>`).join('')}
@@ -224,6 +246,7 @@ export function viewEinkaufBestellungen() {
       ${bandItem(aktiv.length, 'offene Kundenaufträge', 'plain')}
       ${bandItem(ware.filter(p => gruppe(p) === 'offen').length, 'Artikel noch zu bestellen', 'warn')}
       ${bandItem(muster.filter(p => gruppe(p) === 'offen').length, 'Muster noch zu bestellen', 'warn')}
+      ${muster.some(p => gruppe(p) === 'eigen') ? bandItem(muster.filter(p => gruppe(p) === 'eigen').length, 'Muster haben wir da', 'plain') : ''}
       ${bandItem(rot, rot === 1 ? 'Auftrag mit Problem' : 'Aufträge mit Problem', 'crit')}
     </div>
     ${klaeren.length ? `<section class="card problem-card"><div class="card-head"><h2>Zuerst klären</h2><span class="more muted">Rot = blockiert, Gelb = vor dem Bestellen prüfen</span></div><div class="rows">${klaeren.map(einkaufAuftragZeile).join('')}</div></section>` : ''}

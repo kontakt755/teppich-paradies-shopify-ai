@@ -424,3 +424,19 @@ test('lange Musterbestellung: Link gekuerzt, Text vollstaendig', () => {
   assert.match(mail.mailto, /^mailto:muster@lieferant-a\.example\?subject=Musterbestellung[^&]*$/);
   assert.match(mail.text, /30\. Art\.-Nr\. A-0815/);
 });
+
+// ------------------------------------------------- Muster "haben wir da" (musterherkunft.mjs)
+
+test('Muster aus eigenem Bestand: nicht in der Mail, nicht "zu bestellen", mit Grund unter ohneBestellung', async () => {
+  const { wendeAufModellAn } = await import('../lib/musterherkunft.mjs');
+  const m = modell();
+  // Bestellung #T2 (Muster 1): persoenlich vorbeibringen - Wahl fuer die ganze Bestellung.
+  wendeAufModellAn(m, [{ orderId: 'gid://shopify/Order/90002', lineItemId: null, herkunft: 'eigen_vorbei', am: '2026-01-15T10:00:00Z', von: 'Mitarbeiter 1' }]);
+  const mail = bestellmail({ modell: m, lieferant: 'A', art: 'muster', ziel: 'laden', stammdaten: STAMM, jetzt: JETZT }).mails[0];
+  assert.equal(mail.positionen.length, 1, 'nur das zweite Muster bleibt in der Mail');
+  assert.equal(mail.text.includes('Farb-Nr. 020'), false);
+  assert.deepEqual(mail.ohneBestellung.map(f => [f.orderName, f.gruende]), [['#T2', ['aus eigenem Bestand – wird persönlich vorbeigebracht']]]);
+  const a = lieferantenUebersicht(m, { stammdaten: STAMM, jetzt: JETZT }).lieferanten.find(l => l.id === 'A');
+  assert.deepEqual(a.muster, { zuBestellen: 1, bestellt: 0, unterwegs: 0 });
+  assert.equal(a.musterEigenerBestand, 1);
+});

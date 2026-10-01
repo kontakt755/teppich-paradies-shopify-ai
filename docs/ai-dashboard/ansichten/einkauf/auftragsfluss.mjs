@@ -11,13 +11,32 @@ import { $, esc, fmtDateTime, plural, toast } from '../../kern/helfer.mjs';
 import { fetchEinkauf } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
+import { kunden } from '../kunden/gemeinsam.mjs';
+import { musterEigen } from '../../lib/einkauf-lieferanten.mjs';
+
+export { musterEigen };
 
 /** Positionen (Ware und Muster) der Bestelluebersicht mit ihrem lokalen Auftragsfluss-Stand. */
 export function einkaufPositionenMitStand(b) {
   const ware = (b.gruppen || []).flatMap(g => g.positionen);
   const muster = (b.musterGruppen || []).flatMap(g => g.positionen);
-  const gruppe = p => afFilterGruppe(afEintragFuer(p)?.status);
-  return { ware, muster, gruppe };
+  return { ware, muster, gruppe: positionsGruppe };
+}
+
+// Woher kommt ein Muster? Spiegel von operations/lib/musterherkunft.mjs (dort die fuehrende Quelle).
+export const MUSTER_HERKUNFT_LABEL = {
+  lieferant: 'Beim Lieferanten bestellen',
+  eigen_versand: 'Aus eigenem Bestand/Katalog – verschicken',
+  eigen_vorbei: 'Aus eigenem Bestand/Katalog – persönlich vorbeibringen',
+};
+export const MUSTER_HERKUNFT_KURZ = { lieferant: 'beim Lieferanten', eigen_versand: 'haben wir da – verschicken', eigen_vorbei: 'haben wir da – vorbeibringen' };
+/**
+ * Filtergruppe einer Position wie afFilterGruppe(), dazu "eigen": ein noch offenes Muster aus
+ * dem eigenen Bestand - es ist nicht "noch zu bestellen", sondern vorbeizubringen/zu verschicken.
+ */
+export function positionsGruppe(p) {
+  const g = afFilterGruppe(afEintragFuer(p)?.status);
+  return g === 'offen' && musterEigen(p) ? 'eigen' : g;
 }
 
 /**
@@ -178,6 +197,129 @@ async function oeffneAuftragsstatusWieder(pos, notiz) {
   } catch (e) { toast(`Fehler: ${e.message}`, 'crit'); return false; }
 }
 
+/**
+ * Nach einer Aenderung (zurueck auf offen, Muster-Herkunft) alles nachladen, was den Stand
+ * zeigt - ohne dass die Seite auf "Lade ..." springt. `bestellungen`: auch die Bestelluebersicht
+ * (die Herkunft steht an den Positionen dort).
+ */
+export async function ladeStandNeu({ bestellungen = false } = {}) {
+  const auftraege = [fetchEinkauf('/api/einkauf/auftragsstatus').then(d => { if (d?.verfuegbar) einkauf.auftragsstatus = d; })];
+  if (bestellungen) auftraege.push(fetchEinkauf('/api/einkauf/bestellungen').then(d => { if (d?.verfuegbar) einkauf.bestellungen = d; }));
+  if (kunden.bestellungen) auftraege.push(fetchEinkauf('/api/kunden/bestellungen').then(d => { if (d?.verfuegbar) kunden.bestellungen = d; }));
+  if (kunden.detailKey && kunden.detail) {
+    const key = kunden.detailKey;
+    auftraege.push(fetchEinkauf(`/api/kunden/detail?${new URLSearchParams({ key })}`).then(d => { if (kunden.detailKey === key && d?.verfuegbar) kunden.detail = d; }));
+  }
+  kunden.faelle = null;
+  await Promise.all(auftraege);
+  render();
+}
+
+/**
+ * Setzt Positionen von jedem Schritt zurueck auf "noch zu bestellen" (Server protokolliert
+ * wer/wann/von welchem Status). Gibt die Zahl der zurueckgesetzten Positionen zurueck.
+ */
+export async function setzeZurueckAufOffen(positionen, notiz = null) {
+  if (istNurLesend()) { toast('Rolle "lesen" darf keine Aenderungen vornehmen.', 'crit'); return 0; }
+  try {
+    const r = await fetch('/api/einkauf/auftragsstatus', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ aktion: 'zurueckAufOffen', positionen: positionen.map(p => ({ orderId: p.orderId, lineItemId: p.lineItemId })), notiz: notiz || null }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { toast(`Fehler: ${j.error || r.status}`, 'crit'); return 0; }
+    if (!einkauf.auftragsstatus || !einkauf.auftragsstatus.positionen) einkauf.auftragsstatus = { verfuegbar: true, positionen: {} };
+    Object.assign(einkauf.auftragsstatus.positionen, j.eintraege || {});
+    return j.anzahl || 0;
+  } catch (e) { toast(`Fehler: ${e.message}`, 'crit'); return 0; }
+}
+
+// Sammelaktion "zurueck auf offen" je Gruppe/Karte: Positionen beim Zeichnen gemerkt (wie sammelGruppen).
+export const zurueckGruppen = new Map();
+
+/** Rueckfrage vor "Zurück auf offen": zeigt je Artikel, von welchem Schritt er zurueckfaellt. */
+export function openZurueckAufOffenDialog(positionen, titel) {
+  const betroffen = positionen.filter(p => p.lineItemId && afEintragFuer(p)?.status);
+  if (!betroffen.length) { toast('Diese Artikel sind schon offen.'); return; }
+  $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="zoTitel" data-dialog>
+    <h2 id="zoTitel">Zurück auf offen · ${esc(titel)}</h2>
+    <p class="small muted">${plural(betroffen.length, 'Artikel kommt', 'Artikel kommen')} zurück auf „Noch zu bestellen" – z. B. wenn versehentlich „bestellt" geklickt wurde. Der bisherige Stand bleibt mit Zeit und Person im Verlauf gespeichert; in Shopify ändert sich nichts.</p>
+    <ul class="small" style="margin:0;padding-left:18px;max-height:200px;overflow:auto">${betroffen.map(p => `<li>${esc(anzeigeWert(p.titel || ''))}${p.farbe ? ` · ${esc(p.farbe)}` : ''}${p.orderName ? ` · ${esc(p.orderName)}` : ''} <span class="muted">(war: ${esc(AF_STATUS_LABEL[afEintragFuer(p).status] || afEintragFuer(p).status)})</span></li>`).join('')}</ul>
+    <div class="field"><label for="zoNotiz">Notiz (optional)</label><input id="zoNotiz" name="notiz" maxlength="500" placeholder="z. B. nur zum Testen geklickt"></div>
+    <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">${plural(betroffen.length, 'Artikel', 'Artikel')} zurück auf offen</button></div>
+  </form></div>`;
+  const form = $('#dialogRoot form');
+  form.querySelector('input')?.focus();
+  form.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    form.querySelector('[type=submit]').disabled = true;
+    const ok = await setzeZurueckAufOffen(betroffen, (new FormData(form).get('notiz') || '').trim());
+    $('#dialogRoot').innerHTML = '';
+    toast(ok === betroffen.length ? `${plural(ok, 'Artikel', 'Artikel')} zurück auf offen` : `Nur ${ok} von ${betroffen.length} Artikeln zurück auf offen`, ok === betroffen.length ? '' : 'crit');
+    render();
+    ladeStandNeu();
+  });
+}
+
+/** Speichert, woher die Muster einer Bestellung (ohne lineItemId) bzw. einer Position kommen. */
+export async function setzeMusterHerkunft({ orderId, lineItemId = null, herkunft, notiz = null }) {
+  if (istNurLesend()) { toast('Rolle "lesen" darf keine Aenderungen vornehmen.', 'crit'); return false; }
+  try {
+    const r = await fetch('/api/einkauf/auftragsstatus', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ aktion: 'musterHerkunft', orderId, lineItemId, herkunft, notiz }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { toast(`Fehler: ${j.error || r.status}`, 'crit'); return false; }
+    toast(`Muster: ${MUSTER_HERKUNFT_LABEL[herkunft]}`);
+    await ladeStandNeu({ bestellungen: true });
+    return true;
+  } catch (e) { toast(`Fehler: ${e.message}`, 'crit'); return false; }
+}
+
+/** Kunde und Ort (Stadt der Lieferadresse) einer Bestellung - damit man "in der Naehe" erkennt. */
+export function kundeUndOrt(orderId) {
+  const a = alleAuftraege().find(x => x.id === orderId)
+    || kunden.detail?.kunde?.auftraege?.find(x => x.id === orderId)
+    || kunden.bestellungen?.zeilen?.find(z => z.orderId === orderId)?.auftrag;
+  const ok = v => (v && v !== '–' ? String(v).trim() : '');
+  return { name: ok(a?.details?.kunde?.name) || ok(a?.details?.lieferadresse?.name), ort: ok(a?.details?.lieferadresse?.ort), auftrag: a || null };
+}
+
+/**
+ * Dialog "Woher kommen die Muster?" fuer eine Musterbestellung (lineItemId leer) oder eine
+ * Musterposition. Zeigt Kunde und Ort, damit man "Kunde in der Naehe" sofort sieht.
+ */
+export function openMusterHerkunftDialog(orderId, lineItemId = null, { danach = null } = {}) {
+  const { name, ort, auftrag } = kundeUndOrt(orderId);
+  const pos = lineItemId ? (auftrag?.positionen || []).find(p => p.lineItemId === lineItemId) : null;
+  const muster = (auftrag?.positionen || []).filter(p => p.istMuster);
+  const aktuell = (pos || muster[0])?.musterHerkunft || 'lieferant';
+  const bereitsBestellt = (pos ? [pos] : muster).filter(p => afEintragFuer({ orderId, lineItemId: p.lineItemId })?.status === 'bestellt').length;
+  $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="mhTitel" data-dialog>
+    <h2 id="mhTitel">Woher kommen die Muster? · ${esc(auftrag?.name || '')}</h2>
+    <p class="small"><b>${esc(name || 'Kunde')}</b>${ort ? ` · ${esc(ort)}` : ''}${pos ? `<br><span class="muted">${esc(anzeigeWert(pos.titel))}${pos.farbe ? ` · ${esc(pos.farbe)}` : ''}</span>` : muster.length ? `<br><span class="muted">${plural(muster.length, 'Muster', 'Muster')} in dieser Bestellung</span>` : ''}</p>
+    <fieldset class="zl-wahl"><legend>Woher?</legend>
+      ${Object.entries(MUSTER_HERKUNFT_LABEL).map(([w, t]) => `<label><input type="radio" name="herkunft" value="${esc(w)}"${w === aktuell ? ' checked' : ''} required> ${esc(t)}${w === 'eigen_vorbei' ? ' <span class="muted">(Kunde in der Nähe)</span>' : ''}</label>`).join('')}
+    </fieldset>
+    <p class="small muted">„Haben wir da" nimmt die Muster aus der Bestellmail und aus „Muster noch zu bestellen". Gespeichert wird nur hier im Control Center, nicht in Shopify.</p>
+    ${bereitsBestellt ? `<p class="notice warn">${plural(bereitsBestellt, 'Muster steht', 'Muster stehen')} schon auf „Bestellt". Falls das ein Versehen war: in „Positionen bearbeiten" auf „Zurück auf offen…".</p>` : ''}
+    <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Übernehmen</button></div>
+  </form></div>`;
+  const form = $('#dialogRoot form');
+  form.querySelector('input:checked, input')?.focus();
+  form.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const herkunft = String(new FormData(form).get('herkunft') || '');
+    if (!herkunft) return;
+    form.querySelector('[type=submit]').disabled = true;
+    const ok = await setzeMusterHerkunft({ orderId, lineItemId, herkunft });
+    if (!ok) { form.querySelector('[type=submit]').disabled = false; return; }
+    $('#dialogRoot').innerHTML = '';
+    if (danach) danach();
+  });
+}
+
 /** Alle Auftraege der Bestelluebersicht, auch Testbestellungen (die "Ohne Einkauf
  * abschliessen" am haeufigsten trifft und die in keiner Lieferanten-Gruppe stehen). */
 export const alleAuftraege = () => [...(einkauf.bestellungen?.auftraege || []), ...(einkauf.bestellungen?.testauftraege || [])];
@@ -222,7 +364,7 @@ function openSammelBestelltDialog(id) {
   const g = sammelGruppen.get(id);
   if (!g) return;
   // Beim Oeffnen neu pruefen: zwischen Zeichnen und Klick kann jemand einzelne Artikel gesetzt haben.
-  const positionen = g.positionen.filter(p => !afEintragFuer(p)?.status);
+  const positionen = g.positionen.filter(p => !afEintragFuer(p)?.status && !musterEigen(p));
   if (!positionen.length) { toast('Alle Artikel dieser Gruppe sind bereits bestellt.'); return; }
   const luecken = positionen.filter(positionUnvollstaendig).length;
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="sbTitle" data-dialog>
@@ -330,6 +472,16 @@ export function einkaufKlickStatus(e) {
 
 /** Einkauf: wieder oeffnen, Sammelbestellung, Auftrag abschliessen. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function einkaufKlickDialoge(e) {
+  const zurueck = e.target.closest('[data-af-zurueck]');
+  if (zurueck) {
+    // Einzelne Position (data-af-item) oder gemerkte Sammelgruppe (data-af-zurueck-gruppe).
+    const ds = zurueck.dataset;
+    if (ds.afZurueckGruppe) { const g = zurueckGruppen.get(ds.afZurueckGruppe); if (g) openZurueckAufOffenDialog(g.positionen, g.titel); return true; }
+    openZurueckAufOffenDialog([{ orderId: ds.afZurueck, lineItemId: ds.afItem, orderName: ds.afName || '', titel: ds.afTitel || '', farbe: ds.afFarbe || '' }], ds.afName || 'Artikel');
+    return true;
+  }
+  const herkunft = e.target.closest('[data-muster-herkunft]');
+  if (herkunft) { e.preventDefault(); openMusterHerkunftDialog(herkunft.dataset.musterHerkunft, herkunft.dataset.afItem || null); return true; }
   const reopen = e.target.closest('[data-af-reopen]');
   if (reopen) { openWiederOeffnenDialog(reopen.dataset.afReopen, reopen.dataset.afItem || null); return true; }
   const sammelBtn = e.target.closest('[data-af-sammel]');

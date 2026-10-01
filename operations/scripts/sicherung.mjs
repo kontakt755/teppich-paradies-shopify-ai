@@ -39,6 +39,7 @@ export const STANDARD_AUFBEWAHRUNG_TAGE = 30;
 export const SICHERUNGSPFADE = Object.freeze([
   'auftragsstatus.json',
   'auftragsverlauf.json',
+  'musterherkunft.json',
   'lexikon',
   'bestelluebersicht',
   'kennzahlen',

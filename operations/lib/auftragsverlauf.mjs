@@ -39,6 +39,7 @@ import { positionKey, STATUS_ORDER } from './auftragsstatus.mjs';
 import { WARTE_NACHHAKEN_TAGE, WARTE_PROBLEM_TAGE, warnstufe } from './lieferanten.mjs';
 import { kundenSchluessel } from './kundensuche.mjs';
 import { ROUTE } from './route.mjs';
+import { musterOhneLieferant, HERKUNFT } from './musterherkunft.mjs';
 
 /** Nachfassen wird so viele Tage nach "Kunde hat Muster" faellig. */
 export const NACHFASSEN_NACH_TAGEN = 5;
@@ -63,6 +64,8 @@ export const SCHRITT_LABEL = Object.freeze({
     bestellt: 'Muster beim Lieferanten bestellt',
     geliefert: 'Muster bei uns angekommen',
     raus: 'Gelabelt und an Kunden verschickt',
+    raus_eigen: 'Aus eigenem Bestand an Kunden verschickt',
+    raus_vorbei: 'Persönlich übergeben',
     kunde_hat_muster: 'Kunde hat Muster',
     nachgefasst: 'Nachgefasst',
     ergebnis: 'Ergebnis',
@@ -220,7 +223,16 @@ function versandBeleg(auftrag) {
 }
 
 const DIREKT_ROUTEN = new Set([ROUTE.SUPPLIER_DIRECT, ROUTE.SUPPLIER_TO_SITE]);
-const MUSTER_OHNE_LIEFERANT = new Set([ROUTE.SAMPLE_STOCK, ROUTE.SAMPLE_CUT]);
+
+/**
+ * Muster aus dem eigenen Bestand (musterherkunft.mjs bzw. Route SAMPLE_STOCK/SAMPLE_CUT):
+ * 'vorbei' (persoenlich vorbeibringen), 'versand' (wir verschicken) oder null (beim Lieferanten).
+ * Gilt nur, wenn ALLE Muster des Auftrags ohne Lieferant auskommen.
+ */
+function eigenerBestand(positionen) {
+  if (!positionen.length || !positionen.every(p => musterOhneLieferant(p))) return null;
+  return positionen.every(p => p.musterHerkunft === HERKUNFT.VORBEI) ? 'vorbei' : 'versand';
+}
 
 /**
  * Zeitleiste eines Auftrags.
@@ -256,11 +268,15 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
 
   const schritte = [];
   let direkt = false;
+  let eigen = null;
   if (art === AUFTRAGSART.MUSTER) {
-    const brauchtLieferant = !positionen.every(p => MUSTER_OHNE_LIEFERANT.has(p.route));
+    eigen = eigenerBestand(positionen);
     schritte.push(start('angefragt'));
-    if (brauchtLieferant) schritte.push(ausPosition('bestellt'), ausPosition('geliefert'));
-    schritte.push(ausVersand());
+    // Aus eigenem Bestand: "beim Lieferanten bestellt" und "bei uns angekommen" entfallen;
+    // beim Vorbeibringen heisst der Schritt "persoenlich uebergeben" statt "verschickt".
+    if (!eigen) schritte.push(ausPosition('bestellt'), ausPosition('geliefert'));
+    const raus = ausVersand();
+    schritte.push(eigen === 'vorbei' ? { ...raus, label: label.raus_vorbei } : eigen === 'versand' ? { ...raus, label: label.raus_eigen } : raus);
 
     const hat = jeSchritt.kunde_hat_muster?.at(-1);
     schritte.push(hat
@@ -301,7 +317,7 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
     return { ...rest, zustand };
   });
 
-  const ergebnis = { auftragsart: art, verlauf, verlaufNotizen: notizen, abgeschlossen, direktversand: direkt };
+  const ergebnis = { auftragsart: art, verlauf, verlaufNotizen: notizen, abgeschlossen, direktversand: direkt, eigenerBestand: eigen };
   return { ...ergebnis, naechsterSchritt: naechsterSchritt(ergebnis, { auftrag, versand, nachverfolgbar: pos.gesamt > 0, jetzt }) };
 }
 
@@ -358,6 +374,14 @@ export function naechsterSchritt(stand, { auftrag = null, versand = null, nachve
       case 'geliefert':
         return beimLieferanten('Lieferant schickt die Muster an uns', 'geliefert', 'Muster sind angekommen');
       case 'raus':
+        if (stand.eigenerBestand) {
+          // Ein Schritt statt zwei: wer vorbeibringt oder aus dem Bestand verschickt, traegt
+          // danach direkt "Kunde hat Muster" ein (der Server setzt "raus" dabei mit).
+          const kunde = kundeUndOrt(auftrag);
+          return stand.eigenerBestand === 'vorbei'
+            ? schritt('wir', `Muster vorbeibringen bei ${kunde.name}`, `Aus eigenem Bestand/Katalog${kunde.ort ? ` · ${kunde.ort}` : ''} – nicht beim Lieferanten bestellen.`, 'kunde_hat_muster', 'Erledigt – Kunde hat Muster', 'faellig', tage, tage)
+            : schritt('wir', `Muster verschicken an ${kunde.name}`, `Aus eigenem Bestand/Katalog${kunde.ort ? ` · ${kunde.ort}` : ''} – nicht beim Lieferanten bestellen.`, 'kunde_hat_muster', 'Erledigt – Kunde hat Muster', 'faellig', tage, tage);
+        }
         return schritt('wir', `Muster labeln und an den Kunden schicken${teil}`, 'Neu labeln, eintüten, verschicken.', 'raus', 'Muster sind verschickt', 'faellig', tage, tage);
       case 'kunde_hat_muster':
         if (tage >= MUSTER_ANGEKOMMEN_ANNAHME_TAGE) {
@@ -395,6 +419,13 @@ export function naechsterSchritt(stand, { auftrag = null, versand = null, nachve
     default:
       return null;
   }
+}
+
+/** Name und Ort (Stadt der Lieferadresse) - damit man "Kunde in der Naehe" erkennt. */
+export function kundeUndOrt(auftrag) {
+  const d = auftrag?.details || {};
+  const ok = v => v && v !== '–' ? String(v).trim() : '';
+  return { name: ok(d.kunde?.name) || ok(d.lieferadresse?.name) || auftrag?.name || 'Kunde', ort: ok(d.lieferadresse?.ort) || null };
 }
 
 function schritt(wer, text, detail, aktion, knopf, stufe, faelligSeitTagen, wartetSeitTagen) {

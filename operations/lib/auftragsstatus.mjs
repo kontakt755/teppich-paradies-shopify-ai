@@ -178,3 +178,56 @@ export function oeffneWieder(file, { orderId, lineItemId, actor, notiz = null, j
   schreibeAlle(file, alle);
   return eintrag;
 }
+
+/**
+ * Setzt eine Position von jedem Schritt (bestellt/geliefert/raus/erledigt) zurueck auf
+ * "noch zu bestellen" - fuer Versehen wie "als bestellt markiert, aber nie bestellt".
+ * Nichts geht verloren: der bisherige Stand (Schritte mit Zeit/Person/Notiz,
+ * Lieferanten-Bestellnummer) wandert mit wer/wann/von-welchem-Status in `verlauf`.
+ * Die Schrittfelder verschwinden aus dem Datensatz, damit ein spaeterer neuer Durchlauf
+ * (Wartezeit, statusVorErledigt) nicht mit alten Zeitstempeln rechnet.
+ * Gibt null zurueck, wenn die Position schon offen ist (Sammelaktionen ueberspringen sie).
+ *
+ * @param {string} file
+ * @param {object} p
+ * @param {string} p.orderId
+ * @param {string} p.lineItemId
+ * @param {string} p.actor
+ * @param {string} [p.notiz]
+ * @param {Date}   [p.jetzt]
+ */
+export function setzeZurueckAufOffen(file, { orderId, lineItemId, actor, notiz = null, jetzt = new Date() } = {}) {
+  const key = positionKey(orderId, lineItemId);
+  if (!key) throw new AuftragsstatusFehler('orderId und lineItemId sind Pflicht');
+  if (!actor) throw new AuftragsstatusFehler('actor (gh-Login) ist Pflicht');
+  const alle = leseAlle(file);
+  const bisher = alle[key];
+  if (!bisher || !bisher.status) return null;
+  const zeit = jetzt.toISOString();
+  const vorher = {};
+  const rest = { ...bisher };
+  for (const s of STATUS_ORDER) {
+    for (const feld of [`${s}Am`, `${s}Von`, `${s}Notiz`]) {
+      if (rest[feld] !== undefined) { vorher[feld] = rest[feld]; delete rest[feld]; }
+    }
+  }
+  if (rest.lieferantBestellnummer) vorher.lieferantBestellnummer = rest.lieferantBestellnummer;
+  delete rest.lieferantBestellnummer;
+  const protokoll = { aktion: 'zurück auf offen', am: zeit, von: actor, vonStatus: bisher.status, vorher };
+  if (notiz) protokoll.notiz = clip(notiz, 2000);
+  const eintrag = {
+    ...rest,
+    orderId: String(orderId),
+    lineItemId: String(lineItemId),
+    status: null,
+    aktualisiertAm: zeit,
+    aktualisiertVon: actor,
+    zurueckGesetztAm: zeit,
+    zurueckGesetztVon: actor,
+    zurueckGesetztVonStatus: bisher.status,
+    verlauf: [...(Array.isArray(bisher.verlauf) ? bisher.verlauf : []), protokoll].slice(-20),
+  };
+  alle[key] = eintrag;
+  schreibeAlle(file, alle);
+  return eintrag;
+}

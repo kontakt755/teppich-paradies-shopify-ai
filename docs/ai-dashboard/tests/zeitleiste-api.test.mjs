@@ -157,3 +157,63 @@ test('Abwaertskompatibel: der bestehende Aufruf ohne aktion verhaelt sich wie bi
   // Und die Zeitleiste folgt dem alten Schreibweg.
   assert.equal(api.kundenBestellungen().zeilen.find(z => z.orderId === WARE).naechsterSchritt.aktion, 'geliefert');
 });
+
+// ------------------------------------------------- Zurueck auf offen / Muster "haben wir da"
+
+test('Zurück auf offen: einzeln, je Bestellung und als Sammelaktion; protokolliert; Fehlerfaelle', async () => {
+  const { api, schritt } = umgebung();
+  const ich = { name: 'Mitarbeiter 1', rolle: 'mitarbeiter' };
+  await schritt(MUSTER, 'bestellt');
+  await schritt(WARE, 'bestellt');
+  const L1 = 'gid://shopify/LineItem/1';
+  // Einzelne Position
+  const r1 = await api.einkaufAuftragsstatusSetzen({ aktion: 'zurueckAufOffen', orderId: MUSTER, lineItemId: L1, notiz: 'nie bestellt' }, ich);
+  assert.equal(r1.anzahl, 1);
+  const e = r1.eintraege[`${MUSTER}::${L1}`];
+  assert.deepEqual([e.status, e.zurueckGesetztVon, e.zurueckGesetztVonStatus, e.verlauf.at(-1).notiz], [null, 'Mitarbeiter 1', 'bestellt', 'nie bestellt']);
+  // Ganze Bestellung (nur orderId): die zweite Musterposition; die erste ist schon offen
+  const r2 = await api.einkaufAuftragsstatusSetzen({ aktion: 'zurueckAufOffen', orderId: MUSTER }, ich);
+  assert.equal(r2.anzahl, 1);
+  // Sammelaktion ueber Bestellungen hinweg (Lieferantenkarte)
+  const r3 = await api.einkaufAuftragsstatusSetzen({ aktion: 'zurueckAufOffen', positionen: [{ orderId: WARE, lineItemId: 'gid://shopify/LineItem/3' }, { orderId: MUSTER, lineItemId: L1 }] }, ich);
+  assert.equal(r3.anzahl, 1, 'schon offene werden uebersprungen');
+  assert.deepEqual(Object.values(api.einkaufAuftragsstatus().positionen).map(p => p.status), [null, null, null]);
+  // Zeitleiste steht wieder auf "bestellen"
+  assert.equal(api.kundenBestellungen().zeilen.find(z => z.orderId === MUSTER).naechsterSchritt.aktion, 'bestellt');
+  await assert.rejects(() => api.einkaufAuftragsstatusSetzen({ aktion: 'zurueckAufOffen' }, ich), e2 => e2 instanceof ApiError && e2.status === 400);
+});
+
+test('Muster "haben wir da": Wahl speichern (privat, nur anhaengen), raus aus "zu bestellen", To-do-Schritt "vorbeibringen" mit einem Klick erledigt', async () => {
+  const { dir, api, schritt, akte } = umgebung();
+  const ich = { name: 'Mitarbeiter 1', rolle: 'mitarbeiter' };
+  const r = await api.einkaufAuftragsstatusSetzen({ aktion: 'musterHerkunft', orderId: MUSTER, herkunft: 'eigen_vorbei' }, ich);
+  assert.deepEqual([r.ok, r.ereignis.herkunft, r.ereignis.von, r.ereignis.lineItemId], [true, 'eigen_vorbei', 'Mitarbeiter 1', null]);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'musterherkunft.json'), 'utf8')).ereignisse.length, 1);
+  assert.equal(fs.existsSync(path.join(dir, 'auftragsstatus.json')), false, 'die Wahl schreibt keinen Positionsstatus');
+  // Bestelluebersicht traegt die Wahl an den Mustern (auch in den Mustergruppen)
+  const b = api.einkaufBestellungen();
+  assert.deepEqual(b.musterGruppen.flatMap(g => g.positionen).map(p => p.musterHerkunft), ['eigen_vorbei', 'eigen_vorbei']);
+  assert.equal(b.auftraege.find(a => a.id === WARE).positionen[0].musterHerkunft, undefined);
+  // Lieferantenuebersicht: nicht mehr "zu bestellen"
+  const l = api.einkaufLieferanten().lieferanten;
+  assert.equal(l.reduce((s, x) => s + x.muster.zuBestellen, 0), 0);
+  assert.equal(l.reduce((s, x) => s + x.musterEigenerBestand, 0), 2);
+  // Zeitleiste: kein Lieferanten-Schritt, naechster Schritt "vorbeibringen"
+  const a = akte().auftraege.find(x => x.id === MUSTER);
+  assert.deepEqual(a.verlauf.map(s => s.schritt), ['angefragt', 'raus', 'kunde_hat_muster', 'nachgefasst', 'ergebnis']);
+  assert.deepEqual([a.naechsterSchritt.text, a.naechsterSchritt.knopf], ['Muster vorbeibringen bei Testkunde 1', 'Erledigt – Kunde hat Muster']);
+  // Ein Klick: Kunde hat Muster, Positionen gehen mit auf "raus" (persoenlich uebergeben)
+  const fertig = await schritt(MUSTER, 'kunde_hat_muster');
+  assert.equal(fertig.positionen, 2);
+  assert.deepEqual(fertig.verlauf.slice(0, 3).map(s => [s.schritt, s.zustand]), [['angefragt', 'erledigt'], ['raus', 'erledigt'], ['kunde_hat_muster', 'erledigt']]);
+  assert.equal(fertig.verlauf[1].label, 'Persönlich übergeben');
+  assert.equal(fertig.naechsterSchritt.aktion, 'nachgefasst');
+  // Einzelne Position zurueck auf "beim Lieferanten"
+  await api.einkaufAuftragsstatusSetzen({ aktion: 'musterHerkunft', orderId: MUSTER, lineItemId: 'gid://shopify/LineItem/2', herkunft: 'lieferant' }, ich);
+  assert.deepEqual(api.einkaufBestellungen().musterGruppen.flatMap(g => g.positionen).map(p => p.musterHerkunft), ['eigen_vorbei', 'lieferant']);
+  // Fehlerfaelle
+  const fehler = async (payload, status) => assert.rejects(() => api.einkaufAuftragsstatusSetzen({ aktion: 'musterHerkunft', ...payload }, ich), e => e instanceof ApiError && e.status === status);
+  await fehler({ orderId: MUSTER, herkunft: 'mond' }, 400);
+  await fehler({ orderId: WARE, herkunft: 'eigen_vorbei' }, 400);
+  await fehler({ orderId: 'gid://shopify/Order/999', herkunft: 'eigen_vorbei' }, 404);
+});

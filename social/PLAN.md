@@ -129,5 +129,5 @@ Control Center bleiben privat.
 ## 7. Nicht gebaut – bewusst
 
 - Kein automatisches Beantworten von Kommentaren und Nachrichten: das ist Kundenkontakt und bleibt beim Menschen. Die Auswertung zählt sie.
-- Keine KI-erzeugten Bilder. Alles, was erscheint, ist ein Foto des Betriebs oder des Herstellers.
+- Keine KI-erzeugten Bilder aus dem Nichts. Alles, was erscheint, ist ein Foto des Betriebs oder des Herstellers – eigene Fotos seit 01.10.2026 KI-aufgewertet, der Boden unverändert.
 - Keine Musik in Reels über die API (Lizenzfrage; Instagram bietet sie nur in der App).

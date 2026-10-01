@@ -36,6 +36,7 @@ Grundlage: `audit/tp-operations-v3/` (02 Datenmodell, 05 Entscheidungen,
 | `lib/lieferanten.mjs` | Lieferanten-Stammdaten (privat), Übersicht je Lieferant, `bestellmail` (Text + `mailto:`) |
 | `lib/status.mjs` | Enum `AUFTRAG_STATUS`, Uebergaenge, `ableiten(order)` |
 | `lib/auftragsverlauf.mjs` | Zeitleiste je Auftrag (Muster-/Warenstrecke), `naechsterSchritt`, Ereignisse je Auftrag (privat, nur anhängen) |
+| `lib/musterherkunft.mjs` | Woher kommt ein Muster: Lieferant oder eigener Bestand (verschicken/vorbeibringen); privat, nur anhängen |
 | `sync/orders.mjs` | `fetchOrdersSince`, `writeOrderState` (mit Gegenlesen) |
 
 ## Start
@@ -334,11 +335,46 @@ Für die Oberfläche:
   `betreff`/`text`/`mailto` `null`.
 - Muster: `lieferziel` ist `kunde` (Anschrift je Kundenbestellung im Text) oder
   `laden`; `ohneBestellung` listet Muster mit Route `SAMPLE_STOCK`/`SAMPLE_CUT`
-  (eigenes Musterlager/Zuschnitt – keine Lieferantenbestellung).
+  (eigenes Musterlager/Zuschnitt – keine Lieferantenbestellung) und Muster mit
+  der Wahl „haben wir da“ (siehe unten).
 - Nach dem Absenden setzt die Oberfläche den Status wie bisher über
   `POST /api/einkauf/auftragsstatus` (`status: "bestellt"`).
 - `400` bei unbekannter `art`/`ziel`/`gruppe`; ohne `orders.json`
   `{verfuegbar:false, hinweis, mails:[]}`.
+
+## Zurück auf offen und Muster „haben wir da“
+
+**Zurück auf offen.** `setzeZurueckAufOffen()` in `lib/auftragsstatus.mjs` setzt
+eine Position von jedem Schritt (`bestellt`/`geliefert`/`raus`/`erledigt`) zurück
+auf „noch zu bestellen“ (`status: null`). Der bisherige Stand (Schrittfelder,
+Lieferanten-Bestellnummer) wandert mit `{aktion: "zurück auf offen", am, von,
+vonStatus, vorher, notiz?}` in `verlauf` der Position; dazu `zurueckGesetztAm/Von/VonStatus`.
+Schon offene Positionen werden übersprungen (Rückgabe `null`).
+`POST /api/einkauf/auftragsstatus` mit `aktion: "zurueckAufOffen"` und
+`positionen: [{orderId, lineItemId}]` (Sammelaktion, auch über Bestellungen) oder
+`orderId` + `lineItemId`/`lineItemIds` – nur `orderId` = alle Positionen der
+Bestellung. Antwort `{ok, anzahl, eintraege}`. Rolle `lesen`: 403 (Schreibpfad).
+
+**Muster „haben wir da“.** Je Musterbestellung (`lineItemId` leer) oder
+Musterposition eine Herkunft: `lieferant` (Standard), `eigen_versand` (aus eigenem
+Bestand/Katalog – verschicken), `eigen_vorbei` (persönlich vorbeibringen, Kunde in
+der Nähe). Ablage `$TP_PRIVAT_DIR/musterherkunft.json`
+(`{version, ereignisse: [{orderId, lineItemId, herkunft, am, von, notiz?}]}`), nur
+anhängen, das spätere Ereignis gewinnt (eine Wahl für die ganze Bestellung
+überstimmt frühere Einzelwahlen). Teil von `npm run daten:sichern`; Shopify wird nie
+geschrieben. Schreiben: `POST /api/einkauf/auftragsstatus` mit
+`aktion: "musterHerkunft"`, `orderId`, `herkunft`, optional `lineItemId`, `notiz`.
+
+Wirkung (`musterOhneLieferant()`; gilt wie bisher auch für Route
+`SAMPLE_STOCK`/`SAMPLE_CUT`): Die Positionen tragen additiv `musterHerkunft`,
+`musterHerkunftAm/Von` und `musterRoute`. Sie stehen nicht in der Bestellmail (sondern
+mit Grund unter `ohneBestellung`), zählen nicht als „Muster noch zu bestellen“
+(`/api/einkauf/lieferanten`: additiv `musterEigenerBestand`), erzeugen kein To-do
+„Muster bei … bestellen“, sondern „Muster vorbeibringen bei <Kunde>“ bzw. „Muster
+verschicken an <Kunde>“ mit Ort aus der Lieferadresse. In der Zeitleiste entfallen
+„beim Lieferanten bestellt“ und „bei uns angekommen“; beim Vorbeibringen heißt
+`raus` „Persönlich übergeben“. Der nächste Schritt ist „Erledigt – Kunde hat Muster“
+(`kunde_hat_muster`); der Server setzt dabei die Positionen mit auf `raus`.
 
 ## Zeitleiste je Auftrag und nächster Schritt
 

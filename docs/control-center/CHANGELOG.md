@@ -435,3 +435,21 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Nächste Stufe:** Zeilen in „Wer wartet auf was" auf die Auftrags-Zeitleiste zeigen lassen, sobald
   sie gemergt ist; Zähler an „Heute" in der Navigation.
 
+
+## 2026-10-01 · Zurück auf offen, Muster „haben wir da“
+
+- **Geändert:** Positionen lassen sich von jedem Schritt zurück auf „Noch zu bestellen“ setzen
+  (`setzeZurueckAufOffen`, Protokoll im `verlauf` der Position): Knopf „Zurück auf offen…“ je Artikel und
+  „Alle zurück auf offen…“ je Tabelle und je Lieferantenkarte (in „Positionen bearbeiten“), im Bestelldetail
+  unter „Etwas anderes ist passiert …“, und „Rückgängig“ direkt nach „Als bestellt markieren“ im Bestellmail-
+  Dialog (der Dialog bleibt dafür offen). Neu `operations/lib/musterherkunft.mjs`: je Musterbestellung oder
+  -position „Beim Lieferanten bestellen“ / „Aus eigenem Bestand – verschicken“ / „– persönlich vorbeibringen“
+  (privat, nur anhängen). Solche Muster fehlen in der Bestellmail, in „Muster noch zu bestellen“ und im To-do
+  „bestellen“; stattdessen To-do „Muster vorbeibringen bei …“ / „Muster verschicken an …“ mit Ort und Knopf
+  „Erledigt – Kunde hat Muster“. Zeitleiste ohne Lieferanten-Schritte, „Persönlich übergeben“ statt
+  „verschickt“. Rolle „lesen“ sieht keinen der neuen Knöpfe. `dashboard:pruefen` kopiert die neue Datei.
+- **Getestet:** siehe PR (Testzahlen, Klickstrecke gegen die Kopie, Screenshots 1440/390 px).
+- **Risiken/Annahmen:** „Rückgängig“ im Bestellmail-Dialog fragt nicht nochmal nach (es nimmt nur den
+  gerade gesetzten Schritt zurück). Gemischte Musterbestellungen (teils Lieferant, teils eigen) laufen in der
+  Zeitleiste weiter über die Lieferantenstrecke; die eigenen Muster erscheinen dann als To-do.
+- **Nächste Stufe:** Kartenansicht/Entfernung für „Kunde in der Nähe“, falls die Stadt allein nicht reicht.

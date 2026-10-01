@@ -11,7 +11,7 @@ import {
   lieferantenKarten, karteImFilter, ueberfaelligText, hauptAktion, bestellwegText, feldKlartext,
   telLink, verlauf, lieferzeiten, SCHWELLEN_STANDARD, gmailLink } from '../../lib/einkauf-lieferanten.mjs';
 import { state } from '../../kern/zustand.mjs';
-import { $, esc, fmtDate, plural, NICHT_HINTERLEGT } from '../../kern/helfer.mjs';
+import { $, esc, fmtDate, plural, toast, NICHT_HINTERLEGT } from '../../kern/helfer.mjs';
 import { fetchEinkauf } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
@@ -19,6 +19,7 @@ import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import {
   einkauf, afEintragFuer, anzeigeWert, afWarteText, markiereAlsBestellt,
   ensureEinkaufBestellungen, ensureEinkaufAuftragsstatus, ensureEinkaufLieferanten,
+  setzeZurueckAufOffen, zurueckGruppen, openMusterHerkunftDialog, kundeUndOrt,
 } from './auftragsfluss.mjs';
 
 // Welche Karten ihre Positionen zeigen. Als Zustand im Modul (nicht <details>): jede
@@ -60,7 +61,8 @@ function zahlenChips(k) {
   const z = k.zahlen;
   const chip = (n, text, klasse = '') => n ? `<span class="lf-zahl ${klasse}">${n} ${esc(text)}</span>` : '';
   return chip(z.zuBestellen, 'zu bestellen', 'akzent') + chip(z.musterOffen, 'Muster offen', 'akzent')
-    + chip(z.bestellt, 'bestellt') + chip(z.unterwegs, 'unterwegs') + chip(z.musterLaufend, z.musterLaufend === 1 ? 'Muster läuft' : 'Muster laufen');
+    + chip(z.bestellt, 'bestellt') + chip(z.unterwegs, 'unterwegs') + chip(z.musterLaufend, z.musterLaufend === 1 ? 'Muster läuft' : 'Muster laufen')
+    + chip(k.musterEigen, 'Muster haben wir da');
 }
 
 function ueberfaelligHinweis(k, { mitLink = true } = {}) {
@@ -78,7 +80,9 @@ function warteChip(x) {
 function postenZeile(x, namen) {
   const p = x.pos;
   const menge = p.bestellmenge?.menge === 'UNGEKLAERT' ? 'Menge ungeklärt' : p.bestellmenge?.text;
-  const teile = [p.farbe, menge, namen.get(p.orderId), p.orderName].filter(v => v && v !== 'UNGEKLAERT');
+  // Bei Mustern auch der Ort: so sieht man, ob der Kunde in der Naehe wohnt (vorbeibringen).
+  const ort = p.istMuster ? kundeUndOrt(p.orderId).ort : '';
+  const teile = [p.farbe, menge, namen.get(p.orderId), ort, p.orderName].filter(v => v && v !== 'UNGEKLAERT');
   return `<li class="lf-posten"><div class="lf-posten-text"><div class="t">${esc(anzeigeWert(p.titel))}</div><div class="s">${esc(teile.join(' · '))}</div></div>${warteChip(x)}</li>`;
 }
 
@@ -120,9 +124,15 @@ function karteHtml(k, { gruppeKarte, namen, af, alleGruppen, alleMusterGruppen }
   const offen = aufgeklappt.has(k.id) || state.route.params.get('lf') === k.id || !k.zugeordnet || !!af;
   const zu = [...k.ware.zuBestellen, ...k.muster.zuBestellen];
   const laufend = nachWartezeit([...k.ware.bestellt, ...k.ware.unterwegs, ...k.muster.bestellt, ...k.muster.unterwegs]);
-  const anzahl = af === 'erledigt' ? k.ware.erledigt.length + k.muster.erledigt.length : zu.length + laufend.length;
+  const eigen = k.muster.eigen || [];
+  const anzahl = af === 'erledigt' ? k.ware.erledigt.length + k.muster.erledigt.length : zu.length + laufend.length + eigen.length;
   const knoepfe = bestellKnoepfe(k);
-  const vorschau = offen ? '' : postenListe('Zu bestellen', zu, namen, 4) + postenListe('Bestellt und unterwegs', laufend, namen, 3);
+  const vorschau = offen ? '' : postenListe('Zu bestellen', zu, namen, 4) + postenListe('Muster haben wir da – vorbeibringen oder verschicken', eigen, namen, 3) + postenListe('Bestellt und unterwegs', laufend, namen, 3);
+  // Sammelaktion fuer die ganze Karte: alles, was hier schon einen Schritt hat, zurueck auf offen.
+  const gesetzt = (af === 'erledigt' ? [...k.ware.erledigt, ...k.muster.erledigt] : laufend).map(x => x.pos).filter(p => p.lineItemId);
+  const zurueckId = `lf-${k.id}`;
+  const zurueck = offen && gesetzt.length && !istNurLesend() ? `<button type="button" class="btn btn-ghost" data-af-zurueck data-af-zurueck-gruppe="${esc(zurueckId)}">Alle zurück auf offen…</button>` : '';
+  if (zurueck) zurueckGruppen.set(zurueckId, { titel: k.name, positionen: gesetzt }); else zurueckGruppen.delete(zurueckId);
   // Die bisherigen Tabellen je Gruppe (Status setzen, Artikelnummer kopieren, Link zum
   // Lieferanten, Liste kopieren, Sammelaktion) - unveraendert, nur eingeklappt.
   const tabellen = !offen ? '' : k.wareGruppen.map(g => gruppeKarte(g, alleGruppen.indexOf(g), 'ware', { eingebettet: true })).join('')
@@ -133,7 +143,7 @@ function karteHtml(k, { gruppeKarte, namen, af, alleGruppen, alleMusterGruppen }
     ${ueberfaelligHinweis(k)}
     ${vorschau}
     ${offen ? `<div class="lf-tabellen">${tabellen || '<p class="lf-rest">Kein Artikel in diesem Schritt.</p>'}</div>` : ''}
-    <div class="lf-fuss">${knoepfe}<button type="button" class="btn btn-ghost lf-aufklappen" data-lf-auf="${esc(k.id)}" aria-expanded="${offen}">${offen ? 'Positionen einklappen' : `Positionen bearbeiten (${anzahl})`}</button></div>
+    <div class="lf-fuss">${knoepfe}${zurueck}<button type="button" class="btn btn-ghost lf-aufklappen" data-lf-auf="${esc(k.id)}" aria-expanded="${offen}">${offen ? 'Positionen einklappen' : `Positionen bearbeiten (${anzahl})`}</button></div>
   </article>`;
 }
 
@@ -160,7 +170,21 @@ export function lieferantenKartenHtml({ gruppeKarte }) {
 
 // ------------------------------------------------------------ Bestellmail-Dialog
 
-const dialog = { lieferant: null, art: 'ware', ziel: '', daten: null, markiert: new Set() };
+const dialog = { lieferant: null, art: 'ware', ziel: '', daten: null, markiert: new Set(), gesetzt: new Map() };
+
+/** Kunde · Ort einer Bestellung als kurzer Text (Ort = Stadt der Lieferadresse). */
+function kundeOrtText(orderId) {
+  const k = kundeUndOrt(orderId);
+  return [k.name, k.ort].filter(Boolean).join(' · ');
+}
+
+/** Muster der Mail je Zeile mit "Haben wir da …" - fuer Kunden in der Naehe oder vorraetige Kataloge. */
+function musterWahlListe(m) {
+  if (m.art !== 'muster' || istNurLesend() || !(m.positionen || []).length) return '';
+  const zeile = p => `<li class="lf-posten"><div class="lf-posten-text"><div class="t">${esc(anzeigeWert(p.titel || ''))}${p.farbe ? ` · ${esc(p.farbe)}` : ''}</div><div class="s">${esc([kundeOrtText(p.orderId), p.orderName].filter(Boolean).join(' · '))}</div></div>
+    <button type="button" class="btn btn-sm btn-ghost" data-lf-herkunft="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}">Haben wir da…</button></li>`;
+  return `<details class="lf-musterwahl"><summary class="small">Einzelne Muster selbst vorrätig? (${m.positionen.length})</summary><ul class="lf-liste">${m.positionen.map(zeile).join('')}</ul></details>`;
+}
 
 const LIEFERZIEL_TEXT = { laden: 'Lieferung in den Laden', kunde: 'Lieferung direkt an den Kunden', baustelle: 'Lieferung direkt an die Baustelle' };
 
@@ -169,7 +193,7 @@ function mailAbschnitt(m, i, mehrere) {
   const kopf = mehrere ? `<h3 class="lf-mail-titel">${esc(m.art === 'muster' ? 'Muster' : 'Ware')}${LIEFERZIEL_TEXT[m.lieferziel] ? ` · ${esc(LIEFERZIEL_TEXT[m.lieferziel])}` : ''}</h3>` : '';
   const fehlt = (m.fehlt || []).length ? `<div class="notice warn lf-fehltliste"><strong>${m.text ? 'Nicht in der Mail' : 'Kann so nicht bestellt werden'} (${m.fehlt.length}):</strong>
       <ul>${m.fehlt.map(f => `<li>${esc([f.orderName, [f.titel, f.farbe].filter(Boolean).join(', ')].filter(Boolean).join(' · '))} – weil: ${esc((f.gruende || []).join('; '))}</li>`).join('')}</ul></div>` : '';
-  const ohne = (m.ohneBestellung || []).length ? `<p class="small muted">Nicht beim Lieferanten zu bestellen: ${m.ohneBestellung.map(f => `${esc(f.titel || '')} (${esc((f.gruende || []).join(', '))})`).join(' · ')}</p>` : '';
+  const ohne = (m.ohneBestellung || []).length ? `<div class="small muted lf-ohne"><p style="margin:0 0 4px">Nicht beim Lieferanten zu bestellen (${m.ohneBestellung.length}):</p><ul class="lf-liste">${m.ohneBestellung.map(f => `<li class="lf-posten"><div class="lf-posten-text"><div class="t">${esc(anzeigeWert(f.titel || ''))}</div><div class="s">${esc([kundeOrtText(f.orderId), f.orderName, ...(f.gruende || [])].filter(Boolean).join(' · '))}</div></div>${istNurLesend() ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-lf-herkunft="${esc(f.orderId)}" data-af-item="${esc(f.lineItemId)}">Ändern…</button>`}</li>`).join('')}</ul></div>` : '';
   const zielWahl = m.art === 'muster' ? `<div class="lf-zielwahl" role="group" aria-label="Wohin gehen die Muster?"><span class="small muted">Muster gehen an:</span>
       ${[['kunde', 'Kunden'], ['laden', 'Laden']].map(([w, l]) => `<button type="button" class="chip" data-lf-ziel="${w}" aria-pressed="${m.lieferziel === w}">${l}</button>`).join('')}</div>` : '';
   if (!m.text) {
@@ -196,7 +220,7 @@ function mailAbschnitt(m, i, mehrere) {
   const gekuerzt = m.mailtoGekuerzt ? '<p class="notice warn">Der Text ist zu lang für den Link: das Mailprogramm öffnet nur mit Empfänger und Betreff. Bitte „Text kopieren" und in die Mail einfügen.</p>' : '';
   const hinweise = (m.hinweise || []).length ? `<ul class="lf-hinweise small muted">${m.hinweise.map(h => `<li>${esc(h)}</li>`).join('')}</ul>` : '';
   const frage = lesend ? '' : fertig
-    ? `<p class="lf-erledigt">${plural(n, wort, wort)} als bestellt markiert.</p>`
+    ? `<p class="lf-erledigt">${plural(dialog.gesetzt.get(i)?.length ?? n, wort, wort)} als bestellt markiert. <button type="button" class="btn btn-sm btn-ghost" data-lf-rueckgaengig="${i}" title="Versehen? Die Artikel kommen zurück auf „Noch zu bestellen"">Rückgängig</button></p>`
     : `<div class="lf-frage" data-lf-frage="${i}" hidden>
         <strong>Als bestellt markieren?</strong>
         <span class="small muted">Nur, wenn die Bestellung wirklich raus ist.</span>
@@ -206,7 +230,7 @@ function mailAbschnitt(m, i, mehrere) {
   return `<section class="lf-mail">${kopf}${zielWahl}
     <dl class="lf-mailkopf"><dt>An</dt><dd>${an}</dd><dt>Betreff</dt><dd>${esc(m.betreff)}</dd></dl>
     <pre class="lf-mailtext" tabindex="0">${esc(m.text)}</pre>
-    ${gekuerzt}${fehlt}${ohne}${hinweise}
+    ${gekuerzt}${fehlt}${ohne}${hinweise}${fertig ? '' : musterWahlListe(m)}
     ${fertig ? '' : `<div class="lf-mail-knoepfe">${oeffnen.join('')}<button type="button" class="${oeffnen.length ? 'btn' : 'btn btn-primary'}" data-kopiertext="${esc(m.text)}" data-lf-geoeffnet="${i}">Text kopieren</button></div>`}
     ${frage}
   </section>`;
@@ -241,7 +265,7 @@ async function ladeDialog() {
 }
 
 export function openBestellmailDialog(lieferant, art = 'ware') {
-  Object.assign(dialog, { lieferant, art: art === 'muster' ? 'muster' : 'ware', ziel: '', daten: null, markiert: new Set() });
+  Object.assign(dialog, { lieferant, art: art === 'muster' ? 'muster' : 'ware', ziel: '', daten: null, markiert: new Set(), gesetzt: new Map() });
   zeichneDialog();
   ladeDialog();
 }
@@ -252,11 +276,23 @@ async function markiereMail(i, knopf) {
   knopf.disabled = true;
   const nr = ($(`#lfNr${i}`)?.value || '').trim() || null;
   const ok = await markiereAlsBestellt(m.positionen, nr);
-  if (ok === m.positionen.length) dialog.markiert.add(i);
-  // Karten und Zahlen dahinter nachziehen; der Dialog bleibt offen, solange weitere Mails warten.
+  if (ok) { dialog.markiert.add(i); dialog.gesetzt.set(i, m.positionen.filter(p => afEintragFuer(p)?.status === 'bestellt')); }
+  // Karten und Zahlen dahinter nachziehen. Der Dialog bleibt offen - mit "Rückgängig", falls der
+  // Klick ein Versehen war (z. B. beim Ausprobieren); geschlossen wird er von Hand.
   render();
-  const offen = dialog.daten.mails.some((x, j) => x.text && !dialog.markiert.has(j));
-  if (offen || ok !== m.positionen.length) zeichneDialog(); else $('#dialogRoot').innerHTML = '';
+  zeichneDialog();
+}
+
+/** "Rückgängig" direkt nach "Als bestellt markieren": dieselben Artikel zurück auf offen. */
+async function macheMarkierenRueckgaengig(i, knopf) {
+  const positionen = dialog.gesetzt.get(i) || [];
+  if (!positionen.length) return;
+  knopf.disabled = true;
+  const ok = await setzeZurueckAufOffen(positionen, 'Rückgängig direkt nach „Als bestellt markieren"');
+  toast(ok === positionen.length ? `${plural(ok, 'Artikel', 'Artikel')} zurück auf offen` : `Nur ${ok} von ${positionen.length} Artikeln zurück auf offen`, ok === positionen.length ? '' : 'crit');
+  if (ok) { dialog.markiert.delete(i); dialog.gesetzt.delete(i); }
+  render();
+  zeichneDialog();
 }
 
 /** Klicks der Lieferanten-Karten und des Bestellmail-Dialogs. true = Ereignis erledigt. */
@@ -288,6 +324,18 @@ export function einkaufKlickLieferanten(e) {
   }
   const ziel = e.target.closest('[data-lf-ziel]');
   if (ziel) { dialog.ziel = ziel.dataset.lfZiel; dialog.markiert = new Set(); ladeDialog(); return true; }
+  const rueck = e.target.closest('[data-lf-rueckgaengig]');
+  if (rueck) { macheMarkierenRueckgaengig(Number(rueck.dataset.lfRueckgaengig), rueck); return true; }
+  const herkunft = e.target.closest('[data-lf-herkunft]');
+  if (herkunft) {
+    // Die Wahl ersetzt den Mail-Dialog kurz; danach geht die Mail neu geladen wieder auf -
+    // ohne die gerade als vorraetig markierten Muster.
+    const zurueckZu = { lieferant: dialog.lieferant, art: dialog.art, ziel: dialog.ziel };
+    openMusterHerkunftDialog(herkunft.dataset.lfHerkunft, herkunft.dataset.afItem || null, {
+      danach: () => { Object.assign(dialog, { ...zurueckZu, daten: null, markiert: new Set(), gesetzt: new Map() }); zeichneDialog(); ladeDialog(); },
+    });
+    return true;
+  }
   const mark = e.target.closest('[data-lf-markieren]');
   if (mark) { markiereMail(Number(mark.dataset.lfMarkieren), mark); return true; }
   const nicht = e.target.closest('[data-lf-nicht]');
