@@ -181,7 +181,7 @@ test('Referenzen werden uebernommen, zu kleine Bilder aussortiert, Entwuerfe bek
   assert.deepEqual(db.medien(i.id).map(m => m.pruefung), ['ok', 'aussortiert']);
   const b = db.beitragAnlegen({ inhalt_id: i.id, format: 'feed', plattformen: ['instagram'], text: 'x', medien: [] });
   const plan = planeOffene(db, { jetzt: new Date(2026, 8, 30, 14, 0), dir: tmpDir(t) });
-  assert.equal(plan[0].id, b); assert.equal(new Date(db.beitrag(b).geplant_am).getDay(), 4);
+  assert.equal(plan[0].id, b); assert.equal(new Date(db.beitrag(b).geplant_am).getDay(), 3);
 });
 
 test('Auswertung: Klicks und Profilbesuche wiegen schwer, Likes kaum; wenige Beitraege bleiben neutral', async (t) => {

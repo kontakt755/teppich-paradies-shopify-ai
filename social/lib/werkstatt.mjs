@@ -143,7 +143,9 @@ function loeseAuf(wert, medienNachId, inhalt, quellen, dir) {
     return {
       quelle: m.pfad ? medienPfad(m.pfad, dir) : m.url,
       // Korrektur nur fuer eigene Fotos und nur die Helligkeit - Herstellerbilder bleiben unberuehrt.
-      filter: m.pfad && inhalt.quelle === 'baustelle' ? dezenterFilter(m.helligkeit) : 'none',
+      // Eigene Handyfotos: Helligkeit angleichen, eine Spur mehr Kontrast. Mit KI bearbeitete
+      // Bilder (bearbeitet/...) sind schon fertig ausgeleuchtet und bleiben unberuehrt.
+      filter: m.pfad && inhalt.quelle === 'baustelle' && !m.pfad.startsWith('bearbeitet/') ? `${dezenterFilter(m.helligkeit)} contrast(1.04)`.replace(/^none /, '') : 'none',
       ...rest,
     };
   }
