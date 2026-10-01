@@ -1,15 +1,15 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-01T08:32:37Z",
-    "verifiedBy": "Shopify CLI role live nach workflow:live (main 97046828)"
-  },
-  "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-01T08:32:37Z",
+    "verifiedAt": "2026-10-01T08:43:13Z",
+    "verifiedBy": "Shopify CLI role live nach workflow:live (main 6101cc5d)"
+  },
+  "preview": {
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-10-01T08:43:13Z",
     "verifiedBy": "Shopify CLI role unpublished nach Rollentausch; naechstes Preview-Ziel"
   },
   "fallback": {
@@ -314,6 +314,12 @@
       "name": "preview-main-2026-09-15",
       "retiredNoticedAt": "2026-10-01",
       "note": "Per workflow:live abgeloest durch 204436144462 (main 97046828: kompaktere mobile Filterliste). Rollentausch per Shopify CLI gegengeprueft. Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-10-01",
+      "note": "Per workflow:live abgeloest durch 204438208846 (main 6101cc5d: fachlich geordnete Teppichbodenfilter). Rollentausch per Shopify CLI und oeffentlichem Shop gegengeprueft. Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
