@@ -32,11 +32,13 @@ export function viewHilfe() {
 
     ${hilfeKarte('Beim Lieferanten bestellen', `
       <ol style="margin:0;padding-left:20px;line-height:1.9">
-        <li>Oben auf <b>Einkauf</b>: dort stehen die Aufträge und was je Auftrag zu bestellen ist.</li>
-        <li>Artikelnummer anklicken – sie wird kopiert.</li>
-        <li><b>Beim Lieferanten öffnen</b> führt direkt zum Artikel; steht dort <b>suchen</b>, ist kein Direktlink hinterlegt und die Suche beim Lieferanten wird vorbereitet.</li>
-        <li>Nach dem Bestellen den Status setzen, damit der Nächste sieht, was schon läuft.</li>
-      </ol>`)}
+        <li>Oben auf <b>Einkauf</b>: je Lieferant eine Karte mit dem, was zu bestellen, bestellt und unterwegs ist.</li>
+        <li>Der farbige Knopf ist der Bestellweg dieses Lieferanten: <b>Bestellmail öffnen</b>, <b>Im Portal bestellen</b> oder <b>Anrufen</b>. Muster haben einen eigenen Knopf.</li>
+        <li>Die Bestellung steht fertig da. <b>Im Mailprogramm öffnen</b> – abschicken tust du selbst, hier wird nie etwas gesendet. Was nicht in der Mail steht, ist mit Grund aufgelistet.</li>
+        <li>Danach fragt das Dashboard <b>Als bestellt markieren?</b> – ein Klick setzt alle Artikel der Mail auf „Bestellt".</li>
+        <li><b>Positionen bearbeiten</b> klappt die einzelnen Artikel auf: Artikelnummer kopieren, beim Lieferanten öffnen, Status je Artikel setzen.</li>
+      </ol>
+      <p class="small muted" style="margin-top:8px">Gelb heißt: seit 7 Tagen bestellt, bitte nachhaken. Rot: seit 14 Tagen. Ein Klick auf den Namen zeigt Kontakt, Lieferzeit und Verlauf des Lieferanten.</p>`)}
 
     ${hilfeKarte('Was die Kennzeichen bedeuten', `
       <ul style="margin:0;padding-left:20px;line-height:1.9">

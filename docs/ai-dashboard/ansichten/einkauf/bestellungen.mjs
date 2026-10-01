@@ -1,6 +1,7 @@
 /**
- * Einkauf, Reiter "Bestellungen": Karten je Lieferweg und Kunde, Auftragszeilen,
- * Filter nach Stand im Auftragsfluss, abgeschlossene Auftraege.
+ * Einkauf, Reiter "Bestellungen": eine Karte je Lieferant (ansichten/einkauf/lieferanten.mjs),
+ * darin aufklappbar die Tabellen je Lieferweg und Kunde; dazu Auftragszeilen, Filter nach
+ * Stand im Auftragsfluss, abgeschlossene Auftraege.
  */
 import { gruppierePositionenNachKunde } from '../../lib/einkauf-kundengruppen.mjs';
 import { state } from '../../kern/zustand.mjs';
@@ -12,6 +13,7 @@ import {
   ensureEinkaufBestellungen, ensureEinkaufAuftragsstatus, alleAuftraege, erledigtePositionen,
   sammelGruppen, anzeigeWert, afEintragFuer, hatLieferantLink, positionUnvollstaendig,
 } from './auftragsfluss.mjs';
+import { lieferantenKartenHtml } from './lieferanten.mjs';
 
 function kopierbutton(id, label = 'Liste kopieren') {
   return `<button type="button" class="btn btn-sm" data-kopieren="${esc(id)}">${esc(label)}</button>`;
@@ -57,7 +59,11 @@ function afStatusZelle(p) {
   return `${stand}${warte}${grund}${nr}${btn ? `<div style="margin-top:6px">${btn}</div>` : ''}`;
 }
 
-function einkaufGruppeKarte(g, i, praefix) {
+/**
+ * Tabelle einer Gruppe (Lieferant + Lieferweg). `eingebettet`: steht in der Karte des
+ * Lieferanten - dann nennt die Ueberschrift nur noch Ware/Muster und den Lieferweg.
+ */
+function einkaufGruppeKarte(g, i, praefix, { eingebettet = false } = {}) {
   const id = `ek-${praefix}-${i}`;
   const af = state.route.params.get('af') || '';
   // Ohne Filter zeigt die Liste alles, was noch Arbeit macht - "Erledigt" nur auf Wunsch.
@@ -67,7 +73,7 @@ function einkaufGruppeKarte(g, i, praefix) {
   const sortiertePositionen = kundengruppen.flatMap(gruppe => gruppe.positionen);
   const unbekannt = g.lieferant === 'UNGEKLAERT';
   const luecken = positionen.filter(positionUnvollstaendig).length;
-  const titel = unbekannt ? 'Lieferant nicht zugeordnet' : `Lieferant ${esc(g.lieferant)}`;
+  const titel = eingebettet ? (praefix === 'muster' ? 'Muster' : 'Ware') : unbekannt ? 'Lieferant nicht zugeordnet' : `Lieferant ${esc(g.lieferant)}`;
   const route = g.route && g.route !== 'UNGEKLAERT' && g.route !== 'MUSTER'
     ? ` <span class="badge plain" title="${esc(g.route)}">${esc(LIEFERWEG_LABEL[g.route] || g.route)}</span>` : '';
   const unterzeile = luecken
@@ -104,7 +110,7 @@ function einkaufGruppeKarte(g, i, praefix) {
     <tr class="einkauf-kundenkopf"><th colspan="6" scope="rowgroup"><span class="einkauf-kundenname">${esc(gruppe.name)}${gruppe.ort ? ` <span class="muted small">· ${esc(gruppe.ort)}</span>` : ''}</span><span class="small muted">${plural(gruppe.auftragsAnzahl, 'Auftrag', 'Aufträge')} · ${plural(gruppe.positionen.length, praefix === 'muster' ? 'Muster' : 'Artikel', praefix === 'muster' ? 'Muster' : 'Artikel')}</span></th></tr>
     ${gruppe.positionen.map(zeile).join('')}
   </tbody>`).join('');
-  return `<section class="card group-card${luecken ? ' has-gap' : ''}">
+  return `<section class="${eingebettet ? 'lf-gruppe' : 'card'} group-card${luecken ? ' has-gap' : ''}">
     <div class="card-head"><h3>${titel}${route} <span class="muted small">${plural(positionen.length, praefix === 'muster' ? 'Muster' : 'Artikel', praefix === 'muster' ? 'Muster' : 'Artikel')}</span></h3><div class="head-actions">${sammel}${kopierbutton(id)}</div></div>
     <p class="small muted" style="margin:-6px 0 10px">Nach Kunden sortiert. Nach dem Bestellen auf „Als bestellt markieren" klicken.</p>
     ${unterzeile}
@@ -211,10 +217,7 @@ export function viewEinkaufBestellungen() {
   const aktiv = aktiveAuftraege(d);
   const klaeren = aktiv.filter(a => a.ampel === 'rot' || a.ampel === 'gelb').sort((a, b) => (a.ampel === 'rot' ? 0 : 1) - (b.ampel === 'rot' ? 0 : 1));
   const rot = klaeren.filter(a => a.ampel === 'rot').length;
-  const wareKarten = (d.gruppen || []).map((g, i) => einkaufGruppeKarte(g, i, 'ware')).join('');
-  const musterKarten = (d.musterGruppen || []).map((g, i) => einkaufGruppeKarte(g, i, 'muster')).join('');
   const af = state.route.params.get('af') || '';
-  const leer = af ? 'Kein Artikel in diesem Schritt.' : 'Alles bestellt.';
   const abgeschlossen = af === 'erledigt' ? abgeschlosseneAuftraegeKarte() : '';
   return `
     <div class="band">
@@ -224,12 +227,9 @@ export function viewEinkaufBestellungen() {
       ${bandItem(rot, rot === 1 ? 'Auftrag mit Problem' : 'Aufträge mit Problem', 'crit')}
     </div>
     ${klaeren.length ? `<section class="card problem-card"><div class="card-head"><h2>Zuerst klären</h2><span class="more muted">Rot = blockiert, Gelb = vor dem Bestellen prüfen</span></div><div class="rows">${klaeren.map(einkaufAuftragZeile).join('')}</div></section>` : ''}
-    <div class="section-bar"><h2 class="section-title" style="margin:0">Bestellen</h2>${afFilterChips([...ware, ...muster])}</div>
+    <div class="section-bar"><h2 class="section-title" style="margin:0">Bestellen je Lieferant</h2>${afFilterChips([...ware, ...muster])}</div>
     ${abgeschlossen}
-    <h3 class="sub-title">Ware <span class="muted small">je Lieferant</span></h3>
-    ${wareKarten || emptyState(leer, af ? '' : 'Keine offenen Warenartikel.')}
-    <h3 class="sub-title">Muster</h3>
-    ${musterKarten || emptyState(af ? leer : 'Keine offenen Muster.', '')}
+    ${lieferantenKartenHtml({ gruppeKarte: einkaufGruppeKarte })}
     <details class="card section plain-details"><summary><h2>Alle offenen Aufträge</h2><span class="preview">${aktiv.length}</span></summary>
       <div class="rows" style="margin-top:10px">${aktiv.map(einkaufAuftragZeile).join('') || emptyState('Keine offenen Aufträge.', '')}</div>
     </details>
@@ -238,7 +238,7 @@ export function viewEinkaufBestellungen() {
       <p class="small muted" style="margin:6px 0">Tag „TESTBESTELLUNG" oder Shopify-Feld test=true. Fließen nicht in Auftragsampel, Einkauf oder Shop-Zahlen ein.</p>
       <div class="rows">${d.testauftraege.map(einkaufAuftragZeile).join('')}</div>
     </details>` : ''}
-    <p class="small muted" style="margin-top:12px">Stand der Bestellungen: ${esc(fmtDateTime(d.exportiertAm || d.erstellt))} · Hier wird nie etwas automatisch bestellt oder versendet.</p>`;
+    <p class="small muted" style="margin-top:12px">Stand der Bestellungen: ${esc(fmtDateTime(d.exportiertAm || d.erstellt))} · Wartezeit: gelb ab 7 Tagen (nachhaken), rot ab 14. Hier wird nie etwas automatisch bestellt oder versendet.</p>`;
 }
 
 /**

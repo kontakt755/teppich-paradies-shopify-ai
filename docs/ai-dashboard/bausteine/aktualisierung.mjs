@@ -138,7 +138,7 @@ export async function aktualisierenNow() {
 function verwirfDatenspeicher() {
   Object.assign(einkauf, {
     bestellungen: null, produktstatus: null, produktstatusKey: null,
-    auftragsstatus: null, kennzahlen: null,
+    auftragsstatus: null, kennzahlen: null, lieferanten: null,
   });
   Object.assign(kunden, {
     suche: null, sucheKey: null, detail: null, detailKey: null,
