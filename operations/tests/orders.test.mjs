@@ -231,3 +231,20 @@ test('Varianten-Metafelder aus custom landen in der Liste (Rollenbreite, Farbnum
   const keys = li.variant.metafields.map(m => `${m.namespace}.${m.key}`);
   assert.deepEqual(keys, ['einkauf.bestelleinheit', 'lieferant.bevorzugt', 'custom.rollenbreite', 'custom.farbcode']);
 });
+
+test('zu teure Abfrage: Seitengroesse wird halbiert, bis Shopify sie annimmt', async () => {
+  const aufrufe = [];
+  const fetch = async (url, init) => {
+    const v = JSON.parse(init.body).variables;
+    aufrufe.push(v.first);
+    if (v.first > 6) {
+      return { ok: true, status: 200, text: async () => '', json: async () => ({ errors: [{ message: 'Query cost is 2137, which exceeds the single query max cost limit (1000).' }] }) };
+    }
+    return ok({ orders: { pageInfo: { hasNextPage: false, endCursor: null }, nodes: [bestellung(1)] } });
+  };
+  const proxy = new GraphQLProxy({ token: 'shpat_test', fetch });
+  const r = await fetchOrdersSince(proxy, '2026-09-21T00:00:00Z');
+  assert.deepEqual(aufrufe, [50, 25, 12, 6]);
+  assert.equal(r.orders.length, 1);
+  assert.equal(r.seiten, 1);
+});
