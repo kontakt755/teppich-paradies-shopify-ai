@@ -14,6 +14,7 @@ import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { einkauf, AF_STATUS_LABEL, setzeAuftragsstatus } from '../einkauf/auftragsfluss.mjs';
 import { kunden, telLink, kundenAuftragKarte, ZAHLUNG_TEXT, VERSAND_TEXT, statusText } from './gemeinsam.mjs';
+import { zeitleisteBlock, auftragAusZeile, zeitleisteKlick } from './zeitleiste.mjs';
 
 /** Setzt den Auftragsfluss-Status fuer ALLE Positionen einer Bestellung auf einmal (Bereich Kunden/Bestellungen). */
 async function setzeAuftragsstatusFuerBestellung(orderId, status) {
@@ -171,7 +172,7 @@ function bestellzeileHtml(z) {
       <td data-l="Fortschritt"><span class="bq-fortschritt ${pk}">${esc(z.fortschritt?.text || '–')}</span></td>
       <td data-l="Was fehlt">${z.wasFehlt?.length ? `<span class="bq-fehlt">${z.wasFehlt.map(esc).join(' · ')}</span>` : '<span class="small muted">nichts</span>'}</td>
     </tr>
-    ${kunden.erweitert.has(z.orderId) ? `<tr class="bq-detail"><td colspan="9">${weitereAngaben(z, tagListe)}${kundenAuftragKarte(z.auftrag)}${bestellzeileAktionen(z)}</td></tr>` : ''}`;
+    ${kunden.erweitert.has(z.orderId) ? `<tr class="bq-detail"><td colspan="9">${zeitleisteBlock(auftragAusZeile(z), { kontakt: true })}${weitereAngaben(z, tagListe)}${kundenAuftragKarte(z.auftrag)}${bestellzeileAktionen(z)}</td></tr>` : ''}`;
 }
 
 function bestellzeileKarte(z, gruppiert = false) {
@@ -185,7 +186,7 @@ function bestellzeileKarte(z, gruppiert = false) {
     </div>
     <div class="r"><span class="small muted">${kunden.erweitert.has(z.orderId) ? 'zuklappen ▲' : 'Details ▼'}</span></div>
   </div>
-  ${kunden.erweitert.has(z.orderId) ? `<div class="bq-detail-mobil">${kundenAuftragKarte(z.auftrag)}${bestellzeileAktionen(z)}</div>` : ''}`;
+  ${kunden.erweitert.has(z.orderId) ? `<div class="bq-detail-mobil">${zeitleisteBlock(auftragAusZeile(z), { kontakt: true })}${kundenAuftragKarte(z.auftrag)}${bestellzeileAktionen(z)}</div>` : ''}`;
 }
 
 export function viewKundenBestellungen() {
@@ -231,6 +232,8 @@ const FILTERCHIPS_KUNDEN = ['nicht_fertig', 'fertig', 'offen', 'bezahlt', 'unerf
 
 /** Kunden, Reiter Bestellungen: sortieren, aufklappen, Auftragsfluss, fertig. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function kundenKlickBestellungen(e) {
+  // Zeitleiste (Kundenakte und Bestelldetail): Hauptknopf und "Etwas anderes ist passiert ...".
+  if (zeitleisteKlick(e)) return true;
   const sortKopf = e.target.closest('[data-bq-sort-toggle]');
   if (sortKopf) {
     // Zweiter Klick auf dieselbe Spalte dreht die Richtung - vorher war

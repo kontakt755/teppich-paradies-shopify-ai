@@ -1,0 +1,124 @@
+/* Einkauf je Lieferant: Karten, Bestellmail-Dialog, Lieferant-Detail.
+   Nutzt nur die Farb-Tokens aus app.css (hell und dunkel). Farbe traegt Bedeutung:
+   Terrakotta = die eine Hauptaktion und "zu bestellen", Bernstein/Rot nur fuer Wartezeit. */
+
+.lf-name { font-family: var(--serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif); font-weight: 600; letter-spacing: 0; }
+
+/* ---------- Karten im Reiter "Bestellungen" ---------- */
+.lf-raster { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; margin-top: 12px; }
+/* Aufgeklappt braucht die Tabelle die ganze Breite. */
+.lf-karte.lf-offen { grid-column: 1 / -1; }
+.lf-karte { padding: 0; min-width: 0; overflow: hidden; }
+.lf-kopf { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 16px 18px 12px; }
+.lf-kopf h3 { font-size: 1.3rem; min-width: 0; overflow-wrap: anywhere; }
+.lf-kopf h3 a { color: var(--text); }
+.lf-zahlen { margin-left: auto; display: flex; flex-wrap: wrap; gap: 6px; }
+.lf-zahl { padding: 2px 10px; border-radius: 999px; font-size: .8rem; font-weight: 650; background: var(--surface-2); color: var(--text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.lf-zahl.akzent { background: var(--accent-soft); color: var(--accent); }
+.lf-weg { flex-basis: 100%; font-size: .88rem; color: var(--text-2); overflow-wrap: anywhere; }
+.lf-fehlt { color: var(--warn); }
+
+.lf-hinweis { display: flex; gap: 10px; align-items: flex-start; margin: 0 18px 10px; padding: 10px 12px; border-radius: 10px; font-size: .9rem; font-weight: 550; }
+.lf-hinweis.warn { background: var(--warn-soft); color: var(--warn); }
+.lf-hinweis.crit { background: var(--crit-soft); color: var(--crit); }
+.lf-hinweis a { color: inherit; text-decoration: underline; text-underline-offset: 3px; margin-left: 4px; }
+.lf-uhr { flex: none; width: 16px; height: 16px; margin-top: 2px; border: 2px solid currentColor; border-radius: 50%; position: relative; }
+.lf-uhr::after { content: ""; position: absolute; left: 5px; top: 2px; width: 4px; height: 5px; border-left: 2px solid currentColor; border-bottom: 2px solid currentColor; }
+
+.lf-abschnitt { padding: 10px 18px 2px; font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); }
+.lf-liste { list-style: none; margin: 0; padding: 0; }
+.lf-posten { display: flex; align-items: center; gap: 12px; padding: 9px 18px; }
+.lf-posten + .lf-posten { border-top: 1px solid var(--line); }
+.lf-posten-text { min-width: 0; flex: 1; }
+.lf-posten .t { font-weight: 600; overflow-wrap: anywhere; }
+.lf-posten .s { font-size: .86rem; color: var(--text-2); overflow-wrap: anywhere; }
+.lf-tage { flex: none; padding: 2px 9px; border-radius: 999px; font-size: .78rem; font-weight: 650; background: var(--surface-2); color: var(--text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.lf-tage.warn { background: var(--warn-soft); color: var(--warn); }
+.lf-tage.crit { background: var(--crit-soft); color: var(--crit); }
+.lf-rest { padding: 4px 18px 10px; font-size: .88rem; color: var(--text-3); }
+
+.lf-fuss { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 14px 18px 16px; margin-top: 6px; border-top: 1px solid var(--line); }
+.lf-fuss .btn { min-height: 44px; }
+.lf-fuss a.btn:hover, .head-actions a.btn:hover { text-decoration: none; }
+/* Knoepfe, die Links sind (Portal, Telefon): Textfarbe wie Knoepfe, nicht Link-Blau. */
+.lf-fuss a.btn:not(.btn-primary), .lf-mail-knoepfe a.btn:not(.btn-primary), .head-actions a.btn:not(.btn-primary) { color: var(--text); }
+.lf-aufklappen { margin-left: auto; }
+.lf-fussnote { margin-top: 12px; }
+
+/* Die bisherigen Tabellen, eingebettet in die Karte des Lieferanten. */
+.lf-tabellen { padding: 0 18px; }
+.lf-gruppe { padding: 12px 0 4px; border-top: 1px solid var(--line); margin: 0; }
+.lf-gruppe.has-gap { border-left: 0; }
+.lf-gruppe .card-head { flex-wrap: wrap; }
+
+/* Rolle "lesen": Schreibaktionen im Einkauf ausblenden (der Server lehnt sie ohnehin ab). */
+body.rolle-lesen [data-af-set],
+body.rolle-lesen [data-af-sammel],
+body.rolle-lesen [data-af-reopen],
+body.rolle-lesen [data-auftrag-erledigt] { display: none !important; }
+
+/* ---------- Bestellmail-Dialog ---------- */
+.lf-dialog { width: min(600px, 100%); gap: 12px; }
+.lf-dialog h2.lf-name { font-size: 1.3rem; overflow-wrap: anywhere; }
+.lf-mail { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.lf-mail + .lf-mail { border-top: 1px solid var(--line); padding-top: 14px; }
+.lf-mail-titel { font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); }
+.lf-mailkopf { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; margin: 0; font-size: .9rem; }
+.lf-mailkopf dt { color: var(--text-2); }
+.lf-mailkopf dd { margin: 0; font-weight: 550; overflow-wrap: anywhere; }
+.lf-mailtext { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--font); font-size: .9rem; line-height: 1.45; background: var(--surface-2); border-radius: 10px; padding: 12px 14px; max-height: 38vh; overflow: auto; }
+.lf-mail-knoepfe, .lf-frage-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; }
+.lf-mail-knoepfe .btn, .lf-frage-knoepfe .btn { min-height: 44px; }
+.lf-mail-knoepfe .btn-primary { flex: 1 1 220px; }
+.lf-mail-knoepfe a.btn:hover { text-decoration: none; }
+.lf-fehltliste ul, .lf-stammhinweis ul { margin: 4px 0 0; padding-left: 18px; }
+.lf-hinweise { margin: 0; padding-left: 18px; }
+.lf-frage { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--accent); border-radius: 10px; background: var(--accent-soft); }
+.lf-frage strong { font-size: 1rem; }
+.lf-erledigt { color: var(--ok); font-weight: 600; }
+.lf-leer { color: var(--text-2); }
+.lf-zielwahl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.lf-dialog .actions { align-items: center; justify-content: space-between; }
+
+/* ---------- Lieferant-Detail ---------- */
+.lf-zurueck { display: inline-flex; align-items: center; min-height: 36px; margin-bottom: 6px; font-weight: 600; color: var(--text-2); }
+.lf-stammhinweis { margin-bottom: 14px; }
+.lf-stammhinweis p { margin-top: 4px; }
+.page > .lf-hinweis { margin: 0 0 14px; }
+.lf-spalten { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.lf-stapel { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.lf-block { padding: 0 0 8px; min-width: 0; }
+.lf-blocktitel { padding: 14px 18px 4px; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); }
+.lf-kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; margin: 0; padding: 8px 18px 10px; font-size: .93rem; }
+.lf-kv dt { color: var(--text-2); }
+.lf-kv dd { margin: 0; font-weight: 550; overflow-wrap: anywhere; }
+.lf-kv-zusatz { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; font-weight: 400; font-size: .88rem; color: var(--text-2); }
+.lf-freitext { white-space: pre-line; font-weight: 400; }
+.lf-balken { position: relative; display: flex; align-items: flex-end; gap: 6px; height: 84px; margin: 4px 18px 6px; padding-top: 8px; }
+.lf-balken i { flex: 1; min-width: 0; max-width: 56px; background: var(--accent); opacity: .85; border-radius: 3px 3px 0 0; }
+.lf-balken i.spaet { background: var(--warn); }
+.lf-soll { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--text-3); }
+.lf-soll span { position: absolute; right: 0; bottom: 2px; font-size: .7rem; color: var(--text-3); }
+.lf-balken + p { padding: 0 18px 6px; }
+
+@media (max-width: 1080px) {
+  .lf-raster, .lf-spalten { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  .lf-kopf { padding: 14px 15px 10px; }
+  .lf-zahlen { margin-left: 0; flex-basis: 100%; }
+  .lf-hinweis { margin: 0 15px 10px; }
+  .lf-abschnitt, .lf-posten, .lf-rest { padding-left: 15px; padding-right: 15px; }
+  .lf-fuss { padding: 12px 15px 14px; }
+  .lf-fuss .btn { flex: 1 1 150px; }
+  .lf-aufklappen { margin-left: 0; flex-basis: 100%; }
+  .lf-tabellen { padding: 0 12px; }
+  .lf-blocktitel, .lf-kv { padding-left: 15px; padding-right: 15px; }
+  .lf-balken { margin-left: 15px; margin-right: 15px; }
+  /* Dialoge kommen am Handy von unten (Daumen). */
+  .lf-dialog-boden { align-items: flex-end; padding: 0; }
+  .lf-dialog { width: 100%; max-height: 92vh; border-radius: 18px 18px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); }
+  .lf-mail-knoepfe .btn { flex: 1 1 100%; }
+  .lf-frage-knoepfe .btn { flex: 1 1 100%; }
+  .lf-dialog .actions { flex-direction: column-reverse; align-items: stretch; }
+}

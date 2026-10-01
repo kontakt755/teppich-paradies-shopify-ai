@@ -22,8 +22,9 @@ import { normalizeTask, requirementsFor, labelChangesFor, STATUS_BY_KEY, STATUS_
 import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
-import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, oeffneWieder, STATUS_ORDER, AuftragsstatusFehler } from '../operations/lib/auftragsstatus.mjs';
-import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden } from '../operations/lib/kundensuche.mjs';
+import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, oeffneWieder, STATUS_ORDER, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
+import { auftragsverlaufPfad, leseVerlauf, haengeEreignisAn, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
+import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden, kundenIndex } from '../operations/lib/kundensuche.mjs';
 import { faelle as kundenFaelle } from '../operations/lib/kundenfaelle.mjs';
 import { fallmarkenPfad, leseAlle as leseFallmarken, setzeMarke as setzeFallmarke, teileAuf as teileFaelleAuf, juengsterPunkt, FALL_GRUND } from '../operations/lib/fallmarken.mjs';
 import {
@@ -411,6 +412,78 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     protokolliere(protokollPfad(), { benutzer: anzeigename(benutzer, actor), aktion, objekt, jetzt: now() });
   }
 
+  /** Zeitleisten aller Auftraege (orderId -> { auftragsart, verlauf, naechsterSchritt, ... }). */
+  function zeitleisten(dir, modell, statusAlle) {
+    return zeitleistenFuerModell(modell, { statusAlle, verlaufAlle: leseVerlauf(auftragsverlaufPfad(dir)), jetzt: now() });
+  }
+
+  /** Die additiven Zeitleisten-Felder eines Auftrags fuer die Antwort. */
+  function zeitleistenFelder(z) {
+    if (!z) return { auftragsart: null, verlauf: [], verlaufNotizen: [], naechsterSchritt: null, zeitleisteAbgeschlossen: false };
+    return { auftragsart: z.auftragsart, verlauf: z.verlauf, verlaufNotizen: z.verlaufNotizen, naechsterSchritt: z.naechsterSchritt, zeitleisteAbgeschlossen: z.abgeschlossen };
+  }
+
+  /** Dringendster naechster Schritt ueber die echten Bestellungen eines Kunden, mit Bezug zur Bestellung. */
+  function kundenSchritt(auftraege, zl) {
+    const kandidaten = (auftraege || []).filter(a => !a.testbestellung)
+      .map(a => { const n = zl.get(a.id)?.naechsterSchritt; return n ? { ...n, orderId: a.id, orderName: a.name } : null; });
+    return dringendsterSchritt(kandidaten);
+  }
+
+  /**
+   * Setzt einen Schritt der Zeitleiste fuer einen ganzen Auftrag.
+   * - bestellt/geliefert/raus/erledigt: wie bisher je Position (auftragsstatus.json), fuer alle Positionen,
+   *   die den Schritt noch nicht erreicht haben.
+   * - kunde_hat_muster/nachgefasst/kunde_hat_bestellt/kein_interesse/notiz/zurueck: Ereignis je Auftrag
+   *   (auftragsverlauf.json, nur anhaengen). Ein Ergebnis schliesst zusaetzlich die Positionen ab.
+   */
+  function auftragsSchrittSetzen(payload, benutzer, actor) {
+    const { orderId, schritt, notiz, bezug, lieferantBestellnummer } = payload || {};
+    if (!orderId || !schritt) throw new ApiError(400, 'orderId und schritt sind Pflicht', { missing: ['orderId', 'schritt'] });
+    if (!SCHRITT_WERTE.includes(schritt)) throw new ApiError(400, `Unbekannter Schritt „${schritt}"`);
+    const dir = privatDirPath || privatDir();
+    const modell = ladeBestellModell(dir);
+    const auftrag = modell ? [...modell.auftraege, ...modell.testauftraege].find(a => a.id === orderId) : null;
+    if (!auftrag) throw new ApiError(404, 'Bestellung nicht gefunden – Bestelldaten evtl. inzwischen aktualisiert.');
+    const statusDatei = auftragsstatusPfad(dir);
+    const vorher = zeitleisten(dir, modell, leseAuftragsstatus(statusDatei)).get(orderId);
+    const art = vorher.auftragsart;
+    if (!['notiz', 'zurueck'].includes(schritt) && !setzbareSchritte(art).includes(schritt)) {
+      throw new ApiError(400, `Der Schritt „${schritt}" gehört nicht zu ${art === 'muster' ? 'einer Musterbestellung' : 'einer Warenbestellung'}`);
+    }
+    const positionen = auftrag.positionen.filter(p => p.lineItemId);
+    const setzePositionen = (status, text) => {
+      if (!positionen.length) throw new ApiError(400, 'Diese Bestellung hat keine nachverfolgbaren Positionen');
+      const alle = leseAuftragsstatus(statusDatei);
+      const ziel = STATUS_ORDER.indexOf(status);
+      const stufe = p => STATUS_ORDER.indexOf(alle[positionKey(orderId, p.lineItemId)]?.status);
+      // Nur Positionen, die noch nicht so weit sind. Sind alle schon weiter, ist der Klick eine
+      // bewusste Korrektur zurueck - dann gilt er fuer alle.
+      const dahinter = positionen.filter(p => stufe(p) < ziel);
+      const betroffen = dahinter.length ? dahinter : positionen.filter(p => stufe(p) !== ziel);
+      for (const p of betroffen) setzeStatus(statusDatei, { orderId, lineItemId: p.lineItemId, status, actor, lieferantBestellnummer, notiz: text, jetzt: now() });
+      return betroffen.length;
+    };
+    let anzahl = 0;
+    try {
+      if (STATUS_ORDER.includes(schritt)) {
+        anzahl = setzePositionen(schritt, notiz);
+      } else {
+        haengeEreignisAn(auftragsverlaufPfad(dir), { orderId, schritt, actor, notiz, bezug, jetzt: now() });
+        if (['kunde_hat_bestellt', 'kein_interesse'].includes(schritt) && positionen.length) {
+          anzahl = setzePositionen('erledigt', `Ergebnis: ${SCHRITT_LABEL.muster[schritt]}${notiz ? ` – ${notiz}` : ''}`);
+        }
+      }
+    } catch (e) {
+      if (e instanceof AuftragsverlaufFehler || e instanceof AuftragsstatusFehler) throw new ApiError(400, e.message);
+      throw e;
+    }
+    audit({ actor, action: 'auftragsschritt', orderId, schritt, positionen: anzahl });
+    merke(benutzer, actor, 'Auftragsschritt', `${auftrag.name}: ${schritt}`);
+    const nachher = zeitleisten(dir, modell, leseAuftragsstatus(statusDatei)).get(orderId);
+    return { ok: true, orderId, schritt, positionen: anzahl, ...zeitleistenFelder(nachher) };
+  }
+
   async function currentUser() {
     if (userCache) return userCache;
     try { userCache = (await gh(['api', 'user', '--jq', '.login'])).trim() || null; } catch { userCache = null; }
@@ -642,7 +715,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         ? sucheKunden(modell, q2, { statusAlle }).map(k => kundenListenEintrag(k, { statusAlle })).filter(passtZuKundenFilter(filter))
         : alleKunden(modell, { statusAlle, filter });
       const stamm = stammKontakte(dir);
-      const ausBestellungen = roh.map((t) => {
+      // Additiv: der dringendste naechste Schritt je Kunde (Zeitleiste) - fuer Listen und die Heute-Seite.
+      const zl = zeitleisten(dir, modell, statusAlle);
+      const auftraegeJeKunde = new Map(kundenIndex(modell, { statusAlle }).map(k => [k.key, k.auftraege]));
+      const ausBestellungen = roh.map(t => ({ ...t, naechsterSchritt: kundenSchritt(auftraegeJeKunde.get(t.key), zl) })).map((t) => {
         if (t.telefon && t.telefon !== '–') return t;
         const k = stamm.get(`mail:${String(t.email || '').toLowerCase()}`) || stamm.get(`name:${String(t.name || '').toLowerCase()}`);
         if (!k?.telefon) return t;
@@ -664,8 +740,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const modell = ladeBestellModell(dir);
       if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
       const statusAlle = leseAuftragsstatus(auftragsstatusPfad(dir));
-      const kunde = findeKunde(modell, key, { statusAlle });
-      if (kunde) return { verfuegbar: true, kunde };
+      const gefunden = findeKunde(modell, key, { statusAlle });
+      if (gefunden) {
+        // Additiv je Bestellung: auftragsart, verlauf, verlaufNotizen, naechsterSchritt (operations/lib/auftragsverlauf.mjs).
+        const zl = zeitleisten(dir, modell, statusAlle);
+        const kunde = { ...gefunden, auftraege: gefunden.auftraege.map(a => ({ ...a, ...zeitleistenFelder(zl.get(a.id)) })), naechsterSchritt: kundenSchritt(gefunden.auftraege, zl) };
+        return { verfuegbar: true, kunde };
+      }
       // Kunde aus dem Shopify-Stamm ohne Bestellung in dieser Datei: die
       // Akte zeigt dann Kontakt und Anschrift statt einer Fehlermeldung.
       const ausStamm = stammOhneBestellung(dir, new Set()).find(k => k.key === key);
@@ -700,7 +781,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
       const statusAlle = leseAuftragsstatus(auftragsstatusPfad(dir));
       const rueckrufeAlle = leseRueckrufe(rueckrufePfad(dir));
-      return { verfuegbar: true, zeilen: bestellliste(modell, { statusAlle, rueckrufeAlle }) };
+      const zl = zeitleisten(dir, modell, statusAlle);
+      return { verfuegbar: true, zeilen: bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, ...zeitleistenFelder(zl.get(z.orderId)) })) };
     },
 
     /**
@@ -911,6 +993,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const actor = benutzer?.name || await currentUser();
       if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
       const { orderId, lineItemId, status, lieferantBestellnummer, notiz, aktion } = payload || {};
+      // Zeitleiste: ein Schritt fuer den ganzen Auftrag (alle Positionen bzw. ein Ereignis je Auftrag).
+      // Additiv - ohne `aktion` verhaelt sich der Endpunkt exakt wie bisher.
+      if (aktion === 'schritt') return auftragsSchrittSetzen(payload, benutzer, actor);
       if (!orderId || !lineItemId) throw new ApiError(400, 'orderId und lineItemId sind Pflicht', { missing: ['orderId', 'lineItemId'] });
       // "Wieder öffnen" macht einen Abschluss rueckgaengig (z. B. versehentlich "Ohne Einkauf
       // abschliessen"). Eigener Weg statt eines Pseudo-Status, damit der Abschluss im Verlauf

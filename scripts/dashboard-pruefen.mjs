@@ -45,9 +45,9 @@ const ALLE_ANSICHTEN = ['heute', 'einkauf', 'einkauf?tab=produktdaten', 'kunden'
 // der Baustelle), ist das Handy kein Sonderfall mehr: jede Ansicht wird bei jeder Breite geprueft.
 const BREITEN = [[1440, 900, 'desktop'], [1024, 768, 'b1024'], [800, 1000, 'b800'], [390, 844, 'handy'], [360, 740, 'b360']];
 // Grosse Exporte, die das Dashboard nur liest: verlinken statt kopieren.
-const NUR_LESEN = ['einkauf-dryrun', 'einkauf-klaerung', 'lexikon'];
+const NUR_LESEN = ['einkauf-dryrun', 'einkauf-klaerung', 'lexikon', 'lieferanten'];
 // Klein oder beschreibbar: kopieren, damit Klicktests nie die echten Dateien treffen.
-const KOPIEREN = ['bestelluebersicht', 'kennzahlen', 'organisation', 'aktualisierung.json', 'auftragsstatus.json'];
+const KOPIEREN = ['bestelluebersicht', 'kennzahlen', 'organisation', 'aktualisierung.json', 'auftragsstatus.json', 'auftragsverlauf.json'];
 
 function argumente(argv) {
   const a = { ansichten: null, aus: null, offen: false, breiten: null, dunkel: false };
