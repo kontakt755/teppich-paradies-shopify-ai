@@ -16,6 +16,7 @@
  * der Zentrale bestaetigt. Ort, Boden und Raum traegt die Redaktion nach.
  */
 
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -145,6 +146,122 @@ function schreibeStand(dir, stand) {
   fs.writeFileSync(standPfad(dir), `${JSON.stringify(stand, null, 2)}\n`);
 }
 
+/**
+ * Legt aus einer Gruppe von Nachrichten (ein Absender, eine Baustelle) einen Inhalt an
+ * und kopiert die Dateien hinein. Gibt es den Schluessel schon, passiert nichts.
+ */
+function legeBaustelleAn(db, g, { schluessel, dir, pruefe, bericht }) {
+  const tag = g.von.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Berlin' });
+  const { id, neu } = db.inhaltAnlegen({
+    quelle: 'baustelle', typ: 'kundenprojekt',
+    titel: `WhatsApp · ${g.absender} · ${tag}`,
+    schluessel,
+    einwilligung: false, eingereicht_von: g.absender,
+    notiz: 'Aus der WhatsApp-Gruppe – Einwilligung vom Auftragszettel bestätigen, Ort und Boden nachtragen.',
+    daten: { herkunft: 'whatsapp', ortBekannt: false },
+  });
+  if (!neu) { bericht.schonDa = (bericht.schonDa ?? 0) + 1; return; }
+  const ordner = path.join(medienDir(dir), String(id), 'original');
+  fs.mkdirSync(ordner, { recursive: true });
+  let nummer = 0;
+  for (const n of g.nachrichten) {
+    const kopf = Buffer.alloc(16);
+    const fd = fs.openSync(n.datei, 'r');
+    try { fs.readSync(fd, kopf, 0, 16, 0); } finally { fs.closeSync(fd); }
+    const typ = erkenneTyp(kopf);
+    if (!DATEITYPEN[typ]) { bericht.fehlend += 1; continue; }
+    nummer += 1;
+    const ziel = path.join(ordner, `${String(nummer).padStart(2, '0')}.${DATEITYPEN[typ].endung}`);
+    fs.copyFileSync(n.datei, ziel);
+    trageDateiEin(db, id, { datei: ziel, typ, dir });
+  }
+  db.ereignis('whatsapp', 'baustelle-eingang', `inhalt:${id}`, { absender: g.absender, dateien: nummer });
+  pruefe(db, { dir, nur: id });
+  bericht.neu.push({ id, absender: g.absender, dateien: nummer });
+  bericht.dateien += nummer;
+}
+
+// --- Chat-Export vom Handy ---------------------------------------------------
+// Der Mac holt beim Verknuepfen nur einen Teil des Verlaufs und laedt aeltere
+// Fotos erst beim Anklicken. Das Handy hat alles: "Chat exportieren" mit Medien,
+// per AirDrop an den Betriebsrechner. Zwei Formate: iPhone "[25.09.26, 12:25:31]
+// Name: <Anhang: 00000012-PHOTO-….jpg>", Android "25.09.26, 12:25 - Name: IMG-….jpg
+// (Datei angehängt)".
+
+const STEUERZEICHEN = /[\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g;
+const KOPF_IOS = /^\[(\d{1,2})[./](\d{1,2})[./](\d{2,4}),? (\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s?([AP]M))?\] ([^:]+?): (.*)$/;
+const KOPF_ANDROID = /^(\d{1,2})[./](\d{1,2})[./](\d{2,4}),? (\d{1,2}):(\d{2})(?:\s?([AP]M))? - ([^:]+?): (.*)$/;
+const MEDIENENDUNG = /\.(jpe?g|png|heic|webp|mp4|mov)$/i;
+
+function zeitAus(t, m, j, h, mi, s, ampm, amerikanisch) {
+  let [tag, monat] = amerikanisch ? [Number(m), Number(t)] : [Number(t), Number(m)];
+  let jahr = Number(j); if (jahr < 100) jahr += 2000;
+  let stunde = Number(h);
+  if (ampm === 'PM' && stunde < 12) stunde += 12;
+  if (ampm === 'AM' && stunde === 12) stunde = 0;
+  // Ortszeit des Betriebsrechners (Europe/Berlin) - so steht sie im Export.
+  return new Date(jahr, monat - 1, tag, stunde, Number(mi), Number(s ?? 0));
+}
+
+/**
+ * Liest die Chat-Datei eines Exports. Liefert nur Nachrichten mit einer Foto- oder
+ * Videodatei, die im Export tatsaechlich liegt.
+ * @param dateien  Dateinamen im Export-Ordner
+ */
+export function leseExportText(text, dateien) {
+  const vorhanden = new Set(dateien);
+  const zeilen = text.replace(STEUERZEICHEN, '').split(/\r?\n/);
+  // Amerikanisches Datum (Monat zuerst, AM/PM) erkennt man an AM/PM.
+  const amerikanisch = zeilen.some(z => /^\[?\d{1,2}\/\d{1,2}\/\d{2,4},? \d{1,2}:\d{2}(:\d{2})?\s?[AP]M/.test(z));
+  const nachrichten = [];
+  zeilen.forEach((zeile, nr) => {
+    let m = KOPF_IOS.exec(zeile); let kopf;
+    if (m) kopf = { datum: zeitAus(m[1], m[2], m[3], m[4], m[5], m[6], m[7], amerikanisch), absender: m[8].trim(), rest: m[9] };
+    else if ((m = KOPF_ANDROID.exec(zeile))) kopf = { datum: zeitAus(m[1], m[2], m[3], m[4], m[5], null, m[6], amerikanisch), absender: m[7].trim(), rest: m[8] };
+    if (!kopf) return;
+    const datei = kopf.rest.split(/[<>:\s]+/).map(w => w.trim()).find(w => MEDIENENDUNG.test(w) && vorhanden.has(w));
+    if (!datei) return;
+    nachrichten.push({ pk: nr + 1, datum: kopf.datum, absender: kopf.absender, art: /\.(mp4|mov)$/i.test(datei) ? 'video' : 'bild', datei });
+  });
+  return nachrichten;
+}
+
+/** Sucht den neuesten Export der Gruppe in "Downloads". */
+export function findeExport(gruppe, ordner = path.join(os.homedir(), 'Downloads')) {
+  let namen = [];
+  try { namen = fs.readdirSync(ordner); } catch { return null; }
+  const passend = namen.filter(n => /^WhatsApp[ -]Chat/i.test(n) && n.includes(gruppe) && (n.endsWith('.zip') || fs.statSync(path.join(ordner, n)).isDirectory()));
+  passend.sort((a, b) => fs.statSync(path.join(ordner, b)).mtimeMs - fs.statSync(path.join(ordner, a)).mtimeMs);
+  return passend.length ? path.join(ordner, passend[0]) : null;
+}
+
+/**
+ * Uebernimmt einen Chat-Export (ZIP oder entpackter Ordner). Alles ist Vergangenheit,
+ * es wird nicht gewartet. Dieselbe Baustelle entsteht nie doppelt (Schluessel je erster
+ * Datei), und Bilder, die es schon gibt - etwa ueber den Mac schon uebernommen -,
+ * sortiert die Bildpruefung als Dublette aus.
+ */
+export function uebernimmExport(db, quelle, { dir = socialDir(), pruefe = verarbeiteEingang, entpacke = (zip, ziel) => execFileSync('/usr/bin/ditto', ['-x', '-k', zip, ziel]) } = {}) {
+  const bericht = { neu: [], dateien: 0, fehlend: 0, schonDa: 0, nachrichten: 0 };
+  let ordner = quelle; let tmp = null;
+  if (quelle.endsWith('.zip')) { tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-wa-export-')); entpacke(quelle, tmp); ordner = tmp; }
+  try {
+    // Der Chattext liegt je nach Handy direkt im ZIP oder in einem Unterordner.
+    const finde = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) { const t = finde(p); if (t) return t; } else if (/^(_chat\.txt|WhatsApp[- ]Chat.*\.txt)$/i.test(e.name)) return p; } return null; };
+    const chat = finde(ordner);
+    if (!chat) throw new WhatsAppFehler('Im Export fehlt der Chatverlauf (_chat.txt) – beim Exportieren „Medien anhängen“ wählen');
+    const basis = path.dirname(chat);
+    const nachrichten = leseExportText(fs.readFileSync(chat, 'utf8'), fs.readdirSync(basis)).map(n => ({ ...n, datei: path.join(basis, n.datei) }));
+    bericht.nachrichten = nachrichten.length;
+    for (const g of gruppiere(nachrichten)) {
+      legeBaustelleAn(db, g, { schluessel: `whatsapp-export:${path.basename(g.nachrichten[0].datei)}`, dir, pruefe, bericht });
+    }
+    return bericht;
+  } finally {
+    if (tmp) fs.rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
 /** Schiebt `letzterPk` so weit vor, wie alle gelesenen Nachrichten erledigt sind. */
 function rueckeVor(stand, gelesen, erledigt, jetzt) {
   let letzterPk = stand.letzterPk ?? 0;
@@ -202,37 +319,7 @@ export function uebernimmWhatsApp(db, { env = process.env, dir = socialDir(), je
     const vorhanden = g.nachrichten.filter(n => n.datei);
     bericht.fehlend += g.nachrichten.length - vorhanden.length;
 
-    if (vorhanden.length) {
-      const tag = g.von.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Berlin' });
-      const { id, neu } = db.inhaltAnlegen({
-        quelle: 'baustelle', typ: 'kundenprojekt',
-        titel: `WhatsApp · ${g.absender} · ${tag}`,
-        schluessel: `whatsapp:${g.nachrichten[0].pk}`,
-        einwilligung: false, eingereicht_von: g.absender,
-        notiz: 'Aus der WhatsApp-Gruppe – Einwilligung vom Auftragszettel bestätigen, Ort und Boden nachtragen.',
-        daten: { herkunft: 'whatsapp', ortBekannt: false },
-      });
-      if (neu) {
-        const ordner = path.join(medienDir(dir), String(id), 'original');
-        fs.mkdirSync(ordner, { recursive: true });
-        let nummer = 0;
-        for (const n of vorhanden) {
-          const kopf = Buffer.alloc(16);
-          const fd = fs.openSync(n.datei, 'r');
-          try { fs.readSync(fd, kopf, 0, 16, 0); } finally { fs.closeSync(fd); }
-          const typ = erkenneTyp(kopf);
-          if (!DATEITYPEN[typ]) { bericht.fehlend += 1; continue; }
-          nummer += 1;
-          const ziel = path.join(ordner, `${String(nummer).padStart(2, '0')}.${DATEITYPEN[typ].endung}`);
-          fs.copyFileSync(n.datei, ziel);
-          trageDateiEin(db, id, { datei: ziel, typ, dir });
-        }
-        db.ereignis('whatsapp', 'baustelle-eingang', `inhalt:${id}`, { absender: g.absender, dateien: nummer });
-        pruefe(db, { dir, nur: id });
-        bericht.neu.push({ id, absender: g.absender, dateien: nummer });
-        bericht.dateien += nummer;
-      }
-    }
+    if (vorhanden.length) legeBaustelleAn(db, { ...g, nachrichten: vorhanden }, { schluessel: `whatsapp:${g.nachrichten[0].pk}`, dir, pruefe, bericht });
     for (const n of g.nachrichten) erledigt.add(n.pk);
     schreibeStand(dir, rueckeVor(stand, gelesen, erledigt, jetzt));
   }
