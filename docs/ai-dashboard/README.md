@@ -58,6 +58,8 @@ docs/ai-dashboard/
   bausteine/                    was mehrere Ansichten teilen (Karten, Aufgaben-Panel, Dialog, Palette …)
   ansichten/                    eine Datei je Route; große Ansichten mit Teilmodulen im gleichnamigen Ordner
   lib/model.mjs                 Regeln: Status, Body-Parser, Dringlichkeit, Übergänge – Browser UND Server
+  lib/todos.mjs                 To-dos und „Wer wartet auf was“ für „Heute“ – abgeleitet, nicht erfasst
+  stile/                        Styles je Ansicht (heute.css); app.css bleibt das gemeinsame Gerüst
   issues.json, bodenwissen.json generierte Daten, nicht im Git (.gitignore)
   tests/                        node --test (npm run dashboard:test)
 scripts/build-dashboard-data.mjs  erzeugt issues.json (lokal, gh)
@@ -104,7 +106,8 @@ bausteine/
   systemzustand.mjs     Systemgesundheit (Heute, Insights)
   palette.mjs           Befehlspalette (⌘K)
 ansichten/
-  heute.mjs  arbeit.mjs  freigaben.mjs  bereiche.mjs  insights.mjs  aktivitaet.mjs
+  heute.mjs          + heute/{daten,bisher}.mjs
+  arbeit.mjs  freigaben.mjs  bereiche.mjs  insights.mjs  aktivitaet.mjs
   lexikon.mjs  ratgeber.mjs  hilfe.mjs  shopwache.mjs  team.mjs  fotos.mjs
   einkauf.mjs        + einkauf/{auftragsfluss,bestellungen,lieferanten,produktdaten}.mjs
   kunden.mjs         + kunden/{gemeinsam,akte,rueckrufe,bestellungen,angebote,faelle}.mjs

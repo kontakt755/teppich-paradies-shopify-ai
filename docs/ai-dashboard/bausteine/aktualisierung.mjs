@@ -7,7 +7,7 @@
  * Aktualisierung veraltet ist, gehoert er in verwirfDatenspeicher().
  */
 import { state } from '../kern/zustand.mjs';
-import { fmtDateTime, toast } from '../kern/helfer.mjs';
+import { esc, fmtDateTime, toast } from '../kern/helfer.mjs';
 import { fetchEinkauf } from '../kern/api.mjs';
 import { istNurLesend } from '../kern/sitzung.mjs';
 import { refresh } from '../kern/daten.mjs';
@@ -16,6 +16,7 @@ import { einkauf } from '../ansichten/einkauf/auftragsfluss.mjs';
 import { lexikon } from '../ansichten/lexikon.mjs';
 import { kunden } from '../ansichten/kunden/gemeinsam.mjs';
 import { shopwache } from '../ansichten/shopwache.mjs';
+import { verwirfHeuteDaten } from '../ansichten/heute/daten.mjs';
 
 // Ohne Eintrag stuende hier der interne Schluessel ('warenkoerbe') - die vier
 // Teile kamen spaeter dazu und fehlten in dieser Liste.
@@ -23,6 +24,20 @@ const AKTUALISIERUNG_TEIL_LABEL = {
   lexikon: 'Lexikon', bestellungen: 'Bestellübersicht', kennzahlen: 'Kennzahlen',
   kunden: 'Kunden', angebote: 'Angebote', warenkoerbe: 'Liegengebliebene Warenkörbe', bestand: 'Lagerbestand',
 };
+
+/**
+ * Ohne Shopify-Zugang auf diesem Rechner kann der Knopf nichts holen. Der Satz nennt den
+ * Grund und die Handlung: abwarten (die Daten kommen taeglich von selbst) oder, wenn sie
+ * aelter als ein Tag sind, den Inhaber ansprechen - nur er kann den Zugang hinterlegen.
+ */
+const OHNE_ZUGANG_GRUND = 'Geht an diesem Rechner nicht – der Shopify-Zugang fehlt. Die Daten kommen einmal täglich von selbst;';
+const ZUGANG_EINRICHTEN = 'Zugang einrichten: einmalig „npm run operations:verbindung“ im Terminal dieses Rechners.';
+function ohneZugangHinweis() {
+  const rolle = state.session?.benutzer?.rolle;
+  return !rolle || rolle === 'inhaber'
+    ? `${OHNE_ZUGANG_GRUND} sind sie älter als ein Tag: ${ZUGANG_EINRICHTEN}`
+    : `${OHNE_ZUGANG_GRUND} sind sie älter als ein Tag, bitte dem Inhaber Bescheid geben.`;
+}
 
 export function ensureAktualisierung() {
   if (einkauf.aktualisierung || einkauf.loadingAktualisierung) return;
@@ -37,14 +52,15 @@ export function ensureAktualisierung() {
 /** Knopf "Jetzt aktualisieren" - nur lokal, wo die privaten Datenquellen ueberhaupt existieren.
  * Gesperrt und mit Ladehinweis waehrend ein Lauf aktiv ist (sowohl serverseitig als auch nach
  * einem Klick auf diesem Tab); das Ergebnis je Quelle zeigt danach aktualisierungHealth(). */
-export function aktualisierenButton() {
+export function aktualisierenButton({ mitHinweis = true } = {}) {
   if (state.capabilities.mode !== 'local') return '';
   const laeuft = einkauf.aktualisierungLaeuft;
   const bereit = einkauf.aktualisierung?.manuellVerfuegbar === true;
-  const hinweis = einkauf.aktualisierung && !bereit
-    ? '<span class="small muted" role="status">Manueller Abruf ohne Shopify-Zugang nicht verfügbar. Geplanten Export prüfen.</span>'
+  // Der Hinweis sagt, was zu tun ist - "Geplanten Export prüfen" konnte niemand im Laden ausfuehren.
+  const hinweis = mitHinweis && einkauf.aktualisierung && !bereit
+    ? `<span class="small muted" role="status">${esc(ohneZugangHinweis())}</span>`
     : '';
-  return `<button class="btn" type="button" data-action="aktualisieren" ${laeuft || !bereit ? 'disabled' : ''}>${laeuft ? 'Wird aktualisiert …' : 'Jetzt aktualisieren'}</button>${hinweis}`;
+  return `<button class="btn" type="button" data-action="aktualisieren" ${laeuft || !bereit ? 'disabled' : ''}${!bereit && !mitHinweis ? ` title="${esc(ohneZugangHinweis())}"` : ''}>${laeuft ? 'Wird aktualisiert …' : 'Jetzt aktualisieren'}</button>${hinweis}`;
 }
 
 /** Systemgesundheit-Zeilen fuer die lokalen Datenquellen (Lexikon, Bestellübersicht, Kennzahlen). */
@@ -53,7 +69,7 @@ export function aktualisierungHealth() {
   if (!a) return [];
   const aktualisierungHinweis = a.manuellVerfuegbar
     ? 'Bitte „Jetzt aktualisieren“ verwenden.'
-    : 'Manueller Abruf ohne Shopify-Zugang nicht verfügbar. Geplanten Export prüfen.';
+    : `${OHNE_ZUGANG_GRUND} ${ZUGANG_EINRICHTEN}`;
   if (!a.verfuegbar) {
     return [{ level: 'warn', title: 'Lokale Datenquellen noch nie aktualisiert', detail: `${a.hinweis || ''} ${aktualisierungHinweis}` }];
   }
@@ -110,7 +126,7 @@ export async function syncNow() {
 export async function aktualisierenNow() {
   if (istNurLesend()) { toast('Rolle "lesen" darf keine Aktualisierung anstossen.', 'crit'); return; }
   if (einkauf.aktualisierungLaeuft) { toast('Aktualisierung läuft bereits.'); return; }
-  if (einkauf.aktualisierung?.manuellVerfuegbar !== true) { toast('Manueller Abruf ohne Shopify-Zugang nicht verfügbar.', 'crit'); return; }
+  if (einkauf.aktualisierung?.manuellVerfuegbar !== true) { toast(ohneZugangHinweis(), 'crit'); return; }
   try {
     const r = await fetch('/api/aktualisierung/start', { method: 'POST' });
     const j = await r.json().catch(() => ({}));
@@ -147,6 +163,7 @@ function verwirfDatenspeicher() {
   });
   Object.assign(lexikon, { liste: null, listeKey: null, produkt: null, produktKey: null });
   shopwache.daten = null;
+  verwirfHeuteDaten();
 }
 
 function pollAktualisierung() {
