@@ -3,10 +3,13 @@
   "Schurwolle · Schlinge · 6 mm Flor". Gibt Text aus oder nichts.
 
   Alle Angaben kommen vom Teppichboden, aus dem zugeschnitten wird
-  (service.einfass_basis): custom.fasermaterial, custom.arten, custom.florhohe.
-  Von custom.arten steht ein Wert da; fehlt das Fasermaterial, zwei - bei Wovena, Callista
-  und Rubira ist "Wolle" als Art gepflegt, das genaue Fasermaterial aber nicht (2026-09-20). Nichts wird abgeleitet oder ergaenzt - fehlt ein Feld, fehlt der
-  Teil; fehlt alles, bleibt die Zeile weg.
+  (service.einfass_basis): custom.fasermaterial, custom.konstruktion (Velours,
+  Schlinge, Nadelvlies), custom.arten, custom.florhohe.
+  Die Konstruktion steht als ein Wert da; fehlt sie, gilt wie bisher der erste
+  custom.arten-Wert. Fehlt das Fasermaterial, kommt ein zweiter Wert dazu - bei
+  Wovena, Callista und Rubira ist "Wolle" als Art gepflegt, das genaue Fasermaterial
+  aber nicht (2026-09-20). Nichts wird abgeleitet oder ergaenzt - fehlt ein Feld,
+  fehlt der Teil; fehlt alles, bleibt die Zeile weg.
 
   @param {object} product - der Teppich nach Mass
 {% enddoc %}
@@ -36,39 +39,56 @@
       endif
     endif
 
+    assign tq_art_limit = 1
+    if tq_text == blank
+      assign tq_art_limit = 2
+    endif
+    assign tq_art = ''
+    assign tq_kon_val = tq_basis.metafields.custom.konstruktion.value
+    if tq_kon_val != blank
+      for tq_kon_item in tq_kon_val limit: 1
+        capture tq_art
+          echo tq_kon_item.name.value | default: tq_kon_item.name
+        endcapture
+      endfor
+      assign tq_art = tq_art | strip
+      if tq_art != blank
+        assign tq_art_limit = tq_art_limit | minus: 1
+      endif
+    endif
+
     assign tq_art_mf = tq_basis.metafields.custom.arten
     assign tq_art_val = tq_art_mf.value
-    if tq_art_val != blank
+    if tq_art_val != blank and tq_art_limit > 0
       if tq_art_mf.type contains 'list.'
-        assign tq_art_limit = 1
-        if tq_text == blank
-          assign tq_art_limit = 2
-        endif
-        assign tq_art = ''
-        for tq_item in tq_art_val limit: tq_art_limit
+        for tq_item in tq_art_val
           capture tq_art_teil
             echo tq_item.name.value | default: tq_item.name
           endcapture
           assign tq_art_teil = tq_art_teil | strip
-          if tq_art_teil != blank
+          if tq_art_teil != blank and tq_art_teil != tq_art
             if tq_art != blank
               assign tq_art = tq_art | append: ' · '
             endif
             assign tq_art = tq_art | append: tq_art_teil
+            assign tq_art_limit = tq_art_limit | minus: 1
+          endif
+          if tq_art_limit <= 0
+            break
           endif
         endfor
-      else
+      elsif tq_art == blank
         capture tq_art
           echo tq_art_val.name.value | default: tq_art_val.name
         endcapture
       endif
-      assign tq_art = tq_art | strip
-      if tq_art != blank
-        if tq_text != blank
-          assign tq_text = tq_text | append: ' · '
-        endif
-        assign tq_text = tq_text | append: tq_art
+    endif
+    assign tq_art = tq_art | strip
+    if tq_art != blank
+      if tq_text != blank
+        assign tq_text = tq_text | append: ' · '
       endif
+      assign tq_text = tq_text | append: tq_art
     endif
 
     assign tq_flor = tq_basis.metafields.custom.florhohe.value | strip

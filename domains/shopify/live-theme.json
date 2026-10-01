@@ -1,15 +1,15 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-09-30T18:31:45Z",
-    "verifiedBy": "Shopify CLI role live nach workflow:live (main 864d045a)"
-  },
-  "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-09-30T18:31:45Z",
+    "verifiedAt": "2026-09-30T19:48:53Z",
+    "verifiedBy": "Shopify CLI role live nach workflow:live (main 438871cb)"
+  },
+  "preview": {
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-09-30T19:48:53Z",
     "verifiedBy": "Shopify CLI role unpublished nach Rollentausch; naechstes Preview-Ziel"
   },
   "fallback": {
@@ -302,6 +302,12 @@
       "name": "preview-main-2026-09-15",
       "retiredNoticedAt": "2026-09-30",
       "note": "Per workflow:live abgeloest durch 204436144462 (main 864d045a: #791 Teppichfliesen-Menuebild zeigt den Austausch, #789 Instagram im Footer). Rollentausch per Shopify CLI gegengeprueft. Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-09-30",
+      "note": "Per workflow:live abgeloest durch 204438208846 (main 438871cb: #795 Mass-Rechner Teppich nach Mass, #793/#794 Knopf und Label-Fix, #788 Teppichboden-Felder). Rollentausch per Shopify CLI gegengeprueft. Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",

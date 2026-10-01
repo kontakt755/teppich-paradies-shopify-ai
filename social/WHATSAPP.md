@@ -70,6 +70,20 @@ drücken, wenn der Auftragszettel das Kreuz trägt.
    Danach übernimmt der Takt von selbst; sofort geht es mit
    `npm run social -- whatsapp`.
 
+## Ältere Fotos nachholen: Chat-Export vom Handy
+
+Der Mac übernimmt beim Verknüpfen nur einen Teil des Verlaufs und lädt ältere
+Fotos erst, wenn man sie anklickt. Das Handy hat alles:
+
+1. WhatsApp → Gruppe → Gruppenname antippen → **Chat exportieren** →
+   **Medien anhängen** → per **AirDrop an den Mac mini** (landet in „Downloads“).
+2. `npm run social -- whatsapp-export` – nimmt den neuesten Export der Gruppe aus
+   „Downloads“ (oder einen Pfad als Angabe), je Absender und Baustelle ein Eintrag.
+
+Mehrfach ausführen schadet nicht: dieselbe Baustelle entsteht nie zweimal, und
+Bilder, die schon über den Mac kamen, sortiert die Bildprüfung als Dublette aus.
+Die ZIP-Datei danach aus „Downloads“ löschen – sie enthält den ganzen Chat.
+
 ## Störungen
 
 | Meldung (im `takt.log`) | Abhilfe |

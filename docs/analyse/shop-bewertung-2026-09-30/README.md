@@ -328,4 +328,25 @@ Am 2026-09-30 hat der Inhaber entschieden: **Kurzflor gilt bis 5,0 mm, Fliesen u
 
 **Vinyl-Altprodukte:** Der Inhaber hat entschieden, die vier Produkte aus Abschnitt 4.1 nicht mehr anzubieten. Sie stehen seit 2026-09-30 auf Entwurf (Status `DRAFT`, Produktseiten liefern 404), nicht gelöscht; Preise, Typ und Tags sind unverändert. Altzustand und Rückweg liegen lokal unter `~/teppich-paradies-analyse/vinyl-altprodukte-entwurf-2026-09-30/`.
 
-**Weiter offen:** die getrennten Felder nach Weg B (Abschnitt 3.3, vom Inhaber freigegeben, eigener PR), `shopify.pile-type`, die Menü-Doppelungen und die Tag-Bereinigung.
+**Weiter offen nach Schritt 1:** `shopify.pile-type`, die Menü-Doppelungen und die Tag-Bereinigung. Weg B folgt in Abschnitt 10.
+
+## 10. Nachtrag: Umsetzung von Weg B (2026-09-30 / 2026-10-01)
+
+Vom Inhaber freigegeben („für alles Freigabe“). Reihenfolge so gewählt, dass der Shop zu keinem Zeitpunkt einen anderen Stand gezeigt hat als vorher; jeder Schritt wurde gegen den vorherigen geprüft.
+
+| Schritt | Was | Beleg |
+|---|---|---|
+| Felder | Metaobjekt-Typ `teppich_konstruktion` (Einträge Velours, Schlinge, Nadelvlies, alle aktiv), Metafelder `custom.konstruktion` (Liste) und `custom.florhoehe_mm` (Dezimalzahl), beide als Kollektionsbedingung freigegeben und Storefront-lesbar. Angelegt über den Shopify-MCP. | `ids.json` im lokalen Ordner |
+| Befüllung | 99 × Konstruktion (Übernahme der nach Schritt 1 gültigen Werte aus `custom.arten`: 53 Schlinge, 40 Velours, 6 Nadelvlies) und 89 × Florhöhe als Zahl (aus `custom.florhohe`, nur wo das Datenaudit den Wert als Florhöhe bestätigt; 59 bis 5 mm, 9 ab 10 mm). 20 Produkte bewusst ohne Wert, siehe `offen.json`. | Gegenprobe 188 von 188 exakt |
+| Theme | PR #788: Produktkarte, Qualitätszeile der Maßteppiche und Filter-Sichtbarkeit lesen die neuen Felder und fallen auf `custom.arten` zurück. Gemerged und über die Deploy-Kette einer parallelen Sitzung live gegangen. | Live-Theme enthält das Snippet; Kartenzeilen unverändert („Schlinge · Kurzflor“, „Velours · Hochflor“, „Schlinge · Wolle“) |
+| Kollektionsregeln | Velours, Schlinge, Nadelvlies auf `custom.konstruktion`; Kurzflor auf `custom.florhoehe_mm` kleiner 5,01 plus Produkttyp Teppichboden; Hochflor auf größer 9,99 plus Produkttyp. Wolle bleibt auf `custom.arten`. | Mitgliederlisten vor und nach der Umstellung identisch: 59 / 40 / 53 / 9 / 11 / 6 |
+| Filter | Inhaber hat in Search & Discovery „Konstruktion“ angelegt und den alten Textfilter „Florhöhe“ (40 Einzelwerte) gelöscht. | `/collections/teppichboden` zeigt den Filter Konstruktion; auf Unterkategorien mit einem Wert bleibt er ausgeblendet |
+| Bereinigung | Velours, Schlinge, Nadelvlies, Kurzflor und Hochflor aus `custom.arten` entfernt: 61 Produkte behalten Teppichfliesen bzw. Wolle, bei 39 Rollenwaren ist das Feld leer. | Gegenprobe 100 von 100; Kollektionen danach unverändert |
+
+Alle Schreibvorgänge ab der Befüllung hat der Inhaber selbst mit den vorbereiteten Batchdateien ausgeführt (`shopify store execute --allow-mutations`), weil die Berechtigungsprüfung der Sitzung sie blockierte. Plan, Rollback-Dateien (`rollback-b3-kollektionsregeln.gql`, `rollback-b4-arten.gql`) und Schreibprotokolle liegen lokal unter `~/teppich-paradies-analyse/teppichboden-felder-2026-09-30/`.
+
+**Abweichung von Abschnitt 3.3:** Search & Discovery zeigt ein Dezimal-Metafeld nicht als Bereich, sondern als Liste der Rohwerte („0.7, 1.1, 2.2 …“, Punkt statt Komma, ohne Einheit). Ein Filter auf `custom.florhoehe_mm` ist damit nicht brauchbar und sollte in Search & Discovery gelöscht bleiben; die Höhen-Einstiege sind die Kategorien Kurzflor und Hochflor. Ein gruppierter Filter („bis 5 mm / 5 bis 10 mm / ab 10 mm“) wäre nur über das Theme machbar und ist ein eigener kleiner PR.
+
+**Jetzt gilt:** Ein neuer Teppichboden braucht `custom.konstruktion`, `custom.florhoehe_mm` und, nur bei Wolle, den Wert Wolle in `custom.arten`. Kurzflor und Hochflor ergeben sich aus der Zahl, niemand pflegt eine Klasse.
+
+**Offen:** `shopify.pile-type` (17 Produkte mit „Hochflor“ unter 10 mm, unverändert), die Definition `custom.florhohe_klasse` (ungenutzt, kann gelöscht werden), die fünf nicht mehr verwendeten Einträge Velours, Schlinge, Nadelvlies, Kurzflor und Hochflor im Metaobjekt `teppich_art`, die Menü-Doppelungen aus 4.2 und die Tag-Bereinigung aus 4.8.

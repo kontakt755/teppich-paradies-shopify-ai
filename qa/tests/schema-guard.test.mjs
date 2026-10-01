@@ -102,3 +102,20 @@ test('H4: Sections und t:-Schluessel bleiben unangetastet', () => {
   const key = wrap({ name: 't:names.product_recommendations', settings: [], presets: [{ name: 'a' }] });
   assert.deepEqual(rules(analyzeSchemaSource({ source: key, dir: 'blocks', name: 'b.liquid' })), []);
 });
+
+test('L: Setting-Label ueber 70 Zeichen ist ein Fehler, auch in Section-Bloecken', () => {
+  // 2026-09-30: 81 Zeichen im Label von btn1_url - Shopify verwarf die ganze Section.
+  const lang = 'Ziel Knopf 1 (z. B. #ResultsList für die Auswahl darunter; leer = erstes Produkt)';
+  const source = wrap({
+    name: 'S',
+    settings: [{ type: 'url', id: 'btn1_url', label: lang }, { type: 'text', id: 'ok', label: 'x'.repeat(70) }],
+    blocks: [{ type: 'weg', name: 'Weg', settings: [{ type: 'text', id: 't', label: lang }] }],
+    presets: [{ name: 'S' }]
+  });
+  const result = analyzeSchemaSource({ source, dir: 'sections', name: 's.liquid' });
+  const treffer = result.findings.filter(f => f.rule === 'SETTING_LABEL_TOO_LONG');
+  assert.equal(treffer.length, 2);
+  assert.ok(treffer.every(f => f.severity === 'error'));
+  const kurz = wrap({ name: 'S', settings: [{ type: 'text', id: 'a', label: 't:names.' + 'x'.repeat(80) }], presets: [{ name: 'S' }] });
+  assert.deepEqual(rules(analyzeSchemaSource({ source: kurz, dir: 'sections', name: 's.liquid' })), []);
+});

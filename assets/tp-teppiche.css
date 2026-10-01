@@ -78,6 +78,61 @@
 .tp-tep-usps li { display: inline-flex; align-items: center; gap: 8px; }
 .tp-tep-usps .tp-tep-icon { color: var(--tp-ok); }
 
+/* Mass-Rechner im Einstieg (sections/tp-teppiche-hero.liquid, assets/tp-teppich-rechner.js) */
+.tp-tep-rechner { display: grid; gap: 8px; padding: 16px; border-radius: var(--tp-r); background: #fff; border: 1px solid var(--tp-line); box-shadow: var(--tp-shadow); }
+.tp-tep-rechner__label { font-size: 14px; font-weight: 650; }
+.tp-tep-rechner__zeile { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto; gap: 10px; align-items: end; }
+.tp-tep-rechner__feld { display: grid; gap: 4px; font-size: 13px; color: var(--tp-ink-2); }
+.tp-tep .tp-tep-rechner__feld input {
+  width: 100%; min-width: 0; min-height: 48px; padding: 0 14px; border: 1px solid var(--tp-line-2); border-radius: 12px;
+  font: inherit; font-size: 17px; font-weight: 600; color: var(--tp-ink); background: #fff; font-variant-numeric: tabular-nums;
+}
+.tp-tep .tp-tep-rechner__feld input::placeholder { color: var(--tp-ink-3); font-weight: 400; font-size: 15px; }
+.tp-tep .tp-tep-rechner__feld input:focus-visible { outline: 2px solid var(--tp-ink); outline-offset: 1px; border-color: var(--tp-ink); }
+.tp-tep-rechner__mal { padding-bottom: 12px; font-size: 18px; color: var(--tp-ink-3); }
+.tp-tep-rechner__fehler { font-size: 14px; color: #a32a2a; }
+.tp-tep-rechner__hinweis { font-size: 13px; color: var(--tp-ink-3); }
+.tp-tep .tp-tep-rechner__alle { align-self: center; font-size: 15px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+.tp-tep-rechner__ergebnis { display: grid; gap: 16px; margin-top: clamp(28px, 4vw, 44px); scroll-margin-top: 90px; }
+.tp-tep-rechner__ergebnis[hidden] { display: none; }
+.tp-tep-rechner__kopf { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.tp-tep-rechner__summe { font-size: clamp(17px, 1.8vw, 20px); font-weight: 650; max-width: 760px; text-wrap: balance; }
+.tp-tep .tp-tep-rechner__loeschen {
+  min-height: 44px; padding: 0 18px; border: 1px solid var(--tp-line-2); border-radius: 999px; background: #fff;
+  font: inherit; font-size: 14px; font-weight: 600; color: var(--tp-ink); cursor: pointer;
+}
+.tp-tep .tp-tep-rechner__loeschen:hover { border-color: var(--tp-ink); }
+.tp-tep-rechner__liste { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px 16px; }
+.tp-tep-rechner__link { display: grid; gap: 10px; height: 100%; text-decoration: none; color: inherit; }
+.tp-tep-rechner__bild { display: block; aspect-ratio: 1 / 1; border-radius: 12px; overflow: hidden; background: var(--tp-sand-2); }
+.tp-tep-rechner__bild img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .35s ease; }
+.tp-tep-rechner__link:hover .tp-tep-rechner__bild img { transform: scale(1.03); }
+.tp-tep-rechner__text { display: grid; gap: 2px; align-content: start; }
+.tp-tep-rechner__titel { font-size: 15px; font-weight: 650; line-height: 1.3; }
+.tp-tep-rechner__qualitaet { font-size: 13px; color: var(--tp-ink-3); }
+.tp-tep-rechner__preis { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.tp-tep-rechner__ab { font-size: 14px; font-weight: 600; }
+.tp-tep-rechner__betrag { font-size: 20px; font-weight: 750; }
+.tp-tep-rechner__alt { font-size: 14px; color: var(--tp-ink-3); }
+.tp-tep-rechner__preis:has(.tp-tep-rechner__alt) .tp-tep-rechner__betrag { color: var(--tp-hauptaktion, #b0303f); }
+.tp-tep-rechner__grund { font-size: 13px; color: var(--tp-ink-2); }
+.tp-tep-rechner__karte--passt-nicht { opacity: .5; }
+.tp-tep-rechner__karte--passt-nicht .tp-tep-rechner__bild img { filter: grayscale(.6); }
+/* Solange ein Mass gilt, ersetzt die sortierte Liste das normale Raster. */
+.tp-rechner-aktiv #ResultsList { display: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .tp-tep-rechner__bild img { transition: none; }
+  .tp-tep-rechner__link:hover .tp-tep-rechner__bild img { transform: none; }
+}
+@media (max-width: 1099px) { .tp-tep-rechner__liste { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 699px) {
+  .tp-tep-rechner__zeile { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+  .tp-tep-rechner__los { grid-column: 1 / -1; }
+  .tp-tep-rechner__liste { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 12px; }
+  .tp-tep-rechner__betrag { font-size: 18px; }
+}
+
 /* Alle Teppiche: zwei Wege (sections/tp-teppiche-wege.liquid) */
 .tp-tep-wege { padding: clamp(24px, 3.5vw, 48px) 0 clamp(28px, 4vw, 52px); background: linear-gradient(180deg, var(--tp-sand) 0%, #fff 100%); }
 .tp-tep-wege__inner { display: grid; gap: clamp(18px, 2.6vw, 30px); }
