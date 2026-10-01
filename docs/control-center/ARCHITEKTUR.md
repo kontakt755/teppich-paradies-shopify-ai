@@ -149,7 +149,7 @@ Der frühere „statische" Betrieb über GitHub Pages ist abgeschaltet (siehe Ab
 | ohne lokalen Server (z. B. `index.html` direkt geöffnet oder alter Pages-Link) | `GET /api/capabilities` liefert nichts (404) | keiner | keine Daten sichtbar; Hinweis „Nur lokal im Betrieb – `npm run dashboard`" |
 
 Das Frontend erkennt die Betriebsart über `GET /api/capabilities` (404 → nicht lokal). Ohne lokalen Server
-lädt `app.js` bewusst kein `issues.json` und zeigt keine Aufgabendaten, auch wenn die Datei technisch
+lädt die Oberfläche (`kern/daten.mjs`) bewusst kein `issues.json` und zeigt keine Aufgabendaten, auch wenn die Datei technisch
 erreichbar wäre. Aktionen werden im lokalen Betrieb nie nur ausgeblendet: der Server prüft Übergänge
 serverseitig (`lib/model.mjs` ist dieselbe Datei in Browser und Server).
 
@@ -298,7 +298,8 @@ Schreibzugriff, keine Mehrbenutzer-Auth, kein eigener Datenspeicher.
 
 Eigener Tab, getrennt vom Aufgabenmodell oben, weil die Daten aus einer anderen Quelle kommen und nie
 öffentlich werden dürfen: private Dateien unter `$TP_PRIVAT_DIR` (Standard `~/teppich-paradies-analyse`),
-nie `issues.json`, nie GitHub. Drei Unteransichten in `docs/ai-dashboard/app.js` (`viewEinkauf*`):
+nie `issues.json`, nie GitHub. Drei Unteransichten in `docs/ai-dashboard/ansichten/einkauf.mjs` und
+`ansichten/einkauf/` (`viewEinkauf*`):
 
 | Unteransicht | Quelle | Aufbereitung |
 |---|---|---|
@@ -323,7 +324,7 @@ Wartezeiten im Einkauf rechnet das Frontend aus `bestelltAm`/`geliefertAm` (7 Ta
 
 ## 9. Startseite „Heute" (seit 2026-09-23)
 
-`viewHeute()` in `docs/ai-dashboard/app.js` ist die Startseite und bleibt primär aufgabenbasiert
+`viewHeute()` in `docs/ai-dashboard/ansichten/heute.mjs` ist die Startseite und bleibt primär aufgabenbasiert
 (GitHub Issues, siehe Abschnitt 4). Ergänzend – nur im lokalen Modus, weil die Quellen privat sind –
 zeigt sie zwei weitere Kacheln, die jeweils in den Bereich „Einkauf" (Abschnitt 8) durchklicken:
 
@@ -380,7 +381,7 @@ unverändert stehen – lieber ein alter, erkennbar datierter Stand als gar kein
 
 Der Endpunkt `/api/aktualisierung` (`scripts/dashboard-api.mjs`, Funktion `aktualisierung()`) liest diese
 Datei, rechnet je Teil das Alter aus und markiert `veraltet: true` ab 24 Stunden. Die Startseite „Heute"
-und „Insights" zeigen das in der Kachel „Systemgesundheit" (`docs/ai-dashboard/app.js`,
+und „Insights" zeigen das in der Kachel „Systemgesundheit" (`docs/ai-dashboard/bausteine/aktualisierung.mjs`,
 `aktualisierungHealth()`): eine Zeile je Datenquelle mit „Stand: …" und, wenn veraltet oder fehlgeschlagen,
 dem Hinweis „Daten veraltet – bitte `npm run daten:aktualisieren` ausführen." Wie beim Einkauf-Bereich nur
 im lokalen Modus sichtbar (`capabilities.mode === 'local'`) – die Rohdaten bleiben privat.
@@ -424,3 +425,32 @@ fortsetzbar). Details, Ein-/Ausgabedateien und Sicherheitsregeln stehen in
 `operations/README.md`, Abschnitt „Anreicherung aus Lieferantenseiten". Kein
 neuer Dashboard-Bereich – die geplanten Werte landen wie gehabt unter
 `$TP_PRIVAT_DIR/anreicherung/`, nie im Repository.
+
+## 12. Aufbau der Oberfläche in Modulen (seit 2026-10-01)
+
+`docs/ai-dashboard/app.js` war bis dahin eine Datei mit rund 5100 Zeilen; an ihr trafen sich alle
+parallel arbeitenden Sitzungen. Sie ist jetzt der Einstieg in native ES-Module – weiterhin ohne
+Build-Schritt, ohne Framework, ohne neue Abhängigkeit. Verhalten, Texte, Routen und Rollenprüfung
+(`ANSICHT_ROLLEN`, `darfAnsicht` in `kern/router.mjs`) sind unverändert.
+
+| Ordner | Inhalt | darf importieren aus |
+|---|---|---|
+| `kern/` | Zustand, Helfer, API-Zugriff, Sitzung, Router, Daten, Zeichnen | `kern/`, `lib/` |
+| `bausteine/` | was mehrere Ansichten teilen | `kern/`, `lib/`, `bausteine/`; `aktualisierung.mjs` und `palette.mjs` zusätzlich aus Ansichten |
+| `ansichten/` | eine Datei je Route, Teilmodule im gleichnamigen Ordner | alles darunter, andere Ansichten nur wo fachlich nötig |
+| `ereignisse.mjs`, `app.js` | Verdrahtung | alles |
+
+Dateiliste und „wo dockt etwas Neues an" stehen in `docs/ai-dashboard/README.md`, Abschnitt
+„Aufbau der Oberfläche"; `tests/aufbau.test.mjs` prüft die Regeln.
+
+**Auslieferung.** `handleStatic()` in `scripts/serve-dashboard.mjs` liefert jede Datei unterhalb von
+`docs/ai-dashboard/` aus (keine Pfadliste, Ausbrüche nach oben werden abgewiesen), `.mjs` und `.js`
+als `text/javascript`, alles mit `Cache-Control: no-store`. Einen Service Worker gibt es bewusst
+nicht (`index.html`), das PWA-Manifest nennt nur Icons. Für die Module war deshalb keine Änderung am
+Server nötig; `tests/server.test.mjs` hält MIME-Typ und `no-store` für jedes Modul fest. Im
+Netzmodus verlangt jede Moduldatei die Sitzung – Modul-Skripte derselben Herkunft schicken das
+Cookie mit.
+
+**Ladezeit.** Statt einer Anfrage sind es rund 50 kleine; über Tailscale am Handy kostet die
+Importkette einige Umläufe mehr. Falls das spürbar wird: `<link rel="modulepreload">` in
+`index.html` – bewusst noch nicht eingebaut, weil die Liste eine neue gemeinsame Datei wäre.
