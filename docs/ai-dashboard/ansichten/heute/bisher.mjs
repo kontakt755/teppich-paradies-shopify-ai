@@ -108,7 +108,7 @@ function istInhaber() {
 /** Auftragsfluss-Zaehler je Gruppe (offen/bestellt/unterwegs/erledigt) ueber Ware und Muster. */
 function heuteAuftragsflussZaehler(b) {
   const { ware, muster, gruppe } = einkaufPositionenMitStand(b);
-  const afZaehler = { offen: 0, bestellt: 0, unterwegs: 0, erledigt: 0 };
+  const afZaehler = { offen: 0, bestellt: 0, unterwegs: 0, erledigt: 0, eigen: 0 };
   for (const p of [...ware, ...muster]) afZaehler[gruppe(p)] += 1;
   return afZaehler;
 }

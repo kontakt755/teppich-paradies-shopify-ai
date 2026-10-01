@@ -14,7 +14,18 @@
 export const UNGEKLAERT = 'UNGEKLAERT';
 export const SCHWELLEN_STANDARD = Object.freeze({ nachhakenTage: 7, problemTage: 14 });
 
-const STUFEN = ['zuBestellen', 'bestellt', 'unterwegs', 'erledigt'];
+const STUFEN = ['zuBestellen', 'bestellt', 'unterwegs', 'erledigt', 'eigen'];
+
+// Spiegel von operations/lib/musterherkunft.mjs musterOhneLieferant() (dort die fuehrende Quelle).
+const ROUTEN_OHNE_LIEFERANT = ['SAMPLE_STOCK', 'SAMPLE_CUT'];
+
+/** Muster, das nicht beim Lieferanten bestellt wird ("haben wir da" oder Musterlager-Route). */
+export function musterEigen(p) {
+  if (!p?.istMuster) return false;
+  if (p.musterHerkunft === 'eigen_versand' || p.musterHerkunft === 'eigen_vorbei') return true;
+  if (p.musterHerkunft === 'lieferant') return false;
+  return ROUTEN_OHNE_LIEFERANT.includes(p.route) || ROUTEN_OHNE_LIEFERANT.includes(p.musterRoute);
+}
 
 /** Stufe einer Position wie filterGruppe() im Server: geliefert/raus zaehlen als "unterwegs". */
 export function stufeVon(status) {
@@ -41,7 +52,8 @@ export function warnstufe(tage, schwellen = SCHWELLEN_STANDARD) {
   return null;
 }
 
-const leereStufen = () => ({ zuBestellen: [], bestellt: [], unterwegs: [], erledigt: [] });
+// eigen: offene Muster aus dem eigenen Bestand - vorbeibringen/verschicken statt bestellen.
+const leereStufen = () => ({ zuBestellen: [], bestellt: [], unterwegs: [], erledigt: [], eigen: [] });
 
 function leereStammdaten(id) {
   return {
@@ -77,7 +89,8 @@ export function lieferantenKarten({ gruppen = [], musterGruppen = [], lieferante
       for (const pos of g.positionen || []) {
         const eintrag = eintragFuer(pos);
         const tage = wartetage(eintrag, jetzt);
-        ziel[art][stufeVon(eintrag?.status)].push({ pos, eintrag, wartetage: tage, warnstufe: warnstufe(tage, schwellen) });
+        const stufe = stufeVon(eintrag?.status);
+        ziel[art][stufe === 'zuBestellen' && musterEigen(pos) ? 'eigen' : stufe].push({ pos, eintrag, wartetage: tage, warnstufe: warnstufe(tage, schwellen) });
       }
     }
   };
@@ -96,13 +109,16 @@ export function lieferantenKarten({ gruppen = [], musterGruppen = [], lieferante
       musterOffen: k.muster.zuBestellen.length,
       musterLaufend: k.muster.bestellt.length + k.muster.unterwegs.length,
     };
+    // Eigenes Feld (nicht in `zahlen`): offene Muster aus dem eigenen Bestand.
+    const musterEigen = k.muster.eigen.length;
     return {
       ...k,
       name: st.name || leereStammdaten(k.id).name,
       zugeordnet: k.id !== UNGEKLAERT,
       stammdaten: st,
       zahlen,
-      offenGesamt: zahlen.zuBestellen + zahlen.bestellt + zahlen.unterwegs + zahlen.musterOffen + zahlen.musterLaufend,
+      musterEigen,
+      offenGesamt: zahlen.zuBestellen + zahlen.bestellt + zahlen.unterwegs + zahlen.musterOffen + zahlen.musterLaufend + musterEigen,
       ueberfaellig: {
         stufe: wartend.some(x => x.warnstufe === 'crit') ? 'crit' : wartend.length ? 'warn' : null,
         anzahl: wartend.length,
@@ -120,7 +136,7 @@ export function lieferantenKarten({ gruppen = [], musterGruppen = [], lieferante
 /** Passt eine Karte zum Auftragsfluss-Filter (af)? Ohne Filter: alles, was noch Arbeit macht. */
 export function karteImFilter(karte, af = '') {
   const n = stufe => karte.ware[stufe].length + karte.muster[stufe].length;
-  if (!af) return n('zuBestellen') + n('bestellt') + n('unterwegs') > 0;
+  if (!af) return n('zuBestellen') + n('bestellt') + n('unterwegs') + n('eigen') > 0;
   const stufe = af === 'offen' ? 'zuBestellen' : af;
   return STUFEN.includes(stufe) ? n(stufe) > 0 : false;
 }

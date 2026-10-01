@@ -114,9 +114,13 @@ function kopf(anzahl, sicht) {
 function todoZeile(t, erste) {
   const k = t.knopf;
   const klasse = `btn btn-sm${erste ? ' btn-primary' : ''}`;
+  // k.schritt: Zeitleisten-Schritt direkt ausloesen (z. B. "Erledigt – Kunde hat Muster");
+  // der Klick laeuft ueber zeitleisteKlick (ansichten/kunden/zeitleiste.mjs). Rolle "lesen" bekommt den Link.
   const knopf = k.aufgabe
     ? `<button type="button" class="${klasse}" data-open="${esc(k.aufgabe)}" data-primary="1">${esc(k.text)}</button>`
-    : `<a class="${klasse}" href="${esc(k.href)}">${esc(k.text)}</a>`;
+    : k.schritt && !istNurLesend()
+      ? `<button type="button" class="${klasse}" data-zl-schritt="${esc(k.schritt.aktion)}" data-zl-order="${esc(k.schritt.orderId)}">${esc(k.text)}</button>`
+      : `<a class="${klasse}" href="${esc(k.href)}">${esc(k.schritt ? 'Ansehen' : k.text)}</a>`;
   return `<div class="heute-todo ${esc(t.ton)}" data-todo="${esc(t.art)}">
     <div class="heute-todo-text"><div class="t">${esc(t.titel)}</div><div class="s">${esc(t.kontext)}</div></div>
     ${knopf}

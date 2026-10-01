@@ -97,6 +97,16 @@ function laufendeBestellungen(bestellzeilen, statusAlle) {
 }
 
 const kundeVon = z => z.kundenname || z.orderName || 'Kunde';
+
+// Muster aus dem eigenen Bestand ("haben wir da") - Spiegel von operations/lib/musterherkunft.mjs.
+const ROUTEN_OHNE_LIEFERANT = ['SAMPLE_STOCK', 'SAMPLE_CUT'];
+function musterEigen(p) {
+  if (!p?.istMuster) return false;
+  if (p.musterHerkunft === 'eigen_versand' || p.musterHerkunft === 'eigen_vorbei') return true;
+  if (p.musterHerkunft === 'lieferant') return false;
+  return ROUTEN_OHNE_LIEFERANT.includes(p.route) || ROUTEN_OHNE_LIEFERANT.includes(p.musterRoute);
+}
+const ortVon = z => { const o = z?.auftrag?.details?.lieferadresse?.ort; return o && o !== '–' ? o : null; };
 const istBezahlt = z => BEZAHLT.includes(String(z.zahlungsstatus));
 const artWort = positionen => (positionen.every(x => x.p.istMuster) ? 'Muster' : 'Ware');
 
@@ -125,7 +135,12 @@ function lageVon({ z, a, offen }, { statusAlle, rueckrufJeOrder, heute, jetzt, s
   if (rueckrufFaellig(rueckrufJeOrder.get(z.orderId), heute)) return { spalte: 'wir', art: 'rueckruf', schritt: 'Zurückrufen', alterTage: seitBestellung };
   if (!istBezahlt(z)) return { spalte: 'kunde', art: 'zahlung', schritt: 'Zahlung offen', alterTage: seitBestellung };
   const mit = status => offen.filter(x => (x.eintrag?.status || null) === status);
-  const unbestellt = mit(null);
+  const eigen = mit(null).filter(x => musterEigen(x.p));
+  const unbestellt = mit(null).filter(x => !musterEigen(x.p));
+  if (eigen.length && !unbestellt.length) {
+    const vorbei = eigen.every(x => x.p.musterHerkunft === 'eigen_vorbei');
+    return { spalte: 'wir', art: 'muster_eigen', schritt: vorbei ? 'Muster vorbeibringen' : 'Muster verschicken', alterTage: seitBestellung, positionen: eigen };
+  }
   if (unbestellt.length) return { spalte: 'wir', art: 'bestellen', schritt: `${artWort(unbestellt)} bestellen`, alterTage: seitBestellung, positionen: unbestellt };
   const maxTage = (liste, feld) => liste.reduce((m, x) => Math.max(m, tageSeit(x.eintrag?.[feld], jetzt) ?? 0), 0);
   const bestellt = mit('bestellt');
@@ -197,6 +212,7 @@ function ausBestellungen(quellen, k) {
   const todos = [];
   const bestellen = new Map();   // lieferant|art -> Positionen, noch nicht beim Lieferanten bestellt
   const nachhaken = new Map();   // lieferant -> Positionen, zu lange bestellt
+  const eigeneMuster = new Map(); // orderId -> Muster aus eigenem Bestand, noch nicht beim Kunden
   const sammle = (map, key, wert) => { if (!map.has(key)) map.set(key, []); map.get(key).push(wert); };
 
   for (const b of laufendeBestellungen(quellen.bestellzeilen, k.statusAlle)) {
@@ -232,7 +248,9 @@ function ausBestellungen(quellen, k) {
     for (const x of offen) {
       const status = x.eintrag?.status || null;
       const pos = { ...x, z, seitBestellung };
-      if (!status) sammle(bestellen, `${x.p.lieferant ?? UNGEKLAERT}|${x.p.istMuster ? 'muster' : 'ware'}`, pos);
+      // "Haben wir da": nicht beim Lieferanten bestellen, sondern vorbeibringen bzw. verschicken.
+      if (!status && musterEigen(x.p)) sammle(eigeneMuster, z.orderId, pos);
+      else if (!status) sammle(bestellen, `${x.p.lieferant ?? UNGEKLAERT}|${x.p.istMuster ? 'muster' : 'ware'}`, pos);
       else if (status === 'bestellt') {
         const tage = tageSeit(x.eintrag.bestelltAm, k.jetzt);
         if (tage !== null && tage >= k.schwellen.nachhakenTage) sammle(nachhaken, x.p.lieferant ?? UNGEKLAERT, { ...pos, tage });
@@ -267,6 +285,22 @@ function ausBestellungen(quellen, k) {
       titel: `${art === 'muster' ? 'Muster' : 'Ware'} bei ${k.lieferantName(lieferant)} bestellen`,
       kontext: [kundenKurz(positionen), wasKurz(positionen), `bezahlt, Bestellung ${vorText(tage)}`].join(' · '),
       knopf: { text: 'Bestellen', href: einkaufLink(lieferant) },
+    });
+  }
+  for (const [orderId, positionen] of eigeneMuster) {
+    const z = positionen[0].z;
+    const tage = Math.max(...positionen.map(x => x.seitBestellung ?? 0));
+    const vorbei = positionen.every(x => x.p.musterHerkunft === 'eigen_vorbei');
+    todos.push({
+      id: `muster-eigen:${orderId}`, art: 'muster_eigen', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.bestellen), alterTage: tage,
+      titel: vorbei ? `Muster vorbeibringen bei ${kundeVon(z)}` : `Muster verschicken an ${kundeVon(z)}`,
+      kontext: [ortVon(z), z.orderName, wasKurz(positionen), 'aus eigenem Bestand'].filter(Boolean).join(' · '),
+      // Ein Klick traegt "Kunde hat Muster" ein (Zeitleiste); der Server setzt die Uebergabe mit.
+      // Nur wenn ALLE Muster der Bestellung aus dem eigenen Bestand kommen - sonst stuende
+      // "Kunde hat Muster" da, obwohl andere Muster noch beim Lieferanten liegen: dann in die Akte.
+      knopf: (z.auftrag?.positionen || []).filter(p => p.istMuster).every(musterEigen)
+        ? { text: 'Erledigt – Kunde hat Muster', schritt: { orderId, aktion: 'kunde_hat_muster' }, href: kundenLink(z) }
+        : { text: 'Ansehen', href: kundenLink(z) },
     });
   }
   for (const [lieferant, positionen] of nachhaken) {

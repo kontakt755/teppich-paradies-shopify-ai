@@ -22,7 +22,8 @@ import { normalizeTask, requirementsFor, labelChangesFor, STATUS_BY_KEY, STATUS_
 import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
-import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, oeffneWieder, STATUS_ORDER, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
+import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, oeffneWieder, setzeZurueckAufOffen, STATUS_ORDER, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
+import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
 import { auftragsverlaufPfad, leseVerlauf, haengeEreignisAn, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
 import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden, kundenIndex } from '../operations/lib/kundensuche.mjs';
 import { faelle as kundenFaelle } from '../operations/lib/kundenfaelle.mjs';
@@ -188,8 +189,13 @@ function ladeBestellModell(dir) {
   const file = path.join(dir, 'bestelluebersicht', 'orders.json');
   const daten = readJsonIfExists(file);
   if (!daten) return null;
-  try { return aufbereiten(ladeExport(JSON.stringify(daten)), { jetzt: new Date() }); }
+  try { return mitMusterherkunft(aufbereiten(ladeExport(JSON.stringify(daten)), { jetzt: new Date() }), dir); }
   catch { return null; }
+}
+
+/** Traegt die lokale Wahl "Muster haben wir da" (musterherkunft.json) an die Muster-Positionen. */
+function mitMusterherkunft(modell, dir) {
+  return wendeAufModellAn(modell, leseMusterherkunft(musterherkunftPfad(dir)));
 }
 
 /**
@@ -471,6 +477,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         anzahl = setzePositionen(schritt, notiz);
       } else {
         haengeEreignisAn(auftragsverlaufPfad(dir), { orderId, schritt, actor, notiz, bezug, jetzt: now() });
+        // Muster aus eigenem Bestand: "Erledigt – Kunde hat Muster" ist zugleich die Uebergabe
+        // (vorbeigebracht bzw. verschickt) - sonst bliebe "raus" als Luecke im Verlauf stehen.
+        if (schritt === 'kunde_hat_muster' && vorher.eigenerBestand && positionen.length) {
+          const alle = leseAuftragsstatus(statusDatei);
+          if (positionen.some(p => STATUS_ORDER.indexOf(alle[positionKey(orderId, p.lineItemId)]?.status) < STATUS_ORDER.indexOf('raus'))) {
+            anzahl = setzePositionen('raus', vorher.eigenerBestand === 'vorbei' ? 'Persönlich übergeben' : 'Aus eigenem Bestand verschickt');
+          }
+        }
         if (['kunde_hat_bestellt', 'kein_interesse'].includes(schritt) && positionen.length) {
           anzahl = setzePositionen('erledigt', `Ergebnis: ${SCHRITT_LABEL.muster[schritt]}${notiz ? ` – ${notiz}` : ''}`);
         }
@@ -483,6 +497,63 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     merke(benutzer, actor, 'Auftragsschritt', `${auftrag.name}: ${schritt}`);
     const nachher = zeitleisten(dir, modell, leseAuftragsstatus(statusDatei)).get(orderId);
     return { ok: true, orderId, schritt, positionen: anzahl, ...zeitleistenFelder(nachher) };
+  }
+
+  /**
+   * "Zurück auf offen": eine oder mehrere Positionen von jedem Schritt zurueck auf "noch zu
+   * bestellen". Angabe als `positionen: [{orderId, lineItemId}]` (Sammelaktion, auch ueber
+   * mehrere Bestellungen) oder `orderId` mit `lineItemId`/`lineItemIds` - nur `orderId` heisst:
+   * alle Positionen dieser Bestellung. Bereits offene Positionen werden uebersprungen.
+   */
+  function zurueckAufOffen(payload, benutzer, actor) {
+    const { orderId, lineItemId, lineItemIds, positionen, notiz } = payload || {};
+    const dir = privatDirPath || privatDir();
+    const file = auftragsstatusPfad(dir);
+    let ziele;
+    if (Array.isArray(positionen) && positionen.length) ziele = positionen.map(p => ({ orderId: p?.orderId, lineItemId: p?.lineItemId }));
+    else if (orderId && (lineItemId || (Array.isArray(lineItemIds) && lineItemIds.length))) ziele = (lineItemId ? [lineItemId] : lineItemIds).map(l => ({ orderId, lineItemId: l }));
+    else if (orderId) {
+      const alle = leseAuftragsstatus(file);
+      ziele = Object.values(alle).filter(e => e?.orderId === String(orderId) && e.status).map(e => ({ orderId: e.orderId, lineItemId: e.lineItemId }));
+    } else throw new ApiError(400, 'orderId oder positionen sind Pflicht', { missing: ['orderId'] });
+    if (ziele.length > 500) throw new ApiError(400, 'Zu viele Positionen auf einmal');
+    const eintraege = {};
+    let anzahl = 0;
+    try {
+      for (const z of ziele) {
+        const e = setzeZurueckAufOffen(file, { ...z, actor, notiz, jetzt: now() });
+        if (e) { eintraege[positionKey(z.orderId, z.lineItemId)] = e; anzahl += 1; }
+      }
+    } catch (e) {
+      if (e instanceof AuftragsstatusFehler) throw new ApiError(400, e.message);
+      throw e;
+    }
+    audit({ actor, action: 'auftragsstatus-zurueck-auf-offen', anzahl, orderIds: [...new Set(ziele.map(z => z.orderId))].slice(0, 20) });
+    merke(benutzer, actor, 'Zurück auf offen', `${anzahl} Artikel${notiz ? ` · ${notiz}` : ''}`);
+    return { ok: true, anzahl, eintraege };
+  }
+
+  /** "Muster haben wir da": Wahl je Musterbestellung (ohne lineItemId) oder Musterposition, nur anhaengen. */
+  function musterHerkunftSetzen(payload, benutzer, actor) {
+    const { orderId, lineItemId, herkunft, notiz } = payload || {};
+    if (!orderId || !herkunft) throw new ApiError(400, 'orderId und herkunft sind Pflicht', { missing: ['orderId', 'herkunft'] });
+    if (!HERKUNFT_WERTE.includes(herkunft)) throw new ApiError(400, `Unbekannte Herkunft „${herkunft}"`);
+    const dir = privatDirPath || privatDir();
+    const modell = ladeBestellModell(dir);
+    const auftrag = modell ? [...modell.auftraege, ...modell.testauftraege].find(a => a.id === orderId) : null;
+    if (!auftrag) throw new ApiError(404, 'Bestellung nicht gefunden – Bestelldaten evtl. inzwischen aktualisiert.');
+    const muster = auftrag.positionen.filter(p => p.istMuster && (!lineItemId || p.lineItemId === lineItemId));
+    if (!muster.length) throw new ApiError(400, lineItemId ? 'Diese Position ist kein Muster' : 'Diese Bestellung enthält keine Muster');
+    let ereignis;
+    try {
+      ereignis = haengeWahlAn(musterherkunftPfad(dir), { orderId, lineItemId: lineItemId || null, herkunft, actor, notiz, jetzt: now() });
+    } catch (e) {
+      if (e instanceof MusterherkunftFehler) throw new ApiError(400, e.message);
+      throw e;
+    }
+    audit({ actor, action: 'musterherkunft', orderId, lineItemId: lineItemId || null, herkunft });
+    merke(benutzer, actor, 'Muster-Herkunft', `${auftrag.name}${lineItemId ? ' (eine Position)' : ''}: ${HERKUNFT_LABEL[herkunft]}`);
+    return { ok: true, ereignis };
   }
 
   async function currentUser() {
@@ -697,7 +768,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       let modell;
       // Der Export der Admin API liegt als {data:{orders:{nodes}}} vor;
       // ladeExport bringt beide Formen auf {orders, quellvarianten}.
-      try { modell = aufbereiten(ladeExport(JSON.stringify(daten)), { jetzt: now() }); }
+      try { modell = mitMusterherkunft(aufbereiten(ladeExport(JSON.stringify(daten)), { jetzt: now() }), dir); }
       catch (e) { return { verfuegbar: false, quelle: file, hinweis: `orders.json konnte nicht ausgewertet werden: ${e.message}` }; }
       return { verfuegbar: true, quelle: file, exportiertAm: daten.exportiertAm || null, ...modell };
     },
@@ -926,7 +997,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       let hinweis = null;
       if (!daten) hinweis = leseFehler(ordersDatei) || 'orders.json fehlt - Bestelldaten noch nicht exportiert (npm run daten:aktualisieren).';
       else {
-        try { modell = aufbereiten(ladeExport(JSON.stringify(daten)), { jetzt: now() }); }
+        try { modell = mitMusterherkunft(aufbereiten(ladeExport(JSON.stringify(daten)), { jetzt: now() }), dir); }
         catch (e) { hinweis = `orders.json konnte nicht ausgewertet werden: ${e.message}`; }
       }
       return {
@@ -997,6 +1068,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Zeitleiste: ein Schritt fuer den ganzen Auftrag (alle Positionen bzw. ein Ereignis je Auftrag).
       // Additiv - ohne `aktion` verhaelt sich der Endpunkt exakt wie bisher.
       if (aktion === 'schritt') return auftragsSchrittSetzen(payload, benutzer, actor);
+      if (aktion === 'zurueckAufOffen') return zurueckAufOffen(payload, benutzer, actor);
+      if (aktion === 'musterHerkunft') return musterHerkunftSetzen(payload, benutzer, actor);
       if (!orderId || !lineItemId) throw new ApiError(400, 'orderId und lineItemId sind Pflicht', { missing: ['orderId', 'lineItemId'] });
       // "Wieder öffnen" macht einen Abschluss rueckgaengig (z. B. versehentlich "Ohne Einkauf
       // abschliessen"). Eigener Weg statt eines Pseudo-Status, damit der Abschluss im Verlauf

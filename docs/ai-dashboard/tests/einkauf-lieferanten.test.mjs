@@ -152,3 +152,17 @@ test('gmailLink: fertige Nachricht in Gmail, lange Texte ohne body, ohne Empfaen
   assert.equal(lang.url.includes('&body='), false);
   assert.deepEqual(gmailLink({ an: null, text: 'x' }), { url: null, gekuerzt: false });
 });
+
+test('lieferantenKarten: Muster "haben wir da" zaehlen nicht als offen, aber als eigene Arbeit', async () => {
+  const { lieferantenKarten: karten2, karteImFilter: imFilter, musterEigen } = await import('../lib/einkauf-lieferanten.mjs');
+  const m = (id, extra) => ({ orderId: 'o9', orderName: '#T9', lineItemId: id, istMuster: true, ...extra });
+  const k = karten2({ musterGruppen: [{ lieferant: 'A', positionen: [m('m1', { musterHerkunft: 'eigen_vorbei' }), m('m2', {}), m('m3', { musterRoute: 'SAMPLE_STOCK' })] }] })[0];
+  assert.equal(k.zahlen.musterOffen, 1);
+  assert.equal(k.musterEigen, 2);
+  assert.deepEqual(k.muster.eigen.map(x => x.pos.lineItemId), ['m1', 'm3']);
+  assert.equal(imFilter(k, ''), true);
+  const nurEigen = karten2({ musterGruppen: [{ lieferant: 'A', positionen: [m('m1', { musterHerkunft: 'eigen_versand' })] }] })[0];
+  assert.equal(imFilter(nurEigen, 'offen'), false, 'nicht unter "Noch zu bestellen"');
+  assert.equal(imFilter(nurEigen, ''), true);
+  assert.equal(musterEigen({ istMuster: false, musterHerkunft: 'eigen_vorbei' }), false);
+});
