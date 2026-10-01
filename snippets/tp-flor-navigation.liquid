@@ -16,6 +16,7 @@
   endfor
   assign tp_flor_groups = 'Bis 5 mm|gid://shopify/FilterSettingGroup/380207438;Über 5 bis unter 10 mm|gid://shopify/FilterSettingGroup/380240206;Ab 10 mm|gid://shopify/FilterSettingGroup/380272974' | split: ';'
   assign tp_parent_url = collections['teppichboden'].url | default: '/collections/teppichboden'
+  assign tp_height_free_url = tp_flor_filter.url_to_remove | default: collection.url
   assign tp_is_vertical = false
   assign tp_is_horizontal = true
   if filter_style == 'vertical'
@@ -38,7 +39,6 @@
             assign tp_label = tp_parts[0]
             assign tp_value = tp_parts[1]
             assign tp_encoded_value = tp_value | url_encode
-            assign tp_target_url = tp_parent_url | append: '?filter.p.m.custom.florhoehe_mm=' | append: tp_encoded_value
             assign tp_local = false
             assign tp_active = false
             for tp_filter_value in tp_flor_filter.values
@@ -46,19 +46,27 @@
                 if tp_filter_value.count > 0 or tp_filter_value.active
                   assign tp_local = true
                   assign tp_active = tp_filter_value.active
-                  if tp_active
-                    assign tp_target_url = tp_filter_value.url_to_remove
-                  else
-                    assign tp_target_url = collection.url | append: '?filter.p.m.custom.florhoehe_mm=' | append: tp_encoded_value
-                  endif
                 endif
                 break
               endif
             endfor
+            assign tp_target_base = tp_height_free_url
+            unless tp_local
+              assign tp_target_base = tp_height_free_url | replace_first: collection.url, tp_parent_url
+            endunless
+            if tp_active
+              assign tp_target_url = tp_height_free_url
+            else
+              assign tp_separator = '?'
+              if tp_target_base contains '?'
+                assign tp_separator = '&'
+              endif
+              assign tp_target_url = tp_target_base | append: tp_separator | append: 'filter.p.m.custom.florhoehe_mm=' | append: tp_encoded_value
+            endif
           -%}
           <li>
             <a class="tp-flor-navigation__link{% if tp_active %} tp-flor-navigation__link--active{% endif %}"
-              href="{{ tp_target_url }}"
+              href="{{ tp_target_url | escape }}"
               data-tp-flor-navigation="true"
               data-tp-flor-value="{{ tp_value | escape }}"
               {% if tp_active %}data-tp-flor-clear="true"{% endif %}
