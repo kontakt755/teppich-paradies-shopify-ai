@@ -52,6 +52,7 @@ import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { rollenware, paketware, stueck as stueckware, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
 import { ladeEnvLocal } from '../operations/sync/zugang.mjs';
+import { ohneUeberholtenFehler } from '../operations/scripts/aktualisieren.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -1254,6 +1255,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         liste = liste.filter(e => e.typ === 'NOTE' && e.sichtbarkeit !== 'PRIVAT');
       } else if (bereich === 'archiv') {
         liste = liste.filter(e => e.status === 'DONE');
+      } else if (bereich === 'alle-aufgaben') {
+        // Startseite "Heute": alle sichtbaren Aufgaben, Team wie Technik - die To-do-Ableitung
+        // (docs/ai-dashboard/lib/todos.mjs) teilt sie nach `technisch` und Zustaendigkeit auf.
+        liste = liste.filter(e => e.typ === 'TASK' && (!ansicht || ansicht === 'alle' || passtZuAnsicht(e, ansicht, jetzt)));
       }
 
       if (suchtext) {
@@ -1280,7 +1285,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         gruppen: ARBEITSGRUPPEN.map(([key, label]) => ({ key, label, anzahl: gruppenZaehlung[key] || 0 })),
         eintraege: orgSortiere(liste, jetzt).slice(0, 200)
           .map(e => ({ ...e, dringlichkeit: e.typ === 'TASK' ? dringlichkeitsGruppe(e, jetzt) : null,
-            darfAendern: darfAendern(e, benutzer) })),
+            darfAendern: darfAendern(e, benutzer), technisch: istTechnisch(e.bereich) })),
       };
     },
 
@@ -1888,7 +1893,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     const jetzt = now().getTime();
     const SCHWELLE_MS = 24 * 60 * 60 * 1000;
     const teile = {};
-    for (const [teil, stand] of Object.entries(daten.teile)) {
+    for (const [teil, roh] of Object.entries(daten.teile)) {
+      // Ein Fehlversuch, der AELTER ist als der letzte erfolgreiche Stand derselben Quelle,
+      // ist ueberholt: die Daten wurden danach erneuert. Die Datei wird erst beim naechsten
+      // Lauf aufgeraeumt - bis dahin warnte die Startseite vor einem behobenen Fehler.
+      const stand = ohneUeberholtenFehler(roh);
       const alterMs = stand?.zeitpunkt ? jetzt - new Date(stand.zeitpunkt).getTime() : null;
       teile[teil] = { ...stand, alterMs, veraltet: alterMs === null ? null : alterMs > SCHWELLE_MS };
     }

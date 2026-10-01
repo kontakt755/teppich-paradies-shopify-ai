@@ -383,6 +383,40 @@ Fehlt die Datei, liefert der Endpunkt `{verfuegbar: false, hinweis, befehl}` sta
 Kachel zeigt den Hinweis samt Befehl. Der Export selbst laeuft ueber `npm run daten:aktualisieren`
 (Abschnitt 10).
 
+### 9a. „Heute" mit To-dos (seit 2026-10-01)
+
+Die Startseite zeigt zuerst, was zu tun ist: „N offene To-dos für dich" – je Zeile Titel, eine Zeile
+Kontext und genau ein Knopf –, darunter „Wer wartet auf was" (wir / Lieferant / Kunde), beim Inhaber
+vier Kennzahlen, und die bisherigen Blöcke eingeklappt (`ansichten/heute/bisher.mjs`).
+
+To-dos werden nicht erfasst, sondern abgeleitet: `docs/ai-dashboard/lib/todos.mjs` (reine Funktionen,
+`tests/todos.test.mjs`) rechnet aus den Antworten der vorhandenen Endpunkte.
+
+| To-do | Quelle | Regel |
+|---|---|---|
+| Ware/Muster bestellen | `/api/kunden/bestellungen` + `/api/einkauf/auftragsstatus` | bezahlt, Position ohne Auftragsfluss-Stand; je Lieferant und Art ein To-do; gelb ab 3, rot ab 7 Tagen |
+| Nachhaken | dieselben, Schwellen aus `/api/einkauf/lieferanten` | Stand „bestellt" seit ≥ 7 Tagen gelb, ≥ 14 Tagen rot; je Lieferant |
+| Ware ist da – rausgeben | dieselben | Stand „geliefert"; gelb ab 7, rot ab 14 Tagen |
+| Zuerst klären | Ampel „rot" der Bestellung | immer rot; die Positionen erscheinen nicht zusätzlich unter „bestellen" |
+| Zurückrufen | `/api/kunden/rueckrufe` | nicht erledigt und Wiedervorlage heute oder früher; gelb ab 2, rot ab 7 Tagen |
+| Angebot nachfassen | `/api/kunden/faelle` | Angebot seit ≥ 7 Tagen offen; rot ab 14 |
+| Team-Aufgabe | `/api/org/liste?bereich=alle-aufgaben` | Dringlichkeit „überfällig" (rot) oder „jetzt" (gelb), nicht wartend/zurückgestellt |
+| Freigabe | Entwicklungsaufgaben (`issues.json`) | Status Freigabe oder Review durch Mensch; nur Inhaber |
+| Shop-Wache | `/api/shopwache/status` | Ampel gelb/rot; nur Inhaber |
+
+Sortierung: rot vor gelb vor normal, darin das Älteste zuerst.
+
+**Wer sieht was** – ohne neue Rolle: Inhaber (und Notzugang) sehen Freigaben, alles Rote und eigene
+fällige Aufgaben; zwei Sprungfelder zeigen, was im Laden und bei der Website offen ist (`?sicht=laden`
+bzw. `website`, nur für den Inhaber umschaltbar). Mitarbeiter sehen „Laden" (Kunden- und
+Einkaufsschritte, eigene und freie Team-Aufgaben) – oder „Website", wenn die Mehrheit ihrer offenen,
+zugewiesenen Aufgaben in `TECHNISCHE_BEREICHE` liegt (`sichtFuer()`). Der Server gibt dafür je Aufgabe
+`technisch` und `darfAendern` mit (`operations/lib/organisation.mjs`).
+
+Der Datenstand steht als kleine Zeile unter den To-dos. Ein `letzterFehler`, der älter ist als der
+letzte erfolgreiche Stand derselben Quelle, zählt nicht mehr als Warnung (`leseAktualisierungsstand()`
+wendet `ohneUeberholtenFehler()` schon beim Lesen an).
+
 ## 10. Datenaktualisierung (seit 2026-09-23)
 
 Lexikon, Bestellübersicht und Kennzahlen sind Momentaufnahmen unter `$TP_PRIVAT_DIR` (Abschnitt 8/9) und
