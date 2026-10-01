@@ -222,6 +222,16 @@ export function masspruefung({ props, quantity, hundertstel, alleZeilen = [] }) 
  * @param {object} p.variant    {id, sku, metafields, product:{id, handle, metafields}}
  * @param {Array}  [p.alleZeilen] uebrige Positionen (Kettel-Gruppen)
  */
+/** Liest "je lfm" und "<n> cm breit" aus dem Variantentitel - nur diese zwei eindeutigen Muster. */
+export function ausVariantentitel(titel) {
+  const t = String(titel ?? '');
+  const breite = t.match(/(\d{2,3})\s*cm\s*breit/i);
+  return {
+    jeLfm: /\bje\s*(lfm|laufende[nrm]?\s*meter)\b/i.test(t),
+    variantBreiteCm: breite ? Number(breite[1]) : null,
+  };
+}
+
 export function resolveLineItem({ lineItem, variant, alleZeilen = [] } = {}) {
   if (!lineItem) throw new Error('resolveLineItem: lineItem fehlt');
   const props = propertiesMap(lineItem.customAttributes ?? lineItem.properties);
@@ -259,6 +269,9 @@ export function resolveLineItem({ lineItem, variant, alleZeilen = [] } = {}) {
     musterId: leer(props['_Muster_ID']) ? null : String(props['_Muster_ID']),
     gruppe: leer(props['_Gruppe']) ? null : String(props['_Gruppe']),
     farbnummer: leer(props['Farbnummer']) ? null : String(props['Farbnummer']),
+    // Variante, die je laufendem Meter verkauft wird ("80 cm breit (je lfm)"): die
+    // Shopify-Menge IST dann die Laenge in lfm, die Breite steht im Variantentitel.
+    ...ausVariantentitel(lineItem.variantTitle ?? variant?.title),
   };
 
   const istMuster = musterRegel({
