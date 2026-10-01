@@ -165,6 +165,7 @@ export function werWartet(quellen = {}, opt = {}) {
     const lieferanten = [...new Set((lage.positionen || []).map(x => x.p.lieferant).filter(Boolean))];
     spalten[lage.spalte].push({
       id: `auftrag:${b.z.orderId}`,
+      orderId: b.z.orderId,
       name: kundeVon(b.z),
       schritt: lage.schritt,
       zusatz: lieferanten.length === 1 ? k.lieferantName(lieferanten[0]) : b.z.orderName,
