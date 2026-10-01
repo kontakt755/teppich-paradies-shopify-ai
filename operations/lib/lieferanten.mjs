@@ -593,9 +593,9 @@ function musterMail(gruppen, { st, absender, statusAlle, adressen, jetzt, ziel }
   } else {
     // An den Laden: bewusst kurz - eine Zeile je Muster, ohne Kommission, ohne
     // Anschrift und ohne unsere Shop-Namen, die der Lieferant nicht kennt
-    // (Inhaberentscheidung 2026-10-01). Der Farbname steht nur, wenn die Nummer fehlt.
+    // (Inhaberentscheidung 2026-10-01). Auch kein Farbname: es sind unsere Shop-Farbwoerter.
     for (const p of aufgenommen) {
-      zeilen.push([`${p.menge}× Art.-Nr. ${p.artikelnummer}`, p.farbnummer ? `Farb-Nr. ${p.farbnummer}` : p.farbe].filter(Boolean).join(' · '));
+      zeilen.push([`${p.menge}× Art.-Nr. ${p.artikelnummer}`, p.farbnummer ? `Farb-Nr. ${p.farbnummer}` : null].filter(Boolean).join(' · '));
     }
     zeilen.push('');
   }
