@@ -15,7 +15,7 @@ test('Kalenderwoche nach ISO', () => {
 test('Termine liegen auf dem Raster und nie in der Vergangenheit', () => {
   const t = termine(RASTER.beitrag, JETZT, { tage: 7 });
   assert.ok(t.every(x => x.zeit > JETZT));
-  assert.equal(t[0].zeit.getDay(), 4, 'naechster Termin ist Donnerstag');
+  assert.equal(t[0].zeit.getDay(), 3, 'naechster Termin ist noch heute, Mittwoch (ein Beitrag je Werktag)');
   assert.equal(t[0].zeit.getHours(), 18);
 });
 
@@ -28,9 +28,9 @@ test('Frisches von der Baustelle zuerst, nie zweimal dasselbe Thema hintereinand
 });
 
 test('Ein Tag, ein Beitrag - belegte Tage und die Wochengrenze werden geachtet', () => {
-  const donnerstag = new Date(2026, 9, 1, 18, 0).toISOString();
-  const plan = plane({ offen: [b(1, 'kundenprojekt')], belegt: [{ geplantAm: donnerstag, typ: 'produkt_neu', format: 'feed' }], jetzt: JETZT });
-  assert.equal(plan.get(1).getDay(), 6, 'Donnerstag ist belegt, also Samstag');
+  const mittwoch = new Date(2026, 8, 30, 18, 0).toISOString();
+  const plan = plane({ offen: [b(1, 'kundenprojekt')], belegt: [{ geplantAm: mittwoch, typ: 'produkt_neu', format: 'feed' }], jetzt: JETZT });
+  assert.equal(plan.get(1).getDay(), 4, 'Mittwoch ist belegt, also Donnerstag');
   const voll = plane({ offen: Array.from({ length: 12 }, (_, i) => b(i + 1, i % 2 ? 'kundenprojekt' : 'raumidee')), jetzt: JETZT });
   const jeWoche = {};
   for (const [, zeit] of voll) jeWoche[woche(zeit)] = (jeWoche[woche(zeit)] ?? 0) + 1;
@@ -46,8 +46,9 @@ test('Hoechstens ein Angebot je Woche', () => {
 
 test('Storys bekommen eigene, haeufigere Termine', () => {
   const plan = plane({ offen: [b(1, 'kundenprojekt', { format: 'story' }), b(2, 'kundenprojekt', { format: 'story' }), b(3, 'kundenprojekt')], jetzt: JETZT });
-  assert.equal(plan.get(1).getHours(), 12);
-  assert.notEqual(plan.get(1).toDateString(), plan.get(2).toDateString());
+  // Zwei Story-Termine am Tag: heute 17:30, morgen 12:00
+  assert.equal(plan.get(1).getHours(), 17);
+  assert.equal(plan.get(2).getHours(), 12);
   assert.equal(plan.get(3).getHours(), 18);
 });
 

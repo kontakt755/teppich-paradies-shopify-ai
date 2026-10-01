@@ -124,7 +124,7 @@ Control Center bleiben privat.
 2. **Upload von unterwegs**: entschieden – Upload-Link als Abgabe über Funnel (Port 8443 → 8021), dazu die WhatsApp-Gruppe als Auffangnetz. Offen: Funnel in der Tailscale-Verwaltung freischalten, Festplattenvollzugriff für node, Gruppenname in `zugang.env`.
 3. **Einwilligung auf dem Auftragszettel**: eine Zeile zum Ankreuzen („Fotos der fertigen Arbeit dürfen für Website und Social Media verwendet werden"). Das System verlangt das Häkchen – der Zettel ist der Beleg dahinter.
 4. ~~Redaktion einschalten und ffmpeg installieren~~ – erledigt am 30.09.2026 (Redaktion werktags gegen 8 Uhr).
-5. **Automatische Freigabe**: frühestens nach vier Wochen Betrieb und nur für Shop-Inhalte ohne Preis.
+5. ~~Automatische Freigabe~~ – entschieden am 01.10.2026: der Inhaber will autonomes Posten. `SOCIAL_AUTO_FREIGABE=2` (Shop ohne Preis plus eigene Fotos mit Einwilligung und Sichtung), ein Beitrag je Werktag, zwei Storys am Tag, KI-Aufwertung der Fotos.
 
 ## 7. Nicht gebaut – bewusst
 

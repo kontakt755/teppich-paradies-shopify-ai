@@ -20,7 +20,8 @@ Bildern (`medien[].datei` ist ein lokaler Pfad, `medien[].url` ein Shop-Bild).
 
 Für jedes Medium mit `datenschutz: "ungeprueft"` das Bild öffnen und prüfen:
 
-- Personen (auch Spiegelungen, auch Kinder im Hintergrund), Hände und Arme sind unkritisch
+- **erkennbare Gesichter** (auch in Spiegeln, auch Kinder im Hintergrund) – Beine,
+  Hände, Arme, Rücken ohne Gesicht sind unkritisch (Inhaberentscheidung 01.10.2026)
 - Kennzeichen, Klingelschilder, Hausnummern, Straßenschilder
 - Namen, Post, Dokumente, Bildschirme, Familienfotos an der Wand
 - Firmenschilder und Marken eines Kunden
@@ -50,9 +51,45 @@ haben (Lieferscheine, Selfies, Werkzeug), mit `--aussortieren` herausnehmen.
 
 Nicht aus allem wird ein Beitrag. Verwerfen (`inhalt <id> --verwerfen`), wenn
 die Bilder nichts zeigen, was jemanden interessiert, oder wenn dasselbe Thema
-gerade erst lief. Ziel sind drei bis fünf gute Beiträge je Woche – ein voller
-Vorrat für zwei Wochen genügt; mehr Entwürfe als das nur bei frischen
-Baustellen.
+gerade erst lief. Ziel sind sechs Beiträge (Montag bis Samstag) und zwölf
+Storys je Woche – ein voller Vorrat für zwei Wochen genügt. Was gesichtet ist
+und eine Einwilligung hat, gibt das System selbst frei (SOCIAL_AUTO_FREIGABE=2):
+Ein Entwurf muss deshalb so gut sein, dass er ohne weiteren Blick hinaus kann.
+
+**Rohbau ohne Ergebnis aussortieren** (Inhaberentscheidung 01.10.2026): Bilder,
+auf denen nur Beton, Estrich, Spachtelmasse oder ein leerer Rohbau zu sehen ist,
+mit `--aussortieren "nur Rohbau"` herausnehmen. Ausnahme: ein klares
+Vorher-Bild, zu dem dieselbe Baustelle ein fertiges Nachher-Bild hat. Gezeigt
+wird, was der Kunde bekommt – der fertige Boden.
+
+**Bodenart richtig benennen.** Sisal ist Sisal, nicht „Teppichboden“; Kokos,
+Velours, Schlinge, Klebe- und Klickvinyl unterscheiden. Erkennbar am Bild
+(grobe Naturfaser-Bindung = Sisal/Kokos), sonst lieber allgemein bleiben
+(„Bodenbelag“) als falsch. `inhalt <id> --bodenart …` vor dem Entwurf setzen.
+
+### 2b. Bilder aufwerten (KI, Inhaberentscheidung 01.10.2026)
+
+Handyfotos von der Baustelle wirken oft dunkel und unaufgeräumt. Für jedes Bild,
+das in einen Entwurf kommt, eine aufgewertete Fassung erzeugen – „cinematic“:
+helles, warmes Tageslicht, saubere Wände, aufgeräumt, Architekturmagazin-Look.
+
+1. Bild hochladen: Higgsfield-MCP `media_upload` (Dateiname `.jpg`), dann die
+   ausgegebene Datei per `curl -X PUT` an `upload_url` senden und `media_confirm`.
+   Bilder aus dem Shop (`medien[].url`) stattdessen mit `media_import_url`.
+2. `generate_image` mit Modell `seedream_5_0_flash`, Rolle `image_references`,
+   Seitenverhältnis wie das Original (meist `3:4`), `use_unlim: false`, Prompt:
+   „Cinematic high-end interior photograph based on this real photo. Bright warm
+   natural daylight, soft shadows, clean walls, tidy, remove tools, bags, cables
+   and clutter, no people, crisp detail, interior magazine quality. Keep the floor
+   covering exactly as in the photo: <Bodenart, Farbe, Struktur>, same layout and
+   camera viewpoint.“ Kostet 0,5 Credits; vorher `balance` – unter 10 Credits
+   keine Bearbeitung mehr, im Bericht melden.
+3. Ergebnis mit `jobs_wait` abholen, die `result_url` per curl laden und
+   **ansehen**: Ist der Boden noch derselbe (Material, Farbe, Struktur)? Kein
+   Gesicht dazugekommen? Geländer, Fenster, Deko dürfen sich ändern – das ist dem
+   Inhaber egal. Sonst verwerfen und das Original nehmen (höchstens 2 Versuche).
+4. `npm run -s social -- bild-ersetzen <mediumId> <datei>` – erst danach den
+   Entwurf bauen.
 
 ### 3. Entwurf bauen
 

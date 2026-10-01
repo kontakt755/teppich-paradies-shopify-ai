@@ -3,9 +3,13 @@
  *
  * Der Freigabe-Agent sammelt zu jedem Entwurf, was ein Mensch wissen muss
  * (Hinweise), und verweigert die Freigabe, wo ein Risiko nicht geklaert ist
- * (Sperren). Die automatische Freigabe ist vorbereitet, aber ausgeschaltet:
- * sie wird erst nach der Lernphase und nur fuer eindeutige Shop-Inhalte ohne
- * Preisangabe geoeffnet (SOCIAL_AUTO_FREIGABE=1).
+ * (Sperren). Automatische Freigabe (SOCIAL_AUTO_FREIGABE, Inhaberentscheidung
+ * 01.10.2026: das System soll selbststaendig posten):
+ *   1  Shop-Inhalte ohne Preisrisiko (Farben, Raumidee, Produkt der Woche, Neu im Shop)
+ *   2  zusaetzlich Baustellen, Referenzen, Laden - nur mit Einwilligung und
+ *      vollstaendig gesichteten Bildern (Datenschutz ok)
+ * Nie automatisch: Angebote (Preisangaben), Reels, alles mit Sperre oder
+ * einem Hinweis, der einen Menschen braucht.
  */
 
 import { BEITRAG_STATUS, PLATTFORMEN } from './status.mjs';
@@ -45,13 +49,42 @@ export function pruefe({ beitrag, inhalt, medien }) {
  * Darf ein Entwurf ohne Menschen hinaus? Nur, wenn nichts Persoenliches und
  * kein Preis im Spiel ist und die Pruefung gar nichts anzumerken hatte.
  */
+// Hinweise, die bei eigenen Fotos keinen Menschen brauchen: der Beitrag nennt dann einfach keinen Ort.
+const HARMLOS = [/^Ort „/, /^Der Monteur hatte eine Adresse angegeben/];
+
 export function autoFreigabeMoeglich({ beitrag, inhalt, medien }, env = process.env) {
-  if (env.SOCIAL_AUTO_FREIGABE !== '1') return false;
-  if (inhalt.quelle !== 'shopify') return false;
-  if (!['produkt_farben', 'raumidee', 'produkt_woche'].includes(inhalt.typ)) return false;
-  if (beitrag.format === 'reel') return false;
+  const stufe = env.SOCIAL_AUTO_FREIGABE;
+  if (stufe !== '1' && stufe !== '2') return false;
+  if (beitrag.format === 'reel' || inhalt.typ === 'angebot') return false;
   const { sperren, hinweise } = pruefe({ beitrag, inhalt, medien });
-  return sperren.length === 0 && hinweise.length === 0;
+  if (sperren.length) return false;
+  if (inhalt.quelle === 'shopify') {
+    return ['produkt_farben', 'raumidee', 'produkt_woche', 'produkt_neu'].includes(inhalt.typ) && hinweise.length === 0;
+  }
+  if (stufe !== '2' || !['baustelle', 'referenz', 'laden'].includes(inhalt.quelle)) return false;
+  // Eigene Fotos nur, wenn jedes verwendete Bild gesichtet ist - auch Referenzbilder der Website.
+  if (!medien.length || medien.some(m => m.datenschutz !== 'ok')) return false;
+  if (inhalt.quelle === 'baustelle' && !inhalt.einwilligung) return false;
+  return hinweise.every(h => HARMLOS.some(r => r.test(h)));
+}
+
+/**
+ * Gibt frei, was jetzt ohne Menschen hinaus darf. Gerechnet wird mit dem Stand
+ * von jetzt, nicht dem beim Bauen des Entwurfs: eine spaeter bestaetigte
+ * Einwilligung oder Sichtung zaehlt, ein spaeter gesperrtes Bild auch.
+ */
+export function freigebenAutomatisch(db, { env = process.env, jetzt = new Date() } = {}) {
+  const frei = [];
+  for (const b of db.beitraege({ status: BEITRAG_STATUS.FREIGABE })) {
+    if (!b.geplant_am || new Date(b.geplant_am) <= jetzt) continue;
+    const inhalt = db.inhalt(b.inhalt_id);
+    const darf = autoFreigabeMoeglich({ beitrag: b, inhalt, medien: medienZuBeitrag(db, b) }, env);
+    if (Boolean(b.auto_freigabe) !== darf) db.beitragAendern(b.id, { auto_freigabe: darf });
+    if (!darf) continue;
+    freigeben(db, b.id, { von: 'automatisch', jetzt });
+    frei.push(b.id);
+  }
+  return frei;
 }
 
 export function freigeben(db, id, { von = null, geplantAm = null, jetzt = new Date() } = {}) {

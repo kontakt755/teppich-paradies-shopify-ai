@@ -55,18 +55,22 @@ export const RAEUME = Object.freeze([
  * voller Kalender. Wochentag nach Date.getDay(): 0 = Sonntag.
  */
 export const RASTER = Object.freeze({
+  // Inhaberentscheidung 01.10.2026: ein Beitrag je Werktag und zwei Storys am Tag.
   beitrag: [
     { tag: 2, zeit: '18:00', fest: true },   // Dienstag
     { tag: 4, zeit: '18:00', fest: true },   // Donnerstag
     { tag: 6, zeit: '10:30', fest: true },   // Samstag
-    { tag: 1, zeit: '18:00', fest: false },  // Montag
-    { tag: 5, zeit: '17:00', fest: false },  // Freitag
+    { tag: 1, zeit: '18:00', fest: true },   // Montag
+    { tag: 3, zeit: '18:00', fest: true },   // Mittwoch
+    { tag: 5, zeit: '17:00', fest: true },   // Freitag
   ],
   story: [
     { tag: 1, zeit: '12:00' }, { tag: 2, zeit: '12:00' }, { tag: 3, zeit: '12:00' },
     { tag: 4, zeit: '12:00' }, { tag: 5, zeit: '12:00' }, { tag: 6, zeit: '09:30' },
+    { tag: 1, zeit: '17:30' }, { tag: 2, zeit: '17:30' }, { tag: 3, zeit: '17:30' },
+    { tag: 4, zeit: '17:30' }, { tag: 5, zeit: '16:30' }, { tag: 6, zeit: '14:00' },
   ],
-  maxBeitraegeJeWoche: 5,
+  maxBeitraegeJeWoche: 6,
   maxAngeboteJeWoche: 1,
 });
 

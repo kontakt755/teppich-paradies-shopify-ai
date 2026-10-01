@@ -147,6 +147,19 @@ const WEG_LABEL = { mail: 'Bestellmail öffnen', portal: 'Im Portal bestellen', 
  * (Portal in neuem Tab, Telefon); die Bestellung selbst zeigt immer der Dialog.
  * Ohne hinterlegten Bestellweg bleibt die Bestellliste zum Kopieren.
  */
+/**
+ * Link, der in Gmail im Browser eine neue Nachricht mit Empfaenger, Betreff und Text oeffnet.
+ * Fuer Rechner ohne eingerichtetes Mailprogramm. Sehr lange Texte lassen den Text weg
+ * (dann "Text kopieren"); ohne Empfaenger gibt es keinen Link.
+ */
+export const GMAIL_MAX = 6000;
+export function gmailLink({ an, betreff = '', text = '' } = {}) {
+  if (!an) return { url: null, gekuerzt: false };
+  const basis = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(an)}&su=${encodeURIComponent(betreff)}`;
+  const voll = `${basis}&body=${encodeURIComponent(text)}`;
+  return voll.length <= GMAIL_MAX ? { url: voll, gekuerzt: false } : { url: basis, gekuerzt: true };
+}
+
 export function hauptAktion(stammdaten, art = 'ware') {
   const s = stammdaten?.[art] || {};
   if (s.weg === 'mail') return { weg: 'mail', label: WEG_LABEL.mail, href: null, neuerTab: false };
