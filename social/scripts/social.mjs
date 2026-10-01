@@ -18,6 +18,7 @@
  *   npm run social -- referenzen --input export.json
  *   npm run social -- zugang anlegen "Name" | liste | sperren "Name"
  *   npm run social -- meta-pruefen
+ *   npm run social -- bild-ersetzen <mediumId> <datei>   (bearbeitete Fassung eines Fotos einsetzen)
  *   npm run social -- highlights            (Titelbilder der fuenf Instagram-Highlights nach $TP_PRIVAT_DIR/social/highlights)
  *   npm run social -- meta-einrichten       (aus META_SYSTEM_TOKEN Seiten-ID, Seiten-Token und Instagram-Konto ableiten und eintragen)
  *   npm run social -- whatsapp [--pruefen]   (Fotos aus der WhatsApp-Gruppe uebernehmen bzw. nur zeigen, was da ist)
@@ -34,7 +35,8 @@ import { oeffne } from '../lib/db.mjs';
 import { seitenZugang } from '../lib/meta.mjs';
 import { baue, HIGHLIGHTS } from '../lib/vorlagen.mjs';
 import { findeZugang, liesZugaenge, zugangAnlegen, zugangSperren } from '../lib/eingang.mjs';
-import { freigeben, holeGeplanteZurueck, verwerfen } from '../lib/freigabe.mjs';
+import { ersetzeBild } from '../lib/bearbeitung.mjs';
+import { freigeben, freigebenAutomatisch, holeGeplanteZurueck, verwerfen } from '../lib/freigabe.mjs';
 import { medienPfad, socialDir } from '../lib/pfade.mjs';
 import { verarbeiteEingang } from '../lib/pruefung.mjs';
 import { reelMoeglich } from '../lib/reel.mjs';
@@ -246,6 +248,12 @@ async function main(argv) {
         break;
       }
 
+      case 'bild-ersetzen': {
+        const m = ersetzeBild(db, rest[0], rest[1], { dir, von: typeof flags.von === 'string' ? flags.von : 'redaktion' });
+        console.log(`Medium ${m.id}: bearbeitete Fassung eingesetzt (${m.pfad}) – Entwürfe damit neu bauen`);
+        break;
+      }
+
       case 'highlights': {
         const ziel = path.join(dir, 'highlights');
         fs.mkdirSync(ziel, { recursive: true });
@@ -311,6 +319,8 @@ async function main(argv) {
           console.log(`Shop: ${r.produkte} Produkte, ${r.neu.length} neue Anlässe`);
         } catch (e) { console.log(`Shop-Abgleich ausgefallen: ${e.message}`); }
         console.log(`Planer: ${planeOffene(db, { dir }).length} Terminvorschläge`);
+        const auto = freigebenAutomatisch(db, { env });
+        if (auto.length) console.log(`Automatisch freigegeben: ${auto.map(id => `#${id}`).join(' ')}`);
         try {
           const k = await holeKennzahlen(db, { env, dir });
           console.log(`Auswertung: ${k.gemessen} Messwerte, ${k.archiviert} archiviert${k.hinweis ? ` (${k.hinweis})` : ''}`);
@@ -326,6 +336,9 @@ async function main(argv) {
         const wa = uebernimmWhatsApp(db, { env, dir });
         if (wa?.neuerFehler) console.log(`${new Date().toISOString()} whatsapp: ${wa.fehler}`);
         const eingang = verarbeiteEingang(db, { dir, mindestAlterMs: 20 * 60 * 1000 });
+        planeOffene(db, { dir });
+        const auto = freigebenAutomatisch(db, { env });
+        if (auto.length) console.log(`${new Date().toISOString()} automatisch freigegeben: ${auto.map(id => `#${id}`).join(' ')}`);
         const r = await veroeffentlicheFaellige(db, { env, dir });
         const zeile = `${new Date().toISOString()} whatsapp=${wa?.neu.length ?? '-'} eingang=${eingang.length} faellig=${r.faellig} veroeffentlicht=${r.veroeffentlicht.length} fehler=${r.fehler.length}${r.hinweis ? ` hinweis="${r.hinweis}"` : ''}`;
         if (eingang.length || r.faellig || wa?.neu.length) console.log(zeile);

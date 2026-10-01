@@ -50,6 +50,7 @@ Alle Befehle stehen im Kopf von `scripts/social.mjs`. Die wichtigsten:
 | `zugang anlegen "Name"` | persönlichen Upload-Link für einen Bodenleger erzeugen |
 | `veroeffentlichen --trocken` | zeigen, was der Publisher täte |
 | `meta-pruefen` | Meta-Zugang prüfen |
+| `bild-ersetzen <medium> <datei>` | KI-bearbeitete Fassung eines Fotos einsetzen (`REDAKTION.md`, 2b) |
 | `whatsapp --pruefen` | zeigen, was in der WhatsApp-Gruppe neu ist (übernimmt nichts) |
 | `inhalt <id> --einwilligung` | Einwilligung vom Auftragszettel vermerken |
 
@@ -67,7 +68,7 @@ Umgebung, `$TP_PRIVAT_DIR/social/zugang.env` oder `.env.local` (in dieser Reihen
 | `SOCIAL_UPLOAD_BASIS_URL` | Adresse, die `zugang anlegen` in den Link schreibt | Platzhalter |
 | `SOCIAL_WHATSAPP_GRUPPE` | Name der Firmengruppe, deren Fotos übernommen werden (`WHATSAPP.md`) | – (aus) |
 | `SOCIAL_WHATSAPP_DIR` | Datenordner der WhatsApp-Mac-App | `~/Library/Group Containers/group.net.whatsapp.WhatsApp.shared` |
-| `SOCIAL_AUTO_FREIGABE` | `1` schaltet die automatische Freigabe für eindeutige Shop-Inhalte ein | aus |
+| `SOCIAL_AUTO_FREIGABE` | `1` Shop-Inhalte ohne Preisrisiko automatisch freigeben, `2` zusätzlich eigene Fotos mit Einwilligung und Sichtung (nie Angebote, nie Reels) | aus |
 | `TP_SOCIAL_DIR` | abweichendes Datenverzeichnis (Tests, Probeläufe) | `$TP_PRIVAT_DIR/social` |
 
 Die Zentrale verlangt im Netz die Zugänge des Control Centers
