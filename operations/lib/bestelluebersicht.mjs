@@ -133,7 +133,11 @@ export function einkaufsmenge(item, menge) {
       return { menge: r.pakete, einheit: EINHEIT.PAKET, text: `${r.pakete} Paket(e) = ${formatDe(r.qmGesamt)} m²`, grund: null };
     }
     if (e.bestelleinheit === EINHEIT.LFM || gruppe === GRUPPE.ROLLE) {
-      const breiteCm = ein.rollenbreiteCm || ein.ausRolleCm || (p.rollenbreite !== UNGEKLAERT ? p.rollenbreite * 100 : null);
+      const breiteCm = ein.rollenbreiteCm || ein.ausRolleCm || (p.rollenbreite !== UNGEKLAERT ? p.rollenbreite * 100 : null) || ein.variantBreiteCm;
+      // Variante "je lfm" ohne Laengenangabe: die bestellte Stueckzahl ist bereits die Laenge.
+      if (ein.jeLfm && !(ein.gewuenschteLaengeCm > 0) && !ein.masse && !p.preis_pro_001_qm) {
+        return { menge, einheit: EINHEIT.LFM, text: `${menge} lfm${breiteCm > 0 ? ` · ${breiteCm} cm breit` : ''}`, grund: null };
+      }
       if (!(breiteCm > 0)) return ungeklaert('Rollenbreite fehlt (custom.rollenbreite / Property Rollenbreite)');
       // Laenge: der Rollenrechner schreibt "Gewuenschte Laenge", der Zuschnitt-
       // und Einfasskonfigurator stattdessen "Maße" als Breite x Laenge (so
