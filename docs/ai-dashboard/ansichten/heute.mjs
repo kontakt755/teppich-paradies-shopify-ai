@@ -16,6 +16,7 @@ import {
 import { state } from '../kern/zustand.mjs';
 import { esc, fmtDateTime, plural } from '../kern/helfer.mjs';
 import { darfAnsicht } from '../kern/router.mjs';
+import { istNurLesend } from '../kern/sitzung.mjs';
 import { stoerungState } from '../bausteine/karten.mjs';
 import { ensureAktualisierung, aktualisierenButton, aktualisierungHealth } from '../bausteine/aktualisierung.mjs';
 import { einkauf, ensureEinkaufAuftragsstatus, ensureEinkaufKennzahlen, anzeigeWert } from './einkauf/auftragsfluss.mjs';
@@ -164,10 +165,15 @@ function datenstandZeile(sicht) {
 }
 
 function wartZeile(z) {
-  return `<a class="heute-wart" href="${esc(z.href)}">
+  // Abschliessen direkt von hier (erledigt, Testbestellung, hat sich erledigt): derselbe
+  // Sammelschritt mit Rueckfrage wie "Kunde fertig" in der Bestellliste (data-bq-fertig).
+  const fertig = z.orderId && !istNurLesend()
+    ? `<button type="button" class="heute-wart-fertig" data-bq-fertig="${esc(z.orderId)}" title="Abschließen – erledigt oder Testbestellung. Verschwindet danach aus den Listen." aria-label="${esc(z.name)} abschließen">✓</button>`
+    : '';
+  return `<div class="heute-wart-zeile"><a class="heute-wart" href="${esc(z.href)}">
     <span class="heute-wart-text"><span class="t">${esc(z.name)}</span><span class="s">${esc(z.schritt)} · ${esc(z.zusatz)}</span></span>
     ${z.alterTage === null || z.alterTage === undefined ? '' : `<span class="heute-alter ${esc(z.ton)}">${esc(alterText(z.alterTage))}</span>`}
-  </a>`;
+  </a>${fertig}</div>`;
 }
 
 function werWartetBlock(w) {
