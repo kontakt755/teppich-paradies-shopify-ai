@@ -328,6 +328,29 @@ vor „Erledigt" zurück (ohne solchen: kein Status = noch nicht bestellt). Die 
 `wiederGeoeffnetAm/Von` stehen am Datensatz, der Audit-Log erhält `auftragsstatus-wieder-geoeffnet`.
 Wartezeiten im Einkauf rechnet das Frontend aus `bestelltAm`/`geliefertAm` (7 Tage bernstein, 14 rot).
 
+### Einkauf je Lieferant (seit 2026-10-01)
+
+Der Reiter „Bestellungen" zeigt eine Karte je Lieferant (`ansichten/einkauf/lieferanten.mjs`, Regeln ohne
+DOM in `lib/einkauf-lieferanten.mjs`, Styles in `stile/einkauf-lieferanten.css`):
+
+- **Zahlen und Überfällig-Hinweis** werden im Browser aus `/api/einkauf/bestellungen` und dem
+  Auftragsfluss-Stand gezählt, nicht aus `/api/einkauf/lieferanten` – so passen Zahl und Liste nach
+  einem Statuswechsel sofort zusammen. Vom Server kommen Stammdaten und Schwellen (7/14 Tage).
+- **Ein Hauptknopf je Bestellweg** (`ware.weg`): „Bestellmail öffnen", „Im Portal bestellen" (öffnet
+  das Portal in neuem Tab und zugleich den Dialog), „Anrufen". Ohne Bestellweg: „Bestellliste öffnen".
+  „Muster bestellen" erscheint, wenn Muster offen sind.
+- **Bestellmail-Dialog**: An, Betreff und Text unverändert aus `/api/einkauf/bestellmail`; `fehlt` und
+  `hinweise` sichtbar; bei `mailtoGekuerzt` Hinweis auf „Text kopieren". Nach Öffnen oder Kopieren
+  erscheint „Als bestellt markieren?" – setzt die aufgenommenen Positionen über
+  `markiereAlsBestellt()` (dieselbe Sammelaktion wie „Alle als bestellt markieren…"). Gesendet wird nie.
+- **Positionen** sind aufklappbar (Zustand im Modul, kein `<details>`); darin die bisherigen Tabellen
+  je Lieferweg mit allen Aktionen. `#/einkauf?lf=A` öffnet eine Karte aufgeklappt.
+- **Lieferant-Detail** `#/einkauf?lieferant=A` (Parameter, keine eigene Route): Kontakt, Bestellweg,
+  Lieferzeit (zugesagt aus Stammdaten, tatsächlich aus „bestellt"→„geliefert" in Werktagen), Hinweise,
+  offene Posten je Stufe, Verlauf aus den Zeitstempeln des Auftragsflusses. Fehlende Stammdaten
+  werden benannt; gepflegt werden sie nur in der privaten Datei, es gibt keinen Editor.
+- Rolle „lesen": Statusknöpfe und die Markier-Frage sind ausgeblendet.
+
 ## 9. Startseite „Heute" (seit 2026-09-23)
 
 `viewHeute()` in `docs/ai-dashboard/ansichten/heute.mjs` ist die Startseite und bleibt primär aufgabenbasiert
@@ -359,6 +382,40 @@ gebaut.
 Fehlt die Datei, liefert der Endpunkt `{verfuegbar: false, hinweis, befehl}` statt erfundener Zahlen; die
 Kachel zeigt den Hinweis samt Befehl. Der Export selbst laeuft ueber `npm run daten:aktualisieren`
 (Abschnitt 10).
+
+### 9a. „Heute" mit To-dos (seit 2026-10-01)
+
+Die Startseite zeigt zuerst, was zu tun ist: „N offene To-dos für dich" – je Zeile Titel, eine Zeile
+Kontext und genau ein Knopf –, darunter „Wer wartet auf was" (wir / Lieferant / Kunde), beim Inhaber
+vier Kennzahlen, und die bisherigen Blöcke eingeklappt (`ansichten/heute/bisher.mjs`).
+
+To-dos werden nicht erfasst, sondern abgeleitet: `docs/ai-dashboard/lib/todos.mjs` (reine Funktionen,
+`tests/todos.test.mjs`) rechnet aus den Antworten der vorhandenen Endpunkte.
+
+| To-do | Quelle | Regel |
+|---|---|---|
+| Ware/Muster bestellen | `/api/kunden/bestellungen` + `/api/einkauf/auftragsstatus` | bezahlt, Position ohne Auftragsfluss-Stand; je Lieferant und Art ein To-do; gelb ab 3, rot ab 7 Tagen |
+| Nachhaken | dieselben, Schwellen aus `/api/einkauf/lieferanten` | Stand „bestellt" seit ≥ 7 Tagen gelb, ≥ 14 Tagen rot; je Lieferant |
+| Ware ist da – rausgeben | dieselben | Stand „geliefert"; gelb ab 7, rot ab 14 Tagen |
+| Zuerst klären | Ampel „rot" der Bestellung | immer rot; die Positionen erscheinen nicht zusätzlich unter „bestellen" |
+| Zurückrufen | `/api/kunden/rueckrufe` | nicht erledigt und Wiedervorlage heute oder früher; gelb ab 2, rot ab 7 Tagen |
+| Angebot nachfassen | `/api/kunden/faelle` | Angebot seit ≥ 7 Tagen offen; rot ab 14 |
+| Team-Aufgabe | `/api/org/liste?bereich=alle-aufgaben` | Dringlichkeit „überfällig" (rot) oder „jetzt" (gelb), nicht wartend/zurückgestellt |
+| Freigabe | Entwicklungsaufgaben (`issues.json`) | Status Freigabe oder Review durch Mensch; nur Inhaber |
+| Shop-Wache | `/api/shopwache/status` | Ampel gelb/rot; nur Inhaber |
+
+Sortierung: rot vor gelb vor normal, darin das Älteste zuerst.
+
+**Wer sieht was** – ohne neue Rolle: Inhaber (und Notzugang) sehen Freigaben, alles Rote und eigene
+fällige Aufgaben; zwei Sprungfelder zeigen, was im Laden und bei der Website offen ist (`?sicht=laden`
+bzw. `website`, nur für den Inhaber umschaltbar). Mitarbeiter sehen „Laden" (Kunden- und
+Einkaufsschritte, eigene und freie Team-Aufgaben) – oder „Website", wenn die Mehrheit ihrer offenen,
+zugewiesenen Aufgaben in `TECHNISCHE_BEREICHE` liegt (`sichtFuer()`). Der Server gibt dafür je Aufgabe
+`technisch` und `darfAendern` mit (`operations/lib/organisation.mjs`).
+
+Der Datenstand steht als kleine Zeile unter den To-dos. Ein `letzterFehler`, der älter ist als der
+letzte erfolgreiche Stand derselben Quelle, zählt nicht mehr als Warnung (`leseAktualisierungsstand()`
+wendet `ohneUeberholtenFehler()` schon beim Lesen an).
 
 ## 10. Datenaktualisierung (seit 2026-09-23)
 

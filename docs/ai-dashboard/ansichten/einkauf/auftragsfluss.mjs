@@ -36,6 +36,7 @@ export const einkauf = {
   produktstatus: null, loadingProduktstatus: false, produktstatusKey: null,
   auftragsstatus: null, loadingAuftragsstatus: false,
   kennzahlen: null, loadingKennzahlen: false,
+  lieferanten: null, loadingLieferanten: false,
   aktualisierung: null, loadingAktualisierung: false,
   aktualisierungLaeuft: false, aktualisierungPollTimer: null,
 };
@@ -113,6 +114,16 @@ export function ensureEinkaufAuftragsstatus() {
   fetchEinkauf('/api/einkauf/auftragsstatus').then(d => {
     einkauf.auftragsstatus = d; einkauf.loadingAuftragsstatus = false;
     if (['heute', 'einkauf'].includes(state.route.view)) render();
+  });
+}
+
+/** Stammdaten je Lieferant (Bestellweg, Kontakt, Lieferzeit) - fuer die Lieferanten-Karten im Einkauf. */
+export function ensureEinkaufLieferanten() {
+  if (einkauf.lieferanten || einkauf.loadingLieferanten) return;
+  einkauf.loadingLieferanten = true;
+  fetchEinkauf('/api/einkauf/lieferanten').then(d => {
+    einkauf.lieferanten = d; einkauf.loadingLieferanten = false;
+    if (state.route.view === 'einkauf') render();
   });
 }
 
@@ -228,12 +239,22 @@ function openSammelBestelltDialog(id) {
     ev.preventDefault();
     form.querySelector('[type=submit]').disabled = true;
     const nr = (new FormData(form).get('nr') || '').trim() || null;
-    let ok = 0;
-    for (const p of positionen) if (await setzeAuftragsstatus(p, 'bestellt', { lieferantBestellnummer: nr, still: true })) ok += 1;
+    await markiereAlsBestellt(positionen, nr);
     $('#dialogRoot').innerHTML = '';
-    toast(ok === positionen.length ? `${plural(ok, 'Artikel', 'Artikel')} als bestellt markiert` : `Nur ${ok} von ${positionen.length} Artikeln als bestellt markiert`, ok === positionen.length ? '' : 'crit');
     render();
   });
+}
+
+/**
+ * Sammelaktion: setzt mehrere Positionen auf "Bestellt" und meldet einmal. Gemeinsam fuer
+ * "Alle als bestellt markieren…" und die Rueckfrage nach der Bestellmail. Gibt die Zahl der
+ * gesetzten Positionen zurueck; gezeichnet wird vom Aufrufer.
+ */
+export async function markiereAlsBestellt(positionen, lieferantBestellnummer = null) {
+  let ok = 0;
+  for (const p of positionen) if (await setzeAuftragsstatus(p, 'bestellt', { lieferantBestellnummer, still: true })) ok += 1;
+  toast(ok === positionen.length ? `${plural(ok, 'Artikel', 'Artikel')} als bestellt markiert` : `Nur ${ok} von ${positionen.length} Artikeln als bestellt markiert`, ok === positionen.length ? '' : 'crit');
+  return ok;
 }
 
 export function ensureEinkaufKennzahlen() {

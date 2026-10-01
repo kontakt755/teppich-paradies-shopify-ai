@@ -8,6 +8,7 @@ import { emptyState } from '../bausteine/karten.mjs';
 import { ensureAktualisierung, aktualisierenButton } from '../bausteine/aktualisierung.mjs';
 import { viewEinkaufBestellungen } from './einkauf/bestellungen.mjs';
 import { viewEinkaufProduktdaten } from './einkauf/produktdaten.mjs';
+import { viewEinkaufLieferant } from './einkauf/lieferanten.mjs';
 
 function viewEinkaufHilfe() {
   return `<section class="card">
@@ -16,9 +17,11 @@ function viewEinkaufHilfe() {
     <ol style="margin:0 0 4px;padding-left:22px;line-height:1.7">
       <li>Öffne den Tab „Bestellungen" und schau oben auf die Zahlen: wie viele Artikel und Muster noch zu bestellen sind und wie viele Aufträge ein Problem haben.</li>
       <li>Kümmere dich zuerst um den Kasten „Zuerst klären" – dort steht bei jedem Auftrag in Klartext, was fehlt, z. B. eine Großhändler-ID. War es nur eine Testbestellung oder ist der Auftrag anders erledigt, schließe ihn mit „Ohne Einkauf abschließen…" und einem Grund ab.</li>
-      <li>Gehe dann die restlichen Positionen gruppiert nach Lieferant durch. Klicke bei jedem Artikel auf „Öffnen" – das öffnet die passende Produktseite des Lieferanten in einem neuen Tab. Die Großhändler-ID kopierst du mit einem Klick darauf.</li>
-      <li>Bestelle dort wie gewohnt (Telefon, E-Mail, Bestellportal – je nach Lieferant).</li>
-      <li>Trage die Bestellung hier ein: Klick auf „→ Bestellt" und gib die Bestellnummer des Lieferanten ein (optional, hilft aber bei Rückfragen).</li>
+      <li>Darunter steht je Lieferant eine Karte. Der farbige Knopf ist sein Bestellweg: „Bestellmail öffnen", „Im Portal bestellen" (neuer Tab) oder „Anrufen". Sind Muster offen, gibt es zusätzlich „Muster bestellen".</li>
+      <li>Der Knopf zeigt die fertige Bestellung: Empfänger, Betreff, Text. „Im Mailprogramm öffnen" legt die Mail an – abschicken tust du selbst. „Text kopieren" ist für Portal und Telefon. Artikel, die nicht in der Mail stehen, sind mit Grund aufgelistet (z. B. Artikelnummer fehlt).</li>
+      <li>Danach fragt das Dashboard „Als bestellt markieren?". Ein Klick setzt alle Artikel dieser Mail auf „Bestellt"; die Bestellnummer des Lieferanten kannst du dazuschreiben (optional, hilft bei Rückfragen).</li>
+      <li>„Positionen bearbeiten" klappt die einzelnen Artikel auf: Artikelnummer mit einem Klick kopieren, „Beim Lieferanten öffnen", „Liste kopieren", „Alle als bestellt markieren…" und der Status je Artikel.</li>
+      <li>Gelber Hinweis auf der Karte: eine Bestellung wartet seit 7 Tagen – nachhaken. Rot: seit 14 Tagen. Ein Klick auf den Namen des Lieferanten zeigt Kontakt, Bestellweg, Lieferzeit und Verlauf; fehlen dort Angaben, steht dabei, welche (der Inhaber pflegt sie in einer privaten Datei).</li>
       <li>Sobald die Ware bei dir ankommt, setze die Position auf „Geliefert an uns"; sobald sie an den Kunden raus ist (verschickt oder abgeholt), auf „An Kunden raus"; zum Schluss auf „Erledigt".</li>
       <li>Der Filter über den Listen („Noch zu bestellen / Bestellt / Unterwegs / Erledigt") zeigt dir jederzeit, wie viele Artikel in welchem Schritt stehen. Ohne Auswahl siehst du alles, was noch nicht erledigt ist.</li>
     </ol>
@@ -54,6 +57,9 @@ export function viewEinkauf() {
     return `<div class="page-head"><div><h1>Einkauf</h1><p class="sub">Bestellübersicht und Produktdaten-Status für den Einkauf.</p></div></div>
       ${emptyState('Nur lokal im Betrieb verfügbar.', 'Diese Ansicht liest private Bestell- und Einkaufsdaten, die nie im öffentlichen Repository landen. Auf dem Mac starten: npm run dashboard')}`;
   }
+  // Detailseite eines Lieferanten als Parameter (#/einkauf?lieferant=A) - bleibt damit im
+  // Einkauf (Navigation, Rollen, Datenstand) und braucht keine eigene Route.
+  if (state.route.params.get('lieferant')) { ensureAktualisierung(); return viewEinkaufLieferant(state.route.params.get('lieferant')); }
   const tab = ['bestellungen', 'produktdaten', 'hilfe'].includes(state.route.params.get('tab')) ? state.route.params.get('tab') : 'bestellungen';
   const tabs = [['bestellungen', 'Bestellungen'], ['produktdaten', 'Produktdaten'], ['hilfe', 'Anleitung']];
   ensureAktualisierung();

@@ -347,3 +347,91 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Nächste Stufe:** `no-undef`-Prüfung als Test (braucht einen Parser als Entwicklungsabhängigkeit –
   Entscheidung offen); bei spürbarer Ladezeit am Handy `modulepreload`; die Tabelle der Seitentitel
   aus `kern/render.mjs` an die Ansichten geben, damit eine neue Ansicht eine Datei weniger anfasst.
+
+## 2026-10-01 · Einkauf je Lieferant: Karten, Bestellmail-Dialog, Lieferant-Detail
+
+- **Geändert:** Reiter „Bestellungen" zeigt eine Karte je Lieferant statt einer Tabelle je Position
+  (`ansichten/einkauf/lieferanten.mjs`, `lib/einkauf-lieferanten.mjs`, `stile/einkauf-lieferanten.css`):
+  Zahlen, Überfällig-Hinweis (gelb ab 7, rot ab 14 Tagen), ein Hauptknopf je Bestellweg, „Muster
+  bestellen", Positionen aufklappbar mit den bisherigen Tabellen. Bestellmail-Dialog mit Text aus
+  `/api/einkauf/bestellmail`, `mailto`, „Text kopieren", Liste „Nicht in der Mail" und der Frage „Als
+  bestellt markieren?". Neue Detailseite `#/einkauf?lieferant=A`. Sammelaktion als
+  `markiereAlsBestellt()` herausgezogen; Rolle „lesen" sieht keine Statusknöpfe mehr. Hilfe und
+  Einkauf-Anleitung angepasst.
+- **Getestet:** `npm run dashboard:test` (neu: `tests/einkauf-lieferanten.test.mjs`, 10 Tests),
+  `npm run operations:test`, `npm run dashboard:pruefen`. Klickstrecke gegen eine Wegwerf-Instanz mit
+  erfundenen Daten: Bestellmail öffnen → Frage erscheint → markieren: „Artikel noch zu bestellen"
+  20 → 19, Karte 1 zu bestellen/1 bestellt → 2 bestellt, Bestellnummer im Verlauf. Screenshots
+  1440/390/360 px hell und dunkel; Inhalt ohne seitliches Scrollen.
+- **Risiken/Annahmen:** Die Kopfzeile ist mit angemeldetem Namen breiter als der Bildschirm (schon
+  vorher, gehört zum Navigations-Umbau). Der Verlauf kennt nur, was der Auftragsfluss speichert
+  (bestellt/geliefert/raus/erledigt) – kein „nachgehakt". Echte Stammdaten fehlen noch; ohne sie
+  heißt der Knopf „Bestellliste öffnen".
+- **Nächste Stufe:** Nachhak-Mail vom Server (Text + `mailto`), „Nachgehakt" als Zeitstempel mit
+  drei Tagen Ruhe; Filter „Überfällig".
+## 2026-10-01 · Zeitleiste je Auftrag mit genau einem nächsten Schritt
+
+- **Geändert:** Neues Modul `operations/lib/auftragsverlauf.mjs`: Musterstrecke (angefragt → beim
+  Lieferanten bestellt → bei uns angekommen → gelabelt und an Kunden verschickt → Kunde hat Muster →
+  nachgefasst → Ergebnis) und Warenstrecke auf den bestehenden Positionswerten; Ereignisse je Auftrag
+  in `auftragsverlauf.json` (privat, nur anhängen, in der Sicherung). Automatisch erkannt und so
+  gekennzeichnet: Bestelleingang, Shopify-Versand, Zustellung, spätere Bestellung desselben Kunden.
+  `naechsterSchritt` und `verlauf` additiv in `/api/kunden/detail`, `/api/kunden/bestellungen`,
+  `/api/kunden/suche`; Schreiben über `POST /api/einkauf/auftragsstatus` mit `aktion: "schritt"`.
+  Oberfläche: `ansichten/kunden/zeitleiste.mjs` (Karte „Nächster Schritt“, Verlauf, „Worum es geht“,
+  Anrufen/E-Mail) in Kundenakte und Bestelldetail, Gestaltung in `stile/zeitleiste.css`.
+- **Getestet:** `npm run dashboard:test`, `npm run operations:test`, `npm run dashboard:pruefen` grün;
+  Klickstrecke gegen eine Wegwerf-Instanz mit erfundenen Daten bei 1440/390/360 px (Nachgefasst →
+  „Kunde überlegt“, Ergebnis „kein Interesse“ → Kunde „Fertig“; Rolle „lesen“: keine Knöpfe, POST 403).
+- **Risiken/Annahmen:** Zustelldatum = letzte Aktualisierung der Sendung (Shopify-Export führt kein
+  eigenes Zustelldatum). Versandte Bestellungen ohne Auftragsstatus zeigen nach 7 Tagen „abschließen“.
+  Die alten Knöpfe je Bestellung (Bestellt/Geliefert/Raus, „Kunde fertig“) bleiben vorerst daneben.
+- **Nächste Stufe:** „Heute“ nutzt `naechsterSchritt`; Erinnerungen ruhen nach dem Nachfassen;
+  Lieferzeit je Lieferant statt fester 7/14 Tage.
+## 2026-10-01 · Navigation, Layout und Handy (Paket 1 des Konzepts)
+
+- **Geändert:** Gerüst in `index.html`: Seitenleiste links (Heute, Kunden & Aufträge, Einkauf, Lexikon;
+  „Seltener“: Aufgaben, Fotos, Shop-Wache, Sammelpunkt „Büro“ mit den Inhaber-Ansichten, Hilfe) statt
+  Kopfzeilen-Navigation; Kopfzeile nur noch Seitentitel, Suche, „+ Erfassen“, Sitzung, Hell/Dunkel. Bis
+  860 px feste Leiste unten (Heute, Aufträge, Lexikon, Einkauf, Mehr), „Mehr“ öffnet die übrigen Punkte
+  als Blatt samt Datenstand und Abmelden. Neu `kern/navigation.mjs` (Markierung, Zähler, Seitentitel,
+  „Mehr“); Routen, `ANSICHT_ROLLEN`, `darfAnsicht` und `data-nur-inhaber` unverändert. Hell/Dunkel folgt
+  ohne eigene Wahl dem Gerät (`prefers-color-scheme`, auch beim Umschalten des Geräts), die Wahl am Knopf
+  bleibt je Browser gespeichert. `app.css`: Safe-Area (`viewport-fit=cover`, `env(safe-area-inset-*)`),
+  `100dvh`, keine Schrift unter 12 px, Tippflächen 44 px auch für Textlinks, Tabellen unter 1100 px als
+  zweispaltige Karten, Reiter im Raster statt seitlich abgeschnitten, Kennzahlen am Handy zweispaltig und
+  flach, Dialoge von unten; Verläufe, Einblend-Animation und dunkle Markenleiste entfernt. Lexikon:
+  Treffer als Karten, Produktkarte mit Preis, Eckdaten und Farben oben, Bestellangaben am Handy als
+  kompakte Liste je Farbe (die ersten sechs offen). `scripts/dashboard-pruefen.mjs` misst zusätzlich 360,
+  800 und 1024 px, schlägt bei `scrollWidth > clientWidth` fehl und wartet nicht mehr auf `networkidle0`.
+- **Getestet:** `npm run dashboard:test` (162), `npm run operations:test` (438), `npm run dashboard:pruefen`:
+  19 Ansichten × 5 Breiten, 0 px Überlauf, keine JS-Fehler. Gegenprobe mit künstlich zu breiter Seite:
+  Prüfung meldet FEHL. Klickstrecke gegen die Datenkopie bei 360 px (Mehr-Blatt, Esc, Thema merken,
+  Palette, Erfassen-Dialog, Lexikon Suche → Karte → Produkt) und 1440 px dunkel.
+- **Risiken/Annahmen:** Die Rollenbreite im Lexikon wird bei Werten bis 20 als Meter gelesen (stand vorher
+  als „4.0 cm“ da). Lange Ansichten bleiben lang, wo der Inhalt es ist (Ratgeber, Hilfe, Entwicklung);
+  Kopf-Knöpfe auf „Heute“ und die Fall-Karten gehören den Paketen 2 und 6. Nicht auf einem echten iPhone
+  als Home-Bildschirm-App geprüft (Safe-Area nur nach Regelwerk).
+- **Nächste Stufe:** Heute neu (Paket 2), Einkauf als Lieferanten-Karten (Paket 3), Zeitleiste (Paket 6).
+
+## 2026-10-01 · „Heute" neu: To-dos zuerst
+
+- **Geändert:** Startseite neu aufgebaut (`ansichten/heute.mjs`, Styles in der neuen `stile/heute.css`):
+  „N offene To-dos für dich" mit je einem Knopf, Sprungfelder „offen im Laden / bei Website" (Inhaber),
+  „Wer wartet auf was" in drei Spalten, vier Kennzahlen aus dem vorhandenen Shop-Export, Suchfeld
+  „Produkt nachschlagen" (springt ins Lexikon). Ableitung als reine Funktionen in `lib/todos.mjs`.
+  Bisherige Blöcke eingeklappt am Ende (`ansichten/heute/bisher.mjs`). Server: `orgListe` kennt
+  `bereich=alle-aufgaben` und liefert `technisch` je Eintrag; der Datenstand ignoriert einen Fehlversuch,
+  der älter ist als der letzte Erfolg derselben Quelle. Hinweis am Knopf „Jetzt aktualisieren" sagt jetzt,
+  was zu tun ist.
+- **Getestet:** `npm run dashboard:test` (187), `npm run operations:test` (438), `npm run dashboard:pruefen`
+  (alle Ansichten OK); Sichtprüfung mit erfundenen Testdaten bei 1440/390/360 px, hell und dunkel, als
+  Inhaber, Verkäufer und Website-Mitarbeiter; Klickstrecke gegen die Kopie (Sprungfeld, Spaltenwahl,
+  Suche → Lexikon, Freigabe öffnet das Panel, „Nachhaken" → Einkauf mit aufgeklappter Karte des Lieferanten).
+- **Risiken/Annahmen:** Fristen je To-do-Art (3/7, 2/7, 7/14 Tage) sind eine erste Setzung in
+  `FRISTEN`. „Website"-Sicht ergibt sich aus den zugewiesenen Aufgaben – wer keine hat, sieht „Laden".
+  „Bestellen" und „Nachhaken" öffnen die Karte des Lieferanten im Einkauf (`?lf=`), die Mail entsteht
+  dort. Kennzahlen ohne Verlaufslinie, weil der Export keinen Wochenverlauf enthält.
+- **Nächste Stufe:** Zeilen in „Wer wartet auf was" auf die Auftrags-Zeitleiste zeigen lassen, sobald
+  sie gemergt ist; Zähler an „Heute" in der Navigation.
+

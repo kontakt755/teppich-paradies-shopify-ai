@@ -1,0 +1,83 @@
+/* Zeitleiste je Auftrag: Karte "Naechster Schritt", Verlauf, "Worum es geht", Kontakt.
+   Eigene Datei, damit parallele Arbeiten an app.css nicht kollidieren. Farben nur ueber
+   die Tokens aus app.css (:root / html[data-theme="dark"]). Klassen beginnen mit zl-. */
+
+.zl { margin: 0 0 18px; }
+.zl-kopf { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px; margin: 0 0 8px; }
+.zl-kopf h3 { font-size: 1.05rem; }
+.zl-kopf .zl-art { font-weight: 500; color: var(--text-2); font-size: .875rem; }
+.zl-raster { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.zl-spalte { display: grid; gap: 12px; min-width: 0; }
+.zl-titel { font-size: .75rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--text-2); margin: 0 0 10px; }
+
+/* Naechster Schritt - die eine Sache, die auf der Seite auffallen darf. */
+.zl-next { border: 1.5px solid var(--accent); background: var(--accent-soft); border-radius: var(--radius); padding: 16px 18px; min-width: 0; }
+.zl-next .zl-titel { color: var(--accent); margin-bottom: 4px; }
+.zl-next h4 { font-size: 1.2rem; line-height: 1.25; margin: 0 0 2px; overflow-wrap: anywhere; }
+.zl-next p { color: var(--text-2); margin: 0; }
+.zl-next.warten { border-color: var(--line-strong); background: var(--surface); }
+.zl-next.warten .zl-titel { color: var(--text-2); }
+.zl-next.nachhaken { border-color: var(--warn); background: var(--warn-soft); }
+.zl-next.nachhaken .zl-titel { color: var(--warn); }
+.zl-next.problem { border-color: var(--crit); background: var(--crit-soft); }
+.zl-next.problem .zl-titel { color: var(--crit); }
+.zl-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.zl-knoepfe .btn { min-height: 44px; padding-inline: 18px; font-weight: 600; }
+.zl-anders { display: inline-block; margin-top: 10px; padding: 8px 0; min-height: 36px; background: none; border: 0; cursor: pointer; font-size: .875rem; color: var(--text-2); text-decoration: underline; text-underline-offset: 3px; }
+.zl-anders:hover { color: var(--text); }
+.zl-fertig { color: var(--text-2); }
+
+/* Verlauf: senkrechte Linie, Punkt je Schritt. */
+.zl-liste { list-style: none; margin: 0; padding: 0; }
+.zl-liste li { position: relative; padding: 0 0 16px 34px; min-height: 38px; }
+.zl-liste li:last-child { padding-bottom: 0; min-height: 24px; }
+.zl-liste li::before { content: ""; position: absolute; left: 10px; top: 22px; bottom: -2px; width: 2px; background: var(--line); }
+.zl-liste li:last-child::before { display: none; }
+.zl-liste li.erledigt::before { background: var(--accent); }
+.zl-punkt { position: absolute; left: 0; top: 1px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; border: 2px solid var(--line-strong); background: var(--surface); }
+.zl-liste li.erledigt .zl-punkt { background: var(--accent); border-color: var(--accent); }
+.zl-liste li.erledigt .zl-punkt::after { content: ""; width: 9px; height: 5px; border-left: 2px solid var(--surface); border-bottom: 2px solid var(--surface); transform: translateY(-1px) rotate(-45deg); }
+.zl-liste li.aktuell .zl-punkt { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.zl-liste li.aktuell .zl-punkt::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.zl-liste li.uebersprungen .zl-punkt { border-style: dashed; }
+.zl-liste b { font-weight: 600; overflow-wrap: anywhere; }
+.zl-liste li.aktuell b { color: var(--accent); }
+.zl-liste li.offen b, .zl-liste li.uebersprungen b { color: var(--text-3); font-weight: 500; }
+.zl-wann { display: block; font-size: .84rem; color: var(--text-2); overflow-wrap: anywhere; }
+.zl-auto { display: inline-block; padding: 0 7px; border-radius: 999px; border: 1px solid var(--line-strong); font-size: .74rem; color: var(--text-2); white-space: nowrap; }
+.zl-notizen { margin: 14px 0 0; padding: 10px 0 0; border-top: 1px solid var(--line); font-size: .875rem; }
+.zl-notizen p { margin: 0 0 6px; overflow-wrap: anywhere; }
+
+/* Worum es geht / Kontakt */
+.zl-worum dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 0; }
+.zl-worum dt { color: var(--text-2); }
+.zl-worum dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.zl-worum dl + dl { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.zl-fehlt { color: var(--warn); font-weight: 600; }
+.zl-kontakt { display: flex; flex-wrap: wrap; gap: 8px; }
+.zl-kontakt .btn { min-height: 44px; flex: 1 1 130px; max-width: 220px; font-weight: 600; color: var(--text); }
+.zl-kontakt .btn:hover { text-decoration: none; }
+.zl-kontakt-zeile { margin: 8px 0 0; font-size: .875rem; color: var(--text-2); overflow-wrap: anywhere; }
+.zl-abgeschlossen { margin: 0 0 18px; }
+.zl-abgeschlossen > summary { cursor: pointer; padding: 10px 0; color: var(--text-2); }
+.zl-abgeschlossen[open] > summary { margin-bottom: 8px; }
+
+/* Dialog "Etwas anderes ist passiert ..." */
+.zl-wahl { display: grid; gap: 6px; border: 0; margin: 0; padding: 0; min-width: 0; }
+.zl-wahl legend { font-weight: 600; font-size: .88rem; padding: 0; margin-bottom: 6px; }
+.zl-wahl label { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 12px; border: 1px solid var(--line-strong); border-radius: 8px; cursor: pointer; }
+.zl-wahl label:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.zl-wahl input { accent-color: var(--accent); flex: none; }
+.zl-wahl .zl-wahl-trenner { margin-top: 6px; }
+
+@media (max-width: 900px) {
+  .zl-raster { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .zl-next { padding: 14px; }
+  .zl-next h4 { font-size: 1.1rem; }
+  .zl-knoepfe .btn { flex: 1 1 100%; }
+  .zl-kontakt .btn { max-width: none; }
+  .zl .card { padding: 14px; }
+}
+@media print { .zl-knoepfe, .zl-anders, .zl-kontakt { display: none; } }

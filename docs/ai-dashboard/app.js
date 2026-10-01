@@ -25,6 +25,8 @@ import { parseRoute } from './kern/router.mjs';
 import { renderThemeButton } from './kern/thema.mjs';
 import { loadData, loadAgentRuns, refresh, renderSyncChip } from './kern/daten.mjs';
 import { registriereAnsichten, render } from './kern/render.mjs';
+import { registriereNavZaehler } from './kern/navigation.mjs';
+import { kunden } from './ansichten/kunden/gemeinsam.mjs';
 import { viewEinkauf } from './ansichten/einkauf.mjs';
 import { viewLexikon } from './ansichten/lexikon.mjs';
 import { viewKunden } from './ansichten/kunden.mjs';
@@ -46,6 +48,8 @@ const VIEWS = { heute: viewHeute, fotos: viewFotos, team: viewTeam, hilfe: viewH
 
 async function init() {
   registriereAnsichten(VIEWS);
+  // Zaehler in der Navigation: nur, was ohnehin geladen ist - kein eigener Abruf dafuer.
+  registriereNavZaehler({ kunden: () => kunden.faelle?.sofort });
   parseRoute();
   bindEvents();
   renderThemeButton();

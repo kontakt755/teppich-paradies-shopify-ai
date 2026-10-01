@@ -14,6 +14,7 @@ import { emptyState } from '../../bausteine/karten.mjs';
 import { kunden, telLink, kundenAuftragKarte } from './gemeinsam.mjs';
 import { ensureKundenFaelle, fallKarte } from './faelle.mjs';
 import { ORG_STATUS_LABEL } from '../organisation/gemeinsam.mjs';
+import { zeitleisteBlock, kontaktKnoepfe } from './zeitleiste.mjs';
 
 // Voreinstellung "in Arbeit" (Inhabervorgabe) - die Liste ist beim Oeffnen
 // sofort da, ohne Suchtext getippt zu haben.
@@ -116,7 +117,11 @@ export function viewKundenDetail(key) {
       <p class="small">E-Mail: ${k.kunde.email !== '–'
         ? `<a href="mailto:${esc(k.kunde.email)}">${esc(k.kunde.email)}</a>`
         : '–'} · Telefon: ${telLink(k.kunde.telefon)}</p>
-      <div class="kunden-adressen">
+      ${kontaktKnoepfe(k.kunde)}
+    </section>
+    ${woStehtEs(k)}
+    <section class="card" style="margin-top:14px">
+      <div class="kunden-adressen" style="margin-top:0">
         ${adresseHtml(k.lieferadresse, 'Lieferadresse')}
         ${adresseHtml(k.rechnungsadresse, 'Rechnungsadresse')}
       </div>
@@ -129,6 +134,21 @@ export function viewKundenDetail(key) {
     <h2 style="margin-top:18px">Bestellungen</h2>
     ${k.auftraege.map(kundenAuftragKarte).join('') || emptyState('Keine Bestellungen in den hier vorliegenden Daten.', k.hinweis || '')}
   `;
+}
+
+/**
+ * "Wo steht es": je offener Bestellung der eine naechste Schritt und der Verlauf.
+ * Abgeschlossenes bleibt einen Klick entfernt - sonst schiebt die Geschichte eines
+ * Stammkunden das, was heute zu tun ist, aus dem Bild. Testbestellungen sind keine Arbeit.
+ */
+function woStehtEs(k) {
+  const echte = (k.auftraege || []).filter(a => !a.testbestellung && a.verlauf?.length);
+  if (!echte.length) return '';
+  const offen = echte.filter(a => a.naechsterSchritt);
+  const fertig = echte.filter(a => !a.naechsterSchritt);
+  return `<h2 style="margin:18px 0 10px">Wo steht es</h2>
+    ${offen.map(a => zeitleisteBlock(a)).join('') || '<p class="small muted" style="margin:0 0 12px">Alles abgeschlossen – nichts zu tun.</p>'}
+    ${fertig.length ? `<details class="zl-abgeschlossen"><summary>${fertig.length === 1 ? '1 abgeschlossene Bestellung' : `${fertig.length} abgeschlossene Bestellungen`} – Verlauf ansehen</summary>${fertig.map(a => zeitleisteBlock(a)).join('')}</details>` : ''}`;
 }
 
 /**

@@ -35,6 +35,7 @@ Grundlage: `audit/tp-operations-v3/` (02 Datenmodell, 05 Entscheidungen,
 | `lib/einkauf.mjs` | `gruppieren`, `einkaufsId`, `bestellungAusGruppe`, Enum `EINKAUF_STATUS` |
 | `lib/lieferanten.mjs` | Lieferanten-Stammdaten (privat), Übersicht je Lieferant, `bestellmail` (Text + `mailto:`) |
 | `lib/status.mjs` | Enum `AUFTRAG_STATUS`, Uebergaenge, `ableiten(order)` |
+| `lib/auftragsverlauf.mjs` | Zeitleiste je Auftrag (Muster-/Warenstrecke), `naechsterSchritt`, Ereignisse je Auftrag (privat, nur anhängen) |
 | `sync/orders.mjs` | `fetchOrdersSince`, `writeOrderState` (mit Gegenlesen) |
 
 ## Start
@@ -338,6 +339,96 @@ Für die Oberfläche:
   `POST /api/einkauf/auftragsstatus` (`status: "bestellt"`).
 - `400` bei unbekannter `art`/`ziel`/`gruppe`; ohne `orders.json`
   `{verfuegbar:false, hinweis, mails:[]}`.
+
+## Zeitleiste je Auftrag und nächster Schritt
+
+Logik in `lib/auftragsverlauf.mjs`, Tests in `tests/auftragsverlauf.test.mjs` und
+`docs/ai-dashboard/tests/zeitleiste-api.test.mjs`. Jeder offene Auftrag hat genau
+einen nächsten Schritt; die Ableitung ist rein (keine Dateizugriffe).
+
+**Strecken.** Reine Musterbestellung (jede Position ein Muster) = Musterstrecke,
+alles andere = Warenstrecke. Muster gehen nicht vom Lieferanten zum Kunden: sie
+kommen in den Laden, werden neu gelabelt und von uns verschickt.
+
+| Strecke | Schritt (`schritt`) | Anzeige | gesetzt durch | Quelle |
+|---|---|---|---|---|
+| Muster | `angefragt` | Muster angefragt | automatisch | Bestelldatum (Shopify) |
+| Muster | `bestellt` | Muster beim Lieferanten bestellt | Klick | `auftragsstatus.json`, je Position |
+| Muster | `geliefert` | Muster bei uns angekommen | Klick | `auftragsstatus.json`, je Position |
+| Muster | `raus` | Gelabelt und an Kunden verschickt | Klick, sonst automatisch | `auftragsstatus.json`; automatisch bei vollständig versandter Shopify-Bestellung (`fulfillments`) |
+| Muster | `kunde_hat_muster` | Kunde hat Muster | Klick, sonst automatisch | `auftragsverlauf.json`; automatisch nur bei Sendungsstatus „zugestellt“. Ab 3 Tagen seit Versand als Annahme vorgeschlagen (`annahme: true`), nie still gesetzt |
+| Muster | `nachgefasst` | Nachgefasst | Klick | `auftragsverlauf.json` |
+| Muster | `ergebnis` | Kunde hat bestellt / Kein Interesse | Klick, sonst automatisch | `auftragsverlauf.json`; „Kunde hat bestellt“ automatisch bei späterer Warenbestellung desselben Kunden (Abschluss bleibt ein Klick) |
+| Ware | `kunde_hat_bestellt` | Kunde hat bestellt | automatisch | Bestelldatum (Shopify) |
+| Ware | `bestellt` | Ware beim Lieferanten bestellt | Klick | `auftragsstatus.json` |
+| Ware | `geliefert` | Geliefert an uns (entfällt bei Direktversand) | Klick | `auftragsstatus.json` |
+| Ware | `raus` | An Kunden raus | Klick, sonst automatisch | `auftragsstatus.json`; Shopify-Versand |
+| Ware | `erledigt` | Erledigt | Klick | `auftragsstatus.json` |
+
+Die Positionsschritte sind die bestehenden Werte aus `lib/auftragsstatus.mjs` –
+Datei und Format unverändert. Ein Schritt gilt als getan, wenn alle Positionen
+ihn erreicht haben. Schritte je Auftrag liegen als Ereignisliste in
+`$TP_PRIVAT_DIR/auftragsverlauf.json` (`{version, auftraege: {<orderId>: {ereignisse: [{schritt, am, von, notiz?, bezug?}]}}}`),
+es wird nur angehängt; eine Korrektur ist das Ereignis `zurueck` mit `bezug`.
+Die Datei ist Teil von `npm run daten:sichern`.
+
+**Fristen** (Konstanten in `lib/auftragsverlauf.mjs`): `NACHFASSEN_NACH_TAGEN = 5`
+(nach „Kunde hat Muster“), `MUSTER_ANGEKOMMEN_ANNAHME_TAGE = 3`,
+`ERGEBNIS_KLAEREN_NACH_TAGEN = 14`, `WARE_ABSCHLIESSEN_NACH_TAGEN = 7`. Lieferant
+überfällig: `WARTE_NACHHAKEN_TAGE` (7) / `WARTE_PROBLEM_TAGE` (14) aus `lib/lieferanten.mjs`.
+
+**Lesen (additive Felder).** `GET /api/kunden/detail` trägt an jedem Eintrag von
+`kunde.auftraege[]`, `GET /api/kunden/bestellungen` an jeder Zeile von `zeilen[]`:
+
+```json
+{
+  "auftragsart": "muster",
+  "zeitleisteAbgeschlossen": false,
+  "naechsterSchritt": {
+    "wer": "wir", "text": "Nachfassen: Muster liegen seit 6 Tagen beim Kunden",
+    "detail": "Kunden anrufen und fragen, ob etwas gefällt.",
+    "aktion": "nachgefasst", "knopf": "Nachgefasst",
+    "stufe": "faellig", "faelligSeitTagen": 1, "wartetSeitTagen": 6, "annahme": false
+  },
+  "verlauf": [
+    { "schritt": "angefragt", "label": "Muster angefragt", "zustand": "erledigt", "am": "2026-01-01T10:00:00.000Z", "von": null, "automatisch": true, "quelle": "Shopify-Bestellung", "notiz": null, "teil": null },
+    { "schritt": "bestellt", "label": "Muster beim Lieferanten bestellt", "zustand": "erledigt", "am": "2026-01-02T10:00:00.000Z", "von": "Mitarbeiter 1", "automatisch": false, "quelle": "manuell", "notiz": null, "teil": null },
+    { "schritt": "nachgefasst", "label": "Nachgefasst", "zustand": "aktuell", "am": null, "von": null, "automatisch": false, "quelle": null, "notiz": null, "teil": null },
+    { "schritt": "ergebnis", "ergebnis": null, "label": "Ergebnis", "zustand": "offen", "am": null, "von": null, "automatisch": false, "quelle": null, "notiz": null, "teil": null }
+  ],
+  "verlaufNotizen": [{ "am": "2026-01-09T10:00:00.000Z", "von": "Mitarbeiter 1", "text": "Kunde ist bis Freitag im Urlaub" }]
+}
+```
+
+- `naechsterSchritt` ist `null`, wenn nichts zu tun ist (abgeschlossen, storniert).
+  `wer`: `wir` \| `lieferant` \| `kunde`. `stufe`: `faellig` (wir sind dran),
+  `warten` (jemand anderes, in der Frist), `nachhaken` (Lieferant ab 7 Tagen),
+  `problem` (ab 14 Tagen). `faelligSeitTagen`: seit wie vielen Tagen fällig
+  (0 = heute), `null` solange gewartet wird. `aktion` ist der Wert für `schritt`
+  beim Schreiben; `ergebnis` heißt: Auswahl anbieten (`kunde_hat_bestellt`,
+  `kein_interesse`, `nachgefasst`). `annahme: true` = Vorschlag, den ein Mensch bestätigt.
+- `verlauf[].zustand`: `erledigt` \| `aktuell` \| `offen` \| `uebersprungen`
+  (später Schritt getan, dieser nie eingetragen). `teil` = `{erledigt, gesamt}`,
+  wenn erst ein Teil der Positionen so weit ist. `automatisch: true` = aus den
+  Bestelldaten erkannt, nicht geklickt (`quelle` nennt woher).
+- Je Kunde der dringendste Schritt, mit `orderId`/`orderName`: `kunde.naechsterSchritt`
+  in `GET /api/kunden/detail` und `treffer[].naechsterSchritt` in `GET /api/kunden/suche`.
+- Für eine eigene Auswertung (z. B. Startseite): `zeitleistenFuerModell(modell, {statusAlle, verlaufAlle, jetzt})`
+  liefert `Map<orderId, zeitleiste>`; `dringendsterSchritt(liste)` wählt aus.
+
+**Schreiben.** `POST /api/einkauf/auftragsstatus` mit `aktion: "schritt"` (Rollen
+wie bisher: `lesen` bekommt 403). Ohne `aktion` verhält sich der Endpunkt unverändert.
+
+```json
+{ "aktion": "schritt", "orderId": "gid://shopify/Order/90001", "schritt": "nachgefasst", "notiz": "überlegt noch" }
+```
+
+`schritt`: `bestellt` \| `geliefert` \| `raus` \| `erledigt` (setzt alle Positionen des
+Auftrags, die noch nicht so weit sind – wie Einzelklicks im Einkauf), `kunde_hat_muster`
+\| `nachgefasst` \| `kunde_hat_bestellt` \| `kein_interesse` (Ereignis je Auftrag; ein
+Ergebnis setzt zusätzlich die Positionen auf `erledigt`), `notiz` (braucht `notiz`),
+`zurueck` (braucht `bezug`). Antwort: `{ok, orderId, schritt, positionen, auftragsart, verlauf, verlaufNotizen, naechsterSchritt, zeitleisteAbgeschlossen}`.
+`400` bei unbekanntem oder nicht zur Strecke passendem Schritt, `404` bei unbekannter Bestellung.
 
 ## Zugang einrichten (einmalig)
 
