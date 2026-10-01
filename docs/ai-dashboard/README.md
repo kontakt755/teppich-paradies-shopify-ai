@@ -51,6 +51,7 @@ Das Frontend erkennt die Betriebsart über `GET /api/capabilities`.
 ```
 docs/ai-dashboard/
   index.html, app.css           Seite und Gestaltung (kein Build, keine Abhängigkeiten)
+  stile/                        Gestaltung einzelner Bausteine in eigener Datei (zeitleiste.css) – je eine <link>-Zeile in index.html
   app.js                        Einstieg: Tabelle der Ansichten, Start – lädt alles Weitere per import
   ereignisse.mjs                zentrale Ereignisverteilung (Klick, Änderung, Tastatur, Hash-Wechsel)
   kern/                         Zustand, Helfer, API-Zugriff, Sitzung, Router, Zeichnen – kennt keine Ansicht
@@ -106,7 +107,7 @@ ansichten/
   heute.mjs  arbeit.mjs  freigaben.mjs  bereiche.mjs  insights.mjs  aktivitaet.mjs
   lexikon.mjs  ratgeber.mjs  hilfe.mjs  shopwache.mjs  team.mjs  fotos.mjs
   einkauf.mjs        + einkauf/{auftragsfluss,bestellungen,produktdaten}.mjs
-  kunden.mjs         + kunden/{gemeinsam,akte,rueckrufe,bestellungen,angebote,faelle}.mjs
+  kunden.mjs         + kunden/{gemeinsam,akte,rueckrufe,bestellungen,angebote,faelle,zeitleiste}.mjs
   organisation.mjs   + organisation/{gemeinsam,dialoge}.mjs
 ```
 
