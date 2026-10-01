@@ -30,6 +30,8 @@ function renderSessionButton() {
   if (!btn) return;
   const show = Boolean(state.session?.required && state.session?.authenticated);
   btn.hidden = !show;
+  // Am Handy steht das Abmelden im "Mehr"-Blatt statt in der Kopfzeile.
+  document.querySelectorAll('[data-abmelden]').forEach(b => { b.hidden = !show; });
   // Das eigene Passwort darf jeder aendern - nicht nur der Inhaber fuer andere.
   const pw = $('#meinPasswortBtn');
   if (pw) pw.hidden = !show || !state.session?.benutzer?.kuerzel;
