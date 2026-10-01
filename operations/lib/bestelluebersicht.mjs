@@ -367,6 +367,9 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
       testbestellung: istTest,
       bezahlt: order.displayFinancialStatus ?? '–',
       erfuellt: order.displayFulfillmentStatus ?? '–',
+      // Sendungen aus Shopify (Zeitleiste: "an Kunden raus" bzw. "zugestellt" automatisch erkennen).
+      sendungen: knoten(order.fulfillments).map(f => ({ status: f.displayStatus || f.status || null, am: f.createdAt || null, aktualisiertAm: f.updatedAt || null,
+        tracking: knoten(f.trackingInfo).map(t => ({ nummer: t.number || null, traeger: t.company || null, url: t.url || null })) })),
       adminUrl: adminLink(order.id),
       status: statusInfo.status,
       ampel: istTest ? 'test' : ampel,
