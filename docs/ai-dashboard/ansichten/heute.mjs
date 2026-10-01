@@ -71,8 +71,10 @@ export function viewHeute() {
   const b = benutzer();
   const eigeneSicht = sichtFuer(b, q.aufgaben);
   // Umschalten darf nur der Inhaber - und er sieht dann alles in diesem Bereich, nicht nur Eigenes.
+  // Seine Startseite ist der Laden (Inhaberentscheidung 2026-10-01): Technisches (Freigaben,
+  // Website-Aufgaben, Shop-Wache) erscheint erst nach einem Klick auf "Website" oder "Alles".
   const gewuenscht = state.route.params.get('sicht');
-  const sicht = istInhaber() && SICHTEN.includes(gewuenscht) ? gewuenscht : eigeneSicht;
+  const sicht = istInhaber() ? (SICHTEN.includes(gewuenscht) ? gewuenscht : 'laden') : eigeneSicht;
   const opt = { sicht, ich: heuteDaten.aufgaben?.ich || b?.kuerzel || b?.name || null, alle: istInhaber() && sicht !== 'inhaber', lieferantName, klartext: hinweisText };
   const todos = leiteTodosAb(q, opt);
   const wartet = werWartet(q, opt);
@@ -80,8 +82,8 @@ export function viewHeute() {
   return `<div class="heute">
     ${kopf(todos.length, sicht)}
     ${todoListe(todos)}
-    ${istInhaber() ? sprungfelder(zaehleTodos(q, opt), sicht) : ''}
-    ${datenstandZeile()}
+    ${istInhaber() && sicht !== 'laden' ? sprungfelder(zaehleTodos(q, opt), sicht) : ''}
+    ${datenstandZeile(sicht)}
     ${werWartetBlock(wartet)}
     ${istInhaber() ? kennzahlenBlock() : ''}
     ${heuteBisher()}
@@ -91,7 +93,7 @@ export function viewHeute() {
 function kopf(anzahl, sicht) {
   const datum = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
   const umschalter = istInhaber()
-    ? `<span class="heute-sicht" role="group" aria-label="Ansicht wechseln">${SICHTEN.map(k => `<a href="#/heute${k === 'inhaber' ? '' : `?sicht=${k}`}" ${k === sicht ? 'aria-current="true"' : ''}>${esc(SICHT_LABEL[k])}</a>`).join('')}</span>`
+    ? `<span class="heute-sicht" role="group" aria-label="Ansicht wechseln">${['laden', 'website', 'inhaber'].map(k => `<a href="#/heute${k === 'laden' ? '' : `?sicht=${k}`}" ${k === sicht ? 'aria-current="true"' : ''}>${esc(k === 'inhaber' ? 'Alles' : SICHT_LABEL[k])}</a>`).join('')}</span>`
     : `<span>Ansicht ${esc(SICHT_LABEL[sicht])}</span>`;
   return `<header class="heute-kopf">
     <div class="heute-zahl${anzahl ? '' : ' null'}" aria-hidden="true">${anzahl}</div>
@@ -140,12 +142,12 @@ function todoListe(todos) {
 
 /** Inhaber: wie viel liegt im Laden, wie viel bei der Website - ein Klick wechselt die Ansicht. */
 function sprungfelder(zahlen, sicht) {
-  const feld = (k, n, text) => `<a href="#/heute?sicht=${k}" class="${n ? '' : 'null'}" ${sicht === k ? 'aria-current="true"' : ''}><b>${n}</b> ${esc(text)} <span aria-hidden="true">›</span></a>`;
+  const feld = (k, n, text) => `<a href="#/heute${k === 'laden' ? '' : `?sicht=${k}`}" class="${n ? '' : 'null'}" ${sicht === k ? 'aria-current="true"' : ''}><b>${n}</b> ${esc(text)} <span aria-hidden="true">›</span></a>`;
   return `<nav class="heute-sprung" aria-label="Offen im Team">${feld('laden', zahlen.laden, 'offen im Laden')}${feld('website', zahlen.website, 'offen bei Website')}</nav>`;
 }
 
 /** Datenstand: eine kleine Zeile unter den To-dos statt einer Warnleiste ueber allem. */
-function datenstandZeile() {
+function datenstandZeile(sicht) {
   const a = einkauf.aktualisierung;
   if (!a) return '';
   const auffaellig = aktualisierungHealth().filter(h => h.level !== 'ok');
@@ -157,7 +159,7 @@ function datenstandZeile() {
   return `<div class="heute-datenstand${auffaellig.length ? ' warn' : ''}" role="status">
     <span class="punkt" aria-hidden="true"></span><span>${esc(text)}${auffaellig.length && darfAnsicht('insights') ? ' · <a href="#/insights">ansehen</a>' : ''}</span>
     ${/* Der erklaerende Satz nur, wenn es etwas zu tun gibt - bei aktuellen Daten waere er Rauschen. */ ''}
-    ${aktualisierenButton({ mitHinweis: auffaellig.length > 0 })}
+    ${aktualisierenButton({ mitHinweis: auffaellig.length > 0 && sicht !== 'laden' })}
   </div>`;
 }
 
