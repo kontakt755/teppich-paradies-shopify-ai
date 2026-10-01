@@ -359,7 +359,8 @@ test('Muster an den Laden (ziel ueberstimmt Stammdaten): alle in einer Liste, Fa
   assert.equal(mail.positionen.length, 2);
   assert.deepEqual(mail.fehlt, []);
   assert.match(mail.text, /bitte senden Sie uns folgende Muster:/);
-  assert.match(mail.text, /2\. Art\.-Nr\. A-0815\n {3}Muster: Testteppich Wolke, Blau\n {3}Menge: 1 Muster\n {3}Kommission: #T3/);
+  assert.match(mail.text, /\n1× Art\.-Nr\. A-0815 · Testteppich Wolke, Blau\n/);
+  assert.equal(/Kommission|Lieferanschrift|Geschäftsadresse/.test(mail.text), false);
   assert.match(mail.hinweise[0], /1 Position\(en\) ohne Farbnummer/);
 });
 

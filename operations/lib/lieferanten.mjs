@@ -589,9 +589,13 @@ function musterMail(gruppen, { st, absender, statusAlle, adressen, jetzt, ziel }
       zeilen.push('');
     }
   } else {
-    aufgenommen.forEach((p, i) => zeilen.push(...musterZeile(p, i + 1), ''));
-    if (adresseOk(absender?.lieferanschrift)) zeilen.push('Lieferanschrift:', ...adressZeilen(absender.lieferanschrift), '');
-    else zeilen.push('Lieferung bitte an unsere bekannte Geschäftsadresse.', '');
+    // An den Laden: bewusst kurz - eine Zeile je Muster, ohne Kommission und ohne
+    // Anschrift (der Lieferant kennt uns; Inhaberentscheidung 2026-10-01).
+    for (const p of aufgenommen) {
+      const bezeichnung = [p.titel?.replace(/^Muster:\s*/i, ''), p.farbe].filter(Boolean).join(', ');
+      zeilen.push([`${p.menge}× Art.-Nr. ${p.artikelnummer}`, p.farbnummer ? `Farb-Nr. ${p.farbnummer}` : null, bezeichnung].filter(Boolean).join(' · '));
+    }
+    zeilen.push('');
   }
   zeilen.push('Vielen Dank.', '', gruss);
   const stueck = aufgenommen.reduce((s, p) => s + Number(p.menge || 0), 0);
