@@ -328,6 +328,29 @@ vor „Erledigt" zurück (ohne solchen: kein Status = noch nicht bestellt). Die 
 `wiederGeoeffnetAm/Von` stehen am Datensatz, der Audit-Log erhält `auftragsstatus-wieder-geoeffnet`.
 Wartezeiten im Einkauf rechnet das Frontend aus `bestelltAm`/`geliefertAm` (7 Tage bernstein, 14 rot).
 
+### Einkauf je Lieferant (seit 2026-10-01)
+
+Der Reiter „Bestellungen" zeigt eine Karte je Lieferant (`ansichten/einkauf/lieferanten.mjs`, Regeln ohne
+DOM in `lib/einkauf-lieferanten.mjs`, Styles in `stile/einkauf-lieferanten.css`):
+
+- **Zahlen und Überfällig-Hinweis** werden im Browser aus `/api/einkauf/bestellungen` und dem
+  Auftragsfluss-Stand gezählt, nicht aus `/api/einkauf/lieferanten` – so passen Zahl und Liste nach
+  einem Statuswechsel sofort zusammen. Vom Server kommen Stammdaten und Schwellen (7/14 Tage).
+- **Ein Hauptknopf je Bestellweg** (`ware.weg`): „Bestellmail öffnen", „Im Portal bestellen" (öffnet
+  das Portal in neuem Tab und zugleich den Dialog), „Anrufen". Ohne Bestellweg: „Bestellliste öffnen".
+  „Muster bestellen" erscheint, wenn Muster offen sind.
+- **Bestellmail-Dialog**: An, Betreff und Text unverändert aus `/api/einkauf/bestellmail`; `fehlt` und
+  `hinweise` sichtbar; bei `mailtoGekuerzt` Hinweis auf „Text kopieren". Nach Öffnen oder Kopieren
+  erscheint „Als bestellt markieren?" – setzt die aufgenommenen Positionen über
+  `markiereAlsBestellt()` (dieselbe Sammelaktion wie „Alle als bestellt markieren…"). Gesendet wird nie.
+- **Positionen** sind aufklappbar (Zustand im Modul, kein `<details>`); darin die bisherigen Tabellen
+  je Lieferweg mit allen Aktionen. `#/einkauf?lf=A` öffnet eine Karte aufgeklappt.
+- **Lieferant-Detail** `#/einkauf?lieferant=A` (Parameter, keine eigene Route): Kontakt, Bestellweg,
+  Lieferzeit (zugesagt aus Stammdaten, tatsächlich aus „bestellt"→„geliefert" in Werktagen), Hinweise,
+  offene Posten je Stufe, Verlauf aus den Zeitstempeln des Auftragsflusses. Fehlende Stammdaten
+  werden benannt; gepflegt werden sie nur in der privaten Datei, es gibt keinen Editor.
+- Rolle „lesen": Statusknöpfe und die Markier-Frage sind ausgeblendet.
+
 ## 9. Startseite „Heute" (seit 2026-09-23)
 
 `viewHeute()` in `docs/ai-dashboard/ansichten/heute.mjs` ist die Startseite und bleibt primär aufgabenbasiert

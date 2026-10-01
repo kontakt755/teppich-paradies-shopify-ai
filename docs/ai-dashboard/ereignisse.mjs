@@ -20,6 +20,7 @@ import { openActionDialog } from './bausteine/aktions-dialog.mjs';
 import { syncNow, aktualisierenNow } from './bausteine/aktualisierung.mjs';
 import { openPalette, closePalette } from './bausteine/palette.mjs';
 import { einkaufKlickStatus, einkaufKlickDialoge } from './ansichten/einkauf/auftragsfluss.mjs';
+import { einkaufKlickLieferanten } from './ansichten/einkauf/lieferanten.mjs';
 import { lexikonKlick } from './ansichten/lexikon.mjs';
 import { kundenKlickBestellungen } from './ansichten/kunden/bestellungen.mjs';
 import { kundenKlickAkte } from './ansichten/kunden.mjs';
@@ -66,6 +67,7 @@ export function bindEvents() {
     const dec = e.target.closest('[data-decide]');
     if (dec) { const t = state.tasks.find(x => x.number === Number(dec.dataset.task)); if (t) openActionDialog(t, dec.dataset.decide); return; }
     if (einkaufKlickStatus(e)) return;
+    if (einkaufKlickLieferanten(e)) return;
     if (arbeitKlick(e)) return;
     if (einkaufKlickDialoge(e)) return;
     if (orgKlickZuruecksetzen(e)) return;
