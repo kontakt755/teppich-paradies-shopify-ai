@@ -1,0 +1,130 @@
+{%- doc -%}
+  Zeigt in Teppichboden-Unterkategorien alle Florhoehenbereiche. Ein Bereich
+  mit Treffern bleibt in der aktuellen Kategorie; andere fuehren zur gesamten
+  Teppichboden-Auswahl. Die Gruppenkennungen stammen aus Search & Discovery
+  und muessen beim Neuanlegen einer Gruppe hier aktualisiert werden.
+
+  @param {string} filter_style - horizontal oder vertical
+{%- enddoc -%}
+{%- liquid
+  assign tp_flor_filter = nil
+  for tp_f in collection.filters
+    if tp_f.param_name == 'filter.p.m.custom.florhoehe_mm'
+      assign tp_flor_filter = tp_f
+      break
+    endif
+  endfor
+  assign tp_flor_groups = 'Bis 5 mm|gid://shopify/FilterSettingGroup/380207438;Über 5 bis unter 10 mm|gid://shopify/FilterSettingGroup/380240206;Ab 10 mm|gid://shopify/FilterSettingGroup/380272974' | split: ';'
+  assign tp_parent_url = collections['teppichboden'].url | default: '/collections/teppichboden'
+  assign tp_height_free_url = tp_flor_filter.url_to_remove | default: collection.url
+  assign tp_is_vertical = false
+  assign tp_is_horizontal = true
+  if filter_style == 'vertical'
+    assign tp_is_vertical = true
+    assign tp_is_horizontal = false
+  endif
+-%}
+{% capture tp_flor_children %}
+  <details class="facets__panel" {% if tp_is_vertical %}open{% else %}data-auto-close-details="desktop"{% endif %}>
+    <summary class="facets__summary">
+      <span class="facets__label">Florhöhe</span>
+      <span class="svg-wrapper icon-caret icon-animated">{{ 'icon-caret.svg' | inline_asset_content }}</span>
+    </summary>
+    <div class="facets__inputs facets__panel-content details-content{% unless tp_is_vertical %} color-{{ settings.popover_color_scheme }}{% endunless %}">
+      <p class="tp-flor-navigation__intro">Andere Höhen zeigen alle Teppichböden.</p>
+      <ul class="tp-flor-navigation__list list-unstyled" aria-label="Florhöhe wählen">
+        {%- for tp_group in tp_flor_groups -%}
+          {%- liquid
+            assign tp_parts = tp_group | split: '|'
+            assign tp_label = tp_parts[0]
+            assign tp_value = tp_parts[1]
+            assign tp_encoded_value = tp_value | url_encode
+            assign tp_local = false
+            assign tp_active = false
+            for tp_filter_value in tp_flor_filter.values
+              if tp_filter_value.value == tp_value
+                if tp_filter_value.count > 0 or tp_filter_value.active
+                  assign tp_local = true
+                  assign tp_active = tp_filter_value.active
+                endif
+                break
+              endif
+            endfor
+            assign tp_target_base = tp_height_free_url
+            unless tp_local
+              assign tp_target_base = tp_height_free_url | replace_first: collection.url, tp_parent_url
+            endunless
+            if tp_active
+              assign tp_target_url = tp_height_free_url
+            else
+              assign tp_separator = '?'
+              if tp_target_base contains '?'
+                assign tp_separator = '&'
+              endif
+              assign tp_target_url = tp_target_base | append: tp_separator | append: 'filter.p.m.custom.florhoehe_mm=' | append: tp_encoded_value
+            endif
+          -%}
+          <li>
+            <a class="tp-flor-navigation__link{% if tp_active %} tp-flor-navigation__link--active{% endif %}"
+              href="{{ tp_target_url | escape }}"
+              data-tp-flor-navigation="true"
+              data-tp-flor-value="{{ tp_value | escape }}"
+              {% if tp_active %}data-tp-flor-clear="true"{% endif %}
+              {% if tp_active %}aria-current="true"{% endif %}>
+              <span>{{ tp_label }}</span>
+              {%- unless tp_local -%}<span class="tp-flor-navigation__scope">Alle Teppichböden</span>{%- endunless -%}
+            </a>
+          </li>
+        {%- endfor -%}
+      </ul>
+    </div>
+  </details>
+{% endcapture %}
+{% render 'accordion-custom-component',
+  children: tp_flor_children,
+  class: 'facets__item',
+  open: tp_is_vertical,
+  open_by_default_on_desktop: tp_is_vertical,
+  open_by_default_on_mobile: tp_is_vertical,
+  disable_animation_on_desktop: tp_is_horizontal,
+  close_with_escape: tp_is_horizontal,
+  data_filter_param_name: 'filter-p-m-custom-florhoehe-mm'
+%}
+
+{% stylesheet %}
+  .tp-flor-navigation__intro {
+    margin: 0 0 10px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72);
+  }
+
+  .tp-flor-navigation__list {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+  }
+
+  .tp-flor-navigation__link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 44px;
+    padding: 8px 10px;
+    color: inherit;
+    text-decoration: none;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.16);
+    border-radius: 7px;
+  }
+
+  .tp-flor-navigation__link:hover,
+  .tp-flor-navigation__link:focus-visible,
+  .tp-flor-navigation__link--active {
+    border-color: currentColor;
+  }
+
+  .tp-flor-navigation__link--active { font-weight: 600; }
+  .tp-flor-navigation__scope { font-size: 12px; text-align: right; opacity: 0.7; }
+{% endstylesheet %}
