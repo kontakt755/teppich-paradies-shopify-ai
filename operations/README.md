@@ -33,6 +33,7 @@ Grundlage: `audit/tp-operations-v3/` (02 Datenmodell, 05 Entscheidungen,
 | `lib/ampel.mjs` | `procurementReady` je Produktgruppe |
 | `lib/route.mjs` | Enum `ROUTE`, `routeFor` mit Prioritaet und Override-Protokoll |
 | `lib/einkauf.mjs` | `gruppieren`, `einkaufsId`, `bestellungAusGruppe`, Enum `EINKAUF_STATUS` |
+| `lib/lieferanten.mjs` | Lieferanten-Stammdaten (privat), Übersicht je Lieferant, `bestellmail` (Text + `mailto:`) |
 | `lib/status.mjs` | Enum `AUFTRAG_STATUS`, Uebergaenge, `ableiten(order)` |
 | `sync/orders.mjs` | `fetchOrdersSince`, `writeOrderState` (mit Gegenlesen) |
 
@@ -191,6 +192,152 @@ Erst `npm run daten:anreichern -- --schreiben` schreibt, über den Token aus
 `.env.local` (`operations/sync/zugang.mjs`, gleicher Zugang wie oben) und mit
 Gegenprobe je geplantem Wert danach (`write-log.json`: gleich/abweichend/
 fehlend) - `userErrors: []` beim Schreiben gilt nicht als Beleg.
+
+## Lieferanten: Stammdaten, Übersicht, Bestellmail
+
+Ziel: Bestellen mit einem Klick. Logik in `lib/lieferanten.mjs`, Tests in
+`tests/lieferanten.test.mjs` und `docs/ai-dashboard/tests/lieferanten-api.test.mjs`.
+**Es wird nichts versendet** (D8) – die Endpunkte liefern Text und einen
+`mailto:`-Link, abschicken tut ein Mensch.
+
+### Stammdaten (privat)
+
+`$TP_PRIVAT_DIR/lieferanten/stammdaten.json` – nie im Repository. Vorlage mit
+Pseudonymen: `lib/lieferanten.beispiel.json`. Schlüssel unter `lieferanten` ist
+die Kennung aus der Bestellübersicht (`A`, `B`, … – dieselbe wie
+`gruppen[].lieferant`). Leere Felder (`""`/`null`) gelten als nicht hinterlegt.
+
+| Feld | Inhalt |
+|---|---|
+| `anzeigename` | Name für die Oberfläche (sonst „Lieferant A“) |
+| `kundennummer` | unsere Kundennummer beim Lieferanten |
+| `ware.weg` | `portal` \| `mail` \| `telefon`, dazu `ware.portalUrl`, `ware.mail`, `ware.telefon` |
+| `muster.weg` | wie oben, dazu `muster.ansprechperson`, `muster.mail`, `muster.telefon`, `muster.portalUrl` |
+| `muster.lieferung` | `kunde` (Lieferant schickt direkt an den Kunden) \| `laden` |
+| `lieferzeitWerktage` | übliche Lieferzeit, ganze Zahl |
+| `mindestmenge`, `hinweise` | Freitext |
+| `mail.anrede`, `mail.gruss` | überschreiben Anrede/Grußformel der Mails |
+| `absender` (oberste Ebene) | `firma`, `kontaktName`, `telefon`, `mail`, `lieferanschrift {name, strasse, plz, ort, land}` – Grußformel und Lieferanschrift „Laden“ |
+
+Fehlt die Datei, ist sie kaputt oder ein Wert ungültig (Weg unbekannt, keine
+Mailadresse, URL nicht http/https), wirft nichts: der Wert wird `null`, der
+Grund steht in `stammdatenDatei.fehler`. Zurück kommen nur die Felder aus der
+Tabelle – zusätzliche Einträge (z. B. Konditionen) verlassen den Rechner nicht.
+
+### Endpunkte
+
+Alle `GET`, nur im lokalen Server, gleiche Herkunftsprüfung wie die übrigen
+Einkaufs-Endpunkte, lesbar für jede angemeldete Rolle (`lesen`, `mitarbeiter`,
+`inhaber`, Notzugang). Keine Preise in den Antworten.
+
+**`GET /api/einkauf/lieferanten`** – alle Lieferanten aus Stammdaten und offenen
+Positionen; nicht zugeordnete Positionen als `id: "UNGEKLAERT"` am Ende.
+
+```json
+{
+  "verfuegbar": true,
+  "hinweis": null,
+  "stammdatenDatei": { "vorhanden": true, "quelle": "…/lieferanten/stammdaten.json", "fehler": [], "hinweis": null, "absenderHinterlegt": true },
+  "schwellen": { "nachhakenTage": 7, "problemTage": 14 },
+  "lieferanten": [{
+    "id": "A",
+    "name": "Lieferant A",
+    "zugeordnet": true,
+    "stammdaten": {
+      "id": "A", "name": "Lieferant A", "anzeigename": "Lieferant A", "kundennummer": "K-000001",
+      "ware": { "weg": "portal", "portalUrl": "https://lieferant-a.example/haendler", "mail": "bestellung@lieferant-a.example", "telefon": "+49 30 1111111" },
+      "muster": { "weg": "mail", "ansprechperson": "Frau Muster", "mail": "muster@lieferant-a.example", "telefon": null, "portalUrl": null, "lieferung": "kunde" },
+      "lieferzeitWerktage": 5, "mindestmenge": "…", "hinweise": "…",
+      "mail": { "anrede": "Guten Tag Frau Muster,", "gruss": "…" },
+      "fehlend": [], "hinterlegt": true
+    },
+    "positionen": { "zuBestellen": 1, "bestellt": 1, "unterwegs": 1 },
+    "muster": { "zuBestellen": 1, "bestellt": 1, "unterwegs": 0 },
+    "aeltesteOffeneBestellungTage": 16,
+    "aeltesteUnbestellteTage": 19,
+    "ueberfaellig": { "nachhaken": 1, "problem": 1 },
+    "gruppen": [{ "schluessel": "A|SUPPLIER_TO_TP|TP", "route": "SUPPLIER_TO_TP", "lieferziel": "TP", "zuBestellen": 1 }]
+  }]
+}
+```
+
+- `stammdaten.fehlend` nennt, was noch einzutragen ist (z. B. `["kundennummer", "ware.weg"]`);
+  `hinterlegt: false` heißt: gar nichts eingetragen.
+- Stufen wie im Auftragsfluss (`filterGruppe` in `lib/auftragsstatus.mjs`):
+  `zuBestellen` = noch kein Status, `bestellt`, `unterwegs` = „Geliefert an uns“/„An Kunden raus“.
+  Erledigte Positionen zählen nicht.
+- `aeltesteOffeneBestellungTage`: älteste Bestellung beim Lieferanten, die noch
+  nicht bei uns ist (Tage seit `bestelltAm`). `aeltesteUnbestellteTage`: älteste
+  Kundenbestellung, für die noch nichts bestellt wurde.
+- `ueberfaellig`: Wartezeit wie im Frontend (`AF_WARTE_WARN`/`AF_WARTE_CRIT`):
+  ab 7 Tagen `nachhaken`, ab 14 Tagen `problem`.
+- `gruppen[].schluessel` ist der Wert für `gruppe=` der Bestellmail.
+
+**`GET /api/einkauf/lieferant?id=A`** – ein Lieferant wie oben (unter
+`lieferant`), zusätzlich `ware` und `musterPositionen` (je
+`{zuBestellen, bestellt, unterwegs}` als Listen) und `ueberfaelligePositionen`.
+`400` ohne `id`, `404` bei unbekannter Kennung. Position:
+
+```json
+{ "orderId": "gid://shopify/Order/90001", "orderName": "#T1", "orderDatum": "2026-01-01T10:00:00Z", "lineItemId": "gid://shopify/LineItem/1",
+  "titel": "Testdiele Eiche", "farbe": "Natur", "sku": "TEST-A-1", "artikelnummer": "A-4711", "farbnummer": "012",
+  "menge": 3, "einheit": "paket", "mengeText": "3 Paket(e) = 6,60 m²", "mengeHinweis": null, "kundenmenge": "3 Stk.",
+  "route": "SUPPLIER_TO_TP", "istMuster": false, "lieferantUrl": null,
+  "status": "bestellt", "gruppe": "bestellt", "lieferantBestellnummer": "AB-1", "bestelltAm": "2026-01-04T10:00:00Z",
+  "wartetage": 16, "warnstufe": "problem", "kundenbestellungTage": 19 }
+```
+
+Ungeklärtes ist `null` (nie der Text `UNGEKLAERT`).
+
+**`GET /api/einkauf/bestellmail?lieferant=A&art=ware[&gruppe=<schluessel>]`**
+bzw. **`…&art=muster[&ziel=kunde|laden]`** – fertige Bestellung(en). Ware: eine
+Mail je Gruppe (Lieferant + Route + Lieferziel; Direktversand verschiedener
+Kunden wird nie gemischt), ohne `gruppe` alle Gruppen des Lieferanten. Muster:
+eine Mail mit allen offenen Mustern; `ziel` überstimmt `muster.lieferung`.
+
+```json
+{
+  "verfuegbar": true,
+  "lieferant": "A", "name": "Lieferant A", "art": "ware", "automatischGesendet": false,
+  "mails": [{
+    "art": "ware", "weg": "portal", "gruppe": "A|SUPPLIER_TO_TP|TP", "route": "SUPPLIER_TO_TP", "lieferziel": "laden",
+    "an": "bestellung@lieferant-a.example", "ansprechperson": null,
+    "portalUrl": "https://lieferant-a.example/haendler", "telefon": "+49 30 1111111",
+    "betreff": "Bestellung – Kd.-Nr. K-000001 – #T1",
+    "text": "Guten Tag Frau Muster,\n\nwir bestellen folgende Ware:\n\nUnsere Kundennummer: K-000001\n\n1. Art.-Nr. A-4711 · Farb-Nr. 012\n   Testdiele Eiche, Natur\n   Menge: 3 Paket(e) = 6,60 m²\n   Kommission: #T1\n\nLieferanschrift:\n…",
+    "mailto": "mailto:bestellung@lieferant-a.example?subject=Bestellung%20…&body=…",
+    "mailtoGekuerzt": false,
+    "positionen": [ { "…": "wie oben" } ],
+    "fehlt": [{ "orderId": "…", "orderName": "#T1", "lineItemId": "…", "titel": "Testleiste", "farbe": "Weiß", "istMuster": false, "gruende": ["Artikelnummer beim Lieferanten fehlt"] }],
+    "stammdatenFehlt": [],
+    "hinweise": [],
+    "bereitsBestellt": 0
+  }]
+}
+```
+
+Für die Oberfläche:
+
+- **`fehlt`** sind Positionen, die NICHT in der Mail stehen: Artikelnummer beim
+  Lieferanten fehlt, Bestellmenge ungeklärt, Lieferanschrift fehlt, Lieferziel
+  der Muster nicht festgelegt. Sie müssen sichtbar bleiben – stillschweigend
+  weggelassen wird nichts. Eine fehlende Farbnummer blockiert nicht (die Farbe
+  steht als Name in der Mail), erscheint aber in `hinweise`.
+- **`mailto`** ist fertig kodiert (RFC 6068, Zeilenumbruch `%0D%0A`). Ist der
+  Link länger als 1800 Zeichen, trägt er nur Empfänger und Betreff und
+  `mailtoGekuerzt` ist `true` – dann `text` kopieren lassen. Ohne hinterlegte
+  Mailadresse sind `an` und `mailto` `null`; `text` bleibt zum Kopieren
+  (Portal/Telefon), `stammdatenFehlt` nennt die Lücke.
+- Schon bestellte Positionen (Auftragsfluss-Status gesetzt) kommen nicht mehr
+  in die Mail (`bereitsBestellt` zählt sie). Ist nichts mehr offen, sind
+  `betreff`/`text`/`mailto` `null`.
+- Muster: `lieferziel` ist `kunde` (Anschrift je Kundenbestellung im Text) oder
+  `laden`; `ohneBestellung` listet Muster mit Route `SAMPLE_STOCK`/`SAMPLE_CUT`
+  (eigenes Musterlager/Zuschnitt – keine Lieferantenbestellung).
+- Nach dem Absenden setzt die Oberfläche den Status wie bisher über
+  `POST /api/einkauf/auftragsstatus` (`status: "bestellt"`).
+- `400` bei unbekannter `art`/`ziel`/`gruppe`; ohne `orders.json`
+  `{verfuegbar:false, hinweis, mails:[]}`.
 
 ## Zugang einrichten (einmalig)
 

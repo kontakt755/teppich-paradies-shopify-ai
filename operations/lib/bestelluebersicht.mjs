@@ -255,7 +255,7 @@ function vollstaendigeDetails(order, positionen) {
 function musterQuelle(item, quellMap) {
   const id = numerischeId(item.einkauf?.quellvariante !== UNGEKLAERT ? item.einkauf?.quellvariante : item.eingaben?.quellvarianteId);
   const qv = id ? quellMap.get(id) : null;
-  if (!qv) return { id: UNGEKLAERT, quelle: null, lieferant: UNGEKLAERT, quellvariante: id, titel: null };
+  if (!qv) return { id: UNGEKLAERT, quelle: null, lieferant: UNGEKLAERT, quellvariante: id, titel: null, farbnummer: UNGEKLAERT };
   const n = normalisiert({ variant: qv }).variant;
   const vm = metafeldMap(n.metafields);
   const pm = metafeldMap(n.product?.metafields);
@@ -264,7 +264,9 @@ function musterQuelle(item, quellMap) {
   // Muster unter "Lieferant nicht zugeordnet", obwohl die Daten da sind.
   const lf = lieferantFuer({ einkauf: { lieferant: vm?.einkauf?.lieferant }, grosshaendlerIdQuelle: gh.quelle }, vm);
   const url = vm?.einkauf?.lieferant_url;
-  return { id: gh.id, quelle: gh.quelle, lieferant: lf, quellvariante: id, titel: `${n.product?.title ?? ''} – ${n.title ?? ''}`.trim(), lieferantUrl: leer(url) ? UNGEKLAERT : String(url).trim() };
+  return { id: gh.id, quelle: gh.quelle, lieferant: lf, quellvariante: id, titel: `${n.product?.title ?? ''} – ${n.title ?? ''}`.trim(), lieferantUrl: leer(url) ? UNGEKLAERT : String(url).trim(),
+    // Farbnummer der Quellvariante: die Musterbestellung beim Lieferanten nennt Artikel UND Farbe.
+    farbnummer: leer(vm?.einkauf?.farbnummer) ? UNGEKLAERT : String(vm.einkauf.farbnummer).trim() };
 }
 
 /**
