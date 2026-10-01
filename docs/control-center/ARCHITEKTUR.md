@@ -313,6 +313,12 @@ Endpunkte: `/api/einkauf/bestellungen`, `/api/einkauf/produktstatus` (Query `pag
 fragt das Frontend diese Endpunkte gar nicht erst ab und zeigt nur den Hinweis „Nur lokal im Betrieb
 verfügbar".
 
+**Lieferanten (seit 2026-10-01):** `/api/einkauf/lieferanten`, `/api/einkauf/lieferant?id=` und
+`/api/einkauf/bestellmail` (GET, alle Rollen) liefern Stammdaten, offene Positionen je Stufe und die
+fertige Bestellung als Text + `mailto:`-Link (`operations/lib/lieferanten.mjs`). Stammdaten liegen privat
+unter `$TP_PRIVAT_DIR/lieferanten/stammdaten.json`; versendet wird nichts. Felder und Beispielantworten:
+`operations/README.md`, Abschnitt „Lieferanten".
+
 **Auftragsfluss rückgängig (seit 2026-09-24):** `POST /api/einkauf/auftragsstatus` mit
 `{orderId, lineItemId, aktion: "wiederOeffnen", notiz?}` öffnet eine erledigte Position wieder
 (`oeffneWieder()` in `operations/lib/auftragsstatus.mjs`). Sie fällt auf den letzten belegten Schritt

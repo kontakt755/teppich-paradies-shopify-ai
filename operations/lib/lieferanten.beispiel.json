@@ -1,0 +1,54 @@
+{
+  "_anleitung": "Vorlage mit Pseudonymen. Die echte Datei liegt NUR privat unter $TP_PRIVAT_DIR/lieferanten/stammdaten.json (nie im Repository). Leere Felder (\"\" oder null) gelten als nicht hinterlegt. Schluessel unter \"lieferanten\" ist die Kennung aus der Bestelluebersicht (A, B, ...). Felder mit fuehrendem Unterstrich werden ignoriert.",
+  "version": 1,
+  "absender": {
+    "firma": "Beispielhandel GmbH",
+    "kontaktName": "Erika Beispiel",
+    "telefon": "+49 30 0000000",
+    "mail": "einkauf@haendler.example",
+    "lieferanschrift": {
+      "name": "Beispielhandel GmbH",
+      "strasse": "Musterweg 1",
+      "plz": "00000",
+      "ort": "Musterstadt",
+      "land": "Deutschland"
+    }
+  },
+  "lieferanten": {
+    "A": {
+      "anzeigename": "Lieferant A",
+      "kundennummer": "K-000001",
+      "ware": {
+        "weg": "portal",
+        "portalUrl": "https://lieferant-a.example/haendler",
+        "mail": "bestellung@lieferant-a.example",
+        "telefon": "+49 30 1111111"
+      },
+      "muster": {
+        "weg": "mail",
+        "ansprechperson": "Frau Muster",
+        "mail": "muster@lieferant-a.example",
+        "telefon": "",
+        "portalUrl": "",
+        "lieferung": "kunde"
+      },
+      "lieferzeitWerktage": 5,
+      "mindestmenge": "Rollenware ab 1 lfm, Pakete nur ganz",
+      "hinweise": "Bestellschluss 14 Uhr fuer Versand am selben Tag.",
+      "mail": {
+        "anrede": "Guten Tag Frau Muster,",
+        "gruss": "Viele Grüße\nErika Beispiel\nBeispielhandel GmbH"
+      }
+    },
+    "B": {
+      "anzeigename": "Lieferant B",
+      "kundennummer": "",
+      "ware": { "weg": "mail", "portalUrl": "", "mail": "order@lieferant-b.example", "telefon": "" },
+      "muster": { "weg": "mail", "ansprechperson": "", "mail": "order@lieferant-b.example", "telefon": "", "portalUrl": "", "lieferung": "laden" },
+      "lieferzeitWerktage": null,
+      "mindestmenge": "",
+      "hinweise": "",
+      "mail": { "anrede": "", "gruss": "" }
+    }
+  }
+}
