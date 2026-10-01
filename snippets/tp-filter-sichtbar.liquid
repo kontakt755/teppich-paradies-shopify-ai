@@ -3,16 +3,34 @@
   "Arten" und "Konstruktion" entfallen, wenn in der Kollektion hoechstens ein
   Wert Treffer hat - auf einer Unterart wie Klickvinyl oder Velours ist der
   Filter eine Auswahl ohne Wahl.
-  Auf Teppichboden-Kollektionen entfaellt "Arten" auch bei mehreren Werten:
-  dort vermischt es Florhoehe, Konstruktion, Material und Produktformat.
-  Die passenden Unterkategorien und eigenen Filter bleiben sichtbar.
-  Ist ein Wert aktiv, bleibt der Filter stehen, damit er abwaehlbar ist.
+  Auf Teppichboden-Kollektionen entfallen "Arten" und "Konstruktion" auch bei
+  mehreren Werten: "Arten" vermischt unterschiedliche Merkmale, waehrend
+  "Konstruktion" die vorhandenen Unterkategorien wiederholt.
+  Auf Teppichboden bleibt Florhoehe als Hoehenfilter; Gesamtstaerke hat dort
+  noch zu viele Datenluecken. Auf Unterkategorien ersetzt eine Navigation den
+  lokalen Florhoehenfilter, damit auch andere Bereiche erreichbar sind.
+  Ein aktiver Gesamtstaerke-Wert bleibt zum Abwaehlen sichtbar. Bei Florhoehe
+  auf Unterkategorien uebernimmt die neue Navigation diese Aufgabe.
 
   @param {object} filter - der Filter
 {%- enddoc -%}
 {%- liquid
   assign tp_fs_bereich = collection.handle | split: '-' | first
-  if request.page_type == 'collection' and tp_fs_bereich == 'teppichboden' and filter.param_name == 'filter.p.m.custom.arten' and filter.active_values.size == 0
+  assign tp_fs_ausblenden = false
+  if request.page_type == 'collection' and tp_fs_bereich == 'teppichboden' and filter.active_values.size == 0
+    if filter.param_name == 'filter.p.m.custom.arten' or filter.param_name == 'filter.p.m.custom.konstruktion'
+      assign tp_fs_ausblenden = true
+    endif
+    if filter.param_name == 'filter.p.m.custom.gesamtstarke'
+      assign tp_fs_ausblenden = true
+    endif
+  endif
+  if request.page_type == 'collection' and collection.handle != 'teppichboden' and tp_fs_bereich == 'teppichboden'
+    if filter.param_name == 'filter.p.m.custom.florhoehe_mm'
+      assign tp_fs_ausblenden = true
+    endif
+  endif
+  if tp_fs_ausblenden
     echo 'nein'
   else
     assign tp_fs_einwertig = false

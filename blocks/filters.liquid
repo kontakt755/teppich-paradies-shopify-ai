@@ -25,6 +25,11 @@
   assign sort_by = results.sort_by | default: results.default_sort_by
   assign filters = filters | default: results.filters
   assign total_active_values = 0
+  assign tp_teppich_unterkategorie = false
+  assign tp_kollektions_praefix = collection.handle | split: '-' | first
+  if request.page_type == 'collection' and tp_kollektions_praefix == 'teppichboden' and collection.handle != 'teppichboden'
+    assign tp_teppich_unterkategorie = true
+  endif
 
   # Calculate facets margin style
   capture facets_margin_style
@@ -106,6 +111,10 @@
     assign should_use_select_on_mobile = false
   endif
 -%}
+
+{% if tp_teppich_unterkategorie %}
+  <script src="{{ 'tp-flor-navigation.js' | asset_url }}" type="module" fetchpriority="low"></script>
+{% endif %}
 
 {% if block_settings.enable_filtering or block_settings.enable_sorting or block_settings.enable_grid_density %}
   {% if block_settings.filter_style == 'vertical' %}
@@ -211,6 +220,9 @@
               {% assign total_active_values = 0 %}
 
               {% capture rendered_filters %}
+                {% if tp_teppich_unterkategorie %}
+                  {% render 'tp-flor-navigation', filter_style: block_settings.filter_style %}
+                {% endif %}
                 {%- for filter in filters -%}
                   {% case filter.type %}
                     {% when 'price_range' %}
@@ -506,6 +518,10 @@
               <div class="facets__filters-wrapper">
                 {% assign total_active_values = 0 %}
                 {% assign is_active = false %}
+
+                {% if tp_teppich_unterkategorie %}
+                  {% render 'tp-flor-navigation', filter_style: 'vertical' %}
+                {% endif %}
 
                 {%- for filter in filters -%}
                   {% case filter.type %}

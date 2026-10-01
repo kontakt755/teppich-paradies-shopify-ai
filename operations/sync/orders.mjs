@@ -144,7 +144,18 @@ async function paginiereOrders(proxy, query, { first = SEITENGROESSE, warten, fe
   let after = null;
   let seiten = 0;
   for (;;) {
-    const data = await proxy.execute(ORDERS_QUERY, { first, after, query });
+    let data;
+    try {
+      data = await proxy.execute(ORDERS_QUERY, { first, after, query });
+    } catch (e) {
+      // Shopify rechnet die Kosten aus den angefragten Groessen (Bestellungen x Positionen x
+      // Metafelder) und lehnt ueber 1000 ab. Dann mit halber Seitengroesse weiterblaettern.
+      if (first > 1 && /exceeds the single query max cost limit/i.test(String(e?.message))) {
+        first = Math.max(1, Math.floor(first / 2));
+        continue;
+      }
+      throw e;
+    }
     if (data === null) return { orders: [], seiten, gesammelt: true };
     seiten += 1;
     const conn = data?.orders;
