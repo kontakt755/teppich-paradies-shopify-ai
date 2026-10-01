@@ -3,7 +3,12 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { aktualisiere, argumente, standNachLauf, TEIL_FN } from '../scripts/aktualisieren.mjs';
+import { aktualisiere, argumente, standNachLauf, ohneUeberholtenFehler, TEIL_FN } from '../scripts/aktualisieren.mjs';
+
+// Die Tests "ohne Zugang" duerfen nie den echten Zugang des Rechners finden -
+// sonst liefen sie auf dem Betriebsrechner gegen Shopify.
+process.env.TP_ENV_LOCAL = path.join(os.tmpdir(), 'tp-test-kein-zugang', '.env.local');
+for (const k of ['SHOPIFY_ADMIN_TOKEN', 'SHOPIFY_CLIENT_ID', 'SHOPIFY_CLIENT_SECRET']) delete process.env[k];
 
 function tmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisieren-'));
@@ -289,4 +294,36 @@ test('ohne Zugang nennt die Fehlermeldung den --input-Weg', async () => {
   // Ohne Token und ohne Datei: der Text muss den zweiten Weg zeigen, sonst
   // sucht der naechste Leser wieder nach einem Token, den es nicht gibt.
   await assert.rejects(() => TEIL_FN.kunden(dir, null), /--input kunden=<datei>/);
+});
+
+test('Fehlermeldungen sagen, was zu tun ist (kein Zugang, fehlender Bereich, abgelaufener Token)', async () => {
+  const dir = tmpDir();
+  const { status } = await aktualisiere({
+    dir,
+    nur: ['kunden', 'bestand', 'angebote'],
+    teilFn: {
+      ...TEIL_FN,
+      bestand: async () => { throw new Error('Shopify GraphQL: Access denied for inventoryLevels field. Required access: `read_inventory` access scope.'); },
+      angebote: async () => { throw new Error('Shopify Admin API HTTP 401 (Token ungueltig oder ohne Scope): {}'); },
+    },
+  });
+  assert.match(status.teile.kunden.meldung, /^Kein Zugang/);
+  assert.match(status.teile.kunden.meldung, /SHOPIFY_CLIENT_ID.*npm run operations:verbindung/);
+  assert.match(status.teile.bestand.meldung, /Was tun: Der App fehlt ein Zugriffsbereich \(read_inventory\)/);
+  assert.match(status.teile.angebote.meldung, /Was tun: .*SHOPIFY_ADMIN_TOKEN aus \.env\.local loeschen/);
+});
+
+test('ein Fehler, der aelter ist als der Stand daneben, wird beim naechsten Lauf entfernt', async () => {
+  const dir = tmpDir();
+  const frisch = { zeitpunkt: '2026-10-01T05:12:29.514Z', dauerMs: null, erfolg: true, anzahl: 5, meldung: 'von Hand fortgeschrieben' };
+  const alt = { zeitpunkt: '2026-09-26T07:30:38.870Z', dauerMs: 2, erfolg: true, anzahl: 3, meldung: null };
+  const fehler = { zeitpunkt: '2026-09-28T08:25:19.426Z', meldung: 'Kein Zugang' };
+  fs.writeFileSync(path.join(dir, 'aktualisierung.json'), JSON.stringify({ teile: {
+    lexikon: { ...frisch, letzterFehler: fehler },
+    kunden: { ...alt, letzterFehler: fehler },
+  } }));
+  const { status } = await aktualisiere({ dir, nur: ['bestand'], teilFn: { ...TEIL_FN, bestand: async () => ({ anzahl: 1 }) } });
+  assert.equal(status.teile.lexikon.letzterFehler, undefined, 'Erfolg nach dem Fehler: Fehler ist ueberholt');
+  assert.deepEqual(status.teile.kunden.letzterFehler, fehler, 'Fehler nach dem letzten Erfolg bleibt stehen');
+  assert.deepEqual(ohneUeberholtenFehler({ erfolg: false, zeitpunkt: 'x', meldung: 'm' }), { erfolg: false, zeitpunkt: 'x', meldung: 'm' });
 });

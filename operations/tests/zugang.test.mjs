@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { erzeugeProxy, tauscheClientCredentials, ladeEnvLocal } from '../sync/zugang.mjs';
+import { erzeugeProxy, tauscheClientCredentials, ladeEnvLocal, hatZugangsdaten, fehlendeBereiche, wasTun, mitHinweis, pruefeQuellen, LESE_BEREICHE_ZEILE, KEIN_ZUGANG } from '../sync/zugang.mjs';
 
 const json = (body, status = 200) => ({ ok: status < 400, status, json: async () => body, text: async () => JSON.stringify(body) });
 
@@ -55,4 +55,69 @@ test('.env.local wird gelesen, Kommentare ignoriert', () => {
   const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'tp-')), '.env.local');
   fs.writeFileSync(f, '# x\nSHOPIFY_CLIENT_ID=abc\nSHOPIFY_CLIENT_SECRET="def"\n');
   assert.deepEqual(ladeEnvLocal(f), { SHOPIFY_CLIENT_ID: 'abc', SHOPIFY_CLIENT_SECRET: 'def' });
+});
+
+test('.env.local: export-Schreibweise wird verstanden, Platzhalter zaehlen nicht', () => {
+  const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'tp-')), '.env.local');
+  fs.writeFileSync(f, "export SHOPIFY_CLIENT_ID='abc'\n  export SHOPIFY_CLIENT_SECRET=\"def\"\nSHOPIFY_ADMIN_TOKEN=<your-shopify-admin-token-here>\n# export ALT='x'\n");
+  const werte = ladeEnvLocal(f);
+  assert.deepEqual(werte, { SHOPIFY_CLIENT_ID: 'abc', SHOPIFY_CLIENT_SECRET: 'def' });
+  assert.equal(hatZugangsdaten(werte), true);
+  fs.writeFileSync(f, "export SHOPIFY_CLIENT_ID='HIER_CLIENT_ID'\nexport SHOPIFY_CLIENT_SECRET='HIER_SECRET'\n");
+  assert.equal(hatZugangsdaten(ladeEnvLocal(f)), false);
+});
+
+test('abgelaufener fester Token: bei HTTP 401 Wechsel auf Client-Credentials und ein neuer Versuch', async () => {
+  const tokens = [];
+  const fetch = async (url, init) => {
+    if (url.endsWith('/admin/oauth/access_token')) return json({ access_token: 'tok_neu', scope: 'read_orders', expires_in: 86399 });
+    tokens.push(init.headers['X-Shopify-Access-Token']);
+    if (init.headers['X-Shopify-Access-Token'] === 'shpat_alt') return json({ errors: 'Invalid API key or access token' }, 401);
+    return json({ data: { shop: { name: 'X' } } });
+  };
+  const { proxy, art } = await erzeugeProxy({ env: { SHOPIFY_ADMIN_TOKEN: 'shpat_alt', SHOPIFY_CLIENT_ID: 'cid', SHOPIFY_CLIENT_SECRET: 'geheim' }, fetch });
+  assert.equal(art, 'admin-token');
+  const data = await proxy.execute('query { shop { name } }');
+  assert.equal(data.shop.name, 'X');
+  assert.deepEqual(tokens, ['shpat_alt', 'tok_neu']);
+  await proxy.execute('query { shop { name } }');
+  assert.deepEqual(tokens, ['shpat_alt', 'tok_neu', 'tok_neu'], 'der neue Token bleibt, kein weiterer Tausch');
+});
+
+test('fester Token ohne Client-Credentials: 401 bleibt ein Fehler', async () => {
+  const { proxy } = await erzeugeProxy({ env: { SHOPIFY_ADMIN_TOKEN: 'shpat_alt' }, fetch: async () => json({ errors: 'x' }, 401) });
+  await assert.rejects(() => proxy.execute('query { shop { name } }'), /HTTP 401/);
+});
+
+test('fehlendeBereiche: write_x zaehlt als read_x, die Zeile nennt alle Lese-Bereiche', () => {
+  assert.deepEqual(fehlendeBereiche(LESE_BEREICHE_ZEILE), []);
+  assert.deepEqual(
+    fehlendeBereiche('write_orders,read_all_orders,read_customers,write_products,read_metaobjects'),
+    ['read_draft_orders', 'read_inventory', 'read_locations'],
+  );
+  assert.equal(fehlendeBereiche('').length, LESE_BEREICHE_ZEILE.split(',').length);
+});
+
+test('wasTun: bekannte Fehler bekommen eine Handlung, unbekannte bleiben unveraendert', () => {
+  assert.match(wasTun('Shopify GraphQL: Access denied for draftOrders field. Required access: `read_draft_orders` access scope.'), /read_draft_orders/);
+  assert.match(wasTun('Token-Tausch fehlgeschlagen: HTTP 400 {"error":"shop_not_permitted"}'), /nicht installiert/);
+  assert.match(wasTun('Token-Tausch fehlgeschlagen: HTTP 401 {"error":"invalid_client"}'), /Client-ID oder Schluessel/);
+  assert.match(wasTun('Shopify Admin API HTTP 503: '), /Nichts zu tun/);
+  assert.equal(wasTun('Antwort ohne customers'), null);
+  assert.equal(mitHinweis('Antwort ohne customers'), 'Antwort ohne customers');
+  assert.equal(wasTun(KEIN_ZUGANG), null);
+  assert.match(KEIN_ZUGANG, /^Kein Zugang/, 'die Oberflaeche erkennt den Fall an diesem Anfang');
+});
+
+test('pruefeQuellen: je Quelle ok oder Meldung mit Handlung, wirft nie', async () => {
+  const proxy = { execute: async (q) => {
+    if (/draftOrders/.test(q)) throw new Error('Shopify GraphQL: Access denied for draftOrders field. Required access: `read_draft_orders` access scope.');
+    return {};
+  } };
+  const r = await pruefeQuellen(proxy);
+  assert.deepEqual(r.map(x => x.quelle), ['lexikon', 'bestellungen', 'kunden', 'angebote', 'warenkoerbe', 'bestand']);
+  assert.equal(r.filter(x => x.ok).length, 5);
+  assert.match(r.find(x => x.quelle === 'angebote').meldung, /Was tun: .*read_draft_orders/);
+  const leer = await pruefeQuellen({ execute: async () => null });
+  assert.ok(leer.every(x => !x.ok && /^Kein Zugang/.test(x.meldung)));
 });

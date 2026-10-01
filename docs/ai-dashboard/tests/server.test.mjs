@@ -5,6 +5,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { requestHandler, hostErlaubt, extraHostsAus } from '../../../scripts/serve-dashboard.mjs';
 
 
@@ -23,6 +24,31 @@ test('statische Dateien mit korrekten MIME-Typen, keine Pfadausbrueche', async (
   assert.match(mod.headers.get('content-type'), /javascript/);
   const out = await fetch(`${base}/..%2F..%2Fpackage.json`);
   assert.notEqual(out.status, 200);
+}));
+
+test('jedes Modul der Oberflaeche wird als JavaScript und ohne Zwischenspeichern ausgeliefert', async () => withServer(async base => {
+  // Die Oberflaeche besteht aus vielen Modulen statt einer Datei. Der Browser
+  // fuehrt ein Modul nur mit JavaScript-MIME-Typ aus, und nach einem Update darf
+  // er keine alte Fassung eines einzelnen Moduls behalten - sonst laufen neue
+  // und alte Dateien gemischt. Deshalb: no-store fuer jede Datei, auch in
+  // Unterordnern.
+  const wurzel = new URL('../', import.meta.url);
+  const module = ['app.js', 'ereignisse.mjs'];
+  for (const ordner of ['kern', 'bausteine', 'ansichten', 'lib']) {
+    for (const e of fs.readdirSync(new URL(`${ordner}/`, wurzel), { withFileTypes: true, recursive: true })) {
+      if (e.isFile() && /\.m?js$/.test(e.name)) module.push(`${path.relative(fileURLToPath(wurzel), e.parentPath)}/${e.name}`.split(path.sep).join('/'));
+    }
+  }
+  assert.ok(module.length > 20, `zu wenige Module gefunden (${module.length})`);
+  for (const m of module) {
+    const r = await fetch(`${base}/${m}`);
+    assert.equal(r.status, 200, m);
+    assert.match(r.headers.get('content-type'), /^text\/javascript/, m);
+    assert.equal(r.headers.get('cache-control'), 'no-store', m);
+    assert.equal(r.headers.get('x-content-type-options'), 'nosniff', m);
+  }
+  const html = await fetch(`${base}/index.html`);
+  assert.equal(html.headers.get('cache-control'), 'no-store');
 }));
 
 test('schreibende API-Pfade verlangen POST, JSON und lokalen Origin', async () => withServer(async base => {

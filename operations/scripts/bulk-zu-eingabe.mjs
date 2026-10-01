@@ -3,6 +3,7 @@
  * Wandelt das JSONL einer Shopify-Massenabfrage (bulkOperationRunQuery) in die
  * Form um, die `npm run daten:aktualisieren -- --input <teil>=<datei>` erwartet.
  *
+ *   npm run daten:bulk -- --query kunden          (gibt die Massenabfrage aus)
  *   npm run daten:bulk -- --teil kunden --jsonl <datei.jsonl> --ziel <roh.json>
  *
  * Wozu: Ohne Admin-Token laeuft der Abruf ueber den Shopify-MCP in einer
@@ -19,6 +20,24 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { CUSTOMERS_BULK_QUERY } from '../sync/customers.mjs';
+import { DRAFT_ORDERS_BULK_QUERY } from '../sync/draftOrders.mjs';
+import { baueBulkQuery as warenkoerbeBulkQuery } from '../sync/abandonedCheckouts.mjs';
+import { INVENTORY_BULK_QUERY } from '../sync/inventory.mjs';
+
+/**
+ * Die Massenabfrage je Teil - an EINER Stelle abgelegt (neben der jeweiligen
+ * Seitenabfrage in operations/sync/), damit der Ausweichweg ueber den
+ * Shopify-MCP nicht bei jedem Lauf von Hand nachgebaut wird und dabei von den
+ * Feldern des Live-Abrufs abweicht.
+ */
+export function bulkQuery(teil) {
+  if (teil === 'kunden') return CUSTOMERS_BULK_QUERY.trim();
+  if (teil === 'angebote') return DRAFT_ORDERS_BULK_QUERY.trim();
+  if (teil === 'warenkoerbe') return warenkoerbeBulkQuery().trim();
+  if (teil === 'bestand') return INVENTORY_BULK_QUERY.trim();
+  throw new Error(`--query: unbekannter Teil ${teil || '(nichts)'} (erlaubt: kunden, angebote, warenkoerbe, bestand; Lexikon: npm run lexikon:export -- --bulk-query)`);
+}
 
 /** Welcher Teil erwartet welche Wurzel, und wie heissen die Unterlisten? */
 export const TEILE = Object.freeze({
@@ -32,16 +51,18 @@ export const TEILE = Object.freeze({
 });
 
 export function argumente(argv) {
-  const a = { teil: null, jsonl: null, ziel: null, hilfe: false };
+  const a = { teil: null, jsonl: null, ziel: null, query: null, hilfe: false };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i];
     if (k === '--teil') a.teil = argv[++i];
     else if (k === '--jsonl') a.jsonl = argv[++i];
     else if (k === '--ziel') a.ziel = argv[++i];
+    else if (k === '--query') a.query = argv[++i] || '';
     else if (k === '--help' || k === '-h') a.hilfe = true;
     else throw new Error(`Unbekanntes Argument: ${k}`);
   }
   if (a.hilfe) return a;
+  if (a.query !== null) { bulkQuery(a.query); return a; }
   if (!a.teil || !TEILE[a.teil]) throw new Error(`--teil fehlt oder unbekannt (erlaubt: ${Object.keys(TEILE).join(', ')})`);
   if (!a.jsonl) throw new Error('--jsonl <datei> angeben');
   return a;
@@ -127,8 +148,10 @@ function main() {
   const a = argumente(process.argv.slice(2));
   if (a.hilfe) {
     console.log('npm run daten:bulk -- --teil kunden|angebote|warenkoerbe|bestand --jsonl <datei.jsonl> [--ziel <roh.json>]');
+    console.log('npm run daten:bulk -- --query kunden|angebote|warenkoerbe|bestand   (Massenabfrage ausgeben)');
     return;
   }
+  if (a.query !== null) { console.log(bulkQuery(a.query)); return; }
   const text = fs.readFileSync(a.jsonl, 'utf8');
   const modell = umwandeln(a.teil, text);
   const wurzel = TEILE[a.teil].wurzel;

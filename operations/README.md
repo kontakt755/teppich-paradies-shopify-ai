@@ -33,6 +33,7 @@ Grundlage: `audit/tp-operations-v3/` (02 Datenmodell, 05 Entscheidungen,
 | `lib/ampel.mjs` | `procurementReady` je Produktgruppe |
 | `lib/route.mjs` | Enum `ROUTE`, `routeFor` mit Prioritaet und Override-Protokoll |
 | `lib/einkauf.mjs` | `gruppieren`, `einkaufsId`, `bestellungAusGruppe`, Enum `EINKAUF_STATUS` |
+| `lib/lieferanten.mjs` | Lieferanten-Stammdaten (privat), Übersicht je Lieferant, `bestellmail` (Text + `mailto:`) |
 | `lib/status.mjs` | Enum `AUFTRAG_STATUS`, Uebergaenge, `ableiten(order)` |
 | `sync/orders.mjs` | `fetchOrdersSince`, `writeOrderState` (mit Gegenlesen) |
 
@@ -192,19 +193,197 @@ Erst `npm run daten:anreichern -- --schreiben` schreibt, über den Token aus
 Gegenprobe je geplantem Wert danach (`write-log.json`: gleich/abweichend/
 fehlend) - `userErrors: []` beim Schreiben gilt nicht als Beleg.
 
+## Lieferanten: Stammdaten, Übersicht, Bestellmail
+
+Ziel: Bestellen mit einem Klick. Logik in `lib/lieferanten.mjs`, Tests in
+`tests/lieferanten.test.mjs` und `docs/ai-dashboard/tests/lieferanten-api.test.mjs`.
+**Es wird nichts versendet** (D8) – die Endpunkte liefern Text und einen
+`mailto:`-Link, abschicken tut ein Mensch.
+
+### Stammdaten (privat)
+
+`$TP_PRIVAT_DIR/lieferanten/stammdaten.json` – nie im Repository. Vorlage mit
+Pseudonymen: `lib/lieferanten.beispiel.json`. Schlüssel unter `lieferanten` ist
+die Kennung aus der Bestellübersicht (`A`, `B`, … – dieselbe wie
+`gruppen[].lieferant`). Leere Felder (`""`/`null`) gelten als nicht hinterlegt.
+
+| Feld | Inhalt |
+|---|---|
+| `anzeigename` | Name für die Oberfläche (sonst „Lieferant A“) |
+| `kundennummer` | unsere Kundennummer beim Lieferanten |
+| `ware.weg` | `portal` \| `mail` \| `telefon`, dazu `ware.portalUrl`, `ware.mail`, `ware.telefon` |
+| `muster.weg` | wie oben, dazu `muster.ansprechperson`, `muster.mail`, `muster.telefon`, `muster.portalUrl` |
+| `muster.lieferung` | `kunde` (Lieferant schickt direkt an den Kunden) \| `laden` |
+| `lieferzeitWerktage` | übliche Lieferzeit, ganze Zahl |
+| `mindestmenge`, `hinweise` | Freitext |
+| `mail.anrede`, `mail.gruss` | überschreiben Anrede/Grußformel der Mails |
+| `absender` (oberste Ebene) | `firma`, `kontaktName`, `telefon`, `mail`, `lieferanschrift {name, strasse, plz, ort, land}` – Grußformel und Lieferanschrift „Laden“ |
+
+Fehlt die Datei, ist sie kaputt oder ein Wert ungültig (Weg unbekannt, keine
+Mailadresse, URL nicht http/https), wirft nichts: der Wert wird `null`, der
+Grund steht in `stammdatenDatei.fehler`. Zurück kommen nur die Felder aus der
+Tabelle – zusätzliche Einträge (z. B. Konditionen) verlassen den Rechner nicht.
+
+### Endpunkte
+
+Alle `GET`, nur im lokalen Server, gleiche Herkunftsprüfung wie die übrigen
+Einkaufs-Endpunkte, lesbar für jede angemeldete Rolle (`lesen`, `mitarbeiter`,
+`inhaber`, Notzugang). Keine Preise in den Antworten.
+
+**`GET /api/einkauf/lieferanten`** – alle Lieferanten aus Stammdaten und offenen
+Positionen; nicht zugeordnete Positionen als `id: "UNGEKLAERT"` am Ende.
+
+```json
+{
+  "verfuegbar": true,
+  "hinweis": null,
+  "stammdatenDatei": { "vorhanden": true, "quelle": "…/lieferanten/stammdaten.json", "fehler": [], "hinweis": null, "absenderHinterlegt": true },
+  "schwellen": { "nachhakenTage": 7, "problemTage": 14 },
+  "lieferanten": [{
+    "id": "A",
+    "name": "Lieferant A",
+    "zugeordnet": true,
+    "stammdaten": {
+      "id": "A", "name": "Lieferant A", "anzeigename": "Lieferant A", "kundennummer": "K-000001",
+      "ware": { "weg": "portal", "portalUrl": "https://lieferant-a.example/haendler", "mail": "bestellung@lieferant-a.example", "telefon": "+49 30 1111111" },
+      "muster": { "weg": "mail", "ansprechperson": "Frau Muster", "mail": "muster@lieferant-a.example", "telefon": null, "portalUrl": null, "lieferung": "kunde" },
+      "lieferzeitWerktage": 5, "mindestmenge": "…", "hinweise": "…",
+      "mail": { "anrede": "Guten Tag Frau Muster,", "gruss": "…" },
+      "fehlend": [], "hinterlegt": true
+    },
+    "positionen": { "zuBestellen": 1, "bestellt": 1, "unterwegs": 1 },
+    "muster": { "zuBestellen": 1, "bestellt": 1, "unterwegs": 0 },
+    "aeltesteOffeneBestellungTage": 16,
+    "aeltesteUnbestellteTage": 19,
+    "ueberfaellig": { "nachhaken": 1, "problem": 1 },
+    "gruppen": [{ "schluessel": "A|SUPPLIER_TO_TP|TP", "route": "SUPPLIER_TO_TP", "lieferziel": "TP", "zuBestellen": 1 }]
+  }]
+}
+```
+
+- `stammdaten.fehlend` nennt, was noch einzutragen ist (z. B. `["kundennummer", "ware.weg"]`);
+  `hinterlegt: false` heißt: gar nichts eingetragen.
+- Stufen wie im Auftragsfluss (`filterGruppe` in `lib/auftragsstatus.mjs`):
+  `zuBestellen` = noch kein Status, `bestellt`, `unterwegs` = „Geliefert an uns“/„An Kunden raus“.
+  Erledigte Positionen zählen nicht.
+- `aeltesteOffeneBestellungTage`: älteste Bestellung beim Lieferanten, die noch
+  nicht bei uns ist (Tage seit `bestelltAm`). `aeltesteUnbestellteTage`: älteste
+  Kundenbestellung, für die noch nichts bestellt wurde.
+- `ueberfaellig`: Wartezeit wie im Frontend (`AF_WARTE_WARN`/`AF_WARTE_CRIT`):
+  ab 7 Tagen `nachhaken`, ab 14 Tagen `problem`.
+- `gruppen[].schluessel` ist der Wert für `gruppe=` der Bestellmail.
+
+**`GET /api/einkauf/lieferant?id=A`** – ein Lieferant wie oben (unter
+`lieferant`), zusätzlich `ware` und `musterPositionen` (je
+`{zuBestellen, bestellt, unterwegs}` als Listen) und `ueberfaelligePositionen`.
+`400` ohne `id`, `404` bei unbekannter Kennung. Position:
+
+```json
+{ "orderId": "gid://shopify/Order/90001", "orderName": "#T1", "orderDatum": "2026-01-01T10:00:00Z", "lineItemId": "gid://shopify/LineItem/1",
+  "titel": "Testdiele Eiche", "farbe": "Natur", "sku": "TEST-A-1", "artikelnummer": "A-4711", "farbnummer": "012",
+  "menge": 3, "einheit": "paket", "mengeText": "3 Paket(e) = 6,60 m²", "mengeHinweis": null, "kundenmenge": "3 Stk.",
+  "route": "SUPPLIER_TO_TP", "istMuster": false, "lieferantUrl": null,
+  "status": "bestellt", "gruppe": "bestellt", "lieferantBestellnummer": "AB-1", "bestelltAm": "2026-01-04T10:00:00Z",
+  "wartetage": 16, "warnstufe": "problem", "kundenbestellungTage": 19 }
+```
+
+Ungeklärtes ist `null` (nie der Text `UNGEKLAERT`).
+
+**`GET /api/einkauf/bestellmail?lieferant=A&art=ware[&gruppe=<schluessel>]`**
+bzw. **`…&art=muster[&ziel=kunde|laden]`** – fertige Bestellung(en). Ware: eine
+Mail je Gruppe (Lieferant + Route + Lieferziel; Direktversand verschiedener
+Kunden wird nie gemischt), ohne `gruppe` alle Gruppen des Lieferanten. Muster:
+eine Mail mit allen offenen Mustern; `ziel` überstimmt `muster.lieferung`.
+
+```json
+{
+  "verfuegbar": true,
+  "lieferant": "A", "name": "Lieferant A", "art": "ware", "automatischGesendet": false,
+  "mails": [{
+    "art": "ware", "weg": "portal", "gruppe": "A|SUPPLIER_TO_TP|TP", "route": "SUPPLIER_TO_TP", "lieferziel": "laden",
+    "an": "bestellung@lieferant-a.example", "ansprechperson": null,
+    "portalUrl": "https://lieferant-a.example/haendler", "telefon": "+49 30 1111111",
+    "betreff": "Bestellung – Kd.-Nr. K-000001 – #T1",
+    "text": "Guten Tag Frau Muster,\n\nwir bestellen folgende Ware:\n\nUnsere Kundennummer: K-000001\n\n1. Art.-Nr. A-4711 · Farb-Nr. 012\n   Testdiele Eiche, Natur\n   Menge: 3 Paket(e) = 6,60 m²\n   Kommission: #T1\n\nLieferanschrift:\n…",
+    "mailto": "mailto:bestellung@lieferant-a.example?subject=Bestellung%20…&body=…",
+    "mailtoGekuerzt": false,
+    "positionen": [ { "…": "wie oben" } ],
+    "fehlt": [{ "orderId": "…", "orderName": "#T1", "lineItemId": "…", "titel": "Testleiste", "farbe": "Weiß", "istMuster": false, "gruende": ["Artikelnummer beim Lieferanten fehlt"] }],
+    "stammdatenFehlt": [],
+    "hinweise": [],
+    "bereitsBestellt": 0
+  }]
+}
+```
+
+Für die Oberfläche:
+
+- **`fehlt`** sind Positionen, die NICHT in der Mail stehen: Artikelnummer beim
+  Lieferanten fehlt, Bestellmenge ungeklärt, Lieferanschrift fehlt, Lieferziel
+  der Muster nicht festgelegt. Sie müssen sichtbar bleiben – stillschweigend
+  weggelassen wird nichts. Eine fehlende Farbnummer blockiert nicht (die Farbe
+  steht als Name in der Mail), erscheint aber in `hinweise`.
+- **`mailto`** ist fertig kodiert (RFC 6068, Zeilenumbruch `%0D%0A`). Ist der
+  Link länger als 1800 Zeichen, trägt er nur Empfänger und Betreff und
+  `mailtoGekuerzt` ist `true` – dann `text` kopieren lassen. Ohne hinterlegte
+  Mailadresse sind `an` und `mailto` `null`; `text` bleibt zum Kopieren
+  (Portal/Telefon), `stammdatenFehlt` nennt die Lücke.
+- Schon bestellte Positionen (Auftragsfluss-Status gesetzt) kommen nicht mehr
+  in die Mail (`bereitsBestellt` zählt sie). Ist nichts mehr offen, sind
+  `betreff`/`text`/`mailto` `null`.
+- Muster: `lieferziel` ist `kunde` (Anschrift je Kundenbestellung im Text) oder
+  `laden`; `ohneBestellung` listet Muster mit Route `SAMPLE_STOCK`/`SAMPLE_CUT`
+  (eigenes Musterlager/Zuschnitt – keine Lieferantenbestellung).
+- Nach dem Absenden setzt die Oberfläche den Status wie bisher über
+  `POST /api/einkauf/auftragsstatus` (`status: "bestellt"`).
+- `400` bei unbekannter `art`/`ziel`/`gruppe`; ohne `orders.json`
+  `{verfuegbar:false, hinweis, mails:[]}`.
+
 ## Zugang einrichten (einmalig)
 
-```
-npm run operations:einrichten
-```
+Rechte vergeben, App installieren und Schluessel eintragen macht **nur der
+Inhaber** - kein Agent, weder per CLI noch per Browser.
 
-Setzt die Zugriffsbereiche der App "TP Operations", veroeffentlicht die Version,
-oeffnet die Installationsadresse und legt Client-ID und geheimen Schluessel in
-`.env.local` ab (chmod 600, gitignored). Danach holt es den Token und prueft die
-Verbindung. Der Schluessel wird verdeckt eingegeben und nie ausgegeben.
+1. `dev.shopify.com` → App "TP Operations" → **Versionen** → neue Version.
+   Ins Feld **Bereiche (Scopes)** genau diese Zeile, dann freigeben:
 
-Jeder Schritt ist wiederholbar; bricht einer ab, nennt die Meldung den Weg von
-Hand. Hintergrund zu den Token-Wegen: `domains/shopify/admin-token-oauth.md`.
+   ```
+   read_orders,read_all_orders,write_orders,read_customers,read_draft_orders,read_inventory,read_locations,read_products,write_products,read_fulfillments,write_fulfillments,read_merchant_managed_fulfillment_orders,write_merchant_managed_fulfillment_orders,read_metaobjects,write_metaobjects,read_metaobject_definitions
+   ```
+
+   Fuer die Datenquellen des Control Centers genuegen die Lese-Bereiche
+   (`LESE_BEREICHE` in `sync/zugang.mjs`): `read_orders,read_all_orders,read_customers,read_draft_orders,read_products,read_metaobjects,read_inventory,read_locations`.
+   Die Schreib-Bereiche braucht nur das Auftragsband (`ops.*`-Metafelder) und
+   `daten:anreichern -- --schreiben`. Ohne `read_all_orders` laesst Shopify
+   Bestellungen, die aelter als 60 Tage sind, stillschweigend weg.
+2. App im Shop installieren bzw. die geaenderten Bereiche im Shop bestaetigen.
+3. Im Ordner, aus dem der Dienst laeuft (Betrieb: `~/tp-dashboard`), die Datei
+   `.env.local` anlegen (`chmod 600`, gitignored) mit zwei Zeilen:
+
+   ```
+   SHOPIFY_CLIENT_ID=...
+   SHOPIFY_CLIENT_SECRET=...
+   ```
+
+   **Keine** Zeile `SHOPIFY_ADMIN_TOKEN` dazu: der Token aus
+   `npm run shopify:token -- --grant client-credentials` gilt nur 24 Stunden.
+   Mit Client-ID und Schluessel holt `sync/zugang.mjs` ihn selbst und erneuert
+   ihn vor Ablauf. (Steht doch ein abgelaufener Token daneben, wechselt der
+   Proxy beim ersten HTTP 401 auf die Client-Credentials.)
+4. Pruefen: `npm run operations:verbindung` - fragt jede Datenquelle einmal an
+   und nennt je Quelle `OK` oder was fehlt (Exit 0 = alles lesbar, 2 = kein
+   Zugang hinterlegt, 3 = Zugang steht, aber eine Quelle oder ein Bereich fehlt).
+5. Dauerdienst einschalten: `bash operations/scripts/dienste-einrichten.sh`.
+
+`npm run operations:einrichten` (`scripts/app-einrichten.sh`) fuehrt die
+Schritte 1-4 gefuehrt ueber die Shopify-CLI aus; der Schluessel wird dabei
+verdeckt eingegeben und nie ausgegeben. Hintergrund zu den Token-Wegen:
+`domains/shopify/admin-token-oauth.md`.
+
+Jede Arbeitskopie hat ihre eigene `.env.local` - ein Zugang im Hauptcheckout
+gilt nicht fuer `~/tp-dashboard`. Fehlermeldungen der Aktualisierung nennen
+den naechsten Schritt (`wasTun` in `sync/zugang.mjs`): fehlender Zugang,
+fehlender Bereich, abgelaufener Token, nicht installierte App.
 
 ## Aktualisierung (alle Datenquellen in einem Lauf)
 
@@ -295,6 +474,13 @@ laufende Sitzung (z. B. per geplanter Aufgabe). Für den MCP-Weg ohne Token
 bleiben die einzelnen `--input`-Varianten von `lexikon:export`,
 `kennzahlen:export` und `ops:bestelluebersicht`.
 
+**Massenabfragen fuer den MCP-Weg** liegen neben den Seitenabfragen und
+werden nicht mehr von Hand gebaut: `npm run lexikon:export -- --bulk-query`
+(Ergebnis per `--jsonl`) und `npm run daten:bulk -- --query
+kunden|angebote|warenkoerbe|bestand` (Ergebnis per `daten:bulk -- --teil ...`,
+dann `daten:aktualisieren -- --input ...`). Die Lexikon-Abfrage traegt bewusst
+kein `templateSuffix`: Produktgruppe ist der `productType`.
+
 **Von Hand starten:** einfach `npm run daten:aktualisieren` in einem Terminal
 mit Repository als Arbeitsverzeichnis, Token in `.env.local`.
 
@@ -323,6 +509,10 @@ täglich:
 npm run daten:sync-dienst
 TP_SYNC_INTERVALL_MINUTEN=5 npm run daten:sync-dienst   # Standard 10
 ```
+
+Das Lexikon (Massenabfrage ueber alle Produkte) laeuft nur alle
+`TP_SYNC_LEXIKON_MINUTEN` (Standard 60) mit, nach einem Fehlschlag gleich im
+naechsten Intervall wieder; alle anderen Teile laufen in jedem Intervall.
 
 Ablauf: sofortiger erster Lauf, danach ein Lauf je Intervall (die Wartezeit
 beginnt erst, wenn der vorherige Lauf fertig ist - kein Überlappen). Ein

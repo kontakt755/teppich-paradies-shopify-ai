@@ -35,7 +35,7 @@ const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 export const STANDARD_ZIEL = path.join(os.homedir(), 'teppich-paradies-analyse', 'lexikon', 'produkte.json');
 
 export function argumente(argv) {
-  const a = { input: null, ziel: STANDARD_ZIEL, live: false, jsonl: null, metaobjekte: null, hilfe: false };
+  const a = { input: null, ziel: STANDARD_ZIEL, live: false, jsonl: null, metaobjekte: null, bulkQuery: false, hilfe: false };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i];
     if (k === '--input') a.input = argv[++i];
@@ -43,10 +43,11 @@ export function argumente(argv) {
     else if (k === '--live') a.live = true;
     else if (k === '--jsonl') a.jsonl = argv[++i];
     else if (k === '--metaobjekte') a.metaobjekte = argv[++i];
+    else if (k === '--bulk-query') a.bulkQuery = true;
     else if (k === '--help' || k === '-h') a.hilfe = true;
     else throw new Error(`Unbekanntes Argument: ${k}`);
   }
-  if (!a.hilfe && !a.input && !a.live && !a.jsonl) throw new Error('--input <datei>, --live oder --jsonl <datei> angeben');
+  if (!a.hilfe && !a.bulkQuery && !a.input && !a.live && !a.jsonl) throw new Error('--input <datei>, --live, --jsonl <datei> oder --bulk-query angeben');
   return a;
 }
 
@@ -71,6 +72,11 @@ export function pruefeZiel(datei, repo = REPO) {
 // Batch - siehe ladeLive(). Kein raten: bleibt eine GID unaufgeloest, wird
 // nichts angezeigt statt der ID (CLAUDE.md "Produktdaten").
 //
+// custom.* gibt es auch je Variante (marke, farbcode, rollenbreite): hat eine
+// Variante eigene custom-Felder, nimmt lib/lexikon.mjs diese statt der des
+// Produkts. Fehlten sie in der Abfrage, wich die Marke bei einzelnen Produkten
+// vom Handexport ab.
+//
 // einkauf.muster_variante ist dagegen eine einzelne (nicht Listen-)Referenz
 // auf die Mustervariante - die kann inline aufgeloest werden wie
 // einkauf.lieferant, keine Connection, keine Flattening-Problematik.
@@ -80,13 +86,24 @@ export function pruefeZiel(datei, repo = REPO) {
 // fallen, wodurch lib/lexikon.mjs::musterBlock nie einen passenden Handle
 // fand (der Musterhinweis fehlte, obwohl ein Muster existierte). Deshalb
 // zusaetzlich alle Handles mit dem Praefix muster- laden, unabhaengig vom
-// Status.
-const BULK_QUERY = `
+// Status - und alle uebrigen UNLISTED-Produkte (per Direktlink kaeuflich,
+// z. B. Einzelanfertigungen), die der Handexport ebenfalls enthielt.
+//
+// Bewusst OHNE templateSuffix: die Produktgruppe im Lexikon ist der
+// productType ("Klickvinyl", "Teppichboden", ...). Mit templateSuffix in der
+// Abfrage stand dort der technische Vorlagenname, und der Live-Abruf lieferte
+// andere Gruppen als der Handexport - Filter und Suche im Control Center
+// passten dann nicht mehr zusammen.
+//
+// Dieselbe Abfrage dient dem Ausweichweg ohne Zugang (Shopify-MCP):
+//   npm run lexikon:export -- --bulk-query
+// gibt sie aus, damit niemand sie von Hand nachbauen muss.
+export const BULK_QUERY = `
 {
-  products(query: "status:active OR handle:muster-*") {
+  products(query: "status:active OR status:unlisted OR handle:muster-*") {
     edges {
       node {
-        id handle title status templateSuffix productType
+        id handle title status productType
         featuredImage { url }
         metafields(namespace: "custom", first: 30) { edges { node { namespace key value type } } }
         variants {
@@ -101,6 +118,7 @@ const BULK_QUERY = `
                   ... on ProductVariant { id product { handle } }
                 } } }
               }
+              custom: metafields(namespace: "custom", first: 20) { edges { node { namespace key value type } } }
             }
           }
         }
@@ -122,10 +140,13 @@ mutation LexikonBulk($q: String!) {
   }
 }`;
 
+// Abfrage ueber die ID der eben gestarteten Operation, nicht ueber
+// currentBulkOperation: so kann eine fremde, gleichzeitig laufende
+// Massenabfrage nie mit der eigenen verwechselt werden.
 const BULK_STATUS = `
-{
-  currentBulkOperation {
-    id status errorCode objectCount url partialDataUrl
+query LexikonBulkStatus($id: ID!) {
+  node(id: $id) {
+    ... on BulkOperation { id status errorCode objectCount url partialDataUrl }
   }
 }`;
 
@@ -252,21 +273,24 @@ export async function loeseMetaobjekteAuf(execute, gids, { batchSize = 100 } = {
   return map;
 }
 
-export async function ladeLive() {
-  const { erzeugeProxy } = await import('../sync/zugang.mjs');
+export async function ladeLive({ pollMs = 5000 } = {}) {
+  const { erzeugeProxy, KEIN_ZUGANG } = await import('../sync/zugang.mjs');
   const { proxy, art } = await erzeugeProxy();
-  if (art === 'sammeln') throw new Error('Kein Zugang in .env.local (SHOPIFY_ADMIN_TOKEN oder SHOPIFY_CLIENT_ID/SECRET) - --input mit MCP-Export nutzen');
+  if (art === 'sammeln') throw new Error(`${KEIN_ZUGANG} (Ausweichweg ohne Zugang: --input mit einem MCP-Export)`);
 
   const start = await proxy.execute(BULK_START, { q: BULK_QUERY });
   const fehler = start?.bulkOperationRunQuery?.userErrors ?? [];
   if (fehler.length) throw new Error(`bulkOperationRunQuery: ${fehler.map(e => e.message).join('; ')}`);
 
+  const bulkId = start?.bulkOperationRunQuery?.bulkOperation?.id;
+  if (!bulkId) throw new Error('bulkOperationRunQuery: keine Operation gestartet');
+
   let status;
   for (let i = 0; i < 120; i++) {
-    await warte(5000);
-    const antwort = await proxy.execute(BULK_STATUS, {});
-    status = antwort?.currentBulkOperation;
-    if (!status) throw new Error('currentBulkOperation ohne Antwort');
+    await warte(i === 0 ? Math.min(pollMs, 1000) : pollMs);
+    const antwort = await proxy.execute(BULK_STATUS, { id: bulkId });
+    status = antwort?.node;
+    if (!status) throw new Error('Bulk-Operation: Status ohne Antwort');
     if (status.status === 'COMPLETED') break;
     if (status.status === 'FAILED' || status.status === 'CANCELED') {
       throw new Error(`Bulk-Operation ${status.status}: ${status.errorCode ?? 'unbekannt'}`);
@@ -315,8 +339,10 @@ async function main() {
   const a = argumente(process.argv.slice(2));
   if (a.hilfe) {
     console.log('npm run lexikon:export -- --input <export.json> | --live | --jsonl <bulk.jsonl> [--metaobjekte <gid-zu-name.json>] [--ziel <datei.json>]');
+    console.log('  --bulk-query gibt die Massenabfrage aus (fuer bulkOperationRunQuery ueber den Shopify-MCP, Ergebnis dann per --jsonl).');
     return;
   }
+  if (a.bulkQuery) { console.log(BULK_QUERY.trim()); return; }
   const ziel = pruefeZiel(a.ziel);
   let daten;
   if (a.live) {

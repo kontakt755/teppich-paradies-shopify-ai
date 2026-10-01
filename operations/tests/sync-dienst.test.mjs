@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { leseIntervallMinuten, hatZugang, starteDienst, STANDARD_INTERVALL_MINUTEN } from '../scripts/sync-dienst.mjs';
+import { leseIntervallMinuten, leseLexikonMinuten, erzeugeLauf, hatZugang, starteDienst, STANDARD_INTERVALL_MINUTEN, STANDARD_LEXIKON_MINUTEN } from '../scripts/sync-dienst.mjs';
 
 function stummesProtokoll() {
   const zeilen = { log: [], warn: [], error: [] };
@@ -94,4 +94,27 @@ test('ein fehlgeschlagener Teil (erfolg:false) wird als Warnung protokolliert, n
   assert.equal(zeilen.warn.length, 1);
   assert.match(zeilen.warn[0], /lexikon: Kein Zugang/);
   assert.equal(zeilen.error.length, 0);
+});
+
+test('erzeugeLauf: Lexikon im ersten Lauf, danach erst nach lexikonMinuten - nach einem Fehlschlag sofort wieder', async () => {
+  let t = 0;
+  const aufrufe = [];
+  let lexikonErfolg = false;
+  const lauf = erzeugeLauf({
+    lexikonMinuten: 60,
+    jetzt: () => t,
+    aktualisiereFn: async ({ nur }) => { aufrufe.push(nur); return { ergebnisse: nur.map((teil) => ({ teil, erfolg: teil === 'lexikon' ? lexikonErfolg : true })) }; },
+  });
+  await lauf();                       // 1: mit Lexikon, scheitert
+  t = 10 * 60000; lexikonErfolg = true;
+  await lauf();                       // 2: gleich wieder mit Lexikon, klappt
+  t = 20 * 60000;
+  await lauf();                       // 3: ohne
+  t = 70 * 60000;
+  await lauf();                       // 4: 60 Minuten nach dem Erfolg wieder mit
+  assert.deepEqual(aufrufe.map((n) => n.includes('lexikon')), [true, true, false, true]);
+  assert.ok(aufrufe.every((n) => ['bestellungen', 'kennzahlen', 'kunden', 'angebote', 'warenkoerbe', 'bestand'].every((x) => n.includes(x))));
+  assert.equal(leseLexikonMinuten({}), STANDARD_LEXIKON_MINUTEN);
+  assert.equal(leseLexikonMinuten({ TP_SYNC_LEXIKON_MINUTEN: '30' }), 30);
+  assert.throws(() => leseLexikonMinuten({ TP_SYNC_LEXIKON_MINUTEN: '-1' }), /ungueltig/);
 });

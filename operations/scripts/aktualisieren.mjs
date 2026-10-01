@@ -47,6 +47,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { KEIN_ZUGANG, mitHinweis } from '../sync/zugang.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const STANDARD_PRIVAT_DIR = path.join(os.homedir(), 'teppich-paradies-analyse');
@@ -102,7 +103,7 @@ function privatDir(uebersteuerung) {
  * suchen muss, wenn der Knopf "Jetzt aktualisieren" am fehlenden Token haengt.
  */
 function ohneZugang(teil) {
-  return `Kein Zugang in .env.local (SHOPIFY_ADMIN_TOKEN oder SHOPIFY_CLIENT_ID/SECRET) - oder --input ${teil}=<datei> mit einem MCP-Export nutzen`;
+  return `${KEIN_ZUGANG} (Ausweichweg ohne Zugang: --input ${teil}=<datei> mit einem MCP-Export)`;
 }
 
 /**
@@ -122,15 +123,19 @@ async function fuehreAus(name, fn) {
     const { anzahl, hinweis } = await fn();
     return { teil: name, zeitpunkt, dauerMs: Date.now() - start, erfolg: true, anzahl, meldung: hinweis || null };
   } catch (err) {
-    return { teil: name, zeitpunkt, dauerMs: Date.now() - start, erfolg: false, anzahl: null, meldung: err.message };
+    // Die Meldung landet im Dashboard - sie soll sagen, was zu tun ist.
+    return { teil: name, zeitpunkt, dauerMs: Date.now() - start, erfolg: false, anzahl: null, meldung: mitHinweis(err.message) };
   }
 }
 
 async function teilLexikon(dir) {
-  const { ladeLive } = await import('./lexikon-export.mjs');
+  const { ladeLive, ladeLieferantSuchen } = await import('./lexikon-export.mjs');
   const { aufbereiten } = await import('../lib/lexikon.mjs');
   const daten = await ladeLive();
-  const modell = aufbereiten(daten);
+  // Gleiche Aufbereitung wie `npm run lexikon:export` - ohne lieferantSuchen
+  // verloeren die Varianten ihren Suchlink, sobald der Dienst statt des
+  // Handexports schreibt.
+  const modell = aufbereiten(daten, { lieferantSuchen: ladeLieferantSuchen() });
   const ziel = path.join(dir, 'lexikon', 'produkte.json');
   fs.mkdirSync(path.dirname(ziel), { recursive: true });
   fs.writeFileSync(ziel, JSON.stringify(modell, null, 2));
@@ -193,7 +198,7 @@ async function teilBestellungen(dir) {
   const { erzeugeProxy } = await import('../sync/zugang.mjs');
   const { fetchOrdersRelevant, wartenBeiThrottle } = await import('../sync/orders.mjs');
   const { proxy, art } = await erzeugeProxy();
-  if (art === 'sammeln') throw new Error('Kein Zugang in .env.local (SHOPIFY_ADMIN_TOKEN oder SHOPIFY_CLIENT_ID/SECRET) - --input mit MCP-Export nutzen');
+  if (art === 'sammeln') throw new Error(KEIN_ZUGANG);
 
   // Abgrenzung (D fuer Vollstaendigkeit): alle Bestellungen der letzten 90
   // Tage PLUS alle noch nicht vollstaendig erfuellten, unabhaengig vom Alter -
@@ -345,6 +350,20 @@ export function standNachLauf(bisher, r) {
 }
 
 /**
+ * Ein `letzterFehler`, der AELTER ist als der Stand daneben, ist ueberholt: die
+ * Daten wurden danach erfolgreich erneuert (z. B. durch einen Export, der die
+ * Statusdatei von Hand fortschreibt). Ohne das Aufraeumen warnt das Dashboard
+ * dauerhaft vor einem Fehler, der laengst behoben ist.
+ */
+export function ohneUeberholtenFehler(stand) {
+  const f = stand?.letzterFehler;
+  if (!stand?.erfolg || !f?.zeitpunkt || !stand.zeitpunkt) return stand;
+  if (new Date(f.zeitpunkt).getTime() >= new Date(stand.zeitpunkt).getTime()) return stand;
+  const { letzterFehler, ...rest } = stand;
+  return rest;
+}
+
+/**
  * @param {object} opt
  * @param {string[]|null} opt.nur  Teilmenge aus TEILE.
  * @param {Record<string,{daten:object,datei:string}>} opt.eingaben  Bereits
@@ -366,6 +385,7 @@ export async function aktualisiere({ nur = null, dir = privatDir(), teilFn = TEI
   let bestehend = { teile: {} };
   try { bestehend = JSON.parse(fs.readFileSync(statusDatei, 'utf8')); } catch { /* erster Lauf oder defekt - neu anlegen */ }
   const teileStatus = { ...(bestehend.teile || {}) };
+  for (const [teil, stand] of Object.entries(teileStatus)) teileStatus[teil] = ohneUeberholtenFehler(stand);
   for (const r of ergebnisse) {
     teileStatus[r.teil] = standNachLauf(teileStatus[r.teil], r);
   }

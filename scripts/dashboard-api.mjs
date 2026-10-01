@@ -42,6 +42,7 @@ import {
   benutzerDeaktivieren, validiereRolle, BenutzerFehler, ROLLEN, pruefePasswort,
 } from '../operations/lib/benutzer.mjs';
 import { bestellliste } from '../operations/lib/bestellliste.mjs';
+import { leseStammdaten, stammdatenPfad, lieferantenUebersicht, lieferantDetail, bestellmail, LieferantenFehler } from '../operations/lib/lieferanten.mjs';
 import {
   FOTO_ART, FotoFehler, passendeProdukte, produktHinweis, pruefeEingang, titelFuer,
 } from '../operations/lib/baustellenfotos.mjs';
@@ -826,6 +827,72 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         gesamt, gruppen: Object.values(gruppen).sort((a, b) => (b.handarbeit + b.automatisch) - (a.handarbeit + a.automatisch)),
         offen: { count: offene.length, page: p, pageSize: size, pages: Math.max(Math.ceil(offene.length / size), 1), items: seite },
       };
+    },
+
+    /**
+     * Gemeinsame Grundlage der drei Lieferanten-Endpunkte: Bestellmodell,
+     * Auftragsfluss-Status und die privaten Stammdaten. Fehlende Dateien sind
+     * kein Fehler - `modell` ist dann null, die Stammdaten "nicht hinterlegt".
+     */
+    _lieferantenKontext() {
+      const dir = privatDirPath || privatDir();
+      const stammdaten = leseStammdaten(stammdatenPfad(dir));
+      const ordersDatei = path.join(dir, 'bestelluebersicht', 'orders.json');
+      const daten = readJsonIfExists(ordersDatei);
+      let modell = null;
+      let hinweis = null;
+      if (!daten) hinweis = leseFehler(ordersDatei) || 'orders.json fehlt - Bestelldaten noch nicht exportiert (npm run daten:aktualisieren).';
+      else {
+        try { modell = aufbereiten(ladeExport(JSON.stringify(daten)), { jetzt: now() }); }
+        catch (e) { hinweis = `orders.json konnte nicht ausgewertet werden: ${e.message}`; }
+      }
+      return {
+        modell, hinweis, stammdaten,
+        statusAlle: leseAuftragsstatus(auftragsstatusPfad(dir)),
+        stammdatenDatei: {
+          vorhanden: stammdaten.vorhanden,
+          quelle: stammdaten.quelle,
+          fehler: stammdaten.fehler,
+          hinweis: stammdaten.vorhanden ? null : 'Lieferanten-Stammdaten nicht hinterlegt - Vorlage: operations/lib/lieferanten.beispiel.json.',
+          absenderHinterlegt: !!(stammdaten.absender.firma || stammdaten.absender.kontaktName || stammdaten.absender.lieferanschrift),
+        },
+      };
+    },
+
+    /** Alle Lieferanten mit Stammdaten, offenen Positionen je Stufe und ueberfaelligen Bestellungen. */
+    einkaufLieferanten() {
+      const k = this._lieferantenKontext();
+      return {
+        verfuegbar: !!k.modell,
+        hinweis: k.hinweis,
+        stammdatenDatei: k.stammdatenDatei,
+        ...lieferantenUebersicht(k.modell, { statusAlle: k.statusAlle, stammdaten: k.stammdaten, jetzt: now() }),
+      };
+    },
+
+    /** Ein Lieferant mit allen offenen Positionen. */
+    einkaufLieferant({ id = '' } = {}) {
+      if (!String(id).trim()) throw new ApiError(400, 'id ist Pflicht', { missing: ['id'] });
+      const k = this._lieferantenKontext();
+      const lieferant = lieferantDetail(k.modell, id, { statusAlle: k.statusAlle, stammdaten: k.stammdaten, jetzt: now() });
+      if (!lieferant) throw new ApiError(404, 'Lieferant nicht gefunden');
+      return { verfuegbar: !!k.modell, hinweis: k.hinweis, stammdatenDatei: k.stammdatenDatei, lieferant };
+    },
+
+    /** Fertige Bestellung (Ware je Gruppe bzw. offene Muster) als Mailtext + mailto:-Link. Sendet nichts. */
+    einkaufBestellmail({ lieferant = '', art = 'ware', gruppe = '', ziel = '' } = {}) {
+      const k = this._lieferantenKontext();
+      if (!k.modell) return { verfuegbar: false, hinweis: k.hinweis, stammdatenDatei: k.stammdatenDatei, mails: [] };
+      try {
+        return {
+          verfuegbar: true,
+          stammdatenDatei: k.stammdatenDatei,
+          ...bestellmail({ modell: k.modell, lieferant, art, gruppe: gruppe || null, ziel: ziel || null, statusAlle: k.statusAlle, stammdaten: k.stammdaten, jetzt: now() }),
+        };
+      } catch (e) {
+        if (e instanceof LieferantenFehler) throw new ApiError(400, e.message);
+        throw e;
+      }
     },
 
     /** Auftragsfluss-Status je Position, rein lokal (nie im Repository). */

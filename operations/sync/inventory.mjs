@@ -101,3 +101,30 @@ export async function fetchInventoryLevels(proxy, { first = SEITENGROESSE, warte
   }
   return { standorte: locations, bestand, gesammelt: false };
 }
+
+/**
+ * Lagerbestand als Massenabfrage - siehe CUSTOMERS_BULK_QUERY in customers.mjs.
+ * Andere Wurzel als der Seitenabruf (Artikel statt Standort), weil eine
+ * Massenabfrage keine Variablen kennt; `npm run daten:bulk -- --teil bestand`
+ * baut daraus dieselbe Form ({standorte, bestand}).
+ */
+export const INVENTORY_BULK_QUERY = `
+{
+  inventoryItems {
+    edges {
+      node {
+        id sku tracked
+        variant { id sku title product { id handle title } }
+        inventoryLevels {
+          edges {
+            node {
+              id
+              quantities(names: ["available", "on_hand", "committed", "incoming"]) { name quantity }
+              location { id name }
+            }
+          }
+        }
+      }
+    }
+  }
+}`;

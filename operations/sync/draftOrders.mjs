@@ -55,3 +55,29 @@ export async function fetchDraftOrders(proxy, { first = SEITENGROESSE, warten, q
   }
   return { draftOrders, seiten, gesammelt: false };
 }
+
+/** Dieselben Felder als Massenabfrage - siehe CUSTOMERS_BULK_QUERY in customers.mjs. */
+export const DRAFT_ORDERS_BULK_QUERY = `
+{
+  draftOrders {
+    edges {
+      node {
+        id name status createdAt updatedAt completedAt invoiceSentAt invoiceUrl
+        tags note2
+        email phone
+        customer { displayName defaultEmailAddress { emailAddress } defaultPhoneNumber { phoneNumber } }
+        totalPriceSet { shopMoney { amount currencyCode } }
+        subtotalPriceSet { shopMoney { amount currencyCode } }
+        totalQuantityOfLineItems
+        lineItems {
+          edges {
+            node {
+              title quantity sku variantTitle
+              originalUnitPriceSet { shopMoney { amount currencyCode } }
+            }
+          }
+        }
+      }
+    }
+  }
+}`;

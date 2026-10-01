@@ -50,7 +50,12 @@ Das Frontend erkennt die Betriebsart über `GET /api/capabilities`.
 
 ```
 docs/ai-dashboard/
-  index.html, app.js, app.css   Oberfläche (kein Build, keine Abhängigkeiten)
+  index.html, app.css           Seite und Gestaltung (kein Build, keine Abhängigkeiten)
+  app.js                        Einstieg: Tabelle der Ansichten, Start – lädt alles Weitere per import
+  ereignisse.mjs                zentrale Ereignisverteilung (Klick, Änderung, Tastatur, Hash-Wechsel)
+  kern/                         Zustand, Helfer, API-Zugriff, Sitzung, Router, Zeichnen – kennt keine Ansicht
+  bausteine/                    was mehrere Ansichten teilen (Karten, Aufgaben-Panel, Dialog, Palette …)
+  ansichten/                    eine Datei je Route; große Ansichten mit Teilmodulen im gleichnamigen Ordner
   lib/model.mjs                 Regeln: Status, Body-Parser, Dringlichkeit, Übergänge – Browser UND Server
   issues.json, bodenwissen.json generierte Daten, nicht im Git (.gitignore)
   tests/                        node --test (npm run dashboard:test)
@@ -69,6 +74,69 @@ content/      ──────────────────────
                                                                                    ▼
                                                                          index.html / app.js
 ```
+
+## Aufbau der Oberfläche
+
+Seit 2026-10-01 ist `app.js` kein Monolith mehr, sondern der Einstieg in native ES-Module
+(`<script type="module">`, weiterhin ohne Build-Schritt und ohne Framework). Ziel: mehrere Sitzungen
+arbeiten gleichzeitig an verschiedenen Ansichten, ohne sich in einer Datei zu treffen.
+
+```
+app.js            VIEWS (Route → Ansicht), init()
+ereignisse.mjs    bindEvents(): je Ereignisart ein Listener am document
+kern/
+  konfig.mjs      Repository, Datenquelle, Aktualisierungstakt
+  zustand.mjs     state: Aufgaben, Sitzung, Route
+  helfer.mjs      $, esc, fmtDate, fmtDateTime, ago, since, plural, geldText, fmtPreis, toast …
+  api.mjs         fetchEinkauf (lesen, wirft nie), orgSchreiben (POST, wirft mit Servermeldung)
+  sitzung.mjs     Betriebsart, Anmeldung, Rolle „lesen", Abmelden
+  router.mjs      ANSICHT_ROLLEN, darfAnsicht, parseRoute, navigate, openTask, closeTask, setParam
+  daten.mjs       issues.json und KI-Läufe laden, refresh, Datenstand-Chip
+  thema.mjs       hell/dunkel
+  render.mjs      render(): Ansicht zeichnen, Sonderzustände, Titel, Fokus
+bausteine/
+  karten.mjs            emptyState, stoerungState, collapsibleCard, bandItem
+  aufgaben.mjs          Badges, taskRow, echterSchritt, primaryAction (Entwicklungsaufgaben)
+  aufgaben-panel.mjs    Aufgaben-Detail (#/…?task=92)
+  aktions-dialog.mjs    Statuswechsel, Kommentar, Freigabe
+  aktualisierung.mjs    Datenstand der Betriebsdaten, „Jetzt aktualisieren", Synchronisieren
+  systemzustand.mjs     Systemgesundheit (Heute, Insights)
+  palette.mjs           Befehlspalette (⌘K)
+ansichten/
+  heute.mjs  arbeit.mjs  freigaben.mjs  bereiche.mjs  insights.mjs  aktivitaet.mjs
+  lexikon.mjs  ratgeber.mjs  hilfe.mjs  shopwache.mjs  team.mjs  fotos.mjs
+  einkauf.mjs        + einkauf/{auftragsfluss,bestellungen,produktdaten}.mjs
+  kunden.mjs         + kunden/{gemeinsam,akte,rueckrufe,bestellungen,angebote,faelle}.mjs
+  organisation.mjs   + organisation/{gemeinsam,dialoge}.mjs
+```
+
+**Regeln** (geprüft von `tests/aufbau.test.mjs`):
+
+- Importe sind relativ und nennen die Endung (`'../kern/helfer.mjs'`) – es gibt keinen Bundler, der
+  etwas auflöst. Kein Modul importiert `app.js`.
+- `kern/` importiert nur aus `kern/` und `lib/` (einzige Ausnahme: `render.mjs` führt nach dem
+  Zeichnen das Aufgaben-Panel nach). `lib/` importiert nur aus `lib/` – es läuft auch im Server.
+- Keine Importkreise.
+- Jede Route in `VIEWS` hat ihre Datei `ansichten/<route>.mjs`.
+
+**Wo etwas Neues andockt:**
+
+| Vorhaben | Dateien |
+|---|---|
+| Knopf, Filter, Dialog in einer bestehenden Ansicht | nur das Modul der Ansicht: Markup mit `data-…`-Attribut, Behandlung in deren `…Klick(e)` / `…Aenderung(e)` |
+| Neue Ansicht | `ansichten/<route>.mjs` mit `export function view…()`; dann je eine Zeile in `app.js` (`VIEWS`), `kern/router.mjs` (`parseRoute`, bei Inhaber-Ansichten `ANSICHT_ROLLEN`), `kern/render.mjs` (Seitentitel) und `index.html` (Link). Braucht sie eigene Klicks: `export function <route>Klick(e)` und eine Zeile in `ereignisse.mjs` |
+| Block auf „Heute" | Funktion `heute…()` im Modul des Bereichs, Aufruf in `ansichten/heute.mjs` |
+| Neuer Zwischenspeicher, der nach „Jetzt aktualisieren" veraltet | zusätzlich in `verwirfDatenspeicher()` (`bausteine/aktualisierung.mjs`) leeren |
+| Etwas, das zwei Ansichten brauchen | nach `bausteine/` (mit DOM) oder `kern/helfer.mjs` (ohne), nicht quer aus einer Ansicht importieren, wenn es sich vermeiden lässt |
+
+Die Reihenfolge der Prüfungen im Klick-Listener (`ereignisse.mjs`) ist Verhalten: der erste Treffer
+gewinnt. Deshalb ruft der Listener die Funktionen der Ansichten in fester Reihenfolge auf, und manche
+Ansicht hat zwei davon (z. B. `einkaufKlickStatus` und `einkaufKlickDialoge`).
+
+**Zwischenspeicher des Browsers:** Der Server liefert jede Datei mit `Cache-Control: no-store` aus, und
+es gibt keinen Service Worker. Nach einem Update holt der Browser also beim nächsten Laden alle Module
+neu; alte und neue Fassungen können sich nicht mischen. Versionsanhängsel (`?v=…`) an Modul-Importen
+sind deshalb unnötig – und schädlich, weil dieselbe Datei unter zwei Adressen zweimal ausgeführt würde.
 
 Der Browser braucht keinen Token.
 Lokal läuft alles über das im Keychain angemeldete `gh`-Konto; jede Aktion ist damit auf GitHub

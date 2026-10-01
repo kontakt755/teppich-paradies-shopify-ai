@@ -1,6 +1,6 @@
 ---
 name: control-center
-description: Das Control Center (docs/ai-dashboard, npm run dashboard) gestalten, erweitern und reparieren - Startseite "Heute", Einkauf, Arbeit, Lexikon, Freigaben, Ratgeber. Verwenden bei jeder Aenderung an app.js/app.css/index.html, an scripts/serve-dashboard.mjs oder dashboard-api.mjs, bei Design-/Uebersichtswuenschen des Inhabers und bevor ein Dashboard-PR gemergt oder der Dashboard-Dienst neu gestartet wird.
+description: Das Control Center (docs/ai-dashboard, npm run dashboard) gestalten, erweitern und reparieren - Startseite "Heute", Einkauf, Arbeit, Lexikon, Freigaben, Ratgeber. Verwenden bei jeder Aenderung an der Oberflaeche (app.js, ereignisse.mjs, kern/, bausteine/, ansichten/, app.css, index.html), an scripts/serve-dashboard.mjs oder dashboard-api.mjs, bei Design-/Uebersichtswuenschen des Inhabers und bevor ein Dashboard-PR gemergt oder der Dashboard-Dienst neu gestartet wird.
 ---
 
 # Control Center – gestalten und ausbauen
@@ -39,9 +39,13 @@ sechs PRs in einer Stunde). Deshalb:
 
 - Eigener Worktree auf frischem `origin/main`, nie im geteilten Checkout.
 - Vor dem Start: `gh pr list --search "dashboard OR Control Center"` und die
-  Dateien offener PRs ansehen – wer fasst gerade `app.js` an?
+  Dateien offener PRs ansehen – wer fasst gerade dieselbe Ansicht an? Die
+  Oberflaeche ist seit 2026-10-01 in Module zerlegt (`ansichten/<route>.mjs`,
+  `bausteine/`, `kern/`; Aufbau und Andockstellen: `docs/ai-dashboard/README.md`).
+  Eine Aenderung an einer Ansicht bleibt in deren Modul.
 - Kleine, thematisch geschlossene PRs. Vor dem PR `git fetch && git rebase
-  origin/main`, Konflikte in `app.js` von Hand zusammenfuehren (beide Seiten
+  origin/main`, Konflikte in den gemeinsamen Dateien (`app.js`, `ereignisse.mjs`,
+  `kern/`) von Hand zusammenfuehren (beide Seiten
   behalten, nicht eine verwerfen).
 - Fremde Worktrees (`~/tp-wt-*`, `.claude/worktrees/*`) und den Dienst-Checkout
   `~/tp-dashboard` nicht umschalten. `~/tp-dashboard` wird nach dem Merge nur
@@ -68,7 +72,7 @@ stimmt.
 - Nur zeigen, was vom Normalfall abweicht („Telefonnummer fehlt"), nicht jeden
   Zustand („Bezahlt: PAID").
 - Spalten, die in der aktuellen Ansicht ueberall gleich oder leer sind,
-  ausblenden (Beispiel `tableView()` in `app.js`).
+  ausblenden (Beispiel `tableView()` in `ansichten/arbeit.mjs`).
 - Lange Listen: Standardfilter auf die eigentliche Arbeitsliste, Rest einen
   Klick entfernt; seitenweise (25) statt endloser Seiten.
 - Kachelzahl und Liste darunter muessen dieselbe Menge zaehlen.
@@ -76,7 +80,7 @@ stimmt.
 **Sprache** (die Oberflaeche ist deutsch, fuer Mitarbeiter ohne IT-Hintergrund):
 - Nie interne Marker oder API-Werte zeigen: `UNGEKLAERT` → „ungeklaert"/„fehlt",
   `PAID` → „bezahlt", `UNFULFILLED` → „nicht versendet", Label
-  `status:review` → „Status Review". Uebersetzungstabellen stehen in `app.js`
+  `status:review` → „Status Review". Uebersetzungstabellen stehen bei ihrer Ansicht
   (`FINANZ_LABEL`, `VERSAND_LABEL`, `labelKlartext`, `hinweisText`).
 - Knoepfe sagen, was passiert („→ Bestellt", „Ohne Einkauf abschliessen…"),
   und die Rueckmeldung nimmt dasselbe Wort auf.
@@ -106,10 +110,15 @@ kann dafuer weg?
 3. **Ist-Zustand ansehen:** `npm run dashboard:pruefen` und die Screenshots
    lesen (Desktop und Handy). Nie aus dem Code allein gestalten.
 4. Kurz planen: was faellt weg, was wird zusammengefasst, welche Zahl steht wo.
-5. Umsetzen. Im Stil von `app.js` bleiben (Template-Strings, `esc()` fuer
+5. Umsetzen. Im Stil der vorhandenen Module bleiben (Template-Strings, `esc()` fuer
    jeden Wert, Kommentare auf Deutsch, das Warum statt des Was).
 6. Pruefen – alles muss gruen sein, bevor gepusht wird:
-   - `node --check docs/ai-dashboard/app.js`
+   - `node --check` auf jede geaenderte Moduldatei. Achtung: das findet nur
+     Syntaxfehler. Ein fehlender Import faellt erst im Browser auf - und nur
+     in der Ansicht, die ihn braucht. `npm run dashboard:test`
+     (`tests/aufbau.test.mjs`) prueft, dass jeder importierte Name exportiert
+     wird; ein benutzter, aber gar nicht importierter Name zeigt sich erst in
+     `dashboard:pruefen` als JS-Fehler.
    - `npm run dashboard:test`, danach `npm test` (Ergebnis abwarten, erst dann pushen)
    - `npm run dashboard:pruefen` → nur `OK`-Zeilen
    - Fuer geaenderte Aktionen eine Klickstrecke gegen die Kopie

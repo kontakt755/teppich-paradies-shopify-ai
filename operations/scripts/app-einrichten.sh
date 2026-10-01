@@ -15,7 +15,11 @@ set -euo pipefail
 SHOP_HANDLE="sjjyq1-6w"
 SHOP_DOMAIN="${SHOP_HANDLE}.myshopify.com"
 APP_NAME="TP Operations"
-SCOPES="read_orders,write_orders,read_customers,read_products,write_products,read_fulfillments,write_fulfillments,read_merchant_managed_fulfillment_orders,write_merchant_managed_fulfillment_orders,read_metaobjects,write_metaobjects,read_metaobject_definitions"
+# Lese-Bereiche fuer alle Datenquellen des Control Centers (dieselbe Liste wie
+# LESE_BEREICHE in operations/sync/zugang.mjs: Bestellungen auch aelter als 60
+# Tage, Kunden, Angebote, Produkte, Metaobjekte, Lagerbestand, Standorte) plus
+# die Schreib-Bereiche, die das Auftragsband fuer ops.*-Metafelder braucht.
+SCOPES="read_orders,read_all_orders,write_orders,read_customers,read_draft_orders,read_inventory,read_locations,read_products,write_products,read_fulfillments,write_fulfillments,read_merchant_managed_fulfillment_orders,write_merchant_managed_fulfillment_orders,read_metaobjects,write_metaobjects,read_metaobject_definitions"
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ENV_DATEI="${REPO}/.env.local"
@@ -114,8 +118,13 @@ NODE
 unset CLIENT_SECRET
 
 cd "${REPO}"
-hinweis "Token holen ..."
-npm run --silent shopify:token -- --grant client-credentials --write-env || {
+# Bewusst OHNE --write-env: der Token aus diesem Weg gilt nur 24 Stunden. Als
+# SHOPIFY_ADMIN_TOKEN in .env.local abgelegt, haette er Vorrang vor Client-ID
+# und Schluessel und liesse den Zugang am naechsten Tag ausfallen. Client-ID
+# und Schluessel genuegen - operations/sync/zugang.mjs tauscht sie bei Bedarf
+# selbst gegen einen frischen Token.
+hinweis "Token-Tausch testen ..."
+npm run --silent shopify:token -- --grant client-credentials || {
   fehler "Token-Tausch fehlgeschlagen. Meist heisst das: die App ist noch nicht im Shop installiert (Schritt 4)."
   exit 1
 }
