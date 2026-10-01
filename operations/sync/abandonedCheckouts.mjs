@@ -62,3 +62,26 @@ export async function fetchAbandonedCheckouts(proxy, { tageFenster = STANDARD_TA
   }
   return { checkouts, seiten, gesammelt: false, query };
 }
+
+/**
+ * Dieselben Felder als Massenabfrage - siehe CUSTOMERS_BULK_QUERY in
+ * customers.mjs. Das Zeitfenster kommt als Suchausdruck hinein (baueQuery).
+ */
+export function baueBulkQuery(tageFenster = STANDARD_TAGE_FENSTER, jetzt = () => Date.now()) {
+  return `
+{
+  abandonedCheckouts(query: "${baueQuery(tageFenster, jetzt)}") {
+    edges {
+      node {
+        id name createdAt updatedAt completedAt abandonedCheckoutUrl
+        customer { displayName defaultEmailAddress { emailAddress } defaultPhoneNumber { phoneNumber } }
+        totalPriceSet { shopMoney { amount currencyCode } }
+        subtotalPriceSet { shopMoney { amount currencyCode } }
+        billingAddress { name city country }
+        shippingAddress { name city country }
+        lineItems { edges { node { title quantity } } }
+      }
+    }
+  }
+}`;
+}

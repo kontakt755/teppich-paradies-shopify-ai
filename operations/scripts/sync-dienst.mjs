@@ -17,6 +17,9 @@
  * Intervall erneut - genau wie aktualisieren.mjs selbst, das bei einem
  * fehlschlagenden Teil die vorhandene Datei stehen laesst.
  *
+ * Das Lexikon (teure Massenabfrage) laeuft nur alle TP_SYNC_LEXIKON_MINUTEN
+ * (Standard 60) mit, alle anderen Teile in jedem Intervall.
+ *
  * Ohne Token (SHOPIFY_ADMIN_TOKEN oder SHOPIFY_CLIENT_ID/SECRET in
  * .env.local) startet der Dienst NICHT still folgenlos: er meldet das
  * Fehlen klar auf stderr und beendet sich mit Exit-Code 1 - siehe
@@ -29,7 +32,7 @@
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ladeEnvLocal } from '../sync/zugang.mjs';
+import { ladeEnvLocal, hatZugangsdaten, KEIN_ZUGANG } from '../sync/zugang.mjs';
 import { aktualisiere } from './aktualisieren.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -47,7 +50,39 @@ export function leseIntervallMinuten(env = process.env) {
 
 /** Gleiche Zugangspruefung wie sync/zugang.mjs erzeugeProxy: shpat_-Token oder Client-Credentials. */
 export function hatZugang(env = { ...ladeEnvLocal(path.join(REPO, '.env.local')), ...process.env }) {
-  return Boolean(env.SHOPIFY_ADMIN_TOKEN) || Boolean(env.SHOPIFY_CLIENT_ID && env.SHOPIFY_CLIENT_SECRET);
+  return hatZugangsdaten(env);
+}
+
+/**
+ * Das Lexikon ist der teure Teil (Massenabfrage ueber alle Produkte) und
+ * aendert sich selten - es laeuft deshalb nicht in jedem Intervall mit,
+ * sondern hoechstens alle TP_SYNC_LEXIKON_MINUTEN (Standard 60). Bestellungen,
+ * Kunden, Angebote, Warenkoerbe und Bestand bleiben im kurzen Takt.
+ */
+export const STANDARD_LEXIKON_MINUTEN = 60;
+const SCHNELLE_TEILE = ['bestellungen', 'kennzahlen', 'kunden', 'angebote', 'warenkoerbe', 'bestand'];
+
+export function leseLexikonMinuten(env = process.env) {
+  const roh = env.TP_SYNC_LEXIKON_MINUTEN;
+  if (roh === undefined || roh === '') return STANDARD_LEXIKON_MINUTEN;
+  const n = Number(roh);
+  if (!(n > 0)) throw new Error(`TP_SYNC_LEXIKON_MINUTEN ungueltig: "${roh}" (muss eine Zahl > 0 sein)`);
+  return n;
+}
+
+/**
+ * Baut die Lauf-Funktion des Dienstes. Das Lexikon laeuft im ersten Lauf und
+ * danach erst wieder, wenn sein letzter ERFOLGREICHER Lauf lexikonMinuten
+ * zurueckliegt - nach einem Fehlschlag also gleich im naechsten Intervall.
+ */
+export function erzeugeLauf({ lexikonMinuten = leseLexikonMinuten(), aktualisiereFn = aktualisiere, jetzt = Date.now } = {}) {
+  let lexikonErfolgAm = null;
+  return async () => {
+    const mitLexikon = lexikonErfolgAm === null || jetzt() - lexikonErfolgAm >= lexikonMinuten * 60000;
+    const r = await aktualisiereFn({ nur: mitLexikon ? ['lexikon', ...SCHNELLE_TEILE] : SCHNELLE_TEILE });
+    if (mitLexikon && (r?.ergebnisse ?? []).some((e) => e.teil === 'lexikon' && e.erfolg)) lexikonErfolgAm = jetzt();
+    return r;
+  };
 }
 
 function warteStandard(ms, signal) {
@@ -68,7 +103,7 @@ function warteStandard(ms, signal) {
  */
 export async function starteDienst({
   intervallMinuten = leseIntervallMinuten(),
-  lauf = () => aktualisiere(),
+  lauf = erzeugeLauf(),
   protokoll = console,
   warten = warteStandard,
   signal = new AbortController().signal,
@@ -102,20 +137,22 @@ export async function starteDienst({
 
 async function main() {
   if (!hatZugang()) {
-    console.error('[sync-dienst] Kein Zugang: weder SHOPIFY_ADMIN_TOKEN noch SHOPIFY_CLIENT_ID/SHOPIFY_CLIENT_SECRET in .env.local oder der Umgebung.');
-    console.error('[sync-dienst] Einrichtung: npm run operations:einrichten (siehe domains/shopify/admin-token-oauth.md). Ohne Zugang beendet sich der Dienst - er laeuft nie still ohne Wirkung.');
+    console.error(`[sync-dienst] ${KEIN_ZUGANG}`);
+    console.error(`[sync-dienst] Gesucht in: ${path.join(REPO, '.env.local')}. Ohne Zugang beendet sich der Dienst - er laeuft nie still ohne Wirkung.`);
     process.exitCode = 1;
     return;
   }
   let intervallMinuten;
+  let lexikonMinuten;
   try {
     intervallMinuten = leseIntervallMinuten();
+    lexikonMinuten = leseLexikonMinuten();
   } catch (err) {
     console.error(`[sync-dienst] ${err.message}`);
     process.exitCode = 1;
     return;
   }
-  console.log(`[sync-dienst] Start - Intervall ${intervallMinuten} Minute(n), Ziel $TP_PRIVAT_DIR`);
+  console.log(`[sync-dienst] Start - Intervall ${intervallMinuten} Minute(n), Lexikon alle ${lexikonMinuten} Minute(n), Ziel $TP_PRIVAT_DIR`);
   const controller = new AbortController();
   const beenden = (signal) => {
     console.log(`[sync-dienst] ${signal} empfangen - beende nach dem aktuellen Lauf`);
@@ -123,7 +160,7 @@ async function main() {
   };
   process.once('SIGTERM', () => beenden('SIGTERM'));
   process.once('SIGINT', () => beenden('SIGINT'));
-  await starteDienst({ intervallMinuten, signal: controller.signal });
+  await starteDienst({ intervallMinuten, lauf: erzeugeLauf({ lexikonMinuten }), signal: controller.signal });
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

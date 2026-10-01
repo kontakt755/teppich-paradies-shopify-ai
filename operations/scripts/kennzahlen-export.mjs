@@ -47,10 +47,10 @@ export function pruefeZiel(datei, repo = REPO) {
 }
 
 export async function ladeLive(tage) {
-  const { erzeugeProxy } = await import('../sync/zugang.mjs');
+  const { erzeugeProxy, KEIN_ZUGANG } = await import('../sync/zugang.mjs');
   const { fetchOrdersSince } = await import('../sync/orders.mjs');
   const { proxy, art } = await erzeugeProxy();
-  if (art === 'sammeln') throw new Error('Kein Zugang in .env.local (SHOPIFY_ADMIN_TOKEN oder SHOPIFY_CLIENT_ID/SECRET) - --input mit MCP-Export nutzen');
+  if (art === 'sammeln') throw new Error(`${KEIN_ZUGANG} (Ausweichweg ohne Zugang: --input mit einem MCP-Export)`);
   const seit = new Date(Date.now() - tage * 24 * 60 * 60 * 1000).toISOString();
   const r = await fetchOrdersSince(proxy, seit);
   return { orders: r.orders };
