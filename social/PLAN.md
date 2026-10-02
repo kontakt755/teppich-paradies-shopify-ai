@@ -81,8 +81,7 @@ wird genau dieser eine Link gesperrt.
 
 **Auffangnetz WhatsApp** (Entscheidung 30.09.2026): was trotzdem nur in der
 Firmengruppe landet, übernimmt der Takt aus der WhatsApp-App auf dem
-Betriebsrechner – ohne Einwilligung, die bestätigt der Inhaber in der Zentrale
-(`WHATSAPP.md`).
+Betriebsrechner; die Einwilligung liegt mit jedem Auftrag vor (`WHATSAPP.md`).
 
 **Erreichbarkeit** (Entscheidung 30.09.2026: Funnel nur für den Upload-Port): im Laden-WLAN
 und über Tailscale funktioniert der Link sofort. Für Handys ohne Tailscale
