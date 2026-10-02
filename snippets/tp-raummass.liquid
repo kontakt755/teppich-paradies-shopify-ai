@@ -88,6 +88,7 @@
         <input type="radio" id="tp-rm-ri-b-{{ id }}" name="tp-rm-ri-{{ id }}" value="breite">
         <label for="tp-rm-ri-b-{{ id }}">↔ entlang der Raumbreite</label>
       </div>
+      <p class="tp-rm__hilfe tp-rm__hilfe--auto" data-rm-richtung-auto>Vorschlag: entlang der längeren Raumseite – dann reicht meist ein Stück ohne Naht.</p>
     </fieldset>
     {%- endif -%}
     <p class="tp-rm__fehler" data-rm-fehler role="alert" hidden></p>
@@ -179,6 +180,8 @@
     font-weight: 600;
   }
   .tp-rm__chips input:focus-visible + label { outline: 2px solid currentColor; outline-offset: 2px; }
+  .tp-rm__hilfe--auto { margin: 6px 0 0; }
+  .tp-rm__hilfe--auto[hidden] { display: none; }
   .tp-rm__skizze { display: block; width: 100%; max-width: 340px; height: auto; margin: 8px 0 4px; color: var(--color-foreground, #222); }
   .tp-rm__hinweis { margin: 0; font-size: 13px; }
   .tp-rm__mehr > summary {

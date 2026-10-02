@@ -47,12 +47,12 @@ test('Raummass: laengere Seite als Breite wird gedreht', () => {
   assert.equal(v.genau.gedreht, true);
 });
 
-test('Raummass zu breit mit Zugabe -> Empfehlung faellt auf Meterware', () => {
+test('Raummass zu breit mit Zugabe -> Meterware; 490 bei 500er-Rolle auch genau kein Raummass', () => {
   const v = RM.rolleVorschlag({ breite: 490, laenge: 600, rollen: [400, 500], raum: true, maxRaum: 495 });
   assert.equal(v.empfohlen.art, 'meter');
   assert.equal(v.empfohlen.breite, 500);
-  assert.equal(v.genau.art, 'raum');
-  assert.equal(v.genau.breite, 490);
+  // Seit 2026-10-02: 490 ist fast die volle 500er-Rolle -> Meterware, nicht Raummass.
+  assert.deepEqual([v.genau.art, v.genau.breite, v.genau.laenge], ['meter', 500, 600]);
 });
 
 test('Beide Seiten breiter als jede Rolle -> Naht', () => {
@@ -125,4 +125,37 @@ test('Dielen entlang der Raumlaenge: 400 x 500 -> 400 x 510', () => {
   const v = RM.rolleVorschlag({ breite: 400, laenge: 500, rollen: [200, 400], raum: false, preis: vinyl, richtung: 'laenge' });
   assert.deepEqual([v.empfohlen.breite, v.empfohlen.laenge, v.empfohlen.gedreht], [400, 510, false]);
   assert.deepEqual([v.genau.breite, v.genau.laenge], [400, 500]);
+});
+
+// Inhaber 2026-10-02: volle Rollenbreite -> kein Raummass; Raum ueber einer
+// Rollenbreite -> ein Stueck mit der kuerzeren Seite quer, dazu Bahnen.
+test('Volle Rollenbreite 400 x 500: kein Raummass, auch nicht zentimetergenau', () => {
+  const v = RM.rolleVorschlag({ breite: 400, laenge: 500, rollen: [400, 500], raum: true, maxRaum: 495, preis: piumera });
+  assert.deepEqual([v.empfohlen.art, v.empfohlen.breite, v.empfohlen.laenge], ['meter', 400, 510]);
+  assert.equal(v.alternative, null);
+  assert.deepEqual([v.genau.art, v.genau.breite, v.genau.laenge], ['meter', 400, 500]);
+});
+
+test('Knapp unter Rollenbreite 395 x 600: Raummass faellt weg, schmaler 350 bleibt', () => {
+  const a = RM.rolleVorschlag({ breite: 395, laenge: 600, rollen: [400, 500], raum: true, maxRaum: 495, preis: piumera });
+  assert.ok(![a.empfohlen, a.alternative, a.genau].some((k) => k && k.art === 'raum'));
+  const c = RM.rolleVorschlag({ breite: 350, laenge: 600, rollen: [400, 500], raum: true, maxRaum: 495, preis: piumera });
+  assert.equal(c.alternative.art, 'raum');
+});
+
+test('Automatische Dielenrichtung entlang der laengeren Seite', () => {
+  assert.equal(RM.autoRichtung(550, 360), 'breite');
+  assert.equal(RM.autoRichtung(360, 550), 'laenge');
+});
+
+test('Vinyl 550 x 360: ein Stueck 400 x 560, dazu 2 Bahnen a 200 cm', () => {
+  const v = RM.rolleVorschlag({ breite: 550, laenge: 360, rollen: [200, 400], raum: false, preis: vinyl, richtung: RM.autoRichtung(550, 360) });
+  assert.deepEqual([v.empfohlen.breite, v.empfohlen.laenge, v.empfohlen.gedreht], [400, 560, true]);
+  assert.deepEqual([v.teilung.breite, v.teilung.laenge, v.teilung.bahnen, v.teilung.bahnLaenge], [200, 1120, 2, 560]);
+});
+
+test('Keine Teilung, wenn sie mehr Material braucht (360 quer, Rollen 300/400)', () => {
+  const v = RM.rolleVorschlag({ breite: 360, laenge: 550, rollen: [300, 400], raum: false, preis: vinyl, richtung: 'laenge' });
+  assert.equal(v.empfohlen.breite, 400);
+  assert.equal(v.teilung, null);
 });
