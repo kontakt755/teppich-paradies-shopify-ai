@@ -18,7 +18,7 @@
           "settings": {
             "marker_type": "icon",
             "emoji": "☺",
-            "text": "Sehr robust und formstabil"
+            "text": "Nutzungsklasse 32 oder höher"
           }
         },
         "feature_XDKPmP": {
@@ -26,7 +26,7 @@
           "settings": {
             "marker_type": "icon",
             "emoji": "★",
-            "text": "Pflegeleicht, ohne Flor"
+            "text": "Bahnenware und Teppichfliesen"
           }
         },
         "feature_3YcLFy": {
@@ -45,9 +45,9 @@
       ],
       "name": "Hero Split Features",
       "settings": {
-        "heading": "Nadelfilz",
-        "subheading": "Nadelfilz-Teppichboden für Keller, Hobbyraum, Büro und stark beanspruchte Flächen",
-        "body": "<p>Nadelfilz – auch Nadelvlies genannt – ist ein technischer Teppichboden ohne klassischen Flor. Die verdichteten Fasern machen ihn besonders robust, formstabil und pflegeleicht.</p>",
+        "heading": "Büro & Gewerbe",
+        "subheading": "Strapazierfähiger Teppichboden für Büro, Praxis, Kanzlei und Gewerbe",
+        "body": "<p>Hier finden Sie alle Teppichböden und Teppichfliesen mit gewerblicher Nutzungsklasse 32 oder höher nach DIN EN 1307. Sie sind für den täglichen Betrieb in Büros und anderen stark genutzten Räumen ausgelegt. Zuerst Bahnenware, darunter Teppichfliesen.</p>",
         "content_width": 1440,
         "column_gap": 48,
         "image_radius": 14,
@@ -901,33 +901,12 @@
         "padding-block-start": 16,
         "padding-block-end": 16
       }
-    },
-    "tp_fliesen_hinweis": {
-      "type": "tp-zubehoer-produkte",
-      "settings": {
-        "mode": "beliebt",
-        "collection": "teppichfliesen-nadelfilz",
-        "heading": "Nadelfilz auch als Teppichfliese",
-        "intro": "Dieselbe robuste Nadelfilz-Qualität im Format 50 × 50 cm – einzeln austauschbar.",
-        "link_text": "Alle Teppichfliesen",
-        "max_products": 8,
-        "layout_type": "carousel",
-        "carousel_on_mobile": true,
-        "columns": 4,
-        "mobile_columns": "2",
-        "mobile_card_size": "44cqw",
-        "section_width": "page-width",
-        "color_scheme": "scheme-1",
-        "padding-block-start": 40,
-        "padding-block-end": 40
-      }
     }
   },
   "order": [
     "hero_split_kNJWrC",
     "divider_7yWG7B",
     "main",
-    "tp_fliesen_hinweis",
     "carousel_hpxcyi"
   ]
 }

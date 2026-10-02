@@ -902,12 +902,33 @@
         "padding-block-start": 48,
         "padding-block-end": 48
       }
+    },
+    "tp_fliesen_hinweis": {
+      "type": "tp-zubehoer-produkte",
+      "settings": {
+        "mode": "beliebt",
+        "collection": "teppichfliesen",
+        "heading": "Auch als Teppichfliese",
+        "intro": "Modulare Teppichfliesen lassen sich einzeln austauschen und ohne Verschnitt verlegen – ideal für Büro und stark genutzte Räume.",
+        "link_text": "Alle Teppichfliesen",
+        "max_products": 8,
+        "layout_type": "carousel",
+        "carousel_on_mobile": true,
+        "columns": 4,
+        "mobile_columns": "2",
+        "mobile_card_size": "44cqw",
+        "section_width": "page-width",
+        "color_scheme": "scheme-1",
+        "padding-block-start": 40,
+        "padding-block-end": 40
+      }
     }
   },
   "order": [
     "hero_split_f3CGbW",
     "divider_KXJ3wQ",
     "main",
+    "tp_fliesen_hinweis",
     "carousel_hpxcyi"
   ]
 }
