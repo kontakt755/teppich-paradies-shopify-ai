@@ -51,28 +51,34 @@ Entwurfstexte mit den Marken liegen in der Git-Historie dieses Ordners.
 
 ### 1. Teppichboden richtig ausmessen: So ermitteln Sie Breite, Länge und Zugabe
 
-- **1.1** Nimmt das Verlegeteam vorhandene Sockelleisten grundsätzlich ab, oder wird auch an die Leiste geschnitten? Stimmt die Empfehlung „immer Wandmaß“?
-- **1.2** Endet der Belag bei Ihnen mittig unter dem geschlossenen Türblatt, oder gilt eine andere Regel (z. B. bündig mit der Zarge auf der Raumseite)?
-- **1.3** Ab welcher Reserve in der Breite raten Sie zur nächstgrößeren Rolle? Ist die gelieferte Rolle verlässlich mindestens so breit wie angegeben?
-- **1.4** Stimmt die Abstufung 10 cm bei geraden Wänden / 20 cm bei schiefen Wänden und Nischen, oder empfehlen Sie pauschal einen Wert?
-- **1.5** Entspricht diese Rechnung Ihrer Empfehlung „bei 350 × 480 cm lohnt sich oft die 500-cm-Rolle“? Reichen 20 cm Reserve in der Breite (10 cm je Seite) in der Praxis aus?
-- **1.6** Wie viel Überlappung planen Sie je Naht für den Nahtschnitt ein, und muss der Kunde das in der Breite oder Länge zusätzlich bestellen?
-- **1.7** Soll die Option „Raummaß“ im Ratgeber erwähnt werden, solange sie nur bei einzelnen Produkten verfügbar ist?
-- **1.8** Wie soll der Kunde mehrere Bahnen bestellen – je Bahn eine eigene Position mit eigener Länge? Werden die Bahnen dann einzeln zugeschnitten und aus derselben Charge geliefert?
+- **1.1** Nimmt das Verlegeteam vorhandene Sockelleisten grundsätzlich ab, oder wird auch an die Leiste geschnitten? Stimmt die Empfehlung „immer Wandmaß“? → bleibt offen (Hauspraxis Sockelleiste)
+- **1.2** Endet der Belag bei Ihnen mittig unter dem geschlossenen Türblatt, oder gilt eine andere Regel (z. B. bündig mit der Zarge auf der Raumseite)? → bleibt offen (Hausregel Türblatt; nicht in Artikel 1 nötig)
+- **1.3** Ab welcher Reserve in der Breite raten Sie zur nächstgrößeren Rolle? Ist die gelieferte Rolle verlässlich mindestens so breit wie angegeben? → bleibt offen (Shop: Reserve/Rollentoleranz); Text verweist weiter auf Kontakt
+- **1.4** Stimmt die Abstufung 10 cm bei geraden Wänden / 20 cm bei schiefen Wänden und Nischen, oder empfehlen Sie pauschal einen Wert? → beantwortet: rund 10 cm Übermaß je Bahn (Verlegeanleitung Bahnenware, heinze.de-PDF); Spanne 10–20 cm bleibt
+- **1.5** Entspricht diese Rechnung Ihrer Empfehlung „bei 350 × 480 cm lohnt sich oft die 500-cm-Rolle“? Reichen 20 cm Reserve in der Breite (10 cm je Seite) in der Praxis aus? → teilweise: Rechnung im Artikel; Hausempfehlung zur Reserve bleibt offen
+- **1.6** Wie viel Überlappung planen Sie je Naht für den Nahtschnitt ein, und muss der Kunde das in der Breite oder Länge zusätzlich bestellen? → beantwortet: 2–3 cm je Seite für den Nahtschnitt (Verlegeanleitung Bahnenware, heinze.de-PDF), als „nach Herstellerangabe“ formuliert
+- **1.7** Soll die Option „Raummaß“ im Ratgeber erwähnt werden, solange sie nur bei einzelnen Produkten verfügbar ist? → bleibt offen (Shop-Entscheidung Raummaß-Option), nicht erwähnt
+- **1.8** Wie soll der Kunde mehrere Bahnen bestellen – je Bahn eine eigene Position mit eigener Länge? Werden die Bahnen dann einzeln zugeschnitten und aus derselben Charge geliefert? → bleibt offen (Bestellablauf, Charge-Zusage)
 
 ### 2. Rollenbreite wählen und Bahnen planen: 400 oder 500 cm?
 
-- **2.1** Ist die Aussage „die Naht ist die Stelle, die bei starker Beanspruchung zuerst nachgibt“ aus Ihrer Sicht zutreffend, oder zu pauschal?
-- **2.2** Entspricht diese Rechnung Ihrer Hausempfehlung für 350 × 480 cm? Reichen 20 cm Reserve in der Breite (480 cm Raum auf 500 cm Rolle) bei üblichen Wänden aus?
-- **2.3** Ist die Laufrichtung auf der Rückseite der Ware in der Regel bereits aufgedruckt, oder muss sie immer selbst bestimmt und markiert werden?
-- **2.4** Können Sie zusagen, dass Bahnen aus einer Bestellung aus derselben Charge bzw. Rolle geschnitten werden? Falls nicht: Wie soll der Kunde das sicherstellen?
-- **2.5** Gibt es eine Hausregel für die Florrichtung im Raum (z. B. Flor zur Tür bzw. vom Fenster weg)? Wenn ja, bitte hier ergänzen.
-- **2.6** Bestätigen Sie die Regel „Naht nicht in die Hauptlaufzone, bevorzugt unter Möbel“?
-- **2.7** Setzen Sie im Türdurchgang zwischen zwei Räumen mit gleichem Teppichboden grundsätzlich ein Profil, oder wird dort auch Naht an Naht gearbeitet?
-- **2.8** Stimmt die Regel „Naht parallel zum Hauptlichteinfall, also auf das Fenster zulaufend“? Gibt es Ausnahmen je Machart?
-- **2.9** Gibt es eine Mindestbreite für angesetzte Streifen, die Sie empfehlen (z. B. nicht unter 50 cm)?
-- **2.10** Wie viele Zentimeter Überlappung je Naht soll der Kunde zusätzlich einplanen?
-- **2.11** Führt der Shop gemusterte Rollenware mit Rapport? Falls ja: Wo steht der Rapport, und wie wird der Mehrbedarf berechnet? Falls nein, Satz streichen.
+- **2.1** Ist die Aussage „die Naht ist die Stelle, die bei starker Beanspruchung zuerst nachgibt“ aus Ihrer Sicht zutreffend, oder zu pauschal? → nicht übernommen (keine belastbare Quelle)
+- **2.2** Entspricht diese Rechnung Ihrer Hausempfehlung für 350 × 480 cm? Reichen 20 cm Reserve in der Breite (480 cm Raum auf 500 cm Rolle) bei üblichen Wänden aus? → teilweise: Rechnung im Artikel; Reserve bleibt offen
+- **2.3** Ist die Laufrichtung auf der Rückseite der Ware in der Regel bereits aufgedruckt, oder muss sie immer selbst bestimmt und markiert werden? → bleibt offen (keine einheitliche Quellenlage)
+- **2.4** Können Sie zusagen, dass Bahnen aus einer Bestellung aus derselben Charge bzw. Rolle geschnitten werden? Falls nicht: Wie soll der Kunde das sicherstellen? → Shop-Zusage bleibt offen; allgemeiner Hinweis „gleiche Partie, Reihenfolge der Rollennummern“ belegt (Verlegeanleitung Bahnenware, heinze.de-PDF, Herstelleranleitungen)
+- **2.5** Gibt es eine Hausregel für die Florrichtung im Raum (z. B. Flor zur Tür bzw. vom Fenster weg)? Wenn ja, bitte hier ergänzen. → bleibt offen (Hausregel)
+- **2.6** Bestätigen Sie die Regel „Naht nicht in die Hauptlaufzone, bevorzugt unter Möbel“? → beantwortet: keine Naht in Eingängen/Laufwegen (Verlegeanleitung Bahnenware, heinze.de-PDF)
+- **2.7** Setzen Sie im Türdurchgang zwischen zwei Räumen mit gleichem Teppichboden grundsätzlich ein Profil, oder wird dort auch Naht an Naht gearbeitet? → bleibt offen (Hauspraxis Türdurchgang)
+- **2.8** Stimmt die Regel „Naht parallel zum Hauptlichteinfall, also auf das Fenster zulaufend“? Gibt es Ausnahmen je Machart? → beantwortet: Naht zur Hauptlichtquelle (Verlegeanleitung Bahnenware, heinze.de-PDF; selbst.de)
+- **2.9** Gibt es eine Mindestbreite für angesetzte Streifen, die Sie empfehlen (z. B. nicht unter 50 cm)? → bleibt offen (keine belastbare Quelle)
+- **2.10** Wie viele Zentimeter Überlappung je Naht soll der Kunde zusätzlich einplanen? → beantwortet wie 1.6
+- **2.11** Führt der Shop gemusterte Rollenware mit Rapport? Falls ja: Wo steht der Rapport, und wie wird der Mehrbedarf berechnet? Falls nein, Satz streichen. → bleibt offen (Sortiment), Rapport nicht erwähnt
+
+### Verschnitt bei Teppichboden (`verschnitt-bei-teppichboden`, freigegeben 2026-10-02)
+
+- **V.1** Übliche Größenordnung → bewusst kein Pauschalwert, Artikel rät zum Rechnen mit eigenen Maßen
+- **V.2** Überlappung je Naht → beantwortet wie 1.6
+- **V.3** Reststücke mitliefern → bleibt offen (Shop-Ablauf), nicht erwähnt
 
 ### 3. Welcher Teppichboden passt zu welchem Raum?
 
@@ -83,6 +89,8 @@ Entwurfstexte mit den Marken liegen in der Git-Historie dieses Ordners.
 - **3.5** Gilt bei Ihnen „unter Stuhlrollen immer vollflächig verkleben“, oder lassen Sie Fixierung in Wohn-Arbeitszimmern zu?
 - **3.6** Welche Nutzungsklasse empfehlen Sie mindestens für Flur/Treppe und für das Arbeitszimmer? Sind die Klassen bei allen Shop-Produkten in den technischen Daten gepflegt?
 - **3.7** Bestätigen Sie den Hinweis, dass melierte Töne im Eingangsbereich Schmutz besser kaschieren als helle oder dunkle Unifarben?
+
+> Stand 2026-10-02 (Recherche): **beantwortet** 3.2 (Wolle: keine alkalischen Reiniger, keine Dauernaesse – Vorwerk, Utopia), 3.4 (harte Rollen Typ H nach DIN EN 12529 auf Teppichboden, weiche Typ W fuer Hartboden – Baunetz Wissen), 3.5 (vollflaechig verkleben unter Stuhlrollen – Baunetz Wissen), 3.6 teilweise (Klasse 23 fuer intensiv genutzte Wohnbereiche wie Flur – Baunetz Wissen/EN 1307). **Bleibt offen:** 3.1, 3.3, 3.7 (Erfahrungswerte des Hauses), 3.6 Pflege der Klassen im Shop, 3.4 Bodenschutzmatte (Quellen uneinheitlich).
 
 ### 4. Teppichboden verlegen: lose, fixiert oder vollflächig verklebt?
 
@@ -102,6 +110,8 @@ Entwurfstexte mit den Marken liegen in der Git-Historie dieses Ordners.
 - **4.14** Bestätigen Sie „Belag endet mittig unter dem geschlossenen Türblatt“?
 - **4.15** Sichern Sie bei loser Verlegung den Türbereich grundsätzlich mit Band oder Profil?
 - **4.16** Welche Angaben zu Zahnung und Einlegezeit sollen Kunden beachten – reicht der Verweis auf den Kleberhersteller?
+
+> Stand 2026-10-02 (Recherche, Artikel neu im Kurzformat): **beantwortet** 4.2 (Anreiber/Andrueckwalze ergaenzt – TKB-Merkblatt 13, Klebstoffhersteller), 4.3 (Stuhlrollen: Fixierung nur bedingt, Kleben empfohlen; Treppe: Kontakt-/Trockenklebstoff – Baunetz Wissen, TKB 13, Datenblatt Verlegenetz), 4.4 (lose nur nahtfrei, also eine Bahn – Baunetz Wissen; keine m²-Grenze belegt), 4.6 teilweise (Fixierung fuer Klasse 21/22 Wohnbereich – TKB 13), 4.7 (keine Pflicht zum Verkleben; Belag und Verlegewerkstoff muessen freigegeben sein, Richtwert R ≤ 0,15 m²K/W – DIN EN 1264-2, Herstellerdatenblaetter), 4.8 (Untergrundtabelle Fixierer, Grundierung bei saugenden/staubenden Flaechen – Hersteller-Merkblaetter), 4.9 (24–48 h, Raum/Material ≥ 18 °C, Boden ≥ 15 °C, 40–65 % r. F. – TKB 13/17, Klebstoffhersteller), 4.12 (Ablueften Pflicht, auf dichten Untergruenden laenger – TKB 13, Fixierer-Merkblatt), 4.13 (Methode nach Belaghersteller, Schlinge in der Florgasse, Doppelschnitt nie im Kleberbett – TKB 13, Klebstoffhersteller), 4.15 (lose: Raender und Tuerbereich mit Band – Baunetz Wissen), 4.16 (TKB-Zahnung laut Kleberhersteller, anwalzen 50 kg, nach 30–45 min wiederholen – TKB 13). **Bleibt offen:** 4.1 (Dauer/Personen nicht belegt, Metafelder leer), 4.5 (Rueckenarten fuer lose Verlegung), 4.6 Band vs. fluessig als Hausempfehlung, 4.10 (Ueberstand), 4.11 (Bandabstand – je Produkt), 4.13 Nahtversiegelung, 4.14 (Belagende unter dem Tuerblatt). Entwuerfe RAT-TB-006 (Fliesen) und RAT-TB-007 (Wellen) recherchiert und auf `freigegeben`; offen bleiben dort nur Hausfragen (Praxisfall, Nachfixieren als Leistung, Reklamationsabgrenzung).
 
 ### 5. Teppichboden pflegen und Flecken entfernen: Was wirklich hilft
 
@@ -134,3 +144,5 @@ Entwurfstexte mit den Marken liegen in der Git-Historie dieses Ordners.
 - **5.27** Trifft „Flusen in den ersten Wochen sind normal und lassen nach“ auf die Qualitäten im Shop zu – bei welchen Macharten besonders, und welchen Zeitraum nennen Sie Kunden?
 - **5.28** Wie formulieren Sie den Hinweis zum Neugeruch gegenüber Kunden, und welchen Zeitraum nennen Sie?
 - **5.29** Setzen Sie bei kleinen Schäden Flicken aus Reststücken ein, und soll der Ratgeber dazu raten, ein Reststück aufzubewahren?
+
+> Stand 2026-10-02 (Recherche): **beantwortet** 5.8 (Kuehlakku ergaenzt), 5.14 (Kaeltemethode Kaugummi), 5.15 (Wachs: Loeschpapier, lauwarmes Buegeleisen – Vorwerk, toom), 5.16 (Schlamm trocknen lassen, dann saugen), 5.12/5.13/5.17/5.18 (kein Hausmittel genannt, Fleckentferner mit Test an verdeckter Stelle – Quellen uneinheitlich), 5.22 (Wolle: keine alkalischen Mittel, wenig Naesse – Vorwerk, Utopia). **Bleibt offen:** 5.25 (Angebot Grundreinigung) und alle Fragen nach Hauserfahrung (5.1–5.7, 5.9–5.11, 5.19–5.21, 5.23, 5.24, 5.26–5.29) – keine zwei uebereinstimmenden seriösen Quellen gefunden bzw. Shop-Entscheidung.

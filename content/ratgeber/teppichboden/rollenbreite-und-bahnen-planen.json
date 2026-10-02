@@ -29,6 +29,11 @@
       "art": "hausangabe",
       "titel": "Verfuegbare Rollenbreiten im Shop",
       "url": "/collections/teppichboden"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Verlegeanleitung textile Bahnenware (Übermaß ± 10 cm, Bahnen rechtwinklig zu den Fenstern, keine Nähte an Eingängen)",
+      "url": "https://www.heinze.de/m2/68/64068/etc/22/49858022.pdf"
     }
   ],
   "bilder": [
@@ -53,7 +58,7 @@
     "description": "400 oder 500 cm? So vergleichen Sie Rollenbreiten, vermeiden Nähte und halten die Florrichtung ein – mit den Beispielen 350 × 550 und 350 × 480 cm."
   },
   "metafields": {
-    "kurzantwort": "Wählen Sie die Rollenbreite so, dass der Raum möglichst mit einer einzigen Bahn belegt wird, denn jede weitere Bahn bedeutet eine Naht. Die 500-cm-Rolle lohnt sich oft, weil sich der Teppichboden drehen lässt: weniger Verschnitt, kein Anstückeln. Liegt derselbe Teppichboden in mehreren Räumen, achten Sie auf eine einheitliche Verlegerichtung.",
+    "kurzantwort": "Vergleichen Sie 400 und 500 cm jeweils gedreht und nicht gedreht, streichen Sie Varianten mit Naht und nehmen Sie die kleinste bestellte Fläche. Alle Bahnen liegen in derselben Florrichtung, eine unvermeidbare Naht läuft zum Hauptlichteinfall und nicht durch Eingänge.",
     "art": "Planung",
     "dauer": "",
     "schwierigkeit": "",
@@ -67,5 +72,9 @@
     "zubehoer_kollektion": "",
     "geprueft_von": "",
     "stand": ""
+  },
+  "titelbild": {
+    "url": "https://cdn.shopify.com/s/files/1/0875/4852/6926/files/ratgeber-titel-rollenbreite.png",
+    "alt": "Zwei Teppichbodenrollen unterschiedlicher Breite im Lager"
   }
 }

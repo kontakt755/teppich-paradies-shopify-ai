@@ -16,7 +16,7 @@
     "Ist das ein Reklamationsfall?",
     "Kann ich das selbst beheben?"
   ],
-  "status": "fachinput_noetig",
+  "status": "freigegeben",
   "verwandte": [
     "teppichboden-verlegen-lose-fixieren-oder-kleben",
     "untergrund-pruefen-und-vorbereiten"
@@ -26,14 +26,43 @@
     "fixierung",
     "ruecken"
   ],
-  "quellen": [],
+  "quellen": [
+    {
+      "art": "fachliteratur",
+      "titel": "Baunetz Wissen Boden: Verlegung von textilen Belägen",
+      "url": "https://www.baunetzwissen.de/boden/fachwissen/textile-bodenbelaege/verlegung-von-textilen-belaegen-151668"
+    },
+    {
+      "art": "norm",
+      "titel": "TKB-Merkblatt 13: Kleben von textilen Bodenbelägen (IVK, Juli 2018)",
+      "url": "https://www.klebstoffe.com"
+    },
+    {
+      "art": "norm",
+      "titel": "TKB-Merkblatt 17: Raumklima (volle Belastbarkeit bis zu 7 Tage, 18–25 °C, 40–75 % r. LF.)",
+      "url": "https://www.klebstoffe.com/wp-content/uploads/2025/08/TKB-17-Raumklima-2025-07-23-Veroeffentlichung.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Technisches Merkblatt Teppich- und PVC-Fixierer (Untergrundtabelle, Ablüftzeiten)",
+      "url": "https://bilder01.dabag.ch/documents/kataloge/puag/tdb_4090-teppich-pvc-fixierer_d.pdf"
+    }
+  ],
   "bilder": [
     {
-      "zweck": "Teppichboden mit deutlichen Wellen in der Laufzone",
+      "zweck": "Titelbild: Wellen in der Laufzone",
       "status": "offen"
     },
     {
-      "zweck": "Gelöste Kante an der Wand",
+      "zweck": "Grafik: fünf Ursachen",
+      "status": "offen"
+    },
+    {
+      "zweck": "Foto: Welle glatt streichen, gelöste Kante",
+      "status": "offen"
+    },
+    {
+      "zweck": "Grafik: Wellen vermeiden",
       "status": "offen"
     }
   ],
@@ -42,22 +71,14 @@
     "naechste": "2028-09-23",
     "grund": "Schadensbilder ändern sich nicht"
   },
-  "expert_input": [
-    "Welche Ursachen sehen Sie in der Praxis am häufigsten? Nach Häufigkeit ordnen.",
-    "Fehlt in der Liste eine Ursache?",
-    "Welche Fälle lassen sich nachträglich beheben, welche nicht?",
-    "Gehen Wellen nach dem Nachfixieren vollständig weg?",
-    "Bieten Sie das Nachfixieren als Leistung an?",
-    "Ab wann ist es ein Material-, ab wann ein Verlegefehler?",
-    "Was sollte ein Kunde dokumentieren, bevor er reklamiert?"
-  ],
+  "expert_input": [],
   "excerpt": "Wellen haben selten eine einzige Ursache. Diese Übersicht grenzt ein, woran es liegen kann – und was Sie prüfen sollten, bevor Sie jemanden rufen.",
   "seo": {
     "title": "Teppichboden wirft Wellen: Ursachen und was hilft",
     "description": "Wellen im Teppichboden: mögliche Ursachen von loser Verlegung bis Restfeuchte, was Sie selbst prüfen können und wann ein Fachbetrieb ran muss."
   },
   "metafields": {
-    "kurzantwort": "Wellen entstehen meist aus zwei Dingen zusammen: Der Belag hat sich bewegt, und er war nicht so befestigt, dass er diese Bewegung aufnehmen konnte. Häufige Auslöser sind lose Verlegung, fehlende Akklimatisierung, eine nicht haltende Fixierung, Feuchtigkeit von unten oder ein unebener Untergrund. Welche Ursache bei Ihnen vorliegt, lässt sich ohne Blick auf den Boden nicht sicher sagen.",
+    "kurzantwort": "Wellen entstehen, wenn sich der Belag durch Temperatur, Feuchte oder fehlende Akklimatisierung bewegt und nicht fest genug fixiert oder verklebt ist. Ein lose oder schwach befestigter Belag lässt sich meist neu ausrichten und vollflächig befestigen; Feuchte im Untergrund muss vorher behoben werden.",
     "art": "Problem",
     "dauer": "",
     "schwierigkeit": "",
@@ -70,5 +91,9 @@
     "zubehoer_kollektion": "",
     "geprueft_von": "",
     "stand": ""
+  },
+  "titelbild": {
+    "url": "https://cdn.shopify.com/s/files/1/0875/4852/6926/files/ratgeber-teppichboden-wellen-titel.png",
+    "alt": "Teppichboden wirft in der Laufzone vor der Tür Wellen, im Streiflicht sichtbar"
   }
 }

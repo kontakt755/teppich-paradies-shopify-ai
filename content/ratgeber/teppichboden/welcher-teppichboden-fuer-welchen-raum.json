@@ -36,6 +36,26 @@
       "art": "hausangabe",
       "titel": "Technische Daten der Teppichboeden im Shop",
       "url": "/collections/teppichboden"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "Baunetz Wissen Boden: Stuhlrolleneignung (Teppich vollflächig verklebt, Rollen Typ H nach DIN EN 12529)",
+      "url": "https://www.baunetzwissen.de/boden/fachwissen/glossar-a-z/stuhlrolleneignung-953155"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "Baunetz Wissen Boden: Wohnbereich (Beanspruchungsklassen 22+ oder 23 für intensive Nutzung)",
+      "url": "https://www.baunetzwissen.de/boden/fachwissen/glossar-a-z/wohnbereich-49845"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "Baunetz Wissen Boden: Einsatzbereiche textiler Beläge (EN 1307, Klassen Wohn-/Objektbereich)",
+      "url": "https://www.baunetzwissen.de/boden/fachwissen/textile-bodenbelaege/einsatzbereiche-von-textilen-belaegen-959259"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "Vorwerk: Wollteppich reinigen",
+      "url": "https://www.vorwerk.com/de/de/c/home/rezepte-und-ideen/ideenreich/kobold/wissen/wollteppich-reinigen"
     }
   ],
   "bilder": [
@@ -60,7 +80,7 @@
     "description": "Velours, Schlinge, Hochflor, Kurzflor, Wolle, Nadelvlies: welche Machart zu welchem Raum passt – und was Nutzungsklasse und Stuhlrolleneignung bedeuten."
   },
   "metafields": {
-    "kurzantwort": "Entscheidend sind die Beanspruchung des Raums und die Machart des Teppichbodens. Für Schlaf- und Wohnräume werden häufig weiche Velours-, Hochflor- und Wollqualitäten gewählt, für stark begangene Bereiche dichte, feste Qualitäten, für gewerbliche Flächen Nadelvlies und Objektware. Ob ein bestimmter Teppichboden für Stuhlrollen, Treppen oder Fußbodenheizung geeignet ist, steht verbindlich nur in den technischen Daten des jeweiligen Produkts.",
+    "kurzantwort": "Entscheidend sind die Beanspruchung des Raums und die Machart: weiche Velours-, Hochflor- und Wollqualitäten für Schlaf- und Wohnräume, dichte Qualitäten mit Nutzungsklasse 23 für Flur und Treppe, Nadelvlies für Gewerbe. Eignung für Stuhlrollen, Treppe oder Fußbodenheizung steht verbindlich nur in den technischen Daten des Produkts.",
     "art": "Kaufberatung",
     "dauer": "",
     "schwierigkeit": "",
@@ -74,5 +94,9 @@
     "zubehoer_kollektion": "",
     "geprueft_von": "",
     "stand": ""
+  },
+  "titelbild": {
+    "url": "https://cdn.shopify.com/s/files/1/0875/4852/6926/files/ratgeber-teppichboden-wohnzimmer-titel.png",
+    "alt": "Helles Wohnzimmer mit beigem Velours-Teppichboden und Sofa"
   }
 }
