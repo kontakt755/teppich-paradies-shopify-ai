@@ -64,156 +64,6 @@
         "padding_bottom": 24
       }
     },
-    "main": {
-      "type": "main-collection",
-      "blocks": {
-        "filters": {
-          "type": "filters",
-          "static": true,
-          "settings": {
-            "enable_filtering": true,
-            "filter_style": "vertical",
-            "filter_width": "centered",
-            "text_label_case": "default",
-            "show_swatch_label": false,
-            "show_filter_label": false,
-            "enable_sorting": true,
-            "enable_grid_density": false,
-            "inherit_color_scheme": true,
-            "color_scheme": "",
-            "padding-block-start": 8,
-            "padding-block-end": 8,
-            "padding-inline-start": 0,
-            "padding-inline-end": 0,
-            "facets_margin_bottom": 8,
-            "facets_margin_right": 20
-          },
-          "blocks": {}
-        },
-        "product-card": {
-          "type": "_product-card",
-          "static": true,
-          "settings": {
-            "product_card_gap": 4,
-            "inherit_color_scheme": true,
-            "color_scheme": "",
-            "border": "none",
-            "border_width": 1,
-            "border_opacity": 100,
-            "border_radius": 0,
-            "padding-block-start": 0,
-            "padding-block-end": 0,
-            "padding-inline-start": 0,
-            "padding-inline-end": 0
-          },
-          "blocks": {
-            "card-gallery": {
-              "type": "_product-card-gallery",
-              "settings": {
-                "image_ratio": "adapt",
-                "border": "none",
-                "border_width": 1,
-                "border_opacity": 100,
-                "border_radius": 0,
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "product_title_4nY4eT": {
-              "type": "tp-card-title",
-              "name": "t:names.product_title",
-              "settings": {
-                "width": "100%",
-                "max_width": "normal",
-                "alignment": "left",
-                "type_preset": "custom",
-                "font": "var(--font-body--family)",
-                "font_size": "1rem",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "wrap": "pretty",
-                "color": "var(--color-foreground)",
-                "background": false,
-                "background_color": "#00000026",
-                "corner_radius": 0,
-                "padding-block-start": 4,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "price_EzJzMm": {
-              "type": "price",
-              "settings": {
-                "show_sale_price_first": true,
-                "show_installments": false,
-                "show_tax_info": false,
-                "type_preset": "h6",
-                "width": "100%",
-                "alignment": "left",
-                "font": "var(--font-body--family)",
-                "font_size": "1rem",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "color": "var(--color-foreground)",
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "tp_card_color_thumbs": {
-              "type": "tp-card-color-thumbs",
-              "settings": {}
-            },
-            "tp_card_specs": {
-              "type": "tp-card-specs",
-              "settings": {}
-            },
-            "tp_card_actions": {
-              "type": "tp-card-actions",
-              "settings": {}
-            },
-            "tp_card_aktion": {
-              "type": "tp-card-aktion",
-              "settings": {}
-            }
-          },
-          "block_order": [
-            "card-gallery",
-            "product_title_4nY4eT",
-            "price_EzJzMm",
-            "tp_card_aktion",
-            "tp_card_color_thumbs",
-            "tp_card_specs",
-            "tp_card_actions"
-          ]
-        }
-      },
-      "settings": {
-        "layout_type": "grid",
-        "product_card_size": "medium",
-        "mobile_product_card_size": "small",
-        "enable_infinite_scroll": true,
-        "products_per_page": 24,
-        "product_grid_width": "centered",
-        "full_width_on_mobile": false,
-        "columns_gap_horizontal": 16,
-        "columns_gap_vertical": 24,
-        "padding-inline-start": 0,
-        "padding-inline-end": 0,
-        "color_scheme": "scheme-1",
-        "padding-block-start": 0,
-        "padding-block-end": 32
-      }
-    },
     "carousel_hpxcyi": {
       "type": "carousel",
       "blocks": {
@@ -888,20 +738,6 @@
         "padding-block-end": 48
       }
     },
-    "divider_7yWG7B": {
-      "type": "divider",
-      "name": "t:names.divider_section",
-      "settings": {
-        "color_scheme": "",
-        "section_width": "full-width",
-        "thickness": 1,
-        "corner_radius": "square",
-        "width_percent": 100,
-        "alignment_horizontal": "center",
-        "padding-block-start": 16,
-        "padding-block-end": 16
-      }
-    },
     "tp_fliesen_hinweis": {
       "type": "tp-zubehoer-produkte",
       "settings": {
@@ -920,13 +756,547 @@
         "color_scheme": "scheme-1",
         "padding-block-start": 40,
         "padding-block-end": 40
+      },
+      "blocks": {
+        "static-product-card": {
+          "type": "_product-card",
+          "static": true,
+          "settings": {
+            "product_card_gap": 4,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "card-gallery": {
+              "type": "_product-card-gallery",
+              "settings": {
+                "image_ratio": "adapt",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "product_title_4nY4eT": {
+              "type": "tp-card-title",
+              "name": "t:names.product_title",
+              "settings": {
+                "width": "100%",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "custom",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "var(--color-foreground)",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 4,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "price_EzJzMm": {
+              "type": "price",
+              "settings": {
+                "show_sale_price_first": true,
+                "show_installments": false,
+                "show_tax_info": false,
+                "type_preset": "h6",
+                "width": "100%",
+                "alignment": "left",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "color": "var(--color-foreground)",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "tp_card_color_thumbs": {
+              "type": "tp-card-color-thumbs",
+              "settings": {}
+            },
+            "tp_card_specs": {
+              "type": "tp-card-specs",
+              "settings": {}
+            },
+            "tp_card_aktion": {
+              "type": "tp-card-aktion",
+              "settings": {}
+            }
+          },
+          "block_order": [
+            "card-gallery",
+            "product_title_4nY4eT",
+            "price_EzJzMm",
+            "tp_card_aktion",
+            "tp_card_color_thumbs",
+            "tp_card_specs"
+          ]
+        }
+      }
+    },
+    "tp_nf_stufen": {
+      "type": "tp-nadelfilz-stufen",
+      "settings": {
+        "heading": "Welcher Nadelfilz passt?",
+        "text": "Alle unsere Nadelfilz-Böden haben Nutzungsklasse 33 und sind stuhlrollen- und treppengeeignet. Sie unterscheiden sich vor allem im Material, im Gewicht und im Rücken – das entscheidet über Lebensdauer, Optik und Verlegung.",
+        "hinweis": "Preise je m² als Meterware, 200 cm breit. Zuschnitt im Raummaß und kostenlose Muster für alle Farben.",
+        "color_scheme": "scheme-1",
+        "padding_top": 32,
+        "padding_bottom": 8
+      },
+      "blocks": {
+        "einstieg": {
+          "type": "stufe",
+          "settings": {
+            "stufe": "Einstieg",
+            "title": "Preiswert und robust",
+            "collection": "nadelfilz-einstieg",
+            "punkte": "Fasern mit Polypropylen-Anteil\nLeichter Belag (rund 1.000–1.100 g/m²)\nGünstigster Einstieg in die Objektqualität",
+            "fuer": "Keller, Hobbyraum, Lager, Messe- und Mietflächen",
+            "anker": "einstieg",
+            "empfohlen": false,
+            "badge": ""
+          }
+        },
+        "mittelklasse": {
+          "type": "stufe",
+          "settings": {
+            "stufe": "Mittelklasse",
+            "title": "Strapazierfähig fürs Büro",
+            "collection": "nadelfilz-mittelklasse",
+            "punkte": "Polyamid-Fasern: elastischer, richten sich nach Belastung besser wieder auf\nSchwerer Belag bis 1.450 g/m²\nGrößte Farbauswahl, bis zu 32 Farben",
+            "fuer": "Büro, Praxis, Flur, Treppenhaus und Gewerbe",
+            "anker": "mittelklasse",
+            "empfohlen": true,
+            "badge": "Beliebteste Wahl"
+          }
+        },
+        "premium": {
+          "type": "stufe",
+          "settings": {
+            "stufe": "Premium",
+            "title": "Objektqualität",
+            "collection": "nadelfilz-premium",
+            "punkte": "100 % Polyamid\nSpezialrücken für die dauerhafte Vollverklebung\nSchwerste Qualität bis 1.550 g/m², Trittschallverbesserung bis 23 dB",
+            "fuer": "Stark frequentierte Objekte, Schulen, Verwaltung, Gastronomie",
+            "anker": "premium",
+            "empfohlen": false,
+            "badge": ""
+          }
+        }
+      },
+      "block_order": [
+        "einstieg",
+        "mittelklasse",
+        "premium"
+      ]
+    },
+    "tp_nf_einstieg": {
+      "type": "tp-zubehoer-produkte",
+      "blocks": {
+        "static-product-card": {
+          "type": "_product-card",
+          "static": true,
+          "settings": {
+            "product_card_gap": 4,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "card-gallery": {
+              "type": "_product-card-gallery",
+              "settings": {
+                "image_ratio": "adapt",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "product_title_4nY4eT": {
+              "type": "tp-card-title",
+              "name": "t:names.product_title",
+              "settings": {
+                "width": "100%",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "custom",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "var(--color-foreground)",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 4,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "price_EzJzMm": {
+              "type": "price",
+              "settings": {
+                "show_sale_price_first": true,
+                "show_installments": false,
+                "show_tax_info": false,
+                "type_preset": "h6",
+                "width": "100%",
+                "alignment": "left",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "color": "var(--color-foreground)",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "tp_card_color_thumbs": {
+              "type": "tp-card-color-thumbs",
+              "settings": {}
+            },
+            "tp_card_specs": {
+              "type": "tp-card-specs",
+              "settings": {}
+            },
+            "tp_card_aktion": {
+              "type": "tp-card-aktion",
+              "settings": {}
+            }
+          },
+          "block_order": [
+            "card-gallery",
+            "product_title_4nY4eT",
+            "price_EzJzMm",
+            "tp_card_aktion",
+            "tp_card_color_thumbs",
+            "tp_card_specs"
+          ]
+        }
+      },
+      "settings": {
+        "mode": "beliebt",
+        "collection": "nadelfilz-einstieg",
+        "heading": "Einstieg",
+        "intro": "Preiswert und robust: Nadelfilz mit Polypropylen-Anteil.",
+        "link_text": "",
+        "anchor": "einstieg",
+        "max_products": 12,
+        "layout_type": "carousel",
+        "carousel_on_mobile": true,
+        "columns": 4,
+        "mobile_columns": "2",
+        "mobile_card_size": "44cqw",
+        "section_width": "page-width",
+        "color_scheme": "scheme-1",
+        "padding-block-start": 24,
+        "padding-block-end": 24
+      }
+    },
+    "tp_nf_mittelklasse": {
+      "type": "tp-zubehoer-produkte",
+      "blocks": {
+        "static-product-card": {
+          "type": "_product-card",
+          "static": true,
+          "settings": {
+            "product_card_gap": 4,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "card-gallery": {
+              "type": "_product-card-gallery",
+              "settings": {
+                "image_ratio": "adapt",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "product_title_4nY4eT": {
+              "type": "tp-card-title",
+              "name": "t:names.product_title",
+              "settings": {
+                "width": "100%",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "custom",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "var(--color-foreground)",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 4,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "price_EzJzMm": {
+              "type": "price",
+              "settings": {
+                "show_sale_price_first": true,
+                "show_installments": false,
+                "show_tax_info": false,
+                "type_preset": "h6",
+                "width": "100%",
+                "alignment": "left",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "color": "var(--color-foreground)",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "tp_card_color_thumbs": {
+              "type": "tp-card-color-thumbs",
+              "settings": {}
+            },
+            "tp_card_specs": {
+              "type": "tp-card-specs",
+              "settings": {}
+            },
+            "tp_card_aktion": {
+              "type": "tp-card-aktion",
+              "settings": {}
+            }
+          },
+          "block_order": [
+            "card-gallery",
+            "product_title_4nY4eT",
+            "price_EzJzMm",
+            "tp_card_aktion",
+            "tp_card_color_thumbs",
+            "tp_card_specs"
+          ]
+        }
+      },
+      "settings": {
+        "mode": "beliebt",
+        "collection": "nadelfilz-mittelklasse",
+        "heading": "Mittelklasse",
+        "intro": "Strapazierfähig fürs Büro: Polyamid-Fasern, schwerer Belag, größte Farbauswahl.",
+        "link_text": "",
+        "anchor": "mittelklasse",
+        "max_products": 12,
+        "layout_type": "carousel",
+        "carousel_on_mobile": true,
+        "columns": 4,
+        "mobile_columns": "2",
+        "mobile_card_size": "44cqw",
+        "section_width": "page-width",
+        "color_scheme": "scheme-1",
+        "padding-block-start": 24,
+        "padding-block-end": 24
+      }
+    },
+    "tp_nf_premium": {
+      "type": "tp-zubehoer-produkte",
+      "blocks": {
+        "static-product-card": {
+          "type": "_product-card",
+          "static": true,
+          "settings": {
+            "product_card_gap": 4,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "card-gallery": {
+              "type": "_product-card-gallery",
+              "settings": {
+                "image_ratio": "adapt",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "product_title_4nY4eT": {
+              "type": "tp-card-title",
+              "name": "t:names.product_title",
+              "settings": {
+                "width": "100%",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "custom",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "var(--color-foreground)",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 4,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "price_EzJzMm": {
+              "type": "price",
+              "settings": {
+                "show_sale_price_first": true,
+                "show_installments": false,
+                "show_tax_info": false,
+                "type_preset": "h6",
+                "width": "100%",
+                "alignment": "left",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "color": "var(--color-foreground)",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "tp_card_color_thumbs": {
+              "type": "tp-card-color-thumbs",
+              "settings": {}
+            },
+            "tp_card_specs": {
+              "type": "tp-card-specs",
+              "settings": {}
+            },
+            "tp_card_aktion": {
+              "type": "tp-card-aktion",
+              "settings": {}
+            }
+          },
+          "block_order": [
+            "card-gallery",
+            "product_title_4nY4eT",
+            "price_EzJzMm",
+            "tp_card_aktion",
+            "tp_card_color_thumbs",
+            "tp_card_specs"
+          ]
+        }
+      },
+      "settings": {
+        "mode": "beliebt",
+        "collection": "nadelfilz-premium",
+        "heading": "Premium",
+        "intro": "Objektqualität: 100 % Polyamid mit Spezialrücken für die Vollverklebung.",
+        "link_text": "",
+        "anchor": "premium",
+        "max_products": 12,
+        "layout_type": "carousel",
+        "carousel_on_mobile": true,
+        "columns": 4,
+        "mobile_columns": "2",
+        "mobile_card_size": "44cqw",
+        "section_width": "page-width",
+        "color_scheme": "scheme-1",
+        "padding-block-start": 24,
+        "padding-block-end": 24
       }
     }
   },
   "order": [
     "hero_split_kNJWrC",
-    "divider_7yWG7B",
-    "main",
+    "tp_nf_stufen",
+    "tp_nf_einstieg",
+    "tp_nf_mittelklasse",
+    "tp_nf_premium",
     "tp_fliesen_hinweis",
     "carousel_hpxcyi"
   ]
