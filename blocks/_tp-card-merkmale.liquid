@@ -1,0 +1,30 @@
+{% doc %}
+  Bis zu drei Unterscheidungsmerkmale fuer die Produktkarte, aus dem Produkt-Metafeld
+  custom.merkmale (Liste, ein Merkmal je Eintrag). Eingesetzt in den Produktreihen der
+  Nadelfilz-Seite, wo sich die Qualitaeten im Bild kaum unterscheiden. Ohne Metafeld
+  rendert der Block nichts.
+{% enddoc %}
+
+{%- assign tp_cm_liste = closest.product.metafields.custom.merkmale.value -%}
+{%- if tp_cm_liste != blank -%}
+  <ul class="tp-card-merkmale" role="list" {{ block.shopify_attributes }}>
+    {%- for m in tp_cm_liste limit: block.settings.max -%}
+      <li><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>{{ m | escape }}</li>
+    {%- endfor -%}
+  </ul>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-card-merkmale { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; font-size: 0.85rem; line-height: 1.35; }
+  .tp-card-merkmale li { display: grid; grid-template-columns: 14px 1fr; gap: 6px; align-items: start; }
+  .tp-card-merkmale svg { margin-top: 2px; color: #7d9480; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Karten-Merkmale",
+  "settings": [
+    { "type": "range", "id": "max", "label": "Anzahl Merkmale", "min": 1, "max": 4, "step": 1, "default": 3 }
+  ]
+}
+{% endschema %}
