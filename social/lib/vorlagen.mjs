@@ -126,6 +126,34 @@ function vProdukt(d, f) {
 <img src="${esc(BETRIEB.logo)}" alt="" style="position:absolute;left:44px;top:44px;height:54px;background:rgba(255,255,255,.94);padding:10px 14px;border-radius:14px;box-sizing:content-box">`);
 }
 
+/**
+ * Angebot mit Doppelbild (Inhaberwunsch 02.10.2026): links bzw. oben die Ware
+ * von der Rolle, rechts bzw. unten dieselbe Ware als Teppich mit Einfassung.
+ * Unten der alte Preis fett durchgestrichen, daneben der Aktionspreis.
+ * Preise nur aus dem Shop, Streichpreis nur bei echtem Vergleichspreis.
+ */
+function vAngebot(d, f) {
+  const story = f === FORMAT.story;
+  const feld = Math.round(f.hoehe * (story ? 0.27 : 0.3));
+  const bilder = (d.bilder || []).slice(0, 2);
+  const zelle = (b) => `<div style="position:relative;overflow:hidden">${foto({ ausschnitt: '50% 50%', ...b })}${b.label ? `<div style="position:absolute;left:24px;bottom:24px;right:24px"><span class="chip hell" style="font-size:30px">${esc(b.label)}</span></div>` : ''}</div>`;
+  const abzeichen = d.abzeichen ? `<div style="position:absolute;right:40px;top:40px;background:${FARBEN.rot};color:#fff;font-weight:700;font-size:56px;border-radius:50%;width:196px;height:196px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 28px rgba(29,26,23,.28)">${esc(d.abzeichen)}</div>` : '';
+  const streich = d.preisAlt ? `<div style="font-size:${story ? 40 : 38}px;font-weight:700;color:${FARBEN.tinte2};text-decoration:line-through;text-decoration-thickness:5px;text-decoration-color:${FARBEN.rot};white-space:nowrap">statt ${esc(d.preisAlt)}</div>` : '';
+  return grund(f, `
+<div style="position:absolute;left:0;right:0;top:0;height:${f.hoehe - feld}px;display:grid;${story ? 'grid-template-rows:1fr 1fr' : 'grid-template-columns:1fr 1fr'};gap:8px;background:${FARBEN.sand}">${bilder.map(zelle).join('')}</div>
+${abzeichen}
+<div style="position:absolute;left:0;right:0;bottom:0;height:${feld}px;background:${FARBEN.sand};border-top:6px solid ${FARBEN.rot};padding:36px 52px;display:flex;flex-direction:column;justify-content:center;gap:12px">
+  <div class="kicker">${esc(d.kicker || 'Angebot')}</div>
+  <div style="font-size:${String(d.titel || '').length > 20 ? 56 : 68}px;font-weight:700;line-height:1.05;letter-spacing:-.01em">${esc(d.titel)}</div>
+  <div style="display:flex;align-items:baseline;gap:28px;flex-wrap:wrap;margin-top:6px">
+    <div style="font-size:${story ? 84 : 78}px;font-weight:700;color:${FARBEN.rot};line-height:1;white-space:nowrap">${esc(d.preis)}</div>${streich}
+  </div>
+  ${d.zeile ? `<div style="font-size:28px;color:${FARBEN.tinte2};line-height:1.3">${esc(d.zeile)}</div>` : ''}
+  ${story ? `<div style="font-size:28px;font-weight:700;color:${FARBEN.rot}">${esc(BETRIEB.shopKurz)}</div>` : ''}
+</div>
+<img src="${esc(BETRIEB.logo)}" alt="" style="position:absolute;left:40px;top:40px;height:54px;background:rgba(255,255,255,.94);padding:10px 14px;border-radius:14px;box-sizing:content-box">`);
+}
+
 /** Titelbild eines Farb-Karussells: Raster aus Farbflaechen, darunter der Name. */
 function vFarbenTitel(d, f) {
   const bilder = (d.bilder || []).slice(0, 6);
@@ -203,6 +231,7 @@ export const VORLAGEN = Object.freeze({
   farben_titel: { bau: vFarbenTitel, formate: ['feed', 'quadrat'], zweck: 'Titelbild eines Farb- oder Dekor-Karussells' },
   farbe: { bau: vFarbe, formate: ['feed', 'quadrat', 'story'], zweck: 'Einzelne Farbe im Karussell' },
   tipp: { bau: vTipp, formate: ['feed', 'quadrat', 'story'], zweck: 'Tipp, Bodenwissen, Hinweis' },
+  angebot: { bau: vAngebot, formate: ['feed', 'story'], zweck: 'Angebot: Doppelbild (Rolle und Teppich mit Einfassung), Aktionspreis mit fettem Streichpreis' },
   story_foto: { bau: vStoryFoto, formate: ['story'], zweck: 'Story und Reel-Standbild: Foto mit einer Zeile' },
   highlight: { bau: vHighlight, formate: ['story'], zweck: 'Titelbild eines Instagram-Highlights (Kreis in der Mitte)' },
 });

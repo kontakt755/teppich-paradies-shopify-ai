@@ -128,3 +128,13 @@ test('Ausgetauschte Shop-Bilder: der Anlass wird freigegeben und kann neu entste
   assert.equal(db.beitraegeZuInhalt(id).length, 0);
   assert.equal(db.inhaltAnlegen(felder).neu, true, 'derselbe Anlass darf mit frischen Bildern wiederkommen');
 });
+
+test('Vorlage Angebot: Doppelbild, Streichpreis nur mit Vergleichspreis, Feed und Story', () => {
+  const d = { titel: 'Vantana Teppichboden', abzeichen: '−26 %', preis: '36,90 €/m²', preisAlt: '49,90 €/m²', bilder: [{ quelle: 'https://cdn.shopify.com/a.jpg', label: 'Teppichboden' }, { quelle: 'https://cdn.shopify.com/b.jpg', label: 'Teppich mit Einfassung' }] };
+  const feed = baue('angebot', d, 'feed');
+  assert.equal(feed.hoehe, 1350);
+  assert.match(feed.html, /line-through/); assert.match(feed.html, /statt 49,90 €\/m²/);
+  assert.match(feed.html, /grid-template-columns:1fr 1fr/); assert.match(feed.html, /Teppich mit Einfassung/);
+  assert.match(baue('angebot', d, 'story').html, /grid-template-rows:1fr 1fr/);
+  assert.equal(/line-through/.test(baue('angebot', { ...d, preisAlt: null }, 'feed').html), false, 'ohne Vergleichspreis kein Streichpreis');
+});
