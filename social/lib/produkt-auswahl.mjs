@@ -10,6 +10,8 @@
  * Reine Funktionen - der Abruf steckt in shop-quelle.mjs, das Speichern im CLI.
  */
 
+import { vergleichJeEinheit } from './shop-quelle.mjs';
+
 const TAG = 24 * 60 * 60 * 1000;
 
 export const REGELN = Object.freeze({
@@ -113,6 +115,7 @@ export function findeKandidaten({ produkte, stand = new Map(), preise = new Map(
       dazu('angebot', 60 + Math.min(a.rabattProzent, 40) / 2, `${a.rabattProzent} % unter dem bisherigen Preis`, {
         hauptHandle: a.handle, titel: a.titel, url: a.url, bilder: besteBilder(a),
         rabattProzent: a.rabattProzent, preisJeEinheit: preise.get(a.handle) ?? null,
+        vergleichJeEinheit: vergleichJeEinheit(a, preise.get(a.handle)),
       });
     }
     if (zuletzt < regeln.ruheTage) continue;

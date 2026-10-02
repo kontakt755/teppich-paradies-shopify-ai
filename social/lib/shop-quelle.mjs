@@ -74,6 +74,12 @@ export function normalisiere(p, { basis = BETRIEB.shop } = {}) {
   const rabatte = varianten
     .filter(v => Number(v.compare_at_price) > Number(v.price))
     .map(v => Math.round((1 - Number(v.price) / Number(v.compare_at_price)) * 100));
+  // Streichpreis nur, wenn ALLE Varianten reduziert sind (Rolle und Raummass,
+  // AGENTS.md Preislogik). Faktor der guenstigsten Variante = alt / neu.
+  const reduziert = varianten.filter(v => Number(v.price) > 0);
+  const aktionVollstaendig = reduziert.length > 0 && reduziert.every(v => Number(v.compare_at_price) > Number(v.price));
+  const guenstigste = aktionVollstaendig ? reduziert.reduce((a, b) => (Number(b.price) < Number(a.price) ? b : a)) : null;
+  const vergleichFaktor = guenstigste ? Number(guenstigste.compare_at_price) / Number(guenstigste.price) : null;
   const farbOption = (p.options ?? []).find(o => /^(farbe|dekor|design)$/i.test(o.name));
   const variantenFarbe = new Map();
   if (farbOption) {
@@ -104,6 +110,8 @@ export function normalisiere(p, { basis = BETRIEB.shop } = {}) {
     preisMin: preise.length ? Math.min(...preise) : null,
     vergleichMax: vergleiche.length ? Math.max(...vergleiche) : null,
     rabattProzent: rabatte.length ? Math.max(...rabatte) : 0,
+    aktionVollstaendig,
+    vergleichFaktor,
     starkReduziert: (p.tags ?? []).includes('stark-reduziert'),
     verfuegbar: varianten.some(v => v.available),
     zubehoer: ZUBEHOER.test(typ) || (p.tags ?? []).some(t => /^zubehoer/.test(t)),
@@ -131,6 +139,15 @@ export function ladeLexikonPreise(datei = path.join(privatDir(), 'lexikon', 'pro
     preise.set(p.handle, { betrag: kleinster.betrag, einheit: kleinster.einheit, gruppe: p.produktgruppe ?? null });
   }
   return preise;
+}
+
+/**
+ * Vergleichspreis je Einheit fuer die Vorlage `angebot` (preisAlt): nur bei
+ * vollstaendiger Aktion, sonst null - dann erscheint kein Streichpreis.
+ */
+export function vergleichJeEinheit(produkt, preis) {
+  if (!preis || !produkt?.aktionVollstaendig || !(produkt.vergleichFaktor > 1)) return null;
+  return { betrag: Math.round(preis.betrag * produkt.vergleichFaktor * 100) / 100, einheit: preis.einheit };
 }
 
 /** Was Kunden als Muster bestellen, interessiert sie - ein ehrlicheres Signal als Klicks. */

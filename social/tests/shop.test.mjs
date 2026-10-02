@@ -66,3 +66,17 @@ test('Jahreszeit und Musterbestellungen heben, Auswahl bleibt gemischt', () => {
   const viele = Array.from({ length: 8 }, (_, i) => ({ art: 'raumidee', familie: `f${i}`, gruppe: 'Klebevinyl', punkte: 50 - i, schluessel: `s${i}` }));
   assert.equal(waehleAus(viele).length, 3, 'hoechstens drei je Art und Warengruppe');
 });
+
+test('Vergleichspreis je m2 nur, wenn Rolle und Raummass reduziert sind', () => {
+  const preise = new Map([['p', { betrag: 36.9, einheit: 'm2' }]]);
+  const beide = n({ handle: 'p', variants: [
+    { id: 1, price: '36.90', compare_at_price: '49.90', available: true },
+    { id: 2, price: '44.90', compare_at_price: '59.90', available: true }] });
+  const k = findeKandidaten({ produkte: [beide], preise, jetzt: JETZT }).find(x => x.art === 'angebot');
+  assert.deepEqual(k.vergleichJeEinheit, { betrag: 49.9, einheit: 'm2' });
+  const halb = n({ handle: 'p', variants: [
+    { id: 1, price: '36.90', compare_at_price: '49.90', available: true },
+    { id: 2, price: '44.90', compare_at_price: null, available: true }] });
+  const h = findeKandidaten({ produkte: [halb], preise, jetzt: JETZT }).find(x => x.art === 'angebot');
+  assert.equal(h.vergleichJeEinheit, null);
+});

@@ -134,7 +134,9 @@ Angebote immer mit der Vorlage `angebot`: Doppelbild aus der Ware von der Rolle
 und demselben Farbton als „Teppich nach Maß“ mit Einfassung (Kettelecke aus dem
 Produkt „… Teppich nach Maß“), Abzeichen „−XX %“, Aktionspreis groß, alter Preis
 fett durchgestrichen (`preisAlt`). Preise **nur** aus dem Shop
-(`/products/<handle>.js`: `price` und `compare_at_price` der Meterware-Variante):
+(`/products/<handle>.js`: `price` und `compare_at_price` der Meterware-Variante).
+Der Shop-Scout liefert beides fertig: `preisJeEinheit` und `vergleichJeEinheit`
+(null, wenn nicht alle Varianten reduziert sind – dann kein `preisAlt`):
 
 - Streichpreis nur, wenn beide Zuschnittarten (Rolle und Raummaß) reduziert sind
   und der Vergleichspreis im Shop steht – sonst ohne `preisAlt`.
