@@ -51,26 +51,26 @@ Entwurfstexte mit den Marken liegen in der Git-Historie dieses Ordners.
 
 ### 1. Teppichboden richtig ausmessen: So ermitteln Sie Breite, Länge und Zugabe
 
-- **1.1** Nimmt das Verlegeteam vorhandene Sockelleisten grundsätzlich ab, oder wird auch an die Leiste geschnitten? Stimmt die Empfehlung „immer Wandmaß“? → bleibt offen (Hauspraxis Sockelleiste)
-- **1.2** Endet der Belag bei Ihnen mittig unter dem geschlossenen Türblatt, oder gilt eine andere Regel (z. B. bündig mit der Zarge auf der Raumseite)? → bleibt offen (Hausregel Türblatt; nicht in Artikel 1 nötig)
+- **1.1** Nimmt das Verlegeteam vorhandene Sockelleisten grundsätzlich ab, oder wird auch an die Leiste geschnitten? Stimmt die Empfehlung „immer Wandmaß“? → Antwort Verlegeteam 2026-10-02: je nach Kundenwunsch; alte Sockelleisten werden nicht wieder montiert (Artikel 4)
+- **1.2** Endet der Belag bei Ihnen mittig unter dem geschlossenen Türblatt, oder gilt eine andere Regel (z. B. bündig mit der Zarge auf der Raumseite)? → Antwort Verlegeteam 2026-10-02: ja, mittig unter dem geschlossenen Türblatt (Artikel 1 und 4)
 - **1.3** Ab welcher Reserve in der Breite raten Sie zur nächstgrößeren Rolle? Ist die gelieferte Rolle verlässlich mindestens so breit wie angegeben? → bleibt offen (Shop: Reserve/Rollentoleranz); Text verweist weiter auf Kontakt
 - **1.4** Stimmt die Abstufung 10 cm bei geraden Wänden / 20 cm bei schiefen Wänden und Nischen, oder empfehlen Sie pauschal einen Wert? → beantwortet: rund 10 cm Übermaß je Bahn (Verlegeanleitung Bahnenware, heinze.de-PDF); Spanne 10–20 cm bleibt
 - **1.5** Entspricht diese Rechnung Ihrer Empfehlung „bei 350 × 480 cm lohnt sich oft die 500-cm-Rolle“? Reichen 20 cm Reserve in der Breite (10 cm je Seite) in der Praxis aus? → teilweise: Rechnung im Artikel; Hausempfehlung zur Reserve bleibt offen
 - **1.6** Wie viel Überlappung planen Sie je Naht für den Nahtschnitt ein, und muss der Kunde das in der Breite oder Länge zusätzlich bestellen? → beantwortet: 2–3 cm je Seite für den Nahtschnitt (Verlegeanleitung Bahnenware, heinze.de-PDF), als „nach Herstellerangabe“ formuliert
 - **1.7** Soll die Option „Raummaß“ im Ratgeber erwähnt werden, solange sie nur bei einzelnen Produkten verfügbar ist? → beantwortet 2026-10-02 aus Shopdaten: Raummaß bei 50 von 113 Teppichböden (Rechner „zentimetergenau aus der Rolle“), als Tipp in Artikel 1 und im Verschnitt-Artikel
-- **1.8** Wie soll der Kunde mehrere Bahnen bestellen – je Bahn eine eigene Position mit eigener Länge? Werden die Bahnen dann einzeln zugeschnitten und aus derselben Charge geliefert? → teilweise aus Shopdaten: jede Länge ist eine eigene Warenkorbposition (Tipp in Artikel 1); Charge-Zusage bleibt offen
+- **1.8** Wie soll der Kunde mehrere Bahnen bestellen – je Bahn eine eigene Position mit eigener Länge? Werden die Bahnen dann einzeln zugeschnitten und aus derselben Charge geliefert? → teilweise aus Shopdaten: jede Länge ist eine eigene Warenkorbposition (Tipp in Artikel 1); Charge: in der Regel gleiche Partie (Artikel 2)
 
 ### 2. Rollenbreite wählen und Bahnen planen: 400 oder 500 cm?
 
 - **2.1** Ist die Aussage „die Naht ist die Stelle, die bei starker Beanspruchung zuerst nachgibt“ aus Ihrer Sicht zutreffend, oder zu pauschal? → nicht übernommen (keine belastbare Quelle)
 - **2.2** Entspricht diese Rechnung Ihrer Hausempfehlung für 350 × 480 cm? Reichen 20 cm Reserve in der Breite (480 cm Raum auf 500 cm Rolle) bei üblichen Wänden aus? → teilweise: Rechnung im Artikel; Reserve bleibt offen
 - **2.3** Ist die Laufrichtung auf der Rückseite der Ware in der Regel bereits aufgedruckt, oder muss sie immer selbst bestimmt und markiert werden? → bleibt offen (keine einheitliche Quellenlage)
-- **2.4** Können Sie zusagen, dass Bahnen aus einer Bestellung aus derselben Charge bzw. Rolle geschnitten werden? Falls nicht: Wie soll der Kunde das sicherstellen? → Shop-Zusage bleibt offen; allgemeiner Hinweis „gleiche Partie, Reihenfolge der Rollennummern“ belegt (Verlegeanleitung Bahnenware, heinze.de-PDF, Herstelleranleitungen)
-- **2.5** Gibt es eine Hausregel für die Florrichtung im Raum (z. B. Flor zur Tür bzw. vom Fenster weg)? Wenn ja, bitte hier ergänzen. → bleibt offen (Hausregel)
+- **2.4** Können Sie zusagen, dass Bahnen aus einer Bestellung aus derselben Charge bzw. Rolle geschnitten werden? Falls nicht: Wie soll der Kunde das sicherstellen? → Antwort Verlegeteam: in der Regel ja, gleiche Partie (Artikel 2); allgemeiner Hinweis „gleiche Partie, Reihenfolge der Rollennummern“ belegt (Verlegeanleitung Bahnenware, heinze.de-PDF, Herstelleranleitungen)
+- **2.5** Gibt es eine Hausregel für die Florrichtung im Raum (z. B. Flor zur Tür bzw. vom Fenster weg)? Wenn ja, bitte hier ergänzen. → Antwort Verlegeteam: keine Hausregel; üblich laut Ratgeberquellen: Bahnen Richtung Hauptfenster, Flor vom Fenster weg, alle gleich (Artikel 2)
 - **2.6** Bestätigen Sie die Regel „Naht nicht in die Hauptlaufzone, bevorzugt unter Möbel“? → beantwortet: keine Naht in Eingängen/Laufwegen (Verlegeanleitung Bahnenware, heinze.de-PDF)
-- **2.7** Setzen Sie im Türdurchgang zwischen zwei Räumen mit gleichem Teppichboden grundsätzlich ein Profil, oder wird dort auch Naht an Naht gearbeitet? → bleibt offen (Hauspraxis Türdurchgang)
+- **2.7** Setzen Sie im Türdurchgang zwischen zwei Räumen mit gleichem Teppichboden grundsätzlich ein Profil, oder wird dort auch Naht an Naht gearbeitet? → Antwort Verlegeteam: unterschiedlich, je nach Belag und Kunde (Artikel 4)
 - **2.8** Stimmt die Regel „Naht parallel zum Hauptlichteinfall, also auf das Fenster zulaufend“? Gibt es Ausnahmen je Machart? → beantwortet: Naht zur Hauptlichtquelle (Verlegeanleitung Bahnenware, heinze.de-PDF; selbst.de)
-- **2.9** Gibt es eine Mindestbreite für angesetzte Streifen, die Sie empfehlen (z. B. nicht unter 50 cm)? → bleibt offen (keine belastbare Quelle)
+- **2.9** Gibt es eine Mindestbreite für angesetzte Streifen, die Sie empfehlen (z. B. nicht unter 50 cm)? → Antwort Verlegeteam: keine feste Mindestbreite, Streifen von 2–3 cm aber kaum machbar (Artikel 2)
 - **2.10** Wie viele Zentimeter Überlappung je Naht soll der Kunde zusätzlich einplanen? → beantwortet wie 1.6
 - **2.11** Führt der Shop gemusterte Rollenware mit Rapport? Falls ja: Wo steht der Rapport, und wie wird der Mehrbedarf berechnet? Falls nein, Satz streichen. → beantwortet aus Shopdaten: alle 30 Treffer „rapportfrei“, kein Rapport-Mehrbedarf; Satz entfällt
 
@@ -78,7 +78,7 @@ Entwurfstexte mit den Marken liegen in der Git-Historie dieses Ordners.
 
 - **V.1** Übliche Größenordnung → bewusst kein Pauschalwert, Artikel rät zum Rechnen mit eigenen Maßen
 - **V.2** Überlappung je Naht → beantwortet wie 1.6
-- **V.3** Reststücke mitliefern → bleibt offen (Shop-Ablauf), nicht erwähnt
+- **V.3** Reststücke mitliefern → Antwort Verlegeteam: nein, keine Reststücke (Verschnitt-Artikel)
 
 ### 3. Welcher Teppichboden passt zu welchem Raum?
 
