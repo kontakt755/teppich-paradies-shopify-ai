@@ -10,11 +10,13 @@
     Klebevinyl, Vinyl von der Rolle). Die Kurztexte stehen woertlich so auf der
     Vinyl-Kategorieseite (templates/collection.vinylboden.json, Kategoriekarten),
     damit Menue und Seite dasselbe sagen. Ein Kurztext in der Bildkachel geht vor.
-  - Nach Optik: Unterpunkte mit Optik-Filter (Holz-, Steindekore) plus Fischgraet.
-    Fischgraet hat weder Kollektion noch Filter; die Shopsuche nach "Fischgraet"
-    lieferte am 2026-09-11 genau die 24 Fischgraet-Vinylprodukte (12 Klebe, 10 Klick,
-    2 Rolle) und sonst nichts. Eine echte Kollektion waere sauberer, ist aber eine
-    storeweite Datenaenderung und braucht eine Freigabe.
+  - Nach Optik: Unterpunkte mit Optik-Filter (Holz-, Steindekore) plus Fischgraet
+    (Kollektion vinylboden-fischgraet, seit 2026-10 veroeffentlicht; sonst Shopsuche).
+  - Art und Optik (Inhaber 2026-10-02): unter jeder Verlegeart dieselben Optiken als
+    kleine Chips, z. B. "Klebevinyl -> Fischgraet". Holz/Stein = Kollektion der
+    Verlegeart mit dem Optik-Filter aus dem Menuepunkt; Fischgraet = Fischgraet-
+    Kollektion mit dem Filter custom.arten der Verlegeart (Zuordnung unten,
+    2026-10-02 gegen die Kollektion geprueft: 10 Klick, 12 Klebe, 2 Rolle).
   - Zubehoer fuer die Verlegung: bestehende Kollektionen, nur solange sie Produkte
     haben. Bewusst ohne "passend zu Vinyl" - die Produkte tragen keine solche Angabe.
 
@@ -43,6 +45,8 @@
 
   assign tp_vn_b_handles = 'vinylboden-klickvinyl|vinylboden-klebevinyl|vinylboden-vinyl-von-der-rolle' | split: '|'
   assign tp_vn_b_texts = 'Einfach einklicken. Sofort begehbar.|Extra flach. Dauerhaft verklebt.|Große Flächen. Weniger Fugen.' | split: '|'
+  # Metaobjekt "Art" je Verlegeart - Filterwert custom.arten der Fischgraet-Kollektion.
+  assign tp_vn_b_arten = '1720951472462|1720951570766|1724391686478' | split: '|'
 
   assign tp_vn_z_handles = 'bodenleisten|zubehoer-verlegeunterlagen|zubehoer-kleber-fixierung|zubehoer-profile' | split: '|'
   assign tp_vn_z_labels = 'Sockelleisten|Verlege- & Dämmunterlagen|Kleber & Fixierung|Profile' | split: '|'
@@ -66,6 +70,28 @@
   {%- endfor -%}
   <li><a class="tp-nav-chip" href="{{ tp_vn_fg_url }}">Fischgrät</a></li>
 {%- endcapture -%}
+
+{%- comment -%} Optik-Chips je Verlegeart: tp_vn_art_optik[handle] nicht moeglich, deshalb
+  ein String je Verlegeart, getrennt durch @@, in der Reihenfolge von tp_vn_b_handles. {%- endcomment -%}
+{%- capture tp_vn_art_chips -%}
+  {%- for h in tp_vn_b_handles -%}
+    {%- assign a = collections[h] -%}
+    {%- if a.all_products_count > 0 -%}
+      {%- for o in parent_link.links -%}
+        {%- if o.url contains 'custom.optik' -%}
+          {%- assign o_q = o.url | split: '?' | last -%}
+          {%- comment -%} Kurz ("Holz", "Stein"), damit die Chips in eine Zeile passen. {%- endcomment -%}
+          <li><a class="tp-nav-chip tp-nav-chip--klein" href="{{ a.url }}?{{ o_q }}" aria-label="{{ a.title | escape }}: {{ o.title | remove_first: 'Alle ' | escape }}">{{ o.title | remove_first: 'Alle ' | remove: 'dekore' | remove: 'dekor' | escape }}</a></li>
+        {%- endif -%}
+      {%- endfor -%}
+      {%- if tp_vn_fg.all_products_count > 0 -%}
+        <li><a class="tp-nav-chip tp-nav-chip--klein" href="{{ tp_vn_fg.url }}?filter.p.m.custom.arten=gid%3A%2F%2Fshopify%2FMetaobject%2F{{ tp_vn_b_arten[forloop.index0] }}">Fischgrät</a></li>
+      {%- endif -%}
+    {%- endif -%}
+    {%- unless forloop.last -%}@@{%- endunless -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- assign tp_vn_art_chips = tp_vn_art_chips | split: '@@' -%}
 
 {%- capture tp_vn_zub -%}
   {%- for h in tp_vn_z_handles -%}
@@ -118,6 +144,21 @@
         endcapture
       -%}
       {%- render 'tp-drawer-zeile', url: c.url, title: c_title, sub: c_sub, count: c.object.all_products_count, image_html: c_img, current: c.active -%}
+      {%- liquid
+        assign c_chips = ''
+        for h in tp_vn_b_handles
+          if h == c.object.handle
+            assign c_chips = tp_vn_art_chips[forloop.index0] | strip
+          endif
+        endfor
+      -%}
+      {%- if c_chips != blank -%}
+        <li class="tp-dn-list__item tp-dn-art-optik">
+          <ul class="tp-nav-chips tp-nav-chips--art list-unstyled" role="list" aria-label="{{ c.title | escape }} nach Optik">
+            {{- c_chips -}}
+          </ul>
+        </li>
+      {%- endif -%}
     {%- endfor -%}
   </ul>
 
@@ -166,6 +207,21 @@
       {%- endfor -%}
     </ul>
     <div class="tp-vnav__aside">
+      <div class="tp-vnav__group">
+        <p class="tp-nav-group" id="tp-vnav-art-optik">Nach Art und Optik</p>
+        <dl class="tp-vnav__art-optik">
+          {%- for h in tp_vn_b_handles -%}
+            {%- assign a = collections[h] -%}
+            {%- assign a_chips = tp_vn_art_chips[forloop.index0] | strip -%}
+            {%- if a.all_products_count > 0 and a_chips != blank -%}
+              <div class="tp-vnav__art-zeile">
+                <dt>{{ a.title | remove_first: 'Vinylboden - ' | remove_first: 'Vinylboden – ' | escape }}</dt>
+                <dd><ul class="tp-nav-chips tp-nav-chips--art list-unstyled" role="list">{{- a_chips -}}</ul></dd>
+              </div>
+            {%- endif -%}
+          {%- endfor -%}
+        </dl>
+      </div>
       <div class="tp-vnav__group">
         <p class="tp-nav-group" id="tp-vnav-optik">Nach Optik</p>
         <ul class="tp-nav-chips list-unstyled" role="list" aria-labelledby="tp-vnav-optik">

@@ -694,3 +694,26 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
   color: inherit;
   text-decoration: none;
 }
+
+/* Art und Optik (Inhaber 2026-10-02): kleine Optik-Chips je Verlegeart */
+.tp-nav-chip--klein {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+.menu-drawer .tp-dn-art-optik {
+  margin: -4px 0 6px;
+}
+.menu-drawer .tp-nav-chips--art {
+  gap: 6px;
+  padding: 0 8px 0 74px; /* buendig mit dem Zeilentext (Bild 52px + Abstand 14px + Rand 8px) */
+}
+.menu-drawer .tp-nav-chips--art .tp-nav-chip {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+.tp-vnav__art-optik { margin: 0; display: grid; gap: 8px; }
+.tp-vnav__art-zeile { display: grid; gap: 4px; }
+.tp-vnav__art-zeile dt { font-size: 13px; font-weight: 600; }
+.tp-vnav__art-zeile dd { margin: 0; }

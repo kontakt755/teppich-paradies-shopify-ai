@@ -25,8 +25,11 @@
   {% assign tp_card_title_display = closest.product.title | split: ' – ' | first | split: ' Teppichboden' | first %}
   {%- liquid
     # C1: Vinyl-Dekore als Zeile "Linie · Verlegeart" plus grosser Dekorname,
-    # z. B. "Lyon Eiche Mandel Fischgraet" -> "Lyon · Fischgraet" / "Eiche Mandel".
-    # Nur bei Produkttyp mit "vinyl": dort ist das erste Wort belegt die Linie.
+    # z. B. "Lyon Eiche Mandel Fischgraet" -> "Lyon · Klickvinyl" / "Eiche
+    # Mandel Fischgraet". Oben steht immer die Verlegeart (Produkttyp); ein
+    # Muster wie Fischgraet oder Chevron bleibt im Dekornamen (Inhaber
+    # 2026-10-02). Nur bei Produkttyp mit "vinyl": dort ist das erste Wort
+    # belegt die Linie.
     assign tp_ct_typ = closest.product.type | downcase
     assign tp_ct_linie = ''
     assign tp_ct_woerter = tp_card_title_display | split: ' '
@@ -35,11 +38,7 @@
       assign tp_ct_art = closest.product.type
       assign tp_ct_dekor = ''
       for tp_ct_w in tp_ct_woerter offset: 1
-        if tp_ct_w == 'Fischgrät' or tp_ct_w == 'Chevron' or tp_ct_w == 'Landhausdiele'
-          assign tp_ct_art = tp_ct_w
-        else
-          assign tp_ct_dekor = tp_ct_dekor | append: ' ' | append: tp_ct_w
-        endif
+        assign tp_ct_dekor = tp_ct_dekor | append: ' ' | append: tp_ct_w
       endfor
       assign tp_ct_dekor = tp_ct_dekor | strip
       if tp_ct_dekor != blank
