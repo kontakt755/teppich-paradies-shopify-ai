@@ -83,7 +83,7 @@
         "rollenware_stufen": true,
         "hinweis": "",
         "cta_zeigen": false,
-        "cta_link": "/pages/kontakt",
+        "cta_link": "/pages/liefer-verlegeservice#tp-anfrage",
         "cta2_link": "https://wa.me/4917657931322",
         "versand_link": "/collections/all",
         "vertrauen": "",
@@ -94,7 +94,7 @@
     "tp_verlegeservice_kontakt": {
       "type": "tp-verlegeservice-kontakt",
       "settings": {
-        "kontakt_link": "/pages/kontakt",
+        "kontakt_link": "/pages/liefer-verlegeservice#tp-anfrage",
         "vertrauen": "",
         "referenzen_titel": "Echte Arbeiten aus der Region"
       },
@@ -142,6 +142,55 @@
     "google_bewertungen": {
       "type": "google",
       "settings": {}
+    },
+    "tp_anfrage": {
+      "type": "tp-start-kontakt",
+      "settings": {
+        "heading": "Verlegung anfragen",
+        "text": "Rufen Sie an, schicken Sie Fotos per WhatsApp oder schreiben Sie uns – wir melden uns am nächsten Werktag und vereinbaren das kostenlose Aufmaß.",
+        "telefon": "03301 573 37 20",
+        "zeiten": "Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr.",
+        "whatsapp": "https://wa.me/4917657931322",
+        "anliegen": "Boden verlegen lassen",
+        "betreff": "Anfrage Liefer- und Verlegeservice",
+        "form_text": "Für Aufmaß, Lieferung und Verlegung. Wir melden uns am nächsten Werktag.",
+        "nachricht_label": "Nachricht (Räume, ungefähre Fläche, Wunschboden)",
+        "wa_text": "Fotos vom Raum und vom Untergrund schicken – wir antworten in den Öffnungszeiten.",
+        "foto_hinweis": "Fotos vom Raum oder einen Grundriss schicken Sie uns am einfachsten per WhatsApp."
+      }
+    },
+    "tp_bewertung": {
+      "type": "tp-start-trust",
+      "settings": {
+        "rating_wert": "",
+        "rating_text": "",
+        "rating_link": ""
+      },
+      "blocks": {
+        "aufmass": {
+          "type": "aussage",
+          "settings": {
+            "text": "Kostenloses Aufmaß vor Ort"
+          }
+        },
+        "team": {
+          "type": "aussage",
+          "settings": {
+            "text": "Eigenes Verlegeteam aus Oranienburg"
+          }
+        },
+        "gebiet": {
+          "type": "aussage",
+          "settings": {
+            "text": "Eigener Verlegeservice bis 50 km"
+          }
+        }
+      },
+      "block_order": [
+        "aufmass",
+        "team",
+        "gebiet"
+      ]
     }
   },
   "order": [
@@ -149,6 +198,8 @@
     "tp_verlegeservice",
     "tp_verlegegebiet",
     "tp_verlegeservice_kontakt",
+    "tp_bewertung",
+    "tp_anfrage",
     "google_bewertungen"
   ]
 }

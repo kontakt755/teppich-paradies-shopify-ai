@@ -71,8 +71,15 @@
     {%- endcomment -%}
     <p class="tp-lex-inline" data-tp-bw-lexikon="{{ lx_e_eintrag.system.handle }}">
       <span class="tp-lex-inline__text">{{ lx_e_eintrag.kurz.value | strip_newlines | strip }}</span>
-      {%- if lx_e_verlinken -%}
-        <a class="tp-lex-inline__link" href="/pages/bodenlexikon#{{ lx_e_eintrag.system.handle }}">Im Bodenlexikon nachlesen</a>
+      {%- comment -%}
+        Link nur, wenn die Lexikonseite (Handle bodenlexikon, Template
+        page.bodenwissen-lexikon) veroeffentlicht ist. pages[] liefert
+        unveroeffentlichte Seiten nicht - sonst entsteht ein 404-Link auf
+        jeder Produktseite (Audit 01.10.2026, Punkt 2).
+      {%- endcomment -%}
+      {%- assign lx_e_lexikonseite = pages['bodenlexikon'] -%}
+      {%- if lx_e_verlinken and lx_e_lexikonseite != blank and lx_e_lexikonseite.url != blank -%}
+        <a class="tp-lex-inline__link" href="{{ lx_e_lexikonseite.url }}#{{ lx_e_eintrag.system.handle }}">Im Bodenlexikon nachlesen</a>
       {%- endif -%}
     </p>
 

@@ -266,7 +266,30 @@ test('weiter als das Liefergebiet: Kontaktwege statt Absage, und zwar hinter der
   for (const weg of ['tel:', 'mailto:', 'https://wa.me/', 'kontakt_link', 'maps/dir/?api=1']) {
     assert.ok(code.includes(weg), `Kontaktweg fehlt: ${weg}`);
   }
-  assert.equal(seite.sections.tp_verlegeservice_kontakt.settings.kontakt_link, '/pages/kontakt');
+  // Audit 01.10.2026, Punkt 10: der Formular-Weg bleibt auf der Seite - das
+  // Anfrageformular (tp-start-kontakt, Anker #tp-anfrage) steht hier selbst.
+  assert.equal(seite.sections.tp_verlegeservice_kontakt.settings.kontakt_link,
+    '/pages/liefer-verlegeservice#tp-anfrage');
+  const formulare = Object.values(seite.sections).filter((s) => s.type === 'tp-start-kontakt' && !s.disabled);
+  assert.equal(formulare.length, 1, 'Genau ein Anfrageformular auf der Serviceseite.');
+  assert.equal(formulare[0].settings.anliegen, 'Boden verlegen lassen');
+});
+
+test('Serviceseiten: Anfrage-Buttons fuehren zum Formular der eigenen Seite', () => {
+  const seiten = {
+    'page.verlegeservice': 'liefer-verlegeservice',
+    'page.teppichboden-verlegen': 'teppichboden-verlegen-lassen',
+    'page.vinylboden-verlegen': 'vinylboden-verlegen',
+    'page.treppenverlegung': 'treppenverlegung',
+  };
+  for (const [name, handle] of Object.entries(seiten)) {
+    const seite = vorlage(name);
+    const formulare = Object.values(seite.sections).filter((s) => s.type === 'tp-start-kontakt' && !s.disabled);
+    assert.equal(formulare.length, 1, `${name}: genau ein Anfrageformular`);
+    const text = JSON.stringify(seite);
+    assert.doesNotMatch(text, /"\/pages\/kontakt"/, `${name}: Button zeigt noch auf /pages/kontakt`);
+    assert.match(text, new RegExp(`/pages/${handle}#tp-anfrage`), `${name}: kein Sprung auf #tp-anfrage`);
+  }
 });
 
 test('Kontaktdaten kommen aus dem Shop, nicht erfunden', () => {

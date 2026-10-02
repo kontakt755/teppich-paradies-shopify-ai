@@ -131,7 +131,17 @@ Final CTA Block – wiederverwendbare Section (für Theme Editor)
     <p>{{ section.settings.text }}</p>
 
     <div class="final-cta-buttons">
-      <a href="{{ section.settings.primary_link }}" class="final-btn-primary">
+      {%- comment -%}
+        Zeigt der Button zur Kontaktseite und hat diese Seite ein eigenes
+        Anfrageformular (snippets/tp-anfrage-ziel), springt er dorthin.
+      {%- endcomment -%}
+      {%- assign tp_fc_ziel = section.settings.primary_link -%}
+      {%- if tp_fc_ziel contains 'pages/kontakt' -%}
+        {%- capture tp_fc_eigenes -%}{% render 'tp-anfrage-ziel' %}{%- endcapture -%}
+        {%- assign tp_fc_eigenes = tp_fc_eigenes | strip -%}
+        {%- if tp_fc_eigenes != blank -%}{%- assign tp_fc_ziel = tp_fc_eigenes -%}{%- endif -%}
+      {%- endif -%}
+      <a href="{{ tp_fc_ziel }}" class="final-btn-primary">
         {{ section.settings.primary_label }}
       </a>
 

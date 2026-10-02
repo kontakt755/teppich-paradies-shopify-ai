@@ -258,7 +258,7 @@
       {%- else -%}
         <strong>Versandkostenfrei in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert.</strong>
       {%- endif %}
-      Rollen und große Pakete bringt die Spedition bis vor die Haustür, wir rufen vorher an.
+      Rollen und große Pakete liefert die Spedition frei Bordsteinkante, wir rufen vorher an.
     </p>
   {%- endif -%}
 
@@ -270,9 +270,14 @@
   {%- endcomment -%}
   {%- if settings.tp_vs_schwelle != blank and settings.tp_vs_radius_basis != blank -%}
     {%- assign tp_cart_vs_ok = false -%}
+    {%- comment -%}
+      Aktionsware ist vom kostenlosen Vor-Ort-Service ausgenommen (Inhaber
+      2026-09-20, snippets/tp-aktion-aktiv.liquid) - sie zaehlt hier nicht mit.
+    {%- endcomment -%}
     {%- for tp_cart_vs_item in cart.items -%}
       {%- capture tp_cart_vs_ja -%}{% render 'tp-vs-berechtigt', product: tp_cart_vs_item.product %}{%- endcapture -%}
-      {%- if tp_cart_vs_ja contains 'ja' -%}
+      {%- capture tp_cart_vs_aktion -%}{% render 'tp-aktion-aktiv', product: tp_cart_vs_item.product %}{%- endcapture -%}
+      {%- if tp_cart_vs_ja contains 'ja' and tp_cart_vs_aktion == blank -%}
         {%- assign tp_cart_vs_ok = true -%}
         {%- break -%}
       {%- endif -%}
@@ -282,13 +287,16 @@
         {%- comment -%}
           Unter der Schwelle nennt die Zeile den Rest bis zur kostenlosen
           Lieferung, darueber bestaetigt sie sie - wie der Versandhinweis oben.
+          Immer mit Bedingung (Umkreis um Oranienburg, Pruefung der Adresse),
+          nie als pauschales Versprechen (Audit 01.10.2026, Punkt 8); gleicher
+          Wortlaut wie auf der Versandseite (sections/tp-shipping-delivery).
         {%- endcomment -%}
         {%- assign tp_cart_vs_schwelle_cent = settings.tp_vs_schwelle | times: 100 -%}
         {%- if cart.total_price >= tp_cart_vs_schwelle_cent -%}
-          <strong>Kostenlose Lieferung bis {{ settings.tp_vs_radius_basis }}&nbsp;km</strong>
+          <strong>Kostenlose Anlieferung durch unser Team</strong> im Umkreis von {{ settings.tp_vs_radius_basis }}&nbsp;km um Oranienburg möglich, nach Prüfung der Lieferadresse.
         {%- else -%}
           {%- assign tp_cart_vs_rest = tp_cart_vs_schwelle_cent | minus: cart.total_price -%}
-          <strong>Noch {{ tp_cart_vs_rest | money }} bis zur kostenlosen Lieferung</strong> bis {{ settings.tp_vs_radius_basis }}&nbsp;km (ab {{ settings.tp_vs_schwelle }}&nbsp;€ Warenwert)
+          <strong>Noch {{ tp_cart_vs_rest | money }} bis zur kostenlosen Anlieferung durch unser Team</strong> im Umkreis von {{ settings.tp_vs_radius_basis }}&nbsp;km um Oranienburg (ab {{ settings.tp_vs_schwelle }}&nbsp;€ Warenwert, nach Prüfung der Lieferadresse).
         {%- endif %}
       </p>
     {%- endif -%}
