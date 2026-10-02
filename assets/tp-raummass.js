@@ -107,6 +107,46 @@
     });
   }
 
+  // Raummass lohnt nur, wenn es spuerbar schmaler ist als eine Rolle, die den
+  // Raum ohnehin abdeckt. Gibt der Kunde (fast) die volle Rollenbreite an
+  // (400 x 500 oder 395 x 500 bei 400er-Rolle), ist Raummass sinnlos und
+  // faellt weg (Inhaber 2026-10-02). Toleranz: ZUGABE_CM.
+  function raumSinnvoll(k, z, rollen) {
+    if (!k || k.art !== 'raum') return true;
+    var quer = k.breite - z;
+    return !(rollen || []).some(function (r) { return r >= quer && r <= k.breite + ZUGABE_CM; });
+  }
+  function nurSinnvoll(liste, z, rollen) {
+    return liste.filter(function (k) { return raumSinnvoll(k, z, rollen); });
+  }
+
+  // Dasselbe Meterware-Stueck aus schmaleren Rollen: n Bahnen nebeneinander,
+  // ohne mehr Material als das eine Stueck. Bestellt wird die schmale Rolle
+  // in n-facher Laenge. Leichter zu tragen, dafuer mit Naht.
+  function teilung(k, b, l, rollen, preis) {
+    if (!k || k.art !== 'meter') return null;
+    var quer = k.gedreht ? l : b;
+    var schmal = (rollen || []).filter(function (w) { return w < k.breite; }).sort(function (x, y) { return y - x; });
+    for (var i = 0; i < schmal.length; i++) {
+      var w = schmal[i];
+      var n = Math.ceil(quer / w);
+      if (n >= 2 && n * w <= k.breite) {
+        var t = { art: 'meter', breite: w, laenge: n * k.laenge, bahnen: n, bahnLaenge: k.laenge,
+          gedreht: k.gedreht, m2: m2(w, n * k.laenge) };
+        t.preis = typeof preis === 'function' ? preis('meter', t.breite, t.laenge) : 0;
+        if (typeof preis === 'function' && !(t.preis > 0)) continue;
+        return t;
+      }
+    }
+    return null;
+  }
+
+  // Dielenrichtung, solange der Kunde nichts waehlt: entlang der laengeren
+  // Raumseite - dann liegt die kuerzere quer und es reicht am ehesten ein Stueck.
+  function autoRichtung(b, l) {
+    return l >= b ? 'laenge' : 'breite';
+  }
+
   function gleich(x, y) {
     return !!(x && y && x.art === y.art && x.breite === y.breite && x.laenge === y.laenge);
   }
@@ -137,11 +177,11 @@
     }
 
     var mit = bewerte(meterKandidaten(b, l, rollen, z).concat(
-      eingabe.raum ? [raummass(b, l, eingabe.maxRaum, z)] : []), preis);
+      nurSinnvoll(eingabe.raum ? [raummass(b, l, eingabe.maxRaum, z)] : [], z, rollen)), preis);
     var empfohlen = mit[0] || null;
     var alternative = empfohlen ? mit.filter(function (k) { return k.art !== empfohlen.art; })[0] || null : null;
 
-    var ohne = bewerte(eingabe.raum ? [raummass(b, l, eingabe.maxRaum, 0)] : [], preis)[0] ||
+    var ohne = bewerte(nurSinnvoll(eingabe.raum ? [raummass(b, l, eingabe.maxRaum, 0)] : [], 0, rollen), preis)[0] ||
       bewerte(meterKandidaten(b, l, rollen, 0), preis)[0] || null;
     var genau = (gleich(ohne, empfohlen) || gleich(ohne, alternative)) ? null : ohne;
 
@@ -150,6 +190,7 @@
       empfohlen: empfohlen,
       alternative: alternative,
       genau: genau,
+      teilung: teilung(empfohlen, b, l, rollen, preis),
       naht: !empfohlen && !ohne,
       raumM2: m2(b, l)
     };
@@ -157,7 +198,7 @@
 
   function inRichtung(b, l, rollen, z, preis, eingabe, gedreht) {
     var meter = meterKandidaten(b, l, rollen, z).filter(function (k) { return k.gedreht === gedreht; });
-    var raum = eingabe.raum ? [raummass(b, l, eingabe.maxRaum, z, gedreht)] : [];
+    var raum = nurSinnvoll(eingabe.raum ? [raummass(b, l, eingabe.maxRaum, z, gedreht)] : [], z, rollen);
     return bewerte(meter.concat(raum), preis);
   }
 
@@ -175,6 +216,7 @@
       alternative: null,
       genau: genau,
       andereRichtung: andere,
+      teilung: teilung(empfohlen || andere, b, l, rollen, preis),
       richtung: eingabe.richtung,
       naht: !empfohlen,
       raumM2: m2(b, l)
@@ -206,6 +248,7 @@
     ZUGABE_CM: ZUGABE_CM,
     leseCm: leseCm,
     rolleVorschlag: rolleVorschlag,
+    autoRichtung: autoRichtung,
     summeRaeume: summeRaeume,
     fmtZahl: fmtZahl
   };
@@ -233,15 +276,21 @@ if (typeof document !== 'undefined') (function () {
     var fehler = box.querySelector('[data-rm-fehler]');
     // Dielenoptik: Laufrichtung waehlbar (snippet rendert sie nur dann).
     var richtungBox = box.querySelector('[data-rm-richtung]');
-    function richtung() {
-      if (!richtungBox) return null;
-      var c = richtungBox.querySelector('input:checked');
-      return c ? c.value : 'laenge';
-    }
+    // Bis der Kunde selbst waehlt, laufen die Dielen entlang der laengeren
+    // Raumseite (RM.autoRichtung) - die kuerzere liegt quer, ein Stueck reicht.
+    var richtungGewaehlt = false;
+    var richtungAuto = box.querySelector('[data-rm-richtung-auto]');
     function setzeRichtung(wert) {
       if (!richtungBox) return;
       var r = richtungBox.querySelector('input[value="' + wert + '"]');
       if (r) r.checked = true;
+    }
+    function richtung(b, l) {
+      if (!richtungBox) return null;
+      if (!richtungGewaehlt) setzeRichtung(RM.autoRichtung(b, l));
+      if (richtungAuto) richtungAuto.hidden = richtungGewaehlt;
+      var c = richtungBox.querySelector('input:checked');
+      return c ? c.value : 'laenge';
     }
     function richtungVon(v) { return v.gedreht ? 'Raumbreite' : 'Raumlänge'; }
 
@@ -258,8 +307,11 @@ if (typeof document !== 'undefined') (function () {
     }
     function skizze(b, l, v) {
       skizzeNr++;
-      var bh = v.gedreht ? v.laenge : v.breite;   // Bahn waagerecht
-      var bv = v.gedreht ? v.breite : v.laenge;   // Bahn senkrecht
+      var n = v.bahnen || 1;                       // Bahnen nebeneinander
+      var entlang = v.bahnLaenge || v.laenge;      // Schnittlaenge je Bahn
+      var quer = n * v.breite;
+      var bh = v.gedreht ? entlang : quer;         // Bahn waagerecht
+      var bv = v.gedreht ? quer : entlang;         // Bahn senkrecht
       var W = 300;
       var s = Math.min(230 / Math.max(b, bh), 170 / Math.max(l, bv));
       var H = Math.round(Math.max(l, bv) * s + 50);
@@ -268,7 +320,7 @@ if (typeof document !== 'undefined') (function () {
       var rx = cx - b * s / 2, ry = cy - l * s / 2, rw = b * s, rh = l * s;
       var bx = cx - bh * s / 2, by = cy - bv * s / 2, bw = bh * s, bhh = bv * s;
       var svg = el(document.createDocumentFragment(), 'svg', { 'class': 'tp-rm__skizze', viewBox: '0 0 ' + W + ' ' + H, role: 'img',
-        'aria-label': 'Skizze: Raum ' + b + ' × ' + l + ' cm, Bahn ' + v.breite + ' × ' + v.laenge + ' cm, Dielen entlang der ' + richtungVon(v) });
+        'aria-label': 'Skizze: Raum ' + b + ' × ' + l + ' cm, ' + (n > 1 ? n + ' Bahnen à ' + v.breite + ' × ' + entlang : 'Bahn ' + v.breite + ' × ' + entlang) + ' cm, Dielen entlang der ' + richtungVon(v) });
       var clipId = 'tp-rm-clip-' + skizzeNr;
       var defs = el(svg, 'defs', {});
       el(el(defs, 'clipPath', { id: clipId }), 'rect', { x: bx, y: by, width: bw, height: bhh });
@@ -295,16 +347,27 @@ if (typeof document !== 'undefined') (function () {
       el(svg, 'path', { d: 'M' + bx + ' ' + by + 'h' + bw + 'v' + bhh + 'h' + (-bw) + 'z M' + rx + ' ' + ry + 'v' + rh + 'h' + rw + 'v' + (-rh) + 'z',
         'fill-rule': 'evenodd', style: 'fill: var(--color-background, #fff); fill-opacity: .6' });
       el(svg, 'rect', { x: bx, y: by, width: bw, height: bhh, fill: 'none', stroke: '#1d6b47', 'stroke-width': 1.5, 'stroke-dasharray': '5 3' });
+      for (i = 1; i < n; i++) {
+        var naht = i * v.breite * s;
+        if (v.gedreht) el(svg, 'line', { x1: bx, y1: by + naht, x2: bx + bw, y2: by + naht, stroke: '#1d6b47', 'stroke-width': 2.5 });
+        else el(svg, 'line', { x1: bx + naht, y1: by, x2: bx + naht, y2: by + bhh, stroke: '#1d6b47', 'stroke-width': 2.5 });
+      }
       el(svg, 'rect', { x: rx, y: ry, width: rw, height: rh, fill: 'none', stroke: 'currentColor', 'stroke-width': 2 });
       var halo = 'paint-order: stroke; stroke: var(--color-background, #fff); stroke-width: 4px; stroke-linejoin: round';
-      el(svg, 'text', { x: cx, y: cy + 4, 'font-size': 12, 'font-weight': 700, fill: '#1d6b47', 'text-anchor': 'middle', style: halo },
+      // Bei mehreren Bahnen sitzt die Mitte auf der Naht - dann mittig in Bahn 1.
+      var tx = cx, ty = cy;
+      if (n > 1) {
+        if (v.gedreht) ty = by + v.breite * s / 2; else tx = bx + v.breite * s / 2;
+      }
+      el(svg, 'text', { x: tx, y: ty + 4, 'font-size': 12, 'font-weight': 700, fill: '#1d6b47', 'text-anchor': 'middle', style: halo },
         (senkrecht ? '↕' : '↔') + ' Laufrichtung');
       el(svg, 'text', { x: rx + rw / 2, y: Math.min(ry, by) - 6, 'font-size': 11, fill: 'currentColor', 'text-anchor': 'middle' }, 'Raumbreite ' + b + ' cm');
       var lx = Math.min(rx, bx) - 8;
       el(svg, 'text', { x: lx, y: ry + rh / 2, 'font-size': 11, fill: 'currentColor', 'text-anchor': 'middle',
         transform: 'rotate(-90 ' + lx + ' ' + (ry + rh / 2) + ')' }, 'Raumlänge ' + l + ' cm');
       el(svg, 'text', { x: cx, y: H - 6, 'font-size': 11, fill: 'currentColor', 'text-anchor': 'middle' },
-        'gestrichelt: Bahn ' + v.breite + ' × ' + v.laenge + ' cm, Überstand hell');
+        n > 1 ? n + ' Bahnen à ' + v.breite + ' × ' + entlang + ' cm, Naht grün, Überstand hell'
+          : 'gestrichelt: Bahn ' + v.breite + ' × ' + entlang + ' cm, Überstand hell');
       return svg;
     }
 
@@ -326,7 +389,7 @@ if (typeof document !== 'undefined') (function () {
     }
 
     function uebernehmen(v) {
-      if (richtungBox) setzeRichtung(v.gedreht ? 'breite' : 'laenge');
+      if (richtungBox) { setzeRichtung(v.gedreht ? 'breite' : 'laenge'); richtungGewaehlt = true; }
       var art = rechner.querySelector('input[name^="tp-rwc-art-"][value="' + v.art + '"]');
       if (art && !art.disabled) { art.checked = true; feuer(art, 'change'); }
       if (v.art === 'meter') {
@@ -386,6 +449,20 @@ if (typeof document !== 'undefined') (function () {
 
     var mehrOffen = false;
 
+    // Bahnen aus schmaleren Rollen (z. B. 2 x 200 statt 1 x 400): fuer Kunden,
+    // die eine breite Rolle nicht ins Haus oder die Treppe hoch bekommen.
+    function teilungsZeile(t, raum) {
+      var meter = function (cm) { return RM.fmtZahl(cm / 100, 2) + ' m'; };
+      return zeile('In ' + t.bahnen + ' Bahnen à ' + t.breite + ' cm – leichter zu tragen', t,
+        'Sie bekommen eine ' + meter(t.breite) + ' breite Rolle mit ' + meter(t.laenge) + ' Länge, die in ' + t.bahnen +
+        ' Bahnen à ' + meter(t.bahnLaenge) + ' nebeneinander verlegt wird. Dazwischen entsteht eine Naht' +
+        (richtungBox ? '; für den Musteranschluss kann etwas Mehrlänge nötig sein – fragen Sie uns gern.' : '.'),
+        'Diese Variante übernehmen', false, raum);
+    }
+    function teilungsHinweis(t) {
+      return t ? ' Lieber schmalere Rollen? Auch als ' + t.bahnen + ' Bahnen à ' + t.breite + ' cm möglich – unter „Andere Möglichkeiten“.' : '';
+    }
+
     function mehrBox(weitere) {
       if (!weitere.length) return;
       var mehr = document.createElement('details');
@@ -424,14 +501,16 @@ if (typeof document !== 'undefined') (function () {
         aus.appendChild(p);
         if (andere) {
           aus.appendChild(zeile('Ohne Naht – Dielen entlang der ' + richtungVon(andere), andere,
-            erklaerung(andere, z), 'Diese Richtung übernehmen', true, raum));
+            erklaerung(andere, z) + teilungsHinweis(v.teilung), 'Diese Richtung übernehmen', true, raum));
+          if (v.teilung) mehrBox([teilungsZeile(v.teilung, raum)]);
         }
         raumZeile(v);
         return;
       }
-      var warum = erklaerung(e, z);
+      var warum = erklaerung(e, z) + teilungsHinweis(v.teilung);
       aus.appendChild(zeile('Empfohlen – Dielen entlang der ' + gewuenscht, e, warum, 'Dieses Maß übernehmen', true, raum));
       var weitere = [];
+      if (v.teilung) weitere.push(teilungsZeile(v.teilung, raum));
       if (andere) {
         var diff = (andere.preis > 0 && e.preis > 0) ? e.preis - andere.preis : 0;
         var zusatz = diff >= 0.01 ? ' ' + euro(diff) + ' günstiger, aber das Muster läuft quer zu Ihrer Wahl.'
@@ -462,7 +541,7 @@ if (typeof document !== 'undefined') (function () {
       var v = RM.rolleVorschlag({
         breite: b.cm, laenge: l.cm, rollen: r, raum: raumMoeglich(), maxRaum: maxRaum(r),
         preis: typeof rechner.tpRwcPreis === 'function' ? rechner.tpRwcPreis : null,
-        richtung: richtung()
+        richtung: richtung(b.cm, l.cm)
       });
       if (v.richtung) { zeigeMitRichtung(v, b.cm, l.cm, r); return; }
       if (v.naht) {
@@ -480,6 +559,7 @@ if (typeof document !== 'undefined') (function () {
         if (alt && alt.preis > 0 && e.preis > 0 && alt.preis - e.preis >= 0.01) {
           warum += ' ' + euro(alt.preis - e.preis) + ' günstiger als ' + (alt.art === 'meter' ? 'Meterware' : 'Raummaß') + '.';
         }
+        warum += teilungsHinweis(v.teilung);
         aus.appendChild(zeile('Empfohlen – günstigster Weg', e, warum, 'Dieses Maß übernehmen', true));
       }
       // Nur die Empfehlung steht offen (Inhaber 2026-10-02: eine Entscheidung,
@@ -493,6 +573,7 @@ if (typeof document !== 'undefined') (function () {
         weitere.push(zeile(alt.art === 'raum' ? 'Raummaß' : 'Meterware', alt,
           altText + ' Mit ' + z + ' cm Zugabe.', 'Stattdessen übernehmen', false));
       }
+      if (v.teilung) weitere.push(teilungsZeile(v.teilung));
       if (v.genau) {
         weitere.push(zeile('Zentimetergenau – ohne Zugabe', v.genau,
           v.genau.art === 'meter'
@@ -520,7 +601,7 @@ if (typeof document !== 'undefined') (function () {
     }
 
     [bIn, lIn].forEach(function (f) { f.addEventListener('input', rechnen); });
-    if (richtungBox) richtungBox.addEventListener('change', function (e) { e.stopPropagation(); rechnen(); });
+    if (richtungBox) richtungBox.addEventListener('change', function (e) { e.stopPropagation(); richtungGewaehlt = true; rechnen(); });
     // Farbwechsel aendert Rollen und Raummass-Verfuegbarkeit.
     document.addEventListener('change', function (e) {
       if (e.target && e.target.name && e.target.name.indexOf('tp-rwc-') === 0) return;
