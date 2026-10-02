@@ -12,7 +12,7 @@
 
   @param {string} art - 'rolle' oder 'paket'
   @param {string} id - Kennung des umgebenden Blocks
-  @param {boolean} [muster] - Dielenoptik: Laufrichtung waehlen, Raumskizze
+  @param {boolean} [muster] - Dielenoptik: Laufrichtung per Bild waehlen
 {% enddoc %}
 <script src="{{ 'tp-raummass.js' | asset_url }}" defer></script>
 {%- if art == 'paket' -%}
@@ -52,7 +52,7 @@
   </template>
 </details>
 {%- else -%}
-<details class="tp-rm" data-tp-rm-rolle>
+<details class="tp-rm" data-tp-rm-rolle{% if muster %} data-rm-muster{% endif %}>
   <summary class="tp-rm__summary">
     <span class="tp-rm__summary-text">
       <span class="tp-rm__summary-titel">Raummaße eingeben</span>
@@ -79,18 +79,6 @@
         </div>
       </div>
     </div>
-    {%- if muster -%}
-    <fieldset class="tp-rm__richtung" data-rm-richtung>
-      <legend>Dielen sollen verlaufen</legend>
-      <div class="tp-rm__chips">
-        <input type="radio" id="tp-rm-ri-l-{{ id }}" name="tp-rm-ri-{{ id }}" value="laenge" checked>
-        <label for="tp-rm-ri-l-{{ id }}">↕ entlang der Raumlänge</label>
-        <input type="radio" id="tp-rm-ri-b-{{ id }}" name="tp-rm-ri-{{ id }}" value="breite">
-        <label for="tp-rm-ri-b-{{ id }}">↔ entlang der Raumbreite</label>
-      </div>
-      <p class="tp-rm__hilfe tp-rm__hilfe--auto" data-rm-richtung-auto>Vorschlag: entlang der längeren Raumseite – dann reicht meist ein Stück ohne Naht.</p>
-    </fieldset>
-    {%- endif -%}
     <p class="tp-rm__fehler" data-rm-fehler role="alert" hidden></p>
     <div class="tp-rm__ergebnis" data-rm-ergebnis aria-live="polite"></div>
   </div>
@@ -160,30 +148,33 @@
   }
   .tp-rm__titel { margin: 0; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
   .tp-rm__mass { margin: 2px 0; font-size: 16px; font-weight: 700; }
-  .tp-rm__richtung { margin: 12px 0 0; padding: 0; border: 0; min-width: 0; }
-  .tp-rm__richtung legend { padding: 0; margin-bottom: 6px; font-size: 13px; font-weight: 600; }
-  .tp-rm__chips { display: flex; flex-wrap: wrap; gap: 6px; }
-  .tp-rm__chips input { position: absolute; opacity: 0; pointer-events: none; }
-  .tp-rm__chips label {
-    display: inline-flex;
-    align-items: center;
-    min-height: 40px;
-    padding: 0 12px;
-    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.3);
-    border-radius: 999px;
-    font-size: 14px;
-    cursor: pointer;
-  }
-  .tp-rm__chips input:checked + label {
-    border-color: var(--tp-hauptaktion, var(--color-foreground, #111));
-    box-shadow: inset 0 0 0 1px var(--tp-hauptaktion, var(--color-foreground, #111));
-    font-weight: 600;
-  }
-  .tp-rm__chips input:focus-visible + label { outline: 2px solid currentColor; outline-offset: 2px; }
-  .tp-rm__hilfe--auto { margin: 6px 0 0; }
-  .tp-rm__hilfe--auto[hidden] { display: none; }
   .tp-rm__skizze { display: block; width: 100%; max-width: 340px; height: auto; margin: 8px 0 4px; color: var(--color-foreground, #222); }
   .tp-rm__hinweis { margin: 0; font-size: 13px; }
+  .tp-rm__frage { margin: 4px 0 0; font-size: 14px; font-weight: 700; }
+  .tp-rm__wahl { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tp-rm__wahlkarte {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 6px 10px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.25);
+    border-radius: var(--style-border-radius, 8px);
+    background: var(--color-background, #fff);
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+  .tp-rm__wahlkarte .tp-rm__skizze { margin: 0 0 4px; max-width: 140px; }
+  .tp-rm__wahlkarte.is-aktiv {
+    border-color: var(--tp-hauptaktion, var(--color-foreground, #111));
+    box-shadow: inset 0 0 0 2px var(--tp-hauptaktion, var(--color-foreground, #111));
+  }
+  .tp-rm__wahlkarte.is-aus { opacity: .45; cursor: not-allowed; }
+  .tp-rm__wahl-text { font-size: 14px; font-weight: 700; }
+  .tp-rm__wahl-preis { font-size: 13px; }
+  .tp-rm__teilung { margin: 0; font-size: 13px; }
+  .tp-rm__link { padding: 0; border: 0; background: none; font: inherit; font-weight: 600; color: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; min-height: 32px; }
   .tp-rm__mehr > summary {
     display: inline-flex;
     align-items: center;

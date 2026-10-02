@@ -274,23 +274,14 @@ if (typeof document !== 'undefined') (function () {
     var lIn = box.querySelector('[data-rm-laenge]');
     var aus = box.querySelector('[data-rm-ergebnis]');
     var fehler = box.querySelector('[data-rm-fehler]');
-    // Dielenoptik: Laufrichtung waehlbar (snippet rendert sie nur dann).
-    var richtungBox = box.querySelector('[data-rm-richtung]');
-    // Bis der Kunde selbst waehlt, laufen die Dielen entlang der laengeren
-    // Raumseite (RM.autoRichtung) - die kuerzere liegt quer, ein Stueck reicht.
-    var richtungGewaehlt = false;
-    var richtungAuto = box.querySelector('[data-rm-richtung-auto]');
-    function setzeRichtung(wert) {
-      if (!richtungBox) return;
-      var r = richtungBox.querySelector('input[value="' + wert + '"]');
-      if (r) r.checked = true;
-    }
+    // Dielenoptik (snippet setzt data-rm-muster): der Kunde waehlt die
+    // Laufrichtung ueber zwei kleine Bilder. Bis dahin gilt RM.autoRichtung -
+    // entlang der laengeren Seite, die kuerzere liegt quer, ein Stueck reicht.
+    var muster = box.hasAttribute('data-rm-muster');
+    var richtungWahl = null;
     function richtung(b, l) {
-      if (!richtungBox) return null;
-      if (!richtungGewaehlt) setzeRichtung(RM.autoRichtung(b, l));
-      if (richtungAuto) richtungAuto.hidden = richtungGewaehlt;
-      var c = richtungBox.querySelector('input:checked');
-      return c ? c.value : 'laenge';
+      if (!muster) return null;
+      return richtungWahl || RM.autoRichtung(b, l);
     }
     function richtungVon(v) { return v.gedreht ? 'Raumbreite' : 'Raumlänge'; }
 
@@ -305,18 +296,20 @@ if (typeof document !== 'undefined') (function () {
       parent.appendChild(n);
       return n;
     }
-    function skizze(b, l, v) {
+    // kompakt: kleines Auswahlbild ohne Beschriftung.
+    function skizze(b, l, v, kompakt) {
       skizzeNr++;
       var n = v.bahnen || 1;                       // Bahnen nebeneinander
       var entlang = v.bahnLaenge || v.laenge;      // Schnittlaenge je Bahn
       var quer = n * v.breite;
       var bh = v.gedreht ? entlang : quer;         // Bahn waagerecht
       var bv = v.gedreht ? quer : entlang;         // Bahn senkrecht
-      var W = 300;
-      var s = Math.min(230 / Math.max(b, bh), 170 / Math.max(l, bv));
-      var H = Math.round(Math.max(l, bv) * s + 50);
-      var cx = 40 + 115;
-      var cy = 22 + Math.max(l, bv) * s / 2;
+      var W = kompakt ? 140 : 300;
+      var s = kompakt ? Math.min(124 / Math.max(b, bh), 124 / Math.max(l, bv))
+        : Math.min(230 / Math.max(b, bh), 170 / Math.max(l, bv));
+      var H = Math.round(Math.max(l, bv) * s + (kompakt ? 16 : 50));
+      var cx = kompakt ? W / 2 : 40 + 115;
+      var cy = (kompakt ? 8 : 22) + Math.max(l, bv) * s / 2;
       var rx = cx - b * s / 2, ry = cy - l * s / 2, rw = b * s, rh = l * s;
       var bx = cx - bh * s / 2, by = cy - bv * s / 2, bw = bh * s, bhh = bv * s;
       var svg = el(document.createDocumentFragment(), 'svg', { 'class': 'tp-rm__skizze', viewBox: '0 0 ' + W + ' ' + H, role: 'img',
@@ -378,6 +371,7 @@ if (typeof document !== 'undefined') (function () {
       if (n > 1) {
         if (v.gedreht) ty = by + v.breite * s / 2; else tx = bx + v.breite * s / 2;
       }
+      if (kompakt) return svg;
       el(svg, 'text', { x: tx, y: ty + 4, 'font-size': 12, 'font-weight': 700, fill: '#1d6b47', 'text-anchor': 'middle', style: halo },
         (senkrecht ? '↕' : '↔') + ' Laufrichtung');
       el(svg, 'text', { x: rx + rw / 2, y: Math.min(ry, by) - 6, 'font-size': 11, fill: 'currentColor', 'text-anchor': 'middle' }, 'Raumbreite ' + b + ' cm');
@@ -408,7 +402,7 @@ if (typeof document !== 'undefined') (function () {
     }
 
     function uebernehmen(v) {
-      if (richtungBox) { setzeRichtung(v.gedreht ? 'breite' : 'laenge'); richtungGewaehlt = true; }
+      if (muster) richtungWahl = v.gedreht ? 'breite' : 'laenge';
       // Bahnen: der Rechner schreibt daraus den Vermerk "Zuschnitt" in die
       // Warenkorbzeile. Vor den Events setzen, damit er es gleich sieht.
       if (v.bahnen) {
@@ -454,9 +448,7 @@ if (typeof document !== 'undefined') (function () {
       preis.textContent = RM.fmtZahl(v.m2, 2) + ' m²' + (v.preis > 0 ? ' · ' + euro(v.preis) : '');
       var info = document.createElement('p');
       info.className = 'tp-rm__info';
-      info.textContent = text + (richtungBox
-        ? ' Dielen laufen entlang der ' + richtungVon(v) + '.'
-        : (v.gedreht ? ' Breite und Länge sind dafür getauscht.' : ''));
+      info.textContent = text + (v.gedreht && !muster ? ' Quer zum Raum verlegt.' : '');
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'tp-rm__knopf' + (primaer ? ' tp-rm__knopf--primaer' : '');
@@ -473,25 +465,20 @@ if (typeof document !== 'undefined') (function () {
 
     function erklaerung(v, z) {
       return v.art === 'meter'
-        ? 'Volle Rollenbreite, ' + z + ' cm Zugabe auf die Länge zum Anpassen an die Wand.'
-        : 'Je ' + z + ' cm Zugabe auf Breite und Länge – Wände sind selten ganz gerade.';
+        ? 'Inkl. ' + z + ' cm Zugabe zum Anpassen an die Wand.'
+        : 'Inkl. je ' + z + ' cm Zugabe an Breite und Länge.';
     }
 
     var mehrOffen = false;
 
     // Bahnen aus schmaleren Rollen (z. B. 2 x 200 statt 1 x 400): fuer Kunden,
     // die eine breite Rolle nicht ins Haus oder die Treppe hoch bekommen.
-    function teilungsZeile(t, raum) {
-      var meter = function (cm) { return RM.fmtZahl(cm / 100, 2) + ' m'; };
-      return zeile('In ' + t.bahnen + ' Bahnen à ' + t.breite + ' cm – leichter zu tragen', t,
-        'Wir schneiden ' + t.bahnen + ' Bahnen à ' + meter(t.bahnLaenge) + ' zu und liefern sie als ' + t.bahnen +
-        ' einzelne Rollen – leichter zu tragen. Im Warenkorb steht eine Position mit dem Vermerk „Zuschnitt: ' + t.bahnen +
-        ' Bahnen à ' + t.bahnLaenge + ' cm“. Beim Verlegen entsteht eine Naht' +
-        (richtungBox ? '; für den Musteranschluss kann etwas Mehrlänge nötig sein – fragen Sie uns gern.' : '.'),
-        'Diese Variante übernehmen', false, raum);
+    function teilungsText(t) {
+      return 'Wir liefern ' + t.bahnen + ' einzelne Rollen à ' + t.breite + ' × ' + t.bahnLaenge +
+        ' cm – leichter zu tragen. Beim Verlegen entsteht eine Naht.';
     }
-    function teilungsHinweis(t) {
-      return t ? ' Lieber schmalere Rollen? Auch als ' + t.bahnen + ' Bahnen à ' + t.breite + ' cm möglich – unter „Andere Möglichkeiten“.' : '';
+    function teilungsZeile(t) {
+      return zeile(t.bahnen + ' schmale Rollen statt einer breiten', t, teilungsText(t), 'Diese Variante übernehmen', false);
     }
 
     function mehrBox(weitere) {
@@ -517,44 +504,85 @@ if (typeof document !== 'undefined') (function () {
       aus.appendChild(p);
     }
 
-    // Dielenoptik: die gewaehlte Laufrichtung zaehlt vor dem Preis.
-    function zeigeMitRichtung(v, b, l, r) {
-      var z = RM.ZUGABE_CM;
-      var raum = { b: b, l: l };
-      var e = v.empfohlen;
-      var andere = v.andereRichtung;
-      var gewuenscht = v.richtung === 'breite' ? 'Raumbreite' : 'Raumlänge';
-      if (!e) {
+    // Dielenoptik: zwei kleine Bilder zur Wahl der Laufrichtung, darunter nur
+    // das Bestellmass (Inhaber 2026-10-02: so einfach wie moeglich).
+    function zeigeMuster(b, l, r, vorschlag) {
+      var wahl = { laenge: vorschlag('laenge'), breite: vorschlag('breite') };
+      var aktiv = richtung(b, l);
+      if (!wahl[aktiv].empfohlen) aktiv = aktiv === 'laenge' ? 'breite' : 'laenge';
+      var v = wahl[aktiv];
+      if (!v.empfohlen) {
         var p = document.createElement('p');
         p.className = 'tp-rm__info tp-rm__hinweis';
-        p.textContent = 'Entlang der ' + gewuenscht + ' ist Ihr Raum breiter als die breiteste Rolle (' +
-          RM.fmtZahl(Math.max.apply(null, r), 0) + ' cm). Das geht nur mit Naht – rufen Sie uns an, wir planen das mit Ihnen.';
+        p.textContent = 'Ihr Raum ist auf beiden Seiten breiter als ' + RM.fmtZahl(Math.max.apply(null, r) / 100, 0) +
+          ' m. Das geht nur mit Naht – rufen Sie uns an, wir planen das mit Ihnen.';
         aus.appendChild(p);
-        if (andere) {
-          aus.appendChild(zeile('Ohne Naht – Dielen entlang der ' + richtungVon(andere), andere,
-            erklaerung(andere, z) + teilungsHinweis(v.teilung), 'Diese Richtung übernehmen', true, raum));
-          if (v.teilung) mehrBox([teilungsZeile(v.teilung, raum)]);
-        }
-        raumZeile(v);
         return;
       }
-      var warum = erklaerung(e, z) + teilungsHinweis(v.teilung);
-      aus.appendChild(zeile('Empfohlen – Dielen entlang der ' + gewuenscht, e, warum, 'Dieses Maß übernehmen', true, raum));
-      var weitere = [];
-      if (v.teilung) weitere.push(teilungsZeile(v.teilung, raum));
-      if (andere) {
-        var diff = (andere.preis > 0 && e.preis > 0) ? e.preis - andere.preis : 0;
-        var zusatz = diff >= 0.01 ? ' ' + euro(diff) + ' günstiger, aber das Muster läuft quer zu Ihrer Wahl.'
-          : (diff <= -0.01 ? ' ' + euro(-diff) + ' teurer.' : '');
-        weitere.push(zeile('Dielen entlang der ' + richtungVon(andere), andere,
-          erklaerung(andere, z) + zusatz, 'Diese Richtung übernehmen', false, raum));
+      var frage = document.createElement('p');
+      frage.className = 'tp-rm__frage';
+      frage.textContent = 'Wie sollen die Dielen liegen?';
+      aus.appendChild(frage);
+      var leiste = document.createElement('div');
+      leiste.className = 'tp-rm__wahl';
+      ['laenge', 'breite'].forEach(function (ri) {
+        var k = wahl[ri].empfohlen;
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tp-rm__wahlkarte' + (ri === aktiv ? ' is-aktiv' : '');
+        btn.setAttribute('aria-pressed', ri === aktiv ? 'true' : 'false');
+        var bild = k || { art: 'meter', breite: Math.max.apply(null, r), laenge: (ri === 'laenge' ? l : b), gedreht: ri === 'breite' };
+        btn.appendChild(skizze(b, l, bild, true));
+        var t = document.createElement('span');
+        t.className = 'tp-rm__wahl-text';
+        t.textContent = ri === 'laenge' ? 'Dielen ↕' : 'Dielen ↔';
+        var pr = document.createElement('span');
+        pr.className = 'tp-rm__wahl-preis';
+        pr.textContent = k ? (k.preis > 0 ? euro(k.preis) : RM.fmtZahl(k.m2, 2) + ' m²') : 'nur mit Naht';
+        btn.appendChild(t);
+        btn.appendChild(pr);
+        if (!k) { btn.disabled = true; btn.className += ' is-aus'; }
+        btn.addEventListener('click', function () { richtungWahl = ri; rechnen(); });
+        leiste.appendChild(btn);
+      });
+      aus.appendChild(leiste);
+
+      var e = v.empfohlen;
+      var div = document.createElement('div');
+      div.className = 'tp-rm__vorschlag tp-rm__vorschlag--empfohlen';
+      var kopf = document.createElement('p');
+      kopf.className = 'tp-rm__titel';
+      kopf.textContent = 'Ihr Bestellmaß';
+      var mass = document.createElement('p');
+      mass.className = 'tp-rm__mass';
+      mass.textContent = RM.fmtZahl(e.breite, 0) + ' × ' + RM.fmtZahl(e.laenge, 0) + ' cm';
+      var preis = document.createElement('p');
+      preis.className = 'tp-rm__preis';
+      preis.textContent = RM.fmtZahl(e.m2, 2) + ' m²' + (e.preis > 0 ? ' · ' + euro(e.preis) : '');
+      var info = document.createElement('p');
+      info.className = 'tp-rm__info';
+      info.textContent = 'Inkl. ' + RM.ZUGABE_CM + ' cm Zugabe zum Anpassen an die Wand.';
+      var ok = document.createElement('button');
+      ok.type = 'button';
+      ok.className = 'tp-rm__knopf tp-rm__knopf--primaer';
+      ok.textContent = 'Maß übernehmen';
+      ok.addEventListener('click', function () { uebernehmen(e); });
+      [kopf, mass, preis, info, ok].forEach(function (n) { div.appendChild(n); });
+      aus.appendChild(div);
+
+      if (v.teilung) {
+        var t2 = document.createElement('p');
+        t2.className = 'tp-rm__teilung';
+        t2.appendChild(document.createTextNode('Lieber ' + v.teilung.bahnen + ' schmale Rollen à ' + v.teilung.breite +
+          ' cm? Leichter zu tragen, mit Naht. '));
+        var so = document.createElement('button');
+        so.type = 'button';
+        so.className = 'tp-rm__link';
+        so.textContent = 'So bestellen';
+        so.addEventListener('click', function () { uebernehmen(v.teilung); });
+        t2.appendChild(so);
+        aus.appendChild(t2);
       }
-      if (v.genau) {
-        weitere.push(zeile('Zentimetergenau – ohne Zugabe', v.genau,
-          'Volle Rollenbreite, Länge genau wie gemessen.', 'Ohne Zugabe übernehmen', false));
-      }
-      mehrBox(weitere);
-      raumZeile(v);
     }
 
     function rechnen() {
@@ -569,12 +597,19 @@ if (typeof document !== 'undefined') (function () {
         return;
       }
       var r = rollen();
-      var v = RM.rolleVorschlag({
+      var basis = {
         breite: b.cm, laenge: l.cm, rollen: r, raum: raumMoeglich(), maxRaum: maxRaum(r),
-        preis: typeof rechner.tpRwcPreis === 'function' ? rechner.tpRwcPreis : null,
-        richtung: richtung(b.cm, l.cm)
-      });
-      if (v.richtung) { zeigeMitRichtung(v, b.cm, l.cm, r); return; }
+        preis: typeof rechner.tpRwcPreis === 'function' ? rechner.tpRwcPreis : null
+      };
+      if (muster) {
+        zeigeMuster(b.cm, l.cm, r, function (ri) {
+          var e = {}; Object.keys(basis).forEach(function (k) { e[k] = basis[k]; });
+          e.richtung = ri;
+          return RM.rolleVorschlag(e);
+        });
+        return;
+      }
+      var v = RM.rolleVorschlag(basis);
       if (v.naht) {
         var p = document.createElement('p');
         p.className = 'tp-rm__info';
@@ -590,7 +625,6 @@ if (typeof document !== 'undefined') (function () {
         if (alt && alt.preis > 0 && e.preis > 0 && alt.preis - e.preis >= 0.01) {
           warum += ' ' + euro(alt.preis - e.preis) + ' günstiger als ' + (alt.art === 'meter' ? 'Meterware' : 'Raummaß') + '.';
         }
-        warum += teilungsHinweis(v.teilung);
         aus.appendChild(zeile('Empfohlen – günstigster Weg', e, warum, 'Dieses Maß übernehmen', true));
       }
       // Nur die Empfehlung steht offen (Inhaber 2026-10-02: eine Entscheidung,
@@ -598,18 +632,14 @@ if (typeof document !== 'undefined') (function () {
       // darunter; der Zustand bleibt beim Weitertippen erhalten.
       var weitere = [];
       if (alt) {
-        var altText = alt.art === 'raum'
-          ? 'Nur so breit wie nötig zugeschnitten – weniger Reste, aber höherer m²-Preis.'
-          : 'Volle Rollenbreite zum günstigeren m²-Preis, der Überstand wird beim Verlegen abgeschnitten.';
         weitere.push(zeile(alt.art === 'raum' ? 'Raummaß' : 'Meterware', alt,
-          altText + ' Mit ' + z + ' cm Zugabe.', 'Stattdessen übernehmen', false));
+          alt.art === 'raum' ? 'Nur so breit wie nötig, höherer m²-Preis.' : 'Volle Rollenbreite, günstigerer m²-Preis.',
+          'Stattdessen übernehmen', false));
       }
       if (v.teilung) weitere.push(teilungsZeile(v.teilung));
       if (v.genau) {
         weitere.push(zeile('Zentimetergenau – ohne Zugabe', v.genau,
-          v.genau.art === 'meter'
-            ? 'Volle Rollenbreite, Länge genau wie gemessen.'
-            : 'Genau Ihre Maße – nur, wenn Sie sehr exakt gemessen haben.', 'Ohne Zugabe übernehmen', false));
+          'Genau Ihre Maße – nur, wenn Sie sehr exakt gemessen haben.', 'Ohne Zugabe übernehmen', false));
       }
       if (weitere.length) {
         var mehr = document.createElement('details');
@@ -632,7 +662,6 @@ if (typeof document !== 'undefined') (function () {
     }
 
     [bIn, lIn].forEach(function (f) { f.addEventListener('input', rechnen); });
-    if (richtungBox) richtungBox.addEventListener('change', function (e) { e.stopPropagation(); richtungGewaehlt = true; rechnen(); });
     // Farbwechsel aendert Rollen und Raummass-Verfuegbarkeit.
     document.addEventListener('change', function (e) {
       if (e.target && e.target.name && e.target.name.indexOf('tp-rwc-') === 0) return;
