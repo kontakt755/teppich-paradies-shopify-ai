@@ -337,6 +337,13 @@
   data-piece-format="{{ product.metafields.custom.format_cm.value | escape }}"
   {{ block.shopify_attributes }}
 >
+  {%- comment -%}
+    Raumliste (Inhaber 2026-10-02): Raeume als Breite x Laenge eintragen,
+    Summe wird in das Flaechenfeld uebernommen. Rechnet sonst nichts.
+  {%- endcomment -%}
+  {%- if block.settings.raummass_helfer != false -%}
+    {% render 'tp-raummass-paket', id: package_selector_id %}
+  {%- endif -%}
   <div class="carpet-package__primary-{{ package_selector_id }}">
     <label class="carpet-package__label-{{ package_selector_id }}" for="tp-sqm-input-{{ package_selector_id }}">
       Wie viel Fläche benötigen Sie?
@@ -1003,7 +1010,14 @@
 {
   "name": "Paket-Auswahl",
   "tag": null,
-  "settings": [],
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "raummass_helfer",
+      "label": "Fläche aus Raummaßen berechnen (Raumliste)",
+      "default": true
+    }
+  ],
   "presets": [
     {
       "name": "Paket-Auswahl"

@@ -1,0 +1,107 @@
+{% doc %}
+  Raumliste fuer Paketware (im Block paket-auswahl). Kunde notiert alle
+  Raeume oder Teilflaechen als Breite x Laenge, der Helfer zaehlt die m²
+  zusammen und schreibt die Summe in das Flaechenfeld der Paket-Auswahl.
+  Verschnitt und Paketzahl rechnet weiterhin die Paket-Auswahl selbst.
+  Logik: assets/tp-raummass.js.
+
+  @param {string} id - Kennung der Paket-Auswahl
+{% enddoc %}
+<script src="{{ 'tp-raummass.js' | asset_url }}" defer></script>
+<details class="tp-rm tp-rm--paket" data-tp-rm-paket>
+  <summary class="tp-rm__summary">
+    <span class="tp-rm__summary-text">
+      <span class="tp-rm__summary-titel">Fläche aus Raummaßen berechnen</span>
+      <span class="tp-rm__summary-sub">Mehrere Räume eintragen, wir zählen die m² zusammen</span>
+    </span>
+    <span class="tp-rm__summary-aktion"><span class="tp-rm__auf">Öffnen</span><span class="tp-rm__zu">Schließen</span> <span class="tp-rm__pfeil" aria-hidden="true">▾</span></span>
+  </summary>
+  <div class="tp-rm__inhalt">
+    <p class="tp-rm__hilfe">Breite und Länge je Raum in cm oder m (z. B. 350 oder 3,5 m). Ein L-förmiger Raum lässt sich als zwei Rechtecke eintragen.</p>
+    <div class="tp-rm__liste" data-rm-liste></div>
+    <button type="button" class="tp-rm__add" data-rm-add>+ Weiteren Raum hinzufügen</button>
+    <p class="tp-rm__fehler" data-rm-fehler role="alert" hidden></p>
+    <div class="tp-rm__summe">
+      <span>Gesamtfläche</span>
+      <strong data-rm-summe aria-live="polite">–</strong>
+    </div>
+    <button type="button" class="tp-rm__knopf tp-rm__knopf--primaer" data-rm-uebernehmen disabled>Fläche übernehmen</button>
+  </div>
+  <template data-rm-zeile-vorlage>
+    <div class="tp-rm__zeile" data-rm-zeile>
+      <span class="tp-rm__name" data-rm-name></span>
+      <div class="tp-rm__feld">
+        <label data-rm-for="tp-rm-pb-{{ id }}">Breite</label>
+        <input type="text" data-rm-id="tp-rm-pb-{{ id }}" inputmode="decimal" autocomplete="off" placeholder="350" data-rm-b>
+      </div>
+      <span class="tp-rm__mal" aria-hidden="true">×</span>
+      <div class="tp-rm__feld">
+        <label data-rm-for="tp-rm-pl-{{ id }}">Länge</label>
+        <input type="text" data-rm-id="tp-rm-pl-{{ id }}" inputmode="decimal" autocomplete="off" placeholder="420" data-rm-l>
+      </div>
+      <button type="button" class="tp-rm__weg" data-rm-weg aria-label="Raum entfernen">×</button>
+    </div>
+  </template>
+</details>
+
+{% stylesheet %}
+  .tp-rm--paket { margin: 0 0 12px; }
+  .tp-rm__liste { display: grid; gap: 8px; }
+  .tp-rm__zeile {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto;
+    grid-template-areas: "name name name name" "b mal l weg";
+    align-items: end;
+    gap: 2px 8px;
+  }
+  .tp-rm__zeile .tp-rm__name { grid-area: name; font-size: 13px; font-weight: 700; }
+  .tp-rm__zeile .tp-rm__feld:first-of-type { grid-area: b; }
+  .tp-rm__zeile .tp-rm__mal { grid-area: mal; }
+  .tp-rm__zeile .tp-rm__feld:last-of-type { grid-area: l; }
+  .tp-rm__zeile label { font-weight: 400; font-size: 12px; }
+  .tp-rm__zeile input {
+    width: 100%;
+    min-width: 0;
+    height: 44px;
+    padding: 0 10px;
+    font-size: 16px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.3);
+    border-radius: var(--style-border-radius-inputs, 6px);
+    background: var(--color-background, #fff);
+    color: inherit;
+  }
+  .tp-rm__weg {
+    grid-area: weg;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font-size: 22px;
+    cursor: pointer;
+  }
+  .tp-rm__add {
+    margin-top: 8px;
+    padding: 6px 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    color: inherit;
+    cursor: pointer;
+  }
+  .tp-rm__summe {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.15);
+  }
+  .tp-rm__summe strong { font-size: 18px; }
+  .tp-rm__knopf:disabled { opacity: .45; cursor: not-allowed; }
+  .tp-rm--paket .tp-rm__knopf { width: 100%; }
+{% endstylesheet %}

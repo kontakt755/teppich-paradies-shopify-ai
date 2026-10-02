@@ -1,0 +1,125 @@
+{% doc %}
+  Raummass-Helfer fuer Rollenware (im Block tp-rollware-rechner).
+  Kunde gibt Raumbreite und Raumlaenge ein, der Helfer schlaegt ein
+  Bestellmass mit Zugabe (empfohlen) und eines zentimetergenau ohne Zugabe
+  vor. "Uebernehmen" befuellt nur die Felder des Rechners - Preis und
+  Warenkorb bleiben beim Rechner. Logik: assets/tp-raummass.js.
+
+  @param {string} id - Kennung des Rechners
+{% enddoc %}
+<script src="{{ 'tp-raummass.js' | asset_url }}" defer></script>
+<details class="tp-rm" data-tp-rm-rolle>
+  <summary class="tp-rm__summary">
+    <span class="tp-rm__summary-text">
+      <span class="tp-rm__summary-titel">Raummaße eingeben</span>
+      <span class="tp-rm__summary-sub">Wir berechnen Ihr Bestellmaß – mit oder ohne Zugabe</span>
+    </span>
+    <span class="tp-rm__summary-aktion"><span class="tp-rm__auf">Öffnen</span><span class="tp-rm__zu">Schließen</span> <span class="tp-rm__pfeil" aria-hidden="true">▾</span></span>
+  </summary>
+  <div class="tp-rm__inhalt">
+    <p class="tp-rm__hilfe">Messen Sie jeweils die breiteste und die längste Stelle des Raums, auch in Türnischen.</p>
+    <div class="tp-rm__felder">
+      <div class="tp-rm__feld">
+        <label for="tp-rm-b-{{ id }}">Raumbreite</label>
+        <div class="tp-rm__wrap">
+          <input type="text" id="tp-rm-b-{{ id }}" inputmode="decimal" autocomplete="off" placeholder="z. B. 350" data-rm-breite>
+          <span>cm</span>
+        </div>
+      </div>
+      <span class="tp-rm__mal" aria-hidden="true">×</span>
+      <div class="tp-rm__feld">
+        <label for="tp-rm-l-{{ id }}">Raumlänge</label>
+        <div class="tp-rm__wrap">
+          <input type="text" id="tp-rm-l-{{ id }}" inputmode="decimal" autocomplete="off" placeholder="z. B. 550" data-rm-laenge>
+          <span>cm</span>
+        </div>
+      </div>
+    </div>
+    <p class="tp-rm__fehler" data-rm-fehler role="alert" hidden></p>
+    <div class="tp-rm__ergebnis" data-rm-ergebnis aria-live="polite"></div>
+  </div>
+</details>
+
+{% stylesheet %}
+  .tp-rm {
+    margin: 0 0 14px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.18);
+    border-radius: var(--style-border-radius, 8px);
+    background: var(--color-background, #fff);
+  }
+  .tp-rm__summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    cursor: pointer;
+    list-style: none;
+  }
+  .tp-rm__summary::-webkit-details-marker { display: none; }
+  .tp-rm__summary-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .tp-rm__summary-titel { font-weight: 700; font-size: 15px; }
+  .tp-rm__summary-sub { font-size: 13px; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.68); }
+  .tp-rm__summary-aktion {
+    flex: none;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    white-space: nowrap;
+  }
+  .tp-rm__pfeil { display: inline-block; transition: transform .2s; text-decoration: none; }
+  .tp-rm[open] .tp-rm__pfeil { transform: rotate(180deg); }
+  .tp-rm .tp-rm__zu, .tp-rm[open] .tp-rm__auf { display: none; }
+  .tp-rm[open] .tp-rm__zu { display: inline; }
+  .tp-rm__inhalt { padding: 0 14px 14px; }
+  .tp-rm__hilfe { margin: 0 0 10px; font-size: 13px; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.68); }
+  .tp-rm__felder { display: flex; align-items: flex-end; gap: 8px; }
+  .tp-rm__feld { flex: 1 1 0; min-width: 0; }
+  .tp-rm__feld label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .tp-rm__mal { padding-bottom: 12px; font-weight: 600; }
+  .tp-rm__wrap { display: flex; align-items: center; gap: 6px; }
+  .tp-rm__wrap input {
+    width: 100%;
+    min-width: 0;
+    height: 44px;
+    padding: 0 10px;
+    font-size: 16px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.3);
+    border-radius: var(--style-border-radius-inputs, 6px);
+    background: var(--color-background, #fff);
+    color: inherit;
+  }
+  .tp-rm__fehler { margin: 8px 0 0; font-size: 13px; color: #b00020; }
+  .tp-rm__ergebnis:not(:empty) { margin-top: 12px; display: grid; gap: 8px; }
+  .tp-rm__vorschlag {
+    padding: 10px 12px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.15);
+    border-radius: var(--style-border-radius, 8px);
+  }
+  .tp-rm__vorschlag--empfohlen {
+    border-color: var(--tp-hauptaktion, rgb(var(--color-foreground-rgb, 34 34 34) / 0.7));
+    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.035);
+  }
+  .tp-rm__titel { margin: 0; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+  .tp-rm__mass { margin: 2px 0; font-size: 16px; font-weight: 700; }
+  .tp-rm__info, .tp-rm__raum { margin: 0; font-size: 13px; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.68); }
+  .tp-rm__knopf {
+    margin-top: 8px;
+    min-height: 40px;
+    padding: 0 14px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: var(--style-border-radius-buttons-primary, 6px);
+    border: 1px solid currentColor;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+  .tp-rm__knopf--primaer {
+    border-color: var(--tp-hauptaktion, var(--color-foreground, #111));
+    background: var(--tp-hauptaktion, var(--color-foreground, #111));
+    color: #fff;
+  }
+{% endstylesheet %}
