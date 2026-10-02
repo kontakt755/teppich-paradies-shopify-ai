@@ -74,6 +74,10 @@ test('Paketpreis: Streichpreis 29,95 erscheint nur mit laufender Aktion', async 
 test('Dauerrabatt (aktion.klasse = preisanker) zeigt den Streichpreis ohne Aktionsdatum', async () => {
   const mit = await engine.parseAndRender(sqm, paket({ klasse: { value: 'preisanker' } }));
   assert.match(mit, /tp-price-per-sqm__compare[\s\S]*29,95/);
+  const bisHeute = await engine.parseAndRender(sqm, paket({ klasse: { value: 'preisanker' }, ende: { value: heute } }));
+  assert.match(bisHeute, /tp-price-per-sqm__compare[\s\S]*29,95/);
+  const abgelaufen = await engine.parseAndRender(sqm, paket({ klasse: { value: 'preisanker' }, ende: { value: gestern } }));
+  assert.doesNotMatch(abgelaufen, /tp-price-per-sqm__compare/, 'Dauerrabatt nach aktion.ende zeigt keinen Streichpreis');
   const andere = await engine.parseAndRender(sqm, paket({ klasse: { value: 'premium' } }));
   assert.doesNotMatch(andere, /tp-price-per-sqm__compare/);
 });

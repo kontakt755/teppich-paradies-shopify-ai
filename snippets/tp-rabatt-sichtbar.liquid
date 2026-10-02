@@ -3,9 +3,9 @@
   erscheinen? Gibt "ja" aus oder nichts. Einzige Quelle fuer die Anzeige.
 
   Zwei Wege (Inhaber, 2026-09-24):
-    1. Dauerrabatt: aktion.klasse == "preisanker" (Dauerrabatt). Gesetzt vom Rotationsskript
-       (operations/scripts/rabatt-rotation.mjs). Mit dem kostenlosen
-       Verlegeservice kombinierbar.
+    1. Dauerrabatt: aktion.klasse == "preisanker" (Dauerrabatt, rabatt-plan.mjs). Mit dem
+       kostenlosen Verlegeservice kombinierbar. Endet mit aktion.ende (letzter Tag
+       einschliesslich, Inhaber 2026-10-02: Dauerrabatt befristet); leer = unbefristet.
     2. Befristete Aktion: snippets/tp-aktion-aktiv. Schliesst den kostenlosen
        Vor-Ort-Service aus (tp-verlegeservice-hinweis fragt nur dort).
   Ohne einen der beiden zeigt ein stehen gebliebener compare_at_price nichts (S-20).
@@ -19,6 +19,14 @@
   assign trs_aktiv = false
   if product.metafields.aktion.klasse.value == 'preisanker'
     assign trs_aktiv = true
+    assign trs_ende = product.metafields.aktion.ende.value
+    if trs_ende != blank
+      assign trs_heute = 'now' | date: '%Y%m%d' | plus: 0
+      assign trs_bis = trs_ende | date: '%Y%m%d' | plus: 0
+      if trs_heute > trs_bis
+        assign trs_aktiv = false
+      endif
+    endif
   else
     capture trs_aktion
       render 'tp-aktion-aktiv', product: product
