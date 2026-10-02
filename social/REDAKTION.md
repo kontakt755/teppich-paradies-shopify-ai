@@ -128,6 +128,23 @@ Zu jeder Baustelle zusätzlich prüfen:
   ffmpeg schneidet sie zum Video. Das fertige `reel.mp4` einmal ansehen, etwa
   über Einzelbilder: `ffmpeg -ss 3 -i reel.mp4 -frames:v 1 /tmp/bild.jpg`.
 
+### 3b. Angebote (Inhaberwunsch 02.10.2026)
+
+Angebote immer mit der Vorlage `angebot`: Doppelbild aus der Ware von der Rolle
+und demselben Farbton als „Teppich nach Maß“ mit Einfassung (Kettelecke aus dem
+Produkt „… Teppich nach Maß“), Abzeichen „−XX %“, Aktionspreis groß, alter Preis
+fett durchgestrichen (`preisAlt`). Preise **nur** aus dem Shop
+(`/products/<handle>.js`: `price` und `compare_at_price` der Meterware-Variante):
+
+- Streichpreis nur, wenn beide Zuschnittarten (Rolle und Raummaß) reduziert sind
+  und der Vergleichspreis im Shop steht – sonst ohne `preisAlt`.
+- Ende der Aktion aus dem Produkt-Metafeld `aktion.ende` in die Zeile („Nur bis
+  18.10.“) und der Termin muss davor liegen.
+- Den Teppich nach Maß nur zeigen, nicht mit Preis bewerben, wenn er nicht in
+  derselben Aktion ist.
+
+Angebote gibt das System nie automatisch frei – sie warten auf den Inhaber.
+
 ### 4. Texte
 
 Die Stilregeln stehen in der Ausgabe von `offen --json` und sind verbindlich.
