@@ -265,6 +265,8 @@ if (typeof document !== 'undefined') (function () {
         : 'Je ' + z + ' cm Zugabe auf Breite und Länge – Wände sind selten ganz gerade.';
     }
 
+    var mehrOffen = false;
+
     function rechnen() {
       var b = RM.leseCm(bIn.value);
       var l = RM.leseCm(lIn.value);
@@ -298,18 +300,36 @@ if (typeof document !== 'undefined') (function () {
         }
         aus.appendChild(zeile('Empfohlen – günstigster Weg', e, warum, 'Dieses Maß übernehmen', true));
       }
+      // Nur die Empfehlung steht offen (Inhaber 2026-10-02: eine Entscheidung,
+      // nicht drei). Alternative und zentimetergenau liegen aufklappbar
+      // darunter; der Zustand bleibt beim Weitertippen erhalten.
+      var weitere = [];
       if (alt) {
         var altText = alt.art === 'raum'
           ? 'Nur so breit wie nötig zugeschnitten – weniger Reste, aber höherer m²-Preis.'
           : 'Volle Rollenbreite zum günstigeren m²-Preis, der Überstand wird beim Verlegen abgeschnitten.';
-        aus.appendChild(zeile(alt.art === 'raum' ? 'Alternative – Raummaß' : 'Alternative – Meterware', alt,
+        weitere.push(zeile(alt.art === 'raum' ? 'Raummaß' : 'Meterware', alt,
           altText + ' Mit ' + z + ' cm Zugabe.', 'Stattdessen übernehmen', false));
       }
       if (v.genau) {
-        aus.appendChild(zeile('Zentimetergenau – ohne Zugabe', v.genau,
+        weitere.push(zeile('Zentimetergenau – ohne Zugabe', v.genau,
           v.genau.art === 'meter'
             ? 'Volle Rollenbreite, Länge genau wie gemessen.'
             : 'Genau Ihre Maße – nur, wenn Sie sehr exakt gemessen haben.', 'Ohne Zugabe übernehmen', false));
+      }
+      if (weitere.length) {
+        var mehr = document.createElement('details');
+        mehr.className = 'tp-rm__mehr';
+        mehr.open = mehrOffen;
+        mehr.addEventListener('toggle', function () { mehrOffen = mehr.open; });
+        var sum = document.createElement('summary');
+        sum.innerHTML = '<span class="tp-rm__mehr-auf">Andere Möglichkeiten anzeigen</span><span class="tp-rm__mehr-zu">Andere Möglichkeiten ausblenden</span> (' + weitere.length + ') <span class="tp-rm__mehr-pfeil" aria-hidden="true">▾</span>';
+        mehr.appendChild(sum);
+        var liste = document.createElement('div');
+        liste.className = 'tp-rm__mehr-liste';
+        weitere.forEach(function (k) { liste.appendChild(k); });
+        mehr.appendChild(liste);
+        aus.appendChild(mehr);
       }
       var raum = document.createElement('p');
       raum.className = 'tp-rm__raum';
