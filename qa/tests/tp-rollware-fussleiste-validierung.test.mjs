@@ -69,6 +69,8 @@ async function rollCase(raw, checked = true) {
     cmExact: false, selectedWidth: () => 400, getEffectiveLengthCm: () => 200,
     artMode: () => 'meter', lengthInput: new Element('200'), MAX_LENGTH_CM: 1000,
     clearInvalid() {}, markInvalid() {}, calculate() {}, setTimeout() {},
+    // Bahnen aus dem Raummass-Helfer: hier keine (Vermerk "Zuschnitt" entfaellt).
+    bahnenAktiv: () => null,
     document: { dispatchEvent() {}, querySelector: () => null },
     CustomEvent: class {},
     fetch: async (url, options) => {

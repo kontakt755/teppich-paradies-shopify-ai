@@ -330,7 +330,26 @@ if (typeof document !== 'undefined') (function () {
       var pl = 150 * s;                        // Dielenlaenge ~150 cm
       var senkrecht = !v.gedreht;              // Muster entlang der Schnittlaenge
       var i, j, off;
-      if (senkrecht) {
+      var fischgrat = rechner.getAttribute('data-muster') === 'fischgrat';
+      if (fischgrat) {
+        // Zickzack-Spalten (Breite 2 Dielen) entlang der Laufrichtung.
+        var sp = 2 * pw;
+        var pfad = '';
+        if (senkrecht) {
+          for (i = 0; bx + i * sp < bx + bw; i++) {
+            var x0 = bx + i * sp;
+            el(g, 'line', { x1: x0, y1: by, x2: x0, y2: by + bhh });
+            for (j = by - pw; j < by + bhh + pw; j += pw) pfad += 'M' + x0 + ' ' + j + 'L' + (x0 + pw) + ' ' + (j + pw) + 'L' + (x0 + sp) + ' ' + j;
+          }
+        } else {
+          for (i = 0; by + i * sp < by + bhh; i++) {
+            var y0 = by + i * sp;
+            el(g, 'line', { x1: bx, y1: y0, x2: bx + bw, y2: y0 });
+            for (j = bx - pw; j < bx + bw + pw; j += pw) pfad += 'M' + j + ' ' + y0 + 'L' + (j + pw) + ' ' + (y0 + pw) + 'L' + j + ' ' + (y0 + sp);
+          }
+        }
+        el(g, 'path', { d: pfad, fill: 'none' });
+      } else if (senkrecht) {
         for (i = 0; bx + i * pw <= bx + bw; i++) {
           el(g, 'line', { x1: bx + i * pw, y1: by, x2: bx + i * pw, y2: by + bhh });
           off = (i % 3) * pl / 3;
@@ -390,6 +409,17 @@ if (typeof document !== 'undefined') (function () {
 
     function uebernehmen(v) {
       if (richtungBox) { setzeRichtung(v.gedreht ? 'breite' : 'laenge'); richtungGewaehlt = true; }
+      // Bahnen: der Rechner schreibt daraus den Vermerk "Zuschnitt" in die
+      // Warenkorbzeile. Vor den Events setzen, damit er es gleich sieht.
+      if (v.bahnen) {
+        rechner.setAttribute('data-bahnen', String(v.bahnen));
+        rechner.setAttribute('data-bahn-laenge', String(v.bahnLaenge));
+        rechner.setAttribute('data-bahn-breite', String(v.breite));
+      } else {
+        rechner.removeAttribute('data-bahnen');
+        rechner.removeAttribute('data-bahn-laenge');
+        rechner.removeAttribute('data-bahn-breite');
+      }
       var art = rechner.querySelector('input[name^="tp-rwc-art-"][value="' + v.art + '"]');
       if (art && !art.disabled) { art.checked = true; feuer(art, 'change'); }
       if (v.art === 'meter') {
@@ -454,8 +484,9 @@ if (typeof document !== 'undefined') (function () {
     function teilungsZeile(t, raum) {
       var meter = function (cm) { return RM.fmtZahl(cm / 100, 2) + ' m'; };
       return zeile('In ' + t.bahnen + ' Bahnen à ' + t.breite + ' cm – leichter zu tragen', t,
-        'Sie bekommen eine ' + meter(t.breite) + ' breite Rolle mit ' + meter(t.laenge) + ' Länge, die in ' + t.bahnen +
-        ' Bahnen à ' + meter(t.bahnLaenge) + ' nebeneinander verlegt wird. Dazwischen entsteht eine Naht' +
+        'Wir schneiden ' + t.bahnen + ' Bahnen à ' + meter(t.bahnLaenge) + ' zu und liefern sie als ' + t.bahnen +
+        ' einzelne Rollen – leichter zu tragen. Im Warenkorb steht eine Position mit dem Vermerk „Zuschnitt: ' + t.bahnen +
+        ' Bahnen à ' + t.bahnLaenge + ' cm“. Beim Verlegen entsteht eine Naht' +
         (richtungBox ? '; für den Musteranschluss kann etwas Mehrlänge nötig sein – fragen Sie uns gern.' : '.'),
         'Diese Variante übernehmen', false, raum);
     }
