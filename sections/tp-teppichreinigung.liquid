@@ -1,0 +1,124 @@
+{%- comment -%}
+  TP Teppichreinigung: Einstieg, Leistungen und Ablauf der Teppichreinigung.
+  Keine Preise (Inhaber 2026-10-02), Partnerbetrieb wird nicht genannt.
+  Anfrage, FAQ und Kontakt kommen als eigene Sections (tp-start-kontakt,
+  tp-start-faq) darunter.
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+{%- assign tel_raw = section.settings.telefon | remove: ' ' | remove: '/' -%}
+{%- assign tel_link = tel_raw | remove_first: '0' | prepend: '+49' -%}
+
+<section class="tp-s-sec tp-rein" aria-labelledby="tp-rein-h1">
+  <div class="tp-s-wrap tp-rein__hero">
+    <div>
+      {%- if section.settings.eyebrow != blank -%}<span class="tp-s-eyebrow">{{ section.settings.eyebrow | escape }}</span>{%- endif -%}
+      <h1 id="tp-rein-h1" class="tp-s-h2 tp-rein__h1">{{ section.settings.heading | escape }}</h1>
+      <div class="tp-rein__lead">{{ section.settings.text }}</div>
+      <ul class="tp-rein__fakten">
+        {%- assign fakten = section.settings.fakten | newline_to_br | split: '<br />' -%}
+        {%- for f in fakten -%}{%- assign f = f | strip -%}{%- if f != blank -%}<li>{{ f | escape }}</li>{%- endif -%}{%- endfor -%}
+      </ul>
+      <div class="tp-rein__ctas">
+        <a class="tp-s-btn tp-s-btn--primary" href="#tp-anfrage">{{ section.settings.cta | escape }}</a>
+        <a class="tp-s-btn" href="tel:{{ tel_link }}">{{ section.settings.telefon | escape }}</a>
+        {%- if section.settings.whatsapp != blank -%}<a class="tp-s-btn" href="{{ section.settings.whatsapp }}" target="_blank" rel="noopener">WhatsApp</a>{%- endif -%}
+      </div>
+    </div>
+    {%- if section.settings.bild != blank -%}
+      <div class="tp-rein__media">
+        {%- assign rein_alt = section.settings.bild.alt | default: section.settings.heading -%}
+        {{ section.settings.bild | image_url: width: 1200 | image_tag: loading: 'eager', fetchpriority: 'high', widths: '600, 900, 1200', sizes: '(max-width: 1023px) 100vw, 45vw', alt: rein_alt, class: 'tp-rein__img' }}
+      </div>
+    {%- endif -%}
+  </div>
+
+  {%- assign leistungen = section.blocks | where: 'type', 'leistung' -%}
+  {%- if leistungen.size > 0 -%}
+  <div class="tp-s-wrap tp-rein__block">
+    <h2 class="tp-s-h2">{{ section.settings.leistungen_heading | escape }}</h2>
+    <div class="tp-rein__grid">
+      {%- for block in leistungen -%}
+        <div class="tp-rein__card" {{ block.shopify_attributes }}>
+          <h3 class="tp-s-h3">{{ block.settings.titel | escape }}</h3>
+          <p>{{ block.settings.text | escape }}</p>
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+  {%- endif -%}
+
+  {%- assign schritte = section.blocks | where: 'type', 'schritt' -%}
+  {%- if schritte.size > 0 -%}
+  <div class="tp-s-wrap tp-rein__block">
+    <h2 class="tp-s-h2">{{ section.settings.ablauf_heading | escape }}</h2>
+    {%- if section.settings.ablauf_text != blank -%}<p class="tp-rein__sub">{{ section.settings.ablauf_text | escape }}</p>{%- endif -%}
+    <ol class="tp-rein__schritte">
+      {%- for block in schritte -%}
+        <li {{ block.shopify_attributes }}><b>{{ block.settings.titel | escape }}</b><span>{{ block.settings.text | escape }}</span></li>
+      {%- endfor -%}
+    </ol>
+  </div>
+  {%- endif -%}
+</section>
+
+{% stylesheet %}
+  .tp-rein__hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center; }
+  .tp-rein__h1 { margin: 6px 0 14px; }
+  .tp-rein__lead { color: #4a443f; font-size: 17px; max-width: 60ch; }
+  .tp-rein__lead p { margin: 0 0 10px; }
+  .tp-rein__fakten { list-style: none; padding: 0; margin: 16px 0 22px; display: grid; gap: 8px; }
+  .tp-rein__fakten li { padding-left: 26px; position: relative; }
+  .tp-rein__fakten li::before { content: "✓"; position: absolute; left: 0; color: #b0303f; font-weight: 700; }
+  .tp-rein__ctas { display: flex; flex-wrap: wrap; gap: 10px; }
+  .tp-rein__img { width: 100%; height: auto; border-radius: 12px; display: block; }
+  .tp-rein__block { margin-top: 56px; }
+  .tp-rein__sub { color: #4a443f; max-width: 68ch; }
+  .tp-rein__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 18px; }
+  .tp-rein__card { border: 1px solid #e6e0d8; border-radius: 10px; padding: 18px; background: #fff; }
+  .tp-rein__card p { margin: 6px 0 0; color: #4a443f; }
+  .tp-rein__schritte { counter-reset: s; list-style: none; padding: 0; margin: 18px 0 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px 28px; }
+  .tp-rein__schritte li { counter-increment: s; display: grid; grid-template-columns: 36px 1fr; column-gap: 12px; }
+  .tp-rein__schritte li::before { content: counter(s); grid-row: span 2; width: 32px; height: 32px; border-radius: 50%; background: #b0303f; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+  .tp-rein__schritte span { color: #4a443f; }
+  @media (max-width: 1023px) { .tp-rein__hero { grid-template-columns: 1fr; gap: 24px; } .tp-rein__grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 767px) { .tp-rein__grid, .tp-rein__schritte { grid-template-columns: 1fr; } .tp-rein__block { margin-top: 40px; } }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Teppichreinigung",
+  "tag": "div",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Kleine Zeile", "default": "Service im Fachgeschäft" },
+    { "type": "text", "id": "heading", "label": "Ueberschrift (H1)", "default": "Teppichreinigung in Oranienburg" },
+    { "type": "richtext", "id": "text", "label": "Text" },
+    { "type": "textarea", "id": "fakten", "label": "Fakten (je Zeile einer)" },
+    { "type": "image_picker", "id": "bild", "label": "Bild" },
+    { "type": "text", "id": "cta", "label": "Knopf Anfrage", "default": "Reinigung anfragen" },
+    { "type": "text", "id": "telefon", "label": "Telefon", "default": "03301 573 37 20" },
+    { "type": "url", "id": "whatsapp", "label": "WhatsApp-Link (wa.me/…)" },
+    { "type": "text", "id": "leistungen_heading", "label": "Ueberschrift Leistungen", "default": "Was wir reinigen" },
+    { "type": "text", "id": "ablauf_heading", "label": "Ueberschrift Ablauf", "default": "So läuft die Reinigung ab" },
+    { "type": "text", "id": "ablauf_text", "label": "Text Ablauf" }
+  ],
+  "blocks": [
+    {
+      "type": "leistung",
+      "name": "Leistung",
+      "settings": [
+        { "type": "text", "id": "titel", "label": "Titel", "default": "Orientteppiche" },
+        { "type": "textarea", "id": "text", "label": "Text" }
+      ]
+    },
+    {
+      "type": "schritt",
+      "name": "Schritt",
+      "settings": [
+        { "type": "text", "id": "titel", "label": "Titel", "default": "Abgabe" },
+        { "type": "textarea", "id": "text", "label": "Text" }
+      ]
+    }
+  ],
+  "presets": [ { "name": "TP Teppichreinigung" } ]
+}
+{% endschema %}
