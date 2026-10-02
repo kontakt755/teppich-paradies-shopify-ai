@@ -68,7 +68,7 @@ Umgebung, `$TP_PRIVAT_DIR/social/zugang.env` oder `.env.local` (in dieser Reihen
 | `SOCIAL_UPLOAD_BASIS_URL` | Adresse, die `zugang anlegen` in den Link schreibt | Platzhalter |
 | `SOCIAL_WHATSAPP_GRUPPE` | Name der Firmengruppe, deren Fotos übernommen werden (`WHATSAPP.md`) | – (aus) |
 | `SOCIAL_WHATSAPP_DIR` | Datenordner der WhatsApp-Mac-App | `~/Library/Group Containers/group.net.whatsapp.WhatsApp.shared` |
-| `SOCIAL_AUTO_FREIGABE` | `1` Shop-Inhalte ohne Preisrisiko automatisch freigeben, `2` zusätzlich eigene Fotos mit Einwilligung und Sichtung (nie Angebote, nie Reels) | aus |
+| `SOCIAL_AUTO_FREIGABE` | `1` Shop-Inhalte ohne Preisrisiko automatisch freigeben, `2` zusätzlich eigene Fotos mit Einwilligung und Sichtung (Reels laufen mit, nie Angebote) | aus |
 | `TP_SOCIAL_DIR` | abweichendes Datenverzeichnis (Tests, Probeläufe) | `$TP_PRIVAT_DIR/social` |
 
 Die Zentrale verlangt im Netz die Zugänge des Control Centers

@@ -27,7 +27,7 @@ Newsletter-Fußzeile (eine Zeile):
   „Verlegt von Teppich Paradies“.
 - Material: Baustellen im Vorrat mit Vorher- UND Nachher-Bild derselben Raumecke;
   keine erkennbaren Gesichter, keine Rohbau-/Betonbilder.
-- Reels gehen nie automatisch raus (Inhaberfreigabe in der Zentrale).
+- Reels gehen automatisch raus (Inhaber 02.10.2026: korrigiert nachtraeglich in der Zentrale).
 - Rhythmus: 1 Reel pro Woche, Dienstag oder Donnerstag.
 
 ## 3. Lokale Konten (in der App suchen, folgen, sinnvoll kommentieren)
