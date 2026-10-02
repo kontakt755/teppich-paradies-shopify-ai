@@ -8,7 +8,8 @@
  *   1  Shop-Inhalte ohne Preisrisiko (Farben, Raumidee, Produkt der Woche, Neu im Shop)
  *   2  zusaetzlich Baustellen, Referenzen, Laden - nur mit Einwilligung und
  *      vollstaendig gesichteten Bildern (Datenschutz ok)
- * Nie automatisch: Angebote (Preisangaben), Reels, alles mit Sperre oder
+ * Reels laufen wie ihre Quelle mit (Inhaberentscheidung 02.10.2026: er schaut
+ * nachtraeglich rein und korrigiert). Nie automatisch: Angebote (Preisangaben), alles mit Sperre oder
  * einem Hinweis, der einen Menschen braucht.
  */
 
@@ -50,16 +51,16 @@ export function pruefe({ beitrag, inhalt, medien }) {
  * kein Preis im Spiel ist und die Pruefung gar nichts anzumerken hatte.
  */
 // Hinweise, die bei eigenen Fotos keinen Menschen brauchen: der Beitrag nennt dann einfach keinen Ort.
-const HARMLOS = [/^Ort „/, /^Der Monteur hatte eine Adresse angegeben/];
+const HARMLOS = [/^Ort „/, /^Der Monteur hatte eine Adresse angegeben/, /^Reel – /];
 
 export function autoFreigabeMoeglich({ beitrag, inhalt, medien }, env = process.env) {
   const stufe = env.SOCIAL_AUTO_FREIGABE;
   if (stufe !== '1' && stufe !== '2') return false;
-  if (beitrag.format === 'reel' || inhalt.typ === 'angebot') return false;
+  if (inhalt.typ === 'angebot') return false;
   const { sperren, hinweise } = pruefe({ beitrag, inhalt, medien });
   if (sperren.length) return false;
   if (inhalt.quelle === 'shopify') {
-    return ['produkt_farben', 'raumidee', 'produkt_woche', 'produkt_neu'].includes(inhalt.typ) && hinweise.length === 0;
+    return ['produkt_farben', 'raumidee', 'produkt_woche', 'produkt_neu'].includes(inhalt.typ) && hinweise.every(h => /^Reel – /.test(h));
   }
   if (stufe !== '2' || !['baustelle', 'referenz', 'laden'].includes(inhalt.quelle)) return false;
   // Eigene Fotos nur, wenn jedes verwendete Bild gesichtet ist - auch Referenzbilder der Website.

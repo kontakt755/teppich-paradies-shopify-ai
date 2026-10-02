@@ -28,7 +28,7 @@ test('Stufe 1 nur Shop ohne Preisrisiko, Stufe 2 auch eigene Fotos - nie Angebot
   assert.equal(autoFreigabeMoeglich(baustelle(db, { einwilligung: false }), { SOCIAL_AUTO_FREIGABE: '2' }), false);
   assert.equal(autoFreigabeMoeglich(baustelle(db, { datenschutz: 'ungeprueft', quelle: 'referenz', typ: 'referenz' }), { SOCIAL_AUTO_FREIGABE: '2' }), false, 'Referenzbild ungesichtet');
   const reel = baustelle(db); reel.beitrag = { ...reel.beitrag, format: 'reel' };
-  assert.equal(autoFreigabeMoeglich(reel, { SOCIAL_AUTO_FREIGABE: '2' }), false);
+  assert.equal(autoFreigabeMoeglich(reel, { SOCIAL_AUTO_FREIGABE: '2' }), true);
 });
 
 test('Automatisch freigeben: mit dem Stand von jetzt, nichts in der Vergangenheit', (t) => {
