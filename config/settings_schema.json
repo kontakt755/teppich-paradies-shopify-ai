@@ -2317,7 +2317,8 @@
         "type": "text",
         "id": "tp_facebook_url",
         "label": "Facebook-Seite",
-        "info": "Nur die eigene, verwaltete Seite eintragen - nicht die inoffizielle Ortsseite. Leer = ausgeblendet."
+        "info": "Nur die eigene, verwaltete Seite eintragen - nicht die inoffizielle Ortsseite. Leer = ausgeblendet.",
+        "default": "https://www.facebook.com/profile.php?id=100079849794255"
       }
     ]
   },
