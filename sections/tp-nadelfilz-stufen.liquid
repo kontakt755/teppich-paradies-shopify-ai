@@ -1,0 +1,123 @@
+{%- comment -%}
+  Qualitaetsstufen fuer Nadelfilz: drei Karten (Einstieg, Mittelklasse, Premium) mit
+  Preis ab, Staerken, Einsatzbereich und den Boeden der Stufe. Jede Karte springt per
+  Anker zur Produktreihe der Stufe weiter unten (tp-zubehoer-produkte mit gleichem Anker).
+
+  Warum: Zwoelf Nadelfilz-Qualitaeten sehen im Raster fast gleich aus (dunkle
+  Nahaufnahmen). Kunden brauchen zuerst die Entscheidung "welche Stufe", dann die Farbe.
+
+  Die Boeden einer Stufe kommen aus der Kollektion des Blocks (Tag nadelfilz-stufe: ...),
+  angezeigt wird nur das erste Wort des Titels (Eigenname). Preis "ab" ist der kleinste
+  Preis der Kollektion pro m2, nicht fest eingetragen.
+{%- endcomment -%}
+{%- assign s = section.settings -%}
+<div class="tp-nf-stufen section section--page-width color-{{ s.color_scheme }}" style="padding-block: {{ s.padding_top }}px {{ s.padding_bottom }}px;">
+  <div class="tp-nf-stufen__kopf">
+    {%- if s.heading != blank -%}<h2 class="tp-nf-stufen__titel h3">{{ s.heading | escape }}</h2>{%- endif -%}
+    {%- if s.text != blank -%}<p class="tp-nf-stufen__lead">{{ s.text | escape }}</p>{%- endif -%}
+  </div>
+  <ul class="tp-nf-stufen__liste" role="list">
+    {%- for block in section.blocks -%}
+      {%- liquid
+        assign b = block.settings
+        assign col = b.collection
+        assign ab = 0
+        if col != blank
+          assign ab = col.products | map: 'price' | sort | first
+        endif
+      -%}
+      <li class="tp-nf-stufe{% if b.empfohlen %} tp-nf-stufe--empfohlen{% endif %}" {{ block.shopify_attributes }}>
+        {%- if b.empfohlen and b.badge != blank -%}<span class="tp-nf-stufe__badge">{{ b.badge | escape }}</span>{%- endif -%}
+        <p class="tp-nf-stufe__stufe">{{ b.stufe | escape }}</p>
+        <h3 class="tp-nf-stufe__name">{{ b.title | escape }}</h3>
+        {%- if ab > 0 -%}
+          <p class="tp-nf-stufe__preis">ab <strong>{{ ab | money }}</strong> /m²</p>
+        {%- endif -%}
+        {%- if b.punkte != blank -%}
+          <ul class="tp-nf-stufe__punkte" role="list">
+            {%- assign zeilen = b.punkte | newline_to_br | split: '<br />' -%}
+            {%- for z in zeilen -%}
+              {%- assign z = z | strip -%}
+              {%- if z != blank -%}
+                <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>{{ z | escape }}</li>
+              {%- endif -%}
+            {%- endfor -%}
+          </ul>
+        {%- endif -%}
+        {%- if b.fuer != blank -%}<p class="tp-nf-stufe__fuer"><span>Ideal für:</span> {{ b.fuer | escape }}</p>{%- endif -%}
+        {%- if col != blank and col.products_count > 0 -%}
+          <p class="tp-nf-stufe__boeden">
+            {%- for p in col.products limit: 12 -%}{{ p.title | split: ' ' | first | escape }}{%- unless forloop.last -%}<span aria-hidden="true"> · </span>{%- endunless -%}{%- endfor -%}
+          </p>
+        {%- endif -%}
+        {%- if b.anker != blank -%}
+          <a class="tp-nf-stufe__link" href="#{{ b.anker | handleize }}">
+            {{ col.products_count }} Qualitäten ansehen
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+          </a>
+        {%- endif -%}
+      </li>
+    {%- endfor -%}
+  </ul>
+  {%- if s.hinweis != blank -%}<p class="tp-nf-stufen__hinweis">{{ s.hinweis | escape }}</p>{%- endif -%}
+</div>
+
+{% stylesheet %}
+  .tp-nf-stufen__kopf { max-width: 760px; margin-block-end: 20px; }
+  .tp-nf-stufen__titel { margin: 0; }
+  .tp-nf-stufen__lead { margin: 8px 0 0; color: rgb(var(--color-foreground-rgb) / 0.75); line-height: 1.5; }
+  .tp-nf-stufen__liste { display: grid; gap: 16px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
+  .tp-nf-stufe { position: relative; display: flex; flex-direction: column; gap: 10px; padding: 22px 20px 20px; border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-background); }
+  .tp-nf-stufe--empfohlen { border: 2px solid #7d9480; }
+  .tp-nf-stufe__badge { position: absolute; top: -12px; left: 18px; padding: 3px 10px; border-radius: 999px; background: #7d9480; color: #fff; font-size: 0.78rem; font-weight: 600; }
+  .tp-nf-stufe__stufe { margin: 0; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #7d9480; }
+  .tp-nf-stufe__name { margin: 0; font-size: 1.25rem; line-height: 1.25; }
+  .tp-nf-stufe__preis { margin: 0; font-size: 0.95rem; }
+  .tp-nf-stufe__preis strong { font-size: 1.35rem; }
+  .tp-nf-stufe__punkte { display: grid; gap: 6px; margin: 4px 0 0; padding: 0; list-style: none; font-size: 0.93rem; line-height: 1.4; }
+  .tp-nf-stufe__punkte li { display: grid; grid-template-columns: 16px 1fr; gap: 8px; align-items: start; }
+  .tp-nf-stufe__punkte svg { margin-top: 2px; color: #7d9480; }
+  .tp-nf-stufe__fuer { margin: 4px 0 0; font-size: 0.9rem; line-height: 1.45; }
+  .tp-nf-stufe__fuer span { font-weight: 600; }
+  .tp-nf-stufe__boeden { margin: 0; font-size: 0.85rem; color: rgb(var(--color-foreground-rgb) / 0.65); }
+  .tp-nf-stufe__link { display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin-top: auto; padding: 10px 14px; border: 1px solid var(--color-foreground); border-radius: var(--style-border-radius-pills, 999px); color: var(--color-foreground); font-weight: 600; font-size: 0.92rem; text-decoration: none; }
+  .tp-nf-stufe--empfohlen .tp-nf-stufe__link { background: var(--color-foreground); color: var(--color-background); }
+  .tp-nf-stufen__hinweis { margin: 16px 0 0; font-size: 0.85rem; color: rgb(var(--color-foreground-rgb) / 0.65); }
+  @media (max-width: 899px) {
+    .tp-nf-stufen__liste { grid-template-columns: 1fr; gap: 22px; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Nadelfilz Stufen",
+  "tag": "section",
+  "class": "section-wrapper",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Ueberschrift", "default": "Welcher Nadelfilz passt?" },
+    { "type": "textarea", "id": "text", "label": "Einleitung" },
+    { "type": "text", "id": "hinweis", "label": "Hinweis unter den Karten" },
+    { "type": "color_scheme", "id": "color_scheme", "label": "t:settings.color_scheme", "default": "scheme-1" },
+    { "type": "range", "id": "padding_top", "label": "Abstand oben", "min": 0, "max": 80, "step": 4, "unit": "px", "default": 32 },
+    { "type": "range", "id": "padding_bottom", "label": "Abstand unten", "min": 0, "max": 80, "step": 4, "unit": "px", "default": 16 }
+  ],
+  "blocks": [
+    {
+      "type": "stufe",
+      "name": "Stufe",
+      "settings": [
+        { "type": "text", "id": "stufe", "label": "Stufe (Dachzeile)", "default": "Einstieg" },
+        { "type": "text", "id": "title", "label": "Titel", "default": "Preiswert und robust" },
+        { "type": "collection", "id": "collection", "label": "Kollektion der Stufe" },
+        { "type": "textarea", "id": "punkte", "label": "Staerken (eine pro Zeile)" },
+        { "type": "text", "id": "fuer", "label": "Ideal fuer" },
+        { "type": "text", "id": "anker", "label": "Sprungmarke der Produktreihe" },
+        { "type": "checkbox", "id": "empfohlen", "label": "Hervorheben", "default": false },
+        { "type": "text", "id": "badge", "label": "Hervorhebungs-Text", "default": "Beliebteste Wahl" }
+      ]
+    }
+  ],
+  "max_blocks": 4,
+  "presets": [{ "name": "TP Nadelfilz Stufen" }]
+}
+{% endschema %}
