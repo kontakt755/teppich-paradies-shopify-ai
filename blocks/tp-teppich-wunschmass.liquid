@@ -135,7 +135,14 @@
 
     <p class="tp-teppich-wm__note-{{ tp_wm_id }}" data-note></p>
 
-    {% render 'tp-widerruf-massanfertigung', art: 'teppich' %}
+    {%- comment -%}
+      Widerrufs-Hinweis auf Wunsch des Inhabers (2026-10-02) standardmaessig
+      aus - schreckte Kunden ab. Pflichtinformation nach Art. 246a EGBGB,
+      Risiko bewusst getragen; per Block-Einstellung wieder einschaltbar.
+    {%- endcomment -%}
+    {%- if block.settings.widerruf_hinweis -%}
+      {% render 'tp-widerruf-massanfertigung', art: 'teppich' %}
+    {%- endif -%}
     <button type="button" class="tp-teppich-wm__submit-{{ tp_wm_id }}" data-add-to-cart disabled>
       In den Warenkorb
     </button>
@@ -618,6 +625,13 @@
   "name": "TP Teppich Wunschmaß",
   "tag": null,
   "settings": [
+    {
+      "type": "checkbox",
+      "id": "widerruf_hinweis",
+      "label": "Hinweis \"kein Widerrufsrecht\" über dem Warenkorb-Knopf",
+      "info": "Seit 2026-10-02 aus (Inhaber). Rechtlich ist der Hinweis vor der Bestellung vorgesehen - bei Abmahnung hier wieder einschalten.",
+      "default": false
+    },
     {
       "type": "paragraph",
       "content": "Aktiv, sobald am Produkt das Metafeld custom.wunschmass_mindestbreite_cm gesetzt ist. Ohne dieses Metafeld bleibt der Block unsichtbar."
