@@ -57,8 +57,8 @@ Entwurfstexte mit den Marken liegen in der Git-Historie dieses Ordners.
 - **1.4** Stimmt die Abstufung 10 cm bei geraden Wänden / 20 cm bei schiefen Wänden und Nischen, oder empfehlen Sie pauschal einen Wert? → beantwortet: rund 10 cm Übermaß je Bahn (Verlegeanleitung Bahnenware, heinze.de-PDF); Spanne 10–20 cm bleibt
 - **1.5** Entspricht diese Rechnung Ihrer Empfehlung „bei 350 × 480 cm lohnt sich oft die 500-cm-Rolle“? Reichen 20 cm Reserve in der Breite (10 cm je Seite) in der Praxis aus? → teilweise: Rechnung im Artikel; Hausempfehlung zur Reserve bleibt offen
 - **1.6** Wie viel Überlappung planen Sie je Naht für den Nahtschnitt ein, und muss der Kunde das in der Breite oder Länge zusätzlich bestellen? → beantwortet: 2–3 cm je Seite für den Nahtschnitt (Verlegeanleitung Bahnenware, heinze.de-PDF), als „nach Herstellerangabe“ formuliert
-- **1.7** Soll die Option „Raummaß“ im Ratgeber erwähnt werden, solange sie nur bei einzelnen Produkten verfügbar ist? → bleibt offen (Shop-Entscheidung Raummaß-Option), nicht erwähnt
-- **1.8** Wie soll der Kunde mehrere Bahnen bestellen – je Bahn eine eigene Position mit eigener Länge? Werden die Bahnen dann einzeln zugeschnitten und aus derselben Charge geliefert? → bleibt offen (Bestellablauf, Charge-Zusage)
+- **1.7** Soll die Option „Raummaß“ im Ratgeber erwähnt werden, solange sie nur bei einzelnen Produkten verfügbar ist? → beantwortet 2026-10-02 aus Shopdaten: Raummaß bei 50 von 113 Teppichböden (Rechner „zentimetergenau aus der Rolle“), als Tipp in Artikel 1 und im Verschnitt-Artikel
+- **1.8** Wie soll der Kunde mehrere Bahnen bestellen – je Bahn eine eigene Position mit eigener Länge? Werden die Bahnen dann einzeln zugeschnitten und aus derselben Charge geliefert? → teilweise aus Shopdaten: jede Länge ist eine eigene Warenkorbposition (Tipp in Artikel 1); Charge-Zusage bleibt offen
 
 ### 2. Rollenbreite wählen und Bahnen planen: 400 oder 500 cm?
 
@@ -72,7 +72,7 @@ Entwurfstexte mit den Marken liegen in der Git-Historie dieses Ordners.
 - **2.8** Stimmt die Regel „Naht parallel zum Hauptlichteinfall, also auf das Fenster zulaufend“? Gibt es Ausnahmen je Machart? → beantwortet: Naht zur Hauptlichtquelle (Verlegeanleitung Bahnenware, heinze.de-PDF; selbst.de)
 - **2.9** Gibt es eine Mindestbreite für angesetzte Streifen, die Sie empfehlen (z. B. nicht unter 50 cm)? → bleibt offen (keine belastbare Quelle)
 - **2.10** Wie viele Zentimeter Überlappung je Naht soll der Kunde zusätzlich einplanen? → beantwortet wie 1.6
-- **2.11** Führt der Shop gemusterte Rollenware mit Rapport? Falls ja: Wo steht der Rapport, und wie wird der Mehrbedarf berechnet? Falls nein, Satz streichen. → bleibt offen (Sortiment), Rapport nicht erwähnt
+- **2.11** Führt der Shop gemusterte Rollenware mit Rapport? Falls ja: Wo steht der Rapport, und wie wird der Mehrbedarf berechnet? Falls nein, Satz streichen. → beantwortet aus Shopdaten: alle 30 Treffer „rapportfrei“, kein Rapport-Mehrbedarf; Satz entfällt
 
 ### Verschnitt bei Teppichboden (`verschnitt-bei-teppichboden`, freigegeben 2026-10-02)
 
@@ -139,7 +139,7 @@ Entwurfstexte mit den Marken liegen in der Git-Historie dieses Ordners.
 - **5.22** Welche Pflegehinweise geben Sie Kunden zu Wollteppichboden mit – stimmen „wenig Feuchtigkeit, kein heißes Wasser, keine stark alkalischen Mittel, nur wollgeeignete Reiniger“?
 - **5.23** In welchem Abstand empfehlen Sie im Wohnbereich eine Grundreinigung – oder nur nach Bedarf?
 - **5.24** Für welche Verlegearten und Rückenarten halten Sie die Sprühextraktion für geeignet, für welche nicht?
-- **5.25** Bieten Sie eine Grundreinigung selbst an oder vermitteln Sie sie? Sollen Kunden mit Pflegefragen auf die Kontaktseite verwiesen werden?
+- **5.25** Bieten Sie eine Grundreinigung selbst an oder vermitteln Sie sie? Sollen Kunden mit Pflegefragen auf die Kontaktseite verwiesen werden? → beantwortet aus Shopdaten: /pages/teppichreinigung nur fuer lose Teppiche, keine verlegte Auslegware; Hinweis im Artikel
 - **5.26** Welche Methode empfehlen Sie bei Druckstellen (anfeuchten und aufbürsten, Eiswürfel, Dampf mit Abstand)? Gibt es Macharten, bei denen Druckstellen dauerhaft bleiben?
 - **5.27** Trifft „Flusen in den ersten Wochen sind normal und lassen nach“ auf die Qualitäten im Shop zu – bei welchen Macharten besonders, und welchen Zeitraum nennen Sie Kunden?
 - **5.28** Wie formulieren Sie den Hinweis zum Neugeruch gegenüber Kunden, und welchen Zeitraum nennen Sie?
