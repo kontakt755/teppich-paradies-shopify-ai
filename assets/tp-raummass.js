@@ -20,7 +20,12 @@
     Meterware kommt die Breite von der Rolle, die Zugabe gilt dort nur der
     Laenge.
   - Meterware: jede Rolle, jede der zwei Ausrichtungen; quer muss in die
-    Rolle passen, gewinnt die kleinste Bestellflaeche (wie tp-boden-rechner).
+    Rolle passen.
+  - Empfohlen wird das guenstigste Stueck mit Zugabe, ueber die echten
+    Variantenpreise der gewaehlten Farbe (Preisabfrage root.tpRwcPreis im
+    Rollenware-Rechner, gleiche Abrechnung wie die Preisbox). Raummass lohnt
+    sich nur, wenn (Breite + Zugabe) x Raummass-Preis unter Rollenbreite x
+    Meterware-Preis liegt - bei schmalen Raeumen, nicht bei breiten.
   - Raummass: nur wenn die Farbe es anbietet; quer <= maxRaum (groesste Rolle
     minus Zuschnitt-Zugabe, kommt aus TPRollwareArt). Quer ist die kuerzere
     Seite, die noch passt.
@@ -53,26 +58,22 @@
     return Math.round(breiteCm * laengeCm / 100) / 100;
   }
 
-  // Beste Meterware-Variante fuer Raum b x l mit Zugabe z auf die Laenge.
-  function meterware(b, l, rollen, z) {
-    var best = null;
+  // Alle Meterware-Stuecke fuer Raum b x l: jede Rolle, beide Ausrichtungen,
+  // quer muss in die Rolle passen. Zugabe z nur auf die Laenge - die Breite
+  // kommt von der Rolle.
+  function meterKandidaten(b, l, rollen, z) {
+    var out = [];
     (rollen || []).forEach(function (rolle) {
       [[b, l, false], [l, b, true]].forEach(function (o) {
-        var quer = o[0];
-        var laenge = o[1] + z;
-        if (quer > rolle) return;
-        var flaeche = rolle * laenge;
-        if (!best || flaeche < best._f || (flaeche === best._f && !o[2] && best.gedreht)) {
-          best = { art: 'meter', breite: rolle, laenge: laenge, gedreht: o[2], _f: flaeche };
-        }
+        if (o[0] > rolle) return;
+        out.push({ art: 'meter', breite: rolle, laenge: o[1] + z, gedreht: o[2], m2: m2(rolle, o[1] + z) });
       });
     });
-    if (best) { best.m2 = m2(best.breite, best.laenge); delete best._f; }
-    return best;
+    return out;
   }
 
   // Raummass b x l, Zugabe z auf beide Seiten. Kuerzere Seite quer, wenn sie
-  // passt, sonst die laengere.
+  // passt, sonst die laengere. Die Flaeche ist in beiden Lagen gleich.
   function raummass(b, l, maxRaum, z) {
     if (!(maxRaum > 0)) return null;
     var kurz = Math.min(b, l);
@@ -88,25 +89,58 @@
     return null;
   }
 
-  // Vorschlaege fuer die Rollenware-Seite.
-  // eingabe: { breite, laenge, rollen: [400, 500], raum: bool, maxRaum }
-  // -> { empfohlen, genau, naht } (empfohlen/genau koennen null sein)
+  // Kosten je Stueck: mit Preisabfrage der echte Betrag (0 = gibt es nicht),
+  // ohne die Flaeche als Ersatz. Guenstigstes zuerst; bei Gleichstand
+  // Meterware (kein Nachschnitt), dann die kleinere Flaeche.
+  function bewerte(liste, preis) {
+    return liste.filter(Boolean).map(function (k) {
+      k.preis = typeof preis === 'function' ? preis(k.art, k.breite, k.laenge) : 0;
+      k._kosten = typeof preis === 'function' ? k.preis : k.m2;
+      return k;
+    }).filter(function (k) { return k._kosten > 0; }).sort(function (x, y) {
+      if (Math.abs(x._kosten - y._kosten) > 0.005) return x._kosten - y._kosten;
+      if (x.art !== y.art) return x.art === 'meter' ? -1 : 1;
+      return x.m2 - y.m2;
+    });
+  }
+
+  function gleich(x, y) {
+    return !!(x && y && x.art === y.art && x.breite === y.breite && x.laenge === y.laenge);
+  }
+
+  // Vorschlaege fuer die Rollenware-Seite (Inhaber 2026-10-02: nicht pauschal
+  // Raummass, sondern den Weg, der fuer diesen Raum guenstiger ist).
+  // eingabe: { breite, laenge, rollen: [400, 500], raum: bool, maxRaum,
+  //            preis: function (art, breiteCm, laengeCm) -> EUR }
+  // -> { empfohlen, alternative, genau, naht, raumM2 }
+  //   empfohlen   - guenstigstes Stueck mit Zugabe (Meterware oder Raummass)
+  //   alternative - guenstigstes Stueck der jeweils anderen Art, mit Zugabe
+  //   genau       - zentimetergenau ohne Zugabe (Raummass, sonst Meterware
+  //                 mit exakter Laenge), nur wenn es sich von beiden unterscheidet
   function rolleVorschlag(eingabe) {
     var b = eingabe.breite;
     var l = eingabe.laenge;
     var rollen = (eingabe.rollen || []).filter(function (w) { return w > 0; }).sort(function (a, c) { return a - c; });
     var z = typeof eingabe.zugabe === 'number' ? eingabe.zugabe : ZUGABE_CM;
-    var empfohlen = null;
-    var genau = null;
-    if (eingabe.raum) {
-      empfohlen = raummass(b, l, eingabe.maxRaum, z);
-      genau = raummass(b, l, eingabe.maxRaum, 0);
-    }
-    // Ohne Raummass (oder Raum zu breit dafuer) ist Meterware der Weg. Bei
-    // Meterware heisst "ohne Zugabe": volle Rolle, Laenge exakt wie gemessen.
-    if (!empfohlen) empfohlen = meterware(b, l, rollen, z);
-    if (!genau) genau = meterware(b, l, rollen, 0);
-    return { empfohlen: empfohlen, genau: genau, naht: !empfohlen && !genau, raumM2: m2(b, l) };
+    var preis = eingabe.preis;
+
+    var mit = bewerte(meterKandidaten(b, l, rollen, z).concat(
+      eingabe.raum ? [raummass(b, l, eingabe.maxRaum, z)] : []), preis);
+    var empfohlen = mit[0] || null;
+    var alternative = empfohlen ? mit.filter(function (k) { return k.art !== empfohlen.art; })[0] || null : null;
+
+    var ohne = bewerte(eingabe.raum ? [raummass(b, l, eingabe.maxRaum, 0)] : [], preis)[0] ||
+      bewerte(meterKandidaten(b, l, rollen, 0), preis)[0] || null;
+    var genau = (gleich(ohne, empfohlen) || gleich(ohne, alternative)) ? null : ohne;
+
+    [empfohlen, alternative, genau].forEach(function (k) { if (k) delete k._kosten; });
+    return {
+      empfohlen: empfohlen,
+      alternative: alternative,
+      genau: genau,
+      naht: !empfohlen && !ohne,
+      raumM2: m2(b, l)
+    };
   }
 
   // Raumliste -> Summe m² (auf 0,01 gerundet). Leere Zeilen zaehlen nicht,
@@ -194,7 +228,10 @@ if (typeof document !== 'undefined') (function () {
       if (ziel && ziel.scrollIntoView) ziel.scrollIntoView({ block: 'center', behavior: 'smooth' });
     }
 
-    function zeile(titel, v, text, primaer) {
+    function euro(n) { return RM.fmtZahl(n, 2) + ' €'; }
+
+    // knopf: Beschriftung des Uebernehmen-Knopfs; primaer = Empfehlung.
+    function zeile(titel, v, text, knopf, primaer) {
       var div = document.createElement('div');
       div.className = 'tp-rm__vorschlag' + (primaer ? ' tp-rm__vorschlag--empfohlen' : '');
       var kopf = document.createElement('p');
@@ -202,20 +239,30 @@ if (typeof document !== 'undefined') (function () {
       kopf.textContent = titel;
       var mass = document.createElement('p');
       mass.className = 'tp-rm__mass';
-      mass.textContent = (v.art === 'meter' ? 'Meterware ' : 'Raummaß ') + RM.fmtZahl(v.breite, 0) + ' × ' + RM.fmtZahl(v.laenge, 0) + ' cm · ' + RM.fmtZahl(v.m2, 2) + ' m²';
+      mass.textContent = (v.art === 'meter' ? 'Meterware ' : 'Raummaß ') + RM.fmtZahl(v.breite, 0) + ' × ' + RM.fmtZahl(v.laenge, 0) + ' cm';
+      var preis = document.createElement('p');
+      preis.className = 'tp-rm__preis';
+      preis.textContent = RM.fmtZahl(v.m2, 2) + ' m²' + (v.preis > 0 ? ' · ' + euro(v.preis) : '');
       var info = document.createElement('p');
       info.className = 'tp-rm__info';
       info.textContent = text + (v.gedreht ? ' Breite und Länge sind dafür getauscht.' : '');
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'tp-rm__knopf' + (primaer ? ' tp-rm__knopf--primaer' : '');
-      btn.textContent = primaer ? 'Dieses Maß übernehmen' : 'Ohne Zugabe übernehmen';
+      btn.textContent = knopf;
       btn.addEventListener('click', function () { uebernehmen(v); });
       div.appendChild(kopf);
       div.appendChild(mass);
+      div.appendChild(preis);
       div.appendChild(info);
       div.appendChild(btn);
       return div;
+    }
+
+    function erklaerung(v, z) {
+      return v.art === 'meter'
+        ? 'Volle Rollenbreite, ' + z + ' cm Zugabe auf die Länge zum Anpassen an die Wand.'
+        : 'Je ' + z + ' cm Zugabe auf Breite und Länge – Wände sind selten ganz gerade.';
     }
 
     function rechnen() {
@@ -230,7 +277,10 @@ if (typeof document !== 'undefined') (function () {
         return;
       }
       var r = rollen();
-      var v = RM.rolleVorschlag({ breite: b.cm, laenge: l.cm, rollen: r, raum: raumMoeglich(), maxRaum: maxRaum(r) });
+      var v = RM.rolleVorschlag({
+        breite: b.cm, laenge: l.cm, rollen: r, raum: raumMoeglich(), maxRaum: maxRaum(r),
+        preis: typeof rechner.tpRwcPreis === 'function' ? rechner.tpRwcPreis : null
+      });
       if (v.naht) {
         var p = document.createElement('p');
         p.className = 'tp-rm__info';
@@ -239,21 +289,31 @@ if (typeof document !== 'undefined') (function () {
         return;
       }
       var z = RM.ZUGABE_CM;
-      if (v.empfohlen) {
-        aus.appendChild(zeile('Empfohlen – mit Zugabe', v.empfohlen,
-          v.empfohlen.art === 'meter'
-            ? 'Volle Rollenbreite, ' + z + ' cm Zugabe auf die Länge zum Anpassen an die Wand.'
-            : 'Je ' + z + ' cm Zugabe auf Breite und Länge – Wände sind selten ganz gerade.', true));
+      var e = v.empfohlen;
+      var alt = v.alternative;
+      if (e) {
+        var warum = erklaerung(e, z);
+        if (alt && alt.preis > 0 && e.preis > 0 && alt.preis - e.preis >= 0.01) {
+          warum += ' ' + euro(alt.preis - e.preis) + ' günstiger als ' + (alt.art === 'meter' ? 'Meterware' : 'Raummaß') + '.';
+        }
+        aus.appendChild(zeile('Empfohlen – günstigster Weg', e, warum, 'Dieses Maß übernehmen', true));
       }
-      if (v.genau && !(v.empfohlen && v.genau.breite === v.empfohlen.breite && v.genau.laenge === v.empfohlen.laenge)) {
+      if (alt) {
+        var altText = alt.art === 'raum'
+          ? 'Nur so breit wie nötig zugeschnitten – weniger Reste, aber höherer m²-Preis.'
+          : 'Volle Rollenbreite zum günstigeren m²-Preis, der Überstand wird beim Verlegen abgeschnitten.';
+        aus.appendChild(zeile(alt.art === 'raum' ? 'Alternative – Raummaß' : 'Alternative – Meterware', alt,
+          altText + ' Mit ' + z + ' cm Zugabe.', 'Stattdessen übernehmen', false));
+      }
+      if (v.genau) {
         aus.appendChild(zeile('Zentimetergenau – ohne Zugabe', v.genau,
           v.genau.art === 'meter'
             ? 'Volle Rollenbreite, Länge genau wie gemessen.'
-            : 'Genau Ihre Maße – nur, wenn Sie sehr exakt gemessen haben.', false));
+            : 'Genau Ihre Maße – nur, wenn Sie sehr exakt gemessen haben.', 'Ohne Zugabe übernehmen', false));
       }
       var raum = document.createElement('p');
       raum.className = 'tp-rm__raum';
-      raum.textContent = 'Raumfläche: ' + RM.fmtZahl(v.raumM2, 2) + ' m²';
+      raum.textContent = 'Raumfläche: ' + RM.fmtZahl(v.raumM2, 2) + ' m². Preise für die gewählte Farbe, ohne Zubehör.';
       aus.appendChild(raum);
     }
 
