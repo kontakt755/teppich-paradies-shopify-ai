@@ -151,6 +151,19 @@
       content_type: 'products',
       test_id: 'tp-zubehoer-produkte-list'
     %}
+
+    {%- comment -%}
+      Teppich-Gruppe mobil: Raster statt Wischleiste (Wischen wurde uebersehen).
+      Die ersten vier Karten stehen da, der Rest kommt per Knopf. Ab 750 px ohne Wirkung.
+    {%- endcomment -%}
+    {%- if tp_tg_filter != 'alle' and list_items_array.size > 4 -%}
+      <div class="tp-zubehoer-produkte__mehr">
+        <button type="button" class="tp-zubehoer-produkte__mehr-knopf" data-tp-gruppe-mehr aria-expanded="false">
+          Alle {{ list_items_array.size }} Qualitäten zeigen
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+      </div>
+    {%- endif -%}
   </div>
 {%- endif -%}
 
@@ -199,6 +212,17 @@
     border-color: var(--color-foreground);
   }
 {% endstylesheet %}
+
+{% javascript %}
+  document.addEventListener('click', function (event) {
+    var knopf = event.target.closest('[data-tp-gruppe-mehr]');
+    if (!knopf) return;
+    var reihe = knopf.closest('.tp-zubehoer-produkte--teppich-gruppe');
+    if (!reihe) return;
+    reihe.classList.add('is-offen');
+    knopf.setAttribute('aria-expanded', 'true');
+  });
+{% endjavascript %}
 
 {% schema %}
 {
