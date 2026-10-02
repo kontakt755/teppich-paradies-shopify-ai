@@ -45,6 +45,7 @@ Sonderfälle.
 | `farben_titel` | Titelbild einer Farb- oder Dekorvorstellung | Raster aus bis zu sechs Farbflächen, darunter Name und Anzahl |
 | `farbe` | einzelne Farbe im Karussell | Bild bildfüllend, unten links der Farbname, darüber „3 / 9" |
 | `tipp` | Bodenwissen, Hinweise | die einzige Textvorlage: Kicker, Frage, bis zu drei nummerierte Punkte |
+| `angebot` | Angebot (Beitrag, Story) | Doppelbild Rolle + Teppich mit Einfassung, Abzeichen −XX %, Aktionspreis groß in Rot, alter Preis fett durchgestrichen, Aktionsende in der Zeile |
 | `highlight` | Titelbild eines Instagram-Highlights | roter Kreis mit einem Wort in der Bildmitte – Instagram zeigt nur diesen Kreis; `npm run social -- highlights` legt alle fünf unter `$TP_PRIVAT_DIR/social/highlights` ab |
 | `story_foto` | Story, Reel-Standbild | Foto bildfüllend, oben Logo und Marke („Von uns verlegt"), unten eine Zeile; die Bedienflächen von Instagram bleiben frei |
 
