@@ -33,7 +33,15 @@
     assign tp_ct_typ = closest.product.type | downcase
     assign tp_ct_linie = ''
     assign tp_ct_woerter = tp_card_title_display | split: ' '
-    if tp_ct_typ contains 'vinyl' and tp_ct_woerter.size > 1
+    # Markenteppiche "<MARKE>-Kollektion Teppich <NAME>": Zeile "<MARKE> · Typ",
+    # gross nur der Name (Inhaber 2026-10-02). Schreibweise unveraendert aus
+    # Hersteller und Titel - die Markenvorgabe verlangt sie so.
+    assign tp_ct_marke = closest.product.vendor | remove: '-Kollektion' | strip
+    if closest.product.title contains '-Kollektion ' and tp_ct_marke != blank and tp_ct_woerter.size > 2
+      assign tp_ct_linie = tp_ct_marke
+      assign tp_ct_art = closest.product.type
+      assign tp_card_title_display = tp_ct_woerter | last
+    elsif tp_ct_typ contains 'vinyl' and tp_ct_woerter.size > 1
       assign tp_ct_linie = tp_ct_woerter | first
       assign tp_ct_art = closest.product.type
       assign tp_ct_dekor = ''
@@ -60,6 +68,7 @@
     {% render 'text', fallback_text: product_title, block: block %}
   </a>
   {% render 'tp-card-roll-widths', product_resource: closest.product %}
+  {% render 'tp-card-fixgroessen', product: closest.product %}
 {% endif %}
 
 {% comment %}
