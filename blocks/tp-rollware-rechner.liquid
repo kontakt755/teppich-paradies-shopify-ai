@@ -83,6 +83,17 @@
   # zugeschnittener Teppichboden bleibt Auslegware. Wer einen fertigen,
   # umlaufend gekettelten Teppich will, kommt ueber service.einfass_gruppe
   # zum eigenen Produkt "Teppich nach Mass".
+  # Dielenoptik (custom.optik = Holzdekore, v. a. Vinyl von der Rolle): das
+  # Muster laeuft immer entlang der Rollenlaenge. Skizze und Raummass-Helfer
+  # zeigen dann die Laufrichtung, und der Helfer dreht nicht eigenmaechtig
+  # (Inhaber 2026-10-02: Musterrichtung wichtiger als m² Verschnitt).
+  assign tp_rc_dielen = false
+  for tp_rc_optik in product.metafields.custom.optik.value
+    if tp_rc_optik.system.handle == 'holzdekore'
+      assign tp_rc_dielen = true
+    endif
+  endfor
+
   assign tp_rc_leiste = block.settings.kettelleisten_produkt
   assign tp_rc_haft = block.settings.haftunterlage_produkt
   assign tp_rc_einfass_gruppe = product.metafields.service.einfass_gruppe.value
@@ -105,7 +116,7 @@
   endcapture
   assign tp_rc_rabatt = tp_rc_rabatt | strip
 -%}
-<div class="tp-rwc-{{ tp_rc_id }} tp-kaufweg" id="tp-rwc-{{ tp_rc_id }}" data-product-id="{{ product.id }}" data-max-laenge-cm="{{ tp_rc_max_laenge_cm }}" {{ block.shopify_attributes }}>
+<div class="tp-rwc-{{ tp_rc_id }} tp-kaufweg" id="tp-rwc-{{ tp_rc_id }}" data-product-id="{{ product.id }}" {% if tp_rc_dielen %}data-muster="dielen"{% endif %} data-max-laenge-cm="{{ tp_rc_max_laenge_cm }}" {{ block.shopify_attributes }}>
 
   {%- comment -%}
     Faehrt eine Farbe nur noch ueber den Zweitlieferanten, gibt es dafuer
@@ -136,7 +147,7 @@
     oder ohne Zugabe uebernehmen. Befuellt nur die Felder unten.
   {%- endcomment -%}
   {%- if block.settings.raummass_helfer != false -%}
-    <div data-rwc-body>{% render 'tp-raummass', art: 'rolle', id: tp_rc_id %}</div>
+    <div data-rwc-body>{% render 'tp-raummass', art: 'rolle', id: tp_rc_id, muster: tp_rc_dielen %}</div>
   {%- endif -%}
   <div class="tp-rwc-field" data-art-field data-rwc-body hidden>
     <div class="tp-rwc-art" role="radiogroup" aria-label="Art des Zuschnitts">
@@ -227,12 +238,20 @@
     fuer den Kauf aber kein Schritt (Design-Runde 3). Beim Aufklappen wird
     neu gezeichnet, weil die Buehne vorher keine Breite hat.
   {%- endcomment -%}
-  <details class="tp-rwc-skizze" data-draw hidden data-rwc-body>
-    <summary>Skizze Ihres Stücks</summary>
+  {%- comment -%}
+    Bei Dielenoptik steht die Skizze offen und zeigt die Dielen entlang der
+    Laenge - die Laufrichtung entscheidet hier mit ueber die Rollenbreite.
+  {%- endcomment -%}
+  <details class="tp-rwc-skizze" data-draw hidden data-rwc-body{% if tp_rc_dielen %} open{% endif %}>
+    <summary>Skizze Ihres Stücks{% if tp_rc_dielen %} – mit Laufrichtung der Dielen{% endif %}</summary>
+  {%- if tp_rc_dielen -%}
+    <p class="tp-rwc-muster-hinweis">Die Dielen laufen immer entlang der Länge, also in der Richtung, in der wir von der Rolle abschneiden. Quer dazu liegt die Rollenbreite.</p>
+  {%- endif -%}
   <figure class="tp-rwc-draw" aria-hidden="true">
     <svg class="tp-rwc-rolle" viewBox="0 0 340 214" data-rolle-svg hidden></svg>
     <div class="tp-rwc-stage" data-stage>
-      <div class="tp-rwc-piece" data-piece>
+      <div class="tp-rwc-piece{% if tp_rc_dielen %} tp-rwc-piece--dielen{% endif %}" data-piece>
+        {%- if tp_rc_dielen -%}<span class="tp-rwc-laufrichtung">↕ Laufrichtung</span>{%- endif -%}
         <span class="tp-rwc-tag tp-rwc-tag-w" data-tag-width>–</span>
         <span class="tp-rwc-tag tp-rwc-tag-l" data-tag-length>–</span>
       </div>
@@ -772,6 +791,24 @@
     box-shadow: 0 4px 14px rgba(29, 107, 71, 0.18);
     transition: width .2s ease, height .2s ease;
   }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-piece--dielen {
+    background-color: rgba(29, 107, 71, 0.06);
+    background-image: repeating-linear-gradient(90deg, transparent 0, transparent calc(var(--tp-diele, 10px) - 1px), rgba(29, 107, 71, 0.38) calc(var(--tp-diele, 10px) - 1px), rgba(29, 107, 71, 0.38) var(--tp-diele, 10px));
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-laufrichtung {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--color-background, #fff);
+    color: #1d6b47;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-muster-hinweis { margin: 6px 0 0; font-size: 13px; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72); }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-tag { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: #1d6b47; white-space: nowrap; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-tag-w {
     position: absolute;
@@ -1545,6 +1582,10 @@ function tpRwcInit{{ tp_rc_id }}() {
 
     var widthPx = Math.max(DRAW_MIN_PX, Math.min(stageW, Math.round(w * pxPerCm)));
     piece.style.width = widthPx + 'px';
+    // Dielenoptik: eine Diele etwa 20 cm breit, massstaeblich zum Stueck.
+    if (root.getAttribute('data-muster') === 'dielen') {
+      piece.style.setProperty('--tp-diele', Math.max(5, Math.round(20 * pxPerCm)) + 'px');
+    }
     tagW.textContent = 'Breite ' + w + ' cm';
 
     if (!len) {
