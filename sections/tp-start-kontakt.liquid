@@ -8,10 +8,10 @@
 {%- capture tp_kon_formular -%}
       <div class="tp-kon__card tp-kon__card--form" id="tp-anfrage">
         <h3 class="tp-s-h3">Anfrage senden</h3>
-        <p>Für Aufmaß, Verlegung oder ein Angebot. Wir melden uns am nächsten Werktag.</p>
+        <p>{{ section.settings.form_text | default: 'Für Aufmaß, Verlegung oder ein Angebot. Wir melden uns am nächsten Werktag.' | escape }}</p>
         <button class="tp-s-btn tp-s-btn--primary tp-kon__toggle" type="button" aria-expanded="false" data-tp-kon-toggle>Anfrage schreiben</button>
         {%- form 'contact', id: 'tp-start-anfrage', class: 'tp-kon__form' -%}
-          <input type="hidden" name="contact[Betreff]" value="Anfrage von der Startseite">
+          <input type="hidden" name="contact[Betreff]" value="{{ section.settings.betreff | default: 'Anfrage von der Startseite' | escape }}">
           {%- if form.posted_successfully? -%}
             <p class="tp-kon__ok" role="status" data-tp-lead-success><b>Danke, Ihre Anfrage ist angekommen.</b> Wir melden uns am nächsten Werktag.</p>
           {%- elsif form.errors -%}
@@ -21,8 +21,8 @@
           <label>PLZ<input type="text" name="contact[PLZ]" inputmode="numeric" maxlength="5" autocomplete="postal-code"></label>
           <label>E-Mail<input type="email" name="contact[email]" autocomplete="email" required value="{{ form.email }}"></label>
           <label>Telefon (optional)<input type="tel" name="contact[Telefon]" autocomplete="tel"></label>
-          <label class="tp-kon__full">Ich möchte<select name="contact[Anliegen]"><option>Boden verlegen lassen</option><option>Aufmaß und Angebot</option><option>Beratung zum Produkt</option><option>Muster bestellen</option><option>Rückruf</option></select></label>
-          <label class="tp-kon__full">Nachricht (Raum, Fläche, Wunschboden)<textarea name="contact[body]" rows="3">{{ form.body }}</textarea></label>
+          <label class="tp-kon__full">Ich möchte<select name="contact[Anliegen]">{%- if section.settings.anliegen != blank -%}<option selected>{{ section.settings.anliegen | escape }}</option>{%- endif -%}<option>Boden verlegen lassen</option><option>Aufmaß und Angebot</option><option>Beratung zum Produkt</option><option>Muster bestellen</option><option>Rückruf</option></select></label>
+          <label class="tp-kon__full">{{ section.settings.nachricht_label | default: 'Nachricht (Raum, Fläche, Wunschboden)' | escape }}<textarea name="contact[body]" rows="3">{{ form.body }}</textarea></label>
           <p class="tp-s-note tp-kon__full">Fotos oder Grundrisse schicken Sie uns am einfachsten per WhatsApp. Mit dem Absenden stimmen Sie der Verarbeitung Ihrer Angaben zur Bearbeitung der Anfrage zu.</p>
           <button class="tp-s-btn tp-s-btn--primary tp-kon__full" type="submit">Anfrage senden</button>
         {%- endform -%}
@@ -180,6 +180,10 @@
     { "type": "text", "id": "telefon", "label": "Telefon", "default": "03301 573 37 20" },
     { "type": "text", "id": "zeiten", "label": "Zeiten", "default": "Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr." },
     { "type": "url", "id": "whatsapp", "label": "WhatsApp-Link (wa.me/…)" },
+    { "type": "text", "id": "anliegen", "label": "Anliegen vorbelegt", "info": "Wird als erste Auswahl gesetzt, z. B. Teppichreinigung. Leer = Boden verlegen lassen." },
+    { "type": "text", "id": "betreff", "label": "Betreff der Anfrage-Mail", "info": "Leer = Anfrage von der Startseite" },
+    { "type": "text", "id": "form_text", "label": "Text ueber dem Formular", "info": "Leer = Text der Startseite" },
+    { "type": "text", "id": "nachricht_label", "label": "Beschriftung Nachricht", "info": "Leer = Nachricht (Raum, Fläche, Wunschboden)" },
     { "type": "header", "content": "Fachgeschäft (links)" },
     { "type": "paragraph", "content": "Mit Ueberschrift wird die Section zweispaltig: links Foto, Text und Fakten, rechts Kontakt und Formular. Leer = drei Kontaktkarten wie bisher." },
     { "type": "image_picker", "id": "fh_bild", "label": "Echtes Foto (Laden, Team)" },

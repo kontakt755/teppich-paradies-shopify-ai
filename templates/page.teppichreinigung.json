@@ -1,0 +1,205 @@
+{
+  "sections": {
+    "rein": {
+      "type": "tp-teppichreinigung",
+      "blocks": {
+        "l1": {
+          "type": "leistung",
+          "settings": {
+            "titel": "Orient- und Perserteppiche",
+            "text": "Handgeknüpfte Teppiche aus Wolle, auch ältere Stücke. Jeder Teppich wird vorher begutachtet und passend behandelt."
+          }
+        },
+        "l2": {
+          "type": "leistung",
+          "settings": {
+            "titel": "Maschinell gefertigte Teppiche",
+            "text": "Webteppiche, Wohnzimmer- und Kinderzimmerteppiche, Läufer und Brücken."
+          }
+        },
+        "l3": {
+          "type": "leistung",
+          "settings": {
+            "titel": "Hochflor und Shaggy",
+            "text": "Langflorige Teppiche, in denen sich Staub tief festsetzt – mit dem Staubsauger kommt man da nicht heran."
+          }
+        },
+        "l4": {
+          "type": "leistung",
+          "settings": {
+            "titel": "Berber, Gabbeh und Kelim",
+            "text": "Naturbelassene Wollteppiche und flachgewebte Kelims mit der Sorgfalt, die sie brauchen."
+          }
+        },
+        "l5": {
+          "type": "leistung",
+          "settings": {
+            "titel": "Sonderbehandlungen",
+            "text": "Auf Wunsch Geruchs- und Urinbehandlung, Mottenschutz oder Fleckenschutz-Imprägnierung. Was sinnvoll ist, besprechen wir bei der Abgabe."
+          }
+        },
+        "l6": {
+          "type": "leistung",
+          "settings": {
+            "titel": "Kanten und Fransen",
+            "text": "Fransen werden mitgereinigt. Eine ausgefranste Kante können wir in unserer Werkstatt neu ketteln."
+          }
+        },
+        "s1": {
+          "type": "schritt",
+          "settings": {
+            "titel": "Abgabe oder Abholung",
+            "text": "Sie bringen den Teppich in unseren Laden in der Saarlandstraße 73 in Oranienburg – oder wir holen ihn nach Absprache bei Ihnen ab."
+          }
+        },
+        "s2": {
+          "type": "schritt",
+          "settings": {
+            "titel": "Begutachtung",
+            "text": "Material, Flecken und Zustand werden geprüft. Danach steht fest, welche Behandlung Ihr Teppich braucht."
+          }
+        },
+        "s3": {
+          "type": "schritt",
+          "settings": {
+            "titel": "Ausklopfen und Vorbehandlung",
+            "text": "Tief sitzender Staub wird maschinell ausgeklopft, Flecken werden gezielt vorbehandelt."
+          }
+        },
+        "s4": {
+          "type": "schritt",
+          "settings": {
+            "titel": "Professionelle Handwäsche",
+            "text": "Der Teppich wird von Hand gewaschen und gründlich gespült, Fransen inklusive."
+          }
+        },
+        "s5": {
+          "type": "schritt",
+          "settings": {
+            "titel": "Schleudern und Trocknen",
+            "text": "Geschleudert wird das Waschwasser entzogen, anschließend trocknet der Teppich schonend."
+          }
+        },
+        "s6": {
+          "type": "schritt",
+          "settings": {
+            "titel": "Kontrolle und Rückgabe",
+            "text": "Nach der Endkontrolle holen Sie den Teppich bei uns ab oder wir bringen ihn zurück. Die Reinigung dauert insgesamt etwa 2 bis 4 Wochen."
+          }
+        }
+      },
+      "block_order": [
+        "l1",
+        "l2",
+        "l3",
+        "l4",
+        "l5",
+        "l6",
+        "s1",
+        "s2",
+        "s3",
+        "s4",
+        "s5",
+        "s6"
+      ],
+      "settings": {
+        "eyebrow": "Service im Fachgeschäft",
+        "heading": "Teppichreinigung in Oranienburg",
+        "text": "<p>Ihr Teppich wird bei uns professionell von Hand gewaschen und danach geschleudert – gründlich und schonend, vom Wohnzimmerteppich bis zum handgeknüpften Orientteppich. Sie geben ihn in unserem Laden in Oranienburg ab oder wir holen ihn ab.</p>",
+        "fakten": "Alle Teppicharten, auch Orient- und Wollteppiche\nProfessionelle Handwäsche, danach Schleudern\nAbgabe im Laden oder Abholung\nFertig in etwa 2–4 Wochen",
+        "cta": "Reinigung anfragen",
+        "telefon": "03301 573 37 20",
+        "whatsapp": "https://wa.me/4917657931322",
+        "leistungen_heading": "Was wir reinigen",
+        "ablauf_heading": "So läuft die Reinigung ab",
+        "ablauf_text": "Jeder Teppich wird einzeln behandelt – in sechs Schritten von der Abgabe bis zur Rückgabe."
+      }
+    },
+    "faq": {
+      "type": "tp-start-faq",
+      "blocks": {
+        "q1": {
+          "type": "frage",
+          "settings": {
+            "frage": "Welche Teppiche reinigen Sie?",
+            "antwort": "<p>Alle Arten von Teppichen: handgeknüpfte Orient- und Perserteppiche, Wollteppiche, maschinell gefertigte Teppiche, Hochflor, Shaggy, Berber, Kelim und Läufer. Bei sehr empfindlichen oder antiken Stücken schauen wir uns den Teppich vorher genau an.</p>"
+          }
+        },
+        "q2": {
+          "type": "frage",
+          "settings": {
+            "frage": "Reinigen Sie auch Teppichboden oder vor Ort?",
+            "antwort": "<p>Nein. Wir reinigen ausschließlich lose Teppiche, keine fest verlegte Auslegware und keine Reinigung bei Ihnen zu Hause.</p>"
+          }
+        },
+        "q3": {
+          "type": "frage",
+          "settings": {
+            "frage": "Wie lange dauert die Teppichreinigung?",
+            "antwort": "<p>Rechnen Sie mit etwa 2 bis 4 Wochen von der Abgabe bis zur Rückgabe. Wann Ihr Teppich fertig ist, sagen wir Ihnen bei der Abgabe.</p>"
+          }
+        },
+        "q4": {
+          "type": "frage",
+          "settings": {
+            "frage": "Wie wird mein Teppich gereinigt?",
+            "antwort": "<p>Professionell in Handwäsche: ausklopfen, Flecken vorbehandeln, von Hand waschen und spülen, danach schleudern und schonend trocknen. Zum Schluss wird jeder Teppich kontrolliert.</p>"
+          }
+        },
+        "q5": {
+          "type": "frage",
+          "settings": {
+            "frage": "Was kostet die Reinigung?",
+            "antwort": "<p>Das hängt stark von Größe, Material und Zustand des Teppichs ab. Deshalb nennen wir keinen Pauschalpreis, sondern sagen Ihnen den Preis, nachdem wir den Teppich gesehen haben – gern auch vorab anhand von Fotos per WhatsApp.</p>"
+          }
+        },
+        "q6": {
+          "type": "frage",
+          "settings": {
+            "frage": "Kann ich den Teppich abholen lassen?",
+            "antwort": "<p>Ja. Sie können den Teppich in unserem Laden in Oranienburg abgeben oder eine Abholung mit uns vereinbaren. Schreiben Sie uns dazu einfach über das Formular, per WhatsApp oder rufen Sie an.</p>"
+          }
+        },
+        "q7": {
+          "type": "frage",
+          "settings": {
+            "frage": "Gehen Flecken und Gerüche raus?",
+            "antwort": "<p>Die meisten Verschmutzungen lassen sich mit der Handwäsche und einer gezielten Vorbehandlung deutlich verbessern oder ganz entfernen. Für Gerüche, etwa durch Haustiere, gibt es eine Sonderbehandlung. Eine Garantie für jeden alten Fleck können wir ehrlicherweise nicht geben.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "q1",
+        "q2",
+        "q3",
+        "q4",
+        "q5",
+        "q6",
+        "q7"
+      ],
+      "settings": {
+        "heading": "Häufige Fragen zur Teppichreinigung",
+        "erste_offen": true
+      }
+    },
+    "kontakt": {
+      "type": "tp-start-kontakt",
+      "settings": {
+        "heading": "Teppichreinigung anfragen",
+        "text": "Schicken Sie uns ein Foto per WhatsApp, rufen Sie an oder schreiben Sie uns – wir melden uns am nächsten Werktag.",
+        "telefon": "03301 573 37 20",
+        "zeiten": "Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr.",
+        "whatsapp": "https://wa.me/4917657931322",
+        "anliegen": "Teppichreinigung",
+        "betreff": "Anfrage Teppichreinigung",
+        "form_text": "Abgabe im Laden oder Abholung – sagen Sie uns, was Sie möchten.",
+        "nachricht_label": "Nachricht (Teppichart, Größe, Abholung gewünscht?)"
+      }
+    }
+  },
+  "order": [
+    "rein",
+    "faq",
+    "kontakt"
+  ]
+}
