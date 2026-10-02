@@ -159,3 +159,28 @@
 @media (prefers-reduced-motion: no-preference) {
   .tp-rg-cta__link, .tp-rg-produkt__link, .tp-rg-video__play { transition: border-color 0.15s, background 0.15s; }
 }
+
+/* Anschauliche Bausteine im Artikeltext (Ausbau 2026-10): Schrittkarten, Tipp/Achtung, Vergleich, Abbildungen */
+.tp-rg-body figure img { margin: 0; width: 100%; }
+.tp-rg-body figure { margin: 1.4em 0 1.8em; }
+.tp-rg-schritte ol { list-style: none; counter-reset: rg-schritt; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin: 1.2em 0 1.6em; padding: 0; }
+.tp-rg-schritte li { counter-increment: rg-schritt; position: relative; margin: 0; padding: 46px 16px 16px; background: var(--tp-bg-2, #f6f2ec); border-radius: var(--tp-r, 10px); font-size: 16px; line-height: 1.5; }
+.tp-rg-schritte li::before { content: counter(rg-schritt); position: absolute; left: 16px; top: 14px; width: 26px; height: 26px; border-radius: 50%; background: var(--tp-red, #b0303f); color: #fff; font-size: 14px; font-weight: 700; line-height: 26px; text-align: center; }
+.tp-rg-schritte li strong { display: block; margin-bottom: 2px; }
+.tp-rg-tipp, .tp-rg-achtung { margin: 1.2em 0 1.6em; padding: 14px 18px 14px 52px; border-radius: var(--tp-r, 10px); position: relative; font-size: 16px; line-height: 1.55; }
+.tp-rg-tipp p, .tp-rg-achtung p { margin: 0; }
+.tp-rg-tipp { background: #edf5ef; }
+.tp-rg-achtung { background: #fdf3e6; }
+.tp-rg-tipp::before, .tp-rg-achtung::before { position: absolute; left: 16px; top: 13px; width: 24px; height: 24px; border-radius: 50%; color: #fff; font-weight: 700; font-size: 15px; line-height: 24px; text-align: center; }
+.tp-rg-tipp::before { content: "\2713"; background: var(--tp-green, #2f7a4c); }
+.tp-rg-achtung::before { content: "!"; background: #b86a12; }
+.tp-rg-vergleich { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 1.2em 0 1.6em; }
+.tp-rg-vergleich > div { padding: 16px 18px; border: 1px solid var(--tp-line, #e6e0d8); border-radius: var(--tp-r, 10px); }
+.tp-rg-body .tp-rg-vergleich h3 { margin: 0 0 8px; font-size: 18px; }
+.tp-rg-vergleich ul { margin: 0; font-size: 16px; }
+@media (max-width: 599px) {
+  .tp-rg-vergleich { grid-template-columns: 1fr; }
+  .tp-rg-schritte ol { grid-template-columns: 1fr; }
+  .tp-rg-schritte li { padding: 14px 14px 14px 52px; }
+  .tp-rg-schritte li::before { top: 14px; }
+}

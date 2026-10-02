@@ -38,19 +38,66 @@
       "art": "hersteller",
       "titel": "Verarbeitungshinweise des jeweiligen Klebers",
       "url": ""
+    },
+    {
+      "art": "norm",
+      "titel": "TKB-Merkblatt 13: Kleben von textilen Bodenbelägen (IVK, Juli 2018)",
+      "url": "https://www.klebstoffe.com"
+    },
+    {
+      "art": "norm",
+      "titel": "TKB-Merkblatt 17: Raumklima (IVK/BVPF, Juli 2025)",
+      "url": "https://www.klebstoffe.com/wp-content/uploads/2025/08/TKB-17-Raumklima-2025-07-23-Veroeffentlichung.pdf"
+    },
+    {
+      "art": "fachliteratur",
+      "titel": "Baunetz Wissen Boden: Verlegung von textilen Belägen",
+      "url": "https://www.baunetzwissen.de/boden/fachwissen/textile-bodenbelaege/verlegung-von-textilen-belaegen-151668"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Klebstoffhersteller: Technische Information Verlegung von textilen Bodenbelägen (BBKL 04)",
+      "url": "https://stauf.de/fileadmin/masterTemplate/Resources/Public/Files/tech_info/verklebung_von_oberbelaegen/BBKL_04_Verlegung_von_textilen_Bodenbelaegen_Ansicht.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Technisches Merkblatt Teppich- und PVC-Fixierer (Untergrundtabelle, Ablüftzeiten)",
+      "url": "https://bilder01.dabag.ch/documents/kataloge/puag/tdb_4090-teppich-pvc-fixierer_d.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Technisches Merkblatt doppelseitiges Verlegenetz (Untergründe, Stuhlrollen, Fußbodenheizung)",
+      "url": "https://www.fries24.de/out/media/80bo50-11170007~~1~bostik-nibofix-netz-datenblatt.pdf"
+    },
+    {
+      "art": "norm",
+      "titel": "DIN EN 1264-2: Wärmedurchlasswiderstand des Bodenbelags auf Fußbodenheizung (Richtwert 0,15 m²K/W)",
+      "url": ""
     }
   ],
   "bilder": [
     {
-      "zweck": "Verlegeband im Gitter auf dem Untergrund",
+      "zweck": "Titelbild: Andrücken an der Wandkante",
       "status": "offen"
     },
     {
-      "zweck": "Doppelnahtschnitt an der Bahnenkante",
+      "zweck": "Grafik: drei Verlegearten im Schnitt",
       "status": "offen"
     },
     {
-      "zweck": "Anschluss an die Tuerzarge",
+      "zweck": "Grafik: Raumklima zum Verlegen",
+      "status": "offen"
+    },
+    {
+      "zweck": "Foto: Fixierung auf zurückgeschlagener Hälfte",
+      "status": "offen"
+    },
+    {
+      "zweck": "Grafik: Kleben und Anwalzen",
+      "status": "offen"
+    },
+    {
+      "zweck": "Grafik: Doppelschnitt und Schnitt in der Florgasse",
       "status": "offen"
     }
   ],
@@ -66,7 +113,7 @@
     "description": "Lose, fixiert oder vollflächig verklebt? Die Unterschiede der Verlegearten, die Vorbereitung des Untergrunds und der Ablauf beim Fixieren im Überblick."
   },
   "metafields": {
-    "kurzantwort": "Teppichboden von der Rolle wird lose verlegt, fixiert oder vollflächig verklebt. Lose kommt nur für kleine, wenig beanspruchte Räume infrage. Beim Fixieren mit doppelseitigem Verlegeband oder einer Teppichfixierung lässt sich der Belag später wieder aufnehmen, die Verklebung ist dauerhaft. Welche Produkte zu Untergrund und Teppichboden passen und wie sie verarbeitet werden, geben die jeweiligen Hersteller vor.",
+    "kurzantwort": "Lose verlegen kommt nur infrage, wenn der Raum mit einer Bahn ohne Naht auskommt; fixiert wird in normal genutzten Wohnräumen, vollflächig verklebt bei Nähten, Stuhlrollen und starker Beanspruchung. Welche Produkte zu Untergrund und Belag passen, geben die Hersteller vor.",
     "art": "Anleitung",
     "dauer": "",
     "schwierigkeit": "",
@@ -75,6 +122,7 @@
       "Teppichboden mit Zugabe",
       "doppelseitiges Verlegeband oder Teppichfixierung",
       "Teppichmesser mit Ersatzklingen",
+      "Anreiber oder Andrückwalze",
       "Maßband oder Zollstock",
       "Staubsauger",
       "Sockelleisten"
@@ -87,5 +135,9 @@
     "zubehoer_kollektion": "zubehoer-verlegeband",
     "geprueft_von": "",
     "stand": ""
+  },
+  "titelbild": {
+    "url": "https://cdn.shopify.com/s/files/1/0875/4852/6926/files/ratgeber-teppichboden-verlegen-titel.png",
+    "alt": "Grauer Teppichboden wird an der Wandkante angedrückt, daneben Teppichmesser und Verlegeband"
   }
 }

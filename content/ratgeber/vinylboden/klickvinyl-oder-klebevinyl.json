@@ -16,7 +16,7 @@
     "Was lässt sich wieder entfernen?",
     "Was verlangt der Untergrund jeweils?"
   ],
-  "status": "fachinput_noetig",
+  "status": "freigegeben",
   "verwandte": [
     "untergrund-pruefen-und-vorbereiten"
   ],
@@ -26,7 +26,28 @@
     "klebevinyl",
     "klickvinyl"
   ],
-  "quellen": [],
+  "quellen": [
+    {
+      "art": "norm",
+      "titel": "DIN 18202 Toleranzen im Hochbau, Tabelle 3 (Ebenheit)",
+      "url": "https://www.baunetzwissen.de/boden/fachwissen/rohdecke/ebenheitstoleranzen-996781"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Verlegeanleitung Vinyl-Planken (Oberfläche bei Fußbodenheizung max. 27 °C)",
+      "url": "https://heinze.de/m2/83/226183/etc/20/44653220.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Verlegeanleitung LVT zum Kleben (max. 27 °C Oberfläche; 3 mm auf 2 m)",
+      "url": "https://www.habisreutinger.de/media/import/CSimages/1783/178319/Verlegeanleitung_LVT_Glue_DE.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Verlegeanleitung Klick-Vinyl (Ebenheit 2 mm auf 2 m)",
+      "url": "https://cms.fatra.cz/api/document-files/file/Verlegungsvorschrift%20FatraClick.pdf"
+    }
+  ],
   "bilder": [
     {
       "zweck": "Klickverbindung zweier Planken im Schnitt",
@@ -58,7 +79,7 @@
     "description": "Klickvinyl schwimmt, Klebevinyl wird verklebt. Was das für Aufbauhöhe, Untergrund, Rückbau und Reparatur bedeutet."
   },
   "metafields": {
-    "kurzantwort": "Klickvinyl liegt schwimmend: Die Planken verbinden sich untereinander und sind mit dem Untergrund nicht verbunden. Klebevinyl wird vollflächig mit dem Untergrund verklebt. Daraus folgt fast alles Weitere – Klebevinyl baut niedriger und folgt jeder Unebenheit, Klickvinyl lässt sich in der Regel wieder aufnehmen und braucht eine Dehnungsfuge an der Wand.",
+    "kurzantwort": "Klickvinyl liegt schwimmend und lässt sich meist wieder aufnehmen, braucht aber Dehnungsfugen und mehr Aufbauhöhe. Klebevinyl wird vollflächig verklebt, baut sehr niedrig und verlangt einen besonders ebenen, vorbereiteten Untergrund.",
     "art": "Kaufberatung",
     "dauer": "",
     "schwierigkeit": "",
@@ -71,5 +92,9 @@
     "zubehoer_kollektion": "",
     "geprueft_von": "",
     "stand": ""
+  },
+  "titelbild": {
+    "url": "https://cdn.shopify.com/s/files/1/0875/4852/6926/files/ratgeber-klick-oder-klebevinyl-titel.png",
+    "alt": "Vinylboden in Holzoptik, davor eine dicke Klickplanke und eine dünne Klebeplanke"
   }
 }

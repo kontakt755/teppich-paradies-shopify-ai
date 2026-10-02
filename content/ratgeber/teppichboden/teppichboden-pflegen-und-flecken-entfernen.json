@@ -30,6 +30,26 @@
       "art": "hersteller",
       "titel": "Pflegehinweise des jeweiligen Herstellers",
       "url": ""
+    },
+    {
+      "art": "fachquelle",
+      "titel": "Vorwerk: Hartnäckige Flecken im Teppich entfernen (Kaugummi mit Kälte)",
+      "url": "https://www.vorwerk.com/de/de/c/home/rezepte-und-ideen/ideenreich/kobold/wissen/hartnaeckige-flecken-im-teppich-entfernen"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "toom: Teppich reinigen (nicht reiben; Wachs mit Papier und lauwarmem Bügeleisen)",
+      "url": "https://toom.de/selbermachen/wohnen-haushalt/reinigung-pflege/teppich-reinigen/"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "Vorwerk: Wollteppich reinigen",
+      "url": "https://www.vorwerk.com/de/de/c/home/rezepte-und-ideen/ideenreich/kobold/wissen/wollteppich-reinigen"
+    },
+    {
+      "art": "fachquelle",
+      "titel": "Vorwerk: Reinigung und Pflege von Teppichböden (tupfen statt reiben)",
+      "url": "https://www.vorwerk.com/de/de/c/home/rezepte-und-ideen/ideenreich/kobold/wissen/tipps-zur-reinigung-und-pflege-von-teppichboeden"
     }
   ],
   "bilder": [
@@ -54,7 +74,7 @@
     "description": "Teppichboden regelmäßig saugen, Flecken abtupfen statt reiben, erst Wasser, dann getestete Reiniger: Erste Hilfe bei Flecken und typische Fehler."
   },
   "metafields": {
-    "kurzantwort": "Die wichtigste Pflege ist regelmäßiges Saugen – in stark begangenen Bereichen häufiger als in wenig genutzten Räumen. Frische Flecken nehmen Sie sofort mit einem saugfähigen weißen Tuch auf: tupfen, nie reiben, von außen nach innen, zuerst nur mit klarem Wasser. Reinigungsmittel testen Sie vorher an einer verdeckten Stelle. Im Zweifel entscheidet die Pflegeanleitung des Herstellers.",
+    "kurzantwort": "Regelmäßig saugen und am Eingang eine Sauberlaufmatte nutzen. Frische Flecken sofort mit weißem Tuch von außen nach innen abtupfen, zuerst mit Wasser, Reiniger vorher an verdeckter Stelle testen.",
     "art": "Pflege",
     "dauer": "",
     "schwierigkeit": "",
@@ -63,6 +83,7 @@
       "saugfähige weiße Tücher oder Küchenpapier",
       "Löffel",
       "klares Wasser",
+      "Kühlakku",
       "Staubsauger"
     ],
     "cta": [
@@ -72,5 +93,9 @@
     "zubehoer_kollektion": "zubehoer-reinigungsmittel",
     "geprueft_von": "",
     "stand": ""
+  },
+  "titelbild": {
+    "url": "https://cdn.shopify.com/s/files/1/0875/4852/6926/files/ratgeber-fleck-abtupfen-titel.png",
+    "alt": "Kaffeefleck auf hellem Teppichboden wird mit einem weißen Tuch abgetupft"
   }
 }

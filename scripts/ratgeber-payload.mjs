@@ -109,6 +109,8 @@ export function baueEingabe(meta, html, { blogId, kollektionen = {} }) {
       // Bewusst unveroeffentlicht: sichtbar schaltet ein eigener, freigegebener Schritt.
       isPublished: false,
       author: { name: meta.autor || 'Teppich Paradies' },
+      // Beitragsbild: erscheint als Titelbild im Artikel und auf den Karten der Uebersicht.
+      ...(meta.titelbild?.url ? { image: { url: meta.titelbild.url, altText: meta.titelbild.alt || meta.title } } : {}),
       metafields,
     },
   };
