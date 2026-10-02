@@ -241,3 +241,16 @@ a.tp-tep-trust__item:hover { border-color: var(--tp-ink); }
 @media (prefers-reduced-motion: reduce) {
   .tp-tep *, .tp-tep *::before, .tp-tep *::after { transition: none !important; }
 }
+
+/* Gruppen mobil: 2er-Raster, erst vier Karten, Rest per Knopf (Wischleiste wurde uebersehen) */
+.tp-zubehoer-produkte__mehr { display: none; }
+@media (max-width: 749px) {
+  .tp-zubehoer-produkte--teppich-gruppe:not(.is-offen) .resource-list--grid > .resource-list__item:nth-child(n+5) { display: none; }
+  .tp-zubehoer-produkte--teppich-gruppe:not(.is-offen) .tp-zubehoer-produkte__mehr { display: flex; justify-content: center; margin-top: 16px; }
+  .tp-zubehoer-produkte__mehr-knopf {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; min-height: 48px; padding: 12px 18px;
+    font: inherit; font-weight: 600; color: var(--tp-ink, #222);
+    background: #fff; border: 1px solid var(--tp-ink, #222); border-radius: 999px; cursor: pointer;
+  }
+}
