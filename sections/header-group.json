@@ -102,6 +102,14 @@
             "subtitle": ""
           }
         },
+        "tp_kachel_teppich_kunstrasen": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Kunstrasen",
+            "image": "shopify://shop_images/kunstrasen-kategorie.jpg",
+            "subtitle": "Für Balkon, Terrasse und Garten"
+          }
+        },
         "tp_kachel_teppiche": {
           "type": "_tp-menu-kachel",
           "settings": {
@@ -451,6 +459,7 @@
         "tp_kachel_teppich_schlinge",
         "tp_kachel_teppich_wolle",
         "tp_kachel_teppich_nadelvlies",
+        "tp_kachel_teppich_kunstrasen",
         "tp_kachel_teppiche",
         "tp_kachel_teppiche_alle",
         "tp_kachel_teppiche_standard",
