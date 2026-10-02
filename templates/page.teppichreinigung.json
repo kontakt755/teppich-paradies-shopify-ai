@@ -195,14 +195,16 @@
       "type": "tp-start-kontakt",
       "settings": {
         "heading": "Teppichreinigung anfragen",
-        "text": "Schicken Sie uns ein Foto per WhatsApp, rufen Sie an oder schreiben Sie uns – wir melden uns am nächsten Werktag.",
+        "text": "Schicken Sie uns ein Foto Ihres Teppichs per WhatsApp, rufen Sie an oder schreiben Sie uns – wir melden uns am nächsten Werktag.",
         "telefon": "03301 573 37 20",
         "zeiten": "Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr.",
         "whatsapp": "https://wa.me/4917657931322",
         "anliegen": "Teppichreinigung",
         "betreff": "Anfrage Teppichreinigung",
         "form_text": "Abgabe im Laden oder Abholung – sagen Sie uns, was Sie möchten.",
-        "nachricht_label": "Nachricht (Teppichart, Größe, Abholung gewünscht?)"
+        "nachricht_label": "Nachricht (Teppichart, Größe, Abholung gewünscht?)",
+        "wa_text": "Fotos vom Teppich schicken (ganz und Flecken nah) – wir antworten in den Öffnungszeiten.",
+        "foto_hinweis": "Fotos vom Teppich schicken Sie uns am einfachsten per WhatsApp."
       }
     }
   },

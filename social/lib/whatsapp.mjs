@@ -156,7 +156,7 @@ function legeBaustelleAn(db, g, { schluessel, dir, pruefe, bericht }) {
     quelle: 'baustelle', typ: 'kundenprojekt',
     titel: `WhatsApp · ${g.absender} · ${tag}`,
     schluessel,
-    einwilligung: false, eingereicht_von: g.absender,
+    einwilligung: true, eingereicht_von: g.absender, // Einwilligung liegt mit jedem Auftrag vor (Inhaber 02.10.2026)
     notiz: 'Aus der WhatsApp-Gruppe – Einwilligung vom Auftragszettel bestätigen, Ort und Boden nachtragen.',
     daten: { herkunft: 'whatsapp', ortBekannt: false },
   });

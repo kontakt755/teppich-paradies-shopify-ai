@@ -77,12 +77,11 @@ function ausListe(wert, liste) {
   return liste.find(e => e.toLowerCase() === w.toLowerCase()) ?? w;
 }
 
-/** Prueft die Angaben des Monteurs. Alles ausser der Einwilligung ist freiwillig. */
+/**
+ * Prueft die Angaben des Monteurs. Alles ist freiwillig: die Einwilligung holt
+ * der Betrieb mit jedem Auftrag ein (Inhaber 02.10.2026), sie wird nicht mehr abgefragt.
+ */
 export function pruefeAngaben(roh = {}) {
-  const einwilligung = roh.einwilligung === true || roh.einwilligung === 'true' || roh.einwilligung === 'ja';
-  if (!einwilligung) {
-    throw new EingangFehler('Bitte bestätigen, dass der Kunde mit Fotos einverstanden ist – sonst dürfen wir sie nicht verwenden.');
-  }
   const ort = bereinigeOrt(roh.ort);
   const vorherNachher = VORHER_NACHHER.includes(String(roh.vorherNachher ?? '')) ? String(roh.vorherNachher ?? '') : '';
   return {

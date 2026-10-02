@@ -4,8 +4,8 @@ import test from 'node:test';
 import { bereinigeOrt, EingangFehler, erkenneTyp, findeZugang, liesZugaenge, pruefeAngaben, titelFuer, zugangAnlegen, zugangSperren } from '../lib/eingang.mjs';
 import { tmpDir } from './_hilfe.mjs';
 
-test('Ohne Einwilligung entsteht kein Eintrag', () => {
-  assert.throws(() => pruefeAngaben({ ort: 'Oranienburg' }), EingangFehler);
+test('Einwilligung wird nicht mehr abgefragt, sie liegt immer vor', () => {
+  assert.equal(pruefeAngaben({ ort: 'Oranienburg' }).einwilligung, true);
   assert.equal(pruefeAngaben({ einwilligung: 'true' }).einwilligung, true);
 });
 

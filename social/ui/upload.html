@@ -73,7 +73,6 @@
     <h2>Besonderheit</h2><textarea id="besonderheit" placeholder="z. B. Treppe mit 14 Stufen, alter Kleber musste runter"></textarea>
   </details>
 
-  <label class="zustimmung"><input type="checkbox" id="einwilligung"><span>Der Kunde ist mit den Fotos einverstanden<small>Ohne Zustimmung dürfen wir die Bilder nicht verwenden.</small></span></label>
   <div class="fehler" id="fehler" hidden></div>
   <div class="senden"><button id="senden" disabled>Senden</button></div>
 </div>
@@ -126,8 +125,7 @@ $('dateien').addEventListener('change', (e) => {
   for (const f of e.target.files) if (gewaehlt.length < LISTEN.maxDateien) gewaehlt.push(f);
   e.target.value = ''; zeigeVorschau();
 });
-function pruefe() { $('senden').disabled = !(gewaehlt.length && $('einwilligung').checked); }
-$('einwilligung').addEventListener('change', pruefe);
+function pruefe() { $('senden').disabled = !gewaehlt.length; }
 
 function zeigeFehler(t) { $('fehler').textContent = t; $('fehler').hidden = false; $('formular').hidden = false; $('laeuft').hidden = true; window.scrollTo(0, document.body.scrollHeight); }
 
@@ -154,7 +152,7 @@ $('senden').addEventListener('click', async () => {
   $('fehler').hidden = true; $('formular').hidden = true; $('laeuft').hidden = false; window.scrollTo(0, 0);
   try {
     const start = await fetch(location.pathname + '/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-      einwilligung: $('einwilligung').checked, ort: $('ort').value, bodenart: wahl('bodenart')[0] || '', raum: wahl('raum')[0] || '',
+      einwilligung: true, ort: $('ort').value, bodenart: wahl('bodenart')[0] || '', raum: wahl('raum')[0] || '',
       taetigkeit: wahl('taetigkeit'), vorherNachher: wahl('vorherNachher')[0] || '', produkt: $('produkt').value, auftrag: $('auftrag').value, besonderheit: $('besonderheit').value,
     }) });
     const s = await start.json();

@@ -23,7 +23,7 @@
           <label>Telefon (optional)<input type="tel" name="contact[Telefon]" autocomplete="tel"></label>
           <label class="tp-kon__full">Ich möchte<select name="contact[Anliegen]">{%- if section.settings.anliegen != blank -%}<option selected>{{ section.settings.anliegen | escape }}</option>{%- endif -%}<option>Boden verlegen lassen</option><option>Aufmaß und Angebot</option><option>Beratung zum Produkt</option><option>Muster bestellen</option><option>Rückruf</option></select></label>
           <label class="tp-kon__full">{{ section.settings.nachricht_label | default: 'Nachricht (Raum, Fläche, Wunschboden)' | escape }}<textarea name="contact[body]" rows="3">{{ form.body }}</textarea></label>
-          <p class="tp-s-note tp-kon__full">Fotos oder Grundrisse schicken Sie uns am einfachsten per WhatsApp. Mit dem Absenden stimmen Sie der Verarbeitung Ihrer Angaben zur Bearbeitung der Anfrage zu.</p>
+          <p class="tp-s-note tp-kon__full">{{ section.settings.foto_hinweis | default: 'Fotos oder Grundrisse schicken Sie uns am einfachsten per WhatsApp.' | escape }} Mit dem Absenden stimmen Sie der Verarbeitung Ihrer Angaben zur Bearbeitung der Anfrage zu.</p>
           <button class="tp-s-btn tp-s-btn--primary tp-kon__full" type="submit">Anfrage senden</button>
         {%- endform -%}
       </div>
@@ -96,7 +96,7 @@
       <div class="tp-kon__card">
         <div class="tp-kon__ico tp-kon__ico--wa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20l1.3-3.8A8 8 0 1 1 8 19.2z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a4 4 0 0 1-2-2l1-1-1-2z"/></svg></div>
         <h3 class="tp-s-h3">WhatsApp</h3>
-        <p>Foto vom Raum schicken, Frage stellen – wir antworten in den Öffnungszeiten.</p>
+        <p>{{ section.settings.wa_text | default: 'Foto vom Raum schicken, Frage stellen – wir antworten in den Öffnungszeiten.' | escape }}</p>
         <a class="tp-s-btn tp-s-btn--wa" href="{{ section.settings.whatsapp }}" rel="noopener" target="_blank">WhatsApp schreiben</a>
       </div>
 {{ tp_kon_formular }}    </div>
@@ -182,6 +182,8 @@
     { "type": "url", "id": "whatsapp", "label": "WhatsApp-Link (wa.me/…)" },
     { "type": "text", "id": "anliegen", "label": "Anliegen vorbelegt", "info": "Wird als erste Auswahl gesetzt, z. B. Teppichreinigung. Leer = Boden verlegen lassen." },
     { "type": "text", "id": "betreff", "label": "Betreff der Anfrage-Mail", "info": "Leer = Anfrage von der Startseite" },
+    { "type": "text", "id": "wa_text", "label": "Text WhatsApp-Karte", "info": "Leer = Foto vom Raum schicken ..." },
+    { "type": "text", "id": "foto_hinweis", "label": "Foto-Hinweis unter dem Formular", "info": "Leer = Fotos oder Grundrisse ..." },
     { "type": "text", "id": "form_text", "label": "Text ueber dem Formular", "info": "Leer = Text der Startseite" },
     { "type": "text", "id": "nachricht_label", "label": "Beschriftung Nachricht", "info": "Leer = Nachricht (Raum, Fläche, Wunschboden)" },
     { "type": "header", "content": "Fachgeschäft (links)" },
