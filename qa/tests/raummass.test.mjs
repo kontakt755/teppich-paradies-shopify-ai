@@ -65,3 +65,39 @@ test('Raumliste: Summe, leere Zeilen, Fehler', () => {
   assert.equal(RM.summeRaeume([{ breite: '', laenge: '' }]).raeume, 0);
   assert.equal(RM.summeRaeume([{ breite: '350', laenge: '' }]).fehler, true);
 });
+
+// Preise wie Piumera (2026-10-02): Meterware 55,90 €/m², Raummass 75,00 €/m²,
+// abgerechnet in vollen m² (kein preis_pro_001_qm).
+const piumera = (art, b, l) => Math.ceil(b * l / 10000) * (art === 'raum' ? 75 : 55.9);
+
+test('Preisvergleich: 350 x 450 -> Meterware gedreht auf der 500er-Rolle statt Raummass', () => {
+  // Fall aus der Rueckmeldung des Inhabers: vorher Raummass 360 x 460 (1.275 EUR).
+  const v = RM.rolleVorschlag({ breite: 350, laenge: 450, rollen: [400, 500], raum: true, maxRaum: 495, preis: piumera });
+  assert.deepEqual([v.empfohlen.art, v.empfohlen.breite, v.empfohlen.laenge, v.empfohlen.gedreht], ['meter', 500, 360, true]);
+  assert.equal(v.empfohlen.preis, 18 * 55.9);
+  assert.deepEqual([v.alternative.art, v.alternative.breite, v.alternative.laenge], ['raum', 360, 460]);
+  assert.equal(v.alternative.preis, 17 * 75);
+});
+
+test('Preisvergleich: schmaler Flur 120 x 600 -> Raummass lohnt sich', () => {
+  const v = RM.rolleVorschlag({ breite: 120, laenge: 600, rollen: [400, 500], raum: true, maxRaum: 495, preis: piumera });
+  assert.equal(v.empfohlen.art, 'raum');
+  assert.deepEqual([v.empfohlen.breite, v.empfohlen.laenge], [130, 610]);
+  assert.equal(v.alternative.art, 'meter');
+  assert.ok(v.alternative.preis > v.empfohlen.preis);
+});
+
+test('Preisvergleich: Variante ohne Preis faellt raus', () => {
+  const ohneRaum = (art, b, l) => (art === 'raum' ? 0 : piumera(art, b, l));
+  const v = RM.rolleVorschlag({ breite: 120, laenge: 600, rollen: [400, 500], raum: true, maxRaum: 495, preis: ohneRaum });
+  assert.equal(v.empfohlen.art, 'meter');
+  assert.equal(v.alternative, null);
+});
+
+test('Sweetspot Piumera: Raummass erst unter etwa 3/4 der Rollenbreite', () => {
+  // Raum laenger als jede Rolle (kein Drehen): (Breite + 10) * 75 < 400 * 55,90
+  // -> Raummass lohnt bis etwa 288 cm Breite.
+  const bei = (b) => RM.rolleVorschlag({ breite: b, laenge: 650, rollen: [400, 500], raum: true, maxRaum: 495, preis: piumera }).empfohlen.art;
+  assert.equal(bei(250), 'raum');
+  assert.equal(bei(320), 'meter');
+});
