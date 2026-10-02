@@ -162,10 +162,8 @@
     {%- endfor -%}
   </ul>
 
-  <p class="tp-nav-group">Nach Optik</p>
-  <ul class="tp-nav-chips list-unstyled" role="list" aria-label="Nach Optik">
-    {{- tp_vn_optik -}}
-  </ul>
+  {%- comment -%} "Nach Optik" entfaellt im Handy-Menue: die Optik steht schon als
+    Chips unter jeder Verlegeart (Inhaber 2026-10-02: doppelt gemoppelt). {%- endcomment -%}
 
   {%- if tp_vn_zub != blank -%}
     <p class="tp-nav-group">Zubehör für die Verlegung</p>
