@@ -136,7 +136,7 @@
     oder ohne Zugabe uebernehmen. Befuellt nur die Felder unten.
   {%- endcomment -%}
   {%- if block.settings.raummass_helfer != false -%}
-    <div data-rwc-body>{% render 'tp-raummass-rolle', id: tp_rc_id %}</div>
+    <div data-rwc-body>{% render 'tp-raummass', art: 'rolle', id: tp_rc_id %}</div>
   {%- endif -%}
   <div class="tp-rwc-field" data-art-field data-rwc-body hidden>
     <div class="tp-rwc-art" role="radiogroup" aria-label="Art des Zuschnitts">
