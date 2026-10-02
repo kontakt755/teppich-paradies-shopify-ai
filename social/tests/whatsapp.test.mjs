@@ -100,7 +100,7 @@ test('Gruppieren: je Absender, neue Baustelle nach mehr als drei Stunden Pause',
   assert.deepEqual(g.map(x => [x.absender, x.nachrichten.map(y => y.pk)]), [['A', [1, 3]], ['B', [2]], ['A', [4]]]);
 });
 
-test('Uebernahme: Baustelle ohne Einwilligung, Freigabe gesperrt, kein zweites Mal', (t) => {
+test('Uebernahme: Baustelle mit Einwilligung, ohne Sichtung gesperrt, kein zweites Mal', (t) => {
   const db = testDb(t); const dir = tmpDir(t);
   const quelle = waNachbau(t, { nachrichten: [
     { pk: 1, zeit: '2026-09-30T08:00:00Z', wer: 1 }, { pk: 2, zeit: '2026-09-30T08:02:00Z', wer: 1 },
@@ -113,13 +113,13 @@ test('Uebernahme: Baustelle ohne Einwilligung, Freigabe gesperrt, kein zweites M
   assert.deepEqual(r.neu.map(x => [x.absender, x.dateien]), [['Mehmet', 2], ['Jonas', 1]]);
   assert.equal(r.fehlend, 1, 'die PDF-Datei bleibt draussen');
   const inhalt = db.inhalt(r.neu[0].id);
-  assert.equal(inhalt.einwilligung, 0); assert.equal(inhalt.quelle, 'baustelle'); assert.equal(inhalt.eingereicht_von, 'Mehmet');
+  assert.equal(inhalt.einwilligung, 1); assert.equal(inhalt.quelle, 'baustelle'); assert.equal(inhalt.eingereicht_von, 'Mehmet');
   assert.equal(inhalt.daten.ortBekannt, false);
   assert.deepEqual(geprueft, r.neu.map(x => x.id), 'jede Baustelle wird sofort geprueft');
   const medien = db.medien(inhalt.id);
   assert.deepEqual(medien.map(m => path.basename(m.pfad)), ['01.jpg', '02.jpg']);
   assert.ok(fs.existsSync(path.join(dir, medien[0].pfad)));
-  assert.match(pruefe({ beitrag: { format: 'feed', text: 'x', plattformen: ['instagram'] }, inhalt, medien: [] }).sperren.join(), /Einwilligung/);
+  assert.match(pruefe({ beitrag: { format: 'feed', text: 'x', plattformen: ['instagram'] }, inhalt, medien: [] }).sperren.join(), /^(?!.*Einwilligung)/);
   assert.equal(liesStand(dir).letzterPk, 4);
 
   const zweiter = uebernimmWhatsApp(db, { env: env(quelle), dir, jetzt, pruefe: ohnePruefung });
@@ -206,7 +206,7 @@ test('Export uebernehmen: je Absender eine Baustelle, ZIP oder Ordner, kein zwei
   assert.equal(r.fehlend, 1, 'die Textdatei mit .jpg-Endung bleibt draussen');
   assert.deepEqual(geprueft, r.neu.map(b => b.id));
   const inhalt = db.inhalt(r.neu[0].id);
-  assert.equal(inhalt.einwilligung, 0); assert.match(inhalt.titel, /^WhatsApp · Ricardo · 25\.09\.2026$/);
+  assert.equal(inhalt.einwilligung, 1); assert.match(inhalt.titel, /^WhatsApp · Ricardo · 25\.09\.2026$/);
   assert.equal(inhalt.schluessel, 'whatsapp-export:a.jpg');
 
   // Derselbe Export noch einmal, diesmal als ZIP: nichts Neues
