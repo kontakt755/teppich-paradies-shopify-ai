@@ -25,6 +25,14 @@
     if erstes_zeichen == '#' and template.name != 'index'
       assign anfrage = routes.root_url | append: 'pages/kontakt' | replace: '//', '/'
     endif
+    # Serviceseiten mit eigenem Formular: dorthin statt zur Kontaktseite.
+    capture tp_sk_eigenes
+      render 'tp-anfrage-ziel'
+    endcapture
+    assign tp_sk_eigenes = tp_sk_eigenes | strip
+    if tp_sk_eigenes != blank
+      assign anfrage = tp_sk_eigenes
+    endif
   -%}
   <a class="tp-s-btn tp-s-btn--primary" href="{{ anfrage }}">{{ section.settings.label_anfrage | escape }}</a>
 </div>
