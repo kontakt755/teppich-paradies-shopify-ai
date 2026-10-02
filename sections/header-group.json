@@ -334,6 +334,14 @@
             "subtitle": "Sicher & stilvoll belegt"
           }
         },
+        "tp_kachel_service_reinigung": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Teppichreinigung",
+            "image": "shopify://shop_images/teppichreinigung-menu.png",
+            "subtitle": "Handwäsche für alle Teppiche"
+          }
+        },
         "tp_kachel_service_arbeit": {
           "type": "_tp-menu-kachel",
           "settings": {
@@ -473,6 +481,7 @@
         "tp_kachel_service_teppich",
         "tp_kachel_service_vinyl",
         "tp_kachel_service_treppen",
+        "tp_kachel_service_reinigung",
         "tp_kachel_service_arbeit",
         "tp_kachel_service_firmen",
         "tp_kachel_service_ratgeber",
