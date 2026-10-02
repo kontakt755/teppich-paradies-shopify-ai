@@ -1011,11 +1011,18 @@
             "tp_card_aktion": {
               "type": "tp-card-aktion",
               "settings": {}
+            },
+            "tp_card_merkmale": {
+              "type": "_tp-card-merkmale",
+              "settings": {
+                "max": 3
+              }
             }
           },
           "block_order": [
             "card-gallery",
             "product_title_4nY4eT",
+            "tp_card_merkmale",
             "price_EzJzMm",
             "tp_card_aktion",
             "tp_card_color_thumbs",
@@ -1135,11 +1142,18 @@
             "tp_card_aktion": {
               "type": "tp-card-aktion",
               "settings": {}
+            },
+            "tp_card_merkmale": {
+              "type": "_tp-card-merkmale",
+              "settings": {
+                "max": 3
+              }
             }
           },
           "block_order": [
             "card-gallery",
             "product_title_4nY4eT",
+            "tp_card_merkmale",
             "price_EzJzMm",
             "tp_card_aktion",
             "tp_card_color_thumbs",
@@ -1259,11 +1273,18 @@
             "tp_card_aktion": {
               "type": "tp-card-aktion",
               "settings": {}
+            },
+            "tp_card_merkmale": {
+              "type": "_tp-card-merkmale",
+              "settings": {
+                "max": 3
+              }
             }
           },
           "block_order": [
             "card-gallery",
             "product_title_4nY4eT",
+            "tp_card_merkmale",
             "price_EzJzMm",
             "tp_card_aktion",
             "tp_card_color_thumbs",
