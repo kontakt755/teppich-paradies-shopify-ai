@@ -7,6 +7,10 @@
   - "passend":  auf Produktseiten - Geschwister aus derselben
                 Zubehoer-Unterkategorie, das aktuelle Produkt ausgenommen.
 
+  Einstellung "Teppich-Gruppe" (Seite Teppich nach Mass): zeigt nur die Teppiche einer
+  Kundengruppe (snippets/tp-teppich-gruppe); "rest" = Teppiche ohne eindeutige Gruppe,
+  damit keiner verloren geht. Standard "alle" laesst die Leiste unveraendert.
+
   Ohne Produkte rendert die Sektion nichts, damit die Seite nie eine leere
   Ueberschrift zeigt. Die Karten sind dieselben Horizon-Produktkarten wie im
   Raster (statischer _product-card-Block), damit Bild, Preis, Farbfelder und
@@ -38,6 +42,7 @@
   endif
 
   assign items = source.products
+  assign tp_tg_filter = section.settings.teppich_gruppe | default: 'alle'
   if mode == 'neu'
     assign items = items | sort: 'created_at' | reverse
   endif
@@ -82,8 +87,16 @@
     {%- if mode == 'passend' and item.id == product.id -%}
       {%- continue -%}
     {%- endif -%}
+    {%- if tp_tg_filter != 'alle' -%}
+      {%- capture tp_tg -%}{%- render 'tp-teppich-gruppe', product: item -%}{%- endcapture -%}
+      {%- assign tp_tg = tp_tg | strip | default: 'rest' -%}
+      {%- if tp_tg != tp_tg_filter -%}
+        {%- continue -%}
+      {%- endif -%}
+    {%- endif -%}
     {%- comment -%} Ohne Foto wirkt eine Karte in der Empfehlungsleiste kaputt; im Raster bleibt sie sichtbar. {%- endcomment -%}
-    {%- if item.featured_image == blank -%}
+    {%- comment -%} Ausnahme Teppich-Gruppe: dort ist die Leiste das Raster selbst, kein Teppich darf fehlen. {%- endcomment -%}
+    {%- if item.featured_image == blank and tp_tg_filter == 'alle' -%}
       {%- continue -%}
     {%- endif -%}
     {%- comment -%} Von einer Groessen-Gruppe traegt nur die kleinste vorhandene Groesse die Karte. {%- endcomment -%}
@@ -109,7 +122,7 @@
   <div class="section-background color-{{ section.settings.color_scheme }}"></div>
   <div
     {% if section.settings.anchor != blank %}id="{{ section.settings.anchor | handleize }}"{% endif %}
-    class="tp-zubehoer-produkte section section--{{ section.settings.section_width }} color-{{ section.settings.color_scheme }} section-resource-list spacing-style gap-style"
+    class="tp-zubehoer-produkte{% if tp_tg_filter != 'alle' %} tp-zubehoer-produkte--teppich-gruppe{% endif %} section section--{{ section.settings.section_width }} color-{{ section.settings.color_scheme }} section-resource-list spacing-style gap-style"
     style="{% render 'spacing-style', settings: section.settings %} {% render 'gap-style', value: section.settings.gap %}"
     data-testid="tp-zubehoer-produkte-{{ section.id }}"
   >
@@ -208,6 +221,21 @@
       "default": "beliebt"
     },
     {
+      "type": "select",
+      "id": "teppich_gruppe",
+      "label": "Teppich-Gruppe (nur Teppich nach Maß)",
+      "info": "Zeigt nur die Teppiche einer Gruppe, abgeleitet aus Konstruktion, Florhöhe und Faser des Teppichbodens.",
+      "options": [
+        { "value": "alle", "label": "Alle Produkte" },
+        { "value": "flauschig", "label": "Extra flauschig (Velours ab 10 mm Flor)" },
+        { "value": "weich", "label": "Weich (Velours)" },
+        { "value": "robust", "label": "Fest & robust (Schlinge, Nadelvlies)" },
+        { "value": "natur", "label": "Natur (Wolle, Sisal)" },
+        { "value": "rest", "label": "Ohne eindeutige Gruppe" }
+      ],
+      "default": "alle"
+    },
+    {
       "type": "collection",
       "id": "collection",
       "label": "Kollektion (leer = aktuelle Kollektion bzw. Zubehoer)"
@@ -239,7 +267,7 @@
       "id": "max_products",
       "label": "Anzahl Produkte",
       "min": 2,
-      "max": 16,
+      "max": 50,
       "step": 1,
       "default": 8
     },

@@ -120,7 +120,9 @@
 .tp-tep-rechner__karte--passt-nicht { opacity: .5; }
 .tp-tep-rechner__karte--passt-nicht .tp-tep-rechner__bild img { filter: grayscale(.6); }
 /* Solange ein Mass gilt, ersetzt die sortierte Liste das normale Raster. */
-.tp-rechner-aktiv #ResultsList { display: none !important; }
+.tp-rechner-aktiv #ResultsList,
+.tp-rechner-aktiv .tp-tep-gruppen,
+.tp-rechner-aktiv .tp-zubehoer-produkte--teppich-gruppe { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .tp-tep-rechner__bild img { transition: none; }
   .tp-tep-rechner__link:hover .tp-tep-rechner__bild img { transform: none; }
@@ -164,6 +166,32 @@
   .tp-tep-wege__liste { grid-template-columns: minmax(0, 1fr); }
   .tp-tep-wege__bild { aspect-ratio: 16 / 9; }
 }
+
+/* Gruppen (Teppich nach Mass): erst die Art, dann die Qualitaet */
+.tp-tep-gruppen { scroll-margin-top: 96px; padding: clamp(28px, 4vw, 52px) 0 clamp(8px, 1.5vw, 16px); }
+.tp-tep-gruppen__inner { display: grid; gap: clamp(16px, 2.2vw, 26px); }
+.tp-tep-gruppen__kopf { display: grid; gap: 8px; }
+.tp-tep-gruppen__titel { font-size: clamp(24px, 2.8vw, 34px); }
+.tp-tep-gruppen__lead { color: var(--tp-ink-2); }
+.tp-tep-gruppen__liste { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(10px, 1.6vw, 20px); }
+.tp-tep-gruppen__link {
+  display: grid; grid-template-rows: auto 1fr; height: 100%; border-radius: var(--tp-r); overflow: hidden;
+  background: #fff; border: 1px solid var(--tp-line); text-decoration: none; transition: border-color .2s ease;
+}
+.tp-tep-gruppen__link:hover { border-color: var(--tp-ink); }
+.tp-tep-gruppen__bild { display: block; aspect-ratio: 4 / 3; background: var(--tp-sand-2); overflow: hidden; }
+.tp-tep-gruppen__bild img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.tp-tep-gruppen__text { display: grid; gap: 4px; align-content: start; padding: 12px 14px 14px; }
+.tp-tep-gruppen__name { font-size: clamp(17px, 1.6vw, 20px); font-weight: 700; line-height: 1.2; }
+.tp-tep-gruppen__kurz { font-size: 14px; color: var(--tp-ink-2); line-height: 1.4; }
+.tp-tep-gruppen__zahl { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 13px; font-weight: 600; color: var(--tp-accent); }
+@media (max-width: 899px) {
+  .tp-tep-gruppen__liste { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tp-tep-gruppen__text { padding: 10px 12px 12px; }
+  .tp-tep-gruppen__kurz { font-size: 13px; }
+}
+/* Reihen der Gruppen: Sprungziel nicht unter dem festen Kopf verstecken */
+.tp-zubehoer-produkte--teppich-gruppe { scroll-margin-top: 110px; }
 
 /* Schritte */
 .tp-tep-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
