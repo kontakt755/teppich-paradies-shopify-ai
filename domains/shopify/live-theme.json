@@ -3,13 +3,13 @@
   "live": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-02T19:40:00Z",
-    "verifiedBy": "Shopify Admin API role MAIN nach workflow:live (main 6e6e544b, PR #864/#865)"
+    "verifiedAt": "2026-10-02T19:53:00Z",
+    "verifiedBy": "Shopify Admin API role MAIN nach workflow:live (main 4c0ae3d5, PR #866/#868/#869)"
   },
   "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-02T19:40:00Z",
+    "verifiedAt": "2026-10-02T19:53:00Z",
     "verifiedBy": "Rollentausch nach workflow:live; naechstes Preview-Ziel"
   },
   "fallback": {
