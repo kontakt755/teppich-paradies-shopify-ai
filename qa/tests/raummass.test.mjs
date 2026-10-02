@@ -101,3 +101,28 @@ test('Sweetspot Piumera: Raummass erst unter etwa 3/4 der Rollenbreite', () => {
   assert.equal(bei(250), 'raum');
   assert.equal(bei(320), 'meter');
 });
+
+// Dielenoptik (Vinyl von der Rolle, 200/400 cm, ohne Raummass): das Muster
+// laeuft entlang der Rollenlaenge, der Helfer darf nicht drehen.
+const vinyl = (art, b, l) => (art === 'meter' ? Math.round(b * l / 100) / 100 * 24.9 : 0);
+
+test('Dielen entlang der Raumlaenge: 180 x 400 -> 200er-Rolle, 200 x 410', () => {
+  const v = RM.rolleVorschlag({ breite: 180, laenge: 400, rollen: [200, 400], raum: false, preis: vinyl, richtung: 'laenge' });
+  assert.deepEqual([v.empfohlen.breite, v.empfohlen.laenge, v.empfohlen.gedreht], [200, 410, false]);
+  // Quer waere billiger (400 x 190), steht aber nur als andere Richtung da.
+  assert.deepEqual([v.andereRichtung.breite, v.andereRichtung.laenge, v.andereRichtung.gedreht], [400, 190, true]);
+  assert.equal(v.alternative, null);
+});
+
+test('Dielen entlang der Raumbreite: 400 x 500 -> 400er-Rolle quer, 400 x 510 gedreht ist falsch', () => {
+  const v = RM.rolleVorschlag({ breite: 400, laenge: 500, rollen: [200, 400], raum: false, preis: vinyl, richtung: 'breite' });
+  // Muster entlang der Breite (400): geschnittene Laenge 410, Rolle muss 500 abdecken -> gibt es nicht.
+  assert.equal(v.naht, true);
+  assert.deepEqual([v.andereRichtung.breite, v.andereRichtung.laenge], [400, 510]);
+});
+
+test('Dielen entlang der Raumlaenge: 400 x 500 -> 400 x 510', () => {
+  const v = RM.rolleVorschlag({ breite: 400, laenge: 500, rollen: [200, 400], raum: false, preis: vinyl, richtung: 'laenge' });
+  assert.deepEqual([v.empfohlen.breite, v.empfohlen.laenge, v.empfohlen.gedreht], [400, 510, false]);
+  assert.deepEqual([v.genau.breite, v.genau.laenge], [400, 500]);
+});
