@@ -131,6 +131,13 @@
     ART.parseMass trotzdem richtig.
   {%- endcomment -%}
   <p class="tp-rwc-kopf" data-rwc-body>Zuschnitt und Maße</p>
+  {%- comment -%}
+    Raummass-Helfer (Inhaber 2026-10-02): Raummasse eingeben, Bestellmass mit
+    oder ohne Zugabe uebernehmen. Befuellt nur die Felder unten.
+  {%- endcomment -%}
+  {%- if block.settings.raummass_helfer != false -%}
+    <div data-rwc-body>{% render 'tp-raummass-rolle', id: tp_rc_id %}</div>
+  {%- endif -%}
   <div class="tp-rwc-field" data-art-field data-rwc-body hidden>
     <div class="tp-rwc-art" role="radiogroup" aria-label="Art des Zuschnitts">
       <input type="radio" id="tp-rwc-art-m-{{ tp_rc_id }}" name="tp-rwc-art-{{ tp_rc_id }}" value="meter" checked>
@@ -2247,6 +2254,13 @@ else { document.addEventListener('DOMContentLoaded', tpRwcInit{{ tp_rc_id }}); }
   "name": "TP Rollenware-Rechner",
   "tag": null,
   "settings": [
+    {
+      "type": "checkbox",
+      "id": "raummass_helfer",
+      "label": "Raummaße-Helfer über den Maßfeldern",
+      "info": "Kunde gibt Raumbreite und -länge ein und übernimmt das Bestellmaß mit oder ohne Zugabe.",
+      "default": true
+    },
     {
       "type": "header",
       "content": "Zusätze"

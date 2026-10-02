@@ -14,9 +14,20 @@
       "settings": {
         "newsletter_anzeigen": true
       }
+    },
+    "rechner": {
+      "type": "tp-boden-rechner",
+      "settings": {
+        "ueberschrift": "Bestellmaß berechnen",
+        "einleitung": "<p>Raumbreite und Raumlänge eingeben – der Rechner zeigt, welche Rollenbreite passt, welches Bestellmaß sich mit Zugabe ergibt und wie viel Verschnitt anfällt. Zentimetergenau ohne Zugabe bestellen Sie im Rechner auf der Produktseite unter „Raummaß“.</p>",
+        "rollenbreiten": "400, 500",
+        "nur_artikel": "teppichboden-richtig-ausmessen, rollenbreite-und-bahnen-planen, verschnitt-bei-teppichboden",
+        "ziel_kollektion": "teppichboden"
+      }
     }
   },
   "order": [
-    "main"
+    "main",
+    "rechner"
   ]
 }
