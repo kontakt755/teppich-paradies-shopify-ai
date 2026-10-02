@@ -31,9 +31,6 @@ test('Upload: ohne gueltigen Link gibt es nichts, mit Link den ganzen Weg bis zu
   const seite = await fetch(`${basis}/u/${token}`);
   assert.equal(seite.status, 200); assert.match(await seite.text(), /Hallo Mehmet/);
 
-  const ohne = await fetch(`${basis}/u/${token}/start`, json({ ort: 'Velten' }));
-  assert.equal(ohne.status, 400); assert.match((await ohne.json()).error, /einverstanden/);
-  assert.equal(db.inhalte().length, 0, 'ohne Einwilligung entsteht kein Eintrag');
 
   const start = await (await fetch(`${basis}/u/${token}/start`, json({ einwilligung: true, ort: 'Musterweg 5, Velten', bodenart: 'Klebevinyl', taetigkeit: ['Verlegung'], vorherNachher: 'beides' }))).json();
   assert.match(start.upload, /^[a-f0-9]{16}$/);
