@@ -154,8 +154,19 @@
   {%- comment -%}
     Raummass-Helfer (Inhaber 2026-10-02): Raummasse eingeben, Bestellmass mit
     oder ohne Zugabe uebernehmen. Befuellt nur die Felder unten.
+    Produkte mit Tag "ohne-raummass" zeigen ihn nicht (Nadelfilz, Inhaber
+    2026-10-03: dort ueberhaupt kein Raummass).
   {%- endcomment -%}
-  {%- if block.settings.raummass_helfer != false -%}
+  {%- liquid
+    assign tp_rc_helfer = true
+    if block.settings.raummass_helfer == false
+      assign tp_rc_helfer = false
+    endif
+    if product.tags contains 'ohne-raummass'
+      assign tp_rc_helfer = false
+    endif
+  -%}
+  {%- if tp_rc_helfer -%}
     <div data-rwc-body>{% render 'tp-raummass', art: 'rolle', id: tp_rc_id, muster: tp_rc_dielen %}</div>
   {%- endif -%}
   <div class="tp-rwc-field" data-art-field data-rwc-body hidden>
