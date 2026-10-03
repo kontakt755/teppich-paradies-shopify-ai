@@ -1919,14 +1919,18 @@ function tpRwcInit{{ tp_rc_id }}() {
     var n = parseInt(root.getAttribute('data-bahnen') || '', 10);
     var bl = parseInt(root.getAttribute('data-bahn-laenge') || '', 10);
     var bw = parseInt(root.getAttribute('data-bahn-breite') || '', 10);
-    if (!(n >= 2) || !(bl > 0) || artMode() !== 'meter') return null;
+    // data-zuschnitt-text: Stueck aus einer Zwei-Stuecke-Loesung (Inhaber
+    // 2026-10-03), dann genuegt eine Bahn; der Text steht so im Vermerk.
+    var text = root.getAttribute('data-zuschnitt-text') || '';
+    if (!(n >= (text ? 1 : 2)) || !(bl > 0) || artMode() !== 'meter') return null;
     if (selectedWidth() !== bw || getEffectiveLengthCm() !== n * bl) return null;
-    return { n: n, laenge: bl };
+    return { n: n, laenge: bl, text: text };
   }
   function bahnenLoeschen() {
     root.removeAttribute('data-bahnen');
     root.removeAttribute('data-bahn-laenge');
     root.removeAttribute('data-bahn-breite');
+    root.removeAttribute('data-zuschnitt-text');
   }
   function zeigeBahnen() {
     if (!bahnenHint) return;
@@ -1934,8 +1938,9 @@ function tpRwcInit{{ tp_rc_id }}() {
     bahnenHint.hidden = !b;
     if (!b) return;
     while (bahnenHint.firstChild) bahnenHint.removeChild(bahnenHint.firstChild);
-    bahnenHint.appendChild(document.createTextNode('Zuschnitt in ' + b.n + ' Bahnen à ' + b.laenge +
-      ' cm – Sie erhalten ' + b.n + ' einzelne Rollen. '));
+    bahnenHint.appendChild(document.createTextNode(b.text ? b.text + '. '
+      : 'Zuschnitt in ' + b.n + ' Bahnen à ' + b.laenge + ' cm – Sie erhalten ' + b.n + ' einzelne Rollen. '));
+    if (b.text) return;
     var eins = document.createElement('button');
     eins.type = 'button';
     eins.className = 'tp-rwc-linkbtn';
@@ -2258,7 +2263,7 @@ function tpRwcInit{{ tp_rc_id }}() {
       : { 'Art': 'Meterware', 'Rollenbreite': w + ' cm', 'Gewünschte Länge': len + ' cm' };
     properties[cmExact ? 'Fläche' : 'Fläche (aufgerundet)'] = fmt(billedArea) + ' m²';
     var bahnen = bahnenAktiv();
-    if (bahnen) properties['Zuschnitt'] = bahnen.n + ' Bahnen à ' + bahnen.laenge + ' cm, einzeln gerollt';
+    if (bahnen) properties['Zuschnitt'] = bahnen.text || (bahnen.n + ' Bahnen à ' + bahnen.laenge + ' cm, einzeln gerollt');
     // Farbnummer (intern) mitgeben - siehe domains/shopify/farbverwaltung.md.
     // Unterstrich-Property sieht nur der Admin, "Farbnummer" auch der Kunde im Warenkorb.
     if (target.farbnummer) properties['Farbnummer'] = target.farbnummer;

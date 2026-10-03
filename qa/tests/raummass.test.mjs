@@ -159,3 +159,30 @@ test('Keine Teilung, wenn sie mehr Material braucht (360 quer, Rollen 300/400)',
   assert.equal(v.empfohlen.breite, 400);
   assert.equal(v.teilung, null);
 });
+
+// Inhaber 2026-10-03: Raum breiter als jede Rolle -> 2 passende Stuecke.
+test('550 x 650 Vinyl (200/400), Dielen entlang der Laenge: 400 + 200, je 660 lang', () => {
+  const v = RM.rolleVorschlag({ breite: 550, laenge: 650, rollen: [200, 400], raum: false, preis: vinyl, richtung: 'laenge' });
+  assert.equal(v.empfohlen, null);
+  assert.deepEqual(v.zwei.stuecke.map((s) => [s.breite, s.laenge]), [[400, 660], [200, 660]]);
+  assert.equal(v.zwei.gemischt, true);
+  assert.equal(v.zwei.gedreht, false);
+});
+
+test('Gleiche Breiten gewinnen bei gleichem Preis (300 + 300 statt 400 + 200)', () => {
+  const v = RM.zweiStuecke(550, 650, [200, 300, 400], 10, vinyl, false);
+  assert.deepEqual(v.stuecke.map((s) => s.breite), [300, 300]);
+  assert.equal(v.gemischt, false);
+});
+
+test('Teppichboden 550 x 650 (400/500), freie Lage: 2 x 400 quer, 560 lang', () => {
+  const v = RM.rolleVorschlag({ breite: 550, laenge: 650, rollen: [400, 500], raum: false, preis: piumera });
+  assert.equal(v.naht, true);
+  assert.deepEqual(v.zwei.stuecke.map((s) => [s.breite, s.laenge]), [[400, 560], [400, 560]]);
+  assert.equal(v.zwei.gedreht, true);
+});
+
+test('Passt in ein Stueck -> keine Zwei-Stuecke-Loesung', () => {
+  const v = RM.rolleVorschlag({ breite: 350, laenge: 650, rollen: [200, 400], raum: false, preis: vinyl, richtung: 'laenge' });
+  assert.equal(v.zwei, null);
+});
