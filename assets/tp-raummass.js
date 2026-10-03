@@ -141,6 +141,44 @@
     return null;
   }
 
+  // Raum breiter als jede Rolle: guenstigste Loesung aus 2 Stuecken
+  // nebeneinander (Inhaber 2026-10-03). Breiten duerfen verschieden sein
+  // (400 + 200), bei gleichem Preis gewinnen gleiche Breiten - verschiedene
+  // Rollen koennen aus verschiedenen Chargen kommen (Farbabweichung).
+  // nurGedreht: true/false erzwingt die Lage (Dielenrichtung), sonst beide.
+  // -> { stuecke: [{breite, laenge}, ...], gedreht, gemischt, m2, preis }
+  function zweiStuecke(b, l, rollen, z, preis, nurGedreht) {
+    var lagen = typeof nurGedreht === 'boolean' ? [nurGedreht] : [false, true];
+    var best = null;
+    var liste = (rollen || []).filter(function (w) { return w > 0; }).sort(function (x, y) { return y - x; });
+    lagen.forEach(function (gedreht) {
+      var quer = gedreht ? l : b;
+      var entlang = (gedreht ? b : l) + z;
+      for (var i = 0; i < liste.length; i++) {
+        for (var j = i; j < liste.length; j++) {
+          var w1 = liste[i], w2 = liste[j];
+          if (w1 >= quer) continue;            // passt schon in ein Stueck
+          if (w1 + w2 < quer) continue;
+          var p1 = typeof preis === 'function' ? preis('meter', w1, entlang) : m2(w1, entlang);
+          var p2 = typeof preis === 'function' ? preis('meter', w2, entlang) : m2(w2, entlang);
+          if (!(p1 > 0) || !(p2 > 0)) continue;
+          var k = {
+            stuecke: [{ art: 'meter', breite: w1, laenge: entlang }, { art: 'meter', breite: w2, laenge: entlang }],
+            gedreht: gedreht, gemischt: w1 !== w2, m2: m2(w1 + w2, entlang),
+            preis: typeof preis === 'function' ? Math.round((p1 + p2) * 100) / 100 : 0,
+            _k: p1 + p2
+          };
+          if (!best || k._k < best._k - 0.005 || (Math.abs(k._k - best._k) <= 0.005 && best.gemischt && !k.gemischt)) best = k;
+        }
+      }
+    });
+    if (best) {
+      delete best._k;
+      best.stuecke.forEach(function (st) { st.gedreht = best.gedreht; st.m2 = m2(st.breite, st.laenge); });
+    }
+    return best;
+  }
+
   // Dielenrichtung, solange der Kunde nichts waehlt: entlang der laengeren
   // Raumseite - dann liegt die kuerzere quer und es reicht am ehesten ein Stueck.
   function autoRichtung(b, l) {
@@ -191,6 +229,7 @@
       alternative: alternative,
       genau: genau,
       teilung: teilung(empfohlen, b, l, rollen, preis),
+      zwei: (!empfohlen && !ohne) ? zweiStuecke(b, l, rollen, z, preis) : null,
       naht: !empfohlen && !ohne,
       raumM2: m2(b, l)
     };
@@ -217,6 +256,7 @@
       genau: genau,
       andereRichtung: andere,
       teilung: teilung(empfohlen || andere, b, l, rollen, preis),
+      zwei: empfohlen ? null : zweiStuecke(b, l, rollen, z, preis, gedreht),
       richtung: eingabe.richtung,
       naht: !empfohlen,
       raumM2: m2(b, l)
@@ -249,6 +289,7 @@
     leseCm: leseCm,
     rolleVorschlag: rolleVorschlag,
     autoRichtung: autoRichtung,
+    zweiStuecke: zweiStuecke,
     summeRaeume: summeRaeume,
     fmtZahl: fmtZahl
   };
@@ -299,9 +340,14 @@ if (typeof document !== 'undefined') (function () {
     // kompakt: kleines Auswahlbild ohne Beschriftung.
     function skizze(b, l, v, kompakt) {
       skizzeNr++;
-      var n = v.bahnen || 1;                       // Bahnen nebeneinander
-      var entlang = v.bahnLaenge || v.laenge;      // Schnittlaenge je Bahn
-      var quer = n * v.breite;
+      // Bahnen/Stuecke nebeneinander: gleiche Breiten (bahnen) oder eine Liste
+      // verschiedener Breiten (stuecke, Zwei-Stuecke-Loesung).
+      var breiten = [];
+      if (v.stuecke) v.stuecke.forEach(function (st) { breiten.push(st.breite); });
+      else for (var bi = 0; bi < (v.bahnen || 1); bi++) breiten.push(v.breite);
+      var n = breiten.length;
+      var entlang = v.stuecke ? v.stuecke[0].laenge : (v.bahnLaenge || v.laenge);
+      var quer = breiten.reduce(function (a, c) { return a + c; }, 0);
       var bh = v.gedreht ? entlang : quer;         // Bahn waagerecht
       var bv = v.gedreht ? quer : entlang;         // Bahn senkrecht
       var W = kompakt ? 140 : 300;
@@ -313,7 +359,7 @@ if (typeof document !== 'undefined') (function () {
       var rx = cx - b * s / 2, ry = cy - l * s / 2, rw = b * s, rh = l * s;
       var bx = cx - bh * s / 2, by = cy - bv * s / 2, bw = bh * s, bhh = bv * s;
       var svg = el(document.createDocumentFragment(), 'svg', { 'class': 'tp-rm__skizze', viewBox: '0 0 ' + W + ' ' + H, role: 'img',
-        'aria-label': 'Skizze: Raum ' + b + ' × ' + l + ' cm, ' + (n > 1 ? n + ' Bahnen à ' + v.breite + ' × ' + entlang : 'Bahn ' + v.breite + ' × ' + entlang) + ' cm, Dielen entlang der ' + richtungVon(v) });
+        'aria-label': 'Skizze: Raum ' + b + ' × ' + l + ' cm, ' + (n > 1 ? n + ' Stücke ' + breiten.join(' + ') + ' × ' + entlang : 'Bahn ' + v.breite + ' × ' + entlang) + ' cm' });
       var clipId = 'tp-rm-clip-' + skizzeNr;
       var defs = el(svg, 'defs', {});
       el(el(defs, 'clipPath', { id: clipId }), 'rect', { x: bx, y: by, width: bw, height: bhh });
@@ -359,8 +405,9 @@ if (typeof document !== 'undefined') (function () {
       el(svg, 'path', { d: 'M' + bx + ' ' + by + 'h' + bw + 'v' + bhh + 'h' + (-bw) + 'z M' + rx + ' ' + ry + 'v' + rh + 'h' + rw + 'v' + (-rh) + 'z',
         'fill-rule': 'evenodd', style: 'fill: var(--color-background, #fff); fill-opacity: .6' });
       el(svg, 'rect', { x: bx, y: by, width: bw, height: bhh, fill: 'none', stroke: '#1d6b47', 'stroke-width': 1.5, 'stroke-dasharray': '5 3' });
+      var naht = 0;
       for (i = 1; i < n; i++) {
-        var naht = i * v.breite * s;
+        naht += breiten[i - 1] * s;
         if (v.gedreht) el(svg, 'line', { x1: bx, y1: by + naht, x2: bx + bw, y2: by + naht, stroke: '#1d6b47', 'stroke-width': 2.5 });
         else el(svg, 'line', { x1: bx + naht, y1: by, x2: bx + naht, y2: by + bhh, stroke: '#1d6b47', 'stroke-width': 2.5 });
       }
@@ -369,7 +416,7 @@ if (typeof document !== 'undefined') (function () {
       // Bei mehreren Bahnen sitzt die Mitte auf der Naht - dann mittig in Bahn 1.
       var tx = cx, ty = cy;
       if (n > 1) {
-        if (v.gedreht) ty = by + v.breite * s / 2; else tx = bx + v.breite * s / 2;
+        if (v.gedreht) ty = by + breiten[0] * s / 2; else tx = bx + breiten[0] * s / 2;
       }
       if (kompakt) return svg;
       el(svg, 'text', { x: tx, y: ty + 4, 'font-size': 12, 'font-weight': 700, fill: '#1d6b47', 'text-anchor': 'middle', style: halo },
@@ -379,7 +426,7 @@ if (typeof document !== 'undefined') (function () {
       el(svg, 'text', { x: lx, y: ry + rh / 2, 'font-size': 11, fill: 'currentColor', 'text-anchor': 'middle',
         transform: 'rotate(-90 ' + lx + ' ' + (ry + rh / 2) + ')' }, 'Raumlänge ' + l + ' cm');
       el(svg, 'text', { x: cx, y: H - 6, 'font-size': 11, fill: 'currentColor', 'text-anchor': 'middle' },
-        n > 1 ? n + ' Bahnen à ' + v.breite + ' × ' + entlang + ' cm, Naht grün, Überstand hell'
+        n > 1 ? breiten.join(' + ') + ' × ' + entlang + ' cm · Naht grün'
           : 'gestrichelt: Bahn ' + v.breite + ' × ' + entlang + ' cm, Überstand hell');
       return svg;
     }
@@ -401,18 +448,21 @@ if (typeof document !== 'undefined') (function () {
       return ART ? ART.maxRaumBreite(r) : 0;
     }
 
-    function uebernehmen(v) {
+    function uebernehmen(v, offenLassen) {
       if (muster) richtungWahl = v.gedreht ? 'breite' : 'laenge';
       // Bahnen: der Rechner schreibt daraus den Vermerk "Zuschnitt" in die
       // Warenkorbzeile. Vor den Events setzen, damit er es gleich sieht.
-      if (v.bahnen) {
-        rechner.setAttribute('data-bahnen', String(v.bahnen));
-        rechner.setAttribute('data-bahn-laenge', String(v.bahnLaenge));
+      if (v.bahnen || v.zuschnittText) {
+        rechner.setAttribute('data-bahnen', String(v.bahnen || 1));
+        rechner.setAttribute('data-bahn-laenge', String(v.bahnLaenge || v.laenge));
         rechner.setAttribute('data-bahn-breite', String(v.breite));
+        if (v.zuschnittText) rechner.setAttribute('data-zuschnitt-text', v.zuschnittText);
+        else rechner.removeAttribute('data-zuschnitt-text');
       } else {
         rechner.removeAttribute('data-bahnen');
         rechner.removeAttribute('data-bahn-laenge');
         rechner.removeAttribute('data-bahn-breite');
+        rechner.removeAttribute('data-zuschnitt-text');
       }
       var art = rechner.querySelector('input[name^="tp-rwc-art-"][value="' + v.art + '"]');
       if (art && !art.disabled) { art.checked = true; feuer(art, 'change'); }
@@ -425,7 +475,7 @@ if (typeof document !== 'undefined') (function () {
       }
       var len = rechner.querySelector('[data-length-input]');
       if (len) { len.value = String(v.laenge); feuer(len, 'input'); }
-      box.removeAttribute('open');
+      if (!offenLassen) box.removeAttribute('open');
       var ziel = rechner.querySelector('.tp-rwc-masse') || len;
       if (ziel && ziel.scrollIntoView) ziel.scrollIntoView({ block: 'center', behavior: 'smooth' });
     }
@@ -504,14 +554,64 @@ if (typeof document !== 'undefined') (function () {
       aus.appendChild(p);
     }
 
+    // Raum breiter als jede Rolle: 2 Stuecke (Inhaber 2026-10-03).
+    function zweiBlock(zw, b, l) {
+      var div = document.createElement('div');
+      div.className = 'tp-rm__vorschlag tp-rm__vorschlag--empfohlen';
+      var t = function (cls, text, tag) {
+        var n = document.createElement(tag || 'p'); n.className = cls; n.textContent = text; div.appendChild(n); return n;
+      };
+      t('tp-rm__titel', 'Ihr Bestellmaß – 2 Stücke');
+      zw.stuecke.forEach(function (st, i) {
+        t('tp-rm__mass tp-rm__mass--stueck', 'Stück ' + (i + 1) + ': ' + RM.fmtZahl(st.breite, 0) + ' × ' + RM.fmtZahl(st.laenge, 0) + ' cm');
+      });
+      t('tp-rm__preis', 'Zusammen ' + RM.fmtZahl(zw.m2, 2) + ' m²' + (zw.preis > 0 ? ' · ' + euro(zw.preis) : ''));
+      div.appendChild(skizze(b, l, { stuecke: zw.stuecke, gedreht: zw.gedreht, breite: zw.stuecke[0].breite, laenge: zw.stuecke[0].laenge }));
+      t('tp-rm__info', 'Ihr Raum ist breiter als die breiteste Rolle. Die Stücke werden nebeneinander verlegt, dazwischen entsteht eine Naht. Inkl. ' + RM.ZUGABE_CM + ' cm Zugabe.');
+      if (zw.gemischt) {
+        t('tp-rm__hinweis tp-rm__charge', 'Hinweis: Bei zwei verschiedenen Rollenbreiten kann es zu leichten Farbabweichungen (Charge) kommen.');
+        var w1 = zw.stuecke[0], w2 = zw.stuecke[1];
+        [w1, w2].forEach(function (st, i) {
+          var anderes = i === 0 ? w2 : w1;
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'tp-rm__knopf' + (i === 0 ? ' tp-rm__knopf--primaer' : '');
+          btn.textContent = 'Stück ' + (i + 1) + ' übernehmen';
+          btn.addEventListener('click', function () {
+            uebernehmen({ art: 'meter', breite: st.breite, laenge: st.laenge, gedreht: zw.gedreht,
+              zuschnittText: 'Stück ' + (i + 1) + ' von 2 (zusammen mit ' + anderes.breite + ' × ' + anderes.laenge + ' cm)' }, true);
+            btn.textContent = '✓ Stück ' + (i + 1) + ' im Rechner';
+          });
+          div.appendChild(btn);
+        });
+        t('tp-rm__info', 'Bitte beide Stücke nacheinander in den Warenkorb legen.');
+      } else {
+        var ok = document.createElement('button');
+        ok.type = 'button';
+        ok.className = 'tp-rm__knopf tp-rm__knopf--primaer';
+        ok.textContent = 'Maß übernehmen';
+        ok.addEventListener('click', function () {
+          uebernehmen({ art: 'meter', breite: zw.stuecke[0].breite, laenge: 2 * zw.stuecke[0].laenge, bahnen: 2,
+            bahnLaenge: zw.stuecke[0].laenge, gedreht: zw.gedreht });
+        });
+        div.appendChild(ok);
+      }
+      aus.appendChild(div);
+    }
+
     // Dielenoptik: zwei kleine Bilder zur Wahl der Laufrichtung, darunter nur
     // das Bestellmass (Inhaber 2026-10-02: so einfach wie moeglich).
     function zeigeMuster(b, l, r, vorschlag) {
       var wahl = { laenge: vorschlag('laenge'), breite: vorschlag('breite') };
+      var hat = function (ri) { return !!(wahl[ri].empfohlen || wahl[ri].zwei); };
       var aktiv = richtung(b, l);
-      if (!wahl[aktiv].empfohlen) aktiv = aktiv === 'laenge' ? 'breite' : 'laenge';
+      // Lieber die Richtung mit einem Stueck, solange der Kunde nicht gewaehlt hat.
+      if (!richtungWahl && !wahl[aktiv].empfohlen && wahl[aktiv === 'laenge' ? 'breite' : 'laenge'].empfohlen) {
+        aktiv = aktiv === 'laenge' ? 'breite' : 'laenge';
+      }
+      if (!hat(aktiv)) aktiv = aktiv === 'laenge' ? 'breite' : 'laenge';
       var v = wahl[aktiv];
-      if (!v.empfohlen) {
+      if (!hat(aktiv)) {
         var p = document.createElement('p');
         p.className = 'tp-rm__info tp-rm__hinweis';
         p.textContent = 'Ihr Raum ist auf beiden Seiten breiter als ' + RM.fmtZahl(Math.max.apply(null, r) / 100, 0) +
@@ -527,26 +627,30 @@ if (typeof document !== 'undefined') (function () {
       leiste.className = 'tp-rm__wahl';
       ['laenge', 'breite'].forEach(function (ri) {
         var k = wahl[ri].empfohlen;
+        var zw = !k ? wahl[ri].zwei : null;
         var btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'tp-rm__wahlkarte' + (ri === aktiv ? ' is-aktiv' : '');
         btn.setAttribute('aria-pressed', ri === aktiv ? 'true' : 'false');
-        var bild = k || { art: 'meter', breite: Math.max.apply(null, r), laenge: (ri === 'laenge' ? l : b), gedreht: ri === 'breite' };
+        var bild = k || (zw ? { stuecke: zw.stuecke, gedreht: zw.gedreht, breite: zw.stuecke[0].breite, laenge: zw.stuecke[0].laenge }
+          : { art: 'meter', breite: Math.max.apply(null, r), laenge: (ri === 'laenge' ? l : b), gedreht: ri === 'breite' });
         btn.appendChild(skizze(b, l, bild, true));
         var t = document.createElement('span');
         t.className = 'tp-rm__wahl-text';
         t.textContent = ri === 'laenge' ? 'Dielen ↕' : 'Dielen ↔';
         var pr = document.createElement('span');
         pr.className = 'tp-rm__wahl-preis';
-        pr.textContent = k ? (k.preis > 0 ? euro(k.preis) : RM.fmtZahl(k.m2, 2) + ' m²') : 'nur mit Naht';
+        pr.textContent = k ? (k.preis > 0 ? euro(k.preis) : RM.fmtZahl(k.m2, 2) + ' m²')
+          : (zw ? '2 Stücke' + (zw.preis > 0 ? ' · ' + euro(zw.preis) : '') : 'nicht möglich');
         btn.appendChild(t);
         btn.appendChild(pr);
-        if (!k) { btn.disabled = true; btn.className += ' is-aus'; }
+        if (!k && !zw) { btn.disabled = true; btn.className += ' is-aus'; }
         btn.addEventListener('click', function () { richtungWahl = ri; rechnen(); });
         leiste.appendChild(btn);
       });
       aus.appendChild(leiste);
 
+      if (!v.empfohlen) { zweiBlock(v.zwei, b, l); return; }
       var e = v.empfohlen;
       var div = document.createElement('div');
       div.className = 'tp-rm__vorschlag tp-rm__vorschlag--empfohlen';
@@ -610,6 +714,7 @@ if (typeof document !== 'undefined') (function () {
         return;
       }
       var v = RM.rolleVorschlag(basis);
+      if (v.naht && v.zwei) { zweiBlock(v.zwei, b.cm, l.cm); return; }
       if (v.naht) {
         var p = document.createElement('p');
         p.className = 'tp-rm__info';
