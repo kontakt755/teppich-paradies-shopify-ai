@@ -686,6 +686,21 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
   display: none !important;
 }
 
+/* Cookie-Banner am Handy kompakter (Perf 2026-10-05).
+   ------------------------------------------------------------------
+   Lighthouse mobil, Erstbesuch: der Textabsatz des Banners (307 x 187 px) war
+   knapp groesser als die Hauptueberschrift der Startseite (380 x 134) und der
+   Einleitungstext der Kategorieseite (380 x 102) und wurde damit zum LCP-Element
+   - gemalt erst nach 6 bis 9 s, weil Shopify das Banner per Skript nachlaedt.
+   Der Text bleibt unveraendert, nur Schrift und Zeilenabstand werden kleiner;
+   das Banner verdeckt dadurch auch weniger vom Inhalt. */
+@media (max-width: 749px) {
+  #shopify-pc__banner .shopify-pc__banner__body p {
+    font-size: 12px;
+    line-height: 1.3;
+  }
+}
+
 /* Vorab-Hauptebene, bis die Hydration den vollen Drawer einsetzt (snippets/header-drawer.liquid) */
 .tp-dn--vorab .tp-dn-vorab__link {
   display: block;
