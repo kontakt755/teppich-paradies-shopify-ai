@@ -124,6 +124,10 @@
     render 'tp-rabatt-sichtbar', product: product
   endcapture
   assign tp_rc_rabatt = tp_rc_rabatt | strip
+  assign tp_rc_ohne_raum = false
+  if product.tags contains 'ohne-raummass'
+    assign tp_rc_ohne_raum = true
+  endif
 -%}
 <div class="tp-rwc-{{ tp_rc_id }} tp-kaufweg" id="tp-rwc-{{ tp_rc_id }}" data-product-id="{{ product.id }}" {% if tp_rc_dielen %}data-muster="{{ tp_rc_muster }}"{% endif %} data-max-laenge-cm="{{ tp_rc_max_laenge_cm }}" {{ block.shopify_attributes }}>
 
@@ -585,7 +589,18 @@
   "variants": [
     {%- for variant in product.variants -%}
       {%- assign tp_rc_v_title = variant.title | downcase -%}
-      {%- unless tp_rc_v_title contains 'opc-' -%}
+      {%- comment -%}
+        Tag "ohne-raummass": das Produkt gibt es nur als Meterware (Nadelfilz,
+        Auslaufkollektionen). Die Wunschmass-Varianten bleiben in Shopify
+        bestehen, kommen aber nicht in den Rechner - ohne sie fehlt die
+        Raummass-Karte, wie bei jedem Produkt ohne solche Variante.
+      {%- endcomment -%}
+      {%- assign tp_rc_v_aus = false -%}
+      {%- if tp_rc_v_title contains 'opc-' -%}{%- assign tp_rc_v_aus = true -%}{%- endif -%}
+      {%- if tp_rc_ohne_raum -%}
+        {%- if variant.options contains 'Wunschmaß' or variant.options contains 'Wunschmass' -%}{%- assign tp_rc_v_aus = true -%}{%- endif -%}
+      {%- endif -%}
+      {%- unless tp_rc_v_aus -%}
         {%- capture tp_rc_v_farbnummer -%}{% render 'tp-farbe-daten', variant: variant, product: product, feld: 'nummer' %}{%- endcapture -%}
         {%- capture tp_rc_v_farbe_intern -%}{% render 'tp-farbe-daten', variant: variant, product: product, feld: 'intern' %}{%- endcapture -%}
         {
