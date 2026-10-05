@@ -3,11 +3,11 @@
   Abschnitte 11-14). Wird in snippets/cart-summary.liquid vor den
   Checkout-Buttons gerendert - Warenkorbseite und Drawer.
 
-  Die Pflichtfrage "Persoenliche Beratung gewuenscht?" erscheint nur bei einer
-  REINEN MUSTERBESTELLUNG: mindestens ein Muster im Warenkorb und keine
-  regulaere Ware. Wer bereits Ware kauft, hat die Kaufentscheidung getroffen
-  und wird nicht mehr aufgehalten - dann fuehrt nichts mehr zwischen
-  Gesamtbetrag und "Zur Kasse". Was ein Muster ist, entscheidet allein
+  Die fruehere Pflichtfrage "Persoenliche Beratung gewuenscht?" bei reinen
+  Musterbestellungen ist seit 2026-09-26 abgeschaltet (tpb_frage = false,
+  Inhaber). Beratung laeuft freiwillig als Rueckruf-Anfrage ueber
+  snippets/tp-muster-beratungsanfrage.liquid; zwischen Gesamtbetrag und
+  "Zur Kasse" steht keine Pflichtangabe. Was ein Muster ist, entscheidet allein
   snippets/tp-muster-position.liquid (gleiche Regel wie operations/lib/muster.mjs).
 
   Unabhaengig davon bleibt die Verlegeanfrage bei Positionen, fuer die der
