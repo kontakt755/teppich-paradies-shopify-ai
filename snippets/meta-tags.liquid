@@ -222,9 +222,31 @@
 {%- endif -%}
 
 {%- if request.page_type == 'product' -%}
+  {%- comment -%}
+    og:price in derselben Einheit wie offers.price im JSON-LD
+    (snippets/tp-product-structured-data.liquid): Teppich nach Mass je
+    0,01 m2 -> x100, Paketware -> Paketpreis / m2 je Paket. Basis ist die
+    gezeigte Variante statt product.price (das waere der kleinste Preis aller
+    Varianten inkl. Muster). Dezimalpunkt statt Komma, ohne Tausenderpunkt.
+  {%- endcomment -%}
+  {%- liquid
+    assign tp_og_cents = product.selected_or_first_available_variant.price
+    if product.metafields.custom.preis_pro_001_qm.value == true
+      assign tp_og_cents = tp_og_cents | times: 100
+    endif
+    assign tp_og_paket_qm = product.metafields.custom.qm_pro_paket.value | times: 1.0
+    if tp_og_paket_qm > 0
+      assign tp_og_cents = tp_og_cents | times: 1.0 | divided_by: tp_og_paket_qm | round
+    endif
+    assign tp_og_euro = tp_og_cents | divided_by: 100
+    assign tp_og_rest = tp_og_cents | modulo: 100
+    if tp_og_rest < 10
+      assign tp_og_rest = tp_og_rest | prepend: '0'
+    endif
+  -%}
   <meta
     property="og:price:amount"
-    content="{{ product.price | money_without_currency | strip_html }}"
+    content="{{ tp_og_euro }}.{{ tp_og_rest }}"
   >
   <meta
     property="og:price:currency"
