@@ -89,8 +89,21 @@
     </ul>
   </nav>
 </div>
+{%- comment -%}
+  Preisangabe nach PAngV einmal je Seite im Footer: Kategorie- und
+  Suchseiten zeigen Preise auf Karten, dort steht der Hinweis bewusst nicht
+  pro Karte (show_tax_info false). Produktseiten tragen ihn zusaetzlich am
+  Kaufbereich.
+{%- endcomment -%}
+<div class="tp-footer-links__preisangabe">
+  {%- render 'tp-preisangabe' -%}
+</div>
 
 {% stylesheet %}
+  .tp-footer-links__preisangabe {
+    margin-top: 16px;
+  }
+
   .tp-footer-links {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));

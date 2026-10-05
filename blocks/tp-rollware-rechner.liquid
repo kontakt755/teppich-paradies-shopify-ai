@@ -260,31 +260,6 @@
     <span data-wunsch-hint hidden></span>
   </p>
   <p class="tp-rwc-note tp-rwc-note-tipp" data-meter-tipp hidden data-rwc-body></p>
-  {%- comment -%}
-    Die Skizze bleibt, steht aber eingeklappt - sie erklaert das Mass, ist
-    fuer den Kauf aber kein Schritt (Design-Runde 3). Beim Aufklappen wird
-    neu gezeichnet, weil die Buehne vorher keine Breite hat.
-  {%- endcomment -%}
-  {%- comment -%}
-    Bei Dielenoptik steht die Skizze offen und zeigt die Dielen entlang der
-    Laenge - die Laufrichtung entscheidet hier mit ueber die Rollenbreite.
-  {%- endcomment -%}
-  <details class="tp-rwc-skizze" data-draw hidden data-rwc-body{% if tp_rc_dielen %} open{% endif %}>
-    <summary>Skizze Ihres Stücks{% if tp_rc_dielen %} – mit Laufrichtung der Dielen{% endif %}</summary>
-  {%- if tp_rc_dielen -%}
-    <p class="tp-rwc-muster-hinweis">Die Dielen laufen immer entlang der Länge, also in der Richtung, in der wir von der Rolle abschneiden. Quer dazu liegt die Rollenbreite.</p>
-  {%- endif -%}
-  <figure class="tp-rwc-draw" aria-hidden="true">
-    <svg class="tp-rwc-rolle" viewBox="0 0 340 214" data-rolle-svg hidden></svg>
-    <div class="tp-rwc-stage" data-stage>
-      <div class="tp-rwc-piece{% if tp_rc_dielen %} tp-rwc-piece--dielen{% endif %}" data-piece>
-        {%- if tp_rc_dielen -%}<span class="tp-rwc-laufrichtung">↕ Laufrichtung</span>{%- endif -%}
-        <span class="tp-rwc-tag tp-rwc-tag-w" data-tag-width>–</span>
-        <span class="tp-rwc-tag tp-rwc-tag-l" data-tag-length>–</span>
-      </div>
-    </div>
-  </figure>
-  </details>
 
   <p class="tp-rwc-note tp-rwc-note-error" data-error-stock hidden></p>
 
@@ -424,6 +399,35 @@
   {%- endcomment -%}
   <p class="tp-rwc-note tp-rwc-cta-hint" data-cta-hint aria-live="polite" hidden data-rwc-body></p>
   <a href="{{ routes.cart_url }}" class="tp-rwc-cart-link" data-cart-link hidden>Warenkorb ansehen</a>
+
+  {%- comment -%}
+    Reihenfolge (Inhaber 2026-10-05): Farbe > Breite > Laenge > Zubehoer >
+    Preis > Visualisierer. Die Skizze steht deshalb unter Kaufknopf und
+    Warenkorb-Link; sie erscheint weiterhin erst nach gueltiger Laenge.
+    Die Skizze bleibt, steht aber eingeklappt - sie erklaert das Mass, ist
+    fuer den Kauf aber kein Schritt (Design-Runde 3). Beim Aufklappen wird
+    neu gezeichnet, weil die Buehne vorher keine Breite hat.
+  {%- endcomment -%}
+  {%- comment -%}
+    Bei Dielenoptik steht die Skizze offen und zeigt die Dielen entlang der
+    Laenge - die Laufrichtung entscheidet hier mit ueber die Rollenbreite.
+  {%- endcomment -%}
+  <details class="tp-rwc-skizze" data-draw hidden data-rwc-body{% if tp_rc_dielen %} open{% endif %}>
+    <summary>Skizze Ihres Stücks{% if tp_rc_dielen %} – mit Laufrichtung der Dielen{% endif %}</summary>
+  {%- if tp_rc_dielen -%}
+    <p class="tp-rwc-muster-hinweis">Die Dielen laufen immer entlang der Länge, also in der Richtung, in der wir von der Rolle abschneiden. Quer dazu liegt die Rollenbreite.</p>
+  {%- endif -%}
+  <figure class="tp-rwc-draw" aria-hidden="true">
+    <svg class="tp-rwc-rolle" viewBox="0 0 340 214" data-rolle-svg hidden></svg>
+    <div class="tp-rwc-stage" data-stage>
+      <div class="tp-rwc-piece{% if tp_rc_dielen %} tp-rwc-piece--dielen{% endif %}" data-piece>
+        {%- if tp_rc_dielen -%}<span class="tp-rwc-laufrichtung">↕ Laufrichtung</span>{%- endif -%}
+        <span class="tp-rwc-tag tp-rwc-tag-w" data-tag-width>–</span>
+        <span class="tp-rwc-tag tp-rwc-tag-l" data-tag-length>–</span>
+      </div>
+    </div>
+  </figure>
+  </details>
 
   {%- comment -%}
     K7: Muster als Outline-Knopf direkt unter dem Kauf, mit dem Namen der
