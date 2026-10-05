@@ -42,3 +42,26 @@ Aenderungen per `cmView.view.dispatch` erscheinen sofort in der Vorschau, aber
 die Speicherleiste erscheint erst, wenn **im Editorfeld selbst** getippt wurde
 (klicken, ein Zeichen, Backspace). Siehe `shopify_admin_notification_templates`
 in den Notizen.
+
+## Rechnung: Pflichtangaben nach § 14 UStG (2026-10-05)
+
+Die Vorlage "Rechnung" ist der Download, den Kunden im Kundenkonto bekommen;
+im Admin gibt es dafuer keinen Druckknopf (Bestellliste → Drucken bietet nur
+Lieferscheine). Ergaenzt per Admin-Editor:
+
+- Absender mit vollem Firmennamen "Teppich Paradies Oranienburg GmbH" statt
+  `shop.name`, darunter USt-IdNr. und Handelsregister (Werte wie Impressum).
+- Kopf: Rechnungsnr. (`order.order_name` ohne `#`), Rechnungsdatum
+  `%d.%m.%Y`, Leistungsdatum "entspricht dem Rechnungsdatum".
+- Steuerzeile statt "Steuer": "Enthaltene MwSt. <Satz> %" aus
+  `order.tax_lines` (ohne tax_lines: 19 %), darunter der Nettobetrag
+  (`total_price - tax_price`). Bei Steuer 0 steht nur "MwSt.".
+
+Hintergrund: Die Steuererhebung fuer Deutschland war bis 01./02.10.2026 nicht
+aktiv. Bestellungen #1004-#1017 tragen keine Steuerzeile (Shopify rechnet
+nicht rueckwirkend); fuer diese Rechnungen braucht es eine manuelle Korrektur.
+Ab #1018 steht "DE MwSt 19 %" auf jeder Position.
+
+Ob die Vorschau `order.tax_lines` kennt, ist nicht belegt (die Dummy-Bestellung
+#9999 hat Steuer 0). Gegenprobe beim ersten echten Rechnungsdownload einer
+Bestellung ab #1018.
