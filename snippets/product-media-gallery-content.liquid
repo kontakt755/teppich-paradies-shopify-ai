@@ -434,6 +434,14 @@
               if forloop.first
                 assign media_loading = 'eager'
                 assign tp_media_prio = 'high'
+              else
+                # Perf 2026-10-05: Das zweite Bild liegt im Handy-Slider direkt
+                # neben dem ersten und lud deshalb trotz lazy sofort in voller
+                # Groesse (110 KB) - parallel zum LCP-Bild. Bis zum load-Ereignis
+                # oder der ersten Beruehrung meldet sizes am Handy 1px, der
+                # Browser nimmt den kleinsten Kandidaten (240 px). Das Skript am
+                # Ende der Galerie entfernt den Vorsatz wieder.
+                assign media_sizes = '(max-width: 749px) 1px, ' | append: media_sizes
               endif
           -%}
           {% if block_settings.aspect_ratio != 'adapt' and block_settings.constrain_to_viewport %}
@@ -717,6 +725,34 @@
         window.ProductModel.loadShopifyXR();
       </script>
     {%- endif -%}
+    <script>
+      (function () {
+        if (window.__tpGalerieSizes) return;
+        window.__tpGalerieSizes = true;
+        var VORSATZ = '(max-width: 749px) 1px, ';
+        function auf() {
+          document.querySelectorAll('media-gallery img[sizes^="(max-width: 749px) 1px"]').forEach(function (img) {
+            img.sizes = img.sizes.replace(VORSATZ, '');
+          });
+        }
+        var frei = false;
+        function freigeben() {
+          if (frei) return;
+          frei = true;
+          auf();
+          // Nach einem Variantenwechsel setzt der Morph neue Bilder mit Vorsatz ein.
+          new MutationObserver(auf).observe(document.body, { childList: true, subtree: true });
+        }
+        if (document.readyState === 'complete') {
+          setTimeout(freigeben, 0);
+        } else {
+          window.addEventListener('load', freigeben, { once: true });
+        }
+        ['touchstart', 'pointerdown', 'keydown'].forEach(function (typ) {
+          window.addEventListener(typ, freigeben, { once: true, passive: true });
+        });
+      })();
+    </script>
   </media-gallery>
 {% endif %}
 

@@ -229,6 +229,8 @@
      weg, die Radio-Felder bleiben im DOM und tragen weiter die Auswahl. Greift
      erst, wenn assets/tp-farbauswahl.js das Attribut gesetzt hat - ohne JS
      bleibt das Raster benutzbar. */
+  .color-swatch-picker-{{ color_picker_id }}[data-tp-fa-vorab] [data-farb-werkzeuge],
+  .color-swatch-picker-{{ color_picker_id }}[data-tp-fa-vorab] [data-farb-liste],
   .color-swatch-picker-{{ color_picker_id }}[data-tp-fa-aktiv] [data-farb-werkzeuge],
   .color-swatch-picker-{{ color_picker_id }}[data-tp-fa-aktiv] [data-farb-liste] {
     display: none !important;
@@ -298,6 +300,27 @@
     data-darstellung="{{ block.settings.darstellung }}"
     {{ block.shopify_attributes }}
   >
+    {%- comment -%}
+      Perf 2026-10-05: Bei der kompakten Darstellung blendet erst
+      assets/tp-farbauswahl.js das Raster aus. Bis dahin war es sichtbar und
+      der Browser lud alle Farbbilder (Piumera: 15 Bilder, 128 KB) vor dem
+      Hauptbild. Das Attribut verbirgt das Raster schon vor dem ersten Layout.
+      Sicherung: meldet sich die Farbauswahl nicht, kommt das Raster 4 s nach
+      dem Laden zurueck - ohne JS laeuft dieses Skript gar nicht erst.
+    {%- endcomment -%}
+    {%- if block.settings.darstellung == 'dropdown' and color_option.values.size > 1 -%}
+      <script>
+        (function () {
+          var wirt = document.currentScript.parentElement;
+          wirt.setAttribute('data-tp-fa-vorab', '');
+          window.addEventListener('load', function () {
+            setTimeout(function () {
+              if (!wirt.hasAttribute('data-tp-fa-aktiv')) wirt.removeAttribute('data-tp-fa-vorab');
+            }, 4000);
+          });
+        })();
+      </script>
+    {%- endif -%}
     {%- comment -%}
       Farbname als Vorlesetext. Sichtbar zeigt ihn tp-farbanzeige.liquid mit
       Swatch und Hinweis auf fehlende Fotos; zwei Namen nebeneinander waren
