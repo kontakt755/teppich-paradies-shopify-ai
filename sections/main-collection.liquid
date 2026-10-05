@@ -31,6 +31,14 @@
   infinite-scroll="{{ section.settings.enable_infinite_scroll }}"
 >
   {% render 'skip-to-content-link', href: '#ResultsList', text: 'accessibility.skip_to_results_list' %}
+  {%- comment -%}
+    Preisangabe nach PAngV sichtbar ueber dem Raster (Inhaber 2026-10-05):
+    der Footer-Hinweis allein stand zu weit unten. Direktes Kind von
+    results-list (.section), damit es in der Inhaltsspalte steht.
+  {%- endcomment -%}
+  <div class="tp-raster-preisangabe">
+    {%- render 'tp-preisangabe' -%}
+  </div>
 
   <div
     class="collection-wrapper grid gap-style{% if section.settings.product_grid_width == 'full-width' %} collection-wrapper--grid-full-width{% endif %}"
@@ -174,6 +182,13 @@
     {% endpaginate %}
   </div>
 </results-list>
+
+{% stylesheet %}
+  .tp-raster-preisangabe {
+    text-align: right;
+    margin-block-end: 8px;
+  }
+{% endstylesheet %}
 
 {% schema %}
 {
