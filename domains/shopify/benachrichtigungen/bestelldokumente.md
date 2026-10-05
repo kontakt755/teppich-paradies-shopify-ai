@@ -65,3 +65,17 @@ Ab #1018 steht "DE MwSt 19 %" auf jeder Position.
 Ob die Vorschau `order.tax_lines` kennt, ist nicht belegt (die Dummy-Bestellung
 #9999 hat Steuer 0). Gegenprobe beim ersten echten Rechnungsdownload einer
 Bestellung ab #1018.
+
+Nachtrag 2026-10-05 (zweite Runde):
+
+- Absender: "Sitz: Oranienburg, Geschaeftsfuehrerin: ..." ergaenzt (Pflichtangaben
+  fuer Geschaeftsbriefe einer GmbH, § 35a GmbHG; Werte wie Impressum).
+- Telefon fest auf die Festnetznummer aus dem Impressum statt `shop.phone`
+  (dort steht die Mobilnummer).
+- Englische Tabelle "Transaktionsdetails" (authorization/void/success)
+  ersetzt durch eine Zeile "Zahlungsart: <gateway_display_name>" aus der ersten
+  erfolgreichen sale/capture/authorization-Transaktion.
+- Fusszeile in Sie-Form.
+- Offen: "Leistungsdatum: entspricht dem Rechnungsdatum" ist sachlich falsch
+  (Rechnungsdatum = Bestelldatum, Lieferung spaeter). Formulierung mit dem
+  Steuerberater klaeren (Monat der Lieferung oder Verweis auf Lieferschein).
