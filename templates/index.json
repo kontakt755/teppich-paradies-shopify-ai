@@ -61,12 +61,11 @@
         "k2": {
           "type": "kategorie",
           "settings": {
-            "collection": "vinylboden-klickvinyl",
-            "bild": "shopify://shop_images/1267580-8FXC-prod.jpg",
-            "titel": "Klickvinyl",
-            "untertitel": "Ohne Kleber verlegen",
+            "collection": "teppichfliesen",
+            "titel": "Teppichfliesen",
+            "untertitel": "50 × 50 cm, einzeln austauschbar",
             "zahl_zeigen": true,
-            "zahl_wort": "Dekore"
+            "zahl_wort": "Qualitäten"
           }
         },
         "k3": {
