@@ -418,21 +418,31 @@
               # geladen wurden 832 statt ~500 px (262 KB, LCP 7,1 s).
               assign tp_ratio = block_settings.aspect_ratio | append: ''
               if tp_ratio == '1' and media.preview_image.aspect_ratio < 1
-                assign tp_mobil_vw = media.preview_image.aspect_ratio | times: 100 | ceil | append: 'vw'
+                # Perf 2026-10-05: Die Box ist nicht 100vw breit, sondern um den
+                # Seitenrand schmaler (gemessen 354 von 412 px). Mit "67vw" lag
+                # der Bedarf bei 483 px knapp ueber dem 480er-Kandidaten, geladen
+                # wurden 600 px (174 statt 121 KB) - das LCP-Bild der Produktseite.
+                assign tp_mobil_faktor = media.preview_image.aspect_ratio | round: 2
+                assign tp_mobil_vw = 'calc((100vw - 32px) * ' | append: tp_mobil_faktor | append: ')'
                 assign media_sizes = media_sizes | replace_last: '100vw', tp_mobil_vw
               endif
               assign media_loading = 'lazy'
+              # Folgebilder mit niedriger Prioritaet: das zweite Bild liegt im
+              # Slider direkt neben dem ersten, wurde deshalb sofort und mit
+              # hoher Prioritaet geladen (110 KB) und nahm dem LCP-Bild Bandbreite.
+              assign tp_media_prio = 'low'
               if forloop.first
                 assign media_loading = 'eager'
+                assign tp_media_prio = 'high'
               endif
           -%}
           {% if block_settings.aspect_ratio != 'adapt' and block_settings.constrain_to_viewport %}
             <div
               class="product-media-constraint-wrapper">
-              {%- render 'product-media', media: media, sizes: media_sizes, widths: tp_gallery_widths, loading: media_loading, is_main_product_media: forloop.first -%}
+              {%- render 'product-media', media: media, sizes: media_sizes, widths: tp_gallery_widths, loading: media_loading, fetchpriority: tp_media_prio, is_main_product_media: forloop.first -%}
             </div>
           {% else %}
-            {%- render 'product-media', media: media, sizes: media_sizes, widths: tp_gallery_widths, loading: media_loading, is_main_product_media: forloop.first -%}
+            {%- render 'product-media', media: media, sizes: media_sizes, widths: tp_gallery_widths, loading: media_loading, fetchpriority: tp_media_prio, is_main_product_media: forloop.first -%}
           {% endif %}
           {% render 'tp-serena-galerie-label', product: selected_product, media: media, material_id: tp_serena_material_id %}
         {% endcapture %}
