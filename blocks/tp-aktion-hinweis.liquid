@@ -6,6 +6,9 @@
   Inhaberentscheidung 2026-09-22: kein durchgestrichener Vergleichspreis, sondern
   ein Hinweis mit Prozentsatz und Enddatum. Der Rabatt wird im Warenkorb vom
   automatischen Shopify-Rabatt abgezogen. Kein Countdown, keine Verknappung.
+
+  Darunter, unabhaengig von einer Aktion: der Hinweis fuer Auslaufkollektionen
+  (Produkt-Tag "auslauf").
 {% enddoc %}
 {%- liquid
   assign tah_produkt = closest.product | default: product
@@ -26,7 +29,46 @@
   </p>
 {%- endif -%}
 
+{%- comment -%}
+  Auslaufkollektion (Tag "auslauf", Inhaber 2026-10-05): die Ware laeuft beim
+  Hersteller aus, Farben und Mengen sind nicht mehr sicher lieferbar. Der
+  Hinweis sagt das offen und nennt den Weg - wir pruefen und melden uns. Keine
+  Verknappung, kein Countdown. Telefon aus den Theme-Einstellungen.
+{%- endcomment -%}
+{%- if tah_produkt.tags contains 'auslauf' -%}
+  {%- liquid
+    assign tah_tel = settings.tp_vs_telefon | strip
+    assign tah_tel_href = tah_tel | remove: ' ' | remove: '/' | remove: '-'
+    if tah_tel_href.first == '0'
+      assign tah_tel_href = tah_tel_href | slice: 1, 30 | prepend: '+49'
+    endif
+  -%}
+  <div class="tp-auslauf-hinweis" data-tp-auslauf>
+    <p class="tp-auslauf-hinweis__titel">Auslaufkollektion – nur noch begrenzt lieferbar</p>
+    <p class="tp-auslauf-hinweis__text">
+      Nach Ihrer Bestellung prüfen wir, ob Ihre Farbe in der gewünschten Menge noch lieferbar ist, und melden uns persönlich bei Ihnen, falls nicht.
+      {%- if tah_tel != blank %} Vorab fragen? Rufen Sie uns gern an: <a href="tel:{{ tah_tel_href }}">{{ tah_tel | escape }}</a>.{% endif -%}
+      {%- if tah_produkt.tags contains 'ohne-raummass' %} Erhältlich als Meterware in voller Rollenbreite.{% endif -%}
+    </p>
+  </div>
+{%- endif -%}
+
 {% stylesheet %}
+  .tp-auslauf-hinweis {
+    margin: 0;
+    padding: 10px 12px;
+    border-left: 3px solid #b77900;
+    border-radius: 4px;
+    background: #fdf6e7;
+    color: #1d1d1d;
+    font-size: 0.9rem;
+    line-height: 1.45;
+  }
+
+  .tp-auslauf-hinweis p { margin: 0; }
+  .tp-auslauf-hinweis__titel { font-weight: 700; }
+  .tp-auslauf-hinweis__text a { color: inherit; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+
   .tp-aktion-hinweis {
     display: flex;
     flex-wrap: wrap;
