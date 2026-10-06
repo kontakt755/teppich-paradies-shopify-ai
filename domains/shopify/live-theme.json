@@ -1,15 +1,15 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-06T12:03:53Z",
-    "verifiedBy": "Shopify CLI role live nach workflow:live (main fafaeabd, PR #903); oeffentliche Suche ohne Vorschau in Chrome geprueft"
-  },
-  "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-06T12:03:53Z",
+    "verifiedAt": "2026-10-06T12:19:05Z",
+    "verifiedBy": "Shopify CLI role live nach workflow:live (main b47f09a7, PR #905); oeffentlicher Musterservice ohne Vorschau in Chrome geprueft"
+  },
+  "preview": {
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-10-06T12:19:05Z",
     "verifiedBy": "Rollentausch nach workflow:live; naechstes Preview-Ziel"
   },
   "fallback": {
@@ -338,6 +338,12 @@
       "name": "preview-main-2026-09-15",
       "retiredNoticedAt": "2026-10-06",
       "note": "Per workflow:live abgeloest durch 204436144462 (main fafaeabd, PR #903: Suchergebnisse zeigen Serviceseiten und Kategorien). Rollentausch per Shopify CLI und oeffentlicher Suche ohne Vorschau in Chrome geprueft. Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-10-06",
+      "note": "Per workflow:live abgeloest durch 204438208846 (main b47f09a7, PR #905: Mustergrenz-Hinweis). Rollentausch per Shopify CLI und oeffentlichem Musterservice ohne Vorschau in Chrome geprueft. Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
