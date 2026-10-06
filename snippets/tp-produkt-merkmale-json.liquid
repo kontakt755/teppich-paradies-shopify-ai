@@ -109,7 +109,15 @@ Stangenlänge:: m::stangenlaenge
     assign tpm_wert = tpm_produkt.metafields.custom[tpm_key].value
   -%}
   {%- if tpm_wert != blank -%}
-    {%- capture tpm_text -%}{{ tpm_wert }}{{ tpm_einheit }}{%- endcapture -%}
+    {%- liquid
+      assign tpm_wert_text = tpm_wert | append: '' | strip
+      assign tpm_wert_klein = tpm_wert_text | downcase
+      assign tpm_ende = tpm_wert_klein | slice: -2, 2
+      if tpm_key == 'format_cm' and tpm_ende == 'cm'
+        assign tpm_einheit = ''
+      endif
+    -%}
+    {%- capture tpm_text -%}{{ tpm_wert_text }}{{ tpm_einheit }}{%- endcapture -%}
     {%- assign tpm_text = tpm_text | strip -%}
     {%- unless tpm_erste -%},{%- endunless -%}
     {%- assign tpm_erste = false -%}

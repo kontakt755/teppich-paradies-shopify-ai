@@ -45,7 +45,10 @@
 .tp-tbk-faq__answer p { margin: 0; }
 @media (max-width: 700px) {
   .tp-tbk-section, .tp-tbk-faq-section { padding-inline: 16px; }
-  .tp-tbk__inner { grid-template-columns: 1fr; gap: 16px; padding: 20px; }
+  .tp-tbk__inner { grid-template-columns: 1fr; gap: 12px; padding: 14px 16px; }
+  .tp-tbk__eyebrow { display: none; }
+  .tp-tbk h2 { font-size: 20px; }
+  .tp-tbk__copy > p:last-child { font-size: 14px; line-height: 1.4; }
   .tp-tbk__button { width: 100%; }
   .tp-tbk__facts { gap: 8px 14px; }
 }
