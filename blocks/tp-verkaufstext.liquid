@@ -80,18 +80,7 @@
 {%- endif -%}
 
 {%- assign tp_vt_zimmer_mf = product.metafields.custom.zimmer -%}
-{%- assign tp_vt_zimmer_val = tp_vt_zimmer_mf.value -%}
-{%- assign tp_vt_zimmer = '' -%}
-{%- if tp_vt_zimmer_val != blank -%}
-  {%- if tp_vt_zimmer_mf.type contains 'list.' -%}
-    {%- capture tp_vt_zimmer -%}
-      {%- for item in tp_vt_zimmer_val -%}
-        {{- item.name | default: item -}}
-        {%- unless forloop.last %}, {% endunless -%}
-      {%- endfor -%}
-    {%- endcapture -%}
-  {%- endif -%}
-{%- endif -%}
+{%- capture tp_vt_zimmer -%}{%- render 'tp-zimmer-liste', metafield: tp_vt_zimmer_mf -%}{%- endcapture -%}
 {%- assign tp_vt_zimmer = tp_vt_zimmer | strip -%}
 {%- if tp_vt_zimmer != blank -%}
   {%- capture tp_vt_sentences -%}{{ tp_vt_sentences }}|Geeignet für {{ tp_vt_zimmer }}.{%- endcapture -%}
