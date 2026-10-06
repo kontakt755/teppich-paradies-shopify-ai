@@ -34,6 +34,8 @@
   Hersteller aus, Farben und Mengen sind nicht mehr sicher lieferbar. Der
   Hinweis sagt das offen und nennt den Weg - wir pruefen und melden uns. Keine
   Verknappung, kein Countdown. Telefon aus den Theme-Einstellungen.
+  Inhaber 2026-10-06: deutlich sagen, dass die Ware bald nicht mehr erhaeltlich
+  ist und eine nicht mehr lieferbare Bestellung kostenfrei storniert wird.
 {%- endcomment -%}
 {%- if tah_produkt.tags contains 'auslauf' -%}
   {%- liquid
@@ -44,9 +46,9 @@
     endif
   -%}
   <div class="tp-auslauf-hinweis" data-tp-auslauf>
-    <p class="tp-auslauf-hinweis__titel">Auslaufkollektion – nur noch begrenzt lieferbar</p>
+    <p class="tp-auslauf-hinweis__titel">Auslaufkollektion – bald nicht mehr erhältlich</p>
     <p class="tp-auslauf-hinweis__text">
-      Nach Ihrer Bestellung prüfen wir, ob Ihre Farbe in der gewünschten Menge noch lieferbar ist, und melden uns persönlich bei Ihnen, falls nicht.
+      Der Hersteller stellt diese Kollektion ein, die Restbestände sind begrenzt. Nach Ihrer Bestellung prüfen wir, ob Ihre Farbe in der gewünschten Menge noch lieferbar ist. Falls nicht, melden wir uns persönlich: Sie können eine andere Farbe wählen oder die Bestellung kostenfrei stornieren – Sie erhalten dann den vollen Betrag zurück.
       {%- if tah_tel != blank %} Vorab fragen? Rufen Sie uns gern an: <a href="tel:{{ tah_tel_href }}">{{ tah_tel | escape }}</a>.{% endif -%}
       {%- if tah_produkt.tags contains 'ohne-raummass' %} Erhältlich als Meterware in voller Rollenbreite.{% endif -%}
     </p>
