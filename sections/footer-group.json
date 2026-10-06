@@ -59,7 +59,7 @@
           "type": "tp-newsletter",
           "settings": {
             "ueberschrift": "Neuigkeiten aus dem Teppich Paradies",
-            "text": "15 € Rabatt ab 100 € Bestellwert und 4 statt 3 Muster gratis.",
+            "text": "15 € Rabatt ab 100 € Bestellwert, nicht für reduzierte Artikel. Dazu 4 statt 3 Muster gratis.",
             "button": "Gutschein sichern",
             "quelle": "footer",
             "kompakt": true,
