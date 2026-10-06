@@ -80,7 +80,7 @@ test('der Warenkorb rechnet mit der Einstellung, nicht mit einer festen Zahl', (
   // Der Text allein reicht nicht: die Grenze steckte hier als Centbetrag in
   // der Bedingung. Wer nur die Texte anpasst, haette den Warenkorb weiter
   // nach der alten Schwelle rechnen lassen.
-  const warenkorb = readFileSync(path.join(WURZEL, 'snippets', 'cart-summary.liquid'), 'utf8');
+  const warenkorb = readFileSync(path.join(WURZEL, 'snippets', 'tp-cart-versandhinweis.liquid'), 'utf8');
   assert.match(warenkorb, /settings\.tp_versand_frei_ab \| times: 100/,
     'Der Warenkorb rechnet die Schwelle nicht aus der Einstellung.');
   assert.doesNotMatch(warenkorb, /cart\.total_price >= \d+/,

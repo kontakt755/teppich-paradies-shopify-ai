@@ -81,3 +81,11 @@ test('Das ProductGroup-JSON-LD haengt die Merkmale ein, das native bleibt unange
   const nativ = sd.slice(sd.indexOf('{%- else -%}'));
   assert.ok(!nativ.includes('additionalProperty'), 'kein zweiter Product-Knoten im nativen Zweig');
 });
+
+// Importdaten enthalten Formate sowohl mit als auch ohne ausgeschriebene Einheit.
+test('Format wird genau einmal mit cm ausgegeben', async () => {
+  for (const [input, expected] of [['61 × 30,5', '61 × 30,5 cm'], ['61 × 30,5 cm', '61 × 30,5 cm'], ['50 x 50 CM ', '50 x 50 CM']]) {
+    const m = await merkmale({ format_cm: text(input) });
+    assert.equal(m.find(p => p.name === 'Format').value, expected);
+  }
+});

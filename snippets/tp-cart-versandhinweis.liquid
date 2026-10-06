@@ -1,0 +1,36 @@
+{%- comment -%}
+  Versandkostenhinweis fuer jeden gefuellten Warenkorb. Die Speditionsart
+  wird getrennt ermittelt; Varianten-Rollenbreiten sind die aktuelle Quelle.
+  Muster verwenden die gemeinsame Mustererkennung und ihr kostenloses Profil.
+{%- endcomment -%}
+{%- if cart.items.size > 0 -%}
+  {%- assign tp_cart_only_samples = true -%}
+  {%- assign tp_cart_has_spedition_item = false -%}
+  {%- for item in cart.items -%}
+    {%- capture tp_cart_sample -%}{%- render 'tp-muster-position', line_item: item -%}{%- endcapture -%}
+    {%- unless tp_cart_sample contains 'ja' -%}
+      {%- liquid
+        assign tp_cart_only_samples = false
+        assign tp_cart_roll_width = item.variant.metafields.custom.rollenbreite.value | default: item.product.metafields.custom.rollenbreite.value | times: 1
+        assign tp_cart_package_area = item.product.metafields.custom.qm_pro_paket.value | times: 1
+        if tp_cart_roll_width > 0 or tp_cart_package_area > 0
+          assign tp_cart_has_spedition_item = true
+        endif
+      -%}
+    {%- endunless -%}
+  {%- endfor -%}
+  {%- assign tp_cart_versandfrei_cent = settings.tp_versand_frei_ab | times: 100 -%}
+  <p class="tp-cart-shipping-note">
+    {%- if tp_cart_only_samples -%}
+      <strong>Kostenloser Musterversand innerhalb Deutschlands.</strong>
+    {%- elsif cart.total_price >= tp_cart_versandfrei_cent -%}
+      <strong>Versandkostenfrei in Deutschland.</strong>
+    {%- else -%}
+      <strong>Versandkostenfrei in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert.</strong>
+    {%- endif -%}
+    {%- if tp_cart_has_spedition_item %}
+      Rollen und große Pakete liefert die Spedition frei Bordsteinkante, wir rufen vorher an.
+    {%- endif %}
+    <a href="{{ pages['versand-lieferung'].url | default: '/pages/versand-lieferung' }}">Versand und Lieferung</a>
+  </p>
+{%- endif -%}
