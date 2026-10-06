@@ -173,7 +173,13 @@
     if (total === 0) {
       message = '0 von ' + MAX_SAMPLES + ' Mustern ausgewählt';
     } else if (total >= MAX_SAMPLES) {
-      message = MAX_SAMPLES + ' von ' + MAX_SAMPLES + ' Mustern erreicht. Entfernen Sie zuerst ein Muster im Warenkorb, um ein anderes auszuwählen.';
+      if (inCart === 0) {
+        message = MAX_SAMPLES + ' von ' + MAX_SAMPLES + ' Mustern ausgewählt. Wählen Sie eine Farbe ab, um eine andere auszuwählen.';
+      } else if (newlySelected === 0) {
+        message = MAX_SAMPLES + ' von ' + MAX_SAMPLES + ' Mustern im Warenkorb. Entfernen Sie dort zuerst ein Muster, um ein anderes auszuwählen.';
+      } else {
+        message = MAX_SAMPLES + ' von ' + MAX_SAMPLES + ' Mustern erreicht. Wählen Sie eine Farbe ab oder entfernen Sie ein Muster im Warenkorb.';
+      }
     } else {
       var location = newlySelected === 0 ? ' im Warenkorb' : ' insgesamt ausgewählt';
       var possibility = remaining === 1 ? 'noch 1 weiteres möglich' : remaining + ' weitere möglich';

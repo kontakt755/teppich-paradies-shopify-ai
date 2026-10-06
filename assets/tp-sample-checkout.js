@@ -61,7 +61,7 @@
     countEl.textContent = status.message;
     countEl.classList.toggle('tp-sample__count--limit', status.limitReached);
     submitEl.disabled = submitting || selected.size === 0;
-    cartLinkEl.hidden = cartSampleCount === 0 && !status.limitReached;
+    cartLinkEl.hidden = cartSampleCount === 0;
 
     gridEl.querySelectorAll('[data-sample-color]').forEach(function (card) {
       var value = card.getAttribute('data-sample-color');
