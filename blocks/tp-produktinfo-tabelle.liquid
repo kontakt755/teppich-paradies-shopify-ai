@@ -234,6 +234,10 @@ Rückenausstattung::ruecken
       {% assign display_field = row_parts[2] | strip %}
       {% assign metafield = product.metafields.custom[metafield_key] %}
       {% assign metafield_value = metafield.value %}
+      {% if metafield_key == 'zimmer' %}
+        {% capture tp_pit_zimmer %}{% render 'tp-zimmer-liste', metafield: metafield %}{% endcapture %}
+        {% assign metafield_value = tp_pit_zimmer | strip %}
+      {% endif %}
 
       {% comment %} Lexikon-Handle zur Zeile suchen, siehe lexikon_zuordnung oben {% endcomment %}
       {% assign lexikon_handle = '' %}
@@ -261,7 +265,9 @@ Rückenausstattung::ruecken
           <td class="ai-product-info-table__key-{{ ai_gen_id }}">{{ row_label }}</td>
 
           <td class="ai-product-info-table__value-{{ ai_gen_id }}">
-            {% if metafield != blank and metafield_value != blank %}
+            {% if metafield_key == 'zimmer' %}
+              {{ tp_pit_zimmer | strip | escape }}
+            {% elsif metafield != blank and metafield_value != blank %}
               {% if metafield.type contains 'list.' %}
                 {%- for item in metafield_value -%}
                   {%- if display_field == 'value' -%}

@@ -62,18 +62,22 @@ Pflegeleicht::pflegeleicht::name
     assign tpm_wert = tpm_mf.value
   -%}
   {%- if tpm_wert != blank -%}
-    {%- capture tpm_text -%}
-      {%- if tpm_mf.type contains 'list.' -%}
-        {%- for tpm_item in tpm_wert -%}
-          {%- assign tpm_drop = tpm_item[tpm_feld] -%}
-          {{- tpm_drop.value | default: tpm_drop | default: tpm_item.name | default: tpm_item -}}
-          {%- unless forloop.last -%}, {% endunless -%}
-        {%- endfor -%}
-      {%- else -%}
-        {%- assign tpm_drop = tpm_wert[tpm_feld] -%}
-        {{- tpm_drop.value | default: tpm_drop | default: tpm_wert.name | default: tpm_wert -}}
-      {%- endif -%}
-    {%- endcapture -%}
+    {%- if tpm_key == 'zimmer' -%}
+      {%- capture tpm_text -%}{%- render 'tp-zimmer-liste', metafield: tpm_mf -%}{%- endcapture -%}
+    {%- else -%}
+      {%- capture tpm_text -%}
+        {%- if tpm_mf.type contains 'list.' -%}
+          {%- for tpm_item in tpm_wert -%}
+            {%- assign tpm_drop = tpm_item[tpm_feld] -%}
+            {{- tpm_drop.value | default: tpm_drop | default: tpm_item.name | default: tpm_item -}}
+            {%- unless forloop.last -%}, {% endunless -%}
+          {%- endfor -%}
+        {%- else -%}
+          {%- assign tpm_drop = tpm_wert[tpm_feld] -%}
+          {{- tpm_drop.value | default: tpm_drop | default: tpm_wert.name | default: tpm_wert -}}
+        {%- endif -%}
+      {%- endcapture -%}
+    {%- endif -%}
     {%- assign tpm_text = tpm_text | strip_html | strip_newlines | strip -%}
     {%- if tpm_text != blank -%}
       {%- unless tpm_erste -%},{%- endunless -%}
