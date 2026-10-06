@@ -28,14 +28,13 @@
     {% paginate search.results by products_per_page %}
       {%- liquid
         # TP Aufgabe #505 (Luecke L1): search.results mischt alle im Parameter
-        # "type" angefragten Objekttypen (siehe sections/tp-header-suche.liquid,
-        # snippets/tp-suche-ergebnisse.liquid - beide fragen jetzt auch "article"
-        # an). Produkte und Ratgeber-Artikel werden hier getrennt: sonst liefe
-        # ein Artikeltreffer durch die Produktkarten-Logik unten (kaputt, weil
-        # ein Artikel kein Produkt ist) und die Filterleiste zeigte eine
-        # Trefferzahl, die groesser ist als das Produktraster.
+        # "type" angefragten Objekttypen. Jeder Typ bekommt seinen eigenen
+        # Bereich: sonst meldet Shopify Treffer, die hier unsichtbar bleiben,
+        # und Nicht-Produkte laufen durch die Produktkarten-Logik.
         assign tp_sr_produkte = search.results | where: 'object_type', 'product'
         assign tp_sr_artikel = search.results | where: 'object_type', 'article'
+        assign tp_sr_seiten = search.results | where: 'object_type', 'page'
+        assign tp_sr_kategorien = search.results | where: 'object_type', 'collection'
       -%}
       {% if search.results_count > 0 %}
         {% if tp_sr_produkte.size > 0 %}
@@ -51,6 +50,28 @@
         {% render 'tp-suche-leer' %}
         {% assign products = blank %}
         {% assign title = blank %}
+      {% endif %}
+
+      {% if tp_sr_seiten.size > 0 %}
+        <section class="tp-sr-ziele" aria-labelledby="tp-sr-seiten-titel">
+          <h2 class="tp-sr-ziele__titel" id="tp-sr-seiten-titel">Seiten &amp; Service</h2>
+          <ul class="tp-sr-ziele__liste">
+            {% for tp_sr_s in tp_sr_seiten %}
+              <li><a href="{{ tp_sr_s.url | escape }}">{{ tp_sr_s.title | escape }}</a></li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+
+      {% if tp_sr_kategorien.size > 0 %}
+        <section class="tp-sr-ziele" aria-labelledby="tp-sr-kategorien-titel">
+          <h2 class="tp-sr-ziele__titel" id="tp-sr-kategorien-titel">Kategorien</h2>
+          <ul class="tp-sr-ziele__liste">
+            {% for tp_sr_k in tp_sr_kategorien %}
+              <li><a href="{{ tp_sr_k.url | escape }}">{{ tp_sr_k.title | escape }}</a></li>
+            {% endfor %}
+          </ul>
+        </section>
       {% endif %}
 
       {% if tp_sr_artikel.size > 0 %}
@@ -100,6 +121,38 @@
 </results-list>
 
 {% stylesheet %}
+  .tp-sr-ziele {
+    grid-column: 1 / -1;
+    margin: 8px 0 24px;
+  }
+
+  .tp-sr-ziele__titel {
+    margin: 0 0 12px;
+    font-size: clamp(20px, 2.2vw, 26px);
+  }
+
+  .tp-sr-ziele__liste {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-sr-ziele__liste a {
+    display: inline-block;
+    padding: 10px 14px;
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    text-decoration: none;
+  }
+
+  .tp-sr-ziele__liste a:hover,
+  .tp-sr-ziele__liste a:focus-visible {
+    text-decoration: underline;
+  }
+
   /* TP Aufgabe #505: Ratgeber-Abschnitt ueber die volle Rasterbreite, wie
      snippets/tp-suche-leer.liquid es fuer den Leerzustand schon macht - sonst
      quetscht sich der Block in die 250-px-Filterspalte von .collection-wrapper. */
