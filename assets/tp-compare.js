@@ -149,7 +149,7 @@
               image +
               '<span>' + escapeHtml(item.title) + '</span>' +
               '</a>' +
-              '<button type="button" class="tp-compare-remove-btn" data-tp-compare-remove data-tp-compare-handle="' + escapeHtml(item.handle) + '" aria-label="Produkt entfernen">×</button>' +
+              '<button type="button" class="tp-compare-remove-btn" data-tp-compare-remove data-tp-compare-handle="' + escapeHtml(item.handle) + '" aria-label="' + escapeHtml(item.title) + ' aus Vergleich entfernen">×</button>' +
               '</div></th>';
     });
     html += '</tr></thead><tbody>';
@@ -251,6 +251,15 @@
         updateToggleButtons();
         updateBar(true);
         renderDialog();
+        // renderDialog ersetzt den fokussierten Knopf. Nach dem Entfernen
+        // im Dialog beim naechsten Produkt oder beim Schliessen bleiben.
+        var dialogAfterRemoval = document.querySelector('[data-tp-compare-dialog]');
+        if (dialogAfterRemoval && dialogAfterRemoval.open) {
+          var remainingButtons = dialogAfterRemoval.querySelectorAll('[data-tp-compare-remove]');
+          var nextButton = remainingButtons[Math.min(idx, remainingButtons.length - 1)];
+          var focusTarget = nextButton || dialogAfterRemoval.querySelector('[data-tp-compare-close]');
+          if (focusTarget) focusTarget.focus();
+        }
       }
       return;
     }
