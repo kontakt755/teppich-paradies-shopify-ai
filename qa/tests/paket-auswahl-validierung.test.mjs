@@ -36,7 +36,7 @@ class Element {
   appendChild(node) { this.options.push(node); }
 }
 
-async function packageCase(raw, { waste = true, blur = true, action = null, submit = true } = {}) {
+async function packageCase(raw, { waste = true, blur = true, action = null, submit = true, correction = null } = {}) {
   const selectors = ['sqm-input', 'need-label', 'need-display', 'sqm-display',
     'package-display', 'package-word', 'unit-hint', 'pieces-line', 'total-display',
     'waste-checkbox', 'add-to-cart', 'cart-message'];
@@ -67,6 +67,12 @@ async function packageCase(raw, { waste = true, blur = true, action = null, subm
     input.emit('input');
     if (blur) input.emit('blur');
   }
+  const invalidBeforeCorrection = input.getAttribute('aria-invalid');
+  if (correction !== null) {
+    input.value = correction;
+    input.emit('input');
+    input.emit('blur');
+  }
   const click = (selector) => component.emit('click', {
     target: { closest: (query) => query === selector ? nodes[query] ?? {} : null },
     preventDefault() {}, stopPropagation() {},
@@ -79,6 +85,8 @@ async function packageCase(raw, { waste = true, blur = true, action = null, subm
     normalizedInput: input.value,
     errorMessage: nodes['[data-cart-message]'].textContent,
     isError: nodes['[data-cart-message]'].getAttribute('data-error') === 'true',
+    ariaInvalid: input.getAttribute('aria-invalid'),
+    invalidBeforeCorrection,
     packages: nodes['[data-package-display]'].textContent,
     total: nodes['[data-total-display]'].textContent,
   };
@@ -125,6 +133,7 @@ test('TP-001: "20abc" wird abgelehnt, kein Cart-Request, kein stiller Teilwert',
   const result = await packageCase('20abc');
   assert.equal(result.requests.length, 0);
   assert.equal(result.isError, true);
+  assert.equal(result.ariaInvalid, 'true');
   assert.match(result.errorMessage, /nicht gelesen werden/);
 });
 
@@ -148,12 +157,23 @@ test('TP-001/TP-002: unmittelbarer Klick ohne Blur wird ebenfalls geprüft', asy
 });
 
 test('nach Korrektur ist die Eingabe wieder kaufbar', async () => {
-  // Erst ungültig (Blur zeigt Fehler), dann korrigiert und erneut abgesendet.
-  const invalid = await packageCase('20abc', { submit: false });
-  assert.equal(invalid.isError, true);
-
-  const corrected = await packageCase('20');
+  // Im selben Rechner erst Fehler ausloesen, dann Feld korrigieren.
+  const corrected = await packageCase('20abc', { correction: '20' });
+  assert.equal(corrected.invalidBeforeCorrection, 'true');
   assert.equal(corrected.requests.length, 1);
   assert.equal(corrected.requests[0].body.quantity, 11);
   assert.equal(corrected.isError, false);
+  assert.equal(corrected.ariaInvalid, null);
+});
+
+test('Flaechenfeld verweist auf die live angesagte Fehlermeldung', () => {
+  const input = packageSource.match(/<input\b[^>]*data-sqm-input[^>]*>/s)?.[0];
+  const message = packageSource.match(/<div\b[^>]*data-cart-message[^>]*>/s)?.[0];
+  assert.ok(input);
+  assert.ok(message);
+  const describedBy = input.match(/aria-describedby="([^"]+)"/)?.[1];
+  const messageId = message.match(/\bid="([^"]+)"/)?.[1];
+  assert.ok(messageId);
+  assert.equal(describedBy, messageId);
+  assert.match(message, /aria-live="polite"/);
 });
