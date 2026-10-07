@@ -1,0 +1,257 @@
+{
+  "sections": {
+    "hero": {
+      "type": "tp-boden-kategorie-hero",
+      "settings": {
+        "image": "shopify://shop_images/valdoro-eiche-natur-geoelt-parkett-landhausdiele-220x20-9-cm-raum-1.jpg",
+        "eyebrow": "Bodenbeläge entdecken",
+        "heading": "Parkett & Kork",
+        "lead": "<p>Natürlich wirkende Böden für unterschiedliche Wohnstile: Diese Kollektion vereint Parkett und Kork. Vergleichen Sie Material, Farbton und Aufbau anhand der Angaben zum einzelnen Produkt.</p>",
+        "primary_label": "Böden entdecken",
+        "secondary_label": "Beratung anfragen",
+        "secondary_link": "/pages/kontakt",
+        "image_caption": "Raumbeispiel: Valdoro Eiche Natur geölt"
+      },
+      "blocks": {
+        "point_1": {
+          "type": "point",
+          "settings": {
+            "text": "Parkett und Kork"
+          }
+        },
+        "point_2": {
+          "type": "point",
+          "settings": {
+            "text": "Preis je m² und Paket"
+          }
+        },
+        "point_3": {
+          "type": "point",
+          "settings": {
+            "text": "Beratung in Oranienburg"
+          }
+        }
+      },
+      "block_order": [
+        "point_1",
+        "point_2",
+        "point_3"
+      ]
+    },
+    "main": {
+      "type": "main-collection",
+      "blocks": {
+        "filters": {
+          "type": "filters",
+          "static": true,
+          "settings": {
+            "enable_filtering": true,
+            "filter_style": "vertical",
+            "filter_width": "centered",
+            "text_label_case": "default",
+            "show_swatch_label": false,
+            "show_filter_label": false,
+            "enable_sorting": true,
+            "enable_grid_density": false,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "padding-block-start": 8,
+            "padding-block-end": 8,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0,
+            "facets_margin_bottom": 8,
+            "facets_margin_right": 20
+          },
+          "blocks": {}
+        },
+        "product-card": {
+          "type": "_product-card",
+          "static": true,
+          "settings": {
+            "product_card_gap": 4,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "card-gallery": {
+              "type": "_product-card-gallery",
+              "settings": {
+                "image_ratio": "adapt",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "product_title_4nY4eT": {
+              "type": "tp-card-title",
+              "name": "t:names.product_title",
+              "settings": {
+                "width": "100%",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "custom",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "var(--color-foreground)",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 4,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "price_EzJzMm": {
+              "type": "price",
+              "settings": {
+                "show_sale_price_first": true,
+                "show_installments": false,
+                "show_tax_info": false,
+                "type_preset": "h6",
+                "width": "100%",
+                "alignment": "left",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "color": "var(--color-foreground)",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "tp_card_specs_priceEzJzMm": {
+              "type": "tp-card-specs",
+              "name": "TP Card-Merkmale",
+              "settings": {},
+              "blocks": {}
+            },
+            "tp_card_actions_priceEzJzMm": {
+              "type": "tp-card-actions",
+              "name": "TP Card-Aktionen",
+              "settings": {},
+              "blocks": {}
+            },
+            "tp_card_color_thumbs": {
+              "type": "tp-card-color-thumbs",
+              "settings": {}
+            },
+            "tp_card_aktion": {
+              "type": "tp-card-aktion",
+              "settings": {}
+            }
+          },
+          "block_order": [
+            "card-gallery",
+            "product_title_4nY4eT",
+            "price_EzJzMm",
+            "tp_card_aktion",
+            "tp_card_color_thumbs",
+            "tp_card_specs_priceEzJzMm",
+            "tp_card_actions_priceEzJzMm"
+          ]
+        }
+      },
+      "settings": {
+        "layout_type": "grid",
+        "product_card_size": "medium",
+        "mobile_product_card_size": "small",
+        "enable_infinite_scroll": false,
+        "products_per_page": 16,
+        "product_grid_width": "centered",
+        "full_width_on_mobile": false,
+        "columns_gap_horizontal": 16,
+        "columns_gap_vertical": 24,
+        "padding-inline-start": 0,
+        "padding-inline-end": 0,
+        "color_scheme": "scheme-1",
+        "padding-block-start": 0,
+        "padding-block-end": 32
+      }
+    },
+    "guide": {
+      "type": "tp-boden-kategorie-ratgeber",
+      "settings": {
+        "eyebrow": "Gut zu wissen",
+        "heading": "Parkett und Kork passend auswählen",
+        "intro": "<p>Beide Materialien finden Sie hier gemeinsam. Ein Blick auf den Produktnamen, das Material und die technischen Angaben hilft beim Eingrenzen.</p>",
+        "faq_heading": "Häufige Fragen zu Parkett & Kork",
+        "contact_text": "Noch unsicher, welcher Boden passt?",
+        "contact_label": "Persönlich beraten lassen",
+        "contact_link": "/pages/kontakt"
+      },
+      "blocks": {
+        "tip_1": {
+          "type": "tip",
+          "settings": {
+            "heading": "Material einordnen",
+            "body": "<p>Parkett und Kork sind unterschiedliche Beläge. Achten Sie im Produkttitel und in der Beschreibung darauf, welches Material angeboten wird.</p>"
+          }
+        },
+        "tip_2": {
+          "type": "tip",
+          "settings": {
+            "heading": "Oberfläche ansehen",
+            "body": "<p>Farbton, Struktur und Oberfläche können sich deutlich unterscheiden. Nutzen Sie die vorhandenen Produktbilder als Orientierung und prüfen Sie die Details am Artikel.</p>"
+          }
+        },
+        "tip_3": {
+          "type": "tip",
+          "settings": {
+            "heading": "Fläche planen",
+            "body": "<p>Die Produkte werden paketweise angeboten. Der Paketinhalt und der Rechner auf der Produktseite helfen bei der benötigten Menge.</p>"
+          }
+        },
+        "faq_1": {
+          "type": "faq",
+          "settings": {
+            "question": "Warum erscheinen Korkböden in dieser Kategorie?",
+            "answer": "<p>Die Kollektion zeigt derzeit sowohl Parkett als auch Kork. Das Material ist im jeweiligen Produkttitel und in den Produktdetails ausgewiesen.</p>"
+          }
+        },
+        "faq_2": {
+          "type": "faq",
+          "settings": {
+            "question": "Sind für diese Böden kostenlose Muster verfügbar?",
+            "answer": "<p>Für die derzeitigen Parkett- und Korkimporte sind keine kostenlosen Muster hinterlegt. <a href=\"/pages/kontakt\">Kontaktieren Sie uns</a>, wenn Sie eine bestimmte Oberfläche vor der Bestellung besprechen möchten.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "tip_1",
+        "tip_2",
+        "tip_3",
+        "faq_1",
+        "faq_2"
+      ]
+    }
+  },
+  "order": [
+    "hero",
+    "main",
+    "guide"
+  ]
+}
