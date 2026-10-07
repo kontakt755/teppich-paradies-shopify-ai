@@ -1,9 +1,11 @@
 const TP_CARPET_URLS = {
   Hochflor: '/collections/teppichboden-hochflor',
+  Mittelflor: '/collections/teppichboden-mittelflor',
   Kurzflor: '/collections/teppichboden-kurzflor',
   Velours: '/collections/teppichboden-velours',
   Schlinge: '/collections/teppichboden-schlinge',
   Wolle: '/collections/teppichboden-wolle',
+  Sisal: '/collections/teppichboden-sisal',
   'Nadelvlies & Objekt': '/collections/teppichboden-nadelvlies',
 };
 
