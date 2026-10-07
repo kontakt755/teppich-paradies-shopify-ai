@@ -340,13 +340,11 @@
                           </svg>
                         {% endif %}
                       </div>
-                      <label
+                      <span
                         class="{% if show_swatch_label %}facets__swatch-label{% else %}hidden{% endif %}"
-                        for="{{ input_id }}"
-                        tabindex="-1"
                       >
                         {{- tp_filter_value_label }}
-                      </label>
+                      </span>
                     </label>
                   </fieldset>
                 {% else %}
