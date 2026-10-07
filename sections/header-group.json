@@ -58,7 +58,7 @@
           "type": "_tp-menu-kachel",
           "settings": {
             "menu_match": "Hochflor",
-            "image": "shopify://shop_images/1196444-8FXC-prod.jpg",
+            "image": "shopify://shop_images/teppichboden-hochflor-menue.jpg",
             "subtitle": ""
           }
         },
@@ -66,7 +66,7 @@
           "type": "_tp-menu-kachel",
           "settings": {
             "menu_match": "Kurzflor",
-            "image": "shopify://shop_images/1269056-8FXC-prod.jpg",
+            "image": "shopify://shop_images/teppichboden-kurzflor-menue.jpg",
             "subtitle": ""
           }
         },
@@ -74,7 +74,7 @@
           "type": "_tp-menu-kachel",
           "settings": {
             "menu_match": "Velours",
-            "image": "shopify://shop_images/1196472-8FXC-prod.jpg",
+            "image": "shopify://shop_images/teppichboden-velours-menue.jpg",
             "subtitle": ""
           }
         },
@@ -82,7 +82,7 @@
           "type": "_tp-menu-kachel",
           "settings": {
             "menu_match": "Schlinge",
-            "image": "shopify://shop_images/1312387-8FXC-prod.jpg",
+            "image": "shopify://shop_images/teppichboden-schlinge-menue.jpg",
             "subtitle": ""
           }
         },
@@ -90,15 +90,31 @@
           "type": "_tp-menu-kachel",
           "settings": {
             "menu_match": "Wolle",
-            "image": "shopify://shop_images/1312357-8FXC-prod.jpg",
+            "image": "shopify://shop_images/teppichboden-wolle-menue.jpg",
             "subtitle": ""
           }
         },
         "tp_kachel_teppich_nadelvlies": {
           "type": "_tp-menu-kachel",
           "settings": {
-            "menu_match": "Nadelvlies & Objekt",
-            "image": "shopify://shop_images/1276693-8FXC-prod.jpg",
+            "menu_match": "Nadelfilz",
+            "image": "shopify://shop_images/teppichboden-nadelfilz-menue.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_teppich_buero_gewerbe": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Büro & Gewerbe",
+            "image": "shopify://shop_images/teppichboden-buero-gewerbe-menue.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_teppich_fliesen_hinweis": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Auch als Teppichfliesen →",
+            "image": "shopify://shop_images/teppichfliesen-austauschen-menue.jpg",
             "subtitle": ""
           }
         },
@@ -477,6 +493,8 @@
         "tp_kachel_teppich_wolle",
         "tp_kachel_teppich_sisal",
         "tp_kachel_teppich_nadelvlies",
+        "tp_kachel_teppich_buero_gewerbe",
+        "tp_kachel_teppich_fliesen_hinweis",
         "tp_kachel_teppich_kunstrasen",
         "tp_kachel_teppiche",
         "tp_kachel_teppiche_alle",
