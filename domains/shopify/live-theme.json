@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204438208846",
-    "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-07T13:47:13Z",
-    "verifiedBy": "Shopify CLI Rolle live nach workflow:live (main eb5445c9, PR #913 und #914); oeffentliche 404-Seite ohne Vorschau in Chrome geprueft"
-  },
-  "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-07T13:47:13Z",
-    "verifiedBy": "Shopify CLI Rolle unpublished nach workflow:live; naechstes Preview-Ziel"
+    "verifiedAt": "2026-10-07T14:15:21Z",
+    "verifiedBy": "Shopify Admin API role MAIN nach workflow:live (main 7dd65fda, PR #916: Zubehoer-Kachel Werkzeug); oeffentliche Zubehoer-Seite ohne Vorschau per curl geprueft"
+  },
+  "preview": {
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-10-07T14:15:21Z",
+    "verifiedBy": "Rollentausch nach workflow:live; naechstes Preview-Ziel"
   },
   "fallback": {
     "themeId": "204440699214",
@@ -362,6 +362,12 @@
       "name": "Kopie von preview-main-2026-09-04",
       "retiredNoticedAt": "2026-10-07",
       "note": "Per workflow:live abgeloest durch 204438208846 (main eb5445c9, PR #913: 404-Startlink und PR #914: Startseitenkacheln). Rollentausch per Shopify CLI und oeffentlicher 404-Seite ohne Vorschau in Chrome geprueft. Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
+    },
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-10-07",
+      "note": "Per workflow:live abgeloest durch 204436144462 (main 7dd65fda, PR #916: Zubehoer-Kachel Werkzeug). Rollentausch per Admin API und oeffentlicher Zubehoer-Seite ohne Vorschau per curl geprueft. Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
