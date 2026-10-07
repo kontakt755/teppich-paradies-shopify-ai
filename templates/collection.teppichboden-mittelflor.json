@@ -10,10 +10,10 @@
 
 {
   "sections": {
-    "hero_split_ebwe8L": {
+    "hero_split_HUbzCh": {
       "type": "hero_split",
       "blocks": {
-        "feature_CkDXwT": {
+        "feature_FgaRnV": {
           "type": "feature",
           "settings": {
             "marker_type": "icon",
@@ -21,7 +21,7 @@
             "text": "Im Raummaß konfigurierbar"
           }
         },
-        "feature_JWnHGa": {
+        "feature_TidrWL": {
           "type": "feature",
           "settings": {
             "marker_type": "icon",
@@ -29,7 +29,7 @@
             "text": "Bewertet von echten Kunden bei Google"
           }
         },
-        "feature_CKtWMY": {
+        "feature_F8h98A": {
           "type": "feature",
           "settings": {
             "marker_type": "icon",
@@ -39,16 +39,16 @@
         }
       },
       "block_order": [
-        "feature_CkDXwT",
-        "feature_JWnHGa",
-        "feature_CKtWMY"
+        "feature_FgaRnV",
+        "feature_TidrWL",
+        "feature_F8h98A"
       ],
       "name": "Hero Split Features",
       "settings": {
-        "image": "shopify://shop_images/Teppichboden_Velours.png",
-        "heading": "Velours-Teppichboden",
-        "subheading": "Velours Teppichböden in allen Qualitäten und Farben",
-        "body": "<p>Veloursteppichboden wird ähnlich wie Schlingenteppichboden hergestellt, allerdings werden die Schlingen danach aufgeschnitten, um eine samtartige Oberflächenstruktur zu erzeugen.</p>",
+        "image": "shopify://shop_images/teppichboden-mittelflor-kategorie.jpg",
+        "heading": "Mittelflor-Teppichboden",
+        "subheading": "Mittelflor Teppichboden – weich im Schritt und gut zu pflegen",
+        "body": "<p>Mittelflor-Teppichboden hat eine Florhöhe von über 5 bis unter 10 mm und liegt damit zwischen Kurzflor und Hochflor. Er fühlt sich spürbar weicher an als Kurzflor und bleibt dabei pflegeleicht – eine gute Wahl für Wohn- und Schlafräume.</p>",
         "content_width": 1440,
         "column_gap": 48,
         "image_radius": 14,
@@ -65,7 +65,7 @@
         "padding_bottom": 24
       }
     },
-    "divider_N4Fgwt": {
+    "divider_8GmfQa": {
       "type": "divider",
       "name": "t:names.divider_section",
       "settings": {
@@ -466,9 +466,9 @@
                   "type": "image",
                   "name": "t:names.image",
                   "settings": {
-                    "image": "shopify://shop_images/Teppichboden_Kurzflor.png",
-                    "alt": "Kurzflor-Teppichboden, Nahaufnahme der Oberfläche",
-                    "link": "shopify://collections/teppichboden-kurzflor",
+                    "image": "shopify://shop_images/Teppichboden_Velours.png",
+                    "alt": "Velours-Teppichboden, Nahaufnahme der Oberfläche",
+                    "link": "shopify://collections/teppichboden-velours",
                     "image_ratio": "adapt",
                     "width": "fill",
                     "custom_width": 100,
@@ -490,7 +490,7 @@
                   "type": "text",
                   "name": "t:names.heading",
                   "settings": {
-                    "text": "<p>Kurzflor</p>",
+                    "text": "<p>Velours</p>",
                     "width": "fit-content",
                     "max_width": "normal",
                     "alignment": "left",
@@ -516,7 +516,7 @@
                   "type": "text",
                   "name": "t:names.text",
                   "settings": {
-                    "text": "<p>Pflegeleicht und vielseitig</p>",
+                    "text": "<p>Anspruchsvolles Design, samtige Optik</p>",
                     "width": "fit-content",
                     "max_width": "normal",
                     "alignment": "left",
@@ -878,7 +878,7 @@
                 "text_HiRr9H"
               ]
             },
-            "card_mf": {
+            "card_kf": {
               "type": "_card",
               "name": "t:names.card",
               "settings": {
@@ -906,13 +906,13 @@
                 "padding-inline-end": 0
               },
               "blocks": {
-                "image_mf": {
+                "image_63Mx4n": {
                   "type": "image",
                   "name": "t:names.image",
                   "settings": {
-                    "image": "shopify://shop_images/teppichboden-mittelflor-kategorie.jpg",
-                    "alt": "Mittelflor-Teppichboden in einem Wohnraum, Farbe Beige",
-                    "link": "shopify://collections/teppichboden-mittelflor",
+                    "image": "shopify://shop_images/Teppichboden_Kurzflor.png",
+                    "alt": "Kurzflor-Teppichboden, Nahaufnahme der Oberfläche",
+                    "link": "shopify://collections/teppichboden-kurzflor",
                     "image_ratio": "adapt",
                     "width": "fill",
                     "custom_width": 100,
@@ -930,11 +930,11 @@
                   },
                   "blocks": {}
                 },
-                "text_mf_1": {
+                "text_he7erc": {
                   "type": "text",
                   "name": "t:names.heading",
                   "settings": {
-                    "text": "<p>Mittelflor</p>",
+                    "text": "<p>Kurzflor</p>",
                     "width": "fit-content",
                     "max_width": "normal",
                     "alignment": "left",
@@ -956,11 +956,11 @@
                   },
                   "blocks": {}
                 },
-                "text_mf_2": {
+                "text_Axh8X6": {
                   "type": "text",
                   "name": "t:names.text",
                   "settings": {
-                    "text": "<p>Weicher als Kurzflor, pflegeleichter als Hochflor.</p>",
+                    "text": "<p>Pflegeleicht, vielseitig und angenehm kompakt.</p>",
                     "width": "fit-content",
                     "max_width": "normal",
                     "alignment": "left",
@@ -984,9 +984,9 @@
                 }
               },
               "block_order": [
-                "image_mf",
-                "text_mf_1",
-                "text_mf_2"
+                "image_63Mx4n",
+                "text_he7erc",
+                "text_Axh8X6"
               ]
             },
             "card_si": {
@@ -1103,7 +1103,7 @@
           },
           "block_order": [
             "card_iAVpPB",
-            "card_mf",
+            "card_kf",
             "card_b4HTxD",
             "card_QCGrjQ",
             "card_AQRpLG",
@@ -1252,8 +1252,8 @@
     }
   },
   "order": [
-    "hero_split_ebwe8L",
-    "divider_N4Fgwt",
+    "hero_split_HUbzCh",
+    "divider_8GmfQa",
     "main",
     "tp_fliesen_hinweis",
     "carousel_hpxcyi"
