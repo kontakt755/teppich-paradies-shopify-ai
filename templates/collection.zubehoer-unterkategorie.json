@@ -128,6 +128,18 @@
             "sub_collection_2": ""
           }
         },
+        "kachel_werkzeug": {
+          "type": "kachel",
+          "settings": {
+            "collection": "zubehoer-werkzeug",
+            "title": "",
+            "text": "",
+            "icon": "werkzeug",
+            "cta": "Ansehen",
+            "sub_collection_1": "",
+            "sub_collection_2": ""
+          }
+        },
         "kachel_sauberlauf": {
           "type": "kachel",
           "settings": {
@@ -150,6 +162,7 @@
         "kachel_verlegeunterlagen",
         "kachel_reinigungsmittel",
         "kachel_verlegeband",
+        "kachel_werkzeug",
         "kachel_sauberlauf"
       ],
       "settings": {

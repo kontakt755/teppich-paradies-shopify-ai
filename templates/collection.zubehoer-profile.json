@@ -152,6 +152,21 @@
             "sub_collection_2": ""
           }
         },
+        "kachel_werkzeug": {
+          "type": "kachel",
+          "settings": {
+            "collection": "zubehoer-werkzeug",
+            "title": "",
+            "benefit": "Sauber verlegt, sauber repariert.",
+            "text": "Verlegekeile für den Randabstand und Reparaturset für Laminat und Parkett.",
+            "image": "",
+            "product": "",
+            "icon": "werkzeug",
+            "cta": "Ansehen",
+            "sub_collection_1": "",
+            "sub_collection_2": ""
+          }
+        },
         "kachel_sauberlauf": {
           "type": "kachel",
           "settings": {
@@ -172,6 +187,7 @@
         "kachel_verlegeunterlagen",
         "kachel_reinigungsmittel",
         "kachel_verlegeband",
+        "kachel_werkzeug",
         "kachel_sauberlauf"
       ],
       "settings": {
