@@ -232,9 +232,12 @@
                         dem tatsaechlichen Varianten-/Paketpreis, waehrend die
                         Karten hier den €/m²-Preis zeigen (Einheiten-Mismatch,
                         technisch nicht ohne Metafeld-Filterung sauber
-                        loesbar). Alle anderen Filter bleiben unveraendert.
+                        loesbar). Gleiches gilt fuer die Teppichfliesen-
+                        Collections: dort steht der €/m²-Preis auf der Karte,
+                        der Filter rechnet je Paket. Alle anderen Filter
+                        bleiben unveraendert.
                       {%- endcomment -%}
-                      {%- unless request.page_type == 'search' or collection.handle == 'vinylboden-1' or collection.handle == 'vinylboden-klickvinyl' or collection.handle == 'vinylboden-klebevinyl' -%}
+                      {%- unless request.page_type == 'search' or collection.handle == 'vinylboden-1' or collection.handle == 'vinylboden-klickvinyl' or collection.handle == 'vinylboden-klebevinyl' or collection.handle == 'teppichfliesen' or collection.handle == 'teppichfliesen-50x50' or collection.handle == 'teppichplanken' or collection.handle == 'auslauf-teppichfliesen' -%}
                         {%- liquid
                           if filter.min_value.value != null or filter.max_value.value != null
                             assign total_active_values = total_active_values | plus: 1
@@ -526,7 +529,7 @@
                 {%- for filter in filters -%}
                   {% case filter.type %}
                     {% when 'price_range' %}
-                      {%- unless request.page_type == 'search' or collection.handle == 'vinylboden-1' or collection.handle == 'vinylboden-klickvinyl' or collection.handle == 'vinylboden-klebevinyl' -%}
+                      {%- unless request.page_type == 'search' or collection.handle == 'vinylboden-1' or collection.handle == 'vinylboden-klickvinyl' or collection.handle == 'vinylboden-klebevinyl' or collection.handle == 'teppichfliesen' or collection.handle == 'teppichfliesen-50x50' or collection.handle == 'teppichplanken' or collection.handle == 'auslauf-teppichfliesen' -%}
                         {%- liquid
                           if filter.min_value.value != null or filter.max_value.value != null
                             assign total_active_values = total_active_values | plus: 1
