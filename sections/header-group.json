@@ -434,7 +434,7 @@
           "type": "_tp-menu-kachel",
           "settings": {
             "menu_match": "Mittelflor",
-            "image": "shopify://shop_images/teppichboden-mittelflor-menue.jpg",
+            "image": "shopify://shop_images/teppichboden-mittelflor-menue-16x9.jpg",
             "subtitle": ""
           }
         },
@@ -442,7 +442,7 @@
           "type": "_tp-menu-kachel",
           "settings": {
             "menu_match": "Sisal",
-            "image": "shopify://shop_images/teppichboden-sisal-menue.jpg",
+            "image": "shopify://shop_images/teppichboden-sisal-menue-16x9.jpg",
             "subtitle": ""
           }
         }
