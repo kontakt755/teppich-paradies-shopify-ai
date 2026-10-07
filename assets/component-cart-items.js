@@ -95,32 +95,35 @@ class CartItemsComponent extends Component {
       ? this.refs.cartItemRows.filter((row) => gruppenKeys.includes(row.dataset.key ?? ''))
       : [];
 
+    const rowsToRemove = cartItemRowToRemove
+      ? [
+          cartItemRowToRemove,
+          // Get all nested lines of the row to remove
+          ...this.refs.cartItemRows.filter((row) => row.dataset.parentKey === cartItemRowToRemove.dataset.key),
+          ...gruppenRows.filter((row) => row !== cartItemRowToRemove),
+        ]
+      : [];
+    const isEmptyCart = rowsToRemove.length > 0 && rowsToRemove.length === this.refs.cartItemRows.length;
+    const focusEmptyCart = isEmptyCart && this.contains(document.activeElement);
+
     if (gruppenRows.length > 1) {
       this.updateQuantity({
         line,
         quantity: 0,
         action: 'clear',
         updates: Object.fromEntries(gruppenKeys.map((key) => [key, 0])),
+        focusEmptyCart,
       });
     } else {
       this.updateQuantity({
         line,
         quantity: 0,
         action: 'clear',
+        focusEmptyCart,
       });
     }
 
     if (!cartItemRowToRemove) return;
-
-    const rowsToRemove = [
-      cartItemRowToRemove,
-      // Get all nested lines of the row to remove
-      ...this.refs.cartItemRows.filter((row) => row.dataset.parentKey === cartItemRowToRemove.dataset.key),
-      ...gruppenRows.filter((row) => row !== cartItemRowToRemove),
-    ];
-
-    // If the cart item row is the last row, optimistically trigger the cart empty state
-    const isEmptyCart = rowsToRemove.length == this.refs.cartItemRows.length;
 
     const template = document.getElementById('empty-cart-template');
     if (isEmptyCart && template instanceof HTMLTemplateElement) {
@@ -128,6 +131,7 @@ class CartItemsComponent extends Component {
 
       startViewTransition(() => {
         this.replaceChildren(clone);
+        if (focusEmptyCart) this.#focusEmptyCartLink();
       }, [this.isDrawer ? 'empty-cart-drawer' : 'empty-cart-page']);
 
       return;
@@ -153,6 +157,7 @@ class CartItemsComponent extends Component {
    * @param {number} config.line - The line.
    * @param {number} config.quantity - The quantity.
    * @param {string} config.action - The action.
+   * @param {boolean} [config.focusEmptyCart] - Restore keyboard focus after the last line is removed.
    */
   updateQuantity(config) {
     const cartPerformaceUpdateMarker = cartPerformance.createStartingMarker(`${config.action}:user-action`);
@@ -216,6 +221,10 @@ class CartItemsComponent extends Component {
         );
 
         morphSection(this.sectionId, parsedResponseText.sections[this.sectionId], { mode: this.isDrawer ? 'hydration' : 'full' });
+
+        // The server-rendered empty state can replace the optimistic link.
+        // Keep keyboard focus on its visible next action after the morph.
+        if (config.focusEmptyCart && newCartItemCount === 0) this.#focusEmptyCartLink();
 
         this.#updateCartQuantitySelectorButtonStates();
         this.#checkoutSperreAnwenden();
@@ -300,6 +309,12 @@ class CartItemsComponent extends Component {
     const G = /** @type {any} */ (window).TPCartGruppen;
     if (G && eigene) return G.zuEntfernen(eigene, zeilen);
     return eigene?.key ? [eigene.key] : [];
+  }
+
+  #focusEmptyCartLink() {
+    const section = document.getElementById(`shopify-section-${this.sectionId}`);
+    const selector = this.isDrawer ? 'cart-items-component[data-drawer]' : 'cart-items-component:not([data-drawer])';
+    section?.querySelector(selector)?.querySelector('.cart-items__empty-button')?.focus({ preventScroll: true });
   }
 
   /**
