@@ -562,6 +562,16 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
   display: none;
 }
 
+/* Auch ein schmales Browserfenster mit Maus hat das mobile Layout, aber
+   data-menu-style='menu'. Wenn die Drawer-Suche vorhanden ist, darf die
+   deckungsgleiche zweite Lupe kein eigener Tastaturstopp bleiben. */
+@media screen and (max-width: 749px) {
+  #header-component:has(search-button.search-action--hidden-on-menu)
+    search-button.search-action:not(.search-action--hidden-on-menu) {
+    display: none;
+  }
+}
+
 /* ------------------------------------------------------------------
    Desktop: Kontakt als Symbolkacheln (snippets/tp-kontakt-nav.liquid)
    Telefon dunkel, WhatsApp gruen (Grundregel in tp-mega-menu.css), Standort
