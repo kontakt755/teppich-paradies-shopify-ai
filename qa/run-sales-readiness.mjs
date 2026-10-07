@@ -50,10 +50,10 @@ const UEBERLAGERUNGEN_WEG = () => {
     css.textContent = '#shopify-pc__banner, #PBarNextFrameWrapper, #PBarNextFrame { display: none !important; pointer-events: none !important; }';
     document.documentElement.appendChild(css);
   };
+  // Die Vorschauleiste nur verstecken (stil), nicht entfernen - siehe
+  // dismissPreviewBar: Shopify ruft danach noch showPopover() auf ihr auf.
   const weg = () => {
     stil();
-    document.querySelector('#PBarNextFrameWrapper')?.remove();
-    document.querySelector('#PBarNextFrame')?.remove();
     const decline = document.querySelector('#shopify-pc__banner__btn-decline');
     if (decline) decline.click();
     document.querySelector('#shopify-pc__banner')?.remove();

@@ -61,7 +61,7 @@ export async function closeBrowserSafely(browser, timeoutMs = 10_000) {
 }
 
 /**
- * Entfernt Shopifys Theme-Vorschauleiste.
+ * Blendet Shopifys Theme-Vorschauleiste aus.
  *
  * Auf unpublished Preview-Themes blendet Shopify eine Leiste als eigenen
  * iframe (#PBarNextFrame in #PBarNextFrameWrapper) ueber die Seite. Der
@@ -69,12 +69,21 @@ export async function closeBrowserSafely(browser, timeoutMs = 10_000) {
  * Compare-Lauf scheiterte dadurch auf Desktop reproduzierbar daran, den
  * Cookie-Banner wegzuklicken ("subtree intercepts pointer events").
  *
- * Im Livebetrieb existiert die Leiste nicht. Sie zu entfernen stellt fuer den
+ * Die Leiste wird per CSS versteckt, nicht aus dem DOM entfernt: Shopifys
+ * Leisten-Skript ruft spaeter noch showPopover() auf dem Wrapper auf. War er
+ * entfernt, warf das "Invalid on disconnected popover elements" als
+ * pageerror, und COMPARE scheiterte nur auf Preview-Themes (2026-10-07,
+ * 3 von 4 Laeufen; gegen Live 0 von 4).
+ *
+ * Im Livebetrieb existiert die Leiste nicht. Sie auszublenden stellt fuer den
  * Test also den Zustand her, den echte Besucher sehen.
  */
 export async function dismissPreviewBar(page) {
   await page.evaluate(() => {
-    document.querySelector('#PBarNextFrameWrapper')?.remove();
-    document.querySelector('#PBarNextFrame')?.remove();
+    if (document.getElementById('tp-qa-vorschauleiste-aus')) return;
+    const css = document.createElement('style');
+    css.id = 'tp-qa-vorschauleiste-aus';
+    css.textContent = '#PBarNextFrameWrapper, #PBarNextFrame { display: none !important; pointer-events: none !important; }';
+    document.head.append(css);
   }).catch(() => {});
 }
