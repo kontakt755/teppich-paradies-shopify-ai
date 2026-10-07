@@ -413,6 +413,22 @@
             "image": "shopify://shop_images/hochflor-teppich-in-einem-wohnzimmer-dargestellt-farbe-beige-das-ganze-zimmer-soll-den-teppich-haben.png",
             "subtitle": "Meterware, von Wand zu Wand verlegt"
           }
+        },
+        "tp_kachel_teppich_mittelflor": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Mittelflor",
+            "image": "shopify://shop_images/teppichboden-mittelflor-menue.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_teppich_sisal": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Sisal",
+            "image": "shopify://shop_images/teppichboden-sisal-menue.jpg",
+            "subtitle": ""
+          }
         }
       },
       "settings": {
@@ -454,10 +470,12 @@
         "tp_kachel_teppichboden",
         "tp_kachel_teppich_alle",
         "tp_kachel_teppich_hochflor",
+        "tp_kachel_teppich_mittelflor",
         "tp_kachel_teppich_kurzflor",
         "tp_kachel_teppich_velours",
         "tp_kachel_teppich_schlinge",
         "tp_kachel_teppich_wolle",
+        "tp_kachel_teppich_sisal",
         "tp_kachel_teppich_nadelvlies",
         "tp_kachel_teppich_kunstrasen",
         "tp_kachel_teppiche",

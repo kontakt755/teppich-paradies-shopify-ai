@@ -10,10 +10,10 @@
 
 {
   "sections": {
-    "hero_split_ebwe8L": {
+    "hero_split_f3CGbW": {
       "type": "hero_split",
       "blocks": {
-        "feature_CkDXwT": {
+        "feature_9iNVFy": {
           "type": "feature",
           "settings": {
             "marker_type": "icon",
@@ -21,7 +21,7 @@
             "text": "Im Raummaß konfigurierbar"
           }
         },
-        "feature_JWnHGa": {
+        "feature_KYaTGM": {
           "type": "feature",
           "settings": {
             "marker_type": "icon",
@@ -29,7 +29,7 @@
             "text": "Bewertet von echten Kunden bei Google"
           }
         },
-        "feature_CKtWMY": {
+        "feature_RiBERm": {
           "type": "feature",
           "settings": {
             "marker_type": "icon",
@@ -39,16 +39,16 @@
         }
       },
       "block_order": [
-        "feature_CkDXwT",
-        "feature_JWnHGa",
-        "feature_CKtWMY"
+        "feature_9iNVFy",
+        "feature_KYaTGM",
+        "feature_RiBERm"
       ],
       "name": "Hero Split Features",
       "settings": {
-        "image": "shopify://shop_images/Teppichboden_Velours.png",
-        "heading": "Velours-Teppichboden",
-        "subheading": "Velours Teppichböden in allen Qualitäten und Farben",
-        "body": "<p>Veloursteppichboden wird ähnlich wie Schlingenteppichboden hergestellt, allerdings werden die Schlingen danach aufgeschnitten, um eine samtartige Oberflächenstruktur zu erzeugen.</p>",
+        "image": "shopify://shop_images/teppichboden-sisal-kategorie.jpg",
+        "heading": "Sisal-Teppichboden",
+        "subheading": "Sisal Teppichboden – Naturfaser mit markanter Struktur",
+        "body": "<p>Sisal wird aus den Fasern der Sisal-Agave gewonnen. Sisal-Teppichboden ist robust, hat eine natürliche, leicht strukturierte Oberfläche und eine ruhige, warme Optik. Als Meterware von der Rolle, auf Ihr Maß zugeschnitten.</p>",
         "content_width": 1440,
         "column_gap": 48,
         "image_radius": 14,
@@ -65,7 +65,7 @@
         "padding_bottom": 24
       }
     },
-    "divider_N4Fgwt": {
+    "divider_KXJ3wQ": {
       "type": "divider",
       "name": "t:names.divider_section",
       "settings": {
@@ -577,9 +577,9 @@
                   "type": "image",
                   "name": "t:names.image",
                   "settings": {
-                    "image": "shopify://shop_images/Teppichboden_Schlinge.png",
-                    "alt": "Schlingen-Teppichboden, Nahaufnahme der Oberfläche",
-                    "link": "shopify://collections/teppichboden-schlinge",
+                    "image": "shopify://shop_images/Teppichboden_Velours.png",
+                    "alt": "Velours-Teppichboden, Nahaufnahme der Oberfläche",
+                    "link": "shopify://collections/teppichboden-velours",
                     "image_ratio": "adapt",
                     "width": "fill",
                     "custom_width": 100,
@@ -601,7 +601,7 @@
                   "type": "text",
                   "name": "t:names.heading",
                   "settings": {
-                    "text": "<p>Schlinge</p>",
+                    "text": "<p>Velours</p>",
                     "width": "fit-content",
                     "max_width": "normal",
                     "alignment": "left",
@@ -627,7 +627,7 @@
                   "type": "text",
                   "name": "t:names.text",
                   "settings": {
-                    "text": "<p>Robust und strapazierfähig</p>",
+                    "text": "<p>Anspruchsvolles Design, samtige Optik</p>",
                     "width": "fit-content",
                     "max_width": "normal",
                     "alignment": "left",
@@ -688,9 +688,9 @@
                   "type": "image",
                   "name": "t:names.image",
                   "settings": {
-                    "image": "shopify://shop_images/Teppichboden_Wolle.png",
-                    "alt": "Wollteppichboden, Nahaufnahme der Oberfläche",
-                    "link": "shopify://collections/teppichboden-wolle",
+                    "image": "shopify://shop_images/Teppichboden_Schlinge.png",
+                    "alt": "Schlingen-Teppichboden, Nahaufnahme der Oberfläche",
+                    "link": "shopify://collections/teppichboden-schlinge",
                     "image_ratio": "adapt",
                     "width": "fill",
                     "custom_width": 100,
@@ -712,7 +712,7 @@
                   "type": "text",
                   "name": "t:names.heading",
                   "settings": {
-                    "text": "<h2>Wolle</h2>",
+                    "text": "<h2>Schlinge</h2>",
                     "width": "fit-content",
                     "max_width": "normal",
                     "alignment": "left",
@@ -738,7 +738,7 @@
                   "type": "text",
                   "name": "t:names.text",
                   "settings": {
-                    "text": "<p>Natürliches Material, hochwertige Optik</p>",
+                    "text": "<p>Robust und strapazierfähig</p>",
                     "width": "fit-content",
                     "max_width": "normal",
                     "alignment": "left",
@@ -989,7 +989,7 @@
                 "text_mf_2"
               ]
             },
-            "card_si": {
+            "card_wo": {
               "type": "_card",
               "name": "t:names.card",
               "settings": {
@@ -1017,13 +1017,13 @@
                 "padding-inline-end": 0
               },
               "blocks": {
-                "image_si": {
+                "image_fHJzhP": {
                   "type": "image",
                   "name": "t:names.image",
                   "settings": {
-                    "image": "shopify://shop_images/teppichboden-sisal-kategorie.jpg",
-                    "alt": "Sisal-Teppichboden in einem Wohnraum, Farbe Beige",
-                    "link": "shopify://collections/teppichboden-sisal",
+                    "image": "shopify://shop_images/Teppichboden_Wolle.png",
+                    "alt": "Wollteppichboden, Nahaufnahme der Oberfläche",
+                    "link": "shopify://collections/teppichboden-wolle",
                     "image_ratio": "adapt",
                     "width": "fill",
                     "custom_width": 100,
@@ -1041,11 +1041,11 @@
                   },
                   "blocks": {}
                 },
-                "text_si_1": {
+                "text_7BqgQb": {
                   "type": "text",
                   "name": "t:names.heading",
                   "settings": {
-                    "text": "<p>Sisal</p>",
+                    "text": "<p>Wolle</p>",
                     "width": "fit-content",
                     "max_width": "normal",
                     "alignment": "left",
@@ -1067,11 +1067,11 @@
                   },
                   "blocks": {}
                 },
-                "text_si_2": {
+                "text_KXYAHg": {
                   "type": "text",
                   "name": "t:names.text",
                   "settings": {
-                    "text": "<p>Naturfaser mit markanter, robuster Struktur.</p>",
+                    "text": "<p>Natürlicher Wohnkomfort mit hochwertigen Wollqualitäten.</p>",
                     "width": "fit-content",
                     "max_width": "normal",
                     "alignment": "left",
@@ -1095,9 +1095,9 @@
                 }
               },
               "block_order": [
-                "image_si",
-                "text_si_1",
-                "text_si_2"
+                "image_fHJzhP",
+                "text_7BqgQb",
+                "text_KXYAHg"
               ]
             }
           },
@@ -1107,7 +1107,7 @@
             "card_b4HTxD",
             "card_QCGrjQ",
             "card_AQRpLG",
-            "card_si",
+            "card_wo",
             "card_MmmPhd"
           ]
         }
@@ -1252,8 +1252,8 @@
     }
   },
   "order": [
-    "hero_split_ebwe8L",
-    "divider_N4Fgwt",
+    "hero_split_f3CGbW",
+    "divider_KXJ3wQ",
     "main",
     "tp_fliesen_hinweis",
     "carousel_hpxcyi"
