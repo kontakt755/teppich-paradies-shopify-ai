@@ -33,6 +33,20 @@
   // zeigt - beide muessen gleich bleiben.
   var OPTION_NAMES = ['farbe', 'dekor', 'color'];
 
+  // Fuer diese neu importierten Produktarten wurden bewusst keine Muster
+  // angelegt. Ohne Sperre wuerde der Konfigurator den generischen kostenlosen
+  // Musterartikel fuer ein nicht vorhandenes physisches Muster verwenden.
+  function canSample(product) {
+    if (!product) return false;
+    var type = String(product.type || '').trim().toLowerCase();
+    if (['laminat', 'parkett', 'kork'].indexOf(type) !== -1) return false;
+    var tags = Array.isArray(product.tags) ? product.tags : String(product.tags || '').split(',');
+    return !tags.some(function (tag) {
+      var name = String(tag || '').trim().toLowerCase();
+      return name === 'zubehoer' || name === 'ohne-muster';
+    });
+  }
+
   function findOption(product) {
     return (product.options || []).find(function (entry) {
       return OPTION_NAMES.indexOf(String(entry.name || '').trim().toLowerCase()) !== -1;
@@ -229,6 +243,7 @@
     SAMPLE_HANDLE: SAMPLE_HANDLE,
     MAX_SAMPLES: MAX_SAMPLES,
     HAS_BONUS: HAS_BONUS,
+    canSample: canSample,
     getUniqueColors: getUniqueColors,
     getOptionName: getOptionName,
     getOptionTerm: getOptionTerm,

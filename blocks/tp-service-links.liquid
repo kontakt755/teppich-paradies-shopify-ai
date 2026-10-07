@@ -8,6 +8,14 @@
   assign tp_sl_id = block.id | replace: '_', '' | downcase
   assign tp_sl_delivery_time = block.settings.delivery_time | strip
   assign tp_sl_shipping_page = pages['versand-lieferung']
+  assign tp_sl_material = product.type | downcase | strip
+  assign tp_sl_neuer_holzboden = false
+  if tp_sl_material == 'laminat' or tp_sl_material == 'parkett' or tp_sl_material == 'kork'
+    assign tp_sl_neuer_holzboden = true
+    # Fuer diese Neuimporte ist die Standard-Lieferzeit des Planken-Templates
+    # nicht bestaetigt. Lieber keine konkrete Zeit als eine falsche Zusage.
+    assign tp_sl_delivery_time = ''
+  endif
 -%}
 
 {% unless product.template_suffix == 'einfassung' %}<div class="tp-service-links-{{ tp_sl_id }}" {{ block.shopify_attributes }}>
@@ -33,9 +41,10 @@
     {%- endunless -%}
     {%- endunless -%}
     {%- comment -%}
-      Ziel nach Produktart: Rollenware mit Service (snippets/tp-vs-berechtigt)
-      auf die Serviceseite, Klick- und Klebevinyl auf "Vinylboden verlegen",
-      alles andere wie bisher. Vorher fuehrte der Link bei jedem Produkt auf
+      Ziel nach Produktart: Laminat/Parkett/Kork zur persoenlichen Anfrage,
+      Rollenware mit Service (snippets/tp-vs-berechtigt) auf die Serviceseite,
+      Klick- und Klebevinyl auf "Vinylboden verlegen", alles andere wie bisher.
+      Vorher fuehrte der Link bei jedem Produkt auf
       die Gewerbeseite "Boden & Malerarbeiten". Wohnaccessoires wie Dekofelle
       werden nicht verlegt - dort blendet die Einstellung den Link aus.
     {%- endcomment -%}
@@ -44,7 +53,11 @@
       capture tp_sl_vs
         render 'tp-vs-berechtigt', product: product
       endcapture
-      if tp_sl_vs contains 'ja'
+      assign tp_sl_verlegen_label = 'Verlegeservice'
+      if tp_sl_neuer_holzboden
+        assign tp_sl_verlegen_url = pages['kontakt'].url | default: '/pages/kontakt'
+        assign tp_sl_verlegen_label = 'Verlegung anfragen'
+      elsif tp_sl_vs contains 'ja'
         assign tp_sl_verlegen_url = pages['liefer-verlegeservice'].url | default: '/pages/liefer-verlegeservice'
       elsif product.template_suffix == 'planken'
         assign tp_sl_verlegen_url = pages['vinylboden-verlegen'].url | default: '/pages/vinylboden-verlegen'
@@ -52,7 +65,7 @@
         assign tp_sl_verlegen_url = pages['boden-malerarbeiten'].url | default: '/pages/boden-malerarbeiten'
       endif
     -%}
-    <a href="{{ tp_sl_verlegen_url }}">Verlegeservice</a>
+    <a href="{{ tp_sl_verlegen_url }}">{{ tp_sl_verlegen_label }}</a>
     {%- endunless -%}
   </div>
 

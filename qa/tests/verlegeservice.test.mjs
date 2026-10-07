@@ -308,12 +308,13 @@ test('der Link "Verlegeservice" fuehrt je nach Produktart auf die passende Seite
   // den Link doch zugesagt.
   const code = ohneKommentare(lesen('blocks', 'tp-service-links.liquid'));
   assert.match(code, /render 'tp-vs-berechtigt', product: product/);
-  const zweige = code.match(/if tp_sl_vs contains 'ja'([\s\S]*?)elsif product\.template_suffix == 'planken'([\s\S]*?)else([\s\S]*?)endif/);
+  const zweige = code.match(/if tp_sl_neuer_holzboden([\s\S]*?)elsif tp_sl_vs contains 'ja'([\s\S]*?)elsif product\.template_suffix == 'planken'([\s\S]*?)else([\s\S]*?)endif/);
   assert.ok(zweige, 'Die Unterscheidung nach Produktart fehlt.');
-  assert.match(zweige[1], /liefer-verlegeservice/);
-  assert.match(zweige[2], /vinylboden-verlegen/);
-  assert.doesNotMatch(zweige[3], /liefer-verlegeservice/, 'Andere Produkte duerfen nicht auf die Rollenware-Seite.');
-  assert.match(code, /<a href="{{ tp_sl_verlegen_url }}">Verlegeservice<\/a>/);
+  assert.match(zweige[1], /pages\['kontakt'\]/, 'Holzboeden brauchen eine persoenliche Anfrage, keine Vinyl-Anleitung.');
+  assert.match(zweige[2], /liefer-verlegeservice/);
+  assert.match(zweige[3], /vinylboden-verlegen/);
+  assert.doesNotMatch(zweige[4], /liefer-verlegeservice/, 'Andere Produkte duerfen nicht auf die Rollenware-Seite.');
+  assert.match(code, /<a href="{{ tp_sl_verlegen_url }}">{{ tp_sl_verlegen_label }}<\/a>/);
 });
 
 test('Vinyl von der Rolle: Einstieg und Vinylseite nennen den Service, Klick- und Klebevinyl nicht', () => {

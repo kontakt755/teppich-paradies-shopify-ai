@@ -1,0 +1,257 @@
+{
+  "sections": {
+    "hero": {
+      "type": "tp-boden-kategorie-hero",
+      "settings": {
+        "image": "shopify://shop_images/1160176-8FXC-prod.jpg",
+        "eyebrow": "Bodenbeläge entdecken",
+        "heading": "Linoleumboden",
+        "lead": "<p>Entdecken Sie Linoleum in ruhigen und kräftigen Farbtönen. Vergleichen Sie Farbe, Rollenbreite und Produkteigenschaften, bevor Sie den Belag für Ihren Raum auswählen.</p>",
+        "primary_label": "Linoleum entdecken",
+        "secondary_label": "Beratung anfragen",
+        "secondary_link": "/pages/kontakt",
+        "image_caption": "Produktansicht aus der Linoleumkollektion"
+      },
+      "blocks": {
+        "point_1": {
+          "type": "point",
+          "settings": {
+            "text": "Farbtöne vergleichen"
+          }
+        },
+        "point_2": {
+          "type": "point",
+          "settings": {
+            "text": "Rollenbreite am Produkt"
+          }
+        },
+        "point_3": {
+          "type": "point",
+          "settings": {
+            "text": "Beratung in Oranienburg"
+          }
+        }
+      },
+      "block_order": [
+        "point_1",
+        "point_2",
+        "point_3"
+      ]
+    },
+    "main": {
+      "type": "main-collection",
+      "blocks": {
+        "filters": {
+          "type": "filters",
+          "static": true,
+          "settings": {
+            "enable_filtering": true,
+            "filter_style": "vertical",
+            "filter_width": "centered",
+            "text_label_case": "default",
+            "show_swatch_label": false,
+            "show_filter_label": false,
+            "enable_sorting": true,
+            "enable_grid_density": false,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "padding-block-start": 8,
+            "padding-block-end": 8,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0,
+            "facets_margin_bottom": 8,
+            "facets_margin_right": 20
+          },
+          "blocks": {}
+        },
+        "product-card": {
+          "type": "_product-card",
+          "static": true,
+          "settings": {
+            "product_card_gap": 4,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "card-gallery": {
+              "type": "_product-card-gallery",
+              "settings": {
+                "image_ratio": "adapt",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "product_title_4nY4eT": {
+              "type": "tp-card-title",
+              "name": "t:names.product_title",
+              "settings": {
+                "width": "100%",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "custom",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "var(--color-foreground)",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 4,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "price_EzJzMm": {
+              "type": "price",
+              "settings": {
+                "show_sale_price_first": true,
+                "show_installments": false,
+                "show_tax_info": false,
+                "type_preset": "h6",
+                "width": "100%",
+                "alignment": "left",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "color": "var(--color-foreground)",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "tp_card_specs_priceEzJzMm": {
+              "type": "tp-card-specs",
+              "name": "TP Card-Merkmale",
+              "settings": {},
+              "blocks": {}
+            },
+            "tp_card_actions_priceEzJzMm": {
+              "type": "tp-card-actions",
+              "name": "TP Card-Aktionen",
+              "settings": {},
+              "blocks": {}
+            },
+            "tp_card_color_thumbs": {
+              "type": "tp-card-color-thumbs",
+              "settings": {}
+            },
+            "tp_card_aktion": {
+              "type": "tp-card-aktion",
+              "settings": {}
+            }
+          },
+          "block_order": [
+            "card-gallery",
+            "product_title_4nY4eT",
+            "price_EzJzMm",
+            "tp_card_aktion",
+            "tp_card_color_thumbs",
+            "tp_card_specs_priceEzJzMm",
+            "tp_card_actions_priceEzJzMm"
+          ]
+        }
+      },
+      "settings": {
+        "layout_type": "grid",
+        "product_card_size": "medium",
+        "mobile_product_card_size": "small",
+        "enable_infinite_scroll": false,
+        "products_per_page": 16,
+        "product_grid_width": "centered",
+        "full_width_on_mobile": false,
+        "columns_gap_horizontal": 16,
+        "columns_gap_vertical": 24,
+        "padding-inline-start": 0,
+        "padding-inline-end": 0,
+        "color_scheme": "scheme-1",
+        "padding-block-start": 0,
+        "padding-block-end": 32
+      }
+    },
+    "guide": {
+      "type": "tp-boden-kategorie-ratgeber",
+      "settings": {
+        "eyebrow": "Gut zu wissen",
+        "heading": "Linoleum für Ihren Raum auswählen",
+        "intro": "<p>Farbe und Maße sind ein guter Start. Ob ein Belag für Ihr Vorhaben passt, zeigen die Angaben des einzelnen Produkts.</p>",
+        "faq_heading": "Häufige Fragen zu Linoleum",
+        "contact_text": "Noch unsicher, welcher Boden passt?",
+        "contact_label": "Persönlich beraten lassen",
+        "contact_link": "/pages/kontakt"
+      },
+      "blocks": {
+        "tip_1": {
+          "type": "tip",
+          "settings": {
+            "heading": "Farbe abstimmen",
+            "body": "<p>Vergleichen Sie die angebotenen Farben und Produktbilder. Bildschirmfarben können vom Belag vor Ort abweichen.</p>"
+          }
+        },
+        "tip_2": {
+          "type": "tip",
+          "settings": {
+            "heading": "Raum prüfen",
+            "body": "<p>Filtern Sie nach dem gewünschten Einsatzbereich und lesen Sie die technischen Angaben des Produkts, bevor Sie sich entscheiden.</p>"
+          }
+        },
+        "tip_3": {
+          "type": "tip",
+          "settings": {
+            "heading": "Maße vorbereiten",
+            "body": "<p>Messen Sie Ihren Raum sorgfältig aus. Rollenbreite und Bestellschritte stehen auf der jeweiligen Produktseite.</p>"
+          }
+        },
+        "faq_1": {
+          "type": "faq",
+          "settings": {
+            "question": "Welche Rollenbreite ist erhältlich?",
+            "answer": "<p>Die aktuell angebotene Rollenbreite sehen Sie am jeweiligen Produkt und im Filter der Kollektion.</p>"
+          }
+        },
+        "faq_2": {
+          "type": "faq",
+          "settings": {
+            "question": "Wo finde ich Hilfe zur Auswahl?",
+            "answer": "<p>Bei Fragen zu Farbe, Einsatzbereich oder benötigter Menge hilft Ihnen unser <a href=\"/pages/kontakt\">Team persönlich weiter</a>.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "tip_1",
+        "tip_2",
+        "tip_3",
+        "faq_1",
+        "faq_2"
+      ]
+    }
+  },
+  "order": [
+    "hero",
+    "main",
+    "guide"
+  ]
+}

@@ -1,20 +1,27 @@
 {%- doc -%}
-  Liefert das Ziel fuer den Muster-Link: immer /pages/muster (C3, 2026-09-27).
-  Produkte ohne Farboption bietet die Musterseite selbst als ein Muster an.
+  Liefert das Ziel fuer den Muster-Link, wenn fuer diese Produktgruppe
+  Muster angeboten werden. Neue Laminat-, Parkett- und Korkprodukte haben
+  derzeit keine Muster; auch ein direkter Aufruf wird im JS gesperrt.
 
-  Der Konfigurator listet die Werte EINER Produktoption als bestellbare Muster.
-  Er kann das nur, wenn es diese Option gibt. Die Liste der akzeptierten
-  Optionsnamen steht hier und in assets/tp-sample-checkout-core.js - beide
-  muessen gleich bleiben, sonst schickt ein Link Kunden auf eine Seite, die
-  ihnen "keine Muster hinterlegt" meldet.
+  Der Konfigurator ermittelt Farben und Dekore in
+  assets/tp-sample-checkout-core.js. Diese Datei entscheidet nur ueber die
+  Verfuegbarkeit des Musterwegs und gibt gegebenenfalls die URL aus.
 
   Ausgabe: die fertige URL, sonst nichts.
 
   @param {object} product - Produkt
 {%- enddoc -%}
 {%- liquid
-  assign tp_mo_handle = product.handle | url_encode
-  # C3: ein Weg fuer alle - ohne Farboption bietet /pages/muster das Produkt
-  # selbst als ein Muster an (assets/tp-sample-checkout-core.js, getUniqueColors).
-  echo '/pages/muster?produkt=' | append: tp_mo_handle
+  assign tp_mo_type = product.type | downcase | strip
+  assign tp_mo_blocked = false
+  if product == blank or product.tags contains 'zubehoer' or product.tags contains 'ohne-muster'
+    assign tp_mo_blocked = true
+  endif
+  if tp_mo_type == 'laminat' or tp_mo_type == 'parkett' or tp_mo_type == 'kork'
+    assign tp_mo_blocked = true
+  endif
+  unless tp_mo_blocked
+    assign tp_mo_handle = product.handle | url_encode
+    echo '/pages/muster?produkt=' | append: tp_mo_handle
+  endunless
 -%}

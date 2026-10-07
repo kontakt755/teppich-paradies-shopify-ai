@@ -171,7 +171,7 @@
   }
 
   function submitSelection() {
-    if (submitting || selected.size === 0) return;
+    if (submitting || selected.size === 0 || !core.canSample(product)) return;
     submitting = true;
     submitEl.disabled = true;
     hideError();
@@ -235,6 +235,11 @@
       fetchOptional('/products/' + core.sampleProductHandle(handle) + '.js'),
     ]).then(function (results) {
       product = results[0];
+      if (!core.canSample(product)) {
+        loadingEl.hidden = true;
+        showError('Für dieses Produkt bieten wir derzeit keine kostenlosen Muster an. Bitte kontaktieren Sie uns für eine persönliche Beratung.');
+        return;
+      }
       var sampleProduct = results[1];
       var cart = results[2];
       var musterProdukt = results[3];
