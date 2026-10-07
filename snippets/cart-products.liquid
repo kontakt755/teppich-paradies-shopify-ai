@@ -378,6 +378,15 @@
                   {%- if tp_gz_berechnet contains 'ja' -%}
                     {%- assign can_update_quantity = false -%}
                   {%- endif -%}
+                  {%- capture tp_cart_muster -%}{%- render 'tp-muster-position', line_item: item -%}{%- endcapture -%}
+                  {%- assign tp_muster_max = nil -%}
+                  {%- if tp_cart_muster contains 'ja' -%}
+                    {%- comment -%}
+                      Muster bleiben pro Farbe bei Menge 1. Eine bereits hoehere
+                      Menge darf nur noch verringert oder entfernt werden.
+                    {%- endcomment -%}
+                    {%- assign tp_muster_max = item.quantity -%}
+                  {%- endif -%}
                   <div class="cart-items__quantity-controls">
                     {% render 'volume-pricing-info',
                       variant: item.variant,
@@ -393,7 +402,8 @@
                       in_cart_quantity: item.quantity,
                       line_index: item.index,
                       class: 'cart-primary-typography',
-                      can_update_quantity: can_update_quantity
+                      can_update_quantity: can_update_quantity,
+                      max_quantity: tp_muster_max
                     %}
 
                     {%- render 'tp-cart-gruppe', line_item: item, teil: 'menge' -%}
