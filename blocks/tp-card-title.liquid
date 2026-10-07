@@ -24,6 +24,32 @@
 {% else %}
   {% assign tp_card_title_display = closest.product.title | split: ' – ' | first | split: ' Teppichboden' | first %}
   {%- liquid
+    # Wie Kartenbild und ueberlagerter Link dieselbe Raumfarbe waehlen.
+    assign tp_card_title_variant = closest.product.selected_or_first_available_variant
+    if closest.product.selected_variant == blank
+      capture tp_ct_raumdaten
+        render 'tp-sprint-raumdaten', product: closest.product
+      endcapture
+      assign tp_ct_raumteile = tp_ct_raumdaten | strip | split: '|'
+      if tp_ct_raumteile.size == 2
+        assign tp_ct_raumfarbe = tp_ct_raumteile | first
+        for tp_ct_option in closest.product.options_with_values
+          assign tp_ct_optionsname = tp_ct_option.name | downcase
+          if tp_ct_optionsname == 'farbe' or tp_ct_optionsname == 'color' or tp_ct_optionsname == 'dekor'
+            assign tp_ct_farbindex = tp_ct_option.position | minus: 1
+            for tp_ct_variant in closest.product.variants
+              if tp_ct_variant.options[tp_ct_farbindex] == tp_ct_raumfarbe and tp_ct_variant.available
+                assign tp_card_title_variant = tp_ct_variant
+                break
+              endif
+            endfor
+            break
+          endif
+        endfor
+      endif
+    endif
+  -%}
+  {%- liquid
     # C1: Vinyl-Dekore als Zeile "Linie · Verlegeart" plus grosser Dekorname,
     # z. B. "Lyon Eiche Mandel Fischgraet" -> "Lyon · Klickvinyl" / "Eiche
     # Mandel Fischgraet". Oben steht immer die Verlegeart (Produkttyp); ein
@@ -63,7 +89,7 @@
   <a
     class="contents user-select-text tp-card-title__link"
     ref="productTitleLink"
-    href="{{ closest.product.selected_or_first_available_variant.url }}"
+    href="{{ tp_card_title_variant.url }}"
   >
     {% render 'text', fallback_text: product_title, block: block %}
   </a>
