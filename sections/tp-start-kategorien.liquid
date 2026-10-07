@@ -1,8 +1,9 @@
 {%- comment -%}
-  TP Start-Kategorien: sechs Karten 4:5 mit echtem Bild, Titel, Untertitel und
-  Produktzahl aus der Kollektion. Desktop 6 in einer Reihe, Telefon horizontaler
-  Slider mit grossen Karten und Punkten. Ohne Bild im Block: Kollektionsbild,
-  sonst Platzhalter.
+  TP Start-Kategorien: Karten mit echtem Bild, Titel, Untertitel und
+  Produktzahl aus der Kollektion. Bis sieben Karten: eine Reihe 4:5. Bei neun
+  Karten ab 992 px ein Raster mit fuenf Spalten, die erste Karte ueber zwei
+  Zeilen. Telefon horizontaler Slider mit grossen Karten und Punkten. Ohne Bild
+  im Block: Kollektionsbild, sonst Platzhalter.
 {%- endcomment -%}
 {{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 
@@ -17,7 +18,7 @@
         <a class="tp-s-link" href="{{ section.settings.link | default: '/collections/all' }}">{{ section.settings.link_label | escape }}</a>
       {%- endif -%}
     </div>
-    <div class="tp-kat__list" id="tp-kat-list">
+    <div class="tp-kat__list" id="tp-kat-list" data-anzahl="{{ section.blocks.size }}">
       {%- for block in section.blocks -%}
         {%- liquid
           assign col = block.settings.collection
@@ -95,6 +96,18 @@
   .tp-kat__dots { display: none; }
   @media (max-width: 1279px) { .tp-kat__list { grid-template-columns: repeat(4, 1fr); } }
   @media (max-width: 991px) { .tp-kat__list { grid-template-columns: repeat(3, 1fr); } }
+  /* Neun Kategorien (seit Laminat und Parkett): neun 4:5-Karten in einer Reihe
+     waeren nur rund 120 px breit. Ab 992 px deshalb fuenf Spalten in zwei Zeilen,
+     die erste Karte (Teppichboden) hoch ueber beide Zeilen, die uebrigen quer 5:4.
+     Darunter drei mal drei Karten 4:3. Das Telefon behaelt den Slider. */
+  @media (min-width: 992px) {
+    .tp-kat__list[data-anzahl="9"] { grid-template-columns: repeat(5, 1fr); }
+    .tp-kat__list[data-anzahl="9"] .tp-kat__card { aspect-ratio: 5 / 4; }
+    .tp-kat__list[data-anzahl="9"] .tp-kat__card:first-child { grid-row: span 2; aspect-ratio: auto; }
+  }
+  @media (min-width: 768px) and (max-width: 991px) {
+    .tp-kat__list[data-anzahl="9"] .tp-kat__card { aspect-ratio: 4 / 3; }
+  }
   @media (max-width: 767px) {
     .tp-kat__list { display: flex; overflow-x: auto; gap: 12px; scroll-snap-type: x mandatory; padding: 0 var(--tp-pad) 4px; margin: 0 calc(-1 * var(--tp-pad)); scrollbar-width: none; }
     .tp-kat__list::-webkit-scrollbar { display: none; }
@@ -136,7 +149,7 @@
     {
       "type": "kategorie",
       "name": "Kategorie",
-      "limit": 7,
+      "limit": 9,
       "settings": [
         { "type": "collection", "id": "collection", "label": "Kollektion" },
         { "type": "image_picker", "id": "bild", "label": "Bild (leer = Kollektionsbild)" },
