@@ -8,6 +8,14 @@ import { convertMoneyToMinorUnits, formatMoney } from '@theme/money-formatting';
  * @type {string}
  */
 const SEARCH_QUERY = 'q';
+let lastFacetsUrl = `${window.location.pathname}${window.location.search}`;
+
+function restoreFilterDialogFocus() {
+  const dialog = document.querySelector('#filters-drawer dialog[open]');
+  if (dialog && !dialog.contains(document.activeElement)) {
+    dialog.querySelector('.facets-drawer__close')?.focus({ preventScroll: true });
+  }
+}
 
 /**
  * Handles the main facets form functionality
@@ -68,6 +76,7 @@ class FacetsFormComponent extends Component {
     }
 
     history.pushState({ urlParameters: urlParameters.toString() }, '', url.toString());
+    lastFacetsUrl = `${window.location.pathname}${window.location.search}`;
   }
 
   /**
@@ -86,26 +95,51 @@ class FacetsFormComponent extends Component {
     const viewTransition = !this.closest('dialog');
 
     if (viewTransition) {
-      startViewTransition(() => sectionRenderer.renderSection(this.sectionId), ['product-grid']);
+      return startViewTransition(() => sectionRenderer.renderSection(this.sectionId), ['product-grid']);
     } else {
-      sectionRenderer.renderSection(this.sectionId);
+      return sectionRenderer.renderSection(this.sectionId);
     }
   }
 
   /**
    * Updates filters based on a provided URL
    * @param {string} url - The URL to update filters with
+   * @returns {Promise<string | void>} The section update
    */
   updateFiltersByURL(url) {
+    const dialogWasOpen = this.closest('dialog')?.open;
     history.pushState('', '', url);
+    lastFacetsUrl = `${window.location.pathname}${window.location.search}`;
     this.dispatchEvent(new FilterUpdateEvent(this.createURLParameters()));
-    this.#updateSection();
+    const sectionUpdate = this.#updateSection();
+    if (!dialogWasOpen) return sectionUpdate;
+    return sectionUpdate.then((result) => {
+      restoreFilterDialogFocus();
+      return result;
+    });
   }
 }
 
 if (!customElements.get('facets-form-component')) {
   customElements.define('facets-form-component', FacetsFormComponent);
 }
+
+window.addEventListener('popstate', () => {
+  const currentUrl = `${window.location.pathname}${window.location.search}`;
+  if (currentUrl === lastFacetsUrl) return;
+  lastFacetsUrl = currentUrl;
+
+  // Zurueck/Vorwaerts muss Filter und Produktliste mit der URL abgleichen.
+  const facetsForm = document.querySelector('facets-form-component');
+  if (!(facetsForm instanceof FacetsFormComponent)) return;
+
+  const filterDialog = facetsForm.closest('.shopify-section')?.querySelector('#filters-drawer dialog[open]');
+  facetsForm.dispatchEvent(new FilterUpdateEvent(new URLSearchParams(window.location.search)));
+  sectionRenderer.renderSection(facetsForm.sectionId).then(() => {
+    if (!filterDialog) return;
+    restoreFilterDialogFocus();
+  });
+});
 
 /**
  * @typedef {Object} FacetInputsRefs
@@ -455,7 +489,11 @@ class FacetRemoveComponent extends Component {
 
     if (!(facetsForm instanceof FacetsFormComponent)) return;
 
+    const dialog = this.closest('#filters-drawer dialog[open]');
     facetsForm.updateFiltersByURL(url);
+    if (dialog?.contains(document.activeElement)) {
+      dialog.querySelector('.facets-drawer__close')?.focus({ preventScroll: true });
+    }
   }
 
   /**
