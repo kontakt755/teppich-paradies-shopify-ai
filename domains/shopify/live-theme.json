@@ -1,15 +1,15 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-06T13:06:12Z",
-    "verifiedBy": "Shopify CLI role live nach workflow:live (main 461fce88, PR #907); oeffentliche Solenta-Produktseite ohne Vorschau in Chrome geprueft"
-  },
-  "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-06T13:06:12Z",
+    "verifiedAt": "2026-10-07T06:10:22Z",
+    "verifiedBy": "Shopify CLI role live nach workflow:live (main 3de41e8f, PR #909); oeffentliche Versandseite ohne Vorschau in Chrome geprueft"
+  },
+  "preview": {
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-10-07T06:10:22Z",
     "verifiedBy": "Rollentausch nach workflow:live; naechstes Preview-Ziel"
   },
   "fallback": {
@@ -350,6 +350,12 @@
       "name": "preview-main-2026-09-15",
       "retiredNoticedAt": "2026-10-06",
       "note": "Per workflow:live abgeloest durch 204436144462 (main 461fce88, PR #907: Treppeneignung aus Zimmerlisten entfernen). Rollentausch per Shopify CLI und oeffentlicher Solenta-Produktseite ohne Vorschau in Chrome geprueft. Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-10-07",
+      "note": "Per workflow:live abgeloest durch 204438208846 (main 3de41e8f, PR #909: Versandseite an Deutschland-Checkout angepasst). Rollentausch per Shopify CLI und oeffentlicher Versandseite ohne Vorschau in Chrome geprueft. Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
