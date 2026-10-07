@@ -32,7 +32,7 @@
       "type": "tp-start-kategorien",
       "settings": {
         "heading": "Womit möchten Sie starten?",
-        "text": "Sieben Kategorien, direkt zur Auswahl. Preise und Verkaufseinheiten stehen am Produkt. Muster kostenlos.",
+        "text": "Neun Kategorien, direkt zur Auswahl. Preise und Verkaufseinheiten stehen am Produkt. Muster kostenlos.",
         "link_label": "Alle Produkte ansehen",
         "link": "shopify://collections/all"
       },
@@ -79,6 +79,26 @@
             "zahl_wort": "Dekore"
           }
         },
+        "k7": {
+          "type": "kategorie",
+          "settings": {
+            "collection": "laminat",
+            "titel": "Laminat",
+            "untertitel": "Klick-Laminat für Wohnräume",
+            "zahl_zeigen": true,
+            "zahl_wort": "Dekore"
+          }
+        },
+        "k8": {
+          "type": "kategorie",
+          "settings": {
+            "collection": "parkett",
+            "titel": "Parkett",
+            "untertitel": "Landhausdiele, Fischgrät, Kork",
+            "zahl_zeigen": true,
+            "zahl_wort": "Böden"
+          }
+        },
         "k4": {
           "type": "kategorie",
           "settings": {
@@ -118,6 +138,8 @@
         "k0",
         "k2",
         "k3",
+        "k7",
+        "k8",
         "k4",
         "k5",
         "k6"
