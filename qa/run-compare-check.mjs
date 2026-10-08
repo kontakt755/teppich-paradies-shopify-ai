@@ -68,6 +68,15 @@ async function runViewport(browser, name, viewport) {
       count: JSON.parse(localStorage.getItem('tpCompareItems') || '[]').length,
     }));
 
+    // Die automatisch geoeffnete Leiste darf nicht verschwinden, solange
+    // der Tastaturfokus auf einer ihrer Aktionen steht.
+    await page.locator('[data-tp-compare-open]').focus();
+    await page.waitForTimeout(5200);
+    const heldWhileFocused = await bar.evaluate((element) => ({
+      collapsed: element.dataset.collapsed,
+      focusedOpen: document.activeElement === element.querySelector('[data-tp-compare-open]'),
+    }));
+
     const collapseButton = page.locator('[data-tp-compare-collapse]');
     await collapseButton.waitFor({ state: 'visible', timeout: 5_000 });
     const collapseBounds = await collapseButton.boundingBox();
@@ -86,8 +95,12 @@ async function runViewport(browser, name, viewport) {
     });
 
     const expandButton = page.locator('[data-tp-compare-expand]');
-    await expandButton.click({ timeout: 5_000 });
+    await expandButton.press('Enter');
     const reopened = await bar.getAttribute('data-collapsed');
+    const focusAfterExpand = await bar.evaluate((element) =>
+      document.activeElement === element.querySelector('[data-tp-compare-open]'));
+    await page.waitForTimeout(5200);
+    const heldAfterKeyboardExpand = await bar.getAttribute('data-collapsed');
 
     await page.locator('[data-tp-compare-open]').click({ timeout: 5_000 });
     const dialogOpen = await page.locator('[data-tp-compare-dialog]').evaluate((dialog) => dialog.open);
@@ -113,6 +126,8 @@ async function runViewport(browser, name, viewport) {
       && initial.display === 'none'
       && afterThree.count === 3
       && afterThree.collapsed === 'false'
+      && heldWhileFocused.collapsed === 'false'
+      && heldWhileFocused.focusedOpen
       && collapseBounds?.width >= 44
       && collapseBounds?.height >= 44
       && collapsed.collapsed === 'true'
@@ -121,6 +136,8 @@ async function runViewport(browser, name, viewport) {
       && collapsed.ariaExpanded === 'false'
       && collapsed.compactHeight >= 44
       && reopened === 'false'
+      && focusAfterExpand
+      && heldAfterKeyboardExpand === 'false'
       && dialogOpen
       && afterRemove === 2
       && !afterReload.hidden
@@ -133,9 +150,12 @@ async function runViewport(browser, name, viewport) {
       pass,
       initial,
       afterThree,
+      heldWhileFocused,
       collapseButton: collapseBounds ? { width: Math.round(collapseBounds.width), height: Math.round(collapseBounds.height) } : null,
       collapsed,
       reopened,
+      focusAfterExpand,
+      heldAfterKeyboardExpand,
       dialogOpen,
       afterRemove,
       afterReload,

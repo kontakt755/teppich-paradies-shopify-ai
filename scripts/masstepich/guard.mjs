@@ -108,7 +108,8 @@ export function pruefeDaten(snapshot, konfig, namen = namenSet(konfig.lieferante
     const sichtbar = [p.title, p.handle, p.vendor, p.productType, ...(p.tags || []),
       ...(p.options || []).flatMap((o) => [o.name, ...(o.values || [])]),
       ...(p.variants || []).flatMap((v) => [v.sku, v.title]),
-      ...Object.entries(p.metafields || {}).filter(([k]) => !k.startsWith('einkauf.')).map(([, v]) => JSON.stringify(v))];
+      // einkauf.* und grosshandel.* sind interne Einkaufsdaten, nie kundensichtbar.
+      ...Object.entries(p.metafields || {}).filter(([k]) => !k.startsWith('einkauf.') && !k.startsWith('grosshandel.')).map(([, v]) => JSON.stringify(v))];
     if ((freiProdukte.has(p.id) || istEinfass) && lieferantenTreffer(sichtbar.join(' '), namen).length) {
       fehler.push(`${p.title}: Lieferantenname in kundensichtbaren Feldern`);
     }
@@ -121,6 +122,9 @@ export function pruefeDaten(snapshot, konfig, namen = namenSet(konfig.lieferante
         if (!SERVICE_WERTE.includes(wert)) { fehler.push(`${p.title} / ${v.title}: ${feld} = "${wert}" ist kein bekannter Wert`); continue; }
         if (wert !== VERFUEGBAR) continue;
         if (gesperrt.has(p.id) || gesperrt.has(basisId)) { fehler.push(`${p.title}: gesperrter Lieferant mit ${feld} = Verfügbar (Datenfehler)`); continue; }
+        // Fertig vom Hersteller (Wunschmass, z. B. Lieferant B): kein Zuschnitt aus
+        // eigener Meterware, daher keine Basisvariante.
+        if (istEinfass && art === 'fertig') continue;
         if (istEinfass) {
           const bv = mf(v, 'service.basisvariante');
           if (!bv || !freiVarianten.has(bv)) fehler.push(`${p.title} / ${v.title}: ${feld} = Verfügbar, aber die Basisvariante ist nicht freigegeben`);
@@ -156,6 +160,21 @@ export function pruefeDaten(snapshot, konfig, namen = namenSet(konfig.lieferante
       continue;
     }
 
+    if (art === 'fertig') {
+      // Wunschmass vom Hersteller: keine Meterware, keine Basisvariante. Grenzen
+      // kommen direkt vom Produkt; das Gewicht nur paarweise (kg/m2 und Hoechstgewicht).
+      if (mf(p, 'custom.preis_pro_001_qm') !== true) fehler.push(`${p.title}: custom.preis_pro_001_qm fehlt`);
+      if (!(Number(mf(p, 'service.max_breite_cm')) > 0)) fehler.push(`${p.title}: service.max_breite_cm fehlt`);
+      const maxLf = Number(mf(p, 'service.max_laenge_cm'));
+      if (!(maxLf > 0) || (konfig.max_laenge_cm && maxLf > konfig.max_laenge_cm)) fehler.push(`${p.title}: max_laenge_cm ${maxLf} ausserhalb 1..${konfig.max_laenge_cm}`);
+      if ((Number(mf(p, 'service.kg_pro_qm')) > 0) !== (Number(mf(p, 'service.max_gewicht_kg')) > 0)) {
+        fehler.push(`${p.title}: service.kg_pro_qm und service.max_gewicht_kg nur gemeinsam`);
+      }
+      for (const f of mf(p, 'service.formen') || []) {
+        if (!FORMEN.includes(f)) fehler.push(`${p.title}: Form "${f}" unbekannt`);
+      }
+      continue;
+    }
     if (!ARTEN[art]) fehler.push(`${p.title}: service.einfassung "${mf(p, 'service.einfassung')}" unbekannt`);
     if (mf(p, 'custom.preis_pro_001_qm') !== true) fehler.push(`${p.title}: custom.preis_pro_001_qm fehlt`);
     const basis = byId.get(basisId);
