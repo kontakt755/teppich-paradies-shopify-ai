@@ -160,3 +160,20 @@ test('argumente: Standard 7 Tage, Optionen werden geprueft', () => {
   assert.throws(() => argumente(['--json'], heute), /ohne Wert/);
   assert.throws(() => argumente(['--gibts-nicht', 'x'], heute), /unbekannte Option/);
 });
+
+test('Variantenbilder nur dort, wo die Produktart sie sonst traegt (Profile: ein Bild fuer alle Farben)', () => {
+  const profil = (over = {}) => produkt({
+    productType: 'Abschlussprofile', tags: ['zubehoer'],
+    options: [{ name: 'Farbe', values: ['Silber'] }],
+    variants: [{ id: `x${n}`, sku: `A-${n}`, title: 'Silber', price: '9', image: null, selectedOptions: [{ name: 'Farbe', value: 'Silber' }], custom: {} }],
+    ...over,
+  });
+  const peers = Array.from({ length: 5 }, () => profil());
+  const neu = profil({ createdAt: '2026-10-07T08:00:00Z' });
+  assert.deepEqual(regeln(pruefeImporte({ produkte: [...peers, neu], seit: '2026-10-01' })), []);
+});
+
+test('versteckte Hilfsprodukte (UNLISTED, Tag service) werden nicht geprueft', () => {
+  const hilfe = produkt({ createdAt: '2026-10-07T08:00:00Z', status: 'UNLISTED', tags: ['service'], mediaCount: 0, collections: [], category: 'Uncategorized' });
+  assert.deepEqual(pruefeImporte({ produkte: [...vergleich(), hilfe], seit: '2026-10-01' }).befunde, []);
+});
