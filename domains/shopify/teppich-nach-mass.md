@@ -134,3 +134,22 @@ statt Groessenkarten, keine Empfehlungen, kein Muster).
   groesstmoeglichen Flaeche.
 - Tests: `qa/tests/tp-einfass-fertig-pauschale.test.mjs`, `masstepich-rechnung` (Gewicht),
   `masstepich-plan` (Guard).
+
+## Produktseite: Datenblock, Muster, strukturierte Daten (2026-10-08)
+
+Gemeinsame Vorlage `templates/product.einfassung.json` (alle Teppiche nach Maß mit Ketteln, Einfassband,
+Paspelband, Cover; **nicht** `product.wunschmass-fertig.json`).
+
+| Was | Wie |
+|---|---|
+| Technische Daten | Akkordeonzeile „Technische Daten“ vor dem Beschreibungstext, darin `tp-produktinfo-tabelle` wie auf der Meterware-Seite. Der Teppich trägt selbst keine `custom.*`-Merkmale: je Zeile gilt der Wert am Produkt, sonst der des Teppichbodens (`service.einfass_basis`). Fehlt er dort, fehlt die Zeile (Stand: Fußbodenheizung ist an den Teppichböden noch nicht gepflegt, also keine Zeile). |
+| JSON-LD `additionalProperty` | `snippets/tp-produkt-merkmale-json.liquid` bekommt den Teppichboden als `basis` und wendet dieselbe Regel an wie die Tabelle. |
+| JSON-LD `FAQPage` | `snippets/tp-faq-beschreibung-structured-data.liquid` liest die Gruppe `<h3>Häufige Fragen</h3>` mit `<h4>`-Fragen aus dem sichtbaren Beschreibungstext. Nur auf Vorlage `einfassung`; ohne solche Gruppe kein Knoten. |
+| JSON-LD `availability` | Produkt-Tag `auslauf` (wie der Hinweis in `tp-aktion-hinweis`): lieferbare Varianten melden `LimitedAvailability`, nicht lieferbare `OutOfStock`. Gilt in `tp-product-structured-data` für alle Produkte mit dem Tag, nicht nur für Teppiche nach Maß. |
+| Muster-Aufruf | `tp-muster-cta` steht direkt unter der Farbwahl (Schritt 1), nicht mehr unter dem Rechner. Einstellungen und Ziel unverändert; die Zeile „Fragen zu Ihrem Maß? Beratung“ gehört zum Block und wandert mit. |
+| Kopfpreis | Sichtbar ist nur „ab X €, z. B. 80 × 150 cm, inkl. Kettelung“ bzw. der Live-Gesamtpreis des Rechners. Der Preis je m² erscheint nur noch im Rückfall, wenn sich der ab-Preis nicht belegen lässt (`snippets/tp-teppich-ab-preis`, Entscheidung 2026-09-20). |
+
+Das JSON-LD nennt den Preis je m² (`offers.price` = Variantenpreis × 100, mit `UnitPriceSpecification` je 1 MTK).
+Das ist der einzige belegte Einheitspreis dieser Produkte und bleibt unverändert; sichtbar auf der Seite steht der
+ab-Preis für ein Beispielmaß. Tests: `qa/tests/produkt-jsonld-massteppich.test.mjs`,
+`tp-produkt-merkmale-basis.test.mjs`, `einfassung-template-reihenfolge.test.mjs`.
