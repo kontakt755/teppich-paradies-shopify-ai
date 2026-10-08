@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  var ART = { cover: 'Cover', ketteln: 'Gekettelt', einfassband: 'Einfassband', paspelband: 'Paspelband' };
+  var ART = { cover: 'Cover', ketteln: 'Gekettelt', einfassband: 'Einfassband', paspelband: 'Paspelband', fertig: 'Fertig eingefasst' };
   // Vergroesserung in der Kantenlupe und Rand, damit die Kachel auch die
   // aussen liegende Cover-Kontur (stroke-width 9) noch mit abdeckt.
   var LUPE_ZOOM = 3.4;
@@ -25,7 +25,8 @@
     cover: 'Kante umgeschlagen, mit Vlies',
     ketteln: 'Garn Ton in Ton',
     einfassband: 'ca. 3 cm breit',
-    paspelband: 'ca. 1 cm breit'
+    paspelband: 'ca. 1 cm breit',
+    fertig: 'vom Hersteller eingefasst'
   };
   var FORM = { rechteck: 'Rechteck', rund: 'Rund', oval: 'Oval', schablone: 'Schablone', skizze: 'Skizze' };
   var ANFRAGE = {
@@ -88,6 +89,15 @@
     // legitimer Inklusivpreis). Sperrt unten den Kauf statt den Teppich
     // stillschweigend ohne die gewaehlte Kettelung anzubieten.
     var kettelServiceFailed = !!d.kettel_service_failed;
+    // Art "fertig" (Wunschmass vom Hersteller): feste Pauschale je Teppich als
+    // eigene Warenkorbzeile (Menge 1) unter derselben _Gruppe. Ist sie
+    // konfiguriert, aber nicht kaufbar, wird der Kauf gesperrt (wie TP-005).
+    var pauschale = (d.pauschale && d.pauschale.id && parseInt(d.pauschale.price, 10) > 0) ? d.pauschale : null;
+    var pauschaleFailed = !!d.pauschale_failed;
+    var pauschaleCent = pauschale ? parseInt(pauschale.price, 10) : 0;
+    // Versandgrenze nach Gewicht: kg je m2 des Produkts, Hoechstgewicht je Teppich.
+    var kgProQm = Number(d.kg_pro_qm) > 0 ? Number(d.kg_pro_qm) : 0;
+    var maxKg = Number(d.max_gewicht_kg) > 0 ? Number(d.max_gewicht_kg) : 0;
     // Rollenbreiten der Meterware in cm, nur fuer die interne Warenkorbzeile.
     var rollen = (d.rollen || []).map(Number).filter(function (n) { return n > 0; });
     var mitBand = !!BAND_CM[art];
@@ -615,22 +625,23 @@
       var eingabeFehler = fehlerListe.length > 0;
       var eingegeben = b.wert > 0 && (rund || l.wert > 0);
       if (eingegeben && !fehlerListe.length) {
-        fehlerListe = M.pruefeMasse({ form: f, w: b.wert, l: l.wert, maxW: maxW, maxL: maxL });
+        fehlerListe = M.pruefeMasse({ form: f, w: b.wert, l: l.wert, maxW: maxW, maxL: maxL, maxKg: maxKg, kgProQm: kgProQm });
       }
       if (!target.available) fehlerListe.push('Diese Farbe ist derzeit nicht lieferbar.');
       // TP-005: unabhaengig von Mass-/Farbzustand sichtbar - ein ausgefallener
       // konfigurierter Service ist kein Eingabefehler des Kunden.
       if (kettelServiceFailed) fehlerListe.push('Die Kettelung ist aktuell nicht verfügbar. Bitte kurz bei uns melden.');
+      if (pauschaleFailed) fehlerListe.push('Dieser Teppich ist aktuell nicht bestellbar. Bitte kurz bei uns melden.');
       fehler.textContent = fehlerListe.join(' ');
       // Vor der ersten Eingabe keine Meldung - ausser die Eingabe selbst ist
       // das Problem (Komma, 0, negativ) oder der Kettelservice ist ausgefallen.
-      fehler.hidden = !fehlerListe.length || (!eingegeben && !eingabeFehler && !!target && target.available && !kettelServiceFailed);
+      fehler.hidden = !fehlerListe.length || (!eingegeben && !eingabeFehler && !!target && target.available && !kettelServiceFailed && !pauschaleFailed);
 
       // TP-005: ein ausgefallener konfigurierter Kettelservice macht die
       // Konfiguration ungueltig - stand bleibt null (unten), rechnung/cta
       // bleiben verborgen, hinzufuegen() kann also nicht auslösen.
       var gueltig = eingegeben && !fehlerListe.length && !!target && target.available &&
-        parseInt(target.price, 10) > 0 && !kettelServiceFailed;
+        parseInt(target.price, 10) > 0 && !kettelServiceFailed && !pauschaleFailed;
       var startpreis = document.querySelector('[data-tp-mass-startpreis]');
       if (startpreis) startpreis.hidden = gueltig;
       zeichnen(f, gueltig ? b.wert : BEISPIEL.w, gueltig ? l.wert : (rund ? BEISPIEL.w : BEISPIEL.l), !gueltig);
@@ -658,7 +669,7 @@
       // mit, nur der Rest hebt die Materialmenge an.
       var menge = M.mengeMitMindestpreis(flaeche, preis, Math.max(0, mindestCent - kettelCent));
       var materialCent = menge * preis;
-      var summe = materialCent + kettelCent;
+      var summe = materialCent + kettelCent + pauschaleCent;
       var mindest = menge > M.mengeHundertstelM2(flaeche);
       var masse = rund ? 'Ø ' + b.wert + ' cm' : b.wert + ' × ' + l.wert + ' cm';
 
@@ -680,7 +691,7 @@
         var zeigen = false;
         if (preisAlt > preis) {
           var mengeAlt = M.mengeMitMindestpreis(flaeche, preisAlt, Math.max(0, mindestCent - kettelCent));
-          var altSumme = mengeAlt * preisAlt + kettelCent;
+          var altSumme = mengeAlt * preisAlt + kettelCent + pauschaleCent;
           if (mengeAlt === M.mengeHundertstelM2(flaeche) && altSumme > summe) {
             summeAlt.textContent = euro(altSumme);
             summeAlt.setAttribute('aria-label', 'statt ' + euro(altSumme));
@@ -760,26 +771,30 @@
       var gruppe = 'K' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
       p['_Gruppe'] = gruppe;
       p['_Zuschnitt'] = zuschnittText(p);
-      var koerper = { id: target.id, quantity: menge, properties: p };
+      var zeilen = [{ id: target.id, quantity: menge, properties: p }];
       var gesamtMenge = menge;
       if (kettel && stand.kantenEinheiten > 0) {
-        koerper = {
-          items: [
-            { id: target.id, quantity: menge, properties: p },
-            {
-              id: kettel.id,
-              quantity: stand.kantenEinheiten,
-              properties: {
-                'Zu Teppich': d.produkt,
-                'Farbe': target.farbe || '',
-                'Kante umlaufend': fmt(stand.kante) + ' m',
-                '_Gruppe': gruppe
-              }
-            }
-          ]
-        };
-        gesamtMenge = menge + stand.kantenEinheiten;
+        zeilen.push({
+          id: kettel.id,
+          quantity: stand.kantenEinheiten,
+          properties: {
+            'Zu Teppich': d.produkt,
+            'Farbe': target.farbe || '',
+            'Kante umlaufend': fmt(stand.kante) + ' m',
+            '_Gruppe': gruppe
+          }
+        });
+        gesamtMenge += stand.kantenEinheiten;
       }
+      if (pauschale) {
+        zeilen.push({
+          id: pauschale.id,
+          quantity: 1,
+          properties: { 'Zu Teppich': d.produkt, 'Farbe': target.farbe || '', 'Maße': stand.masse, '_Gruppe': gruppe }
+        });
+        gesamtMenge += 1;
+      }
+      var koerper = zeilen.length > 1 ? { items: zeilen } : zeilen[0];
 
       inFlight = true;
       cta.disabled = true;

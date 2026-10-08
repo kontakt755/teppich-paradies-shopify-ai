@@ -126,3 +126,14 @@ test('H: Rolle und Rollenanzahl', () => {
   assert.equal(M.rollenAnzahl(18.76, 18.75), 2);
   assert.equal(M.rollenAnzahl(10, 0), 0);
 });
+
+test('Gewichtsgrenze: kg nach abgerechneter Flaeche, ohne kg/m2 keine Grenze', () => {
+  assert.equal(M.gewichtKg('rechteck', 200, 300, 4.4).toFixed(2), '26.40');
+  assert.equal(M.gewichtKg('rechteck', 200, 300, 0), 0);
+  assert.deepEqual(M.pruefeMasse({ form: 'rechteck', w: 200, l: 300, maxW: 200, maxL: 600, maxKg: 30, kgProQm: 4.4 }), []);
+  const f = M.pruefeMasse({ form: 'rechteck', w: 200, l: 400, maxW: 200, maxL: 600, maxKg: 30, kgProQm: 4.4 });
+  assert.equal(f.length, 1);
+  assert.match(f[0], /30 kg/);
+  assert.match(f[0], /6,81 m²/);
+  assert.deepEqual(M.pruefeMasse({ form: 'rechteck', w: 200, l: 400, maxW: 200, maxL: 600 }), []);
+});
