@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { aufNeunzig, ende, istRaummass, ladeExport, plane, planeVariante, rueckstellNeunzig, sperrgrund } from '../../operations/scripts/angebotswelle.mjs';
+import { aufNeunzig, ende, istRaummass, ladeExport, optionsFehler, plane, planeVariante, rueckstellNeunzig, sperrgrund } from '../../operations/scripts/angebotswelle.mjs';
 
 const P = (o) => ({ id: 'gid://shopify/Product/1', handle: 'velours-x', productType: 'Teppichboden', status: 'ACTIVE', ...o });
 const V = (o) => ({ id: 'gid://shopify/ProductVariant/1', title: '400 cm', sku: 'S1', price: '20.00', compareAtPrice: null, product: P(), ...o });
@@ -144,4 +144,27 @@ test('--produkte geht vor eingebettetem Teilprodukt mit leeren Metafeldern', () 
   const produkte = JSON.stringify([{ id: 'gid://shopify/Product/9', handle: 'h', ende: { value: '2026-10-18' }, klasse: { value: 'preisanker' } }]);
   const [v] = ladeExport(varianten, produkte);
   assert.equal(v.product.ende, '2026-10-18');
+});
+
+test('--ende-am trennt zwei Aktionen derselben Klasse (Welle 1 vom Dauerrabatt)', () => {
+  const welle1 = P({ id: 'w1', ende: '2026-10-18', klasse: 'preisanker' });
+  const dauer = P({ id: 'd1', ende: '2026-11-01', klasse: 'preisanker' });
+  const varianten = [
+    V({ id: 'a', price: '17.00', compareAtPrice: '20.00', product: welle1 }),
+    V({ id: 'b', price: '17.00', compareAtPrice: '20.00', product: dauer }),
+  ];
+  assert.equal(ende(varianten, { stichtag: '2026-11-02', klasse: 'preisanker' }).csv.length, 2, 'ohne Filter beide');
+  const r = ende(varianten, { stichtag: '2026-11-02', klasse: 'preisanker', endeAm: '2026-11-01' });
+  assert.deepEqual([...r.zurueck.keys()], ['d1']);
+  assert.throws(() => ende(varianten, { stichtag: '2026-11-02', endeAm: '2026-11-02' }), /vor dem Stichtag/);
+  assert.throws(() => ende(varianten, { stichtag: '2026-11-02', endeAm: '1.11.' }), /JJJJ-MM-TT/);
+});
+
+test('Optionen: Tippfehler und fehlende Werte brechen ab statt still zu entfallen', () => {
+  assert.equal(optionsFehler('ende', { stichtag: '2026-11-02', klasse: 'preisanker', 'ende-am': '2026-11-01' }), null);
+  assert.match(optionsFehler('ende', { stichtag: '2026-11-02', 'ende-am': undefined }), /ohne Wert/);
+  assert.match(optionsFehler('ende', { stichtag: '2026-11-02', 'ende-am 2026-11-01': undefined }), /Unbekannte Option/);
+  assert.match(optionsFehler('ende', { stichtag: '2026-11-02', endeam: '2026-11-01' }), /Unbekannte Option --endeam/);
+  assert.match(optionsFehler('ende', { 'ende-am': '--stichtag' }), /ohne Wert/);
+  assert.equal(optionsFehler('plan', { prozent: '15', start: '2026-11-03', ende: '2026-11-16', typ: 'Teppichboden' }), null);
 });
