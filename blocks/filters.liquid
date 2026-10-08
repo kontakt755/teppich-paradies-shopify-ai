@@ -22,6 +22,8 @@
 {%- liquid
   assign block_settings = block.settings
   assign products_count = results_size
+  # Die Suche paginiert gemischte Treffer. products_count zaehlt nur Produkte
+  # auf der aktuellen Seite, results.results_count alle Suchtreffer.
   assign sort_by = results.sort_by | default: results.default_sort_by
   assign filters = filters | default: results.filters
   assign total_active_values = 0
@@ -132,7 +134,9 @@
         data-testid="products-count"
       >
         <span role="status">
-          {% if products_count > 25000 %}
+          {% if request.page_type == 'search' %}
+            {{- results.results_count }} Suchtreffer
+          {% elsif products_count > 25000 %}
             {{- 'content.item_count_cutoff' | t: count: 25000 -}}
           {% else %}
             {{- 'content.item_count' | t: count: products_count -}}
@@ -323,7 +327,9 @@
                 data-testid="products-count"
               >
                 <span role="status">
-                  {% if products_count > 25000 %}
+                  {% if request.page_type == 'search' %}
+                    {{- results.results_count }} Suchtreffer
+                  {% elsif products_count > 25000 %}
                     {{- 'content.item_count_cutoff' | t: count: 25000 -}}
                   {% else %}
                     {{- 'content.item_count' | t: count: products_count -}}
@@ -598,7 +604,11 @@
             type="button"
             on:click="dialog-component/closeDialog"
           >
-            {{- 'actions.see_items' | t: count: products_count -}}
+            {% if request.page_type == 'search' %}
+              Suchergebnisse anzeigen
+            {% else %}
+              {{- 'actions.see_items' | t: count: products_count -}}
+            {% endif %}
           </button>
         {% endif %}
       </div>
