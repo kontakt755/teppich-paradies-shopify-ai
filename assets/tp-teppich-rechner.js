@@ -119,27 +119,14 @@
     try { daten = JSON.parse(datenEl.textContent); } catch (e) { return; }
     var teppiche = (daten.teppiche || []).filter(Boolean);
     if (!teppiche.length) {
-      // Die Produktliste der Kollektion hat nur eine Seite mit bis zu 250 Eintraegen.
-      // Wird die Rasterseite 2 direkt geladen, fuehrt die Masssuche zu Seite 1.
-      var seite = new URL(window.location.href).searchParams.get('page');
-      if (Number(seite) > 1 && Number(daten.gesamt) > 0) {
-        var spaetesForm = root.querySelector('[data-tp-rechner]');
-        var spaetesW = root.querySelector('[data-tp-rechner-breite]');
-        var spaetesL = root.querySelector('[data-tp-rechner-laenge]');
-        var spaeterFehler = root.querySelector('[data-tp-rechner-fehler]');
-        if (!spaetesForm || !spaetesW || !spaetesL || !spaeterFehler) return;
-        root.setAttribute('data-tp-rechner-bereit', '1');
-        spaetesForm.addEventListener('submit', function (e) {
-          e.preventDefault();
-          var mass = massPruefen(spaetesW, spaetesL);
-          spaeterFehler.textContent = mass.fehler;
-          spaeterFehler.hidden = !mass.fehler;
-          if (mass.fehler) return;
-          speichern(mass.w, mass.l);
-          var ziel = new URL(window.location.href);
-          ziel.searchParams.delete('page');
-          window.location.assign(ziel.toString());
-        });
+      // Diese Kategorie zeigt alle Qualitaeten in Gruppen statt auf Rasterseiten.
+      // Alte direkte ?page=2-Links waehlen dennoch die leere zweite Seite aller
+      // 250er-Paginationsbloecke. Nur dann zur gefuellten Seite zurueckkehren;
+      // andere Filter, Sortierung und das Fragment bleiben im URL-Objekt erhalten.
+      var ziel = new URL(window.location.href);
+      if (Number(ziel.searchParams.get('page')) > 1 && Number(daten.gesamt) > 0) {
+        ziel.searchParams.delete('page');
+        window.location.replace(ziel.toString());
       }
       return;
     }
