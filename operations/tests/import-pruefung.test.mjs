@@ -177,3 +177,11 @@ test('versteckte Hilfsprodukte (UNLISTED, Tag service) werden nicht geprueft', (
   const hilfe = produkt({ createdAt: '2026-10-07T08:00:00Z', status: 'UNLISTED', tags: ['service'], mediaCount: 0, collections: [], category: 'Uncategorized' });
   assert.deepEqual(pruefeImporte({ produkte: [...vergleich(), hilfe], seit: '2026-10-01' }).befunde, []);
 });
+
+test('Entwuerfe liefern nur Hinweise (Vorlage mit Preis 0, Farben ohne Bild)', () => {
+  const vorlage = produkt({ createdAt: '2026-10-07T08:00:00Z', status: 'DRAFT', onlineStoreUrl: null });
+  vorlage.variants[0].price = '0.00';
+  const erg = pruefeImporte({ produkte: [...vergleich(), vorlage], seit: '2026-10-01' });
+  assert.ok(erg.befunde.length > 0);
+  assert.ok(erg.befunde.every((b) => b.stufe === 'hinweis'), JSON.stringify(erg.befunde));
+});
