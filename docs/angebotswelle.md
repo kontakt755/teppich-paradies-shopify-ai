@@ -41,7 +41,9 @@ Auswahl, Prozent, Start und Ende; am Ende geht der Preis auf den regulaeren Prei
     ohne `selectedOptions` im Export zaehlt der Variantentitel `Farbe / Wunschmaß`):
     naechstgelegener ,90-Betrag zum Vergleichspreis, `round(x + 0,10) - 0,10`
     (Inhaber 2026-10-05). Volle Euro gehen 0,10 nach unten (104,00 → 103,90,
-    50,00 → 49,90), Betraege auf ,90 bleiben. Dieselbe Regel gilt fuer die vorab
+    50,00 → 49,90), Betraege auf ,90 bleiben. Das Ziel liegt nie ueber dem Vergleichspreis
+    (88,50 -> 87,90); unbekannte Wunschmass-Schreibweisen meldet das Skript als
+    WARNUNG. Dieselbe Regel gilt fuer die vorab
     berechnete `rueckstellen.jsonl` aus `plan`.
   - Muster (`M-`, Handle `muster-…`) werden nie zurueckgestellt.
 - Wellen setzen `aktion.klasse = aktion`: befristete Aktion, **nicht** mit dem

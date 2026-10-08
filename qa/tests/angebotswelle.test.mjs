@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { aufNeunzig, ende, istRaummass, ladeExport, plane, planeVariante, sperrgrund } from '../../operations/scripts/angebotswelle.mjs';
+import { aufNeunzig, ende, istRaummass, ladeExport, plane, planeVariante, rueckstellNeunzig, sperrgrund } from '../../operations/scripts/angebotswelle.mjs';
 
 const P = (o) => ({ id: 'gid://shopify/Product/1', handle: 'velours-x', productType: 'Teppichboden', status: 'ACTIVE', ...o });
 const V = (o) => ({ id: 'gid://shopify/ProductVariant/1', title: '400 cm', sku: 'S1', price: '20.00', compareAtPrice: null, product: P(), ...o });
@@ -123,4 +123,25 @@ test('JSON-Array-Export mit getrennter Produktdatei (--produkte)', () => {
   assert.equal(v.product.handle, 'h');
   assert.equal(v.product.klasse, 'preisanker');
   assert.throws(() => ladeExport(varianten), /--produkte/);
+});
+
+test('Rueckstellung: ,90-Ziel liegt nie ueber dem Vergleichspreis', () => {
+  assert.equal(rueckstellNeunzig(10400), 10390);
+  assert.equal(rueckstellNeunzig(11490), 11490);
+  assert.equal(rueckstellNeunzig(8850), 8790);
+  assert.equal(rueckstellNeunzig(8895), 8890);
+  const r = ende([RM({ price: '79.00', compareAtPrice: '88.50', product: abgelaufen })], { stichtag: '2026-10-19' });
+  assert.equal(zielpreise(r)[V().id].price, '87.90');
+});
+
+test('Ende: unbekannte Raummass-Schreibweise wird gemeldet', () => {
+  const r = ende([V({ title: 'Grau / Wunschmaß (Raummaß)', selectedOptions: [{ name: 'Breite', value: 'Wunschmaß (Raummaß)' }], price: '45.00', compareAtPrice: '50.00', product: abgelaufen })], { stichtag: '2026-10-19' });
+  assert.equal(r.warnungen.length, 1);
+});
+
+test('--produkte geht vor eingebettetem Teilprodukt mit leeren Metafeldern', () => {
+  const varianten = JSON.stringify([{ id: 'gid://shopify/ProductVariant/8', title: 'A / 400 cm', price: '45.00', compareAtPrice: '50.00', product: { id: 'gid://shopify/Product/9', handle: 'h', ende: null } }]);
+  const produkte = JSON.stringify([{ id: 'gid://shopify/Product/9', handle: 'h', ende: { value: '2026-10-18' }, klasse: { value: 'preisanker' } }]);
+  const [v] = ladeExport(varianten, produkte);
+  assert.equal(v.product.ende, '2026-10-18');
 });

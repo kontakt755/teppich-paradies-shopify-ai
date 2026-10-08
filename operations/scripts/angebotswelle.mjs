@@ -40,7 +40,8 @@ export function ladeExport(text, produkteText) {
   const produkte = new Map([...zeilen, ...extra].filter((z) => z.id?.includes('/Product/') && !z.__parentId).map((p) => [p.id, p]));
   return zeilen.filter((z) => z.id?.includes('/ProductVariant/')).map((v) => {
     const id = v.product?.id || v.__parentId;
-    const p = { ...produkte.get(id), ...v.product };
+    // Produktzeile bzw. --produkte geht vor dem eingebetteten Teilprodukt (dort fehlen oft Metafelder).
+    const p = { ...v.product, ...produkte.get(id) };
     if (!p.handle) throw new Error(`Produktdaten fehlen fuer ${v.id} (${id || 'ohne Produkt'}) - Produktexport mit --produkte angeben`);
     return { ...v, product: { ...p, start: p.start?.value ?? p.start ?? null, ende: p.ende?.value ?? p.ende ?? null, klasse: p.klasse?.value ?? p.klasse ?? null } };
   });
@@ -56,12 +57,25 @@ export function istRaummass(v) {
   return werte.some((w) => RAUMMASS.test(String(w).trim()));
 }
 
+// Optionswert, der nach Raummass aussieht, aber nicht erkannt wird (andere Schreibweise) -> Warnung.
+const RAUMMASS_AEHNLICH = /(wunsch|raum)ma(ß|ss)/i;
+export function raummassUnklar(v) {
+  const werte = v.selectedOptions?.length ? v.selectedOptions.map((o) => o.value) : String(v.title || '').split(' / ');
+  return !istRaummass(v) && werte.some((w) => RAUMMASS_AEHNLICH.test(String(w)));
+}
+
 /**
  * Inhaber 2026-10-05: Raummass-Preise enden auf ,90 - naechstgelegener ,90-Betrag,
  * round(x + 0,10) - 0,10. Volle Euro gehen 0,10 nach unten (104,00 -> 103,90),
  * Betraege auf ,90 bleiben. Rechnet in Cent.
  */
 export const aufNeunzig = (c) => Math.round((c + 10) / 100) * 100 - 10;
+
+/**
+ * Rueckstellung: der ,90-Betrag darf nie ueber dem Vergleichspreis (belegter Vorpreis) liegen,
+ * freigegeben ist nur der Schritt nach unten (88,50 -> 87,90, nicht 88,90).
+ */
+export const rueckstellNeunzig = (c) => { const z = aufNeunzig(c); return z > c ? z - 100 : z; };
 
 /** Warum ein Produkt nicht in die Welle darf - oder null. */
 export function sperrgrund(produkt, start) {
@@ -101,7 +115,7 @@ export function plane(varianten, opt) {
     if (!setzen.has(p.id)) { setzen.set(p.id, []); zurueck.set(p.id, []); }
     setzen.get(p.id).push({ id: v.id, price: r.price, compareAtPrice: r.compareAtPrice });
     // vorab berechnete Rueckstellung nach derselben Regel wie ende() (Raummass auf ,90)
-    zurueck.get(p.id).push({ id: v.id, price: istRaummass(v) ? euro(aufNeunzig(cent(r.compareAtPrice))) : r.compareAtPrice, compareAtPrice: null });
+    zurueck.get(p.id).push({ id: v.id, price: istRaummass(v) ? euro(rueckstellNeunzig(cent(r.compareAtPrice))) : r.compareAtPrice, compareAtPrice: null });
     produkte.add(p.id);
     csv.push([p.productType || '-', p.handle, v.title, v.sku || '', r.compareAtPrice, r.price, prozent].join(';'));
   }
@@ -121,7 +135,7 @@ export function plane(varianten, opt) {
  */
 export function ende(varianten, opt) {
   if (!DATUM.test(opt.stichtag || '')) throw new Error('--stichtag als JJJJ-MM-TT');
-  const zurueck = new Map(); const csv = [];
+  const zurueck = new Map(); const csv = []; const warnungen = [];
   for (const v of varianten) {
     const p = v.product;
     if (!p.ende || !DATUM.test(p.ende) || tag(p.ende) >= tag(opt.stichtag)) continue;
@@ -129,12 +143,13 @@ export function ende(varianten, opt) {
     if (istMuster(v)) continue;
     if (!v.compareAtPrice || cent(v.compareAtPrice) <= cent(v.price)) continue;
     const raummass = istRaummass(v);
-    const ziel = euro(raummass ? aufNeunzig(cent(v.compareAtPrice)) : cent(v.compareAtPrice));
+    if (raummassUnklar(v)) warnungen.push(`${p.handle} / ${v.title}: Raummass-Schreibweise nicht erkannt, als Meterware gerechnet`);
+    const ziel = euro(raummass ? rueckstellNeunzig(cent(v.compareAtPrice)) : cent(v.compareAtPrice));
     if (!zurueck.has(p.id)) zurueck.set(p.id, []);
     zurueck.get(p.id).push({ id: v.id, price: ziel, compareAtPrice: null });
     csv.push([p.handle, v.title, v.sku || '', raummass ? 'Raummaß' : 'Meterware', v.price, euro(cent(v.compareAtPrice)), ziel, p.ende].join(';'));
   }
-  return { zurueck, csv };
+  return { zurueck, csv, warnungen };
 }
 
 const jsonl = (map) => [...map].map(([productId, variants]) => JSON.stringify({ productId, variants })).join('\n') + '\n';
@@ -171,5 +186,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     schreib('rueckstellen.csv', ['handle;variante;sku;zuschnitt;preis_aktion;vergleichspreis;zielpreis;aktion_ende', ...r.csv].join('\n') + '\n');
     schreib('rueckstellen.jsonl', jsonl(r.zurueck));
     console.log(`Rueckstellung: ${r.csv.length} Varianten in ${r.zurueck.size} Produkten -> ${ziel}`);
+    for (const w of r.warnungen) console.warn(`WARNUNG ${w}`);
   }
 }
