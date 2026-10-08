@@ -18,9 +18,9 @@ Branch `feature/weiterentwicklung-sonderposten` · Worktree `.claude/worktrees/w
 | 3 | Technisches Umsetzungskonzept | **abgeschlossen** (`docs/weiterentwicklung/*.md`) |
 | 4 | Sonderposten-Produktstruktur | **abgeschlossen** (Theme in der Entwicklungskopie, Shopify-Daten angelegt, mit Testprodukt getestet) |
 | 5 | Ladenverkauf | **gebaut** (Control Center, Entwurfs-PR #986, 19 Tests); bucht erst nach Freigabe E5 (`write_inventory`) |
-| 6 | Produktbewertungen | Theme-Teil fertig (unsichtbar ohne Bewertungen); **Entscheidung Judge.me vs. „bei Google bleiben“ bei Ahmet** (Werkbank w-027, Empfehlung: bei Google bleiben – ~22 Online-Bestellungen in 90 Tagen) |
+| 6 | Produktbewertungen | **abgeschlossen**: Entscheidung 08.10. – keine Bewertungs-App, bei der Google-Bewertung bleiben (zu wenige Online-Bestellungen je Produkt). Sterne-Darstellung bleibt vorbereitet und ohne Daten unsichtbar. |
 | 7 | Bildverwaltung und Bildrechte | **Inventur fertig** (8.530 Bilder erfasst, `npm run bildrechte:inventur`); Lizenzen je Lieferant + Bildarchiv-Ort beim Inhaber (E7); Dashboard-Liste offen |
-| 8 | Menüpunkt „Angebote“ | **gebaut**; Kollektion `angebote` mit 510 Produkten angelegt (Freigabe Ahmet, w-029); offen: täglicher Lauf (Freigabe), Menüpunkte mit dem Livegang |
+| 8 | Menüpunkt „Angebote“ | **gebaut**; Kollektion `angebote` (510) angelegt; täglicher Abgleich 0:00 als Dienst `net.teppich-paradies.angebote` (PR #995); Menüpunkte mit dem Livegang |
 | 9 | Gesamttest | offen |
 | 10 | Veröffentlichung vorbereiten | offen |
 
@@ -98,9 +98,8 @@ bei Google bleiben), w-028 (Bildarchiv, Lizenzen). Beantwortet und umgesetzt: w-
 ## 5. Noch offene Aufgaben
 
 - Phase 5: nach E5 einmal mit dem Testprodukt durchbuchen (Bestand vorher auf 1); PR #986 mergen, Dienst vorspulen.
-- Phase 6: Sterne-Snippet/-Blöcke + `aggregateRating` (nur mit Daten), App nach Freigabe.
 - Phase 7: Dashboard-Liste „Bildrechte“ (nach der Sonderposten-Ansicht); Lizenzklärung je Lieferant (E7).
-- Phase 8: täglichen Lauf einrichten (Freigabe), Menüpunkte „Angebote“ und „Reste & Sonderposten“ mit dem Livegang (`angebote.md` §5).
+- Phase 8: PR #995 mergen und `~/tp-dashboard` vorspulen (Dienst läuft daraus); Menüpunkte „Angebote“ und „Reste & Sonderposten“ mit dem Livegang (`angebote.md` §5).
 - Phase 9/10: Gesamttest, Deploy-Kette (`workflow:doctor` → PR → `main` → Preview → Live).
 
 **Entscheidungen des Inhabers** (blockieren die jeweilige Phase, nicht die anderen):
@@ -112,7 +111,7 @@ bei Google bleiben), w-028 (Bildarchiv, Lizenzen). Beantwortet und umgesetzt: w-
 | E3 | Abholung am Standort aktivieren + Versandprofil „Sonderposten – nur Abholung“ | ja, vor dem ersten echten Sonderposten |
 | E4 | Welche SumUp-Lösung läuft im Laden? | **unbekannt** → Weg B zuerst, Weg C zurückgestellt |
 | E5 | Dashboard-Zugang: Recht `write_inventory` ergänzen (Inhaber selbst) | ja, für Weg B |
-| E6 | Judge.me Forever Free installieren (0 €) + Datenschutzerklärung ergänzen | **freigegeben 2026-10-08**; Datenschutztext ändert der Inhaber |
+| E6 | Judge.me installieren? | **entschieden 2026-10-08: nein**, bei Google bleiben |
 | E7 | Speicherort Bildarchiv + Lizenzunterlagen je Lieferant | Inhaber |
 | E8 | Menüpunkte „Angebote“ und „Reste & Sonderposten“ ins Hauptmenü (unsichtbar, bis Inhalt da ist) | ja |
 

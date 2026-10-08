@@ -1,5 +1,11 @@
 # Produktbewertungen mit Sternen
 
+> **Entscheidung 2026-10-08:** keine Bewertungs-App. Die Google-Unternehmensbewertung bleibt das
+> Vertrauenssignal (Block `tp-bewertungsbeleg`). Grund: rund 22 bezahlte Online-Bestellungen in
+> 90 Tagen auf ~1.290 Produkte – Produktbewertungen kämen zu langsam, um zu wirken. Die
+> Sterne-Darstellung (`tp-sterne`, `tp-produkt-sterne`, `tp-card-sterne`, `aggregateRating`) bleibt
+> im Theme und zeigt ohne `reviews.*`-Daten nichts; eine App lässt sich später nachrüsten.
+
 Teil von `SHOPIFY_WEITERENTWICKLUNG.md` (Phase 6). Stand 2026-10-08.
 
 ## 1. Ist-Zustand (geprüft)

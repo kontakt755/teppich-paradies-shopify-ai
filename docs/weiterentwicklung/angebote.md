@@ -89,7 +89,7 @@ Theme-Sicherung, Bedingung „Kollektion nicht leer“).
 | Kollektion `angebote` (Tag = angebot) | **angelegt und im Onlineshop veröffentlicht** (2026-10-08, Freigabe Ahmet in der Werkbank w-029); 510 Produkte, Seite 1: 24/24 Karten mit Streichpreis |
 | Tags `angebot` | **geschrieben**: 510 Produkte, Gegenprobe 0 offen / 0 Fehler. Vorher trug kein Produkt den Tag. Rückweg: Liste `~/teppich-paradies-analyse/angebote/abgleich-2026-10-08/vorher.json` → `tagsRemove` je Produkt |
 | Menüpunkte „Angebote“ / „Reste & Sonderposten“ in `main-menu` | **erst mit dem Theme-Livegang** – das Live-Theme kennt die Ausblend-Logik noch nicht und würde die Punkte sonst immer zeigen |
-| Täglicher Lauf (00:15) | **noch nicht eingerichtet** – dauerhafter Dienst auf dem Mac, braucht ausdrückliche Freigabe. Bis dahin: nach jeder Angebotswelle und am Tag nach einem Aktionsende `npm run angebote:abgleich -- --schreiben` von Hand. Die Theme-Sicherung verhindert in der Zwischenzeit, dass der Menüpunkt ohne sichtbares Angebot erscheint. |
+| Täglicher Lauf (0:00) | **eingerichtet 2026-10-08** (Dienst `net.teppich-paradies.angebote`, Vorlage in `operations/launchagents/`, PR #995). Vorher: **noch nicht eingerichtet** – dauerhafter Dienst auf dem Mac, braucht ausdrückliche Freigabe. Bis dahin: nach jeder Angebotswelle und am Tag nach einem Aktionsende `npm run angebote:abgleich -- --schreiben` von Hand. Die Theme-Sicherung verhindert in der Zwischenzeit, dass der Menüpunkt ohne sichtbares Angebot erscheint. |
 
 **Belege:**
 - Trockenlauf 08.10.: 1.290 aktive Produkte, 510 zeigen einen Rabatt; 0 Produkte mit
