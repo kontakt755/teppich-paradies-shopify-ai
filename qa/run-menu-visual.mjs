@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { chromium } from 'playwright-core';
+import { sperreTracking } from './tracking-sperre.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -31,6 +32,7 @@ try {
 
 async function preparePage(viewport) {
   const context = await browser.newContext({ viewport, locale: 'de-DE', reducedMotion: 'reduce' });
+  await sperreTracking(context);
   const page = await context.newPage();
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: config.navigationTimeoutMs });
   process.stderr.write(`Mega-Menu-QA: ${viewport.width}px geladen\n`);
