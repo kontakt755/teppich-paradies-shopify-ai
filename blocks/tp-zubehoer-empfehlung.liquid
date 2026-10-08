@@ -61,8 +61,13 @@
         assign tp_ze_art = 'parkett-2schicht-kleben'
       elsif tp_ze_belag contains 'massiv' and tp_ze_belag contains 'zum Verkleben'
         assign tp_ze_art = 'parkett-massiv-kleben'
+      elsif tp_ze_belag contains '3-Schicht' and tp_ze_belag contains 'Nut und Feder' and tp_ze_belag contains 'vollflächig verklebt'
+        # Datenblatt: schwimmend mit verleimter Nut und Feder oder vollflaechig verklebt
+        assign tp_ze_art = 'parkett-3schicht-nutfeder'
+      elsif tp_ze_belag contains '3-Schicht' and tp_ze_belag contains 'schwimmend' and tp_ze_belag contains 'vollflächig verklebt'
+        # Datenblatt: schwimmend (leimfreies Verlegesystem) oder vollflaechig verklebt
+        assign tp_ze_art = 'parkett-3schicht-klick'
       endif
-      # 3-Schicht-Landhausdiele/Schiffsboden: Verlegeart nicht belegt -> nur Leisten.
     when 'Klickvinyl'
       assign tp_ze_leisten = true
       # Klick-Vinyl bekommt eine Unterlage nur, wenn belegt ist, dass der Boden
@@ -118,6 +123,10 @@
       assign tp_ze_regeln = 'kleber|uzin-mk-250-stp-parkettklebstoff|Für Mehrschicht- und Fertigparkett.;kleber|uzin-mk-200-stp-parkettklebstoff|Für Mehrschicht- und Fertigparkett mit Nut und Feder.;unterlage|mineralische-trittschallunterlage-3-mm-platten|Wird vollflächig unter Mehrschichtparkett verklebt.'
     when 'parkett-massiv-kleben'
       assign tp_ze_regeln = 'kleber|uzin-mk-250-stp-parkettklebstoff|Für Stab-, Mosaik-, Hochkant- und Massivparkett.;kleber|uzin-mk-92-s-2k-pur-parkettklebstoff|Für alle Holz- und Parkettarten, zweikomponentig.'
+    when 'parkett-3schicht-klick'
+      assign tp_ze_regeln = 'unterlage|duenne-trittschallunterlage-1-8-mm-mit-alu-kaschierung|Bei schwimmender Verlegung – für Laminat und Parkett.;unterlage|trittschalldaemmung-xps-fuer-laminat-und-parkett|Bei schwimmender Verlegung – für Laminat, Parkett und Klick-Vinyl.;unterlage|dampfbremse-pe-folie-0-2-mm|Auf Estrich oder Beton, wenn die Unterlage keine Alu-Kaschierung hat.;kleber|uzin-mk-250-stp-parkettklebstoff|Bei vollflächiger Verklebung – für Mehrschicht- und Fertigparkett.'
+    when 'parkett-3schicht-nutfeder'
+      assign tp_ze_regeln = 'unterlage|duenne-trittschallunterlage-1-8-mm-mit-alu-kaschierung|Schwimmend nur mit verleimter Nut und Feder – für Laminat und Parkett.;unterlage|trittschalldaemmung-xps-fuer-laminat-und-parkett|Schwimmend nur mit verleimter Nut und Feder – für Laminat, Parkett und Klick-Vinyl.;unterlage|dampfbremse-pe-folie-0-2-mm|Auf Estrich oder Beton, wenn die Unterlage keine Alu-Kaschierung hat.;kleber|uzin-mk-250-stp-parkettklebstoff|Bei vollflächiger Verklebung – für Mehrschicht- und Fertigparkett.;kleber|uzin-mk-200-stp-parkettklebstoff|Bei vollflächiger Verklebung – für Fertigparkett mit Nut und Feder.'
     when 'klickvinyl-ohne-daemmung'
       assign tp_ze_regeln = 'unterlage|unterlage-fuer-designboeden-1-5-mm-mit-antirutsch-oberflaeche|Für Designböden und Klick-Vinyl.;unterlage|trittschalldaemmung-xps-fuer-laminat-und-parkett|Für Laminat, Parkett und Klick-Vinyl.'
     when 'klebevinyl'
