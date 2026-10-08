@@ -470,3 +470,40 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   „kein Zugriff“. Die Freigabe erfolgt im Teilen-Menü der Werkbank, nicht hier.
 - **Nächste Stufe:** Falls gewünscht, offene Fragen an den Inhaber aus der Werkbank als Zähler an den Link
   hängen (bräuchte einen lesenden Abruf über den Server).
+
+## 2026-10-08 · Sonderposten: „Im Laden verkauft“ (Teil von #978)
+
+- **Geändert:** Neue Ansicht „Sonderposten“ (`#/sonderposten`, Seitenleiste unter „Seltener“ nach „Fotos“,
+  am Handy im „Mehr“-Blatt). Sie zeigt Reststücke und Einzelstücke live aus Shopify (`productType`
+  „Sonderposten“, ohne Archiv und ohne die Vorlage SP-0000/„VORLAGE …“) mit Foto, SKU, Titel, Maßen
+  („4,00 × 2,35 m · 9,40 m²“), Zustand, Farbe, Lagerort, Preis und Status. Suchfeld für die SP-Nummer vom
+  Etikett („SP-0042“, „sp 42“ und „42“ treffen dasselbe Stück). Verfügbare Stücke oben, darunter
+  „Nicht mehr verfügbar“ mit „verkauft am … von … (im Laden)“. Einzige Hauptaktion: „Im Laden verkauft…“,
+  nur bei Bestand 1 und nicht für die Rolle „lesen“; der Dialog zeigt Foto, Titel, SKU, Preis.
+  Server: `GET /api/sonderposten/liste`, `POST /api/sonderposten/verkauft` (in der write-Liste:
+  „lesen“ 403, „mitarbeiter“/„inhaber“ 200). Die Buchung liest das Produkt neu, bucht nur bei Bestand 1,
+  setzt ihn per `inventorySetQuantities` mit `changeFromQuantity: 1` und `@idempotent` auf 0, schreibt erst
+  danach `sonderposten.verkauft_am/_von/_kanal` (Name aus der Sitzung), protokolliert
+  („sonderposten-im-laden-verkauft“) und liest zur Gegenprobe erneut. Logik in
+  `operations/lib/sonderposten.mjs`. `write_inventory` steht jetzt in der Bereichszeile
+  (`operations/README.md`, `app-einrichten.sh`) und als `SCHREIB_BEREICHE` in `sync/zugang.mjs`;
+  `operations:verbindung` listet fehlende Schreibrechte getrennt. Servertests blenden den echten Zugang
+  aus (`_testumgebung.mjs`).
+- **Getestet:** `npm run dashboard:test` 207/207, `npm test` 1765/1765 (7 Suiten, nach Rebase auf main). Neu: 11 Tests in
+  `operations/tests/sonderposten.test.mjs`, 7 in `tests/sonderposten-api.test.mjs` (Bestand 1 → Buchung,
+  Felder, Protokoll, Gegenprobe; Bestand 0 → 409, nur ein Lesezugriff; ACCESS_DENIED → Klartext, keine
+  Felder, kein Protokoll; über den Server „lesen“ 403 ohne Shopify-Aufruf, „mitarbeiter“ 200, zweiter
+  Klick 409, „inhaber“ 200, GET 405), 1 in `zugang.test.mjs`. `dashboard:pruefen`: 20 Ansichten × 5
+  Breiten = 100 × OK, 0 px Überlauf. Klickstrecke gegen die Kopie bei 390 und 1440 px mit vorgetäuschten
+  Shopify-Antworten: Abbrechen/Esc → 0 Buchungen; „Recht fehlt“ → Meldung im Dialog; 409 → „bereits
+  verkauft“; Erfolg → Rückmeldung „Als im Laden verkauft gebucht – online nicht mehr bestellbar“, Knöpfe
+  1 → 0, Status „verkauft am … von … (im Laden)“; Suche „17“ → 1 Treffer. Echter Lesetest gegen Shopify:
+  1 Sonderposten (Testprodukt SP-TEST-0001, Bestand 0), Vorlage ausgefiltert, 0,7 s. **Kein echter
+  Schreibtest.**
+- **Risiken/Annahmen:** Der Zugang des Dashboards hat heute kein `write_inventory` – bis der Inhaber es
+  freischaltet, meldet der Knopf genau das und schreibt nichts (Rückfallweg: Bestand in der Shopify-App auf
+  0). Shopify hat `compareQuantity` in API 2026-07 durch `changeFromQuantity` ersetzt; die Prüfung gegen
+  das echte Schema (nur lesend) bestätigt das Feld. Scheitern nach gebuchtem Bestand nur die
+  Verkaufsfelder, bleibt das Stück verkauft und der Dialog sagt, was fehlt.
+- **Nächste Stufe:** Nach der Freischaltung einmal mit dem Testprodukt (Bestand vorher auf 1) durchbuchen;
+  danach Archivieren nach 30 Tagen und optional der SumUp-Abgleich (Konzept Abschnitt 6, Weg C).

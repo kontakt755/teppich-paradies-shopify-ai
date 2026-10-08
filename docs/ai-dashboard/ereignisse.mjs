@@ -32,6 +32,7 @@ import {
 import { openMeinPasswort, teamKlick, teamAenderung } from './ansichten/team.mjs';
 import { fotosEreignisseBinden, fotosAenderung } from './ansichten/fotos.mjs';
 import { arbeitKlick } from './ansichten/arbeit.mjs';
+import { sonderpostenKlick } from './ansichten/sonderposten.mjs';
 import { ladeAktivitaetsdaten } from './ansichten/aktivitaet.mjs';
 
 export function bindEvents() {
@@ -90,6 +91,7 @@ export function bindEvents() {
     if (teamKlick(e)) return;
     if (orgKlick(e)) return;
     if (kundenKlickBestellungen(e)) return;
+    if (sonderpostenKlick(e)) return;
     const kt = e.target.closest('[data-kopiertext]');
     if (kt) {
       const text = kt.dataset.kopiertext;

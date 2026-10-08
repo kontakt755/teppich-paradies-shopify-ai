@@ -19,7 +19,7 @@ APP_NAME="TP Operations"
 # LESE_BEREICHE in operations/sync/zugang.mjs: Bestellungen auch aelter als 60
 # Tage, Kunden, Angebote, Produkte, Metaobjekte, Lagerbestand, Standorte) plus
 # die Schreib-Bereiche, die das Auftragsband fuer ops.*-Metafelder braucht.
-SCOPES="read_orders,read_all_orders,write_orders,read_customers,read_draft_orders,read_inventory,read_locations,read_products,write_products,read_fulfillments,write_fulfillments,read_merchant_managed_fulfillment_orders,write_merchant_managed_fulfillment_orders,read_metaobjects,write_metaobjects,read_metaobject_definitions"
+SCOPES="read_orders,read_all_orders,write_orders,read_customers,read_draft_orders,read_inventory,write_inventory,read_locations,read_products,write_products,read_fulfillments,write_fulfillments,read_merchant_managed_fulfillment_orders,write_merchant_managed_fulfillment_orders,read_metaobjects,write_metaobjects,read_metaobject_definitions"
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ENV_DATEI="${REPO}/.env.local"

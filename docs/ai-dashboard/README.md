@@ -109,7 +109,7 @@ bausteine/
 ansichten/
   heute.mjs          + heute/{daten,bisher}.mjs
   arbeit.mjs  freigaben.mjs  bereiche.mjs  insights.mjs  aktivitaet.mjs
-  lexikon.mjs  ratgeber.mjs  hilfe.mjs  shopwache.mjs  team.mjs  fotos.mjs
+  lexikon.mjs  ratgeber.mjs  hilfe.mjs  shopwache.mjs  team.mjs  fotos.mjs  sonderposten.mjs
   einkauf.mjs        + einkauf/{auftragsfluss,bestellungen,lieferanten,produktdaten}.mjs
   kunden.mjs         + kunden/{gemeinsam,akte,rueckrufe,bestellungen,angebote,faelle,zeitleiste}.mjs
   organisation.mjs   + organisation/{gemeinsam,dialoge}.mjs
@@ -164,6 +164,8 @@ auditierbar (Kommentar `## Control Center: …`) und zusätzlich in `.router/con
 - Server bindet nur `127.0.0.1`; schreibende Endpunkte nur POST + JSON + lokaler Origin.
 - Übergänge werden serverseitig geprüft (Owner für In Arbeit, Grund für Blockiert, Bestätigung für Erledigt).
 - Keine Schreibzugriffe auf Shopify, Google oder andere Systeme – nur Labels, Assignee, Kommentare in GitHub.
+  Einzige Ausnahme: „Im Laden verkauft“ (Sonderposten) setzt den Bestand eines Stücks von 1 auf 0 und
+  schreibt `sonderposten.verkauft_*` – serverseitig geprüft, siehe `docs/control-center/ARCHITEKTUR.md` Abschnitt 13.
 - Das Repository ist öffentlich: keine Kundendaten, Umsätze oder Zugangsdaten in Issues.
 
 ## Tastatur

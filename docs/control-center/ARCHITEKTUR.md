@@ -279,6 +279,8 @@ Höchstens fünf Einträge; jeder Eintrag zeigt die Gründe.
 
 Externe Schreibaktionen zu Shopify/Google finden **nicht** im Control Center statt (weiterhin nur über
 den Workflow mit Gates). Das Control Center schreibt ausschließlich Labels, Assignees und Kommentare nach GitHub.
+**Einzige Ausnahme seit 2026-10-08:** „Im Laden verkauft“ in der Ansicht Sonderposten setzt den Bestand
+genau eines Sonderpostens von 1 auf 0 und schreibt dessen `sonderposten.verkauft_*`-Felder (Abschnitt 13).
 
 ## 6. Migrationsstrategie (keine destruktiven Schritte)
 
@@ -517,3 +519,39 @@ Cookie mit.
 **Ladezeit.** Statt einer Anfrage sind es rund 50 kleine; über Tailscale am Handy kostet die
 Importkette einige Umläufe mehr. Falls das spürbar wird: `<link rel="modulepreload">` in
 `index.html` – bewusst noch nicht eingebaut, weil die Liste eine neue gemeinsame Datei wäre.
+
+## 13. Sonderposten und „Im Laden verkauft“ (seit 2026-10-08)
+
+Reststücke und Einzelstücke sind Shopify-Produkte mit `productType` „Sonderposten“, genau einer Variante
+(SKU `SP-xxxx`) und geführtem Bestand 1 am einzigen Standort. Wird ein Stück im Laden verkauft, muss es
+online sofort aus dem Verkauf – sonst bestellt es jemand ein zweites Mal. Konzept: Branch
+`feature/weiterentwicklung-sonderposten`, `docs/weiterentwicklung/sonderposten.md`, Abschnitt 6 (Weg B).
+
+**Live statt Export.** Anders als die übrigen Quellen (Abschnitt 10) liest `GET /api/sonderposten/liste`
+bei jedem Aufruf direkt aus Shopify (`operations/lib/sonderposten.mjs`, `leseListe`) – wer „verkauft“
+klickt, muss den Bestand von jetzt sehen. Zugang wie überall: `operations/sync/zugang.mjs`
+(`erzeugeProxy`), einmal je Serverprozess aufgebaut. Ohne Zugang derselbe Hinweis wie bei fehlenden
+Exporten. Die Vorlage (SKU `SP-0000` oder Titel „VORLAGE …“) und archivierte Stücke erscheinen nie.
+
+**Buchen** (`POST /api/sonderposten/verkauft`, Rolle `mitarbeiter` oder `inhaber`, „lesen“ 403):
+
+1. Produkt neu lesen; die IDs aus dem Browser werden nur abgeglichen, nie geglaubt.
+2. Nur bei Bestand genau 1 weiter, sonst 409 („bereits verkauft“) – nichts geschrieben.
+3. `inventorySetQuantities` (`available` → 0, `reason: correction`,
+   `referenceDocumentUri: tp://laden-verkauf/<SKU>/<Zeit>`) mit `changeFromQuantity: 1` – zwei
+   gleichzeitige Klicks buchen nicht doppelt – und `@idempotent` (ab API 2026-04 Pflicht).
+4. Erst danach `metafieldsSet`: `verkauft_am` (jetzt), `verkauft_von` (Anzeigename aus der Sitzung),
+   `verkauft_kanal` = „Laden“. Scheitert schon Schritt 3, bleiben die Felder unberührt.
+5. Protokolleintrag `sonderposten-im-laden-verkauft` (`$TP_PRIVAT_DIR/protokoll.jsonl`).
+6. Gegenprobe: Produkt erneut lesen, Bestand und Felder im Ergebnis – `userErrors: []` ist kein Beleg.
+
+**Recht.** Dafür braucht der Zugang `write_inventory` (Bestand) und `write_products` (Felder),
+festgehalten als `SCHREIB_BEREICHE` in `sync/zugang.mjs` und in der Bereichszeile in
+`operations/README.md`. Fehlt `write_inventory`, antwortet der Server 403 mit „Bestand kann nicht geändert
+werden: dem Control Center fehlt das Shopify-Recht write_inventory …“ und schreibt nichts. Freischalten macht
+nur der Inhaber im Dev Dashboard.
+
+**Tests** sprechen nie echtes Shopify: `tests/_testumgebung.mjs` blendet `.env.local` und die
+`SHOPIFY_*`-Variablen aus, die Tests reichen eine Attrappe (`operations/tests/sonderposten-attrappe.mjs`)
+über `createApi({ shopifyZugang })` bzw. `ersetzeShopifyZugang()` in `serve-dashboard.mjs` hinein.
+

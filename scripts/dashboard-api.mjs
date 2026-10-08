@@ -52,7 +52,8 @@ import { protokollPfad, protokolliere } from '../operations/lib/protokoll.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { rollenware, paketware, stueck as stueckware, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
-import { ladeEnvLocal } from '../operations/sync/zugang.mjs';
+import { ladeEnvLocal, erzeugeProxy, KEIN_ZUGANG, mitHinweis } from '../operations/sync/zugang.mjs';
+import { leseListe as leseSonderposten, verkaufeImLaden, SonderpostenFehler } from '../operations/lib/sonderposten.mjs';
 import { ohneUeberholtenFehler } from '../operations/scripts/aktualisieren.mjs';
 
 const execFileP = promisify(execFile);
@@ -388,7 +389,7 @@ function stammKontakte(dir) {
   return index;
 }
 
-export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env } = {}) {
+export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env, shopifyZugang = null } = {}) {
   let userCache = null;
   let labelCache = { at: 0, names: [] };
   // Prozesszustand des Knopfs "Jetzt aktualisieren" - genau ein Lauf gleichzeitig,
@@ -400,6 +401,22 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
   function manuellerZugangVorhanden() {
     const zugang = { ...ladeEnvLocal(path.join(root, '.env.local')), ...env };
     return Boolean(zugang.SHOPIFY_ADMIN_TOKEN || (zugang.SHOPIFY_CLIENT_ID && zugang.SHOPIFY_CLIENT_SECRET));
+  }
+
+  /**
+   * Live-Zugang zur Shopify Admin API (nur Sonderposten). Einmal je Prozess
+   * aufgebaut: der Client-Credentials-Tausch kostet eine Anfrage, und
+   * erzeugeProxy erneuert den Token bei Ablauf selbst. Tests reichen eine
+   * Attrappe als `shopifyZugang` hinein - kein Test spricht echtes Shopify.
+   */
+  let shopifyZugangCache = null;
+  async function shopify() {
+    if (shopifyZugang) { const ersatz = await shopifyZugang(); if (ersatz) return ersatz; }
+    if (!shopifyZugangCache) {
+      shopifyZugangCache = erzeugeProxy({ env: { ...ladeEnvLocal(process.env.TP_ENV_LOCAL || path.join(root, '.env.local')), ...env } })
+        .catch((e) => { shopifyZugangCache = null; throw e; });
+    }
+    return shopifyZugangCache;
   }
 
   const auditPath = path.join(root, '.router', 'control-center-audit.jsonl');
@@ -1883,6 +1900,53 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         return { verfuegbar: false, quelle: file, hinweis: 'Noch keine Bestandsdaten exportiert.', befehl: 'npm run daten:aktualisieren -- --nur bestand' };
       }
       return { verfuegbar: true, quelle: file, ...daten };
+    },
+
+    /**
+     * Sonderposten live aus Shopify (operations/lib/sonderposten.mjs). Ohne
+     * Zugang derselbe Hinweis wie bei den anderen Quellen; ein Lesefehler wird
+     * als Stoerung mit Handlungshinweis gemeldet, nie als leere Liste.
+     */
+    async sonderpostenListe() {
+      let zugang;
+      try { zugang = await shopify(); } catch (e) {
+        return { verfuegbar: false, fehler: true, hinweis: mitHinweis(String(e?.message || e).split('\n')[0]) };
+      }
+      if (zugang?.art === 'sammeln') {
+        return { verfuegbar: false, hinweis: KEIN_ZUGANG, befehl: 'npm run operations:verbindung' };
+      }
+      try {
+        const daten = await leseSonderposten(zugang.proxy, { jetzt: now() });
+        if (!daten) return { verfuegbar: false, hinweis: KEIN_ZUGANG, befehl: 'npm run operations:verbindung' };
+        return { verfuegbar: true, ...daten };
+      } catch (e) {
+        const msg = String(e?.message || e).split('\n')[0].slice(0, 300);
+        console.error(`[sonderposten] ${msg}`);
+        return { verfuegbar: false, fehler: true, hinweis: `Shopify war nicht lesbar: ${mitHinweis(msg)}` };
+      }
+    },
+
+    /**
+     * "Im Laden verkauft": Bestand 1 -> 0, Verkaufsangaben, Protokoll,
+     * Gegenprobe. `benutzer` kommt aus der Sitzung, nie aus der Anfrage.
+     * Nur Produkt-ID und inventoryItemId werden aus dem Browser genommen -
+     * beides wird gegen den frisch gelesenen Stand geprueft.
+     */
+    async sonderpostenVerkauft(payload, benutzer) {
+      const { produktId, inventoryItemId } = payload || {};
+      if (!produktId) throw new ApiError(400, 'produktId ist Pflicht', { missing: ['produktId'] });
+      const zugang = await shopify();
+      if (zugang?.art === 'sammeln') throw new ApiError(503, 'Kein Zugang zu Shopify eingerichtet – hier kann nichts gebucht werden.', { grund: 'kein-zugang' });
+      const wer = benutzer?.name || 'Inhaber';
+      let ergebnis;
+      try {
+        ergebnis = await verkaufeImLaden(zugang.proxy, { produktId: String(produktId), inventoryItemId: inventoryItemId ? String(inventoryItemId) : null, verkauftVon: wer, jetzt: now() });
+      } catch (e) {
+        if (e instanceof SonderpostenFehler) throw new ApiError(e.status, e.message, e.extra);
+        throw e;
+      }
+      merke(benutzer, wer, 'sonderposten-im-laden-verkauft', `${ergebnis.sku || '–'} · ${String(produktId)}${ergebnis.ok ? '' : ` · Gegenprobe: Bestand ${ergebnis.bestandNachher}`}`);
+      return ergebnis;
     },
 
     /** Erfuellungen (Sendungen) und Rueckerstattungen je Bestellung. */

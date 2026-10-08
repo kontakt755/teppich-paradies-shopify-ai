@@ -475,13 +475,18 @@ Inhaber** - kein Agent, weder per CLI noch per Browser.
    Ins Feld **Bereiche (Scopes)** genau diese Zeile, dann freigeben:
 
    ```
-   read_orders,read_all_orders,write_orders,read_customers,read_draft_orders,read_inventory,read_locations,read_products,write_products,read_fulfillments,write_fulfillments,read_merchant_managed_fulfillment_orders,write_merchant_managed_fulfillment_orders,read_metaobjects,write_metaobjects,read_metaobject_definitions
+   read_orders,read_all_orders,write_orders,read_customers,read_draft_orders,read_inventory,write_inventory,read_locations,read_products,write_products,read_fulfillments,write_fulfillments,read_merchant_managed_fulfillment_orders,write_merchant_managed_fulfillment_orders,read_metaobjects,write_metaobjects,read_metaobject_definitions
    ```
 
    Fuer die Datenquellen des Control Centers genuegen die Lese-Bereiche
    (`LESE_BEREICHE` in `sync/zugang.mjs`): `read_orders,read_all_orders,read_customers,read_draft_orders,read_products,read_metaobjects,read_inventory,read_locations`.
-   Die Schreib-Bereiche braucht nur das Auftragsband (`ops.*`-Metafelder) und
-   `daten:anreichern -- --schreiben`. Ohne `read_all_orders` laesst Shopify
+   Die Schreib-Bereiche braucht nur das Auftragsband (`ops.*`-Metafelder),
+   `daten:anreichern -- --schreiben` und im Control Center die Ansicht
+   „Sonderposten“: `write_inventory` setzt beim Knopf „Im Laden verkauft“ den
+   Bestand auf 0, `write_products` schreibt `sonderposten.verkauft_*`
+   (`SCHREIB_BEREICHE` in `sync/zugang.mjs`). Fehlt `write_inventory`, bucht
+   der Knopf nichts und sagt das; `npm run operations:verbindung` listet
+   fehlende Schreibrechte getrennt auf. Ohne `read_all_orders` laesst Shopify
    Bestellungen, die aelter als 60 Tage sind, stillschweigend weg.
 2. App im Shop installieren bzw. die geaenderten Bereiche im Shop bestaetigen.
 3. Im Ordner, aus dem der Dienst laeuft (Betrieb: `~/tp-dashboard`), die Datei
