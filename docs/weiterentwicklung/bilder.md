@@ -7,7 +7,7 @@ Teil von `SHOPIFY_WEITERENTWICKLUNG.md` (Phase 7). Stand 2026-10-08, nur lesend 
 **Speicherort:** Alle Produktbilder liegen ausschließlich als Shopify-Medien am Produkt
 (Shopify-CDN). Eine lokale Originalablage gibt es nicht; Importe hängen Bilder per
 `productCreateMedia` direkt von der Lieferanten-URL an (Skill `produktimport`). Raumbilder
-kommen aus der Lieferanten-Mediendatenbank (Skill `joka-raumbilder-shopify`) bzw. werden in
+kommen aus der Lieferanten-Mediendatenbank (eigener Raumbild-Skill für Lieferant A) bzw. werden in
 einem eigenen Chat erzeugt (Gedächtnis „Bilder macht ein anderer Chat“).
 
 **Verbindung zu Shopify:** Produkt → Medien (Reihenfolge = Galerie), Variante → ein
