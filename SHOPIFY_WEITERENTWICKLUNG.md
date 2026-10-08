@@ -22,7 +22,7 @@ Branch `feature/weiterentwicklung-sonderposten` · Worktree `.claude/worktrees/w
 | 7 | Bildverwaltung und Bildrechte | **Inventur fertig** (8.530 Bilder erfasst, `npm run bildrechte:inventur`); Lizenzen je Lieferant + Bildarchiv-Ort beim Inhaber (E7); Dashboard-Liste offen |
 | 8 | Menüpunkt „Angebote“ | **gebaut**; Kollektion `angebote` (510) angelegt; täglicher Abgleich 0:00 als Dienst `net.teppich-paradies.angebote` (PR #995); Menüpunkte mit dem Livegang |
 | 9 | Gesamttest | **abgeschlossen** (08.10.): Shop-QA PASS, Menülogik Desktop/Handy/Drawer/Footer, Reste ein/aus, Angebote; Befund „5. Menüstelle“ behoben |
-| 10 | Veröffentlichung vorbereiten | offen |
+| 10 | Veröffentlichung vorbereiten | **vorbereitet** (08.10.): Code-Review #977 (7 Befunde, 6 behoben), Menükacheln, Livegang-Checkliste unten – **wartet auf Live-Freigabe** |
 
 ## 2. Abgeschlossene Aufgaben
 
@@ -226,9 +226,31 @@ ist immer `tp-ist-sonderposten`).
 | Tags `angebot` | Abgleich-Skript im Modus `--entfernen` |
 | Bewertungs-App | deinstallieren; Theme zeigt ohne `reviews.*` nichts mehr an |
 
+## 10a. Livegang – Checkliste (erst nach ausdrücklicher Freigabe)
+
+Wichtig: **Ein Merge nach `main` ist praktisch schon der Livegang**, weil andere Sitzungen
+`main` regelmäßig deployen. Deshalb wird #977 erst mit der Freigabe gemergt.
+
+1. `npm run pr:doctor` – #977 gegen `main` sauber; danach mergen.
+2. Deploy-Kette (Skill `deploy`): `npm run workflow:doctor` → `workflow:preview` → Prüfungen →
+   `workflow:live`. Vorher in der Werkbank/anderen Sitzungen ansagen (kein paralleler Deploy).
+3. Öffentlich ohne Vorschau prüfen: Startseite, eine Kollektion, eine Produktseite (Mengenfeld,
+   Preis, JSON-LD), Warenkorb, Suche, Handy-Drawer, Footer.
+4. **Erst danach** Menüpunkte ins Hauptmenü: `menuUpdate` auf `main-menu` mit dem **ganzen** Baum
+   inkl. aller MenuItem-IDs (Sicherung `docs/weiterentwicklung/sicherung/2026-10-08-hauptmenue.json`,
+   vorher frisch auslesen) + „Angebote“ (`/collections/angebote`) und „Reste & Sonderposten“
+   (`/collections/reste-sonderposten`). Gegenprobe: identische ID-Menge plus zwei neue IDs
+   (`docs/lessons/tote-menuelinks.md`). Vorher nicht – das alte Live-Theme kennt die
+   Ausblend-Logik nicht und würde „Reste & Sonderposten“ ohne Stücke zeigen.
+5. `npm run menu:guard` – keine toten Links; „Reste“ erscheint erst mit dem ersten echten Stück.
+6. `live-theme.json` nachtragen (macht `workflow:live`), Werkbank-Einträge abschließen.
+7. Aufräumen: Testmenü `test-weiterentwicklung` und Entwicklungstheme (`entwicklung` in
+   `live-theme.json` → `retired`) nach Projektende; Teststück bleibt als Entwurf für Schulungen.
+
+**Nicht Teil des Livegangs, eigene Freigaben:** PR #986 (Control Center, braucht `write_inventory`),
+echte Sonderposten (Erfassung w-014, Preise w-015).
+
 ## 11. Nächster Arbeitsschritt
 
-Phase 5: Control Center „Sonderposten“ – Liste aller Stücke (SKU, Maße, Preis, Bestand,
-Lagerort) und Button „Im Laden verkauft“ (`inventorySetQuantities` mit `compareQuantity: 1`,
-`verkauft_*`-Metafelder, Protokolleintrag, Gegenprobe). Test gegen das Testprodukt
-(Bestand vorher wieder auf 1 setzen). Danach Phase 6 (Judge.me).
+Live-Freigabe durch den Benutzer abwarten, dann Checkliste 10a. Parallel offen bei Ahmet
+(Werkbank): w-015 (wer bucht im Laden, Preisfreigabe), w-017 (`write_inventory`), w-028 (Bilder).
