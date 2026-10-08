@@ -26,6 +26,13 @@
     "verifiedBy": "Shopify Admin API, role UNPUBLISHED, angelegt per themeDuplicate des Live-Themes am 2026-09-22",
     "note": "Einziges Ziel fuer Zwischenstaende und Ausprobieren (nur --only-Pushes). Niemals als --theme-id fuer workflow:preview/live verwenden, niemals publishen. Das Preview-Ziel ist ausschliesslich preview.themeId - wer dorthin Zwischenstaende pusht, blockiert den Livegang (PREVIEW_DRIFT/PREVIEW_DIFF, dreimal am 2026-09-21/22)."
   },
+  "entwicklung": {
+    "themeId": "206267056462",
+    "name": "Entwicklung Weiterentwicklung 2026-10 - nie pub...",
+    "verifiedAt": "2026-10-08T10:00:00Z",
+    "verifiedBy": "Shopify Admin API themeDuplicate des Live-Themes 204438208846 am 2026-10-08, role UNPUBLISHED",
+    "note": "Testumgebung fuer SHOPIFY_WEITERENTWICKLUNG.md (Sonderposten, Bewertungen, Angebote). Nur --only-Pushes vom Branch feature/weiterentwicklung-sonderposten. Nie Preview-Ziel, nie publishen. Nach Abschluss des Projekts unter retired eintragen und loeschen."
+  },
   "retired": [
     {
       "themeId": "204438208846",

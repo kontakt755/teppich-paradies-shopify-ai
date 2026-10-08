@@ -1,0 +1,22 @@
+{%- doc -%}
+  Flaeche eines Sonderpostens in m2 als Zahl (ungerundet) oder nichts.
+
+  Vorrang hat das gepflegte Metafeld sonderposten.flaeche_m2 (z. B. bei
+  unregelmaessigen Zuschnitten). Fehlt es, wird Breite x Laenge gerechnet.
+  Fehlt auch das, kommt nichts - geschaetzt wird nie.
+
+  @param {object} product - das Produkt
+{%- enddoc -%}
+{%- liquid
+  assign tsf_f = product.metafields.sonderposten.flaeche_m2.value | times: 1.0
+  if tsf_f <= 0
+    assign tsf_b = product.metafields.sonderposten.breite_m.value | times: 1.0
+    assign tsf_l = product.metafields.sonderposten.laenge_m.value | times: 1.0
+    if tsf_b > 0 and tsf_l > 0
+      assign tsf_f = tsf_b | times: tsf_l
+    endif
+  endif
+  if tsf_f > 0
+    echo tsf_f
+  endif
+-%}

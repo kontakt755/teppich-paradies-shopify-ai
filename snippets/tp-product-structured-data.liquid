@@ -123,6 +123,18 @@
 {%- if tp_sd_skip -%}
   {%- comment -%} Service-/Hilfsprodukt: bewusst kein JSON-LD {%- endcomment -%}
 {%- elsif tp_sd_per_001 or tp_sd_is_roll or tp_sd_is_paket or tp_sd_is_wunschmass_legacy == false -%}
+  {%- comment -%}
+    Zustand: neu, ausser bei Sonderposten mit gepflegtem Zustand ungleich
+    "Neuware" (Ausstellungsstueck, B-Ware) - dann gebraucht. Google kennt fuer
+    Merchant Listings nur neu, gebraucht, generalueberholt.
+  {%- endcomment -%}
+  {%- assign tp_sd_zustand = 'https://schema.org/NewCondition' -%}
+  {%- if product_resource.type == 'Sonderposten' -%}
+    {%- assign tp_sd_zustand_wert = product_resource.metafields.sonderposten.zustand.value | default: 'Neuware' -%}
+    {%- unless tp_sd_zustand_wert contains 'Neuware' -%}
+      {%- assign tp_sd_zustand = 'https://schema.org/UsedCondition' -%}
+    {%- endunless -%}
+  {%- endif -%}
   {%- capture tp_sd_offers -%}
     {%- assign tp_sd_first = true -%}
     {%- for tp_sd_variant in product_resource.variants -%}
@@ -233,7 +245,7 @@
               }
             },
             {%- endif -%}
-            "itemCondition": "https://schema.org/NewCondition",
+            "itemCondition": {{ tp_sd_zustand | json }},
             "availability": {% if tp_sd_variant.available %}"https://schema.org/InStock"{% else %}"https://schema.org/OutOfStock"{% endif %},
             "seller": {
               "@type": "Organization",

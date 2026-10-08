@@ -1,0 +1,20 @@
+{%- doc -%}
+  Gibt eine Dezimalzahl mit genau zwei Nachkommastellen und Komma aus:
+  4 -> "4,00", 2.35 -> "2,35", 9.4 -> "9,40". Keine Tausenderpunkte
+  (gedacht fuer Masse und Flaechen, nicht fuer Geldbetraege - dafuer gibt
+  es den money-Filter).
+
+  Aufruf ueber capture, denn render liefert Text:
+    {% capture breite %}{% render 'tp-zahl-de', zahl: 4 %}{% endcapture %}
+
+  @param {number} zahl - die Zahl
+{%- enddoc -%}
+{%- liquid
+  assign tzd_cent = zahl | times: 100.0 | round | plus: 0
+  assign tzd_ganz = tzd_cent | divided_by: 100
+  assign tzd_rest = tzd_cent | modulo: 100
+  if tzd_rest < 10
+    assign tzd_rest = '0' | append: tzd_rest
+  endif
+  echo tzd_ganz | append: ',' | append: tzd_rest
+-%}

@@ -396,6 +396,15 @@
                     {%- endcomment -%}
                     {%- assign tp_muster_max = item.quantity -%}
                   {%- endif -%}
+                  {%- capture tp_cart_sp -%}{%- render 'tp-ist-sonderposten', product: item.product -%}{%- endcapture -%}
+                  {%- if tp_cart_sp contains 'ja' -%}
+                    {%- comment -%}
+                      Sonderposten sind Einzelstuecke: hoechstens 1. Der Bestand
+                      (1, nicht ueberverkaufen) sperrt mehr ohnehin serverseitig -
+                      das Feld soll gar nicht erst mehr anbieten.
+                    {%- endcomment -%}
+                    {%- assign tp_muster_max = 1 -%}
+                  {%- endif -%}
                   <div class="cart-items__quantity-controls">
                     {% render 'volume-pricing-info',
                       variant: item.variant,

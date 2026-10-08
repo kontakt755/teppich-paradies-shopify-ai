@@ -1,0 +1,105 @@
+{% doc %}
+  Sonderposten auf der Produktkarte: "Reststück · 4,00 × 2,35 m (9,40 m²)"
+  und der rechnerische m2-Preis. Rendert nur bei Sonderposten
+  (snippets/tp-ist-sonderposten) und darf deshalb in jeder Kollektionsvorlage
+  stehen. Datenquelle wie blocks/tp-sonderposten-daten.liquid.
+{% enddoc %}
+{%- liquid
+  assign tp_csp_p = closest.product
+  capture tp_csp_ist
+    render 'tp-ist-sonderposten', product: tp_csp_p
+  endcapture
+  assign tp_csp_ist = tp_csp_ist | strip
+-%}
+{%- if tp_csp_ist == 'ja' -%}
+  {%- liquid
+    assign tp_csp_mf = tp_csp_p.metafields.sonderposten
+    assign tp_csp_art = tp_csp_mf.art.value | default: 'Sonderposten'
+    assign tp_csp_b = tp_csp_mf.breite_m.value | times: 1.0
+    assign tp_csp_l = tp_csp_mf.laenge_m.value | times: 1.0
+    capture tp_csp_f
+      render 'tp-sonderposten-flaeche', product: tp_csp_p
+    endcapture
+    assign tp_csp_f = tp_csp_f | strip | times: 1.0
+    assign tp_csp_masse = ''
+    if tp_csp_b > 0 and tp_csp_l > 0
+      capture tp_csp_b_txt
+        render 'tp-zahl-de', zahl: tp_csp_b
+      endcapture
+      capture tp_csp_l_txt
+        render 'tp-zahl-de', zahl: tp_csp_l
+      endcapture
+      assign tp_csp_masse = tp_csp_b_txt | strip | append: ' × ' | append: tp_csp_l_txt | strip | append: ' m'
+    endif
+    if tp_csp_f > 0
+      capture tp_csp_f_txt
+        render 'tp-zahl-de', zahl: tp_csp_f
+      endcapture
+      assign tp_csp_v = tp_csp_p.selected_or_first_available_variant
+      assign tp_csp_qm = tp_csp_v.price | divided_by: tp_csp_f | round
+    endif
+  -%}
+  <div class="tp-card-sp" {{ block.shopify_attributes }}>
+    <p class="tp-card-sp__zeile">
+      <span class="tp-card-sp__art">{{ tp_csp_art }}</span>
+      {%- if tp_csp_masse != blank %}
+        <span class="tp-card-sp__masse">{{ tp_csp_masse }}{% if tp_csp_f > 0 %} ({{ tp_csp_f_txt | strip }} m²){% endif %}</span>
+      {%- elsif tp_csp_f > 0 %}
+        <span class="tp-card-sp__masse">{{ tp_csp_f_txt | strip }} m²</span>
+      {%- endif -%}
+    </p>
+    {%- if tp_csp_f > 0 -%}
+      <p class="tp-card-sp__grundpreis">Preis für das ganze Stück · entspricht {{ tp_csp_qm | money }}/m²</p>
+    {%- endif -%}
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-card-sp {
+    display: grid;
+    gap: 2px;
+    font-size: 0.8rem;
+    line-height: 1.35;
+  }
+
+  .tp-card-sp p {
+    margin: 0;
+  }
+
+  .tp-card-sp__zeile {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
+  }
+
+  .tp-card-sp__art {
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: #1d1a17;
+    color: #fff;
+    font-weight: 700;
+  }
+
+  .tp-card-sp__masse {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tp-card-sp__grundpreis {
+    color: rgb(0 0 0 / 0.62);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Karte: Sonderposten",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Karte: Sonderposten"
+    }
+  ]
+}
+{% endschema %}
