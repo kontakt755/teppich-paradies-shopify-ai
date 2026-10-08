@@ -191,4 +191,20 @@
       align-items: center;
     }
   }
+
+  /* Die drei Vinyl-Einstiegslinks sind auch am Desktop nur 26 px hoch.
+     Die bereits mobile Trefferflaeche gilt dort fuer dieselben Ziele. */
+  {% if collection.handle == 'vinylboden-1' %}
+  @media screen and (min-width: 750px) {
+    body .section-carousel .card__inner > a.link:is(
+      [href='/collections/vinylboden-klickvinyl'],
+      [href='/collections/vinylboden-klebevinyl'],
+      [href='/collections/vinylboden-vinyl-von-der-rolle']
+    ) {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+    }
+  }
+  {% endif %}
 </style>
