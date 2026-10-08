@@ -27,6 +27,9 @@ Auswahl, Prozent, Start und Ende; am Ende geht der Preis auf den regulaeren Prei
    Liegt der Export als zwei JSON-Arrays vor (Varianten nur mit `product.id`, Produkte
    getrennt, z. B. seitenweise per `shopify store execute`):
    `npm run -s angebot -- ende varianten.json <ordner> --produkte produkte.json --stichtag <ende+1>`.
+   Laufen zwei Aktionen derselben Klasse mit verschiedenen Enddaten, mit
+   `--ende-am <aktion.ende>` auf genau eine begrenzen - sonst nimmt der spaetere Stichtag
+   die fruehere Aktion mit, falls sie noch nicht zurueckgestellt ist.
 
 ## Regeln im Skript
 
@@ -53,8 +56,10 @@ Auswahl, Prozent, Start und Ende; am Ende geht der Preis auf den regulaeren Prei
 
 ## Stand
 
-- Dauerrabatt vom 24.09. (482 Produkte, `preisanker`): `aktion.ende = 2026-11-01`,
-  Rueckstellung am 02.11.2026.
+- Dauerrabatt vom 24.09. (`preisanker`): `aktion.ende = 2026-11-01`, Rueckstellung am
+  02.11.2026 mit `--stichtag 2026-11-02 --klasse preisanker --ende-am 2026-11-01`.
+  Probelauf gegen den Export vom 08.10.: 2.182 Varianten in 503 Produkten (77 Raummass
+  in 12 Produkten); ohne `--ende-am` kaemen die 680 Welle-1-Varianten dazu.
 - Welle 1 Teppichboden: Rueckstellung 19.10. (#413). Probelauf am 08.10. gegen den
   Export vom 08.10. (`--stichtag 2026-10-19 --klasse preisanker`): 680 Varianten in
   18 Produkten (451 Meterware, 229 Raummass), Zielpreise identisch mit der

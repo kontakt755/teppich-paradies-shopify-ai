@@ -145,3 +145,17 @@ test('--produkte geht vor eingebettetem Teilprodukt mit leeren Metafeldern', () 
   const [v] = ladeExport(varianten, produkte);
   assert.equal(v.product.ende, '2026-10-18');
 });
+
+test('--ende-am trennt zwei Aktionen derselben Klasse (Welle 1 vom Dauerrabatt)', () => {
+  const welle1 = P({ id: 'w1', ende: '2026-10-18', klasse: 'preisanker' });
+  const dauer = P({ id: 'd1', ende: '2026-11-01', klasse: 'preisanker' });
+  const varianten = [
+    V({ id: 'a', price: '17.00', compareAtPrice: '20.00', product: welle1 }),
+    V({ id: 'b', price: '17.00', compareAtPrice: '20.00', product: dauer }),
+  ];
+  assert.equal(ende(varianten, { stichtag: '2026-11-02', klasse: 'preisanker' }).csv.length, 2, 'ohne Filter beide');
+  const r = ende(varianten, { stichtag: '2026-11-02', klasse: 'preisanker', endeAm: '2026-11-01' });
+  assert.deepEqual([...r.zurueck.keys()], ['d1']);
+  assert.throws(() => ende(varianten, { stichtag: '2026-11-02', endeAm: '2026-11-02' }), /vor dem Stichtag/);
+  assert.throws(() => ende(varianten, { stichtag: '2026-11-02', endeAm: '1.11.' }), /JJJJ-MM-TT/);
+});
