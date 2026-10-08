@@ -11,6 +11,8 @@
   lokalen Florhoehenfilter, damit auch andere Bereiche erreichbar sind.
   Ein aktiver Gesamtstaerke-Wert bleibt zum Abwaehlen sichtbar. Bei Florhoehe
   auf Unterkategorien uebernimmt die neue Navigation diese Aufgabe.
+  Auf Bodenleisten entfaellt Gesamtstaerke ebenfalls: fast alle Leisten liegen
+  in "Ueber 12 mm", gewaehlt wird dort nach der Hoehe (Filter Leistenhoehe).
 
   @param {object} filter - der Filter
 {%- enddoc -%}
@@ -21,6 +23,11 @@
     if filter.param_name == 'filter.p.m.custom.arten' or filter.param_name == 'filter.p.m.custom.konstruktion'
       assign tp_fs_ausblenden = true
     endif
+    if filter.param_name == 'filter.p.m.custom.gesamtstarke'
+      assign tp_fs_ausblenden = true
+    endif
+  endif
+  if request.page_type == 'collection' and tp_fs_bereich == 'bodenleisten' and filter.active_values.size == 0
     if filter.param_name == 'filter.p.m.custom.gesamtstarke'
       assign tp_fs_ausblenden = true
     endif

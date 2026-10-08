@@ -7,6 +7,11 @@
   ausgegeben, nichts wird erfunden. Die Farbenanzahl kommt aus der Option
   "Farbe" bzw. "Dekor".
 
+  Ohne hoehe-Tag kommt die Hoehe aus dem Metafeld custom.leistenhoehe
+  (z. B. "58 mm", seit 2026-10-08 bei allen Leisten mit belegtem Mass). Dann
+  bleibt hoehe_key leer: Navigation und Vorschau gruppieren weiter nur nach
+  den Tags, die Detailtabelle und die Karte zeigen die Hoehe trotzdem.
+
   @param {object} product - Produkt
 {% enddoc %}
 {%- liquid
@@ -36,6 +41,10 @@
       assign tp_lm_hoehe = tp_lm_hoehe_key | replace: 'mm-xl', ' mm XL' | replace: 'mm', ' mm'
     endif
   endfor
+
+  if tp_lm_hoehe == blank
+    assign tp_lm_hoehe = product.metafields.custom.leistenhoehe.value | strip
+  endif
 
   assign tp_lm_farben = 0
   for option in product.options_with_values
