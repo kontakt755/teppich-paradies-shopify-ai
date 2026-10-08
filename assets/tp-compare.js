@@ -76,7 +76,15 @@
     window.clearTimeout(collapseTimer);
     collapseTimer = window.setTimeout(function () {
       var bar = document.querySelector('[data-tp-compare-bar]');
-      if (bar && !bar.hidden && readItems().length > 0) collapseBar(false);
+      if (!bar || bar.hidden || readItems().length === 0) return;
+      var dialog = document.querySelector('[data-tp-compare-dialog]');
+      // Die Leiste darf weder einen fokussierten Knopf noch den Ausloeser
+      // eines offenen Dialogs verbergen. Danach erneut auf Inaktivitaet warten.
+      if (bar.contains(document.activeElement) || (dialog && dialog.open)) {
+        scheduleCollapse();
+        return;
+      }
+      collapseBar(false);
     }, COLLAPSE_DELAY);
   }
 
@@ -231,7 +239,11 @@
 
     var expandBtn = event.target.closest('[data-tp-compare-expand]');
     if (expandBtn) {
-      expandBar(true);
+      // Der kompakte Knopf wird beim Ausklappen verborgen. Den Fokus an die
+      // erste sichtbare Aktion uebergeben und die Leiste offen lassen.
+      expandBar(false);
+      var openCompareButton = expandBtn.closest('[data-tp-compare-bar]').querySelector('[data-tp-compare-open]');
+      if (openCompareButton) openCompareButton.focus();
       return;
     }
 
