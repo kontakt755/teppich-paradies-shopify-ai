@@ -158,6 +158,18 @@ export function ende(varianten, opt) {
 
 const jsonl = (map) => [...map].map(([productId, variants]) => JSON.stringify({ productId, variants })).join('\n') + '\n';
 
+// Preisskript: eine falsch geschriebene oder wertlose Option darf nie still entfallen
+// (sonst rechnet ende ohne --ende-am und nimmt eine fremde Aktion mit).
+const OPTIONEN = { plan: ['prozent', 'start', 'ende', 'typ', 'handles', 'produkte'], ende: ['stichtag', 'klasse', 'ende-am', 'produkte'] };
+export function optionsFehler(befehl, o) {
+  const erlaubt = OPTIONEN[befehl] || [];
+  for (const [k, v] of Object.entries(o)) {
+    if (!erlaubt.includes(k)) return `Unbekannte Option --${k} fuer ${befehl} (erlaubt: ${erlaubt.map((x) => '--' + x).join(' ')})`;
+    if (v == null || v === '' || String(v).startsWith('--')) return `Option --${k} ohne Wert`;
+  }
+  return null;
+}
+
 function argumente(liste) {
   const o = {}; const rest = [];
   for (let i = 0; i < liste.length; i++) {
@@ -170,6 +182,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const [befehl, ...weiter] = process.argv.slice(2);
   const { o, rest: [quelle, ziel] } = argumente(weiter);
   if (befehl === 'abfrage') { console.log(ABFRAGE); process.exit(0); }
+  const fehler = optionsFehler(befehl, o);
+  if (fehler) { console.error(fehler); process.exit(2); }
   if (!['plan', 'ende'].includes(befehl) || !quelle || !ziel) {
     console.error('Aufruf: angebotswelle.mjs abfrage | plan <export.jsonl> <ziel> --prozent N --start D --ende D (--typ T | --handles a,b) | ende <export.jsonl> <ziel> --stichtag D [--klasse K] [--ende-am D] [--produkte produkte.json]');
     process.exit(2);
