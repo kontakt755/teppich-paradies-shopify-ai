@@ -53,13 +53,19 @@
   }
 
   // Preis eines Teppichs fuer w x l: guenstigste Farbe, die das Mass hergibt.
-  function preisFuer(M, t, kettel, w, l) {
+  function preisFuer(M, t, kettel, w, l, pauschale) {
     var kurz = Math.min(w, l);
     var lang = Math.max(w, l);
     var flaeche = M.flaecheM2(w, l);
     var mitKettel = t.art === 'ketteln';
     if (mitKettel && !(kettel > 0)) return { passt: false, grund: 'preis' };
-    var kettelCent = mitKettel ? M.kanteEinheiten(M.umfangM('rechteck', w, l)) * kettel : 0;
+    // Art "fertig": Pauschale je Teppich (Pflicht) und Gewichtsgrenze fuer den Paketversand -
+    // dieselben Regeln wie im Konfigurator (blocks/tp-einfass-konfigurator.liquid).
+    var istFertig = t.art === 'fertig';
+    if (istFertig && !(pauschale > 0)) return { passt: false, grund: 'preis' };
+    if (t.max_kg > 0 && t.kg_qm > 0 && flaeche * t.kg_qm > t.max_kg + 1e-9) return { passt: false, grund: 'mass' };
+    var kettelCent = (mitKettel ? M.kanteEinheiten(M.umfangM('rechteck', w, l)) * kettel : 0) +
+      (istFertig ? pauschale : 0);
     var rest = Math.max(0, (t.mindest || 0) - kettelCent);
     var besteW = 0;
     var best = null;
@@ -162,7 +168,7 @@
         }
         text.appendChild(preis);
         text.appendChild(el('span', 'tp-tep-rechner__grund',
-          w + ' × ' + l + ' cm' + (t.art === 'ketteln' ? ', inkl. Kettelung' : ', inkl. Einfassung') +
+          w + ' × ' + l + ' cm' + (t.art === 'ketteln' ? ', inkl. Kettelung' : t.art === 'fertig' ? ', inkl. Einfassung und Pauschale' : ', inkl. Einfassung') +
           (r.mindest ? ' · Mindestpreis' : '')));
       } else if (r.grund === 'mass') {
         text.appendChild(el('span', 'tp-tep-rechner__grund',
@@ -179,7 +185,7 @@
       var passend = [];
       var andere = [];
       teppiche.forEach(function (t) {
-        var r = preisFuer(M, t, daten.kettel, w, l);
+        var r = preisFuer(M, t, daten.kettel, w, l, daten.pauschale);
         (r.passt ? passend : andere).push({ t: t, r: r });
       });
       passend.sort(function (a, b) { return a.r.summe - b.r.summe; });
