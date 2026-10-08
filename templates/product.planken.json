@@ -331,6 +331,10 @@
                 "label": "Kostenloses Muster anfragen",
                 "hinweis": "Bis zu 3 Farben, versandkostenfrei"
               }
+            },
+            "tp_zubehoer_empfehlung": {
+              "type": "tp-zubehoer-empfehlung",
+              "settings": {}
             }
           },
           "block_order": [
@@ -348,6 +352,7 @@
             "tp_compare_toggle_night3",
             "options_price_calculator_product_calculator_z3CEfy",
             "tp_verlegen_lassen",
+            "tp_zubehoer_empfehlung",
             "buy_buttons_eYQEYi",
             "text_aEtTtq"
           ]

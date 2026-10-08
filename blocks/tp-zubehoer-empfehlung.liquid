@@ -1,0 +1,402 @@
+{% doc %}
+  Passendes Zubehoer auf Bodenseiten: Unterlage, Kleber/Fixierung, Leisten.
+
+  Regelwerk, Belege und bewusste Luecken: docs/zubehoer-empfehlungen.md.
+  Wer hier eine Zeile aendert, aendert dort die Tabelle mit (der Test
+  qa/tests/zubehoer-empfehlung.test.mjs gleicht beides ab).
+
+  Grundsatz: Eine Empfehlung erscheint nur, wenn BEIDES belegt ist -
+  1. Bodenart und Verlegeart dieses Bodens aus den Produktdaten
+     (product.type, custom.belagsart, Tag "art: teppichfliese"), und
+  2. die Eignung des Zubehoers fuer genau diese Bodenart laut Hersteller-
+     bzw. Produktangabe des Zubehoers.
+  Trifft keine Regel zu, rendert der Block nichts - kein Fallback, keine
+  pauschale Liste.
+
+  Leisten: Es gibt keine belegte Zuordnung Boden -> dekorgleiche Leiste.
+  Bei Hartboeden und elastischen Belaegen steht deshalb nur ein neutraler
+  Verweis auf das Leisten- und Profilsortiment, ohne "passt zu"-Aussage.
+
+  Das Zubehoer wird bewusst nicht direkt in den Warenkorb gelegt: Unterlagen
+  und Kleber werden je m2, je lfm oder je Gebinde verkauft, und die richtige
+  Menge rechnet erst die Mengenhilfe auf der Zubehoerseite
+  (blocks/tp-zubehoer-menge). Der Link fuehrt dorthin; Warenkorb und
+  Paketrechner dieses Bodens bleiben unberuehrt.
+
+  Die Zubehoerprodukte kommen aus ihren Smart-Collections
+  (domains/shopify/zubehoer-struktur.md). Damit erscheint nur, was
+  veroeffentlicht ist; ein Entwurf oder ein geloeschtes Produkt faellt still
+  weg. Ausverkauftes wird ebenfalls nicht gezeigt.
+{% enddoc %}
+
+{%- liquid
+  assign tp_ze_typ = product.type | strip
+  assign tp_ze_belag = product.metafields.custom.belagsart.value | append: ''
+  assign tp_ze_text = product.description | append: ''
+  assign tp_ze_art = ''
+  assign tp_ze_leisten = false
+
+  # Belegte Daemmung am Boden: Kennwert oder Nennung in der Beschreibung.
+  assign tp_ze_gedaemmt = false
+  if product.metafields.custom.trittschallverbesserung.value != blank
+    assign tp_ze_gedaemmt = true
+  endif
+  if tp_ze_text contains 'IXPE' or tp_ze_text contains 'Trittschalldämmung' or tp_ze_text contains 'Dämmschicht' or tp_ze_text contains 'Dämmunterlage' or tp_ze_text contains 'Korkrücken'
+    assign tp_ze_gedaemmt = true
+  endif
+
+  case tp_ze_typ
+    when 'Laminat'
+      assign tp_ze_leisten = true
+      if tp_ze_belag contains 'Klicksystem'
+        # Laminat mit Klicksystem wird schwimmend verlegt (Beschreibung aller
+        # Laminate). Eine bereits vorhandene Daemmung schliesst die Unterlage aus.
+        unless tp_ze_gedaemmt
+          assign tp_ze_art = 'laminat-klick'
+        endunless
+      endif
+    when 'Parkett'
+      assign tp_ze_leisten = true
+      if tp_ze_belag contains 'Fertigparkett 2-Schicht' and tp_ze_belag contains 'zum Verkleben'
+        assign tp_ze_art = 'parkett-2schicht-kleben'
+      elsif tp_ze_belag contains 'massiv' and tp_ze_belag contains 'zum Verkleben'
+        assign tp_ze_art = 'parkett-massiv-kleben'
+      endif
+      # 3-Schicht-Landhausdiele/Schiffsboden: Verlegeart nicht belegt -> nur Leisten.
+    when 'Klickvinyl'
+      assign tp_ze_leisten = true
+      # Klick-Vinyl bekommt eine Unterlage nur, wenn belegt ist, dass der Boden
+      # KEINE integrierte Daemmung hat. Das Feld ist vorbereitet, aber noch nicht
+      # angelegt (docs/zubehoer-empfehlungen.md, "Vorgeschlagene Daten").
+      assign tp_ze_di = product.metafields.custom.daemmung_integriert.value | append: ''
+      if tp_ze_belag contains 'Klick-Vinyl' and tp_ze_di == 'false'
+        unless tp_ze_gedaemmt
+          assign tp_ze_art = 'klickvinyl-ohne-daemmung'
+        endunless
+      endif
+    when 'Klebevinyl'
+      assign tp_ze_leisten = true
+      if tp_ze_belag contains 'zum Vollverkleben'
+        assign tp_ze_art = 'klebevinyl'
+      endif
+    when 'Kork'
+      assign tp_ze_leisten = true
+    when 'Vinyl von der Rolle'
+      assign tp_ze_leisten = true
+      if product.tags contains 'material: pvc'
+        assign tp_ze_art = 'vinyl-rolle'
+      endif
+    when 'Linoleumboden'
+      assign tp_ze_leisten = true
+    when 'Teppichboden'
+      if product.tags contains 'art: teppichfliese'
+        assign tp_ze_art = 'teppichfliese'
+      else
+        # Die Komfortunterlage ist laut Hersteller fuer dimensionsstabile
+        # Teppichboeden. Als belegt gilt hier nur ein Textil- oder Vliesruecken
+        # ohne eigenen Trittschallwert; Schaum-, Latex-, Bitumen- und
+        # Komfortruecken bekommen keine Unterlage.
+        assign tp_ze_ruecken = product.metafields.custom.ruckenausstattung.value | append: ''
+        assign tp_ze_art = 'teppichboden-rolle'
+        unless tp_ze_gedaemmt
+          if tp_ze_ruecken contains 'Textil' or tp_ze_ruecken contains 'Vlies'
+            assign tp_ze_art = 'teppichboden-rolle-textil'
+          endif
+        endunless
+      endif
+    when 'Teppich nach Maß', 'Wohnteppich', 'Teppich'
+      assign tp_ze_art = 'teppich-lose'
+  endcase
+
+  # Regeln: Eintraege mit ";" getrennt, Felder mit "|": gruppe|handle|hinweis.
+  # Hinweise geben die belegte Eignung bzw. Bedingung wieder, keine Werbung.
+  assign tp_ze_regeln = ''
+  case tp_ze_art
+    when 'laminat-klick'
+      assign tp_ze_regeln = 'unterlage|duenne-trittschallunterlage-1-8-mm-mit-alu-kaschierung|Für die schwimmende Verlegung unter Laminat und Parkett.;unterlage|trittschalldaemmung-xps-fuer-laminat-und-parkett|Für Laminat, Parkett und Klick-Vinyl.;unterlage|dampfbremse-pe-folie-0-2-mm|Nur auf Estrich oder Beton – wird unter die Trittschalldämmung gelegt.'
+    when 'parkett-2schicht-kleben'
+      assign tp_ze_regeln = 'kleber|uzin-mk-250-stp-parkettklebstoff|Für Mehrschicht- und Fertigparkett.;kleber|uzin-mk-200-stp-parkettklebstoff|Für Mehrschicht- und Fertigparkett mit Nut und Feder.;unterlage|mineralische-trittschallunterlage-3-mm-platten|Wird vollflächig unter Mehrschichtparkett verklebt.'
+    when 'parkett-massiv-kleben'
+      assign tp_ze_regeln = 'kleber|uzin-mk-250-stp-parkettklebstoff|Für Stab-, Mosaik-, Hochkant- und Massivparkett.;kleber|uzin-mk-92-s-2k-pur-parkettklebstoff|Für alle Holz- und Parkettarten, zweikomponentig.'
+    when 'klickvinyl-ohne-daemmung'
+      assign tp_ze_regeln = 'unterlage|unterlage-fuer-designboeden-1-5-mm-mit-antirutsch-oberflaeche|Für Designböden und Klick-Vinyl.;unterlage|trittschalldaemmung-xps-fuer-laminat-und-parkett|Für Laminat, Parkett und Klick-Vinyl.'
+    when 'klebevinyl'
+      assign tp_ze_regeln = 'kleber|haftfixierung-fuer-designboeden|Für maßstabile PVC-Designbeläge, später wieder aufnehmbar.;kleber|universal-verlegeband-70-mm|Für Ränder an Wänden und Türen sowie Trittstufen.'
+    when 'vinyl-rolle'
+      assign tp_ze_regeln = 'kleber|nass-und-haftklebstoff-fuer-elastische-belaege|Für PVC- und CV-Beläge, auch in stark belasteten Bereichen.;kleber|trockenklebstoff-fuer-bahnenware-rolle-75-cm|Ohne flüssigen Klebstoff – auf bestehendem Kunststein oder Terrazzo.;kleber|universal-verlegeband-70-mm|Für Ränder an Wänden und Türen sowie Trittstufen.'
+    when 'teppichboden-rolle-textil'
+      assign tp_ze_regeln = 'unterlage|komfortunterlage-fuer-teppichboden|Für dimensionsstabile Teppichböden, lose oder verklebt.;kleber|dispersionsfixierung-wasserabloesbar|Fixierung für Teppichboden, später mit Wasser lösbar.;kleber|trockenklebstoff-fuer-bahnenware-rolle-75-cm|Ohne flüssigen Klebstoff – auf bestehendem Parkett, Laminat oder Kunststein.'
+    when 'teppichboden-rolle'
+      assign tp_ze_regeln = 'kleber|dispersionsfixierung-wasserabloesbar|Fixierung für Teppichboden, später mit Wasser lösbar.;kleber|trockenklebstoff-fuer-bahnenware-rolle-75-cm|Ohne flüssigen Klebstoff – auf bestehendem Parkett, Laminat oder Kunststein.'
+    when 'teppichfliese'
+      assign tp_ze_regeln = 'kleber|dispersionsfixierung-wasserabloesbar|Fixierung für Teppichboden, später mit Wasser lösbar.'
+    when 'teppich-lose'
+      assign tp_ze_regeln = 'unterlage|antirutsch-unterlage-fuer-teppiche-rollenware|Hält Teppiche und Läufer auf glatten Böden.;unterlage|teppichunterlage-elastisch-rollenware|Für lose aufgelegte Teppiche auf glatten Böden, mehr Gehkomfort.'
+  endcase
+
+  assign tp_ze_eintraege = tp_ze_regeln | split: ';'
+  assign tp_ze_quellen_unterlage = 'zubehoer-verlegeunterlagen' | split: ','
+  assign tp_ze_quellen_kleber = 'zubehoer-kleber-fixierung,zubehoer-verlegeband' | split: ','
+
+  assign tp_ze_leisten_coll = collections['bodenleisten']
+  assign tp_ze_profile_coll = collections['zubehoer-profile']
+  assign tp_ze_leisten_n = tp_ze_leisten_coll.products_count | default: 0
+  assign tp_ze_profile_n = tp_ze_profile_coll.products_count | default: 0
+  if tp_ze_leisten_n == 0 and tp_ze_profile_n == 0
+    assign tp_ze_leisten = false
+  endif
+-%}
+
+{%- capture tp_ze_gruppen -%}
+  {%- for tp_ze_gruppe in (1..2) -%}
+    {%- liquid
+      if tp_ze_gruppe == 1
+        assign tp_ze_key = 'unterlage'
+        assign tp_ze_label = 'Unterlage'
+        assign tp_ze_quellen = tp_ze_quellen_unterlage
+      else
+        assign tp_ze_key = 'kleber'
+        assign tp_ze_label = 'Kleber & Fixierung'
+        assign tp_ze_quellen = tp_ze_quellen_kleber
+      endif
+    -%}
+    {%- capture tp_ze_items -%}
+      {%- for tp_ze_eintrag in tp_ze_eintraege -%}
+        {%- assign tp_ze_f = tp_ze_eintrag | split: '|' -%}
+        {%- if tp_ze_f[0] != tp_ze_key -%}{%- continue -%}{%- endif -%}
+        {%- assign tp_ze_handle = tp_ze_f[1] | strip -%}
+        {%- assign tp_ze_p = nil -%}
+        {%- for tp_ze_q in tp_ze_quellen -%}
+          {%- for tp_ze_kand in collections[tp_ze_q].products -%}
+            {%- if tp_ze_kand.handle == tp_ze_handle -%}
+              {%- assign tp_ze_p = tp_ze_kand -%}
+              {%- break -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {%- if tp_ze_p != nil -%}{%- break -%}{%- endif -%}
+        {%- endfor -%}
+        {%- if tp_ze_p == nil or tp_ze_p.available == false -%}{%- continue -%}{%- endif -%}
+        <li class="tp-ze__item">
+          <a class="tp-ze__link" href="{{ tp_ze_p.url }}">
+            <span class="tp-ze__bild" aria-hidden="true">
+              {%- if tp_ze_p.featured_image -%}
+                {{- tp_ze_p.featured_image | image_url: width: 160 | image_tag: width: 64, height: 64, loading: 'lazy', alt: '', class: 'tp-ze__img' -}}
+              {%- endif -%}
+            </span>
+            <span class="tp-ze__text">
+              <span class="tp-ze__name">{{ tp_ze_p.title | escape }}</span>
+              {%- if tp_ze_f[2] != blank -%}
+                <span class="tp-ze__hinweis">{{ tp_ze_f[2] | strip | escape }}</span>
+              {%- endif -%}
+            </span>
+            <span class="tp-ze__pfeil" aria-hidden="true">›</span>
+          </a>
+        </li>
+      {%- endfor -%}
+    {%- endcapture -%}
+    {%- if tp_ze_items != blank -%}
+      <div class="tp-ze__gruppe" data-tp-ze-gruppe="{{ tp_ze_key }}">
+        <p class="tp-ze__gruppe-titel">{{ tp_ze_label }}</p>
+        <ul class="tp-ze__liste" role="list">{{ tp_ze_items }}</ul>
+      </div>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+
+{%- capture tp_ze_leisten_links -%}
+  {%- if tp_ze_leisten -%}
+    <p class="tp-ze__neutral">
+      {%- if tp_ze_leisten_n > 0 -%}
+        <a href="{{ tp_ze_leisten_coll.url }}">Sockelleisten ansehen</a>
+      {%- endif -%}
+      {%- if tp_ze_profile_n > 0 -%}
+        <a href="{{ tp_ze_profile_coll.url }}">Übergangs- und Abschlussprofile</a>
+      {%- endif -%}
+    </p>
+    <p class="tp-ze__hinweis tp-ze__hinweis--leisten">Farbe und Höhe der Leiste wählen Sie passend zu Ihrem Raum.</p>
+  {%- endif -%}
+{%- endcapture -%}
+
+{%- comment -%}
+  Ohne belegtes Zubehoer bleibt nur der neutrale Leistenverweis. Dann steht
+  dort auch keine Einleitung "ausgewaehlt nach Bodenart", weil nichts
+  ausgewaehlt wurde.
+{%- endcomment -%}
+{%- if tp_ze_gruppen != blank -%}
+  <section class="tp-ze" {{ block.shopify_attributes }} data-tp-ze-art="{{ tp_ze_art }}" aria-labelledby="tp-ze-titel-{{ block.id }}">
+    <h2 class="tp-ze__titel" id="tp-ze-titel-{{ block.id }}">{{ block.settings.titel | escape }}</h2>
+    {%- if block.settings.text != blank -%}
+      <p class="tp-ze__intro">{{ block.settings.text | escape }}</p>
+    {%- endif -%}
+    {{ tp_ze_gruppen }}
+    {%- if tp_ze_leisten_links != blank -%}
+      <div class="tp-ze__gruppe" data-tp-ze-gruppe="leisten">
+        <p class="tp-ze__gruppe-titel">Leisten &amp; Profile</p>
+        {{ tp_ze_leisten_links }}
+      </div>
+    {%- endif -%}
+  </section>
+{%- elsif tp_ze_leisten_links != blank -%}
+  <section class="tp-ze tp-ze--nur-leisten" {{ block.shopify_attributes }} data-tp-ze-art="nur-leisten" aria-labelledby="tp-ze-titel-{{ block.id }}">
+    <h2 class="tp-ze__titel" id="tp-ze-titel-{{ block.id }}">Leisten &amp; Profile</h2>
+    <div class="tp-ze__gruppe" data-tp-ze-gruppe="leisten">{{ tp_ze_leisten_links }}</div>
+  </section>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-ze {
+    margin: 0 0 16px;
+    padding: 14px 16px 6px;
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.12);
+    border-radius: 10px;
+  }
+
+  .tp-ze__titel {
+    margin: 0 0 2px;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .tp-ze__intro {
+    margin: 0 0 8px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: rgb(var(--color-foreground-rgb) / 0.72);
+  }
+
+  .tp-ze__gruppe {
+    padding: 8px 0;
+    border-top: 1px solid rgb(var(--color-foreground-rgb) / 0.08);
+  }
+
+  .tp-ze__gruppe:first-of-type {
+    border-top: 0;
+  }
+
+  .tp-ze__gruppe-titel {
+    margin: 0 0 4px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgb(var(--color-foreground-rgb) / 0.62);
+  }
+
+  .tp-ze__liste {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-ze__link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 44px;
+    padding: 6px 0;
+    color: var(--color-foreground);
+    text-decoration: none;
+  }
+
+  .tp-ze__bild {
+    flex: 0 0 56px;
+    width: 56px;
+    height: 56px;
+    overflow: hidden;
+    border-radius: 6px;
+    background: #fff;
+    box-shadow: inset 0 0 0 1px rgb(var(--color-foreground-rgb) / 0.08);
+  }
+
+  .tp-ze__img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .tp-ze__text {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .tp-ze__name {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .tp-ze__link:hover .tp-ze__name,
+  .tp-ze__link:focus-visible .tp-ze__name {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .tp-ze__hinweis {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.4;
+    color: rgb(var(--color-foreground-rgb) / 0.72);
+  }
+
+  .tp-ze__pfeil {
+    flex: 0 0 auto;
+    font-size: 20px;
+    line-height: 1;
+    color: rgb(var(--color-foreground-rgb) / 0.45);
+  }
+
+  .tp-ze__neutral {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 20px;
+    margin: 0;
+    font-size: 14px;
+  }
+
+  .tp-ze__neutral a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--color-foreground);
+    text-underline-offset: 3px;
+  }
+
+  .tp-ze__hinweis--leisten {
+    margin-bottom: 6px;
+  }
+
+  .tp-ze--nur-leisten .tp-ze__gruppe {
+    padding-top: 0;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Passendes Zubehör",
+  "settings": [
+    {
+      "type": "text",
+      "id": "titel",
+      "label": "Überschrift",
+      "default": "Passendes Zubehör"
+    },
+    {
+      "type": "text",
+      "id": "text",
+      "label": "Einleitung",
+      "info": "Die Auswahl selbst steht im Code (docs/zubehoer-empfehlungen.md), nicht im Editor.",
+      "default": "Ausgewählt nach Bodenart und Verlegeart dieses Bodens."
+    }
+  ],
+  "presets": [
+    { "name": "TP Passendes Zubehör" }
+  ]
+}
+{% endschema %}
