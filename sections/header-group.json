@@ -445,6 +445,20 @@
             "image": "shopify://shop_images/teppichboden-sisal-menue-16x9.jpg",
             "subtitle": ""
           }
+        },
+        "tp_kachel_angebote": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Angebote",
+            "subtitle": "Aktuell reduzierte Produkte"
+          }
+        },
+        "tp_kachel_reste": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Reste & Sonderposten",
+            "subtitle": "Einzelstücke zum Sonderpreis"
+          }
         }
       },
       "settings": {
@@ -532,7 +546,9 @@
         "tp_kachel_service_ratgeber",
         "tp_kachel_linoleum",
         "tp_kachel_kontakt_anrufen",
-        "tp_kachel_kontakt_vorort"
+        "tp_kachel_kontakt_vorort",
+        "tp_kachel_angebote",
+        "tp_kachel_reste"
       ]
     },
     "tp_topbar": {
