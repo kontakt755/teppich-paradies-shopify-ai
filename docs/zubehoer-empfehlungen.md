@@ -36,7 +36,9 @@ Daten-Stand 2026-10-08, Admin API, aktive Produkte.
 | `laminat-klick` | Typ `Laminat`, `belagsart` enthält „Klicksystem“, keine belegte Dämmung am Boden | 74 |
 | `parkett-2schicht-kleben` | Typ `Parkett`, `belagsart` „Fertigparkett 2-Schicht (zum Verkleben)“ | 55 |
 | `parkett-massiv-kleben` | Typ `Parkett`, `belagsart` enthält „massiv“ und „zum Verkleben“ (Massiv-, Mosaik-, Hochkantparkett) | 11 |
-| `klickvinyl-ohne-daemmung` | Typ `Klickvinyl`, `belagsart` „Klick-Vinyl …“, **und** `custom.daemmung_integriert` = false, keine belegte Dämmung | 0 (Feld fehlt, siehe unten) |
+| `parkett-3schicht-klick` | Typ `Parkett`, `belagsart` enthält „3-Schicht“, „schwimmend“ und „vollflächig verklebt“, nicht „Nut und Feder“ (Landhausdiele/Schiffsboden mit leimfreiem Verlegesystem) | 123 |
+| `parkett-3schicht-nutfeder` | Typ `Parkett`, `belagsart` enthält „3-Schicht“, „Nut und Feder“ und „vollflächig verklebt“ | 38 |
+| `klickvinyl-ohne-daemmung` | Typ `Klickvinyl`, `belagsart` „Klick-Vinyl …“, **und** `custom.daemmung_integriert` = false, keine belegte Dämmung | 0 (alle Klick-Vinyl-Linien haben laut Datenblatt eine integrierte Dämmung, `custom.daemmung_integriert` = true) |
 | `klebevinyl` | Typ `Klebevinyl`, `belagsart` enthält „zum Vollverkleben“ | 179 |
 | `vinyl-rolle` | Typ `Vinyl von der Rolle`, Tag `material: pvc` | 118 |
 | `teppichboden-rolle-textil` | Typ `Teppichboden`, kein Tag `art: teppichfliese`, Rücken enthält „Textil“ oder „Vlies“, keine belegte Dämmung | 87 |
@@ -61,6 +63,15 @@ empfohlen.
 | `parkett-2schicht-kleben` | Unterlage | `mineralische-trittschallunterlage-3-mm-platten` | „zur vollflächigen Verklebung unter Mehrschichtparkett“ |
 | `parkett-massiv-kleben` | Kleber | `uzin-mk-250-stp-parkettklebstoff` | „Stabparkett, Mosaikparkett (8 mm Massivparkett), Hochkantlamelle, Massivdielen“ |
 | `parkett-massiv-kleben` | Kleber | `uzin-mk-92-s-2k-pur-parkettklebstoff` | „Für alle Holz- und Parkettarten, z. B. Stab-, 10-mm-Massiv-…“ |
+| `parkett-3schicht-klick` | Unterlage | `duenne-trittschallunterlage-1-8-mm-mit-alu-kaschierung` | „speziell für die schwimmende Verlegung unter Laminat und Parkett“; Verlegeanleitung des Bodens (Lieferant A): bei schwimmender Verlegung „eine geeignete … Unterlage inkl. Alu-Kaschierung“ |
+| `parkett-3schicht-klick` | Unterlage | `trittschalldaemmung-xps-fuer-laminat-und-parkett` | Eignung „Unter Laminat, Parkett und Klick-Vinyl“; Verlegeanleitung: Unterlage bei schwimmender Verlegung |
+| `parkett-3schicht-klick` | Unterlage | `dampfbremse-pe-folie-0-2-mm` | Verlegeanleitung: ohne Alu-Kaschierung „muss unbedingt eine mindestens 0,2 mm starke PE-Folie darunter verlegt werden“; Zubehör: „auf mineralischem Untergrund (Beton, Estrich)“ |
+| `parkett-3schicht-klick` | Kleber | `uzin-mk-250-stp-parkettklebstoff` | „Mehrschicht- und Fertigparkett“; Datenblatt des Bodens: „vollflächige Verklebung“ zulässig |
+| `parkett-3schicht-nutfeder` | Unterlage | `duenne-trittschallunterlage-1-8-mm-mit-alu-kaschierung` | wie oben; Datenblatt: „schwimmende Verlegung mit H-Verleimung“ |
+| `parkett-3schicht-nutfeder` | Unterlage | `trittschalldaemmung-xps-fuer-laminat-und-parkett` | Eignung „Unter Laminat, Parkett und Klick-Vinyl“; Unterlage bei schwimmender Verlegung |
+| `parkett-3schicht-nutfeder` | Unterlage | `dampfbremse-pe-folie-0-2-mm` | Verlegeanleitung: ohne Alu-Kaschierung PE-Folie ≥ 0,2 mm; Zubehör: „auf mineralischem Untergrund (Beton, Estrich)“ |
+| `parkett-3schicht-nutfeder` | Kleber | `uzin-mk-250-stp-parkettklebstoff` | „Mehrschicht- und Fertigparkett“; Datenblatt: „vollflächige Verklebung“ |
+| `parkett-3schicht-nutfeder` | Kleber | `uzin-mk-200-stp-parkettklebstoff` | „Mehrschicht-/Fertigparkett mit Nut und Feder“ |
 | `klickvinyl-ohne-daemmung` | Unterlage | `unterlage-fuer-designboeden-1-5-mm-mit-antirutsch-oberflaeche` | Eignung „Unter Designböden und Klick-Vinyl“ |
 | `klickvinyl-ohne-daemmung` | Unterlage | `trittschalldaemmung-xps-fuer-laminat-und-parkett` | Eignung „Unter Laminat, Parkett und Klick-Vinyl“ |
 | `klebevinyl` | Kleber | `haftfixierung-fuer-designboeden` | „geeignet für maßstabile PVC-Designbeläge“ |
@@ -103,14 +114,18 @@ Teppiche und Sauberlauf bekommen keinen Leistenverweis.
 
 | Boden | Warum |
 |---|---|
-| Parkett 3-Schicht-Landhausdiele / Schiffsboden (161) | Verlegeart (Klick, verleimt, verklebt) steht weder in `belagsart` noch in der Beschreibung. Nur Leistenverweis. |
-| Klick-Vinyl (77) | Ob eine Dämmung integriert ist, ist nur bei Bergen/Porto (IXPE) und Turku/Nantes (Trittschallwert) belegt; für Odense, Verona, Lyon, Rovelia fehlt die Angabe. Eine zweite Unterlage unter integrierter Dämmung ist fachlich falsch. Erst mit `custom.daemmung_integriert` = false. |
-| Holz-Designboden (Klicksystem, 46) | Trägerplatte aus organischem Rigid Core, kein PVC – die Designboden-Unterlagen nennen nur Klick-Vinyl. |
+| Klick-Vinyl (77 aktiv) | Alle Linien haben laut Datenblatt von Lieferant A eine integrierte Trittschalldämmung: IXPE 1,0 mm, ca. 21 dB (Bergen, Porto, Turku, Nantes, Odense, Verona, Lyon) bzw. Presskork-Gegenzug, ca. 16 dB (Rovelia). Gesetzt als `custom.daemmung_integriert` = true (2026-10-08). Eine zweite Unterlage wäre fachlich falsch. |
+| Holz-Designboden (Klicksystem, 46) | Trägerplatte aus organischem Rigid Core, kein PVC – die Designboden-Unterlagen nennen nur Klick-Vinyl. `custom.daemmung_integriert` = false (Finvara, Ostara, Velorra, Solvera, Pellara): laut Datenblatt kein Dämmrücken; die Verlegeanleitung verlangt bei schwimmender Verlegung die Systemunterlage des Lieferanten, die der Shop nicht führt. |
 | Korkboden Klick (6) | Die mineralische Unterlage nennt Kork nur in der Shop-Zeile „Eignung“, nicht in den Herstellerangaben. |
 | Klebekork (6) | Der passende Kork-Kontaktkleber ist ein Entwurf. |
 | Linoleum (9) | Der Linoleumklebstoff ist ein Entwurf; die PU-Kork-Unterlage setzt ein Klebesystem voraus. Nur Leistenverweis. |
 | Laminat mit belegter Dämmung | aktuell keiner; Regel greift automatisch, sobald die Beschreibung sie nennt. |
 | Kunstrasen, Sauberlauf, Dekofell | kein belegtes Zubehör. |
+
+Bei 3-Schicht-Parkett bewusst nicht empfohlen: die mineralische Unterlage (die
+Verlegeanleitungen sagen, beim Verkleben ist keine Dämmunterlage nötig), MK 150
+(laut Beschreibung nur bis 2200 × 200 mm, mehrere Linien sind breiter/länger) und
+Parkett-Kaltleim (Anleitung verlangt D3-Weißleim, D3 im Zubehör nicht belegt).
 
 Nicht automatisch empfohlen, obwohl für mehrere Beläge belegt: PU-Kork-Unterlage
 (setzt Verklebung von Unterlage und Belag voraus), Entkoppelungsplatte und
@@ -118,16 +133,19 @@ mineralische Unterlage unter Laminat (Auswahl bewusst auf drei Unterlagen
 begrenzt), weitere UZIN-Parkettklebstoffe (MK 91, MK 95, MK 150, MK 200 T –
 Spezialfälle).
 
-## Vorgeschlagene Daten (nicht geschrieben)
+## Daten (Stand 2026-10-08)
 
-1. **`custom.daemmung_integriert`** (boolean, Produkt) für Klick-Vinyl je Linie
-   aus dem Herstellerdatenblatt: true bei Bergen, Porto, Turku, Nantes (belegt
-   über IXPE bzw. Trittschallwert), für Odense, Verona, Lyon, Rovelia erst nach
-   Datenblatt. Der Block liest das Feld bereits.
-2. **Verlegeart für 3-Schicht-Parkett** in `custom.belagsart` ergänzen
-   („… (Klicksystem)“ bzw. „… (zum Verkleben)“), je Linie aus dem Datenblatt.
-   Danach greifen die Parkett-Regeln ohne Codeänderung, sobald die passende
-   Regel ergänzt ist.
-3. Optional: Search & Discovery „Ergänzende Produkte“
+1. **`custom.daemmung_integriert`** (boolean, Produkt): erledigt 2026-10-08 –
+   Definition angelegt, 131 Produkte gesetzt (85 × true Klick-Vinyl, 46 × false
+   Holz-Designboden), Beleg je Linie aus Datenblatt und Verlegeanleitung von
+   Lieferant A. Rollback lokal unter `~/teppich-paradies-analyse/klickvinyl-daemmung/`.
+2. **Verlegeart für 3-Schicht-Parkett** in `custom.belagsart`: erledigt
+   2026-10-08 – 163 Produkte (13 Linien, alle „schwimmend oder vollflächig
+   verklebt“, drei Linien mit Nut und Feder), Beleg je Linie aus Datenblatt bzw.
+   Lieferantenseite. Kein Filter und keine Kollektionsregel liest das Feld.
+   Rollback lokal unter `~/teppich-paradies-analyse/parkett-verlegeart/`.
+3. Offen: `custom.trittschallverbesserung` laut Datenblatt für Bergen, Porto,
+   Odense, Verona, Lyon (21 dB) und Rovelia (16 dB) nachtragen.
+4. Optional: Search & Discovery „Ergänzende Produkte“
    (`shopify--discovery--product_recommendation.complementary_products`) ist
    heute bei 0 Produkten gesetzt und wird hier nicht genutzt.
