@@ -152,6 +152,14 @@
       {{ content_for_layout }}
     </main>
 
+    {%- comment -%}
+      Zuletzt angesehen (w-025): eigene Section-Gruppe zwischen Inhalt und Footer, nicht
+      innerhalb von main - sonst nimmt die letzte Section dort die Stelle von
+      ".content-for-layout > .shopify-section:last-child" ein. Die Section rendert nur auf
+      Produkt- und Kollektionsseiten etwas, sonst nichts.
+    {%- endcomment -%}
+    {% sections 'tp-zuletzt-group' %}
+
     <footer>
       {% sections 'footer-group' %}
     </footer>
