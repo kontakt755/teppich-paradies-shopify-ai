@@ -16,9 +16,9 @@ Branch `feature/weiterentwicklung-sonderposten` · Worktree `.claude/worktrees/w
 | 1 | Shop analysieren | **abgeschlossen** |
 | 2 | Theme-Kopie und Testumgebung | **abgeschlossen** |
 | 3 | Technisches Umsetzungskonzept | **abgeschlossen** (`docs/weiterentwicklung/*.md`) |
-| 4 | Sonderposten-Produktstruktur | **Theme fertig und in der Entwicklungskopie**; Shopify-Daten (Metafelder, Vorlage-Produkt, Kollektion) warten auf Freigabe |
-| 5 | Ladenverkauf | Konzept + Bewertung fertig; Umsetzung (Control-Center-Button) nach Phase-4-Test |
-| 6 | Produktbewertungen | Konzept fertig; App-Entscheidung beim Inhaber |
+| 4 | Sonderposten-Produktstruktur | **abgeschlossen** (Theme in der Entwicklungskopie, Shopify-Daten angelegt, mit Testprodukt getestet) |
+| 5 | Ladenverkauf | **in Bearbeitung**: Control-Center-Button „Im Laden verkauft“ |
+| 6 | Produktbewertungen | Konzept fertig; Judge.me Free freigegeben (2026-10-08) |
 | 7 | Bildverwaltung und Bildrechte | Konzept fertig; Speicherort und Lizenzen beim Inhaber |
 | 8 | Menüpunkt „Angebote“ | Konzept fertig |
 | 9 | Gesamttest | offen |
@@ -73,24 +73,25 @@ kostenlos, Daten per Export/Import) – lohnt sich nur, falls Checkout-/Versandl
 muss. Für diese fünf Funktionen genügt: Theme-Kopie + klar markierte, nicht veröffentlichte
 Testdaten (Entwurf, keine Vertriebskanäle, Titel „TEST …“) + Freigabe vor jedem Schreibvorgang.
 
-## 4. Aufgaben in Bearbeitung / nächste Freigaben
+## 4. Aufgaben in Bearbeitung
 
-Diese Schreibvorgänge in Shopify sind nötig, um Phase 4 zu testen. Alle sind umkehrbar, keiner
-ändert Preise, Varianten oder SKUs bestehender Produkte, keiner ist im Live-Theme sichtbar:
+**Freigaben des Inhabers vom 2026-10-08:** E1 ja (alle vier Schreibvorgänge), E2 Streichpreis
+nur mit Beleg, E4 SumUp-Lösung unbekannt → zuerst nur Button „Im Laden verkauft“,
+E6 Judge.me Forever Free ja. Offen: E3, E5, E7, E8.
 
-1. **Metafeld-Definitionen** `sonderposten.*` anlegen (14 Felder, `sonderposten.md` §3).
-2. **Vorlage-Produkt** „VORLAGE Sonderposten – nicht veröffentlichen“ (Entwurf, keine Kanäle).
-3. **Testprodukt** „TEST Reststück – nicht kaufen“: Typ Sonderposten, Bestand 1, Vorlage
-   `sonderposten`. Für die Vorschau kurz im Onlineshop-Kanal veröffentlicht, aber
-   `seo.hidden`, in keiner Kollektion außer der unveröffentlichten Sonderposten-Kollektion,
-   nicht im Google-Kanal; nach dem Test wieder Entwurf.
-4. **Smart-Kollektion** „Reste & Sonderposten“ (`reste-sonderposten`), zunächst **nicht**
-   veröffentlicht.
+**In Shopify angelegt (Phase 4, 2026-10-08):**
+
+| Was | Stand |
+|---|---|
+| 14 Metafeld-Definitionen `sonderposten.*` | angelegt, gegengeprüft (Typen, Auswahlwerte, Grenzen; `lagerort`, `verkauft_*` ohne Storefront-Zugriff) |
+| Produkt „VORLAGE Sonderposten – nicht veröffentlichen“ (`vorlage-sonderposten`) | Entwurf, keine Kanäle, Typ/Vorlage/SKU `SP-0000`/Bestandsregeln gesetzt – zum Duplizieren |
+| Produkt „TEST Reststück – nicht kaufen“ (`test-reststueck-nicht-kaufen`, SKU `SP-TEST-0001`) | zum Test kurz aktiv (nur Onlineshop-Kanal, `seo.hidden`), jetzt wieder **Entwurf**, Bestand 0 |
+| Kollektion „Reste & Sonderposten“ (`reste-sonderposten`) | Smart-Regel Typ = Sonderposten UND Bestand > 0, Vorlage `sonderposten`. **Im Onlineshop veröffentlicht** (für die Vorschau nötig), aber leer und `seo.hidden` – siehe Probleme Nr. 6 |
+
+**Phase 5** (jetzt): Control-Center-Ansicht „Sonderposten“ mit Button „Im Laden verkauft“.
 
 ## 5. Noch offene Aufgaben
 
-- Phase 4: Test mit echten Daten (Desktop, 390 px, Warenkorb max. 1, Bestand 0 → Verkauft,
-  Kollektion leert sich), danach Vorlage-Produkt.
 - Phase 5: Control-Center „Sonderposten“ + „Im Laden verkauft“ (`sonderposten.md` §6).
 - Phase 6: Sterne-Snippet/-Blöcke + `aggregateRating` (nur mit Daten), App nach Freigabe.
 - Phase 7: Bildrechte-Erstbefüllung (Skript, nur lesend) + Dashboard-Liste.
@@ -101,12 +102,12 @@ Diese Schreibvorgänge in Shopify sind nötig, um Phase 4 zu testen. Alle sind u
 
 | # | Frage | Empfehlung |
 |---|---|---|
-| E1 | Freigabe der vier Schreibvorgänge in §4 | ja |
-| E2 | Vergleichspreis bei Reststücken („statt regulär 25,90 €/m² × Fläche“) zeigen? | nur mit Beleg (umgesetzt); rechtlich sicherer: keinen |
+| E1 | Freigabe der vier Schreibvorgänge in §4 | **erteilt 2026-10-08** |
+| E2 | Vergleichspreis bei Reststücken zeigen? | **entschieden: nur mit Beleg** (umgesetzt) |
 | E3 | Abholung am Standort aktivieren + Versandprofil „Sonderposten – nur Abholung“ | ja, vor dem ersten echten Sonderposten |
-| E4 | Welche SumUp-Lösung läuft im Laden (App / Kassensystem Lite / Pro)? | Auskunft nötig für Weg C |
+| E4 | Welche SumUp-Lösung läuft im Laden? | **unbekannt** → Weg B zuerst, Weg C zurückgestellt |
 | E5 | Dashboard-Zugang: Recht `write_inventory` ergänzen (Inhaber selbst) | ja, für Weg B |
-| E6 | Judge.me Forever Free installieren (0 €) + Datenschutzerklärung ergänzen | ja |
+| E6 | Judge.me Forever Free installieren (0 €) + Datenschutzerklärung ergänzen | **freigegeben 2026-10-08**; Datenschutztext ändert der Inhaber |
 | E7 | Speicherort Bildarchiv + Lizenzunterlagen je Lieferant | Inhaber |
 | E8 | Menüpunkte „Angebote“ und „Reste & Sonderposten“ ins Hauptmenü (unsichtbar, bis Inhalt da ist) | ja |
 
@@ -136,9 +137,12 @@ Diese Schreibvorgänge in Shopify sind nötig, um Phase 4 zu testen. Alle sind u
 | `templates/product.sonderposten.json` | neu – Produktvorlage |
 | `templates/collection.sonderposten.json` | neu – Kollektionsvorlage |
 | `templates/search.json` | Kartenzeile Sonderposten in Suchergebnissen |
-| `blocks/buy-buttons.liquid` | Sonderposten: kein Mengenfeld, Hinweis „liegt bereits im Warenkorb“ |
+| `blocks/buy-buttons.liquid` | Sonderposten: kein Mengenfeld, Hinweis „liegt bereits im Warenkorb“, Button „Verkauft“ |
 | `snippets/cart-products.liquid` | Sonderposten: Mengenfeld im Warenkorb max. 1 |
 | `blocks/_product-card-gallery.liquid` | Sonderposten: „Verkauft“ statt „Ausverkauft“ |
+| `blocks/tp-card-title.liquid` | Sonderposten: voller Titel statt Kürzung ab „ Teppichboden“ |
+| `sections/product-information.liquid` | Kaufleiste (Handy): „Verkauft“ statt „Ausverkauft“ bei Sonderposten |
+| `qa/tests/tp-sonderposten.test.mjs`, `qa/tests/tp-streichpreis-nur-bei-aktion.test.mjs`, `qa/tests/tp-teppich-ab-preis.test.mjs` | neue Tests bzw. Hilfs-Snippet in der Test-Engine |
 | `snippets/tp-rabatt-sichtbar.liquid` | Weg 3: Sonderposten-Streichpreis nur mit Beleg |
 | `snippets/tp-verkaufseinheit.liquid` | Sonderposten immer `einzel` |
 | `snippets/tp-product-structured-data.liquid` | `itemCondition` für Sonderposten aus Zustand |
@@ -158,7 +162,20 @@ ist immer `tp-ist-sonderposten`).
 | Rauchtest Entwicklungskopie: Start, 4 Kollektionen, Suche, Warenkorb, Produkt, `?view=sonderposten` | alle HTTP 200, gerendertes Theme = Entwicklungskopie, 0 Liquid-Fehler |
 | Regression Leiste + Zubehör: Mengenfeld, `itemCondition` | identisch zu Live |
 | Angebots-Kollektionen live (Seite 1) | jede Karte mit sichtbarem Streichpreis – heute konsistent |
-| Sonderposten mit echten Daten | **offen** – braucht Freigabe E1 |
+| **Phase 4 mit Testprodukt** (Entwicklungskopie, Chrome-Engine im App-Browser) | |
+| Produktseite Desktop: Art, „Nur 1× verfügbar“, Maße 4,00/2,35/9,40, Stückpreis, „entspricht 9,47 €/m²“, Ersparnis 154,46 € (63 %) mit Beleg, Zustand, Material, Farbe, Link Ursprungsprodukt, Abholhinweis | ok |
+| Lagerort im HTML | nicht vorhanden (ok) |
+| Mengenfeld auf der Produktseite | nicht vorhanden (ok) |
+| JSON-LD | `NewCondition`, `InStock`, Preis 89 – stimmt mit Seite überein |
+| Warenkorb: zweites Hinzufügen | Shopify 422 „maximale Menge bereits im Warenkorb“ (ok) |
+| Warenkorb: Menge auf 3 ändern | Shopify 422, Menge bleibt 1 (ok) |
+| Warenkorbseite | Mengenfeld `max=1`, Plus-Button gesperrt, Grundpreis 9,47 €/m² aus Shopify (ok) |
+| Produktseite mit Stück im Warenkorb | Hinweis „Dieses Stück liegt bereits in Ihrem Warenkorb.“ (ok) |
+| Kollektion „Reste & Sonderposten“ | 1 Karte: „Reststück · 4,00 × 2,35 m (9,40 m²)“, „Preis für das ganze Stück · entspricht 9,47 €/m²“, −63-%-Badge (ok) |
+| Handy 390 px | kein horizontaler Überlauf, Maße-Raster 3 × 118 px (ok) |
+| Bestand 0 (`inventorySetQuantities` mit `compareQuantity: 1`) | Chip „Verkauft“, beide Kaufbuttons „Verkauft“ und gesperrt, JSON-LD `OutOfStock`, `cart/add` 422 (ok) |
+| Kollektion nach Bestand 0 | nach wenigen Minuten leer (Shopify rechnet Smart-Regeln verzögert) – ok |
+| Regression nach allen Änderungen | `npm test` grün, alle Guards 0 Fehler |
 
 ## 9. Erkannte Probleme
 
@@ -168,7 +185,15 @@ ist immer `tp-ist-sonderposten`).
    Produkte ohne sichtbaren Rabatt enthalten (nächster Termin: Dauerrabatt-Ende 01.11. →
    Rückstellung 02.11.). Wird mit Phase 8 abgesichert.
 4. 37 % der Stichprobenbilder < 1200 px breit; uneinheitliche Dateinamen.
-5. Der CLI-Zugang darf keine Menüs und keine Metaobjekte lesen (Menü-Sicherung deshalb über die Admin API).
+5. Der CLI-Zugang darf keine Menüs und keine Metaobjekte lesen und nichts veröffentlichen (Menü-Sicherung und Veröffentlichung deshalb über die Admin API/MCP).
+6. Die Admin API (MCP) verweigert `publishableUnpublish` aus Sicherheitsgründen. Die Kollektion
+   „Reste & Sonderposten“ bleibt deshalb im Onlineshop veröffentlicht. Sie ist leer, nirgends verlinkt
+   und `seo.hidden`. Unter `/collections/reste-sonderposten` zeigt das Live-Theme „Keine Produkte“.
+   Wer das nicht will, nimmt die Veröffentlichung im Admin zurück (Kollektion → Vertriebskanäle).
+7. Smart-Kollektionen folgen dem Bestand mit einigen Minuten Verzögerung; die Produktseite
+   sperrt sofort. Für den Ladenverkauf reicht das (Shopify verhindert die Bestellung ohnehin).
+8. Leere Sonderposten-Kollektion zeigt den Horizon-Standardtext „Keine Produkte“ – vor dem
+   Livegang durch einen freundlichen Hinweis ersetzen (Phase 9).
 
 ## 10. Rollback
 
@@ -185,10 +210,7 @@ ist immer `tp-ist-sonderposten`).
 
 ## 11. Nächster Arbeitsschritt
 
-Nach Freigabe E1: Metafeld-Definitionen anlegen → Testprodukt → Kollektion (unveröffentlicht) →
-Phase-4-Tests in der Entwicklungskopie (Desktop + 390 px, Warenkorb, Bestand 0) →
-Ergebnis hier eintragen → Phase 5.
-
-Ohne Freigabe weiter möglich: Phase 5 Code im Control Center (ohne Shopify-Schreibzugriff
-testbar gegen eine Attrappe), Sterne-Snippets für Phase 6, Abgleich-Skript für Phase 8
-(Trockenlauf, nur lesend).
+Phase 5: Control Center „Sonderposten“ – Liste aller Stücke (SKU, Maße, Preis, Bestand,
+Lagerort) und Button „Im Laden verkauft“ (`inventorySetQuantities` mit `compareQuantity: 1`,
+`verkauft_*`-Metafelder, Protokolleintrag, Gegenprobe). Test gegen das Testprodukt
+(Bestand vorher wieder auf 1 setzen). Danach Phase 6 (Judge.me).

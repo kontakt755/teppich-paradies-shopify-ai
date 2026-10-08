@@ -99,9 +99,6 @@
       {%- else -%}
         <span class="tp-sp__chip tp-sp__chip--weg">Verkauft</span>
       {%- endif -%}
-      {%- if tp_sp_spar > 0 -%}
-        <span class="tp-sp__chip tp-sp__chip--preis">Sonderpreis −{{ tp_sp_spar_pz }} %</span>
-      {%- endif -%}
     </p>
 
     {%- if tp_sp_b > 0 or tp_sp_l > 0 or tp_sp_f > 0 -%}
@@ -127,7 +124,7 @@
 
     {%- if tp_sp_spar > 0 -%}
       <p class="tp-sp__spar">
-        Sie sparen {{ tp_sp_spar | money }} gegenüber {{ tp_sp_v.compare_at_price | money }}
+        Sie sparen {{ tp_sp_spar | money }} ({{ tp_sp_spar_pz }} %) gegenüber {{ tp_sp_v.compare_at_price | money }}
         {%- if tp_sp_mf.preis_beleg.value != blank %} ({{ tp_sp_mf.preis_beleg.value }}){%- endif -%}.
       </p>
     {%- endif -%}
@@ -209,12 +206,6 @@
   .tp-sp__chip--weg {
     background: #e9e6e1;
     color: #4a4a4a;
-  }
-
-  .tp-sp__chip--preis {
-    background: #b3261e;
-    color: #fff;
-    font-variant-numeric: tabular-nums;
   }
 
   .tp-sp__masse {

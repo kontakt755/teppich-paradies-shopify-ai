@@ -23,6 +23,14 @@
   </span>
 {% else %}
   {% assign tp_card_title_display = closest.product.title | split: ' – ' | first | split: ' Teppichboden' | first %}
+  {%- comment -%}
+    Sonderposten (Einzelstuecke): voller Titel, denn "Velory Teppichboden
+    Reststueck Grau" waere sonst nur "Velory" - die Unterscheidung steckt im Rest.
+  {%- endcomment -%}
+  {%- capture tp_ct_sp -%}{%- render 'tp-ist-sonderposten', product: closest.product -%}{%- endcapture -%}
+  {%- if tp_ct_sp contains 'ja' -%}
+    {%- assign tp_card_title_display = closest.product.title -%}
+  {%- endif -%}
   {%- liquid
     # Wie Kartenbild und ueberlagerter Link dieselbe Raumfarbe waehlen.
     assign tp_card_title_variant = closest.product.selected_or_first_available_variant

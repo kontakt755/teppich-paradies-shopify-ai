@@ -61,6 +61,9 @@
     elsif inventory_managed and inventory_quantity <= 0 and inventory_policy == 'deny' or quantity_rule_soldout
       assign can_add_to_cart = false
       assign add_to_cart_text = 'products.product.sold_out' | t
+      if tp_ist_sonderposten
+        assign add_to_cart_text = 'Verkauft'
+      endif
     else
       assign can_add_to_cart = false
       assign add_to_cart_text = 'products.product.unavailable' | t
