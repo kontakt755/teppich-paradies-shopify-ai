@@ -1,4 +1,5 @@
 import { chromium } from 'playwright-core';
+import { sperreTracking } from './tracking-sperre.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -480,6 +481,7 @@ async function runFlow(browser, { flow, productType, viewportName, viewport, exe
   let context;
   try {
     context = await browser.newContext({ viewport, locale: 'de-DE' });
+    await sperreTracking(context);
     const page = await context.newPage();
     await page.addInitScript(UEBERLAGERUNGEN_WEG);
     page.setDefaultTimeout(15_000);
