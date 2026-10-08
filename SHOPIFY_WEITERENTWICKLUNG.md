@@ -18,9 +18,9 @@ Branch `feature/weiterentwicklung-sonderposten` · Worktree `.claude/worktrees/w
 | 3 | Technisches Umsetzungskonzept | **abgeschlossen** (`docs/weiterentwicklung/*.md`) |
 | 4 | Sonderposten-Produktstruktur | **abgeschlossen** (Theme in der Entwicklungskopie, Shopify-Daten angelegt, mit Testprodukt getestet) |
 | 5 | Ladenverkauf | **gebaut** (Control Center, Entwurfs-PR #986, 19 Tests); bucht erst nach Freigabe E5 (`write_inventory`) |
-| 6 | Produktbewertungen | Konzept fertig; Judge.me Free freigegeben (2026-10-08) |
+| 6 | Produktbewertungen | Theme-Teil fertig (unsichtbar ohne Bewertungen); **Entscheidung Judge.me vs. „bei Google bleiben“ bei Ahmet** (Werkbank w-027, Empfehlung: bei Google bleiben – ~22 Online-Bestellungen in 90 Tagen) |
 | 7 | Bildverwaltung und Bildrechte | **Inventur fertig** (8.530 Bilder erfasst, `npm run bildrechte:inventur`); Lizenzen je Lieferant + Bildarchiv-Ort beim Inhaber (E7); Dashboard-Liste offen |
-| 8 | Menüpunkt „Angebote“ | **gebaut** (Theme-Logik + `npm run angebote:abgleich`, Trockenlauf 510 Angebote, Stichprobe 14/14); Kollektion/Tags/Menüpunkte warten auf Freigabe |
+| 8 | Menüpunkt „Angebote“ | **gebaut**; Kollektion `angebote` mit 510 Produkten angelegt (Freigabe Ahmet, w-029); offen: täglicher Lauf (Freigabe), Menüpunkte mit dem Livegang |
 | 9 | Gesamttest | offen |
 | 10 | Veröffentlichung vorbereiten | offen |
 
@@ -79,6 +79,11 @@ Testdaten (Entwurf, keine Vertriebskanäle, Titel „TEST …“) + Freigabe vor
 nur mit Beleg, E4 SumUp-Lösung unbekannt → zuerst nur Button „Im Laden verkauft“,
 E6 Judge.me Forever Free ja. Offen: E3, E5, E7, E8.
 
+**Seit 2026-10-08 entscheidet Ahmet über die Werkbank** (Vorgabe Tobias): offene Fragen stehen dort als
+„Wartet auf Inhaber“ mit Erklärung – w-015 (Sonderposten: wer bucht im Laden, Versandprofil
+„nur Abholung“, Preise/Streichpreis), w-017 (Recht `write_inventory`), w-027 (Judge.me oder
+bei Google bleiben), w-028 (Bildarchiv, Lizenzen). Beantwortet und umgesetzt: w-029 (Angebote).
+
 **In Shopify angelegt (Phase 4, 2026-10-08):**
 
 | Was | Stand |
@@ -95,7 +100,7 @@ E6 Judge.me Forever Free ja. Offen: E3, E5, E7, E8.
 - Phase 5: nach E5 einmal mit dem Testprodukt durchbuchen (Bestand vorher auf 1); PR #986 mergen, Dienst vorspulen.
 - Phase 6: Sterne-Snippet/-Blöcke + `aggregateRating` (nur mit Daten), App nach Freigabe.
 - Phase 7: Dashboard-Liste „Bildrechte“ (nach der Sonderposten-Ansicht); Lizenzklärung je Lieferant (E7).
-- Phase 8: Kollektion `angebote` anlegen, Tags schreiben, täglichen Lauf einrichten, Menüpunkte mit dem Livegang (`angebote.md` §5).
+- Phase 8: täglichen Lauf einrichten (Freigabe), Menüpunkte „Angebote“ und „Reste & Sonderposten“ mit dem Livegang (`angebote.md` §5).
 - Phase 9/10: Gesamttest, Deploy-Kette (`workflow:doctor` → PR → `main` → Preview → Live).
 
 **Entscheidungen des Inhabers** (blockieren die jeweilige Phase, nicht die anderen):

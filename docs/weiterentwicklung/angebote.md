@@ -86,10 +86,10 @@ Theme-Sicherung, Bedingung „Kollektion nicht leer“).
 | `snippets/tp-menu-link-sichtbar.liquid` | gebaut, an allen vier Menü-Stellen eingehängt (Desktop, Handy-Leiste, Drawer, SEO-Linkliste) |
 | `operations/lib/angebote-abgleich.mjs` + Tests | gebaut, 9 Tests; Regel 1:1 aus den Liquid-Snippets (auch die Liquid-Eigenheit: fehlender Vergleichspreis kippt die Rollenware-Regel nicht) |
 | `npm run angebote:abgleich` | gebaut; Trockenlauf Standard, `--schreiben`, `--stichtag`, `--ausgabe`; wartet auf Shopify-Budget, Gegenprobe nach dem Schreiben |
-| Kollektion `angebote` (Tag = angebot) | **noch nicht angelegt** (Freigabe) |
-| Tags `angebot` | **noch nicht geschrieben** (Freigabe; Trockenlauf: 510 Produkte) |
+| Kollektion `angebote` (Tag = angebot) | **angelegt und im Onlineshop veröffentlicht** (2026-10-08, Freigabe Ahmet in der Werkbank w-029); 510 Produkte, Seite 1: 24/24 Karten mit Streichpreis |
+| Tags `angebot` | **geschrieben**: 510 Produkte, Gegenprobe 0 offen / 0 Fehler. Vorher trug kein Produkt den Tag. Rückweg: Liste `~/teppich-paradies-analyse/angebote/abgleich-2026-10-08/vorher.json` → `tagsRemove` je Produkt |
 | Menüpunkte „Angebote“ / „Reste & Sonderposten“ in `main-menu` | **erst mit dem Theme-Livegang** – das Live-Theme kennt die Ausblend-Logik noch nicht und würde die Punkte sonst immer zeigen |
-| Täglicher Lauf (00:15) | noch einzurichten (launchd auf dem Dashboard-Mac, wie die anderen Dienste) |
+| Täglicher Lauf (00:15) | **noch nicht eingerichtet** – dauerhafter Dienst auf dem Mac, braucht ausdrückliche Freigabe. Bis dahin: nach jeder Angebotswelle und am Tag nach einem Aktionsende `npm run angebote:abgleich -- --schreiben` von Hand. Die Theme-Sicherung verhindert in der Zwischenzeit, dass der Menüpunkt ohne sichtbares Angebot erscheint. |
 
 **Belege:**
 - Trockenlauf 08.10.: 1.290 aktive Produkte, 510 zeigen einen Rabatt; 0 Produkte mit
