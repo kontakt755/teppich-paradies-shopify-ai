@@ -148,6 +148,8 @@ Gestapelte PRs **vor** dem Merge ihrer Basis umzielen. Die CI meldet nur
 
 `Branch → PR → main → workflow:preview → workflow:live`, vorher `npm run workflow:doctor` (meldet alle Blocker auf einmal). Verlangt der Benutzer einen Deploy („deploy“, „live stellen“, „push das raus“), führt der Agent die Kette selbst aus — die Freigabe-Flags sind Teil des Befehls. Ein abgebrochenes Gate ist ein Befund: Ursache beheben, nie das Gate ausbauen. Details: Skill `deploy`, `docs/WORKFLOW.md`.
 
+**Während eines Deploys nichts nach `main` mergen.** Von `workflow preview` bis zum Ende von `workflow live` ist ein Deploy-Fenster offen; ein Merge dazwischen bricht Live mit `LIVE_SOURCE` ab. Claude blockiert der Guard-Hook automatisch, alle anderen (Codex) prüfen vor jedem Merge `npm run -s deploy:frei` (Exit 1 = warten).
+
 ## Vor jedem Commit
 
 ```
@@ -163,6 +165,7 @@ lokal auf dem Mac. Unbekannte Flags brechen ab.
 | Befehl | Zweck |
 |---|---|
 | `npm run workflow:doctor` | **vor jedem Deploy**: alle Voraussetzungen in einem Lauf |
+| `npm run -s deploy:frei` | **vor jedem Merge nach main**: läuft gerade ein Deploy (Preview bis Live)? Exit 1 = nicht mergen |
 | `npm run theme:block list\|add\|remove` | Bloecke in Templates setzen, statt im Editor zu klicken |
 | `npm run liquid:guard` | ungueltiges Liquid, das Shopify still verwirft |
 | `npm run schema:guard` | Block-Schemata, die deployen aber im Editor unsichtbar bleiben |
