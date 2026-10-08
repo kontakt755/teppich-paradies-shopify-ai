@@ -88,6 +88,7 @@ test('Guard-Hook verweigert gh pr merge und Push nach main waehrend eines Deploy
   assert.equal(lauf('git push origin main'), 'BLOCK');
   assert.equal(lauf('git push origin HEAD:main'), 'BLOCK');
   assert.equal(lauf('git push -u origin feature/x'), 'DURCH');
+  assert.equal(lauf('git push -u origin main-fix'), 'DURCH');
   assert.equal(lauf('gh pr create --base main --title x'), 'DURCH');
   assert.equal(lauf('gh pr view 980'), 'DURCH');
   schliesseFenster(repo);

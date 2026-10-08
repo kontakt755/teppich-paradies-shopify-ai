@@ -280,7 +280,7 @@ const command = (await stdinJson())?.tool_input?.command ?? '';
 //
 // Fail-open: fehlt das Modul (alter Checkout) oder scheitert die Abfrage,
 // laeuft der Befehl durch - die Regel koordiniert, sie schuetzt keine Daten.
-const NACH_MAIN = [/^gh\s+pr\s+merge\b/, /^git\s+(.*\s)?push\b.*(\s|:)main\b/];
+const NACH_MAIN = [/^gh\s+pr\s+merge\b/, /^git\s+(.*\s)?push\b.*(\s|:)main(\s|$)/];
 async function deploySperre(befehl) {
   if (!segmente(befehl).some((seg) => kandidaten(seg).some(({ teil }) => NACH_MAIN.some((m) => m.test(teil))))) return null;
   try {
