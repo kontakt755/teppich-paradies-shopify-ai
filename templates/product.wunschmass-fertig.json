@@ -7,10 +7,6 @@
  * made to this file may be overwritten.
  * ------------------------------------------------------------
  */
-/*
- * Teppich nach Mass vom Hersteller (Lieferant B): fertig eingefasst, Pauschale je Teppich,
- * Gewichtsgrenze ueber service.kg_pro_qm / service.max_gewicht_kg. Basis: product.dekofell.
- */
 {
   "sections": {
     "main": {
