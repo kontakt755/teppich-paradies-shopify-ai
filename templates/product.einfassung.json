@@ -345,6 +345,10 @@
                 "titel": "Struktur in Originalaufnahme",
                 "hinweis": "Echtes Foto des Belags, aus dem Ihr Teppich zugeschnitten wird."
               }
+            },
+            "tp_zubehoer_empfehlung": {
+              "type": "tp-zubehoer-empfehlung",
+              "settings": {}
             }
           },
           "block_order": [
@@ -358,6 +362,7 @@
             "tp_einfass_konfigurator_1",
             "tp_muster_cta_1",
             "tp_bewertungsbeleg_night1",
+            "tp_zubehoer_empfehlung",
             "buy_buttons_eYQEYi",
             "tp_einfass_wechsel_1",
             "tp_vertrauen_sales1",

@@ -305,6 +305,10 @@
                 "pauschale_produkt": "wunschmass-pauschale"
               },
               "blocks": {}
+            },
+            "tp_zubehoer_empfehlung": {
+              "type": "tp-zubehoer-empfehlung",
+              "settings": {}
             }
           },
           "block_order": [
@@ -317,6 +321,7 @@
             "tp_einfass_konfigurator_1",
             "buy_buttons_eYQEYi",
             "tp_service_links_sales1",
+            "tp_zubehoer_empfehlung",
             "tp_bewertungsbeleg_dekofell",
             "text_aEtTtq",
             "tp_bildnachweis_desktop"
