@@ -15,7 +15,7 @@
 
   Rechnet nichts selbst; die Formel steht allein in assets/tp-masstepich-rechnung.js.
 
-  @param {object} collection - Kollektion, deren Teppiche (bis 50) ausgegeben werden
+  @param {object} collection - Kollektion, deren Teppiche (bis 250) ausgegeben werden
 {%- enddoc -%}
 {%- liquid
   assign tpr_kettel_v = all_products['kettelservice'].selected_or_first_available_variant
@@ -30,8 +30,9 @@
     assign tpr_pauschale = tpr_pauschale_v.price
   endif
 -%}
-{"kettel": {{ tpr_kettel }}, "pauschale": {{ tpr_pauschale }}, "teppiche": [
-{%- for tpr_p in collection.products limit: 50 -%}
+{"kettel": {{ tpr_kettel }}, "pauschale": {{ tpr_pauschale }}, "gesamt": {{ collection.products_count | json }}, "teppiche": [
+{%- paginate collection.products by 250 -%}
+{%- for tpr_p in collection.products -%}
   {%- liquid
     assign tpr_art = tpr_p.metafields.service.einfassung.value | strip | downcase
     assign tpr_ok = false
@@ -70,4 +71,5 @@
     null]},
   {%- endif -%}
 {%- endfor -%}
+{%- endpaginate -%}
 null]}
