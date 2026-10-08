@@ -37,10 +37,12 @@ class FacetsFormComponent extends Component {
   createURLParameters(formData = new FormData(this.refs.facetsForm)) {
     let newParameters = new URLSearchParams(/** @type any */ (formData));
 
-    // Im mobilen Filterformular stehen Select und Radio fuer denselben Sortierwert.
-    // Der sichtbare Select-Wert steht zuerst; doppelte URL-Parameter entfernen.
+    // Im Filterformular stehen Select und Radio fuer denselben Sortierwert.
+    // Auf Mobile gilt der erste (Select), auf Desktop der letzte Wert (Radio).
     const sortValues = newParameters.getAll('sort_by');
-    if (sortValues.length > 1) newParameters.set('sort_by', sortValues[0]);
+    if (sortValues.length > 1) {
+      newParameters.set('sort_by', window.innerWidth < 750 ? sortValues[0] : sortValues[sortValues.length - 1]);
+    }
 
     if (newParameters.get('filter.v.price.gte') === '') newParameters.delete('filter.v.price.gte');
     if (newParameters.get('filter.v.price.lte') === '') newParameters.delete('filter.v.price.lte');
