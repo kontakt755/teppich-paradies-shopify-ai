@@ -59,6 +59,12 @@ URLs als `lieferant-a.example`. Rohdaten nur unter `~/teppich-paradies-analyse/l
     der Kunde Versand. Das Zuordnen ist eine Versandaenderung: nur mit ausdruecklicher
     Freigabe des Inhabers. Gegenprobe ueber `deliveryProfile.profileItems`, nicht
     `productVariantsCount` (deckelt bei 500).
+11. **Abschluss:** `npm run -s import:pruefen -- --handles <neue Handles>` (oder `--tage 1`)
+    prueft Veroeffentlichung, Bilder, Variantenbilder, Kategorie, SKU, Muster und die
+    Metafelder, die die uebrigen Produkte derselben Produktart tragen. Fehler beheben,
+    Hinweise belegt nachtragen oder als offenen Fall notieren. Ohne `.env.local` im
+    Worktree: `TP_ENV_LOCAL=<Betriebskopie>/.env.local` oder `--bulk-query` ueber den
+    Shopify-MCP und das JSONL per `--jsonl` uebergeben.
 
 Mehr als etwa 50 Werte auf bestehenden Produkten (Metafelder, Tags, Einkaufsfelder):
 Skill `shopify-massendaten` (Plan, Rollback, Batchdateien).

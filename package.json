@@ -70,6 +70,7 @@
     "operations:einrichten": "bash operations/scripts/app-einrichten.sh",
     "rabatt:plan": "node operations/scripts/rabatt-plan.mjs",
     "angebot": "node operations/scripts/angebotswelle.mjs",
+    "import:pruefen": "node operations/scripts/import-pruefen.mjs",
     "bodenwissen:guard": "node scripts/bodenwissen-guard.mjs",
     "lexikon:payload": "node scripts/lexikon-payload.mjs",
     "probleme:payload": "node scripts/probleme-payload.mjs",
