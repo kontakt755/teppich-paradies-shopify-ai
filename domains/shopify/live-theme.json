@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-08T10:13:06Z",
-    "verifiedBy": "Shopify Admin API role MAIN nach workflow:live (main fda3482f, PR #981 SEO-Check und #982 Label HDF); oeffentliche Bodenleisten-Seite ohne Vorschau geprueft"
-  },
-  "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-08T10:13:06Z",
-    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live; naechstes Preview-Ziel"
+    "verifiedAt": "2026-10-08T10:57:27Z",
+    "verifiedBy": "Shopify CLI role live nach workflow:live (main e33aecbb); alle vier Theme-Rollen gegengeprueft"
+  },
+  "preview": {
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-10-08T10:57:27Z",
+    "verifiedBy": "Shopify CLI role unpublished nach workflow:live; naechstes Preview-Ziel"
   },
   "fallback": {
     "themeId": "204440699214",
@@ -27,6 +27,12 @@
     "note": "Einziges Ziel fuer Zwischenstaende und Ausprobieren (nur --only-Pushes). Niemals als --theme-id fuer workflow:preview/live verwenden, niemals publishen. Das Preview-Ziel ist ausschliesslich preview.themeId - wer dorthin Zwischenstaende pusht, blockiert den Livegang (PREVIEW_DRIFT/PREVIEW_DIFF, dreimal am 2026-09-21/22)."
   },
   "retired": [
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-10-08",
+      "note": "Per workflow:live durch 204438208846 abgeloest (main e33aecbb); bleibt als unpublished Theme das naechste Preview-Ziel."
+    },
     {
       "themeId": "204438208846",
       "name": "preview-main-2026-09-15",
