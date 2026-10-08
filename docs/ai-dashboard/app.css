@@ -94,6 +94,8 @@ button { font: inherit; color: inherit; }
 .nav-more-kopf { width: 100%; border: 0; background: none; cursor: pointer; text-align: left; }
 .mainnav a:hover, .nav-more-kopf:hover { background: var(--surface-2); text-decoration: none; color: var(--text); }
 .mainnav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); }
+/* Externer Link (Werkbank): kleiner Pfeil rechts statt eines Zaehlers. */
+.mainnav .nav-extern-ic { width: 14px; height: 14px; margin-left: auto; opacity: .55; }
 .nav-more-kopf.current { color: var(--accent); }
 .nav-count { margin-left: auto; background: var(--accent); color: var(--accent-ink); font-size: .78rem; font-weight: 700; border-radius: 999px; padding: 1px 6px; min-width: 22px; text-align: center; font-variant-numeric: tabular-nums; }
 .nav-label { margin: 0; padding: 16px 10px 4px; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); }
@@ -238,6 +240,8 @@ details.card[open] > .collapsible-head .chev { transform: rotate(90deg); }
    entscheidet ueber Rechte, hier geht es nur um eine ruhige Oberflaeche. */
 body.rolle-mitarbeiter [data-nur-inhaber],
 body.rolle-lesen [data-nur-inhaber] { display: none !important; }
+/* Lesezugaenge sehen keine Arbeitswerkzeuge ausserhalb des Control Centers (Werkbank). */
+body.rolle-lesen [data-nicht-lesen] { display: none !important; }
 
 /* Badges */
 .badge { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px; font-size: .75rem; font-weight: 600; border: 1px solid transparent; white-space: nowrap; }
