@@ -22,7 +22,9 @@ Grundlage: `audit/tp-operations-v3/` (02 Datenmodell, 05 Entscheidungen,
 - **Einkauf wird nie automatisch gesendet** (D8). `bestellungAusGruppe` liefert
   nur den Entwurf.
 - Shopify-Schreibzugriff nur auf Order-Metafelder `ops.*` und Tags; nie auf
-  Produkte, Preise oder Varianten aus diesem Modul.
+  Produkte, Preise oder Varianten aus diesem Modul. **Einzige Ausnahme:** der
+  Angebote-Abgleich setzt und entfernt am Produkt genau den Tag `angebot`
+  (Inhaber, 2026-10-08) – nie Preise, Vergleichspreise, Varianten oder andere Tags.
 
 ## Module
 
@@ -625,6 +627,26 @@ Alter im Dashboard (Kachel "Systemgesundheit"): steht dort "Daten veraltet",
 reicht ein manueller Lauf von `npm run daten:aktualisieren`, sobald der
 Rechner wieder läuft und online ist. Es gibt keinen Nachhol-Mechanismus, der
 verpasste Läufe automatisch aufholt.
+
+## Angebote-Abgleich (täglich 0:00)
+
+`npm run angebote:abgleich` hält den Produkt-Tag `angebot` deckungsgleich mit dem, was
+der Shop gerade als Rabatt **anzeigt** (Streichpreis über `snippets/tp-rabatt-sichtbar`
+oder zentrale Aktion `tp_aktion`; Sonderposten nie). Die Smart-Kollektion „Angebote“
+(`/collections/angebote`, Regel Tag = angebot) und der Menüpunkt folgen dem Tag; das Theme
+blendet den Menüpunkt zusätzlich selbst aus, wenn kein Produkt einen Rabatt zeigt.
+Regel und Tests: `lib/angebote-abgleich.mjs`, `tests/angebote-abgleich.test.mjs`.
+
+- Ohne Argument: Trockenlauf. `--schreiben` setzt/entfernt den Tag und rechnet danach
+  nach (Exit-Code 1, wenn etwas offen bleibt). `--stichtag JJJJ-MM-TT` prüft einen anderen
+  Tag (nur Trockenlauf), `--ausgabe <datei>` schreibt die Handles für Stichproben.
+- Dienst: Vorlage `launchagents/net.teppich-paradies.angebote.plist.vorlage`
+  (`__HOME__` ersetzen, nach `~/Library/LaunchAgents/` kopieren, `launchctl load`).
+  Läuft täglich 0:00 aus `~/tp-dashboard`, Protokoll
+  `~/teppich-paradies-analyse/angebote/abgleich.log`.
+- Rückweg: Tag `angebot` entfernen (der Lauf entfernt ihn überall dort, wo kein Rabatt
+  angezeigt wird; zum vollständigen Abschalten den Dienst entladen und `tagsRemove` je
+  Produkt aus der Sicherung `~/teppich-paradies-analyse/angebote/abgleich-2026-10-08/vorher.json`).
 
 ## Sync-Dienst (häufigere Aktualisierung)
 
