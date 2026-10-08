@@ -291,6 +291,26 @@
         {%- if tp_sd_merkmale != blank -%}
         "additionalProperty": [{{ tp_sd_merkmale }}],
         {%- endif -%}
+        {%- comment -%}
+          Produktbewertung nur aus den Standardfeldern der Bewertungs-App
+          (reviews.rating, reviews.rating_count) und nur mit mindestens einer
+          Bewertung. Nie aus der Google-Unternehmensbewertung - die gehoert
+          nicht an ein Produkt (docs/weiterentwicklung/bewertungen.md). Die App
+          selbst gibt kein JSON-LD aus (dort abgeschaltet), sonst gaebe es
+          zwei aggregateRating fuer dasselbe Produkt.
+        {%- endcomment -%}
+        {%- assign tp_sd_rating = product_resource.metafields.reviews.rating.value -%}
+        {%- assign tp_sd_rating_wert = tp_sd_rating.rating | times: 1.0 -%}
+        {%- assign tp_sd_rating_anzahl = product_resource.metafields.reviews.rating_count.value | default: product_resource.metafields.reviews.rating_count | times: 1 | round -%}
+        {%- if tp_sd_rating_wert > 0 and tp_sd_rating_anzahl > 0 -%}
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": {{ tp_sd_rating_wert | round: 2 }},
+          "reviewCount": {{ tp_sd_rating_anzahl }},
+          "bestRating": {{ tp_sd_rating.scale_max | default: 5 }},
+          "worstRating": {{ tp_sd_rating.scale_min | default: 1 }}
+        },
+        {%- endif -%}
         "hasVariant": [
           {{ tp_sd_offers }}
         ]

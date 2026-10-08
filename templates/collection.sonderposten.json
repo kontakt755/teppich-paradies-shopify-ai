@@ -210,11 +210,16 @@
             "tp_card_color_thumbs": {
               "type": "tp-card-color-thumbs",
               "settings": {}
+            },
+            "tp_card_sterne": {
+              "type": "tp-card-sterne",
+              "settings": {}
             }
           },
           "block_order": [
             "card-gallery",
             "product_title_4nY4eT",
+            "tp_card_sterne",
             "price_EzJzMm",
             "tp_card_sonderposten",
             "tp_card_color_thumbs"
