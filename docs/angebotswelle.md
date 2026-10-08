@@ -22,7 +22,11 @@ Auswahl, Prozent, Start und Ende; am Ende geht der Preis auf den regulaeren Prei
    frischen Export ziehen und
    `npm run -s angebot -- ende export.jsonl <ordner> --stichtag <ende+1>` →
    `rueckstellen.jsonl` schreiben. Das gilt auch fuer den Dauerrabatt
-   (`--klasse preisanker`).
+   (`--klasse preisanker`). `rueckstellen.csv` zeigt je Variante Zuschnitt,
+   Aktionspreis, Vergleichspreis und Zielpreis (zur Freigabe).
+   Liegt der Export als zwei JSON-Arrays vor (Varianten nur mit `product.id`, Produkte
+   getrennt, z. B. seitenweise per `shopify store execute`):
+   `npm run -s angebot -- ende varianten.json <ordner> --produkte produkte.json --stichtag <ende+1>`.
 
 ## Regeln im Skript
 
@@ -31,6 +35,15 @@ Auswahl, Prozent, Start und Ende; am Ende geht der Preis auf den regulaeren Prei
 - **30-Tage-Sperre:** Ein Produkt, dessen letzte Aktion vor weniger als 30 Tagen endete,
   kommt nicht in die Welle (PAngV § 11 - der Streichpreis muss der niedrigste Preis der
   letzten 30 Tage sein). Gruende stehen in `ausgelassen.csv`.
+- **Zielpreis der Rueckstellung:** Der Vergleichspreis wird geleert.
+  - Meterware: Zielpreis = Vergleichspreis (belegter Vorpreis).
+  - Raummass (Variante mit Optionswert `Wunschmaß`, bei Teppichboden Option `Breite`;
+    ohne `selectedOptions` im Export zaehlt der Variantentitel `Farbe / Wunschmaß`):
+    naechstgelegener ,90-Betrag zum Vergleichspreis, `round(x + 0,10) - 0,10`
+    (Inhaber 2026-10-05). Volle Euro gehen 0,10 nach unten (104,00 → 103,90,
+    50,00 → 49,90), Betraege auf ,90 bleiben. Dieselbe Regel gilt fuer die vorab
+    berechnete `rueckstellen.jsonl` aus `plan`.
+  - Muster (`M-`, Handle `muster-…`) werden nie zurueckgestellt.
 - Wellen setzen `aktion.klasse = aktion`: befristete Aktion, **nicht** mit dem
   kostenlosen Vor-Ort-Service kombinierbar (Inhaber 2026-09-20). Der Dauerrabatt
   `preisanker` bleibt kombinierbar und endet ebenfalls mit `aktion.ende`.
@@ -40,4 +53,7 @@ Auswahl, Prozent, Start und Ende; am Ende geht der Preis auf den regulaeren Prei
 
 - Dauerrabatt vom 24.09. (482 Produkte, `preisanker`): `aktion.ende = 2026-11-01`,
   Rueckstellung am 02.11.2026.
-- Welle 1 Teppichboden: Rueckstellung 19.10. (#413).
+- Welle 1 Teppichboden: Rueckstellung 19.10. (#413). Probelauf am 08.10. gegen den
+  Export vom 08.10. (`--stichtag 2026-10-19 --klasse preisanker`): 680 Varianten in
+  18 Produkten (451 Meterware, 229 Raummass), Zielpreise identisch mit der
+  freigegebenen Variantenliste.

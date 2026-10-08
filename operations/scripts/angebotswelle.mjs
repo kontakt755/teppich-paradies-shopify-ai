@@ -7,12 +7,13 @@
 //   node operations/scripts/angebotswelle.mjs abfrage
 //   node operations/scripts/angebotswelle.mjs plan <export.jsonl> <ziel> --prozent 15 --start 2026-11-03 --ende 2026-11-16 (--typ Teppichboden | --handles a,b)
 //   node operations/scripts/angebotswelle.mjs ende <export.jsonl> <ziel> --stichtag 2026-11-02 [--klasse preisanker]
+//   node operations/scripts/angebotswelle.mjs ende <varianten.json> <ziel> --produkte <produkte.json> --stichtag ...
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Bulk-Export, den plan und ende lesen (eine Zeile je Variante, product eingebettet).
-export const ABFRAGE = `{ productVariants { edges { node { id sku title price compareAtPrice
+export const ABFRAGE = `{ productVariants { edges { node { id sku title price compareAtPrice selectedOptions { name value }
   product { id handle title productType status
     start: metafield(namespace: "aktion", key: "start") { value }
     ende: metafield(namespace: "aktion", key: "ende") { value }
@@ -25,15 +26,42 @@ const euro = (c) => (c / 100).toFixed(2);
 const tag = (d) => new Date(`${d}T00:00:00Z`).getTime();
 const DATUM = /^\d{4}-\d{2}-\d{2}$/;
 
-/** Bulk-Export-Zeilen in Varianten mit eingebettetem Produkt umbauen (JSONL mit __parentId oder schon eingebettet). */
-export function ladeExport(text) {
-  const zeilen = text.split('\n').filter(Boolean).map((l) => JSON.parse(l));
-  const produkte = new Map(zeilen.filter((z) => z.id?.includes('/Product/') && !z.__parentId).map((p) => [p.id, p]));
+// JSONL (Bulk-Export) oder JSON-Array (seitenweiser Export per CLI) -> Zeilen.
+const zeilenAus = (text) => (/^\s*\[/.test(text) ? JSON.parse(text) : text.split('\n').filter((l) => l.trim()).map((l) => JSON.parse(l)));
+
+/**
+ * Export in Varianten mit eingebettetem Produkt umbauen. Akzeptiert Bulk-JSONL (mit __parentId
+ * oder schon eingebettet) und JSON-Arrays; traegt eine Variante nur product.id, kommen die
+ * Produktdaten aus produkteText (zweite Exportdatei, --produkte).
+ */
+export function ladeExport(text, produkteText) {
+  const zeilen = zeilenAus(text);
+  const extra = produkteText ? zeilenAus(produkteText) : [];
+  const produkte = new Map([...zeilen, ...extra].filter((z) => z.id?.includes('/Product/') && !z.__parentId).map((p) => [p.id, p]));
   return zeilen.filter((z) => z.id?.includes('/ProductVariant/')).map((v) => {
-    const p = v.product?.id ? v.product : produkte.get(v.__parentId) || v.product || {};
+    const id = v.product?.id || v.__parentId;
+    const p = { ...produkte.get(id), ...v.product };
+    if (!p.handle) throw new Error(`Produktdaten fehlen fuer ${v.id} (${id || 'ohne Produkt'}) - Produktexport mit --produkte angeben`);
     return { ...v, product: { ...p, start: p.start?.value ?? p.start ?? null, ende: p.ende?.value ?? p.ende ?? null, klasse: p.klasse?.value ?? p.klasse ?? null } };
   });
 }
+
+const istMuster = (v) => String(v.sku || '').startsWith('M-') || /^muster-/.test(v.product?.handle || '');
+
+// Raummass-Variante: Optionswert "Wunschmaß" (Option "Breite" bei Teppichboden) bzw. "Raummaß".
+// Ohne selectedOptions (alter Export) zaehlt der Variantentitel "Farbe / Wunschmaß".
+const RAUMMASS = /^(wunschma(ß|ss)|raumma(ß|ss))$/i;
+export function istRaummass(v) {
+  const werte = v.selectedOptions?.length ? v.selectedOptions.map((o) => o.value) : String(v.title || '').split(' / ');
+  return werte.some((w) => RAUMMASS.test(String(w).trim()));
+}
+
+/**
+ * Inhaber 2026-10-05: Raummass-Preise enden auf ,90 - naechstgelegener ,90-Betrag,
+ * round(x + 0,10) - 0,10. Volle Euro gehen 0,10 nach unten (104,00 -> 103,90),
+ * Betraege auf ,90 bleiben. Rechnet in Cent.
+ */
+export const aufNeunzig = (c) => Math.round((c + 10) / 100) * 100 - 10;
 
 /** Warum ein Produkt nicht in die Welle darf - oder null. */
 export function sperrgrund(produkt, start) {
@@ -47,7 +75,7 @@ export function sperrgrund(produkt, start) {
 
 /** Eine Variante -> { price, compareAtPrice, basis } oder { grund } zum Auslassen. */
 export function planeVariante(v, prozent) {
-  if (String(v.sku || '').startsWith('M-') || /^muster-/.test(v.product?.handle || '')) return { grund: 'Muster' };
+  if (istMuster(v)) return { grund: 'Muster' };
   const preis = cent(v.price);
   if (preis <= 0) return { grund: 'Preis 0' };
   if (v.compareAtPrice && cent(v.compareAtPrice) > preis) return { grund: 'schon reduziert' };
@@ -72,7 +100,8 @@ export function plane(varianten, opt) {
     if (r.grund) { ausgelassen.push([p.handle, v.title, r.grund].join(';')); continue; }
     if (!setzen.has(p.id)) { setzen.set(p.id, []); zurueck.set(p.id, []); }
     setzen.get(p.id).push({ id: v.id, price: r.price, compareAtPrice: r.compareAtPrice });
-    zurueck.get(p.id).push({ id: v.id, price: r.compareAtPrice, compareAtPrice: null });
+    // vorab berechnete Rueckstellung nach derselben Regel wie ende() (Raummass auf ,90)
+    zurueck.get(p.id).push({ id: v.id, price: istRaummass(v) ? euro(aufNeunzig(cent(r.compareAtPrice))) : r.compareAtPrice, compareAtPrice: null });
     produkte.add(p.id);
     csv.push([p.productType || '-', p.handle, v.title, v.sku || '', r.compareAtPrice, r.price, prozent].join(';'));
   }
@@ -86,7 +115,9 @@ export function plane(varianten, opt) {
 
 /**
  * Rueckstellung aus dem Live-Stand: Produkte, deren aktion.ende vor dem Stichtag liegt und
- * die noch reduziert sind, gehen auf den Vergleichspreis (= regulaerer Preis) zurueck.
+ * die noch reduziert sind, gehen auf den regulaeren Preis zurueck, der Vergleichspreis wird
+ * geleert. Meterware: Zielpreis = Vergleichspreis. Raummass (Wunschmass-Variante): der
+ * ,90-Betrag dazu (aufNeunzig, Inhaber 2026-10-05). Muster bleiben unberuehrt.
  */
 export function ende(varianten, opt) {
   if (!DATUM.test(opt.stichtag || '')) throw new Error('--stichtag als JJJJ-MM-TT');
@@ -95,10 +126,13 @@ export function ende(varianten, opt) {
     const p = v.product;
     if (!p.ende || !DATUM.test(p.ende) || tag(p.ende) >= tag(opt.stichtag)) continue;
     if (opt.klasse && p.klasse !== opt.klasse) continue;
+    if (istMuster(v)) continue;
     if (!v.compareAtPrice || cent(v.compareAtPrice) <= cent(v.price)) continue;
+    const raummass = istRaummass(v);
+    const ziel = euro(raummass ? aufNeunzig(cent(v.compareAtPrice)) : cent(v.compareAtPrice));
     if (!zurueck.has(p.id)) zurueck.set(p.id, []);
-    zurueck.get(p.id).push({ id: v.id, price: euro(cent(v.compareAtPrice)), compareAtPrice: null });
-    csv.push([p.handle, v.title, v.sku || '', v.price, euro(cent(v.compareAtPrice)), p.ende].join(';'));
+    zurueck.get(p.id).push({ id: v.id, price: ziel, compareAtPrice: null });
+    csv.push([p.handle, v.title, v.sku || '', raummass ? 'Raummaß' : 'Meterware', v.price, euro(cent(v.compareAtPrice)), ziel, p.ende].join(';'));
   }
   return { zurueck, csv };
 }
@@ -118,10 +152,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { o, rest: [quelle, ziel] } = argumente(weiter);
   if (befehl === 'abfrage') { console.log(ABFRAGE); process.exit(0); }
   if (!['plan', 'ende'].includes(befehl) || !quelle || !ziel) {
-    console.error('Aufruf: angebotswelle.mjs abfrage | plan <export.jsonl> <ziel> --prozent N --start D --ende D (--typ T | --handles a,b) | ende <export.jsonl> <ziel> --stichtag D [--klasse K]');
+    console.error('Aufruf: angebotswelle.mjs abfrage | plan <export.jsonl> <ziel> --prozent N --start D --ende D (--typ T | --handles a,b) | ende <export.jsonl> <ziel> --stichtag D [--klasse K] [--produkte produkte.json]');
     process.exit(2);
   }
-  const varianten = ladeExport(fs.readFileSync(quelle, 'utf8'));
+  const varianten = ladeExport(fs.readFileSync(quelle, 'utf8'), o.produkte && fs.readFileSync(o.produkte, 'utf8'));
   fs.mkdirSync(ziel, { recursive: true });
   const schreib = (name, inhalt) => fs.writeFileSync(path.join(ziel, name), inhalt);
   if (befehl === 'plan') {
@@ -134,7 +168,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     console.log(`Plan: ${r.csv.length} Varianten in ${r.setzen.size} Produkten, ${r.ausgelassen.length} ausgelassen -> ${ziel}`);
   } else {
     const r = ende(varianten, { stichtag: o.stichtag, klasse: o.klasse });
-    schreib('rueckstellen.csv', ['handle;variante;sku;preis_aktion;preis_regulaer;aktion_ende', ...r.csv].join('\n') + '\n');
+    schreib('rueckstellen.csv', ['handle;variante;sku;zuschnitt;preis_aktion;vergleichspreis;zielpreis;aktion_ende', ...r.csv].join('\n') + '\n');
     schreib('rueckstellen.jsonl', jsonl(r.zurueck));
     console.log(`Rueckstellung: ${r.csv.length} Varianten in ${r.zurueck.size} Produkten -> ${ziel}`);
   }
