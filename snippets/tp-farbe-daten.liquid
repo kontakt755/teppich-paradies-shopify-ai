@@ -7,6 +7,8 @@
     1. Varianten-Metafeld custom.farbe  -> Metaobjekt tp_farbe, Feld farbnummer
     2. Varianten-Metafeld custom.farbcode (Farbnummer als Text)
     3. Teil der SKU hinter dem letzten Unterstrich (PVCJOKANEC_4381 -> 4381)
+       - nicht bei Zubehoer (Tag zubehoer) ohne Farboption: dort ist das
+         SKU-Ende Gebinde/Groesse (KLEUU3000_10, ZUBUJK128_100), keine Farbe
 
   @param {object} variant - Die Variante
   @param {object} product - Das Produkt (fuer die Optionsposition)
@@ -21,12 +23,14 @@
   assign tp_fd_nummer = ''
   assign tp_fd_swatch = ''
   assign tp_fd_register = variant.metafields.custom.farbe.value
+  assign tp_fd_hat_farboption = false
 
   for tp_fd_option in product.options_with_values
     assign tp_fd_oname = tp_fd_option.name | downcase
     if tp_fd_oname contains 'farbe' or tp_fd_oname contains 'color' or tp_fd_oname contains 'dekor'
       assign tp_fd_idx = tp_fd_option.position | minus: 1
       assign tp_fd_name = variant.options[tp_fd_idx]
+      assign tp_fd_hat_farboption = true
       break
     endif
   endfor
@@ -49,6 +53,11 @@
     assign tp_fd_nummer = tp_fd_register.farbnummer.value
   elsif variant.metafields.custom.farbcode.value != blank
     assign tp_fd_nummer = variant.metafields.custom.farbcode.value
+  # Zubehoer ohne Farboption (Kleber, Unterlagen, Reiniger, Verlegeband):
+  # das SKU-Ende ist Gebinde/Groesse, keine Farbnummer.
+  # Boeden ohne Farboption (Vinyl, Laminat, Parkett) behalten den SKU-Fallback.
+  elsif variant.sku contains '_' and product.tags contains 'zubehoer' and tp_fd_hat_farboption == false
+    assign tp_fd_nummer = ''
   elsif variant.sku contains '_'
     assign tp_fd_sku_suffix = variant.sku | split: '_' | last | strip
     if tp_fd_sku_suffix.size > 0 and tp_fd_sku_suffix.size <= 10
