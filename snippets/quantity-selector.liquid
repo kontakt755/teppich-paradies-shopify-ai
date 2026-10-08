@@ -8,6 +8,7 @@
   @param {number} [line_index] - the index of the forloop representing the line on which the quantity selector is rendered
   @param {string} [class] - custom class for the quantity selector, optional
   @param {boolean} [can_update_quantity] - whether the quantity can be updated, defaults to true
+  @param {number} [max_quantity] - absolute upper bound in the cart, if stricter than the variant rule
   @param {number} [min] - override the minimum quantity (e.g., 0 for quick order list)
   @param {block} [block] - The block object, used for Shopify editor attributes.
 {%- enddoc -%}
@@ -89,6 +90,8 @@
       {% endif %}
       {% if tp_qty_locked %}
         max="{{ in_cart_quantity }}"
+      {% elsif max_quantity != null %}
+        max="{{ max_quantity }}"
       {% elsif variant.quantity_rule.max %}
         max="{{ variant.quantity_rule.max }}"
       {% endif %}

@@ -33,7 +33,77 @@ Muster **nicht** als Umsatz werten, kein doppeltes `purchase`, UTMs erhalten.
 | installation_request | `tp_verlegung_angefragt` |
 | phone_click / whatsapp_click | `tp_lead_call` / `tp_lead_whatsapp` |
 
-## Custom Pixel (Admin → Einstellungen → Kundenereignisse → Custom Pixel)
+## Fertiger Code (2026-10-02, Audit Quick Win 3) – zum Einfügen
+
+Shopify-Admin → Einstellungen → Kundenereignisse → Pixel **„TP Funnel und
+Musterbestellung“** (angelegt, noch leer und nicht verbunden). Einwilligung:
+Erforderlich, Marketing + Analysen. Code einfügen → Speichern → Verbinden.
+Danach das alte Pixel **„GTM-KRXFFDSL Checkout Tracking“** trennen und löschen
+(doppeltes `purchase`, fremdes Meta-Pixel 1997776204331503).
+
+```js
+// Teppich Paradies - Funnel und Musterbestellung (2026-10-02)
+// KEIN zweites purchase: der Kauf kommt aus der Google-&-YouTube- und der Facebook-App.
+const GA4 = 'G-3KKWHJHS0D';
+const META_PIXEL = '1401914534871545';
+
+const s = document.createElement('script');
+s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA4;
+s.async = true;
+document.head.appendChild(s);
+window.dataLayer = window.dataLayer || [];
+function gtag() { dataLayer.push(arguments); }
+gtag('js', new Date());
+gtag('config', GA4, { send_page_view: false });
+
+!function (f, b, e, v, n, t, sc) {
+  if (f.fbq) return; n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
+  if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0'; n.queue = [];
+  t = b.createElement(e); t.async = !0; t.src = v; sc = b.getElementsByTagName(e)[0]; sc.parentNode.insertBefore(t, sc);
+}(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', META_PIXEL);
+
+// Muster: SKU M-..., TP-MUSTER-... oder Produkttyp Musterservice
+function istMuster(li) {
+  const v = li.variant || {};
+  const sku = v.sku || '';
+  const typ = (v.product && v.product.type) || '';
+  return sku.startsWith('M-') || sku.startsWith('TP-MUSTER-') || typ === 'Musterservice';
+}
+
+const themeEvents = ['tp_farbe_gewaehlt', 'tp_masse_eingegeben', 'tp_muster_cta_klick', 'tp_muster_im_warenkorb',
+  'tp_in_den_warenkorb_konfiguriert', 'tp_lead_call', 'tp_lead_whatsapp', 'tp_lead_mail', 'tp_lead_form_submit',
+  'tp_beratung_ja', 'tp_beratung_nein', 'tp_masspruefung_ja', 'tp_verlegung_angefragt', 'tp_newsletter_anmeldung_erfolg'];
+themeEvents.forEach(function (name) {
+  analytics.subscribe(name, function (e) { gtag('event', name, e.customData || {}); });
+});
+
+analytics.subscribe('checkout_completed', function (e) {
+  const co = e.data.checkout;
+  const items = co.lineItems || [];
+  const muster = items.filter(istMuster);
+  const ware = items.filter(function (li) { return !istMuster(li); });
+  const wert = Number((co.totalPrice && co.totalPrice.amount) || 0);
+  const typ = ware.length === 0 ? 'muster' : (muster.length ? 'misch' : 'ware');
+  const tid = (co.order && co.order.id) || co.token || '';
+  gtag('event', 'tp_bestellung_typ', { typ: typ, wert: wert, transaction_id: tid, muster_anzahl: muster.length });
+  if (typ === 'muster' || wert === 0) {
+    gtag('event', 'sample_order', { muster_anzahl: muster.length, transaction_id: tid, value: 0, currency: 'EUR' });
+    fbq('trackCustom', 'Musterbestellung', { muster_anzahl: muster.length, value: 0, currency: 'EUR' }, { eventID: 'muster-' + tid });
+  } else {
+    fbq('trackCustom', 'KaufWare', { value: wert, currency: 'EUR' }, { eventID: 'ware-' + tid });
+  }
+});
+```
+
+Folgeschritte nach dem Verbinden:
+- GA4: `sample_order` als Schlüsselereignis markieren; in Google Ads als
+  sekundäre Conversion „Musterbestellung“ importieren.
+- Meta: Kampagne „TP | Meta | Muster“ auf das benutzerdefinierte Ereignis
+  `Musterbestellung` optimieren; Custom Conversion „Kauf > 0 €“ auf `KaufWare`.
+- Nachweis per Netzwerkmitschnitt einer Testbestellung (nicht über Ads-Zahlen).
+
+## Custom Pixel – ursprüngliche Vorlage (2026-09-22)
 
 Berechtigungen: Analytics + Marketing (Consent-Pflicht, Pixel läuft nur mit
 Einwilligung). `G-XXXXXXXXXX` durch die GA4-Mess-ID des Inhabers ersetzen.

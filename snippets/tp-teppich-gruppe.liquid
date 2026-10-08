@@ -1,0 +1,104 @@
+{% doc %}
+  Ordnet einen Teppich nach Mass einer Kundengruppe zu und gibt deren Kennung aus:
+  "natur", "flauschig", "weich", "robust" - oder nichts.
+
+  Warum: 50 Qualitaeten in einem Raster waren fuer Kunden kaum zu ueberblicken
+  (Inhaber 2026-10-02: "logisch sortieren - weich, fest, natur"). Die Seite
+  Teppich nach Mass zeigt deshalb je Gruppe eine eigene Reihe
+  (sections/tp-teppiche-gruppen + tp-zubehoer-produkte mit Einstellung "Teppich-Gruppe").
+
+  Nichts wird geraten. Alle Angaben kommen - wie bei snippets/tp-teppich-qualitaet -
+  vom Teppichboden, aus dem zugeschnitten wird (service.einfass_basis):
+  1. natur:     erstes custom.fasermaterial ist eine Naturfaser (Wolle, Sisal, ...)
+                oder custom.arten enthaelt "Wolle" (bei Wovena, Rubira, Nordica,
+                Callista ist nur die Art gepflegt, 2026-10-02).
+  2. flauschig: custom.konstruktion Velours und custom.florhohe ab 10 mm.
+  3. weich:     custom.konstruktion Velours, Flor unter 10 mm oder unbekannt.
+  4. robust:    custom.konstruktion Schlinge oder Nadelvlies.
+  Fehlen die Daten, bleibt die Ausgabe leer; die Seite zeigt solche Teppiche
+  in der Reihe "Weitere Qualitaeten", sie verschwinden also nie.
+
+  @param {object} product - der Teppich nach Mass
+{% enddoc %}
+{%- liquid
+  assign tg_basis = product.metafields.service.einfass_basis.value
+  assign tg_gruppe = ''
+  if tg_basis != blank
+    assign tg_natur_fasern = 'schurwolle,wolle,sisal,jute,kokos,seegras,baumwolle,leinen' | split: ','
+
+    assign tg_faser = ''
+    assign tg_faser_mf = tg_basis.metafields.custom.fasermaterial
+    assign tg_faser_val = tg_faser_mf.value
+    if tg_faser_val != blank
+      if tg_faser_mf.type contains 'list.'
+        for tg_item in tg_faser_val limit: 1
+          assign tg_fm = tg_item.fasermaterial
+          capture tg_faser
+            echo tg_fm.value | default: tg_fm | default: tg_item.name
+          endcapture
+        endfor
+      else
+        assign tg_fm = tg_faser_val.fasermaterial
+        capture tg_faser
+          echo tg_fm.value | default: tg_fm | default: tg_faser_val.name
+        endcapture
+      endif
+    endif
+    assign tg_faser = tg_faser | strip | downcase
+    if tg_natur_fasern contains tg_faser and tg_faser != blank
+      assign tg_gruppe = 'natur'
+    endif
+
+    if tg_gruppe == blank
+      assign tg_art_mf = tg_basis.metafields.custom.arten
+      assign tg_art_val = tg_art_mf.value
+      if tg_art_val != blank
+        if tg_art_mf.type contains 'list.'
+          for tg_item in tg_art_val
+            capture tg_art
+              echo tg_item.name.value | default: tg_item.name
+            endcapture
+            assign tg_art = tg_art | strip | downcase
+            if tg_art == 'wolle'
+              assign tg_gruppe = 'natur'
+              break
+            endif
+          endfor
+        else
+          capture tg_art
+            echo tg_art_val.name.value | default: tg_art_val.name
+          endcapture
+          assign tg_art = tg_art | strip | downcase
+          if tg_art == 'wolle'
+            assign tg_gruppe = 'natur'
+          endif
+        endif
+      endif
+    endif
+
+    if tg_gruppe == blank
+      assign tg_kon = ''
+      assign tg_kon_val = tg_basis.metafields.custom.konstruktion.value
+      if tg_kon_val != blank
+        for tg_kon_item in tg_kon_val limit: 1
+          capture tg_kon
+            echo tg_kon_item.name.value | default: tg_kon_item.name
+          endcapture
+        endfor
+      endif
+      assign tg_kon = tg_kon | strip | downcase
+
+      if tg_kon == 'velours'
+        assign tg_flor = tg_basis.metafields.custom.florhohe.value | downcase | remove: 'mm' | strip | replace: ',', '.' | plus: 0
+        if tg_flor >= 10
+          assign tg_gruppe = 'flauschig'
+        else
+          assign tg_gruppe = 'weich'
+        endif
+      elsif tg_kon == 'schlinge' or tg_kon == 'nadelvlies'
+        assign tg_gruppe = 'robust'
+      endif
+    endif
+  endif
+  echo tg_gruppe
+-%}

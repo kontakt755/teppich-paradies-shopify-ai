@@ -31,11 +31,11 @@ auf dem Betriebsrechner (`lib/whatsapp.mjs`).
 |---|---|---|
 | Bildqualität | Original | von WhatsApp verkleinert (meist 1600 px, reicht für Beiträge) |
 | Ort, Boden, Raum | vom Monteur angetippt | fehlen – die Redaktion trägt nach, was das Bild eindeutig zeigt |
-| Einwilligung | Häkchen beim Upload | **fehlt** – der Inhaber bestätigt sie in der Zentrale |
+| Einwilligung | liegt immer vor | liegt immer vor |
 
-Ohne bestätigte Einwilligung lässt sich nichts freigeben. In der Zentrale steht
-dafür am Material und am Entwurf der Knopf **„Einwilligung liegt vor“** – nur
-drücken, wenn der Auftragszettel das Kreuz trägt.
+Die Einwilligung holt der Betrieb mit jedem Auftrag ein (Inhaber 02.10.2026); sie
+wird nirgends mehr abgefragt. Pflicht bleibt die Sichtung: Bilder mit erkennbaren
+Gesichtern gehen nicht raus.
 
 ## Einrichten (einmalig, am Mac mini)
 

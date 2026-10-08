@@ -24,22 +24,55 @@
 {% else %}
   {% assign tp_card_title_display = closest.product.title | split: ' – ' | first | split: ' Teppichboden' | first %}
   {%- liquid
+    # Wie Kartenbild und ueberlagerter Link dieselbe Raumfarbe waehlen.
+    assign tp_card_title_variant = closest.product.selected_or_first_available_variant
+    if closest.product.selected_variant == blank
+      capture tp_ct_raumdaten
+        render 'tp-sprint-raumdaten', product: closest.product
+      endcapture
+      assign tp_ct_raumteile = tp_ct_raumdaten | strip | split: '|'
+      if tp_ct_raumteile.size == 2
+        assign tp_ct_raumfarbe = tp_ct_raumteile | first
+        for tp_ct_option in closest.product.options_with_values
+          assign tp_ct_optionsname = tp_ct_option.name | downcase
+          if tp_ct_optionsname == 'farbe' or tp_ct_optionsname == 'color' or tp_ct_optionsname == 'dekor'
+            assign tp_ct_farbindex = tp_ct_option.position | minus: 1
+            for tp_ct_variant in closest.product.variants
+              if tp_ct_variant.options[tp_ct_farbindex] == tp_ct_raumfarbe and tp_ct_variant.available
+                assign tp_card_title_variant = tp_ct_variant
+                break
+              endif
+            endfor
+            break
+          endif
+        endfor
+      endif
+    endif
+  -%}
+  {%- liquid
     # C1: Vinyl-Dekore als Zeile "Linie · Verlegeart" plus grosser Dekorname,
-    # z. B. "Lyon Eiche Mandel Fischgraet" -> "Lyon · Fischgraet" / "Eiche Mandel".
-    # Nur bei Produkttyp mit "vinyl": dort ist das erste Wort belegt die Linie.
+    # z. B. "Lyon Eiche Mandel Fischgraet" -> "Lyon · Klickvinyl" / "Eiche
+    # Mandel Fischgraet". Oben steht immer die Verlegeart (Produkttyp); ein
+    # Muster wie Fischgraet oder Chevron bleibt im Dekornamen (Inhaber
+    # 2026-10-02). Nur bei Produkttyp mit "vinyl": dort ist das erste Wort
+    # belegt die Linie.
     assign tp_ct_typ = closest.product.type | downcase
     assign tp_ct_linie = ''
     assign tp_ct_woerter = tp_card_title_display | split: ' '
-    if tp_ct_typ contains 'vinyl' and tp_ct_woerter.size > 1
+    # Markenteppiche "<MARKE>-Kollektion Teppich <NAME>": Zeile "<MARKE> · Typ",
+    # gross nur der Name (Inhaber 2026-10-02). Schreibweise unveraendert aus
+    # Hersteller und Titel - die Markenvorgabe verlangt sie so.
+    assign tp_ct_marke = closest.product.vendor | remove: '-Kollektion' | strip
+    if closest.product.title contains '-Kollektion ' and tp_ct_marke != blank and tp_ct_woerter.size > 2
+      assign tp_ct_linie = tp_ct_marke
+      assign tp_ct_art = closest.product.type
+      assign tp_card_title_display = tp_ct_woerter | last
+    elsif tp_ct_typ contains 'vinyl' and tp_ct_woerter.size > 1
       assign tp_ct_linie = tp_ct_woerter | first
       assign tp_ct_art = closest.product.type
       assign tp_ct_dekor = ''
       for tp_ct_w in tp_ct_woerter offset: 1
-        if tp_ct_w == 'Fischgrät' or tp_ct_w == 'Chevron' or tp_ct_w == 'Landhausdiele'
-          assign tp_ct_art = tp_ct_w
-        else
-          assign tp_ct_dekor = tp_ct_dekor | append: ' ' | append: tp_ct_w
-        endif
+        assign tp_ct_dekor = tp_ct_dekor | append: ' ' | append: tp_ct_w
       endfor
       assign tp_ct_dekor = tp_ct_dekor | strip
       if tp_ct_dekor != blank
@@ -56,11 +89,16 @@
   <a
     class="contents user-select-text tp-card-title__link"
     ref="productTitleLink"
-    href="{{ closest.product.selected_or_first_available_variant.url }}"
+    href="{{ tp_card_title_variant.url }}"
   >
     {% render 'text', fallback_text: product_title, block: block %}
   </a>
+  {%- comment -%} Tag "auslauf": Auslaufkollektion, ruhig gekennzeichnet (Hinweis dazu auf der Produktseite) {%- endcomment -%}
+  {%- if closest.product.tags contains 'auslauf' -%}
+    <p class="tp-card-title__auslauf">Auslaufkollektion</p>
+  {%- endif -%}
   {% render 'tp-card-roll-widths', product_resource: closest.product %}
+  {% render 'tp-card-fixgroessen', product: closest.product %}
 {% endif %}
 
 {% comment %}
@@ -72,6 +110,7 @@
   weiter gewinnt.
 {% endcomment %}
 {% stylesheet %}
+  .tp-card-title__auslauf { margin: 2px 0 0; font-size: 12px; line-height: 1.3; font-weight: 600; color: #8a5a00; }
   .tp-card-title__linie { margin: 0 0 2px; font-size: 12px; line-height: 1.3; letter-spacing: .02em; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.65); }
   :where(.tp-card-title__link) [role='heading'] {
     margin: 0;

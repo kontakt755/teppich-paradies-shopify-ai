@@ -47,9 +47,12 @@
 </div>
 
 {% stylesheet %}
+  /* Kein content-visibility: auto - ohne Platzhalterhoehe zaehlte der Footer
+     ausserhalb des Bildes 50 px statt rund 1.700 px (Handy). Beim Scrollen am
+     Seitenende kippte die Seitenhoehe staendig, iOS-Safari (ohne Scroll-Verankerung)
+     blieb beim Hochscrollen haengen. Gemessen 2026-10-03. */
   .footer-content {
     contain: content;
-    content-visibility: auto;
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--footer-gap);

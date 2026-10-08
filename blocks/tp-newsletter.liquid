@@ -1,7 +1,7 @@
 {% doc %}
-  Duenner Wrapper um snippets/tp-newsletter.liquid: reicht Block-Einstellungen
-  durch, traegt block.shopify_attributes fuer den Theme-Editor. Keine eigene
-  Formularlogik - die liegt vollstaendig im Snippet, damit dieselbe Anmeldung
+  Duenner Wrapper um snippets/tp-newsletter-kachel.liquid: reicht Block-Einstellungen
+  durch, traegt block.shopify_attributes fuer den Theme-Editor. Die eigentliche
+  Formularlogik liegt weiterhin in snippets/tp-newsletter.liquid, damit dieselbe Anmeldung
   auch aus Sections/Artikeln per render aufgerufen werden kann
   (z. B. {% render 'tp-newsletter', quelle: 'ratgeber' %}).
 
@@ -27,7 +27,7 @@
 {% enddoc %}
 
 <div{% if block.settings.quelle == 'footer' %} class="tp-nl-footer"{% endif %} {{ block.shopify_attributes }}>
-  {%- render 'tp-newsletter',
+  {%- render 'tp-newsletter-kachel',
     ueberschrift: block.settings.ueberschrift,
     text: block.settings.text,
     hinweis: block.settings.hinweis,
@@ -37,22 +37,6 @@
     instanz: block.id
   -%}
 </div>
-{%- if block.settings.quelle == 'footer' -%}
-  {%- comment -%}
-    A5: Newsletter nur einmal pro Seite. Steht im Inhalt schon eine Anmeldung
-    (Startseiten-Sektion, Kachel im Raster, Ratgeber), entfaellt die im Footer.
-    Skript statt :has()-Regel: die CSS-Buendelung von Shopify verwarf die Regel.
-    Der Footer steht nach main, der Inhalt ist hier also schon im DOM.
-  {%- endcomment -%}
-  <script>
-    (function () {
-      if (document.querySelector('main .tp-nl, .tp-nv, .tp-nk')) {
-        document.querySelectorAll('.tp-nl-footer').forEach(function (el) { el.hidden = true; el.style.display = 'none'; });
-      }
-    })();
-  </script>
-{%- endif -%}
-
 {% stylesheet %}
   .tp-nl {
     display: flex;

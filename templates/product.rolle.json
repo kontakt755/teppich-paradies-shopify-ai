@@ -315,6 +315,10 @@
                 "label": "Kostenloses Muster anfragen",
                 "hinweis": "Bis zu 3 Farben, versandkostenfrei"
               }
+            },
+            "tp_zubehoer_empfehlung": {
+              "type": "tp-zubehoer-empfehlung",
+              "settings": {}
             }
           },
           "block_order": [
@@ -323,6 +327,7 @@
             "divider_VJhene",
             "group_farbwahl",
             "tp_rollware_rechner_sales1",
+            "tp_zubehoer_empfehlung",
             "tp_muster_cta_1",
             "buy_buttons_eYQEYi"
           ]

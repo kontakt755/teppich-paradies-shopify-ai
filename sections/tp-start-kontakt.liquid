@@ -21,7 +21,7 @@
           <label>PLZ<input type="text" name="contact[PLZ]" inputmode="numeric" maxlength="5" autocomplete="postal-code"></label>
           <label>E-Mail<input type="email" name="contact[email]" autocomplete="email" required value="{{ form.email }}"></label>
           <label>Telefon (optional)<input type="tel" name="contact[Telefon]" autocomplete="tel"></label>
-          <label class="tp-kon__full">Ich möchte<select name="contact[Anliegen]">{%- if section.settings.anliegen != blank -%}<option selected>{{ section.settings.anliegen | escape }}</option>{%- endif -%}<option>Boden verlegen lassen</option><option>Aufmaß und Angebot</option><option>Beratung zum Produkt</option><option>Muster bestellen</option><option>Rückruf</option></select></label>
+          <label class="tp-kon__full">Ich möchte<select name="contact[Anliegen]">{%- if section.settings.anliegen != blank -%}<option selected>{{ section.settings.anliegen | escape }}</option>{%- endif -%}{%- assign tp_kon_anliegen = 'Boden verlegen lassen|Aufmaß und Angebot|Beratung zum Produkt|Muster bestellen|Rückruf' | split: '|' -%}{%- for tp_kon_a in tp_kon_anliegen -%}{%- unless tp_kon_a == section.settings.anliegen -%}<option>{{ tp_kon_a }}</option>{%- endunless -%}{%- endfor -%}</select></label>
           <label class="tp-kon__full">{{ section.settings.nachricht_label | default: 'Nachricht (Raum, Fläche, Wunschboden)' | escape }}<textarea name="contact[body]" rows="3">{{ form.body }}</textarea></label>
           <p class="tp-s-note tp-kon__full">{{ section.settings.foto_hinweis | default: 'Fotos oder Grundrisse schicken Sie uns am einfachsten per WhatsApp.' | escape }} Mit dem Absenden stimmen Sie der Verarbeitung Ihrer Angaben zur Bearbeitung der Anfrage zu.</p>
           <button class="tp-s-btn tp-s-btn--primary tp-kon__full" type="submit">Anfrage senden</button>
@@ -161,12 +161,22 @@
     if (!t) return;
     var card = t.closest('.tp-kon__card--form');
     if (card && card.querySelector('.tp-kon__ok, .tp-kon__err')) card.classList.add('tp-kon__card--offen');
-    t.addEventListener('click', function () {
+    function oeffnen() {
       card.classList.add('tp-kon__card--offen');
       t.setAttribute('aria-expanded', 'true');
+    }
+    t.addEventListener('click', function () {
+      oeffnen();
       var first = card.querySelector('input[type=text]');
       if (first) first.focus();
     });
+    /* Buttons "Verlegung anfragen" auf Serviceseiten springen auf #tp-anfrage:
+       am Telefon dann gleich das Formular zeigen statt nur den Aufklapp-Knopf. */
+    function perAnker() {
+      if (window.location.hash === '#tp-anfrage') oeffnen();
+    }
+    perAnker();
+    window.addEventListener('hashchange', perAnker);
   })();
 {% endjavascript %}
 

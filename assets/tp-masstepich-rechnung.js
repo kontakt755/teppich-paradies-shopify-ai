@@ -97,7 +97,19 @@
     } else if (o.maxL && lang > o.maxL) {
       f.push('Die längere Seite darf höchstens ' + o.maxL + ' cm messen.');
     }
+    var kg = gewichtKg(o.form, o.w, o.l, o.kgProQm);
+    if (!f.length && o.maxKg > 0 && kg > o.maxKg + EPS) {
+      f.push('Höchstens ' + o.maxKg + ' kg Versandgewicht – bei dieser Qualität bis ca. ' +
+        String(Math.floor((o.maxKg / o.kgProQm) * 100) / 100).replace('.', ',') + ' m².');
+    }
     return f;
+  }
+
+  // Versandgewicht nach der abgerechneten Flaeche (Lieferantenangabe kg/m2).
+  // Ohne kg/m2 gibt es keine Gewichtsgrenze (0).
+  function gewichtKg(form, wCm, lCm, kgProQm) {
+    if (!(kgProQm > 0)) return 0;
+    return abrechnungsflaecheM2(form, wCm, lCm) * kgProQm;
   }
 
   // Kante in 0,01-lfm-Einheiten. Shopify rechnet ganze Mengen mal
@@ -130,6 +142,7 @@
     rolleFuer: rolleFuer,
     rollenAnzahl: rollenAnzahl,
     pruefeMasse: pruefeMasse,
+    gewichtKg: gewichtKg,
     mengeMitMindestpreis: mengeMitMindestpreis
   };
 })(typeof window !== 'undefined' ? window : globalThis);

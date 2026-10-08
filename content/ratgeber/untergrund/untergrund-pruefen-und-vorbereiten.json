@@ -16,7 +16,7 @@
     "Ab wann muss gespachtelt werden?",
     "Muss der alte Belag raus?"
   ],
-  "status": "fachinput_noetig",
+  "status": "freigegeben",
   "verwandte": [
     "teppichboden-auf-fliesen",
     "teppichboden-verlegen-lose-fixieren-oder-kleben"
@@ -30,6 +30,41 @@
       "art": "hersteller",
       "titel": "Technische Merkblätter der Grundierungen und Spachtelmassen",
       "url": ""
+    },
+    {
+      "art": "norm",
+      "titel": "DIN 18365 Bodenbelagarbeiten (VOB/C) – Prüfpflichten des Auftragnehmers",
+      "url": ""
+    },
+    {
+      "art": "norm",
+      "titel": "DIN 18202 Toleranzen im Hochbau, Tabelle 3 (Ebenheit)",
+      "url": "https://www.baunetzwissen.de/boden/fachwissen/rohdecke/ebenheitstoleranzen-996781"
+    },
+    {
+      "art": "fachpublikation",
+      "titel": "Untergrundfibel (Händler-Fachschrift) – DIN 18202 Tab. 3 Zeile 3: 4 mm bei 1 m",
+      "url": "https://habisreutinger.de/media/import/CSimages/5513/55133/Untergrundfibel.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "CM-Messung Zement- und Calciumsulfatestrich – Grenzwerte Belegreife",
+      "url": "https://rapid-floor.de/wp-content/uploads/2024/11/CM-Messung_Zement-und-Calciumsulfatestrich.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Arbeitsanweisung CM-Messung",
+      "url": "https://baumit.at/files/at/technical_documents/Arbeitsanweisung-CM-Messung.pdf"
+    },
+    {
+      "art": "verband",
+      "titel": "TKB Technisches Hinweisblatt 05 – Belegreife (CM-%: Zement 2,0/1,8, Calciumsulfat 0,5/0,3 unbeheizt/beheizt)",
+      "url": "https://www.klebstoffe.com/wp-content/uploads/2024/11/Technisches-Hinweisblatt-05-KRL-Messmethode-Ermittlung-und-Beurteilung-der-Belegreife-hinsichtlich-der-Trockenheit-des-Untergrundes.pdf"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Verlegeanleitung Klick-Vinyl (Ebenheit 2 mm auf 2 m)",
+      "url": "https://cms.fatra.cz/api/document-files/file/Verlegungsvorschrift%20FatraClick.pdf"
     }
   ],
   "bilder": [
@@ -68,7 +103,7 @@
     "description": "Fest, eben, trocken, sauber: was der Untergrund können muss, was Sie selbst prüfen können und wann gespachtelt oder grundiert wird."
   },
   "metafields": {
-    "kurzantwort": "Der Untergrund muss fest, eben, trocken und sauber sein. Festigkeit, grobe Ebenheit und Verschmutzungen können Sie selbst prüfen. Die Restfeuchte eines Estrichs lässt sich dagegen nicht schätzen – sie wird gemessen, und dieser Punkt ist der teuerste, wenn man ihn übergeht. Ob eine Fläche gespachtelt werden muss, entscheidet sich vor Ort.",
+    "kurzantwort": "Der Untergrund muss fest, eben, trocken und sauber sein; Festigkeit und grobe Ebenheit können Sie selbst prüfen. Die Restfeuchte wird vom Fachbetrieb per CM-Messung bestimmt – ein Folientest ersetzt sie nicht.",
     "art": "Anleitung",
     "dauer": "",
     "schwierigkeit": "",
@@ -82,5 +117,9 @@
     "zubehoer_kollektion": "zubehoer",
     "geprueft_von": "",
     "stand": ""
+  },
+  "titelbild": {
+    "url": "https://cdn.shopify.com/s/files/1/0875/4852/6926/files/ratgeber-untergrund-pruefen-titel.png",
+    "alt": "Zementestrich mit aufgelegter Richtlatte und Messkeil"
   }
 }

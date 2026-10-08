@@ -37,6 +37,16 @@
     return { wert: n, fehler: '' };
   }
 
+  function massPruefen(inW, inL) {
+    var b = zahl(inW);
+    var l = zahl(inL);
+    var f = b.fehler || l.fehler;
+    if (!f && (!b.wert || !l.wert)) f = 'Bitte Breite und Länge in Zentimetern eingeben.';
+    if (!f && (b.wert < MIN_CM || l.wert < MIN_CM)) f = 'Beide Seiten mindestens ' + MIN_CM + ' cm.';
+    if (!f && (b.wert > MAX_EINGABE_CM || l.wert > MAX_EINGABE_CM)) f = 'Bitte ein Maß bis ' + MAX_EINGABE_CM + ' cm eingeben.';
+    return { w: b.wert, l: l.wert, fehler: f };
+  }
+
   function lesenGespeichert() {
     try {
       var s = JSON.parse(sessionStorage.getItem(SPEICHER) || 'null');
@@ -53,13 +63,19 @@
   }
 
   // Preis eines Teppichs fuer w x l: guenstigste Farbe, die das Mass hergibt.
-  function preisFuer(M, t, kettel, w, l) {
+  function preisFuer(M, t, kettel, w, l, pauschale) {
     var kurz = Math.min(w, l);
     var lang = Math.max(w, l);
     var flaeche = M.flaecheM2(w, l);
     var mitKettel = t.art === 'ketteln';
     if (mitKettel && !(kettel > 0)) return { passt: false, grund: 'preis' };
-    var kettelCent = mitKettel ? M.kanteEinheiten(M.umfangM('rechteck', w, l)) * kettel : 0;
+    // Art "fertig": Pauschale je Teppich (Pflicht) und Gewichtsgrenze fuer den Paketversand -
+    // dieselben Regeln wie im Konfigurator (blocks/tp-einfass-konfigurator.liquid).
+    var istFertig = t.art === 'fertig';
+    if (istFertig && !(pauschale > 0)) return { passt: false, grund: 'preis' };
+    if (t.max_kg > 0 && t.kg_qm > 0 && flaeche * t.kg_qm > t.max_kg + 1e-9) return { passt: false, grund: 'mass' };
+    var kettelCent = (mitKettel ? M.kanteEinheiten(M.umfangM('rechteck', w, l)) * kettel : 0) +
+      (istFertig ? pauschale : 0);
     var rest = Math.max(0, (t.mindest || 0) - kettelCent);
     var besteW = 0;
     var best = null;
@@ -102,7 +118,31 @@
     var daten;
     try { daten = JSON.parse(datenEl.textContent); } catch (e) { return; }
     var teppiche = (daten.teppiche || []).filter(Boolean);
-    if (!teppiche.length) return;
+    if (!teppiche.length) {
+      // Die Produktliste der Kollektion hat nur eine Seite mit bis zu 250 Eintraegen.
+      // Wird die Rasterseite 2 direkt geladen, fuehrt die Masssuche zu Seite 1.
+      var seite = new URL(window.location.href).searchParams.get('page');
+      if (Number(seite) > 1 && Number(daten.gesamt) > 0) {
+        var spaetesForm = root.querySelector('[data-tp-rechner]');
+        var spaetesW = root.querySelector('[data-tp-rechner-breite]');
+        var spaetesL = root.querySelector('[data-tp-rechner-laenge]');
+        var spaeterFehler = root.querySelector('[data-tp-rechner-fehler]');
+        if (!spaetesForm || !spaetesW || !spaetesL || !spaeterFehler) return;
+        root.setAttribute('data-tp-rechner-bereit', '1');
+        spaetesForm.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var mass = massPruefen(spaetesW, spaetesL);
+          spaeterFehler.textContent = mass.fehler;
+          spaeterFehler.hidden = !mass.fehler;
+          if (mass.fehler) return;
+          speichern(mass.w, mass.l);
+          var ziel = new URL(window.location.href);
+          ziel.searchParams.delete('page');
+          window.location.assign(ziel.toString());
+        });
+      }
+      return;
+    }
     root.setAttribute('data-tp-rechner-bereit', '1');
 
     var form = root.querySelector('[data-tp-rechner]');
@@ -162,7 +202,7 @@
         }
         text.appendChild(preis);
         text.appendChild(el('span', 'tp-tep-rechner__grund',
-          w + ' × ' + l + ' cm' + (t.art === 'ketteln' ? ', inkl. Kettelung' : ', inkl. Einfassung') +
+          w + ' × ' + l + ' cm' + (t.art === 'ketteln' ? ', inkl. Kettelung' : t.art === 'fertig' ? ', inkl. Einfassung und Pauschale' : ', inkl. Einfassung') +
           (r.mindest ? ' · Mindestpreis' : '')));
       } else if (r.grund === 'mass') {
         text.appendChild(el('span', 'tp-tep-rechner__grund',
@@ -179,7 +219,7 @@
       var passend = [];
       var andere = [];
       teppiche.forEach(function (t) {
-        var r = preisFuer(M, t, daten.kettel, w, l);
+        var r = preisFuer(M, t, daten.kettel, w, l, daten.pauschale);
         (r.passt ? passend : andere).push({ t: t, r: r });
       });
       passend.sort(function (a, b) { return a.r.summe - b.r.summe; });
@@ -202,15 +242,10 @@
 
     form.addEventListener('submit', function (e) {
       e.preventDefault();
-      var b = zahl(inW);
-      var l = zahl(inL);
-      var f = b.fehler || l.fehler;
-      if (!f && (!b.wert || !l.wert)) f = 'Bitte Breite und Länge in Zentimetern eingeben.';
-      if (!f && (b.wert < MIN_CM || l.wert < MIN_CM)) f = 'Beide Seiten mindestens ' + MIN_CM + ' cm.';
-      if (!f && (b.wert > MAX_EINGABE_CM || l.wert > MAX_EINGABE_CM)) f = 'Bitte ein Maß bis ' + MAX_EINGABE_CM + ' cm eingeben.';
-      fehlerZeigen(f);
-      if (f) return;
-      anwenden(b.wert, l.wert, true);
+      var mass = massPruefen(inW, inL);
+      fehlerZeigen(mass.fehler);
+      if (mass.fehler) return;
+      anwenden(mass.w, mass.l, true);
     });
     // "oder alle Qualitaeten ansehen": Mass verwerfen, der Link springt dann zum normalen Raster.
     root.querySelectorAll('[data-tp-rechner-alle]').forEach(function (link) {

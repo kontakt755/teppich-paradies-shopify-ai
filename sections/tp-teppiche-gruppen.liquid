@@ -1,0 +1,112 @@
+{%- comment -%}
+  Wegweiser auf der Seite Teppich nach Mass: je Kundengruppe eine Karte (z. B. Extra
+  flauschig, Weich, Fest & robust, Natur) mit Bild, Kurztext und Anzahl. Jede Karte
+  springt per Anker zur Reihe der Gruppe weiter unten (tp-zubehoer-produkte mit
+  gleicher Teppich-Gruppe und gleichem Anker).
+
+  Warum: 50 Qualitaeten in einem Raster waren fuer Kunden schwer zu finden
+  (Inhaber 2026-10-02). Erst die Art waehlen, dann die Qualitaet.
+
+  Zuordnung allein ueber snippets/tp-teppich-gruppe (Daten des Teppichbodens), nichts
+  fest eingetragen. Bild und Anzahl kommen aus der aktuellen Kollektion (bis 50 Produkte,
+  wie beim Mass-Rechner). Eine Gruppe ohne Teppich zeigt keine Karte.
+{%- endcomment -%}
+{{ 'tp-teppiche.css' | asset_url | stylesheet_tag }}
+{%- liquid
+  assign s = section.settings
+  assign tg_keys = ''
+  if collection != blank
+    for tg_p in collection.products limit: 50
+      capture tg_k
+        render 'tp-teppich-gruppe', product: tg_p
+      endcapture
+      assign tg_k = tg_k | strip | default: 'rest'
+      assign tg_keys = tg_keys | append: tg_k | append: ','
+    endfor
+  endif
+  assign tg_keys = tg_keys | split: ','
+-%}
+<section class="tp-tep tp-tep-gruppen" id="{{ s.anchor | default: 'auswahl' | handleize }}" aria-labelledby="tp-tg-{{ section.id }}">
+  <div class="tp-tep-wrap tp-tep-gruppen__inner">
+    <div class="tp-tep-gruppen__kopf">
+      <h2 class="tp-tep-gruppen__titel" id="tp-tg-{{ section.id }}">{{ s.heading | escape }}</h2>
+      {%- if s.text != blank -%}<p class="tp-tep-gruppen__lead">{{ s.text | escape }}</p>{%- endif -%}
+    </div>
+    <ul class="tp-tep-gruppen__liste" role="list">
+      {%- for block in section.blocks -%}
+        {%- liquid
+          assign b = block.settings
+          assign tg_anzahl = 0
+          assign tg_bild = b.image
+          for tg_k in tg_keys
+            if tg_k == b.gruppe
+              assign tg_anzahl = tg_anzahl | plus: 1
+              if tg_bild == blank
+                assign tg_index = forloop.index0
+                for tg_p in collection.products limit: 1 offset: tg_index
+                  assign tg_bild = tg_p.featured_image
+                endfor
+              endif
+            endif
+          endfor
+          if tg_anzahl == 0
+            continue
+          endif
+        -%}
+        <li class="tp-tep-gruppen__gruppe" {{ block.shopify_attributes }}>
+          <a class="tp-tep-gruppen__link" href="#{{ b.anker | default: b.gruppe | handleize }}">
+            <span class="tp-tep-gruppen__bild">
+              {%- if tg_bild != blank -%}
+                {{ tg_bild | image_url: width: 600 | image_tag: loading: 'lazy', widths: '200, 300, 400, 600', sizes: '(min-width: 900px) 22vw, 44vw', alt: '' }}
+              {%- endif -%}
+            </span>
+            <span class="tp-tep-gruppen__text">
+              <span class="tp-tep-gruppen__name">{{ b.title | escape }}</span>
+              {%- if b.kurz != blank -%}<span class="tp-tep-gruppen__kurz">{{ b.kurz | escape }}</span>{%- endif -%}
+              <span class="tp-tep-gruppen__zahl">{{ tg_anzahl }} {% if tg_anzahl == 1 %}Qualität{% else %}Qualitäten{% endif %}<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></span>
+            </span>
+          </a>
+        </li>
+      {%- endfor -%}
+    </ul>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "TP Teppiche Gruppen",
+  "tag": "div",
+  "class": "tp-tep-section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Überschrift", "default": "Welcher Teppich passt zu Ihnen?" },
+    { "type": "textarea", "id": "text", "label": "Text", "default": "Wählen Sie zuerst die Art – darunter finden Sie alle passenden Qualitäten." },
+    { "type": "text", "id": "anchor", "label": "Anker dieses Bereichs", "info": "Ziel für Links wie #auswahl.", "default": "auswahl" }
+  ],
+  "blocks": [
+    {
+      "type": "gruppe",
+      "name": "Gruppe",
+      "settings": [
+        {
+          "type": "select",
+          "id": "gruppe",
+          "label": "Teppich-Gruppe",
+          "options": [
+            { "value": "flauschig", "label": "Extra flauschig (Velours ab 10 mm Flor)" },
+            { "value": "weich", "label": "Weich (Velours)" },
+            { "value": "robust", "label": "Fest & robust (Schlinge, Nadelvlies)" },
+            { "value": "natur", "label": "Natur (Wolle, Sisal)" },
+            { "value": "rest", "label": "Ohne eindeutige Gruppe" }
+          ],
+          "default": "weich"
+        },
+        { "type": "text", "id": "title", "label": "Titel", "default": "Weich" },
+        { "type": "text", "id": "kurz", "label": "Kurztext" },
+        { "type": "image_picker", "id": "image", "label": "Bild (sonst der erste Teppich der Gruppe)" },
+        { "type": "text", "id": "anker", "label": "Anker der Reihe", "info": "Gleicher Anker wie in der Produktreihe der Gruppe. Leer = Gruppenkennung." }
+      ]
+    }
+  ],
+  "presets": [{ "name": "TP Teppiche Gruppen" }]
+}
+{% endschema %}

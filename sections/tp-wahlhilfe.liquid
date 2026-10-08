@@ -1,0 +1,75 @@
+{%- comment -%}
+  TP Wahlhilfe: zwei bis vier Karten, die eine Kategorie nach einem Kennwert
+  ordnen (z. B. Kunstrasen nach Florhoehe) und direkt auf die passenden
+  Produkte mit Preis verlinken. Keine H1 - die Seite hat ihre eigene.
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+
+<section class="tp-s-sec tp-wh" aria-labelledby="tp-wh-h2-{{ section.id }}">
+  <div class="tp-s-wrap">
+    <div class="tp-s-sec-head">
+      <div>
+        {%- if section.settings.kicker != blank -%}<span class="tp-s-eyebrow">{{ section.settings.kicker | escape }}</span>{%- endif -%}
+        <h2 id="tp-wh-h2-{{ section.id }}" class="tp-s-h2">{{ section.settings.heading | escape }}</h2>
+        {%- if section.settings.text != blank -%}<p class="tp-wh__intro">{{ section.settings.text | escape }}</p>{%- endif -%}
+      </div>
+    </div>
+    <div class="tp-wh__grid">
+      {%- for block in section.blocks -%}
+        <div class="tp-wh__card" {{ block.shopify_attributes }}>
+          {%- if block.settings.kennwert != blank -%}<span class="tp-wh__wert">{{ block.settings.kennwert | escape }}</span>{%- endif -%}
+          <h3 class="tp-s-h3">{{ block.settings.titel | escape }}</h3>
+          {%- if block.settings.text != blank -%}<p>{{ block.settings.text | escape }}</p>{%- endif -%}
+          {%- if block.settings.produkte != blank -%}
+            <ul class="tp-wh__liste">
+              {%- for p in block.settings.produkte -%}
+                  <li><a href="{{ p.url }}"><span>{% if section.settings.titel_kuerzen != blank %}{{ p.title | remove: section.settings.titel_kuerzen | strip | escape }}{% else %}{{ p.title | escape }}{% endif %}</span><span class="tp-wh__preis">ab {{ p.price_min | money }}{% if block.settings.einheit != blank %} {{ block.settings.einheit | escape }}{% endif %}</span></a></li>
+              {%- endfor -%}
+            </ul>
+          {%- endif -%}
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% stylesheet %}
+  .tp-wh__intro { color: #4a443f; max-width: 68ch; margin: 8px 0 0; }
+  .tp-wh__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 20px; }
+  .tp-wh__card { border: 1px solid #e6e0d8; border-radius: 12px; padding: 20px; background: #fff; display: flex; flex-direction: column; gap: 8px; }
+  .tp-wh__card p { margin: 0; color: #4a443f; }
+  .tp-wh__wert { align-self: flex-start; font-size: 13px; font-weight: 700; letter-spacing: .02em; color: #fff; background: #5f7a52; border-radius: 999px; padding: 3px 10px; }
+  .tp-wh__liste { list-style: none; padding: 0; margin: 6px 0 0; border-top: 1px solid #eee7de; }
+  .tp-wh__liste a { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid #eee7de; color: #1d1a17; text-decoration: none; min-height: 44px; align-items: center; }
+  .tp-wh__liste a:hover span:first-child { text-decoration: underline; }
+  .tp-wh__preis { color: #4a443f; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  @media (max-width: 989px) { .tp-wh__grid { grid-template-columns: 1fr; } }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Wahlhilfe",
+  "tag": "div",
+  "settings": [
+    { "type": "text", "id": "kicker", "label": "Dachzeile" },
+    { "type": "text", "id": "heading", "label": "Ueberschrift (H2)", "default": "Welche Qualität passt?" },
+    { "type": "textarea", "id": "text", "label": "Text" },
+    { "type": "text", "id": "titel_kuerzen", "label": "Wort aus Produkttiteln ausblenden", "info": "Z. B. Kunstrasen - aus \"Verdia Kunstrasen\" wird \"Verdia\". Der Link behaelt den vollen Titel." }
+  ],
+  "blocks": [
+    {
+      "type": "karte",
+      "name": "Karte",
+      "settings": [
+        { "type": "text", "id": "kennwert", "label": "Kennwert (Plakette)", "default": "6 mm" },
+        { "type": "text", "id": "titel", "label": "Titel", "default": "Kurzer Flor" },
+        { "type": "textarea", "id": "text", "label": "Text" },
+        { "type": "product_list", "id": "produkte", "label": "Produkte", "limit": 6 },
+        { "type": "text", "id": "einheit", "label": "Preiseinheit", "default": "/ m²" }
+      ]
+    }
+  ],
+  "max_blocks": 4,
+  "presets": [ { "name": "TP Wahlhilfe" } ]
+}
+{% endschema %}

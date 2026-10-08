@@ -337,6 +337,13 @@
   data-piece-format="{{ product.metafields.custom.format_cm.value | escape }}"
   {{ block.shopify_attributes }}
 >
+  {%- comment -%}
+    Raumliste (Inhaber 2026-10-02): Raeume als Breite x Laenge eintragen,
+    Summe wird in das Flaechenfeld uebernommen. Rechnet sonst nichts.
+  {%- endcomment -%}
+  {%- if block.settings.raummass_helfer != false -%}
+    {% render 'tp-raummass', art: 'paket', id: package_selector_id %}
+  {%- endif -%}
   <div class="carpet-package__primary-{{ package_selector_id }}">
     <label class="carpet-package__label-{{ package_selector_id }}" for="tp-sqm-input-{{ package_selector_id }}">
       Wie viel Fläche benötigen Sie?
@@ -365,6 +372,7 @@
         autocomplete="off"
         id="tp-sqm-input-{{ package_selector_id }}"
         placeholder="z. B. 18,00"
+        aria-describedby="tp-sqm-message-{{ package_selector_id }}"
         data-sqm-input
       >
 
@@ -497,8 +505,12 @@
   </button>
 
   <div
+    id="tp-sqm-message-{{ package_selector_id }}"
     class="carpet-package__message-{{ package_selector_id }}"
     data-cart-message
+    role="status"
+    aria-live="polite"
+    aria-atomic="true"
   ></div>
 </carpet-package-selector-{{ package_selector_id }}>
 
@@ -629,10 +641,14 @@
       return Number.isSafeInteger(packages * packagePriceCents);
     }
 
-    function setMessage(text, isError) {
+    function setMessage(text, isError, inputError) {
       if (!cartMessage) return;
 
       cartMessage.textContent = text || '';
+      if (sqmInput) {
+        if (isError && inputError) sqmInput.setAttribute('aria-invalid', 'true');
+        else sqmInput.removeAttribute('aria-invalid');
+      }
 
       if (isError) {
         cartMessage.setAttribute('data-error', 'true');
@@ -720,6 +736,7 @@
     function setDesiredSqm(value, options) {
       const opts = options || {};
       desiredSqm = Math.max(0.01, value);
+      setMessage('', false);
       if (opts.syncInput !== false) {
         syncInputValue();
       }
@@ -735,12 +752,12 @@
       if (sqmInput) {
         const result = evaluateSqmInput(sqmInput.value);
         if (result.state === 'invalid') {
-          setMessage(INVALID_SQM_MESSAGE, true);
+          setMessage(INVALID_SQM_MESSAGE, true, true);
           sqmInput.focus();
           return;
         }
         if (result.state === 'unsafe') {
-          setMessage(UNSAFE_SQM_MESSAGE, true);
+          setMessage(UNSAFE_SQM_MESSAGE, true, true);
           sqmInput.focus();
           return;
         }
@@ -900,11 +917,11 @@
         const result = evaluateSqmInput(sqmInput.value);
 
         if (result.state === 'invalid') {
-          setMessage(INVALID_SQM_MESSAGE, true);
+          setMessage(INVALID_SQM_MESSAGE, true, true);
           return;
         }
         if (result.state === 'unsafe') {
-          setMessage(UNSAFE_SQM_MESSAGE, true);
+          setMessage(UNSAFE_SQM_MESSAGE, true, true);
           return;
         }
 
@@ -1003,7 +1020,14 @@
 {
   "name": "Paket-Auswahl",
   "tag": null,
-  "settings": [],
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "raummass_helfer",
+      "label": "Fläche aus Raummaßen berechnen (Raumliste)",
+      "default": true
+    }
+  ],
   "presets": [
     {
       "name": "Paket-Auswahl"

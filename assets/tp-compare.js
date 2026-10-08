@@ -76,7 +76,15 @@
     window.clearTimeout(collapseTimer);
     collapseTimer = window.setTimeout(function () {
       var bar = document.querySelector('[data-tp-compare-bar]');
-      if (bar && !bar.hidden && readItems().length > 0) collapseBar(false);
+      if (!bar || bar.hidden || readItems().length === 0) return;
+      var dialog = document.querySelector('[data-tp-compare-dialog]');
+      // Die Leiste darf weder einen fokussierten Knopf noch den Ausloeser
+      // eines offenen Dialogs verbergen. Danach erneut auf Inaktivitaet warten.
+      if (bar.contains(document.activeElement) || (dialog && dialog.open)) {
+        scheduleCollapse();
+        return;
+      }
+      collapseBar(false);
     }, COLLAPSE_DELAY);
   }
 
@@ -149,7 +157,7 @@
               image +
               '<span>' + escapeHtml(item.title) + '</span>' +
               '</a>' +
-              '<button type="button" class="tp-compare-remove-btn" data-tp-compare-remove data-tp-compare-handle="' + escapeHtml(item.handle) + '" aria-label="Produkt entfernen">×</button>' +
+              '<button type="button" class="tp-compare-remove-btn" data-tp-compare-remove data-tp-compare-handle="' + escapeHtml(item.handle) + '" aria-label="' + escapeHtml(item.title) + ' aus Vergleich entfernen">×</button>' +
               '</div></th>';
     });
     html += '</tr></thead><tbody>';
@@ -231,7 +239,11 @@
 
     var expandBtn = event.target.closest('[data-tp-compare-expand]');
     if (expandBtn) {
-      expandBar(true);
+      // Der kompakte Knopf wird beim Ausklappen verborgen. Den Fokus an die
+      // erste sichtbare Aktion uebergeben und die Leiste offen lassen.
+      expandBar(false);
+      var openCompareButton = expandBtn.closest('[data-tp-compare-bar]').querySelector('[data-tp-compare-open]');
+      if (openCompareButton) openCompareButton.focus();
       return;
     }
 
@@ -251,6 +263,15 @@
         updateToggleButtons();
         updateBar(true);
         renderDialog();
+        // renderDialog ersetzt den fokussierten Knopf. Nach dem Entfernen
+        // im Dialog beim naechsten Produkt oder beim Schliessen bleiben.
+        var dialogAfterRemoval = document.querySelector('[data-tp-compare-dialog]');
+        if (dialogAfterRemoval && dialogAfterRemoval.open) {
+          var remainingButtons = dialogAfterRemoval.querySelectorAll('[data-tp-compare-remove]');
+          var nextButton = remainingButtons[Math.min(idx, remainingButtons.length - 1)];
+          var focusTarget = nextButton || dialogAfterRemoval.querySelector('[data-tp-compare-close]');
+          if (focusTarget) focusTarget.focus();
+        }
       }
       return;
     }

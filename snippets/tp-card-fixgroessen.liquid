@@ -1,0 +1,47 @@
+{%- doc -%}
+  Groessen auf der Produktkarte fuer Ware in festen Groessen (Teppiche,
+  Dekofelle): "3 Größen · 60 × 110 bis 160 × 230 cm". Nur mit Option "Größe"
+  und ohne Rollenbreite - Rollenware zeigt ihre Breiten selbst
+  (tp-card-roll-widths). Inhaber 2026-10-02: Karten zu kahl.
+
+  @param {product} product - Produkt der Karte
+{%- enddoc -%}
+{%- liquid
+  assign tp_fg_opt = product.options_by_name['Größe']
+  assign tp_fg_zahl = tp_fg_opt.values.size | default: 0
+  assign tp_fg_rolle = product.metafields.custom.rollenbreite.value
+-%}
+{%- if tp_fg_zahl > 1 and tp_fg_rolle == blank -%}
+  {%- liquid
+    assign tp_fg_erst = tp_fg_opt.values.first | remove: ' cm'
+    assign tp_fg_letzt = tp_fg_opt.values.last
+    assign tp_fg_eckig = true
+    assign tp_fg_rund = false
+    for tp_fg_w in tp_fg_opt.values
+      if tp_fg_w contains 'Ø' or tp_fg_w contains 'rund'
+        assign tp_fg_rund = true
+      endif
+    endfor
+    if tp_fg_erst contains 'Ø' or tp_fg_erst contains 'Fellform' or tp_fg_letzt contains 'Ø' or tp_fg_letzt contains 'Fellform'
+      assign tp_fg_eckig = false
+    endif
+  -%}
+  <p class="tp-card-fixgroessen">
+    <span class="tp-card-fixgroessen__zahl">{{ tp_fg_zahl }} Größen</span>
+    {%- if tp_fg_eckig %} · {{ tp_fg_erst | escape }} bis {{ tp_fg_letzt | escape }}{%- endif -%}
+    {%- if tp_fg_rund %} · auch rund{%- endif -%}
+  </p>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-card-fixgroessen {
+    margin: 4px 0 0;
+    font-size: 13px;
+    line-height: 1.35;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72);
+  }
+  .tp-card-fixgroessen__zahl {
+    font-weight: 600;
+    color: var(--color-foreground, #222);
+  }
+{% endstylesheet %}

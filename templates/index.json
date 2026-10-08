@@ -32,7 +32,7 @@
       "type": "tp-start-kategorien",
       "settings": {
         "heading": "Womit möchten Sie starten?",
-        "text": "Sieben Kategorien, direkt zur Auswahl. Preise und Verkaufseinheiten stehen am Produkt. Muster kostenlos.",
+        "text": "Neun Kategorien, direkt zur Auswahl. Preise und Verkaufseinheiten stehen am Produkt. Muster kostenlos.",
         "link_label": "Alle Produkte ansehen",
         "link": "shopify://collections/all"
       },
@@ -53,7 +53,7 @@
           "settings": {
             "collection": "teppiche",
             "titel": "Teppiche",
-            "untertitel": "Nach Maß, gekettelt",
+            "untertitel": "Standardgrößen oder nach Maß",
             "zahl_zeigen": false,
             "zahl_wort": "Qualitäten"
           }
@@ -61,12 +61,11 @@
         "k2": {
           "type": "kategorie",
           "settings": {
-            "collection": "vinylboden-klickvinyl",
-            "bild": "shopify://shop_images/1267580-8FXC-prod.jpg",
-            "titel": "Klickvinyl",
-            "untertitel": "Ohne Kleber verlegen",
+            "collection": "teppichfliesen",
+            "titel": "Teppichfliesen",
+            "untertitel": "50 × 50 cm, einzeln austauschbar",
             "zahl_zeigen": true,
-            "zahl_wort": "Dekore"
+            "zahl_wort": "Qualitäten"
           }
         },
         "k3": {
@@ -78,6 +77,26 @@
             "untertitel": "Klick-, Klebe- und Rollenvinyl",
             "zahl_zeigen": true,
             "zahl_wort": "Dekore"
+          }
+        },
+        "k7": {
+          "type": "kategorie",
+          "settings": {
+            "collection": "laminat",
+            "titel": "Laminat",
+            "untertitel": "Klick-Laminat für Wohnräume",
+            "zahl_zeigen": true,
+            "zahl_wort": "Dekore"
+          }
+        },
+        "k8": {
+          "type": "kategorie",
+          "settings": {
+            "collection": "parkett",
+            "titel": "Parkett",
+            "untertitel": "Landhausdiele, Fischgrät, Kork",
+            "zahl_zeigen": true,
+            "zahl_wort": "Böden"
           }
         },
         "k4": {
@@ -119,6 +138,8 @@
         "k0",
         "k2",
         "k3",
+        "k7",
+        "k8",
         "k4",
         "k5",
         "k6"
@@ -481,14 +502,6 @@
         "cta_text": "Muster bestellen",
         "cta_link": "/pages/muster",
         "hinweis": "Bis zu 3 Muster kostenlos · Versand innerhalb Deutschlands"
-      }
-    },
-    "tp_newsletter_vorteil": {
-      "type": "tp-newsletter-vorteil",
-      "settings": {
-        "eyebrow": "Newsletter",
-        "betrag": 15,
-        "mindestwert": 100
       }
     },
     "angebote_teppichboden": {
@@ -1392,7 +1405,6 @@
     "tp_zwei_wege_home",
     "tp_start_muster",
     "tp_start_bewertungen",
-    "tp_newsletter_vorteil",
     "tp_start_fachhandel",
     "tp_start_faq",
     "tp_start_kontakt",

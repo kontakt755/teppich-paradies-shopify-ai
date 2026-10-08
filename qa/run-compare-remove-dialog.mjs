@@ -66,6 +66,8 @@ async function runViewport(browser, name, viewport) {
     // Überprüfe, dass alle 3 Spalten mit Entfernen-Buttons vorhanden sind
     const headerCells = await dialog.locator('thead .tp-compare-header-cell').count();
     const removeButtons = await dialog.locator('[data-tp-compare-remove]').count();
+    const removeLabels = await dialog.locator('[data-tp-compare-remove]').evaluateAll((buttons) =>
+      buttons.map((button) => button.getAttribute('aria-label')));
 
     // Entfernen-Button im Dialog für das erste Produkt klicken
     const firstRemoveBtn = dialog.locator('[data-tp-compare-remove]').first();
@@ -81,6 +83,10 @@ async function runViewport(browser, name, viewport) {
     // Überprüfe, dass die Dialog-Tabelle aktualisiert wurde (2 Spalten statt 3)
     const headerCellsAfter = await dialog.locator('thead .tp-compare-header-cell').count();
     const removeButtonsAfter = await dialog.locator('[data-tp-compare-remove]').count();
+    const focusAfterFirst = await dialog.evaluate((element) => ({
+      insideDialog: element.contains(document.activeElement),
+      onRemainingRemove: document.activeElement?.matches('[data-tp-compare-remove]') || false,
+    }));
 
     // Dialog bleibt offen
     const dialogStillOpen = await dialog.evaluate((d) => d.open);
@@ -94,17 +100,37 @@ async function runViewport(browser, name, viewport) {
 
     const afterSecondRemove = await page.evaluate(() => JSON.parse(localStorage.getItem('tpCompareItems') || '[]').length);
     const headerCellsAfterSecond = await dialog.locator('thead .tp-compare-header-cell').count();
+    const focusAfterSecond = await dialog.evaluate((element) => ({
+      insideDialog: element.contains(document.activeElement),
+      onRemainingRemove: document.activeElement?.matches('[data-tp-compare-remove]') || false,
+    }));
+
+    await dialog.locator('[data-tp-compare-remove]').click({ timeout: 5_000 });
+    const afterLastRemove = await dialog.evaluate((element) => ({
+      open: element.open,
+      emptyMessage: element.querySelector('[data-tp-compare-table]')?.textContent.includes('Noch keine Produkte'),
+      focusOnClose: document.activeElement === element.querySelector('[data-tp-compare-close]'),
+    }));
 
     const pass = dialogOpen
       && headerCells === 3
       && removeButtons === 3
+      && new Set(removeLabels).size === 3
+      && removeLabels.every((label) => label?.endsWith(' aus Vergleich entfernen'))
       && itemsCount === 2
       && !firstHandleExists
       && headerCellsAfter === 2
       && removeButtonsAfter === 2
+      && focusAfterFirst.insideDialog
+      && focusAfterFirst.onRemainingRemove
       && dialogStillOpen
       && afterSecondRemove === 1
       && headerCellsAfterSecond === 1
+      && focusAfterSecond.insideDialog
+      && focusAfterSecond.onRemainingRemove
+      && afterLastRemove.open
+      && afterLastRemove.emptyMessage
+      && afterLastRemove.focusOnClose
       && pageErrors.length === 0;
 
     return {
@@ -113,17 +139,21 @@ async function runViewport(browser, name, viewport) {
       dialogOpen,
       initialHeaders: headerCells,
       initialRemoveButtons: removeButtons,
+      removeLabels,
       afterFirstRemove: {
         itemsCount,
         firstHandleRemoved: !firstHandleExists,
         headerCount: headerCellsAfter,
         removeButtonCount: removeButtonsAfter,
         dialogStillOpen,
+        focus: focusAfterFirst,
       },
       afterSecondRemove: {
         itemsCount: afterSecondRemove,
         headerCount: headerCellsAfterSecond,
+        focus: focusAfterSecond,
       },
+      afterLastRemove,
       pageErrors,
     };
   } finally {

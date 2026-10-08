@@ -129,7 +129,7 @@
     >
       <facet-inputs-component
         on:change="/updateFilters"
-        id="facet-inputs-component-{{ filter.param_name | escape | replace: '.', '-' }}"
+        id="facet-inputs-component-{{ sectionId }}-{{ filter_param_name }}-{{ filter_style }}-{{ in_drawer }}"
       >
         {% liquid
           assign has_active_values = false
@@ -217,6 +217,10 @@
             name="{{ filter.label }}"
           >
             {%- for value in filter.values -%}
+              {%- assign tp_zimmer_filterwert = value.label | downcase | strip -%}
+              {%- if filter.param_name == 'filter.p.m.custom.zimmer' and tp_zimmer_filterwert == 'treppeneignung' -%}
+                {%- continue -%}
+              {%- endif -%}
               {%- if tp_is_roll_width_filter -%}
                 {%- assign tp_filter_value_label = value.value | times: 100 | round | append: ' cm' -%}
               {%- else -%}
@@ -257,7 +261,7 @@
                   <fieldset
                     class="variant-option variant-option--buttons variant-option--images"
                     aria-label="{{ tp_filter_value_label }}"
-                    on:keydown="#facet-inputs-component-{{ filter.param_name | escape | replace: '.', '-' }}/handleKeyDown"
+                    on:keydown="facet-inputs-component/handleKeyDown"
                   >
                     <div class="facets__image-wrapper">
                       {% if value.image %}
@@ -302,7 +306,7 @@
                   <fieldset
                     class="variant-option variant-option--buttons variant-option--swatches {% if is_disabled %}variant-option--swatches-disabled{% endif %}"
                     aria-label="{{ tp_filter_value_label }}"
-                    on:keydown="#facet-inputs-component-{{ filter.param_name | escape | replace: '.', '-' }}/handleKeyDown"
+                    on:keydown="facet-inputs-component/handleKeyDown"
                   >
                     <label
                       class="variant-option__button-label variant-option__button-label--has-swatch"
@@ -340,20 +344,18 @@
                           </svg>
                         {% endif %}
                       </div>
-                      <label
+                      <span
                         class="{% if show_swatch_label %}facets__swatch-label{% else %}hidden{% endif %}"
-                        for="{{ input_id }}"
-                        tabindex="-1"
                       >
                         {{- tp_filter_value_label }}
-                      </label>
+                      </span>
                     </label>
                   </fieldset>
                 {% else %}
                   {% if should_use_pills %}
                     <div
                       class="facets__pill-wrapper"
-                      on:keydown="#facet-inputs-component-{{ filter.param_name | escape | replace: '.', '-' }}/handleKeyDown"
+                      on:keydown="facet-inputs-component/handleKeyDown"
                     >
                       <input
                         type="checkbox"

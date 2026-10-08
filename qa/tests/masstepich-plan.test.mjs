@@ -171,3 +171,21 @@ test('J: keine Bildquellenangabe mit Lieferantennamen im Theme, auch nicht in de
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('Fertig: Wunschmass vom Hersteller braucht keine Basisvariante; interne Felder zaehlen nicht als sichtbar', () => {
+  const fertig = {
+    id: 'F', title: 'Velora Teppich nach Maß', handle: 'velora-teppich-nach-mass', vendor: 'TeppichParadies', options: [],
+    metafields: { 'service.einfassung': 'Fertig', 'custom.preis_pro_001_qm': true, 'service.max_breite_cm': 200, 'service.max_laenge_cm': 600,
+      'service.kg_pro_qm': 3.3, 'service.max_gewicht_kg': 30, 'service.formen': ['Rechteck'], 'grosshandel.sku': 'Lieferantx Linie D.231', 'einkauf.lieferant_kollektion': 'Lieferantx Linie' },
+    variants: [V('f1', ['Grau'], '2.79', { metafields: { 'service.einfassen': 'Verfügbar' } })],
+  };
+  const f = pruefeDaten({ products: [fertig] }, { freigabe: [], gesperrte_ids: [], max_laenge_cm: 600 }, namen);
+  assert.deepEqual(f, []);
+  delete fertig.metafields['service.max_gewicht_kg'];
+  assert.match(pruefeDaten({ products: [fertig] }, { freigabe: [], max_laenge_cm: 600 }, namen).join('\n'), /nur gemeinsam/);
+  fertig.metafields['service.max_gewicht_kg'] = 30;
+  fertig.title = 'Lieferantx Teppich nach Maß';
+  assert.match(pruefeDaten({ products: [fertig] }, { freigabe: [], gesperrte_ids: [] }, namen).join('\n'), /Lieferantenname/);
+  fertig.title = 'Velora Teppich nach Maß';
+  assert.match(pruefeDaten({ products: [fertig] }, { freigabe: [], gesperrte_ids: ['F'] }, namen).join('\n'), /gesperrter Lieferant/);
+});

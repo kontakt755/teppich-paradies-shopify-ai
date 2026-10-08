@@ -293,7 +293,9 @@ if (typeof document !== 'undefined') {
         if (status) {
           status.hidden = false;
           status.textContent = 'Ergebnis für Raumbreite ' + fmt(ergebnis.raumBreiteCm, 0) + ' cm und Raumlänge '
-            + fmt(ergebnis.raumLaengeCm, 0) + ' cm, Raumfläche ' + fmt(ergebnis.raumflaecheM2) + ' m².';
+            + fmt(ergebnis.raumLaengeCm, 0) + ' cm, Raumfläche ' + fmt(ergebnis.raumflaecheM2) + ' m². '
+            + 'Zentimetergenau ohne Zugabe: Raummaß ' + fmt(ergebnis.raumBreiteCm, 0) + ' × '
+            + fmt(ergebnis.raumLaengeCm, 0) + ' cm – bei vielen Teppichböden im Produktrechner wählbar.';
         }
       }
 

@@ -1,7 +1,8 @@
 {{ 'tp-teppichboden-kampagne.css' | asset_url | stylesheet_tag }}
 
 <div class="tp-tbk-faq" aria-labelledby="tp-tbk-faq-title-{{ section.id }}">
-  <h2 id="tp-tbk-faq-title-{{ section.id }}">Häufige Fragen zu Teppichboden</h2>
+  {%- comment -%} Ueberschrift je Template einstellbar (z. B. Kunstrasen); leer = bisheriger Text {%- endcomment -%}
+  <h2 id="tp-tbk-faq-title-{{ section.id }}">{{ section.settings.heading | default: 'Häufige Fragen zu Teppichboden' | escape }}</h2>
   {%- for block in section.blocks -%}
     <details class="tp-tbk-faq__item" {{ block.shopify_attributes }}>
       <summary>{{ block.settings.question | escape }}</summary>
@@ -15,7 +16,9 @@
   "name": "TP Teppichboden FAQ",
   "tag": "section",
   "class": "tp-tbk-faq-section",
-  "settings": [],
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Überschrift", "default": "Häufige Fragen zu Teppichboden" }
+  ],
   "blocks": [
     {
       "type": "frage",

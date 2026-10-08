@@ -62,18 +62,22 @@ Pflegeleicht::pflegeleicht::name
     assign tpm_wert = tpm_mf.value
   -%}
   {%- if tpm_wert != blank -%}
-    {%- capture tpm_text -%}
-      {%- if tpm_mf.type contains 'list.' -%}
-        {%- for tpm_item in tpm_wert -%}
-          {%- assign tpm_drop = tpm_item[tpm_feld] -%}
-          {{- tpm_drop.value | default: tpm_drop | default: tpm_item.name | default: tpm_item -}}
-          {%- unless forloop.last -%}, {% endunless -%}
-        {%- endfor -%}
-      {%- else -%}
-        {%- assign tpm_drop = tpm_wert[tpm_feld] -%}
-        {{- tpm_drop.value | default: tpm_drop | default: tpm_wert.name | default: tpm_wert -}}
-      {%- endif -%}
-    {%- endcapture -%}
+    {%- if tpm_key == 'zimmer' -%}
+      {%- capture tpm_text -%}{%- render 'tp-zimmer-liste', metafield: tpm_mf -%}{%- endcapture -%}
+    {%- else -%}
+      {%- capture tpm_text -%}
+        {%- if tpm_mf.type contains 'list.' -%}
+          {%- for tpm_item in tpm_wert -%}
+            {%- assign tpm_drop = tpm_item[tpm_feld] -%}
+            {{- tpm_drop.value | default: tpm_drop | default: tpm_item.name | default: tpm_item -}}
+            {%- unless forloop.last -%}, {% endunless -%}
+          {%- endfor -%}
+        {%- else -%}
+          {%- assign tpm_drop = tpm_wert[tpm_feld] -%}
+          {{- tpm_drop.value | default: tpm_drop | default: tpm_wert.name | default: tpm_wert -}}
+        {%- endif -%}
+      {%- endcapture -%}
+    {%- endif -%}
     {%- assign tpm_text = tpm_text | strip_html | strip_newlines | strip -%}
     {%- if tpm_text != blank -%}
       {%- unless tpm_erste -%},{%- endunless -%}
@@ -109,7 +113,15 @@ Stangenlänge:: m::stangenlaenge
     assign tpm_wert = tpm_produkt.metafields.custom[tpm_key].value
   -%}
   {%- if tpm_wert != blank -%}
-    {%- capture tpm_text -%}{{ tpm_wert }}{{ tpm_einheit }}{%- endcapture -%}
+    {%- liquid
+      assign tpm_wert_text = tpm_wert | append: '' | strip
+      assign tpm_wert_klein = tpm_wert_text | downcase
+      assign tpm_ende = tpm_wert_klein | slice: -2, 2
+      if tpm_key == 'format_cm' and tpm_ende == 'cm'
+        assign tpm_einheit = ''
+      endif
+    -%}
+    {%- capture tpm_text -%}{{ tpm_wert_text }}{{ tpm_einheit }}{%- endcapture -%}
     {%- assign tpm_text = tpm_text | strip -%}
     {%- unless tpm_erste -%},{%- endunless -%}
     {%- assign tpm_erste = false -%}

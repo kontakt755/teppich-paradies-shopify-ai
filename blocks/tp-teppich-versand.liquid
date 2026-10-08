@@ -22,9 +22,11 @@
 -%}
 
 <div class="tp-teppich-versand-{{ tp_tv2_id }}" {{ block.shopify_attributes }}>
-  <a class="tp-teppich-versand__sample-{{ tp_tv2_id }}" href="{{ tp_tv2_sample_url }}">
-    Kostenloses Muster anfragen
-  </a>
+  {%- if tp_tv2_sample_url != blank -%}
+    <a class="tp-teppich-versand__sample-{{ tp_tv2_id }}" href="{{ tp_tv2_sample_url }}">
+      Kostenloses Muster anfragen
+    </a>
+  {%- endif -%}
 
   <div class="tp-teppich-versand__shipping-{{ tp_tv2_id }}" aria-label="Lieferung und Versand">
     {%- if tp_tv2_delivery_time != blank -%}

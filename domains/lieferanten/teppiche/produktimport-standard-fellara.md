@@ -20,7 +20,7 @@ Freigabe im Chat.
 ## Checkliste je Produkt
 
 1. **Dublettenabgleich** aller SKUs und EANs ueber alle Status (Varianten-Suche `sku:` und
-   `barcode:`), nicht nur Titel. Vorhandene Entwuerfe (Velora = Gravina) wiederverwenden.
+   `barcode:`), nicht nur Titel. Vorhandene Entwuerfe (z. B. Velora) wiederverwenden.
 2. **Name und Stamm:** Eigenname (wie Fellara, Velora), Vendor `TeppichParadies`,
    Produkttyp `Dekofell` bzw. `Wohnteppich`, Kategorie `hg-3-57`,
    `mm-google-shopping.google_product_category = 598`, SEO-Titel/-Beschreibung.
@@ -99,13 +99,50 @@ Fuer die Lizenzmarke gelten eigene Bild- und Markenbedingungen (Dokumente lokal)
 - Nicht jede Farbe hat Raumbilder; dann Draufsicht, Perspektive, Ecke, Detail, Kante.
 - Alt-Texte: die Galerie vergleicht mit Liquid-`contains`, das Gross-/Kleinschreibung
   unterscheidet („Hellblau“ enthaelt nicht „Blau“). Farben, die Teilwort einer anderen in
-  gleicher Schreibung waeren, vermeiden.
+  gleicher Schreibung waeren, vermeiden (z. B. „Silber“ neben „Silber/Schwarz“ – eine der
+  beiden umbenennen). Auch der Produktname darf keine Farbe des Produkts enthalten.
+- Neben `_KI` gibt es Collagen aller Farben (`farben`), Bilder mit eingeblendetem Text oder
+  Siegel (`award`, `oekotex`, `saugroboter`) und Wunschmass-Motive (`wunschmass`, `wm`,
+  `einfassung`): nicht verwenden. Raumbilder zeigen teils eine runde Ausfuehrung, die es in
+  der Liste nicht gibt – weglassen.
+- Fehlt der Freisteller von oben, ist die Perspektive mit ganzem Teppich das Variantenbild.
+
+## Hausmarke von Lieferant B (2026-10-07, 68 Produkte)
+
+- **Je Design ein Produkt** (Farben und Groessen als Optionen), Eigenname passend zum Muster
+  (Blumen → „Florina“), nie ein Farbwort fuer einen andersfarbigen Teppich. Titel
+  `<Name> Wohnteppich`, Vendor `TeppichParadies`, Produkttyp `Wohnteppich`, Template `dekofell`.
+- Bildbedingungen 10-2026: Vermerk ohne Jahreszahl im Metafeld `custom.bildnachweis`;
+  KI-gekennzeichnete Bilder braeuchten einen sichtbaren Hinweis am Bild – deshalb nicht
+  verwenden. Logo nicht noetig (Inhaberentscheidung 2026-10-07).
+- Datenliste: Spalte „Durchmesser“ ist der Rollendurchmesser der Verpackung, nicht die Form.
+  Rund ist nur, was in der Bezeichnung „rund“ heisst (oder im Bild eindeutig rund ist und als
+  quadratisches Mass gelistet wird – dann `Ø … cm rund`). Breite/Laenge teils vertauscht:
+  Mass aus der Bezeichnung nehmen. Flaechengewicht gegen Stueckgewicht/Flaeche pruefen und
+  bei grober Abweichung weglassen.
+- Farbnamen bleiben beim Lieferantennamen, auch wenn das Foto anders wirkt.
+- Bildsichtung parallel: Kontaktboegen je Design/Farbe, mehrere Pruefer je Liniengruppe,
+  Ergebnis als JSON (Variantenbild, Galerie, Auffaelligkeiten). Bogen-Dateinamen in einer
+  Schreibweise erzeugen – macOS unterscheidet Gross-/Kleinschreibung nicht und ueberschreibt.
+
+## Nach der Anlage (feste Regel)
+
+- Einkaufsfelder je Variante setzen (`einkauf.lieferant`, `hersteller`, `marke`,
+  `lieferant_kollektion`, `lieferant_produktname`, `artikelnummer`, `farbnummer`, `farbname`,
+  `bestelleinheit`) nach Skill `shopify-massendaten` – sonst ist das Produkt im Lexikon nicht
+  ueber den echten Namen auffindbar. `bestelleinheit` ist eine Auswahlliste (`stueck`, nicht
+  `stk`); `metafieldsSet` verwirft bei einem ungueltigen Wert den ganzen Aufruf.
+- Danach Lexikon exportieren (`daten:aktualisieren`) und nach Shop- und Lieferantennamen suchen.
 
 ## Technik, die funktioniert hat
 
 - Anlage in einem Schritt: `productSet` mit `files` (resourceUrl aus dem Staged Upload) und
   `variants[].file` (dieselbe Quelle) legt Bilder und Variantenbilder mit an.
-- `shopify store execute` hat kein `write_publications`: `publishablePublish` ueber den MCP.
+- `shopify store execute` hat kein `write_publications` und darf auch
+  `publishedOnPublication` nicht lesen: Veroeffentlichen und Pruefen ueber den MCP
+  (Zaehlen: `productsCount(query:"… published_status:published")`).
+- Python-Bildverarbeitung: `ProcessPoolExecutor` startet unter macOS das Skript neu und bricht
+  ohne `__main__`-Schutz ab; `ThreadPoolExecutor` genuegt.
 - Bilder: `stagedUploadsCreate` (PUT) → `curl -X PUT -H "Content-Type: image/jpeg"`
   (**kein** `x-goog-acl`-Header, sonst 400) → `productCreateMedia` je 15 Bilder.
 - Skriptbare Schreibvorgaenge: `shopify store execute -s <store> --query-file … --variable-file … -j --allow-mutations --output-file …`.

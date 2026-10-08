@@ -68,7 +68,7 @@
           "name": "t:names.button",
           "settings": {
             "label": "Zur Startseite",
-            "link": "shopify://collections/all",
+            "link": "/",
             "open_in_new_tab": false,
             "style_class": "button",
             "width": "fit-content",

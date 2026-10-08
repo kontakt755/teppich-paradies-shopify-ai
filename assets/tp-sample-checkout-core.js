@@ -33,6 +33,20 @@
   // zeigt - beide muessen gleich bleiben.
   var OPTION_NAMES = ['farbe', 'dekor', 'color'];
 
+  // Fuer diese neu importierten Produktarten wurden bewusst keine Muster
+  // angelegt. Ohne Sperre wuerde der Konfigurator den generischen kostenlosen
+  // Musterartikel fuer ein nicht vorhandenes physisches Muster verwenden.
+  function canSample(product) {
+    if (!product) return false;
+    var type = String(product.type || '').trim().toLowerCase();
+    if (['laminat', 'parkett', 'kork'].indexOf(type) !== -1) return false;
+    var tags = Array.isArray(product.tags) ? product.tags : String(product.tags || '').split(',');
+    return !tags.some(function (tag) {
+      var name = String(tag || '').trim().toLowerCase();
+      return name === 'zubehoer' || name === 'ohne-muster';
+    });
+  }
+
   function findOption(product) {
     return (product.options || []).find(function (entry) {
       return OPTION_NAMES.indexOf(String(entry.name || '').trim().toLowerCase()) !== -1;
@@ -173,7 +187,13 @@
     if (total === 0) {
       message = '0 von ' + MAX_SAMPLES + ' Mustern ausgewählt';
     } else if (total >= MAX_SAMPLES) {
-      message = MAX_SAMPLES + ' von ' + MAX_SAMPLES + ' Mustern erreicht. Entfernen Sie zuerst ein Muster im Warenkorb, um ein anderes auszuwählen.';
+      if (inCart === 0) {
+        message = MAX_SAMPLES + ' von ' + MAX_SAMPLES + ' Mustern ausgewählt. Wählen Sie eine Farbe ab, um eine andere auszuwählen.';
+      } else if (newlySelected === 0) {
+        message = MAX_SAMPLES + ' von ' + MAX_SAMPLES + ' Mustern im Warenkorb. Entfernen Sie dort zuerst ein Muster, um ein anderes auszuwählen.';
+      } else {
+        message = MAX_SAMPLES + ' von ' + MAX_SAMPLES + ' Mustern erreicht. Wählen Sie eine Farbe ab oder entfernen Sie ein Muster im Warenkorb.';
+      }
     } else {
       var location = newlySelected === 0 ? ' im Warenkorb' : ' insgesamt ausgewählt';
       var possibility = remaining === 1 ? 'noch 1 weiteres möglich' : remaining + ' weitere möglich';
@@ -223,6 +243,7 @@
     SAMPLE_HANDLE: SAMPLE_HANDLE,
     MAX_SAMPLES: MAX_SAMPLES,
     HAS_BONUS: HAS_BONUS,
+    canSample: canSample,
     getUniqueColors: getUniqueColors,
     getOptionName: getOptionName,
     getOptionTerm: getOptionTerm,

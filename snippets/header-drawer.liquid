@@ -66,6 +66,8 @@
       <span class="svg-wrapper header-drawer-icon header-drawer-icon--close">
         {{- 'icon-close.svg' | inline_asset_content -}}
       </span>
+      {%- comment -%} Beschriftung unter dem Symbol (Inhaber 2026-10-02: Symbol allein zu unauffaellig). {%- endcomment -%}
+      <span class="tp-menu-beschriftung" aria-hidden="true">Menü</span>
     </summary>
     <div
       ref="menuDrawer"
@@ -323,6 +325,29 @@
     margin: auto;
     width: var(--icon-size-xs);
     height: var(--icon-size-xs);
+  }
+
+  /* Handy: Menue-Symbol mit drei Strichen, groesser, mit Beschriftung. */
+  .header__icon--summary .header-drawer-icon--open {
+    width: 26px;
+    height: 26px;
+  }
+  .header__icon--summary .header-drawer-icon--close {
+    width: 20px;
+    height: 20px;
+  }
+  .menu-drawer-container .header__icon--summary {
+    flex-direction: column;
+    gap: 1px;
+  }
+  .tp-menu-beschriftung {
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.02em;
+  }
+  details[open] .tp-menu-beschriftung {
+    display: none;
   }
 
   .menu-drawer__featured-content {

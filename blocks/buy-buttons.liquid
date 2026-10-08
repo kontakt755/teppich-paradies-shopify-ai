@@ -32,6 +32,11 @@
   if template.name == 'product' and tp_verkaufsart == 'paket'
     assign tp_hide_buy_buttons = true
   endif
+  # Interne Musterprodukte bleiben fuer den Konfigurator als Ajax-Artikel
+  # verfuegbar. Ihre direkte Produktseite darf den Musterweg nicht umgehen.
+  if template.name == 'product' and product.type == 'Musterservice'
+    assign tp_hide_buy_buttons = true
+  endif
 
   if variant
     if variant.quantity_rule.min > variant.inventory_quantity and inventory_managed and inventory_policy == 'deny'

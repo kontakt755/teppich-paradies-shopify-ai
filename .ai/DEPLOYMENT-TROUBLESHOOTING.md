@@ -69,6 +69,12 @@ oder der anderen Richtung.
 ### SEO-Fehlschlag ist oft nicht der eigene Diff
 Am 2026-09-03 blockierte der SEO-Gate einen Live-Deploy mit 16 Fehlern, die alle vorbestanden: Die Google-Rating-API lieferte 404 auf allen PDPs (Desktop + Mobile), völlig unabhängig von der Änderung. `npm run seo:check` laufen lassen, `SEO_REPORT.md` öffnen und die ERROR-Sektion gegen den eigenen Diff halten, bevor Zeit in die falsche Ursache fließt. Ein Override existiert bewusst nicht (`--force-seo-override` wurde ausprobiert, gibt es nicht) – Altfehler müssen behoben werden, und ob trotzdem deployt wird, entscheidet der Mensch, nicht der Agent.
 
+### COMPARE rot nur auf dem Preview-Theme: `showPopover … disconnected popover`
+Am 2026-10-07 brach `workflow:preview` zweimal bei COMPARE ab, der Compare-Check allein gegen Live war gruen. Fehler im Bericht `qa/results/compare-readiness.json`: `Failed to execute 'showPopover' on 'HTMLElement': Invalid on disconnected popover elements.` Das einzige Popover auf der Testseite war `#PBarNextFrameWrapper`, Shopifys Vorschauleiste - die gibt es nur auf Preview-Themes. Der QA-Helfer entfernte sie aus dem DOM, Shopifys Skript rief danach noch `showPopover()` darauf auf. Seit #925 wird sie nur per CSS versteckt. Erkennen: denselben Check mit `WORKFLOW_BASE_URL=https://www.teppich-paradies.net/?preview_theme_id=<id>` und ohne mehrfach laufen lassen und die Quote vergleichen (vorher 3 von 4 gegen 0 von 4) - und auf der Preview-Seite per `document.querySelectorAll('[popover]')` nachsehen, wem das Popover gehoert, bevor man im Theme sucht.
+
+### Zwei Sitzungen im selben main-Worktree
+Codex (ChatGPT-App) und Claude deployen aus demselben Worktree auf `main`. Vor `git pull` oder einem eigenen Lauf `.workflow/lock.json` und `ps -eo pid,etime,command | grep workflow/cli` pruefen; laeuft etwas, nichts anfassen. Wird waehrend eines fremden Preview-Laufs ein PR nach `main` gemergt, passt dessen Evidence nicht mehr und Live bricht mit `LIVE_SOURCE` ab - dann Preview auf dem neuen Stand wiederholen. Die von `validate` geaenderte `qa/evidence/local-verification.json` macht den Tree fuer den naechsten Lauf schmutzig: benannt wegstashen (`git stash push -m <tag> -- <datei>`), nicht verwerfen.
+
 ### Merge-in-Progress beim Session-Start
 Eine vorherige Sitzung kann einen offenen Merge hinterlassen. `git status` gehört als allererster Schritt in jede Deploy-Sitzung. Bei offenem Merge ohne Konflikte erst mit dem Menschen klären, ob `git merge --abort` sicher ist.
 

@@ -20,9 +20,9 @@
      beim Tippen von "500" zweimal auf - nach der "5" und nach der "50".
      Das liest sich wie Tadel für eine Eingabe, die gerade erst entsteht.
 
-  3. Fehler sind jetzt mit dem Feld verknüpft (aria-describedby) und werden
-     angesagt (role=status). Ohne das erfährt ein Screenreader-Nutzer nie,
-     warum der Knopf nicht reagiert.
+  3. Der jeweils sichtbare Fehler ist mit dem Feld verknüpft und wird über
+     eine dauerhafte Statuszeile angesagt. Auch Format- und Obergrenzenfehler
+     gehören dazu.
 
   Greift nur, wo ein Wurzelelement id="tp-rwc-…" sowohl input[data-length-input]
   als auch [data-error-min] enthält - also ausschließlich im Rollenware-Rechner
@@ -34,24 +34,37 @@
   (function () {
     function init() {
       document.querySelectorAll('[id^="tp-rwc-"]').forEach(function (wurzel) {
-        if (wurzel.dataset.tpFormularBereit) return;
+        if (wurzel.dataset.tpFormularBereit) {
+          // Farbwechsel außerhalb des Rechners rechnet verzögert neu.
+          if (wurzel.tpFormularAbgleichen) wurzel.tpFormularAbgleichen();
+          return;
+        }
 
         var feld = wurzel.querySelector('input[data-length-input]');
         var fehlerMin = wurzel.querySelector('[data-error-min]');
+        var fehlerFormat = wurzel.querySelector('[data-error-comma]');
+        var fehlerMax = wurzel.querySelector('[data-error-max]');
         var fehlerLager = wurzel.querySelector('[data-error-stock]');
+        var gegenprobe = wurzel.querySelector('[data-length-echo]');
         if (!feld || !fehlerMin) return;
 
         wurzel.dataset.tpFormularBereit = '1';
 
-        // --- Fehler ansagbar und mit dem Feld verknüpft machen ---
-        var ids = [];
-        [fehlerMin, fehlerLager].forEach(function (el, i) {
+        // --- Fehler mit dem Feld verknüpfen und Änderungen ansagen ---
+        var fehler = [fehlerMin, fehlerFormat, fehlerMax, fehlerLager];
+        fehler.forEach(function (el, i) {
           if (!el) return;
           if (!el.id) el.id = wurzel.id + '-fehler-' + i;
-          el.setAttribute('role', 'status');
-          el.setAttribute('aria-live', 'polite');
-          ids.push(el.id);
         });
+
+        // Ein dauerhaft vorhandener Live-Bereich meldet auch Fehlertexte, die
+        // im Rechner schon vor dem Einblenden feststehen (z. B. "abc").
+        var status = document.createElement('p');
+        status.className = 'tp-formular-status';
+        status.setAttribute('role', 'status');
+        status.setAttribute('aria-live', 'polite');
+        status.setAttribute('aria-atomic', 'true');
+        fehlerMin.parentNode.insertBefore(status, fehlerMin);
 
         // --- Dauerhafter Hinweis statt Fehler im Nachhinein ---
         var hinweis = document.createElement('p');
@@ -64,9 +77,8 @@
           ? 'Länge von 1 m (100 cm) bis ' + (maxCm / 100) + ' m'
           : 'Mindestens 100 cm';
         fehlerMin.parentNode.insertBefore(hinweis, fehlerMin);
-        ids.unshift(hinweis.id);
-
-        feld.setAttribute('aria-describedby', ids.join(' '));
+        // Nur der aktuelle Fehler darf in der Feldbeschreibung stehen. Sonst
+        // lesen Screenreader auch verborgene, gerade unpassende Fehler vor.
 
         // --- Fehler erst nach dem Verlassen des Feldes ---
         // Ob die Mindestlaenge verletzt ist, entscheidet allein der Rechner
@@ -87,11 +99,19 @@
         function abgleichen() {
           var zeigen = wurdeVerlassen && rechnerZeigt;
           fehlerMin.hidden = !zeigen;
-          if (zeigen) {
+          var aktiverFehler = fehler.find(function (el) { return el && !el.hidden; });
+          var eingabefehler = [fehlerMin, fehlerFormat, fehlerMax].some(function (el) { return el && !el.hidden; });
+          var ids = [hinweis.id];
+          if (gegenprobe && !gegenprobe.hidden) ids.push(gegenprobe.id);
+          if (aktiverFehler) ids.push(aktiverFehler.id);
+          feld.setAttribute('aria-describedby', ids.join(' '));
+          if (eingabefehler) {
             feld.setAttribute('aria-invalid', 'true');
           } else {
             feld.removeAttribute('aria-invalid');
           }
+          var meldung = aktiverFehler ? aktiverFehler.textContent : '';
+          if (status.textContent !== meldung) status.textContent = meldung;
         }
 
         function nachRechner() {
@@ -100,8 +120,10 @@
             abgleichen();
           });
         }
+        wurzel.tpFormularAbgleichen = nachRechner;
 
         feld.addEventListener('input', nachRechner);
+        wurzel.addEventListener('change', nachRechner);
 
         feld.addEventListener('blur', function () {
           wurdeVerlassen = true;
@@ -136,5 +158,13 @@
     margin: 8px 0 0;
     font-size: 0.82rem;
     color: rgb(var(--color-foreground-rgb, 28 25 23) / 0.62);
+  }
+  .tp-formular-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 </style>

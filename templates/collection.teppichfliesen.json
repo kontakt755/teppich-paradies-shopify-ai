@@ -26,7 +26,7 @@
           "settings": {
             "marker_type": "icon",
             "emoji": "✂",
-            "text": "Ohne Verschnitt verlegbar"
+            "text": "Flexibel verlegbar"
           }
         },
         "feature_cZ2mVs": {
@@ -47,7 +47,7 @@
       "settings": {
         "heading": "Teppichfliesen",
         "subheading": "Modulare Teppichfliesen für Wohn- und Objektbereiche",
-        "body": "<p>Teppichfliesen werden einzeln verlegt und lassen sich bei Bedarf punktuell austauschen – ganz ohne Verschnitt beim Zuschnitt. Geeignet für Wohn- und Objektbereiche.</p>",
+        "body": "<p>Teppichfliesen werden einzeln verlegt und lassen sich bei Bedarf punktuell austauschen. Beim Anpassen an Raumkanten und Hindernisse kann Verschnitt entstehen. Geeignet für Wohn- und Objektbereiche.</p>",
         "content_width": 1440,
         "column_gap": 48,
         "image_radius": 14,

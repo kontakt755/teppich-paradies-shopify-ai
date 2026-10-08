@@ -90,3 +90,47 @@ Die Entscheidung trifft dann ein Mensch.
    eine Breitenoption mit dem Wert „Wunschmaß“ nicht mehr als Breite und zeigt dann nur noch eine feste Breite.
 7. Schnellkauf und Variantenwähler außerhalb des Rechners prüfen (Kollektionskarten, Quick-Add):
    „Wunschmaß“ darf dort nicht wählbar sein. Sonst landet 1 m² ohne Maßangabe im Warenkorb.
+
+## Gruppen auf der Kategorieseite (2026-10-02)
+
+Die Seite Teppich nach Maß zeigt die Qualitäten nicht mehr als ein Raster, sondern in Gruppen: oben
+Wegweiser-Karten (`sections/tp-teppiche-gruppen`), darunter je Gruppe eine Reihe
+(`tp-zubehoer-produkte`, Einstellung „Teppich-Gruppe“). Die Zuordnung steht allein in
+`snippets/tp-teppich-gruppe` und kommt aus den Daten des Teppichbodens (`service.einfass_basis`):
+
+| Gruppe | Regel | Stand |
+|---|---|---|
+| Natur | erstes `custom.fasermaterial` Naturfaser (Schurwolle, Sisal …) oder `custom.arten` = Wolle | 14 |
+| Extra flauschig | `custom.konstruktion` Velours und `custom.florhohe` ab 10 mm | 8 |
+| Weich | Velours unter 10 mm | 13 |
+| Fest & robust | Schlinge oder Nadelvlies | 15 |
+| Weitere Qualitäten | keine Regel greift (Daten fehlen) – Reihe erscheint nur dann | 0 |
+
+Neue Teppiche ordnen sich selbst ein, sobald Konstruktion, Florhöhe und Faser am Teppichboden gepflegt
+sind. Wie der Mass-Rechner liest die Seite höchstens 50 Produkte der Kollektion.
+
+## Wunschmass vom Hersteller (Art „Fertig“, ab 2026-10-08)
+
+Fuer Lieferant B fertigt der Hersteller den Teppich nach Mass und fasst ihn ein; wir
+schneiden nichts zu. Template `product.wunschmass-fertig` (Basis `dekofell`, Konfigurator
+statt Groessenkarten, keine Empfehlungen, kein Muster).
+
+| Feld | Wert |
+|---|---|
+| `service.einfassung` | `Fertig` |
+| `service.max_breite_cm` | 200 (Paketversand: kuerzere Seite = Rollenlaenge) |
+| `service.max_laenge_cm` | 600 |
+| `service.kg_pro_qm` / `service.max_gewicht_kg` | kg je m² laut Datenliste / 30 – nur gemeinsam |
+| `service.formen` | `["Rechteck"]` (Rund/Oval erst nach Bestaetigung je Qualitaet) |
+| `custom.preis_pro_001_qm` | true; Variantenpreis = UVP je m² / 100 |
+
+- Keine Basisvariante, kein Kettelservice. Der Guard (`scripts/masstepich/guard.mjs`) prueft
+  fuer `fertig` nur Preisflag, Grenzen, Gewichtspaar und Formen.
+- Pauschale je Teppich (Dropship-Gebuehr des Lieferanten, Inhaber 2026-10-08: 14,99 €):
+  Produkt `wunschmass-pauschale`, Block-Einstellung `pauschale_produkt`. Sie geht mit
+  Menge 1 unter derselben `_Gruppe` in den Warenkorb und steckt im ab-Preis. Ist sie
+  konfiguriert, aber nicht kaufbar, sperrt der Konfigurator den Kauf.
+- Gewichtsgrenze: abgerechnete Flaeche × kg/m² ≤ Hoechstgewicht, sonst Meldung mit der
+  groesstmoeglichen Flaeche.
+- Tests: `qa/tests/tp-einfass-fertig-pauschale.test.mjs`, `masstepich-rechnung` (Gewicht),
+  `masstepich-plan` (Guard).

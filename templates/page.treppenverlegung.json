@@ -65,7 +65,7 @@
         "hero_text": "Jede Treppe ist anders – offene oder geschlossene Stufen, Kanten, Podeste. Deshalb schauen wir sie uns an und messen kostenlos auf.",
         "hero_fakten": "Kostenloses Aufmaß vor Ort, Oranienburg und 50 km Umkreis – weiter auf Anfrage, Beratung zu Belag und Kanten, Verlegung durch unser eigenes Team",
         "hero_cta": "Verlegung anfragen",
-        "hero_cta_ziel": "/pages/kontakt",
+        "hero_cta_ziel": "/pages/treppenverlegung#tp-anfrage",
         "telefon": "+4933015733720",
         "telefon_label": "oder anrufen: 03301 573 37 20",
         "beleg": "",
@@ -224,7 +224,7 @@
         "heading": "Treppe neu belegen lassen?",
         "text": "Wir beraten zu Belag und Kanten, messen auf und belegen Ihre Treppe fachgerecht – in Oranienburg, Berlin und Umgebung.",
         "primary_label": "Angebot anfragen",
-        "primary_link": "/pages/kontakt",
+        "primary_link": "/pages/treppenverlegung#tp-anfrage",
         "call_label": "Direkt anrufen",
         "whatsapp_label": "WhatsApp schreiben",
         "whatsapp_link": "https://wa.me/4917657931322",
@@ -237,7 +237,7 @@
       "type": "tp-verlegegebiet",
       "settings": {
         "cta_zeigen": false,
-        "cta_link": "/pages/kontakt",
+        "cta_link": "/pages/treppenverlegung#tp-anfrage",
         "cta2_link": "https://wa.me/4917657931322",
         "vertrauen": "",
         "versand_link": "/collections/all"
@@ -375,9 +375,58 @@
         "matrix_ecke": "Ausführung",
         "matrix_hinweis": "Kokos ist zum Ketteln zu grob und kommt deshalb in festen Breiten mit verschweißter Industriekante auf die Stange. Vinyl lässt sich ebenfalls nicht ketteln – alle übrigen Ausführungen sind damit möglich.",
         "cta_label": "Verlegung anfragen",
-        "cta_ziel": "/pages/kontakt",
+        "cta_ziel": "/pages/treppenverlegung#tp-anfrage",
         "cta_zusatz": "Beim Aufmaß sehen wir vor Ort, welche Ausführung auf Ihre Treppe passt."
       }
+    },
+    "tp_anfrage": {
+      "type": "tp-start-kontakt",
+      "settings": {
+        "heading": "Treppe belegen lassen",
+        "text": "Rufen Sie an, schicken Sie Fotos Ihrer Treppe per WhatsApp oder schreiben Sie uns – wir melden uns am nächsten Werktag und vereinbaren das kostenlose Aufmaß.",
+        "telefon": "03301 573 37 20",
+        "zeiten": "Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr.",
+        "whatsapp": "https://wa.me/4917657931322",
+        "anliegen": "Treppe belegen lassen",
+        "betreff": "Anfrage Treppenverlegung",
+        "form_text": "Für Aufmaß, Angebot und Belag Ihrer Treppe. Wir melden uns am nächsten Werktag.",
+        "nachricht_label": "Nachricht (Anzahl Stufen, Treppenform, Wunschbelag)",
+        "wa_text": "Fotos der Treppe schicken (ganz und eine Stufe nah) – wir antworten in den Öffnungszeiten.",
+        "foto_hinweis": "Fotos Ihrer Treppe schicken Sie uns am einfachsten per WhatsApp."
+      }
+    },
+    "tp_bewertung": {
+      "type": "tp-start-trust",
+      "settings": {
+        "rating_wert": "",
+        "rating_text": "",
+        "rating_link": ""
+      },
+      "blocks": {
+        "aufmass": {
+          "type": "aussage",
+          "settings": {
+            "text": "Kostenloses Aufmaß vor Ort"
+          }
+        },
+        "team": {
+          "type": "aussage",
+          "settings": {
+            "text": "Eigenes Verlegeteam aus Oranienburg"
+          }
+        },
+        "gebiet": {
+          "type": "aussage",
+          "settings": {
+            "text": "Eigener Verlegeservice bis 50 km"
+          }
+        }
+      },
+      "block_order": [
+        "aufmass",
+        "team",
+        "gebiet"
+      ]
     }
   },
   "order": [
@@ -386,6 +435,8 @@
     "main",
     "tp_verlegegebiet",
     "final_cta_service",
+    "tp_bewertung",
+    "tp_anfrage",
     "google_MkFfBg",
     "kundenbilder_grid_NJW4hw"
   ]

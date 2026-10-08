@@ -38,7 +38,8 @@
             "blog": "ratgeber-teppichboden",
             "titel": "Teppichboden",
             "text": "Auswählen, planen, verlegen und pflegen – Schritt für Schritt erklärt.",
-            "bald": false
+            "bald": false,
+            "bild": "shopify://shop_images/ratgeber-teppichboden-wohnzimmer-titel.png"
           }
         },
         "vinylboden": {
@@ -46,13 +47,26 @@
           "settings": {
             "titel": "Vinylboden",
             "text": "Klick-, Klebe- und Rollenvinyl: Auswahl, Untergrund und Verlegung.",
-            "bald": true
+            "bald": false,
+            "blog": "ratgeber-vinylboden",
+            "bild": "shopify://shop_images/ratgeber-klick-oder-klebevinyl-titel.png"
+          }
+        },
+        "untergrund": {
+          "type": "bereich",
+          "settings": {
+            "blog": "ratgeber-untergrund",
+            "titel": "Untergrund",
+            "text": "Prüfen, ausgleichen, vorbereiten – damit jeder Belag hält.",
+            "bald": false,
+            "bild": "shopify://shop_images/ratgeber-untergrund-pruefen-titel.png"
           }
         }
       },
       "block_order": [
         "teppichboden",
-        "vinylboden"
+        "vinylboden",
+        "untergrund"
       ],
       "settings": {}
     },

@@ -112,10 +112,44 @@
       "type": "contact-form",
       "name": "Kontaktseite",
       "settings": {}
+    },
+    "tp_bewertung": {
+      "type": "tp-start-trust",
+      "settings": {
+        "rating_wert": "",
+        "rating_text": "",
+        "rating_link": ""
+      },
+      "blocks": {
+        "antwort": {
+          "type": "aussage",
+          "settings": {
+            "text": "Antwort am nächsten Werktag"
+          }
+        },
+        "laden": {
+          "type": "aussage",
+          "settings": {
+            "text": "Fachgeschäft in Oranienburg"
+          }
+        },
+        "aufmass": {
+          "type": "aussage",
+          "settings": {
+            "text": "Kostenloses Aufmaß vor Ort"
+          }
+        }
+      },
+      "block_order": [
+        "antwort",
+        "laden",
+        "aufmass"
+      ]
     }
   },
   "order": [
     "main",
+    "tp_bewertung",
     "form",
     "contact_form_DKFg93"
   ]

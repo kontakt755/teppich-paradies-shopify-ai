@@ -83,6 +83,26 @@
   # zugeschnittener Teppichboden bleibt Auslegware. Wer einen fertigen,
   # umlaufend gekettelten Teppich will, kommt ueber service.einfass_gruppe
   # zum eigenen Produkt "Teppich nach Mass".
+  # Dielenoptik (custom.optik = Holzdekore, v. a. Vinyl von der Rolle): das
+  # Muster laeuft immer entlang der Rollenlaenge. Skizze und Raummass-Helfer
+  # zeigen dann die Laufrichtung, und der Helfer dreht nicht eigenmaechtig
+  # (Inhaber 2026-10-02: Musterrichtung wichtiger als m² Verschnitt).
+  assign tp_rc_dielen = false
+  for tp_rc_optik in product.metafields.custom.optik.value
+    if tp_rc_optik.system.handle == 'holzdekore'
+      assign tp_rc_dielen = true
+    endif
+  endfor
+  # Fischgrat ist auch Holzdekor, wird aber als Fischgrat gezeichnet.
+  assign tp_rc_muster = ''
+  if tp_rc_dielen
+    assign tp_rc_muster = 'dielen'
+    assign tp_rc_handle_klein = product.handle | downcase
+    if tp_rc_handle_klein contains 'fischgrat'
+      assign tp_rc_muster = 'fischgrat'
+    endif
+  endif
+
   assign tp_rc_leiste = block.settings.kettelleisten_produkt
   assign tp_rc_haft = block.settings.haftunterlage_produkt
   assign tp_rc_einfass_gruppe = product.metafields.service.einfass_gruppe.value
@@ -104,8 +124,12 @@
     render 'tp-rabatt-sichtbar', product: product
   endcapture
   assign tp_rc_rabatt = tp_rc_rabatt | strip
+  assign tp_rc_ohne_raum = false
+  if product.tags contains 'ohne-raummass'
+    assign tp_rc_ohne_raum = true
+  endif
 -%}
-<div class="tp-rwc-{{ tp_rc_id }} tp-kaufweg" id="tp-rwc-{{ tp_rc_id }}" data-product-id="{{ product.id }}" data-max-laenge-cm="{{ tp_rc_max_laenge_cm }}" {{ block.shopify_attributes }}>
+<div class="tp-rwc-{{ tp_rc_id }} tp-kaufweg" id="tp-rwc-{{ tp_rc_id }}" data-product-id="{{ product.id }}" {% if tp_rc_dielen %}data-muster="{{ tp_rc_muster }}"{% endif %} data-max-laenge-cm="{{ tp_rc_max_laenge_cm }}" {{ block.shopify_attributes }}>
 
   {%- comment -%}
     Faehrt eine Farbe nur noch ueber den Zweitlieferanten, gibt es dafuer
@@ -131,6 +155,24 @@
     ART.parseMass trotzdem richtig.
   {%- endcomment -%}
   <p class="tp-rwc-kopf" data-rwc-body>Zuschnitt und Maße</p>
+  {%- comment -%}
+    Raummass-Helfer (Inhaber 2026-10-02): Raummasse eingeben, Bestellmass mit
+    oder ohne Zugabe uebernehmen. Befuellt nur die Felder unten.
+    Produkte mit Tag "ohne-raummass" zeigen ihn nicht (Nadelfilz, Inhaber
+    2026-10-03: dort ueberhaupt kein Raummass).
+  {%- endcomment -%}
+  {%- liquid
+    assign tp_rc_helfer = true
+    if block.settings.raummass_helfer == false
+      assign tp_rc_helfer = false
+    endif
+    if product.tags contains 'ohne-raummass'
+      assign tp_rc_helfer = false
+    endif
+  -%}
+  {%- if tp_rc_helfer -%}
+    <div data-rwc-body>{% render 'tp-raummass', art: 'rolle', id: tp_rc_id, muster: tp_rc_dielen %}</div>
+  {%- endif -%}
   <div class="tp-rwc-field" data-art-field data-rwc-body hidden>
     <div class="tp-rwc-art" role="radiogroup" aria-label="Art des Zuschnitts">
       <input type="radio" id="tp-rwc-art-m-{{ tp_rc_id }}" name="tp-rwc-art-{{ tp_rc_id }}" value="meter" checked>
@@ -196,6 +238,13 @@
         Warenkorb. Darueber wird beraten statt blockiert.
       {%- endcomment -%}
       <p class="tp-rwc-note tp-rwc-note-error" data-error-max hidden></p>
+      {%- comment -%}
+        Bahnen aus dem Raummass-Helfer (z. B. 2 x 200 x 560 statt 1 x 400 x 560):
+        eine Warenkorbzeile ueber die Gesamtlaenge, Vermerk "Zuschnitt" fuer
+        den Zuschnitt in einzelne Rollen. Verschwindet, sobald Breite, Laenge
+        oder Art nicht mehr dazu passen.
+      {%- endcomment -%}
+      <p class="tp-rwc-note tp-rwc-bahnen" data-bahnen-hint hidden></p>
     </div>
   </div>
   </div>
@@ -215,23 +264,6 @@
     <span data-wunsch-hint hidden></span>
   </p>
   <p class="tp-rwc-note tp-rwc-note-tipp" data-meter-tipp hidden data-rwc-body></p>
-  {%- comment -%}
-    Die Skizze bleibt, steht aber eingeklappt - sie erklaert das Mass, ist
-    fuer den Kauf aber kein Schritt (Design-Runde 3). Beim Aufklappen wird
-    neu gezeichnet, weil die Buehne vorher keine Breite hat.
-  {%- endcomment -%}
-  <details class="tp-rwc-skizze" data-draw hidden data-rwc-body>
-    <summary>Skizze Ihres Stücks</summary>
-  <figure class="tp-rwc-draw" aria-hidden="true">
-    <svg class="tp-rwc-rolle" viewBox="0 0 340 214" data-rolle-svg hidden></svg>
-    <div class="tp-rwc-stage" data-stage>
-      <div class="tp-rwc-piece" data-piece>
-        <span class="tp-rwc-tag tp-rwc-tag-w" data-tag-width>–</span>
-        <span class="tp-rwc-tag tp-rwc-tag-l" data-tag-length>–</span>
-      </div>
-    </div>
-  </figure>
-  </details>
 
   <p class="tp-rwc-note tp-rwc-note-error" data-error-stock hidden></p>
 
@@ -355,7 +387,14 @@
     disabled waere genauso stumm: ein Klick darauf loest kein Event aus. Statt
     dessen traegt er aria-disabled und meldet beim Klick, welches Feld fehlt.
   {%- endcomment -%}
-  {% render 'tp-widerruf-massanfertigung', art: 'zuschnitt', extra_attributes: 'data-rwc-body' %}
+  {%- comment -%}
+    Widerrufs-Hinweis auf Wunsch des Inhabers (2026-10-02) standardmaessig
+    aus - schreckte Kunden ab. Pflichtinformation nach Art. 246a EGBGB,
+    Risiko bewusst getragen; per Block-Einstellung wieder einschaltbar.
+  {%- endcomment -%}
+  {%- if block.settings.widerruf_hinweis -%}
+    {% render 'tp-widerruf-massanfertigung', art: 'zuschnitt', extra_attributes: 'data-rwc-body' %}
+  {%- endif -%}
   <button type="button" class="tp-rwc-cta is-incomplete" data-cta data-add-to-cart aria-disabled="true" data-rwc-body>In den Warenkorb</button>
   {%- comment -%}
     K6: Der Knopf heisst immer "In den Warenkorb". Solange etwas fehlt, ist er
@@ -364,6 +403,35 @@
   {%- endcomment -%}
   <p class="tp-rwc-note tp-rwc-cta-hint" data-cta-hint aria-live="polite" hidden data-rwc-body></p>
   <a href="{{ routes.cart_url }}" class="tp-rwc-cart-link" data-cart-link hidden>Warenkorb ansehen</a>
+
+  {%- comment -%}
+    Reihenfolge (Inhaber 2026-10-05): Farbe > Breite > Laenge > Zubehoer >
+    Preis > Visualisierer. Die Skizze steht deshalb unter Kaufknopf und
+    Warenkorb-Link; sie erscheint weiterhin erst nach gueltiger Laenge.
+    Die Skizze bleibt, steht aber eingeklappt - sie erklaert das Mass, ist
+    fuer den Kauf aber kein Schritt (Design-Runde 3). Beim Aufklappen wird
+    neu gezeichnet, weil die Buehne vorher keine Breite hat.
+  {%- endcomment -%}
+  {%- comment -%}
+    Bei Dielenoptik steht die Skizze offen und zeigt die Dielen entlang der
+    Laenge - die Laufrichtung entscheidet hier mit ueber die Rollenbreite.
+  {%- endcomment -%}
+  <details class="tp-rwc-skizze" data-draw hidden data-rwc-body{% if tp_rc_dielen %} open{% endif %}>
+    <summary>Skizze Ihres Stücks{% if tp_rc_dielen %} – mit Laufrichtung der Dielen{% endif %}</summary>
+  {%- if tp_rc_dielen -%}
+    <p class="tp-rwc-muster-hinweis">Die Dielen laufen immer entlang der Länge, also in der Richtung, in der wir von der Rolle abschneiden. Quer dazu liegt die Rollenbreite.</p>
+  {%- endif -%}
+  <figure class="tp-rwc-draw" aria-hidden="true">
+    <svg class="tp-rwc-rolle" viewBox="0 0 340 214" data-rolle-svg hidden></svg>
+    <div class="tp-rwc-stage" data-stage>
+      <div class="tp-rwc-piece{% if tp_rc_dielen %} tp-rwc-piece--dielen{% endif %}" data-piece>
+        {%- if tp_rc_dielen -%}<span class="tp-rwc-laufrichtung">↕ Laufrichtung</span>{%- endif -%}
+        <span class="tp-rwc-tag tp-rwc-tag-w" data-tag-width>–</span>
+        <span class="tp-rwc-tag tp-rwc-tag-l" data-tag-length>–</span>
+      </div>
+    </div>
+  </figure>
+  </details>
 
   {%- comment -%}
     K7: Muster als Outline-Knopf direkt unter dem Kauf, mit dem Namen der
@@ -478,6 +546,7 @@
   "meter_tipp": {{ block.settings.meterware_tipp_anzeigen | json }},
   "aktion_prozent": {{ tp_rc_aktion_prozent | default: 0 }},
   "product_title": {{ product.title | json }},
+  "produkt_art": {{ product.type | default: 'Teppich' | json }},
   "leiste": [
     {%- if tp_rc_leiste != blank -%}
       {%- for tp_rc_lv in tp_rc_leiste.variants -%}
@@ -520,7 +589,18 @@
   "variants": [
     {%- for variant in product.variants -%}
       {%- assign tp_rc_v_title = variant.title | downcase -%}
-      {%- unless tp_rc_v_title contains 'opc-' -%}
+      {%- comment -%}
+        Tag "ohne-raummass": das Produkt gibt es nur als Meterware (Nadelfilz,
+        Auslaufkollektionen). Die Wunschmass-Varianten bleiben in Shopify
+        bestehen, kommen aber nicht in den Rechner - ohne sie fehlt die
+        Raummass-Karte, wie bei jedem Produkt ohne solche Variante.
+      {%- endcomment -%}
+      {%- assign tp_rc_v_aus = false -%}
+      {%- if tp_rc_v_title contains 'opc-' -%}{%- assign tp_rc_v_aus = true -%}{%- endif -%}
+      {%- if tp_rc_ohne_raum -%}
+        {%- if variant.options contains 'Wunschmaß' or variant.options contains 'Wunschmass' -%}{%- assign tp_rc_v_aus = true -%}{%- endif -%}
+      {%- endif -%}
+      {%- unless tp_rc_v_aus -%}
         {%- capture tp_rc_v_farbnummer -%}{% render 'tp-farbe-daten', variant: variant, product: product, feld: 'nummer' %}{%- endcapture -%}
         {%- capture tp_rc_v_farbe_intern -%}{% render 'tp-farbe-daten', variant: variant, product: product, feld: 'intern' %}{%- endcapture -%}
         {
@@ -758,6 +838,26 @@
     box-shadow: 0 4px 14px rgba(29, 107, 71, 0.18);
     transition: width .2s ease, height .2s ease;
   }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-piece--dielen {
+    background-color: rgba(29, 107, 71, 0.06);
+    background-image: repeating-linear-gradient(90deg, transparent 0, transparent calc(var(--tp-diele, 10px) - 1px), rgba(29, 107, 71, 0.38) calc(var(--tp-diele, 10px) - 1px), rgba(29, 107, 71, 0.38) var(--tp-diele, 10px));
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-laufrichtung {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--color-background, #fff);
+    color: #1d6b47;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-bahnen { color: #1d6b47; font-weight: 600; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-bahnen[hidden] { display: none; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-muster-hinweis { margin: 6px 0 0; font-size: 13px; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72); }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-tag { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: #1d6b47; white-space: nowrap; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-tag-w {
     position: absolute;
@@ -1242,6 +1342,19 @@ function tpRwcInit{{ tp_rc_id }}() {
     return Math.round((wCm * lenCm) / 100);
   }
 
+  // Preisabfrage fuer den Raummass-Helfer (snippets/tp-raummass.liquid):
+  // Betrag in EUR fuer ein Stueck der gewaehlten Farbe, abgerechnet wie in
+  // der Preisbox (0,01 m² oder volle m²). 0 = gibt es nicht.
+  root.tpRwcPreis = function (art, wCm, lenCm) {
+    if (wIdx === -1 || !(wCm > 0) || !(lenCm > 0)) return 0;
+    var v = art === 'raum' ? raumVariant() : variantFor(baseOptions(), byWidth(wCm));
+    if (art === 'raum' && !ART.wunschOk(v, wIdx)) return 0;
+    var rate = rateOf(v);
+    if (!(rate > 0)) return 0;
+    var qty = cmExact ? roundedHundredthsQty(wCm, lenCm) : Math.ceil((wCm * lenCm) / 10000);
+    return (cmExact ? qty / 100 : qty) * rate;
+  };
+
   // Im Raummass-Modus ist die Breite die eigene Eingabe, sonst die Rolle.
   function selectedWidth() {
     if (wIdx === -1) return widths[0];
@@ -1518,6 +1631,20 @@ function tpRwcInit{{ tp_rc_id }}() {
 
     var widthPx = Math.max(DRAW_MIN_PX, Math.min(stageW, Math.round(w * pxPerCm)));
     piece.style.width = widthPx + 'px';
+    // Dielenoptik: eine Diele etwa 20 cm breit, massstaeblich zum Stueck.
+    var muster = root.getAttribute('data-muster');
+    if (muster === 'dielen' || muster === 'fischgrat') {
+      var dpx = Math.max(5, Math.round(20 * pxPerCm));
+      piece.style.setProperty('--tp-diele', dpx + 'px');
+      if (muster === 'fischgrat') {
+        // Fischgrat: Zickzack-Spalten entlang der Laenge (Laufrichtung).
+        var fw = dpx * 2;
+        var fsvg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + fw + '" height="' + fw + '">' +
+          '<path d="M0 0L' + dpx + ' ' + dpx + 'L' + fw + ' 0M0 ' + fw + 'L' + dpx + ' ' + dpx + 'L' + fw + ' ' + fw + '" fill="none" stroke="rgba(29,107,71,.45)" stroke-width="1"/>' +
+          '<path d="M0 0V' + fw + 'M' + fw + ' 0V' + fw + '" stroke="rgba(29,107,71,.3)" stroke-width="1"/></svg>';
+        piece.style.backgroundImage = 'url("data:image/svg+xml,' + encodeURIComponent(fsvg) + '")';
+      }
+    }
     tagW.textContent = 'Breite ' + w + ' cm';
 
     if (!len) {
@@ -1815,8 +1942,46 @@ function tpRwcInit{{ tp_rc_id }}() {
     root.querySelectorAll('[data-extra]').forEach(function (x) { if (!x.hidden) setNum(x); });
   }
 
+  // Bahnen aus dem Helfer: gilt nur, solange Meterware, Rolle und Gesamt-
+  // laenge noch genau dazu passen.
+  var bahnenHint = root.querySelector('[data-bahnen-hint]');
+  function bahnenAktiv() {
+    var n = parseInt(root.getAttribute('data-bahnen') || '', 10);
+    var bl = parseInt(root.getAttribute('data-bahn-laenge') || '', 10);
+    var bw = parseInt(root.getAttribute('data-bahn-breite') || '', 10);
+    // data-zuschnitt-text: Stueck aus einer Zwei-Stuecke-Loesung (Inhaber
+    // 2026-10-03), dann genuegt eine Bahn; der Text steht so im Vermerk.
+    var text = root.getAttribute('data-zuschnitt-text') || '';
+    if (!(n >= (text ? 1 : 2)) || !(bl > 0) || artMode() !== 'meter') return null;
+    if (selectedWidth() !== bw || getEffectiveLengthCm() !== n * bl) return null;
+    return { n: n, laenge: bl, text: text };
+  }
+  function bahnenLoeschen() {
+    root.removeAttribute('data-bahnen');
+    root.removeAttribute('data-bahn-laenge');
+    root.removeAttribute('data-bahn-breite');
+    root.removeAttribute('data-zuschnitt-text');
+  }
+  function zeigeBahnen() {
+    if (!bahnenHint) return;
+    var b = bahnenAktiv();
+    bahnenHint.hidden = !b;
+    if (!b) return;
+    while (bahnenHint.firstChild) bahnenHint.removeChild(bahnenHint.firstChild);
+    bahnenHint.appendChild(document.createTextNode(b.text ? b.text + '. '
+      : 'Zuschnitt in ' + b.n + ' Bahnen à ' + b.laenge + ' cm – Sie erhalten ' + b.n + ' einzelne Rollen. '));
+    if (b.text) return;
+    var eins = document.createElement('button');
+    eins.type = 'button';
+    eins.className = 'tp-rwc-linkbtn';
+    eins.textContent = 'Lieber als ein Stück';
+    eins.addEventListener('click', function () { bahnenLoeschen(); calculate(); });
+    bahnenHint.appendChild(eins);
+  }
+
   function calculate() {
     syncArtUi();
+    zeigeBahnen();
     var w = selectedWidth();
     var raum = artMode() === 'raum';
     // Die Zugabe greift nur im Raummass - bei Meterware bekommt der Kunde die
@@ -1925,7 +2090,7 @@ function tpRwcInit{{ tp_rc_id }}() {
         aktionZeile.hidden = !(aktionAbzug > 0);
         if (aktionAbzug > 0) aktionZeile.textContent = 'Aktion −' + aktionProzent + ' %: −' + fmt(aktionAbzug) + ' € (wird im Warenkorb abgezogen)';
       }
-      var summe = [['Teppich · ' + fmtArea(billedArea) + ' m² × ' + fmt(rate) + ' €', total]];
+      var summe = [[(data.produkt_art || 'Teppich') + ' · ' + fmtArea(billedArea) + ' m² × ' + fmt(rate) + ' €', total]];
       if (aktionAbzug > 0) summe.push(['Aktion −' + aktionProzent + ' % (im Warenkorb)', -aktionAbzug]);
       zeigeSumme(summe.concat(extras.rows));
       outTotal.textContent = fmt(total - aktionAbzug + extras.sum) + ' €';
@@ -2127,6 +2292,8 @@ function tpRwcInit{{ tp_rc_id }}() {
       ? { 'Art': 'Raummaß', 'Ihre Breite': w + ' cm', 'Aus Rolle': ART.rolleFuer(w, farbBreiten) + ' cm', 'Gewünschte Länge': len + ' cm' }
       : { 'Art': 'Meterware', 'Rollenbreite': w + ' cm', 'Gewünschte Länge': len + ' cm' };
     properties[cmExact ? 'Fläche' : 'Fläche (aufgerundet)'] = fmt(billedArea) + ' m²';
+    var bahnen = bahnenAktiv();
+    if (bahnen) properties['Zuschnitt'] = bahnen.text || (bahnen.n + ' Bahnen à ' + bahnen.laenge + ' cm, einzeln gerollt');
     // Farbnummer (intern) mitgeben - siehe domains/shopify/farbverwaltung.md.
     // Unterstrich-Property sieht nur der Admin, "Farbnummer" auch der Kunde im Warenkorb.
     if (target.farbnummer) properties['Farbnummer'] = target.farbnummer;
@@ -2247,6 +2414,20 @@ else { document.addEventListener('DOMContentLoaded', tpRwcInit{{ tp_rc_id }}); }
   "name": "TP Rollenware-Rechner",
   "tag": null,
   "settings": [
+    {
+      "type": "checkbox",
+      "id": "widerruf_hinweis",
+      "label": "Hinweis \"kein Widerrufsrecht\" über dem Warenkorb-Knopf",
+      "info": "Seit 2026-10-02 aus (Inhaber). Rechtlich ist der Hinweis vor der Bestellung vorgesehen - bei Abmahnung hier wieder einschalten.",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "raummass_helfer",
+      "label": "Raummaße-Helfer über den Maßfeldern",
+      "info": "Kunde gibt Raumbreite und -länge ein und übernimmt das Bestellmaß mit oder ohne Zugabe.",
+      "default": true
+    },
     {
       "type": "header",
       "content": "Zusätze"

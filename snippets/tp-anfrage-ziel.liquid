@@ -1,0 +1,25 @@
+{% doc %}
+  Hat die aktuelle Seite ein eigenes Anfrageformular (Section tp-start-kontakt,
+  Anker #tp-anfrage)? Gibt dann "#tp-anfrage" aus, sonst nichts.
+
+  Fuer Sections aus Header-/Footer-Gruppe (Sticky-Kontakt, Final-CTA), die
+  sonst auf /pages/kontakt fuehren: Auf den Serviceseiten steht das Formular
+  selbst auf der Seite - der Umweg ueber die Kontaktseite verliert dort das
+  vorbelegte Anliegen (Audit 01.10.2026, Punkt 10).
+
+  Liste der Seitenvorlagen mit eigenem Formular - beim Einfuegen von
+  tp-start-kontakt in eine weitere Seitenvorlage hier ergaenzen.
+
+  Aufruf:
+    capture x
+      render 'tp-anfrage-ziel'
+    endcapture
+{% enddoc %}
+{%- liquid
+  if template.name == 'page'
+    assign taz_vorlagen = 'verlegeservice,teppichboden-verlegen,vinylboden-verlegen,treppenverlegung,teppichreinigung' | split: ','
+    if taz_vorlagen contains template.suffix
+      echo '#tp-anfrage'
+    endif
+  endif
+-%}

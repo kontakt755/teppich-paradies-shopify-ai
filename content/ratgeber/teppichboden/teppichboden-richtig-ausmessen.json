@@ -31,6 +31,11 @@
       "art": "hausangabe",
       "titel": "Rollenbreiten und Bestellraster im Shop",
       "url": "/collections/teppichboden"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Verlegeanleitung textile Bahnenware (Übermaß ± 10 cm, Bahnen rechtwinklig zu den Fenstern, keine Nähte an Eingängen)",
+      "url": "https://www.heinze.de/m2/68/64068/etc/22/49858022.pdf"
     }
   ],
   "bilder": [
@@ -59,7 +64,7 @@
     "description": "Teppichboden ausmessen: an der breitesten und längsten Stelle messen, Rollenbreite wählen, 10–20 cm Zugabe auf die Länge. Mit Rechenbeispielen."
   },
   "metafields": {
-    "kurzantwort": "Messen Sie den Raum an seiner breitesten und an seiner längsten Stelle, Türnischen und Erker eingeschlossen. Die Breite des Teppichbodens ergibt sich nicht aus dem Raum, sondern aus der Rollenbreite: Sie wählen die nächstgrößere Rolle, meist 400 oder 500 cm. Auf die gemessene Länge geben Sie 10 bis 20 cm zu, damit beim Verlegen sauber an der Wand geschnitten werden kann. Breite und Länge dürfen Sie tauschen, wenn der Raum dadurch besser auf die Rolle passt.",
+    "kurzantwort": "Messen Sie den Raum an seiner breitesten und längsten Stelle, Türnischen eingeschlossen, und wählen Sie die kleinste Rollenbreite, die die Breite abdeckt. Auf die Länge geben Sie 10 bis 20 cm zu; Breite und Länge dürfen Sie tauschen, wenn der Raum dadurch besser auf die Rolle passt.",
     "art": "Planung",
     "dauer": "",
     "schwierigkeit": "",
@@ -73,5 +78,9 @@
     "zubehoer_kollektion": "",
     "geprueft_von": "",
     "stand": ""
+  },
+  "titelbild": {
+    "url": "https://cdn.shopify.com/s/files/1/0875/4852/6926/files/ratgeber-titel-teppichboden-ausmessen.png",
+    "alt": "Raum wird mit dem Zollstock von der Wand aus ausgemessen, daneben eine Raumskizze"
   }
 }

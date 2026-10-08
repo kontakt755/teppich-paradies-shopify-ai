@@ -13,6 +13,9 @@
     - service.mindestpreis gilt fuer den Auftrag: die Materialmenge wird in ganzen
       Einheiten angehoben, bis Material + Kante den Mindestpreis erreichen. Deshalb
       kann der Einstieg knapp ueber dem Mindestpreis liegen (99,10 statt 99,00 EUR).
+    - Art "fertig" (Wunschmass vom Hersteller): Pauschale je Teppich aus dem Produkt
+      wunschmass-pauschale (derselbe Handle wie in templates/product.wunschmass-fertig.json,
+      Einstellung pauschale_produkt); nicht kaufbar -> kein ab-Preis.
   Optionale Extras sind nicht enthalten.
 
   Laesst sich der Preis nicht belegen (kein 0,01-m2-Preis, Kettelservice nicht
@@ -85,6 +88,15 @@
         assign tp_ab_belegt = false
       endif
     endif
+    assign tp_ab_pauschale_cent = 0
+    if tp_ab_art == 'fertig'
+      assign tp_ab_pauschale_v = all_products['wunschmass-pauschale'].selected_or_first_available_variant
+      if tp_ab_pauschale_v.available and tp_ab_pauschale_v.price > 0
+        assign tp_ab_pauschale_cent = tp_ab_pauschale_v.price
+      else
+        assign tp_ab_belegt = false
+      endif
+    endif
 
     assign tp_ab_mp = product.metafields.service.mindestpreis.value
     if tp_ab_mp.amount
@@ -100,7 +112,7 @@
       assign tp_ab_menge = tp_ab_rest_cent | plus: tp_ab_einheit_cent | minus: 1 | divided_by: tp_ab_einheit_cent
       assign tp_ab_material_cent = tp_ab_menge | times: tp_ab_einheit_cent
     endif
-    assign tp_ab_cent = tp_ab_material_cent | plus: tp_ab_kante_cent
+    assign tp_ab_cent = tp_ab_material_cent | plus: tp_ab_kante_cent | plus: tp_ab_pauschale_cent
 
     # Streichpreis (S-30): derselbe Teppich zum alten Variantenpreis, dieselbe Formel - die
     # Kettelung ist nicht rabattiert und steckt in beiden Summen. Nur bei aktiver Aktion
@@ -120,7 +132,7 @@
         if tp_ab_rest_cent > tp_ab_alt_material_cent
           assign tp_ab_alt_cent = 0
         else
-          assign tp_ab_alt_cent = tp_ab_alt_material_cent | plus: tp_ab_kante_cent
+          assign tp_ab_alt_cent = tp_ab_alt_material_cent | plus: tp_ab_kante_cent | plus: tp_ab_pauschale_cent
           if tp_ab_alt_cent <= tp_ab_cent
             assign tp_ab_alt_cent = 0
           endif
@@ -145,7 +157,7 @@
         <s class="tp-ab-preis__alt" data-tp-ab-alt-cent="{{ tp_ab_alt_cent }}"><span class="visually-hidden">statt </span>{{ tp_ab_alt_cent | money_without_trailing_zeros }}</s>
       {%- endif -%}
     </span>
-    <span class="tp-ab-preis__grund">z.&nbsp;B. {{ tp_ab_breite_cm }}&nbsp;×&nbsp;{{ tp_ab_laenge_cm }}&nbsp;cm, inkl. {% if tp_ab_art == 'ketteln' %}Kettelung{% else %}Einfassung{% endif %}</span>
+    <span class="tp-ab-preis__grund">z.&nbsp;B. {{ tp_ab_breite_cm }}&nbsp;×&nbsp;{{ tp_ab_laenge_cm }}&nbsp;cm, inkl. {% if tp_ab_art == 'ketteln' %}Kettelung{% elsif tp_ab_art == 'fertig' %}Einfassung und Pauschale{% else %}Einfassung{% endif %}</span>
   </span>
 {%- else -%}
   <span class="tp-preis-je-m2">{% if variant == blank %}ab {% endif %}{{ tp_ab_m2_cent | money }}<span class="tp-preis-je-m2__einheit">/m²</span></span>

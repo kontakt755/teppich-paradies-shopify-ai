@@ -1,0 +1,26 @@
+{%- doc -%}
+  Gibt nur tatsaechliche Raumwerte aus custom.zimmer aus. Der Metaobjektwert
+  "Treppeneignung" ist keine Raumbezeichnung und darf daraus weder im sichtbaren
+  Text noch in strukturierten Daten eine Eignungsaussage machen.
+
+  @param {object} metafield - custom.zimmer des Produkts
+{%- enddoc -%}
+
+{%- liquid
+  assign tp_zl_erstes = true
+  assign tp_zl_werte = metafield.value
+-%}
+{%- if metafield.type contains 'list.' and tp_zl_werte != blank -%}
+  {%- for tp_zl_eintrag in tp_zl_werte -%}
+    {%- liquid
+      assign tp_zl_feld = tp_zl_eintrag.zimmer
+      assign tp_zl_name = tp_zl_feld.value | default: tp_zl_feld | default: tp_zl_eintrag.name | default: tp_zl_eintrag | strip_html | strip
+      assign tp_zl_name_klein = tp_zl_name | downcase
+    -%}
+    {%- if tp_zl_name != blank and tp_zl_name_klein != 'treppeneignung' -%}
+      {%- unless tp_zl_erstes -%}, {% endunless -%}
+      {{- tp_zl_name -}}
+      {%- assign tp_zl_erstes = false -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endif -%}

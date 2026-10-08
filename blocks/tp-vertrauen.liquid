@@ -12,7 +12,8 @@
   <li>Muster vor dem Kauf möglich</li>
   <li>Persönliche Fachberatung</li>
   <li>Google-Bewertungen und echte Projekterfahrungen</li>
-  <li>Wunschmaß möglich</li>
+  {%- comment -%} Tag "ohne-raummass": nur Meterware, also kein Wunschmass-Versprechen {%- endcomment -%}
+  {% unless product.tags contains 'ohne-raummass' %}<li>Wunschmaß möglich</li>{% endunless %}
   <li>Liefer- & Verlegeservice in Oranienburg, Berlin & Umgebung</li>
 </ul>{% endunless %}
 {%- comment -%} D8: Telefon steht in der Kontaktbox im Kaufbereich, hier nicht noch einmal {%- endcomment -%}

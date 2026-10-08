@@ -16,7 +16,7 @@
     "Wie halte ich den Verschnitt klein?",
     "Was mache ich mit den Resten?"
   ],
-  "status": "fachinput_noetig",
+  "status": "freigegeben",
   "verwandte": [
     "teppichboden-richtig-ausmessen",
     "rollenbreite-und-bahnen-planen"
@@ -30,6 +30,11 @@
       "art": "hausangabe",
       "titel": "Rollenbreiten und Bedarfsrechner im Shop",
       "url": "/collections/teppichboden"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Verlegeanleitung textile Bahnenware (Übermaß ± 10 cm, Bahnen rechtwinklig zu den Fenstern, keine Nähte an Eingängen)",
+      "url": "https://www.heinze.de/m2/68/64068/etc/22/49858022.pdf"
     }
   ],
   "bilder": [
@@ -43,18 +48,14 @@
     "naechste": "2028-09-23",
     "grund": "Rechenweg folgt den Rollenbreiten"
   },
-  "expert_input": [
-    "Nennen Sie Kunden eine übliche Größenordnung für Verschnitt, oder raten Sie davon ab?",
-    "Wie viel Überlappung je Naht muss zusätzlich eingeplant werden?",
-    "Können Reststücke mitgeliefert werden, oder bleiben sie beim Zuschnitt?"
-  ],
+  "expert_input": [],
   "excerpt": "Teppichboden kommt in Rollenbreite, nicht in Raumgröße. Was übrig bleibt, bezahlen Sie mit – mit der richtigen Ausrichtung oft nur halb so viel.",
   "seo": {
     "title": "Verschnitt bei Teppichboden richtig einplanen",
     "description": "Woraus Verschnitt entsteht, ein durchgerechnetes Beispiel für 400- und 500-cm-Rollen und wie Sie ihn klein halten."
   },
   "metafields": {
-    "kurzantwort": "Verschnitt entsteht, weil Teppichboden in Rollenbreite geliefert wird und nicht in Raumgröße. Drei Quellen addieren sich: die Differenz zwischen Rollenbreite und Raumbreite, die Zugabe auf die Länge und Nischen oder schiefe Wände. Wie viel es wird, hängt stark davon ab, ob die Bahn längs oder quer liegt – im Beispiel unten sind es 30 % gegenüber 16 % derselben Raumfläche.",
+    "kurzantwort": "Verschnitt entsteht, weil Teppichboden in Rollenbreite statt in Raumgröße kommt, plus Zugabe, Nischen und gegebenenfalls Nahtzugabe. Ein pauschaler Prozentwert passt nicht – im Beispiel macht allein das Drehen der Bahn aus 30 % Verschnitt 16 %.",
     "art": "Planung",
     "dauer": "",
     "schwierigkeit": "",
@@ -68,5 +69,9 @@
     "zubehoer_kollektion": "",
     "geprueft_von": "",
     "stand": ""
+  },
+  "titelbild": {
+    "url": "https://cdn.shopify.com/s/files/1/0875/4852/6926/files/ratgeber-titel-verschnitt.png",
+    "alt": "Verlegter Teppichboden mit abgeschnittenem Randstreifen und aufgerolltem Reststück"
   }
 }

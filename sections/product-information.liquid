@@ -35,7 +35,7 @@
   m2-Preises. Findet das Skript weder Formular noch Kaufweg, bleibt die
   Leiste aus - ein sichtbarer Knopf ohne Wirkung entsteht so nicht wieder.
 {%- endcomment -%}
-{% if section.settings.enable_sticky_add_to_cart %}
+{% if section.settings.enable_sticky_add_to_cart and product.type != 'Musterservice' %}
   {% liquid
     assign current_variant = product.selected_or_first_available_variant
     # Get the initial quantity based on quantity rules

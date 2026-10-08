@@ -266,7 +266,30 @@ test('weiter als das Liefergebiet: Kontaktwege statt Absage, und zwar hinter der
   for (const weg of ['tel:', 'mailto:', 'https://wa.me/', 'kontakt_link', 'maps/dir/?api=1']) {
     assert.ok(code.includes(weg), `Kontaktweg fehlt: ${weg}`);
   }
-  assert.equal(seite.sections.tp_verlegeservice_kontakt.settings.kontakt_link, '/pages/kontakt');
+  // Audit 01.10.2026, Punkt 10: der Formular-Weg bleibt auf der Seite - das
+  // Anfrageformular (tp-start-kontakt, Anker #tp-anfrage) steht hier selbst.
+  assert.equal(seite.sections.tp_verlegeservice_kontakt.settings.kontakt_link,
+    '/pages/liefer-verlegeservice#tp-anfrage');
+  const formulare = Object.values(seite.sections).filter((s) => s.type === 'tp-start-kontakt' && !s.disabled);
+  assert.equal(formulare.length, 1, 'Genau ein Anfrageformular auf der Serviceseite.');
+  assert.equal(formulare[0].settings.anliegen, 'Boden verlegen lassen');
+});
+
+test('Serviceseiten: Anfrage-Buttons fuehren zum Formular der eigenen Seite', () => {
+  const seiten = {
+    'page.verlegeservice': 'liefer-verlegeservice',
+    'page.teppichboden-verlegen': 'teppichboden-verlegen-lassen',
+    'page.vinylboden-verlegen': 'vinylboden-verlegen',
+    'page.treppenverlegung': 'treppenverlegung',
+  };
+  for (const [name, handle] of Object.entries(seiten)) {
+    const seite = vorlage(name);
+    const formulare = Object.values(seite.sections).filter((s) => s.type === 'tp-start-kontakt' && !s.disabled);
+    assert.equal(formulare.length, 1, `${name}: genau ein Anfrageformular`);
+    const text = JSON.stringify(seite);
+    assert.doesNotMatch(text, /"\/pages\/kontakt"/, `${name}: Button zeigt noch auf /pages/kontakt`);
+    assert.match(text, new RegExp(`/pages/${handle}#tp-anfrage`), `${name}: kein Sprung auf #tp-anfrage`);
+  }
 });
 
 test('Kontaktdaten kommen aus dem Shop, nicht erfunden', () => {
@@ -285,12 +308,13 @@ test('der Link "Verlegeservice" fuehrt je nach Produktart auf die passende Seite
   // den Link doch zugesagt.
   const code = ohneKommentare(lesen('blocks', 'tp-service-links.liquid'));
   assert.match(code, /render 'tp-vs-berechtigt', product: product/);
-  const zweige = code.match(/if tp_sl_vs contains 'ja'([\s\S]*?)elsif product\.template_suffix == 'planken'([\s\S]*?)else([\s\S]*?)endif/);
+  const zweige = code.match(/if tp_sl_neuer_holzboden([\s\S]*?)elsif tp_sl_vs contains 'ja'([\s\S]*?)elsif product\.template_suffix == 'planken'([\s\S]*?)else([\s\S]*?)endif/);
   assert.ok(zweige, 'Die Unterscheidung nach Produktart fehlt.');
-  assert.match(zweige[1], /liefer-verlegeservice/);
-  assert.match(zweige[2], /vinylboden-verlegen/);
-  assert.doesNotMatch(zweige[3], /liefer-verlegeservice/, 'Andere Produkte duerfen nicht auf die Rollenware-Seite.');
-  assert.match(code, /<a href="{{ tp_sl_verlegen_url }}">Verlegeservice<\/a>/);
+  assert.match(zweige[1], /pages\['kontakt'\]/, 'Holzboeden brauchen eine persoenliche Anfrage, keine Vinyl-Anleitung.');
+  assert.match(zweige[2], /liefer-verlegeservice/);
+  assert.match(zweige[3], /vinylboden-verlegen/);
+  assert.doesNotMatch(zweige[4], /liefer-verlegeservice/, 'Andere Produkte duerfen nicht auf die Rollenware-Seite.');
+  assert.match(code, /<a href="{{ tp_sl_verlegen_url }}">{{ tp_sl_verlegen_label }}<\/a>/);
 });
 
 test('Vinyl von der Rolle: Einstieg und Vinylseite nennen den Service, Klick- und Klebevinyl nicht', () => {

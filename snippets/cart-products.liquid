@@ -138,6 +138,15 @@
               {%- comment -%} Streichpreis/Sale nur bei aktiver Aktion (snippets/tp-aktion-aktiv) - ein stehen gebliebener compare_at_price allein zeigt nichts (S-20, 2026-09-20). {%- endcomment -%}
               {%- capture tp_cp_aktion -%}{% render 'tp-rabatt-sichtbar', product: item.product %}{%- endcapture -%}
               {%- assign tp_cp_aktion = tp_cp_aktion | strip -%}
+              {%- liquid
+                assign tp_cp_item_url = item.url
+                if item.properties._Muster_ID != blank and item.properties._Quellprodukt != blank
+                  assign tp_cp_item_url = '/products/' | append: item.properties._Quellprodukt
+                  if item.properties._Quellvariante_ID != blank
+                    assign tp_cp_item_url = tp_cp_item_url | append: '?variant=' | append: item.properties._Quellvariante_ID
+                  endif
+                endif
+              -%}
               <tr
                 role="row"
                 class="cart-items__table-row{% if item.parent_relationship.parent != null %} cart-items__nested-line{% endif %}{% unless item.unit_price_measurement %} cart-items__table-row--full-width-variants{% endunless %}"
@@ -186,7 +195,7 @@
                     %}
                   {% if tp_cart_image %}
                     <a
-                      href="{{ item.url }}"
+                      href="{{ tp_cp_item_url | escape }}"
                       class="cart-items__media-container"
                       style="--ratio:{{ ratio }};"
                     >
@@ -205,7 +214,7 @@
                   <div class="cart-items__product-info">
                     <p>
                       <a
-                        href="{{ item.url }}"
+                        href="{{ tp_cp_item_url | escape }}"
                         class="cart-items__title"
                         {% if item.parent_relationship.parent != null %}
                           aria-label="{{ 'accessibility.nested_product' | t: product_title: item.product.title, parent_title: item.parent_relationship.parent.title | escape }}"
@@ -378,6 +387,15 @@
                   {%- if tp_gz_berechnet contains 'ja' -%}
                     {%- assign can_update_quantity = false -%}
                   {%- endif -%}
+                  {%- capture tp_cart_muster -%}{%- render 'tp-muster-position', line_item: item -%}{%- endcapture -%}
+                  {%- assign tp_muster_max = nil -%}
+                  {%- if tp_cart_muster contains 'ja' -%}
+                    {%- comment -%}
+                      Muster bleiben pro Farbe bei Menge 1. Eine bereits hoehere
+                      Menge darf nur noch verringert oder entfernt werden.
+                    {%- endcomment -%}
+                    {%- assign tp_muster_max = item.quantity -%}
+                  {%- endif -%}
                   <div class="cart-items__quantity-controls">
                     {% render 'volume-pricing-info',
                       variant: item.variant,
@@ -393,7 +411,8 @@
                       in_cart_quantity: item.quantity,
                       line_index: item.index,
                       class: 'cart-primary-typography',
-                      can_update_quantity: can_update_quantity
+                      can_update_quantity: can_update_quantity,
+                      max_quantity: tp_muster_max
                     %}
 
                     {%- render 'tp-cart-gruppe', line_item: item, teil: 'menge' -%}
