@@ -23,6 +23,8 @@ export const UEBLICH_AB = 0.8;
 export const MIN_VERGLEICH = 5;
 /** Fehlende SKUs zaehlen nur, wo die Produktart sonst so gut wie immer SKUs traegt. */
 export const SKU_UEBLICH_AB = 0.95;
+/** Variantenbilder fehlen nur dort, wo die Produktart sie sonst ueberwiegend hat. */
+export const BILD_UEBLICH_AB = 0.5;
 
 const MUSTER_PRAEFIX = 'muster-';
 
@@ -30,6 +32,11 @@ const klein = (s) => String(s ?? '').trim().toLowerCase();
 
 export function istMusterProdukt(p) {
   return String(p.handle ?? '').startsWith(MUSTER_PRAEFIX) || klein(p.productType) === 'musterservice';
+}
+
+/** UNLISTED mit Tag service: Zusatzposition im Warenkorb, keine Kundenseite. */
+export function istHilfsprodukt(p) {
+  return p.status === 'UNLISTED' && (p.tags ?? []).some((t) => klein(t) === 'service');
 }
 
 /** Wortgleich zu canSample in assets/tp-sample-checkout-core.js. */
@@ -70,17 +77,19 @@ export function ueblicheFelder(produkte, { ab = UEBLICH_AB, min = MIN_VERGLEICH 
     const vZaehler = new Map();
     let vGesamt = 0;
     let mitSku = 0;
+    let mitBild = 0;
     for (const p of liste) {
       for (const k of new Set(Object.keys(p.custom ?? {}))) pZaehler.set(k, (pZaehler.get(k) ?? 0) + 1);
       for (const v of p.variants ?? []) {
         vGesamt += 1;
         if (String(v.sku ?? '').trim()) mitSku += 1;
+        if (v.image) mitBild += 1;
         for (const k of new Set(Object.keys(v.custom ?? {}))) vZaehler.set(k, (vZaehler.get(k) ?? 0) + 1);
       }
     }
     const produkt = new Set([...pZaehler].filter(([, n]) => n / liste.length >= ab).map(([k]) => k));
     const variante = new Set([...vZaehler].filter(([, n]) => vGesamt && n / vGesamt >= ab).map(([k]) => k));
-    ergebnis.set(art, { anzahl: liste.length, produkt, variante, skuAnteil: vGesamt ? mitSku / vGesamt : 1 });
+    ergebnis.set(art, { anzahl: liste.length, produkt, variante, skuAnteil: vGesamt ? mitSku / vGesamt : 1, bildAnteil: vGesamt ? mitBild / vGesamt : 1 });
   }
   return ergebnis;
 }
@@ -118,6 +127,9 @@ export function pruefeImporte({ produkte, seit, handles = null }) {
   const befunde = [];
   for (const p of neu) {
     if (istMusterProdukt(p)) { befunde.push(...pruefeMuster(p, nachHandle)); continue; }
+    // Versteckte Hilfsprodukte (Kettelservice, Wunschmass-Pauschale) haengen
+    // als Zusatzzeile an einer anderen Position - ohne Bild und Kategorie gewollt.
+    if (istHilfsprodukt(p)) continue;
 
     if (p.status === 'DRAFT') befunde.push(befund(p, 'hinweis', 'entwurf', 'Entwurf - im Shop nicht sichtbar'));
     if (p.status === 'ACTIVE' && !p.onlineStoreUrl) {
@@ -146,8 +158,10 @@ export function pruefeImporte({ produkte, seit, handles = null }) {
     const ohnePreis = varianten.filter((v) => !(Number(v.price) > 0));
     if (ohnePreis.length) befunde.push(befund(p, 'fehler', 'preis', `${ohnePreis.length} Variante(n) mit Preis 0`));
 
+    // Profile fuehren ein Bild fuer alle Farben; gemeldet wird nur, wo die
+    // Produktart sonst Variantenbilder traegt.
     const option = farbOption(p);
-    if (option) {
+    if (option && (vergleich ? vergleich.bildAnteil >= BILD_UEBLICH_AB : true)) {
       const ohneBild = varianten.filter((v) => !v.image);
       if (ohneBild.length) {
         befunde.push(befund(p, 'fehler', 'variantenbild', `${ohneBild.length} von ${varianten.length} Farbvarianten ohne Variantenbild (z. B. ${farbeDerVariante(ohneBild[0], option.name)})`));
