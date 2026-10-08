@@ -77,3 +77,24 @@ Theme-Sicherung, Bedingung „Kollektion nicht leer“).
 | Nur Rabattcode aktiv | kein Menüpunkt |
 | Zentrale Aktion `tp_aktion` aktiv | Produkte der Aktionskollektion getaggt, Karte zeigt „−X % Aktion bis …“ |
 | `menu:guard` gegen die Vorschau | kein toter Link |
+
+## 5. Umsetzungsstand (2026-10-08)
+
+| Teil | Stand |
+|---|---|
+| `snippets/tp-angebot-sichtbar.liquid` | gebaut – eine Regel für „Angebot“ (Streichpreis sichtbar oder zentrale Aktion; nie Sonderposten) |
+| `snippets/tp-menu-link-sichtbar.liquid` | gebaut, an allen vier Menü-Stellen eingehängt (Desktop, Handy-Leiste, Drawer, SEO-Linkliste) |
+| `operations/lib/angebote-abgleich.mjs` + Tests | gebaut, 9 Tests; Regel 1:1 aus den Liquid-Snippets (auch die Liquid-Eigenheit: fehlender Vergleichspreis kippt die Rollenware-Regel nicht) |
+| `npm run angebote:abgleich` | gebaut; Trockenlauf Standard, `--schreiben`, `--stichtag`, `--ausgabe`; wartet auf Shopify-Budget, Gegenprobe nach dem Schreiben |
+| Kollektion `angebote` (Tag = angebot) | **noch nicht angelegt** (Freigabe) |
+| Tags `angebot` | **noch nicht geschrieben** (Freigabe; Trockenlauf: 510 Produkte) |
+| Menüpunkte „Angebote“ / „Reste & Sonderposten“ in `main-menu` | **erst mit dem Theme-Livegang** – das Live-Theme kennt die Ausblend-Logik noch nicht und würde die Punkte sonst immer zeigen |
+| Täglicher Lauf (00:15) | noch einzurichten (launchd auf dem Dashboard-Mac, wie die anderen Dienste) |
+
+**Belege:**
+- Trockenlauf 08.10.: 1.290 aktive Produkte, 510 zeigen einen Rabatt; 0 Produkte mit
+  Vergleichspreis, die der Shop nicht als Rabatt zeigt.
+- Stichprobe gegen die ausgelieferten Produktseiten: 8/8 Angebote zeigen einen Streichpreis,
+  6/6 Nicht-Angebote keinen.
+- `--stichtag 2026-11-02` (Tag nach Dauerrabatt-Ende): 0 Angebote → Menüpunkt verschwindet von selbst.
+- Entwicklungskopie: Desktop-Menü 24 Einträge wie live, 0 Liquid-Fehler.

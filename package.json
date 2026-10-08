@@ -59,6 +59,7 @@
     "operations:band": "node operations/server.mjs",
     "operations:test": "node --test operations/tests/*.test.mjs",
     "bildrechte:inventur": "node operations/scripts/bildrechte-inventur.mjs",
+    "angebote:abgleich": "node operations/scripts/angebote-abgleich.mjs",
     "operations:verbindung": "node operations/scripts/verbindung-pruefen.mjs",
     "ops:bestelluebersicht": "node operations/scripts/bestelluebersicht.mjs",
     "kennzahlen:export": "node operations/scripts/kennzahlen-export.mjs",

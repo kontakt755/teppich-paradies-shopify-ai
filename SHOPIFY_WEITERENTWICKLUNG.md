@@ -17,10 +17,10 @@ Branch `feature/weiterentwicklung-sonderposten` · Worktree `.claude/worktrees/w
 | 2 | Theme-Kopie und Testumgebung | **abgeschlossen** |
 | 3 | Technisches Umsetzungskonzept | **abgeschlossen** (`docs/weiterentwicklung/*.md`) |
 | 4 | Sonderposten-Produktstruktur | **abgeschlossen** (Theme in der Entwicklungskopie, Shopify-Daten angelegt, mit Testprodukt getestet) |
-| 5 | Ladenverkauf | **in Bearbeitung**: Control-Center-Button „Im Laden verkauft“ |
+| 5 | Ladenverkauf | **gebaut** (Control Center, Entwurfs-PR #986, 19 Tests); bucht erst nach Freigabe E5 (`write_inventory`) |
 | 6 | Produktbewertungen | Konzept fertig; Judge.me Free freigegeben (2026-10-08) |
 | 7 | Bildverwaltung und Bildrechte | **Inventur fertig** (8.530 Bilder erfasst, `npm run bildrechte:inventur`); Lizenzen je Lieferant + Bildarchiv-Ort beim Inhaber (E7); Dashboard-Liste offen |
-| 8 | Menüpunkt „Angebote“ | Konzept fertig |
+| 8 | Menüpunkt „Angebote“ | **gebaut** (Theme-Logik + `npm run angebote:abgleich`, Trockenlauf 510 Angebote, Stichprobe 14/14); Kollektion/Tags/Menüpunkte warten auf Freigabe |
 | 9 | Gesamttest | offen |
 | 10 | Veröffentlichung vorbereiten | offen |
 
@@ -92,10 +92,10 @@ E6 Judge.me Forever Free ja. Offen: E3, E5, E7, E8.
 
 ## 5. Noch offene Aufgaben
 
-- Phase 5: Control-Center „Sonderposten“ + „Im Laden verkauft“ (`sonderposten.md` §6).
+- Phase 5: nach E5 einmal mit dem Testprodukt durchbuchen (Bestand vorher auf 1); PR #986 mergen, Dienst vorspulen.
 - Phase 6: Sterne-Snippet/-Blöcke + `aggregateRating` (nur mit Daten), App nach Freigabe.
 - Phase 7: Dashboard-Liste „Bildrechte“ (nach der Sonderposten-Ansicht); Lizenzklärung je Lieferant (E7).
-- Phase 8: Abgleich-Skript `angebote:abgleich`, Kollektion `angebote`, Menü-Sicherung im Theme.
+- Phase 8: Kollektion `angebote` anlegen, Tags schreiben, täglichen Lauf einrichten, Menüpunkte mit dem Livegang (`angebote.md` §5).
 - Phase 9/10: Gesamttest, Deploy-Kette (`workflow:doctor` → PR → `main` → Preview → Live).
 
 **Entscheidungen des Inhabers** (blockieren die jeweilige Phase, nicht die anderen):

@@ -1,0 +1,46 @@
+{%- doc -%}
+  Darf dieser Menuepunkt gerade erscheinen? Gibt "nein" aus, wenn nicht -
+  sonst nichts. Einzige Quelle fuer alle Stellen, die das Hauptmenue ausgeben
+  (Desktop blocks/_header-menu.liquid, Handy-Leiste ebenda, Drawer
+  snippets/tp-drawer-nav.liquid, Linkliste sections/tp-start-seo.liquid).
+
+  Gesteuert werden nur zwei Kollektionen (docs/weiterentwicklung/angebote.md):
+    angebote            - nur, wenn mindestens eines der ersten 24 Produkte
+                          gerade einen Rabatt ANZEIGT (snippets/tp-angebot-sichtbar).
+                          Die Kollektion selbst pflegt ein Tag-Abgleich; laeuft er
+                          spaet, versteckt diese Pruefung den Punkt eher zu lange,
+                          zeigt ihn aber nie ohne sichtbares Angebot.
+    reste-sonderposten  - nur, wenn die Kollektion Produkte hat (die Smart-Regel
+                          verlangt Bestand > 0).
+  Alle anderen Menuepunkte bleiben unberuehrt.
+
+  @param {object} link - der Menuepunkt
+{%- enddoc -%}
+{%- liquid
+  assign tmls_handle = ''
+  if link.type == 'collection_link'
+    assign tmls_handle = link.object.handle
+  elsif link.url contains '/collections/'
+    assign tmls_handle = link.url | split: '/collections/' | last | split: '?' | first | split: '/' | first | split: '#' | first
+  endif
+
+  if tmls_handle == 'angebote'
+    assign tmls_ja = false
+    for tmls_p in collections['angebote'].products limit: 24
+      capture tmls_angebot
+        render 'tp-angebot-sichtbar', product: tmls_p
+      endcapture
+      if tmls_angebot contains 'ja'
+        assign tmls_ja = true
+        break
+      endif
+    endfor
+    unless tmls_ja
+      echo 'nein'
+    endunless
+  elsif tmls_handle == 'reste-sonderposten'
+    if collections['reste-sonderposten'].products_count == 0
+      echo 'nein'
+    endif
+  endif
+-%}
