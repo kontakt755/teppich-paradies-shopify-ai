@@ -468,6 +468,8 @@
     {%- if settings.tp_versand_frei_ab != blank -%}<span>versandkostenfrei ab {{ settings.tp_versand_frei_ab }} €</span>{%- endif -%}
     {%- if tp_rc_aktion_prozent > 0 -%}<span class="tp-rwc-infozeile__aktion">Aktion −{{ tp_rc_aktion_prozent }} % im Warenkorb</span>{%- endif -%}
   </p>
+  {%- comment -%} Abholung und Zahlarten als zweite Infozeile (Wortlaut: Theme-Einstellungen "TP Zahlung und Abholung", snippets/tp-zahlung-abholung) {%- endcomment -%}
+  {%- render 'tp-zahlung-abholung', kontext: 'rechner' -%}
 
 
 

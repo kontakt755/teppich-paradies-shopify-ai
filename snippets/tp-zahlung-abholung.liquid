@@ -1,0 +1,81 @@
+{%- doc -%}
+  Eine ruhige Hinweiszeile: wie der Kunde bezahlen und ob er abholen kann.
+
+  Stellen (der Kaufbereich ist je Produktvorlage anders gebaut):
+  - 'produkt'   im Lieferkasten von blocks/tp-service-links und blocks/tp-teppich-versand
+  - 'rechner'   unter der Infozeile des Rollware-Rechners (blocks/tp-rollware-rechner)
+  - 'mass'      unter "Fragen zu Ihrem Maß?" bei Teppich nach Maß (blocks/tp-muster-cta)
+  - 'warenkorb' unter dem Kaufknopf (snippets/cart-summary, Seite und Drawer)
+
+  Beide Saetze sind Theme-Einstellungen unter "TP Zahlung und Abholung"; leer
+  lassen blendet den jeweiligen Satz aus, sind beide leer, rendert das Snippet
+  nichts. Der Wortlaut ist nur, was der echte Checkout am 2026-10-08 anbietet
+  (Zahlung: Kreditkarte, PayPal, Klarna; Lieferung: Versand oder Abholung am
+  Standort Oranienburg). Keine Betraege, Raten, Zinsen oder Konditionen - das
+  waere Finanzierungswerbung mit Pflichtangaben. Klarna fuehrt der Checkout nur
+  als "Klarna", ohne "Rechnung" oder "Raten"; solange das nicht bei Klarna
+  belegt ist, steht es auch hier nicht.
+
+  @param {string} [kontext] - { 'produkt' | 'rechner' | 'mass' | 'warenkorb' }, Standard 'produkt'.
+{%- enddoc -%}
+
+{%- liquid
+  assign tp_za_abholung = settings.tp_hinweis_abholung | strip
+  assign tp_za_zahlung = settings.tp_hinweis_zahlung | strip
+  assign tp_za_kontext = kontext | default: 'produkt'
+-%}
+{%- if tp_za_abholung != blank or tp_za_zahlung != blank -%}
+  {%- comment -%}
+    Im Rollware-Rechner uebernimmt die Zeile Klasse und Verhalten der
+    Infozeile darueber (Punkte zwischen den Teilen, data-rwc-body blendet sie
+    mit dem Rest aus, wenn das Produkt dort keinen Zuschnitt hat).
+  {%- endcomment -%}
+  <p
+    class="tp-zahlung-abholung tp-zahlung-abholung--{{ tp_za_kontext }}{% if tp_za_kontext == 'rechner' %} tp-rwc-infozeile{% endif %}"
+    {% if tp_za_kontext == 'rechner' %}data-rwc-body{% endif %}
+  >
+    {%- if tp_za_abholung != blank -%}
+      <span class="tp-zahlung-abholung__teil">{{ tp_za_abholung | escape }}</span>
+    {%- endif -%}
+    {%- if tp_za_zahlung != blank -%}
+      <span class="tp-zahlung-abholung__teil">{{ tp_za_zahlung | escape }}</span>
+    {%- endif -%}
+  </p>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-zahlung-abholung__teil {
+    display: block;
+  }
+
+  /* Warenkorb: leise, mittig unter dem Kaufknopf */
+  .tp-zahlung-abholung--warenkorb {
+    margin: var(--margin-xs) 0 0;
+    color: rgb(var(--color-foreground-rgb) / var(--opacity-subdued-text));
+    font-size: var(--font-size--2xs);
+    line-height: 1.4;
+    text-align: center;
+  }
+
+  /* Teppich nach Mass: gleiche Schrift wie die Beratungszeile darueber */
+  .tp-zahlung-abholung--mass {
+    margin: 6px 0 0;
+    font-size: 0.83rem;
+    line-height: 1.4;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72);
+  }
+
+  /* Lieferkasten: erbt Schrift und Farbe vom Kasten, nur etwas Luft nach oben */
+  .tp-zahlung-abholung.tp-zahlung-abholung--produkt {
+    margin-top: 8px;
+  }
+
+  /* Rollware-Rechner: zweite Infozeile direkt unter der ersten */
+  .tp-zahlung-abholung.tp-zahlung-abholung--rechner.tp-rwc-infozeile {
+    margin-top: -6px;
+  }
+
+  .tp-zahlung-abholung--rechner .tp-zahlung-abholung__teil {
+    display: inline;
+  }
+{% endstylesheet %}

@@ -94,10 +94,11 @@
   {% if should_show_clear_all and is_active %}
     <facet-remove-component
       data-url="{{ results_url }}"
+      active-class="facets__clear-all-link--active"
     >
       <button
         type="button"
-        class="button-unstyled facets__clear-all-link"
+        class="button-unstyled facets__clear-all-link facets__clear-all-link--active"
         ref="clearButton"
         on:click="/removeFilter?form="
         on:keydown="/removeFilter?form="

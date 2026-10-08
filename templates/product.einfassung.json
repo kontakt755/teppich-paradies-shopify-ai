@@ -306,24 +306,6 @@
               },
               "blocks": {}
             },
-            "ai_gen_block_b888d9b_CJbJ8X": {
-              "type": "tp-produktinfo-tabelle",
-              "settings": {
-                "desktop_width_percent": 100,
-                "key_column_width": 35,
-                "cell_padding": 16,
-                "border_radius": 8,
-                "row_border_width": 1,
-                "background_color": "#ffffff",
-                "border_color": "#e6e6e6",
-                "key_text_color": "#000000",
-                "value_text_color": "#000000",
-                "key_font_size": 14,
-                "key_font_weight": "600",
-                "value_font_size": 14
-              },
-              "blocks": {}
-            },
             "tp_einfass_konfigurator_1": {
               "type": "tp-einfass-konfigurator",
               "name": "TP Einfass-Konfigurator",
@@ -356,6 +338,45 @@
             "tp_zubehoer_empfehlung": {
               "type": "tp-zubehoer-empfehlung",
               "settings": {}
+            },
+            "tp_produkt_akkordeon_technik": {
+              "type": "accordion",
+              "settings": {},
+              "blocks": {
+                "tp_row_technik": {
+                  "type": "_accordion-row",
+                  "settings": {
+                    "heading": "Technische Daten",
+                    "open_by_default": true
+                  },
+                  "blocks": {
+                    "ai_gen_block_b888d9b_CJbJ8X": {
+                      "type": "tp-produktinfo-tabelle",
+                      "settings": {
+                        "desktop_width_percent": 100,
+                        "key_column_width": 35,
+                        "cell_padding": 12,
+                        "border_radius": 8,
+                        "row_border_width": 1,
+                        "background_color": "#ffffff",
+                        "border_color": "#e6e6e6",
+                        "key_text_color": "#000000",
+                        "value_text_color": "#000000",
+                        "key_font_size": 14,
+                        "key_font_weight": "600",
+                        "value_font_size": 14
+                      },
+                      "blocks": {}
+                    }
+                  },
+                  "block_order": [
+                    "ai_gen_block_b888d9b_CJbJ8X"
+                  ]
+                }
+              },
+              "block_order": [
+                "tp_row_technik"
+              ]
             }
           },
           "block_order": [
@@ -364,10 +385,10 @@
             "divider_VJhene",
             "tp_step_farbe_sales1",
             "color_swatch_picker_f7EyBF",
+            "tp_muster_cta_1",
             "tp_farbanzeige_tp1",
             "tp_teppich_struktur_1",
             "tp_einfass_konfigurator_1",
-            "tp_muster_cta_1",
             "tp_bewertungsbeleg_night1",
             "tp_zubehoer_empfehlung",
             "buy_buttons_eYQEYi",
@@ -375,8 +396,8 @@
             "tp_vertrauen_sales1",
             "tp_vorteile_sales1",
             "tp_service_links_sales1",
-            "text_aEtTtq",
-            "ai_gen_block_b888d9b_CJbJ8X"
+            "tp_produkt_akkordeon_technik",
+            "text_aEtTtq"
           ]
         }
       },
