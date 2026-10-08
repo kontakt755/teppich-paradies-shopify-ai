@@ -1,4 +1,5 @@
 import { chromium } from 'playwright-core';
+import { sperreTracking } from './tracking-sperre.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -116,6 +117,7 @@ const add = (scope, pageName, viewport, severity, message, data) => {
 
 async function inspectPage(browser, pageConfig, viewportName, viewport) {
   const context = await browser.newContext({ viewport, locale: 'de-DE', reducedMotion: 'reduce' });
+  await sperreTracking(context);
   try {
   const page = await context.newPage();
   const pageErrors = [];

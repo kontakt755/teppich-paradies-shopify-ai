@@ -37,6 +37,14 @@
   assign tp_startseite_titel = 'Teppichboden & Vinylboden online kaufen | Teppich Paradies'
   assign og_title = page_title | default: tp_marke
   assign tp_canonical_url = canonical_url | default: request.origin
+  # Alte ?page=2-Links der Mass-Teppiche zeigen bei bis zu 250 Qualitaeten
+  # keine zweite Gruppenseite. Schon das rohe HTML soll deshalb auf die
+  # gefuellte Kategorieseite verweisen, auch ohne JavaScript-Weiterleitung.
+  if request.page_type == 'collection' and collection.handle == 'teppich-nach-mass' and collection.products_count > 0 and collection.products_count <= 250
+    if tp_canonical_url contains '?page='
+      assign tp_canonical_url = tp_canonical_url | split: '?' | first
+    endif
+  endif
   assign og_url = tp_canonical_url
   assign og_type = 'website'
   assign og_description = page_description | default: shop.description | default: tp_marke

@@ -5,18 +5,18 @@ Diese Resource-Daten wurden nicht automatisch verändert. Empfohlene Titel und B
 ## Startseite
 
 - URL: https://www.teppich-paradies.net/
-- Aktueller Title: Teppichboden, Vinyl & Verlegeservice Oranienburg | Teppich Paradies
-- Empfohlener Title: Bodenbeläge online kaufen | Teppichboden & Vinyl | Teppich Paradies
-- Aktuelle Description: Teppichboden, Klickvinyl, Klebevinyl und Vinylboden von der Rolle online kaufen. Kostenlose Muster, persönliche Fachberatung und Verlegeservice.
-- Empfohlene Description: Teppichboden, Klickvinyl, Klebevinyl und Vinyl-Meterware online kaufen. Muster, persönliche Fachberatung und Verlegeservice aus Oranienburg.
+- Aktueller Title: Teppichboden & Vinylboden online kaufen | Teppich Paradies
+- Empfohlener Title: Teppichboden & Vinylboden online kaufen | Teppich Paradies
+- Aktuelle Description: Teppichboden, Klick- und Klebevinyl sowie Vinyl von der Rolle online kaufen, deutschlandweit geliefert. Bis zu 3 Muster kostenlos, Fachberatung inklusive.
+- Empfohlene Description: Teppichboden, Klick- und Klebevinyl sowie Vinyl von der Rolle online kaufen, deutschlandweit geliefert. Bis zu 3 Muster kostenlos, Fachberatung inklusive.
 
 ## Teppichboden
 
 - URL: https://www.teppich-paradies.net/collections/teppichboden
 - Aktueller Title: Teppichboden Meterware online kaufen | Teppich Paradies
 - Empfohlener Title: Teppichboden Meterware online kaufen | Teppich Paradies
-- Aktuelle Description: Teppichboden als Meterware für Wohn- und Objektbereiche entdecken. Rollenbreiten vergleichen, Muster bestellen und persönlich beraten lassen.
-- Empfohlene Description: Teppichboden als Meterware für Wohn- und Objektbereiche entdecken. Rollenbreiten vergleichen, Muster bestellen und persönlich beraten lassen.
+- Aktuelle Description: Teppichboden als Meterware: Velours, Schlinge, Hochflor und Wolle vom Fachhandel. Bis zu 3 Muster kostenlos, ab 50 € versandkostenfrei in ganz Deutschland.
+- Empfohlene Description: Teppichboden als Meterware: Velours, Schlinge, Hochflor und Wolle vom Fachhandel. Bis zu 3 Muster kostenlos, ab 50 € versandkostenfrei in ganz Deutschland.
 
 ## Vinylboden
 
@@ -29,26 +29,26 @@ Diese Resource-Daten wurden nicht automatisch verändert. Empfohlene Titel und B
 ## Klickvinyl
 
 - URL: https://www.teppich-paradies.net/collections/vinylboden-klickvinyl
-- Aktueller Title: Klickvinyl online kaufen | Muster & Fachberatung
-- Empfohlener Title: Klickvinyl online kaufen | Muster & Fachberatung
-- Aktuelle Description: Klickvinyl in authentischen Holz- und Steindekoren online entdecken. Muster bestellen, technische Eigenschaften vergleichen und beraten lassen.
-- Empfohlene Description: Klickvinyl in authentischen Holz- und Steindekoren online entdecken. Muster bestellen, technische Eigenschaften vergleichen und beraten lassen.
+- Aktueller Title: Klickvinyl kaufen – Holz- & Steinoptik | Teppich Paradies
+- Empfohlener Title: Klickvinyl kaufen – Holz- & Steinoptik | Teppich Paradies
+- Aktuelle Description: Klickvinyl in Holz- und Steinoptik, schwimmend verlegt, Preise pro m². Bis zu 3 Muster kostenlos, ab 50 € versandkostenfrei in ganz Deutschland.
+- Empfohlene Description: Klickvinyl in Holz- und Steinoptik, schwimmend verlegt, Preise pro m². Bis zu 3 Muster kostenlos, ab 50 € versandkostenfrei in ganz Deutschland.
 
 ## Klebevinyl
 
 - URL: https://www.teppich-paradies.net/collections/vinylboden-klebevinyl
-- Aktueller Title: Klebevinyl online kaufen | Designboden vom Fachhandel
-- Empfohlener Title: Klebevinyl online kaufen | Designboden vom Fachhandel
-- Aktuelle Description: Klebevinyl für belastbare, flache Bodenaufbauten online entdecken. Dekore vergleichen, Muster anfordern und Fachberatung nutzen.
-- Empfohlene Description: Klebevinyl für belastbare, flache Bodenaufbauten online entdecken. Dekore vergleichen, Muster anfordern und Fachberatung nutzen.
+- Aktueller Title: Klebevinyl kaufen – Vinylboden zum Kleben | Teppich Paradies
+- Empfohlener Title: Klebevinyl kaufen – Vinylboden zum Kleben | Teppich Paradies
+- Aktuelle Description: Klebevinyl für flache, belastbare Bodenaufbauten vom Fachhandel, Preise pro m². Bis zu 3 Muster kostenlos, ab 50 € versandkostenfrei in ganz Deutschland.
+- Empfohlene Description: Klebevinyl für flache, belastbare Bodenaufbauten vom Fachhandel, Preise pro m². Bis zu 3 Muster kostenlos, ab 50 € versandkostenfrei in ganz Deutschland.
 
 ## Vinyl von der Rolle
 
 - URL: https://www.teppich-paradies.net/collections/vinylboden-vinyl-von-der-rolle
-- Aktueller Title: Vinylboden von der Rolle | Meterware online kaufen
-- Empfohlener Title: Vinylboden von der Rolle | Meterware online kaufen
-- Aktuelle Description: Vinylboden von der Rolle als passgenaue Meterware online kaufen. Rollenbreiten und Dekore vergleichen, Muster bestellen und beraten lassen.
-- Empfohlene Description: Vinylboden von der Rolle als passgenaue Meterware online kaufen. Rollenbreiten und Dekore vergleichen, Muster bestellen und beraten lassen.
+- Aktueller Title: Vinylboden von der Rolle & PVC-Meterware | Teppich Paradies
+- Empfohlener Title: Vinylboden von der Rolle & PVC-Meterware | Teppich Paradies
+- Aktuelle Description: Vinylboden von der Rolle als PVC-Meterware, passgenau zugeschnitten. Rollenbreiten vergleichen, bis zu 3 Muster kostenlos, Lieferung in ganz Deutschland.
+- Empfohlene Description: Vinylboden von der Rolle als PVC-Meterware, passgenau zugeschnitten. Rollenbreiten vergleichen, bis zu 3 Muster kostenlos, Lieferung in ganz Deutschland.
 
 ## Teppichboden Hochflor
 

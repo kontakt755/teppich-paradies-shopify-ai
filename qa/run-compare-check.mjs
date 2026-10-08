@@ -1,4 +1,5 @@
 import { chromium } from 'playwright-core';
+import { sperreTracking } from './tracking-sperre.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { resolveBrowserExecutable } from './browser-resolver.mjs';
@@ -21,6 +22,7 @@ fs.mkdirSync(resultsDir, { recursive: true });
 
 async function runViewport(browser, name, viewport) {
   const context = await browser.newContext({ viewport });
+  await sperreTracking(context);
   try {
     const page = await context.newPage();
     const pageErrors = [];

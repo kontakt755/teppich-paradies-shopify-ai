@@ -1,14 +1,22 @@
 (function () {
   var params = new URLSearchParams(window.location.search);
-  if (params.get('thema') !== 'muster') {
-    anfrageVorbelegen(params);
-    return;
-  }
-
   var root = document.querySelector('[data-tp-sample-request]');
   if (!root) return;
 
-  root.setAttribute('data-mode', 'sample');
+  var isSample = params.get('thema') === 'muster';
+  if (isSample) {
+    root.setAttribute('data-mode', 'sample');
+  } else {
+    anfrageVorbelegen(params);
+  }
+
+  // Nach dem Absenden laedt Shopify die Seite neu. Den sichtbaren Ergebnistext
+  // fokussieren, damit Fehler und Erfolg auch per Tastatur erreichbar sind.
+  var result = root.querySelector('.tp-form-error');
+  if (!result) result = root.querySelector(isSample ? '.tp-success--sample' : '.tp-success--generic');
+  if (result) result.focus();
+
+  if (!isSample) return;
 
   // Nachricht ist bei einer Musteranfrage optional, bei der normalen
   // Kontaktanfrage bleibt sie Pflichtfeld (siehe data-message-field im

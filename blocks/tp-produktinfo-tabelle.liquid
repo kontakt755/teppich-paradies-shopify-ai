@@ -232,6 +232,13 @@ Rückenausstattung::ruecken
       {% assign row_label = row_parts[0] | strip %}
       {% assign metafield_key = row_parts[1] | strip %}
       {% assign display_field = row_parts[2] | strip %}
+      {% comment %}
+        Bei Leisten ist gesamtstarke die Materialstaerke (16 bei 16x58 mm), nicht
+        die Belagsdicke aus dem Lexikon - daher "Staerke" und ohne Lexikontext.
+      {% endcomment %}
+      {% if metafield_key == 'gesamtstarke' and product.type == 'Sockelleisten' %}
+        {% assign row_label = 'Stärke' %}
+      {% endif %}
       {% assign metafield = product.metafields.custom[metafield_key] %}
       {% assign metafield_value = metafield.value %}
       {% if metafield_key == 'zimmer' %}
