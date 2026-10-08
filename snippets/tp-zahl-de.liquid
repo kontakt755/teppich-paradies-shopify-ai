@@ -11,7 +11,7 @@
 {%- enddoc -%}
 {%- liquid
   assign tzd_cent = zahl | times: 100.0 | round | plus: 0
-  assign tzd_ganz = tzd_cent | divided_by: 100
+  assign tzd_ganz = tzd_cent | divided_by: 100 | floor
   assign tzd_rest = tzd_cent | modulo: 100
   if tzd_rest < 10
     assign tzd_rest = '0' | append: tzd_rest

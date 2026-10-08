@@ -1,0 +1,1000 @@
+{
+  "collections": {
+    "nodes": [
+      {
+        "id": "gid://shopify/Collection/689927618894",
+        "handle": "teppichboden-hochflor",
+        "title": "Teppichboden Hochflor",
+        "templateSuffix": "teppichboden-hochflor",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "GREATER_THAN",
+              "condition": "9.99"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "Teppichboden"
+            },
+            {
+              "column": "TITLE",
+              "relation": "NOT_CONTAINS",
+              "condition": "fliese"
+            },
+            {
+              "column": "TITLE",
+              "relation": "NOT_CONTAINS",
+              "condition": "planke"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/689931387214",
+        "handle": "teppichboden-kurzflor",
+        "title": "Teppichboden Kurzflor",
+        "templateSuffix": "teppichboden-kurzflor",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "LESS_THAN",
+              "condition": "5.01"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "Teppichboden"
+            },
+            {
+              "column": "TITLE",
+              "relation": "NOT_CONTAINS",
+              "condition": "fliese"
+            },
+            {
+              "column": "TITLE",
+              "relation": "NOT_CONTAINS",
+              "condition": "planke"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/689931583822",
+        "handle": "teppichboden-velours",
+        "title": "Teppichboden Velours",
+        "templateSuffix": "teppichboden-velours",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1838520828238"
+            },
+            {
+              "column": "TITLE",
+              "relation": "NOT_CONTAINS",
+              "condition": "fliese"
+            },
+            {
+              "column": "TITLE",
+              "relation": "NOT_CONTAINS",
+              "condition": "planke"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/689931682126",
+        "handle": "teppichboden-schlinge",
+        "title": "Teppichboden Schlinge",
+        "templateSuffix": "teppichboden-schlinge",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1838520861006"
+            },
+            {
+              "column": "TITLE",
+              "relation": "NOT_CONTAINS",
+              "condition": "fliese"
+            },
+            {
+              "column": "TITLE",
+              "relation": "NOT_CONTAINS",
+              "condition": "planke"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/689931813198",
+        "handle": "teppichboden-wolle",
+        "title": "Teppichboden Wolle",
+        "templateSuffix": "teppichboden-wolle",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1720949637454"
+            },
+            {
+              "column": "TITLE",
+              "relation": "NOT_CONTAINS",
+              "condition": "fliese"
+            },
+            {
+              "column": "TITLE",
+              "relation": "NOT_CONTAINS",
+              "condition": "planke"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/689932009806",
+        "handle": "teppichboden-nadelvlies-alt",
+        "title": "Teppichboden Nadelfilz (alt)",
+        "templateSuffix": "teppichboden-nadelvlies",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1838520893774"
+            },
+            {
+              "column": "TITLE",
+              "relation": "NOT_CONTAINS",
+              "condition": "fliese"
+            },
+            {
+              "column": "TITLE",
+              "relation": "NOT_CONTAINS",
+              "condition": "planke"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/689934369102",
+        "handle": "vinylboden-klickvinyl",
+        "title": "Vinylboden - Klickvinyl",
+        "templateSuffix": "vinylboden-klickvinyl",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1720951472462"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/689934401870",
+        "handle": "vinylboden-klebevinyl",
+        "title": "Vinylboden - Klebevinyl",
+        "templateSuffix": "vinylboden-klebevinyl",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1720951570766"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/689934434638",
+        "handle": "vinylboden-vinyl-von-der-rolle",
+        "title": "Vinylboden - Vinyl von der Rolle",
+        "templateSuffix": "vinylboden-rollenvinyl",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1724391686478"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/700879536462",
+        "handle": "teppichfliesen",
+        "title": "Teppichfliesen",
+        "templateSuffix": "teppichfliesen",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1794239660366"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/701795664206",
+        "handle": "linoleumboden-1",
+        "title": "Linoleumboden",
+        "templateSuffix": "linoleumboden",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "Linoleumboden"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/701924376910",
+        "handle": "zubehoer",
+        "title": "Zubehör",
+        "templateSuffix": "zubehoer",
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1724386279758"
+            },
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1724386509134"
+            },
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1724386640206"
+            },
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1805084295502"
+            },
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1805084328270"
+            },
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1805084361038"
+            },
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1805084393806"
+            },
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1805084426574"
+            },
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1843668779342"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/701924409678",
+        "handle": "zubehoer-profile",
+        "title": "Profile",
+        "templateSuffix": "zubehoer-profile",
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1724386279758"
+            },
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1724386509134"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/701924442446",
+        "handle": "zubehoer-uebergangsprofile",
+        "title": "Übergangsprofile",
+        "templateSuffix": "zubehoer-unterkategorie",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1724386279758"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/701924475214",
+        "handle": "zubehoer-abschlussprofile",
+        "title": "Abschlussprofile",
+        "templateSuffix": "zubehoer-unterkategorie",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1724386509134"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/701924507982",
+        "handle": "zubehoer-kleber-fixierung",
+        "title": "Kleber & Fixierung",
+        "templateSuffix": "zubehoer-unterkategorie",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1724386640206"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/701924540750",
+        "handle": "zubehoer-bauchemie",
+        "title": "Bauchemie",
+        "templateSuffix": "zubehoer-unterkategorie",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1805084295502"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/701924573518",
+        "handle": "zubehoer-verlegeunterlagen",
+        "title": "Verlege- u. Dämmunterlagen",
+        "templateSuffix": "zubehoer-unterkategorie",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1805084328270"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/701924606286",
+        "handle": "zubehoer-reinigungsmittel",
+        "title": "Reinigungsmittel",
+        "templateSuffix": "zubehoer-unterkategorie",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1805084361038"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/701924639054",
+        "handle": "zubehoer-verlegeband",
+        "title": "Verlegeband",
+        "templateSuffix": "zubehoer-unterkategorie",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1805084393806"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/701924671822",
+        "handle": "zubehoer-sauberlauf",
+        "title": "Sauberlauf",
+        "templateSuffix": "zubehoer-unterkategorie",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1805084426574"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/702266638670",
+        "handle": "vinylboden-fischgraet",
+        "title": "Vinylboden - Fischgrät",
+        "templateSuffix": null,
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TITLE",
+              "relation": "CONTAINS",
+              "condition": "Fischgr"
+            },
+            {
+              "column": "TITLE",
+              "relation": "CONTAINS",
+              "condition": "vinyl"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/702826545486",
+        "handle": "teppichfliesen-50x50",
+        "title": "Teppichfliesen 50 × 50 cm",
+        "templateSuffix": null,
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TITLE",
+              "relation": "CONTAINS",
+              "condition": "Teppichfliese"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/702826578254",
+        "handle": "teppichplanken",
+        "title": "Teppichplanken",
+        "templateSuffix": null,
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TITLE",
+              "relation": "CONTAINS",
+              "condition": "Teppichplanke"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/703369085262",
+        "handle": "intern-regulaerer-preis",
+        "title": "Intern: Regulärer Preis (rabattcode-fähig)",
+        "templateSuffix": null,
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "IS_PRICE_REDUCED",
+              "relation": "IS_NOT_SET",
+              "condition": ""
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/703839600974",
+        "handle": "teppich-nach-mass",
+        "title": "Teppich nach Maß",
+        "templateSuffix": "teppiche",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "gekettelt"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/703852970318",
+        "handle": "stark-reduziert",
+        "title": "Stark reduziert",
+        "templateSuffix": null,
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "stark-reduziert"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/704018612558",
+        "handle": "angebote-teppichboden",
+        "title": "Angebote Teppichboden",
+        "templateSuffix": null,
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "Teppichboden"
+            },
+            {
+              "column": "IS_PRICE_REDUCED",
+              "relation": "IS_SET",
+              "condition": ""
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/704018645326",
+        "handle": "angebote-vinylboden",
+        "title": "Angebote Vinylboden",
+        "templateSuffix": null,
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TYPE",
+              "relation": "CONTAINS",
+              "condition": "vinyl"
+            },
+            {
+              "column": "IS_PRICE_REDUCED",
+              "relation": "IS_SET",
+              "condition": ""
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/704018678094",
+        "handle": "angebote-linoleum",
+        "title": "Angebote Linoleum",
+        "templateSuffix": null,
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "Linoleumboden"
+            },
+            {
+              "column": "IS_PRICE_REDUCED",
+              "relation": "IS_SET",
+              "condition": ""
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/704018710862",
+        "handle": "angebote-leisten-zubehoer",
+        "title": "Angebote Leisten & Zubehör",
+        "templateSuffix": null,
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "IS_PRICE_REDUCED",
+              "relation": "IS_SET",
+              "condition": ""
+            },
+            {
+              "column": "TYPE",
+              "relation": "NOT_CONTAINS",
+              "condition": "eppich"
+            },
+            {
+              "column": "TYPE",
+              "relation": "NOT_CONTAINS",
+              "condition": "vinyl"
+            },
+            {
+              "column": "TYPE",
+              "relation": "NOT_CONTAINS",
+              "condition": "Linoleum"
+            },
+            {
+              "column": "TYPE",
+              "relation": "NOT_CONTAINS",
+              "condition": "Kunstrasen"
+            },
+            {
+              "column": "TYPE",
+              "relation": "NOT_CONTAINS",
+              "condition": "Dekofell"
+            },
+            {
+              "column": "TYPE",
+              "relation": "NOT_CONTAINS",
+              "condition": "Muster"
+            },
+            {
+              "column": "TYPE",
+              "relation": "NOT_CONTAINS",
+              "condition": "Service"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/704705429838",
+        "handle": "teppichfliesen-nadelfilz",
+        "title": "Nadelfilz-Teppichfliesen",
+        "templateSuffix": null,
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1838520893774"
+            },
+            {
+              "column": "TITLE",
+              "relation": "CONTAINS",
+              "condition": "fliese"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/704706707790",
+        "handle": "teppichboden-nadelvlies",
+        "title": "Teppichboden Nadelfilz",
+        "templateSuffix": "teppichboden-nadelvlies",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1838520893774"
+            },
+            {
+              "column": "TITLE",
+              "relation": "NOT_CONTAINS",
+              "condition": "fliese"
+            },
+            {
+              "column": "TITLE",
+              "relation": "NOT_CONTAINS",
+              "condition": "planke"
+            },
+            {
+              "column": "TITLE",
+              "relation": "NOT_CONTAINS",
+              "condition": "Muster"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/704740163918",
+        "handle": "kunstrasen",
+        "title": "Kunstrasen",
+        "templateSuffix": "kunstrasen",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "art: kunstrasen"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/704765198670",
+        "handle": "nadelfilz-einstieg",
+        "title": "Nadelfilz Einstieg",
+        "templateSuffix": null,
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "nadelfilz-stufe: einstieg"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/704765231438",
+        "handle": "nadelfilz-mittelklasse",
+        "title": "Nadelfilz Mittelklasse",
+        "templateSuffix": null,
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "nadelfilz-stufe: mittelklasse"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/704765264206",
+        "handle": "nadelfilz-premium",
+        "title": "Nadelfilz Premium",
+        "templateSuffix": null,
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "nadelfilz-stufe: premium"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/705205076302",
+        "handle": "auslauf",
+        "title": "Auslauf – nur noch kurze Zeit",
+        "templateSuffix": null,
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "auslauf"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "Teppichboden"
+            },
+            {
+              "column": "TAG",
+              "relation": "NOT_EQUALS",
+              "condition": "art: teppichfliese"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/705207861582",
+        "handle": "auslauf-vinylboden",
+        "title": "Auslauf Vinylboden – nur noch kurze Zeit",
+        "templateSuffix": null,
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "auslauf"
+            },
+            {
+              "column": "TYPE",
+              "relation": "CONTAINS",
+              "condition": "vinyl"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/705207894350",
+        "handle": "auslauf-teppich-nach-mass",
+        "title": "Auslauf Teppich nach Maß – nur noch kurze Zeit",
+        "templateSuffix": null,
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "auslauf"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "Teppich nach Maß"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/705289519438",
+        "handle": "auslauf-teppichfliesen",
+        "title": "Auslauf Teppichfliesen – nur noch kurze Zeit",
+        "templateSuffix": null,
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "auslauf"
+            },
+            {
+              "column": "TAG",
+              "relation": "EQUALS",
+              "condition": "art: teppichfliese"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/705347453262",
+        "handle": "laminat",
+        "title": "Laminat",
+        "templateSuffix": "laminat",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "Laminat"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/705347486030",
+        "handle": "parkett",
+        "title": "Parkett",
+        "templateSuffix": "parkett",
+        "ruleSet": {
+          "appliedDisjunctively": true,
+          "rules": [
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "Parkett"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "Kork"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/705353285966",
+        "handle": "zubehoer-werkzeug",
+        "title": "Werkzeug",
+        "templateSuffix": "zubehoer-unterkategorie",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1843668779342"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/705358659918",
+        "handle": "teppichboden-mittelflor",
+        "title": "Teppichboden Mittelflor",
+        "templateSuffix": "teppichboden-mittelflor",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "GREATER_THAN",
+              "condition": "5.0"
+            },
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "LESS_THAN",
+              "condition": "10"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "Teppichboden"
+            },
+            {
+              "column": "TITLE",
+              "relation": "NOT_CONTAINS",
+              "condition": "fliese"
+            },
+            {
+              "column": "TITLE",
+              "relation": "NOT_CONTAINS",
+              "condition": "planke"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gid://shopify/Collection/705358692686",
+        "handle": "teppichboden-sisal",
+        "title": "Teppichboden Sisal",
+        "templateSuffix": "teppichboden-sisal",
+        "ruleSet": {
+          "appliedDisjunctively": false,
+          "rules": [
+            {
+              "column": "PRODUCT_METAFIELD_DEFINITION",
+              "relation": "EQUALS",
+              "condition": "gid://shopify/Metaobject/1781868527950"
+            },
+            {
+              "column": "TYPE",
+              "relation": "EQUALS",
+              "condition": "Teppichboden"
+            },
+            {
+              "column": "TITLE",
+              "relation": "NOT_CONTAINS",
+              "condition": "fliese"
+            },
+            {
+              "column": "TITLE",
+              "relation": "NOT_CONTAINS",
+              "condition": "planke"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "metaobjects": {
+    "nodes": []
+  }
+}

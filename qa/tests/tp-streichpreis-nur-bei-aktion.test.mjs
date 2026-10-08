@@ -48,6 +48,7 @@ sqm = sqm.slice(0, sqm.indexOf('{% stylesheet %}'));
 const engine = new Liquid({ templates: {
   'tp-aktion-aktiv': ohneDoc('snippets/tp-aktion-aktiv.liquid'),
   'tp-rabatt-sichtbar': ohneDoc('snippets/tp-rabatt-sichtbar.liquid'),
+  'tp-ist-sonderposten': ohneDoc('snippets/tp-ist-sonderposten.liquid'),
   'tp-paketinhalt': '',
 } });
 engine.registerFilter('money_without_currency', (c) => (Number(c) / 100).toFixed(2).replace('.', ','));
@@ -86,4 +87,13 @@ test('Verlegeservice-Hinweis fragt weiter nur die befristete Aktion', () => {
   const code = readFileSync(path.join(root, 'blocks/tp-verlegeservice-hinweis.liquid'), 'utf8');
   assert.match(code, /render 'tp-aktion-aktiv'/);
   assert.doesNotMatch(code, /tp-rabatt-sichtbar/);
+});
+
+test('Sonderposten: Streichpreis nur mit Preisbeleg, unabhaengig von aktion.*', async () => {
+  const sichtbar = (product) => engine.parseAndRender("{% render 'tp-rabatt-sichtbar', product: product %}", { product });
+  const sp = (metafields) => ({ type: 'Sonderposten', variants: [{ title: 'Default Title', price: 8900, compare_at_price: 24346 }], metafields });
+  assert.equal((await sichtbar(sp({ sonderposten: { preis_beleg: { value: 'regulaer 25,90 EUR/m2 x 9,40 m2' } } }))).trim(), 'ja');
+  assert.equal((await sichtbar(sp({ sonderposten: {} }))).trim(), '', 'ohne Beleg kein Streichpreis');
+  assert.equal((await sichtbar(sp({ sonderposten: {}, aktion: { klasse: { value: 'preisanker' } } }))).trim(), '',
+    'ein mitkopiertes aktion.klasse darf beim Sonderposten keinen Streichpreis freischalten');
 });

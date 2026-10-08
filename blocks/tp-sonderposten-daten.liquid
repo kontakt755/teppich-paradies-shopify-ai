@@ -75,12 +75,12 @@
       assign tp_sp_qm_preis = tp_sp_v.price | divided_by: tp_sp_f | round
     endif
 
-    capture tp_sp_rabatt
+    capture tp_sp_aktion
       render 'tp-rabatt-sichtbar', product: tp_sp_p
     endcapture
-    assign tp_sp_rabatt = tp_sp_rabatt | strip
+    assign tp_sp_aktion = tp_sp_aktion | strip
     assign tp_sp_spar = 0
-    if tp_sp_rabatt == 'ja' and tp_sp_v.compare_at_price > tp_sp_v.price
+    if tp_sp_aktion == 'ja' and tp_sp_v.compare_at_price > tp_sp_v.price
       assign tp_sp_spar = tp_sp_v.compare_at_price | minus: tp_sp_v.price
       assign tp_sp_spar_pz = tp_sp_spar | times: 100.0 | divided_by: tp_sp_v.compare_at_price | round
     endif
