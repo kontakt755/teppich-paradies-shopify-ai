@@ -13,10 +13,10 @@
     "tp_teppiche_hero": {
       "type": "tp-teppiche-hero",
       "settings": {
-        "kicker": "Zentimetergenau zugeschnitten",
+        "kicker": "Zentimetergenau nach Ihrem Maß",
         "heading": "Teppich nach Maß",
-        "text": "Qualität und Farbe wählen, Breite und Länge eingeben – wir schneiden zu und ketteln rundum. Der Preis steht sofort.",
-        "usps": "Bis 500 × 600 cm je nach Qualität\nRundum gekettelt\n3 Muster kostenlos",
+        "text": "Qualität und Farbe wählen, Breite und Länge eingeben – wir fertigen Ihren Teppich auf den Zentimeter genau, rundum eingefasst. Der Preis steht sofort.",
+        "usps": "Bis 500 × 600 cm je nach Qualität\nRundum eingefasst\n3 Muster kostenlos",
         "card_title": "",
         "card_text": "",
         "btn1_label": "[anzahl] Qualitäten ansehen",
@@ -885,7 +885,7 @@
           "type": "step",
           "settings": {
             "title": "Bestellen",
-            "text": "Wir schneiden zu, ketteln die Kante rundum und liefern."
+            "text": "Wir fertigen Ihren Teppich, fassen die Kante rundum ein und liefern."
           }
         }
       },
