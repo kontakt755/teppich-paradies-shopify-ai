@@ -37,6 +37,16 @@
     return { wert: n, fehler: '' };
   }
 
+  function massPruefen(inW, inL) {
+    var b = zahl(inW);
+    var l = zahl(inL);
+    var f = b.fehler || l.fehler;
+    if (!f && (!b.wert || !l.wert)) f = 'Bitte Breite und Länge in Zentimetern eingeben.';
+    if (!f && (b.wert < MIN_CM || l.wert < MIN_CM)) f = 'Beide Seiten mindestens ' + MIN_CM + ' cm.';
+    if (!f && (b.wert > MAX_EINGABE_CM || l.wert > MAX_EINGABE_CM)) f = 'Bitte ein Maß bis ' + MAX_EINGABE_CM + ' cm eingeben.';
+    return { w: b.wert, l: l.wert, fehler: f };
+  }
+
   function lesenGespeichert() {
     try {
       var s = JSON.parse(sessionStorage.getItem(SPEICHER) || 'null');
@@ -102,7 +112,31 @@
     var daten;
     try { daten = JSON.parse(datenEl.textContent); } catch (e) { return; }
     var teppiche = (daten.teppiche || []).filter(Boolean);
-    if (!teppiche.length) return;
+    if (!teppiche.length) {
+      // Die Produktliste der Kollektion hat nur eine Seite mit bis zu 250 Eintraegen.
+      // Wird die Rasterseite 2 direkt geladen, fuehrt die Masssuche zu Seite 1.
+      var seite = new URL(window.location.href).searchParams.get('page');
+      if (Number(seite) > 1 && Number(daten.gesamt) > 0) {
+        var spaetesForm = root.querySelector('[data-tp-rechner]');
+        var spaetesW = root.querySelector('[data-tp-rechner-breite]');
+        var spaetesL = root.querySelector('[data-tp-rechner-laenge]');
+        var spaeterFehler = root.querySelector('[data-tp-rechner-fehler]');
+        if (!spaetesForm || !spaetesW || !spaetesL || !spaeterFehler) return;
+        root.setAttribute('data-tp-rechner-bereit', '1');
+        spaetesForm.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var mass = massPruefen(spaetesW, spaetesL);
+          spaeterFehler.textContent = mass.fehler;
+          spaeterFehler.hidden = !mass.fehler;
+          if (mass.fehler) return;
+          speichern(mass.w, mass.l);
+          var ziel = new URL(window.location.href);
+          ziel.searchParams.delete('page');
+          window.location.assign(ziel.toString());
+        });
+      }
+      return;
+    }
     root.setAttribute('data-tp-rechner-bereit', '1');
 
     var form = root.querySelector('[data-tp-rechner]');
@@ -202,15 +236,10 @@
 
     form.addEventListener('submit', function (e) {
       e.preventDefault();
-      var b = zahl(inW);
-      var l = zahl(inL);
-      var f = b.fehler || l.fehler;
-      if (!f && (!b.wert || !l.wert)) f = 'Bitte Breite und Länge in Zentimetern eingeben.';
-      if (!f && (b.wert < MIN_CM || l.wert < MIN_CM)) f = 'Beide Seiten mindestens ' + MIN_CM + ' cm.';
-      if (!f && (b.wert > MAX_EINGABE_CM || l.wert > MAX_EINGABE_CM)) f = 'Bitte ein Maß bis ' + MAX_EINGABE_CM + ' cm eingeben.';
-      fehlerZeigen(f);
-      if (f) return;
-      anwenden(b.wert, l.wert, true);
+      var mass = massPruefen(inW, inL);
+      fehlerZeigen(mass.fehler);
+      if (mass.fehler) return;
+      anwenden(mass.w, mass.l, true);
     });
     // "oder alle Qualitaeten ansehen": Mass verwerfen, der Link springt dann zum normalen Raster.
     root.querySelectorAll('[data-tp-rechner-alle]').forEach(function (link) {
