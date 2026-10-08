@@ -40,7 +40,7 @@
   # Alte ?page=2-Links der Mass-Teppiche zeigen bei bis zu 250 Qualitaeten
   # keine zweite Gruppenseite. Schon das rohe HTML soll deshalb auf die
   # gefuellte Kategorieseite verweisen, auch ohne JavaScript-Weiterleitung.
-  if request.page_type == 'collection' and collection.handle == 'teppich-nach-mass' and collection.products_count <= 250
+  if request.page_type == 'collection' and collection.handle == 'teppich-nach-mass' and collection.products_count > 0 and collection.products_count <= 250
     if tp_canonical_url contains '?page='
       assign tp_canonical_url = tp_canonical_url | split: '?' | first
     endif
