@@ -141,6 +141,14 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
     };
     const accessibleName = element => [element.getAttribute('aria-label'), element.getAttribute('title'), element.innerText, element.textContent, element.value, element.querySelector('img')?.alt]
       .map(value => String(value || '').replace(/\s+/g, ' ').trim()).find(Boolean) || '';
+    // Ein bewusst leeres alt="" in einer Schaltflaeche/einem Link/Label mit eigenem
+    // Namen ist korrekt (das Bild ist Deko, der Name steht im Text daneben) - z. B. das
+    // Farbbild in der Farbauswahl neben "Sand Hell". Fehlendes alt bleibt ein Befund.
+    const decorativeInNamedControl = img => {
+      if (img.getAttribute('alt') !== '') return false;
+      const control = img.closest('button, a[href], label');
+      return Boolean(control && accessibleName(control));
+    };
     const relevantImages = [...document.querySelectorAll('main img, footer img')].filter(img => visible(img) && img.getBoundingClientRect().width >= 40 && img.getBoundingClientRect().height >= 40);
     const jsonLd = [...document.querySelectorAll('script[type="application/ld+json"]')].map(script => script.textContent.trim()).filter(Boolean);
     const links = [...document.querySelectorAll('a[href]')].map(link => ({ href: link.href, text: accessibleName(link), visible: visible(link), area: Math.round(link.getBoundingClientRect().width * link.getBoundingClientRect().height) }));
@@ -173,7 +181,7 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
       robots: document.querySelector('meta[name="robots"]')?.content?.trim() || '',
       h1: [...document.querySelectorAll('h1')].filter(visible).map(x => x.textContent.replace(/\s+/g, ' ').trim()),
       bodyText, mainText, jsonLd, links, facets, scripts,
-      images: relevantImages.map(img => ({ src: img.currentSrc || img.src, alt: img.getAttribute('alt'), broken: img.complete && img.naturalWidth === 0, loading: img.loading || '', naturalWidth: img.naturalWidth, renderedWidth: Math.round(img.getBoundingClientRect().width), top: Math.round(img.getBoundingClientRect().top) })),
+      images: relevantImages.map(img => ({ src: img.currentSrc || img.src, alt: img.getAttribute('alt'), decorativeInNamedControl: decorativeInNamedControl(img), broken: img.complete && img.naturalWidth === 0, loading: img.loading || '', naturalWidth: img.naturalWidth, renderedWidth: Math.round(img.getBoundingClientRect().width), top: Math.round(img.getBoundingClientRect().top) })),
       unnamedButtons, unnamedLinks, unlabeledInputs, smallTargets, resourceEntries,
       visiblePriceTexts: [...document.querySelectorAll('main product-price, main .price, main [class*="price"]')].filter(visible).filter((el, _, all) => !all.some(other => other !== el && other.contains(el))).map(el => el.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean).slice(0, 160),
       visibleComparePrices: [...document.querySelectorAll('main s, main del, main [class*="compare-at"]')].filter(visible).map(el => el.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean),
@@ -297,7 +305,7 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
   if (viewportName === 'Desktop' && pageConfig.indexExpected && robots.includes('noindex')) add('ERROR', 'UNEXPECTED_NOINDEX', pageConfig.name, viewportName, `Unerwartetes noindex: ${robots.trim()}`);
   if (viewportName === 'Desktop' && !pageConfig.indexExpected && !robots.includes('noindex')) add('WARN', 'NOINDEX_UNCLEAR', pageConfig.name, viewportName, 'Kein explizites noindex im HTML/Header; robots.txt-Verhalten separat prüfen');
   data.images.filter(img => img.broken).forEach(img => add('ERROR', 'BROKEN_IMAGE', pageConfig.name, viewportName, `Sichtbares Bild defekt: ${img.src}`));
-  const missingAltImages = data.images.filter(img => img.alt === null || img.alt.trim() === '');
+  const missingAltImages = data.images.filter(img => (img.alt === null || img.alt.trim() === '') && !img.decorativeInNamedControl);
   if (missingAltImages.length) add('WARN', 'IMAGE_ALT_MISSING', pageConfig.name, viewportName, `${missingAltImages.length} relevante sichtbare Bilder ohne Alt-Text`, { examples: missingAltImages.slice(0, 5).map(img => img.src) });
   const oversizedImages = data.images.filter(img => img.naturalWidth > 1600 && img.renderedWidth > 0 && img.naturalWidth / img.renderedWidth > 2.7);
   if (oversizedImages.length) add('WARN', 'IMAGE_OVERSIZED', pageConfig.name, viewportName, `${oversizedImages.length} Bilder deutlich größer als ihre Darstellung`, { examples: oversizedImages.slice(0, 5) });
