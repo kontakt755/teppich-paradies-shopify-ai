@@ -453,3 +453,20 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   gerade gesetzten Schritt zurück). Gemischte Musterbestellungen (teils Lieferant, teils eigen) laufen in der
   Zeitleiste weiter über die Lieferantenstrecke; die eigenen Muster erscheinen dann als To-do.
 - **Nächste Stufe:** Kartenansicht/Entfernung für „Kunde in der Nähe“, falls die Stadt allein nicht reicht.
+
+## 2026-10-08 · Link zur Werkbank Shop & Technik
+
+- **Geändert:** Neuer Punkt „Werkbank“ in der Seitenleiste unter „Seltener“ (am Handy im „Mehr“-Blatt),
+  direkt nach „Aufgaben“. Die Werkbank ist das gemeinsame Board von Inhaber und Shop-/Technik-Mitarbeiter
+  (Ideen, Aufgaben, Fragen, Erledigtes) und liegt als privates claude.ai-Artefakt außerhalb des Control
+  Centers. Deshalb öffnet der Link in einem neuen Tab (kleiner Pfeil statt Zähler) und trägt kein `data-nav`.
+  Neues Attribut `data-nicht-lesen` blendet ihn für die Rolle „lesen“ aus; Inhaber und Mitarbeiter sehen ihn.
+- **Getestet:** `npm run dashboard:test` 200/200, `npm test` grün. `dashboard:pruefen`: 19 Ansichten auf
+  1440, 1024, 800, 390 und 360 px ohne seitliches Scrollen. Einziger Fehler ist ein 404 im Ratgeber bei
+  1440 px, der schon vor der Änderung auftrat. Klickprüfung gegen die Kopie bei 390 px: Link im „Mehr“-Blatt
+  sichtbar, 48 px hoch, `target=_blank`, `rel=noopener`; mit `rolle-lesen` `display: none`, mit
+  `rolle-mitarbeiter` sichtbar.
+- **Risiken/Annahmen:** Wer kein Claude-Konto mit Zugriff auf die Werkbank hat, landet bei Claude auf
+  „kein Zugriff“. Die Freigabe erfolgt im Teilen-Menü der Werkbank, nicht hier.
+- **Nächste Stufe:** Falls gewünscht, offene Fragen an den Inhaber aus der Werkbank als Zähler an den Link
+  hängen (bräuchte einen lesenden Abruf über den Server).
