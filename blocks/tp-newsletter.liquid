@@ -37,22 +37,6 @@
     instanz: block.id
   -%}
 </div>
-{%- if block.settings.quelle == 'footer' -%}
-  {%- comment -%}
-    A5: Newsletter nur einmal pro Seite. Steht im Inhalt schon eine Anmeldung
-    (Startseiten-Sektion, Kachel im Raster, Ratgeber), entfaellt die im Footer.
-    Skript statt :has()-Regel: die CSS-Buendelung von Shopify verwarf die Regel.
-    Der Footer steht nach main, der Inhalt ist hier also schon im DOM.
-  {%- endcomment -%}
-  <script>
-    (function () {
-      if (document.querySelector('main .tp-nl, .tp-nv, .tp-nk')) {
-        document.querySelectorAll('.tp-nl-footer').forEach(function (el) { el.hidden = true; el.style.display = 'none'; });
-      }
-    })();
-  </script>
-{%- endif -%}
-
 {% stylesheet %}
   .tp-nl {
     display: flex;

@@ -504,14 +504,6 @@
         "hinweis": "Bis zu 3 Muster kostenlos · Versand innerhalb Deutschlands"
       }
     },
-    "tp_newsletter_vorteil": {
-      "type": "tp-newsletter-vorteil",
-      "settings": {
-        "eyebrow": "Newsletter",
-        "betrag": 15,
-        "mindestwert": 100
-      }
-    },
     "angebote_teppichboden": {
       "type": "product-list",
       "blocks": {
@@ -1413,7 +1405,6 @@
     "tp_zwei_wege_home",
     "tp_start_muster",
     "tp_start_bewertungen",
-    "tp_newsletter_vorteil",
     "tp_start_fachhandel",
     "tp_start_faq",
     "tp_start_kontakt",
