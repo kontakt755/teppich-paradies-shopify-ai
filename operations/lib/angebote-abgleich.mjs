@@ -65,13 +65,17 @@ export function angezeigteVariante(produkt) {
   return v.find((x) => x.kaufbar) ?? v[0] ?? null;
 }
 
+/** Zentrale Aktionen (Metaobjekt tp_aktion), die heute laufen - wie snippets/tp-aktion-laufend.liquid. */
+export function laufendeAktionen(aktionen, heute) {
+  return (aktionen ?? []).filter((a) => a.aktiv === true
+    && tag(a.start) && tag(a.ende) && tag(a.start) <= heute && heute <= tag(a.ende)
+    && a.kollektion && Number(a.prozent) > 0);
+}
+
 /** snippets/tp-aktion-laufend.liquid: laeuft eine zentrale Aktion fuer eine Kollektion des Produkts? */
 export function aktionLaufend(produkt, aktionen, heute) {
   const kollektionen = new Set(produkt.kollektionen ?? []);
-  return (aktionen ?? []).some((a) => a.aktiv === true
-    && tag(a.start) && tag(a.ende) && tag(a.start) <= heute && heute <= tag(a.ende)
-    && a.kollektion && kollektionen.has(a.kollektion)
-    && Number(a.prozent) > 0);
+  return laufendeAktionen(aktionen, heute).some((a) => kollektionen.has(a.kollektion));
 }
 
 /** snippets/tp-angebot-sichtbar.liquid */
