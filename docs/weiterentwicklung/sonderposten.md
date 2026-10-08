@@ -148,19 +148,18 @@ Stück mit der SKU zurückgelegt werden (Hinweis im Control Center unter „Heut
 
 ## 8. Versand und Abholung
 
-Befund 2026-10-08: **Abholung im Geschäft ist in Shopify nicht eingerichtet**
-(`localPickupSettingsV2` am Standort = leer). Es gibt drei Versandprofile
-(„Allgemeines Profil“, „Bodenbeläge & Teppiche – kostenlos“, „Kostenlose Muster“).
-Ein Kunde kann deshalb heute im Checkout keine Abholung wählen.
+**Entscheidung 2026-10-08 (Tobias):** Sonderposten werden **abgeholt und versendet**. Die
+frühere Vorgabe „zuerst nur Abholung“ gilt nicht mehr; ein Profil „nur Abholung“ entfällt.
 
-Das Theme zeigt den Hinweis aus `sonderposten.versand` an; **erzwingen** lässt er sich nur in
-den Versandeinstellungen – und die ändert nur der Inhaber (AGENTS.md):
+- Abholung am Standort Saarlandstraße 73 ist eingeschaltet (Bereitzeit „5+ Tage“, Hinweis
+  „Abholung nur nach unserer Bestätigung …“) und bleibt im Checkout immer wählbar.
+- Vorlage und Teststück tragen `sonderposten.versand = Abholung oder Versand`. Der Wert
+  „Nur Abholung“ ist nur noch ein Hinweis für einzelne Ausnahmestücke – er wird im Checkout
+  **nicht** erzwungen (dafür bräuchte es ein eigenes Profil).
 
-1. Lokale Abholung am Standort Saarlandstraße 73 aktivieren (kostenlos, Shopify-Bordmittel).
-2. Eigenes Versandprofil „Sonderposten – nur Abholung“ ohne Versandzonen: Produkte darin
-   sind im Checkout nur per Abholung bestellbar.
-3. Optional zweites Profil „Sonderposten – Versand“ mit Speditionspauschale für Stücke, die
-   verschickt werden dürfen.
-
-Bis das eingerichtet ist, dürfen Sonderposten nicht in den Onlineshop-Verkauf gehen, denn
-sonst würde ein 4 × 2,35 m-Stück mit den normalen Versandregeln verkauft.
+**Offen – Versandkosten (Inhaber, Werkbank w-015 Frage 3):** Ohne eigene Regel laufen
+Sonderposten über das „Allgemeine Profil“: Deutschland ab 50 € kostenlos (sonst 4,99 €),
+EU 13,99 €, International 19,99 €. Für große Reststücke (4 m breite Rolle, 20–40 kg) liegt das
+weit unter den echten Versand-/Speditionskosten. Empfehlung: eigenes Profil „Sonderposten“,
+nur Deutschland, Pauschale je Stück (Betrag legt der Inhaber fest). Bis das entschieden ist,
+sollten Sonderposten nicht online bestellbar veröffentlicht werden.
