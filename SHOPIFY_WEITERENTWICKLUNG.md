@@ -108,7 +108,7 @@ bei Google bleiben), w-028 (Bildarchiv, Lizenzen). Beantwortet und umgesetzt: w-
 |---|---|---|
 | E1 | Freigabe der vier Schreibvorgänge in §4 | **erteilt 2026-10-08** |
 | E2 | Vergleichspreis bei Reststücken zeigen? | **entschieden: nur mit Beleg** (umgesetzt) |
-| E3 | Versand von Sonderposten | **entschieden 08.10.: Abholung UND Versand**; Abholung ist eingeschaltet. Offen: Versandkosten für Reste (eigenes Profil mit Pauschale, Werkbank w-015) |
+| E3 | Versand von Sonderposten | **entschieden 08.10.: Abholung UND Versand**; Abholung ist eingeschaltet. Versandkosten wie alle Produkte (entschieden 08.10., kein eigenes Profil) |
 | E4 | Welche SumUp-Lösung läuft im Laden? | **unbekannt** → Weg B zuerst, Weg C zurückgestellt |
 | E5 | Dashboard-Zugang: Recht `write_inventory` ergänzen (Inhaber selbst) | ja, für Weg B |
 | E6 | Judge.me installieren? | **entschieden 2026-10-08: nein**, bei Google bleiben |
@@ -183,7 +183,7 @@ ist immer `tp-ist-sonderposten`).
 
 ## 9. Erkannte Probleme
 
-1. Sonderposten laufen ohne eigenes Versandprofil über das „Allgemeine Profil“ (DE ab 50 € kostenlos, EU 13,99 €, International 19,99 €) – für große Reststücke viel zu günstig. Vor dem ersten echten Stück Versandkosten festlegen (w-015).
+1. Sonderposten laufen über das „Allgemeine Profil“ (DE ab 50 € kostenlos, EU 13,99 €, International 19,99 €) – bei großen Reststücken unter den echten Kosten; bewusst so entschieden (08.10.).
 2. Basic-Plan: 2 Mitarbeiterkonten – Nachvollziehbarkeit „wer“ deshalb über die Control-Center-Anmeldung.
 3. Angebots-Kollektionen „Preis reduziert“ können zwischen `aktion.ende` und Preis-Rückstellung
    Produkte ohne sichtbaren Rabatt enthalten (nächster Termin: Dauerrabatt-Ende 01.11. →

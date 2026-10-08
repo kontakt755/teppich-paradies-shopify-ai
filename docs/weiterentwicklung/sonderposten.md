@@ -157,9 +157,7 @@ frühere Vorgabe „zuerst nur Abholung“ gilt nicht mehr; ein Profil „nur Ab
   „Nur Abholung“ ist nur noch ein Hinweis für einzelne Ausnahmestücke – er wird im Checkout
   **nicht** erzwungen (dafür bräuchte es ein eigenes Profil).
 
-**Offen – Versandkosten (Inhaber, Werkbank w-015 Frage 3):** Ohne eigene Regel laufen
-Sonderposten über das „Allgemeine Profil“: Deutschland ab 50 € kostenlos (sonst 4,99 €),
-EU 13,99 €, International 19,99 €. Für große Reststücke (4 m breite Rolle, 20–40 kg) liegt das
-weit unter den echten Versand-/Speditionskosten. Empfehlung: eigenes Profil „Sonderposten“,
-nur Deutschland, Pauschale je Stück (Betrag legt der Inhaber fest). Bis das entschieden ist,
-sollten Sonderposten nicht online bestellbar veröffentlicht werden.
+**Versandkosten – entschieden 2026-10-08 (Tobias):** wie bei allen Produkten (Allgemeines
+Profil: Deutschland ab 50 € kostenlos, sonst 4,99 €; EU 13,99 €; International 19,99 €).
+Kein eigenes Profil. Bewusst in Kauf genommen: Bei großen Reststücken können die echten
+Versandkosten über dem liegen, was der Kunde zahlt.
