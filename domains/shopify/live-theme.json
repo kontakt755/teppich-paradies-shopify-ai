@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204438208846",
-    "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-08T09:04:41Z",
-    "verifiedBy": "Shopify CLI role LIVE nach workflow:live (main 26287cbe mit PR #963: Auslauf-Antwortfrist); oeffentliche Optivia-Produktseite in Chrome ohne Vorschau geprueft"
-  },
-  "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-08T09:04:41Z",
-    "verifiedBy": "Shopify CLI role UNPUBLISHED nach workflow:live; naechstes Preview-Ziel"
+    "verifiedAt": "2026-10-08T10:13:06Z",
+    "verifiedBy": "Shopify Admin API role MAIN nach workflow:live (main fda3482f, PR #981 SEO-Check und #982 Label HDF); oeffentliche Bodenleisten-Seite ohne Vorschau geprueft"
+  },
+  "preview": {
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-10-08T10:13:06Z",
+    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live; naechstes Preview-Ziel"
   },
   "fallback": {
     "themeId": "204440699214",
@@ -34,6 +34,12 @@
     "note": "Testumgebung fuer SHOPIFY_WEITERENTWICKLUNG.md (Sonderposten, Bewertungen, Angebote). Nur --only-Pushes vom Branch feature/weiterentwicklung-sonderposten. Nie Preview-Ziel, nie publishen. Nach Abschluss des Projekts unter retired eintragen und loeschen."
   },
   "retired": [
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-10-08",
+      "note": "Per workflow:live durch 204436144462 abgeloest (main fda3482f); bleibt als unpublished Theme das naechste Preview-Ziel."
+    },
     {
       "themeId": "204438208846",
       "name": "preview-main-2026-09-15",

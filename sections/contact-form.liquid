@@ -224,20 +224,24 @@
       <input type="hidden" name="contact[Produkt-Link]" value="" data-tp-hidden-field="Produkt-Link">
 
       {%- if form.posted_successfully? -%}
-        <div class="tp-form-success tp-success--generic" tabindex="-1" autofocus data-tp-lead-success data-tp-mixed-contact-success>
+        <div class="tp-form-success tp-success--generic" role="status" tabindex="-1" data-tp-lead-success data-tp-mixed-contact-success>
           {{- 'icon-checkmark.svg' | inline_asset_content -}}
           <span>Vielen Dank für Ihre Nachricht! Wir melden uns schnellstmöglich bei Ihnen.</span>
         </div>
-        <div class="tp-form-success tp-success--sample" tabindex="-1">
+        <div class="tp-form-success tp-success--sample" role="status" tabindex="-1">
           {{- 'icon-checkmark.svg' | inline_asset_content -}}
           <span>Vielen Dank! Ihre Musteranfrage ist bei uns eingegangen – wir senden Ihnen das Muster schnellstmöglich zu.</span>
         </div>
       {%- endif -%}
 
       {%- if form.errors -%}
-        <div class="tp-form-error" tabindex="-1" autofocus>
+        <div class="tp-form-error" role="alert" tabindex="-1">
           {{- 'icon-error.svg' | inline_asset_content -}}
-          <span>{{ form.errors.translated_fields.email | capitalize }} {{ form.errors.messages.email }}</span>
+          {%- if form.errors.messages.email != blank -%}
+            <span>{{ form.errors.translated_fields.email | default: 'E-Mail' | capitalize }} {{ form.errors.messages.email }}</span>
+          {%- else -%}
+            <span>Bitte prüfen Sie Ihre Angaben und versuchen Sie es erneut.</span>
+          {%- endif -%}
         </div>
       {%- endif -%}
 

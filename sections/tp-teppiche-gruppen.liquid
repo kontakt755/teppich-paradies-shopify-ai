@@ -8,21 +8,52 @@
   (Inhaber 2026-10-02). Erst die Art waehlen, dann die Qualitaet.
 
   Zuordnung allein ueber snippets/tp-teppich-gruppe (Daten des Teppichbodens), nichts
-  fest eingetragen. Bild und Anzahl kommen aus der aktuellen Kollektion (bis 50 Produkte,
-  wie beim Mass-Rechner). Eine Gruppe ohne Teppich zeigt keine Karte.
+  fest eingetragen. Bild und Anzahl kommen aus derselben vollstaendigen Kollektion
+  wie beim Mass-Rechner. Eine Gruppe ohne Teppich zeigt keine Karte.
 {%- endcomment -%}
 {{ 'tp-teppiche.css' | asset_url | stylesheet_tag }}
 {%- liquid
   assign s = section.settings
   assign tg_keys = ''
+  assign tg_bild_flauschig = blank
+  assign tg_bild_weich = blank
+  assign tg_bild_robust = blank
+  assign tg_bild_natur = blank
+  assign tg_bild_rest = blank
   if collection != blank
-    for tg_p in collection.products limit: 50
-      capture tg_k
-        render 'tp-teppich-gruppe', product: tg_p
-      endcapture
-      assign tg_k = tg_k | strip | default: 'rest'
-      assign tg_keys = tg_keys | append: tg_k | append: ','
-    endfor
+    paginate collection.products by 250
+      for tg_p in collection.products
+        capture tg_k
+          render 'tp-teppich-gruppe', product: tg_p
+        endcapture
+        assign tg_k = tg_k | strip | default: 'rest'
+        assign tg_keys = tg_keys | append: tg_k | append: ','
+        if tg_p.featured_image != blank
+          case tg_k
+            when 'flauschig'
+              if tg_bild_flauschig == blank
+                assign tg_bild_flauschig = tg_p.featured_image
+              endif
+            when 'weich'
+              if tg_bild_weich == blank
+                assign tg_bild_weich = tg_p.featured_image
+              endif
+            when 'robust'
+              if tg_bild_robust == blank
+                assign tg_bild_robust = tg_p.featured_image
+              endif
+            when 'natur'
+              if tg_bild_natur == blank
+                assign tg_bild_natur = tg_p.featured_image
+              endif
+            when 'rest'
+              if tg_bild_rest == blank
+                assign tg_bild_rest = tg_p.featured_image
+              endif
+          endcase
+        endif
+      endfor
+    endpaginate
   endif
   assign tg_keys = tg_keys | split: ','
 -%}
@@ -38,15 +69,23 @@
           assign b = block.settings
           assign tg_anzahl = 0
           assign tg_bild = b.image
+          if tg_bild == blank
+            case b.gruppe
+              when 'flauschig'
+                assign tg_bild = tg_bild_flauschig
+              when 'weich'
+                assign tg_bild = tg_bild_weich
+              when 'robust'
+                assign tg_bild = tg_bild_robust
+              when 'natur'
+                assign tg_bild = tg_bild_natur
+              when 'rest'
+                assign tg_bild = tg_bild_rest
+            endcase
+          endif
           for tg_k in tg_keys
             if tg_k == b.gruppe
               assign tg_anzahl = tg_anzahl | plus: 1
-              if tg_bild == blank
-                assign tg_index = forloop.index0
-                for tg_p in collection.products limit: 1 offset: tg_index
-                  assign tg_bild = tg_p.featured_image
-                endfor
-              endif
             endif
           endfor
           if tg_anzahl == 0

@@ -28,7 +28,7 @@
  * bleibt die Instanz dafuer stehen; Adresse und Passwort stehen dann in der Ausgabe.
  */
 
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import net from 'node:net';
@@ -72,6 +72,24 @@ function freierPort() {
   });
 }
 
+/**
+ * issues.json und bodenwissen.json sind seit 2026-09-30 erzeugt und nicht
+ * mehr im Git. In einem frischen Worktree fehlen sie, und der Ratgeber meldet
+ * dann einen 404, der im echten Control Center nicht auftritt. Einmal
+ * erzeugen; scheitert das, laeuft die Pruefung trotzdem und meldet den 404.
+ */
+const ERZEUGT = [
+  ['issues.json', 'scripts/build-dashboard-data.mjs'],
+  ['bodenwissen.json', 'scripts/build-bodenwissen-data.mjs'],
+];
+function erzeugteDateien() {
+  for (const [datei, skript] of ERZEUGT) {
+    if (fs.existsSync(path.join(REPO, 'docs/ai-dashboard', datei))) continue;
+    const r = spawnSync(process.execPath, [path.join(REPO, skript)], { cwd: REPO, encoding: 'utf8' });
+    if (r.status !== 0) console.warn(`${datei} fehlt und liess sich nicht erzeugen (${skript}) - der Lauf meldet dafuer einen 404.`);
+  }
+}
+
 function datenKopie(quelle) {
   const ziel = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-dashboard-daten-'));
   for (const n of NUR_LESEN) if (fs.existsSync(path.join(quelle, n))) fs.symlinkSync(path.join(quelle, n), path.join(ziel, n));
@@ -94,6 +112,7 @@ async function main() {
   try { puppeteer = (await import('puppeteer')).default; }
   catch { throw new Error('puppeteer fehlt - im Repository-Root `npm install` ausfuehren (Worktree: node_modules verlinken).'); }
 
+  erzeugteDateien();
   const quelle = process.env.TP_PRIVAT_DIR || path.join(os.homedir(), 'teppich-paradies-analyse');
   const daten = datenKopie(quelle);
   const aus = args.aus || fs.mkdtempSync(path.join(os.tmpdir(), 'tp-dashboard-pruefung-'));
@@ -131,6 +150,8 @@ async function main() {
     const fehler = [];
     seite.on('pageerror', e => fehler.push(`pageerror: ${e.message}`));
     seite.on('console', m => { if (m.type() === 'error') fehler.push(`console: ${m.text()}`); });
+    // Die Konsole nennt bei einem 404 nicht die Adresse - die Antwort schon.
+    seite.on('response', r => { if (r.status() >= 400) fehler.push(`http ${r.status()}: ${r.url().replace(basis, '')}`); });
     await seite.goto(`${basis}/login`);
     const login = await seite.evaluate(async pw => (await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ passwort: pw }) })).status, passwort);
     if (login !== 200) throw new Error(`Anmeldung an der Pruef-Instanz fehlgeschlagen (HTTP ${login})`);
