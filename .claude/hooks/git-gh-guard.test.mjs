@@ -6,6 +6,7 @@
 import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { tmpdir } from 'os';
 
 const HOOK = join(dirname(fileURLToPath(import.meta.url)), 'git-gh-guard.mjs');
 const FORCE = 'git ' + 'push --force';
@@ -94,6 +95,11 @@ for (const [erwartet, cmd] of FAELLE) {
   const r = spawnSync('node', [HOOK], {
     input: JSON.stringify({ tool_name: 'Bash', tool_input: { command: cmd } }),
     encoding: 'utf8',
+    // Ausserhalb jedes Git-Repos: sonst sieht die Deploy-Sperre einen echten,
+    // gerade laufenden Deploy und blockiert Merges (eigener Test dafuer:
+    // workflow/tests/deploy-fenster.test.mjs).
+    cwd: tmpdir(),
+    env: { ...process.env, CLAUDE_PROJECT_DIR: '' },
   });
   const got = r.stdout.trim() ? 'BLOCK' : 'DURCH';
   if (got !== erwartet) {
