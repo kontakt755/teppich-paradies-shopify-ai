@@ -21,11 +21,22 @@
 
   Keine lieferant.*- oder einkauf.*-Metafelder. Diese Datei ist oeffentlich.
 
+  Teppich nach Mass: Der Teppich traegt selbst keine technischen Merkmale, sie
+  stehen am Teppichboden, aus dem zugeschnitten wird (service.einfass_basis,
+  Entscheidung 2026-09-20: Sachangaben nie am Teppich doppelt pflegen). Der
+  Aufrufer reicht diesen Teppichboden als basis herein. Je Merkmal gilt: Wert am
+  Produkt selbst zuerst, nur wenn er fehlt der Wert des Teppichbodens. Fehlt er
+  auch dort, fehlt die Zeile - nichts wird abgeleitet. Die Mengen- und
+  Massangaben unten (Rollenbreite, Inhalt je Paket ...) gehoeren dem Produkt und
+  kommen nie vom Teppichboden.
+
   @param {object} produkt - Produkt (product)
+  @param {object} [basis] - Teppichboden, aus dem zugeschnitten wird (optional)
 {%- enddoc -%}
 
 {%- liquid
   assign tpm_produkt = produkt
+  assign tpm_basis = basis
   assign tpm_erste = true
 -%}
 {%- capture tpm_config -%}
@@ -59,6 +70,9 @@ Pflegeleicht::pflegeleicht::name
     assign tpm_key = tpm_teile[1] | strip
     assign tpm_feld = tpm_teile[2] | strip
     assign tpm_mf = tpm_produkt.metafields.custom[tpm_key]
+    if tpm_mf.value == blank and tpm_basis != blank
+      assign tpm_mf = tpm_basis.metafields.custom[tpm_key]
+    endif
     assign tpm_wert = tpm_mf.value
   -%}
   {%- if tpm_wert != blank -%}

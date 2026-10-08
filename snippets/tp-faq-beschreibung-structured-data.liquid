@@ -1,0 +1,61 @@
+{%- doc -%}
+  FAQPage-JSON-LD aus der FAQ im sichtbaren Produkttext (Teppich nach Mass).
+
+  Aufruf:
+    {% render 'tp-faq-beschreibung-structured-data',
+       html: product.description, seiten_url: url %}
+
+  Die Beschreibung der Teppiche nach Mass endet mit einer Gruppe
+  <h3>Häufige Fragen</h3>; darunter steht je Frage eine <h4> und die Antwort in
+  den folgenden Absaetzen. Genau diese Paare werden ausgegeben - Wort fuer
+  Wort das, was die Seite im Block "Beschreibung" zeigt. Google und die
+  KI-Suchsysteme verlangen, dass FAQ-Markup nur Sichtbares enthaelt; alles
+  andere waere Structured-Data-Spam.
+
+  Fail closed: Fehlt die Ueberschrift "Häufige Fragen", fehlt eine Frage oder
+  eine Antwort, wird dieses Paar (bzw. das ganze Skript) ausgelassen. Nichts
+  wird ergaenzt oder aus anderen Feldern abgeleitet. Die Gruppe endet an der
+  naechsten <h2> oder <h3>.
+
+  Nur einmal je Seite einbinden: zwei FAQPage-Knoten auf derselben URL wertet
+  Google als widerspruechlich (siehe snippets/tp-faq-structured-data.liquid).
+
+  @param {string} html - Produktbeschreibung als HTML (product.description)
+  @param {string} seiten_url - absolute URL der Produktseite (fuer die @id)
+{%- enddoc -%}
+
+{%- liquid
+  assign tpfb_teile = html | split: 'Häufige Fragen</h3>'
+  assign tpfb_anzahl = 0
+  assign tpfb_json = ''
+  if tpfb_teile.size > 1
+    assign tpfb_gruppe = tpfb_teile[1] | split: '<h2' | first | split: '<h3' | first
+    assign tpfb_paare = tpfb_gruppe | split: '<h4'
+  endif
+-%}
+
+{%- capture tpfb_json -%}
+  {%- for tpfb_paar in tpfb_paare -%}
+    {%- unless forloop.first -%}
+      {%- assign tpfb_pq = tpfb_paar | split: '</h4>' -%}
+      {%- assign tpfb_frage = tpfb_pq[0] | prepend: '<h4' | append: '</h4>' | strip_html | strip_newlines | replace: '&nbsp;', ' ' | replace: '&amp;', '&' | replace: '&quot;', '"' | replace: '&#39;', "'" | strip -%}
+      {%- assign tpfb_antwort = tpfb_pq[1] | replace: '</p>', ' </p>' | replace: '</li>', ' </li>' | replace: '<br', ' <br' | strip_html | strip_newlines | replace: '&nbsp;', ' ' | replace: '&amp;', '&' | replace: '&quot;', '"' | replace: '&#39;', "'" | replace: '  ', ' ' | replace: '  ', ' ' | replace: '  ', ' ' | strip -%}
+      {%- if tpfb_pq.size > 1 and tpfb_frage != blank and tpfb_antwort != blank -%}
+        {%- if tpfb_anzahl > 0 -%},{%- endif -%}
+        {%- assign tpfb_anzahl = tpfb_anzahl | plus: 1 -%}
+        {"@type":"Question","name":{{ tpfb_frage | json }},"acceptedAnswer":{"@type":"Answer","text":{{ tpfb_antwort | json }}}}
+      {%- endif -%}
+    {%- endunless -%}
+  {%- endfor -%}
+{%- endcapture -%}
+
+{%- if tpfb_anzahl > 0 -%}
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "@id": {{ seiten_url | append: '#faq' | json }},
+      "mainEntity": [{{ tpfb_json | strip }}]
+    }
+  </script>
+{%- endif -%}
