@@ -108,3 +108,29 @@ Wegweiser-Karten (`sections/tp-teppiche-gruppen`), darunter je Gruppe eine Reihe
 
 Neue Teppiche ordnen sich selbst ein, sobald Konstruktion, Florhöhe und Faser am Teppichboden gepflegt
 sind. Wie der Mass-Rechner liest die Seite höchstens 50 Produkte der Kollektion.
+
+## Wunschmass vom Hersteller (Art „Fertig“, ab 2026-10-08)
+
+Fuer Lieferant B fertigt der Hersteller den Teppich nach Mass und fasst ihn ein; wir
+schneiden nichts zu. Template `product.wunschmass-fertig` (Basis `dekofell`, Konfigurator
+statt Groessenkarten, keine Empfehlungen, kein Muster).
+
+| Feld | Wert |
+|---|---|
+| `service.einfassung` | `Fertig` |
+| `service.max_breite_cm` | 200 (Paketversand: kuerzere Seite = Rollenlaenge) |
+| `service.max_laenge_cm` | 600 |
+| `service.kg_pro_qm` / `service.max_gewicht_kg` | kg je m² laut Datenliste / 30 – nur gemeinsam |
+| `service.formen` | `["Rechteck"]` (Rund/Oval erst nach Bestaetigung je Qualitaet) |
+| `custom.preis_pro_001_qm` | true; Variantenpreis = UVP je m² / 100 |
+
+- Keine Basisvariante, kein Kettelservice. Der Guard (`scripts/masstepich/guard.mjs`) prueft
+  fuer `fertig` nur Preisflag, Grenzen, Gewichtspaar und Formen.
+- Pauschale je Teppich (Dropship-Gebuehr des Lieferanten, Inhaber 2026-10-08: 14,99 €):
+  Produkt `wunschmass-pauschale`, Block-Einstellung `pauschale_produkt`. Sie geht mit
+  Menge 1 unter derselben `_Gruppe` in den Warenkorb und steckt im ab-Preis. Ist sie
+  konfiguriert, aber nicht kaufbar, sperrt der Konfigurator den Kauf.
+- Gewichtsgrenze: abgerechnete Flaeche × kg/m² ≤ Hoechstgewicht, sonst Meldung mit der
+  groesstmoeglichen Flaeche.
+- Tests: `qa/tests/tp-einfass-fertig-pauschale.test.mjs`, `masstepich-rechnung` (Gewicht),
+  `masstepich-plan` (Guard).
