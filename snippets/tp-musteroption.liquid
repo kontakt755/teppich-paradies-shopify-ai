@@ -5,7 +5,8 @@
 
   Der Konfigurator ermittelt Farben und Dekore in
   assets/tp-sample-checkout-core.js. Diese Datei entscheidet nur ueber die
-  Verfuegbarkeit des Musterwegs und gibt gegebenenfalls die URL aus.
+  Verfuegbarkeit des Musterwegs und gibt gegebenenfalls die URL aus. Bei
+  internen Musterartikeln fuehrt sie zum Quellprodukt zurueck.
 
   Ausgabe: die fertige URL, sonst nichts.
 
@@ -21,7 +22,20 @@
     assign tp_mo_blocked = true
   endif
   unless tp_mo_blocked
-    assign tp_mo_handle = product.handle | url_encode
-    echo '/pages/muster?produkt=' | append: tp_mo_handle
+    assign tp_mo_handle = product.handle
+    if product.type == 'Musterservice'
+      assign tp_mo_prefix = tp_mo_handle | slice: 0, 7
+      if tp_mo_prefix == 'muster-'
+        assign tp_mo_handle = tp_mo_handle | remove_first: 'muster-'
+      else
+        assign tp_mo_handle = ''
+      endif
+    endif
+    if tp_mo_handle == ''
+      echo '/pages/muster'
+    else
+      assign tp_mo_handle = tp_mo_handle | url_encode
+      echo '/pages/muster?produkt=' | append: tp_mo_handle
+    endif
   endunless
 -%}

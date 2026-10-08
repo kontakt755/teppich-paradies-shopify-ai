@@ -29,7 +29,8 @@ test('der Rollenrechner bringt keine eigene Kaufleiste mehr mit', () => {
 
 test('die Theme-Leiste wird auf Rechner-Seiten nicht mehr abgeschaltet', () => {
   assert.doesNotMatch(section, /tp_sticky_konfigurator/);
-  assert.match(section, /\{% if section\.settings\.enable_sticky_add_to_cart %\}/);
+  // Nur interne Musterprodukte haben keinen direkten Kaufweg auf ihrer PDP.
+  assert.match(section, /\{% if section\.settings\.enable_sticky_add_to_cart and product\.type != 'Musterservice' %\}/);
 });
 
 test('die Theme-Leiste findet den Kaufweg und bleibt ohne Ziel aus', () => {
