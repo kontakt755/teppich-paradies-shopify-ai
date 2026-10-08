@@ -155,13 +155,14 @@
             </span>
           {% endif %}
           <span class="add-to-cart-text__content">
+            {%- capture tp_pi_sonderposten -%}{%- render 'tp-ist-sonderposten', product: product -%}{%- endcapture -%}
             <span>
               {%- if current_variant.available -%}
                 {{- 'products.product.add_to_cart' | t -}}
               {%- elsif current_variant == blank -%}
                 {{- 'products.product.unavailable' | t -}}
-              {%- elsif product.type == 'Sonderposten' -%}
-                {%- comment -%} Einzelstueck: verkauft, nicht nur gerade nicht vorraetig (snippets/tp-ist-sonderposten) {%- endcomment -%}
+              {%- elsif tp_pi_sonderposten contains 'ja' -%}
+                {%- comment -%} Sonderposten: verkauft, nicht nur gerade nicht vorraetig {%- endcomment -%}
                 Verkauft
               {%- else -%}
                 {{- 'products.product.sold_out' | t -}}

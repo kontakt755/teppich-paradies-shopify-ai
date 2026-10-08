@@ -80,6 +80,10 @@ Lieferantennamen gehören nicht in diese Felder: Herkunft nur über `ursprungspr
 5. Metafelder ausfüllen (Abschnitt 3), SKU `SP-<nächste Nummer>`.
 6. Bestand Saarlandstraße 73 = 1.
 7. Status **Aktiv**, Vertriebskanäle: Onlineshop (Google erst nach Freigabe, siehe offene Punkte).
+   Bei Zustand **Ausstellungsstück** oder **B-Ware**: im Google-&-YouTube-Kanal den Zustand des
+   Produkts auf „Gebraucht“ stellen (Metafeld `mm-google-shopping.condition = used`). Die Seite
+   meldet Google dann `UsedCondition`; ohne diese Einstellung schickt der Feed „neu“ und das
+   Merchant Center meldet einen Widerspruch.
 8. Etikett mit SKU ans Stück im Laden.
 
 Die Smart-Kollektion nimmt das Stück automatisch auf; nichts muss von Hand zugeordnet werden.

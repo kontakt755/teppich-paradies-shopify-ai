@@ -43,9 +43,15 @@
     render 'tp-ist-sonderposten', product: product
   endcapture
   assign tp_ist_sonderposten = tp_ist_sonderposten | strip
+  assign tp_sp_einzel = false
   if tp_ist_sonderposten == 'ja'
     assign tp_ist_sonderposten = true
     assign tp_sp_im_warenkorb = cart | item_count_for_variant: variant.id
+    # Einzelstueck (Bestand hoechstens 1): kein Mengenfeld. Bei mehreren
+    # gleichen Stuecken (Lagerueberhang) bleibt das normale Mengenfeld.
+    unless variant.inventory_management == 'shopify' and variant.inventory_quantity > 1
+      assign tp_sp_einzel = true
+    endunless
   else
     assign tp_ist_sonderposten = false
   endif
@@ -146,11 +152,11 @@
           {%- endif -%}
 
           {%- comment -%}
-            Sonderposten sind Einzelstuecke mit festen Massen: kein Mengenfeld.
+            Sonderposten-Einzelstuecke (Bestand 1) mit festen Massen: kein Mengenfeld.
             Ohne Feld legt das Formular genau 1 in den Warenkorb
             (data-quantity-default). Mehr verhindert der Bestand serverseitig.
           {%- endcomment -%}
-          {%- if tp_ist_sonderposten -%}
+          {%- if tp_sp_einzel -%}
             {%- if tp_sp_im_warenkorb > 0 -%}
               <p class="tp-sp-kauf__hinweis">Dieses Stück liegt bereits in Ihrem Warenkorb.</p>
             {%- endif -%}

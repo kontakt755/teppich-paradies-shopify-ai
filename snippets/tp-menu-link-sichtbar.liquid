@@ -9,11 +9,14 @@
   (qa/tests/tp-menu-link-sichtbar.test.mjs prueft das).
 
   Gesteuert werden nur zwei Kollektionen (docs/weiterentwicklung/angebote.md):
-    angebote            - nur, wenn mindestens eines der ersten 24 Produkte
+    angebote            - nur, wenn mindestens eines der ersten 6 Produkte
                           gerade einen Rabatt ANZEIGT (snippets/tp-angebot-sichtbar).
-                          Die Kollektion selbst pflegt ein Tag-Abgleich; laeuft er
-                          spaet, versteckt diese Pruefung den Punkt eher zu lange,
-                          zeigt ihn aber nie ohne sichtbares Angebot.
+                          Die Kollektion selbst pflegt der naechtliche Tag-Abgleich;
+                          laeuft er spaet, versteckt diese Pruefung den Punkt eher zu
+                          lange, zeigt ihn aber nie ohne sichtbares Angebot.
+                          Nur 6 Produkte: die Pruefung laeuft je Seitenaufruf an bis
+                          zu sechs Menuestellen; nach dem Abgleich sind ohnehin alle
+                          Produkte der Kollektion sichtbare Angebote.
     reste-sonderposten  - nur, wenn die Kollektion Produkte hat (die Smart-Regel
                           verlangt Bestand > 0).
   Alle anderen Menuepunkte bleiben unberuehrt.
@@ -30,7 +33,7 @@
 
   if tmls_handle == 'angebote'
     assign tmls_ja = false
-    for tmls_p in collections['angebote'].products limit: 24
+    for tmls_p in collections['angebote'].products limit: 6
       capture tmls_angebot
         render 'tp-angebot-sichtbar', product: tmls_p
       endcapture
