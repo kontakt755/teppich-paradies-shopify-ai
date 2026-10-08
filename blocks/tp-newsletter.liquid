@@ -1,7 +1,7 @@
 {% doc %}
-  Duenner Wrapper um snippets/tp-newsletter.liquid: reicht Block-Einstellungen
-  durch, traegt block.shopify_attributes fuer den Theme-Editor. Keine eigene
-  Formularlogik - die liegt vollstaendig im Snippet, damit dieselbe Anmeldung
+  Duenner Wrapper um snippets/tp-newsletter-kachel.liquid: reicht Block-Einstellungen
+  durch, traegt block.shopify_attributes fuer den Theme-Editor. Die eigentliche
+  Formularlogik liegt weiterhin in snippets/tp-newsletter.liquid, damit dieselbe Anmeldung
   auch aus Sections/Artikeln per render aufgerufen werden kann
   (z. B. {% render 'tp-newsletter', quelle: 'ratgeber' %}).
 
@@ -27,7 +27,7 @@
 {% enddoc %}
 
 <div{% if block.settings.quelle == 'footer' %} class="tp-nl-footer"{% endif %} {{ block.shopify_attributes }}>
-  {%- render 'tp-newsletter',
+  {%- render 'tp-newsletter-kachel',
     ueberschrift: block.settings.ueberschrift,
     text: block.settings.text,
     hinweis: block.settings.hinweis,
