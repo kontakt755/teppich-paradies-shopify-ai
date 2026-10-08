@@ -417,6 +417,15 @@
 
 {% render 'buy-buttons-styles' %}
 
+{% stylesheet %}
+  /* Sonderposten: Hinweis, wenn das Einzelstueck schon im Warenkorb liegt. */
+  .tp-sp-kauf__hinweis {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #1f6b3a;
+  }
+{% endstylesheet %}
+
 {% schema %}
 {
   "name": "t:names.product_buy_buttons",

@@ -2,7 +2,11 @@
   Darf dieser Menuepunkt gerade erscheinen? Gibt "nein" aus, wenn nicht -
   sonst nichts. Einzige Quelle fuer alle Stellen, die das Hauptmenue ausgeben
   (Desktop blocks/_header-menu.liquid, Handy-Leiste ebenda, Drawer
-  snippets/tp-drawer-nav.liquid, Linkliste sections/tp-start-seo.liquid).
+  snippets/tp-drawer-nav.liquid und dessen Vorab-Liste in
+  snippets/header-drawer.liquid, Footer blocks/tp-footer-links.liquid,
+  Linkliste sections/tp-start-seo.liquid). Neue Stelle, die Menuelinks
+  ausgibt? Hier eintragen und die Pruefung einhaengen
+  (qa/tests/tp-menu-link-sichtbar.test.mjs prueft das).
 
   Gesteuert werden nur zwei Kollektionen (docs/weiterentwicklung/angebote.md):
     angebote            - nur, wenn mindestens eines der ersten 24 Produkte

@@ -21,7 +21,7 @@ Branch `feature/weiterentwicklung-sonderposten` · Worktree `.claude/worktrees/w
 | 6 | Produktbewertungen | **abgeschlossen**: Entscheidung 08.10. – keine Bewertungs-App, bei der Google-Bewertung bleiben (zu wenige Online-Bestellungen je Produkt). Sterne-Darstellung bleibt vorbereitet und ohne Daten unsichtbar. |
 | 7 | Bildverwaltung und Bildrechte | **Inventur fertig** (8.530 Bilder erfasst, `npm run bildrechte:inventur`); Lizenzen je Lieferant + Bildarchiv-Ort beim Inhaber (E7); Dashboard-Liste offen |
 | 8 | Menüpunkt „Angebote“ | **gebaut**; Kollektion `angebote` (510) angelegt; täglicher Abgleich 0:00 als Dienst `net.teppich-paradies.angebote` (PR #995); Menüpunkte mit dem Livegang |
-| 9 | Gesamttest | offen |
+| 9 | Gesamttest | **abgeschlossen** (08.10.): Shop-QA PASS, Menülogik Desktop/Handy/Drawer/Footer, Reste ein/aus, Angebote; Befund „5. Menüstelle“ behoben |
 | 10 | Veröffentlichung vorbereiten | offen |
 
 ## 2. Abgeschlossene Aufgaben
@@ -180,6 +180,20 @@ ist immer `tp-ist-sonderposten`).
 | Bestand 0 (`inventorySetQuantities` mit `compareQuantity: 1`) | Chip „Verkauft“, beide Kaufbuttons „Verkauft“ und gesperrt, JSON-LD `OutOfStock`, `cart/add` 422 (ok) |
 | Kollektion nach Bestand 0 | nach wenigen Minuten leer (Shopify rechnet Smart-Regeln verzögert) – ok |
 | Regression nach allen Änderungen | `npm test` grün, alle Guards 0 Fehler |
+
+### Gesamttest Phase 9 (2026-10-08, Entwicklungskopie vollständig auf Branch-Stand)
+
+| Test | Ergebnis |
+|---|---|
+| `npm run qa` gegen die Entwicklungskopie (15 Seiten × Desktop/Handy) | **PASS**, 0 relevante Fehler. 30 Hinweise = abgebrochene Shopify-Analyse-Anfragen im Testbrowser auf allen Seiten, auch unveränderten (Umgebung, nicht Code) |
+| Theme Check gegen Baseline | 0 neue Errors, 0 neue Warnings (vorher 1 neue Warnung `ValidScopedCSSClass` aus `buy-buttons` → CSS in den Block verlegt) |
+| Testmenü (`test-weiterentwicklung`, nur Entwicklungskopie) – Angebote vorhanden, Reste leer | Desktop: Angebote sichtbar, Reste fehlt ✓ |
+| Befund: Vorab-Liste des Handy-Drawers (`snippets/header-drawer.liquid`) gab Menüpunkte ohne Prüfung aus | **behoben**, dazu Footer-Sortiment; neuer Test `qa/tests/tp-menu-link-sichtbar.test.mjs` bindet jede Menü-Schleife an die Prüfung (Gegenprobe: ohne Prüfung rot) |
+| Teststück aktiv, Bestand 1 | „Reste & Sonderposten“ erscheint nach ~30 s in Desktop-Menü und Drawer („1 Produkt“) ✓ |
+| Bestand 0 | Punkt verschwindet nach ~60 s überall ✓ |
+| Handy-Drawer 390 px | Angebote (545 Produkte), Reste (1 Produkt) ✓ – optisch: Reste-Kachel zeigt Platzhalter „R“, Angebote ein zufälliges Produktbild → vor Livegang eigene Kacheln (`_tp-menu-kachel`) |
+| Produktbewertungen | keine Daten → keine Sterne, kein `aggregateRating` ✓ (Entscheidung: bei Google bleiben) |
+| Teststück danach | wieder Entwurf, Bestand 0 |
 
 ## 9. Erkannte Probleme
 

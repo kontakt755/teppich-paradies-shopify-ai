@@ -17,6 +17,8 @@
     <ul role="list">
       {%- if tp_fl_sortiment != blank and tp_fl_sortiment.links.size > 0 -%}
         {%- for link in tp_fl_sortiment.links -%}
+          {%- capture tp_mls -%}{%- render 'tp-menu-link-sichtbar', link: link -%}{%- endcapture -%}
+          {%- if tp_mls contains 'nein' -%}{%- continue -%}{%- endif -%}
           {%- if link.url contains '/collections/' -%}
             <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
           {%- endif -%}
