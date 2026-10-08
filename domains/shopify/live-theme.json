@@ -1,15 +1,15 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204438208846",
-    "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-08T05:45:52Z",
-    "verifiedBy": "Shopify CLI role LIVE nach workflow:live (main 44ca3ea6 mit PR #948/#949); oeffentliche Kategorien, Startseite und Ratgeber ohne Preview-Parameter mit genau einem Footer-Newsletter per HTTP und Chrome geprueft, auch mobil und beim Nachladen; keine Preview-Leiste, role MAIN"
-  },
-  "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-08T05:45:52Z",
+    "verifiedAt": "2026-10-08T07:22:49Z",
+    "verifiedBy": "Shopify CLI role LIVE nach workflow:live (main 469e8abb mit PR #951); oeffentliche Teppichboden-Kategorie in Chrome ohne Preview-Leiste mobil geprueft: Farbfilter bleibt aktiv, sort_by genau einmal"
+  },
+  "preview": {
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-10-08T07:22:49Z",
     "verifiedBy": "Shopify CLI role UNPUBLISHED nach workflow:live; naechstes Preview-Ziel"
   },
   "fallback": {
@@ -27,6 +27,12 @@
     "note": "Einziges Ziel fuer Zwischenstaende und Ausprobieren (nur --only-Pushes). Niemals als --theme-id fuer workflow:preview/live verwenden, niemals publishen. Das Preview-Ziel ist ausschliesslich preview.themeId - wer dorthin Zwischenstaende pusht, blockiert den Livegang (PREVIEW_DRIFT/PREVIEW_DIFF, dreimal am 2026-09-21/22)."
   },
   "retired": [
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-10-08",
+      "note": "Per workflow:live durch 204436144462 abgeloest (main 469e8abb mit PR #951); bleibt unpublished als naechstes Preview-Ziel."
+    },
     {
       "themeId": "204436144462",
       "name": "Kopie von preview-main-2026-09-04",
