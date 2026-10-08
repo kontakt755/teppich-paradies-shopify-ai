@@ -217,6 +217,10 @@
             name="{{ filter.label }}"
           >
             {%- for value in filter.values -%}
+              {%- assign tp_zimmer_filterwert = value.label | downcase | strip -%}
+              {%- if filter.param_name == 'filter.p.m.custom.zimmer' and tp_zimmer_filterwert == 'treppeneignung' -%}
+                {%- continue -%}
+              {%- endif -%}
               {%- if tp_is_roll_width_filter -%}
                 {%- assign tp_filter_value_label = value.value | times: 100 | round | append: ' cm' -%}
               {%- else -%}
