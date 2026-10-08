@@ -16,6 +16,8 @@ Stand 29.09.2026. **Entwurf, keine Kampagne erstellt oder aktiviert.** Finaler W
 
 Landingpage: `https://www.teppich-paradies.net/pages/liefer-verlegeservice`
 
+Die Zielseite beschreibt Lieferung und Verlegung **für dort gekaufte Teppichboden- und Vinyl-Rollenware**. Die allgemeine Bodenleger-Kampagne darf daher keine Verlegung fremder Materialien oder Klick-/Klebevinyl über diese Zielseite versprechen; für Vinylarten ist Kampagne 3 vorgesehen. Allgemeine Suchbegriffe vor dem Start im Konto auf Passung prüfen.
+
 Exact: `[bodenleger oranienburg]`, `[boden verlegen lassen oranienburg]`, `[bodenleger berlin nord]`.
 Phrase: `"bodenleger in der nähe"`, `"bodenbelag verlegen lassen"`, `"bodenleger für wohnung"`.
 
@@ -25,7 +27,7 @@ RSA-Headlines (max. 30 Zeichen je Zeile):
 2. Boden verlegen lassen
 3. Verlegung vom Fachbetrieb
 4. Aufmaß vor Ort anfragen
-5. Teppich & Vinyl verlegen
+5. Rollenware verlegen lassen
 6. Eigenes Verlegeteam
 7. Untergrund prüfen lassen
 8. Angebot zur Verlegung
@@ -33,7 +35,7 @@ RSA-Headlines (max. 30 Zeichen je Zeile):
 Beschreibungen (max. 90 Zeichen):
 
 1. Wir beraten zum Bodenbelag, prüfen den Untergrund und planen die Verlegung vor Ort.
-2. Teppichboden und Vinyl vom Fachhandel in Oranienburg. Jetzt Angebot anfragen.
+2. Teppichboden und Vinyl von der Rolle aus Oranienburg. Jetzt Angebot anfragen.
 3. Aufmaß, Lieferung und Verlegung aus einer Hand. Wir besprechen Ihr Vorhaben persönlich.
 4. Für Wohnräume und Gewerbe im Raum Oranienburg. Fragen Sie Ihren Termin an.
 
