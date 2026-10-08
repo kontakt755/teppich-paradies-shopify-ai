@@ -48,8 +48,8 @@ sechs PRs in einer Stunde). Deshalb:
   `kern/`) von Hand zusammenfuehren (beide Seiten
   behalten, nicht eine verwerfen).
 - Fremde Worktrees (`~/tp-wt-*`, `.claude/worktrees/*`) und den Dienst-Checkout
-  `~/tp-dashboard` nicht umschalten. `~/tp-dashboard` wird nach dem Merge nur
-  vorgespult (siehe unten).
+  `~/tp-dashboard` nicht umschalten. In `~/tp-dashboard` wird main nach dem
+  Merge hineingemergt (siehe unten, Schritt 9).
 
 ## Gestaltung
 
@@ -127,14 +127,31 @@ kann dafuer weg?
 7. `docs/control-center/CHANGELOG.md` (Format: Geaendert · Getestet ·
    Risiken · Naechste Stufe), bei neuem Verhalten auch `ARCHITEKTUR.md`.
 8. PR mit `Closes #<n>`, danach `npm run task -- review <n> --note "PR #…"`.
-9. Nach dem Merge den Dienst aktualisieren – nur vorspulen, nie umschalten:
+9. Nach dem Merge den Dienst nachziehen – main hineinmergen, nie umschalten.
+   `~/tp-dashboard` steht auf dem Zweig `dashboard-betrieb`, der eigene Commits
+   traegt („betrieb: Zwischenstand“, 24./25.09.). Darin liegen
+   `start-dashboard.sh` (startet die App „Teppich Dashboard“) und `einrichten.sh`
+   (Starter „Dashboard einrichten“ auf dem Schreibtisch); beide werden benutzt,
+   nicht entfernen. `--ff-only` schlaegt deshalb immer fehl:
    ```
-   git -C ~/tp-dashboard fetch origin
-   git -C ~/tp-dashboard rev-list --count origin/main..HEAD   # muss 0 sein
-   git -C ~/tp-dashboard merge --ff-only origin/main
+   cd ~/tp-dashboard && git fetch -q origin
+   git merge-tree --write-tree HEAD origin/main   # Exit 0 = konfliktfrei
+   git merge origin/main -m "merge: <PR-Titel> (#<n>)"
+   npm run dashboard:test
    launchctl kickstart -k gui/$(id -u)/net.teppich-paradies.dashboard
    ```
-   Danach `curl http://127.0.0.1:8001/login` → 200.
+   Der Dienst baut nach dem Start erst `issues.json`, ein paar Sekunden warten.
+   Dann `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8001/login` → 200
+   und `git rev-list --count HEAD..origin/main` → 0. Im Browser einmal hart neu
+   laden, sonst zeigt der Cache die alte `app.js`.
+   - Exit 1 bei `merge-tree` heisst Konflikt: nicht mergen, melden. Der Dienst
+     laeuft unveraendert weiter.
+   - Aendert der Merge `social/`, zusaetzlich
+     `launchctl kickstart -k gui/$(id -u)/net.teppich-paradies.social`
+     (Kontrolle: `curl -I http://127.0.0.1:8020/api/status` → 401).
+   - `package-lock.json` ist dort dauerhaft veraendert (nur `name`: npm traegt den
+     Ordnernamen ein, weil `package.json` keinen hat). Aendert main den Lockfile,
+     bricht `git merge` ohne Folgen ab. Dann melden und nicht auf Umwegen verwerfen.
 
 ## Fallstricke (alle schon passiert)
 
