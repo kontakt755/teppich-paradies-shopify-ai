@@ -329,6 +329,15 @@
   {% endif %}
 </div>
 
+{%- comment -%}
+  Direkt unter dem Kaufknopf, wo die Frage nach der Zahlung auftaucht:
+  Zahlarten und Abholung als eine ruhige Zeile (Checkout-Befund 2026-10-08,
+  Wortlaut in den Theme-Einstellungen "TP Zahlung und Abholung").
+{%- endcomment -%}
+{%- if cart.item_count > 0 -%}
+  {%- render 'tp-zahlung-abholung', kontext: 'warenkorb' -%}
+{%- endif -%}
+
 {% # Hinter dem Kaufknopf: die freiwillige Verlegeanfrage - sie haelt einen Kaufkunden nicht auf %}
 {% render 'tp-cart-beratung', stelle: 'nach_kasse' %}
 {% render 'tp-muster-beratungsanfrage' %}

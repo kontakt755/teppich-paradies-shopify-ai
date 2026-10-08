@@ -129,6 +129,14 @@
       <p><strong>Versand in Deutschland {{ settings.tp_versand_preis }}, ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos</strong></p>
     {%- endif -%}
 
+    {%- comment -%}
+      Abholung und Zahlarten: eine ruhige Zeile aus dem Checkout-Befund vom
+      2026-10-08 (snippets/tp-zahlung-abholung, Einstellungen "TP Zahlung und
+      Abholung"). Sie steht im Lieferkasten, damit der Kaufbereich nicht um
+      einen eigenen Kasten waechst.
+    {%- endcomment -%}
+    {%- render 'tp-zahlung-abholung', kontext: 'produkt' -%}
+
     {%- if tp_sl_is_flooring -%}
     <details class="tp-service-links__shipping-details-{{ tp_sl_id }}">
       <summary>Was bedeutet „frei Bordsteinkante“?</summary>
