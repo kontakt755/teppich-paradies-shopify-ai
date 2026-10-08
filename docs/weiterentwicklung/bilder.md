@@ -110,10 +110,37 @@ belegt (`*-raumansicht*` aus dem Lieferanten-Import, `products_*` aus Lieferante
 Danach entscheidet ein Mensch je Lieferant pauschal (eine Lizenz deckt alle Bilder desselben
 Lieferanten), sodass nicht Tausende Einzelprüfungen nötig sind.
 
+## 5a. Umsetzung und erster Lauf (2026-10-08)
+
+- Logik: `operations/lib/bildrechte.mjs` (Tests: `operations/tests/bildrechte.test.mjs`).
+- Lauf: `npm run bildrechte:inventur` – nur lesend, schreibt
+  `$TP_PRIVAT_DIR/bildrechte/bildrechte.csv` (Semikolon, öffnet direkt in Excel/Numbers),
+  sichert die vorige Fassung mit Zeitstempel. Handspalten (`quelle`, `urheber`, `lizenz`,
+  `beleg`, `bearbeitet`, `quellenangabe_pflicht`, `status`, `geprueft_von`, `geprueft_am`,
+  `notiz`) überschreibt der Lauf nie. Neue Bilder kommen immer als `ungeklaert`.
+  Verschwundene Bilder bleiben mit Notiz stehen, damit dokumentierte Lizenzen nicht verloren gehen.
+- `--nur-auswerten` zählt nur; `--input <datei>` liest einen Export statt der API.
+
+**Erster Lauf (aktive + Entwurfs-Produkte):**
+
+| Kennzahl | Wert |
+|---|---|
+| Bilder / Produkte | 8.530 / 1.293 |
+| ungeklärt | 8.530 (noch niemand hat entschieden – erwartet) |
+| schmaler als 1.200 px | 3.118 (Teppichboden 1.599, Teppich nach Maß 537, Sauberlauf 211, Klebevinyl 158, Parkett 101) |
+| ohne ALT-Text | 0 |
+| Herkunft am Namen erkennbar | 1.058 Raumbild-Importe (`*-raumansicht`), 1.130 Lieferanten-Exporte (`products_<nr>`), 6.342 ohne Hinweis |
+| Bildtyp am Namen erkennbar | Raum 1.747, Detail 1.364, Struktur 2, ohne 5.417 |
+| Dateiname nach neuem Schema | 0 (Schema gilt ab jetzt für neue Bilder; Altbestand wird nicht umbenannt) |
+
+**Weg zur Klärung ohne Einzelprüfung:** Je Lieferant einmal die Lizenz klären (Inhaber), dann
+alle Zeilen mit derselben Herkunft in der CSV gemeinsam auf `geprueft` setzen (Filter in Excel).
+Altbestand nicht umbenennen – Shopify-Medien-URLs würden sich ändern, ohne Nutzen für Kunden.
+
 ## 6. Dashboard
 
-Sinnvoll, aber klein: eine Ansicht „Bildrechte“ im Control Center liest `bildrechte.csv` und
-die Shopify-Medien und zeigt nur drei Listen – **ungeklärt**, **zu klein (< 1200 px)**,
+Sinnvoll, aber klein (noch nicht gebaut, eigener PR nach der Sonderposten-Ansicht): eine Ansicht
+„Bildrechte“ im Control Center liest `bildrechte.csv` und zeigt nur drei Listen – **ungeklärt**, **zu klein (< 1200 px)**,
 **ohne ALT-Text** – mit Link zum Produkt. Keine Bildbearbeitung, kein Upload im Dashboard.
 
 ## 7. Offene Punkte
