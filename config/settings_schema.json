@@ -2344,6 +2344,29 @@
     ]
   },
   {
+    "name": "TP Zahlung und Abholung",
+    "settings": [
+      {
+        "type": "paragraph",
+        "content": "Zwei kurze Zeilen im Kaufbereich der Produktseite und im Warenkorb. Sie nennen nur, was der Checkout wirklich anbietet (Stand 08.10.2026: Kreditkarte, PayPal, Klarna; Abholung am Standort Oranienburg). Ohne Beträge, Raten oder Zinsen. Ändert sich der Checkout, gehört der Text hier zusammen geändert."
+      },
+      {
+        "type": "text",
+        "id": "tp_hinweis_abholung",
+        "label": "Hinweis zur Abholung",
+        "info": "Leer lassen blendet die Zeile aus - zum Beispiel, wenn die Abholung in Shopify abgeschaltet wird.",
+        "default": "Abholung in Oranienburg möglich – nach Bestätigung"
+      },
+      {
+        "type": "text",
+        "id": "tp_hinweis_zahlung",
+        "label": "Hinweis zur Zahlung",
+        "info": "Nur Zahlarten nennen, die im Checkout unter Zahlung stehen. Klarna steht dort ohne Zusatz - Rechnung oder Raten erst nennen, wenn das bei Klarna belegt ist. Leer lassen blendet die Zeile aus.",
+        "default": "Zahlung per Kreditkarte, PayPal oder Klarna"
+      }
+    ]
+  },
+  {
     "name": "TP Verlegeservice",
     "settings": [
       {

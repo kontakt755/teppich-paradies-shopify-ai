@@ -1,0 +1,19 @@
+Action,Keyword status,Campaign,Ad group,Keyword,Match Type
+Add,Paused,TP | Search | Bodenleger lokal,Bodenleger lokal,bodenleger oranienburg,Exact match
+Add,Paused,TP | Search | Bodenleger lokal,Bodenleger lokal,boden verlegen lassen oranienburg,Exact match
+Add,Paused,TP | Search | Bodenleger lokal,Bodenleger lokal,bodenleger berlin nord,Exact match
+Add,Paused,TP | Search | Bodenleger lokal,Bodenleger lokal,bodenleger in der nähe,Phrase match
+Add,Paused,TP | Search | Bodenleger lokal,Bodenleger lokal,bodenbelag verlegen lassen,Phrase match
+Add,Paused,TP | Search | Bodenleger lokal,Bodenleger lokal,bodenleger für wohnung,Phrase match
+Add,Paused,TP | Search | Teppichboden-Verlegung,Teppichboden-Verlegung,teppichboden verlegen lassen,Exact match
+Add,Paused,TP | Search | Teppichboden-Verlegung,Teppichboden-Verlegung,teppichboden verlegung oranienburg,Exact match
+Add,Paused,TP | Search | Teppichboden-Verlegung,Teppichboden-Verlegung,teppichboden verlegen berlin,Exact match
+Add,Paused,TP | Search | Teppichboden-Verlegung,Teppichboden-Verlegung,teppichboden verlegen lassen,Phrase match
+Add,Paused,TP | Search | Teppichboden-Verlegung,Teppichboden-Verlegung,teppichboden fachgerecht verlegen,Phrase match
+Add,Paused,TP | Search | Teppichboden-Verlegung,Teppichboden-Verlegung,teppich verlegen lassen,Phrase match
+Add,Paused,TP | Search | Vinyl-Verlegung,Vinyl-Verlegung,vinylboden verlegen lassen,Exact match
+Add,Paused,TP | Search | Vinyl-Verlegung,Vinyl-Verlegung,vinyl verlegen lassen oranienburg,Exact match
+Add,Paused,TP | Search | Vinyl-Verlegung,Vinyl-Verlegung,klickvinyl verlegen lassen,Exact match
+Add,Paused,TP | Search | Vinyl-Verlegung,Vinyl-Verlegung,vinylboden verlegen lassen,Phrase match
+Add,Paused,TP | Search | Vinyl-Verlegung,Vinyl-Verlegung,vinyl verlegung berlin,Phrase match
+Add,Paused,TP | Search | Vinyl-Verlegung,Vinyl-Verlegung,klebevinyl verlegen lassen,Phrase match

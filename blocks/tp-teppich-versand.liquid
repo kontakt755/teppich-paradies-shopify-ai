@@ -36,6 +36,7 @@
     {%- if tp_tv2_versandart == 'spedition' -%}
       <p><strong>Speditionsversand</strong></p>
       <p>Aufgrund der Größe wird dieser Teppich per Spedition frei Bordsteinkante geliefert.</p>
+      {%- render 'tp-zahlung-abholung', kontext: 'produkt' -%}
 
       <details class="tp-teppich-versand__shipping-details-{{ tp_tv2_id }}">
         <summary>Was bedeutet „frei Bordsteinkante“?</summary>
@@ -51,6 +52,8 @@
     {%- else -%}
       <p><strong>Versand per Paketdienst</strong></p>
       <p>Bequeme Lieferung direkt zu Ihrer Haus- bzw. Wohnungstür.</p>
+      {%- comment -%} Abholung und Zahlarten: Wortlaut und Quelle siehe snippets/tp-zahlung-abholung {%- endcomment -%}
+      {%- render 'tp-zahlung-abholung', kontext: 'produkt' -%}
 
       <details class="tp-teppich-versand__shipping-details-{{ tp_tv2_id }}">
         <summary>Wie läuft die Lieferung ab?</summary>

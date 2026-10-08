@@ -51,6 +51,20 @@
   Antwortmaschine sie nicht aus dem Fliesstext raten muss.
   Keine lieferant.*- oder einkauf.*-Metafelder.
 
+  Teppich nach Mass (service.einfass_basis): Der Teppich traegt selbst keine
+  technischen Merkmale. additionalProperty nimmt je Merkmal den Wert des
+  Teppichbodens, aus dem zugeschnitten wird - dieselbe Regel wie die sichtbare
+  Tabelle (blocks/tp-produktinfo-tabelle.liquid). Fehlt ein Wert dort, fehlt
+  die Zeile. Auf der Vorlage einfassung steht die FAQ ("Haeufige Fragen") im
+  sichtbaren Beschreibungstext; sie wird als eigener FAQPage-Knoten ausgegeben
+  (snippets/tp-faq-beschreibung-structured-data.liquid), nur mit den Fragen,
+  die dort wirklich stehen.
+
+  Auslaufkollektion (Produkt-Tag "auslauf", dieselbe Regel wie der Hinweis in
+  blocks/tp-aktion-hinweis.liquid): lieferbare Varianten melden
+  LimitedAvailability statt InStock - die Restbestaende sind begrenzt, und
+  der Hersteller stellt die Kollektion ein. Nicht lieferbare bleiben OutOfStock.
+
   Alle Kaufprodukte verwenden dieselbe Quelle, damit Variantenbeschreibung,
   SKU und GTIN nicht zwischen Theme- und Shopify-Ausgabe auseinanderlaufen.
   Preise bleiben Variantenpreise; nur bei Flaechenware wird die vorhandene
@@ -62,6 +76,17 @@
   if product_resource.type == 'Service' or product_resource.type == 'Musterservice' or product_resource.tags contains 'service'
     assign tp_sd_skip = true
   endif
+
+  # Auslaufkollektion: gleiche Erkennung wie der sichtbare Hinweis
+  # (blocks/tp-aktion-hinweis.liquid), nur das Produkt-Tag zaehlt.
+  assign tp_sd_auslauf = false
+  if product_resource.tags contains 'auslauf'
+    assign tp_sd_auslauf = true
+  endif
+
+  # Teppich nach Mass: Teppichboden, aus dem zugeschnitten wird. Leer bei allen
+  # anderen Produkten, dann bleibt additionalProperty wie bisher.
+  assign tp_sd_basis = product_resource.metafields.service.einfass_basis.value
 
   assign tp_sd_per_001 = false
   if product_resource.metafields.custom.preis_pro_001_qm.value == true
@@ -234,7 +259,7 @@
             },
             {%- endif -%}
             "itemCondition": "https://schema.org/NewCondition",
-            "availability": {% if tp_sd_variant.available %}"https://schema.org/InStock"{% else %}"https://schema.org/OutOfStock"{% endif %},
+            "availability": {% if tp_sd_variant.available %}{% if tp_sd_auslauf %}"https://schema.org/LimitedAvailability"{% else %}"https://schema.org/InStock"{% endif %}{% else %}"https://schema.org/OutOfStock"{% endif %},
             "seller": {
               "@type": "Organization",
               "name": {{ shop.name | json }}
@@ -245,7 +270,7 @@
     {%- endfor -%}
   {%- endcapture -%}
   {%- assign tp_sd_offers = tp_sd_offers | strip -%}
-  {%- capture tp_sd_merkmale -%}{%- render 'tp-produkt-merkmale-json', produkt: product_resource -%}{%- endcapture -%}
+  {%- capture tp_sd_merkmale -%}{%- render 'tp-produkt-merkmale-json', produkt: product_resource, basis: tp_sd_basis -%}{%- endcapture -%}
   {%- assign tp_sd_merkmale = tp_sd_merkmale | strip -%}
   {%- if tp_sd_offers != blank -%}
     <script type="application/ld+json">
@@ -284,6 +309,14 @@
         ]
       }
     </script>
+    {%- comment -%}
+      FAQPage nur auf der Vorlage einfassung: Dort zeigt der Block
+      "Beschreibung" den Produkttext samt "Haeufige Fragen" sichtbar an. Das
+      Snippet gibt nichts aus, wenn der Text keine solche FAQ enthaelt.
+    {%- endcomment -%}
+    {%- if product_resource.template_suffix == 'einfassung' -%}
+      {%- render 'tp-faq-beschreibung-structured-data', html: product_resource.description, seiten_url: tp_sd_product_url -%}
+    {%- endif -%}
   {%- endif -%}
 {%- elsif tp_sd_is_wunschmass_legacy -%}
   {%- comment -%}

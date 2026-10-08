@@ -9,6 +9,13 @@
 - `snippets/meta-tags.liquid`: `/collections/teppiche` erhält den Canonical und `og:url` der Hauptadresse `/collections/teppich-nach-mass`. Bekannte Menüliste und Such-Chip zeigen nun auf die Hauptadresse (`sections/header-group.json`, `sections/tp-header-suche.liquid`).
 - **Live seit 29.09.2026:** Preview- und Live-Gates bestanden (Compare, SEO, Full QA, Sales ohne Bestellabschluss, P0/P1 = 0). Öffentlicher Nachtest: Kontaktseite enthält Erfolgssignal und beide getrennten Formularevents; `/collections/teppiche` liefert Canonical auf `/collections/teppich-nach-mass`; Vinyl-Redirect bleibt HTTP 301, Ziel HTTP 200.
 
+## Nachtrag 30.09.2026
+
+- **Consent-Test bestanden (Live-Theme, `/pages/kontakt`):** Bei abgelehnter Einwilligung kein Request an Google oder Meta, auch nicht beim Ausfüllen des Formulars. Nach Zustimmung laden Ads-Tag `AW-10991759596`, GA4 `G-3KKWHJHS0D` und die Sandbox des Custom Pixels „Google Ads Lead Erfolg“ (332661070).
+- **Lead-Test weiterhin offen:** Das Captcha muss der Shopbetreiber im eigenen Browser lösen; erst danach Eingang bei „Kontaktformular“ prüfen.
+- **Ads-Konto gelesen, nicht geändert:** Bestehende Kampagnen „Auf der Suche?“ (Smart, entfernt), „Teppichboden verlegen“, „Vinylboden verlegen“, „Lagerware“ (pausiert, jeweils „Alle Anzeigen wurden abgelehnt“), „Teppichboden verlegen #2“ (entfernt); keine Namenskollision mit `TP | Search | …`. Der Ablehnungsgrund der alten Anzeigen ist noch zu prüfen, bevor neue Anzeigen gestartet werden. Kontostandard-Ziele: Kauf (1 primär), Anruf-Lead (2), Kontakt (5), Seitenaufruf (1); Warenkorb, Bezahlvorgang und Download „falsch konfiguriert“.
+- **Web-Upload vorbereitet:** [`search-ads-web-upload-2026-09-30/`](search-ads-web-upload-2026-09-30/README.md). Anlegen der Kampagnen, des Ziels „Nur Kontaktformular“ und die Aktivierung bleiben manuelle Freigabeschritte des Betreibers.
+
 ## Website und Shopify
 
 | Punkt | Befund / nächster Schritt |
@@ -19,6 +26,8 @@
 | Treppenverlegung | Live HTTP 200. Für die drei geplanten lokalen Search-Kampagnen keine Treppen-Anzeigengruppe vorgesehen; daher keine Änderung. |
 
 ## Tracking: Sollzustand und Prüfprotokoll
+
+Der noch nicht im Konto ausgeführte Ablauf für Zielauswahl, Lead-/Consent-Test und pausierten Import steht in [`search-ads-kontoeinrichtung-2026-09-29.md`](search-ads-kontoeinrichtung-2026-09-29.md).
 
 Shopify Admin wurde am 29.09.2026 geprüft: Die Google-&-YouTube-App ist mit Ads, GA4 und Merchant Center verbunden; das App-Pixel läuft mit Datenzugriff „Optimiert“, Enhanced Conversions ist in der App aktiviert. Zusätzlich existiert das Custom Pixel „GTM-KRXFFDSL Checkout Tracking“. Es lädt den GTM-Container **erst beim Ereignis `checkout_completed`** und schiebt dabei ein `purchase` mit Transaktions-ID, Wert und Währung in dessen dataLayer; `begin_checkout` wird ebenfalls gepusht. Der GTM-Container enthält ein altes Ads-Tag „Kontaktformular“ mit Trigger `form_submit` und weitere Google-/Meta-/Consent-Tags. Diese Konstruktion ist für normale Service-Leads nicht geeignet: Der Container wird auf der Kontaktseite durch dieses Pixel nicht geladen. Die Kaufaktion der Google-App ist bereits separat verbunden. Das Custom Pixel darf nicht pauschal entfernt werden, bevor abhängige Tags geprüft sind.
 
@@ -55,18 +64,18 @@ Für spätere Shopping-Anzeigen Feed-Preis gegen Landingpage und Versandangaben 
 
 ## Lokaler Search-Entwurf (nur Planung, keine Aktivierung)
 
-Anzeigen, Suchbegriffe, Ausschlüsse und Freigabekriterien sind in `docs/google/search-ads-entwurf-2026-09-29.md` vollständig als pausierter Entwurf ausgearbeitet.
-Zusätzlich liegen unter `docs/google/search-ads-editor-import-2026-09-29/` vier CSV-Vorlagen für drei pausierte Kampagnen, Anzeigengruppen, 18 Exact-/Phrase-Keywords und drei pausierte Responsive Search Ads. Die drei Zielseiten antworteten am 29.09. mit HTTP 200; Headline- und Beschreibungslängen wurden geprüft. Die Dateien wurden nicht ins Konto importiert oder in Google Ads Editor validiert.
+Anzeigen, Suchbegriffe, Ausschlüsse und Freigabekriterien sind in `docs/google/search-ads-entwurf-2026-09-29.md` vollständig als pausierter Entwurf ausgearbeitet. Die allgemeine Zielseite `/pages/liefer-verlegeservice` beschränkt den konkret beschriebenen Verlegeservice auf bei Teppich Paradies gekaufte Rollenware; der Entwurf für die allgemeine Bodenleger-Kampagne wurde deshalb sprachlich eingegrenzt. Die Teppichboden- und Vinylseiten zeigen jeweils eine Angebotsanfrage, Telefon und WhatsApp; die allgemeine Seite verlinkt ebenfalls auf das Kontaktformular. Ein erfolgreicher Formularabschluss ist weiterhin ungetestet.
+Zusätzlich liegen unter `docs/google/search-ads-editor-import-2026-09-29/` vier CSV-Vorlagen für drei pausierte Kampagnen, Anzeigengruppen, 18 Exact-/Phrase-Keywords und drei pausierte Responsive Search Ads sowie eine Einfügeliste für zwölf negative Phrase-Begriffe. Die drei Zielseiten antworteten am 29.09. mit HTTP 200; Headline- und Beschreibungslängen wurden geprüft. Die Dateien wurden nicht ins Konto importiert oder in Google Ads Editor validiert. Ein öffentlicher Vergleich von vier lokalen Anbietern ist in `docs/google/lokale-konkurrenz-search-2026-09-29.md` dokumentiert; tatsächliche Konkurrenzanzeigen, Suchvolumen und Klickpreise wurden nicht erhoben.
 
 | Kampagne | Landingpage | Exact / Phrase Startbegriffe | Startbudget-Entwurf |
 |---|---|---|---:|
 | Bodenleger lokal | `/pages/liefer-verlegeservice` | `[bodenleger oranienburg]`, `"bodenleger in der nähe"`, `"boden verlegen lassen oranienburg"` | 15 €/Tag |
-| Teppichboden-Verlegung | `/pages/teppichboden-verlegen-lassen` | `[teppichboden verlegen lassen]`, `"teppichboden verlegung berlin"`, `"teppich verlegen lassen oranienburg"` | 10 €/Tag |
-| Vinyl-Verlegung | `/pages/vinylboden-verlegen` | `[vinylboden verlegen lassen]`, `"vinyl verlegen lassen berlin"`, `"klickvinyl verlegen lassen"` | 10 €/Tag |
+| Teppichboden-Verlegung | `/pages/teppichboden-verlegen-lassen` | `[teppichboden verlegen lassen]`, `[teppichboden verlegung oranienburg]`, `"teppich verlegen lassen"` | 10 €/Tag |
+| Vinyl-Verlegung | `/pages/vinylboden-verlegen` | `[vinylboden verlegen lassen]`, `[vinyl verlegen lassen oranienburg]`, `"klebevinyl verlegen lassen"` | 10 €/Tag |
 
 Gesamt: **35 €/Tag als unverbindlicher Entwurf**, keine Ausgabe. Standortausrichtung Oranienburg plus tatsächlich bedienter Umkreis (laut Website regulär 50 km), Präsenz im Zielgebiet statt bloßes Interesse; Sprache Deutsch. Anzeigentexte: eigenes Verlegeteam, Untergrundprüfung, Aufmaß, Angebot anfragen, lokale Rufnummer. Assets: Sitelinks zu Leistungen, Kontakt und Referenzen, Anruf-Asset nur während erreichbarer Zeiten, Standort-Asset erst nach Kontoprüfung. Vor Veröffentlichung Leistungs- und Reichweitenaussagen mit dem Betrieb abgleichen. Keine Preisversprechen ohne Beleg.
 
-Gemeinsame Negativliste als Startentwurf: `jobs`, `stellenangebote`, `ausbildung`, `gehalt`, `selber verlegen`, `anleitung`, `tutorial`, `youtube`, `kostenlos`, `gebraucht`, `pdf`. Suchbegriffsbericht nach Start eng prüfen; Negative nur nach tatsächlichem Kontext auf Kampagnenebene ergänzen. **AI Max, Broad Match, Display und Performance Max bleiben aus.**
+Gemeinsame Negativliste als Startentwurf: `jobs`, `stellenangebote`, `ausbildung`, `gehalt`, `selber verlegen`, `anleitung`, `tutorial`, `video`, `youtube`, `pdf`, `gebraucht`, `kostenlos`. Suchbegriffsbericht nach Start eng prüfen; weitere Negative nur nach tatsächlichem Kontext auf Kampagnenebene ergänzen. **AI Max, Broad Match, Display und Performance Max bleiben aus.**
 
 ## Startampel
 

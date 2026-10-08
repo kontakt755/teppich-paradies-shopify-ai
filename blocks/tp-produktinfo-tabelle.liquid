@@ -16,6 +16,16 @@
   bleibt exakt wie zuvor - kein leeres details-Element.
   Siehe docs/bodenwissen/LEXIKON.md, Abschnitt "Auf der Produktseite".
 
+  Teppich nach Mass (templates/product.einfassung.json): Der Teppich traegt
+  selbst keine technischen Merkmale. Fehlt ein Wert am Produkt, gilt der Wert
+  des Teppichbodens, aus dem zugeschnitten wird (service.einfass_basis,
+  Entscheidung 2026-09-20: Sachangaben nie am Teppich doppelt pflegen). Das
+  gilt je Zeile und nur fuer die Merkmalszeilen; Rollenbreite und Paketinhalt
+  bleiben beim Produkt. Fehlende Werte (z. B. Fussbodenheizung, solange sie
+  am Teppichboden nicht gepflegt ist) ergeben keine Zeile. Dieselbe Regel steht
+  fuer das JSON-LD in snippets/tp-produkt-merkmale-json.liquid, damit
+  sichtbare Tabelle und strukturierte Daten dieselben Werte tragen.
+
   @prompt
     Tabellarische Anzeige von Produktinformationen. Links Key, rechts entsprechender Wert.
 {% enddoc %}
@@ -220,6 +230,10 @@ Rückenausstattung::ruecken
   assign tp_pit_rw_sorted = tp_pit_rw_entries | split: ',' | sort
 
   assign tp_pit_paket_qm = product.metafields.custom.qm_pro_paket.value
+
+  # Teppich nach Mass: Teppichboden, aus dem zugeschnitten wird (leer bei allen
+  # anderen Produkten, dann aendert sich an keiner Zeile etwas).
+  assign tp_pit_basis = product.metafields.service.einfass_basis.value
 -%}
 
 <product-info-table-{{ ai_gen_id }}
@@ -240,6 +254,14 @@ Rückenausstattung::ruecken
         {% assign row_label = 'Stärke' %}
       {% endif %}
       {% assign metafield = product.metafields.custom[metafield_key] %}
+      {% comment %}
+        Teppich nach Mass: Wert fehlt am Teppich selbst, dann der Wert des
+        Teppichbodens, aus dem zugeschnitten wird (siehe Dateikopf). Fehlt er
+        auch dort, entfaellt die Zeile.
+      {% endcomment %}
+      {% if metafield.value == blank and tp_pit_basis != blank %}
+        {% assign metafield = tp_pit_basis.metafields.custom[metafield_key] %}
+      {% endif %}
       {% assign metafield_value = metafield.value %}
       {% if metafield_key == 'zimmer' %}
         {% capture tp_pit_zimmer %}{% render 'tp-zimmer-liste', metafield: metafield %}{% endcapture %}

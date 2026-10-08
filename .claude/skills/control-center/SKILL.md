@@ -149,9 +149,11 @@ kann dafuer weg?
    - Aendert der Merge `social/`, zusaetzlich
      `launchctl kickstart -k gui/$(id -u)/net.teppich-paradies.social`
      (Kontrolle: `curl -I http://127.0.0.1:8020/api/status` → 401).
-   - `package-lock.json` ist dort dauerhaft veraendert (nur `name`: npm traegt den
-     Ordnernamen ein, weil `package.json` keinen hat). Aendert main den Lockfile,
-     bricht `git merge` ohne Folgen ab. Dann melden und nicht auf Umwegen verwerfen.
+   - Vorher `git status --porcelain` ansehen. Eine uncommittete Aenderung an einer
+     Datei, die main ebenfalls aendert, laesst `git merge` ohne Folgen abbrechen.
+     Ist es nur npm-Rauschen in `package-lock.json`: `git merge --autostash …`,
+     danach `npm install --package-lock-only` (npm schreibt den Lockfile wieder
+     passend). Alles andere melden, nicht auf Umwegen verwerfen.
 
 ## Fallstricke (alle schon passiert)
 

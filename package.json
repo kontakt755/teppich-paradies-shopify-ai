@@ -1,4 +1,5 @@
 {
+  "name": "teppich-paradies-shopify-ai",
   "private": true,
   "scripts": {
     "test": "npm run qa:unit:test && npm run dashboard:test && npm run operations:test && npm run automation:test && npm run workflow:test && npm run hooks:test && npm run social:test",

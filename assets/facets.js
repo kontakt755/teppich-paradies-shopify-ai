@@ -499,8 +499,11 @@ class FacetRemoveComponent extends Component {
     if (!(facetsForm instanceof FacetsFormComponent)) return;
 
     const dialog = this.closest('#filters-drawer dialog[open]');
-    const desktopChip = !dialog && window.matchMedia('(min-width: 750px)').matches &&
+    const desktop = !dialog && window.matchMedia('(min-width: 750px)').matches;
+    const desktopChip = desktop &&
       this.matches('[role="button"]') && this.getClientRects().length > 0;
+    const desktopReset = desktop &&
+      (this.querySelector('.facets__clear-all-link--active')?.getClientRects().length ?? 0) > 0;
     const formId = facetsForm.refs.facetsForm.id;
     const chipIndex = desktopChip
       ? [...(this.parentElement?.querySelectorAll('facet-remove-component[role="button"]') ?? [])].indexOf(this)
@@ -510,7 +513,7 @@ class FacetRemoveComponent extends Component {
       dialog.querySelector('.facets-drawer__close')?.focus({ preventScroll: true });
     }
 
-    if (desktopChip) {
+    if (desktopChip || desktopReset) {
       const updatedUrl = `${window.location.pathname}${window.location.search}`;
       sectionUpdate.then(() => {
         // Eine zwischenzeitliche Navigation oder neue Fokussierung hat Vorrang.
@@ -522,7 +525,7 @@ class FacetRemoveComponent extends Component {
 
         const chips = [...updatedForm.querySelectorAll('.facets-remove facet-remove-component[role="button"]')]
           .filter((element) => element.getClientRects().length > 0);
-        const nextChip = chips[Math.min(chipIndex, chips.length - 1)];
+        const nextChip = desktopChip ? chips[Math.min(chipIndex, chips.length - 1)] : null;
         const nextControl = [...updatedForm.querySelectorAll(
           '.facets__filters-wrapper input:not(:disabled), .facets__filters-wrapper summary, .facets__filters-wrapper button:not(:disabled), sorting-filter-component summary, sorting-filter-component select:not(:disabled)'
         )].find((element) => element.getClientRects().length > 0 && getComputedStyle(element).visibility === 'visible');
