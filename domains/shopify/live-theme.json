@@ -1,15 +1,15 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-09T12:07:29.481563Z",
-    "verifiedBy": "Shopify Admin API role MAIN nach workflow:live (PR #1028, main 0e1a9085)"
-  },
-  "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-09T12:07:29.481563Z",
+    "verifiedAt": "2026-10-09T13:43:07.843721Z",
+    "verifiedBy": "Shopify Admin API role MAIN nach workflow:live (PR #1031, main 47db05c7)"
+  },
+  "preview": {
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-10-09T13:43:07.843721Z",
     "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live; naechstes Preview-Ziel"
   },
   "fallback": {
@@ -494,6 +494,12 @@
       "name": "preview-main-2026-09-15",
       "retiredNoticedAt": "2026-10-09",
       "note": "Per workflow:live abgeloest (PR #1028: Restbestandsgrenze, Musterfarbe und Sonderposten-Einstieg). Rollentausch per Admin API bestaetigt; oeffentliche Produktseite ohne Preview geprueft. Bleibt unpublished als naechstes Preview-Ziel."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-10-09",
+      "note": "Per workflow:live abgeloest (PR #1031: Raumhilfe fuer feste Rollenbreite). Bleibt unpublished als naechstes Preview-Ziel."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
