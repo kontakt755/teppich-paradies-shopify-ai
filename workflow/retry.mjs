@@ -13,6 +13,8 @@ export const MAX_IMMEDIATE_SCRIPT_RETRIES = 1;
 
 export function classifyFailure(result = {}) {
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}\n${result.message ?? ''}`;
+  // Ein echter Assertion-Stack geht vor HTTP-Woertern in erfolgreichen Testnamen.
+  if (/(?:^|\n)\s*(?:#\s*)?AssertionError(?:\s+\[ERR_ASSERTION\])?:[^\n]*[\s\S]*?\n\s*(?:#\s*)?at\s/.test(output)) return EXTERNAL_BLOCKS.CODE_DEFECT;
   if (/\b403\b.{0,120}(?:claude (?:cloud agent )?proxy|cloud agent proxy)|(?:claude (?:cloud agent )?proxy|cloud agent proxy).{0,120}\b403\b|cloud (?:environment|agent).{0,120}(?:cannot|can't|darf nicht|forbidden).{0,120}storefront/i.test(output)) return EXTERNAL_BLOCKS.LOCAL_RUNNER;
   if (/\b429\b|too many requests|rate limit|cloudflare.{0,80}(?:limit|block)|temporar(?:y|ily|e).{0,40}waf/is.test(output)) return EXTERNAL_BLOCKS.RATE_LIMIT;
   if (/shopifysvc\.com\/(?:observeonly|error).{0,240}(?:cors|blocked)|(?:cors|blocked).{0,240}shopifysvc\.com\/(?:observeonly|error)/is.test(output)) return EXTERNAL_BLOCKS.UPSTREAM;
