@@ -29,6 +29,16 @@ node workflow/cli.mjs preview --theme-id <id> --approve-preview --p0 0 --p1 0
 node workflow/cli.mjs live --theme-id <id> --approve-live --approval-text "PUBLISH LIVE" --execute --p0 0 --p1 0
 ```
 
+**Deploy-Fenster: waehrend des Deploys merged niemand nach `main`.** `preview`
+oeffnet `.workflow/deploy-fenster.json` in der Deploy-Arbeitskopie, `live`
+schliesst es am Ende (auch bei Abbruch; eine gescheiterte Preview schliesst es
+selbst). Solange es offen ist (hoechstens 60 Minuten) oder eine
+`workflow preview|live`-Sperre laeuft, verweigert `.claude/hooks/git-gh-guard.mjs`
+`gh pr merge` und `git push ... main`; `npm run -s deploy:frei` zeigt den Stand.
+Grund: am 2026-10-08 brach Live dreimal mit `LIVE_SOURCE` ab, weil andere
+Sitzungen waehrend der Preview gemergt hatten. Bleibt nach einem Abbruch ein
+Fenster liegen und ist sicher kein Deploy mehr aktiv: Datei loeschen.
+
 **Pro Arbeitskopie laeuft nur ein Deploy.** `preview`, `live` und die volle
 `validate` nehmen eine Sperre (`.workflow/lock.json`), QA ebenfalls; der
 Kindprozess des Workflows erkennt die eigene und laeuft durch. Ein zweiter Lauf

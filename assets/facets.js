@@ -118,7 +118,9 @@ class FacetsFormComponent extends Component {
     history.pushState('', '', url);
     lastFacetsUrl = `${window.location.pathname}${window.location.search}`;
     this.dispatchEvent(new FilterUpdateEvent(this.createURLParameters()));
-    const sectionUpdate = this.#updateSection();
+    // Beim Entfernen eines Chips muss das Promise erst nach dem Section-Morph
+    // aufloesen. Der View-Transition-Fallback wartet nicht auf den Render-Callback.
+    const sectionUpdate = sectionRenderer.renderSection(this.sectionId);
     if (!dialogWasOpen) return sectionUpdate;
     return sectionUpdate.then((result) => {
       restoreFilterDialogFocus();
@@ -497,9 +499,36 @@ class FacetRemoveComponent extends Component {
     if (!(facetsForm instanceof FacetsFormComponent)) return;
 
     const dialog = this.closest('#filters-drawer dialog[open]');
-    facetsForm.updateFiltersByURL(url);
+    const desktopChip = !dialog && window.matchMedia('(min-width: 750px)').matches &&
+      this.matches('[role="button"]') && this.getClientRects().length > 0;
+    const formId = facetsForm.refs.facetsForm.id;
+    const chipIndex = desktopChip
+      ? [...(this.parentElement?.querySelectorAll('facet-remove-component[role="button"]') ?? [])].indexOf(this)
+      : -1;
+    const sectionUpdate = facetsForm.updateFiltersByURL(url);
     if (dialog?.contains(document.activeElement)) {
       dialog.querySelector('.facets-drawer__close')?.focus({ preventScroll: true });
+    }
+
+    if (desktopChip) {
+      const updatedUrl = `${window.location.pathname}${window.location.search}`;
+      sectionUpdate.then(() => {
+        // Eine zwischenzeitliche Navigation oder neue Fokussierung hat Vorrang.
+        if (`${window.location.pathname}${window.location.search}` !== updatedUrl) return;
+        if (document.activeElement !== document.body && document.activeElement?.isConnected) return;
+
+        const updatedForm = document.getElementById(formId);
+        if (!(updatedForm instanceof HTMLFormElement)) return;
+
+        const chips = [...updatedForm.querySelectorAll('.facets-remove facet-remove-component[role="button"]')]
+          .filter((element) => element.getClientRects().length > 0);
+        const nextChip = chips[Math.min(chipIndex, chips.length - 1)];
+        const nextControl = [...updatedForm.querySelectorAll(
+          '.facets__filters-wrapper input:not(:disabled), .facets__filters-wrapper summary, .facets__filters-wrapper button:not(:disabled), sorting-filter-component summary, sorting-filter-component select:not(:disabled)'
+        )].find((element) => element.getClientRects().length > 0 && getComputedStyle(element).visibility === 'visible');
+
+        (nextChip ?? nextControl)?.focus({ preventScroll: true });
+      });
     }
   }
 

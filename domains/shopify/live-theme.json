@@ -3,14 +3,14 @@
   "live": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-08T10:04:17Z",
-    "verifiedBy": "Shopify CLI role LIVE nach workflow:live (main 5ef4b63c mit #973 Parkett-Zubehoer, #976 Farbnummer, #968/#972/#979); oeffentlich ohne Vorschau: Parkett-Regeln und Zubehoer-Formular ohne Farbnummer geprueft"
+    "verifiedAt": "2026-10-08T10:57:27Z",
+    "verifiedBy": "Shopify CLI role live nach workflow:live (main e33aecbb); alle vier Theme-Rollen gegengeprueft"
   },
   "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-08T10:04:17Z",
-    "verifiedBy": "Shopify CLI role UNPUBLISHED nach workflow:live; naechstes Preview-Ziel"
+    "verifiedAt": "2026-10-08T10:57:27Z",
+    "verifiedBy": "Shopify CLI role unpublished nach workflow:live; naechstes Preview-Ziel"
   },
   "fallback": {
     "themeId": "204440699214",
@@ -27,6 +27,18 @@
     "note": "Einziges Ziel fuer Zwischenstaende und Ausprobieren (nur --only-Pushes). Niemals als --theme-id fuer workflow:preview/live verwenden, niemals publishen. Das Preview-Ziel ist ausschliesslich preview.themeId - wer dorthin Zwischenstaende pusht, blockiert den Livegang (PREVIEW_DRIFT/PREVIEW_DIFF, dreimal am 2026-09-21/22)."
   },
   "retired": [
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-10-08",
+      "note": "Per workflow:live durch 204438208846 abgeloest (main e33aecbb); bleibt als unpublished Theme das naechste Preview-Ziel."
+    },
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-10-08",
+      "note": "Per workflow:live durch 204436144462 abgeloest (main fda3482f); bleibt als unpublished Theme das naechste Preview-Ziel."
+    },
     {
       "themeId": "204438208846",
       "name": "preview-main-2026-09-15",

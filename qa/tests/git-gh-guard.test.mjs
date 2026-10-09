@@ -12,15 +12,21 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { execFileSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 const hook = path.join(import.meta.dirname, '..', '..', '.claude', 'hooks', 'git-gh-guard.mjs');
+// Diese Regex-Tests duerfen kein echtes Deploy-Fenster einer anderen
+// Arbeitskopie sehen. Die Deploy-Sperre hat eigene Tests mit Git-Fixture.
+const hookKontext = { cwd: tmpdir(), env: { ...process.env, CLAUDE_PROJECT_DIR: '' } };
 
 /** true = der Hook verweigert den Befehl. */
 const blockiert = (command) => {
   const out = execFileSync('node', [hook], {
+    ...hookKontext,
     input: JSON.stringify({ tool_input: { command } }),
     encoding: 'utf8',
+    env: { ...hookKontext.env, TP_AGENT_LOOP_ACTIVE: '' },
   });
   return out.trim().length > 0;
 };
@@ -297,9 +303,10 @@ for (const cmd of ['"/usr/bin/git" status', '"git" log --oneline']) {
  */
 const blockiertUnbeaufsichtigt = (command) => {
   const out = execFileSync('node', [hook], {
+    ...hookKontext,
     input: JSON.stringify({ tool_input: { command } }),
     encoding: 'utf8',
-    env: { ...process.env, TP_AGENT_LOOP_ACTIVE: '1' },
+    env: { ...hookKontext.env, TP_AGENT_LOOP_ACTIVE: '1' },
   });
   return out.trim().length > 0;
 };
