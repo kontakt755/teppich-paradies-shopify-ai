@@ -222,14 +222,6 @@
             "subtitle": ""
           }
         },
-        "tp_kachel_vinyl_rolle_alle": {
-          "type": "_tp-menu-kachel",
-          "settings": {
-            "menu_match": "Alle Rollenware",
-            "image": "shopify://shop_images/tp-vinyl-rollenvinyl-kategorie-2026.jpg",
-            "subtitle": ""
-          }
-        },
         "tp_kachel_vinyl_rolle_holz": {
           "type": "_tp-menu-kachel",
           "settings": {
@@ -517,7 +509,6 @@
         "tp_kachel_vinyl_klick",
         "tp_kachel_vinyl_klebe",
         "tp_kachel_vinyl_rolle",
-        "tp_kachel_vinyl_rolle_alle",
         "tp_kachel_vinyl_rolle_holz",
         "tp_kachel_vinyl_rolle_stein",
         "tp_kachel_vinyl_holz",
