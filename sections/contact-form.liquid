@@ -188,6 +188,25 @@
   }
 </style>
 
+{% stylesheet %}
+  .tp-contact-service-links {
+    margin: 0 0 18px;
+    color: #333;
+    font-size: 16px;
+  }
+  .tp-contact-service-links p { margin: 0 0 4px; }
+  .tp-contact-service-links ul { margin: 0; padding-left: 20px; }
+  .tp-contact-service-links a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    text-decoration: underline;
+  }
+  [data-tp-sample-request][data-mode="sample"] .tp-contact-service-links {
+    display: none;
+  }
+{% endstylesheet %}
+
 <section class="kontakt-section">
   <div class="kontakt-info">
     <h2>Kontaktieren Sie uns</h2>
@@ -205,6 +224,13 @@
   </div>
 
   <div class="kontakt-formular" data-tp-sample-request>
+    <div class="tp-contact-service-links">
+      <p>Für Serviceanfragen direkt zum passenden Formular:</p>
+      <ul>
+        <li><a href="/pages/liefer-verlegeservice#tp-anfrage">Liefer- &amp; Verlegeservice anfragen</a></li>
+        <li><a href="/pages/teppichreinigung#tp-anfrage">Teppichreinigung anfragen</a></li>
+      </ul>
+    </div>
     <div class="tp-sample-intro">
       <h3 class="tp-sample-intro__heading">Kostenloses Muster bestellen</h3>
       <div class="tp-sample-intro__product">
