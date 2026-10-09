@@ -41,3 +41,14 @@ test('Andere Mengeneinheiten und mehrere Varianten werden nicht als m2 interpret
 test('Ohne ausdrueckliches Produktlimit bleibt die bisherige Rollenware unveraendert', async () => {
   assert.equal(await grenze({ limit: null, stock: 0 }), '5000|false');
 });
+
+test('Musterfarbe behandelt beide Schreibweisen des Farbtag-Praefixes gleich', async () => {
+  const start = source.indexOf('    assign tp_rc_start_farbe = product.selected_or_first_available_variant.options | first');
+  const end = source.indexOf('    assign tp_rc_muster_platzhalter', start);
+  assert.ok(start >= 0 && end > start);
+  const template = '{% liquid\n' + source.slice(start, end) + '%}{{ tp_rc_start_farbe }}';
+  for (const tags of [['farbe: anthrazit'], ['Farbe: anthrazit']]) {
+    assert.equal((await engine.parseAndRender(template, { product: { tags, selected_or_first_available_variant: { options: ['Default Title'] } } })).trim(), 'Anthrazit');
+  }
+  assert.equal((await engine.parseAndRender(template, { product: { tags: [], selected_or_first_available_variant: { options: ['Default Title'] } } })).trim(), '');
+});

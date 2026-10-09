@@ -520,7 +520,7 @@
       for tp_rc_tag in product.tags
         assign tp_rc_tag_anfang = tp_rc_tag | slice: 0, 7 | downcase
         if tp_rc_tag_anfang == 'farbe: '
-          assign tp_rc_start_farbe = tp_rc_tag | remove_first: 'farbe: ' | strip | capitalize
+          assign tp_rc_start_farbe = tp_rc_tag | slice: 7, 1000 | strip | capitalize
           break
         endif
       endfor
