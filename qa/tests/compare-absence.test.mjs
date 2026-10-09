@@ -8,7 +8,7 @@ import { auditCompareSources, compareAbsencePass, compareSourceFindings, inspect
 
 const root = path.resolve(import.meta.dirname, '../..');
 
-test('Produktvergleich ist in keiner aktiven Theme-Datei eingebunden', () => {
+test('Produktvergleich ist vollstaendig aus dem Theme entfernt', () => {
   const result = auditCompareSources(root);
   assert.ok(result.checkedFiles > 100);
   assert.deepEqual(result.findings, []);
@@ -25,7 +25,18 @@ test('Gate findet erneute Einbindung durch Layout, Template, Karten und Script',
     ['snippets/tp-compare-bar.liquid', 'data-tp-compare-dialog'],
     ['blocks/tp-compare-toggle.liquid', 'data-tp-compare-toggle'],
   ]);
-  assert.deepEqual(compareSourceFindings(files).map(finding => finding.file), [...files.keys()].slice(0, 5));
+  assert.deepEqual(compareSourceFindings(files).map(finding => finding.file), [...files.keys()]);
+});
+
+test('Auch leere oder ungenutzte ehemalige Vergleichsdateien blockieren das Gate', () => {
+  const files = new Map([
+    ['assets/tp-compare.js', ''],
+    ['blocks/tp-compare-toggle.liquid', '{% schema %}{"name":"Alt"}{% endschema %}'],
+    ['snippets/tp-compare-bar.liquid', ''],
+  ]);
+  const findings = compareSourceFindings(files);
+  assert.deepEqual(findings.map(finding => finding.file), [...files.keys()]);
+  assert.ok(findings.every(finding => finding.reason === 'Entfernte Vergleichsdatei ist wieder vorhanden'));
 });
 
 test('Streichpreise, Rollenpreisvergleich und Vorher-Nachher bleiben erlaubt', () => {
