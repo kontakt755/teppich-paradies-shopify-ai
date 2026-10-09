@@ -1,0 +1,5 @@
+{% if resource_type == 'product' %}
+  {% render 'tp-card-title-display', product: resource %}
+{% else %}
+  {{ resource.title }}
+{% endif %}
