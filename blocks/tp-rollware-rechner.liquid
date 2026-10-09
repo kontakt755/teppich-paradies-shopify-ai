@@ -1444,7 +1444,10 @@ function tpRwcInit{{ tp_rc_id }}() {
   // Betrag in EUR fuer ein Stueck der gewaehlten Farbe, abgerechnet wie in
   // der Preisbox (0,01 m² oder volle m²). 0 = gibt es nicht.
   root.tpRwcPreis = function (art, wCm, lenCm) {
-    if (wIdx === -1 || !(wCm > 0) || !(lenCm > 0)) return 0;
+    if (!(wCm > 0) || !(lenCm > 0)) return 0;
+    // Feste Rollenbreite ohne Breitenoption: wie im Hauptrechner verwenden.
+    // Raummass gibt es hier nicht; fremde Breiten duerfen keinen Preis erhalten.
+    if (wIdx === -1 && (art !== 'meter' || wCm !== fallbackWidthCm)) return 0;
     var v = art === 'raum' ? raumVariant() : variantFor(baseOptions(), byWidth(wCm));
     if (art === 'raum' && !ART.wunschOk(v, wIdx)) return 0;
     var rate = rateOf(v);
