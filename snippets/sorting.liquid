@@ -30,14 +30,14 @@
 
   <div class="sorting-filter__container {% if should_use_select_on_mobile %} desktop:hidden {% else %} hidden {% endif %}">
     <label
-      for="sort-select-{{ section_id }}"
+      for="sort-select-{{ section_id }}-{{ suffix }}"
       class="facets__label"
     >
       {{- 'actions.sort' | t -}}
     </label>
     <div class="sorting-filter__select-wrapper">
       <select
-        id="sort-select-{{ section_id }}"
+        id="sort-select-{{ section_id }}-{{ suffix }}"
         name="sort_by"
         class="sorting-filter__select"
         {% if should_use_select_on_mobile == false %}
