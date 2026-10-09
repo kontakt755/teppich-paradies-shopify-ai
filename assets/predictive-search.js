@@ -21,6 +21,8 @@ import { DialogCloseEvent, DialogOpenEvent, DialogComponent } from '@theme/dialo
 class PredictiveSearchComponent extends Component {
   requiredRefs = ['searchInput', 'predictiveSearchResults', 'resetButton'];
 
+  static #nextOptionId = 0;
+
   #controller = new AbortController();
 
   /**
@@ -175,7 +177,7 @@ class PredictiveSearchComponent extends Component {
       if (option) {
         // Default product cards are links; search results already use role="option".
         option.setAttribute('role', 'option');
-        option.id ||= `predictive-search-option-${itemIndex}`;
+        option.id ||= `predictive-search-option-${++PredictiveSearchComponent.#nextOptionId}`;
       }
 
       if (itemIndex === index) {
