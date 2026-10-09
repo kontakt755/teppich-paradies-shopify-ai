@@ -152,32 +152,53 @@ class PredictiveSearchComponent extends Component {
   #isKeyboardNavigation = false;
 
   get #currentIndex() {
-    return this.#allResultsItems?.findIndex((item) => item.getAttribute('aria-selected') === 'true') ?? -1;
+    return this.#allResultsItems?.findIndex((item) => item.getAttribute('data-selected') === 'true') ?? -1;
   }
 
   set #currentIndex(index) {
-    if (!this.#allResultsItems?.length) return;
+    const items = this.#allResultsItems;
+    const { searchInput } = this.refs;
+    if (!items.length) {
+      searchInput.removeAttribute('aria-activedescendant');
+      return;
+    }
 
     let activeItem = null;
+    let activeOption = null;
 
-    this.#allResultsItems.forEach((item) => {
+    items.forEach((item) => {
       item.classList.remove('keyboard-focus');
     });
 
-    for (const [itemIndex, item] of this.#allResultsItems.entries()) {
+    for (const [itemIndex, item] of items.entries()) {
+      const option = item.querySelector('a[role="option"], a');
+      if (option) {
+        // Default product cards are links; search results already use role="option".
+        option.setAttribute('role', 'option');
+        option.id ||= `predictive-search-option-${itemIndex}`;
+      }
+
       if (itemIndex === index) {
-        item.setAttribute('aria-selected', 'true');
+        item.setAttribute('data-selected', 'true');
+        option?.setAttribute('aria-selected', 'true');
         if (this.#isKeyboardNavigation) {
           item.classList.add('keyboard-focus');
         }
         activeItem = item;
+        activeOption = option;
       } else {
-        item.removeAttribute('aria-selected');
+        item.removeAttribute('data-selected');
+        option?.removeAttribute('aria-selected');
       }
     }
 
+    if (activeOption) {
+      searchInput.setAttribute('aria-activedescendant', activeOption.id);
+    } else {
+      searchInput.removeAttribute('aria-activedescendant');
+    }
     activeItem?.scrollIntoView({ behavior: prefersReducedMotion() ? 'instant' : 'smooth', block: 'nearest' });
-    this.refs.searchInput.focus();
+    searchInput.focus();
   }
 
   get #currentItem() {
