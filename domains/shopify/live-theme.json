@@ -1,15 +1,15 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-09T13:59:48.055415Z",
-    "verifiedBy": "Shopify Admin API role MAIN nach workflow:live (PR #1034, main ab5d9480)"
-  },
-  "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-09T13:59:48.055415Z",
+    "verifiedAt": "2026-10-09T17:27:18.564817Z",
+    "verifiedBy": "Shopify Admin API role MAIN nach workflow:live (PR #1038, main 5352bcdb)"
+  },
+  "preview": {
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-10-09T17:27:18.564817Z",
     "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live; naechstes Preview-Ziel"
   },
   "fallback": {
@@ -31,7 +31,7 @@
       "themeId": "204436144462",
       "name": "Kopie von preview-main-2026-09-04",
       "retiredNoticedAt": "2026-10-09",
-      "note": "Nach Live-Publish durch 204438208846 abgeloest (main 519b0039 mit PR #1022/#1023); bleibt unpublished als naechstes Preview-Ziel."
+      "note": "Nach Live-Publish von main 5352bcdb (PR #1038) abgeloest; bleibt unpublished als naechstes Preview-Ziel."
     },
     {
       "themeId": "204438208846",
