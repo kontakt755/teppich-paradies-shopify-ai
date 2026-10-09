@@ -58,13 +58,9 @@
     }
   }
 
-  /* Produktkarten: "Muster" (29px) und "Vergleichen" (25px) sind Verkaufswege,
-     keine Nebensache - die Musterbestellung ist oft der erste Schritt. Sie
-     standen ausserdem nur 6px auseinander; die Regel verlangt 8px zwischen
-     Tippzielen, sonst trifft man am Telefon den Nachbarn. */
+  /* Musterbestellung: grosses Tippziel und Abstand zwischen Kartenaktionen. */
   @media screen and (max-width: 749px) {
-    [class*='tp-card-actions__sample'],
-    [class*='tp-card-actions__compare'] {
+    [class*='tp-card-actions__sample'] {
       min-height: 44px;
       display: inline-flex;
       align-items: center;

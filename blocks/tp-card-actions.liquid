@@ -1,91 +1,19 @@
 {% doc %}
-  Kompakte Aktionszeile auf Produktkarten: "Zum Vergleich hinzufügen" (nutzt
-  dieselbe Vergleichsfunktion/dasselbe Script wie auf der Produktseite, siehe
-  blocks/tp-compare-toggle.liquid + assets/tp-compare.js - hier nur kompakt
-  gestylt für die Karte, keine neue Logik) und ein kurzer Muster-Link. Fuer
-  alle Produkte sichtbar (wie bei Vinylboden); der €/m²-Preis im
-  Vergleichs-Snapshot wird nur fuer Paketprodukte (Metafeld
-  custom.qm_pro_paket gesetzt) berechnet, sonst bleibt er leer.
+  Produktkarten mit Muster-Link und Konfigurator fuer Teppiche nach Mass.
 {% enddoc %}
 
-{%- liquid
-  assign tp_ca_product = closest.product
-  assign tp_ca_sqm_per_package = tp_ca_product.metafields.custom.qm_pro_paket.value
--%}
-
+{%- assign tp_ca_product = closest.product -%}
 {%- if tp_ca_product != blank -%}
   {%- liquid
-    assign tp_ca_variant = tp_ca_product.selected_or_first_available_variant
-
-    assign tp_ca_price_per_sqm = ''
-    if tp_ca_sqm_per_package != blank and tp_ca_sqm_per_package > 0
-      assign tp_ca_price_per_sqm_raw = tp_ca_variant.price | times: 1.0 | divided_by: tp_ca_sqm_per_package | round
-      assign tp_ca_price_per_sqm = tp_ca_price_per_sqm_raw | money | strip_html
-    endif
-
-    assign tp_ca_belagsart = tp_ca_product.metafields.custom.belagsart.value
-    assign tp_ca_staerke = tp_ca_product.metafields.custom.gesamtstarke.value
-
-    assign tp_ca_nk_mf = tp_ca_product.metafields.custom.nutzungsklassen
-    assign tp_ca_nk_val = tp_ca_nk_mf.value
-    assign tp_ca_nutzungsklasse = ''
-    if tp_ca_nk_val != blank
-      if tp_ca_nk_mf.type contains 'list.'
-        capture tp_ca_nutzungsklasse
-          for item in tp_ca_nk_val
-            assign nk = item.nutzungsklasse
-            echo nk.value | default: nk | default: item.name | default: item
-            unless forloop.last
-              echo ', '
-            endunless
-          endfor
-        endcapture
-      else
-        assign nk = tp_ca_nk_val.nutzungsklasse
-        assign tp_ca_nutzungsklasse = nk.value | default: nk | default: tp_ca_nk_val.name | default: tp_ca_nk_val
-      endif
-    endif
-    assign tp_ca_nutzungsklasse = tp_ca_nutzungsklasse | strip
-
-    assign tp_ca_trittschall = tp_ca_product.metafields.custom.trittschallverbesserung.value
-
-    assign tp_ca_heating_val = tp_ca_product.metafields.custom.fusbodenheizung.value
-    assign tp_ca_heating = tp_ca_heating_val.fusbodenheizung.value | default: tp_ca_heating_val.fusbodenheizung | default: tp_ca_heating_val.name | default: tp_ca_heating_val
-
     assign tp_ca_url = tp_ca_product.url
-    assign tp_ca_image = ''
-    if tp_ca_product.featured_image
-      assign tp_ca_image = tp_ca_product.featured_image | image_url: width: 200
-    endif
-
-    assign tp_ca_paketinhalt = ''
-    if tp_ca_sqm_per_package != blank and tp_ca_sqm_per_package > 0
-      assign tp_ca_paketinhalt = tp_ca_sqm_per_package | append: '' | replace: '.', ',' | append: ' m²'
-    endif
-  -%}
-  {%- capture tp_ca_snapshot -%}
-{"handle":{{ tp_ca_product.handle | json }},"title":{{ tp_ca_product.title | json }},"url":{{ tp_ca_url | json }},"image":{{ tp_ca_image | json }},"pricePerSqm":{{ tp_ca_price_per_sqm | json }},"belagsart":{{ tp_ca_belagsart | json }},"staerke":{{ tp_ca_staerke | json }},"nutzschicht":"","nutzungsklasse":{{ tp_ca_nutzungsklasse | json }},"trittschall":{{ tp_ca_trittschall | json }},"fussbodenheizung":{{ tp_ca_heating | json }},"feuchtraum":"","paketinhalt":{{ tp_ca_paketinhalt | json }}}
-  {%- endcapture -%}
-
-  {%- comment -%}
-    Reihenfolge und Gewicht: Das Muster ist der Verkaufsweg - bei Bodenbelaegen
-    bestellt fast niemand mehrere Quadratmeter, ohne die Farbe vorher zu Hause
-    gesehen zu haben. Der Vergleich ist eine Nebenfunktion. Bis zum Audit vom
-    2026-09-10 war es umgekehrt: "Vergleichen" war auf jeder Karte der breite
-    Hauptknopf, "Muster" ein schmaler Anhang (Befund B-08).
-  {%- endcomment -%}
-  {%- comment -%}
-    Teppiche nach Mass (Erkennung wie snippets/tp-teppich-ab-preis.liquid): der Weg
-    fuehrt ueber den Konfigurator, deshalb ist "Jetzt konfigurieren" hier die
-    Hauptaktion (Entscheidung des Inhabers 2026-09-20). Muster und Vergleich bleiben
-    als ruhige Textlinks erhalten. Alle anderen Warenarten: Muster bleibt Hauptknopf.
-  {%- endcomment -%}
-  {%- liquid
     assign tp_ca_teppich = false
     if tp_ca_product.metafields.custom.preis_pro_001_qm.value == true and tp_ca_product.metafields.service.einfassung.value != blank
       assign tp_ca_teppich = true
     endif
   -%}
+  {%- capture tp_ca_sample_url -%}{%- render 'tp-musteroption', product: tp_ca_product -%}{%- endcapture -%}
+  {%- assign tp_ca_sample_url = tp_ca_sample_url | strip -%}
+  {%- if tp_ca_teppich or tp_ca_sample_url != blank -%}
   <div class="tp-card-actions{% if tp_ca_teppich %} tp-card-actions--teppich{% endif %}" {{ block.shopify_attributes }}>
     {%- if tp_ca_teppich -%}
       {%- comment -%}
@@ -105,9 +33,6 @@
       </p>
       <a class="tp-card-actions__konfig" href="{{ tp_ca_url }}">Jetzt konfigurieren</a>
     {%- endif -%}
-    {%- comment -%} Das Snippet entscheidet zentral, ob fuer dieses Produkt Muster angeboten werden. {%- endcomment -%}
-    {%- capture tp_ca_sample_url -%}{%- render 'tp-musteroption', product: tp_ca_product -%}{%- endcapture -%}
-    {%- assign tp_ca_sample_url = tp_ca_sample_url | strip -%}
     {%- if tp_ca_sample_url != blank -%}
       <a
         class="tp-card-actions__sample"
@@ -122,22 +47,8 @@
         Muster<span class="tp-card-actions__sample-verb">&nbsp;anfordern</span>
       </a>
     {%- endif -%}
-    <button
-      type="button"
-      class="tp-card-actions__compare"
-      data-tp-compare-toggle
-      data-tp-compare-handle="{{ tp_ca_product.handle }}"
-      data-tp-compare-snapshot="{{ tp_ca_snapshot | strip | escape }}"
-      data-tp-compare-icon
-      aria-pressed="false"
-      aria-label="Zum Vergleich hinzufügen"
-      title="Zum Vergleich hinzufügen"
-    >
-      {%- comment -%} C1: Symbol statt Text; Beschriftung per aria-label (assets/tp-compare.js) {%- endcomment -%}
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="2.5" y="4" width="6" height="12" rx="1.2"/><rect x="11.5" y="4" width="6" height="12" rx="1.2"/><path d="M10 2v16"/></svg>
-    </button>
   </div>
-
+  {%- endif -%}
 {%- endif -%}
 
 {% stylesheet %}
@@ -149,46 +60,6 @@
     margin-top: 6px;
     position: relative;
     z-index: 1;
-  }
-
-  /* Der Vergleich ist die Nebenfunktion: feste Breite, ruhige Kontur. */
-  .tp-card-actions__compare {
-    flex: 0 0 auto;
-    min-width: 0;
-    min-height: 44px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    padding: 8px 10px;
-    background: transparent;
-    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.22);
-    border-radius: 6px;
-    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.78);
-    font: inherit;
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.2;
-    cursor: pointer;
-    text-align: center;
-  }
-
-  .tp-card-actions__compare[data-tp-compare-icon] {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    padding: 0;
-  }
-  .tp-card-actions__compare[data-tp-compare-icon]:only-child { flex: 0 0 44px; }
-  .tp-card-actions__compare[aria-pressed='true'] {
-    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
-    border-color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.4);
-    color: var(--color-foreground);
-  }
-
-  /* Zubehoer hat kein Muster - dann traegt der Vergleich die Zeile allein. */
-  .tp-card-actions__compare:only-child {
-    flex: 1 1 auto;
   }
 
   /* V2 (Design-Runde 3): Muster ist eine Nebenaktion - Schwarz-Outline statt
@@ -217,9 +88,6 @@
     background: rgb(0 0 0 / 0.05);
   }
 
-  /* Sehr schmale Geraete: Beschriftung nicht abschneiden. Weniger Innenabstand
-     und eine Spur kleinere Schrift genuegen, damit "Vergleichen" vollstaendig
-     neben "Muster" passt - beide bleiben 44 px hoch. */
   @media screen and (max-width: 479px) {
     .tp-card-actions {
       gap: 4px;
@@ -229,10 +97,6 @@
       display: none;
     }
 
-    .tp-card-actions__compare {
-      padding-inline: 6px;
-      font-size: 12.5px;
-    }
 
     .tp-card-actions__sample {
       padding-inline: 8px;
@@ -240,7 +104,7 @@
     }
   }
 
-  /* Teppich nach Mass: Hinweis, Hauptknopf, darunter zwei ruhige Textlinks. */
+  /* Teppich nach Mass: Hinweis, Hauptknopf, darunter ein ruhiger Muster-Link. */
   .tp-card-actions--teppich { flex-wrap: wrap; gap: 6px 14px; }
   .tp-card-actions__hinweis { flex: 0 1 auto; display: inline-flex; align-items: center; gap: 6px; margin: 0 auto 2px 0; padding: 5px 10px; border-radius: 6px; background: rgb(0 0 0 / 0.05); color: var(--color-foreground, #000); font-size: 13px; font-weight: 600; line-height: 1.3; }
   .tp-card-actions__hinweis-icon { flex: none; }
@@ -263,9 +127,7 @@
   }
   .tp-card-actions__konfig:hover { background: rgb(0 0 0 / 0.05); }
   .tp-card-actions__konfig:focus-visible { outline: 2px solid var(--color-foreground); outline-offset: 2px; }
-  .tp-card-actions--teppich .tp-card-actions__sample,
-  .tp-card-actions--teppich .tp-card-actions__compare,
-  .tp-card-actions--teppich .tp-card-actions__compare:only-child {
+  .tp-card-actions--teppich .tp-card-actions__sample {
     flex: 0 0 auto;
     width: auto;
     min-height: 44px;
@@ -281,7 +143,6 @@
     display: inline-flex;
     align-items: center;
   }
-  .tp-card-actions--teppich .tp-card-actions__compare[aria-pressed='true'] { color: var(--color-foreground); font-weight: 700; background: none; }
 {% endstylesheet %}
 
 {% schema %}
