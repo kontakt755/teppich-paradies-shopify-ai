@@ -41,6 +41,11 @@
     endif
   endif
 
+  assign tp_more_href = source.url
+  if request.page_type == 'collection' and collection.handle == 'zubehoer' and source.handle == 'zubehoer' and mode == 'beliebt'
+    assign tp_more_href = '#ResultsList'
+  endif
+
   assign items = source.products
   assign tp_tg_filter = section.settings.teppich_gruppe | default: 'alle'
   if mode == 'neu'
@@ -135,8 +140,8 @@
           <p class="tp-zubehoer-produkte__intro">{{ section.settings.intro | escape }}</p>
         {%- endif -%}
       </div>
-      {%- if section.settings.link_text != blank and source.url != blank -%}
-        <a class="tp-zubehoer-produkte__more" href="{{ source.url }}">
+      {%- if section.settings.link_text != blank and tp_more_href != blank -%}
+        <a class="tp-zubehoer-produkte__more" href="{{ tp_more_href }}">
           {{ section.settings.link_text | escape }}
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
