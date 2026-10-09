@@ -201,7 +201,10 @@
             "paket_auswahl_xLTafR": {
               "type": "paket-auswahl",
               "name": "Paket-Auswahl",
-              "settings": {},
+              "settings": {
+                "holzleiste_standard": "lignova-sockelleiste-16x60mm",
+                "holzleiste_parkett": "lignova-sockelleiste-22x60mm"
+              },
               "blocks": {}
             },
             "tp_service_links_night1": {

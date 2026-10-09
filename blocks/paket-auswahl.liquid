@@ -15,6 +15,18 @@
 {% endcomment %}
 {% assign sqm_per_package = product.metafields.custom.qm_pro_paket.value | times: 1.0 %}
 {% assign initial_packages = 1 %}
+{% assign tp_pa_leiste = block.settings.holzleiste_standard %}
+{% if product.type == 'Parkett' %}
+  {% assign tp_pa_leiste = block.settings.holzleiste_parkett %}
+{% endif %}
+{% assign tp_pa_leistenlaenge = tp_pa_leiste.metafields.custom.stangenlaenge.value | times: 1.0 %}
+{% assign tp_pa_bodenart = product.type %}
+{% assign tp_pa_leiste_zeigen = false %}
+{% if tp_pa_bodenart == 'Parkett' or tp_pa_bodenart == 'Laminat' or tp_pa_bodenart == 'Klickvinyl' or tp_pa_bodenart == 'Klebevinyl' or tp_pa_bodenart == 'Kork' or tp_pa_bodenart == 'Linoleumboden' %}
+  {% if tp_pa_leiste != blank and tp_pa_leiste.available and tp_pa_leistenlaenge > 0 %}
+    {% assign tp_pa_leiste_zeigen = true %}
+  {% endif %}
+{% endif %}
 {% if sqm_per_package > 0 %}
 
 {% style %}
@@ -274,6 +286,25 @@
     color: var(--cp-text);
   }
 
+  .carpet-package__extra-{{ package_selector_id }} {
+    margin-top: 16px;
+    padding: 12px 14px;
+    border: 1px solid var(--cp-border);
+    border-radius: 7px;
+    background: var(--cp-surface);
+  }
+  .carpet-package__extra-{{ package_selector_id }} h3 { margin: 0 0 8px; font-size: 15px; }
+  .carpet-package__extra-{{ package_selector_id }} label { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+  .carpet-package__extra-{{ package_selector_id }} label small { display: block; margin-top: 2px; color: var(--cp-muted); font-size: 13px; }
+  .carpet-package__extra-{{ package_selector_id }} input[type="checkbox"] { width: 20px; height: 20px; margin: 0; }
+  .carpet-package__extra-fields-{{ package_selector_id }} { display: grid; gap: 8px; margin-top: 10px; }
+  .carpet-package__extra-fields-{{ package_selector_id }}[hidden] { display: none; }
+  .carpet-package__extra-fields-{{ package_selector_id }} label { display: block; font-size: 14px; }
+  .carpet-package__extra-fields-{{ package_selector_id }} input,
+  .carpet-package__extra-fields-{{ package_selector_id }} select { width: 100%; min-height: 44px; padding: 8px; border: 1px solid var(--cp-border-strong); border-radius: 6px; font: inherit; }
+  .carpet-package__extra-fields-{{ package_selector_id }} p { margin: 0; font-size: 13px; line-height: 1.4; color: var(--cp-muted); }
+  .carpet-package__extra-fields-{{ package_selector_id }} [data-rail-error] { color: #b00020; }
+
   .carpet-package__submit-{{ package_selector_id }} {
     width: 100%;
     min-height: 74px;
@@ -335,6 +366,7 @@
   data-piece-count="{{ product.metafields.custom.stueck_pro_paket.value }}"
   data-piece-label="{{ product.metafields.custom.stueck_bezeichnung.value | default: 'Stück' | escape }}"
   data-piece-format="{{ product.metafields.custom.format_cm.value | escape }}"
+  {% if tp_pa_leiste_zeigen %}data-rail-length="{{ tp_pa_leistenlaenge }}"{% endif %}
   {{ block.shopify_attributes }}
 >
   {%- comment -%}
@@ -411,6 +443,39 @@
       Charge – Übriges hilft später bei Reparaturen.
     </p>
   </div>
+
+  {% if tp_pa_leiste_zeigen %}
+    <div class="carpet-package__extra-{{ package_selector_id }}" data-rail-extra>
+      <h3>Zubehör (optional)</h3>
+      <label>
+        <input type="checkbox" data-rail-check>
+        <span>
+          Sockelleiste aus Echtholzfurnier, 60 mm hoch
+          <small>{% if product.type == 'Parkett' %}22 × 60 mm{% else %}16 × 60 mm{% endif %} · ab {{ tp_pa_leiste.price_min | money }} je Stange</small>
+        </span>
+      </label>
+      <div class="carpet-package__extra-fields-{{ package_selector_id }}" data-rail-fields hidden>
+        <div>
+          <label for="tp-rail-m-{{ package_selector_id }}">Benötigte Länge in Metern</label>
+          <input id="tp-rail-m-{{ package_selector_id }}" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 18,5" data-rail-meters>
+        </div>
+        <div>
+          <label for="tp-rail-color-{{ package_selector_id }}">Farbe der Sockelleiste</label>
+          <select id="tp-rail-color-{{ package_selector_id }}" data-rail-variant>
+            <option value="">Bitte Farbe wählen</option>
+            {% for tp_pa_variant in tp_pa_leiste.variants %}
+              {% if tp_pa_variant.available %}
+                <option value="{{ tp_pa_variant.id }}" data-price="{{ tp_pa_variant.price }}">{{ tp_pa_variant.title | escape }}</option>
+              {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+        <p data-rail-result></p>
+        <p data-rail-error role="alert" hidden></p>
+        <p>Verkauf in ganzen Stangen à {{ tp_pa_leistenlaenge | replace: '.', ',' }} m. Die Menge wird für Ihre Länge aufgerundet.</p>
+      </div>
+    </div>
+  {% endif %}
 
   {% comment %}
     Der Hinweis erscheint nur, wenn der Kunde weniger eingibt als ein Paket
@@ -565,6 +630,13 @@
     const unitHint = component.querySelector('[data-unit-hint]');
     const piecesLine = component.querySelector('[data-pieces-line]');
     const totalDisplay = component.querySelector('[data-total-display]');
+    const railCheck = component.querySelector('[data-rail-check]');
+    const railFields = component.querySelector('[data-rail-fields]');
+    const railMeters = component.querySelector('[data-rail-meters]');
+    const railVariant = component.querySelector('[data-rail-variant]');
+    const railResult = component.querySelector('[data-rail-result]');
+    const railError = component.querySelector('[data-rail-error]');
+    const railLength = Number(component.dataset.railLength || 0);
 
     // Stueckangaben kommen aus den Metafeldern am Element. Fehlt die
     // Stueckzahl, ist piecesLine gar nicht gerendert - die Zeile entfaellt
@@ -592,6 +664,29 @@
 
     function formatMoney(cents) {
       return moneyFormat.format(cents / 100) + ' €';
+    }
+
+    function railSelection() {
+      if (!railCheck?.checked) return { active: false, cents: 0, rods: 0 };
+      const meters = parseSqm(railMeters?.value);
+      const option = railVariant?.selectedOptions[0];
+      const price = Number(option?.dataset.price);
+      const id = Number(option?.value);
+      if (!meters || meters <= 0 || !Number.isFinite(railLength) || railLength <= 0 || !Number.isSafeInteger(price) || price <= 0 || !Number.isSafeInteger(id)) {
+        return { active: true, valid: false, cents: 0, rods: 0 };
+      }
+      const rods = Math.ceil(meters / railLength - FLOAT_EPSILON);
+      if (!Number.isSafeInteger(rods) || !Number.isSafeInteger(rods * price)) return { active: true, valid: false, cents: 0, rods: 0 };
+      return { active: true, valid: true, meters, rods, cents: rods * price, id };
+    }
+
+    function renderRail() {
+      if (!railCheck) return { active: false, cents: 0, rods: 0 };
+      if (railFields) railFields.hidden = !railCheck.checked;
+      const selection = railSelection();
+      if (railResult) railResult.textContent = selection.valid ? selection.rods + ' Stangen = ' + formatGermanNumber(selection.rods * railLength, 2) + ' m · ' + formatMoney(selection.cents) : '';
+      if (railError) { railError.hidden = true; railError.textContent = ''; }
+      return selection;
     }
 
     // Epsilon faengt Gleitkomma-Rauschen ab (z.B. wiederholtes += auf
@@ -663,7 +758,8 @@
       const packages = computePackages();
       const requiredSqm = getRequiredSqm();
       const actualSqm = packages * sqmPerPackage;
-      const totalCents = packages * packagePriceCents;
+      const rail = renderRail();
+      const totalCents = packages * packagePriceCents + (rail.valid ? rail.cents : 0);
 
       // Solange niemand eine Flaeche genannt hat, wird auch keine behauptet.
       // Der Ruhezustand ist "1 Paket" - eine vorbelegte Zahl im Feld waere
@@ -768,6 +864,13 @@
 
       const packages = renderResults();
       const actualSqm = packages * sqmPerPackage;
+      const rail = railSelection();
+      if (rail.active && !rail.valid) {
+        railError.textContent = 'Bitte eine gültige Länge und Farbe für die Sockelleiste angeben.';
+        railError.hidden = false;
+        railMeters.focus();
+        return;
+      }
       setMessage('', false);
 
       if (!variantId) {
@@ -792,11 +895,14 @@
         _verschnitt: wasteCheckbox && wasteCheckbox.checked ? '5%' : '0%',
       };
 
-      const payload = {
+      const floorItem = {
         id: variantId,
         quantity: packages,
         properties: properties,
       };
+      const payload = rail.valid
+        ? { items: [floorItem, { id: rail.id, quantity: rail.rods }] }
+        : floorItem;
 
       try {
         const response = await fetch('/cart/add.js', {
@@ -826,7 +932,7 @@
             detail: {
               resource: added,
               sourceId: component.id || 'paket-auswahl',
-              data: { itemCount: packages, source: 'product-form-component' },
+              data: { itemCount: packages + (rail.valid ? rail.rods : 0), source: 'product-form-component' },
             },
           })
         );
@@ -981,6 +1087,9 @@
         renderResults();
       });
     }
+    if (railCheck) railCheck.addEventListener('change', renderResults);
+    if (railMeters) railMeters.addEventListener('input', renderResults);
+    if (railVariant) railVariant.addEventListener('change', renderResults);
 
     // Horizon meldet den Variantenwechsel als "variant:update" am Abschnitt.
     // Nur Ereignisse dieses Produkts zaehlen - eine Empfehlungskarte daneben
@@ -1026,6 +1135,16 @@
       "id": "raummass_helfer",
       "label": "Fläche aus Raummaßen berechnen (Raumliste)",
       "default": true
+    },
+    {
+      "type": "product",
+      "id": "holzleiste_standard",
+      "label": "Sockelleiste für Vinyl, Laminat und andere Paketböden"
+    },
+    {
+      "type": "product",
+      "id": "holzleiste_parkett",
+      "label": "Sockelleiste für Parkett"
     }
   ],
   "presets": [

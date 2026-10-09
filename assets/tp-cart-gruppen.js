@@ -14,7 +14,7 @@
     (a) Property _Gruppe vorhanden
     (b) Property Art mit Wert Meterware oder Raummass
     (c) Produkt-Metafeld custom.preis_pro_001_qm == true
-    (d) Property "Zu Teppich"/"Zu Teppichboden" oder "Kante umlaufend"
+    (d) Property "Zu Teppich"/"Zu Teppichboden"/"Zu Bodenbelag" oder "Kante umlaufend"
         (Service-Zeile: Kettelservice, Fussleiste, Haftunterlage) - oder
         Produkttyp "Service" (so tragen Kettelservice und Fussleiste ihn im
         Shop; eine Service-Zeile ohne Properties kam ohne Rechner herein)
@@ -34,7 +34,7 @@
   var WUNSCH = /^wunschma(ß|ss)$/i;
   var FLAECHE_KEYS = ['Fläche (abgerechnet)', 'Fläche', 'Fläche (aufgerundet)', 'Fläche (berechnet)'];
   var MASS_KEYS = FLAECHE_KEYS.concat(['Ihre Breite', 'Rollenbreite', 'Breite', 'Maße']);
-  var SERVICE_KEYS = ['Zu Teppich', 'Zu Teppichboden'];
+  var SERVICE_KEYS = ['Zu Teppich', 'Zu Teppichboden', 'Zu Bodenbelag'];
   var SERVICE_TYP = /^service$/i;
 
   var GRUND = {
@@ -81,7 +81,7 @@
   }
 
   // Service-Zeile: haengt an einem anderen Artikel (Kettelservice, Fussleiste,
-  // Haftunterlage). Erkannt an "Zu Teppich…" - oder an "Kante umlaufend" ohne
+  // Haftunterlage, Holzleiste). Erkannt an "Zu ..." - oder an "Kante umlaufend" ohne
   // eigene Masse (die Teppich-Hauptzeile traegt "Maße" dazu).
   function istServiceTyp(zeile) {
     return SERVICE_TYP.test(String(zeile && zeile.typ != null ? zeile.typ : '').trim());
@@ -131,6 +131,7 @@
       return hatProp(zeile, 'Mindestpreis') ? fl + ' (Mindestpreis)' : fl;
     }
     if (istService(zeile)) {
+      if (hatProp(zeile, 'Zu Bodenbelag')) return String(zeile.quantity) + (zeile.quantity === 1 ? ' Stange' : ' Stangen');
       var kante = prop(zeile, 'Kante umlaufend');
       if (kante) return kante + ' Kettelkante';
       var laenge = prop(zeile, 'Länge');
@@ -170,7 +171,7 @@
     if (!gruppe(zeile) || !istService(zeile)) return '';
     var h = hauptzeile(zeile, zeilen);
     if (!h) return '';
-    var t = h.titel || prop(zeile, 'Zu Teppich') || prop(zeile, 'Zu Teppichboden');
+    var t = h.titel || prop(zeile, 'Zu Teppich') || prop(zeile, 'Zu Teppichboden') || prop(zeile, 'Zu Bodenbelag');
     return 'Gehört zu ' + t + '; wird gemeinsam entfernt';
   }
 

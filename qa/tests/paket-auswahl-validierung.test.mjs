@@ -36,16 +36,21 @@ class Element {
   appendChild(node) { this.options.push(node); }
 }
 
-async function packageCase(raw, { waste = true, blur = true, action = null, submit = true, correction = null } = {}) {
+async function packageCase(raw, { waste = true, blur = true, action = null, submit = true, correction = null, rail = null } = {}) {
   const selectors = ['sqm-input', 'need-label', 'need-display', 'sqm-display',
     'package-display', 'package-word', 'unit-hint', 'pieces-line', 'total-display',
-    'waste-checkbox', 'add-to-cart', 'cart-message'];
+    'waste-checkbox', 'add-to-cart', 'cart-message', 'rail-check', 'rail-fields', 'rail-meters', 'rail-variant', 'rail-result', 'rail-error'];
   const nodes = Object.fromEntries(selectors.map((s) => [`[data-${s}]`, new Element()]));
   nodes['[data-waste-checkbox]'].checked = waste;
+  if (rail) {
+    nodes['[data-rail-check]'].checked = true;
+    nodes['[data-rail-meters]'].value = rail.meters;
+    nodes['[data-rail-variant]'].selectedOptions = [{ value: '61105510809934', dataset: { price: '2988' } }];
+  }
   const component = new Element();
   // Fixture identisch zum Audit (historischer Marlow-Cart-Payload).
   component.dataset = { sqmPerPackage: '2.08', packagePriceCents: '10598',
-    variantId: '60332523127118', initialPackages: '1', pieceCount: '6', pieceLabel: 'Planken' };
+    variantId: '60332523127118', initialPackages: '1', pieceCount: '6', pieceLabel: 'Planken', railLength: rail ? '2.5' : '' };
   component.querySelector = (selector) => nodes[selector] ?? null;
   component.closest = () => null;
   const doc = new Element();
@@ -89,6 +94,7 @@ async function packageCase(raw, { waste = true, blur = true, action = null, subm
     invalidBeforeCorrection,
     packages: nodes['[data-package-display]'].textContent,
     total: nodes['[data-total-display]'].textContent,
+    railError: nodes['[data-rail-error]'].textContent,
   };
 }
 
@@ -176,4 +182,19 @@ test('Flaechenfeld verweist auf die live angesagte Fehlermeldung', () => {
   assert.ok(messageId);
   assert.equal(describedBy, messageId);
   assert.match(message, /aria-live="polite"/);
+});
+
+test('Sockelleiste: Meter werden auf ganze Stangen gerundet und gemeinsam bestellt', async () => {
+  const result = await packageCase('20', { rail: { meters: '18,5' } });
+  assert.equal(result.requests.length, 1);
+  assert.equal(result.requests[0].body.items[0].quantity, 11);
+  assert.equal(result.requests[0].body.items[1].id, 61105510809934);
+  assert.equal(result.requests[0].body.items[1].quantity, 8);
+  assert.equal(result.total, '1.404,82 €');
+});
+
+test('Sockelleiste: ohne Meterangabe wird kein Warenkorb-Aufruf gesendet', async () => {
+  const result = await packageCase('20', { rail: { meters: '' } });
+  assert.equal(result.requests.length, 0);
+  assert.match(result.railError, /gültige Länge/);
 });

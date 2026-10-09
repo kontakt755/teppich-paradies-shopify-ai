@@ -45,7 +45,7 @@ class Element {
   focus() {}
 }
 
-async function rollCase(raw, checked = true) {
+async function rollCase(raw, checked = true, holz = null) {
   const fields = Object.fromEntries(['hoehe', 'an', 'felder', 'meter', 'hint', 'preis']
     .map((s) => [`[data-leiste-${s}]`, new Element()]));
   fields['[data-leiste-hoehe]'].value = 'audit-leiste';
@@ -54,15 +54,24 @@ async function rollCase(raw, checked = true) {
   fields['[data-leiste-meter]'].value = raw;
   fields['[data-leiste-meter]'].setAttribute('data-touched', '1');
   const leisteBox = { querySelector: (s) => fields[s] ?? null };
+  const holzFields = Object.fromEntries(['an', 'felder', 'meter', 'variante', 'preis', 'ergebnis']
+    .map((s) => [`[data-holz-${s}]`, new Element()]));
+  holzFields['[data-holz-an]'].checked = !!holz;
+  holzFields['[data-holz-meter]'].value = holz?.meters ?? '';
+  holzFields['[data-holz-meter]'].setAttribute('data-touched', '1');
+  holzFields['[data-holz-variante]'].value = holz?.variant ?? '';
+  const holzBox = holz ? { querySelector: (s) => holzFields[s] ?? null } : null;
   const cta = new Element();
   const requests = [];
   const context = vm.createContext({
-    leisteBox, haftBox: null, formulaExtras: null,
+    leisteBox, haftBox: null, holzBox, formulaExtras: null,
     leisteVarianten: [{ id: 'audit-leiste', title: '5 cm', price: 1095 }],
+    holzVarianten: holz ? [{ id: 'audit-holz', title: 'Eiche', price: 1688 }] : [],
+    holzLaenge: holz ? 2.5 : 0,
     haftVarianten: [], extrasAllowed: () => true, farbeText: () => 'Sand Hell – 004',
     fmt: (n) => n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
     fmtArea: (n) => String(n),
-    data: { product_title: 'Piumera Teppichboden 400cm 500cm' },
+    data: { product_title: holz ? 'Vinyl von der Rolle' : 'Piumera Teppichboden 400cm 500cm' },
     inFlight: false, cta, ctaHint: new Element(), cartLink: new Element(),
     target: { id: 60330695491918, price: 6590, available: true,
       farbnummer: '004', farbe_intern: 'Sand Hell – 004' },
@@ -89,6 +98,7 @@ async function rollCase(raw, checked = true) {
     payload: requests[0],
     extraItems: JSON.parse(JSON.stringify(extras.items)),
     leisteInvalid: extras.leisteInvalid,
+    holzInvalid: extras.holzInvalid,
     hint: fields['[data-leiste-hint]'].textContent,
   };
 }
@@ -100,6 +110,20 @@ test('Regression: gültige Fußleistenlänge bleibt kaufbar (2 Positionen)', asy
   assert.equal(result.payload.body.items[0].quantity, 12);
   assert.equal(result.payload.body.items[1].quantity, 8);
   assert.equal(result.leisteInvalid, false);
+});
+
+test('Vinyl-Sockelleiste: 18,5 m ergeben acht Stangen im selben Warenkorb-Aufruf', async () => {
+  const result = await rollCase('12', false, { meters: '18,5', variant: 'audit-holz' });
+  assert.equal(result.requestCount, 1);
+  assert.equal(result.holzInvalid, false);
+  assert.equal(result.payload.body.items[0].quantity, 8);
+  assert.equal(result.payload.body.items[0].properties['Zu Bodenbelag'], 'Vinyl von der Rolle');
+});
+
+test('Vinyl-Sockelleiste ohne Farbe stoppt den gesamten Warenkorb-Aufruf', async () => {
+  const result = await rollCase('12', false, { meters: '18,5', variant: '' });
+  assert.equal(result.holzInvalid, true);
+  assert.equal(result.requestCount, 0);
 });
 
 test('Regression: Checkbox aus -> nur Hauptware, kein Block', async () => {
