@@ -148,6 +148,10 @@
   {%- endif -%}
 </product-price>
 
+{%- if product_resource.handle == 'vorwerk-passion-yasmin-anthrazit-teppichboden-400-cm-sonderposten' and product_resource.handle == product.handle -%}
+  {% render 'tp-yasmin-angebot', product: product_resource %}
+{%- endif -%}
+
 <style>
   .price-with-unit__wrapper {
     display: inline-flex;
