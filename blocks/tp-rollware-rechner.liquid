@@ -115,7 +115,27 @@
   assign tp_rc_einfass_gruppe = product.metafields.service.einfass_gruppe.value
 -%}
 
-{%- assign tp_rc_max_laenge_cm = 5000 -%}
+{%- liquid
+  assign tp_rc_max_laenge_cm = 5000
+  assign tp_rc_bestand_gefuehrt = false
+  assign tp_rc_produkt_max_cm = product.metafields.custom.max_roll_laenge_cm.value | times: 1
+  if tp_rc_produkt_max_cm > 0
+    if tp_rc_produkt_max_cm < tp_rc_max_laenge_cm
+      assign tp_rc_max_laenge_cm = tp_rc_produkt_max_cm
+    endif
+    if product.variants.size == 1 and tp_rc_cm_exact == false and tp_rc_fallback_width_cm > 0
+      assign tp_rc_bestand_variante = product.variants.first
+      if tp_rc_bestand_variante.inventory_management == 'shopify' and tp_rc_bestand_variante.inventory_policy == 'deny'
+        assign tp_rc_bestand_gefuehrt = true
+        assign tp_rc_bestand_max_cm = tp_rc_bestand_variante.inventory_quantity | times: 10000 | divided_by: tp_rc_fallback_width_cm
+        assign tp_rc_bestand_max_cm = tp_rc_bestand_max_cm | at_least: 0
+        if tp_rc_bestand_max_cm < tp_rc_max_laenge_cm
+          assign tp_rc_max_laenge_cm = tp_rc_bestand_max_cm
+        endif
+      endif
+    endif
+  endif
+-%}
 {%- comment -%}
   Zentral gesteuerte Aktion (snippets/tp-aktion-laufend). Nur Anzeige: der
   Rabatt selbst kommt im Warenkorb vom automatischen Shopify-Rabatt.
@@ -232,6 +252,17 @@
         <span class="tp-rwc-unit" data-mass-unit>cm</span>
       </div>
       <p class="tp-rwc-note tp-rwc-gegen" id="tp-rwc-len-echo-{{ tp_rc_id }}" data-length-echo hidden></p>
+      {%- if tp_rc_bestand_gefuehrt -%}
+        <p class="tp-rwc-note" data-rollbestand>
+          {%- if tp_rc_max_laenge_cm >= 100 -%}
+            Aktuell bis {{ tp_rc_max_laenge_cm | divided_by: 100.0 | replace: '.', ',' }} m Länge bei voller Rollenbreite verfügbar.
+          {%- elsif tp_rc_max_laenge_cm > 0 -%}
+            Restlänge unter 1 m – bitte fragen Sie im Laden an.
+          {%- else -%}
+            Dieser Sonderposten ist ausverkauft.
+          {%- endif -%}
+        </p>
+      {%- endif -%}
       <p class="tp-rwc-note tp-rwc-note-error" data-error-min hidden>Mindestlänge 100 cm</p>
       {%- comment -%}
         Das Attribut heisst noch data-error-comma, meldet aber jede nicht
@@ -484,13 +515,23 @@
     assign tp_rc_muster_url = tp_rc_muster_url | strip
     assign tp_rc_muster_vorlage = block.settings.muster_label | default: 'Kostenloses Muster in {farbe}'
     assign tp_rc_start_farbe = product.selected_or_first_available_variant.options | first
+    if tp_rc_start_farbe == 'Default Title'
+      assign tp_rc_start_farbe = ''
+      for tp_rc_tag in product.tags
+        assign tp_rc_tag_anfang = tp_rc_tag | slice: 0, 7 | downcase
+        if tp_rc_tag_anfang == 'farbe: '
+          assign tp_rc_start_farbe = tp_rc_tag | slice: 7, 1000 | strip | capitalize
+          break
+        endif
+      endfor
+    endif
     assign tp_rc_muster_platzhalter = '{farbe}'
     assign tp_rc_muster_text = tp_rc_muster_vorlage | replace: tp_rc_muster_platzhalter, tp_rc_start_farbe
     assign tp_rc_muster_farbe = tp_rc_start_farbe | url_encode
     assign tp_rc_muster_url = tp_rc_muster_url | append: '&farbe=' | append: tp_rc_muster_farbe
   -%}
   {%- if block.settings.muster_anzeigen and tp_rc_muster_url != blank -%}
-    <a class="tp-rwc-muster" href="{{ tp_rc_muster_url }}" data-muster-link data-muster-vorlage="{{ tp_rc_muster_vorlage | escape }}" data-rwc-body>
+    <a class="tp-rwc-muster" href="{{ tp_rc_muster_url }}" data-muster-link data-muster-vorlage="{{ tp_rc_muster_vorlage | escape }}" data-muster-fallback-farbe="{{ tp_rc_start_farbe | escape }}" data-rwc-body>
       {{- tp_rc_muster_text | escape -}}
     </a>
   {%- endif -%}
@@ -502,7 +543,8 @@
   {%- endcomment -%}
   <p class="tp-rwc-infozeile" data-rwc-body>
     {%- if block.settings.lieferzeit != blank -%}<span>Lieferzeit {{ block.settings.lieferzeit | escape }}</span>{%- endif -%}
-    <span>Spedition frei Bordsteinkante</span>
+    {%- if product.tags contains 'sonderposten' -%}<span>Versand per Paketdienst oder Spedition je nach Maß</span>
+    {%- else -%}<span>Spedition frei Bordsteinkante</span>{%- endif -%}
     {%- if settings.tp_versand_frei_ab != blank -%}<span>versandkostenfrei ab {{ settings.tp_versand_frei_ab }} €</span>{%- endif -%}
     {%- if tp_rc_aktion_prozent > 0 -%}<span class="tp-rwc-infozeile__aktion">Aktion −{{ tp_rc_aktion_prozent }} % im Warenkorb</span>{%- endif -%}
   </p>
@@ -1325,6 +1367,7 @@ function tpRwcInit{{ tp_rc_id }}() {
   function updateMuster() {
     if (!musterLink || !target) return;
     var name = target.options.filter(function (_, i) { return i !== wIdx; }).join(' ');
+    if (!name || name === 'Default Title') name = musterLink.getAttribute('data-muster-fallback-farbe') || '';
     musterLink.textContent = (musterLink.getAttribute('data-muster-vorlage') || '').replace('{farbe}', name);
     var musterUrl = new URL(musterLink.href, window.location.origin);
     musterUrl.searchParams.set('farbe', name);
@@ -2107,7 +2150,9 @@ function tpRwcInit{{ tp_rc_id }}() {
     var lenEingegeben = String(lengthInput.value || '').trim() !== '';
     errMin.hidden = badInput || blocked || tooLong || !((len > 0 && len < 100) || (lenEingegeben && len === 0));
     if (errMax) {
-      errMax.textContent = 'Ab ' + (MAX_LENGTH_CM / 100) + ' m Länge beraten wir Sie lieber persönlich – bitte kurz anrufen, damit Zuschnitt und Lieferung passen.';
+      errMax.textContent = {{ tp_rc_bestand_gefuehrt | json }}
+        ? 'Für diesen Sonderposten sind höchstens ' + (MAX_LENGTH_CM / 100).toLocaleString('de-DE') + ' m Länge verfügbar.'
+        : 'Über ' + (MAX_LENGTH_CM / 100) + ' m Länge beraten wir Sie lieber persönlich – bitte kurz anrufen, damit Zuschnitt und Lieferung passen.';
       errMax.hidden = !tooLong;
     }
 
