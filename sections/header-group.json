@@ -182,6 +182,14 @@
             "subtitle": ""
           }
         },
+        "tp_kachel_fliesen_auslauf": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "/collections/auslauf-teppichfliesen",
+            "image": "shopify://shop_images/teppichfliesen-auslauf-format-menue.jpg",
+            "subtitle": ""
+          }
+        },
         "tp_kachel_vinyl_alle": {
           "type": "_tp-menu-kachel",
           "settings": {
@@ -504,6 +512,7 @@
         "tp_kachel_fliesen_alle",
         "tp_kachel_fliesen_50x50",
         "tp_kachel_fliesen_planken",
+        "tp_kachel_fliesen_auslauf",
         "tp_kachel_vinyl_alle",
         "tp_kachel_vinyl_klick",
         "tp_kachel_vinyl_klebe",
