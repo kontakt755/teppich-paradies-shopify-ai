@@ -30,6 +30,10 @@ const haft = (g) => ({
   key: 'h1', titel: 'Antirutsch-Unterlage', quantity: 5, preisPro001Qm: false, optionen: ['200 cm'],
   properties: { 'Zu Teppichboden': 'Piumera Teppichboden 400cm 500cm', 'Ausführung': '200 cm', 'Bahnen': '2', _Gruppe: g },
 });
+const holzleiste = (g) => ({
+  key: 'l1', titel: 'Lignova Sockelleiste 16x60mm', quantity: 8, preisPro001Qm: false, optionen: ['Eiche Gold Mittel'], typ: 'Sockelleisten',
+  properties: { 'Zu Bodenbelag': 'Vinyl von der Rolle', _Gruppe: g },
+});
 const mass = (g, extra = {}) => ({
   key: 't1', titel: 'Piumera Teppich nach Maß', quantity: 600, preisPro001Qm: true, optionen: ['Sand Hell'],
   properties: { 'Einfassung': 'Gekettelt', 'Form': 'Rechteck', 'Maße': '200 × 300 cm', 'Fläche (abgerechnet)': '6,00 m²', 'Kante umlaufend': '10,00 m', 'Farbnummer': '004', 'Garn': 'Ton in Ton', '_Zuschnitt aus Rolle': '400 cm', ...(g ? { _Gruppe: g } : {}), ...extra },
@@ -47,6 +51,7 @@ test('A: berechnete Zeilen werden datengetrieben erkannt, Stueckware nicht', () 
   assert.equal(G.istBerechnet(kettel('K1')), true, '_Gruppe');
   assert.equal(G.istBerechnet(kettel()), true, 'Zu Teppich ohne Gruppe');
   assert.equal(G.istBerechnet(fussleiste('T1')), true, 'Zu Teppichboden');
+  assert.equal(G.istBerechnet(holzleiste('V1')), true, 'Zu Bodenbelag');
   // Wunschmass-Variante ohne Rechner (direkt per /cart/add.js)
   assert.equal(G.istBerechnet({ key: 'w', quantity: 1, optionen: ['Sand Hell', 'Wunschmaß'], properties: {} }), true);
   assert.equal(G.istBerechnet({ key: 'z', quantity: 12, properties: { 'Gewünschte Länge': '300 cm' } }), true, 'Gewuenschte Laenge');
@@ -59,6 +64,7 @@ test('B: Service-Zeile vs Hauptzeile - Teppich mit Kante ist keine Service-Zeile
   assert.equal(G.istService(kettel('K1')), true);
   assert.equal(G.istService(fussleiste('T1')), true);
   assert.equal(G.istService(haft('T1')), true);
+  assert.equal(G.istService(holzleiste('V1')), true);
   assert.equal(G.istService(meterware('T1')), false);
 });
 
@@ -69,6 +75,7 @@ test('C: Kundeneinheit aus den Properties, Fallback Stueckzahl, nie ein Preis', 
   assert.equal(G.kundeneinheit(kettel('K1')), '10,00 m Kettelkante');
   assert.equal(G.kundeneinheit(fussleiste('T1')), '19 m Fußleiste');
   assert.equal(G.kundeneinheit(haft('T1')), '5 lfm (2 Bahnen)');
+  assert.equal(G.kundeneinheit(holzleiste('V1')), '8 Stangen');
   assert.equal(G.kundeneinheit({ key: 'x', quantity: 3, properties: { _Gruppe: 'T1' } }), '3 Stück');
   for (const z of [meterware(), mass(), kettel('K1'), fussleiste('T1'), haft('T1')]) {
     assert.doesNotMatch(G.kundeneinheit(z), /€/);
@@ -140,9 +147,18 @@ test('G: Checkout-Sperre nur bei Waisen', () => {
   assert.equal(G.checkoutGesperrt([]), false);
 });
 
+test('Vinyl-Leiste bleibt an die Rollenware gebunden und wird ohne Boden gesperrt', () => {
+  const boden = { ...meterware('V1'), titel: 'Vinyl von der Rolle' };
+  const leiste = holzleiste('V1');
+  assert.equal(G.gruppen([boden, leiste]).V1.haupt.key, 'm1');
+  assert.deepEqual(G.zuEntfernen(leiste, [boden, leiste]).sort(), ['l1', 'm1']);
+  assert.deepEqual(G.waisen([boden, leiste]), []);
+  assert.equal(G.waisen([leiste])[0].grund, G.GRUND.GRUPPE_OHNE_HAUPT);
+});
+
 test('H: Liquid-Seite kennt dieselben Property-Namen und Texte wie das JS', () => {
   const liquid = lies('snippets/tp-cart-gruppe.liquid');
-  for (const key of ['_Gruppe', 'Zu Teppich', 'Zu Teppichboden', 'Kante umlaufend', 'Maße', 'Fläche (abgerechnet)', 'Fläche (aufgerundet)', 'Ihre Breite', 'Rollenbreite', 'Länge', 'Höhe', 'Bahnen', 'Mindestpreis']) {
+  for (const key of ['_Gruppe', 'Zu Teppich', 'Zu Teppichboden', 'Zu Bodenbelag', 'Kante umlaufend', 'Maße', 'Fläche (abgerechnet)', 'Fläche (aufgerundet)', 'Ihre Breite', 'Rollenbreite', 'Länge', 'Höhe', 'Bahnen', 'Mindestpreis']) {
     assert.ok(liquid.includes(key), `Liquid kennt ${key}`);
   }
   assert.ok(liquid.includes('preis_pro_001_qm'));

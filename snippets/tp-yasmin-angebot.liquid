@@ -1,0 +1,27 @@
+{%- comment -%}
+  Yasmin: Herkunft und freigegebene Preise anderer Farben/Verkaufsformen.
+  63,99 ist der vom Inhaber genannte Bestellpreis anderer Farben, kein Vorpreis.
+  Vorwerk-Logo: https://commons.wikimedia.org/wiki/File:Vorwerk.svg (Quelle: Vorwerk SE & Co. KG)
+  Hersteller: https://dasteppichwerk.de/impressum
+  Raummass bleibt auf Anfrage, bis der gemeinsame Rollenbestand aktiv ist.
+{%- endcomment -%}
+{%- assign tp_yasmin_raummass = product.selected_or_first_available_variant.price | times: 1.35 | divided_by: 100.0 | round | times: 100 -%}
+<div class="tp-yasmin-angebot">
+  <div class="tp-yasmin-angebot__marke">
+    <img src="{{ 'tp-vorwerk-logo.svg' | asset_url }}" alt="Vorwerk" width="120" height="48" loading="lazy">
+    <p><strong>Heute DAS TEPPICHWERK</strong><br>Teppichtradition aus Hameln – bekannt als Vorwerk.</p>
+  </div>
+  <p><strong>Raummaß: {{ tp_yasmin_raummass | money_without_currency }} €/m²</strong><br>Wunschbreite und Wunschlänge auf Anfrage. Als Kettelteppich zusätzlich 19,00 € je laufendem Meter Einfassung.</p>
+  <p class="tp-yasmin-angebot__vergleich">Andere Farben auf Bestellung: <strong>63,99 €/m²</strong>.<br>Dieser Sonderposten gilt für unseren vorhandenen anthrazitfarbenen Lagerbestand.</p>
+  <a href="/pages/kontakt?thema=Raummaß&amp;produkt={{ product.handle | url_encode }}">Raummaß oder andere Farbe anfragen</a>
+</div>
+
+{% stylesheet %}
+  .tp-yasmin-angebot { font-size: 14px; line-height: 1.5; }
+  .tp-yasmin-angebot p { margin: 0 0 10px; }
+  .tp-yasmin-angebot__marke { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
+  .tp-yasmin-angebot__marke img { width: 120px; height: 48px; object-fit: contain; }
+  .tp-yasmin-angebot__marke p { margin: 0; }
+  .tp-yasmin-angebot__vergleich { color: rgb(var(--color-foreground-rgb) / .75); }
+  .tp-yasmin-angebot a { text-underline-offset: 3px; }
+{% endstylesheet %}

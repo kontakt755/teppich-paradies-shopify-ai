@@ -32,16 +32,10 @@
     endif
   endif
 
-  # Gekuerzter Anzeigetitel fuer Produktkarten (z.B. predictive search,
-  # mega menu, header drawer) - dieselbe Kuerzungsregel wie
-  # blocks/tp-card-title.liquid auf Collection-/Such-Karten, damit Titel
-  # ueberall konsistent kurz sind. Der echte Produkttitel (resource.title)
-  # bleibt unveraendert, nur die Anzeige hier wird gekuerzt.
-  assign card_display_title = resource.title
-  if resource_type == 'product'
-    assign card_display_title = resource.title | split: ' – ' | first | split: ' Teppichboden' | first
-  endif
 %}
+
+{% capture card_display_title %}{% render 'tp-resource-card-title-display', resource: resource, resource_type: resource_type %}{% endcapture %}
+{% assign card_display_title = card_display_title | strip %}
 
 {%- if resource_type == 'product' and settings.transition_to_main_product -%}
   <product-card-link

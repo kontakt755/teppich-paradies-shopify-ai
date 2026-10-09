@@ -1,0 +1,6 @@
+{% assign tp_card_title_display = product.title | split: ' – ' | first %}
+{% assign tp_card_product_type = product.type | downcase %}
+{% if tp_card_product_type contains 'teppichboden' %}
+  {% assign tp_card_title_display = tp_card_title_display | split: ' Teppichboden' | first %}
+{% endif %}
+{{ tp_card_title_display }}

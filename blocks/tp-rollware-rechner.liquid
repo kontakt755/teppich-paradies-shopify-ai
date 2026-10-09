@@ -105,10 +105,37 @@
 
   assign tp_rc_leiste = block.settings.kettelleisten_produkt
   assign tp_rc_haft = block.settings.haftunterlage_produkt
+  assign tp_rc_holz = blank
+  if product.type == 'Vinyl von der Rolle' or product.type == 'Linoleumboden'
+    assign tp_rc_holz = block.settings.holzleiste_produkt
+    if tp_rc_holz.available == false or tp_rc_holz.metafields.custom.stangenlaenge.value == blank
+      assign tp_rc_holz = blank
+    endif
+  endif
   assign tp_rc_einfass_gruppe = product.metafields.service.einfass_gruppe.value
 -%}
 
-{%- assign tp_rc_max_laenge_cm = 5000 -%}
+{%- liquid
+  assign tp_rc_max_laenge_cm = 5000
+  assign tp_rc_bestand_gefuehrt = false
+  assign tp_rc_produkt_max_cm = product.metafields.custom.max_roll_laenge_cm.value | times: 1
+  if tp_rc_produkt_max_cm > 0
+    if tp_rc_produkt_max_cm < tp_rc_max_laenge_cm
+      assign tp_rc_max_laenge_cm = tp_rc_produkt_max_cm
+    endif
+    if product.variants.size == 1 and tp_rc_cm_exact == false and tp_rc_fallback_width_cm > 0
+      assign tp_rc_bestand_variante = product.variants.first
+      if tp_rc_bestand_variante.inventory_management == 'shopify' and tp_rc_bestand_variante.inventory_policy == 'deny'
+        assign tp_rc_bestand_gefuehrt = true
+        assign tp_rc_bestand_max_cm = tp_rc_bestand_variante.inventory_quantity | times: 10000 | divided_by: tp_rc_fallback_width_cm
+        assign tp_rc_bestand_max_cm = tp_rc_bestand_max_cm | at_least: 0
+        if tp_rc_bestand_max_cm < tp_rc_max_laenge_cm
+          assign tp_rc_max_laenge_cm = tp_rc_bestand_max_cm
+        endif
+      endif
+    endif
+  endif
+-%}
 {%- comment -%}
   Zentral gesteuerte Aktion (snippets/tp-aktion-laufend). Nur Anzeige: der
   Rabatt selbst kommt im Warenkorb vom automatischen Shopify-Rabatt.
@@ -225,6 +252,17 @@
         <span class="tp-rwc-unit" data-mass-unit>cm</span>
       </div>
       <p class="tp-rwc-note tp-rwc-gegen" id="tp-rwc-len-echo-{{ tp_rc_id }}" data-length-echo hidden></p>
+      {%- if tp_rc_bestand_gefuehrt -%}
+        <p class="tp-rwc-note" data-rollbestand>
+          {%- if tp_rc_max_laenge_cm >= 100 -%}
+            Aktuell bis {{ tp_rc_max_laenge_cm | divided_by: 100.0 | replace: '.', ',' }} m Länge bei voller Rollenbreite verfügbar.
+          {%- elsif tp_rc_max_laenge_cm > 0 -%}
+            Restlänge unter 1 m – bitte fragen Sie im Laden an.
+          {%- else -%}
+            Dieser Sonderposten ist ausverkauft.
+          {%- endif -%}
+        </p>
+      {%- endif -%}
       <p class="tp-rwc-note tp-rwc-note-error" data-error-min hidden>Mindestlänge 100 cm</p>
       {%- comment -%}
         Das Attribut heisst noch data-error-comma, meldet aber jede nicht
@@ -268,15 +306,15 @@
   <p class="tp-rwc-note tp-rwc-note-error" data-error-stock hidden></p>
 
   {%- comment -%}
-    K4: Zubehoer als eingeklappter Abschnitt direkt unter den Massen. Jede
+    K4: Zubehoer als sichtbarer Abschnitt direkt unter den Massen. Jede
     Zeile ist eine Checkbox mit dem fuer dieses Stueck berechneten Preis
     (Fussleiste: Umfang, Haftunterlage: Bahnen x Laenge). "Mehr dazu" ist ein
     Tooltip statt eines aufklappenden Absatzes. Sichtbar nur, wenn der Rechner
     fuer diese Farbe mindestens einen Zusatz anbietet (updateExtras).
   {%- endcomment -%}
-  {%- if tp_rc_leiste != blank or tp_rc_haft != blank -%}
-    <details class="tp-rwc-zubehoer" id="tp-rwc-extras-{{ tp_rc_id }}" data-zubehoer hidden data-rwc-body>
-      <summary class="tp-rwc-zubehoer__kopf">Zubehör <span>(optional)</span></summary>
+  {%- if tp_rc_leiste != blank or tp_rc_haft != blank or tp_rc_holz != blank -%}
+    <div class="tp-rwc-zubehoer" id="tp-rwc-extras-{{ tp_rc_id }}" data-zubehoer hidden data-rwc-body>
+      <p class="tp-rwc-zubehoer__kopf">Zubehör <span>(optional)</span></p>
       {%- if tp_rc_leiste != blank -%}
         <div class="tp-rwc-extra" data-extra="leiste" hidden>
           <label class="tp-rwc-karte">
@@ -323,7 +361,38 @@
           </span>
         </div>
       {%- endif -%}
-    </details>
+      {%- if tp_rc_holz != blank -%}
+        <div class="tp-rwc-extra" data-extra="holz" hidden>
+          <label class="tp-rwc-karte">
+            <input type="checkbox" data-holz-an>
+            <span class="tp-rwc-karte-text">
+              <b>Sockelleiste aus Echtholzfurnier, 60 mm hoch</b>
+              <small data-holz-hint>16 × 60 mm · Verkauf in ganzen Stangen</small>
+            </span>
+            <span class="tp-rwc-karte-preis" data-holz-preis></span>
+          </label>
+          <div class="tp-rwc-extra-felder" data-holz-felder hidden>
+            <div>
+              <label class="tp-rwc-label" for="tp-rwc-hm-{{ tp_rc_id }}">Benötigte Länge in Metern</label>
+              <div class="tp-rwc-input-wrap">
+                <input type="text" id="tp-rwc-hm-{{ tp_rc_id }}" class="tp-rwc-input" inputmode="decimal" placeholder="z. B. 18,5" data-holz-meter>
+                <span class="tp-rwc-unit">m</span>
+              </div>
+            </div>
+            <div>
+              <label class="tp-rwc-label" for="tp-rwc-hv-{{ tp_rc_id }}">Farbe der Sockelleiste</label>
+              <select id="tp-rwc-hv-{{ tp_rc_id }}" class="tp-rwc-select" data-holz-variante>
+                <option value="">Bitte Farbe wählen</option>
+                {% for tp_rc_hv in tp_rc_holz.variants %}
+                  {% if tp_rc_hv.available %}<option value="{{ tp_rc_hv.id }}">{{ tp_rc_hv.title | escape }}</option>{% endif %}
+                {% endfor %}
+              </select>
+            </div>
+            <p class="tp-rwc-note" data-holz-ergebnis></p>
+          </div>
+        </div>
+      {%- endif -%}
+    </div>
   {%- endif -%}
 
   {%- comment -%}
@@ -446,13 +515,23 @@
     assign tp_rc_muster_url = tp_rc_muster_url | strip
     assign tp_rc_muster_vorlage = block.settings.muster_label | default: 'Kostenloses Muster in {farbe}'
     assign tp_rc_start_farbe = product.selected_or_first_available_variant.options | first
+    if tp_rc_start_farbe == 'Default Title'
+      assign tp_rc_start_farbe = ''
+      for tp_rc_tag in product.tags
+        assign tp_rc_tag_anfang = tp_rc_tag | slice: 0, 7 | downcase
+        if tp_rc_tag_anfang == 'farbe: '
+          assign tp_rc_start_farbe = tp_rc_tag | slice: 7, 1000 | strip | capitalize
+          break
+        endif
+      endfor
+    endif
     assign tp_rc_muster_platzhalter = '{farbe}'
     assign tp_rc_muster_text = tp_rc_muster_vorlage | replace: tp_rc_muster_platzhalter, tp_rc_start_farbe
     assign tp_rc_muster_farbe = tp_rc_start_farbe | url_encode
     assign tp_rc_muster_url = tp_rc_muster_url | append: '&farbe=' | append: tp_rc_muster_farbe
   -%}
   {%- if block.settings.muster_anzeigen and tp_rc_muster_url != blank -%}
-    <a class="tp-rwc-muster" href="{{ tp_rc_muster_url }}" data-muster-link data-muster-vorlage="{{ tp_rc_muster_vorlage | escape }}" data-rwc-body>
+    <a class="tp-rwc-muster" href="{{ tp_rc_muster_url }}" data-muster-link data-muster-vorlage="{{ tp_rc_muster_vorlage | escape }}" data-muster-fallback-farbe="{{ tp_rc_start_farbe | escape }}" data-rwc-body>
       {{- tp_rc_muster_text | escape -}}
     </a>
   {%- endif -%}
@@ -464,7 +543,8 @@
   {%- endcomment -%}
   <p class="tp-rwc-infozeile" data-rwc-body>
     {%- if block.settings.lieferzeit != blank -%}<span>Lieferzeit {{ block.settings.lieferzeit | escape }}</span>{%- endif -%}
-    <span>Spedition frei Bordsteinkante</span>
+    {%- if product.tags contains 'sonderposten' -%}<span>Versand per Paketdienst oder Spedition je nach Maß</span>
+    {%- else -%}<span>Spedition frei Bordsteinkante</span>{%- endif -%}
     {%- if settings.tp_versand_frei_ab != blank -%}<span>versandkostenfrei ab {{ settings.tp_versand_frei_ab }} €</span>{%- endif -%}
     {%- if tp_rc_aktion_prozent > 0 -%}<span class="tp-rwc-infozeile__aktion">Aktion −{{ tp_rc_aktion_prozent }} % im Warenkorb</span>{%- endif -%}
   </p>
@@ -554,6 +634,17 @@
       {%- for tp_rc_lv in tp_rc_leiste.variants -%}
         {%- if tp_rc_lv.available and tp_rc_lv.price > 0 -%}
           { "id": {{ tp_rc_lv.id | json }}, "title": {{ tp_rc_lv.title | json }}, "price": {{ tp_rc_lv.price | json }} },
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endif -%}
+    null
+  ],
+  "holz_laenge": {{ tp_rc_holz.metafields.custom.stangenlaenge.value | default: 0 | json }},
+  "holz": [
+    {%- if tp_rc_holz != blank -%}
+      {%- for tp_rc_hv in tp_rc_holz.variants -%}
+        {%- if tp_rc_hv.available and tp_rc_hv.price > 0 -%}
+          { "id": {{ tp_rc_hv.id | json }}, "title": {{ tp_rc_hv.title | json }}, "price": {{ tp_rc_hv.price | json }} },
         {%- endif -%}
       {%- endfor -%}
     {%- endif -%}
@@ -1006,7 +1097,8 @@
 
   /* Fehlendes Pflichtfeld: roter Rahmen am Eingabefeld selbst, damit die
      Meldung unter dem Button nicht die einzige Spur ist. */
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-input.is-invalid {
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-input.is-invalid,
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-select.is-invalid {
     border-color: #a62020;
     box-shadow: 0 0 0 2px rgba(166, 32, 32, 0.18);
   }
@@ -1052,6 +1144,7 @@
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-text small { font-size: 13px; color: #595959; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-preis { font-size: 15px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; align-items: end; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder[hidden] { display: none; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder .tp-rwc-select,
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder .tp-rwc-input-wrap { max-width: none; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder .tp-rwc-note { grid-column: 1 / -1; margin: 0; }
@@ -1070,13 +1163,10 @@
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-round { margin: 0 0 8px; }
 
 
-  /* K4: Zubehoer eingeklappt, Tooltip statt Aufklapptext. */
+  /* K4: Zubehoer sichtbar, Tooltip statt Aufklapptext. */
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer { margin: 4px 0 12px; border-top: 1px solid var(--tp-rwc-line); border-bottom: 1px solid var(--tp-rwc-line); }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer__kopf { display: flex; align-items: center; justify-content: space-between; min-height: 44px; cursor: pointer; font-size: 15px; font-weight: 600; list-style: none; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer__kopf::-webkit-details-marker { display: none; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer__kopf { display: flex; align-items: center; min-height: 44px; margin: 0; font-size: 15px; font-weight: 600; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer__kopf span { font-weight: 400; color: #595959; margin-right: auto; margin-left: 6px; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer__kopf::after { content: '+'; font-size: 20px; font-weight: 400; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer[open] > .tp-rwc-zubehoer__kopf::after { content: '\2212'; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer .tp-rwc-extra { margin: 0 0 10px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-tip { position: relative; display: inline-block; margin: 4px 0 0 30px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-tip__knopf { display: inline-flex; align-items: center; min-height: 44px; padding: 4px 0; border: 0; background: none; color: var(--tp-rwc-ink); font: inherit; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; cursor: help; }
@@ -1102,6 +1192,7 @@
     .tp-rwc-{{ tp_rc_id }} .tp-rwc-unit { font-size: .9rem; right: 14px; }
     .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-total-value { font-size: 1.6rem; }
     .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte { grid-template-columns: 20px 1fr auto; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder { grid-template-columns: 1fr; }
     .tp-rwc-{{ tp_rc_id }} .tp-rwc-input-wrap { max-width: none; }
   }
 </style>
@@ -1276,6 +1367,7 @@ function tpRwcInit{{ tp_rc_id }}() {
   function updateMuster() {
     if (!musterLink || !target) return;
     var name = target.options.filter(function (_, i) { return i !== wIdx; }).join(' ');
+    if (!name || name === 'Default Title') name = musterLink.getAttribute('data-muster-fallback-farbe') || '';
     musterLink.textContent = (musterLink.getAttribute('data-muster-vorlage') || '').replace('{farbe}', name);
     var musterUrl = new URL(musterLink.href, window.location.origin);
     musterUrl.searchParams.set('farbe', name);
@@ -1289,7 +1381,7 @@ function tpRwcInit{{ tp_rc_id }}() {
   function markInvalid(el, on) {
     if (!el) return;
     el.classList.toggle('is-invalid', !!on);
-    if (el.tagName === 'INPUT') {
+    if (el.tagName === 'INPUT' || el.tagName === 'SELECT') {
       if (on) el.setAttribute('aria-invalid', 'true');
       else el.removeAttribute('aria-invalid');
     }
@@ -1299,6 +1391,10 @@ function tpRwcInit{{ tp_rc_id }}() {
     markInvalid(lengthInput, false);
     markInvalid(wunschInput, false);
     markInvalid(widthSeg, false);
+    if (holzBox) {
+      markInvalid(holzBox.querySelector('[data-holz-meter]'), false);
+      markInvalid(holzBox.querySelector('[data-holz-variante]'), false);
+    }
     if (ctaHint) { ctaHint.textContent = ''; ctaHint.hidden = true; }
   }
 
@@ -1348,7 +1444,10 @@ function tpRwcInit{{ tp_rc_id }}() {
   // Betrag in EUR fuer ein Stueck der gewaehlten Farbe, abgerechnet wie in
   // der Preisbox (0,01 m² oder volle m²). 0 = gibt es nicht.
   root.tpRwcPreis = function (art, wCm, lenCm) {
-    if (wIdx === -1 || !(wCm > 0) || !(lenCm > 0)) return 0;
+    if (!(wCm > 0) || !(lenCm > 0)) return 0;
+    // Feste Rollenbreite ohne Breitenoption: wie im Hauptrechner verwenden.
+    // Raummass gibt es hier nicht; fremde Breiten duerfen keinen Preis erhalten.
+    if (wIdx === -1 && (art !== 'meter' || wCm !== fallbackWidthCm)) return 0;
     var v = art === 'raum' ? raumVariant() : variantFor(baseOptions(), byWidth(wCm));
     if (art === 'raum' && !ART.wunschOk(v, wIdx)) return 0;
     var rate = rateOf(v);
@@ -1734,9 +1833,12 @@ function tpRwcInit{{ tp_rc_id }}() {
 
   var leisteBox = root.querySelector('[data-extra="leiste"]');
   var haftBox = root.querySelector('[data-extra="haft"]');
+  var holzBox = root.querySelector('[data-extra="holz"]');
   var formulaExtras = root.querySelector('[data-formula-extras]');
   var zubehoerBox = root.querySelector('[data-zubehoer]');
   var leisteVarianten = (data.leiste || []).filter(function (v) { return v && parseFloat(v.price) > 0; });
+  var holzVarianten = (data.holz || []).filter(function (v) { return v && parseFloat(v.price) > 0; });
+  var holzLaenge = parseFloat(data.holz_laenge) || 0;
   // Breite der Haftunterlage steht im Variantentitel ("1 mm, 180 cm breit
   // (je lfm)"). Ohne erkennbare Breite faellt die Variante weg - lieber keine
   // Unterlage anbieten als eine geratene Menge berechnen.
@@ -1763,7 +1865,7 @@ function tpRwcInit{{ tp_rc_id }}() {
     // nicht gewählt" und darf die Bestellung nicht als reinen Teppichkauf
     // durchlassen. calculate() und der Klick-Handler sperren damit den
     // Warenkorb-Request, statt das Zubehör kommentarlos wegzulassen.
-    var res = { items: [], sum: 0, lines: [], rows: [], leisteInvalid: false };
+    var res = { items: [], sum: 0, lines: [], rows: [], leisteInvalid: false, holzInvalid: false, holzInvalidField: null };
     var allowed = extrasAllowed();
     if (leisteBox) {
       var showL = allowed && leisteVarianten.length > 0;
@@ -1873,6 +1975,40 @@ function tpRwcInit{{ tp_rc_id }}() {
         res.lines.push('+ Haftunterlage: ' + beste.meter + ' m × ' + fmt(beste.v.price / 100) + ' € = ' + fmt(beste.summe) + ' €');
       }
     }
+    if (holzBox) {
+      var showHolz = holzVarianten.length > 0 && holzLaenge > 0;
+      holzBox.hidden = !showHolz;
+      var holzAn = showHolz && holzBox.querySelector('[data-holz-an]').checked;
+      holzBox.querySelector('[data-holz-felder]').hidden = !holzAn;
+      var holzInput = holzBox.querySelector('[data-holz-meter]');
+      if (holzInput && !holzInput.getAttribute('data-touched') && w > 0 && len > 0) {
+        // Holzleisten werden in Stangen berechnet: der echte Umfang darf
+        // vorher nicht auf volle Meter aufgerundet werden.
+        holzInput.value = String((2 * (w + len)) / 100).replace('.', ',');
+      }
+      var holzText = String((holzInput && holzInput.value) || '').trim();
+      var holzMeter = /^\d+([,.]\d+)?$/.test(holzText) ? Number(holzText.replace(',', '.')) : 0;
+      var holzSel = holzBox.querySelector('[data-holz-variante]');
+      var holzV = holzVarianten.filter(function (v) { return String(v.id) === String(holzSel.value); })[0];
+      var holzStangen = holzMeter > 0 ? Math.ceil(holzMeter / holzLaenge - 1e-9) : 0;
+      var holzMeterOk = Number.isSafeInteger(holzStangen) && holzStangen > 0;
+      var holzPreisOk = holzV && Number.isSafeInteger(holzStangen * holzV.price);
+      var holzOk = holzAn && holzV && holzMeterOk && holzPreisOk;
+      res.holzInvalid = holzAn && !holzOk;
+      if (res.holzInvalid) res.holzInvalidField = !holzMeterOk || (holzV && !holzPreisOk) ? 'meter' : 'variante';
+      if (holzMeterOk && (!holzV || holzPreisOk)) markInvalid(holzInput, false);
+      if (holzV) markInvalid(holzSel, false);
+      var holzPreis = holzBox.querySelector('[data-holz-preis]');
+      if (holzPreis && showHolz) holzPreis.textContent = holzOk ? fmt(holzStangen * holzV.price / 100) + ' €' : 'ab ' + fmt(Math.min.apply(null, holzVarianten.map(function (v) { return v.price; })) / 100) + ' € / Stange';
+      var holzErgebnis = holzBox.querySelector('[data-holz-ergebnis]');
+      if (holzErgebnis) holzErgebnis.textContent = holzOk ? holzStangen + ' Stangen à ' + fmt(holzLaenge) + ' m = ' + fmt(holzStangen * holzLaenge) + ' m' : (holzAn ? 'Bitte Länge und Farbe wählen.' : '');
+      if (holzOk) {
+        res.items.push({ id: holzV.id, quantity: holzStangen, properties: { 'Zu Bodenbelag': data.product_title } });
+        res.sum += holzStangen * holzV.price / 100;
+        res.rows.push(['Sockelleiste · ' + holzStangen + ' Stangen', holzStangen * holzV.price / 100]);
+        res.lines.push('+ Sockelleiste: ' + holzStangen + ' Stangen × ' + fmt(holzV.price / 100) + ' € = ' + fmt(holzStangen * holzV.price / 100) + ' €');
+      }
+    }
     if (formulaExtras) {
       while (formulaExtras.firstChild) formulaExtras.removeChild(formulaExtras.firstChild);
       res.lines.forEach(function (l) {
@@ -1883,7 +2019,7 @@ function tpRwcInit{{ tp_rc_id }}() {
       formulaExtras.hidden = !res.lines.length;
     }
     if (typeof zubehoerBox !== 'undefined' && zubehoerBox) {
-      zubehoerBox.hidden = !((leisteBox && !leisteBox.hidden) || (haftBox && !haftBox.hidden));
+      zubehoerBox.hidden = !((leisteBox && !leisteBox.hidden) || (haftBox && !haftBox.hidden) || (holzBox && !holzBox.hidden));
     }
     return res;
   }
@@ -2017,7 +2153,9 @@ function tpRwcInit{{ tp_rc_id }}() {
     var lenEingegeben = String(lengthInput.value || '').trim() !== '';
     errMin.hidden = badInput || blocked || tooLong || !((len > 0 && len < 100) || (lenEingegeben && len === 0));
     if (errMax) {
-      errMax.textContent = 'Ab ' + (MAX_LENGTH_CM / 100) + ' m Länge beraten wir Sie lieber persönlich – bitte kurz anrufen, damit Zuschnitt und Lieferung passen.';
+      errMax.textContent = {{ tp_rc_bestand_gefuehrt | json }}
+        ? 'Für diesen Sonderposten sind höchstens ' + (MAX_LENGTH_CM / 100).toLocaleString('de-DE') + ' m Länge verfügbar.'
+        : 'Über ' + (MAX_LENGTH_CM / 100) + ' m Länge beraten wir Sie lieber persönlich – bitte kurz anrufen, damit Zuschnitt und Lieferung passen.';
       errMax.hidden = !tooLong;
     }
 
@@ -2125,7 +2263,7 @@ function tpRwcInit{{ tp_rc_id }}() {
     // TP-003: eine angehakte, aber unvollstaendige Fussleiste darf den
     // Hauptkauf nicht kaufbereit erscheinen lassen - sonst faellt das
     // ausdruecklich gewaehlte Zubehoer beim Absenden kommentarlos weg.
-    var ctaReady = !!(valid && ok) && !(extras && extras.leisteInvalid);
+    var ctaReady = !!(valid && ok) && !(extras && (extras.leisteInvalid || extras.holzInvalid));
     if (!cta.disabled) {
       cta.setAttribute('aria-disabled', ctaReady ? 'false' : 'true');
       cta.classList.toggle('is-incomplete', !ctaReady);
@@ -2137,6 +2275,7 @@ function tpRwcInit{{ tp_rc_id }}() {
     if (!ctaReady && !inFlight && ctaHint) {
       var fehltJetzt = fehlendesFeld();
       if (extras && extras.leisteInvalid) ctaHint.textContent = 'Bitte Fußleisten-Länge angeben';
+      else if (extras && extras.holzInvalid) ctaHint.textContent = 'Bitte Länge und Farbe der Sockelleiste angeben';
       else if (wErr && wErr !== 'leer') ctaHint.textContent = wErr;
       else if (lenFehler === 'ungueltig' || lenFehler === 'negativ') ctaHint.textContent = errComma ? errComma.textContent : 'Bitte Länge prüfen';
       else if (!errMin.hidden) ctaHint.textContent = errMin.textContent;
@@ -2189,7 +2328,7 @@ function tpRwcInit{{ tp_rc_id }}() {
     var el = e.target;
     if (el.name === 'tp-rwc-width-{{ tp_rc_id }}') calculate();
     if (el.name === 'tp-rwc-art-{{ tp_rc_id }}') calculate();
-    if (el.hasAttribute && (el.hasAttribute('data-leiste-an') || el.hasAttribute('data-haft-an') || el.hasAttribute('data-leiste-hoehe'))) calculate();
+    if (el.hasAttribute && (el.hasAttribute('data-leiste-an') || el.hasAttribute('data-haft-an') || el.hasAttribute('data-leiste-hoehe') || el.hasAttribute('data-holz-an') || el.hasAttribute('data-holz-variante'))) calculate();
   });
   if (wunschInput) wunschInput.addEventListener('input', calculate);
   lengthInput.addEventListener('input', calculate);
@@ -2200,6 +2339,11 @@ function tpRwcInit{{ tp_rc_id }}() {
       calculate();
     });
   }
+  var holzMeterInput = root.querySelector('[data-holz-meter]');
+  if (holzMeterInput) holzMeterInput.addEventListener('input', function () {
+    holzMeterInput.setAttribute('data-touched', '1');
+    calculate();
+  });
 
   if (drawFigure) drawFigure.addEventListener('toggle', function () {
     var len = getEffectiveLengthCm();
@@ -2311,6 +2455,14 @@ function tpRwcInit{{ tp_rc_id }}() {
     if (extras.leisteInvalid) {
       var meterIn = leisteBox.querySelector('[data-leiste-meter]');
       if (meterIn && typeof meterIn.focus === 'function') meterIn.focus({ preventScroll: false });
+      return;
+    }
+    if (extras.holzInvalid) {
+      var holzFeld = holzBox.querySelector('[data-holz-meter]');
+      var holzFarbe = holzBox.querySelector('[data-holz-variante]');
+      var holzFehlerFeld = extras.holzInvalidField === 'meter' ? holzFeld : holzFarbe;
+      markInvalid(holzFehlerFeld, true);
+      holzFehlerFeld.focus({ preventScroll: false });
       return;
     }
 
@@ -2448,6 +2600,11 @@ else { document.addEventListener('DOMContentLoaded', tpRwcInit{{ tp_rc_id }}); }
       "id": "haftunterlage_produkt",
       "label": "Haftunterlage (Varianten = Breiten, Preis je laufendem Meter)",
       "info": "Die Breite muss im Variantentitel stehen, z. B. \"1 mm, 180 cm breit (je lfm)\"."
+    },
+    {
+      "type": "product",
+      "id": "holzleiste_produkt",
+      "label": "Sockelleiste für Vinyl von der Rolle"
     },
     {
       "type": "text",
