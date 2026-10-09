@@ -1237,7 +1237,7 @@ function tpRwcInit{{ tp_rc_id }}() {
   var raumAnfrage = data.raummass_anfrage === true && wIdx === -1 &&
     variants.length === 1 && !cmExact && fallbackWidthCm > 0;
   var raumAngebot = raumAnfrage ? Object.assign({}, variants[0], {
-    id: null, quote_only: true,
+    id: null, quote_only: true, einfassen: "", kettelung: false,
     price: Math.round(Number(variants[0].price) * 1.35 / 100) * 100,
     compare_at_price: 0
   }) : null;
@@ -1471,6 +1471,7 @@ function tpRwcInit{{ tp_rc_id }}() {
     var rate = rateOf(v);
     if (!(rate > 0)) return 0;
     var qty = cmExact ? roundedHundredthsQty(wCm, lenCm) : Math.ceil((wCm * lenCm) / 10000);
+    if (v && v.quote_only) return Math.round(wCm * lenCm / 10000 * rate * 100) / 100;
     return (cmExact ? qty / 100 : qty) * rate;
   };
 
@@ -1681,6 +1682,10 @@ function tpRwcInit{{ tp_rc_id }}() {
     var cmp = ART.meterwareGuenstiger(w, len, rateRaum, farbBreiten, function (rolle) {
       return rateOf(variantFor(t, byWidth(rolle)));
     }, cmExact ? function (a) { return Math.round(a * 100 + 1e-9) / 100; } : Math.ceil);
+    if (cmp && raumAnfrage) {
+      cmp.totalRaum = Math.round(w * len / 10000 * rateRaum * 100) / 100;
+      cmp.guenstiger = cmp.totalMeter < cmp.totalRaum;
+    }
     if (!cmp || !cmp.guenstiger) { meterTipp.hidden = true; return; }
     while (meterTipp.firstChild) meterTipp.removeChild(meterTipp.firstChild);
     meterTipp.appendChild(document.createTextNode(
@@ -2217,15 +2222,15 @@ function tpRwcInit{{ tp_rc_id }}() {
       // TP-004: aus den ganzzahligen cm-Massen (roundedHundredthsQty), nicht
       // aus der bereits gerundeten "area" - siehe Kommentar dort.
       var qty = cmExact ? roundedHundredthsQty(w, len) : Math.ceil(area);
-      var billedArea = cmExact ? qty / 100 : qty;
-      var total = billedArea * rate;
+      var billedArea = target.quote_only ? area : (cmExact ? qty / 100 : qty);
+      var total = target.quote_only ? Math.round(billedArea * rate * 100) / 100 : billedArea * rate;
 
       formulaArea.textContent = w + ' cm × ' + len + ' cm = ' + fmt(area) + ' m²';
 
       // Nur der aufrundende Modus braucht einen Hinweis - sonst stuende dort
       // eine Gleichung, die fuer den Kunden nicht aufgeht.
       if (formulaRound) {
-        var isRounded = !cmExact && qty > area + 0.0001;
+        var isRounded = !target.quote_only && !cmExact && qty > area + 0.0001;
         if (isRounded) {
           formulaRound.textContent = 'Rollenware wird in vollen m² zugeschnitten und berechnet – aufgerundet auf ' + qty + ' m².';
         }

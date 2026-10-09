@@ -16,6 +16,8 @@ test('Anfragepreis ohne bestellbare Varianten-ID; Originalbestand bleibt beim Or
   assert.equal(c.raumAngebot.price, 5700);
   assert.equal(c.raumAngebot.id, null);
   assert.equal(c.raumAngebot.quote_only, true);
+  assert.equal(c.raumAngebot.einfassen, "");
+  assert.equal(c.raumAngebot.kettelung, false);
   assert.equal(c.raumAngebot.compare_at_price, 0);
   assert.equal(original.id, 123);
   assert.equal(original.price, 4195);
@@ -49,4 +51,20 @@ test('Echter Klickzweig verlaesst Anfrage vor Warenkorbaufbau und nimmt Produkt 
   assert.equal(url.searchParams.get('breite'), '200 cm');
   assert.equal(url.searchParams.get('laenge_cm'), '300');
   assert.match(url.searchParams.get('variante'), /57,00/);
+});
+
+test('Anfragepreis ist flaechengetreu statt voller m2: 200x310cm = 353,40 EUR', () => {
+  const { c } = angebot();
+  c.root = {};
+  c.raumVariant = () => c.raumAngebot;
+  c.variantFor = () => c.variants[0];
+  c.baseOptions = () => [];
+  c.byWidth = w => w;
+  c.rateOf = v => v.price / 100;
+  c.roundedHundredthsQty = (w, l) => Math.round(w * l / 100);
+  const begin = source.indexOf('  root.tpRwcPreis = function (art, wCm, lenCm) {');
+  const end = source.indexOf('\n  };', begin) + 5;
+  vm.runInContext(source.slice(begin, end), c);
+  assert.equal(c.root.tpRwcPreis('raum', 200, 310), 353.4);
+  assert.equal(c.root.tpRwcPreis('meter', 400, 310), 13 * 41.95);
 });
