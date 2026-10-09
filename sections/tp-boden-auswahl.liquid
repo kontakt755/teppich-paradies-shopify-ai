@@ -1,0 +1,201 @@
+{{ 'tp-boden-kategorie.css' | asset_url | stylesheet_tag }}
+{%- liquid
+  assign kind = section.settings.kind
+  assign groups = ''
+  case kind
+    when 'laminat'
+      assign groups = 'staerke|optik' | split: '|'
+    when 'parkett'
+      assign groups = 'oberflaeche|optik' | split: '|'
+  endcase
+  assign has_selection = false
+  if current_tags != blank
+    assign has_selection = true
+  endif
+  for filter in collection.filters
+    if filter.active_values.size > 0 or filter.min_value.value != nil or filter.max_value.value != nil
+      assign has_selection = true
+    endif
+  endfor
+-%}
+<section data-tp-boden-auswahl data-section-id="{{ section.id }}" class="tp-ba" id="tp-boden-auswahl" aria-labelledby="tp-ba-title-{{ section.id }}" {{ section.shopify_attributes }}>
+  <div class="tp-ba__inner">
+    <header class="tp-ba__header">
+      <h2 id="tp-ba-title-{{ section.id }}">{{ section.settings.heading | escape }}</h2>
+      {%- if section.settings.intro != blank -%}<p>{{ section.settings.intro | escape }}</p>{%- endif -%}
+    </header>
+    {%- if kind == 'linoleum' -%}
+      <ul class="tp-ba__qualities" role="list" aria-label="Linoleum-Qualitäten">
+        {%- for item in collection.products -%}
+          <li>
+            <a class="tp-ba__quality" href="{{ item.url }}">
+              {%- if item.featured_image != blank -%}
+                <span class="tp-ba__swatch">{{ item.featured_image | image_url: width: 800 | image_tag: loading: 'lazy', widths: '160, 300, 500, 800', sizes: '(max-width: 749px) 64px, 88px', alt: '' }}</span>
+              {%- endif -%}
+              <span class="tp-ba__quality-copy">
+                <strong>{{ item.title | remove: ' Linoleumboden' | remove: ' 200cm' | escape }}</strong>
+                {%- capture facts -%}{% render 'tp-linoleum-kurzinfo', product: item, details: true %}{%- endcapture -%}
+                <span>{{ facts | strip | escape }}</span>
+              </span>
+              <span class="tp-ba__arrow" aria-hidden="true">→</span>
+            </a>
+          </li>
+        {%- endfor -%}
+      </ul>
+      <p class="tp-ba__note">NK bedeutet Nutzungsklasse. Klasse 23: Wohnbereich, starke Nutzung. Klasse 34: gewerblich, sehr starke Nutzung. Klasse 43: industriell, starke Nutzung. Klasse 41: industriell, geringe Nutzung. Die Klassen gelten jeweils für den genannten Einsatzbereich; die Produktdetails helfen bei der Auswahl für Ihren Raum.</p>
+    {%- elsif kind == 'kork' -%}
+      <ul class="tp-ba__routes" role="list">
+        <li><a class="tp-ba__route" href="{{ routes.collections_url }}/korkboden-klick" {% if collection.handle == 'korkboden-klick' %}aria-current="page"{% endif %}><strong>Kork zum Klicken</strong><span>Suberra · schwimmend verlegen</span><span aria-hidden="true">→</span></a></li>
+        <li><a class="tp-ba__route" href="{{ routes.collections_url }}/korkboden-kleben" {% if collection.handle == 'korkboden-kleben' %}aria-current="page"{% endif %}><strong>Kork zum Kleben</strong><span>Quercina · vollflächig verkleben</span><span aria-hidden="true">→</span></a></li>
+      </ul>
+      {%- if collection.handle != 'korkboden' -%}<a class="tp-ba__reset" href="{{ routes.collections_url }}/korkboden">Alle Korkböden ansehen</a>{%- endif -%}
+    {%- else -%}
+      {%- for group in groups -%}
+        {%- liquid
+          assign group_label = group
+          case group
+            when 'staerke'
+              assign group_label = 'Nach Stärke'
+            when 'oberflaeche'
+              assign group_label = 'Nach Oberfläche'
+            when 'optik'
+              if kind == 'parkett'
+                assign group_label = 'Nach Holzart'
+              else
+                assign group_label = 'Nach Dekor'
+              endif
+          endcase
+          assign group_tags = collection.all_tags
+          if kind == 'laminat' and group == 'staerke'
+            assign group_tags = 'staerke: 7mm|staerke: 8mm|staerke: 10mm' | split: '|'
+          endif
+        -%}
+        {%- capture group_links -%}
+          {%- for tag in group_tags -%}
+            {%- liquid
+              assign prefix = tag | downcase | split: ':' | first | strip
+              assign label = tag | split: ':' | last | strip
+              if tag == 'unbehandelt'
+                assign prefix = 'oberflaeche'
+              endif
+              if prefix != group
+                continue
+              endif
+              unless collection.all_tags contains tag
+                continue
+              endunless
+              if group == 'staerke'
+                assign label = label | replace: 'mm', ' mm'
+              else
+                assign label = label | capitalize
+              endif
+              assign tags_path = ''
+              for selected_tag in current_tags
+                assign selected_prefix = selected_tag | downcase | split: ':' | first | strip
+                if selected_tag == 'unbehandelt'
+                  assign selected_prefix = 'oberflaeche'
+                endif
+                unless selected_prefix == group
+                  assign tag_handle = selected_tag | handleize
+                  assign tags_path = tags_path | append: tag_handle | append: '+'
+                endunless
+              endfor
+              unless current_tags contains tag
+                assign tag_handle = tag | handleize
+                assign tags_path = tags_path | append: tag_handle | append: '+'
+              endunless
+              assign tags_path = tags_path | split: '+' | join: '+'
+              capture target
+                echo collection.url
+                if tags_path != blank
+                  echo '/'
+                  echo tags_path
+                endif
+                echo '?sort_by='
+                echo collection.sort_by | default: collection.default_sort_by | url_encode
+                for filter in collection.filters
+                  for value in filter.active_values
+                    echo '&'
+                    echo value.param_name | url_encode
+                    echo '='
+                    echo value.value | url_encode
+                  endfor
+                  if filter.type == 'price_range'
+                    if filter.min_value.value != nil
+                      echo '&'
+                      echo filter.min_value.param_name | url_encode
+                      echo '='
+                      echo filter.min_value.value | divided_by: 100.0
+                    endif
+                    if filter.max_value.value != nil
+                      echo '&'
+                      echo filter.max_value.param_name | url_encode
+                      echo '='
+                      echo filter.max_value.value | divided_by: 100.0
+                    endif
+                  endif
+                endfor
+              endcapture
+            -%}
+            <li><a class="tp-ba__chip" href="{{ target | escape }}#ResultsList" {% if current_tags contains tag %}aria-current="true"{% endif %}>{{ label | escape }}</a></li>
+          {%- endfor -%}
+        {%- endcapture -%}
+        {%- if group_links != blank -%}
+          <div class="tp-ba__group" role="group" aria-labelledby="tp-ba-{{ group }}-{{ section.id }}">
+            <h3 id="tp-ba-{{ group }}-{{ section.id }}">{{ group_label }}</h3>
+            <ul class="tp-ba__chips" role="list">{{ group_links }}</ul>
+          </div>
+        {%- endif -%}
+      {%- endfor -%}
+      {%- if has_selection -%}<a class="tp-ba__reset" href="{{ collection.url }}?sort_by={{ collection.sort_by | default: collection.default_sort_by | url_encode }}#ResultsList">Auswahl zurücksetzen</a>{%- endif -%}
+    {%- endif -%}
+    {%- if kind == 'parkett' -%}<p class="tp-ba__crosslink">Sie suchen Kork? <a href="{{ routes.collections_url }}/korkboden">Zur eigenen Korkboden-Auswahl</a></p>{%- endif -%}
+  </div>
+</section>
+{% javascript %}
+(() => {
+  let controller;
+  let version = 0;
+  async function refreshSelection() {
+    const element = document.querySelector('[data-tp-boden-auswahl]');
+    if (!element) return;
+    controller?.abort();
+    controller = new AbortController();
+    const current = ++version;
+    const url = new URL(window.location.href);
+    url.hash = '';
+    url.searchParams.set('section_id', element.dataset.sectionId);
+    try {
+      const response = await fetch(url.href, { signal: controller.signal });
+      if (!response.ok) throw new Error('Bodenauswahl konnte nicht aktualisiert werden');
+      const html = await response.text();
+      if (current !== version) return;
+      const replacement = new DOMParser().parseFromString(html, 'text/html').querySelector('[data-tp-boden-auswahl]');
+      if (!replacement) throw new Error('Bodenauswahl fehlt in der Serverantwort');
+      element.replaceWith(replacement);
+    } catch (error) {
+      if (error.name === 'AbortError' || current !== version) return;
+      window.location.reload();
+    }
+  }
+  document.addEventListener('filter:update', refreshSelection);
+  window.addEventListener('popstate', refreshSelection);
+})();
+{% endjavascript %}
+{% schema %}
+{
+  "name": "TP Boden-Auswahl",
+  "tag": "section",
+  "settings": [
+    { "type": "select", "id": "kind", "label": "Bodenart", "options": [
+      { "value": "laminat", "label": "Laminat" },
+      { "value": "parkett", "label": "Parkett" },
+      { "value": "kork", "label": "Kork" },
+      { "value": "linoleum", "label": "Linoleum" }
+    ], "default": "laminat" },
+    { "type": "text", "id": "heading", "label": "Überschrift", "default": "Die passende Auswahl" },
+    { "type": "text", "id": "intro", "label": "Kurztext" }
+  ],
+  "presets": [{ "name": "TP Boden-Auswahl" }]
+}
+{% endschema %}

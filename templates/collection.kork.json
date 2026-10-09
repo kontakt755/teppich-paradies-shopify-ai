@@ -12,20 +12,21 @@
     "hero": {
       "type": "tp-boden-kategorie-hero",
       "settings": {
-        "image": "shopify://shop_images/valdoro-eiche-natur-geoelt-parkett-landhausdiele-220x20-9-cm-raum-1.jpg",
+        "image": "shopify://shop_images/korkboden-beispielraum-v1.png",
         "eyebrow": "Bodenbeläge entdecken",
-        "heading": "Parkettboden",
-        "lead": "<p>Parkett nach Holzart und Oberfläche auswählen. Entdecken Sie geölte, lackierte und unbehandelte Oberflächen und planen Sie Ihren Paketbedarf am Produkt.</p>",
-        "primary_label": "Parkett ansehen",
+        "heading": "",
+        "lead": "<p>Korkboden zum Klicken oder zum Kleben: Wählen Sie die Verlegeart und sehen Sie die angebotenen Farbtöne und Produktdetails.</p>",
+        "primary_label": "Korkböden ansehen",
         "secondary_label": "Beratung anfragen",
         "secondary_link": "/pages/kontakt",
-        "image_caption": "Raumbeispiel: Valdoro Eiche Natur geölt"
+        "image_caption": "Beispielraum mit Korkboden",
+        "image_alt": "Illustration eines Beispielraums mit Korkboden"
       },
       "blocks": {
         "point_1": {
           "type": "point",
           "settings": {
-            "text": "Echtholz-Oberflächen"
+            "text": "Klicken oder Kleben"
           }
         },
         "point_2": {
@@ -205,8 +206,8 @@
       "type": "tp-boden-kategorie-ratgeber",
       "settings": {
         "eyebrow": "Gut zu wissen",
-        "heading": "Fragen zu Ihrem Parkett",
-        "intro": "<p>Format, Aufbau und technische Eigenschaften prüfen Sie am einzelnen Produkt.</p>",
+        "heading": "Fragen zu Korkboden",
+        "intro": "<p>Verlegeart, Paketinhalt und technische Eigenschaften finden Sie direkt am jeweiligen Korkboden.</p>",
         "faq_heading": "Häufige Fragen",
         "contact_text": "Auswahl oder Produktdaten noch unklar?",
         "contact_label": "Persönlich beraten lassen",
@@ -216,22 +217,22 @@
         "faq_1": {
           "type": "faq",
           "settings": {
-            "question": "Wo sehe ich Oberfläche und Holzart?",
-            "answer": "<p>Die Auswahl oben führt zu den passenden Oberflächen und Holzarten. Ausführung, Maße und weitere Eigenschaften stehen in den Produktdetails.</p>"
+            "question": "Wie unterscheiden sich Klick-Kork und Klebekork?",
+            "answer": "<p>Suberra wird schwimmend verlegt; Quercina ist zum vollflächigen Verkleben vorgesehen. Prüfen Sie die Verlegehinweise und Anforderungen an den Untergrund am ausgewählten Produkt.</p>"
           }
         },
         "faq_2": {
           "type": "faq",
           "settings": {
-            "question": "Wie plane ich die Bestellmenge?",
-            "answer": "<p>Parkett wird paketweise angeboten. Der Rechner am Produkt zeigt den Paketbedarf für Ihre Fläche anhand des jeweiligen Paketinhalts.</p>"
+            "question": "Wie viel Korkboden muss ich bestellen?",
+            "answer": "<p>Die angebotenen Korkböden werden paketweise verkauft. Nutzen Sie den Rechner auf der Produktseite, um den Bedarf für Ihre Fläche zu planen.</p>"
           }
         },
         "faq_3": {
           "type": "faq",
           "settings": {
-            "question": "Sind kostenlose Muster erhältlich?",
-            "answer": "<p>Für die derzeit angebotenen Parkettprodukte sind keine kostenlosen Muster hinterlegt. <a href=\"/pages/kontakt\">Unsere Beratung</a> hilft bei Fragen zu einer bestimmten Oberfläche.</p>"
+            "question": "Kann ich einen Farbton vorab besprechen?",
+            "answer": "<p>Für die derzeit angebotenen Korkböden sind keine kostenlosen Muster hinterlegt. <a href=\"/pages/kontakt\">Kontaktieren Sie unser Team</a> bei Fragen zu Farbe oder Oberfläche.</p>"
           }
         }
       },
@@ -244,9 +245,9 @@
     "auswahl": {
       "type": "tp-boden-auswahl",
       "settings": {
-        "kind": "parkett",
-        "heading": "Ihr Parkett eingrenzen",
-        "intro": "Oberfläche und Holzart kombinieren und passende Parkettböden entdecken."
+        "kind": "kork",
+        "heading": "Welche Verlegeart passt?",
+        "intro": "Suberra zum Klicken und Quercina zum Kleben in eigenen Kategorien entdecken."
       }
     }
   },
