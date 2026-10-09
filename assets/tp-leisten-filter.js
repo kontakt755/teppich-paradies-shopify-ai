@@ -93,6 +93,7 @@
       var replacement = new DOMParser().parseFromString(html, 'text/html').querySelector('[data-tp-leisten]');
       if (!replacement) throw new Error('Leistenauswahl fehlt in der Serverantwort');
       element.replaceWith(replacement);
+      normalizeLegacyHeight();
     } catch (error) {
       if (error.name === 'AbortError') return;
       window.location.reload();

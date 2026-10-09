@@ -54,17 +54,18 @@ test('Desktop und Drawer-Menue nutzen vollstaendige Quellen und native Hoehenwer
   assert.doesNotMatch(html, /tp-nav-link__count/);
 });
 
-function scriptHarness(hash = '', { currentTags = [], heights = [], href } = {}) {
+function scriptHarness(hash = '', { currentTags = [], heights = [], href, loadedTags, loadedHeights } = {}) {
   const listeners = {};
-  const element = { dataset: { sectionId: 'quick', collectionUrl: collection.url }, querySelector(selector) { return { textContent: JSON.stringify(selector === '[data-tp-leisten-current-tags]' ? currentTags : selector === '[data-tp-leisten-heights]' ? heights : collection.all_tags) }; }, replaceWith(other) { this.replacement = other; } };
+  const element = { dataset: { sectionId: 'quick', collectionUrl: collection.url }, querySelector(selector) { return { textContent: JSON.stringify(selector === '[data-tp-leisten-current-tags]' ? currentTags : selector === '[data-tp-leisten-heights]' ? heights : collection.all_tags) }; }, replaceWith(other) { this.replacement = other; if (other.querySelector) activeElement = other; } };
+  let activeElement = element;
   const location = { href: href || 'https://example.test/collections/bodenleisten/material-mdf?sort_by=price-descending&page=3' + hash, hash, replace(url) { this.replaced = url; }, reload() { this.reloaded = true; } };
   const requests = [];
   const window = { location, addEventListener(name, handler) { listeners[name] = handler; } };
   vm.runInNewContext(read('assets/tp-leisten-filter.js'), {
-    window, document: { querySelector() { return element; }, addEventListener(name, handler) { listeners[name] = handler; } },
+    window, document: { querySelector() { return activeElement; }, addEventListener(name, handler) { listeners[name] = handler; } },
     URL, URLSearchParams, AbortController,
     fetch: async url => { requests.push(url); return { ok: true, text: async () => '<section>' }; },
-    DOMParser: class { parseFromString() { return { querySelector() { return { rendered: true }; } }; } },
+    DOMParser: class { parseFromString() { return { querySelector() { return loadedTags ? { ...element, rendered: true, querySelector(selector) { return { textContent: JSON.stringify(selector === '[data-tp-leisten-current-tags]' ? loadedTags : loadedHeights) }; } } : { rendered: true }; } }; } },
   });
   return { listeners, element, location, requests };
 }
@@ -127,4 +128,17 @@ test('Uneindeutige Legacy-Hoehe wird beim nativen Wechsel entfernt, Material und
   assert.equal(native.searchParams.get('filter.p.m.custom.leistenhoehe'), 'ueber80');
   assert.equal(native.searchParams.get('sort_by'), 'price-ascending');
   assert.equal(legacy.requests.length, 0);
+});
+
+
+test('Zurueck auf eine Legacy-Tagroute normalisiert auch den frisch vom Server geladenen Abschnitt', async () => {
+  const history = scriptHarness('', {
+    href: 'https://example.test/collections/bodenleisten/hoehe-40mm?sort_by=price-descending',
+    loadedTags: ['hoehe: 40mm'], loadedHeights: [{ value: 'bis40', count: 1 }],
+  });
+  await history.listeners.popstate();
+  const target = new URL(history.location.replaced);
+  assert.equal(target.pathname, '/collections/bodenleisten');
+  assert.equal(target.searchParams.get('filter.p.m.custom.leistenhoehe'), 'bis40');
+  assert.equal(target.searchParams.get('sort_by'), 'price-descending');
 });
