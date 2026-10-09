@@ -90,7 +90,7 @@
           "type": "_tp-menu-kachel",
           "settings": {
             "menu_match": "Wolle",
-            "image": "shopify://shop_images/teppichboden-wolle-menue.jpg",
+            "image": "shopify://shop_images/1312333-8FXC-prod.jpg",
             "subtitle": ""
           }
         },
@@ -154,7 +154,7 @@
           "type": "_tp-menu-kachel",
           "settings": {
             "menu_match": "Teppichfliesen",
-            "image": "shopify://shop_images/teppichfliesen-einzeln-austauschen.jpg",
+            "image": "shopify://shop_images/teppichfliesen-austauschen-menue.jpg",
             "subtitle": ""
           }
         },
@@ -162,7 +162,7 @@
           "type": "_tp-menu-kachel",
           "settings": {
             "menu_match": "Alle Teppichfliesen",
-            "image": "shopify://shop_images/teppichfliesen-einzeln-austauschen.jpg",
+            "image": "shopify://shop_images/teppichfliesen-austauschen-menue.jpg",
             "subtitle": ""
           }
         },
@@ -170,7 +170,7 @@
           "type": "_tp-menu-kachel",
           "settings": {
             "menu_match": "Fliesen 50 × 50 cm",
-            "image": "shopify://shop_images/1127454-8FXC-prod.jpg",
+            "image": "shopify://shop_images/teppichfliesen-austauschen-menue.jpg",
             "subtitle": ""
           }
         },
@@ -178,7 +178,7 @@
           "type": "_tp-menu-kachel",
           "settings": {
             "menu_match": "Teppichplanken",
-            "image": "shopify://shop_images/1227287-8FXC-prod.jpg",
+            "image": "shopify://shop_images/teppichplanken-format-menue-v1.png",
             "subtitle": ""
           }
         },
@@ -442,7 +442,7 @@
           "type": "_tp-menu-kachel",
           "settings": {
             "menu_match": "Sisal",
-            "image": "shopify://shop_images/teppichboden-sisal-menue-16x9.jpg",
+            "image": "shopify://shop_images/1312423-8FXC-prod.jpg",
             "subtitle": ""
           }
         }
