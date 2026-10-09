@@ -4,11 +4,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { Liquid } from 'liquidjs';
-import { auditCompareSources, compareAbsencePass, compareSourceFindings, inspectCompareDom } from '../compare-absence.mjs';
+import { auditCompareSources, compareAbsencePass, compareSourceFindings, INERT_COMPARE_CONTENT, inspectCompareDom } from '../compare-absence.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 
-test('Produktvergleich ist vollstaendig aus dem Theme entfernt', () => {
+test('Vergleichsfunktion ist entfernt und Legacy-Dateien sind exakt inert', () => {
   const result = auditCompareSources(root);
   assert.ok(result.checkedFiles > 100);
   assert.deepEqual(result.findings, []);
@@ -36,7 +36,33 @@ test('Auch leere oder ungenutzte ehemalige Vergleichsdateien blockieren das Gate
   ]);
   const findings = compareSourceFindings(files);
   assert.deepEqual(findings.map(finding => finding.file), [...files.keys()]);
-  assert.ok(findings.every(finding => finding.reason === 'Entfernte Vergleichsdatei ist wieder vorhanden'));
+  assert.ok(findings.every(finding => finding.reason === 'Vergleichsdatei ist nicht exakt der freigegebene inerte Platzhalter'));
+});
+
+test('Nur die exakt freigegebenen inerten Inhalte werden fuer die zwei Legacy-Dateien akzeptiert', () => {
+  assert.deepEqual(compareSourceFindings(new Map(INERT_COMPARE_CONTENT)), []);
+  for (const [file, source] of INERT_COMPARE_CONTENT) {
+    assert.equal(fs.readFileSync(path.join(root, file), 'utf8'), source);
+    for (const changed of [source + '\n', source + 'window.example = true;', source.replace('entfernt', 'aktiv'), '<div>Hallo</div>']) {
+      assert.equal(compareSourceFindings(new Map([[file, changed]])).length, 1, file);
+    }
+  }
+  assert.equal(compareSourceFindings(new Map([['snippets/tp-compare-bar.liquid', INERT_COMPARE_CONTENT.get('assets/tp-compare.js')]])).length, 1);
+});
+
+test('Legacy-Script ist ausschliesslich ein Kommentar und der Block rendert exakt null Zeichen', async () => {
+  const script = fs.readFileSync(path.join(root, 'assets/tp-compare.js'), 'utf8');
+  assert.match(script, /^\/\*[^]*\*\/\n$/);
+  assert.equal(script.replace(/\/\*[^]*?\*\//g, '').trim(), '');
+  vm.runInNewContext(script, {});
+  const source = fs.readFileSync(path.join(root, 'blocks/tp-compare-toggle.liquid'), 'utf8');
+  const blockEngine = new Liquid();
+  blockEngine.registerTag('schema', {
+    parse(token, tokens) { while (tokens.length && tokens.shift().name !== 'endschema') {} },
+    render() { return ''; },
+  });
+  assert.equal(await blockEngine.parseAndRender(source, { product: product({ sample: true }) }), '');
+  assert.equal(fs.existsSync(path.join(root, 'snippets/tp-compare-bar.liquid')), false);
 });
 
 test('Streichpreise, Rollenpreisvergleich und Vorher-Nachher bleiben erlaubt', () => {

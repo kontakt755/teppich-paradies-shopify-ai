@@ -1,17 +1,25 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const REMOVED_COMPARE_FILES = new Set([
+export const COMPARE_LEGACY_FILES = new Set([
   'assets/tp-compare.js',
   'blocks/tp-compare-toggle.liquid',
   'snippets/tp-compare-bar.liquid',
+]);
+
+export const INERT_COMPARE_CONTENT = new Map([
+  ['assets/tp-compare.js', "/* Produktvergleich entfernt. Inerter Platzhalter fuer den Theme-Abgleich. */\n"],
+  ['blocks/tp-compare-toggle.liquid', "{% schema %}\n{\n  \"name\": \"TP Vergleich entfernt\",\n  \"tag\": null,\n  \"settings\": [],\n  \"presets\": [{ \"name\": \"TP Vergleich entfernt\" }]\n}\n{% endschema %}"],
 ]);
 
 export const COMPARE_SIGNATURE = /data-tp-compare-|tp-card-actions__compare|tp-compare-(?:bar|toggle|dialog|table|count|open|close|remove|expand|collapse)|tp-compare\.js|tpCompareItems/i;
 
 export function compareSourceFindings(files) {
   return [...files].flatMap(([file, source]) => {
-    if (REMOVED_COMPARE_FILES.has(file)) return [{ file, line: 1, reason: 'Entfernte Vergleichsdatei ist wieder vorhanden' }];
+    if (COMPARE_LEGACY_FILES.has(file)) {
+      if (INERT_COMPARE_CONTENT.has(file) && INERT_COMPARE_CONTENT.get(file) === source) return [];
+      return [{ file, line: 1, reason: 'Vergleichsdatei ist nicht exakt der freigegebene inerte Platzhalter' }];
+    }
     return source.split('\n').flatMap((line, index) => COMPARE_SIGNATURE.test(line)
       ? [{ file, line: index + 1 }]
       : []);
