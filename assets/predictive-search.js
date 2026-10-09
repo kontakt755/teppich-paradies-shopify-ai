@@ -21,6 +21,8 @@ import { DialogCloseEvent, DialogOpenEvent, DialogComponent } from '@theme/dialo
 class PredictiveSearchComponent extends Component {
   requiredRefs = ['searchInput', 'predictiveSearchResults', 'resetButton'];
 
+  static #nextOptionId = 0;
+
   #controller = new AbortController();
 
   /**
@@ -51,9 +53,14 @@ class PredictiveSearchComponent extends Component {
     if (dialog) {
       document.addEventListener('keydown', this.#handleKeyboardShortcut, { signal });
       dialog.addEventListener(DialogCloseEvent.eventName, this.#handleDialogClose, { signal });
-      dialog.addEventListener(DialogOpenEvent.eventName, this.#handleDialogOpen, { signal, once: true });
+      dialog.addEventListener(DialogOpenEvent.eventName, this.#handleDialogOpen, { signal });
 
       this.addEventListener('click', this.#handleModalClick, { signal });
+
+      // The search dialog may already be open when this low-priority module upgrades.
+      if (dialog.querySelector('dialog[open]')) {
+        this.#handleDialogOpen();
+      }
     }
 
     if (RecentlyViewed.getProducts().length > 0) {
@@ -101,10 +108,13 @@ class PredictiveSearchComponent extends Component {
    * Handles the dialog close event.
    */
   #handleDialogClose = () => {
+    this.refs.searchInput.setAttribute('aria-expanded', 'false');
     this.#resetSearch();
   };
 
   #handleDialogOpen = () => {
+    // The suggestions are visible throughout the open dialog, including its empty state.
+    this.refs.searchInput.setAttribute('aria-expanded', 'true');
     if (!this.#emptyStateLoaded && RecentlyViewed.getProducts().length > 0) {
       this.#loadEmptyState();
     }
@@ -144,32 +154,53 @@ class PredictiveSearchComponent extends Component {
   #isKeyboardNavigation = false;
 
   get #currentIndex() {
-    return this.#allResultsItems?.findIndex((item) => item.getAttribute('aria-selected') === 'true') ?? -1;
+    return this.#allResultsItems?.findIndex((item) => item.getAttribute('data-selected') === 'true') ?? -1;
   }
 
   set #currentIndex(index) {
-    if (!this.#allResultsItems?.length) return;
+    const items = this.#allResultsItems;
+    const { searchInput } = this.refs;
+    if (!items.length) {
+      searchInput.removeAttribute('aria-activedescendant');
+      return;
+    }
 
     let activeItem = null;
+    let activeOption = null;
 
-    this.#allResultsItems.forEach((item) => {
+    items.forEach((item) => {
       item.classList.remove('keyboard-focus');
     });
 
-    for (const [itemIndex, item] of this.#allResultsItems.entries()) {
+    for (const [itemIndex, item] of items.entries()) {
+      const option = item.querySelector('a[role="option"], a');
+      if (option) {
+        // Default product cards are links; search results already use role="option".
+        option.setAttribute('role', 'option');
+        option.id ||= `predictive-search-option-${++PredictiveSearchComponent.#nextOptionId}`;
+      }
+
       if (itemIndex === index) {
-        item.setAttribute('aria-selected', 'true');
+        item.setAttribute('data-selected', 'true');
+        option?.setAttribute('aria-selected', 'true');
         if (this.#isKeyboardNavigation) {
           item.classList.add('keyboard-focus');
         }
         activeItem = item;
+        activeOption = option;
       } else {
-        item.removeAttribute('aria-selected');
+        item.removeAttribute('data-selected');
+        option?.removeAttribute('aria-selected');
       }
     }
 
+    if (activeOption) {
+      searchInput.setAttribute('aria-activedescendant', activeOption.id);
+    } else {
+      searchInput.removeAttribute('aria-activedescendant');
+    }
     activeItem?.scrollIntoView({ behavior: prefersReducedMotion() ? 'instant' : 'smooth', block: 'nearest' });
-    this.refs.searchInput.focus();
+    searchInput.focus();
   }
 
   get #currentItem() {

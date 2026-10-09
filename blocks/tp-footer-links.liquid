@@ -9,6 +9,8 @@
   assign tp_fl_sortiment = block.settings.sortiment_menu
   assign tp_fl_service = block.settings.service_menu
   assign tp_fl_recht = block.settings.rechtliches_menu
+  assign tp_fl_sonderposten = collections['sonderposten-im-laden']
+  assign tp_fl_sonderposten_verlinkt = false
 -%}
 
 <div class="tp-footer-links" {{ block.shopify_attributes }}>
@@ -21,12 +23,18 @@
           {%- if tp_mls contains 'nein' -%}{%- continue -%}{%- endif -%}
           {%- if link.url contains '/collections/' -%}
             <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
+            {%- if link.url == tp_fl_sonderposten.url -%}
+              {%- assign tp_fl_sonderposten_verlinkt = true -%}
+            {%- endif -%}
           {%- endif -%}
         {%- endfor -%}
       {%- else -%}
         <li><a href="{{ collections['teppichboden'].url }}">Teppichboden</a></li>
         <li><a href="{{ collections['vinylboden-1'].url }}">Vinylboden</a></li>
         <li><a href="{{ collections['linoleumboden-1'].url }}">Linoleum</a></li>
+      {%- endif -%}
+      {%- if tp_fl_sonderposten.products_count > 0 and tp_fl_sonderposten_verlinkt == false -%}
+        <li><a href="{{ tp_fl_sonderposten.url }}">{{ tp_fl_sonderposten.title | escape }}</a></li>
       {%- endif -%}
     </ul>
   </nav>

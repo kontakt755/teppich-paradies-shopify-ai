@@ -4,9 +4,9 @@
 
     berechnet: _Gruppe | Art = Meterware/Raummass | Gewuenschte Laenge
                | custom.preis_pro_001_qm
-               | Service-Property (Zu Teppich, Zu Teppichboden, Kante umlaufend)
+               | Service-Property (Zu Teppich, Zu Teppichboden, Zu Bodenbelag, Kante umlaufend)
                | Optionswert Wunschmass
-    Service:   Zu Teppich/Zu Teppichboden, Kante umlaufend ohne Masse,
+    Service:   Zu Teppich/Zu Teppichboden/Zu Bodenbelag, Kante umlaufend ohne Masse,
                oder Produkttyp "Service" (Kettelservice, Fussleiste)
     Hauptzeile einer Gruppe: erste Zeile der Gruppe ohne Service-Property
     Waise:     Service mit _Gruppe ohne Hauptzeile | Service ohne _Gruppe
@@ -40,7 +40,8 @@
       assign tp_gz_it_p = tp_gz_it.properties
       assign tp_gz_it_g = tp_gz_it_p._Gruppe | default: '' | strip
       assign tp_gz_it_service = false
-      if tp_gz_it_p['Zu Teppich'] != blank or tp_gz_it_p['Zu Teppichboden'] != blank
+      assign tp_gz_it_link = tp_gz_it_p['Zu Teppich'] | default: tp_gz_it_p['Zu Teppichboden'] | default: tp_gz_it_p['Zu Bodenbelag']
+      if tp_gz_it_link != blank
         assign tp_gz_it_service = true
       elsif tp_gz_it_p['Kante umlaufend'] != blank and tp_gz_it_p['Maße'] == blank
         assign tp_gz_it_service = true
@@ -71,7 +72,8 @@
             continue
           endif
           assign tp_gz_it2_p = tp_gz_it2.properties
-          if tp_gz_it2_p['Zu Teppich'] == blank and tp_gz_it2_p['Zu Teppichboden'] == blank and tp_gz_it2.product.type != 'Service'
+          assign tp_gz_it2_link = tp_gz_it2_p['Zu Teppich'] | default: tp_gz_it2_p['Zu Teppichboden'] | default: tp_gz_it2_p['Zu Bodenbelag']
+          if tp_gz_it2_link == blank and tp_gz_it2.product.type != 'Service'
             if tp_gz_it2_p['Kante umlaufend'] == blank or tp_gz_it2_p['Maße'] != blank
               assign tp_gz_it_haupt = true
             endif
@@ -141,7 +143,8 @@
     endif
 
     assign tp_gz_service = false
-    if tp_gz_p['Zu Teppich'] != blank or tp_gz_p['Zu Teppichboden'] != blank
+    assign tp_gz_link = tp_gz_p['Zu Teppich'] | default: tp_gz_p['Zu Teppichboden'] | default: tp_gz_p['Zu Bodenbelag']
+    if tp_gz_link != blank
       assign tp_gz_service = true
     elsif tp_gz_p['Kante umlaufend'] != blank and tp_gz_p['Maße'] == blank
       assign tp_gz_service = true
@@ -178,7 +181,8 @@
         endif
         assign tp_gz_it_p = tp_gz_it.properties
         assign tp_gz_it_service = false
-        if tp_gz_it_p['Zu Teppich'] != blank or tp_gz_it_p['Zu Teppichboden'] != blank
+        assign tp_gz_it_link = tp_gz_it_p['Zu Teppich'] | default: tp_gz_it_p['Zu Teppichboden'] | default: tp_gz_it_p['Zu Bodenbelag']
+        if tp_gz_it_link != blank
           assign tp_gz_it_service = true
         elsif tp_gz_it_p['Kante umlaufend'] != blank and tp_gz_it_p['Maße'] == blank
           assign tp_gz_it_service = true
@@ -214,6 +218,12 @@
       assign tp_gz_text = tp_gz_flaeche
       if tp_gz_p['Mindestpreis'] != blank
         assign tp_gz_text = tp_gz_text | append: ' (Mindestpreis)'
+      endif
+    elsif tp_gz_service and tp_gz_p['Zu Bodenbelag'] != blank
+      if line_item.quantity == 1
+        assign tp_gz_text = '1 Stange'
+      else
+        assign tp_gz_text = line_item.quantity | append: ' Stangen'
       endif
     elsif tp_gz_service and tp_gz_p['Kante umlaufend'] != blank
       assign tp_gz_text = tp_gz_p['Kante umlaufend'] | strip | append: ' Kettelkante'

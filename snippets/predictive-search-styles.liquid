@@ -207,7 +207,7 @@
 
   .predictive-search-results__pill:focus,
   .predictive-search-results__pill:hover,
-  .predictive-search-results__card--query:is([aria-selected='true'], :focus-within) .predictive-search-results__pill {
+  .predictive-search-results__card--query:is([data-selected='true'], :focus-within) .predictive-search-results__pill {
     --pill-background-color: rgb(var(--color-foreground-rgb) / var(--opacity-8));
 
     background-color: var(--pill-background-color);
@@ -270,7 +270,7 @@
       margin: calc((var(--padding-2xs) + 2px) * -1);
     }
 
-    &:is([aria-selected='true'].keyboard-focus, &:focus-visible, &:has(.resource-card:focus-visible)) {
+    &:is([data-selected='true'].keyboard-focus, &:focus-visible, &:has(.resource-card:focus-visible)) {
       background-color: var(--card-bg-hover);
       padding: calc(var(--padding-2xs) + 1px);
       margin: calc((var(--padding-2xs) + 1px) * -1);
@@ -296,7 +296,7 @@
       background-color: var(--card-bg-hover);
     }
 
-    &[aria-selected='true'].keyboard-focus {
+    &[data-selected='true'].keyboard-focus {
       border-color: var(--card-border-hover);
       background-color: var(--card-bg-hover);
     }

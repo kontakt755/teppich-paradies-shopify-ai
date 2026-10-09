@@ -424,11 +424,9 @@
   .tp-se__link:hover,
   .tp-se__produkt:hover { background: var(--tp-se-bg-2); border-color: var(--tp-se-ink); }
 
-  /* Aktive Option per Tastatur (Dropdown: aria-selected auf dem Link,
-     Horizon-Fenster: auf dem li). Rahmen statt Farbfeld, damit das
+  /* Aktive Option per Tastatur. Rahmen statt Farbfeld, damit das
      Produktbild unveraendert bleibt. */
   .tp-se [role='option'][aria-selected='true'],
-  .tp-se li[aria-selected='true'] > [role='option'],
   .tp-se [role='option']:focus-visible {
     background: var(--tp-se-bg-2);
     outline: 2px solid var(--tp-se-ink);
