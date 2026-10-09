@@ -76,7 +76,7 @@
     {%- for tp_li_p in tp_li_col.products -%}
       {%- capture tp_li_img -%}
         {%- if tp_li_p.featured_image -%}
-          {{ tp_li_p.featured_image | image_url: width: 1600 | image_tag: loading: 'lazy', fetchpriority: 'low', widths: '300, 500, 800, 1200, 1600', class: 'mega-menu__link-image tp-lino-nav__swatch', sizes: tp_li_sizes, alt: '' }}
+          {{ tp_li_p.featured_image | image_url: width: 800 | image_tag: loading: 'lazy', fetchpriority: 'low', widths: '200, 300, 400, 600, 800', class: 'mega-menu__link-image tp-lino-nav__swatch', sizes: tp_li_sizes, alt: '' }}
         {%- endif -%}
       {%- endcapture -%}
       {%- assign tp_li_title = tp_li_p.title | remove: ' Linoleumboden' | remove: ' 200cm' | strip -%}
@@ -90,5 +90,6 @@
 {% stylesheet %}
   .tp-lino-nav .tp-mm-card__media,
   .tp-lino-nav .tp-dn-row__media { overflow: hidden; }
+  .menu-drawer .tp-dn-panel .tp-lino-nav .tp-dn-row__sub { display: block; white-space: normal; -webkit-line-clamp: unset; text-overflow: clip; overflow: visible; }
   .tp-lino-nav .tp-lino-nav__swatch { object-fit: cover; transform: scale(1.7); transform-origin: center; }
 {% endstylesheet %}

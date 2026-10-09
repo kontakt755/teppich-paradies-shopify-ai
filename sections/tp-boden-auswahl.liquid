@@ -25,7 +25,7 @@
       {%- if section.settings.intro != blank -%}<p>{{ section.settings.intro | escape }}</p>{%- endif -%}
     </header>
     {%- if kind == 'linoleum' -%}
-      <ul class="tp-ba__qualities" role="list">
+      <ul class="tp-ba__qualities" role="list" aria-label="Linoleum-Qualitäten">
         {%- for item in collection.products -%}
           <li>
             <a class="tp-ba__quality" href="{{ item.url }}">
@@ -42,7 +42,7 @@
           </li>
         {%- endfor -%}
       </ul>
-      <p class="tp-ba__note">Nutzungsklasse 34: gewerblich, sehr starke Nutzung. Klasse 43: industriell, starke Nutzung. Klasse 41: industriell, geringe Nutzung. Die Klassen gelten jeweils für den genannten Einsatzbereich; die Produktdetails helfen bei der Auswahl für Ihren Raum.</p>
+      <p class="tp-ba__note">NK bedeutet Nutzungsklasse. Klasse 23: Wohnbereich, starke Nutzung. Klasse 34: gewerblich, sehr starke Nutzung. Klasse 43: industriell, starke Nutzung. Klasse 41: industriell, geringe Nutzung. Die Klassen gelten jeweils für den genannten Einsatzbereich; die Produktdetails helfen bei der Auswahl für Ihren Raum.</p>
     {%- elsif kind == 'kork' -%}
       <ul class="tp-ba__routes" role="list">
         <li><a class="tp-ba__route" href="{{ routes.collections_url }}/korkboden-klick" {% if collection.handle == 'korkboden-klick' %}aria-current="page"{% endif %}><strong>Kork zum Klicken</strong><span>Suberra · schwimmend verlegen</span><span aria-hidden="true">→</span></a></li>

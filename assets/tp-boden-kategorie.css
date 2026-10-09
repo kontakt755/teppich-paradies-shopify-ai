@@ -225,8 +225,13 @@
   .tp-ba__inner { padding: 22px 16px; }
   .tp-ba__header h2 { font-size: 23px; }
   .tp-ba__header p { font-size: 14px; }
-  .tp-ba__qualities { grid-template-columns: minmax(0, 1fr); gap: 8px; margin-top: 16px; }
-  .tp-ba__quality { min-height: 88px; gap: 10px; padding: 10px; }
+  .tp-ba__qualities { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 220px; gap: 10px; margin-top: 16px; padding: 8px 8px 12px; overflow-x: auto; overscroll-behavior-inline: contain; scroll-snap-type: x proximity; scroll-padding-inline: 8px; scrollbar-width: thin; }
+  .tp-ba__qualities > li { scroll-snap-align: start; }
+  .tp-ba__quality { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: start; min-height: 140px; gap: 8px 10px; padding: 10px; }
+  .tp-ba__quality-copy { display: contents; }
+  .tp-ba__quality-copy strong { grid-column: 2; grid-row: 1; align-self: center; margin: 0; }
+  .tp-ba__quality-copy > span { grid-column: 1 / -1; grid-row: 2; line-height: 1.4; }
+  .tp-ba__arrow { grid-column: 3; grid-row: 1; align-self: center; margin: 0; }
   .tp-ba__swatch { flex-basis: 64px; width: 64px; height: 64px; }
   .tp-ba__quality-copy strong { font-size: 16px; }
   .tp-ba__routes { grid-template-columns: minmax(0, 1fr); gap: 8px; }

@@ -68,8 +68,8 @@ test('Alle neun Linoleumqualitaeten mit Originalbildern, Farbenzahlen und belegt
   const html = await render(linoCollection, 'linoleum');
   assert.equal((html.match(/class="tp-ba__quality"/g) || []).length, 9);
   assert.match(html, /21 Farben/);
-  assert.match(html, /Nutzungsklassen 34 \/ 41/);
-  assert.match(html, /Nutzungsklasse 34: gewerblich, sehr starke Nutzung/);
+  assert.match(html, /NK 34 \/ 41/);
+  assert.match(html, /Klasse 34: gewerblich, sehr starke Nutzung/);
   assert.match(html, /Klasse 43: industriell, starke Nutzung/);
   assert.match(html, /Klasse 41: industriell, geringe Nutzung/);
   assert.match(html, /original-9\.jpg/);
@@ -78,8 +78,8 @@ test('Alle neun Linoleumqualitaeten mit Originalbildern, Farbenzahlen und belegt
 test('Widerspruechliche Linoleumstaerke wird verschwiegen, Farbauswahl und Nutzungsklasse bleiben', async () => {
   const facts = await engine.parseAndRender(read('snippets/tp-linoleum-kurzinfo.liquid'), { product: linoCollection.products[5], details: true });
   assert.match(facts, /1 Farbe/);
-  assert.match(facts, /Nutzungsklassen 34 \/ 43/);
-  assert.match(facts, /200 cm Rollenbreite/);
+  assert.match(facts, /NK 34 \/ 43/);
+  assert.match(facts, /200 cm Rolle/);
   assert.doesNotMatch(facts, /2[,.][05] mm|Nicht spezifiziert/);
   const regular = await engine.parseAndRender(read('snippets/tp-linoleum-kurzinfo.liquid'), { product: linoCollection.products[0], details: true });
   assert.match(regular, /2,5 mm/);
@@ -131,4 +131,23 @@ test('Desktop-Linoleummenue zeigt alle neun Qualitaeten', async () => {
   assert.equal((html.match(/class="mega-menu__link tp-mm-card__link"/g) || []).length, 10);
   assert.match(html, /Qualität 9/);
   assert.match(html, /21 Farben/);
+});
+
+
+test('Lange Nutzungsklassenfelder werden in Kurzinfos auf belegte Ziffern gekuerzt', async () => {
+  const product = lino(1, 4);
+  product.metafields.custom.nutzungsklassen.value = [
+    { nutzungsklasse: { value: 'Klasse 43 (Industrie, stark)' } },
+    { nutzungsklasse: { value: 'Klasse 34 (Gewerbe, sehr stark)' } },
+    { nutzungsklasse: { value: 'Klasse 23 (Wohnen, stark)' } },
+    { nutzungsklasse: { value: '34' } },
+    { nutzungsklasse: { value: 'Nicht angegeben' } },
+  ];
+  const source = read('snippets/tp-linoleum-kurzinfo.liquid');
+  const facts = await engine.parseAndRender(source, { product, details: true });
+  assert.match(facts, /4 Farben · Vliesrücken · NK 23 \/ 34 \/ 43/);
+  assert.doesNotMatch(facts, /Gewerbe|Industrie|Wohnen|Klasse|Nicht angegeben/);
+  const menu = await engine.parseAndRender(read('snippets/tp-linoleum-nav.liquid'), { parent_link: { object: { ...linoCollection, products: [product] }, url: linoCollection.url }, variant: 'drawer' });
+  assert.match(menu, /NK 23 \/ 34 \/ 43/);
+  assert.doesNotMatch(menu, /Gewerbe|Industrie|Wohnen/);
 });
