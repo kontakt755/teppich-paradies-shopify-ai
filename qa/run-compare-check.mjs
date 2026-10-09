@@ -30,7 +30,11 @@ fs.mkdirSync(resultsDir, { recursive: true });
 async function runViewport(browser, name, viewport, scenario) {
   const context = await browser.newContext({ viewport });
   await sperreTracking(context);
+  // Init-Skripte laufen in jedem Frame. In abgeschotteten iframes (Startseite)
+  // wirft schon der Zugriff auf localStorage - das landete als Seitenfehler im
+  // Gate. Die Vergleichsauswahl gehoert nur ins Hauptfenster.
   await context.addInitScript(({ items }) => {
+    if (window.top !== window) return;
     if (items === null) localStorage.removeItem('tpCompareItems');
     else localStorage.setItem('tpCompareItems', items);
   }, scenario);
