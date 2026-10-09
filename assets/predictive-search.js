@@ -51,9 +51,14 @@ class PredictiveSearchComponent extends Component {
     if (dialog) {
       document.addEventListener('keydown', this.#handleKeyboardShortcut, { signal });
       dialog.addEventListener(DialogCloseEvent.eventName, this.#handleDialogClose, { signal });
-      dialog.addEventListener(DialogOpenEvent.eventName, this.#handleDialogOpen, { signal, once: true });
+      dialog.addEventListener(DialogOpenEvent.eventName, this.#handleDialogOpen, { signal });
 
       this.addEventListener('click', this.#handleModalClick, { signal });
+
+      // The search dialog may already be open when this low-priority module upgrades.
+      if (dialog.querySelector('dialog[open]')) {
+        this.#handleDialogOpen();
+      }
     }
 
     if (RecentlyViewed.getProducts().length > 0) {
@@ -101,10 +106,13 @@ class PredictiveSearchComponent extends Component {
    * Handles the dialog close event.
    */
   #handleDialogClose = () => {
+    this.refs.searchInput.setAttribute('aria-expanded', 'false');
     this.#resetSearch();
   };
 
   #handleDialogOpen = () => {
+    // The suggestions are visible throughout the open dialog, including its empty state.
+    this.refs.searchInput.setAttribute('aria-expanded', 'true');
     if (!this.#emptyStateLoaded && RecentlyViewed.getProducts().length > 0) {
       this.#loadEmptyState();
     }
