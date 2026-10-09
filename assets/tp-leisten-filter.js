@@ -38,8 +38,45 @@
     return true;
   }
 
+  function normalizeLegacyHeight() {
+    var element = root();
+    if (!element) return false;
+    var currentTags;
+    var heights;
+    try {
+      currentTags = JSON.parse(element.querySelector('[data-tp-leisten-current-tags]').textContent) || [];
+      heights = JSON.parse(element.querySelector('[data-tp-leisten-heights]').textContent) || [];
+    } catch (error) {
+      return false;
+    }
+    var legacyHeights = currentTags.filter(function (tag) {
+      return tag.toLowerCase().split(':')[0].trim() === 'hoehe';
+    }).map(function (tag) {
+      return tag.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    });
+    if (!legacyHeights.length) return false;
+    var target = new URL(window.location.href);
+    var nativeParam = 'filter.p.m.custom.leistenhoehe';
+    if (!target.searchParams.has(nativeParam)) {
+      var candidates = heights.filter(function (height) { return height.count > 0 && height.value; });
+      if (candidates.length !== 1) return false;
+      target.searchParams.set(nativeParam, candidates[0].value);
+    }
+    var base = element.dataset.collectionUrl;
+    if (target.pathname.indexOf(base + '/') !== 0) return false;
+    var remaining = target.pathname.slice(base.length + 1).split('+').filter(function (tag) {
+      return legacyHeights.indexOf(tag) === -1;
+    });
+    if (remaining.length === target.pathname.slice(base.length + 1).split('+').length) return false;
+    target.pathname = base + (remaining.length ? '/' + remaining.join('+') : '');
+    target.searchParams.delete('page');
+    target.hash = 'bodenleisten-produkte';
+    window.location.replace(target.href);
+    return true;
+  }
+
   async function refresh() {
-    if (migrateHash()) return;
+    if (migrateHash() || normalizeLegacyHeight()) return;
     var element = root();
     if (!element) return;
     if (controller) controller.abort();
@@ -65,5 +102,5 @@
   document.addEventListener('filter:update', refresh);
   window.addEventListener('popstate', refresh);
   window.addEventListener('hashchange', migrateHash);
-  migrateHash();
+  if (!migrateHash()) normalizeLegacyHeight();
 })();

@@ -7,7 +7,7 @@
   assign tags_path = ''
   for selected_tag in current_tags
     assign prefix = selected_tag | downcase | split: ':' | first | strip
-    unless prefix == 'material'
+    unless prefix == 'material' or prefix == 'hoehe'
       assign tag_handle = selected_tag | handleize
       assign tags_path = tags_path | append: tag_handle | append: '+'
     endunless

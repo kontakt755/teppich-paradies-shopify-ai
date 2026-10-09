@@ -22,11 +22,11 @@ const collection = {
   ] }],
 };
 
-test('Materialwechsel ersetzt nur die Materialgruppe und behaelt Hoehe, Preis und Sortierung', async () => {
+test('Materialwechsel ersetzt Material und entfernt Legacy-Hoehen-Tags, behaelt native Hoehe, Preis und Sortierung', async () => {
   const filters = [...collection.filters.map(f => ({ ...f, active_values: [{ param_name: f.param_name, value: 'group1' }] })), { type: 'price_range', min_value: { param_name: 'filter.v.price.gte', value: 1250 }, max_value: { param_name: 'filter.v.price.lte', value: 4000 } }];
   const url = await engine.parseAndRender(read('snippets/tp-leisten-filter-url.liquid'), { collection: { ...collection, filters }, tag: 'material: kunststoff', current_tags: ['material: mdf', 'hoehe: 40mm'] });
   const parsed = new URL(url, 'https://example.test');
-  assert.equal(parsed.pathname, '/collections/bodenleisten/hoehe-40mm+material-kunststoff');
+  assert.equal(parsed.pathname, '/collections/bodenleisten/material-kunststoff');
   assert.equal(parsed.searchParams.get('filter.p.m.custom.leistenhoehe'), 'group1');
   assert.equal(parsed.searchParams.get('filter.v.price.gte'), '12.5');
   assert.equal(parsed.searchParams.get('sort_by'), 'price-ascending');
@@ -54,10 +54,10 @@ test('Desktop und Drawer-Menue nutzen vollstaendige Quellen und native Hoehenwer
   assert.doesNotMatch(html, /tp-nav-link__count/);
 });
 
-function scriptHarness(hash = '') {
+function scriptHarness(hash = '', { currentTags = [], heights = [], href } = {}) {
   const listeners = {};
-  const element = { dataset: { sectionId: 'quick', collectionUrl: collection.url }, querySelector() { return { textContent: JSON.stringify(collection.all_tags) }; }, replaceWith(other) { this.replacement = other; } };
-  const location = { href: 'https://example.test/collections/bodenleisten/material-mdf?sort_by=price-descending&page=3' + hash, hash, replace(url) { this.replaced = url; }, reload() { this.reloaded = true; } };
+  const element = { dataset: { sectionId: 'quick', collectionUrl: collection.url }, querySelector(selector) { return { textContent: JSON.stringify(selector === '[data-tp-leisten-current-tags]' ? currentTags : selector === '[data-tp-leisten-heights]' ? heights : collection.all_tags) }; }, replaceWith(other) { this.replacement = other; } };
+  const location = { href: href || 'https://example.test/collections/bodenleisten/material-mdf?sort_by=price-descending&page=3' + hash, hash, replace(url) { this.replaced = url; }, reload() { this.reloaded = true; } };
   const requests = [];
   const window = { location, addEventListener(name, handler) { listeners[name] = handler; } };
   vm.runInNewContext(read('assets/tp-leisten-filter.js'), {
@@ -88,4 +88,43 @@ test('Alte Menue-Hashes werden vor dem Filtern in vorhandene serverseitige Tags 
   assert.equal(migrated.searchParams.has('page'), false);
   assert.equal(migrated.searchParams.get('sort_by'), 'price-descending');
   assert.equal(migrated.hash, '#bodenleisten-produkte');
+});
+
+
+test('Legacy 40 mm wird zur belegten nativen Hoehe; Wechsel ueber 80 mm liefert passende Modelle', async () => {
+  const initial = scriptHarness('#leisten:material=mdf&hoehe=40mm');
+  const migrated = scriptHarness('', {
+    href: initial.location.replaced,
+    currentTags: ['material: mdf', 'hoehe: 40mm'],
+    heights: [{ value: 'bis40', count: 3 }, { value: 'ueber80', count: 0 }],
+  });
+  const native = new URL(migrated.location.replaced);
+  assert.equal(native.pathname, '/collections/bodenleisten/material-mdf');
+  assert.equal(native.searchParams.get('filter.p.m.custom.leistenhoehe'), 'bis40');
+  native.searchParams.set('filter.p.m.custom.leistenhoehe', 'ueber80');
+  const switched = scriptHarness('', { href: native.href });
+  await switched.listeners['filter:update']();
+  const request = new URL(switched.requests[0]);
+  const models = [{ material: 'mdf', height: 40 }, { material: 'mdf', height: 96 }];
+  const matches = models.filter(model => model.material === 'mdf'
+    && (request.searchParams.get('filter.p.m.custom.leistenhoehe') !== 'ueber80' || model.height > 80)
+    && (!request.pathname.includes('hoehe-40mm') || model.height === 40));
+  assert.equal(request.pathname, '/collections/bodenleisten/material-mdf');
+  assert.deepEqual(matches.map(model => model.height), [96]);
+});
+
+test('Uneindeutige Legacy-Hoehe wird beim nativen Wechsel entfernt, Material und andere Tags bleiben', async () => {
+  const legacy = scriptHarness('', {
+    href: 'https://example.test/collections/bodenleisten/material-mdf+hoehe-40mm+aktion?sort_by=price-ascending',
+    currentTags: ['material: mdf', 'hoehe: 40mm', 'aktion'],
+    heights: [{ value: 'bis40', count: 1 }, { value: 'ueber80', count: 1 }],
+  });
+  assert.equal(legacy.location.replaced, undefined);
+  legacy.location.href += '&filter.p.m.custom.leistenhoehe=ueber80';
+  await legacy.listeners['filter:update']();
+  const native = new URL(legacy.location.replaced);
+  assert.equal(native.pathname, '/collections/bodenleisten/material-mdf+aktion');
+  assert.equal(native.searchParams.get('filter.p.m.custom.leistenhoehe'), 'ueber80');
+  assert.equal(native.searchParams.get('sort_by'), 'price-ascending');
+  assert.equal(legacy.requests.length, 0);
 });

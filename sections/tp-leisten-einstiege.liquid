@@ -33,6 +33,12 @@
   data-testid="tp-leisten-einstiege-{{ section.id }}"
 >
   <script type="application/json" data-tp-leisten-tags>{{ collection.all_tags | json }}</script>
+  <script type="application/json" data-tp-leisten-current-tags>{{ current_tags | json }}</script>
+  <script type="application/json" data-tp-leisten-heights>[
+    {%- for value in height_filter.values -%}
+      {"value":{{ value.value | json }},"count":{{ value.count | json }}}{% unless forloop.last %},{% endunless %}
+    {%- endfor -%}
+  ]</script>
   {%- if section.settings.heading != blank or section.settings.intro != blank -%}
     <header class="tp-le__head">
       {%- if section.settings.heading != blank -%}<h2 class="tp-le__heading h3">{{ section.settings.heading | escape }}</h2>{%- endif -%}
