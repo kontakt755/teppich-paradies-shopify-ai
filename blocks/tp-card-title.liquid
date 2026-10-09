@@ -22,7 +22,8 @@
     {% render 'text', fallback_text: product_title, block: block %}
   </span>
 {% else %}
-  {% assign tp_card_title_display = closest.product.title | split: ' – ' | first | split: ' Teppichboden' | first %}
+  {% capture tp_card_title_display %}{% render 'tp-card-title-display', product: closest.product %}{% endcapture %}
+  {% assign tp_card_title_display = tp_card_title_display | strip %}
   {%- liquid
     # Wie Kartenbild und ueberlagerter Link dieselbe Raumfarbe waehlen.
     assign tp_card_title_variant = closest.product.selected_or_first_available_variant
