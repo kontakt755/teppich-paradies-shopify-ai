@@ -367,7 +367,7 @@
             <input type="checkbox" data-holz-an>
             <span class="tp-rwc-karte-text">
               <b>Sockelleiste aus Echtholzfurnier, 60 mm hoch</b>
-              <small data-holz-hint>16 × 60 mm · Verkauf in ganzen Stangen</small>
+              <small data-holz-hint>16 × 60 mm · Verkauf in ganzen Leisten</small>
             </span>
             <span class="tp-rwc-karte-preis" data-holz-preis></span>
           </label>
@@ -2006,7 +2006,7 @@ function tpRwcInit{{ tp_rc_id }}() {
       holzBox.querySelector('[data-holz-felder]').hidden = !holzAn;
       var holzInput = holzBox.querySelector('[data-holz-meter]');
       if (holzInput && !holzInput.getAttribute('data-touched') && w > 0 && len > 0) {
-        // Holzleisten werden in Stangen berechnet: der echte Umfang darf
+        // Holzleisten werden in Leisten berechnet: der echte Umfang darf
         // vorher nicht auf volle Meter aufgerundet werden.
         holzInput.value = String((2 * (w + len)) / 100).replace('.', ',');
       }
@@ -2023,14 +2023,14 @@ function tpRwcInit{{ tp_rc_id }}() {
       if (holzMeterOk && (!holzV || holzPreisOk)) markInvalid(holzInput, false);
       if (holzV) markInvalid(holzSel, false);
       var holzPreis = holzBox.querySelector('[data-holz-preis]');
-      if (holzPreis && showHolz) holzPreis.textContent = holzOk ? fmt(holzStangen * holzV.price / 100) + ' €' : 'ab ' + fmt(Math.min.apply(null, holzVarianten.map(function (v) { return v.price; })) / 100) + ' € / Stange';
+      if (holzPreis && showHolz) holzPreis.textContent = holzOk ? fmt(holzStangen * holzV.price / 100) + ' €' : 'ab ' + fmt(Math.min.apply(null, holzVarianten.map(function (v) { return v.price; })) / 100) + ' € / Leiste';
       var holzErgebnis = holzBox.querySelector('[data-holz-ergebnis]');
-      if (holzErgebnis) holzErgebnis.textContent = holzOk ? holzStangen + ' Stangen à ' + fmt(holzLaenge) + ' m = ' + fmt(holzStangen * holzLaenge) + ' m' : (holzAn ? 'Bitte Länge und Farbe wählen.' : '');
+      if (holzErgebnis) holzErgebnis.textContent = holzOk ? holzStangen + (holzStangen === 1 ? ' Leiste' : ' Leisten') + ' à ' + fmt(holzLaenge) + ' m = ' + fmt(holzStangen * holzLaenge) + ' m' : (holzAn ? 'Bitte Länge und Farbe wählen.' : '');
       if (holzOk) {
         res.items.push({ id: holzV.id, quantity: holzStangen, properties: { 'Zu Bodenbelag': data.product_title } });
         res.sum += holzStangen * holzV.price / 100;
-        res.rows.push(['Sockelleiste · ' + holzStangen + ' Stangen', holzStangen * holzV.price / 100]);
-        res.lines.push('+ Sockelleiste: ' + holzStangen + ' Stangen × ' + fmt(holzV.price / 100) + ' € = ' + fmt(holzStangen * holzV.price / 100) + ' €');
+        res.rows.push(['Sockelleiste · ' + holzStangen + (holzStangen === 1 ? ' Leiste' : ' Leisten'), holzStangen * holzV.price / 100]);
+        res.lines.push('+ Sockelleiste: ' + holzStangen + (holzStangen === 1 ? ' Leiste' : ' Leisten') + ' × ' + fmt(holzV.price / 100) + ' € = ' + fmt(holzStangen * holzV.price / 100) + ' €');
       }
     }
     if (formulaExtras) {

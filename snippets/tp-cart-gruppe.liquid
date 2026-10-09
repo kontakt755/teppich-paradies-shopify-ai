@@ -221,9 +221,9 @@
       endif
     elsif tp_gz_service and tp_gz_p['Zu Bodenbelag'] != blank
       if line_item.quantity == 1
-        assign tp_gz_text = '1 Stange'
+        assign tp_gz_text = '1 Leiste'
       else
-        assign tp_gz_text = line_item.quantity | append: ' Stangen'
+        assign tp_gz_text = line_item.quantity | append: ' Leisten'
       endif
     elsif tp_gz_service and tp_gz_p['Kante umlaufend'] != blank
       assign tp_gz_text = tp_gz_p['Kante umlaufend'] | strip | append: ' Kettelkante'

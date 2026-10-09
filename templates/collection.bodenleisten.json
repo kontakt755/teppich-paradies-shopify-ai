@@ -243,7 +243,7 @@
           "type": "faq",
           "settings": {
             "question": "Wie viele Meter Leiste brauche ich?",
-            "answer": "<p>Messen Sie alle Wandlängen des Raums und ziehen Sie Türen und Durchgänge ab. Rechnen Sie einen Zuschlag von etwa 10 % für Zuschnitt und Ecken ein. Die Stangenlänge steht auf der jeweiligen Produktseite.</p>"
+            "answer": "<p>Messen Sie alle Wandlängen des Raums und ziehen Sie Türen und Durchgänge ab. Rechnen Sie einen Zuschlag von etwa 10 % für Zuschnitt und Ecken ein. Die Leistenlänge steht auf der jeweiligen Produktseite.</p>"
           }
         },
         "faq_montage": {

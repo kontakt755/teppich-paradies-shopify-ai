@@ -1,170 +1,93 @@
-{% comment %} CSS in assets/tp-leisten-einstiege.css ausgelagert, laedt nur mit dieser Datei {% endcomment %}
 {{ 'tp-leisten-einstiege.css' | asset_url | stylesheet_tag }}
-{% comment %}
-  Schnelleinstiege fuer Bodenleisten: Kacheln nach Material und Chips nach
-  Hoehe. Beide Gruppen werden aus den Produkt-Tags der aktuellen Kollektion
-  gebildet (material:, hoehe:), es erscheinen also nur Gruppen, die das
-  Sortiment wirklich hat - samt Trefferzahl.
-
-  Die Einstiege blenden Karten im Produktraster darunter ein und aus
-  (assets/tp-leisten-filter.js). Shopify-Filter, Sortierung und Nachladen
-  bleiben unberuehrt. Ohne JavaScript sind es Sprunglinks zum Raster.
-
-  Hintergrund: Search & Discovery kennt fuer diese Kategorie nur Preis und
-  Verfuegbarkeit als Filter. Sobald dort Tag-Filter fuer Material und Hoehe
-  aktiviert sind, kann diese Sektion auf echte Filter-URLs umgestellt werden.
-{% endcomment %}
-
-{%- liquid
-  assign material_keys = ''
-  assign material_labels = ''
-  assign hoehe_keys = ''
-  assign hoehe_labels = ''
-  assign data_json = ''
-
-  for p in collection.products
-    capture raw
-      render 'tp-leisten-merkmale', product: p
-    endcapture
-    assign parts = raw | strip | split: '|'
-    assign m_label = parts[0] | strip
-    assign h_label = parts[1] | strip
-    assign m_key = parts[3] | strip
-    assign h_key = parts[4] | strip
-
-    if m_key != blank
-      assign probe = '|' | append: m_key | append: '|'
-      assign haystack = '|' | append: material_keys | append: '|'
-      unless haystack contains probe
-        assign material_keys = material_keys | append: m_key | append: '|'
-        assign material_labels = material_labels | append: m_label | append: '|'
-      endunless
-    endif
-    if h_key != blank
-      assign probe = '|' | append: h_key | append: '|'
-      assign haystack = '|' | append: hoehe_keys | append: '|'
-      unless haystack contains probe
-        assign hoehe_keys = hoehe_keys | append: h_key | append: '|'
-        assign hoehe_labels = hoehe_labels | append: h_label | append: '|'
-      endunless
-    endif
-
-    capture entry
-      echo p.handle | json
-      echo ':{"material":'
-      echo m_key | json
-      echo ',"hoehe":'
-      echo h_key | json
-      echo '}'
-    endcapture
-    if data_json != blank
-      assign data_json = data_json | append: ','
-    endif
-    assign data_json = data_json | append: entry
-  endfor
-
-  assign material_key_list = material_keys | split: '|'
-  assign material_label_list = material_labels | split: '|'
-  assign hoehe_key_list = hoehe_keys | split: '|'
-  assign hoehe_label_list = hoehe_labels | split: '|'
-  # Hoehen in Sortimentsreihenfolge (numerisch), unbekannte Werte hinten anhaengen
-  assign hoehe_order = '40mm|60mm|60mm-xl|80mm|80mm-xl|100mm|120mm' | split: '|'
-  assign hoehe_sorted_str = ''
-  for o in hoehe_order
-    for k in hoehe_key_list
-      if k == o
-        assign hoehe_sorted_str = hoehe_sorted_str | append: k | append: '|'
-      endif
-    endfor
-  endfor
-  for k in hoehe_key_list
-    assign probe = '|' | append: k | append: '|'
-    assign haystack = '|' | append: hoehe_sorted_str | append: '|'
-    unless haystack contains probe
-      assign hoehe_sorted_str = hoehe_sorted_str | append: k | append: '|'
-    endunless
-  endfor
-  assign hoehe_sorted = hoehe_sorted_str | split: '|'
--%}
-
-{%- if material_key_list.size > 0 or hoehe_key_list.size > 0 -%}
 <script src="{{ 'tp-leisten-filter.js' | asset_url }}" defer></script>
-
+{%- liquid
+  assign height_filter = blank
+  assign has_material = false
+  assign selection_active = false
+  if current_tags != blank
+    assign selection_active = true
+  endif
+  for tag in collection.all_tags
+    assign prefix = tag | downcase | split: ':' | first | strip
+    assign key = tag | downcase | split: ':' | last | strip
+    if prefix == 'material' and key != 'pvc'
+      assign has_material = true
+    endif
+  endfor
+  for filter in collection.filters
+    if filter.param_name == 'filter.p.m.custom.leistenhoehe'
+      assign height_filter = filter
+    endif
+    if filter.active_values.size > 0 or filter.min_value.value != nil or filter.max_value.value != nil
+      assign selection_active = true
+    endif
+  endfor
+-%}
 <div class="section-background color-{{ section.settings.color_scheme }}"></div>
 <div
   class="tp-le section section--page-width color-{{ section.settings.color_scheme }} spacing-style"
   style="{% render 'spacing-style', settings: section.settings %}"
   data-tp-leisten
+  data-section-id="{{ section.id }}"
+  data-collection-url="{{ collection.url }}"
   data-testid="tp-leisten-einstiege-{{ section.id }}"
 >
-  <script type="application/json" data-tp-leisten-data>{ {{ data_json }} }</script>
-
+  <script type="application/json" data-tp-leisten-tags>{{ collection.all_tags | json }}</script>
   {%- if section.settings.heading != blank or section.settings.intro != blank -%}
     <header class="tp-le__head">
-      {%- if section.settings.heading != blank -%}
-        <h2 class="tp-le__heading h3">{{ section.settings.heading | escape }}</h2>
-      {%- endif -%}
-      {%- if section.settings.intro != blank -%}
-        <p class="tp-le__intro">{{ section.settings.intro | escape }}</p>
-      {%- endif -%}
+      {%- if section.settings.heading != blank -%}<h2 class="tp-le__heading h3">{{ section.settings.heading | escape }}</h2>{%- endif -%}
+      {%- if section.settings.intro != blank -%}<p class="tp-le__intro">{{ section.settings.intro | escape }}</p>{%- endif -%}
     </header>
   {%- endif -%}
-
-  {%- if section.settings.show_material and material_key_list.size > 0 -%}
+  {%- if section.settings.show_material and has_material -%}
     <div class="tp-le__group" role="group" aria-labelledby="tp-le-material-{{ section.id }}">
       <p class="tp-le__label" id="tp-le-material-{{ section.id }}">Nach Material</p>
       <ul class="tp-le__tiles" role="list">
-        {%- for m_key in material_key_list -%}
+        {%- for tag in collection.all_tags -%}
           {%- liquid
-            assign m_label = material_label_list[forloop.index0]
-            assign count = 0
+            assign prefix = tag | downcase | split: ':' | first | strip
+            assign key = tag | downcase | split: ':' | last | strip
+            unless prefix == 'material'
+              continue
+            endunless
+            if key == 'pvc'
+              continue
+            endif
+            assign label = key | capitalize
+            assign text = ''
+            case key
+              when 'kunststoff'
+                assign label = 'Kunststoff'
+                assign text = section.settings.text_kunststoff
+              when 'mdf'
+                assign label = 'MDF Holzdekor'
+                assign text = section.settings.text_mdf
+              when 'hartschaum'
+                assign label = 'Hartschaum'
+                assign text = section.settings.text_hartschaum
+              when 'hdf'
+                assign label = 'HDF'
+            endcase
             assign sample_image = blank
             for p in collection.products
-              assign tagged = false
-              for tag in p.tags
-                assign tag_down = tag | downcase
-                if tag_down contains 'material:'
-                  assign v = tag_down | remove: 'material:' | strip
-                  if v == m_key
-                    assign tagged = true
-                  endif
-                endif
-              endfor
-              if tagged
-                assign count = count | plus: 1
-                if sample_image == blank and p.featured_image != blank
-                  assign sample_image = p.featured_image
-                endif
+              if p.tags contains tag and p.featured_image != blank
+                assign sample_image = p.featured_image
+                break
               endif
             endfor
-            case m_key
-              when 'kunststoff'
-                assign m_text = section.settings.text_kunststoff
-              when 'mdf'
-                assign m_text = section.settings.text_mdf
-              when 'hartschaum'
-                assign m_text = section.settings.text_hartschaum
-              else
-                assign m_text = ''
-            endcase
+            capture material_url
+              render 'tp-leisten-filter-url', collection: collection, tag: tag
+            endcapture
           -%}
           <li class="tp-le__tile-item">
-            <a
-              class="tp-le__tile"
-              href="#bodenleisten-produkte"
-              data-tp-leisten-group="material"
-              data-tp-leisten-value="{{ m_key }}"
-              aria-pressed="false"
-            >
+            <a class="tp-le__tile" href="{{ material_url | strip | escape }}#bodenleisten-produkte"
+              {% if current_tags contains tag %}aria-current="true"{% endif %}>
               {%- if sample_image != blank -%}
-                <span class="tp-le__tile-media">
-                  {{ sample_image | image_url: width: 300 | image_tag: loading: 'lazy', widths: '150, 300', sizes: '96px', alt: '' }}
-                </span>
+                <span class="tp-le__tile-media">{{ sample_image | image_url: width: 300 | image_tag: loading: 'lazy', widths: '150, 300', sizes: '96px', alt: '' }}</span>
               {%- endif -%}
               <span class="tp-le__tile-body">
-                <span class="tp-le__tile-title">{{ m_label }}</span>
-                {%- if m_text != blank -%}<span class="tp-le__tile-text">{{ m_text | escape }}</span>{%- endif -%}
-                <span class="tp-le__tile-count">{{ count }} {% if count == 1 %}Modell{% else %}Modelle{% endif %}</span>
+                <span class="tp-le__tile-title">{{ label | escape }}</span>
+                {%- if text != blank -%}<span class="tp-le__tile-text">{{ text | escape }}</span>{%- endif -%}
               </span>
             </a>
           </li>
@@ -172,63 +95,32 @@
       </ul>
     </div>
   {%- endif -%}
-
-  {%- if section.settings.show_hoehe and hoehe_key_list.size > 0 -%}
+  {%- if section.settings.show_hoehe and height_filter != blank -%}
     <div class="tp-le__group" role="group" aria-labelledby="tp-le-hoehe-{{ section.id }}">
       <p class="tp-le__label" id="tp-le-hoehe-{{ section.id }}">Nach Höhe</p>
       <ul class="tp-le__chips" role="list">
-        {%- for h_key in hoehe_sorted -%}
-          {%- liquid
-            assign h_label = h_key
-            for k in hoehe_key_list
-              if k == h_key
-                assign h_label = hoehe_label_list[forloop.index0]
-              endif
-            endfor
-            assign count = 0
-            for p in collection.products
-              for tag in p.tags
-                assign tag_down = tag | downcase
-                if tag_down contains 'hoehe:'
-                  assign v = tag_down | remove: 'hoehe:' | strip
-                  if v == h_key
-                    assign count = count | plus: 1
-                  endif
-                endif
-              endfor
-            endfor
-          -%}
+        {%- for value in height_filter.values -%}
           <li>
-            <a
-              class="tp-le__chip"
-              href="#bodenleisten-produkte"
-              data-tp-leisten-group="hoehe"
-              data-tp-leisten-value="{{ h_key }}"
-              aria-pressed="false"
-            >
-              {{ h_label }}<span class="tp-le__chip-count" aria-label="{{ count }} Modelle">{{ count }}</span>
-            </a>
+            {%- if value.count > 0 or value.active -%}
+              <a class="tp-le__chip" href="{% if value.active %}{{ value.url_to_remove | escape }}{% else %}{{ value.url_to_add | escape }}{% endif %}#bodenleisten-produkte"
+                {% if value.active %}aria-current="true"{% endif %}>
+                {{ value.label | escape }}<span class="tp-le__chip-count">{{ value.count }}</span>
+              </a>
+            {%- else -%}
+              <span class="tp-le__chip" aria-disabled="true">{{ value.label | escape }}<span class="tp-le__chip-count">0</span></span>
+            {%- endif -%}
           </li>
         {%- endfor -%}
       </ul>
     </div>
   {%- endif -%}
-
   <div class="tp-le__status-row">
-    <p class="tp-le__status" role="status" aria-live="polite" data-tp-leisten-status></p>
-    <button type="button" class="tp-le__reset" data-tp-leisten-reset hidden>Auswahl zurücksetzen</button>
+    <p class="tp-le__status" role="status" aria-live="polite">{{ collection.products_count }} {% if collection.products_count == 1 %}Leiste{% else %}Leisten{% endif %}</p>
+    {%- if selection_active -%}<a class="tp-le__reset" href="{{ collection.url }}?sort_by={{ collection.sort_by | default: collection.default_sort_by | url_encode }}#bodenleisten-produkte">Auswahl zurücksetzen</a>{%- endif -%}
   </div>
-  <p class="tp-le__empty" data-tp-leisten-empty hidden>
-    Keine Leiste passt zu dieser Kombination. Bitte eine Auswahl abwählen oder die Auswahl zurücksetzen.
-  </p>
-  {%- comment -%} Sprungziel fuer Hero-Button und Einstiege: direkt ueber dem Produktraster {%- endcomment -%}
+  {%- if collection.products_count == 0 -%}<p class="tp-le__empty">Keine Leiste passt zu dieser Kombination. Bitte eine Auswahl abwählen oder die Auswahl zurücksetzen.</p>{%- endif -%}
   <div id="bodenleisten-produkte" class="tp-le__anchor" aria-hidden="true"></div>
 </div>
-
-{%- endif -%}
-
-
-
 {% schema %}
 {
   "name": "TP Leisten-Einstiege",
