@@ -528,7 +528,11 @@
     assign tp_rc_muster_platzhalter = '{farbe}'
     assign tp_rc_muster_text = tp_rc_muster_vorlage | replace: tp_rc_muster_platzhalter, tp_rc_start_farbe
     assign tp_rc_muster_farbe = tp_rc_start_farbe | url_encode
-    assign tp_rc_muster_url = tp_rc_muster_url | append: '&farbe=' | append: tp_rc_muster_farbe
+    # Ohne Muster (Tag ohne-muster, zubehoer) liefert tp-musteroption nichts -
+    # dann nichts anhaengen, sonst entsteht ein Knopf mit kaputtem Link.
+    if tp_rc_muster_url != blank
+      assign tp_rc_muster_url = tp_rc_muster_url | append: '&farbe=' | append: tp_rc_muster_farbe
+    endif
   -%}
   {%- if block.settings.muster_anzeigen and tp_rc_muster_url != blank -%}
     <a class="tp-rwc-muster" href="{{ tp_rc_muster_url }}" data-muster-link data-muster-vorlage="{{ tp_rc_muster_vorlage | escape }}" data-muster-fallback-farbe="{{ tp_rc_start_farbe | escape }}" data-rwc-body>
