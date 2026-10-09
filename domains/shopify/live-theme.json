@@ -1,15 +1,15 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204438208846",
-    "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-09T13:43:07.843721Z",
-    "verifiedBy": "Shopify Admin API role MAIN nach workflow:live (PR #1031, main 47db05c7)"
-  },
-  "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-09T13:43:07.843721Z",
+    "verifiedAt": "2026-10-09T13:59:48.055415Z",
+    "verifiedBy": "Shopify Admin API role MAIN nach workflow:live (PR #1034, main ab5d9480)"
+  },
+  "preview": {
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-10-09T13:59:48.055415Z",
     "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live; naechstes Preview-Ziel"
   },
   "fallback": {
@@ -500,6 +500,12 @@
       "name": "Kopie von preview-main-2026-09-04",
       "retiredNoticedAt": "2026-10-09",
       "note": "Per workflow:live abgeloest (PR #1031: Raumhilfe fuer feste Rollenbreite). Bleibt unpublished als naechstes Preview-Ziel."
+    },
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-10-09",
+      "note": "Per workflow:live abgeloest (PR #1034: Yasmin Raummasspreis und Herstellerdarstellung). Bleibt unpublished als naechstes Preview-Ziel."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
