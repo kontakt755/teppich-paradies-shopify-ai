@@ -142,3 +142,38 @@ test('Zurueck auf eine Legacy-Tagroute normalisiert auch den frisch vom Server g
   assert.equal(target.searchParams.get('filter.p.m.custom.leistenhoehe'), 'bis40');
   assert.equal(target.searchParams.get('sort_by'), 'price-descending');
 });
+
+
+test('Alle drei Filterformulare behalten aktive Laminat-/Parkett-Tagrouten bei Sortierung und nativen Facets', async () => {
+  const source = read('blocks/filters.liquid');
+  const initialization = source.match(/\{%- liquid[\s\S]*?-%\}/)[0];
+  const forms = [...source.matchAll(/<form\b[\s\S]*?>/g)].map(match => match[0]);
+  assert.equal(forms.length, 3);
+  for (const handle of ['laminat', 'parkett']) {
+    const taggedPath = '/collections/' + handle + '/staerke-8mm';
+    const html = await engine.parseAndRender(initialization + forms.join(''), {
+      collection: { handle }, current_tags: ['staerke: 8mm'],
+      results: { url: '/collections/' + handle, filters: [] },
+      block: { settings: {} }, request: { path: taggedPath, page_type: 'collection' },
+    });
+    const actions = [...html.matchAll(/action="([^"]+)"/g)].map(match => match[1]);
+    assert.equal(actions.length, 3);
+    for (const action of actions) {
+      const submitted = new URL(action, 'https://example.test');
+      submitted.search = new URLSearchParams({ sort_by: 'price-ascending', 'filter.v.availability': '1' }).toString();
+      assert.equal(submitted.pathname, taggedPath);
+      assert.equal(submitted.searchParams.get('sort_by'), 'price-ascending');
+      assert.equal(submitted.searchParams.get('filter.v.availability'), '1');
+    }
+    const unfiltered = await engine.parseAndRender(initialization + '{{ form_url }}', {
+      collection: { handle }, current_tags: [], results: { url: '/collections/' + handle, filters: [] },
+      block: { settings: {} }, request: { path: taggedPath, page_type: 'collection' },
+    });
+    assert.equal(unfiltered, '/collections/' + handle);
+  }
+  const search = await engine.parseAndRender(initialization + '{{ form_url }}', {
+    current_tags: ['staerke: 8mm'], results: { terms: 'hell', sort_by: 'relevance', filters: [] },
+    block: { settings: {} }, request: { path: '/search', page_type: 'search' },
+  });
+  assert.equal(search, '?q=hell&options%5Bprefix%5D=last&sort_by=relevance');
+});

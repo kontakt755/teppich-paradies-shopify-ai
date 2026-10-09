@@ -103,7 +103,7 @@
   endif
 
   assign form_url = results_url
-  if collection.handle == 'bodenleisten' and current_tags != blank
+  if collection != blank and current_tags != blank
     assign form_url = request.path
   endif
 
