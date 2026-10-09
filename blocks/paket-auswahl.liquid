@@ -672,11 +672,13 @@
       const option = railVariant?.selectedOptions[0];
       const price = Number(option?.dataset.price);
       const id = Number(option?.value);
-      if (!meters || meters <= 0 || !Number.isFinite(railLength) || railLength <= 0 || !Number.isSafeInteger(price) || price <= 0 || !Number.isSafeInteger(id)) {
-        return { active: true, valid: false, cents: 0, rods: 0 };
+      const metersValid = meters > 0 && Number.isFinite(railLength) && railLength > 0;
+      const variantValid = Number.isSafeInteger(price) && price > 0 && Number.isSafeInteger(id) && id > 0;
+      if (!metersValid || !variantValid) {
+        return { active: true, valid: false, invalidField: metersValid ? 'variant' : 'meters', cents: 0, rods: 0 };
       }
       const rods = Math.ceil(meters / railLength - FLOAT_EPSILON);
-      if (!Number.isSafeInteger(rods) || !Number.isSafeInteger(rods * price)) return { active: true, valid: false, cents: 0, rods: 0 };
+      if (!Number.isSafeInteger(rods) || !Number.isSafeInteger(rods * price)) return { active: true, valid: false, invalidField: 'meters', cents: 0, rods: 0 };
       return { active: true, valid: true, meters, rods, cents: rods * price, id };
     }
 
@@ -686,6 +688,8 @@
       const selection = railSelection();
       if (railResult) railResult.textContent = selection.valid ? selection.rods + ' Stangen = ' + formatGermanNumber(selection.rods * railLength, 2) + ' m · ' + formatMoney(selection.cents) : '';
       if (railError) { railError.hidden = true; railError.textContent = ''; }
+      railMeters?.removeAttribute('aria-invalid');
+      railVariant?.removeAttribute('aria-invalid');
       return selection;
     }
 
@@ -868,7 +872,9 @@
       if (rail.active && !rail.valid) {
         railError.textContent = 'Bitte eine gültige Länge und Farbe für die Sockelleiste angeben.';
         railError.hidden = false;
-        railMeters.focus();
+        const invalidField = rail.invalidField === 'meters' ? railMeters : railVariant;
+        invalidField.setAttribute('aria-invalid', 'true');
+        invalidField.focus();
         return;
       }
       setMessage('', false);

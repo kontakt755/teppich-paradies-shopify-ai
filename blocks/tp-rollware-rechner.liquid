@@ -1055,7 +1055,8 @@
 
   /* Fehlendes Pflichtfeld: roter Rahmen am Eingabefeld selbst, damit die
      Meldung unter dem Button nicht die einzige Spur ist. */
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-input.is-invalid {
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-input.is-invalid,
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-select.is-invalid {
     border-color: #a62020;
     box-shadow: 0 0 0 2px rgba(166, 32, 32, 0.18);
   }
@@ -1337,7 +1338,7 @@ function tpRwcInit{{ tp_rc_id }}() {
   function markInvalid(el, on) {
     if (!el) return;
     el.classList.toggle('is-invalid', !!on);
-    if (el.tagName === 'INPUT') {
+    if (el.tagName === 'INPUT' || el.tagName === 'SELECT') {
       if (on) el.setAttribute('aria-invalid', 'true');
       else el.removeAttribute('aria-invalid');
     }
@@ -1347,6 +1348,10 @@ function tpRwcInit{{ tp_rc_id }}() {
     markInvalid(lengthInput, false);
     markInvalid(wunschInput, false);
     markInvalid(widthSeg, false);
+    if (holzBox) {
+      markInvalid(holzBox.querySelector('[data-holz-meter]'), false);
+      markInvalid(holzBox.querySelector('[data-holz-variante]'), false);
+    }
     if (ctaHint) { ctaHint.textContent = ''; ctaHint.hidden = true; }
   }
 
@@ -1814,7 +1819,7 @@ function tpRwcInit{{ tp_rc_id }}() {
     // nicht gewählt" und darf die Bestellung nicht als reinen Teppichkauf
     // durchlassen. calculate() und der Klick-Handler sperren damit den
     // Warenkorb-Request, statt das Zubehör kommentarlos wegzulassen.
-    var res = { items: [], sum: 0, lines: [], rows: [], leisteInvalid: false, holzInvalid: false };
+    var res = { items: [], sum: 0, lines: [], rows: [], leisteInvalid: false, holzInvalid: false, holzInvalidField: null };
     var allowed = extrasAllowed();
     if (leisteBox) {
       var showL = allowed && leisteVarianten.length > 0;
@@ -1931,15 +1936,22 @@ function tpRwcInit{{ tp_rc_id }}() {
       holzBox.querySelector('[data-holz-felder]').hidden = !holzAn;
       var holzInput = holzBox.querySelector('[data-holz-meter]');
       if (holzInput && !holzInput.getAttribute('data-touched') && w > 0 && len > 0) {
-        holzInput.value = Math.ceil((2 * (w + len)) / 100);
+        // Holzleisten werden in Stangen berechnet: der echte Umfang darf
+        // vorher nicht auf volle Meter aufgerundet werden.
+        holzInput.value = String((2 * (w + len)) / 100).replace('.', ',');
       }
       var holzText = String((holzInput && holzInput.value) || '').trim();
       var holzMeter = /^\d+([,.]\d+)?$/.test(holzText) ? Number(holzText.replace(',', '.')) : 0;
       var holzSel = holzBox.querySelector('[data-holz-variante]');
       var holzV = holzVarianten.filter(function (v) { return String(v.id) === String(holzSel.value); })[0];
       var holzStangen = holzMeter > 0 ? Math.ceil(holzMeter / holzLaenge - 1e-9) : 0;
-      var holzOk = holzAn && holzV && Number.isSafeInteger(holzStangen) && holzStangen > 0 && Number.isSafeInteger(holzStangen * holzV.price);
+      var holzMeterOk = Number.isSafeInteger(holzStangen) && holzStangen > 0;
+      var holzPreisOk = holzV && Number.isSafeInteger(holzStangen * holzV.price);
+      var holzOk = holzAn && holzV && holzMeterOk && holzPreisOk;
       res.holzInvalid = holzAn && !holzOk;
+      if (res.holzInvalid) res.holzInvalidField = !holzMeterOk || (holzV && !holzPreisOk) ? 'meter' : 'variante';
+      if (holzMeterOk && (!holzV || holzPreisOk)) markInvalid(holzInput, false);
+      if (holzV) markInvalid(holzSel, false);
       var holzPreis = holzBox.querySelector('[data-holz-preis]');
       if (holzPreis && showHolz) holzPreis.textContent = holzOk ? fmt(holzStangen * holzV.price / 100) + ' €' : 'ab ' + fmt(Math.min.apply(null, holzVarianten.map(function (v) { return v.price; })) / 100) + ' € / Stange';
       var holzErgebnis = holzBox.querySelector('[data-holz-ergebnis]');
@@ -2400,7 +2412,9 @@ function tpRwcInit{{ tp_rc_id }}() {
     if (extras.holzInvalid) {
       var holzFeld = holzBox.querySelector('[data-holz-meter]');
       var holzFarbe = holzBox.querySelector('[data-holz-variante]');
-      (holzFeld.value.trim() ? holzFarbe : holzFeld).focus();
+      var holzFehlerFeld = extras.holzInvalidField === 'meter' ? holzFeld : holzFarbe;
+      markInvalid(holzFehlerFeld, true);
+      holzFehlerFeld.focus({ preventScroll: false });
       return;
     }
 

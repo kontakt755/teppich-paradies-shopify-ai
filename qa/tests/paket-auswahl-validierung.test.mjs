@@ -28,7 +28,7 @@ class Element {
     this.classList = { add() {}, remove() {}, toggle() {} };
   }
   addEventListener(type, callback) { this.listeners.set(type, callback); }
-  focus() {}
+  focus() { this.focused = true; }
   emit(type, event = {}) { return this.listeners.get(type)?.(event); }
   setAttribute(name, value) { this.attributes.set(name, String(value)); }
   getAttribute(name) { return this.attributes.get(name) ?? null; }
@@ -45,7 +45,9 @@ async function packageCase(raw, { waste = true, blur = true, action = null, subm
   if (rail) {
     nodes['[data-rail-check]'].checked = true;
     nodes['[data-rail-meters]'].value = rail.meters;
-    nodes['[data-rail-variant]'].selectedOptions = [{ value: '61105510809934', dataset: { price: '2988' } }];
+    nodes['[data-rail-variant]'].selectedOptions = [rail.variant === false
+      ? { value: '', dataset: {} }
+      : { value: '61105510809934', dataset: { price: '2988' } }];
   }
   const component = new Element();
   // Fixture identisch zum Audit (historischer Marlow-Cart-Payload).
@@ -95,6 +97,10 @@ async function packageCase(raw, { waste = true, blur = true, action = null, subm
     packages: nodes['[data-package-display]'].textContent,
     total: nodes['[data-total-display]'].textContent,
     railError: nodes['[data-rail-error]'].textContent,
+    railMetersFocused: !!nodes['[data-rail-meters]'].focused,
+    railVariantFocused: !!nodes['[data-rail-variant]'].focused,
+    railMetersInvalid: nodes['[data-rail-meters]'].getAttribute('aria-invalid'),
+    railVariantInvalid: nodes['[data-rail-variant]'].getAttribute('aria-invalid'),
   };
 }
 
@@ -197,4 +203,14 @@ test('Sockelleiste: ohne Meterangabe wird kein Warenkorb-Aufruf gesendet', async
   const result = await packageCase('20', { rail: { meters: '' } });
   assert.equal(result.requests.length, 0);
   assert.match(result.railError, /gültige Länge/);
+  assert.equal(result.railMetersFocused, true);
+  assert.equal(result.railMetersInvalid, 'true');
+});
+
+test('Sockelleiste: fehlende Farbe fokussiert die Farbauswahl', async () => {
+  const result = await packageCase('20', { rail: { meters: '18,5', variant: false } });
+  assert.equal(result.requests.length, 0);
+  assert.equal(result.railVariantFocused, true);
+  assert.equal(result.railMetersFocused, false);
+  assert.equal(result.railVariantInvalid, 'true');
 });
