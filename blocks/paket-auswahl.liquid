@@ -450,8 +450,8 @@
       <label>
         <input type="checkbox" data-rail-check>
         <span>
-          Sockelleiste aus Echtholzfurnier, 60 mm hoch
-          <small>{% if product.type == 'Parkett' %}22 × 60 mm{% else %}16 × 60 mm{% endif %} · ab {{ tp_pa_leiste.price_min | money }} je Leiste</small>
+          Sockelleiste aus Echtholzfurnier, 60&nbsp;mm hoch
+          <small>{% if product.type == 'Parkett' %}22&nbsp;×&nbsp;60&nbsp;mm{% else %}16&nbsp;×&nbsp;60&nbsp;mm{% endif %} · ab {{ tp_pa_leiste.price_min | money }} je Leiste</small>
         </span>
       </label>
       <div class="carpet-package__extra-fields-{{ package_selector_id }}" data-rail-fields hidden>
@@ -843,6 +843,20 @@
       renderResults();
     }
 
+    // Fehlerfeld zeigen, dann fokussieren. focus() allein scrollt nicht, wenn
+    // das Feld knapp unter der Oberkante liegt - dann bliebe es unter dem
+    // klebenden Kopf verdeckt (Live-Gegenprobe w-061). Mittig steht es auch
+    // sicher ueber der klebenden Kaufleiste unten.
+    function showInvalidField(field) {
+      if (!field) return;
+      if (typeof field.scrollIntoView === 'function') {
+        field.scrollIntoView({ block: 'center' });
+        field.focus({ preventScroll: true });
+      } else {
+        field.focus();
+      }
+    }
+
     async function addToCart() {
       // Letzte Prüfung direkt aus dem Feld, unabhängig davon, ob Blur bereits
       // ausgelöst wurde (z.B. Eingabe -> sofortiger Klick ohne Fokuswechsel).
@@ -853,12 +867,12 @@
         const result = evaluateSqmInput(sqmInput.value);
         if (result.state === 'invalid') {
           setMessage(INVALID_SQM_MESSAGE, true, true);
-          sqmInput.focus();
+          showInvalidField(sqmInput);
           return;
         }
         if (result.state === 'unsafe') {
           setMessage(UNSAFE_SQM_MESSAGE, true, true);
-          sqmInput.focus();
+          showInvalidField(sqmInput);
           return;
         }
         if (result.state === 'ok') {
@@ -874,7 +888,7 @@
         railError.hidden = false;
         const invalidField = rail.invalidField === 'meters' ? railMeters : railVariant;
         invalidField.setAttribute('aria-invalid', 'true');
-        invalidField.focus();
+        showInvalidField(invalidField);
         return;
       }
       setMessage('', false);
