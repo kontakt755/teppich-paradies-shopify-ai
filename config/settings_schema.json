@@ -2340,6 +2340,12 @@
         "id": "tp_versand_preis",
         "label": "Versandkosten darunter",
         "default": "4,99 €"
+      },
+      {
+        "type": "text",
+        "id": "tp_lieferdatum_annahmeschluss",
+        "label": "Annahmeschluss für das Lieferdatum (z. B. 14:00)",
+        "info": "Bestellungen ab dieser Uhrzeit (Berlin) zählen ab dem Folgetag. Leer = ohne Annahmeschluss. Nur eine belegte Uhrzeit eintragen."
       }
     ]
   },

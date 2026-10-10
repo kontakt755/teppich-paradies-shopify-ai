@@ -29,9 +29,8 @@
   {%- endif -%}
 
   <div class="tp-teppich-versand__shipping-{{ tp_tv2_id }}" aria-label="Lieferung und Versand">
-    {%- if tp_tv2_delivery_time != blank -%}
-      <p><strong>Lieferzeit:</strong> {{ tp_tv2_delivery_time | escape }}</p>
-    {%- endif -%}
+    {%- comment -%} Lieferzeit samt voraussichtlichem Datum, Quelle siehe snippets/tp-lieferzeit (#165) {%- endcomment -%}
+    {%- render 'tp-lieferzeit', text: tp_tv2_delivery_time, product: product, kontext: 'produkt' -%}
 
     {%- if tp_tv2_versandart == 'spedition' -%}
       <p><strong>Speditionsversand</strong></p>
@@ -235,7 +234,7 @@
       "type": "text",
       "id": "delivery_time",
       "label": "Lieferzeit",
-      "info": "Nur eine verifizierte Lieferzeit eintragen. Leer lassen, wenn keine Angabe vorliegt."
+      "info": "Nur eine verifizierte Lieferzeit eintragen, z. B. 2–5 Werktage. Werktage zeigt der Shop als voraussichtliches Lieferdatum. Produktfeld service.lieferzeit hat Vorrang."
     }
   ],
   "presets": [
