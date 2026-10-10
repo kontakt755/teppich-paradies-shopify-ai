@@ -53,6 +53,39 @@ Properties. Bestellbar bleibt es also immer — nur ohne eigene SKU.
 Das Sammelprodukt `kostenloses-muster` bleibt deshalb bestehen und darf nicht
 geloescht werden.
 
+### Teppich nach Maß: Musterprodukt des Teppichbodens (ab 2026-10-10)
+
+Ein Teppich nach Maß wird aus einem Teppichboden zugeschnitten
+(`service.einfass_basis`); das physische Muster ist dasselbe. Deshalb gibt es
+zwischen dem eigenen Musterprodukt und dem Sammelprodukt eine Zwischenstufe.
+Reihenfolge je Musterbestellung auf `/pages/muster?produkt=<handle>`:
+
+| Stufe | Wann | Warenkorbzeile |
+|---|---|---|
+| 1. `muster-<handle>` | Musterprodukt des Teppichs nach Maß existiert | wie bisher je Farbe: eigene Variante, fehlende Farbe → Stufe 3 |
+| 2. `muster-<handle von service.einfass_basis>` | nur wenn es Stufe 1 **gar nicht** gibt, das Produkt `service.einfass_basis` traegt und dessen Musterprodukt existiert | Variante mit demselben Wert der Option `Farbe` (Gross-/Kleinschreibung egal, nur lieferbare Varianten); Titel und SKU des Teppichboden-Musters |
+| 3. `kostenloses-muster` | alles Uebrige | Sammelprodukt mit Properties `Produkt` und `Farbe` |
+
+Wie es technisch laeuft: `/products/<handle>.js` kennt keine Metafelder. Die
+Section `sections/tp-muster-basis.liquid` (in keinem Template, nur ueber die
+Section Rendering API) liefert unter `/products/<handle>?section_id=tp-muster-basis`
+den Handle des Teppichbodens als JSON-Text. Abgerufen wird sie nur, wenn
+Stufe 1 fehlt. Keine Antwort, kein Feld, ein ungueltiger Handle oder ein
+fehlendes Teppichboden-Muster: Stufe 3, wie bisher. Die Muster-Kennung
+(`_Muster_ID`, `_Quellprodukt`) bleibt immer die des Teppichs nach Maß – die
+Zaehlung (hoechstens 3 Muster) aendert sich dadurch nicht.
+
+Folge fuer die Pflege: Ein Teppich nach Maß braucht kein eigenes
+Musterprodukt, wenn der Teppichboden eins hat und die Farben gleich heissen
+(Regel des Inhabers: Teppichboden und Maßteppich fuehren dieselben
+Farbnamen). Legt man doch ein `muster-<handle>` an, gilt allein dieses
+(Stufe 1), auch fuer Farben, die dort fehlen.
+
+Code: `assets/tp-sample-checkout-core.js` (`basisSectionUrl`,
+`parseBasisHandle`, `assignSampleVariantsWithBasis`), Aufruf in
+`assets/tp-sample-checkout.js` (`ladeBasisMuster`). Tests:
+`qa/tests/muster-basis-rueckfall.test.mjs`.
+
 ## Versandprofil - der Schritt, den man vergisst
 
 Musterbestellungen sind versandkostenfrei, und das haengt **nicht** am Preis 0,00

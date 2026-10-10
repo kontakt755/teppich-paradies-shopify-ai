@@ -15,6 +15,9 @@
     custom.preis_pro_001_qm true (Variantenpreis gilt pro 0,01 m2)
   Optional service.kante_inklusive (boolean): bei Ketteln enthaelt der m2-Preis
   die Kettelung bereits - keine Kettelservice-Zeile, keine Kantenkosten.
+  Optional service.bandfarbe_fest (Text): bei Einfassband/Paspelband arbeitet
+  der Hersteller das Band in einer festen Farbe - keine Bandauswahl, nur der
+  Hinweis "Bandfarbe: <Wert>", der Wert geht als Property Bandfarbe mit.
   Angeboten werden nur Varianten mit service.einfassen exakt "Verfuegbar"
   (mit Umlaut) und Preis > 0. Formen aus service.formen (Rechteck, Rund,
   Oval, Schablone, Skizze); unbekannte Werte fallen weg, ohne Angabe gibt es
@@ -157,12 +160,23 @@
     if tp_ek_art == 'einfassband' or tp_ek_art == 'paspelband'
       assign tp_ek_mit_band = true
     endif
+    # Feste Bandfarbe (service.bandfarbe_fest, Text, ohne Metafeld-Definition):
+    # der Hersteller arbeitet das Band immer in derselben Farbe, der Kunde waehlt
+    # nichts. Leer oder fehlend: Bandauswahl wie bisher.
+    assign tp_ek_band_fest = ''
+    if tp_ek_mit_band
+      assign tp_ek_band_fest = product.metafields.service.bandfarbe_fest.value | append: '' | strip
+    endif
+    assign tp_ek_band_wahl = false
+    if tp_ek_mit_band and tp_ek_band_fest == blank
+      assign tp_ek_band_wahl = true
+    endif
     assign tp_ek_mit_anfrage = false
     if tp_ek_formen contains 'schablone' or tp_ek_formen contains 'skizze'
       assign tp_ek_mit_anfrage = true
     endif
   -%}
-  {%- if tp_ek_mit_band -%}
+  {%- if tp_ek_band_wahl -%}
     {%- capture tp_ek_baender -%}{% render 'tp-bandfarben' %}{%- endcapture -%}
   {%- endif -%}
 
@@ -226,12 +240,15 @@
         <p class="tp-ek__fehler" role="alert" data-fehler hidden></p>
       </div>
 
-      {%- if tp_ek_mit_band -%}
+      {%- if tp_ek_band_wahl -%}
         <div class="tp-ek__schritt" data-schritt="band">
           {% render 'tp-step-heading', number: 4, label: 'Bandfarbe' %}
           <div class="tp-ek__baender" role="radiogroup" aria-label="Bandfarbe" data-baender></div>
           <p class="tp-ek__bandname" data-band-name>Bitte eine Farbe wählen</p>
         </div>
+      {%- elsif tp_ek_band_fest != blank -%}
+        {%- comment -%} Feste Bandfarbe: kein Schritt, nur ein ruhiger Hinweis {%- endcomment -%}
+        <p class="tp-ek__bandfest" data-band-fest>Bandfarbe: <span>{{ tp_ek_band_fest | escape }}</span></p>
       {%- endif -%}
 
       {%- capture tp_ek_vorschau_inhalt -%}
@@ -376,7 +393,8 @@
           null
         ],
         "selected_id": {{ product.selected_or_first_available_variant.id | json }},
-        "baender": {% if tp_ek_mit_band %}{{ tp_ek_baender | strip }}{% else %}[]{% endif %},
+        "baender": {% if tp_ek_band_wahl %}{{ tp_ek_baender | strip }}{% else %}[]{% endif %},
+        "band_fest": {{ tp_ek_band_fest | json }},
         "varianten": [
           {%- for tp_ek_v in product.variants -%}
             {%- if tp_ek_v.metafields.service.einfassen.value == 'Verfügbar' and tp_ek_v.price > 0 -%}
