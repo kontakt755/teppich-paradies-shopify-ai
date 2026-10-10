@@ -147,6 +147,7 @@ test('Snippet: Metafeld vor Block-Einstellung, kein Datum bei Auslauf oder Kalen
   const s = lies('snippets/tp-lieferzeit.liquid');
   assert.match(s, /product\.metafields\.service\.lieferzeit\.value/);
   assert.match(s, /product\.tags contains 'auslauf'/);
+  assert.match(s, /tp_lz_text == blank and product\.tags contains 'sonderposten'/);
   assert.match(s, /tp_lz_text contains 'Werktag'/);
   assert.match(s, /settings\.tp_lieferdatum_annahmeschluss/);
   assert.match(s, /'tp-lieferdatum\.js' \| asset_url/);

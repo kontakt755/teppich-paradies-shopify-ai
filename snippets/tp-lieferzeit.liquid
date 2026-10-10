@@ -11,7 +11,9 @@
   Quelle der Lieferzeit, in dieser Reihenfolge:
   1. Produkt-Metafeld service.lieferzeit (produktspezifisch belegt, z. B.
      Teppich nach Mass "ca. 5–8 Werktage inkl. Ketteln")
-  2. der uebergebene Text (Block-Einstellung der Produktvorlage)
+  2. der uebergebene Text (Block-Einstellung der Produktvorlage), nicht fuer
+     Produkte mit Tag "sonderposten" (eigener Bestand, Vorlagenwert gilt dort
+     nicht)
   Leer = keine Zeile (fail closed).
 
   Kein Datum, nur die Werktage-Angabe:
@@ -35,7 +37,11 @@
 {%- liquid
   assign tp_lz_kontext = kontext | default: 'produkt'
   assign tp_lz_text = product.metafields.service.lieferzeit.value | strip
-  if tp_lz_text == blank
+  # Sonderposten kommen aus eigenem Bestand, nicht vom Grosshandel: der
+  # Vorlagenwert gilt fuer sie nicht, nur ein eigenes service.lieferzeit.
+  if tp_lz_text == blank and product.tags contains 'sonderposten'
+    assign tp_lz_text = ''
+  elsif tp_lz_text == blank
     assign tp_lz_text = text | strip
   endif
   assign tp_lz_datum = true
