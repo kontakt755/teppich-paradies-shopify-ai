@@ -1,0 +1,64 @@
+{%- doc -%}
+  Warenkorb-Gegenprobe zur Mindestbestelllaenge (custom.mindestlaenge_lfm,
+  Inhaber 2026-10-10). Der Rollen-Rechner hebt kuerzere Laengen bereits an;
+  die Menge berechneter Zeilen ist im Warenkorb gesperrt. Landet trotzdem
+  eine kuerzere Zeile im Warenkorb (z. B. direkt ueber /cart/add), zeigt
+  diese Zeile einen Hinweis. Eine serverseitige Sperre gibt es ohne
+  Validierungs-App nicht.
+
+  Laenge = abgerechnete Flaeche / Breite. Breite aus "Ihre Breite"
+  (Raummass), sonst custom.rollenbreite der Variante bzw. des Produkts (m).
+
+  Gibt nichts aus ohne Mindestlaenge oder ohne bestimmbare Breite.
+
+  @param {object} line_item - Warenkorbposition
+{%- enddoc -%}
+{%- liquid
+  assign tp_ml_zeigen = false
+  assign tp_ml_min_cm = line_item.product.metafields.custom.mindestlaenge_lfm.value | times: 100 | ceil
+  if tp_ml_min_cm >= 100
+    assign tp_ml_breite_cm = line_item.properties['Ihre Breite'] | remove: 'cm' | strip | plus: 0
+    if tp_ml_breite_cm <= 0
+      assign tp_ml_breite_cm = line_item.variant.metafields.custom.rollenbreite.value | times: 100
+    endif
+    if tp_ml_breite_cm <= 0
+      assign tp_ml_breite_cm = line_item.product.metafields.custom.rollenbreite.value | times: 100
+    endif
+    if tp_ml_breite_cm > 0
+      # Flaeche in cm2: Menge in 0,01 m2 (je 100 cm2) oder in vollen m2.
+      if line_item.product.metafields.custom.preis_pro_001_qm.value == true
+        assign tp_ml_flaeche_cm2 = line_item.quantity | times: 100
+      else
+        assign tp_ml_flaeche_cm2 = line_item.quantity | times: 10000
+      endif
+      assign tp_ml_laenge_cm = tp_ml_flaeche_cm2 | divided_by: tp_ml_breite_cm
+      if tp_ml_laenge_cm < tp_ml_min_cm
+        assign tp_ml_zeigen = true
+        # "8" statt "8.0", "5,5" statt "5.5"
+        assign tp_ml_min_m = tp_ml_min_cm | divided_by: 100
+        assign tp_ml_min_rest = tp_ml_min_cm | modulo: 100
+        if tp_ml_min_rest > 0
+          # ohne Gleitkomma: 550 -> 5,5 / 505 -> 5,05
+          assign tp_ml_min_z = tp_ml_min_rest | modulo: 10
+          if tp_ml_min_z == 0
+            assign tp_ml_min_rest = tp_ml_min_rest | divided_by: 10
+          elsif tp_ml_min_rest < 10
+            assign tp_ml_min_rest = tp_ml_min_rest | prepend: '0'
+          endif
+          assign tp_ml_min_m = tp_ml_min_m | append: ',' | append: tp_ml_min_rest
+        endif
+      endif
+    endif
+  endif
+-%}
+{%- if tp_ml_zeigen -%}
+  <p class="tp-cart-mindestlaenge" role="alert">
+    Unter der Mindestbestellmenge von {{ tp_ml_min_m }}&nbsp;m Länge. Bitte die Position entfernen und auf der
+    <a href="{{ line_item.url }}">Produktseite</a> neu berechnen.
+  </p>
+{%- endif -%}
+
+{%- stylesheet -%}
+  .tp-cart-mindestlaenge { margin: 6px 0 0; color: #a62020; font-size: .85rem; line-height: 1.4; }
+  .tp-cart-mindestlaenge a { color: inherit; text-decoration: underline; }
+{%- endstylesheet -%}
