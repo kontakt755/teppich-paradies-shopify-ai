@@ -239,3 +239,15 @@ test('Gegenprobe und Feldwert zeigen dieselben cm in beiden Einheiten', () => {
     assert.equal(cm(A.massWert(i, 'cm'), 'cm'), i);
   }
 });
+
+test('Mindestlaenge hebt kuerzere Laengen an, statt sie zu sperren', () => {
+  assert.deepEqual(A.mitMindestlaenge(500, 800), { cm: 800, angehoben: true });
+  assert.deepEqual(A.mitMindestlaenge(800, 800), { cm: 800, angehoben: false });
+  assert.deepEqual(A.mitMindestlaenge(950, 800), { cm: 950, angehoben: false });
+  // Gleitkomma-Reste aus dem Metafeld (5,55 lfm x 100) ergeben ganze cm.
+  assert.deepEqual(A.mitMindestlaenge(120, 5.55 * 100), { cm: 555, angehoben: true });
+  // Ohne Mindestlaenge oder ohne Eingabe: nichts anheben.
+  assert.deepEqual(A.mitMindestlaenge(50, 0), { cm: 50, angehoben: false });
+  assert.deepEqual(A.mitMindestlaenge(0, 800), { cm: 0, angehoben: false });
+  assert.deepEqual(A.mitMindestlaenge(null, 800), { cm: 0, angehoben: false });
+});

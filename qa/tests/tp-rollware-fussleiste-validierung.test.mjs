@@ -80,7 +80,7 @@ async function rollCase(raw, checked = true, holz = null, dimensions = { w: 400,
     inFlight: false, cta, ctaHint: new Element(), cartLink: new Element(),
     target: { id: 60330695491918, price: 6590, available: true,
       farbnummer: '004', farbe_intern: 'Sand Hell – 004' },
-    cmExact: false, selectedWidth: () => dimensions.w, getEffectiveLengthCm: () => dimensions.len,
+    cmExact: false, selectedWidth: () => dimensions.w, laengeAngehoben: () => null, getEffectiveLengthCm: () => dimensions.len,
     artMode: () => 'meter', lengthInput: new Element('200'), MAX_LENGTH_CM: 1000,
     clearInvalid() {}, calculate() {}, setTimeout() {},
     // Bahnen aus dem Raummass-Helfer: hier keine (Vermerk "Zuschnitt" entfaellt).

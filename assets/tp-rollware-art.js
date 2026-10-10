@@ -152,6 +152,17 @@
     return '';
   }
 
+  // Mindestbestelllaenge je Produkt (custom.mindestlaenge_lfm, Inhaber
+  // 2026-10-10): eine kuerzere Laenge wird angehoben statt gesperrt - wie der
+  // Mindestpreis im Einfass-Konfigurator. Geliefert und berechnet wird die
+  // angehobene Laenge. Leere oder ungueltige Eingaben bleiben unberuehrt
+  // (cm <= 0), ebenso Produkte ohne Mindestlaenge (minCm <= 0).
+  function mitMindestlaenge(cm, minCm) {
+    var min = Math.round(Number(minCm) || 0);
+    if (!(cm > 0) || !(min > 0) || cm >= min) return { cm: cm > 0 ? cm : 0, angehoben: false };
+    return { cm: min, angehoben: true };
+  }
+
   // Vergleich, den der Kunde sonst nicht sehen wuerde: kostet dasselbe Stueck
   // als Meterware weniger als im Raummass? Geprueft werden ALLE Rollen, die
   // mindestens so breit sind wie das Stueck - Meterware braucht keine Zugabe,
@@ -197,6 +208,7 @@
     maxRaumBreite: maxRaumBreite,
     ZUGABE_CM: ZUGABE_CM,
     pruefeBreite: pruefeBreite,
+    mitMindestlaenge: mitMindestlaenge,
     meterwareGuenstiger: meterwareGuenstiger
   };
 })(typeof window !== 'undefined' ? window : globalThis);

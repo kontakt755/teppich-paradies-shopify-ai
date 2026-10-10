@@ -116,6 +116,30 @@
 -%}
 
 {%- liquid
+  # Mindestbestelllaenge (custom.mindestlaenge_lfm, laufende Meter; Inhaber
+  # 2026-10-10). Kuerzere Eingaben hebt der Rechner auf diese Laenge an,
+  # statt sie zu sperren (ART.mitMindestlaenge) - wie der Mindestpreis im
+  # Einfass-Konfigurator. Ohne Metafeld bleibt es bei 100 cm.
+  assign tp_rc_min_laenge_cm = product.metafields.custom.mindestlaenge_lfm.value | times: 100 | round
+  if tp_rc_min_laenge_cm < 100
+    assign tp_rc_min_laenge_cm = 0
+  endif
+  # "8" statt "8.0", "5,5" statt "5.5"
+  assign tp_rc_min_laenge_m = tp_rc_min_laenge_cm | divided_by: 100
+  assign tp_rc_min_laenge_rest = tp_rc_min_laenge_cm | modulo: 100
+  if tp_rc_min_laenge_rest > 0
+    # ohne Gleitkomma: 550 -> 5,5 / 505 -> 5,05
+    assign tp_rc_min_laenge_z = tp_rc_min_laenge_rest | modulo: 10
+    if tp_rc_min_laenge_z == 0
+      assign tp_rc_min_laenge_rest = tp_rc_min_laenge_rest | divided_by: 10
+    elsif tp_rc_min_laenge_rest < 10
+      assign tp_rc_min_laenge_rest = tp_rc_min_laenge_rest | prepend: '0'
+    endif
+    assign tp_rc_min_laenge_m = tp_rc_min_laenge_m | append: ',' | append: tp_rc_min_laenge_rest
+  endif
+-%}
+
+{%- liquid
   assign tp_rc_max_laenge_cm = 5000
   assign tp_rc_bestand_gefuehrt = false
   assign tp_rc_produkt_max_cm = product.metafields.custom.max_roll_laenge_cm.value | times: 1
@@ -134,6 +158,12 @@
         endif
       endif
     endif
+  endif
+  # Liegt die Mindestlaenge ueber dem, was ueberhaupt da ist (Restbestand,
+  # max_roll_laenge_cm), waere jede Eingabe zu lang und das Produkt
+  # unverkaeuflich. Dann gilt sie nicht - der Rest ist eigene Ware.
+  if tp_rc_min_laenge_cm > tp_rc_max_laenge_cm
+    assign tp_rc_min_laenge_cm = 0
   endif
 -%}
 {%- comment -%}
@@ -268,7 +298,10 @@
           {%- endif -%}
         </p>
       {%- endif -%}
-      <p class="tp-rwc-note tp-rwc-note-error" data-error-min hidden>Mindestlänge 100 cm</p>
+      {%- if tp_rc_min_laenge_cm > 0 -%}
+        <p class="tp-rwc-note" data-mindest-hint>Mindestbestellmenge: {{ tp_rc_min_laenge_m }} m Länge. Kürzere Längen liefern und berechnen wir mit {{ tp_rc_min_laenge_m }} m.</p>
+      {%- endif -%}
+      <p class="tp-rwc-note tp-rwc-note-error" data-error-min hidden>Mindestlänge {% if tp_rc_min_laenge_cm > 0 %}{{ tp_rc_min_laenge_m }} m{% else %}100 cm{% endif %}</p>
       {%- comment -%}
         Das Attribut heisst noch data-error-comma, meldet aber jede nicht
         lesbare Angabe (Buchstaben, zwei Kommas, Minus).
@@ -908,6 +941,7 @@
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-note { margin: 4px 0 0; font-size: .82rem; line-height: 1.4; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-note-error { color: #a62020; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-note--angehoben { font-weight: 600; color: #7a4a00; }
   .tp-rwc-{{ tp_rc_id }}.tp-rwc-no-service [data-rwc-body] { display: none; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-service-hint {
     margin: 0 0 16px;
@@ -1372,6 +1406,10 @@ function tpRwcInit{{ tp_rc_id }}() {
   // Wert aus Liquid (tp_rc_max_laenge_cm), damit der Hinweis in
   // snippets/tp-formular dieselbe Zahl nennt.
   var MAX_LENGTH_CM = {{ tp_rc_max_laenge_cm }};
+  // Mindestbestelllaenge in cm, 0 = keine (siehe tp_rc_min_laenge_cm).
+  var MIN_BESTELL_CM = {{ tp_rc_min_laenge_cm }};
+  var mindestHint = root.querySelector('[data-mindest-hint]');
+  var mindestHintBasis = mindestHint ? mindestHint.textContent : '';
   var errStock = root.querySelector('[data-error-stock]');
   var piece = root.querySelector('[data-piece]');
   var tagW = root.querySelector('[data-tag-width]');
@@ -1815,7 +1853,20 @@ function tpRwcInit{{ tp_rc_id }}() {
     // Obergrenze (Beratungshinweis) und gilt nicht als leer.
     var p = ART.parseMass(lengthInput.value, einheitAktiv);
     if (p.fehler === 'zu_gross') return MAX_LENGTH_CM + 1;
-    return p.cm > 0 ? p.cm : 0;
+    // Mindestbestelllaenge: kuerzere Laengen werden angehoben, nicht gesperrt.
+    // Alles danach (Skizze, Preis, Menge, Zeileneigenschaften, Kaufleiste)
+    // rechnet mit der angehobenen Laenge.
+    return ART.mitMindestlaenge(p.cm, MIN_BESTELL_CM).cm;
+  }
+
+  // Ist die eingegebene Laenge kuerzer als die Mindestbestelllaenge? Dann
+  // steht im Hinweis, was tatsaechlich geliefert und berechnet wird.
+  // "8 m", "5,5 m", "4,35 m"
+  function fmtMeter(cm) { return (cm / 100).toLocaleString('de-DE', { maximumFractionDigits: 2 }) + ' m'; }
+
+  function laengeAngehoben() {
+    var p = ART.parseMass(lengthInput.value, einheitAktiv);
+    return p.fehler ? null : (ART.mitMindestlaenge(p.cm, MIN_BESTELL_CM).angehoben ? p.cm : null);
   }
 
   var SVG_NS = 'http://www.w3.org/2000/svg';
@@ -2198,6 +2249,13 @@ function tpRwcInit{{ tp_rc_id }}() {
     var badInput = lenFehler === 'ungueltig' || lenFehler === 'negativ';
     if (errComma) errComma.hidden = !badInput;
     zeigeGegenprobe(lengthEcho, 'Länge', lengthInput);
+    if (mindestHint) {
+      var eingabeKurz = laengeAngehoben();
+      mindestHint.textContent = eingabeKurz
+        ? 'Mindestbestellmenge ' + fmtMeter(MIN_BESTELL_CM) + ': Ihre ' + fmtMeter(eingabeKurz) + ' werden auf ' + fmtMeter(MIN_BESTELL_CM) + ' angehoben – so liefern und berechnen wir es.'
+        : mindestHintBasis;
+      mindestHint.classList.toggle('tp-rwc-note--angehoben', !!eingabeKurz);
+    }
     zeigeGegenprobe(wunschEcho, 'Breite', raum ? wunschInput : null);
 
     // "0" oder "-5" sind keine leere Eingabe: dann Mindestlaenge zeigen.
@@ -2501,6 +2559,8 @@ function tpRwcInit{{ tp_rc_id }}() {
       ? { 'Art': 'Raummaß', 'Ihre Breite': w + ' cm', 'Aus Rolle': ART.rolleFuer(w, farbBreiten) + ' cm', 'Gewünschte Länge': len + ' cm' }
       : { 'Art': 'Meterware', 'Rollenbreite': w + ' cm', 'Gewünschte Länge': len + ' cm' };
     properties[cmExact ? 'Fläche' : 'Fläche (aufgerundet)'] = fmt(billedArea) + ' m²';
+    var angehobenVon = laengeAngehoben();
+    if (angehobenVon) properties['Mindestbestellmenge'] = fmtMeter(MIN_BESTELL_CM) + ' (eingegeben ' + fmtMeter(angehobenVon) + ')';
     var bahnen = bahnenAktiv();
     if (bahnen) properties['Zuschnitt'] = bahnen.text || (bahnen.n + ' Bahnen à ' + bahnen.laenge + ' cm, einzeln gerollt');
     // Farbnummer (intern) mitgeben - siehe domains/shopify/farbverwaltung.md.
