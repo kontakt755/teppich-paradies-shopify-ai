@@ -19,15 +19,13 @@
     assign tp_ca_suchteile = tp_ca_suchfarbe | strip | split: '|'
     assign tp_ca_farbwert = ''
     if tp_ca_suchteile.size == 2
-      assign tp_ca_such_id = tp_ca_suchteile | first | plus: 0
+      assign tp_ca_such_pos = tp_ca_suchteile | first | plus: 0
       assign tp_ca_farbindex = tp_ca_suchteile | last | plus: 0
-      for tp_ca_variant in tp_ca_product.variants
-        if tp_ca_variant.id == tp_ca_such_id
-          assign tp_ca_url = tp_ca_variant.url
-          assign tp_ca_farbwert = tp_ca_variant.options[tp_ca_farbindex]
-          break
-        endif
-      endfor
+      assign tp_ca_suchvariante = tp_ca_product.variants[tp_ca_such_pos]
+      if tp_ca_suchvariante != blank
+        assign tp_ca_url = tp_ca_suchvariante.url
+        assign tp_ca_farbwert = tp_ca_suchvariante.options[tp_ca_farbindex]
+      endif
     endif
   -%}
   {%- capture tp_ca_sample_url -%}{%- render 'tp-musteroption', product: tp_ca_product -%}{%- endcapture -%}

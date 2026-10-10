@@ -20,13 +20,8 @@
       {%- capture tp_pcg_suchfarbe -%}{% render 'tp-suchfarbe-variante', product: product %}{%- endcapture -%}
       {%- assign tp_pcg_suchteile = tp_pcg_suchfarbe | strip | split: '|' -%}
       {%- if tp_pcg_suchteile.size == 2 -%}
-        {%- assign tp_pcg_such_id = tp_pcg_suchteile | first | plus: 0 -%}
-        {%- for tp_pcg_variant in product.variants -%}
-          {%- if tp_pcg_variant.id == tp_pcg_such_id -%}
-            {%- assign tp_pcg_v = tp_pcg_variant -%}
-            {%- break -%}
-          {%- endif -%}
-        {%- endfor -%}
+        {%- assign tp_pcg_such_pos = tp_pcg_suchteile | first | plus: 0 -%}
+        {%- assign tp_pcg_v = product.variants[tp_pcg_such_pos] | default: tp_pcg_v -%}
       {%- endif -%}
       {%- if tp_pcg_aktion == 'ja' and tp_pcg_v.compare_at_price > tp_pcg_v.price -%}
         {%- assign tp_pcg_sale = true -%}

@@ -33,13 +33,8 @@
     assign tp_ct_suchteile = tp_ct_suchfarbe | strip | split: '|'
     assign tp_ct_suchvariante = nil
     if tp_ct_suchteile.size == 2
-      assign tp_ct_such_id = tp_ct_suchteile | first | plus: 0
-      for tp_ct_variant in closest.product.variants
-        if tp_ct_variant.id == tp_ct_such_id
-          assign tp_ct_suchvariante = tp_ct_variant
-          break
-        endif
-      endfor
+      assign tp_ct_such_pos = tp_ct_suchteile | first | plus: 0
+      assign tp_ct_suchvariante = closest.product.variants[tp_ct_such_pos]
     endif
     assign tp_card_title_variant = closest.product.selected_or_first_available_variant
     if tp_ct_suchvariante != nil

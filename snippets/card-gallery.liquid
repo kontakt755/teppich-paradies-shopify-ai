@@ -139,13 +139,8 @@
       assign tp_suchteile = tp_suchfarbe | strip | split: '|'
       assign tp_suchvariante = nil
       if tp_suchteile.size == 2
-        assign tp_such_id = tp_suchteile | first | plus: 0
-        for tp_variant in product.variants
-          if tp_variant.id == tp_such_id
-            assign tp_suchvariante = tp_variant
-            break
-          endif
-        endfor
+        assign tp_such_pos = tp_suchteile | first | plus: 0
+        assign tp_suchvariante = product.variants[tp_such_pos]
       endif
 
       assign tp_card_variant = product.selected_or_first_available_variant

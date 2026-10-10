@@ -26,15 +26,12 @@
   assign tp_pr_suchvariante = nil
   assign tp_pr_farbwert = nil
   if tp_pr_suchteile.size == 2
-    assign tp_pr_such_id = tp_pr_suchteile | first | plus: 0
+    assign tp_pr_such_pos = tp_pr_suchteile | first | plus: 0
     assign tp_pr_farbindex = tp_pr_suchteile | last | plus: 0
-    for tp_pr_such_v in product_resource.variants
-      if tp_pr_such_v.id == tp_pr_such_id
-        assign tp_pr_suchvariante = tp_pr_such_v
-        assign tp_pr_farbwert = tp_pr_such_v.options[tp_pr_farbindex]
-        break
-      endif
-    endfor
+    assign tp_pr_suchvariante = product_resource.variants[tp_pr_such_pos]
+    if tp_pr_suchvariante != nil
+      assign tp_pr_farbwert = tp_pr_suchvariante.options[tp_pr_farbindex]
+    endif
   endif
 -%}
 {%- if product_resource.metafields.custom.preis_pro_001_qm.value == true and product_resource.metafields.service.einfassung.value != blank and product.handle != product_resource.handle -%}

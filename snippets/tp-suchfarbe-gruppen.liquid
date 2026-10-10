@@ -4,11 +4,15 @@
 
   Eine Zeile je Gruppe:   <name>: <wort>, <wort>, ...
   Ein Wort trifft auch als Teil eines Farbnamens ("grau" trifft "Hellgrau",
-  "Steingrau", "Grau Mittel"), Gross-/Kleinschreibung egal. Steht eines der
-  Woerter im Suchbegriff, waehlt die Karte die erste verfuegbare, bebilderte
-  Variante, deren Farbe ein Wort derselben Gruppe enthaelt.
+  "Steingrau", "Grau Mittel"), Gross-/Kleinschreibung egal. Ein Wort mit *
+  trifft nur am Wortanfang: "stein*" trifft "Stein" und "Steingrau", aber nicht
+  "Bernstein", "Sandstein" oder "Feinsteinzeug" - weder im Suchbegriff noch im
+  Farbnamen (Review PR #1078: Suchen nach "feinsteinzeug" und "bernstein"
+  zeigten sonst graue Wohnteppiche). Steht eines der Woerter im Suchbegriff,
+  waehlt die Karte die erste verfuegbare, bebilderte Variante, deren Farbe ein
+  Wort derselben Gruppe enthaelt.
 
   Nur vom Inhaber entschiedene Gruppen eintragen - keine eigenen Annahmen.
   grau: Inhaberentscheidung 2026-10-10.
 {%- endcomment -%}
-grau: grau, silber, stein, anthrazit, greige, taupe
+grau: grau, silber, stein*, anthrazit, greige, taupe

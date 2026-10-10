@@ -76,13 +76,8 @@
     {%- assign tp_bp_suchteile = tp_bp_suchfarbe | strip | split: '|' -%}
     {%- assign tp_bp_suchvariante = nil -%}
     {%- if tp_bp_suchteile.size == 2 -%}
-      {%- assign tp_bp_such_id = tp_bp_suchteile | first | plus: 0 -%}
-      {%- for tp_bp_variant in product_resource.variants -%}
-        {%- if tp_bp_variant.id == tp_bp_such_id -%}
-          {%- assign tp_bp_suchvariante = tp_bp_variant -%}
-          {%- break -%}
-        {%- endif -%}
-      {%- endfor -%}
+      {%- assign tp_bp_such_pos = tp_bp_suchteile | first | plus: 0 -%}
+      {%- assign tp_bp_suchvariante = product_resource.variants[tp_bp_such_pos] -%}
     {%- endif -%}
     {%- if product != blank and product.handle == product_resource.handle -%}
       {% render 'tp-teppich-ab-preis', product: product_resource, variant: selected_variant %}

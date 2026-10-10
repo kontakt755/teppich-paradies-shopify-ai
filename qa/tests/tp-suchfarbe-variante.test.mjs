@@ -85,9 +85,10 @@ function produkt(variants, { zweiteOption = 'Breite', metafields = {} } = {}) {
 async function wahl(product, globals) {
   const out = (await engine.parseAndRender("{% render 'tp-suchfarbe-variante', product: product %}", { product }, { globals })).trim();
   if (!out) return null;
-  const [id, index] = out.split('|').map(Number);
+  const [pos, index] = out.split('|').map(Number);
   assert.equal(index, 0, 'Farbe ist die erste Option');
-  return product.variants.find((v) => v.id === id);
+  assert.ok(Number.isInteger(pos) && pos >= 0 && pos < product.variants.length, `Position ${out} liegt in product.variants`);
+  return product.variants[pos];
 }
 
 // Corvella-aehnlich: Greige steht vor Blaugrau und Steingrau, Mokka ist die Raumfarbe.
@@ -100,7 +101,31 @@ function rollenware() {
 
 test('Farbgruppen: nur die entschiedene Gruppe grau mit den sechs Woertern', () => {
   const daten = ohneDoc('snippets/tp-suchfarbe-gruppen.liquid').replace(/{%-?\s*comment\s*-?%}[\s\S]*?{%-?\s*endcomment\s*-?%}/g, '').trim();
-  assert.deepEqual(daten.split('\n').map((z) => z.trim()).filter(Boolean), ['grau: grau, silber, stein, anthrazit, greige, taupe']);
+  assert.deepEqual(daten.split('\n').map((z) => z.trim()).filter(Boolean), ['grau: grau, silber, stein*, anthrazit, greige, taupe']);
+});
+
+// Review PR #1078: "stein" als Teilwort machte "feinsteinzeug" (16 Karten) und
+// "bernstein" (7 Karten) im Development-Theme zu Grau-Suchen. "stein*" trifft nur am Wortanfang.
+test('"stein" nur am Wortanfang: Bernstein, Feinsteinzeug, Sandstein sind keine Grau-Suche', async () => {
+  for (const begriff of ['bernstein', 'feinsteinzeug', 'sandstein teppich', 'naturstein-optik']) {
+    assert.equal(await wahl(rollenware(), suche(begriff)), null, begriff);
+  }
+  assert.equal((await wahl(rollenware(), suche('stein teppichboden'))).title, 'Steingrau (095) / 400 cm');
+  assert.equal((await wahl(rollenware(), suche('teppichboden-stein'))).title, 'Steingrau (095) / 400 cm');
+});
+
+test('"stein" nur am Wortanfang: Farben Bernstein und Sandstein zaehlen nicht als grau', async () => {
+  const p = produkt([variante('Bernstein (012)', '400 cm'), variante('Sandstein', '400 cm'), variante('Creme/Stein', '400 cm')]);
+  assert.equal((await wahl(p, suche('grauer teppich'))).option1, 'Creme/Stein');
+  const ohne = produkt([variante('Bernstein (012)', '400 cm'), variante('Sandstein', '400 cm')]);
+  assert.equal(await wahl(ohne, suche('grauer teppich')), null);
+});
+
+test('Teilwort bleibt fuer die uebrigen Woerter: hellgraue, dunkelgrau, Mausgrau', async () => {
+  const p = produkt([variante('Beige', '400 cm'), variante('Mausgrau (074)', '400 cm')]);
+  for (const begriff of ['hellgrauer teppichboden', 'dunkelgrau', 'silbergraue teppiche', 'anthrazitfarben']) {
+    assert.equal((await wahl(p, suche(begriff))).option1, 'Mausgrau (074)', begriff);
+  }
 });
 
 test('"grauer teppichboden": erste verfuegbare Variante mit "grau" im Farbnamen', async () => {
@@ -146,17 +171,66 @@ test('Shopify-Treffer bleibt, wenn er grau, verfuegbar und bebildert ist', async
   assert.equal((await wahl(p, suche('teppichboden grau'))).title, 'Steingrau (095) / 500 cm');
 });
 
+// Ersatz behaelt die uebrigen Optionen (hier 500 cm) der Shopify-Auswahl, siehe Filter-Tests unten.
 test('Shopify-Treffer ohne Bild, nicht lieferbar oder nicht grau wird ersetzt', async () => {
   for (const aendern of [(v) => { v.featured_media = null; }, (v) => { v.available = false; }]) {
     const p = rollenware();
     const sel = p.variants.find((v) => v.title === 'Steingrau (095) / 500 cm');
     aendern(sel);
     p.selected_variant = sel;
-    assert.equal((await wahl(p, suche('teppichboden grau'))).title, 'Blaugrau (078) / 400 cm');
+    assert.equal((await wahl(p, suche('teppichboden grau'))).title, 'Blaugrau (078) / 500 cm');
   }
   const p = rollenware();
   p.selected_variant = p.variants.find((v) => v.title === 'Mokka (048) / 500 cm');
+  assert.equal((await wahl(p, suche('teppichboden grau'))).title, 'Blaugrau (078) / 500 cm');
+});
+
+// Review PR #1078: Bei aktivem Varianten-Filter (z. B. /search?q=teppichboden+grau
+// &filter.v.m.custom.rollenbreite=5.0) setzt Shopify product.selected_variant auf eine
+// passende Variante - oft in einer anderen Farbe ("Mokka / 500 cm"). Die graue Karte
+// muss dieselbe Breite behalten, sonst hebelt die Vorauswahl den Filter aus.
+const titel = (p, t) => p.variants.find((v) => v.title === t);
+test('Filter Rollenbreite 500 cm: graue Variante derselben Breite', async () => {
+  const p = rollenware();
+  p.selected_variant = titel(p, 'Mokka (048) / 500 cm');
+  assert.equal((await wahl(p, suche('teppichboden grau'))).title, 'Blaugrau (078) / 500 cm');
+  assert.equal((await wahl(p, suche('grauer teppichboden'))).title, 'Blaugrau (078) / 500 cm');
+  assert.equal((await wahl(p, schnellsuche('grauer teppichboden'))).title, 'Blaugrau (078) / 500 cm');
+});
+
+test('Filter Rollenbreite 500 cm: Wort aus dem Suchbegriff zuerst, aber in der gefilterten Breite', async () => {
+  const p = rollenware();
+  p.selected_variant = titel(p, 'Mokka (048) / 500 cm');
+  assert.equal((await wahl(p, suche('anthrazit'))).title, 'Anthrazit (099) / 500 cm');
+  // Anthrazit 500 cm nicht lieferbar: die Breite geht vor dem genauen Farbwort.
+  titel(p, 'Anthrazit (099) / 500 cm').available = false;
+  assert.equal((await wahl(p, suche('anthrazit'))).title, 'Greige (049) / 500 cm');
+});
+
+test('Filter Rollenbreite 500 cm ohne graue 500-cm-Variante: erste graue Variante wie bisher', async () => {
+  const p = rollenware();
+  for (const v of p.variants) if (v.option2 === '500 cm' && v.option1 !== 'Mokka (048)') v.featured_media = null;
+  p.selected_variant = titel(p, 'Mokka (048) / 500 cm');
   assert.equal((await wahl(p, suche('teppichboden grau'))).title, 'Blaugrau (078) / 400 cm');
+  assert.equal((await wahl(p, suche('taupe'))).title, 'Greige (049) / 400 cm');
+});
+
+test('Filter auf eine Groesse: graue Variante derselben Groesse', async () => {
+  const p = produkt([
+    variante('Beige', '80x150'), variante('Beige', '160x230'),
+    variante('Grau', '80x150'), variante('Grau', '160x230'),
+  ], { zweiteOption: 'Größe' });
+  p.selected_variant = titel(p, 'Beige / 160x230');
+  assert.equal((await wahl(p, suche('grauer teppich'))).title, 'Grau / 160x230');
+});
+
+test('Produkt nur mit Farboption: Shopify-Auswahl in anderer Farbe stoert nicht', async () => {
+  const p = produkt([variante('Beige', '-'), variante('Hellgrau', '-'), variante('Anthrazit', '-')]);
+  p.options_with_values = [{ name: 'Farbe', position: 1 }];
+  for (const v of p.variants) { v.options = [v.option1]; v.title = v.option1; }
+  p.selected_variant = p.variants[0];
+  assert.equal((await wahl(p, suche('grau'))).option1, 'Hellgrau');
+  assert.equal((await wahl(p, suche('anthrazit'))).option1, 'Anthrazit');
 });
 
 test('Schnellsuche nutzt denselben Begriff', async () => {
@@ -275,6 +349,16 @@ for (const [datei, rolle] of Object.entries(STELLEN)) {
     assert.match(lies(datei), /render 'tp-suchfarbe-variante'/);
   });
 }
+
+// Review PR #1078 (Kosten): Das Snippet liefert die Position; keine Kartenstelle sucht die
+// Variante noch einmal per ID-Schleife ueber alle Varianten.
+test('Kartenstellen lesen die Variante per Position, ohne eigene Suchschleife', () => {
+  for (const datei of Object.keys(STELLEN)) {
+    const code = lies(datei);
+    assert.match(code, /\.variants\[tp_\w*such_pos\]/, `${datei} liest product.variants[Position]`);
+    assert.doesNotMatch(code, /such_id/, `${datei} sucht die Variante per ID`);
+  }
+});
 
 test('nur das zentrale Snippet liest den Suchbegriff fuer die Farbwahl', () => {
   for (const datei of Object.keys(STELLEN)) {
