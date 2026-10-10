@@ -30,6 +30,7 @@ oben eingebunden. Hier steht nur, was Claude Code zusaetzlich betrifft.
 | `produktimport` | neue Produkte aus Lieferantenquellen, Schreibzugriff (`shopify-daten.md`) |
 | `lieferant-a-recherche` | Artikel- und Farbnummern bei Lieferant A belegt klaeren |
 | `shopify-massendaten` | viele Metafelder/Tags auf einmal, mit Plan und Rollback |
+| `raumbilder-recherche` | Produkte ohne Raumbild: Hersteller hinter dem Lieferantenprodukt finden, farbgenaue Raumbilder aus erlaubten Quellen suchen |
 
 ## Review
 
