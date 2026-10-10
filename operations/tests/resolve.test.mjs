@@ -133,3 +133,51 @@ test('Hilfsfunktionen: metafeldMap, propertiesMap, parseMasse', () => {
   assert.equal(parseMasse(''), null);
   assert.throws(() => resolveLineItem({}), /lineItem fehlt/);
 });
+
+// Gemeinsamer Rollenbestand (Inhaber 10.10.2026): Rollenware als Bundle-Komponente
+// (lineItemGroup) unter "Zuschnitt von der Rolle", Teppich nach Mass mit
+// custom.zuschnitt_von_rolle. Nachbau der Pruefung in der internen Bestellmail.
+const rolleVariante = {
+  id: 'gid://shopify/ProductVariant/61140136821070', sku: 'Y-ROLLE',
+  metafields: [mf('custom', 'rollenbreite', '4.0')],
+  product: { id: 'gid://shopify/Product/16132122444110', handle: 'yasmin-rolle', metafields: [mf('custom', 'max_roll_laenge_cm', '2000')] },
+};
+const massVariante = {
+  id: 'gid://shopify/ProductVariant/61140136984910', sku: 'Y-MASS', metafields: [],
+  product: { id: 'gid://shopify/Product/16132122575182', handle: 'yasmin-mass', metafields: [mf('custom', 'preis_pro_001_qm', 'true'), mf('custom', 'zuschnitt_von_rolle', 'gid://shopify/Product/16134901629262')] },
+};
+const yTeppich = (masse = '200 × 300 cm', menge = 600) => ({ id: 't', sku: 'Y-MASS', quantity: menge, variant: massVariante, customAttributes: [
+  { key: 'Maße', value: masse }, { key: '_Gruppe', value: 'Y1' }, { key: '_Zuschnitt aus Rolle', value: '400 cm' }, { key: '_Rollenzuschnitt', value: '200' }] });
+const yKomponente = (menge = 8) => ({ id: 'k', sku: 'Y-ROLLE', quantity: menge, variant: rolleVariante, customAttributes: [],
+  lineItemGroup: { id: 'gid://shopify/LineItemGroup/1', title: 'Zuschnitt von der Rolle – Passion Yasmin Anthrazit', quantity: 1, customAttributes: [] } });
+const aufloesen = (zeilen) => zeilen.map(li => resolveLineItem({ lineItem: li, variant: li.variant, alleZeilen: zeilen }));
+
+test('Rollenbestand: Komponente ist Bestandsabgang, Teppich mit passendem Abgang ist ok', () => {
+  const [t, k] = aufloesen([yTeppich(), yKomponente(8)]);
+  assert.equal(k.masspruefung.status, 'bestand');
+  assert.match(k.masspruefung.hinweis, /nicht separat zuschneiden/);
+  assert.deepEqual(k.bundle, { titel: 'Zuschnitt von der Rolle – Passion Yasmin Anthrazit', menge: 1 });
+  assert.equal(t.masspruefung.status, 'ok');
+  assert.match(t.masspruefung.hinweis, /8 m² abgebucht/);
+  assert.equal(t.bundle, null);
+});
+
+test('Rollenbestand: 2,5 x 7 m braucht 28, 201 x 301 braucht 9 Einheiten', () => {
+  assert.equal(aufloesen([yTeppich('250 × 700 cm', 1750), yKomponente(28)])[0].masspruefung.status, 'ok');
+  assert.equal(aufloesen([yTeppich('250 × 700 cm', 1750), yKomponente(27)])[0].masspruefung.status, 'abweichung');
+  assert.equal(aufloesen([yTeppich('201 × 301 cm', 606), yKomponente(9)])[0].masspruefung.status, 'ok');
+});
+
+test('Rollenbestand: fehlende oder zu kleine Komponente ist eine Abweichung', () => {
+  const [ohne] = aufloesen([yTeppich()]);
+  assert.equal(ohne.masspruefung.status, 'abweichung');
+  assert.match(ohne.masspruefung.hinweis, /noetig 8 m², abgebucht 0/);
+  assert.equal(aufloesen([yTeppich(), yKomponente(7)])[0].masspruefung.status, 'abweichung');
+});
+
+test('Rollenbestand: Teppich nach Mass ohne Verweis bleibt bei der Flaechenpruefung', () => {
+  const normal = { ...yTeppich(), variant: { ...massVariante, product: { ...massVariante.product, metafields: [mf('custom', 'preis_pro_001_qm', 'true')] } } };
+  const r = resolveLineItem({ lineItem: normal, variant: normal.variant, alleZeilen: [normal] });
+  assert.equal(r.masspruefung.status, 'ok');
+  assert.equal(r.masspruefung.hinweis, undefined);
+});

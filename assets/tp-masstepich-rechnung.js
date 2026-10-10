@@ -129,7 +129,40 @@
     return menge;
   }
 
+  // Gemeinsamer Rollenbestand (Sonderposten mit begrenzter Rolle): wie viel
+  // laufende Rolle der Zuschnitt verbraucht, und welche Variante des
+  // versteckten Bundles "Zuschnitt von der Rolle" diesen Verbrauch im Checkout
+  // vom Bestand der Rollenware abbucht. Gleiche Regel wie
+  // operations/lib/rollenverbrauch.mjs: passt die laengere Seite quer in die
+  // Rolle, wird nur die kuerzere abgeschnitten (2 x 3 m aus 4 m: 2 m),
+  // sonst die laengere. Rund und oval nach dem umschliessenden Rechteck.
+  // varianten: [{ id, cm, available }] - genommen wird die kleinste Variante,
+  // die den Verbrauch deckt (Bundle-Raster 25 cm = 1 m2 bei 4 m Breite).
+  // Ergebnis null = Mass passt nicht auf die Rolle.
+  function rollenZuschnitt(form, wCm, lCm, rollenbreiteCm, varianten) {
+    var w = Number(wCm);
+    var l = form === 'rund' ? w : Number(lCm);
+    var rb = Number(rollenbreiteCm);
+    if (!(w > 0) || !(l > 0) || !(rb > 0)) return null;
+    var kurz = Math.min(w, l);
+    var lang = Math.max(w, l);
+    if (kurz > rb + EPS) return null;
+    var verbrauch = lang <= rb + EPS ? kurz : lang;
+    var passend = null;
+    (varianten || []).forEach(function (v) {
+      var cm = v ? Number(v.cm) : 0;
+      if (!(cm > 0) || cm + EPS < verbrauch) return;
+      if (!passend || cm < Number(passend.cm)) passend = v;
+    });
+    return {
+      verbrauchCm: verbrauch,
+      variante: passend,
+      ausreichend: !!(passend && passend.available === true)
+    };
+  }
+
   root.TPMass = {
+    rollenZuschnitt: rollenZuschnitt,
     flaecheM2: flaecheM2,
     abrechnungsflaecheM2: abrechnungsflaecheM2,
     echteFlaecheM2: echteFlaecheM2,

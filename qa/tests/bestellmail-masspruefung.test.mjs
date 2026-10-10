@@ -94,3 +94,42 @@ test('jede Division ist engine-unabhaengig abgerundet', () => {
   const ohne = [...tpl.matchAll(/\| divided_by: \d+\b(?! \| floor)/g)];
   assert.equal(ohne.length, 0);
 });
+
+// Gemeinsamer Rollenbestand (Inhaber 10.10.2026): Teppich nach Mass mit
+// custom.zuschnitt_von_rolle, Rollenverbrauch ueber ein 0-EUR-Bundle. In der
+// Bestellung steht die Rollenware als Bundle-Komponente (line.groups, 0 EUR).
+const yasminProd = { metafields: { custom: { preis_pro_001_qm: true, zuschnitt_von_rolle: 'gid://shopify/Product/2' }, service: { max_breite_cm: 400 }, grosshandel: { sku: 'X1' } } };
+const rolleProd = { metafields: { custom: { max_roll_laenge_cm: 2000 }, grosshandel: { sku: 'X1' } } };
+const yasmin = (q, m = '200 × 300 cm', extra = {}) => ({ ...mass(q, m, 'Rechteck', { _Gruppe: 'Y1', _Rollenzuschnitt: '200', ...extra }), title: 'Passion Yasmin Kettelteppich nach Maß', product: yasminProd });
+const yKettel = q => kettel(q, 'Y1');
+const komponente = (q, art = 'groups') => ({ title: 'Passion Yasmin Anthrazit – Sonderposten, 400 cm', quantity: q, sku: 'S', variant_title: 'Default Title', properties: [], product: rolleProd, variant: { metafields: { lieferant: {} } }, final_price: 0, ...(art === 'groups' ? { groups: [{ title: 'Zuschnitt von der Rolle' }] } : {}) });
+const bundleZeile = (q, cm = '200 cm') => ({ title: 'Zuschnitt von der Rolle – Passion Yasmin Anthrazit', quantity: q, sku: '', variant_title: cm, properties: P({ 'Zu Teppich': 'Passion Yasmin', Rollenzuschnitt: cm, _Gruppe: 'Y1' }), product: { metafields: {} }, variant: { metafields: { lieferant: {} } }, final_price: 0 });
+const meterYasmin = q => ({ ...meter(q), title: 'Passion Yasmin Anthrazit – Sonderposten, 400 cm', product: rolleProd, final_price: 4195 });
+const render = items => eng.parseAndRender(tpl, { name: '#1100', created_at: '2026-10-10T10:00:00Z', email: 'k@example.com', line_items: items, customer: { name: 'Test' } });
+const rollFaelle = [
+  ['ehrlich: 2 x 3 m braucht 200 cm = 8 Einheiten, Komponente 8', [yasmin(600), yKettel(1000), komponente(8)], 'passt', false],
+  ['ehrlich: Komponente ohne line.groups, nur Preis 0', [yasmin(600), yKettel(1000), komponente(8, 'preis')], 'passt', false],
+  ['ehrlich: Shopify zeigt die Bundle-Zeile statt der Komponente', [yasmin(600), yKettel(1000), bundleZeile(1)], 'passt', false],
+  ['ehrlich: 2,5 x 7 m braucht 700 cm = 28 Einheiten', [yasmin(1750, '250 × 700 cm'), komponente(28)], 'passt', false],
+  ['ehrlich: 201 x 301 cm braucht 201 cm = 9 Einheiten', [yasmin(606, '201 × 301 cm'), komponente(9)], 'passt', false],
+  ['ehrlich: gemischter Warenkorb Meterware + Massteppich', [meterYasmin(12), yasmin(600), yKettel(1000), komponente(8)], 'passt', false],
+  ['MANIPULIERT: Zuschnittzeile entfernt', [yasmin(600), yKettel(1000)], 'NICHT VOLL ABGEBUCHT', true],
+  ['MANIPULIERT: kleinere Zuschnittvariante (175 cm = 7)', [yasmin(600), yKettel(1000), komponente(7)], 'NICHT VOLL ABGEBUCHT', true],
+  ['MANIPULIERT: Zuschnitt ohne Teppich (0 EUR Rollenware)', [komponente(8)], 'OHNE TEPPICH', true],
+  ['Unlesbar: Masse des Massteppichs fehlen', [{ ...yasmin(600), properties: P({ _Gruppe: 'Y1' }) }, komponente(8)], 'NICHT PRÜFBAR', true],
+];
+for (const [name, items, erwartet, alarm] of rollFaelle) {
+  test(`Rollenbestand – ${name}`, async () => {
+    const html = await render(items);
+    assert.ok(html.includes(erwartet), `erwartet "${erwartet}"`);
+    assert.equal(/ROLLENBESTAND NICHT|OHNE TEPPICH – NICHTS/.test(html), alarm, 'Rollen-Alarm');
+    if (!alarm) assert.ok(!html.includes('NICHT ZUSCHNEIDEN'), 'ehrliche Bestellung ohne Warnbanner');
+    // Die Komponentenzeile ist nie ein eigener Zuschnitt.
+    if (items.some(i => i.product === rolleProd && i.final_price === 0)) assert.ok(html.includes('Bestandsabgang zum Maßteppich'));
+  });
+}
+test('Rollenbestand – Bestellungen ohne Zuschnitt-Bundle bleiben unveraendert', async () => {
+  const html = await render([mass(600), kettel(1000), meter(12), muster()]);
+  assert.ok(!html.includes('Rollenbestand'), 'kein Rollenhinweis ohne Massteppich aus der Rolle');
+  assert.ok(!html.includes('Bestandsabgang'));
+});

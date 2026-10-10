@@ -100,6 +100,17 @@
     var maxKg = Number(d.max_gewicht_kg) > 0 ? Number(d.max_gewicht_kg) : 0;
     // Rollenbreiten der Meterware in cm, nur fuer die interne Warenkorbzeile.
     var rollen = (d.rollen || []).map(Number).filter(function (n) { return n > 0; });
+    // Gemeinsamer Rollenbestand: je Teppich eine 0-EUR-Variante des Bundles
+    // "Zuschnitt von der Rolle" (Komponente = Rollenware). Fail closed: genau
+    // eine Rollenbreite, jede Variante zu 0 EUR - sonst zahlte der Kunde das
+    // Material doppelt - und mindestens eine Variante.
+    var zuschnitt = d.zuschnitt || null;
+    var zsVarianten = zuschnitt ? (zuschnitt.varianten || []).filter(Boolean) : [];
+    var zsRolle = rollen.length === 1 ? rollen[0] : 0;
+    var zuschnittFailed = !!zuschnitt && (zuschnitt.failed === true || !zsVarianten.length || !(zsRolle > 0) ||
+      zsVarianten.some(function (v) { return parseInt(v.price, 10) !== 0; }));
+    var zsMaxCm = 0;
+    zsVarianten.forEach(function (v) { if (v.available === true && Number(v.cm) > zsMaxCm) zsMaxCm = Number(v.cm); });
     var mitBand = !!BAND_CM[art];
     var baender = mitBand ? (d.baender || []).filter(function (b) { return b && b.art === art && /^#[0-9a-f]{6}$/i.test(b.hex); }) : [];
     if (mitBand && !baender.length) return;
@@ -632,16 +643,29 @@
       // konfigurierter Service ist kein Eingabefehler des Kunden.
       if (kettelServiceFailed) fehlerListe.push('Die Kettelung ist aktuell nicht verfügbar. Bitte kurz bei uns melden.');
       if (pauschaleFailed) fehlerListe.push('Dieser Teppich ist aktuell nicht bestellbar. Bitte kurz bei uns melden.');
+      if (zuschnittFailed) fehlerListe.push('Dieser Teppich ist aktuell nicht bestellbar. Bitte kurz bei uns melden.');
+      // Restbestand der Rolle: erst nach gueltiger Eingabe pruefen, sonst
+      // stuende die Meldung schon vor dem ersten Mass da.
+      var zs = null;
+      if (zuschnitt && !zuschnittFailed && eingegeben && !fehlerListe.length) {
+        zs = M.rollenZuschnitt(f, b.wert, l.wert, zsRolle, zsVarianten);
+        if (!zs || !zs.ausreichend) {
+          fehlerListe.push(zsMaxCm > 0
+            ? 'Für dieses Maß reicht die Rolle nicht mehr: noch ' + fmt(zsMaxCm / 100) + ' m Rollenlänge (' + fmt(zsRolle / 100) + ' m breit) verfügbar.'
+            : 'Diese Rolle ist ausverkauft.');
+        }
+      }
       fehler.textContent = fehlerListe.join(' ');
       // Vor der ersten Eingabe keine Meldung - ausser die Eingabe selbst ist
       // das Problem (Komma, 0, negativ) oder der Kettelservice ist ausgefallen.
-      fehler.hidden = !fehlerListe.length || (!eingegeben && !eingabeFehler && !!target && target.available && !kettelServiceFailed && !pauschaleFailed);
+      fehler.hidden = !fehlerListe.length || (!eingegeben && !eingabeFehler && !!target && target.available && !kettelServiceFailed && !pauschaleFailed && !zuschnittFailed);
 
       // TP-005: ein ausgefallener konfigurierter Kettelservice macht die
       // Konfiguration ungueltig - stand bleibt null (unten), rechnung/cta
       // bleiben verborgen, hinzufuegen() kann also nicht auslösen.
       var gueltig = eingegeben && !fehlerListe.length && !!target && target.available &&
-        parseInt(target.price, 10) > 0 && !kettelServiceFailed && !pauschaleFailed;
+        parseInt(target.price, 10) > 0 && !kettelServiceFailed && !pauschaleFailed && !zuschnittFailed &&
+        (!zuschnitt || !!(zs && zs.ausreichend));
       var startpreis = document.querySelector('[data-tp-mass-startpreis]');
       if (startpreis) startpreis.hidden = gueltig;
       zeichnen(f, gueltig ? b.wert : BEISPIEL.w, gueltig ? l.wert : (rund ? BEISPIEL.w : BEISPIEL.l), !gueltig);
@@ -704,7 +728,8 @@
 
       stand = {
         form: f, w: b.wert, l: l.wert, flaeche: abgerechnet, menge: menge,
-        kante: kante, kantenEinheiten: kantenEinheiten, masse: masse, mindest: mindest
+        kante: kante, kantenEinheiten: kantenEinheiten, masse: masse, mindest: mindest,
+        zuschnitt: zs
       };
       cta.hidden = false;
       cta.disabled = inFlight || bandFehlt;
@@ -791,6 +816,25 @@
           id: pauschale.id,
           quantity: 1,
           properties: { 'Zu Teppich': d.produkt, 'Farbe': target.farbe || '', 'Maße': stand.masse, '_Gruppe': gruppe }
+        });
+        gesamtMenge += 1;
+      }
+      // Gemeinsamer Rollenbestand: die Bundle-Variante bucht den Verbrauch im
+      // Checkout von der Rollenware ab. Die Hauptzeile nennt ihn ebenfalls
+      // (_Rollenzuschnitt), damit Warenkorb und interne Mail eine fehlende
+      // oder zu kleine Zuschnittzeile erkennen.
+      if (zuschnitt) {
+        var zsStand = stand.zuschnitt;
+        if (!zsStand || !zsStand.ausreichend || !zsStand.variante) return;
+        p['_Rollenzuschnitt'] = String(zsStand.variante.cm);
+        zeilen.push({
+          id: zsStand.variante.id,
+          quantity: 1,
+          properties: {
+            'Zu Teppich': d.produkt,
+            'Rollenzuschnitt': zsStand.variante.cm + ' cm',
+            '_Gruppe': gruppe
+          }
         });
         gesamtMenge += 1;
       }

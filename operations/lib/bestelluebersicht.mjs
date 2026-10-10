@@ -336,7 +336,9 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         bestellmenge: istM ? { menge, einheit: 'muster', text: `${menge} Muster`, grund: null } : (li.variant ? einkaufsmenge(item, menge) : { menge: UNGEKLAERT, einheit: UNGEKLAERT, text: UNGEKLAERT, grund: "Variante in Shopify geloescht - Artikel von Hand klaeren" }),
         idGrund: ghId !== UNGEKLAERT ? null : !li.variant ? "Variante geloescht" : istM ? (mq?.quellvariante ? "Quellvariante ohne ID-Metafeld" : "Muster ohne _Quellvariante_ID - Produkt/Farbe siehe Titel") : "weder lieferant.* noch grosshandel.sku gesetzt",
       };
-      if (!istTest && offen && menge > 0) (istM ? muster : einkaufPositionen).push(pos);
+      // Bundle-Komponenten (z. B. Rollenware unter "Zuschnitt von der Rolle")
+      // sind ein Bestandsabgang; das Material steht schon an der Teppichzeile.
+      if (!istTest && offen && menge > 0 && !item.bundle) (istM ? muster : einkaufPositionen).push(pos);
       return pos;
     });
 
