@@ -25,9 +25,26 @@
   {% capture tp_card_title_display %}{% render 'tp-card-title-display', product: closest.product %}{% endcapture %}
   {% assign tp_card_title_display = tp_card_title_display | strip %}
   {%- liquid
-    # Wie Kartenbild und ueberlagerter Link dieselbe Raumfarbe waehlen.
+    # Wie Kartenbild und ueberlagerter Link dieselbe Variante waehlen:
+    # erst die Suchfarbe (snippets/tp-suchfarbe-variante), sonst die Raumfarbe.
+    capture tp_ct_suchfarbe
+      render 'tp-suchfarbe-variante', product: closest.product
+    endcapture
+    assign tp_ct_suchteile = tp_ct_suchfarbe | strip | split: '|'
+    assign tp_ct_suchvariante = nil
+    if tp_ct_suchteile.size == 2
+      assign tp_ct_such_id = tp_ct_suchteile | first | plus: 0
+      for tp_ct_variant in closest.product.variants
+        if tp_ct_variant.id == tp_ct_such_id
+          assign tp_ct_suchvariante = tp_ct_variant
+          break
+        endif
+      endfor
+    endif
     assign tp_card_title_variant = closest.product.selected_or_first_available_variant
-    if closest.product.selected_variant == blank
+    if tp_ct_suchvariante != nil
+      assign tp_card_title_variant = tp_ct_suchvariante
+    elsif closest.product.selected_variant == blank
       capture tp_ct_raumdaten
         render 'tp-sprint-raumdaten', product: closest.product
       endcapture

@@ -1,0 +1,14 @@
+{%- comment -%}
+  Farbgruppen fuer die Farb-Vorauswahl der Suchkarten. Einzige Datenquelle;
+  die Regel steht in snippets/tp-suchfarbe-variante.liquid.
+
+  Eine Zeile je Gruppe:   <name>: <wort>, <wort>, ...
+  Ein Wort trifft auch als Teil eines Farbnamens ("grau" trifft "Hellgrau",
+  "Steingrau", "Grau Mittel"), Gross-/Kleinschreibung egal. Steht eines der
+  Woerter im Suchbegriff, waehlt die Karte die erste verfuegbare, bebilderte
+  Variante, deren Farbe ein Wort derselben Gruppe enthaelt.
+
+  Nur vom Inhaber entschiedene Gruppen eintragen - keine eigenen Annahmen.
+  grau: Inhaberentscheidung 2026-10-10.
+{%- endcomment -%}
+grau: grau, silber, stein, anthrazit, greige, taupe

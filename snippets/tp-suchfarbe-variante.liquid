@@ -1,0 +1,129 @@
+{%- doc -%}
+  Farb-Vorauswahl fuer Suchkarten (Inhaberentscheidung 2026-10-10): Wer nach
+  "grauer Teppichboden" sucht, soll Karten in einem grauen Farbton sehen.
+
+  Einzige Stelle, die die Variante waehlt. Bild, alle Links, Preis,
+  Rabatt-Badge und Verfuegbarkeit der Karte leiten sich aus genau dieser
+  Variante ab; jede Kartenstelle rendert dieses Snippet selbst, weil Bloecke
+  untereinander keine Variablen teilen:
+    snippets/product-card.liquid (Kartenflaeche), snippets/card-gallery.liquid
+    (Bild, Bildlink), blocks/tp-card-title.liquid (Titellink),
+    blocks/_product-card-gallery.liquid (Rabatt-Badge), snippets/price.liquid
+    und blocks/price.liquid (Preis), blocks/tp-card-actions.liquid
+    (Konfigurator- und Musterlink), snippets/tp-suche-ergebnisse.liquid
+    (Schnellsuche).
+
+  Wirkt nur mit Suchbegriff: Suchergebnisseite (search.terms) und Schnellsuche
+  (predictive_search.terms). Kollektionen, Filter und Produktseite bleiben
+  unberuehrt; ebenso jedes Produkt mit ?variant= in der Adresse.
+
+  Farbgruppen: snippets/tp-suchfarbe-gruppen.liquid. Enthaelt der Suchbegriff
+  ein Wort einer Gruppe, gilt die Gruppe. Gewaehlt wird die erste Variante in
+  Shopify-Reihenfolge, die
+    - verfuegbar ist (variant.available),
+    - ein eigenes Bild hat (sonst zeigte die Karte das Bild einer anderen Farbe),
+    - keine OPC-Konfiguratorvariante ist (wie snippets/price.liquid),
+    - bei Teppich nach Mass fuers Einfassen freigegeben ist (wie im Konfigurator),
+    - und deren Farboption (Farbe, Color oder Dekor) ein Wort der Gruppe enthaelt.
+  Steht ein Gruppenwort selbst im Suchbegriff (z. B. "anthrazit"), gewinnt die
+  erste Variante mit genau diesem Wort; erst ohne sie die erste mit einem
+  anderen Wort der Gruppe. Passt keine Variante, bleibt die Karte wie bisher.
+
+  Ausgabe: "<Varianten-ID>|<Index der Farboption>" oder nichts.
+
+  @param {object} product - Produkt der Karte
+{%- enddoc -%}
+{%- liquid
+  assign tp_sf_begriff = ''
+  if request.page_type == 'search' and search.performed
+    assign tp_sf_begriff = search.terms
+  elsif predictive_search.performed
+    assign tp_sf_begriff = predictive_search.terms
+  endif
+  assign tp_sf_begriff = tp_sf_begriff | downcase | strip
+
+  if tp_sf_begriff != blank and product != blank and product.selected_variant == blank
+    capture tp_sf_daten
+      render 'tp-suchfarbe-gruppen'
+    endcapture
+
+    # Woerter aller Gruppen, von denen der Suchbegriff mindestens eines enthaelt.
+    assign tp_sf_woerter = ''
+    assign tp_sf_zeilen = tp_sf_daten | newline_to_br | split: '<br />'
+    for tp_sf_zeile in tp_sf_zeilen
+      assign tp_sf_teile = tp_sf_zeile | split: ':'
+      if tp_sf_teile.size != 2
+        continue
+      endif
+      assign tp_sf_liste = tp_sf_teile | last | downcase | split: ','
+      for tp_sf_eintrag in tp_sf_liste
+        assign tp_sf_wort = tp_sf_eintrag | strip
+        if tp_sf_wort != blank and tp_sf_begriff contains tp_sf_wort
+          assign tp_sf_woerter = tp_sf_woerter | append: ',' | append: tp_sf_teile.last
+          break
+        endif
+      endfor
+    endfor
+
+    assign tp_sf_index = -1
+    for tp_sf_option in product.options_with_values
+      assign tp_sf_name = tp_sf_option.name | downcase
+      if tp_sf_name == 'farbe' or tp_sf_name == 'color' or tp_sf_name == 'dekor'
+        assign tp_sf_index = tp_sf_option.position | minus: 1
+        break
+      endif
+    endfor
+
+    if tp_sf_woerter != '' and tp_sf_index >= 0
+      assign tp_sf_teppich = false
+      if product.metafields.custom.preis_pro_001_qm.value == true and product.metafields.service.einfassung.value != blank
+        assign tp_sf_teppich = true
+      endif
+      assign tp_sf_gruppe = tp_sf_woerter | downcase | split: ','
+      assign tp_sf_treffer = ''
+      assign tp_sf_ersatz = ''
+      for tp_sf_v in product.variants
+        if tp_sf_v.available != true or tp_sf_v.featured_media == blank
+          continue
+        endif
+        assign tp_sf_titel = tp_sf_v.title | downcase
+        if tp_sf_titel contains 'opc-'
+          continue
+        endif
+        if tp_sf_teppich
+          unless tp_sf_v.metafields.service.einfassen.value == 'Verfügbar'
+            continue
+          endunless
+        endif
+        assign tp_sf_farbe = tp_sf_v.options[tp_sf_index] | downcase
+        for tp_sf_eintrag in tp_sf_gruppe
+          assign tp_sf_wort = tp_sf_eintrag | strip
+          if tp_sf_wort == blank
+            continue
+          endif
+          unless tp_sf_farbe contains tp_sf_wort
+            continue
+          endunless
+          if tp_sf_ersatz == ''
+            assign tp_sf_ersatz = tp_sf_v.id | append: ''
+          endif
+          if tp_sf_begriff contains tp_sf_wort
+            assign tp_sf_treffer = tp_sf_v.id | append: ''
+            break
+          endif
+        endfor
+        if tp_sf_treffer != ''
+          break
+        endif
+      endfor
+
+      assign tp_sf_id = tp_sf_treffer
+      if tp_sf_id == ''
+        assign tp_sf_id = tp_sf_ersatz
+      endif
+      if tp_sf_id != ''
+        echo tp_sf_id | append: '|' | append: tp_sf_index
+      endif
+    endif
+  endif
+-%}

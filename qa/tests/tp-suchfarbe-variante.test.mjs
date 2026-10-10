@@ -1,0 +1,272 @@
+// Farb-Vorauswahl der Suchkarten (Inhaberentscheidung 2026-10-10): Wer nach
+// "grauer Teppichboden" sucht, sieht Karten in einem grauen Farbton. Die Variante
+// waehlt allein snippets/tp-suchfarbe-variante.liquid; Bild, alle Links, Preis,
+// Rabatt-Badge und Verfuegbarkeit der Karte muessen aus genau dieser Variante
+// kommen. Der Test rendert die echten Snippets mit LiquidJS und prueft, dass jede
+// Kartenstelle dieselbe Quelle fragt.
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import { Liquid } from 'liquidjs';
+
+const root = fileURLToPath(new URL('../../', import.meta.url));
+const lies = (datei) => readFileSync(path.join(root, datei), 'utf8');
+const ohneDoc = (datei) => lies(datei).replace(/{%-?\s*doc\s*-?%}[\s\S]*?{%-?\s*enddoc\s*-?%}/g, '');
+const ohneStylesheet = (code) => code.replace(/{%-?\s*stylesheet\s*-?%}[\s\S]*?{%-?\s*endstylesheet\s*-?%}/g, '');
+
+const engine = new Liquid({
+  templates: {
+    'tp-suchfarbe-variante': ohneDoc('snippets/tp-suchfarbe-variante.liquid'),
+    'tp-suchfarbe-gruppen': ohneDoc('snippets/tp-suchfarbe-gruppen.liquid'),
+    'tp-verkaufseinheit': ohneDoc('snippets/tp-verkaufseinheit.liquid'),
+    'tp-aktion-aktiv': ohneDoc('snippets/tp-aktion-aktiv.liquid'),
+    'tp-rabatt-sichtbar': ohneDoc('snippets/tp-rabatt-sichtbar.liquid'),
+    'tp-teppich-ab-preis': ohneDoc('snippets/tp-teppich-ab-preis.liquid'),
+    'tp-teppich-qualitaet': ohneDoc('snippets/tp-teppich-qualitaet.liquid'),
+    'tp-teppich-max-breite': ohneDoc('snippets/tp-teppich-max-breite.liquid'),
+    'tp-musteroption': ohneDoc('snippets/tp-musteroption.liquid'),
+    'tp-paketinhalt': '',
+    'unit-price': '',
+  },
+});
+// Shopify teilt Integer/Integer ganzzahlig, LiquidJS nicht (wie tp-teppich-ab-preis.test.mjs).
+engine.registerFilter('divided_by', (a, b) => {
+  const q = Number(a) / Number(b);
+  return Number.isInteger(Number(a)) && Number.isInteger(Number(b)) ? Math.floor(q) : q;
+});
+const euro = (c) => (Number(c) / 100).toFixed(2).replace('.', ',');
+engine.registerFilter('money_without_currency', euro);
+engine.registerFilter('money', (c) => `${euro(c)} €`);
+engine.registerFilter('money_with_currency', (c) => `${euro(c)} EUR`);
+engine.registerFilter('money_without_trailing_zeros', (c) => `${euro(c)} €`.replace(',00 €', ' €'));
+engine.registerFilter('t', (schluessel) => schluessel);
+
+const suche = (terms) => ({ request: { page_type: 'search' }, search: { performed: true, terms } });
+const schnellsuche = (terms) => ({ request: { page_type: 'index' }, predictive_search: { performed: true, terms } });
+const kollektion = () => ({ request: { page_type: 'collection' }, search: { performed: false } });
+
+let naechsteId = 100;
+function variante(farbe, zweite, { price = 3690, compare = null, available = true, bild = true, metafields = {} } = {}) {
+  const id = naechsteId++;
+  return {
+    id,
+    title: `${farbe} / ${zweite}`,
+    url: `/products/test?variant=${id}`,
+    available,
+    price,
+    compare_at_price: compare,
+    featured_media: bild ? { id: id * 10, src: `bild-${id}.jpg` } : null,
+    featured_image: bild ? `bild-${id}.jpg` : null,
+    options: [farbe, zweite],
+    option1: farbe,
+    option2: zweite,
+    metafields,
+  };
+}
+function produkt(variants, { zweiteOption = 'Breite', metafields = {} } = {}) {
+  return {
+    id: 1,
+    handle: 'test',
+    title: 'Test Teppichboden 400cm 500cm',
+    available: variants.some((v) => v.available),
+    options_with_values: [{ name: 'Farbe', position: 1 }, { name: zweiteOption, position: 2 }],
+    variants,
+    price_min: Math.min(...variants.map((v) => v.price)),
+    price_max: Math.max(...variants.map((v) => v.price)),
+    price_varies: new Set(variants.map((v) => v.price)).size > 1,
+    selected_or_first_available_variant: variants.find((v) => v.available) || variants[0],
+    selected_variant: null,
+    metafields,
+  };
+}
+
+async function wahl(product, globals) {
+  const out = (await engine.parseAndRender("{% render 'tp-suchfarbe-variante', product: product %}", { product }, { globals })).trim();
+  if (!out) return null;
+  const [id, index] = out.split('|').map(Number);
+  assert.equal(index, 0, 'Farbe ist die erste Option');
+  return product.variants.find((v) => v.id === id);
+}
+
+// Corvella-aehnlich: Greige steht vor Blaugrau und Steingrau, Mokka ist die Raumfarbe.
+function rollenware() {
+  const farben = ['Tannengrün (024)', 'Mokka (048)', 'Greige (049)', 'Blaugrau (078)', 'Steingrau (095)', 'Anthrazit (099)'];
+  const breite = { custom: { rollenbreite: { value: 4 } } };
+  const v = farben.flatMap((f) => [variante(f, '400 cm', { metafields: breite }), variante(f, '500 cm', { metafields: breite })]);
+  return produkt(v);
+}
+
+test('Farbgruppen: nur die entschiedene Gruppe grau mit den sechs Woertern', () => {
+  const daten = ohneDoc('snippets/tp-suchfarbe-gruppen.liquid').replace(/{%-?\s*comment\s*-?%}[\s\S]*?{%-?\s*endcomment\s*-?%}/g, '').trim();
+  assert.deepEqual(daten.split('\n').map((z) => z.trim()).filter(Boolean), ['grau: grau, silber, stein, anthrazit, greige, taupe']);
+});
+
+test('"grauer teppichboden": erste verfuegbare Variante mit "grau" im Farbnamen', async () => {
+  const p = rollenware();
+  assert.equal((await wahl(p, suche('grauer teppichboden'))).title, 'Blaugrau (078) / 400 cm');
+  assert.equal((await wahl(p, suche('Teppichboden Grau'))).title, 'Blaugrau (078) / 400 cm');
+});
+
+test('"anthrazit": Variante mit genau diesem Wort vor anderen Grautoenen', async () => {
+  assert.equal((await wahl(rollenware(), suche('anthrazit'))).title, 'Anthrazit (099) / 400 cm');
+});
+
+test('Gruppenwort ohne eigene Variante: erste Variante der Gruppe (hier Greige)', async () => {
+  assert.equal((await wahl(rollenware(), suche('taupe teppichboden'))).title, 'Greige (049) / 400 cm');
+  assert.equal((await wahl(rollenware(), suche('greige'))).title, 'Greige (049) / 400 cm');
+});
+
+test('Zusammensetzungen zaehlen: Hellgrau, Grau Mittel, Silbergrau', async () => {
+  for (const farbe of ['Hellgrau', 'Grau Mittel', 'Silbergrau (070)']) {
+    const p = produkt([variante('Beige', '400 cm'), variante(farbe, '400 cm')]);
+    assert.equal((await wahl(p, suche('grauer teppichboden'))).option1, farbe);
+  }
+});
+
+test('ohne Farbwort bleibt alles wie bisher', async () => {
+  assert.equal(await wahl(rollenware(), suche('teppichboden')), null);
+  assert.equal(await wahl(rollenware(), suche('')), null);
+});
+
+test('Kollektionsseite und Produktseite: keine Vorauswahl', async () => {
+  assert.equal(await wahl(rollenware(), kollektion()), null);
+  // Suchobjekt mit Begriff, aber keine Suchseite (z. B. eingebettete Ausgabe)
+  assert.equal(await wahl(rollenware(), { request: { page_type: 'collection' }, search: { performed: true, terms: 'grau' } }), null);
+  const mitVariante = rollenware();
+  mitVariante.selected_variant = mitVariante.variants[0];
+  assert.equal(await wahl(mitVariante, suche('grau')), null);
+});
+
+test('Schnellsuche nutzt denselben Begriff', async () => {
+  assert.equal((await wahl(rollenware(), schnellsuche('grauer teppichboden'))).title, 'Blaugrau (078) / 400 cm');
+});
+
+test('nicht verfuegbare, unbebilderte und OPC-Varianten werden uebersprungen', async () => {
+  const p = produkt([
+    variante('Grau', '400 cm', { available: false }),
+    variante('Grau', '500 cm', { bild: false }),
+    { ...variante('Grau', 'OPC-1'), title: 'Grau / opc-1' },
+    variante('Grau', 'Wunschmaß'),
+  ]);
+  assert.equal((await wahl(p, suche('grau'))).option2, 'Wunschmaß');
+  const ohne = produkt([variante('Grau', '400 cm', { available: false }), variante('Beige', '400 cm')]);
+  assert.equal(await wahl(ohne, suche('grau')), null);
+});
+
+test('Produkt ohne Farboption: keine Vorauswahl', async () => {
+  const p = produkt([variante('Grau', '400 cm')]);
+  p.options_with_values = [{ name: 'Größe', position: 1 }, { name: 'Breite', position: 2 }];
+  assert.equal(await wahl(p, suche('grau')), null);
+});
+
+test('Teppich nach Mass: nur fuers Einfassen freigegebene Farben', async () => {
+  const einfassen = (wert) => ({ service: { einfassen: { value: wert } } });
+  const p = produkt(
+    [variante('Grau Hell', 'Standard', { metafields: einfassen('Nicht verfügbar') }), variante('Anthrazit', 'Standard', { metafields: einfassen('Verfügbar') })],
+    { metafields: { custom: { preis_pro_001_qm: { value: true } }, service: { einfassung: { value: 'Ketteln' } } } },
+  );
+  assert.equal((await wahl(p, suche('grauer teppich'))).option1, 'Anthrazit');
+});
+
+// --- Preis: aus der gewaehlten Farbe, nicht aus dem guenstigsten Farbton des Produkts ---
+// LiquidJS-Shim: "assign x = blank" ergibt dort keinen Wert, der "== blank" ist - die
+// Min/Max-Schleife liefe ins Leere. Shopify behandelt das wie nil.
+const preisSnippet = ohneStylesheet(ohneDoc('snippets/price.liquid'))
+  .replace(/(assign sqm_(?:price_min|price_max|compare_at_for_min)) = blank/g, '$1 = nil')
+  .replace(/(sqm_price_(?:min|max)) == blank/g, '$1 == nil');
+async function preis(product, globals) {
+  const html = await engine.parseAndRender(preisSnippet, { product_resource: product, template: { name: 'search' }, settings: {} }, { globals });
+  return html.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+test('Rollenware: Kartenpreis aus den Breiten der gewaehlten Farbe', async () => {
+  const breite = { custom: { rollenbreite: { value: 4 } } };
+  const p = produkt([
+    variante('Mokka', '400 cm', { price: 3690, metafields: breite }),
+    variante('Steingrau', '400 cm', { price: 3990, metafields: breite }),
+    variante('Steingrau', '500 cm', { price: 3990, metafields: breite }),
+    variante('Mokka', 'Wunschmaß', { price: 5000 }),
+    variante('Steingrau', 'Wunschmaß', { price: 5200 }),
+  ]);
+  assert.match(await preis(p, suche('teppichboden')), /ab 36,90 €\/m²/);
+  assert.match(await preis(p, suche('grauer teppichboden')), /ab 39,90 €\/m²/);
+});
+
+test('Teppiche in festen Groessen: ab-Preis nur ueber die Groessen der gewaehlten Farbe', async () => {
+  const p = produkt([
+    variante('Beige', '80x150', { price: 9900 }),
+    variante('Grau', '80x150', { price: 12900 }),
+    variante('Grau', '160x230', { price: 29900 }),
+  ], { zweiteOption: 'Größe' });
+  p.options_by_name = { 'Größe': { name: 'Größe' } };
+  assert.match(await preis(p, suche('teppich')), /ab 99,00 €/);
+  assert.match(await preis(p, suche('grauer teppich')), /ab 129,00 €/);
+});
+
+test('Teppich nach Mass auf der Karte: Preis der gewaehlten Farbe, Kartenoptik bleibt', async () => {
+  const einfassen = { service: { einfassen: { value: 'Verfügbar' } } };
+  const p = produkt(
+    [variante('Beige', 'Standard', { price: 89, metafields: einfassen }), variante('Grau', 'Standard', { price: 99, metafields: einfassen })],
+    { metafields: { custom: { preis_pro_001_qm: { value: true } }, service: { einfassung: { value: 'Ketteln' }, mindestpreis: { value: 0 }, max_breite_cm: { value: 400 }, max_laenge_cm: { value: 1000 } } } },
+  );
+  const kettel = { kettelservice: { selected_or_first_available_variant: { available: true, price: 19 } } };
+  const render = (globals) => engine.parseAndRender(preisSnippet, { product_resource: p, template: { name: 'search' }, settings: {}, all_products: kettel }, { globals: { ...globals, all_products: kettel } });
+  const ohne = await render(suche('teppich'));
+  const grau = await render(suche('grauer teppich'));
+  const cent = (html) => Number(html.match(/data-tp-ab-cent="(\d+)"/)[1]);
+  assert.equal(cent(ohne), 120 * 89 + 460 * 19);
+  assert.equal(cent(grau), 120 * 99 + 460 * 19);
+  assert.match(grau, /tp-ab-preis__ab/);
+});
+
+test('Kartenaktionen: Konfigurator- und Musterlink fuehren zur gewaehlten Farbe', async () => {
+  const karte = ohneStylesheet(ohneDoc('blocks/tp-card-actions.liquid')).replace(/{%-?\s*schema\s*-?%}[\s\S]*?{%-?\s*endschema\s*-?%}/g, '');
+  const einfassen = { service: { einfassen: { value: 'Verfügbar' } } };
+  const p = produkt(
+    [variante('Beige (030)', 'Standard', { metafields: einfassen }), variante('Grau Hell (095)', 'Standard', { metafields: einfassen })],
+    { metafields: { custom: { preis_pro_001_qm: { value: true } }, service: { einfassung: { value: 'Ketteln' }, max_breite_cm: { value: 400 }, max_laenge_cm: { value: 1000 } } } },
+  );
+  Object.assign(p, { url: '/products/test', handle: 'test-teppich-nach-mass', tags: [], type: 'Teppich' });
+  const grau = p.variants[1];
+  const html = (globals) => engine.parseAndRender(karte, { closest: { product: p } }, { globals });
+  const ohne = await html(suche('teppich'));
+  assert.match(ohne, /class="tp-card-actions__konfig" href="\/products\/test"/);
+  assert.match(ohne, /href="\/pages\/muster\?produkt=test-teppich-nach-mass"/);
+  const mit = await html(suche('grauer teppich'));
+  assert.match(mit, new RegExp(`class="tp-card-actions__konfig" href="${grau.url.replace(/[?]/g, '\\?')}"`));
+  assert.match(mit, /href="\/pages\/muster\?produkt=test-teppich-nach-mass&farbe=Grau(%20|\+)Hell(%20|\+)(\(|%28)095(\)|%29)"/);
+});
+
+// --- Jede Kartenstelle fragt dieselbe Quelle ---
+const STELLEN = {
+  'snippets/product-card.liquid': 'Kartenflaeche (Link ueber die ganze Karte)',
+  'snippets/card-gallery.liquid': 'Bild und Bildlink',
+  'blocks/tp-card-title.liquid': 'Titellink',
+  'blocks/_product-card-gallery.liquid': 'Rabatt-Badge',
+  'snippets/price.liquid': 'Preis',
+  'blocks/price.liquid': 'Preis Teppich nach Mass',
+  'blocks/tp-card-actions.liquid': 'Konfigurator- und Musterlink',
+  'snippets/tp-suche-ergebnisse.liquid': 'Schnellsuche',
+};
+for (const [datei, rolle] of Object.entries(STELLEN)) {
+  test(`${datei} (${rolle}) nutzt snippets/tp-suchfarbe-variante`, () => {
+    assert.match(lies(datei), /render 'tp-suchfarbe-variante'/);
+  });
+}
+
+test('nur das zentrale Snippet liest den Suchbegriff fuer die Farbwahl', () => {
+  for (const datei of Object.keys(STELLEN)) {
+    assert.doesNotMatch(lies(datei), /tp-suchfarbe-gruppen/, `${datei} liest die Farbgruppen selbst`);
+  }
+});
+
+test('Suchkarte: die Variante hat Vorrang vor der Raumfarbe', () => {
+  for (const datei of ['snippets/product-card.liquid', 'snippets/card-gallery.liquid', 'blocks/tp-card-title.liquid']) {
+    const code = lies(datei);
+    const such = code.indexOf("render 'tp-suchfarbe-variante'");
+    const raum = code.indexOf("render 'tp-sprint-raumdaten'");
+    assert.ok(such > -1 && raum > such, `${datei}: Suchfarbe muss vor der Raumfarbe stehen`);
+  }
+});

@@ -16,6 +16,18 @@
       {%- assign tp_pcg_aktion = tp_pcg_aktion | strip -%}
       {%- assign tp_pcg_sale = false -%}
       {%- assign tp_pcg_v = product.selected_or_first_available_variant -%}
+      {%- comment -%} Farbwort im Suchbegriff: Badge aus derselben Variante wie Bild, Links und Preis (snippets/tp-suchfarbe-variante). {%- endcomment -%}
+      {%- capture tp_pcg_suchfarbe -%}{% render 'tp-suchfarbe-variante', product: product %}{%- endcapture -%}
+      {%- assign tp_pcg_suchteile = tp_pcg_suchfarbe | strip | split: '|' -%}
+      {%- if tp_pcg_suchteile.size == 2 -%}
+        {%- assign tp_pcg_such_id = tp_pcg_suchteile | first | plus: 0 -%}
+        {%- for tp_pcg_variant in product.variants -%}
+          {%- if tp_pcg_variant.id == tp_pcg_such_id -%}
+            {%- assign tp_pcg_v = tp_pcg_variant -%}
+            {%- break -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endif -%}
       {%- if tp_pcg_aktion == 'ja' and tp_pcg_v.compare_at_price > tp_pcg_v.price -%}
         {%- assign tp_pcg_sale = true -%}
         {%- assign tp_pcg_prozent = tp_pcg_v.compare_at_price | minus: tp_pcg_v.price | times: 100.0 | divided_by: tp_pcg_v.compare_at_price | round -%}

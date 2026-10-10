@@ -116,6 +116,8 @@ function liquidSource(file) {
 const engine = new Liquid({ templates: {
   'tp-musteroption': liquidSource('snippets/tp-musteroption.liquid'),
   'tp-teppich-max-breite': liquidSource('snippets/tp-teppich-max-breite.liquid'),
+  'tp-suchfarbe-variante': liquidSource('snippets/tp-suchfarbe-variante.liquid'),
+  'tp-suchfarbe-gruppen': liquidSource('snippets/tp-suchfarbe-gruppen.liquid'),
 } });
 const card = liquidSource('blocks/tp-card-actions.liquid');
 
