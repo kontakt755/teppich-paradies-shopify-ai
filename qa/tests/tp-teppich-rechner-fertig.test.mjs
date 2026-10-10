@@ -35,3 +35,24 @@ test('Hero-Rechner: andere Arten unveraendert (keine Pauschale)', () => {
   const t = { ...fertig, art: 'cover', kg_qm: 0, max_kg: 0 };
   assert.equal(preisFuer(M, t, null, 150, 200, 1499).summe, 300 * 99);
 });
+
+// service.kante_inklusive (Daten: "kante_inkl"): Kettelung steckt im m2-Preis.
+const gekettelt = { art: 'ketteln', max_l: 600, mindest: 9900, kg_qm: 0, max_kg: 0, farben: [{ id: 2, p: 89, alt: 0, w: 400 }] };
+
+test('Hero-Rechner: Ketteln ohne kante_inkl rechnet die Kante wie bisher', () => {
+  assert.equal(preisFuer(M, gekettelt, 19, 200, 300, null).summe, 600 * 89 + 1000 * 19);
+  assert.equal(preisFuer(M, gekettelt, null, 200, 300, null).passt, false, 'ohne Kettelpreis kein Preis');
+  assert.equal(preisFuer(M, { ...gekettelt, kante_inkl: false }, 19, 200, 300, null).summe, 600 * 89 + 1000 * 19);
+});
+
+test('Hero-Rechner: kante_inkl rechnet nur die Flaeche, auch ohne Kettelpreis', () => {
+  const t = { ...gekettelt, kante_inkl: true };
+  assert.equal(preisFuer(M, t, 19, 200, 300, null).summe, 600 * 89);
+  assert.equal(preisFuer(M, t, null, 200, 300, null).summe, 600 * 89);
+});
+
+test('Hero-Rechner: kante_inkl - Mindestpreis allein ueber die Flaeche', () => {
+  const r = preisFuer(M, { ...gekettelt, kante_inkl: true }, 19, 50, 50, null);
+  assert.equal(r.summe, Math.ceil(9900 / 89) * 89);
+  assert.equal(r.mindest, true);
+});

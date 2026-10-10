@@ -12,6 +12,8 @@
   Kettelung: Preis je 0,01 lfm Kante aus dem Kettelservice-Produkt (Handle kettelservice,
   wie in tp-teppich-ab-preis). Ist es nicht kaufbar, bleibt "kettel" null - der Rechner
   nennt fuer gekettelte Teppiche dann keinen Preis statt eines zu niedrigen.
+  Ausnahme: "kante_inkl" = true (service.kante_inklusive) - die Kettelung steckt im
+  m2-Preis, der Rechner zaehlt keine Kante dazu und braucht "kettel" nicht.
 
   Rechnet nichts selbst; die Formel steht allein in assets/tp-masstepich-rechnung.js.
 
@@ -39,6 +41,10 @@
     if tpr_p.metafields.custom.preis_pro_001_qm.value == true and tpr_art != blank
       assign tpr_ok = true
     endif
+    assign tpr_kante_inkl = false
+    if tpr_art == 'ketteln' and tpr_p.metafields.service.kante_inklusive.value == true
+      assign tpr_kante_inkl = true
+    endif
     assign tpr_max_l = tpr_p.metafields.service.max_laenge_cm.value | times: 1
     assign tpr_mp = tpr_p.metafields.service.mindestpreis.value
     if tpr_mp.amount
@@ -57,7 +63,7 @@
   {%- if tpr_ok -%}
   {"id": {{ tpr_p.id | json }}, "titel": {{ tpr_p.title | json }}, "url": {{ tpr_p.url | json }},
    "bild": {% if tpr_p.featured_image %}{{ tpr_p.featured_image | image_url: width: 600 | json }}{% else %}null{% endif %},
-   "qualitaet": {{ tpr_qualitaet | strip | json }}, "art": {{ tpr_art | json }},
+   "qualitaet": {{ tpr_qualitaet | strip | json }}, "art": {{ tpr_art | json }}, "kante_inkl": {{ tpr_kante_inkl | json }},
    "max_l": {{ tpr_max_l | json }}, "mindest": {{ tpr_mindest | json }},
    "kg_qm": {{ tpr_p.metafields.service.kg_pro_qm.value | default: 0 | json }}, "max_kg": {{ tpr_p.metafields.service.max_gewicht_kg.value | default: 0 | json }},
    "farben": [
