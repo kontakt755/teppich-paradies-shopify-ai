@@ -470,3 +470,24 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   „kein Zugriff“. Die Freigabe erfolgt im Teilen-Menü der Werkbank, nicht hier.
 - **Nächste Stufe:** Falls gewünscht, offene Fragen an den Inhaber aus der Werkbank als Zähler an den Link
   hängen (bräuchte einen lesenden Abruf über den Server).
+
+## 2026-10-10 · „Muster nachfassen" auf „Heute"
+
+- **Geändert:** Inhaberentscheidung vom 10.10. (Werkbank w-035): der Verkauf im Laden fasst Musterkunden
+  nach. Neue Karte „Muster nachfassen" auf „Heute" (Sichten Laden und Alles) mit Kunde, Bestellnummer,
+  Bestelldatum, Versand, Mustern je Produkt, Kontaktweg, Textvorschlag (aufklappbar, kopierbar, als
+  `mailto:` vorbefüllt) und dem Knopf „Erledigt – nachgefasst". Der Knopf ist der vorhandene
+  Zeitleisten-Schritt `nachgefasst` und hält wer und wann fest; Erledigtes bleibt eine Woche mit wer/wann
+  sichtbar. Regeln (erste Nachfrage ab 4 Tagen nach Versand, eine Erinnerung nach 10 Tagen, nicht
+  länger als 30 Tage) in `lib/muster-nachfassen.mjs`. Neuer lesender Endpunkt `/api/kunden/muster-texte`
+  liest die Vorlage `muster-nachfassen-texte.md` aus dem Privatordner; `dashboard:pruefen` kopiert sie mit.
+  Die offenen Kunden zählen bei „N offene To-dos" mit; „Alles erledigt" erscheint nicht, solange welche offen sind.
+- **Getestet:** siehe PR (Testzahlen, Sichtprüfung 1440–360 px hell und dunkel, Klickstrecke gegen die Kopie).
+- **Risiken/Annahmen:** Die Kundenakte rechnet „Nachfassen" weiter 5 Tage nach „Kunde hat Muster" und bietet
+  dort „Kunden anrufen" an; die Karte folgt dem Konzept des Inhabers (E-Mail ab 4 Tagen nach Versand, Anruf
+  nur bei Rückrufwunsch). Die Anrede (Herr/Frau) steht nicht in den Bestelldaten – der Text sagt
+  „Guten Tag Vorname Nachname". Ein Link zum eigentlichen Produkt fehlt, weil Muster eigene Produkte sind.
+  Die geplante Aufgabe „musterkunden-liste-montag" wird für die Karte nicht gebraucht (sie rechnet aus den
+  Bestelldaten des Control Centers).
+- **Nächste Stufe:** Zeitpunkt in Kundenakte und Karte angleichen, sobald der Inhaber die Regel bestätigt;
+  Produktlink über die Musterzuordnung des Lexikons (`original.produktHandle`).

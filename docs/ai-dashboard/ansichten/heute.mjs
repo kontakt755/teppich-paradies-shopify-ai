@@ -3,6 +3,8 @@
  *
  *   1. "N offene To-dos fuer dich" - je Zeile Titel, eine Zeile Kontext, genau ein Knopf
  *   2. Datenstand (klein) und, beim Inhaber, was im Laden und bei der Website offen ist
+ *   2a. "Muster nachfassen" (ansichten/heute/muster-nachfassen.mjs) - nicht in der Website-Sicht,
+ *       die offenen Kunden zaehlen bei N mit
  *   3. "Wer wartet auf was" - wir / Lieferant / Kunde
  *   4. Kennzahlen (nur Inhaber, nur was der Export hergibt)
  *   5. die bisherigen Bloecke, eingeklappt (ansichten/heute/bisher.mjs)
@@ -26,8 +28,9 @@ import { ensureKundenBestellungen } from './kunden/bestellungen.mjs';
 import { ensureKundenRueckrufe } from './kunden/rueckrufe.mjs';
 import { ensureKundenFaelle } from './kunden/faelle.mjs';
 import { shopwache } from './shopwache.mjs';
-import { heuteDaten, ensureHeuteLieferanten, ensureHeuteAufgaben } from './heute/daten.mjs';
+import { heuteDaten, ensureHeuteLieferanten, ensureHeuteAufgaben, ensureHeuteMusterTexte } from './heute/daten.mjs';
 import { heuteBisher } from './heute/bisher.mjs';
+import { musterNachfassenStand, musterNachfassenBlock } from './heute/muster-nachfassen.mjs';
 
 const TODOS_SICHTBAR = 7;      // "eine kurze Liste" - der Rest steht einen Klick weiter
 const SPALTE_SICHTBAR = 6;
@@ -79,12 +82,16 @@ export function viewHeute() {
   const opt = { sicht, ich: heuteDaten.aufgaben?.ich || b?.kuerzel || b?.name || null, alle: istInhaber() && sicht !== 'inhaber', lieferantName, klartext: hinweisText };
   const todos = leiteTodosAb(q, opt);
   const wartet = werWartet(q, opt);
+  // Muster nachfassen macht der Laden (Inhaberentscheidung 2026-10-10) - in der Website-Sicht nicht.
+  const muster = sicht === 'website' ? { offen: [], erledigt: [] } : musterNachfassenStand();
+  if (muster.offen.length) ensureHeuteMusterTexte();
 
   return `<div class="heute">
-    ${kopf(todos.length, sicht)}
-    ${todoListe(todos)}
+    ${kopf(todos.length + muster.offen.length, sicht)}
+    ${todoListe(todos, muster.offen.length)}
     ${istInhaber() && sicht !== 'laden' ? sprungfelder(zaehleTodos(q, opt), sicht) : ''}
     ${datenstandZeile(sicht)}
+    ${musterNachfassenBlock(muster)}
     ${werWartetBlock(wartet)}
     ${istInhaber() ? kennzahlenBlock() : ''}
     ${heuteBisher()}
@@ -127,7 +134,7 @@ function todoZeile(t, erste) {
   </div>`;
 }
 
-function todoListe(todos) {
+function todoListe(todos, musterOffen = 0) {
   // Solange die Bestelldaten noch laden, waere "Alles erledigt" eine Behauptung ohne Grundlage.
   const laedt = !kunden.bestellungen || !einkauf.auftragsstatus || !heuteDaten.aufgaben;
   const stoerung = [kunden.bestellungen, kunden.rueckrufe, heuteDaten.aufgaben].find(d => d?.fehler);
@@ -139,7 +146,9 @@ function todoListe(todos) {
     inhalt = oben.map((t, i) => todoZeile(t, i === 0)).join('')
       + (rest.length ? `<details class="heute-rest"><summary>Alle anzeigen (+${rest.length})</summary>${rest.map(t => todoZeile(t, false)).join('')}</details>` : '');
   } else if (laedt) inhalt = `<div class="heute-leer">Lade To-dos …</div>`;
-  else inhalt = `<div class="heute-leer"><strong>Alles erledigt.</strong> Nichts wartet auf dich.</div>`;
+  // "Alles erledigt" stimmt nicht, solange weiter unten Musterkunden aufs Nachfassen warten.
+  else if (musterOffen) inhalt = `<div class="heute-leer">Sonst nichts – nur die Musterkunden weiter unten nachfassen.</div>`;
+  else inhalt =`<div class="heute-leer"><strong>Alles erledigt.</strong> Nichts wartet auf dich.</div>`;
   return `<section class="heute-todos" aria-label="Offene To-dos">${inhalt}</section>
     ${stoerung ? stoerungState(stoerung, 'Ein Teil der Daten') : ''}
     ${ohneBestelldaten ? `<p class="heute-hinweis">Bestelldaten fehlen noch – To-dos aus Bestellungen können deshalb nicht erscheinen. ${esc(kunden.bestellungen.hinweis || '')}</p>` : ''}`;

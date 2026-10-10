@@ -417,6 +417,28 @@ Der Datenstand steht als kleine Zeile unter den To-dos. Ein `letzterFehler`, der
 letzte erfolgreiche Stand derselben Quelle, zählt nicht mehr als Warnung (`leseAktualisierungsstand()`
 wendet `ohneUeberholtenFehler()` schon beim Lesen an).
 
+**Muster nachfassen** (seit 2026-10-10; Inhaberentscheidung: der Verkauf im Laden fasst nach). Eigene
+Karte unter dem Datenstand, in den Sichten „Laden" und „Alles" (nicht „Website"); die offenen Kunden
+zählen bei „N offene To-dos" mit. Abgeleitet in `docs/ai-dashboard/lib/muster-nachfassen.mjs`
+(`tests/muster-nachfassen.test.mjs`) aus `/api/kunden/bestellungen` samt Zeitleiste – nichts wird
+zusätzlich gespeichert:
+
+| Stufe | Regel |
+|---|---|
+| Erste Nachfrage | Musterbestellung (nicht Test, nicht storniert, nicht abgeschlossen, kein Ergebnis), verschickt bzw. übergeben vor 4 bis 30 Tagen, noch nicht nachgefasst |
+| Erinnerung | genau einmal nachgefasst, vor 10 bis 30 Tagen; nach der zweiten Nachfrage nicht mehr |
+| Erledigt | nachgefasst in den letzten 7 Tagen, mit wer und wann |
+
+Kontaktweg: E-Mail; Telefon nur bei Rückrufwunsch („Beratung gewünscht"), sonst ein Hinweis. Der Knopf
+„Erledigt – nachgefasst" ist der Zeitleisten-Schritt `nachgefasst` (POST `/api/einkauf/auftragsstatus`,
+`aktion: "schritt"`), der wer und wann in `auftragsverlauf.json` festhält. Der Textvorschlag kommt aus
+`GET /api/kunden/muster-texte`: der Server liest `$TP_PRIVAT_DIR/muster-nachfassen-texte.md` (Vorlage des
+Inhabers, Abschnitte „Text 1" und „Erinnerung" mit `**Betreff:**`). Eingesetzt werden Kundenname, der
+Name der angemeldeten Person und die festen Shop-Links (Muster, Liefer- & Verlegeservice); eine Zeile mit
+einem Platzhalter, der sich nicht sicher füllen lässt (z. B. `{Link Produkt}`), fällt weg. „E-Mail
+öffnen" ist ein `mailto:`-Link – gesendet wird nichts. Fehlt die Vorlage, bleiben Liste und Knopf, nur
+ohne Textvorschlag.
+
 ## 10. Datenaktualisierung (seit 2026-09-23)
 
 Lexikon, Bestellübersicht und Kennzahlen sind Momentaufnahmen unter `$TP_PRIVAT_DIR` (Abschnitt 8/9) und
