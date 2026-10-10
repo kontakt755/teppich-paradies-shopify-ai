@@ -71,8 +71,18 @@
       Rueckfall stehen allein in snippets/tp-teppich-ab-preis.liquid.
     {%- endcomment -%}
     {%- comment -%} Auf der eigenen Produktseite zaehlt die gewaehlte Farbe, auf Karten die guenstigste kaufbare. {%- endcomment -%}
+    {%- comment -%} Farbwort im Suchbegriff: Preis der Farbe, die auch Bild und Links der Karte zeigen (snippets/tp-suchfarbe-variante). {%- endcomment -%}
+    {%- capture tp_bp_suchfarbe -%}{% render 'tp-suchfarbe-variante', product: product_resource %}{%- endcapture -%}
+    {%- assign tp_bp_suchteile = tp_bp_suchfarbe | strip | split: '|' -%}
+    {%- assign tp_bp_suchvariante = nil -%}
+    {%- if tp_bp_suchteile.size == 2 -%}
+      {%- assign tp_bp_such_pos = tp_bp_suchteile | first | plus: 0 -%}
+      {%- assign tp_bp_suchvariante = product_resource.variants[tp_bp_such_pos] -%}
+    {%- endif -%}
     {%- if product != blank and product.handle == product_resource.handle -%}
       {% render 'tp-teppich-ab-preis', product: product_resource, variant: selected_variant %}
+    {%- elsif tp_bp_suchvariante != nil -%}
+      {% render 'tp-teppich-ab-preis', product: product_resource, variant: tp_bp_suchvariante, karte: true %}
     {%- else -%}
       {% render 'tp-teppich-ab-preis', product: product_resource %}
     {%- endif -%}

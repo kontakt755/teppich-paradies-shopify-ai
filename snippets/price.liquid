@@ -15,13 +15,39 @@
   0,01 m2: 0,48 EUR statt ab 145 EUR (Befund Inhaber 2026-09-30). Auf der eigenen
   Produktseite (Sticky-Leiste) bleibt die bisherige Ausgabe unveraendert.
 {%- endcomment -%}
+{%- liquid
+  # Farbwort im Suchbegriff (snippets/tp-suchfarbe-variante): Preis aus der
+  # Variante bzw. Farbe, die auch Bild und Links der Karte bestimmt. Ausserhalb
+  # der Suche liefert das Snippet nichts - dann bleibt alles wie bisher.
+  capture tp_pr_suchfarbe
+    render 'tp-suchfarbe-variante', product: product_resource
+  endcapture
+  assign tp_pr_suchteile = tp_pr_suchfarbe | strip | split: '|'
+  assign tp_pr_suchvariante = nil
+  assign tp_pr_farbwert = nil
+  if tp_pr_suchteile.size == 2
+    assign tp_pr_such_pos = tp_pr_suchteile | first | plus: 0
+    assign tp_pr_farbindex = tp_pr_suchteile | last | plus: 0
+    assign tp_pr_suchvariante = product_resource.variants[tp_pr_such_pos]
+    if tp_pr_suchvariante != nil
+      assign tp_pr_farbwert = tp_pr_suchvariante.options[tp_pr_farbindex]
+    endif
+  endif
+-%}
 {%- if product_resource.metafields.custom.preis_pro_001_qm.value == true and product_resource.metafields.service.einfassung.value != blank and product.handle != product_resource.handle -%}
-  {% render 'tp-teppich-ab-preis', product: product_resource %}
+  {%- if tp_pr_suchvariante != nil -%}
+    {% render 'tp-teppich-ab-preis', product: product_resource, variant: tp_pr_suchvariante, karte: true %}
+  {%- else -%}
+    {% render 'tp-teppich-ab-preis', product: product_resource %}
+  {%- endif -%}
 {%- else -%}
 {%- liquid
   assign show_unit_price = show_unit_price | default: false
   assign show_sale_price_first = show_sale_price_first | default: false
   assign selected_variant = product_resource.selected_or_first_available_variant
+  if tp_pr_suchvariante != nil
+    assign selected_variant = tp_pr_suchvariante
+  endif
   assign price = selected_variant.price
   assign compare_at_price = selected_variant.compare_at_price
 
@@ -159,6 +185,10 @@
       assign sqm_price_max = blank
       assign sqm_compare_at_for_min = blank
       for price_variant in product_resource.variants
+        # Suchfarbe: nur die Breiten/Zuschnittarten der gewaehlten Farbe.
+        if tp_pr_farbwert != nil and price_variant.options[tp_pr_farbindex] != tp_pr_farbwert
+          continue
+        endif
         assign price_variant_title = price_variant.title | downcase
         unless is_roll_card and price_variant_title contains 'opc-'
           if sqm_price_min == blank or price_variant.price < sqm_price_min
@@ -215,7 +245,27 @@
   # (Inhaber 2026-10-02: Karten zu kahl). Quadratmeterware bleibt wie oben.
   if is_product_card and is_sqm_card == false and product_resource.price_varies and product.handle != product_resource.handle
     assign tp_pr_groesse = product_resource.options_by_name['Größe']
-    if tp_pr_groesse != blank
+    if tp_pr_groesse != blank and tp_pr_farbwert != nil
+      # Suchfarbe: kleinster Preis nur ueber die Groessen der gewaehlten Farbe.
+      assign tp_pr_farb_min = nil
+      assign tp_pr_farb_max = nil
+      for tp_pr_v in product_resource.variants
+        if tp_pr_v.options[tp_pr_farbindex] != tp_pr_farbwert
+          continue
+        endif
+        if tp_pr_farb_min == nil or tp_pr_v.price < tp_pr_farb_min
+          assign tp_pr_farb_min = tp_pr_v.price
+          assign compare_at_price = tp_pr_v.compare_at_price
+        endif
+        if tp_pr_farb_max == nil or tp_pr_v.price > tp_pr_farb_max
+          assign tp_pr_farb_max = tp_pr_v.price
+        endif
+      endfor
+      assign price = tp_pr_farb_min
+      if tp_pr_farb_max > tp_pr_farb_min
+        assign show_from_price = true
+      endif
+    elsif tp_pr_groesse != blank
       assign price = product_resource.price_min
       assign show_from_price = true
       for tp_pr_v in product_resource.variants

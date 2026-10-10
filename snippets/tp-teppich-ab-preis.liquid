@@ -34,6 +34,9 @@
   @param {object} [variant] - gewaehlte Variante (Produktseite); ohne sie zaehlt die guenstigste Farbe.
     Ohne Variante (= Produktkarte) steht ueber dem Preis die Qualitaetszeile aus
     snippets/tp-teppich-qualitaet.
+  @param {boolean} [karte] - Produktkarte mit fester Variante (Farb-Vorauswahl der Suche,
+    snippets/tp-suchfarbe-variante): Preis aus variant, Darstellung wie auf jeder Karte
+    (Qualitaetszeile, "ab" im Rueckfall).
 {%- enddoc -%}
 {%- liquid
   assign tp_ab_breite_cm = 80
@@ -142,7 +145,7 @@
   endif
 -%}
 {%- if tp_ab_belegt and tp_ab_cent > 0 -%}
-  {%- if variant == blank -%}
+  {%- if variant == blank or karte -%}
     {%- capture tp_ab_qualitaet -%}{% render 'tp-teppich-qualitaet', product: product %}{%- endcapture -%}
     {%- assign tp_ab_qualitaet = tp_ab_qualitaet | strip -%}
   {%- endif -%}
@@ -160,5 +163,5 @@
     <span class="tp-ab-preis__grund">z.&nbsp;B. {{ tp_ab_breite_cm }}&nbsp;×&nbsp;{{ tp_ab_laenge_cm }}&nbsp;cm, inkl. {% if tp_ab_art == 'ketteln' %}Kettelung{% elsif tp_ab_art == 'fertig' %}Einfassung und Pauschale{% else %}Einfassung{% endif %}</span>
   </span>
 {%- else -%}
-  <span class="tp-preis-je-m2">{% if variant == blank %}ab {% endif %}{{ tp_ab_m2_cent | money }}<span class="tp-preis-je-m2__einheit">/m²</span></span>
+  <span class="tp-preis-je-m2">{% if variant == blank or karte %}ab {% endif %}{{ tp_ab_m2_cent | money }}<span class="tp-preis-je-m2__einheit">/m²</span></span>
 {%- endif -%}

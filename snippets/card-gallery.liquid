@@ -131,8 +131,24 @@
       assign other_media = product.media | reject: 'src', product.featured_media
       assign media_list_to_show = product.featured_media | concat: other_media
 
+      # Farbwort im Suchbegriff (snippets/tp-suchfarbe-variante): Bild und
+      # Bildlink kommen aus genau dieser Variante, vor der Raumfarbe.
+      capture tp_suchfarbe
+        render 'tp-suchfarbe-variante', product: product
+      endcapture
+      assign tp_suchteile = tp_suchfarbe | strip | split: '|'
+      assign tp_suchvariante = nil
+      if tp_suchteile.size == 2
+        assign tp_such_pos = tp_suchteile | first | plus: 0
+        assign tp_suchvariante = product.variants[tp_such_pos]
+      endif
+
       assign tp_card_variant = product.selected_or_first_available_variant
-      if product.selected_variant == blank
+      if tp_suchvariante != nil and tp_suchvariante.featured_media != blank
+        assign tp_card_variant = tp_suchvariante
+        assign other_media = product.media | reject: 'src', tp_suchvariante.featured_media.src
+        assign media_list_to_show = tp_suchvariante.featured_media | concat: other_media
+      elsif product.selected_variant == blank
         capture tp_raumdaten
           render 'tp-sprint-raumdaten', product: product
         endcapture
