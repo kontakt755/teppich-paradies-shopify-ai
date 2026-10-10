@@ -24,88 +24,104 @@
   Fehlen die Daten, bleibt die Ausgabe leer; die Seite zeigt solche Teppiche
   in der Reihe "Weitere Qualitaeten", sie verschwinden also nie.
 
+  Schnellweg: custom.teppich_basis_daten (JSON, v = 1) traegt das Ergebnis dieser Regeln
+  fertig am Teppich. Das Aufloesen von service.einfass_basis kostet je Produkt rund 12 ms
+  und liess die Seite Teppich nach Mass ab ~200 Produkten in Shopifys Render-Timeout laufen
+  (2026-10-10). Gepflegt wird das Feld per `npm run teppich:basis-daten` aus der Vorlage
+  product.teppich-basis-daten, die dieses Snippet mit live: true auswertet - die Regeln
+  stehen also nur hier. Fehlt das Feld, wird wie bisher live gerechnet.
+
   @param {object} product - der Teppich nach Mass
+  @param {boolean} [live] - true: immer aus den Basisdaten rechnen, gespeichertes Ergebnis ignorieren
 {% enddoc %}
 {%- liquid
-  assign tg_basis = product.metafields.service.einfass_basis.value
+  assign tg_daten = nil
+  unless live
+    assign tg_daten = product.metafields.custom.teppich_basis_daten.value
+  endunless
   assign tg_gruppe = ''
-  assign tg_einfassung = product.metafields.service.einfassung.value | strip | downcase
-  if tg_einfassung == 'fertig'
-    assign tg_gruppe = 'design'
-  elsif tg_basis != blank
-    assign tg_natur_fasern = 'schurwolle,wolle,sisal,jute,kokos,seegras,baumwolle,leinen' | split: ','
+  if tg_daten.v == 1
+    assign tg_gruppe = tg_daten.gruppe
+  else
+    assign tg_basis = product.metafields.service.einfass_basis.value
+    assign tg_einfassung = product.metafields.service.einfassung.value | strip | downcase
+    if tg_einfassung == 'fertig'
+      assign tg_gruppe = 'design'
+    elsif tg_basis != blank
+      assign tg_natur_fasern = 'schurwolle,wolle,sisal,jute,kokos,seegras,baumwolle,leinen' | split: ','
 
-    assign tg_faser = ''
-    assign tg_faser_mf = tg_basis.metafields.custom.fasermaterial
-    assign tg_faser_val = tg_faser_mf.value
-    if tg_faser_val != blank
-      if tg_faser_mf.type contains 'list.'
-        for tg_item in tg_faser_val limit: 1
-          assign tg_fm = tg_item.fasermaterial
+      assign tg_faser = ''
+      assign tg_faser_mf = tg_basis.metafields.custom.fasermaterial
+      assign tg_faser_val = tg_faser_mf.value
+      if tg_faser_val != blank
+        if tg_faser_mf.type contains 'list.'
+          for tg_item in tg_faser_val limit: 1
+            assign tg_fm = tg_item.fasermaterial
+            capture tg_faser
+              echo tg_fm.value | default: tg_fm | default: tg_item.name
+            endcapture
+          endfor
+        else
+          assign tg_fm = tg_faser_val.fasermaterial
           capture tg_faser
-            echo tg_fm.value | default: tg_fm | default: tg_item.name
+            echo tg_fm.value | default: tg_fm | default: tg_faser_val.name
           endcapture
-        endfor
-      else
-        assign tg_fm = tg_faser_val.fasermaterial
-        capture tg_faser
-          echo tg_fm.value | default: tg_fm | default: tg_faser_val.name
-        endcapture
+        endif
       endif
-    endif
-    assign tg_faser = tg_faser | strip | downcase
-    if tg_natur_fasern contains tg_faser and tg_faser != blank
-      assign tg_gruppe = 'natur'
-    endif
+      assign tg_faser = tg_faser | strip | downcase
+      if tg_natur_fasern contains tg_faser and tg_faser != blank
+        assign tg_gruppe = 'natur'
+      endif
 
-    if tg_gruppe == blank
-      assign tg_art_mf = tg_basis.metafields.custom.arten
-      assign tg_art_val = tg_art_mf.value
-      if tg_art_val != blank
-        if tg_art_mf.type contains 'list.'
-          for tg_item in tg_art_val
+      if tg_gruppe == blank
+        assign tg_art_mf = tg_basis.metafields.custom.arten
+        assign tg_art_val = tg_art_mf.value
+        if tg_art_val != blank
+          if tg_art_mf.type contains 'list.'
+            for tg_item in tg_art_val
+              capture tg_art
+                echo tg_item.name.value | default: tg_item.name
+              endcapture
+              assign tg_art = tg_art | strip | downcase
+              if tg_art == 'wolle'
+                assign tg_gruppe = 'natur'
+                break
+              endif
+            endfor
+          else
             capture tg_art
-              echo tg_item.name.value | default: tg_item.name
+              echo tg_art_val.name.value | default: tg_art_val.name
             endcapture
             assign tg_art = tg_art | strip | downcase
             if tg_art == 'wolle'
               assign tg_gruppe = 'natur'
-              break
             endif
-          endfor
-        else
-          capture tg_art
-            echo tg_art_val.name.value | default: tg_art_val.name
-          endcapture
-          assign tg_art = tg_art | strip | downcase
-          if tg_art == 'wolle'
-            assign tg_gruppe = 'natur'
           endif
         endif
       endif
-    endif
 
-    if tg_gruppe == blank
-      assign tg_kon = ''
-      assign tg_kon_val = tg_basis.metafields.custom.konstruktion.value
-      if tg_kon_val != blank
-        for tg_kon_item in tg_kon_val limit: 1
-          capture tg_kon
-            echo tg_kon_item.name.value | default: tg_kon_item.name
-          endcapture
-        endfor
-      endif
-      assign tg_kon = tg_kon | strip | downcase
-
-      if tg_kon == 'velours'
-        assign tg_flor = tg_basis.metafields.custom.florhohe.value | downcase | remove: 'mm' | strip | replace: ',', '.' | plus: 0
-        if tg_flor >= 10
-          assign tg_gruppe = 'flauschig'
-        else
-          assign tg_gruppe = 'weich'
+      if tg_gruppe == blank
+        assign tg_kon = ''
+        assign tg_kon_val = tg_basis.metafields.custom.konstruktion.value
+        if tg_kon_val != blank
+          for tg_kon_item in tg_kon_val limit: 1
+            capture tg_kon
+              echo tg_kon_item.name.value | default: tg_kon_item.name
+            endcapture
+          endfor
         endif
-      elsif tg_kon == 'schlinge' or tg_kon == 'nadelvlies'
-        assign tg_gruppe = 'robust'
+        assign tg_kon = tg_kon | strip | downcase
+
+        if tg_kon == 'velours'
+          assign tg_flor = tg_basis.metafields.custom.florhohe.value | downcase | remove: 'mm' | strip | replace: ',', '.' | plus: 0
+          if tg_flor >= 10
+            assign tg_gruppe = 'flauschig'
+          else
+            assign tg_gruppe = 'weich'
+          endif
+        elsif tg_kon == 'schlinge' or tg_kon == 'nadelvlies'
+          assign tg_gruppe = 'robust'
+        endif
       endif
     endif
   endif

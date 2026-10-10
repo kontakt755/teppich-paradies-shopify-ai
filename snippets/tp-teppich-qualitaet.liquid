@@ -11,92 +11,104 @@
   aber nicht (2026-09-20). Nichts wird abgeleitet oder ergaenzt - fehlt ein Feld,
   fehlt der Teil; fehlt alles, bleibt die Zeile weg.
 
+  Schnellweg wie in snippets/tp-teppich-gruppe: custom.teppich_basis_daten.qualitaet
+  (JSON, v = 1), gepflegt per `npm run teppich:basis-daten` aus genau diesem Snippet.
+
   @param {object} product - der Teppich nach Mass
+  @param {boolean} [live] - true: immer aus den Basisdaten rechnen, gespeichertes Ergebnis ignorieren
 {% enddoc %}
 {%- liquid
-  assign tq_basis = product.metafields.service.einfass_basis.value
+  assign tq_daten = nil
+  unless live
+    assign tq_daten = product.metafields.custom.teppich_basis_daten.value
+  endunless
   assign tq_text = ''
-  if tq_basis != blank
-    assign tq_faser_mf = tq_basis.metafields.custom.fasermaterial
-    assign tq_faser_val = tq_faser_mf.value
-    if tq_faser_val != blank
-      if tq_faser_mf.type contains 'list.'
-        for tq_item in tq_faser_val limit: 1
-          assign tq_fm = tq_item.fasermaterial
+  if tq_daten.v == 1
+    assign tq_text = tq_daten.qualitaet
+  else
+    assign tq_basis = product.metafields.service.einfass_basis.value
+    if tq_basis != blank
+      assign tq_faser_mf = tq_basis.metafields.custom.fasermaterial
+      assign tq_faser_val = tq_faser_mf.value
+      if tq_faser_val != blank
+        if tq_faser_mf.type contains 'list.'
+          for tq_item in tq_faser_val limit: 1
+            assign tq_fm = tq_item.fasermaterial
+            capture tq_faser
+              echo tq_fm.value | default: tq_fm | default: tq_item.name
+            endcapture
+          endfor
+        else
+          assign tq_fm = tq_faser_val.fasermaterial
           capture tq_faser
-            echo tq_fm.value | default: tq_fm | default: tq_item.name
+            echo tq_fm.value | default: tq_fm | default: tq_faser_val.name
+          endcapture
+        endif
+        assign tq_faser = tq_faser | strip
+        if tq_faser != blank
+          assign tq_text = tq_faser
+        endif
+      endif
+
+      assign tq_art_limit = 1
+      if tq_text == blank
+        assign tq_art_limit = 2
+      endif
+      assign tq_art = ''
+      assign tq_kon_val = tq_basis.metafields.custom.konstruktion.value
+      if tq_kon_val != blank
+        for tq_kon_item in tq_kon_val limit: 1
+          capture tq_art
+            echo tq_kon_item.name.value | default: tq_kon_item.name
           endcapture
         endfor
-      else
-        assign tq_fm = tq_faser_val.fasermaterial
-        capture tq_faser
-          echo tq_fm.value | default: tq_fm | default: tq_faser_val.name
-        endcapture
+        assign tq_art = tq_art | strip
+        if tq_art != blank
+          assign tq_art_limit = tq_art_limit | minus: 1
+        endif
       endif
-      assign tq_faser = tq_faser | strip
-      if tq_faser != blank
-        assign tq_text = tq_faser
-      endif
-    endif
 
-    assign tq_art_limit = 1
-    if tq_text == blank
-      assign tq_art_limit = 2
-    endif
-    assign tq_art = ''
-    assign tq_kon_val = tq_basis.metafields.custom.konstruktion.value
-    if tq_kon_val != blank
-      for tq_kon_item in tq_kon_val limit: 1
-        capture tq_art
-          echo tq_kon_item.name.value | default: tq_kon_item.name
-        endcapture
-      endfor
+      assign tq_art_mf = tq_basis.metafields.custom.arten
+      assign tq_art_val = tq_art_mf.value
+      if tq_art_val != blank and tq_art_limit > 0
+        if tq_art_mf.type contains 'list.'
+          for tq_item in tq_art_val
+            capture tq_art_teil
+              echo tq_item.name.value | default: tq_item.name
+            endcapture
+            assign tq_art_teil = tq_art_teil | strip
+            if tq_art_teil != blank and tq_art_teil != tq_art
+              if tq_art != blank
+                assign tq_art = tq_art | append: ' · '
+              endif
+              assign tq_art = tq_art | append: tq_art_teil
+              assign tq_art_limit = tq_art_limit | minus: 1
+            endif
+            if tq_art_limit <= 0
+              break
+            endif
+          endfor
+        elsif tq_art == blank
+          capture tq_art
+            echo tq_art_val.name.value | default: tq_art_val.name
+          endcapture
+        endif
+      endif
       assign tq_art = tq_art | strip
       if tq_art != blank
-        assign tq_art_limit = tq_art_limit | minus: 1
+        if tq_text != blank
+          assign tq_text = tq_text | append: ' · '
+        endif
+        assign tq_text = tq_text | append: tq_art
       endif
-    endif
 
-    assign tq_art_mf = tq_basis.metafields.custom.arten
-    assign tq_art_val = tq_art_mf.value
-    if tq_art_val != blank and tq_art_limit > 0
-      if tq_art_mf.type contains 'list.'
-        for tq_item in tq_art_val
-          capture tq_art_teil
-            echo tq_item.name.value | default: tq_item.name
-          endcapture
-          assign tq_art_teil = tq_art_teil | strip
-          if tq_art_teil != blank and tq_art_teil != tq_art
-            if tq_art != blank
-              assign tq_art = tq_art | append: ' · '
-            endif
-            assign tq_art = tq_art | append: tq_art_teil
-            assign tq_art_limit = tq_art_limit | minus: 1
-          endif
-          if tq_art_limit <= 0
-            break
-          endif
-        endfor
-      elsif tq_art == blank
-        capture tq_art
-          echo tq_art_val.name.value | default: tq_art_val.name
-        endcapture
+      assign tq_flor = tq_basis.metafields.custom.florhohe.value | strip
+      if tq_flor != blank
+        if tq_text != blank
+          assign tq_text = tq_text | append: ' · '
+        endif
+        assign tq_text = tq_text | append: tq_flor | append: ' Flor'
       endif
-    endif
-    assign tq_art = tq_art | strip
-    if tq_art != blank
-      if tq_text != blank
-        assign tq_text = tq_text | append: ' · '
-      endif
-      assign tq_text = tq_text | append: tq_art
-    endif
-
-    assign tq_flor = tq_basis.metafields.custom.florhohe.value | strip
-    if tq_flor != blank
-      if tq_text != blank
-        assign tq_text = tq_text | append: ' · '
-      endif
-      assign tq_text = tq_text | append: tq_flor | append: ' Flor'
     endif
   endif
   echo tq_text

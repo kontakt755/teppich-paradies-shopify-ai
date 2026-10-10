@@ -7,7 +7,7 @@
   Warum eine eigene Liste statt das Raster umzusortieren: Horizon laedt hoechstens
   36 Karten je Seite und den Rest per Endlos-Scroll nach - ein Sortieren der geladenen
   Karten waere nie vollstaendig. Die Daten aller Teppiche kommen deshalb als JSON aus
-  snippets/tp-teppich-rechner-daten.liquid; das normale Raster (#ResultsList) wird nur
+  snippets/tp-teppich-rechner-daten.liquid (nachgeladen, siehe laden()); das normale Raster (#ResultsList) wird nur
   ausgeblendet, solange ein Mass gilt.
 
   Gerechnet wird mit assets/tp-masstepich-rechnung.js - derselben Formel wie im
@@ -257,7 +257,42 @@
     }
   }
 
-  function alle() { document.querySelectorAll('[data-tp-rechner-root]').forEach(init); }
+  // Daten nachladen (data-tp-rechner-quelle): Inline im Hero kosteten sie die ganze Seite
+  // je Teppich rund 5 ms Renderzeit. Wer vorher schon rechnet, wird nach dem Laden bedient.
+  // Eine ?page=-Angabe geht mit, damit der Ruecksprung alter ?page=2-Links (init) weiter greift.
+  function laden(root) {
+    var datenEl = root.querySelector('[data-tp-rechner-daten]');
+    var quelle = datenEl && datenEl.getAttribute('data-tp-rechner-quelle');
+    if (!quelle || datenEl.textContent.trim()) { init(root); return; }
+    if (root.getAttribute('data-tp-rechner-laedt')) return;
+    root.setAttribute('data-tp-rechner-laedt', '1');
+    var form = root.querySelector('[data-tp-rechner]');
+    var wartet = false;
+    function frueh(e) { e.preventDefault(); wartet = true; }
+    if (form) form.addEventListener('submit', frueh);
+    var seite = new URL(window.location.href).searchParams.get('page');
+    if (seite) quelle += (quelle.indexOf('?') < 0 ? '?' : '&') + 'page=' + encodeURIComponent(seite);
+    fetch(quelle, { credentials: 'same-origin' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.text();
+      })
+      .then(function (text) {
+        datenEl.textContent = text;
+        if (form) form.removeEventListener('submit', frueh);
+        init(root);
+        if (wartet && form) {
+          if (form.requestSubmit) form.requestSubmit();
+          else form.dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+      })
+      .catch(function () {
+        if (form) form.removeEventListener('submit', frueh);
+        root.removeAttribute('data-tp-rechner-laedt');
+      });
+  }
+
+  function alle() { document.querySelectorAll('[data-tp-rechner-root]').forEach(laden); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', alle);
   else alle();
   document.addEventListener('shopify:section:load', alle);
