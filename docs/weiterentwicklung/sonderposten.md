@@ -17,12 +17,37 @@ Regeln verletzen. Ein eigenes Produkt ist der kleinste sichere Weg.
 
 | Was | Wert | Wirkung |
 |---|---|---|
-| Produkttyp | `Sonderposten` | einziges Merkmal (`snippets/tp-ist-sonderposten.liquid`); schließt das Stück aus allen Kategorie-Kollektionen aus (deren Regeln verlangen `TYPE = Teppichboden` usw.) |
+| Produkttyp | `Sonderposten` | einziges Merkmal (`snippets/tp-ist-sonderposten.liquid`); schließt das Stück aus den Kategorie-Kollektionen aus (deren Regeln verlangen `TYPE = Teppichboden` usw.). **Nicht** aus Kollektionen, die nur Typen ausschließen – siehe „Wo ein Stück sonst landet“ unten |
 | Theme-Vorlage | `sonderposten` (`templates/product.sonderposten.json`) | Maße, Fläche, Stückpreis, Zustand, Verfügbarkeit, kein Mengenfeld |
 | Kollektion | „Reste & Sonderposten“, Handle `reste-sonderposten`, Vorlage `sonderposten` | Smart-Kollektion: `Produkttyp = Sonderposten` **und** `Bestand > 0` – verkaufte Stücke verschwinden von selbst |
 | Bestand | Bestand verfolgen = an, Menge 1, „Verkauf bei Nichtverfügbarkeit fortsetzen“ = **aus** | kein Überverkauf, Shopify prüft serverseitig und beim Checkout. Fehlt eine der beiden Einstellungen, bietet das Theme das Stück **nicht** online an (`snippets/tp-sonderposten-kaufstatus.liquid`: „Online nicht bestellbar“, kein Kaufknopf, JSON-LD `OutOfStock`) und das Control Center bucht nichts. |
 | SKU | `SP-0001`, fortlaufend | dieselbe Nummer steht auf dem Etikett am Stück im Laden und im SumUp-Artikel (siehe Abschnitt 6) |
 | Grundpreis | Variante: Grundpreis-Messung Fläche = Fläche des Stücks, Referenz 1 m² (`showUnitPrice`) | Shopify zeigt €/m² nativ und gibt es an Google; der Block rechnet zusätzlich als Rückfall |
+
+### Wo ein Stück sonst landet (geprüft 2026-10-10, Admin API)
+
+Zwei Smart-Kollektionen schließen nur bestimmte Typen aus und nehmen deshalb auch
+`Sonderposten` auf – abhängig davon, ob ein Vergleichspreis gesetzt ist:
+
+| Stück | Kollektion | Regel | Folge |
+|---|---|---|---|
+| **mit** Vergleichspreis (Teststück, 243,46 €) | `angebote-leisten-zubehoer` „Angebote Leisten & Zubehör“ | Preis reduziert **und** Typ enthält nicht eppich/vinyl/Linoleum/Kunstrasen/Dekofell/Muster/Service; keine Bestandsregel | Stück steht als Zubehör-Angebot unter `/collections/angebote-leisten-zubehoer` (Standardvorlage, Karte ohne Maße), auch nach dem Verkauf („Verkauft“). Die Startseiten-Liste „Aktuelle Angebote → Leisten & Zubehör“ liest diese Kollektion. |
+| **ohne** Vergleichspreis (Vorlage) | `intern-regulaerer-preis` „Intern: Regulärer Preis (rabattcode-fähig)“ | Preis reduziert nicht gesetzt | Marketingcodes (z. B. Newsletter) gelten auch für dieses Stück (`docs/kundenbindung/marketingcodes-und-aktionen.md`). |
+
+Das widerspricht der Regel „Sonderposten zählen nie als Angebot“ (`angebote.md` §3).
+
+- **Theme-Sicherung (gebaut):** Die Startseiten-Listen (`sections/product-list.liquid`, Weg
+  `tp_je_linie_eins`, alle vier „Aktuelle Angebote“) überspringen Sonderposten, außer die
+  Liste zeigt selbst eine Kollektion mit Vorlage `sonderposten`. Die Kollektionsseite selbst
+  kann das Theme nicht filtern.
+- **Datenänderung (wartet auf Freigabe des Inhabers, nichts geändert):**
+  `angebote-leisten-zubehoer` bekommt die Regel *Typ enthält nicht `Sonderposten`*. Ob
+  Marketingcodes für Sonderposten gelten sollen, entscheidet der Inhaber; wenn nein, bekommt
+  `intern-regulaerer-preis` dieselbe Regel. Rückweg jeweils: Regel wieder entfernen.
+  Gegenprobe: `product.inCollection` für Teststück und Vorlage (nicht `userErrors: []`).
+- Bis die Regel steht, sollte **kein Stück mit Vergleichspreis** in den Status Aktiv gehen,
+  auch nicht das Teststück für eine Buchungsprobe (#986): Das Live-Theme kennt die
+  Theme-Sicherung erst nach dem Livegang dieses PRs – siehe Abschnitt 9.
 
 ## 3. Metafelder (Namensraum `sonderposten`)
 
@@ -75,10 +100,18 @@ Lieferantennamen gehören nicht in diese Felder: Herkunft nur über `ursprungspr
   Preisermäßigungen als Referenz den niedrigsten Preis der letzten 30 Tage *für dieselbe
   Ware*. Für ein neu eingestelltes Reststück gab es nie einen eigenen Vorpreis; der
   Vergleich mit dem regulären Meterpreis ist ein Vergleich mit dem eigenen Normalpreis der
-  Meterware. Deshalb nennt der Shop die Herkunft des Vergleichswerts ausdrücklich
-  („gegenüber 243,46 € (regulär 25,90 €/m² × 9,40 m²)“). Ob das genügt, entscheidet der
+  Meterware. Deshalb nennt der Shop die Herkunft des Vergleichswerts ausdrücklich, und zwar
+  **überall, wo der Streichpreis steht**: auf der Produktseite „gegenüber 243,46 € (regulär
+  25,90 €/m² × 9,40 m²)“, auf Karten, in Suche und Suchvorschlägen (`snippets/price.liquid`)
+  und im Warenkorb (`snippets/cart-products.liquid`) die Zeile „Vergleichspreis = regulär
+  25,90 €/m² × 9,40 m²“ (`snippets/tp-sonderposten-vergleich.liquid`, gleiche Bedingung wie
+  der Streichpreis). Außerhalb des Themes kann der Shop das nicht: Ob Shopify im Checkout
+  und in der Bestellbestätigung den Vergleichspreis durchgestrichen zeigt, ist nicht
+  geprüft. Ob das genügt, entscheidet der
   Inhaber – die sichere Alternative ist „kein Vergleichspreis, nur Stückpreis und
-  €/m²“; dafür einfach `preis_beleg` leer lassen.
+  €/m²“; dafür `preis_beleg` **und** den Vergleichspreis leer lassen. Nebenwirkung: Ohne
+  Vergleichspreis liegt das Stück in `intern-regulaerer-preis`, Marketingcodes greifen
+  dann (Abschnitt 2, „Wo ein Stück sonst landet“).
 
 ## 5. Pflege im Shopify-Backend (Anleitung für Mitarbeiter)
 
@@ -199,6 +232,9 @@ wenn alles davon belegt ist:
 4. **Preis kalkuliert** und vom Inhaber freigegeben; Vergleichspreis nur mit Beleg nach
    Abschnitt 4, je Stück einzeln.
 5. **Versand oder Abholung** je Stück entschieden (Abschnitt 8).
+6. **Nur mit Vergleichspreis:** `angebote-leisten-zubehoer` schließt den Typ `Sonderposten`
+   aus (Abschnitt 2, „Wo ein Stück sonst landet“). Gegenprobe am Stück:
+   `inCollection(angebote-leisten-zubehoer) = false`.
 
 Fehlt einer der Punkte, bleibt das Produkt im Status Entwurf. Massenanlage auf Verdacht gibt es
 nicht.

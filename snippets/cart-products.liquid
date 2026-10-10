@@ -364,6 +364,8 @@
                         {% endif %}
                       {% endif %}
                     </div>
+                    {%- comment -%} Sonderposten: Rechenweg zum Streichpreis (Meterpreis x Flaeche), sonst leer {%- endcomment -%}
+                    {%- render 'tp-sonderposten-vergleich', product: item.product -%}
                   </div>
                 </td>
                 <td

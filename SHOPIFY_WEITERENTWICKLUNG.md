@@ -119,7 +119,7 @@ bei Google bleiben), w-028 (Bildarchiv, Lizenzen). Beantwortet und umgesetzt: w-
 
 | Entscheidung | Begründung |
 |---|---|
-| Sonderposten = eigenes Produkt je Stück, Typ `Sonderposten`, eine Variante, Bestand 1, „nicht überverkaufen“ | hält Stückware aus Rollen-/Paket-/Raummaß-Logik, Kategorie-Kollektionen und Flächen-Feed heraus |
+| Sonderposten = eigenes Produkt je Stück, Typ `Sonderposten`, eine Variante, Bestand 1, „nicht überverkaufen“ | hält Stückware aus Rollen-/Paket-/Raummaß-Logik, Kategorie-Kollektionen und Flächen-Feed heraus – **nicht** aus `angebote-leisten-zubehoer` und `intern-regulaerer-preis` (Regeln schließen nur Typen aus; `sonderposten.md` §2) |
 | Erkennung nur über `snippets/tp-ist-sonderposten.liquid` | eine Quelle, wie `tp-verkaufseinheit` |
 | `tp-verkaufseinheit` liefert für Sonderposten immer `einzel` | auch wenn Tags/Metafelder vom Ursprungsprodukt kopiert wurden |
 | Kein Mengenfeld, Warenkorb max. 1 | „nicht versehentlich mehr bestellen“; serverseitig sperrt der Bestand |
@@ -145,7 +145,10 @@ bei Google bleiben), w-028 (Bildarchiv, Lizenzen). Beantwortet und umgesetzt: w-
 | `templates/collection.sonderposten.json` | neu – Kollektionsvorlage |
 | `templates/search.json` | Kartenzeile Sonderposten in Suchergebnissen |
 | `blocks/buy-buttons.liquid` | Sonderposten: kein Mengenfeld, Hinweis „liegt bereits im Warenkorb“, Button „Verkauft“; ohne gesicherten Bestand bzw. bei „Nur Abholung“ kein Kaufknopf |
-| `snippets/cart-products.liquid` | Sonderposten: Mengenfeld im Warenkorb max. 1 |
+| `snippets/cart-products.liquid` | Sonderposten: Mengenfeld im Warenkorb max. 1; Rechenweg zum Streichpreis |
+| `snippets/tp-sonderposten-vergleich.liquid` | neu – Zeile „Vergleichspreis = regulär … €/m² × … m²“ überall, wo der Streichpreis eines Sonderpostens außerhalb der eigenen Produktseite steht |
+| `snippets/price.liquid` | Sonderposten: Rechenweg unter dem Streichpreis (Karte, Suche, Suchvorschläge) |
+| `sections/product-list.liquid` | Startseiten-Listen (`tp_je_linie_eins`): Sonderposten nur in einer Liste der Sonderposten-Kollektion |
 | `blocks/_product-card-gallery.liquid` | Sonderposten: „Verkauft“ statt „Ausverkauft“ |
 | `blocks/tp-card-title.liquid` | Sonderposten: voller Titel statt Kürzung ab „ Teppichboden“ |
 | `sections/product-information.liquid` | Kaufleiste (Handy): „Verkauft“ statt „Ausverkauft“ bei Sonderposten; gesperrt wie der Kaufknopf |
@@ -215,6 +218,12 @@ ist immer `tp-ist-sonderposten`).
    sperrt sofort. Für den Ladenverkauf reicht das (Shopify verhindert die Bestellung ohnehin).
 8. Leere Sonderposten-Kollektion zeigt den Horizon-Standardtext „Keine Produkte“ – vor dem
    Livegang durch einen freundlichen Hinweis ersetzen (Phase 9).
+9. Review 2026-10-10: Ein Stück **mit** Vergleichspreis liegt in `angebote-leisten-zubehoer`
+   (Teststück per Admin API belegt), eines **ohne** in `intern-regulaerer-preis`
+   (Marketingcodes greifen). Theme: Startseiten-Listen überspringen Sonderposten; Karte, Suche
+   und Warenkorb nennen den Rechenweg zum Streichpreis. Offen, mit Freigabe des Inhabers:
+   Regel „Typ enthält nicht Sonderposten“ (`sonderposten.md` §2). Bis dahin kein Stück mit
+   Vergleichspreis aktiv schalten.
 
 ## 10. Rollback
 

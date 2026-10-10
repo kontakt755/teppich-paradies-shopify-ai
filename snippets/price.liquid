@@ -322,6 +322,15 @@
       </div>
     {% endif %}
   {% endif %}
+  {%- if show_compare_price and product.handle != product_resource.handle -%}
+    {%- comment -%}
+      Sonderposten: Rechenweg direkt unter dem Streichpreis (Karte, Suche,
+      Suchvorschlaege). Der Vergleichspreis ist Meterpreis x Flaeche, kein
+      frueherer Preis des Stuecks. Die eigene Produktseite nennt ihn im
+      Datenblock (blocks/tp-sonderposten-daten). Fuer alle anderen Produkte leer.
+    {%- endcomment -%}
+    {%- render 'tp-sonderposten-vergleich', product: product_resource -%}
+  {%- endif -%}
   {%- if is_package_card and is_product_card and tp_pr_paketpreis != blank -%}
     {%- comment -%}
       Zweite Zeile der Produktkarte: was ein Paket kostet und enthaelt. Ohne

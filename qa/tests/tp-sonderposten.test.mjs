@@ -66,8 +66,16 @@ const voll = new Liquid({ templates: {
   'tp-aktion-aktiv': ohneDoc('snippets/tp-aktion-aktiv.liquid'),
   'tp-verkaufseinheit': ohneDoc('snippets/tp-verkaufseinheit.liquid'),
   'tp-zahl-de': ohneDoc('snippets/tp-zahl-de.liquid'),
+  'tp-sonderposten-vergleich': ohneStil(ohneDoc('snippets/tp-sonderposten-vergleich.liquid')),
+  // Fuer snippets/price.liquid: Zweige, die ein Sonderposten nie erreicht.
+  'tp-teppich-ab-preis': '',
+  'tp-paketinhalt': '',
+  'unit-price': '',
+  'tp-rabatt-badge-styles': '',
 } });
 voll.registerFilter('money', (c) => `${(Number(c) / 100).toFixed(2).replace('.', ',')} €`);
+voll.registerFilter('money_without_currency', (c) => (Number(c) / 100).toFixed(2).replace('.', ','));
+voll.registerFilter('money_with_currency', (c) => `${(Number(c) / 100).toFixed(2).replace('.', ',')} € EUR`);
 voll.registerFilter('t', (k) => k);
 voll.registerFilter('item_count_for_variant', () => 0);
 
@@ -187,4 +195,87 @@ test('Streichpreis: Ursprung als Paketware oder mit Preis je 0,01 m2', async () 
   assert.equal(await streichpreis(mitBeleg({ ursprung: paket })), 'ja', '64,75 € / 2,5 m2 = 25,90 €/m2');
   const zentimeter = rolle(26, { metafields: { custom: { preis_pro_001_qm: { value: true } } } });
   assert.equal(await streichpreis(mitBeleg({ ursprung: zentimeter })), 'ja', '0,26 € je 0,01 m2 = 26,00 €/m2');
+});
+
+// ---------------------------------------------------------------------------
+// Review-Befunde 2026-10-10 (PR #977)
+// 1. Der Streichpreis eines Sonderpostens (Meterpreis x Flaeche) steht nie ohne
+//    Rechenweg - auch nicht auf Karte, in der Suche oder im Warenkorb.
+// 2. Startseiten-Listen zeigen keine Sonderposten: "Preis reduziert"-Kollektionen
+//    wie angebote-leisten-zubehoer nehmen ein Reststueck mit Vergleichspreis auf.
+// ---------------------------------------------------------------------------
+
+const vergleich = async (product) => (await voll.parseAndRender("{% render 'tp-sonderposten-vergleich', product: product %}", { product })).trim();
+
+test('Rechenweg: genau dann, wenn der Streichpreis erscheint', async () => {
+  assert.equal(await vergleich(mitBeleg()), '<p class="tp-sp-vergleich">Vergleichspreis = regulär 25,90 €/m² × 9,40 m²</p>');
+  assert.equal(await vergleich(stueck()), '', 'ohne Vergleichspreis kein Rechenweg');
+  assert.equal(await vergleich(mitBeleg({ beleg: 'regulär 25,90 €/m² × 10,00 m²', vergleich: 25900 })), '',
+    'Beleg passt nicht zum Stueck: kein Streichpreis, also auch kein Rechenweg');
+  assert.equal(await vergleich({ ...mitBeleg(), type: 'Teppichboden' }), '', 'nur Sonderposten');
+  assert.match(await vergleich(mitBeleg({ beleg: 'regulär 25,90 €/m² × 9,40 m² <b>' })), /9,40 m² &lt;b&gt;<\/p>$/,
+    'Freitext aus dem Metafeld wird escaped');
+});
+
+const preisQuelle = ohneStil(ohneDoc('snippets/price.liquid'));
+const preis = (product_resource, { eigeneSeite = false } = {}) => voll.parseAndRender(preisQuelle, {
+  product_resource,
+  product: eigeneSeite ? product_resource : undefined,
+  template: { name: eigeneSeite ? 'product' : 'collection' },
+  settings: {},
+});
+
+test('Karte und Suche: Streichpreis nur zusammen mit dem Rechenweg', async () => {
+  const karte = await preis({ ...mitBeleg(), handle: 'velory-reststueck' });
+  assert.match(karte, /compare-at-price">243,46 €/, 'Gegenprobe: der Streichpreis steht auf der Karte');
+  assert.match(karte, /Vergleichspreis = regulär 25,90 €\/m² × 9,40 m²/);
+
+  const ohneBeleg = await preis({ ...mitBeleg({ beleg: 'regulärer Preis' }), handle: 'velory-reststueck' });
+  assert.doesNotMatch(ohneBeleg, /compare-at-price|Vergleichspreis/, 'ohne gueltigen Beleg weder Streichpreis noch Rechenweg');
+
+  const eigene = await preis({ ...mitBeleg(), handle: 'velory-reststueck' }, { eigeneSeite: true });
+  assert.match(eigene, /compare-at-price">243,46 €/);
+  assert.doesNotMatch(eigene, /Vergleichspreis =/, 'eigene Produktseite: Rechenweg steht im Datenblock, nicht doppelt');
+});
+
+test('Warenkorb fragt den Rechenweg neben dem Streichpreis', () => {
+  const warenkorb = lies('snippets/cart-products.liquid');
+  const preiszelle = warenkorb.slice(warenkorb.indexOf('<div class="cart-items__unit-price-wrapper">'));
+  const ende = preiszelle.indexOf('</td>');
+  assert.match(preiszelle.slice(0, ende), /render 'tp-sonderposten-vergleich', product: item\.product/);
+});
+
+// Linien-Schleife der Startseiten-Listen mit echtem Liquid; die Karte ist durch
+// den Produkttitel ersetzt, paginate durch seinen Inhalt.
+const listenQuelle = lies('sections/product-list.liquid');
+const linienSchleife = listenQuelle
+  .slice(listenQuelle.indexOf('{%- paginate section.settings.collection.products by 250 -%}'),
+    listenQuelle.indexOf('{%- endpaginate -%}'))
+  .replace(/{%-?\s*(end)?paginate[^%]*%}/g, '')
+  .replace(/{%\s*#[^%]*%}/g, '')
+  .replace(/{%\s*content_for 'block', type: '_product-card'[^%]*%}/g, '[{{ product.title }}]');
+const liste = async (products, template_suffix = null) => {
+  const html = await voll.parseAndRender(linienSchleife, {
+    section: { settings: { collection: { template_suffix, products } } },
+    max_items: 4,
+    routes: { search_url: '/search' },
+  });
+  return [...html.matchAll(/\[([^\]]+)\]/g)].map((m) => m[1]);
+};
+
+test('Startseiten-Liste: Reststueck in einer Angebots-Kollektion wird uebersprungen', async () => {
+  const p = (title, type = 'Zubehör') => ({ title, type });
+  const angebote = [
+    p('Velory Reststück Grau 4,00 × 2,35 m', 'Sonderposten'),
+    p('Brixona Sauberlaufmatte 135 × 205 cm', 'Sauberlauf'),
+    p('Brixona Sauberlaufmatte 90 × 155 cm', 'Sauberlauf'),
+    p('Dr. Schutz PU-Reiniger'),
+    p('SwitchTec Remur Verlegeband'),
+    p('UZIN U-Tack Universal-Sockelklebeband'),
+  ];
+  assert.deepEqual(await liste(angebote),
+    ['Brixona Sauberlaufmatte 135 × 205 cm', 'Dr. Schutz PU-Reiniger', 'SwitchTec Remur Verlegeband', 'UZIN U-Tack Universal-Sockelklebeband'],
+    'vier Karten ohne das Reststueck, je Linie eine');
+  assert.deepEqual((await liste(angebote, 'sonderposten'))[0], 'Velory Reststück Grau 4,00 × 2,35 m',
+    'Gegenprobe: eine Liste der Sonderposten-Kollektion zeigt das Stueck');
 });
