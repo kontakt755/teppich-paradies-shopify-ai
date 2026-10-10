@@ -67,6 +67,9 @@
 .tp-ek__band input:focus-visible + span { outline: 2px solid var(--tp-ek-ink); outline-offset: 3px; }
 .tp-ek__bandname { margin: 10px 0 0; font-size: .88rem; font-weight: 600; }
 .tp-ek__bandname:empty { display: none; }
+/* Feste Bandfarbe (service.bandfarbe_fest): keine Wahl, nur ein ruhiger Hinweis unter den Massen. */
+.tp-ek__bandfest { margin: -8px 0 22px; font-size: .88rem; line-height: 1.45; color: var(--tp-ek-muted); }
+.tp-ek__bandfest span { color: var(--tp-ek-ink); font-weight: 600; }
 
 .tp-ek__vorschau { margin: 0 0 14px; padding: 12px 12px 10px; border-radius: 10px; background: var(--tp-ek-soft); }
 .tp-ek--mass .tp-ek__vorschau{margin:12px 0 0;padding:9px 12px;border:1px solid var(--tp-ek-line);background:var(--tp-ek-surface)}
