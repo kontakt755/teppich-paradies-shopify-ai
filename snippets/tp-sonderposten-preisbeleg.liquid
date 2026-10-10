@@ -1,0 +1,128 @@
+{%- doc -%}
+  Traegt der Streichpreis dieses Sonderpostens eine pruefbare Grundlage?
+  Gibt "ja" aus oder nichts. Fragt nur snippets/tp-rabatt-sichtbar (Weg 3).
+
+  Ein gepflegter Text allein ist kein Beleg (Codex-Review 2026-10-09): er
+  wird beim Duplizieren aus der Vorlage oder einem anderen Stueck mitkopiert.
+  Deshalb muss jeder Beleg zu genau diesem Stueck passen. Alle Bedingungen:
+
+    1. sonderposten.preis_beleg im festen Format
+         "regulaer <Meterpreis> EUR/m2 x <Flaeche> m2"
+       (geschrieben z. B. "regulär 25,90 €/m² × 9,40 m²"; € oder EUR,
+       m² oder m2, × oder x).
+    2. Die Flaeche im Beleg ist die Flaeche dieses Stuecks
+       (snippets/tp-sonderposten-flaeche, Abweichung hoechstens 0,005 m2).
+    3. Meterpreis x Flaeche ergibt den Vergleichspreis der Variante
+       (auf den Cent gerundet, Abweichung hoechstens 1 Cent), und der
+       Vergleichspreis liegt ueber dem Stueckpreis.
+    4. sonderposten.ursprungsprodukt ist gesetzt, und der Meterpreis im
+       Beleg ist nicht hoeher als der guenstigste aktuelle Preis je m2
+       derselben Ware dort: verkaufbare Rollenbreiten-Varianten (ohne
+       Wunschmass, Muster, OPC) bzw. Paketpreis / custom.qm_pro_paket.
+       Laesst sich der Preis je m2 nicht belegen, gibt es keinen Streichpreis.
+
+  Was dieses Snippet nicht entscheiden kann: ob der Vergleich mit dem
+  Meterpreis rechtlich als Vorpreis genuegt (Paragraph 11 PAngV). Das
+  entscheidet der Inhaber je Stueck, indem er den Beleg pflegt oder leer
+  laesst (docs/weiterentwicklung/sonderposten.md Abschnitt 4).
+
+  @param {object} product - der Sonderposten
+{%- enddoc -%}
+{%- liquid
+  assign tsb_ok = false
+  assign tsb_beleg = product.metafields.sonderposten.preis_beleg.value | append: ''
+  assign tsb_v = product.variants.first
+  assign tsb_vergleich = tsb_v.compare_at_price | default: 0
+  if tsb_beleg != blank and tsb_vergleich > tsb_v.price
+    assign tsb_t = tsb_beleg | downcase | replace: '€', ' ' | replace: 'eur', ' ' | replace: '²', '2' | replace: '×', ' x '
+    assign tsb_teile = tsb_t | split: '/m2'
+    if tsb_teile.size >= 2
+      assign tsb_meter_txt = tsb_teile[0] | strip | split: ' ' | last | replace: ',', '.'
+      assign tsb_flaeche_txt = tsb_teile[1] | replace: 'x', ' ' | strip | split: ' ' | first | replace: ',', '.'
+      assign tsb_meter = tsb_meter_txt | times: 1.0
+      assign tsb_flaeche = tsb_flaeche_txt | times: 1.0
+
+      capture tsb_stueck
+        render 'tp-sonderposten-flaeche', product: product
+      endcapture
+      assign tsb_stueck = tsb_stueck | strip | times: 1.0
+
+      if tsb_meter > 0 and tsb_flaeche > 0 and tsb_stueck > 0
+        assign tsb_fdiff = tsb_flaeche | minus: tsb_stueck | abs
+        assign tsb_soll = tsb_meter | times: tsb_flaeche | times: 100 | round
+        assign tsb_cdiff = tsb_soll | minus: tsb_vergleich | abs
+        if tsb_fdiff <= 0.005 and tsb_cdiff <= 1
+          assign tsb_ok = true
+        endif
+      endif
+    endif
+  endif
+
+  # 4. Gegenprobe am Ursprungsprodukt: der guenstigste aktuelle Preis je m2.
+  if tsb_ok
+    assign tsb_ok = false
+    assign tsb_u = product.metafields.sonderposten.ursprungsprodukt.value
+    if tsb_u != blank
+      capture tsb_art
+        render 'tp-verkaufseinheit', product: tsb_u
+      endcapture
+      assign tsb_art = tsb_art | strip
+      assign tsb_min = 0
+      if tsb_art == 'rolle'
+        assign tsb_faktor = 1
+        if tsb_u.metafields.custom.preis_pro_001_qm.value == true
+          assign tsb_faktor = 100
+        endif
+        for tsb_uv in tsb_u.variants
+          unless tsb_uv.available
+            continue
+          endunless
+          assign tsb_titel = tsb_uv.title | downcase
+          if tsb_titel contains 'opc-'
+            continue
+          endif
+          assign tsb_opt = tsb_uv.option1 | append: ' ' | append: tsb_uv.option2 | append: ' ' | append: tsb_uv.option3 | downcase
+          if tsb_opt contains 'wunschma' or tsb_opt contains 'muster'
+            continue
+          endif
+          assign tsb_rb = tsb_uv.metafields.custom.rollenbreite.value | times: 1
+          unless tsb_opt contains ' cm' or tsb_rb > 0
+            continue
+          endunless
+          assign tsb_qm = tsb_uv.price | times: tsb_faktor
+          if tsb_qm > 0
+            if tsb_min == 0 or tsb_qm < tsb_min
+              assign tsb_min = tsb_qm
+            endif
+          endif
+        endfor
+      elsif tsb_art == 'paket'
+        assign tsb_paket = tsb_u.metafields.custom.qm_pro_paket.value | times: 1.0
+        for tsb_uv in tsb_u.variants
+          unless tsb_uv.available
+            continue
+          endunless
+          assign tsb_titel = tsb_uv.title | downcase
+          if tsb_titel contains 'muster' or tsb_titel contains 'opc-'
+            continue
+          endif
+          assign tsb_qm = tsb_uv.price | divided_by: tsb_paket
+          if tsb_qm > 0
+            if tsb_min == 0 or tsb_qm < tsb_min
+              assign tsb_min = tsb_qm
+            endif
+          endif
+        endfor
+      endif
+      assign tsb_meter_cent = tsb_meter | times: 100
+      assign tsb_grenze = tsb_min | plus: 1
+      if tsb_min > 0 and tsb_meter_cent <= tsb_grenze
+        assign tsb_ok = true
+      endif
+    endif
+  endif
+
+  if tsb_ok
+    echo 'ja'
+  endif
+-%}

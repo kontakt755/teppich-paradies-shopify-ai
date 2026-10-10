@@ -123,7 +123,8 @@ bei Google bleiben), w-028 (Bildarchiv, Lizenzen). Beantwortet und umgesetzt: w-
 | Erkennung nur über `snippets/tp-ist-sonderposten.liquid` | eine Quelle, wie `tp-verkaufseinheit` |
 | `tp-verkaufseinheit` liefert für Sonderposten immer `einzel` | auch wenn Tags/Metafelder vom Ursprungsprodukt kopiert wurden |
 | Kein Mengenfeld, Warenkorb max. 1 | „nicht versehentlich mehr bestellen“; serverseitig sperrt der Bestand |
-| Streichpreis nur mit `sonderposten.preis_beleg` | AGENTS.md: Streichpreise nur mit belegtem Vorpreis |
+| Streichpreis nur mit prüfbarem `sonderposten.preis_beleg` (Format, Fläche, Rechnung, Ursprungspreis; `tp-sonderposten-preisbeleg`) | AGENTS.md: Streichpreise nur mit belegtem Vorpreis; ein bloßer Text würde beim Duplizieren mitkopiert (Review 09.10.) |
+| Online-Kauf nur bei gesichertem Bestand (geführt, kein Überverkauf) und nicht bei „Nur Abholung“ (`tp-sonderposten-kaufstatus`) | sonst Doppelverkauf eines Einzelstücks möglich bzw. Abhol-Zusage, die der Checkout nicht durchsetzt (Review 09.10.) |
 | `itemCondition` aus `sonderposten.zustand` | B-Ware/Ausstellungsstück nicht als „neu“ auszeichnen |
 | Ladenverkauf über Control Center (Weg B), SumUp nur als späteres Sicherheitsnetz | SumUp-API ohne SKU; vorhandene Anmeldung/Rollen/Protokoll; 0 € |
 | Bewertungen: Theme rendert aus `reviews.*`-Standardfeldern, App nur für Sammeln/Moderation | App austauschbar, kein App-Skript auf Kollektionsseiten, ein JSON-LD |
@@ -135,21 +136,23 @@ bei Google bleiben), w-028 (Bildarchiv, Lizenzen). Beantwortet und umgesetzt: w-
 |---|---|
 | `snippets/tp-ist-sonderposten.liquid` | neu – ist das Produkt ein Sonderposten |
 | `snippets/tp-sonderposten-flaeche.liquid` | neu – Fläche aus Metafeld oder Breite × Länge |
+| `snippets/tp-sonderposten-kaufstatus.liquid` | neu – frei / ungesichert / laden / verkauft: einzige Quelle für Verfügbarkeit, Kaufknopf, Kaufleiste und JSON-LD |
+| `snippets/tp-sonderposten-preisbeleg.liquid` | neu – Streichpreis-Beleg je Stück prüfen |
 | `snippets/tp-zahl-de.liquid` | neu – „4,00“-Formatierung |
 | `blocks/tp-sonderposten-daten.liquid` | neu – Produktseite: Art, Verfügbarkeit, Maße, Stückpreis, €/m², Ersparnis, Zustand, Herkunft, Abholung |
 | `blocks/tp-card-sonderposten.liquid` | neu – Kartenzeile „Reststück · 4,00 × 2,35 m (9,40 m²)“ + €/m² |
 | `templates/product.sonderposten.json` | neu – Produktvorlage |
 | `templates/collection.sonderposten.json` | neu – Kollektionsvorlage |
 | `templates/search.json` | Kartenzeile Sonderposten in Suchergebnissen |
-| `blocks/buy-buttons.liquid` | Sonderposten: kein Mengenfeld, Hinweis „liegt bereits im Warenkorb“, Button „Verkauft“ |
+| `blocks/buy-buttons.liquid` | Sonderposten: kein Mengenfeld, Hinweis „liegt bereits im Warenkorb“, Button „Verkauft“; ohne gesicherten Bestand bzw. bei „Nur Abholung“ kein Kaufknopf |
 | `snippets/cart-products.liquid` | Sonderposten: Mengenfeld im Warenkorb max. 1 |
 | `blocks/_product-card-gallery.liquid` | Sonderposten: „Verkauft“ statt „Ausverkauft“ |
 | `blocks/tp-card-title.liquid` | Sonderposten: voller Titel statt Kürzung ab „ Teppichboden“ |
-| `sections/product-information.liquid` | Kaufleiste (Handy): „Verkauft“ statt „Ausverkauft“ bei Sonderposten |
+| `sections/product-information.liquid` | Kaufleiste (Handy): „Verkauft“ statt „Ausverkauft“ bei Sonderposten; gesperrt wie der Kaufknopf |
 | `qa/tests/tp-sonderposten.test.mjs`, `qa/tests/tp-streichpreis-nur-bei-aktion.test.mjs`, `qa/tests/tp-teppich-ab-preis.test.mjs` | neue Tests bzw. Hilfs-Snippet in der Test-Engine |
 | `snippets/tp-rabatt-sichtbar.liquid` | Weg 3: Sonderposten-Streichpreis nur mit Beleg |
 | `snippets/tp-verkaufseinheit.liquid` | Sonderposten immer `einzel` |
-| `snippets/tp-product-structured-data.liquid` | `itemCondition` für Sonderposten aus Zustand |
+| `snippets/tp-product-structured-data.liquid` | `itemCondition` für Sonderposten aus Zustand; `availability` folgt `tp-sonderposten-kaufstatus` |
 | `domains/shopify/live-theme.json` | Eintrag `entwicklung` |
 | `SHOPIFY_WEITERENTWICKLUNG.md`, `docs/weiterentwicklung/**` | Dokumentation, Sicherung |
 

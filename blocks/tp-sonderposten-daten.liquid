@@ -14,11 +14,15 @@
   Preis: Der Variantenpreis ist der Preis fuer das ganze Stueck. Der m2-Preis
   ist nur eine Umrechnung zur Orientierung (Grundpreisangabe).
   Streichpreis und Ersparnis erscheinen nur, wenn snippets/tp-rabatt-sichtbar
-  "ja" sagt - fuer Sonderposten heisst das: Vergleichspreis gesetzt UND
-  Beleg sonderposten.preis_beleg gepflegt.
+  "ja" sagt - fuer Sonderposten heisst das: pruefbarer Beleg fuer genau dieses
+  Stueck (snippets/tp-sonderposten-preisbeleg).
 
-  Verfuegbarkeit: Bestand wird fuer Sonderposten gefuehrt (1, nicht
-  ueberverkaufen). Ist nichts mehr da, steht "Verkauft" statt "Nur 1x".
+  Verfuegbarkeit und Versand kommen aus snippets/tp-sonderposten-kaufstatus:
+  "Nur N x verfuegbar" und "Abholung oder Versand" nur, wenn Shopify den
+  Bestand fuehrt und Ueberverkauf sperrt. Sonst steht da, dass das Stueck
+  online nicht bestellbar ist - nie "Verfuegbar" ohne gesicherte Stueckzahl.
+  "Nur Abholung" setzt der Checkout nicht durch; solche Stuecke gibt es nur
+  im Geschaeft (kein Versandversprechen, das der Checkout bricht).
 {% enddoc %}
 
 {%- liquid
@@ -35,21 +39,21 @@
     assign tp_sp_v = tp_sp_p.selected_or_first_available_variant
     assign tp_sp_art = tp_sp_mf.art.value | default: 'Sonderposten'
 
-    # Bestand nur zaehlen, wenn Shopify ihn fuehrt. Ohne Bestandsfuehrung
-    # waere inventory_quantity 0 bei kaufbarem Artikel - dann keine Zahl nennen.
+    # Kaufstatus: frei | ungesichert | laden | verkauft. Eine Stueckzahl gibt
+    # es nur bei "frei" - dort fuehrt Shopify den Bestand und sperrt
+    # Ueberverkauf fuer jede verkaufbare Variante.
+    capture tp_sp_status
+      render 'tp-sonderposten-kaufstatus', product: tp_sp_p
+    endcapture
+    assign tp_sp_status = tp_sp_status | strip
     assign tp_sp_bestand = 0
-    assign tp_sp_kaufbar = false
-    assign tp_sp_gezaehlt = true
-    for tp_sp_var in tp_sp_p.variants
-      if tp_sp_var.available
-        assign tp_sp_kaufbar = true
-        if tp_sp_var.inventory_management == 'shopify' and tp_sp_var.inventory_policy == 'deny'
+    if tp_sp_status == 'frei'
+      for tp_sp_var in tp_sp_p.variants
+        if tp_sp_var.available
           assign tp_sp_bestand = tp_sp_bestand | plus: tp_sp_var.inventory_quantity
-        else
-          assign tp_sp_gezaehlt = false
         endif
-      endif
-    endfor
+      endfor
+    endif
 
     assign tp_sp_b = tp_sp_mf.breite_m.value | times: 1.0
     assign tp_sp_l = tp_sp_mf.laenge_m.value | times: 1.0
@@ -86,19 +90,21 @@
     endif
 
     assign tp_sp_ursprung = tp_sp_mf.ursprungsprodukt.value
-    assign tp_sp_versand = tp_sp_mf.versand.value | default: ''
   -%}
 
   <div class="tp-sp" {{ block.shopify_attributes }}>
     <p class="tp-sp__chips">
       <span class="tp-sp__chip tp-sp__chip--art">{{ tp_sp_art }}</span>
-      {%- if tp_sp_kaufbar and tp_sp_gezaehlt and tp_sp_bestand > 0 -%}
-        <span class="tp-sp__chip tp-sp__chip--frei">Nur {{ tp_sp_bestand }}× verfügbar</span>
-      {%- elsif tp_sp_kaufbar -%}
-        <span class="tp-sp__chip tp-sp__chip--frei">Verfügbar</span>
-      {%- else -%}
-        <span class="tp-sp__chip tp-sp__chip--weg">Verkauft</span>
-      {%- endif -%}
+      {%- case tp_sp_status -%}
+        {%- when 'frei' -%}
+          <span class="tp-sp__chip tp-sp__chip--frei">Nur {{ tp_sp_bestand }}× verfügbar</span>
+        {%- when 'laden' -%}
+          <span class="tp-sp__chip tp-sp__chip--weg">Nur im Geschäft</span>
+        {%- when 'ungesichert' -%}
+          <span class="tp-sp__chip tp-sp__chip--weg">Online nicht bestellbar</span>
+        {%- else -%}
+          <span class="tp-sp__chip tp-sp__chip--weg">Verkauft</span>
+      {%- endcase -%}
     </p>
 
     {%- if tp_sp_b > 0 or tp_sp_l > 0 or tp_sp_f > 0 -%}
@@ -153,11 +159,14 @@
 
     <p class="tp-sp__regel">
       Feste Maße: Dieses Stück wird so verkauft, wie es ist – kein weiterer Zuschnitt, keine Nachlieferung in derselben Charge.
-      {%- if tp_sp_versand == 'Nur Abholung' %}
-        <strong>Nur Abholung</strong> in unserem Geschäft in Oranienburg.
-      {%- elsif tp_sp_versand == 'Abholung oder Versand' %}
-        Abholung in Oranienburg oder Versand.
-      {%- endif -%}
+      {%- case tp_sp_status -%}
+        {%- when 'frei' %}
+          Abholung in Oranienburg oder Versand.
+        {%- when 'laden' %}
+          Dieses Stück verkaufen wir nur in unserem Geschäft in Oranienburg; online ist es nicht bestellbar.
+        {%- when 'ungesichert' %}
+          Online ist dieses Stück gerade nicht bestellbar. Fragen Sie bitte in unserem Geschäft in Oranienburg danach.
+      {%- endcase -%}
     </p>
   </div>
 {%- endif -%}

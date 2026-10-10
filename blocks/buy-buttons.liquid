@@ -75,6 +75,25 @@
       assign add_to_cart_text = 'products.product.unavailable' | t
     endif
   endif
+
+  # Sonderposten nur mit gesichertem Bestand online verkaufen
+  # (snippets/tp-sonderposten-kaufstatus): ohne gefuehrten Bestand oder mit
+  # erlaubtem Ueberverkauf koennte dasselbe Einzelstueck zweimal verkauft
+  # werden; "Nur Abholung" setzt der Checkout nicht durch. In beiden Faellen
+  # kein Kaufknopf - auch kein Express-Checkout (haengt an can_add_to_cart).
+  if tp_ist_sonderposten
+    capture tp_sp_kaufstatus
+      render 'tp-sonderposten-kaufstatus', product: product
+    endcapture
+    assign tp_sp_kaufstatus = tp_sp_kaufstatus | strip
+    if tp_sp_kaufstatus == 'ungesichert'
+      assign can_add_to_cart = false
+      assign add_to_cart_text = 'Online nicht bestellbar'
+    elsif tp_sp_kaufstatus == 'laden'
+      assign can_add_to_cart = false
+      assign add_to_cart_text = 'Nur im Geschäft erhältlich'
+    endif
+  endif
 %}
 
 {%- unless tp_hide_buy_buttons -%}

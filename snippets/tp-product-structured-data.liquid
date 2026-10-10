@@ -154,11 +154,22 @@
     Merchant Listings nur neu, gebraucht, generalueberholt.
   {%- endcomment -%}
   {%- assign tp_sd_zustand = 'https://schema.org/NewCondition' -%}
+  {%- assign tp_sd_sp_gesperrt = false -%}
   {%- if product_resource.type == 'Sonderposten' -%}
     {%- assign tp_sd_zustand_wert = product_resource.metafields.sonderposten.zustand.value | default: 'Neuware' -%}
     {%- unless tp_sd_zustand_wert contains 'Neuware' -%}
       {%- assign tp_sd_zustand = 'https://schema.org/UsedCondition' -%}
     {%- endunless -%}
+    {%- comment -%}
+      Verfuegbarkeit wie auf der Seite (snippets/tp-sonderposten-kaufstatus):
+      ohne gesicherten Bestand oder bei "Nur Abholung" bietet die Seite keinen
+      Kauf an - dann meldet das JSON-LD auch nicht InStock.
+    {%- endcomment -%}
+    {%- capture tp_sd_sp_status -%}{%- render 'tp-sonderposten-kaufstatus', product: product_resource -%}{%- endcapture -%}
+    {%- assign tp_sd_sp_status = tp_sd_sp_status | strip -%}
+    {%- if tp_sd_sp_status == 'ungesichert' or tp_sd_sp_status == 'laden' -%}
+      {%- assign tp_sd_sp_gesperrt = true -%}
+    {%- endif -%}
   {%- endif -%}
   {%- capture tp_sd_offers -%}
     {%- assign tp_sd_first = true -%}
@@ -271,7 +282,7 @@
             },
             {%- endif -%}
             "itemCondition": {{ tp_sd_zustand | json }},
-            "availability": {% if tp_sd_variant.available %}{% if tp_sd_auslauf %}"https://schema.org/LimitedAvailability"{% else %}"https://schema.org/InStock"{% endif %}{% else %}"https://schema.org/OutOfStock"{% endif %},
+            "availability": {% if tp_sd_variant.available and tp_sd_sp_gesperrt == false %}{% if tp_sd_auslauf %}"https://schema.org/LimitedAvailability"{% else %}"https://schema.org/InStock"{% endif %}{% else %}"https://schema.org/OutOfStock"{% endif %},
             "seller": {
               "@type": "Organization",
               "name": {{ shop.name | json }}

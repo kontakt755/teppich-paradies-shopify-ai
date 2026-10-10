@@ -1,6 +1,6 @@
 # Sonderposten: Produktstruktur, Pflege und Ladenverkauf
 
-Teil von `SHOPIFY_WEITERENTWICKLUNG.md` (Phasen 4 und 5). Stand 2026-10-08.
+Teil von `SHOPIFY_WEITERENTWICKLUNG.md` (Phasen 4 und 5). Stand 2026-10-10 (Review-Befunde vom 09.10. eingearbeitet).
 
 ## 1. Grundsatz
 
@@ -20,7 +20,7 @@ Regeln verletzen. Ein eigenes Produkt ist der kleinste sichere Weg.
 | Produkttyp | `Sonderposten` | einziges Merkmal (`snippets/tp-ist-sonderposten.liquid`); schließt das Stück aus allen Kategorie-Kollektionen aus (deren Regeln verlangen `TYPE = Teppichboden` usw.) |
 | Theme-Vorlage | `sonderposten` (`templates/product.sonderposten.json`) | Maße, Fläche, Stückpreis, Zustand, Verfügbarkeit, kein Mengenfeld |
 | Kollektion | „Reste & Sonderposten“, Handle `reste-sonderposten`, Vorlage `sonderposten` | Smart-Kollektion: `Produkttyp = Sonderposten` **und** `Bestand > 0` – verkaufte Stücke verschwinden von selbst |
-| Bestand | Bestand verfolgen = an, Menge 1, „Verkauf bei Nichtverfügbarkeit fortsetzen“ = **aus** | kein Überverkauf, Shopify prüft serverseitig und beim Checkout |
+| Bestand | Bestand verfolgen = an, Menge 1, „Verkauf bei Nichtverfügbarkeit fortsetzen“ = **aus** | kein Überverkauf, Shopify prüft serverseitig und beim Checkout. Fehlt eine der beiden Einstellungen, bietet das Theme das Stück **nicht** online an (`snippets/tp-sonderposten-kaufstatus.liquid`: „Online nicht bestellbar“, kein Kaufknopf, JSON-LD `OutOfStock`) und das Control Center bucht nichts. |
 | SKU | `SP-0001`, fortlaufend | dieselbe Nummer steht auf dem Etikett am Stück im Laden und im SumUp-Artikel (siehe Abschnitt 6) |
 | Grundpreis | Variante: Grundpreis-Messung Fläche = Fläche des Stücks, Referenz 1 m² (`showUnitPrice`) | Shopify zeigt €/m² nativ und gibt es an Google; der Block rechnet zusätzlich als Rückfall |
 
@@ -40,8 +40,8 @@ untereinander stehen.
 | `flaeche_m2` | Dezimalzahl | nein | nur bei unregelmäßigem Zuschnitt, sonst Breite × Länge | ja |
 | `farbe` | Einzeiliger Text | ja | Grau | ja |
 | `ursprungsprodukt` | Produktreferenz | nein | das reguläre Produkt (Eigenname), aus dem das Stück stammt | ja (Link „Aus der Kollektion“) |
-| `preis_beleg` | Einzeiliger Text | nur mit Vergleichspreis | „regulär 25,90 €/m² × 9,40 m²“ | ja; ohne Beleg **kein** Streichpreis |
-| `versand` | Einzeiliger Text, Auswahl | ja | Nur Abholung · Abholung oder Versand | ja (Hinweis) |
+| `preis_beleg` | Einzeiliger Text | nur mit Vergleichspreis | „regulär 25,90 €/m² × 9,40 m²“ (festes Format) | ja; ohne **prüfbaren** Beleg kein Streichpreis (Abschnitt 4) |
+| `versand` | Einzeiliger Text, Auswahl | ja | Abholung oder Versand · Nur Abholung | ja; „Nur Abholung“ = nur im Geschäft, online nicht bestellbar (Abschnitt 8) |
 | `lagerort` | Einzeiliger Text | nein | „Halle 2, Regal C“ | **nie** – nur intern |
 | `verkauft_am` | Datum und Uhrzeit | – | schreibt der Ladenverkauf-Ablauf | nein |
 | `verkauft_von` | Einzeiliger Text | – | Name aus der Dashboard-Anmeldung | nein |
@@ -55,8 +55,20 @@ Lieferantennamen gehören nicht in diese Felder: Herkunft nur über `ursprungspr
 
 - **Preis der Variante = Preis für das ganze Stück** (z. B. 89,00 €).
 - **Vergleichspreis** (compare-at) = regulärer Preis derselben Ware: regulärer €/m²-Preis
-  des Ursprungsprodukts × Fläche (z. B. 25,90 × 9,40 = 243,46 €). Er erscheint nur, wenn
-  `sonderposten.preis_beleg` gepflegt ist (`snippets/tp-rabatt-sichtbar.liquid`, Weg 3).
+  des Ursprungsprodukts × Fläche (z. B. 25,90 × 9,40 = 243,46 €). Er erscheint nur mit einem
+  Beleg, der zu genau diesem Stück passt (`snippets/tp-sonderposten-preisbeleg.liquid`, gefragt
+  von `snippets/tp-rabatt-sichtbar.liquid`, Weg 3). Ein gepflegter Text allein reicht nicht – er
+  würde beim Duplizieren mitkopiert. Alle Bedingungen:
+  1. `preis_beleg` im Format „regulär <Meterpreis> €/m² × <Fläche> m²“ (auch „EUR/m2“, „x“).
+  2. Die Fläche im Beleg ist die Fläche dieses Stücks (±0,005 m²).
+  3. Meterpreis × Fläche = Vergleichspreis der Variante (±1 Cent), Vergleichspreis > Stückpreis.
+  4. `ursprungsprodukt` ist gesetzt, und der Meterpreis im Beleg liegt nicht über dem
+     günstigsten **aktuellen** Preis je m² dort (verkaufbare Rollenbreiten ohne Raummaß/Muster
+     bzw. Paketpreis ÷ `custom.qm_pro_paket`). Lässt sich der Preis je m² nicht belegen, gibt es
+     keinen Streichpreis.
+- **Streichpreise nur einzeln:** Jeder Beleg wird je Stück vom Inhaber freigegeben; keine
+  Sammelpflege, keine Übernahme aus der Vorlage oder einem duplizierten Stück – ein kopierter
+  Beleg mit fremder Fläche wird ohnehin nicht angezeigt.
 - Ersparnis in € und % rechnet das Theme aus Preis und Vergleichspreis, nichts wird
   gespeichert, was auseinanderlaufen könnte.
 - **Rechtlicher Hinweis (keine Rechtsberatung):** § 11 PAngV verlangt bei
@@ -158,10 +170,35 @@ frühere Vorgabe „zuerst nur Abholung“ gilt nicht mehr; ein Profil „nur Ab
 - Abholung am Standort Saarlandstraße 73 ist eingeschaltet (Bereitzeit „5+ Tage“, Hinweis
   „Abholung nur nach unserer Bestätigung …“) und bleibt im Checkout immer wählbar.
 - Vorlage und Teststück tragen `sonderposten.versand = Abholung oder Versand`. Der Wert
-  „Nur Abholung“ ist nur noch ein Hinweis für einzelne Ausnahmestücke – er wird im Checkout
-  **nicht** erzwungen (dafür bräuchte es ein eigenes Profil).
+  „Nur Abholung“ wird im Checkout **nicht** erzwungen (dafür bräuchte es ein eigenes
+  Profil). Damit der Shop nichts verspricht, was der Checkout bricht (Codex-Review
+  2026-10-09), gilt: Ein Stück mit „Nur Abholung“ ist **nur im Geschäft** erhältlich – die
+  Seite zeigt „Nur im Geschäft“, keinen Kaufknopf und kein Versandversprechen
+  (`snippets/tp-sonderposten-kaufstatus.liquid`, Status `laden`). Wer solche Stücke online mit
+  reiner Abholung verkaufen will, braucht vorher ein eigenes Versandprofil (Checkout-Einstellung,
+  nur mit Freigabe des Inhabers).
+- Die Zeile „Abholung in Oranienburg oder Versand“ erscheint nur bei online bestellbaren
+  Stücken (Status `frei`).
 
 **Versandkosten – entschieden 2026-10-08 (Tobias):** wie bei allen Produkten (Allgemeines
 Profil: Deutschland ab 50 € kostenlos, sonst 4,99 €; EU 13,99 €; International 19,99 €).
 Kein eigenes Profil. Bewusst in Kauf genommen: Bei großen Reststücken können die echten
 Versandkosten über dem liegen, was der Kunde zahlt.
+
+## 9. Pilot: welche Stücke online gehen dürfen
+
+Die Technik ist Vorbereitung, keine Freigabe für einzelne Artikel. Ein Stück geht erst online,
+wenn alles davon belegt ist:
+
+1. **Physisch gezählt und gekennzeichnet:** Stück liegt im Laden, Maße nachgemessen,
+   Etikett mit der SKU (`SP-xxxx`) hängt am Stück.
+2. **Bestand gesichert:** Bestand verfolgen = an, Menge = gezählte Stückzahl (Einzelstück 1),
+   „Verkauf bei Nichtverfügbarkeit fortsetzen“ = aus. Sonst zeigt die Seite „Online nicht
+   bestellbar“.
+3. **Aktuelle eigene Fotos** des Stücks mit Nutzungsrecht (`docs/weiterentwicklung/bilder.md`).
+4. **Preis kalkuliert** und vom Inhaber freigegeben; Vergleichspreis nur mit Beleg nach
+   Abschnitt 4, je Stück einzeln.
+5. **Versand oder Abholung** je Stück entschieden (Abschnitt 8).
+
+Fehlt einer der Punkte, bleibt das Produkt im Status Entwurf. Massenanlage auf Verdacht gibt es
+nicht.
