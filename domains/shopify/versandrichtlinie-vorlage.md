@@ -90,7 +90,15 @@ kundenspezifischem Zuschnitt,"). Markdown-Reste in HTML — rein
 kosmetisch, aber in einem Rechtstext sichtbar.
 
 **Zwei verschiedene Telefonnummern.** Die Richtlinie „Kontakt" führt
-`0176 57931322` (die WhatsApp-Mobilnummer) als Telefonnummer, das
+die private Mobilnummer des Inhabers als Telefonnummer, das
 Impressum dagegen `03301 5733720`. Im Checkout sieht der Kunde die
 Mobilnummer. Falls das Absicht ist, bleibt es so — falls nicht, gehören
 beide auf die Festnetznummer.
+
+Stand 2026-10-10 (Inhaberentscheidung, Werkbank w-022): Die private
+Nummer wird überall durch die Firmen-WhatsApp `0179 2612211`
+(`wa.me/491792612211`) ersetzt, die Adresse lautet überall
+„Saarlandstraße 73-81". Im Theme ist das umgesetzt. In den
+Rechtstexten (Richtlinien „Kontakt" und „Datenschutzerklärung") und in
+der Shop-Adresse/-Telefonnummer der Shop-Einstellungen steht noch die
+private Nummer bzw. „Saarlandstraße 73" — das ändert nur der Inhaber.
