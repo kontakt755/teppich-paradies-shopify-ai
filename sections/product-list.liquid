@@ -43,6 +43,15 @@
             endfor
             assign tp_ln_gezeigt = '|'
             assign tp_ln_zahl = 0
+            # Sonderposten (Einzelstuecke) zeigt eine Liste nur, wenn sie die
+            # Sonderposten-Kollektion selbst zeigt (Vorlage "sonderposten").
+            # Smart-Kollektionen mit "Preis reduziert" nehmen ein Reststueck mit
+            # Vergleichspreis sonst als Angebot auf (angebote-leisten-zubehoer,
+            # PR #977) - auf der Startseite ohne Masse und auch nach dem Verkauf.
+            assign tp_ln_ohne_sp = true
+            if section.settings.collection.template_suffix == 'sonderposten'
+              assign tp_ln_ohne_sp = false
+            endif
           -%}
           {%- for product in section.settings.collection.products -%}
             {%- liquid
@@ -53,6 +62,14 @@
               endif
               if tp_ln_zahl >= max_items
                 break
+              endif
+              if tp_ln_ohne_sp
+                capture tp_ln_sp
+                  render 'tp-ist-sonderposten', product: product
+                endcapture
+                if tp_ln_sp contains 'ja'
+                  continue
+                endif
               endif
               assign tp_ln_gezeigt = tp_ln_gezeigt | append: tp_ln_marke
               assign tp_ln_zahl = tp_ln_zahl | plus: 1

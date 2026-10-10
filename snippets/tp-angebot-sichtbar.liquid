@@ -1,0 +1,42 @@
+{%- doc -%}
+  Ist das Produkt gerade ein sichtbares Angebot? Gibt "ja" aus oder nichts.
+  Einzige Quelle fuer "Angebot" im Sinne von Menuepunkt und Angebots-Kollektion
+  (docs/weiterentwicklung/angebote.md). Dieselbe Regel steht fuer den
+  Tag-Abgleich in operations/lib/angebote-abgleich.mjs - beide aendern sich
+  nur gemeinsam.
+
+  Angebot heisst: der Shop ZEIGT gerade einen Rabatt an -
+    a) Streichpreis: snippets/tp-rabatt-sichtbar sagt "ja" und die angezeigte
+       Variante hat compare_at_price > price, oder
+    b) zentrale Aktion: snippets/tp-aktion-laufend liefert einen Prozentsatz.
+  Sonderposten zaehlen nie als Angebot - sie haben ihren eigenen Bereich.
+
+  @param {object} product - das Produkt
+{%- enddoc -%}
+{%- liquid
+  capture tas_sp
+    render 'tp-ist-sonderposten', product: product
+  endcapture
+  assign tas_ja = false
+  unless tas_sp contains 'ja'
+    capture tas_rabatt_aktion
+      render 'tp-rabatt-sichtbar', product: product
+    endcapture
+    assign tas_rabatt_aktion = tas_rabatt_aktion | strip
+    assign tas_v = product.selected_or_first_available_variant
+    if tas_rabatt_aktion == 'ja' and tas_v.compare_at_price > tas_v.price
+      assign tas_ja = true
+    else
+      capture tas_laufend
+        render 'tp-aktion-laufend', product: product
+      endcapture
+      assign tas_laufend = tas_laufend | strip
+      if tas_laufend != blank
+        assign tas_ja = true
+      endif
+    endif
+  endunless
+  if tas_ja
+    echo 'ja'
+  endif
+-%}

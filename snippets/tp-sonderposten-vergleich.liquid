@@ -1,0 +1,51 @@
+{%- doc -%}
+  Rechenweg zum Streichpreis eines Sonderpostens - fuer jede Stelle, die den
+  Streichpreis ausserhalb der eigenen Produktseite zeigt (Karte, Suche,
+  Suchvorschlaege, Warenkorb). Gibt eine Zeile
+    "Vergleichspreis = regulaer 25,90 EUR/m2 x 9,40 m2"
+  aus oder nichts.
+
+  Warum: Der Vergleichspreis eines Reststuecks ist kein frueherer Preis
+  dieses Stuecks, sondern Meterpreis der Ware x Flaeche. Er ist nur mit
+  genannter Herkunft vertretbar (docs/weiterentwicklung/sonderposten.md
+  Abschnitt 4). Ohne die Zeile laese sich "-63 %" neben 243,46 EUR als
+  Preissenkung des Stuecks selbst (Review PR #977, 2026-10-10). Die eigene
+  Produktseite nennt den Rechenweg im Datenblock (blocks/tp-sonderposten-daten).
+
+  Gibt nur etwas aus, wenn
+    - das Produkt ein Sonderposten ist (snippets/tp-ist-sonderposten),
+    - snippets/tp-rabatt-sichtbar den Streichpreis zeigt (Weg 3: gepruefter
+      Beleg, snippets/tp-sonderposten-preisbeleg) und
+    - der Vergleichspreis ueber dem Stueckpreis liegt.
+  Damit steht der Rechenweg genau dort, wo auch der Streichpreis steht.
+
+  @param {object} product - das Produkt
+{%- enddoc -%}
+{%- liquid
+  capture tsv_sp
+    render 'tp-ist-sonderposten', product: product
+  endcapture
+  if tsv_sp contains 'ja'
+    capture tsv_aktion
+      render 'tp-rabatt-sichtbar', product: product
+    endcapture
+    assign tsv_aktion = tsv_aktion | strip
+    assign tsv_v = product.variants.first
+    assign tsv_beleg = product.metafields.sonderposten.preis_beleg.value | append: '' | strip
+    if tsv_aktion == 'ja' and tsv_v.compare_at_price > tsv_v.price and tsv_beleg != blank
+      echo '<p class="tp-sp-vergleich">Vergleichspreis = '
+      echo tsv_beleg | escape
+      echo '</p>'
+    endif
+  endif
+-%}
+
+{% stylesheet %}
+  .tp-sp-vergleich {
+    margin: 2px 0 0;
+    font-size: 0.8rem;
+    line-height: 1.35;
+    font-weight: 400;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
+  }
+{% endstylesheet %}

@@ -28,6 +28,7 @@ const engine = new Liquid({ templates: {
   'tp-teppich-max-breite': ohneDoc('snippets/tp-teppich-max-breite.liquid'),
   'tp-aktion-aktiv': ohneDoc('snippets/tp-aktion-aktiv.liquid'),
   'tp-rabatt-sichtbar': ohneDoc('snippets/tp-rabatt-sichtbar.liquid'),
+  'tp-ist-sonderposten': ohneDoc('snippets/tp-ist-sonderposten.liquid'),
 } });
 engine.registerFilter('divided_by', (a, b) => Math.floor(Number(a) / Number(b)));
 engine.registerFilter('money', (c) => (Number(c) / 100).toFixed(2).replace('.', ',') + ' €');

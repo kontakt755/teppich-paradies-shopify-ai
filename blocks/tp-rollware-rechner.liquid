@@ -156,7 +156,12 @@
     assign tp_rc_ohne_raum = true
   endif
 -%}
-<div class="tp-rwc-{{ tp_rc_id }} tp-kaufweg" id="tp-rwc-{{ tp_rc_id }}" data-product-id="{{ product.id }}" {% if tp_rc_dielen %}data-muster="{{ tp_rc_muster }}"{% endif %} data-max-laenge-cm="{{ tp_rc_max_laenge_cm }}" {{ block.shopify_attributes }}>
+{%- comment -%}
+  data-tp-breite / data-tp-laenge: das Stueck fuer die klebende Kaufleiste
+  (assets/sticky-add-to-cart.js), gesetzt von calculate(). Leer heisst noch
+  offen - die Leiste zeigt dann nicht die Startvariante.
+{%- endcomment -%}
+<div class="tp-rwc-{{ tp_rc_id }} tp-kaufweg" id="tp-rwc-{{ tp_rc_id }}" data-product-id="{{ product.id }}" {% if tp_rc_dielen %}data-muster="{{ tp_rc_muster }}"{% endif %} data-max-laenge-cm="{{ tp_rc_max_laenge_cm }}" data-tp-breite="" data-tp-laenge="" {{ block.shopify_attributes }}>
 
   {%- comment -%}
     Faehrt eine Farbe nur noch ueber den Zweitlieferanten, gibt es dafuer
@@ -1409,6 +1414,20 @@ function tpRwcInit{{ tp_rc_id }}() {
     }
   }
 
+  // Fehlerfeld zeigen, dann fokussieren. focus() allein scrollt nicht, wenn
+  // das Feld knapp unter der Oberkante liegt - dann bliebe es unter dem
+  // klebenden Kopf verdeckt (Live-Gegenprobe w-061). Mittig steht es auch
+  // sicher ueber der klebenden Kaufleiste unten.
+  function zeigeFehlerfeld(el) {
+    if (!el) return;
+    if (typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ block: 'center' });
+      if (typeof el.focus === 'function') el.focus({ preventScroll: true });
+    } else if (typeof el.focus === 'function') {
+      el.focus();
+    }
+  }
+
   function clearInvalid() {
     markInvalid(lengthInput, false);
     markInvalid(wunschInput, false);
@@ -2168,6 +2187,10 @@ function tpRwcInit{{ tp_rc_id }}() {
     var blocked = (len === -1);
     var tooLong = len > MAX_LENGTH_CM;
     var valid = !blocked && !tooLong && len >= 100 && !wErr;
+    // Das Stueck fuer die klebende Kaufleiste: Breite, sobald sie feststeht,
+    // Laenge nur, wenn sie gueltig ist. Die Leiste rechnet nichts nach.
+    root.setAttribute('data-tp-breite', w > 0 && !wErr ? String(w) : '');
+    root.setAttribute('data-tp-laenge', valid && w > 0 ? String(len) : '');
 
     // Nicht lesbare Laenge bekommt eine klare Meldung statt einer stillen
     // Umdeutung. "150,7" und "3,5 m" sind gueltig (siehe ART.parseMass).
@@ -2418,9 +2441,7 @@ function tpRwcInit{{ tp_rc_id }}() {
           : (breiteFehlt ? 'Bitte Breite eingeben.' : 'Bitte Länge eingeben.'));
         ctaHint.hidden = false;
       }
-      if (fehlt.el && typeof fehlt.el.focus === 'function') {
-        fehlt.el.focus({ preventScroll: false });
-      }
+      zeigeFehlerfeld(fehlt.el);
       return;
     }
 
@@ -2496,7 +2517,7 @@ function tpRwcInit{{ tp_rc_id }}() {
     // traegt bereits den passenden Hinweistext aus updateExtras().
     if (extras.leisteInvalid) {
       var meterIn = leisteBox.querySelector('[data-leiste-meter]');
-      if (meterIn && typeof meterIn.focus === 'function') meterIn.focus({ preventScroll: false });
+      zeigeFehlerfeld(meterIn);
       return;
     }
     if (extras.holzInvalid) {
@@ -2504,7 +2525,7 @@ function tpRwcInit{{ tp_rc_id }}() {
       var holzFarbe = holzBox.querySelector('[data-holz-variante]');
       var holzFehlerFeld = extras.holzInvalidField === 'meter' ? holzFeld : holzFarbe;
       markInvalid(holzFehlerFeld, true);
-      holzFehlerFeld.focus({ preventScroll: false });
+      zeigeFehlerfeld(holzFehlerFeld);
       return;
     }
 

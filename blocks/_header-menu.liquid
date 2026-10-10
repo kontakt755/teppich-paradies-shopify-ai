@@ -41,6 +41,9 @@
             role="list"
           >
             {% for link in block_settings.menu.links %}
+              {%- comment -%} Saisonale Punkte (Angebote, Reste) nur mit Inhalt: snippets/tp-menu-link-sichtbar {%- endcomment -%}
+              {%- capture tp_mls -%}{%- render 'tp-menu-link-sichtbar', link: link -%}{%- endcapture -%}
+              {%- if tp_mls contains 'nein' -%}{%- continue -%}{%- endif -%}
               <li>
                 <a
                   href="{{ link.url }}"
@@ -86,6 +89,9 @@
 
     {% capture children %}
       {% for link in block_settings.menu.links %}
+              {%- comment -%} Saisonale Punkte (Angebote, Reste) nur mit Inhalt: snippets/tp-menu-link-sichtbar {%- endcomment -%}
+              {%- capture tp_mls -%}{%- render 'tp-menu-link-sichtbar', link: link -%}{%- endcapture -%}
+              {%- if tp_mls contains 'nein' -%}{%- continue -%}{%- endif -%}
         {%- liquid
           # Kuratierte Untermenues fuer Punkte ohne Unterpunkte in der Navigation:
           # Linoleum (Sortiment aus der Kollektion) und Kontakt (Anruf, WhatsApp, Standort).
