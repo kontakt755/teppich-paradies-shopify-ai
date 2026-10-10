@@ -45,7 +45,8 @@ class Element {
   getAttribute(name) { return this.attributes.get(name) ?? null; }
   removeAttribute(name) { this.attributes.delete(name); }
   appendChild(node) { this.options.push(node); }
-  focus() { this.focused = true; }
+  focus(options) { this.focused = true; this.focusOptions = options; }
+  scrollIntoView(options) { this.scrolledIntoView = options; }
 }
 
 async function rollCase(raw, checked = true, holz = null, dimensions = { w: 400, len: 200 }) {
@@ -109,6 +110,7 @@ async function rollCase(raw, checked = true, holz = null, dimensions = { w: 400,
     holzColorFocused: !!holzFields['[data-holz-variante]'].focused,
     holzMeterInvalid: holzFields['[data-holz-meter]'].getAttribute('aria-invalid'),
     holzColorInvalid: holzFields['[data-holz-variante]'].getAttribute('aria-invalid'),
+    holzColorFocusWay: JSON.parse(JSON.stringify([holzFields['[data-holz-variante]'].scrolledIntoView, holzFields['[data-holz-variante]'].focusOptions])),
     hint: fields['[data-leiste-hint]'].textContent,
   };
 }
@@ -143,6 +145,9 @@ test('Vinyl-Sockelleiste ohne Farbe stoppt den gesamten Warenkorb-Aufruf', async
   assert.equal(result.requestCount, 0);
   assert.equal(result.holzColorFocused, true);
   assert.equal(result.holzColorInvalid, 'true');
+  // Live-Gegenprobe w-061: erst mittig einblenden, sonst bleibt das Feld
+  // knapp unter der Oberkante vom klebenden Kopf verdeckt.
+  assert.deepEqual(result.holzColorFocusWay, [{ block: 'center' }, { preventScroll: true }]);
 });
 
 test('Vinyl-Sockelleiste mit ungültiger Länge fokussiert das Längenfeld', async () => {

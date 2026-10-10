@@ -236,15 +236,13 @@ class StickyAddToCartComponent extends Component {
       characterData: true,
       subtree: true,
     });
-    // Breite und Laenge aendern das Stueck, nicht zwingend den Button.
-    const stueck = button.closest('.tp-kaufweg')?.querySelector('[data-stueck]');
-    if (stueck) {
-      this.#targetStateObserver.observe(stueck, {
+    // Breite und Laenge aendern das Stueck, nicht zwingend den Button. Der
+    // Rollenware-Rechner meldet es als data-tp-breite/-laenge am Kaufweg.
+    const kaufweg = button.closest('.tp-kaufweg');
+    if (kaufweg) {
+      this.#targetStateObserver.observe(kaufweg, {
         attributes: true,
-        attributeFilter: ['hidden'],
-        childList: true,
-        characterData: true,
-        subtree: true,
+        attributeFilter: ['data-tp-breite', 'data-tp-laenge'],
       });
     }
     this.#syncTargetState();
@@ -315,33 +313,39 @@ class StickyAddToCartComponent extends Component {
   /**
    * Variantenzeile auf Seiten mit dem Rollenware-Rechner. Dort gibt es keinen
    * variant-picker und damit kein variant:update - die Zeile blieb auf der
-   * Startvariante stehen. Farbe kommt aus dem Farbwaehler, das Mass aus der
-   * Stueck-Zeile des Rechners; gerechnet wird hier nichts.
+   * Startvariante stehen. Farbe kommt aus dem Farbwaehler, das Mass aus
+   * data-tp-breite/-laenge am Kaufweg (calculate() in
+   * blocks/tp-rollware-rechner.liquid); gerechnet wird hier nichts.
    * @param {HTMLElement} target - Kaufbutton des Rechners
    */
   #syncRechnerVariantLine(target) {
     const kaufweg = target.closest('.tp-kaufweg');
-    if (!kaufweg) return;
-    // Der Einfass-Konfigurator hat keine Stueck-Zeile - dort nur die Farbe.
-    const mass = kaufweg.querySelector('[data-stueck-mass]');
+    if (!(kaufweg instanceof HTMLElement)) return;
     const variantElement = this.querySelector('.sticky-add-to-cart__variant');
-    if (!variantElement) return;
+    if (!(variantElement instanceof HTMLElement)) return;
 
     const section = this.closest('.shopify-section');
     const farbe = section?.querySelector('[data-farb-item] input:checked');
-    const stueckBox = mass?.closest('[data-stueck]');
-    const sichtbar = stueckBox instanceof HTMLElement && !stueckBox.hidden;
-    const voll = sichtbar
-      ? (mass?.textContent || '').replace(/^Ihr Stück:\s*/, '').replace(/\s*=\s*[^=]*$/, '').trim()
-      : '';
-    // Die Infospalte der Leiste ist schmal: "400 × 350 cm" statt der
-    // ausgeschriebenen Zeile; die steht im Rechner und hier im title.
-    const zahlen = voll.match(/Breite\s+(\d+)\s*cm.*?Länge\s+(\d+)\s*cm/);
-    const massText = zahlen ? `${zahlen[1]} × ${zahlen[2]} cm` : '';
+    // Der Einfass-Konfigurator meldet kein Stueck - dort nur die Farbe.
+    const meldetStueck = kaufweg.hasAttribute('data-tp-breite');
+    const breite = Number(kaufweg.dataset.tpBreite) || 0;
+    const laenge = Number(kaufweg.dataset.tpLaenge) || 0;
+    const cm = (/** @type {number} */ zahl) => zahl.toLocaleString('de-DE');
+    // Die Infospalte der Leiste ist schmal: "400 × 205 cm", ausgeschrieben im
+    // title. Ohne gueltige Laenge nur die gewaehlte Breite - nie die
+    // Startvariante, die mit dem Stueck nichts zu tun hat.
+    let massText = '';
+    let voll = '';
+    if (breite && laenge) {
+      massText = `${cm(breite)} × ${cm(laenge)} cm`;
+      voll = `Breite ${cm(breite)} cm · Länge ${cm(laenge)} cm`;
+    } else if (breite) {
+      massText = voll = `Breite ${cm(breite)} cm`;
+    }
     const farbName = farbe instanceof HTMLInputElement ? farbe.value : '';
     // Mass zuerst: bei langen Farbnamen kuerzt die Ellipse nur das Namensende.
     const teile = [massText, farbName].filter(Boolean);
-    if (!teile.length) return;
+    if (!teile.length && !meldetStueck) return;
     variantElement.textContent = teile.join(' · ');
     variantElement.title = [farbName, voll].filter(Boolean).join(' · ');
     variantElement.style.whiteSpace = 'nowrap';

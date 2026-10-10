@@ -28,7 +28,8 @@ class Element {
     this.classList = { add() {}, remove() {}, toggle() {} };
   }
   addEventListener(type, callback) { this.listeners.set(type, callback); }
-  focus() { this.focused = true; }
+  focus(options) { this.focused = true; this.focusOptions = options; }
+  scrollIntoView(options) { this.scrolledIntoView = options; }
   emit(type, event = {}) { return this.listeners.get(type)?.(event); }
   setAttribute(name, value) { this.attributes.set(name, String(value)); }
   getAttribute(name) { return this.attributes.get(name) ?? null; }
@@ -101,6 +102,9 @@ async function packageCase(raw, { waste = true, blur = true, action = null, subm
     railVariantFocused: !!nodes['[data-rail-variant]'].focused,
     railMetersInvalid: nodes['[data-rail-meters]'].getAttribute('aria-invalid'),
     railVariantInvalid: nodes['[data-rail-variant]'].getAttribute('aria-invalid'),
+    // Wie das Fehlerfeld in den Blick kommt: [scrollIntoView, focus]-Optionen.
+    sqmFocusWay: JSON.parse(JSON.stringify([input.scrolledIntoView, input.focusOptions])),
+    railVariantFocusWay: JSON.parse(JSON.stringify([nodes['[data-rail-variant]'].scrolledIntoView, nodes['[data-rail-variant]'].focusOptions])),
   };
 }
 
@@ -213,4 +217,15 @@ test('Sockelleiste: fehlende Farbe fokussiert die Farbauswahl', async () => {
   assert.equal(result.railVariantFocused, true);
   assert.equal(result.railMetersFocused, false);
   assert.equal(result.railVariantInvalid, 'true');
+});
+
+// Live-Gegenprobe w-061: focus() allein scrollt nicht, wenn das Feld knapp
+// unter der Oberkante liegt - es blieb unter dem klebenden Kopf verdeckt.
+// Erst mittig einblenden, dann ohne zweiten Browser-Scroll fokussieren.
+test('Fehlerfokus: Flaechenfeld und Leistenfarbe werden mittig eingeblendet', async () => {
+  const flaeche = await packageCase('20abc');
+  assert.deepEqual(flaeche.sqmFocusWay, [{ block: 'center' }, { preventScroll: true }]);
+  const farbe = await packageCase('20', { rail: { meters: '12,5', variant: false } });
+  assert.equal(farbe.requests.length, 0);
+  assert.deepEqual(farbe.railVariantFocusWay, [{ block: 'center' }, { preventScroll: true }]);
 });
