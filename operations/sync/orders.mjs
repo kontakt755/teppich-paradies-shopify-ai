@@ -46,6 +46,9 @@ query OpsOrders($first: Int!, $after: String, $query: String) {
           id sku title variantTitle quantity currentQuantity unfulfilledQuantity
           originalUnitPriceSet { shopMoney { amount currencyCode } }
           customAttributes { key value }
+          # Bundle-Komponente (z. B. Rollenware unter "Zuschnitt von der Rolle"):
+          # die Zeile ist ein Bestandsabgang, kein eigener Zuschnitt.
+          lineItemGroup { id title quantity customAttributes { key value } }
           image { url altText }
           variant {
             id sku title

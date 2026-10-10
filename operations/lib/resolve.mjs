@@ -215,6 +215,54 @@ export function masspruefung({ props, quantity, hundertstel, alleZeilen = [] }) 
 }
 
 /**
+ * Gemeinsamer Rollenbestand (Inhaberentscheidung 2026-10-10, Nachbau der
+ * internen Bestellmail): Ein Teppich nach Mass mit custom.zuschnitt_von_rolle
+ * bucht seinen Rollenverbrauch ueber ein 0-EUR-Bundle ab; in der Bestellung
+ * steht dafuer die Rollenware als Bundle-Komponente (lineItemGroup gesetzt).
+ * Verglichen wird ueber die ganze Bestellung: Bedarf aller solchen Teppiche
+ * (aus den Massen, Bestandseinheit 1 m2 voller Rollenbreite) gegen die Menge
+ * der Komponentenzeilen.
+ *
+ * @returns {{bedarf:number|null, gebucht:number, rollenbreiteCm:number|null}}
+ */
+export function istRollenKomponente(li) {
+  if (!li?.lineItemGroup) return false;
+  const pm = metafeldMap(li.variant?.product?.metafields);
+  return !leer(pm?.custom?.max_roll_laenge_cm);
+}
+
+function istRollenTeppich(li) {
+  const pm = metafeldMap(li?.variant?.product?.metafields);
+  return !leer(pm?.custom?.zuschnitt_von_rolle);
+}
+
+export function rollenbestand(zeilen = []) {
+  const komponenten = zeilen.filter(istRollenKomponente);
+  const gebucht = komponenten.reduce((s, z) => s + (Number(z.quantity) || 0), 0);
+  // Rollenbreite aus der Rollenware (custom.rollenbreite in m an der Variante).
+  let rollenbreiteCm = null;
+  for (const k of komponenten) {
+    const vm = metafeldMap(k.variant?.metafields);
+    const m = zahlOderUngeklaert(vm?.custom?.rollenbreite);
+    if (m !== UNGEKLAERT) { rollenbreiteCm = Math.round(m * 100); break; }
+  }
+  let bedarf = 0;
+  for (const z of zeilen.filter(istRollenTeppich)) {
+    const p = propertiesMap(z.customAttributes ?? z.properties);
+    const masse = parseMasse(p['Maße']);
+    // Ohne Komponente fehlt die Rollenbreite der Ware; dann gilt die interne
+    // Angabe des Konfigurators (nur fuer die Hoehe des Bedarfs, nicht fuer ok).
+    const rb = rollenbreiteCm ?? (ganzzahlCm(p['_Zuschnitt aus Rolle']) || null);
+    if (!masse || !(masse.w > 0) || !(masse.l > 0) || !rb) return { bedarf: null, gebucht, rollenbreiteCm };
+    const kurz = Math.min(masse.w, masse.l);
+    const lang = Math.max(masse.w, masse.l);
+    const cm = lang <= rb ? kurz : lang;
+    bedarf += Math.ceil((cm * rb) / 10000);
+  }
+  return { bedarf, gebucht, rollenbreiteCm };
+}
+
+/**
  * Loest eine Bestellposition zu einem procurement_item auf.
  *
  * @param {object} p
@@ -285,9 +333,31 @@ export function resolveLineItem({ lineItem, variant, alleZeilen = [] } = {}) {
     einkauf.quellvariante_quelle = 'property:_Quellvariante_ID';
   }
 
-  const pruefung = masspruefung({ props, quantity: lineItem.quantity, hundertstel: produkt.preis_pro_001_qm, alleZeilen });
+  let pruefung = masspruefung({ props, quantity: lineItem.quantity, hundertstel: produkt.preis_pro_001_qm, alleZeilen });
+
+  // Bundle-Komponente (lineItemGroup): Bestandsabgang zum Bundle, kein eigener
+  // Zuschnitt und kein eigener Einkauf.
+  const gruppe = lineItem.lineItemGroup ?? null;
+  const bundle = gruppe ? { titel: gruppe.title ?? null, menge: Number(gruppe.quantity) || null } : null;
+  if (gruppe) {
+    pruefung = {
+      status: 'bestand', soll: 0, einheit: '', ist: Number(lineItem.quantity) || 0,
+      hinweis: `Bestandsabgang zu „${gruppe.title ?? 'Bundle'}“ – nicht separat zuschneiden`,
+    };
+  } else if (!leer(pm?.custom?.zuschnitt_von_rolle)) {
+    const zeilen = alleZeilen.includes(lineItem) ? alleZeilen : [lineItem, ...alleZeilen];
+    const rb = rollenbestand(zeilen);
+    if (rb.bedarf === null) {
+      pruefung = { ...pruefung, status: 'unlesbar', hinweis: 'Rollenverbrauch nicht pruefbar – von Hand nachrechnen' };
+    } else if (rb.gebucht < rb.bedarf) {
+      pruefung = { ...pruefung, status: pruefung.status === 'unlesbar' ? 'unlesbar' : 'abweichung', hinweis: `Rollenbestand nicht voll abgebucht: noetig ${rb.bedarf} m², abgebucht ${rb.gebucht} – nicht zuschneiden, Bestand pruefen` };
+    } else {
+      pruefung = { ...pruefung, hinweis: `Rollenbestand: ${rb.gebucht} m² abgebucht (noetig ${rb.bedarf})` };
+    }
+  }
 
   return {
+    bundle,
     lineItemId: lineItem.id ?? null,
     sku: sku ?? UNGEKLAERT,
     variantId: variant?.id ?? UNGEKLAERT,

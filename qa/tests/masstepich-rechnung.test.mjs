@@ -137,3 +137,33 @@ test('Gewichtsgrenze: kg nach abgerechneter Flaeche, ohne kg/m2 keine Grenze', (
   assert.match(f[0], /6,81 m²/);
   assert.deepEqual(M.pruefeMasse({ form: 'rechteck', w: 200, l: 400, maxW: 200, maxL: 600 }), []);
 });
+
+test('Rollenzuschnitt: Verbrauch der 4-m-Rolle und passende Bundle-Variante (25-cm-Raster)', () => {
+  const v = [];
+  for (let cm = 50; cm <= 1000; cm += 25) v.push({ id: cm, cm, available: cm <= 2000 });
+  // 2 x 3 m passt quer: nur die kuerzere Seite wird abgeschnitten.
+  assert.deepEqual(M.rollenZuschnitt('rechteck', 200, 300, 400, v), { verbrauchCm: 200, variante: v[6], ausreichend: true });
+  assert.equal(M.rollenZuschnitt('rechteck', 300, 200, 400, v).verbrauchCm, 200);
+  // 4 x 2 m: laengere Seite = Rollenbreite, 2 m Verbrauch.
+  assert.equal(M.rollenZuschnitt('rechteck', 400, 200, 400, v).verbrauchCm, 200);
+  // 2,5 x 7 m: laengere Seite passt nicht quer, 7 m Verbrauch.
+  assert.equal(M.rollenZuschnitt('rechteck', 250, 700, 400, v).variante.cm, 700);
+  // Angefangene 25 cm reservieren die naechste Variante: 201 cm -> 225 cm.
+  assert.equal(M.rollenZuschnitt('rechteck', 201, 301, 400, v).variante.cm, 225);
+  // Mindestmass 50 cm, rund nach umschliessendem Quadrat.
+  assert.equal(M.rollenZuschnitt('rechteck', 50, 50, 400, v).variante.cm, 50);
+  assert.equal(M.rollenZuschnitt('rund', 180, 999, 400, v).variante.cm, 200);
+  // Breiter als die Rolle: kein Zuschnitt.
+  assert.equal(M.rollenZuschnitt('rechteck', 410, 500, 400, v), null);
+  // Laenger als das Bundle-Raster (10 m): Variante fehlt, nicht ausreichend.
+  const zuLang = M.rollenZuschnitt('rechteck', 300, 1010, 400, v);
+  assert.equal(zuLang.variante, null);
+  assert.equal(zuLang.ausreichend, false);
+  // Bestand reicht nicht: Variante ist nicht verfuegbar.
+  const knapp = v.map(x => ({ ...x, available: x.cm <= 300 }));
+  assert.equal(M.rollenZuschnitt('rechteck', 250, 700, 400, knapp).ausreichend, false);
+  assert.equal(M.rollenZuschnitt('rechteck', 300, 400, 400, knapp).ausreichend, true);
+  // Ungueltige Eingaben.
+  assert.equal(M.rollenZuschnitt('rechteck', 0, 300, 400, v), null);
+  assert.equal(M.rollenZuschnitt('rechteck', 200, 300, 0, v), null);
+});

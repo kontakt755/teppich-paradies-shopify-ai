@@ -21,6 +21,12 @@
   Abgerechnet wird Variantenpreis x Menge durch Shopify. Menge = abgerechnete
   Flaeche in 0,01-m2-Einheiten (rund und oval: umschliessendes Rechteck),
   mindestens service.mindestpreis (EUR).
+
+  Optional custom.zuschnitt_von_rolle (Produktverweis): Sonderposten aus einer
+  begrenzten Rolle. Dann liegt je Teppich eine 0-EUR-Variante des versteckten
+  Bundles "Zuschnitt von der Rolle" mit im Warenkorb; ihre Komponente ist die
+  Rollenware, der Checkout prueft und bucht so denselben Bestand wie bei der
+  Meterware (docs/weiterentwicklung/rollenbestand.md).
 {% enddoc %}
 
 {%- liquid
@@ -114,6 +120,24 @@
       assign tp_ek_pauschale_v = nil
       assign tp_ek_pauschale_failed = true
     endunless
+  endif
+  # Gemeinsamer Rollenbestand (Sonderposten, Inhaber 10.10.2026): Das Produkt
+  # verweist mit custom.zuschnitt_von_rolle auf ein verstecktes Bundle, dessen
+  # Varianten ("50 cm" bis "1000 cm") je 25 cm eine Einheit der Rollenware als
+  # Komponente tragen. Eine Variante davon geht mit 0 EUR in denselben
+  # Warenkorbaufruf; der Checkout bucht so den Rollenverbrauch vom Bestand der
+  # Meterware ab. Verweis gesetzt, aber Bundle nicht ladbar (Entwurf, nicht
+  # veroeffentlicht) oder ohne Variante: Kauf gesperrt (fail closed).
+  assign tp_ek_zs_feld = product.metafields.custom.zuschnitt_von_rolle
+  assign tp_ek_zs_aktiv = false
+  assign tp_ek_zs_failed = false
+  assign tp_ek_zs = nil
+  if tp_ek_zs_feld != nil and tp_ek_zs_feld != blank
+    assign tp_ek_zs_aktiv = true
+    assign tp_ek_zs = tp_ek_zs_feld.value
+    if tp_ek_zs == blank or tp_ek_zs.variants.size == 0
+      assign tp_ek_zs_failed = true
+    endif
   endif
   assign tp_ek_kg_qm = product.metafields.service.kg_pro_qm.value | default: 0 | times: 1
   assign tp_ek_max_kg = product.metafields.service.max_gewicht_kg.value | default: 0 | times: 1
@@ -335,6 +359,21 @@
         "kettel_service_failed": {{ tp_ek_kettel_service_failed | json }},
         "pauschale": {% if tp_ek_pauschale_v %}{ "id": {{ tp_ek_pauschale_v.id | json }}, "price": {{ tp_ek_pauschale_v.price | json }} }{% else %}null{% endif %},
         "pauschale_failed": {{ tp_ek_pauschale_failed | json }},
+        {%- comment -%} Zuschnitt von der Rolle: Variante je Rollenlaenge in cm (Optionswert "200 cm") {%- endcomment -%}
+        "zuschnitt": {% if tp_ek_zs_aktiv -%}{
+          "failed": {{ tp_ek_zs_failed | json }},
+          "varianten": [
+            {%- unless tp_ek_zs_failed -%}
+              {%- for tp_ek_zv in tp_ek_zs.variants -%}
+                {%- assign tp_ek_zv_cm = tp_ek_zv.option1 | remove: 'cm' | strip | times: 1 -%}
+                {%- if tp_ek_zv_cm > 0 -%}
+                  { "id": {{ tp_ek_zv.id | json }}, "cm": {{ tp_ek_zv_cm | json }}, "price": {{ tp_ek_zv.price | json }}, "available": {{ tp_ek_zv.available | json }} },
+                {%- endif -%}
+              {%- endfor -%}
+            {%- endunless -%}
+            null
+          ]
+        }{%- else -%}null{%- endif -%},
         "kg_pro_qm": {{ tp_ek_kg_qm | json }},
         "max_gewicht_kg": {{ tp_ek_max_kg | json }},
         "rollen": {{ tp_ek_rollen_liste | json }},

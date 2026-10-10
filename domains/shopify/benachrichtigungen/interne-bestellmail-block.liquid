@@ -38,6 +38,23 @@
   "zu wenig bezahlt"; eine hoehere Menge (Mindestpreis) ist in Ordnung.
   Das blockiert keine Bestellung. Es ist ein Auffangnetz vor dem Zuschnitt.
 
+  GEMEINSAMER ROLLENBESTAND (Inhaberentscheidung 2026-10-10, Sofortkauf):
+  Ein Teppich nach Mass mit custom.zuschnitt_von_rolle (Sonderposten aus einer
+  begrenzten Rolle) bucht seinen Rollenverbrauch ueber ein verstecktes
+  0-EUR-Bundle "Zuschnitt von der Rolle" ab. In der Bestellung steht dafuer
+  eine Zeile der ROLLENWARE (Bundle-Komponente, 0 EUR) - sie ist ein
+  Bestandsabgang zum Teppich und wird NICHT separat als Meterware
+  zugeschnitten. Die Mail rechnet den Verbrauch aus den Massen des Teppichs
+  nach (passt die laengere Seite quer in die Rolle, nur die kuerzere; Breite =
+  service.max_breite_cm) und vergleicht ihn mit den abgebuchten Einheiten
+  (1 Einheit = 1 m2 = 25 cm bei 4 m Rolle). Fehlt die Zeile oder ist sie zu
+  klein (per /cart/change.js entfernt), muss der Bestand vor dem Zuschnitt
+  von Hand gesenkt werden. Komponentenzeilen erkennt die Mail an line.groups
+  (Bundle) oder an Preis 0 bei einem Produkt mit custom.max_roll_laenge_cm;
+  zeigt Shopify statt der Komponente die Bundle-Zeile selbst, zaehlt deren
+  Property "Rollenzuschnitt". Beides ist erst mit der ersten echten
+  Bestellung belegt (Testbenachrichtigung im Admin, README).
+
   Die Variante gewinnt vor dem Produkt: eine Farbe kann eine eigene
   Artikelnummer beim Grosshaendler haben. Fehlt beides, steht bewusst
   "Großhändler-ID fehlt" da - nicht ein leeres Feld, das man ueberliest.
@@ -129,6 +146,14 @@
   </div>
 
   {%- assign tp_mp_alarm = false -%}
+  {%- liquid
+    assign tp_rz_bedarf = 0
+    assign tp_rz_gebucht = 0
+    assign tp_rz_bundle_cm = 0
+    assign tp_rz_rb_ref = 0
+    assign tp_rz_teppiche = 0
+    assign tp_rz_unlesbar = false
+  -%}
   {%- capture tp_mp_tabelle -%}
   <p style="margin:0 0 4px;font-weight:bold;">Artikel mit Großhändler-ID</p>
   <table style="width:100%;border-collapse:collapse;font-size:13px;">
@@ -190,6 +215,7 @@
         assign tp_mp_form = ''
         assign tp_mp_wm_breite = ''
         assign tp_mp_wm_einzel = ''
+        assign tp_rz_zeile_cm = ''
         for p in line.properties
           case p.first
             when 'Maße'
@@ -220,6 +246,8 @@
               assign tp_mp_zu = p.last
             when 'Zu Teppichboden'
               assign tp_mp_zu = p.last
+            when 'Rollenzuschnitt'
+              assign tp_rz_zeile_cm = p.last
           endcase
         endfor
 
@@ -388,6 +416,52 @@
           assign tp_mp_status = 'unlesbar'
         endif
 
+        # Gemeinsamer Rollenbestand: Bedarf des Teppichs aus seinen Massen.
+        assign tp_rz_rolle = ''
+        assign tp_rz_marker = line.product.metafields.custom.zuschnitt_von_rolle
+        if tp_rz_marker != blank
+          assign tp_rz_teppiche = tp_rz_teppiche | plus: 1
+          assign tp_rz_rb_feld = line.product.metafields.service.max_breite_cm
+          assign tp_rz_rb = tp_rz_rb_feld.value | default: tp_rz_rb_feld | plus: 0 | floor
+          if tp_rz_rb > 0 and tp_mp_w > 0 and tp_mp_l > 0 and tp_mp_masse != ''
+            if tp_mp_w < tp_mp_l
+              assign tp_rz_kurz = tp_mp_w
+              assign tp_rz_lang = tp_mp_l
+            else
+              assign tp_rz_kurz = tp_mp_l
+              assign tp_rz_lang = tp_mp_w
+            endif
+            if tp_rz_lang <= tp_rz_rb
+              assign tp_rz_cm = tp_rz_kurz
+            else
+              assign tp_rz_cm = tp_rz_lang
+            endif
+            assign tp_rz_einh = tp_rz_cm | times: tp_rz_rb | plus: 9999 | divided_by: 10000 | floor
+            assign tp_rz_bedarf = tp_rz_bedarf | plus: tp_rz_einh
+            assign tp_rz_rb_ref = tp_rz_rb
+            assign tp_rz_rolle = 'Rolle: ' | append: tp_rz_cm | append: ' cm = ' | append: tp_rz_einh | append: ' m² Bestand'
+          else
+            assign tp_rz_unlesbar = true
+          endif
+        endif
+
+        # Bundle-Komponente (Rollenware zu 0 EUR) oder - falls Shopify die
+        # Bundle-Zeile selbst zeigt - die Zeile mit "Rollenzuschnitt".
+        assign tp_rz_komponente = false
+        if line.product.metafields.custom.max_roll_laenge_cm != blank and tp_mp_laenge == ''
+          if line.groups.size > 0 or line.final_price == 0
+            assign tp_rz_komponente = true
+          endif
+        endif
+        if tp_rz_komponente
+          assign tp_rz_gebucht = tp_rz_gebucht | plus: line.quantity
+          assign tp_mp_status = 'bestand'
+        elsif tp_rz_zeile_cm != ''
+          assign tp_rz_z_cm = tp_rz_zeile_cm | remove: 'cm' | strip | plus: 0 | floor | times: line.quantity
+          assign tp_rz_bundle_cm = tp_rz_bundle_cm | plus: tp_rz_z_cm
+          assign tp_mp_status = 'bestand'
+        endif
+
         if tp_mp_status == 'abweichung' or tp_mp_status == 'unlesbar' or tp_mp_status == 'waise'
           assign tp_mp_alarm = true
         endif
@@ -411,13 +485,58 @@
             {% when 'abweichung' %}<strong style="color:#a62020;">MENGE ZU KLEIN</strong><br><span style="font-size:12px;">bestellt {{ line.quantity }}, zum Maß gehören mind. {{ tp_mp_soll }} {{ tp_mp_einheit }}</span>
             {% when 'unlesbar' %}<strong style="color:#a62020;">Maß fehlt oder nicht lesbar</strong><br><span style="font-size:12px;">von Hand nachrechnen</span>
             {% when 'waise' %}<strong style="color:#a62020;">Service ohne Teppich</strong><br><span style="font-size:12px;">zugehörige Zeile fehlt</span>
+            {% when 'bestand' %}<strong>Bestandsabgang zum Maßteppich</strong><br><span style="font-size:12px;">nicht separat zuschneiden</span>
             {% else %}–
           {% endcase %}
+          {% if tp_rz_rolle != '' %}<br><span style="color:#6b6b6b;font-size:12px;">{{ tp_rz_rolle }}</span>{% endif %}
         </td>
       </tr>
     {% endfor %}
   </table>
   {%- endcapture -%}
+  {%- liquid
+    if tp_rz_bundle_cm > 0 and tp_rz_rb_ref > 0
+      assign tp_rz_bundle_einh = tp_rz_bundle_cm | times: tp_rz_rb_ref | divided_by: 10000 | floor
+      assign tp_rz_gebucht = tp_rz_gebucht | plus: tp_rz_bundle_einh
+    elsif tp_rz_bundle_cm > 0
+      assign tp_rz_unlesbar = true
+    endif
+    assign tp_rz_fall = ''
+    if tp_rz_unlesbar
+      assign tp_rz_fall = 'unlesbar'
+    elsif tp_rz_teppiche > 0 and tp_rz_gebucht < tp_rz_bedarf
+      assign tp_rz_fall = 'fehlt'
+    elsif tp_rz_teppiche == 0 and tp_rz_gebucht > 0
+      assign tp_rz_fall = 'ohne-teppich'
+    elsif tp_rz_teppiche > 0 and tp_rz_gebucht > tp_rz_bedarf
+      assign tp_rz_fall = 'zu-viel'
+    elsif tp_rz_teppiche > 0
+      assign tp_rz_fall = 'ok'
+    endif
+  -%}
+  {%- case tp_rz_fall -%}
+    {%- when 'fehlt' -%}
+      <div style="margin:0 0 16px;padding:12px;border:3px solid #a62020;background:#fde8e8;color:#a62020;font-size:15px;font-weight:bold;">
+        ROLLENBESTAND NICHT VOLL ABGEBUCHT – NICHT ZUSCHNEIDEN.<br>
+        <span style="font-size:13px;font-weight:normal;color:#15171a;">Der Maßteppich braucht {{ tp_rz_bedarf }} m² der Rolle, abgebucht wurden {{ tp_rz_gebucht }}. Vor dem Zuschnitt prüfen, ob die Rolle noch reicht, und den Bestand der Rollenware im Admin um {{ tp_rz_bedarf | minus: tp_rz_gebucht }} senken; reicht sie nicht, stornieren und erstatten.</span>
+      </div>
+    {%- when 'unlesbar' -%}
+      <div style="margin:0 0 16px;padding:12px;border:3px solid #a62020;background:#fde8e8;color:#a62020;font-size:15px;font-weight:bold;">
+        ROLLENBESTAND NICHT PRÜFBAR – NICHT ZUSCHNEIDEN.<br>
+        <span style="font-size:13px;font-weight:normal;color:#15171a;">Maß oder Rollenbreite des Maßteppichs ist nicht lesbar. Verbrauch von Hand nachrechnen und mit dem Bestand der Rollenware abgleichen.</span>
+      </div>
+    {%- when 'ohne-teppich' -%}
+      <div style="margin:0 0 16px;padding:12px;border:3px solid #a62020;background:#fde8e8;color:#a62020;font-size:15px;font-weight:bold;">
+        ZUSCHNITT VON DER ROLLE OHNE TEPPICH – NICHTS ZUSCHNEIDEN.<br>
+        <span style="font-size:13px;font-weight:normal;color:#15171a;">{{ tp_rz_gebucht }} m² Rollenbestand wurden ohne zugehörigen Maßteppich abgebucht. Bestellung prüfen und die Zeile mit Wiedereinlagerung stornieren.</span>
+      </div>
+    {%- when 'zu-viel' -%}
+      <div style="margin:0 0 16px;padding:10px 12px;border-radius:6px;background:#fff4e5;border:1px solid #f0b34c;line-height:1.5;">
+        <strong>Rollenbestand: {{ tp_rz_gebucht }} m² abgebucht, nötig sind {{ tp_rz_bedarf }}.</strong> Zugeschnitten wird nur der Bedarf; den Rest im Admin wieder zubuchen.
+      </div>
+    {%- when 'ok' -%}
+      <p style="margin:0 0 16px;color:#1d6b35;">Rollenbestand: {{ tp_rz_gebucht }} m² für {{ tp_rz_teppiche }} Maßteppich{% if tp_rz_teppiche > 1 %}e{% endif %} abgebucht – passt. Die Zeile der Rollenware ist kein eigener Zuschnitt.</p>
+  {%- endcase -%}
   {%- if tp_mp_alarm -%}
     <div style="margin:0 0 16px;padding:12px;border:3px solid #a62020;background:#fde8e8;color:#a62020;font-size:15px;font-weight:bold;">
       MENGE PASST NICHT ZUM MASS – NICHT ZUSCHNEIDEN.<br>

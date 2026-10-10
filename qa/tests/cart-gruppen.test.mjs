@@ -193,3 +193,44 @@ test('J: component-cart-items.js loescht Gruppen ueber /cart/update.js und sperr
   assert.match(js, /data-tp-cart-gesperrt/);
   assert.match(js, /\.cart__checkout-button/);
 });
+
+// Gemeinsamer Rollenbestand: Hauptzeile mit _Rollenzuschnitt, 0-EUR-Bundle-Zeile
+// "Zuschnitt von der Rolle" derselben Gruppe (assets/tp-einfass-konfigurator.js).
+const zuschnitt = (g, cm = '200 cm', q = 1) => ({
+  key: 'z1', titel: 'Zuschnitt von der Rolle – Passion Yasmin Anthrazit', quantity: q, preisPro001Qm: false, optionen: [cm],
+  properties: { 'Zu Teppich': 'Passion Yasmin Kettelteppich nach Maß', 'Rollenzuschnitt': cm, ...(g ? { _Gruppe: g } : {}) },
+});
+const yasmin = (g, cm = '200') => mass(g, { _Rollenzuschnitt: cm });
+
+test('K: Rollenzuschnitt - Bundle-Zeile ist Service der Teppichgruppe, fehlend oder zu klein sperrt', () => {
+  const ok = [yasmin('Y1'), kettel('Y1'), zuschnitt('Y1')];
+  assert.equal(G.istService(zuschnitt('Y1')), true);
+  assert.equal(G.istBerechnet(zuschnitt('Y1')), true);
+  assert.equal(G.kundeneinheit(zuschnitt('Y1')), '200 cm von der Rolle');
+  assert.equal(G.gruppen(ok).Y1.haupt.key, 't1');
+  assert.deepEqual(G.waisen(ok), []);
+  assert.equal(G.checkoutGesperrt(ok), false);
+  assert.deepEqual(G.zuEntfernen(yasmin('Y1'), ok).sort(), ['k1', 't1', 'z1']);
+
+  // Bundle-Zeile per /cart/change.js entfernt: Teppich ohne Bestandsabgang.
+  const ohne = G.waisen([yasmin('Y1'), kettel('Y1')]);
+  assert.equal(ohne.length, 1);
+  assert.equal(ohne[0].key, 't1');
+  assert.equal(ohne[0].grund, G.GRUND.ZUSCHNITT_FEHLT);
+  // Kleinere Variante oder Menge 0 deckt den Verbrauch nicht.
+  assert.equal(G.waisen([yasmin('Y1'), zuschnitt('Y1', '175 cm')])[0].grund, G.GRUND.ZUSCHNITT_FEHLT);
+  assert.equal(G.waisen([yasmin('Y1'), zuschnitt('Y1', '200 cm', 0)])[0].grund, G.GRUND.ZUSCHNITT_FEHLT);
+  // Zuschnitt einer anderen Gruppe zaehlt nicht.
+  assert.equal(G.waisen([yasmin('Y1'), zuschnitt('Y2')]).map(w => w.grund).sort().join(), [G.GRUND.GRUPPE_OHNE_HAUPT, G.GRUND.ZUSCHNITT_FEHLT].sort().join());
+  // Bundle-Zeile allein (Teppich entfernt) ist eine Waise wie der Kettelservice.
+  assert.equal(G.waisen([zuschnitt('Y1')])[0].grund, G.GRUND.GRUPPE_OHNE_HAUPT);
+  // Gewoehnlicher Teppich nach Mass ohne _Rollenzuschnitt bleibt unberuehrt.
+  assert.deepEqual(G.waisen([mass('K1'), kettel('K1')]), []);
+  // Gemischter Warenkorb: Meterware derselben Rolle daneben stoert nicht.
+  assert.deepEqual(G.waisen([meterware('T1'), ...ok]), []);
+});
+
+test('L: Liquid-Seite kennt die Rollenzuschnitt-Regel', () => {
+  const liquid = lies('snippets/tp-cart-gruppe.liquid');
+  for (const key of ['_Rollenzuschnitt', 'Rollenzuschnitt', 'von der Rolle']) assert.ok(liquid.includes(key), key);
+});
