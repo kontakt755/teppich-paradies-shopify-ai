@@ -8,6 +8,7 @@
 //   node operations/scripts/angebotswelle.mjs plan <export.jsonl> <ziel> --prozent 15 --start 2026-11-03 --ende 2026-11-16 (--typ Teppichboden | --handles a,b)
 //   node operations/scripts/angebotswelle.mjs ende <export.jsonl> <ziel> --stichtag 2026-11-02 [--klasse preisanker] [--ende-am 2026-11-01]
 //   node operations/scripts/angebotswelle.mjs ende <varianten.json> <ziel> --produkte <produkte.json> --stichtag ...
+//   node operations/scripts/angebotswelle.mjs ende ... --ausschluss <ids.txt>   (Varianten nie hochsetzen, nur Vergleichspreis leeren)
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -128,17 +129,38 @@ export function plane(varianten, opt) {
 }
 
 /**
+ * Ausschlussliste fuer ende: eine Varianten-ID je Zeile (gid://shopify/ProductVariant/<n> oder
+ * nur <n>), "#" leitet einen Kommentar ein. Unlesbare Zeilen brechen ab statt still zu entfallen.
+ */
+export function ladeAusschluss(text) {
+  const ids = new Set();
+  for (const roh of String(text).split('\n')) {
+    const z = roh.replace(/#.*/, '').trim();
+    if (!z) continue;
+    const m = z.match(/^(?:gid:\/\/shopify\/ProductVariant\/)?(\d+)$/);
+    if (!m) throw new Error(`Ausschlussliste: "${z}" ist keine Varianten-ID`);
+    ids.add(`gid://shopify/ProductVariant/${m[1]}`);
+  }
+  if (!ids.size) throw new Error('Ausschlussliste ist leer');
+  return ids;
+}
+
+/**
  * Rueckstellung aus dem Live-Stand: Produkte, deren aktion.ende vor dem Stichtag liegt und
  * die noch reduziert sind, gehen auf den regulaeren Preis zurueck, der Vergleichspreis wird
  * geleert. Meterware: Zielpreis = Vergleichspreis. Raummass (Wunschmass-Variante): der
  * ,90-Betrag dazu (aufNeunzig, Inhaber 2026-10-05). Muster bleiben unberuehrt.
  * opt.endeAm (JJJJ-MM-TT): nur Produkte mit genau diesem aktion.ende - trennt zwei Aktionen
  * derselben Klasse (Welle 1 endet 18.10., Dauerrabatt 01.11., beide preisanker).
+ * opt.ausschluss (Set von Varianten-IDs): Vergleichspreis ist kein eigener Vorpreis (z. B.
+ * UVP neuer Linien) - Preis bleibt, nur der Vergleichspreis wird geleert (eigene Datei
+ * `leeren`), statt den Preis auf den Vergleichspreis hochzusetzen.
  */
 export function ende(varianten, opt) {
   if (!DATUM.test(opt.stichtag || '')) throw new Error('--stichtag als JJJJ-MM-TT');
   if (opt.endeAm != null && (!DATUM.test(opt.endeAm) || tag(opt.endeAm) >= tag(opt.stichtag))) throw new Error('--ende-am als JJJJ-MM-TT vor dem Stichtag');
   const zurueck = new Map(); const csv = []; const warnungen = [];
+  const leeren = new Map(); const ausgeschlossen = [];
   for (const v of varianten) {
     const p = v.product;
     if (!p.ende || !DATUM.test(p.ende) || tag(p.ende) >= tag(opt.stichtag)) continue;
@@ -146,6 +168,13 @@ export function ende(varianten, opt) {
     if (opt.endeAm && p.ende !== opt.endeAm) continue;
     if (istMuster(v)) continue;
     if (!v.compareAtPrice || cent(v.compareAtPrice) <= cent(v.price)) continue;
+    if (opt.ausschluss?.has(v.id)) {
+      // Preis unveraendert mitgeben: batch-erzeugen.mjs schreibt price immer mit.
+      if (!leeren.has(p.id)) leeren.set(p.id, []);
+      leeren.get(p.id).push({ id: v.id, price: euro(cent(v.price)), compareAtPrice: null });
+      ausgeschlossen.push([p.handle, v.title, v.sku || '', euro(cent(v.price)), euro(cent(v.compareAtPrice)), p.ende].join(';'));
+      continue;
+    }
     const raummass = istRaummass(v);
     if (raummassUnklar(v)) warnungen.push(`${p.handle} / ${v.title}: Raummass-Schreibweise nicht erkannt, als Meterware gerechnet`);
     const ziel = euro(raummass ? rueckstellNeunzig(cent(v.compareAtPrice)) : cent(v.compareAtPrice));
@@ -153,14 +182,14 @@ export function ende(varianten, opt) {
     zurueck.get(p.id).push({ id: v.id, price: ziel, compareAtPrice: null });
     csv.push([p.handle, v.title, v.sku || '', raummass ? 'Raummaß' : 'Meterware', v.price, euro(cent(v.compareAtPrice)), ziel, p.ende].join(';'));
   }
-  return { zurueck, csv, warnungen };
+  return { zurueck, csv, warnungen, leeren, ausgeschlossen };
 }
 
 const jsonl = (map) => [...map].map(([productId, variants]) => JSON.stringify({ productId, variants })).join('\n') + '\n';
 
 // Preisskript: eine falsch geschriebene oder wertlose Option darf nie still entfallen
 // (sonst rechnet ende ohne --ende-am und nimmt eine fremde Aktion mit).
-const OPTIONEN = { plan: ['prozent', 'start', 'ende', 'typ', 'handles', 'produkte'], ende: ['stichtag', 'klasse', 'ende-am', 'produkte'] };
+const OPTIONEN = { plan: ['prozent', 'start', 'ende', 'typ', 'handles', 'produkte'], ende: ['stichtag', 'klasse', 'ende-am', 'produkte', 'ausschluss'] };
 export function optionsFehler(befehl, o) {
   const erlaubt = OPTIONEN[befehl] || [];
   for (const [k, v] of Object.entries(o)) {
@@ -185,7 +214,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const fehler = optionsFehler(befehl, o);
   if (fehler) { console.error(fehler); process.exit(2); }
   if (!['plan', 'ende'].includes(befehl) || !quelle || !ziel) {
-    console.error('Aufruf: angebotswelle.mjs abfrage | plan <export.jsonl> <ziel> --prozent N --start D --ende D (--typ T | --handles a,b) | ende <export.jsonl> <ziel> --stichtag D [--klasse K] [--ende-am D] [--produkte produkte.json]');
+    console.error('Aufruf: angebotswelle.mjs abfrage | plan <export.jsonl> <ziel> --prozent N --start D --ende D (--typ T | --handles a,b) | ende <export.jsonl> <ziel> --stichtag D [--klasse K] [--ende-am D] [--produkte produkte.json] [--ausschluss ids.txt]');
     process.exit(2);
   }
   const varianten = ladeExport(fs.readFileSync(quelle, 'utf8'), o.produkte && fs.readFileSync(o.produkte, 'utf8'));
@@ -200,10 +229,16 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     schreib('rueckstellen.jsonl', jsonl(r.zurueck));
     console.log(`Plan: ${r.csv.length} Varianten in ${r.setzen.size} Produkten, ${r.ausgelassen.length} ausgelassen -> ${ziel}`);
   } else {
-    const r = ende(varianten, { stichtag: o.stichtag, klasse: o.klasse, endeAm: o['ende-am'] });
+    const ausschluss = o.ausschluss ? ladeAusschluss(fs.readFileSync(o.ausschluss, 'utf8')) : null;
+    const r = ende(varianten, { stichtag: o.stichtag, klasse: o.klasse, endeAm: o['ende-am'], ausschluss });
     schreib('rueckstellen.csv', ['handle;variante;sku;zuschnitt;preis_aktion;vergleichspreis;zielpreis;aktion_ende', ...r.csv].join('\n') + '\n');
     schreib('rueckstellen.jsonl', jsonl(r.zurueck));
     console.log(`Rueckstellung: ${r.csv.length} Varianten in ${r.zurueck.size} Produkten -> ${ziel}`);
+    if (ausschluss) {
+      schreib('ausgeschlossen.csv', ['handle;variante;sku;preis_bleibt;vergleichspreis_leeren;aktion_ende', ...r.ausgeschlossen].join('\n') + '\n');
+      schreib('nur-vergleichspreis-leeren.jsonl', r.leeren.size ? jsonl(r.leeren) : '');
+      console.log(`Ausschluss: ${r.ausgeschlossen.length} von ${ausschluss.size} gelisteten Varianten reduziert und betroffen; Preis bleibt, nur Vergleichspreis leeren -> nur-vergleichspreis-leeren.jsonl`);
+    }
     for (const w of r.warnungen) console.warn(`WARNUNG ${w}`);
   }
 }

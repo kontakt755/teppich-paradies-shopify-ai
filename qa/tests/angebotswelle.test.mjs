@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { aufNeunzig, ende, istRaummass, ladeExport, optionsFehler, plane, planeVariante, rueckstellNeunzig, sperrgrund } from '../../operations/scripts/angebotswelle.mjs';
+import { aufNeunzig, ende, istRaummass, ladeAusschluss, ladeExport, optionsFehler, plane, planeVariante, rueckstellNeunzig, sperrgrund } from '../../operations/scripts/angebotswelle.mjs';
 
 const P = (o) => ({ id: 'gid://shopify/Product/1', handle: 'velours-x', productType: 'Teppichboden', status: 'ACTIVE', ...o });
 const V = (o) => ({ id: 'gid://shopify/ProductVariant/1', title: '400 cm', sku: 'S1', price: '20.00', compareAtPrice: null, product: P(), ...o });
@@ -167,4 +167,41 @@ test('Optionen: Tippfehler und fehlende Werte brechen ab statt still zu entfalle
   assert.match(optionsFehler('ende', { stichtag: '2026-11-02', endeam: '2026-11-01' }), /Unbekannte Option --endeam/);
   assert.match(optionsFehler('ende', { 'ende-am': '--stichtag' }), /ohne Wert/);
   assert.equal(optionsFehler('plan', { prozent: '15', start: '2026-11-03', ende: '2026-11-16', typ: 'Teppichboden' }), null);
+});
+
+test('Ausschlussliste: Varianten-IDs mit Kommentaren, Nummer ohne gid, Fehler bei Unlesbarem', () => {
+  const ids = ladeAusschluss('# UVP neuer Linien\ngid://shopify/ProductVariant/1001\n1002  # Matte gross\n\n');
+  assert.deepEqual([...ids], ['gid://shopify/ProductVariant/1001', 'gid://shopify/ProductVariant/1002']);
+  assert.throws(() => ladeAusschluss('gid://shopify/Product/2001'), /keine Varianten-ID/);
+  assert.throws(() => ladeAusschluss('# nur Kommentar\n'), /leer/);
+});
+
+test('Ende mit Ausschluss: UVP-Vergleichspreis wird nie Verkaufspreis, nur geleert', () => {
+  const dauer = P({ id: 'd1', handle: 'matte-x', ende: '2026-11-01', klasse: 'preisanker' });
+  const uvp = 'gid://shopify/ProductVariant/1001';
+  const varianten = [
+    V({ id: uvp, price: '65.00', compareAtPrice: '68.63', product: dauer }),
+    V({ id: 'belegt', price: '17.00', compareAtPrice: '20.00', product: dauer }),
+  ];
+  const ohne = ende(varianten, { stichtag: '2026-11-02', klasse: 'preisanker', endeAm: '2026-11-01' });
+  assert.equal(zielpreise(ohne)[uvp].price, '68.63', 'ohne Liste wird auf die UVP hochgesetzt');
+  const r = ende(varianten, { stichtag: '2026-11-02', klasse: 'preisanker', endeAm: '2026-11-01', ausschluss: new Set([uvp]) });
+  assert.deepEqual(Object.keys(zielpreise(r)), ['belegt']);
+  assert.equal(r.csv.length, 1);
+  assert.deepEqual(r.leeren.get('d1'), [{ id: uvp, price: '65.00', compareAtPrice: null }]);
+  assert.equal(r.ausgeschlossen.length, 1);
+  assert.match(r.ausgeschlossen[0], /^matte-x;400 cm;S1;65\.00;68\.63;2026-11-01$/);
+});
+
+test('Ausschluss gilt nur fuer reduzierte Varianten im Rueckstell-Fenster', () => {
+  const welle1 = P({ id: 'w1', ende: '2026-10-18', klasse: 'preisanker' });
+  const dauer = P({ id: 'd1', ende: '2026-11-01', klasse: 'preisanker' });
+  const r = ende([
+    V({ id: 'x', price: '65.00', compareAtPrice: '68.63', product: dauer }),
+    V({ id: 'y', price: '65.00', compareAtPrice: null, product: welle1 }),
+  ], { stichtag: '2026-10-19', klasse: 'preisanker', ausschluss: new Set(['x', 'y']) });
+  assert.equal(r.csv.length, 0);
+  assert.equal(r.leeren.size, 0, 'Dauerrabatt-Variante liegt am 19.10. ausserhalb, Welle-1-Variante ist nicht reduziert');
+  assert.equal(optionsFehler('ende', { stichtag: '2026-11-02', ausschluss: 'ids.txt' }), null);
+  assert.match(optionsFehler('plan', { ausschluss: 'ids.txt' }), /Unbekannte Option --ausschluss/);
 });

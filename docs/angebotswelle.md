@@ -49,6 +49,13 @@ Auswahl, Prozent, Start und Ende; am Ende geht der Preis auf den regulaeren Prei
     WARNUNG. Dieselbe Regel gilt fuer die vorab
     berechnete `rueckstellen.jsonl` aus `plan`.
   - Muster (`M-`, Handle `muster-…`) werden nie zurueckgestellt.
+  - **Vergleichspreis ist kein eigener Vorpreis** (z. B. UVP neuer Linien, die nie zu
+    diesem Preis im Shop standen): `--ausschluss <ids.txt>` (eine Varianten-ID je Zeile,
+    `#` = Kommentar). Diese Varianten werden nicht auf den Vergleichspreis hochgesetzt,
+    sondern landen in `ausgeschlossen.csv` und `nur-vergleichspreis-leeren.jsonl`
+    (Preis unveraendert, Vergleichspreis `null`). Ohne die Liste wuerde `ende` den Preis
+    auf die UVP anheben. Die Liste selbst liegt lokal unter `~/teppich-paradies-analyse/`
+    (enthaelt Shop-IDs, gehoert nicht ins Repository).
 - Wellen setzen `aktion.klasse = aktion`: befristete Aktion, **nicht** mit dem
   kostenlosen Vor-Ort-Service kombinierbar (Inhaber 2026-09-20). Der Dauerrabatt
   `preisanker` bleibt kombinierbar und endet ebenfalls mit `aktion.ende`.
@@ -64,3 +71,8 @@ Auswahl, Prozent, Start und Ende; am Ende geht der Preis auf den regulaeren Prei
   Export vom 08.10. (`--stichtag 2026-10-19 --klasse preisanker`): 680 Varianten in
   18 Produkten (451 Meterware, 229 Raummass), Zielpreise identisch mit der
   freigegebenen Variantenliste.
+- UVP-Vergleichspreise neuer Linien (74 Varianten in 40 Produkten, alle `preisanker`,
+  Ende 01.11.): am 09.10. geleert, am 10.10. Wiederherstellung gewuenscht (Freigabe der
+  konkreten Tabelle offen). Sind sie wiederhergestellt, braucht die Rueckstellung am 02.11.
+  `--ausschluss`, sonst setzt `ende` diese Preise um 5–18 % auf die UVP hoch. Welle 1
+  (Stichtag 19.10.) erfasst sie nicht, weil ihr `aktion.ende` nach dem Stichtag liegt.
