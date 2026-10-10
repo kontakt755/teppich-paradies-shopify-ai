@@ -57,9 +57,9 @@ test('Telefonnummer: Kundenkonto zuerst, sonst aus der Lieferadresse', () => {
   assert.equal(ausKonto.telefonQuelle, 'kundenkonto');
 
   const ohneKonto = { ...kunde(2), defaultPhoneNumber: null };
-  ohneKonto.defaultAddress = { ...ohneKonto.defaultAddress, phone: '+4917657931322' };
+  ohneKonto.defaultAddress = { ...ohneKonto.defaultAddress, phone: '+491792612211' };
   const ausAdresse = kundenEintrag(ohneKonto);
-  assert.equal(ausAdresse.telefon, '+4917657931322');
+  assert.equal(ausAdresse.telefon, '+491792612211');
   assert.equal(ausAdresse.telefonQuelle, 'lieferadresse');
 
   const ohneAlles = { ...kunde(3), defaultPhoneNumber: null };
