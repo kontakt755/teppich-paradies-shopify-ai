@@ -120,7 +120,7 @@
   # 2026-10-10). Kuerzere Eingaben hebt der Rechner auf diese Laenge an,
   # statt sie zu sperren (ART.mitMindestlaenge) - wie der Mindestpreis im
   # Einfass-Konfigurator. Ohne Metafeld bleibt es bei 100 cm.
-  assign tp_rc_min_laenge_cm = product.metafields.custom.mindestlaenge_lfm.value | times: 100 | ceil
+  assign tp_rc_min_laenge_cm = product.metafields.custom.mindestlaenge_lfm.value | times: 100 | round
   if tp_rc_min_laenge_cm < 100
     assign tp_rc_min_laenge_cm = 0
   endif
@@ -158,6 +158,12 @@
         endif
       endif
     endif
+  endif
+  # Liegt die Mindestlaenge ueber dem, was ueberhaupt da ist (Restbestand,
+  # max_roll_laenge_cm), waere jede Eingabe zu lang und das Produkt
+  # unverkaeuflich. Dann gilt sie nicht - der Rest ist eigene Ware.
+  if tp_rc_min_laenge_cm > tp_rc_max_laenge_cm
+    assign tp_rc_min_laenge_cm = 0
   endif
 -%}
 {%- comment -%}
@@ -293,7 +299,7 @@
         </p>
       {%- endif -%}
       {%- if tp_rc_min_laenge_cm > 0 -%}
-        <p class="tp-rwc-note" data-mindest-hint data-text-basis="Mindestbestellmenge: {{ tp_rc_min_laenge_m }} m Länge. Kürzere Längen liefern und berechnen wir mit {{ tp_rc_min_laenge_m }} m.">Mindestbestellmenge: {{ tp_rc_min_laenge_m }} m Länge. Kürzere Längen liefern und berechnen wir mit {{ tp_rc_min_laenge_m }} m.</p>
+        <p class="tp-rwc-note" data-mindest-hint>Mindestbestellmenge: {{ tp_rc_min_laenge_m }} m Länge. Kürzere Längen liefern und berechnen wir mit {{ tp_rc_min_laenge_m }} m.</p>
       {%- endif -%}
       <p class="tp-rwc-note tp-rwc-note-error" data-error-min hidden>Mindestlänge {% if tp_rc_min_laenge_cm > 0 %}{{ tp_rc_min_laenge_m }} m{% else %}100 cm{% endif %}</p>
       {%- comment -%}
@@ -1403,6 +1409,7 @@ function tpRwcInit{{ tp_rc_id }}() {
   // Mindestbestelllaenge in cm, 0 = keine (siehe tp_rc_min_laenge_cm).
   var MIN_BESTELL_CM = {{ tp_rc_min_laenge_cm }};
   var mindestHint = root.querySelector('[data-mindest-hint]');
+  var mindestHintBasis = mindestHint ? mindestHint.textContent : '';
   var errStock = root.querySelector('[data-error-stock]');
   var piece = root.querySelector('[data-piece]');
   var tagW = root.querySelector('[data-tag-width]');
@@ -2246,7 +2253,7 @@ function tpRwcInit{{ tp_rc_id }}() {
       var eingabeKurz = laengeAngehoben();
       mindestHint.textContent = eingabeKurz
         ? 'Mindestbestellmenge ' + fmtMeter(MIN_BESTELL_CM) + ': Ihre ' + fmtMeter(eingabeKurz) + ' werden auf ' + fmtMeter(MIN_BESTELL_CM) + ' angehoben – so liefern und berechnen wir es.'
-        : mindestHint.getAttribute('data-text-basis');
+        : mindestHintBasis;
       mindestHint.classList.toggle('tp-rwc-note--angehoben', !!eingabeKurz);
     }
     zeigeGegenprobe(wunschEcho, 'Breite', raum ? wunschInput : null);

@@ -15,7 +15,7 @@
 {%- enddoc -%}
 {%- liquid
   assign tp_ml_zeigen = false
-  assign tp_ml_min_cm = line_item.product.metafields.custom.mindestlaenge_lfm.value | times: 100 | ceil
+  assign tp_ml_min_cm = line_item.product.metafields.custom.mindestlaenge_lfm.value | times: 100 | round
   if tp_ml_min_cm >= 100
     assign tp_ml_breite_cm = line_item.properties['Ihre Breite'] | remove: 'cm' | strip | plus: 0
     if tp_ml_breite_cm <= 0

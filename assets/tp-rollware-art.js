@@ -158,7 +158,7 @@
   // angehobene Laenge. Leere oder ungueltige Eingaben bleiben unberuehrt
   // (cm <= 0), ebenso Produkte ohne Mindestlaenge (minCm <= 0).
   function mitMindestlaenge(cm, minCm) {
-    var min = Math.ceil(Number(minCm) || 0);
+    var min = Math.round(Number(minCm) || 0);
     if (!(cm > 0) || !(min > 0) || cm >= min) return { cm: cm > 0 ? cm : 0, angehoben: false };
     return { cm: min, angehoben: true };
   }
