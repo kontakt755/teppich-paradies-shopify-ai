@@ -118,10 +118,12 @@ Die Entscheidung trifft dann ein Mensch.
 Die Seite Teppich nach Maß zeigt die Qualitäten nicht mehr als ein Raster, sondern in Gruppen: oben
 Wegweiser-Karten (`sections/tp-teppiche-gruppen`), darunter je Gruppe eine Reihe
 (`tp-zubehoer-produkte`, Einstellung „Teppich-Gruppe“). Die Zuordnung steht allein in
-`snippets/tp-teppich-gruppe` und kommt aus den Daten des Teppichbodens (`service.einfass_basis`):
+`snippets/tp-teppich-gruppe` und kommt aus den Daten des Teppichbodens (`service.einfass_basis`) –
+mit einer Ausnahme vorweg: Design-Teppiche.
 
 | Gruppe | Regel | Stand |
 |---|---|---|
+| Design-Teppiche | `service.einfassung` = Fertig (Wunschmaß vom Hersteller, gemustert, bis 200 cm breit, kein Teppichboden dahinter). Geht allen anderen Regeln vor. Kennung `design`, Anker `#design`, Reihe `tp_gruppe_design` direkt vor „Weitere Qualitäten“ (2026-10-10). | neu; bis dahin unter „Weitere“ (dort live 28 am 10.10.) |
 | Natur | erstes `custom.fasermaterial` Naturfaser (Schurwolle, Sisal …) oder `custom.arten` = Wolle | 14 |
 | Extra flauschig | `custom.konstruktion` Velours und `custom.florhohe` ab 10 mm | 8 |
 | Weich | Velours unter 10 mm | 13 |
@@ -130,6 +132,10 @@ Wegweiser-Karten (`sections/tp-teppiche-gruppen`), darunter je Gruppe eine Reihe
 
 Neue Teppiche ordnen sich selbst ein, sobald Konstruktion, Florhöhe und Faser am Teppichboden gepflegt
 sind. Wie der Mass-Rechner liest die Seite höchstens 50 Produkte der Kollektion.
+
+Die Wegweiser-Karten stehen ab 900 px in einer Reihe, gleich breit, egal ob 4 oder 5 Gruppen Teppiche
+haben. Darunter zwei Spalten; bei ungerader Anzahl nimmt die letzte Karte die volle Breite
+(`assets/tp-teppiche.css`). Tests: `qa/tests/tp-teppich-gruppe.test.mjs`.
 
 ## Wunschmass vom Hersteller (Art „Fertig“, ab 2026-10-08)
 
