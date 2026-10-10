@@ -19,6 +19,7 @@ import os from 'node:os';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { normalizeTask, requirementsFor, labelChangesFor, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
+import { texteAusMarkdown } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
 import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
@@ -855,6 +856,28 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const rueckrufeAlle = leseRueckrufe(rueckrufePfad(dir));
       const zl = zeitleisten(dir, modell, statusAlle);
       return { verfuegbar: true, zeilen: bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, ...zeitleistenFelder(zl.get(z.orderId)) })) };
+    },
+
+    /**
+     * Textvorlage "Muster nachfassen" (Konzept des Inhabers, liegt nur im Privatordner):
+     * Betreff und Text der ersten Nachfrage und der Erinnerung. Die Liste selbst rechnet der
+     * Browser aus /api/kunden/bestellungen (docs/ai-dashboard/lib/muster-nachfassen.mjs).
+     */
+    kundenMusterTexte() {
+      const dir = privatDirPath || privatDir();
+      const file = path.join(dir, 'muster-nachfassen-texte.md');
+      let md;
+      try { md = fs.readFileSync(file, 'utf8'); }
+      catch (e) {
+        if (e?.code === 'ENOENT') return { verfuegbar: false, hinweis: 'Die Textvorlage fehlt: muster-nachfassen-texte.md im Privatordner ablegen.' };
+        console.error(`[daten] ${file}: ${e?.message || e}`);
+        return { verfuegbar: false, hinweis: 'Die Textvorlage ist nicht lesbar.' };
+      }
+      const texte = texteAusMarkdown(md);
+      if (!texte.erste && !texte.erinnerung) {
+        return { verfuegbar: false, hinweis: 'In der Textvorlage fehlen die Abschnitte „Text 1“ und „Erinnerung“ mit einer Zeile „**Betreff:**“.' };
+      }
+      return { verfuegbar: true, texte };
     },
 
     /**

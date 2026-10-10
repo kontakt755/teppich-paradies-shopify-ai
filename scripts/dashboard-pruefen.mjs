@@ -47,7 +47,7 @@ const BREITEN = [[1440, 900, 'desktop'], [1024, 768, 'b1024'], [800, 1000, 'b800
 // Grosse Exporte, die das Dashboard nur liest: verlinken statt kopieren.
 const NUR_LESEN = ['einkauf-dryrun', 'einkauf-klaerung', 'lexikon', 'lieferanten'];
 // Klein oder beschreibbar: kopieren, damit Klicktests nie die echten Dateien treffen.
-const KOPIEREN = ['bestelluebersicht', 'kennzahlen', 'organisation', 'aktualisierung.json', 'auftragsstatus.json', 'auftragsverlauf.json', 'musterherkunft.json'];
+const KOPIEREN = ['bestelluebersicht', 'kennzahlen', 'organisation', 'aktualisierung.json', 'auftragsstatus.json', 'auftragsverlauf.json', 'musterherkunft.json', 'muster-nachfassen-texte.md'];
 
 function argumente(argv) {
   const a = { ansichten: null, aus: null, offen: false, breiten: null, dunkel: false };

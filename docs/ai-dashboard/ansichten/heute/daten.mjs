@@ -1,6 +1,7 @@
 /**
- * "Heute": die zwei Datenquellen, die nur die Startseite braucht - die Lieferanten-Uebersicht
- * (Namen und Wartefristen) und alle sichtbaren Team-Aufgaben in einer Liste.
+ * "Heute": die Datenquellen, die nur die Startseite braucht - die Lieferanten-Uebersicht
+ * (Namen und Wartefristen), alle sichtbaren Team-Aufgaben in einer Liste und die Textvorlage
+ * fuer "Muster nachfassen".
  *
  * Beides aendert sich durch Arbeit in anderen Ansichten (im Einkauf wird bestellt, in den
  * Aufgaben wird abgehakt), ohne dass diese Module hier Bescheid geben. Deshalb gilt ein
@@ -16,6 +17,7 @@ const HALTBAR_MS = 30_000;
 export const heuteDaten = {
   lieferanten: null, lieferantenAm: 0, laedtLieferanten: false,
   aufgaben: null, aufgabenAm: 0, laedtAufgaben: false,
+  musterTexte: null, musterTexteAm: 0, laedtMusterTexte: false,
 };
 
 function lade(feld, pfad) {
@@ -40,6 +42,9 @@ export function ensureHeuteLieferanten() { lade('lieferanten', '/api/einkauf/lie
 export function ensureHeuteAufgaben() {
   lade('aufgaben', `/api/org/liste?${new URLSearchParams({ bereich: 'alle-aufgaben', ansicht: 'offen', gruppe: 'alles' })}`);
 }
+
+/** Betreff und Text fuer "Muster nachfassen" (Vorlage des Inhabers aus dem Privatordner). */
+export function ensureHeuteMusterTexte() { lade('musterTexte', '/api/kunden/muster-texte'); }
 
 /** Nach "Jetzt aktualisieren": die Lieferanten-Uebersicht stammt aus den Bestelldaten und ist dann veraltet. */
 export function verwirfHeuteDaten() { heuteDaten.lieferantenAm = 0; }
