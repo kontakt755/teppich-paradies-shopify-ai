@@ -143,7 +143,7 @@ der folgenden Tabelle, die Kategorie-Metafelder fehlen dort komplett.
 | Namespace | Key | Typ | Beispiel | Quelle |
 |-----------|-----|-----|----------|--------|
 | `custom` | `starke` | single_line_text_field | `2.5 mm` | Lieferant A „Stärke (mm)" |
-| `custom` | `ruckenausstattung` | single_line_text_field | `Elastischer Träger` | Lieferant-A-Produktaufbau |
+| `custom` | `ruckenausstattung` | single_line_text_field | `Juteträger` (nur bei Beleg) | Produktbezogenes technisches Datenblatt, Abschnitt Aufbau/Unterschicht |
 | `custom` | `material` | single_line_text_field | `Linoleum elastisch` | fest fuer alle Linoleum-Linien |
 | `custom` | `rollenbreite` | number_decimal | `2` | Lieferant A „Breite (mm)" / 1000, z.B. 2000mm → `2` |
 | `custom` | `brandverhalten` | list.metaobject_reference | `["gid://shopify/Metaobject/1723461796174"]` | Cfl-S 1, siehe Tabelle unten |
@@ -153,6 +153,15 @@ der folgenden Tabelle, die Kategorie-Metafelder fehlen dort komplett.
 | `mm-google-shopping` | `google_product_category` | string | `2826` | fest — Google-Kategorie „Bodenbeläge", quer ueber alle Rollenware wiederverwendbar |
 
 Je Variante zusaetzlich `custom.farbcode` (single_line_text_field, der reine Zahlencode).
+
+**Ruecken nicht aus einer Referenz kopieren.** Ein Beispielwert ist kein
+Produktbeleg. Linoleumbelaege auf Jute tragen `Jutetraeger` im Datenblatt
+(im Metafeld `Juteträger`); `Homogen` beschreibt den Belagsaufbau und ersetzt
+keine Traegerschicht. Weder `Vliesruecken` aus Teppichdaten noch unspezifische
+Bezeichnungen wie `Elastischer Traeger` pauschal uebernehmen. Fehlt ein
+eindeutiger produktbezogener Beleg, das Feld nicht neu fuellen und den Fall
+zur Pruefung dokumentieren. Bei Korrekturen den Altwert sichern und den
+geschriebenen Wert frisch aus Shopify sowie in der Storefront gegenpruefen.
 
 **`custom.brandverhalten` — vorhandene Metaobject-Werte** (Definition `37467554126`,
 `metaobjects(type: ...)` liefert keine Treffer ueber den Typnamen, nur ueber
@@ -267,6 +276,8 @@ Sammeln (Lieferant A):
 - [ ] Technische Daten von der Seite: Staerke (mm), Ruecken/Produktaufbau, Breite (mm),
       Brandverhalten, Nutzungsklasse — je als eigener `t.match()`/`grab()`, nicht aus der
       Beschreibung eines anderen Produkts uebernehmen
+- [ ] Ruecken anhand des Datenblatts fuer genau diese Serie/SKU belegen;
+      unklare Angaben offen lassen, keine Teppich-Fixture als Quelle verwenden
 
 Anlegen (ein `productSet`):
 - [ ] Titel: `{Marke} Linoleumboden {Breite}`

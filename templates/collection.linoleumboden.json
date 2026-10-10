@@ -15,11 +15,14 @@
         "image": "shopify://shop_images/1160176-8FXC-prod.jpg",
         "eyebrow": "Bodenbeläge entdecken",
         "heading": "Linoleumboden",
-        "lead": "<p>Entdecken Sie Linoleum in ruhigen und kräftigen Farbtönen. Vergleichen Sie Farbe, Rollenbreite und Produkteigenschaften, bevor Sie den Belag für Ihren Raum auswählen.</p>",
-        "primary_label": "Linoleum entdecken",
+        "lead": "<p>Linoleum-Qualitäten mit unterschiedlichen Farbauswahlen und belegten Nutzungsklassen. Sehen Sie die Materialstruktur und wählen Sie Ihren Favoriten.</p>",
+        "primary_label": "Qualitäten ansehen",
         "secondary_label": "Beratung anfragen",
         "secondary_link": "/pages/kontakt",
-        "image_caption": "Produktansicht aus der Linoleumkollektion"
+        "image_caption": "Produktansicht aus der Linoleumkollektion",
+        "primary_link": "#tp-boden-auswahl",
+        "image_crop": "structure",
+        "image_alt": "Original-Farbansicht eines Linoleumbodens"
       },
       "blocks": {
         "point_1": {
@@ -210,61 +213,46 @@
       "type": "tp-boden-kategorie-ratgeber",
       "settings": {
         "eyebrow": "Gut zu wissen",
-        "heading": "Linoleum für Ihren Raum auswählen",
-        "intro": "<p>Farbe und Maße sind ein guter Start. Ob ein Belag für Ihr Vorhaben passt, zeigen die Angaben des einzelnen Produkts.</p>",
-        "faq_heading": "Häufige Fragen zu Linoleum",
-        "contact_text": "Noch unsicher, welcher Boden passt?",
+        "heading": "Fragen zu Linoleum",
+        "intro": "<p>Die Materialansichten zeigen Originalmuster. Bildschirmfarben können vom Belag vor Ort abweichen.</p>",
+        "faq_heading": "Häufige Fragen",
+        "contact_text": "Auswahl oder Produktdaten noch unklar?",
         "contact_label": "Persönlich beraten lassen",
         "contact_link": "/pages/kontakt"
       },
       "blocks": {
-        "tip_1": {
-          "type": "tip",
-          "settings": {
-            "heading": "Farbe abstimmen",
-            "body": "<p>Vergleichen Sie die angebotenen Farben und Produktbilder. Bildschirmfarben können vom Belag vor Ort abweichen.</p>"
-          }
-        },
-        "tip_2": {
-          "type": "tip",
-          "settings": {
-            "heading": "Raum prüfen",
-            "body": "<p>Filtern Sie nach dem gewünschten Einsatzbereich und lesen Sie die technischen Angaben des Produkts, bevor Sie sich entscheiden.</p>"
-          }
-        },
-        "tip_3": {
-          "type": "tip",
-          "settings": {
-            "heading": "Maße vorbereiten",
-            "body": "<p>Messen Sie Ihren Raum sorgfältig aus. Rollenbreite und Bestellschritte stehen auf der jeweiligen Produktseite.</p>"
-          }
-        },
         "faq_1": {
           "type": "faq",
           "settings": {
-            "question": "Welche Rollenbreite ist erhältlich?",
-            "answer": "<p>Die aktuell angebotene Rollenbreite sehen Sie am jeweiligen Produkt und im Filter der Kollektion.</p>"
+            "question": "Was bedeuten die Nutzungsklassen?",
+            "answer": "<p>34 steht für sehr starke gewerbliche Nutzung, 43 für starke industrielle Nutzung und 41 für geringe industrielle Nutzung. Vergleichen Sie die Klassen innerhalb ihres Einsatzbereichs und prüfen Sie die Produktdetails für Ihr Vorhaben.</p>"
           }
         },
         "faq_2": {
           "type": "faq",
           "settings": {
-            "question": "Wo finde ich Hilfe zur Auswahl?",
-            "answer": "<p>Bei Fragen zu Farbe, Einsatzbereich oder benötigter Menge hilft Ihnen unser <a href=\"/pages/kontakt\">Team persönlich weiter</a>.</p>"
+            "question": "Welche Rollenbreite ist erhältlich?",
+            "answer": "<p>Die Rollenbreite ist am Produkt angegeben. Bereiten Sie Ihre Raummaße vor; unsere Beratung hilft bei Fragen zur passenden Qualität und benötigten Menge.</p>"
           }
         }
       },
       "block_order": [
-        "tip_1",
-        "tip_2",
-        "tip_3",
         "faq_1",
         "faq_2"
       ]
+    },
+    "auswahl": {
+      "type": "tp-boden-auswahl",
+      "settings": {
+        "kind": "linoleum",
+        "heading": "Linoleum-Qualitäten auf einen Blick",
+        "intro": "Farbauswahl, Rücken und Nutzungsklassen helfen, die Qualitäten einzuordnen."
+      }
     }
   },
   "order": [
     "hero",
+    "auswahl",
     "main",
     "guide"
   ]

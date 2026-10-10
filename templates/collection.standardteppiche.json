@@ -9,43 +9,94 @@
  */
 {
   "sections": {
-    "hero": {
-      "type": "tp-boden-kategorie-hero",
-      "settings": {
-        "image": "shopify://shop_images/valdoro-eiche-natur-geoelt-parkett-landhausdiele-220x20-9-cm-raum-1.jpg",
-        "eyebrow": "Bodenbeläge entdecken",
-        "heading": "Parkettboden",
-        "lead": "<p>Parkett nach Holzart und Oberfläche auswählen. Entdecken Sie geölte, lackierte und unbehandelte Oberflächen und planen Sie Ihren Paketbedarf am Produkt.</p>",
-        "primary_label": "Parkett ansehen",
-        "secondary_label": "Beratung anfragen",
-        "secondary_link": "/pages/kontakt",
-        "image_caption": "Raumbeispiel: Valdoro Eiche Natur geölt"
-      },
+    "section": {
+      "type": "section",
       "blocks": {
-        "point_1": {
-          "type": "point",
+        "text_tqQTNE": {
+          "type": "text",
+          "name": "Title",
           "settings": {
-            "text": "Echtholz-Oberflächen"
-          }
+            "text": "<h1>{{ closest.collection.title }}</h1>",
+            "width": "fit-content",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "h2",
+            "font": "var(--font-primary--family)",
+            "font_size": "",
+            "line_height": "normal",
+            "letter_spacing": "normal",
+            "case": "none",
+            "wrap": "pretty",
+            "color": "",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
         },
-        "point_2": {
-          "type": "point",
+        "text_twGGkJ": {
+          "type": "text",
+          "name": "Description",
           "settings": {
-            "text": "Preis je m² und Paket"
-          }
-        },
-        "point_3": {
-          "type": "point",
-          "settings": {
-            "text": "Beratung in Oranienburg"
-          }
+            "text": "{{ closest.collection.description }}",
+            "width": "fit-content",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "rte",
+            "font": "var(--font-primary--family)",
+            "font_size": "",
+            "line_height": "normal",
+            "letter_spacing": "normal",
+            "case": "none",
+            "wrap": "pretty",
+            "color": "",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
         }
       },
       "block_order": [
-        "point_1",
-        "point_2",
-        "point_3"
-      ]
+        "text_tqQTNE",
+        "text_twGGkJ"
+      ],
+      "name": "Collection heading",
+      "settings": {
+        "content_direction": "column",
+        "vertical_on_mobile": true,
+        "horizontal_alignment": "flex-start",
+        "vertical_alignment": "center",
+        "align_baseline": false,
+        "horizontal_alignment_flex_direction_column": "flex-start",
+        "vertical_alignment_flex_direction_column": "center",
+        "gap": 12,
+        "section_width": "page-width",
+        "section_height": "",
+        "section_height_custom": 50,
+        "color_scheme": "scheme-1",
+        "background_media": "none",
+        "video_position": "cover",
+        "background_image_position": "cover",
+        "border": "none",
+        "border_width": 1,
+        "border_opacity": 100,
+        "border_radius": 0,
+        "toggle_overlay": false,
+        "overlay_color": "#00000026",
+        "overlay_style": "solid",
+        "gradient_direction": "to top",
+        "padding-block-start": 24,
+        "padding-block-end": 16
+      }
     },
     "main": {
       "type": "main-collection",
@@ -93,7 +144,7 @@
             "card-gallery": {
               "type": "_product-card-gallery",
               "settings": {
-                "image_ratio": "adapt",
+                "image_ratio": "portrait",
                 "border": "none",
                 "border_width": 1,
                 "border_opacity": 100,
@@ -171,16 +222,11 @@
             "tp_card_aktion": {
               "type": "tp-card-aktion",
               "settings": {}
-            },
-            "tp_card_sterne": {
-              "type": "tp-card-sterne",
-              "settings": {}
             }
           },
           "block_order": [
             "card-gallery",
             "product_title_4nY4eT",
-            "tp_card_sterne",
             "price_EzJzMm",
             "tp_card_aktion",
             "tp_card_color_thumbs",
@@ -193,8 +239,8 @@
         "layout_type": "grid",
         "product_card_size": "medium",
         "mobile_product_card_size": "small",
-        "enable_infinite_scroll": false,
-        "products_per_page": 16,
+        "enable_infinite_scroll": true,
+        "products_per_page": 24,
         "product_grid_width": "centered",
         "full_width_on_mobile": false,
         "columns_gap_horizontal": 16,
@@ -206,59 +252,71 @@
         "padding-block-end": 32
       }
     },
-    "guide": {
-      "type": "tp-boden-kategorie-ratgeber",
-      "settings": {
-        "eyebrow": "Gut zu wissen",
-        "heading": "Fragen zu Ihrem Parkett",
-        "intro": "<p>Format, Aufbau und technische Eigenschaften prüfen Sie am einzelnen Produkt.</p>",
-        "faq_heading": "Häufige Fragen",
-        "contact_text": "Auswahl oder Produktdaten noch unklar?",
-        "contact_label": "Persönlich beraten lassen",
-        "contact_link": "/pages/kontakt"
-      },
+    "teppicharten": {
+      "type": "tp-standardteppiche-einstiege",
       "blocks": {
-        "faq_1": {
-          "type": "faq",
+        "web": {
+          "type": "art",
           "settings": {
-            "question": "Wo sehe ich Oberfläche und Holzart?",
-            "answer": "<p>Die Auswahl oben führt zu den passenden Oberflächen und Holzarten. Ausführung, Maße und weitere Eigenschaften stehen in den Produktdetails.</p>"
+            "filter_label": "Webteppich",
+            "label": "Webteppiche",
+            "description": "Gewebte Teppiche.",
+            "product": "zigara-wohnteppich"
           }
         },
-        "faq_2": {
-          "type": "faq",
+        "handtuft": {
+          "type": "art",
           "settings": {
-            "question": "Wie plane ich die Bestellmenge?",
-            "answer": "<p>Parkett wird paketweise angeboten. Der Rechner am Produkt zeigt den Paketbedarf für Ihre Fläche anhand des jeweiligen Paketinhalts.</p>"
+            "filter_label": "Handtuft-Teppich",
+            "label": "Handtuft-Teppiche",
+            "description": "Von Hand getuftet.",
+            "product": "schoener-wohnen-kollektion-teppich-milena"
           }
         },
-        "faq_3": {
-          "type": "faq",
+        "handweb": {
+          "type": "art",
           "settings": {
-            "question": "Sind kostenlose Muster erhältlich?",
-            "answer": "<p>Für die derzeit angebotenen Parkettprodukte sind keine kostenlosen Muster hinterlegt. <a href=\"/pages/kontakt\">Unsere Beratung</a> hilft bei Fragen zu einer bestimmten Oberfläche.</p>"
+            "filter_label": "Handwebteppich",
+            "label": "Handwebteppiche",
+            "description": "Von Hand gewebt.",
+            "product": "schoener-wohnen-kollektion-teppich-omira"
+          }
+        },
+        "handgefertigt": {
+          "type": "art",
+          "settings": {
+            "filter_label": "Handgefertigter Teppich",
+            "label": "Weitere Handarbeit",
+            "description": "Weitere Handarbeit.",
+            "product": "jorina-wohnteppich"
+          }
+        },
+        "dekofelle": {
+          "type": "art",
+          "settings": {
+            "filter_label": "Dekofell",
+            "label": "Dekofelle",
+            "description": "Fellform oder rund.",
+            "product": "fellara-dekofell"
           }
         }
       },
       "block_order": [
-        "faq_1",
-        "faq_2",
-        "faq_3"
-      ]
-    },
-    "auswahl": {
-      "type": "tp-boden-auswahl",
+        "web",
+        "handtuft",
+        "handweb",
+        "handgefertigt",
+        "dekofelle"
+      ],
       "settings": {
-        "kind": "parkett",
-        "heading": "Ihr Parkett eingrenzen",
-        "intro": "Oberfläche und Holzart kombinieren und passende Parkettböden entdecken."
+        "heading": "Teppiche nach Art auswählen",
+        "text": "Wählen Sie eine Teppichart. Farbe und Preis lassen sich anschließend im Filter eingrenzen."
       }
     }
   },
   "order": [
-    "hero",
-    "auswahl",
-    "main",
-    "guide"
+    "section",
+    "teppicharten",
+    "main"
   ]
 }

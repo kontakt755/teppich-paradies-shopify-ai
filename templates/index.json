@@ -32,7 +32,7 @@
       "type": "tp-start-kategorien",
       "settings": {
         "heading": "Womit möchten Sie starten?",
-        "text": "Neun Kategorien, direkt zur Auswahl. Preise und Verkaufseinheiten stehen am Produkt. Muster kostenlos.",
+        "text": "Zehn Kategorien, direkt zur Auswahl. Preise und Verkaufseinheiten stehen am Produkt. Kostenlose Muster bei vielen Produkten.",
         "link_label": "Alle Produkte ansehen",
         "link": "shopify://collections/all"
       },
@@ -41,7 +41,7 @@
           "type": "kategorie",
           "settings": {
             "collection": "teppichboden",
-            "bild": "shopify://shop_images/1196472-8FXC-prod.jpg",
+            "bild": "shopify://shop_images/ratgeber-teppichboden-wohnzimmer-titel.png",
             "titel": "Teppichboden",
             "untertitel": "Velours, Schlinge, Hochflor, Wolle",
             "zahl_zeigen": true,
@@ -62,6 +62,7 @@
           "type": "kategorie",
           "settings": {
             "collection": "teppichfliesen",
+            "bild": "shopify://shop_images/teppichfliesen-arbeitszimmer.jpg",
             "titel": "Teppichfliesen",
             "untertitel": "50 × 50 cm, einzeln austauschbar",
             "zahl_zeigen": true,
@@ -72,7 +73,7 @@
           "type": "kategorie",
           "settings": {
             "collection": "vinylboden-1",
-            "bild": "shopify://shop_images/1158971-8FXC-prod.jpg",
+            "bild": "shopify://shop_images/ratgeber-klick-oder-klebevinyl-titel.png",
             "titel": "Vinylboden",
             "untertitel": "Klick-, Klebe- und Rollenvinyl",
             "zahl_zeigen": true,
@@ -83,6 +84,7 @@
           "type": "kategorie",
           "settings": {
             "collection": "laminat",
+            "bild": "shopify://shop_images/ribe-eiche-hell-laminat-8mm-raum-2.jpg",
             "titel": "Laminat",
             "untertitel": "Klick-Laminat für Wohnräume",
             "zahl_zeigen": true,
@@ -93,17 +95,29 @@
           "type": "kategorie",
           "settings": {
             "collection": "parkett",
+            "bild": "shopify://shop_images/valdoro-eiche-natur-geoelt-parkett-landhausdiele-220x20-9-cm-raum-1.jpg",
             "titel": "Parkett",
-            "untertitel": "Landhausdiele, Fischgrät, Kork",
+            "untertitel": "Echtholz, geölt oder lackiert",
             "zahl_zeigen": true,
             "zahl_wort": "Böden"
+          }
+        },
+        "k9": {
+          "type": "kategorie",
+          "settings": {
+            "collection": "korkboden",
+            "bild": "shopify://shop_images/korkboden-beispielraum-v1.png",
+            "titel": "Korkboden",
+            "untertitel": "Klick-Kork und Klebekork",
+            "zahl_zeigen": true,
+            "zahl_wort": "Dekore"
           }
         },
         "k4": {
           "type": "kategorie",
           "settings": {
             "collection": "linoleumboden-1",
-            "bild": "shopify://shop_images/1160176-8FXC-prod.jpg",
+            "bild": "shopify://shop_images/linoleumboden-kueche-salbeigruen.jpg",
             "titel": "Linoleum",
             "untertitel": "Natürlich, strapazierfähig",
             "zahl_zeigen": true,
@@ -118,7 +132,7 @@
             "titel": "Bodenleisten",
             "untertitel": "Passend zu jedem Boden",
             "zahl_zeigen": true,
-            "zahl_wort": "Profile"
+            "zahl_wort": "Leisten"
           }
         },
         "k6": {
@@ -140,6 +154,7 @@
         "k3",
         "k7",
         "k8",
+        "k9",
         "k4",
         "k5",
         "k6"

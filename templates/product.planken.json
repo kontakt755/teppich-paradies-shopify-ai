@@ -222,12 +222,6 @@
               },
               "blocks": {}
             },
-            "tp_compare_toggle_night3": {
-              "type": "tp-compare-toggle",
-              "name": "TP Vergleichen-Button",
-              "settings": {},
-              "blocks": {}
-            },
             "options_price_calculator_product_calculator_z3CEfy": {
               "type": "shopify://apps/options-price-calculator/blocks/product_calculator/46eaac1e-1432-4cdd-814e-d2c707255110",
               "disabled": true,
@@ -359,7 +353,6 @@
             "tp_service_links_night1",
             "tp_muster_cta_1",
             "tp_bewertungsbeleg_planken",
-            "tp_compare_toggle_night3",
             "options_price_calculator_product_calculator_z3CEfy",
             "tp_verlegen_lassen",
             "tp_zubehoer_empfehlung",

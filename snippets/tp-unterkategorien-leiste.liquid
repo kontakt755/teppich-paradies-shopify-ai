@@ -24,6 +24,7 @@
     assign tp_uk_menu = linklists['main-menu']
   endif
 
+  assign tp_uk_bildkarten = false
   assign tp_uk_parent = null
   if collection_resource != blank
     for tp_uk_link in tp_uk_menu.links
@@ -45,11 +46,14 @@
       endif
     endfor
   endif
+  if tp_uk_parent.object.handle == 'teppichboden'
+    assign tp_uk_bildkarten = true
+  endif
 -%}
 
 {%- if tp_uk_parent and tp_uk_parent.links.size > 0 -%}
   <nav
-    class="tp-uk"
+    class="tp-uk{% if tp_uk_bildkarten %} tp-uk--bildkarten{% endif %}"
     aria-label="{{ label | default: 'Unterkategorien' | escape }}"
     data-tp-uk
     {{ attributes }}
@@ -68,7 +72,50 @@
               aria-current="page"
             {% endif %}
           >
-            {{- tp_uk_child.title | escape -}}
+            {%- if tp_uk_bildkarten -%}
+              {%- liquid
+                assign tp_uk_file = ''
+                case tp_uk_child.title
+                  when 'Alle Teppichböden'
+                    assign tp_uk_file = 'ratgeber-teppichboden-wohnzimmer-titel.png'
+                  when 'Hochflor'
+                    assign tp_uk_file = 'teppichboden-hochflor-menue.jpg'
+                  when 'Mittelflor'
+                    assign tp_uk_file = 'teppichboden-mittelflor-menue-16x9.jpg'
+                  when 'Kurzflor'
+                    assign tp_uk_file = 'teppichboden-kurzflor-menue.jpg'
+                  when 'Velours'
+                    assign tp_uk_file = 'teppichboden-velours-menue.jpg'
+                  when 'Schlinge'
+                    assign tp_uk_file = 'teppichboden-schlinge-menue.jpg'
+                  when 'Wolle'
+                    assign tp_uk_file = '1312333-8FXC-prod.jpg'
+                  when 'Sisal'
+                    assign tp_uk_file = '1312423-8FXC-prod.jpg'
+                  when 'Nadelfilz'
+                    assign tp_uk_file = 'teppichboden-nadelfilz-menue.jpg'
+                  when 'Büro & Gewerbe'
+                    assign tp_uk_file = 'teppichboden-buero-gewerbe-menue.jpg'
+                  when 'Auch als Teppichfliesen →'
+                    assign tp_uk_file = 'teppichfliesen-austauschen-menue.jpg'
+                  when 'Kunstrasen'
+                    assign tp_uk_file = 'kunstrasen-garten.jpg'
+                endcase
+                assign tp_uk_image = images[tp_uk_file]
+                if tp_uk_image == blank
+                  assign tp_uk_image = tp_uk_child.object.image
+                endif
+                if tp_uk_image == blank and tp_uk_child.type == 'collection_link'
+                  assign tp_uk_image = tp_uk_child.object.products.first.featured_image
+                endif
+              -%}
+              {%- if tp_uk_image != blank -%}
+                <span class="tp-uk__media" aria-hidden="true">
+                  {{ tp_uk_image | image_url: width: 288 | image_tag: widths: '96, 144, 216, 288', sizes: '(max-width: 1024px) 72px, 88px', loading: 'lazy', alt: '', class: 'tp-uk__image' }}
+                </span>
+              {%- endif -%}
+            {%- endif -%}
+            <span>{{- tp_uk_child.title | escape -}}</span>
           </a>
         </li>
       {%- endfor -%}
@@ -242,6 +289,52 @@
   /* Am Telefon war der Pfeil zuvor auf 28 px verkleinert - dort ist ein
      ausreichendes Trefferziel am wichtigsten, nicht am unwichtigsten. Die
      Verkleinerung ist deshalb ersatzlos entfallen; es bleibt bei 44 px. */
+
+  .tp-uk--bildkarten .tp-uk__pill {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 7px;
+    width: 112px;
+    height: 100%;
+    min-height: 112px;
+    padding: 10px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.3;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .tp-uk__media {
+    display: block;
+    flex: none;
+    width: 88px;
+    height: 66px;
+    overflow: hidden;
+    border-radius: 7px;
+  }
+
+  .tp-uk__image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  @media screen and (max-width: 1024px) {
+    .tp-uk--bildkarten .tp-uk__pill {
+      width: 96px;
+      min-height: 108px;
+      padding: 10px 11px;
+    }
+
+    .tp-uk--bildkarten .tp-uk__media {
+      width: 72px;
+      height: 54px;
+    }
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .tp-uk__list { scroll-behavior: auto; }

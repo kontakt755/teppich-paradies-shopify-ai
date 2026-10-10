@@ -85,6 +85,12 @@
   # recommendations. Original ratios remain untouched and are cropped only in
   # this card context; PDP galleries keep their separate media-fit behavior.
   assign ratio = '1'
+  assign tp_card_crop_square = true
+  if collection.handle == 'teppiche-standardgroessen'
+    assign ratio = '0.75'
+    assign media_fit = 'contain'
+    assign tp_card_crop_square = false
+  endif
 
   if block_settings.image_ratio == 'adapt' and block_settings.constrain_to_viewport
     if block_settings.constrain_to_viewport != ''
@@ -240,7 +246,7 @@
           endif
 
           capture slideshow_children
-            render 'product-media', media: media, sizes: sizes, widths: card_image_widths, loading: loading, fetchpriority: tp_fetchpriority, preview_image_only: true, crop_square: true
+            render 'product-media', media: media, sizes: sizes, widths: card_image_widths, loading: loading, fetchpriority: tp_fetchpriority, preview_image_only: true, crop_square: tp_card_crop_square
           endcapture
 
           render 'slideshow-slide', slide_id: media.id, index: forloop.index0, hidden: hidden, class: class, attributes: attributes, children: slideshow_children, media_fit: media_fit

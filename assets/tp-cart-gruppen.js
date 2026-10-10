@@ -131,7 +131,7 @@
       return hatProp(zeile, 'Mindestpreis') ? fl + ' (Mindestpreis)' : fl;
     }
     if (istService(zeile)) {
-      if (hatProp(zeile, 'Zu Bodenbelag')) return String(zeile.quantity) + (zeile.quantity === 1 ? ' Stange' : ' Stangen');
+      if (hatProp(zeile, 'Zu Bodenbelag')) return String(zeile.quantity) + (zeile.quantity === 1 ? ' Leiste' : ' Leisten');
       var kante = prop(zeile, 'Kante umlaufend');
       if (kante) return kante + ' Kettelkante';
       var laenge = prop(zeile, 'Länge');

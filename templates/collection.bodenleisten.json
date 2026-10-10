@@ -15,12 +15,12 @@
       "settings": {
         "show_breadcrumb": true,
         "breadcrumb_parent": "",
-        "eyebrow": "Sockelleisten für Teppich, Vinyl und Linoleum",
+        "eyebrow": "Sockelleisten für Ihren Boden",
         "heading": "",
-        "text": "Der saubere Abschluss zwischen Boden und Wand: Sockelleisten aus Kunststoff, MDF mit Holzdekor und Hartschaum in Höhen von 40 bis 100 mm.",
-        "fact_1": "Kunststoff, MDF-Holzdekor und Hartschaum",
-        "fact_2": "Höhen von 40 bis 100 mm",
-        "fact_3": "Bis zu 62 Farben und Dekore je Modell",
+        "text": "Der saubere Abschluss zwischen Boden und Wand: Kunststoff, MDF, Hartschaum, Massivholz und Holzfurnier.",
+        "fact_1": "Nach Material auswählen",
+        "fact_2": "Passende Höhe finden",
+        "fact_3": "",
         "cta_label": "Bodenleisten entdecken",
         "cta_link": "#bodenleisten-produkte",
         "cta_2_label": "",
@@ -248,7 +248,7 @@
           "type": "faq",
           "settings": {
             "question": "Wie viele Meter Leiste brauche ich?",
-            "answer": "<p>Messen Sie alle Wandlängen des Raums und ziehen Sie Türen und Durchgänge ab. Rechnen Sie einen Zuschlag von etwa 10 % für Zuschnitt und Ecken ein. Die Stangenlänge steht auf der jeweiligen Produktseite.</p>"
+            "answer": "<p>Messen Sie alle Wandlängen des Raums und ziehen Sie Türen und Durchgänge ab. Rechnen Sie einen Zuschlag von etwa 10 % für Zuschnitt und Ecken ein. Die Leistenlänge steht auf der jeweiligen Produktseite.</p>"
           }
         },
         "faq_montage": {

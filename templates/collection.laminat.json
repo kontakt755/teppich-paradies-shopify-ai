@@ -15,8 +15,8 @@
         "image": "shopify://shop_images/ribe-eiche-hell-laminat-8mm-raum-2.jpg",
         "eyebrow": "Bodenbeläge entdecken",
         "heading": "Laminatboden",
-        "lead": "<p>Von hellen Holzdekoren bis zu ruhigen Steinoptiken: Entdecken Sie Laminat, das zu Ihrem Raum passt. Quadratmeterpreis und Paketinhalt stehen direkt am Produkt.</p>",
-        "primary_label": "Laminat entdecken",
+        "lead": "<p>Holz- und Steindekore in 7, 8 oder 10 mm Stärke. Grenzen Sie die Auswahl ein und planen Sie Ihre Fläche mit dem Paketrechner am Produkt.</p>",
+        "primary_label": "Produkte ansehen",
         "secondary_label": "Beratung anfragen",
         "secondary_link": "/pages/kontakt",
         "image_caption": "Raumbeispiel: Ribe Eiche Hell"
@@ -210,61 +210,54 @@
       "type": "tp-boden-kategorie-ratgeber",
       "settings": {
         "eyebrow": "Gut zu wissen",
-        "heading": "So finden Sie das passende Laminat",
-        "intro": "<p>Schauen Sie zuerst auf die Optik. Danach helfen Stärke, Produktdetails und Paketinhalt bei der Auswahl für Ihren Raum.</p>",
-        "faq_heading": "Häufige Fragen zu Laminat",
-        "contact_text": "Noch unsicher, welcher Boden passt?",
+        "heading": "Fragen vor der Bestellung",
+        "intro": "<p>Paketinhalt und technische Eigenschaften stehen direkt am jeweiligen Laminat.</p>",
+        "faq_heading": "Häufige Fragen",
+        "contact_text": "Auswahl oder Produktdaten noch unklar?",
         "contact_label": "Persönlich beraten lassen",
         "contact_link": "/pages/kontakt"
       },
       "blocks": {
-        "tip_1": {
-          "type": "tip",
-          "settings": {
-            "heading": "Die Optik wählen",
-            "body": "<p>Im Sortiment finden Sie Holz- und Steindekore. Die Filter helfen, die Auswahl nach Optik und Farbe einzugrenzen.</p>"
-          }
-        },
-        "tip_2": {
-          "type": "tip",
-          "settings": {
-            "heading": "Details vergleichen",
-            "body": "<p>Stärke und weitere Eigenschaften unterscheiden sich je Produkt. Die Angaben auf der Produktseite sind für Ihre Entscheidung maßgeblich.</p>"
-          }
-        },
-        "tip_3": {
-          "type": "tip",
-          "settings": {
-            "heading": "Paketbedarf berechnen",
-            "body": "<p>Laminat wird paketweise angeboten. Auf der Produktseite sehen Sie den Inhalt je Paket und können den Bedarf für Ihre Fläche berechnen.</p>"
-          }
-        },
         "faq_1": {
           "type": "faq",
           "settings": {
-            "question": "Wie viel Laminat muss ich bestellen?",
-            "answer": "<p>Geben Sie Ihre Fläche im Rechner auf der jeweiligen Produktseite ein. Er zeigt, wie viele Pakete benötigt werden; den Paketinhalt finden Sie direkt am Produkt.</p>"
+            "question": "Welche Stärke passt zu meinem Raum?",
+            "answer": "<p>Im Sortiment finden Sie 7, 8 und 10 mm. Berücksichtigen Sie die benötigte Aufbauhöhe und prüfen Sie die weiteren Eigenschaften am ausgewählten Produkt. Bei Fragen hilft unsere Beratung.</p>"
           }
         },
         "faq_2": {
           "type": "faq",
           "settings": {
-            "question": "Gibt es für jedes Laminat ein Muster?",
-            "answer": "<p>Für diese Laminatkollektion sind derzeit keine kostenlosen Muster hinterlegt. Wenn Sie ein bestimmtes Dekor vorab ansehen möchten, <a href=\"/pages/kontakt\">fragen Sie uns gern persönlich</a>.</p>"
+            "question": "Wie viel Laminat muss ich bestellen?",
+            "answer": "<p>Geben Sie Ihre Fläche im Rechner auf der Produktseite ein. Er berechnet ganze Pakete anhand des jeweiligen Paketinhalts.</p>"
+          }
+        },
+        "faq_3": {
+          "type": "faq",
+          "settings": {
+            "question": "Kann ich ein Dekor vorab ansehen?",
+            "answer": "<p>Für diese Laminatkollektion sind derzeit keine kostenlosen Muster hinterlegt. <a href=\"/pages/kontakt\">Fragen Sie uns persönlich</a>, wenn Sie ein bestimmtes Dekor vorab besprechen möchten.</p>"
           }
         }
       },
       "block_order": [
-        "tip_1",
-        "tip_2",
-        "tip_3",
         "faq_1",
-        "faq_2"
+        "faq_2",
+        "faq_3"
       ]
+    },
+    "auswahl": {
+      "type": "tp-boden-auswahl",
+      "settings": {
+        "kind": "laminat",
+        "heading": "Laminat gezielt auswählen",
+        "intro": "Stärke und Dekor kombinieren – die Produktauswahl wird passend eingegrenzt."
+      }
     }
   },
   "order": [
     "hero",
+    "auswahl",
     "main",
     "guide"
   ]
