@@ -13,7 +13,7 @@
 {%- liquid
   assign tp_price_sort_blocked = false
   if request.page_type == 'collection'
-    if collection.all_types contains 'Laminat' or collection.all_types contains 'Parkett' or collection.all_types contains 'Kork' or collection.all_types contains 'Klickvinyl' or collection.all_types contains 'Klebevinyl'
+    if collection.all_types contains 'Laminat' or collection.all_types contains 'Parkett' or collection.all_types contains 'Kork' or collection.all_types contains 'Kautschukboden' or collection.all_types contains 'Klickvinyl' or collection.all_types contains 'Klebevinyl'
       assign tp_price_sort_blocked = true
     endif
   endif

@@ -41,6 +41,7 @@ Daten-Stand 2026-10-08, Admin API, aktive Produkte.
 | `klickvinyl-ohne-daemmung` | Typ `Klickvinyl`, `belagsart` „Klick-Vinyl …“, **und** `custom.daemmung_integriert` = false, keine belegte Dämmung | 0 (alle Klick-Vinyl-Linien haben laut Datenblatt eine integrierte Dämmung, `custom.daemmung_integriert` = true) |
 | `klebevinyl` | Typ `Klebevinyl`, `belagsart` enthält „zum Vollverkleben“ | 179 |
 | `vinyl-rolle` | Typ `Vinyl von der Rolle`, Tag `material: pvc` | 118 |
+| `kautschuk-bis-2-5mm` | Typ `Kautschukboden`, `custom.gesamtstarke` höchstens 2,5 mm | 1 (Gommara, 2 mm; seit 2026-10-10) |
 | `teppichboden-rolle-textil` | Typ `Teppichboden`, kein Tag `art: teppichfliese`, Rücken enthält „Textil“ oder „Vlies“, keine belegte Dämmung | 87 |
 | `teppichboden-rolle` | Typ `Teppichboden`, kein Tag `art: teppichfliese`, übrige Rücken | 28 |
 | `teppichfliese` | Typ `Teppichboden`, Tag `art: teppichfliese` | 62 |
@@ -78,6 +79,7 @@ empfohlen.
 | `klebevinyl` | Kleber | `universal-verlegeband-70-mm` | „Für die Verlegung von PVC-haltigen Bodenbelägen und Designböden in Form von Fliesen und Planken. Zur Randverlegung …“ |
 | `vinyl-rolle` | Kleber | `nass-und-haftklebstoff-fuer-elastische-belaege` | „Für homogene und heterogene PVC-, CV-Beläge …“ |
 | `vinyl-rolle` | Kleber | `trockenklebstoff-fuer-bahnenware-rolle-75-cm` | „Für neue PVC- und CV-Beläge auf bestehendem Kunststein oder Terrazzo“ – Hinweis nennt die Bedingung |
+| `kautschuk-bis-2-5mm` | Kleber | `nass-und-haftklebstoff-fuer-elastische-belaege` | „Kautschuk-Beläge bis 2,5 mm Dicke … bei Stuhlrollenbelastung“ |
 | `vinyl-rolle` | Kleber | `universal-verlegeband-70-mm` | „PVC-haltige Bodenbeläge … Randverlegung an Wänden und Türen oder auf Trittstufen“ |
 | `teppichboden-rolle-textil` | Unterlage | `komfortunterlage-fuer-teppichboden` | „Komfortunterlage für dimensionsstabile Teppichböden“, Eignung „lose oder verklebt“ |
 | `teppichboden-rolle-textil` | Kleber | `dispersionsfixierung-wasserabloesbar` | „Wasserablösbare Fixierung für Teppichboden und CV-Beläge“ |
@@ -106,7 +108,7 @@ tragen nur `material:`/`hoehe:`/`dekor:`-Tags, die Dekornamen der Leisten
 kommen in keinem Boden des Shops vor, und kein Boden verweist per Metafeld auf
 eine Leiste. Deshalb steht bei Hartböden und elastischen Belägen (`Laminat`,
 `Parkett`, `Klickvinyl`, `Klebevinyl`, `Kork`, `Vinyl von der Rolle`,
-`Linoleumboden`) nur ein **neutraler Verweis** auf `/collections/bodenleisten`
+`Linoleumboden`, `Kautschukboden`) nur ein **neutraler Verweis** auf `/collections/bodenleisten`
 und `/collections/zubehoer-profile`, ohne „passt zu“-Aussage. Teppichboden,
 Teppiche und Sauberlauf bekommen keinen Leistenverweis.
 
@@ -119,6 +121,7 @@ Teppiche und Sauberlauf bekommen keinen Leistenverweis.
 | Korkboden Klick (6) | Die mineralische Unterlage nennt Kork nur in der Shop-Zeile „Eignung“, nicht in den Herstellerangaben. |
 | Klebekork (6) | Der passende Kork-Kontaktkleber ist ein Entwurf. |
 | Linoleum (9) | Der Linoleumklebstoff ist ein Entwurf; die PU-Kork-Unterlage setzt ein Klebesystem voraus. Nur Leistenverweis. |
+| Kautschukfliesen über 2,5 mm (Rondaro 3 mm, Tondara 3,5 mm) | Der Nass- und Haftklebstoff ist laut Herstellerangabe nur bis 2,5 mm freigegeben; ein anderer Kautschukkleber ist nicht im Sortiment. Nur Leistenverweis. |
 | Laminat mit belegter Dämmung | aktuell keiner; Regel greift automatisch, sobald die Beschreibung sie nennt. |
 | Kunstrasen, Sauberlauf, Dekofell | kein belegtes Zubehör. |
 

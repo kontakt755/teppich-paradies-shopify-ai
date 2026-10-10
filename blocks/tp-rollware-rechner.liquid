@@ -106,7 +106,7 @@
   assign tp_rc_leiste = block.settings.kettelleisten_produkt
   assign tp_rc_haft = block.settings.haftunterlage_produkt
   assign tp_rc_holz = blank
-  if product.type == 'Vinyl von der Rolle' or product.type == 'Linoleumboden'
+  if product.type == 'Vinyl von der Rolle' or product.type == 'Linoleumboden' or product.type == 'Kautschukboden'
     assign tp_rc_holz = block.settings.holzleiste_produkt
     if tp_rc_holz.available == false or tp_rc_holz.metafields.custom.stangenlaenge.value == blank
       assign tp_rc_holz = blank
