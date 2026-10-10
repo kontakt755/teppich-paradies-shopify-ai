@@ -546,7 +546,8 @@
     tp_versand_frei_ab, die Aktion kommt aus snippets/tp-aktion-laufend.
   {%- endcomment -%}
   <p class="tp-rwc-infozeile" data-rwc-body>
-    {%- if block.settings.lieferzeit != blank -%}<span>Lieferzeit {{ block.settings.lieferzeit | escape }}</span>{%- endif -%}
+    {%- comment -%} Lieferzeit samt voraussichtlichem Datum, Quelle siehe snippets/tp-lieferzeit (#165) {%- endcomment -%}
+    {%- render 'tp-lieferzeit', text: block.settings.lieferzeit, product: product, kontext: 'rechner' -%}
     {%- if product.tags contains 'sonderposten' -%}<span>Versand per Paketdienst oder Spedition je nach Maß</span>
     {%- else -%}<span>Spedition frei Bordsteinkante</span>{%- endif -%}
     {%- if settings.tp_versand_frei_ab != blank -%}<span>versandkostenfrei ab {{ settings.tp_versand_frei_ab }} €</span>{%- endif -%}
@@ -2652,7 +2653,7 @@ else { document.addEventListener('DOMContentLoaded', tpRwcInit{{ tp_rc_id }}); }
       "type": "text",
       "id": "lieferzeit",
       "label": "Lieferzeit in der Infozeile",
-      "info": "Leer = ohne Lieferzeit. Versandschwelle kommt aus den Theme-Einstellungen.",
+      "info": "Leer = ohne Lieferzeit. Werktage zeigt der Shop als voraussichtliches Lieferdatum. Produktfeld service.lieferzeit hat Vorrang. Versandschwelle kommt aus den Theme-Einstellungen.",
       "default": "5–7 Werktage"
     },
     {

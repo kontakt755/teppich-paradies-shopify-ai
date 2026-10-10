@@ -1,0 +1,76 @@
+{%- doc -%}
+  Lieferzeit mit voraussichtlichem Lieferdatum (Issue #165).
+
+  Liquid gibt die Werktage-Angabe aus wie bisher ("Lieferzeit: 2–5 Werktage").
+  assets/tp-lieferdatum.js ersetzt sie im Browser durch
+  "Lieferung voraussichtlich Di., 13.10. – Fr., 16.10. (ca. 2–5 Werktage)".
+  Gerechnet wird dort (Berlin-Zeit, Wochenenden und Feiertage bundesweit plus
+  Brandenburg), weil Shopify Seiten zwischenspeichert. Ohne JavaScript bleibt
+  die Werktage-Angabe stehen.
+
+  Quelle der Lieferzeit, in dieser Reihenfolge:
+  1. Produkt-Metafeld service.lieferzeit (produktspezifisch belegt, z. B.
+     Teppich nach Mass "ca. 5–8 Werktage inkl. Ketteln")
+  2. der uebergebene Text (Block-Einstellung der Produktvorlage)
+  Leer = keine Zeile (fail closed).
+
+  Kein Datum, nur die Werktage-Angabe:
+  - Angaben ohne "Werktage" (z. B. "ca. 14 Tage")
+  - Produkte mit Tag "auslauf": die Verfuegbarkeit wird erst nach der
+    Bestellung geprueft (blocks/tp-aktion-hinweis), ein Datum waere eine
+    staerkere Zusage als die Quelle.
+
+  Stellen:
+  - 'produkt' Absatz im Lieferkasten (blocks/tp-service-links, blocks/tp-teppich-versand)
+  - 'rechner' Teil der Infozeile im Rollware-Rechner (blocks/tp-rollware-rechner)
+  - 'mass'    nur die Datumszeile im Preishinweis des Mass-Konfigurators
+              (blocks/tp-einfass-konfigurator); die Werktage nennt dort der
+              Preishinweis selbst, deshalb ohne Zusatz und ohne Rueckfalltext.
+
+  @param {string} [text] - Lieferzeit aus der Block-Einstellung, z. B. "2–5 Werktage"
+  @param {object} product - Produkt fuer Metafeld und Tags
+  @param {string} [kontext] - { 'produkt' | 'rechner' | 'mass' }, Standard 'produkt'
+{%- enddoc -%}
+
+{%- liquid
+  assign tp_lz_kontext = kontext | default: 'produkt'
+  assign tp_lz_text = product.metafields.service.lieferzeit.value | strip
+  if tp_lz_text == blank
+    assign tp_lz_text = text | strip
+  endif
+  assign tp_lz_datum = true
+  if tp_lz_text contains 'Werktag'
+    if product.tags contains 'auslauf'
+      assign tp_lz_datum = false
+    endif
+  else
+    assign tp_lz_datum = false
+  endif
+  assign tp_lz_schluss = settings.tp_lieferdatum_annahmeschluss | strip
+-%}
+
+{%- if tp_lz_text != blank -%}
+  {%- capture tp_lz_attr -%}
+    {%- if tp_lz_datum %} data-tp-lieferdatum data-text="{{ tp_lz_text | escape }}" data-annahmeschluss="{{ tp_lz_schluss | escape }}"{% endif -%}
+  {%- endcapture -%}
+  {%- case tp_lz_kontext -%}
+    {%- when 'rechner' -%}
+      <span class="tp-lieferzeit tp-lieferzeit--rechner"{{ tp_lz_attr }}>Lieferzeit {{ tp_lz_text | escape }}</span>
+    {%- when 'mass' -%}
+      {%- if tp_lz_datum -%}
+        <p class="tp-ek__preishinweis tp-lieferzeit tp-lieferzeit--mass"{{ tp_lz_attr }} data-zusatz="0" hidden></p>
+      {%- endif -%}
+    {%- else -%}
+      <p class="tp-lieferzeit tp-lieferzeit--produkt"{{ tp_lz_attr }} data-fett="1"><strong>Lieferzeit:</strong> {{ tp_lz_text | escape }}</p>
+  {%- endcase -%}
+  {%- if tp_lz_datum -%}
+    <script src="{{ 'tp-lieferdatum.js' | asset_url }}" defer></script>
+  {%- endif -%}
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-lieferzeit .tp-lieferdatum__zusatz {
+    white-space: nowrap;
+    opacity: 0.8;
+  }
+{% endstylesheet %}

@@ -70,9 +70,8 @@
   </div>
 
   <div class="tp-service-links__shipping-{{ tp_sl_id }}" aria-label="Lieferung und Versand">
-    {%- if tp_sl_delivery_time != blank -%}
-      <p><strong>Lieferzeit:</strong> {{ tp_sl_delivery_time | escape }}</p>
-    {%- endif -%}
+    {%- comment -%} Lieferzeit samt voraussichtlichem Datum, Quelle siehe snippets/tp-lieferzeit (#165) {%- endcomment -%}
+    {%- render 'tp-lieferzeit', text: tp_sl_delivery_time, product: product, kontext: 'produkt' -%}
     {%- comment -%}
       Stand der Versandprofile am 2026-09-11 (Admin API): alle aktiven Produkte,
       auch Rollen- und Paketware, liegen im allgemeinen Profil - Preis und
@@ -254,7 +253,7 @@
       "type": "text",
       "id": "delivery_time",
       "label": "Lieferzeit",
-      "info": "Nur eine verifizierte Lieferzeit eintragen. Leer lassen, wenn keine Angabe vorliegt."
+      "info": "Nur eine verifizierte Lieferzeit eintragen, z. B. 2–5 Werktage. Werktage zeigt der Shop als voraussichtliches Lieferdatum. Produktfeld service.lieferzeit hat Vorrang."
     }
   ],
   "presets": [

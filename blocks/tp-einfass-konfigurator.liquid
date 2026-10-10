@@ -270,6 +270,21 @@
         {%- endcomment -%}
         <p class="tp-ek__preishinweis" data-rund-hinweis hidden>Rund und oval: berechnet wird das umschließende Rechteck – so viel Teppich wird zugeschnitten.</p>
         <p class="tp-ek__preishinweis" data-mindest-hinweis hidden></p>
+        {%- comment -%}
+          Voraussichtliches Lieferdatum (#165). Die Werktage selbst nennt der
+          Preishinweis oben; Quelle ist das Produktfeld service.lieferzeit,
+          fuer Serena der Inhaberwert vom 30.09. Art "fertig" rechnet in
+          Kalendertagen und bekommt kein Datum.
+        {%- endcomment -%}
+        {%- unless tp_ek_art == 'fertig' -%}
+          {%- liquid
+            assign tp_ek_ld_text = ''
+            if product.handle == 'serena-teppich-nach-mass'
+              assign tp_ek_ld_text = 'ca. 4–8 Werktage'
+            endif
+          -%}
+          {%- render 'tp-lieferzeit', text: tp_ek_ld_text, product: product, kontext: 'mass' -%}
+        {%- endunless -%}
       </div>
 
       {%- comment -%}
