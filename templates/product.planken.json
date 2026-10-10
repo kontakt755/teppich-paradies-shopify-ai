@@ -332,6 +332,10 @@
             "tp_zubehoer_empfehlung": {
               "type": "tp-zubehoer-empfehlung",
               "settings": {}
+            },
+            "tp_boden_raumansicht": {
+              "type": "tp-boden-raumansicht",
+              "settings": {}
             }
           },
           "block_order": [
@@ -344,6 +348,7 @@
             "tp_farbanzeige_tp1",
             "paket_auswahl_xLTafR",
             "tp_service_links_night1",
+            "tp_boden_raumansicht",
             "tp_muster_cta_1",
             "tp_bewertungsbeleg_planken",
             "options_price_calculator_product_calculator_z3CEfy",
