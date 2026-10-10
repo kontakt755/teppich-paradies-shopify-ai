@@ -169,10 +169,12 @@ test('Optionen: Tippfehler und fehlende Werte brechen ab statt still zu entfalle
   assert.equal(optionsFehler('plan', { prozent: '15', start: '2026-11-03', ende: '2026-11-16', typ: 'Teppichboden' }), null);
 });
 
-test('Ausschlussliste: Varianten-IDs mit Kommentaren, Nummer ohne gid, Fehler bei Unlesbarem', () => {
-  const ids = ladeAusschluss('# UVP neuer Linien\ngid://shopify/ProductVariant/1001\n1002  # Matte gross\n\n');
+test('Ausschlussliste: nur volle Varianten-IDs, Kommentare erlaubt, Fehler bei Unlesbarem', () => {
+  const ids = ladeAusschluss('# UVP neuer Linien\ngid://shopify/ProductVariant/1001\n  gid://shopify/ProductVariant/1002  # Matte gross\n\n');
   assert.deepEqual([...ids], ['gid://shopify/ProductVariant/1001', 'gid://shopify/ProductVariant/1002']);
-  assert.throws(() => ladeAusschluss('gid://shopify/Product/2001'), /keine Varianten-ID/);
+  assert.throws(() => ladeAusschluss('gid://shopify/Product/2001'), /keine volle Varianten-ID/);
+  // Nummer allein: koennte eine aus der Admin-URL kopierte Produkt-ID sein
+  assert.throws(() => ladeAusschluss('gid://shopify/ProductVariant/1001\n16125372760398'), /keine volle Varianten-ID/);
   assert.throws(() => ladeAusschluss('# nur Kommentar\n'), /leer/);
 });
 
@@ -202,6 +204,34 @@ test('Ausschluss gilt nur fuer reduzierte Varianten im Rueckstell-Fenster', () =
   ], { stichtag: '2026-10-19', klasse: 'preisanker', ausschluss: new Set(['x', 'y']) });
   assert.equal(r.csv.length, 0);
   assert.equal(r.leeren.size, 0, 'Dauerrabatt-Variante liegt am 19.10. ausserhalb, Welle-1-Variante ist nicht reduziert');
+  assert.deepEqual(r.ausschlussStand, { gelistet: 2, ausgeschlossen: 0, nichtReduziert: 1, ausserhalb: 1 });
+  assert.equal(r.warnungen.length, 0, 'greift die Liste gar nicht (vor der Wiederherstellung), ist das keine Warnung');
   assert.equal(optionsFehler('ende', { stichtag: '2026-11-02', ausschluss: 'ids.txt' }), null);
   assert.match(optionsFehler('plan', { ausschluss: 'ids.txt' }), /Unbekannte Option --ausschluss/);
+});
+
+test('Ausschluss fail closed: gelistete ID nicht im Export bricht ab, Variante faellt nie still auf die UVP', () => {
+  // Befund Review #1072: Produktnummer statt Varianten-ID in der Liste -> echte Variante lief ungeschuetzt durch.
+  const dauer = P({ id: 'gid://shopify/Product/16125372760398', handle: 'matte-gross', ende: '2026-11-01', klasse: 'preisanker' });
+  const echt = 'gid://shopify/ProductVariant/61097110896974';
+  const varianten = [V({ id: echt, price: '320.50', compareAtPrice: '337.45', product: dauer })];
+  const opt = { stichtag: '2026-11-02', klasse: 'preisanker', endeAm: '2026-11-01' };
+  assert.throws(() => ende(varianten, { ...opt, ausschluss: new Set(['gid://shopify/ProductVariant/16125372760398']) }), /1 von 1 IDs nicht im Export.*16125372760398/);
+  // neu angelegte Variante mit anderer ID: alte ID fehlt -> Abbruch statt Rueckstellung der neuen Variante auf die UVP
+  assert.throws(() => ende([V({ id: 'gid://shopify/ProductVariant/99', price: '320.50', compareAtPrice: '337.45', product: dauer })], { ...opt, ausschluss: new Set([echt]) }), /nicht im Export/);
+  const r = ende(varianten, { ...opt, ausschluss: new Set([echt]) });
+  assert.equal(r.csv.length, 0);
+  assert.deepEqual(r.ausschlussStand, { gelistet: 1, ausgeschlossen: 1, nichtReduziert: 0, ausserhalb: 0 });
+});
+
+test('Ausschluss nur teilweise wirksam: WARNUNG mit getrennten Zahlen', () => {
+  const dauer = P({ id: 'd1', ende: '2026-11-01', klasse: 'preisanker' });
+  const r = ende([
+    V({ id: 'a', price: '65.00', compareAtPrice: '68.63', product: dauer }),
+    V({ id: 'b', price: '65.00', compareAtPrice: null, product: dauer }),
+  ], { stichtag: '2026-11-02', klasse: 'preisanker', endeAm: '2026-11-01', ausschluss: new Set(['a', 'b']) });
+  assert.deepEqual(r.ausschlussStand, { gelistet: 2, ausgeschlossen: 1, nichtReduziert: 1, ausserhalb: 0 });
+  assert.equal(r.warnungen.length, 1);
+  assert.match(r.warnungen[0], /nur bei 1 von 2 .*1 ohne Vergleichspreis ueber Preis, 0 ausserhalb/);
+  assert.equal(r.csv.length, 0, 'b ist nicht reduziert und wird nie zurueckgestellt');
 });
