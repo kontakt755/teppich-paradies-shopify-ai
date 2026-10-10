@@ -260,14 +260,14 @@
   // Daten nachladen (data-tp-rechner-quelle): Inline im Hero kosteten sie die ganze Seite
   // je Teppich rund 5 ms Renderzeit. Wer vorher schon rechnet, wird nach dem Laden bedient.
   // Eine ?page=-Angabe geht mit, damit der Ruecksprung alter ?page=2-Links (init) weiter greift.
-  function laden(root) {
+  function laden(root, abgeschickt) {
     var datenEl = root.querySelector('[data-tp-rechner-daten]');
     var quelle = datenEl && datenEl.getAttribute('data-tp-rechner-quelle');
     if (!quelle || datenEl.textContent.trim()) { init(root); return; }
     if (root.getAttribute('data-tp-rechner-laedt')) return;
     root.setAttribute('data-tp-rechner-laedt', '1');
     var form = root.querySelector('[data-tp-rechner]');
-    var wartet = false;
+    var wartet = !!abgeschickt;
     function frueh(e) { e.preventDefault(); wartet = true; }
     if (form) form.addEventListener('submit', frueh);
     var seite = new URL(window.location.href).searchParams.get('page');
@@ -287,12 +287,28 @@
         }
       })
       .catch(function () {
-        if (form) form.removeEventListener('submit', frueh);
+        // Kein stilles Neuladen der Seite per Formular: Hinweis zeigen, naechster Versuch beim Absenden.
         root.removeAttribute('data-tp-rechner-laedt');
+        if (form) {
+          form.removeEventListener('submit', frueh);
+          form.addEventListener('submit', function erneut(e) {
+            e.preventDefault();
+            form.removeEventListener('submit', erneut);
+            laden(root, true);
+          });
+        }
+        if (wartet) wartetNachFehler(root);
       });
   }
 
-  function alle() { document.querySelectorAll('[data-tp-rechner-root]').forEach(laden); }
+  function wartetNachFehler(root) {
+    var fehler = root.querySelector('[data-tp-rechner-fehler]');
+    if (!fehler || root.getAttribute('data-tp-rechner-bereit')) return;
+    fehler.textContent = 'Die Preise konnten gerade nicht geladen werden. Bitte gleich noch einmal versuchen.';
+    fehler.hidden = false;
+  }
+
+  function alle() { document.querySelectorAll('[data-tp-rechner-root]').forEach(function (r) { laden(r); }); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', alle);
   else alle();
   document.addEventListener('shopify:section:load', alle);

@@ -122,6 +122,8 @@ test('Reihen und Wegweiser lesen die Gruppe direkt aus dem Feld, Snippet nur als
   const reihe = lies('sections/tp-zubehoer-produkte.liquid');
   assert.match(reihe, /paginate source\.products by 250/, 'Reihe sieht alle Teppiche, nicht nur 50');
   assert.match(reihe, /"id": "karten_sofort"/);
+  assert.match(reihe, /if request\.design_mode\s+assign tp_tg_sofort = 0/, 'Theme-Editor: alles sofort');
+  assert.match(reihe, /CSS\.supports\('overflow-anchor', 'auto'\)/, 'nur ohne native Verankerung von Hand');
 });
 
 test('Nachladevorlage: dieselben Reihen wie collection.teppiche, ohne Layout und ohne Begrenzung', () => {
@@ -150,7 +152,7 @@ test('Hero: Rechner-Daten kommen nachgeladen aus collection.teppiche-rechner', (
   assert.match(lies('templates/collection.teppiche-rechner.liquid'), /render 'tp-teppich-rechner-daten', collection: collection/);
   const js = lies('assets/tp-teppich-rechner.js');
   assert.match(js, /data-tp-rechner-quelle/);
-  assert.match(js, /forEach\(laden\)/);
+  assert.match(js, /forEach\(function \(r\) { laden\(r\); }\)/);
 });
 
 /* ─── Pflegeskript ──────────────────────────────────────────────────── */

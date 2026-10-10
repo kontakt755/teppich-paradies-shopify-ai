@@ -55,6 +55,10 @@
   assign items = source.products
   assign tp_tg_filter = section.settings.teppich_gruppe | default: 'alle'
   assign tp_tg_sofort = section.settings.karten_sofort | default: 0
+  # Im Theme-Editor alles sofort: nachgeladen wuerde die gespeicherte Vorlage, nicht die bearbeitete.
+  if request.design_mode
+    assign tp_tg_sofort = 0
+  endif
   if tp_tg_filter != 'alle'
     # Die Gruppen-Reihen sind das Raster selbst: kein Teppich darf an max_products scheitern.
     assign max_items = 250
@@ -282,9 +286,12 @@
 
     function einsetzen(doc) {
       var reihen = Array.prototype.slice.call(document.querySelectorAll('[data-tp-reihe-nachladen]'));
-      // Eigene Scroll-Verankerung: Reihen ueber dem Blick wachsen, der Blick soll stehen bleiben.
+      // Reihen ueber dem Blick wachsen, der Blick soll stehen bleiben. Chrome und Firefox
+      // verankern selbst (overflow-anchor); nur ohne diese Faehigkeit (Safari) von Hand,
+      // sonst wuerde doppelt korrigiert.
+      var vonHand = !(window.CSS && CSS.supports && CSS.supports('overflow-anchor', 'auto'));
       var anker = null;
-      for (var i = 0; i < reihen.length; i++) {
+      for (var i = 0; vonHand && i < reihen.length; i++) {
         if (reihen[i].getBoundingClientRect().bottom > 0) { anker = reihen[i]; break; }
       }
       var ankerOben = anker ? anker.getBoundingClientRect().top : 0;

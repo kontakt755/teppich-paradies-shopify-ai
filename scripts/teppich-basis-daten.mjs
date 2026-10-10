@@ -27,6 +27,11 @@
  * (siehe Ausgabe). Danach dieses Skript erneut starten - die Gegenprobe ist
  * "0 Abweichungen", nicht `userErrors: []`.
  *
+ * Grenze: Die Vorlage laeuft durch Shopifys Seiten-Cache. Aendert sich nur der
+ * Teppichboden (nicht der Teppich selbst), kann der Shop kurz noch den alten
+ * "soll"-Stand liefern - dann nach einigen Minuten erneut pruefen. Eine sichere
+ * Cache-Umgehung fuer Produktseiten ist nicht belegt (2026-10-10).
+ *
  * Wann laufen lassen: nach jedem Import oder jeder Aenderung an einem
  * Teppichboden, der als Basis dient (Faser, Konstruktion, Flor, Rollenbreiten,
  * Verfuegbarkeit der Rollen). Bis dahin zeigt die Seite den alten Stand; neue
