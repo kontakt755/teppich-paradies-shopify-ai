@@ -567,6 +567,30 @@ if (!customElements.get('facet-remove-component')) {
 class SortingFilterComponent extends Component {
   requiredRefs = ['details', 'summary', 'listbox'];
 
+  connectedCallback() {
+    super.connectedCallback();
+    this.#normalizePriceSort();
+  }
+
+  updatedCallback() {
+    super.updatedCallback();
+    this.#normalizePriceSort();
+  }
+
+  #normalizePriceSort() {
+    if (this.dataset.tpPriceSortBlocked !== 'true') return;
+    const url = new URL(window.location.href);
+    const sortValues = url.searchParams.getAll('sort_by');
+    const defaultIsPrice = this.dataset.tpDefaultSortBy === 'price-ascending' || this.dataset.tpDefaultSortBy === 'price-descending';
+    if (!sortValues.some((value) => value === 'price-ascending' || value === 'price-descending') && !(sortValues.length === 0 && defaultIsPrice)) return;
+    // Nur die unpassende Paketsortierung ersetzen; Filter, Seite, Hash und History bleiben.
+    url.searchParams.delete('sort_by');
+    if (defaultIsPrice) {
+      url.searchParams.set('sort_by', this.dataset.tpSortFallback);
+    }
+    window.location.replace(url.toString());
+  }
+
   /**
    * Handles keyboard navigation in the sorting dropdown
    * @param {KeyboardEvent} event - The keyboard event

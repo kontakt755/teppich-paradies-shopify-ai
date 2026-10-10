@@ -3,4 +3,11 @@
 {% if tp_card_product_type contains 'teppichboden' %}
   {% assign tp_card_title_display = tp_card_title_display | split: ' Teppichboden' | first %}
 {% endif %}
+{% if collection.handle == 'teppiche-standardgroessen' %}
+  {% if tp_card_product_type == 'wohnteppich' %}
+    {% assign tp_card_title_display = tp_card_title_display | split: ' Wohnteppich' | first %}
+  {% elsif tp_card_product_type == 'dekofell' %}
+    {% assign tp_card_title_display = tp_card_title_display | split: ' Dekofell' | first %}
+  {% endif %}
+{% endif %}
 {{ tp_card_title_display }}

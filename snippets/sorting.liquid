@@ -10,6 +10,27 @@
   @param {string} section_id - The section ID
 {%- enddoc -%}
 
+{%- liquid
+  assign tp_price_sort_blocked = false
+  if request.page_type == 'collection'
+    if collection.all_types contains 'Laminat' or collection.all_types contains 'Parkett' or collection.all_types contains 'Kork' or collection.all_types contains 'Klickvinyl' or collection.all_types contains 'Klebevinyl'
+      assign tp_price_sort_blocked = true
+    endif
+  endif
+  assign tp_sort_options = results.sort_options
+  assign default_sort_by = results.default_sort_by
+  assign tp_invalid_price_sort = false
+  if tp_price_sort_blocked
+    assign tp_sort_options = tp_sort_options | reject: 'value', 'price-ascending' | reject: 'value', 'price-descending'
+    if default_sort_by == 'price-ascending' or default_sort_by == 'price-descending'
+      assign default_sort_by = tp_sort_options.first.value
+    endif
+    if sort_by == 'price-ascending' or sort_by == 'price-descending'
+      assign tp_invalid_price_sort = true
+    endif
+  endif
+-%}
+
 <sorting-filter-component
   class="sorting-filter{% if filter_style == 'horizontal' %} sorting-filter__horizontal{% endif %}"
   on:change="/updateFilterAndSorting"
@@ -18,10 +39,15 @@
     data-testid="sorting-filter-component-{{ sort_position }}"
   {% endif %}
   data-should-use-select-on-mobile="{{ should_use_select_on_mobile }}"
+  {% if tp_price_sort_blocked %}
+    data-tp-price-sort-blocked="true"
+    data-tp-default-sort-by="{{ results.default_sort_by }}"
+    data-tp-sort-fallback="{{ default_sort_by }}"
+  {% endif %}
+  {% if tp_invalid_price_sort %}hidden{% endif %}
 >
   {% liquid
-    assign default_sort_by = results.default_sort_by
-    for option in results.sort_options
+    for option in tp_sort_options
       if option.value == sort_by
         assign status = option.name
       endif
@@ -30,21 +56,21 @@
 
   <div class="sorting-filter__container {% if should_use_select_on_mobile %} desktop:hidden {% else %} hidden {% endif %}">
     <label
-      for="sort-select-{{ section_id }}"
+      for="sort-select-{{ section_id }}-{{ suffix }}"
       class="facets__label"
     >
       {{- 'actions.sort' | t -}}
     </label>
     <div class="sorting-filter__select-wrapper">
       <select
-        id="sort-select-{{ section_id }}"
+        id="sort-select-{{ section_id }}-{{ suffix }}"
         name="sort_by"
         class="sorting-filter__select"
         {% if should_use_select_on_mobile == false %}
           disabled
         {% endif %}
       >
-        {% for option in results.sort_options %}
+        {% for option in tp_sort_options %}
           <option
             value="{{ option.value }}"
             {% if option.value == sort_by %}
@@ -107,7 +133,7 @@
         ref="listbox"
       >
         <div class="sorting-filter__options-inner">
-          {% for option in results.sort_options %}
+          {% for option in tp_sort_options %}
             <label
               for="sort-option-{{ option.value }}-{{ section_id }}"
             >

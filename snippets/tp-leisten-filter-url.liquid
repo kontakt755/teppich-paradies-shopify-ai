@@ -1,0 +1,49 @@
+{% doc %}
+  Serverbasierte Materialauswahl mit vorhandenen Tags, Filtern und Sortierung.
+  @param {object} collection - Bodenleisten-Kollektion
+  @param {string} tag - Vorhandener Material-Tag zum Umschalten
+{% enddoc %}
+{%- liquid
+  assign tags_path = ''
+  for selected_tag in current_tags
+    assign prefix = selected_tag | downcase | split: ':' | first | strip
+    unless prefix == 'material' or prefix == 'hoehe'
+      assign tag_handle = selected_tag | handleize
+      assign tags_path = tags_path | append: tag_handle | append: '+'
+    endunless
+  endfor
+  unless current_tags contains tag
+    assign tag_handle = tag | handleize
+    assign tags_path = tags_path | append: tag_handle | append: '+'
+  endunless
+  assign tags_path = tags_path | split: '+' | join: '+'
+  echo collection.url
+  if tags_path != blank
+    echo '/'
+    echo tags_path
+  endif
+  echo '?sort_by='
+  echo collection.sort_by | default: collection.default_sort_by | url_encode
+  for filter in collection.filters
+    for value in filter.active_values
+      echo '&'
+      echo value.param_name | url_encode
+      echo '='
+      echo value.value | url_encode
+    endfor
+    if filter.type == 'price_range'
+      if filter.min_value.value != nil
+        echo '&'
+        echo filter.min_value.param_name | url_encode
+        echo '='
+        echo filter.min_value.value | divided_by: 100.0
+      endif
+      if filter.max_value.value != nil
+        echo '&'
+        echo filter.max_value.param_name | url_encode
+        echo '='
+        echo filter.max_value.value | divided_by: 100.0
+      endif
+    endif
+  endfor
+-%}

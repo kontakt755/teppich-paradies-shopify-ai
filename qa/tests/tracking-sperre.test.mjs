@@ -44,7 +44,10 @@ test('sperreTracking beantwortet mit 204 und zaehlt', async () => {
 
 test('alle Storefront-Laeufe mit Warenkorb oder Klicks haengen die Sperre an', () => {
   for (const datei of ['run-qa.mjs', 'run-sales-readiness.mjs', 'run-compare-check.mjs', 'run-compare-remove-dialog.mjs', 'run-menu-visual.mjs']) {
-    const text = fs.readFileSync(new URL(`../${datei}`, import.meta.url), 'utf8');
+    const source = fs.readFileSync(new URL(`../${datei}`, import.meta.url), 'utf8');
+    const text = source.trim() === "import './run-compare-check.mjs';"
+      ? fs.readFileSync(new URL('../run-compare-check.mjs', import.meta.url), 'utf8')
+      : source;
     assert.match(text, /sperreTracking\(/, `${datei} ohne Tracking-Sperre`);
   }
 });

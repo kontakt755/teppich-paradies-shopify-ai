@@ -6,7 +6,7 @@
 // Der Test ist bewusst strukturell: jede Theme-Datei, die compare_at_price liest, muss
 // auch das gemeinsame Snippet fragen. Wer eine neue Preisanzeige baut, faellt hier auf.
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { beforeEach } from 'node:test';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -45,14 +45,19 @@ const ohneDoc = (datei) => readFileSync(path.join(root, datei), 'utf8')
   .replace(/{%-?\s*doc\s*-?%}[\s\S]*?{%-?\s*enddoc\s*-?%}/g, '');
 let sqm = ohneDoc('snippets/tp-price-per-sqm.liquid');
 sqm = sqm.slice(0, sqm.indexOf('{% stylesheet %}'));
-const engine = new Liquid({ templates: {
+// ISO-Fixtures und LiquidJS verwenden denselben UTC-Kalendertag.
+beforeEach((t) => t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-10-09T22:30:00Z') }));
+const engine = new Liquid({ timezoneOffset: 0, templates: {
   'tp-aktion-aktiv': ohneDoc('snippets/tp-aktion-aktiv.liquid'),
   'tp-rabatt-sichtbar': ohneDoc('snippets/tp-rabatt-sichtbar.liquid'),
   'tp-paketinhalt': '',
 } });
 engine.registerFilter('money_without_currency', (c) => (Number(c) / 100).toFixed(2).replace('.', ','));
-const heute = new Date().toISOString().slice(0, 10);
-const gestern = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+const tag = (offset) => {
+  const datum = new Date();
+  datum.setUTCDate(datum.getUTCDate() + offset);
+  return datum.toISOString().slice(0, 10);
+};
 const paket = (aktion) => ({
   selected_variant: { price: 2495, compare_at_price: 2995 },
   sqm_per_package: 1,
@@ -64,22 +69,32 @@ test('Paketpreis: Streichpreis 29,95 erscheint nur mit laufender Aktion', async 
   assert.doesNotMatch(ohne, /tp-price-per-sqm__compare/);
   assert.match(ohne, /24,95/);
 
-  const mit = await engine.parseAndRender(sqm, paket({ start: { value: heute } }));
+  const mit = await engine.parseAndRender(sqm, paket({ start: { value: tag(0) } }));
   assert.match(mit, /tp-price-per-sqm__compare[\s\S]*29,95/);
 
-  const vorbei = await engine.parseAndRender(sqm, paket({ start: { value: '2026-01-01' }, ende: { value: gestern } }));
+  const vorbei = await engine.parseAndRender(sqm, paket({ start: { value: '2026-01-01' }, ende: { value: tag(-1) } }));
   assert.doesNotMatch(vorbei, /tp-price-per-sqm__compare/);
 });
 
 test('Dauerrabatt (aktion.klasse = preisanker) zeigt den Streichpreis ohne Aktionsdatum', async () => {
   const mit = await engine.parseAndRender(sqm, paket({ klasse: { value: 'preisanker' } }));
   assert.match(mit, /tp-price-per-sqm__compare[\s\S]*29,95/);
-  const bisHeute = await engine.parseAndRender(sqm, paket({ klasse: { value: 'preisanker' }, ende: { value: heute } }));
+  const bisHeute = await engine.parseAndRender(sqm, paket({ klasse: { value: 'preisanker' }, ende: { value: tag(0) } }));
   assert.match(bisHeute, /tp-price-per-sqm__compare[\s\S]*29,95/);
-  const abgelaufen = await engine.parseAndRender(sqm, paket({ klasse: { value: 'preisanker' }, ende: { value: gestern } }));
+  const abgelaufen = await engine.parseAndRender(sqm, paket({ klasse: { value: 'preisanker' }, ende: { value: tag(-1) } }));
   assert.doesNotMatch(abgelaufen, /tp-price-per-sqm__compare/, 'Dauerrabatt nach aktion.ende zeigt keinen Streichpreis');
   const andere = await engine.parseAndRender(sqm, paket({ klasse: { value: 'premium' } }));
   assert.doesNotMatch(andere, /tp-price-per-sqm__compare/);
+});
+
+test('Dauerrabatt-Enddatum bleibt bis UTC-Mitternacht einschliesslich gueltig', async (t) => {
+  const aktion = { klasse: { value: 'preisanker' }, ende: { value: '2026-10-09' } };
+  for (const zeit of ['2026-10-09T21:59:59Z', '2026-10-09T22:00:00Z', '2026-10-09T23:59:59.999Z']) {
+    t.mock.timers.setTime(Date.parse(zeit));
+    assert.match(await engine.parseAndRender(sqm, paket(aktion)), /tp-price-per-sqm__compare[\s\S]*29,95/, zeit);
+  }
+  t.mock.timers.setTime(Date.parse('2026-10-10T00:00:00Z'));
+  assert.doesNotMatch(await engine.parseAndRender(sqm, paket(aktion)), /tp-price-per-sqm__compare/);
 });
 
 test('Verlegeservice-Hinweis fragt weiter nur die befristete Aktion', () => {

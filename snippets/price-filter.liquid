@@ -94,7 +94,11 @@
           Shopify - benannt werden kann sie aber.
         {%- endcomment -%}
         <p class="price-facet__einheit">
-          Bei Meterware je m², bei Paketware je Paket.
+          {%- if collection.handle == 'teppiche-standardgroessen' -%}
+            Preis je Teppich bzw. je Dekofell, abhängig von der gewählten Größe.
+          {%- else -%}
+            Bei Meterware je m², bei Paketware je Paket.
+          {%- endif -%}
         </p>
         <div class="facets__inputs-wrapper facets__inputs-wrapper--row">
           <div

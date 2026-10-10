@@ -11,12 +11,12 @@ const start = source.indexOf('  root.tpRwcPreis = function (art, wCm, lenCm) {')
 const end = source.indexOf('\n  };', start) + 5;
 assert.ok(start >= 0 && end > start);
 
-function preis({ wIdx = -1, fallbackWidthCm = 400, cmExact = false } = {}) {
-  const context = vm.createContext({ root: {}, wIdx, fallbackWidthCm, cmExact,
+function preis({ wIdx = -1, fallbackWidthCm = 400, cmExact = false, raumAnfrage = false } = {}) {
+  const context = vm.createContext({ root: {}, wIdx, fallbackWidthCm, cmExact, raumAnfrage,
     raumVariant: () => ({ rate: 75 }),
     variantFor: (_options, width) => ({ rate: width === 500 ? 60 : 41.95 }),
     baseOptions: () => [], byWidth: w => w, rateOf: v => v?.rate || 0,
-    ART: { wunschOk: () => true },
+    raumMoeglich: () => true, ART: { wunschOk: () => true },
     roundedHundredthsQty: (w, l) => Math.round(w * l / 100)
   });
   vm.runInContext(source.slice(start, end), context);
@@ -52,4 +52,11 @@ test('Artikel mit Breitenoption und cm-genauem Raummass behalten ihre Preise', (
   const p = preis({ wIdx: 1, cmExact: true });
   assert.equal(p('meter', 500, 200), 600);
   assert.equal(p('raum', 200, 250), 375);
+});
+
+ test('Anfrageangebot verwendet Raumhelfer, feste Meterware bleibt unveraendert', () => {
+  const p = preis({ raumAnfrage: true });
+  assert.equal(p('raum', 200, 300), 450);
+  assert.equal(p('meter', 400, 200), 335.6);
+  assert.equal(p('meter', 500, 200), 0);
 });

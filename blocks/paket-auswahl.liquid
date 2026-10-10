@@ -451,7 +451,7 @@
         <input type="checkbox" data-rail-check>
         <span>
           Sockelleiste aus Echtholzfurnier, 60 mm hoch
-          <small>{% if product.type == 'Parkett' %}22 × 60 mm{% else %}16 × 60 mm{% endif %} · ab {{ tp_pa_leiste.price_min | money }} je Stange</small>
+          <small>{% if product.type == 'Parkett' %}22 × 60 mm{% else %}16 × 60 mm{% endif %} · ab {{ tp_pa_leiste.price_min | money }} je Leiste</small>
         </span>
       </label>
       <div class="carpet-package__extra-fields-{{ package_selector_id }}" data-rail-fields hidden>
@@ -472,7 +472,7 @@
         </div>
         <p data-rail-result></p>
         <p data-rail-error role="alert" hidden></p>
-        <p>Verkauf in ganzen Stangen à {{ tp_pa_leistenlaenge | replace: '.', ',' }} m. Die Menge wird für Ihre Länge aufgerundet.</p>
+        <p>Verkauf in ganzen Leisten à {{ tp_pa_leistenlaenge | replace: '.', ',' }} m. Die Menge wird für Ihre Länge aufgerundet.</p>
       </div>
     </div>
   {% endif %}
@@ -686,7 +686,7 @@
       if (!railCheck) return { active: false, cents: 0, rods: 0 };
       if (railFields) railFields.hidden = !railCheck.checked;
       const selection = railSelection();
-      if (railResult) railResult.textContent = selection.valid ? selection.rods + ' Stangen = ' + formatGermanNumber(selection.rods * railLength, 2) + ' m · ' + formatMoney(selection.cents) : '';
+      if (railResult) railResult.textContent = selection.valid ? selection.rods + (selection.rods === 1 ? ' Leiste' : ' Leisten') + ' = ' + formatGermanNumber(selection.rods * railLength, 2) + ' m · ' + formatMoney(selection.cents) : '';
       if (railError) { railError.hidden = true; railError.textContent = ''; }
       railMeters?.removeAttribute('aria-invalid');
       railVariant?.removeAttribute('aria-invalid');

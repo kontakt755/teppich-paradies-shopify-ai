@@ -27,6 +27,7 @@
 {%- liquid
   assign tp_mb_sizes = sizes | default: 'auto'
   assign tp_mb_src = ''
+  assign tp_mb_class = class
 
   capture tp_mb_idx
     render 'tp-menu-kachel-index', link: link, kacheln: kacheln, match_title: match_title
@@ -40,6 +41,9 @@
   endif
 
   if tp_mb_src != blank
+    if tp_mb_src contains '/teppichplanken-format-menue-v1.png'
+      assign tp_mb_class = tp_mb_class | append: ' tp-menu-bild--format'
+    endif
     assign tp_mb_widths = widths | default: '200,300,400,600,800' | split: ','
     assign tp_mb_srcset = ''
     for tp_mb_w in tp_mb_widths
@@ -50,8 +54,16 @@
       endunless
     endfor
     assign tp_mb_src_klein = tp_mb_src | replace: 'width=800', 'width=' | append: tp_mb_widths.first
-    echo '<img src="' | append: tp_mb_src_klein | append: '" srcset="' | append: tp_mb_srcset | append: '" sizes="' | append: tp_mb_sizes | append: '" alt="" loading="lazy" fetchpriority="low" class="' | append: class | append: '">'
+    echo '<img src="' | append: tp_mb_src_klein | append: '" srcset="' | append: tp_mb_srcset | append: '" sizes="' | append: tp_mb_sizes | append: '" alt="" loading="lazy" fetchpriority="low" class="' | append: tp_mb_class | append: '">'
   else
     render 'link-featured-image', link: link, class: class, sizes: tp_mb_sizes, widths: widths
   endif
 -%}
+
+{% stylesheet %}
+  .mega-menu__grid .mega-menu__list .tp-mm-card--media .tp-mm-card__media > img.mega-menu__link-image.tp-menu-bild--format,
+  .menu-drawer .tp-dn-row__media img.tp-menu-bild--format {
+    object-fit: contain;
+    transform: none;
+  }
+{% endstylesheet %}

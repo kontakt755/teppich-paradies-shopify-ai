@@ -14,9 +14,9 @@
       "settings": {
         "image": "shopify://shop_images/valdoro-eiche-natur-geoelt-parkett-landhausdiele-220x20-9-cm-raum-1.jpg",
         "eyebrow": "Bodenbeläge entdecken",
-        "heading": "Parkett & Kork",
-        "lead": "<p>Natürlich wirkende Böden für unterschiedliche Wohnstile: Diese Kollektion vereint Parkett und Kork. Vergleichen Sie Material, Farbton und Aufbau anhand der Angaben zum einzelnen Produkt.</p>",
-        "primary_label": "Böden entdecken",
+        "heading": "Parkettboden",
+        "lead": "<p>Parkett nach Holzart und Oberfläche auswählen. Entdecken Sie geölte, lackierte und unbehandelte Oberflächen und planen Sie Ihren Paketbedarf am Produkt.</p>",
+        "primary_label": "Parkett ansehen",
         "secondary_label": "Beratung anfragen",
         "secondary_link": "/pages/kontakt",
         "image_caption": "Raumbeispiel: Valdoro Eiche Natur geölt"
@@ -25,7 +25,7 @@
         "point_1": {
           "type": "point",
           "settings": {
-            "text": "Parkett und Kork"
+            "text": "Echtholz-Oberflächen"
           }
         },
         "point_2": {
@@ -205,61 +205,54 @@
       "type": "tp-boden-kategorie-ratgeber",
       "settings": {
         "eyebrow": "Gut zu wissen",
-        "heading": "Parkett und Kork passend auswählen",
-        "intro": "<p>Beide Materialien finden Sie hier gemeinsam. Ein Blick auf den Produktnamen, das Material und die technischen Angaben hilft beim Eingrenzen.</p>",
-        "faq_heading": "Häufige Fragen zu Parkett & Kork",
-        "contact_text": "Noch unsicher, welcher Boden passt?",
+        "heading": "Fragen zu Ihrem Parkett",
+        "intro": "<p>Format, Aufbau und technische Eigenschaften prüfen Sie am einzelnen Produkt.</p>",
+        "faq_heading": "Häufige Fragen",
+        "contact_text": "Auswahl oder Produktdaten noch unklar?",
         "contact_label": "Persönlich beraten lassen",
         "contact_link": "/pages/kontakt"
       },
       "blocks": {
-        "tip_1": {
-          "type": "tip",
-          "settings": {
-            "heading": "Material einordnen",
-            "body": "<p>Parkett und Kork sind unterschiedliche Beläge. Achten Sie im Produkttitel und in der Beschreibung darauf, welches Material angeboten wird.</p>"
-          }
-        },
-        "tip_2": {
-          "type": "tip",
-          "settings": {
-            "heading": "Oberfläche ansehen",
-            "body": "<p>Farbton, Struktur und Oberfläche können sich deutlich unterscheiden. Nutzen Sie die vorhandenen Produktbilder als Orientierung und prüfen Sie die Details am Artikel.</p>"
-          }
-        },
-        "tip_3": {
-          "type": "tip",
-          "settings": {
-            "heading": "Fläche planen",
-            "body": "<p>Die Produkte werden paketweise angeboten. Der Paketinhalt und der Rechner auf der Produktseite helfen bei der benötigten Menge.</p>"
-          }
-        },
         "faq_1": {
           "type": "faq",
           "settings": {
-            "question": "Warum erscheinen Korkböden in dieser Kategorie?",
-            "answer": "<p>Die Kollektion zeigt derzeit sowohl Parkett als auch Kork. Das Material ist im jeweiligen Produkttitel und in den Produktdetails ausgewiesen.</p>"
+            "question": "Wo sehe ich Oberfläche und Holzart?",
+            "answer": "<p>Die Auswahl oben führt zu den passenden Oberflächen und Holzarten. Ausführung, Maße und weitere Eigenschaften stehen in den Produktdetails.</p>"
           }
         },
         "faq_2": {
           "type": "faq",
           "settings": {
-            "question": "Sind für diese Böden kostenlose Muster verfügbar?",
-            "answer": "<p>Für die derzeitigen Parkett- und Korkimporte sind keine kostenlosen Muster hinterlegt. <a href=\"/pages/kontakt\">Kontaktieren Sie uns</a>, wenn Sie eine bestimmte Oberfläche vor der Bestellung besprechen möchten.</p>"
+            "question": "Wie plane ich die Bestellmenge?",
+            "answer": "<p>Parkett wird paketweise angeboten. Der Rechner am Produkt zeigt den Paketbedarf für Ihre Fläche anhand des jeweiligen Paketinhalts.</p>"
+          }
+        },
+        "faq_3": {
+          "type": "faq",
+          "settings": {
+            "question": "Sind kostenlose Muster erhältlich?",
+            "answer": "<p>Für die derzeit angebotenen Parkettprodukte sind keine kostenlosen Muster hinterlegt. <a href=\"/pages/kontakt\">Unsere Beratung</a> hilft bei Fragen zu einer bestimmten Oberfläche.</p>"
           }
         }
       },
       "block_order": [
-        "tip_1",
-        "tip_2",
-        "tip_3",
         "faq_1",
-        "faq_2"
+        "faq_2",
+        "faq_3"
       ]
+    },
+    "auswahl": {
+      "type": "tp-boden-auswahl",
+      "settings": {
+        "kind": "parkett",
+        "heading": "Ihr Parkett eingrenzen",
+        "intro": "Oberfläche und Holzart kombinieren und passende Parkettböden entdecken."
+      }
     }
   },
   "order": [
     "hero",
+    "auswahl",
     "main",
     "guide"
   ]

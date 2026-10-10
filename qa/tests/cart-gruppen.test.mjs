@@ -75,7 +75,7 @@ test('C: Kundeneinheit aus den Properties, Fallback Stueckzahl, nie ein Preis', 
   assert.equal(G.kundeneinheit(kettel('K1')), '10,00 m Kettelkante');
   assert.equal(G.kundeneinheit(fussleiste('T1')), '19 m Fußleiste');
   assert.equal(G.kundeneinheit(haft('T1')), '5 lfm (2 Bahnen)');
-  assert.equal(G.kundeneinheit(holzleiste('V1')), '8 Stangen');
+  assert.equal(G.kundeneinheit(holzleiste('V1')), '8 Leisten');
   assert.equal(G.kundeneinheit({ key: 'x', quantity: 3, properties: { _Gruppe: 'T1' } }), '3 Stück');
   for (const z of [meterware(), mass(), kettel('K1'), fussleiste('T1'), haft('T1')]) {
     assert.doesNotMatch(G.kundeneinheit(z), /€/);
