@@ -12,8 +12,9 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
-// Reine Formatierer ohne eigene Entscheidung, ob ein Streichpreis erscheint.
-const AUSNAHMEN = new Set(['snippets/tp-aktion-aktiv.liquid', 'snippets/tp-rabatt-sichtbar.liquid', 'snippets/format-price.liquid']);
+// Reine Formatierer ohne eigene Entscheidung, ob ein Streichpreis erscheint - und
+// tp-sonderposten-preisbeleg, das nur tp-rabatt-sichtbar selbst fragt (Weg 3).
+const AUSNAHMEN = new Set(['snippets/tp-aktion-aktiv.liquid', 'snippets/tp-rabatt-sichtbar.liquid', 'snippets/format-price.liquid', 'snippets/tp-sonderposten-preisbeleg.liquid']);
 
 const dateien = ['blocks', 'snippets', 'sections'].flatMap((ordner) =>
   readdirSync(path.join(root, ordner))
@@ -50,6 +51,10 @@ beforeEach((t) => t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-10-
 const engine = new Liquid({ timezoneOffset: 0, templates: {
   'tp-aktion-aktiv': ohneDoc('snippets/tp-aktion-aktiv.liquid'),
   'tp-rabatt-sichtbar': ohneDoc('snippets/tp-rabatt-sichtbar.liquid'),
+  'tp-ist-sonderposten': ohneDoc('snippets/tp-ist-sonderposten.liquid'),
+  'tp-sonderposten-preisbeleg': ohneDoc('snippets/tp-sonderposten-preisbeleg.liquid'),
+  'tp-sonderposten-flaeche': ohneDoc('snippets/tp-sonderposten-flaeche.liquid'),
+  'tp-verkaufseinheit': ohneDoc('snippets/tp-verkaufseinheit.liquid'),
   'tp-paketinhalt': '',
 } });
 engine.registerFilter('money_without_currency', (c) => (Number(c) / 100).toFixed(2).replace('.', ','));
@@ -101,4 +106,23 @@ test('Verlegeservice-Hinweis fragt weiter nur die befristete Aktion', () => {
   const code = readFileSync(path.join(root, 'blocks/tp-verlegeservice-hinweis.liquid'), 'utf8');
   assert.match(code, /render 'tp-aktion-aktiv'/);
   assert.doesNotMatch(code, /tp-rabatt-sichtbar/);
+});
+
+test('Sonderposten: Streichpreis nur mit pruefbarem Preisbeleg, unabhaengig von aktion.*', async () => {
+  const sichtbar = (product) => engine.parseAndRender("{% render 'tp-rabatt-sichtbar', product: product %}", { product });
+  const ursprung = { type: 'Teppichboden', tags: [], metafields: { custom: {} },
+    variants: [{ title: '400 cm', option1: '400 cm', price: 2590, available: true, metafields: { custom: {} } }] };
+  const masse = { breite_m: { value: 4 }, laenge_m: { value: 2.35 }, ursprungsprodukt: { value: ursprung } };
+  const sp = (metafields) => ({ type: 'Sonderposten', variants: [{ title: 'Default Title', price: 8900, compare_at_price: 24346 }], metafields });
+  assert.equal((await sichtbar(sp({ sonderposten: { ...masse, preis_beleg: { value: 'regulaer 25,90 EUR/m2 x 9,40 m2' } } }))).trim(), 'ja');
+  assert.equal((await sichtbar(sp({ sonderposten: { preis_beleg: { value: 'regulaer 25,90 EUR/m2 x 9,40 m2' } } }))).trim(), '',
+    'Beleg ohne Masse und Ursprungsprodukt ist nicht pruefbar');
+  assert.equal((await sichtbar(sp({ sonderposten: { ...masse } }))).trim(), '', 'ohne Beleg kein Streichpreis');
+  assert.equal((await sichtbar(sp({ sonderposten: { ...masse }, aktion: { klasse: { value: 'preisanker' } } }))).trim(), '',
+    'ein mitkopiertes aktion.klasse darf beim Sonderposten keinen Streichpreis freischalten');
+});
+
+test('tp-sonderposten-preisbeleg wird nur von tp-rabatt-sichtbar gefragt', () => {
+  const nutzer = dateien.filter((datei) => /render 'tp-sonderposten-preisbeleg'/.test(readFileSync(path.join(root, datei), 'utf8')));
+  assert.deepEqual(nutzer, ['snippets/tp-rabatt-sichtbar.liquid']);
 });

@@ -1,0 +1,100 @@
+{%- doc -%}
+  Produktbewertung als Sterne + "4,8 (12 Bewertungen)".
+
+  Quelle sind ausschliesslich die Shopify-Standardfelder, die eine
+  Bewertungs-App pflegt: reviews.rating (Typ rating) und reviews.rating_count.
+  Ohne Bewertung (Feld leer oder Anzahl 0) wird NICHTS ausgegeben - keine
+  leeren Sterne, kein "0 Bewertungen". Werte werden nie geschaetzt oder aus der
+  Google-Unternehmensbewertung (Theme-Einstellung) uebernommen: das ist eine
+  Bewertung des Geschaefts, nicht des Produkts (docs/weiterentwicklung/bewertungen.md).
+
+  @param {object} product - das Produkt
+  @param {string} [groesse] - 'seite' (Produktseite) oder 'karte' (Produktkarte, kompakt)
+  @param {string} [ziel] - Sprungziel fuer den Link, z. B. '#bewertungen'; leer = kein Link
+{%- enddoc -%}
+{%- liquid
+  assign tst_wert = product.metafields.reviews.rating.value.rating | times: 1.0
+  assign tst_max = product.metafields.reviews.rating.value.scale_max | times: 1.0
+  if tst_max <= 0
+    assign tst_max = 5.0
+  endif
+  assign tst_anzahl = product.metafields.reviews.rating_count.value | default: product.metafields.reviews.rating_count | times: 1 | round
+-%}
+{%- if tst_wert > 0 and tst_anzahl > 0 -%}
+  {%- liquid
+    assign tst_prozent = tst_wert | divided_by: tst_max | times: 100 | round: 1
+    assign tst_text = tst_wert | round: 1 | append: '' | replace: '.', ','
+    unless tst_text contains ','
+      assign tst_text = tst_text | append: ',0'
+    endunless
+    if tst_anzahl == 1
+      assign tst_wort = 'Bewertung'
+    else
+      assign tst_wort = 'Bewertungen'
+    endif
+    assign tst_max_text = tst_max | round | append: ''
+    assign tst_label = 'Bewertet mit ' | append: tst_text | append: ' von ' | append: tst_max_text | append: ' Sternen, ' | append: tst_anzahl | append: ' ' | append: tst_wort
+    assign tst_tag = 'span'
+    if ziel != blank
+      assign tst_tag = 'a'
+    endif
+  -%}
+  <{{ tst_tag }}
+    class="tp-sterne tp-sterne--{{ groesse | default: 'seite' }}"
+    {% if ziel != blank %}href="{{ ziel }}"{% endif %}
+    aria-label="{{ tst_label | escape }}"
+  >
+    <span class="tp-sterne__reihe" aria-hidden="true">
+      <span class="tp-sterne__voll" style="width: {{ tst_prozent }}%;">★★★★★</span>★★★★★
+    </span>
+    <span class="tp-sterne__wert" aria-hidden="true">{{ tst_text }}</span>
+    <span class="tp-sterne__anzahl" aria-hidden="true">({{ tst_anzahl }}{% if groesse != 'karte' %} {{ tst_wort }}{% endif %})</span>
+  </{{ tst_tag }}>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-sterne {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 6px;
+    color: var(--color-foreground);
+    font-size: 0.92rem;
+    line-height: 1.3;
+    text-decoration: none;
+  }
+
+  a.tp-sterne:hover .tp-sterne__anzahl,
+  a.tp-sterne:focus-visible .tp-sterne__anzahl {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .tp-sterne__reihe {
+    position: relative;
+    display: inline-block;
+    color: rgb(0 0 0 / 0.18);
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  .tp-sterne__voll {
+    position: absolute;
+    inset: 0 auto 0 0;
+    overflow: hidden;
+    color: #c28a00;
+  }
+
+  .tp-sterne__wert {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tp-sterne__anzahl {
+    color: rgb(0 0 0 / 0.62);
+  }
+
+  .tp-sterne--karte {
+    font-size: 0.78rem;
+  }
+{% endstylesheet %}

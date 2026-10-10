@@ -16,7 +16,7 @@
           <h3 class="tp-seo__h4">{{ block.settings.titel | default: block.settings.menu.title | escape }}</h3>
           <ul>
             {%- if block.settings.menu != blank -%}
-              {%- for link in block.settings.menu.links -%}<li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>{%- endfor -%}
+              {%- for link in block.settings.menu.links -%}{%- capture tp_mls -%}{%- render 'tp-menu-link-sichtbar', link: link -%}{%- endcapture -%}{%- if tp_mls contains 'nein' -%}{%- continue -%}{%- endif -%}<li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>{%- endfor -%}
             {%- elsif block.settings.links != blank -%}
               {%- assign zeilen = block.settings.links | newline_to_br | split: '<br />' -%}
               {%- for zeile in zeilen -%}

@@ -38,6 +38,24 @@
     assign tp_hide_buy_buttons = true
   endif
 
+  # Sonderposten: Einzelstueck, Menge fest 1 (snippets/tp-ist-sonderposten).
+  capture tp_ist_sonderposten
+    render 'tp-ist-sonderposten', product: product
+  endcapture
+  assign tp_ist_sonderposten = tp_ist_sonderposten | strip
+  assign tp_sp_einzel = false
+  if tp_ist_sonderposten == 'ja'
+    assign tp_ist_sonderposten = true
+    assign tp_sp_im_warenkorb = cart | item_count_for_variant: variant.id
+    # Einzelstueck (Bestand hoechstens 1): kein Mengenfeld. Bei mehreren
+    # gleichen Stuecken (Lagerueberhang) bleibt das normale Mengenfeld.
+    unless variant.inventory_management == 'shopify' and variant.inventory_quantity > 1
+      assign tp_sp_einzel = true
+    endunless
+  else
+    assign tp_ist_sonderposten = false
+  endif
+
   if variant
     if variant.quantity_rule.min > variant.inventory_quantity and inventory_managed and inventory_policy == 'deny'
       assign quantity_rule_soldout = true
@@ -49,9 +67,31 @@
     elsif inventory_managed and inventory_quantity <= 0 and inventory_policy == 'deny' or quantity_rule_soldout
       assign can_add_to_cart = false
       assign add_to_cart_text = 'products.product.sold_out' | t
+      if tp_ist_sonderposten
+        assign add_to_cart_text = 'Verkauft'
+      endif
     else
       assign can_add_to_cart = false
       assign add_to_cart_text = 'products.product.unavailable' | t
+    endif
+  endif
+
+  # Sonderposten nur mit gesichertem Bestand online verkaufen
+  # (snippets/tp-sonderposten-kaufstatus): ohne gefuehrten Bestand oder mit
+  # erlaubtem Ueberverkauf koennte dasselbe Einzelstueck zweimal verkauft
+  # werden; "Nur Abholung" setzt der Checkout nicht durch. In beiden Faellen
+  # kein Kaufknopf - auch kein Express-Checkout (haengt an can_add_to_cart).
+  if tp_ist_sonderposten
+    capture tp_sp_kaufstatus
+      render 'tp-sonderposten-kaufstatus', product: product
+    endcapture
+    assign tp_sp_kaufstatus = tp_sp_kaufstatus | strip
+    if tp_sp_kaufstatus == 'ungesichert'
+      assign can_add_to_cart = false
+      assign add_to_cart_text = 'Online nicht bestellbar'
+    elsif tp_sp_kaufstatus == 'laden'
+      assign can_add_to_cart = false
+      assign add_to_cart_text = 'Nur im Geschäft erhältlich'
     endif
   endif
 %}
@@ -130,7 +170,18 @@
             </div>
           {%- endif -%}
 
-          {% content_for 'block', type: 'quantity', id: 'quantity' %}
+          {%- comment -%}
+            Sonderposten-Einzelstuecke (Bestand 1) mit festen Massen: kein Mengenfeld.
+            Ohne Feld legt das Formular genau 1 in den Warenkorb
+            (data-quantity-default). Mehr verhindert der Bestand serverseitig.
+          {%- endcomment -%}
+          {%- if tp_sp_einzel -%}
+            {%- if tp_sp_im_warenkorb > 0 -%}
+              <p class="tp-sp-kauf__hinweis">Dieses Stück liegt bereits in Ihrem Warenkorb.</p>
+            {%- endif -%}
+          {%- else -%}
+            {% content_for 'block', type: 'quantity', id: 'quantity' %}
+          {%- endif -%}
 
           {%- if has_quantity_rules -%}
             <div
@@ -390,6 +441,15 @@
 {%- endunless -%}
 
 {% render 'buy-buttons-styles' %}
+
+{% stylesheet %}
+  /* Sonderposten: Hinweis, wenn das Einzelstueck schon im Warenkorb liegt. */
+  .tp-sp-kauf__hinweis {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #1f6b3a;
+  }
+{% endstylesheet %}
 
 {% schema %}
 {

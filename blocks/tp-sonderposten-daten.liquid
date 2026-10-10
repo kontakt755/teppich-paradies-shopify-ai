@@ -1,0 +1,304 @@
+{% doc %}
+  Sonderposten auf der Produktseite: Art und Verfuegbarkeit, feste Masse,
+  Stueckpreis mit rechnerischem m2-Preis, Ersparnis, Zustand, Herkunft und
+  Abholung/Versand. Rendert nur bei Sonderposten (snippets/tp-ist-sonderposten),
+  sonst nichts - der Block darf deshalb auch in anderen Vorlagen stehen.
+
+  Datenquelle sind die Produkt-Metafelder im Namensraum "sonderposten"
+  (Definitionen und Pflege: docs/weiterentwicklung/sonderposten.md):
+    art, zustand, zustand_hinweis, farbe, breite_m, laenge_m, flaeche_m2,
+    ursprungsprodukt, versand
+  Material kommt aus custom.material wie bei allen anderen Produkten.
+  sonderposten.lagerort ist intern und wird hier bewusst NIE ausgegeben.
+
+  Preis: Der Variantenpreis ist der Preis fuer das ganze Stueck. Der m2-Preis
+  ist nur eine Umrechnung zur Orientierung (Grundpreisangabe).
+  Streichpreis und Ersparnis erscheinen nur, wenn snippets/tp-rabatt-sichtbar
+  "ja" sagt - fuer Sonderposten heisst das: pruefbarer Beleg fuer genau dieses
+  Stueck (snippets/tp-sonderposten-preisbeleg).
+
+  Verfuegbarkeit und Versand kommen aus snippets/tp-sonderposten-kaufstatus:
+  "Nur N x verfuegbar" und "Abholung oder Versand" nur, wenn Shopify den
+  Bestand fuehrt und Ueberverkauf sperrt. Sonst steht da, dass das Stueck
+  online nicht bestellbar ist - nie "Verfuegbar" ohne gesicherte Stueckzahl.
+  "Nur Abholung" setzt der Checkout nicht durch; solche Stuecke gibt es nur
+  im Geschaeft (kein Versandversprechen, das der Checkout bricht).
+{% enddoc %}
+
+{%- liquid
+  assign tp_sp_p = closest.product
+  capture tp_sp_ist
+    render 'tp-ist-sonderposten', product: tp_sp_p
+  endcapture
+  assign tp_sp_ist = tp_sp_ist | strip
+-%}
+
+{%- if tp_sp_ist == 'ja' -%}
+  {%- liquid
+    assign tp_sp_mf = tp_sp_p.metafields.sonderposten
+    assign tp_sp_v = tp_sp_p.selected_or_first_available_variant
+    assign tp_sp_art = tp_sp_mf.art.value | default: 'Sonderposten'
+
+    # Kaufstatus: frei | ungesichert | laden | verkauft. Eine Stueckzahl gibt
+    # es nur bei "frei" - dort fuehrt Shopify den Bestand und sperrt
+    # Ueberverkauf fuer jede verkaufbare Variante.
+    capture tp_sp_status
+      render 'tp-sonderposten-kaufstatus', product: tp_sp_p
+    endcapture
+    assign tp_sp_status = tp_sp_status | strip
+    assign tp_sp_bestand = 0
+    if tp_sp_status == 'frei'
+      for tp_sp_var in tp_sp_p.variants
+        if tp_sp_var.available
+          assign tp_sp_bestand = tp_sp_bestand | plus: tp_sp_var.inventory_quantity
+        endif
+      endfor
+    endif
+
+    assign tp_sp_b = tp_sp_mf.breite_m.value | times: 1.0
+    assign tp_sp_l = tp_sp_mf.laenge_m.value | times: 1.0
+    capture tp_sp_f
+      render 'tp-sonderposten-flaeche', product: tp_sp_p
+    endcapture
+    assign tp_sp_f = tp_sp_f | strip | times: 1.0
+
+    if tp_sp_b > 0
+      capture tp_sp_b_txt
+        render 'tp-zahl-de', zahl: tp_sp_b
+      endcapture
+    endif
+    if tp_sp_l > 0
+      capture tp_sp_l_txt
+        render 'tp-zahl-de', zahl: tp_sp_l
+      endcapture
+    endif
+    if tp_sp_f > 0
+      capture tp_sp_f_txt
+        render 'tp-zahl-de', zahl: tp_sp_f
+      endcapture
+      assign tp_sp_qm_preis = tp_sp_v.price | divided_by: tp_sp_f | round
+    endif
+
+    capture tp_sp_aktion
+      render 'tp-rabatt-sichtbar', product: tp_sp_p
+    endcapture
+    assign tp_sp_aktion = tp_sp_aktion | strip
+    assign tp_sp_spar = 0
+    if tp_sp_aktion == 'ja' and tp_sp_v.compare_at_price > tp_sp_v.price
+      assign tp_sp_spar = tp_sp_v.compare_at_price | minus: tp_sp_v.price
+      assign tp_sp_spar_pz = tp_sp_spar | times: 100.0 | divided_by: tp_sp_v.compare_at_price | round
+    endif
+
+    assign tp_sp_ursprung = tp_sp_mf.ursprungsprodukt.value
+  -%}
+
+  <div class="tp-sp" {{ block.shopify_attributes }}>
+    <p class="tp-sp__chips">
+      <span class="tp-sp__chip tp-sp__chip--art">{{ tp_sp_art }}</span>
+      {%- case tp_sp_status -%}
+        {%- when 'frei' -%}
+          <span class="tp-sp__chip tp-sp__chip--frei">Nur {{ tp_sp_bestand }}× verfügbar</span>
+        {%- when 'laden' -%}
+          <span class="tp-sp__chip tp-sp__chip--weg">Nur im Geschäft</span>
+        {%- when 'ungesichert' -%}
+          <span class="tp-sp__chip tp-sp__chip--weg">Online nicht bestellbar</span>
+        {%- else -%}
+          <span class="tp-sp__chip tp-sp__chip--weg">Verkauft</span>
+      {%- endcase -%}
+    </p>
+
+    {%- if tp_sp_b > 0 or tp_sp_l > 0 or tp_sp_f > 0 -%}
+      <dl class="tp-sp__masse" aria-label="Maße dieses Stücks">
+        {%- if tp_sp_b > 0 -%}
+          <div><dt>Breite</dt><dd>{{ tp_sp_b_txt | strip }} m</dd></div>
+        {%- endif -%}
+        {%- if tp_sp_l > 0 -%}
+          <div><dt>Länge</dt><dd>{{ tp_sp_l_txt | strip }} m</dd></div>
+        {%- endif -%}
+        {%- if tp_sp_f > 0 -%}
+          <div><dt>Fläche</dt><dd>{{ tp_sp_f_txt | strip }} m²</dd></div>
+        {%- endif -%}
+      </dl>
+    {%- endif -%}
+
+    <p class="tp-sp__preis">
+      <strong>{{ tp_sp_v.price | money }}</strong> für das gesamte Stück
+      {%- if tp_sp_f > 0 %}
+        <span class="tp-sp__grundpreis">(entspricht {{ tp_sp_qm_preis | money }}/m²)</span>
+      {%- endif -%}
+    </p>
+
+    {%- if tp_sp_spar > 0 -%}
+      <p class="tp-sp__spar">
+        Sie sparen {{ tp_sp_spar | money }} ({{ tp_sp_spar_pz }} %) gegenüber {{ tp_sp_v.compare_at_price | money }}
+        {%- if tp_sp_mf.preis_beleg.value != blank %} ({{ tp_sp_mf.preis_beleg.value }}){%- endif -%}.
+      </p>
+    {%- endif -%}
+
+    <ul class="tp-sp__fakten">
+      {%- if tp_sp_mf.zustand.value != blank -%}
+        <li><span>Zustand</span> {{ tp_sp_mf.zustand.value }}</li>
+      {%- endif -%}
+      {%- if tp_sp_p.metafields.custom.material.value != blank -%}
+        <li><span>Material</span> {{ tp_sp_p.metafields.custom.material.value }}</li>
+      {%- endif -%}
+      {%- if tp_sp_mf.farbe.value != blank -%}
+        <li><span>Farbe</span> {{ tp_sp_mf.farbe.value }}</li>
+      {%- endif -%}
+      {%- if tp_sp_ursprung != blank -%}
+        <li>
+          <span>Aus der Kollektion</span>
+          <a href="{{ tp_sp_ursprung.url }}">{{ tp_sp_ursprung.title | split: ' Teppichboden' | first | split: ' Vinyl' | first }}</a>
+        </li>
+      {%- endif -%}
+    </ul>
+
+    {%- if tp_sp_mf.zustand_hinweis.value != blank -%}
+      <p class="tp-sp__hinweis">{{ tp_sp_mf.zustand_hinweis.value | escape | newline_to_br }}</p>
+    {%- endif -%}
+
+    <p class="tp-sp__regel">
+      Feste Maße: Dieses Stück wird so verkauft, wie es ist – kein weiterer Zuschnitt, keine Nachlieferung in derselben Charge.
+      {%- case tp_sp_status -%}
+        {%- when 'frei' %}
+          Abholung in Oranienburg oder Versand.
+        {%- when 'laden' %}
+          Dieses Stück verkaufen wir nur in unserem Geschäft in Oranienburg; online ist es nicht bestellbar.
+        {%- when 'ungesichert' %}
+          Online ist dieses Stück gerade nicht bestellbar. Fragen Sie bitte in unserem Geschäft in Oranienburg danach.
+      {%- endcase -%}
+    </p>
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-sp {
+    display: grid;
+    gap: 12px;
+    margin: 0;
+    color: var(--color-foreground);
+    font-size: 0.95rem;
+    line-height: 1.45;
+  }
+
+  .tp-sp p,
+  .tp-sp ul,
+  .tp-sp dl {
+    margin: 0;
+  }
+
+  .tp-sp__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .tp-sp__chip {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  .tp-sp__chip--art {
+    background: #1d1a17;
+    color: #fff;
+  }
+
+  .tp-sp__chip--frei {
+    border: 1px solid #1f6b3a;
+    color: #1f6b3a;
+  }
+
+  .tp-sp__chip--weg {
+    background: #e9e6e1;
+    color: #4a4a4a;
+  }
+
+  .tp-sp__masse {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1px;
+    overflow: hidden;
+    border: 1px solid rgb(0 0 0 / 0.12);
+    border-radius: 6px;
+    background: rgb(0 0 0 / 0.12);
+  }
+
+  .tp-sp__masse > div {
+    padding: 8px 10px;
+    background: var(--color-background, #fff);
+  }
+
+  .tp-sp__masse dt {
+    font-size: 0.8rem;
+    color: rgb(0 0 0 / 0.62);
+  }
+
+  .tp-sp__masse dd {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tp-sp__grundpreis {
+    color: rgb(0 0 0 / 0.62);
+    white-space: nowrap;
+  }
+
+  .tp-sp__spar {
+    color: #96262f;
+    font-weight: 600;
+  }
+
+  .tp-sp__fakten {
+    display: grid;
+    gap: 4px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-sp__fakten span {
+    display: inline-block;
+    min-width: 9.5em;
+    color: rgb(0 0 0 / 0.62);
+  }
+
+  .tp-sp__fakten a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .tp-sp__hinweis,
+  .tp-sp__regel {
+    padding: 10px 12px;
+    border-left: 3px solid #b77900;
+    border-radius: 4px;
+    background: #fdf6e7;
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 420px) {
+    .tp-sp__fakten span {
+      display: block;
+      min-width: 0;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Sonderposten: Daten",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Sonderposten: Daten"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,30 @@
+{% doc %}
+  Kompakte Produktbewertung auf der Produktkarte (snippets/tp-sterne.liquid).
+  Rendert nichts ohne echte Bewertung. Liest nur Metafelder - auf
+  Kollektionsseiten wird dafuer kein Skript einer Bewertungs-App geladen.
+{% enddoc %}
+{%- capture tp_cs_html -%}
+  {%- render 'tp-sterne', product: closest.product, groesse: 'karte' -%}
+{%- endcapture -%}
+{%- if tp_cs_html != blank -%}
+  <div class="tp-card-sterne" {{ block.shopify_attributes }}>{{ tp_cs_html }}</div>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-card-sterne {
+    margin: 0;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Karte: Bewertung",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Karte: Bewertung"
+    }
+  ]
+}
+{% endschema %}

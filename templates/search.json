@@ -172,12 +172,22 @@
               "name": "TP Card-Aktionen",
               "settings": {},
               "blocks": {}
+            },
+            "tp_card_sonderposten": {
+              "type": "tp-card-sonderposten",
+              "settings": {}
+            },
+            "tp_card_sterne": {
+              "type": "tp-card-sterne",
+              "settings": {}
             }
           },
           "block_order": [
             "product_card_gallery_cFExAi",
             "product_title_j7qXTx",
+            "tp_card_sterne",
             "price_fYkUgG",
+            "tp_card_sonderposten",
             "tp_card_specs_pricefYkUgG",
             "tp_card_actions_pricefYkUgG"
           ]

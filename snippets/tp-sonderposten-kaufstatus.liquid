@@ -1,0 +1,62 @@
+{%- doc -%}
+  Darf dieser Sonderposten online gekauft werden? Einzige Quelle fuer
+  Verfuegbarkeitsanzeige (blocks/tp-sonderposten-daten), Kaufknopf
+  (blocks/buy-buttons, Leiste in sections/product-information) und JSON-LD
+  (snippets/tp-product-structured-data). Gibt genau ein Wort aus:
+
+    frei        Shopify verkauft das Stueck UND jede verkaufbare Variante hat
+                gefuehrten Bestand (inventory_management "shopify") ohne
+                Ueberverkauf (inventory_policy "deny") und Bestand > 0. Nur
+                dann ist die Stueckzahl belegt und Shopify verhindert selbst,
+                dass ein Einzelstueck zweimal verkauft wird.
+    ungesichert Shopify wuerde verkaufen, aber der Bestand wird nicht gefuehrt
+                oder Ueberverkauf ist erlaubt ("Verkauf bei Nichtverfuegbarkeit
+                fortsetzen"). Dann waere ein Doppelverkauf moeglich - das Stueck
+                wird nicht online angeboten (fail closed).
+    laden       Bestand gesichert, aber sonderposten.versand = "Nur Abholung".
+                Der Checkout setzt das nicht durch (kein eigenes Versandprofil,
+                docs/weiterentwicklung/sonderposten.md Abschnitt 8) und boete
+                Versand an. Statt einer Zusage, die der Checkout bricht: nur
+                im Geschaeft, online nicht bestellbar.
+    verkauft    keine Variante ist verkaufbar.
+
+  Fuer Produkte, die kein Sonderposten sind, gibt es nichts aus.
+
+  Grenze: Das Theme kann nur Anzeige und Kaufknopf sperren. Ein Warenkorb-Link
+  (/cart/add) umgeht beides; dagegen hilft allein die Bestandseinstellung in
+  Shopify. Deshalb sperrt "ungesichert" hier und meldet das Control Center
+  dasselbe Stueck als "in Shopify pruefen".
+
+  @param {object} product - das Produkt
+{%- enddoc -%}
+{%- liquid
+  capture tsk_ist
+    render 'tp-ist-sonderposten', product: product
+  endcapture
+  assign tsk_ist = tsk_ist | strip
+  if tsk_ist == 'ja'
+    assign tsk_verkaufbar = false
+    assign tsk_gesichert = true
+    assign tsk_bestand = 0
+    for tsk_v in product.variants
+      if tsk_v.available
+        assign tsk_verkaufbar = true
+        if tsk_v.inventory_management == 'shopify' and tsk_v.inventory_policy == 'deny'
+          assign tsk_bestand = tsk_bestand | plus: tsk_v.inventory_quantity
+        else
+          assign tsk_gesichert = false
+        endif
+      endif
+    endfor
+
+    if tsk_verkaufbar == false
+      echo 'verkauft'
+    elsif tsk_gesichert == false or tsk_bestand <= 0
+      echo 'ungesichert'
+    elsif product.metafields.sonderposten.versand.value == 'Nur Abholung'
+      echo 'laden'
+    else
+      echo 'frei'
+    endif
+  endif
+-%}

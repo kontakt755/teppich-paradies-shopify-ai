@@ -1,0 +1,39 @@
+{% doc %}
+  Produktbewertung unter dem Produktnamen (snippets/tp-sterne.liquid).
+  Rendert nichts, solange das Produkt keine echte Bewertung hat - der Block
+  kann deshalb schon vor der ersten Bewertung in allen Vorlagen stehen.
+  Klick springt zum Bewertungsbereich der App weiter unten.
+{% enddoc %}
+{%- capture tp_ps_html -%}
+  {%- render 'tp-sterne', product: closest.product, groesse: 'seite', ziel: block.settings.ziel -%}
+{%- endcapture -%}
+{%- if tp_ps_html != blank -%}
+  <div class="tp-produkt-sterne" {{ block.shopify_attributes }}>{{ tp_ps_html }}</div>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-produkt-sterne {
+    margin: 0;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Produkt: Bewertung",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "ziel",
+      "label": "Sprungziel zum Bewertungsbereich",
+      "default": "#bewertungen",
+      "info": "Anker des Bewertungsbereichs weiter unten auf der Seite. Leer = Sterne ohne Link."
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Produkt: Bewertung"
+    }
+  ]
+}
+{% endschema %}

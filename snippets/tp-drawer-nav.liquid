@@ -30,6 +30,8 @@
 <ul class="tp-dn" role="list">
   {%- assign tp_dn_group = '' -%}
   {%- for link in linklist.links -%}
+    {%- capture tp_mls -%}{%- render 'tp-menu-link-sichtbar', link: link -%}{%- endcapture -%}
+    {%- if tp_mls contains 'nein' -%}{%- continue -%}{%- endif -%}
     {%- liquid
       assign tp_dn_kind = 'liste'
       if link.type == 'collection_link' and link.object.handle == 'vinylboden-1'

@@ -137,36 +137,56 @@
         {% render 'price', product_resource: product, show_sale_price_first: true %}
       </div>
 
+      {%- liquid
+        # Sonderposten: die Leiste bietet nur an, was der Kaufknopf anbietet
+        # (snippets/tp-sonderposten-kaufstatus, blocks/buy-buttons).
+        assign tp_pi_kaufbar = current_variant.available
+        capture tp_pi_sp_status
+          render 'tp-sonderposten-kaufstatus', product: product
+        endcapture
+        assign tp_pi_sp_status = tp_pi_sp_status | strip
+        if tp_pi_sp_status == 'ungesichert' or tp_pi_sp_status == 'laden'
+          assign tp_pi_kaufbar = false
+        endif
+      -%}
       <button
         type="button"
         class="sticky-add-to-cart__button add-to-cart-button button"
         ref="addToCartButton"
         on:click="/handleAddToCartClick"
-        {% unless current_variant.available %}
+        {% unless tp_pi_kaufbar %}
           disabled
         {% endunless %}
       >
         <span
           class="add-to-cart-text"
         >
-          {% if current_variant.available %}
+          {% if tp_pi_kaufbar %}
             <span class="svg-wrapper add-to-cart-icon">
               {{- 'icon-add-to-cart.svg' | inline_asset_content -}}
             </span>
           {% endif %}
           <span class="add-to-cart-text__content">
+            {%- capture tp_pi_sonderposten -%}{%- render 'tp-ist-sonderposten', product: product -%}{%- endcapture -%}
             <span>
-              {%- if current_variant.available -%}
+              {%- if tp_pi_sp_status == 'ungesichert' -%}
+                Online nicht bestellbar
+              {%- elsif tp_pi_sp_status == 'laden' -%}
+                Nur im Geschäft erhältlich
+              {%- elsif current_variant.available -%}
                 {{- 'products.product.add_to_cart' | t -}}
               {%- elsif current_variant == blank -%}
                 {{- 'products.product.unavailable' | t -}}
+              {%- elsif tp_pi_sonderposten contains 'ja' -%}
+                {%- comment -%} Sonderposten: verkauft, nicht nur gerade nicht vorraetig {%- endcomment -%}
+                Verkauft
               {%- else -%}
                 {{- 'products.product.sold_out' | t -}}
               {%- endif -%}
             </span>
             <span
               ref="quantityDisplay"
-              {% if current_variant.available and initial_quantity > 1 %}
+              {% if tp_pi_kaufbar and initial_quantity > 1 %}
                 style="display: inline;"
               {% else %}
                 style="display: none;"
