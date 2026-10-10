@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204438208846",
-    "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-10T10:06:59Z",
-    "verifiedBy": "Shopify Admin API role MAIN, nach workflow:live von main d28caea2 (Kaufleiste/Fehlerfokus w-061, PR #1080); Preview-/Live-Gates und oeffentlicher Shop ohne Vorschau bestanden"
-  },
-  "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-10T10:06:59Z",
-    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live von main d28caea2; naechstes Preview-Ziel"
+    "verifiedAt": "2026-10-10T16:05:16Z",
+    "verifiedBy": "Shopify Admin API role MAIN, nach workflow:live von main 6fe616cb (Kante inklusive, Markenvorlage, Design-Teppiche, PR #1092); Preview-/Live-Gates bestanden"
+  },
+  "preview": {
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-10-10T16:05:16Z",
+    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live von main 6fe616cb; naechstes Preview-Ziel"
   },
   "fallback": {
     "themeId": "204440699214",
@@ -34,6 +34,12 @@
     "note": "Testumgebung fuer SHOPIFY_WEITERENTWICKLUNG.md (Sonderposten, Bewertungen, Angebote). Nur --only-Pushes vom Branch feature/weiterentwicklung-sonderposten. Nie Preview-Ziel, nie publishen. Nach Abschluss des Projekts unter retired eintragen und loeschen."
   },
   "retired": [
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-10-10",
+      "note": "Per workflow:live von main 6fe616cb (PR #1092) abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen per Shopify Admin API gegengeprueft."
+    },
     {
       "themeId": "204436144462",
       "name": "Kopie von preview-main-2026-09-04",
