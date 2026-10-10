@@ -82,13 +82,17 @@
     var mindestCent = parseInt(d.mindestpreis_cent, 10) || 0;
     // Preis je 0,01 laufendem Meter Kante. Ohne Service-Produkt wird die Kante
     // nicht getrennt berechnet - die Bandarten rechnen alles ueber den m2-Preis.
-    var kettel = (d.kettel && d.kettel.id && parseInt(d.kettel.price, 10) > 0) ? d.kettel : null;
+    // service.kante_inklusive: die Kettelung steckt im m2-Preis. Dann nie eine
+    // Kettelzeile und kein TP-005-Abbruch - Liquid liefert in dem Fall ohnehin
+    // kettel = null und kettel_service_failed = false, hier nur doppelt gesichert.
+    var kanteInklusive = d.art === 'ketteln' && d.kante_inklusive === true;
+    var kettel = (!kanteInklusive && d.kettel && d.kettel.id && parseInt(d.kettel.price, 10) > 0) ? d.kettel : null;
     // TP-005: true nur, wenn der Merchant ein Kettelservice-Produkt
     // konfiguriert hat, dessen Variante aber gerade nicht verfuegbar/bepreist
     // ist - anders als "kein Service konfiguriert" (kettel bleibt dann null,
     // legitimer Inklusivpreis). Sperrt unten den Kauf statt den Teppich
     // stillschweigend ohne die gewaehlte Kettelung anzubieten.
-    var kettelServiceFailed = !!d.kettel_service_failed;
+    var kettelServiceFailed = !kanteInklusive && !!d.kettel_service_failed;
     // Art "fertig" (Wunschmass vom Hersteller): feste Pauschale je Teppich als
     // eigene Warenkorbzeile (Menge 1) unter derselben _Gruppe. Ist sie
     // konfiguriert, aber nicht kaufbar, wird der Kauf gesperrt (wie TP-005).
@@ -754,6 +758,7 @@
       if (target.farbnummer) p['Farbnummer'] = target.farbnummer;
       if (mitBand) p['Bandfarbe'] = band.nr + ' ' + band.name;
       if (art === 'ketteln') p['Garn'] = 'Ton in Ton';
+      if (kanteInklusive) p['Kettelung'] = 'im m²-Preis enthalten';
       if (art === 'cover') p['Vlies'] = 'inklusive';
       if (stand.mindest) p['Mindestpreis'] = 'angewendet';
 

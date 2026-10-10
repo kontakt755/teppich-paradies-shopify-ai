@@ -120,6 +120,13 @@
     return kanteM > 0 ? Math.round(kanteM * 100) : 0;
   }
 
+  // Wird die Kante als eigene Kettelservice-Zeile berechnet? Nur bei Ketteln und
+  // nur, wenn der m2-Preis die Kettelung nicht schon enthaelt
+  // (Produkt-Metafeld service.kante_inklusive = true).
+  function kettelSeparat(art, kanteInklusive) {
+    return art === 'ketteln' && kanteInklusive !== true;
+  }
+
   // Menge in 0,01-m2-Einheiten inklusive Mindestpreis (alles in Cent).
   function mengeMitMindestpreis(areaM2, preisJeEinheitCent, mindestCent) {
     var menge = mengeHundertstelM2(areaM2);
@@ -135,6 +142,7 @@
     echteFlaecheM2: echteFlaecheM2,
     umfangM: umfangM,
     kanteEinheiten: kanteEinheiten,
+    kettelSeparat: kettelSeparat,
     mengeVolleM2: mengeVolleM2,
     mengeHundertstelM2: mengeHundertstelM2,
     raummassPreis: raummassPreis,

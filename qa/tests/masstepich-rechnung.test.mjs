@@ -137,3 +137,15 @@ test('Gewichtsgrenze: kg nach abgerechneter Flaeche, ohne kg/m2 keine Grenze', (
   assert.match(f[0], /6,81 m²/);
   assert.deepEqual(M.pruefeMasse({ form: 'rechteck', w: 200, l: 400, maxW: 200, maxL: 600 }), []);
 });
+
+test('Kettelung als eigene Zeile nur bei Ketteln ohne Inklusiv-Kante (service.kante_inklusive)', () => {
+  assert.equal(M.kettelSeparat('ketteln'), true, 'Feld fehlt: wie bisher');
+  assert.equal(M.kettelSeparat('ketteln', null), true);
+  assert.equal(M.kettelSeparat('ketteln', false), true);
+  assert.equal(M.kettelSeparat('ketteln', true), false);
+  assert.equal(M.kettelSeparat('ketteln', 'true'), true, 'nur echtes true zaehlt - fail closed');
+  for (const art of ['cover', 'einfassband', 'paspelband', 'fertig']) {
+    assert.equal(M.kettelSeparat(art, false), false, art);
+    assert.equal(M.kettelSeparat(art, true), false, art);
+  }
+});

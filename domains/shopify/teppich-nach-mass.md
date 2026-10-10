@@ -28,6 +28,7 @@ ein neues Produkt. Es gibt dann keinen deaktivierten Knopf und keinen Hinweis �
 | `service.max_breite_cm` / `service.max_laenge_cm` | Einfassprodukt | Grenzen. Beim Cover gilt Rollenbreite − 10 cm (die Kante wird umgeschlagen); die Länge beträgt höchstens 1000 cm. |
 | `service.formen` | Einfassprodukt | Liste aus Rechteck, Rund, Oval, Schablone, Skizze. Ohne Angabe gibt es nur Rechteck. |
 | `service.mindestpreis` | Einfassprodukt | EUR, optional |
+| `service.kante_inklusive` | Einfassprodukt | Boolean, optional, nur bei `Ketteln`. `true`: der m²-Preis enthält die Kettelung bereits (Hersteller-UVP je m²) – siehe „Kante im m²-Preis enthalten“. Fehlt das Feld oder ist es `false`, wird die Kante wie bisher über den Kettelservice berechnet. |
 | `service.einfass_gruppe` | Meterware und Einfassprodukte | die vier Einfassprodukte |
 | `service.einfass_basis` | Einfassprodukt | die Meterware, aus der zugeschnitten wird |
 | `service.basisvariante` | Variante des Einfassprodukts | die Meterware-Variante derselben Farbe. Die Farbe wird nie über Namen zugeordnet. |
@@ -46,6 +47,27 @@ Die Preislogik bleibt unverändert: Variantenpreis × Menge, abgerechnet durch S
 - **Einfassprodukte:** Der Variantenpreis gilt pro 0,01 m² (`custom.preis_pro_001_qm`). Deshalb sind
   **nur volle Euro je m²** exakt darstellbar: 129 € geht, 129,90 € nicht. Der Planer meldet das als Konflikt.
 - **Rund und oval** werden nach dem umschließenden Rechteck abgerechnet, denn so viel Teppich wird zugeschnitten.
+
+### Kante im m²-Preis enthalten (`service.kante_inklusive`)
+
+Normalfall bei `Ketteln`: Die Kante kommt als zweite Warenkorbzeile dazu (Produkt `kettelservice`, Preis je
+0,01 lfm, Block-Einstellung `kettelservice_produkt`), und ab-Preis sowie Kategorie-Rechner rechnen sie ein.
+Ist der Kettelservice konfiguriert, aber nicht kaufbar, sperrt der Konfigurator den Kauf (TP-005).
+
+Manche Hersteller-Ware hat einen UVP je m², der die Kettelung schon enthält. Dafür trägt das Einfassprodukt
+`service.kante_inklusive = true` (Produkt-Metafeld, Typ boolean). Dann gilt:
+
+- Konfigurator (`blocks/tp-einfass-konfigurator.liquid`, `assets/tp-einfass-konfigurator.js`): keine
+  Kettelservice-Zeile, keine Kantenkosten, der Mindestpreis hebt allein die Fläche an. Der Preishinweis nennt
+  „Kettelung … im Quadratmeterpreis bereits enthalten“. Die Line-Item-Properties bleiben vollständig
+  (Einfassung: Gekettelt, Kante umlaufend, Garn) und bekommen zusätzlich `Kettelung: im m²-Preis enthalten`.
+  TP-005 greift hier nicht, denn der Kettelservice wird gar nicht geladen.
+- ab-Preis (`snippets/tp-teppich-ab-preis.liquid`) und Kategorie-Rechner (`snippets/tp-teppich-rechner-daten.liquid`
+  liefert `kante_inkl`, `assets/tp-teppich-rechner.js`) zählen keine Kante dazu.
+- Entscheidungsregel einmal im Rechenkern: `TPMass.kettelSeparat(art, kanteInklusive)`.
+- Nur echtes `true` zählt. Fehlt das Feld, ist es `false` oder ist die Art nicht `Ketteln`, bleibt alles wie bisher.
+- Tests: `tp-einfass-kettelservice-validierung`, `tp-teppich-ab-preis`, `tp-teppich-rechner-fertig`,
+  `masstepich-rechnung`, `tp-einfass-fertig-pauschale`.
 
 ## Werkzeuge
 
@@ -96,10 +118,12 @@ Die Entscheidung trifft dann ein Mensch.
 Die Seite Teppich nach Maß zeigt die Qualitäten nicht mehr als ein Raster, sondern in Gruppen: oben
 Wegweiser-Karten (`sections/tp-teppiche-gruppen`), darunter je Gruppe eine Reihe
 (`tp-zubehoer-produkte`, Einstellung „Teppich-Gruppe“). Die Zuordnung steht allein in
-`snippets/tp-teppich-gruppe` und kommt aus den Daten des Teppichbodens (`service.einfass_basis`):
+`snippets/tp-teppich-gruppe` und kommt aus den Daten des Teppichbodens (`service.einfass_basis`) –
+mit einer Ausnahme vorweg: Design-Teppiche.
 
 | Gruppe | Regel | Stand |
 |---|---|---|
+| Design-Teppiche | `service.einfassung` = Fertig (Wunschmaß vom Hersteller, gemustert, bis 200 cm breit, kein Teppichboden dahinter). Geht allen anderen Regeln vor. Kennung `design`, Anker `#design`, Reihe `tp_gruppe_design` direkt vor „Weitere Qualitäten“ (2026-10-10). | neu; bis dahin unter „Weitere“ (dort live 28 am 10.10.) |
 | Natur | erstes `custom.fasermaterial` Naturfaser (Schurwolle, Sisal …) oder `custom.arten` = Wolle | 14 |
 | Extra flauschig | `custom.konstruktion` Velours und `custom.florhohe` ab 10 mm | 8 |
 | Weich | Velours unter 10 mm | 13 |
@@ -108,6 +132,10 @@ Wegweiser-Karten (`sections/tp-teppiche-gruppen`), darunter je Gruppe eine Reihe
 
 Neue Teppiche ordnen sich selbst ein, sobald Konstruktion, Florhöhe und Faser am Teppichboden gepflegt
 sind. Wie der Mass-Rechner liest die Seite höchstens 50 Produkte der Kollektion.
+
+Die Wegweiser-Karten stehen ab 900 px in einer Reihe, gleich breit, egal ob 4 oder 5 Gruppen Teppiche
+haben. Darunter zwei Spalten; bei ungerader Anzahl nimmt die letzte Karte die volle Breite
+(`assets/tp-teppiche.css`). Tests: `qa/tests/tp-teppich-gruppe.test.mjs`.
 
 ## Wunschmass vom Hersteller (Art „Fertig“, ab 2026-10-08)
 

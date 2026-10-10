@@ -9,7 +9,9 @@
     - guenstigste Farbe (price_min, Preis je 0,01 m2)
     - Pflicht-Kettelung bei service.einfassung = Ketteln: Umfang in Einheiten
       a 0,01 lfm (4,60 m = 460) des Kettelservice-Produkts (derselbe Handle wie in
-      templates/product.einfassung.json, Einstellung kettelservice_produkt)
+      templates/product.einfassung.json, Einstellung kettelservice_produkt).
+      Ausnahme service.kante_inklusive = true: die Kettelung steckt im m2-Preis,
+      es kommen keine Kantenkosten dazu und der Kettelservice wird nicht gebraucht.
     - service.mindestpreis gilt fuer den Auftrag: die Materialmenge wird in ganzen
       Einheiten angehoben, bis Material + Kante den Mindestpreis erreichen. Deshalb
       kann der Einstieg knapp ueber dem Mindestpreis liegen (99,10 statt 99,00 EUR).
@@ -80,7 +82,13 @@
     endif
     assign tp_ab_kante_einheiten = tp_ab_breite_cm | plus: tp_ab_laenge_cm | times: 2
     assign tp_ab_kante_cent = 0
-    if tp_ab_art == 'ketteln'
+    # Kante inklusive: Kettelung steckt im m2-Preis, keine Kantenkosten.
+    assign tp_ab_kante_inkl = false
+    assign tp_ab_ki = product.metafields.service.kante_inklusive.value | append: '' | strip | downcase
+    if tp_ab_art == 'ketteln' and tp_ab_ki == 'true'
+      assign tp_ab_kante_inkl = true
+    endif
+    if tp_ab_art == 'ketteln' and tp_ab_kante_inkl == false
       assign tp_ab_kettel_v = all_products['kettelservice'].selected_or_first_available_variant
       if tp_ab_kettel_v.available and tp_ab_kettel_v.price > 0
         assign tp_ab_kante_cent = tp_ab_kettel_v.price | times: tp_ab_kante_einheiten

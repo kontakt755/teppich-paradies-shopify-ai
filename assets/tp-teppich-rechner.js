@@ -67,7 +67,9 @@
     var kurz = Math.min(w, l);
     var lang = Math.max(w, l);
     var flaeche = M.flaecheM2(w, l);
-    var mitKettel = t.art === 'ketteln';
+    // Kettelung als eigene Zeile nur ohne kante_inkl (service.kante_inklusive):
+    // sonst steckt sie im m2-Preis - dieselbe Regel wie im Konfigurator.
+    var mitKettel = M.kettelSeparat(t.art, t.kante_inkl);
     if (mitKettel && !(kettel > 0)) return { passt: false, grund: 'preis' };
     // Art "fertig": Pauschale je Teppich (Pflicht) und Gewichtsgrenze fuer den Paketversand -
     // dieselben Regeln wie im Konfigurator (blocks/tp-einfass-konfigurator.liquid).
