@@ -13,6 +13,9 @@
     service.max_breite_cm   > 0 (Cover: Rollenbreite minus 10 cm)
     service.max_laenge_cm   > 0
     custom.preis_pro_001_qm true (Variantenpreis gilt pro 0,01 m2)
+  Optional, ohne Einfluss auf das Rendern:
+    service.lieferzeit      Text hinter "Lieferzeit:" im Preishinweis, nur
+                            belegte Werte; leer = keine Lieferzeit
   Angeboten werden nur Varianten mit service.einfassen exakt "Verfuegbar"
   (mit Umlaut) und Preis > 0. Formen aus service.formen (Rechteck, Rund,
   Oval, Schablone, Skizze); unbekannte Werte fallen weg, ohne Angabe gibt es
@@ -117,6 +120,21 @@
   endif
   assign tp_ek_kg_qm = product.metafields.service.kg_pro_qm.value | default: 0 | times: 1
   assign tp_ek_max_kg = product.metafields.service.max_gewicht_kg.value | default: 0 | times: 1
+
+  # Lieferzeit im Preishinweis (Werkbank w-018). Quelle ist das Produkt-
+  # Metafeld service.lieferzeit (Text, z. B. "ca. 5–8 Werktage inkl. Ketteln"),
+  # gesetzt nur dort, wo die Lieferzeit belegt ist - seit 10.10. fuer die
+  # gekettelten Teppiche nach Mass laut Inhaberentscheidung. Ohne Metafeld keine
+  # Angabe (fail closed), nichts wird von anderen Produkten geliehen. Serena
+  # behaelt bis zu einer Entscheidung den Inhaberwert vom 30.09. als Rueckfall.
+  # Art "fertig" nennt ihre Lieferzeit schon im Hinweistext unten.
+  assign tp_ek_lieferzeit = ''
+  unless tp_ek_art == 'fertig'
+    assign tp_ek_lieferzeit = product.metafields.service.lieferzeit.value | strip
+    if tp_ek_lieferzeit == blank and product.handle == 'serena-teppich-nach-mass'
+      assign tp_ek_lieferzeit = 'ca. 4–8 Werktage'
+    endif
+  endunless
 
   # Rohwarenbreiten der Meterware, aus der zugeschnitten wird - nur fuer die
   # interne Angabe im Warenkorb. Der Kunde waehlt keine Rolle.
@@ -262,7 +280,7 @@
       {%- endcomment -%}
       <div class="tp-ek__preis" aria-live="polite" data-rechnung hidden>
         <div class="tp-ek__summe"><span>Gesamtpreis für Ihr Maß</span><span class="tp-ek__summe-werte"><s class="tp-ek__summe-alt" data-summe-alt hidden></s><strong data-summe>–</strong></span></div>
-        <p class="tp-ek__preishinweis">{% if tp_ek_art == 'fertig' %}Vom Hersteller nach Ihrem Maß gefertigt und eingefasst{% if tp_ek_pauschale_v %}, inklusive Fertigungs- und Versandpauschale{% endif %}. Lieferzeit ca. 14 Tage.{% else %}Inklusive Zuschnitt und Einfassung rundum.{% endif %} Inkl. MwSt.; <a href="{{ pages['versand-lieferung'].url | default: '/pages/versand-lieferung' }}">Versand</a> in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos.{% if product.handle == 'serena-teppich-nach-mass' %}<br>Lieferzeit: ca. 4–8 Werktage.{% endif %}</p>
+        <p class="tp-ek__preishinweis">{% if tp_ek_art == 'fertig' %}Vom Hersteller nach Ihrem Maß gefertigt und eingefasst{% if tp_ek_pauschale_v %}, inklusive Fertigungs- und Versandpauschale{% endif %}. Lieferzeit ca. 14 Tage.{% else %}Inklusive Zuschnitt und Einfassung rundum.{% endif %} Inkl. MwSt.; <a href="{{ pages['versand-lieferung'].url | default: '/pages/versand-lieferung' }}">Versand</a> in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos.{% if tp_ek_lieferzeit != blank %}<br>Lieferzeit: {{ tp_ek_lieferzeit | escape }}.{% endif %}</p>
         {%- comment -%}
           Keine Rechenaufschluesselung in der Kundenansicht (Entscheidung 2026-09-20):
           sichtbar sind Endpreis und die zwei Hinweise, die den Preis erklaeren muessen.
