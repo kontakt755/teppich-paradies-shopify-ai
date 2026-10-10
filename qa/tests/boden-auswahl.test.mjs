@@ -57,7 +57,7 @@ test('Laminat zeigt nur vorhandene Staerken in numerischer Reihenfolge und keine
 
 function lino(index, colors, conflict = false) {
   return { title: `Qualität ${index} Linoleumboden 200cm`, url: `/products/qualitaet-${index}`, featured_image: { url: `/original-${index}.jpg` }, options_with_values: [{ name: 'Farbe', values: Array.from({ length: colors }, (_, i) => `Farbe ${i}`) }], metafields: { custom: {
-    ruckenausstattung: { value: conflict ? 'Nicht spezifiziert' : 'Vliesrücken' },
+    ruckenausstattung: { value: conflict ? 'Nicht spezifiziert' : 'Juteträger' },
     starke: { value: conflict ? '2.0 mm' : '2.5 mm' }, gesamtstarke: { value: '2,5 mm' }, rollenbreite: { value: 2 },
     nutzungsklassen: { value: [{ nutzungsklasse: { value: '34' } }, { nutzungsklasse: { value: index === 9 ? '41' : '43' } }] },
   } } };
@@ -73,6 +73,8 @@ test('Alle neun Linoleumqualitaeten mit Originalbildern, Farbenzahlen und belegt
   assert.match(html, /Klasse 43: industriell, starke Nutzung/);
   assert.match(html, /Klasse 41: industriell, geringe Nutzung/);
   assert.match(html, /original-9\.jpg/);
+  assert.match(html, /Juteträger/);
+  assert.doesNotMatch(html, /Vliesrücken/);
 });
 
 test('Widerspruechliche Linoleumstaerke wird verschwiegen, Farbauswahl und Nutzungsklasse bleiben', async () => {
@@ -145,7 +147,7 @@ test('Lange Nutzungsklassenfelder werden in Kurzinfos auf belegte Ziffern gekuer
   ];
   const source = read('snippets/tp-linoleum-kurzinfo.liquid');
   const facts = await engine.parseAndRender(source, { product, details: true });
-  assert.match(facts, /4 Farben · Vliesrücken · NK 23 \/ 34 \/ 43/);
+  assert.match(facts, /4 Farben · Juteträger · NK 23 \/ 34 \/ 43/);
   assert.doesNotMatch(facts, /Gewerbe|Industrie|Wohnen|Klasse|Nicht angegeben/);
   const menu = await engine.parseAndRender(read('snippets/tp-linoleum-nav.liquid'), { parent_link: { object: { ...linoCollection, products: [product] }, url: linoCollection.url }, variant: 'drawer' });
   assert.match(menu, /NK 23 \/ 34 \/ 43/);
