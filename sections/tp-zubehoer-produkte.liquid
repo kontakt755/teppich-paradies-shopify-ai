@@ -11,6 +11,12 @@
   Kundengruppe (snippets/tp-teppich-gruppe); "rest" = Teppiche ohne eindeutige Gruppe,
   damit keiner verloren geht. Standard "alle" laesst die Leiste unveraendert.
 
+  Renderzeit (2026-10-10: Render-Timeout ab ~200 Teppichen): Jede Karte kostet rund 8 ms.
+  "Karten sofort" (karten_sofort) begrenzt deshalb, wie viele Karten der Gruppe im ersten
+  HTML stehen; den Rest holt das Skript unten aus der Vorlage collection.teppiche-reihen
+  (gleiche Reihen, ohne Begrenzung, ohne Layout) und setzt ihn ein. Die Gruppe kommt direkt aus custom.teppich_basis_daten (sonst live per Snippet),
+  die Groessen-Gruppen der Sauberlaufmatten spielen bei Teppichen keine Rolle.
+
   Ohne Produkte rendert die Sektion nichts, damit die Seite nie eine leere
   Ueberschrift zeigt. Die Karten sind dieselben Horizon-Produktkarten wie im
   Raster (statischer _product-card-Block), damit Bild, Preis, Farbfelder und
@@ -48,6 +54,21 @@
 
   assign items = source.products
   assign tp_tg_filter = section.settings.teppich_gruppe | default: 'alle'
+  assign tp_tg_sofort = section.settings.karten_sofort | default: 0
+  # Im Theme-Editor alles sofort: nachgeladen wuerde die gespeicherte Vorlage, nicht die bearbeitete.
+  if request.design_mode
+    assign tp_tg_sofort = 0
+  endif
+  if tp_tg_filter != 'alle'
+    # Die Gruppen-Reihen sind das Raster selbst: kein Teppich darf an max_products scheitern.
+    assign max_items = 250
+  endif
+  if tp_tg_filter != 'alle'
+    # Ohne paginate liefert Shopify nur 50 Produkte; die Reihe muss alle Teppiche sehen.
+    paginate source.products by 250
+      assign items = source.products
+    endpaginate
+  endif
   if mode == 'neu'
     assign items = items | sort: 'created_at' | reverse
   endif
@@ -68,7 +89,11 @@
   {%- liquid
     assign tp_gruppe_traeger = ''
     assign tp_gruppe_beste = 999
+    assign tp_tg_gesamt = 0
     for tp_gruppe_p in items
+      if tp_tg_filter != 'alle'
+        break
+      endif
       if mode == 'passend' and tp_gruppe_p.id == product.id
         continue
       endif
@@ -86,16 +111,26 @@
     endfor
   -%}
   {%- for item in items -%}
-    {%- if rendered >= max_items -%}
+    {%- if rendered >= max_items or tp_tg_gesamt >= max_items -%}
       {%- break -%}
     {%- endif -%}
     {%- if mode == 'passend' and item.id == product.id -%}
       {%- continue -%}
     {%- endif -%}
     {%- if tp_tg_filter != 'alle' -%}
-      {%- capture tp_tg -%}{%- render 'tp-teppich-gruppe', product: item -%}{%- endcapture -%}
+      {%- comment -%} Schnellweg wie in snippets/tp-teppich-gruppe, ohne den Aufwand eines render je Produkt und Reihe {%- endcomment -%}
+      {%- assign tp_tg_daten = item.metafields.custom.teppich_basis_daten.value -%}
+      {%- if tp_tg_daten.v == 1 -%}
+        {%- assign tp_tg = tp_tg_daten.gruppe -%}
+      {%- else -%}
+        {%- capture tp_tg -%}{%- render 'tp-teppich-gruppe', product: item -%}{%- endcapture -%}
+      {%- endif -%}
       {%- assign tp_tg = tp_tg | strip | default: 'rest' -%}
       {%- if tp_tg != tp_tg_filter -%}
+        {%- continue -%}
+      {%- endif -%}
+      {%- assign tp_tg_gesamt = tp_tg_gesamt | plus: 1 -%}
+      {%- if tp_tg_sofort > 0 and rendered >= tp_tg_sofort -%}
         {%- continue -%}
       {%- endif -%}
     {%- endif -%}
@@ -105,10 +140,12 @@
       {%- continue -%}
     {%- endif -%}
     {%- comment -%} Von einer Groessen-Gruppe traegt nur die kleinste vorhandene Groesse die Karte. {%- endcomment -%}
-    {%- capture tp_gruppe_rolle -%}{%- render 'tp-produktgruppe', product: item -%}{%- endcapture -%}
-    {%- assign tp_gruppe_rolle = tp_gruppe_rolle | strip -%}
-    {%- if tp_gruppe_rolle != blank and item.handle != tp_gruppe_traeger -%}
-      {%- continue -%}
+    {%- if tp_tg_filter == 'alle' -%}
+      {%- capture tp_gruppe_rolle -%}{%- render 'tp-produktgruppe', product: item -%}{%- endcapture -%}
+      {%- assign tp_gruppe_rolle = tp_gruppe_rolle | strip -%}
+      {%- if tp_gruppe_rolle != blank and item.handle != tp_gruppe_traeger -%}
+        {%- continue -%}
+      {%- endif -%}
     {%- endif -%}
     {%- if rendered > 0 -%}<!--@list/split-->{%- endif -%}
     <div class="resource-list__item">
@@ -130,6 +167,8 @@
     class="tp-zubehoer-produkte{% if tp_tg_filter != 'alle' %} tp-zubehoer-produkte--teppich-gruppe{% endif %} section section--{{ section.settings.section_width }} color-{{ section.settings.color_scheme }} section-resource-list spacing-style gap-style"
     style="{% render 'spacing-style', settings: section.settings %} {% render 'gap-style', value: section.settings.gap %}"
     data-testid="tp-zubehoer-produkte-{{ section.id }}"
+    {% if tp_tg_filter != 'alle' %}data-tp-reihe-gruppe="{{ tp_tg_filter }}"{% endif %}
+    {% if tp_tg_gesamt > list_items_array.size %}data-tp-reihe-nachladen="{{ source.url }}?view=teppiche-reihen"{% endif %}
   >
     <header class="tp-zubehoer-produkte__head">
       <div>
@@ -148,6 +187,7 @@
       {%- endif -%}
     </header>
 
+    <div class="tp-zubehoer-produkte__karten" data-tp-reihe-karten>
     {% render 'resource-list',
       list_items: list_items,
       list_items_array: list_items_array,
@@ -161,14 +201,16 @@
       Teppich-Gruppe mobil: Raster statt Wischleiste (Wischen wurde uebersehen).
       Die ersten vier Karten stehen da, der Rest kommt per Knopf. Ab 750 px ohne Wirkung.
     {%- endcomment -%}
-    {%- if tp_tg_filter != 'alle' and list_items_array.size > 4 -%}
+    {%- assign tp_tg_anzahl = list_items_array.size | at_least: tp_tg_gesamt -%}
+    {%- if tp_tg_filter != 'alle' and tp_tg_anzahl > 4 -%}
       <div class="tp-zubehoer-produkte__mehr">
         <button type="button" class="tp-zubehoer-produkte__mehr-knopf" data-tp-gruppe-mehr aria-expanded="false">
-          Alle {{ list_items_array.size }} Qualitäten zeigen
+          Alle {{ tp_tg_anzahl }} Qualitäten zeigen
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
         </button>
       </div>
     {%- endif -%}
+    </div>
   </div>
 {%- endif -%}
 
@@ -219,14 +261,82 @@
 {% endstylesheet %}
 
 {% javascript %}
-  document.addEventListener('click', function (event) {
-    var knopf = event.target.closest('[data-tp-gruppe-mehr]');
-    if (!knopf) return;
-    var reihe = knopf.closest('.tp-zubehoer-produkte--teppich-gruppe');
-    if (!reihe) return;
-    reihe.classList.add('is-offen');
-    knopf.setAttribute('aria-expanded', 'true');
-  });
+  (function () {
+    // Teppich-Gruppen: Reihen mit data-tp-reihe-nachladen zeigen nur die ersten Karten.
+    // Die vollstaendigen Reihen kommen aus der Vorlage collection.teppiche-reihen (eine
+    // Anfrage fuer alle Reihen) und ersetzen den Kartenbereich. Schlaegt das fehl, bleibt
+    // die Reihe mit den ersten Karten stehen; die Produkte sind weiter ueber die Suche und
+    // die Produktseiten erreichbar.
+    var laden = null;
+
+    function holen(url) {
+      if (!laden) {
+        laden = fetch(url, { credentials: 'same-origin' })
+          .then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.text();
+          })
+          .then(function (text) {
+            return new DOMParser().parseFromString(text, 'text/html');
+          });
+        laden.catch(function () { laden = null; });
+      }
+      return laden;
+    }
+
+    function einsetzen(doc) {
+      var reihen = Array.prototype.slice.call(document.querySelectorAll('[data-tp-reihe-nachladen]'));
+      // Reihen ueber dem Blick wachsen, der Blick soll stehen bleiben. Chrome und Firefox
+      // verankern selbst (overflow-anchor); nur ohne diese Faehigkeit (Safari) von Hand,
+      // sonst wuerde doppelt korrigiert.
+      var vonHand = !(window.CSS && CSS.supports && CSS.supports('overflow-anchor', 'auto'));
+      var anker = null;
+      for (var i = 0; vonHand && i < reihen.length; i++) {
+        if (reihen[i].getBoundingClientRect().bottom > 0) { anker = reihen[i]; break; }
+      }
+      var ankerOben = anker ? anker.getBoundingClientRect().top : 0;
+      reihen.forEach(function (reihe) {
+        var gruppe = reihe.getAttribute('data-tp-reihe-gruppe');
+        var neu = doc.querySelector('[data-tp-reihe-gruppe="' + gruppe + '"] [data-tp-reihe-karten]');
+        var alt = reihe.querySelector('[data-tp-reihe-karten]');
+        if (!neu || !alt) return;
+        var offen = reihe.classList.contains('is-offen');
+        alt.replaceWith(document.importNode(neu, true));
+        reihe.removeAttribute('data-tp-reihe-nachladen');
+        if (offen) {
+          var knopf = reihe.querySelector('[data-tp-gruppe-mehr]');
+          if (knopf) knopf.setAttribute('aria-expanded', 'true');
+        }
+      });
+      if (anker && anker !== reihen[0]) {
+        var versatz = anker.getBoundingClientRect().top - ankerOben;
+        if (Math.abs(versatz) > 1) window.scrollBy(0, versatz);
+      }
+    }
+
+    function start() {
+      var erste = document.querySelector('[data-tp-reihe-nachladen]');
+      if (!erste) return Promise.resolve();
+      return holen(erste.getAttribute('data-tp-reihe-nachladen')).then(einsetzen, function () {});
+    }
+
+    function imLeerlauf() {
+      if ('requestIdleCallback' in window) window.requestIdleCallback(start, { timeout: 2000 });
+      else setTimeout(start, 300);
+    }
+    if (document.readyState === 'complete') imLeerlauf();
+    else window.addEventListener('load', imLeerlauf);
+
+    document.addEventListener('click', function (event) {
+      var knopf = event.target.closest('[data-tp-gruppe-mehr]');
+      if (!knopf) return;
+      var reihe = knopf.closest('.tp-zubehoer-produkte--teppich-gruppe');
+      if (!reihe) return;
+      reihe.classList.add('is-offen');
+      knopf.setAttribute('aria-expanded', 'true');
+      if (reihe.hasAttribute('data-tp-reihe-nachladen')) start();
+    });
+  })();
 {% endjavascript %}
 
 {% schema %}
@@ -264,6 +374,13 @@
         { "value": "rest", "label": "Ohne eindeutige Gruppe" }
       ],
       "default": "alle"
+    },
+    {
+      "type": "number",
+      "id": "karten_sofort",
+      "label": "Karten sofort (nur Teppich-Gruppe)",
+      "info": "So viele Karten stehen im ersten HTML, der Rest wird nachgeladen. 0 = alle sofort.",
+      "default": 0
     },
     {
       "type": "collection",

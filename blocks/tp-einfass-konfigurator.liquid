@@ -35,7 +35,7 @@
   # Groesste Breite kommt vom Teppichboden (snippets/tp-teppich-max-breite), hier ueber
   # alle Farben; je Farbe steht sie unten an der Variante.
   capture tp_ek_max_b
-    render 'tp-teppich-max-breite', product: product
+    render 'tp-teppich-max-breite', product: product, live: true
   endcapture
   assign tp_ek_max_b = tp_ek_max_b | strip | times: 1
   assign tp_ek_max_l = product.metafields.service.max_laenge_cm.value | times: 1
@@ -400,7 +400,7 @@
             {%- if tp_ek_v.metafields.service.einfassen.value == 'Verfügbar' and tp_ek_v.price > 0 -%}
               {%- capture tp_ek_v_name -%}{% render 'tp-farbe-daten', variant: tp_ek_v, product: product, feld: 'name' %}{%- endcapture -%}
               {%- capture tp_ek_v_nr -%}{% render 'tp-farbe-daten', variant: tp_ek_v, product: product, feld: 'nummer' %}{%- endcapture -%}
-              {%- capture tp_ek_v_max -%}{% render 'tp-teppich-max-breite', product: product, farbe: tp_ek_v.option1 %}{%- endcapture -%}
+              {%- capture tp_ek_v_max -%}{% render 'tp-teppich-max-breite', product: product, farbe: tp_ek_v.option1, live: true %}{%- endcapture -%}
               {%- assign tp_ek_v_max = tp_ek_v_max | strip | times: 1 -%}
               {
                 "id": {{ tp_ek_v.id | json }},

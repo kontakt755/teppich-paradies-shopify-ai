@@ -1,0 +1,8 @@
+{%- layout none -%}
+{%- comment -%}
+  Daten des Mass-Rechners (snippets/tp-teppich-rechner-daten) als eigene Antwort:
+  /collections/<handle>?view=teppiche-rechner. assets/tp-teppich-rechner.js holt sie nach
+  dem Laden der Seite (sections/tp-teppiche-hero, data-tp-rechner-quelle). Inline im Hero
+  kosteten sie je Teppich rund 5 ms Renderzeit der ganzen Seite (2026-10-10, Render-Timeout).
+{%- endcomment -%}
+{%- render 'tp-teppich-rechner-daten', collection: collection -%}
