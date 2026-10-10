@@ -84,7 +84,8 @@
     assign tp_ab_kante_cent = 0
     # Kante inklusive: Kettelung steckt im m2-Preis, keine Kantenkosten.
     assign tp_ab_kante_inkl = false
-    if tp_ab_art == 'ketteln' and product.metafields.service.kante_inklusive.value == true
+    assign tp_ab_ki = product.metafields.service.kante_inklusive.value | append: '' | strip | downcase
+    if tp_ab_art == 'ketteln' and tp_ab_ki == 'true'
       assign tp_ab_kante_inkl = true
     endif
     if tp_ab_art == 'ketteln' and tp_ab_kante_inkl == false

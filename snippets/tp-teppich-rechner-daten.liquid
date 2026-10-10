@@ -42,7 +42,8 @@
       assign tpr_ok = true
     endif
     assign tpr_kante_inkl = false
-    if tpr_art == 'ketteln' and tpr_p.metafields.service.kante_inklusive.value == true
+    assign tpr_ki = tpr_p.metafields.service.kante_inklusive.value | append: '' | strip | downcase
+    if tpr_art == 'ketteln' and tpr_ki == 'true'
       assign tpr_kante_inkl = true
     endif
     assign tpr_max_l = tpr_p.metafields.service.max_laenge_cm.value | times: 1

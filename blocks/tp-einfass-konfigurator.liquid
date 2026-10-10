@@ -103,7 +103,8 @@
   # Kantenkosten und keinen TP-005-Abbruch - der Kettelservice wird gar nicht
   # gebraucht. Fehlt das Feld oder ist es false, bleibt alles wie bisher.
   assign tp_ek_kante_inkl = false
-  if tp_ek_art == 'ketteln' and product.metafields.service.kante_inklusive.value == true
+  assign tp_ek_ki = product.metafields.service.kante_inklusive.value | append: '' | strip | downcase
+  if tp_ek_art == 'ketteln' and tp_ek_ki == 'true'
     assign tp_ek_kante_inkl = true
   endif
   if tp_ek_art == 'ketteln' and tp_ek_kante_inkl == false and block.settings.kettelservice_produkt != blank
