@@ -4,7 +4,7 @@
 // Aufruf: npm run operations:verbindung
 // Exit: 0 alles lesbar · 1 Fehler beim Zugang · 2 kein Zugang hinterlegt ·
 //       3 Zugang steht, aber mindestens eine Quelle ist nicht lesbar
-import { erzeugeProxy, pruefeQuellen, fehlendeBereiche, mitHinweis, KEIN_ZUGANG, LESE_BEREICHE, LESE_BEREICHE_ZEILE } from '../sync/zugang.mjs';
+import { erzeugeProxy, pruefeQuellen, fehlendeBereiche, fehlendeSchreibBereiche, mitHinweis, KEIN_ZUGANG, LESE_BEREICHE, LESE_BEREICHE_ZEILE, SCHREIB_BEREICHE } from '../sync/zugang.mjs';
 
 try {
   const { proxy, art, scope } = await erzeugeProxy();
@@ -29,6 +29,14 @@ try {
     console.log(`\nWas tun: im Dev Dashboard eine neue Version der App mit dieser Bereichszeile freigeben und die Aenderung im Shop bestaetigen:\n  ${LESE_BEREICHE_ZEILE}`);
   } else if (!scope) {
     console.log('\nHinweis: Ein fester Token meldet seine Bereiche nicht - massgeblich sind die Proben oben.');
+  }
+
+  // Schreibrechte aendern den Exit-Code nicht: ohne sie laufen alle Lese-Quellen,
+  // nur die betroffene Aktion im Control Center sagt, was fehlt.
+  const schreibFehlt = scope ? fehlendeSchreibBereiche(scope) : [];
+  if (schreibFehlt.length) {
+    console.log('\nNicht freigeschaltete Schreibrechte (nur fuer einzelne Aktionen noetig):');
+    for (const b of schreibFehlt) console.log(`  ${b} - betrifft: ${SCHREIB_BEREICHE[b]}`);
   }
 
   const kaputt = quellen.filter(q => !q.ok).length;

@@ -71,6 +71,23 @@ export const LESE_BEREICHE = Object.freeze({
 export const LESE_BEREICHE_ZEILE = Object.keys(LESE_BEREICHE).join(',');
 
 /**
+ * Schreibbereiche, die das Control Center selbst braucht - bisher keine,
+ * seit der Ansicht "Sonderposten" (Knopf "Im Laden verkauft") zwei. Ohne sie
+ * laufen alle Lese-Quellen weiter; nur die eine Aktion meldet, was fehlt.
+ * Freischalten macht ausschliesslich der Inhaber im Dev Dashboard.
+ */
+export const SCHREIB_BEREICHE = Object.freeze({
+  write_inventory: 'Sonderposten: "Im Laden verkauft" setzt den Bestand auf 0',
+  write_products: 'Sonderposten: Verkaufsangaben (verkauft_am, verkauft_von, verkauft_kanal)',
+});
+
+/** Welche Schreibbereiche fehlen in der von Shopify gemeldeten Liste? */
+export function fehlendeSchreibBereiche(scope) {
+  const erteilt = new Set(String(scope || '').split(',').map(s => s.trim()).filter(Boolean));
+  return Object.keys(SCHREIB_BEREICHE).filter(b => !erteilt.has(b));
+}
+
+/**
  * Welche Lese-Bereiche fehlen in der von Shopify gemeldeten Liste? Shopify
  * laesst read_x weg, wenn write_x erteilt ist - write_x gilt deshalb als read_x.
  */
@@ -101,6 +118,9 @@ export function wasTun(meldung) {
   }
   if (/HTTP 403|access denied|ACCESS_DENIED/i.test(m)) {
     const bereich = m.match(/`?((?:read|write)_[a-z_]+)`?/)?.[1];
+    if (bereich && SCHREIB_BEREICHE[bereich]) {
+      return `Der App fehlt das Schreibrecht ${bereich} (${SCHREIB_BEREICHE[bereich]}). Der Inhaber gibt im Dev Dashboard eine neue Version mit ${bereich} in der Bereichszeile frei (operations/README.md, "Zugang einrichten") und bestaetigt die Aenderung im Shop.`;
+    }
     return `Der App fehlt ein Zugriffsbereich${bereich ? ` (${bereich})` : ''}. Im Dev Dashboard eine neue Version mit dieser Bereichszeile freigeben und die Aenderung im Shop bestaetigen: ${LESE_BEREICHE_ZEILE} - danach: npm run operations:verbindung`;
   }
   if (/THROTTLED|HTTP 429/i.test(m)) return 'Shopify bremst gerade (zu viele Abfragen). Nichts zu tun - der naechste Lauf holt es nach.';

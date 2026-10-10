@@ -1,0 +1,40 @@
+/* Sonderposten (ansichten/sonderposten.mjs). Nur Tokens aus app.css - keine festen Farben.
+   Auffallen darf genau eins: der Knopf "Im Laden verkauft…" bei verfuegbaren Stuecken.
+   Verkaufte Stuecke stehen darunter, blasser, ohne Knopf. */
+
+.sp-stand { margin: 0 0 10px; }
+.sp-liste { display: flex; flex-direction: column; gap: 8px; }
+.sp-liste + .sub-title { margin-top: 22px; }
+
+.sp-karte {
+  display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; gap: 12px 14px; align-items: start;
+  padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface);
+}
+.sp-karte.sp-weg { background: var(--surface-2); }
+.sp-karte.sp-weg .sp-bild, .sp-karte.sp-weg .sp-titel { opacity: .75; }
+
+.sp-bild { width: 72px; height: 72px; border-radius: 8px; object-fit: cover; background: var(--surface-2); display: block; }
+.sp-ohne-bild { display: flex; align-items: center; justify-content: center; text-align: center; font-size: .7rem; color: var(--text-3); border: 1px dashed var(--line-strong); }
+
+.sp-inhalt { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.sp-kopf { font-size: .85rem; color: var(--text-2); }
+.sp-sku { font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+.sp-titel { font-weight: 600; overflow-wrap: anywhere; }
+.sp-angaben { display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: .88rem; color: var(--text-2); }
+.sp-fuss { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin-top: 4px; }
+.sp-fuss .badge { white-space: normal; }
+
+.sp-rechts { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.sp-preis { font-family: var(--serif); font-size: 1.25rem; font-weight: 600; white-space: nowrap; font-variant-numeric: lining-nums tabular-nums; }
+
+.sp-dialog-stueck { display: flex; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
+.sp-dialog-stueck .mono { font-size: .9rem; color: var(--text-2); overflow-wrap: anywhere; }
+
+/* Handy: Foto links klein, Preis und Knopf unter den Angaben in voller Breite -
+   der Knopf muss mit dem Daumen gut zu treffen sein. */
+@media (max-width: 640px) {
+  .sp-karte { grid-template-columns: 56px minmax(0, 1fr); }
+  .sp-karte .sp-bild { width: 56px; height: 56px; }
+  .sp-rechts { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: space-between; }
+  .sp-rechts .btn { min-height: 44px; padding-inline: 16px; }
+}

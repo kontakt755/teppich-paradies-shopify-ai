@@ -13,3 +13,10 @@ import path from 'node:path';
 export const PRIVAT_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-dashboard-test-'));
 process.env.TP_PRIVAT_DIR = PRIVAT_DIR;
 delete process.env.TP_DASHBOARD_PASSWORT;
+
+// Kein Test spricht echtes Shopify: der Zugang aus .env.local und aus der
+// Umgebung wird ausgeblendet (Sonderposten liest und schreibt live).
+process.env.TP_ENV_LOCAL = path.join(PRIVAT_DIR, 'kein-zugang.env.local');
+delete process.env.SHOPIFY_ADMIN_TOKEN;
+delete process.env.SHOPIFY_CLIENT_ID;
+delete process.env.SHOPIFY_CLIENT_SECRET;

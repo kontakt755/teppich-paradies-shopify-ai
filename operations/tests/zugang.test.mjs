@@ -121,3 +121,12 @@ test('pruefeQuellen: je Quelle ok oder Meldung mit Handlung, wirft nie', async (
   const leer = await pruefeQuellen({ execute: async () => null });
   assert.ok(leer.every(x => !x.ok && /^Kein Zugang/.test(x.meldung)));
 });
+
+test('Schreibrechte fuer Sonderposten: fehlendeSchreibBereiche und wasTun nennen write_inventory', async () => {
+  const { fehlendeSchreibBereiche, SCHREIB_BEREICHE } = await import('../sync/zugang.mjs');
+  assert.deepEqual(fehlendeSchreibBereiche('read_inventory,read_locations,write_products'), ['write_inventory']);
+  assert.deepEqual(fehlendeSchreibBereiche(Object.keys(SCHREIB_BEREICHE).join(',')), []);
+  const tun = wasTun('Shopify GraphQL: Access denied for inventorySetQuantities field. Required access: `write_inventory` access scope.');
+  assert.match(tun, /Schreibrecht write_inventory/);
+  assert.match(tun, /Inhaber/);
+});
