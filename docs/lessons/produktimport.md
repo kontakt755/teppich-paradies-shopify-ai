@@ -45,6 +45,21 @@ durchsuchen, nicht nur Titel und Beschreibung prüfen. Den Plan auf Reste des
 Seitenparsers prüfen (` | `, `millimeter`); unbekannte Spezifikationsfelder
 hängen sich sonst an den Vorwert (`R10 | Florhöhe in millimeter | 2.8`).
 
+## Dieselben Dekore unter anderer Nummer (2026-10-10)
+
+Beim Linoleum der Hausmarke von C waren 38 von 89 Farben schon im Shop, als
+Farben von Lieferant A: Marenta, Kaneo, Coloria und Elastium führen dieselben
+Herstellerdekore. Lieferant A nummeriert um: eigenes Präfix plus die letzten
+zwei Ziffern der Herstellernummer (aus Herstellerfarbe 0081 wird 4381, aus
+3593 wird 1093). Ein
+Abgleich über die Farbnummer findet deshalb nichts. Mehrere Linien nutzen sogar
+pixelgleiche Herstellerfotos.
+
+Vor dem Anlegen neuer Farben gegen den ganzen Bestand derselben Produktart
+prüfen, und zwar auf drei Wegen: Bildmerkmale (ORB, findet gleiche Fotos),
+Farbabstand des Bildmittels und Endziffern-Schema. Grenzfälle mit Bild nebeneinander
+ansehen. Raumbild-Dateinamen des Bestands nennen oft den Herstellerdekor.
+
 ## Lieferantennamen (Regel des Inhabers, 2026-09-11)
 
 Repository, Issues und Dashboard sind oeffentlich; Bezugsquellen sind
