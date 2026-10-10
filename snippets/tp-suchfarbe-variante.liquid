@@ -15,19 +15,25 @@
 
   Wirkt nur mit Suchbegriff: Suchergebnisseite (search.terms) und Schnellsuche
   (predictive_search.terms). Kollektionen, Filter und Produktseite bleiben
-  unberuehrt; ebenso jedes Produkt mit ?variant= in der Adresse.
+  unberuehrt.
 
   Farbgruppen: snippets/tp-suchfarbe-gruppen.liquid. Enthaelt der Suchbegriff
-  ein Wort einer Gruppe, gilt die Gruppe. Gewaehlt wird die erste Variante in
-  Shopify-Reihenfolge, die
+  ein Wort einer Gruppe, gilt die Gruppe. In Frage kommt jede Variante, die
     - verfuegbar ist (variant.available),
     - ein eigenes Bild hat (sonst zeigte die Karte das Bild einer anderen Farbe),
     - keine OPC-Konfiguratorvariante ist (wie snippets/price.liquid),
     - bei Teppich nach Mass fuers Einfassen freigegeben ist (wie im Konfigurator),
     - und deren Farboption (Farbe, Color oder Dekor) ein Wort der Gruppe enthaelt.
-  Steht ein Gruppenwort selbst im Suchbegriff (z. B. "anthrazit"), gewinnt die
-  erste Variante mit genau diesem Wort; erst ohne sie die erste mit einem
-  anderen Wort der Gruppe. Passt keine Variante, bleibt die Karte wie bisher.
+  Reihenfolge:
+    1. Die Variante, die Shopify selbst zum Suchbegriff ausgewaehlt hat
+       (product.selected_variant, z. B. "Grau Tief" bei "teppichboden grau"),
+       wenn sie in Frage kommt. Sonst zeigte die Karte etwa eine nicht
+       lieferbare oder unbebilderte Variante.
+    2. Die erste Variante in Shopify-Reihenfolge mit einem Gruppenwort, das
+       selbst im Suchbegriff steht ("anthrazit" -> Anthrazit vor Greige).
+    3. Die erste Variante mit irgendeinem Wort der Gruppe.
+  Passt keine Variante, gibt das Snippet nichts aus und die Karte bleibt wie
+  bisher.
 
   Ausgabe: "<Varianten-ID>|<Index der Farboption>" oder nichts.
 
@@ -42,7 +48,7 @@
   endif
   assign tp_sf_begriff = tp_sf_begriff | downcase | strip
 
-  if tp_sf_begriff != blank and product != blank and product.selected_variant == blank
+  if tp_sf_begriff != blank and product != blank
     capture tp_sf_daten
       render 'tp-suchfarbe-gruppen'
     endcapture
@@ -80,9 +86,19 @@
         assign tp_sf_teppich = true
       endif
       assign tp_sf_gruppe = tp_sf_woerter | downcase | split: ','
+      assign tp_sf_shopify_id = ''
+      if product.selected_variant != blank
+        assign tp_sf_shopify_id = product.selected_variant.id | append: ''
+      endif
+      assign tp_sf_shopify_gesehen = false
+      assign tp_sf_shopify = ''
       assign tp_sf_treffer = ''
       assign tp_sf_ersatz = ''
       for tp_sf_v in product.variants
+        assign tp_sf_v_id = tp_sf_v.id | append: ''
+        if tp_sf_v_id == tp_sf_shopify_id
+          assign tp_sf_shopify_gesehen = true
+        endif
         if tp_sf_v.available != true or tp_sf_v.featured_media == blank
           continue
         endif
@@ -104,20 +120,34 @@
           unless tp_sf_farbe contains tp_sf_wort
             continue
           endunless
+          if tp_sf_v_id == tp_sf_shopify_id
+            assign tp_sf_shopify = tp_sf_v_id
+          endif
           if tp_sf_ersatz == ''
-            assign tp_sf_ersatz = tp_sf_v.id | append: ''
+            assign tp_sf_ersatz = tp_sf_v_id
           endif
           if tp_sf_begriff contains tp_sf_wort
-            assign tp_sf_treffer = tp_sf_v.id | append: ''
+            if tp_sf_treffer == ''
+              assign tp_sf_treffer = tp_sf_v_id
+            endif
             break
           endif
         endfor
-        if tp_sf_treffer != ''
+        # Frueh aufhoeren, sobald nichts Besseres mehr kommen kann.
+        if tp_sf_shopify != ''
           break
+        endif
+        if tp_sf_treffer != ''
+          if tp_sf_shopify_id == '' or tp_sf_shopify_gesehen
+            break
+          endif
         endif
       endfor
 
-      assign tp_sf_id = tp_sf_treffer
+      assign tp_sf_id = tp_sf_shopify
+      if tp_sf_id == ''
+        assign tp_sf_id = tp_sf_treffer
+      endif
       if tp_sf_id == ''
         assign tp_sf_id = tp_sf_ersatz
       endif

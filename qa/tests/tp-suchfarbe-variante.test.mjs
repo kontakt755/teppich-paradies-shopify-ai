@@ -130,13 +130,33 @@ test('ohne Farbwort bleibt alles wie bisher', async () => {
   assert.equal(await wahl(rollenware(), suche('')), null);
 });
 
-test('Kollektionsseite und Produktseite: keine Vorauswahl', async () => {
+test('Kollektions- und Produktseite: keine Vorauswahl', async () => {
   assert.equal(await wahl(rollenware(), kollektion()), null);
   // Suchobjekt mit Begriff, aber keine Suchseite (z. B. eingebettete Ausgabe)
   assert.equal(await wahl(rollenware(), { request: { page_type: 'collection' }, search: { performed: true, terms: 'grau' } }), null);
-  const mitVariante = rollenware();
-  mitVariante.selected_variant = mitVariante.variants[0];
-  assert.equal(await wahl(mitVariante, suche('grau')), null);
+  assert.equal(await wahl(rollenware(), { request: { page_type: 'product' } }), null);
+});
+
+// Shopify waehlt bei exakten Worttreffern ("teppichboden grau") selbst eine Variante
+// (product.selected_variant). Live-Beleg 2026-10-10: Granuro "Grau Tief" verlinkt,
+// in der Schnellsuche aber das Raumbild einer roten Farbe.
+test('Shopify-Treffer bleibt, wenn er grau, verfuegbar und bebildert ist', async () => {
+  const p = rollenware();
+  p.selected_variant = p.variants.find((v) => v.title === 'Steingrau (095) / 500 cm');
+  assert.equal((await wahl(p, suche('teppichboden grau'))).title, 'Steingrau (095) / 500 cm');
+});
+
+test('Shopify-Treffer ohne Bild, nicht lieferbar oder nicht grau wird ersetzt', async () => {
+  for (const aendern of [(v) => { v.featured_media = null; }, (v) => { v.available = false; }]) {
+    const p = rollenware();
+    const sel = p.variants.find((v) => v.title === 'Steingrau (095) / 500 cm');
+    aendern(sel);
+    p.selected_variant = sel;
+    assert.equal((await wahl(p, suche('teppichboden grau'))).title, 'Blaugrau (078) / 400 cm');
+  }
+  const p = rollenware();
+  p.selected_variant = p.variants.find((v) => v.title === 'Mokka (048) / 500 cm');
+  assert.equal((await wahl(p, suche('teppichboden grau'))).title, 'Blaugrau (078) / 400 cm');
 });
 
 test('Schnellsuche nutzt denselben Begriff', async () => {
