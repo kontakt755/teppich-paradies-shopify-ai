@@ -169,12 +169,13 @@ test('Optionen: Tippfehler und fehlende Werte brechen ab statt still zu entfalle
   assert.equal(optionsFehler('plan', { prozent: '15', start: '2026-11-03', ende: '2026-11-16', typ: 'Teppichboden' }), null);
 });
 
-test('Ausschlussliste: nur volle Varianten-IDs, Kommentare erlaubt, Fehler bei Unlesbarem', () => {
-  const ids = ladeAusschluss('# UVP neuer Linien\ngid://shopify/ProductVariant/1001\n  gid://shopify/ProductVariant/1002  # Matte gross\n\n');
-  assert.deepEqual([...ids], ['gid://shopify/ProductVariant/1001', 'gid://shopify/ProductVariant/1002']);
+test('Ausschlussliste: nur volle Varianten-IDs, optional mit UVP, Kommentare erlaubt, Fehler bei Unlesbarem', () => {
+  const ids = ladeAusschluss('# UVP neuer Linien\r\ngid://shopify/ProductVariant/1001\r\n  gid://shopify/ProductVariant/1002;68.63  # Matte gross\n\n');
+  assert.deepEqual([...ids], [['gid://shopify/ProductVariant/1001', null], ['gid://shopify/ProductVariant/1002', 6863]]);
   assert.throws(() => ladeAusschluss('gid://shopify/Product/2001'), /keine volle Varianten-ID/);
   // Nummer allein: koennte eine aus der Admin-URL kopierte Produkt-ID sein
-  assert.throws(() => ladeAusschluss('gid://shopify/ProductVariant/1001\n16125372760398'), /keine volle Varianten-ID/);
+  assert.throws(() => ladeAusschluss('gid://shopify/ProductVariant/1001\n2001'), /keine volle Varianten-ID/);
+  assert.throws(() => ladeAusschluss('gid://shopify/ProductVariant/1001;68,63'), /keine volle Varianten-ID/);
   assert.throws(() => ladeAusschluss('# nur Kommentar\n'), /leer/);
 });
 
@@ -212,11 +213,11 @@ test('Ausschluss gilt nur fuer reduzierte Varianten im Rueckstell-Fenster', () =
 
 test('Ausschluss fail closed: gelistete ID nicht im Export bricht ab, Variante faellt nie still auf die UVP', () => {
   // Befund Review #1072: Produktnummer statt Varianten-ID in der Liste -> echte Variante lief ungeschuetzt durch.
-  const dauer = P({ id: 'gid://shopify/Product/16125372760398', handle: 'matte-gross', ende: '2026-11-01', klasse: 'preisanker' });
-  const echt = 'gid://shopify/ProductVariant/61097110896974';
+  const dauer = P({ id: 'gid://shopify/Product/2001', handle: 'matte-gross', ende: '2026-11-01', klasse: 'preisanker' });
+  const echt = 'gid://shopify/ProductVariant/1001';
   const varianten = [V({ id: echt, price: '320.50', compareAtPrice: '337.45', product: dauer })];
   const opt = { stichtag: '2026-11-02', klasse: 'preisanker', endeAm: '2026-11-01' };
-  assert.throws(() => ende(varianten, { ...opt, ausschluss: new Set(['gid://shopify/ProductVariant/16125372760398']) }), /1 von 1 IDs nicht im Export.*16125372760398/);
+  assert.throws(() => ende(varianten, { ...opt, ausschluss: new Set(['gid://shopify/ProductVariant/2001']) }), /1 von 1 IDs nicht im Export.*ProductVariant\/2001/);
   // neu angelegte Variante mit anderer ID: alte ID fehlt -> Abbruch statt Rueckstellung der neuen Variante auf die UVP
   assert.throws(() => ende([V({ id: 'gid://shopify/ProductVariant/99', price: '320.50', compareAtPrice: '337.45', product: dauer })], { ...opt, ausschluss: new Set([echt]) }), /nicht im Export/);
   const r = ende(varianten, { ...opt, ausschluss: new Set([echt]) });
@@ -234,4 +235,65 @@ test('Ausschluss nur teilweise wirksam: WARNUNG mit getrennten Zahlen', () => {
   assert.equal(r.warnungen.length, 1);
   assert.match(r.warnungen[0], /nur bei 1 von 2 .*1 ohne Vergleichspreis ueber Preis, 0 ausserhalb/);
   assert.equal(r.csv.length, 0, 'b ist nicht reduziert und wird nie zurueckgestellt');
+});
+
+test('Ausschluss mit UVP-Betrag: anderer Vergleichspreis (spaetere echte Aktion) bricht ab statt Aktionspreis zu behalten', () => {
+  const p = P({ id: 'd1', ende: '2026-11-01', klasse: 'preisanker' });
+  const opt = { stichtag: '2026-11-02', klasse: 'preisanker', endeAm: '2026-11-01' };
+  const liste = ladeAusschluss('gid://shopify/ProductVariant/1001;68.63\n');
+  const uvp = ende([V({ id: 'gid://shopify/ProductVariant/1001', price: '65.00', compareAtPrice: '68.63', product: p })], { ...opt, ausschluss: liste });
+  assert.equal(uvp.ausschlussStand.ausgeschlossen, 1);
+  assert.throws(() => ende([V({ id: 'gid://shopify/ProductVariant/1001', price: '56.00', compareAtPrice: '70.00', product: p })], { ...opt, ausschluss: liste }), /anderen Vergleichspreis.*70\.00, Liste 68\.63/);
+});
+
+test('Ausschluss zaehlt je ID einmal, auch bei doppelter Exportzeile', () => {
+  const p = P({ id: 'd1', ende: '2026-11-01', klasse: 'preisanker' });
+  const a = V({ id: 'a', price: '65.00', compareAtPrice: '68.63', product: p });
+  const r = ende([a, a, V({ id: 'b', price: '65.00', compareAtPrice: null, product: p })], { stichtag: '2026-11-02', ausschluss: new Set(['a', 'b']) });
+  assert.deepEqual(r.ausschlussStand, { gelistet: 2, ausgeschlossen: 1, nichtReduziert: 1, ausserhalb: 0 });
+  assert.equal(r.leeren.get('d1').length, 1);
+  assert.equal(r.warnungen.length, 1, 'doppelte Zeile verdeckt die Teil-Warnung nicht');
+});
+
+test('CLI ende: Fehler laesst den Zielordner unveraendert, Erfolg ersetzt alte Ausschluss-Dateien', async () => {
+  const { spawnSync } = await import('node:child_process');
+  const fs = await import('node:fs');
+  const os = await import('node:os');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const skript = fileURLToPath(new URL('../../operations/scripts/angebotswelle.mjs', import.meta.url));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'angebot-ende-'));
+  try {
+    const exp = path.join(dir, 'export.json'); const ziel = path.join(dir, 'roh');
+    fs.writeFileSync(exp, JSON.stringify([
+      { id: 'gid://shopify/ProductVariant/1001', title: 'Rot', sku: 'S1', price: '65.00', compareAtPrice: '68.63', product: { id: 'gid://shopify/Product/2001', handle: 'matte-x', ende: '2026-11-01', klasse: 'preisanker' } },
+      { id: 'gid://shopify/ProductVariant/1002', title: 'Blau', sku: 'S2', price: '17.00', compareAtPrice: '20.00', product: { id: 'gid://shopify/Product/2001', handle: 'matte-x', ende: '2026-11-01', klasse: 'preisanker' } },
+    ]));
+    const liste = path.join(dir, 'ids.txt'); fs.writeFileSync(liste, 'gid://shopify/ProductVariant/1001;68.63\n');
+    const lauf = (...extra) => spawnSync(process.execPath, [skript, 'ende', exp, ziel, '--stichtag', '2026-11-02', '--klasse', 'preisanker', '--ende-am', '2026-11-01', ...extra], { encoding: 'utf8' });
+    let r = lauf('--ausschluss', liste);
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /Rueckstellung: 1 Varianten in 1 Produkten/);
+    assert.match(r.stdout, /1 gelistet, alle im Export; 1 ausgeschlossen/);
+    assert.ok(!fs.readFileSync(path.join(ziel, 'rueckstellen.jsonl'), 'utf8').includes('ProductVariant/1001'));
+    assert.match(fs.readFileSync(path.join(ziel, 'nur-vergleichspreis-leeren.jsonl'), 'utf8'), /"id":"gid:\/\/shopify\/ProductVariant\/1001","price":"65.00","compareAtPrice":null/);
+    const vorher = fs.readFileSync(path.join(ziel, 'rueckstellen.jsonl'), 'utf8');
+    // Produktnummer in der Liste: Exit 1, FEHLER, alter Plan bleibt unangetastet
+    const kaputt = path.join(dir, 'kaputt.txt'); fs.writeFileSync(kaputt, '2001\n');
+    r = lauf('--ausschluss', kaputt);
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /^FEHLER Ausschlussliste: "2001" ist keine volle Varianten-ID/);
+    assert.equal(fs.readFileSync(path.join(ziel, 'rueckstellen.jsonl'), 'utf8'), vorher);
+    // ID nicht im Export: ebenfalls Exit 1
+    fs.writeFileSync(kaputt, 'gid://shopify/ProductVariant/2001\n');
+    r = lauf('--ausschluss', kaputt);
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /nicht im Export/);
+    // Erfolg ohne Liste: alte Ausschluss-Dateien verschwinden, UVP-Variante steht (bewusst) im Plan
+    r = lauf();
+    assert.equal(r.status, 0, r.stderr);
+    assert.ok(!fs.existsSync(path.join(ziel, 'ausgeschlossen.csv')));
+    assert.ok(!fs.existsSync(path.join(ziel, 'nur-vergleichspreis-leeren.jsonl')));
+    assert.match(fs.readFileSync(path.join(ziel, 'rueckstellen.jsonl'), 'utf8'), /ProductVariant\/1001","price":"68.63"/);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
