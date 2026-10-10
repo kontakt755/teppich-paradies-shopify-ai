@@ -536,14 +536,28 @@ Exporten. Die Vorlage (SKU `SP-0000` oder Titel „VORLAGE …“) und archivier
 **Buchen** (`POST /api/sonderposten/verkauft`, Rolle `mitarbeiter` oder `inhaber`, „lesen“ 403):
 
 1. Produkt neu lesen; die IDs aus dem Browser werden nur abgeglichen, nie geglaubt.
-2. Nur bei Bestand genau 1 weiter, sonst 409 („bereits verkauft“) – nichts geschrieben.
+2. Nur bei geführtem Bestand genau 1 **und** gesperrtem Überverkauf (`inventoryPolicy: DENY`) weiter,
+   sonst 409 – nichts geschrieben. Mit `CONTINUE` bliebe das Stück bei Bestand 0 online bestellbar; die
+   Liste zeigt dann keinen Knopf, sondern „„Verkauf bei Nichtverfügbarkeit fortsetzen“ ist an – in Shopify
+   ausschalten“ (Review 2026-10-09).
 3. `inventorySetQuantities` (`available` → 0, `reason: correction`,
    `referenceDocumentUri: tp://laden-verkauf/<SKU>/<Zeit>`) mit `changeFromQuantity: 1` – zwei
    gleichzeitige Klicks buchen nicht doppelt – und `@idempotent` (ab API 2026-04 Pflicht).
+   **Antwortverlust:** Kommt auf die Mutation keine Antwort (Netz, Zeitlimit, 5xx), kann Shopify sie
+   trotzdem ausgeführt haben. Der Server liest dann erneut: Bestand 0 → gebucht, weiter mit Schritt 4;
+   Bestand 1 → 502 „nicht angekommen“; sonst 504 „unklar, Bestand prüfen“ samt Protokolleintrag
+   `sonderposten-im-laden-verkauft-unklar`. „Nichts gebucht“ sagt der Server nur, wenn Shopify abgelehnt hat
+   oder die Mutation gar nicht gesendet wurde.
 4. Erst danach `metafieldsSet`: `verkauft_am` (jetzt), `verkauft_von` (Anzeigename aus der Sitzung),
    `verkauft_kanal` = „Laden“. Scheitert schon Schritt 3, bleiben die Felder unberührt.
 5. Protokolleintrag `sonderposten-im-laden-verkauft` (`$TP_PRIVAT_DIR/protokoll.jsonl`).
 6. Gegenprobe: Produkt erneut lesen, Bestand und Felder im Ergebnis – `userErrors: []` ist kein Beleg.
+   `ok` heißt Bestand 0 **und** online gesperrt (geführt, `DENY`). Scheitert nur das Lesen, ist die Buchung
+   trotzdem erfolgt: Antwort 200 mit `gegenprobe: "fehlgeschlagen"`, nie ein Fehler.
+
+**Rückmeldung im Browser** (`lib/sonderposten.mjs`, `meldungNachBuchung`): Kommt vom Dashboard keine
+Antwort, heißt es „Ob der Verkauf gebucht wurde, ist unklar – Liste neu laden und Bestand prüfen“, nie
+„nichts gebucht“. Ein erneuter Klick kann nicht doppelt buchen (Schritt 1 und 3).
 
 **Recht.** Dafür braucht der Zugang `write_inventory` (Bestand) und `write_products` (Felder),
 festgehalten als `SCHREIB_BEREICHE` in `sync/zugang.mjs` und in der Bereichszeile in

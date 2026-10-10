@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createApi, ApiError } from '../../../scripts/dashboard-api.mjs';
-import { RECHT_FEHLT } from '../../../operations/lib/sonderposten.mjs';
+import { RECHT_FEHLT, ERGEBNIS_UNKLAR, UEBERVERKAUF_OFFEN } from '../../../operations/lib/sonderposten.mjs';
 import { attrappe, PRODUKT_ID, ITEM_ID } from '../../../operations/tests/sonderposten-attrappe.mjs';
 
 const JETZT = new Date('2026-10-08T09:15:00.000Z');
@@ -79,6 +79,40 @@ test('Verkauft: ACCESS_DENIED -> verstaendliche Meldung, keine Metafelder, kein 
   assert.ok(!a.namen().includes('SonderpostenVerkauftFelder'));
   assert.equal(a.zustand.felder.verkauft_am, undefined);
   assert.equal(protokoll().length, vorher);
+});
+
+test('Verkauft: Ueberverkauf erlaubt -> 409, nichts geschrieben, kein Protokoll', async () => {
+  const a = attrappe({ policy: 'CONTINUE' });
+  const vorher = protokoll().length;
+  await assert.rejects(apiMit(a).sonderpostenVerkauft({ produktId: PRODUKT_ID }, MONA),
+    e => e.status === 409 && e.message === UEBERVERKAUF_OFFEN && e.extra.grund === 'ueberverkauf');
+  assert.deepEqual(a.namen(), ['SonderpostenEinzeln']);
+  assert.equal(protokoll().length, vorher);
+  const liste = await apiMit(attrappe({ policy: 'CONTINUE' })).sonderpostenListe();
+  assert.equal(liste.eintraege[0].verkaufbar, false, 'kein Knopf in der Liste');
+});
+
+test('Verkauft: Antwort verloren und Ergebnis unklar -> 504 mit Protokolleintrag', async () => {
+  const a = attrappe({ antwortWeg: 'nach', lesenScheitert: [2] });
+  const vorher = protokoll().length;
+  await assert.rejects(apiMit(a).sonderpostenVerkauft({ produktId: PRODUKT_ID }, MONA),
+    e => e instanceof ApiError && e.status === 504 && e.message === ERGEBNIS_UNKLAR && e.extra.grund === 'unklar');
+  const neu = protokoll().slice(vorher);
+  assert.equal(neu.length, 1, 'die Mutation kann angekommen sein - wer wann gebucht hat, steht trotzdem im Protokoll');
+  assert.equal(neu[0].aktion, 'sonderposten-im-laden-verkauft-unklar');
+  assert.equal(neu[0].benutzer, 'Mona Mitarbeiter');
+});
+
+test('Verkauft: Gegenprobe scheitert nach der Buchung -> 200 mit Hinweis, Protokoll vermerkt es', async () => {
+  const a = attrappe({ lesenScheitert: [2] });
+  const vorher = protokoll().length;
+  const r = await apiMit(a).sonderpostenVerkauft({ produktId: PRODUKT_ID }, MONA);
+  assert.equal(r.gebucht, true);
+  assert.equal(r.gegenprobe, 'fehlgeschlagen');
+  assert.equal(a.zustand.available, 0);
+  const neu = protokoll().slice(vorher);
+  assert.equal(neu.length, 1);
+  assert.match(neu[0].objekt, /Gegenprobe nicht lesbar/);
 });
 
 test('Verkauft: ohne Zugang 503, ohne Produkt-ID 400', async () => {

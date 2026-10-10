@@ -14,6 +14,7 @@ import { fetchEinkauf } from '../kern/api.mjs';
 import { istNurLesend } from '../kern/sitzung.mjs';
 import { render } from '../kern/render.mjs';
 import { emptyState, stoerungState } from '../bausteine/karten.mjs';
+import { meldungNachBuchung } from '../lib/sonderposten.mjs';
 
 export const sonderposten = { daten: null, laedt: false };
 
@@ -62,6 +63,8 @@ function zustandVon(e) {
     return { text: `verkauft am ${fmtDateTime(e.verkauftAm)}${wer}${wo}`, klasse: 'plain' };
   }
   if (!e.getrackt || e.bestand === null) return { text: 'Bestand wird nicht geführt – in Shopify prüfen', klasse: 'gap' };
+  // Mit erlaubtem Ueberverkauf sperrt Bestand 0 den Onlinekauf nicht - der Knopf fehlt deshalb.
+  if (!e.ueberverkaufGesperrt) return { text: '„Verkauf bei Nichtverfügbarkeit fortsetzen“ ist an – in Shopify ausschalten', klasse: 'gap' };
   if (e.bestand === 0) return { text: 'nicht mehr verfügbar (Bestand 0)', klasse: 'plain' };
   return { text: `Bestand ${e.bestand} – sollte 1 sein, in Shopify prüfen`, klasse: 'gap' };
 }
@@ -137,10 +140,7 @@ async function bucheVerkauf(e) {
     body: JSON.stringify({ produktId: e.id, inventoryItemId: e.inventoryItemId }),
   });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) {
-    const text = j.error || (r.status === 401 ? 'Die Anmeldung ist abgelaufen – bitte neu anmelden.' : 'Das hat nicht geklappt. Bitte noch einmal versuchen.');
-    return { ok: false, status: r.status, grund: j.grund || null, text };
-  }
+  if (!r.ok) return { ok: false, status: r.status, grund: j.grund || null, text: j.error || '' };
   return { ok: true, ergebnis: j };
 }
 
@@ -172,28 +172,17 @@ function oeffneVerkaufDialog(e) {
     knopf.disabled = true;
     knopf.textContent = 'Wird gebucht …';
     let antwort;
-    try { antwort = await bucheVerkauf(e); } catch {
-      antwort = { ok: false, text: 'Keine Verbindung zum Dashboard am Mac. Es wurde nichts gebucht – bitte noch einmal versuchen.' };
-    }
-    if (antwort.ok) {
-      const er = antwort.ergebnis;
-      ensureSonderposten({ neu: true });
-      if (er.ok && !er.felderFehler) {
-        $('#dialogRoot').innerHTML = '';
-        toast('Als im Laden verkauft gebucht – online nicht mehr bestellbar');
-        return;
-      }
-      // Gebucht, aber die Gegenprobe zeigt eine Abweichung: sagen, was stimmt und was nicht.
-      const text = !er.ok
-        ? `Shopify zeigt nach dem Buchen Bestand ${er.bestandNachher ?? 'unbekannt'} statt 0. Bitte in der Shopify-App prüfen und dort auf 0 setzen.`
-        : `Bestand ist auf 0 – online nicht mehr bestellbar. Datum und Name des Verkaufs konnten aber nicht gespeichert werden (${er.felderFehler}). Bitte Ahmet Bescheid geben.`;
-      zeigeDialogMeldung(form, 'warn', text);
-      knopf.hidden = true;
-      form.querySelector('[data-close-dialog]').textContent = 'Schließen';
+    // Ohne Antwort ist offen, ob der Server schon gebucht hat - lib/sonderposten.mjs
+    // sagt dann "unklar" statt "nichts gebucht".
+    try { antwort = await bucheVerkauf(e); } catch { antwort = { verbindung: false }; }
+    const m = meldungNachBuchung(antwort);
+    if (m.neuLaden) ensureSonderposten({ neu: true });
+    if (m.erfolg) {
+      $('#dialogRoot').innerHTML = '';
+      toast(m.text);
       return;
     }
-    zeigeDialogMeldung(form, antwort.grund === 'recht-fehlt' ? 'warn' : 'crit', antwort.text);
-    if (antwort.status === 409) ensureSonderposten({ neu: true }); // Stand hat sich geaendert
+    zeigeDialogMeldung(form, m.klasse, m.text);
     knopf.hidden = true;
     form.querySelector('[data-close-dialog]').textContent = 'Schließen';
   });

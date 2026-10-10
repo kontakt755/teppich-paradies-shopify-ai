@@ -1942,10 +1942,18 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       try {
         ergebnis = await verkaufeImLaden(zugang.proxy, { produktId: String(produktId), inventoryItemId: inventoryItemId ? String(inventoryItemId) : null, verkauftVon: wer, jetzt: now() });
       } catch (e) {
-        if (e instanceof SonderpostenFehler) throw new ApiError(e.status, e.message, e.extra);
+        if (e instanceof SonderpostenFehler) {
+          // Ausgang offen: die Bestandsmutation kann angekommen sein. Wer wann
+          // gebucht hat, gehoert dann trotzdem ins Protokoll.
+          if (e.extra?.grund === 'unklar') merke(benutzer, wer, 'sonderposten-im-laden-verkauft-unklar', `${String(produktId)} · Ergebnis unklar, Bestand pruefen`);
+          throw new ApiError(e.status, e.message, e.extra);
+        }
         throw e;
       }
-      merke(benutzer, wer, 'sonderposten-im-laden-verkauft', `${ergebnis.sku || '–'} · ${String(produktId)}${ergebnis.ok ? '' : ` · Gegenprobe: Bestand ${ergebnis.bestandNachher}`}`);
+      const gegenprobe = ergebnis.gegenprobe === 'fehlgeschlagen'
+        ? ' · Gegenprobe nicht lesbar'
+        : (ergebnis.ok ? '' : ` · Gegenprobe: Bestand ${ergebnis.bestandNachher}${ergebnis.onlineGesperrt === false ? ', online nicht gesperrt' : ''}`);
+      merke(benutzer, wer, 'sonderposten-im-laden-verkauft', `${ergebnis.sku || '–'} · ${String(produktId)}${gegenprobe}${ergebnis.antwortVerloren ? ' · Antwort verloren, per Lesen bestaetigt' : ''}`);
       return ergebnis;
     },
 

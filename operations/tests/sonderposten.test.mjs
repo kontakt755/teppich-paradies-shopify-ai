@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   eintragAus, istVorlage, leseListe, verkaufeImLaden, alsDateTime, istZugriffVerweigert,
-  SonderpostenFehler, RECHT_FEHLT, STANDORT_ID, adminLink,
+  SonderpostenFehler, RECHT_FEHLT, STANDORT_ID, adminLink, UEBERVERKAUF_OFFEN, ERGEBNIS_UNKLAR,
 } from '../lib/sonderposten.mjs';
 import { attrappe, PRODUKT_ID, ITEM_ID } from './sonderposten-attrappe.mjs';
 
@@ -124,4 +124,91 @@ test('alsDateTime und istZugriffVerweigert', () => {
   assert.equal(alsDateTime(JETZT), '2026-10-08T12:34:56Z');
   assert.equal(istZugriffVerweigert(new Error('Shopify GraphQL: Access denied for inventorySetQuantities field.')), true);
   assert.equal(istZugriffVerweigert(new Error('Shopify Admin API HTTP 503')), false);
+});
+
+// ---------------------------------------------------------------------------
+// Review-Befunde 2026-10-09 (PR #986): Ueberverkauf und Antwortverlust.
+// ---------------------------------------------------------------------------
+
+test('Ueberverkauf erlaubt (CONTINUE) oder unbekannt: kein Knopf, keine Buchung', async () => {
+  for (const policy of ['CONTINUE', null]) {
+    const { proxy, namen } = attrappe({ policy });
+    const { product } = await proxy.execute('query SonderpostenEinzeln', { id: PRODUKT_ID });
+    const e = eintragAus(product);
+    assert.equal(e.ueberverkaufGesperrt, false, String(policy));
+    assert.equal(e.verkaufbar, false, `${policy}: Bestand 1, aber Bestand 0 wuerde den Onlinekauf nicht sperren`);
+    await assert.rejects(
+      verkaufeImLaden(proxy, { produktId: PRODUKT_ID, verkauftVon: 'Mona', jetzt: JETZT }),
+      err => err.status === 409 && err.message === UEBERVERKAUF_OFFEN && err.extra.grund === 'ueberverkauf',
+    );
+    assert.deepEqual(namen(), ['SonderpostenEinzeln', 'SonderpostenEinzeln'], 'nur gelesen, nichts geschrieben');
+  }
+});
+
+test('Gegenprobe: Bestand 0, aber Ueberverkauf inzwischen erlaubt -> ok false, onlineGesperrt false', async () => {
+  const a = attrappe();
+  const original = a.proxy.execute;
+  a.proxy.execute = async (q, v) => {
+    const r = await original(q, v);
+    if (/mutation SonderpostenLadenverkauf/.test(q)) a.zustand.policy = 'CONTINUE';
+    return r;
+  };
+  const r = await verkaufeImLaden(a.proxy, { produktId: PRODUKT_ID, verkauftVon: 'Mona', jetzt: JETZT });
+  assert.equal(r.bestandNachher, 0);
+  assert.equal(r.onlineGesperrt, false);
+  assert.equal(r.ok, false, 'Bestand 0 allein ist nicht "online nicht mehr bestellbar"');
+});
+
+test('Antwortverlust nach der Buchung: erneutes Lesen zeigt 0 -> gebucht, Felder gesetzt', async () => {
+  const { proxy, namen, zustand } = attrappe({ antwortWeg: 'nach' });
+  const r = await verkaufeImLaden(proxy, { produktId: PRODUKT_ID, verkauftVon: 'Mona', jetzt: JETZT });
+  assert.deepEqual(namen(), ['SonderpostenEinzeln', 'SonderpostenLadenverkauf', 'SonderpostenEinzeln', 'SonderpostenVerkauftFelder', 'SonderpostenEinzeln']);
+  assert.equal(r.ok, true);
+  assert.equal(r.gebucht, true);
+  assert.equal(r.antwortVerloren, true);
+  assert.equal(zustand.available, 0);
+  assert.equal(zustand.felder.verkauft_kanal, 'Laden');
+});
+
+test('Antwortverlust vor der Buchung: Bestand weiterhin 1 -> 502 "nicht angekommen", keine Felder', async () => {
+  const { proxy, namen, zustand } = attrappe({ antwortWeg: 'vor' });
+  await assert.rejects(verkaufeImLaden(proxy, { produktId: PRODUKT_ID, verkauftVon: 'Mona', jetzt: JETZT }), e => {
+    assert.equal(e.status, 502);
+    assert.equal(e.extra.grund, 'nicht-angekommen');
+    assert.match(e.message, /weiterhin 1/);
+    return true;
+  });
+  assert.ok(!namen().includes('SonderpostenVerkauftFelder'));
+  assert.equal(zustand.available, 1);
+});
+
+test('Antwortverlust und erneutes Lesen scheitert: "unklar", nie "nichts gebucht"', async () => {
+  const { proxy, namen, zustand } = attrappe({ antwortWeg: 'nach', lesenScheitert: [2] });
+  await assert.rejects(verkaufeImLaden(proxy, { produktId: PRODUKT_ID, verkauftVon: 'Mona', jetzt: JETZT }), e => {
+    assert.equal(e.status, 504);
+    assert.equal(e.extra.grund, 'unklar');
+    assert.equal(e.message, ERGEBNIS_UNKLAR);
+    assert.doesNotMatch(e.message, /nichts gebucht/);
+    return true;
+  });
+  assert.equal(zustand.available, 0, 'Shopify hat tatsaechlich gebucht - genau deshalb darf die Meldung nicht "nichts gebucht" sagen');
+  assert.ok(!namen().includes('SonderpostenVerkauftFelder'));
+});
+
+test('Gegenprobe scheitert nach erfolgreicher Buchung: Ergebnis statt Fehler', async () => {
+  const { proxy, zustand } = attrappe({ lesenScheitert: [2] });
+  const r = await verkaufeImLaden(proxy, { produktId: PRODUKT_ID, verkauftVon: 'Mona', jetzt: JETZT });
+  assert.equal(r.gebucht, true);
+  assert.equal(r.gegenprobe, 'fehlgeschlagen');
+  assert.equal(r.ok, false);
+  assert.equal(r.bestandNachher, null);
+  assert.equal(zustand.available, 0);
+  assert.equal(zustand.felder.verkauft_kanal, 'Laden');
+});
+
+test('Erstes Lesen scheitert: 502 "nichts gebucht" ist hier belegt - keine Mutation gesendet', async () => {
+  const { proxy, namen } = attrappe({ lesenScheitert: [1] });
+  await assert.rejects(verkaufeImLaden(proxy, { produktId: PRODUKT_ID, verkauftVon: 'Mona', jetzt: JETZT }),
+    e => e.status === 502 && e.extra.grund === 'nicht-erreichbar' && /nichts gebucht/.test(e.message));
+  assert.deepEqual(namen(), ['SonderpostenEinzeln']);
 });

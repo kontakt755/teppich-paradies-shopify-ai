@@ -507,3 +507,27 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Verkaufsfelder, bleibt das Stück verkauft und der Dialog sagt, was fehlt.
 - **Nächste Stufe:** Nach der Freischaltung einmal mit dem Testprodukt (Bestand vorher auf 1) durchbuchen;
   danach Archivieren nach 30 Tagen und optional der SumUp-Abgleich (Konzept Abschnitt 6, Weg C).
+
+## 2026-10-10 · Sonderposten: Überverkauf und Antwortverlust (Review-Befunde vom 09.10.)
+
+- **Geändert:** Buchen nur noch bei gesperrtem Überverkauf (`inventoryPolicy: DENY`); sonst 409 mit
+  Handlungshinweis, kein Knopf in der Liste und der Status „„Verkauf bei Nichtverfügbarkeit fortsetzen“ ist
+  an – in Shopify ausschalten“. Die Gegenprobe meldet `ok` nur bei Bestand 0 **und** gesperrtem Onlinekauf
+  (`onlineGesperrt`). Antwortverlust bei der Bestandsmutation: erneutes Lesen entscheidet (0 = gebucht,
+  1 = nicht angekommen, sonst „unklar“ mit Protokolleintrag). Scheitert nur die Gegenprobe nach der Buchung,
+  antwortet der Server 200 mit `gegenprobe: "fehlgeschlagen"` statt eines Fehlers. Die Rückmeldung im
+  Dialog kommt aus `lib/sonderposten.mjs`: ohne Antwort vom Dashboard „unklar, Liste neu laden“ statt
+  „Es wurde nichts gebucht“.
+- **Getestet:** 7 neue Tests in `operations/tests/sonderposten.test.mjs` (CONTINUE und fehlende Policy,
+  Policy nach der Buchung geändert, Antwort nach/vor der Buchung verloren, Lesen danach gescheitert,
+  Gegenprobe gescheitert, erstes Lesen gescheitert), neue `tests/sonderposten-meldung.test.mjs` (jede
+  Rückmeldung; keine Negativbestätigung ohne Beleg) und Servertests für „unklar“ samt Protokoll und für die
+  gescheiterte Gegenprobe. `npm run dashboard:test` 217/217, `npm test` 1782/1782 (7 Suiten).
+  `dashboard:pruefen` 20 Ansichten × 5 Breiten = 100 × OK, 0 px Überlauf. Klickstrecke gegen die Kopie bei
+  390 und 1440 px mit vorgetäuschten Antworten: Stück mit erlaubtem Überverkauf ohne Knopf und mit Hinweis;
+  abgebrochene Verbindung → „unklar, Liste neu laden“; 504 „unklar“ → Servertext; 200 mit gescheiterter
+  Gegenprobe → „angenommen, bitte prüfen“; Erfolg → Toast; 4 Anfragen, 0 JS-Fehler.
+- **Risiken/Annahmen:** Bleibt eine Mutation in Shopify länger hängen als das erneute Lesen, meldet der
+  Server „nicht angekommen“; ein zweiter Klick bucht wegen `changeFromQuantity: 1` trotzdem nie doppelt.
+  Weiterhin kein echter Schreibtest (fehlendes `write_inventory`).
+- **Nächste Stufe:** unverändert – nach der Freischaltung einmal mit dem Testprodukt durchbuchen.

@@ -15,7 +15,10 @@
  *
  * Schreiben (verkaufeImLaden) haelt sich an eine feste Reihenfolge:
  *   1. Produkt serverseitig neu lesen - nie dem Browser glauben.
- *   2. Nur bei Bestand genau 1 weiter, sonst Abbruch (409), nichts geschrieben.
+ *   2. Nur bei gefuehrtem Bestand genau 1 UND gesperrtem Ueberverkauf
+ *      (inventoryPolicy DENY) weiter, sonst Abbruch (409), nichts geschrieben.
+ *      Mit CONTINUE bliebe ein Stueck bei Bestand 0 online bestellbar - dann
+ *      waere "online nicht mehr bestellbar" eine falsche Zusage.
  *   3. Bestand per inventorySetQuantities auf 0, mit changeFromQuantity: 1
  *      (Compare-and-swap: zwei gleichzeitige Klicks buchen nicht doppelt) und
  *      @idempotent (ab API 2026-04 Pflicht fuer Bestandsmutationen).
@@ -24,6 +27,12 @@
  *      Felder unberuehrt - sonst stuende "verkauft" an einem Stueck, das
  *      online noch kaufbar ist.
  *   5. Gegenprobe: Produkt erneut lesen. userErrors: [] allein ist kein Beleg.
+ * Antwortverlust: Kommt auf die Bestandsmutation keine Antwort (Netz, Zeitlimit,
+ * 5xx), kann Shopify sie trotzdem ausgefuehrt haben. Dann entscheidet ein
+ * erneutes Lesen: Bestand 0 = gebucht (weiter mit Schritt 4), Bestand 1 = nicht
+ * angekommen, sonst "unklar" - nie eine Negativbestaetigung auf Verdacht.
+ * Scheitert erst die Gegenprobe, ist die Buchung trotzdem erfolgt: das Ergebnis
+ * meldet gegenprobe "fehlgeschlagen" statt eines Fehlers.
  * Das Protokoll schreibt der Aufrufer (scripts/dashboard-api.mjs), weil nur er
  * den angemeldeten Benutzer kennt.
  */
@@ -46,7 +55,7 @@ export class SonderpostenFehler extends Error {
 export const RECHT_FEHLT = 'Bestand kann nicht geändert werden: dem Control Center fehlt das Shopify-Recht write_inventory '
   + '(Inhaber schaltet es im Dev Dashboard frei). Bis dahin: Bestand in der Shopify-App auf 0 setzen.';
 
-const VARIANTEN_FELDER = `variants(first: 2) { nodes { id sku price inventoryItem { id tracked
+const VARIANTEN_FELDER = `variants(first: 2) { nodes { id sku price inventoryPolicy inventoryItem { id tracked
   inventoryLevel(locationId: $locationId) { quantities(names: ["available", "on_hand"]) { name quantity } } } } }`;
 
 export const LISTE_QUERY = `
@@ -135,6 +144,8 @@ export function eintragAus(produkt) {
   // Fehlt die Flaeche, aber beide Masse stehen da, ist sie eine Rechnung, keine Annahme.
   const flaeche = flaecheFeld ?? (breite !== null && laenge !== null ? Math.round(breite * laenge * 100) / 100 : null);
   const bestand = item?.tracked ? menge(item.inventoryLevel, 'available') : null;
+  // Nur DENY sperrt den Verkauf bei Bestand 0. Fehlt das Feld, gilt es als offen.
+  const ueberverkaufGesperrt = variante?.inventoryPolicy === 'DENY';
   const bild = produkt.featuredMedia?.preview?.image || null;
   return {
     id: produkt.id,
@@ -147,6 +158,7 @@ export function eintragAus(produkt) {
     variantenAnzahl: produkt.variants?.nodes?.length ?? 0,
     inventoryItemId: item?.id || null,
     getrackt: Boolean(item?.tracked),
+    ueberverkaufGesperrt,
     // null = Bestand wird nicht gefuehrt oder ist am Standort nicht angelegt.
     bestand,
     breiteM: breite,
@@ -164,7 +176,9 @@ export function eintragAus(produkt) {
     verkauftKanal: f.verkauft_kanal || null,
     adminUrl: adminLink(produkt.id),
     // Der Knopf "Im Laden verkauft" erscheint nur hier - dieselbe Regel wie im Server.
-    verkaufbar: Boolean(item?.tracked) && bestand === 1 && produkt.status !== 'ARCHIVED',
+    verkaufbar: Boolean(item?.tracked) && ueberverkaufGesperrt && bestand === 1 && produkt.status !== 'ARCHIVED',
+    // Bestand 0 sperrt den Onlinekauf nur mit gefuehrtem Bestand und DENY.
+    onlineGesperrt: Boolean(item?.tracked) && ueberverkaufGesperrt && bestand === 0,
   };
 }
 
@@ -212,6 +226,23 @@ export function istZugriffVerweigert(err) {
   return /access denied|ACCESS_DENIED|HTTP 403|write_inventory/i.test(String(err?.message || err));
 }
 
+/** Meldung, wenn Ueberverkauf erlaubt ist: Bestand 0 wuerde den Onlinekauf nicht sperren. */
+export const UEBERVERKAUF_OFFEN = 'In Shopify ist für dieses Stück „Verkauf bei Nichtverfügbarkeit fortsetzen“ eingeschaltet – '
+  + 'mit Bestand 0 wäre es online weiter bestellbar. Bitte dort ausschalten; hier wird nichts gebucht.';
+
+/** Meldung, wenn nach der Bestandsmutation keine Antwort kam und auch die Gegenprobe nichts belegt. */
+export const ERGEBNIS_UNKLAR = 'Ob der Verkauf gebucht wurde, ist unklar: Shopify hat auf die Buchung nicht geantwortet. '
+  + 'Bitte die Liste neu laden und den Bestand prüfen, bevor noch einmal gebucht wird.';
+
+/** Liest das Stueck neu; ein Lesefehler ergibt null statt einer Ausnahme (fuer Gegenproben). */
+async function leseOderNull(proxy, id, standortId) {
+  try {
+    return (await leseEinzeln(proxy, id, { standortId })).eintrag;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Bucht ein Stueck als im Laden verkauft. Wirft SonderpostenFehler (Status
  * und Klartext fuer die Oberflaeche); alles andere ist ein unerwarteter Fehler.
@@ -227,13 +258,23 @@ export async function verkaufeImLaden(proxy, { produktId, inventoryItemId = null
   if (!/^gid:\/\/shopify\/Product\/\d+$/.test(String(produktId || ''))) {
     throw new SonderpostenFehler(400, 'Ungültige Produkt-ID.');
   }
-  // 1. Frisch lesen.
-  const { produkt, eintrag: vorher } = await leseEinzeln(proxy, produktId, { standortId });
+  // 1. Frisch lesen. Scheitert das Lesen am Netz, ist noch nichts geschrieben.
+  let produkt;
+  let vorher;
+  try {
+    ({ produkt, eintrag: vorher } = await leseEinzeln(proxy, produktId, { standortId }));
+  } catch (err) {
+    if (err instanceof SonderpostenFehler) throw err;
+    throw new SonderpostenFehler(502, 'Shopify war nicht lesbar – nichts gebucht. Bitte noch einmal versuchen.', { grund: 'nicht-erreichbar', detail: String(err?.message || err).slice(0, 200) });
+  }
   if (produkt.productType !== PRODUKTART) throw new SonderpostenFehler(400, 'Das ist kein Sonderposten – hier wird nichts gebucht.');
   if (istVorlage(produkt)) throw new SonderpostenFehler(400, 'Die Vorlage ist kein verkaufbares Stück.');
   if (vorher.variantenAnzahl !== 1) throw new SonderpostenFehler(409, 'Dieses Stück hat mehr als eine Variante – bitte in Shopify prüfen, hier wird nichts gebucht.');
   if (!vorher.getrackt || !vorher.inventoryItemId) {
     throw new SonderpostenFehler(409, 'Für dieses Stück wird in Shopify kein Bestand geführt – bitte dort „Bestand verfolgen“ einschalten.');
+  }
+  if (!vorher.ueberverkaufGesperrt) {
+    throw new SonderpostenFehler(409, UEBERVERKAUF_OFFEN, { grund: 'ueberverkauf' });
   }
   if (inventoryItemId && inventoryItemId !== vorher.inventoryItemId) {
     throw new SonderpostenFehler(409, 'Die Angaben haben sich in Shopify geändert. Bitte die Liste neu laden.');
@@ -250,6 +291,7 @@ export async function verkaufeImLaden(proxy, { produktId, inventoryItemId = null
   const zeit = alsDateTime(jetzt);
   const referenz = `tp://laden-verkauf/${encodeURIComponent(vorher.sku || numId(produktId))}/${zeit}`;
   let bestandAntwort;
+  let antwortVerloren = false;
   try {
     bestandAntwort = await proxy.execute(BESTAND_MUTATION, {
       schluessel,
@@ -261,8 +303,20 @@ export async function verkaufeImLaden(proxy, { produktId, inventoryItemId = null
       },
     });
   } catch (err) {
+    // Shopify lehnt fehlende Rechte vor der Ausfuehrung ab - dann ist sicher nichts gebucht.
     if (istZugriffVerweigert(err)) throw new SonderpostenFehler(403, RECHT_FEHLT, { grund: 'recht-fehlt' });
-    throw err;
+    // Sonst ist der Ausgang offen: die Mutation kann angekommen sein, nur die
+    // Antwort nicht. Erneut lesen statt "nichts gebucht" zu behaupten.
+    const pruef = await leseOderNull(proxy, produktId, standortId);
+    if (pruef?.bestand === 1) {
+      throw new SonderpostenFehler(502, 'Shopify hat die Buchung nicht bestätigt; laut erneutem Lesen ist der Bestand weiterhin 1. Bitte noch einmal versuchen.', { grund: 'nicht-angekommen' });
+    }
+    if (pruef?.bestand !== 0) {
+      throw new SonderpostenFehler(504, ERGEBNIS_UNKLAR, { grund: 'unklar', bestand: pruef?.bestand ?? null });
+    }
+    // Bestand ist 0: die Buchung ist angekommen. Weiter mit den Verkaufsangaben.
+    antwortVerloren = true;
+    bestandAntwort = null;
   }
   const bestandFehler = bestandAntwort?.inventorySetQuantities?.userErrors ?? [];
   if (bestandFehler.length) {
@@ -288,16 +342,40 @@ export async function verkaufeImLaden(proxy, { produktId, inventoryItemId = null
     felderFehler = String(err?.message || err).slice(0, 300);
   }
 
-  // 5. Gegenprobe.
-  const { eintrag: nachher } = await leseEinzeln(proxy, produktId, { standortId });
+  // 5. Gegenprobe. Der Bestand ist ab hier gebucht - scheitert nur das Lesen,
+  // wird das gemeldet, nicht als Fehlschlag der Buchung ausgegeben.
+  const nachher = await leseOderNull(proxy, produktId, standortId);
+  if (!nachher) {
+    return {
+      ok: false,
+      gebucht: true,
+      gegenprobe: 'fehlgeschlagen',
+      antwortVerloren,
+      sku: vorher.sku,
+      titel: vorher.titel,
+      referenz,
+      bestandVorher: vorher.bestand,
+      bestandNachher: null,
+      onlineGesperrt: null,
+      felderGesetzt: null,
+      felderFehler,
+      eintrag: null,
+    };
+  }
   const felderGesetzt = nachher.verkauftAm !== null && nachher.verkauftKanal === 'Laden' && nachher.verkauftVon !== null;
   return {
-    ok: nachher.bestand === 0,
+    // ok heisst: Bestand 0 UND online gesperrt (gefuehrt, DENY) - nur dann stimmt
+    // "online nicht mehr bestellbar".
+    ok: nachher.onlineGesperrt,
+    gebucht: true,
+    gegenprobe: 'ok',
+    antwortVerloren,
     sku: vorher.sku,
     titel: vorher.titel,
     referenz,
     bestandVorher: vorher.bestand,
     bestandNachher: nachher.bestand,
+    onlineGesperrt: nachher.onlineGesperrt,
     felderGesetzt,
     felderFehler: felderFehler || (felderGesetzt ? null : 'Verkaufsangaben sind nach dem Speichern nicht in Shopify zu sehen.'),
     eintrag: nachher,
