@@ -470,3 +470,24 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   „kein Zugriff“. Die Freigabe erfolgt im Teilen-Menü der Werkbank, nicht hier.
 - **Nächste Stufe:** Falls gewünscht, offene Fragen an den Inhaber aus der Werkbank als Zähler an den Link
   hängen (bräuchte einen lesenden Abruf über den Server).
+
+## 2026-10-11 · Kachel „Laden“ auf „Heute“
+
+- **Geändert:** Neue Kachel „Laden“ auf „Heute“ (Sichten Laden und Alles, nicht Website) mit den Zahlen aus dem
+  Laden-Modus der Auftrags-App: offene Beratungen (davon neu), fällige Wiedervorlagen (Bernstein, wenn > 0),
+  Angebote offen (davon zum Nachfassen), Fälle aus dem Shop der letzten 7 Tage, gewonnen und verloren der
+  letzten 30 Tage, dazu der Link „Laden-Ansicht öffnen“ (neuer Tab). Neuer lesender Endpunkt
+  `/api/laden/zahlen`: der Server ruft `<App-URL>?ansicht=zahlen&s=<Schlüssel>` ab (Weiterleitung folgen,
+  15 s Zeitlimit, Erfolg 5 Minuten, Fehlschlag 1 Minute gemerkt) und reicht nur die bekannten Zahlenfelder
+  durch (`scripts/laden-zahlen.mjs`). URL und Schlüssel stehen in `.env.local` des Dienstes
+  (`LADEN_ZAHLEN_URL`, `LADEN_ZAHLEN_SCHLUESSEL`), nie im Repository und nie im Browser; ohne sie zeigt die
+  Kachel „Nicht eingerichtet“. Platzhalter in `.env.local.example`.
+- **Getestet:** `tests/laden-zahlen.test.mjs` (Konfiguration, Zahlenprüfung, Abruf mit Schlüssel, Zwischenspeicher,
+  Fehlerfälle samt echtem Zeitlimit, Route über den Server, Kachel-Markup). `dashboard:pruefen` für „Heute“
+  bei 1440, 1024, 800, 390 und 360 px ohne seitliches Scrollen. Sichtprüfung gegen die Kopie mit
+  abgefangenem `/api/laden/zahlen` in allen drei Zuständen (Zahlen, nicht erreichbar, nicht eingerichtet),
+  hell und dunkel: 5/3/2 Spalten, keine JS-Fehler, Link am Handy 44 px hoch.
+- **Risiken/Annahmen:** Die Zahlen sind höchstens 5 Minuten alt (plus 10 s Zwischenspeicher in der App).
+  „Angebote offen“ zählt Beratungen im Status Angebot oder Nachfassen. Die Kachel funktioniert erst, wenn die
+  App mit dem Endpunkt ausgerollt und die Script-Property gesetzt ist.
+- **Nächste Stufe:** Bei Bedarf fällige Wiedervorlagen als To-do „Laden: Wiedervorlage fällig“ in die Liste oben.
