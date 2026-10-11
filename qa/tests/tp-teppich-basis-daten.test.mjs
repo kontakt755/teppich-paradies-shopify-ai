@@ -18,7 +18,7 @@ const lies = (datei) => fs.readFileSync(path.join(root, datei), 'utf8');
 const ohneDoc = (s) => s
   .replace(/{%-?\s*doc\s*-?%}[\s\S]*?{%-?\s*enddoc\s*-?%}/g, '')
   .replace(/{%-?\s*layout\s+none\s*-?%}/g, '');
-const jsonVorlage = (datei) => JSON.parse(lies(datei).replace(/^\/\*[\s\S]*?\*\/\s*/, ''));
+const jsonVorlage = (datei) => JSON.parse(lies(datei).replace(/^(\s*\/\*[\s\S]*?\*\/)+\s*/, ''));
 
 // Snippets aus dem Repository, Doc-Bloecke entfernt (LiquidJS kennt {% doc %} nicht).
 const engine = new Liquid({

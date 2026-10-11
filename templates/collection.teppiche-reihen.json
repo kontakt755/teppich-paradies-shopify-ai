@@ -1,8 +1,11 @@
 /*
- * Nachladevorlage fuer die Seite Teppich nach Mass (sections/tp-zubehoer-produkte, karten_sofort):
- * dieselben Gruppen-Reihen wie collection.teppiche, ohne Begrenzung und ohne Layout.
- * Abruf per /collections/<handle>?view=teppiche-reihen. Einstellungen bis auf karten_sofort
- * identisch halten - qa/tests/tp-teppich-reihen-nachladen.test.mjs prueft das.
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
  */
 {
   "layout": false,
