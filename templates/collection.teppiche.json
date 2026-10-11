@@ -217,7 +217,8 @@
         "section_width": "page-width",
         "color_scheme": "scheme-1",
         "padding-block-start": 24,
-        "padding-block-end": 24
+        "padding-block-end": 24,
+        "karten_sofort": 4
       }
     },
     "tp_gruppe_weich": {
@@ -348,7 +349,8 @@
         "section_width": "page-width",
         "color_scheme": "scheme-1",
         "padding-block-start": 24,
-        "padding-block-end": 24
+        "padding-block-end": 24,
+        "karten_sofort": 4
       }
     },
     "tp_gruppe_robust": {
@@ -479,7 +481,8 @@
         "section_width": "page-width",
         "color_scheme": "scheme-1",
         "padding-block-start": 24,
-        "padding-block-end": 24
+        "padding-block-end": 24,
+        "karten_sofort": 4
       }
     },
     "tp_gruppe_natur": {
@@ -610,7 +613,8 @@
         "section_width": "page-width",
         "color_scheme": "scheme-1",
         "padding-block-start": 24,
-        "padding-block-end": 24
+        "padding-block-end": 24,
+        "karten_sofort": 4
       }
     },
     "tp_gruppe_design": {
@@ -741,7 +745,8 @@
         "section_width": "page-width",
         "color_scheme": "scheme-1",
         "padding-block-start": 24,
-        "padding-block-end": 24
+        "padding-block-end": 24,
+        "karten_sofort": 4
       }
     },
     "tp_gruppe_rest": {
@@ -872,7 +877,8 @@
         "section_width": "page-width",
         "color_scheme": "scheme-1",
         "padding-block-start": 24,
-        "padding-block-end": 24
+        "padding-block-end": 24,
+        "karten_sofort": 4
       }
     },
     "main": {
@@ -1115,7 +1121,7 @@
         "text": "",
         "phone_label": "03301 573 37 20",
         "phone_link": "+4933015733720",
-        "whatsapp": "4917657931322",
+        "whatsapp": "491792612211",
         "sand": false
       }
     },

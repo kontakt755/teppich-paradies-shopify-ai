@@ -88,7 +88,8 @@
     "social": "node social/scripts/social.mjs",
     "social:test": "node --test social/tests/*.test.mjs",
     "social:zentrale": "node social/scripts/server.mjs",
-    "social:einrichten": "bash social/scripts/dienste-einrichten.sh"
+    "social:einrichten": "bash social/scripts/dienste-einrichten.sh",
+    "teppich:basis-daten": "node scripts/teppich-basis-daten.mjs"
   },
   "devDependencies": {
     "liquidjs": "^10.29.0",

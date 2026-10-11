@@ -2301,6 +2301,13 @@
       },
       {
         "type": "text",
+        "id": "tp_strasse_schema",
+        "label": "Strasse und Hausnummer im LocalBusiness-Schema",
+        "info": "Leer = Strasse aus den Shop-Einstellungen (dort steht nur die Hausnummer 73, die Rechnungsadresse bleibt unveraendert).",
+        "default": "Saarlandstraße 73-81"
+      },
+      {
+        "type": "text",
         "id": "tp_google_profil",
         "label": "Google-Unternehmensprofil (sameAs)",
         "info": "Verknuepft den Shop mit dem Profil. Die Sternebewertung selbst wird bewusst nicht ausgezeichnet, sie stammt nicht von dieser Seite.",
@@ -2534,7 +2541,7 @@
         "id": "tp_vs_whatsapp",
         "label": "WhatsApp-Nummer",
         "info": "Nur Ziffern mit Ländervorwahl, ohne + und Leerzeichen. Leer lassen blendet WhatsApp aus.",
-        "default": "4917657931322"
+        "default": "491792612211"
       },
       {
         "type": "text",
