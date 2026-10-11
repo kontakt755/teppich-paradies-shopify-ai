@@ -14,7 +14,8 @@
   Renderzeit (2026-10-10: Render-Timeout ab ~200 Teppichen): Jede Karte kostet rund 8 ms.
   "Karten sofort" (karten_sofort) begrenzt deshalb, wie viele Karten der Gruppe im ersten
   HTML stehen; den Rest holt das Skript unten aus der Vorlage collection.teppiche-reihen
-  (gleiche Reihen, ohne Begrenzung, ohne Layout) und setzt ihn ein. Die Gruppe kommt direkt aus custom.teppich_basis_daten (sonst live per Snippet),
+  (gleiche Reihen, ohne Begrenzung, ohne Layout; Einstellungen bis auf karten_sofort
+  gleich halten, qa/tests/tp-teppich-basis-daten.test.mjs prueft das) und setzt ihn ein. Die Gruppe kommt direkt aus custom.teppich_basis_daten (sonst live per Snippet),
   die Groessen-Gruppen der Sauberlaufmatten spielen bei Teppichen keine Rolle.
 
   Ohne Produkte rendert die Sektion nichts, damit die Seite nie eine leere
