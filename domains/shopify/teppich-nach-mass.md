@@ -29,6 +29,8 @@ ein neues Produkt. Es gibt dann keinen deaktivierten Knopf und keinen Hinweis �
 | `service.formen` | Einfassprodukt | Liste aus Rechteck, Rund, Oval, Schablone, Skizze. Ohne Angabe gibt es nur Rechteck. |
 | `service.mindestpreis` | Einfassprodukt | EUR, optional |
 | `service.kante_inklusive` | Einfassprodukt | Boolean, optional, nur bei `Ketteln`. `true`: der m²-Preis enthält die Kettelung bereits (Hersteller-UVP je m²) – siehe „Kante im m²-Preis enthalten“. Fehlt das Feld oder ist es `false`, wird die Kante wie bisher über den Kettelservice berechnet. |
+| `service.bandfarbe_fest` | Einfassprodukt | Text, optional, nur bei `Einfassband`/`Paspelband` – siehe „Feste Bandfarbe“. |
+| `service.einfass_label` | Einfassprodukt | Text, optional: Beschriftung seines Chips im Einfass-Wechsel statt Cover/Gekettelt/Einfassband/Paspelband. |
 | `service.einfass_gruppe` | Meterware und Einfassprodukte | die vier Einfassprodukte |
 | `service.einfass_basis` | Einfassprodukt | die Meterware, aus der zugeschnitten wird |
 | `service.basisvariante` | Variante des Einfassprodukts | die Meterware-Variante derselben Farbe. Die Farbe wird nie über Namen zugeordnet. |
@@ -68,6 +70,38 @@ Manche Hersteller-Ware hat einen UVP je m², der die Kettelung schon enthält. D
 - Nur echtes `true` zählt. Fehlt das Feld, ist es `false` oder ist die Art nicht `Ketteln`, bleibt alles wie bisher.
 - Tests: `tp-einfass-kettelservice-validierung`, `tp-teppich-ab-preis`, `tp-teppich-rechner-fertig`,
   `masstepich-rechnung`, `tp-einfass-fertig-pauschale`.
+
+### Feste Bandfarbe (`service.bandfarbe_fest`, ab 2026-10-10)
+
+Normalfall bei `Einfassband` und `Paspelband`: Der Kunde wählt eine Bandfarbe aus `snippets/tp-bandfarben`, ohne
+Wahl bleibt der Warenkorb-Knopf gesperrt („Bitte Bandfarbe wählen“).
+
+Manche Hersteller arbeiten das Band immer in der empfohlenen Farbe der Qualität. Dafür trägt das Einfassprodukt
+`service.bandfarbe_fest` (Produkt-Metafeld, Text, ohne Metafeld-Definition), z. B. „Ton in Ton (Herstellerempfehlung)“.
+Ist der Wert nach `strip` nicht leer, gilt:
+
+- Konfigurator (`blocks/tp-einfass-konfigurator.liquid`, `assets/tp-einfass-konfigurator.js`): kein Schritt
+  „Bandfarbe“, keine Farbpunkte, stattdessen der Hinweis „Bandfarbe: <Wert>“ unter den Maßen. Der Kauf hängt an
+  keiner Bandwahl; die Line-Item-Property `Bandfarbe` ist der feste Wert (auch in `_Zuschnitt`). Die Vorschau zeigt
+  das Band aus dem Material, leicht abgesetzt, statt der gestrichelten „noch wählen“-Kante.
+- ab-Preis (`snippets/tp-teppich-ab-preis.liquid`) und Kategorie-Rechner (`snippets/tp-teppich-rechner-daten.liquid`,
+  `assets/tp-teppich-rechner.js`): unverändert – sie rechnen ohne Band (das Band steckt im m²-Preis) und setzen
+  keine Bandauswahl voraus.
+- Nur bei `Einfassband`/`Paspelband`. Fehlt das Feld oder ist es leer, bleibt alles wie bisher.
+- Tests: `qa/tests/tp-einfass-bandfarbe-fest.test.mjs`.
+
+### Chip-Beschriftung (`service.einfass_label`, ab 2026-10-10)
+
+`blocks/tp-einfass-wechsel.liquid` beschriftet die Chips fest nach Art (Cover, Gekettelt, Einfassband, Paspelband).
+Trägt ein Produkt der Gruppe `service.einfass_label` (Text), steht dieser Wert auf seinem Chip – auf der eigenen
+Seite (aktiver Chip) wie auf den anderen Seiten der Gruppe (Link). Leer oder fehlend: feste Beschriftung.
+Tests: `qa/tests/tp-einfass-wechsel-label.test.mjs`.
+
+## Musterprodukt
+
+Der Muster-Aufruf führt auf `/pages/muster?produkt=<handle>`. Gibt es kein `muster-<handle>`, nimmt der
+Musterkonfigurator das Musterprodukt des Teppichbodens (`service.einfass_basis`), sofern es die Farbe führt, erst
+danach `kostenloses-muster`. Details: `domains/shopify/benachrichtigungen/musterartikel.md`.
 
 ## Werkzeuge
 

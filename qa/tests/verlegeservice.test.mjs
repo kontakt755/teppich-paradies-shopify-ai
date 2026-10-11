@@ -295,10 +295,10 @@ test('Serviceseiten: Anfrage-Buttons fuehren zum Formular der eigenen Seite', ()
 test('Kontaktdaten kommen aus dem Shop, nicht erfunden', () => {
   // Dieselben Nummern wie in Service-Links, Final-CTA und Kontaktseite.
   assert.equal(standard('tp_vs_telefon').replace(/\D/g, ''), '033015733720');
-  assert.equal(standard('tp_vs_whatsapp'), '4917657931322');
+  assert.equal(standard('tp_vs_whatsapp'), '491792612211');
   assert.equal(standard('tp_vs_email'), 'kontakt@teppich-paradies.net');
   assert.match(lesen('blocks', 'tp-service-links.liquid'), /tel:\+4933015733720/);
-  assert.match(lesen('blocks', 'tp-service-links.liquid'), /wa\.me\/4917657931322/);
+  assert.match(lesen('blocks', 'tp-service-links.liquid'), /wa\.me\/491792612211/);
 });
 
 test('der Link "Verlegeservice" fuehrt je nach Produktart auf die passende Seite', () => {
