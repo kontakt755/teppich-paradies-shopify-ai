@@ -27,6 +27,8 @@ Farbnamen nach dem Schema `Grundton + Stufe`.
 | Lieferantenlinie | gehört nach `grosshandel.sku`, nirgends sonst |
 | Farbname | deutsch, `Grundton + Stufe`, ohne Nummer, ohne Englisch, pro Produkt eindeutig |
 | Farbnummer | nur in SKU (`{PREFIX}_{NUMMER}`) und `custom.farbcode` |
+| Bilddateiname | eigener Name `<handle>[-<farbe>]-farbansicht.<ext>` bzw. `-raumbild`, beim Anlegen über `files[].filename` in `productSet` — nie der Dateiname des Lieferanten (`PB_…`, `RB_…`): er landet sonst in der CDN-URL und im Quelltext jeder Produktseite |
+| Material, Umweltangaben | je Artikel aus der Lieferantenspezifikation, nie pauschal je Warengruppe — ein „Vinyl“-Sortiment kann PVC-freie Ware enthalten, „phthalatfrei“ fehlt bei einzelnen Qualitäten |
 
 **Ein bestehendes, fertiges Produkt ist die Spezifikation.** Vor dem Anlegen eines neuen
 Produkts das nächstliegende fertige abfragen — Titel, Vendor, Variantentitel, Metafelder —
@@ -117,6 +119,7 @@ Für Korrekturen an bestehenden Produkten sind die schmalen Mutationen richtig:
 | Bild hochladen | `productCreateMedia(productId:, media:[...])` — nimmt die Lieferanten-URL direkt, kein `input`-Wrapper, kein Staged Upload |
 | Variantenbild zuordnen | `productVariantsBulkUpdate` mit `mediaId` |
 | Falsches Medium entfernen | `productDeleteMedia` |
+| Dateiname nachträglich ändern | `fileUpdate(files:[{id, filename}])` — braucht `write_files`; die Store-CLI hat das nicht, der Shopify-MCP schon. Blöcke ≤ 40 Dateien, 100 enden in einem Upstream-Fehler |
 
 ---
 

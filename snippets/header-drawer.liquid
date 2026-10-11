@@ -111,6 +111,8 @@
         {% else %}
           <ul class="tp-dn tp-dn--vorab" role="list">
             {%- for link in linklist.links -%}
+              {%- capture tp_mls -%}{%- render 'tp-menu-link-sichtbar', link: link -%}{%- endcapture -%}
+              {%- if tp_mls contains 'nein' -%}{%- continue -%}{%- endif -%}
               <li><a class="tp-dn-vorab__link" href="{{ link.url }}">{{ link.title }}</a></li>
             {%- endfor -%}
           </ul>

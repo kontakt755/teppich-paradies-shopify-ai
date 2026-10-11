@@ -184,7 +184,7 @@
 }
 
 .tp-bk-hero__visual--structure img { transform: scale(1.6); }
-.tp-ba { color: #292521; border-bottom: 1px solid #e9e4db; background: #fff; }
+.tp-ba { scroll-margin-top: var(--header-height, 0px); color: #292521; border-bottom: 1px solid #e9e4db; background: #fff; }
 .tp-ba__inner { box-sizing: border-box; max-width: 1440px; margin-inline: auto; padding: 28px 24px; }
 .tp-ba__header h2 { margin: 0 0 6px; font-size: clamp(23px, 2.4vw, 30px); line-height: 1.15; }
 .tp-ba__header p { margin: 0; color: #58524b; font-size: 15px; line-height: 1.45; }

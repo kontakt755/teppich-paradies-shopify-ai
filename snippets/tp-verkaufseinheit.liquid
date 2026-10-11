@@ -5,7 +5,8 @@
             (Teppichfliesen, Klickvinyl, Klebevinyl). Beleg: custom.qm_pro_paket.
     rolle   Bahnenware, die nach Breite x Laenge geschnitten wird.
     stueck  Stangen- und Stueckware mit bekannter Laenge (Sockelleisten).
-    einzel  Alles uebrige - normaler Artikel mal Menge.
+    einzel  Alles uebrige - normaler Artikel mal Menge. Sonderposten sind
+            immer einzel, egal was sonst am Produkt haengt.
 
   Aufruf immer ueber capture, denn render liefert Text:
     {% capture art %}{% render 'tp-verkaufseinheit', product: product %}{% endcapture %}
@@ -26,6 +27,14 @@
 {%- enddoc -%}
 {%- liquid
   assign tp_ve_produkt = product
+
+  # 0. Sonderposten sind immer Einzelstuecke mit festem Stueckpreis - nie
+  #    Rolle, Paket oder Stange, auch wenn Tags oder Metafelder vom
+  #    Ursprungsprodukt mitkopiert wurden (snippets/tp-ist-sonderposten).
+  capture tp_ve_sp
+    render 'tp-ist-sonderposten', product: tp_ve_produkt
+  endcapture
+  assign tp_ve_sp = tp_ve_sp | strip
 
   # 1. Paketware. Das Metafeld ist die Paketflaeche selbst und damit der
   #    unmittelbare Beleg - kein abgeleitetes Merkmal.
@@ -81,7 +90,9 @@
   # 3. Stangenware. Belegte Produktlaenge, siehe blocks/tp-zubehoer-menge.liquid.
   assign tp_ve_stange = tp_ve_produkt.metafields.custom.stangenlaenge.value | times: 1.0
 
-  if tp_ve_paket > 0
+  if tp_ve_sp == 'ja'
+    echo 'einzel'
+  elsif tp_ve_paket > 0
     echo 'paket'
   elsif tp_ve_rolle
     echo 'rolle'

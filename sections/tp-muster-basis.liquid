@@ -1,0 +1,35 @@
+{% comment %}
+  Nur fuer den Musterkonfigurator (assets/tp-sample-checkout.js), abgerufen ueber
+  die Section Rendering API: /products/<handle>?section_id=tp-muster-basis.
+  Kein Template bindet diese Section ein, im Theme-Editor ist sie nicht waehlbar
+  (keine presets).
+
+  Liefert den Handle des Teppichbodens, aus dem ein Teppich nach Mass
+  zugeschnitten wird (service.einfass_basis), als JSON-Text. Gibt es fuer den
+  Teppich nach Mass kein eigenes Musterprodukt muster-<handle>, nimmt der
+  Musterkonfigurator muster-<Handle des Teppichbodens>, sofern es die Farbe
+  fuehrt - erst danach das Sammelprodukt kostenloses-muster.
+  Siehe domains/shopify/benachrichtigungen/musterartikel.md.
+
+  Ohne Produkt, ohne Feld oder bei Verweis auf sich selbst: leerer Text.
+
+  doc-Tag ist nur in Snippets/Blocks erlaubt, nicht in Sections - deshalb
+  hier comment statt doc.
+{% endcomment %}
+{%- liquid
+  assign tp_mb_handle = ''
+  if product != blank
+    assign tp_mb_basis = product.metafields.service.einfass_basis.value
+    if tp_mb_basis.handle != blank and tp_mb_basis.handle != product.handle
+      assign tp_mb_handle = tp_mb_basis.handle
+    endif
+  endif
+-%}
+<script type="application/json" data-tp-muster-basis>{{ tp_mb_handle | json }}</script>
+
+{% schema %}
+{
+  "name": "TP Muster-Basis",
+  "settings": []
+}
+{% endschema %}

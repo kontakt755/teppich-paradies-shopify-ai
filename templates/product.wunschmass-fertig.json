@@ -157,10 +157,17 @@
                     "padding-inline-end": 0
                   },
                   "blocks": {}
+                },
+                "tp_produkt_sterne": {
+                  "type": "tp-produkt-sterne",
+                  "settings": {
+                    "ziel": "#bewertungen"
+                  }
                 }
               },
               "block_order": [
                 "text_xrnftG",
+                "tp_produkt_sterne",
                 "price_tVjtKg"
               ]
             },

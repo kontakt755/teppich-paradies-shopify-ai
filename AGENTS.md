@@ -169,7 +169,7 @@ lokal auf dem Mac. Unbekannte Flags brechen ab.
 | `npm run theme:block list\|add\|remove` | Bloecke in Templates setzen, statt im Editor zu klicken |
 | `npm run liquid:guard` | ungueltiges Liquid, das Shopify still verwirft |
 | `npm run schema:guard` | Block-Schemata, die deployen aber im Editor unsichtbar bleiben |
-| `npm run template:guard` | Kollektions-Templates, deren Produktkarte abweicht |
+| `npm run template:guard` | Kollektions-Templates, deren Produktkarte abweicht; Shopify-Blockgrenzen (50 je Section, z. B. Header-Kacheln) |
 | `npm run theme:guard` | veraltete Theme-IDs in Anweisungsdateien, ungeschuetztes Live-Theme |
 | `npm run menu:guard` | Menuelinks auf leeres Raster oder ins Nichts (braucht Netz) |
 | `npm run unmerged:guard` | Bloecke/Templates auf ungemergten Branches |

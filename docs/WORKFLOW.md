@@ -41,7 +41,7 @@ Das System führt vier spezialisierte Prüfungen durch, die Fehler abfangen, die
   
 - **Schema-Guard** (`npm run schema:guard`): Findet fehlerhafte `{% schema %}`-Blöcke in Blocks. Diese deployen zwar, erscheinen aber nicht in der Block-Auswahl des Theme-Editors (wegen unbekannter Keys oder fehlender `presets`).
 
-- **Template-Guard** (`npm run template:guard`): Meldet Kollektions-Templates, deren Produktkarten nicht dieselben Blöcke tragen wie die übrigen (häufig aus blockweisem Einklicken im Editor entstanden, führt zu Drift).
+- **Template-Guard** (`npm run template:guard`): Meldet Kollektions-Templates, deren Produktkarten nicht dieselben Blöcke tragen wie die übrigen (häufig aus blockweisem Einklicken im Editor entstanden, führt zu Drift). Außerdem prüft er alle Templates und Section-Gruppen gegen Shopifys Grenzen (50 hinzufügbare Blöcke je Section, 1.250 je Datei, 25 Sections je Datei, `max_blocks` aus dem Schema); eine Datei darüber würde Shopify beim Push ablehnen.
 
 - **Live-Theme-Guard** (`npm run theme:guard`): Findet veraltete Theme-IDs in Anweisungsdateien (CLAUDE.md, AGENTS.md, Roadmaps). Verhindert, dass eine alte Theme-ID wieder als aktuell angenommen wird. Historische Reports behalten ihre alten IDs mit Absicht.
 
