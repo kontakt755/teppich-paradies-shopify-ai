@@ -177,6 +177,41 @@
     });
   }
 
+  // Teppich nach Mass, Zwischenstufe vor dem Sammelprodukt: fehlt das
+  // Musterprodukt muster-<handle> ganz, nennt die Section tp-muster-basis
+  // (Section Rendering API im Kontext des Produkts) den Handle des
+  // Teppichbodens, aus dem zugeschnitten wird (service.einfass_basis). Dessen
+  // Musterprodukt ist dasselbe physische Muster.
+  var BASIS_SECTION = 'tp-muster-basis';
+  var BASIS_RX = /<script[^>]*\bdata-tp-muster-basis\b[^>]*>([\s\S]*?)<\/script>/i;
+
+  function basisSectionUrl(productHandle) {
+    return '/products/' + encodeURIComponent(String(productHandle || '')) + '?section_id=' + BASIS_SECTION;
+  }
+
+  // Liest nur den JSON-Text im Script-Tag der Section. Alles andere - keine
+  // Antwort, kein Tag, kein Text, ein fremdes Zeichen im Handle, Verweis auf
+  // sich selbst - ergibt null, und es bleibt beim bisherigen Rueckfall.
+  function parseBasisHandle(html, productHandle) {
+    var match = BASIS_RX.exec(String(html || ''));
+    if (!match) return null;
+    var value;
+    try { value = JSON.parse(match[1]); } catch (error) { return null; }
+    if (typeof value !== 'string') return null;
+    value = value.trim();
+    if (!/^[a-z0-9-]+$/.test(value) || value === String(productHandle || '')) return null;
+    return value;
+  }
+
+  // Reihenfolge der Musterquelle: das eigene Musterprodukt der Qualitaet
+  // (muster-<handle>), unveraendert je Farbe wie bisher. Nur wenn es das gar
+  // nicht gibt, das Musterprodukt des Teppichbodens - und auch das nur fuer
+  // Farben, die es mit demselben Optionswert fuehrt. Alles Uebrige bleibt
+  // ohne sampleVariantId und geht auf das Sammelprodukt kostenloses-muster.
+  function assignSampleVariantsWithBasis(colors, ownSample, basisSample, optionName) {
+    return assignSampleVariants(colors, ownSample || basisSample || null, optionName);
+  }
+
   function getSelectionStatus(cartCount, selectedCount) {
     var inCart = Math.max(0, Number(cartCount || 0));
     var newlySelected = Math.max(0, Number(selectedCount || 0));
@@ -251,6 +286,9 @@
     getSampleState: getSampleState,
     sampleProductHandle: sampleProductHandle,
     assignSampleVariants: assignSampleVariants,
+    basisSectionUrl: basisSectionUrl,
+    parseBasisHandle: parseBasisHandle,
+    assignSampleVariantsWithBasis: assignSampleVariantsWithBasis,
     getSelectionStatus: getSelectionStatus,
     buildCartItems: buildCartItems,
   };

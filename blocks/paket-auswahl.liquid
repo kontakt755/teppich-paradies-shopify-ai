@@ -22,7 +22,7 @@
 {% assign tp_pa_leistenlaenge = tp_pa_leiste.metafields.custom.stangenlaenge.value | times: 1.0 %}
 {% assign tp_pa_bodenart = product.type %}
 {% assign tp_pa_leiste_zeigen = false %}
-{% if tp_pa_bodenart == 'Parkett' or tp_pa_bodenart == 'Laminat' or tp_pa_bodenart == 'Klickvinyl' or tp_pa_bodenart == 'Klebevinyl' or tp_pa_bodenart == 'Kork' or tp_pa_bodenart == 'Linoleumboden' %}
+{% if tp_pa_bodenart == 'Parkett' or tp_pa_bodenart == 'Laminat' or tp_pa_bodenart == 'Klickvinyl' or tp_pa_bodenart == 'Klebevinyl' or tp_pa_bodenart == 'Kork' or tp_pa_bodenart == 'Linoleumboden' or tp_pa_bodenart == 'Kautschukboden' %}
   {% if tp_pa_leiste != blank and tp_pa_leiste.available and tp_pa_leistenlaenge > 0 %}
     {% assign tp_pa_leiste_zeigen = true %}
   {% endif %}

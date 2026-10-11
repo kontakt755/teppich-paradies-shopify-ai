@@ -220,3 +220,49 @@ test('Produktseite: Streichpreis folgt der gewaehlten Variante', async () => {
   assert.equal(abCent(html), 120 * 100 + 460 * 19);
   assert.equal(altCent(html), 120 * 117 + 460 * 19);
 });
+
+// service.kante_inklusive: Kettelung steckt im m2-Preis - keine Kantenkosten im ab-Preis,
+// der Kettelservice wird nicht gebraucht. Ohne Feld oder bei false: wie bisher.
+const mitKanteInklusive = (p, wert) => { p.metafields.service.kante_inklusive = { value: wert }; return p; };
+
+test('Kante inklusive: ab-Preis nur aus der Fläche, Text bleibt "inkl. Kettelung"', async () => {
+  const html = await render(mitKanteInklusive(produkt({ einheitCent: 92 }), true));
+  assert.equal(abCent(html), 120 * 92);
+  assert.equal(abCent(html), erwartet(92, 0, 9900));
+  assert.match(html, /inkl\. Kettelung/);
+});
+
+test('Kante inklusive: Mindestpreis allein über die Fläche', async () => {
+  const html = await render(mitKanteInklusive(produkt({ einheitCent: 5, mindest: 150 }), true));
+  assert.equal(abCent(html), erwartet(5, 0, 15000));
+  assert.equal(abCent(html), Math.ceil(15000 / 5) * 5);
+});
+
+test('Kante inklusive: nicht kaufbarer Kettelservice verhindert den ab-Preis nicht', async () => {
+  const html = await render(mitKanteInklusive(produkt({ einheitCent: 92 }), true), {
+    kettelservice: { selected_or_first_available_variant: { available: false, price: 19 } },
+  });
+  assert.equal(abCent(html), 120 * 92);
+});
+
+test('Kante inklusive: Streichpreis ohne Kante in beiden Summen', async () => {
+  const html = await render(mitKanteInklusive(mitAktion(rabattiert(), { start: { value: heuteIso } }), true));
+  // 120 x 0,78 EUR liegt unter dem Mindestpreis 99 EUR - ohne Kante hebt er die Menge an.
+  assert.equal(abCent(html), erwartet(78, 0, 9900));
+  assert.equal(abCent(html), 127 * 78);
+  assert.equal(altCent(html), 120 * 92);
+});
+
+test('Regression: kante_inklusive = false rechnet die Kettelung wie bisher ein', async () => {
+  const html = await render(mitKanteInklusive(produkt({ einheitCent: 92 }), false));
+  assert.equal(abCent(html), 120 * 92 + 460 * 19);
+  const aus = await render(mitKanteInklusive(produkt({ einheitCent: 26 }), false), {
+    kettelservice: { selected_or_first_available_variant: { available: false, price: 19 } },
+  });
+  assert.equal(abCent(aus), null, 'ohne Inklusiv-Kante bleibt der fehlende Kettelservice ein Abbruch');
+});
+
+test('kante_inklusive bei anderer Einfassart: keine Wirkung', async () => {
+  const html = await render(mitKanteInklusive(produkt({ einheitCent: 129, art: 'Einfassband', mindest: null }), true));
+  assert.equal(abCent(html), erwartet(129, 0, 0));
+});

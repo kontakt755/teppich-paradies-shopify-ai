@@ -4,6 +4,9 @@
     service.einfassung      Einfassart des aktuellen Produkts (Pflicht)
     service.einfass_gruppe  Liste der Einfassprodukte, das aktuelle inklusive
     service.einfass_basis   Meterware, aus der zugeschnitten wird
+    service.einfass_label   optional, Text: Beschriftung des Chips dieses
+                            Produkts statt der festen (Cover, Gekettelt,
+                            Einfassband, Paspelband)
   Die Farbe bleibt beim Wechsel erhalten ueber service.basisvariante der
   Varianten: dieselbe Meterware-Variante heisst dieselbe Farbe. Keine
   Zuordnung ueber Namen oder Titel, nur Varianten mit service.einfassen
@@ -54,10 +57,18 @@
                 {%- when 'einfassband' -%}{%- assign tp_ew_label = 'Einfassband' -%}
                 {%- when 'paspelband' -%}{%- assign tp_ew_label = 'Paspelband' -%}
               {%- endcase -%}
+              {%- comment -%}
+                Optional service.einfass_label (Text) am jeweiligen Produkt ersetzt die
+                feste Beschriftung seines Chips, z. B. Paspel oder Umgeschlagene Kante.
+              {%- endcomment -%}
+              {%- assign tp_ew_eigenes_label = tp_ew_p.metafields.service.einfass_label.value | append: '' | strip -%}
+              {%- if tp_ew_eigenes_label != blank -%}
+                {%- assign tp_ew_label = tp_ew_eigenes_label -%}
+              {%- endif -%}
               {%- if tp_ew_p.id == product.id -%}
-                <span class="tp-ew__chip is-aktiv" aria-current="page">{{ tp_ew_label }}</span>
+                <span class="tp-ew__chip is-aktiv" aria-current="page">{{ tp_ew_label | escape }}</span>
               {%- else -%}
-                <a class="tp-ew__chip" href="{{ tp_ew_p.url }}" data-ew-ziel="{{ tp_ew_p.id }}">{{ tp_ew_label }}</a>
+                <a class="tp-ew__chip" href="{{ tp_ew_p.url }}" data-ew-ziel="{{ tp_ew_p.id }}">{{ tp_ew_label | escape }}</a>
               {%- endif -%}
             {%- endif -%}
             {%- break -%}
