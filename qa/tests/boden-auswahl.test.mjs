@@ -153,3 +153,13 @@ test('Lange Nutzungsklassenfelder werden in Kurzinfos auf belegte Ziffern gekuer
   assert.match(menu, /NK 23 \/ 34 \/ 43/);
   assert.doesNotMatch(menu, /Gewerbe|Industrie|Wohnen/);
 });
+
+test('Kautschuk bekommt eine eigene Vorlage mit derselben Produktkarte wie Kork, ohne fremde Bodenarten', () => {
+  const json = name => { const raw = read(`templates/collection.${name}.json`); return JSON.parse(raw.slice(raw.indexOf('{'))); };
+  const kautschuk = json('kautschukboden'); const kork = json('kork');
+  assert.deepEqual(kautschuk.order, ['hero', 'main', 'guide']);
+  assert.equal(kautschuk.sections.hero.settings.image, 'shopify://shop_images/kautschukboden-treppenhaus-rot.jpg');
+  assert.deepEqual(kautschuk.sections.main, kork.sections.main);
+  assert.doesNotMatch(JSON.stringify(kautschuk), /Kork|Parkett|Linoleum|Suberra|Quercina/);
+  for (const datei of ['blocks/paket-auswahl.liquid', 'blocks/tp-rollware-rechner.liquid', 'blocks/tp-zubehoer-empfehlung.liquid', 'snippets/sorting.liquid']) assert.match(read(datei), /Kautschukboden/, datei);
+});

@@ -1,6 +1,6 @@
 {%- comment -%}
   Wegweiser auf der Seite Teppich nach Mass: je Kundengruppe eine Karte (z. B. Extra
-  flauschig, Weich, Fest & robust, Natur) mit Bild, Kurztext und Anzahl. Jede Karte
+  flauschig, Weich, Fest & robust, Natur, Design-Teppiche) mit Bild, Kurztext und Anzahl. Jede Karte
   springt per Anker zur Reihe der Gruppe weiter unten (tp-zubehoer-produkte mit
   gleicher Teppich-Gruppe und gleichem Anker).
 
@@ -19,6 +19,7 @@
   assign tg_bild_weich = blank
   assign tg_bild_robust = blank
   assign tg_bild_natur = blank
+  assign tg_bild_design = blank
   assign tg_bild_rest = blank
   if collection != blank
     paginate collection.products by 250
@@ -45,6 +46,10 @@
             when 'natur'
               if tg_bild_natur == blank
                 assign tg_bild_natur = tg_p.featured_image
+              endif
+            when 'design'
+              if tg_bild_design == blank
+                assign tg_bild_design = tg_p.featured_image
               endif
             when 'rest'
               if tg_bild_rest == blank
@@ -79,6 +84,8 @@
                 assign tg_bild = tg_bild_robust
               when 'natur'
                 assign tg_bild = tg_bild_natur
+              when 'design'
+                assign tg_bild = tg_bild_design
               when 'rest'
                 assign tg_bild = tg_bild_rest
             endcase
@@ -135,6 +142,7 @@
             { "value": "weich", "label": "Weich (Velours)" },
             { "value": "robust", "label": "Fest & robust (Schlinge, Nadelvlies)" },
             { "value": "natur", "label": "Natur (Wolle, Sisal)" },
+            { "value": "design", "label": "Design-Teppiche (Wunschmaß fertig eingefasst)" },
             { "value": "rest", "label": "Ohne eindeutige Gruppe" }
           ],
           "default": "weich"
