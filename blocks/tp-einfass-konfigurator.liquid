@@ -126,13 +126,13 @@
   # gesetzt nur dort, wo die Lieferzeit belegt ist - seit 10.10. fuer die
   # gekettelten Teppiche nach Mass laut Inhaberentscheidung. Ohne Metafeld keine
   # Angabe (fail closed), nichts wird von anderen Produkten geliehen. Serena
-  # behaelt bis zu einer Entscheidung den Inhaberwert vom 30.09. als Rueckfall.
+  # gehoert seit 10.10. ebenfalls zum bestaetigten Wert inkl. Ketteln.
   # Art "fertig" nennt ihre Lieferzeit schon im Hinweistext unten.
   assign tp_ek_lieferzeit = ''
   unless tp_ek_art == 'fertig'
     assign tp_ek_lieferzeit = product.metafields.service.lieferzeit.value | strip
     if tp_ek_lieferzeit == blank and product.handle == 'serena-teppich-nach-mass'
-      assign tp_ek_lieferzeit = 'ca. 4–8 Werktage'
+      assign tp_ek_lieferzeit = 'ca. 5–8 Werktage inkl. Ketteln'
     endif
   endunless
 
