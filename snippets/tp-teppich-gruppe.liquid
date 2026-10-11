@@ -1,13 +1,19 @@
 {% doc %}
   Ordnet einen Teppich nach Mass einer Kundengruppe zu und gibt deren Kennung aus:
-  "natur", "flauschig", "weich", "robust" - oder nichts.
+  "design", "natur", "flauschig", "weich", "robust" - oder nichts.
 
   Warum: 50 Qualitaeten in einem Raster waren fuer Kunden kaum zu ueberblicken
   (Inhaber 2026-10-02: "logisch sortieren - weich, fest, natur"). Die Seite
   Teppich nach Mass zeigt deshalb je Gruppe eine eigene Reihe
   (sections/tp-teppiche-gruppen + tp-zubehoer-produkte mit Einstellung "Teppich-Gruppe").
 
-  Nichts wird geraten. Alle Angaben kommen - wie bei snippets/tp-teppich-qualitaet -
+  0. design:    service.einfassung = Fertig (Gross-/Kleinschreibung egal): gemusterte
+                Wohnteppiche im Wunschmass, vom Hersteller eingefasst (Vorlage
+                product.wunschmass-fertig, ohne service.einfass_basis, bis 200 cm
+                breit). Geht allen anderen Regeln vor - vorher landeten sie mangels
+                Teppichboden-Daten in "Weitere Qualitaeten" (Inhaber 2026-10-10).
+
+  Fuer 1. bis 4. wird nichts geraten. Alle Angaben kommen - wie bei snippets/tp-teppich-qualitaet -
   vom Teppichboden, aus dem zugeschnitten wird (service.einfass_basis):
   1. natur:     erstes custom.fasermaterial ist eine Naturfaser (Wolle, Sisal, ...)
                 oder custom.arten enthaelt "Wolle" (bei Wovena, Rubira, Nordica,
@@ -23,7 +29,10 @@
 {%- liquid
   assign tg_basis = product.metafields.service.einfass_basis.value
   assign tg_gruppe = ''
-  if tg_basis != blank
+  assign tg_einfassung = product.metafields.service.einfassung.value | strip | downcase
+  if tg_einfassung == 'fertig'
+    assign tg_gruppe = 'design'
+  elsif tg_basis != blank
     assign tg_natur_fasern = 'schurwolle,wolle,sisal,jute,kokos,seegras,baumwolle,leinen' | split: ','
 
     assign tg_faser = ''

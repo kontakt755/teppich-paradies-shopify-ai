@@ -82,13 +82,17 @@
     var mindestCent = parseInt(d.mindestpreis_cent, 10) || 0;
     // Preis je 0,01 laufendem Meter Kante. Ohne Service-Produkt wird die Kante
     // nicht getrennt berechnet - die Bandarten rechnen alles ueber den m2-Preis.
-    var kettel = (d.kettel && d.kettel.id && parseInt(d.kettel.price, 10) > 0) ? d.kettel : null;
+    // service.kante_inklusive: die Kettelung steckt im m2-Preis. Dann nie eine
+    // Kettelzeile und kein TP-005-Abbruch - Liquid liefert in dem Fall ohnehin
+    // kettel = null und kettel_service_failed = false, hier nur doppelt gesichert.
+    var kanteInklusive = d.art === 'ketteln' && d.kante_inklusive === true;
+    var kettel = (!kanteInklusive && d.kettel && d.kettel.id && parseInt(d.kettel.price, 10) > 0) ? d.kettel : null;
     // TP-005: true nur, wenn der Merchant ein Kettelservice-Produkt
     // konfiguriert hat, dessen Variante aber gerade nicht verfuegbar/bepreist
     // ist - anders als "kein Service konfiguriert" (kettel bleibt dann null,
     // legitimer Inklusivpreis). Sperrt unten den Kauf statt den Teppich
     // stillschweigend ohne die gewaehlte Kettelung anzubieten.
-    var kettelServiceFailed = !!d.kettel_service_failed;
+    var kettelServiceFailed = !kanteInklusive && !!d.kettel_service_failed;
     // Art "fertig" (Wunschmass vom Hersteller): feste Pauschale je Teppich als
     // eigene Warenkorbzeile (Menge 1) unter derselben _Gruppe. Ist sie
     // konfiguriert, aber nicht kaufbar, wird der Kauf gesperrt (wie TP-005).
@@ -101,8 +105,13 @@
     // Rollenbreiten der Meterware in cm, nur fuer die interne Warenkorbzeile.
     var rollen = (d.rollen || []).map(Number).filter(function (n) { return n > 0; });
     var mitBand = !!BAND_CM[art];
-    var baender = mitBand ? (d.baender || []).filter(function (b) { return b && b.art === art && /^#[0-9a-f]{6}$/i.test(b.hex); }) : [];
-    if (mitBand && !baender.length) return;
+    // service.bandfarbe_fest: der Hersteller arbeitet das Band in einer festen
+    // Farbe. Dann waehlt der Kunde nichts, der Kauf haengt an keiner Bandwahl
+    // und die Property "Bandfarbe" ist dieser Wert. Leer: Auswahl wie bisher.
+    var bandFest = mitBand && typeof d.band_fest === 'string' ? d.band_fest.trim() : '';
+    var bandWahl = mitBand && !bandFest;
+    var baender = bandWahl ? (d.baender || []).filter(function (b) { return b && b.art === art && /^#[0-9a-f]{6}$/i.test(b.hex); }) : [];
+    if (bandWahl && !baender.length) return;
 
     var q = function (s) { return root.querySelector(s); };
     var konfig = q('[data-konfig]');
@@ -319,7 +328,8 @@
       svgEl('circle', { cx: lx, cy: ly, r: r }, clip);
       var g = svgEl('g', { 'clip-path': 'url(#' + uid + '-lupe)' }, svg);
       svgEl('rect', { x: lx - r, y: ly - r, width: 2 * r, height: 2 * r, fill: '#efece6' }, g);
-      svgEl('rect', { x: lx - r, y: ly - r, width: 2 * r, height: ky - (ly - r), fill: muster(defs, uid + '-gross', lx - r, ly - r, 2 * r, 2 * r, LUPE_ZOOM) }, g);
+      var lupeMaterial = muster(defs, uid + '-gross', lx - r, ly - r, 2 * r, 2 * r, LUPE_ZOOM);
+      svgEl('rect', { x: lx - r, y: ly - r, width: 2 * r, height: ky - (ly - r), fill: lupeMaterial }, g);
       if (art === 'cover') {
         svgEl('rect', { x: lx - r, y: ky - 12, width: 2 * r, height: 12, fill: 'rgba(0,0,0,.22)' }, g);
         svgEl('line', { x1: lx - r, y1: ky - 12, x2: lx + r, y2: ky - 12, stroke: 'rgba(255,255,255,.7)', 'stroke-width': 1.2 }, g);
@@ -334,8 +344,14 @@
         svgEl('line', { x1: lx - r, y1: ky, x2: lx + r, y2: ky, stroke: 'rgba(0,0,0,.30)', 'stroke-width': 0.9 }, g);
       } else {
         var hoehe = art === 'einfassband' ? 11 : 4;
-        svgEl('rect', { x: lx - r, y: ky - hoehe, width: 2 * r, height: hoehe, fill: band ? band.hex : 'rgba(255,255,255,.65)' }, g);
-        if (!band) svgEl('rect', { x: lx - r, y: ky - hoehe, width: 2 * r, height: hoehe, fill: 'none', stroke: 'rgba(0,0,0,.35)', 'stroke-dasharray': '4 3' }, g);
+        if (!band && bandFest) {
+          // Feste Bandfarbe, z. B. Ton in Ton: Band aus dem Material, leicht abgesetzt.
+          svgEl('rect', { x: lx - r, y: ky - hoehe, width: 2 * r, height: hoehe, fill: lupeMaterial }, g);
+          svgEl('rect', { x: lx - r, y: ky - hoehe, width: 2 * r, height: hoehe, fill: 'rgba(0,0,0,.2)' }, g);
+        } else {
+          svgEl('rect', { x: lx - r, y: ky - hoehe, width: 2 * r, height: hoehe, fill: band ? band.hex : 'rgba(255,255,255,.65)' }, g);
+          if (!band) svgEl('rect', { x: lx - r, y: ky - hoehe, width: 2 * r, height: hoehe, fill: 'none', stroke: 'rgba(0,0,0,.35)', 'stroke-dasharray': '4 3' }, g);
+        }
         if (art === 'einfassband') svgEl('line', { x1: lx - r, y1: ky - hoehe + 2, x2: lx + r, y2: ky - hoehe + 2, stroke: 'rgba(255,255,255,.55)', 'stroke-dasharray': '3 2' }, g);
       }
       svgEl('circle', { cx: lx, cy: ly, r: r, fill: 'none', stroke: '#fff', 'stroke-width': 2.5 }, svg);
@@ -413,7 +429,7 @@
         var proCm = (buehne.clientWidth || 360) / raumBreiteCm;
         teppich.setAttribute('data-tp-kante', 'band');
         teppich.style.setProperty('--tp-ek-bandbreite', Math.max(2, BAND_CM[art] * proCm).toFixed(1) + 'px');
-        teppich.style.setProperty('--tp-ek-bandfarbe', band ? band.hex : 'rgba(255,255,255,.75)');
+        teppich.style.setProperty('--tp-ek-bandfarbe', band ? band.hex : (bandFest ? 'rgba(0,0,0,.22)' : 'rgba(255,255,255,.75)'));
       } else {
         teppich.setAttribute('data-tp-kante', art);
         teppich.style.removeProperty('--tp-ek-bandbreite');
@@ -534,9 +550,16 @@
         umriss({ fill: 'none', stroke: 'rgba(0,0,0,.26)', 'stroke-width': 0.8 });
       } else {
         var px = Math.min(kantePx(art === 'einfassband' ? 11 : 5), Math.max(art === 'einfassband' ? 6 : 3, BAND_CM[art] * s * 2));
-        umriss(band
-          ? { fill: 'none', stroke: band.hex, 'stroke-width': px }
-          : { fill: 'none', stroke: 'rgba(0,0,0,.35)', 'stroke-width': 2, 'stroke-dasharray': '6 4' });
+        if (!band && bandFest) {
+          // Feste Bandfarbe: das Band aus dem Material, leicht abgesetzt - keine
+          // gestrichelte "noch waehlen"-Kante, denn es gibt nichts zu waehlen.
+          umriss({ fill: 'none', stroke: fuellung, 'stroke-width': px });
+          umriss({ fill: 'none', stroke: 'rgba(0,0,0,.2)', 'stroke-width': px });
+        } else {
+          umriss(band
+            ? { fill: 'none', stroke: band.hex, 'stroke-width': px }
+            : { fill: 'none', stroke: 'rgba(0,0,0,.35)', 'stroke-width': 2, 'stroke-dasharray': '6 4' });
+        }
       }
 
       masslinie(x, 28, x + pw, 28, f === 'rund' ? 'Ø ' + w + ' cm' : l + ' cm');
@@ -559,6 +582,7 @@
       if (farbe) teile.push(farbe);
       teile.push(f === 'rund' ? 'Ø ' + w + ' cm' : w + ' × ' + l + ' cm');
       teile.push(ART[art] + (band ? ' ' + band.nr + ' ' + band.name : '') + ' (' + KANTE[art] + ')');
+      if (!band && bandFest) teile.push('Bandfarbe: ' + bandFest);
       legende.textContent = teile.join(' · ');
       raumZeichnen(f, w, l);
       vorschau.hidden = false;
@@ -646,7 +670,7 @@
       if (startpreis) startpreis.hidden = gueltig;
       zeichnen(f, gueltig ? b.wert : BEISPIEL.w, gueltig ? l.wert : (rund ? BEISPIEL.w : BEISPIEL.l), !gueltig);
 
-      var bandFehlt = mitBand && !band;
+      var bandFehlt = bandWahl && !band;
       if (!gueltig) {
         stand = null;
         rechnung.hidden = true;
@@ -738,7 +762,7 @@
 
     function hinzufuegen() {
       if (inFlight) return;
-      if (!stand || !target || !target.available || (mitBand && !band)) return;
+      if (!stand || !target || !target.available || (bandWahl && !band)) return;
       var p = {
         'Einfassung': ART[art],
         'Form': FORM[stand.form],
@@ -752,8 +776,9 @@
         'Kante umlaufend': fmt(stand.kante) + ' m'
       };
       if (target.farbnummer) p['Farbnummer'] = target.farbnummer;
-      if (mitBand) p['Bandfarbe'] = band.nr + ' ' + band.name;
+      if (mitBand) p['Bandfarbe'] = bandFest || (band.nr + ' ' + band.name);
       if (art === 'ketteln') p['Garn'] = 'Ton in Ton';
+      if (kanteInklusive) p['Kettelung'] = 'im m²-Preis enthalten';
       if (art === 'cover') p['Vlies'] = 'inklusive';
       if (stand.mindest) p['Mindestpreis'] = 'angewendet';
 

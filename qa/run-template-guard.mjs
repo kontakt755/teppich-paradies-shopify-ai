@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { analyzeTemplates, blockTypesOf, forbiddenCardBlocks } from './template-guard.mjs';
+import { analyzeTemplates, blockLimitFindings, blockTypesOf, forbiddenCardBlocks, maxBlocksOf } from './template-guard.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const config = JSON.parse(fs.readFileSync(path.join(root, 'qa/template-guard.config.json'), 'utf8'));
@@ -36,6 +36,20 @@ if (Object.keys(verboten).length > 0) {
         });
       }
     }
+  }
+}
+
+// Shopify-Grenzen (50 Bloecke je Section, 1.250 je Datei, 25 Sections je
+// Datei): ueber alle Templates und Section-Gruppen. Faengt vor allem den
+// Header ab, der eine Bildkachel je Menuepunkt als Block traegt.
+const maxBlocks = {};
+for (const name of fs.readdirSync(path.join(root, 'sections')).filter(file => file.endsWith('.liquid'))) {
+  const value = maxBlocksOf(fs.readFileSync(path.join(root, 'sections', name), 'utf8'));
+  if (value !== null) maxBlocks[name.replace(/\.liquid$/, '')] = value;
+}
+for (const dir of ['templates', 'sections']) {
+  for (const name of fs.readdirSync(path.join(root, dir)).filter(file => file.endsWith('.json')).sort()) {
+    findings.push(...blockLimitFindings(fs.readFileSync(path.join(root, dir, name), 'utf8'), `${dir}/${name}`, { maxBlocks }));
   }
 }
 

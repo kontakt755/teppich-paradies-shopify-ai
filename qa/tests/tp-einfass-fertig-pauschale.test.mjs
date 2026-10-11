@@ -58,6 +58,7 @@ function fixture(o = {}) {
       service: {
         einfassung: val('Fertig'), max_breite_cm: val(200), max_laenge_cm: val(600),
         formen: val(['Rechteck']), kg_pro_qm: val(o.kg ?? 4.4), max_gewicht_kg: val(30),
+        ...(o.kanteInklusive === undefined ? {} : { kante_inklusive: val(o.kanteInklusive) }),
       },
     },
   };
@@ -190,4 +191,13 @@ test('Fertig: kuerzere Seite ueber 200 cm wird abgelehnt', async () => {
   const r = await runCase({ width: 210, length: 220, kg: 1 });
   assert.equal(r.requests.length, 0);
   assert.match(r.error, /höchstens 200 cm/);
+});
+
+test('Fertig: service.kante_inklusive hat keine Wirkung (nur fuer Ketteln)', async () => {
+  const r = await runCase({ width: 150, length: 200, kanteInklusive: true });
+  assert.equal(r.data.kante_inklusive, false);
+  assert.equal(r.data.kettel, null);
+  const [teppich, pauschale] = r.requests[0].body.items;
+  assert.equal(teppich.properties['Kettelung'], undefined);
+  assert.equal(pauschale.id, 'fertig-pauschale');
 });
