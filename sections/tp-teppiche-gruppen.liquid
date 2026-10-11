@@ -8,7 +8,8 @@
   (Inhaber 2026-10-02). Erst die Art waehlen, dann die Qualitaet.
 
   Zuordnung allein ueber snippets/tp-teppich-gruppe (Daten des Teppichbodens), nichts
-  fest eingetragen. Bild und Anzahl kommen aus derselben vollstaendigen Kollektion
+  fest eingetragen; gespeichert in custom.teppich_basis_daten (npm run teppich:basis-daten).
+  Bild und Anzahl kommen aus derselben vollstaendigen Kollektion
   wie beim Mass-Rechner. Eine Gruppe ohne Teppich zeigt keine Karte.
 {%- endcomment -%}
 {{ 'tp-teppiche.css' | asset_url | stylesheet_tag }}
@@ -24,9 +25,15 @@
   if collection != blank
     paginate collection.products by 250
       for tg_p in collection.products
-        capture tg_k
-          render 'tp-teppich-gruppe', product: tg_p
-        endcapture
+        # Schnellweg wie in snippets/tp-teppich-gruppe, ohne render je Produkt
+        assign tg_daten = tg_p.metafields.custom.teppich_basis_daten.value
+        if tg_daten.v == 1
+          assign tg_k = tg_daten.gruppe
+        else
+          capture tg_k
+            render 'tp-teppich-gruppe', product: tg_p
+          endcapture
+        endif
         assign tg_k = tg_k | strip | default: 'rest'
         assign tg_keys = tg_keys | append: tg_k | append: ','
         if tg_p.featured_image != blank
