@@ -688,3 +688,32 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiken/Annahmen:** Bis die Auftrags-App Version 47 läuft, öffnet der Link die Laden-Ansicht ohne Filter – der
   Inhaber muss dann noch auf „Spam prüfen“ tippen.
 - **Nächste Stufe:** keine.
+
+## 2026-10-12 · Einkauf: Muster über das Sammelprodukt zeigen Lieferant und Link, Lieferanten C–E zugeordnet (#1145)
+
+- **Geändert:** Muster ohne eigenes Musterprodukt – fast alle Vinylböden von der Rolle (PVC/CV) und einige
+  Designböden – laufen über das Sammelprodukt „Kostenloses Muster“. Ihre Position trug dessen Handle, „Im Lexikon
+  ansehen“ öffnete deshalb das Sammelprodukt: kein Lieferant, keine Artikelnummer, kein Link zum Lieferanten.
+  `aufbereiten()` (`operations/lib/bestelluebersicht.mjs`) setzt bei diesen Mustern jetzt den Handle des
+  Quellprodukts (aus der geladenen Quellvariante, sonst aus `_Quellprodukt`); eigene Musterprodukte `muster-*`
+  bleiben, weil das Lexikon dort das Original selbst zeigt. Damit stehen auch die wartenden Kunden am richtigen
+  Produkt. Zweitens kannte die GID-Zuordnung für `einkauf.lieferant` nur A und B; jede Position von C, D und E
+  stand unter „Lieferant nicht zugeordnet“. Die feste Liste kennt jetzt A–E, und der
+  Export (`operations/scripts/aktualisieren.mjs`) liest alle `tp_lieferant`-Metaobjekte als `lieferanten` in
+  `orders.json` mit – ein neuer Lieferant braucht keine Codeänderung mehr. Scheitert nur diese Abfrage, läuft der
+  Export weiter und die feste Liste greift.
+- **Getestet:** Zwei neue Tests in `operations/tests/bestelluebersicht.test.mjs` (Sammelprodukt-Muster →
+  Quellprodukt mit Lieferant, Link und ID; ohne geladene Quellvariante aus `_Quellprodukt`; `muster-*` unverändert;
+  C/D/E aus der festen Liste, unbekannte GID über `lieferanten` aus dem Export), Exporttest um die Lieferantenabfrage
+  erweitert. `npm run dashboard:test` 249/249, `npm test` grün, Guards und `validate --static` PASS,
+  `secret:scan` PASS. Vergleich alt/neu auf den echten Bestelldaten (nur lesend): 63 Positionen, genau 8 geändert –
+  7 Sammelprodukt-Muster zeigen aufs Quellprodukt, ein Teppichboden-Muster bekommt statt „nicht
+  zugeordnet“ seinen Lieferanten. `dashboard:pruefen` nur `OK`, 0 px Überlauf. Klickstrecke gegen die Kopie: „Lieferant nicht
+  zugeordnet“ verschwunden, Karten A, B, E; alle 7 Muster-Zeilen mit Lieferantenlink, „Im Lexikon ansehen“ beim
+  PVC-Muster öffnet den Vinylboden mit Lieferant A, Artikelnummer und „Beim Lieferanten öffnen“ (375 px: 0 px
+  Überlauf), dort „2 Kunden warten auf dieses Produkt“.
+- **Risiken/Annahmen:** Die Zuordnung C–E greift für den aktuellen Export sofort über die feste Liste; die
+  Metaobjekt-Liste kommt mit dem nächsten Lauf von `npm run daten:aktualisieren`. Für C–E fehlen ggf. noch
+  Stammdaten (Bestellweg, Mail) – die Karte zeigt dann „nicht hinterlegt“.
+- **Nächste Stufe:** Lieferant B (Wohnteppiche, Dekofelle, Teppiche, Teppich nach Maß) hat im Lexikon bei 654
+  Varianten weder Link noch Suchlink; Wunschmaß-Varianten bei Teppichboden haben keinen eigenen Link.

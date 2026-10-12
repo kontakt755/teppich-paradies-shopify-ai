@@ -322,3 +322,41 @@ test('"Aus Rolle" des Rollenrechners geht vor "_Zuschnitt aus Rolle"', () => {
   const mm = aufbereiten({ orders: [bestellung(43, [z])] }, { jetzt: new Date('2026-01-07T00:00:00Z') });
   assert.match(mm.auftraege[0].positionen[0].bestellmenge.text, /× 4,00 m/);
 });
+
+test('Muster ueber das Sammelprodukt verweist aufs Quellprodukt (Lexikon, Lieferant, Link)', () => {
+  // Vinylboeden von der Rolle haben fast nie ein eigenes Musterprodukt: die
+  // Zeile ist "Kostenloses Muster". Dessen Lexikon-Eintrag hat weder
+  // Lieferant noch Link - "Im Lexikon ansehen" muss zum Quellprodukt fuehren.
+  const qv = {
+    id: 'gid://shopify/ProductVariant/888', sku: 'CVTEST_210', title: 'Default Title',
+    metafields: { nodes: [mf('einkauf', 'lieferant', 'gid://shopify/Metaobject/1828679713102'), mf('einkauf', 'lieferant_url', 'https://lieferant-a.example/p/1')] },
+    lieferant: { nodes: [] },
+    product: { id: 'gid://shopify/Product/88', handle: 'testvinyl-eiche-von-der-rolle', title: 'Testvinyl Eiche', grosshandel: { nodes: [mf('grosshandel', 'sku', 'CVTEST_210')] } },
+  };
+  const sammel = zeile({ id: 30, sku: 'TP-MUSTER-000', title: 'Kostenloses Muster', handle: 'kostenloses-muster',
+    attrs: [{ key: '_Muster_ID', value: 'testvinyl--eiche' }, { key: '_Quellprodukt', value: 'testvinyl-eiche-von-der-rolle' }, { key: '_Quellvariante_ID', value: '888' }, { key: 'Produkt', value: 'Testvinyl Eiche' }, { key: 'Farbe', value: 'Eiche' }] });
+  const ohneQv = zeile({ id: 31, sku: 'TP-MUSTER-000', title: 'Kostenloses Muster', handle: 'kostenloses-muster',
+    attrs: [{ key: '_Muster_ID', value: 'testvinyl2--grau' }, { key: '_Quellprodukt', value: 'testvinyl-grau-von-der-rolle' }, { key: 'Produkt', value: 'Testvinyl Grau' }] });
+  const mm = aufbereiten({ orders: [bestellung(30, [sammel, ohneQv, musterM])], quellvarianten: [qv, quellvariante] });
+  const alle = mm.auftraege.flatMap(a => a.positionen);
+  const p = alle.find(x => x.lineItemId === 'gid://shopify/LineItem/30');
+  assert.equal(p.handle, 'testvinyl-eiche-von-der-rolle');
+  assert.equal(p.lieferant, 'A');
+  assert.equal(p.lieferantUrl, 'https://lieferant-a.example/p/1');
+  assert.equal(p.grosshaendlerId, 'CVTEST_210');
+  // Quellvariante nicht geladen: der Handle aus der Property reicht fuers Lexikon.
+  assert.equal(alle.find(x => x.lineItemId === 'gid://shopify/LineItem/31').handle, 'testvinyl-grau-von-der-rolle');
+  // Eigenes Musterprodukt bleibt: das Lexikon zeigt dort das Original selbst.
+  assert.equal(alle.find(x => x.sku === 'M-TESTROLLE_1').handle, 'muster-testboden');
+});
+
+test('Lieferant aus Metaobjekt-GID: feste Liste kennt A-E, der Export liefert weitere mit', () => {
+  const gid = n => `gid://shopify/Metaobject/${n}`;
+  const mitLieferant = (id, wert) => zeile({ id, sku: `TEST-LF-${id}`, title: `Testartikel ${id}`, einkauf: [['lieferant', wert]] });
+  const orders = [bestellung(40, [mitLieferant(41, gid(1845606482254)), mitLieferant(42, gid(1846305227086)), mitLieferant(43, gid(1846305259854)), mitLieferant(44, gid(1999))])];
+  const lf = modell => Object.fromEntries(modell.auftraege.flatMap(a => a.positionen).map(p => [p.sku, p.lieferant]));
+  const ohneListe = lf(aufbereiten({ orders }));
+  assert.deepEqual(ohneListe, { 'TEST-LF-41': 'C', 'TEST-LF-42': 'D', 'TEST-LF-43': 'E', 'TEST-LF-44': UNGEKLAERT });
+  const mitListe = lf(aufbereiten({ orders, lieferanten: [{ id: gid(1999), kuerzel: 'f' }] }));
+  assert.equal(mitListe['TEST-LF-44'], 'F');
+});
