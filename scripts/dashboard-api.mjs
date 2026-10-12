@@ -54,7 +54,7 @@ import { findeZugang, liesZugaenge, zugangAnlegen } from '../social/lib/eingang.
 import { ladeUmgebung } from '../social/lib/zugang.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
-import { rollenware, paketware, stueck as stueckware, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
+import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
 import { ausVariantentitel } from '../operations/lib/resolve.mjs';
 import { ladeEnvLocal, erzeugeProxy, KEIN_ZUGANG, mitHinweis } from '../operations/sync/zugang.mjs';
 import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, SonderpostenFehler } from '../operations/lib/sonderposten.mjs';
@@ -1267,7 +1267,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         if (!(flaeche > 0)) return { verfuegbar: true, ergebnis: null, grund: 'Kundenmenge (m²) eingeben' };
         try {
           const r = paketware({ bedarfM2: flaeche, qmProPaket: qm });
-          return { verfuegbar: true, ergebnis: { text: `${r.pakete} Paket${r.pakete === 1 ? '' : 'e'} (${r.qmGesamt} m² gesamt)`, ...r } };
+          return { verfuegbar: true, ergebnis: { text: `${r.pakete} Paket${r.pakete === 1 ? '' : 'e'} (${formatDe(r.qmGesamt)} m² gesamt)`, ...r } };
         } catch (e) { return { verfuegbar: true, ergebnis: null, grund: String(e.message) }; }
       }
       if (einheit === 'rolle' || einheit === 'lfm') {
