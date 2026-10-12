@@ -178,12 +178,29 @@
                   assign tp_se_farben = tp_se_opt.values.size
                 endif
               endfor
+
+              # Farbwort im Suchbegriff (snippets/tp-suchfarbe-variante): Link
+              # und Bild aus derselben Variante wie der Preis (snippets/price).
+              assign tp_se_url = tp_se_p.url
+              assign tp_se_bild = tp_se_p.featured_image
+              capture tp_se_suchfarbe
+                render 'tp-suchfarbe-variante', product: tp_se_p
+              endcapture
+              assign tp_se_suchteile = tp_se_suchfarbe | strip | split: '|'
+              if tp_se_suchteile.size == 2
+                assign tp_se_such_pos = tp_se_suchteile | first | plus: 0
+                assign tp_se_suchvariante = tp_se_p.variants[tp_se_such_pos]
+                if tp_se_suchvariante != blank
+                  assign tp_se_url = tp_se_suchvariante.url
+                  assign tp_se_bild = tp_se_suchvariante.featured_image
+                endif
+              endif
             -%}
             <li ref="resultsItems[]" role="presentation" class="tp-se__item">
-              <a role="option" class="tp-se__produkt" data-tp-typ="produkt" href="{{ tp_se_p.url }}">
+              <a role="option" class="tp-se__produkt" data-tp-typ="produkt" href="{{ tp_se_url }}">
                 <span class="tp-se__bild" aria-hidden="true">
-                  {%- if tp_se_p.featured_image -%}
-                    {{ tp_se_p.featured_image | image_url: width: 160 | image_tag: widths: '80, 160', sizes: '80px', loading: 'lazy', class: 'tp-se__img', alt: '' }}
+                  {%- if tp_se_bild -%}
+                    {{ tp_se_bild | image_url: width: 160 | image_tag: widths: '80, 160', sizes: '80px', loading: 'lazy', class: 'tp-se__img', alt: '' }}
                   {%- endif -%}
                 </span>
                 <span class="tp-se__text">

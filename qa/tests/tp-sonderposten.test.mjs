@@ -67,6 +67,9 @@ const voll = new Liquid({ templates: {
   'tp-verkaufseinheit': ohneDoc('snippets/tp-verkaufseinheit.liquid'),
   'tp-zahl-de': ohneDoc('snippets/tp-zahl-de.liquid'),
   'tp-sonderposten-vergleich': ohneStil(ohneDoc('snippets/tp-sonderposten-vergleich.liquid')),
+  // Farb-Vorauswahl der Suche (snippets/price.liquid fragt sie immer; ausserhalb der Suche leer).
+  'tp-suchfarbe-variante': ohneDoc('snippets/tp-suchfarbe-variante.liquid'),
+  'tp-suchfarbe-gruppen': ohneDoc('snippets/tp-suchfarbe-gruppen.liquid'),
   // Fuer snippets/price.liquid: Zweige, die ein Sonderposten nie erreicht.
   'tp-teppich-ab-preis': '',
   'tp-paketinhalt': '',
