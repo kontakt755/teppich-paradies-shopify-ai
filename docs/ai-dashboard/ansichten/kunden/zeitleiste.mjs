@@ -84,8 +84,8 @@ function worumKarte(a) {
     const menge = p.kundenmenge || p.menge;
     return `<dl>
       <dt>Artikel</dt><dd>${artikel}${gesetzt(p.farbe) ? ` · ${esc(p.farbe)}` : ''}${gesetzt(menge) ? ` <span class="small muted">(${esc(menge)})</span>` : ''}</dd>
-      <dt>Lieferant</dt><dd>${gesetzt(p.lieferant) ? `Lieferant ${esc(p.lieferant)}` : '<span class="zl-fehlt">nicht zugeordnet</span>'}</dd>
-      <dt>Art.-Nr.</dt><dd>${gesetzt(p.grosshaendlerId) ? esc(p.grosshaendlerId) : '<span class="zl-fehlt">fehlt</span>'}</dd>
+      ${p.eigenleistung ? '<dt>Einkauf</dt><dd>Eigenleistung – nichts beim Lieferanten</dd>' : `<dt>Lieferant</dt><dd>${gesetzt(p.lieferant) ? `Lieferant ${esc(p.lieferant)}` : '<span class="zl-fehlt">nicht zugeordnet</span>'}</dd>
+      <dt>Art.-Nr.</dt><dd>${gesetzt(p.grosshaendlerId) ? esc(p.grosshaendlerId) : '<span class="zl-fehlt">fehlt</span>'}</dd>`}
     </dl>`;
   });
   return `<div class="card zl-worum"><p class="zl-titel">Worum es geht</p>${zeilen.join('') || '<p class="small muted">Keine Positionen.</p>'}</div>`;

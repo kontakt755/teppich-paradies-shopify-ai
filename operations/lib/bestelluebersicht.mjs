@@ -102,6 +102,19 @@ export function lieferantFuer(item, variantMetafelder) {
   return UNGEKLAERT;
 }
 
+/**
+ * Eigenleistungen ohne Material vom Grosshaendler (Ketteln, Pauschale fuer
+ * Wunschmass): nichts zu bestellen, keine Grosshaendler-ID noetig. Bewusst
+ * eine feste Liste statt productType "Service" - die gekettelte Fussleiste
+ * ist auch ein Service, braucht aber Material und bleibt deshalb sichtbar
+ * offen.
+ */
+const EIGENLEISTUNG_HANDLES = new Set(['kettelservice', 'wunschmass-pauschale']);
+
+export function istEigenleistung(lineItem) {
+  return EIGENLEISTUNG_HANDLES.has(lineItem?.variant?.product?.handle ?? '');
+}
+
 export function istMusterPosition(item, lineItem) {
   if (item.istMuster) return true;
   // Eine Regel fuer alle Module: operations/lib/muster.mjs. Die frueher hier
@@ -298,8 +311,11 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
       const item = resolveLineItem({ lineItem: li, variant: li.variant, alleZeilen: zeilen });
       const vm = metafeldMap(li.variant?.metafields);
       const props = propertiesMap(li.customAttributes ?? li.properties);
-      const menge = offeneMenge(li);
       const istM = istMusterPosition(item, li);
+      // Fuer den Einkauf ist bei einer Eigenleistung nichts offen; die Menge 0
+      // haelt sie aus der Bestellliste und der offenen Arbeitsliste heraus.
+      const eigen = !istM && istEigenleistung(li);
+      const menge = eigen ? 0 : offeneMenge(li);
       const farbe = props.Farbe || li.variantTitle || li.variant?.title || '–';
       let ghId = item.grosshaendlerId;
       let ghQuelle = item.grosshaendlerIdQuelle;
@@ -323,17 +339,18 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         sku: item.sku,
         preis: geld(li.originalUnitPriceSet),
         menge,
-        kundenmenge: kundenmengeText(item, menge),
+        kundenmenge: kundenmengeText(item, eigen ? offeneMenge(li) : menge),
         grosshaendlerId: ghId,
         grosshaendlerIdQuelle: ghQuelle,
         lieferant,
         route: item.einkauf.route,
         istMuster: istM,
+        eigenleistung: eigen,
         musterQuelle: mq,
         ohneVariante: !li.variant,
         masspruefung: item.masspruefung,
         einkauf: item.einkauf,
-        bestellmenge: istM ? { menge, einheit: 'muster', text: `${menge} Muster`, grund: null } : (li.variant ? einkaufsmenge(item, menge) : { menge: UNGEKLAERT, einheit: UNGEKLAERT, text: UNGEKLAERT, grund: "Variante in Shopify geloescht - Artikel von Hand klaeren" }),
+        bestellmenge: eigen ? { menge: 0, einheit: 'eigenleistung', text: 'Eigenleistung – nichts zu bestellen', grund: null } : istM ? { menge, einheit: 'muster', text: `${menge} Muster`, grund: null } : (li.variant ? einkaufsmenge(item, menge) : { menge: UNGEKLAERT, einheit: UNGEKLAERT, text: UNGEKLAERT, grund: "Variante in Shopify geloescht - Artikel von Hand klaeren" }),
         idGrund: ghId !== UNGEKLAERT ? null : !li.variant ? "Variante geloescht" : istM ? (mq?.quellvariante ? "Quellvariante ohne ID-Metafeld" : "Muster ohne _Quellvariante_ID - Produkt/Farbe siehe Titel") : "weder lieferant.* noch grosshandel.sku gesetzt",
       };
       if (!istTest && offen && menge > 0) (istM ? muster : einkaufPositionen).push(pos);
@@ -346,7 +363,7 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
     const verlegung = attributWert(order, 'Verlegung');
     const massAttr = attributWert(order, 'Maßprüfung');
     const massProbleme = positionen.filter(p => ['abweichung', 'unlesbar', 'waise'].includes(p.masspruefung?.status));
-    const ohneId = positionen.filter(p => p.grosshaendlerId === UNGEKLAERT);
+    const ohneId = positionen.filter(p => !p.eigenleistung && p.grosshaendlerId === UNGEKLAERT);
     const mengeOffen = positionen.filter(p => !p.istMuster && p.bestellmenge.menge === UNGEKLAERT);
 
     const hinweise = [];
@@ -407,7 +424,7 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
       auftraege: auftraege.length,
       offeneAuftraege: auftraege.filter(a => a.offen).length,
       positionen: alle.length,
-      ohneId: alle.filter(p => p.grosshaendlerId === UNGEKLAERT).length,
+      ohneId: alle.filter(p => !p.eigenleistung && p.grosshaendlerId === UNGEKLAERT).length,
       mengeUngeklaert: alle.filter(p => !p.istMuster && p.bestellmenge.menge === UNGEKLAERT).length,
       zuBestellen: einkaufPositionen.length,
       muster: muster.length,
@@ -439,6 +456,7 @@ function datumDe(iso) {
 const AMPEL_TEXT = { gruen: 'Bereit', gelb: 'Prüfen', rot: 'Blockiert', grau: 'Geschlossen', test: 'Testbestellung' };
 
 function idZelle(p) {
+  if (p.eigenleistung) return '<small>Eigenleistung</small>';
   if (p.grosshaendlerId === UNGEKLAERT) return `<span class="flag">UNGEKLAERT</span>${p.idGrund ? `<small>${esc(p.idGrund)}</small>` : ""}`;
   return `<code>${esc(p.grosshaendlerId)}</code>`;
 }
