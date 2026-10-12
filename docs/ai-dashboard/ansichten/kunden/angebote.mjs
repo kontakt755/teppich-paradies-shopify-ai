@@ -4,7 +4,7 @@
  * sehen, wer wartet, worauf, und wie er denjenigen erreicht.
  */
 import { state } from '../../kern/zustand.mjs';
-import { esc } from '../../kern/helfer.mjs';
+import { esc, geldText } from '../../kern/helfer.mjs';
 import { fetchEinkauf } from '../../kern/api.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
@@ -51,8 +51,7 @@ function positionenKurz(positionen) {
 }
 
 function betragText(betrag, waehrung) {
-  const zahl = Number(betrag);
-  return `${Number.isFinite(zahl) ? zahl.toFixed(2) : '–'} ${esc(waehrung || 'EUR')}`;
+  return geldText({ betrag, waehrung });
 }
 
 function angebotZeile(a) {
@@ -118,6 +117,6 @@ export function viewKundenWarenkoerbe() {
   const liste = [...(d.warenkoerbe || [])].sort((a, b) => (b.wert || 0) - (a.wert || 0));
   const summe = liste.reduce((s, w) => s + (w.wert || 0), 0);
   return `
-    <p class="small muted" style="margin:0 0 10px">Kunden, die den Kauf abgebrochen haben – nach Wert sortiert, zusammen ${esc(summe.toFixed(2))} €. Anrufen oder anschreiben lohnt sich meist bei den obersten.</p>
+    <p class="small muted" style="margin:0 0 10px">Kunden, die den Kauf abgebrochen haben – nach Wert sortiert, zusammen ${geldText({ betrag: summe })}. Anrufen oder anschreiben lohnt sich meist bei den obersten.</p>
     <div class="rows">${liste.length ? liste.map(warenkorbZeile).join('') : emptyState('Kein liegengebliebener Warenkorb.', '')}</div>`;
 }

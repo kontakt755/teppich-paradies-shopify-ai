@@ -7,8 +7,12 @@
  *       die offenen Kunden zaehlen bei N mit
  *   3. "Wer wartet auf was" - wir / Lieferant / Kunde
  *   3a. "Laden" - Zahlen aus der Auftrags-App (ansichten/heute/laden.mjs), nicht in der Website-Sicht
+ *   3b. "Montage" - Zahlen der Montage-App (ansichten/heute/laden.mjs), nicht in der Website-Sicht
  *   4. Kennzahlen (nur Inhaber, nur was der Export hergibt)
- *   5. die bisherigen Bloecke, eingeklappt (ansichten/heute/bisher.mjs)
+ *
+ * Die frueheren eingeklappten "Weiteren Uebersichten" (Einkaufszahlen, Rueckrufe, Kundenfaelle,
+ * Shop-Wache, Shop-Zahlen als Tabelle, GitHub-Arbeit) sind am 2026-10-12 entfallen: jede Zahl
+ * darin stand schon oben, in "Kunden", "Einkauf" oder "Entwicklung" - teils mit anderem Stand.
  *
  * To-dos und Spalten werden nicht erfasst, sondern abgeleitet: lib/todos.mjs rechnet sie
  * aus den Antworten der vorhandenen Endpunkte. Diese Datei laedt und zeichnet nur.
@@ -20,6 +24,7 @@ import { state } from '../kern/zustand.mjs';
 import { esc, fmtDateTime, plural } from '../kern/helfer.mjs';
 import { darfAnsicht } from '../kern/router.mjs';
 import { istNurLesend } from '../kern/sitzung.mjs';
+import { schnittJeBezahlter } from '../lib/kennzahlen.mjs';
 import { stoerungState } from '../bausteine/karten.mjs';
 import { ensureAktualisierung, aktualisierenButton, aktualisierungHealth } from '../bausteine/aktualisierung.mjs';
 import { einkauf, ensureEinkaufAuftragsstatus, ensureEinkaufKennzahlen, anzeigeWert } from './einkauf/auftragsfluss.mjs';
@@ -28,17 +33,16 @@ import { kunden } from './kunden/gemeinsam.mjs';
 import { ensureKundenBestellungen } from './kunden/bestellungen.mjs';
 import { ensureKundenRueckrufe } from './kunden/rueckrufe.mjs';
 import { ensureKundenFaelle } from './kunden/faelle.mjs';
-import { heuteLaden } from './heute/laden.mjs';
-import { shopwache } from './shopwache.mjs';
+import { heuteLaden, heuteMontage } from './heute/laden.mjs';
+import { shopwache, ensureShopwache } from './shopwache.mjs';
 import { heuteDaten, ensureHeuteLieferanten, ensureHeuteAufgaben, ensureHeuteMusterTexte } from './heute/daten.mjs';
-import { heuteBisher } from './heute/bisher.mjs';
 import { musterNachfassenStand, musterNachfassenBlock } from './heute/muster-nachfassen.mjs';
 
 const TODOS_SICHTBAR = 7;      // "eine kurze Liste" - der Rest steht einen Klick weiter
 const SPALTE_SICHTBAR = 6;
 
 const SPALTEN = [
-  ['wir', 'Wir sind dran', 'bestellen, nachhaken, zurückrufen', 'Wir'],
+  ['wir', 'Wir sind dran', 'bestellen, nachhaken, nachfassen', 'Wir'],
   ['lieferant', 'Lieferant ist dran', 'Muster oder Ware bestellt', 'Lieferant'],
   ['kunde', 'Kunde ist dran', 'prüft Muster, zahlt oder entscheidet', 'Kunde'],
 ];
@@ -72,6 +76,9 @@ export function viewHeute() {
   ensureKundenBestellungen(); ensureEinkaufAuftragsstatus(); ensureKundenRueckrufe(); ensureKundenFaelle();
   ensureHeuteLieferanten(); ensureHeuteAufgaben(); ensureAktualisierung();
   if (istInhaber()) ensureEinkaufKennzahlen();
+  // Die Shop-Wache liefert To-dos fuer den Inhaber - geladen wurde sie bisher nur nebenbei
+  // von der eingeklappten Zeile weiter unten.
+  if (darfAnsicht('shopwache')) ensureShopwache();
 
   const q = quellen();
   const b = benutzer();
@@ -83,9 +90,12 @@ export function viewHeute() {
   const sicht = istInhaber() ? (SICHTEN.includes(gewuenscht) ? gewuenscht : 'laden') : eigeneSicht;
   const opt = { sicht, ich: heuteDaten.aufgaben?.ich || b?.kuerzel || b?.name || null, alle: istInhaber() && sicht !== 'inhaber', lieferantName, klartext: hinweisText };
   const todos = leiteTodosAb(q, opt);
-  const wartet = werWartet(q, opt);
+  // Faellige Nachfragen bei Musterkunden: dort sind wir dran, nicht der Kunde. Ohne diesen
+  // Abgleich stand derselbe Kunde unter "Muster nachfassen" und zugleich unter "Kunde ist dran".
+  const musterAlle = musterNachfassenStand();
+  const wartet = werWartet(q, { ...opt, nachfassen: new Set(musterAlle.offen.map(e => e.orderId)) });
   // Muster nachfassen macht der Laden (Inhaberentscheidung 2026-10-10) - in der Website-Sicht nicht.
-  const muster = sicht === 'website' ? { offen: [], erledigt: [] } : musterNachfassenStand();
+  const muster = sicht === 'website' ? { offen: [], erledigt: [] } : musterAlle;
   if (muster.offen.length) ensureHeuteMusterTexte();
 
   return `<div class="heute">
@@ -96,8 +106,8 @@ export function viewHeute() {
     ${musterNachfassenBlock(muster)}
     ${werWartetBlock(wartet)}
     ${sicht === 'website' ? '' : heuteLaden()}
+    ${sicht === 'website' ? '' : heuteMontage()}
     ${istInhaber() ? kennzahlenBlock() : ''}
-    ${heuteBisher()}
   </div>`;
 }
 
@@ -211,6 +221,13 @@ function werWartetBlock(w) {
   </section>`;
 }
 
+/** Schnitt je bezahlter Bestellung fuer die Kachel; ohne Bestellung mit Betrag ein Strich. */
+function schnittText(z, geld) {
+  if (!z) return null;
+  const n = schnittJeBezahlter(z);
+  return n ? geld(n, z) : '–';
+}
+
 /**
  * Kennzahlen: nur, was der Shop-Export (/api/einkauf/kennzahlen) wirklich enthaelt -
  * Bestellungen, Muster, Umsatz und Bestellwert fuer 7 und 30 Tage. Einen Wochenverlauf
@@ -236,7 +253,7 @@ function kennzahlenBlock() {
       ${kachel('Bestellungen', zahl(z7?.bestellungen), zahl(z30?.bestellungen))}
       ${kachel('davon kostenlose Muster', zahl(z7?.kostenlos), zahl(z30?.kostenlos))}
       ${kachel('Umsatz', geld(z7?.umsatz, z7), geld(z30?.umsatz, z30))}
-      ${kachel('Ø Bestellwert', z7?.bestellungen ? geld(z7?.durchschnitt, z7) : null, z30?.bestellungen ? geld(z30?.durchschnitt, z30) : null)}
+      ${kachel('Ø je bezahlter Bestellung', schnittText(z7, geld), schnittText(z30, geld))}
     </div>
   </section>`;
 }

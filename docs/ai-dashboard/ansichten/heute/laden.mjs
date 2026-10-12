@@ -1,5 +1,5 @@
 /**
- * "Heute": Kachel "Laden" - Zahlen aus dem Laden-Modus der Auftrags-App.
+ * "Heute": Kacheln "Laden" und "Montage" - Zahlen aus der Auftrags-App.
  *
  * Offene Beratungen, faellige Wiedervorlagen, offene Angebote, Faelle aus dem Shop
  * (7 Tage) und gewonnen/verloren (30 Tage), darunter - nur wenn es welche gibt - die
@@ -10,6 +10,9 @@
  *
  * Der Server haelt einen Stand 5 Minuten; hier wird beim Zeichnen von "Heute" nach
  * einer Minute still nachgefragt. Der alte Stand bleibt so lange stehen.
+ *
+ * "Montage" (seit 2026-10-12) kommt aus derselben Antwort (Objekt `montage`, jede Zahl
+ * optional): vorhandene Zahlen zeigen, fehlende weglassen, ohne Objekt "noch nicht verbunden".
  */
 import { state } from '../../kern/zustand.mjs';
 import { fetchEinkauf } from '../../kern/api.mjs';
@@ -42,8 +45,16 @@ function kachel(n, titel, unter, { warn = false } = {}) {
   return `<div class="heute-kpi">
       <div class="n${klasse}">${esc(n.toLocaleString('de-DE'))}</div>
       <div class="l">${esc(titel)}</div>
-      <div class="d">${esc(unter)}</div>
+      ${unter ? `<div class="d">${esc(unter)}</div>` : ''}
     </div>`;
+}
+
+/** Link in eine Ansicht der Auftrags-App (neuer Tab, eigene Anmeldung dort). Nur https. */
+function appLink(url, text) {
+  let u;
+  try { u = new URL(String(url || '')); } catch { return ''; }
+  if (u.protocol !== 'https:') return '';
+  return `<a href="${esc(u.toString())}" target="_blank" rel="noopener">${esc(text)} <span aria-hidden="true">↗</span></a>`;
 }
 
 /**
@@ -86,14 +97,14 @@ function spamHinweis(n, ladenUrl) {
 export function heuteLaden() {
   ensureLadenZahlen();
   const d = ladenKachel.daten;
-  const link = d?.ladenUrl
-    ? `<a href="${esc(d.ladenUrl)}" target="_blank" rel="noopener">Laden-Ansicht öffnen <span aria-hidden="true">↗</span></a>`
-    : '';
+  // Der Link steht, sobald die Adresse der App bekannt ist - auch ohne Schluessel fuer die Zahlen.
+  const link = appLink(d?.ladenUrl, 'Laden-Ansicht öffnen');
   let unterzeile;
   let inhalt = '';
   if (!d) unterzeile = 'Lade …';
   else if (d.fehler) { unterzeile = 'nicht erreichbar'; inhalt = `<p class="heute-hinweis">${esc(d.hinweis || 'Das Dashboard am Mac antwortet gerade nicht.')}</p>`; }
-  else if (!d.eingerichtet) unterzeile = 'Nicht eingerichtet';
+  // Adresse da, Schluessel nicht: sagen, was fehlt - "Nicht eingerichtet" stimmte dann nicht.
+  else if (!d.eingerichtet) unterzeile = d.fehlt === 'schluessel' ? 'Schlüssel fehlt' : 'Nicht eingerichtet';
   else if (!d.erreichbar) { unterzeile = 'nicht erreichbar'; inhalt = `<p class="heute-hinweis">${esc(grundText(d))}</p>`; }
   else {
     const z = d.zahlen;
@@ -108,6 +119,43 @@ export function heuteLaden() {
   }
   return `<section class="heute-block heute-laden" aria-labelledby="heuteLaden">
     <div class="heute-block-kopf"><h2 id="heuteLaden">Laden</h2><span>${esc(unterzeile)}</span>${link}</div>
+    ${inhalt}
+  </section>`;
+}
+
+/** Montage-Zahlen in fester Reihenfolge; Bernstein, wo etwas liegen geblieben ist. */
+const MONTAGE_KACHELN = [
+  ['einsaetzeHeute', 'Einsätze heute'],
+  ['einsaetzeMorgen', 'Einsätze morgen'],
+  ['offenVonGestern', 'Offen von gestern', { warn: true }],
+  ['meldungenOffen', 'Meldungen offen', { warn: true }],
+  ['antraegeOffen', 'Anträge offen', { warn: true }],
+  ['neueAuftraege', 'Neue Aufträge'],
+  ['rueckmeldungenNeu', 'Neue Rückmeldungen'],
+];
+
+/**
+ * Block "Montage" fuer die Startseite: nur Zahlen der Montage-App, nie Namen. Fehlt eine Zahl,
+ * faellt ihre Kachel weg; fehlt das ganze Objekt (aeltere App) oder der Schluessel, steht ruhig
+ * "noch nicht verbunden". Der Link "Montage-App öffnen" braucht nur die Adresse der App.
+ */
+export function heuteMontage() {
+  ensureLadenZahlen();
+  const d = ladenKachel.daten;
+  const link = appLink(d?.montageUrl, 'Montage-App öffnen');
+  let unterzeile;
+  let inhalt = '';
+  const m = d?.montage;
+  if (!d) unterzeile = 'Lade …';
+  else if (d.fehler || (d.eingerichtet && !d.erreichbar)) unterzeile = 'nicht erreichbar';
+  else if (!d.eingerichtet || !m) unterzeile = 'noch nicht verbunden';
+  else {
+    const da = MONTAGE_KACHELN.filter(([k]) => Number.isInteger(m[k]));
+    unterzeile = `aus der Montage-App · Stand ${fmtDateTime(d.stand || d.abgerufen)}`;
+    inhalt = da.length ? `<div class="heute-kpis heute-montage-zahlen">${da.map(([k, titel, opt]) => kachel(m[k], titel, '', opt)).join('')}</div>` : '';
+  }
+  return `<section class="heute-block heute-laden heute-montage" aria-labelledby="heuteMontage">
+    <div class="heute-block-kopf"><h2 id="heuteMontage">Montage</h2><span>${esc(unterzeile)}</span>${link}</div>
     ${inhalt}
   </section>`;
 }

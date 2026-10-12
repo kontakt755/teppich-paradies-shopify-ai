@@ -163,3 +163,23 @@ test('Positionen ohne lineItemId gelten nicht still als fertig', () => {
   // Eine Bestellung ganz ohne Positionen bleibt wie bisher "fertig"
   assert.equal(istFertig({ id: 'gid://shopify/Order/78', positionen: [] }, {}), true);
 });
+
+test('wasFehlt: "Noch nicht versendet" nur, solange die Ware laut Auftragsfluss nicht beim Kunden ist', () => {
+  const auftrag = { offen: true, erfuellt: 'UNFULFILLED', bezahlt: 'PAID', checks: {}, positionen: [] };
+  assert.ok(wasFehlt(auftrag, null).includes('Noch nicht versendet'));
+  assert.ok(wasFehlt(auftrag, null, { minStufe: 1 }).includes('Noch nicht versendet'), 'bestellt: noch nicht raus');
+  assert.ok(!wasFehlt(auftrag, null, { minStufe: 3 }).includes('Noch nicht versendet'), 'an Kunden raus: fehlt nicht');
+  assert.ok(!wasFehlt(auftrag, null, { minStufe: 4 }).includes('Noch nicht versendet'), 'erledigt: fehlt nicht');
+});
+
+test('bestellzeile: an Kunden raus, aber in Shopify unversandt - Hinweis statt "Noch nicht versendet"', () => {
+  const modell = aufbereiten({ orders: [bestellung(1, [zeileA])] });
+  const a = modell.auftraege[0];
+  const statusAlle = { [positionKey(a.id, a.positionen[0].lineItemId)]: { status: 'raus' } };
+  const [z] = bestellliste(modell, { statusAlle });
+  assert.equal(z.versandHinweis, 'In Shopify noch nicht als versendet gebucht');
+  assert.ok(!z.wasFehlt.includes('Noch nicht versendet'));
+  const [ohne] = bestellliste(modell);
+  assert.equal(ohne.versandHinweis, null);
+  assert.ok(ohne.wasFehlt.includes('Noch nicht versendet'));
+});

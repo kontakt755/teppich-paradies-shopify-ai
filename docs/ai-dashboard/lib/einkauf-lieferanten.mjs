@@ -14,7 +14,15 @@
 export const UNGEKLAERT = 'UNGEKLAERT';
 export const SCHWELLEN_STANDARD = Object.freeze({ nachhakenTage: 7, problemTage: 14 });
 
-const STUFEN = ['zuBestellen', 'bestellt', 'unterwegs', 'erledigt', 'eigen'];
+const STUFEN = ['zuBestellen', 'bestellt', 'eingetroffen', 'erledigt', 'eigen'];
+
+/**
+ * Filter-Parameter `af` aus aelteren Links: "unterwegs" hiess bis 2026-10-12 der Schritt
+ * "geliefert an uns" (zusammen mit "an Kunden raus") - heute "eingetroffen".
+ */
+export function afNorm(af) {
+  return af === 'unterwegs' ? 'eingetroffen' : (af || '');
+}
 
 // Spiegel von operations/lib/musterherkunft.mjs musterOhneLieferant() (dort die fuehrende Quelle).
 const ROUTEN_OHNE_LIEFERANT = ['SAMPLE_STOCK', 'SAMPLE_CUT'];
@@ -27,12 +35,17 @@ export function musterEigen(p) {
   return ROUTEN_OHNE_LIEFERANT.includes(p.route) || ROUTEN_OHNE_LIEFERANT.includes(p.musterRoute);
 }
 
-/** Stufe einer Position wie filterGruppe() im Server: geliefert/raus zaehlen als "unterwegs". */
+/**
+ * Stufe einer Position aus Sicht des Einkaufs. Der Einkauf endet, wenn die Ware bei uns
+ * eingetroffen ist: "an Kunden raus" zaehlt hier als erledigt. Frueher stand es unter
+ * "unterwegs" - so zaehlten Muster, die laengst beim Kunden lagen, als offene Einkaeufe.
+ * Was danach kommt (nachfassen, abschliessen), fuehrt die Zeitleiste beim Kunden.
+ */
 export function stufeVon(status) {
   if (!status) return 'zuBestellen';
   if (status === 'bestellt') return 'bestellt';
-  if (status === 'geliefert' || status === 'raus') return 'unterwegs';
-  if (status === 'erledigt') return 'erledigt';
+  if (status === 'geliefert') return 'eingetroffen';
+  if (status === 'raus' || status === 'erledigt') return 'erledigt';
   return 'zuBestellen';
 }
 
@@ -53,7 +66,7 @@ export function warnstufe(tage, schwellen = SCHWELLEN_STANDARD) {
 }
 
 // eigen: offene Muster aus dem eigenen Bestand - vorbeibringen/verschicken statt bestellen.
-const leereStufen = () => ({ zuBestellen: [], bestellt: [], unterwegs: [], erledigt: [], eigen: [] });
+const leereStufen = () => ({ zuBestellen: [], bestellt: [], eingetroffen: [], erledigt: [], eigen: [] });
 
 function leereStammdaten(id) {
   return {
@@ -99,15 +112,15 @@ export function lieferantenKarten({ gruppen = [], musterGruppen = [], lieferante
 
   const stamm = new Map((lieferanten || []).map(l => [l.id, l.stammdaten]));
   const karten = [...je.values()].map(k => {
-    const wartend = [...k.ware.bestellt, ...k.ware.unterwegs, ...k.muster.bestellt, ...k.muster.unterwegs].filter(x => x.warnstufe);
+    const wartend = [...k.ware.bestellt, ...k.ware.eingetroffen, ...k.muster.bestellt, ...k.muster.eingetroffen].filter(x => x.warnstufe);
     wartend.sort((a, b) => b.wartetage - a.wartetage);
     const st = stamm.get(k.id) || leereStammdaten(k.id);
     const zahlen = {
       zuBestellen: k.ware.zuBestellen.length,
       bestellt: k.ware.bestellt.length,
-      unterwegs: k.ware.unterwegs.length,
+      eingetroffen: k.ware.eingetroffen.length,
       musterOffen: k.muster.zuBestellen.length,
-      musterLaufend: k.muster.bestellt.length + k.muster.unterwegs.length,
+      musterLaufend: k.muster.bestellt.length + k.muster.eingetroffen.length,
     };
     // Eigenes Feld (nicht in `zahlen`): offene Muster aus dem eigenen Bestand.
     const musterEigen = k.muster.eigen.length;
@@ -118,10 +131,13 @@ export function lieferantenKarten({ gruppen = [], musterGruppen = [], lieferante
       stammdaten: st,
       zahlen,
       musterEigen,
-      offenGesamt: zahlen.zuBestellen + zahlen.bestellt + zahlen.unterwegs + zahlen.musterOffen + zahlen.musterLaufend + musterEigen,
+      offenGesamt: zahlen.zuBestellen + zahlen.bestellt + zahlen.eingetroffen + zahlen.musterOffen + zahlen.musterLaufend + musterEigen,
       ueberfaellig: {
         stufe: wartend.some(x => x.warnstufe === 'crit') ? 'crit' : wartend.length ? 'warn' : null,
         anzahl: wartend.length,
+        // Mehrere Positionen einer Kundenbestellung sind ein Auftrag - "15 Bestellungen warten"
+        // waren in Wahrheit 15 Positionen aus 5 Auftraegen.
+        auftraege: new Set(wartend.map(x => x.pos?.orderId || x.pos?.orderName).filter(Boolean)).size || wartend.length,
         problem: wartend.filter(x => x.warnstufe === 'crit').length,
         maxTage: wartend.length ? wartend[0].wartetage : null,
         positionen: wartend,
@@ -136,7 +152,8 @@ export function lieferantenKarten({ gruppen = [], musterGruppen = [], lieferante
 /** Passt eine Karte zum Auftragsfluss-Filter (af)? Ohne Filter: alles, was noch Arbeit macht. */
 export function karteImFilter(karte, af = '') {
   const n = stufe => karte.ware[stufe].length + karte.muster[stufe].length;
-  if (!af) return n('zuBestellen') + n('bestellt') + n('unterwegs') + n('eigen') > 0;
+  af = afNorm(af);
+  if (!af) return n('zuBestellen') + n('bestellt') + n('eingetroffen') + n('eigen') > 0;
   const stufe = af === 'offen' ? 'zuBestellen' : af;
   return STUFEN.includes(stufe) ? n(stufe) > 0 : false;
 }
@@ -145,10 +162,14 @@ export function karteImFilter(karte, af = '') {
 export function ueberfaelligText(ue) {
   if (!ue?.stufe) return null;
   const tage = `${ue.maxTage} ${ue.maxTage === 1 ? 'Tag' : 'Tagen'}`;
-  const was = ue.anzahl === 1 ? '1 Bestellung wartet' : `${ue.anzahl} Bestellungen warten`;
+  const auftraege = ue.auftraege ?? ue.anzahl;
+  const pos = ue.anzahl === 1 ? '1 Position' : `${ue.anzahl} Positionen`;
+  const was = auftraege === 1
+    ? `1 Auftrag wartet${ue.anzahl > 1 ? ` (${pos})` : ''}`
+    : `${auftraege} Aufträge warten (${pos})`;
   return ue.stufe === 'crit'
-    ? { stufe: 'crit', text: `Überfällig: ${was}, die älteste seit ${tage}.` }
-    : { stufe: 'warn', text: `Nachhaken: ${was}, die älteste seit ${tage}.` };
+    ? { stufe: 'crit', text: `Überfällig: ${was}, der älteste seit ${tage}.` }
+    : { stufe: 'warn', text: `Nachhaken: ${was}, der älteste seit ${tage}.` };
 }
 
 export function telLink(nummer) {

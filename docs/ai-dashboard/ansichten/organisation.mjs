@@ -7,11 +7,11 @@ import { esc, fmtDate, fmtDateTime, toast } from '../kern/helfer.mjs';
 import { orgSchreiben } from '../kern/api.mjs';
 import { navigate } from '../kern/router.mjs';
 import { render } from '../kern/render.mjs';
-import { emptyState, bandItem } from '../bausteine/karten.mjs';
+import { emptyState } from '../bausteine/karten.mjs';
 import {
   org, ORG_BEREICHE, ORG_ANSICHTEN, ORG_ANSICHTEN_HAUPT, ORG_DRINGLICHKEIT, ORG_STATUS_LABEL,
   ORG_PRIO_LABEL, ORG_PRIO_WAHL, ORG_WIEDERHOLUNG_LABEL, ORG_PRUEF_LABEL, orgParams,
-  orgEintragOeffnen, ensureOrgListe, ensureOrgKennzahlen, ensureOrgDetail, orgFrisch, orgZeile,
+  orgEintragOeffnen, ensureOrgListe, ensureOrgDetail, orgFrisch, orgZeile,
 } from './organisation/gemeinsam.mjs';
 import { openOrgFuerChatGPT, openOrgSchnell, openOrgListe } from './organisation/dialoge.mjs';
 
@@ -213,35 +213,6 @@ export function viewOrganisation() {
 
   return kopf + reiter + suche + ansichten + gruppen + personen +
     `<p class="small muted" style="margin:0 0 8px">${d.anzahl} ${d.anzahl === 1 ? 'Eintrag' : 'Einträge'}${sindAufgaben ? ' · nach Dringlichkeit geordnet' : ''}</p>` + liste;
-}
-
-/** Startseite: zwei kompakte Widgets statt der ganzen Verwaltung. */
-export function heuteOrganisation() {
-  ensureOrgKennzahlen();
-  const k = org.kennzahlen;
-  if (!k || !k.verfuegbar) return '';
-  const zahl = (n, label, cls, ziel) => n ? bandItem(n, label, cls, `#/organisation?${ziel}`) : '';
-  const meine = [
-    // "offen" zuerst: ohne sie blieb das Widget leer, solange nichts faellig
-    // oder dringend war - obwohl Aufgaben dalagen.
-    zahl(k.meine.offen, 'offen', 'plain', 'oa='),
-    zahl(k.meine.ueberfaellig, 'überfällig', 'crit', 'oa=ueberfaellig'),
-    zahl(k.meine.heute, 'heute fällig', 'warn', 'oa=heute'),
-    zahl(k.meine.dringend, 'dringend', 'crit', 'oa=dringend'),
-    zahl(k.meine.warten, 'warten auf', 'plain', 'oa=warten'),
-    zahl(k.meine.pruefung, 'in Prüfung', 'plain', 'oa=pruefung'),
-  ].filter(Boolean);
-  const team = [
-    zahl(k.team.offen, 'offen im Team', 'plain', 'ob=team-aufgaben&oa=alle'),
-    zahl(k.team.heute, 'heute fällig', 'warn', 'ob=team-aufgaben&oa=heute'),
-    zahl(k.team.ueberfaellig, 'überfällig', 'crit', 'ob=team-aufgaben&oa=ueberfaellig'),
-  ].filter(Boolean);
-  if (!meine.length && !team.length && !k.naechste.length) return '';
-
-  return `<h2 class="section-title">Meine Arbeit <span class="section-note"><a href="#/organisation">alles ansehen →</a></span></h2>
-    ${meine.length ? `<div class="band">${meine.join('')}</div>` : ''}
-    ${k.naechste.length ? `<div class="rows" style="margin-bottom:14px">${k.naechste.map(orgZeile).join('')}</div>` : ''}
-    ${team.length ? `<h2 class="section-title">Team</h2><div class="band">${team.join('')}</div>` : ''}`;
 }
 
 /** Aufgaben: Filter zuruecksetzen. Gibt true zurueck, wenn der Klick damit erledigt ist. */

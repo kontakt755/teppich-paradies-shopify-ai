@@ -230,7 +230,7 @@ function produktKarte(p, normaleVarianten) {
     <div class="lex-produkt-kopf">
       ${p.bild ? `<img class="lex-produkt-bild" src="${esc(p.bild)}" alt="" loading="lazy">` : ''}
       <div class="lex-produkt-titel">
-        <div class="gruppe">${p.produktgruppe ? esc(p.produktgruppe) : NICHT_HINTERLEGT}${p.status ? ` · ${esc(p.status)}` : ''}</div>
+        <div class="gruppe">${p.produktgruppe ? esc(p.produktgruppe) : NICHT_HINTERLEGT}${statusHinweis(p.status)}</div>
         <h1>${esc(p.titel)}</h1>
       </div>
       ${minPreis ? `<div class="lex-produkt-preis"><span>ab</span><b>${esc(preisText(minPreis.betrag, minPreis.einheit))}</b></div>` : ''}
@@ -242,6 +242,13 @@ function produktKarte(p, normaleVarianten) {
       ${p.adminUrl ? `<a class="btn" href="${esc(p.adminUrl)}" target="_blank" rel="noopener">Im Shopify-Admin ↗</a>` : `<span class="btn" aria-disabled="true">Im Shopify-Admin (${NICHT_HINTERLEGT})</span>`}
     </div>
   </section>`;
+}
+
+// Shopify-Status in Klartext. "Aktiv" ist der Normalfall und steht nicht da - nur Abweichungen.
+const PRODUKT_STATUS = { DRAFT: 'Entwurf – nicht im Shop', ARCHIVED: 'archiviert – nicht im Shop', UNLISTED: 'nicht gelistet' };
+function statusHinweis(status) {
+  if (!status || status === 'ACTIVE') return '';
+  return ` · ${esc(PRODUKT_STATUS[status] || String(status).toLowerCase())}`;
 }
 
 /** Was oben in der Produktkarte keinen Platz hat: Herkunft und die Angaben, die man erklaeren muss. */

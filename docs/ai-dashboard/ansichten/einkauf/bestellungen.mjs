@@ -4,6 +4,7 @@
  * Stand im Auftragsfluss, abgeschlossene Auftraege.
  */
 import { gruppierePositionenNachKunde } from '../../lib/einkauf-kundengruppen.mjs';
+import { afNorm } from '../../lib/einkauf-lieferanten.mjs';
 import { state } from '../../kern/zustand.mjs';
 import { esc, fmtDate, fmtDateTime, plural, geldText } from '../../kern/helfer.mjs';
 import { emptyState, stoerungState, bandItem } from '../../bausteine/karten.mjs';
@@ -84,7 +85,7 @@ function einkaufGruppeKarte(g, i, praefix, { eingebettet = false } = {}) {
   const id = `ek-${praefix}-${i}`;
   const af = state.route.params.get('af') || '';
   // Ohne Filter zeigt die Liste alles, was noch Arbeit macht - "Erledigt" nur auf Wunsch.
-  const positionen = g.positionen.filter(p => { const gr = positionsGruppe(p); return af ? gr === af : gr !== 'erledigt'; });
+  const positionen = g.positionen.filter(p => { const gr = positionsGruppe(p); return af ? gr === afNorm(af) : gr !== 'erledigt'; });
   if (!positionen.length) return '';
   const kundengruppen = gruppierePositionenNachKunde(positionen, einkauf.bestellungen?.auftraege || []);
   const sortiertePositionen = kundengruppen.flatMap(gruppe => gruppe.positionen);
@@ -214,14 +215,15 @@ export function einkaufAuftragZeile(a) {
   return `<details class="order-details"><summary>${kopf}</summary>${detail}</details>`;
 }
 
-const AF_FILTER_LABEL = { offen: 'Noch zu bestellen', bestellt: 'Bestellt', unterwegs: 'Unterwegs', erledigt: 'Erledigt' };
+// "Eingetroffen" = bei uns angekommen, noch nicht beim Kunden. Danach ist der Einkauf fertig.
+const AF_FILTER_LABEL = { offen: 'Noch zu bestellen', bestellt: 'Bestellt', eingetroffen: 'Bei uns eingetroffen', erledigt: 'Erledigt' };
 
 /** Filter nach Auftragsfluss-Schritt. Ohne Auswahl: alles ausser "Erledigt". */
 function afFilterChips(allePositionen) {
-  const zaehler = { offen: 0, bestellt: 0, unterwegs: 0, erledigt: 0, eigen: 0 };
+  const zaehler = { offen: 0, bestellt: 0, eingetroffen: 0, erledigt: 0, eigen: 0 };
   for (const p of allePositionen) zaehler[positionsGruppe(p)] += 1;
-  const af = state.route.params.get('af') || '';
-  const offenGesamt = zaehler.offen + zaehler.bestellt + zaehler.unterwegs + zaehler.eigen;
+  const af = afNorm(state.route.params.get('af'));
+  const offenGesamt = zaehler.offen + zaehler.bestellt + zaehler.eingetroffen + zaehler.eigen;
   return `<div class="chips" role="group" aria-label="Nach Auftragsfluss filtern">
     <button type="button" class="chip" data-param="af" data-value="" aria-pressed="${!af}">Alle offenen<span class="c">${offenGesamt}</span></button>
     ${Object.keys(AF_FILTER_LABEL).map(k => `<button type="button" class="chip" data-param="af" data-value="${k}" aria-pressed="${af === k}">${esc(AF_FILTER_LABEL[k])}<span class="c">${zaehler[k]}</span></button>`).join('')}
@@ -239,7 +241,7 @@ export function viewEinkaufBestellungen() {
   const aktiv = aktiveAuftraege(d);
   const klaeren = aktiv.filter(a => a.ampel === 'rot' || a.ampel === 'gelb').sort((a, b) => (a.ampel === 'rot' ? 0 : 1) - (b.ampel === 'rot' ? 0 : 1));
   const rot = klaeren.filter(a => a.ampel === 'rot').length;
-  const af = state.route.params.get('af') || '';
+  const af = afNorm(state.route.params.get('af'));
   const abgeschlossen = af === 'erledigt' ? abgeschlosseneAuftraegeKarte() : '';
   return `
     <div class="band">

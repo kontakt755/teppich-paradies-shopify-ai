@@ -175,7 +175,8 @@ export function einkaufsmenge(item, menge) {
       const flaecheM2 = p.preis_pro_001_qm ? menge / 100 : null;
       if (!(laengeCm > 0) && !(flaecheM2 > 0)) return ungeklaert('Laenge fehlt (Property Gewuenschte Laenge oder Maße)');
       const r = rollenware({ laengeCm, flaecheM2, breiteM: breiteCm / 100 });
-      const rasterHinweis = r.raster === UNGEKLAERT ? ' (Lieferantenraster UNGEKLAERT)' : '';
+      // Lesbar, nicht als interner Marker: der Text steht so im Einkauf und in der Bestellliste.
+      const rasterHinweis = r.raster === UNGEKLAERT ? ' (Lieferantenraster ungeklärt)' : '';
       return { menge: r.lfm, einheit: EINHEIT.LFM, text: r.text + rasterHinweis, grund: r.raster === UNGEKLAERT ? 'Lieferantenraster nicht belegt' : null };
     }
     if (e.bestelleinheit === EINHEIT.STUECK) {
