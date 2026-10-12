@@ -176,10 +176,17 @@ Bestand noch 1 ist (erst melden, nicht selbst buchen).
 4. Shop: Kollektion nimmt das Stück sofort heraus (Regel `Bestand > 0`), die Produktseite
    zeigt „Verkauft“, der Kaufbutton ist gesperrt.
 
-Voraussetzung: Die Shopify-Zugangsdaten des Dashboards brauchen zusätzlich
-`write_inventory` und `write_products` (heute `read_products,write_products` in
-`scripts/shopify-oauth.mjs`). Rechtevergabe macht der Inhaber selbst (Gedächtnis:
-keine Rechtevergabe im Dev Dashboard durch Agenten).
+Voraussetzung: Die Shopify-Zugangsdaten des Dashboards (App „TP Operations“) brauchen
+`write_inventory` und `write_products`. **Seit 2026-10-12 erteilt** (Version
+`tp-operations-4`, im Shop bestätigt; echter Schreibtest am Testprodukt SP-TEST-0001
+bestanden). Rechtevergabe macht der Inhaber selbst. Freigeben im Dev Dashboard allein
+reicht nicht: im Shop-Admin unter Einstellungen → Apps → TP Operations → „App öffnen“
+die neuen Berechtigungen bestätigen, danach den Dashboard-Dienst neu starten.
+
+Gebaut (PR #986, #1115): Ansicht „Sonderposten“ im Control Center, auch für Restrollen
+(Rollenware mit Tag `sonderposten`, Länge eingeben). Ohne persönliches Konto (gemeinsames
+Passwort) fragt der Dialog „Wer hat verkauft?“ – Pflicht, steht im Protokoll und in
+`verkauft_von`.
 
 ### Verkauft: verschwinden oder anzeigen?
 

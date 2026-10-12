@@ -12,10 +12,10 @@
   Eine Einfassart allein ist keine Wahl - dann rendert das Snippet nichts
   (Inhaber 2026-09-13), den Weg zur Meterware zeigt weiter blocks/tp-einfass-wechsel.
 
-  Bild je Art aus den Block-Einstellungen: zuerst marke_bild_<art> (nur wenn
-  product.vendor gleich marke_bilder_vendor - Herstellerfotos nur fuer die eigene
-  Marke), dann bild_<art> fuer alle; ohne Bild zeichnet CSS die Kante auf das
-  Foto der gewaehlten Farbe.
+  Bild je Art aus den Block-Einstellungen: zuerst <slot>_bild_<art> fuer die
+  Marke, deren Vendor in <slot>_bilder_vendor steht (Slots marke, marke2 -
+  Herstellerfotos nur fuer die eigene Marke), dann bild_<art> fuer alle; ohne
+  Bild zeichnet CSS die Kante auf das Foto der gewaehlten Farbe.
 
   @param {object} product - der Teppich nach Mass dieser Seite
   @param {object} bilder - block.settings des Konfigurators (Bilder je Art)
@@ -24,6 +24,8 @@
 
 {%- liquid
   assign tk_arten = 'ketteln,paspelband,einfassband,cover' | split: ','
+  # Zwei Markenplaetze mit eigenen Herstellerfotos (marke_*, marke2_*)
+  assign tk_marken_slots = 'marke,marke2' | split: ','
   assign tk_eigen = product.metafields.service.einfassung.value | strip | downcase
   assign tk_gruppe = product.metafields.service.einfass_gruppe.value
   assign tk_sel = product.selected_or_first_available_variant
@@ -51,7 +53,7 @@
         {%- for tk_p in tk_gruppe -%}
           {%- assign tk_a = tk_p.metafields.service.einfassung.value | strip | downcase -%}
           {%- if tk_a != tk_art -%}{%- continue -%}{%- endif -%}
-          {%- if tk_p.id != product.id and tk_p.available == false -%}{%- break -%}{%- endif -%}
+          {%- if tk_p.id != product.id and tk_p.available == false -%}{%- continue -%}{%- endif -%}
           {%- liquid
             assign tk_aktiv = false
             if tk_p.id == product.id
@@ -84,7 +86,7 @@
                 assign tk_text = 'Breites Band rundum, ca. 3 cm, Farbe nach Wahl'
               when 'cover'
                 assign tk_label = 'Cover'
-                assign tk_text = 'Kante umgeschlagen und vernäht – ohne sichtbares Band'
+                assign tk_text = 'Kante umgeschlagen, Rücken mit Vlies unterfüttert – ohne sichtbares Band'
             endcase
             assign tk_eigenes_label = tk_p.metafields.service.einfass_label.value | append: '' | strip
             if tk_eigenes_label != blank
@@ -92,7 +94,32 @@
             endif
             assign tk_band_fest = tk_p.metafields.service.bandfarbe_fest.value | append: '' | strip
             if tk_art == 'paspelband' and tk_band_fest != blank
-              assign tk_text = 'Schmales Band rundum, ca. 1 cm, in der Farbe des Teppichs'
+              assign tk_text = 'Schmales Einfassband rundum in der Farbe des Teppichs'
+            endif
+            # Eigene Bandfarben des Herstellers (service.bandfarben, "Name|#hex;..."), z. B.
+            # Vorwerk-Paspel in Kontrastfarbe: Text nennt die Farben, Bild eigener Schluessel.
+            assign tk_bild_art = tk_art
+            assign tk_band_eigen = tk_p.metafields.service.bandfarben.value | append: '' | strip
+            if tk_band_eigen != blank and tk_band_fest == blank
+              assign tk_band_namen = ''
+              assign tk_band_teile = tk_band_eigen | split: ';'
+              for tk_bt in tk_band_teile
+                assign tk_bn = tk_bt | split: '|' | first | strip
+                if tk_bn != blank
+                  if tk_band_namen != blank
+                    if forloop.last
+                      assign tk_band_namen = tk_band_namen | append: ' oder '
+                    else
+                      assign tk_band_namen = tk_band_namen | append: ', '
+                    endif
+                  endif
+                  assign tk_band_namen = tk_band_namen | append: tk_bn
+                endif
+              endfor
+              assign tk_text = 'Schmales Einfassband rundum, Farbe nach Wahl: ' | append: tk_band_namen
+              if tk_art == 'paspelband'
+                assign tk_bild_art = 'paspelwahl'
+              endif
             endif
 
             assign tk_inkl = true
@@ -104,21 +131,23 @@
             # Herstellerfoto nur auf Produkten dieser Marke (Bildrechte), sonst das
             # allgemeine Bild der Art, sonst die Zeichnung.
             assign tk_bild = nil
-            assign tk_marke = bilder.marke_bilder_vendor | strip
-            if tk_marke != blank and product.vendor == tk_marke
-              capture tk_bild_key
-                echo 'marke_bild_'
-                echo tk_art
-              endcapture
+            for tk_slot in tk_marken_slots
+              assign tk_vendor_key = tk_slot | append: '_bilder_vendor'
+              assign tk_marke = bilder[tk_vendor_key] | strip
+              if tk_marke != blank and product.vendor == tk_marke
+                assign tk_bild_key = tk_slot | append: '_bild_' | append: tk_bild_art
+                assign tk_bild = bilder[tk_bild_key]
+                unless tk_bild
+                  assign tk_bild_key = tk_slot | append: '_bild_' | append: tk_art
+                  assign tk_bild = bilder[tk_bild_key]
+                endunless
+                break
+              endif
+            endfor
+            unless tk_bild
+              assign tk_bild_key = 'bild_' | append: tk_art
               assign tk_bild = bilder[tk_bild_key]
-            endif
-            if tk_bild == blank
-              capture tk_bild_key
-                echo 'bild_'
-                echo tk_art
-              endcapture
-              assign tk_bild = bilder[tk_bild_key]
-            endif
+            endunless
           -%}
           <a
             class="tp-ek__kante{% if tk_aktiv %} is-aktiv{% endif %}"
@@ -130,12 +159,12 @@
             {% unless tk_v %}hidden{% endunless %}
           >
             <span
-              class="tp-ek__kante-bild{% if tk_bild == blank %} tp-ek__kante-bild--zeichnung{% endif %}"
-              {% if tk_bild == blank and tk_sel.featured_image %}style="--tp-ek-textur: url('{{ tk_sel.featured_image | image_url: width: 480 }}');"{% endif %}
+              class="tp-ek__kante-bild{% unless tk_bild %} tp-ek__kante-bild--zeichnung{% endunless %}"
+              {% if tk_sel.featured_image %}{% unless tk_bild %}style="--tp-ek-textur: url('{{ tk_sel.featured_image | image_url: width: 480 }}');"{% endunless %}{% endif %}
               data-kante-bild
               aria-hidden="true"
             >
-              {%- if tk_bild != blank -%}
+              {%- if tk_bild -%}
                 {{ tk_bild | image_url: width: 480 | image_tag: loading: 'lazy', widths: '240, 360, 480', sizes: '(min-width: 750px) 180px, 45vw', alt: '' }}
               {%- else -%}
                 <span class="tp-ek__kante-ecke"></span>
@@ -153,7 +182,6 @@
             </span>
           </a>
           {%- assign tk_index = tk_index | plus: 1 -%}
-          {%- break -%}
         {%- endfor -%}
       {%- endfor -%}
     </div>
@@ -187,7 +215,7 @@
             {%- for tk_p in tk_gruppe -%}
               {%- assign tk_a = tk_p.metafields.service.einfassung.value | strip | downcase -%}
               {%- if tk_a != tk_art -%}{%- continue -%}{%- endif -%}
-              {%- if tk_p.id != product.id and tk_p.available == false -%}{%- break -%}{%- endif -%}
+              {%- if tk_p.id != product.id and tk_p.available == false -%}{%- continue -%}{%- endif -%}
               {%- liquid
                 assign tk_ki = tk_p.metafields.service.kante_inklusive.value | append: '' | strip | downcase
                 assign tk_mp = tk_p.metafields.service.mindestpreis.value
@@ -223,7 +251,6 @@
                   "_": null
                 }
               },
-              {%- break -%}
             {%- endfor -%}
           {%- endfor -%}
           null

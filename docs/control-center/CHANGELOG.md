@@ -650,3 +650,21 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   die Rollenbreite). Neue Eigenleistungen müssen in `EIGENLEISTUNG_HANDLES` nachgetragen werden.
 - **Nächste Stufe:** Dieselbe Kennzeichnung in der internen Bestellmail (Shopify-Benachrichtigung), dort steht
   beim Kettelservice weiter „Großhändler-ID fehlt“.
+
+## 2026-10-12 · Sonderposten: „Wer hat verkauft?“ im gemeinsamen Zugang, Recht erteilt
+
+- **Geändert:** Das Control Center läuft ohne persönliche Konten (gemeinsames Passwort); jede Buchung stand
+  deshalb als „Inhaber“ im Protokoll. Beide Dialoge („Im Laden verkauft?“ und „Von der Rolle verkauft“) fragen
+  jetzt im gemeinsamen Zugang „Wer hat verkauft?“ – Pflicht, ohne Vorbelegung, zuletzt benutzte Namen als
+  Vorschlag. Der Server verlangt den Namen dann (400 ohne Shopify-Aufruf) und schreibt ihn in `verkauft_von`
+  und ins Protokoll (Vermerk „Name im gemeinsamen Zugang angegeben“). Mit persönlichem Konto (Kürzel) gilt
+  weiter der Name aus der Sitzung. Doku: `write_inventory` ist seit heute erteilt.
+- **Getestet:** API-Tests für Notzugang ohne/mit Namen (Stück und Rolle) und persönliches Konto schlägt
+  Anfrage; `dashboard:test` grün. Klickstrecke 1440/390 px gegen die Kopie (Liste live gelesen, Buchung
+  abgefangen): nur Länge → Knopf gesperrt, mit „Thomas“ → frei, Anfrage trägt `verkauftVon: "Thomas"`,
+  zweiter Dialog leer mit Vorschlag „Thomas“, 0 JS-Fehler, 0 px Überlauf. Echter Schreibtest nach der
+  Freischaltung nur am Testprodukt SP-TEST-0001: 0 → 1 → 0, Felder gesetzt, Gegenprobe ok; Yasmin unberührt.
+- **Risiken/Annahmen:** Der Name ist im gemeinsamen Zugang eine Angabe, keine Anmeldung. Wer es genauer will,
+  legt persönliche Konten unter „Team“ an.
+- **Nächste Stufe:** Ersten echten Rollenverkauf in Shopify (Bestandsverlauf) gegenprüfen.
+

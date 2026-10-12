@@ -616,7 +616,16 @@ Antwort, heißt es „Ob der Verkauf gebucht wurde, ist unklar – Liste neu lad
 festgehalten als `SCHREIB_BEREICHE` in `sync/zugang.mjs` und in der Bereichszeile in
 `operations/README.md`. Fehlt `write_inventory`, antwortet der Server 403 mit „Bestand kann nicht geändert
 werden: dem Control Center fehlt das Shopify-Recht write_inventory …“ und schreibt nichts. Freischalten macht
-nur der Inhaber im Dev Dashboard.
+nur der Inhaber im Dev Dashboard **und** danach im Shop-Admin (Einstellungen → Apps → TP Operations →
+„App öffnen“ → neue Berechtigungen bestätigen); erst dann trägt der Token das Recht. Der Dienst hält seinen
+Token im Speicher – nach der Freischaltung neu starten. Erteilt seit 2026-10-12 (Version `tp-operations-4`).
+
+**Wer hat verkauft?** Mit persönlichem Konto (Kürzel in `benutzer.json`) kommt der Name aus der Sitzung, nie
+aus der Anfrage. Im gemeinsamen Zugang (Einzelpasswort; die Sitzung meldet `{name: 'Inhaber', kuerzel: null}`)
+fragt der Dialog „Wer hat verkauft?“ – Pflicht, ohne Vorbelegung, zuletzt benutzte Namen nur als Vorschlag
+(`localStorage`, je Gerät). Der Server verlangt den Namen dann (400 `name-fehlt`, kein Shopify-Aufruf),
+schreibt ihn in `verkauft_von` und als Benutzer ins Protokoll, mit dem Vermerk „Name im gemeinsamen Zugang
+angegeben“. Grund: Inhaber 2026-10-10 – im Laden bucht die gerade verkaufende Person.
 
 **Restrollen (seit 2026-10-12, Inhaber).** Rollenware mit Produkt-Tag `sonderposten` und Rollenbreite
 (`custom.rollenbreite`, Variante vor Produkt), deren Bestand Shopify in ganzen m² führt – z. B. Passion

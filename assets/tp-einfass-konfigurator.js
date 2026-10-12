@@ -51,6 +51,9 @@
     return Number(n).toLocaleString('de-DE', { minimumFractionDigits: s, maximumFractionDigits: s });
   }
   function euro(cent) { return fmt(cent / 100) + ' €'; }
+  // Bandfarben mit Nummer (Farbkarte des Konfektionaers) oder nur mit Namen
+  // (Herstellerfarben aus service.bandfarben, z. B. Vorwerk Sand/Anthrazit/Schwarz).
+  function bandText(b, trenner) { return [b.nr, b.name].filter(Boolean).join(trenner); }
   function leeren(node) { while (node.firstChild) node.removeChild(node.firstChild); }
   function svgEl(name, attrs, parent) {
     var el = document.createElementNS(SVG_NS, name);
@@ -235,12 +238,12 @@
       baender.forEach(function (b) {
         var label = document.createElement('label');
         label.className = 'tp-ek__band';
-        label.title = b.nr + ' · ' + b.name;
+        label.title = bandText(b, ' · ');
         var input = document.createElement('input');
         input.type = 'radio';
         input.name = uid + '-band';
-        input.value = b.nr;
-        input.setAttribute('aria-label', b.nr + ' ' + b.name);
+        input.value = b.nr || b.name;
+        input.setAttribute('aria-label', bandText(b, ' '));
         var punkt = document.createElement('span');
         punkt.style.background = b.hex;
         label.appendChild(input);
@@ -249,7 +252,7 @@
         input.addEventListener('change', function () {
           band = b;
           var name = q('[data-band-name]');
-          if (name) name.textContent = b.nr + ' · ' + b.name;
+          if (name) name.textContent = bandText(b, ' · ');
           rechnen();
         });
       });
@@ -590,7 +593,8 @@
       var farbe = target ? [target.farbnummer, target.farbe].filter(Boolean).join(' ') : '';
       if (farbe) teile.push(farbe);
       teile.push(f === 'rund' ? 'Ø ' + w + ' cm' : w + ' × ' + l + ' cm');
-      teile.push(ART[art] + (band ? ' ' + band.nr + ' ' + band.name : '') + ' (' + KANTE[art] + ')');
+      // Herstellerbaender (service.bandfarben): Breite nicht belegt - keine cm-Angabe.
+      teile.push(ART[art] + (band ? ' ' + bandText(band, ' ') : '') + ' (' + (d.band_hersteller ? 'schmales Band' : KANTE[art]) + ')');
       if (!band && bandFest) teile.push('Bandfarbe: ' + bandFest);
       legende.textContent = teile.join(' · ');
       raumZeichnen(f, w, l);
@@ -786,17 +790,28 @@
       // Die Kundenansicht zeigt nur den Endpreis; die Aufschluesselung ist entfernt.
       var rh = q('[data-rund-hinweis]');
       if (rh) rh.hidden = !(f === 'rund' || f === 'oval');
+      // Ist der Mindestpreis genau eine ganze Flaeche zum m2-Preis (Hersteller: Vorwerk 3 m2,
+      // JAB 1 m2), heisst er so - das versteht der Kunde besser als ein Betrag.
+      var preisM2Cent = preis * 100;
+      var minM2 = preisM2Cent > 0 ? mindestCent / preisM2Cent : 0;
+      var minFlaeche = !kettel && !pauschale && minM2 >= 1 && Math.abs(minM2 - Math.round(minM2)) < 1e-9 ? Math.round(minM2) : 0;
       var mh = q('[data-mindest-hinweis]');
       if (mh) {
         mh.hidden = !mindest;
-        if (mindest) mh.textContent = 'Mindestpreis ' + euro(mindestCent) + ' für kleine Teppiche.';
+        if (mindest) {
+          mh.textContent = minFlaeche
+            ? 'Teppiche unter ' + fmt(minFlaeche, 0) + ' m² berechnet der Hersteller mit ' + fmt(minFlaeche, 0) + ' m².'
+            : 'Mindestpreis ' + euro(mindestCent) + ' für kleine Teppiche.';
+        }
       }
       q('[data-summe]').textContent = euro(summe);
       var rz = q('[data-rechenzeile]');
       if (rz) {
-        var zeile = !kettel && !pauschale && !mindest;
+        var zeile = !kettel && !pauschale && (!mindest || minFlaeche > 0);
         rz.hidden = !zeile;
-        rz.textContent = zeile ? fmt(abgerechnet) + ' m² × ' + fmt(preis, 0) + ' €/m²' + (f === 'rund' || f === 'oval' ? ' (umschließendes Rechteck)' : '') : '';
+        rz.textContent = !zeile ? ''
+          : mindest ? fmt(minFlaeche) + ' m² × ' + fmt(preis, 0) + ' €/m² (Mindestfläche)'
+          : fmt(abgerechnet) + ' m² × ' + fmt(preis, 0) + ' €/m²' + (f === 'rund' || f === 'oval' ? ' (umschließendes Rechteck)' : '');
       }
       // Aktion: derselbe Teppich zum alten Variantenpreis, dieselbe Rechnung. Liquid liefert
       // compare_at_price nur bei aktiver Aktion. Greift beim alten Preis der Mindestpreis,
@@ -868,7 +883,7 @@
         'Kante umlaufend': fmt(stand.kante) + ' m'
       };
       if (target.farbnummer) p['Farbnummer'] = target.farbnummer;
-      if (mitBand) p['Bandfarbe'] = bandFest || (band.nr + ' ' + band.name);
+      if (mitBand) p['Bandfarbe'] = bandFest || bandText(band, ' ');
       if (art === 'ketteln') p['Garn'] = 'Ton in Ton';
       if (kanteInklusive) p['Kettelung'] = 'im m²-Preis enthalten';
       if (art === 'cover') p['Vlies'] = 'inklusive';

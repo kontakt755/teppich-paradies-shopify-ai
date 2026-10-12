@@ -195,7 +195,28 @@
     endif
   -%}
   {%- if tp_ek_band_wahl -%}
-    {%- capture tp_ek_baender -%}{% render 'tp-bandfarben' %}{%- endcapture -%}
+    {%- comment -%}
+      Eigene Bandfarben des Herstellers (service.bandfarben, Text "Name|#hex;Name|#hex",
+      z. B. Vorwerk-Paspel Sand/Anthrazit/Schwarz) ersetzen die Farbkarte unseres
+      Konfektionaers aus snippets/tp-bandfarben. Nur gueltige Hexwerte zaehlen
+      (das Skript prueft es noch einmal); ohne Feld bleibt alles wie bisher.
+    {%- endcomment -%}
+    {%- assign tp_ek_band_eigen = product.metafields.service.bandfarben.value | append: '' | strip -%}
+    {%- if tp_ek_band_eigen != blank -%}
+      {%- capture tp_ek_baender -%}
+        [
+        {%- assign tp_ek_bt_liste = tp_ek_band_eigen | split: ';' -%}
+        {%- for tp_ek_bt in tp_ek_bt_liste -%}
+          {%- assign tp_ek_bt_teile = tp_ek_bt | split: '|' -%}
+          {%- assign tp_ek_bt_name = tp_ek_bt_teile[0] | strip -%}
+          {%- assign tp_ek_bt_hex = tp_ek_bt_teile[1] | strip | downcase -%}
+          {"art": {{ tp_ek_art | json }}, "nr": "", "name": {{ tp_ek_bt_name | json }}, "hex": {{ tp_ek_bt_hex | json }}}{% unless forloop.last %},{% endunless %}
+        {%- endfor -%}
+        ]
+      {%- endcapture -%}
+    {%- else -%}
+      {%- capture tp_ek_baender -%}{% render 'tp-bandfarben' %}{%- endcapture -%}
+    {%- endif -%}
   {%- endif -%}
 
   <div class="tp-ek tp-kaufweg tp-ek--mass" id="tp-ek-{{ tp_ek_id }}" data-tp-ek {{ block.shopify_attributes }}>
@@ -437,6 +458,7 @@
         "selected_id": {{ product.selected_or_first_available_variant.id | json }},
         "baender": {% if tp_ek_band_wahl %}{{ tp_ek_baender | strip }}{% else %}[]{% endif %},
         "band_fest": {{ tp_ek_band_fest | json }},
+        "band_hersteller": {% if tp_ek_band_wahl and tp_ek_band_eigen != blank %}true{% else %}false{% endif %},
         "varianten": [
           {%- for tp_ek_v in product.variants -%}
             {%- if tp_ek_v.metafields.service.einfassen.value == 'Verfügbar' and tp_ek_v.price > 0 -%}
@@ -559,6 +581,39 @@
       "type": "image_picker",
       "id": "marke_bild_cover",
       "label": "Marke: Bild Cover"
+    },
+    {
+      "type": "text",
+      "id": "marke2_bilder_vendor",
+      "label": "Zweite Marke mit eigenen Kantenbildern",
+      "info": "Hersteller (Vendor) exakt wie im Produkt, z. B. Vorwerk.",
+      "default": "Vorwerk"
+    },
+    {
+      "type": "image_picker",
+      "id": "marke2_bild_ketteln",
+      "label": "Marke 2: Bild Gekettelt"
+    },
+    {
+      "type": "image_picker",
+      "id": "marke2_bild_paspelband",
+      "label": "Marke 2: Bild Paspel"
+    },
+    {
+      "type": "image_picker",
+      "id": "marke2_bild_einfassband",
+      "label": "Marke 2: Bild Einfassband"
+    },
+    {
+      "type": "image_picker",
+      "id": "marke2_bild_cover",
+      "label": "Marke 2: Bild Cover"
+    },
+    {
+      "type": "image_picker",
+      "id": "marke2_bild_paspelwahl",
+      "label": "Marke 2: Bild Paspel mit Farbwahl",
+      "info": "Paspel mit eigenen Bandfarben (service.bandfarben), z. B. Kontrastfarbe."
     },
     {
       "type": "header",
