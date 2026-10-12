@@ -16,11 +16,26 @@ export const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 export const issueUrl = n => `${REPO_URL}/issues/${n}`;
 export const newIssueUrl = (params = {}) => `${REPO_URL}/issues/new?${new URLSearchParams(params)}`;
 
-export function toast(text, kind = '') {
+// Zeitpunkt der letzten Stoerung (Server antwortet 5xx, keine Verbindung,
+// JS-Fehler). Kommt gleich danach eine rote Rueckmeldung, traegt sie einen
+// Knopf "Melden": wer gerade gescheitert ist, soll das mit einem Tipp melden
+// koennen - Seite und Fehlermeldung haengt "Fehler melden" selbst an.
+let letzteStoerung = 0;
+export function merkeStoerung() { letzteStoerung = Date.now(); }
+
+export function toast(text, kind = '', { dauer = null } = {}) {
   const el = document.createElement('div');
   el.className = `toast ${kind}`; el.textContent = text;
+  // Nicht im offenen Melde-Dialog: der Knopf wuerde ihn samt Eingabe neu oeffnen.
+  const melden = kind === 'crit' && Date.now() - letzteStoerung < 3000 && !document.querySelector('.fm-dialog');
+  if (melden) {
+    const knopf = document.createElement('button');
+    knopf.type = 'button'; knopf.className = 'toast-knopf'; knopf.textContent = 'Melden';
+    knopf.dataset.fehlerMelden = '';
+    el.append(knopf);
+  }
   $('#toastRoot').appendChild(el);
-  setTimeout(() => el.remove(), 4200);
+  setTimeout(() => el.remove(), dauer || (melden ? 9000 : 4200));
 }
 
 export function geldText(g) {

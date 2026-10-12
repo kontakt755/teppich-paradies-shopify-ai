@@ -747,3 +747,23 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiken/Annahmen:** Weitergabe nur, solange die Claude-App auf dem Mac läuft (geplante Aufgabe). Der Lauf
   formuliert Titel und ersetzt Kundendaten – Text der Mitarbeiter ist für ihn Daten, keine Anweisung.
 - **Nächste Stufe:** Bei Bedarf Bildschirmfoto an die Meldung hängen (Anhänge wie bei Aufgaben).
+
+## 2026-10-12 · „Fehler melden“ leichter und informativer (#1155)
+
+- **Geändert:** Dialog schlanker: Seite steht als Zeile („Seite: Einkauf · ändern“), Bildschirmfoto per Knopf oder ⌘V
+  (bis 3, verkleinert, Vorschau mit ×), „Was automatisch mitgeht“ zeigt Seite, Gerät, letzte Schritte und Fehler im
+  Browser. Mit geht jetzt auch: die letzten sechs Klicks und der Commit des Dienstes. Rote Rückmeldungen nach einer
+  Störung (5xx, keine Verbindung) tragen „Melden“, Störungskästen ebenso; ein JS-Fehler aus dem eigenen Code meldet
+  sich einmal je Seitenaufruf. Antwort an den Melder: Zeile unten plus Zahl am Knopf, sobald eine eigene Meldung
+  behoben oder geprüft ist; in der Liste „Neu:“ und Bild-Links. Stand genauer („Wird bearbeitet“, „Wartet auf
+  Entscheidung“). Neu `GET /api/fehler/bild`, `bausteine/bilder.mjs` (aus „Fotos“ herausgelöst), `stile/fehler-melden.css`.
+  Behoben: die Leiste der Rückmeldungen verdeckte unten links Knöpfe der Seitenleiste.
+- **Getestet:** Bibliothek 12 Tests (Bilder nur echte PNG/JPEG/WebP, getarntes SVG abgelehnt, höchstens 3, Pfade
+  nur eigene Namen, gemeinsamer Zugang erkennt eigene Meldungen, Werkbank-Stand), Servertest mit Bild hochladen und
+  abrufen (Melder und Inhaber 200, Fremde 404). `dashboard:pruefen` Heute/Hilfe/Fotos 1440–360 px nur `OK`. Klickstrecke
+  gegen die Kopie: Schritte erfasst, Bild angehängt und gespeichert, Antwort per Skript → Zeile „Behoben – …“ und Zahl 1
+  am Knopf, nach dem Öffnen weg, Bild abrufbar, „Melden“ in roter Rückmeldung öffnet den Dialog, am Handy kein ⌘V-Hinweis,
+  0 JS-Fehler.
+- **Risiken/Annahmen:** Bildschirmfotos zeigen oft Kundendaten; sie bleiben deshalb im Privatordner und gehen nicht in
+  die Werkbank.
+- **Nächste Stufe:** keine.

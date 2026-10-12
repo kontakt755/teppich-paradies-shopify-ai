@@ -703,5 +703,23 @@ GET /api/fehler/liste ──> Dialog zeigt „Gemeldet“ / „Bei der Technik�
   auf „Bei der Technik“.
 - **Datenschutz:** Kundennamen, E-Mail, Telefon und Anschrift ersetzt der Lauf in der Werkbank durch
   „Kunde“; der Originaltext bleibt nur lokal.
+- **Bildschirmfotos** (seit 2026-10-12, #1155): bis zu drei je Meldung, per Knopf oder Einfügen (⌘V),
+  im Browser auf 2000 px verkleinert (`bausteine/bilder.mjs`, geteilt mit „Fotos“). Der Server nimmt nur
+  echte PNG/JPEG/WebP (an den ersten Bytes erkannt, höchstens 4 MB) und legt sie unter
+  `$TP_PRIVAT_DIR/fehlermeldungen/F-001-1.jpg` ab (Rechte 600). `GET /api/fehler/bild?id=&nr=` liefert
+  sie nur dem Melder und dem Inhaber; eine fremde Meldung antwortet wie eine fehlende (404). Bilder
+  gehen nie in die Werkbank – dort steht nur die Zahl, `npm run -s fehler -- zeige` nennt die Pfade.
+- **Letzte Schritte und Version:** die letzten sechs Klicks („heute: „Einkauf““) und der Commit des
+  laufenden Dienstes gehen mit. Der Dialog zeigt unter „Was automatisch mitgeht“, was das ist.
+- **Melden aus der Störung heraus:** `kern/api.mjs` merkt sich Serverfehler (5xx) und fehlende
+  Verbindung (`merkeStoerung`); eine rote Rückmeldung in den 3 Sekunden danach trägt den Knopf „Melden“.
+  Störungskästen (`stoerungState`) haben ihn immer. Ein JS-Fehler aus dem eigenen Code zeigt einmal je
+  Seitenaufruf eine rote Zeile mit „Melden“.
+- **Rückmeldung an den Melder:** beim Start und wenn der Tab wieder sichtbar wird (höchstens alle
+  5 Minuten) prüft der Browser, ob eine eigene Meldung behoben oder geprüft ist: eine Zeile unten und
+  eine Zahl am Knopf, bis der Dialog geöffnet wurde (`localStorage` `tp-fehler-gesehen`). Der Stand
+  folgt der Werkbank genauer: „Bei der Technik“, „Wird bearbeitet“ (gestartet), „Wartet auf Entscheidung“.
+- **Rückmeldungen verdecken nichts mehr:** die Leiste der Rückmeldungen ist bildschirmbreit und lässt
+  Klicks jetzt durch (`pointer-events`); vorher war „Fehler melden“ unten links dahinter nicht klickbar.
 - **Grenze:** Der Lauf ist eine geplante Aufgabe der Claude-App auf dem Mac. Ist die App zu, wartet die
   Meldung im Dialog sichtbar auf „Gemeldet“ und wird beim nächsten Lauf übertragen.
