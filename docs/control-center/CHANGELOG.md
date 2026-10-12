@@ -580,3 +580,23 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Nächste Stufe:** Nach der Freischaltung den ersten echten Ladenverkauf hier buchen und in Shopify
   (Bestandsverlauf der Variante, Referenz `tp://laden-verkauf/…`) und im Shop gegenprüfen.
 
+## 2026-10-12 · Kachel „Laden“: Spam-Verdacht
+
+- **Geändert:** Die Auftrags-App liefert ab Version 43 zusätzlich `spamVerdacht` – offene Fälle aus dem Shop,
+  die im Laden im Filter „Spam prüfen“ warten und in keiner anderen Zahl mitzählen. Der Server reicht das Feld
+  durch (`LADEN_ZAHLEN_FELDER`); fehlt es (ältere App), gilt es als 0 statt die Kachel auf „nicht erreichbar“ zu
+  setzen (`LADEN_ZAHLEN_SPAETER`). Ist es da, gilt dieselbe Prüfung wie für alle Felder (ganze Zahl ≥ 0). Die
+  Kachel zeigt nur bei > 0 eine Zeile unter den fünf Zahlen: „2 Fälle aus dem Shop mit Spam-Verdacht – in der
+  Laden-Ansicht unter „Spam prüfen“ ansehen. In den Zahlen oben nicht enthalten.“ Die Zahl steht in Bernstein
+  wie „Wiedervorlage fällig“, keine sechste Kachel. Nur Zahlen, keine Namen.
+- **Getestet:** `tests/laden-zahlen.test.mjs` 9/9 (neu: Feld fehlt → 0 und erreichbar, Feld vorhanden, ungültige
+  Werte −1/1,5/"3"/null/true → unbrauchbar, Zeile bei 2 und 1 – Einzahl „Fall“ –, keine Zeile bei 0 und ohne
+  Feld). `npm run dashboard:test` 231/231, `npm test` 2109/2109 (nach Zusammenführen mit `main`). `dashboard:pruefen`
+  für „Heute“ bei 1440, 1024, 800, 390 und 360 px nur `OK`. Sichtprüfung gegen die Kopie mit abgefangenem `/api/laden/zahlen` (2, 1, 0, Feld
+  fehlt) bei 1440/390/360 px, hell und dunkel: Zeile nur bei 2 und 1, steht unter den Zahlen, Farbe gleich der
+  Wiedervorlage-Zahl (hell `#9a6400`, dunkel `#e5b34f`), 0 px seitlicher Überlauf, keine JS-Fehler.
+- **Risiken/Annahmen:** Die Laden-Ansicht der App hat keinen Sprunglink direkt auf den Filter; die Zeile nennt
+  deshalb den Filternamen. Ein ungültiger Wert in `spamVerdacht` setzt – wie bei jedem anderen Feld – die ganze
+  Kachel auf „nicht erreichbar“.
+- **Nächste Stufe:** Falls die App einen Parameter für den Filter bekommt (z. B. `?ansicht=laden&filter=spam`),
+  die Zeile direkt dorthin verlinken.

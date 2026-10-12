@@ -3,8 +3,8 @@
  *
  * Die Auftrags-App (Google Apps Script, eigenes Repository) beantwortet
  * `<App-URL>?ansicht=zahlen&s=<Schluessel>` mit reinen Zahlen - offene Beratungen,
- * faellige Wiedervorlagen, offene Angebote, Faelle aus dem Shop, gewonnen/verloren.
- * Nie Namen oder Kundendaten.
+ * faellige Wiedervorlagen, offene Angebote, Faelle aus dem Shop, gewonnen/verloren und
+ * (ab App-Version 43) Faelle aus dem Shop mit Spam-Verdacht. Nie Namen oder Kundendaten.
  *
  * Abgerufen wird hier im Server und nicht im Browser:
  *  - Apps Script schickt keine CORS-Kopfzeilen, ein fetch() aus der Seite scheitert.
@@ -37,8 +37,14 @@ import { ladeEnvLocal } from '../operations/sync/zugang.mjs';
 
 /** Felder, die durchgereicht werden - alles andere aus der Antwort faellt weg. */
 export const LADEN_ZAHLEN_FELDER = Object.freeze([
-  'offen', 'neu', 'angebot', 'nachfassen', 'faellig', 'ausShop7Tage', 'gewonnen30Tage', 'verloren30Tage', 'angeboteOffen',
+  'offen', 'neu', 'angebot', 'nachfassen', 'faellig', 'ausShop7Tage', 'gewonnen30Tage', 'verloren30Tage', 'angeboteOffen', 'spamVerdacht',
 ]);
+/**
+ * Felder, die aeltere App-Versionen noch nicht liefern (spamVerdacht erst ab Version 43).
+ * Fehlen sie, gelten sie als 0 - sonst stuende die Kachel bis zum Update der App auf
+ * „nicht erreichbar". Sind sie da, gilt dieselbe Pruefung wie fuer alle anderen.
+ */
+export const LADEN_ZAHLEN_SPAETER = Object.freeze(['spamVerdacht']);
 export const LADEN_CACHE_MS = 5 * 60_000;
 export const LADEN_FEHLER_CACHE_MS = 60_000;
 export const LADEN_ZEITLIMIT_MS = 15_000;
@@ -76,13 +82,14 @@ export function ladenUrl(basis) {
 /**
  * Antwort der Auftrags-App pruefen: genau die bekannten Felder, jedes eine ganze Zahl >= 0.
  * Fehlt eines oder ist eines keine Zahl, gilt die ganze Antwort als unbrauchbar (null) -
- * lieber „nicht erreichbar" als eine halbe, falsche Kachel.
+ * lieber „nicht erreichbar" als eine halbe, falsche Kachel. Ausnahme: ein fehlendes Feld aus
+ * LADEN_ZAHLEN_SPAETER (aeltere App-Version) zaehlt als 0.
  */
 export function zahlenAus(j) {
   if (!j || typeof j !== 'object' || Array.isArray(j)) return null;
   const zahlen = {};
   for (const f of LADEN_ZAHLEN_FELDER) {
-    const n = j[f];
+    const n = j[f] === undefined && LADEN_ZAHLEN_SPAETER.includes(f) ? 0 : j[f];
     if (!Number.isInteger(n) || n < 0) return null;
     zahlen[f] = n;
   }

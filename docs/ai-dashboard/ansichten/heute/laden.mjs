@@ -2,7 +2,8 @@
  * "Heute": Kachel "Laden" - Zahlen aus dem Laden-Modus der Auftrags-App.
  *
  * Offene Beratungen, faellige Wiedervorlagen, offene Angebote, Faelle aus dem Shop
- * (7 Tage) und gewonnen/verloren (30 Tage). Nur Zahlen: Namen und Kundendaten bleiben
+ * (7 Tage) und gewonnen/verloren (30 Tage), darunter - nur wenn es welche gibt - die
+ * Faelle mit Spam-Verdacht. Nur Zahlen: Namen und Kundendaten bleiben
  * in der Auftrags-App. Die Zahlen holt der lokale Server (/api/laden/zahlen,
  * scripts/laden-zahlen.mjs) - der Browser spricht die App nie direkt an und kennt
  * ihren Schluessel nicht.
@@ -46,6 +47,17 @@ function kachel(n, titel, unter, { warn = false } = {}) {
 }
 
 /**
+ * Faelle aus dem Shop, die die App als moeglichen Spam zurueckhaelt. Sie zaehlen in keiner der
+ * fuenf Zahlen mit und warten in der Laden-Ansicht im Filter „Spam pruefen" auf eine Entscheidung.
+ * Deshalb eine eigene Zeile - aber nur, wenn welche da sind (0 oder aeltere App: nichts).
+ */
+function spamHinweis(n) {
+  if (!Number.isInteger(n) || n <= 0) return '';
+  const faelle = n === 1 ? 'Fall' : 'Fälle';
+  return `<p class="heute-hinweis heute-laden-spam"><b>${esc(n.toLocaleString('de-DE'))}</b> ${faelle} aus dem Shop mit Spam-Verdacht – in der Laden-Ansicht unter „Spam prüfen“ ansehen. In den Zahlen oben nicht enthalten.</p>`;
+}
+
+/**
  * Block "Laden" fuer die Startseite. Ohne Einrichtung (keine URL/kein Schluessel in .env.local)
  * eine ruhige Zeile statt eines Fehlers.
  */
@@ -70,7 +82,7 @@ export function heuteLaden() {
       ${kachel(z.angeboteOffen, 'Angebote offen', `davon ${z.nachfassen} zum Nachfassen`)}
       ${kachel(z.ausShop7Tage, 'Aus dem Shop', 'Muster und Anfragen, 7 Tage')}
       ${kachel(z.gewonnen30Tage, 'Gewonnen', `verloren ${z.verloren30Tage} · 30 Tage`)}
-    </div>`;
+    </div>${spamHinweis(z.spamVerdacht)}`;
   }
   return `<section class="heute-block heute-laden" aria-labelledby="heuteLaden">
     <div class="heute-block-kopf"><h2 id="heuteLaden">Laden</h2><span>${esc(unterzeile)}</span>${link}</div>

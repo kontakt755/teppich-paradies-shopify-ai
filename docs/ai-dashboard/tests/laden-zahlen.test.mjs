@@ -24,6 +24,8 @@ const BASIS = 'https://script.google.com/macros/s/TEST-DEPLOYMENT/exec';
 const SCHLUESSEL = 'test-schluessel-nur-fuer-tests-0123456789';
 const ENV = { TP_ENV_LOCAL: KEINE_DATEI, LADEN_ZAHLEN_URL: BASIS, LADEN_ZAHLEN_SCHLUESSEL: SCHLUESSEL };
 const ZAHLEN = { offen: 6, neu: 4, angebot: 1, nachfassen: 1, faellig: 2, ausShop7Tage: 2, gewonnen30Tage: 2, verloren30Tage: 2, angeboteOffen: 2 };
+// Ab App-Version 43 kommt spamVerdacht dazu (in genau dieser Reihenfolge am Ende); ZAHLEN allein ist die aeltere App.
+const ZAHLEN_V43 = { ...ZAHLEN, spamVerdacht: 3 };
 const STAND = '2026-10-14T08:00:00.000Z';
 
 function antwort(body, { status = 200 } = {}) {
@@ -73,13 +75,27 @@ test('ladenKonfig: nicht eingerichtet ohne URL oder Schluessel; nur https://scri
 });
 
 test('zahlenAus: genau die bekannten Felder als ganze Zahlen >= 0, alles andere faellt weg; sonst null', () => {
-  const ok = zahlenAus({ stand: STAND, ...ZAHLEN, kunde: 'Max Muster', telefon: '0171 9876543' });
-  assert.deepEqual(ok, { zahlen: ZAHLEN, stand: STAND });
+  const ok = zahlenAus({ stand: STAND, ...ZAHLEN_V43, kunde: 'Max Muster', telefon: '0171 9876543' });
+  assert.deepEqual(ok, { zahlen: ZAHLEN_V43, stand: STAND });
   assert.deepEqual(Object.keys(ok.zahlen), LADEN_ZAHLEN_FELDER);
-  assert.equal(zahlenAus({ ...ZAHLEN, stand: 'gestern' }).stand, null);
+  assert.deepEqual(LADEN_ZAHLEN_FELDER, ['offen', 'neu', 'angebot', 'nachfassen', 'faellig', 'ausShop7Tage', 'gewonnen30Tage', 'verloren30Tage', 'angeboteOffen', 'spamVerdacht']);
+  assert.equal(zahlenAus({ ...ZAHLEN_V43, stand: 'gestern' }).stand, null);
   for (const kaputt of [null, [], 'text', { fehler: 'kein Zugriff' }, { ...ZAHLEN, offen: -1 }, { ...ZAHLEN, faellig: 1.5 }, { ...ZAHLEN, neu: '4' }, (({ offen, ...r }) => r)(ZAHLEN)]) {
     assert.equal(zahlenAus(kaputt), null, JSON.stringify(kaputt));
   }
+});
+
+test('zahlenAus: spamVerdacht fehlt (App vor Version 43) → 0, die Antwort bleibt brauchbar; ist es da, gilt dieselbe Pruefung', () => {
+  const alt = zahlenAus({ stand: STAND, ...ZAHLEN });
+  assert.deepEqual(alt, { zahlen: { ...ZAHLEN, spamVerdacht: 0 }, stand: STAND });
+  assert.deepEqual(Object.keys(alt.zahlen), LADEN_ZAHLEN_FELDER);
+  assert.equal(zahlenAus({ ...ZAHLEN, spamVerdacht: 0 }).zahlen.spamVerdacht, 0);
+  assert.equal(zahlenAus({ ...ZAHLEN, spamVerdacht: 12 }).zahlen.spamVerdacht, 12);
+  for (const kaputt of [-1, 1.5, '3', null, true]) {
+    assert.equal(zahlenAus({ ...ZAHLEN, spamVerdacht: kaputt }), null, `spamVerdacht: ${JSON.stringify(kaputt)}`);
+  }
+  // Nur spamVerdacht darf fehlen - jedes andere Feld bleibt Pflicht.
+  assert.equal(zahlenAus((({ angeboteOffen, ...r }) => r)(ZAHLEN_V43)), null);
 });
 
 test('Abruf: nicht eingerichtet ruft nichts ab; eingerichtet holt ?ansicht=zahlen&s=… (Weiterleitung folgen) und gibt nur Zahlen und den Link zurueck - nie den Schluessel', async () => {
@@ -89,7 +105,7 @@ test('Abruf: nicht eingerichtet ruft nichts ab; eingerichtet holt ?ansicht=zahle
   assert.equal(f0.aufrufe.length, 0);
 
   const jetzt = uhr();
-  const f = attrappe(antwort({ stand: STAND, ...ZAHLEN, kunde: 'Max Muster' }));
+  const f = attrappe(antwort({ stand: STAND, ...ZAHLEN_V43, kunde: 'Max Muster' }));
   const lz = createLadenZahlen({ env: ENV, fetch: f, jetzt, log: stumm });
   const r = await lz.abrufen();
   assert.equal(f.aufrufe.length, 1);
@@ -99,9 +115,14 @@ test('Abruf: nicht eingerichtet ruft nichts ab; eingerichtet holt ?ansicht=zahle
   assert.equal(u.searchParams.get('s'), SCHLUESSEL);
   assert.equal(f.aufrufe[0].opt.redirect, 'follow');
   assert.ok(f.aufrufe[0].opt.signal, 'Zeitlimit gesetzt');
-  assert.deepEqual(r, { eingerichtet: true, erreichbar: true, zahlen: ZAHLEN, stand: STAND, abgerufen: new Date(jetzt()).toISOString(), ladenUrl: `${BASIS}?ansicht=laden` });
+  assert.deepEqual(r, { eingerichtet: true, erreichbar: true, zahlen: ZAHLEN_V43, stand: STAND, abgerufen: new Date(jetzt()).toISOString(), ladenUrl: `${BASIS}?ansicht=laden` });
   const text = JSON.stringify(r);
   assert.ok(!text.includes(SCHLUESSEL) && !text.includes('s=') && !text.includes('Muster'), text);
+
+  // Aeltere App ohne spamVerdacht: weiter erreichbar, Spam-Verdacht 0 statt „nicht erreichbar"
+  const alt = await createLadenZahlen({ env: ENV, fetch: attrappe(antwort({ stand: STAND, ...ZAHLEN })), jetzt, log: stumm }).abrufen();
+  assert.equal(alt.erreichbar, true);
+  assert.deepEqual(alt.zahlen, { ...ZAHLEN, spamVerdacht: 0 });
 });
 
 test('Zwischenspeicher: Erfolg 5 Minuten, Fehlschlag 1 Minute; gleichzeitige Anfragen teilen einen Abruf; neue Konfiguration verwirft den alten Stand', async () => {
@@ -195,6 +216,16 @@ test('Kachel auf "Heute": fuenf Zahlen, faellige Wiedervorlagen in Bernstein, 0 
   assert.match(html, /<div class="n warn">2<\/div>\s*<div class="l">Wiedervorlage fällig/);
   assert.match(html, /<div class="n null">0<\/div>\s*<div class="l">Aus dem Shop/);
   assert.match(html, /href="https:\/\/script\.google\.com\/macros\/s\/TEST-DEPLOYMENT\/exec\?ansicht=laden" target="_blank" rel="noopener">Laden-Ansicht öffnen/);
+  assert.ok(!/Spam/.test(html), 'ohne Feld (aeltere App) kein Spam-Hinweis');
+
+  // Spam-Verdacht: nur bei > 0 eine Zeile unter den Zahlen, Zahl in Bernstein, keine sechste Kachel
+  const mitSpam = n => { ladenKachel.daten = { ...ladenKachel.daten, zahlen: { ...ZAHLEN_V43, spamVerdacht: n } }; return heuteLaden(); };
+  assert.ok(!/Spam/.test(mitSpam(0)), '0 Spam-Verdacht: keine Zeile');
+  const zwei = mitSpam(2);
+  assert.equal((zwei.match(/class="heute-kpi"/g) || []).length, 5, 'weiter fuenf Zahlen');
+  assert.match(zwei, /<p class="heute-hinweis heute-laden-spam"><b>2<\/b> Fälle aus dem Shop mit Spam-Verdacht – in der Laden-Ansicht unter „Spam prüfen“ ansehen\. In den Zahlen oben nicht enthalten\.<\/p>/);
+  assert.ok(zwei.indexOf('heute-laden-spam') > zwei.indexOf('Gewonnen'), 'Zeile steht unter den Zahlen');
+  assert.match(mitSpam(1), /<b>1<\/b> Fall aus dem Shop mit Spam-Verdacht/);
 
   ladenKachel.daten = { eingerichtet: false };
   const leer = heuteLaden();

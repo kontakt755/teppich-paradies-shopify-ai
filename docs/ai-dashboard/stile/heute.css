@@ -108,6 +108,9 @@ html[data-theme="dark"] .heute-sicht a[aria-current] { color: var(--bg); }
 .heute-kpis.heute-laden-zahlen { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .heute-laden-zahlen .n.null { color: var(--text-3); }
 .heute-laden-zahlen .n.warn { color: var(--warn); }
+/* Spam-Verdacht: eine ruhige Zeile unter den Zahlen, nur die Zahl in Bernstein (zu tun). */
+.heute-laden .heute-laden-spam { margin-top: 10px; }
+.heute-laden-spam b { color: var(--warn); font-weight: 650; font-variant-numeric: tabular-nums; }
 @media (max-width: 1100px) {
   .heute-kpis.heute-laden-zahlen { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
