@@ -622,7 +622,14 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   // und weiterlaufen.
   process.on('uncaughtException', e => logFehler('server', `Unerwarteter Fehler (Dienst laeuft weiter): ${String(e?.stack || e?.message || e).split('\n').slice(0, 3).join(' ')}`));
   process.on('unhandledRejection', e => logFehler('server', `Unbehandelte Ablehnung (Dienst laeuft weiter): ${String(e?.stack || e?.message || e).split('\n').slice(0, 3).join(' ')}`));
-  createServer(requestHandler).listen(PORT, HOST, () => {
+  const server = createServer(requestHandler);
+  // Faengt der Start selbst (Port belegt), soll der Prozess enden - sonst liefe er
+  // dank der Handler oben ohne offenen Port weiter, und launchd startete ihn nie neu.
+  server.on('error', e => {
+    logFehler('server', `Start fehlgeschlagen: ${e?.message || e}`);
+    process.exit(1);
+  });
+  server.listen(PORT, HOST, () => {
     if (HOST === '127.0.0.1') {
       console.log(`Control Center: http://localhost:${PORT}`);
     } else {
