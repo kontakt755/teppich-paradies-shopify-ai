@@ -4,7 +4,7 @@
 import { normalizeTask, attentionScore, freshness } from '../lib/model.mjs';
 import { CONFIG } from './konfig.mjs';
 import { state } from './zustand.mjs';
-import { $, fmtDateTime, toast } from './helfer.mjs';
+import { $, fmtDateTime, chipZeit, toast } from './helfer.mjs';
 import { render } from './render.mjs';
 
 export async function loadData() {
@@ -59,7 +59,7 @@ export function renderSyncChip() {
   const fr = freshness(state.raw?.generated_at);
   chip.className = `sync-chip ${state.loadError ? 'fehler' : fr.level}`;
   // Kurz halten: der Chip darf in der Kopfzeile nicht umbrechen. Details stehen im Tooltip.
-  const uhrzeit = state.raw?.generated_at ? new Date(state.raw.generated_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '–';
+  const uhrzeit = chipZeit(state.raw?.generated_at);
   // "Stand 14:30" liest sich wie der Stand aller Zahlen im Dashboard. Der Wert
   // kommt aber allein aus issues.json, also von den Entwicklungsaufgaben; die
   // Betriebsdaten (Bestellungen, Kunden, Lexikon) haben eigene, meist aeltere

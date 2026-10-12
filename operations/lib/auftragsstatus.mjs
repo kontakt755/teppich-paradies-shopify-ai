@@ -49,14 +49,27 @@ function defaultPrivatDir() {
   return process.env.TP_PRIVAT_DIR || path.join(os.homedir(), 'teppich-paradies-analyse');
 }
 
-/** Liest die Statusdatei; fehlende Datei ist kein Fehler, sondern leerer Zustand. */
+/**
+ * Liest die Statusdatei; fehlende Datei ist kein Fehler, sondern leerer Zustand.
+ *
+ * Nur das Fehlen gilt als leer. Eine unlesbare oder beschaedigte Datei wirft -
+ * frueher kam dann {} zurueck, und der naechste Klick auf "→ Bestellt" schrieb
+ * eine Datei mit genau dieser einen Position: der Stand aller anderen war weg.
+ */
 export function leseAlle(file) {
+  let text;
   try {
-    const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
-    return raw && typeof raw === 'object' && raw.positionen && typeof raw.positionen === 'object' ? raw.positionen : {};
-  } catch {
-    return {};
+    text = fs.readFileSync(file, 'utf8');
+  } catch (e) {
+    if (e?.code === 'ENOENT') return {};
+    throw new Error(`${path.basename(file)} ist nicht lesbar (${e?.code || e?.message}) – bitte aus der Sicherung holen`);
   }
+  if (!text.trim()) return {};
+  let raw;
+  try { raw = JSON.parse(text); } catch {
+    throw new Error(`${path.basename(file)} ist beschädigt – bitte aus der Sicherung holen (npm run daten:sichern legt sie an)`);
+  }
+  return raw && typeof raw === 'object' && raw.positionen && typeof raw.positionen === 'object' ? raw.positionen : {};
 }
 
 /** Atomarer Schreibvorgang: tmp-Datei im selben Verzeichnis, dann rename. */

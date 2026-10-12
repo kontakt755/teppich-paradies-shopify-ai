@@ -408,6 +408,38 @@ function ausShopwache(quellen, jetzt) {
   }];
 }
 
+/**
+ * Tailscale am Mac mini: ohne laufendes Tailscale ist das Control Center von unterwegs
+ * (Handy, zu Hause) nicht erreichbar. Der Server fragt `tailscale status` nur ab
+ * (operations/lib/tailscale.mjs) und liefert das Ergebnis mit der Shop-Wache aus.
+ * Text an einer Stelle: To-do, Shop-Wache und Systemzustand sagen dasselbe.
+ */
+export function tailscaleHinweis(stand) {
+  if (stand?.status === 'gestoppt') {
+    return {
+      titel: 'Tailscale ist aus – von unterwegs ist das Control Center nicht erreichbar',
+      handlung: 'Am Mac mini oben rechts in der Menüleiste auf das Tailscale-Symbol klicken und „Connect“ wählen.',
+    };
+  }
+  if (stand?.status === 'abgemeldet') {
+    return {
+      titel: 'Tailscale ist abgemeldet – von unterwegs ist das Control Center nicht erreichbar',
+      handlung: 'Am Mac mini das Tailscale-Symbol in der Menüleiste öffnen und mit dem Firmenkonto anmelden („Log in“).',
+    };
+  }
+  return null;
+}
+
+function ausTailscale(quellen) {
+  const h = tailscaleHinweis(quellen.shopwache?.tailscale);
+  if (!h) return [];
+  return [{
+    id: 'tailscale', art: 'tailscale', bereich: 'website', ton: 'warn', alterTage: null,
+    titel: h.titel, kontext: h.handlung,
+    knopf: { text: 'Ansehen', href: '#/shopwache' },
+  }];
+}
+
 /** Alle ableitbaren To-dos, unsortiert und ohne Blick auf die Rolle. */
 function alleTodos(quellen, opt) {
   const k = kontext(quellen, opt);
@@ -417,6 +449,7 @@ function alleTodos(quellen, opt) {
     ...ausAufgaben(quellen, { ich: opt.ich, jetzt: k.jetzt }),
     ...ausFreigaben(quellen, k.jetzt),
     ...ausShopwache(quellen, k.jetzt),
+    ...ausTailscale(quellen),
   ];
 }
 

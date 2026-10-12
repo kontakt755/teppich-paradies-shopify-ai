@@ -18,7 +18,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
-import { normalizeTask, requirementsFor, labelChangesFor, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
+import { normalizeTask, requirementsFor, labelChangesFor, mitBlockerAbschnitt, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
 import { texteAusMarkdown } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
 import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
@@ -38,7 +38,7 @@ import { analysiere as orgAnalysiere, ausListe as orgAusListe } from '../operati
 import {
   lies as orgLies, schreib as orgSchreib, dateiPfad as orgDatei, baueEintrag,
   findeEintrag, aendere as orgAendere, kommentiere as orgKommentiere,
-  speichereAnhang, anhangPfad, ANHANG_TYPEN,
+  speichereAnhang, anhangPfad, ANHANG_TYPEN, OrganisationFehler,
 } from '../operations/lib/organisation-speicher.mjs';
 import {
   leseBenutzer as orgLeseBenutzer, schreibeBenutzer, benutzerAnlegen, passwortSetzen,
@@ -61,6 +61,8 @@ import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, Sonde
 import { ohneUeberholtenFehler } from '../operations/scripts/aktualisieren.mjs';
 import { meldungenPfad, abgleichPfad, meldungAnlegen, alleMeldungen, sichtbareMeldungen, darfMeldungSehen, bildAusUpload, bildDatei, BILDER_MAX, FehlermeldungFehler } from '../operations/lib/fehlermeldungen.mjs';
 import { dashboardLinks } from './weitere-dashboards.mjs';
+import { logFehler } from './dashboard-log.mjs';
+import { leseTailscaleStatus } from '../operations/lib/tailscale.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -132,13 +134,52 @@ function readJsonIfExists(file) {
       ? 'Die Datei ist beschädigt (kein gültiges JSON).'
       : e?.code === 'EACCES' ? 'Keine Leserechte für die Datei.' : String(e?.message || e).slice(0, 200);
     leseFehlerCache.set(file, text);
-    console.error(`[daten] ${file}: ${text}`);
+    logFehler('daten', `${file}: ${text}`);
     return null;
+  }
+}
+
+/**
+ * Eingabefehler aus dem Aufgabenspeicher (fehlender Titel, leerer Kommentar,
+ * unbekannter Status) sind 400 - bisher kamen sie als 500 "Das hat nicht
+ * geklappt" an, und niemand erfuhr, was an der Eingabe fehlte.
+ */
+function mitEingabepruefung(fn) {
+  try { return fn(); } catch (e) {
+    if (e instanceof OrganisationFehler) throw new ApiError(400, e.message);
+    throw e;
   }
 }
 
 /** Grund, warum eine Datei nicht gelesen werden konnte - null, wenn sie schlicht fehlt. */
 export function leseFehler(file) { return leseFehlerCache.get(file) || null; }
+
+/**
+ * Wie readJsonIfExists, aber zwischengespeichert, solange sich die Datei nicht
+ * aendert (Groesse und Aenderungszeit). Gedacht fuer den Lexikon-Export: rund
+ * 27 MB, die bisher bei JEDER Anfrage synchron gelesen und geparst wurden -
+ * die Befehlspalette fragt beim Tippen alle 150 ms, und waehrenddessen stand
+ * der ganze Dienst fuer alle anderen still.
+ *
+ * Das Ergebnis wird von mehreren Anfragen geteilt: Aufrufer duerfen es nur
+ * lesen, nie veraendern.
+ */
+const jsonZwischenspeicher = new Map();
+export function readJsonGecacht(file) {
+  let st;
+  try { st = fs.statSync(file); } catch (e) {
+    jsonZwischenspeicher.delete(file);
+    if (e?.code === 'ENOENT') { leseFehlerCache.delete(file); return null; }
+    return readJsonIfExists(file);   // meldet den Grund wie gewohnt
+  }
+  const kennung = `${st.size}:${st.mtimeMs}`;
+  const treffer = jsonZwischenspeicher.get(file);
+  if (treffer && treffer.kennung === kennung) return treffer.daten;
+  const daten = readJsonIfExists(file);
+  if (daten === null) jsonZwischenspeicher.delete(file);
+  else jsonZwischenspeicher.set(file, { kennung, daten });
+  return daten;
+}
 
 /** Wendet dieselben Filterchips wie alleKunden() auf Freitextsuchtreffer an (kundenListenEintrag-Form). */
 function passtZuKundenFilter(filter) {
@@ -443,7 +484,7 @@ function stammKontakte(dir) {
   return index;
 }
 
-export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env, shopifyZugang = null } = {}) {
+export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus } = {}) {
   let userCache = null;
   let labelCache = { at: 0, names: [] };
   // Prozesszustand des Knopfs "Jetzt aktualisieren" - genau ein Lauf gleichzeitig,
@@ -451,6 +492,25 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
   // noch laufenden Kindprozess, der aber unabhaengig weiterlaeuft und sein Ergebnis
   // ohnehin nur in aktualisierung.json schreibt).
   let aktualisierungLauf = null; // { seit, fehler, fertig } waehrend ein Lauf aktiv ist, sonst null
+  // Ergebnis des letzten Knopf-Laufs. Bisher wurde ein Fehler gesetzt und im selben
+  // Moment mit dem Lauf verworfen - die Oberflaeche meldete "abgeschlossen", auch
+  // wenn der Lauf abgebrochen war.
+  let letzterKnopfLauf = null;  // { seit, bis, fehler }
+
+  // Tailscale: hoechstens einmal je Minute fragen, gleichzeitige Anfragen teilen sich die Antwort.
+  let tailscaleStand = null;    // { at, wert }
+  let tailscaleAbfrage = null;
+  async function tailscaleZustand() {
+    if (tailscaleStand && Date.now() - tailscaleStand.at < 60_000) return tailscaleStand.wert;
+    if (!tailscaleAbfrage) {
+      tailscaleAbfrage = Promise.resolve()
+        // Bewusst process.env statt `env`: es geht um diesen Rechner, nicht um den Shop-Zugang.
+        .then(() => tailscale())
+        .catch(e => ({ status: 'unbekannt', zustand: null, meldung: String(e?.message || e).slice(0, 200) }))
+        .then(wert => { tailscaleStand = { at: Date.now(), wert }; tailscaleAbfrage = null; return wert; });
+    }
+    return tailscaleAbfrage;
+  }
 
   function manuellerZugangVorhanden() {
     const zugang = { ...ladeEnvLocal(path.join(root, '.env.local')), ...env };
@@ -741,7 +801,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
       const target = String(payload.target || '');
       if (!STATUS_BY_KEY[target]) throw new ApiError(400, `Unbekannter Zielstatus „${target}"`, { missing: [`Unbekannter Zielstatus „${target}"`] });
-      const { task } = await fetchIssue(number);
+      const { task, raw } = await fetchIssue(number);
       const missing = requirementsFor(task, target, payload);
       if (missing.length) throw new ApiError(400, 'Pflichtangaben fehlen', { missing });
       const labels = await repoLabels();
@@ -753,7 +813,16 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       for (const l of change.add) editArgs.push('--add-label', l);
       const newOwner = payload.owner && payload.owner !== task.owner ? String(payload.owner).replace(/^@/, '') : null;
       if (newOwner) editArgs.push('--add-assignee', newOwner);
-      if (change.remove.length || change.add.length || newOwner) await gh(editArgs);
+      // Der Grund stand bisher nur im Kommentar. Die Oberflaeche liest ihn aber aus
+      // dem Abschnitt "## Blocker" im Issue - "Blocker-Grund fehlt" stand dann
+      // neben einer Aufgabe, deren Grund gerade erst eingegeben worden war.
+      let neuerBody = null;
+      if (target === 'blockiert' && String(payload.reason || '').trim()) {
+        neuerBody = mitBlockerAbschnitt(raw?.body || '', payload.reason);
+        if (neuerBody !== (raw?.body || '')) editArgs.push('--body', neuerBody);
+        else neuerBody = null;
+      }
+      if (change.remove.length || change.add.length || newOwner || neuerBody !== null) await gh(editArgs);
 
       const text = payload.comment || payload.reason || null;
       const heading = payload.decision && DECISION_LABEL[payload.decision] ? DECISION_LABEL[payload.decision] : `Status ${task.statusLabel} → ${STATUS_BY_KEY[target].label}`;
@@ -1052,7 +1121,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const planFile = path.join(dir, 'einkauf-dryrun', 'plan.json');
       const offenFile = path.join(dir, 'einkauf-klaerung', 'offen.json');
       // Vorrang hat das Lexikon (laufend erneuert); die Septemberdateien nur, wenn es keins gibt.
-      const lexikon = readJsonIfExists(lexikonFile);
+      const lexikon = readJsonGecacht(lexikonFile);
       let planRows;
       let offenRows;
       let quelle;
@@ -1268,7 +1337,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     lexikonListe({ q = '', page = 1, pageSize = 20 } = {}) {
       const dir = privatDirPath || privatDir();
       const file = path.join(dir, 'lexikon', 'produkte.json');
-      const daten = readJsonIfExists(file);
+      const daten = readJsonGecacht(file);
       if (!daten || !Array.isArray(daten.produkte)) {
         const kaputt = leseFehler(file);
         return {
@@ -1302,7 +1371,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     lexikonMengenhilfe({ handle, variantenId, kundenmengeM2, kundenlaengeCm } = {}) {
       const dir = privatDirPath || privatDir();
       const file = path.join(dir, 'lexikon', 'produkte.json');
-      const daten = readJsonIfExists(file);
+      const daten = readJsonGecacht(file);
       if (!daten || !Array.isArray(daten.produkte)) {
         const kaputt = leseFehler(file);
         return {
@@ -1363,7 +1432,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     lexikonProdukt(handle) {
       const dir = privatDirPath || privatDir();
       const file = path.join(dir, 'lexikon', 'produkte.json');
-      const daten = readJsonIfExists(file);
+      const daten = readJsonGecacht(file);
       if (!daten || !Array.isArray(daten.produkte)) {
         const kaputt = leseFehler(file);
         return {
@@ -1607,7 +1676,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
 
     _lexikonProdukte() {
       const file = path.join(privatDirPath || privatDir(), 'lexikon', 'produkte.json');
-      const daten = readJsonIfExists(file);
+      const daten = readJsonGecacht(file);
       return Array.isArray(daten?.produkte) ? daten.produkte : [];
     },
 
@@ -1861,7 +1930,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const anzulegen = Array.isArray(zeilen) ? zeilen : [];
       const angelegt = [];
       for (const roh of anzulegen) {
-        angelegt.push(baueEintrag(roh, { benutzer }));
+        angelegt.push(mitEingabepruefung(() => baueEintrag(roh, { benutzer })));
       }
       daten.eintraege.push(...angelegt);
       if (angelegt.length) orgSchreib(daten, datei);
@@ -1871,7 +1940,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     orgNeu(roh = {}, { benutzer = null } = {}) {
       const datei = this._orgDatei();
       const daten = orgLies(datei);
-      const eintrag = baueEintrag(roh, { benutzer });
+      const eintrag = mitEingabepruefung(() => baueEintrag(roh, { benutzer }));
       daten.eintraege.push(eintrag);
       orgSchreib(daten, datei);
       return { ok: true, eintrag };
@@ -1899,7 +1968,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         eintrag.verlauf.push({ zeit: new Date().toISOString(), wer: benutzer?.kuerzel || benutzer?.name || 'inhaber', was: regel ? `Wiederholung auf ${regel} gesetzt` : 'Wiederholung entfernt' });
         delete felder.wiederholungRegel;
       }
-      orgAendere(eintrag, felder, { benutzer });
+      mitEingabepruefung(() => orgAendere(eintrag, felder, { benutzer }));
       orgSchreib(daten, datei);
       return { ok: true, eintrag };
     },
@@ -1910,7 +1979,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const eintrag = findeEintrag(daten, id);
       if (!eintrag) throw new ApiError(404, 'Eintrag nicht gefunden');
       if (!darfSehen(eintrag, benutzer)) throw new ApiError(403, 'Keine Berechtigung für diesen Eintrag');
-      orgKommentiere(eintrag, text, { benutzer });
+      mitEingabepruefung(() => orgKommentiere(eintrag, text, { benutzer }));
       orgSchreib(daten, datei);
       return { ok: true, eintrag };
     },
@@ -1954,7 +2023,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (!eintrag || !darfSehen(eintrag, benutzer)) throw new ApiError(404, 'Nicht gefunden');
       const anhang = (eintrag.anhaenge ?? []).find(a => a.datei === datei);
       if (!anhang) throw new ApiError(404, 'Anhang nicht gefunden');
-      const pfad = anhangPfad(id, datei, privatDirPath || privatDir());
+      const pfad = mitEingabepruefung(() => anhangPfad(id, datei, privatDirPath || privatDir()));
       return { pfad, typ: anhang.typ, name: anhang.name };
     },
 
@@ -1969,14 +2038,17 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * Ergebnis der Shop-Wache (operations/scripts/shopwache.mjs). Zeigt, ob
      * der oeffentliche Shop laeuft - das sieht man den Admin-Daten nicht an.
      */
-    shopwacheStatus() {
+    async shopwacheStatus() {
       const dir = privatDirPath || privatDir();
       const file = path.join(dir, 'shopwache', 'status.json');
       const daten = readJsonIfExists(file);
+      // Tailscale gehoert nicht zum Shop, aber zur selben Frage "laeuft von aussen
+      // alles?" - und der Inhaber sieht diese Antwort als To-do auf "Heute".
+      const ts = await tailscaleZustand();
       if (!daten || !daten.geprueftAm) {
-        return { verfuegbar: false, quelle: file, hinweis: 'Shop-Wache noch nie gelaufen.', befehl: 'npm run shop:wache' };
+        return { verfuegbar: false, quelle: file, hinweis: 'Shop-Wache noch nie gelaufen.', befehl: 'npm run shop:wache', tailscale: ts };
       }
-      return { verfuegbar: true, quelle: file, ...daten };
+      return { verfuegbar: true, quelle: file, ...daten, tailscale: ts };
     },
 
     /**
@@ -2237,7 +2309,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * Fehler, nur ein leerer Zustand mit dem Befehl, der sie anlegen wuerde.
      */
     aktualisierung() {
-      return leseAktualisierungsstand();
+      return { ...leseAktualisierungsstand(), letzterKnopfLauf };
     },
 
     /**
@@ -2269,8 +2341,28 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       audit({ action: 'aktualisierung-start' });
       execFileP(process.execPath, [skript], { cwd: root, timeout: 10 * 60_000, maxBuffer: 8 * 1024 * 1024 })
         .then(() => { lauf.fertig = true; })
-        .catch(err => { lauf.fertig = true; lauf.fehler = String(err?.message || err).split('\n')[0].slice(0, 500); })
-        .finally(() => { if (aktualisierungLauf === lauf) aktualisierungLauf = null; });
+        .catch(err => {
+          lauf.fertig = true;
+          // Exit 1 nach vollstaendigem Bericht heisst: einzelne Quellen scheiterten. Das steht
+          // je Quelle in aktualisierung.json und im Systemzustand - kein Abbruch des Laufs.
+          const ausgabe = String(err?.stdout || '');
+          if (!err?.killed && !err?.signal && /^Aktualisierung: /m.test(ausgabe)) {
+            const fehlgeschlagen = (ausgabe.match(/: FEHLER · /g) || []).length;
+            logFehler('aktualisierung', `Knopf-Lauf seit ${seit}: ${fehlgeschlagen} Quelle(n) fehlgeschlagen (Einzelheiten im Systemzustand)`);
+            return;
+          }
+          // Aus der Fehlerausgabe die Zeile mit der eigentlichen Meldung, nicht die Dateiposition davor.
+          const zeilen = String(err?.stderr || '').split('\n').map(z => z.trim()).filter(Boolean);
+          const meldung = zeilen.find(z => /^Fehler: |^[A-Za-z]*Error\b/.test(z)) || zeilen[0] || String(err?.message || err).split('\n')[0];
+          lauf.fehler = err?.killed || err?.signal
+            ? `nach ${Math.round((now() - new Date(seit)) / 1000)} s abgebrochen (${err.signal || 'Zeitlimit'})`
+            : meldung.slice(0, 500);
+          logFehler('aktualisierung', `Knopf-Lauf seit ${seit} abgebrochen: ${lauf.fehler}`);
+        })
+        .finally(() => {
+          letzterKnopfLauf = { seit, bis: now().toISOString(), fehler: lauf.fehler };
+          if (aktualisierungLauf === lauf) aktualisierungLauf = null;
+        });
       return { gestartet: true, laeuft: true, seit };
     },
 
@@ -2280,7 +2372,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * `aktualisierung()`). Wird per Abfrage gepollt (kein Warten im Request).
      */
     aktualisierungStatus() {
-      const stand = leseAktualisierungsstand();
+      const stand = { ...leseAktualisierungsstand(), letzterKnopfLauf };
       if (aktualisierungLauf) return { ...stand, laeuft: true, seit: aktualisierungLauf.seit };
       return { ...stand, laeuft: false, seit: null };
     },
