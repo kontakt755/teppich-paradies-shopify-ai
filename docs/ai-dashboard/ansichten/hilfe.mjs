@@ -32,7 +32,7 @@ export function viewHilfe() {
 
     ${hilfeKarte('Beim Lieferanten bestellen', `
       <ol style="margin:0;padding-left:20px;line-height:1.9">
-        <li>Oben auf <b>Einkauf</b>: je Lieferant eine Karte mit dem, was zu bestellen, bestellt und unterwegs ist.</li>
+        <li>Oben auf <b>Einkauf</b>: je Lieferant eine Karte mit dem, was zu bestellen, bestellt und bei uns eingetroffen ist. Was schon beim Kunden ist, zählt dort als erledigt.</li>
         <li>Der farbige Knopf ist der Bestellweg dieses Lieferanten: <b>Bestellmail öffnen</b>, <b>Im Portal bestellen</b> oder <b>Anrufen</b>. Muster haben einen eigenen Knopf.</li>
         <li>Die Bestellung steht fertig da. <b>Im Mailprogramm öffnen</b> – abschicken tust du selbst, hier wird nie etwas gesendet. Was nicht in der Mail steht, ist mit Grund aufgelistet.</li>
         <li>Danach fragt das Dashboard <b>Als bestellt markieren?</b> – ein Klick setzt alle Artikel der Mail auf „Bestellt".</li>
@@ -66,7 +66,7 @@ export function viewHilfe() {
         <li><b>Anhänge</b>: Bilder, PDF oder Text bis 10 MB direkt an der Aufgabe.</li>
         <li><b>Jetzt prüfen</b> misst Aufgaben mit hinterlegtem Erfolgskriterium am echten Shop – automatisch auch jeden Morgen um 9:30.</li>
       </ul>
-      <p class="small muted" style="margin-top:8px">Der Bereich <b>Entwicklung</b> unter „Mehr" ist etwas anderes: dort steht die Arbeit an Shop und Technik (GitHub, KI-Läufe). Für den Ladenalltag brauchst du ihn nicht.</p>`)}
+      <p class="small muted" style="margin-top:8px">Der Bereich <b>Entwicklung</b> unter „Mehr" ist etwas anderes: dort steht die Arbeit an Shop und Technik (GitHub-Aufgaben). Für den Ladenalltag brauchst du ihn nicht.</p>`)}
 
     ${hilfeKarte('Aufgaben aus ChatGPT oder von einem Zettel übernehmen', `
       <p>Im Bereich <b>Aufgaben</b> oben auf <b>Liste einfügen</b>. Eine Zeile je Aufgabe – Aufzählungszeichen, Nummerierung und Kästchen werden automatisch entfernt, Überschriften übersprungen.</p>

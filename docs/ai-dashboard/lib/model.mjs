@@ -527,7 +527,6 @@ export const SAVED_VIEWS = Object.freeze([
   { key: 'unzugeordnet', label: 'Unzugeordnet',        filter: t => t.open && !t.owner && !['eingang', 'triage', 'beobachten'].includes(t.status) },
   { key: 'blockiert',   label: 'Blockiert',            filter: t => t.status === 'blockiert' },
   { key: 'heute',       label: 'Heute fällig',         filter: t => t.open && t.daysToDue !== null && t.daysToDue <= 0 },
-  { key: 'ki',          label: 'KI wartet',            filter: t => t.open && t.executorKind === 'ki' && ['review', 'freigabe', 'blockiert'].includes(t.status) },
   { key: 'review',      label: 'Review-Queue',         filter: t => t.status === 'review' },
   { key: 'stale',       label: 'Ohne Update seit 7 Tagen', filter: t => t.open && (t.daysSinceUpdate ?? 0) >= 7 && !['eingang', 'beobachten', 'geplant'].includes(t.status) },
   { key: 'triage',      label: 'Triage nötig',         filter: t => t.open && t.triage.length > 0 },

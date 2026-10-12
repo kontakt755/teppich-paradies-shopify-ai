@@ -113,8 +113,10 @@ function weitereLinks() {
     ['https://www.instagram.com/teppich.paradies/', 'Instagram'],
     ['https://www.facebook.com/profile.php?id=100079849794255', 'Facebook'],
   ];
+  // Baustellenfotos (#/fotos) haben seit 2026-10-12 keinen eigenen Menuepunkt mehr - der Weg
+  // vom Handy ist der Upload-Link unten; die eingereichten Bilder stehen hier einen Klick weiter.
   return `<p class="social-weitere small">${links.map(([href, text]) =>
-    `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(text)}</a>`).join('<span aria-hidden="true">·</span>')}</p>`;
+    `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(text)}</a>`).join('<span aria-hidden="true">·</span>')}<span aria-hidden="true">·</span><a href="#/fotos">Baustellenfotos</a></p>`;
 }
 
 export function viewSocial() {

@@ -57,6 +57,22 @@ test('Zeitraeume trennen 7 und 30 Tage, Storno wird ausgewiesen', () => {
   assert.equal(s.zeitraeume['30'].waehrung, 'EUR');
 });
 
+test('Durchschnitt nur ueber Bestellungen mit Betrag - kostenlose Muster druecken ihn nicht', () => {
+  // Erfundene Zahlen: 10 Bestellungen, davon 8 kostenlose Muster, 300 EUR Umsatz - frueher 30 EUR "Bestellwert".
+  const s = schnappschuss([
+    bestellung(1, 200), bestellung(2, 100),
+    ...Array.from({ length: 8 }, (_, i) => bestellung(1 + (i % 5), 0)),
+  ], { jetzt: JETZT });
+  assert.equal(s.zeitraeume['7'].bestellungen, 10);
+  assert.equal(s.zeitraeume['7'].kostenlos, 8);
+  assert.equal(s.zeitraeume['7'].mitBetrag, 2);
+  assert.equal(s.zeitraeume['7'].durchschnitt, 150);
+  // Nur kostenlose Muster: kein Schnitt, nicht 0 geteilt durch irgendwas.
+  const nurMuster = schnappschuss([bestellung(1, 0), bestellung(2, 0)], { jetzt: JETZT });
+  assert.equal(nurMuster.zeitraeume['7'].mitBetrag, 0);
+  assert.equal(nurMuster.zeitraeume['7'].durchschnitt, 0);
+});
+
 test('ohne Bestellungen bleibt der Durchschnitt 0 statt NaN', () => {
   const s = schnappschuss([], { jetzt: JETZT });
   assert.equal(s.zeitraeume['7'].bestellungen, 0);

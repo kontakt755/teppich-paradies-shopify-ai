@@ -120,3 +120,59 @@ test('erledigter Rueckruf steht nicht mehr als Beratung oben', () => {
   // Die Bestellung selbst bleibt sichtbar, solange sie nicht versandt ist
   assert.match(s.text, /bestellen|Versenden/);
 });
+
+// ---------------------------------------------------------------------------
+// Naechster Schritt aus der Zeitleiste (2026-10-12): Shopify-Versandstatus nur als Hinweis
+// ---------------------------------------------------------------------------
+
+const zl = (wer, stufe, text, extra = {}) => ({ wer, stufe, text, faelligSeitTagen: stufe === 'warten' ? null : 0, wartetSeitTagen: 0, ...extra });
+
+test('Zeitleiste vor Shopify: Muster beim Kunden heisst nicht "Versenden"', () => {
+  // Shopify: unversandt. Auftragsfluss: an Kunden raus, Nachfassen faellig seit 7 Tagen.
+  const z = bestellzeile({ fortschritt: { stufe: 'raus', minStufe: 3 }, zeitleisteSchritt: zl('wir', 'faellig', 'Nachfassen: Muster liegen seit 12 Tagen beim Kunden', { faelligSeitTagen: 7 }) });
+  const s = naechsterSchritt(z, { jetzt: JETZT });
+  assert.doesNotMatch(s.text, /Versenden/);
+  assert.match(s.text, /Nachfassen/);
+  assert.equal(s.dringend, DRINGEND.SOFORT);
+  assert.equal(s.hinweis, 'In Shopify noch nicht als versendet gebucht');
+});
+
+test('Zeitleiste: faellig frisch = bald, nachhaken = bald, Problem = sofort; Hinweis nur, wenn die Ware raus ist', () => {
+  const frisch = naechsterSchritt(bestellzeile({ zeitleisteSchritt: zl('wir', 'faellig', 'Ware beim Lieferanten bestellen', { faelligSeitTagen: 1 }) }), { jetzt: JETZT });
+  assert.equal(frisch.dringend, DRINGEND.BALD);
+  assert.equal(frisch.hinweis, null, 'noch nicht raus: kein Shopify-Hinweis');
+  const nachhaken = naechsterSchritt(bestellzeile({ fortschritt: { stufe: 'bestellt', minStufe: 1 }, zeitleisteSchritt: zl('lieferant', 'nachhaken', 'Beim Lieferanten nachhaken: Muster seit 10 Tagen bestellt', { faelligSeitTagen: 3 }) }), { jetzt: JETZT });
+  assert.equal(nachhaken.dringend, DRINGEND.BALD);
+  assert.equal(nachhaken.wer, 'lieferant');
+  const problem = naechsterSchritt(bestellzeile({ zeitleisteSchritt: zl('lieferant', 'problem', 'Problem: Ware seit 15 Tagen bestellt und nicht da') }), { jetzt: JETZT });
+  assert.equal(problem.dringend, DRINGEND.SOFORT);
+});
+
+test('Zeitleiste: warten (Lieferant oder Kunde ist dran) steht nicht in der Arbeitsliste, wird aber gezaehlt', () => {
+  // Keine reservierte Testdomain: Testadressen zaehlen auch als Wartende nie mit.
+  const kunde = { email: 'erika@musterkundin.local', kundenSchluessel: 'email:erika@musterkundin.local' };
+  const wartet = bestellzeile({ ...kunde, fortschritt: { stufe: 'raus', minStufe: 3 }, zeitleisteSchritt: zl('kunde', 'warten', 'Muster sind unterwegs zum Kunden') });
+  assert.equal(naechsterSchritt(wartet, { jetzt: JETZT }).art, 'wartet');
+  const r = faelle({ bestellzeilen: [wartet] }, { jetzt: JETZT });
+  assert.equal(r.anzahl, 0);
+  assert.equal(r.wartend, 1);
+  assert.deepEqual(r.wartendeSchluessel, ['email:erika@musterkundin.local']);
+  const test = faelle({ bestellzeilen: [{ ...wartet, email: 'erika@example.test', kundenSchluessel: 'email:erika@example.test' }] }, { jetzt: JETZT });
+  assert.equal(test.wartend, 0, 'Testadresse zaehlt nicht');
+  // Hat derselbe Kunde etwas zu tun, bleibt der wartende Vorgang in seiner Karte (unten).
+  const zuTun = bestellzeile({ ...kunde, orderName: '#1002', datum: vorTagen(5), zeitleisteSchritt: zl('wir', 'faellig', 'Ware beim Lieferanten bestellen', { faelligSeitTagen: 5 }) });
+  const beide = faelle({ bestellzeilen: [wartet, zuTun] }, { jetzt: JETZT });
+  assert.equal(beide.anzahl, 1);
+  assert.equal(beide.wartend, 0);
+  assert.deepEqual(beide.faelle[0].punkte.map(p => p.schritt.art), ['auftrag', 'wartet']);
+});
+
+test('Zeitleiste abgeschlossen (null): nur was sonst noch fehlt, sonst faellt die Bestellung raus', () => {
+  const fertig = bestellzeile({ zeitleisteSchritt: null, fortschritt: { stufe: 'erledigt', minStufe: 4 }, wasFehlt: [] });
+  assert.equal(naechsterSchritt(fertig, { jetzt: JETZT }).art, 'fertig');
+  const mass = bestellzeile({ zeitleisteSchritt: null, wasFehlt: ['Maßprüfung offen (1)'] });
+  assert.match(naechsterSchritt(mass, { jetzt: JETZT }).text, /Maßprüfung/);
+  // Unbezahlt: die Zeitleiste kennt keine Zahlung - es bleibt bei "Noch nicht bezahlt".
+  const offen = bestellzeile({ zahlungsstatus: 'PENDING', zeitleisteSchritt: zl('wir', 'faellig', 'Ware beim Lieferanten bestellen'), wasFehlt: ['Noch nicht bezahlt'] });
+  assert.match(naechsterSchritt(offen, { jetzt: JETZT }).text, /Noch nicht bezahlt/);
+});

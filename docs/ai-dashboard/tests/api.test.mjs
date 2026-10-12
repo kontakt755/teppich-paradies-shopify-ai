@@ -42,6 +42,10 @@ test('capabilities meldet lokalen Modus mit Nutzer und Labels', async () => {
   assert.equal(c.user, 'tobias');
   assert.equal(c.actions, true);
   assert.ok(c.labelsAvailable.includes('status:geplant'));
+  // Ohne Adressen in der Umgebung keine Links "Weitere Dashboards" - nie eine Adresse aus dem Repository.
+  assert.deepEqual(c.dashboards, { werkbank: null, laden: null, montage: null });
+  const mit = await createApi({ gh, root: tmpRoot(), env: { TP_ENV_LOCAL: path.join(tmpRoot(), 'fehlt.env'), WERKBANK_URL: 'https://claude.ai/artifact/TEST', AUFTRAGS_APP_URL: 'https://script.google.com/macros/s/TEST/exec' } }).capabilities();
+  assert.deepEqual(mit.dashboards, { werkbank: 'https://claude.ai/artifact/TEST', laden: 'https://script.google.com/macros/s/TEST/exec?ansicht=laden', montage: 'https://script.google.com/macros/s/TEST/exec' });
 });
 
 test('transition lehnt fehlende Pflichtangaben serverseitig ab', async () => {

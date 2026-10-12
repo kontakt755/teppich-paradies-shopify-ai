@@ -60,6 +60,7 @@ import { ladeEnvLocal, erzeugeProxy, KEIN_ZUGANG, mitHinweis } from '../operatio
 import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, SonderpostenFehler } from '../operations/lib/sonderposten.mjs';
 import { ohneUeberholtenFehler } from '../operations/scripts/aktualisieren.mjs';
 import { meldungenPfad, abgleichPfad, meldungAnlegen, alleMeldungen, sichtbareMeldungen, darfMeldungSehen, bildAusUpload, bildDatei, BILDER_MAX, FehlermeldungFehler } from '../operations/lib/fehlermeldungen.mjs';
+import { dashboardLinks } from './weitere-dashboards.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -631,6 +632,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       return {
         mode: 'local', user, actions: Boolean(user), sync: true, agentRuns: true, activity: true,
         repo, labelsAvailable,
+        // Links "Weitere Dashboards" (Werkbank, Laden, Montage) aus .env.local - nie im Repository.
+        dashboards: dashboardLinks({ root, env }),
         note: user ? null : 'gh ist nicht angemeldet – Aktionen sind gesperrt (gh auth login).',
       };
     },
@@ -1927,7 +1930,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       }
       const statusAlle = leseAuftragsstatus(auftragsstatusPfad(dir));
       const rueckrufeAlle = leseRueckrufe(rueckrufePfad(dir));
-      const bestellzeilen = bestellliste(modell, { statusAlle, rueckrufeAlle });
+      // Der naechste Schritt kommt aus der Zeitleiste (Auftragsfluss + Verlauf), nicht aus dem
+      // Shopify-Versandstatus: Muster, die laengst beim Kunden sind, standen sonst als "Versenden".
+      const zl = zeitleisten(dir, modell, statusAlle);
+      const bestellzeilen = bestellliste(modell, { statusAlle, rueckrufeAlle })
+        .map(z => ({ ...z, zeitleisteSchritt: zl.get(z.orderId)?.naechsterSchritt ?? null }));
       const angebote = readJsonIfExists(path.join(dir, 'angebote', 'angebote.json'))?.angebote ?? [];
       const warenkoerbe = readJsonIfExists(path.join(dir, 'warenkoerbe', 'warenkoerbe.json'))?.warenkoerbe ?? [];
       const roh = kundenFaelle({ bestellzeilen, angebote, warenkoerbe });
@@ -1943,9 +1950,12 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const autoAus = mitAuto.filter(f => f.marke?.automatisch);
       const rest = mitAuto.filter(f => !f.marke?.automatisch);
       const { sichtbar, ausgeblendet } = teileFaelleAuf(rest, marken);
+      // Wartende Kunden, die jemand als erledigt oder "kein echter Kunde" markiert hat, zaehlen nicht mit.
+      const { wartendeSchluessel = [], ...ohneSchluessel } = roh;
       return {
         verfuegbar: true,
-        ...roh,
+        ...ohneSchluessel,
+        wartend: wartendeSchluessel.filter(k => !marken[k]).length,
         faelle: sichtbar,
         anzahl: sichtbar.length,
         sofort: sichtbar.filter(k => k.dringend === 0).length,
