@@ -52,7 +52,9 @@ haben (Lieferscheine, Selfies, Werkzeug), mit `--aussortieren` herausnehmen.
 Nicht aus allem wird ein Beitrag. Verwerfen (`inhalt <id> --verwerfen`), wenn
 die Bilder nichts zeigen, was jemanden interessiert, oder wenn dasselbe Thema
 gerade erst lief. Ziel sind sechs Beiträge (Montag bis Samstag) und zwölf
-Storys je Woche – ein voller Vorrat für zwei Wochen genügt. Was gesichtet ist
+Storys je Woche – ein voller Vorrat für zwei Wochen genügt. Wie voll die Wochen
+schon sind, steht in `npm run -s social -- status` (Beiträge und Storys je
+Kalenderwoche) – erst nachsehen, dann Entwürfe bauen. Was gesichtet ist
 und eine Einwilligung hat, gibt das System selbst frei (SOCIAL_AUTO_FREIGABE=2):
 Ein Entwurf muss deshalb so gut sein, dass er ohne weiteren Blick hinaus kann.
 
