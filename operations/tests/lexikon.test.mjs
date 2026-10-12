@@ -578,3 +578,13 @@ test('Muster-Original ueber die Shop-SKU, wenn die Artikelnummer eine Null mehr 
   assert.equal(ohneLink.original.url, null);
   assert.equal(ohneLink.original.suchlink, 'https://lieferant-a.example/de-DE/quicksearch?query=TEPTEST04_098');
 });
+
+test('rollenbreiteM: Breite der Variante aus custom.rollenbreite (Meter), sonst null', () => {
+  const p = produkt({ variants: [
+    { id: 'gid://shopify/ProductVariant/7001', title: 'Grau / 400 cm', sku: 'R-400', price: '20', availableForSale: true, selectedOptions: [], metafields: [{ namespace: 'custom', key: 'rollenbreite', value: '4.0' }] },
+    { id: 'gid://shopify/ProductVariant/7002', title: 'Grau / 500 cm', sku: 'R-500', price: '20', availableForSale: true, selectedOptions: [], metafields: [{ namespace: 'custom', key: 'rollenbreite', value: '5.0' }] },
+    { id: 'gid://shopify/ProductVariant/7003', title: 'Default', sku: 'R-X', price: '20', availableForSale: true, selectedOptions: [], metafields: [] },
+  ] });
+  const v = aufbereiten({ produkte: [p] }, { jetzt: JETZT }).produkte[0].varianten;
+  assert.deepEqual(v.map((x) => x.rollenbreiteM), [4, 5, null]);
+});

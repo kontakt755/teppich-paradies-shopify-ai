@@ -146,6 +146,10 @@ kann dafuer weg?
    laden, sonst zeigt der Cache die alte `app.js`.
    - Exit 1 bei `merge-tree` heisst Konflikt: nicht mergen, melden. Der Dienst
      laeuft unveraendert weiter.
+   - Aendert der Merge `operations/` (Lexikon, Bestelluebersicht, Export), zusaetzlich
+     `launchctl kickstart -k gui/$(id -u)/net.teppich-paradies.sync`. Der Dienst laedt
+     den Code nur beim Start und ueberschreibt sonst beim naechsten Lauf die frischen
+     Exporte mit dem alten Code (2026-10-12: Lexikon fiel so auf den Stand vor dem Fix zurueck).
    - Aendert der Merge `social/`, zusaetzlich
      `launchctl kickstart -k gui/$(id -u)/net.teppich-paradies.social`
      (Kontrolle: `curl -I http://127.0.0.1:8020/api/status` → 401).

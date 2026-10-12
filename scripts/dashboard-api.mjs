@@ -1242,6 +1242,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const flaeche = Number(String(kundenmengeM2 ?? '').replace(',', '.'));
       const laenge = Number(String(kundenlaengeCm ?? '').replace(',', '.'));
 
+      // m²-Ware ohne Paket (Teppich nach Mass direkt vom Hersteller): bestellt
+      // wird die Flaeche selbst, auf 0,01 m² aufgerundet.
+      if (einheit === 'm2' && !produkt.eigenschaften?.qmProPaket) {
+        if (!(flaeche > 0)) return { verfuegbar: true, ergebnis: null, grund: 'Kundenmenge (m²) eingeben' };
+        const m2 = Math.ceil(flaeche * 100 - 1e-9) / 100;
+        return { verfuegbar: true, ergebnis: { text: `${m2.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m²`, m2 } };
+      }
       if (einheit === 'paket' || einheit === 'm2') {
         const qm = produkt.eigenschaften?.qmProPaket;
         if (!qm) return { verfuegbar: true, ergebnis: null, grund: 'Bestellmenge ungeklaert - m² pro Paket ist am Produkt nicht hinterlegt' };
@@ -1252,8 +1259,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         } catch (e) { return { verfuegbar: true, ergebnis: null, grund: String(e.message) }; }
       }
       if (einheit === 'rolle' || einheit === 'lfm') {
-        const breiteText = produkt.eigenschaften?.rollenbreite;
-        const breiteM = breiteText ? Number(String(breiteText).replace(',', '.')) / 100 : null;
+        const breiteM = rollenbreiteInMetern(variante.rollenbreiteM ?? produkt.eigenschaften?.rollenbreite);
+        if (!breiteM && produkt.produktgruppe === 'Teppich nach Maß') {
+          return { verfuegbar: true, ergebnis: null, grund: 'Teppich nach Maß: die Rolle ergibt sich aus den Maßen der Bestellung – die Bestellmenge rechnet der Einkauf dort aus.' };
+        }
         if (!breiteM) return { verfuegbar: true, ergebnis: null, grund: 'Bestellmenge ungeklaert - Rollenbreite ist am Produkt nicht hinterlegt' };
         if (!(flaeche > 0) && !(laenge > 0)) return { verfuegbar: true, ergebnis: null, grund: 'Kundenmenge (m² oder Länge in cm) eingeben' };
         try {
@@ -2192,6 +2201,17 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     }
     return { verfuegbar: true, quelle: file, aktualisiertAm: daten.aktualisiertAm || null, teile, manuellVerfuegbar };
   }
+}
+
+/**
+ * Rollenbreite in Metern. Shopify fuehrt custom.rollenbreite in Metern ("4.0");
+ * die Mengenhilfe teilte frueher pauschal durch 100 und rechnete damit fuer
+ * 20 m² auf einer 2-m-Rolle 1000 lfm statt 10. Werte ueber 10 sind Zentimeter.
+ */
+export function rollenbreiteInMetern(wert) {
+  const n = Number(String(wert ?? '').replace(',', '.'));
+  if (!(n > 0)) return null;
+  return n > 10 ? n / 100 : n;
 }
 
 /** Sucht ueber Produktname, Handle, SKU, Lieferanten-Artikelnummer, Farbe und Kollektion. */
