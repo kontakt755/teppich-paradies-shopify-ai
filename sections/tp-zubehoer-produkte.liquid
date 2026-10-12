@@ -216,7 +216,7 @@
       <div class="tp-zubehoer-produkte__nachladen" data-tp-reihe-ersatz>
         <p data-tp-reihe-fehler role="status" hidden>Die weiteren Qualitäten konnten gerade nicht geladen werden.</p>
         <button type="button" data-tp-reihe-erneut hidden>Weitere Qualitäten erneut laden</button>
-        <a href="{{ routes.root_url }}{% unless routes.root_url == '/' %}/{% endunless %}collections/teppiche-alle">Alle Teppiche als Liste ansehen</a>
+        <a href="{{ collection.url }}?view=teppiche-alle">Alle Maßteppiche als Liste ansehen</a>
       </div>
     {%- endif -%}
   </div>

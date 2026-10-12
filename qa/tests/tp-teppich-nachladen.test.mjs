@@ -114,7 +114,7 @@ function reihenHarness() {
   const fallback = row.appendChild(h.node('div', { 'data-tp-reihe-ersatz': '' }));
   const status = fallback.appendChild(h.node('p', { 'data-tp-reihe-fehler': '' })); status.hidden = true;
   const retry = fallback.appendChild(h.node('button', { 'data-tp-reihe-erneut': '' })); retry.hidden = true;
-  fallback.appendChild(h.node('a', { href: '/collections/teppiche-alle' }));
+  fallback.appendChild(h.node('a', { href: '/collections/teppich-nach-mass?view=teppiche-alle' }));
   const loaded = { querySelector: () => cards(7) };
   let idle;
   const css = { supports: () => true };
@@ -176,9 +176,10 @@ test('Reihen: Fokus ausserhalb wird nicht entzogen', async () => {
 test('Ohne JavaScript rendert der Ersatzweg eine ehrliche normale Liste, keine toten Filter', async () => {
   const fallback = section.match(/{%- if tp_tg_gesamt > list_items_array.size -%}[\s\S]*?data-tp-reihe-ersatz[\s\S]*?{%- endif -%}/)[0];
   const engine = new Liquid();
-  for (const root_url of ['/', '/de']) {
-    const html = await engine.parseAndRender(fallback, { tp_tg_gesamt: 7, list_items_array: [1, 2, 3, 4], routes: { root_url } });
-    assert.match(html, /Alle Teppiche als Liste ansehen/); assert.match(html, new RegExp('href="' + (root_url === '/' ? '' : root_url) + '/collections/teppiche-alle"'));
+  for (const url of ['/collections/teppich-nach-mass', '/de/collections/teppich-nach-mass']) {
+    const html = await engine.parseAndRender(fallback, { tp_tg_gesamt: 7, list_items_array: [1, 2, 3, 4], collection: { url } });
+    assert.match(html, /Alle Maßteppiche als Liste ansehen/);
+    assert.ok(html.includes(`href="${url}?view=teppiche-alle"`));
     assert.doesNotMatch(html, /filter\.|<noscript/);
   }
 });
