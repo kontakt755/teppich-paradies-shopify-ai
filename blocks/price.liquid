@@ -81,7 +81,7 @@
     {%- endif -%}
     {%- if product != blank and product.handle == product_resource.handle -%}
       {% render 'tp-teppich-ab-preis', product: product_resource, variant: selected_variant %}
-    {%- elsif tp_bp_suchvariante != nil -%}
+    {%- elsif tp_bp_suchvariante != nil and product_resource.metafields.service.einfassung.value != blank -%}
       {% render 'tp-teppich-ab-preis', product: product_resource, variant: tp_bp_suchvariante, karte: true %}
     {%- else -%}
       {% render 'tp-teppich-ab-preis', product: product_resource %}
