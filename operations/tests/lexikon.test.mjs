@@ -179,6 +179,61 @@ test('Mustererkennung ueber die Mustervariante (einkauf.muster_variante), wenn d
   assert.deepEqual(modell.produkte[0].muster, { vorhanden: true, handle: 'muster-irgendwas' });
 });
 
+function musterProduktFuer(handle, status) {
+  return produkt({
+    id: 'gid://shopify/Product/9098',
+    handle,
+    title: 'Muster Fortiva Teppich nach Maß',
+    status,
+    variants: [{
+      id: 'gid://shopify/ProductVariant/6098',
+      title: 'Schwarz',
+      sku: '',
+      price: '0.00',
+      availableForSale: false,
+      selectedOptions: [{ name: 'Farbe', value: 'Schwarz' }],
+      metafields: [],
+    }],
+  });
+}
+
+test('archivierte Produkte fehlen im Lexikon, auch archivierte Muster (Export laedt muster-* unabhaengig vom Status)', () => {
+  const aktiv = produkt({ handle: 'fortiva-teppichboden' });
+  const archiviert = produkt({ id: 'gid://shopify/Product/9097', handle: 'fortiva-teppich-nach-mass', status: 'ARCHIVED' });
+  const muster = musterProduktFuer('muster-fortiva-teppich-nach-mass', 'ARCHIVED');
+  const modell = aufbereiten({ produkte: [aktiv, archiviert, muster] }, { jetzt: JETZT });
+  assert.deepEqual(modell.produkte.map((p) => p.handle), ['fortiva-teppichboden']);
+  assert.equal(modell.anzahl, 1);
+});
+
+test('archiviertes Muster zaehlt nicht als vorhandenes Muster - weder ueber den Handle noch ueber einkauf.muster_variante', () => {
+  const ueberHandle = produkt({ handle: 'fortiva-teppich-nach-mass' });
+  const ueberVariante = produkt({
+    id: 'gid://shopify/Product/9002',
+    handle: 'anderer-name',
+    variants: [{
+      id: 'gid://shopify/ProductVariant/5002',
+      title: 'Grün / 200x300',
+      sku: 'NS-200-GR',
+      price: '129.90',
+      availableForSale: true,
+      selectedOptions: [{ name: 'Farbe', value: 'Grün' }],
+      metafields: [{
+        namespace: 'einkauf',
+        key: 'muster_variante',
+        value: { id: 'gid://shopify/ProductVariant/6098', product: { handle: 'muster-fortiva-teppich-nach-mass' } },
+      }],
+    }],
+  });
+  const muster = musterProduktFuer('muster-fortiva-teppich-nach-mass', 'ARCHIVED');
+  const modell = aufbereiten({ produkte: [ueberHandle, ueberVariante, muster] }, { jetzt: JETZT });
+  for (const p of modell.produkte) assert.deepEqual(p.muster, { vorhanden: false, handle: null }, p.handle);
+
+  // Gegenprobe: dasselbe Muster als UNLISTED wird wie bisher verknuepft.
+  const mitAktivemMuster = aufbereiten({ produkte: [ueberHandle, musterProduktFuer('muster-fortiva-teppich-nach-mass', 'UNLISTED')] }, { jetzt: JETZT });
+  assert.deepEqual(mitAktivemMuster.produkte[0].muster, { vorhanden: true, handle: 'muster-fortiva-teppich-nach-mass' });
+});
+
 test('wunschmass: Option "Wunschmaß" markiert die Variante, keine Datenluecke', () => {
   const p = produkt({
     variants: [{

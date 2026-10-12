@@ -261,6 +261,10 @@ function musterBlock(produkt, varianten, handleSet, musterKandidatenAusVarianten
   return { vorhanden, handle: musterHandle };
 }
 
+function istArchiviert(produkt) {
+  return String(produkt?.status ?? '').toUpperCase() === 'ARCHIVED';
+}
+
 /** Produktliste aus verschiedenen Export-Huellen ziehen. */
 function produktListe(exportDaten) {
   const j = typeof exportDaten === 'string' ? JSON.parse(exportDaten) : exportDaten;
@@ -281,7 +285,14 @@ function produktListe(exportDaten) {
  * @returns {{erstellt: string, anzahl: number, produkte: Array}}
  */
 export function aufbereiten(exportDaten, opt = {}) {
-  const produkte = produktListe(exportDaten);
+  // Archivierte Produkte gibt es im Shop nicht mehr und gehoeren nicht ins
+  // Lexikon (Inhaber 2026-10-05). Der Export laedt Musterprodukte ueber
+  // handle:muster-* unabhaengig vom Status, also auch archivierte - sie
+  // fallen hier heraus, und ein Verweis auf ein archiviertes Muster zaehlt
+  // nicht als vorhandenes Muster.
+  const alle = produktListe(exportDaten);
+  const archiviert = new Set(alle.filter(istArchiviert).map((p) => text(p.handle)).filter(Boolean));
+  const produkte = alle.filter((p) => !istArchiviert(p));
   const jetzt = opt.jetzt ?? new Date();
   const lieferantSuchen = opt.lieferantSuchen ?? {};
   // Fuer die Muster-Verknuepfung ueber den Produkt-Handle (muster-<handle>)
@@ -308,7 +319,7 @@ export function aufbereiten(exportDaten, opt = {}) {
       const waehrung = v.priceV2?.currencyCode ?? v.priceSet?.shopMoney?.currencyCode ?? (leer(preisWert) ? null : 'EUR');
       const musterVarianteRoh = vMap.einkauf?.muster_variante;
       const musterHandle = musterHandleAusEinkaufswert(musterVarianteRoh);
-      if (musterHandle) musterKandidatenAusVarianten.push(musterHandle);
+      if (musterHandle && !archiviert.has(musterHandle)) musterKandidatenAusVarianten.push(musterHandle);
       const musterRef = (musterVarianteRoh && typeof musterVarianteRoh === 'object')
         ? { id: text(musterVarianteRoh.id), handle: musterHandle }
         : null;
