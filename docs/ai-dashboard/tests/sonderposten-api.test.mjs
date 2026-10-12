@@ -133,6 +133,31 @@ async function mitServer(handler, run) {
   finally { await new Promise(r => server.close(r)); }
 }
 
+test('Rolle: Laenge -> m2 vom Bestand, Protokoll mit Laenge und m2, Name aus der Sitzung', async () => {
+  const a = attrappe({ rolle: true });
+  const vorher = protokoll().length;
+  const r = await apiMit(a).sonderpostenVerkauft({ produktId: PRODUKT_ID, inventoryItemId: ITEM_ID, laengeM: '3.5' }, MONA);
+  assert.equal(r.ok, true);
+  assert.equal(r.qm, 14);
+  assert.equal(a.zustand.available, 66);
+  const neu = protokoll().slice(vorher);
+  assert.equal(neu.length, 1);
+  assert.equal(neu[0].benutzer, 'Mona Mitarbeiter');
+  assert.equal(neu[0].aktion, 'sonderposten-rolle-im-laden-verkauft');
+  assert.match(neu[0].objekt, /3,5 m = 14 m² · Bestand 80 → 66 m²/);
+});
+
+test('Rolle: zu viel -> 409 ohne Buchung und ohne Protokoll; Liste zeigt die Rolle mit Rest', async () => {
+  const a = attrappe({ rolle: true, available: 10 });
+  const vorher = protokoll().length;
+  await assert.rejects(() => apiMit(a).sonderpostenVerkauft({ produktId: PRODUKT_ID, laengeM: 3 }, MONA), e => e instanceof ApiError && e.status === 409);
+  assert.equal(a.zustand.available, 10);
+  assert.equal(protokoll().length, vorher);
+  const d = await apiMit(attrappe({ rolle: true })).sonderpostenListe();
+  assert.equal(d.eintraege[0].typ, 'rolle');
+  assert.equal(d.eintraege[0].laengeM, 20);
+});
+
 test('Server: /api/sonderposten/verkauft - lesen 403, mitarbeiter 200, inhaber 200, GET 405', async () => {
   const { schreibeBenutzer, benutzerAnlegen } = await import('../../../operations/lib/benutzer.mjs');
   const privat = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-sonderposten-rollen-'));

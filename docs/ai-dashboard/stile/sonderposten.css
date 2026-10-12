@@ -27,6 +27,14 @@
 .sp-rechts { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
 .sp-preis { font-family: var(--serif); font-size: 1.25rem; font-weight: 600; white-space: nowrap; font-variant-numeric: lining-nums tabular-nums; }
 
+.sp-preis-zusatz { display: block; text-align: right; font-family: var(--font); font-weight: 400; }
+
+/* Restrolle: Laengenfeld mit Einheit, darunter die Rechnung (m2 und Rest). */
+.sp-eingabe { display: flex; align-items: center; gap: 8px; }
+.sp-eingabe input { width: 9rem; font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+.sp-rechnung { margin: 0; min-height: 1.4em; font-variant-numeric: tabular-nums; }
+.sp-rechnung-fehler { color: var(--crit); }
+
 .sp-dialog-stueck { display: flex; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
 .sp-dialog-stueck .mono { font-size: .9rem; color: var(--text-2); overflow-wrap: anywhere; }
 
@@ -37,4 +45,5 @@
   .sp-karte .sp-bild { width: 56px; height: 56px; }
   .sp-rechts { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: space-between; }
   .sp-rechts .btn { min-height: 44px; padding-inline: 16px; }
+  .sp-preis-zusatz { text-align: left; }
 }

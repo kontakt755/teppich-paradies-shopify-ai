@@ -35,6 +35,16 @@
  * meldet gegenprobe "fehlgeschlagen" statt eines Fehlers.
  * Das Protokoll schreibt der Aufrufer (scripts/dashboard-api.mjs), weil nur er
  * den angemeldeten Benutzer kennt.
+ *
+ * Restrollen (Inhaber 2026-10-12): Rollenware mit Produkt-Tag "sonderposten"
+ * und Rollenbreite (custom.rollenbreite), deren Bestand Shopify in ganzen m2
+ * fuehrt - z. B. Passion Yasmin. Im Laden wird dort nicht ein Stueck verkauft,
+ * sondern eine Laenge von der Rolle (verkaufeVonRolle): Laenge x volle
+ * Rollenbreite, auf ganze m2 aufgerundet, wird vom Bestand abgezogen. Auch ein
+ * schmaleres Stueck verbraucht die volle Breite (2 x 3 m Teppich = 2 m Rolle).
+ * Dieselbe Reihenfolge wie oben, nur ohne Verkaufsfelder (das Produkt bleibt
+ * im Shop, solange noch etwas da ist); die Spur ist das Protokoll und die
+ * referenceDocumentUri der Bestandsbuchung in Shopify.
  */
 
 import { randomUUID } from 'node:crypto';
@@ -55,15 +65,24 @@ export class SonderpostenFehler extends Error {
 export const RECHT_FEHLT = 'Bestand kann nicht geändert werden: dem Control Center fehlt das Shopify-Recht write_inventory '
   + '(Inhaber schaltet es im Dev Dashboard frei). Bis dahin: Bestand in der Shopify-App auf 0 setzen.';
 
-const VARIANTEN_FELDER = `variants(first: 2) { nodes { id sku price inventoryPolicy inventoryItem { id tracked
+/** Dieselbe Meldung fuer Restrollen: dort wird nicht auf 0 gesetzt, sondern abgezogen. */
+export const RECHT_FEHLT_ROLLE = 'Bestand kann nicht geändert werden: dem Control Center fehlt das Shopify-Recht write_inventory '
+  + '(Inhaber schaltet es im Dev Dashboard frei). Bis dahin: in der Shopify-App die verkauften m² vom Bestand abziehen.';
+
+const VARIANTEN_FELDER = `variants(first: 2) { nodes { id sku price inventoryPolicy
+  rollenbreite: metafield(namespace: "custom", key: "rollenbreite") { value }
+  inventoryItem { id tracked
   inventoryLevel(locationId: $locationId) { quantities(names: ["available", "on_hand"]) { name quantity } } } } }`;
+
+const PRODUKT_FELDER = `id title status handle productType tags
+      rollenbreite: metafield(namespace: "custom", key: "rollenbreite") { value }`;
 
 export const LISTE_QUERY = `
 query SonderpostenListe($first: Int!, $after: String, $query: String!, $locationId: ID!) {
   products(first: $first, after: $after, query: $query, sortKey: UPDATED_AT, reverse: true) {
     pageInfo { hasNextPage endCursor }
     nodes {
-      id title status handle productType
+      ${PRODUKT_FELDER}
       featuredMedia { preview { image { url(transform: {maxWidth: 240, maxHeight: 240}) altText } } }
       metafields(namespace: "${NAMENSRAUM}", first: 30) { nodes { key value } }
       ${VARIANTEN_FELDER}
@@ -74,7 +93,7 @@ query SonderpostenListe($first: Int!, $after: String, $query: String!, $location
 export const EINZELN_QUERY = `
 query SonderpostenEinzeln($id: ID!, $locationId: ID!) {
   product(id: $id) {
-    id title status handle productType
+    ${PRODUKT_FELDER}
     metafields(namespace: "${NAMENSRAUM}", first: 30) { nodes { key value } }
     ${VARIANTEN_FELDER}
   }
@@ -96,8 +115,11 @@ mutation SonderpostenVerkauftFelder($metafields: [MetafieldsSetInput!]!) {
   }
 }`;
 
-/** Suche: nur Sonderposten, archivierte nie (die sind erledigt). */
-export const SUCHE = `product_type:${PRODUKTART} AND (status:active OR status:draft)`;
+/** Produkt-Tag, der Rollenware als Restrolle (Sonderposten von der Rolle) kennzeichnet. */
+export const ROLLEN_TAG = 'sonderposten';
+
+/** Suche: Sonderposten und Restrollen, archivierte nie (die sind erledigt). */
+export const SUCHE = `(product_type:${PRODUKTART} OR tag:${ROLLEN_TAG}) AND (status:active OR status:draft)`;
 
 const STATUS_TEXT = { ACTIVE: 'im Shop', DRAFT: 'Entwurf', ARCHIVED: 'archiviert', UNLISTED: 'nicht gelistet' };
 
@@ -116,6 +138,36 @@ function felder(produkt) {
   const f = {};
   for (const m of produkt?.metafields?.nodes ?? []) f[m.key] = m.value;
   return f;
+}
+
+/** Rollenbreite in m (Variante vor Produkt) oder null. */
+export function rollenbreiteM(produkt) {
+  const v = zahl(produkt?.variants?.nodes?.[0]?.rollenbreite?.value) ?? zahl(produkt?.rollenbreite?.value);
+  return v !== null && v > 0 ? v : null;
+}
+
+/**
+ * Restrolle: Tag "sonderposten", kein Einzelstueck, Rollenbreite gesetzt. Ohne
+ * Rollenbreite (z. B. das Massprodukt "Teppich nach Mass" derselben Rolle) ist
+ * es keine eigene Ware mit eigenem Bestand und erscheint nicht.
+ */
+export function istRolle(produkt) {
+  return produkt?.productType !== PRODUKTART
+    && (produkt?.tags ?? []).includes(ROLLEN_TAG)
+    && rollenbreiteM(produkt) !== null;
+}
+
+/**
+ * m2, die eine Laenge von der Rolle verbraucht: Laenge x volle Breite, auf
+ * ganze m2 aufgerundet (Shopify fuehrt den Bestand in ganzen m2; lieber einen
+ * Rest zu wenig anbieten als zu viel). Ganzzahlig in cm gerechnet.
+ * Gegenstueck im Browser: docs/ai-dashboard/lib/sonderposten.mjs (rollenRechnung).
+ */
+export function qmFuerLaenge(laengeM, breiteM) {
+  const laengeCm = Math.round(Number(laengeM) * 100);
+  const breiteCm = Math.round(Number(breiteM) * 100);
+  if (!(laengeCm > 0) || !(breiteCm > 0)) return null;
+  return Math.ceil((laengeCm * breiteCm) / 10000);
 }
 
 /** Vorlagen sind Kopiervorlagen fuer neue Stuecke, keine Ware. */
@@ -147,8 +199,12 @@ export function eintragAus(produkt) {
   // Nur DENY sperrt den Verkauf bei Bestand 0. Fehlt das Feld, gilt es als offen.
   const ueberverkaufGesperrt = variante?.inventoryPolicy === 'DENY';
   const bild = produkt.featuredMedia?.preview?.image || null;
+  const rolle = istRolle(produkt);
+  const rollenbreite = rolle ? rollenbreiteM(produkt) : null;
   return {
     id: produkt.id,
+    // stueck = Einzelstueck (Bestand 1); rolle = Restrolle (Bestand in m2)
+    typ: rolle ? 'rolle' : 'stueck',
     titel: produkt.title || '',
     status: produkt.status || null,
     statusText: STATUS_TEXT[produkt.status] || String(produkt.status || '').toLowerCase(),
@@ -161,9 +217,9 @@ export function eintragAus(produkt) {
     ueberverkaufGesperrt,
     // null = Bestand wird nicht gefuehrt oder ist am Standort nicht angelegt.
     bestand,
-    breiteM: breite,
-    laengeM: laenge,
-    flaecheM2: flaeche,
+    breiteM: rolle ? rollenbreite : breite,
+    laengeM: rolle ? (bestand === null ? null : Math.max(0, Math.floor((bestand * 10000) / Math.round(rollenbreite * 100))) / 100) : laenge,
+    flaecheM2: rolle ? bestand : flaeche,
     art: f.art || null,
     zustand: f.zustand || null,
     farbe: f.farbe || null,
@@ -176,7 +232,9 @@ export function eintragAus(produkt) {
     verkauftKanal: f.verkauft_kanal || null,
     adminUrl: adminLink(produkt.id),
     // Der Knopf "Im Laden verkauft" erscheint nur hier - dieselbe Regel wie im Server.
-    verkaufbar: Boolean(item?.tracked) && ueberverkaufGesperrt && bestand === 1 && produkt.status !== 'ARCHIVED',
+    // Einzelstueck: genau 1. Restrolle: irgendein Rest (ganze m2).
+    verkaufbar: Boolean(item?.tracked) && ueberverkaufGesperrt && produkt.status !== 'ARCHIVED'
+      && (rolle ? bestand !== null && bestand > 0 : bestand === 1),
     // Bestand 0 sperrt den Onlinekauf nur mit gefuehrtem Bestand und DENY.
     onlineGesperrt: Boolean(item?.tracked) && ueberverkaufGesperrt && bestand === 0,
   };
@@ -193,7 +251,8 @@ export async function leseListe(proxy, { standortId = STANDORT_ID, jetzt = new D
     const conn = data?.products;
     if (!conn) throw new Error('Sonderposten: Antwort ohne products');
     for (const p of conn.nodes ?? []) {
-      if (p.productType !== PRODUKTART || p.status === 'ARCHIVED' || istVorlage(p)) continue;
+      if (p.status === 'ARCHIVED' || istVorlage(p)) continue;
+      if (p.productType !== PRODUKTART && !istRolle(p)) continue;
       eintraege.push(eintragAus(p));
     }
     if (!conn.pageInfo?.hasNextPage) break;
@@ -244,6 +303,50 @@ async function leseOderNull(proxy, id, standortId) {
 }
 
 /**
+ * Setzt den Bestand von `vorher` auf `neu`: Compare-and-swap (changeFromQuantity)
+ * gegen Doppelbuchung, @idempotent gegen doppelte Zustellung. Kommt keine
+ * Antwort, klaert erneutes Lesen den Ausgang - "nichts gebucht" nur, wenn der
+ * Bestand nachweislich unveraendert ist. Gibt { antwortVerloren } zurueck oder
+ * wirft SonderpostenFehler.
+ */
+async function bucheBestand(proxy, { produktId, inventoryItemId, vorher, neu, referenz, schluessel, standortId, rechtFehlt }) {
+  let antwort;
+  try {
+    antwort = await proxy.execute(BESTAND_MUTATION, {
+      schluessel,
+      input: {
+        name: 'available',
+        reason: 'correction',
+        referenceDocumentUri: referenz,
+        quantities: [{ inventoryItemId, locationId: standortId, quantity: neu, changeFromQuantity: vorher }],
+      },
+    });
+  } catch (err) {
+    // Shopify lehnt fehlende Rechte vor der Ausfuehrung ab - dann ist sicher nichts gebucht.
+    if (istZugriffVerweigert(err)) throw new SonderpostenFehler(403, rechtFehlt, { grund: 'recht-fehlt' });
+    // Sonst ist der Ausgang offen: die Mutation kann angekommen sein, nur die
+    // Antwort nicht. Erneut lesen statt "nichts gebucht" zu behaupten.
+    const pruef = await leseOderNull(proxy, produktId, standortId);
+    if (pruef?.bestand === vorher) {
+      throw new SonderpostenFehler(502, `Shopify hat die Buchung nicht bestätigt; laut erneutem Lesen ist der Bestand weiterhin ${vorher}. Bitte noch einmal versuchen.`, { grund: 'nicht-angekommen' });
+    }
+    if (pruef?.bestand !== neu) {
+      throw new SonderpostenFehler(504, ERGEBNIS_UNKLAR, { grund: 'unklar', bestand: pruef?.bestand ?? null });
+    }
+    // Bestand ist `neu`: die Buchung ist angekommen.
+    return { antwortVerloren: true };
+  }
+  const fehler = antwort?.inventorySetQuantities?.userErrors ?? [];
+  if (fehler.length) {
+    if (fehler.some(e => /STALE|COMPARE/i.test(e.code || ''))) {
+      throw new SonderpostenFehler(409, 'Jemand hat den Bestand gerade gleichzeitig geändert – nichts gebucht. Bitte die Liste neu laden.', { grund: 'bestand' });
+    }
+    throw new SonderpostenFehler(502, `Shopify hat die Bestandsänderung abgelehnt: ${fehler.map(e => e.message).join('; ')}`);
+  }
+  return { antwortVerloren: false };
+}
+
+/**
  * Bucht ein Stueck als im Laden verkauft. Wirft SonderpostenFehler (Status
  * und Klartext fuer die Oberflaeche); alles andere ist ein unerwarteter Fehler.
  *
@@ -267,6 +370,7 @@ export async function verkaufeImLaden(proxy, { produktId, inventoryItemId = null
     if (err instanceof SonderpostenFehler) throw err;
     throw new SonderpostenFehler(502, 'Shopify war nicht lesbar – nichts gebucht. Bitte noch einmal versuchen.', { grund: 'nicht-erreichbar', detail: String(err?.message || err).slice(0, 200) });
   }
+  if (istRolle(produkt)) throw new SonderpostenFehler(400, 'Das ist eine Restrolle – bitte die abgeschnittene Länge angeben.');
   if (produkt.productType !== PRODUKTART) throw new SonderpostenFehler(400, 'Das ist kein Sonderposten – hier wird nichts gebucht.');
   if (istVorlage(produkt)) throw new SonderpostenFehler(400, 'Die Vorlage ist kein verkaufbares Stück.');
   if (vorher.variantenAnzahl !== 1) throw new SonderpostenFehler(409, 'Dieses Stück hat mehr als eine Variante – bitte in Shopify prüfen, hier wird nichts gebucht.');
@@ -290,41 +394,9 @@ export async function verkaufeImLaden(proxy, { produktId, inventoryItemId = null
   // 3. Bestand auf 0 - mit Compare-and-swap gegen Doppelbuchung.
   const zeit = alsDateTime(jetzt);
   const referenz = `tp://laden-verkauf/${encodeURIComponent(vorher.sku || numId(produktId))}/${zeit}`;
-  let bestandAntwort;
-  let antwortVerloren = false;
-  try {
-    bestandAntwort = await proxy.execute(BESTAND_MUTATION, {
-      schluessel,
-      input: {
-        name: 'available',
-        reason: 'correction',
-        referenceDocumentUri: referenz,
-        quantities: [{ inventoryItemId: vorher.inventoryItemId, locationId: standortId, quantity: 0, changeFromQuantity: 1 }],
-      },
-    });
-  } catch (err) {
-    // Shopify lehnt fehlende Rechte vor der Ausfuehrung ab - dann ist sicher nichts gebucht.
-    if (istZugriffVerweigert(err)) throw new SonderpostenFehler(403, RECHT_FEHLT, { grund: 'recht-fehlt' });
-    // Sonst ist der Ausgang offen: die Mutation kann angekommen sein, nur die
-    // Antwort nicht. Erneut lesen statt "nichts gebucht" zu behaupten.
-    const pruef = await leseOderNull(proxy, produktId, standortId);
-    if (pruef?.bestand === 1) {
-      throw new SonderpostenFehler(502, 'Shopify hat die Buchung nicht bestätigt; laut erneutem Lesen ist der Bestand weiterhin 1. Bitte noch einmal versuchen.', { grund: 'nicht-angekommen' });
-    }
-    if (pruef?.bestand !== 0) {
-      throw new SonderpostenFehler(504, ERGEBNIS_UNKLAR, { grund: 'unklar', bestand: pruef?.bestand ?? null });
-    }
-    // Bestand ist 0: die Buchung ist angekommen. Weiter mit den Verkaufsangaben.
-    antwortVerloren = true;
-    bestandAntwort = null;
-  }
-  const bestandFehler = bestandAntwort?.inventorySetQuantities?.userErrors ?? [];
-  if (bestandFehler.length) {
-    if (bestandFehler.some(e => /STALE|COMPARE/i.test(e.code || ''))) {
-      throw new SonderpostenFehler(409, 'Jemand hat den Bestand gerade gleichzeitig geändert – nichts gebucht. Bitte die Liste neu laden.', { grund: 'bestand' });
-    }
-    throw new SonderpostenFehler(502, `Shopify hat die Bestandsänderung abgelehnt: ${bestandFehler.map(e => e.message).join('; ')}`);
-  }
+  const { antwortVerloren } = await bucheBestand(proxy, {
+    produktId, inventoryItemId: vorher.inventoryItemId, vorher: 1, neu: 0, referenz, schluessel, standortId, rechtFehlt: RECHT_FEHLT,
+  });
 
   // 4. Verkaufsangaben. Der Bestand ist ab hier gebucht - ein Fehler bei den
   // Feldern macht ihn nicht rueckgaengig, er wird als Hinweis zurueckgegeben.
@@ -378,6 +450,90 @@ export async function verkaufeImLaden(proxy, { produktId, inventoryItemId = null
     onlineGesperrt: nachher.onlineGesperrt,
     felderGesetzt,
     felderFehler: felderFehler || (felderGesetzt ? null : 'Verkaufsangaben sind nach dem Speichern nicht in Shopify zu sehen.'),
+    eintrag: nachher,
+  };
+}
+
+/** Hoechste Laenge, die in einem Zug von einer Rolle gebucht werden kann (Schutz gegen Vertipper). */
+export const MAX_LAENGE_M = 100;
+
+/**
+ * Bucht eine im Laden verkaufte Laenge von einer Restrolle: Laenge x volle
+ * Rollenbreite (aufgerundet auf ganze m2) wird vom Bestand abgezogen. Wirft
+ * SonderpostenFehler wie verkaufeImLaden.
+ *
+ * @param {object} proxy
+ * @param {object} p
+ * @param {string} p.produktId
+ * @param {string} [p.inventoryItemId]  aus der Liste - nur zum Abgleich
+ * @param {number} p.laengeM            abgeschnittene Laenge in m (volle Rollenbreite)
+ * @param {Date}   p.jetzt
+ */
+export async function verkaufeVonRolle(proxy, { produktId, inventoryItemId = null, laengeM, jetzt = new Date(), standortId = STANDORT_ID, schluessel = randomUUID() } = {}) {
+  if (!/^gid:\/\/shopify\/Product\/\d+$/.test(String(produktId || ''))) {
+    throw new SonderpostenFehler(400, 'Ungültige Produkt-ID.');
+  }
+  const laenge = Number(laengeM);
+  if (!Number.isFinite(laenge) || laenge <= 0) throw new SonderpostenFehler(400, 'Bitte die abgeschnittene Länge in Metern angeben, z. B. 3,5.');
+  if (laenge > MAX_LAENGE_M) throw new SonderpostenFehler(400, `Mehr als ${MAX_LAENGE_M} m in einem Zug? Bitte die Eingabe prüfen.`);
+  if (Math.abs(laenge * 100 - Math.round(laenge * 100)) > 1e-6) throw new SonderpostenFehler(400, 'Die Länge bitte auf den Zentimeter genau angeben (höchstens zwei Nachkommastellen).');
+
+  // 1. Frisch lesen.
+  let produkt;
+  let vorher;
+  try {
+    ({ produkt, eintrag: vorher } = await leseEinzeln(proxy, produktId, { standortId }));
+  } catch (err) {
+    if (err instanceof SonderpostenFehler) throw err;
+    throw new SonderpostenFehler(502, 'Shopify war nicht lesbar – nichts gebucht. Bitte noch einmal versuchen.', { grund: 'nicht-erreichbar', detail: String(err?.message || err).slice(0, 200) });
+  }
+  if (!istRolle(produkt)) throw new SonderpostenFehler(400, 'Das ist keine Restrolle – hier wird keine Länge gebucht.');
+  if (vorher.variantenAnzahl !== 1) throw new SonderpostenFehler(409, 'Diese Rolle hat mehr als eine Variante – bitte in Shopify prüfen, hier wird nichts gebucht.');
+  if (!vorher.getrackt || !vorher.inventoryItemId) {
+    throw new SonderpostenFehler(409, 'Für diese Rolle wird in Shopify kein Bestand geführt – bitte dort „Bestand verfolgen“ einschalten.');
+  }
+  if (!vorher.ueberverkaufGesperrt) {
+    throw new SonderpostenFehler(409, 'In Shopify ist für diese Rolle „Verkauf bei Nichtverfügbarkeit fortsetzen“ eingeschaltet – der Bestand würde online nichts begrenzen. Bitte dort ausschalten; hier wird nichts gebucht.', { grund: 'ueberverkauf' });
+  }
+  if (inventoryItemId && inventoryItemId !== vorher.inventoryItemId) {
+    throw new SonderpostenFehler(409, 'Die Angaben haben sich in Shopify geändert. Bitte die Liste neu laden.');
+  }
+
+  // 2. Verbrauch rechnen und gegen den Bestand pruefen.
+  const qm = qmFuerLaenge(laenge, vorher.breiteM);
+  if (vorher.bestand === null || vorher.bestand <= 0) {
+    throw new SonderpostenFehler(409, 'Diese Rolle ist laut Shopify schon leer (Bestand 0) – nichts gebucht.', { grund: 'bestand', bestand: vorher.bestand });
+  }
+  if (qm > vorher.bestand) {
+    const m = String(vorher.laengeM).replace('.', ',');
+    throw new SonderpostenFehler(409, `So viel ist nicht mehr da: ${laenge.toLocaleString('de-DE')} m ergeben ${qm} m², in Shopify stehen nur noch ${vorher.bestand} m² (${m} m). Nichts gebucht – bitte Länge und Bestand prüfen.`, { grund: 'bestand', bestand: vorher.bestand });
+  }
+
+  // 3. Abziehen - mit Compare-and-swap gegen Doppelbuchung.
+  const zeit = alsDateTime(jetzt);
+  const referenz = `tp://laden-verkauf/${encodeURIComponent(produkt.handle || numId(produktId))}/${zeit}?laenge_cm=${Math.round(laenge * 100)}&qm=${qm}`;
+  const neu = vorher.bestand - qm;
+  const { antwortVerloren } = await bucheBestand(proxy, {
+    produktId, inventoryItemId: vorher.inventoryItemId, vorher: vorher.bestand, neu, referenz, schluessel, standortId, rechtFehlt: RECHT_FEHLT_ROLLE,
+  });
+
+  // 4. Gegenprobe. Scheitert nur das Lesen, ist trotzdem gebucht.
+  const nachher = await leseOderNull(proxy, produktId, standortId);
+  return {
+    typ: 'rolle',
+    ok: nachher ? nachher.bestand === neu : false,
+    gebucht: true,
+    gegenprobe: nachher ? 'ok' : 'fehlgeschlagen',
+    antwortVerloren,
+    titel: vorher.titel,
+    referenz,
+    laengeM: laenge,
+    breiteM: vorher.breiteM,
+    qm,
+    bestandVorher: vorher.bestand,
+    bestandErwartet: neu,
+    bestandNachher: nachher ? nachher.bestand : null,
+    restLaengeM: nachher ? nachher.laengeM : null,
     eintrag: nachher,
   };
 }

@@ -53,7 +53,7 @@ import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { rollenware, paketware, stueck as stueckware, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
 import { ladeEnvLocal, erzeugeProxy, KEIN_ZUGANG, mitHinweis } from '../operations/sync/zugang.mjs';
-import { leseListe as leseSonderposten, verkaufeImLaden, SonderpostenFehler } from '../operations/lib/sonderposten.mjs';
+import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, SonderpostenFehler } from '../operations/lib/sonderposten.mjs';
 import { ohneUeberholtenFehler } from '../operations/scripts/aktualisieren.mjs';
 
 const execFileP = promisify(execFile);
@@ -1927,17 +1927,35 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     },
 
     /**
-     * "Im Laden verkauft": Bestand 1 -> 0, Verkaufsangaben, Protokoll,
-     * Gegenprobe. `benutzer` kommt aus der Sitzung, nie aus der Anfrage.
+     * "Im Laden verkauft": Einzelstueck Bestand 1 -> 0 mit Verkaufsangaben,
+     * Restrolle (mit laengeM) Bestand minus Laenge x Rollenbreite; jeweils
+     * Protokoll und Gegenprobe. `benutzer` kommt aus der Sitzung, nie aus der Anfrage.
      * Nur Produkt-ID und inventoryItemId werden aus dem Browser genommen -
      * beides wird gegen den frisch gelesenen Stand geprueft.
      */
     async sonderpostenVerkauft(payload, benutzer) {
-      const { produktId, inventoryItemId } = payload || {};
+      const { produktId, inventoryItemId, laengeM } = payload || {};
       if (!produktId) throw new ApiError(400, 'produktId ist Pflicht', { missing: ['produktId'] });
       const zugang = await shopify();
       if (zugang?.art === 'sammeln') throw new ApiError(503, 'Kein Zugang zu Shopify eingerichtet – hier kann nichts gebucht werden.', { grund: 'kein-zugang' });
       const wer = benutzer?.name || 'Inhaber';
+      // Restrolle: mit Laenge. Ob das Produkt wirklich eine Rolle ist, prueft
+      // verkaufeVonRolle am frisch gelesenen Stand - nicht der Browser.
+      if (laengeM !== undefined && laengeM !== null && laengeM !== '') {
+        let r;
+        try {
+          r = await verkaufeVonRolle(zugang.proxy, { produktId: String(produktId), inventoryItemId: inventoryItemId ? String(inventoryItemId) : null, laengeM: Number(laengeM), jetzt: now() });
+        } catch (e) {
+          if (e instanceof SonderpostenFehler) {
+            if (e.extra?.grund === 'unklar') merke(benutzer, wer, 'sonderposten-rolle-im-laden-verkauft-unklar', `${String(produktId)} · ${laengeM} m · Ergebnis unklar, Bestand pruefen`);
+            throw new ApiError(e.status, e.message, e.extra);
+          }
+          throw e;
+        }
+        const pruef = r.gegenprobe === 'fehlgeschlagen' ? ' · Gegenprobe nicht lesbar' : (r.ok ? '' : ` · Gegenprobe: Bestand ${r.bestandNachher} statt ${r.bestandErwartet}`);
+        merke(benutzer, wer, 'sonderposten-rolle-im-laden-verkauft', `${r.titel} · ${String(r.laengeM).replace('.', ',')} m = ${r.qm} m² · Bestand ${r.bestandVorher} → ${r.bestandErwartet} m² · ${String(produktId)}${pruef}${r.antwortVerloren ? ' · Antwort verloren, per Lesen bestaetigt' : ''}`);
+        return r;
+      }
       let ergebnis;
       try {
         ergebnis = await verkaufeImLaden(zugang.proxy, { produktId: String(produktId), inventoryItemId: inventoryItemId ? String(inventoryItemId) : null, verkauftVon: wer, jetzt: now() });

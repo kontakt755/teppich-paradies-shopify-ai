@@ -552,3 +552,31 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   „Angebote offen“ zählt Beratungen im Status Angebot oder Nachfassen. Die Kachel funktioniert erst, wenn die
   App mit dem Endpunkt ausgerollt und die Script-Property gesetzt ist.
 - **Nächste Stufe:** Bei Bedarf fällige Wiedervorlagen als To-do „Laden: Wiedervorlage fällig“ in die Liste oben.
+
+## 2026-10-12 · Sonderposten: Restrollen im Laden abbuchen (Inhaber)
+
+- **Geändert:** Die Ansicht „Sonderposten“ zeigt neben Reststücken und Einzelstücken jetzt auch Restrollen
+  (Rollenware mit Tag `sonderposten` und Rollenbreite, z. B. Passion Yasmin): „Restrolle · Rolle 4 m breit ·
+  noch 20 m (80 m²)“, Preis je m² (online). Der Knopf „Im Laden verkauft…“ fragt dort nach der abgeschnittenen
+  Länge, zeigt vor dem Klick „3,5 m × 4 m = 14 m² · danach noch 66 m² (16,5 m)“ (nicht glatte m² aufgerundet,
+  mehr als der Rest gesperrt) und bucht „14 m² abbuchen“. Server `verkaufeVonRolle`
+  (`operations/lib/sonderposten.mjs`) mit derselben Sicherung wie beim Stück (neu lesen, Compare-and-swap,
+  `@idempotent`, Antwortverlust über erneutes Lesen, Gegenprobe), Protokoll
+  `sonderposten-rolle-im-laden-verkauft`. Bestandsbuchung als gemeinsamer Helfer `bucheBestand` für beide Wege.
+  Zweig vorher mit `main` zusammengeführt (217 Commits; Konflikte in `serve-dashboard.mjs` – Pfadliste
+  vereinigt um `laden/zahlen` – und hier im Changelog, beide Seiten behalten).
+- **Getestet:** `operations/tests/sonderposten-rolle.test.mjs` (15: Rechnung, Liste, 3,5 m → 80 → 66,
+  genau der Rest, zu viel 409, ungültige Länge 400 ohne Aufruf, vertauschte Wege, ohne Tracking/mit
+  Überverkauf 409, Recht fehlt 403, Item-ID, Antwortverlust nach/vor der Buchung, unklar, Gegenprobe nicht
+  lesbar, gleichzeitige Buchung 409). Meldungs- und API-Tests ergänzt (u. a. Browser- und Serverrechnung für
+  2000 Längen × 3 Breiten gleich). `dashboard:test` 230/230, `operations:test` grün. `dashboard:pruefen`
+  (Liste live aus Shopify gelesen) ohne Überlauf bei 1440/1024/800/390/360 px. Klickstrecke bei 1440 und
+  390 px mit abgefangener Buchung: 3,3 m → „13,2 m², aufgerundet 14 m²“, 25 m → gesperrt mit Hinweis, Esc
+  schließt, 3,5 m → genau eine Anfrage `laengeM: 3.5` → Toast „14 m² abgebucht – noch 16,5 m (66 m²) auf
+  der Rolle“, 0 JS-Fehler.
+- **Risiken/Annahmen:** Kein echter Schreibtest – dem Zugang fehlt weiterhin `write_inventory` (am
+  2026-10-12 per Token-Tausch geprüft). Aufrunden auf ganze m² nimmt bei krummen Längen bis zu knapp 1 m²
+  je Buchung mehr vom Bestand, als physisch fehlt (lieber zu wenig anbieten als zu viel).
+- **Nächste Stufe:** Nach der Freischaltung den ersten echten Ladenverkauf hier buchen und in Shopify
+  (Bestandsverlauf der Variante, Referenz `tp://laden-verkauf/…`) und im Shop gegenprüfen.
+

@@ -7,11 +7,13 @@ export const ITEM_ID = 'gid://shopify/InventoryItem/7001';
 
 function produkt(z) {
   return {
-    id: z.id, title: z.titel, status: z.status, handle: 'test-reststueck', productType: z.productType,
+    id: z.id, title: z.titel, status: z.status, handle: z.handle || 'test-reststueck', productType: z.productType,
+    tags: z.tags || [], rollenbreite: null,
     featuredMedia: null,
     metafields: { nodes: Object.entries(z.felder).map(([key, value]) => ({ key, value })) },
     variants: { nodes: [{
-      id: 'gid://shopify/ProductVariant/8001', sku: z.sku, price: '149.00', inventoryPolicy: z.policy,
+      id: 'gid://shopify/ProductVariant/8001', sku: z.sku, price: z.preis || '149.00', inventoryPolicy: z.policy,
+      rollenbreite: z.rollenbreite ? { value: z.rollenbreite } : null,
       inventoryItem: { id: ITEM_ID, tracked: z.tracked, inventoryLevel: z.available === null ? null : { quantities: [{ name: 'available', quantity: z.available }, { name: 'on_hand', quantity: z.available }] } },
     }] },
   };
@@ -26,12 +28,24 @@ function produkt(z) {
  * @param {'nach'|'vor'|null} [o.antwortWeg=null]  Bestandsmutation endet ohne Antwort (Netzfehler):
  *        'nach' = Shopify hat gebucht, nur die Antwort fehlt; 'vor' = nie angekommen
  * @param {number[]} [o.lesenScheitert=[]] Nummern der SonderpostenEinzeln-Lesungen (1 = erste), die mit Netzfehler enden
+ * @param {boolean} [o.rolle=false]        Restrolle statt Einzelstueck: Teppichboden mit Tag "sonderposten",
+ *        Rollenbreite 4 m an der Variante, Bestand in m2 (Standard 80), ohne SKU
+ * @param {object[]} [o.weitere=[]]        zusaetzliche Produkte fuer die Liste (rohe Admin-API-Knoten)
  */
-export function attrappe({ available = 1, verweigert = false, felderFehler = false, productType = 'Sonderposten', sku = 'SP-TEST-0001', titel = 'TEST Reststück – nicht kaufen', tracked = true, policy = 'DENY', antwortWeg = null, lesenScheitert = [] } = {}) {
-  const z = {
-    id: PRODUKT_ID, titel, status: 'DRAFT', productType, sku, tracked, available, policy,
-    felder: { art: 'Reststück', zustand: 'Neuware', breite_m: '4.0', laenge_m: '2.35', lagerort: 'Regal 3' },
-  };
+export { produkt as rohProdukt };
+
+export function attrappe({ available, verweigert = false, felderFehler = false, productType, sku, titel, tracked = true, policy = 'DENY', antwortWeg = null, lesenScheitert = [], rolle = false, weitere = [] } = {}) {
+  const z = rolle
+    ? {
+      id: PRODUKT_ID, titel: titel ?? 'TEST Restrolle – nicht kaufen', status: 'ACTIVE', productType: productType ?? 'Teppichboden',
+      sku: sku ?? null, tracked, available: available === undefined ? 80 : available, policy, handle: 'test-restrolle',
+      tags: ['art: teppichboden', 'sonderposten'], rollenbreite: '4.0', preis: '41.95', felder: {},
+    }
+    : {
+      id: PRODUKT_ID, titel: titel ?? 'TEST Reststück – nicht kaufen', status: 'DRAFT', productType: productType ?? 'Sonderposten',
+      sku: sku ?? 'SP-TEST-0001', tracked, available: available === undefined ? 1 : available, policy,
+      felder: { art: 'Reststück', zustand: 'Neuware', breite_m: '4.0', laenge_m: '2.35', lagerort: 'Regal 3' },
+    };
   const aufrufe = [];
   let lesungen = 0;
   const proxy = {
@@ -46,7 +60,7 @@ export function attrappe({ available = 1, verweigert = false, felderFehler = fal
       }
       if (name === 'SonderpostenListe') {
         const vorlage = { ...produkt({ ...z, id: 'gid://shopify/Product/1', titel: 'VORLAGE Sonderposten', sku: 'SP-0000', available: 0, felder: {} }) };
-        return { products: { pageInfo: { hasNextPage: false, endCursor: null }, nodes: [produkt(z), vorlage] } };
+        return { products: { pageInfo: { hasNextPage: false, endCursor: null }, nodes: [produkt(z), vorlage, ...weitere] } };
       }
       if (name === 'SonderpostenLadenverkauf') {
         if (verweigert) throw new Error('Shopify GraphQL: Access denied for inventorySetQuantities field. Required access: `write_inventory` access scope.');

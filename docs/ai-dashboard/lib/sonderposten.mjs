@@ -12,6 +12,65 @@
 
 export const TEXT_ERFOLG = 'Als im Laden verkauft gebucht – online nicht mehr bestellbar';
 
+// -- Restrollen ---------------------------------------------------------------
+
+const zahlDe = n => Number(n).toLocaleString('de-DE', { maximumFractionDigits: 2 });
+
+/** "3,5", "3.5", "3,5 m", " 12 " -> Zahl; alles andere -> null. */
+export function leseMeter(text) {
+  const t = String(text ?? '').trim().replace(/\s*m$/i, '').replace(',', '.');
+  if (!/^\d+(\.\d+)?$/.test(t)) return null;
+  return Number(t);
+}
+
+/**
+ * Rechnung im Dialog "Von der Rolle verkauft". Gleiche Regel wie der Server
+ * (operations/lib/sonderposten.mjs, qmFuerLaenge): Laenge x volle Rollenbreite,
+ * ganzzahlig in cm, auf ganze m2 aufgerundet. Der Server rechnet selbst noch
+ * einmal - diese Rechnung ist nur die Anzeige vor dem Klick.
+ *
+ * @returns {{ ok: boolean, leer?: boolean, fehler?: string, laengeM?: number, qm?: number,
+ *             flaecheText?: string, restQm?: number, restM?: number, text?: string }}
+ */
+export function rollenRechnung(eingabe, breiteM, bestandQm) {
+  if (String(eingabe ?? '').trim() === '') return { ok: false, leer: true, fehler: '' };
+  const laenge = leseMeter(eingabe);
+  if (laenge === null || laenge <= 0) return { ok: false, fehler: 'Bitte die Länge in Metern eingeben, z. B. 3,5.' };
+  const laengeCm = Math.round(laenge * 100);
+  if (Math.abs(laenge * 100 - laengeCm) > 1e-6) return { ok: false, fehler: 'Höchstens zwei Nachkommastellen – auf den Zentimeter genau.' };
+  const breiteCm = Math.round(Number(breiteM) * 100);
+  if (!(breiteCm > 0)) return { ok: false, fehler: 'Für diese Rolle fehlt in Shopify die Rollenbreite.' };
+  const flaecheCm2 = laengeCm * breiteCm;
+  const qm = Math.ceil(flaecheCm2 / 10000);
+  const bestand = Number(bestandQm) || 0;
+  if (qm > bestand) {
+    const restM = Math.floor((bestand * 10000) / breiteCm) / 100;
+    return { ok: false, fehler: `So viel ist nicht mehr da: ${zahlDe(laenge)} m ergeben ${qm} m², auf der Rolle sind nur noch ${bestand} m² (${zahlDe(restM)} m).` };
+  }
+  const restQm = bestand - qm;
+  const restM = Math.floor((restQm * 10000) / breiteCm) / 100;
+  const exakt = flaecheCm2 % 10000 === 0;
+  const flaecheText = exakt ? `${qm} m²` : `${zahlDe(flaecheCm2 / 10000)} m², aufgerundet ${qm} m²`;
+  return {
+    ok: true, laengeM: laenge, qm, restQm, restM, flaecheText,
+    text: `${zahlDe(laenge)} m × ${zahlDe(breiteCm / 100)} m = ${flaecheText} · danach noch ${restQm} m² (${zahlDe(restM)} m)`,
+  };
+}
+
+/** Rueckmeldung nach einer gebuchten Laenge (ergebnis aus verkaufeVonRolle). */
+function meldungRolle(er) {
+  if (er.gegenprobe === 'fehlgeschlagen') {
+    return { erfolg: false, klasse: 'warn', text: `Shopify hat die Buchung angenommen (${er.bestandVorher} → ${er.bestandErwartet} m²). Die Gegenprobe konnte Shopify danach nicht lesen – bitte die Liste neu laden und den Bestand prüfen.`, neuLaden: true };
+  }
+  if (!er.ok) {
+    return { erfolg: false, klasse: 'warn', text: `Gebucht, aber Shopify zeigt danach ${er.bestandNachher ?? 'unbekannt'} m² statt ${er.bestandErwartet} m² – vielleicht wurde gleichzeitig online gekauft. Bitte in der Shopify-App prüfen.`, neuLaden: true };
+  }
+  const text = er.bestandNachher === 0
+    ? `${er.qm} m² abgebucht – die Rolle ist jetzt leer und online nicht mehr bestellbar`
+    : `${er.qm} m² abgebucht – noch ${zahlDe(er.restLaengeM)} m (${er.bestandNachher} m²) auf der Rolle`;
+  return { erfolg: true, klasse: null, text, neuLaden: true };
+}
+
 export const TEXT_OHNE_ANTWORT = 'Keine Antwort vom Dashboard am Mac. Ob der Verkauf gebucht wurde, ist unklar – '
   + 'bitte die Liste neu laden und den Bestand prüfen, bevor Sie noch einmal buchen.';
 
@@ -28,6 +87,7 @@ export function meldungNachBuchung(antwort) {
   }
   if (antwort.ok) {
     const er = antwort.ergebnis || {};
+    if (er.typ === 'rolle' && er.gebucht === true) return meldungRolle(er);
     if (er.gebucht !== true) {
       // 200 ohne lesbares Ergebnis: der Server hat gebucht oder nicht - unbelegt.
       return { erfolg: false, klasse: 'warn', text: 'Die Antwort des Dashboards war unvollständig. Ob der Verkauf gebucht wurde, ist unklar – bitte die Liste neu laden und den Bestand prüfen.', neuLaden: true };

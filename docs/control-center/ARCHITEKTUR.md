@@ -281,6 +281,8 @@ Externe Schreibaktionen zu Shopify/Google finden **nicht** im Control Center sta
 den Workflow mit Gates). Das Control Center schreibt ausschließlich Labels, Assignees und Kommentare nach GitHub.
 **Einzige Ausnahme seit 2026-10-08:** „Im Laden verkauft“ in der Ansicht Sonderposten setzt den Bestand
 genau eines Sonderpostens von 1 auf 0 und schreibt dessen `sonderposten.verkauft_*`-Felder (Abschnitt 13).
+Seit 2026-10-12 zieht derselbe Knopf bei einer Restrolle die verkaufte Länge × Rollenbreite (ganze m²)
+vom Bestand ab (Abschnitt 13, „Restrollen“).
 
 ## 6. Migrationsstrategie (keine destruktiven Schritte)
 
@@ -589,6 +591,22 @@ festgehalten als `SCHREIB_BEREICHE` in `sync/zugang.mjs` und in der Bereichszeil
 `operations/README.md`. Fehlt `write_inventory`, antwortet der Server 403 mit „Bestand kann nicht geändert
 werden: dem Control Center fehlt das Shopify-Recht write_inventory …“ und schreibt nichts. Freischalten macht
 nur der Inhaber im Dev Dashboard.
+
+**Restrollen (seit 2026-10-12, Inhaber).** Rollenware mit Produkt-Tag `sonderposten` und Rollenbreite
+(`custom.rollenbreite`, Variante vor Produkt), deren Bestand Shopify in ganzen m² führt – z. B. Passion
+Yasmin. Die Liste fragt `(product_type:Sonderposten OR tag:sonderposten)`; Produkte mit dem Tag, aber ohne
+Rollenbreite (das Maßprodukt derselben Rolle) erscheinen nicht, weil sie keinen eigenen Bestand haben. Der
+Knopf öffnet „Von der Rolle verkauft“: Eingabe der abgeschnittenen Länge in m, immer über die volle
+Rollenbreite (ein Teppich 2 × 3 m verbraucht 2 m der 4-m-Rolle). Server (`verkaufeVonRolle`): neu lesen,
+Rolle/Bestand geführt/`DENY`/Item-ID prüfen, m² = Länge × Breite in cm gerechnet und auf ganze m²
+aufgerundet, mehr als der Rest → 409. Dann `inventorySetQuantities` auf Bestand − m² mit
+`changeFromQuantity` = gelesener Bestand und `@idempotent`, Antwortverlust wie oben über erneutes Lesen
+geklärt, `referenceDocumentUri: tp://laden-verkauf/<handle>/<Zeit>?laenge_cm=…&qm=…`. Keine
+`verkauft_*`-Felder (die Rolle bleibt im Shop, solange etwas da ist); Spur ist der Protokolleintrag
+`sonderposten-rolle-im-laden-verkauft` („3,5 m = 14 m² · Bestand 80 → 66 m²“). Fehlt `write_inventory`,
+sagt der Dialog, wie man bis dahin in der Shopify-App abzieht. Der Dialog rechnet dieselbe Regel vorher an
+(`lib/sonderposten.mjs`, `rollenRechnung`; ein Test hält Browser und Server gleich). Der Shop zeigt den Rest
+unter dem Preis aus demselben Bestand (`blocks/tp-aktion-hinweis.liquid`, `snippets/tp-rollenrest.liquid`).
 
 **Tests** sprechen nie echtes Shopify: `tests/_testumgebung.mjs` blendet `.env.local` und die
 `SHOPIFY_*`-Variablen aus, die Tests reichen eine Attrappe (`operations/tests/sonderposten-attrappe.mjs`)
