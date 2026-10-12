@@ -49,6 +49,8 @@ import {
   FOTO_ART, FotoFehler, passendeProdukte, produktHinweis, pruefeEingang, titelFuer,
 } from '../operations/lib/baustellenfotos.mjs';
 import { protokollPfad, protokolliere } from '../operations/lib/protokoll.mjs';
+import { findeZugang, liesZugaenge, zugangAnlegen } from '../social/lib/eingang.mjs';
+import { ladeUmgebung } from '../social/lib/zugang.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { rollenware, paketware, stueck as stueckware, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
@@ -1504,6 +1506,65 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * Rechteregelung wirkungslos: alles laeuft als "Inhaber".
      */
     _benutzerDatei() { return path.join(privatDirPath || privatDir(), 'benutzer.json'); },
+
+    /**
+     * Upload-Links der Monteure fuer Baustellenfotos (Ansicht "Social Media").
+     *
+     * Der Link IST der Zugang. Das Social-Modul speichert davon nur den Hash
+     * (upload-zugaenge.json); damit Inhaber und Mitarbeiter ihn spaeter noch
+     * kopieren koennen, legt das Control Center den Klartext beim Anlegen in
+     * upload-links.json daneben ab - beides nur im Privatordner, Rechte 600.
+     * Angezeigt wird ein gemerkter Link nur, solange sein Zugang aktiv ist:
+     * wer per `npm run social -- zugang sperren` sperrt, sperrt auch hier.
+     */
+    _socialDir() { return path.join(privatDirPath || privatDir(), 'social'); },
+    _uploadBasis() {
+      const dir = this._socialDir();
+      const basis = ladeUmgebung(env, { dir, repo: root }).SOCIAL_UPLOAD_BASIS_URL || '';
+      return /^https?:\/\/[^\s<>]+$/.test(basis) ? basis.replace(/\/+$/, '') : '';
+    },
+    _uploadLinksDatei() { return path.join(this._socialDir(), 'upload-links.json'); },
+    _uploadLinks() {
+      try { return JSON.parse(fs.readFileSync(this._uploadLinksDatei(), 'utf8')).links ?? []; } catch { return []; }
+    },
+
+    socialZugaenge() {
+      const dir = this._socialDir();
+      const liste = liesZugaenge(path.join(dir, 'upload-zugaenge.json'));
+      const basis = this._uploadBasis();
+      const gemerkt = this._uploadLinks();
+      const namen = [...new Set(liste.filter(z => z.aktiv).map(z => z.name))];
+      const zugaenge = namen.map(name => {
+        const aktive = liste.filter(z => z.aktiv && z.name === name);
+        // Juengster noch gueltiger gemerkter Link dieses Namens.
+        const treffer = gemerkt.filter(l => l.name === name && findeZugang(l.token, aktive))
+          .sort((a, b) => String(b.angelegt).localeCompare(String(a.angelegt)))[0];
+        return {
+          name,
+          seit: aktive.map(z => z.angelegt).sort()[0] || null,
+          link: treffer && basis ? `${basis}/u/${treffer.token}` : null,
+        };
+      });
+      return { basisVorhanden: Boolean(basis), zugaenge };
+    },
+
+    socialLinkNeu({ name = '' } = {}, { benutzer = null } = {}) {
+      const sauber = String(name || '').trim().slice(0, 40);
+      if (!sauber) throw new ApiError(400, 'Bitte einen Namen eintragen, z. B. „Team“.');
+      const basis = this._uploadBasis();
+      if (!basis) throw new ApiError(409, 'Die öffentliche Upload-Adresse ist am Mac noch nicht eingetragen.');
+      const dir = this._socialDir();
+      // Ein weiterer Link fuer denselben Namen sperrt den alten nicht: die
+      // Monteure benutzen ihn vielleicht gerade auf der Baustelle.
+      const z = zugangAnlegen(sauber, { datei: path.join(dir, 'upload-zugaenge.json'), jetzt: now() });
+      const links = this._uploadLinks();
+      links.push({ name: z.name, token: z.token, angelegt: now().toISOString() });
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(this._uploadLinksDatei(), JSON.stringify({ links }, null, 2), { mode: 0o600 });
+      fs.chmodSync(this._uploadLinksDatei(), 0o600);
+      merke(benutzer, null, 'Upload-Link angelegt', z.name);
+      return { ok: true, ...this.socialZugaenge() };
+    },
 
     teamListe() {
       const liste = orgLeseBenutzer(this._benutzerDatei());

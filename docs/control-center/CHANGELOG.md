@@ -600,3 +600,17 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Kachel auf „nicht erreichbar“.
 - **Nächste Stufe:** Falls die App einen Parameter für den Filter bekommt (z. B. `?ansicht=laden&filter=spam`),
   die Zeile direkt dorthin verlinken.
+## 2026-10-12 · Ansicht „Social Media“: Upload-Link fürs Team und Kampagnen-Links
+
+- **Geändert:** Neuer Punkt „Social Media“ unter „Seltener“ (`#/social`, für Rolle „lesen“ ausgeblendet). Karte
+  „Foto-Upload fürs Team“: je Name der kopierbare Upload-Link für die Baustellenfotos; der Link kommt nur vom
+  Server (`/api/social/zugaenge`, „lesen“ → 403). „Neuen Link anlegen“ (nur Inhaber) erzeugt einen Zugang im
+  Social-Modul und merkt den Klartext im Privatordner; alte Links bleiben gültig. Karte „Kampagnen-Link“:
+  Ziel (Startseite, Liefer- und Verlegeservice, Unsere Arbeit, Muster oder eigene Shop-Adresse), Kanal, Art,
+  Kampagne → fertiger UTM-Link mit „Kopieren“. Darüber eine Zeile mit Social-Zentrale, Instagram, Facebook.
+- **Getestet:** siehe PR (Testzahlen, `dashboard:pruefen`, Klickstrecke gegen die Kopie).
+- **Risiken/Annahmen:** Der bestehende Zugang „Team“ ist nur als Hash gespeichert; sein Link lässt sich nicht
+  wiederherstellen. Bis der Inhaber einmal „Neuen Link anlegen“ drückt, zeigt die Zeile nur den Hinweis.
+  Die Zentrale (Port 8020) ist nur im Netz des Macs bzw. über Tailscale erreichbar.
+- **Nächste Stufe:** Sperren eines Upload-Links direkt hier statt per Kommandozeile.
+

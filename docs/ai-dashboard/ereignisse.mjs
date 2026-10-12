@@ -31,6 +31,7 @@ import {
 } from './ansichten/organisation.mjs';
 import { openMeinPasswort, teamKlick, teamAenderung } from './ansichten/team.mjs';
 import { fotosEreignisseBinden, fotosAenderung } from './ansichten/fotos.mjs';
+import { socialEingabe, socialAbsenden } from './ansichten/social.mjs';
 import { arbeitKlick } from './ansichten/arbeit.mjs';
 import { sonderpostenKlick } from './ansichten/sonderposten.mjs';
 import { ladeAktivitaetsdaten } from './ansichten/aktivitaet.mjs';
@@ -43,6 +44,7 @@ export function bindEvents() {
     try { localStorage.setItem(`tp-heute-${d.dataset.collapsible}`, d.open ? '1' : '0'); } catch {}
   }, true);
   fotosEreignisseBinden();
+  document.addEventListener('submit', e => { socialAbsenden(e); });
   document.addEventListener('click', e => {
     if (e.target.closest('[data-abmelden]')) { logout(); return; }
     const open = e.target.closest('[data-open]');
@@ -104,6 +106,7 @@ export function bindEvents() {
   });
   document.addEventListener('change', e => {
     if (fotosAenderung(e)) return;
+    if (socialEingabe(e)) return;
     if (orgAenderungAnhang(e)) return;
     if (teamAenderung(e)) return;
     const el = e.target.closest('select[data-param]'); if (el) { setParam(el.dataset.param, el.value); return; }
@@ -111,6 +114,7 @@ export function bindEvents() {
   });
   let qTimer;
   document.addEventListener('input', e => {
+    if (socialEingabe(e)) return;
     const el = e.target.closest('input[type=search][data-param]');
     if (!el) return;
     const key = el.dataset.param;
