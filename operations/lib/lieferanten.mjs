@@ -655,3 +655,105 @@ export function bestellmail({ modell, lieferant, art = 'ware', gruppe = null, zi
   // sieht die Oberflaeche "nichts mehr zu bestellen" statt eines Fehlers.
   return { lieferant: id, name: st.name, art, automatischGesendet: false, mails };
 }
+
+// ------------------------------------------------------ Schnellzugriff (Lexikon)
+
+/**
+ * Kuerzel aus dem Lexikon: der Export fuehrt "B", aeltere Daten "Lieferant B". null, wenn
+ * daraus keine gueltige Kennung wird (leer, UNGEKLAERT, Freitext).
+ */
+export function kennungAusLexikon(wert) {
+  const k = kennung(String(wert ?? '').trim().replace(/^lieferant\s+/i, ''));
+  return k && k !== UNGEKLAERT && KENNUNG_RE.test(k) ? k : null;
+}
+
+function schnellMail(st, art, artikel, absender) {
+  const { anrede, gruss } = rahmen({ st, absender, anredeStandard: 'Sehr geehrte Damen und Herren,' });
+  const nr = geklaert(artikel.artikelnummer);
+  const farbe = geklaert(artikel.farbnummer);
+  const kopf = [nr ? `Art.-Nr. ${nr}` : null, farbe ? `Farb-Nr. ${farbe}` : null].filter(Boolean).join(' · ');
+  // Nur die Bezeichnung des Lieferanten - unsere Shop-Namen kennt er nicht (wie musterMail).
+  const bezeichnung = geklaert(artikel.produktname);
+  const zeilen = [anrede, ''];
+  if (art === 'muster') {
+    zeilen.push(st.mail.duzen ? 'bitte schick uns folgendes Muster:' : 'bitte senden Sie uns folgendes Muster:', '');
+    if (st.kundennummer) zeilen.push(`Unsere Kundennummer: ${st.kundennummer}`, '');
+    zeilen.push(`1× ${kopf || bezeichnung || ''}`.trim(), '', 'Vielen Dank.', '', gruss);
+  } else {
+    zeilen.push('wir bestellen folgende Ware:', '');
+    if (st.kundennummer) zeilen.push(`Unsere Kundennummer: ${st.kundennummer}`, '');
+    if (kopf) zeilen.push(kopf);
+    if (bezeichnung) zeilen.push(kopf ? `   ${bezeichnung}` : bezeichnung);
+    // Menge und Anschrift kennt das Lexikon nicht - leer zum Ausfuellen, nie geraten.
+    zeilen.push(`${kopf || bezeichnung ? '   ' : ''}Menge: `, '', 'Lieferanschrift: ', '',
+      'Bitte bestätigen Sie uns den Auftrag mit dem voraussichtlichen Liefertermin.', '', gruss);
+  }
+  const betreff = [art === 'muster' ? 'Musterbestellung' : 'Bestellung', st.kundennummer ? `Kd.-Nr. ${st.kundennummer}` : null, nr ? `Art.-Nr. ${nr}` : null].filter(Boolean).join(' – ');
+  const text = zeilen.join('\n');
+  return { an: st[art].mail, betreff, text, mailto: mailtoLink({ an: st[art].mail, betreff, text }).mailto };
+}
+
+/**
+ * Schnellzugriff zum Lieferanten fuer eine Lexikon-Variante, die weder einen Direkt- noch einen
+ * Suchlink hat (Auftrag des Inhabers: bei Ware und Mustern immer ein Weg zum Lieferanten). Manche
+ * Lieferanten haben online keine Produktseiten - dann ist ihr Bestellweg aus den Stammdaten der
+ * Schnellzugriff: Bestellmail (fertig mit Artikel- und Farbnummer), Portal oder Telefon, der
+ * hinterlegte Hauptweg zuerst. Ohne Stammdaten bleibt `aktionen` leer und `hinweis` sagt, was
+ * fehlt. Wie bestellmail(): Es wird nichts gesendet, und aus den Stammdaten gehen nur Kontakt
+ * und Kundennummer hinaus.
+ *
+ * @param {object} stammdaten  Rueckgabe von leseStammdaten() (oder null)
+ * @param {string} lieferant   Kuerzel aus dem Lexikon ("B" oder "Lieferant B")
+ * @param {{artikel?:object, art?:'ware'|'muster'}} [opt]  artikel: { artikelnummer, farbnummer, produktname }
+ * @returns {object|null} null, wenn kein Lieferant zugeordnet ist
+ */
+export function lexikonSchnellzugriff(stammdaten, lieferant, { artikel = {}, art = 'ware' } = {}) {
+  const id = kennungAusLexikon(lieferant);
+  if (!id) return null;
+  const st = stammdatenFuer(stammdaten, id);
+  const s = st[art];
+  const reihenfolge = s.weg === 'portal' ? ['portal', 'mail', 'telefon'] : s.weg === 'telefon' ? ['telefon', 'mail', 'portal'] : ['mail', 'portal', 'telefon'];
+  const aktionen = [];
+  for (const weg of reihenfolge) {
+    if (weg === 'mail' && s.mail) {
+      aktionen.push({ weg, label: `${art === 'muster' ? 'Musterbestellung' : 'Bestellmail'} an ${st.name}`, ...schnellMail(st, art, artikel ?? {}, stammdaten?.absender ?? null) });
+    }
+    if (weg === 'portal' && s.portalUrl) aktionen.push({ weg, label: 'Im Portal bestellen', href: s.portalUrl });
+    if (weg === 'telefon' && s.telefon) aktionen.push({ weg, label: 'Anrufen', nummer: s.telefon });
+  }
+  return {
+    lieferant: id,
+    name: st.name,
+    art,
+    weg: aktionen[0]?.weg ?? null,
+    aktionen,
+    kundennummer: st.kundennummer,
+    // Nur mit Eintrag zeigt der Einkauf eine Lieferantenseite ("was fehlt?"); ohne Eintrag und
+    // ohne offene Bestellung meldet er "nicht gefunden" - dann nennt der Hinweis die Datei.
+    stammdatenEintrag: Boolean(stammdaten?.lieferanten?.[id]),
+    hinweis: aktionen.length ? null
+      : `${art === 'muster' ? 'Musterbestellweg' : 'Bestellweg'} von ${st.name} nicht hinterlegt – Mail, Portal oder Telefon in den Lieferanten-Stammdaten eintragen${stammdaten?.lieferanten?.[id] ? '' : ' (private Datei lieferanten/stammdaten.json auf dem Büro-Mac, Inhaber)'}.`,
+  };
+}
+
+/**
+ * Lexikon-Produkt mit Schnellzugriff an jeder Variante ohne Direkt- und Suchlink:
+ * echte Varianten an `link.schnellzugriff` (Bestellweg Ware), Mustervarianten an
+ * `original.schnellzugriff` (Bestellweg Muster). Varianten mit Link bleiben unveraendert;
+ * das Exportobjekt selbst wird nicht veraendert.
+ */
+export function lexikonProduktMitSchnellzugriff(produkt, stammdaten) {
+  if (!produkt) return produkt;
+  const varianten = (produkt.varianten ?? []).map(v => {
+    if (v.original) {
+      const o = v.original;
+      if (!o.gefunden || o.url || o.suchlink) return v;
+      const sz = lexikonSchnellzugriff(stammdaten, o.lieferant, { artikel: o, art: 'muster' });
+      return sz ? { ...v, original: { ...o, schnellzugriff: sz } } : v;
+    }
+    if (!v.link || v.link.status === 'vorhanden' || v.link.suchlink) return v;
+    const sz = lexikonSchnellzugriff(stammdaten, v.einkauf?.lieferant, { artikel: v.einkauf ?? {}, art: 'ware' });
+    return sz ? { ...v, link: { ...v.link, schnellzugriff: sz } } : v;
+  });
+  return { ...produkt, varianten };
+}

@@ -851,3 +851,29 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   nächsten Lauf; bis dahin rechnet die Kachel aus `kostenlos`.
 - **Nächste Stufe:** `WERKBANK_URL` und `AUFTRAGS_APP_URL` im Dienst setzen; Zugänge anlegen (ARCHITEKTUR §1e); in
   „Zu tun“ einen Knopf für den Zeitleisten-Schritt (wie auf „Heute“), damit „Nachfassen“/„Abschließen“ direkt geht.
+
+## 2026-10-12 · Lexikon: Bestellweg als Schnellzugriff, wenn es keinen Link gibt (#1168)
+
+- **Geändert:** Auftrag des Inhabers: bei Ware und Mustern immer ein Schnellzugriff zum Lieferanten. Lieferant B
+  hat online keine Artikelseiten und keine brauchbare Suche – 654 Varianten (Wohnteppich, Teppich nach Maß,
+  Teppich, Dekofell) hatten weder Direkt- noch Suchlink. Neu `lexikonSchnellzugriff()` und
+  `lexikonProduktMitSchnellzugriff()` in `operations/lib/lieferanten.mjs`: `/api/lexikon/produkt` hängt an
+  jede Variante ohne Link den Bestellweg aus den Lieferanten-Stammdaten (Mail, Portal, Telefon; Hauptweg
+  zuerst). Das Lexikon zeigt unter „Zum Bestellen“ einmal Weg, Kundennummer und „Anrufen“, je Variante
+  „Bestellmail“ (mit Artikel-/Farbnummer und Bezeichnung des Lieferanten, Menge und Lieferanschrift leer
+  zum Ausfüllen) plus „in Gmail“; Muster entsprechend über den Musterweg. Ohne Stammdaten ein Hinweis, was
+  fehlt und wo es gepflegt wird.
+- **Daten (nicht im Repo):** Bestellweg von B aus der Korrespondenz belegt (Bestellungen per Mail an den
+  Verkauf, zuletzt 12.10.; Kundennummer aus zwei Mails) und in der privaten Stammdatendatei eingetragen –
+  damit zeigt auch die Lieferantenkarte im Einkauf „per E-Mail“ und die fertige Bestellmail.
+- **Getestet:** 6 neue Tests in `operations/tests/lieferanten.test.mjs`, 2 in `api.test.mjs`;
+  `dashboard:test` 253/253, `npm test` grün. Gegenprobe über den ganzen Export: 14434 Varianten – 12898
+  Direktlink, 882 Suchlink, 654 Bestellweg, 0 ohne; 5850/5850 Muster mit Weg. `dashboard:pruefen` (Lexikon,
+  Fellara, Kontura, Einkauf) 1440–360 px nur `OK`, 0 px Überlauf. Klickstrecke gegen die Kopie: Bestellmail
+  an die hinterlegte Adresse mit Betreff „Bestellung – Kd.-Nr. … – Art.-Nr. …“, Gmail-Link gleich befüllt,
+  `tel:`-Link; ohne Eintrag Hinweis mit Datei, mit leerem Eintrag „Was fehlt?“ → Lieferant-Detail
+  „noch keine Stammdaten hinterlegt“; 0 JS-Fehler.
+- **Risiken/Annahmen:** Die Lieferzeit von B steht nur als Freitext in den Hinweisen („ca. 5 Tage“ ist nicht
+  als Werktage belegt). Die Trefferliste zählt Bestellweg-Varianten weiter als „Link fehlt“.
+- **Nächste Stufe:** Musterweg von B eintragen, sobald belegt.
+

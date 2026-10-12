@@ -344,6 +344,31 @@ Für die Oberfläche:
 - `400` bei unbekannter `art`/`ziel`/`gruppe`; ohne `orders.json`
   `{verfuegbar:false, hinweis, mails:[]}`.
 
+### Schnellzugriff im Lexikon (seit 2026-10-12)
+
+Manche Lieferanten haben online keine Artikelseiten. Hat eine Lexikon-Variante
+weder Direktlink (`einkauf.lieferant_url`) noch Suchlink, haengt
+`GET /api/lexikon/produkt` den Bestellweg aus den Stammdaten an
+(`lexikonProduktMitSchnellzugriff` / `lexikonSchnellzugriff`):
+echte Varianten unter `link.schnellzugriff` (Weg `ware`), Mustervarianten unter
+`original.schnellzugriff` (Weg `muster`).
+
+```json
+{ "lieferant": "B", "name": "Lieferant B", "art": "ware", "weg": "mail", "kundennummer": "K-7",
+  "stammdatenEintrag": true, "hinweis": null,
+  "aktionen": [
+    { "weg": "mail", "label": "Bestellmail an Lieferant B", "an": "order@lieferant-b.example", "betreff": "Bestellung – Kd.-Nr. K-7 – Art.-Nr. B-9001", "text": "…", "mailto": "mailto:…" },
+    { "weg": "telefon", "label": "Anrufen", "nummer": "+49 30 2222222" }
+  ] }
+```
+
+- Der hinterlegte Weg (`ware.weg` bzw. `muster.weg`) steht vorn, weitere
+  Kontakte folgen. Die Mail traegt Kundennummer, Artikel- und Farbnummer und die
+  Bezeichnung des Lieferanten (`einkauf.produktname`), nie unsere Shop-Namen;
+  Menge und Lieferanschrift bleiben leer zum Ausfuellen.
+- Ohne Weg: `aktionen: []`, `hinweis` sagt, was fehlt. `stammdatenEintrag: false`
+  heisst, der Einkauf kennt keine Lieferantenseite dazu – dann nennt der Hinweis die Datei.
+
 ## Zurück auf offen und Muster „haben wir da“
 
 **Zurück auf offen.** `setzeZurueckAufOffen()` in `lib/auftragsstatus.mjs` setzt
