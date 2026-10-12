@@ -34,6 +34,13 @@
       assign tp_ew_anzahl = tp_ew_anzahl | plus: 1
     endif
   endif
+  # Seit 2026-10-12 waehlt der Konfigurator die Kante als Bildkacheln mit Preis
+  # (snippets/tp-einfass-kanten, gleiche Bedingung: mindestens eine andere
+  # lieferbare Einfassart) und zeigt dort auch den Weg zur Meterware. Dieser Block
+  # bleibt nur fuer Teppiche mit einer einzigen Einfassart.
+  if tp_ew_andere > 0
+    assign tp_ew_anzahl = 0
+  endif
 -%}
 
 {%- if tp_ew_anzahl > 0 -%}

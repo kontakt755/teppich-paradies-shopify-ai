@@ -258,6 +258,24 @@
         <p class="tp-ek__fehler" role="alert" data-fehler hidden></p>
       </div>
 
+      {%- comment -%}
+        Kantenwahl als Bildkacheln (Inhaber 2026-10-12), nur bei mehr als einer
+        Einfassart. Der Kettelservice-Preis rechnet den Endpreis einer gekettelten
+        Kachel ohne kante_inklusive - auch, wenn diese Seite selbst Paspel oder Cover ist.
+      {%- endcomment -%}
+      {%- liquid
+        assign tp_ek_kettel_cent = 0
+        if tp_ek_kettel_v
+          assign tp_ek_kettel_cent = tp_ek_kettel_v.price
+        elsif block.settings.kettelservice_produkt != blank
+          assign tp_ek_kv2 = block.settings.kettelservice_produkt.selected_or_first_available_variant
+          if tp_ek_kv2.available and tp_ek_kv2.price > 0
+            assign tp_ek_kettel_cent = tp_ek_kv2.price
+          endif
+        endif
+      -%}
+      {% render 'tp-einfass-kanten', product: product, bilder: block.settings, kettel_cent: tp_ek_kettel_cent %}
+
       {%- if tp_ek_band_wahl -%}
         <div class="tp-ek__schritt" data-schritt="band">
           {% render 'tp-step-heading', number: 4, label: 'Bandfarbe' %}
@@ -480,6 +498,34 @@
       "label": "WhatsApp-Nummer fuer Fotos",
       "info": "Nur Ziffern mit Laendervorwahl, z. B. 491792612211. Leer lassen, um den Link auszublenden.",
       "default": "491792612211"
+    },
+    {
+      "type": "header",
+      "content": "Kantenbilder"
+    },
+    {
+      "type": "paragraph",
+      "content": "Bild je Einfassart fuer die Kantenkacheln. Ohne Bild zeichnet der Konfigurator die Kante auf das Foto der gewaehlten Farbe."
+    },
+    {
+      "type": "image_picker",
+      "id": "bild_ketteln",
+      "label": "Bild Gekettelt"
+    },
+    {
+      "type": "image_picker",
+      "id": "bild_paspelband",
+      "label": "Bild Paspel"
+    },
+    {
+      "type": "image_picker",
+      "id": "bild_einfassband",
+      "label": "Bild Einfassband"
+    },
+    {
+      "type": "image_picker",
+      "id": "bild_cover",
+      "label": "Bild Cover"
     },
     {
       "type": "header",

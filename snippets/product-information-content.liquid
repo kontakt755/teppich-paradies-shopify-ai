@@ -139,6 +139,23 @@
         endfor
       endif
 
+      # Teppiche nach Mass: product.type "Teppich nach Maß" steckt in keinem
+      # Kollektionstitel ("Teppiche nach Maß"), der Rueckfall griff nach der
+      # groessten Kollektion - bei JAB war das "JAB Anstoetz Designboden".
+      # Gleiche Stufen wie auf der Kategorieseite: Teppiche > Teppich nach Maß
+      # bzw. Vorwerk & JAB Teppiche nach Maß (Markenware, auch Paspel/Cover).
+      if product.type == 'Teppich nach Maß' and collections['teppiche'] != blank
+        assign tp_crumb_1 = collections['teppiche']
+        if product.tags contains 'marken-teppich-nach-mass' or product.tags contains 'marken-einfassung'
+          assign tp_crumb_2 = collections['marken-teppiche-nach-mass']
+        else
+          assign tp_crumb_2 = collections['teppich-nach-mass']
+        endif
+        if tp_crumb_2.id == blank
+          assign tp_crumb_2 = null
+        endif
+      endif
+
       # Teppichfliesen sind eine eigene sichtbare Kategorie. Produkte, die
       # dort gelistet sind, bekommen diese Collection als direkte Rueckspur,
       # auch wenn product.type allgemeiner "Teppichboden" lautet.
