@@ -346,10 +346,9 @@ Abschlussberichte kompakt halten:
 Nicht automatisch bearbeiten, aber bei zukünftigen Aufgaben berücksichtigen:
 
 - Teppichboden Mobile-Menü optimieren
-- fehlendes oder graues Kategoriebild bei Teppichboden-Unterseiten endgültig beheben
 - Hochflor-/Mittelflor-Zuordnung fachlich verbessern
 - ecoVella-/Wolle-Zuordnung sauber prüfen
-- Raumplaner / Roomvo evaluieren beziehungsweise später integrieren
+- Eigenen Raumvisualisierer für Hartböden ausbauen – keine fremden Visualisierer wie Roomvo (Inhaber 09.10.)
 - Horizon 4.1.3 später separat migrieren
 - Produktbilder langfristig verbessern
 - Reste & Sonderposten später als eigenen starken Shopbereich aufbauen
