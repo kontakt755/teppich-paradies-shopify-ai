@@ -47,7 +47,7 @@ function zeichne() {
     return;
   }
   main.innerHTML = (state.loadError ? `<div class="notice crit" style="margin-bottom:12px">Aktualisierung fehlgeschlagen: ${esc(state.loadError)} – es wird der letzte geladene Stand gezeigt.</div>` : '') + ansichten[state.route.view]();
-  document.title = `${{ heute: 'Heute', arbeit: 'Entwicklung', freigaben: 'Freigaben', bereiche: 'Bereiche', insights: 'Insights', aktivitaet: 'Aktivität', einkauf: 'Einkauf', kunden: 'Kunden', lexikon: 'Lexikon', ratgeber: 'Ratgeber', hilfe: 'Hilfe', shopwache: 'Shop-Wache', organisation: 'Aufgaben & Organisation' }[state.route.view] || 'Teppich Paradies'} · Teppich Dashboard`;
+  document.title = `${{ heute: 'Heute', arbeit: 'Entwicklung', freigaben: 'Freigaben', bereiche: 'Bereiche', insights: 'Insights', aktivitaet: 'Aktivität', einkauf: 'Einkauf', kunden: 'Kunden', lexikon: 'Lexikon', ratgeber: 'Ratgeber', hilfe: 'Hilfe', shopwache: 'Shop-Wache', organisation: 'Aufgaben & Organisation', sonderposten: 'Sonderposten' }[state.route.view] || 'Teppich Paradies'} · Teppich Dashboard`;
   renderSheet();
   // Zuerst weitertippen lassen, wo jemand gerade tippt.
   if (eingabe && stelleEingabeWiederHer(main.querySelector(`input[data-param="${eingabe.param}"]`), eingabe)) return;

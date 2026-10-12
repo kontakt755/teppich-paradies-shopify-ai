@@ -8,7 +8,8 @@
   automatischen Shopify-Rabatt abgezogen. Kein Countdown, keine Verknappung.
 
   Darunter, unabhaengig von einer Aktion: der Hinweis fuer Auslaufkollektionen
-  (Produkt-Tag "auslauf").
+  (Produkt-Tag "auslauf") und fuer Sonderposten von der Rolle (Produkt-Tag
+  "sonderposten") mit dem echten Restbestand aus Shopify.
 {% enddoc %}
 {%- liquid
   assign tah_produkt = closest.product | default: product
@@ -55,6 +56,45 @@
       {%- if tah_produkt.tags contains 'ohne-raummass' %} Erhältlich als Meterware in voller Rollenbreite.{% endif -%}
     </p>
   </div>
+{%- endif -%}
+
+{%- comment -%}
+  Sonderposten von der Rolle (Tag "sonderposten", z. B. Vorwerk Passion
+  Yasmin, Inhaber 2026-10-12): "nur solange der Vorrat reicht" mit dem
+  Restbestand aus Shopify (snippets/tp-rollenrest). Erscheint nur, wenn
+  Shopify den Bestand in m2 fuehrt und Ueberverkauf sperrt - dann begrenzt
+  auch der Rollenrechner die Laenge auf genau diesen Rest. Ohne gesicherten
+  Bestand keine Mengenangabe. Einzelstuecke mit Produkttyp "Sonderposten"
+  zeigen ihre Stueckzahl in blocks/tp-sonderposten-daten.
+{%- endcomment -%}
+{%- if tah_produkt.tags contains 'sonderposten' -%}
+  {%- liquid
+    capture tah_rest
+      render 'tp-rollenrest', product: tah_produkt
+    endcapture
+    assign tah_rest = tah_rest | strip
+  -%}
+  {%- if tah_rest != blank -%}
+    {%- liquid
+      assign tah_rest_teile = tah_rest | split: '|'
+      assign tah_rest_qm = tah_rest_teile[2] | times: 1
+      capture tah_rest_m
+        render 'tp-meter-de', cm: tah_rest_teile[0]
+      endcapture
+      capture tah_breite_m
+        render 'tp-meter-de', cm: tah_rest_teile[1]
+      endcapture
+    -%}
+    <div class="tp-auslauf-hinweis tp-vorrat-hinweis" data-tp-vorrat="{{ tah_rest_qm }}">
+      {%- if tah_rest_qm > 0 -%}
+        <p class="tp-auslauf-hinweis__titel">Sonderposten – nur solange der Vorrat reicht</p>
+        <p class="tp-auslauf-hinweis__text">Restbestand: noch <strong>{{ tah_rest_m | strip }} m</strong> Länge bei {{ tah_breite_m | strip }} m Rollenbreite ({{ tah_rest_qm }} m²).</p>
+      {%- else -%}
+        <p class="tp-auslauf-hinweis__titel">Sonderposten – ausverkauft</p>
+        <p class="tp-auslauf-hinweis__text">Der Restbestand ist verkauft.</p>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
 {%- endif -%}
 
 {% stylesheet %}
