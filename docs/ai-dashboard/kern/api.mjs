@@ -14,6 +14,8 @@ function fehlerText(status, roh) {
   return roh || 'Unbekannter Fehler';
 }
 
+import { merkeStoerung } from './helfer.mjs';
+
 /**
  * Gescheiterte Aufrufe als Ereignis melden. "Fehler melden"
  * (bausteine/fehler-melden.mjs) haengt die letzten davon an die Meldung - der
@@ -22,6 +24,9 @@ function fehlerText(status, roh) {
  */
 function meldeApiFehler(methode, pfad, status, text) {
   if (status === 404 || typeof window === 'undefined') return;
+  // Nur echte Stoerungen (Server kaputt, keine Verbindung) bekommen den
+  // Melden-Knopf - eine fehlende Berechtigung ist kein Fehler im Dashboard.
+  if (!status || status >= 500) merkeStoerung();
   try { window.dispatchEvent(new CustomEvent('tp-api-fehler', { detail: `${methode} ${pfad} → ${status || 'keine Verbindung'}: ${text || ''}` })); } catch { /* nur Zusatzinfo */ }
 }
 
