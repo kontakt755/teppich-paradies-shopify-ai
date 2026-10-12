@@ -174,6 +174,19 @@ query OpsQuellvarianten($ids: [ID!]!) {
   }
 }`;
 
+/**
+ * Alle Lieferanten-Metaobjekte (GID -> Kuerzel). einkauf.lieferant steht in
+ * den Bestelldaten nur als GID; ohne diese Liste kennt die Bestelluebersicht
+ * nur ihre feste Rueckfall-Liste, und jeder neu angelegte Lieferant steht
+ * unter "nicht zugeordnet".
+ */
+const LIEFERANTEN_QUERY = `
+query OpsLieferanten {
+  metaobjects(type: "tp_lieferant", first: 50) {
+    nodes { id kuerzel: field(key: "kuerzel") { value } }
+  }
+}`;
+
 function quellvarianteIdsAus(orders) {
   const ids = new Set();
   for (const o of orders) {
@@ -220,10 +233,20 @@ async function teilBestellungen(dir) {
     await wartenBeiThrottle(proxy);
   }
 
+  // Scheitert nur diese Abfrage, laufen die Bestellungen trotzdem durch - die
+  // Uebersicht faellt dann auf die feste Liste in bestelluebersicht.mjs zurueck.
+  let lieferanten = [];
+  try {
+    const antwort = await proxy.execute(LIEFERANTEN_QUERY, {});
+    lieferanten = (antwort?.metaobjects?.nodes ?? [])
+      .map(n => ({ id: n?.id ?? null, kuerzel: n?.kuerzel?.value ?? null }))
+      .filter(l => l.id && l.kuerzel);
+  } catch { /* Rueckfall: feste Liste */ }
+
   const ziel = path.join(dir, 'bestelluebersicht', 'orders.json');
   fs.mkdirSync(path.dirname(ziel), { recursive: true });
   const exportiertAm = new Date().toISOString();
-  fs.writeFileSync(ziel, JSON.stringify({ exportiertAm, orders, quellvarianten }, null, 2));
+  fs.writeFileSync(ziel, JSON.stringify({ exportiertAm, orders, quellvarianten, lieferanten }, null, 2));
 
   // Erfuellungen/Rueckerstattungen stecken schon in denselben Bestelldaten
   // (fulfillments/refunds in ORDERS_QUERY) - kein zweiter Abruf noetig.
