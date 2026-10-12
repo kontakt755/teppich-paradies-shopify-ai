@@ -51,6 +51,9 @@
     return Number(n).toLocaleString('de-DE', { minimumFractionDigits: s, maximumFractionDigits: s });
   }
   function euro(cent) { return fmt(cent / 100) + ' €'; }
+  // Bandfarben mit Nummer (Farbkarte des Konfektionaers) oder nur mit Namen
+  // (Herstellerfarben aus service.bandfarben, z. B. Vorwerk Sand/Anthrazit/Schwarz).
+  function bandText(b, trenner) { return [b.nr, b.name].filter(Boolean).join(trenner); }
   function leeren(node) { while (node.firstChild) node.removeChild(node.firstChild); }
   function svgEl(name, attrs, parent) {
     var el = document.createElementNS(SVG_NS, name);
@@ -235,12 +238,12 @@
       baender.forEach(function (b) {
         var label = document.createElement('label');
         label.className = 'tp-ek__band';
-        label.title = b.nr + ' · ' + b.name;
+        label.title = bandText(b, ' · ');
         var input = document.createElement('input');
         input.type = 'radio';
         input.name = uid + '-band';
-        input.value = b.nr;
-        input.setAttribute('aria-label', b.nr + ' ' + b.name);
+        input.value = b.nr || b.name;
+        input.setAttribute('aria-label', bandText(b, ' '));
         var punkt = document.createElement('span');
         punkt.style.background = b.hex;
         label.appendChild(input);
@@ -249,7 +252,7 @@
         input.addEventListener('change', function () {
           band = b;
           var name = q('[data-band-name]');
-          if (name) name.textContent = b.nr + ' · ' + b.name;
+          if (name) name.textContent = bandText(b, ' · ');
           rechnen();
         });
       });
@@ -590,7 +593,8 @@
       var farbe = target ? [target.farbnummer, target.farbe].filter(Boolean).join(' ') : '';
       if (farbe) teile.push(farbe);
       teile.push(f === 'rund' ? 'Ø ' + w + ' cm' : w + ' × ' + l + ' cm');
-      teile.push(ART[art] + (band ? ' ' + band.nr + ' ' + band.name : '') + ' (' + KANTE[art] + ')');
+      // Herstellerbaender (service.bandfarben): Breite nicht belegt - keine cm-Angabe.
+      teile.push(ART[art] + (band ? ' ' + bandText(band, ' ') : '') + ' (' + (d.band_hersteller ? 'schmales Band' : KANTE[art]) + ')');
       if (!band && bandFest) teile.push('Bandfarbe: ' + bandFest);
       legende.textContent = teile.join(' · ');
       raumZeichnen(f, w, l);
@@ -879,7 +883,7 @@
         'Kante umlaufend': fmt(stand.kante) + ' m'
       };
       if (target.farbnummer) p['Farbnummer'] = target.farbnummer;
-      if (mitBand) p['Bandfarbe'] = bandFest || (band.nr + ' ' + band.name);
+      if (mitBand) p['Bandfarbe'] = bandFest || bandText(band, ' ');
       if (art === 'ketteln') p['Garn'] = 'Ton in Ton';
       if (kanteInklusive) p['Kettelung'] = 'im m²-Preis enthalten';
       if (art === 'cover') p['Vlies'] = 'inklusive';

@@ -53,7 +53,7 @@
         {%- for tk_p in tk_gruppe -%}
           {%- assign tk_a = tk_p.metafields.service.einfassung.value | strip | downcase -%}
           {%- if tk_a != tk_art -%}{%- continue -%}{%- endif -%}
-          {%- if tk_p.id != product.id and tk_p.available == false -%}{%- break -%}{%- endif -%}
+          {%- if tk_p.id != product.id and tk_p.available == false -%}{%- continue -%}{%- endif -%}
           {%- liquid
             assign tk_aktiv = false
             if tk_p.id == product.id
@@ -96,6 +96,31 @@
             if tk_art == 'paspelband' and tk_band_fest != blank
               assign tk_text = 'Schmales Einfassband rundum in der Farbe des Teppichs'
             endif
+            # Eigene Bandfarben des Herstellers (service.bandfarben, "Name|#hex;..."), z. B.
+            # Vorwerk-Paspel in Kontrastfarbe: Text nennt die Farben, Bild eigener Schluessel.
+            assign tk_bild_art = tk_art
+            assign tk_band_eigen = tk_p.metafields.service.bandfarben.value | append: '' | strip
+            if tk_band_eigen != blank and tk_band_fest == blank
+              assign tk_band_namen = ''
+              assign tk_band_teile = tk_band_eigen | split: ';'
+              for tk_bt in tk_band_teile
+                assign tk_bn = tk_bt | split: '|' | first | strip
+                if tk_bn != blank
+                  if tk_band_namen != blank
+                    if forloop.last
+                      assign tk_band_namen = tk_band_namen | append: ' oder '
+                    else
+                      assign tk_band_namen = tk_band_namen | append: ', '
+                    endif
+                  endif
+                  assign tk_band_namen = tk_band_namen | append: tk_bn
+                endif
+              endfor
+              assign tk_text = 'Schmales Einfassband rundum, Farbe nach Wahl: ' | append: tk_band_namen
+              if tk_art == 'paspelband'
+                assign tk_bild_art = 'paspelwahl'
+              endif
+            endif
 
             assign tk_inkl = true
             assign tk_ki = tk_p.metafields.service.kante_inklusive.value | append: '' | strip | downcase
@@ -110,8 +135,12 @@
               assign tk_vendor_key = tk_slot | append: '_bilder_vendor'
               assign tk_marke = bilder[tk_vendor_key] | strip
               if tk_marke != blank and product.vendor == tk_marke
-                assign tk_bild_key = tk_slot | append: '_bild_' | append: tk_art
+                assign tk_bild_key = tk_slot | append: '_bild_' | append: tk_bild_art
                 assign tk_bild = bilder[tk_bild_key]
+                unless tk_bild
+                  assign tk_bild_key = tk_slot | append: '_bild_' | append: tk_art
+                  assign tk_bild = bilder[tk_bild_key]
+                endunless
                 break
               endif
             endfor
@@ -153,7 +182,6 @@
             </span>
           </a>
           {%- assign tk_index = tk_index | plus: 1 -%}
-          {%- break -%}
         {%- endfor -%}
       {%- endfor -%}
     </div>
@@ -187,7 +215,7 @@
             {%- for tk_p in tk_gruppe -%}
               {%- assign tk_a = tk_p.metafields.service.einfassung.value | strip | downcase -%}
               {%- if tk_a != tk_art -%}{%- continue -%}{%- endif -%}
-              {%- if tk_p.id != product.id and tk_p.available == false -%}{%- break -%}{%- endif -%}
+              {%- if tk_p.id != product.id and tk_p.available == false -%}{%- continue -%}{%- endif -%}
               {%- liquid
                 assign tk_ki = tk_p.metafields.service.kante_inklusive.value | append: '' | strip | downcase
                 assign tk_mp = tk_p.metafields.service.mindestpreis.value
@@ -223,7 +251,6 @@
                   "_": null
                 }
               },
-              {%- break -%}
             {%- endfor -%}
           {%- endfor -%}
           null
