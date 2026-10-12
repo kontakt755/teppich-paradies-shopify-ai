@@ -1,0 +1,34 @@
+{%- doc -%}
+  Restbestand einer Rollenware, deren Bestand Shopify in ganzen m2 fuehrt
+  (z. B. der Sonderposten Vorwerk Passion Yasmin). Gibt
+  "<laenge_cm>|<breite_cm>|<m2>" aus oder nichts.
+
+  Dieselben Bedingungen wie die Laengengrenze im Rollenrechner
+  (blocks/tp-rollware-rechner.liquid, tp_rc_bestand_gefuehrt): Produktlimit
+  custom.max_roll_laenge_cm gesetzt, genau eine Variante, Menge in ganzen m2
+  (kein custom.preis_pro_001_qm), Rollenbreite aus custom.rollenbreite
+  (Variante vor Produkt), Bestand von Shopify gefuehrt und Ueberverkauf
+  gesperrt. Nur dann begrenzt auch der Rechner die Laenge auf diesen Rest.
+  Fehlt etwas, kommt nichts - eine Restmenge ohne gesicherten Bestand wird
+  nie behauptet.
+
+  Die Laenge ist der Bestand bei voller Rollenbreite (m2 / Breite),
+  abgerundet auf ganze Zentimeter und nicht durch das Zuschnittlimit gekappt.
+
+  @param {object} product - das Produkt
+{%- enddoc -%}
+{%- liquid
+  assign trr_max_cm = product.metafields.custom.max_roll_laenge_cm.value | times: 1
+  if trr_max_cm > 0 and product.variants.size == 1 and product.metafields.custom.preis_pro_001_qm.value != true
+    assign trr_v = product.variants.first
+    assign trr_breite_cm = trr_v.metafields.custom.rollenbreite.value | times: 100.0 | round
+    if trr_breite_cm <= 0
+      assign trr_breite_cm = product.metafields.custom.rollenbreite.value | times: 100.0 | round
+    endif
+    if trr_breite_cm > 0 and trr_v.inventory_management == 'shopify' and trr_v.inventory_policy == 'deny'
+      assign trr_qm = trr_v.inventory_quantity | at_least: 0
+      assign trr_cm = trr_qm | times: 10000 | divided_by: trr_breite_cm | floor
+      echo trr_cm | append: '|' | append: trr_breite_cm | append: '|' | append: trr_qm
+    endif
+  endif
+-%}

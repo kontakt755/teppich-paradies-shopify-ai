@@ -290,7 +290,8 @@
       {%- if tp_rc_bestand_gefuehrt -%}
         <p class="tp-rwc-note" data-rollbestand>
           {%- if tp_rc_max_laenge_cm >= 100 -%}
-            Aktuell bis {{ tp_rc_max_laenge_cm | divided_by: 100.0 | replace: '.', ',' }} m Länge bei voller Rollenbreite verfügbar.
+            {%- capture tp_rc_max_laenge_m -%}{%- render 'tp-meter-de', cm: tp_rc_max_laenge_cm -%}{%- endcapture -%}
+            Aktuell bis {{ tp_rc_max_laenge_m | strip }} m Länge bei voller Rollenbreite verfügbar.
           {%- elsif tp_rc_max_laenge_cm > 0 -%}
             Restlänge unter 1 m – bitte fragen Sie im Laden an.
           {%- else -%}
