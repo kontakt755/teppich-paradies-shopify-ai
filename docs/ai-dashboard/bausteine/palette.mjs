@@ -10,6 +10,7 @@ import { fetchEinkauf } from '../kern/api.mjs';
 import { darfAnsicht, navigate, openTask } from '../kern/router.mjs';
 import { refresh } from '../kern/daten.mjs';
 import { syncNow } from './aktualisierung.mjs';
+import { openFehlerMelden } from './fehler-melden.mjs';
 import { openOrgSchnell, openOrgListe } from '../ansichten/organisation/dialoge.mjs';
 
 // Treffer aus den Betriebsdaten - Kunden und Produkte. Die Suche ist fuer
@@ -66,6 +67,7 @@ function paletteItems(q) {
   }
   items.push({ kind: 'Aktion', label: 'Schnell erfassen (Aufgabe oder Notiz)', run: () => openOrgSchnell() });
   items.push({ kind: 'Aktion', label: 'Liste einfügen (mehrere Aufgaben auf einmal)', run: () => openOrgListe() });
+  items.push({ kind: 'Aktion', label: 'Fehler melden', sub: 'Etwas geht nicht – an die Technik', run: () => openFehlerMelden() });
   items.push({ kind: 'Aktion', label: 'Daten neu laden', run: () => refresh() });
   if (state.capabilities.sync && darfAnsicht('arbeit')) items.push({ kind: 'Aktion', label: 'Jetzt mit GitHub synchronisieren', run: () => syncNow() });
   if (darfAnsicht('arbeit')) {

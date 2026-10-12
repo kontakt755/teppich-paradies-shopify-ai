@@ -665,3 +665,43 @@ die man für Social Media braucht. Für die Rolle „lesen“ ist sie ausgeblend
 - **Kampagnen-Link:** reines Frontend. Ziel nur auf `teppich-paradies.net`, Kanal → `utm_source`/`utm_medium`
   (social, email, print; Art „Anzeige“ → paid), Kampagnenname klein mit Bindestrichen, Art → `utm_content`.
 - **Weitere Links:** Social-Zentrale auf demselben Host, Port 8020; Instagram- und Facebook-Profil.
+
+## 15. „Fehler melden“ und Weitergabe an die Werkbank (seit 2026-10-12)
+
+Mitarbeiter melden im Control Center, was nicht funktioniert; die Technik (Inhaber und Shop-Mitarbeiter)
+arbeitet die Meldungen in der **Werkbank Shop & Technik** ab, einem privaten claude.ai-Artefakt. Der
+Server kann die Werkbank nicht erreichen (kein Schlüssel, keine API) – die Brücke ist ein geplanter
+Claude-Lauf.
+
+```
+Knopf „Fehler melden“ ──POST /api/fehler/melden──> $TP_PRIVAT_DIR/fehlermeldungen.json      (nur der Server schreibt)
+                                                          │
+geplanter Lauf „fehlermeldungen-werkbank“ (Mo–Sa, halbstündlich, ~/tp-dashboard)
+   npm run -s fehler -- abgleich  ──>  ArtifactData: items/F-001 anlegen (art "fehler", prio 1, phase heute)
+   npm run -s fehler -- uebernommen F-001 --werkbank F-001
+   ArtifactData query (art == fehler, out_dir) ──> npm run -s fehler -- werkbank-stand --ordner …
+                                                          │
+                                   $TP_PRIVAT_DIR/fehlermeldungen-abgleich.json              (nur der Abgleich schreibt)
+                                                          │
+GET /api/fehler/liste ──> Dialog zeigt „Gemeldet“ / „Bei der Technik“ / „Behoben“ + Ergebnis aus der Werkbank
+```
+
+- **Wer darf:** melden darf jede angemeldete Rolle, auch „lesen“ (einzige Ausnahme von deren Schreibsperre
+  in `serve-dashboard.mjs`) – eine Meldung ändert keine Betriebsdaten. Name und Kürzel kommen aus der
+  Sitzung. Die Liste zeigt Mitarbeitern nur die eigenen Meldungen, dem Inhaber (und dem Notzugang) alle.
+- **Was mitgeht:** Text, Seite („Wo?“, vorbelegt mit dem Seitentitel), „blockiert die Arbeit“, Adresse
+  (Hash), Browser, Fensterbreite und die letzten drei Störungen im Browser (JS-Fehler und gescheiterte
+  API-Aufrufe; `kern/api.mjs` meldet sie als Ereignis `tp-api-fehler`). Die Technik-Angaben bleiben auf
+  dem Server; `npm run -s fehler -- zeige F-001` zeigt sie.
+- **Zwei Dateien, je ein Schreiber:** Server und Abgleich überschreiben sich so nie gegenseitig. Eine
+  kaputte Datei wird nicht als „leer“ gelesen, sondern als Fehler gemeldet – sonst ginge beim nächsten
+  Schreiben alles verloren. Beide Dateien sind in `npm run daten:sichern`.
+- **In der Werkbank:** Dokument-ID = Meldungsnummer (der Lauf ist dadurch wiederholbar). Offene
+  Fehlermeldungen stehen nur im roten Abschnitt „Fehler – muss behoben werden“ oben im Überblick, „blockiert
+  die Arbeit“ zuerst. „Erledigt …“ und „Kein Fehler …“ verlangen einen Satz für den Melder; den trägt der
+  Abgleich wörtlich zurück. Wird ein Eintrag binnen drei Tagen wieder geöffnet, steht die Meldung wieder
+  auf „Bei der Technik“.
+- **Datenschutz:** Kundennamen, E-Mail, Telefon und Anschrift ersetzt der Lauf in der Werkbank durch
+  „Kunde“; der Originaltext bleibt nur lokal.
+- **Grenze:** Der Lauf ist eine geplante Aufgabe der Claude-App auf dem Mac. Ist die App zu, wartet die
+  Meldung im Dialog sichtbar auf „Gemeldet“ und wird beim nächsten Lauf übertragen.

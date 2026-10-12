@@ -82,7 +82,7 @@ Wenn es einen Termin gibt, schreib „heute“, „morgen“ oder das Datum dazu
     ${hilfeKarte('Wenn etwas nicht stimmt', `
       <ul style="margin:0;padding-left:20px;line-height:1.9">
         <li>Daten sehen alt aus? Rechts oben auf den Stand schauen und <b>Jetzt aktualisieren</b> drücken.</li>
-        <li>Seite leer oder Fehlermeldung? Einmal neu laden (⌘R). Bleibt es, bei Ahmet melden.</li>
+        <li>Seite leer oder Fehlermeldung? Einmal neu laden (⌘R). Bleibt es: <button type="button" class="btn btn-sm" data-fehler-melden>Fehler melden</button> – auch in der Seitenleiste unten. Die Technik bekommt die Meldung samt Seite, und du siehst dort, wann sie behoben ist.</li>
         <li>Lagerbestand: aktuell führt der Shop keinen echten Bestand – die 999 ist ein Platzhalter, keine Menge.</li>
       </ul>`)}
   `;
