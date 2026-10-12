@@ -1,0 +1,234 @@
+{%- doc -%}
+  Kantenwahl im Konfigurator fuer Teppiche nach Mass (blocks/tp-einfass-konfigurator):
+  jede Einfassart aus service.einfass_gruppe als Bildkachel mit Preis je m2, nach
+  Eingabe der Masse mit dem Endpreis fuer genau dieses Mass. Vorbild ist die
+  Kachelwahl im Fachhandel (Inhaber 2026-10-12): Kunden vergleichen Kanten ueber
+  Bild und Preis, nicht ueber Chips am Seitenende.
+
+  Jede Einfassart ist ein eigenes Produkt. Die Kachel verlinkt dorthin und nimmt
+  Farbe (ueber service.basisvariante, nie ueber Namen) und Masse (?breite=&laenge=,
+  liest der Konfigurator schon) mit. Angeboten wird nur, was es in der gewaehlten
+  Farbe gibt: Varianten mit service.einfassen exakt "Verfuegbar" und Preis > 0.
+  Eine Einfassart allein ist keine Wahl - dann rendert das Snippet nichts
+  (Inhaber 2026-09-13), den Weg zur Meterware zeigt weiter blocks/tp-einfass-wechsel.
+
+  Bild je Art aus den Block-Einstellungen: zuerst marke_bild_<art> (nur wenn
+  product.vendor gleich marke_bilder_vendor - Herstellerfotos nur fuer die eigene
+  Marke), dann bild_<art> fuer alle; ohne Bild zeichnet CSS die Kante auf das
+  Foto der gewaehlten Farbe.
+
+  @param {object} product - der Teppich nach Mass dieser Seite
+  @param {object} bilder - block.settings des Konfigurators (Bilder je Art)
+  @param {number} kettel_cent - Kettelservice je 0,01 lfm in Cent (0 = keiner)
+{%- enddoc -%}
+
+{%- liquid
+  assign tk_arten = 'ketteln,paspelband,einfassband,cover' | split: ','
+  assign tk_eigen = product.metafields.service.einfassung.value | strip | downcase
+  assign tk_gruppe = product.metafields.service.einfass_gruppe.value
+  assign tk_sel = product.selected_or_first_available_variant
+  assign tk_sel_basis = tk_sel.metafields.service.basisvariante.value
+
+  assign tk_anzahl = 0
+  if tk_arten contains tk_eigen
+    for tk_p in tk_gruppe
+      assign tk_a = tk_p.metafields.service.einfassung.value | strip | downcase
+      if tk_arten contains tk_a
+        if tk_p.id == product.id or tk_p.available
+          assign tk_anzahl = tk_anzahl | plus: 1
+        endif
+      endif
+    endfor
+  endif
+-%}
+
+{%- if tk_anzahl > 1 -%}
+  <div class="tp-ek__schritt tp-ek__kanten-schritt" data-schritt="kante" id="tp-ek-kanten">
+    {% render 'tp-step-heading', number: 3, label: 'Kante' %}
+    <div class="tp-ek__kanten" role="list">
+      {%- assign tk_index = 0 -%}
+      {%- for tk_art in tk_arten -%}
+        {%- for tk_p in tk_gruppe -%}
+          {%- assign tk_a = tk_p.metafields.service.einfassung.value | strip | downcase -%}
+          {%- if tk_a != tk_art -%}{%- continue -%}{%- endif -%}
+          {%- if tk_p.id != product.id and tk_p.available == false -%}{%- break -%}{%- endif -%}
+          {%- liquid
+            assign tk_aktiv = false
+            if tk_p.id == product.id
+              assign tk_aktiv = true
+            endif
+            # Variante derselben Farbe: dieselbe Meterware-Variante = dieselbe Farbe.
+            assign tk_v = nil
+            if tk_aktiv
+              assign tk_v = tk_sel
+            elsif tk_sel_basis
+              for tk_pv in tk_p.variants
+                if tk_pv.metafields.service.einfassen.value == 'Verfügbar' and tk_pv.price > 0 and tk_pv.available
+                  if tk_pv.metafields.service.basisvariante.value.id == tk_sel_basis.id
+                    assign tk_v = tk_pv
+                    break
+                  endif
+                endif
+              endfor
+            endif
+
+            case tk_art
+              when 'ketteln'
+                assign tk_label = 'Gekettelt'
+                assign tk_text = 'Kante mit Garn Ton in Ton umstochen – klassisch und unauffällig'
+              when 'paspelband'
+                assign tk_label = 'Paspel'
+                assign tk_text = 'Schmales Band rundum, ca. 1 cm – eine feine, gerade Linie'
+              when 'einfassband'
+                assign tk_label = 'Einfassband'
+                assign tk_text = 'Breites Band rundum, ca. 3 cm, Farbe nach Wahl'
+              when 'cover'
+                assign tk_label = 'Cover'
+                assign tk_text = 'Kante umgeschlagen und vernäht – ohne sichtbares Band'
+            endcase
+            assign tk_eigenes_label = tk_p.metafields.service.einfass_label.value | append: '' | strip
+            if tk_eigenes_label != blank
+              assign tk_label = tk_eigenes_label
+            endif
+            assign tk_band_fest = tk_p.metafields.service.bandfarbe_fest.value | append: '' | strip
+            if tk_art == 'paspelband' and tk_band_fest != blank
+              assign tk_text = 'Schmales Band rundum, ca. 1 cm, in der Farbe des Teppichs'
+            endif
+
+            assign tk_inkl = true
+            assign tk_ki = tk_p.metafields.service.kante_inklusive.value | append: '' | strip | downcase
+            if tk_art == 'ketteln' and tk_ki != 'true'
+              assign tk_inkl = false
+            endif
+
+            # Herstellerfoto nur auf Produkten dieser Marke (Bildrechte), sonst das
+            # allgemeine Bild der Art, sonst die Zeichnung.
+            assign tk_bild = nil
+            assign tk_marke = bilder.marke_bilder_vendor | strip
+            if tk_marke != blank and product.vendor == tk_marke
+              capture tk_bild_key
+                echo 'marke_bild_'
+                echo tk_art
+              endcapture
+              assign tk_bild = bilder[tk_bild_key]
+            endif
+            if tk_bild == blank
+              capture tk_bild_key
+                echo 'bild_'
+                echo tk_art
+              endcapture
+              assign tk_bild = bilder[tk_bild_key]
+            endif
+          -%}
+          <a
+            class="tp-ek__kante{% if tk_aktiv %} is-aktiv{% endif %}"
+            role="listitem"
+            href="{{ tk_p.url }}{% if tk_v %}?variant={{ tk_v.id }}{% endif %}#tp-ek-kanten"
+            data-kante="{{ tk_index }}"
+            data-kante-art="{{ tk_art }}"
+            {% if tk_aktiv %}aria-current="true"{% endif %}
+            {% unless tk_v %}hidden{% endunless %}
+          >
+            <span
+              class="tp-ek__kante-bild{% if tk_bild == blank %} tp-ek__kante-bild--zeichnung{% endif %}"
+              {% if tk_bild == blank and tk_sel.featured_image %}style="--tp-ek-textur: url('{{ tk_sel.featured_image | image_url: width: 480 }}');"{% endif %}
+              data-kante-bild
+              aria-hidden="true"
+            >
+              {%- if tk_bild != blank -%}
+                {{ tk_bild | image_url: width: 480 | image_tag: loading: 'lazy', widths: '240, 360, 480', sizes: '(min-width: 750px) 180px, 45vw', alt: '' }}
+              {%- else -%}
+                <span class="tp-ek__kante-ecke"></span>
+              {%- endif -%}
+            </span>
+            <span class="tp-ek__kante-kopf">
+              <span class="tp-ek__kante-name">{{ tk_label | escape }}</span>
+              {%- if tk_aktiv -%}<span class="tp-ek__kante-haken">Gewählt</span>{%- endif -%}
+            </span>
+            <span class="tp-ek__kante-text">{{ tk_text }}</span>
+            <span class="tp-ek__kante-preis">
+              <strong data-kante-summe hidden></strong>
+              <span data-kante-m2>{% if tk_v %}{{ tk_v.price | times: 100 | money_without_currency | remove: ',00' }}&nbsp;€/m²{% endif %}</span>
+              <span class="tp-ek__kante-inkl">{% if tk_inkl %}inkl. Kante{% else %}zzgl. Kettelung{% endif %}</span>
+            </span>
+          </a>
+          {%- assign tk_index = tk_index | plus: 1 -%}
+          {%- break -%}
+        {%- endfor -%}
+      {%- endfor -%}
+    </div>
+    <p class="tp-ek__kanten-hinweis" data-kanten-hinweis>Nach Eingabe der Maße steht hier der Endpreis jeder Kante für Ihr Maß.</p>
+    {%- comment -%}
+      Weg zur Meterware - vorher in blocks/tp-einfass-wechsel unter den Chips. Der
+      Block bleibt fuer Teppiche mit nur einer Einfassart zustaendig.
+    {%- endcomment -%}
+    {%- assign tk_basis = product.metafields.service.einfass_basis.value -%}
+    {%- if tk_basis and tk_basis.available -%}
+      <p class="tp-ek__kanten-basis">
+        Ganz ohne Kante, zum Beispiel für Wand-zu-Wand?
+        <a href="{{ tk_basis.url }}{% if tk_sel_basis %}?variant={{ tk_sel_basis.id }}{% endif %}" data-kanten-basis>Als Teppichboden von der Rolle</a>
+      </p>
+    {%- endif -%}
+
+    <script type="application/json" data-kanten-daten>
+      {
+        "kettel_cent": {{ kettel_cent | default: 0 | json }},
+        "eigen": {
+          {%- for tk_ev in product.variants -%}
+            {%- assign tk_eb = tk_ev.metafields.service.basisvariante.value -%}
+            {%- if tk_ev.metafields.service.einfassen.value == 'Verfügbar' and tk_eb -%}
+              "{{ tk_ev.id }}": "{{ tk_eb.id }}",
+            {%- endif -%}
+          {%- endfor -%}
+          "_": ""
+        },
+        "kanten": [
+          {%- for tk_art in tk_arten -%}
+            {%- for tk_p in tk_gruppe -%}
+              {%- assign tk_a = tk_p.metafields.service.einfassung.value | strip | downcase -%}
+              {%- if tk_a != tk_art -%}{%- continue -%}{%- endif -%}
+              {%- if tk_p.id != product.id and tk_p.available == false -%}{%- break -%}{%- endif -%}
+              {%- liquid
+                assign tk_ki = tk_p.metafields.service.kante_inklusive.value | append: '' | strip | downcase
+                assign tk_mp = tk_p.metafields.service.mindestpreis.value
+                if tk_mp.amount
+                  assign tk_mindest = tk_mp.amount | times: 100 | round
+                else
+                  assign tk_mindest = tk_mp | times: 100 | round
+                endif
+                assign tk_ml = tk_p.metafields.service.max_laenge_cm.value | times: 1
+              -%}
+              {
+                "art": {{ tk_art | json }},
+                "url": {{ tk_p.url | json }},
+                "aktiv": {% if tk_p.id == product.id %}true{% else %}false{% endif %},
+                "inkl": {% if tk_art == 'ketteln' and tk_ki != 'true' %}false{% else %}true{% endif %},
+                "mindest_cent": {{ tk_mindest | json }},
+                "max_l": {{ tk_ml | json }},
+                "v": {
+                  {%- for tk_pv in tk_p.variants -%}
+                    {%- liquid
+                      assign tk_pb = tk_pv.metafields.service.basisvariante.value
+                      # Die eigene Seite zeigt ihre Kachel auch bei nicht lieferbarer Farbe -
+                      # die Meldung dazu kommt vom Konfigurator. Andere Kanten nur lieferbar.
+                      assign tk_pv_ok = tk_pv.available
+                      if tk_p.id == product.id
+                        assign tk_pv_ok = true
+                      endif
+                    -%}
+                    {%- if tk_pv.metafields.service.einfassen.value == 'Verfügbar' and tk_pv.price > 0 and tk_pv_ok and tk_pb -%}
+                      "{{ tk_pb.id }}": [{{ tk_pv.id | json }}, {{ tk_pv.price | json }}],
+                    {%- endif -%}
+                  {%- endfor -%}
+                  "_": null
+                }
+              },
+              {%- break -%}
+            {%- endfor -%}
+          {%- endfor -%}
+          null
+        ]
+      }
+    </script>
+  </div>
+{%- endif -%}

@@ -58,6 +58,7 @@ function fixture(o = {}) {
       service: {
         einfassung: val('Ketteln'), max_breite_cm: val(400), max_laenge_cm: val(600),
         mindestpreis: val(99), formen: val(['Rechteck']),
+        ...(o.kanteInklusive === undefined ? {} : { kante_inklusive: val(o.kanteInklusive) }),
         einfass_basis: val({ variants: [400, 500].map((width) => ({ metafields: { custom: { rollenbreite: val(width / 100) } } })) }),
       },
     },
@@ -135,6 +136,8 @@ async function runCase(o = {}) {
   return {
     data,
     requests,
+    summe: q('[data-summe]').textContent,
+    mindestHinweis: q('[data-mindest-hinweis]').hidden ? null : q('[data-mindest-hinweis]').textContent,
     ctaHidden: q('[data-cta]').hidden,
     ctaDisabled: q('[data-cta]').disabled,
     error: q('[data-fehler]').hidden ? null : q('[data-fehler]').textContent,
@@ -176,4 +179,73 @@ test('TP-005: konfigurierter Service mit Preis 0 wird ebenfalls als Ausfall beha
   assert.equal(result.data.kettel_service_failed, true);
   assert.equal(result.requests.length, 0);
   assert.equal(result.ctaHidden, true);
+});
+
+// service.kante_inklusive: der m2-Preis enthaelt die Kettelung (Hersteller-UVP je m2).
+// Dann keine Kettelzeile, keine Kantenkosten, kein TP-005-Abbruch; ohne Feld oder bei
+// false bleibt alles wie oben.
+
+test('Kante inklusive: nur die Teppichzeile, keine Kantenkosten, Properties bleiben vollständig', async () => {
+  const result = await runCase({ kanteInklusive: true });
+  assert.equal(result.data.kante_inklusive, true);
+  assert.equal(result.data.kettel, null, 'Kettelservice wird gar nicht geladen');
+  assert.equal(result.data.kettel_service_failed, false);
+  assert.equal(result.error, null);
+  assert.equal(result.requests.length, 1);
+  const body = result.requests[0].body;
+  assert.equal(body.items, undefined, 'keine zweite Zeile für die Kante');
+  assert.equal(body.id, 'audit-einfass-material');
+  assert.equal(body.quantity, 600, '2 x 3 m = 600 Einheiten a 0,01 m2');
+  assert.equal(result.summe, '534,00 €', 'nur Fläche: 600 x 0,89 EUR');
+  assert.equal(body.properties['Einfassung'], 'Gekettelt');
+  assert.equal(body.properties['Kante umlaufend'], '10,00 m');
+  assert.equal(body.properties['Garn'], 'Ton in Ton');
+  assert.equal(body.properties['Kettelung'], 'im m²-Preis enthalten');
+  assert.ok(body.properties._Gruppe);
+  assert.ok(body.properties._Zuschnitt);
+});
+
+test('Kante inklusive: nicht verfügbarer Kettelservice sperrt den Kauf nicht (kein TP-005)', async () => {
+  for (const o of [{ service: 'unavailable' }, { edgePrice: 0 }, { service: 'missing' }]) {
+    const result = await runCase({ ...o, kanteInklusive: true });
+    assert.equal(result.data.kettel_service_failed, false, JSON.stringify(o));
+    assert.equal(result.ctaHidden, false, JSON.stringify(o));
+    assert.equal(result.error, null, JSON.stringify(o));
+    assert.equal(result.requests.length, 1, JSON.stringify(o));
+    assert.equal(result.requests[0].body.items, undefined, JSON.stringify(o));
+  }
+});
+
+test('Kante inklusive: Mindestpreis nur über die Fläche (50 x 50 cm, 99 EUR bei 0,89 EUR je 0,01 m2)', async () => {
+  const result = await runCase({ kanteInklusive: true, width: 50, length: 50 });
+  assert.equal(result.requests.length, 1);
+  assert.equal(result.requests[0].body.quantity, 112, 'ceil(9900 / 89) - keine Kante zieht den Mindestpreis herunter');
+  assert.equal(result.summe, '99,68 €');
+  assert.match(result.mindestHinweis, /Mindestpreis 99,00 €/);
+});
+
+test('Regression: kante_inklusive = false rechnet die Kante wie bisher als zweite Zeile', async () => {
+  const result = await runCase({ kanteInklusive: false });
+  assert.equal(result.data.kante_inklusive, false);
+  assert.ok(result.data.kettel);
+  const [teppich, kante] = result.requests[0].body.items;
+  assert.equal(teppich.quantity, 600);
+  assert.equal(teppich.properties['Kettelung'], undefined);
+  assert.equal(kante.id, 'audit-einfass-edge');
+  assert.equal(kante.quantity, 1000);
+  assert.equal(result.summe, '724,00 €', '600 x 0,89 + 1000 x 0,19 EUR');
+});
+
+test('Regression: kante_inklusive = false und Kettelservice nicht verfügbar sperrt weiter (TP-005)', async () => {
+  const result = await runCase({ kanteInklusive: false, service: 'unavailable' });
+  assert.equal(result.data.kettel_service_failed, true);
+  assert.equal(result.requests.length, 0);
+  assert.equal(result.ctaHidden, true);
+});
+
+test('Regression: ohne Feld Mindestpreis abzüglich Kante (50 x 50 cm)', async () => {
+  const result = await runCase({ width: 50, length: 50 });
+  const [teppich, kante] = result.requests[0].body.items;
+  assert.equal(kante.quantity, 200);
+  assert.equal(teppich.quantity, 69, 'ceil((9900 - 3800) / 89)');
 });

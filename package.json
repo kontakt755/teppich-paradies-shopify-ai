@@ -60,6 +60,7 @@
     "dashboard:brief": "node scripts/dashboard-brief.mjs",
     "operations:band": "node operations/server.mjs",
     "operations:test": "node --test operations/tests/*.test.mjs",
+    "bildrechte:inventur": "node operations/scripts/bildrechte-inventur.mjs",
     "angebote:abgleich": "node operations/scripts/angebote-abgleich.mjs",
     "operations:verbindung": "node operations/scripts/verbindung-pruefen.mjs",
     "ops:bestelluebersicht": "node operations/scripts/bestelluebersicht.mjs",
@@ -87,7 +88,8 @@
     "social": "node social/scripts/social.mjs",
     "social:test": "node --test social/tests/*.test.mjs",
     "social:zentrale": "node social/scripts/server.mjs",
-    "social:einrichten": "bash social/scripts/dienste-einrichten.sh"
+    "social:einrichten": "bash social/scripts/dienste-einrichten.sh",
+    "teppich:basis-daten": "node scripts/teppich-basis-daten.mjs"
   },
   "devDependencies": {
     "liquidjs": "^10.29.0",

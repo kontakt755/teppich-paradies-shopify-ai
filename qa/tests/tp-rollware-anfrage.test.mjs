@@ -37,7 +37,7 @@ test('Echter Klickzweig verlaesst Anfrage vor Warenkorbaufbau und nimmt Produkt 
   let callback;
   let url;
   const c = vm.createContext({ URL, cta: { disabled: false, addEventListener: (_event, fn) => { callback = fn; } }, inFlight: false,
-    fehlendesFeld: () => null, selectedWidth: () => 200, getEffectiveLengthCm: () => 300, artMode: () => 'raum',
+    fehlendesFeld: () => null, selectedWidth: () => 200, laengeAngehoben: () => null, getEffectiveLengthCm: () => 300, artMode: () => 'raum',
     target: { id: null, quote_only: true, available: true, price: 5700 }, raumMoeglich: () => true,
     clearInvalid: () => {}, data: { product_title: 'Yasmin Anthrazit', product_handle: 'yasmin-anthrazit' },
     rateOf: v => v.price / 100, fmt: n => n.toFixed(2).replace('.', ','),

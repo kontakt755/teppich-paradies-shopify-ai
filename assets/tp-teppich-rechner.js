@@ -7,7 +7,7 @@
   Warum eine eigene Liste statt das Raster umzusortieren: Horizon laedt hoechstens
   36 Karten je Seite und den Rest per Endlos-Scroll nach - ein Sortieren der geladenen
   Karten waere nie vollstaendig. Die Daten aller Teppiche kommen deshalb als JSON aus
-  snippets/tp-teppich-rechner-daten.liquid; das normale Raster (#ResultsList) wird nur
+  snippets/tp-teppich-rechner-daten.liquid (nachgeladen, siehe laden()); das normale Raster (#ResultsList) wird nur
   ausgeblendet, solange ein Mass gilt.
 
   Gerechnet wird mit assets/tp-masstepich-rechnung.js - derselben Formel wie im
@@ -67,7 +67,9 @@
     var kurz = Math.min(w, l);
     var lang = Math.max(w, l);
     var flaeche = M.flaecheM2(w, l);
-    var mitKettel = t.art === 'ketteln';
+    // Kettelung als eigene Zeile nur ohne kante_inkl (service.kante_inklusive):
+    // sonst steckt sie im m2-Preis - dieselbe Regel wie im Konfigurator.
+    var mitKettel = M.kettelSeparat(t.art, t.kante_inkl);
     if (mitKettel && !(kettel > 0)) return { passt: false, grund: 'preis' };
     // Art "fertig": Pauschale je Teppich (Pflicht) und Gewichtsgrenze fuer den Paketversand -
     // dieselben Regeln wie im Konfigurator (blocks/tp-einfass-konfigurator.liquid).
@@ -110,13 +112,25 @@
     return e;
   }
 
+  function datenLesen(text) {
+    var daten = JSON.parse(text);
+    if (!daten || !Array.isArray(daten.teppiche) || !daten.teppiche.every(function (t) {
+      // Das Liquid-Snippet schliesst beide Arrays mit null ab, damit keine
+      // nachgestellten Kommata entstehen. Das ist ein gueltiger Leerplatz.
+      return t === null || (typeof t === 'object' && !Array.isArray(t) && Array.isArray(t.farben) && t.farben.every(function (f) {
+        return f === null || (typeof f === 'object' && !Array.isArray(f));
+      }));
+    })) throw new Error('Ungueltige Rechner-Daten');
+    return daten;
+  }
+
   function init(root) {
-    if (root.getAttribute('data-tp-rechner-bereit')) return;
+    if (root.getAttribute('data-tp-rechner-bereit')) return true;
     var M = window.TPMass;
     var datenEl = root.querySelector('[data-tp-rechner-daten]');
     if (!M || !datenEl) return;
     var daten;
-    try { daten = JSON.parse(datenEl.textContent); } catch (e) { return; }
+    try { daten = datenLesen(datenEl.textContent); } catch (e) { return false; }
     var teppiche = (daten.teppiche || []).filter(Boolean);
     if (!teppiche.length) {
       // Diese Kategorie zeigt alle Qualitaeten in Gruppen statt auf Rasterseiten.
@@ -130,8 +144,6 @@
       }
       return;
     }
-    root.setAttribute('data-tp-rechner-bereit', '1');
-
     var form = root.querySelector('[data-tp-rechner]');
     var inW = root.querySelector('[data-tp-rechner-breite]');
     var inL = root.querySelector('[data-tp-rechner-laenge]');
@@ -247,15 +259,77 @@
     });
 
     // Zurueck vom Produkt: das zuletzt gerechnete Mass steht wieder da.
-    var alt = lesenGespeichert();
+    // Auch eine erst teilweise eingegebene oder wieder geloeschte Eingabe gehoert
+    // dem Kunden. Ein spaeter Fetch darf sie nicht durch den Speicher ersetzen.
+    var bearbeitet = root.getAttribute('data-tp-rechner-bearbeitet') || inW.value || inL.value;
+    var alt = bearbeitet ? null : lesenGespeichert();
     if (alt) {
       inW.value = alt.w;
       inL.value = alt.l;
       anwenden(alt.w, alt.l, false);
     }
+    root.setAttribute('data-tp-rechner-bereit', '1');
+    return true;
   }
 
-  function alle() { document.querySelectorAll('[data-tp-rechner-root]').forEach(init); }
+  // Daten nachladen (data-tp-rechner-quelle): Inline im Hero kosteten sie die ganze Seite
+  // je Teppich rund 5 ms Renderzeit. Wer vorher schon rechnet, wird nach dem Laden bedient.
+  // Eine ?page=-Angabe geht mit, damit der Ruecksprung alter ?page=2-Links (init) weiter greift.
+  function laden(root, abgeschickt) {
+    var datenEl = root.querySelector('[data-tp-rechner-daten]');
+    var quelle = datenEl && datenEl.getAttribute('data-tp-rechner-quelle');
+    if (!quelle || datenEl.textContent.trim()) { init(root); return; }
+    if (root.getAttribute('data-tp-rechner-laedt')) return;
+    root.setAttribute('data-tp-rechner-laedt', '1');
+    var form = root.querySelector('[data-tp-rechner]');
+    if (form && !root.getAttribute('data-tp-rechner-beobachtet')) {
+      root.setAttribute('data-tp-rechner-beobachtet', '1');
+      form.addEventListener('input', function () { root.setAttribute('data-tp-rechner-bearbeitet', '1'); });
+    }
+    var wartet = !!abgeschickt;
+    function frueh(e) { e.preventDefault(); wartet = true; }
+    if (form) form.addEventListener('submit', frueh);
+    var seite = new URL(window.location.href).searchParams.get('page');
+    if (seite) quelle += (quelle.indexOf('?') < 0 ? '?' : '&') + 'page=' + encodeURIComponent(seite);
+    fetch(quelle, { credentials: 'same-origin' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.text();
+      })
+      .then(function (text) {
+        datenLesen(text);
+        datenEl.textContent = text;
+        if (!init(root)) throw new Error('Rechner nicht bereit');
+        if (form) form.removeEventListener('submit', frueh);
+        if (wartet && form) {
+          if (form.requestSubmit) form.requestSubmit();
+          else form.dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+      })
+      .catch(function () {
+        // Kein stilles Neuladen der Seite per Formular: Hinweis zeigen, naechster Versuch beim Absenden.
+        root.removeAttribute('data-tp-rechner-laedt');
+        datenEl.textContent = '';
+        if (form) {
+          form.removeEventListener('submit', frueh);
+          form.addEventListener('submit', function erneut(e) {
+            e.preventDefault();
+            form.removeEventListener('submit', erneut);
+            laden(root, true);
+          });
+        }
+        if (wartet) wartetNachFehler(root);
+      });
+  }
+
+  function wartetNachFehler(root) {
+    var fehler = root.querySelector('[data-tp-rechner-fehler]');
+    if (!fehler || root.getAttribute('data-tp-rechner-bereit')) return;
+    fehler.textContent = 'Die Preise konnten gerade nicht geladen werden. Bitte gleich noch einmal versuchen.';
+    fehler.hidden = false;
+  }
+
+  function alle() { document.querySelectorAll('[data-tp-rechner-root]').forEach(function (r) { laden(r); }); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', alle);
   else alle();
   document.addEventListener('shopify:section:load', alle);

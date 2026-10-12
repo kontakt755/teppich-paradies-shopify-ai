@@ -50,8 +50,11 @@ auf Kompatibilitaet pruefen. Keine pauschale Mengenregel pro Flaecheneinheit:
 der Verbrauch haengt auch von der Breite des Zuschnitts ab.
 
 Ladenverkaeufe werden in derselben Bestandsquelle als laufende Meter gebucht.
-Ein einfaches Eingabefeld rechnet die Meter in die Bestandseinheit um. Der
-Control-Center-Zugang braucht dafuer `write_inventory` (derzeit nicht erteilt).
+Gebaut (2026-10-12): Control Center, Ansicht Sonderposten, Knopf "Im Laden
+verkauft" an der Restrolle - Laenge eingeben, abgezogen wird Laenge x volle
+Rollenbreite in ganzen m2 (aufgerundet). Details: `docs/control-center/ARCHITEKTUR.md`,
+Abschnitt 13. Der Control-Center-Zugang braucht dafuer `write_inventory`
+(Stand 2026-10-12 noch nicht erteilt; bis dahin sagt der Dialog das und bucht nichts).
 Buchungen brauchen atomare Bestandsaenderung, Idempotenz und Gegenprobe;
 Antwortverlust darf nicht zu einer zweiten Abbuchung fuehren.
 

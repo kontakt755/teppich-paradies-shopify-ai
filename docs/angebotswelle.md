@@ -49,6 +49,30 @@ Auswahl, Prozent, Start und Ende; am Ende geht der Preis auf den regulaeren Prei
     WARNUNG. Dieselbe Regel gilt fuer die vorab
     berechnete `rueckstellen.jsonl` aus `plan`.
   - Muster (`M-`, Handle `muster-…`) werden nie zurueckgestellt.
+  - **Vergleichspreis ist kein eigener Vorpreis** (z. B. UVP neuer Linien, die nie zu
+    diesem Preis im Shop standen): `--ausschluss <ids.txt>` (eine volle Varianten-ID
+    `gid://shopify/ProductVariant/<n>` je Zeile, empfohlen mit UVP dahinter: `<id>;68.63`,
+    `#` = Kommentar; eine Nummer allein wird abgelehnt, weil Produkt- und Varianten-IDs gleich
+    aussehen). Diese Varianten werden nicht
+    auf den Vergleichspreis hochgesetzt, sondern landen in `ausgeschlossen.csv` und
+    `nur-vergleichspreis-leeren.jsonl` (Preis unveraendert, Vergleichspreis `null`). Ohne die
+    Liste wuerde `ende` den Preis auf die UVP anheben. Die Liste selbst liegt lokal unter
+    `~/teppich-paradies-analyse/` (enthaelt Shop-IDs, gehoert nicht ins Repository).
+  - Die Liste ist fail closed: steht eine ID darin, die im Export fehlt (Tippfehler,
+    Produkt-ID, neu angelegte Variante), bricht `ende` mit Exit 1 ab und loescht vorher die
+    alten Ergebnisdateien im Zielordner. Die Ausgabe zaehlt getrennt: ausgeschlossen, ohne
+    Vergleichspreis ueber Preis, ausserhalb Stichtag/Klasse/Ende. Greift die Liste nur zum
+    Teil, folgt eine `WARNUNG`. `0 ausgeschlossen` ist richtig, solange die Vergleichspreise
+    nicht wiederhergestellt sind. Steht die UVP in der Liste und traegt eine gelistete Variante
+    einen anderen Vergleichspreis (z. B. spaeter eine echte Aktion mit belegtem Vorpreis),
+    bricht `ende` ebenfalls ab, statt den Aktionspreis still als Dauerpreis zu behalten.
+  - `nur-vergleichspreis-leeren.jsonl` traegt den Preis aus dem Export mit (fuer
+    `batch-erzeugen.mjs`); nur aus einem Export vom Schreibtag schreiben, sonst geht ein
+    inzwischen geaenderter Preis zurueck. Sicherer: nur `compareAtPrice: null` schreiben.
+  - Der Schutz wirkt nur mit der Option. Wer `ende` fuer einen Zeitraum aufruft, in dem
+    solche Varianten liegen, gibt die Liste immer mit, auch vor einer Wiederherstellung
+    (dann `0 ausgeschlossen`), und prueft danach, dass keine gelistete ID in
+    `rueckstellen.jsonl` steht.
 - Wellen setzen `aktion.klasse = aktion`: befristete Aktion, **nicht** mit dem
   kostenlosen Vor-Ort-Service kombinierbar (Inhaber 2026-09-20). Der Dauerrabatt
   `preisanker` bleibt kombinierbar und endet ebenfalls mit `aktion.ende`.
@@ -64,3 +88,11 @@ Auswahl, Prozent, Start und Ende; am Ende geht der Preis auf den regulaeren Prei
   Export vom 08.10. (`--stichtag 2026-10-19 --klasse preisanker`): 680 Varianten in
   18 Produkten (451 Meterware, 229 Raummass), Zielpreise identisch mit der
   freigegebenen Variantenliste.
+- UVP-Vergleichspreise neuer Linien (121 Varianten in 79 Produkten, alle `preisanker`,
+  Ende 01.11.): 47 am 08.10. und 74 am 09.10. geleert, am 10.10. Wiederherstellung
+  gewuenscht (Freigabe der konkreten Tabelle offen). Sind sie wiederhergestellt, braucht die
+  Rueckstellung am 02.11. `--ausschluss`, sonst setzt `ende` diese Preise um 5–18 % auf die
+  UVP hoch. Probelauf gegen den Export vom 10.10. mit eingesetzten Vergleichspreisen: ohne
+  Liste 2.231 Varianten / 542 Produkte, mit Liste 2.110 / 464 (identisch mit dem Rohplan
+  ohne Wiederherstellung) und 121 ausgeschlossen. Welle 1 (Stichtag 19.10.) erfasst sie
+  nicht, weil ihr `aktion.ende` nach dem Stichtag liegt.

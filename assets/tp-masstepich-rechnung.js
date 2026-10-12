@@ -120,6 +120,13 @@
     return kanteM > 0 ? Math.round(kanteM * 100) : 0;
   }
 
+  // Wird die Kante als eigene Kettelservice-Zeile berechnet? Nur bei Ketteln und
+  // nur, wenn der m2-Preis die Kettelung nicht schon enthaelt
+  // (Produkt-Metafeld service.kante_inklusive = true).
+  function kettelSeparat(art, kanteInklusive) {
+    return art === 'ketteln' && kanteInklusive !== true;
+  }
+
   // Menge in 0,01-m2-Einheiten inklusive Mindestpreis (alles in Cent).
   function mengeMitMindestpreis(areaM2, preisJeEinheitCent, mindestCent) {
     var menge = mengeHundertstelM2(areaM2);
@@ -127,6 +134,18 @@
       menge = Math.ceil(mindestCent / preisJeEinheitCent - EPS);
     }
     return menge;
+  }
+
+  // Endpreis eines Teppichs nach Mass in Cent - dieselbe Rechnung wie der
+  // Konfigurator: Flaeche in 0,01 m2 mal Variantenpreis, Kettelung (nur wenn
+  // separat) je 0,01 lfm, Mindestpreis fuer den Auftrag (die Kante zaehlt mit,
+  // nur der Rest hebt die Materialmenge an), Pauschale je Teppich.
+  // o: { form, w, l, preisCent, mindestCent, kettelCent, pauschaleCent }
+  function summeCent(o) {
+    var flaeche = abrechnungsflaecheM2(o.form, o.w, o.l);
+    var kanteCent = o.kettelCent > 0 ? kanteEinheiten(umfangM(o.form, o.w, o.l)) * o.kettelCent : 0;
+    var menge = mengeMitMindestpreis(flaeche, o.preisCent, Math.max(0, (o.mindestCent || 0) - kanteCent));
+    return menge * o.preisCent + kanteCent + (o.pauschaleCent || 0);
   }
 
   // Gemeinsamer Rollenbestand (Sonderposten mit begrenzter Rolle): wie viel
@@ -162,12 +181,14 @@
   }
 
   root.TPMass = {
+    summeCent: summeCent,
     rollenZuschnitt: rollenZuschnitt,
     flaecheM2: flaecheM2,
     abrechnungsflaecheM2: abrechnungsflaecheM2,
     echteFlaecheM2: echteFlaecheM2,
     umfangM: umfangM,
     kanteEinheiten: kanteEinheiten,
+    kettelSeparat: kettelSeparat,
     mengeVolleM2: mengeVolleM2,
     mengeHundertstelM2: mengeHundertstelM2,
     raummassPreis: raummassPreis,

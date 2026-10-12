@@ -1,0 +1,110 @@
+{% doc %}
+  Hinweis auf der Meterware-Seite: dieselbe Qualitaet gibt es als Teppich nach Mass
+  (2026-10-12). Bisher fuehrte nur der Weg vom Teppich zur Meterware, nicht zurueck.
+
+  Gefunden wird der Teppich ueber die Handle-Regel der Importe
+  (<qualitaet>-teppichboden-... -> <qualitaet>-teppich-nach-mass) und nur
+  angezeigt, wenn er per service.einfass_basis auf genau diese Meterware
+  zurueckverweist und kaufbar ist - eine Namensaehnlichkeit allein reicht nicht.
+  Die Farbe kommt mit: Variante, deren service.basisvariante dieselbe Farbe
+  (option1) der Meterware traegt. Preis aus snippets/tp-teppich-ab-preis (eine Quelle).
+{% enddoc %}
+
+{%- liquid
+  assign tnh_ziel = nil
+  if product.handle contains '-teppichboden'
+    assign tnh_stamm = product.handle | split: '-teppichboden' | first
+    assign tnh_handle = tnh_stamm | append: '-teppich-nach-mass'
+    assign tnh_kandidat = all_products[tnh_handle]
+    if tnh_kandidat != blank and tnh_kandidat.available
+      if tnh_kandidat.metafields.service.einfass_basis.value.id == product.id
+        assign tnh_ziel = tnh_kandidat
+      endif
+    endif
+  endif
+-%}
+
+{%- if tnh_ziel -%}
+  {%- liquid
+    assign tnh_farbe = product.selected_or_first_available_variant.option1
+    assign tnh_url = tnh_ziel.url
+    for tnh_v in tnh_ziel.variants
+      if tnh_v.available and tnh_v.metafields.service.einfassen.value == 'Verfügbar'
+        if tnh_v.metafields.service.basisvariante.value.option1 == tnh_farbe
+          assign tnh_url = tnh_ziel.url | append: '?variant=' | append: tnh_v.id
+          break
+        endif
+      endif
+    endfor
+  -%}
+  <a class="tp-nmh" href="{{ tnh_url }}" data-tp-nachmass-hinweis {{ block.shopify_attributes }}>
+    <span class="tp-nmh__bild" aria-hidden="true">
+      {%- if block.settings.bild != blank -%}
+        {{ block.settings.bild | image_url: width: 240 | image_tag: loading: 'lazy', widths: '120, 180, 240', sizes: '88px', alt: '' }}
+      {%- endif -%}
+    </span>
+    <span class="tp-nmh__text">
+      <span class="tp-nmh__titel">{{ block.settings.titel | escape }}</span>
+      <span class="tp-nmh__satz">{{ block.settings.satz | escape }}</span>
+      <span class="tp-nmh__preis">{% render 'tp-teppich-ab-preis', product: tnh_ziel %}</span>
+    </span>
+    <svg class="tp-nmh__pfeil" viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </a>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-nmh {
+    display: flex; align-items: center; gap: 12px; margin: 4px 0 8px; padding: 10px 12px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.16); border-radius: 10px;
+    color: var(--color-foreground, #15171a); text-decoration: none; transition: border-color .15s;
+  }
+  .tp-nmh:hover { border-color: var(--color-foreground, #15171a); }
+  .tp-nmh__bild { flex: 0 0 72px; width: 72px; height: 72px; overflow: hidden; border-radius: 8px; background: #ece6dc; }
+  .tp-nmh__bild:empty { display: none; }
+  .tp-nmh__bild img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .tp-nmh__text { display: grid; gap: 2px; min-width: 0; flex: 1; }
+  .tp-nmh__titel { font-size: .95rem; font-weight: 700; line-height: 1.3; }
+  .tp-nmh__satz { font-size: .8rem; line-height: 1.35; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.68); }
+  .tp-nmh__preis { font-size: .85rem; font-weight: 700; }
+  .tp-nmh__preis .tp-ab-preis { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 6px; }
+  .tp-nmh__preis .tp-ab-preis__qualitaet { display: none; }
+  .tp-nmh__preis .tp-ab-preis__haupt { display: inline-flex; align-items: baseline; gap: 4px; }
+  .tp-nmh__preis .tp-ab-preis__betrag { font-size: .95rem; }
+  .tp-nmh__preis .tp-ab-preis__grund { font-size: .75rem; font-weight: 400; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62); }
+  .tp-nmh__pfeil { flex-shrink: 0; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Hinweis nach Maß",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Erscheint nur auf Teppichboden, zu dem es einen kaufbaren Teppich nach Mass mit service.einfass_basis auf genau diese Meterware gibt."
+    },
+    {
+      "type": "text",
+      "id": "titel",
+      "label": "Titel",
+      "default": "Auch als Teppich nach Maß"
+    },
+    {
+      "type": "text",
+      "id": "satz",
+      "label": "Satz",
+      "default": "Dieselbe Qualität, zentimetergenau zugeschnitten und rundum eingefasst."
+    },
+    {
+      "type": "image_picker",
+      "id": "bild",
+      "label": "Bild"
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Hinweis nach Maß"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,35 @@
+{%- layout none -%}
+{%- comment -%}
+  Maschinenlesbare Quelle fuer custom.teppich_basis_daten (scripts/teppich-basis-daten.mjs,
+  `npm run teppich:basis-daten`). Aufruf: /products/<handle>?view=teppich-basis-daten
+
+  "soll" wertet die drei Snippets mit live: true aus - also genau die Regeln, die sonst
+  bei jedem Seitenaufruf gerechnet wuerden. Die Regeln stehen damit weiter nur in den
+  Snippets; das Skript vergleicht "soll" mit "ist" (gespeichertes Feld) und schreibt nur
+  Abweichungen. Warum ueberhaupt speichern: siehe snippets/tp-teppich-gruppe (Schnellweg).
+
+  Je Farbe des Teppichs (option1, wie im Rechner und im Konfigurator) die groesste Breite;
+  0 = keine Breite belegt (die Snippets geben dann nichts aus, wie live).
+{%- endcomment -%}
+{%- liquid
+  capture tbd_gruppe
+    render 'tp-teppich-gruppe', product: product, live: true
+  endcapture
+  capture tbd_qualitaet
+    render 'tp-teppich-qualitaet', product: product, live: true
+  endcapture
+  capture tbd_max
+    render 'tp-teppich-max-breite', product: product, live: true
+  endcapture
+  assign tbd_farben = product.variants | map: 'option1' | uniq
+-%}
+{"id": {{ product.id | json }}, "handle": {{ product.handle | json }},
+ "soll": {"v": 1, "gruppe": {{ tbd_gruppe | strip | json }}, "qualitaet": {{ tbd_qualitaet | strip | json }},
+  "breite_max": {{ tbd_max | strip | times: 1 | json }},
+  "breite": {
+  {%- for tbd_farbe in tbd_farben -%}
+    {%- capture tbd_b -%}{% render 'tp-teppich-max-breite', product: product, farbe: tbd_farbe, live: true %}{%- endcapture -%}
+    {{ tbd_farbe | json }}: {{ tbd_b | strip | times: 1 | json }}{% unless forloop.last %}, {% endunless %}
+  {%- endfor -%}
+  }},
+ "ist": {% if product.metafields.custom.teppich_basis_daten.value != blank %}{{ product.metafields.custom.teppich_basis_daten.value | json }}{% else %}null{% endif %}}
