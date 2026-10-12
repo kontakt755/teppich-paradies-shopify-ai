@@ -308,7 +308,7 @@ Nicht für jede Miniänderung den gesamten Shop unnötig testen.
 - **Der Gedächtnis-Vault** (`~/.claude/projects/<projekt>/memory`, zugleich Obsidian-Vault, privates Repo `tp-claude-gedaechtnis`) enthält nur, was nicht aus dem Repository folgt: Entscheidungen des Inhabers, Datenquellen der Lieferanten, Shopify-Fallen, Vorlieben des Benutzers. Keine Zwischenstände, keine Theme-IDs, keine Kopien von Regeln. Dateinamen in snake_case, Wikilinks mit genau diesem Dateinamen. `.claude/hooks/gedaechtnis-sync.sh` holt beim Sitzungsstart und pusht am Sitzungsende; Codex ruft `npm run gedaechtnis:sync -- pull|push` auf.
 - **Übergaben zwischen Claude und Codex** nur auf ausdrücklichen Auftrag: `Zusammenarbeit/Start.md` im Vault lesen, je Übergabe eine Datei unter `Zusammenarbeit/Aufgaben/`. Keine Secrets oder Kundendaten.
 - **Review:** Es gibt keinen Router und kein Pflicht-Review nach jeder Antwort (entfernt 2026-09-30). Vor dem Merge von Änderungen an Preisen, SKUs, Varianten, Massenimporten, Checkout oder der Deploy-Kette einen zweiten Blick auf den **PR-Diff** holen (`/code-review` in Claude Code oder Codex) — nie auf den geteilten Working Tree.
-- Externe 429/503/Timeouts: höchstens ein unmittelbarer Script-Retry (`workflow/retry.mjs`). Cloud-/Proxy-403 bei Storefront-Zugriff heißt: lokal auf dem Mac ausführen.
+- Externe 429/503/Timeouts: höchstens ein unmittelbarer Script-Retry (`workflow/retry.mjs`). Einzige Ausnahme: Der HTTP-Check der Preview direkt nach dem Push prüft 5xx (Kaltstart) bis zu zweimal mit Wartezeit nach (`PREVIEW_HTTP_WAITS_MS`); 4xx und bleibende 5xx brechen ab, die Wartezeiten nicht verlängern. Cloud-/Proxy-403 bei Storefront-Zugriff heißt: lokal auf dem Mac ausführen.
 
 ## Kommunikation
 

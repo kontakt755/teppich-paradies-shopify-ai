@@ -350,5 +350,14 @@ test('PREVIEW_HTTP: Kaltstart-500 wird nachgeprueft, 4xx und dauerhafte 5xx brec
     assertPreviewHttp(url, { fetchImpl: fake([500, 502, 500, 200]), sleep }),
     error => error.code === 'PREVIEW_HTTP' && /HTTP 500 nach 3 Versuchen: 500, 502, 500/.test(error.message),
   );
-  assert.match(remediationFor('PREVIEW_HTTP').fix, /20 s und 40 s/);
+  assert.match(remediationFor('PREVIEW_HTTP').fix, /nach 20 s und nach weiteren 40 s/);
+});
+
+test('Preview-Lauf prueft die URL ueber assertPreviewHttp, nicht per rohem fetch', () => {
+  // Ein Merge-Konflikt, der die alte Zeile zurueckbringt, liesse alle anderen
+  // Tests gruen - und den naechsten Kaltstart wieder sofort abbrechen.
+  const cli = fs.readFileSync(new URL('../cli.mjs', import.meta.url), 'utf8');
+  assert.match(cli, /await assertPreviewHttp\(previewUrl,/);
+  assert.doesNotMatch(cli, /fetch\(previewUrl/);
+  assert.match(cli, /previewHttpAttempts: previewHttp\.attempts/);
 });
