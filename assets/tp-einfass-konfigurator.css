@@ -224,7 +224,7 @@
 .tp-ek__cta--zweit { background: var(--tp-ek-ink); }
 .tp-ek__warenkorb { display: block; margin-top: 10px; text-align: center; font-size: .85rem; text-decoration: underline; text-underline-offset: 3px; }
 
-/* Befestigungs-Tipp bei gekettelten Teppichen: freundlich, kein Warnhinweis */
+/* Befestigungs-Tipp bei Teppichen nach Mass (alle Kanten ausser Fertig): freundlich, kein Warnhinweis */
 .tp-ek__tipp { margin: 14px 0 0; padding: 14px 16px; border: 1px solid rgb(29 107 71 / 0.22); border-radius: 10px; background: var(--tp-ek-green-soft); }
 .tp-ek__tipp-kopf { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; font-size: .95rem; line-height: 1.3; }
 .tp-ek__tipp-marke { padding: 2px 9px; border-radius: 999px; background: var(--tp-ek-green); color: #fff; font-size: .72rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
