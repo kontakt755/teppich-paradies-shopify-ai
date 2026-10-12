@@ -286,3 +286,39 @@ test('Variante "je lfm": Stueckzahl ist die Laenge, Breite aus dem Variantentite
   // Ohne "je lfm" bleibt es ungeklaert - geraten wird nichts.
   assert.equal(einkaufsmenge({ ...item, eingaben: ausVariantentitel('Natur') }, 25).menge, 'UNGEKLAERT');
 });
+
+// Teppich nach Mass: der Konfigurator schreibt die Rolle privat als
+// "_Zuschnitt aus Rolle", der Kettelservice haengt als eigene Zeile in
+// derselben _Gruppe dran (Fall #1031, hier mit erfundenen Daten).
+test('Teppich nach Mass: Rolle aus "_Zuschnitt aus Rolle", Kettelservice ist Eigenleistung', () => {
+  const teppich = zeile({ id: 41, sku: null, title: 'Testteppich nach Maß', variantTitle: 'Blau', quantity: 336, handle: 'testteppich-nach-mass',
+    attrs: [{ key: 'Maße', value: '120 × 280 cm' }, { key: '_Zuschnitt aus Rolle', value: '200 cm' }, { key: '_Gruppe', value: 'g1' }],
+    einkauf: [['lieferant', 'A'], ['artikelnummer', 'A-733-120'], ['bestelleinheit', 'lfm'], ['route', 'SUPPLIER_TO_TP']],
+    custom: [['preis_pro_001_qm', 'true']] });
+  const kettel = zeile({ id: 42, sku: null, title: 'Kettelservice', variantTitle: 'je 0,01 laufender Meter', quantity: 800, handle: 'kettelservice',
+    attrs: [{ key: 'Zu Teppich', value: 'Testteppich nach Maß' }, { key: 'Kante umlaufend', value: '8,00 m' }, { key: '_Gruppe', value: 'g1' }] });
+  const mm = aufbereiten({ orders: [bestellung(41, [teppich, kettel])] }, { jetzt: new Date('2026-01-07T00:00:00Z') });
+  const [t, k] = mm.auftraege[0].positionen;
+
+  // 120 cm quer zur 200-cm-Rolle, 280 cm entlang: 2,80 lfm.
+  assert.equal(t.bestellmenge.menge, 2.8);
+  assert.equal(t.bestellmenge.einheit, 'lfm');
+
+  assert.equal(k.eigenleistung, true);
+  assert.equal(k.menge, 0);
+  assert.equal(k.bestellmenge.text, 'Eigenleistung – nichts zu bestellen');
+  assert.match(k.kundenmenge, /800/);
+  assert.ok(!mm.auftraege[0].hinweise.some(h => /ohne Großhändler-ID/.test(h)), mm.auftraege[0].hinweise.join(' | '));
+  assert.equal(mm.zahlen.ohneId, 0);
+  assert.equal(mm.zahlen.zuBestellen, 1);
+  assert.ok(mm.gruppen.flatMap(g => g.positionen).every(p => p.titel !== 'Kettelservice'));
+  assert.match(renderHtml(mm), /Eigenleistung/);
+});
+
+test('"Aus Rolle" des Rollenrechners geht vor "_Zuschnitt aus Rolle"', () => {
+  const z = zeile({ id: 43, sku: 'TEST-ROLLE-2', title: 'Testboden Rolle', quantity: 1,
+    attrs: [{ key: 'Aus Rolle', value: '400 cm' }, { key: '_Zuschnitt aus Rolle', value: '200 cm' }, { key: 'Gewünschte Länge', value: '150 cm' }],
+    einkauf: [['lieferant', 'A'], ['artikelnummer', 'A-1'], ['bestelleinheit', 'lfm']] });
+  const mm = aufbereiten({ orders: [bestellung(43, [z])] }, { jetzt: new Date('2026-01-07T00:00:00Z') });
+  assert.match(mm.auftraege[0].positionen[0].bestellmenge.text, /× 4,00 m/);
+});
