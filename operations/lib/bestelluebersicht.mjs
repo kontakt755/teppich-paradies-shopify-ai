@@ -10,7 +10,7 @@
  * geschrieben (README "Bestelluebersicht").
  */
 
-import { resolveLineItem, metafeldMap, grosshaendlerId, propertiesMap } from './resolve.mjs';
+import { resolveLineItem, metafeldMap, grosshaendlerId, propertiesMap, ausVariantentitel } from './resolve.mjs';
 import { UNGEKLAERT, EINHEIT, paketware, rollenware, stueck, formatDe } from './umrechnung.mjs';
 import { gruppieren } from './einkauf.mjs';
 import { ableiten } from './status.mjs';
@@ -56,6 +56,14 @@ export function istOffen(order) {
   if (order?.cancelledAt) return false;
   const f = String(order?.displayFulfillmentStatus ?? '').toUpperCase();
   return f === '' || OFFEN_FULFILLMENT.has(f);
+}
+
+/** Was der Kunde bestellt hat (nach Aenderungen/Erstattungen), unabhaengig vom Versandstand. */
+function bestellteMenge(li) {
+  for (const k of ['currentQuantity', 'quantity']) {
+    if (li[k] !== undefined && li[k] !== null) return Number(li[k]) || 0;
+  }
+  return 0;
 }
 
 function offeneMenge(li) {
@@ -194,9 +202,13 @@ function procurementReadyGruppe(item) {
   return procurementReady(item).gruppe;
 }
 
-function kundenmengeText(item, menge) {
+function kundenmengeText(item, menge, variantenTitel = null) {
   const teile = [];
   if (item.produkt?.preis_pro_001_qm) teile.push(`${menge} × 0,01 m² = ${formatDe(menge / 100)} m²`);
+  // Kettelservice wird "je 0,01 laufender Meter" verkauft: 800 sind 8 m Kante, nicht 800 Stueck.
+  else if (/je\s*0,01\s*lauf/i.test(String(variantenTitel ?? ''))) teile.push(`${menge} × 0,01 lfm = ${formatDe(menge / 100)} lfm`);
+  // "80 cm breit (je lfm)": die Stueckzahl ist die Laenge in laufenden Metern.
+  else if (ausVariantentitel(variantenTitel).jeLfm) teile.push(`${menge} lfm`);
   else teile.push(`${menge} Stk.`);
   const m = item.eingaben?.masse;
   if (m) teile.push(`${m.breiteCm} × ${m.laengeCm} cm`);
@@ -364,7 +376,8 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         sku: item.sku,
         preis: geld(li.originalUnitPriceSet),
         menge,
-        kundenmenge: kundenmengeText(item, eigen ? offeneMenge(li) : menge),
+        // Bestellte Menge, wenn nichts mehr offen ist: bei gelieferter Ware stand sonst "0 Stk.".
+        kundenmenge: kundenmengeText(item, (eigen || !(menge > 0)) ? bestellteMenge(li) : menge, li.variantTitle ?? li.variant?.title),
         grosshaendlerId: ghId,
         grosshaendlerIdQuelle: ghQuelle,
         lieferant,
