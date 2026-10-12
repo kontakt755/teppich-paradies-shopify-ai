@@ -212,6 +212,13 @@
       </div>
     {%- endif -%}
     </div>
+    {%- if tp_tg_gesamt > list_items_array.size -%}
+      <div class="tp-zubehoer-produkte__nachladen" data-tp-reihe-ersatz>
+        <p data-tp-reihe-fehler role="status" hidden>Die weiteren Qualitäten konnten gerade nicht geladen werden.</p>
+        <button type="button" data-tp-reihe-erneut hidden>Weitere Qualitäten erneut laden</button>
+        <a href="{{ collection.url }}?view=teppiche-alle">Alle Maßteppiche als Liste ansehen</a>
+      </div>
+    {%- endif -%}
   </div>
 {%- endif -%}
 
@@ -259,15 +266,27 @@
   .tp-zubehoer-produkte__more:focus-visible {
     border-color: var(--color-foreground);
   }
+
+  .tp-zubehoer-produkte__nachladen {
+    margin-top: 16px;
+    font-size: 0.9rem;
+  }
+
+  .tp-zubehoer-produkte__nachladen button {
+    min-height: 44px;
+    margin-right: 12px;
+    padding: 8px 12px;
+    font: inherit;
+    cursor: pointer;
+  }
 {% endstylesheet %}
 
 {% javascript %}
   (function () {
     // Teppich-Gruppen: Reihen mit data-tp-reihe-nachladen zeigen nur die ersten Karten.
     // Die vollstaendigen Reihen kommen aus der Vorlage collection.teppiche-reihen (eine
-    // Anfrage fuer alle Reihen) und ersetzen den Kartenbereich. Schlaegt das fehl, bleibt
-    // die Reihe mit den ersten Karten stehen; die Produkte sind weiter ueber die Suche und
-    // die Produktseiten erreichbar.
+    // Anfrage fuer alle Reihen) und ersetzen den Kartenbereich. Bei einem Fehler bleiben
+    // ein erreichbarer Wiederholungsversuch und die regulaere paginierte Liste stehen.
     var laden = null;
 
     function holen(url) {
@@ -283,6 +302,26 @@
         laden.catch(function () { laden = null; });
       }
       return laden;
+    }
+
+    function linkFokussieren(bereich, href) {
+      var links = Array.prototype.slice.call(bereich.querySelectorAll('a[href]'));
+      if (href) {
+        links = links.filter(function (link) { return link.getAttribute('href') === href; }).concat(
+          links.filter(function (link) { return link.getAttribute('href') !== href; })
+        );
+      }
+      for (var i = 0; i < links.length; i++) {
+        // Horizon umschliesst Karten mit display: contents-Links. Diese haben
+        // kein eigenes Layoutrechteck und .focus() bleibt dort wirkungslos.
+        var sichtbar = Array.prototype.some.call(links[i].getClientRects(), function (rect) {
+          return rect.width > 0 && rect.height > 0;
+        });
+        if (!sichtbar) continue;
+        links[i].focus({ preventScroll: true });
+        if (document.activeElement === links[i]) return true;
+      }
+      return false;
     }
 
     function einsetzen(doc) {
@@ -301,12 +340,37 @@
         var neu = doc.querySelector('[data-tp-reihe-gruppe="' + gruppe + '"] [data-tp-reihe-karten]');
         var alt = reihe.querySelector('[data-tp-reihe-karten]');
         if (!neu || !alt) return;
-        var offen = reihe.classList.contains('is-offen');
+        var offen = reihe.classList.contains('is-offen') || reihe.hasAttribute('data-tp-reihe-oeffnen');
+        var fokus = document.activeElement;
+        var imKartenbereich = fokus && alt.contains(fokus);
+        var fokusLink = imKartenbereich && fokus.closest('a[href]');
+        var href = fokusLink && fokusLink.getAttribute('href');
+        var mehrFokus = imKartenbereich && fokus.closest('[data-tp-gruppe-mehr]');
+        var ersatz = reihe.querySelector('[data-tp-reihe-ersatz]');
+        var retryFokus = ersatz && ersatz.contains(fokus);
         alt.replaceWith(document.importNode(neu, true));
         reihe.removeAttribute('data-tp-reihe-nachladen');
+        reihe.removeAttribute('data-tp-reihe-oeffnen');
+        if (ersatz) ersatz.hidden = true;
         if (offen) {
+          reihe.classList.add('is-offen');
           var knopf = reihe.querySelector('[data-tp-gruppe-mehr]');
           if (knopf) knopf.setAttribute('aria-expanded', 'true');
+        }
+        if (imKartenbereich || retryFokus) {
+          var neuerBereich = reihe.querySelector('[data-tp-reihe-karten]');
+          var fokussiert = href && linkFokussieren(neuerBereich, href);
+          // Der mobile Mehrknopf ist nach dem Oeffnen verborgen: zur ersten
+          // neu sichtbaren Karte springen, statt einen unsichtbaren Knopf zu fokussieren.
+          if (!fokussiert && mehrFokus && !offen) {
+            var mehr = neuerBereich.querySelector('[data-tp-gruppe-mehr]');
+            if (mehr) { mehr.focus({ preventScroll: true }); fokussiert = document.activeElement === mehr; }
+          }
+          if (!fokussiert && offen && (mehrFokus || retryFokus)) {
+            var karten = neuerBereich.querySelectorAll('.resource-list__item');
+            if (karten[4]) fokussiert = linkFokussieren(karten[4]);
+          }
+          if (!fokussiert) linkFokussieren(neuerBereich);
         }
       });
       if (anker && anker !== reihen[0]) {
@@ -318,7 +382,14 @@
     function start() {
       var erste = document.querySelector('[data-tp-reihe-nachladen]');
       if (!erste) return Promise.resolve();
-      return holen(erste.getAttribute('data-tp-reihe-nachladen')).then(einsetzen, function () {});
+      return holen(erste.getAttribute('data-tp-reihe-nachladen')).then(einsetzen).catch(function () {
+        document.querySelectorAll('[data-tp-reihe-nachladen]').forEach(function (reihe) {
+          var fehler = reihe.querySelector('[data-tp-reihe-fehler]');
+          var erneut = reihe.querySelector('[data-tp-reihe-erneut]');
+          if (fehler) fehler.hidden = false;
+          if (erneut) erneut.hidden = false;
+        });
+      });
     }
 
     function imLeerlauf() {
@@ -329,13 +400,25 @@
     else window.addEventListener('load', imLeerlauf);
 
     document.addEventListener('click', function (event) {
+      if (event.target.closest('[data-tp-reihe-erneut]')) { start(); return; }
       var knopf = event.target.closest('[data-tp-gruppe-mehr]');
       if (!knopf) return;
       var reihe = knopf.closest('.tp-zubehoer-produkte--teppich-gruppe');
       if (!reihe) return;
+      if (reihe.hasAttribute('data-tp-reihe-nachladen')) {
+        // Erst oeffnen, wenn die weiteren Karten wirklich da sind. Sonst verbirgt
+        // Mobile den noch fokussierten Mehrknopf bereits waehrend des Wartens.
+        reihe.setAttribute('data-tp-reihe-oeffnen', '1');
+        start();
+        return;
+      }
+      var fokusAmKnopf = document.activeElement === knopf;
       reihe.classList.add('is-offen');
       knopf.setAttribute('aria-expanded', 'true');
-      if (reihe.hasAttribute('data-tp-reihe-nachladen')) start();
+      if (fokusAmKnopf) {
+        var karten = reihe.querySelectorAll('.resource-list__item');
+        if (karten[4]) linkFokussieren(karten[4]);
+      }
     });
   })();
 {% endjavascript %}
