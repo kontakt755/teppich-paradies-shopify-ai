@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import { fileURLToPath } from 'node:url';
 import { Liquid } from 'liquidjs';
 
 const read = file => fs.readFileSync(new URL('../../' + file, import.meta.url), 'utf8');
@@ -182,4 +183,22 @@ test('Ohne JavaScript rendert der Ersatzweg eine ehrliche normale Liste, keine t
     assert.ok(html.includes(`href="${url}?view=teppiche-alle"`));
     assert.doesNotMatch(html, /filter\.|<noscript/);
   }
+});
+test('Ersatzansicht rendert serverseitige Folgeseiten statt JavaScript-Nachladen', async () => {
+  const template = JSON.parse(read('templates/collection.teppiche-alle.json').replace(/^\s*\/\*[\s\S]*?\*\//, ''));
+  const section = Object.values(template.sections).find(s => s.type === 'main-collection');
+  const engine = new Liquid({ root: fileURLToPath(new URL('../../snippets/', import.meta.url)), extname: '.liquid' });
+  for (const tag of ['doc', 'style', 'stylesheet']) {
+    engine.registerTag(tag, { parse(token, tokens) { while (tokens.length && tokens.shift().name !== 'end' + tag) {} }, render() { return ''; } });
+  }
+  engine.registerFilter('inline_asset_content', () => '');
+  engine.registerFilter('t', value => value);
+  const next = '/collections/teppich-nach-mass?view=teppiche-alle&page=2';
+  const html = await engine.parseAndRender(read('snippets/product-grid.liquid'), {
+    section: { ...section, id: 'qa-list' }, products: [{}], children: '<li>Testqualität</li>', request: { design_mode: true },
+    enable_infinite_scroll: section.settings.enable_infinite_scroll,
+    paginate: { pages: 6, current_page: 1, next: { url: next }, parts: [{ title: '1', is_link: false }, { title: '2', is_link: true, url: next }] },
+  });
+  assert.match(html, /class="pagination"/); assert.ok(html.includes(`href="${next}"`));
+  assert.doesNotMatch(html, /ref="viewMoreNext"/);
 });
