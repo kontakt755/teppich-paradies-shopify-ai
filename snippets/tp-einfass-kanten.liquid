@@ -86,7 +86,7 @@
                 assign tk_text = 'Breites Band rundum, ca. 3 cm, Farbe nach Wahl'
               when 'cover'
                 assign tk_label = 'Cover'
-                assign tk_text = 'Kante umgeschlagen und vernäht – ohne sichtbares Band'
+                assign tk_text = 'Kante umgeschlagen, Rücken mit Vlies unterfüttert – ohne sichtbares Band'
             endcase
             assign tk_eigenes_label = tk_p.metafields.service.einfass_label.value | append: '' | strip
             if tk_eigenes_label != blank
@@ -94,7 +94,7 @@
             endif
             assign tk_band_fest = tk_p.metafields.service.bandfarbe_fest.value | append: '' | strip
             if tk_art == 'paspelband' and tk_band_fest != blank
-              assign tk_text = 'Schmales Band rundum, ca. 1 cm, in der Farbe des Teppichs'
+              assign tk_text = 'Schmales Einfassband rundum in der Farbe des Teppichs'
             endif
 
             assign tk_inkl = true

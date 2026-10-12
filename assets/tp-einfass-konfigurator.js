@@ -786,17 +786,28 @@
       // Die Kundenansicht zeigt nur den Endpreis; die Aufschluesselung ist entfernt.
       var rh = q('[data-rund-hinweis]');
       if (rh) rh.hidden = !(f === 'rund' || f === 'oval');
+      // Ist der Mindestpreis genau eine ganze Flaeche zum m2-Preis (Hersteller: Vorwerk 3 m2,
+      // JAB 1 m2), heisst er so - das versteht der Kunde besser als ein Betrag.
+      var preisM2Cent = preis * 100;
+      var minM2 = preisM2Cent > 0 ? mindestCent / preisM2Cent : 0;
+      var minFlaeche = !kettel && !pauschale && minM2 >= 1 && Math.abs(minM2 - Math.round(minM2)) < 1e-9 ? Math.round(minM2) : 0;
       var mh = q('[data-mindest-hinweis]');
       if (mh) {
         mh.hidden = !mindest;
-        if (mindest) mh.textContent = 'Mindestpreis ' + euro(mindestCent) + ' für kleine Teppiche.';
+        if (mindest) {
+          mh.textContent = minFlaeche
+            ? 'Teppiche unter ' + fmt(minFlaeche, 0) + ' m² berechnet der Hersteller mit ' + fmt(minFlaeche, 0) + ' m².'
+            : 'Mindestpreis ' + euro(mindestCent) + ' für kleine Teppiche.';
+        }
       }
       q('[data-summe]').textContent = euro(summe);
       var rz = q('[data-rechenzeile]');
       if (rz) {
-        var zeile = !kettel && !pauschale && !mindest;
+        var zeile = !kettel && !pauschale && (!mindest || minFlaeche > 0);
         rz.hidden = !zeile;
-        rz.textContent = zeile ? fmt(abgerechnet) + ' m² × ' + fmt(preis, 0) + ' €/m²' + (f === 'rund' || f === 'oval' ? ' (umschließendes Rechteck)' : '') : '';
+        rz.textContent = !zeile ? ''
+          : mindest ? fmt(minFlaeche) + ' m² × ' + fmt(preis, 0) + ' €/m² (Mindestfläche)'
+          : fmt(abgerechnet) + ' m² × ' + fmt(preis, 0) + ' €/m²' + (f === 'rund' || f === 'oval' ? ' (umschließendes Rechteck)' : '');
       }
       // Aktion: derselbe Teppich zum alten Variantenpreis, dieselbe Rechnung. Liquid liefert
       // compare_at_price nur bei aktiver Aktion. Greift beim alten Preis der Mindestpreis,
