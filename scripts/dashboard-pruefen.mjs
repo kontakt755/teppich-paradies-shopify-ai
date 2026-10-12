@@ -49,7 +49,9 @@ const NUR_LESEN = ['einkauf-dryrun', 'einkauf-klaerung', 'lexikon', 'lieferanten
 // Klein oder beschreibbar: kopieren, damit Klicktests nie die echten Dateien treffen.
 const KOPIEREN = ['bestelluebersicht', 'kennzahlen', 'organisation', 'aktualisierung.json', 'auftragsstatus.json', 'auftragsverlauf.json', 'musterherkunft.json',
   // Upload-Links der Ansicht "Social Media": ein Klick auf "Neuen Link anlegen" schreibt hierhin.
-  'social/upload-zugaenge.json', 'social/upload-links.json'];
+  'social/upload-zugaenge.json', 'social/upload-links.json',
+  // Textvorlage fuer "Muster nachfassen" auf Heute
+  'muster-nachfassen-texte.md'];
 
 function argumente(argv) {
   const a = { ansichten: null, aus: null, offen: false, breiten: null, dunkel: false };
