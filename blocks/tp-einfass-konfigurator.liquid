@@ -373,12 +373,14 @@
       {%- endif -%}
       <button type="button" class="tp-ek__cta" data-cta data-add-to-cart disabled hidden>In den Warenkorb</button>
       {%- comment -%}
-        Befestigungs-Tipp nur bei gekettelten Teppichen (Inhaber 2026-10-12): frisch
-        ausgerollt ist der Teppich steif und liegt nicht sofort gerade. Freundlicher
-        Tipp unter dem Warenkorb-Knopf, kein Warnhinweis. Der Link oeffnet einen neuen
-        Tab, damit Mass und Farbe hier erhalten bleiben.
+        Befestigungs-Tipp bei allen selbst zugeschnittenen Kanten (Inhaber 2026-10-12:
+        erst gekettelt, dann auch Einfassband, Paspel, Cover): frisch ausgerollt ist der
+        Teppich steif und liegt nicht sofort gerade. Nicht bei "fertig" - die fasst der
+        Hersteller ein. Freundlicher Tipp unter dem Warenkorb-Knopf, kein Warnhinweis.
+        Der Link oeffnet einen neuen Tab, damit Mass und Farbe hier erhalten bleiben.
       {%- endcomment -%}
-      {%- if tp_ek_art == 'ketteln' and block.settings.befestigung_tipp -%}
+      {%- assign tp_ek_tipp_arten = 'ketteln,einfassband,paspelband,cover' | split: ',' -%}
+      {%- if tp_ek_tipp_arten contains tp_ek_art and block.settings.befestigung_tipp -%}
         {%- liquid
           assign tp_ek_bef = block.settings.befestigung_produkt
           if tp_ek_bef.available != true
@@ -547,13 +549,13 @@
     },
     {
       "type": "header",
-      "content": "Befestigungs-Tipp (nur gekettelt)"
+      "content": "Befestigungs-Tipp"
     },
     {
       "type": "checkbox",
       "id": "befestigung_tipp",
       "label": "Tipp unter dem Warenkorb-Knopf zeigen",
-      "info": "Nur bei der Einfassart Ketteln: frisch ausgerollt ist der Teppich steif und liegt nicht sofort gerade.",
+      "info": "Gekettelt, Einfassband, Paspel und Cover (nicht Fertig): frisch ausgerollt ist der Teppich steif und liegt nicht sofort gerade.",
       "default": true
     },
     {
@@ -566,7 +568,7 @@
       "type": "textarea",
       "id": "befestigung_text",
       "label": "Text",
-      "default": "Frisch ausgerollt ist ein gekettelter Teppich noch etwas steif und liegt nicht gleich ganz gerade – das ist normal. Mit einer Antirutsch-Unterlage darunter liegt er sofort plan und verrutscht nicht."
+      "default": "Frisch aus der Rolle liegt ein neuer Teppich anfangs nicht ganz plan – das ist normal. Mit einer Antirutsch-Unterlage darunter liegt er sofort glatt und rutschfest."
     },
     {
       "type": "product",

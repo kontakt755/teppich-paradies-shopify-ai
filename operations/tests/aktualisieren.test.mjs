@@ -116,6 +116,9 @@ test('teilBestellungen: laedt vollstaendig ueber mehrere Seiten und mehrere Quel
     if (query.includes('OpsQuellvarianten')) {
       return ok({ nodes: variables.ids.map((id) => ({ id, sku: `Q-${id}`, title: 'Q', metafields: { nodes: [] }, lieferant: { nodes: [] }, custom: { nodes: [] }, product: null })) });
     }
+    if (query.includes('OpsLieferanten')) {
+      return ok({ metaobjects: { nodes: [{ id: 'gid://shopify/Metaobject/1', kuerzel: { value: 'A' } }, { id: 'gid://shopify/Metaobject/2', kuerzel: null }] } });
+    }
     throw new Error(`unerwartete Query: ${query.slice(0, 30)}`);
   };
   try {
@@ -133,6 +136,8 @@ test('teilBestellungen: laedt vollstaendig ueber mehrere Seiten und mehrere Quel
     const datei = JSON.parse(fs.readFileSync(path.join(dir, 'bestelluebersicht', 'orders.json'), 'utf8'));
     assert.equal(datei.orders.length, anzahlBestellungen);
     assert.equal(datei.quellvarianten.length, anzahlBestellungen);
+    // Lieferanten-Metaobjekte fuer die GID -> Kuerzel-Zuordnung; ohne Kuerzel faellt einer weg.
+    assert.deepEqual(datei.lieferanten, [{ id: 'gid://shopify/Metaobject/1', kuerzel: 'A' }]);
   } finally {
     globalThis.fetch = altesFetch;
     if (alterToken === undefined) delete process.env.SHOPIFY_ADMIN_TOKEN; else process.env.SHOPIFY_ADMIN_TOKEN = alterToken;
