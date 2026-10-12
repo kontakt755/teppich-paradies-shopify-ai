@@ -27,6 +27,13 @@ const engine = new Liquid({
     'tp-teppich-qualitaet': ohneDoc('snippets/tp-teppich-qualitaet.liquid'),
     'tp-teppich-max-breite': ohneDoc('snippets/tp-teppich-max-breite.liquid'),
     'tp-musteroption': ohneDoc('snippets/tp-musteroption.liquid'),
+    // Sonderposten-Zweige aus main (tp-verkaufseinheit, tp-rabatt-sichtbar, price.liquid):
+    // echte Snippets, damit die Karte genauso rendert wie im Shop.
+    'tp-ist-sonderposten': ohneDoc('snippets/tp-ist-sonderposten.liquid'),
+    'tp-sonderposten-preisbeleg': ohneDoc('snippets/tp-sonderposten-preisbeleg.liquid'),
+    'tp-sonderposten-flaeche': ohneDoc('snippets/tp-sonderposten-flaeche.liquid'),
+    'tp-sonderposten-vergleich': ohneStylesheet(ohneDoc('snippets/tp-sonderposten-vergleich.liquid')),
+    'tp-rabatt-badge-styles': '',
     'tp-paketinhalt': '',
     'unit-price': '',
   },
@@ -313,6 +320,24 @@ test('Teppich nach Mass auf der Karte: Preis der gewaehlten Farbe, Kartenoptik b
   assert.equal(cent(ohne), 120 * 89 + 460 * 19);
   assert.equal(cent(grau), 120 * 99 + 460 * 19);
   assert.match(grau, /tp-ab-preis__ab/);
+});
+
+test('Teppich nach Mass mit Kante im m2-Preis: Suchkarte zeigt den Preis je m2 der gewaehlten Farbe', async () => {
+  const einfassen = { service: { einfassen: { value: 'Verfügbar' } } };
+  const p = produkt(
+    [variante('Beige', 'Standard', { price: 89, metafields: einfassen }), variante('Grau', 'Standard', { price: 99, metafields: einfassen })],
+    { metafields: { custom: { preis_pro_001_qm: { value: true } }, service: { einfassung: { value: 'Paspelband' }, mindestpreis: { value: 0 }, max_breite_cm: { value: 400 }, max_laenge_cm: { value: 1000 } } } },
+  );
+  const render = (globals) => engine.parseAndRender(preisSnippet, { product_resource: p, template: { name: 'search' }, settings: {} }, { globals });
+  const ohne = await render(suche('teppich'));
+  const grau = await render(suche('grauer teppich'));
+  const m2 = (html) => Number(html.match(/data-tp-ab-m2-cent="(\d+)"/)[1]);
+  assert.equal(m2(ohne), 8900, 'ohne Farbwort: guenstigste Farbe, wie auf jeder Karte');
+  assert.equal(m2(grau), 9900, 'Suchfarbe: Preis je m2 genau dieser Farbe');
+  assert.match(ohne, /tp-ab-preis__ab/, 'Farben kosten unterschiedlich: "ab" ohne Suchfarbe');
+  assert.doesNotMatch(grau, /tp-ab-preis__ab/, 'feste Farbe: kein "ab"');
+  assert.doesNotMatch(grau, /data-tp-ab-cent=/, 'kein Einstiegspreis 80 x 150 statt des Preises je m2');
+  assert.match(grau, /inkl\. Paspel rundum</, 'Kartenzeile wie ohne Suchfarbe, ohne Konfigurator-Hinweis des Kopfes');
 });
 
 test('Kartenaktionen: Konfigurator- und Musterlink fuehren zur gewaehlten Farbe', async () => {

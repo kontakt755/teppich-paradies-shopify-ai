@@ -1,0 +1,256 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "hero": {
+      "type": "tp-boden-kategorie-hero",
+      "settings": {
+        "image": "shopify://shop_images/kautschukboden-treppenhaus-rot.jpg",
+        "eyebrow": "Bodenbeläge entdecken",
+        "heading": "",
+        "lead": "<p>Kautschukboden als Noppenfliese, großformatige Fliese oder von der Rolle: Wählen Sie Format und Farbe und sehen Sie Stärke, Nutzungsklasse und Preis pro m² direkt am Produkt.</p>",
+        "primary_label": "Kautschukböden ansehen",
+        "secondary_label": "Beratung anfragen",
+        "secondary_link": "/pages/kontakt",
+        "image_caption": "Treppenhaus mit Kautschuk-Noppenbelag",
+        "image_alt": "Treppenhaus mit rotem Kautschukboden in Noppenoptik"
+      },
+      "blocks": {
+        "point_1": {
+          "type": "point",
+          "settings": {
+            "text": "Fliesen und Rollenware"
+          }
+        },
+        "point_2": {
+          "type": "point",
+          "settings": {
+            "text": "Preis je m², Paket oder Fliese"
+          }
+        },
+        "point_3": {
+          "type": "point",
+          "settings": {
+            "text": "Beratung in Oranienburg"
+          }
+        }
+      },
+      "block_order": [
+        "point_1",
+        "point_2",
+        "point_3"
+      ]
+    },
+    "main": {
+      "type": "main-collection",
+      "blocks": {
+        "filters": {
+          "type": "filters",
+          "static": true,
+          "settings": {
+            "enable_filtering": true,
+            "filter_style": "vertical",
+            "filter_width": "centered",
+            "text_label_case": "default",
+            "show_swatch_label": false,
+            "show_filter_label": false,
+            "enable_sorting": true,
+            "enable_grid_density": false,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "padding-block-start": 8,
+            "padding-block-end": 8,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0,
+            "facets_margin_bottom": 8,
+            "facets_margin_right": 20
+          },
+          "blocks": {}
+        },
+        "product-card": {
+          "type": "_product-card",
+          "static": true,
+          "settings": {
+            "product_card_gap": 4,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "card-gallery": {
+              "type": "_product-card-gallery",
+              "settings": {
+                "image_ratio": "adapt",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "product_title_4nY4eT": {
+              "type": "tp-card-title",
+              "name": "t:names.product_title",
+              "settings": {
+                "width": "100%",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "custom",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "var(--color-foreground)",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 4,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "price_EzJzMm": {
+              "type": "price",
+              "settings": {
+                "show_sale_price_first": true,
+                "show_installments": false,
+                "show_tax_info": false,
+                "type_preset": "h6",
+                "width": "100%",
+                "alignment": "left",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "color": "var(--color-foreground)",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "tp_card_specs_priceEzJzMm": {
+              "type": "tp-card-specs",
+              "name": "TP Card-Merkmale",
+              "settings": {},
+              "blocks": {}
+            },
+            "tp_card_actions_priceEzJzMm": {
+              "type": "tp-card-actions",
+              "name": "TP Card-Aktionen",
+              "settings": {},
+              "blocks": {}
+            },
+            "tp_card_color_thumbs": {
+              "type": "tp-card-color-thumbs",
+              "settings": {}
+            },
+            "tp_card_aktion": {
+              "type": "tp-card-aktion",
+              "settings": {}
+            },
+            "tp_card_sterne": {
+              "type": "tp-card-sterne",
+              "settings": {}
+            }
+          },
+          "block_order": [
+            "card-gallery",
+            "product_title_4nY4eT",
+            "tp_card_sterne",
+            "price_EzJzMm",
+            "tp_card_aktion",
+            "tp_card_color_thumbs",
+            "tp_card_specs_priceEzJzMm",
+            "tp_card_actions_priceEzJzMm"
+          ]
+        }
+      },
+      "settings": {
+        "layout_type": "grid",
+        "product_card_size": "medium",
+        "mobile_product_card_size": "small",
+        "enable_infinite_scroll": false,
+        "products_per_page": 16,
+        "product_grid_width": "centered",
+        "full_width_on_mobile": false,
+        "columns_gap_horizontal": 16,
+        "columns_gap_vertical": 24,
+        "padding-inline-start": 0,
+        "padding-inline-end": 0,
+        "color_scheme": "scheme-1",
+        "padding-block-start": 0,
+        "padding-block-end": 32
+      }
+    },
+    "guide": {
+      "type": "tp-boden-kategorie-ratgeber",
+      "settings": {
+        "eyebrow": "Gut zu wissen",
+        "heading": "Fragen zu Kautschukboden",
+        "intro": "<p>Format, Stärke, Nutzungsklasse und Verkaufseinheit finden Sie direkt am jeweiligen Kautschukboden.</p>",
+        "faq_heading": "Häufige Fragen",
+        "contact_text": "Auswahl oder Produktdaten noch unklar?",
+        "contact_label": "Persönlich beraten lassen",
+        "contact_link": "/pages/kontakt"
+      },
+      "blocks": {
+        "faq_1": {
+          "type": "faq",
+          "settings": {
+            "question": "Welche Formate gibt es?",
+            "answer": "<p>Rondaro ist eine Noppenfliese 50 × 50 cm im Paket zu 5 m². Tondara ist eine Fliese 100 × 100 cm, verkauft je Fliese. Gommara kommt von der Rolle in 190 cm Breite und wird nach Länge zugeschnitten.</p>"
+          }
+        },
+        "faq_2": {
+          "type": "faq",
+          "settings": {
+            "question": "Wie wird Kautschukboden verlegt?",
+            "answer": "<p>Alle angebotenen Kautschukböden werden vollflächig verklebt. Prüfen Sie die Verlegehinweise und Anforderungen an den Untergrund am ausgewählten Produkt oder lassen Sie sich beraten.</p>"
+          }
+        },
+        "faq_3": {
+          "type": "faq",
+          "settings": {
+            "question": "Kann ich einen Farbton vorab besprechen?",
+            "answer": "<p>Für die angebotenen Kautschukböden sind keine kostenlosen Muster hinterlegt. <a href=\"/pages/kontakt\">Kontaktieren Sie unser Team</a> bei Fragen zu Farbe oder Oberfläche.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "faq_1",
+        "faq_2",
+        "faq_3"
+      ]
+    }
+  },
+  "order": [
+    "hero",
+    "main",
+    "guide"
+  ]
+}

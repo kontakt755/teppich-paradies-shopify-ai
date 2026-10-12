@@ -279,6 +279,10 @@ Höchstens fünf Einträge; jeder Eintrag zeigt die Gründe.
 
 Externe Schreibaktionen zu Shopify/Google finden **nicht** im Control Center statt (weiterhin nur über
 den Workflow mit Gates). Das Control Center schreibt ausschließlich Labels, Assignees und Kommentare nach GitHub.
+**Einzige Ausnahme seit 2026-10-08:** „Im Laden verkauft“ in der Ansicht Sonderposten setzt den Bestand
+genau eines Sonderpostens von 1 auf 0 und schreibt dessen `sonderposten.verkauft_*`-Felder (Abschnitt 13).
+Seit 2026-10-12 zieht derselbe Knopf bei einer Restrolle die verkaufte Länge × Rollenbreite (ganze m²)
+vom Bestand ab (Abschnitt 13, „Restrollen“).
 
 ## 6. Migrationsstrategie (keine destruktiven Schritte)
 
@@ -361,6 +365,35 @@ zeigt sie zwei weitere Kacheln, die jeweils in den Bereich „Einkauf" (Abschnit
 |---|---|---|
 | „Einkauf – heute zu tun" | `einkaufBestellungen()` + `einkaufAuftragsstatus()` | Positionen zu bestellen, offene Musterbestellungen, Aufträge mit Problem (Ampel rot: Beratung ohne Telefon, Maßprüfung offen, fehlende Großhändler-ID), Positionen je Schritt des Auftragsflusses |
 | „Shop-Zahlen" | `einkaufKennzahlen()` → `kennzahlen/shop-snapshot.json` | Bestellungen, Umsatz, Durchschnittsbon der letzten 7 und 30 Tage |
+| „Laden" (seit 2026-10-11) | `/api/laden/zahlen` → Auftrags-App `?ansicht=zahlen` | offene Beratungen (davon neu), fällige Wiedervorlagen, Angebote offen (davon nachfassen), Fälle aus dem Shop (7 Tage), gewonnen/verloren (30 Tage); nur wenn > 0 eine Zeile „Spam-Verdacht“ (seit 2026-10-12); Link „Laden-Ansicht öffnen" |
+
+**Kachel „Laden"** (`ansichten/heute/laden.mjs`, Server `scripts/laden-zahlen.mjs`, Sichten „Laden" und
+„Alles", nicht „Website"). Die Zahlen kommen aus dem Laden-Modus der Auftrags-App (Google Apps Script,
+eigenes Repository), die unter `<App-URL>?ansicht=zahlen&s=<Schlüssel>` **nur Zahlen** liefert – nie Namen
+oder Kundendaten. Der Abruf läuft im lokalen Server, nicht im Browser: Apps Script sendet keine
+CORS-Kopfzeilen, und der Schlüssel bleibt auf dem Mac. Der Server folgt der Weiterleitung auf
+`script.googleusercontent.com`, bricht nach 15 s ab, merkt sich einen Erfolg 5 Minuten und einen
+Fehlschlag 1 Minute; gleichzeitige Anfragen teilen sich einen Abruf. Durchgereicht werden nur die
+bekannten Zahlenfelder (ganze Zahlen ≥ 0), alles andere fällt weg. Fehlt eines, gilt die ganze Antwort als
+unbrauchbar – mit einer Ausnahme: `spamVerdacht` (offene Fälle aus dem Shop, die die App ab Version 43 im
+Filter „Spam prüfen“ zurückhält und in keiner anderen Zahl mitzählt) darf fehlen und gilt dann als 0, damit
+eine ältere App die Kachel nicht auf „nicht erreichbar“ setzt (`LADEN_ZAHLEN_SPAETER`). Die Kachel zeigt
+dafür keine sechste Zahl, sondern nur bei > 0 eine Zeile unter den Zahlen, die Zahl in Bernstein.
+
+Einrichtung **außerhalb des Repositorys** (es ist öffentlich): in `.env.local` im Ordner des Dienstes
+(`~/tp-dashboard/.env.local`, gitignored, dieselbe Datei wie der Shopify-Zugang) oder als
+Umgebungsvariable:
+
+```
+LADEN_ZAHLEN_URL=https://script.google.com/macros/s/<Deployment-ID>/exec
+LADEN_ZAHLEN_SCHLUESSEL=<derselbe Wert wie die Script-Property LADEN_ZAHLEN_SCHLUESSEL der App>
+```
+
+Angenommen wird nur `https://script.google.com`, damit ein Tippfehler den Schlüssel nicht an einen fremden
+Rechner schickt. Die Datei wird bei jedem Abruf neu gelesen, ein Neustart ist nicht nötig. Fehlt ein Wert,
+zeigt die Kachel ruhig „Nicht eingerichtet"; ist die App nicht erreichbar oder lehnt den Schlüssel ab,
+„nicht erreichbar" mit einem Satz dazu. Der Link „Laden-Ansicht öffnen" ist `<App-URL>?ansicht=laden`
+(ohne Schlüssel) und öffnet in einem neuen Tab.
 
 Offene Inhaberentscheidungen sind bereits über die bestehende Band-Kachel „warten auf Freigabe" und den
 Abschnitt „Wartet auf dich" abgedeckt (Aufgaben mit `status:freigabe`/Review), dafür wurde nichts Neues
@@ -517,3 +550,83 @@ Cookie mit.
 **Ladezeit.** Statt einer Anfrage sind es rund 50 kleine; über Tailscale am Handy kostet die
 Importkette einige Umläufe mehr. Falls das spürbar wird: `<link rel="modulepreload">` in
 `index.html` – bewusst noch nicht eingebaut, weil die Liste eine neue gemeinsame Datei wäre.
+
+## 13. Sonderposten und „Im Laden verkauft“ (seit 2026-10-08)
+
+Reststücke und Einzelstücke sind Shopify-Produkte mit `productType` „Sonderposten“, genau einer Variante
+(SKU `SP-xxxx`) und geführtem Bestand 1 am einzigen Standort. Wird ein Stück im Laden verkauft, muss es
+online sofort aus dem Verkauf – sonst bestellt es jemand ein zweites Mal. Konzept: Branch
+`feature/weiterentwicklung-sonderposten`, `docs/weiterentwicklung/sonderposten.md`, Abschnitt 6 (Weg B).
+
+**Live statt Export.** Anders als die übrigen Quellen (Abschnitt 10) liest `GET /api/sonderposten/liste`
+bei jedem Aufruf direkt aus Shopify (`operations/lib/sonderposten.mjs`, `leseListe`) – wer „verkauft“
+klickt, muss den Bestand von jetzt sehen. Zugang wie überall: `operations/sync/zugang.mjs`
+(`erzeugeProxy`), einmal je Serverprozess aufgebaut. Ohne Zugang derselbe Hinweis wie bei fehlenden
+Exporten. Die Vorlage (SKU `SP-0000` oder Titel „VORLAGE …“) und archivierte Stücke erscheinen nie.
+
+**Buchen** (`POST /api/sonderposten/verkauft`, Rolle `mitarbeiter` oder `inhaber`, „lesen“ 403):
+
+1. Produkt neu lesen; die IDs aus dem Browser werden nur abgeglichen, nie geglaubt.
+2. Nur bei geführtem Bestand genau 1 **und** gesperrtem Überverkauf (`inventoryPolicy: DENY`) weiter,
+   sonst 409 – nichts geschrieben. Mit `CONTINUE` bliebe das Stück bei Bestand 0 online bestellbar; die
+   Liste zeigt dann keinen Knopf, sondern „„Verkauf bei Nichtverfügbarkeit fortsetzen“ ist an – in Shopify
+   ausschalten“ (Review 2026-10-09).
+3. `inventorySetQuantities` (`available` → 0, `reason: correction`,
+   `referenceDocumentUri: tp://laden-verkauf/<SKU>/<Zeit>`) mit `changeFromQuantity: 1` – zwei
+   gleichzeitige Klicks buchen nicht doppelt – und `@idempotent` (ab API 2026-04 Pflicht).
+   **Antwortverlust:** Kommt auf die Mutation keine Antwort (Netz, Zeitlimit, 5xx), kann Shopify sie
+   trotzdem ausgeführt haben. Der Server liest dann erneut: Bestand 0 → gebucht, weiter mit Schritt 4;
+   Bestand 1 → 502 „nicht angekommen“; sonst 504 „unklar, Bestand prüfen“ samt Protokolleintrag
+   `sonderposten-im-laden-verkauft-unklar`. „Nichts gebucht“ sagt der Server nur, wenn Shopify abgelehnt hat
+   oder die Mutation gar nicht gesendet wurde.
+4. Erst danach `metafieldsSet`: `verkauft_am` (jetzt), `verkauft_von` (Anzeigename aus der Sitzung),
+   `verkauft_kanal` = „Laden“. Scheitert schon Schritt 3, bleiben die Felder unberührt.
+5. Protokolleintrag `sonderposten-im-laden-verkauft` (`$TP_PRIVAT_DIR/protokoll.jsonl`).
+6. Gegenprobe: Produkt erneut lesen, Bestand und Felder im Ergebnis – `userErrors: []` ist kein Beleg.
+   `ok` heißt Bestand 0 **und** online gesperrt (geführt, `DENY`). Scheitert nur das Lesen, ist die Buchung
+   trotzdem erfolgt: Antwort 200 mit `gegenprobe: "fehlgeschlagen"`, nie ein Fehler.
+
+**Rückmeldung im Browser** (`lib/sonderposten.mjs`, `meldungNachBuchung`): Kommt vom Dashboard keine
+Antwort, heißt es „Ob der Verkauf gebucht wurde, ist unklar – Liste neu laden und Bestand prüfen“, nie
+„nichts gebucht“. Ein erneuter Klick kann nicht doppelt buchen (Schritt 1 und 3).
+
+**Recht.** Dafür braucht der Zugang `write_inventory` (Bestand) und `write_products` (Felder),
+festgehalten als `SCHREIB_BEREICHE` in `sync/zugang.mjs` und in der Bereichszeile in
+`operations/README.md`. Fehlt `write_inventory`, antwortet der Server 403 mit „Bestand kann nicht geändert
+werden: dem Control Center fehlt das Shopify-Recht write_inventory …“ und schreibt nichts. Freischalten macht
+nur der Inhaber im Dev Dashboard.
+
+**Restrollen (seit 2026-10-12, Inhaber).** Rollenware mit Produkt-Tag `sonderposten` und Rollenbreite
+(`custom.rollenbreite`, Variante vor Produkt), deren Bestand Shopify in ganzen m² führt – z. B. Passion
+Yasmin. Die Liste fragt `(product_type:Sonderposten OR tag:sonderposten)`; Produkte mit dem Tag, aber ohne
+Rollenbreite (das Maßprodukt derselben Rolle) erscheinen nicht, weil sie keinen eigenen Bestand haben. Der
+Knopf öffnet „Von der Rolle verkauft“: Eingabe der abgeschnittenen Länge in m, immer über die volle
+Rollenbreite (ein Teppich 2 × 3 m verbraucht 2 m der 4-m-Rolle). Server (`verkaufeVonRolle`): neu lesen,
+Rolle/Bestand geführt/`DENY`/Item-ID prüfen, m² = Länge × Breite in cm gerechnet und auf ganze m²
+aufgerundet, mehr als der Rest → 409. Dann `inventorySetQuantities` auf Bestand − m² mit
+`changeFromQuantity` = gelesener Bestand und `@idempotent`, Antwortverlust wie oben über erneutes Lesen
+geklärt, `referenceDocumentUri: tp://laden-verkauf/<handle>/<Zeit>?laenge_cm=…&qm=…`. Keine
+`verkauft_*`-Felder (die Rolle bleibt im Shop, solange etwas da ist); Spur ist der Protokolleintrag
+`sonderposten-rolle-im-laden-verkauft` („3,5 m = 14 m² · Bestand 80 → 66 m²“). Fehlt `write_inventory`,
+sagt der Dialog, wie man bis dahin in der Shopify-App abzieht. Der Dialog rechnet dieselbe Regel vorher an
+(`lib/sonderposten.mjs`, `rollenRechnung`; ein Test hält Browser und Server gleich). Der Shop zeigt den Rest
+unter dem Preis aus demselben Bestand (`blocks/tp-aktion-hinweis.liquid`, `snippets/tp-rollenrest.liquid`).
+
+**Tests** sprechen nie echtes Shopify: `tests/_testumgebung.mjs` blendet `.env.local` und die
+`SHOPIFY_*`-Variablen aus, die Tests reichen eine Attrappe (`operations/tests/sonderposten-attrappe.mjs`)
+über `createApi({ shopifyZugang })` bzw. `ersetzeShopifyZugang()` in `serve-dashboard.mjs` hinein.
+
+## 14. Ansicht „Social Media" (seit 2026-10-12)
+
+`#/social` (`ansichten/social.mjs`, `lib/kampagnenlink.mjs`, `stile/social.css`) bündelt die Links,
+die man für Social Media braucht. Für die Rolle „lesen“ ist sie ausgeblendet (`data-nicht-lesen`).
+
+- **Foto-Upload fürs Team:** `GET /api/social/zugaenge` liefert je aktivem Zugang des Social-Moduls
+  (`$TP_PRIVAT_DIR/social/upload-zugaenge.json`) eine Zeile; Rolle „lesen“ bekommt 403, auch lesend.
+  Das Social-Modul speichert nur den Hash des Links. Den kopierbaren Klartext legt
+  `POST /api/social/link-neu` (nur Inhaber) beim Anlegen in `social/upload-links.json` ab (Rechte 600) –
+  ein gemerkter Link erscheint nur, solange sein Zugang aktiv ist. Ein neuer Link für einen vorhandenen
+  Namen sperrt den alten nicht. Die Adresse davor ist `SOCIAL_UPLOAD_BASIS_URL` aus `social/zugang.env`.
+- **Kampagnen-Link:** reines Frontend. Ziel nur auf `teppich-paradies.net`, Kanal → `utm_source`/`utm_medium`
+  (social, email, print; Art „Anzeige“ → paid), Kampagnenname klein mit Bindestrichen, Art → `utm_content`.
+- **Weitere Links:** Social-Zentrale auf demselben Host, Port 8020; Instagram- und Facebook-Profil.

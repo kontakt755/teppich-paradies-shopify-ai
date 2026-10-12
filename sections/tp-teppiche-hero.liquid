@@ -10,7 +10,7 @@
   Mass-Rechner (Einstellung "rechner", Inhaber 2026-09-30): Breite und Laenge statt
   Knopf 1. Darunter erscheinen alle Teppiche der Kollektion mit dem Preis fuer genau
   dieses Mass, guenstigste zuerst (assets/tp-teppich-rechner.js, Daten aus
-  snippets/tp-teppich-rechner-daten). Knopf 1 wird dann zum Textlink.
+  snippets/tp-teppich-rechner-daten, nachgeladen ueber templates/collection.teppiche-rechner). Knopf 1 wird dann zum Textlink.
 {%- endcomment -%}
 {{ 'tp-teppiche.css' | asset_url | stylesheet_tag }}
 {%- liquid
@@ -97,7 +97,8 @@
       </div>
       <ul class="tp-tep-rechner__liste" role="list" data-tp-rechner-liste></ul>
     </div>
-    <script type="application/json" data-tp-rechner-daten>{% render 'tp-teppich-rechner-daten', collection: collection %}</script>
+    {%- comment -%} Daten kommen nach dem Laden aus templates/collection.teppiche-rechner (Renderzeit) {%- endcomment -%}
+    <script type="application/json" data-tp-rechner-daten data-tp-rechner-quelle="{{ collection.url }}?view=teppiche-rechner"></script>
     <script src="{{ 'tp-masstepich-rechnung.js' | asset_url }}" defer></script>
     <script src="{{ 'tp-teppich-rechner.js' | asset_url }}" defer></script>
   {%- endif -%}
