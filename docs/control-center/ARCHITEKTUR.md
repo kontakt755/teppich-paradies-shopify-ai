@@ -616,3 +616,17 @@ unter dem Preis aus demselben Bestand (`blocks/tp-aktion-hinweis.liquid`, `snipp
 `SHOPIFY_*`-Variablen aus, die Tests reichen eine Attrappe (`operations/tests/sonderposten-attrappe.mjs`)
 über `createApi({ shopifyZugang })` bzw. `ersetzeShopifyZugang()` in `serve-dashboard.mjs` hinein.
 
+## 14. Ansicht „Social Media" (seit 2026-10-12)
+
+`#/social` (`ansichten/social.mjs`, `lib/kampagnenlink.mjs`, `stile/social.css`) bündelt die Links,
+die man für Social Media braucht. Für die Rolle „lesen“ ist sie ausgeblendet (`data-nicht-lesen`).
+
+- **Foto-Upload fürs Team:** `GET /api/social/zugaenge` liefert je aktivem Zugang des Social-Moduls
+  (`$TP_PRIVAT_DIR/social/upload-zugaenge.json`) eine Zeile; Rolle „lesen“ bekommt 403, auch lesend.
+  Das Social-Modul speichert nur den Hash des Links. Den kopierbaren Klartext legt
+  `POST /api/social/link-neu` (nur Inhaber) beim Anlegen in `social/upload-links.json` ab (Rechte 600) –
+  ein gemerkter Link erscheint nur, solange sein Zugang aktiv ist. Ein neuer Link für einen vorhandenen
+  Namen sperrt den alten nicht. Die Adresse davor ist `SOCIAL_UPLOAD_BASIS_URL` aus `social/zugang.env`.
+- **Kampagnen-Link:** reines Frontend. Ziel nur auf `teppich-paradies.net`, Kanal → `utm_source`/`utm_medium`
+  (social, email, print; Art „Anzeige“ → paid), Kampagnenname klein mit Bindestrichen, Art → `utm_content`.
+- **Weitere Links:** Social-Zentrale auf demselben Host, Port 8020; Instagram- und Facebook-Profil.
