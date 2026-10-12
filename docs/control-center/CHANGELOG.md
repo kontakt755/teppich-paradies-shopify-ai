@@ -764,8 +764,8 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   gegen die Kopie: Schritte erfasst, Bild angehängt und gespeichert, Antwort per Skript → Zeile „Behoben – …“ und Zahl 1
   am Knopf, nach dem Öffnen weg, Bild abrufbar, „Melden“ in roter Rückmeldung öffnet den Dialog, am Handy kein ⌘V-Hinweis,
   0 JS-Fehler.
-- **Risiken/Annahmen:** Bildschirmfotos zeigen oft Kundendaten; sie bleiben deshalb im Privatordner und gehen nicht in
-  die Werkbank.
+- **Risiken/Annahmen:** Bildschirmfotos zeigen oft Kundendaten. Nachtrag (nächster Eintrag): auf Wunsch des Inhabers erscheinen
+  sie jetzt auch in der privaten Werkbank (Bildspeicher der Seite).
 - **Nächste Stufe:** keine.
 
 ## 2026-10-12 · Lexikon: Gesamtprüfung aller Produkte, Mengenhilfe für Rollenware repariert (#1157)
@@ -795,3 +795,15 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   auch ihn neu starten, sonst schreibt er den Export mit altem Code.
 - **Nächste Stufe:** 12 Artikelnummern findet Lieferant A nicht mehr (ausgelaufen oder umnummeriert);
   Lieferant B ohne Schnellzugriff.
+
+## 2026-10-12 · Bildschirmfotos auch in der Werkbank
+
+- **Geändert:** Der geplante Abgleich `fehlermeldungen-werkbank` lädt Bildschirmfotos einer Meldung in den Bildspeicher der
+  Werkbank (Fähigkeit `assets`) und trägt sie als `bilder: [{id, url}]` am Eintrag ein. Die Werkbank zeigt sie als Vorschau
+  unter der Beschreibung (Klick vergrößert) und „Bildschirmfoto“ in der Zeile. Grund: Der Inhaber konnte den Anhang der
+  Testmeldung nicht sehen. Doku in `ARCHITEKTUR.md` Abschnitt 15 nachgezogen.
+- **Getestet:** Echte Testmeldung F-002 mit Bild: Upload in den Bildspeicher, Eintrag zeigt das Bild; Rückweg „Wird bearbeitet“
+  und „Kein Fehler“ mit Erklärung im Dashboard angekommen. Werkbank-Seite mit Attrappe bei 1200 und 390 px: Bild lädt,
+  Vergrößern geht, 0 px Überlauf, keine JS-Fehler.
+- **Risiken/Annahmen:** Bildschirmfotos können Kundendaten zeigen; die Werkbank bleibt privat.
+- **Nächste Stufe:** keine.
