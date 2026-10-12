@@ -59,7 +59,12 @@ function documentHarness() {
   const fetch = url => new Promise((resolve, reject) => requests.push({ url, resolve, reject }));
   return { doc, requests, fetch, node: (tag, attrs) => new Element(tag, attrs, doc) };
 }
-const daten = JSON.stringify({ teppiche: [{ titel: 'Test', url: '/test', art: 'cover', max_l: 600, farben: [{ id: 1, p: 100, w: 400 }] }] });
+// Produktionsaufbau aus tp-teppich-rechner-daten.liquid, ohne echte Katalogdaten.
+// Beide Listen enden absichtlich mit null statt einem nachgestellten Komma.
+const daten = JSON.stringify({ kettel: null, pauschale: null, gesamt: 1, teppiche: [{
+  id: 1, titel: 'Test', url: '/test', bild: null, qualitaet: '', art: 'cover', kante_inkl: false,
+  max_l: 600, mindest: 0, kg_qm: 0, max_kg: 0, farben: [{ id: 1, p: 100, alt: 0, w: 400 }, null],
+}, null] });
 function rechnerHarness(saved = { w: 200, l: 300 }) {
   const h = documentHarness(); const root = h.doc.body.appendChild(h.node('div', { 'data-tp-rechner-root': '' }));
   const form = root.appendChild(h.node('form', { 'data-tp-rechner': '' }));
@@ -83,7 +88,7 @@ test('Teilweise Eingabe und bewusstes Leeren bleiben erhalten; unberuehrter Ruec
   const cleared = rechnerHarness(); cleared.form.dispatchEvent({ type: 'input' }); await cleared.answer(); assert.equal(cleared.w.value, ''); assert.equal(cleared.l.value, '');
   const untouched = rechnerHarness(); await untouched.answer(); assert.equal(untouched.w.value, 200); assert.equal(untouched.l.value, 300);
 });
-for (const payload of ['ungueltiges JSON', '{}', '{"teppiche":{}}']) {
+for (const payload of ['ungueltiges JSON', '{}', '{"teppiche":{}}', '{"teppiche":[false]}', '{"teppiche":[5]}', '{"teppiche":[{"farben":[false]}]}']) {
   test('Ungueltige Antwort schuetzt Submit und kann wiederholt werden: ' + payload, async () => {
     const h = rechnerHarness(); h.w.value = '350'; h.l.value = '350'; h.form.requestSubmit(); await h.answer(payload);
     assert.equal(h.form.navigations || 0, 0); assert.equal(h.root.hasAttribute('data-tp-rechner-bereit'), false);
@@ -129,8 +134,23 @@ test('Reihen: fokussierter vorhandener Produktlink bleibt nach Ersatz beim selbe
   assert.equal(h.doc.activeElement.getAttribute('href'), '/product-2'); assert.equal(h.row.contains(h.doc.activeElement), true);
 });
 test('Reihen: frueher Mehrklick fuehrt Fokus zur ersten neu sichtbaren Karte', async () => {
-  const h = reihenHarness(); const more = h.row.querySelector('[data-tp-gruppe-mehr]'); more.focus(); h.click(more); await h.answer();
+  const h = reihenHarness(); const more = h.row.querySelector('[data-tp-gruppe-mehr]'); more.focus(); h.click(more);
+  assert.equal(h.row.classList.contains('is-offen'), false, 'Noch keine neuen Karten: Mobile muss den Mehrknopf weiter zeigen');
+  assert.equal(h.doc.activeElement, more);
+  await tick(); assert.equal(h.row.classList.contains('is-offen'), false);
+  await h.answer();
   assert.equal(h.doc.activeElement.getAttribute('href'), '/product-4'); assert.equal(h.row.classList.contains('is-offen'), true);
+});
+test('Reihen: nach fruehem Mehrklick wird zwischenzeitlich anderer Fokus nicht zurueckgezogen', async () => {
+  const h = reihenHarness(); const more = h.row.querySelector('[data-tp-gruppe-mehr]'); more.focus(); h.click(more);
+  const outside = h.doc.body.appendChild(h.node('input')); outside.focus(); await h.answer();
+  assert.equal(h.doc.activeElement, outside); assert.equal(h.row.classList.contains('is-offen'), true);
+});
+test('Reihen: frueher Mehrklick und 503 lassen denselben Mehrknopf fuer erneuten Versuch stehen', async () => {
+  const h = reihenHarness(); const more = h.row.querySelector('[data-tp-gruppe-mehr]'); more.focus(); h.click(more); await h.answer(false);
+  assert.equal(h.row.classList.contains('is-offen'), false); assert.equal(h.doc.activeElement, more); assert.equal(h.row.contains(more), true);
+  h.click(more); await h.answer(false); assert.equal(h.row.classList.contains('is-offen'), false);
+  h.click(more); await h.answer(); assert.equal(h.doc.activeElement.getAttribute('href'), '/product-4'); assert.equal(h.row.classList.contains('is-offen'), true);
 });
 test('Reihen: nur fokussierter Mehrknopf bleibt bei geschlossener Reihe erhalten', async () => {
   const h = reihenHarness(); h.row.querySelector('[data-tp-gruppe-mehr]').focus(); await h.answer();

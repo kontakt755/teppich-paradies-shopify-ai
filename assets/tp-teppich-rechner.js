@@ -115,7 +115,11 @@
   function datenLesen(text) {
     var daten = JSON.parse(text);
     if (!daten || !Array.isArray(daten.teppiche) || !daten.teppiche.every(function (t) {
-      return t && typeof t === 'object' && !Array.isArray(t) && (!t.farben || Array.isArray(t.farben));
+      // Das Liquid-Snippet schliesst beide Arrays mit null ab, damit keine
+      // nachgestellten Kommata entstehen. Das ist ein gueltiger Leerplatz.
+      return t === null || (typeof t === 'object' && !Array.isArray(t) && Array.isArray(t.farben) && t.farben.every(function (f) {
+        return f === null || (typeof f === 'object' && !Array.isArray(f));
+      }));
     })) throw new Error('Ungueltige Rechner-Daten');
     return daten;
   }

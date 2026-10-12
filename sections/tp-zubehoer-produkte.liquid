@@ -320,7 +320,7 @@
         var neu = doc.querySelector('[data-tp-reihe-gruppe="' + gruppe + '"] [data-tp-reihe-karten]');
         var alt = reihe.querySelector('[data-tp-reihe-karten]');
         if (!neu || !alt) return;
-        var offen = reihe.classList.contains('is-offen');
+        var offen = reihe.classList.contains('is-offen') || reihe.hasAttribute('data-tp-reihe-oeffnen');
         var fokus = document.activeElement;
         var imKartenbereich = fokus && alt.contains(fokus);
         var fokusLink = imKartenbereich && fokus.closest('a[href]');
@@ -330,8 +330,10 @@
         var retryFokus = ersatz && ersatz.contains(fokus);
         alt.replaceWith(document.importNode(neu, true));
         reihe.removeAttribute('data-tp-reihe-nachladen');
+        reihe.removeAttribute('data-tp-reihe-oeffnen');
         if (ersatz) ersatz.hidden = true;
         if (offen) {
+          reihe.classList.add('is-offen');
           var knopf = reihe.querySelector('[data-tp-gruppe-mehr]');
           if (knopf) knopf.setAttribute('aria-expanded', 'true');
         }
@@ -386,9 +388,15 @@
       if (!knopf) return;
       var reihe = knopf.closest('.tp-zubehoer-produkte--teppich-gruppe');
       if (!reihe) return;
+      if (reihe.hasAttribute('data-tp-reihe-nachladen')) {
+        // Erst oeffnen, wenn die weiteren Karten wirklich da sind. Sonst verbirgt
+        // Mobile den noch fokussierten Mehrknopf bereits waehrend des Wartens.
+        reihe.setAttribute('data-tp-reihe-oeffnen', '1');
+        start();
+        return;
+      }
       reihe.classList.add('is-offen');
       knopf.setAttribute('aria-expanded', 'true');
-      if (reihe.hasAttribute('data-tp-reihe-nachladen')) start();
     });
   })();
 {% endjavascript %}
