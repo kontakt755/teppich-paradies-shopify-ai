@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import {
   APPROVAL_TEXT, DEFAULT_STORE, OFFICIAL_BASE, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPrGate, assertScratchGate, remediationFor,
   commandName, compareThemeMaps, createDryRunSummary, createPreviewTempDir, deriveWorkflowState, fileSha256, findingsAreClear, livePublishArgs, parseArgs, parseThemeList,
-  previewPushArgs, requireSuccess, runBounded, runValidation, selectThemeTargets, themeFileMap, TRACKED_EVIDENCE_PATH, verifyPreviewPayload, verifyPreviewSnapshot, writeRuntimeReport, writeTrackedEvidence,
+  assertPreviewHttp, previewPushArgs, requireSuccess, runBounded, runValidation, selectThemeTargets, themeFileMap, TRACKED_EVIDENCE_PATH, verifyPreviewPayload, verifyPreviewSnapshot, writeRuntimeReport, writeTrackedEvidence,
 } from './core.mjs';
 import { acquireWorktreeLock, releaseOnProcessExit } from './worktree-lock.mjs';
 import { oeffneFenster, schliesseFenster } from './deploy-fenster.mjs';
@@ -420,10 +420,11 @@ async function runMode() {
       const ignored = ['config/settings_data.json'];
       const comparison = compareThemeMaps(themeFileMap(root, { ignored }), themeFileMap(afterDir, { ignored }));
       if (comparison.differenceCount !== 0) throw Object.assign(new WorkflowGateError('Preview-Dateien entsprechen nicht exakt origin/main', 'PREVIEW_DIFF'), { comparison });
-      const response = await fetch(previewUrl, { redirect: 'follow', signal: AbortSignal.timeout(30_000) });
-      if (!response.ok) throw new WorkflowGateError(`Preview-URL antwortet mit HTTP ${response.status}`, 'PREVIEW_HTTP');
+      const previewHttp = await assertPreviewHttp(previewUrl, {
+        onRetry: ({ status, attempt, maxAttempts, waitMs }) => console.error(`Hinweis: Preview-URL antwortet mit HTTP ${status} (Versuch ${attempt} von ${maxAttempts}), neue Pruefung in ${waitMs / 1000} s.`),
+      });
       const validation = validate({ baseUrl: previewUrl });
-      const evidence = { status: 'PASS', commit: current.originMain, themeId: String(themeId), themeName: after.name, previewUrl, previewHttpStatus: response.status, settingsDataProtected: true, settingsDataSha256: settingsAfter, previewDiffCount: 0, validationStatus: validation.status, createdAt: new Date().toISOString() };
+      const evidence = { status: 'PASS', commit: current.originMain, themeId: String(themeId), themeName: after.name, previewUrl, previewHttpStatus: previewHttp.status, previewHttpAttempts: previewHttp.attempts, settingsDataProtected: true, settingsDataSha256: settingsAfter, previewDiffCount: 0, validationStatus: validation.status, createdAt: new Date().toISOString() };
       writeRuntimeReport(root, 'preview.json', evidence);
       const summary = { ...validation, workflow: 'preview', themeId: String(themeId), previewUrl: evidence.previewUrl, readyForPreview: true, readyForLive: false };
       writeRuntimeReport(root, 'latest.json', summary); printSummary(summary); console.log(`PREVIEW URL: ${evidence.previewUrl}`); return summary;

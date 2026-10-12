@@ -2,6 +2,8 @@
 // Pruefskripte der Deploy-Kette (validate/preview/live). Frueher Teil von
 // workflow/router.mjs; der Router ist entfernt, diese Hilfen braucht core.mjs.
 
+import { setTimeout as wait } from 'node:timers/promises';
+
 export const EXTERNAL_BLOCKS = Object.freeze({
   RATE_LIMIT: 'BLOCKED_EXTERNAL_RATE_LIMIT',
   UPSTREAM: 'BLOCKED_EXTERNAL_UPSTREAM',
@@ -37,4 +39,36 @@ export function runWithExternalRetry(run, { maxImmediateRetries = MAX_IMMEDIATE_
     if (!retryable || attempts > boundedRetries) return { result, attempts, blocker };
   }
   throw new Error('Unreachable bounded retry state');
+}
+
+// Wartezeiten vor der zweiten und dritten Pruefung der Preview-URL. Direkt nach
+// dem Push rendert Shopify das Theme kalt: Am 2026-10-12 antwortete die Preview
+// zweimal mit HTTP 500 und eine Minute spaeter mit 200. Das ist kein sofortiger
+// Script-Retry wie runWithExternalRetry (synchron, ohne Pause), sondern eine
+// verzoegerte Gegenprobe einer einzelnen Anfrage.
+export const PREVIEW_HTTP_WAITS_MS = Object.freeze([20_000, 40_000]);
+
+export function isTransientHttpStatus(status) {
+  return Number.isInteger(status) && status >= 500 && status <= 599;
+}
+
+/**
+ * Ruft die URL ab und wiederholt nur bei 5xx, jeweils nach der naechsten
+ * Wartezeit aus waitsMs. Jede andere Antwort (2xx, 4xx) geht sofort zurueck,
+ * Netzwerkfehler und Timeouts werden nicht abgefangen. Ob die letzte Antwort
+ * reicht, entscheidet der Aufrufer.
+ */
+export async function fetchWithServerErrorRetry(url, { waitsMs = PREVIEW_HTTP_WAITS_MS, timeoutMs = 30_000, fetchImpl = fetch, sleep = wait, onRetry = () => {} } = {}) {
+  const statuses = [];
+  const maxAttempts = waitsMs.length + 1;
+  for (let attempt = 1; ; attempt += 1) {
+    const response = await fetchImpl(url, { redirect: 'follow', signal: AbortSignal.timeout(timeoutMs) });
+    statuses.push(response.status);
+    if (!isTransientHttpStatus(response.status) || attempt >= maxAttempts) return { response, attempts: attempt, statuses };
+    // Ungelesene Antworten halten sonst die Verbindung offen.
+    await response.body?.cancel().catch(() => {});
+    const waitMs = waitsMs[attempt - 1];
+    onRetry({ status: response.status, attempt, maxAttempts, waitMs });
+    await sleep(waitMs);
+  }
 }

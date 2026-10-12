@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import {
-  APPROVAL_TEXT, GATE_REMEDIATION, REQUIRED_LOCAL_EVIDENCE_STEPS, TRACKED_EVIDENCE_PATH, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPrGate, assertScratchGate, commandName, compareThemeMaps, createDryRunSummary,
+  APPROVAL_TEXT, GATE_REMEDIATION, REQUIRED_LOCAL_EVIDENCE_STEPS, TRACKED_EVIDENCE_PATH, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPreviewHttp, assertPrGate, assertScratchGate, commandName, compareThemeMaps, createDryRunSummary,
   deriveWorkflowState, fileSha256, findingsAreClear, parseThemeList, previewPushArgs, runValidation, selectThemeTargets, verifyLocalEvidence, verifyPreviewPayload,
   remediationFor, verifyPreviewSnapshot, verifySalesReport,
 } from '../core.mjs';
@@ -326,4 +326,29 @@ test('jeder geworfene Gate-Code hat einen Loesungshinweis', () => {
   for (const [code, hint] of Object.entries(GATE_REMEDIATION)) {
     assert.ok(hint.fix && hint.fix.length > 20, `Loesungstext zu ${code} ist zu duenn`);
   }
+});
+
+test('PREVIEW_HTTP: Kaltstart-500 wird nachgeprueft, 4xx und dauerhafte 5xx brechen ab', async () => {
+  const fake = statuses => {
+    let index = 0;
+    return async () => {
+      const status = statuses[index++];
+      return { status, ok: status >= 200 && status < 300, body: { cancel: async () => {} } };
+    };
+  };
+  const sleep = async () => {};
+  const url = 'https://www.teppich-paradies.net/?preview_theme_id=1';
+
+  const ok = await assertPreviewHttp(url, { fetchImpl: fake([500, 200]), sleep });
+  assert.deepEqual(ok, { status: 200, attempts: 2, statuses: [500, 200] });
+
+  await assert.rejects(
+    assertPreviewHttp(url, { fetchImpl: fake([404, 200]), sleep }),
+    error => error instanceof WorkflowGateError && error.code === 'PREVIEW_HTTP' && error.message === 'Preview-URL antwortet mit HTTP 404',
+  );
+  await assert.rejects(
+    assertPreviewHttp(url, { fetchImpl: fake([500, 502, 500, 200]), sleep }),
+    error => error.code === 'PREVIEW_HTTP' && /HTTP 500 nach 3 Versuchen: 500, 502, 500/.test(error.message),
+  );
+  assert.match(remediationFor('PREVIEW_HTTP').fix, /20 s und 40 s/);
 });
