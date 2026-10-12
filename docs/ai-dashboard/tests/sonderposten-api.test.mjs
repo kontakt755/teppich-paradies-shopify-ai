@@ -11,6 +11,8 @@ import { attrappe, PRODUKT_ID, ITEM_ID } from '../../../operations/tests/sonderp
 
 const JETZT = new Date('2026-10-08T09:15:00.000Z');
 const MONA = { name: 'Mona Mitarbeiter', kuerzel: 'mona', rolle: 'mitarbeiter' };
+// So meldet die Anmeldung den gemeinsamen Zugang (Einzelpasswort): Name "Inhaber", kein Kuerzel.
+const NOTZUGANG = { name: 'Inhaber', kuerzel: null, rolle: 'inhaber' };
 
 function protokoll() {
   const datei = path.join(process.env.TP_PRIVAT_DIR, 'protokoll.jsonl');
@@ -156,6 +158,31 @@ test('Rolle: zu viel -> 409 ohne Buchung und ohne Protokoll; Liste zeigt die Rol
   const d = await apiMit(attrappe({ rolle: true })).sonderpostenListe();
   assert.equal(d.eintraege[0].typ, 'rolle');
   assert.equal(d.eintraege[0].laengeM, 20);
+});
+
+test('Gemeinsamer Zugang (ohne Konto): ohne Namen 400 ohne Shopify-Aufruf, mit Namen steht er in Feld und Protokoll', async () => {
+  const a = attrappe();
+  await assert.rejects(apiMit(a).sonderpostenVerkauft({ produktId: PRODUKT_ID, verkauftVon: '   ' }, NOTZUGANG), e => e instanceof ApiError && e.status === 400 && e.extra?.grund === 'name-fehlt');
+  await assert.rejects(apiMit(a).sonderpostenVerkauft({ produktId: PRODUKT_ID }, null), e => e instanceof ApiError && e.status === 400);
+  assert.deepEqual(a.namen(), [], 'ohne Namen wird nichts gelesen oder gebucht');
+  const vorher = protokoll().length;
+  const r = await apiMit(a).sonderpostenVerkauft({ produktId: PRODUKT_ID, verkauftVon: '  Thomas  ' }, NOTZUGANG);
+  assert.equal(r.ok, true);
+  assert.equal(a.zustand.felder.verkauft_von, 'Thomas');
+  const neu = protokoll().slice(vorher);
+  assert.equal(neu.length, 1);
+  assert.equal(neu[0].benutzer, 'Thomas');
+  assert.match(neu[0].objekt, /Name im gemeinsamen Zugang angegeben/);
+});
+
+test('Gemeinsamer Zugang, Restrolle: Name ins Protokoll; persoenliches Konto schlaegt den Namen aus der Anfrage', async () => {
+  const vorher = protokoll().length;
+  await apiMit(attrappe({ rolle: true })).sonderpostenVerkauft({ produktId: PRODUKT_ID, laengeM: 2, verkauftVon: 'Enrico' }, NOTZUGANG);
+  await apiMit(attrappe({ rolle: true })).sonderpostenVerkauft({ produktId: PRODUKT_ID, laengeM: 2, verkauftVon: 'Faelschung' }, MONA);
+  const neu = protokoll().slice(vorher);
+  assert.deepEqual(neu.map(x => x.benutzer), ['Enrico', 'Mona Mitarbeiter']);
+  assert.match(neu[0].objekt, /2 m = 8 m² · Bestand 80 → 72 m².*gemeinsamen Zugang/);
+  assert.doesNotMatch(neu[1].objekt, /gemeinsamen Zugang/);
 });
 
 test('Server: /api/sonderposten/verkauft - lesen 403, mitarbeiter 200, inhaber 200, GET 405', async () => {

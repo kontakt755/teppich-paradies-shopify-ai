@@ -2013,16 +2013,28 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     /**
      * "Im Laden verkauft": Einzelstueck Bestand 1 -> 0 mit Verkaufsangaben,
      * Restrolle (mit laengeM) Bestand minus Laenge x Rollenbreite; jeweils
-     * Protokoll und Gegenprobe. `benutzer` kommt aus der Sitzung, nie aus der Anfrage.
-     * Nur Produkt-ID und inventoryItemId werden aus dem Browser genommen -
-     * beides wird gegen den frisch gelesenen Stand geprueft.
+     * Protokoll und Gegenprobe. `benutzer` kommt aus der Sitzung, nie aus der Anfrage;
+     * nur im gemeinsamen Zugang (ohne persoenliches Konto) gilt `verkauftVon` aus dem
+     * Dialog. Produkt-ID und inventoryItemId werden gegen den frisch gelesenen Stand
+     * geprueft.
      */
     async sonderpostenVerkauft(payload, benutzer) {
       const { produktId, inventoryItemId, laengeM } = payload || {};
       if (!produktId) throw new ApiError(400, 'produktId ist Pflicht', { missing: ['produktId'] });
       const zugang = await shopify();
       if (zugang?.art === 'sammeln') throw new ApiError(503, 'Kein Zugang zu Shopify eingerichtet – hier kann nichts gebucht werden.', { grund: 'kein-zugang' });
-      const wer = benutzer?.name || 'Inhaber';
+      // Mit persoenlichem Konto zaehlt der Name aus der Sitzung, nie die Anfrage.
+      // Im gemeinsamen Zugang (Einzelpasswort, benutzer null) sagt der Dialog,
+      // wer verkauft hat - Inhaber 2026-10-10: im Laden bucht die verkaufende
+      // Person, und das Protokoll soll sie nennen, nicht "Inhaber".
+      // Persoenliches Konto = mit Kuerzel; der Notzugang meldet {name: 'Inhaber', kuerzel: null}.
+      const persoenlich = Boolean(benutzer?.kuerzel && benutzer?.name);
+      const angegeben = String(payload?.verkauftVon ?? '').replace(/\s+/g, ' ').trim().slice(0, 60);
+      if (!persoenlich && !angegeben) throw new ApiError(400, 'Bitte angeben, wer verkauft hat.', { grund: 'name-fehlt' });
+      const wer = persoenlich ? benutzer.name : angegeben;
+      const zugangVermerk = persoenlich ? '' : ' · Name im gemeinsamen Zugang angegeben';
+      // Im Protokoll steht die verkaufende Person, nicht der Platzhalter "Inhaber" des Notzugangs.
+      const protokollBenutzer = persoenlich ? benutzer : null;
       // Restrolle: mit Laenge. Ob das Produkt wirklich eine Rolle ist, prueft
       // verkaufeVonRolle am frisch gelesenen Stand - nicht der Browser.
       if (laengeM !== undefined && laengeM !== null && laengeM !== '') {
@@ -2031,13 +2043,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           r = await verkaufeVonRolle(zugang.proxy, { produktId: String(produktId), inventoryItemId: inventoryItemId ? String(inventoryItemId) : null, laengeM: Number(laengeM), jetzt: now() });
         } catch (e) {
           if (e instanceof SonderpostenFehler) {
-            if (e.extra?.grund === 'unklar') merke(benutzer, wer, 'sonderposten-rolle-im-laden-verkauft-unklar', `${String(produktId)} · ${laengeM} m · Ergebnis unklar, Bestand pruefen`);
+            if (e.extra?.grund === 'unklar') merke(protokollBenutzer, wer, 'sonderposten-rolle-im-laden-verkauft-unklar', `${String(produktId)} · ${laengeM} m · Ergebnis unklar, Bestand pruefen`);
             throw new ApiError(e.status, e.message, e.extra);
           }
           throw e;
         }
         const pruef = r.gegenprobe === 'fehlgeschlagen' ? ' · Gegenprobe nicht lesbar' : (r.ok ? '' : ` · Gegenprobe: Bestand ${r.bestandNachher} statt ${r.bestandErwartet}`);
-        merke(benutzer, wer, 'sonderposten-rolle-im-laden-verkauft', `${r.titel} · ${String(r.laengeM).replace('.', ',')} m = ${r.qm} m² · Bestand ${r.bestandVorher} → ${r.bestandErwartet} m² · ${String(produktId)}${pruef}${r.antwortVerloren ? ' · Antwort verloren, per Lesen bestaetigt' : ''}`);
+        merke(protokollBenutzer, wer, 'sonderposten-rolle-im-laden-verkauft', `${r.titel} · ${String(r.laengeM).replace('.', ',')} m = ${r.qm} m² · Bestand ${r.bestandVorher} → ${r.bestandErwartet} m² · ${String(produktId)}${pruef}${r.antwortVerloren ? ' · Antwort verloren, per Lesen bestaetigt' : ''}${zugangVermerk}`);
         return r;
       }
       let ergebnis;
@@ -2047,7 +2059,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         if (e instanceof SonderpostenFehler) {
           // Ausgang offen: die Bestandsmutation kann angekommen sein. Wer wann
           // gebucht hat, gehoert dann trotzdem ins Protokoll.
-          if (e.extra?.grund === 'unklar') merke(benutzer, wer, 'sonderposten-im-laden-verkauft-unklar', `${String(produktId)} · Ergebnis unklar, Bestand pruefen`);
+          if (e.extra?.grund === 'unklar') merke(protokollBenutzer, wer, 'sonderposten-im-laden-verkauft-unklar', `${String(produktId)} · Ergebnis unklar, Bestand pruefen`);
           throw new ApiError(e.status, e.message, e.extra);
         }
         throw e;
@@ -2055,7 +2067,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const gegenprobe = ergebnis.gegenprobe === 'fehlgeschlagen'
         ? ' · Gegenprobe nicht lesbar'
         : (ergebnis.ok ? '' : ` · Gegenprobe: Bestand ${ergebnis.bestandNachher}${ergebnis.onlineGesperrt === false ? ', online nicht gesperrt' : ''}`);
-      merke(benutzer, wer, 'sonderposten-im-laden-verkauft', `${ergebnis.sku || '–'} · ${String(produktId)}${gegenprobe}${ergebnis.antwortVerloren ? ' · Antwort verloren, per Lesen bestaetigt' : ''}`);
+      merke(protokollBenutzer, wer, 'sonderposten-im-laden-verkauft', `${ergebnis.sku || '–'} · ${String(produktId)}${gegenprobe}${ergebnis.antwortVerloren ? ' · Antwort verloren, per Lesen bestaetigt' : ''}${zugangVermerk}`);
       return ergebnis;
     },
 

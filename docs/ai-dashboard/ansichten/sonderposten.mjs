@@ -152,12 +152,62 @@ export function viewSonderposten() {
     + (weg.length ? `<h2 class="sub-title">Nicht mehr verfügbar (${weg.length})</h2><div class="sp-liste">${weg.map(karte).join('')}</div>` : '');
 }
 
+// -- Wer hat verkauft? ---------------------------------------------------------
+// Im gemeinsamen Zugang (ein Passwort, kein persoenliches Konto) kennt der Server
+// niemanden - das Protokoll stuende sonst immer auf "Inhaber". Inhaber 2026-10-10:
+// im Laden bucht die verkaufende Person. Der Dialog fragt deshalb nach dem Namen,
+// Pflicht und ohne Vorbelegung (am Laden-PC wechseln die Leute); zuletzt benutzte
+// Namen stehen nur als Vorschlag in der Liste. Mit persoenlichem Konto entfaellt
+// das Feld, dann gilt der Name aus der Sitzung.
+
+const NAMEN_SCHLUESSEL = 'tp-sp-verkaeufer';
+
+/** Persoenliches Konto hat ein Kuerzel; der gemeinsame Zugang meldet {name: 'Inhaber', kuerzel: null}. */
+function brauchtNamen() {
+  return !state.session?.benutzer?.kuerzel;
+}
+
+function gemerkteNamen() {
+  try {
+    const l = JSON.parse(localStorage.getItem(NAMEN_SCHLUESSEL) || '[]');
+    return Array.isArray(l) ? l.filter(n => typeof n === 'string' && n).slice(0, 8) : [];
+  } catch { return []; }
+}
+
+function merkeNamen(name) {
+  try {
+    const l = [name, ...gemerkteNamen().filter(n => n.toLowerCase() !== name.toLowerCase())].slice(0, 8);
+    localStorage.setItem(NAMEN_SCHLUESSEL, JSON.stringify(l));
+  } catch { /* ohne Speicher keine Vorschlaege - die Buchung geht trotzdem */ }
+}
+
+function nameFeld() {
+  if (!brauchtNamen()) return '';
+  const namen = gemerkteNamen();
+  return `<div class="field">
+      <label for="spVerkaeufer">Wer hat verkauft?</label>
+      <input id="spVerkaeufer" name="verkaeufer" type="text" autocomplete="off" maxlength="60" placeholder="Name"${namen.length ? ' list="spNamen"' : ''}>
+      ${namen.length ? `<datalist id="spNamen">${namen.map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist>` : ''}
+      <span class="hint">Steht im Protokoll.</span>
+    </div>`;
+}
+
+/** Name aus dem Feld; null, wenn das Feld gar nicht da ist (persoenliches Konto). */
+function leseNamen(form) {
+  const f = form.querySelector('#spVerkaeufer');
+  return f ? f.value.replace(/\s+/g, ' ').trim() : null;
+}
+
 // -- Buchen -----------------------------------------------------------------
 
-async function bucheVerkauf(e, laengeM = null) {
+async function bucheVerkauf(e, laengeM = null, verkauftVon = null) {
   const r = await fetch('/api/sonderposten/verkauft', {
     method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ produktId: e.id, inventoryItemId: e.inventoryItemId, ...(laengeM === null ? {} : { laengeM }) }),
+    body: JSON.stringify({
+      produktId: e.id, inventoryItemId: e.inventoryItemId,
+      ...(laengeM === null ? {} : { laengeM }),
+      ...(verkauftVon ? { verkauftVon } : {}),
+    }),
   });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) return { ok: false, status: r.status, grund: j.grund || null, text: j.error || '' };
@@ -181,20 +231,29 @@ function oeffneVerkaufDialog(e) {
         <div class="sp-preis">${e.preis === null ? '–' : `${esc(fmtPreis(e.preis))} €`}</div></div>
     </div>
     <p class="small muted" style="margin:0">Der Bestand wird in Shopify auf 0 gesetzt. Online ist das Stück danach nicht mehr bestellbar. Wer gebucht hat, wird festgehalten.</p>
+    ${nameFeld()}
     <p data-sp-meldung hidden></p>
     <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Ja, im Laden verkauft</button></div>
   </form></div>`;
   const form = $('#dialogRoot form');
   const knopf = form.querySelector('[type=submit]');
-  knopf.focus();
+  const namensFeld = form.querySelector('#spVerkaeufer');
+  const pruefeNamen = () => { if (namensFeld) knopf.disabled = !leseNamen(form); };
+  namensFeld?.addEventListener('input', pruefeNamen);
+  pruefeNamen();
+  (namensFeld || knopf).focus();
   form.addEventListener('submit', async ev => {
     ev.preventDefault();
+    const name = leseNamen(form);
+    if (name === '') return;
     knopf.disabled = true;
+    if (namensFeld) namensFeld.disabled = true;
     knopf.textContent = 'Wird gebucht …';
+    if (name) merkeNamen(name);
     let antwort;
     // Ohne Antwort ist offen, ob der Server schon gebucht hat - lib/sonderposten.mjs
     // sagt dann "unklar" statt "nichts gebucht".
-    try { antwort = await bucheVerkauf(e); } catch { antwort = { verbindung: false }; }
+    try { antwort = await bucheVerkauf(e, null, name); } catch { antwort = { verbindung: false }; }
     const m = meldungNachBuchung(antwort);
     if (m.neuLaden) ensureSonderposten({ neu: true });
     if (m.erfolg) {
@@ -223,6 +282,7 @@ function oeffneRollenDialog(e) {
       <span class="hint" id="spLaengeHinweis">Immer die Länge über die volle Rollenbreite (${esc(breite)} m) – auch bei schmaleren Stücken: Ein Teppich 2 × 3 m verbraucht 2 m der Rolle.</span>
     </div>
     <p class="sp-rechnung" id="spRechnung" data-sp-rechnung aria-live="polite"></p>
+    ${nameFeld()}
     <p data-sp-meldung hidden></p>
     <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary" disabled>Abbuchen</button></div>
   </form></div>`;
@@ -230,27 +290,32 @@ function oeffneRollenDialog(e) {
   const feld = form.querySelector('#spLaenge');
   const zeile = form.querySelector('[data-sp-rechnung]');
   const knopf = form.querySelector('[type=submit]');
+  const namensFeld = form.querySelector('#spVerkaeufer');
   let rechnung = rollenRechnung('', e.breiteM, e.bestand);
   const aktualisiere = () => {
     rechnung = rollenRechnung(feld.value, e.breiteM, e.bestand);
     zeile.textContent = rechnung.ok ? rechnung.text : rechnung.fehler;
     zeile.classList.toggle('sp-rechnung-fehler', !rechnung.ok && !rechnung.leer);
-    knopf.disabled = !rechnung.ok;
+    knopf.disabled = !rechnung.ok || leseNamen(form) === '';
     knopf.textContent = rechnung.ok ? `${rechnung.qm} m² abbuchen` : 'Abbuchen';
   };
   feld.addEventListener('input', aktualisiere);
+  namensFeld?.addEventListener('input', aktualisiere);
   feld.focus();
   form.addEventListener('submit', async ev => {
     ev.preventDefault();
     aktualisiere();
-    if (!rechnung.ok) return;
+    const name = leseNamen(form);
+    if (!rechnung.ok || name === '') return;
     knopf.disabled = true;
     feld.disabled = true;
+    if (namensFeld) namensFeld.disabled = true;
     knopf.textContent = 'Wird gebucht …';
+    if (name) merkeNamen(name);
     let antwort;
     // Ohne Antwort ist offen, ob der Server schon gebucht hat - lib/sonderposten.mjs
     // sagt dann "unklar" statt "nichts gebucht".
-    try { antwort = await bucheVerkauf(e, rechnung.laengeM); } catch { antwort = { verbindung: false }; }
+    try { antwort = await bucheVerkauf(e, rechnung.laengeM, name); } catch { antwort = { verbindung: false }; }
     const m = meldungNachBuchung(antwort);
     if (m.neuLaden) ensureSonderposten({ neu: true });
     if (m.erfolg) {
