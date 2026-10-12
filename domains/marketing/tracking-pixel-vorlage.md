@@ -33,17 +33,29 @@ Muster **nicht** als Umsatz werten, kein doppeltes `purchase`, UTMs erhalten.
 | installation_request | `tp_verlegung_angefragt` |
 | phone_click / whatsapp_click | `tp_lead_call` / `tp_lead_whatsapp` |
 
-## Fertiger Code (2026-10-02, Audit Quick Win 3) – zum Einfügen
+## Fertiger Code (2026-10-02, Audit Quick Win 3; ergänzt 2026-10-12) – so im Admin aktiv
+
+**Nachtrag 2026-10-12:** Die Annahme oben („purchase … über die App gemappt“) stimmt nicht.
+Die Google-&-YouTube-App meldet Käufe nur an Google Ads („Google Shopping App Purchase“),
+nicht an GA4. Bis 05.10. kam das GA4-`purchase` aus dem GTM-Pixel; nach dessen Trennung
+kam von 07.10. bis 12.10. kein einziges `purchase` mehr in GA4 an (auch nicht der
+Warenkauf #1031). Die primäre Ads-Conversion „Kauf Ware (GA4, ohne Muster)“ zählte
+deshalb nichts. Seit 12.10. sendet dieses Pixel für Warenkäufe > 0 € ein GA4-`purchase`
+mit Bestellnummer, Betrag und Artikeln (Freigabe Tobias). Muster bleiben ausgenommen;
+doppelt wird nichts gezählt, solange das GTM-Pixel getrennt bleibt.
+Gegenprobe ohne Testkauf: echte Bestellungen (Admin API) gegen GA4-Ereignisse
+(`purchase`, `sample_order`, `tp_bestellung_typ`) abgleichen.
 
 Shopify-Admin → Einstellungen → Kundenereignisse → Pixel **„TP Funnel und
 Musterbestellung“** (angelegt, noch leer und nicht verbunden). Einwilligung:
 Erforderlich, Marketing + Analysen. Code einfügen → Speichern → Verbinden.
-Danach das alte Pixel **„GTM-KRXFFDSL Checkout Tracking“** trennen und löschen
-(doppeltes `purchase`, fremdes Meta-Pixel 1997776204331503).
+Danach das alte Pixel **„GTM-KRXFFDSL Checkout Tracking“** trennen (erledigt) und löschen
+(fremdes Meta-Pixel 1997776204331503). Nicht wieder verbinden: Es sendet ebenfalls ein GA4-`purchase`.
 
 ```js
 // Teppich Paradies - Funnel und Musterbestellung (2026-10-02)
-// KEIN zweites purchase: der Kauf kommt aus der Google-&-YouTube- und der Facebook-App.
+// GA4-purchase fuer Warenkaeufe > 0 EUR kommt von hier (seit 12.10.): Die Google-&-YouTube-App meldet
+// Kaeufe nur an Google Ads, das GTM-Pixel ist getrennt. Meta-Kauf weiter nur ueber die Facebook-App.
 const GA4 = 'G-3KKWHJHS0D';
 const META_PIXEL = '1401914534871545';
 
@@ -91,6 +103,15 @@ analytics.subscribe('checkout_completed', function (e) {
     gtag('event', 'sample_order', { muster_anzahl: muster.length, transaction_id: tid, value: 0, currency: 'EUR' });
     fbq('trackCustom', 'Musterbestellung', { muster_anzahl: muster.length, value: 0, currency: 'EUR' }, { eventID: 'muster-' + tid });
   } else {
+    gtag('event', 'purchase', {
+      transaction_id: String(tid),
+      value: wert,
+      currency: co.currencyCode || 'EUR',
+      items: ware.map(function (li) {
+        const v = li.variant || {};
+        return { item_id: v.sku || String(v.id || ''), item_name: li.title || '', price: Number((v.price && v.price.amount) || 0), quantity: li.quantity || 1 };
+      })
+    });
     fbq('trackCustom', 'KaufWare', { value: wert, currency: 'EUR' }, { eventID: 'ware-' + tid });
   }
 });
