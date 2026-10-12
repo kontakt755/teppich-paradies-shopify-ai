@@ -767,3 +767,31 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiken/Annahmen:** Bildschirmfotos zeigen oft Kundendaten; sie bleiben deshalb im Privatordner und gehen nicht in
   die Werkbank.
 - **Nächste Stufe:** keine.
+
+## 2026-10-12 · Lexikon: Gesamtprüfung aller Produkte, Mengenhilfe für Rollenware repariert (#1157)
+
+- **Geändert:** Prüfung aller 3228 Lexikon-Produkte (20279 Varianten) mit dem echten Ansichtscode und gegen die
+  Lieferantenseiten. Drei Fehler im Code behoben:
+  - **Mengenhilfe rechnete Rollenware falsch oder gar nicht.** Shopify führt `custom.rollenbreite` in Metern
+    („2.0“), die Mengenhilfe teilte pauschal durch 100 – für 20 m² auf einer 2-m-Rolle kamen 1000 lfm statt 10
+    heraus (31 Produkte). Bei 570 Rollenprodukten mit mehreren Breiten steht die Breite nur an der Variante, die
+    Mengenhilfe fand sie nicht. Jetzt: Breite je Variante (`rollenbreiteM` aus dem Export), Meter und Zentimeter
+    werden erkannt (`rollenbreiteInMetern`), bei mehreren Breiten wählt man die Rolle im Widget. m²-Ware ohne
+    Paket (Teppich nach Maß direkt vom Hersteller, 284 Produkte) ergibt die Fläche selbst statt „m² pro Paket
+    fehlt“; Teppich nach Maß in lfm erklärt, dass der Einkauf die Menge aus den Maßen der Bestellung rechnet.
+  - **Varianten ohne Farbe** (Vinyl von der Rolle, Sockelleisten, Zubehör; 723 Varianten) standen als
+    „nicht hinterlegt“ da, 200/300/400 cm waren nicht zu unterscheiden. Die Bestellliste nennt jetzt die Variante.
+  - **Teppich nach Maß direkt vom Hersteller** (3112 Varianten) zeigte „Art.-Nr. nicht hinterlegt“, obwohl die
+    Bestellbezeichnung des Lieferanten da ist. Sie steht jetzt kopierbar an der Stelle der Artikelnummer.
+- **Getestet:** Alle 3228 Detailseiten mit der laufenden Ansicht gerendert: 0 Abbrüche, keine „undefined“/„NaN“.
+  Links gegen die Lieferanten: A 5510 bestätigt (Artikelnummer → offizielle Produktseite), C 1240, D 1046 (im
+  Browser, Seitentitel nennt Qualität/Farbe), E 524 – alle erreichbar. Neue Tests in `api.test.mjs`
+  (Meter/Zentimeter, mehrere Breiten, m², Teppich nach Maß) und `lexikon.test.mjs` (`rollenbreiteM`).
+  `dashboard:test`, `npm test` grün, `dashboard:pruefen` nur OK; Sichtprüfung 375 px ohne Überlauf.
+- **Daten (nicht im Repo):** 180 Lieferantenlinks von A korrigiert – 1 zeigte auf einen anderen Dekor, 1 fehlte,
+  178 zeigten auf die Sammelseite der Qualität statt auf die Farbe. Plan, Rücksicherung und Gegenprobe (180/180)
+  liegen lokal.
+- **Risiken/Annahmen:** Der Hintergrunddienst `sync` lädt Code nur beim Start – nach einem Merge ins Lexikon
+  auch ihn neu starten, sonst schreibt er den Export mit altem Code.
+- **Nächste Stufe:** 12 Artikelnummern findet Lieferant A nicht mehr (ausgelaufen oder umnummeriert);
+  Lieferant B ohne Schnellzugriff.

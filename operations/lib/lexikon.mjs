@@ -338,6 +338,11 @@ export function aufbereiten(exportDaten, opt = {}) {
         // hier immer leer, weil die Ware erst beim Zuschnitt entsteht - keine
         // Datenluecke. Front-End muss das getrennt von echten Luecken zeigen.
         wunschmass: istWunschmass(v.selectedOptions),
+        // Rollenbreite in Metern (custom.rollenbreite an der Variante, z. B.
+        // "4.0"). Bei Produkten mit mehreren Breiten steht sie nur dort, nicht
+        // am Produkt - ohne sie fand die Mengenhilfe bei 570 Rollenprodukten
+        // keine Breite.
+        rollenbreiteM: zahl(vMap.custom?.rollenbreite),
         einkauf,
         __musterRef: musterRef,
       };
