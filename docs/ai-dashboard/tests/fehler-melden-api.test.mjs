@@ -68,7 +68,30 @@ test('Server: Fehler melden - jede Rolle darf melden, Liste zeigt nur Eigenes, I
       const get = await fetch(`${base}/api/fehler/melden`, { headers: { cookie: ina } });
       assert.equal(get.status, 405);
 
+      // Bildschirmfoto: nur echte Bilder, sichtbar fuer den Melder und den Inhaber.
+      const png = Buffer.from('89504e470d0a1a0a0000000d49484452', 'hex');
+      const mitBild = await melden(mona, { text: 'Mit Bildschirmfoto', bilder: [{ name: 'x.png', typ: 'image/png', daten: png.toString('base64') }], technik: { schritte: ['14:01 einkauf: „→ Bestellt“'] } });
+      assert.equal(mitBild.status, 200);
+      const bildId = (await mitBild.json()).id;
+      const bild = (keks) => fetch(`${base}/api/fehler/bild?id=${bildId}&nr=1`, { headers: { cookie: keks } });
+      const eigenes = await bild(mona);
+      assert.equal(eigenes.status, 200);
+      assert.equal(eigenes.headers.get('content-type'), 'image/png');
+      assert.deepEqual(Buffer.from(await eigenes.arrayBuffer()), png);
+      assert.equal((await bild(ina)).status, 200, 'der Inhaber sieht alle Bilder');
+      assert.equal((await bild(lena)).status, 404, 'fremde Meldung: wie nicht vorhanden');
+      assert.equal((await fetch(`${base}/api/fehler/bild?id=${bildId}&nr=2`, { headers: { cookie: mona } })).status, 404);
+      const kaputt = await melden(mona, { text: 'Getarntes SVG', bilder: [{ typ: 'image/png', daten: Buffer.from('<svg onload=alert(1)>').toString('base64') }] });
+      assert.equal(kaputt.status, 400);
+      assert.match((await kaputt.json()).error, /Nur Bilder/);
+      const eigeneMitBild = (await lesen(mona)).meldungen.find(m => m.id === bildId);
+      assert.equal(eigeneMitBild.bilder, 1);
+      assert.equal(eigeneMitBild.eigen, true);
+
       const gespeichert = JSON.parse(fs.readFileSync(path.join(privat, 'fehlermeldungen.json'), 'utf8')).meldungen;
+      const mitSchritten = gespeichert.find(m => m.id === bildId);
+      assert.deepEqual(mitSchritten.technik.schritte, ['14:01 einkauf: „→ Bestellt“']);
+      assert.match(String(mitSchritten.technik.version), /^[0-9a-f]{7,}$/, 'Stand des laufenden Dienstes');
       assert.deepEqual(gespeichert[1].technik.fehler, ['POST /api/x → 500']);
       assert.equal(gespeichert[1].dringend, true);
       const protokoll = fs.readFileSync(path.join(privat, 'protokoll.jsonl'), 'utf8').trim().split('\n').map(z => JSON.parse(z));

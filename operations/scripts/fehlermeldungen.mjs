@@ -19,7 +19,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {
-  meldungenPfad, abgleichPfad, alleMeldungen, abgleichSetzen, standAusWerkbank, STATUS_LABEL, FehlermeldungFehler,
+  meldungenPfad, abgleichPfad, alleMeldungen, abgleichSetzen, standAusWerkbank, statusText, bildDatei, FehlermeldungFehler,
 } from '../lib/fehlermeldungen.mjs';
 
 function argWert(args, name) {
@@ -33,12 +33,12 @@ function argWert(args, name) {
  * zurueck auf "Bei der Technik" - sonst stuende sie beim Melder weiter als
  * behoben da.
  */
-export function abgleichDaten(liste, jetzt = new Date()) {
+export function abgleichDaten(liste, jetzt = new Date(), md = meldungenPfad()) {
   const grenze = jetzt.getTime() - 3 * 86_400_000;
   return {
     neu: liste.filter(m => m.status === 'neu').reverse().map(m => ({
       id: m.id, erstelltAm: m.erstelltAm, von: m.von?.name || '', text: m.text, ort: m.ort,
-      dringend: m.dringend, technik: m.technik,
+      dringend: m.dringend, technik: m.technik, bilder: bildPfade(md, m),
     })),
     laufend: liste.filter(m => m.status === 'uebernommen').map(m => ({ id: m.id, werkbankId: m.werkbankId })),
     kuerzlichErledigt: liste
@@ -54,9 +54,14 @@ export function abgleichDaten(liste, jetzt = new Date()) {
  * Ergebnis abtippen oder in eine Shell-Zeile setzen. Fehlt eine Datei, steht die
  * Meldung unter `fehlt` - geloescht wird daraus nichts, der Lauf prueft nach.
  */
+/** Absolute Pfade der Bildschirmfotos - der Abgleich nennt nur die Zahl, wer behebt, oeffnet sie. */
+function bildPfade(md, m) {
+  return (m.bilder || []).map(name => bildDatei(md, name).pfad);
+}
+
 export function werkbankStand(md, ad, ordner, jetzt = new Date()) {
   if (!ordner || !fs.existsSync(ordner)) throw new FehlermeldungFehler(`Ordner ${ordner || '(fehlt)'} gibt es nicht (--ordner)`);
-  const daten = abgleichDaten(alleMeldungen(md, ad), jetzt);
+  const daten = abgleichDaten(alleMeldungen(md, ad), jetzt, md);
   const zuPruefen = [...daten.laufend, ...daten.kuerzlichErledigt];
   const ergebnis = { geaendert: [], unveraendert: [], fehlt: [] };
   const aktuell = new Map(alleMeldungen(md, ad).map(m => [m.id, m]));
@@ -68,7 +73,7 @@ export function werkbankStand(md, ad, ordner, jetzt = new Date()) {
     const neu = standAusWerkbank(aktuell.get(id), eintrag);
     if (!neu) { ergebnis.unveraendert.push(id); continue; }
     abgleichSetzen(md, ad, id, { ...neu, werkbankId }, { jetzt });
-    ergebnis.geaendert.push({ id, status: neu.status });
+    ergebnis.geaendert.push({ id, status: neu.status, werkbank: neu.werkbankStatus });
   }
   return ergebnis;
 }
@@ -79,14 +84,14 @@ export function main(argv = process.argv.slice(2), { aus = console.log, fehler =
   const ad = abgleichPfad();
   try {
     if (befehl === 'abgleich') {
-      aus(JSON.stringify(abgleichDaten(alleMeldungen(md, ad)), null, 2));
+      aus(JSON.stringify(abgleichDaten(alleMeldungen(md, ad), new Date(), md), null, 2));
       return 0;
     }
     if (befehl === 'liste' || !befehl) {
       const liste = alleMeldungen(md, ad);
       if (!liste.length) { aus('Noch keine Fehlermeldungen.'); return 0; }
       for (const m of liste) {
-        aus(`${m.id}  ${m.erstelltAm.slice(0, 16).replace('T', ' ')}  ${STATUS_LABEL[m.status].padEnd(24)} ${m.von?.name || ''}${m.dringend ? '  [dringend]' : ''}`);
+        aus(`${m.id}  ${m.erstelltAm.slice(0, 16).replace('T', ' ')}  ${statusText(m).padEnd(24)} ${m.von?.name || ''}${m.dringend ? '  [dringend]' : ''}${m.bilder.length ? `  [${m.bilder.length} Bild]` : ''}`);
         aus(`       ${m.text.split('\n')[0].slice(0, 100)}`);
         if (m.ergebnis) aus(`       → ${m.ergebnis}`);
       }
@@ -99,7 +104,7 @@ export function main(argv = process.argv.slice(2), { aus = console.log, fehler =
     if (befehl === 'zeige') {
       const m = alleMeldungen(md, ad).find(x => x.id === id);
       if (!m) { fehler(`Meldung ${id || '(fehlt)'} gibt es nicht`); return 1; }
-      aus(JSON.stringify(m, null, 2));
+      aus(JSON.stringify({ ...m, statusText: statusText(m), bilder: bildPfade(md, m) }, null, 2));
       return 0;
     }
     if (['uebernommen', 'behoben', 'verworfen'].includes(befehl)) {

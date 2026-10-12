@@ -16,7 +16,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { execFile } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { normalizeTask, requirementsFor, labelChangesFor, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
 import { texteAusMarkdown } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
@@ -58,7 +58,7 @@ import { rollenware, paketware, stueck as stueckware, UNGEKLAERT as MENGE_UNGEKL
 import { ladeEnvLocal, erzeugeProxy, KEIN_ZUGANG, mitHinweis } from '../operations/sync/zugang.mjs';
 import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, SonderpostenFehler } from '../operations/lib/sonderposten.mjs';
 import { ohneUeberholtenFehler } from '../operations/scripts/aktualisieren.mjs';
-import { meldungenPfad, abgleichPfad, meldungAnlegen, alleMeldungen, sichtbareMeldungen, FehlermeldungFehler } from '../operations/lib/fehlermeldungen.mjs';
+import { meldungenPfad, abgleichPfad, meldungAnlegen, alleMeldungen, sichtbareMeldungen, darfMeldungSehen, bildAusUpload, bildDatei, BILDER_MAX, FehlermeldungFehler } from '../operations/lib/fehlermeldungen.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -421,6 +421,17 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         .catch((e) => { shopifyZugangCache = null; throw e; });
     }
     return shopifyZugangCache;
+  }
+
+  // Stand des laufenden Dienstes (Commit) - eine Fehlermeldung ist nur
+  // nachstellbar, wenn klar ist, welcher Code lief. Einmal je Prozess.
+  let versionCache;
+  function dienstVersion() {
+    if (versionCache === undefined) {
+      try { versionCache = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, timeout: 3000, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || null; }
+      catch { versionCache = null; }
+    }
+    return versionCache;
   }
 
   const auditPath = path.join(root, '.router', 'control-center-audit.jsonl');
@@ -1962,13 +1973,31 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     fehlerMelden(payload = {}, { benutzer = null } = {}) {
       const dir = privatDirPath || privatDir();
       try {
-        const { meldung, doppelt } = meldungAnlegen(meldungenPfad(dir), payload || {}, { von: benutzer, jetzt: now() });
+        const roh = Array.isArray(payload?.bilder) ? payload.bilder : [];
+        if (roh.length > BILDER_MAX) throw new FehlermeldungFehler(`Höchstens ${BILDER_MAX} Bilder je Meldung.`);
+        const bilder = roh.map(bildAusUpload);
+        const { meldung, doppelt } = meldungAnlegen(meldungenPfad(dir), payload || {}, { von: benutzer, jetzt: now(), bilder, version: dienstVersion() });
         if (!doppelt) merke(benutzer, null, 'Fehler gemeldet', meldung.id);
         return { ok: true, id: meldung.id, doppelt };
       } catch (e) {
         if (e instanceof FehlermeldungFehler) throw new ApiError(400, e.message);
         throw e;
       }
+    },
+
+    /** Bildschirmfoto einer Meldung - nur fuer den Melder selbst und den Inhaber. */
+    fehlerBild({ id = '', nr = '', benutzer = null } = {}) {
+      const dir = privatDirPath || privatDir();
+      const md = meldungenPfad(dir);
+      const m = alleMeldungen(md, abgleichPfad(dir)).find(x => x.id === id);
+      // Fremde Meldung und unbekannte gleich beantworten: sonst verraet die
+      // Antwort, welche Nummern es gibt.
+      if (!m || !darfMeldungSehen(m, benutzer)) throw new ApiError(404, 'Bild nicht gefunden');
+      const name = m.bilder[Number(nr) - 1];
+      if (!name) throw new ApiError(404, 'Bild nicht gefunden');
+      const { pfad, typ } = bildDatei(md, name);
+      if (!fs.existsSync(pfad)) throw new ApiError(404, 'Bild nicht gefunden');
+      return { pfad, typ, name };
     },
 
     /** Eigene Meldungen samt Stand; der Inhaber sieht alle. */
