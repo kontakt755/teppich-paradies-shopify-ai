@@ -372,6 +372,37 @@
         {% render 'tp-widerruf-massanfertigung', art: 'teppich' %}
       {%- endif -%}
       <button type="button" class="tp-ek__cta" data-cta data-add-to-cart disabled hidden>In den Warenkorb</button>
+      {%- comment -%}
+        Befestigungs-Tipp nur bei gekettelten Teppichen (Inhaber 2026-10-12): frisch
+        ausgerollt ist der Teppich steif und liegt nicht sofort gerade. Freundlicher
+        Tipp unter dem Warenkorb-Knopf, kein Warnhinweis. Der Link oeffnet einen neuen
+        Tab, damit Mass und Farbe hier erhalten bleiben.
+      {%- endcomment -%}
+      {%- if tp_ek_art == 'ketteln' and block.settings.befestigung_tipp -%}
+        {%- liquid
+          assign tp_ek_bef = block.settings.befestigung_produkt
+          if tp_ek_bef.available != true
+            assign tp_ek_bef = nil
+          endif
+        -%}
+        <aside class="tp-ek__tipp" aria-labelledby="tp-ek-tipp-{{ tp_ek_id }}">
+          <p class="tp-ek__tipp-kopf"><span class="tp-ek__tipp-marke">Tipp</span><strong id="tp-ek-tipp-{{ tp_ek_id }}">{{ block.settings.befestigung_titel | escape }}</strong></p>
+          <p class="tp-ek__tipp-text">{{ block.settings.befestigung_text | escape }}</p>
+          {%- if tp_ek_bef -%}
+            <a class="tp-ek__tipp-produkt" href="{{ tp_ek_bef.url }}" target="_blank" rel="noopener">
+              {%- if tp_ek_bef.featured_image -%}
+                {{ tp_ek_bef.featured_image | image_url: width: 112, height: 112, crop: 'center' | image_tag: width: 56, height: 56, widths: '56, 112', sizes: '56px', alt: '', loading: 'lazy', class: 'tp-ek__tipp-bild' }}
+              {%- endif -%}
+              <span class="tp-ek__tipp-name">
+                {{- block.settings.befestigung_link | default: tp_ek_bef.title | escape -}}
+                <span class="tp-ek__tipp-preis">ab {{ tp_ek_bef.price_min | money }}{% if block.settings.befestigung_einheit != blank %} {{ block.settings.befestigung_einheit | escape }}{% endif %}</span>
+              </span>
+              <span class="visually-hidden">(öffnet in neuem Tab)</span>
+              <svg class="tp-ek__tipp-pfeil" viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true"><path d="m6 3 5 5-5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+          {%- endif -%}
+        </aside>
+      {%- endif -%}
       <details class="tp-ek__vorschau" data-vorschau hidden>
           <summary>
             <span class="tp-ek__vorschau-titel">Ihr Maß <span>Schematische Darstellung</span></span>
@@ -513,6 +544,47 @@
       "id": "kettelservice_produkt",
       "label": "Kettelservice (Preis je 0,01 laufendem Meter Kante)",
       "info": "Nur fuer die Einfassart Ketteln. Ohne Produkt wird die Kante nicht getrennt berechnet."
+    },
+    {
+      "type": "header",
+      "content": "Befestigungs-Tipp (nur gekettelt)"
+    },
+    {
+      "type": "checkbox",
+      "id": "befestigung_tipp",
+      "label": "Tipp unter dem Warenkorb-Knopf zeigen",
+      "info": "Nur bei der Einfassart Ketteln: frisch ausgerollt ist der Teppich steif und liegt nicht sofort gerade.",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "befestigung_titel",
+      "label": "Überschrift",
+      "default": "Für einen perfekt glatten Sitz"
+    },
+    {
+      "type": "textarea",
+      "id": "befestigung_text",
+      "label": "Text",
+      "default": "Frisch ausgerollt ist ein gekettelter Teppich noch etwas steif und liegt nicht gleich ganz gerade – das ist normal. Mit einer Antirutsch-Unterlage darunter liegt er sofort plan und verrutscht nicht."
+    },
+    {
+      "type": "product",
+      "id": "befestigung_produkt",
+      "label": "Empfohlenes Befestigungsmaterial",
+      "info": "Link mit Bild und Ab-Preis; nicht lieferbar = nur Text ohne Link."
+    },
+    {
+      "type": "text",
+      "id": "befestigung_link",
+      "label": "Linktext",
+      "default": "Antirutsch-Unterlage ansehen"
+    },
+    {
+      "type": "text",
+      "id": "befestigung_einheit",
+      "label": "Einheit hinter dem Ab-Preis",
+      "default": "je Meter"
     },
     {
       "type": "product",
