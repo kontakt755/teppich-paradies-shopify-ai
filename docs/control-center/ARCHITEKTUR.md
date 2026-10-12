@@ -806,8 +806,13 @@ GET /api/fehler/liste ──> Dialog zeigt „Gemeldet“ / „Bei der Technik�
   im Browser auf 2000 px verkleinert (`bausteine/bilder.mjs`, geteilt mit „Fotos“). Der Server nimmt nur
   echte PNG/JPEG/WebP (an den ersten Bytes erkannt, höchstens 4 MB) und legt sie unter
   `$TP_PRIVAT_DIR/fehlermeldungen/F-001-1.jpg` ab (Rechte 600). `GET /api/fehler/bild?id=&nr=` liefert
-  sie nur dem Melder und dem Inhaber; eine fremde Meldung antwortet wie eine fehlende (404). Bilder
-  gehen nie in die Werkbank – dort steht nur die Zahl, `npm run -s fehler -- zeige` nennt die Pfade.
+  sie nur dem Melder und dem Inhaber; eine fremde Meldung antwortet wie eine fehlende (404).
+  **In der Werkbank** (Inhaberentscheidung 2026-10-12: „ich will den Anhang sehen“): der Abgleich lädt
+  jedes Bild in den Bildspeicher der Werkbank (`Artifact` mit `asset: true`, Fähigkeit `assets` der
+  Seite) und trägt `bilder: [{id, url}]` am Eintrag ein; die Seite zeigt sie als Vorschau, ein Klick
+  vergrößert. Bildschirmfotos können Kundendaten zeigen – die Werkbank bleibt deshalb privat (Inhaber
+  und freigegebene Mitarbeiter). Scheitert ein Upload, steht im Eintrag der Hinweis auf
+  `npm run -s fehler -- zeige`.
 - **Letzte Schritte und Version:** die letzten sechs Klicks („heute: „Einkauf““) und der Commit des
   laufenden Dienstes gehen mit. Der Dialog zeigt unter „Was automatisch mitgeht“, was das ist.
 - **Melden aus der Störung heraus:** `kern/api.mjs` merkt sich Serverfehler (5xx) und fehlende
