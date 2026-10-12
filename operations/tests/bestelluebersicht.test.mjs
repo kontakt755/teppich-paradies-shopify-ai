@@ -92,7 +92,8 @@ test('Einkaufsmenge ueber umrechnung.mjs, sonst UNGEKLAERT - nie geraten', () =>
   const r = pos('TEST-ROLLE-1').bestellmenge;
   assert.equal(r.menge, 3.02); // 302 cm aus der Rolle 400 cm
   assert.equal(r.einheit, 'lfm');
-  assert.match(r.text, /Lieferantenraster UNGEKLAERT/);
+  assert.match(r.text, /Lieferantenraster ungeklärt/);
+  assert.doesNotMatch(r.text, /UNGEKLAERT/, 'kein interner Marker im angezeigten Text');
   assert.equal(pos('TEST-FREI').bestellmenge.menge, UNGEKLAERT);
   assert.match(pos('TEST-FREI').bestellmenge.grund, /bestelleinheit/);
   assert.equal(pos('Alter Testartikel').bestellmenge.menge, UNGEKLAERT);

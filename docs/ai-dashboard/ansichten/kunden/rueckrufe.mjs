@@ -7,7 +7,7 @@ import { $, esc, fmtDate, toast } from '../../kern/helfer.mjs';
 import { fetchEinkauf } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
-import { emptyState, stoerungState, collapsibleCard } from '../../bausteine/karten.mjs';
+import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { kunden, telLink } from './gemeinsam.mjs';
 
 const RUECKRUF_STATUS_LABEL = { offen: 'Offen', nicht_erreicht: 'Nicht erreicht', angerufen: 'Angerufen', erledigt: 'Erledigt' };
@@ -45,27 +45,6 @@ async function setzeRueckrufStatus(orderId, status, notiz, wiedervorlage = null)
     render();
     return true;
   } catch (e) { toast(`Fehler: ${e.message}`, 'crit'); return false; }
-}
-
-/** Startseiten-Block "Heute": die aeltesten offenen Rueckrufe, damit niemand vergessen wird. */
-export function heuteRueckrufBlock() {
-  ensureKundenRueckrufe();
-  const r = kunden.rueckrufe;
-  if (!r && kunden.loadingRueckrufe) return '';
-  if (!r || !r.verfuegbar) return '';
-  const offen = r.zeilen.filter(z => z.status !== 'erledigt' && !z.testbestellung);
-  if (!offen.length) return '';
-  // Wer "nicht erreicht" gesetzt und einen Tag notiert hat, will heute daran
-  // erinnert werden - sonst steht die Wiedervorlage nur in der Rueckrufliste.
-  const heute = heuteTag();
-  const faellig = offen.filter(z => z.wiedervorlage && z.wiedervorlage <= heute);
-  const sortiert = [...faellig, ...offen.filter(z => !faellig.includes(z))];
-  return collapsibleCard('rueckrufe', 'Rückrufe & Beratungen',
-    faellig.length ? `${faellig.length} heute nochmal · ${offen.length} offen` : `${offen.length} offen`, `
-    <p class="small muted" style="margin:0 0 8px">Bestellungen mit Beratungswunsch oder Maßprüfung – ältester Wunsch zuerst.</p>
-    <div class="rows">${sortiert.slice(0, 5).map(rueckrufZeileHtml).join('')}</div>
-    ${offen.length > 5 ? `<p class="small muted" style="margin-top:6px">+${offen.length - 5} weitere – <a href="#/kunden?tab=rueckrufe">alle ansehen →</a></p>` : ''}
-  `, { openByDefault: true });
 }
 
 function rueckrufZeileHtml(z) {

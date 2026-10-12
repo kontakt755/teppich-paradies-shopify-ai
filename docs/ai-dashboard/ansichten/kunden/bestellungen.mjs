@@ -95,6 +95,15 @@ function fortschrittKlasse(stufe) {
   return 'unterwegs';
 }
 
+/**
+ * Versand: der Stand kommt aus dem Auftragsfluss, Shopify nur als Hinweis. Steht die Ware dort
+ * schon "An Kunden raus", hiess es in derselben Zeile sonst zugleich "Noch nicht versandt".
+ */
+function versandZelle(z) {
+  if (z.versandHinweis) return `<span class="small muted" title="Im Auftragsfluss an Kunden raus – in Shopify ist keine Sendung gebucht.">in Shopify nicht gebucht</span>`;
+  return statusText(z.fulfillmentstatus, VERSAND_TEXT);
+}
+
 function wertText(v) { return v === null || v === undefined ? '<span class="small muted">nicht hinterlegt</span>' : esc(v); }
 
 function bestellzeileAktionen(z) {
@@ -168,7 +177,7 @@ function bestellzeileHtml(z) {
       <td data-l="Kontakt">${kontaktZelle(z)}</td>
       <td data-l="Betrag">${geldText({ betrag: z.gesamtbetrag, waehrung: z.waehrung })}</td>
       <td data-l="Zahlung">${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)}</td>
-      <td data-l="Versand">${statusText(z.fulfillmentstatus, VERSAND_TEXT)}</td>
+      <td data-l="Versand">${versandZelle(z)}</td>
       <td data-l="Fortschritt"><span class="bq-fortschritt ${pk}">${esc(z.fortschritt?.text || '–')}</span></td>
       <td data-l="Was fehlt">${z.wasFehlt?.length ? `<span class="bq-fehlt">${z.wasFehlt.map(esc).join(' · ')}</span>` : '<span class="small muted">nichts</span>'}</td>
     </tr>

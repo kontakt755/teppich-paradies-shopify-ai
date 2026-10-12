@@ -8,8 +8,8 @@ npm run dashboard
 
 öffnet den lokalen Server unter `http://localhost:8001`. Voraussetzung: `gh auth login` einmalig auf dem
 Mac. Standardmäßig ist der Server an `127.0.0.1` gebunden (kein Zugriff von anderen Geräten im selben
-Netz) und verlangt keine Anmeldung – das Verhalten ändert sich nicht, solange niemand bewusst den
-Netzmodus aktiviert (siehe 1c).
+Netz) und verlangt keine Anmeldung – solange weder ein Passwort gesetzt (1c) noch ein Zugang angelegt ist
+(1e). Sobald es Zugänge gibt, ist die Anmeldung überall Pflicht, auch am Mac selbst.
 
 ## 1c. Netzmodus im Firmennetz (seit 2026-09-23)
 
@@ -72,7 +72,7 @@ nicht einmal.
 **Zwei Schichten, die beide greifen müssen:**
 
 1. **Tailscale** entscheidet, welches *Gerät* den Server überhaupt erreicht.
-2. **Der Dashboard-Zugang** (Abschnitt 1c, Benutzer und Rollen) entscheidet, *wer* was sieht.
+2. **Der Dashboard-Zugang** (Abschnitte 1c und 1e, Benutzer und Rollen) entscheidet, *wer* was sieht.
 
 Ein Gerät im Tailnet ohne Zugang kommt nicht weiter als bis zur Anmeldeseite.
 
@@ -169,7 +169,7 @@ nicht mehr im Git und entstehen nur noch lokal (`npm run dashboard` baut beide b
 „Jetzt synchronisieren" erneut; der SessionStart-Hook frischt `issues.json` im Hauptcheckout höchstens
 stündlich im Hintergrund auf). Damit liegen auch unter der Pages-URL keine Aufgabendaten mehr.
 
-## 1d. Mitarbeiterzugänge (seit 2026-09-24)
+## 1e. Mitarbeiterzugänge (seit 2026-09-24)
 
 Statt eines einzigen gemeinsamen Passworts kann das Control Center Mitarbeiterzugänge führen:
 Name/Kürzel + eigenes Passwort je Person, ausschließlich lokal unter
@@ -186,7 +186,27 @@ npm run benutzer -- liste
 
 Rollen: `inhaber` (alles, inkl. Benutzerliste im UI unter „Aktivität"), `mitarbeiter` (Auftragsfluss,
 Aufgabenstatus, Aktualisierung anstoßen), `lesen` (nur Ansicht – **serverseitig** durchgesetzt in
-`scripts/serve-dashboard.mjs`, nicht nur im Frontend ausgeblendet).
+`scripts/serve-dashboard.mjs`, nicht nur im Frontend ausgeblendet). Die Oberfläche fragt nur ab, was die
+Rolle darf: `/api/agent-runs` nur beim Inhaber, und „lesen“ sieht keine Knöpfe, die der Server ablehnen
+würde (Fälle abhaken, „Jetzt aktualisieren“, Auftragsfluss). Geprüft wird das mit
+`npm run dashboard:pruefen -- --rollen` (Wegwerf-Zugänge nur in der Datenkopie, jede 403-Antwort ist ein
+Fehler).
+
+### Zugänge einrichten (für den Inhaber)
+
+Einmal am Mac mini, in einem Terminal im Repository (die Datei landet unter
+`~/teppich-paradies-analyse/benutzer.json`, nie im Repository):
+
+1. **Zuerst den eigenen Zugang:** `npm run benutzer -- anlegen` – Name, Kürzel, Rolle `inhaber`,
+   Passwort (verdeckt, zweimal).
+2. **Dann je Mitarbeiter einen:** derselbe Befehl, Rolle `mitarbeiter` (wer nur schauen soll: `lesen`).
+3. **Zuletzt den Laden:** ein gemeinsamer Zugang für den Ladenrechner, z. B. Kürzel `laden`, Rolle
+   `mitarbeiter`. Der Ladenrechner bleibt angemeldet („angemeldet bleiben“ ist dort Standard).
+
+Ab dem ersten angelegten Zugang verlangt das Control Center **immer** Name und Passwort – auch am Mac
+selbst. Deshalb zuerst den eigenen. Das bisherige Einzelpasswort bleibt als Notzugang des Inhabers
+gültig. Pflege danach: `npm run benutzer -- liste | passwort <kürzel> | deaktivieren <kürzel>`; jeder kann
+sein eigenes Passwort im Control Center unter „Passwort ändern“ setzen.
 
 **Notzugang:** Solange keine `benutzer.json` existiert, bleibt das bisherige Einzelpasswort
 (`TP_DASHBOARD_PASSWORT` / `dashboard-passwort.txt`) der einzige Zugang – kein Bruch im laufenden
@@ -269,13 +289,16 @@ Deterministische Punktzahl in `lib/model.mjs` (`attentionScore`), Gründe werden
 
 Höchstens fünf Einträge; jeder Eintrag zeigt die Gründe.
 
-## 5. Rollen und Rechte (Stufenplan)
+## 5. Rollen und Rechte (Stand 2026-10-12)
 
-| Stufe | Wer | Wie durchgesetzt |
-|---|---|---|
-| jetzt: statisch | alle mit Link | read-only, technisch keine Aktion möglich |
-| jetzt: lokal | die Person, die auf dem Mac angemeldet ist und `gh auth` besitzt | Server bindet nur 127.0.0.1; jede Aktion läuft unter dem GitHub-Konto des Keychains und ist damit auf GitHub auditierbar |
-| später | Admin / Bereichsverantwortliche / Mitarbeiter / KI-Agent | GitHub-Berechtigungen (Collaborator-Rollen) + Server-Prüfung der Rolle je Aktion; KI-Agent nur über die Steuerzentrale mit Human Gate |
+| Rolle | Wer | Was | Wie durchgesetzt |
+|---|---|---|---|
+| `inhaber` | Inhaber, Notzugang (Einzelpasswort) | alles, auch Entwicklung, Freigaben, Umsatzzahlen, Zugänge | `NUR_INHABER` in `scripts/serve-dashboard.mjs`; GitHub-Aktionen laufen unter dem `gh`-Konto des Macs |
+| `mitarbeiter` | Laden, Einkauf, Monteure | Kundengeschäft, Einkauf, Aufgaben, Sonderposten | Schreibpfade in der `write`-Liste; Inhaber-Ansichten (`ANSICHT_ROLLEN`) nicht erreichbar |
+| `lesen` | wer nur schauen soll | nur Ansicht; „Fehler melden“ darf jeder | jeder Schreibpfad 403; Knöpfe ausgeblendet (`istNurLesend`, `data-nicht-lesen`) |
+
+Zugänge und Anmeldung: Abschnitt 1e. Ohne Zugang und ohne Passwort (nur am Mac, `127.0.0.1`) gilt der
+Standardbetrieb wie ein Inhaber.
 
 Externe Schreibaktionen zu Shopify/Google finden **nicht** im Control Center statt (weiterhin nur über
 den Workflow mit Gates). Das Control Center schreibt ausschließlich Labels, Assignees und Kommentare nach GitHub.
@@ -293,10 +316,18 @@ vom Bestand ab (Abschnitt 13, „Restrollen“).
    Bis dahin gilt die Übergangsregel für Freigaben.
 4. Das Frontend wird ersetzt; das alte `index.html` bleibt bis zum Merge in der Git-Historie erreichbar.
 
-## 7. Nicht-Ziele dieser Ausbaustufe
+## 7. Nicht-Ziele (Stand 2026-10-12)
 
-Kein Shopify-/Ads-/GA4-Lesen (öffentliches Repo, erst Sichtbarkeitsentscheidung), keine KI-Automatik mit
-Schreibzugriff, keine Mehrbenutzer-Auth, kein eigener Datenspeicher.
+Ursprünglich (2026-09-08) standen hier auch „kein Shopify-Lesen“ und „keine Mehrbenutzer-Anmeldung“. Beides
+ist überholt: Shopify-Daten kommen als lokaler Export bzw. live (Abschnitte 8–10, 13), Zugänge mit Rollen
+gibt es seit 2026-09-24 (1e). Weiterhin **kein** Ziel:
+
+- Google Ads und GA4 im Control Center (erst nach einer Sichtbarkeitsentscheidung; Systemzustand nennt das).
+- Schreiben nach Shopify außer dem Ladenverkauf von Sonderposten (Abschnitt 13) – Preise, Produkte, Bestellungen
+  und Versand bleiben im Shopify-Admin bzw. im Workflow mit Gates.
+- KI-Automatik mit Schreibzugriff.
+- Ein zweiter Aufgabenspeicher neben GitHub Issues (Abschnitt 1); Betriebsdaten liegen nur lokal unter
+  `$TP_PRIVAT_DIR`.
 
 ## 8. Bereich „Einkauf" (seit 2026-09-22)
 
@@ -323,6 +354,16 @@ verfügbar".
 fertige Bestellung als Text + `mailto:`-Link (`operations/lib/lieferanten.mjs`). Stammdaten liegen privat
 unter `$TP_PRIVAT_DIR/lieferanten/stammdaten.json`; versendet wird nichts. Felder und Beispielantworten:
 `operations/README.md`, Abschnitt „Lieferanten".
+
+**Wo der Einkauf endet (seit 2026-10-12):** bei „bei uns eingetroffen“. Die Filter heißen „Noch zu
+bestellen · Bestellt · Bei uns eingetroffen · Erledigt“; eine Position auf „An Kunden raus“ zählt im Einkauf
+als erledigt (`stufeVon()` in `lib/einkauf-lieferanten.mjs`, `afFilterGruppe()` in
+`ansichten/einkauf/auftragsfluss.mjs`). Vorher stand sie unter „Unterwegs“ – 27 Muster, die längst beim
+Kunden lagen, zählten als offene Einkäufe. Was danach kommt (nachfassen, abschließen), führt die Zeitleiste
+beim Kunden. Alte Links `#/einkauf?af=unterwegs` landen im neuen Schritt. Der Nachhak-Hinweis einer
+Lieferantenkarte zählt Aufträge und Positionen getrennt („5 Aufträge warten (15 Positionen)“). Der Server
+(`/api/einkauf/lieferanten`, `filterGruppe()`) zählt weiter nach dem alten Schnitt; die Oberfläche nutzt
+dafür nur die Stammdaten.
 
 **Auftragsfluss rückgängig (seit 2026-09-24):** `POST /api/einkauf/auftragsstatus` mit
 `{orderId, lineItemId, aktion: "wiederOeffnen", notiz?}` öffnet eine erledigte Position wieder
@@ -366,6 +407,7 @@ zeigt sie zwei weitere Kacheln, die jeweils in den Bereich „Einkauf" (Abschnit
 | „Einkauf – heute zu tun" | `einkaufBestellungen()` + `einkaufAuftragsstatus()` | Positionen zu bestellen, offene Musterbestellungen, Aufträge mit Problem (Ampel rot: Beratung ohne Telefon, Maßprüfung offen, fehlende Großhändler-ID), Positionen je Schritt des Auftragsflusses |
 | „Shop-Zahlen" | `einkaufKennzahlen()` → `kennzahlen/shop-snapshot.json` | Bestellungen, Umsatz, Durchschnittsbon der letzten 7 und 30 Tage |
 | „Laden" (seit 2026-10-11) | `/api/laden/zahlen` → Auftrags-App `?ansicht=zahlen` | offene Beratungen (davon neu), fällige Wiedervorlagen, Angebote offen (davon nachfassen), Fälle aus dem Shop (7 Tage), gewonnen/verloren (30 Tage); nur wenn > 0 eine Zeile „Spam-Verdacht“ (seit 2026-10-12) mit Link „Spam prüfen“ direkt in den Filter; Link „Laden-Ansicht öffnen" |
+| „Montage" (seit 2026-10-12) | dieselbe Antwort, Objekt `montage` | Einsätze heute/morgen, offen von gestern, Meldungen offen, Anträge offen, neue Aufträge, neue Rückmeldungen – jede Zahl optional; Link „Montage-App öffnen" |
 
 **Kachel „Laden"** (`ansichten/heute/laden.mjs`, Server `scripts/laden-zahlen.mjs`, Sichten „Laden" und
 „Alles", nicht „Website"). Die Zahlen kommen aus dem Laden-Modus der Auftrags-App (Google Apps Script,
@@ -391,13 +433,32 @@ Umgebungsvariable:
 ```
 LADEN_ZAHLEN_URL=https://script.google.com/macros/s/<Deployment-ID>/exec
 LADEN_ZAHLEN_SCHLUESSEL=<derselbe Wert wie die Script-Property LADEN_ZAHLEN_SCHLUESSEL der App>
+AUFTRAGS_APP_URL=https://script.google.com/macros/s/<Deployment-ID>/exec   # Links Laden und Montage
+WERKBANK_URL=https://claude.ai/artifact/<id>                              # Link Werkbank
 ```
+
+**Weitere Dashboards (seit 2026-10-12).** Die Seitenleiste trägt eine Gruppe „Weitere Dashboards“ mit
+Werkbank, Laden (`AUFTRAGS_APP_URL?ansicht=laden`) und Montage (`AUFTRAGS_APP_URL`), je in neuem Tab.
+`/api/capabilities` liefert sie als `dashboards: { werkbank, laden, montage }` (`scripts/weitere-dashboards.mjs`);
+angenommen wird nur https, fehlt eine Adresse, fehlt der Link. Ohne `AUFTRAGS_APP_URL` gilt die Adresse aus
+`LADEN_ZAHLEN_URL` (dieselbe App). Die Werkbank ist für „lesen“ ausgeblendet. Vorher stand die Werkbank-Adresse
+fest in `index.html` – im öffentlichen Repository.
+
+**Kachel „Montage“.** Die App liefert in der Zahlenantwort ein Objekt `montage` mit den optionalen ganzen
+Zahlen `einsaetzeHeute`, `einsaetzeMorgen`, `meldungenOffen`, `offenVonGestern`, `neueAuftraege`,
+`antraegeOffen`, `rueckmeldungenNeu` (`MONTAGE_FELDER` in `scripts/laden-zahlen.mjs`). Jedes Feld wird
+einzeln geprüft (ganze Zahl ≥ 0), Unbekanntes und Ungültiges fällt weg, die Laden-Zahlen bleiben davon
+unberührt. Die Kachel zeigt nur vorhandene Zahlen (Bernstein bei offen von gestern, Meldungen, Anträgen),
+ohne Objekt oder Schlüssel „noch nicht verbunden“, bei unerreichbarer App „nicht erreichbar“. Nur Zahlen, nie
+Namen.
 
 Angenommen wird nur `https://script.google.com`, damit ein Tippfehler den Schlüssel nicht an einen fremden
 Rechner schickt. Die Datei wird bei jedem Abruf neu gelesen, ein Neustart ist nicht nötig. Fehlt ein Wert,
-zeigt die Kachel ruhig „Nicht eingerichtet"; ist die App nicht erreichbar oder lehnt den Schlüssel ab,
+zeigt die Kachel ruhig „Nicht eingerichtet" – steht die Adresse da und nur der Schlüssel fehlt,
+„Schlüssel fehlt“ (`fehlt: 'schluessel'`); ist die App nicht erreichbar oder lehnt den Schlüssel ab,
 „nicht erreichbar" mit einem Satz dazu. Der Link „Laden-Ansicht öffnen" ist `<App-URL>?ansicht=laden`
-(ohne Schlüssel) und öffnet in einem neuen Tab.
+(ohne Schlüssel), öffnet in einem neuen Tab und steht, sobald eine App-Adresse bekannt ist – auch ohne
+Schlüssel.
 
 Offene Inhaberentscheidungen sind bereits über die bestehende Band-Kachel „warten auf Freigabe" und den
 Abschnitt „Wartet auf dich" abgedeckt (Aufgaben mit `status:freigabe`/Review), dafür wurde nichts Neues
@@ -423,8 +484,18 @@ Kachel zeigt den Hinweis samt Befehl. Der Export selbst laeuft ueber `npm run da
 ### 9a. „Heute" mit To-dos (seit 2026-10-01)
 
 Die Startseite zeigt zuerst, was zu tun ist: „N offene To-dos für dich" – je Zeile Titel, eine Zeile
-Kontext und genau ein Knopf –, darunter „Wer wartet auf was" (wir / Lieferant / Kunde), beim Inhaber
-vier Kennzahlen, und die bisherigen Blöcke eingeklappt (`ansichten/heute/bisher.mjs`).
+Kontext und genau ein Knopf –, darunter „Wer wartet auf was" (wir / Lieferant / Kunde), die Kacheln
+„Laden“ und „Montage“ und beim Inhaber vier Kennzahlen. Die früheren eingeklappten „Weiteren Übersichten“
+(`ansichten/heute/bisher.mjs`) sind am 2026-10-12 entfallen: jede Zahl darin stand schon oben oder in
+„Kunden“, „Einkauf“, „Entwicklung“ – „bezahlt, noch nicht versandt“ sogar nach dem Shopify-Status und damit
+falsch. Was davon nicht doppelt war, lebt weiter: eine Shop-Wache, die sich seit mehr als drei Stunden nicht
+gemeldet hat, ist jetzt ein To-do (nur Inhaber), „GitHub synchronisieren“ steht in „Entwicklung“.
+
+**Kennzahl „Ø je bezahlter Bestellung“** (seit 2026-10-12): Umsatz geteilt durch die Bestellungen **mit
+Betrag** – kostenlose Musterbestellungen zählen nicht mit (vorher lag der Schnitt dadurch bei einem
+Bruchteil des echten). Gerechnet in
+`lib/kennzahlen.mjs` aus `umsatz`, `bestellungen` und `kostenlos`, damit auch ein älterer Export stimmt;
+`operations/lib/kennzahlen.mjs` liefert seither `mitBetrag` und den korrigierten `durchschnitt`.
 
 To-dos werden nicht erfasst, sondern abgeleitet: `docs/ai-dashboard/lib/todos.mjs` (reine Funktionen,
 `tests/todos.test.mjs`) rechnet aus den Antworten der vorhandenen Endpunkte.
@@ -475,6 +546,34 @@ Name der angemeldeten Person und die festen Shop-Links (Muster, Liefer- & Verleg
 einem Platzhalter, der sich nicht sicher füllen lässt (z. B. `{Link Produkt}`), fällt weg. „E-Mail
 öffnen" ist ein `mailto:`-Link – gesendet wird nichts. Fehlt die Vorlage, bleiben Liste und Knopf, nur
 ohne Textvorschlag.
+
+**Muster nachfassen und „Wer wartet auf was“** (seit 2026-10-12): Ein Musterauftrag mit fälliger Nachfrage
+steht unter „Wir sind dran“ („Muster nachfassen“), nicht mehr zugleich unter „Kunde ist dran“
+(`werWartet(…, { nachfassen })` in `lib/todos.mjs`, die orderIds kommen aus `musterNachfassen()`). Nach
+„Erledigt – nachgefasst“ wandert er zurück zum Kunden.
+
+### 9b. Kunden „Zu tun“: der nächste Schritt kommt aus der Zeitleiste (seit 2026-10-12)
+
+`/api/kunden/faelle` hängt an jede Bestellzeile den nächsten Schritt der Zeitleiste
+(`zeitleisteSchritt`, `operations/lib/auftragsverlauf.mjs`); `naechsterSchritt()` in
+`operations/lib/kundenfaelle.mjs` nimmt dann dessen Text. Vorher entschied allein der Shopify-Versandstatus:
+17 Fälle hießen „Versenden – bezahlt, noch nicht raus“, obwohl 9 Muster längst beim Kunden und 8 beim
+Lieferanten bestellt waren.
+
+| Zeitleiste | Dringlichkeit in „Zu tun“ |
+|---|---|
+| wir dran, fällig seit < 3 Tagen | bald |
+| wir dran, fällig seit ≥ 3 Tagen | sofort |
+| Lieferant: nachhaken (≥ 7 Tage) | bald |
+| Lieferant: Problem (≥ 14 Tage) | sofort |
+| Lieferant oder Kunde dran, Frist läuft | nicht in der Liste; gezählt als `wartend` („N weitere Kunden warten nur auf Lieferant oder Kunde“); in der Karte eines Kunden mit anderem To-do als „Lieferant/Kunde ist dran: …“ |
+
+Unbezahlte Bestellungen behalten „Noch nicht bezahlt“ (die Zeitleiste kennt keine Zahlung); ist die
+Zeitleiste abgeschlossen, bleibt nur, was sonst fehlt (Maßprüfung, Großhändler-ID). Steht die Ware im
+Auftragsfluss auf „An Kunden raus“, Shopify kennt aber keine Sendung, heißt es nur noch als Hinweis „In
+Shopify noch nicht als versendet gebucht“ – in der Fallkarte, als `versandHinweis` der Bestellzeile und in der
+Spalte „Versand“ der Bestellliste („in Shopify nicht gebucht“); „Noch nicht versendet“ unter „Was fehlt“
+entfällt dann. In Shopify wird nichts geschrieben.
 
 ## 10. Datenaktualisierung (seit 2026-09-23)
 

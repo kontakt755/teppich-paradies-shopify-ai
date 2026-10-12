@@ -7,6 +7,7 @@ import { state } from '../../kern/zustand.mjs';
 import { esc, toast, fmtPreis } from '../../kern/helfer.mjs';
 import { fetchEinkauf, orgSchreiben } from '../../kern/api.mjs';
 import { render } from '../../kern/render.mjs';
+import { istNurLesend } from '../../kern/sitzung.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { kunden } from './gemeinsam.mjs';
 
@@ -20,6 +21,7 @@ export function ensureKundenFaelle() {
 }
 
 const FALL_QUELLE_LABEL = { bestellung: 'Bestellung', angebot: 'Angebot', warenkorb: 'Warenkorb' };
+const WER_LABEL = { lieferant: 'Lieferant ist dran: ', kunde: 'Kunde ist dran: ' };
 const DRINGEND_LABEL = ['sofort', 'bald', 'wenn Zeit ist'];
 
 function fallKontakt(f) {
@@ -36,8 +38,12 @@ function fallPunkt(p) {
     ? ` <a class="small" href="#/lexikon?handle=${encodeURIComponent(produkte[0].handle)}" onclick="event.stopPropagation()">im Lexikon nachschlagen →</a>`
     : '';
   const klasse = p.schritt.dringend === 0 ? 'crit' : p.schritt.dringend === 1 ? 'gap' : 'plain';
+  // Wartende Vorgaenge stehen nur in der Karte eines Kunden, der auch etwas zu tun hat:
+  // dann sagt der Vorsatz, wer gerade dran ist.
+  const wer = p.schritt.art === 'wartet' ? (WER_LABEL[p.schritt.wer] || '') : '';
   return `<li class="fall-punkt">
-    <div><span class="badge ${klasse}">${esc(p.schritt.text)}</span></div>
+    <div><span class="badge ${klasse}">${esc(wer + p.schritt.text)}</span></div>
+    ${p.schritt.hinweis ? `<div class="small muted">${esc(p.schritt.hinweis)}</div>` : ''}
     <div class="small">${esc(FALL_QUELLE_LABEL[p.quelle] || p.quelle)}${p.bezug ? ` ${esc(p.bezug)}` : ''}${p.tage !== null ? ` · seit ${p.tage === 0 ? 'heute' : `${p.tage} Tagen`}` : ''}${p.betrag ? ` · ${esc(fmtPreis(p.betrag))} ${esc(p.waehrung)}` : ''}</div>
     <div class="small">${p.moechte.length ? esc(p.moechte.join(' · ')) : '<span class="muted">keine Positionen</span>'}${nachschlagen}</div>
     ${p.adminUrl ? `<a class="small" href="${esc(p.adminUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">In Shopify öffnen ↗</a>` : ''}
@@ -54,7 +60,8 @@ const FALL_GRUND_LABEL = { erledigt: 'Erledigt', test: 'Kein echter Kunde' };
  */
 export function fallKarte(f, { ausgeblendet = false } = {}) {
   const stufe = DRINGEND_LABEL[f.dringend] || '';
-  const aktionen = ausgeblendet
+  // Rolle "lesen" darf nichts markieren - der Server lehnt ab, die Knoepfe fuehrten nur zu einer Fehlermeldung.
+  const aktionen = istNurLesend() ? '' : ausgeblendet
     ? (f.marke?.automatisch
       ? `<span class="small muted">automatisch erkannt (Testadresse)</span>`
       : `<button type="button" class="btn btn-sm" data-fall-marke="${esc(f.schluessel)}" data-grund="">Wieder einblenden</button>`)
@@ -67,7 +74,7 @@ export function fallKarte(f, { ausgeblendet = false } = {}) {
     </div>
     <p class="small" style="margin:0 0 8px">${fallKontakt(f)}${f.ort ? ` · ${esc(f.ort)}` : ''}</p>
     <ul class="fall-punkte">${f.punkte.map(fallPunkt).join('')}</ul>
-    <div class="fall-aktionen">${aktionen}</div>
+    ${aktionen ? `<div class="fall-aktionen">${aktionen}</div>` : ''}
   </section>`;
 }
 
@@ -99,19 +106,11 @@ export function viewKundenFaelle() {
   if (!d.faelle.length) {
     return emptyState('Nichts offen.', 'Keine Bestellung, kein Angebot und kein Warenkorb wartet gerade auf eine Antwort.') + ausBlock;
   }
+  // Wer nur auf Lieferant oder Kunde wartet, steht nicht in der Arbeitsliste - die Zahl sagt,
+  // dass es sie gibt und wo sie stehen, damit niemand einen Kunden vermisst.
+  const wartend = d.wartend ? ` · ${d.wartend} ${d.wartend === 1 ? 'weiterer Kunde wartet' : 'weitere Kunden warten'} nur auf Lieferant oder Kunde – <a href="#/kunden?tab=bestellungen">Bestellungen</a>` : '';
   return `
-    <p class="small muted" style="margin:0 0 10px">${d.anzahl} ${d.anzahl === 1 ? 'Kunde wartet' : 'Kunden warten'}${d.sofort ? `, davon ${d.sofort} sofort` : ''} · dringendstes zuerst, bei gleicher Stufe das älteste</p>
+    <p class="small muted" style="margin:0 0 10px">${d.anzahl} ${d.anzahl === 1 ? 'Kunde wartet' : 'Kunden warten'} auf uns${d.sofort ? `, davon ${d.sofort} sofort` : ''} · dringendstes zuerst${wartend}</p>
     ${d.faelle.map(f => fallKarte(f)).join('')}
     ${ausBlock}`;
-}
-
-/** Startseite: die drei dringendsten Kunden - der Rest steht im Reiter. */
-export function heuteFaelle() {
-  ensureKundenFaelle();
-  const d = kunden.faelle;
-  if (!d || !d.verfuegbar || !d.faelle.length) return '';
-  const oben = d.faelle.slice(0, 3);   // ausgeblendete sind hier schon raus
-  return `<h2 class="section-title">Wer wartet auf was <span class="section-note">${d.anzahl} ${d.anzahl === 1 ? 'Kunde' : 'Kunden'}${d.sofort ? `, ${d.sofort} sofort` : ''}</span></h2>
-    ${oben.map(f => fallKarte(f)).join('')}
-    ${d.faelle.length > 3 ? `<p class="small muted" style="margin:-4px 0 0">+${d.faelle.length - 3} weitere – <a href="#/kunden?tab=zutun">alle ansehen →</a></p>` : ''}`;
 }

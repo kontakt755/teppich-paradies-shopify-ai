@@ -807,3 +807,59 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Vergrößern geht, 0 px Überlauf, keine JS-Fehler.
 - **Risiken/Annahmen:** Bildschirmfotos können Kundendaten zeigen; die Werkbank bleibt privat.
 - **Nächste Stufe:** keine.
+
+## 2026-10-12 · Befunde der Analyse umgesetzt: Zu tun, Einkauf, Rollen, Heute, Navigation, Montage (#1154)
+
+- **Geändert:**
+  - *Kunden „Zu tun“:* Der nächste Schritt kommt aus der Zeitleiste (Auftragsfluss + Verlauf), nicht aus dem
+    Shopify-Versandstatus (`operations/lib/kundenfaelle.mjs`, `zeitleisteSchritt` aus `/api/kunden/faelle`).
+    Muster beim Kunden heißen „Nachfassen …“ bzw. „… verschickt – sind sie angekommen?“ statt „Versenden“; was beim
+    Lieferanten liegt, heißt „Beim Lieferanten nachhaken …“. Wer nur auf Lieferant oder Kunde wartet, steht nicht in
+    der Arbeitsliste, die Kopfzeile nennt die Zahl. „In Shopify noch nicht als versendet gebucht“ ist nur noch ein
+    Hinweis; die Bestellliste zeigt in derselben Zeile nicht mehr „Noch nicht versandt“ und „An Kunden raus“ zugleich.
+  - *Heute:* Kennzahl „Ø je bezahlter Bestellung“ ohne kostenlose Muster. Fällige Nachfass-Muster stehen unter „Wir
+    sind dran“, nicht zugleich unter „Kunde ist dran“. Die eingeklappten „Weiteren Übersichten“ sind weg (jede Zahl
+    stand schon oben oder in Kunden/Einkauf/Entwicklung, „bezahlt, noch nicht versandt“ sogar falsch); eine seit
+    über drei Stunden stumme Shop-Wache ist jetzt ein To-do, „GitHub synchronisieren“ steht in „Entwicklung“.
+  - *Einkauf:* endet bei „bei uns eingetroffen“ – „An Kunden raus“ zählt als erledigt statt „Unterwegs“; Filter
+    „Bei uns eingetroffen“, alter Link `af=unterwegs` landet dort. Nachhaken zählt Aufträge und Positionen getrennt.
+    „Lieferantenraster ungeklärt“ statt `UNGEKLAERT`.
+  - *Rollen:* `/api/agent-runs` fragt nur noch der Inhaber ab (vorher 403 samt Konsolenfehler für Mitarbeiter und
+    „lesen“ auf jeder Seite). „lesen“ sieht „✓ Erledigt“, „Kein echter Kunde“ und „Jetzt aktualisieren“ nicht mehr.
+  - *Navigation:* überall „Kunden“ (vorher „Kunden & Aufträge“, „Aufträge“, „Kunden“). „Fotos“ ohne eigenen Punkt,
+    verlinkt aus „Social Media“. „KI-Läufe“ (Systemzustand) und „KI wartet“ (Entwicklung) entfernt – seit dem Wegfall
+    des Routers immer 0. GitHub-Login → „Inhaber“, Lexikon-Status nur bei Abweichung und deutsch, Geldbeträge
+    „0,00 €“, Ratgeber ohne Skriptpfad und Befehl, Shop-Wache-Tabellen im Scroll-Rahmen.
+  - *Weitere Dashboards:* Gruppe in der Seitenleiste mit Werkbank, Laden, Montage (neuer Tab). Adressen aus
+    `WERKBANK_URL` und `AUFTRAGS_APP_URL` (Laden = `?ansicht=laden`; ohne `AUFTRAGS_APP_URL` gilt `LADEN_ZAHLEN_URL`),
+    über `/api/capabilities` (`scripts/weitere-dashboards.mjs`), nur https, ohne Adresse kein Link. Die Werkbank-Adresse
+    steht nicht mehr in `index.html`. Kachel „Laden“: „Schlüssel fehlt“ statt „Nicht eingerichtet“, wenn nur der
+    Schlüssel fehlt; „Laden-Ansicht öffnen“, sobald eine App-Adresse bekannt ist.
+  - *Montage:* Kachel neben „Laden“ aus dem neuen Objekt `montage` der Zahlenantwort (`MONTAGE_FELDER`): vorhandene
+    Zahlen, fehlende weggelassen, ohne Objekt/Schlüssel „noch nicht verbunden“, Link „Montage-App öffnen“. Nur Zahlen.
+  - *Prüfwerkzeug:* `dashboard:pruefen` kopiert auch `kunden/`, `angebote/`, `warenkoerbe/`, `shopwache/`, `bestand/`,
+    `erfuellung/` und die beschreibbaren Einzeldateien; `--rollen` prüft mit drei Wegwerf-Zugängen nur in der Kopie;
+    Netzfehler zählen wie Fehlerantworten. Doku: README ohne „öffentliche“ Pages-Adresse, ARCHITEKTUR §1e
+    (vorher doppelt „1d“) mit „Zugänge einrichten“, §5 und §7 auf Stand, §8/§9/§9b zu Einkauf, Heute, Zu tun.
+- **Getestet:** `npm run dashboard:test` 263/263, `npm test` 2250/2250 (7 Suiten, nach Rebase auf `main`).
+  `dashboard:pruefen` 21 Ansichten × 5 Breiten = 105 × OK, 0 px Überlauf; `--rollen` (Inhaber 21, Mitarbeiter 13,
+  „lesen“ 12 Ansichten) × 5 Breiten = 230 × OK. Vorher (origin/main, `--rollen`, 1440/390 px): 3 × FEHL –
+  403 auf `/api/agent-runs` für Mitarbeiter und „lesen“, Shop-Wache-Tabelle bei 390 px (erst sichtbar, seit die Kopie
+  `shopwache/` enthält). Klickstrecken gegen die Kopie (Zahlen):
+  „Zu tun“ 15 Kunden/10 sofort (14 × „Versenden“) → 10/2 und 6 wartend, 0 × „Versenden“; Menüzahl 10 → 2;
+  „✓ Erledigt“ 10 → 9, „Wieder einblenden“ → 10. Heute „Wir/Lieferant/Kunde“ 7/5/9 → 10/5/6; „Erledigt – nachgefasst“
+  → 9/5/7, Muster nachfassen 3 → 2. Einkauf „Alle offenen/Bestellt/Unterwegs/Erledigt“ 56/27/27/4 → 29/27/0
+  („Bei uns eingetroffen“)/31, Lieferant A „53 Muster laufen“ → 26, „15 Bestellungen warten“ → „5 Aufträge warten (15
+  Positionen)“; Position → „Geliefert an uns“: Bestellt 27 → 26, Eingetroffen 0 → 1; → „An Kunden raus“: Erledigt 31
+  → 32. Rollen: 0 × 403; Werkbank für „lesen“ ausgeblendet, Laden/Montage sichtbar; Knöpfe Erledigt/Kein echter
+  Kunde/Jetzt aktualisieren für „lesen“ 0 (Mitarbeiter 20). Laden mit Adresse ohne Schlüssel: „Schlüssel fehlt“ + Link;
+  Montage mit Beispielantwort 7 Kacheln (2 in Bernstein), mit zwei Zahlen 2 Kacheln, ohne Objekt „noch nicht
+  verbunden“. 0 JS-Fehler.
+- **Risiken/Annahmen:** „Zu tun“ zeigt weniger Kunden – wer nur wartet, steht unter „Bestellungen“ und auf „Heute“ in
+  „Wer wartet auf was“. Der Einkauf zählt „An Kunden raus“ als erledigt; `/api/einkauf/lieferanten` (Server) zählt noch
+  nach dem alten Schnitt, die Oberfläche nutzt davon nur die Stammdaten. Ohne `WERKBANK_URL` in `.env.local` des
+  Dienstes fehlt der Werkbank-Link (vorher fest im Markup). Die Montage-Felder sind mit der parallel gebauten App
+  abgestimmt, aber erst mit deren Auslieferung sichtbar. Der Kennzahlen-Export liefert `mitBetrag` erst nach dem
+  nächsten Lauf; bis dahin rechnet die Kachel aus `kostenlos`.
+- **Nächste Stufe:** `WERKBANK_URL` und `AUFTRAGS_APP_URL` im Dienst setzen; Zugänge anlegen (ARCHITEKTUR §1e); in
+  „Zu tun“ einen Knopf für den Zeitleisten-Schritt (wie auf „Heute“), damit „Nachfassen“/„Abschließen“ direkt geht.

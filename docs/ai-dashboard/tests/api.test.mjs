@@ -42,6 +42,10 @@ test('capabilities meldet lokalen Modus mit Nutzer und Labels', async () => {
   assert.equal(c.user, 'tobias');
   assert.equal(c.actions, true);
   assert.ok(c.labelsAvailable.includes('status:geplant'));
+  // Ohne Adressen in der Umgebung keine Links "Weitere Dashboards" - nie eine Adresse aus dem Repository.
+  assert.deepEqual(c.dashboards, { werkbank: null, laden: null, montage: null });
+  const mit = await createApi({ gh, root: tmpRoot(), env: { TP_ENV_LOCAL: path.join(tmpRoot(), 'fehlt.env'), WERKBANK_URL: 'https://claude.ai/artifact/TEST', AUFTRAGS_APP_URL: 'https://script.google.com/macros/s/TEST/exec' } }).capabilities();
+  assert.deepEqual(mit.dashboards, { werkbank: 'https://claude.ai/artifact/TEST', laden: 'https://script.google.com/macros/s/TEST/exec?ansicht=laden', montage: 'https://script.google.com/macros/s/TEST/exec' });
 });
 
 test('transition lehnt fehlende Pflichtangaben serverseitig ab', async () => {
@@ -597,6 +601,7 @@ test('lexikonMengenhilfe rechnet Paketware ueber operations/lib/umrechnung.mjs',
   assert.equal(r.verfuegbar, true);
   assert.equal(r.ergebnis.pakete, 3); // ceil(6/2.5)
   assert.equal(r.ergebnis.qmGesamt, 7.5);
+  assert.match(r.ergebnis.text, /7,50 m² gesamt/, 'deutsches Komma, nicht "7.5"');
 });
 
 test('lexikonMengenhilfe meldet ehrlich UNGEKLAERT statt zu schaetzen, wenn eine Angabe fehlt', () => {

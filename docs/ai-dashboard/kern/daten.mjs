@@ -25,7 +25,10 @@ export async function loadData() {
 }
 
 export async function loadAgentRuns() {
-  if (!state.capabilities.agentRuns) { state.agentRuns = null; return; }
+  // Nur der Inhaber darf die Laeufe lesen (NUR_INHABER in scripts/serve-dashboard.mjs). Fuer
+  // Mitarbeiter und "lesen" endete der Abruf auf jeder Seite in einem 403 samt Konsolenfehler.
+  const rolle = state.session?.benutzer?.rolle;
+  if (!state.capabilities.agentRuns || (rolle && rolle !== 'inhaber')) { state.agentRuns = null; return; }
   try {
     const r = await fetch('/api/agent-runs', { cache: 'no-store' });
     state.agentRuns = r.ok ? await r.json() : { error: `HTTP ${r.status}` };

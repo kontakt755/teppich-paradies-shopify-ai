@@ -38,9 +38,11 @@ export function toast(text, kind = '', { dauer = null } = {}) {
   setTimeout(() => el.remove(), dauer || (melden ? 9000 : 4200));
 }
 
+/** Geldbetrag deutsch: "0,00 €", "1.234,50 €"; andere Waehrungen mit ihrem Kuerzel. */
 export function geldText(g) {
-  if (!g || g.betrag === null || g.betrag === undefined) return '–';
-  return `${g.betrag.toFixed(2)} ${esc(g.waehrung || 'EUR')}`;
+  if (!g || g.betrag === null || g.betrag === undefined || !Number.isFinite(Number(g.betrag))) return '–';
+  const w = g.waehrung || 'EUR';
+  return `${fmtPreis(g.betrag)} ${w === 'EUR' ? '€' : esc(w)}`;
 }
 
 export const NICHT_HINTERLEGT = '<span class="small muted">nicht hinterlegt</span>';

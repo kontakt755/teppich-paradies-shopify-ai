@@ -175,8 +175,12 @@ function kontext(quellen, opt) {
 export function werWartet(quellen = {}, opt = {}) {
   const k = kontext(quellen, opt);
   const spalten = { wir: [], lieferant: [], kunde: [] };
+  // orderIds mit faelliger Nachfrage (lib/muster-nachfassen.mjs): die Muster liegen beim Kunden,
+  // aber jetzt sind wir mit der Nachfrage dran - also nicht mehr "Kunde ist dran".
+  const nachfassen = opt.nachfassen instanceof Set ? opt.nachfassen : new Set(opt.nachfassen || []);
   for (const b of laufendeBestellungen(quellen.bestellzeilen, k.statusAlle)) {
-    const lage = lageVon(b, k);
+    let lage = lageVon(b, k);
+    if (lage.spalte === 'kunde' && nachfassen.has(b.z.orderId)) lage = { ...lage, spalte: 'wir', art: 'nachfassen', schritt: 'Muster nachfassen' };
     const lieferanten = [...new Set((lage.positionen || []).map(x => x.p.lieferant).filter(Boolean))];
     spalten[lage.spalte].push({
       id: `auftrag:${b.z.orderId}`,
@@ -263,7 +267,7 @@ function ausBestellungen(quellen, k) {
           id, art: 'rausgeben', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.rausgeben), alterTage: tage,
           titel: `${x.p.istMuster ? 'Muster' : 'Ware'} ist da – an ${kundeVon(z)} rausgeben`,
           kontext: [z.orderName, x.p.titel, tage !== null ? `liegt ${seitText(tage)} bei uns` : null].filter(Boolean).join(' · '),
-          knopf: { text: 'Rausgeben', href: '#/einkauf?af=unterwegs' },
+          knopf: { text: 'Rausgeben', href: '#/einkauf?af=eingetroffen' },
         });
       }
     }
@@ -376,10 +380,25 @@ function ausFreigaben(quellen, jetzt) {
     });
 }
 
-/** Shop-Wache: nur wenn sie etwas meldet. */
+/** Die Shop-Wache laeuft stuendlich; ein aelterer Stand sagt nichts ueber den Shop von jetzt. */
+export const SHOPWACHE_STUMM_STUNDEN = 3;
+
+/** Shop-Wache: nur wenn sie etwas meldet - oder sich seit Stunden nicht mehr gemeldet hat. */
 function ausShopwache(quellen, jetzt) {
   const d = quellen.shopwache;
-  if (!d || !d.verfuegbar || !['rot', 'gelb'].includes(d.ampel)) return [];
+  if (!d || !d.verfuegbar) return [];
+  const stunden = d.geprueftAm ? (jetzt.getTime() - new Date(d.geprueftAm).getTime()) / 3_600_000 : null;
+  // Frueher stand dieser Hinweis in den eingeklappten "Weiteren Uebersichten" auf Heute -
+  // dort sah ihn niemand. Eine stumme Wache meldet auch keinen kaputten Shop.
+  if (d.ampel === 'gruen' && stunden !== null && stunden > SHOPWACHE_STUMM_STUNDEN) {
+    return [{
+      id: 'shopwache', art: 'shopwache', bereich: 'website', ton: 'warn', alterTage: tageSeit(d.geprueftAm, jetzt),
+      titel: 'Shop-Wache meldet sich nicht',
+      kontext: `letzte Prüfung vor ${Math.floor(stunden)} Stunden – sie läuft sonst stündlich`,
+      knopf: { text: 'Prüfen', href: '#/shopwache' },
+    }];
+  }
+  if (!['rot', 'gelb'].includes(d.ampel)) return [];
   const befunde = d.befunde || [];
   return [{
     id: 'shopwache', art: 'shopwache', bereich: 'website', ton: d.ampel === 'rot' ? 'crit' : 'warn', alterTage: tageSeit(d.geprueftAm, jetzt),
