@@ -597,6 +597,7 @@ test('lexikonMengenhilfe rechnet Paketware ueber operations/lib/umrechnung.mjs',
   assert.equal(r.verfuegbar, true);
   assert.equal(r.ergebnis.pakete, 3); // ceil(6/2.5)
   assert.equal(r.ergebnis.qmGesamt, 7.5);
+  assert.match(r.ergebnis.text, /7,50 m² gesamt/, 'deutsches Komma, nicht "7.5"');
 });
 
 test('lexikonMengenhilfe meldet ehrlich UNGEKLAERT statt zu schaetzen, wenn eine Angabe fehlt', () => {

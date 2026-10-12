@@ -1,0 +1,93 @@
+{%- doc -%}
+  Unterlagen-Tipp im Warenkorb (Inhaber 2026-10-12): Liegt ein Teppich nach Mass
+  mit eigener Kante (Ketteln, Einfassband, Paspel, Cover - nicht "fertig") im
+  Warenkorb, aber noch keine Unterlage, steht oberhalb des Gesamtbetrags ein
+  kurzer Hinweis mit den zwei Unterlagen aus dem Befestigungs-Tipp der
+  Produktseite (blocks/tp-einfass-konfigurator.liquid). Nie zwischen
+  Gesamtbetrag und "Zur Kasse" (Inhaber 2026-09-24: dort nichts, was vom Kauf
+  ablenkt). Rein serverseitig, kein Skript; Musterzeilen zaehlen nicht.
+
+  Die Produkte stehen hier fest per Handle, weil der Warenkorb die
+  Block-Einstellungen der Produktseite nicht kennt. Nicht lieferbare oder
+  geloeschte Produkte fallen still weg; ohne lieferbare Unterlage kein Hinweis.
+{%- enddoc -%}
+
+{%- liquid
+  assign tcu_arten = 'ketteln,einfassband,paspelband,cover' | split: ','
+  assign tcu_handles = 'antirutsch-unterlage-fuer-teppiche-rollenware,teppichbremse-fuer-teppiche-rollenware,teppichbremse-fuer-teppiche-abgepasst' | split: ','
+  assign tcu_teppich = false
+  assign tcu_unterlage = false
+  for tcu_item in cart.items
+    if tcu_handles contains tcu_item.product.handle
+      assign tcu_unterlage = true
+      break
+    endif
+    capture tcu_muster
+      render 'tp-muster-position', line_item: tcu_item
+    endcapture
+    if tcu_muster contains 'ja'
+      continue
+    endif
+    assign tcu_art = tcu_item.product.metafields.service.einfassung.value | strip | downcase
+    if tcu_arten contains tcu_art
+      assign tcu_teppich = true
+    endif
+  endfor
+
+  assign tcu_glatt = nil
+  assign tcu_textil = nil
+  if tcu_teppich and tcu_unterlage == false
+    assign tcu_glatt = all_products['antirutsch-unterlage-fuer-teppiche-rollenware']
+    assign tcu_textil = all_products['teppichbremse-fuer-teppiche-rollenware']
+  endif
+-%}
+
+{%- if tcu_glatt.available or tcu_textil.available -%}
+  <div class="tp-cart-unterlage" role="note" aria-label="Tipp zur Unterlage">
+    <p class="tp-cart-unterlage__text"><strong>Tipp für einen glatten Sitz:</strong> Frisch aus der Rolle liegt ein neuer Teppich anfangs nicht ganz plan. Mit einer passenden Unterlage liegt er sofort glatt und rutschfest.</p>
+    <ul class="tp-cart-unterlage__liste" role="list">
+      {%- if tcu_glatt.available -%}
+        <li><a href="{{ tcu_glatt.url }}"><span>Für glatte Böden:</span> Antirutsch-Unterlage</a> <span class="tp-cart-unterlage__preis">ab {{ tcu_glatt.price_min | money }} je Meter</span></li>
+      {%- endif -%}
+      {%- if tcu_textil.available -%}
+        <li><a href="{{ tcu_textil.url }}"><span>Für Teppichboden:</span> Teppichbremse</a> <span class="tp-cart-unterlage__preis">ab {{ tcu_textil.price_min | money }} je Meter</span></li>
+      {%- endif -%}
+    </ul>
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-cart-unterlage {
+    margin: 0 0 var(--margin-xs, 0.5rem);
+    padding: var(--padding-sm, 0.875rem);
+    border: 1px solid rgb(29 107 71 / 0.22);
+    border-radius: var(--style-border-radius-inputs, 4px);
+    background: rgb(29 107 71 / 0.06);
+    font-size: var(--font-size--2xs, 0.8125rem);
+    line-height: 1.45;
+  }
+  .tp-cart-unterlage__text {
+    margin: 0;
+  }
+  .tp-cart-unterlage__liste {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .tp-cart-unterlage__liste a {
+    color: #1d6b47;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .tp-cart-unterlage__liste a span {
+    color: var(--color-foreground);
+    font-weight: 500;
+  }
+  .tp-cart-unterlage__preis {
+    white-space: nowrap;
+    color: rgb(var(--color-foreground-rgb) / var(--opacity-subdued-text, 0.7));
+  }
+{% endstylesheet %}
