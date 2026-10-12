@@ -14,6 +14,17 @@ function fehlerText(status, roh) {
   return roh || 'Unbekannter Fehler';
 }
 
+/**
+ * Gescheiterte Aufrufe als Ereignis melden. "Fehler melden"
+ * (bausteine/fehler-melden.mjs) haengt die letzten davon an die Meldung - der
+ * Kern kennt den Baustein nicht, deshalb ein Ereignis statt eines Imports.
+ * 404 bleibt aussen vor: das heisst hier "Export noch nicht da", kein Fehler.
+ */
+function meldeApiFehler(methode, pfad, status, text) {
+  if (status === 404 || typeof window === 'undefined') return;
+  try { window.dispatchEvent(new CustomEvent('tp-api-fehler', { detail: `${methode} ${pfad} → ${status || 'keine Verbindung'}: ${text || ''}` })); } catch { /* nur Zusatzinfo */ }
+}
+
 export async function fetchEinkauf(path) {
   try {
     const r = await fetch(path, { cache: 'no-store' });
@@ -22,10 +33,12 @@ export async function fetchEinkauf(path) {
       // "nichts zu tun" - beides in derselben blassen Box.
       let roh = null;
       try { roh = (await r.json())?.error || null; } catch { /* kein JSON im Fehlerfall */ }
+      meldeApiFehler('GET', path, r.status, roh);
       return { verfuegbar: false, fehler: true, status: r.status, hinweis: fehlerText(r.status, roh) };
     }
     return await r.json();
   } catch (e) {
+    meldeApiFehler('GET', path, 0, e.message);
     return { verfuegbar: false, fehler: true, hinweis: 'Keine Verbindung zum Dashboard am Mac. Läuft es noch?', roh: e.message };
   }
 }
@@ -33,6 +46,9 @@ export async function fetchEinkauf(path) {
 export async function orgSchreiben(pfad, rumpf) {
   const r = await fetch(pfad, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(rumpf) });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
+  if (!r.ok) {
+    meldeApiFehler('POST', pfad, r.status, [j.error, j.technisch].filter(Boolean).join(' | '));
+    throw new Error(j.error || `HTTP ${r.status}`);
+  }
   return j;
 }

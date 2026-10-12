@@ -58,6 +58,7 @@ import { rollenware, paketware, stueck as stueckware, UNGEKLAERT as MENGE_UNGEKL
 import { ladeEnvLocal, erzeugeProxy, KEIN_ZUGANG, mitHinweis } from '../operations/sync/zugang.mjs';
 import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, SonderpostenFehler } from '../operations/lib/sonderposten.mjs';
 import { ohneUeberholtenFehler } from '../operations/scripts/aktualisieren.mjs';
+import { meldungenPfad, abgleichPfad, meldungAnlegen, alleMeldungen, sichtbareMeldungen, FehlermeldungFehler } from '../operations/lib/fehlermeldungen.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -1951,6 +1952,35 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       });
       merke(benutzer, null, 'Fall markiert', `${schluessel}: ${grund || 'zurückgenommen'}`);
       return { ok: true, ...ergebnis };
+    },
+
+    /**
+     * "Fehler melden": jeder Angemeldete darf melden, auch die Rolle "lesen" -
+     * eine Meldung aendert keine Betriebsdaten. Weiter in die Werkbank traegt
+     * sie der geplante Abgleich (operations/scripts/fehlermeldungen.mjs).
+     */
+    fehlerMelden(payload = {}, { benutzer = null } = {}) {
+      const dir = privatDirPath || privatDir();
+      try {
+        const { meldung, doppelt } = meldungAnlegen(meldungenPfad(dir), payload || {}, { von: benutzer, jetzt: now() });
+        if (!doppelt) merke(benutzer, null, 'Fehler gemeldet', meldung.id);
+        return { ok: true, id: meldung.id, doppelt };
+      } catch (e) {
+        if (e instanceof FehlermeldungFehler) throw new ApiError(400, e.message);
+        throw e;
+      }
+    },
+
+    /** Eigene Meldungen samt Stand; der Inhaber sieht alle. */
+    fehlerListe({ benutzer = null } = {}) {
+      const dir = privatDirPath || privatDir();
+      let liste;
+      try { liste = alleMeldungen(meldungenPfad(dir), abgleichPfad(dir)); } catch (e) {
+        if (e instanceof FehlermeldungFehler) throw new ApiError(500, e.message);
+        throw e;
+      }
+      const sichtbar = sichtbareMeldungen(liste, benutzer);
+      return { verfuegbar: true, alle: !benutzer || benutzer.rolle === 'inhaber', anzahl: sichtbar.length, meldungen: sichtbar.slice(0, 30) };
     },
 
     /** Angebote/Entwuerfe (DraftOrder) - Mass-/Verlegeangebote, die noch keine Bestellung sind. */

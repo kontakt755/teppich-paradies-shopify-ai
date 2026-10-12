@@ -48,6 +48,9 @@ export const SICHERUNGSPFADE = Object.freeze([
   'einkauf-hersteller',
   'einkauf-kollektion',
   'aktualisierung.json',
+  // "Fehler melden": Meldungen der Mitarbeiter und ihr Stand in der Werkbank.
+  'fehlermeldungen.json',
+  'fehlermeldungen-abgleich.json',
   // Social-Media-Modul: taeglicher, in sich stimmiger Abzug der Datenbank
   // (social/lib/ablauf.mjs, sichereDatenbank) und die Upload-Zugaenge. Die
   // Fotos selbst (social/medien) sind zu gross fuer das Tagesarchiv.

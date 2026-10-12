@@ -109,5 +109,5 @@ export function bindeNavigation() {
     try { localStorage.setItem(BUERO_KEY, offen ? '1' : '0'); } catch {}
   });
   // Derselbe Punkt nochmal angetippt aendert die Adresse nicht - das Blatt muss trotzdem zu.
-  $('#side')?.addEventListener('click', e => { if (e.target.closest('a[href], #syncChip, #meinPasswortBtn')) schliesseMehr(); });
+  $('#side')?.addEventListener('click', e => { if (e.target.closest('a[href], #syncChip, #meinPasswortBtn, [data-fehler-melden]')) schliesseMehr(); });
 }
