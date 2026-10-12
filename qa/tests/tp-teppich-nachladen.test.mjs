@@ -156,6 +156,20 @@ test('Reihen: nur fokussierter Mehrknopf bleibt bei geschlossener Reihe erhalten
   const h = reihenHarness(); h.row.querySelector('[data-tp-gruppe-mehr]').focus(); await h.answer();
   assert.equal(h.doc.activeElement.hasAttribute('data-tp-gruppe-mehr'), true); assert.equal(h.row.contains(h.doc.activeElement), true);
 });
+test('Reihen: Mehrklick nach abgeschlossenem Nachladen fuehrt Fokus zur fuenften Karte', async () => {
+  const h = reihenHarness(); await h.answer();
+  const more = h.row.querySelector('[data-tp-gruppe-mehr]'); more.focus();
+  // Wie im nativen Mobile-Fall: ein per CSS verborgener Knopf verliert Fokus.
+  const add = h.row.classList.add;
+  h.row.classList.add = cls => { add(cls); if (cls === 'is-offen' && h.doc.activeElement === more) h.doc.activeElement = h.doc.body; };
+  h.click(more);
+  assert.equal(h.doc.activeElement.getAttribute('href'), '/product-4'); assert.equal(h.row.classList.contains('is-offen'), true);
+});
+test('Reihen: Mehrklick nach Nachladen stiehlt keinen anderswo stehenden Fokus', async () => {
+  const h = reihenHarness(); await h.answer();
+  const outside = h.doc.body.appendChild(h.node('input')); outside.focus(); h.click(h.row.querySelector('[data-tp-gruppe-mehr]'));
+  assert.equal(h.doc.activeElement, outside); assert.equal(h.row.classList.contains('is-offen'), true);
+});
 test('Reihen: Fokus ausserhalb wird nicht entzogen', async () => {
   const h = reihenHarness(); const outside = h.doc.body.appendChild(h.node('input')); outside.focus(); await h.answer(); assert.equal(h.doc.activeElement, outside);
 });

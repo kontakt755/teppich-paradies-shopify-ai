@@ -395,8 +395,14 @@
         start();
         return;
       }
+      var fokusAmKnopf = document.activeElement === knopf;
       reihe.classList.add('is-offen');
       knopf.setAttribute('aria-expanded', 'true');
+      if (fokusAmKnopf) {
+        var karten = reihe.querySelectorAll('.resource-list__item');
+        var ziel = karten[4] && karten[4].querySelector('a[href]');
+        if (ziel) ziel.focus({ preventScroll: true });
+      }
     });
   })();
 {% endjavascript %}
