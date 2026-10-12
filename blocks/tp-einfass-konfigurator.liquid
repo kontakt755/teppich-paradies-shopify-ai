@@ -391,7 +391,7 @@
           {%- if tp_ek_bef -%}
             <a class="tp-ek__tipp-produkt" href="{{ tp_ek_bef.url }}" target="_blank" rel="noopener">
               {%- if tp_ek_bef.featured_image -%}
-                {{ tp_ek_bef.featured_image | image_url: width: 112, height: 112, crop: 'center' | image_tag: width: 56, height: 56, alt: '', loading: 'lazy', class: 'tp-ek__tipp-bild' }}
+                {{ tp_ek_bef.featured_image | image_url: width: 112, height: 112, crop: 'center' | image_tag: width: 56, height: 56, widths: '56, 112', sizes: '56px', alt: '', loading: 'lazy', class: 'tp-ek__tipp-bild' }}
               {%- endif -%}
               <span class="tp-ek__tipp-name">
                 {{- block.settings.befestigung_link | default: tp_ek_bef.title | escape -}}
