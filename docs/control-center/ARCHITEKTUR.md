@@ -365,7 +365,7 @@ zeigt sie zwei weitere Kacheln, die jeweils in den Bereich „Einkauf" (Abschnit
 |---|---|---|
 | „Einkauf – heute zu tun" | `einkaufBestellungen()` + `einkaufAuftragsstatus()` | Positionen zu bestellen, offene Musterbestellungen, Aufträge mit Problem (Ampel rot: Beratung ohne Telefon, Maßprüfung offen, fehlende Großhändler-ID), Positionen je Schritt des Auftragsflusses |
 | „Shop-Zahlen" | `einkaufKennzahlen()` → `kennzahlen/shop-snapshot.json` | Bestellungen, Umsatz, Durchschnittsbon der letzten 7 und 30 Tage |
-| „Laden" (seit 2026-10-11) | `/api/laden/zahlen` → Auftrags-App `?ansicht=zahlen` | offene Beratungen (davon neu), fällige Wiedervorlagen, Angebote offen (davon nachfassen), Fälle aus dem Shop (7 Tage), gewonnen/verloren (30 Tage); nur wenn > 0 eine Zeile „Spam-Verdacht“ (seit 2026-10-12); Link „Laden-Ansicht öffnen" |
+| „Laden" (seit 2026-10-11) | `/api/laden/zahlen` → Auftrags-App `?ansicht=zahlen` | offene Beratungen (davon neu), fällige Wiedervorlagen, Angebote offen (davon nachfassen), Fälle aus dem Shop (7 Tage), gewonnen/verloren (30 Tage); nur wenn > 0 eine Zeile „Spam-Verdacht“ (seit 2026-10-12) mit Link „Spam prüfen“ direkt in den Filter; Link „Laden-Ansicht öffnen" |
 
 **Kachel „Laden"** (`ansichten/heute/laden.mjs`, Server `scripts/laden-zahlen.mjs`, Sichten „Laden" und
 „Alles", nicht „Website"). Die Zahlen kommen aus dem Laden-Modus der Auftrags-App (Google Apps Script,
@@ -378,7 +378,11 @@ bekannten Zahlenfelder (ganze Zahlen ≥ 0), alles andere fällt weg. Fehlt eine
 unbrauchbar – mit einer Ausnahme: `spamVerdacht` (offene Fälle aus dem Shop, die die App ab Version 43 im
 Filter „Spam prüfen“ zurückhält und in keiner anderen Zahl mitzählt) darf fehlen und gilt dann als 0, damit
 eine ältere App die Kachel nicht auf „nicht erreichbar“ setzt (`LADEN_ZAHLEN_SPAETER`). Die Kachel zeigt
-dafür keine sechste Zahl, sondern nur bei > 0 eine Zeile unter den Zahlen, die Zahl in Bernstein.
+dafür keine sechste Zahl, sondern nur bei > 0 eine Zeile unter den Zahlen, die Zahl in Bernstein. Die Zeile
+endet mit dem Link „Spam prüfen ↗“ (neuer Tab), der direkt in den Filter springt: `spamUrl()` in
+`ansichten/heute/laden.mjs` baut ihn per URL-API aus `ladenUrl` – weitere Parameter bleiben, `ansicht=laden`
+und `filter=spam` werden gesetzt (Auftrags-App ab Version 47; eine ältere App zeigt die Laden-Ansicht ohne
+Filter). Ohne `ladenUrl` (oder kein `https`) bleibt die Zeile ohne Link und nennt den Filter in Worten.
 
 Einrichtung **außerhalb des Repositorys** (es ist öffentlich): in `.env.local` im Ordner des Dienstes
 (`~/tp-dashboard/.env.local`, gitignored, dieselbe Datei wie der Shopify-Zugang) oder als

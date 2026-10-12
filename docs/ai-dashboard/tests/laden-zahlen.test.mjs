@@ -223,9 +223,16 @@ test('Kachel auf "Heute": fuenf Zahlen, faellige Wiedervorlagen in Bernstein, 0 
   assert.ok(!/Spam/.test(mitSpam(0)), '0 Spam-Verdacht: keine Zeile');
   const zwei = mitSpam(2);
   assert.equal((zwei.match(/class="heute-kpi"/g) || []).length, 5, 'weiter fuenf Zahlen');
-  assert.match(zwei, /<p class="heute-hinweis heute-laden-spam"><b>2<\/b> Fälle aus dem Shop mit Spam-Verdacht – in der Laden-Ansicht unter „Spam prüfen“ ansehen\. In den Zahlen oben nicht enthalten\.<\/p>/);
+  assert.match(zwei, /<p class="heute-hinweis heute-laden-spam"><b>2<\/b> Fälle aus dem Shop mit Spam-Verdacht – in den Zahlen oben nicht enthalten\. <a href="https:\/\/script\.google\.com\/macros\/s\/TEST-DEPLOYMENT\/exec\?ansicht=laden&amp;filter=spam" target="_blank" rel="noopener">Spam prüfen <span aria-hidden="true">↗<\/span><\/a><\/p>/);
   assert.ok(zwei.indexOf('heute-laden-spam') > zwei.indexOf('Gewonnen'), 'Zeile steht unter den Zahlen');
   assert.match(mitSpam(1), /<b>1<\/b> Fall aus dem Shop mit Spam-Verdacht/);
+  assert.equal((zwei.match(/target="_blank" rel="noopener"/g) || []).length, 2, 'Kopf-Link und Spam-Link, beide in neuem Tab');
+
+  // ohne ladenUrl: dieselbe Zeile ohne Link, mit dem Weg in Worten
+  ladenKachel.daten = { ...ladenKachel.daten, zahlen: ZAHLEN_V43, ladenUrl: undefined };
+  const ohneUrl = heuteLaden();
+  assert.match(ohneUrl, /<p class="heute-hinweis heute-laden-spam"><b>3<\/b> Fälle aus dem Shop mit Spam-Verdacht – in der Laden-Ansicht unter „Spam prüfen“ ansehen\. In den Zahlen oben nicht enthalten\.<\/p>/);
+  assert.ok(!/href=/.test(ohneUrl), 'ohne ladenUrl weder Kopf- noch Spam-Link');
 
   ladenKachel.daten = { eingerichtet: false };
   const leer = heuteLaden();
@@ -245,4 +252,23 @@ test('Kachel auf "Heute": fuenf Zahlen, faellige Wiedervorlagen in Bernstein, 0 
   heuteLaden();
   await new Promise(r => setImmediate(r));
   assert.deepEqual(holt, ['/api/laden/zahlen']);
+});
+
+test('Spam-Link: aus ladenUrl per URL-API, ansicht=laden und filter=spam, weitere Parameter bleiben; sonst kein Link', async () => {
+  globalThis.document ??= { querySelector: () => null, querySelectorAll: () => [], addEventListener() {}, documentElement: { dataset: {}, setAttribute() {} } };
+  globalThis.location ??= { hash: '', search: '' };
+  const { spamUrl } = await import('../ansichten/heute/laden.mjs');
+  const params = url => Object.fromEntries(new URL(url).searchParams);
+
+  // so liefert ihn der Server (ladenUrl() oben)
+  assert.equal(spamUrl(ladenUrl(BASIS)), `${BASIS}?ansicht=laden&filter=spam`);
+  // vorhandene Parameter bleiben, ein anderer Filter wird ersetzt, ansicht wird gesetzt, wenn sie fehlt
+  assert.deepEqual(params(spamUrl(`${BASIS}?ansicht=laden&authuser=1`)), { ansicht: 'laden', authuser: '1', filter: 'spam' });
+  assert.deepEqual(params(spamUrl(`${BASIS}?ansicht=laden&filter=neu`)), { ansicht: 'laden', filter: 'spam' });
+  assert.deepEqual(params(spamUrl(BASIS)), { ansicht: 'laden', filter: 'spam' });
+  assert.equal(new URL(spamUrl(`${BASIS}?ansicht=laden`)).pathname, '/macros/s/TEST-DEPLOYMENT/exec', 'Pfad bleibt');
+  // kein oder unbrauchbarer ladenUrl: kein Link
+  for (const kaputt of [undefined, null, '', 'kein-url', '/relativ?ansicht=laden', 'javascript:alert(1)', 'http://script.google.com/macros/s/X/exec']) {
+    assert.equal(spamUrl(kaputt), '', String(kaputt));
+  }
 });
