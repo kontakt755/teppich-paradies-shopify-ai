@@ -88,6 +88,8 @@ export function pruefeZiel(datei, repo = REPO) {
 // zusaetzlich alle Handles mit dem Praefix muster- laden, unabhaengig vom
 // Status - und alle uebrigen UNLISTED-Produkte (per Direktlink kaeuflich,
 // z. B. Einzelanfertigungen), die der Handexport ebenfalls enthielt.
+// Archivierte Muster kommen dadurch mit; lib/lexikon.mjs::aufbereiten
+// laesst sie weg (gilt so auch fuer --jsonl und --input).
 //
 // Bewusst OHNE templateSuffix: die Produktgruppe im Lexikon ist der
 // productType ("Klickvinyl", "Teppichboden", ...). Mit templateSuffix in der

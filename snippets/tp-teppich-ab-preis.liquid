@@ -9,7 +9,9 @@
     - guenstigste Farbe (price_min, Preis je 0,01 m2)
     - Pflicht-Kettelung bei service.einfassung = Ketteln: Umfang in Einheiten
       a 0,01 lfm (4,60 m = 460) des Kettelservice-Produkts (derselbe Handle wie in
-      templates/product.einfassung.json, Einstellung kettelservice_produkt)
+      templates/product.einfassung.json, Einstellung kettelservice_produkt).
+      Ausnahme service.kante_inklusive = true: die Kettelung steckt im m2-Preis,
+      es kommen keine Kantenkosten dazu und der Kettelservice wird nicht gebraucht.
     - service.mindestpreis gilt fuer den Auftrag: die Materialmenge wird in ganzen
       Einheiten angehoben, bis Material + Kante den Mindestpreis erreichen. Deshalb
       kann der Einstieg knapp ueber dem Mindestpreis liegen (99,10 statt 99,00 EUR).
@@ -31,6 +33,8 @@
   Einfassung - sie bekommt hier unveraendert den Preis je m2.
 
   @param {object} product - Produkt
+  @param {boolean} [kopf] - Preis im Kopf der Produktseite: bei Kante im m2-Preis steht
+    der Preis je m2 vorn statt des ab-Preises (siehe unten)
   @param {object} [variant] - gewaehlte Variante (Produktseite); ohne sie zaehlt die guenstigste Farbe.
     Ohne Variante (= Produktkarte) steht ueber dem Preis die Qualitaetszeile aus
     snippets/tp-teppich-qualitaet.
@@ -80,7 +84,13 @@
     endif
     assign tp_ab_kante_einheiten = tp_ab_breite_cm | plus: tp_ab_laenge_cm | times: 2
     assign tp_ab_kante_cent = 0
-    if tp_ab_art == 'ketteln'
+    # Kante inklusive: Kettelung steckt im m2-Preis, keine Kantenkosten.
+    assign tp_ab_kante_inkl = false
+    assign tp_ab_ki = product.metafields.service.kante_inklusive.value | append: '' | strip | downcase
+    if tp_ab_art == 'ketteln' and tp_ab_ki == 'true'
+      assign tp_ab_kante_inkl = true
+    endif
+    if tp_ab_art == 'ketteln' and tp_ab_kante_inkl == false
       assign tp_ab_kettel_v = all_products['kettelservice'].selected_or_first_available_variant
       if tp_ab_kettel_v.available and tp_ab_kettel_v.price > 0
         assign tp_ab_kante_cent = tp_ab_kettel_v.price | times: tp_ab_kante_einheiten
@@ -141,7 +151,74 @@
     endif
   endif
 -%}
-{%- if tp_ab_belegt and tp_ab_cent > 0 -%}
+{%- liquid
+  # Kopf der Produktseite (kopf: true): steckt die Kante im m2-Preis (Paspel, Band,
+  # Cover, Ketteln mit service.kante_inklusive), ist der Preis je m2 der vollstaendige
+  # Preis - dann steht er vorn, wie im Fachhandel ueblich (Inhaber 2026-10-12, Vorlage
+  # Konkurrenzshop). Eigene Kettelung je lfm und Wunschmass mit Pauschale behalten den
+  # ab-Preis, dort waere der m2-Preis nur ein Teil.
+  # Dasselbe auf Karten (ohne Variante): Karte und Produktseite zeigen denselben
+  # Preis je m2, "ab" nur, wenn die Farben unterschiedlich kosten.
+  assign tp_ab_m2_kopf = false
+  if kopf or variant == blank
+    if tp_ab_einheit_cent > 0 and product.metafields.custom.preis_pro_001_qm.value == true
+      if tp_ab_art == 'paspelband' or tp_ab_art == 'einfassband' or tp_ab_art == 'cover'
+        assign tp_ab_m2_kopf = true
+      elsif tp_ab_art == 'ketteln' and tp_ab_kante_inkl
+        assign tp_ab_m2_kopf = true
+      endif
+    endif
+  endif
+-%}
+{%- if tp_ab_m2_kopf -%}
+  {%- liquid
+    assign tp_ab_m2_alt_cent = 0
+    if tp_ab_alt_einheit_cent > tp_ab_einheit_cent
+      capture tp_ab_aktion_kopf
+        render 'tp-rabatt-sichtbar', product: product
+      endcapture
+      assign tp_ab_aktion_kopf = tp_ab_aktion_kopf | strip
+      if tp_ab_aktion_kopf == 'ja'
+        assign tp_ab_m2_alt_cent = tp_ab_alt_einheit_cent | times: 100
+      endif
+    endif
+    case tp_ab_art
+      when 'ketteln'
+        assign tp_ab_kante_wort = 'Kettelung'
+      when 'paspelband'
+        assign tp_ab_kante_wort = 'Paspel'
+      when 'einfassband'
+        assign tp_ab_kante_wort = 'Einfassband'
+      else
+        assign tp_ab_kante_wort = 'Einfassung'
+    endcase
+  -%}
+  {%- if variant == blank -%}
+    {%- capture tp_ab_qualitaet -%}{% render 'tp-teppich-qualitaet', product: product %}{%- endcapture -%}
+    {%- assign tp_ab_qualitaet = tp_ab_qualitaet | strip -%}
+  {%- endif -%}
+  <span class="tp-ab-preis tp-ab-preis--m2" data-tp-ab-m2-cent="{{ tp_ab_m2_cent }}">
+    {%- if tp_ab_qualitaet != blank -%}
+      <span class="tp-ab-preis__qualitaet">{{ tp_ab_qualitaet | escape }}</span>
+    {%- endif -%}
+    <span class="tp-ab-preis__haupt">
+      {%- if variant == blank and product.price_min != product.price_max -%}<span class="tp-ab-preis__ab">ab</span>{%- endif -%}
+      <span class="tp-ab-preis__betrag">{% if tp_ab_m2_alt_cent > 0 %}<span class="visually-hidden">Aktionspreis </span>{% endif %}{{ tp_ab_m2_cent | money_without_currency | remove: ',00' }}&nbsp;€<span class="tp-ab-preis__einheit">/m²</span></span>
+      {%- if tp_ab_m2_alt_cent > 0 -%}
+        <s class="tp-ab-preis__alt"><span class="visually-hidden">statt </span>{{ tp_ab_m2_alt_cent | money_without_currency | remove: ',00' }}&nbsp;€/m²</s>
+      {%- endif -%}
+    </span>
+    <span class="tp-ab-preis__grund">inkl. {{ tp_ab_kante_wort }} rundum{% if kopf %} · Endpreis nach Ihrem Maß im Konfigurator{% endif %}</span>
+    {%- comment -%} Lieferzeit nur im Kopf und nur aus service.lieferzeit (belegt) {%- endcomment -%}
+    {%- assign tp_ab_lieferzeit = product.metafields.service.lieferzeit.value | strip -%}
+    {%- if kopf and tp_ab_lieferzeit != blank -%}
+      <span class="tp-ab-preis__lieferzeit">
+        <svg viewBox="0 0 20 20" width="16" height="16" fill="none" aria-hidden="true" focusable="false"><path d="M2 5h10v8H2zM12 8h3.2l2.3 2.6V13H12z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="5.5" cy="14.2" r="1.6" fill="currentColor"/><circle cx="14.5" cy="14.2" r="1.6" fill="currentColor"/></svg>
+        Lieferzeit {{ tp_ab_lieferzeit | escape }}
+      </span>
+    {%- endif -%}
+  </span>
+{%- elsif tp_ab_belegt and tp_ab_cent > 0 -%}
   {%- if variant == blank -%}
     {%- capture tp_ab_qualitaet -%}{% render 'tp-teppich-qualitaet', product: product %}{%- endcapture -%}
     {%- assign tp_ab_qualitaet = tp_ab_qualitaet | strip -%}

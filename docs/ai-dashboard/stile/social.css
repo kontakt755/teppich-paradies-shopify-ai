@@ -1,0 +1,17 @@
+/* Ansicht "Social Media" (#/social): zwei ruhige Karten, nur Tokens. */
+.social-raster { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }
+@media (max-width: 860px) { .social-raster { grid-template-columns: 1fr; } }
+.social-karte h2 { margin: 0 0 4px; }
+.social-karte > p.small { margin: 0 0 12px; }
+/* Links mit Geheimnis oder UTM sind lang: umbrechen statt die Seite zu verbreitern. */
+.social-link { overflow-wrap: anywhere; word-break: break-all; font-size: .82rem; color: var(--text-2); }
+.social-neu { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.social-zeile { display: flex; gap: 8px; margin-top: 4px; }
+.social-zeile input { flex: 1; min-width: 0; min-height: 42px; box-sizing: border-box; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; }
+.social-felder { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+.social-felder .field:first-child, .social-felder #socialEigenFeld, .social-felder .field:last-child { grid-column: 1 / -1; }
+.social-felder .field input, .social-felder .field select { width: 100%; box-sizing: border-box; }
+.social-felder [hidden] { display: none !important; }
+.social-ergebnis { margin-top: 14px; padding: 12px; border-radius: 10px; background: var(--surface-2, var(--bg)); display: grid; gap: 10px; justify-items: start; }
+.social-weitere { display: flex; flex-wrap: wrap; gap: 6px 10px; margin: 0 0 14px; color: var(--text-3); }
+@media (max-width: 480px) { .social-felder { grid-template-columns: 1fr; } }

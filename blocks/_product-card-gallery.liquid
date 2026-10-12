@@ -31,7 +31,8 @@
             {% if product.available == false %} color-{{ settings.badge_sold_out_color_scheme }}{% elsif tp_pcg_sale %} color-{{ settings.badge_sale_color_scheme }}{% endif %}
           "
         >
-          {{ 'content.product_badge_sold_out' | t }}
+          {%- capture tp_pcg_sp -%}{%- render 'tp-ist-sonderposten', product: product -%}{%- endcapture -%}
+          {%- if tp_pcg_sp contains 'ja' -%}Verkauft{%- else -%}{{ 'content.product_badge_sold_out' | t }}{%- endif -%}
         </div>
       {%- endif -%}
     </div>

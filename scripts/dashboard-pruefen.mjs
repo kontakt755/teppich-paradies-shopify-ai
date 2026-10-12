@@ -38,7 +38,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..');
-const ALLE_ANSICHTEN = ['heute', 'einkauf', 'einkauf?tab=produktdaten', 'kunden', 'kunden?tab=bestellungen', 'kunden?tab=warenkoerbe', 'organisation', 'fotos', 'lexikon', 'lexikon?handle=kontura-teppichboden', 'arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet', 'shopwache', 'team', 'hilfe'];
+const ALLE_ANSICHTEN = ['heute', 'einkauf', 'einkauf?tab=produktdaten', 'kunden', 'kunden?tab=bestellungen', 'kunden?tab=warenkoerbe', 'organisation', 'fotos', 'social', 'sonderposten', 'lexikon', 'lexikon?handle=kontura-teppichboden', 'arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet', 'shopwache', 'team', 'hilfe'];
 // Fensterbreiten [Breite, Hoehe, Name]. Die Namen "desktop" und "handy" bleiben fuer die
 // beiden Breiten, die es schon immer gab - Screenshots heissen dort wie bisher.
 // Seit das Control Center ueber Tailscale vom Handy aus benutzt wird (auch vom Monteur auf
@@ -47,7 +47,11 @@ const BREITEN = [[1440, 900, 'desktop'], [1024, 768, 'b1024'], [800, 1000, 'b800
 // Grosse Exporte, die das Dashboard nur liest: verlinken statt kopieren.
 const NUR_LESEN = ['einkauf-dryrun', 'einkauf-klaerung', 'lexikon', 'lieferanten'];
 // Klein oder beschreibbar: kopieren, damit Klicktests nie die echten Dateien treffen.
-const KOPIEREN = ['bestelluebersicht', 'kennzahlen', 'organisation', 'aktualisierung.json', 'auftragsstatus.json', 'auftragsverlauf.json', 'musterherkunft.json', 'muster-nachfassen-texte.md'];
+const KOPIEREN = ['bestelluebersicht', 'kennzahlen', 'organisation', 'aktualisierung.json', 'auftragsstatus.json', 'auftragsverlauf.json', 'musterherkunft.json',
+  // Upload-Links der Ansicht "Social Media": ein Klick auf "Neuen Link anlegen" schreibt hierhin.
+  'social/upload-zugaenge.json', 'social/upload-links.json',
+  // Textvorlage fuer "Muster nachfassen" auf Heute
+  'muster-nachfassen-texte.md'];
 
 function argumente(argv) {
   const a = { ansichten: null, aus: null, offen: false, breiten: null, dunkel: false };
@@ -93,7 +97,11 @@ function erzeugteDateien() {
 function datenKopie(quelle) {
   const ziel = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-dashboard-daten-'));
   for (const n of NUR_LESEN) if (fs.existsSync(path.join(quelle, n))) fs.symlinkSync(path.join(quelle, n), path.join(ziel, n));
-  for (const n of KOPIEREN) if (fs.existsSync(path.join(quelle, n))) fs.cpSync(path.join(quelle, n), path.join(ziel, n), { recursive: true });
+  for (const n of KOPIEREN) {
+    if (!fs.existsSync(path.join(quelle, n))) continue;
+    fs.mkdirSync(path.dirname(path.join(ziel, n)), { recursive: true });
+    fs.cpSync(path.join(quelle, n), path.join(ziel, n), { recursive: true });
+  }
   return ziel;
 }
 

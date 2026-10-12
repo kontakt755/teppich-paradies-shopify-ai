@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { analyzeTemplates, blockTypesOf, forbiddenCardBlocks, stripHeader } from '../template-guard.mjs';
+import { analyzeTemplates, blockLimitFindings, blockTypesOf, countDynamicBlocks, forbiddenCardBlocks, maxBlocksOf, SHOPIFY_GRENZEN, stripHeader } from '../template-guard.mjs';
 
 const template = (order, types) => JSON.stringify({
   sections: { main: { blocks: { pc: {
@@ -189,4 +189,91 @@ test('H5: die echte Konfiguration nennt fuer nurIn nur Bodenleisten', async () =
     assert.ok(tpls.length > 0, `${typ} hat einen leeren nurIn-Eintrag`);
     assert.deepEqual(tpls, ['collection.bodenleisten.json'], `${typ} nennt ein unerwartetes Template`);
   }
+});
+
+// --- Shopify-Grenzen: 50 hinzufuegbare Bloecke je Section ------------------
+// Anlass: #977 brachte sections/header-group.json auf 52 Kachel-Bloecke,
+// nachdem main ihn in ff713442 auf 50 gekuerzt hatte. Shopify lehnt so eine
+// Datei beim Push ab; kein Guard hat es gezaehlt.
+
+const kacheln = (anzahl, { statisch = 0 } = {}) => {
+  const blocks = {};
+  for (let i = 0; i < statisch; i += 1) blocks[`fest_${i}`] = { type: '_header-menu', static: true, settings: {} };
+  for (let i = 0; i < anzahl; i += 1) blocks[`kachel_${i}`] = { type: '_tp-menu-kachel', settings: { menu_match: `Punkt ${i}` } };
+  return blocks;
+};
+const gruppe = (sections) => `/*\n * auto-generated\n */\n${JSON.stringify({ type: 'header', sections, order: Object.keys(sections) })}`;
+
+test('J1: 52 Kacheln im Header sind ein Fehler, die statischen Bloecke zaehlen nicht mit', () => {
+  const raw = gruppe({ header_section: { type: 'header', blocks: kacheln(52, { statisch: 2 }) } });
+  const findings = blockLimitFindings(raw, 'sections/header-group.json');
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].severity, 'error');
+  assert.equal(findings[0].rule, 'BLOCK_LIMIT');
+  assert.match(findings[0].message, /header_section/);
+  assert.match(findings[0].message, /52 hinzufuegbare Bloecke, erlaubt sind 50/);
+  assert.match(findings[0].message, /2 Block\/Bloecke entfernen/);
+});
+
+test('J2: genau 50 sind erlaubt, melden aber "voll"', () => {
+  const raw = gruppe({ header_section: { type: 'header', blocks: kacheln(50, { statisch: 2 }) } });
+  const findings = blockLimitFindings(raw, 'sections/header-group.json');
+  assert.deepEqual(findings.map(f => [f.severity, f.rule]), [['warn', 'BLOCK_LIMIT_VOLL']]);
+  assert.deepEqual(blockLimitFindings(gruppe({ s: { type: 'header', blocks: kacheln(49) } }), 'x.json'), []);
+});
+
+test('J3: verschachtelte Bloecke zaehlen mit, statische in jeder Tiefe nicht', () => {
+  const section = { type: 'header', blocks: {
+    menue: { type: '_header-menu', static: true, blocks: kacheln(30) },
+    gruppe: { type: 'group', blocks: kacheln(20, { statisch: 3 }) },
+  } };
+  // 30 unter dem statischen Menue + Gruppe selbst + 20 darin = 51
+  assert.equal(countDynamicBlocks(section), 51);
+  const findings = blockLimitFindings(gruppe({ h: section }), 'sections/header-group.json');
+  assert.equal(findings[0]?.rule, 'BLOCK_LIMIT');
+});
+
+test('J4: max_blocks aus dem Section-Schema senkt die Grenze', () => {
+  const raw = JSON.stringify({ sections: { faq: { type: 'tp-teppiche-faq', blocks: kacheln(5) } } });
+  const findings = blockLimitFindings(raw, 'templates/x.json', { maxBlocks: { 'tp-teppiche-faq': 4 } });
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].rule, 'BLOCK_LIMIT');
+  assert.match(findings[0].message, /max_blocks in sections\/tp-teppiche-faq\.liquid/);
+  // voll nach max_blocks ist gewollt und kein Hinweis wert
+  assert.deepEqual(blockLimitFindings(raw, 'templates/x.json', { maxBlocks: { 'tp-teppiche-faq': 5 } }), []);
+});
+
+test('J5: Dateigrenzen - 25 Sections und 1.250 Bloecke je Datei', () => {
+  const viele = Object.fromEntries(Array.from({ length: 26 }, (_, i) => [`s${i}`, { type: 'text', blocks: kacheln(49) }]));
+  const rules = blockLimitFindings(JSON.stringify({ sections: viele }), 'templates/index.json').map(f => f.rule).sort();
+  assert.deepEqual(rules, ['BLOCK_LIMIT_DATEI', 'SECTION_LIMIT']);
+  assert.equal(SHOPIFY_GRENZEN.bloeckeProSection, 50);
+});
+
+test('J6: max_blocks wird aus dem Liquid-Schema gelesen', () => {
+  assert.equal(maxBlocksOf('<div></div>\n{% schema %}\n{"name": "FAQ", "max_blocks": 12}\n{% endschema %}'), 12);
+  assert.equal(maxBlocksOf('{%- schema -%}{"name": "x"}{%- endschema -%}'), null);
+  assert.equal(maxBlocksOf('{% schema %}{kaputt{% endschema %}'), null);
+  assert.equal(maxBlocksOf('ohne Schema'), null);
+});
+
+test('J7: kein Template und keine Section-Gruppe im Repository ueberschreitet eine Shopify-Grenze', async () => {
+  const { readFileSync, readdirSync } = await import('node:fs');
+  const root = new URL('../../', import.meta.url);
+  const maxBlocks = {};
+  for (const name of readdirSync(new URL('sections/', root)).filter(f => f.endsWith('.liquid'))) {
+    const value = maxBlocksOf(readFileSync(new URL(`sections/${name}`, root), 'utf8'));
+    if (value !== null) maxBlocks[name.replace(/\.liquid$/, '')] = value;
+  }
+  const fehler = [];
+  let geprueft = 0;
+  for (const dir of ['templates', 'sections']) {
+    for (const name of readdirSync(new URL(`${dir}/`, root)).filter(f => f.endsWith('.json'))) {
+      geprueft += 1;
+      const raw = readFileSync(new URL(`${dir}/${name}`, root), 'utf8');
+      fehler.push(...blockLimitFindings(raw, `${dir}/${name}`, { maxBlocks }).filter(f => f.severity === 'error'));
+    }
+  }
+  assert.ok(geprueft > 30, `nur ${geprueft} Dateien gefunden`);
+  assert.deepEqual(fehler.map(f => f.message), []);
 });

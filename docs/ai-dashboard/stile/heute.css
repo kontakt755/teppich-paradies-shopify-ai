@@ -124,6 +124,26 @@ html[data-theme="dark"] .heute-sicht a[aria-current] { color: var(--bg); }
 .heute-kpi .l { font-size: .85rem; color: var(--text-2); }
 .heute-kpi .d { margin-top: 6px; font-size: .78rem; color: var(--text-3); }
 
+/* ---------- Laden: Zahlen aus der Auftrags-App (ansichten/heute/laden.mjs) ----------
+   Gleiche Zellen wie die Kennzahlen, fuenf statt vier. Bernstein nur fuer faellige
+   Wiedervorlagen (zu tun), 0 wird grau. */
+.heute-laden .heute-block-kopf a span { font-weight: 400; }
+.heute-laden .heute-hinweis { margin-top: 0; }
+.heute-kpis.heute-laden-zahlen { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.heute-laden-zahlen .n.null { color: var(--text-3); }
+.heute-laden-zahlen .n.warn { color: var(--warn); }
+/* Spam-Verdacht: eine ruhige Zeile unter den Zahlen, nur die Zahl in Bernstein (zu tun). */
+.heute-laden .heute-laden-spam { margin-top: 10px; }
+.heute-laden-spam b { color: var(--warn); font-weight: 650; font-variant-numeric: tabular-nums; }
+@media (max-width: 1100px) {
+  .heute-kpis.heute-laden-zahlen { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .heute-kpis.heute-laden-zahlen { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .heute-laden-zahlen > .heute-kpi:last-child { grid-column: 1 / -1; }
+  .heute-laden .heute-block-kopf a { min-height: 44px; display: inline-flex; align-items: center; gap: 4px; }
+}
+
 /* ---------- Bisherige Bloecke, eingeklappt ---------- */
 .heute .heute-abschnitt { margin-top: 36px; }
 .heute-klappe { border-top: 1px solid var(--line); }

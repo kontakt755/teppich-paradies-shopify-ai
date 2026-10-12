@@ -151,6 +151,114 @@ export function findAllBlocks(node, type, out = []) {
 }
 
 /**
+ * Shopify-Grenzen fuer Bloecke und Sections, laut
+ * https://shopify.dev/docs/storefronts/themes/architecture/limits (abgerufen
+ * 2026-10-10). Statische Bloecke ({% content_for 'block' %}, "static": true)
+ * zaehlen nicht mit. Eine Datei darueber lehnt Shopify beim Speichern bzw.
+ * Push ab: workflow:preview bricht dann ab, das Theme behaelt die alte Datei,
+ * und das Live-Gate blockiert jeden folgenden Deploy.
+ *
+ * Warum der Guard: sections/header-group.json traegt eine Bildkachel je
+ * Menuepunkt als Block. main musste den Header in ff713442 von 51 auf 50
+ * kuerzen; ein Feature-Branch (#977) stand trotzdem wieder bei 52, und der
+ * Merge lief ohne Konflikt durch - gezaehlt hat das niemand.
+ */
+export const SHOPIFY_GRENZEN = Object.freeze({
+  bloeckeProSection: 50,
+  bloeckeProDatei: 1250,
+  sectionsProDatei: 25,
+});
+
+/**
+ * Hinzufuegbare (nicht statische) Bloecke unter einem Knoten, in jeder Tiefe.
+ * Bewusst konservativ: Shopify sagt nicht eindeutig, ob verschachtelte
+ * Theme-Bloecke auf die 50 der Section angerechnet werden. Wer alle zaehlt,
+ * meldet im Zweifel zu frueh statt zu spaet.
+ */
+export function countDynamicBlocks(node) {
+  let count = 0;
+  for (const block of Object.values(node?.blocks ?? {})) {
+    if (!block || typeof block !== 'object') continue;
+    if (block.static !== true) count += 1;
+    count += countDynamicBlocks(block);
+  }
+  return count;
+}
+
+/** "max_blocks" aus dem Schema einer Section-Datei (Liquid), sonst null. */
+export function maxBlocksOf(liquid) {
+  const match = String(liquid).match(/\{%-?\s*schema\s*-?%\}([\s\S]*?)\{%-?\s*endschema\s*-?%\}/);
+  if (!match) return null;
+  try {
+    const value = JSON.parse(match[1]).max_blocks;
+    return Number.isInteger(value) && value > 0 ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Prueft eine Template- oder Section-Gruppen-Datei gegen die Shopify-Grenzen.
+ *
+ * @param {string} raw  Dateiinhalt (JSON, Kommentarkopf erlaubt)
+ * @param {string} file  Anzeigename, z. B. "sections/header-group.json"
+ * @param {object} [options]
+ * @param {Record<string, number>} [options.maxBlocks]  Section-Typ -> max_blocks aus dem Schema
+ */
+export function blockLimitFindings(raw, file, { maxBlocks = {} } = {}) {
+  const findings = [];
+  const sections = JSON.parse(stripHeader(raw))?.sections;
+  if (!sections || typeof sections !== 'object') return findings;
+
+  const sectionIds = Object.keys(sections);
+  if (sectionIds.length > SHOPIFY_GRENZEN.sectionsProDatei) {
+    findings.push({
+      severity: 'error',
+      rule: 'SECTION_LIMIT',
+      templates: [file],
+      message: `${file} hat ${sectionIds.length} Sections, Shopify erlaubt ${SHOPIFY_GRENZEN.sectionsProDatei} je Template bzw. Section-Gruppe.`,
+    });
+  }
+
+  let total = 0;
+  for (const [id, section] of Object.entries(sections)) {
+    const count = countDynamicBlocks(section);
+    total += count;
+    const schemaMax = maxBlocks[section?.type];
+    const limit = Number.isInteger(schemaMax)
+      ? Math.min(SHOPIFY_GRENZEN.bloeckeProSection, schemaMax)
+      : SHOPIFY_GRENZEN.bloeckeProSection;
+    const quelle = limit === SHOPIFY_GRENZEN.bloeckeProSection ? 'Shopify-Grenze' : `max_blocks in sections/${section.type}.liquid`;
+    if (count > limit) {
+      findings.push({
+        severity: 'error',
+        rule: 'BLOCK_LIMIT',
+        templates: [file],
+        message: `${file}: Section "${id}" (${section?.type}) hat ${count} hinzufuegbare Bloecke, erlaubt sind ${limit} (${quelle}). Shopify lehnt die Datei beim Push ab - erst ${count - limit} Block/Bloecke entfernen.`,
+      });
+    } else if (count === SHOPIFY_GRENZEN.bloeckeProSection) {
+      findings.push({
+        severity: 'warn',
+        rule: 'BLOCK_LIMIT_VOLL',
+        templates: [file],
+        message: `${file}: Section "${id}" (${section?.type}) steht bei ${count} von ${limit} Bloecken - ein weiterer Block braucht erst einen freien Platz.`,
+      });
+    }
+  }
+
+  if (total > SHOPIFY_GRENZEN.bloeckeProDatei) {
+    findings.push({
+      severity: 'error',
+      rule: 'BLOCK_LIMIT_DATEI',
+      templates: [file],
+      message: `${file} hat ${total} hinzufuegbare Bloecke, Shopify erlaubt ${SHOPIFY_GRENZEN.bloeckeProDatei} je Template bzw. Section-Gruppe.`,
+    });
+  }
+
+  return findings;
+}
+
+/**
  * Blocktypen, die in keiner Produktkarte stecken duerfen, weil der Code
  * sich darauf verlaesst, dass es sie dort nicht gibt. Anders als die Drift-
  * Pruefung geht das ueber jedes Template und jede Section-Gruppe - Karten

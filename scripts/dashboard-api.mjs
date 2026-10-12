@@ -50,10 +50,13 @@ import {
   FOTO_ART, FotoFehler, passendeProdukte, produktHinweis, pruefeEingang, titelFuer,
 } from '../operations/lib/baustellenfotos.mjs';
 import { protokollPfad, protokolliere } from '../operations/lib/protokoll.mjs';
+import { findeZugang, liesZugaenge, zugangAnlegen } from '../social/lib/eingang.mjs';
+import { ladeUmgebung } from '../social/lib/zugang.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { rollenware, paketware, stueck as stueckware, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
-import { ladeEnvLocal } from '../operations/sync/zugang.mjs';
+import { ladeEnvLocal, erzeugeProxy, KEIN_ZUGANG, mitHinweis } from '../operations/sync/zugang.mjs';
+import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, SonderpostenFehler } from '../operations/lib/sonderposten.mjs';
 import { ohneUeberholtenFehler } from '../operations/scripts/aktualisieren.mjs';
 
 const execFileP = promisify(execFile);
@@ -389,7 +392,7 @@ function stammKontakte(dir) {
   return index;
 }
 
-export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env } = {}) {
+export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env, shopifyZugang = null } = {}) {
   let userCache = null;
   let labelCache = { at: 0, names: [] };
   // Prozesszustand des Knopfs "Jetzt aktualisieren" - genau ein Lauf gleichzeitig,
@@ -401,6 +404,22 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
   function manuellerZugangVorhanden() {
     const zugang = { ...ladeEnvLocal(path.join(root, '.env.local')), ...env };
     return Boolean(zugang.SHOPIFY_ADMIN_TOKEN || (zugang.SHOPIFY_CLIENT_ID && zugang.SHOPIFY_CLIENT_SECRET));
+  }
+
+  /**
+   * Live-Zugang zur Shopify Admin API (nur Sonderposten). Einmal je Prozess
+   * aufgebaut: der Client-Credentials-Tausch kostet eine Anfrage, und
+   * erzeugeProxy erneuert den Token bei Ablauf selbst. Tests reichen eine
+   * Attrappe als `shopifyZugang` hinein - kein Test spricht echtes Shopify.
+   */
+  let shopifyZugangCache = null;
+  async function shopify() {
+    if (shopifyZugang) { const ersatz = await shopifyZugang(); if (ersatz) return ersatz; }
+    if (!shopifyZugangCache) {
+      shopifyZugangCache = erzeugeProxy({ env: { ...ladeEnvLocal(process.env.TP_ENV_LOCAL || path.join(root, '.env.local')), ...env } })
+        .catch((e) => { shopifyZugangCache = null; throw e; });
+    }
+    return shopifyZugangCache;
   }
 
   const auditPath = path.join(root, '.router', 'control-center-audit.jsonl');
@@ -1511,6 +1530,65 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      */
     _benutzerDatei() { return path.join(privatDirPath || privatDir(), 'benutzer.json'); },
 
+    /**
+     * Upload-Links der Monteure fuer Baustellenfotos (Ansicht "Social Media").
+     *
+     * Der Link IST der Zugang. Das Social-Modul speichert davon nur den Hash
+     * (upload-zugaenge.json); damit Inhaber und Mitarbeiter ihn spaeter noch
+     * kopieren koennen, legt das Control Center den Klartext beim Anlegen in
+     * upload-links.json daneben ab - beides nur im Privatordner, Rechte 600.
+     * Angezeigt wird ein gemerkter Link nur, solange sein Zugang aktiv ist:
+     * wer per `npm run social -- zugang sperren` sperrt, sperrt auch hier.
+     */
+    _socialDir() { return path.join(privatDirPath || privatDir(), 'social'); },
+    _uploadBasis() {
+      const dir = this._socialDir();
+      const basis = ladeUmgebung(env, { dir, repo: root }).SOCIAL_UPLOAD_BASIS_URL || '';
+      return /^https?:\/\/[^\s<>]+$/.test(basis) ? basis.replace(/\/+$/, '') : '';
+    },
+    _uploadLinksDatei() { return path.join(this._socialDir(), 'upload-links.json'); },
+    _uploadLinks() {
+      try { return JSON.parse(fs.readFileSync(this._uploadLinksDatei(), 'utf8')).links ?? []; } catch { return []; }
+    },
+
+    socialZugaenge() {
+      const dir = this._socialDir();
+      const liste = liesZugaenge(path.join(dir, 'upload-zugaenge.json'));
+      const basis = this._uploadBasis();
+      const gemerkt = this._uploadLinks();
+      const namen = [...new Set(liste.filter(z => z.aktiv).map(z => z.name))];
+      const zugaenge = namen.map(name => {
+        const aktive = liste.filter(z => z.aktiv && z.name === name);
+        // Juengster noch gueltiger gemerkter Link dieses Namens.
+        const treffer = gemerkt.filter(l => l.name === name && findeZugang(l.token, aktive))
+          .sort((a, b) => String(b.angelegt).localeCompare(String(a.angelegt)))[0];
+        return {
+          name,
+          seit: aktive.map(z => z.angelegt).sort()[0] || null,
+          link: treffer && basis ? `${basis}/u/${treffer.token}` : null,
+        };
+      });
+      return { basisVorhanden: Boolean(basis), zugaenge };
+    },
+
+    socialLinkNeu({ name = '' } = {}, { benutzer = null } = {}) {
+      const sauber = String(name || '').trim().slice(0, 40);
+      if (!sauber) throw new ApiError(400, 'Bitte einen Namen eintragen, z. B. „Team“.');
+      const basis = this._uploadBasis();
+      if (!basis) throw new ApiError(409, 'Die öffentliche Upload-Adresse ist am Mac noch nicht eingetragen.');
+      const dir = this._socialDir();
+      // Ein weiterer Link fuer denselben Namen sperrt den alten nicht: die
+      // Monteure benutzen ihn vielleicht gerade auf der Baustelle.
+      const z = zugangAnlegen(sauber, { datei: path.join(dir, 'upload-zugaenge.json'), jetzt: now() });
+      const links = this._uploadLinks();
+      links.push({ name: z.name, token: z.token, angelegt: now().toISOString() });
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(this._uploadLinksDatei(), JSON.stringify({ links }, null, 2), { mode: 0o600 });
+      fs.chmodSync(this._uploadLinksDatei(), 0o600);
+      merke(benutzer, null, 'Upload-Link angelegt', z.name);
+      return { ok: true, ...this.socialZugaenge() };
+    },
+
     teamListe() {
       const liste = orgLeseBenutzer(this._benutzerDatei());
       return {
@@ -1906,6 +1984,79 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         return { verfuegbar: false, quelle: file, hinweis: 'Noch keine Bestandsdaten exportiert.', befehl: 'npm run daten:aktualisieren -- --nur bestand' };
       }
       return { verfuegbar: true, quelle: file, ...daten };
+    },
+
+    /**
+     * Sonderposten live aus Shopify (operations/lib/sonderposten.mjs). Ohne
+     * Zugang derselbe Hinweis wie bei den anderen Quellen; ein Lesefehler wird
+     * als Stoerung mit Handlungshinweis gemeldet, nie als leere Liste.
+     */
+    async sonderpostenListe() {
+      let zugang;
+      try { zugang = await shopify(); } catch (e) {
+        return { verfuegbar: false, fehler: true, hinweis: mitHinweis(String(e?.message || e).split('\n')[0]) };
+      }
+      if (zugang?.art === 'sammeln') {
+        return { verfuegbar: false, hinweis: KEIN_ZUGANG, befehl: 'npm run operations:verbindung' };
+      }
+      try {
+        const daten = await leseSonderposten(zugang.proxy, { jetzt: now() });
+        if (!daten) return { verfuegbar: false, hinweis: KEIN_ZUGANG, befehl: 'npm run operations:verbindung' };
+        return { verfuegbar: true, ...daten };
+      } catch (e) {
+        const msg = String(e?.message || e).split('\n')[0].slice(0, 300);
+        console.error(`[sonderposten] ${msg}`);
+        return { verfuegbar: false, fehler: true, hinweis: `Shopify war nicht lesbar: ${mitHinweis(msg)}` };
+      }
+    },
+
+    /**
+     * "Im Laden verkauft": Einzelstueck Bestand 1 -> 0 mit Verkaufsangaben,
+     * Restrolle (mit laengeM) Bestand minus Laenge x Rollenbreite; jeweils
+     * Protokoll und Gegenprobe. `benutzer` kommt aus der Sitzung, nie aus der Anfrage.
+     * Nur Produkt-ID und inventoryItemId werden aus dem Browser genommen -
+     * beides wird gegen den frisch gelesenen Stand geprueft.
+     */
+    async sonderpostenVerkauft(payload, benutzer) {
+      const { produktId, inventoryItemId, laengeM } = payload || {};
+      if (!produktId) throw new ApiError(400, 'produktId ist Pflicht', { missing: ['produktId'] });
+      const zugang = await shopify();
+      if (zugang?.art === 'sammeln') throw new ApiError(503, 'Kein Zugang zu Shopify eingerichtet – hier kann nichts gebucht werden.', { grund: 'kein-zugang' });
+      const wer = benutzer?.name || 'Inhaber';
+      // Restrolle: mit Laenge. Ob das Produkt wirklich eine Rolle ist, prueft
+      // verkaufeVonRolle am frisch gelesenen Stand - nicht der Browser.
+      if (laengeM !== undefined && laengeM !== null && laengeM !== '') {
+        let r;
+        try {
+          r = await verkaufeVonRolle(zugang.proxy, { produktId: String(produktId), inventoryItemId: inventoryItemId ? String(inventoryItemId) : null, laengeM: Number(laengeM), jetzt: now() });
+        } catch (e) {
+          if (e instanceof SonderpostenFehler) {
+            if (e.extra?.grund === 'unklar') merke(benutzer, wer, 'sonderposten-rolle-im-laden-verkauft-unklar', `${String(produktId)} · ${laengeM} m · Ergebnis unklar, Bestand pruefen`);
+            throw new ApiError(e.status, e.message, e.extra);
+          }
+          throw e;
+        }
+        const pruef = r.gegenprobe === 'fehlgeschlagen' ? ' · Gegenprobe nicht lesbar' : (r.ok ? '' : ` · Gegenprobe: Bestand ${r.bestandNachher} statt ${r.bestandErwartet}`);
+        merke(benutzer, wer, 'sonderposten-rolle-im-laden-verkauft', `${r.titel} · ${String(r.laengeM).replace('.', ',')} m = ${r.qm} m² · Bestand ${r.bestandVorher} → ${r.bestandErwartet} m² · ${String(produktId)}${pruef}${r.antwortVerloren ? ' · Antwort verloren, per Lesen bestaetigt' : ''}`);
+        return r;
+      }
+      let ergebnis;
+      try {
+        ergebnis = await verkaufeImLaden(zugang.proxy, { produktId: String(produktId), inventoryItemId: inventoryItemId ? String(inventoryItemId) : null, verkauftVon: wer, jetzt: now() });
+      } catch (e) {
+        if (e instanceof SonderpostenFehler) {
+          // Ausgang offen: die Bestandsmutation kann angekommen sein. Wer wann
+          // gebucht hat, gehoert dann trotzdem ins Protokoll.
+          if (e.extra?.grund === 'unklar') merke(benutzer, wer, 'sonderposten-im-laden-verkauft-unklar', `${String(produktId)} · Ergebnis unklar, Bestand pruefen`);
+          throw new ApiError(e.status, e.message, e.extra);
+        }
+        throw e;
+      }
+      const gegenprobe = ergebnis.gegenprobe === 'fehlgeschlagen'
+        ? ' · Gegenprobe nicht lesbar'
+        : (ergebnis.ok ? '' : ` · Gegenprobe: Bestand ${ergebnis.bestandNachher}${ergebnis.onlineGesperrt === false ? ', online nicht gesperrt' : ''}`);
+      merke(benutzer, wer, 'sonderposten-im-laden-verkauft', `${ergebnis.sku || '–'} · ${String(produktId)}${gegenprobe}${ergebnis.antwortVerloren ? ' · Antwort verloren, per Lesen bestaetigt' : ''}`);
+      return ergebnis;
     },
 
     /** Erfuellungen (Sendungen) und Rueckerstattungen je Bestellung. */

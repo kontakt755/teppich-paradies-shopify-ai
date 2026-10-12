@@ -12,44 +12,66 @@
 
   Rueckfall, wenn der Teppichboden keine Rollenbreiten liefert: service.max_breite_cm.
 
+  Schnellweg wie in snippets/tp-teppich-gruppe: custom.teppich_basis_daten (JSON, v = 1)
+  traegt "breite_max" und je Farbe "breite" (0 = keine Breite belegt), gepflegt per
+  `npm run teppich:basis-daten` aus genau diesem Snippet. Fehlt die Farbe dort (neu seit
+  dem letzten Lauf), wird live gerechnet. Der Konfigurator auf der Produktseite rechnet
+  immer live (live: true) - dort wird bestellt.
+
   @param {object} product - der Teppich nach Mass
   @param {string} [farbe] - Farbname der gewaehlten Variante; ohne ihn die groesste Breite ueber alle Farben
+  @param {boolean} [live] - true: immer aus den Basisdaten rechnen, gespeichertes Ergebnis ignorieren
 {% enddoc %}
 {%- liquid
   assign tmb_max = 0
-  assign tmb_basis = product.metafields.service.einfass_basis.value
-  if tmb_basis != blank
-    for tmb_v in tmb_basis.variants
-      if tmb_v.available
+  assign tmb_gespeichert = nil
+  unless live
+    assign tmb_daten = product.metafields.custom.teppich_basis_daten.value
+    if tmb_daten.v == 1
+      if farbe == blank
+        assign tmb_gespeichert = tmb_daten.breite_max
+      else
+        assign tmb_gespeichert = tmb_daten.breite[farbe]
+      endif
+    endif
+  endunless
+  if tmb_gespeichert != nil
+    assign tmb_max = tmb_gespeichert | times: 1
+  else
+    assign tmb_basis = product.metafields.service.einfass_basis.value
+    if tmb_basis != blank
+      for tmb_v in tmb_basis.variants
+        if tmb_v.available
+          if farbe == blank or tmb_v.option1 == farbe
+            assign tmb_cm = tmb_v.metafields.custom.rollenbreite.value | times: 100 | round
+            if tmb_cm > tmb_max
+              assign tmb_max = tmb_cm
+            endif
+          endif
+        endif
+      endfor
+    endif
+    # Keine VERFUEGBARE Rolle dieser Farbe: die Rollen der Farbe zaehlen trotzdem - die Grenze
+    # darf nie ueber das hinausgehen, was es in dieser Farbe gibt. Hart sperren waere falsch:
+    # ein falsch gepflegter Bestand wuerde dann Verkaeufe blockieren (Codex-Review 2026-09-20).
+    if tmb_max == 0 and tmb_basis != blank
+      for tmb_v in tmb_basis.variants
         if farbe == blank or tmb_v.option1 == farbe
           assign tmb_cm = tmb_v.metafields.custom.rollenbreite.value | times: 100 | round
           if tmb_cm > tmb_max
             assign tmb_max = tmb_cm
           endif
         endif
-      endif
-    endfor
-  endif
-  # Keine VERFUEGBARE Rolle dieser Farbe: die Rollen der Farbe zaehlen trotzdem - die Grenze
-  # darf nie ueber das hinausgehen, was es in dieser Farbe gibt. Hart sperren waere falsch:
-  # ein falsch gepflegter Bestand wuerde dann Verkaeufe blockieren (Codex-Review 2026-09-20).
-  if tmb_max == 0 and tmb_basis != blank
-    for tmb_v in tmb_basis.variants
-      if farbe == blank or tmb_v.option1 == farbe
-        assign tmb_cm = tmb_v.metafields.custom.rollenbreite.value | times: 100 | round
-        if tmb_cm > tmb_max
-          assign tmb_max = tmb_cm
-        endif
-      endif
-    endfor
-  endif
-  if tmb_max > 0
-    assign tmb_art = product.metafields.service.einfassung.value | strip | downcase
-    if tmb_art == 'cover'
-      assign tmb_max = tmb_max | minus: 10
+      endfor
     endif
-  else
-    assign tmb_max = product.metafields.service.max_breite_cm.value | times: 1
+    if tmb_max > 0
+      assign tmb_art = product.metafields.service.einfassung.value | strip | downcase
+      if tmb_art == 'cover'
+        assign tmb_max = tmb_max | minus: 10
+      endif
+    else
+      assign tmb_max = product.metafields.service.max_breite_cm.value | times: 1
+    endif
   endif
   if tmb_max > 0
     echo tmb_max

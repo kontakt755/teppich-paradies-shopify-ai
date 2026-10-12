@@ -29,6 +29,7 @@ import { fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createApi, ApiError } from './dashboard-api.mjs';
+import { createLadenZahlen } from './laden-zahlen.mjs';
 import {
   createAuth, loadConfiguredPassword, parseCookies, sessionCookieHeader,
   clearedCookieHeader, renderLoginPage, sleep, SESSION_COOKIE,
@@ -90,11 +91,21 @@ async function rebuild() {
 
 // sitzungenVerwerfen reicht das Auth-Objekt hinein, statt es zu importieren -
 // auth entsteht hier, ein Import in dashboard-api.mjs waere ein Zyklus.
+// Servertests ersetzen den Shopify-Zugang (Sonderposten) durch eine Attrappe -
+// sonst liefe ein Test mit dem .env.local des Rechners gegen den echten Shop.
+let shopifyZugangErsatz = null;
+export function ersetzeShopifyZugang(fabrik) { shopifyZugangErsatz = fabrik; }
+
 export const api = createApi({
   root: REPO_ROOT,
   rebuild,
   sitzungenVerwerfen: (kuerzel) => auth.sitzungenVerwerfen(kuerzel),
+  shopifyZugang: () => (shopifyZugangErsatz ? shopifyZugangErsatz() : null),
 });
+
+// Kachel „Laden" auf „Heute": Zahlen aus der Auftrags-App, serverseitig abgerufen
+// (URL und Schluessel aus .env.local des Dienstes, nie im Browser) - scripts/laden-zahlen.mjs.
+const ladenZahlen = createLadenZahlen({ root: REPO_ROOT });
 
 function send(res, status, body, type = 'application/json; charset=utf-8') {
   res.writeHead(status, { 'Content-Type': type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' });
@@ -192,6 +203,8 @@ const NUR_INHABER = new Set([
   'benutzer',
   'team/liste',
   'team/aendern',
+  // Ein neuer Upload-Link oeffnet einen Weg von aussen ins Haus.
+  'social/link-neu',
   'einkauf/kennzahlen', // Umsatzzahlen
   // Das Protokoll sagt, wer wann was getan hat. Es haengt im Frontend allein an
   // der Ansicht "Aktivitaet" (inhaber-only), stand aber unter keiner
@@ -218,7 +231,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
   // Bestelltabelle, Lexikon samt Mengenhilfe und die neuen Datenarten
   // (Kunden, Angebote, Warenkoerbe, Bestand, Erfuellung) - fehlt einer,
   // antwortet der Server 404.
-  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/muster-texte|kunden\/bestellung-fertig|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/muster-texte|kunden\/bestellung-fertig|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|sonderposten\/liste|sonderposten\/verkauft|laden\/zahlen)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { send(res, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
   // Host-Pruefung fuer JEDEN Aufruf, nicht nur fuer schreibende: sonst kann
@@ -228,7 +241,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     send(res, 403, { error: 'Dafür fehlt dir die Berechtigung – das macht der Inhaber.' });
     return;
   }
-  const write = simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || simple === 'kunden/fall-marke' || ['org/neu', 'org/aendern', 'org/kommentar', 'org/pruefen', 'org/analyse', 'org/liste-einfuegen', 'org/anhang', 'fotos/neu'].includes(simple) || ['transition', 'assign', 'comment'].includes(taskOp);
+  const write = simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || simple === 'kunden/fall-marke' || ['org/neu', 'org/aendern', 'org/kommentar', 'org/pruefen', 'org/analyse', 'org/liste-einfuegen', 'org/anhang', 'fotos/neu', 'social/link-neu', 'sonderposten/verkauft'].includes(simple) || ['transition', 'assign', 'comment'].includes(taskOp);
   try {
     if (write) {
       if (req.method !== 'POST') { send(res, 405, { error: 'POST erwartet' }); return; }
@@ -236,6 +249,10 @@ export async function handleApi(req, res, pathname, benutzer = null) {
       // Frontend die Aktion anzeigt. Ohne Mehrbenutzerbetrieb (kein `benutzer`) gilt
       // weiterhin der bisherige Notzugang (Inhaber, alle Rechte).
       if (benutzer && benutzer.rolle === 'lesen') { send(res, 403, { error: 'Rolle "lesen" darf keine Aenderungen vornehmen' }); return; }
+    } else if (simple === 'social/zugaenge') {
+      // Der Upload-Link ist ein Geheimnis: Rolle "lesen" bekommt ihn auch lesend nicht.
+      if (benutzer && benutzer.rolle === 'lesen') { send(res, 403, { error: 'Dafür fehlt dir die Berechtigung.' }); return; }
+      if (req.method !== 'GET') { send(res, 405, { error: 'GET erwartet' }); return; }
     } else if (simple === 'benutzer' || simple === 'team/liste') {
       if (req.method !== 'GET') { send(res, 405, { error: 'GET erwartet' }); return; }
     } else if (simple === 'team/aendern' || simple === 'mein-passwort') {
@@ -285,6 +302,8 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'fotos/neu') result = api.fotosNeu(await readJson(req, MAX_BODY_UPLOAD), { benutzer });
     else if (simple === 'fotos/liste') result = api.fotosListe({ offen: url.searchParams.get('offen') === '1', benutzer });
     else if (simple === 'fotos/produkt') result = api.fotosProdukt({ boden: url.searchParams.get('boden') || '' });
+    else if (simple === 'social/zugaenge') result = api.socialZugaenge();
+    else if (simple === 'social/link-neu') result = api.socialLinkNeu(await readJson(req), { benutzer });
     else if (simple === 'team/liste') result = api.teamListe();
     else if (simple === 'team/aendern') result = api.teamAendern(await readJson(req), { benutzer });
     else if (simple === 'mein-passwort') result = api.eigenesPasswort(await readJson(req), { benutzer });
@@ -315,7 +334,12 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'warenkoerbe/liste') result = api.warenkoerbeListe();
     else if (simple === 'bestand/liste') result = api.bestandListe();
     else if (simple === 'shopwache/status') result = api.shopwacheStatus();
+    else if (simple === 'laden/zahlen') result = await ladenZahlen.abrufen();
     else if (simple === 'erfuellung/liste') result = api.erfuellungListe();
+    else if (simple === 'sonderposten/liste') result = await api.sonderpostenListe();
+    // Schreibt nach Shopify (Bestand, Verkaufsfelder) - steht deshalb oben in der write-Liste:
+    // Rolle "lesen" bekommt 403, mitarbeiter und inhaber duerfen.
+    else if (simple === 'sonderposten/verkauft') result = await api.sonderpostenVerkauft(await readJson(req), benutzer);
     else if (simple === 'aktualisierung') result = api.aktualisierung();
     else if (simple === 'aktualisierung/status') result = api.aktualisierungStatus();
     else if (simple === 'aktualisierung/start') result = api.aktualisierungStarten();

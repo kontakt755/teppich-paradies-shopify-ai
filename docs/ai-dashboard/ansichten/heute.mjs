@@ -6,6 +6,7 @@
  *   2a. "Muster nachfassen" (ansichten/heute/muster-nachfassen.mjs) - nicht in der Website-Sicht,
  *       die offenen Kunden zaehlen bei N mit
  *   3. "Wer wartet auf was" - wir / Lieferant / Kunde
+ *   3a. "Laden" - Zahlen aus der Auftrags-App (ansichten/heute/laden.mjs), nicht in der Website-Sicht
  *   4. Kennzahlen (nur Inhaber, nur was der Export hergibt)
  *   5. die bisherigen Bloecke, eingeklappt (ansichten/heute/bisher.mjs)
  *
@@ -27,6 +28,7 @@ import { kunden } from './kunden/gemeinsam.mjs';
 import { ensureKundenBestellungen } from './kunden/bestellungen.mjs';
 import { ensureKundenRueckrufe } from './kunden/rueckrufe.mjs';
 import { ensureKundenFaelle } from './kunden/faelle.mjs';
+import { heuteLaden } from './heute/laden.mjs';
 import { shopwache } from './shopwache.mjs';
 import { heuteDaten, ensureHeuteLieferanten, ensureHeuteAufgaben, ensureHeuteMusterTexte } from './heute/daten.mjs';
 import { heuteBisher } from './heute/bisher.mjs';
@@ -93,6 +95,7 @@ export function viewHeute() {
     ${datenstandZeile(sicht)}
     ${musterNachfassenBlock(muster)}
     ${werWartetBlock(wartet)}
+    ${sicht === 'website' ? '' : heuteLaden()}
     ${istInhaber() ? kennzahlenBlock() : ''}
     ${heuteBisher()}
   </div>`;
