@@ -622,6 +622,7 @@ test('lexikonMengenhilfe: Rollenbreite in Metern je Variante, m²-Ware direkt, T
     { handle: 'alt-cm', titel: 'Alt', produktgruppe: 'Teppichboden', eigenschaften: { rollenbreite: '400' }, varianten: [variante(4)] },
     { handle: 'tnm-m2', titel: 'TnM', produktgruppe: 'Teppich nach Maß', eigenschaften: {}, varianten: [variante(5, { einkauf: { bestelleinheit: 'm2' } })] },
     { handle: 'tnm-lfm', titel: 'TnM A', produktgruppe: 'Teppich nach Maß', eigenschaften: {}, varianten: [variante(6)] },
+    { handle: 'unterlage', titel: 'Unterlage', produktgruppe: 'Verlege- u. Dämmunterlagen', eigenschaften: {}, varianten: [variante(7, { titel: '3 mm, 80 cm breit (je lfm)' })] },
   ];
   fs.writeFileSync(path.join(dir, 'lexikon', 'produkte.json'), JSON.stringify({ erstellt: '2026-10-12T08:00:00Z', anzahl: produkte.length, produkte }));
   const api = createApi({ gh: async () => '', root, privatDirPath: dir });
@@ -636,6 +637,7 @@ test('lexikonMengenhilfe: Rollenbreite in Metern je Variante, m²-Ware direkt, T
   const tnm = mh('tnm-lfm', 6, '6');
   assert.equal(tnm.ergebnis, null);
   assert.match(tnm.grund, /Teppich nach Maß/);
+  assert.equal(mh('unterlage', 7, '4').ergebnis.lfm, 5, 'Breite aus "80 cm breit" im Variantentitel');
 });
 
 // ---------------------------------------------------------------------------
