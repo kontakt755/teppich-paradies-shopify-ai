@@ -27,7 +27,7 @@ import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, oeffne
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
 import { auftragsverlaufPfad, leseVerlauf, haengeEreignisAn, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
 import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden, kundenIndex } from '../operations/lib/kundensuche.mjs';
-import { faelle as kundenFaelle } from '../operations/lib/kundenfaelle.mjs';
+import { faelle as kundenFaelle, istTestkontakt } from '../operations/lib/kundenfaelle.mjs';
 import { fallmarkenPfad, leseAlle as leseFallmarken, setzeMarke as setzeFallmarke, teileAuf as teileFaelleAuf, juengsterPunkt, FALL_GRUND } from '../operations/lib/fallmarken.mjs';
 import {
   sortiere as orgSortiere, passtZuAnsicht, darfSehen, darfAendern, findeDoppelgaenger,
@@ -283,6 +283,10 @@ function einkaufNaechsterSchritt(feld, grund) {
       if (/VE oder Stueck/i.test(g)) return 'Verpackungseinheit oder Einzelstueck? Von Hand in der Preisliste pruefen';
       if (/Massteppich/i.test(g)) return 'Bestelleinheit als Zuschnitt+Einfassung von Hand festlegen (Inhaberentscheidung noetig)';
       return 'Bestelleinheit von Hand aus der Preisliste uebernehmen';
+    case 'lieferant_url':
+      return 'Produktseite beim Lieferanten suchen und als Link hinterlegen - bis dahin hilft der Suchlink im Lexikon';
+    case 'lieferant_produktname':
+      return 'Bezeichnung aus der Preisliste/Bestellbestaetigung des Lieferanten uebernehmen';
     case 'lieferant_kollektion':
       return 'Kollektion kommt automatisch, sobald die Lieferantenseite geholt ist';
     case 'hersteller':
@@ -312,6 +316,50 @@ function produktSucheTreffer(eintrag, q) {
  * Klaerungslauf (offen.json, Feld+Grund je gid - das ist die tatsaechlich
  * noch offene Menge, plan.json selbst ist ein aelterer Zwischenstand).
  */
+/**
+ * Dieselben Zeilen wie Einkauf-Dry-Run (plan.json) und Klaerungslauf
+ * (offen.json), aber aus dem Lexikon-Export, den der Sync-Dienst laufend
+ * erneuert. Die beiden Septemberdateien wurden nie wieder erzeugt: der
+ * Reiter meldete am 2026-10-12 "0 von 509 vollstaendig" und Luecken, die
+ * laengst geschlossen waren, und kannte die 2.700 spaeter angelegten
+ * Produkte nicht.
+ *
+ * Blockierend bleibt, was eine Bestellung verhindert (Lieferant,
+ * Artikelnummer, Bestelleinheit). Eine Bestellbezeichnung des Lieferanten
+ * ersetzt die Artikelnummer (Teppich nach Mass direkt vom Hersteller).
+ * Nachtragen: Lieferanten-Produktseite, Farbnummer (nur bei Farbvarianten)
+ * und Lieferanten-Produktname. Kollektion und Hersteller halten keine
+ * Bestellung auf und werden hier nicht gezaehlt. Muster, Dienstleistungen,
+ * Testprodukte und Sonderposten aus eigenem Bestand gehoeren nicht dazu.
+ */
+export function produktstatusAusLexikon(produkte = []) {
+  const planRows = [];
+  const offenRows = [];
+  for (const p of produkte) {
+    const handle = String(p?.handle ?? '');
+    if (!handle || handle.startsWith('muster-') || handle.startsWith('test-') || /-sonderposten$/.test(handle)) continue;
+    if (p.produktgruppe === 'Musterservice' || p.produktgruppe === 'Service') continue;
+    for (const v of p.varianten || []) {
+      if (v.original || !v.id) continue;
+      const titel = String(v.titel ?? '');
+      planRows.push({
+        gid: v.id, handle, product_title: p.titel || handle, sku: v.sku || null, gruppe: p.produktgruppe || 'Unbekannt',
+        // istStrukturellOffenerFall erkennt Wunschmass am Titel.
+        variant_title: v.wunschmass && !/wunschma/i.test(titel) ? `${titel} (Wunschmaß)` : titel,
+      });
+      const e = v.einkauf || {};
+      const offen = (field, reason) => offenRows.push({ gid: v.id, field, reason });
+      if (!e.lieferant) offen('lieferant', 'Lieferant nicht hinterlegt');
+      if (!e.artikelnummer && !e.produktname) offen('artikelnummer', e.lieferant ? 'Artikelnummer nicht hinterlegt' : 'Lieferant unklar');
+      if (!e.bestelleinheit) offen('bestelleinheit', 'Bestelleinheit nicht hinterlegt');
+      if (v.farbe && !e.farbnummer) offen('farbnummer', e.lieferant ? 'Farbnummer nicht hinterlegt' : 'Lieferant unklar');
+      if (!e.url) offen('lieferant_url', 'Lieferanten-Produktseite nicht hinterlegt');
+      if (!e.produktname) offen('lieferant_produktname', 'Lieferanten-Produktname nicht hinterlegt');
+    }
+  }
+  return { planRows, offenRows };
+}
+
 function produktstatusAufbauen(planRows, offenRows) {
   const dim = new Map(planRows.map(r => [r.gid, r]));
   const produkte = new Map();
@@ -1000,12 +1048,26 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      */
     einkaufProduktstatus({ page = 1, pageSize = 50, q = '', gruppe = '', filter = '' } = {}) {
       const dir = privatDirPath || privatDir();
+      const lexikonFile = path.join(dir, 'lexikon', 'produkte.json');
       const planFile = path.join(dir, 'einkauf-dryrun', 'plan.json');
       const offenFile = path.join(dir, 'einkauf-klaerung', 'offen.json');
-      const planRows = readJsonIfExists(planFile);
-      if (!Array.isArray(planRows)) return { verfuegbar: false, quelle: planFile, hinweis: 'plan.json fehlt - Einkauf-Dry-Run vorher lokal laufen lassen.' };
-      const offenRows = readJsonIfExists(offenFile);
-      if (!Array.isArray(offenRows)) return { verfuegbar: false, quelle: offenFile, hinweis: 'offen.json fehlt (einkauf-klaerung) - Klaerungslauf vorher lokal ausfuehren.' };
+      // Vorrang hat das Lexikon (laufend erneuert); die Septemberdateien nur, wenn es keins gibt.
+      const lexikon = readJsonIfExists(lexikonFile);
+      let planRows;
+      let offenRows;
+      let quelle;
+      let stand = null;
+      if (Array.isArray(lexikon?.produkte)) {
+        ({ planRows, offenRows } = produktstatusAusLexikon(lexikon.produkte));
+        quelle = lexikonFile;
+        stand = lexikon.erstellt || null;
+      } else {
+        planRows = readJsonIfExists(planFile);
+        if (!Array.isArray(planRows)) return { verfuegbar: false, quelle: lexikonFile, hinweis: 'Noch keine Lexikon-Daten exportiert.', befehl: 'npm run daten:aktualisieren -- --nur lexikon' };
+        offenRows = readJsonIfExists(offenFile);
+        if (!Array.isArray(offenRows)) return { verfuegbar: false, quelle: offenFile, hinweis: 'offen.json fehlt (einkauf-klaerung) - Klaerungslauf vorher lokal ausfuehren.' };
+        quelle = `${planFile} + ${offenFile}`;
+      }
 
       const eintraege = produktstatusAufbauen(planRows, offenRows);
       const gruppen = {};
@@ -1035,7 +1097,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const seite = offene.slice(start, start + size);
 
       return {
-        verfuegbar: true, quelle: `${planFile} + ${offenFile}`,
+        verfuegbar: true, quelle, stand,
         gesamt, gruppen: Object.values(gruppen).sort((a, b) => (b.handarbeit + b.automatisch) - (a.handarbeit + a.automatisch)),
         offen: { count: offene.length, page: p, pageSize: size, pages: Math.max(Math.ceil(offene.length / size), 1), items: seite },
       };
@@ -2052,7 +2114,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (!daten || !Array.isArray(daten.warenkoerbe)) {
         return { verfuegbar: false, quelle: file, hinweis: 'Noch keine Warenkorb-Daten exportiert.', befehl: 'npm run daten:aktualisieren -- --nur warenkoerbe' };
       }
-      return { verfuegbar: true, quelle: file, ...daten };
+      // Auch aeltere Exporte ohne Testfilter: Testadressen nie als verlorenen Umsatz zeigen.
+      const echte = daten.warenkoerbe.filter(w => !istTestkontakt(w));
+      const ausgeblendet = daten.warenkoerbe.length - echte.length;
+      return { verfuegbar: true, quelle: file, ...daten, warenkoerbe: echte, testAusgeblendet: (daten.testAusgeblendet || 0) + ausgeblendet };
     },
 
     /** Lagerbestand je Standort/Variante - oder der Hinweis, dass der Shop keinen fuehrt. */

@@ -593,6 +593,42 @@ test('lexikonProdukt meldet unbekanntes Handle statt zu werfen', () => {
   assert.equal(r.verfuegbar, false);
 });
 
+test('einkaufProduktstatus liest den Lexikon-Export statt der Septemberdateien', () => {
+  // Die Septemberdateien (plan.json/offen.json) wurden nie erneuert - der Reiter
+  // meldete "0 von 509 vollstaendig" und laengst geschlossene Luecken.
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat');
+  fs.mkdirSync(path.join(dir, 'lexikon'), { recursive: true });
+  const v = (id, einkauf, extra = {}) => ({ id: `gid://shopify/ProductVariant/${id}`, titel: 'Grau', farbe: 'Grau', sku: `S-${id}`, einkauf, link: {}, ...extra });
+  const voll = { lieferant: 'A', artikelnummer: 'A-1', farbnummer: '1', bestelleinheit: 'paket', url: 'https://lieferant-a.example/p/1', produktname: 'X' };
+  const produkte = [
+    { handle: 'vollstaendig', titel: 'Vollständig', produktgruppe: 'Klickvinyl', varianten: [v(1, voll)] },
+    { handle: 'ohne-lieferant', titel: 'Ohne Lieferant', produktgruppe: 'Teppichboden', varianten: [v(2, { ...voll, lieferant: null, artikelnummer: null })] },
+    { handle: 'nur-link-fehlt', titel: 'Nur Link fehlt', produktgruppe: 'Wohnteppich', varianten: [v(3, { ...voll, lieferant: 'B', url: null })] },
+    // Bestellbezeichnung ersetzt die Artikelnummer (Teppich nach Mass vom Hersteller)
+    { handle: 'tnm-hersteller', titel: 'TnM', produktgruppe: 'Teppich nach Maß', varianten: [v(4, { ...voll, artikelnummer: null })] },
+    // Wunschmass entsteht beim Zuschnitt - keine Aufgabe
+    { handle: 'mit-wunschmass', titel: 'Mit Wunschmaß', produktgruppe: 'Teppichboden', varianten: [v(5, voll), v(6, { lieferant: 'A' }, { titel: 'Grau / Wunschmaß', wunschmass: true })] },
+    { handle: 'muster-vollstaendig', titel: 'Muster', produktgruppe: 'Musterservice', varianten: [v(7, {}, { original: { gefunden: true } })] },
+    { handle: 'kettelservice', titel: 'Kettelservice', produktgruppe: 'Service', varianten: [v(8, {})] },
+    { handle: 'test-irgendwas', titel: 'Test', produktgruppe: 'Teppichboden', varianten: [v(9, {})] },
+    { handle: 'rolle-sonderposten', titel: 'Restrolle', produktgruppe: 'Teppichboden', varianten: [v(10, {})] },
+  ];
+  fs.writeFileSync(path.join(dir, 'lexikon', 'produkte.json'), JSON.stringify({ erstellt: '2026-10-12T13:50:00Z', anzahl: produkte.length, produkte }));
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.einkaufProduktstatus({ page: 1, pageSize: 50 });
+  assert.equal(r.verfuegbar, true);
+  assert.equal(r.stand, '2026-10-12T13:50:00Z');
+  assert.deepEqual(r.gesamt, { anzahl: 5, vollstaendig: 3, handarbeit: 1, automatisch: 1, offen: 2 });
+  const ohne = r.offen.items.find(e => e.handle === 'ohne-lieferant');
+  assert.equal(ohne.status, 'handarbeit');
+  assert.ok(ohne.offeneFelder.some(f => f.feld === 'lieferant' && f.blockierend));
+  const link = r.offen.items.find(e => e.handle === 'nur-link-fehlt');
+  assert.equal(link.status, 'automatisch');
+  assert.equal(link.blockiertBestellung, false);
+  assert.match(link.offeneFelder[0].naechsterSchritt, /Produktseite beim Lieferanten/);
+});
+
 test('lexikonMengenhilfe rechnet Paketware ueber operations/lib/umrechnung.mjs', () => {
   const root = tmpRoot();
   const dir = lexikonFixture(root);
