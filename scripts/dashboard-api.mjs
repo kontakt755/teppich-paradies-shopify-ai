@@ -55,6 +55,7 @@ import { ladeUmgebung } from '../social/lib/zugang.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { rollenware, paketware, stueck as stueckware, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
+import { ausVariantentitel } from '../operations/lib/resolve.mjs';
 import { ladeEnvLocal, erzeugeProxy, KEIN_ZUGANG, mitHinweis } from '../operations/sync/zugang.mjs';
 import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, SonderpostenFehler } from '../operations/lib/sonderposten.mjs';
 import { ohneUeberholtenFehler } from '../operations/scripts/aktualisieren.mjs';
@@ -1270,7 +1271,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         } catch (e) { return { verfuegbar: true, ergebnis: null, grund: String(e.message) }; }
       }
       if (einheit === 'rolle' || einheit === 'lfm') {
-        const breiteM = rollenbreiteInMetern(variante.rollenbreiteM ?? produkt.eigenschaften?.rollenbreite);
+        // Letzter Weg wie im Einkauf (resolve.mjs): "80 cm breit (je lfm)" im Variantentitel.
+        const breiteM = rollenbreiteInMetern(variante.rollenbreiteM ?? produkt.eigenschaften?.rollenbreite ?? ausVariantentitel(variante.titel).variantBreiteCm);
         if (!breiteM && produkt.produktgruppe === 'Teppich nach Maß') {
           return { verfuegbar: true, ergebnis: null, grund: 'Teppich nach Maß: die Rolle ergibt sich aus den Maßen der Bestellung – die Bestellmenge rechnet der Einkauf dort aus.' };
         }
