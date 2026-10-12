@@ -40,9 +40,10 @@ class Element {
   querySelectorAll(s) { return this.children.flatMap(c => [...(c.matches(s) ? [c] : []), ...c.querySelectorAll(s)]); }
   querySelector(s) { return this.querySelectorAll(s)[0] || null; }
   closest(s) { return this.matches(s) ? this : this.parent?.closest(s) || null; }
-  focus() { this.doc.activeElement = this; }
+  focus() { if (this.getClientRects().length) this.doc.activeElement = this; }
   scrollIntoView() {}
-  getBoundingClientRect() { return { top: 0, bottom: 100 }; }
+  getBoundingClientRect() { return { top: 0, bottom: 100, width: 100, height: 100 }; }
+  getClientRects() { return this.getAttribute('style') === 'display: contents' || this.hidden ? [] : [this.getBoundingClientRect()]; }
   replaceWith(n) {
     if (this.contains(this.doc.activeElement)) this.doc.activeElement = this.doc.body;
     n.parent = this.parent; this.parent.children[this.parent.children.indexOf(this)] = n; this.parent = null;
@@ -108,7 +109,13 @@ function reihenHarness() {
   const h = documentHarness(); const row = h.doc.body.appendChild(h.node('section', { class: 'tp-zubehoer-produkte--teppich-gruppe', 'data-tp-reihe-gruppe': 'weich', 'data-tp-reihe-nachladen': '/rows' }));
   function cards(count) {
     const area = h.node('div', { 'data-tp-reihe-karten': '' });
-    for (let i = 0; i < count; i++) area.appendChild(h.node('div', { class: 'resource-list__item' })).appendChild(h.node('a', { href: '/product-' + i }));
+    for (let i = 0; i < count; i++) {
+      const card = area.appendChild(h.node('div', { class: 'resource-list__item' }));
+      // Horizon-Karten: der umschliessende Link hat display: contents;
+      // der spaetere CTA kann mit derselben Zieladresse wirklich Fokus tragen.
+      card.appendChild(h.node('a', { href: '/product-' + i, style: 'display: contents' }));
+      card.appendChild(h.node('a', { href: '/product-' + i, class: 'qa-visible-cta' }));
+    }
     area.appendChild(h.node('button', { 'data-tp-gruppe-mehr': '' })); return area;
   }
   row.appendChild(cards(4));
@@ -131,8 +138,9 @@ test('Reihen: wiederholter 503 laesst Retry und Liste erreichbar, Erfolg beendet
   assert.equal(h.row.querySelectorAll('.resource-list__item').length, 7); assert.equal(h.doc.activeElement.getAttribute('href'), '/product-0');
 });
 test('Reihen: fokussierter vorhandener Produktlink bleibt nach Ersatz beim selben Produkt', async () => {
-  const h = reihenHarness(); h.row.querySelectorAll('a[href]')[2].focus(); await h.answer();
+  const h = reihenHarness(); h.row.querySelectorAll('.qa-visible-cta')[2].focus(); await h.answer();
   assert.equal(h.doc.activeElement.getAttribute('href'), '/product-2'); assert.equal(h.row.contains(h.doc.activeElement), true);
+  assert.equal(h.doc.activeElement.classList.contains('qa-visible-cta'), true);
 });
 test('Reihen: frueher Mehrklick fuehrt Fokus zur ersten neu sichtbaren Karte', async () => {
   const h = reihenHarness(); const more = h.row.querySelector('[data-tp-gruppe-mehr]'); more.focus(); h.click(more);

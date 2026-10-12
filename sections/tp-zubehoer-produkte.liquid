@@ -304,6 +304,26 @@
       return laden;
     }
 
+    function linkFokussieren(bereich, href) {
+      var links = Array.prototype.slice.call(bereich.querySelectorAll('a[href]'));
+      if (href) {
+        links = links.filter(function (link) { return link.getAttribute('href') === href; }).concat(
+          links.filter(function (link) { return link.getAttribute('href') !== href; })
+        );
+      }
+      for (var i = 0; i < links.length; i++) {
+        // Horizon umschliesst Karten mit display: contents-Links. Diese haben
+        // kein eigenes Layoutrechteck und .focus() bleibt dort wirkungslos.
+        var sichtbar = Array.prototype.some.call(links[i].getClientRects(), function (rect) {
+          return rect.width > 0 && rect.height > 0;
+        });
+        if (!sichtbar) continue;
+        links[i].focus({ preventScroll: true });
+        if (document.activeElement === links[i]) return true;
+      }
+      return false;
+    }
+
     function einsetzen(doc) {
       var reihen = Array.prototype.slice.call(document.querySelectorAll('[data-tp-reihe-nachladen]'));
       // Reihen ueber dem Blick wachsen, der Blick soll stehen bleiben. Chrome und Firefox
@@ -339,21 +359,18 @@
         }
         if (imKartenbereich || retryFokus) {
           var neuerBereich = reihe.querySelector('[data-tp-reihe-karten]');
-          var ziel = null;
-          if (href) {
-            ziel = Array.prototype.find.call(neuerBereich.querySelectorAll('a[href]'), function (link) {
-              return link.getAttribute('href') === href;
-            });
-          }
+          var fokussiert = href && linkFokussieren(neuerBereich, href);
           // Der mobile Mehrknopf ist nach dem Oeffnen verborgen: zur ersten
           // neu sichtbaren Karte springen, statt einen unsichtbaren Knopf zu fokussieren.
-          if (!ziel && mehrFokus && !offen) ziel = neuerBereich.querySelector('[data-tp-gruppe-mehr]');
-          if (!ziel && offen && (mehrFokus || retryFokus)) {
-            var karten = neuerBereich.querySelectorAll('.resource-list__item');
-            ziel = karten[4] && karten[4].querySelector('a[href]');
+          if (!fokussiert && mehrFokus && !offen) {
+            var mehr = neuerBereich.querySelector('[data-tp-gruppe-mehr]');
+            if (mehr) { mehr.focus({ preventScroll: true }); fokussiert = document.activeElement === mehr; }
           }
-          if (!ziel) ziel = neuerBereich.querySelector('a[href]');
-          if (ziel) ziel.focus({ preventScroll: true });
+          if (!fokussiert && offen && (mehrFokus || retryFokus)) {
+            var karten = neuerBereich.querySelectorAll('.resource-list__item');
+            if (karten[4]) fokussiert = linkFokussieren(karten[4]);
+          }
+          if (!fokussiert) linkFokussieren(neuerBereich);
         }
       });
       if (anker && anker !== reihen[0]) {
@@ -400,8 +417,7 @@
       knopf.setAttribute('aria-expanded', 'true');
       if (fokusAmKnopf) {
         var karten = reihe.querySelectorAll('.resource-list__item');
-        var ziel = karten[4] && karten[4].querySelector('a[href]');
-        if (ziel) ziel.focus({ preventScroll: true });
+        if (karten[4]) linkFokussieren(karten[4]);
       }
     });
   })();
