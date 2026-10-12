@@ -136,7 +136,20 @@
     return menge;
   }
 
+  // Endpreis eines Teppichs nach Mass in Cent - dieselbe Rechnung wie der
+  // Konfigurator: Flaeche in 0,01 m2 mal Variantenpreis, Kettelung (nur wenn
+  // separat) je 0,01 lfm, Mindestpreis fuer den Auftrag (die Kante zaehlt mit,
+  // nur der Rest hebt die Materialmenge an), Pauschale je Teppich.
+  // o: { form, w, l, preisCent, mindestCent, kettelCent, pauschaleCent }
+  function summeCent(o) {
+    var flaeche = abrechnungsflaecheM2(o.form, o.w, o.l);
+    var kanteCent = o.kettelCent > 0 ? kanteEinheiten(umfangM(o.form, o.w, o.l)) * o.kettelCent : 0;
+    var menge = mengeMitMindestpreis(flaeche, o.preisCent, Math.max(0, (o.mindestCent || 0) - kanteCent));
+    return menge * o.preisCent + kanteCent + (o.pauschaleCent || 0);
+  }
+
   root.TPMass = {
+    summeCent: summeCent,
     flaecheM2: flaecheM2,
     abrechnungsflaecheM2: abrechnungsflaecheM2,
     echteFlaecheM2: echteFlaecheM2,

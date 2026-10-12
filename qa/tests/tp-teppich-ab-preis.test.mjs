@@ -32,6 +32,7 @@ const engine = new Liquid({ templates: {
 } });
 engine.registerFilter('divided_by', (a, b) => Math.floor(Number(a) / Number(b)));
 engine.registerFilter('money', (c) => (Number(c) / 100).toFixed(2).replace('.', ',') + ' €');
+engine.registerFilter('money_without_currency', (c) => (Number(c) / 100).toFixed(2).replace('.', ','));
 engine.registerFilter('money_without_trailing_zeros', (c) =>
   ((Number(c) / 100).toFixed(2).replace('.', ',') + ' €').replace(',00 €', ' €'));
 
@@ -42,6 +43,7 @@ function produkt({ einheitCent, mindest = 99, art = 'Ketteln', p001 = true, maxB
   const variants = varianten || [{ price: einheitCent, available: true, metafields: { service: { einfassen: { value: 'Verfügbar' } } } }];
   return {
     price_min: Math.min(...variants.map((v) => v.price)),
+    price_max: Math.max(...variants.map((v) => v.price)),
     variants,
     metafields: {
       custom: { preis_pro_001_qm: { value: p001 } },
@@ -51,8 +53,8 @@ function produkt({ einheitCent, mindest = 99, art = 'Ketteln', p001 = true, maxB
 }
 const kettelOk = { kettelservice: { selected_or_first_available_variant: { available: true, price: 19 } } };
 
-async function render(product, all_products = kettelOk, variant = null) {
-  return engine.parseAndRender(source, { product, all_products, variant });
+async function render(product, all_products = kettelOk, variant = null, kopf = false) {
+  return engine.parseAndRender(source, { product, all_products, variant, kopf });
 }
 function abCent(html) {
   const m = html.match(/data-tp-ab-cent="(\d+)"/);
@@ -97,7 +99,9 @@ test('Einstiegsmass passt nicht in die Rolle: kein ab-Preis', async () => {
 });
 
 test('andere Einfassart: keine Kettelzeile eingerechnet', async () => {
-  const html = await render(produkt({ einheitCent: 129, art: 'Einfassband', mindest: null }));
+  // Karte und Kopf zeigen hier den Preis je m2 (Tests unten); der ab-Preis rechnet nur
+  // noch im Produktseiten-Pfad ohne Kopf - die Formel bleibt dieselbe.
+  const html = await render(produkt({ einheitCent: 129, art: 'Einfassband', mindest: null }), kettelOk, { price: 129 });
   assert.equal(abCent(html), erwartet(129, 0, 0));
 });
 
@@ -165,7 +169,7 @@ test('fehlende Grenzen (leer oder 0): kein ab-Preis - der Konfigurator faellt da
 test('Text nennt Kettelung nur bei Ketteln, sonst Einfassung', async () => {
   assert.match(await render(produkt({ einheitCent: 92 })), /inkl\. Kettelung/);
   const band = await render(produkt({ einheitCent: 129, art: 'Einfassband', mindest: null }));
-  assert.match(band, /inkl\. Einfassung/);
+  assert.match(band, /inkl\. Einfassband rundum/);
   assert.doesNotMatch(band, /Kettelung/);
 });
 
@@ -226,14 +230,14 @@ test('Produktseite: Streichpreis folgt der gewaehlten Variante', async () => {
 const mitKanteInklusive = (p, wert) => { p.metafields.service.kante_inklusive = { value: wert }; return p; };
 
 test('Kante inklusive: ab-Preis nur aus der Fläche, Text bleibt "inkl. Kettelung"', async () => {
-  const html = await render(mitKanteInklusive(produkt({ einheitCent: 92 }), true));
+  const html = await render(mitKanteInklusive(produkt({ einheitCent: 92 }), true), kettelOk, { price: 92 });
   assert.equal(abCent(html), 120 * 92);
   assert.equal(abCent(html), erwartet(92, 0, 9900));
   assert.match(html, /inkl\. Kettelung/);
 });
 
 test('Kante inklusive: Mindestpreis allein über die Fläche', async () => {
-  const html = await render(mitKanteInklusive(produkt({ einheitCent: 5, mindest: 150 }), true));
+  const html = await render(mitKanteInklusive(produkt({ einheitCent: 5, mindest: 150 }), true), kettelOk, { price: 5 });
   assert.equal(abCent(html), erwartet(5, 0, 15000));
   assert.equal(abCent(html), Math.ceil(15000 / 5) * 5);
 });
@@ -241,12 +245,12 @@ test('Kante inklusive: Mindestpreis allein über die Fläche', async () => {
 test('Kante inklusive: nicht kaufbarer Kettelservice verhindert den ab-Preis nicht', async () => {
   const html = await render(mitKanteInklusive(produkt({ einheitCent: 92 }), true), {
     kettelservice: { selected_or_first_available_variant: { available: false, price: 19 } },
-  });
+  }, { price: 92 });
   assert.equal(abCent(html), 120 * 92);
 });
 
 test('Kante inklusive: Streichpreis ohne Kante in beiden Summen', async () => {
-  const html = await render(mitKanteInklusive(mitAktion(rabattiert(), { start: { value: heuteIso } }), true));
+  const html = await render(mitKanteInklusive(mitAktion(rabattiert(), { start: { value: heuteIso } }), true), kettelOk, { price: 78, compare_at_price: 92 });
   // 120 x 0,78 EUR liegt unter dem Mindestpreis 99 EUR - ohne Kante hebt er die Menge an.
   assert.equal(abCent(html), erwartet(78, 0, 9900));
   assert.equal(abCent(html), 127 * 78);
@@ -263,6 +267,50 @@ test('Regression: kante_inklusive = false rechnet die Kettelung wie bisher ein',
 });
 
 test('kante_inklusive bei anderer Einfassart: keine Wirkung', async () => {
-  const html = await render(mitKanteInklusive(produkt({ einheitCent: 129, art: 'Einfassband', mindest: null }), true));
+  const html = await render(mitKanteInklusive(produkt({ einheitCent: 129, art: 'Einfassband', mindest: null }), true), kettelOk, { price: 129 });
   assert.equal(abCent(html), erwartet(129, 0, 0));
+});
+
+// Seit 2026-10-12: Steckt die Kante im m2-Preis (Paspel, Band, Cover, Ketteln mit
+// kante_inklusive), zeigen Karte und Kopf der Produktseite den Preis je m2 - wie im
+// Fachhandel und in der Herstellerliste. Eigene Kettelung je lfm behaelt den ab-Preis.
+const m2Cent = (html) => { const m = html.match(/data-tp-ab-m2-cent="(\d+)"/); return m ? Number(m[1]) : null; };
+
+test('Karte, Kante im m2-Preis: Preis je m2 statt ab-Preis, ohne "ab" bei einem Preis', async () => {
+  const html = await render(mitKanteInklusive(produkt({ einheitCent: 79 }), true));
+  assert.equal(abCent(html), null);
+  assert.equal(m2Cent(html), 7900);
+  assert.match(html, /79&nbsp;€<span class="tp-ab-preis__einheit">\/m²<\/span>/);
+  assert.match(html, /inkl\. Kettelung rundum</);
+  assert.doesNotMatch(html, /tp-ab-preis__ab/);
+  assert.doesNotMatch(html, /Lieferzeit/, 'Lieferzeit nur im Kopf');
+});
+
+test('Karte, Farben verschieden teuer: "ab" vor dem guenstigsten Preis je m2', async () => {
+  const html = await render(produkt({ art: 'Paspelband', varianten: [v(106), v(120)] }));
+  assert.equal(m2Cent(html), 10600);
+  assert.match(html, /tp-ab-preis__ab">ab</);
+  assert.match(html, /inkl\. Paspel rundum/);
+});
+
+test('Kopf der Produktseite: Preis je m2 der gewaehlten Farbe, Hinweis auf den Konfigurator, Lieferzeit', async () => {
+  const p = produkt({ einheitCent: 271, art: 'Cover', mindest: 271 });
+  p.metafields.service.lieferzeit = { value: 'ca. 2–3 Wochen (Fertigung beim Hersteller)' };
+  const html = await render(p, kettelOk, { price: 271 }, true);
+  assert.equal(m2Cent(html), 27100);
+  assert.match(html, /inkl\. Einfassung rundum · Endpreis nach Ihrem Maß im Konfigurator/);
+  assert.match(html, /Lieferzeit ca\. 2–3 Wochen \(Fertigung beim Hersteller\)/);
+  assert.doesNotMatch(html, /tp-ab-preis__qualitaet/);
+});
+
+test('Kopf bei eigener Kettelung je lfm: ab-Preis bleibt (m2-Preis waere nur ein Teil)', async () => {
+  const html = await render(produkt({ einheitCent: 92 }), kettelOk, { price: 92 }, true);
+  assert.equal(m2Cent(html), null);
+  assert.equal(abCent(html), 120 * 92 + 460 * 19);
+});
+
+test('Wunschmass vom Hersteller (Art Fertig) bleibt beim ab-Preis', async () => {
+  const pauschale = { 'wunschmass-pauschale': { selected_or_first_available_variant: { available: true, price: 1499 } } };
+  const html = await render(produkt({ einheitCent: 92, art: 'Fertig' }), pauschale);
+  assert.equal(m2Cent(html), null);
 });
