@@ -311,7 +311,11 @@
               "name": "TP Einfass-Konfigurator",
               "settings": {
                 "kettelservice_produkt": "kettelservice",
-                "whatsapp": "491792612211"
+                "whatsapp": "491792612211",
+                "bild_ketteln": "shopify://shop_images/tp-kante-gekettelt.jpg",
+                "marke_bilder_vendor": "JAB Anstoetz",
+                "marke_bild_paspelband": "shopify://shop_images/tp-kante-jab-paspel.jpg",
+                "marke_bild_cover": "shopify://shop_images/tp-kante-jab-cover.jpg"
               },
               "blocks": {}
             },

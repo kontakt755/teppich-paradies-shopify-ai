@@ -276,12 +276,18 @@ function abProdukt(art, fest) {
 
 test('ab-Preis: Bandarten rechnen mit und ohne feste Bandfarbe identisch (keine Bandauswahl noetig)', async () => {
   for (const art of ['Einfassband', 'Paspelband']) {
+    // Karte: Kante steckt im m2-Preis -> Preis je m2 (seit 2026-10-12), mit und ohne feste Bandfarbe gleich.
     const ohne = await abEngine.parseAndRender(abSource, { product: abProdukt(art), all_products: {}, variant: null });
     const mit = await abEngine.parseAndRender(abSource, { product: abProdukt(art, FEST), all_products: {}, variant: null });
     assert.equal(mit, ohne, art);
-    // 80 x 150 cm = 120 Einheiten x 1,29 EUR = 154,80 EUR, ueber dem Mindestpreis.
-    assert.match(mit, /data-tp-ab-cent="15480"/, art);
-    assert.match(mit, /inkl\. Einfassung/, art);
+    assert.match(mit, /data-tp-ab-m2-cent="12900"/, art);
+    // Rechnung des ab-Preises (Produktseiten-Pfad ohne Kopf): 80 x 150 cm = 120 Einheiten x 1,29 EUR = 154,80 EUR.
+    const v = { price: 129 };
+    const ohneV = await abEngine.parseAndRender(abSource, { product: abProdukt(art), all_products: {}, variant: v });
+    const mitV = await abEngine.parseAndRender(abSource, { product: abProdukt(art, FEST), all_products: {}, variant: v });
+    assert.equal(mitV, ohneV, art);
+    assert.match(mitV, /data-tp-ab-cent="15480"/, art);
+    assert.match(mitV, /inkl\. Einfassung/, art);
   }
 });
 

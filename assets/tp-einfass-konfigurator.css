@@ -61,6 +61,7 @@
 .tp-ek__fehler { margin: 8px 0 0; font-size: .85rem; color: #a62020; }
 
 /* Kantenwahl als Bildkacheln (snippets/tp-einfass-kanten): Bild, Name, ein Satz, Preis. */
+.tp-ek__kanten-schritt { scroll-margin-top: 96px; }
 .tp-ek__kanten { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
 .tp-ek__kante {
   display: flex; flex-direction: column; min-width: 0; overflow: hidden;
@@ -209,6 +210,7 @@
 .tp-ek--mass .tp-ek__summe strong{font-size:1.45rem;white-space:nowrap}
 .tp-ek--mass .tp-ek__summe .tp-ek__summe-alt{font-size:.88rem}
 .tp-ek__preishinweis { margin: 6px 0 0; font-size: .82rem; line-height: 1.45; color: var(--tp-ek-muted); }
+.tp-ek__rechenzeile { margin: 2px 0 0; text-align: right; font-size: .8rem; color: var(--tp-ek-muted); font-variant-numeric: tabular-nums; }
 
 .tp-ek__cta {
   display: block; width: 100%; min-height: 52px; padding: 15px 18px; border: 0;

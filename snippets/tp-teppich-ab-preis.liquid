@@ -157,12 +157,16 @@
   # Preis - dann steht er vorn, wie im Fachhandel ueblich (Inhaber 2026-10-12, Vorlage
   # Konkurrenzshop). Eigene Kettelung je lfm und Wunschmass mit Pauschale behalten den
   # ab-Preis, dort waere der m2-Preis nur ein Teil.
+  # Dasselbe auf Karten (ohne Variante): Karte und Produktseite zeigen denselben
+  # Preis je m2, "ab" nur, wenn die Farben unterschiedlich kosten.
   assign tp_ab_m2_kopf = false
-  if kopf and variant != blank and tp_ab_einheit_cent > 0
-    if tp_ab_art == 'paspelband' or tp_ab_art == 'einfassband' or tp_ab_art == 'cover'
-      assign tp_ab_m2_kopf = true
-    elsif tp_ab_art == 'ketteln' and tp_ab_kante_inkl
-      assign tp_ab_m2_kopf = true
+  if kopf or variant == blank
+    if tp_ab_einheit_cent > 0 and product.metafields.custom.preis_pro_001_qm.value == true
+      if tp_ab_art == 'paspelband' or tp_ab_art == 'einfassband' or tp_ab_art == 'cover'
+        assign tp_ab_m2_kopf = true
+      elsif tp_ab_art == 'ketteln' and tp_ab_kante_inkl
+        assign tp_ab_m2_kopf = true
+      endif
     endif
   endif
 -%}
@@ -189,17 +193,25 @@
         assign tp_ab_kante_wort = 'Einfassung'
     endcase
   -%}
+  {%- if variant == blank -%}
+    {%- capture tp_ab_qualitaet -%}{% render 'tp-teppich-qualitaet', product: product %}{%- endcapture -%}
+    {%- assign tp_ab_qualitaet = tp_ab_qualitaet | strip -%}
+  {%- endif -%}
   <span class="tp-ab-preis tp-ab-preis--m2" data-tp-ab-m2-cent="{{ tp_ab_m2_cent }}">
+    {%- if tp_ab_qualitaet != blank -%}
+      <span class="tp-ab-preis__qualitaet">{{ tp_ab_qualitaet | escape }}</span>
+    {%- endif -%}
     <span class="tp-ab-preis__haupt">
+      {%- if variant == blank and product.price_min != product.price_max -%}<span class="tp-ab-preis__ab">ab</span>{%- endif -%}
       <span class="tp-ab-preis__betrag">{% if tp_ab_m2_alt_cent > 0 %}<span class="visually-hidden">Aktionspreis </span>{% endif %}{{ tp_ab_m2_cent | money_without_currency | remove: ',00' }}&nbsp;€<span class="tp-ab-preis__einheit">/m²</span></span>
       {%- if tp_ab_m2_alt_cent > 0 -%}
         <s class="tp-ab-preis__alt"><span class="visually-hidden">statt </span>{{ tp_ab_m2_alt_cent | money_without_currency | remove: ',00' }}&nbsp;€/m²</s>
       {%- endif -%}
     </span>
-    <span class="tp-ab-preis__grund">inkl. {{ tp_ab_kante_wort }} rundum · Endpreis nach Ihrem Maß im Konfigurator</span>
-    {%- comment -%} Lieferzeit nur aus service.lieferzeit (belegt), sonst keine Zeile {%- endcomment -%}
+    <span class="tp-ab-preis__grund">inkl. {{ tp_ab_kante_wort }} rundum{% if kopf %} · Endpreis nach Ihrem Maß im Konfigurator{% endif %}</span>
+    {%- comment -%} Lieferzeit nur im Kopf und nur aus service.lieferzeit (belegt) {%- endcomment -%}
     {%- assign tp_ab_lieferzeit = product.metafields.service.lieferzeit.value | strip -%}
-    {%- if tp_ab_lieferzeit != blank -%}
+    {%- if kopf and tp_ab_lieferzeit != blank -%}
       <span class="tp-ab-preis__lieferzeit">
         <svg viewBox="0 0 20 20" width="16" height="16" fill="none" aria-hidden="true" focusable="false"><path d="M2 5h10v8H2zM12 8h3.2l2.3 2.6V13H12z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="5.5" cy="14.2" r="1.6" fill="currentColor"/><circle cx="14.5" cy="14.2" r="1.6" fill="currentColor"/></svg>
         Lieferzeit {{ tp_ab_lieferzeit | escape }}

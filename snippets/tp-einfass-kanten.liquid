@@ -12,9 +12,10 @@
   Eine Einfassart allein ist keine Wahl - dann rendert das Snippet nichts
   (Inhaber 2026-09-13), den Weg zur Meterware zeigt weiter blocks/tp-einfass-wechsel.
 
-  Bild je Art aus den Block-Einstellungen (bild_ketteln, bild_paspelband,
-  bild_einfassband, bild_cover); ohne Bild zeichnet CSS die Kante auf das Foto der
-  gewaehlten Farbe.
+  Bild je Art aus den Block-Einstellungen: zuerst marke_bild_<art> (nur wenn
+  product.vendor gleich marke_bilder_vendor - Herstellerfotos nur fuer die eigene
+  Marke), dann bild_<art> fuer alle; ohne Bild zeichnet CSS die Kante auf das
+  Foto der gewaehlten Farbe.
 
   @param {object} product - der Teppich nach Mass dieser Seite
   @param {object} bilder - block.settings des Konfigurators (Bilder je Art)
@@ -100,11 +101,24 @@
               assign tk_inkl = false
             endif
 
-            capture tk_bild_key
-              echo 'bild_'
-              echo tk_art
-            endcapture
-            assign tk_bild = bilder[tk_bild_key]
+            # Herstellerfoto nur auf Produkten dieser Marke (Bildrechte), sonst das
+            # allgemeine Bild der Art, sonst die Zeichnung.
+            assign tk_bild = nil
+            assign tk_marke = bilder.marke_bilder_vendor | strip
+            if tk_marke != blank and product.vendor == tk_marke
+              capture tk_bild_key
+                echo 'marke_bild_'
+                echo tk_art
+              endcapture
+              assign tk_bild = bilder[tk_bild_key]
+            endif
+            if tk_bild == blank
+              capture tk_bild_key
+                echo 'bild_'
+                echo tk_art
+              endcapture
+              assign tk_bild = bilder[tk_bild_key]
+            endif
           -%}
           <a
             class="tp-ek__kante{% if tk_aktiv %} is-aktiv{% endif %}"

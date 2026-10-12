@@ -326,6 +326,12 @@
       {%- endcomment -%}
       <div class="tp-ek__preis" aria-live="polite" data-rechnung hidden>
         <div class="tp-ek__summe"><span>Gesamtpreis für Ihr Maß</span><span class="tp-ek__summe-werte"><s class="tp-ek__summe-alt" data-summe-alt hidden></s><strong data-summe>–</strong></span></div>
+        {%- comment -%}
+          Rechenzeile "Flaeche x Preis je m2" (2026-10-12, Vorlage Fachhandel) - nur, wenn
+          der Endpreis genau das ist: Kante im m2-Preis, keine Pauschale, kein Mindestpreis.
+          Sonst bleibt es bei der einen Zahl (Inhaber 2026-09-20).
+        {%- endcomment -%}
+        <p class="tp-ek__rechenzeile" data-rechenzeile hidden></p>
         <p class="tp-ek__preishinweis">{% if tp_ek_art == 'fertig' %}Vom Hersteller nach Ihrem Maß gefertigt und eingefasst{% if tp_ek_pauschale_v %}, inklusive Fertigungs- und Versandpauschale{% endif %}. Lieferzeit ca. 14 Tage.{% elsif tp_ek_kante_inkl %}Inklusive Zuschnitt und Kettelung rundum – die Kettelung ist im Quadratmeterpreis bereits enthalten.{% else %}Inklusive Zuschnitt und Einfassung rundum.{% endif %} Inkl. MwSt.; <a href="{{ pages['versand-lieferung'].url | default: '/pages/versand-lieferung' }}">Versand</a> in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos.{% if tp_ek_lieferzeit != blank %}<br>Lieferzeit: {{ tp_ek_lieferzeit | escape }}.{% endif %}</p>
         {%- comment -%}
           Keine Rechenaufschluesselung in der Kundenansicht (Entscheidung 2026-09-20):
@@ -526,6 +532,33 @@
       "type": "image_picker",
       "id": "bild_cover",
       "label": "Bild Cover"
+    },
+    {
+      "type": "text",
+      "id": "marke_bilder_vendor",
+      "label": "Marke mit eigenen Kantenbildern",
+      "info": "Hersteller (Vendor) exakt wie im Produkt, z. B. JAB Anstoetz. Herstellerfotos nur auf den Produkten dieser Marke.",
+      "default": "JAB Anstoetz"
+    },
+    {
+      "type": "image_picker",
+      "id": "marke_bild_ketteln",
+      "label": "Marke: Bild Gekettelt"
+    },
+    {
+      "type": "image_picker",
+      "id": "marke_bild_paspelband",
+      "label": "Marke: Bild Paspel"
+    },
+    {
+      "type": "image_picker",
+      "id": "marke_bild_einfassband",
+      "label": "Marke: Bild Einfassband"
+    },
+    {
+      "type": "image_picker",
+      "id": "marke_bild_cover",
+      "label": "Marke: Bild Cover"
     },
     {
       "type": "header",

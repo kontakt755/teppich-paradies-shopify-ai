@@ -792,6 +792,12 @@
         if (mindest) mh.textContent = 'Mindestpreis ' + euro(mindestCent) + ' für kleine Teppiche.';
       }
       q('[data-summe]').textContent = euro(summe);
+      var rz = q('[data-rechenzeile]');
+      if (rz) {
+        var zeile = !kettel && !pauschale && !mindest;
+        rz.hidden = !zeile;
+        rz.textContent = zeile ? fmt(abgerechnet) + ' m² × ' + fmt(preis, 0) + ' €/m²' + (f === 'rund' || f === 'oval' ? ' (umschließendes Rechteck)' : '') : '';
+      }
       // Aktion: derselbe Teppich zum alten Variantenpreis, dieselbe Rechnung. Liquid liefert
       // compare_at_price nur bei aktiver Aktion. Greift beim alten Preis der Mindestpreis,
       // gibt es keinen Streichpreis - die Rundung ergaebe sonst einen Cent-"Rabatt".
@@ -995,6 +1001,13 @@
       if (r) r.checked = true;
     }
     rechnen();
+
+    // Nach dem Wechsel per Kantenkachel (#tp-ek-kanten) dort weitermachen, wo der
+    // Kunde war - das Theme springt beim Laden sonst an den Seitenanfang.
+    if (window.location.hash === '#tp-ek-kanten') {
+      var kantenZiel = document.getElementById('tp-ek-kanten');
+      if (kantenZiel) setTimeout(function () { kantenZiel.scrollIntoView({ block: 'start' }); }, 80);
+    }
   }
 
   function alle() { document.querySelectorAll('[data-tp-ek]').forEach(init); }
