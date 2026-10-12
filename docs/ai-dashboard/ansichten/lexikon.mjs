@@ -322,7 +322,9 @@ function musterBestellZeile(v) {
     : NICHT_HINTERLEGT;
   const linkZelle = o.gefunden && o.url
     ? `<a class="btn btn-sm" href="${esc(o.url)}" target="_blank" rel="noopener">Original beim Lieferanten ↗</a>`
-    : `<div class="small muted">${esc(o.grund || 'kein Original hinterlegt')}</div>`;
+    : o.gefunden && o.suchlink
+      ? `<a class="btn btn-sm" href="${esc(o.suchlink)}" target="_blank" rel="noopener">Beim Lieferanten suchen ↗</a>`
+      : `<div class="small muted">${esc(o.grund || 'kein Original hinterlegt')}</div>`;
   return `<tr>
     <td data-l="Unsere SKU">${v.sku ? `<code class="mono">${esc(v.sku)}</code>` : NICHT_HINTERLEGT}</td>
     <td data-l="Lieferant">${lexWert(o.lieferant)}</td>
