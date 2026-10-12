@@ -4,6 +4,7 @@ import { oeffne } from '../lib/db.mjs';
 import { autoFreigabeMoeglich, bearbeiten, freigeben, FreigabeFehler, pruefe, verwerfen, zurueckholen } from '../lib/freigabe.mjs';
 import { REPO } from '../lib/pfade.mjs';
 import { StatusFehler } from '../lib/status.mjs';
+import { zeigeStatus } from '../scripts/social.mjs';
 import { testDb } from './_hilfe.mjs';
 
 const TEXT = 'In Velten haben wir den alten Belag entfernt und Klebevinyl verlegt. Wir übernehmen Beratung, Aufmaß und Verlegung.';
@@ -101,4 +102,33 @@ test('Automatische Freigabe: aus, solange nicht eingeschaltet - und nie fuer Bau
   assert.equal(autoFreigabeMoeglich(fall('angebot'), { SOCIAL_AUTO_FREIGABE: '1' }), false);
   const { id, b } = baustelle(db);
   assert.equal(autoFreigabeMoeglich({ beitrag: db.beitrag(b), inhalt: db.inhalt(id), medien: [] }, { SOCIAL_AUTO_FREIGABE: '1' }), false);
+});
+
+test('Status zeigt alle geplanten Termine - nicht nur die ersten 20', (t) => {
+  // Ein Redaktionslauf hielt Woche 2 fuer leer, weil die Liste nach 20 Eintraegen abbrach.
+  const jetzt = new Date(2026, 9, 12, 8, 0);   // Montag, 12.10.2026
+  const db = testDb(t, () => jetzt);
+  const { id } = db.inhaltAnlegen({ quelle: 'shopify', typ: 'produkt_farben', titel: 'Farben' });
+  const plane = (tag, stunde, format) => db.beitragAnlegen({ inhalt_id: id, format, plattformen: ['instagram'], text: TEXT, medien: [], status: 'GEPLANT', geplant_am: new Date(2026, 9, tag, stunde).toISOString() });
+  // 12.-31.10.: jeden Tag eine Story um 12 Uhr, jeden Werktag ein Beitrag um 18 Uhr
+  for (let tag = 12; tag <= 31; tag += 1) {
+    plane(tag, 12, 'story');
+    if (![0, 6].includes(new Date(2026, 9, tag).getDay())) plane(tag, 18, 'feed');
+  }
+  assert.equal(db.uebersicht().geplant.length, 35);
+
+  const zeilen = [];
+  zeigeStatus(db, { jetzt, schreibe: z => zeilen.push(...z.split('\n')) });
+  assert.ok(zeilen.includes('Geplant (35 Termine)'));
+  assert.ok(zeilen.includes('  KW 42 (12.10.–18.10.): 5 Beiträge · 7 Storys'));
+  assert.ok(zeilen.includes('  KW 43 (19.10.–25.10.): 5 Beiträge · 7 Storys'), 'Woche 2 ist voll, nicht leer');
+  assert.ok(zeilen.includes('  KW 44 (26.10.–01.11.): 5 Beiträge · 6 Storys'));
+  assert.equal(zeilen.filter(z => z.includes(': Farben')).length, 24, 'alle Termine bis 26.10. 08:00 einzeln');
+  assert.equal(zeilen.at(-1), '  … und 11 weitere bis 31.10.');
+});
+
+test('Status ohne geplante Termine', (t) => {
+  const zeilen = [];
+  zeigeStatus(testDb(t), { schreibe: z => zeilen.push(...z.split('\n')) });
+  assert.deepEqual(zeilen.slice(-2), ['Geplant (0 Termine)', '  –']);
 });

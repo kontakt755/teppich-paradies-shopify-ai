@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { plane, termine, woche } from '../lib/planer.mjs';
+import { planAnsicht, plane, termine, woche } from '../lib/planer.mjs';
 import { RASTER } from '../lib/konfig.mjs';
 
 // Mittwoch, 30.09.2026, 14 Uhr Ortszeit
@@ -57,4 +57,22 @@ test('Der Lernstand verschiebt die Reihenfolge nur begrenzt', () => {
   assert.ok(ohne.get(1) < ohne.get(2));
   const mit = plane({ offen: [b(1, 'produkt_woche', { punkte: 60 }), b(2, 'raumidee', { punkte: 50 })], jetzt: JETZT, lernstand: { typ: { raumidee: { faktor: 9 }, produkt_woche: { faktor: 0.1 } } } });
   assert.ok(mit.get(2) < mit.get(1), 'raumidee 50*1.25 schlaegt produkt_woche 60*0.8');
+});
+
+test('Planansicht: naechste 14 Tage einzeln, Rest als Anzahl, je Woche Beitraege und Storys', () => {
+  const jetzt = new Date(2026, 9, 12, 8, 0);   // Montag, 12.10.2026
+  const g = (tag, stunde, format = 'feed') => ({ geplantAm: new Date(2026, 9, tag, stunde).toISOString(), format });
+  const p = planAnsicht([g(28, 18), g(12, 18), g(12, 12, 'story'), g(25, 18), g(26, 12, 'story'), g(13, 18)], { jetzt });
+  assert.equal(p.gesamt, 6);
+  assert.deepEqual(p.naechste.map(x => new Date(x.geplantAm).getDate()), [12, 12, 13, 25], 'sortiert, bis vor dem 26.10. 08:00');
+  assert.equal(p.weitere, 2);
+  assert.equal(new Date(p.weitereBis).getDate(), 28);
+  assert.deepEqual(p.wochen.map(w => [w.kw, w.von.getDate(), w.bis.getDate(), w.beitraege, w.storys]), [[42, 12, 18, 2, 1], [43, 19, 25, 1, 0], [44, 26, 1, 1, 1]]);
+});
+
+test('Planansicht: Ueberfaelliges zaehlt zu den naechsten, ohne Termine ist alles leer', () => {
+  const jetzt = new Date(2026, 9, 12, 8, 0);
+  const p = planAnsicht([{ geplantAm: new Date(2026, 9, 11, 18).toISOString(), format: 'feed' }], { jetzt });
+  assert.equal(p.naechste.length, 1); assert.equal(p.weitere, 0); assert.equal(p.weitereBis, null);
+  assert.deepEqual(planAnsicht([], { jetzt }), { naechste: [], weitere: 0, weitereBis: null, gesamt: 0, wochen: [] });
 });
