@@ -117,6 +117,6 @@ export function viewKundenWarenkoerbe() {
   const liste = [...(d.warenkoerbe || [])].sort((a, b) => (b.wert || 0) - (a.wert || 0));
   const summe = liste.reduce((s, w) => s + (w.wert || 0), 0);
   return `
-    <p class="small muted" style="margin:0 0 10px">Kunden, die den Kauf abgebrochen haben – nach Wert sortiert, zusammen ${geldText({ betrag: summe })}. Anrufen oder anschreiben lohnt sich meist bei den obersten.</p>
+    <p class="small muted" style="margin:0 0 10px">Kunden, die den Kauf abgebrochen haben – nach Wert sortiert, zusammen ${geldText({ betrag: summe })}. Anrufen oder anschreiben lohnt sich meist bei den obersten.${d.testAusgeblendet ? ` ${d.testAusgeblendet === 1 ? 'Ein Testkauf ist' : `${d.testAusgeblendet} Testkäufe sind`} ausgeblendet.` : ''}</p>
     <div class="rows">${liste.length ? liste.map(warenkorbZeile).join('') : emptyState('Kein liegengebliebener Warenkorb.', '')}</div>`;
 }

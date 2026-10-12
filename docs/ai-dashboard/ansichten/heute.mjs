@@ -101,7 +101,7 @@ export function viewHeute() {
   return `<div class="heute">
     ${kopf(todos.length + muster.offen.length, sicht)}
     ${todoListe(todos, muster.offen.length)}
-    ${istInhaber() && sicht !== 'laden' ? sprungfelder(zaehleTodos(q, opt), sicht) : ''}
+    ${istInhaber() && sicht !== 'laden' ? sprungfelder(mitMusterImLaden(zaehleTodos(q, opt), musterAlle.offen.length), sicht) : ''}
     ${datenstandZeile(sicht)}
     ${musterNachfassenBlock(muster)}
     ${werWartetBlock(wartet)}
@@ -165,6 +165,14 @@ function todoListe(todos, musterOffen = 0) {
   return `<section class="heute-todos" aria-label="Offene To-dos">${inhalt}</section>
     ${stoerung ? stoerungState(stoerung, 'Ein Teil der Daten') : ''}
     ${ohneBestelldaten ? `<p class="heute-hinweis">Bestelldaten fehlen noch – To-dos aus Bestellungen können deshalb nicht erscheinen. ${esc(kunden.bestellungen.hinweis || '')}</p>` : ''}`;
+}
+
+/**
+ * Muster nachfassen macht der Laden und zaehlt dort in der Ueberschrift mit.
+ * Ohne sie stand im Sprungfeld "2 offen im Laden", die Laden-Ansicht zeigte 5.
+ */
+function mitMusterImLaden(zahlen, musterOffen) {
+  return { ...zahlen, laden: (zahlen.laden || 0) + musterOffen };
 }
 
 /** Inhaber: wie viel liegt im Laden, wie viel bei der Website - ein Klick wechselt die Ansicht. */

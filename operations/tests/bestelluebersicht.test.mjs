@@ -361,3 +361,13 @@ test('Lieferant aus Metaobjekt-GID: feste Liste kennt A-E, der Export liefert we
   const mitListe = lf(aufbereiten({ orders, lieferanten: [{ id: gid(1999), kuerzel: 'f' }] }));
   assert.equal(mitListe['TEST-LF-44'], 'F');
 });
+
+test('Kundenmenge: bei gelieferter Ware die bestellte Menge, Kettelservice in laufenden Metern', () => {
+  // Vorher: "0 Stk." bei gelieferter Ware (offene Menge) und "800 Stk. Kettelservice".
+  const geliefert = { ...zeile({ id: 50, sku: 'TEST-ROLLE-9', title: 'Testunterlage', variantTitle: '80 cm breit (je lfm)', quantity: 3 }), unfulfilledQuantity: 0 };
+  const kettel = zeile({ id: 51, sku: null, title: 'Kettelservice', variantTitle: 'je 0,01 laufender Meter', quantity: 800, handle: 'kettelservice' });
+  const mm = aufbereiten({ orders: [bestellung(50, [geliefert, kettel])] });
+  const pos = mm.auftraege[0].positionen;
+  assert.match(pos.find(p => p.titel === 'Testunterlage').kundenmenge, /^3 lfm/, 'je lfm: Stueckzahl ist die Laenge');
+  assert.match(pos.find(p => p.titel === 'Kettelservice').kundenmenge, /800 × 0,01 lfm = 8,00 lfm/);
+});

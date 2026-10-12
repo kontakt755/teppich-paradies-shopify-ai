@@ -1,6 +1,8 @@
 // Abgebrochene Warenkoerbe (AbandonedCheckout) fuers Control Center -
 // verlorener Umsatz, den heute niemand sieht.
 
+import { istTestkontakt } from './kundenfaelle.mjs';
+
 export function ladeWarenkoerbe(daten) {
   const j = typeof daten === 'string' ? JSON.parse(daten) : daten;
   if (Array.isArray(j)) return j;
@@ -44,7 +46,9 @@ export function warenkorbEintrag(c) {
  */
 export function aufbereiten(daten, opt = {}) {
   const alle = ladeWarenkoerbe(daten).map(warenkorbEintrag);
-  const offen = alle.filter(c => !c.abgeschlossenAm);
+  // Testkaeufe (qa-test@example.com aus den Shop-Pruefungen) sind kein
+  // verlorener Umsatz - sie machten am 2026-10-12 rund 3.150 von 3.338 € aus.
+  const offen = alle.filter(c => !c.abgeschlossenAm && !istTestkontakt(c));
   offen.sort((a, b) => (b.zeitpunkt || '').localeCompare(a.zeitpunkt || ''));
   const gesamtwert = offen.reduce((s, c) => s + c.wert, 0);
   return {
@@ -55,5 +59,6 @@ export function aufbereiten(daten, opt = {}) {
     warenkoerbe: offen,
     // Nachtraeglich doch abgeschlossene bleiben belegbar, aber getrennt.
     nachtraeglichAbgeschlossen: alle.filter(c => c.abgeschlossenAm).length,
+    testAusgeblendet: alle.filter(c => !c.abgeschlossenAm && istTestkontakt(c)).length,
   };
 }
