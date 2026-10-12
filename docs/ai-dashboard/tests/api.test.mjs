@@ -609,6 +609,35 @@ test('lexikonMengenhilfe meldet ehrlich UNGEKLAERT statt zu schaetzen, wenn eine
   assert.match(r.grund, /m² pro Paket.*nicht hinterlegt/);
 });
 
+test('lexikonMengenhilfe: Rollenbreite in Metern je Variante, m²-Ware direkt, Teppich nach Mass mit Hinweis', () => {
+  // Shopify fuehrt custom.rollenbreite in Metern ("2.0", "4.0") - frueher wurde
+  // pauschal durch 100 geteilt: 20 m² auf einer 2-m-Rolle ergaben 1000 lfm.
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat');
+  fs.mkdirSync(path.join(dir, 'lexikon'), { recursive: true });
+  const variante = (id, extra = {}) => ({ id: `gid://shopify/ProductVariant/${id}`, titel: 'x', sku: `S-${id}`, einkauf: { bestelleinheit: 'lfm' }, ...extra });
+  const produkte = [
+    { handle: 'lino-200', titel: 'Lino', produktgruppe: 'Linoleumboden', eigenschaften: { rollenbreite: '2.0' }, varianten: [variante(1)] },
+    { handle: 'tb-400-500', titel: 'TB', produktgruppe: 'Teppichboden', eigenschaften: {}, varianten: [variante(2, { rollenbreiteM: 4 }), variante(3, { rollenbreiteM: 5 })] },
+    { handle: 'alt-cm', titel: 'Alt', produktgruppe: 'Teppichboden', eigenschaften: { rollenbreite: '400' }, varianten: [variante(4)] },
+    { handle: 'tnm-m2', titel: 'TnM', produktgruppe: 'Teppich nach Maß', eigenschaften: {}, varianten: [variante(5, { einkauf: { bestelleinheit: 'm2' } })] },
+    { handle: 'tnm-lfm', titel: 'TnM A', produktgruppe: 'Teppich nach Maß', eigenschaften: {}, varianten: [variante(6)] },
+  ];
+  fs.writeFileSync(path.join(dir, 'lexikon', 'produkte.json'), JSON.stringify({ erstellt: '2026-10-12T08:00:00Z', anzahl: produkte.length, produkte }));
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const mh = (handle, id, m2) => api.lexikonMengenhilfe({ handle, variantenId: `gid://shopify/ProductVariant/${id}`, kundenmengeM2: m2 });
+  assert.equal(mh('lino-200', 1, '20').ergebnis.lfm, 10);
+  assert.equal(mh('tb-400-500', 2, '20').ergebnis.lfm, 5);
+  assert.equal(mh('tb-400-500', 3, '20').ergebnis.lfm, 4);
+  assert.equal(mh('alt-cm', 4, '20').ergebnis.lfm, 5, 'Zentimeterwert bleibt lesbar');
+  const m2 = mh('tnm-m2', 5, '6,004');
+  assert.equal(m2.ergebnis.m2, 6.01);
+  assert.match(m2.ergebnis.text, /6,01 m²/);
+  const tnm = mh('tnm-lfm', 6, '6');
+  assert.equal(tnm.ergebnis, null);
+  assert.match(tnm.grund, /Teppich nach Maß/);
+});
+
 // ---------------------------------------------------------------------------
 // Datenstand: aktualisierung.json (operations/scripts/aktualisieren.mjs)
 // ---------------------------------------------------------------------------
