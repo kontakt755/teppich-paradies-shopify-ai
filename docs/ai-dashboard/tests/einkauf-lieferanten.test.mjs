@@ -34,7 +34,9 @@ function karten() {
 
 test('Stufe, Wartezeit und Warnstufe einer Position', () => {
   assert.equal(stufeVon(null), 'zuBestellen');
-  assert.equal(stufeVon('raus'), 'unterwegs');
+  // Der Einkauf endet bei "bei uns eingetroffen": an Kunden raus ist fuer ihn erledigt.
+  assert.equal(stufeVon('geliefert'), 'eingetroffen');
+  assert.equal(stufeVon('raus'), 'erledigt');
   assert.equal(wartetage({ status: 'bestellt', bestelltAm: vor(9) }, JETZT), 9);
   assert.equal(wartetage({ status: 'raus', bestelltAm: vor(9) }, JETZT), null);
   assert.deepEqual([6, 7, 13, 14, null].map(t => warnstufe(t)), [null, 'warn', 'warn', 'crit', null]);
@@ -44,7 +46,7 @@ test('Stufe, Wartezeit und Warnstufe einer Position', () => {
 test('lieferantenKarten: zaehlt je Stufe, Muster getrennt, erledigt zaehlt nicht als offen', () => {
   const k = karten();
   const a = k.find(x => x.id === 'A');
-  assert.deepEqual(a.zahlen, { zuBestellen: 1, bestellt: 1, unterwegs: 1, musterOffen: 1, musterLaufend: 0 });
+  assert.deepEqual(a.zahlen, { zuBestellen: 1, bestellt: 1, eingetroffen: 1, musterOffen: 1, musterLaufend: 0 });
   assert.equal(a.offenGesamt, 4);
   assert.equal(a.ware.erledigt.length, 1);
   assert.equal(a.name, 'Lieferant A');
@@ -56,11 +58,28 @@ test('lieferantenKarten: ueberfaellig ab 7 Tagen gelb, ab 14 rot - auch fuer "ge
   const a = karten().find(x => x.id === 'A');
   // a2 wartet 9 Tage (bestellt), a3 15 Tage (geliefert, noch nicht raus).
   assert.deepEqual({ stufe: a.ueberfaellig.stufe, anzahl: a.ueberfaellig.anzahl, problem: a.ueberfaellig.problem, maxTage: a.ueberfaellig.maxTage }, { stufe: 'crit', anzahl: 2, problem: 1, maxTage: 15 });
-  assert.match(ueberfaelligText(a.ueberfaellig).text, /^Überfällig: 2 Bestellungen warten, die älteste seit 15 Tagen\.$/);
-  assert.deepEqual(ueberfaelligText({ stufe: 'warn', anzahl: 1, maxTage: 9 }), { stufe: 'warn', text: 'Nachhaken: 1 Bestellung wartet, die älteste seit 9 Tagen.' });
+  // a2 und a3 gehoeren zur selben Kundenbestellung (o1): ein Auftrag, zwei Positionen.
+  assert.equal(a.ueberfaellig.auftraege, 1);
+  assert.match(ueberfaelligText(a.ueberfaellig).text, /^Überfällig: 1 Auftrag wartet \(2 Positionen\), der älteste seit 15 Tagen\.$/);
+  assert.deepEqual(ueberfaelligText({ stufe: 'warn', anzahl: 1, maxTage: 9 }), { stufe: 'warn', text: 'Nachhaken: 1 Auftrag wartet, der älteste seit 9 Tagen.' });
+  // Mehrere Positionen einer Kundenbestellung sind ein Auftrag.
+  assert.equal(ueberfaelligText({ stufe: 'warn', anzahl: 15, auftraege: 5, maxTage: 10 }).text, 'Nachhaken: 5 Aufträge warten (15 Positionen), der älteste seit 10 Tagen.');
+  assert.equal(ueberfaelligText({ stufe: 'warn', anzahl: 3, auftraege: 1, maxTage: 8 }).text, 'Nachhaken: 1 Auftrag wartet (3 Positionen), der älteste seit 8 Tagen.');
   const c = karten().find(x => x.id === 'C');
   assert.equal(c.ueberfaellig.stufe, null);
   assert.equal(ueberfaelligText(c.ueberfaellig), null);
+});
+
+test('lieferantenKarten: Muster beim Kunden ("an Kunden raus") sind fuer den Einkauf erledigt', () => {
+  const st = { m1: { status: 'raus', bestelltAm: vor(12), geliefertAm: vor(10), rausAm: vor(9) }, m2: { status: 'bestellt', bestelltAm: vor(2) }, m3: { status: 'geliefert', bestelltAm: vor(4), geliefertAm: vor(1) } };
+  const [k] = lieferantenKarten({
+    musterGruppen: [{ lieferant: 'A', positionen: ['m1', 'm2', 'm3'].map(id => pos(id, { istMuster: true })) }],
+    eintragFuer: p => st[p.lineItemId] || null, jetzt: JETZT,
+  });
+  assert.equal(k.zahlen.musterLaufend, 2, 'bestellt + bei uns eingetroffen, nicht das Muster beim Kunden');
+  assert.equal(k.muster.erledigt.length, 1);
+  assert.equal(k.offenGesamt, 2);
+  assert.equal(karteImFilter(k, 'erledigt'), true);
 });
 
 test('lieferantenKarten: Reihenfolge - zu tun zuerst, nicht zugeordnet zuletzt; unbekannter Lieferant bekommt leere Stammdaten', () => {
@@ -80,6 +99,8 @@ test('karteImFilter: ohne Filter alles Offene, mit Filter nur die Stufe', () => 
   assert.deepEqual(sichtbar(''), ['A', 'C', 'UNGEKLAERT']);
   assert.deepEqual(sichtbar('offen'), ['A', 'UNGEKLAERT']);
   assert.deepEqual(sichtbar('bestellt'), ['A', 'C']);
+  assert.deepEqual(sichtbar('eingetroffen'), ['A']);
+  // Alte Links (#/einkauf?af=unterwegs) landen im neuen Schritt.
   assert.deepEqual(sichtbar('unterwegs'), ['A']);
   assert.deepEqual(sichtbar('erledigt'), ['A']);
   assert.deepEqual(sichtbar('quatsch'), []);

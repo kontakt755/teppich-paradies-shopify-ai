@@ -147,18 +147,12 @@ html[data-theme="dark"] .heute-sicht a[aria-current] { color: var(--bg); }
   .heute-laden .heute-block-kopf a, .heute-laden-spam a { min-height: 44px; display: inline-flex; align-items: center; gap: 4px; }
 }
 
-/* ---------- Bisherige Bloecke, eingeklappt ---------- */
-.heute .heute-abschnitt { margin-top: 36px; }
-.heute-klappe { border-top: 1px solid var(--line); }
-.heute-klappe:last-of-type { border-bottom: 1px solid var(--line); }
-.heute-klappe > summary { display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 8px 2px; cursor: pointer; list-style: none; }
-.heute-klappe > summary::-webkit-details-marker { display: none; }
-.heute-klappe > summary .chev { flex: none; color: var(--text-3); transition: transform .12s ease; }
-.heute-klappe[open] > summary .chev { transform: rotate(90deg); }
-.heute-klappe-titel { font-weight: 650; }
-.heute-klappe-vorschau { margin-left: auto; font-size: .85rem; color: var(--text-3); text-align: right; }
-.heute-klappe-inhalt { padding: 4px 0 22px; min-width: 0; }
-.heute-klappe-inhalt > .section-title:first-child { margin-top: 8px; }
+/* ---------- Montage: Zahlen der Montage-App (ansichten/heute/laden.mjs) ----------
+   Bis zu sieben Zahlen, jede optional - so viele Spalten, wie Platz ist. Bernstein nur, wo
+   etwas liegen geblieben ist; 0 wird grau. */
+.heute-kpis.heute-montage-zahlen { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.heute-montage-zahlen .n.null { color: var(--text-3); }
+.heute-montage-zahlen .n.warn { color: var(--warn); }
 
 /* ---------- Schmal ---------- */
 @media (max-width: 900px) {

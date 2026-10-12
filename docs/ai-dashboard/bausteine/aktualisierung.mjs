@@ -53,7 +53,8 @@ export function ensureAktualisierung() {
  * Gesperrt und mit Ladehinweis waehrend ein Lauf aktiv ist (sowohl serverseitig als auch nach
  * einem Klick auf diesem Tab); das Ergebnis je Quelle zeigt danach aktualisierungHealth(). */
 export function aktualisierenButton({ mitHinweis = true } = {}) {
-  if (state.capabilities.mode !== 'local') return '';
+  // Rolle "lesen" darf nichts anstossen (der Server antwortet 403) - also kein Knopf.
+  if (state.capabilities.mode !== 'local' || istNurLesend()) return '';
   const laeuft = einkauf.aktualisierungLaeuft;
   const bereit = einkauf.aktualisierung?.manuellVerfuegbar === true;
   // Der Hinweis sagt, was zu tun ist - "Geplanten Export prüfen" konnte niemand im Laden ausfuehren.

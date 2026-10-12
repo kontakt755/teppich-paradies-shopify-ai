@@ -282,3 +282,29 @@ test('Muster "haben wir da": kein "bei Lieferant bestellen", sondern "vorbeibrin
   const ww = werWartet({ bestellzeilen: [vorbei] }, { jetzt: JETZT });
   assert.equal(ww.wir[0].schritt, 'Muster vorbeibringen');
 });
+
+test('Wer wartet: faellige Nachfrage bei Musterkunden steht unter "Wir sind dran", nicht unter "Kunde ist dran"', () => {
+  const muster = zeile({ name: 'Musterkunde', tage: 12, positionen: [{ istMuster: true }] });
+  const statusAlle = stand(muster, 0, { status: 'raus', rausAm: vorTagen(11) });
+  const ohne = werWartet({ bestellzeilen: [muster], statusAlle }, { jetzt: JETZT });
+  assert.equal(ohne.kunde.length, 1, 'ohne faellige Nachfrage: Kunde ist dran');
+  const mit = werWartet({ bestellzeilen: [muster], statusAlle }, { jetzt: JETZT, nachfassen: new Set([muster.orderId]) });
+  assert.equal(mit.kunde.length, 0, 'nicht zugleich bei "Kunde ist dran"');
+  assert.equal(mit.wir.length, 1);
+  assert.equal(mit.wir[0].schritt, 'Muster nachfassen');
+  assert.equal(mit.gesamt, 1, 'jeder Vorgang genau einmal');
+  // Auch als Liste von IDs; ein bestellter Auftrag bleibt beim Lieferanten.
+  const bestellt = zeile({ name: 'Noch beim Lieferanten', tage: 3, positionen: [{ istMuster: true }] });
+  const w = werWartet({ bestellzeilen: [bestellt], statusAlle: stand(bestellt, 0, { status: 'bestellt', bestelltAm: vorTagen(2) }) }, { jetzt: JETZT, nachfassen: [bestellt.orderId] });
+  assert.equal(w.lieferant.length, 1);
+});
+
+test('Shop-Wache: stumm seit mehr als drei Stunden wird ein To-do (gruen, aber veraltet); frisch gruen nicht', () => {
+  const stunden = h => new Date(JETZT.getTime() - h * 3_600_000).toISOString();
+  const stumm = leiteTodosAb({ shopwache: { verfuegbar: true, ampel: 'gruen', geprueftAm: stunden(5), befunde: [] } }, { sicht: 'website', jetzt: JETZT });
+  assert.equal(stumm.length, 1);
+  assert.equal(stumm[0].titel, 'Shop-Wache meldet sich nicht');
+  assert.equal(stumm[0].ton, 'warn');
+  assert.match(stumm[0].kontext, /vor 5 Stunden/);
+  assert.deepEqual(leiteTodosAb({ shopwache: { verfuegbar: true, ampel: 'gruen', geprueftAm: stunden(1), befunde: [] } }, { sicht: 'website', jetzt: JETZT }), []);
+});

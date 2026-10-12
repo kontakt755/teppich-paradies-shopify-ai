@@ -25,7 +25,7 @@ import { parseRoute } from './kern/router.mjs';
 import { renderThemeButton } from './kern/thema.mjs';
 import { loadData, loadAgentRuns, refresh, renderSyncChip } from './kern/daten.mjs';
 import { registriereAnsichten, render } from './kern/render.mjs';
-import { registriereNavZaehler } from './kern/navigation.mjs';
+import { registriereNavZaehler, zeichneDashboards } from './kern/navigation.mjs';
 import { kunden } from './ansichten/kunden/gemeinsam.mjs';
 import { viewEinkauf } from './ansichten/einkauf.mjs';
 import { viewLexikon } from './ansichten/lexikon.mjs';
@@ -58,6 +58,7 @@ async function init() {
   renderThemeButton();
   await loadSession();
   await loadCapabilities();
+  zeichneDashboards();
   await loadData();
   renderSyncChip();
   if (state.route.view === 'aktivitaet') { await ladeAktivitaetsdaten(); }

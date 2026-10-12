@@ -12,7 +12,7 @@ import { fetchEinkauf } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { kunden } from '../kunden/gemeinsam.mjs';
-import { musterEigen } from '../../lib/einkauf-lieferanten.mjs';
+import { musterEigen, stufeVon } from '../../lib/einkauf-lieferanten.mjs';
 
 export { musterEigen };
 
@@ -64,21 +64,23 @@ export const einkauf = {
 // Muss zu operations/lib/auftragsstatus.mjs passen (dort die fuehrende Quelle).
 const AF_STATUS_ORDER = ['bestellt', 'geliefert', 'raus', 'erledigt'];
 export const AF_STATUS_LABEL = { bestellt: 'Bestellt', geliefert: 'Geliefert an uns', raus: 'An Kunden raus', erledigt: 'Erledigt' };
-// Naechster Schritt nach dem AKTUELLEN Status (nicht nach der Filtergruppe!). "geliefert" und
-// "raus" fallen beide in die Filtergruppe "unterwegs" (afFilterGruppe) - ein Mapping ueber die
-// Filtergruppe wie zuvor hier stand liefert dafuer keinen Eintrag, und der "Weiter"-Button
-// verschwand dauerhaft ab "Geliefert an uns": die Position blieb ohne Bedienelement stecken.
+// Naechster Schritt nach dem AKTUELLEN Status (nicht nach der Filtergruppe!). "raus" und
+// "erledigt" fallen beide in die Filtergruppe "erledigt" (afFilterGruppe) - ein Mapping ueber
+// die Filtergruppe liefert dafuer keinen eindeutigen Eintrag; frueher verschwand so der
+// "Weiter"-Button ab "Geliefert an uns" und die Position blieb ohne Bedienelement stecken.
 export function afNaechsterStatus(status) {
   if (!status) return AF_STATUS_ORDER[0];
   const idx = AF_STATUS_ORDER.indexOf(status);
   return idx >= 0 && idx < AF_STATUS_ORDER.length - 1 ? AF_STATUS_ORDER[idx + 1] : null;
 }
+/**
+ * Filtergruppe im Einkauf: offen -> bestellt -> eingetroffen (bei uns) -> erledigt. Der Einkauf
+ * endet bei "bei uns eingetroffen"; "an Kunden raus" zaehlt hier als erledigt (dieselbe Regel
+ * wie stufeVon() in lib/einkauf-lieferanten.mjs, dort mit "zuBestellen" statt "offen").
+ */
 export function afFilterGruppe(status) {
-  if (!status) return 'offen';
-  if (status === 'bestellt') return 'bestellt';
-  if (status === 'geliefert' || status === 'raus') return 'unterwegs';
-  if (status === 'erledigt') return 'erledigt';
-  return 'offen';
+  const stufe = stufeVon(status);
+  return stufe === 'zuBestellen' ? 'offen' : stufe;
 }
 // einkauf.route -> Klartext (domains/shopify/einkauf-metafelder.json)
 // Steht bewusst weit oben: die Einkaufsansicht zeigte den Rohwert
