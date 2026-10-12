@@ -32,14 +32,25 @@ function standardPrivatDir() {
   return process.env.TP_PRIVAT_DIR || path.join(os.homedir(), 'teppich-paradies-analyse');
 }
 
-/** Fehlende Datei ist kein Fehler, sondern "noch nichts markiert". */
+/**
+ * Fehlende Datei ist kein Fehler, sondern "noch nichts markiert". Eine
+ * unlesbare oder beschaedigte Datei wirft, statt als leer zu gelten - sonst
+ * holte die naechste Markierung alle abgehakten Faelle zurueck in die Liste.
+ */
 export function leseAlle(datei) {
+  let text;
   try {
-    const roh = JSON.parse(fs.readFileSync(datei, 'utf8'));
-    return roh && typeof roh === 'object' && roh.eintraege && typeof roh.eintraege === 'object' ? roh.eintraege : {};
-  } catch {
-    return {};
+    text = fs.readFileSync(datei, 'utf8');
+  } catch (e) {
+    if (e?.code === 'ENOENT') return {};
+    throw new Error(`${path.basename(datei)} ist nicht lesbar (${e?.code || e?.message}) – bitte aus der Sicherung holen`);
   }
+  if (!text.trim()) return {};
+  let roh;
+  try { roh = JSON.parse(text); } catch {
+    throw new Error(`${path.basename(datei)} ist beschädigt – bitte aus der Sicherung holen`);
+  }
+  return roh && typeof roh === 'object' && roh.eintraege && typeof roh.eintraege === 'object' ? roh.eintraege : {};
 }
 
 function schreibAlle(datei, eintraege) {

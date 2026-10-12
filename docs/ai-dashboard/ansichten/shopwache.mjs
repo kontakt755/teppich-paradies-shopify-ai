@@ -8,6 +8,7 @@ import { esc, fmtDateTime, NICHT_HINTERLEGT, fmtPreis } from '../kern/helfer.mjs
 import { fetchEinkauf } from '../kern/api.mjs';
 import { render } from '../kern/render.mjs';
 import { emptyState } from '../bausteine/karten.mjs';
+import { tailscaleHinweis } from '../lib/todos.mjs';
 
 export const shopwache = { daten: null, laedt: false };
 
@@ -17,7 +18,7 @@ export function ensureShopwache() {
   shopwache.laedt = true;
   fetchEinkauf('/api/shopwache/status').then(d => {
     shopwache.daten = d; shopwache.laedt = false;
-    if (['heute', 'shopwache'].includes(state.route.view)) render();
+    if (['heute', 'shopwache', 'insights'].includes(state.route.view)) render();
   });
 }
 
@@ -26,8 +27,11 @@ export function viewShopwache() {
   const kopf = `<div class="page-head"><div><h1>Shop-Wache</h1><p class="sub">Der Shop von außen gesehen – so wie ein Kunde ihn erlebt.</p></div></div>`;
   const d = shopwache.daten;
   if (!d && shopwache.laedt) return kopf + `<div class="empty">Lade Prüfergebnis …</div>`;
+  // Nur wenn Tailscale nicht laeuft - im Normalfall steht hier nichts.
+  const ts = tailscaleHinweis(d?.tailscale);
+  const tailscale = ts ? `<p class="notice warn" role="status"><b>${esc(ts.titel)}.</b> ${esc(ts.handlung)}</p>` : '';
   if (!d || !d.verfuegbar) {
-    return kopf + emptyState('Die Shop-Wache ist noch nie gelaufen.', `Auf dem Mac starten: ${d?.befehl || 'npm run shop:wache'}`);
+    return kopf + tailscale + emptyState('Die Shop-Wache ist noch nie gelaufen.', `Auf dem Mac starten: ${d?.befehl || 'npm run shop:wache'}`);
   }
   const zeile = (s) => {
     const ok = !s.fehler && s.status >= 200 && s.status < 400;
@@ -45,7 +49,7 @@ export function viewShopwache() {
     <td>${p.imShop === null ? NICHT_HINTERLEGT : `${esc(fmtPreis(p.imShop))} €`}</td>
     <td><span class="badge ${p.inOrdnung ? 'ok' : 'crit'}">${p.inOrdnung ? 'gleich' : 'weicht ab'}</span></td>
   </tr>`;
-  return kopf + `
+  return kopf + tailscale + `
     <p class="small muted" style="margin:0 0 12px">Zuletzt geprüft: ${esc(fmtDateTime(d.geprueftAm))} · ${esc(d.basis)}</p>
     ${d.ampel === 'gruen'
       ? `<p class="notice ok">Alles in Ordnung: jede Pflichtseite antwortet, keine Preisabweichung.</p>`

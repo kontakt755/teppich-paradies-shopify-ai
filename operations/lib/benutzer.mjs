@@ -30,15 +30,29 @@ export function benutzerDateiPfad() {
 
 export class BenutzerFehler extends Error {}
 
-/** Liest die Benutzerliste. Fehlende Datei -> leere Liste (kein Fehler, das ist der Notzugang-Fall). */
+/**
+ * Liest die Benutzerliste. Fehlende Datei -> leere Liste (kein Fehler, das ist der Notzugang-Fall).
+ *
+ * Nur das Fehlen gilt als leer. Eine unlesbare oder beschaedigte Datei wirft:
+ * frueher kam dann [] zurueck, und der naechste Zugang, den der Inhaber
+ * anlegte, schrieb eine Liste mit genau diesem einen Eintrag - alle anderen
+ * Zugaenge waren weg.
+ */
 export function leseBenutzer(file = benutzerDateiPfad()) {
+  let roh;
   try {
-    const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
-    if (!raw || !Array.isArray(raw.benutzer)) return [];
-    return raw.benutzer;
-  } catch {
-    return [];
+    roh = fs.readFileSync(file, 'utf8');
+  } catch (e) {
+    if (e?.code === 'ENOENT') return [];
+    throw new BenutzerFehler(`${path.basename(file)} ist nicht lesbar (${e?.code || e?.message}) – Zugänge bitte aus der Sicherung holen`);
   }
+  if (!roh.trim()) return [];
+  let raw;
+  try { raw = JSON.parse(roh); } catch {
+    throw new BenutzerFehler(`${path.basename(file)} ist beschädigt – Zugänge bitte aus der Sicherung holen`);
+  }
+  if (!raw || !Array.isArray(raw.benutzer)) return [];
+  return raw.benutzer;
 }
 
 export function benutzerDateiExistiert(file = benutzerDateiPfad()) {

@@ -888,3 +888,52 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiken/Annahmen:** Das Test-Sonderpostenstück SP-TEST-0001 bleibt sichtbar – es ist klar gekennzeichnet und wird
   für Schreibtests über die Liste gebraucht (die Test-Attrappe nutzt dieselbe SKU).
 - **Nächste Stufe:** Bestellweg für Lieferant C, D und E in den Stammdaten fehlt (Karte „Bestellweg nicht hinterlegt“).
+
+## 2026-10-12 · Robustheit: kein Absturz durch Anfragen, Fehler im Protokoll, Lesefehler, Blocker, Tailscale (#1175)
+
+- **Geändert** (Befunde der Prüfung vom 12.10., Details ARCHITEKTUR §16):
+  - *Absturz:* Eine Anfrage mit `Cookie: x=%` beendete ohne Anmeldung den ganzen Dienst (URIError in
+    `parseCookies`). Kaputte Cookie-Werte werden übersprungen, `requestHandler` fängt jeden Fehler (auch aus
+    `handleApi`/`handleLogin`) als 500, `uncaughtException`/`unhandledRejection` werden protokolliert.
+  - *Fehler sichtbar:* je Fehlerantwort der API (auch 4xx), abgelehnter Anmeldung und unerwartetem Fehler eine
+    Zeile mit ISO-Zeit, Status, Methode und Pfad ohne Abfrageteil (`scripts/dashboard-log.mjs`) – keine Cookies,
+    Körper, Passwörter oder Suchbegriffe. Sync-Protokoll mit Uhrzeit je Zeile. Ein abgebrochener Klick auf „Jetzt
+    aktualisieren“ bleibt als `letzterKnopfLauf` stehen: Rückmeldung „abgebrochen“ statt „abgeschlossen“ und eine
+    Zeile im Systemzustand.
+  - *Lesefehler:* Auftragsstatus, Rückrufe, Fallmarken, Aufgaben/Notizen und Benutzer gelten nur bei fehlender
+    Datei als leer; beschädigt oder unlesbar → Fehler, die Datei wird nicht mehr mit einem Eintrag überschrieben.
+    Beschädigte `benutzer.json`: Anmeldung 503 mit Klartext, Notzugang geht, Sitzungen bleiben.
+  - *Blocker:* „Blockieren“ schreibt den Grund als `## Blocker` in den Issue-Body (vorher nur Kommentar →
+    „Blocker-Grund fehlt“). Gilt auch für `npm run task -- block`. Das Detailblatt zeigt den Abschnitt nur noch,
+    solange die Aufgabe blockiert ist.
+  - *Tempo:* Lexikon (27 MB) nach Größe/Änderungszeit zwischengespeichert statt bei jeder Anfrage gelesen.
+    Sync-Dienst holt den Lagerbestand nur noch stündlich (`TP_SYNC_BESTAND_MINUTEN`); Sonderposten buchen weiter
+    live gegen Shopify.
+  - *Aktualität:* `issues.json` wird im Dienst alle 10 Minuten neu gebaut (`TP_DASHBOARD_NEUBAU_MINUTEN`, nie
+    überlappend). Der Chip zeigt bei einem älteren Stand das Datum („10.10. 09:00“).
+  - *Handy:* Im „Mehr“-Blatt bleibt der Fuß stehen; „Fehler melden“ steht dort zuerst über die volle Breite.
+    Rückmeldungen erscheinen bei offenem Blatt oben.
+  - *Kleinigkeiten:* 413 kommt an (statt Verbindungsabbruch); Eingabefehler bei Aufgaben/Notizen 400 statt 500;
+    Anhänge nur als Bild/PDF/Text im Fenster, sonst Download, immer `nosniff`; jede Antwort mit
+    `X-Frame-Options: DENY` und `frame-ancestors 'none'`.
+  - *Tailscale-Wache:* Ist Tailscale am Mac mini gestoppt oder abgemeldet (nur gelesen über
+    `tailscale status --json`), steht beim Inhaber ein To-do in der Website-Sicht, ein Hinweis auf der
+    Shop-Wache und eine Zeile im Systemzustand – mit dem Handgriff.
+  - *Prüfwerkzeug:* `dashboard:pruefen` räumt auch bei SIGTERM/SIGHUP auf; „Lade …“ nach 6 s ist `FEHL`.
+    Verwaiste Prüf-Instanz (127.0.0.1:58704, Worktree pr1077-merge) beendet, drei Datenkopien im Temp-Ordner
+    gelöscht.
+- **Getestet:** `dashboard:test` 264 → 282 grün (neu `tests/robustheit.test.mjs`, Blocker/Lexikon/Knopf-Lauf/
+  Tailscale in `api.test.mjs`, `model.test.mjs`, `todos.test.mjs`); `npm test` 7 Suiten grün (2282 Tests, neu
+  `operations/tests/speicher-lesefehler.test.mjs`, `tailscale.test.mjs`, Sync-Takt); `secret:scan` PASS, Guards
+  und `validate --static` PASS. `dashboard:pruefen` 105 × OK vorher und nachher (21 Ansichten × 5 Breiten, jetzt
+  mit „Lade“-Prüfung), `--rollen` bei 390/1440 px 92 × OK (Inhaber 42, Mitarbeiter 26, „lesen“ 24). Gegen die Kopie: `Cookie: x=%` und `a=%E0%A4%A` → `/` 302, `/api/capabilities` 401,
+  `/api/logout` 200, Prozess-ID unverändert; `org/neu` ohne Titel 400 (vorher 500), 70-KB-Körper 413 mit Text;
+  Protokollzeilen mit ISO-Zeit. „Mehr“-Blatt mit Weiteren Dashboards: „Fehler melden“ vorher 852–900 px bei
+  844 px Fenster (unsichtbar), nachher 674–722 px (390×844), 497–545 px (375×667), 570–618 px (360×740), jeweils
+  klickbar. Tailscale (am Mac mini gerade gestoppt): To-do „Tailscale ist aus …“ in Heute › Website, Hinweis auf
+  der Shop-Wache, Zeile im Systemzustand; Heute › Laden ohne Eintrag. 0 JS-Fehler.
+- **Risiken/Annahmen:** Eine beschädigte Datei bringt die betroffene Ansicht jetzt sichtbar zum Stehen (500 mit
+  Hinweis auf die Sicherung) statt still leer zu zeigen – gewollt, aber neu. Das Lexikon liegt geparst im
+  Speicher des Dienstes. Der Blockieren-Klick schreibt in den öffentlichen Issue-Body (wie bisher der Kommentar).
+  Der Lagerbestand im Einkauf ist bis zu einer Stunde alt.
+- **Nächste Stufe:** Tailscale am Mac mini wieder verbinden (Menüleiste → Connect); danach verschwindet das To-do.

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   parseBody, parseDate, statusOf, normalizeTask, attentionScore, attentionList,
   requirementsFor, labelChangesFor, summarize, areaHealth, freshness, SAVED_VIEWS, matchesQuery,
+  mitBlockerAbschnitt,
 } from '../lib/model.mjs';
 
 const NOW = new Date('2026-09-08T12:00:00Z');
@@ -209,4 +210,26 @@ test('summarize, areaHealth, freshness und gespeicherte Ansichten', () => {
   assert.deepEqual(tasks.filter(t => view('freigabe').filter(t, {})).map(t => t.number), [4]);
   assert.ok(matchesQuery(tasks[0], 'api-key'));
   assert.ok(!matchesQuery(tasks[0], 'nirgends'));
+});
+
+test('mitBlockerAbschnitt: setzt "## Blocker" so, dass parseBody den Grund liest - ersetzt, verdoppelt nie', () => {
+  const body = '## Ziel\nShop schneller\n\n## Nächster Schritt\nMessen';
+  const neu = mitBlockerAbschnitt(body, 'Warte auf Zugang von Lieferant A');
+  assert.equal(parseBody(neu).blocker, 'Warte auf Zugang von Lieferant A');
+  assert.equal(parseBody(neu).goal, 'Shop schneller');
+  assert.equal(parseBody(neu).nextStep, 'Messen');
+  assert.ok(neu.startsWith(body), 'der Rest des Bodys bleibt unveraendert');
+  // Zweites Blockieren ersetzt den Grund, statt einen zweiten Abschnitt anzuhaengen.
+  const nochmal = mitBlockerAbschnitt(neu, 'Warte auf Freigabe');
+  assert.equal(parseBody(nochmal).blocker, 'Warte auf Freigabe');
+  assert.equal((nochmal.match(/## Blocker/g) || []).length, 1);
+  assert.ok(!nochmal.includes('Lieferant A'));
+  // Auch die Kurzform "Blocker: …" mitten im Body wird ersetzt; was danach kommt, bleibt.
+  const kurz = mitBlockerAbschnitt('Blocker: alt\n## Frist\n2026-10-20', 'neu');
+  assert.equal(parseBody(kurz).blocker, 'neu');
+  assert.equal(parseBody(kurz).due, '2026-10-20');
+  // Leerer Body, mehrzeiliger Grund, keine eingeschleuste Ueberschrift.
+  assert.equal(mitBlockerAbschnitt('', 'Grund'), '## Blocker\nGrund');
+  assert.equal(parseBody(mitBlockerAbschnitt(null, 'Zeile 1\n## Ziel\nboese')).goal, null);
+  assert.equal(mitBlockerAbschnitt(body, '   '), body, 'ohne Grund keine Aenderung');
 });

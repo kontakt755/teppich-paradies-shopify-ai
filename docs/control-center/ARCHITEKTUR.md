@@ -133,6 +133,15 @@ Dashboard ist dann unter `https://<name>.ts.net` erreichbar, auch am Handy über
 liegen dort und nirgendwo sonst. Das ist gewollt (keine Kundendaten in fremder Hand), aber es heißt: der
 Mac mini ist ab jetzt Betriebsmittel, nicht nur Arbeitsplatz.
 
+**Wache (seit 2026-10-12).** Ist Tailscale am Mac mini gestoppt oder abgemeldet, merkt das im Laden
+niemand. Der Server fragt deshalb mit der Shop-Wache (`GET /api/shopwache/status`, Feld `tailscale`)
+`tailscale status --json` ab – nur lesend, höchstens einmal je Minute, nie `up`/`login`
+(`operations/lib/tailscale.mjs`). Bei `Stopped` oder `NeedsLogin` erscheint beim Inhaber ein To-do in
+der Website-Sicht von „Heute“, ein Hinweis oben auf der Shop-Wache und eine Zeile im Systemzustand
+(Insights) – jeweils mit dem Handgriff („Tailscale-Symbol in der Menüleiste → Connect“). Läuft Tailscale
+oder ist es nicht installiert, steht nirgends etwas. `TP_TAILSCALE_PRUEFEN=0` schaltet die Abfrage ab
+(Tests, andere Rechner).
+
 ## 1. Leitentscheidung: Eine Wahrheit, nur noch lokaler Betrieb
 
 **GitHub Issues bleiben die führende Aufgabenquelle.** Das Control Center legt kein zweites Aufgabensystem an.
@@ -621,11 +630,26 @@ die vorherige Regel „letzte 50 Bestellungen nach `updatedAt`". Details der
 Abgrenzung und der Ratenlimit-Wartung (`wartenBeiThrottle`) stehen in
 `operations/README.md`.
 
+**Knopf „Jetzt aktualisieren“ (seit 2026-10-12):** Bricht der Lauf selbst ab (Absturz, Zeitlimit von
+10 Minuten), behält der Server das Ergebnis als `letzterKnopfLauf: { seit, bis, fehler }` in
+`/api/aktualisierung` und `/api/aktualisierung/status`. Die Oberfläche meldet dann „abgebrochen“ statt
+„abgeschlossen“ und zeigt im Systemzustand eine Zeile, bis ein späterer Lauf die Daten erneuert hat.
+Scheitern nur einzelne Quellen (Exit 1 nach vollständigem Bericht), ist das kein Abbruch – das steht je
+Quelle wie bisher.
+
+**Aufgabendaten im Dienst (seit 2026-10-12):** `issues.json` wurde im Dienst nur beim Start, nach einer
+Schreibaktion und auf „Jetzt synchronisieren“ neu gebaut. Jetzt zusätzlich alle
+`TP_DASHBOARD_NEUBAU_MINUTEN` (Standard 10, `0` = aus), nie überlappend: läuft schon ein Neubau, fällt der
+Takt aus; kommt eine Schreibaktion während eines Neubaus, folgt genau ein weiterer. Der Datenstand-Chip
+zeigt bei einem Stand von einem anderen Tag das Datum mit („10.10. 09:00“).
+
 **Häufiger als täglich:** `operations/scripts/sync-dienst.mjs`
 (`npm run daten:sync-dienst`) führt `aktualisieren()` in einer Dauerschleife
 aus statt über eine geplante Aufgabe – Intervall `TP_SYNC_INTERVALL_MINUTEN`
 (Standard 10 Minuten), damit eine am Nachmittag eingegangene Bestellung nicht
-erst am nächsten Morgen im Control Center sichtbar wird. Läuft entweder von
+erst am nächsten Morgen im Control Center sichtbar wird. Lexikon und Lagerbestand laufen nur stündlich mit
+(`TP_SYNC_LEXIKON_MINUTEN`, `TP_SYNC_BESTAND_MINUTEN`); der Bestand allein kostete vorher rund 90 von 100
+Sekunden je Lauf. Jede Zeile im Sync-Protokoll beginnt mit der Uhrzeit. Läuft entweder von
 Hand in einem Terminal oder dauerhaft über die launchd-Vorlage
 `operations/launchagents/net.teppich-paradies.sync.plist.vorlage`. Ohne Zugang
 (`SHOPIFY_ADMIN_TOKEN`/Client-Credentials) startet der Dienst nicht still –
@@ -827,3 +851,34 @@ GET /api/fehler/liste ──> Dialog zeigt „Gemeldet“ / „Bei der Technik�
   Klicks jetzt durch (`pointer-events`); vorher war „Fehler melden“ unten links dahinter nicht klickbar.
 - **Grenze:** Der Lauf ist eine geplante Aufgabe der Claude-App auf dem Mac. Ist die App zu, wartet die
   Meldung im Dialog sichtbar auf „Gemeldet“ und wird beim nächsten Lauf übertragen.
+
+## 16. Robustheit des Dienstes (seit 2026-10-12)
+
+Befunde einer Prüfung am 2026-10-12, alle mit Test (`tests/robustheit.test.mjs`,
+`operations/tests/speicher-lesefehler.test.mjs`):
+
+- **Kein Absturz durch Anfragen.** Ein Cookie `x=%` beendete ohne Anmeldung den ganzen Dienst
+  (`decodeURIComponent` in `parseCookies`). Kaputte Cookie-Werte werden übersprungen; `requestHandler`
+  fängt jeden Fehler (auch aus `handleApi`/`handleLogin`) und antwortet 500; `uncaughtException` und
+  `unhandledRejection` werden protokolliert, der Prozess läuft weiter.
+- **Fehlerprotokoll.** `scripts/dashboard-log.mjs`: eine Zeile je Fehlerantwort der API (auch 4xx),
+  je abgelehnter Anmeldung und je unerwartetem Fehler – mit ISO-Zeit, Status, Methode und Pfad **ohne**
+  Abfrageteil (dort stehen Suchbegriffe wie Kundennamen); nie Cookies, Anfragekörper oder Passwörter.
+- **Lesefehler sind keine leeren Daten.** Auftragsstatus, Rückrufe, Fallmarken, Aufgaben/Notizen und
+  Benutzer gelten nur bei fehlender (oder 0 Byte großer) Datei als leer. Eine beschädigte oder unlesbare
+  Datei wirft; der nächste Klick überschreibt sie nicht mehr mit einem einzigen Eintrag. Ist
+  `benutzer.json` beschädigt, antwortet die Anmeldung 503 mit Klartext, der Notzugang (Einzelpasswort)
+  kommt weiter herein, und Sitzungen werden nicht gelöscht.
+- **Eingabefehler sind 400**, nicht 500 (`OrganisationFehler` in `organisation-speicher.mjs`).
+- **Blockieren schreibt `## Blocker`** in den Issue-Body (`mitBlockerAbschnitt` in `lib/model.mjs`), wo
+  `parseBody` den Grund liest; vorher stand er nur im Kommentar und die Aufgabe zeigte „Blocker-Grund
+  fehlt“. Das Aufgaben-Detail zeigt den Abschnitt nur, solange die Aufgabe blockiert ist.
+- **Lexikon im Zwischenspeicher** (`readJsonGecacht`, nach Größe und Änderungszeit): die rund 27 MB
+  wurden vorher bei jeder Anfrage synchron gelesen, die Befehlspalette fragt beim Tippen alle 150 ms.
+- **Kopfzeilen.** Jede Antwort: `X-Frame-Options: DENY`, `Content-Security-Policy: frame-ancestors 'none'`,
+  `nosniff`. Anhänge (`org/anhang-lesen`, `fehler/bild`) nur als Bild, PDF oder Text im Fenster, alles
+  andere als Download. Ein zu großer Körper bekommt seine 413, statt dass die Verbindung abreißt.
+- **Prüfwerkzeug.** `dashboard:pruefen` räumt Instanz und Datenkopie auch bei `SIGTERM`/`SIGHUP` auf und
+  zählt eine Ansicht, die nach 6 s noch „Lade …“ zeigt, als `FEHL`.
+- **Handy.** Der Fuß des „Mehr“-Blatts (Datenstand, Fehler melden, Passwort, Abmelden) bleibt unten
+  stehen, zweispaltig; Rückmeldungen erscheinen bei offenem Blatt oben statt darüber.
