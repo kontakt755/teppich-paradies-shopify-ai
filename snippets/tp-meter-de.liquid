@@ -1,0 +1,26 @@
+{%- doc -%}
+  Laenge in ganzen Zentimetern als Meter mit Komma, ohne ueberfluessige
+  Nullen: 2000 -> "20", 1650 -> "16,5", 1625 -> "16,25", 75 -> "0,75".
+  Ganzzahlig gerechnet, damit weder "20,0" noch ein Gleitkommarest entsteht.
+
+  Aufruf ueber capture, denn render liefert Text:
+    {% capture laenge %}{% render 'tp-meter-de', cm: 1650 %}{% endcapture %}
+
+  @param {number} cm - Laenge in Zentimetern
+{%- enddoc -%}
+{%- liquid
+  assign tmd_cm = cm | times: 1.0 | round | at_least: 0
+  assign tmd_m = tmd_cm | divided_by: 100 | floor
+  assign tmd_rest = tmd_cm | modulo: 100
+  if tmd_rest == 0
+    echo tmd_m
+  else
+    assign tmd_z = tmd_rest | modulo: 10
+    if tmd_z == 0
+      assign tmd_rest = tmd_rest | divided_by: 10 | floor
+    elsif tmd_rest < 10
+      assign tmd_rest = tmd_rest | prepend: '0'
+    endif
+    echo tmd_m | append: ',' | append: tmd_rest
+  endif
+-%}

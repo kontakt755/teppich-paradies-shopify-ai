@@ -173,7 +173,9 @@
 .tp-tep-gruppen__kopf { display: grid; gap: 8px; }
 .tp-tep-gruppen__titel { font-size: clamp(24px, 2.8vw, 34px); }
 .tp-tep-gruppen__lead { color: var(--tp-ink-2); }
-.tp-tep-gruppen__liste { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(10px, 1.6vw, 20px); }
+/* Desktop: alle Gruppen in einer Reihe, gleich breit - egal ob 4 oder 5 Karten
+   (leere Gruppen rendern keine Karte, die Anzahl steht also nicht fest). */
+.tp-tep-gruppen__liste { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: clamp(10px, 1.6vw, 20px); }
 .tp-tep-gruppen__link {
   display: grid; grid-template-rows: auto 1fr; height: 100%; border-radius: var(--tp-r); overflow: hidden;
   background: #fff; border: 1px solid var(--tp-line); text-decoration: none; transition: border-color .2s ease;
@@ -186,7 +188,11 @@
 .tp-tep-gruppen__kurz { font-size: 14px; color: var(--tp-ink-2); line-height: 1.4; }
 .tp-tep-gruppen__zahl { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 13px; font-weight: 600; color: var(--tp-accent); }
 @media (max-width: 899px) {
-  .tp-tep-gruppen__liste { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tp-tep-gruppen__liste { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Ungerade Anzahl (z. B. 5 Gruppen): die letzte Karte nimmt die ganze Breite,
+     mit flacherem Bild, statt allein in einer halben Spalte zu stehen. */
+  .tp-tep-gruppen__gruppe:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .tp-tep-gruppen__gruppe:last-child:nth-child(odd) .tp-tep-gruppen__bild { aspect-ratio: 16 / 7; }
   .tp-tep-gruppen__text { padding: 10px 12px 12px; }
   .tp-tep-gruppen__kurz { font-size: 13px; }
 }

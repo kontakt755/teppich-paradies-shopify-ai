@@ -221,11 +221,27 @@
       return;
     }
 
-    // Musterprodukt der Qualitaet zuerst (eigene Variante je Farbe), das
-    // Sammelprodukt "Kostenloses Muster" nur als Rueckfall, falls es fuer
-    // dieses Produkt noch kein Musterprodukt gibt.
+    // Musterprodukt der Qualitaet zuerst (eigene Variante je Farbe). Fehlt es
+    // bei einem Teppich nach Mass, das Musterprodukt des Teppichbodens
+    // (ladeBasisMuster). Das Sammelprodukt "Kostenloses Muster" bleibt der
+    // Rueckfall fuer alles, was keine eigene Mustervariante findet.
     function fetchOptional(url) {
       return fetchJson(url).catch(function () { return null; });
+    }
+
+    // Zwischenstufe fuer Teppiche nach Mass: nur wenn es muster-<handle> gar
+    // nicht gibt, das Musterprodukt des Teppichbodens (service.einfass_basis,
+    // gelesen ueber sections/tp-muster-basis). Scheitert etwas, bleibt es beim
+    // Sammelprodukt - die Musterbestellung bricht nie daran ab.
+    function ladeBasisMuster(musterProdukt) {
+      if (musterProdukt) return Promise.resolve(null);
+      return fetch(core.basisSectionUrl(handle), { headers: { Accept: 'text/html' } })
+        .then(function (response) { return response.ok ? response.text() : ''; })
+        .then(function (html) {
+          var basis = core.parseBasisHandle(html, handle);
+          return basis ? fetchOptional('/products/' + core.sampleProductHandle(basis) + '.js') : null;
+        })
+        .catch(function () { return null; });
     }
 
     Promise.all([
@@ -255,24 +271,26 @@
 
       // Beschriftungen an das Sortiment anpassen: "Farben" oder "Dekore".
       optionName = core.getOptionName(product);
-      colors = core.assignSampleVariants(colors, musterProdukt, optionName);
-      root.querySelectorAll('[data-sample-term]').forEach(function (el) {
-        el.textContent = core.getOptionTerm(product, el.getAttribute('data-sample-term'));
+      return ladeBasisMuster(musterProdukt).then(function (basisMuster) {
+        colors = core.assignSampleVariantsWithBasis(colors, musterProdukt, basisMuster, optionName);
+        root.querySelectorAll('[data-sample-term]').forEach(function (el) {
+          el.textContent = core.getOptionTerm(product, el.getAttribute('data-sample-term'));
+        });
+
+        var state = core.getSampleState(cart);
+        existingKeys = state.keys;
+        cartSampleCount = state.count;
+        remaining = state.remaining;
+
+        productImageEl.src = product.featured_image || '';
+        productNameEl.textContent = product.title;
+        productWrapEl.hidden = false;
+
+        loadingEl.hidden = true;
+        fieldsetEl.hidden = false;
+        renderColors();
+        vorauswahl(getParam('farbe'));
       });
-
-      var state = core.getSampleState(cart);
-      existingKeys = state.keys;
-      cartSampleCount = state.count;
-      remaining = state.remaining;
-
-      productImageEl.src = product.featured_image || '';
-      productNameEl.textContent = product.title;
-      productWrapEl.hidden = false;
-
-      loadingEl.hidden = true;
-      fieldsetEl.hidden = false;
-      renderColors();
-      vorauswahl(getParam('farbe'));
     }).catch(function () {
       loadingEl.hidden = true;
       showError('Für dieses Produkt sind aktuell keine Muster hinterlegt.');

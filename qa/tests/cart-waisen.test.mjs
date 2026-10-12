@@ -32,7 +32,7 @@ test('cart-products bindet beide Teile ein', () => {
 });
 
 const serviceRegeln = [
-  ['Zu Teppich / Zu Teppichboden', /\['Zu Teppich'\] != blank or tp_gz_p\['Zu Teppichboden'\] != blank/],
+  ['Zu Teppich / Zu Teppichboden / Zu Bodenbelag', /assign tp_gz_link = tp_gz_p\['Zu Teppich'\] \| default: tp_gz_p\['Zu Teppichboden'\] \| default: tp_gz_p\['Zu Bodenbelag'\]\s*\n\s*if tp_gz_link != blank/],
   ['Kante umlaufend ohne eigene Masse', /\['Kante umlaufend'\] != blank and tp_gz_p\['Maße'\] == blank/],
   ['Produkttyp Service', /line_item\.product\.type == 'Service'/],
 ];

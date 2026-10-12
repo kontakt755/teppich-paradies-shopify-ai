@@ -2301,6 +2301,13 @@
       },
       {
         "type": "text",
+        "id": "tp_strasse_schema",
+        "label": "Strasse und Hausnummer im LocalBusiness-Schema",
+        "info": "Leer = Strasse aus den Shop-Einstellungen (dort steht nur die Hausnummer 73, die Rechnungsadresse bleibt unveraendert).",
+        "default": "Saarlandstraße 73-81"
+      },
+      {
+        "type": "text",
         "id": "tp_google_profil",
         "label": "Google-Unternehmensprofil (sameAs)",
         "info": "Verknuepft den Shop mit dem Profil. Die Sternebewertung selbst wird bewusst nicht ausgezeichnet, sie stammt nicht von dieser Seite.",
@@ -2340,6 +2347,29 @@
         "id": "tp_versand_preis",
         "label": "Versandkosten darunter",
         "default": "4,99 €"
+      }
+    ]
+  },
+  {
+    "name": "TP Zahlung und Abholung",
+    "settings": [
+      {
+        "type": "paragraph",
+        "content": "Zwei kurze Zeilen im Kaufbereich der Produktseite und im Warenkorb. Sie nennen nur, was der Checkout wirklich anbietet (Stand 08.10.2026: Kreditkarte, PayPal, Klarna; Abholung am Standort Oranienburg). Ohne Beträge, Raten oder Zinsen. Ändert sich der Checkout, gehört der Text hier zusammen geändert."
+      },
+      {
+        "type": "text",
+        "id": "tp_hinweis_abholung",
+        "label": "Hinweis zur Abholung",
+        "info": "Leer lassen blendet die Zeile aus - zum Beispiel, wenn die Abholung in Shopify abgeschaltet wird.",
+        "default": "Abholung in Oranienburg möglich – nach Bestätigung"
+      },
+      {
+        "type": "text",
+        "id": "tp_hinweis_zahlung",
+        "label": "Hinweis zur Zahlung",
+        "info": "Nur Zahlarten nennen, die im Checkout unter Zahlung stehen. Klarna steht dort ohne Zusatz - Rechnung oder Raten erst nennen, wenn das bei Klarna belegt ist. Leer lassen blendet die Zeile aus.",
+        "default": "Zahlung per Kreditkarte, PayPal oder Klarna"
       }
     ]
   },
@@ -2511,7 +2541,7 @@
         "id": "tp_vs_whatsapp",
         "label": "WhatsApp-Nummer",
         "info": "Nur Ziffern mit Ländervorwahl, ohne + und Leerzeichen. Leer lassen blendet WhatsApp aus.",
-        "default": "4917657931322"
+        "default": "491792612211"
       },
       {
         "type": "text",

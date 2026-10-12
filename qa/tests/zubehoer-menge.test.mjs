@@ -110,11 +110,15 @@ test('C: Klebeband rechnet in Metern je Rolle', () => {
   assert.match(teile['[data-result]'].textContent, /^1 Rolle bestellen/);
 });
 
-test('D: Gleitkomma bestellt keine Stange zu viel', () => {
+test('D: Gleitkomma bestellt keine Leiste zu viel', () => {
   // 7,2 / 2,4 ist in Gleitkomma 3,0000000000000004 - ohne Toleranz 4 Stangen.
-  const { menge, eingeben } = seite({ m: 'stange', w: 0, a: 2.4, n: 'stange' });
+  const { teile, menge, eingeben } = seite({ m: 'stange', w: 0, a: 2.4, n: 'stange' });
+  assert.match(teile['[data-hint]'].textContent, /^Eine Leiste ist 2,4 m lang/);
+  eingeben('2,4');
+  assert.match(teile['[data-result]'].textContent, /^1 Leiste bestellen/);
   eingeben('7,2');
   assert.equal(menge.value, '3');
+  assert.match(teile['[data-result]'].textContent, /^3 Leisten bestellen/);
   eingeben('7,3');
   assert.equal(menge.value, '4');
 });

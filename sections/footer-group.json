@@ -21,7 +21,7 @@
         "primary_link": "shopify://pages/kontakt",
         "call_label": "Direkt anrufen",
         "whatsapp_label": "WhatsApp schreiben",
-        "whatsapp_link": "https://wa.me/4917657931322",
+        "whatsapp_link": "https://wa.me/491792612211",
         "phone_text": "",
         "phone_number": "+4933015733720",
         "phone_display": ""
@@ -88,7 +88,7 @@
       "type": "tp-sticky-kontakt",
       "settings": {
         "telefon": "03301 573 37 20",
-        "whatsapp": "https://wa.me/4917657931322",
+        "whatsapp": "https://wa.me/491792612211",
         "anfrage_link": "#tp-kontakt",
         "label_tel": "Anrufen",
         "label_wa": "WhatsApp",

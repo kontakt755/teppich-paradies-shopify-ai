@@ -1,0 +1,80 @@
+{% doc %}
+  Belegte Farbauswahl, Ruecken, Nutzungsklassen und widerspruchsfreie Staerke.
+  @param {object} product - Linoleumprodukt
+  @param {boolean} [details] - Rollenbreite und Staerke ergaenzen
+{% enddoc %}
+{%- liquid
+  assign color_count = 0
+  for option in product.options_with_values
+    assign option_name = option.name | downcase
+    if option_name == 'farbe'
+      assign color_count = option.values.size
+    endif
+  endfor
+  assign backing = product.metafields.custom.ruckenausstattung.value | strip
+  assign backing_normalized = backing | downcase
+  assign thickness = product.metafields.custom.gesamtstarke.value | default: product.metafields.custom.starke.value | strip | replace: '.', ','
+  assign alternate_thickness = product.metafields.custom.starke.value | strip | replace: '.', ','
+  assign thickness_consistent = true
+  if alternate_thickness != blank and thickness != alternate_thickness
+    assign thickness_consistent = false
+  endif
+  assign classes = product.metafields.custom.nutzungsklassen.value
+  assign separator = ''
+  if color_count > 0
+    echo color_count
+    if color_count == 1
+      echo ' Farbe'
+    else
+      echo ' Farben'
+    endif
+    assign separator = ' · '
+  endif
+  if backing != blank and backing_normalized != 'nicht spezifiziert'
+    echo separator
+    echo backing
+    assign separator = ' · '
+  endif
+  if classes != blank
+    assign supported_codes = '21|22|23|31|32|33|34|41|42|43' | split: '|'
+    assign class_codes = ''
+    for item in classes
+      assign class_field = item.nutzungsklasse
+      assign class_label = class_field.value | default: class_field | default: item.name.value | default: item.name | append: '' | strip
+      assign class_code = class_label | remove: 'Nutzungsklasse' | remove: 'nutzungsklasse' | remove: 'Klasse' | remove: 'klasse' | remove: 'NK' | strip | split: ' ' | first | split: '(' | first | strip
+      if supported_codes contains class_code
+        assign class_codes = class_codes | append: class_code | append: '|'
+      endif
+    endfor
+    assign class_labels = class_codes | split: '|' | uniq | sort | join: ' / '
+    if class_labels != blank
+      echo separator
+      echo 'NK '
+      echo class_labels
+      assign separator = ' · '
+    endif
+  endif
+  if details
+    if thickness_consistent and thickness != blank
+      echo separator
+      echo thickness
+      assign separator = ' · '
+    endif
+    assign width = product.metafields.custom.rollenbreite.value
+    if width != blank and width > 0
+      echo separator
+      echo width | times: 100 | round
+      echo ' cm Rolle'
+    else
+      for option in product.options_with_values
+        assign option_name = option.name | downcase
+        if option_name == 'breite' and option.values.size == 1
+          echo separator
+          assign width_option = option.values | first
+          echo width_option.name | default: width_option
+          echo ' Rolle'
+        endif
+      endfor
+    endif
+  endif
+-%}

@@ -1,0 +1,12 @@
+{%- doc -%}
+  Ist das Produkt ein Sonderposten (Reststueck, Restposten, Einzelstueck,
+  Auslaufartikel, Lagerueberhang)? Gibt "ja" aus oder nichts.
+  Einzige Quelle dieser Frage - Bloecke fragen hier, statt selbst zu pruefen.
+
+  Merkmal ist der Produkttyp "Sonderposten". Er wird beim Anlegen gesetzt
+  (Vorlage: docs/weiterentwicklung/sonderposten.md) und haelt das Produkt aus
+  allen Rollen-, Paket- und Rechnerwegen heraus.
+
+  @param {object} product - das Produkt
+{%- enddoc -%}
+{%- if product.type == 'Sonderposten' -%}ja{%- endif -%}

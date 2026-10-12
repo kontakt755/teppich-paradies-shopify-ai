@@ -190,6 +190,9 @@ export function pruefeImporte({ produkte, seit, handles = null }) {
       }
     }
   }
+  // Ein Entwurf ist im Shop unsichtbar: seine Luecken sind Arbeitsstand
+  // (z. B. Vorlage Sonderposten mit Preis 0), kein Fehler fuer Kunden.
+  for (const b of befunde) if (nachHandle.get(b.handle)?.status === 'DRAFT') b.stufe = 'hinweis';
   return { geprueft: neu.length, befunde };
 }
 

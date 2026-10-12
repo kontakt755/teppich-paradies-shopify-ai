@@ -13,6 +13,14 @@
     service.max_breite_cm   > 0 (Cover: Rollenbreite minus 10 cm)
     service.max_laenge_cm   > 0
     custom.preis_pro_001_qm true (Variantenpreis gilt pro 0,01 m2)
+  Optional, ohne Einfluss auf das Rendern:
+    service.lieferzeit      Text hinter "Lieferzeit:" im Preishinweis, nur
+                            belegte Werte; leer = keine Lieferzeit
+  Optional service.kante_inklusive (boolean): bei Ketteln enthaelt der m2-Preis
+  die Kettelung bereits - keine Kettelservice-Zeile, keine Kantenkosten.
+  Optional service.bandfarbe_fest (Text): bei Einfassband/Paspelband arbeitet
+  der Hersteller das Band in einer festen Farbe - keine Bandauswahl, nur der
+  Hinweis "Bandfarbe: <Wert>", der Wert geht als Property Bandfarbe mit.
   Angeboten werden nur Varianten mit service.einfassen exakt "Verfuegbar"
   (mit Umlaut) und Preis > 0. Formen aus service.formen (Rechteck, Rund,
   Oval, Schablone, Skizze); unbekannte Werte fallen weg, ohne Angabe gibt es
@@ -30,7 +38,7 @@
   # Groesste Breite kommt vom Teppichboden (snippets/tp-teppich-max-breite), hier ueber
   # alle Farben; je Farbe steht sie unten an der Variante.
   capture tp_ek_max_b
-    render 'tp-teppich-max-breite', product: product
+    render 'tp-teppich-max-breite', product: product, live: true
   endcapture
   assign tp_ek_max_b = tp_ek_max_b | strip | times: 1
   assign tp_ek_max_l = product.metafields.service.max_laenge_cm.value | times: 1
@@ -96,7 +104,16 @@
   # nicht kaufbar" - Letzteres darf den Teppich nicht stillschweigend als
   # vollstaendig gekettelt anbieten (siehe audit/ISSUES.md TP-005).
   assign tp_ek_kettel_service_failed = false
-  if tp_ek_art == 'ketteln' and block.settings.kettelservice_produkt != blank
+  # Kante inklusive (service.kante_inklusive = true): der m2-Preis des Herstellers
+  # enthaelt die Kettelung schon. Dann gibt es keine Kettelservice-Zeile, keine
+  # Kantenkosten und keinen TP-005-Abbruch - der Kettelservice wird gar nicht
+  # gebraucht. Fehlt das Feld oder ist es false, bleibt alles wie bisher.
+  assign tp_ek_kante_inkl = false
+  assign tp_ek_ki = product.metafields.service.kante_inklusive.value | append: '' | strip | downcase
+  if tp_ek_art == 'ketteln' and tp_ek_ki == 'true'
+    assign tp_ek_kante_inkl = true
+  endif
+  if tp_ek_art == 'ketteln' and tp_ek_kante_inkl == false and block.settings.kettelservice_produkt != blank
     assign tp_ek_kettel_v = block.settings.kettelservice_produkt.selected_or_first_available_variant
     unless tp_ek_kettel_v.available and tp_ek_kettel_v.price > 0
       assign tp_ek_kettel_v = nil
@@ -117,6 +134,21 @@
   endif
   assign tp_ek_kg_qm = product.metafields.service.kg_pro_qm.value | default: 0 | times: 1
   assign tp_ek_max_kg = product.metafields.service.max_gewicht_kg.value | default: 0 | times: 1
+
+  # Lieferzeit im Preishinweis (Werkbank w-018). Quelle ist das Produkt-
+  # Metafeld service.lieferzeit (Text, z. B. "ca. 5–8 Werktage inkl. Ketteln"),
+  # gesetzt nur dort, wo die Lieferzeit belegt ist - seit 10.10. fuer die
+  # gekettelten Teppiche nach Mass laut Inhaberentscheidung. Ohne Metafeld keine
+  # Angabe (fail closed), nichts wird von anderen Produkten geliehen. Serena
+  # gehoert seit 10.10. ebenfalls zum bestaetigten Wert inkl. Ketteln.
+  # Art "fertig" nennt ihre Lieferzeit schon im Hinweistext unten.
+  assign tp_ek_lieferzeit = ''
+  unless tp_ek_art == 'fertig'
+    assign tp_ek_lieferzeit = product.metafields.service.lieferzeit.value | strip
+    if tp_ek_lieferzeit == blank and product.handle == 'serena-teppich-nach-mass'
+      assign tp_ek_lieferzeit = 'ca. 5–8 Werktage inkl. Ketteln'
+    endif
+  endunless
 
   # Rohwarenbreiten der Meterware, aus der zugeschnitten wird - nur fuer die
   # interne Angabe im Warenkorb. Der Kunde waehlt keine Rolle.
@@ -146,12 +178,23 @@
     if tp_ek_art == 'einfassband' or tp_ek_art == 'paspelband'
       assign tp_ek_mit_band = true
     endif
+    # Feste Bandfarbe (service.bandfarbe_fest, Text, ohne Metafeld-Definition):
+    # der Hersteller arbeitet das Band immer in derselben Farbe, der Kunde waehlt
+    # nichts. Leer oder fehlend: Bandauswahl wie bisher.
+    assign tp_ek_band_fest = ''
+    if tp_ek_mit_band
+      assign tp_ek_band_fest = product.metafields.service.bandfarbe_fest.value | append: '' | strip
+    endif
+    assign tp_ek_band_wahl = false
+    if tp_ek_mit_band and tp_ek_band_fest == blank
+      assign tp_ek_band_wahl = true
+    endif
     assign tp_ek_mit_anfrage = false
     if tp_ek_formen contains 'schablone' or tp_ek_formen contains 'skizze'
       assign tp_ek_mit_anfrage = true
     endif
   -%}
-  {%- if tp_ek_mit_band -%}
+  {%- if tp_ek_band_wahl -%}
     {%- capture tp_ek_baender -%}{% render 'tp-bandfarben' %}{%- endcapture -%}
   {%- endif -%}
 
@@ -215,12 +258,15 @@
         <p class="tp-ek__fehler" role="alert" data-fehler hidden></p>
       </div>
 
-      {%- if tp_ek_mit_band -%}
+      {%- if tp_ek_band_wahl -%}
         <div class="tp-ek__schritt" data-schritt="band">
           {% render 'tp-step-heading', number: 4, label: 'Bandfarbe' %}
           <div class="tp-ek__baender" role="radiogroup" aria-label="Bandfarbe" data-baender></div>
           <p class="tp-ek__bandname" data-band-name>Bitte eine Farbe wählen</p>
         </div>
+      {%- elsif tp_ek_band_fest != blank -%}
+        {%- comment -%} Feste Bandfarbe: kein Schritt, nur ein ruhiger Hinweis {%- endcomment -%}
+        <p class="tp-ek__bandfest" data-band-fest>Bandfarbe: <span>{{ tp_ek_band_fest | escape }}</span></p>
       {%- endif -%}
 
       {%- capture tp_ek_vorschau_inhalt -%}
@@ -262,7 +308,7 @@
       {%- endcomment -%}
       <div class="tp-ek__preis" aria-live="polite" data-rechnung hidden>
         <div class="tp-ek__summe"><span>Gesamtpreis für Ihr Maß</span><span class="tp-ek__summe-werte"><s class="tp-ek__summe-alt" data-summe-alt hidden></s><strong data-summe>–</strong></span></div>
-        <p class="tp-ek__preishinweis">{% if tp_ek_art == 'fertig' %}Vom Hersteller nach Ihrem Maß gefertigt und eingefasst{% if tp_ek_pauschale_v %}, inklusive Fertigungs- und Versandpauschale{% endif %}. Lieferzeit ca. 14 Tage.{% else %}Inklusive Zuschnitt und Einfassung rundum.{% endif %} Inkl. MwSt.; <a href="{{ pages['versand-lieferung'].url | default: '/pages/versand-lieferung' }}">Versand</a> in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos.{% if product.handle == 'serena-teppich-nach-mass' %}<br>Lieferzeit: ca. 4–8 Werktage.{% endif %}</p>
+        <p class="tp-ek__preishinweis">{% if tp_ek_art == 'fertig' %}Vom Hersteller nach Ihrem Maß gefertigt und eingefasst{% if tp_ek_pauschale_v %}, inklusive Fertigungs- und Versandpauschale{% endif %}. Lieferzeit ca. 14 Tage.{% elsif tp_ek_kante_inkl %}Inklusive Zuschnitt und Kettelung rundum – die Kettelung ist im Quadratmeterpreis bereits enthalten.{% else %}Inklusive Zuschnitt und Einfassung rundum.{% endif %} Inkl. MwSt.; <a href="{{ pages['versand-lieferung'].url | default: '/pages/versand-lieferung' }}">Versand</a> in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos.{% if tp_ek_lieferzeit != blank %}<br>Lieferzeit: {{ tp_ek_lieferzeit | escape }}.{% endif %}</p>
         {%- comment -%}
           Keine Rechenaufschluesselung in der Kundenansicht (Entscheidung 2026-09-20):
           sichtbar sind Endpreis und die zwei Hinweise, die den Preis erklaeren muessen.
@@ -333,6 +379,7 @@
         {%- comment -%} Preis je 0,01 lfm Kante, Rollenbreiten in cm {%- endcomment -%}
         "kettel": {% if tp_ek_kettel_v %}{ "id": {{ tp_ek_kettel_v.id | json }}, "price": {{ tp_ek_kettel_v.price | json }} }{% else %}null{% endif %},
         "kettel_service_failed": {{ tp_ek_kettel_service_failed | json }},
+        "kante_inklusive": {{ tp_ek_kante_inkl | json }},
         "pauschale": {% if tp_ek_pauschale_v %}{ "id": {{ tp_ek_pauschale_v.id | json }}, "price": {{ tp_ek_pauschale_v.price | json }} }{% else %}null{% endif %},
         "pauschale_failed": {{ tp_ek_pauschale_failed | json }},
         "kg_pro_qm": {{ tp_ek_kg_qm | json }},
@@ -364,13 +411,14 @@
           null
         ],
         "selected_id": {{ product.selected_or_first_available_variant.id | json }},
-        "baender": {% if tp_ek_mit_band %}{{ tp_ek_baender | strip }}{% else %}[]{% endif %},
+        "baender": {% if tp_ek_band_wahl %}{{ tp_ek_baender | strip }}{% else %}[]{% endif %},
+        "band_fest": {{ tp_ek_band_fest | json }},
         "varianten": [
           {%- for tp_ek_v in product.variants -%}
             {%- if tp_ek_v.metafields.service.einfassen.value == 'Verfügbar' and tp_ek_v.price > 0 -%}
               {%- capture tp_ek_v_name -%}{% render 'tp-farbe-daten', variant: tp_ek_v, product: product, feld: 'name' %}{%- endcapture -%}
               {%- capture tp_ek_v_nr -%}{% render 'tp-farbe-daten', variant: tp_ek_v, product: product, feld: 'nummer' %}{%- endcapture -%}
-              {%- capture tp_ek_v_max -%}{% render 'tp-teppich-max-breite', product: product, farbe: tp_ek_v.option1 %}{%- endcapture -%}
+              {%- capture tp_ek_v_max -%}{% render 'tp-teppich-max-breite', product: product, farbe: tp_ek_v.option1, live: true %}{%- endcapture -%}
               {%- assign tp_ek_v_max = tp_ek_v_max | strip | times: 1 -%}
               {
                 "id": {{ tp_ek_v.id | json }},
@@ -430,8 +478,8 @@
       "type": "text",
       "id": "whatsapp",
       "label": "WhatsApp-Nummer fuer Fotos",
-      "info": "Nur Ziffern mit Laendervorwahl, z. B. 4917657931322. Leer lassen, um den Link auszublenden.",
-      "default": "4917657931322"
+      "info": "Nur Ziffern mit Laendervorwahl, z. B. 491792612211. Leer lassen, um den Link auszublenden.",
+      "default": "491792612211"
     },
     {
       "type": "header",

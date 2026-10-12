@@ -35,7 +35,7 @@
     {%- unless block.settings.kontakt_ausblenden -%}
     <a href="tel:+4933015733720">Beratung: 03301 573 37 20</a>
     <span aria-hidden="true">·</span>
-    <a href="https://wa.me/4917657931322" target="_blank" rel="noopener">WhatsApp</a>
+    <a href="https://wa.me/491792612211" target="_blank" rel="noopener">WhatsApp</a>
     {%- unless block.settings.verlegeservice_ausblenden -%}
     <span aria-hidden="true">·</span>
     {%- endunless -%}
@@ -128,6 +128,14 @@
     {%- else -%}
       <p><strong>Versand in Deutschland {{ settings.tp_versand_preis }}, ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos</strong></p>
     {%- endif -%}
+
+    {%- comment -%}
+      Abholung und Zahlarten: eine ruhige Zeile aus dem Checkout-Befund vom
+      2026-10-08 (snippets/tp-zahlung-abholung, Einstellungen "TP Zahlung und
+      Abholung"). Sie steht im Lieferkasten, damit der Kaufbereich nicht um
+      einen eigenen Kasten waechst.
+    {%- endcomment -%}
+    {%- render 'tp-zahlung-abholung', kontext: 'produkt' -%}
 
     {%- if tp_sl_is_flooring -%}
     <details class="tp-service-links__shipping-details-{{ tp_sl_id }}">

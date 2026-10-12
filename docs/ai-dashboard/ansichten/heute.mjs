@@ -4,6 +4,7 @@
  *   1. "N offene To-dos fuer dich" - je Zeile Titel, eine Zeile Kontext, genau ein Knopf
  *   2. Datenstand (klein) und, beim Inhaber, was im Laden und bei der Website offen ist
  *   3. "Wer wartet auf was" - wir / Lieferant / Kunde
+ *   3a. "Laden" - Zahlen aus der Auftrags-App (ansichten/heute/laden.mjs), nicht in der Website-Sicht
  *   4. Kennzahlen (nur Inhaber, nur was der Export hergibt)
  *   5. die bisherigen Bloecke, eingeklappt (ansichten/heute/bisher.mjs)
  *
@@ -25,6 +26,7 @@ import { kunden } from './kunden/gemeinsam.mjs';
 import { ensureKundenBestellungen } from './kunden/bestellungen.mjs';
 import { ensureKundenRueckrufe } from './kunden/rueckrufe.mjs';
 import { ensureKundenFaelle } from './kunden/faelle.mjs';
+import { heuteLaden } from './heute/laden.mjs';
 import { shopwache } from './shopwache.mjs';
 import { heuteDaten, ensureHeuteLieferanten, ensureHeuteAufgaben } from './heute/daten.mjs';
 import { heuteBisher } from './heute/bisher.mjs';
@@ -86,6 +88,7 @@ export function viewHeute() {
     ${istInhaber() && sicht !== 'laden' ? sprungfelder(zaehleTodos(q, opt), sicht) : ''}
     ${datenstandZeile(sicht)}
     ${werWartetBlock(wartet)}
+    ${sicht === 'website' ? '' : heuteLaden()}
     ${istInhaber() ? kennzahlenBlock() : ''}
     ${heuteBisher()}
   </div>`;

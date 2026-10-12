@@ -8,6 +8,7 @@ import {
   previewPushArgs, requireSuccess, runBounded, runValidation, selectThemeTargets, themeFileMap, TRACKED_EVIDENCE_PATH, verifyPreviewPayload, verifyPreviewSnapshot, writeRuntimeReport, writeTrackedEvidence,
 } from './core.mjs';
 import { acquireWorktreeLock, releaseOnProcessExit } from './worktree-lock.mjs';
+import { oeffneFenster, schliesseFenster } from './deploy-fenster.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const [mode = 'validate', ...rawArgs] = process.argv.slice(2);
@@ -290,9 +291,16 @@ async function main() {
   const lock = acquireWorktreeLock({ root, label: `workflow ${mode}` });
   const aufraeumen = releaseOnProcessExit(lock);
   if (lock.tookOver) console.error(`Hinweis: verwaiste Sperre uebernommen (${lock.tookOver.label ?? 'Lauf'}, PID ${lock.tookOver.pid ?? '?'}).`);
+  // Deploy-Fenster (workflow/deploy-fenster.mjs): ab der Preview bis zum Ende
+  // von Live darf nichts nach main - der Guard-Hook verweigert sonst den Merge.
+  if (mode === 'preview') oeffneFenster(root, { head: git('rev-parse', 'HEAD') });
+  let erfolgreich = false;
   try {
-    return await runMode();
+    const ergebnis = await runMode();
+    erfolgreich = true;
+    return ergebnis;
   } finally {
+    if (mode === 'live' || (mode === 'preview' && (!erfolgreich || process.exitCode))) schliesseFenster(root);
     aufraeumen();
   }
 }

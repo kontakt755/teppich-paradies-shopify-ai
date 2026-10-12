@@ -363,6 +363,31 @@ zeigt sie zwei weitere Kacheln, die jeweils in den Bereich „Einkauf" (Abschnit
 |---|---|---|
 | „Einkauf – heute zu tun" | `einkaufBestellungen()` + `einkaufAuftragsstatus()` | Positionen zu bestellen, offene Musterbestellungen, Aufträge mit Problem (Ampel rot: Beratung ohne Telefon, Maßprüfung offen, fehlende Großhändler-ID), Positionen je Schritt des Auftragsflusses |
 | „Shop-Zahlen" | `einkaufKennzahlen()` → `kennzahlen/shop-snapshot.json` | Bestellungen, Umsatz, Durchschnittsbon der letzten 7 und 30 Tage |
+| „Laden" (seit 2026-10-11) | `/api/laden/zahlen` → Auftrags-App `?ansicht=zahlen` | offene Beratungen (davon neu), fällige Wiedervorlagen, Angebote offen (davon nachfassen), Fälle aus dem Shop (7 Tage), gewonnen/verloren (30 Tage); Link „Laden-Ansicht öffnen" |
+
+**Kachel „Laden"** (`ansichten/heute/laden.mjs`, Server `scripts/laden-zahlen.mjs`, Sichten „Laden" und
+„Alles", nicht „Website"). Die Zahlen kommen aus dem Laden-Modus der Auftrags-App (Google Apps Script,
+eigenes Repository), die unter `<App-URL>?ansicht=zahlen&s=<Schlüssel>` **nur Zahlen** liefert – nie Namen
+oder Kundendaten. Der Abruf läuft im lokalen Server, nicht im Browser: Apps Script sendet keine
+CORS-Kopfzeilen, und der Schlüssel bleibt auf dem Mac. Der Server folgt der Weiterleitung auf
+`script.googleusercontent.com`, bricht nach 15 s ab, merkt sich einen Erfolg 5 Minuten und einen
+Fehlschlag 1 Minute; gleichzeitige Anfragen teilen sich einen Abruf. Durchgereicht werden nur die
+bekannten Zahlenfelder (ganze Zahlen ≥ 0), alles andere fällt weg.
+
+Einrichtung **außerhalb des Repositorys** (es ist öffentlich): in `.env.local` im Ordner des Dienstes
+(`~/tp-dashboard/.env.local`, gitignored, dieselbe Datei wie der Shopify-Zugang) oder als
+Umgebungsvariable:
+
+```
+LADEN_ZAHLEN_URL=https://script.google.com/macros/s/<Deployment-ID>/exec
+LADEN_ZAHLEN_SCHLUESSEL=<derselbe Wert wie die Script-Property LADEN_ZAHLEN_SCHLUESSEL der App>
+```
+
+Angenommen wird nur `https://script.google.com`, damit ein Tippfehler den Schlüssel nicht an einen fremden
+Rechner schickt. Die Datei wird bei jedem Abruf neu gelesen, ein Neustart ist nicht nötig. Fehlt ein Wert,
+zeigt die Kachel ruhig „Nicht eingerichtet"; ist die App nicht erreichbar oder lehnt den Schlüssel ab,
+„nicht erreichbar" mit einem Satz dazu. Der Link „Laden-Ansicht öffnen" ist `<App-URL>?ansicht=laden`
+(ohne Schlüssel) und öffnet in einem neuen Tab.
 
 Offene Inhaberentscheidungen sind bereits über die bestehende Band-Kachel „warten auf Freigabe" und den
 Abschnitt „Wartet auf dich" abgedeckt (Aufgaben mit `status:freigabe`/Review), dafür wurde nichts Neues

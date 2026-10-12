@@ -271,6 +271,41 @@ const REGELN = process.env.TP_AGENT_LOOP_ACTIVE === '1' ? [...VERBOTEN, ...NUR_U
 
 const command = (await stdinJson())?.tool_input?.command ?? '';
 
+// --- Kein Merge nach main, solange ein Deploy laeuft (Werkbank w-049) ---
+//
+// Am 2026-10-08 platzte der Live-Schritt dreimal mit LIVE_SOURCE, weil andere
+// Sitzungen waehrend der Preview gemergt hatten. Abgestimmt wurde bis dahin
+// per Nachricht. Die Sperre gilt fuer jede Sitzung, die diesen Hook laedt;
+// Codex fragt dasselbe mit `npm run -s deploy:frei` ab.
+//
+// Fail-open: fehlt das Modul (alter Checkout) oder scheitert die Abfrage,
+// laeuft der Befehl durch - die Regel koordiniert, sie schuetzt keine Daten.
+const NACH_MAIN = [/^gh\s+pr\s+merge\b/, /^git\s+(.*\s)?push\b.*(\s|:)main(\s|$)/];
+async function deploySperre(befehl) {
+  if (!segmente(befehl).some((seg) => kandidaten(seg).some(({ teil }) => NACH_MAIN.some((m) => m.test(teil))))) return null;
+  try {
+    const { laufenderDeploy } = await import(new URL('../../workflow/deploy-fenster.mjs', import.meta.url));
+    return laufenderDeploy({ cwd: process.env.CLAUDE_PROJECT_DIR || process.cwd() });
+  } catch {
+    return null;
+  }
+}
+const deploy = await deploySperre(command);
+if (deploy) {
+  process.stdout.write(`${JSON.stringify({
+    hookSpecificOutput: {
+      hookEventName: 'PreToolUse',
+      permissionDecision: 'deny',
+      permissionDecisionReason:
+        `Blockiert durch .claude/hooks/git-gh-guard.mjs: gerade laeuft ein Deploy (${deploy.grund}, ${deploy.pfad}). ` +
+        `Ein Merge nach main bricht dessen Live-Schritt mit LIVE_SOURCE ab. Warten, bis Live durch ist ` +
+        `(npm run -s deploy:frei zeigt den Stand). Ist der Deploy abgebrochen, verfaellt das Fenster nach 60 Minuten; ` +
+        `sofort geht es mit Loeschen von .workflow/deploy-fenster.json in jener Arbeitskopie.`,
+    },
+  })}\n`);
+  process.exit(0);
+}
+
 for (const segment of segmente(command)) {
  for (const { teil, nackt } of kandidaten(segment)) {
   if (nackt && AUSNAHMEN.some((muster) => muster.test(teil))) continue;

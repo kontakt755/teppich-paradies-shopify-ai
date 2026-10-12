@@ -37,6 +37,20 @@ test('external script retry is bounded to one and never changes agent', () => {
   assert.equal(cors.blocker, EXTERNAL_BLOCKS.UPSTREAM);
 });
 
+test('erfolgreicher HTTP-503-Testname verdeckt keinen echten Assertion-Stack', () => {
+  let stack;
+  try { assert.equal('ist', 'soll'); } catch (error) { stack = error.stack; }
+  let calls = 0;
+  const defect = runWithExternalRetry(() => {
+    calls += 1;
+    return { exitCode: 1, stdout: '✔ HTTP 503 Service Unavailable wird korrekt wiederholt', stderr: stack };
+  });
+  assert.equal(classifyFailure(defect.result), EXTERNAL_BLOCKS.CODE_DEFECT);
+  assert.equal(defect.blocker, EXTERNAL_BLOCKS.CODE_DEFECT);
+  assert.equal(defect.attempts, 1);
+  assert.equal(calls, 1);
+});
+
 test('fresh structured 503 report triggers exactly one immediate script retry', t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-router-report-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));

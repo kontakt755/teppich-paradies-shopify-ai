@@ -71,7 +71,10 @@
             "paket_auswahl_xLTafR": {
               "type": "paket-auswahl",
               "name": "Paket-Auswahl",
-              "settings": {},
+              "settings": {
+                "holzleiste_standard": "lignova-sockelleiste-16x60mm",
+                "holzleiste_parkett": "lignova-sockelleiste-22x60mm"
+              },
               "blocks": {}
             },
             "tp_service_links_night1": {
@@ -80,12 +83,6 @@
               "settings": {
                 "delivery_time": "5–7 Werktage"
               },
-              "blocks": {}
-            },
-            "tp_compare_toggle_night3": {
-              "type": "tp-compare-toggle",
-              "name": "TP Vergleichen-Button",
-              "settings": {},
               "blocks": {}
             },
             "tp_verkaufstext_night2": {
@@ -180,10 +177,17 @@
                     "padding-inline-end": 0
                   },
                   "blocks": {}
+                },
+                "tp_produkt_sterne": {
+                  "type": "tp-produkt-sterne",
+                  "settings": {
+                    "ziel": "#bewertungen"
+                  }
                 }
               },
               "block_order": [
                 "text_xrnftG",
+                "tp_produkt_sterne",
                 "price_tVjtKg"
               ]
             },
@@ -371,7 +375,6 @@
             "tp_farbanzeige_tp1",
             "paket_auswahl_xLTafR",
             "tp_service_links_night1",
-            "tp_compare_toggle_night3",
             "options_price_calculator_product_calculator_z3CEfy",
             "tp_verlegen_lassen",
             "buy_buttons_eYQEYi",

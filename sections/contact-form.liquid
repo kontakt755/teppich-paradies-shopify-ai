@@ -188,6 +188,25 @@
   }
 </style>
 
+{% stylesheet %}
+  .tp-contact-service-links {
+    margin: 0 0 18px;
+    color: #333;
+    font-size: 16px;
+  }
+  .tp-contact-service-links p { margin: 0 0 4px; }
+  .tp-contact-service-links ul { margin: 0; padding-left: 20px; }
+  .tp-contact-service-links a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    text-decoration: underline;
+  }
+  [data-tp-sample-request][data-mode="sample"] .tp-contact-service-links {
+    display: none;
+  }
+{% endstylesheet %}
+
 <section class="kontakt-section">
   <div class="kontakt-info">
     <h2>Kontaktieren Sie uns</h2>
@@ -195,16 +214,23 @@
     <p><strong>Telefon:</strong> <a href="tel:+4933015733720">03301 573 37 20</a></p>
     <p><strong>E-Mail:</strong> <a href="mailto:kontakt@teppich-paradies.net">kontakt@teppich-paradies.net</a></p>
     <p><strong>WhatsApp:</strong>
-      <a href="https://wa.me/4917657931322" target="_blank" class="whatsapp-link">
+      <a href="https://wa.me/491792612211" target="_blank" class="whatsapp-link">
         {%- comment -%} Eigenes Icon statt upload.wikimedia.org: kein Drittanbieter-Request (Audit B-23) {%- endcomment -%}
         <svg class="whatsapp-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20l1.3-3.8A8 8 0 1 1 8 19.2z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a4 4 0 0 1-2-2l1-1-1-2z"/></svg>
-        0176 579 31322
+        0179 2612211
       </a>
     </p>
     <p><strong>Öffnungszeiten:</strong><br>Mo–Fr: 8:30–18:00 Uhr<br>Sa: 8:30–14:30 Uhr</p>
   </div>
 
   <div class="kontakt-formular" data-tp-sample-request>
+    <div class="tp-contact-service-links">
+      <p>Für Serviceanfragen direkt zum passenden Formular:</p>
+      <ul>
+        <li><a href="/pages/liefer-verlegeservice#tp-anfrage">Liefer- &amp; Verlegeservice anfragen</a></li>
+        <li><a href="/pages/teppichreinigung#tp-anfrage">Teppichreinigung anfragen</a></li>
+      </ul>
+    </div>
     <div class="tp-sample-intro">
       <h3 class="tp-sample-intro__heading">Kostenloses Muster bestellen</h3>
       <div class="tp-sample-intro__product">

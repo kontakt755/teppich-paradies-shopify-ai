@@ -1,0 +1,13 @@
+{% doc %}
+  Kompakte Herstellerzeile fuer Yasmin. Zuschnittarten und Preise stehen im
+  vorhandenen Rollenware-Rechner, nicht in einem zweiten Preisblock.
+  Vorwerk-Logo: https://commons.wikimedia.org/wiki/File:Vorwerk.svg
+{% enddoc %}
+<div class="tp-yasmin-angebot">
+  <img src="{{ 'tp-vorwerk-logo.svg' | asset_url }}" alt="Vorwerk" width="90" height="36" loading="lazy">
+  <span>Vorwerk – heute DAS TEPPICHWERK</span>
+</div>
+{% stylesheet %}
+  .tp-yasmin-angebot { display: flex; align-items: center; gap: 12px; font-size: 13px; flex-wrap: wrap; }
+  .tp-yasmin-angebot img { width: 90px; height: 36px; object-fit: contain; }
+{% endstylesheet %}

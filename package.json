@@ -1,4 +1,5 @@
 {
+  "name": "teppich-paradies-shopify-ai",
   "private": true,
   "scripts": {
     "test": "npm run qa:unit:test && npm run dashboard:test && npm run operations:test && npm run automation:test && npm run workflow:test && npm run hooks:test && npm run social:test",
@@ -32,6 +33,7 @@
     "compare:check": "node qa/run-compare-check.mjs",
     "compare:remove:check": "node qa/run-compare-remove-dialog.mjs",
     "workflow:doctor": "node workflow/cli.mjs doctor",
+    "deploy:frei": "node workflow/deploy-frei.mjs",
     "workflow:validate": "node workflow/cli.mjs validate",
     "workflow:pr": "node workflow/cli.mjs pr",
     "workflow:scratch": "node workflow/cli.mjs scratch",
@@ -58,6 +60,8 @@
     "dashboard:brief": "node scripts/dashboard-brief.mjs",
     "operations:band": "node operations/server.mjs",
     "operations:test": "node --test operations/tests/*.test.mjs",
+    "bildrechte:inventur": "node operations/scripts/bildrechte-inventur.mjs",
+    "angebote:abgleich": "node operations/scripts/angebote-abgleich.mjs",
     "operations:verbindung": "node operations/scripts/verbindung-pruefen.mjs",
     "ops:bestelluebersicht": "node operations/scripts/bestelluebersicht.mjs",
     "kennzahlen:export": "node operations/scripts/kennzahlen-export.mjs",
@@ -84,7 +88,8 @@
     "social": "node social/scripts/social.mjs",
     "social:test": "node --test social/tests/*.test.mjs",
     "social:zentrale": "node social/scripts/server.mjs",
-    "social:einrichten": "bash social/scripts/dienste-einrichten.sh"
+    "social:einrichten": "bash social/scripts/dienste-einrichten.sh",
+    "teppich:basis-daten": "node scripts/teppich-basis-daten.mjs"
   },
   "devDependencies": {
     "liquidjs": "^10.29.0",

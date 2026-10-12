@@ -1,4 +1,5 @@
 import { chromium } from 'playwright-core';
+import { sperreTracking } from './tracking-sperre.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -11,6 +12,7 @@ import { sanitizeDeep, sanitizeText, sanitizeUrl } from '../automation/core/url-
 import { parseJsonProcessOutput, runProcess, shopifyInvocations } from './process-runner.mjs';
 import { qaImpactSummary, selectImpactedPages } from './impact-router.mjs';
 import { hasCartPurchasePath } from './cart-readiness.mjs';
+import { compareDomIsAbsent, inspectCompareDom } from './compare-absence.mjs';
 import { acquireWorktreeLock, releaseOnProcessExit } from '../workflow/worktree-lock.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -116,6 +118,7 @@ const add = (scope, pageName, viewport, severity, message, data) => {
 
 async function inspectPage(browser, pageConfig, viewportName, viewport) {
   const context = await browser.newContext({ viewport, locale: 'de-DE', reducedMotion: 'reduce' });
+  await sperreTracking(context);
   try {
   const page = await context.newPage();
   const pageErrors = [];
@@ -276,6 +279,7 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
         renderedThemeId: window.Shopify?.theme?.id ?? null
       };
     });
+    metrics.compareEvidence = await page.evaluate(inspectCompareDom);
   }
 
   const failuresBefore = checks.filter(x => x.page === pageConfig.name && x.viewport === viewportName && x.severity === 'error').length;
@@ -305,7 +309,7 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
     if (exp.pricePerSquareMeter && !metrics.hasVisiblePricePerSquareMeter) add('Shop-Smoke', pageConfig.name, viewportName, 'error', 'Sichtbarer „€/m²“-Preis im Produkt-Kaufbereich fehlt');
     if (exp.cart && !hasCartPurchasePath(pageConfig.type, metrics.allInteractiveText)) add('Shop-Smoke', pageConfig.name, viewportName, 'error', 'Kaufpfad zum Warenkorb fehlt');
     if (exp.sample && !/(muster|sample)/i.test(metrics.allInteractiveText)) add('Shop-Smoke', pageConfig.name, viewportName, 'error', 'Muster-CTA fehlt');
-    if (exp.compare && !/(vergleich|compare)/i.test(metrics.allInteractiveText)) add('Shop-Smoke', pageConfig.name, viewportName, 'error', 'Vergleichsbutton fehlt');
+    if (!compareDomIsAbsent(metrics.compareEvidence)) add('Shop-Smoke', pageConfig.name, viewportName, 'error', 'Produktvergleich ist noch eingebunden', metrics.compareEvidence);
     if (pageConfig.type === 'vinylCollection' && !metrics.bodyText.trim()) add('Shop-Smoke', pageConfig.name, viewportName, 'error', 'Vinylboden-Collection ist leer');
     if (pageConfig.type === 'carpetCollection' && metrics.visibleImageCount < 1) add('Shop-Smoke', pageConfig.name, viewportName, 'error', 'Keine sichtbaren Teppichboden-Bilder');
     pageErrors.slice(0, 10).forEach(x => add('Browser', pageConfig.name, viewportName, 'error', `${x.type}: ${x.message}`));
