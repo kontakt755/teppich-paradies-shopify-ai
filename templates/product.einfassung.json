@@ -319,7 +319,8 @@
                 "marke2_bilder_vendor": "Vorwerk",
                 "marke2_bild_ketteln": "shopify://shop_images/tp-kante-vorwerk-kettel.jpg",
                 "marke2_bild_paspelband": "shopify://shop_images/tp-kante-vorwerk-premium.jpg",
-                "marke2_bild_cover": "shopify://shop_images/tp-kante-vorwerk-deluxe.jpg"
+                "marke2_bild_cover": "shopify://shop_images/tp-kante-vorwerk-deluxe.jpg",
+                "marke2_bild_paspelwahl": "shopify://shop_images/tp-kante-vorwerk-paspel.jpg"
               },
               "blocks": {}
             },
