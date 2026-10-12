@@ -47,14 +47,36 @@ function kachel(n, titel, unter, { warn = false } = {}) {
 }
 
 /**
+ * Sprunglink in die Laden-Ansicht mit dem Filter „Spam pruefen" (Auftrags-App ab Version 47:
+ * `?ansicht=laden&filter=spam`). Gebaut aus dem ladenUrl des Servers, damit weitere Parameter
+ * der App-Adresse erhalten bleiben; `ansicht=laden` wird mitgesetzt, weil es den Filter nur dort
+ * gibt. Nur https - alles andere (oder kein ladenUrl) ergibt keinen Link. Eine aeltere App
+ * ignoriert den Parameter und zeigt die Laden-Ansicht ohne Filter.
+ */
+export function spamUrl(ladenUrl) {
+  if (!ladenUrl) return '';
+  let u;
+  try { u = new URL(ladenUrl); } catch { return ''; }
+  if (u.protocol !== 'https:') return '';
+  u.searchParams.set('ansicht', 'laden');
+  u.searchParams.set('filter', 'spam');
+  return u.toString();
+}
+
+/**
  * Faelle aus dem Shop, die die App als moeglichen Spam zurueckhaelt. Sie zaehlen in keiner der
  * fuenf Zahlen mit und warten in der Laden-Ansicht im Filter „Spam pruefen" auf eine Entscheidung.
  * Deshalb eine eigene Zeile - aber nur, wenn welche da sind (0 oder aeltere App: nichts).
+ * Mit Adresse der App endet die Zeile mit dem Sprung direkt in den Filter; der Linktext ist
+ * der Filtername, damit der Klick dort landet, wo er es verspricht.
  */
-function spamHinweis(n) {
+function spamHinweis(n, ladenUrl) {
   if (!Number.isInteger(n) || n <= 0) return '';
   const faelle = n === 1 ? 'Fall' : 'Fälle';
-  return `<p class="heute-hinweis heute-laden-spam"><b>${esc(n.toLocaleString('de-DE'))}</b> ${faelle} aus dem Shop mit Spam-Verdacht – in der Laden-Ansicht unter „Spam prüfen“ ansehen. In den Zahlen oben nicht enthalten.</p>`;
+  const zahl = `<b>${esc(n.toLocaleString('de-DE'))}</b> ${faelle} aus dem Shop mit Spam-Verdacht`;
+  const ziel = spamUrl(ladenUrl);
+  if (!ziel) return `<p class="heute-hinweis heute-laden-spam">${zahl} – in der Laden-Ansicht unter „Spam prüfen“ ansehen. In den Zahlen oben nicht enthalten.</p>`;
+  return `<p class="heute-hinweis heute-laden-spam">${zahl} – in den Zahlen oben nicht enthalten. <a href="${esc(ziel)}" target="_blank" rel="noopener">Spam prüfen <span aria-hidden="true">↗</span></a></p>`;
 }
 
 /**
@@ -82,7 +104,7 @@ export function heuteLaden() {
       ${kachel(z.angeboteOffen, 'Angebote offen', `davon ${z.nachfassen} zum Nachfassen`)}
       ${kachel(z.ausShop7Tage, 'Aus dem Shop', 'Muster und Anfragen, 7 Tage')}
       ${kachel(z.gewonnen30Tage, 'Gewonnen', `verloren ${z.verloren30Tage} · 30 Tage`)}
-    </div>${spamHinweis(z.spamVerdacht)}`;
+    </div>${spamHinweis(z.spamVerdacht, d.ladenUrl)}`;
   }
   return `<section class="heute-block heute-laden" aria-labelledby="heuteLaden">
     <div class="heute-block-kopf"><h2 id="heuteLaden">Laden</h2><span>${esc(unterzeile)}</span>${link}</div>
