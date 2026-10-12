@@ -149,3 +149,16 @@ test('Kettelung als eigene Zeile nur bei Ketteln ohne Inklusiv-Kante (service.ka
     assert.equal(M.kettelSeparat(art, true), false, art);
   }
 });
+
+test('summeCent: Endpreis der Kantenkacheln rechnet wie der Konfigurator', () => {
+  // Gekettelt inklusive, 79 EUR/m2 = 79 Cent je 0,01 m2: 200 x 300 cm = 600 Einheiten.
+  assert.equal(M.summeCent({ form: 'rechteck', w: 200, l: 300, preisCent: 79, mindestCent: 9900, kettelCent: 0 }), 47400);
+  // Kettelung separat (19 Cent je 0,01 lfm): 10 m Kante = 1000 Einheiten.
+  assert.equal(M.summeCent({ form: 'rechteck', w: 200, l: 300, preisCent: 44, mindestCent: 9900, kettelCent: 19 }), 26400 + 19000);
+  // Mindestpreis hebt nur das Material an, die Kante zaehlt mit - wie Test G.
+  assert.equal(M.summeCent({ form: 'rechteck', w: 50, l: 50, preisCent: 89, mindestCent: 9900, kettelCent: 19 }), 9941);
+  assert.equal(M.summeCent({ form: 'rechteck', w: 50, l: 50, preisCent: 79, mindestCent: 9900, kettelCent: 0 }), 126 * 79);
+  // Pauschale je Teppich kommt obendrauf, rund nach umschliessendem Quadrat.
+  assert.equal(M.summeCent({ form: 'rechteck', w: 100, l: 100, preisCent: 50, mindestCent: 0, kettelCent: 0, pauschaleCent: 1499 }), 6499);
+  assert.equal(M.summeCent({ form: 'rund', w: 200, l: 0, preisCent: 79, mindestCent: 0, kettelCent: 0 }), 400 * 79);
+});

@@ -3,14 +3,14 @@
   "live": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-12T05:51:55Z",
-    "verifiedBy": "Shopify Admin API role MAIN nach workflow:live von main 70fb5c6b (Sonderposten-Vorrat und Restbestand #1111); volle Preview-/Live-Gates und oeffentlicher Shop ohne Vorschau bestanden"
+    "verifiedAt": "2026-10-12T09:18:04Z",
+    "verifiedBy": "Shopify Admin API role MAIN nach workflow:live von main da936848 (Teppich nach Mass ohne Nadelvlies #1120); volle Preview-/Live-Gates und oeffentlicher Shop ohne Vorschau bestanden"
   },
   "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-12T05:51:55Z",
-    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live von main 70fb5c6b; naechstes Preview-Ziel"
+    "verifiedAt": "2026-10-12T09:18:04Z",
+    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live von main da936848; naechstes Preview-Ziel"
   },
   "fallback": {
     "themeId": "204440699214",
@@ -34,6 +34,18 @@
     "note": "Testumgebung fuer SHOPIFY_WEITERENTWICKLUNG.md (Sonderposten, Bewertungen, Angebote). Nur --only-Pushes vom Branch feature/weiterentwicklung-sonderposten. Nie Preview-Ziel, nie publishen. Nach Abschluss des Projekts unter retired eintragen und loeschen."
   },
   "retired": [
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-10-12",
+      "note": "Nach Livegang Teppich nach Mass ohne Nadelvlies (main da936848) abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen per Shopify Admin API bestaetigt."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-10-12",
+      "note": "Nach Livegang Teppich nach Mass Kantenkacheln (main b16d11d4) abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen per Shopify Admin API bestaetigt."
+    },
     {
       "themeId": "204438208846",
       "name": "preview-main-2026-09-15",

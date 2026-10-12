@@ -154,6 +154,15 @@
     var raumBreiteCm = Number(d.raum_breite_cm) > 0 ? Number(d.raum_breite_cm) : 420;
     var formSchritt = q('[data-schritt="form"]');
     var formSchrittAus = formSchritt ? formSchritt.hidden : true;
+    // Kantenkacheln (snippets/tp-einfass-kanten): jede Einfassart ein eigenes Produkt.
+    // Ohne Daten bleibt alles wie bisher.
+    var kd = null;
+    var kdEl = q('[data-kanten-daten]');
+    if (kdEl) {
+      try { kd = JSON.parse(kdEl.textContent); } catch (e) { kd = null; }
+    }
+    var kantenListe = kd ? (kd.kanten || []).filter(Boolean) : [];
+    var kantenHinweis = q('[data-kanten-hinweis]');
 
     // Regel 1/5: Farben ohne freigegebene Variante gar nicht erst anbieten. Die
     // Farbwahl ist ein eigener Theme-Block und kennt die Freigabe nicht.
@@ -606,6 +615,79 @@
       }
     }
 
+    /*
+      Kantenkacheln auf Farbe und Mass bringen: Link mit der Variante derselben
+      Farbe (service.basisvariante) und den Massen, Preis je m2 und - bei gueltigem
+      Mass - der Endpreis genau dieser Kante (TPMass.summeCent, dieselbe Rechnung
+      wie unten). Passt das Mass nicht (Cover ist 10 cm schmaler als die Rolle),
+      sagt die Kachel das, statt einen Preis zu zeigen.
+    */
+    function kantenAktualisieren(mass) {
+      if (!kd || !kantenListe.length) return;
+      var basisId = target ? kd.eigen[String(target.id)] : null;
+      var rolleCm = target && Number(target.max_breite_cm) > 0
+        ? Number(target.max_breite_cm) + (art === 'cover' ? 10 : 0) : 0;
+      var kettelK = parseInt(kd.kettel_cent, 10) || 0;
+      // Gezeichnete Kacheln zeigen die Kante auf dem Foto der gewaehlten Farbe.
+      if (target && target.bild) {
+        root.querySelectorAll('.tp-ek__kante-bild--zeichnung').forEach(function (el) {
+          el.style.setProperty('--tp-ek-textur', 'url("' + String(target.bild).replace(/"/g, '%22') + '")');
+        });
+      }
+      root.querySelectorAll('[data-kante]').forEach(function (kachel) {
+        var k = kantenListe[parseInt(kachel.getAttribute('data-kante'), 10)];
+        var ziel = k && basisId && k.v ? k.v[basisId] : null;
+        // Gibt es die Farbe dort nicht, gibt es auch keine Kachel - ausser der eigenen.
+        kachel.hidden = !ziel && !(k && k.aktiv);
+        if (!ziel) return;
+        var preis = parseInt(ziel[1], 10);
+        var m2 = kachel.querySelector('[data-kante-m2]');
+        if (m2) m2.textContent = fmt(preis, 0) + ' €/m²';
+        if (!k.aktiv) {
+          var url = new URL(k.url, window.location.href);
+          url.searchParams.set('variant', String(ziel[0]));
+          url.searchParams.delete('breite');
+          url.searchParams.delete('laenge');
+          if (mass) {
+            url.searchParams.set('breite', String(mass.w));
+            if (mass.f !== 'rund') url.searchParams.set('laenge', String(mass.l));
+          }
+          url.hash = 'tp-ek-kanten';
+          kachel.setAttribute('href', url.href);
+        }
+        var summe = kachel.querySelector('[data-kante-summe]');
+        if (!summe) return;
+        kachel.classList.remove('is-zu-gross');
+        summe.textContent = '';
+        if (mass) {
+          var separat = k.art === 'ketteln' && !k.inkl;
+          var maxWk = rolleCm > 0 ? M.maxBreiteCm(rolleCm, k.art) : 0;
+          var probleme = M.pruefeMasse({ form: mass.f, w: mass.w, l: mass.l, maxW: maxWk, maxL: Number(k.max_l) || 0 });
+          if (probleme.length) {
+            summe.textContent = 'In diesem Maß nicht möglich';
+            kachel.classList.add('is-zu-gross');
+          } else if (!separat || kettelK > 0) {
+            summe.textContent = euro(M.summeCent({
+              form: mass.f, w: mass.w, l: mass.l, preisCent: preis,
+              mindestCent: parseInt(k.mindest_cent, 10) || 0, kettelCent: separat ? kettelK : 0
+            }));
+          }
+        }
+        summe.hidden = !summe.textContent;
+      });
+      var basisLink = q('[data-kanten-basis]');
+      if (basisLink && basisId) {
+        var bu = new URL(basisLink.getAttribute('href'), window.location.href);
+        bu.searchParams.set('variant', String(basisId));
+        basisLink.setAttribute('href', bu.href);
+      }
+      if (kantenHinweis) {
+        kantenHinweis.textContent = mass
+          ? 'Endpreis für ' + (mass.f === 'rund' ? 'Ø ' + mass.w : mass.w + ' × ' + mass.l) + ' cm inklusive Kante. Ein Klick wechselt die Kante, Farbe und Maße bleiben.'
+          : 'Nach Eingabe der Maße steht hier der Endpreis jeder Kante für Ihr Maß.';
+      }
+    }
+
     function rechnen() {
       target = aktuelleVariante();
       maxW = (target && Number(target.max_breite_cm) > 0) ? Number(target.max_breite_cm) : d.max_breite_cm;
@@ -667,8 +749,12 @@
       var gueltig = eingegeben && !fehlerListe.length && !!target && target.available &&
         parseInt(target.price, 10) > 0 && !kettelServiceFailed && !pauschaleFailed;
       var startpreis = document.querySelector('[data-tp-mass-startpreis]');
-      if (startpreis) startpreis.hidden = gueltig;
+      // Der ab-Preis weicht dem Endpreis; ein Preis je m2 (Kante inklusive) bleibt stehen.
+      if (startpreis) startpreis.hidden = gueltig && !startpreis.querySelector('[data-tp-ab-m2-cent]');
       zeichnen(f, gueltig ? b.wert : BEISPIEL.w, gueltig ? l.wert : (rund ? BEISPIEL.w : BEISPIEL.l), !gueltig);
+      // Die Kacheln rechnen mit jedem eingegebenen Mass, auch wenn es nur fuer diese
+      // Kante nicht passt - dann zeigen sie, welche Kante es kann.
+      kantenAktualisieren(eingegeben && !eingabeFehler ? { f: f, w: b.wert, l: l.wert } : null);
 
       var bandFehlt = bandWahl && !band;
       if (!gueltig) {
@@ -706,6 +792,12 @@
         if (mindest) mh.textContent = 'Mindestpreis ' + euro(mindestCent) + ' für kleine Teppiche.';
       }
       q('[data-summe]').textContent = euro(summe);
+      var rz = q('[data-rechenzeile]');
+      if (rz) {
+        var zeile = !kettel && !pauschale && !mindest;
+        rz.hidden = !zeile;
+        rz.textContent = zeile ? fmt(abgerechnet) + ' m² × ' + fmt(preis, 0) + ' €/m²' + (f === 'rund' || f === 'oval' ? ' (umschließendes Rechteck)' : '') : '';
+      }
       // Aktion: derselbe Teppich zum alten Variantenpreis, dieselbe Rechnung. Liquid liefert
       // compare_at_price nur bei aktiver Aktion. Greift beim alten Preis der Mindestpreis,
       // gibt es keinen Streichpreis - die Rundung ergaebe sonst einen Cent-"Rabatt".
@@ -909,6 +1001,13 @@
       if (r) r.checked = true;
     }
     rechnen();
+
+    // Nach dem Wechsel per Kantenkachel (#tp-ek-kanten) dort weitermachen, wo der
+    // Kunde war - das Theme springt beim Laden sonst an den Seitenanfang.
+    if (window.location.hash === '#tp-ek-kanten') {
+      var kantenZiel = document.getElementById('tp-ek-kanten');
+      if (kantenZiel) setTimeout(function () { kantenZiel.scrollIntoView({ block: 'start' }); }, 80);
+    }
   }
 
   function alle() { document.querySelectorAll('[data-tp-ek]').forEach(init); }

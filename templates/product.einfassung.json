@@ -311,7 +311,11 @@
               "name": "TP Einfass-Konfigurator",
               "settings": {
                 "kettelservice_produkt": "kettelservice",
-                "whatsapp": "491792612211"
+                "whatsapp": "491792612211",
+                "bild_ketteln": "shopify://shop_images/tp-kante-gekettelt.jpg",
+                "marke_bilder_vendor": "JAB Anstoetz",
+                "marke_bild_paspelband": "shopify://shop_images/tp-kante-jab-paspel.jpg",
+                "marke_bild_cover": "shopify://shop_images/tp-kante-jab-cover.jpg"
               },
               "blocks": {}
             },
@@ -389,13 +393,13 @@
             "tp_farbanzeige_tp1",
             "tp_teppich_struktur_1",
             "tp_einfass_konfigurator_1",
-            "tp_bewertungsbeleg_night1",
-            "tp_zubehoer_empfehlung",
-            "buy_buttons_eYQEYi",
             "tp_einfass_wechsel_1",
+            "tp_bewertungsbeleg_night1",
+            "buy_buttons_eYQEYi",
             "tp_vertrauen_sales1",
             "tp_vorteile_sales1",
             "tp_service_links_sales1",
+            "tp_zubehoer_empfehlung",
             "tp_produkt_akkordeon_technik",
             "text_aEtTtq"
           ]
