@@ -12,10 +12,10 @@
   Eine Einfassart allein ist keine Wahl - dann rendert das Snippet nichts
   (Inhaber 2026-09-13), den Weg zur Meterware zeigt weiter blocks/tp-einfass-wechsel.
 
-  Bild je Art aus den Block-Einstellungen: zuerst marke_bild_<art> (nur wenn
-  product.vendor gleich marke_bilder_vendor - Herstellerfotos nur fuer die eigene
-  Marke), dann bild_<art> fuer alle; ohne Bild zeichnet CSS die Kante auf das
-  Foto der gewaehlten Farbe.
+  Bild je Art aus den Block-Einstellungen: zuerst <slot>_bild_<art> fuer die
+  Marke, deren Vendor in <slot>_bilder_vendor steht (Slots marke, marke2 -
+  Herstellerfotos nur fuer die eigene Marke), dann bild_<art> fuer alle; ohne
+  Bild zeichnet CSS die Kante auf das Foto der gewaehlten Farbe.
 
   @param {object} product - der Teppich nach Mass dieser Seite
   @param {object} bilder - block.settings des Konfigurators (Bilder je Art)
@@ -24,6 +24,8 @@
 
 {%- liquid
   assign tk_arten = 'ketteln,paspelband,einfassband,cover' | split: ','
+  # Zwei Markenplaetze mit eigenen Herstellerfotos (marke_*, marke2_*)
+  assign tk_marken_slots = 'marke,marke2' | split: ','
   assign tk_eigen = product.metafields.service.einfassung.value | strip | downcase
   assign tk_gruppe = product.metafields.service.einfass_gruppe.value
   assign tk_sel = product.selected_or_first_available_variant
@@ -104,21 +106,19 @@
             # Herstellerfoto nur auf Produkten dieser Marke (Bildrechte), sonst das
             # allgemeine Bild der Art, sonst die Zeichnung.
             assign tk_bild = nil
-            assign tk_marke = bilder.marke_bilder_vendor | strip
-            if tk_marke != blank and product.vendor == tk_marke
-              capture tk_bild_key
-                echo 'marke_bild_'
-                echo tk_art
-              endcapture
+            for tk_slot in tk_marken_slots
+              assign tk_vendor_key = tk_slot | append: '_bilder_vendor'
+              assign tk_marke = bilder[tk_vendor_key] | strip
+              if tk_marke != blank and product.vendor == tk_marke
+                assign tk_bild_key = tk_slot | append: '_bild_' | append: tk_art
+                assign tk_bild = bilder[tk_bild_key]
+                break
+              endif
+            endfor
+            unless tk_bild
+              assign tk_bild_key = 'bild_' | append: tk_art
               assign tk_bild = bilder[tk_bild_key]
-            endif
-            if tk_bild == blank
-              capture tk_bild_key
-                echo 'bild_'
-                echo tk_art
-              endcapture
-              assign tk_bild = bilder[tk_bild_key]
-            endif
+            endunless
           -%}
           <a
             class="tp-ek__kante{% if tk_aktiv %} is-aktiv{% endif %}"
@@ -130,12 +130,12 @@
             {% unless tk_v %}hidden{% endunless %}
           >
             <span
-              class="tp-ek__kante-bild{% if tk_bild == blank %} tp-ek__kante-bild--zeichnung{% endif %}"
-              {% if tk_bild == blank and tk_sel.featured_image %}style="--tp-ek-textur: url('{{ tk_sel.featured_image | image_url: width: 480 }}');"{% endif %}
+              class="tp-ek__kante-bild{% unless tk_bild %} tp-ek__kante-bild--zeichnung{% endunless %}"
+              {% if tk_sel.featured_image %}{% unless tk_bild %}style="--tp-ek-textur: url('{{ tk_sel.featured_image | image_url: width: 480 }}');"{% endunless %}{% endif %}
               data-kante-bild
               aria-hidden="true"
             >
-              {%- if tk_bild != blank -%}
+              {%- if tk_bild -%}
                 {{ tk_bild | image_url: width: 480 | image_tag: loading: 'lazy', widths: '240, 360, 480', sizes: '(min-width: 750px) 180px, 45vw', alt: '' }}
               {%- else -%}
                 <span class="tp-ek__kante-ecke"></span>
