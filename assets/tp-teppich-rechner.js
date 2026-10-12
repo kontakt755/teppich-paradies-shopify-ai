@@ -112,13 +112,21 @@
     return e;
   }
 
+  function datenLesen(text) {
+    var daten = JSON.parse(text);
+    if (!daten || !Array.isArray(daten.teppiche) || !daten.teppiche.every(function (t) {
+      return t && typeof t === 'object' && !Array.isArray(t) && (!t.farben || Array.isArray(t.farben));
+    })) throw new Error('Ungueltige Rechner-Daten');
+    return daten;
+  }
+
   function init(root) {
-    if (root.getAttribute('data-tp-rechner-bereit')) return;
+    if (root.getAttribute('data-tp-rechner-bereit')) return true;
     var M = window.TPMass;
     var datenEl = root.querySelector('[data-tp-rechner-daten]');
     if (!M || !datenEl) return;
     var daten;
-    try { daten = JSON.parse(datenEl.textContent); } catch (e) { return; }
+    try { daten = datenLesen(datenEl.textContent); } catch (e) { return false; }
     var teppiche = (daten.teppiche || []).filter(Boolean);
     if (!teppiche.length) {
       // Diese Kategorie zeigt alle Qualitaeten in Gruppen statt auf Rasterseiten.
@@ -132,8 +140,6 @@
       }
       return;
     }
-    root.setAttribute('data-tp-rechner-bereit', '1');
-
     var form = root.querySelector('[data-tp-rechner]');
     var inW = root.querySelector('[data-tp-rechner-breite]');
     var inL = root.querySelector('[data-tp-rechner-laenge]');
@@ -249,12 +255,17 @@
     });
 
     // Zurueck vom Produkt: das zuletzt gerechnete Mass steht wieder da.
-    var alt = lesenGespeichert();
+    // Auch eine erst teilweise eingegebene oder wieder geloeschte Eingabe gehoert
+    // dem Kunden. Ein spaeter Fetch darf sie nicht durch den Speicher ersetzen.
+    var bearbeitet = root.getAttribute('data-tp-rechner-bearbeitet') || inW.value || inL.value;
+    var alt = bearbeitet ? null : lesenGespeichert();
     if (alt) {
       inW.value = alt.w;
       inL.value = alt.l;
       anwenden(alt.w, alt.l, false);
     }
+    root.setAttribute('data-tp-rechner-bereit', '1');
+    return true;
   }
 
   // Daten nachladen (data-tp-rechner-quelle): Inline im Hero kosteten sie die ganze Seite
@@ -267,6 +278,10 @@
     if (root.getAttribute('data-tp-rechner-laedt')) return;
     root.setAttribute('data-tp-rechner-laedt', '1');
     var form = root.querySelector('[data-tp-rechner]');
+    if (form && !root.getAttribute('data-tp-rechner-beobachtet')) {
+      root.setAttribute('data-tp-rechner-beobachtet', '1');
+      form.addEventListener('input', function () { root.setAttribute('data-tp-rechner-bearbeitet', '1'); });
+    }
     var wartet = !!abgeschickt;
     function frueh(e) { e.preventDefault(); wartet = true; }
     if (form) form.addEventListener('submit', frueh);
@@ -278,9 +293,10 @@
         return r.text();
       })
       .then(function (text) {
+        datenLesen(text);
         datenEl.textContent = text;
+        if (!init(root)) throw new Error('Rechner nicht bereit');
         if (form) form.removeEventListener('submit', frueh);
-        init(root);
         if (wartet && form) {
           if (form.requestSubmit) form.requestSubmit();
           else form.dispatchEvent(new Event('submit', { cancelable: true }));
@@ -289,6 +305,7 @@
       .catch(function () {
         // Kein stilles Neuladen der Seite per Formular: Hinweis zeigen, naechster Versuch beim Absenden.
         root.removeAttribute('data-tp-rechner-laedt');
+        datenEl.textContent = '';
         if (form) {
           form.removeEventListener('submit', frueh);
           form.addEventListener('submit', function erneut(e) {

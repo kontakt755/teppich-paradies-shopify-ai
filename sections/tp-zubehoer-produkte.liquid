@@ -212,6 +212,13 @@
       </div>
     {%- endif -%}
     </div>
+    {%- if tp_tg_gesamt > list_items_array.size -%}
+      <div class="tp-zubehoer-produkte__nachladen" data-tp-reihe-ersatz>
+        <p data-tp-reihe-fehler role="status" hidden>Die weiteren Qualitäten konnten gerade nicht geladen werden.</p>
+        <button type="button" data-tp-reihe-erneut hidden>Weitere Qualitäten erneut laden</button>
+        <a href="{{ routes.root_url }}{% unless routes.root_url == '/' %}/{% endunless %}collections/teppiche-alle">Alle Teppiche als Liste ansehen</a>
+      </div>
+    {%- endif -%}
   </div>
 {%- endif -%}
 
@@ -259,15 +266,27 @@
   .tp-zubehoer-produkte__more:focus-visible {
     border-color: var(--color-foreground);
   }
+
+  .tp-zubehoer-produkte__nachladen {
+    margin-top: 16px;
+    font-size: 0.9rem;
+  }
+
+  .tp-zubehoer-produkte__nachladen button {
+    min-height: 44px;
+    margin-right: 12px;
+    padding: 8px 12px;
+    font: inherit;
+    cursor: pointer;
+  }
 {% endstylesheet %}
 
 {% javascript %}
   (function () {
     // Teppich-Gruppen: Reihen mit data-tp-reihe-nachladen zeigen nur die ersten Karten.
     // Die vollstaendigen Reihen kommen aus der Vorlage collection.teppiche-reihen (eine
-    // Anfrage fuer alle Reihen) und ersetzen den Kartenbereich. Schlaegt das fehl, bleibt
-    // die Reihe mit den ersten Karten stehen; die Produkte sind weiter ueber die Suche und
-    // die Produktseiten erreichbar.
+    // Anfrage fuer alle Reihen) und ersetzen den Kartenbereich. Bei einem Fehler bleiben
+    // ein erreichbarer Wiederholungsversuch und die regulaere paginierte Liste stehen.
     var laden = null;
 
     function holen(url) {
@@ -302,11 +321,37 @@
         var alt = reihe.querySelector('[data-tp-reihe-karten]');
         if (!neu || !alt) return;
         var offen = reihe.classList.contains('is-offen');
+        var fokus = document.activeElement;
+        var imKartenbereich = fokus && alt.contains(fokus);
+        var fokusLink = imKartenbereich && fokus.closest('a[href]');
+        var href = fokusLink && fokusLink.getAttribute('href');
+        var mehrFokus = imKartenbereich && fokus.closest('[data-tp-gruppe-mehr]');
+        var ersatz = reihe.querySelector('[data-tp-reihe-ersatz]');
+        var retryFokus = ersatz && ersatz.contains(fokus);
         alt.replaceWith(document.importNode(neu, true));
         reihe.removeAttribute('data-tp-reihe-nachladen');
+        if (ersatz) ersatz.hidden = true;
         if (offen) {
           var knopf = reihe.querySelector('[data-tp-gruppe-mehr]');
           if (knopf) knopf.setAttribute('aria-expanded', 'true');
+        }
+        if (imKartenbereich || retryFokus) {
+          var neuerBereich = reihe.querySelector('[data-tp-reihe-karten]');
+          var ziel = null;
+          if (href) {
+            ziel = Array.prototype.find.call(neuerBereich.querySelectorAll('a[href]'), function (link) {
+              return link.getAttribute('href') === href;
+            });
+          }
+          // Der mobile Mehrknopf ist nach dem Oeffnen verborgen: zur ersten
+          // neu sichtbaren Karte springen, statt einen unsichtbaren Knopf zu fokussieren.
+          if (!ziel && mehrFokus && !offen) ziel = neuerBereich.querySelector('[data-tp-gruppe-mehr]');
+          if (!ziel && offen && (mehrFokus || retryFokus)) {
+            var karten = neuerBereich.querySelectorAll('.resource-list__item');
+            ziel = karten[4] && karten[4].querySelector('a[href]');
+          }
+          if (!ziel) ziel = neuerBereich.querySelector('a[href]');
+          if (ziel) ziel.focus({ preventScroll: true });
         }
       });
       if (anker && anker !== reihen[0]) {
@@ -318,7 +363,14 @@
     function start() {
       var erste = document.querySelector('[data-tp-reihe-nachladen]');
       if (!erste) return Promise.resolve();
-      return holen(erste.getAttribute('data-tp-reihe-nachladen')).then(einsetzen, function () {});
+      return holen(erste.getAttribute('data-tp-reihe-nachladen')).then(einsetzen).catch(function () {
+        document.querySelectorAll('[data-tp-reihe-nachladen]').forEach(function (reihe) {
+          var fehler = reihe.querySelector('[data-tp-reihe-fehler]');
+          var erneut = reihe.querySelector('[data-tp-reihe-erneut]');
+          if (fehler) fehler.hidden = false;
+          if (erneut) erneut.hidden = false;
+        });
+      });
     }
 
     function imLeerlauf() {
@@ -329,6 +381,7 @@
     else window.addEventListener('load', imLeerlauf);
 
     document.addEventListener('click', function (event) {
+      if (event.target.closest('[data-tp-reihe-erneut]')) { start(); return; }
       var knopf = event.target.closest('[data-tp-gruppe-mehr]');
       if (!knopf) return;
       var reihe = knopf.closest('.tp-zubehoer-produkte--teppich-gruppe');
