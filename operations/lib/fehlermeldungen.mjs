@@ -31,11 +31,25 @@ export const STATUS_LABEL = Object.freeze({
   verworfen: 'Geprüft, keine Änderung',
 });
 
+/**
+ * Genauer als der Status, sobald der Werkbank-Stand bekannt ist: "Bei der
+ * Technik" heisst nur "angekommen" - ob jemand schon daran sitzt oder eine
+ * Entscheidung fehlt, will der Melder auch wissen.
+ */
+export function statusText(m) {
+  if (m.status === 'uebernommen' && m.werkbankStatus === 'in-arbeit') return 'Wird bearbeitet';
+  if (m.status === 'uebernommen' && m.werkbankStatus === 'wartet-inhaber') return 'Wartet auf Entscheidung';
+  return STATUS_LABEL[m.status] || STATUS_LABEL.neu;
+}
+
 export const TEXT_MIN = 5;
 export const TEXT_MAX = 2000;
 const ORT_MAX = 120;
 const TECHNIK_MAX = 600;
 const ERGEBNIS_MAX = 500;
+const SCHRITTE_MAX = 6;
+export const BILDER_MAX = 3;
+const BILD_BYTES_MAX = 4 * 1024 * 1024;
 
 export class FehlermeldungFehler extends Error {}
 
@@ -49,6 +63,41 @@ export function meldungenPfad(privatDir) {
 
 export function abgleichPfad(privatDir) {
   return path.join(privatDir || standardPrivatDir(), 'fehlermeldungen-abgleich.json');
+}
+
+/** Bildschirmfotos liegen neben der Meldungsdatei in fehlermeldungen/F-001-1.jpg. */
+export function bilderOrdner(meldungenDatei) {
+  return path.join(path.dirname(meldungenDatei), 'fehlermeldungen');
+}
+
+const BILD_NAME = /^F-\d{3,}-[1-9]\.(jpg|png|webp)$/;
+const BILD_TYP = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
+
+/** Absoluter Pfad und Typ eines gespeicherten Bildes - nur fuer Namen, die wir selbst vergeben haben. */
+export function bildDatei(meldungenDatei, name) {
+  const m = BILD_NAME.exec(String(name || ''));
+  if (!m) throw new FehlermeldungFehler('Unbekanntes Bild');
+  return { pfad: path.join(bilderOrdner(meldungenDatei), name), typ: BILD_TYP[m[1]] };
+}
+
+/**
+ * Upload pruefen: nur echte PNG-, JPEG- oder WebP-Dateien (an den ersten
+ * Bytes erkannt, nicht an der Angabe des Browsers) und hoechstens 4 MB. Der
+ * Server liefert die Datei spaeter mit Bild-Typ wieder aus - was hier
+ * durchgeht, landet im Browser des Inhabers.
+ */
+export function bildAusUpload(upload) {
+  const roh = typeof upload?.daten === 'string' ? upload.daten : '';
+  const puffer = Buffer.from(roh, 'base64');
+  if (!puffer.length) throw new FehlermeldungFehler('Das Bild war leer.');
+  if (puffer.length > BILD_BYTES_MAX) throw new FehlermeldungFehler('Das Bild ist zu groß (höchstens 4 MB).');
+  const kopf = puffer.subarray(0, 12);
+  let ext = null;
+  if (kopf[0] === 0x89 && kopf.toString('latin1', 1, 4) === 'PNG') ext = 'png';
+  else if (kopf[0] === 0xff && kopf[1] === 0xd8 && kopf[2] === 0xff) ext = 'jpg';
+  else if (kopf.toString('latin1', 0, 4) === 'RIFF' && kopf.toString('latin1', 8, 12) === 'WEBP') ext = 'webp';
+  if (!ext) throw new FehlermeldungFehler('Nur Bilder (PNG, JPG oder WebP) lassen sich anhängen.');
+  return { puffer, ext };
 }
 
 /**
@@ -100,7 +149,7 @@ function naechsteId(meldungen) {
  * Ein zweiter Klick auf "Melden" mit demselben Text innerhalb von zehn
  * Minuten legt keine Doppelung an, sondern liefert die erste zurueck.
  */
-export function meldungAnlegen(datei, { text, ort = '', dringend = false, technik = {} } = {}, { von = null, jetzt = new Date() } = {}) {
+export function meldungAnlegen(datei, { text, ort = '', dringend = false, technik = {} } = {}, { von = null, jetzt = new Date(), bilder = [], version = null } = {}) {
   const sauber = kuerze(text, TEXT_MAX);
   if (sauber.length < TEXT_MIN) throw new FehlermeldungFehler('Bitte kurz beschreiben, was passiert ist.');
   const meldungen = lies(datei, 'meldungen');
@@ -108,9 +157,23 @@ export function meldungAnlegen(datei, { text, ort = '', dringend = false, techni
   const doppelt = meldungen.find(m => m.text === sauber && (m.von?.kuerzel || null) === wer.kuerzel
     && jetzt - new Date(m.erstelltAm) < 10 * 60 * 1000);
   if (doppelt) return { meldung: doppelt, doppelt: true };
+  if (bilder.length > BILDER_MAX) throw new FehlermeldungFehler(`Höchstens ${BILDER_MAX} Bilder je Meldung.`);
   const t = technik && typeof technik === 'object' ? technik : {};
+  const id = naechsteId(meldungen);
+  // Bilder zuerst: scheitert das Schreiben, gibt es keine Meldung, die auf
+  // fehlende Dateien zeigt.
+  const bildNamen = [];
+  if (bilder.length) {
+    const ordner = bilderOrdner(datei);
+    fs.mkdirSync(ordner, { recursive: true, mode: 0o700 });
+    bilder.forEach((b, i) => {
+      const name = `${id}-${i + 1}.${b.ext}`;
+      fs.writeFileSync(path.join(ordner, name), b.puffer, { mode: 0o600 });
+      bildNamen.push(name);
+    });
+  }
   const meldung = {
-    id: naechsteId(meldungen),
+    id,
     erstelltAm: jetzt.toISOString(),
     von: wer,
     text: sauber,
@@ -121,7 +184,10 @@ export function meldungAnlegen(datei, { text, ort = '', dringend = false, techni
       browser: einzeilig(t.browser, 200),
       breite: Number.isFinite(Number(t.breite)) ? Math.round(Number(t.breite)) : null,
       fehler: (Array.isArray(t.fehler) ? t.fehler : []).slice(-3).map(f => einzeilig(f, TECHNIK_MAX)).filter(Boolean),
+      schritte: (Array.isArray(t.schritte) ? t.schritte : []).slice(-SCHRITTE_MAX).map(x => einzeilig(x, 120)).filter(Boolean),
+      version: einzeilig(version || '', 40) || null,
     },
+    bilder: bildNamen,
   };
   meldungen.push(meldung);
   schreib(datei, 'meldungen', meldungen, jetzt);
@@ -141,6 +207,8 @@ export function alleMeldungen(meldungenDatei, abgleichDatei) {
         uebernommenAm: a.uebernommenAm || null,
         erledigtAm: a.erledigtAm || null,
         ergebnis: a.ergebnis || '',
+        werkbankStatus: a.werkbankStatus || null,
+        bilder: Array.isArray(m.bilder) ? m.bilder : [],
       };
     })
     .sort((x, y) => String(y.erstelltAm).localeCompare(String(x.erstelltAm)));
@@ -151,7 +219,7 @@ export function alleMeldungen(meldungenDatei, abgleichDatei) {
  * Erlaubt ist jeder Wechsel ausser zurueck auf "neu": eine Meldung, die schon
  * in der Werkbank steht, darf nicht noch einmal angelegt werden.
  */
-export function abgleichSetzen(meldungenDatei, abgleichDatei, id, { status, werkbankId = null, ergebnis = '' } = {}, { jetzt = new Date() } = {}) {
+export function abgleichSetzen(meldungenDatei, abgleichDatei, id, { status, werkbankId = null, ergebnis = '', werkbankStatus = null } = {}, { jetzt = new Date() } = {}) {
   if (!['uebernommen', 'behoben', 'verworfen'].includes(status)) throw new FehlermeldungFehler(`Unbekannter Status: ${status}`);
   if (!lies(meldungenDatei, 'meldungen').some(m => m.id === id)) throw new FehlermeldungFehler(`Meldung ${id} gibt es nicht`);
   const stand = lies(abgleichDatei, 'stand');
@@ -164,6 +232,7 @@ export function abgleichSetzen(meldungenDatei, abgleichDatei, id, { status, werk
     uebernommenAm: vorher.uebernommenAm || jetzt.toISOString(),
     erledigtAm: status === 'uebernommen' ? null : (vorher.status === status && vorher.erledigtAm ? vorher.erledigtAm : jetzt.toISOString()),
     ergebnis: status === 'uebernommen' ? '' : kuerze(ergebnis, ERGEBNIS_MAX),
+    werkbankStatus: einzeilig(werkbankStatus || '', 30) || null,
   };
   stand[id] = neu;
   schreib(abgleichDatei, 'stand', stand, jetzt);
@@ -182,24 +251,37 @@ export function standAusWerkbank(meldung, eintrag) {
   const ws = eintrag?.status;
   const ergebnis = String(eintrag?.ergebnis ?? '').trim();
   if (ws === 'erledigt') {
-    const neu = { status: 'behoben', ergebnis: ergebnis || 'Behoben.' };
+    const neu = { status: 'behoben', ergebnis: ergebnis || 'Behoben.', werkbankStatus: ws };
     return meldung.status === neu.status && meldung.ergebnis === kuerze(neu.ergebnis, ERGEBNIS_MAX) ? null : neu;
   }
   if (ws === 'verworfen') {
-    const neu = { status: 'verworfen', ergebnis: ergebnis || 'Geprüft, keine Änderung nötig.' };
+    const neu = { status: 'verworfen', ergebnis: ergebnis || 'Geprüft, keine Änderung nötig.', werkbankStatus: ws };
     return meldung.status === neu.status && meldung.ergebnis === kuerze(neu.ergebnis, ERGEBNIS_MAX) ? null : neu;
   }
-  if (WERKBANK_OFFEN.includes(ws) && meldung.status !== 'uebernommen') return { status: 'uebernommen', ergebnis: '' };
+  // Auch ein Wechsel innerhalb der Werkbank zaehlt ("Starten" -> "Wird bearbeitet").
+  if (WERKBANK_OFFEN.includes(ws) && (meldung.status !== 'uebernommen' || (meldung.werkbankStatus || null) !== ws)) {
+    return { status: 'uebernommen', ergebnis: '', werkbankStatus: ws };
+  }
   return null;
 }
 
 /** Was der Browser bekommt: der Inhaber sieht alle Meldungen, alle anderen nur ihre eigenen. */
+export function istEigene(m, benutzer) {
+  // Gemeinsamer Zugang (Einzelpasswort): die Sitzung meldet "Inhaber" ohne
+  // Kuerzel, ohne Anmeldung gibt es gar keinen Benutzer. Eigene sind dann die
+  // Meldungen ohne Kuerzel.
+  if (!benutzer || (!benutzer.kuerzel && benutzer.rolle === 'inhaber')) return !m.von?.kuerzel;
+  return Boolean(m.von?.kuerzel) && m.von.kuerzel === benutzer.kuerzel;
+}
+
+export function darfMeldungSehen(m, benutzer) {
+  return !benutzer || benutzer.rolle === 'inhaber' || istEigene(m, benutzer);
+}
+
 export function sichtbareMeldungen(liste, benutzer) {
-  const istInhaber = !benutzer || benutzer.rolle === 'inhaber';
-  const eigene = istInhaber ? liste : liste.filter(m => m.von?.kuerzel && m.von.kuerzel === benutzer.kuerzel);
-  return eigene.map(m => ({
+  return liste.filter(m => darfMeldungSehen(m, benutzer)).map(m => ({
     id: m.id, erstelltAm: m.erstelltAm, von: m.von?.name || '', text: m.text, ort: m.ort,
-    dringend: m.dringend, status: m.status, statusLabel: STATUS_LABEL[m.status], ergebnis: m.ergebnis,
-    erledigtAm: m.erledigtAm,
+    dringend: m.dringend, status: m.status, statusLabel: statusText(m), ergebnis: m.ergebnis,
+    erledigtAm: m.erledigtAm, eigen: istEigene(m, benutzer), bilder: (m.bilder || []).length,
   }));
 }

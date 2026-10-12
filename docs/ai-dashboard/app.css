@@ -735,8 +735,11 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
   right: 12px;
   transform: none;
   align-items: center;
+  /* Die Leiste ist so breit wie der Bildschirm, aber unsichtbar - ohne das
+     verdeckte sie unten links "Fehler melden", solange ein Hinweis stand. */
+  pointer-events: none;
 }
-.toast { max-width: min(520px, 100%); }
+.toast { max-width: min(520px, 100%); pointer-events: auto; }
 
 /* Auf Fingergeraeten (Baustelle, Laden) sind 32 px zu klein zum Treffen. */
 @media (pointer: coarse) {

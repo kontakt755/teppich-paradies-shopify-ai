@@ -45,6 +45,7 @@ import { viewInsights } from './ansichten/insights.mjs';
 import { ladeAktivitaetsdaten, viewAktivitaet } from './ansichten/aktivitaet.mjs';
 import { viewHeute } from './ansichten/heute.mjs';
 import { bindEvents } from './ereignisse.mjs';
+import { pruefeAntworten } from './bausteine/fehler-melden.mjs';
 
 const VIEWS = { heute: viewHeute, fotos: viewFotos, sonderposten: viewSonderposten, social: viewSocial, team: viewTeam, hilfe: viewHilfe, organisation: viewOrganisation, shopwache: viewShopwache, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
 
@@ -63,6 +64,8 @@ async function init() {
   render();
   if (state.route.view === 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus();
   loadAgentRuns().then(() => { if (state.agentRuns) render(); });
+  // Antwort auf eine eigene Fehlermeldung? Eine Zeile unten, Zahl am Knopf.
+  pruefeAntworten();
   setInterval(() => refresh({ silent: true }), CONFIG.refreshMs);
 }
 

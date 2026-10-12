@@ -14,7 +14,8 @@ export function emptyState(title, hint, link) {
 export function stoerungState(d, was = 'Diese Daten') {
   return `<div class="notice crit"><strong>${esc(was)} konnten nicht geladen werden.</strong>
     ${esc(d?.hinweis || 'Unbekannter Fehler')}
-    <button type="button" class="btn btn-sm" data-action="reload" style="margin-left:8px">Nochmal versuchen</button></div>`;
+    <button type="button" class="btn btn-sm" data-action="reload" style="margin-left:8px">Nochmal versuchen</button>
+    <button type="button" class="btn btn-sm" data-fehler-melden style="margin-left:4px">Fehler melden</button></div>`;
 }
 
 /**
