@@ -168,8 +168,13 @@ async function main() {
     if (!args.offen) { server.kill(); fs.rmSync(daten, { recursive: true, force: true }); }
   };
   // Auch bei Fehlern im Lauf: Instanz beenden und Datenkopie loeschen (ausser mit --offen).
+  // Abbruch von aussen raeumt immer auf, auch mit --offen. Bisher nur bei Strg-C (SIGINT):
+  // ein `kill` oder ein geschlossenes Terminal liess Pruef-Instanz und Datenkopie (mit
+  // Kundendaten) im Temp-Ordner zurueck - am 2026-10-12 lief eine solche Instanz seit Stunden.
   process.on('exit', aufraeumen);
-  process.on('SIGINT', () => { args.offen = false; process.exit(130); });
+  for (const [signal, code] of [['SIGINT', 130], ['SIGTERM', 143], ['SIGHUP', 129]]) {
+    process.on(signal, () => { args.offen = false; process.exit(code); });
+  }
 
   // Wegwerf-Zugaenge je Rolle - nur in der Datenkopie, nie in der echten benutzer.json.
   const zugaenge = [];
@@ -227,10 +232,17 @@ async function main() {
           // die Seite weiter nach und der Lauf brach mit "Navigation timeout" ab. Stattdessen
           // warten, bis nichts mehr "Lade ..." zeigt, hoechstens aber ein paar Sekunden.
           await seite.goto(`${basis}/#/${ansicht}`, { waitUntil: 'domcontentloaded' });
-          await seite.waitForFunction(() => {
+          // Steht nach 6 s noch "Lade …" da, ist das ein Befund: genau so sah der Fehler aus,
+          // wenn eine Ladefunktion nach dem Laden nicht neu zeichnete (Skill, "Fallstricke").
+          // Bisher zaehlte das als OK - der Screenshot zeigte es, aber niemand sah hin.
+          const fertig = await seite.waitForFunction(() => {
             const main = document.querySelector('#main');
             return main && !main.querySelector('.skeleton') && !/Lade\b[^.]{0,40}…/.test(main.textContent);
-          }, { timeout: 6000 }).catch(() => { /* bleibt etwas im Ladezustand, zeigt es der Screenshot */ });
+          }, { timeout: 6000 }).then(() => true, () => false);
+          if (!fertig) {
+            const rest = await seite.evaluate(() => (document.querySelector('#main')?.textContent.match(/Lade\b[^.]{0,40}…/) || ['Seite lädt'])[0]).catch(() => 'Seite lädt');
+            fehler.push(`laedt nach 6 s noch: ${rest.replace(/\s+/g, ' ').trim()}`);
+          }
           await new Promise(r => setTimeout(r, 700));
           const name = `${anmeldung.rolle ? `${anmeldung.rolle}-` : ''}${geraet}-${ansicht.replace(/[?=&]/g, '_')}`;
           const datei = path.join(aus, `${name}.png`);

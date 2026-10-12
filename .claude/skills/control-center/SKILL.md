@@ -209,6 +209,14 @@ kann dafuer weg?
 - **Testbestellungen stehen nicht in `auftraege`**, sondern in
   `testauftraege`. Aktionen, die einen Auftrag per ID suchen, `alleAuftraege()`
   nehmen – sonst tut der Knopf bei Testbestellungen still nichts.
+- **Eine lokale Ablage liest nur eine FEHLENDE Datei als leer** (`ENOENT`). Ein
+  `catch { return {} }` um `JSON.parse` liess bis 2026-10-12 fuenf Ablagen bei
+  kaputtem JSON leer erscheinen - der naechste Klick schrieb dann eine Datei mit
+  genau einem Eintrag. Vorbild: `operations/lib/fehlermeldungen.mjs`, Tests:
+  `operations/tests/speicher-lesefehler.test.mjs`.
+- **Fehlerantworten im Server immer ueber `apiFehler()`** (`serve-dashboard.mjs`),
+  nicht `send(res, 4xx, …)` - sonst fehlt die Zeile im Dienstprotokoll. Nie den
+  Abfrageteil, Cookies oder Koerper protokollieren (`scripts/dashboard-log.mjs`).
 - **Auftragsfluss-Stand** (`auftragsstatus.json`) gibt es nur lokal; er wird
   von `npm run daten:sichern` gesichert. Aktionen, die ihn schreiben, immer
   mit Grund/Notiz und ueber den Filter „Erledigt" nachvollziehbar.

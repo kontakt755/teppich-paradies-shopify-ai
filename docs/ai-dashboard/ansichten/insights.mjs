@@ -8,9 +8,10 @@ import { emptyState } from '../bausteine/karten.mjs';
 import { prioBadge } from '../bausteine/aufgaben.mjs';
 import { ensureAktualisierung } from '../bausteine/aktualisierung.mjs';
 import { systemHealth, healthRow } from '../bausteine/systemzustand.mjs';
+import { shopwache, ensureShopwache } from './shopwache.mjs';
 
 export function viewInsights() {
-  if (state.capabilities.mode === 'local') ensureAktualisierung();
+  if (state.capabilities.mode === 'local') { ensureAktualisierung(); ensureShopwache(); }
   const open = state.tasks.filter(t => t.open);
   const byStatus = STATUSES.filter(s => s.open).map(s => [s.label, open.filter(t => t.status === s.key).length]).filter(x => x[1]);
   const byPrio = Object.values(PRIORITIES).map(p => [p.label, open.filter(t => t.priority === p.key).length]);
@@ -26,7 +27,7 @@ export function viewInsights() {
   return `
     <div class="page-head"><div><h1>Insights</h1><p class="sub">Systemzustand und Verteilung der Arbeit. Jede Zahl mit Quelle und Datenstand.</p></div></div>
     <div class="grid grid-2">
-      <section class="card span-2"><div class="card-head"><h2>Systemzustand</h2><span class="more muted">Stand ${fmtDateTime(new Date().toISOString())}</span></div><div class="health">${systemHealth().map(healthRow).join('')}</div></section>
+      <section class="card span-2"><div class="card-head"><h2>Systemzustand</h2><span class="more muted">Stand ${fmtDateTime(new Date().toISOString())}</span></div><div class="health">${systemHealth({ tailscale: shopwache.daten?.tailscale }).map(healthRow).join('')}</div></section>
       <section class="card"><div class="card-head"><h2>Warnungen</h2><span class="more muted">aus Aufgabenzustand abgeleitet</span></div>
         ${warnings.length ? `<div class="rows">${warnings.map(w => `<div class="row" data-open="${w.t.number}" tabindex="0" role="button"><div><div class="t">${prioBadge(w.t)} ${esc(w.t.title)}</div><div class="m"><span class="warnc" style="color:var(--crit)">${esc(w.text)}</span></div></div></div>`).join('')}</div>` : emptyState('Keine Warnungen.', 'Keine lange blockierten P0/P1, keine überfälligen Aufgaben.')}
       </section>

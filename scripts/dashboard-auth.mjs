@@ -123,7 +123,16 @@ export function createAuth({ password = null, benutzerDatei = benutzerDateiPfad(
   /** Prueft Name+Passwort (Mehrbenutzerbetrieb) oder nur Passwort (Notzugang). Gibt Benutzerobjekt oder null zurueck. */
   function verifyLogin({ name = '', passwort = '' } = {}) {
     if (hatBenutzerdatei()) {
-      const liste = ladeBenutzerliste({ exists: hatBenutzerdatei });
+      let liste;
+      try {
+        liste = ladeBenutzerliste({ exists: hatBenutzerdatei });
+      } catch (e) {
+        // benutzer.json beschaedigt: der Notzugang kommt trotzdem herein (sonst
+        // kann niemand die Datei zurueckholen), alle anderen bekommen einen
+        // Hinweis statt "Passwort falsch".
+        if (passwordHash && verifyPassword(passwort)) return { name: 'Inhaber', kuerzel: null, rolle: 'inhaber' };
+        throw e;
+      }
       const treffer = authentifiziere(liste, name, passwort);
       if (treffer) return treffer;
       // Notzugang bleibt gueltig, auch wenn schon eine benutzer.json existiert - der Inhaber darf sich nie aussperren.
@@ -168,7 +177,15 @@ export function createAuth({ password = null, benutzerDatei = benutzerDateiPfad(
     const kuerzel = eintrag.benutzer?.kuerzel || null;
     if (!kuerzel) return { gueltig: true, benutzer: eintrag.benutzer || null };   // Notzugang
 
-    const aktuell = findeAktivenBenutzer(leseBenutzer(benutzerDatei), kuerzel);
+    let liste;
+    try {
+      liste = leseBenutzer(benutzerDatei);
+    } catch {
+      // Datei gerade unlesbar: nicht anmelden, aber die Sitzung auch nicht
+      // loeschen - sonst waeren nach dem Zurueckholen alle abgemeldet.
+      return { gueltig: false, benutzer: null };
+    }
+    const aktuell = findeAktivenBenutzer(liste, kuerzel);
     if (!aktuell) {
       // Gesperrt oder geloescht: die Sitzung ist wertlos und verschwindet sofort.
       if (sessions.delete(sidHash(sid))) speichereSitzungen();
@@ -260,7 +277,11 @@ export function parseCookies(req) {
     if (idx < 0) continue;
     const k = part.slice(0, idx).trim();
     const v = part.slice(idx + 1).trim();
-    if (k) out[k] = decodeURIComponent(v);
+    if (!k) continue;
+    // Ein kaputter Wert ("x=%") warf hier einen URIError - ohne Anmeldung, vor
+    // jeder Pruefung, und der Fehler beendete den ganzen Dienst. Solche Werte
+    // werden uebersprungen; das Sitzungscookie selbst ist reines Hex.
+    try { out[k] = decodeURIComponent(v); } catch { /* unlesbar: ueberspringen */ }
   }
   return out;
 }

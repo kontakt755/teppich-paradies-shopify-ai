@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { createApi, ApiError, buildComment } from '../../../scripts/dashboard-api.mjs';
+import { createApi, ApiError, buildComment, readJsonGecacht } from '../../../scripts/dashboard-api.mjs';
 
 /** Fake-gh: merkt sich Aufrufe, liefert Issue/Labels/User. */
 function fakeGh({ issue, labels = ['status:geplant', 'status:in-arbeit', 'status:review', 'status:blockiert', 'status:fertig', 'reviewer:mensch'], user = 'tobias' } = {}) {
@@ -872,11 +872,11 @@ test('kundenDetail zeigt auch einen Kunden ohne Bestellung in dieser Datei', () 
   assert.equal(api.kundenDetail({ key: 'email:gibtsnicht@example.test' }).verfuegbar, false);
 });
 
-test('shopwacheStatus liest das Pruefergebnis und meldet sonst ehrlich nichts', () => {
+test('shopwacheStatus liest das Pruefergebnis und meldet sonst ehrlich nichts', async () => {
   const root = tmpRoot();
   const dir = privatFixture(root);
   const api0 = createApi({ gh: async () => '', root, privatDirPath: dir });
-  assert.equal(api0.shopwacheStatus().verfuegbar, false);
+  assert.equal((await api0.shopwacheStatus()).verfuegbar, false);
 
   fs.mkdirSync(path.join(dir, 'shopwache'), { recursive: true });
   fs.writeFileSync(path.join(dir, 'shopwache', 'status.json'), JSON.stringify({
@@ -884,10 +884,28 @@ test('shopwacheStatus liest das Pruefergebnis und meldet sonst ehrlich nichts', 
     kritisch: 0, warnungen: 1, seiten: [], preise: [], befunde: [{ art: 'warnung', titel: 'Suche laedt langsam', text: '3.4 s' }],
   }));
   const api = createApi({ gh: async () => '', root, privatDirPath: dir });
-  const r = api.shopwacheStatus();
+  const r = await api.shopwacheStatus();
   assert.equal(r.verfuegbar, true);
   assert.equal(r.ampel, 'gelb');
   assert.equal(r.befunde.length, 1);
+  // Im Test fragt niemand den Rechner (TP_TAILSCALE_PRUEFEN=0 in _testumgebung.mjs).
+  assert.equal(r.tailscale.status, 'nicht-geprueft');
+});
+
+test('shopwacheStatus meldet Tailscale - auch wenn die Shop-Wache noch nie lief; hoechstens eine Abfrage je Minute', async () => {
+  const root = tmpRoot();
+  const dir = privatFixture(root);
+  let abfragen = 0;
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir, tailscale: async () => { abfragen += 1; return { status: 'gestoppt', zustand: 'Stopped' }; } });
+  const [a, b] = await Promise.all([api.shopwacheStatus(), api.shopwacheStatus()]);
+  assert.equal(a.verfuegbar, false);
+  assert.deepEqual(a.tailscale, { status: 'gestoppt', zustand: 'Stopped' });
+  assert.deepEqual(b.tailscale, a.tailscale);
+  await api.shopwacheStatus();
+  assert.equal(abfragen, 1, 'gleichzeitige und spaetere Abfragen innerhalb einer Minute teilen sich eine Antwort');
+  // Eine kaputte Abfrage wird zu "unbekannt", nie zu einem Fehler der Shop-Wache.
+  const kaputt = createApi({ gh: async () => '', root, privatDirPath: dir, tailscale: async () => { throw new Error('kein Zugriff'); } });
+  assert.equal((await kaputt.shopwacheStatus()).tailscale.status, 'unbekannt');
 });
 
 // -- Aufgaben & Organisation: Rechte serverseitig --------------------------
@@ -1237,4 +1255,84 @@ test('Kaputte Datei sieht nicht mehr aus wie eine fehlende', () => {
   assert.equal(kaputt.verfuegbar, false);
   assert.equal(kaputt.fehler, true);
   assert.match(kaputt.hinweis, /beschädigt/);
+});
+
+// ---------------------------------------------------------------------------
+// Robustheit (Pruefung 2026-10-12)
+// ---------------------------------------------------------------------------
+
+test('Blockieren schreibt den Grund in "## Blocker" im Issue - dort liest ihn die Oberflaeche', async () => {
+  const issue = baseIssue({ labels: [{ name: 'status:in-arbeit' }, { name: 'priority:p1' }, { name: 'area:produktseite' }], assignee: { login: 'ahmet' }, assignees: [{ login: 'ahmet' }] });
+  const { gh, calls } = fakeGh({ issue });
+  const api = createApi({ gh, root: tmpRoot() });
+  await api.transition(41, { target: 'blockiert', reason: 'Warte auf Freigabe vom Inhaber' });
+  const edit = calls.find(c => c[0] === 'issue' && c[1] === 'edit');
+  const body = edit[edit.indexOf('--body') + 1];
+  assert.match(body, /## Blocker\nWarte auf Freigabe vom Inhaber$/);
+  assert.ok(body.startsWith(issue.body), 'der bisherige Body bleibt stehen');
+  assert.ok(edit.includes('status:blockiert'));
+  // Ein anderer Statuswechsel fasst den Body nicht an.
+  const { gh: gh2, calls: calls2 } = fakeGh({ issue: baseIssue() });
+  await createApi({ gh: gh2, root: tmpRoot() }).transition(41, { target: 'in-arbeit', owner: 'ahmet' });
+  assert.ok(!calls2.find(c => c[1] === 'edit').includes('--body'));
+});
+
+test('readJsonGecacht: dieselbe Datei wird erst nach einer Aenderung neu gelesen', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-lexikon-cache-'));
+  const datei = path.join(dir, 'produkte.json');
+  assert.equal(readJsonGecacht(datei), null, 'fehlt -> null');
+  fs.writeFileSync(datei, JSON.stringify({ produkte: [{ handle: 'a' }] }));
+  const erst = readJsonGecacht(datei);
+  assert.equal(readJsonGecacht(datei), erst, 'unveraendert -> derselbe Stand ohne neues Lesen');
+  fs.writeFileSync(datei, JSON.stringify({ produkte: [{ handle: 'a' }, { handle: 'b' }] }));
+  fs.utimesSync(datei, new Date(), new Date(Date.now() + 5000));
+  assert.equal(readJsonGecacht(datei).produkte.length, 2, 'neue Fassung wird gelesen');
+  fs.rmSync(datei);
+  assert.equal(readJsonGecacht(datei), null, 'geloescht -> null, kein alter Stand');
+});
+
+test('Lexikon-Suche nutzt den Zwischenspeicher und sieht einen neuen Export sofort', () => {
+  const root = tmpRoot();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-lexikon-'));
+  fs.mkdirSync(path.join(dir, 'lexikon'));
+  const datei = path.join(dir, 'lexikon', 'produkte.json');
+  fs.writeFileSync(datei, JSON.stringify({ erstellt: '2026-10-12T10:00:00Z', produkte: [{ handle: 'kontura', titel: 'Kontura', varianten: [] }] }));
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  assert.equal(api.lexikonListe({ q: 'kontura' }).treffer.count, 1);
+  assert.equal(api.lexikonListe({ q: 'serena' }).treffer.count, 0);
+  fs.writeFileSync(datei, JSON.stringify({ erstellt: '2026-10-12T11:00:00Z', produkte: [{ handle: 'kontura', titel: 'Kontura', varianten: [] }, { handle: 'serena', titel: 'Serena', varianten: [] }] }));
+  fs.utimesSync(datei, new Date(), new Date(Date.now() + 5000));
+  assert.equal(api.lexikonListe({ q: 'serena' }).treffer.count, 1);
+  assert.equal(api.lexikonProdukt('serena').produkt.titel, 'Serena');
+});
+
+test('"Jetzt aktualisieren": ein abgebrochener Lauf bleibt als letzterKnopfLauf sichtbar, Teilfehler nicht', async () => {
+  const root = tmpRoot();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  fakeAktualisierenSkript(root, dir, { verzoegerungMs: 20, wirftFehler: true });
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir, env: { SHOPIFY_ADMIN_TOKEN: 'test-only' } });
+  const vorher = console.error; const zeilen = []; console.error = z => zeilen.push(z);
+  try {
+    const start = api.aktualisierungStarten();
+    for (let i = 0; i < 50 && api.aktualisierungStatus().laeuft; i += 1) await new Promise(r => setTimeout(r, 50));
+    const s = api.aktualisierungStatus();
+    assert.equal(s.laeuft, false);
+    assert.equal(s.letzterKnopfLauf.seit, start.seit);
+    assert.match(s.letzterKnopfLauf.fehler, /absichtlicher Testfehler/);
+    assert.deepEqual(api.aktualisierung().letzterKnopfLauf, s.letzterKnopfLauf);
+    assert.match(zeilen.join('\n'), /\[aktualisierung\] Knopf-Lauf seit .* abgebrochen/);
+  } finally { console.error = vorher; }
+
+  // Exit 1 mit vollstaendigem Bericht: einzelne Quellen scheiterten - kein Abbruch.
+  const root2 = tmpRoot();
+  const skript = path.join(root2, 'operations', 'scripts');
+  fs.mkdirSync(skript, { recursive: true });
+  fs.writeFileSync(path.join(skript, 'aktualisieren.mjs'), "console.log('Aktualisierung: /tmp/x'); console.log('  bestand: FEHLER · Kein Zugang'); process.exitCode = 1;");
+  const api2 = createApi({ gh: async () => '', root: root2, privatDirPath: dir, env: { SHOPIFY_ADMIN_TOKEN: 'test-only' } });
+  console.error = () => {};
+  try {
+    api2.aktualisierungStarten();
+    for (let i = 0; i < 50 && api2.aktualisierungStatus().laeuft; i += 1) await new Promise(r => setTimeout(r, 50));
+  } finally { console.error = vorher; }
+  assert.equal(api2.aktualisierungStatus().letzterKnopfLauf.fehler, null);
 });

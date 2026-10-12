@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   leiteTodosAb, zaehleTodos, werWartet, sichtFuer, sortiereTodos, tonNachAlter, alterText, tageSeit,
+  tailscaleHinweis,
 } from '../lib/todos.mjs';
 
 // Nur erfundene Daten: Testkunden und Lieferanten-Pseudonyme.
@@ -307,4 +308,21 @@ test('Shop-Wache: stumm seit mehr als drei Stunden wird ein To-do (gruen, aber v
   assert.equal(stumm[0].ton, 'warn');
   assert.match(stumm[0].kontext, /vor 5 Stunden/);
   assert.deepEqual(leiteTodosAb({ shopwache: { verfuegbar: true, ampel: 'gruen', geprueftAm: stunden(1), befunde: [] } }, { sicht: 'website', jetzt: JETZT }), []);
+});
+
+test('Tailscale gestoppt oder abgemeldet: ein To-do in der Website-Sicht, sonst nichts', () => {
+  const gestoppt = leiteTodosAb({ shopwache: { verfuegbar: false, tailscale: { status: 'gestoppt' } } }, { sicht: 'website', jetzt: JETZT });
+  assert.equal(gestoppt.length, 1);
+  assert.equal(gestoppt[0].id, 'tailscale');
+  assert.equal(gestoppt[0].ton, 'warn');
+  assert.match(gestoppt[0].titel, /Tailscale ist aus/);
+  assert.match(gestoppt[0].kontext, /Menüleiste/);
+  assert.equal(leiteTodosAb({ shopwache: { verfuegbar: true, ampel: 'gruen', geprueftAm: JETZT.toISOString(), befunde: [], tailscale: { status: 'abgemeldet' } } }, { sicht: 'website', jetzt: JETZT })[0].id, 'tailscale');
+  for (const status of ['laeuft', 'startet', 'nicht-installiert', 'nicht-geprueft', 'unbekannt']) {
+    assert.deepEqual(leiteTodosAb({ shopwache: { verfuegbar: false, tailscale: { status } } }, { sicht: 'website', jetzt: JETZT }), [], status);
+    assert.equal(tailscaleHinweis({ status }), null, status);
+  }
+  // Im Laden zaehlt es nicht - die Website-Zahl des Inhabers schon.
+  assert.deepEqual(leiteTodosAb({ shopwache: { tailscale: { status: 'gestoppt' } } }, { sicht: 'laden', jetzt: JETZT }), []);
+  assert.equal(zaehleTodos({ shopwache: { tailscale: { status: 'gestoppt' } } }, { jetzt: JETZT }).website, 1);
 });

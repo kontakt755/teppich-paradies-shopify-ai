@@ -36,6 +36,7 @@ import {
 } from './dashboard-auth.mjs';
 import { leseBenutzer, benutzerDateiExistiert, benutzerDateiPfad } from '../operations/lib/benutzer.mjs';
 import { protokollPfad, letzteEintraege } from '../operations/lib/protokoll.mjs';
+import { logFehler, pfadOhneAbfrage } from './dashboard-log.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..');
@@ -84,9 +85,41 @@ const TYPES = {
 const execFileP = promisify(execFile);
 // Beide Datendateien entstehen seit 2026-09-30 nur noch lokal (nicht mehr per
 // Workflow auf main): issues.json aus GitHub (gh), bodenwissen.json aus content/.
-async function rebuild() {
+async function baueNeu() {
   await execFileP(process.execPath, [join(HERE, 'build-dashboard-data.mjs')], { cwd: REPO_ROOT, timeout: 120_000, maxBuffer: 8 * 1024 * 1024 });
   await execFileP(process.execPath, [join(HERE, 'build-bodenwissen-data.mjs')], { cwd: REPO_ROOT, timeout: 60_000, maxBuffer: 8 * 1024 * 1024 });
+}
+
+/**
+ * Nie zwei Neubauten gleichzeitig (beide schreiben dieselbe issues.json).
+ * Laeuft schon einer, wartet ein Aufruf darauf und stoesst danach genau einen
+ * weiteren an - sonst zeigte eine Schreibaktion, die waehrend des
+ * regelmaessigen Neubaus kam, den Stand von vor ihrer Aenderung. Mehrere
+ * Wartende teilen sich diesen einen Folgelauf.
+ */
+let neubauLauf = null;
+let neubauFolge = null;
+function rebuild() {
+  if (!neubauLauf) {
+    neubauLauf = baueNeu().finally(() => { neubauLauf = null; });
+    return neubauLauf;
+  }
+  if (!neubauFolge) {
+    neubauFolge = neubauLauf.catch(() => {}).then(() => { neubauFolge = null; return rebuild(); });
+  }
+  return neubauFolge;
+}
+
+/**
+ * issues.json wurde im Dienst nur beim Start, nach einer Schreibaktion und
+ * auf "Jetzt synchronisieren" neu gebaut - im Dauerbetrieb war der
+ * Aufgabenstand damit oft Tage alt. Regelmaessig, aber nie ueberlappend: laeuft
+ * gerade ein Neubau, faellt dieser Takt aus.
+ */
+export const NEUBAU_MINUTEN = Number(process.env.TP_DASHBOARD_NEUBAU_MINUTEN ?? 10);
+export function regelmaessigNeubauen() {
+  if (neubauLauf) return null;
+  return rebuild().catch(e => logFehler('neubau', `issues.json konnte nicht neu erzeugt werden: ${String(e?.message || e).split('\n')[0]}`));
 }
 
 // sitzungenVerwerfen reicht das Auth-Objekt hinein, statt es zu importieren -
@@ -107,8 +140,26 @@ export const api = createApi({
 // (URL und Schluessel aus .env.local des Dienstes, nie im Browser) - scripts/laden-zahlen.mjs.
 const ladenZahlen = createLadenZahlen({ root: REPO_ROOT });
 
+/**
+ * Kopfzeilen fuer jede Antwort. Das Control Center zeigt Kundendaten und hat
+ * Knoepfe, die etwas buchen - keine fremde Seite darf es in einen Rahmen laden
+ * und den Benutzer dort klicken lassen (Clickjacking). X-Frame-Options fuer
+ * aeltere Browser, frame-ancestors fuer alle neueren.
+ */
+const SICHERHEITS_KOEPFE = {
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'no-referrer',
+  'X-Frame-Options': 'DENY',
+  'Content-Security-Policy': "frame-ancestors 'none'",
+};
+
 function send(res, status, body, type = 'application/json; charset=utf-8') {
-  res.writeHead(status, { 'Content-Type': type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' });
+  if (res.headersSent) { res.end(); return; }
+  const koepfe = { 'Content-Type': type, 'Cache-Control': 'no-store', ...SICHERHEITS_KOEPFE };
+  // Nach einem zu grossen Koerper die Verbindung schliessen, statt den Rest
+  // weiter anzunehmen - die Antwort selbst kommt aber an (siehe readJson).
+  if (status === 413) koepfe.Connection = 'close';
+  res.writeHead(status, koepfe);
   res.end(typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body));
 }
 
@@ -116,10 +167,56 @@ function readJson(req, max = MAX_BODY) {
   return new Promise((resolveBody, reject) => {
     if (!/^application\/json/i.test(req.headers['content-type'] || '')) { reject(new ApiError(415, 'Nur application/json')); return; }
     let size = 0; const chunks = [];
-    req.on('data', c => { size += c.length; if (size > max) { req.destroy(); reject(new ApiError(413, `Request zu groß (über ${Math.round(max / 1024)} KB)`)); } else chunks.push(c); });
-    req.on('end', () => { try { resolveBody(chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : {}); } catch { reject(new ApiError(400, 'Ungültiges JSON')); } });
+    let zuGross = false;
+    req.on('data', c => {
+      if (zuGross) return;
+      size += c.length;
+      if (size > max) {
+        // Frueher req.destroy(): die Verbindung war weg, bevor die 413 hinausging -
+        // der Browser meldete nur "Netzwerkfehler", nie "zu gross". Jetzt wird der
+        // Rest verworfen (nicht gespeichert) und die Antwort schliesst die Verbindung.
+        zuGross = true;
+        chunks.length = 0;
+        req.resume();
+        reject(new ApiError(413, `Request zu groß (über ${Math.round(max / 1024)} KB)`));
+      } else chunks.push(c);
+    });
+    req.on('end', () => {
+      if (zuGross) return;
+      try { resolveBody(chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : {}); } catch { reject(new ApiError(400, 'Ungültiges JSON')); }
+    });
     req.on('error', reject);
   });
+}
+
+/**
+ * Was der Browser im eigenen Fenster anzeigen darf. Der Dateityp eines Anhangs
+ * stammt vom Browser beim Hochladen; alles ausser Bildern, PDF und reinem Text
+ * kommt deshalb als Download, und nosniff verhindert, dass der Browser aus
+ * einem angeblichen Bild doch eine Seite macht.
+ */
+const INLINE_TYPEN = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'text/plain']);
+export function dateiKoepfe({ typ, name }) {
+  const inline = INLINE_TYPEN.has(typ);
+  const anzeigeName = String(name || 'datei');
+  const ascii = anzeigeName.replace(/[^\w.\- ]+/g, '_');
+  return {
+    'Content-Type': inline ? (typ === 'text/plain' ? 'text/plain; charset=utf-8' : typ) : 'application/octet-stream',
+    'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(anzeigeName)}`,
+    'Cache-Control': 'private, no-store',
+    ...SICHERHEITS_KOEPFE,
+  };
+}
+function dateiAusliefern(res, { inhalt, typ, name }) {
+  res.writeHead(200, dateiKoepfe({ typ, name }));
+  res.end(inhalt);
+}
+
+/** Fehlerantwort der API samt einer Protokollzeile (Zeit, Status, Methode, Pfad, Meldung - nie Cookies oder Abfrageteil). */
+function apiFehler(req, res, pathname, status, body) {
+  // Beim 500 steht die eigentliche Ursache in `technisch`, der Text fuer den Laden ist immer derselbe.
+  logFehler('api', `${status} ${req.method} ${pfadOhneAbfrage(pathname)}: ${body?.technisch || body?.error || ''}`);
+  send(res, status, body);
 }
 
 // Firmennetz: private Adressbereiche (RFC 1918) zusaetzlich zu localhost.
@@ -232,34 +329,34 @@ export async function handleApi(req, res, pathname, benutzer = null) {
   // (Kunden, Angebote, Warenkoerbe, Bestand, Erfuellung) - fehlt einer,
   // antwortet der Server 404.
   const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/muster-texte|kunden\/bestellung-fertig|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|sonderposten\/liste|sonderposten\/verkauft|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
-  if (!m) { send(res, 404, { error: 'Unbekannter API-Pfad' }); return; }
+  if (!m) { apiFehler(req, res, pathname, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
   // Host-Pruefung fuer JEDEN Aufruf, nicht nur fuer schreibende: sonst kann
   // eine fremde Seite per DNS-Rebinding die Kundendaten auslesen.
-  if (!sameOrigin(req)) { send(res, 403, { error: herkunftFehler(req) }); return; }
+  if (!sameOrigin(req)) { apiFehler(req, res, pathname, 403, { error: herkunftFehler(req) }); return; }
   if (!darfPfad(benutzer, simple, taskOp)) {
-    send(res, 403, { error: 'Dafür fehlt dir die Berechtigung – das macht der Inhaber.' });
+    apiFehler(req, res, pathname, 403, { error: 'Dafür fehlt dir die Berechtigung – das macht der Inhaber.' });
     return;
   }
   const write = simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || simple === 'kunden/fall-marke' || ['org/neu', 'org/aendern', 'org/kommentar', 'org/pruefen', 'org/analyse', 'org/liste-einfuegen', 'org/anhang', 'fotos/neu', 'social/link-neu', 'sonderposten/verkauft', 'fehler/melden'].includes(simple) || ['transition', 'assign', 'comment'].includes(taskOp);
   try {
     if (write) {
-      if (req.method !== 'POST') { send(res, 405, { error: 'POST erwartet' }); return; }
+      if (req.method !== 'POST') { apiFehler(req, res, pathname, 405, { error: 'POST erwartet' }); return; }
       // Rolle "lesen" darf serverseitig nichts veraendern - unabhaengig davon, ob das
       // Frontend die Aktion anzeigt. Ohne Mehrbenutzerbetrieb (kein `benutzer`) gilt
       // weiterhin der bisherige Notzugang (Inhaber, alle Rechte).
       // Einzige Ausnahme: einen Fehler melden darf jeder. Die Meldung aendert keine
       // Betriebsdaten, und gerade wer nur zuschaut, stolpert oft als Erster darueber.
-      if (benutzer && benutzer.rolle === 'lesen' && simple !== 'fehler/melden') { send(res, 403, { error: 'Rolle "lesen" darf keine Aenderungen vornehmen' }); return; }
+      if (benutzer && benutzer.rolle === 'lesen' && simple !== 'fehler/melden') { apiFehler(req, res, pathname, 403, { error: 'Rolle "lesen" darf keine Aenderungen vornehmen' }); return; }
     } else if (simple === 'social/zugaenge') {
       // Der Upload-Link ist ein Geheimnis: Rolle "lesen" bekommt ihn auch lesend nicht.
-      if (benutzer && benutzer.rolle === 'lesen') { send(res, 403, { error: 'Dafür fehlt dir die Berechtigung.' }); return; }
-      if (req.method !== 'GET') { send(res, 405, { error: 'GET erwartet' }); return; }
+      if (benutzer && benutzer.rolle === 'lesen') { apiFehler(req, res, pathname, 403, { error: 'Dafür fehlt dir die Berechtigung.' }); return; }
+      if (req.method !== 'GET') { apiFehler(req, res, pathname, 405, { error: 'GET erwartet' }); return; }
     } else if (simple === 'benutzer' || simple === 'team/liste') {
-      if (req.method !== 'GET') { send(res, 405, { error: 'GET erwartet' }); return; }
+      if (req.method !== 'GET') { apiFehler(req, res, pathname, 405, { error: 'GET erwartet' }); return; }
     } else if (simple === 'team/aendern' || simple === 'mein-passwort') {
-      if (req.method !== 'POST') { send(res, 405, { error: 'POST erwartet' }); return; }
-    } else if (req.method !== 'GET') { send(res, 405, { error: 'GET erwartet' }); return; }
+      if (req.method !== 'POST') { apiFehler(req, res, pathname, 405, { error: 'POST erwartet' }); return; }
+    } else if (req.method !== 'GET') { apiFehler(req, res, pathname, 405, { error: 'GET erwartet' }); return; }
     let result;
     const url = new URL(req.url, `http://${req.headers.host || HOST}`);
     if (simple === 'capabilities') result = await api.capabilities();
@@ -319,13 +416,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'org/anhang-lesen') {
       // Datei direkt ausliefern, nicht als JSON - der Browser soll sie anzeigen.
       const { pfad, typ, name } = api.orgAnhangLesen({ id: url.searchParams.get('id') || '', datei: url.searchParams.get('datei') || '', benutzer });
-      const inhalt = await readFile(pfad);
-      res.writeHead(200, {
-        'Content-Type': typ,
-        'Content-Disposition': `inline; filename="${encodeURIComponent(name)}"`,
-        'Cache-Control': 'private, no-store',
-      });
-      res.end(inhalt);
+      dateiAusliefern(res, { inhalt: await readFile(pfad), typ, name });
       return;
     }
     else if (simple === 'kunden/bestellung-fertig') result = await api.kundenBestellungFertig(await readJson(req), benutzer);
@@ -335,7 +426,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'angebote/liste') result = api.angeboteListe();
     else if (simple === 'warenkoerbe/liste') result = api.warenkoerbeListe();
     else if (simple === 'bestand/liste') result = api.bestandListe();
-    else if (simple === 'shopwache/status') result = api.shopwacheStatus();
+    else if (simple === 'shopwache/status') result = await api.shopwacheStatus();
     else if (simple === 'laden/zahlen') result = await ladenZahlen.abrufen();
     else if (simple === 'erfuellung/liste') result = api.erfuellungListe();
     else if (simple === 'sonderposten/liste') result = await api.sonderpostenListe();
@@ -348,14 +439,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'fehler/melden') result = api.fehlerMelden(await readJson(req, MAX_BODY_UPLOAD), { benutzer });
     else if (simple === 'fehler/bild') {
       const { pfad, typ, name } = api.fehlerBild({ id: url.searchParams.get('id') || '', nr: url.searchParams.get('nr') || '', benutzer });
-      const inhalt = await readFile(pfad);
-      res.writeHead(200, {
-        'Content-Type': typ,
-        'Content-Disposition': `inline; filename="${encodeURIComponent(name)}"`,
-        'Cache-Control': 'private, no-store',
-        'X-Content-Type-Options': 'nosniff',
-      });
-      res.end(inhalt);
+      dateiAusliefern(res, { inhalt: await readFile(pfad), typ, name });
       return;
     }
     else if (simple === 'fehler/liste') result = api.fehlerListe({ benutzer });
@@ -368,13 +452,12 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (taskOp === 'comment') result = await api.comment(number, await readJson(req), benutzer);
     send(res, 200, result);
   } catch (e) {
-    if (e instanceof ApiError) { send(res, e.status, { error: e.message, ...e.extra }); return; }
+    if (e instanceof ApiError) { apiFehler(req, res, pathname, e.status, { error: e.message, ...e.extra }); return; }
     // Die englische Node-Meldung samt Dateipfad hilft am Ladentresen niemandem.
     // Sie steht im Serverprotokoll und zusaetzlich im Feld `technisch`, damit
     // sie beim Nachfragen nicht verloren ist.
     const msg = String(e?.message || e).split('\n')[0].slice(0, 300);
-    console.error(`[api] ${pathname}: ${msg}`);
-    send(res, 500, {
+    apiFehler(req, res, pathname, 500, {
       error: 'Das hat nicht geklappt. Bitte noch einmal versuchen – bleibt es dabei, über „Fehler melden“ (Seitenleiste unten) Bescheid geben.',
       technisch: msg,
       pfad: pathname,
@@ -433,14 +516,26 @@ async function handleLogin(req, res) {
   // einzelner Name noch eine einzelne IP-Adresse andere Konten mitsperrt.
   const rateKey = `${ip}::${name.toLowerCase() || 'unbekannt'}`;
   if (auth.isLocked(rateKey) || auth.isLocked(ip)) {
+    // Name und Passwort nie ins Protokoll - nur, dass und von wo.
+    logFehler('anmeldung', `429 gesperrt nach Fehlversuchen (${ip})`);
     send(res, 429, { error: 'Zu viele Fehlversuche. Kurz warten und erneut versuchen.' });
     return;
   }
-  const benutzer = auth.required ? auth.verifyLogin({ name, passwort: body?.passwort }) : null;
+  let benutzer;
+  try {
+    benutzer = auth.required ? auth.verifyLogin({ name, passwort: body?.passwort }) : null;
+  } catch (e) {
+    // benutzer.json unlesbar: kein "Passwort falsch", sondern was los ist.
+    logFehler('anmeldung', `503 Zugangsliste nicht lesbar: ${String(e?.message || e).split('\n')[0]}`);
+    await sleep(auth.failDelayMs);
+    send(res, 503, { error: 'Anmeldung gerade nicht möglich: die Liste der Zugänge ist nicht lesbar. Bitte dem Inhaber Bescheid geben.' });
+    return;
+  }
   await sleep(auth.failDelayMs);
   if (!benutzer) {
     auth.registerFailure(rateKey);
     auth.registerFailure(ip);
+    logFehler('anmeldung', `401 Name oder Passwort falsch (${ip})`);
     send(res, 401, { error: 'Name oder Passwort falsch' });
     return;
   }
@@ -464,7 +559,31 @@ function handleSession(req, res) {
   send(res, 200, { required: auth.required, authenticated: isAuthed(req), benutzer: sessionBenutzer(req) });
 }
 
+/**
+ * Letzte Linie: ein Fehler, der bis hierher durchschlaegt, wird protokolliert
+ * und als 500 beantwortet - er beendet nie den Dienst. Am 2026-10-12 reichte
+ * ein Cookie "x=%" ohne Anmeldung, um den ganzen Prozess abstuerzen zu lassen.
+ */
+function unerwarteterFehler(req, res, e) {
+  logFehler('server', `500 ${req.method} ${pfadOhneAbfrage(req.url)}: ${String(e?.stack || e?.message || e).split('\n').slice(0, 2).join(' ')}`);
+  try {
+    if (res.headersSent) { res.destroy(); return; }
+    send(res, 500, { error: 'Das hat nicht geklappt. Bitte noch einmal versuchen – bleibt es dabei, über „Fehler melden“ (Seitenleiste unten) Bescheid geben.' });
+  } catch { /* Antwort nicht mehr moeglich - Verbindung ist schon weg */ }
+}
+
 export function requestHandler(req, res) {
+  try {
+    const ergebnis = verteile(req, res);
+    if (ergebnis && typeof ergebnis.catch === 'function') return ergebnis.catch(e => unerwarteterFehler(req, res, e));
+    return ergebnis;
+  } catch (e) {
+    unerwarteterFehler(req, res, e);
+    return undefined;
+  }
+}
+
+function verteile(req, res) {
   let pathname;
   try { pathname = decodeURIComponent(new URL(req.url || '/', `http://${HOST}`).pathname); } catch { pathname = '/'; }
 
@@ -497,7 +616,20 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     console.error(`[dashboard] ${e.message}`);
     process.exit(1);
   }
-  createServer(requestHandler).listen(PORT, HOST, () => {
+  // Ein Fehler ausserhalb einer Anfrage (Zeitgeber, Kindprozess, vergessenes
+  // catch) beendete bisher den Dienst; launchd startete ihn zwar neu, aber
+  // laufende Buchungen und Sitzungen im Speicher waren weg. Jetzt: protokollieren
+  // und weiterlaufen.
+  process.on('uncaughtException', e => logFehler('server', `Unerwarteter Fehler (Dienst laeuft weiter): ${String(e?.stack || e?.message || e).split('\n').slice(0, 3).join(' ')}`));
+  process.on('unhandledRejection', e => logFehler('server', `Unbehandelte Ablehnung (Dienst laeuft weiter): ${String(e?.stack || e?.message || e).split('\n').slice(0, 3).join(' ')}`));
+  const server = createServer(requestHandler);
+  // Faengt der Start selbst (Port belegt), soll der Prozess enden - sonst liefe er
+  // dank der Handler oben ohne offenen Port weiter, und launchd startete ihn nie neu.
+  server.on('error', e => {
+    logFehler('server', `Start fehlgeschlagen: ${e?.message || e}`);
+    process.exit(1);
+  });
+  server.listen(PORT, HOST, () => {
     if (HOST === '127.0.0.1') {
       console.log(`Control Center: http://localhost:${PORT}`);
     } else {
@@ -505,5 +637,9 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       console.log('Zugriff nur mit Passwort. Jede Route verlangt eine Anmeldung; Sitzung 12 Stunden gültig.');
     }
     console.log('Lokaler Aktionsmodus: Statuswechsel und Kommentare laufen über gh (angemeldetes Konto).');
+    if (NEUBAU_MINUTEN > 0) {
+      setInterval(regelmaessigNeubauen, NEUBAU_MINUTEN * 60_000).unref();
+      console.log(`Aufgabendaten (issues.json) werden alle ${NEUBAU_MINUTEN} Minuten neu geholt.`);
+    }
   });
 }

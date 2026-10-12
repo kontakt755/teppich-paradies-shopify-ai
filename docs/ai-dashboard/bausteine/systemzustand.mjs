@@ -9,9 +9,14 @@ import { state } from '../kern/zustand.mjs';
 import { esc, fmtDateTime } from '../kern/helfer.mjs';
 import { personName } from '../kern/konfig.mjs';
 import { aktualisierungHealth } from './aktualisierung.mjs';
+import { tailscaleHinweis } from '../lib/todos.mjs';
 
-export function systemHealth() {
+/** @param {{tailscale?: object}} [extra] Zustand von Tailscale aus /api/shopwache/status (nur Inhaber). */
+export function systemHealth({ tailscale = null } = {}) {
   const items = [];
+  // Nur wenn Tailscale nicht laeuft: von unterwegs ist das Control Center dann weg.
+  const ts = tailscaleHinweis(tailscale);
+  if (ts) items.push({ level: 'warn', title: ts.titel, detail: ts.handlung });
   const fr = freshness(state.raw?.generated_at);
   if (state.loadError) items.push({ level: 'crit', title: 'Aufgabendaten nicht ladbar', detail: state.loadError });
   else items.push({ level: fr.level === 'frisch' ? 'ok' : fr.level === 'alt' ? 'warn' : 'crit', title: `Aufgabendaten aus GitHub Issues · Stand ${fmtDateTime(state.raw?.generated_at)} (${fr.text})`, detail: state.capabilities.mode === 'local' ? 'Lokaler Modus: „Jetzt synchronisieren" holt frische Daten über gh.' : 'Die Daten entstehen seit 2026-09-30 nur noch lokal. Für aktuelle Aufgaben `npm run dashboard` starten.' });
