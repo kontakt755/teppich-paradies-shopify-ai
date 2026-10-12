@@ -38,7 +38,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..');
-const ALLE_ANSICHTEN = ['heute', 'einkauf', 'einkauf?tab=produktdaten', 'kunden', 'kunden?tab=bestellungen', 'kunden?tab=warenkoerbe', 'organisation', 'fotos', 'lexikon', 'lexikon?handle=kontura-teppichboden', 'arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet', 'shopwache', 'team', 'hilfe'];
+const ALLE_ANSICHTEN = ['heute', 'einkauf', 'einkauf?tab=produktdaten', 'kunden', 'kunden?tab=bestellungen', 'kunden?tab=warenkoerbe', 'organisation', 'fotos', 'sonderposten', 'lexikon', 'lexikon?handle=kontura-teppichboden', 'arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet', 'shopwache', 'team', 'hilfe'];
 // Fensterbreiten [Breite, Hoehe, Name]. Die Namen "desktop" und "handy" bleiben fuer die
 // beiden Breiten, die es schon immer gab - Screenshots heissen dort wie bisher.
 // Seit das Control Center ueber Tailscale vom Handy aus benutzt wird (auch vom Monteur auf
