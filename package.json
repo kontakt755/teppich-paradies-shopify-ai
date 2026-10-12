@@ -56,6 +56,7 @@
     "dashboard:pruefen": "node scripts/dashboard-pruefen.mjs",
     "task": "node scripts/task.mjs",
     "benutzer": "node operations/scripts/benutzer.mjs",
+    "fehler": "node operations/scripts/fehlermeldungen.mjs",
     "ratgeber:payload": "node scripts/ratgeber-payload.mjs",
     "dashboard:brief": "node scripts/dashboard-brief.mjs",
     "operations:band": "node operations/server.mjs",

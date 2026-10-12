@@ -231,7 +231,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
   // Bestelltabelle, Lexikon samt Mengenhilfe und die neuen Datenarten
   // (Kunden, Angebote, Warenkoerbe, Bestand, Erfuellung) - fehlt einer,
   // antwortet der Server 404.
-  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/muster-texte|kunden\/bestellung-fertig|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|sonderposten\/liste|sonderposten\/verkauft|laden\/zahlen)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/muster-texte|kunden\/bestellung-fertig|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|sonderposten\/liste|sonderposten\/verkauft|laden\/zahlen|fehler\/melden|fehler\/liste)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { send(res, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
   // Host-Pruefung fuer JEDEN Aufruf, nicht nur fuer schreibende: sonst kann
@@ -241,14 +241,16 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     send(res, 403, { error: 'Dafür fehlt dir die Berechtigung – das macht der Inhaber.' });
     return;
   }
-  const write = simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || simple === 'kunden/fall-marke' || ['org/neu', 'org/aendern', 'org/kommentar', 'org/pruefen', 'org/analyse', 'org/liste-einfuegen', 'org/anhang', 'fotos/neu', 'social/link-neu', 'sonderposten/verkauft'].includes(simple) || ['transition', 'assign', 'comment'].includes(taskOp);
+  const write = simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || simple === 'kunden/fall-marke' || ['org/neu', 'org/aendern', 'org/kommentar', 'org/pruefen', 'org/analyse', 'org/liste-einfuegen', 'org/anhang', 'fotos/neu', 'social/link-neu', 'sonderposten/verkauft', 'fehler/melden'].includes(simple) || ['transition', 'assign', 'comment'].includes(taskOp);
   try {
     if (write) {
       if (req.method !== 'POST') { send(res, 405, { error: 'POST erwartet' }); return; }
       // Rolle "lesen" darf serverseitig nichts veraendern - unabhaengig davon, ob das
       // Frontend die Aktion anzeigt. Ohne Mehrbenutzerbetrieb (kein `benutzer`) gilt
       // weiterhin der bisherige Notzugang (Inhaber, alle Rechte).
-      if (benutzer && benutzer.rolle === 'lesen') { send(res, 403, { error: 'Rolle "lesen" darf keine Aenderungen vornehmen' }); return; }
+      // Einzige Ausnahme: einen Fehler melden darf jeder. Die Meldung aendert keine
+      // Betriebsdaten, und gerade wer nur zuschaut, stolpert oft als Erster darueber.
+      if (benutzer && benutzer.rolle === 'lesen' && simple !== 'fehler/melden') { send(res, 403, { error: 'Rolle "lesen" darf keine Aenderungen vornehmen' }); return; }
     } else if (simple === 'social/zugaenge') {
       // Der Upload-Link ist ein Geheimnis: Rolle "lesen" bekommt ihn auch lesend nicht.
       if (benutzer && benutzer.rolle === 'lesen') { send(res, 403, { error: 'Dafür fehlt dir die Berechtigung.' }); return; }
@@ -340,6 +342,10 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     // Schreibt nach Shopify (Bestand, Verkaufsfelder) - steht deshalb oben in der write-Liste:
     // Rolle "lesen" bekommt 403, mitarbeiter und inhaber duerfen.
     else if (simple === 'sonderposten/verkauft') result = await api.sonderpostenVerkauft(await readJson(req), benutzer);
+    // Fehler melden: `benutzer` aus der Sitzung, nie aus der Anfrage - sonst
+    // koennte jemand im Namen eines Kollegen melden oder dessen Meldungen lesen.
+    else if (simple === 'fehler/melden') result = api.fehlerMelden(await readJson(req), { benutzer });
+    else if (simple === 'fehler/liste') result = api.fehlerListe({ benutzer });
     else if (simple === 'aktualisierung') result = api.aktualisierung();
     else if (simple === 'aktualisierung/status') result = api.aktualisierungStatus();
     else if (simple === 'aktualisierung/start') result = api.aktualisierungStarten();
@@ -356,7 +362,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     const msg = String(e?.message || e).split('\n')[0].slice(0, 300);
     console.error(`[api] ${pathname}: ${msg}`);
     send(res, 500, {
-      error: 'Das hat nicht geklappt. Bitte noch einmal versuchen – bleibt es dabei, gib Ahmet Bescheid.',
+      error: 'Das hat nicht geklappt. Bitte noch einmal versuchen – bleibt es dabei, über „Fehler melden“ (Seitenleiste unten) Bescheid geben.',
       technisch: msg,
       pfad: pathname,
     });
