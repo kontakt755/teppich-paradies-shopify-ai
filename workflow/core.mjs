@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { EXTERNAL_BLOCKS, runWithExternalRetry } from './retry.mjs';
+import { EXTERNAL_BLOCKS, PREVIEW_HTTP_WAITS_MS, fetchWithServerErrorRetry, runWithExternalRetry } from './retry.mjs';
 
 export const OFFICIAL_BASE = 'main';
 export const BRANCH_PATTERN = /^(feature|fix|chore)\/[a-z0-9][a-z0-9._-]*$/;
@@ -244,7 +244,7 @@ export const GATE_REMEDIATION = {
   PREVIEW_DIFF: { fix: 'Die Dateien auf dem Preview-Theme weichen von origin/main ab. Preview erneut pushen, statt den Unterschied zu ignorieren.' },
   PREVIEW_DRIFT: { fix: 'Das Preview-Theme wurde seit der Evidence veraendert - vermutlich durch einen Scratch- oder Handpush. Preview neu erzeugen.', command: 'npm run workflow:preview -- --theme-id <PREVIEW_ID> --p0 0 --p1 0 --approve-preview' },
   PREVIEW_EVIDENCE: { fix: 'Live verlangt eine bestandene Preview fuer exakt diesen origin/main-Commit. Erst Preview laufen lassen, dann Live. --local-runner umgeht das nicht.', command: 'npm run workflow:preview -- --theme-id <PREVIEW_ID> --p0 0 --p1 0 --approve-preview' },
-  PREVIEW_HTTP: { fix: 'Die Preview-URL antwortet nicht mit 200. Theme im Admin oeffnen und pruefen, ob es fehlerfrei rendert.' },
+  PREVIEW_HTTP: { fix: `Die Preview-URL antwortet nicht mit 2xx. Ein 5xx wurde bereits nach ${PREVIEW_HTTP_WAITS_MS.map((ms, index) => `${index ? 'weiteren ' : ''}${ms / 1000} s`).join(' und nach ')} erneut geprueft (Kaltstart nach dem Push), ein 4xx bricht sofort ab - der Fehler ist also kein kurzer Aussetzer. Preview-URL im Browser bzw. das Theme im Admin oeffnen und pruefen, ob es fehlerfrei rendert.` },
   PREVIEW_OUTPUT: { fix: 'Die Push-Ausgabe von Shopify passt nicht zur angeforderten Theme-ID. Theme-ID gegen domains/shopify/live-theme.json pruefen.' },
   PREVIEW_ROLE: { fix: 'Das Ziel-Theme ist laut Shopify nicht (mehr) unpublished. Rollen per Admin-API pruefen und domains/shopify/live-theme.json aktualisieren - nie eine Theme-ID aus aelteren Notizen uebernehmen.' },
   PREVIEW_SETTINGS: { fix: 'config/settings_data.json wurde beim Push veraendert, obwohl sie geschuetzt ist. Aenderung zurueckrollen und Theme-Einstellungen im Admin pflegen.' },
@@ -362,6 +362,20 @@ export function verifyPreviewPayload(payload, themeId) {
   try { url = new URL(payload.theme.preview_url); } catch { throw new WorkflowGateError('Shopify Push-Ausgabe enthält keine gültige Preview-URL', 'PREVIEW_OUTPUT'); }
   if (url.protocol !== 'https:' || url.searchParams.get('preview_theme_id') !== String(themeId)) throw new WorkflowGateError('Preview-URL ist nicht eindeutig an die Theme-ID gebunden', 'PREVIEW_OUTPUT');
   return url.href;
+}
+
+/**
+ * Die Preview muss nach dem Push mit 2xx antworten. 5xx gilt zunaechst als
+ * Kaltstart und wird mit Wartezeit erneut geprueft (PREVIEW_HTTP_WAITS_MS);
+ * bleibt es bei 5xx oder kommt ein 4xx, bricht das Gate ab wie bisher.
+ */
+export async function assertPreviewHttp(previewUrl, options = {}) {
+  const { response, attempts, statuses } = await fetchWithServerErrorRetry(previewUrl, options);
+  if (!response.ok) {
+    const verlauf = attempts > 1 ? ` nach ${attempts} Versuchen: ${statuses.join(', ')}` : '';
+    throw new WorkflowGateError(`Preview-URL antwortet mit HTTP ${response.status}${verlauf}`, 'PREVIEW_HTTP');
+  }
+  return { status: response.status, attempts, statuses };
 }
 
 export function livePublishArgs({ store, themeId, root }) {
