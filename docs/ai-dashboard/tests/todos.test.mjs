@@ -368,3 +368,17 @@ test('Auslauf-Pruefung: Befunde, gestoerter Lieferant und stumme Pruefung werden
   assert.deepEqual(mit({ geprueftAm: vorTagen(2), befunde: [] }), []);
   assert.deepEqual(mit(null), []);
 });
+
+test('Neuheiten: neue Artikel unserer Linien werden ein Website-To-do, ohne Neues keins', () => {
+  const mit = neuheiten => leiteTodosAb({ shopwache: { verfuegbar: true, ampel: 'gruen', geprueftAm: vorTagen(0), befunde: [], auslauf: { geprueftAm: vorTagen(1), befunde: [], neuheiten } } }, { sicht: 'website', jetzt: JETZT });
+  const t = mit({ neu: [
+    { nr: 'CVTEST2_0653', name: 'CV-Boden Testa 200cm CV Testlinie' },
+    { nr: 'CVTEST4_0653', name: 'CV-Boden Testa 400cm CV Testlinie' },
+  ] });
+  assert.equal(t.length, 1);
+  assert.equal(t[0].id, 'neuheiten');
+  assert.equal(t[0].titel, 'Lieferant A: 2 neue Artikel in unseren Linien');
+  assert.match(t[0].kontext, /^CV-Boden Testa · prüfen und anlegen/);
+  assert.deepEqual(mit({ neu: [] }), []);
+  assert.deepEqual(mit(null), []);
+});
