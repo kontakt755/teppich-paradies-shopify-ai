@@ -23,7 +23,8 @@
   Leer = keine Zeile (fail closed).
 
   Kein Datum, nur die Werktage-Angabe:
-  - Angaben ohne "Werktage" (z. B. "ca. 14 Tage")
+  - Angaben ohne "Werktage" (z. B. "ca. 14 Tage") oder mit einer zweiten
+    Zeitangabe (z. B. "2–3 Wochen, Muster in 2 Werktagen")
   - Produkte mit Tag "auslauf": die Verfuegbarkeit wird erst nach der
     Bestellung geprueft (blocks/tp-aktion-hinweis), ein Datum waere eine
     staerkere Zusage als die Quelle.
@@ -54,8 +55,11 @@
       assign tp_lz_text = text | strip
     endif
   endif
+  # Grobe Vorpruefung; ob die Angabe wirklich eine Werktage-Spanne ist, prueft
+  # assets/tp-lieferdatum.js (sonst bleibt der Liquid-Text stehen).
   assign tp_lz_datum = true
-  if tp_lz_text contains 'Werktag'
+  assign tp_lz_klein = tp_lz_text | downcase
+  if tp_lz_klein contains 'werktag'
     if product.tags contains 'auslauf'
       assign tp_lz_datum = false
     endif

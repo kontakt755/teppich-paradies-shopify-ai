@@ -70,6 +70,17 @@ test('Werktage-Angaben lesen, Kalendertage und freie Texte ignorieren', () => {
   assert.equal(L.leseWerktage(null), null);
   assert.equal(L.leseWerktage('0–2 Werktage'), null);
   assert.equal(L.leseWerktage('5–60 Werktage'), null);
+  // Grossschreibung egal, "ca" auch ohne Punkt
+  assert.deepEqual(L.leseWerktage('5–7 werktage'), { min: 5, max: 7 });
+  assert.deepEqual(L.leseWerktage('ca 5–8 Werktage'), { min: 5, max: 8 });
+  // Nur eine Spanne am Anfang, keine zweite Zeitangabe dahinter (Review 13.10.)
+  assert.equal(L.leseWerktage('2–3 Wochen, Muster in 2 Werktagen'), null);
+  assert.equal(L.leseWerktage('ca. 2–3 Wochen (Fertigung beim Hersteller)'), null);
+  assert.equal(L.leseWerktage('2–5 Werktage, ab Lager 1 Tag'), null);
+  assert.equal(L.leseWerktage('Lieferzeit 2–5 Werktage'), null);
+  // alle Werte, die am 13.10. im Shop stehen
+  assert.deepEqual(L.leseWerktage('5–7 Werktage'), { min: 5, max: 7 });
+  assert.deepEqual(L.leseWerktage('ca. 5–8 Werktage inkl. Ketteln'), { min: 5, max: 8 });
 });
 
 test('Annahmeschluss lesen', () => {
@@ -171,6 +182,7 @@ test('Text: Datum mit Wochentag, Zusatz mit "ca." und der Quelle', () => {
   assert.equal(t.zusatz, '(ca. 2–5 Werktage)');
   const m = L.lieferText({ text: 'ca. 5–8 Werktage inkl. Ketteln', jetzt: berlin('2026-10-12T08:00:00+02:00') });
   assert.equal(m.zusatz, '(ca. 5–8 Werktage inkl. Ketteln)');
+  assert.equal(L.lieferText({ text: 'ca 5–8 Werktage', jetzt: berlin('2026-10-12T08:00:00+02:00') }).zusatz, '(ca. 5–8 Werktage)');
   const e = L.lieferText({ text: '3 Werktage', jetzt: berlin('2026-10-12T08:00:00+02:00') });
   assert.equal(e.datum, 'Do., 15.10.');
   assert.equal(L.lieferText({ text: 'ca. 14 Tage', jetzt: new Date() }), null);
@@ -182,7 +194,8 @@ test('Snippet: Metafeld vor Block-Einstellung, kein Datum bei Auslauf oder Kalen
   assert.match(s, /product\.metafields\.service\.lieferzeit\.value/);
   assert.match(s, /product\.tags contains 'auslauf'/);
   assert.match(s, /tp_lz_text == blank and product\.tags contains 'sonderposten'/);
-  assert.match(s, /tp_lz_text contains 'Werktag'/);
+  assert.match(s, /assign tp_lz_klein = tp_lz_text \| downcase/);
+  assert.match(s, /tp_lz_klein contains 'werktag'/);
   assert.match(s, /settings\.tp_lieferdatum_annahmeschluss/);
   assert.match(s, /'tp-lieferdatum\.js' \| asset_url/);
   assert.doesNotMatch(s, /<style/);

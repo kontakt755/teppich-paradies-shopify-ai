@@ -23,9 +23,13 @@
     dem Eingangstag.
   - Annahmeschluss: Theme-Einstellung (Standard 12:00, Uhrzeit in Berlin).
     Leer = kein Annahmeschluss.
-  - Nur Angaben in Werktagen werden umgerechnet ("2–5 Werktage",
-    "ca. 5–8 Werktage inkl. Ketteln"). Kalendertage ("ca. 14 Tage") und
-    freie Texte bleiben unveraendert stehen.
+  - Nur Angaben, die mit einer Werktage-Spanne beginnen, werden umgerechnet
+    ("2–5 Werktage", "ca. 5–8 Werktage inkl. Ketteln"). Kalendertage
+    ("ca. 14 Tage"), Wochen und Texte mit einer zweiten Zeitangabe bleiben
+    unveraendert stehen.
+  - Das Datum wird neu gerechnet, wenn die Seite wieder sichtbar wird
+    (Zurueck-Taste, Tab-Wechsel) und jede Minute - sonst bliebe nach 12 Uhr
+    oder nach Mitternacht die alte Spanne stehen.
 */
 (function (root) {
   'use strict';
@@ -125,17 +129,22 @@
     return d;
   }
 
+  var berlinFormat = null;
+
   // Kalendertag und Uhrzeit in Berlin fuer einen Zeitpunkt.
   function berlin(jetzt) {
-    var teile = new Intl.DateTimeFormat('de-DE', {
-      timeZone: 'Europe/Berlin',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hourCycle: 'h23'
-    }).formatToParts(jetzt);
+    if (!berlinFormat) {
+      berlinFormat = new Intl.DateTimeFormat('de-DE', {
+        timeZone: 'Europe/Berlin',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23'
+      });
+    }
+    var teile = berlinFormat.formatToParts(jetzt);
     var w = {};
     for (var n = 0; n < teile.length; n++) w[teile[n].type] = teile[n].value;
     return {
@@ -156,20 +165,16 @@
   }
 
   // "2–5 Werktage", "ca. 5-8 Werktage inkl. Ketteln", "3 bis 5 Werktage",
-  // "4 Werktage" -> {min, max}; alles ohne "Werktag" -> null.
+  // "4 Werktage" -> {min, max}. Die Spanne muss am Anfang stehen (hoechstens
+  // "ca." davor), und dahinter darf keine weitere Zahl oder Zeiteinheit folgen:
+  // "2–3 Wochen, Muster in 2 Werktagen" oder "ca. 14 Tage" -> null.
   function leseWerktage(text) {
-    var t = String(text == null ? '' : text);
-    var spanne = /(\d{1,2})\s*(?:[–—‒-]|bis)\s*(\d{1,2})\s*Werktag/i.exec(t);
-    var min;
-    var max;
-    if (spanne) {
-      min = Number(spanne[1]);
-      max = Number(spanne[2]);
-    } else {
-      var einzeln = /(\d{1,2})\s*Werktag/i.exec(t);
-      if (!einzeln) return null;
-      min = max = Number(einzeln[1]);
-    }
+    var t = String(text == null ? '' : text).trim();
+    var m = /^(?:ca\.?\s*)?(\d{1,2})(?:\s*(?:[–—‒-]|bis)\s*(\d{1,2}))?\s*Werktag(?:e|en)?(?![a-zäöüß])(.*)$/i.exec(t);
+    if (!m) return null;
+    if (/\d|woche|monat|(^|[^a-zäöüß])tag/i.test(m[3])) return null;
+    var min = Number(m[1]);
+    var max = m[2] ? Number(m[2]) : min;
     if (min > max) {
       var tmp = min;
       min = max;
@@ -213,7 +218,7 @@
     var gleich = spanne.von.getTime() === spanne.bis.getTime();
     var datum = gleich ? formatiere(spanne.von) : formatiere(spanne.von) + ' – ' + formatiere(spanne.bis);
     var basis = String(optionen.text).trim().replace(/\s+/g, ' ').replace(/\.$/, '');
-    if (!/^ca\./i.test(basis)) basis = 'ca. ' + basis;
+    basis = 'ca. ' + basis.replace(/^ca\.?\s*/i, '');
     return { datum: datum, zusatz: '(' + basis + ')', von: spanne.von, bis: spanne.bis };
   }
 
@@ -240,18 +245,23 @@
     return html;
   }
 
-  function aufwerten(wurzel) {
+  // erzwingen = false (nach DOM-Aenderungen): nur Elemente, deren Text ein
+  // Morph von Horizon (Variantenwechsel) auf den Liquid-Text zurueckgesetzt hat.
+  // erzwingen = true (Uhr, Seite wieder sichtbar): alle neu rechnen und nur
+  // schreiben, wenn sich die Spanne geaendert hat.
+  function aufwerten(wurzel, erzwingen) {
     var liste = (wurzel || document).querySelectorAll('[data-tp-lieferdatum]');
     var jetzt = new Date();
     for (var n = 0; n < liste.length; n++) {
       var el = liste[n];
-      // Ein Morph von Horizon (Variantenwechsel) setzt den Liquid-Text zurueck:
-      // dann neu rechnen, sonst nichts anfassen.
-      if (el.__tpLieferdatum && el.innerHTML === el.__tpLieferdatum) continue;
+      var unveraendert = el.__tpLieferdatum && el.innerHTML === el.__tpLieferdatum;
+      if (unveraendert && !erzwingen) continue;
       var html = markup(el, jetzt);
       if (html === null) continue;
+      if (unveraendert && html === el.__tpLieferdatumQuelle) continue;
       el.innerHTML = html;
       el.__tpLieferdatum = el.innerHTML;
+      el.__tpLieferdatumQuelle = html;
       el.hidden = false;
       el.setAttribute('data-tp-lieferdatum-fertig', '');
     }
@@ -291,6 +301,12 @@
         aufwerten(document);
       });
     }).observe(document.body, { childList: true, subtree: true, characterData: true });
+    // Annahmeschluss und Mitternacht auf einer offenen Seite, Zurueck-Taste (bfcache)
+    setInterval(function () { aufwerten(document, true); }, 60000);
+    root.addEventListener('pageshow', function () { aufwerten(document, true); });
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) aufwerten(document, true);
+    });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
