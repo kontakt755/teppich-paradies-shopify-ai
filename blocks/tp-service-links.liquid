@@ -12,9 +12,8 @@
   assign tp_sl_neuer_holzboden = false
   if tp_sl_material == 'laminat' or tp_sl_material == 'parkett' or tp_sl_material == 'kork'
     assign tp_sl_neuer_holzboden = true
-    # Fuer diese Neuimporte ist die Standard-Lieferzeit des Planken-Templates
-    # nicht bestaetigt. Lieber keine konkrete Zeit als eine falsche Zusage.
-    assign tp_sl_delivery_time = ''
+    # Lieferzeit: seit Inhaberentscheidung 13.10. (Werkbank w-071) gilt auch
+    # hier die Grosshandels-Lieferzeit der Planken-Vorlage (2–5 Werktage).
   endif
 -%}
 
@@ -70,9 +69,8 @@
   </div>
 
   <div class="tp-service-links__shipping-{{ tp_sl_id }}" aria-label="Lieferung und Versand">
-    {%- if tp_sl_delivery_time != blank -%}
-      <p><strong>Lieferzeit:</strong> {{ tp_sl_delivery_time | escape }}</p>
-    {%- endif -%}
+    {%- comment -%} Lieferzeit samt voraussichtlichem Datum, Quelle siehe snippets/tp-lieferzeit (#165) {%- endcomment -%}
+    {%- render 'tp-lieferzeit', text: tp_sl_delivery_time, product: product, kontext: 'produkt' -%}
     {%- comment -%}
       Stand der Versandprofile am 2026-09-11 (Admin API): alle aktiven Produkte,
       auch Rollen- und Paketware, liegen im allgemeinen Profil - Preis und
@@ -254,7 +252,7 @@
       "type": "text",
       "id": "delivery_time",
       "label": "Lieferzeit",
-      "info": "Nur eine verifizierte Lieferzeit eintragen. Leer lassen, wenn keine Angabe vorliegt."
+      "info": "Nur eine verifizierte Lieferzeit eintragen, z. B. 2–5 Werktage. Werktage zeigt der Shop als voraussichtliches Lieferdatum. Vorrang haben das Produktfeld service.lieferzeit und bei Sonderposten die Theme-Einstellung unter TP Versand."
     }
   ],
   "presets": [

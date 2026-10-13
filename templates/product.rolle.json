@@ -273,7 +273,7 @@
                 "holzleiste_produkt": "lignova-sockelleiste-16x60mm",
                 "messen_link": "/blogs/ratgeber-teppichboden/teppichboden-richtig-ausmessen",
                 "muster_anzeigen": true,
-                "lieferzeit": "5–7 Werktage",
+                "lieferzeit": "2–5 Werktage",
                 "muster_label": "Kostenloses Muster in {farbe}"
               },
               "blocks": {}
@@ -778,7 +778,7 @@
                   "type": "tp-service-links",
                   "name": "TP Service-Links",
                   "settings": {
-                    "delivery_time": "5–7 Werktage",
+                    "delivery_time": "2–5 Werktage",
                     "kontakt_ausblenden": true
                   },
                   "blocks": {}
