@@ -38,6 +38,8 @@
 
   setHiddenField('Betreff', 'Kostenlose Musteranfrage');
 
+  var produktwahl = produktwahlEinrichten();
+
   var handle = params.get('produkt');
   if (!handle) return;
 
@@ -67,10 +69,161 @@
       setHiddenField('Produkt', product.title);
       setHiddenField('Produkt-Handle', product.handle);
       setHiddenField('Produkt-Link', window.location.origin + '/products/' + product.handle);
+      if (produktwahl) produktwahl.uebernehmen(product);
     })
     .catch(function () {
       /* Produktdaten optional - Musteranfrage funktioniert auch ohne */
     });
+
+  // Pflichtfeld "Produkt und Dekor" (Audit 13.10.2026): Ohne ?produkt= kam die
+  // Musteranfrage bis dahin ohne Belag an - Name und Adresse waren Pflicht, der
+  // Boden nicht. Das sichtbare Feld hat keinen name; sein Text landet in
+  // contact[Produkt]. Wer aus der Vorschlagsliste (Shopify Predictive Search)
+  // waehlt, belegt zusaetzlich Produkt-Handle und Produkt-Link - dieselben
+  // Felder wie der Weg mit ?produkt=. Hat das Produkt einen Musterweg im
+  // Konfigurator, steht der direkte Link darunter.
+  function produktwahlEinrichten() {
+    var box = root.querySelector('[data-tp-produktwahl]');
+    var feld = box && box.querySelector('[data-tp-produktwahl-feld]');
+    var liste = box && box.querySelector('[data-tp-produktwahl-liste]');
+    if (!feld || !liste) return null;
+    var direkt = box.querySelector('[data-tp-produktwahl-direkt]');
+    var direktLink = box.querySelector('[data-tp-produktwahl-direkt-link]');
+
+    feld.required = true;
+    var gewaehlt = null;
+    var timer = null;
+    var anfrage = 0;
+
+    function zuklappen() {
+      liste.hidden = true;
+      liste.innerHTML = '';
+      feld.setAttribute('aria-expanded', 'false');
+    }
+
+    function direktZeigen(product) {
+      if (!direkt || !direktLink) return;
+      var ok = product && hatMusterweg(product);
+      if (ok) direktLink.href = '/pages/muster?produkt=' + encodeURIComponent(product.handle);
+      direkt.hidden = !ok;
+    }
+
+    function uebernehmen(product) {
+      gewaehlt = product;
+      feld.value = product.title;
+      setHiddenField('Produkt', product.title);
+      setHiddenField('Produkt-Handle', product.handle);
+      setHiddenField('Produkt-Link', window.location.origin + '/products/' + product.handle);
+      zuklappen();
+      direktZeigen(product);
+    }
+
+    function zeigen(produkte) {
+      liste.innerHTML = '';
+      produkte.forEach(function (product) {
+        var li = document.createElement('li');
+        li.setAttribute('role', 'presentation');
+        var knopf = document.createElement('button');
+        knopf.type = 'button';
+        knopf.className = 'tp-produktwahl__option';
+        knopf.setAttribute('role', 'option');
+        var bild = (product.featured_image && product.featured_image.url) || product.image;
+        if (bild) {
+          var img = document.createElement('img');
+          img.src = bild + (bild.indexOf('?') === -1 ? '?' : '&') + 'width=80';
+          img.alt = '';
+          img.width = 40;
+          img.height = 40;
+          img.loading = 'lazy';
+          knopf.appendChild(img);
+        }
+        var text = document.createElement('span');
+        text.textContent = product.title;
+        knopf.appendChild(text);
+        knopf.addEventListener('click', function () {
+          uebernehmen(product);
+          feld.focus();
+        });
+        li.appendChild(knopf);
+        liste.appendChild(li);
+      });
+      var offen = produkte.length > 0;
+      liste.hidden = !offen;
+      feld.setAttribute('aria-expanded', offen ? 'true' : 'false');
+    }
+
+    function suchen(q) {
+      var nr = ++anfrage;
+      var url = '/search/suggest.json?q=' + encodeURIComponent(q) +
+        '&resources[type]=product&resources[limit]=10&resources[options][unavailable_products]=last';
+      fetch(url, { headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (daten) {
+          if (nr !== anfrage) return;
+          var produkte = (daten && daten.resources && daten.resources.results && daten.resources.results.products) || [];
+          zeigen(produkte.filter(hatMusterweg).slice(0, 6));
+        })
+        .catch(function () { zuklappen(); });
+    }
+
+    feld.addEventListener('input', function () {
+      var text = feld.value.trim();
+      // Freitext gilt immer; Handle/Link nur, solange der Text zur Auswahl passt.
+      setHiddenField('Produkt', text);
+      if (gewaehlt && text !== gewaehlt.title) {
+        gewaehlt = null;
+        setHiddenField('Produkt-Handle', '');
+        setHiddenField('Produkt-Link', '');
+        direktZeigen(null);
+      }
+      clearTimeout(timer);
+      if (text.length < 2) { zuklappen(); return; }
+      timer = setTimeout(function () { suchen(text); }, 250);
+    });
+
+    feld.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') zuklappen();
+      if (event.key === 'ArrowDown' && !liste.hidden) {
+        var erster = liste.querySelector('button');
+        if (erster) { event.preventDefault(); erster.focus(); }
+      }
+    });
+
+    liste.addEventListener('keydown', function (event) {
+      var knoepfe = Array.prototype.slice.call(liste.querySelectorAll('button'));
+      var i = knoepfe.indexOf(document.activeElement);
+      if (event.key === 'ArrowDown' && i < knoepfe.length - 1) { event.preventDefault(); knoepfe[i + 1].focus(); }
+      if (event.key === 'ArrowUp') { event.preventDefault(); (i > 0 ? knoepfe[i - 1] : feld).focus(); }
+      if (event.key === 'Escape') { zuklappen(); feld.focus(); }
+    });
+
+    document.addEventListener('click', function (event) {
+      if (!box.contains(event.target)) zuklappen();
+    });
+
+    var form = feld.form;
+    if (form) {
+      form.addEventListener('submit', function () {
+        setHiddenField('Produkt', feld.value.trim());
+      });
+    }
+
+    return { uebernehmen: uebernehmen };
+  }
+
+  // Dieselbe Regel wie snippets/tp-musteroption und canSample in
+  // assets/tp-sample-checkout-core.js (qa/tests/muster-produktwahl.test.mjs
+  // prueft den Gleichlauf): Laminat, Parkett, Kork, Zubehoer und ohne-muster
+  // haben keinen kostenlosen Musterweg.
+  function hatMusterweg(product) {
+    var typ = String(product.type || '').trim().toLowerCase();
+    if (['laminat', 'parkett', 'kork'].indexOf(typ) !== -1) return false;
+    var tags = Array.isArray(product.tags) ? product.tags : String(product.tags || '').split(',');
+    return !tags.some(function (tag) {
+      var name = String(tag || '').trim().toLowerCase();
+      return name === 'zubehoer' || name === 'ohne-muster';
+    });
+  }
 
   // Anfragen von der Produktseite (#163): Verlegung, Angebot, Beratungstermin.
   // Bis 2026-09-27 kam ?produkt= hier an und wurde ignoriert - die Anfrage

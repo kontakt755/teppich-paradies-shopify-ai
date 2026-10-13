@@ -86,20 +86,20 @@
           {%- endif -%}
           {%- if tp_sample_gezeigt == 0 -%}
             {%- comment -%}
-              Kategorien wie Klick- und Klebevinyl fuehren hier keine Produkte:
-              Dort ist jedes Dekor ein eigenes Produkt mit einer einzigen
-              Variante, es gibt also keine Farboption, die der Konfigurator
-              auflisten koennte (Stand 2026-09-15 ueber die Admin-API geprueft:
-              Optionen heissen "Title" oder "Breite").
+              Kein musterfaehiges Produkt unter den ersten 12 der Kollektion.
+              Stand 13.10.2026: Bei Klick- und Klebevinyl stehen vorne die
+              Dekore ohne Muster (Tag ohne-muster), die Dekore mit Muster
+              kommen erst weiter hinten. Jedes Dekor ist ein eigenes Produkt;
+              der Konfigurator kann es (Einzeldekor, tp-sample-checkout-core).
 
-              Die Produktseite schickt genau diese Faelle ins Kontaktformular -
-              siehe snippets/tp-musteroption. Derselbe Weg steht deshalb auch
-              hier, statt die Gruppe leer zu lassen. Keine neue Zusage: der
-              Text verspricht kein Selbstbedienungs-Muster, sondern Beratung.
+              Darum zuerst der direkte Weg ueber die Produktseite. Der Link ins
+              Kontaktformular verlangt dort ein Pflichtfeld "Produkt und Dekor"
+              mit Vorschlagsliste (assets/tp-sample-request.js) - eine Anfrage
+              ohne Belag ist nicht mehr moeglich.
             {%- endcomment -%}
             <p class="tp-sample__gruppe-hinweis">
-              Hier ist jedes Dekor ein eigener Belag.
-              <a href="/pages/kontakt?thema=muster">Schreiben Sie uns kurz, welches Sie sehen möchten</a> – wir schicken das Muster zu.
+              Hier ist jedes Dekor ein eigener Belag: Öffnen Sie das Dekor und tippen Sie dort auf „Kostenloses Muster anfragen“.
+              Oder <a href="/pages/kontakt?thema=muster">nennen Sie uns das Dekor</a> – wir schicken das Muster zu.
             </p>
           {%- endif -%}
           <a class="tp-sample__gruppe-alle" href="{{ tp_sample_url }}">Alle {{ tp_sample_titel | escape }} ansehen</a>
@@ -111,7 +111,11 @@
   </div>
   <div class="tp-sample__product" data-sample-product hidden>
     <img data-sample-product-image alt="" width="72" height="72">
-    <strong data-sample-product-name></strong>
+    <span class="tp-sample__product-text">
+      <strong data-sample-product-name></strong>
+      {%- comment -%} Klickvinyl mit Tag muster-klebevariante: Muster kommt als Klebe-Ausfuehrung (blocks/tp-muster-cta) {%- endcomment -%}
+      <small class="tp-sample__product-hinweis" data-sample-klebe hidden>Das Muster zeigt dasselbe Dekor in der Klebeausführung.</small>
+    </span>
   </div>
   <div class="tp-sample__loading" data-sample-loading aria-live="polite"><span data-sample-term="plural">Farben</span> werden geladen …</div>
   <div class="tp-sample__error" data-sample-error role="alert" hidden></div>

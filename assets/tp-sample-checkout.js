@@ -343,6 +343,8 @@
 
         productImageEl.src = product.featured_image || '';
         productNameEl.textContent = product.title;
+        var klebeEl = root.querySelector('[data-sample-klebe]');
+        if (klebeEl) klebeEl.hidden = (product.tags || []).indexOf('muster-klebevariante') === -1;
         productWrapEl.hidden = false;
 
         loadingEl.hidden = true;

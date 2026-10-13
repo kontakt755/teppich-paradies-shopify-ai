@@ -188,6 +188,71 @@
     font-size: 16px;
   }
   .tp-contact-service-links p { margin: 0 0 4px; }
+
+  /* Produktwahl bei der Musteranfrage (assets/tp-sample-request.js) */
+  .tp-produktwahl {
+    position: relative;
+  }
+  .tp-produktwahl input {
+    box-sizing: border-box;
+    width: 100%;
+  }
+  .tp-produktwahl__hinweis,
+  .tp-produktwahl__direkt {
+    margin: 6px 0 0;
+    font-size: 14px;
+    line-height: 1.4;
+    color: #555;
+  }
+  .tp-produktwahl__direkt a {
+    color: #222;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .tp-produktwahl__direkt[hidden],
+  .tp-produktwahl__liste[hidden] {
+    display: none;
+  }
+  .tp-produktwahl__liste {
+    list-style: none;
+    margin: 4px 0 0;
+    padding: 4px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  .kontakt-formular .tp-produktwahl__option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    margin: 0;
+    padding: 6px 8px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: #222;
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.3;
+    text-align: left;
+    cursor: pointer;
+  }
+  .kontakt-formular .tp-produktwahl__option:hover,
+  .kontakt-formular .tp-produktwahl__option:focus-visible {
+    background: #f1f1f1;
+  }
+  .tp-produktwahl__option img {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex: 0 0 auto;
+  }
   .tp-contact-service-links ul { margin: 0; padding-left: 20px; }
   .tp-contact-service-links a {
     display: flex;
@@ -364,6 +429,35 @@
           {%- endif -%}
         </div>
       {%- endif -%}
+
+      {%- comment -%}
+        Musteranfrage ohne ?produkt= (z. B. Musterseite, Gruppe Klick-/Klebevinyl):
+        Pflichtfeld Produkt und Dekor (Audit 13.10.2026). Das Feld selbst hat keinen
+        name - assets/tp-sample-request.js uebertraegt den Text in contact[Produkt]
+        und bei Auswahl aus der Vorschlagsliste auch Produkt-Handle und Produkt-Link.
+        Pflicht wird es nur im Mustermodus (per JS, wie die Adresse).
+      {%- endcomment -%}
+      <div data-sample-field class="tp-produktwahl" data-tp-produktwahl>
+        <label for="ContactFormProdukt">Produkt und Dekor</label>
+        <input
+          type="text"
+          id="ContactFormProdukt"
+          autocomplete="off"
+          minlength="3"
+          placeholder="z. B. Turku Eiche Hell"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded="false"
+          aria-controls="ContactFormProduktListe"
+          aria-describedby="ContactFormProduktHinweis"
+          data-tp-produktwahl-feld
+        >
+        <p class="tp-produktwahl__hinweis" id="ContactFormProduktHinweis">Namen eintippen und aus der Liste wählen – oder frei beschreiben.</p>
+        <ul class="tp-produktwahl__liste" id="ContactFormProduktListe" role="listbox" aria-label="Vorschläge" data-tp-produktwahl-liste hidden></ul>
+        <p class="tp-produktwahl__direkt" data-tp-produktwahl-direkt hidden>
+          Schneller: <a href="/pages/muster" data-tp-produktwahl-direkt-link>Muster direkt in den Warenkorb legen</a> – kostenlos, ohne Nachricht.
+        </p>
+      </div>
 
       <label for="ContactFormName">Name</label>
       <input type="text" id="ContactFormName" name="contact[name]" value="{{ form.name }}" required>
