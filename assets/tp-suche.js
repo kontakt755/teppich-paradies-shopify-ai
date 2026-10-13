@@ -81,6 +81,7 @@ class TpSucheLeiste extends HTMLElement {
     event.preventDefault();
     const text = this.input.value;
     modal.showDialog();
+    this.#geisterklickSchlucken();
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         const ziel = modal.querySelector('input[type="search"]');
@@ -93,6 +94,29 @@ class TpSucheLeiste extends HTMLElement {
       });
     });
   };
+
+  /**
+   * Das Fenster oeffnet schon bei pointerdown. Der Klick desselben Tippens
+   * kommt erst danach und landet sonst auf dem, was jetzt an dieser Stelle im
+   * Fenster liegt - meist eine Karte "Zuletzt angesehen", die sofort das
+   * Produkt oeffnete statt der Suche. Diesen einen Klick verwerfen.
+   */
+  #geisterklickSchlucken() {
+    const schlucken = (event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      aufraeumen();
+    };
+    const aufraeumen = () => {
+      clearTimeout(frist);
+      document.removeEventListener('click', schlucken, true);
+      document.removeEventListener('pointercancel', aufraeumen, true);
+    };
+    // Wischt der Finger statt zu tippen, kommt kein Klick: nichts verwerfen.
+    document.addEventListener('pointercancel', aufraeumen, true);
+    document.addEventListener('click', schlucken, true);
+    const frist = setTimeout(aufraeumen, 800);
+  }
 
   #onFocus = () => {
     if (this.telefon.matches) return;
