@@ -147,6 +147,34 @@ Bundle-Variante `cm x Rollenbreite / 10000` Einheiten als Komponentenmenge
 
 - Bundle 0,00 EUR, Bestandsfuehrung am Massprodukt aus, `custom.zuschnitt_von_rolle`
   gesetzt; Rollback unter `~/teppich-paradies-analyse/yasmin-sofortkauf-2026-10-13/`.
-- Bundle und Massprodukt stehen nach dem Livegang auf UNLISTED im Onlineshop:
-  kaufbar nur per Direktlink, nicht in Kollektionen, Suche oder Sitemap. Das
-  Massprodukt wird erst nach dem Testkauf (Mensch, mit Storno) auf ACTIVE gesetzt.
+- Theme-Code live (main c7e743e2, #1083 + #1186). Probe im Live-Shop (anonymer
+  Warenkorb, kein Kauf): Konfigurator legt Teppich, Kettelservice und die
+  kleinste deckende Zuschnitt-Variante (0 EUR) mit gleicher `_Gruppe` ab;
+  ohne Zuschnitt-Zeile sperrt der Warenkorb; mit Meterware im Korb weist
+  Shopify eine Zuschnitt-Variante ab, sobald die Rolle nicht mehr reicht
+  ("bereits ausverkauft") - die Komponente zaehlt gegen denselben Bestand.
+- **Bundle und Massprodukt stehen wieder auf DRAFT.** Grund: Ein Warenkorb
+  nur mit einer Zuschnitt-Variante (Permalink `/cart/<variante>:1` oder
+  `/cart/add.js`) umgeht die Warenkorbsperre des Themes, und mit "Abholung"
+  waere das eine 0-EUR-Bestellung (der Shop schliesst 0-EUR-Bestellungen
+  ohne Zahlung ab, siehe Gratismuster). Sie wuerde bis zu 40 m2 Rolle binden,
+  bis jemand storniert. Auf Basic gibt es keine eigene Checkout-Validierung.
+  Vor dem Veroeffentlichen braucht es eine Entscheidung (siehe unten).
+
+### Offen: Schutz gegen Zuschnitt ohne Teppich
+
+| Weg | Wirkung | Aufwand / Freigabe |
+|---|---|---|
+| Validierungs-App aus dem App Store (Functions laufen fuer oeffentliche Apps auch auf Basic), Regel "Zuschnitt von der Rolle nur zusammen mit dem Massteppich" | verhindert den Checkout | App-Installation, ggf. Kosten - Inhaber |
+| Bundle-Preis 0,57 EUR (= 1 Einheit des Massprodukts), Konfigurator senkt die Teppichmenge um 1 | Endpreis centgenau gleich, nie 0 EUR; Missbrauch kostet Geld, bindet aber weiter Bestand | Preisaenderung - Inhaber; Code in Konfigurator, Mail, Control Center |
+| Shopify Flow (im Basic-Tarif enthalten): Bestellung mit Zuschnitt ohne Massteppich sofort stornieren, wieder einlagern, intern melden | macht den Fall in Sekunden rueckgaengig, verhindert ihn nicht | Admin-Einrichtung durch einen Menschen |
+
+Empfehlung: Flow als Netz in jedem Fall; dazu entweder die App (echte Sperre)
+oder 0,57 EUR (kein 0-EUR-Auftrag mehr).
+
+Beobachtung am Rand (nicht Yasmin-spezifisch): Der Warenkorb nimmt von einer
+bestandsgefuehrten Variante hoechstens 50 Stueck an ("Aufgrund der
+Verfuegbarkeit wurden nur 50 Artikel ..."), obwohl Shopify 80 bzw. 999 als
+online verkaufbar meldet (auch Klickvinyl mit 999 Paketen). Online gehen
+damit hoechstens 50 m2 Yasmin je Bestellung (12,5 m Meterware), obwohl der
+Rechner bis 20 m erlaubt. Ursache ungeklaert.
