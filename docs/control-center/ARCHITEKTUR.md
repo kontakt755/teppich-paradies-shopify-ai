@@ -1029,6 +1029,25 @@ validiert die Position am vorhandenen Bestellmodell und nimmt Soll/Einheit vom S
 kumulative menschliche Bestätigungen. Restmenge > 0 bleibt bestellt und sperrt geliefert/raus/erledigt,
 auch über den Sammelschritt. Neue Zustände ändern keine Shopify-Mengen/Preise/Varianten.
 
+`bestellSoll` wird nur im lokalen API-Modell aus `currentQuantity` (sonst `quantity`) desselben
+Exports über die vorhandene Mengenberechnung abgeleitet. Anders als die offene Einkaufsmenge
+bleibt es nach Versand erhalten. `beschaffungsStand()` gleicht bestätigten Eingang beim Lesen
+gegen dieses frische Soll ab: größere Sollmenge zeigt den Rest und öffnet die Anzeige wieder,
+ohne den bestätigten Eingang zu überschreiben. Sinkt das Soll unter die angekommene Menge,
+ändert sich die Einheit oder fehlt die Quelle, erscheinen Klärhinweis und blockierte Folgeschritte.
+Mengen werden weder gekürzt noch umgerechnet; eine Korrektur in derselben Einheit bleibt eine
+ausdrückliche menschliche Bestätigung. Bei einer neuen Bestätigung wird das aktuelle Soll gespeichert.
+`klaerung`/`aktuelleBestellmenge` sind reine Lesefelder, keine zweite Ablage.
+
+Sammelschritte bereiten sämtliche Positionsänderungen an einer frisch gelesenen Datei vor und
+schreiben sie erst nach erfolgreicher Prüfung mit einem atomaren Rename. Auftragsereignisse
+werden ebenfalls vorbereitet und beschädigte Verlaufsdateien verweigern das Schreiben; bei
+einer abgelehnten Positionsprüfung bleiben Status und Ereignisdatei unverändert. Die lokale
+Vorprüfung bis zum Write enthält kein `await`; parallel eintreffende Klicks lesen so auch die
+Arbeitsübernahme direkt vor ihrer Änderung frisch. Die vorhandene asynchrone Versandsperre
+bleibt bestehen. Fehlende Beschaffungs-Zusatzfelder bleiben kompatibel, ungültige Termine,
+Hinweise, Einheiten und nichtpositive Sollmengen werden nicht überschrieben.
+
 Aktion `uebernahme` nimmt Positionen und `uebernahmeAktion: nehmen|freigeben|uebernehmen`.
 Person/Rolle kommen ausschließlich aus der Sitzung. Mitarbeiter dürfen keine fremde Übernahme
 freigeben/übernehmen; Inhaber übernimmt bewusst mit eigenem Knopf. Kein automatischer Ablauf.
@@ -1038,11 +1057,16 @@ Der Endpunkt liegt weiter in der bestehenden Schreib-/Rollenprüfung; Leser erha
 Heute-Links behalten rohe Auftrags-/Kunden-/Fallkennungen als URL-Parameter und führen zurück zu Heute.
 `auftrag` begrenzt Einkauf inklusive Bestelltexte; der Quellspeicher wird nicht gefiltert/verändert.
 Muster-Nachfasstexte verwenden maximal drei aktive, eindeutige Varianten aus dem lokalen Lexikon,
-nur öffentliche Produkt-URLs und keinerlei private Kundenakten-/Trackinglinks. Aussendung bleibt manuell.
+nur öffentliche Produkt-URLs und keinerlei private Kundenakten-/Trackinglinks. Die Quelle muss eine
+belegte `onlineStoreUrl` und eine eindeutige verfügbare Variante besitzen; ältere Exporte ohne dieses
+Feld erzeugen bis zum nächsten regulären Export keine Kauflinks. Aussendung bleibt manuell.
 
 `aktualisierung` und dessen Status ergänzen `betrieb`. Nach erfolgreichem Archiv schreibt die bestehende
 Sicherung atomar `sicherungsstand.json` mit letztem Erfolg. Werkbank-Rückmeldungen verwenden nur ihren
-vorhandenen Aktualisierungszeitpunkt. Fehlende Basis ist unbekannt; über 48 Stunden alt ist ein Hinweis.
+vorhandenen Aktualisierungszeitpunkt als `letzteLokaleRueckmeldung` und separat `lokalerStatus`.
+Der Gesamtstatus/`vollabgleich` bleibt unbekannt, denn der Zeitstempel belegt keinen vollständigen
+Brückenabgleich oder externe Schreibrechte. Fehlende Basis ist unbekannt; über 48 Stunden alt ist ein
+lokaler Hinweis, beschädigte Metadaten sind ein Fehler. Unbekannt ist in der Oberfläche neutral.
 Montage reicht v49 `letzterLaufMin`/`laufzeitHeuteSek` nur als Integer >= 0 durch; fehlend wird nie 0.
 Die QA-Instanz entfernt Shopify-/Auftrags-App-Zugänge und verwendet Testattrappen, nicht den Realbestand.
 

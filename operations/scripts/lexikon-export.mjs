@@ -105,7 +105,7 @@ export const BULK_QUERY = `
   products(query: "status:active OR status:unlisted OR handle:muster-*") {
     edges {
       node {
-        id handle title status productType
+        id handle title status productType onlineStoreUrl
         featuredImage { url }
         metafields(namespace: "custom", first: 30) { edges { node { namespace key value type } } }
         variants {

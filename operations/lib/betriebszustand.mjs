@@ -12,8 +12,12 @@ function stand(datei, feld, jetzt, maxStunden) {
   return { status: jetzt.getTime() - zeit > maxStunden * 3600000 ? 'alt' : 'ok', letzterErfolg: new Date(zeit).toISOString() };
 }
 export function betriebszustand(dir, { jetzt = new Date() } = {}) {
+  const lokal = stand(path.join(dir, 'fehlermeldungen-abgleich.json'), 'aktualisiertAm', jetzt, 48);
   return {
     sicherung: stand(path.join(dir, 'sicherungsstand.json'), 'letzterErfolg', jetzt, 48),
-    werkbank: stand(path.join(dir, 'fehlermeldungen-abgleich.json'), 'aktualisiertAm', jetzt, 48),
+    // aktualisiertAm belegt nur einen lokalen Rueckmeldungs-Schreibvorgang, auch per CLI.
+    // Unveraenderte/fallweise unvollstaendige Einleselaeufe und Cloud-Schreibrechte sind damit nicht belegt.
+    werkbank: { status: lokal.status === 'fehler' ? 'fehler' : 'unbekannt',
+      letzteLokaleRueckmeldung: lokal.letzterErfolg, lokalerStatus: lokal.status, vollabgleich: 'unbekannt' },
   };
 }

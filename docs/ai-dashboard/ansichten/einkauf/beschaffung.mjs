@@ -3,7 +3,7 @@ import { state } from '../../kern/zustand.mjs';
 import { $, esc, toast } from '../../kern/helfer.mjs';
 import { render } from '../../kern/render.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
-import { personId, uebernahmeText, einheitText } from '../../lib/beschaffung.mjs';
+import { personId, uebernahmeText, einheitText, beschaffungsStand } from '../../lib/beschaffung.mjs';
 import { alleAuftraege, afEintragFuer, ladeStandNeu, einkauf } from './auftragsfluss.mjs';
 
 export function uebernahmeBlock(positionen) {
@@ -27,22 +27,25 @@ async function schreiben(payload) {
 function openBeschaffung(orderId, lineItemId, eingang) {
   const p = alleAuftraege().flatMap(a => a.positionen || []).find(x => x.orderId === orderId && x.lineItemId === lineItemId);
   if (!p) { toast('Die Position ist nicht in den aktuellen Daten. Bitte aktualisieren.', 'crit'); return; }
-  const b = afEintragFuer(p)?.beschaffung || {}, w = b.wareneingang;
-  const soll = w?.soll ?? p.bestellmenge?.menge, rohEinheit = w?.einheit || p.bestellmenge?.einheit;
+  const bestellmenge = p.bestellSoll || p.bestellmenge;
+  const b = beschaffungsStand(afEintragFuer(p), bestellmenge)?.beschaffung || {}, w = b.wareneingang;
+  const soll = bestellmenge?.menge, rohEinheit = bestellmenge?.einheit;
   const einheit = einheitText(rohEinheit);
   const belegt = Number.isFinite(Number(soll)) && Number(soll) > 0 && ['paket', 'stueck', 'muster', 'lfm', 'm2'].includes(rohEinheit);
+  const einheitGeaendert = w && w.einheit !== rohEinheit;
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="bTitel" data-dialog>
     <h2 id="bTitel">Liefertermin / Wareneingang · ${esc(p.orderName)}</h2><p class="small">${esc(p.titel)} · ${esc(p.farbe || '')}</p>
     <div class="field"><label for="bTermin">Bestätigter Liefertermin (optional)</label><input id="bTermin" name="liefertermin" type="date" value="${esc(b.liefertermin || '')}"></div>
-    ${belegt ? `<p class="small">Bestellt: <b>${esc(Number(soll).toLocaleString('de-DE'))} ${esc(einheit)}</b>. Mengen sind der bisherige Gesamtstand, keine zusätzliche Lieferung.</p>${[['angekommen', 'Bisher angekommen'], ['verwendbar', 'Davon verwendbar']].map(([n, t]) => `<div class="field"><label for="b-${n}">${t} (${esc(einheit)})</label><input id="b-${n}" name="${n}" type="number" min="0" max="${esc(soll)}" step="any" ${eingang ? 'required' : ''} value="${esc(w?.[n] ?? '')}"></div>`).join('')}` : '<p class="notice warn">Bestellmenge nicht belegt. Nur der Termin kann gespeichert werden.</p>'}
+    ${b.klaerung ? `<p class="notice warn">${esc(b.klaerung)}${w ? ` Erfasst: ${esc(w.angekommen)} angekommen / ${esc(w.verwendbar)} verwendbar (${esc(einheitText(w.einheit))}).` : ''}</p>` : ''}
+    ${belegt && !einheitGeaendert ? `<p class="small">Bestellt: <b>${esc(Number(soll).toLocaleString('de-DE'))} ${esc(einheit)}</b>. Mengen sind der bisherige Gesamtstand, keine zusätzliche Lieferung.</p>${[['angekommen', 'Bisher angekommen'], ['verwendbar', 'Davon verwendbar']].map(([n, t]) => `<div class="field"><label for="b-${n}">${t} (${esc(einheit)})</label><input id="b-${n}" name="${n}" type="number" min="0" max="${esc(soll)}" step="any" ${eingang ? 'required' : ''} value="${esc(w?.[n] ?? '')}"></div>`).join('')}` : '<p class="notice warn">Wareneingang zuerst klären. Nur Termin und Hinweis können gespeichert werden.</p>'}
     <div class="field"><label for="bGrund">Hinweis / Grund für nicht verwendbare Menge</label><textarea id="bGrund" name="grund" rows="2" maxlength="1000">${esc(b.grund || '')}</textarea></div>
     <p class="small muted">Sie bestätigen den tatsächlichen Stand. Eine Fehlmenge bleibt offen. Keine Shopify-Änderung oder Nachricht.</p><p data-b-fehler class="notice crit" role="alert" tabindex="-1" hidden></p>
     <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Angaben bestätigen</button></div></form></div>`;
-  const form = $('#dialogRoot form'); form.querySelector(eingang && belegt ? '#b-angekommen' : '#bTermin')?.focus();
+  const form = $('#dialogRoot form'); form.querySelector(eingang && belegt && !einheitGeaendert ? '#b-angekommen' : '#bTermin')?.focus();
   form.addEventListener('submit', async e => {
     e.preventDefault(); const fd = new FormData(form), btn = form.querySelector('[type=submit]'); btn.disabled = true;
     const felder = { liefertermin: fd.get('liefertermin') || null, grund: fd.get('grund') || null };
-    if (belegt && (fd.get('angekommen') !== '' || fd.get('verwendbar') !== '')) Object.assign(felder, { angekommen: fd.get('angekommen'), verwendbar: fd.get('verwendbar') });
+    if (belegt && !einheitGeaendert && (fd.get('angekommen') !== '' || fd.get('verwendbar') !== '')) Object.assign(felder, { angekommen: fd.get('angekommen'), verwendbar: fd.get('verwendbar') });
     try { await schreiben({ aktion: 'beschaffung', orderId, lineItemId, felder }); $('#dialogRoot').innerHTML = ''; toast('Liefertermin / Wareneingang bestätigt.'); }
     catch (err) { const h = form.querySelector('[data-b-fehler]'); h.textContent = err.message; h.hidden = false; h.focus(); btn.disabled = false; }
   });

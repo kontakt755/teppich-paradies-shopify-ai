@@ -168,3 +168,13 @@ test('ladeLive fragt den Status ueber die ID der eigenen Operation ab und baut d
   assert.deepEqual(abfragen[1].variables, { id: 'gid://shopify/BulkOperation/7' });
   assert.ok(!/currentBulkOperation/.test(abfragen[1].query));
 });
+
+
+test('Lesende Lexikon-Abfrage und JSONL erhalten den öffentlichen Veröffentlichungsnachweis', async () => {
+  const {BULK_QUERY}=await import('../scripts/lexikon-export.mjs');
+  assert.match(BULK_QUERY,/id handle title status productType onlineStoreUrl/);
+  const url='https://www.teppich-paradies.net/products/test-boden';
+  const p=jsonlZuProdukten(JSON.stringify({id:'gid://shopify/Product/1',handle:'test-boden',title:'Testboden',status:'ACTIVE',onlineStoreUrl:url})).produkte[0];
+  assert.equal(p.onlineStoreUrl,url);
+  const {aufbereiten}=await import('../lib/lexikon.mjs');assert.equal(aufbereiten([p]).produkte[0].onlineStoreUrl,url);
+});

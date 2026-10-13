@@ -588,3 +588,13 @@ test('rollenbreiteM: Breite der Variante aus custom.rollenbreite (Meter), sonst 
   const v = aufbereiten({ produkte: [p] }, { jetzt: JETZT }).produkte[0].varianten;
   assert.deepEqual(v.map((x) => x.rollenbreiteM), [4, 5, null]);
 });
+
+
+test('Onlineshop-Veröffentlichung bleibt belegtes Admin-Feld; aus dem Handle entsteht kein Nachweis', () => {
+  const url='https://www.teppich-paradies.net/products/nordsee-teppich';
+  assert.equal(aufbereiten([produkt({onlineStoreUrl:url})],{jetzt:JETZT}).produkte[0].onlineStoreUrl,url);
+  for(const onlineStoreUrl of [undefined,null,'']){
+    const p=aufbereiten([produkt({onlineStoreUrl})],{jetzt:JETZT}).produkte[0];
+    assert.equal(p.onlineStoreUrl,null);assert.ok(p.shopUrl,'bestehender interner Produktweg bleibt kompatibel');
+  }
+});

@@ -261,7 +261,7 @@ export function viewEinkaufBestellungen() {
   const klaeren = aktiv.filter(a => a.ampel === 'rot' || a.ampel === 'gelb').sort((a, b) => (a.ampel === 'rot' ? 0 : 1) - (b.ampel === 'rot' ? 0 : 1));
   const rot = klaeren.filter(a => a.ampel === 'rot').length;
   const af = afNorm(state.route.params.get('af'));
-  const abgeschlossen = af === 'erledigt' ? abgeschlosseneAuftraegeKarte() : '';
+  const abgeschlossen = af === 'erledigt' ? abgeschlosseneAuftraegeKarte(auftragId) : '';
   return `
     ${auftragId ? `<p class="no-print"><a href="#/heute">← Zurück zu Heute</a> · <a href="#/einkauf">Alle Aufträge</a></p><p class="notice">Nur die ausgewählte Bestellung${aktiv[0]?.name ? ` ${esc(aktiv[0].name)}` : ''}. ${!aktiv.length ? 'Sie ist nicht mehr offen oder nicht in den aktuellen Daten.' : ''}</p>` : ''}
     <div class="band">
@@ -291,8 +291,8 @@ export function viewEinkaufBestellungen() {
  * Auch Testbestellungen, deren Artikel in keiner Lieferanten-Gruppe stehen - sonst gaebe es
  * fuer sie keinen Weg zurueck.
  */
-function abgeschlosseneAuftraegeKarte() {
-  const liste = alleAuftraege().map(a => ({ a, erledigt: erledigtePositionen(a) })).filter(x => x.erledigt.length);
+function abgeschlosseneAuftraegeKarte(auftragId) {
+  const liste = alleAuftraege().filter(a => !auftragId || String(a.id) === String(auftragId)).map(a => ({ a, erledigt: erledigtePositionen(a) })).filter(x => x.erledigt.length);
   if (!liste.length) return '';
   const zeile = ({ a, erledigt }) => {
     const e = afEintragFuer({ orderId: a.id, lineItemId: erledigt[0].lineItemId });

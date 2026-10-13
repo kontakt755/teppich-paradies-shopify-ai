@@ -39,13 +39,14 @@ export function bestaetigeBeschaffung(file, { orderId, lineItemId, felder, soll,
   let status = vorher.status || null;
   if (wareneingang) {
     if (['raus', 'erledigt'].includes(status)) throw new BeschaffungFehler('Diese Position ist schon beim Kunden. Wareneingang hier nicht rückwirkend ändern.', 409);
-    const bestellt = b.wareneingang?.soll ?? menge(soll);
+    const bestellt = menge(soll);
     if (!(bestellt > 0) || !['paket', 'stueck', 'muster', 'lfm', 'm2'].includes(einheit)) throw new BeschaffungFehler('Die Bestellmenge ist nicht belegt. Zuerst die Position klären.');
+    if (b.wareneingang && b.wareneingang.einheit !== einheit) throw new BeschaffungFehler('Bestelleinheit geändert. Den erfassten Wareneingang zuerst klären; Mengen werden nicht umgerechnet.', 409);
     const angekommen = menge(felder.angekommen);
     const verwendbar = menge(felder.verwendbar);
     if (verwendbar > angekommen || angekommen > bestellt) throw new BeschaffungFehler('Verwendbare Menge darf nicht größer als angekommen sein; angekommen nicht größer als bestellt.');
     if (angekommen > verwendbar && !b.grund) throw new BeschaffungFehler('Bitte den Grund für die nicht verwendbare Menge nennen.');
-    b.wareneingang = { soll: bestellt, angekommen, verwendbar, einheit: b.wareneingang?.einheit || String(einheit), bestaetigtAm: zeit, bestaetigtVon: actor };
+    b.wareneingang = { soll: bestellt, angekommen, verwendbar, einheit: String(einheit), bestaetigtAm: zeit, bestaetigtVon: actor };
     status = verwendbar >= bestellt ? 'geliefert' : 'bestellt';
   }
   b.bestaetigtAm = zeit; b.bestaetigtVon = actor;

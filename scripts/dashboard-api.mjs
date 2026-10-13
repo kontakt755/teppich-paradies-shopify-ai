@@ -23,11 +23,11 @@ import { texteAusMarkdown } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs
 import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
-import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, STATUS_ORDER, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
+import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, setzeStatusPositionen, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, STATUS_ORDER, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
 import { bucheVersand, versandNachzuholen, VersandFehler, VERSANDDIENSTE } from '../operations/lib/versand.mjs';
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
 import { musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
-import { auftragsverlaufPfad, leseVerlauf, haengeEreignisAn, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
+import { auftragsverlaufPfad, leseVerlauf, bereiteEreignisVor, schreibeVerlauf, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
 import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden, kundenIndex } from '../operations/lib/kundensuche.mjs';
 import { faelle as kundenFaelle, istTestkontakt } from '../operations/lib/kundenfaelle.mjs';
 import { fallmarkenPfad, leseAlle as leseFallmarken, setzeMarke as setzeFallmarke, teileAuf as teileFaelleAuf, juengsterPunkt, FALL_GRUND } from '../operations/lib/fallmarken.mjs';
@@ -66,7 +66,7 @@ import { dashboardLinks } from './weitere-dashboards.mjs';
 import { logFehler } from './dashboard-log.mjs';
 import { leseTailscaleStatus } from '../operations/lib/tailscale.mjs';
 import { bestaetigeBeschaffung, arbeitsuebernahme, BeschaffungFehler } from '../operations/lib/beschaffung.mjs';
-import { darfWeiter } from '../docs/ai-dashboard/lib/beschaffung.mjs';
+import { darfWeiter, beschaffungsStand } from '../docs/ai-dashboard/lib/beschaffung.mjs';
 import { filtereAuftrag } from '../docs/ai-dashboard/lib/vorgangslink.mjs';
 import { musterKaufLinks } from '../docs/ai-dashboard/lib/muster-kauf-links.mjs';
 import { betriebszustand } from '../operations/lib/betriebszustand.mjs';
@@ -244,8 +244,32 @@ function ladeBestellModell(dir) {
   const file = path.join(dir, 'bestelluebersicht', 'orders.json');
   const daten = readJsonIfExists(file);
   if (!daten) return null;
-  try { return mitMusterherkunft(aufbereiten(ladeExport(JSON.stringify(daten)), { jetzt: new Date() }), dir); }
+  try { return bereiteBestellModell(daten, dir, new Date()); }
   catch { return null; }
+}
+
+function bereiteBestellModell(daten, dir, jetzt) {
+  const exportDaten = ladeExport(JSON.stringify(daten));
+  const modell = mitMusterherkunft(aufbereiten(exportDaten, { jetzt }), dir);
+  // Dieselbe Umrechnung, aber aktuelle Gesamtmenge: nach Versand ist die offene Menge 0,
+  // die bestaetigte Lieferung bleibt trotzdem 10 von 10. Der Export selbst wird nicht veraendert.
+  const sollExport = structuredClone(exportDaten);
+  for (const a of sollExport.orders) {
+    const zeilen = Array.isArray(a.lineItems) ? a.lineItems : a.lineItems?.nodes || a.lineItems?.edges?.map(e => e.node) || [];
+    for (const p of zeilen) p.unfulfilledQuantity = p.currentQuantity ?? p.quantity;
+  }
+  const sollModell = aufbereiten(sollExport, { jetzt });
+  const mengen = new Map([...(sollModell.auftraege || []), ...(sollModell.testauftraege || [])].flatMap(a => a.positionen || []).map(p => [positionKey(p.orderId, p.lineItemId), p.bestellmenge]));
+  for (const a of [...(modell.auftraege || []), ...(modell.testauftraege || [])]) for (const p of a.positionen || []) p.bestellSoll = mengen.get(positionKey(p.orderId, p.lineItemId)) || null;
+  return modell;
+}
+
+/** Nur abgeleitete Anzeige: neue Sollmenge macht alte Vollstaendigkeit sofort wieder offen. */
+function leseAktuellenStatus(file, modell = ladeBestellModell(path.dirname(file))) {
+  const alle = leseAuftragsstatus(file);
+  const positionen = [...(modell?.auftraege || []), ...(modell?.testauftraege || [])].flatMap(a => a.positionen || []);
+  const mengen = new Map(positionen.map(p => [positionKey(p.orderId, p.lineItemId), p.bestellSoll || p.bestellmenge]));
+  return Object.fromEntries(Object.entries(alle).map(([key, e]) => [key, beschaffungsStand(e, mengen.get(key))]));
 }
 
 /**
@@ -809,7 +833,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     const auftrag = modell ? [...modell.auftraege, ...modell.testauftraege].find(a => a.id === orderId) : null;
     if (!auftrag) throw new ApiError(404, 'Bestellung nicht gefunden – Bestelldaten evtl. inzwischen aktualisiert.');
     const statusDatei = auftragsstatusPfad(dir);
-    const vorher = zeitleisten(dir, modell, leseAuftragsstatus(statusDatei)).get(orderId);
+    const vorher = zeitleisten(dir, modell, leseAktuellenStatus(statusDatei, modell)).get(orderId);
     const art = vorher.auftragsart;
     if (!['notiz', 'zurueck'].includes(schritt) && !setzbareSchritte(art).includes(schritt)) {
       throw new ApiError(400, `Der Schritt „${schritt}" gehört nicht zu ${art === 'muster' ? 'einer Musterbestellung' : 'einer Warenbestellung'}`);
@@ -823,24 +847,23 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     const angaben = versandAngaben(payload?.versand);
     const setzePositionen = (status, text, versandMail = null) => {
       if (!positionen.length) throw new ApiError(400, 'Diese Bestellung hat keine nachverfolgbaren Positionen');
-      const alle = leseAuftragsstatus(statusDatei);
+      const alle = leseAktuellenStatus(statusDatei, modell);
       const ziel = STATUS_ORDER.indexOf(status);
       const stufe = p => STATUS_ORDER.indexOf(alle[positionKey(orderId, p.lineItemId)]?.status);
       // Nur Positionen, die noch nicht so weit sind. Sind alle schon weiter, ist der Klick eine
       // bewusste Korrektur zurueck - dann gilt er fuer alle.
       const dahinter = positionen.filter(p => stufe(p) < ziel);
       const betroffen = dahinter.length ? dahinter : positionen.filter(p => stufe(p) !== ziel);
-      if (betroffen.some(p => !darfWeiter(alle[positionKey(orderId, p.lineItemId)], status))) throw new ApiError(409, 'Die bestätigte Fehlmenge ist noch offen. Zuerst den Wareneingang vervollständigen.');
-      for (const p of betroffen) {
-        setzeStatus(statusDatei, { orderId, lineItemId: p.lineItemId, status, actor, lieferantBestellnummer, notiz: text, jetzt: now(),
-          ...(status === 'raus' ? { sendungsnummer: angaben.sendungsnummer, versanddienst: angaben.versanddienst, versandMail } : {}) });
-      }
+      const blockiert = positionen.map(p => alle[positionKey(orderId, p.lineItemId)]).find(e => !darfWeiter(e, status));
+      if (blockiert) throw new ApiError(409, blockiert.beschaffung?.klaerung || 'Die bestätigte Fehlmenge ist noch offen. Zuerst den Wareneingang vervollständigen.');
+      setzeStatusPositionen(statusDatei, betroffen.map(p => ({ orderId, lineItemId: p.lineItemId, status, actor, bestellmenge: p.bestellSoll || p.bestellmenge || null, lieferantBestellnummer, notiz: text, jetzt: now(),
+        ...(status === 'raus' ? { sendungsnummer: angaben.sendungsnummer, versanddienst: angaben.versanddienst, versandMail } : {}) })));
       return betroffen.map(p => p.lineItemId);
     };
     // Nur eine neue Sendung wird gebucht: Positionen, die vor dem Klick noch nicht "raus" waren.
     // Die Korrektur von "erledigt" zurueck auf "raus" bucht nichts nachtraeglich.
     const vorRaus = () => {
-      const alle = leseAuftragsstatus(statusDatei);
+      const alle = leseAktuellenStatus(statusDatei, modell);
       return new Set(positionen.filter(p => STATUS_ORDER.indexOf(alle[positionKey(orderId, p.lineItemId)]?.status) < STATUS_ORDER.indexOf('raus')).map(p => p.lineItemId));
     };
     let anzahl = 0;
@@ -853,11 +876,12 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         anzahl = ids.length;
         if (neu) rausIds = ids.filter(id => neu.has(id));
       } else {
-        haengeEreignisAn(auftragsverlaufPfad(dir), { orderId, schritt, actor, notiz, bezug, jetzt: now() });
+        // Verlauf und alle Positionsregeln pruefen, bevor irgendeine der beiden Dateien geschrieben wird.
+        const ereignis = bereiteEreignisVor(auftragsverlaufPfad(dir), { orderId, schritt, actor, notiz, bezug, jetzt: now() });
         // Muster aus eigenem Bestand: "Erledigt – Kunde hat Muster" ist zugleich die Uebergabe
         // (vorbeigebracht bzw. verschickt) - sonst bliebe "raus" als Luecke im Verlauf stehen.
         if (schritt === 'kunde_hat_muster' && vorher.eigenerBestand && positionen.length) {
-          const alle = leseAuftragsstatus(statusDatei);
+          const alle = leseAktuellenStatus(statusDatei, modell);
           if (positionen.some(p => STATUS_ORDER.indexOf(alle[positionKey(orderId, p.lineItemId)]?.status) < STATUS_ORDER.indexOf('raus'))) {
             const neu = vorRaus();
             // "Kunde hat Muster": der Kunde hat sie schon - eine Mail "ist unterwegs" verwirrt nur.
@@ -870,9 +894,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         if (['kunde_hat_bestellt', 'kein_interesse'].includes(schritt) && positionen.length) {
           anzahl = setzePositionen('erledigt', `Ergebnis: ${SCHRITT_LABEL.muster[schritt]}${notiz ? ` – ${notiz}` : ''}`).length;
         }
+        schreibeVerlauf(auftragsverlaufPfad(dir), ereignis.auftraege);
       }
     } catch (e) {
-      if (e instanceof AuftragsverlaufFehler || e instanceof AuftragsstatusFehler) throw new ApiError(400, e.message);
+      if (e instanceof AuftragsverlaufFehler || e instanceof AuftragsstatusFehler) throw new ApiError(e.status || 400, e.message);
       throw e;
     }
     // Muster aus dem Lager verschickt bzw. uebergeben: abzaehlen.
@@ -881,7 +906,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     merke(benutzer, actor, 'Auftragsschritt', `${auftrag.name}: ${schritt}`);
     // Erst jetzt nach Shopify: der lokale Schritt steht, egal wie die Buchung ausgeht.
     const shopifyErgebnis = rausIds.length ? await versandBuchen({ dir, auftrag, lineItemIds: rausIds, angaben, benutzer, actor }) : null;
-    const statusNachher = leseAuftragsstatus(statusDatei);
+    const statusNachher = leseAktuellenStatus(statusDatei, modell);
     const nachher = zeitleisten(dir, modell, statusNachher).get(orderId);
     return { ok: true, orderId, schritt, positionen: anzahl, ...(shopifyErgebnis ? { shopify: shopifyErgebnis } : {}), ...zeitleistenFelder(nachher), ...versandFelder(auftrag, statusNachher) };
   }
@@ -1190,7 +1215,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       let modell;
       // Der Export der Admin API liegt als {data:{orders:{nodes}}} vor;
       // ladeExport bringt beide Formen auf {orders, quellvarianten}.
-      try { modell = mitMusterherkunft(aufbereiten(ladeExport(JSON.stringify(daten)), { jetzt: now() }), dir); }
+      try { modell = bereiteBestellModell(daten, dir, now()); }
       catch (e) { return { verfuegbar: false, quelle: file, hinweis: `orders.json konnte nicht ausgewertet werden: ${e.message}` }; }
       return { verfuegbar: true, quelle: file, exportiertAm: daten.exportiertAm || null, ...modell };
     },
@@ -1200,7 +1225,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const dir = privatDirPath || privatDir();
       const modell = ladeBestellModell(dir);
       if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt - siehe operations/lib/bestelluebersicht.mjs bzw. den Export-Lauf dafuer.' };
-      const statusAlle = leseAuftragsstatus(auftragsstatusPfad(dir));
+      const statusAlle = leseAktuellenStatus(auftragsstatusPfad(dir), modell);
       // Unter zwei Zeichen ist die Suche kein Tor mehr, sondern die volle
       // Kundenliste (Inhabervorgabe) - gefiltert/sortiert wie alleKunden().
       // Ab zwei Zeichen bleibt es Freitextsuche, mit demselben Filter drauf.
@@ -1233,7 +1258,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const dir = privatDirPath || privatDir();
       const modell = ladeBestellModell(dir);
       if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
-      const statusAlle = leseAuftragsstatus(auftragsstatusPfad(dir));
+      const statusAlle = leseAktuellenStatus(auftragsstatusPfad(dir), modell);
       const gefunden = findeKunde(modell, key, { statusAlle });
       if (gefunden) {
         // Additiv je Bestellung: auftragsart, verlauf, verlaufNotizen, naechsterSchritt (operations/lib/auftragsverlauf.mjs).
@@ -1273,7 +1298,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const dir = privatDirPath || privatDir();
       const modell = ladeBestellModell(dir);
       if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
-      const statusAlle = leseAuftragsstatus(auftragsstatusPfad(dir));
+      const statusAlle = leseAktuellenStatus(auftragsstatusPfad(dir), modell);
       const rueckrufeAlle = leseRueckrufe(rueckrufePfad(dir));
       const zl = zeitleisten(dir, modell, statusAlle);
       let katalog = [];
@@ -1318,13 +1343,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       }
       const dir = privatDirPath || privatDir();
       const file = auftragsstatusPfad(dir);
-      const eintraege = [];
-      for (const lineItemId of lineItemIds) {
-        try {
-          eintraege.push(setzeStatus(file, { orderId, lineItemId, status: 'erledigt', actor, notiz: notiz || 'Kunde fertig (Sammelschritt)', jetzt: now() }));
-        } catch (e) {
-          if (!(e instanceof AuftragsstatusFehler)) throw e;
-        }
+      const modell = ladeBestellModell(dir);
+      const positionen = [...(modell?.auftraege || []), ...(modell?.testauftraege || [])].find(a => a.id === orderId)?.positionen || [];
+      let eintraege;
+      try {
+        eintraege = setzeStatusPositionen(file, [...new Set(lineItemIds)].map(lineItemId => { const p = positionen.find(p => p.lineItemId === lineItemId); return { orderId, lineItemId, status: 'erledigt', actor, bestellmenge: p?.bestellSoll || p?.bestellmenge || null, notiz: notiz || 'Kunde fertig (Sammelschritt)', jetzt: now() }; }));
+      } catch (e) {
+        if (e instanceof AuftragsstatusFehler) throw new ApiError(e.status, e.message);
+        throw e;
       }
       audit({ actor, action: 'auftragsstatus-kunde-fertig', orderId, anzahl: eintraege.length });
       merke(benutzer, actor, 'Kunde fertig', `${orderId}: ${eintraege.length} Artikel`);
@@ -1457,12 +1483,12 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       let hinweis = null;
       if (!daten) hinweis = leseFehler(ordersDatei) || 'orders.json fehlt - Bestelldaten noch nicht exportiert (npm run daten:aktualisieren).';
       else {
-        try { modell = mitMusterherkunft(aufbereiten(ladeExport(JSON.stringify(daten)), { jetzt: now() }), dir); }
+        try { modell = bereiteBestellModell(daten, dir, now()); }
         catch (e) { hinweis = `orders.json konnte nicht ausgewertet werden: ${e.message}`; }
       }
       return {
         modell, hinweis, stammdaten,
-        statusAlle: leseAuftragsstatus(auftragsstatusPfad(dir)),
+        statusAlle: leseAktuellenStatus(auftragsstatusPfad(dir), modell),
         stammdatenDatei: {
           vorhanden: stammdaten.vorhanden,
           quelle: stammdaten.quelle,
@@ -1513,7 +1539,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     einkaufAuftragsstatus() {
       const dir = privatDirPath || privatDir();
       const file = auftragsstatusPfad(dir);
-      const positionen = leseAuftragsstatus(file);
+      const positionen = leseAktuellenStatus(file);
       return { verfuegbar: true, quelle: file, positionen };
     },
 
@@ -1525,6 +1551,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Anmeldung (Notzugang) bleibt der bisherige gh-Login die handelnde Person.
       const actor = benutzer?.name || await currentUser();
       if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
+      // Bis zu den lokalen Writes kein await: Vorpruefung und Uebernahmesperre werden
+      // im selben JS-Schritt frisch gelesen; asynchron bleibt nur die bestehende Versandbuchung.
       const { orderId, lineItemId, status, lieferantBestellnummer, notiz, aktion } = payload || {};
       if (aktion === 'beschaffung' || aktion === 'uebernahme') {
         const dir = privatDirPath || privatDir();
@@ -1542,7 +1570,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
             return { ok: true, eintraege };
           }
           const p = allePositionen.find(z => String(z.orderId) === String(orderId) && String(z.lineItemId) === String(lineItemId));
-          const eintrag = bestaetigeBeschaffung(file, { orderId, lineItemId, felder: payload.felder, soll: p.bestellmenge?.menge, einheit: p.bestellmenge?.einheit, actor, jetzt: now() });
+          const menge = p.bestellSoll || p.bestellmenge;
+          const eintrag = bestaetigeBeschaffung(file, { orderId, lineItemId, felder: payload.felder, soll: menge?.menge, einheit: menge?.einheit, actor, jetzt: now() });
           audit({ actor, action: 'beschaffung-bestaetigt', orderId, lineItemId });
           merke(benutzer, actor, 'Liefertermin / Wareneingang bestätigt', `${p.orderName} · ${p.titel}`);
           return { ok: true, eintrag };
@@ -1581,13 +1610,15 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Stand vor dem Wechsel: danach hat die Position einen Status und gilt nicht mehr als offen.
       const vorLager = status === 'raus' ? auftragFuerLager(dir, orderId) : null;
       const angaben = versandAngaben(payload?.versand);
-      const vorher = leseAuftragsstatus(file)[positionKey(orderId, lineItemId)];
+      const modell = ladeBestellModell(dir);
+      const p = [...(modell?.auftraege || []), ...(modell?.testauftraege || [])].flatMap(a => a.positionen || []).find(p => p.orderId === orderId && p.lineItemId === lineItemId);
+      const vorher = leseAktuellenStatus(file, modell)[positionKey(orderId, lineItemId)];
       let eintrag;
       try {
-        eintrag = setzeStatus(file, { orderId, lineItemId, status, actor, lieferantBestellnummer, notiz, jetzt: now(),
+        eintrag = setzeStatus(file, { orderId, lineItemId, status, actor, bestellmenge: p?.bestellSoll || p?.bestellmenge || null, lieferantBestellnummer, notiz, jetzt: now(),
           ...(status === 'raus' ? { sendungsnummer: angaben.sendungsnummer, versanddienst: angaben.versanddienst, versandMail: angaben.benachrichtigen } : {}) });
       } catch (e) {
-        if (e instanceof AuftragsstatusFehler) throw new ApiError(400, e.message);
+        if (e instanceof AuftragsstatusFehler) throw new ApiError(e.status, e.message);
         throw e;
       }
       if (vorLager) lagerAbgangFestschreiben(dir, vorLager, [lineItemId], actor);
@@ -2524,7 +2555,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (!modell) {
         return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
       }
-      const statusAlle = leseAuftragsstatus(auftragsstatusPfad(dir));
+      const statusAlle = leseAktuellenStatus(auftragsstatusPfad(dir), modell);
       const rueckrufeAlle = leseRueckrufe(rueckrufePfad(dir));
       // Der naechste Schritt kommt aus der Zeitleiste (Auftragsfluss + Verlauf), nicht aus dem
       // Shopify-Versandstatus: Muster, die laengst beim Kunden sind, standen sonst als "Versenden".

@@ -33,7 +33,7 @@
  */
 
 import fs from 'node:fs';
-import { beschaffungText, restmenge } from '../../docs/ai-dashboard/lib/beschaffung.mjs';
+import { beschaffungText, restmenge, beschaffungsStand } from '../../docs/ai-dashboard/lib/beschaffung.mjs';
 import path from 'node:path';
 import os from 'node:os';
 import { positionKey, STATUS_ORDER } from './auftragsstatus.mjs';
@@ -94,11 +94,14 @@ export function auftragsverlaufPfad(privatDir) {
 }
 
 /** Liest alle Ereignisse ({ [orderId]: { ereignisse: [...] } }); fehlende oder kaputte Datei = leer. */
-export function leseVerlauf(file) {
+export function leseVerlauf(file, { streng = false } = {}) {
   try {
     const roh = JSON.parse(fs.readFileSync(file, 'utf8'));
-    return roh && typeof roh === 'object' && roh.auftraege && typeof roh.auftraege === 'object' ? roh.auftraege : {};
-  } catch {
+    if (!roh || typeof roh !== 'object' || Array.isArray(roh) || !roh.auftraege || typeof roh.auftraege !== 'object' || Array.isArray(roh.auftraege)
+      || Object.values(roh.auftraege).some(e => !e || typeof e !== 'object' || !Array.isArray(e.ereignisse))) throw new Error('ungültiges Verlaufsformat');
+    return roh.auftraege;
+  } catch (e) {
+    if (streng && e?.code !== 'ENOENT') throw new AuftragsverlaufFehler('Der Auftragsverlauf ist nicht lesbar oder beschädigt. Es wurde nichts verändert.');
     return {};
   }
 }
@@ -121,7 +124,7 @@ function clip(text, max) {
  * @param {string} [p.bezug]   bei "zurueck": welcher Schritt zurueckgenommen wird
  * @param {Date}   [p.jetzt]
  */
-export function haengeEreignisAn(file, { orderId, schritt, actor, notiz = null, bezug = null, jetzt = new Date() } = {}) {
+export function bereiteEreignisVor(file, { orderId, schritt, actor, notiz = null, bezug = null, jetzt = new Date() } = {}) {
   const id = String(orderId ?? '').trim();
   if (!id) throw new AuftragsverlaufFehler('orderId ist Pflicht');
   if (!actor) throw new AuftragsverlaufFehler('actor ist Pflicht');
@@ -129,18 +132,26 @@ export function haengeEreignisAn(file, { orderId, schritt, actor, notiz = null, 
   if (schritt === 'notiz' && !clip(notiz, 2000)) throw new AuftragsverlaufFehler('Die Notiz ist leer');
   if (schritt === 'zurueck' && !AUFTRAGS_SCHRITTE.includes(bezug)) throw new AuftragsverlaufFehler('Welcher Schritt zurückgenommen wird, fehlt');
 
-  const alle = leseVerlauf(file);
+  const alle = leseVerlauf(file, { streng: true });
   const ereignis = { schritt, am: jetzt.toISOString(), von: String(actor) };
   if (notiz && clip(notiz, 2000)) ereignis.notiz = clip(notiz, 2000);
   if (schritt === 'zurueck') ereignis.bezug = bezug;
   const bisher = Array.isArray(alle[id]?.ereignisse) ? alle[id].ereignisse : [];
   alle[id] = { ...(alle[id] || {}), ereignisse: [...bisher, ereignis] };
+  return { auftraege: alle, ereignis };
+}
 
+export function schreibeVerlauf(file, auftraege) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify({ version: 1, auftraege: alle }, null, 2));
+  fs.writeFileSync(tmp, JSON.stringify({ version: 1, auftraege }, null, 2));
   fs.renameSync(tmp, file);
-  return ereignis;
+}
+
+export function haengeEreignisAn(file, angaben = {}) {
+  const vorbereitet = bereiteEreignisVor(file, angaben);
+  schreibeVerlauf(file, vorbereitet.auftraege);
+  return vorbereitet.ereignis;
 }
 
 // ---------------------------------------------------------------------------
@@ -193,7 +204,7 @@ function wirksameEreignisse(ereignisse = []) {
 /** Stand eines Positions-Schritts ueber alle nachverfolgbaren Positionen des Auftrags. */
 function positionsStand(auftrag, statusAlle) {
   const positionen = (auftrag?.positionen ?? []).filter(p => p.lineItemId);
-  const eintraege = positionen.map(p => statusAlle[positionKey(auftrag.id, p.lineItemId)] || null);
+  const eintraege = positionen.map(p => beschaffungsStand(statusAlle[positionKey(auftrag.id, p.lineItemId)] || null, p.bestellSoll || p.bestellmenge));
   const stufen = eintraege.map(e => (e ? STATUS_ORDER.indexOf(e.status) + 1 : 0));
   const minStufe = stufen.length ? Math.min(...stufen) : 0;
   const schritt = (status) => {
@@ -319,7 +330,7 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
   });
 
   const ergebnis = { auftragsart: art, verlauf, verlaufNotizen: notizen, abgeschlossen, direktversand: direkt, eigenerBestand: eigen };
-  const beschaffung = (auftrag?.positionen || []).map(p => statusAlle[positionKey(auftrag.id, p.lineItemId)]).filter(e => e?.status === 'bestellt');
+  const beschaffung = (auftrag?.positionen || []).map(p => beschaffungsStand(statusAlle[positionKey(auftrag.id, p.lineItemId)], p.bestellSoll || p.bestellmenge)).filter(e => e?.status === 'bestellt');
   return { ...ergebnis, naechsterSchritt: naechsterSchritt(ergebnis, { auftrag, versand, beschaffung, nachverfolgbar: pos.gesamt > 0, jetzt }) };
 }
 
@@ -369,6 +380,8 @@ export function naechsterSchritt(stand, { auftrag = null, versand = null, bescha
     return schritt('wir', 'Stand im Shopify-Admin prüfen', 'Die Positionen dieser Bestellung haben keine Kennung – der Stand lässt sich hier nicht festhalten.', null, null, 'faellig', tage, tage);
   }
   if (aktuell.schritt === 'geliefert' && beschaffung.length) {
+    const klaerung = beschaffung.find(e => e.beschaffung?.klaerung);
+    if (klaerung) return schritt('wir', 'Bestellmenge / Wareneingang klären', beschaffungText(klaerung), 'geliefert', 'Wareneingang prüfen', 'problem', 0, tage);
     const schaden = beschaffung.find(e => restmenge(e) > 0 && e.beschaffung.wareneingang.angekommen > e.beschaffung.wareneingang.verwendbar);
     if (schaden) return schritt('wir', 'Nicht verwendbare Ware / Fehlmenge klären', beschaffungText(schaden), 'geliefert', 'Wareneingang prüfen', 'problem', 0, tage);
     if (beschaffung.every(e => e.beschaffung?.liefertermin)) {

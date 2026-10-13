@@ -114,7 +114,7 @@ export function viewKundenFaelle() {
   const wartend = d.wartend ? ` · ${d.wartend} ${d.wartend === 1 ? 'weiterer Kunde wartet' : 'weitere Kunden warten'} nur auf Lieferant oder Kunde – <a href="#/kunden?tab=bestellungen">Bestellungen</a>` : '';
   return `
     ${zurueck}
-    <p class="small muted" style="margin:0 0 10px">${d.anzahl} ${d.anzahl === 1 ? 'Kunde wartet' : 'Kunden warten'} auf uns${d.sofort ? `, davon ${d.sofort} sofort` : ''} · dringendstes zuerst${wartend}</p>
+    <p class="small muted" style="margin:0 0 10px">${ziel ? 'Nur der ausgewählte Fall.' : `${d.anzahl} ${d.anzahl === 1 ? 'Kunde wartet' : 'Kunden warten'} auf uns${d.sofort ? `, davon ${d.sofort} sofort` : ''} · dringendstes zuerst${wartend}`}</p>
     ${d.faelle.map(f => fallKarte(f)).join('')}
     ${ausBlock}`;
 }

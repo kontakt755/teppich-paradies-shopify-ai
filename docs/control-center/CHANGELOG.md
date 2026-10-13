@@ -2,6 +2,33 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-13 · Review-Korrekturen zu Mengen, Kaufquellen und Brückenstatus (#1206)
+
+- **Geändert:** Der lokale Export liefert das aktuelle Gesamt-Soll über dieselbe bestehende Umrechnung;
+  eine neue Bestellung von 12 statt 10 Einheiten zeigt sofort 2 offen, ohne Eingang neu einzugeben.
+  Bereits versandte Mengen bleiben Teil des Gesamt-Solls. Verkleinerung unter den erfassten Eingang,
+  geänderte Einheit oder fehlende Sollquelle führen zur Klärung; kein Kürzen und keine Umrechnung
+  bestätigter Mengen. Einzel-/Sammelabschlüsse prüfen den frischen Stand vor dem Schreiben.
+  Sammelergebnisse und Eigenbestandsübergabe schreiben bei abgelehntem Eingang kein Verlaufsereignis;
+  alle Positionen werden vor einem einzigen atomaren Positions-Write geprüft. Beschädigte optionale
+  Beschaffungsfelder sowie beschädigte Verlaufsdateien bleiben unangetastet. Übernahmesperren werden
+  direkt vor dem lokalen Write frisch gelesen, ohne asynchrone Lücke.
+  Kaufquellen verlangen jetzt zusätzlich eine belegte öffentliche Shop-URL und eine eindeutige verfügbare
+  Variante. Der Werkbank-Zeitpunkt bezeichnet nur eine lokale Rückmeldung; der vollständige Abgleich
+  bleibt unbekannt. Die Gesundheitsübersicht behandelt unbekannte Zustände als neutrale Information.
+- **Getestet:** 50/50 gezielte Beschaffungs-/API-/Positions-/Zeitleistenregressionen mit Attrappen, darunter
+  10 → 12 ohne Neueingabe/mit Bestätigung, 12 → 10, Einheitenwechsel, Versand mit offener Menge 0,
+  blockierte Sammelergebnisse und Eigenbestandsübergabe, unveränderte Dateien bei Ablehnung,
+  beschädigte Zusatztypen/Verlauf und konkurrierende Übernahmen. Public-/Health-Tests separat geprüft.
+  Syntaxprüfung der betroffenen Module und Diff-Formatprüfung. Der abschließende gemeinsame Gesamt-
+  und Browserlauf erfolgt durch Root; Loopback-Servertests benötigen den erlaubten lokalen Testbetrieb.
+- **Risiken/Annahmen:** Sollabgleich nutzt den vorhandenen lokalen Export; nichts wird live aus Shopify
+  abgefragt oder geändert. Alte Lexikonexporte ohne öffentliche Shop-URL zeigen bis zum nächsten bestehenden
+  Export keine Kauflinks. Einheitenwechsel braucht fachliche Klärung; kein automatischer Datenabgleich.
+  Ein lokaler Brückenzeitpunkt belegt weder vollständigen Abgleich noch externe Schreibrechte.
+- **Nächste Stufe:** Root prüft und committet die gemeinsam abgegrenzten Korrekturen; kein eigenes Staging,
+  Commit, Push, Dienstneustart oder Google-Release.
+
 ## 2026-10-13 · Direkte Vorgänge, Muster-Kauflinks und bestätigte Beschaffung (#1206)
 
 - **Geändert:** Heute öffnet konkrete Aufträge/Rückrufe/Fälle mit Rückweg; der Auftragsfilter begrenzt auch
