@@ -979,7 +979,10 @@
         });
         gesamtMenge += 1;
       }
-      var koerper = zeilen.length > 1 ? { items: zeilen } : zeilen[0];
+      // Shopify zeigt die zuletzt angelegte Zeile oben. Umgekehrt senden, damit
+      // der Teppich vor seinem Kettelservice/Zuschnitt steht - sonst stand die
+      // eingerueckte Kante als erste Position ueber dem Teppich.
+      var koerper = zeilen.length > 1 ? { items: zeilen.slice().reverse() } : zeilen[0];
 
       inFlight = true;
       cta.disabled = true;

@@ -87,6 +87,11 @@
       aria-label="{{ 'accessibility.quantity' | t }}"
       {% if line_index %}
         data-cart-line="{{ line_index | plus: 1 }}"
+        {%- comment -%}
+          Enter im Warenkorb: Menge uebernehmen (blur -> setQuantity) statt das
+          Formular abzusenden - einziger Submit-Knopf ist sonst "Zur Kasse".
+        {%- endcomment -%}
+        onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
       {% endif %}
       {% if tp_qty_locked %}
         max="{{ in_cart_quantity }}"
