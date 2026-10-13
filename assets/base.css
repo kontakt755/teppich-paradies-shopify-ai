@@ -2764,6 +2764,16 @@ form.payment-terms {
 
 .shopify-policy__container {
   padding-block: var(--padding-xl);
+  /* tp: lange deutsche Woerter ("Kontaktinformationen") zogen den Container
+     auf 390-px-Handys auf ~530 px Breite - waagerechtes Scrollen, Adresse abgeschnitten */
+  max-width: min(65ch, 100%);
+  box-sizing: border-box;
+  overflow-wrap: break-word;
+}
+
+.shopify-policy__title h1 {
+  hyphens: auto;
+  overflow-wrap: break-word;
 }
 
 .checkbox {

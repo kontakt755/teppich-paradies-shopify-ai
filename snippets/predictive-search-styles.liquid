@@ -163,6 +163,13 @@
 
       .predictive-search__reset-button-text {
         display: block;
+        white-space: nowrap;
+      }
+
+      /* tp: min-width ersetzt min-width:auto - ohne flex-shrink:0 schrumpfte der
+         Knopf auf 44 px und schnitt "Löschen" ab (".öschei") */
+      .predictive-search__reset-button {
+        flex-shrink: 0;
       }
 
       .predictive-search-form__content {
