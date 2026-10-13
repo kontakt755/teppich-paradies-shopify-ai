@@ -1,0 +1,33 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { basisTitel, feedTitel, feedZeilen } from '../scripts/feed-titel.mjs';
+
+const v = (opts) => ({ selectedOptions: Object.entries(opts).map(([name, value]) => ({ name, value })) });
+
+test('basisTitel entfernt Shopnamen und Breitenlisten', () => {
+  assert.equal(basisTitel('Vallora Teppichboden 400cm 500cm'), 'Vallora Teppichboden');
+  assert.equal(basisTitel('Terracora Eiche Fischgrät – Vinylboden von der Rolle, 200/400 cm'), 'Terracora Eiche Fischgrät – Vinylboden von der Rolle');
+  assert.equal(basisTitel('Bergen Beton – Klickvinyl 6mm | Teppich Paradies'), 'Bergen Beton – Klickvinyl 6mm');
+});
+
+test('feedTitel: Farbe bei mehreren Farben, Breite als "breit", Wunschmass ohne Zusatz', () => {
+  assert.equal(feedTitel('Vallora Teppichboden 400cm 500cm', v({ Farbe: 'Salbeigrün (081)', Breite: '400 cm' }), 12), 'Vallora Teppichboden Salbeigrün (081), 400 cm breit');
+  assert.equal(feedTitel('Hestia Teppichboden 400cm', v({ Farbe: 'Steingrau (173)', Breite: 'Wunschmaß' }), 8), 'Hestia Teppichboden Steingrau (173)');
+  assert.equal(feedTitel('Zafira Teppichboden 400cm 500cm', v({ Farbe: 'Haselnuss (420)', Breite: '500cm' }), 5), 'Zafira Teppichboden Haselnuss (420), 500 cm breit');
+});
+
+test('feedTitel: keine Filterfarbe bei Einzeldekor', () => {
+  assert.equal(feedTitel('Landora Eiche Beige – Vinylboden von der Rolle', v({ Breite: '300 cm', Farbe: 'Beige Braun' }), 1), 'Landora Eiche Beige – Vinylboden von der Rolle, 300 cm breit');
+});
+
+test('feedZeilen baut die offerId der Shopify-App', () => {
+  const jsonl = [
+    { id: 'gid://shopify/Product/1', title: 'Hestia Teppichboden 400cm' },
+    { id: 'gid://shopify/ProductVariant/11', __parentId: 'gid://shopify/Product/1', ...v({ Farbe: 'Grau', Breite: '400 cm' }) },
+    { id: 'gid://shopify/ProductVariant/12', __parentId: 'gid://shopify/Product/1', ...v({ Farbe: 'Sand', Breite: '400 cm' }) },
+  ].map((o) => JSON.stringify(o)).join('\n');
+  assert.deepEqual(feedZeilen(jsonl), [
+    ['shopify_ZZ_1_11', 'Hestia Teppichboden Grau, 400 cm breit'],
+    ['shopify_ZZ_1_12', 'Hestia Teppichboden Sand, 400 cm breit'],
+  ]);
+});

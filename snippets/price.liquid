@@ -393,7 +393,17 @@
       {% render 'tp-paketinhalt', product: product_resource, sqm_per_package: sqm_per_package, prefix: '', nur_flaeche: true %}
     </div>
   {%- endif -%}
-  {%- if selected_variant.unit_price and show_unit_price %}
+  {%- comment -%}
+    Grundpreis nur, wenn der Preis selbst nicht schon pro m2 steht - sonst
+    zeigt die Suche "15,90 EUR/m2" zweimal untereinander.
+  {%- endcomment -%}
+  {%- liquid
+    assign tp_pr_grundpreis_zeigen = show_unit_price
+    if is_sqm_card or is_roll_card
+      assign tp_pr_grundpreis_zeigen = false
+    endif
+  -%}
+  {%- if selected_variant.unit_price and tp_pr_grundpreis_zeigen %}
     {%- liquid
       if use_currency
         assign unit_price = selected_variant.unit_price | money_with_currency

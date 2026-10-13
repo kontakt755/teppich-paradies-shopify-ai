@@ -44,6 +44,22 @@
   margin-bottom: 20px;
 }
 
+.tp-sample__product-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tp-sample__product-hinweis {
+  font-size: 14px;
+  line-height: 1.35;
+  color: #555;
+}
+
+.tp-sample__product-hinweis[hidden] {
+  display: none;
+}
+
 .tp-sample__product img {
   width: 56px;
   height: 56px;
@@ -129,6 +145,19 @@
 .tp-sample__card[data-selected='true'] {
   border-color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
   border-width: 2px;
+}
+
+.tp-sample__card-input {
+  /* Nur fuer Tastatur und Screenreader - sichtbar ist das runde Haekchen. */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+  opacity: 0;
 }
 
 .tp-sample__card-check {

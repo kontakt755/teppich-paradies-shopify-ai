@@ -186,3 +186,30 @@ test('Passt in ein Stueck -> keine Zwei-Stuecke-Loesung', () => {
   const v = RM.rolleVorschlag({ breite: 350, laenge: 650, rollen: [200, 400], raum: false, preis: vinyl, richtung: 'laenge' });
   assert.equal(v.zwei, null);
 });
+
+// Shop-Analyse 13.10.2026: Zuschnitt und berechnete Menge getrennt zeigen,
+// leere Zusatzraeume benennen. Nur Anzeige, die Rechnung bleibt.
+test('flaecheText: Zuschnitt und berechnete m² nur getrennt, wenn verschieden', () => {
+  assert.equal(RM.flaecheText(22.4, 23), '22,4 m² Zuschnitt · berechnet 23 m²');
+  assert.equal(RM.flaecheText(20, 20), '20,00 m²');
+  assert.equal(RM.flaecheText(22.4, 0), '22,40 m²', 'ohne Abfrage wie bisher');
+  assert.equal(RM.flaecheText(22.4, 22.4), '22,40 m²', '0,01-m²-Abrechnung');
+});
+
+test('flaecheText/stueckeRundungText: Eichwald 300 x 460 + 200 x 460', () => {
+  assert.equal(RM.flaecheText(23, [14, 10]), '23 m² Zuschnitt · berechnet 24 m²');
+  assert.equal(RM.stueckeRundungText([14, 10]), 'Jedes Stück wird einzeln auf volle m² aufgerundet: 14 + 10 = 24 m² berechnet.');
+  assert.equal(RM.stueckeRundungText([14]), '');
+});
+
+test('leereRaeume: Raum 2 ohne Maße wird gemeldet, halb ausgefuellte nicht', () => {
+  assert.deepEqual(RM.leereRaeume([{ breite: '3,5', laenge: '4' }, { breite: '', laenge: '' }]), [2]);
+  assert.deepEqual(RM.leereRaeume([{ breite: '3,5', laenge: '4' }, { breite: '200', laenge: '' }]), []);
+});
+
+test('Rollenrechner stellt Mengen- und Bestellmass-Abfrage fuer den Helfer bereit', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../../blocks/tp-rollware-rechner.liquid', import.meta.url), 'utf8');
+  assert.match(src, /root\.tpRwcBerechnetM2 = function \(wCm, lenCm\)/);
+  assert.match(src, /root\.tpRwcBestellmass = function \(\)/);
+});

@@ -344,3 +344,27 @@ test('Tailscale gestoppt oder abgemeldet: ein To-do in der Website-Sicht, sonst 
   assert.deepEqual(leiteTodosAb({ shopwache: { tailscale: { status: 'gestoppt' } } }, { sicht: 'laden', jetzt: JETZT }), []);
   assert.equal(zaehleTodos({ shopwache: { tailscale: { status: 'gestoppt' } } }, { jetzt: JETZT }).website, 1);
 });
+
+test('Auslauf-Pruefung: Befunde, gestoerter Lieferant und stumme Pruefung werden ein Website-To-do', () => {
+  const mit = auslauf => leiteTodosAb({ shopwache: { verfuegbar: true, ampel: 'gruen', geprueftAm: vorTagen(0), befunde: [], auslauf } }, { sicht: 'website', jetzt: JETZT });
+  const weg = mit({ geprueftAm: vorTagen(1), befunde: [
+    { lieferant: 'A', ergebnis: 'fehlt', handles: ['testboden-eiche'] },
+    { lieferant: 'C', ergebnis: 'hinweis', handles: ['testteppich', 'muster-testteppich'] },
+  ] });
+  assert.equal(weg.length, 1);
+  assert.equal(weg[0].id, 'auslauf');
+  assert.equal(weg[0].ton, 'crit');
+  assert.match(weg[0].titel, /1 Artikel beim Lieferanten nicht mehr gefunden/);
+  assert.match(weg[0].kontext, /^testboden-eiche, testteppich, muster-testteppich · gegenprüfen/);
+  assert.equal(weg[0].knopf.href, '#/lexikon?lq=testboden-eiche');
+
+  const nurHinweis = mit({ geprueftAm: vorTagen(1), befunde: [{ lieferant: 'E', ergebnis: 'verdacht', handles: ['x'] }] });
+  assert.equal(nurHinweis[0].ton, 'warn');
+
+  const gestoert = mit({ geprueftAm: vorTagen(1), befunde: [], ausfaelle: [{ lieferant: 'D', grund: '90 von 100 Abrufen gescheitert' }] });
+  assert.match(gestoert[0].titel, /Lieferant D nicht prüfbar/);
+
+  assert.match(mit({ geprueftAm: vorTagen(9), befunde: [] })[0].titel, /meldet sich nicht/);
+  assert.deepEqual(mit({ geprueftAm: vorTagen(2), befunde: [] }), []);
+  assert.deepEqual(mit(null), []);
+});

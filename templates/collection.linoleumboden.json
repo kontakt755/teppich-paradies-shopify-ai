@@ -12,17 +12,20 @@
     "hero": {
       "type": "tp-boden-kategorie-hero",
       "settings": {
-        "image": "shopify://shop_images/1160176-8FXC-prod.jpg",
+        "image": "shopify://shop_images/linoleumboden-kueche-salbeigruen.jpg",
         "eyebrow": "Bodenbeläge entdecken",
         "heading": "Linoleumboden",
         "lead": "<p>Linoleum-Qualitäten mit unterschiedlichen Farbauswahlen und belegten Nutzungsklassen. Sehen Sie die Materialstruktur und wählen Sie Ihren Favoriten.</p>",
         "primary_label": "Qualitäten ansehen",
         "secondary_label": "Beratung anfragen",
         "secondary_link": "/pages/kontakt",
-        "image_caption": "Produktansicht aus der Linoleumkollektion",
+        "image_caption": "Beispielraum – Farbtöne je Qualität im Produkt",
         "primary_link": "#tp-boden-auswahl",
-        "image_crop": "structure",
-        "image_alt": "Original-Farbansicht eines Linoleumbodens"
+        "image_crop": "room",
+        "image_alt": "Küche mit salbeigrünem Linoleumboden (Beispielbild)",
+        "image_detail": "shopify://shop_images/1160176-8FXC-prod.jpg",
+        "image_detail_alt": "Materialstruktur eines Linoleumbodens in Nahansicht",
+        "image_detail_label": "Struktur"
       },
       "blocks": {
         "point_1": {
