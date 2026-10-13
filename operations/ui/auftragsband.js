@@ -86,7 +86,9 @@ function bandHtml(band) {
 function positionHtml(p) {
   const bild = p.bild ? `<img src="${esc(p.bild)}" alt="">` : '<span class="platzhalter" aria-hidden="true"></span>';
   const mass = p.masspruefung && ['abweichung', 'unlesbar', 'waise'].includes(p.masspruefung.status)
-    ? `<p class="warnung">Maßprüfung: ${esc(p.masspruefung.status)}${p.masspruefung.hinweis ? ' – ' + esc(p.masspruefung.hinweis) : ''}</p>` : '';
+    ? `<p class="warnung">Maßprüfung: ${esc(p.masspruefung.status)}${p.masspruefung.hinweis ? ' – ' + esc(p.masspruefung.hinweis) : ''}</p>`
+    // Bundle-Komponente (Rollenware unter "Zuschnitt von der Rolle"): Bestandsabgang, kein Zuschnitt.
+    : p.masspruefung?.status === 'bestand' ? `<p class="hinweis">${esc(p.masspruefung.hinweis || 'Bestandsabgang – nicht separat zuschneiden')}</p>` : '';
   return `<li>
     ${bild}
     <span class="pd">

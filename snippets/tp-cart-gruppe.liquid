@@ -11,6 +11,9 @@
     Hauptzeile einer Gruppe: erste Zeile der Gruppe ohne Service-Property
     Waise:     Service mit _Gruppe ohne Hauptzeile | Service ohne _Gruppe
                | Flaechenware/Wunschmass ohne Mass-Property
+               | Hauptzeile mit _Rollenzuschnitt (cm) ohne Zeile "Rollenzuschnitt"
+                 derselben _Gruppe, die den Verbrauch deckt (Zuschnitt-Bundle,
+                 gemeinsamer Rollenbestand)
 
   Fail safe: Waisen sperren den Checkout (teil 'sperre'), ebenso fehlende,
   abweichende oder veraltete Zuschnitt-Attribute (Lieferschein liest nur
@@ -86,6 +89,23 @@
         assign tp_gz_it_waise = 'Dieser Artikel braucht eine Maßangabe – bitte über die Produktseite konfigurieren'
       elsif tp_gz_it_fw and tp_gz_it_mass == false
         assign tp_gz_it_waise = 'Dieser Artikel braucht eine Maßangabe – bitte über die Produktseite konfigurieren'
+      endif
+      # Gemeinsamer Rollenbestand: die Bundle-Zeile "Rollenzuschnitt" derselben
+      # Gruppe muss den Verbrauch der Hauptzeile decken.
+      assign tp_gz_it_bedarf = tp_gz_it_p['_Rollenzuschnitt'] | default: '' | remove: 'cm' | strip | times: 1
+      if tp_gz_it_waise == blank and tp_gz_it_bedarf > 0
+        assign tp_gz_it_gedeckt = 0
+        for tp_gz_it3 in cart.items
+          assign tp_gz_it3_g = tp_gz_it3.properties._Gruppe | default: '' | strip
+          if tp_gz_it_g == blank or tp_gz_it3_g != tp_gz_it_g
+            continue
+          endif
+          assign tp_gz_it3_cm = tp_gz_it3.properties['Rollenzuschnitt'] | default: '' | remove: 'cm' | strip | times: tp_gz_it3.quantity
+          assign tp_gz_it_gedeckt = tp_gz_it_gedeckt | plus: tp_gz_it3_cm
+        endfor
+        if tp_gz_it_gedeckt < tp_gz_it_bedarf
+          assign tp_gz_it_waise = 'Der Zuschnitt von der Rolle fehlt – bitte Teppich entfernen und neu konfigurieren'
+        endif
       endif
       if tp_gz_it_waise != blank
         assign tp_gz_gesperrt = true
@@ -206,6 +226,21 @@
         assign tp_gz_waise = 'Dieser Artikel braucht eine Maßangabe – bitte über die Produktseite konfigurieren'
       endif
     endif
+    assign tp_gz_bedarf = tp_gz_p['_Rollenzuschnitt'] | default: '' | remove: 'cm' | strip | times: 1
+    if tp_gz_waise == blank and tp_gz_bedarf > 0
+      assign tp_gz_gedeckt = 0
+      for tp_gz_it in cart.items
+        assign tp_gz_it_g = tp_gz_it.properties._Gruppe | default: '' | strip
+        if tp_gz_gruppe == blank or tp_gz_it_g != tp_gz_gruppe
+          continue
+        endif
+        assign tp_gz_it_cm = tp_gz_it.properties['Rollenzuschnitt'] | default: '' | remove: 'cm' | strip | times: tp_gz_it.quantity
+        assign tp_gz_gedeckt = tp_gz_gedeckt | plus: tp_gz_it_cm
+      endfor
+      if tp_gz_gedeckt < tp_gz_bedarf
+        assign tp_gz_waise = 'Der Zuschnitt von der Rolle fehlt – bitte Teppich entfernen und neu konfigurieren'
+      endif
+    endif
   endif
 -%}
 {%- if teil == 'berechnet' -%}
@@ -231,6 +266,8 @@
       assign tp_gz_text = tp_gz_p['Länge'] | strip | append: ' Fußleiste'
     elsif tp_gz_service and tp_gz_p['Länge'] != blank
       assign tp_gz_text = tp_gz_p['Länge'] | strip
+    elsif tp_gz_service and tp_gz_p['Rollenzuschnitt'] != blank
+      assign tp_gz_text = tp_gz_p['Rollenzuschnitt'] | strip | append: ' von der Rolle'
     elsif tp_gz_service and tp_gz_p['Bahnen'] != blank
       assign tp_gz_bahnen = tp_gz_p['Bahnen'] | strip
       if tp_gz_bahnen == '1'
