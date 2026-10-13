@@ -132,12 +132,21 @@
   }
 
   .carpet-package__waste-{{ package_selector_id }} {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 7px;
     margin-top: 10px;
     font-size: 16px;
     color: var(--cp-muted);
+  }
+
+  /* Zeile ist sichtbar 26 px hoch; Trefferflaeche auf 44 px erweitern,
+     ohne den Abstand zu aendern (wie die Paket-Knoepfe unten). */
+  .carpet-package__waste-{{ package_selector_id }}::after {
+    content: "";
+    position: absolute;
+    inset: -9px 0;
   }
 
   .carpet-package__waste-{{ package_selector_id }} input {

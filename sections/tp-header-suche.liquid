@@ -169,7 +169,9 @@
        16 px, sonst zoomt iOS. */
     .tp-hs__leiste { max-width: none; }
     .tp-hs__form { height: 44px; margin: 6px 0; padding: 0 4px 0 16px; }
-    .tp-hs__btn { width: 36px; height: 36px; }
+    .tp-hs__btn { width: 36px; height: 36px; position: relative; }
+    /* Sichtbar 36 px, Trefferflaeche 44 px (Feld ist 44 px hoch) */
+    .tp-hs__btn::after { content: ''; position: absolute; inset: -4px; }
     .tp-hs__panel { display: none; }
     .tp-hs__chips { display: flex; gap: 8px; overflow-x: auto; padding: 0 var(--tp-pad) 8px; scrollbar-width: none; scroll-snap-type: x proximity; }
     .tp-hs__chips::-webkit-scrollbar { display: none; }
