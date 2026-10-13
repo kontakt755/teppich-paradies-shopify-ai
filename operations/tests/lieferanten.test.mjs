@@ -9,6 +9,7 @@ import {
   pruefeStammdaten, leseStammdaten, stammdatenPfad, stammdatenFuer, lieferantenUebersicht, lieferantDetail,
   bestellmail, mailtoLink, wartetage, warnstufe, LieferantenFehler,
   WARTE_NACHHAKEN_TAGE, WARTE_PROBLEM_TAGE, MAILTO_MAX,
+  kennungAusLexikon, lexikonSchnellzugriff, lexikonProduktMitSchnellzugriff,
 } from '../lib/lieferanten.mjs';
 
 // Nur synthetische Testdaten: Pseudonyme (Lieferant A/B, *.example), erfundene Kunden.
@@ -439,4 +440,96 @@ test('Muster aus eigenem Bestand: nicht in der Mail, nicht "zu bestellen", mit G
   const a = lieferantenUebersicht(m, { stammdaten: STAMM, jetzt: JETZT }).lieferanten.find(l => l.id === 'A');
   assert.deepEqual(a.muster, { zuBestellen: 1, bestellt: 0, unterwegs: 0 });
   assert.equal(a.musterEigenerBestand, 1);
+});
+
+// ------------------------------------------------------ Schnellzugriff (Lexikon)
+
+const ARTIKEL_B = { artikelnummer: 'B-6924', farbnummer: '004', produktname: 'Testfell 35 rund silber' };
+
+test('Lexikon-Kuerzel: "B" und "Lieferant B" ergeben B, Leeres und UNGEKLAERT nichts', () => {
+  assert.equal(kennungAusLexikon('B'), 'B');
+  assert.equal(kennungAusLexikon('Lieferant b'), 'B');
+  assert.equal(kennungAusLexikon(''), null);
+  assert.equal(kennungAusLexikon(null), null);
+  assert.equal(kennungAusLexikon('UNGEKLAERT'), null);
+  assert.equal(kennungAusLexikon('irgendein Freitext'), null);
+});
+
+test('Schnellzugriff: Lieferant nur mit Mail -> fertige Bestellmail mit Artikel- und Farbnummer, ohne Shop-Namen', () => {
+  const st = pruefeStammdaten({ lieferanten: { B: { kundennummer: 'K-42', ware: { weg: 'mail', mail: 'order@lieferant-b.example', telefon: '+49 30 2222222' }, mail: { anrede: 'Hallo,' } } } });
+  const sz = lexikonSchnellzugriff(st, 'B', { artikel: ARTIKEL_B });
+  assert.equal(sz.lieferant, 'B');
+  assert.equal(sz.weg, 'mail');
+  assert.equal(sz.hinweis, null);
+  assert.equal(sz.kundennummer, 'K-42');
+  assert.deepEqual(sz.aktionen.map(a => a.weg), ['mail', 'telefon'], 'Hauptweg zuerst, dann die weiteren Kontakte');
+  const mail = sz.aktionen[0];
+  assert.equal(mail.label, 'Bestellmail an Lieferant B');
+  assert.equal(mail.an, 'order@lieferant-b.example');
+  assert.equal(mail.betreff, 'Bestellung – Kd.-Nr. K-42 – Art.-Nr. B-6924');
+  assert.match(mail.text, /^Hallo,\n/);
+  assert.match(mail.text, /Unsere Kundennummer: K-42/);
+  assert.match(mail.text, /Art\.-Nr\. B-6924 · Farb-Nr\. 004\n {3}Testfell 35 rund silber\n {3}Menge: /);
+  assert.match(mail.text, /Lieferanschrift: /);
+  assert.ok(mail.mailto.startsWith('mailto:order@lieferant-b.example?subject='));
+  assert.equal(sz.aktionen[1].label, 'Anrufen');
+  assert.equal(sz.aktionen[1].nummer, '+49 30 2222222');
+});
+
+test('Schnellzugriff: Hauptweg Portal bzw. Telefon steht vorn', () => {
+  const portal = lexikonSchnellzugriff(STAMM, 'A', { artikel: { artikelnummer: 'A-1' } });
+  assert.deepEqual(portal.aktionen.map(a => a.weg), ['portal', 'mail', 'telefon']);
+  assert.equal(portal.aktionen[0].label, 'Im Portal bestellen');
+  assert.equal(portal.aktionen[0].href, 'https://lieferant-a.example/haendler');
+  const tel = pruefeStammdaten({ lieferanten: { C: { ware: { weg: 'telefon', telefon: '+49 30 3333333', mail: 'c@lieferant-c.example' } } } });
+  assert.deepEqual(lexikonSchnellzugriff(tel, 'C').aktionen.map(a => a.weg), ['telefon', 'mail']);
+});
+
+test('Schnellzugriff ohne Stammdaten: keine Aktion, Hinweis sagt was fehlt - nichts geraten', () => {
+  const sz = lexikonSchnellzugriff(pruefeStammdaten({}), 'B', { artikel: ARTIKEL_B });
+  assert.deepEqual(sz.aktionen, []);
+  assert.equal(sz.weg, null);
+  assert.match(sz.hinweis, /Bestellweg von Lieferant B nicht hinterlegt/);
+  assert.equal(sz.stammdatenEintrag, false);
+  assert.match(sz.hinweis, /lieferanten\/stammdaten\.json/, 'ohne Eintrag fuehrt keine Lieferantenseite weiter - die Datei steht im Hinweis');
+  const leer = lexikonSchnellzugriff(pruefeStammdaten({ lieferanten: { B: { muster: { lieferung: 'laden' } } } }), 'B');
+  assert.equal(leer.stammdatenEintrag, true, 'mit Eintrag zeigt der Einkauf, was fehlt');
+  assert.doesNotMatch(leer.hinweis, /stammdaten\.json/);
+  assert.equal(lexikonSchnellzugriff(null, 'B').aktionen.length, 0, 'auch ohne Stammdatendatei');
+  assert.equal(lexikonSchnellzugriff(STAMM, null), null, 'ohne Lieferant kein Schnellzugriff');
+});
+
+test('Schnellzugriff fuer Muster nutzt den Musterweg und schreibt eine Musterbestellung', () => {
+  const sz = lexikonSchnellzugriff(STAMM, 'A', { artikel: { artikelnummer: 'A-4711', farbnummer: '023' }, art: 'muster' });
+  assert.equal(sz.art, 'muster');
+  assert.equal(sz.aktionen[0].weg, 'mail');
+  assert.equal(sz.aktionen[0].label, 'Musterbestellung an Lieferant A');
+  assert.equal(sz.aktionen[0].an, 'muster@lieferant-a.example');
+  assert.match(sz.aktionen[0].text, /1× Art\.-Nr\. A-4711 · Farb-Nr\. 023/);
+  assert.ok(sz.aktionen[0].betreff.startsWith('Musterbestellung'));
+});
+
+test('Lexikon-Produkt: Schnellzugriff nur an Varianten ohne Direkt- und Suchlink, Export bleibt unveraendert', () => {
+  const produkt = {
+    handle: 'testteppich',
+    varianten: [
+      { id: 'v1', einkauf: { lieferant: 'A', artikelnummer: 'A-1', url: 'https://lieferant-a.example/a-1' }, link: { status: 'vorhanden', grund: null, suchlink: null } },
+      { id: 'v2', einkauf: { lieferant: 'A', artikelnummer: 'A-2' }, link: { status: 'nur_artikelnummer', grund: 'x', suchlink: 'https://lieferant-a.example/suche?q=A-2' } },
+      { id: 'v3', einkauf: { lieferant: 'B', ...ARTIKEL_B }, link: { status: 'nur_artikelnummer', grund: 'Artikelnummer vorhanden, aber kein Link hinterlegt (Lieferant B)', suchlink: null } },
+      { id: 'v4', einkauf: { lieferant: null }, link: { status: 'fehlt', grund: 'keine Einkaufsdaten', suchlink: null } },
+      { id: 'm1', original: { gefunden: true, lieferant: 'B', artikelnummer: 'B-6924', url: null, suchlink: null } },
+      { id: 'm2', original: { gefunden: true, lieferant: 'A', artikelnummer: 'A-1', url: 'https://lieferant-a.example/a-1' } },
+    ],
+  };
+  const vorher = JSON.stringify(produkt);
+  const r = lexikonProduktMitSchnellzugriff(produkt, STAMM);
+  assert.equal(JSON.stringify(produkt), vorher, 'das Exportobjekt wird nicht veraendert');
+  const [v1, v2, v3, v4, m1, m2] = r.varianten;
+  assert.equal(v1.link.schnellzugriff, undefined);
+  assert.equal(v2.link.schnellzugriff, undefined, 'Suchlink reicht als Schnellzugriff');
+  assert.equal(v3.link.schnellzugriff.aktionen[0].label, 'Bestellmail an Lieferant B');
+  assert.equal(v4.link.schnellzugriff, undefined, 'ohne Lieferant bleibt der Grund stehen');
+  assert.equal(m1.original.schnellzugriff.art, 'muster');
+  assert.equal(m1.original.schnellzugriff.aktionen[0].an, 'order@lieferant-b.example');
+  assert.equal(m2.original.schnellzugriff, undefined);
 });

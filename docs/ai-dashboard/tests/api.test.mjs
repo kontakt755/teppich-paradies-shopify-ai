@@ -585,6 +585,32 @@ test('lexikonProdukt liefert das volle Produkt inkl. Varianten und Einkaufsdaten
   assert.equal(r.produkt.muster.vorhanden, true);
 });
 
+test('lexikonProdukt: Variante ohne Direkt- und Suchlink bekommt den Bestellweg des Lieferanten als Schnellzugriff', () => {
+  const root = tmpRoot();
+  const dir = lexikonFixture(root);
+  fs.mkdirSync(path.join(dir, 'lieferanten'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'lieferanten', 'stammdaten.json'), JSON.stringify({
+    lieferanten: { B: { kundennummer: 'K-7', ware: { weg: 'mail', mail: 'order@lieferant-b.example', telefon: '+49 30 2222222' } } },
+  }));
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const sz = api.lexikonProdukt('vinyl-clic-eiche').produkt.varianten[0].link.schnellzugriff;
+  assert.equal(sz.lieferant, 'B');
+  assert.deepEqual(sz.aktionen.map(a => a.label), ['Bestellmail an Lieferant B', 'Anrufen']);
+  assert.match(sz.aktionen[0].text, /Art\.-Nr\. B-9001/);
+  assert.match(sz.aktionen[0].mailto, /^mailto:order@lieferant-b\.example\?subject=Bestellung/);
+  // Varianten mit Link bleiben, wie sie sind.
+  assert.equal(api.lexikonProdukt('traum-teppich-grau').produkt.varianten[0].link.schnellzugriff, undefined);
+});
+
+test('lexikonProdukt ohne Stammdaten: Schnellzugriff sagt, dass der Bestellweg fehlt', () => {
+  const root = tmpRoot();
+  const dir = lexikonFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const sz = api.lexikonProdukt('vinyl-clic-eiche').produkt.varianten[0].link.schnellzugriff;
+  assert.deepEqual(sz.aktionen, []);
+  assert.match(sz.hinweis, /Bestellweg von Lieferant B nicht hinterlegt/);
+});
+
 test('lexikonProdukt meldet unbekanntes Handle statt zu werfen', () => {
   const root = tmpRoot();
   const dir = lexikonFixture(root);
