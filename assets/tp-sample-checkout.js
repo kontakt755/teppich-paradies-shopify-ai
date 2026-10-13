@@ -191,10 +191,17 @@
   // Die Produktseite haengt die dort gewaehlte Farbe als ?farbe= an
   // (assets/tp-farbauswahl.js). Vorauswahl ueber denselben Weg wie ein Tipp
   // des Kunden, damit Limit und bereits bestellte Muster weiter gelten.
-  // Unbekannter oder fehlender Wert: nichts passiert.
+  // Unbekannter Wert: nichts passiert. Ohne Wert wird nur gewaehlt, wenn es
+  // genau ein Dekor gibt (Einzeldekor wie Klickvinyl) - sonst muesste der
+  // Kunde das einzige Kaestchen selbst antippen (Fehleranalyse 13.10.).
   function vorauswahl(farbe) {
-    if (!farbe) return;
     var cards = gridEl.querySelectorAll('[data-sample-color]');
+    if (!farbe) {
+      if (cards.length !== 1) return;
+      var einzige = cards[0].querySelector('input[type="checkbox"]');
+      if (einzige && !einzige.disabled && !einzige.checked) einzige.click();
+      return;
+    }
     for (var i = 0; i < cards.length; i += 1) {
       if (cards[i].getAttribute('data-sample-color') !== farbe) continue;
       var checkbox = cards[i].querySelector('input[type="checkbox"]');
