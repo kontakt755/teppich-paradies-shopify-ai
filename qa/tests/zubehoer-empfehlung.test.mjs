@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
+import { ladeLieferantenNamen } from '../../scripts/masstepich/lib.mjs';
 
 // Block und Regelwerk muessen dieselben Regeln und Zubehoer-Handles nennen.
 // Eine Empfehlung ohne Beleg in docs/zubehoer-empfehlungen.md darf es nicht geben.
@@ -67,8 +68,17 @@ test('jede Zeile im Regelwerk ist im Block umgesetzt', () => {
 
 test('keine Lieferantennamen im Block oder Regelwerk', () => {
   // AGENTS.md Punkt 8: nur Pseudonyme. Herstellernamen von Zubehoer sind erlaubt.
-  for (const verboten of ['JOKA', 'Joka', 'Jordan', 'jordanshop']) {
+  // Weitere Klarnamen kommen aus der internen Liste (TP_LIEFERANTEN_NAMEN oder
+  // lokale Konfiguration) - sie stehen bewusst nicht im Repository.
+  const intern = [...(ladeLieferantenNamen() ?? [])];
+  for (const verboten of ['JOKA', 'Joka']) {
     assert.ok(!block.includes(verboten), `Block nennt ${verboten}`);
     assert.ok(!doc.includes(verboten), `Regelwerk nennt ${verboten}`);
+  }
+  const kleinBlock = block.toLowerCase();
+  const kleinDoc = doc.toLowerCase();
+  for (const name of intern) {
+    assert.ok(!kleinBlock.includes(name), 'Block nennt einen internen Lieferantennamen');
+    assert.ok(!kleinDoc.includes(name), 'Regelwerk nennt einen internen Lieferantennamen');
   }
 });

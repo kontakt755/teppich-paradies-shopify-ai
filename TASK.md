@@ -247,7 +247,7 @@ Nicht nur den sichtbaren Frontendpreis prüfen.
 Immer auch den tatsächlich an Shopify übergebenen Warenkorbwert prüfen.
 
 ────────────────────────────
-JORDAN / KETTELSERVICE
+LIEFERANT A / KETTELSERVICE
 ────────────────────────────
 
 Kettelservice darf nicht pauschal allen Produkten angeboten werden.

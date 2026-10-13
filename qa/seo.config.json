@@ -24,7 +24,7 @@
     { "name": "Versand & Lieferung", "path": "/pages/versand-lieferung", "type": "page", "indexExpected": true, "recommendation": { "title": "Versand & Lieferung | Teppich Paradies", "description": "Informationen zu Versandarten, Lieferzeiten und der Anlieferung von Teppichboden, Vinylboden, Rollenware und Paketware bei Teppich Paradies." } },
     { "name": "Teppichboden PDP", "path": "/products/piumera-teppichboden-400cm-500cm", "type": "product", "productKind": "roll", "indexExpected": true },
     { "name": "Rollen-Vinyl PDP", "path": "/products/marano-eiche-braun-vinylboden-von-der-rolle", "type": "product", "productKind": "roll", "indexExpected": true },
-    { "name": "Klickvinyl PDP", "path": "/products/marlow-eiche-nordisch-klickvinyl-7mm", "type": "product", "productKind": "package", "indexExpected": true },
+    { "name": "Klickvinyl PDP", "path": "/products/turku-eiche-nordisch-klickvinyl-7mm", "type": "product", "productKind": "package", "indexExpected": true },
     { "name": "Klebevinyl PDP", "path": "/products/alvora-eiche-bernstein-klebevinyl-2-5mm", "type": "product", "productKind": "package", "indexExpected": true }
   ],
   "infrastructure": ["/robots.txt", "/sitemap.xml"],
