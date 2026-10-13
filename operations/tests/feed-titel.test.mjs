@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { basisTitel, feedTitel, feedZeilen } from '../scripts/feed-titel.mjs';
+import { basisTitel, feedTitel, feedZeilen, grundpreis } from '../scripts/feed-titel.mjs';
 
 const v = (opts) => ({ selectedOptions: Object.entries(opts).map(([name, value]) => ({ name, value })) });
 
@@ -27,7 +27,28 @@ test('feedZeilen baut die offerId der Shopify-App', () => {
     { id: 'gid://shopify/ProductVariant/12', __parentId: 'gid://shopify/Product/1', ...v({ Farbe: 'Sand', Breite: '400 cm' }) },
   ].map((o) => JSON.stringify(o)).join('\n');
   assert.deepEqual(feedZeilen(jsonl), [
-    ['shopify_ZZ_1_11', 'Hestia Teppichboden Grau, 400 cm breit'],
-    ['shopify_ZZ_1_12', 'Hestia Teppichboden Sand, 400 cm breit'],
+    ['shopify_ZZ_1_11', 'Hestia Teppichboden Grau, 400 cm breit', '', ''],
+    ['shopify_ZZ_1_12', 'Hestia Teppichboden Sand, 400 cm breit', '', ''],
   ]);
+});
+
+const mess = (quantityValue, quantityUnit = 'M2', referenceValue = 1, referenceUnit = 'M2') => ({ quantityUnit, quantityValue, referenceUnit, referenceValue });
+
+test('grundpreis: Paketware in m², nur wenn Shopify den Grundpreis zeigt', () => {
+  assert.deepEqual(grundpreis({ showUnitPrice: true, unitPriceMeasurement: mess(2.21) }), ['2.21 sqm', '1 sqm']);
+  assert.deepEqual(grundpreis({ showUnitPrice: true, unitPriceMeasurement: mess(2.5, 'M', 1, 'M') }), ['2.5 m', '1 m']);
+  assert.deepEqual(grundpreis({ showUnitPrice: true, unitPriceMeasurement: mess(1.7999999, 'M2') }), ['1.8 sqm', '1 sqm'], 'Fliesskomma gerundet');
+  assert.deepEqual(grundpreis({ showUnitPrice: false, unitPriceMeasurement: mess(2.21) }), ['', ''], 'Grundpreis aus');
+  assert.deepEqual(grundpreis({ showUnitPrice: true, unitPriceMeasurement: null }), ['', '']);
+  assert.deepEqual(grundpreis({ showUnitPrice: true, unitPriceMeasurement: mess(0) }), ['', ''], 'Menge 0');
+  assert.deepEqual(grundpreis({ showUnitPrice: true, unitPriceMeasurement: mess(20, 'MM', 1, 'MM') }), ['', ''], 'unbekannte Einheit nicht raten');
+  assert.deepEqual(grundpreis(undefined), ['', '']);
+});
+
+test('feedZeilen: Grundpreis-Spalten aus der Bulk-Abfrage', () => {
+  const jsonl = [
+    { id: 'gid://shopify/Product/2', title: 'Rostavo Eiche Rustikal – Klickvinyl 5,2mm' },
+    { id: 'gid://shopify/ProductVariant/21', __parentId: 'gid://shopify/Product/2', selectedOptions: [], showUnitPrice: true, unitPriceMeasurement: mess(2.21) },
+  ].map((o) => JSON.stringify(o)).join('\n');
+  assert.deepEqual(feedZeilen(jsonl), [['shopify_ZZ_2_21', 'Rostavo Eiche Rustikal – Klickvinyl 5,2mm', '2.21 sqm', '1 sqm']]);
 });
