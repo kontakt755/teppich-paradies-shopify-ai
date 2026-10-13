@@ -1012,11 +1012,13 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
     raus…“ (Zeitleiste) öffnen ein Fenster „An Kunden raus“: Häkchen für die Artikel im Paket (Teillieferung),
     Sendungsnummer und Versanddienst (optional), „Kunde bekommt die Versandmail von Shopify“. „Als verschickt
     buchen“ setzt den Schritt **und** bucht die Sendung in Shopify; Shopify schickt die Versandmail, mit
-    Sendungsnummer samt Verfolgungslink. Persönlich vorbeigebrachte Muster: gebucht, ohne Mail.
+    Sendungsnummer samt Verfolgungslink. Persönlich vorbeigebrachte Muster und „Kunde hat Muster“ (eigener
+    Bestand): gebucht, ohne Mail; die Mail-Wahl steht an der Position und gilt auch beim Nachholen.
   - *Wenn es nicht klappt* (Recht fehlt, kein Zugang, Netz, in Shopify zurückgehalten): Der Schritt steht trotzdem,
     die Rückmeldung ist rot und sagt den Grund; an der Zeitleiste und an der Einkaufsposition steht „Versand nicht
-    in Shopify gebucht“ mit „In Shopify buchen“ zum Nachholen. Im Protokoll „Versand in Shopify gebucht / nicht
-    gebucht / unklar“, Fehlschläge zusätzlich im Dienstprotokoll.
+    in Shopify gebucht“ mit „In Shopify buchen“ zum Nachholen (je Sendung eine Buchung mit ihrer Nummer). Endgültige
+    Gründe (storniert, Testbestellung, Artikel nicht mehr in der Bestellung) zeigen keinen roten Hinweis. Im
+    Protokoll „Versand in Shopify gebucht / nicht gebucht / unklar“, Fehlschläge zusätzlich im Dienstprotokoll.
   - *Sicherheit:* nur Positionen, die vor dem Klick noch nicht raus waren; nie rückwirkend (alte „raus“-Positionen
     ohne Vermerk bleiben unberührt); Buchungen derselben Bestellung nacheinander und gegen die frisch gelesene offene
     Menge – doppelter Klick bucht nicht doppelt. Zurückhaltung „Bestand fehlt“ hebt das Control Center auf, andere
@@ -1028,13 +1030,14 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   - *Prüfwerkzeug:* `dashboard:pruefen` startet seine Instanz ohne Shopify-Zugang (auch nicht aus `.env.local`).
   - `SCHREIB_BEREICHE` um `write_fulfillments` und `write_merchant_managed_fulfillment_orders` ergänzt
     (`operations:verbindung` meldet sie, wenn sie fehlen). Beide sind erteilt (Lesprobe 13.10.).
-- **Getestet:** neu `operations/tests/versand.test.mjs` (13: Teillieferung, bereits erfüllt, Recht fehlt laut Liste
-  und laut Antwort, Netzfehler beim Lesen / Antwort verloren nach und vor der Buchung / ohne Beleg = unklar,
-  Zurückhaltung aufheben bzw. stehen lassen, Teilergebnis, Ablehnung, gleichzeitig gebucht, storniert, Spedition),
-  `docs/ai-dashboard/tests/versand-api.test.mjs` (9: Auswahl, Einzelklick, doppelter Klick → 1 Buchung, Recht fehlt
-  → nachholen, kein Zugang, unklar, keine rückwirkende Buchung, Testbestellung, Vorbeibringen ohne Mail, Zurück auf
-  offen), `auftragsstatus.test.mjs` (Vermerk). `dashboard:test` 304/304, `npm test` 7 Suiten grün (2358 Tests,
-  nach Rebase auf `main`), Guards, `validate --static` und `secret:scan` PASS.
+- **Getestet:** neu `operations/tests/versand.test.mjs` (15: Teillieferung, bereits erfüllt, Recht fehlt beim Lesen
+  und Buchen, Netzfehler beim Lesen / Antwort verloren nach und vor der Buchung / ohne Beleg = unklar,
+  Zurückhaltung aufheben bzw. stehen lassen, Teilergebnis, Ablehnung, gleichzeitig gebucht, storniert,
+  Testbestellung laut Shopify, Spedition, geschlossene Fulfillment Orders), `docs/ai-dashboard/tests/versand-api.test.mjs`
+  (10: Auswahl, Einzelklick, doppelter Klick → 1 Buchung, Recht fehlt → nachholen, kein Zugang, unklar, keine
+  rückwirkende Buchung, Testbestellung, Vorbeibringen ohne Mail, Nachholen mit Mail-Wahl und je Sendung, storniert,
+  Zurück auf offen), `auftragsstatus.test.mjs` (Vermerk). Review (`code-review` high, 15 Befunde) eingearbeitet.
+  `dashboard:test` und `npm test` grün (nach Rebase auf `main`), Guards, `validate --static` und `secret:scan` PASS.
   `dashboard:pruefen` 22 Ansichten × 5 Breiten = 110 × OK, 0 px Überlauf; `--rollen` bei 390/1440 px 98 × OK
   (Inhaber 44, Mitarbeiter 28, „lesen“ 26). Klickstrecke gegen die Datenkopie mit
   Shopify-Attrappe (nie echter Shop): Musterbestellung mit 3 Artikeln, 1 abgewählt, Sendungsnummer + GLS → 1 Buchung

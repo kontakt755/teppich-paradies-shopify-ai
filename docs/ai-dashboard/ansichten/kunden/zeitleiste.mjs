@@ -15,6 +15,7 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { einkauf, setzeZurueckAufOffen, setzeMusterHerkunft, kundeUndOrt, ladeStandNeu, MUSTER_HERKUNFT_LABEL } from '../einkauf/auftragsfluss.mjs';
 import { oeffneVersandDialog } from '../einkauf/versand.mjs';
+import { versandRueckmeldung } from '../../lib/versand.mjs';
 import { kunden } from './gemeinsam.mjs';
 
 const WER_TEXT = { wir: 'wir', lieferant: 'Lieferant', kunde: 'Kunde' };
@@ -182,13 +183,17 @@ async function ladeNeu() {
 }
 
 async function setzeSchritt(orderId, schritt, { notiz = null, bezug = null } = {}) {
+  let antwort;
   try {
-    await orgSchreiben('/api/einkauf/auftragsstatus', { aktion: 'schritt', orderId, schritt, notiz, bezug });
+    antwort = await orgSchreiben('/api/einkauf/auftragsstatus', { aktion: 'schritt', orderId, schritt, notiz, bezug });
   } catch (e) {
     toast(`Nicht gespeichert: ${e.message}`, 'crit');
     return false;
   }
-  toast(GESETZT_TEXT[schritt] || 'Gespeichert');
+  // "Kunde hat Muster" bei Mustern aus eigenem Bestand setzt "raus" mit und bucht in Shopify -
+  // was dabei herauskam, gehoert in dieselbe Rueckmeldung.
+  const r = versandRueckmeldung(GESETZT_TEXT[schritt] || 'Gespeichert', antwort?.shopify);
+  toast(r.text, r.ton, r.ton ? { dauer: 9000 } : {});
   await ladeNeu();
   return true;
 }

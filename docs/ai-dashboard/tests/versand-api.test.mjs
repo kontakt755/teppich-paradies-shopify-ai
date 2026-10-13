@@ -25,18 +25,17 @@ const bestellung = (id, zeilen, { tags = [] } = {}) => ({
 });
 const TEST = 'gid://shopify/Order/5002';
 const ICH = { name: 'Mitarbeiter 1', rolle: 'mitarbeiter' };
-const RECHTE = 'read_orders,write_fulfillments,write_merchant_managed_fulfillment_orders';
 
-function umgebung({ attrappe = versandAttrappe(), scope = RECHTE, zugang = true } = {}) {
+function umgebung({ attrappe = versandAttrappe(), zugang = true } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-versand-'));
   fs.mkdirSync(path.join(dir, 'bestelluebersicht'), { recursive: true });
   fs.writeFileSync(path.join(dir, 'bestelluebersicht', 'orders.json'), JSON.stringify({ orders: [
     bestellung(BESTELLUNG, [position(1), position(2)]),
     bestellung(TEST, [position(7)], { tags: ['TESTBESTELLUNG'] }),
   ] }));
-  const z = { attrappe, scope, aktiv: zugang };
+  const z = { attrappe, aktiv: zugang };
   const api = createApi({ gh: async () => '', root: dir, privatDirPath: dir, now: () => new Date('2026-10-13T10:00:00Z'),
-    shopifyZugang: async () => (z.aktiv ? { proxy: z.attrappe.proxy, art: 'client-credentials', scope: z.scope } : { proxy: { execute: async () => null }, art: 'sammeln', scope: null }) });
+    shopifyZugang: async () => (z.aktiv ? { proxy: z.attrappe.proxy, art: 'client-credentials', scope: 'read_orders' } : { proxy: { execute: async () => null }, art: 'sammeln', scope: null }) });
   const setze = payload => api.einkaufAuftragsstatusSetzen(payload, ICH);
   const stand = () => api.einkaufAuftragsstatus().positionen;
   const eintrag = n => stand()[`${BESTELLUNG}::${li(n)}`];
@@ -81,12 +80,12 @@ test('Einzelner Statuswechsel auf "raus" (Einkauf) bucht; doppelter Klick bucht 
 });
 
 test('Recht fehlt: Schritt steht trotzdem, Shopify unberuehrt, Klartext, nachholbar sobald das Recht da ist', async () => {
-  const u = umgebung({ scope: 'read_orders,write_inventory,write_products' });
+  const u = umgebung({ attrappe: versandAttrappe({ verweigert: 'buchen' }) });
   const r = await u.setze({ aktion: 'schritt', orderId: BESTELLUNG, schritt: 'raus' });
   assert.equal(r.shopify.status, 'fehler');
   assert.equal(r.shopify.grund, 'recht-fehlt');
   assert.match(r.shopify.meldung, /write_merchant_managed_fulfillment_orders/);
-  assert.equal(u.z.attrappe.aufrufe.length, 0, 'kein Aufruf an Shopify');
+  assert.equal(u.z.attrappe.zustand.fos[0].zeilen.every(z => z.offen === 1), true, 'in Shopify nichts gebucht');
   assert.deepEqual([u.eintrag(1).status, u.eintrag(2).status], ['raus', 'raus']);
   assert.deepEqual([r.versandNachholen.anzahl, r.versandNachholen.unklar], [2, false]);
   assert.ok(letzteEintraege(protokollPfad(), 5).some(e => e.aktion === 'Versand in Shopify nicht gebucht' && /write_merchant_managed/.test(e.objekt)));
@@ -94,8 +93,8 @@ test('Recht fehlt: Schritt steht trotzdem, Shopify unberuehrt, Klartext, nachhol
   const zeile = u.api.kundenBestellungen().zeilen.find(z => z.orderId === BESTELLUNG);
   assert.equal(zeile.versandHinweis, 'Versand in Shopify nicht gebucht – in der Bestellung nachholen');
   assert.equal(zeile.versandNachholen.anzahl, 2);
-  // Recht erteilt: nachholen.
-  u.z.scope = RECHTE;
+  // Recht erteilt (Dienst neu gestartet, frischer Token): nachholen.
+  u.z.attrappe = versandAttrappe();
   const n = await u.setze({ aktion: 'versandNachholen', orderId: BESTELLUNG });
   assert.equal(n.shopify.status, 'gebucht');
   assert.equal(n.shopify.gebucht, 2);
@@ -186,4 +185,32 @@ test('Browser-Regeln: Kandidaten, Vorauswahl (Eigenleistung mit der letzten Ware
   assert.equal(versandRueckmeldung('Als verschickt eingetragen', { status: 'gebucht', meldung: 'In Shopify als versendet gebucht.' }).ton, '');
   const f = versandRueckmeldung('Als verschickt eingetragen', { status: 'fehler', meldung: 'Versand nicht in Shopify gebucht: Recht fehlt.' });
   assert.deepEqual(f, { text: 'Als verschickt eingetragen – aber Versand nicht in Shopify gebucht: Recht fehlt.', ton: 'crit' });
+});
+
+test('Nachholen behaelt die Wahl "ohne Mail" und bucht je Sendungsnummer getrennt; endgueltige Gruende ohne roten Hinweis', async () => {
+  const u = umgebung({ zugang: false });
+  // Zwei Pakete, beide scheitern (kein Zugang): A mit GLS-Nummer, B mit DHL-Nummer und ohne Mail.
+  await u.setze({ aktion: 'schritt', orderId: BESTELLUNG, schritt: 'raus', lineItemIds: [li(1)], versand: { sendungsnummer: 'G1', versanddienst: 'GLS', benachrichtigen: true } });
+  await u.setze({ aktion: 'schritt', orderId: BESTELLUNG, schritt: 'raus', lineItemIds: [li(2)], versand: { sendungsnummer: 'D2', versanddienst: 'DHL', benachrichtigen: false } });
+  assert.deepEqual([u.eintrag(1).versandMail, u.eintrag(2).versandMail], [true, false]);
+  u.z.aktiv = true;
+  const n = await u.setze({ aktion: 'versandNachholen', orderId: BESTELLUNG });
+  assert.equal(n.shopify.status, 'gebucht');
+  const b = u.z.attrappe.buchungen().map(x => x.variables.fulfillment);
+  assert.equal(b.length, 2, 'eine Buchung je Sendung');
+  assert.deepEqual(b.map(x => [x.trackingInfo.number, x.trackingInfo.company, x.notifyCustomer]), [['G1', 'GLS', true], ['D2', 'DHL', false]]);
+
+  // Einzelner Klick (Einkauf) auf ein persoenlich vorbeigebrachtes Muster: ohne Mail, auch ohne Dialog-Angabe.
+  const v = umgebung();
+  await v.setze({ aktion: 'musterHerkunft', orderId: BESTELLUNG, herkunft: 'eigen_vorbei' });
+  await v.setze({ orderId: BESTELLUNG, lineItemId: li(1), status: 'raus' });
+  assert.equal(v.z.attrappe.buchungen()[0].variables.fulfillment.notifyCustomer, false);
+
+  // Storniert: Vermerk "uebersprungen", kein roter Hinweis, nichts nachzuholen.
+  const s = umgebung({ attrappe: versandAttrappe({ storniert: true }) });
+  const r = await s.setze({ aktion: 'schritt', orderId: BESTELLUNG, schritt: 'raus' });
+  assert.equal(r.shopify.status, 'uebersprungen');
+  assert.equal(r.versandNachholen, null);
+  assert.equal(s.eintrag(1).shopifyVersand.status, 'uebersprungen');
+  await assert.rejects(() => s.setze({ aktion: 'versandNachholen', orderId: BESTELLUNG }), e => e.status === 409);
 });

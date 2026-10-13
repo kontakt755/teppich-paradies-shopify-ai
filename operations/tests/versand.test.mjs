@@ -1,11 +1,9 @@
 // Versand in Shopify buchen (operations/lib/versand.mjs) - nur gegen die Attrappe.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { bucheVersand, ordneZu, buchungsEingaben, fehlendeVersandBereiche, versandNachzuholen, versandGebucht, VersandFehler, VERSANDDIENSTE, RECHT_FEHLT_VERSAND } from '../lib/versand.mjs';
+import { bucheVersand, ordneZu, buchungsEingaben, offeneMengen, versandNachzuholen, versandGebucht, VersandFehler, VERSANDDIENSTE, RECHT_FEHLT_VERSAND } from '../lib/versand.mjs';
 import { VERSANDDIENSTE as DIENSTE_BROWSER } from '../../docs/ai-dashboard/lib/versand.mjs';
 import { versandAttrappe, fo, li, BESTELLUNG } from './versand-attrappe.mjs';
-
-const ALLE_RECHTE = 'read_orders,write_fulfillments,write_merchant_managed_fulfillment_orders';
 
 async function wirft(fn, grund) {
   try { await fn(); } catch (e) {
@@ -18,7 +16,7 @@ async function wirft(fn, grund) {
 
 test('bucht genau die angegebenen Positionen mit Versandmail und Sendungsnummer, Gegenprobe ok', async () => {
   const a = versandAttrappe();
-  const r = await bucheVersand(a.proxy, { orderId: BESTELLUNG, lineItemIds: [li(1), li(2)], sendungsnummer: ' 1234 5678 ', versanddienst: 'GLS', scope: ALLE_RECHTE });
+  const r = await bucheVersand(a.proxy, { orderId: BESTELLUNG, lineItemIds: [li(1), li(2)], sendungsnummer: ' 1234 5678 ', versanddienst: 'GLS' });
   assert.equal(r.status, 'gebucht');
   assert.deepEqual(r.gebucht, [li(1), li(2)]);
   assert.equal(r.kundeBenachrichtigt, true);
@@ -33,7 +31,7 @@ test('bucht genau die angegebenen Positionen mit Versandmail und Sendungsnummer,
 
 test('Teillieferung: nur die eine Position, die andere bleibt offen; ohne Liste wuerde Shopify alles buchen', async () => {
   const a = versandAttrappe({ fos: [fo('1', [{ n: 1, menge: 3 }, { n: 2, menge: 2 }])] });
-  const r = await bucheVersand(a.proxy, { orderId: BESTELLUNG, lineItemIds: [li(2)], benachrichtigen: false, scope: ALLE_RECHTE });
+  const r = await bucheVersand(a.proxy, { orderId: BESTELLUNG, lineItemIds: [li(2)], benachrichtigen: false });
   assert.equal(r.status, 'gebucht');
   const eingabe = a.buchungen()[0].variables.fulfillment;
   assert.equal(eingabe.notifyCustomer, false);
@@ -42,36 +40,32 @@ test('Teillieferung: nur die eine Position, die andere bleibt offen; ohne Liste 
   assert.equal(a.zustand.fos[0].status, 'IN_PROGRESS');
   assert.equal(a.zustand.fos[0].zeilen[0].offen, 3, 'Position 1 unberuehrt');
   // Zweiter Teil spaeter: bucht nur noch Position 1.
-  const r2 = await bucheVersand(a.proxy, { orderId: BESTELLUNG, lineItemIds: [li(1)], scope: ALLE_RECHTE });
+  const r2 = await bucheVersand(a.proxy, { orderId: BESTELLUNG, lineItemIds: [li(1)] });
   assert.equal(r2.status, 'gebucht');
   assert.equal(a.zustand.fos[0].status, 'CLOSED');
 });
 
 test('bereits erfuellt: nichts geschrieben, Status "bereits" - ein zweiter Klick bucht nie doppelt', async () => {
   const a = versandAttrappe();
-  await bucheVersand(a.proxy, { orderId: BESTELLUNG, lineItemIds: [li(1), li(2)], scope: ALLE_RECHTE });
+  await bucheVersand(a.proxy, { orderId: BESTELLUNG, lineItemIds: [li(1), li(2)] });
   const vorher = a.schreibend().length;
-  const r = await bucheVersand(a.proxy, { orderId: BESTELLUNG, lineItemIds: [li(1), li(2)], scope: ALLE_RECHTE });
+  const r = await bucheVersand(a.proxy, { orderId: BESTELLUNG, lineItemIds: [li(1), li(2)] });
   assert.equal(r.status, 'bereits');
   assert.deepEqual(r.bereits, [li(1), li(2)]);
   assert.equal(a.schreibend().length, vorher, 'kein weiterer Schreibaufruf');
 });
 
-test('Recht fehlt: laut Bereichsliste gar kein Aufruf; laut Shopify-Antwort "recht-fehlt" mit Handgriff', async () => {
-  const a = versandAttrappe();
-  const e = await wirft(() => bucheVersand(a.proxy, { orderId: BESTELLUNG, lineItemIds: [li(1)], scope: 'read_orders,write_inventory' }), 'recht-fehlt');
+test('Recht fehlt: Shopify lehnt beim Buchen oder schon beim Lesen ab - "recht-fehlt" mit Handgriff, nichts gebucht', async () => {
+  const b = versandAttrappe({ verweigert: 'buchen' });
+  const e = await wirft(() => bucheVersand(b.proxy, { orderId: BESTELLUNG, lineItemIds: [li(1)] }), 'recht-fehlt');
   assert.equal(e.message, RECHT_FEHLT_VERSAND);
   assert.match(e.message, /write_merchant_managed_fulfillment_orders/);
+  assert.match(e.message, /neu starten/);
   assert.match(e.message, /Artikel versenden/);
-  assert.equal(a.aufrufe.length, 0);
-
-  const b = versandAttrappe({ verweigert: 'buchen' });
-  await wirft(() => bucheVersand(b.proxy, { orderId: BESTELLUNG, lineItemIds: [li(1)], scope: null }), 'recht-fehlt');
   assert.equal(b.zustand.fos[0].zeilen[0].offen, 1, 'nichts gebucht');
   const c = versandAttrappe({ verweigert: 'lesen' });
   await wirft(() => bucheVersand(c.proxy, { orderId: BESTELLUNG, lineItemIds: [li(1)] }), 'recht-fehlt');
-  assert.deepEqual(fehlendeVersandBereiche(null), [], 'fester Token meldet keine Liste - dann nichts behaupten');
-  assert.deepEqual(fehlendeVersandBereiche('write_fulfillments'), ['write_merchant_managed_fulfillment_orders']);
+  assert.equal(c.buchungen().length, 0);
 });
 
 test('Netzfehler: beim Lesen nichts gebucht; Antwort verloren nach der Buchung = gebucht; vor der Buchung = nicht angekommen; ohne Beleg = unklar', async () => {
@@ -125,9 +119,12 @@ test('Shopify lehnt ab: "abgelehnt"; hat in dem Moment jemand anders gebucht, is
   assert.equal(r.status, 'bereits');
 });
 
-test('storniert, unbekannte Position, ungueltige Eingabe: nichts gebucht', async () => {
+test('storniert, Testbestellung laut Shopify, unbekannte Position, ungueltige Eingabe: nichts gebucht', async () => {
   const a = versandAttrappe({ storniert: true });
   await wirft(() => bucheVersand(a.proxy, { orderId: BESTELLUNG, lineItemIds: [li(1)] }), 'storniert');
+  const t = versandAttrappe({ test: true });
+  await wirft(() => bucheVersand(t.proxy, { orderId: BESTELLUNG, lineItemIds: [li(1)] }), 'testbestellung');
+  assert.equal(t.buchungen().length, 0);
   const b = versandAttrappe();
   await wirft(() => bucheVersand(b.proxy, { orderId: BESTELLUNG, lineItemIds: [li(99)] }), 'nicht-buchbar');
   await wirft(() => bucheVersand(b.proxy, { orderId: 'gid://shopify/Order/x', lineItemIds: [li(1)] }), 'eingabe');
@@ -173,4 +170,26 @@ test('Vermerke: nachzuholen nur bei Fehlschlag nach dem 13.10., gebucht laesst d
 
 test('Versanddienste: Browser und Server fuehren dieselbe Liste', () => {
   assert.deepEqual([...DIENSTE_BROWSER], [...VERSANDDIENSTE]);
+});
+
+test('Nichts neu gebucht, aber etwas haengt (schon erfuellt + zurueckgehalten): Fehler mit Gruenden je Position, nie gruen', async () => {
+  const a = versandAttrappe({ fos: [fo('1', [{ n: 1, offen: 0 }], { status: 'CLOSED' }), fo('2', [{ n: 2 }], { status: 'ON_HOLD', holds: [{ reason: 'HIGH_RISK_OF_FRAUD', displayReason: 'Betrugsrisiko' }] })] });
+  const e = await wirft(() => bucheVersand(a.proxy, { orderId: BESTELLUNG, lineItemIds: [li(1), li(2)] }), 'zurueckgehalten');
+  assert.deepEqual(e.extra.bereits, [li(1)]);
+  assert.deepEqual(e.extra.nichtGebucht.map(n => [n.lineItemId, n.grund]), [[li(2), 'gehalten']]);
+  // Erste Buchung scheitert: die Gruende der anderen Positionen bleiben erhalten.
+  const b = versandAttrappe({ antwortWeg: 'vor', fos: [fo('1', [{ n: 1 }]), fo('2', [{ n: 2 }], { status: 'ON_HOLD', holds: [{ reason: 'AWAITING_PAYMENT', displayReason: 'Zahlung ausstehend' }] })] });
+  const f = await wirft(() => bucheVersand(b.proxy, { orderId: BESTELLUNG, lineItemIds: [li(1), li(2)] }), 'nicht-angekommen');
+  assert.deepEqual(f.extra.nichtGebucht.map(n => [n.lineItemId, n.grund]), [[li(2), 'gehalten']]);
+});
+
+test('Geschlossene oder stornierte Fulfillment Orders zaehlen nicht als offen (Restmenge nach Verschieben)', () => {
+  const order = { fulfillmentOrders: { nodes: [
+    { id: 'ALT', status: 'CLOSED', supportedActions: [], fulfillmentHolds: [], assignedLocation: { location: { id: 'L1' } }, lineItems: { nodes: [{ id: 'Z1', remainingQuantity: 2, lineItem: { id: li(1) } }] } },
+    { id: 'NEU', status: 'OPEN', supportedActions: [{ action: 'CREATE_FULFILLMENT' }], fulfillmentHolds: [], assignedLocation: { location: { id: 'L1' } }, lineItems: { nodes: [{ id: 'Z2', remainingQuantity: 2, lineItem: { id: li(1) } }] } },
+  ] } };
+  const [z] = ordneZu(order, [li(1)]);
+  assert.equal(z.klasse, 'buchbar');
+  assert.deepEqual(z.zeilen.map(t => t.fo.id), ['NEU']);
+  assert.equal(offeneMengen(order, [li(1)]).get(li(1)), 2);
 });

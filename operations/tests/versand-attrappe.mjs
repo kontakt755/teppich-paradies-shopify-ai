@@ -36,6 +36,7 @@ function aktionen(f) {
  * @param {object} [o]
  * @param {object[]} [o.fos]           Fulfillment Orders (fo())
  * @param {boolean} [o.storniert]
+ * @param {boolean} [o.test]                     Shopify-Testbestellung
  * @param {'lesen'|'buchen'|null} [o.verweigert]  wo Shopify "Access denied" meldet
  * @param {'vor'|'nach'|null} [o.antwortWeg]      Buchung ohne Antwort: 'nach' = Shopify hat gebucht, 'vor' = nie angekommen
  * @param {number[]} [o.lesenScheitert]            Nummern der Lesungen (1 = erste), die mit Netzfehler enden
@@ -43,14 +44,14 @@ function aktionen(f) {
  * @param {boolean} [o.gleichzeitigGebucht]        mit userErrors: jemand anders hat in dem Moment gebucht
  * @param {number} [o.verzoegerung]                ms je Aufruf (fuer gleichzeitige Klicks)
  */
-export function versandAttrappe({ fos = [fo('1', [{ n: 1 }, { n: 2 }])], storniert = false, verweigert = null, antwortWeg = null, lesenScheitert = [], userErrors = null, gleichzeitigGebucht = false, verzoegerung = 0 } = {}) {
+export function versandAttrappe({ fos = [fo('1', [{ n: 1 }, { n: 2 }])], storniert = false, test = false, verweigert = null, antwortWeg = null, lesenScheitert = [], userErrors = null, gleichzeitigGebucht = false, verzoegerung = 0 } = {}) {
   const zustand = { fos: structuredClone(fos), fulfillments: [] };
   const aufrufe = [];
   let lesungen = 0;
   const warte = () => (verzoegerung ? new Promise(r => setTimeout(r, verzoegerung)) : Promise.resolve());
 
   const order = () => ({
-    id: BESTELLUNG, name: '#T5001', test: false, cancelledAt: storniert ? '2026-10-01T00:00:00Z' : null, displayFulfillmentStatus: 'UNFULFILLED',
+    id: BESTELLUNG, name: '#T5001', test, cancelledAt: storniert ? '2026-10-01T00:00:00Z' : null, displayFulfillmentStatus: 'UNFULFILLED',
     fulfillmentOrders: { nodes: zustand.fos.map(f => ({
       id: f.id, status: f.status,
       assignedLocation: { location: { id: f.standort } },

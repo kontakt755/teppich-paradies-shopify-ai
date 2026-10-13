@@ -616,14 +616,29 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
   }
 
   /**
+   * Bekommt der Kunde die Versandmail? Was im Dialog angekreuzt war, sonst: ja - ausser alle
+   * Positionen sind Muster, die jemand persoenlich vorbeibringt. Die Wahl steht danach an der
+   * Position (versandMail) und gilt auch beim Nachholen.
+   */
+  function versandMailFuer(angaben, positionen) {
+    if (typeof angaben.benachrichtigen === 'boolean') return angaben.benachrichtigen;
+    return !(positionen.length && positionen.every(p => p?.musterHerkunft === 'eigen_vorbei'));
+  }
+
+  // Gruende, bei denen Nachholen nie hilft: kein roter Hinweis, kein Knopf - nur der Vermerk.
+  const VERSAND_ENDGUELTIG = new Set(['storniert', 'nicht-gefunden', 'eingabe', 'testbestellung', 'unbekannt']);
+  const vermerkStatus = grund => (grund === 'unklar' ? 'unklar' : VERSAND_ENDGUELTIG.has(grund) ? 'uebersprungen' : 'fehler');
+
+  /**
    * "An Kunden raus" -> Versand in Shopify buchen (operations/lib/versand.mjs; Inhaber
    * 2026-10-13, Werkbank w-079). Laeuft NACH dem lokalen Schritt: der Schritt gilt immer,
    * die Ware ist ja raus. Scheitert die Buchung, steht das als Vermerk an der Position, im
    * Protokoll, im Dienstprotokoll und in der Antwort - nie still. Positionen mit Vermerk
    * "gebucht"/"bereits" werden nicht noch einmal versucht (doppelter Klick bucht nie doppelt).
+   * Sendungsnummer und Mail-Wahl kommen aus dem Dialog, sonst von der Position (Nachholen).
    * Gibt die Kurzfassung fuer die Oberflaeche zurueck.
    */
-  async function versandBuchen({ dir, auftrag, lineItemIds, angaben = {}, mailStandard = true, benutzer, actor }) {
+  async function versandBuchen({ dir, auftrag, lineItemIds, angaben = {}, benutzer, actor }) {
     const file = auftragsstatusPfad(dir);
     return nacheinander(auftrag.id, async () => {
       const alle = leseAuftragsstatus(file);
@@ -633,52 +648,59 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const am = now().toISOString();
       const nummer = angaben.sendungsnummer || ids.map(id => eintrag(id)?.sendungsnummer).find(Boolean) || null;
       const dienst = angaben.sendungsnummer ? angaben.versanddienst : (ids.map(id => eintrag(id)?.versanddienst).find(Boolean) || null);
-      const benachrichtigen = angaben.benachrichtigen === null || angaben.benachrichtigen === undefined ? mailStandard : angaben.benachrichtigen;
+      const gespeichert = ids.map(id => eintrag(id)?.versandMail).find(v => typeof v === 'boolean');
+      const benachrichtigen = typeof angaben.benachrichtigen === 'boolean' ? angaben.benachrichtigen : gespeichert ?? true;
       const vermerk = (id, v) => {
         try { vermerkeShopifyVersand(file, { orderId: auftrag.id, lineItemId: id, vermerk: { am, ...v } }); } catch (e) { logFehler('versand', `${auftrag.name}: Vermerk nicht gespeichert (${String(e?.message || e).split('\n')[0]})`); }
       };
-      const fehlschlag = (status, grund, meldung) => {
-        for (const id of ids) vermerk(id, { status, grund, meldung });
-        merke(benutzer, actor, status === 'unklar' ? 'Versand in Shopify unklar' : 'Versand in Shopify nicht gebucht', `${auftrag.name}: ${ids.length} Artikel · ${meldung}`);
-        audit({ actor, action: 'versand-shopify', orderId: auftrag.id, status, grund, anzahl: ids.length });
+      const protokolliereFehlschlag = (status, grund, meldung, anzahl) => {
+        if (status === 'uebersprungen') return; // endgueltig, kein Handlungsbedarf
+        merke(benutzer, actor, status === 'unklar' ? 'Versand in Shopify unklar' : 'Versand in Shopify nicht gebucht', `${auftrag.name}: ${anzahl} Artikel · ${meldung}`);
         logFehler('versand', `${auftrag.name}: ${status} (${grund}) - ${meldung}`);
+      };
+      const fehlschlag = (grund, meldung) => {
+        const status = vermerkStatus(grund);
+        for (const id of ids) vermerk(id, { status, grund, meldung });
+        protokolliereFehlschlag(status, grund, meldung, ids.length);
+        audit({ actor, action: 'versand-shopify', orderId: auftrag.id, status, grund, anzahl: ids.length });
         return { status, grund, meldung, gebucht: 0, bereits: 0, nichtGebucht: ids.length };
       };
       // Testbestellungen zaehlen nirgends - und eine Versandmail an eine Testadresse hilft niemandem.
-      if (auftrag.testbestellung) {
-        const meldung = 'Testbestellung – in Shopify nicht gebucht.';
-        for (const id of ids) vermerk(id, { status: 'uebersprungen', grund: 'testbestellung', meldung });
-        return { status: 'uebersprungen', grund: 'testbestellung', meldung, gebucht: 0, bereits: 0, nichtGebucht: ids.length };
-      }
+      if (auftrag.testbestellung) return fehlschlag('testbestellung', 'Testbestellung – in Shopify nicht gebucht.');
       let zugang;
       try { zugang = await shopify(); } catch (e) {
-        return fehlschlag('fehler', 'nicht-erreichbar', `Versand nicht in Shopify gebucht: ${mitHinweis(String(e?.message || e).split('\n')[0])}`.slice(0, 400));
+        return fehlschlag('nicht-erreichbar', `Versand nicht in Shopify gebucht: ${mitHinweis(String(e?.message || e).split('\n')[0])}`.slice(0, 400));
       }
-      if (zugang?.art === 'sammeln') return fehlschlag('fehler', 'kein-zugang', 'Versand nicht in Shopify gebucht: kein Zugang zu Shopify eingerichtet. Bitte in Shopify „Artikel versenden“ wählen.');
+      if (zugang?.art === 'sammeln') return fehlschlag('kein-zugang', 'Versand nicht in Shopify gebucht: kein Zugang zu Shopify eingerichtet. Bitte in Shopify „Artikel versenden“ wählen.');
       let r;
       try {
-        r = await bucheVersand(zugang.proxy, { orderId: auftrag.id, lineItemIds: ids, benachrichtigen, sendungsnummer: nummer, versanddienst: dienst, scope: zugang.scope ?? null });
+        r = await bucheVersand(zugang.proxy, { orderId: auftrag.id, lineItemIds: ids, benachrichtigen, sendungsnummer: nummer, versanddienst: dienst });
       } catch (e) {
-        if (e instanceof VersandFehler) {
-          for (const id of e.extra?.bereits ?? []) vermerk(id, { status: 'bereits' });
-          const rest = ids.filter(id => !(e.extra?.bereits ?? []).includes(id));
-          const einzeln = new Map((e.extra?.nichtGebucht ?? []).map(n => [n.lineItemId, n]));
-          for (const id of rest) {
-            const n = einzeln.get(id);
-            vermerk(id, { status: e.grund === 'unklar' ? 'unklar' : 'fehler', grund: n?.grund === 'gehalten' ? 'zurueckgehalten' : e.grund, meldung: n ? `Versand nicht in Shopify gebucht: ${n.meldung}.` : e.message });
-          }
-          const status = e.grund === 'unklar' ? 'unklar' : 'fehler';
-          merke(benutzer, actor, status === 'unklar' ? 'Versand in Shopify unklar' : 'Versand in Shopify nicht gebucht', `${auftrag.name}: ${rest.length} Artikel · ${e.message}`);
-          audit({ actor, action: 'versand-shopify', orderId: auftrag.id, status, grund: e.grund, anzahl: rest.length });
-          logFehler('versand', `${auftrag.name}: ${status} (${e.grund}) - ${e.message}`);
-          return { status, grund: e.grund, meldung: e.message, gebucht: 0, bereits: ids.length - rest.length, nichtGebucht: rest.length };
+        if (!(e instanceof VersandFehler)) {
+          // Unerwarteter Fehler: ob Shopify schon gebucht hat, ist offen - also "unklar", nie "nicht gebucht".
+          return fehlschlag('unklar', `Ob der Versand in Shopify gebucht wurde, ist unklar (${String(e?.message || e).split('\n')[0].slice(0, 160)}). Bitte in Shopify nachsehen.`);
         }
-        // Unerwarteter Fehler: ob Shopify schon gebucht hat, ist offen - also "unklar", nie "nicht gebucht".
-        return fehlschlag('unklar', 'unerwartet', `Ob der Versand in Shopify gebucht wurde, ist unklar (${String(e?.message || e).split('\n')[0].slice(0, 160)}). Bitte in Shopify nachsehen.`);
+        const bereits = e.extra?.bereits ?? [];
+        for (const id of bereits) vermerk(id, { status: 'bereits' });
+        const rest = ids.filter(id => !bereits.includes(id));
+        // Je Position der eigene Grund (zurueckgehalten, unbekannt ...), sonst der der Buchung.
+        const einzeln = new Map((e.extra?.nichtGebucht ?? []).map(n => [n.lineItemId, n]));
+        for (const id of rest) {
+          const n = einzeln.get(id);
+          const grund = n ? (n.grund === 'gehalten' ? 'zurueckgehalten' : n.grund) : e.grund;
+          vermerk(id, { status: vermerkStatus(grund), grund, meldung: n ? `Versand nicht in Shopify gebucht: ${n.meldung}.` : e.message });
+        }
+        const status = vermerkStatus(e.grund);
+        protokolliereFehlschlag(status, e.grund, e.message, rest.length);
+        audit({ actor, action: 'versand-shopify', orderId: auftrag.id, status, grund: e.grund, anzahl: rest.length });
+        return { status, grund: e.grund, meldung: e.message, gebucht: 0, bereits: ids.length - rest.length, nichtGebucht: rest.length };
       }
       for (const id of r.gebucht) vermerk(id, { status: 'gebucht', fulfillmentId: r.fulfillmentIds[0] || null, kundeBenachrichtigt: r.kundeBenachrichtigt });
       for (const id of r.bereits) vermerk(id, { status: 'bereits' });
-      for (const n of r.nichtGebucht) vermerk(n.lineItemId, { status: n.grund === 'unklar' ? 'unklar' : 'fehler', grund: n.grund === 'gehalten' ? 'zurueckgehalten' : n.grund, meldung: `Versand nicht in Shopify gebucht: ${n.meldung}.` });
+      for (const n of r.nichtGebucht) {
+        const grund = n.grund === 'gehalten' ? 'zurueckgehalten' : n.grund;
+        vermerk(n.lineItemId, { status: vermerkStatus(grund), grund, meldung: `Versand nicht in Shopify gebucht: ${n.meldung}.` });
+      }
       const sendung = r.sendungsnummer ? ` · Sendung ${r.versanddienst ? `${r.versanddienst} ` : ''}${r.sendungsnummer}` : '';
       const mail = r.kundeBenachrichtigt ? ' – der Kunde bekommt die Versandmail' : ' (ohne Mail an den Kunden)';
       const pruef = r.gegenprobe === 'ok' ? '' : r.gegenprobe === 'abweichung' ? ' · Gegenprobe weicht ab, bitte in Shopify ansehen' : ' · Gegenprobe nicht lesbar';
@@ -689,10 +711,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (r.gebucht.length) {
         merke(benutzer, actor, 'Versand in Shopify gebucht', `${auftrag.name}: ${r.gebucht.length} Artikel${r.kundeBenachrichtigt ? ' · Versandmail an Kunden' : ' · ohne Mail'}${sendung}${r.aufgehoben ? ' · Zurückhaltung „Bestand fehlt“ aufgehoben' : ''}${r.antwortVerloren ? ' · Antwort verloren, per Lesen bestätigt' : ''}${pruef}`);
       }
-      if (r.nichtGebucht.length) {
-        merke(benutzer, actor, 'Versand in Shopify nicht gebucht', `${auftrag.name}: ${r.nichtGebucht.length} Artikel · ${r.nichtGebucht[0].meldung}`);
-        logFehler('versand', `${auftrag.name}: ${r.nichtGebucht.length} Artikel nicht gebucht - ${r.nichtGebucht[0].meldung}`);
-      }
+      if (r.nichtGebucht.length) protokolliereFehlschlag('fehler', r.nichtGebucht[0].grund, r.nichtGebucht[0].meldung, r.nichtGebucht.length);
       audit({ actor, action: 'versand-shopify', orderId: auftrag.id, status: r.status, gebucht: r.gebucht.length, bereits: r.bereits.length, nichtGebucht: r.nichtGebucht.length, gegenprobe: r.gegenprobe });
       return {
         status: r.status, meldung, gebucht: r.gebucht.length, bereits: r.bereits.length + (lineItemIds.length - ids.length), nichtGebucht: r.nichtGebucht.length,
@@ -701,7 +720,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     });
   }
 
-  /** Nachholen: Positionen dieses Auftrags, deren Buchung scheiterte oder unklar blieb, erneut buchen. */
+  /**
+   * Nachholen: Positionen dieses Auftrags, deren Buchung scheiterte oder unklar blieb, erneut
+   * buchen. Je Sendung (Nummer, Dienst, Mail-Wahl) eine eigene Buchung - zwei Pakete mit
+   * verschiedenen Nummern duerfen nicht unter einer Nummer landen.
+   */
   async function versandNachholen(payload, benutzer, actor) {
     const { orderId } = payload || {};
     if (!orderId) throw new ApiError(400, 'orderId ist Pflicht', { missing: ['orderId'] });
@@ -713,7 +736,25 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       : { ...auftrag, positionen: Object.values(statusAlle).filter(e => e?.orderId === String(orderId)).map(e => ({ lineItemId: e.lineItemId })) };
     const offen = versandNachzuholen(quelle, statusAlle);
     if (!offen) throw new ApiError(409, 'Hier ist nichts nachzubuchen – der Versand ist in Shopify gebucht oder wurde nie versucht.');
-    const shopifyErgebnis = await versandBuchen({ dir, auftrag, lineItemIds: offen.lineItemIds, angaben: versandAngaben(payload?.versand), benutzer, actor });
+    const sendungen = new Map();
+    for (const id of offen.lineItemIds) {
+      const e = statusAlle[positionKey(auftrag.id, id)] || {};
+      const schluessel = JSON.stringify([e.sendungsnummer || null, e.versanddienst || null, typeof e.versandMail === 'boolean' ? e.versandMail : null]);
+      if (!sendungen.has(schluessel)) sendungen.set(schluessel, { angaben: { sendungsnummer: e.sendungsnummer || null, versanddienst: e.versanddienst || null, benachrichtigen: typeof e.versandMail === 'boolean' ? e.versandMail : null }, ids: [] });
+      sendungen.get(schluessel).ids.push(id);
+    }
+    const teile = [];
+    for (const { angaben, ids } of sendungen.values()) {
+      // eslint-disable-next-line no-await-in-loop -- je Sendung nacheinander, dieselbe Bestellung.
+      teile.push(await versandBuchen({ dir, auftrag, lineItemIds: ids, angaben, benutzer, actor }));
+    }
+    const schlecht = teile.find(t => !['gebucht', 'bereits'].includes(t.status));
+    const shopifyErgebnis = teile.length === 1 ? teile[0] : {
+      status: schlecht ? (teile.some(t => t.gebucht) ? 'teilweise' : schlecht.status) : teile.some(t => t.gebucht) ? 'gebucht' : 'bereits',
+      meldung: schlecht ? schlecht.meldung : teile.map(t => t.meldung).find(Boolean),
+      gebucht: teile.reduce((n, t) => n + (t.gebucht || 0), 0), bereits: teile.reduce((n, t) => n + (t.bereits || 0), 0), nichtGebucht: teile.reduce((n, t) => n + (t.nichtGebucht || 0), 0),
+      kundeBenachrichtigt: teile.some(t => t.kundeBenachrichtigt),
+    };
     return { ok: true, orderId: auftrag.id, shopify: shopifyErgebnis, ...versandFelder(quelle, leseAuftragsstatus(auftragsstatusPfad(dir))) };
   }
 
@@ -769,7 +810,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     const positionen = auswahl ? allePositionen.filter(p => auswahl.has(p.lineItemId)) : allePositionen;
     if (auswahl && !positionen.length) throw new ApiError(400, 'Bitte mindestens einen Artikel dieser Bestellung auswählen');
     const angaben = versandAngaben(payload?.versand);
-    const setzePositionen = (status, text) => {
+    const setzePositionen = (status, text, versandMail = null) => {
       if (!positionen.length) throw new ApiError(400, 'Diese Bestellung hat keine nachverfolgbaren Positionen');
       const alle = leseAuftragsstatus(statusDatei);
       const ziel = STATUS_ORDER.indexOf(status);
@@ -780,7 +821,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const betroffen = dahinter.length ? dahinter : positionen.filter(p => stufe(p) !== ziel);
       for (const p of betroffen) {
         setzeStatus(statusDatei, { orderId, lineItemId: p.lineItemId, status, actor, lieferantBestellnummer, notiz: text, jetzt: now(),
-          ...(status === 'raus' ? { sendungsnummer: angaben.sendungsnummer, versanddienst: angaben.versanddienst } : {}) });
+          ...(status === 'raus' ? { sendungsnummer: angaben.sendungsnummer, versanddienst: angaben.versanddienst, versandMail } : {}) });
       }
       return betroffen.map(p => p.lineItemId);
     };
@@ -793,13 +834,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     let anzahl = 0;
     // Positionen, die in diesem Schritt raus gehen - die bucht Shopify danach als versendet.
     let rausIds = [];
-    // Versandmail an den Kunden: ja, ausser bei Mustern, die jemand persoenlich vorbeibringt -
-    // eine Mail "ist unterwegs" fuer etwas, das der Kunde in der Hand hat, verwirrt nur.
-    let mailStandard = true;
     try {
       if (STATUS_ORDER.includes(schritt)) {
         const neu = schritt === 'raus' ? vorRaus() : null;
-        const ids = setzePositionen(schritt, notiz);
+        const ids = setzePositionen(schritt, notiz, schritt === 'raus' ? versandMailFuer(angaben, positionen) : null);
         anzahl = ids.length;
         if (neu) rausIds = ids.filter(id => neu.has(id));
       } else {
@@ -810,11 +848,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           const alle = leseAuftragsstatus(statusDatei);
           if (positionen.some(p => STATUS_ORDER.indexOf(alle[positionKey(orderId, p.lineItemId)]?.status) < STATUS_ORDER.indexOf('raus'))) {
             const neu = vorRaus();
-            const ids = setzePositionen('raus', vorher.eigenerBestand === 'vorbei' ? 'Persönlich übergeben' : 'Aus eigenem Bestand verschickt');
+            // "Kunde hat Muster": der Kunde hat sie schon - eine Mail "ist unterwegs" verwirrt nur.
+            // Shopify bucht trotzdem, damit die Bestellung dort nicht ewig offen steht.
+            const ids = setzePositionen('raus', vorher.eigenerBestand === 'vorbei' ? 'Persönlich übergeben' : 'Aus eigenem Bestand verschickt', false);
             anzahl = ids.length;
             rausIds = ids.filter(id => neu.has(id));
-            // Persoenlich vorbeigebracht: keine Versandmail. Aus dem Bestand verschickt: doch.
-            mailStandard = vorher.eigenerBestand !== 'vorbei';
           }
         }
         if (['kunde_hat_bestellt', 'kein_interesse'].includes(schritt) && positionen.length) {
@@ -830,7 +868,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     audit({ actor, action: 'auftragsschritt', orderId, schritt, positionen: anzahl });
     merke(benutzer, actor, 'Auftragsschritt', `${auftrag.name}: ${schritt}`);
     // Erst jetzt nach Shopify: der lokale Schritt steht, egal wie die Buchung ausgeht.
-    const shopifyErgebnis = rausIds.length ? await versandBuchen({ dir, auftrag, lineItemIds: rausIds, angaben, mailStandard, benutzer, actor }) : null;
+    const shopifyErgebnis = rausIds.length ? await versandBuchen({ dir, auftrag, lineItemIds: rausIds, angaben, benutzer, actor }) : null;
     const statusNachher = leseAuftragsstatus(statusDatei);
     const nachher = zeitleisten(dir, modell, statusNachher).get(orderId);
     return { ok: true, orderId, schritt, positionen: anzahl, ...(shopifyErgebnis ? { shopify: shopifyErgebnis } : {}), ...zeitleistenFelder(nachher), ...versandFelder(auftrag, statusNachher) };
@@ -1504,10 +1542,12 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const vorLager = status === 'raus' ? auftragFuerLager(dir, orderId) : null;
       const angaben = versandAngaben(payload?.versand);
       const vorher = leseAuftragsstatus(file)[positionKey(orderId, lineItemId)];
+      const versandAuftrag = status === 'raus' ? auftragFuerVersand(dir, String(orderId)) : null;
       let eintrag;
       try {
         eintrag = setzeStatus(file, { orderId, lineItemId, status, actor, lieferantBestellnummer, notiz, jetzt: now(),
-          ...(status === 'raus' ? { sendungsnummer: angaben.sendungsnummer, versanddienst: angaben.versanddienst } : {}) });
+          ...(status === 'raus' ? { sendungsnummer: angaben.sendungsnummer, versanddienst: angaben.versanddienst,
+            versandMail: versandMailFuer(angaben, versandAuftrag.positionen.filter(p => p.lineItemId === String(lineItemId))) } : {}) });
       } catch (e) {
         if (e instanceof AuftragsstatusFehler) throw new ApiError(400, e.message);
         throw e;
@@ -1518,7 +1558,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // "An Kunden raus" bucht in Shopify - nur beim Wechsel von einem Schritt davor (neue Sendung),
       // nicht bei der Korrektur von "erledigt" zurueck.
       if (status === 'raus' && STATUS_ORDER.indexOf(vorher?.status) < STATUS_ORDER.indexOf('raus')) {
-        const shopifyErgebnis = await versandBuchen({ dir, auftrag: auftragFuerVersand(dir, String(orderId)), lineItemIds: [String(lineItemId)], angaben, benutzer, actor });
+        const shopifyErgebnis = await versandBuchen({ dir, auftrag: versandAuftrag, lineItemIds: [String(lineItemId)], angaben, benutzer, actor });
         return { ok: true, eintrag: leseAuftragsstatus(file)[positionKey(orderId, lineItemId)] || eintrag, shopify: shopifyErgebnis };
       }
       return { ok: true, eintrag };

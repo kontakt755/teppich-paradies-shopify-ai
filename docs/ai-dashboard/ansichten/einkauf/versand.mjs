@@ -51,6 +51,9 @@ export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = 
   }
   const { name, ort, auftrag } = info;
   const kandidaten = auftrag ? versandKandidaten(auftrag, einkauf.auftragsstatus?.positionen || {}) : [];
+  // Nichts mehr offen (laut geladenem Stand): kein Buchen-Knopf - sonst setzte der Server "erledigt"
+  // still zurueck auf "raus". Mit angeklickter Position bleibt es bei genau dieser einen.
+  const nichtsOffen = Boolean(auftrag) && !kandidaten.length && !lineItemId;
   const geklickt = kandidaten.find(p => p.lineItemId === lineItemId) || null;
   const vor = vorauswahl(kandidaten, { geklickt: geklickt?.lineItemId || null });
   // Muster, die jemand persoenlich vorbeibringt: keine Sendungsnummer, Mail vorab aus.
@@ -62,7 +65,7 @@ export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = 
       </fieldset>`
     : kandidaten.length === 1 ? `<p class="small">${esc(artikelText(kandidaten[0]))}</p>`
       // Stand unbekannt (Bestellung nicht geladen): der Server nimmt alles, was noch nicht raus ist.
-      : auftrag ? '<p class="small muted">Alle Artikel sind schon als raus eingetragen – in Shopify wird dabei nichts mehr gebucht.</p>'
+      : nichtsOffen ? '<p class="small muted">Alle Artikel sind schon als raus eingetragen – hier ist nichts mehr zu buchen.</p>'
         : '<p class="small muted">Alle Artikel dieser Bestellung, die noch nicht raus sind.</p>';
   const sendung = uebergabe ? '' : `<div class="vs-sendung">
       <div class="field"><label for="vsNummer">Sendungsnummer (optional)</label><input id="vsNummer" name="nummer" autocomplete="off" maxlength="60" placeholder="vom Paketaufkleber"></div>
@@ -73,17 +76,19 @@ export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = 
     <h2 id="vsTitel">${uebergabe ? 'Übergeben' : 'An Kunden raus'}${auftrag?.name ? ` · ${esc(auftrag.name)}` : ''}</h2>
     ${name || ort ? `<p class="small muted">${esc([name, ort].filter(Boolean).join(' · '))}</p>` : ''}
     ${liste}
-    ${sendung}
+    ${nichtsOffen ? '' : `${sendung}
     <fieldset class="zl-wahl"><label><input type="checkbox" name="mail"${uebergabe ? '' : ' checked'}> Kunde bekommt die Versandmail von Shopify</label></fieldset>
-    <p class="small muted">Die Artikel werden in Shopify als versendet gebucht.</p>
-    <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Als ${wort} buchen</button></div>
+    <p class="small muted">Die Artikel werden in Shopify als versendet gebucht.</p>`}
+    <div class="actions"><button type="button" class="btn" data-close-dialog>${nichtsOffen ? 'Schließen' : 'Abbrechen'}</button>${nichtsOffen ? '' : `<button type="submit" class="btn btn-primary">Als ${wort} buchen</button>`}</div>
   </form></div>`;
   const form = $('#dialogRoot form');
-  (form.querySelector('#vsNummer') || form.querySelector('[type=submit]'))?.focus();
+  (form.querySelector('#vsNummer') || form.querySelector('[type=submit]') || form.querySelector('[data-close-dialog].btn'))?.focus();
   form.addEventListener('submit', async ev => {
     ev.preventDefault();
     const daten = new FormData(form);
-    const ids = kandidaten.length > 1 ? daten.getAll('pos').map(String) : kandidaten.length === 1 ? [kandidaten[0].lineItemId] : null;
+    if (nichtsOffen) return;
+    // Angeklickte Position, die im geladenen Stand fehlt: genau diese eine, nie die ganze Bestellung.
+    const ids = kandidaten.length > 1 ? daten.getAll('pos').map(String) : kandidaten.length === 1 ? [kandidaten[0].lineItemId] : lineItemId ? [lineItemId] : null;
     if (ids && !ids.length) { toast('Bitte mindestens einen Artikel ankreuzen.', 'warn'); return; }
     const nummer = String(daten.get('nummer') || '').trim();
     const gewaehlt = String(daten.get('dienst') || '');

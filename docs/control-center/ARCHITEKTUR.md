@@ -975,25 +975,30 @@ benachrichtigen}` an `POST /api/einkauf/auftragsstatus`.
    Gegenprobe durch erneutes Lesen.
 4. Ergebnis je Position als `shopifyVersand` in `auftragsstatus.json` (`status`: gebucht, bereits, fehler,
    unklar, uebersprungen; `grund`, `meldung`, `am`, `fulfillmentId`, `kundeBenachrichtigt`), Sendungsnummer als
-   `sendungsnummer`/`versanddienst`. Protokoll: „Versand in Shopify gebucht“ (mit Sendung, Mail ja/nein) bzw.
+   `sendungsnummer`/`versanddienst`, die Mail-Wahl als `versandMail` (ohne Angabe: ja, außer bei persönlich
+   vorbeigebrachten Mustern). „uebersprungen“ heißt endgültig (storniert, Testbestellung – auch laut Shopify –,
+   Position nicht mehr in der Bestellung): kein roter Hinweis, kein Nachholen. Protokoll: „Versand in Shopify gebucht“ (mit Sendung, Mail ja/nein) bzw.
    „… nicht gebucht“/„… unklar“ samt Grund; Fehlschläge zusätzlich im Dienstprotokoll (`[versand]`).
 5. Antwort mit `shopify: {status, meldung, …}`; die Oberfläche meldet z. B. „Als verschickt eingetragen · In
    Shopify als versendet gebucht – der Kunde bekommt die Versandmail.“ oder rot „… – aber Versand nicht in
    Shopify gebucht: …“.
 
 **Nicht gebucht** werden Testbestellungen (Vermerk „uebersprungen“) und stornierte Bestellungen. „Kunde hat
-Muster“ bei Mustern aus eigenem Bestand setzt „raus“ mit: gebucht wird mit Versandmail, beim persönlichen
-Vorbeibringen ohne. **Nichts rückwirkend:** Positionen, die vor dem 13.10. auf „raus“ standen, tragen keinen
+Muster“ bei Mustern aus eigenem Bestand setzt „raus“ mit: gebucht wird ohne Versandmail (der Kunde hat sie
+schon); die Rückmeldung nennt das Ergebnis der Buchung. **Nichts rückwirkend:** Positionen, die vor dem 13.10. auf „raus“ standen, tragen keinen
 Vermerk und werden nie gebucht – dort bleibt der Hinweis „In Shopify noch nicht als versendet gebucht“.
 
 **Nachholen.** Scheitert die Buchung (Recht fehlt, kein Zugang, Netz, zurückgehalten), steht der Schritt
 trotzdem. Die Zeitleiste zeigt rot „Versand nicht in Shopify gebucht – …“ mit „In Shopify buchen“, die
 Einkaufsposition dasselbe; `aktion: "versandNachholen"` bucht genau die Positionen mit Vermerk „fehler“ oder
-„unklar“ (sonst 409).
+„unklar“ (sonst 409), je Sendung (Nummer, Dienst, Mail-Wahl) eine eigene Buchung, mit der damals getroffenen
+Mail-Wahl.
 
 **Recht.** `write_fulfillments` und `write_merchant_managed_fulfillment_orders` (`SCHREIB_BEREICHE` in
 `sync/zugang.mjs`); beide sind erteilt (Lesprobe 2026-10-13 über `currentAppInstallation.accessScopes`).
-Fehlen sie, bucht der Server nichts und sagt „dem Control Center fehlt das Shopify-Recht
+Kein Vorab-Abgleich mit der beim Start gemeldeten Rechteliste (die veraltet im laufenden Dienst) – Shopify
+lehnt ohne Recht vor jeder Änderung ab. Der Dienst hält seinen Token im Speicher: nach einer Freischaltung neu
+starten. Fehlen sie, bucht der Server nichts und sagt „dem Control Center fehlt das Shopify-Recht
 write_merchant_managed_fulfillment_orders … Bis dahin in Shopify die Bestellung öffnen und „Artikel versenden“
 wählen.“
 

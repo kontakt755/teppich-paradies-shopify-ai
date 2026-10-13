@@ -104,9 +104,10 @@ function clip(text, max) {
  * @param {string} [p.notiz]
  * @param {string} [p.sendungsnummer]  nur bei "raus": Sendungsnummer des Pakets (geht mit der Versandbuchung an Shopify)
  * @param {string} [p.versanddienst]   nur bei "raus", z. B. "GLS"
+ * @param {boolean} [p.versandMail]    nur bei "raus": bekommt der Kunde die Versandmail? (gilt auch beim Nachholen)
  * @param {Date}   [p.jetzt]
  */
-export function setzeStatus(file, { orderId, lineItemId, status, actor, lieferantBestellnummer = null, notiz = null, sendungsnummer = null, versanddienst = null, jetzt = new Date() } = {}) {
+export function setzeStatus(file, { orderId, lineItemId, status, actor, lieferantBestellnummer = null, notiz = null, sendungsnummer = null, versanddienst = null, versandMail = null, jetzt = new Date() } = {}) {
   const key = positionKey(orderId, lineItemId);
   if (!key) throw new AuftragsstatusFehler('orderId und lineItemId sind Pflicht');
   if (!STATUS_ORDER.includes(status)) throw new AuftragsstatusFehler(`Unbekannter Status "${status}"`);
@@ -140,6 +141,8 @@ export function setzeStatus(file, { orderId, lineItemId, status, actor, lieferan
       eintrag.versanddienst = sendungsnummer && versanddienst ? clip(versanddienst, 40) : null;
     }
     if (neuerVersand) delete eintrag.shopifyVersand;
+    if (typeof versandMail === 'boolean') eintrag.versandMail = versandMail;
+    else if (neuerVersand) delete eintrag.versandMail;
   }
 
   alle[key] = eintrag;
@@ -272,7 +275,7 @@ export function setzeZurueckAufOffen(file, { orderId, lineItemId, actor, notiz =
   delete rest.lieferantBestellnummer;
   // Versandangaben gehoeren zum alten Durchlauf. Eine Buchung in Shopify bleibt dort bestehen;
   // hier wandert nur der Vermerk in den Verlauf.
-  for (const feld of ['sendungsnummer', 'versanddienst', 'shopifyVersand']) {
+  for (const feld of ['sendungsnummer', 'versanddienst', 'versandMail', 'shopifyVersand']) {
     if (rest[feld] !== undefined && rest[feld] !== null) vorher[feld] = rest[feld];
     delete rest[feld];
   }

@@ -55,9 +55,6 @@ mutation VersandFreigeben($id: ID!, $holdIds: [ID!]) {
   }
 }`;
 
-/** Schreibrechte fuer die Buchung (gleiche Namen wie in sync/zugang.mjs, SCHREIB_BEREICHE). */
-export const VERSAND_BEREICHE = Object.freeze(['write_fulfillments', 'write_merchant_managed_fulfillment_orders']);
-
 /** Versanddienste fuer die Sendungsnummer - Namen so, wie Shopify sie kennt (dann baut Shopify den Verfolgungslink). */
 export const VERSANDDIENSTE = Object.freeze(['GLS', 'DHL', 'DPD', 'Hermes', 'UPS', 'Deutsche Post (DE)', 'Spedition']);
 
@@ -65,9 +62,12 @@ export const VERSANDDIENSTE = Object.freeze(['GLS', 'DHL', 'DPD', 'Hermes', 'UPS
 const SELBST_AUFHEBBAR = new Set(['INVENTORY_OUT_OF_STOCK']);
 
 const BUCHBAR = new Set(['OPEN', 'IN_PROGRESS']);
+// Abgeschlossene Fulfillment Orders zaehlen nie als offen - nach Verschieben oder Stornieren
+// kann dort noch eine Restmenge stehen, die laengst in einer neuen Fulfillment Order liegt.
+const ERLEDIGT = new Set(['CLOSED', 'CANCELLED']);
 
 export const RECHT_FEHLT_VERSAND = 'Versand nicht in Shopify gebucht: dem Control Center fehlt das Shopify-Recht '
-  + 'write_merchant_managed_fulfillment_orders (Inhaber schaltet es im Dev Dashboard frei). '
+  + 'write_merchant_managed_fulfillment_orders (Inhaber schaltet es im Dev Dashboard frei, danach den Dashboard-Dienst neu starten). '
   + 'Bis dahin in Shopify die Bestellung öffnen und „Artikel versenden“ wählen.';
 
 export const ERGEBNIS_UNKLAR_VERSAND = 'Ob der Versand in Shopify gebucht wurde, ist unklar: Shopify hat nicht geantwortet. '
@@ -81,13 +81,6 @@ export class VersandFehler extends Error {
 /** Fehlt dem Zugang ein Recht? Shopify meldet das als "Access denied ..." (ACCESS_DENIED) oder HTTP 403. */
 export function istZugriffVerweigert(err) {
   return /access denied|ACCESS_DENIED|HTTP 403|required access/i.test(String(err?.message || err));
-}
-
-/** Welche Versand-Rechte fehlen in der von Shopify gemeldeten Liste? Ohne Liste (fester Token) nichts behaupten. */
-export function fehlendeVersandBereiche(scope) {
-  if (scope === null || scope === undefined) return [];
-  const erteilt = new Set(String(scope).split(',').map(s => s.trim()).filter(Boolean));
-  return VERSAND_BEREICHE.filter(b => !erteilt.has(b));
 }
 
 function knoten(conn) {
@@ -115,7 +108,7 @@ export function ordneZu(order, lineItemIds) {
       }
     }
     if (!treffer.length) { ergebnis.push({ lineItemId, klasse: 'unbekannt' }); continue; }
-    const offen = treffer.filter(t => Number(t.zeile.remainingQuantity) > 0);
+    const offen = treffer.filter(t => Number(t.zeile.remainingQuantity) > 0 && !ERLEDIGT.has(t.fo.status));
     if (!offen.length) { ergebnis.push({ lineItemId, klasse: 'bereits' }); continue; }
     const buchbar = [];
     const aufhebbar = [];
@@ -149,6 +142,7 @@ export function ordneZu(order, lineItemIds) {
 export function offeneMengen(order, lineItemIds) {
   const m = new Map(lineItemIds.map(id => [id, 0]));
   for (const fo of knoten(order?.fulfillmentOrders)) {
+    if (ERLEDIGT.has(fo.status)) continue;
     for (const z of knoten(fo.lineItems)) {
       const id = z?.lineItem?.id;
       if (m.has(id)) m.set(id, m.get(id) + Math.max(0, Number(z.remainingQuantity) || 0));
@@ -237,22 +231,24 @@ async function hebeAuf(proxy, zuordnung) {
  * @param {boolean}  [p.benachrichtigen]  Versandmail an den Kunden (Standard: ja)
  * @param {string}   [p.sendungsnummer]
  * @param {string}   [p.versanddienst]    einer aus VERSANDDIENSTE oder leer
- * @param {string}   [p.scope]            von Shopify gemeldete Rechte (null = unbekannt)
  * @returns {Promise<{status: 'gebucht'|'teilweise'|'bereits', gebucht: string[], bereits: string[],
  *   nichtGebucht: {lineItemId: string, grund: string, meldung: string}[], fulfillmentIds: string[],
  *   kundeBenachrichtigt: boolean, aufgehoben: number, antwortVerloren: boolean, gegenprobe: string}>}
  */
-export async function bucheVersand(proxy, { orderId, lineItemIds, benachrichtigen = true, sendungsnummer = null, versanddienst = null, scope = null } = {}) {
+export async function bucheVersand(proxy, { orderId, lineItemIds, benachrichtigen = true, sendungsnummer = null, versanddienst = null } = {}) {
   if (!/^gid:\/\/shopify\/Order\/\d+$/.test(String(orderId || ''))) throw new VersandFehler('eingabe', 'Ungültige Bestell-ID – Versand nicht gebucht.');
   const ids = [...new Set((lineItemIds || []).map(String))].filter(id => /^gid:\/\/shopify\/LineItem\/\d+$/.test(id));
   if (!ids.length) throw new VersandFehler('eingabe', 'Keine Position angegeben – Versand nicht gebucht.');
-  if (fehlendeVersandBereiche(scope).length) throw new VersandFehler('recht-fehlt', RECHT_FEHLT_VERSAND);
+  // Kein Vorab-Abgleich mit der beim Start gemeldeten Rechteliste: die veraltet im laufenden
+  // Dienst. Fehlt ein Recht, lehnt Shopify vor jeder Aenderung ab (Access denied) - das reicht.
   const nummer = String(sendungsnummer ?? '').replace(/\s+/g, '').slice(0, 60) || null;
   const dienst = VERSANDDIENSTE.includes(versanddienst) ? versanddienst : null;
 
   // 1./2. Frisch lesen und einordnen.
   let order = await lese(proxy, orderId);
   if (order.cancelledAt) throw new VersandFehler('storniert', 'Die Bestellung ist in Shopify storniert – Versand nicht gebucht.');
+  // Testbestellung laut Shopify - auch wenn sie im Export (noch) fehlt: keine Mail an Testadressen.
+  if (order.test) throw new VersandFehler('testbestellung', 'Testbestellung – in Shopify nicht gebucht.');
   let zuordnung = ordneZu(order, ids);
 
   // 3. "Bestand fehlt" aufheben, dann neu lesen - der Stand nach der Freigabe zaehlt.
@@ -290,7 +286,7 @@ export async function bucheVersand(proxy, { orderId, lineItemIds, benachrichtige
   const gebucht = [];
   let antwortVerloren = false;
   const scheitern = (grund, meldung, teil) => {
-    if (!gebucht.length) throw new VersandFehler(grund, meldung, { bereits });
+    if (!gebucht.length) throw new VersandFehler(grund, meldung, { bereits, nichtGebucht });
     for (const lineItemId of teil) nichtGebucht.push({ lineItemId, grund, meldung });
   };
   for (const { fulfillment, lineItemIds: teil } of buchungsEingaben(zuordnung, { benachrichtigen, sendungsnummer: nummer, versanddienst: dienst })) {
@@ -328,6 +324,10 @@ export async function bucheVersand(proxy, { orderId, lineItemIds, benachrichtige
     gebucht.push(...teil);
   }
   if (!gebucht.length) {
+    // Nichts neu gebucht: "bereits" nur, wenn auch nichts haengen blieb - sonst ist es ein Fehler.
+    if (nichtGebucht.length) {
+      throw new VersandFehler(nichtGebucht[0].grund === 'gehalten' ? 'zurueckgehalten' : 'nicht-buchbar', `Versand nicht in Shopify gebucht: ${nichtGebucht[0].meldung}.`, { nichtGebucht, bereits });
+    }
     return { status: 'bereits', gebucht: [], bereits, nichtGebucht, fulfillmentIds, kundeBenachrichtigt: false, aufgehoben, antwortVerloren: false, gegenprobe: 'ok' };
   }
 
