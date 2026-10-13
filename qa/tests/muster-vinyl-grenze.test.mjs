@@ -288,7 +288,8 @@ test('Konfigurator: Vinyl-Rolle mit 3 Vinyl-Mustern im Warenkorb - Auswahl gespe
 test('Konfigurator: Vinyl-Rolle unter der Grenze - Muster mit _Muster_Gruppe in den Warenkorb', async () => {
   const k = await konfigurator({ product: ROLLE, cartItems: [muster('a', 'vinyl')] });
   const karte = k.el('[data-sample-grid]').querySelector('[data-sample-color]');
-  karte.querySelector('input[type="checkbox"]').click();
+  // Einziges Dekor ist vorausgewaehlt (Fehleranalyse 13.10.), kein eigener Klick noetig
+  assert.equal(karte.querySelector('input[type="checkbox"]').checked, true, 'einziges Dekor vorausgewaehlt');
   k.el('[data-sample-submit]').dispatch('click');
   await k.ticks();
   const add = k.requests.find((r) => r.url === '/cart/add.js');
@@ -305,11 +306,22 @@ test('Konfigurator: in einem zweiten Tab kamen Vinyl-Muster dazu - nichts wird h
     cartItems: [muster('a', 'vinyl')],
     cartNachher: [muster('a', 'vinyl'), muster('b', 'vinyl'), muster('c', 'vinyl')],
   });
-  k.el('[data-sample-grid]').querySelector('[data-sample-color]').querySelector('input[type="checkbox"]').click();
+  assert.equal(k.el('[data-sample-grid]').querySelector('[data-sample-color]').querySelector('input[type="checkbox"]').checked, true);
   k.el('[data-sample-submit]').dispatch('click');
   await k.ticks();
   assert.equal(k.requests.some((r) => r.url === '/cart/add.js'), false);
   assert.match(k.el('[data-sample-error]').textContent, /höchstens 3 Vinyl-Muster/);
+});
+
+test('Konfigurator: mehrere Farben ohne ?farbe= - nichts vorausgewaehlt', async () => {
+  const zwei = { ...ROLLE, options: [{ name: 'Farbe', position: 1 }], variants: [
+    { id: 61, option1: 'Grau', title: 'Grau', available: true },
+    { id: 62, option1: 'Sand', title: 'Sand', available: true },
+  ] };
+  const k = await konfigurator({ product: zwei, cartItems: [] });
+  const boxen = k.el('[data-sample-grid]').querySelectorAll('input[type="checkbox"]');
+  assert.equal(boxen.length, 2);
+  assert.equal(boxen.some((b) => b.checked), false);
 });
 
 // --- Rollenrechner: Beschriftung des Musterknopfs ---
