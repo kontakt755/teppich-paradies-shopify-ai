@@ -78,8 +78,20 @@
       <div class="tp-vs__angebot">
         <span class="tp-vs__angebot-zeichen">{% render 'tp-vs-icon', name: 'check' %}</span>
         <div>
-          <p class="tp-vs__angebot-titel">Lieferung &amp; lose Verlegung kostenlos <span>ab {{ vs_schwelle }}&nbsp;€ Warenwert im Umkreis von {{ vs_nah }}&nbsp;km</span></p>
-          <p class="tp-vs__angebot-text">Beides muss zusammenkommen. Darunter oder weiter weg: faire Festpreise ab {% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_nah %} – vorab genannt.</p>
+          <p class="tp-vs__angebot-titel">Lieferung &amp; lose Verlegung kostenlos <span>nur wenn <strong>beides</strong> erfüllt ist: ab {{ vs_schwelle }}&nbsp;€ Warenwert <strong>und</strong> höchstens {{ vs_nah }}&nbsp;km von unserem Geschäft in Oranienburg entfernt</span></p>
+          {%- comment -%}
+            Die drei moeglichen Faelle einzeln (Inhaber 2026-10-13). Der Satz
+            "Beides muss zusammenkommen. Darunter oder weiter weg: ..." war zu
+            undeutlich - Kunden ueber der Schwelle aus weiterer Entfernung
+            lasen darin eine kostenlose Verlegung. Fehlt eine Bedingung, kosten
+            Lieferung UND lose Verlegung.
+          {%- endcomment -%}
+          <ul class="tp-vs__faelle" role="list">
+            <li class="tp-vs__fall tp-vs__fall--ja"><span class="tp-vs__fall-lage">Ab {{ vs_schwelle }}&nbsp;€ <strong>und</strong> bis {{ vs_nah }}&nbsp;km</span><span class="tp-vs__fall-folge">Lieferung &amp; lose Verlegung kostenlos</span></li>
+            <li class="tp-vs__fall"><span class="tp-vs__fall-lage">Ab {{ vs_schwelle }}&nbsp;€, <strong>aber weiter als {{ vs_nah }}&nbsp;km</strong></span><span class="tp-vs__fall-folge">Sie zahlen Lieferung (ab {% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_mitte %}) <strong>und</strong> lose Verlegung ({% render 'tp-vs-preis', wert: settings.tp_vs_lose %})</span></li>
+            <li class="tp-vs__fall"><span class="tp-vs__fall-lage"><strong>Unter {{ vs_schwelle }}&nbsp;€</strong> – auch ganz in der Nähe</span><span class="tp-vs__fall-folge">Sie zahlen Lieferung (ab {% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_nah %}) <strong>und</strong> lose Verlegung ({% render 'tp-vs-preis', wert: settings.tp_vs_lose %}, mind. {{ vs_mindest }})</span></li>
+          </ul>
+          <p class="tp-vs__angebot-text"><strong>Kurz gesagt:</strong> Fehlt eine der beiden Bedingungen, berechnen wir Lieferung <em>und</em> lose Verlegung – auch bei mehr als {{ vs_schwelle }}&nbsp;€ Warenwert. Alle Preise nennen wir vorab.</p>
           <p class="tp-vs__angebot-zusatz"><span class="tp-vs__zusatz-marke">Zusatz</span> Verlegeband, Fixierung und vollflächige Verklebung sind nicht enthalten – die buchen Sie zu festen Aufpreisen dazu.</p>
           {%- comment -%}
             Aktionspreis-Regel des Inhabers (2026-09-20), gleicher Wortlaut wie im Produkthinweis

@@ -113,6 +113,46 @@
   line-height: 1.5;
 }
 
+/* Die drei Faelle als Liste: links die Lage, rechts was sie kostet. Nur der
+   erste Fall ist gruen markiert - die anderen beiden sagen ausdruecklich,
+   dass Lieferung UND lose Verlegung berechnet werden. */
+.tp-vs__faelle {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tp-vs__fall {
+  display: grid;
+  gap: 2px;
+  padding: 8px 12px;
+  border-left: 3px solid #b8a68c;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.75);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.tp-vs__fall--ja {
+  border-left-color: rgb(var(--tp-vs-gruen));
+}
+
+.tp-vs__fall-lage {
+  color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.9);
+  font-weight: 500;
+}
+
+.tp-vs__fall-folge {
+  color: var(--tp-vs-leise);
+}
+
+.tp-vs__fall--ja .tp-vs__fall-folge {
+  color: rgb(var(--tp-vs-gruen));
+  font-weight: 700;
+}
+
 .tp-vs__angebot-text .tp-vs-preis {
   color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.9);
 }
