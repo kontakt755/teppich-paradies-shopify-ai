@@ -151,6 +151,9 @@ test('Produktseite: bei 3 Vinyl-Mustern ist der Knopf deaktiviert und erklaert',
   const html = await cta('voll');
   assert.doesNotMatch(html.match(vollKnopf)[0], /hidden/);
   assert.match(html.match(offenerLink)[1], /hidden/, 'Link zum Konfigurator verborgen');
+  // Nach cart:update wird der Link wieder sichtbar - dann mit Vinyl-Hinweis, nicht "Bis zu 3 Farben"
+  assert.match(html, /Höchstens 3 Vinyl-Muster je Bestellung/);
+  assert.doesNotMatch(html, /Bis zu 3 Farben/);
   assert.match(html, /<p class="tp-muster-cta-grenze"[^>]*data-tp-mg-voll>\s*3 von 3 Vinyl-Mustern im Warenkorb/);
   assert.match(html, /href="\/cart"/);
 });

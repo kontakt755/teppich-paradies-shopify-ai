@@ -64,7 +64,7 @@
         <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">Parkett-Muster auf Anfrage – wir melden uns zu Ihrem Dekor</small>
       {%- else -%}
         {{ block.settings.label | default: 'Kostenloses Muster anfragen' | escape }}
-        {%- if tp_mc_grenze == 'vinyl' -%}
+        {%- if tp_mc_grenze != blank -%}
           <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">Höchstens 3 Vinyl-Muster je Bestellung, versandkostenfrei</small>
         {%- elsif block.settings.hinweis != blank -%}
           <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">{{ block.settings.hinweis | escape }}</small>
