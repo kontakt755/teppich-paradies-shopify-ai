@@ -73,6 +73,11 @@
         {{- 'icon-minus.svg' | inline_asset_content -}}
       </span>
     </button>
+    {%- comment -%}
+      Warenkorb (line_index): Enter uebernimmt die Menge (blur -> setQuantity),
+      statt das Formular abzusenden - dessen einziger Submit-Knopf ist sonst
+      "Zur Kasse".
+    {%- endcomment -%}
     <input
       type="number"
       name="{% if line_index %}updates[]{% else %}quantity{% endif %}"
@@ -87,11 +92,7 @@
       aria-label="{{ 'accessibility.quantity' | t }}"
       {% if line_index %}
         data-cart-line="{{ line_index | plus: 1 }}"
-        {%- comment -%}
-          Enter im Warenkorb: Menge uebernehmen (blur -> setQuantity) statt das
-          Formular abzusenden - einziger Submit-Knopf ist sonst "Zur Kasse".
-        {%- endcomment -%}
-        onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
+        onkeydown="event.key === 'Enter' && (event.preventDefault(), this.blur())"
       {% endif %}
       {% if tp_qty_locked %}
         max="{{ in_cart_quantity }}"
