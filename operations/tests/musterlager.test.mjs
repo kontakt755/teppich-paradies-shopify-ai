@@ -93,16 +93,18 @@ test('wendeLagerAn: offene Musterposition kommt automatisch aus dem Lager und fa
   assert.equal(g.find(p => p.lineItemId === 'L2').musterHerkunft, undefined);
 });
 
-test('wendeLagerAn: ausdrueckliche Wahl, vorhandener Stand und erledigte Auftraege bleiben unberuehrt', () => {
+test('wendeLagerAn: ausdrueckliche Wahl, vorhandener Stand, erledigte Auftraege und versendete Positionen bleiben unberuehrt', () => {
   const file = musterlagerPfad(tmp());
   einlagern(file, { titel: 'Testvelours', farbe: 'Sand', schluessel: ['TESTVEL4_102'], art: 'bahn', ort: 'Regal B', actor: 'x', jetzt: AM });
   const gewaehlt = muster('O1', 'L1', 'M-TESTVEL4_102', { musterHerkunft: 'lieferant' });
   const bestellt = muster('O2', 'L1', 'M-TESTVEL4_102');
   const zu = muster('O3', 'L1', 'M-TESTVEL4_102');
   const vorbei = muster('O4', 'L1', 'M-TESTVEL4_102', { musterHerkunft: 'eigen_vorbei' });
+  const versendet = muster('O5', 'L1', 'M-TESTVEL4_102', { menge: 0 });
   const m = modellMit([
     auftrag('O1', '2026-10-01', [gewaehlt]), auftrag('O2', '2026-10-02', [bestellt]),
     auftrag('O3', '2026-10-03', [zu], { offen: false }), auftrag('O4', '2026-10-04', [vorbei]),
+    auftrag('O5', '2026-10-05', [versendet]),
   ]);
   wendeLagerAn(m, leseLager(file), { statusAlle: { 'O2::L1': { status: 'bestellt' } } });
   assert.equal(m.auftraege[0].positionen[0].musterHerkunft, 'lieferant');
@@ -112,6 +114,7 @@ test('wendeLagerAn: ausdrueckliche Wahl, vorhandener Stand und erledigte Auftrae
   // "Vorbeibringen" bleibt, bekommt aber den Lagerplatz dazu.
   assert.equal(m.auftraege[3].positionen[0].musterHerkunft, 'eigen_vorbei');
   assert.equal(m.auftraege[3].positionen[0].musterLager.ort, 'Regal B');
+  assert.equal(m.auftraege[4].positionen[0].musterHerkunft, undefined, 'in Shopify schon versendet: nichts zurueckzulegen');
 });
 
 test('wendeLagerAn: Einzelmuster zaehlen ab - das aelteste wartende bekommt das letzte, der Rest geht zum Lieferanten', () => {

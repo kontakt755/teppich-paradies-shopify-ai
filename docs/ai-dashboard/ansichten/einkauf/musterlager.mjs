@@ -19,7 +19,10 @@ import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { ladeStandNeu } from './auftragsfluss.mjs';
 
-export const musterlager = { daten: null, laedt: false };
+export const musterlager = { daten: null, laedt: false, geladenAm: 0 };
+
+/** So lange gilt der geladene Stand; danach beim naechsten Zeichnen still neu holen (Verschicktes zaehlt ab). */
+const FRISCH_MS = 30000;
 
 const ARTEN_STANDARD = { einzel: 'Einzelmuster', probestueck: 'Probestück 2 × 1 m', bahn: 'Bahn 4 m × 20 cm' };
 const ART_HINWEIS = {
@@ -29,9 +32,9 @@ const ART_HINWEIS = {
 };
 
 export function ensureMusterlager({ neu = false } = {}) {
-  if (musterlager.laedt || (musterlager.daten && !neu)) return;
+  if (musterlager.laedt || (musterlager.daten && !neu && Date.now() - musterlager.geladenAm < FRISCH_MS)) return;
   musterlager.laedt = true;
-  fetchEinkauf('/api/einkauf/musterlager').then(d => { musterlager.daten = d; }).finally(() => {
+  fetchEinkauf('/api/einkauf/musterlager').then(d => { musterlager.daten = d; musterlager.geladenAm = Date.now(); }).finally(() => {
     musterlager.laedt = false;
     if (state.route.view === 'einkauf') render();
   });

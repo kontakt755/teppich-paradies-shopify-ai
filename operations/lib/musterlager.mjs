@@ -281,7 +281,8 @@ export function wendeLagerAn(modell, lager, { statusAlle = {} } = {}) {
       }
       if (p.musterHerkunft) continue; // "Beim Lieferanten bestellen" gewaehlt
       if (statusAlle[posKey(a.id, p.lineItemId)]?.status) continue;
-      if (a.offen === false) continue;
+      // In Shopify schon versendet (offene Menge 0) oder Auftrag zu: nichts mehr zu verschicken.
+      if (a.offen === false || (p.menge ?? 1) <= 0) continue;
       kandidaten.push({ a, p, test, passend, datum: String(p.orderDatum || a.datum || '') });
     }
   }

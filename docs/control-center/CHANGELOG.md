@@ -966,7 +966,7 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
     `lagerId` in `musterherkunft.json`). Lagerplatz an der Position im Einkauf und in der Bestellmail-Begründung.
   - *Server:* `operations/lib/musterlager.mjs`, `GET/POST /api/einkauf/musterlager`,
     `GET /api/einkauf/musterlager-farben`; `musterlager.json` in Sicherung und Prüfkopie.
-- **Getestet:** neu `operations/tests/musterlager.test.mjs` (13), `docs/ai-dashboard/tests/musterlager-api.test.mjs`
+- **Getestet:** neu `operations/tests/musterlager.test.mjs` (12), `docs/ai-dashboard/tests/musterlager-api.test.mjs`
   (5, inkl. Rolle „lesen“ 403 / „mitarbeiter“ 200), `tests/bestellinhalt.test.mjs` (5), `todos.test.mjs` +1;
   `npm test` alle 7 Suiten grün, Guards und `validate --static` PASS. `dashboard:pruefen` (Heute, Einkauf,
   Musterlager, Bestellungen bei 1440/390 px) nur OK, 0 px Überlauf. Klickstrecke gegen die Datenkopie:

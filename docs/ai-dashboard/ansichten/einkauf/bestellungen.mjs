@@ -57,7 +57,11 @@ function afStatusZelle(p) {
   // Muster, die wir selbst da haben: kein "Als bestellt markieren", sondern die Wahl, woher sie kommen.
   const eigen = !status && musterEigen(p);
   if (eigen) {
-    const wahl = lesend ? '' : `<div style="margin-top:6px"><button type="button" class="btn btn-sm btn-ghost" data-muster-herkunft="${esc(p.orderId)}" ${daten}>Woher? ändern…</button></div>`;
+    // "Verschickt" direkt hier: bei gemischten Bestellungen (ein Muster aus dem Lager, eins vom
+    // Lieferanten) gab es sonst keinen Weg, das Lagermuster allein als raus einzutragen.
+    const wahl = lesend ? '' : `<div class="af-knoepfe" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">
+      <button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(p.orderId)}" data-af-status="raus" ${daten}>${esc(p.musterHerkunft === 'eigen_vorbei' ? 'Als übergeben markieren' : 'Als verschickt markieren')}</button>
+      <button type="button" class="btn btn-sm btn-ghost" data-muster-herkunft="${esc(p.orderId)}" ${daten}>Woher? ändern…</button></div>`;
     const woher = p.musterLager && p.musterHerkunft !== 'eigen_vorbei'
       ? `aus dem Musterlager${p.musterLager.ort ? ` · ${p.musterLager.ort}` : ''}`
       : MUSTER_HERKUNFT_KURZ[p.musterHerkunft] || 'aus dem eigenen Musterlager';
