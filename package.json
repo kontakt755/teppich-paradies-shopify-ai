@@ -82,6 +82,7 @@
     "probleme:payload": "node scripts/probleme-payload.mjs",
     "bodenwissen:daten": "node scripts/build-bodenwissen-data.mjs",
     "shop:wache": "node operations/scripts/shopwache.mjs",
+    "auslauf:pruefen": "node operations/scripts/auslauf-pruefen.mjs",
     "aufgaben:pruefen": "node operations/scripts/aufgaben-pruefen.mjs",
     "daten:bulk": "node operations/scripts/bulk-zu-eingabe.mjs",
     "kurz": "node scripts/kurz.mjs",

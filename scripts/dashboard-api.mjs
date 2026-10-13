@@ -2467,10 +2467,16 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Tailscale gehoert nicht zum Shop, aber zur selben Frage "laeuft von aussen
       // alles?" - und der Inhaber sieht diese Antwort als To-do auf "Heute".
       const ts = await tailscaleZustand();
+      // Woechentliche Auslauf-Pruefung (operations/scripts/auslauf-pruefen.mjs) faehrt mit:
+      // dieselbe Frage "stimmt, was der Shop zeigt?", dieselbe To-do-Quelle auf "Heute".
+      const aus = readJsonIfExists(path.join(dir, 'auslauf', 'status.json'));
+      const auslauf = aus?.geprueftAm
+        ? { geprueftAm: aus.geprueftAm, ampel: aus.ampel, befunde: aus.befunde || [], ausfaelle: aus.ausfaelle || [] }
+        : null;
       if (!daten || !daten.geprueftAm) {
-        return { verfuegbar: false, quelle: file, hinweis: 'Shop-Wache noch nie gelaufen.', befehl: 'npm run shop:wache', tailscale: ts };
+        return { verfuegbar: false, quelle: file, hinweis: 'Shop-Wache noch nie gelaufen.', befehl: 'npm run shop:wache', tailscale: ts, auslauf };
       }
-      return { verfuegbar: true, quelle: file, ...daten, tailscale: ts };
+      return { verfuegbar: true, quelle: file, ...daten, tailscale: ts, auslauf };
     },
 
     /**

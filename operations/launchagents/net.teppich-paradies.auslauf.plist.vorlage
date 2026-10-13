@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>net.teppich-paradies.auslauf</string>
+
+  <!-- Auslauf-Pruefung (operations/scripts/auslauf-pruefen.mjs): gibt es, was
+       der Shop verkauft, bei den Lieferanten noch? Inhaberregel 2026-10-13:
+       Ausgelaufenes wird nie angezeigt. Der Lauf liest nur und schreibt
+       $TP_PRIVAT_DIR/auslauf/status.json; Befunde erscheinen als To-do im
+       Control Center, archiviert wird nach Gegenprobe - nie automatisch.
+       Laeuft aus dem Dienst-Checkout ~/tp-dashboard (rund 1 Stunde, A ist langsam).
+       Einrichten: Platzhalter __HOME__ ersetzen, nach ~/Library/LaunchAgents kopieren,
+       launchctl load <datei>. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-lc</string>
+    <string>cd "$HOME/tp-dashboard" &amp;&amp; date &amp;&amp; exec npm run -s auslauf:pruefen</string>
+  </array>
+
+  <!-- Montags 4:00 Ortszeit; das Lexikon ist dann vom Sync-Dienst frisch. -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key><integer>1</integer>
+    <key>Hour</key><integer>4</integer>
+    <key>Minute</key><integer>0</integer>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>__HOME__/teppich-paradies-analyse/auslauf/pruefung.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/teppich-paradies-analyse/auslauf/pruefung.log</string>
+</dict>
+</plist>

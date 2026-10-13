@@ -448,6 +448,48 @@ function ausTailscale(quellen) {
   }];
 }
 
+/** Die Auslauf-Pruefung laeuft montags; ab 9 Tagen ohne neuen Stand ist sie ausgefallen. */
+export const AUSLAUF_STUMM_TAGE = 9;
+
+/**
+ * Auslauf-Pruefung (Inhaberregel 2026-10-13: Ausgelaufenes wird nie angezeigt).
+ * Kommt mit der Shop-Wache (quellen.shopwache.auslauf). Meldet Befunde, gestoerte
+ * Lieferanten und eine Pruefung, die sich nicht mehr meldet - archiviert wird nach Gegenprobe.
+ */
+function ausAuslauf(quellen, jetzt) {
+  const d = quellen.shopwache?.auslauf;
+  if (!d?.geprueftAm) return [];
+  const tage = tageSeit(d.geprueftAm, jetzt);
+  const basis = { id: 'auslauf', art: 'auslauf', bereich: 'website', alterTage: tage, knopf: { text: 'Lexikon', href: '#/lexikon' } };
+  const befunde = d.befunde || [];
+  const weg = befunde.filter(b => b.ergebnis === 'fehlt');
+  if (befunde.length) {
+    const handles = [...new Set(befunde.flatMap(b => b.handles || []))];
+    return [{
+      ...basis, ton: weg.length ? 'crit' : 'warn',
+      knopf: { text: 'Im Lexikon', href: `#/lexikon?${new URLSearchParams({ lq: handles[0] || '' })}` },
+      titel: weg.length
+        ? `Auslauf: ${weg.length} Artikel beim Lieferanten nicht mehr gefunden`
+        : `Auslauf-Prüfung: ${befunde.length} ${befunde.length === 1 ? 'Seite' : 'Seiten'} auffällig`,
+      kontext: [
+        handles.slice(0, 3).join(', '), handles.length > 3 ? `+${handles.length - 3} weitere` : null,
+        'gegenprüfen, dann archivieren (AGENTS.md)',
+      ].filter(Boolean).join(' · '),
+    }];
+  }
+  if (d.ausfaelle?.length) {
+    return [{
+      ...basis, ton: 'warn',
+      titel: `Auslauf-Prüfung: Lieferant ${d.ausfaelle.map(a => a.lieferant).join(', ')} nicht prüfbar`,
+      kontext: d.ausfaelle[0].grund,
+    }];
+  }
+  if (tage !== null && tage >= AUSLAUF_STUMM_TAGE) {
+    return [{ ...basis, ton: 'warn', titel: 'Auslauf-Prüfung meldet sich nicht', kontext: `letzter Lauf vor ${tage} Tagen – sie läuft sonst montags` }];
+  }
+  return [];
+}
+
 /** Alle ableitbaren To-dos, unsortiert und ohne Blick auf die Rolle. */
 function alleTodos(quellen, opt) {
   const k = kontext(quellen, opt);
@@ -457,6 +499,7 @@ function alleTodos(quellen, opt) {
     ...ausAufgaben(quellen, { ich: opt.ich, jetzt: k.jetzt }),
     ...ausFreigaben(quellen, k.jetzt),
     ...ausShopwache(quellen, k.jetzt),
+    ...ausAuslauf(quellen, k.jetzt),
     ...ausTailscale(quellen),
   ];
 }
@@ -480,7 +523,7 @@ function fuerSicht(todos, sicht, alle) {
  *   faelle         /api/kunden/faelle          -> faelle
  *   aufgaben       /api/org/liste?bereich=alle-aufgaben -> eintraege
  *   freigaben      Entwicklungsaufgaben (issues.json), nur beim Inhaber gefuellt
- *   shopwache      /api/shopwache/status, nur beim Inhaber gefuellt
+ *   shopwache      /api/shopwache/status, nur beim Inhaber gefuellt (mit `auslauf`)
  * @param {object} opt
  *   sicht          'inhaber' | 'laden' | 'website'
  *   ich            Kuerzel des angemeldeten Benutzers
