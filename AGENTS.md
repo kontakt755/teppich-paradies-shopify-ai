@@ -209,7 +209,7 @@ Fertige, getestete Funktionen nicht neu bauen: €/m²-Darstellung bei Paketprod
 
 Der Paket-/Verschnittrechner und dessen Warenkorblogik sind bereits intensiv getestet. Nicht neu schreiben, außer der Benutzer beauftragt dies ausdrücklich.
 
-Globo Mega Menu funktioniert aktuell. Nicht grundsätzlich umbauen, außer der Auftrag betrifft ausdrücklich das Menü.
+Das Hauptmenü kommt aus Horizon (`sections/header-group.json`, Menü `main-menu`). Das Globo-Mega-Menu-Embed steht zwar noch in `config/settings_data.json`, gibt im Live-Shop aber nichts aus (geprüft 13.10.). Menü nicht grundsätzlich umbauen, außer der Auftrag betrifft ausdrücklich das Menü.
 
 Horizon 4.1.3 existiert als separates Update. Keine Migration durchführen, solange dies nicht ausdrücklich beauftragt wird.
 
