@@ -150,6 +150,11 @@ export function pruefeImporte({ produkte, seit, handles = null }) {
   const befunde = [];
   for (const p of neu) {
     if (istMusterProdukt(p)) { befunde.push(...pruefeMuster(p, nachHandle)); continue; }
+    // Archiviert = fuer Kunden weg (Auslauf, verworfene Lieferanten-Entwuerfe, alte Tests).
+    // Ein fehlendes Bild oder Preis 0 schadet dort niemandem.
+    if (p.status === 'ARCHIVED') continue;
+    // Testprodukte (Tag test, UNLISTED) sind Werkzeug fuer Theme-Tests, keine Kundenseite.
+    if ((p.tags ?? []).some((t) => klein(t) === 'test') && p.status !== 'ACTIVE') continue;
     // Versteckte Hilfsprodukte (Kettelservice, Wunschmass-Pauschale) haengen
     // als Zusatzzeile an einer anderen Position - ohne Bild und Kategorie gewollt.
     if (istHilfsprodukt(p)) continue;
@@ -238,6 +243,8 @@ export function pruefeMuster(m, nachHandle) {
   const quelle = nachHandle.get(String(m.handle).slice(MUSTER_PRAEFIX.length));
   // Auslaufregel (AGENTS.md, Produktdaten): Quelle archiviert -> Muster mit archiviert. Das ist kein Befund.
   if (m.status === 'ARCHIVED' && (!quelle || quelle.status === 'ARCHIVED')) return befunde;
+  // Das Sammelmuster ist keine Kopie eines Quellprodukts und traegt bewusst eine eigene SKU.
+  if (m.handle === 'kostenloses-muster') return befunde;
   if (!quelle && m.handle !== 'kostenloses-muster') befunde.push(befund(m, 'hinweis', 'muster-quelle', 'kein Quellprodukt mit gleichem Handle ohne muster-'));
   if (m.status !== 'UNLISTED') befunde.push(befund(m, 'hinweis', 'muster-status', `Status ${m.status} statt UNLISTED`));
   if (!m.onlineStoreUrl) befunde.push(befund(m, 'fehler', 'muster-nicht-veroeffentlicht', 'nicht im Onlineshop veroeffentlicht - Musterbestellung scheitert'));
