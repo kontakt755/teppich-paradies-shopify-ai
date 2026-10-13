@@ -1,6 +1,8 @@
 /**
- * Kunden, Reiter "Rueckrufe": alle Bestellungen mit Beratungswunsch oder Masspruefung,
- * aelteste zuerst, mit klickbarer Telefonnummer - und der zugehoerige Block auf "Heute".
+ * Kunden, Reiter "Rueckrufe": alle Bestellungen mit Beratungswunsch, Masspruefung oder
+ * angefragter Verlegung, aelteste zuerst, mit klickbarer Telefonnummer - und der zugehoerige
+ * Block auf "Heute". Seit 2026-10-13 die fuehrende Liste (w-078): die Laden-Ansicht der
+ * Auftrags-App legt dafuer keine eigenen Faelle mehr an und verlinkt hierher.
  */
 import { state } from '../../kern/zustand.mjs';
 import { $, esc, fmtDate, toast } from '../../kern/helfer.mjs';
@@ -101,7 +103,7 @@ export function viewKundenRueckrufe() {
   const erledigt = r.zeilen.filter(z => z.status === 'erledigt');
   const tests = r.zeilen.filter(z => z.status !== 'erledigt' && z.testbestellung);
   return `
-    <p class="small muted" style="margin:0 0 10px">Alle Bestellungen mit Beratungswunsch oder Maßprüfung „Ja" – älteste zuerst. Status und Notiz werden lokal auf diesem Mac gespeichert.</p>
+    <p class="small muted" style="margin:0 0 10px">Alle Bestellungen mit Beratungswunsch, Maßprüfung „Ja" oder angefragter Verlegung – älteste zuerst. Nachgefasst wird nur hier, nicht in der Laden-Ansicht. Status und Notiz werden lokal auf diesem Mac gespeichert.</p>
     <div class="rows">${offen.length ? offen.map(rueckrufZeileHtml).join('') : emptyState('Keine offenen Rückrufe.', '')}</div>
     ${tests.length ? `<details style="margin-top:14px"><summary>${tests.length} aus Testbestellungen</summary><div class="rows">${tests.map(rueckrufZeileHtml).join('')}</div></details>` : ''}
     ${erledigt.length ? `<details style="margin-top:14px"><summary>${erledigt.length} erledigt</summary><div class="rows">${erledigt.map(rueckrufZeileHtml).join('')}</div></details>` : ''}
