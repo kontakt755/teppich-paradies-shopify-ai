@@ -1537,6 +1537,17 @@ function tpRwcInit{{ tp_rc_id }}() {
     return (cmExact ? qty / 100 : qty) * rate;
   };
 
+  // Fuer die Anzeige im Raummass-Helfer (Shop-Analyse 13.10.): berechnete
+  // Menge in m² wie in der Preisbox gerundet, und das Mass, das gerade im
+  // Rechner steht (= das, was in den Warenkorb ginge). Rechnet keinen Preis.
+  root.tpRwcBerechnetM2 = function (wCm, lenCm) {
+    if (!(wCm > 0) || !(lenCm > 0)) return 0;
+    return cmExact ? roundedHundredthsQty(wCm, lenCm) / 100 : Math.ceil((wCm * lenCm) / 10000);
+  };
+  root.tpRwcBestellmass = function () {
+    return { art: artMode(), breite: selectedWidth() || 0, laenge: getEffectiveLengthCm() || 0 };
+  };
+
   // Im Raummass-Modus ist die Breite die eigene Eingabe, sonst die Rolle.
   function selectedWidth() {
     if (wIdx === -1 && !raumAnfrage) return widths[0];
