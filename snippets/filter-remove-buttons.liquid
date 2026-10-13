@@ -48,8 +48,42 @@
         <span class="visually-hidden">{{ 'actions.remove' | t }}</span>
       </facet-remove-component>
     {% else %}
+      {%- liquid
+        # Audit 13.10.: zusammengefasste Masswerte (tp-filter-wertgruppen) als ein Chip
+        assign tp_wg = ''
+        if filter.active_values.size > 0
+          capture tp_wg_roh
+            render 'tp-filter-wertgruppen', filter: filter
+          endcapture
+          assign tp_wg = tp_wg_roh | strip | split: ';'
+        endif
+        assign tp_wg_genutzt = false
+        if tp_wg.size == filter.values.size and tp_wg.size > 0
+          assign tp_wg_genutzt = true
+        endif
+      -%}
       {%- for value in filter.active_values -%}
         {%- liquid
+          assign tp_wg_mitwerte = ''
+          assign tp_wg_t = 'N'
+          if tp_wg_genutzt
+            for tp_wg_v in filter.values
+              if tp_wg_v.value == value.value
+                assign tp_wg_t = tp_wg[forloop.index0]
+                break
+              endif
+            endfor
+            assign tp_wg_art = tp_wg_t | slice: 0
+            if tp_wg_art == 'X'
+              assign tp_wg_besitzer = tp_wg_t | remove_first: 'X' | plus: 0
+              if filter.values[tp_wg_besitzer].active
+                continue
+              endif
+            elsif tp_wg_art == 'R'
+              assign tp_wg_teile = tp_wg_t | split: '~'
+              assign tp_wg_mitwerte = tp_wg_teile[1]
+            endif
+          endif
           assign is_active = true
           assign tp_active_filter_value_label = value.label
           if filter.param_name == 'filter.v.m.custom.rollenbreite'
@@ -64,6 +98,10 @@
             {% if value.swatch %}pills__pill--swatch{% endif %}
           "
           data-url="{{ value.url_to_remove }}"
+          {% if tp_wg_mitwerte != '' %}
+            data-tp-mitwerte="{{ tp_wg_mitwerte | escape }}"
+            data-tp-mitwerte-name="{{ value.param_name | escape }}"
+          {% endif %}
           tabindex="0"
           role="button"
           on:click="/removeFilter?form="

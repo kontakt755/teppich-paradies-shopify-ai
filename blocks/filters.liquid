@@ -27,6 +27,14 @@
   assign sort_by = results.sort_by | default: results.default_sort_by
   assign filters = filters | default: results.filters
   assign total_active_values = 0
+
+  # Preisfilter aus: Shopify filtert nach dem Variantenpreis (Paketpreis,
+  # bei Teppich nach Mass je 0,01 m2), die Karten zeigen dagegen den Preis
+  # je m2. Ein belastbarer, filterbarer EUR/m2-Wert existiert nicht.
+  # Betroffen sind Kollektionen mit ueberwiegend oder teilweise Paketware
+  # (Pruefung custom.qm_pro_paket, Audit 13.10.2026). Alle anderen Filter
+  # bleiben unveraendert.
+  assign tp_preisfilter_aus = 'vinylboden-1,vinylboden-klickvinyl,vinylboden-klebevinyl,vinylboden-fischgraet,angebote-vinylboden,auslauf-vinylboden,jab-anstoetz-designboden,laminat,parkett,korkboden,korkboden-klick,korkboden-kleben,kautschukboden,teppichfliesen,teppichfliesen-50x50,teppichfliesen-nadelfilz,teppichplanken,auslauf-teppichfliesen,teppichboden-buero-gewerbe,angebote-teppichboden,angebote,teppich-nach-mass,marken-teppiche-nach-mass' | split: ','
   assign tp_teppich_unterkategorie = false
   assign tp_kollektions_praefix = collection.handle | split: '-' | first
   if request.page_type == 'collection' and tp_kollektions_praefix == 'teppichboden' and collection.handle != 'teppichboden'
@@ -91,6 +99,15 @@
         endif
       else
         assign active_value_count = filter.active_values | size
+        if active_value_count > 1
+          capture tp_wg_anzahl
+            render 'tp-filter-wertgruppen', filter: filter, nur_anzahl: true
+          endcapture
+          assign tp_wg_anzahl = tp_wg_anzahl | strip
+          if tp_wg_anzahl != ''
+            assign active_value_count = tp_wg_anzahl | plus: 0
+          endif
+        endif
         assign total_active_values = total_active_values | plus: active_value_count
     endcase
   endfor
@@ -236,7 +253,7 @@
                   {% case filter.type %}
                     {% when 'price_range' %}
                       {%- comment -%}
-                        Preisfilter blendet fuer die Vinylboden-Collection
+                        Liste tp_preisfilter_aus oben. Preisfilter blendet fuer die Vinylboden-Collection
                         bewusst aus: Shopifys nativer Preisfilter filtert nach
                         dem tatsaechlichen Varianten-/Paketpreis, waehrend die
                         Karten hier den €/m²-Preis zeigen (Einheiten-Mismatch,
@@ -248,7 +265,7 @@
                         "hoechster Preis 3,05 EUR" an (2026-10-12). Alle
                         anderen Filter bleiben unveraendert.
                       {%- endcomment -%}
-                      {%- unless request.page_type == 'search' or collection.handle == 'vinylboden-1' or collection.handle == 'vinylboden-klickvinyl' or collection.handle == 'vinylboden-klebevinyl' or collection.handle == 'teppichfliesen' or collection.handle == 'teppichfliesen-50x50' or collection.handle == 'teppichplanken' or collection.handle == 'auslauf-teppichfliesen' or collection.handle == 'teppich-nach-mass' or collection.handle == 'marken-teppiche-nach-mass' -%}
+                      {%- unless request.page_type == 'search' or tp_preisfilter_aus contains collection.handle -%}
                         {%- liquid
                           if filter.min_value.value != null or filter.max_value.value != null
                             assign total_active_values = total_active_values | plus: 1
@@ -271,6 +288,15 @@
                         endif
 
                         assign active_value_count = filter.active_values | size
+                        if active_value_count > 1
+                          capture tp_wg_anzahl
+                            render 'tp-filter-wertgruppen', filter: filter, nur_anzahl: true
+                          endcapture
+                          assign tp_wg_anzahl = tp_wg_anzahl | strip
+                          if tp_wg_anzahl != ''
+                            assign active_value_count = tp_wg_anzahl | plus: 0
+                          endif
+                        endif
                         assign total_active_values = total_active_values | plus: active_value_count
                         if block_settings.filter_style != 'vertical'
                           assign should_render_clear = true
@@ -542,7 +568,7 @@
                 {%- for filter in filters -%}
                   {% case filter.type %}
                     {% when 'price_range' %}
-                      {%- unless request.page_type == 'search' or collection.handle == 'vinylboden-1' or collection.handle == 'vinylboden-klickvinyl' or collection.handle == 'vinylboden-klebevinyl' or collection.handle == 'teppichfliesen' or collection.handle == 'teppichfliesen-50x50' or collection.handle == 'teppichplanken' or collection.handle == 'auslauf-teppichfliesen' or collection.handle == 'teppich-nach-mass' or collection.handle == 'marken-teppiche-nach-mass' -%}
+                      {%- unless request.page_type == 'search' or tp_preisfilter_aus contains collection.handle -%}
                         {%- liquid
                           if filter.min_value.value != null or filter.max_value.value != null
                             assign total_active_values = total_active_values | plus: 1
@@ -559,6 +585,15 @@
                         endif
 
                         assign active_value_count = filter.active_values | size
+                        if active_value_count > 1
+                          capture tp_wg_anzahl
+                            render 'tp-filter-wertgruppen', filter: filter, nur_anzahl: true
+                          endcapture
+                          assign tp_wg_anzahl = tp_wg_anzahl | strip
+                          if tp_wg_anzahl != ''
+                            assign active_value_count = tp_wg_anzahl | plus: 0
+                          endif
+                        endif
                         assign total_active_values = total_active_values | plus: active_value_count
                         capture tp_filter_aus
                           render 'tp-filter-sichtbar', filter: filter
