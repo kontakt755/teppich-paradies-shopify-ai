@@ -75,7 +75,7 @@
     "view_pricing_info": "Preisinformationen anzeigen",
     "slideshow": "Slideshow",
     "header_navigation_label": "Haupt-",
-    "home_logo_alt": "{{ store_name }} – Home",
+    "home_logo_alt": "{{ store_name }} – Startseite",
     "active_filters": "Aktive Filter:",
     "product_details": "Produktdetails",
     "show_product_details": "Produktdetails für {{ product_name }} anzeigen",
