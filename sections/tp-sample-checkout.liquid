@@ -63,7 +63,12 @@
           {%- assign tp_sample_gezeigt = 0 -%}
           {%- if tp_sample_coll != blank and tp_sample_coll.products.size > 0 -%}
             <ul class="tp-sample__produkte">
-              {%- for tp_sample_p in tp_sample_coll.products limit: 12 -%}
+              {%- comment -%}
+                50 statt 12: In "Vinyl von der Rolle" tragen die meistverkauften
+                Produkte (Lieferant C) ohne-muster; mit 12 blieb dort nur ein
+                Produkt uebrig (13.10.2026). Gezeigt werden weiter hoechstens 4.
+              {%- endcomment -%}
+              {%- for tp_sample_p in tp_sample_coll.products limit: 50 -%}
                 {%- if tp_sample_gezeigt >= 4 -%}{%- break -%}{%- endif -%}
                 {%- unless tp_sample_p.tags contains 'zubehoer' or tp_sample_p.tags contains 'ohne-muster' -%}
                   {%- capture tp_sample_ziel -%}{%- render 'tp-musteroption', product: tp_sample_p -%}{%- endcapture -%}

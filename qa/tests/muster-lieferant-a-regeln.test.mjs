@@ -22,6 +22,7 @@ const optionSource = option.slice(option.indexOf('{%- liquid'), option.lastIndex
 const block = read('blocks/tp-muster-cta.liquid')
   .replace(/\{% doc %\}[\s\S]*?\{% enddoc %\}/, '')
   .replace(/\{% schema %\}[\s\S]*?\{% endschema %\}/, '')
+  .replace(/\{% stylesheet %\}[\s\S]*?\{% endstylesheet %\}/, '')
   .replace("render 'tp-musteroption', product: product", 'echo tp_test_url')
   .replace("render 'tp-muster-grenze', product: product", 'echo tp_test_grenze');
 assert.ok(block.includes('echo tp_test_url'), 'Snippet-Aufruf im Block nicht gefunden');

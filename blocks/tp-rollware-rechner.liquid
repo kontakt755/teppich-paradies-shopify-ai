@@ -560,10 +560,10 @@
     assign tp_rc_start_variante = product.selected_or_first_available_variant
     for tp_rc_opt in product.options_with_values
       assign tp_rc_opt_name = tp_rc_opt.name | downcase | strip
-      if tp_rc_opt_name != 'breite'
+      unless tp_rc_opt_name contains 'breite'
         assign tp_rc_start_farbe = tp_rc_start_variante.options[forloop.index0]
         break
-      endif
+      endunless
     endfor
     if tp_rc_start_farbe == 'Default Title'
       assign tp_rc_start_farbe = ''
@@ -591,21 +591,25 @@
     assign tp_rc_muster_grenze = tp_rc_muster_grenze | strip
   -%}
   {%- if block.settings.muster_anzeigen and tp_rc_muster_url != blank -%}
-    {%- if tp_rc_muster_grenze == 'voll' -%}
-      <button class="tp-rwc-muster" type="button" disabled aria-describedby="tp-rwc-muster-grenze-{{ tp_rc_id }}" data-rwc-body>
-        {{- tp_rc_muster_text | escape -}}
-      </button>
-      <p class="tp-rwc-muster-grenze" id="tp-rwc-muster-grenze-{{ tp_rc_id }}" data-rwc-body>
-        3 von 3 Vinyl-Mustern im Warenkorb – mehr sind je Bestellung nicht möglich. <a href="{{ routes.cart_url }}">Zum Warenkorb</a>
-      </p>
-    {%- else -%}
-      <a class="tp-rwc-muster" href="{{ tp_rc_muster_url }}" data-muster-link data-muster-vorlage="{{ tp_rc_muster_vorlage | escape }}" data-muster-fallback-farbe="{{ tp_rc_start_farbe | escape }}" data-rwc-body>
+    {%- comment -%}
+      Vinyl: beide Zustaende stehen im HTML, assets/tp-muster-grenze.js schaltet
+      nach Warenkorb-Aenderungen (Drawer, Zurueck-Knopf) um, ohne Neuladen.
+    {%- endcomment -%}
+    <div{% if tp_rc_muster_grenze != blank %} data-tp-muster-grenze="{{ tp_rc_muster_grenze }}"{% endif %} data-rwc-body>
+      <a class="tp-rwc-muster" href="{{ tp_rc_muster_url }}" data-muster-link data-muster-vorlage="{{ tp_rc_muster_vorlage | escape }}" data-muster-fallback-farbe="{{ tp_rc_start_farbe | escape }}"{% if tp_rc_muster_grenze != blank %} data-tp-mg-offen{% endif %}{% if tp_rc_muster_grenze == 'voll' %} hidden{% endif %}>
         {{- tp_rc_muster_text | escape -}}
       </a>
-      {%- if tp_rc_muster_grenze == 'vinyl' -%}
-        <p class="tp-rwc-muster-grenze" data-rwc-body>Kostenlos, höchstens 3 Vinyl-Muster je Bestellung</p>
+      {%- if tp_rc_muster_grenze != blank -%}
+        <p class="tp-rwc-muster-grenze" data-tp-mg-offen{% if tp_rc_muster_grenze == 'voll' %} hidden{% endif %}>Kostenlos, höchstens 3 Vinyl-Muster je Bestellung</p>
+        <button class="tp-rwc-muster" type="button" disabled aria-describedby="tp-rwc-muster-grenze-{{ tp_rc_id }}" data-tp-mg-voll{% unless tp_rc_muster_grenze == 'voll' %} hidden{% endunless %}>
+          {{- tp_rc_muster_text | escape -}}
+        </button>
+        <p class="tp-rwc-muster-grenze tp-rwc-muster-grenze--voll" id="tp-rwc-muster-grenze-{{ tp_rc_id }}" data-tp-mg-voll{% unless tp_rc_muster_grenze == 'voll' %} hidden{% endunless %}>
+          3 von 3 Vinyl-Mustern im Warenkorb – mehr sind je Bestellung nicht möglich. <a href="{{ routes.cart_url }}">Zum Warenkorb</a>
+        </p>
+        <script src="{{ 'tp-muster-grenze.js' | asset_url }}" defer></script>
       {%- endif -%}
-    {%- endif -%}
+    </div>
   {%- endif -%}
 
   {%- comment -%}
@@ -1196,7 +1200,7 @@
   /* Vinyl-Grenze (snippets/tp-muster-grenze): Hinweis darunter, bei 3 von 3 deaktiviert */
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-muster:disabled { width: 100%; font-family: inherit; background: transparent; opacity: .5; cursor: not-allowed; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-muster-grenze { margin: 6px 0 0; font-size: 13px; line-height: 1.4; text-align: center; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72); }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-muster:disabled + .tp-rwc-muster-grenze { color: var(--tp-rwc-ink); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-muster-grenze--voll { color: var(--tp-rwc-ink); }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-muster-grenze a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 
   .tp-rwc-{{ tp_rc_id }} [hidden] { display: none !important; }

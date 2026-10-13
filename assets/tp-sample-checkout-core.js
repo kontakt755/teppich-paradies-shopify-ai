@@ -164,9 +164,9 @@
   // gezaehlt wird die engere - bei gleichem Rest die Vinyl-Grenze, damit der
   // Kunde liest, warum es nicht weitergeht ("3 von 3 Vinyl-Mustern").
   function getLimit(product, state) {
-    var total = { max: MAX_SAMPLES, inCart: state.count, remaining: Math.max(0, MAX_SAMPLES - state.count), word: 'Muster', vinyl: false };
+    var total = { max: MAX_SAMPLES, inCart: state.count, remaining: Math.max(0, MAX_SAMPLES - state.count), word: 'Muster' };
     if (!isVinyl(product)) return total;
-    var vinyl = { max: VINYL_MAX, inCart: state.vinylCount, remaining: Math.max(0, VINYL_MAX - state.vinylCount), word: 'Vinyl-Muster', vinyl: true };
+    var vinyl = { max: VINYL_MAX, inCart: state.vinylCount, remaining: Math.max(0, VINYL_MAX - state.vinylCount), word: 'Vinyl-Muster' };
     return vinyl.remaining <= total.remaining ? vinyl : total;
   }
 
@@ -270,7 +270,7 @@
     return {
       total: total,
       remaining: remaining,
-      limitReached: total >= MAX_SAMPLES,
+      limitReached: total >= limit,
       message: message,
     };
   }
