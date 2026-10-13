@@ -31,8 +31,22 @@ test('Section-URL: Produktkontext ueber die Section Rendering API', () => {
   assert.equal(core.basisSectionUrl('velluna-teppich-nach-mass'), '/products/velluna-teppich-nach-mass?section_id=tp-muster-basis');
 });
 
-const sectionHtml = (inhalt) =>
-  `<div id="shopify-section-tp-muster-basis" class="shopify-section">\n<script type="application/json" data-tp-muster-basis>${inhalt}</script>\n</div>`;
+const sectionHtml = (inhalt, quelle) =>
+  `<div id="shopify-section-tp-muster-basis" class="shopify-section">\n<script type="application/json" data-tp-muster-basis>${inhalt}</script>\n`
+  + (quelle === undefined ? '' : `<script type="application/json" data-tp-muster-quelle>${quelle}</script>\n`)
+  + '</div>';
+
+test('Muster-Quelle: nur gueltige muster-Handles oder leer, sonst null (alter Weg)', () => {
+  const html = (q) => sectionHtml('""', q);
+  assert.deepEqual(plain(core.parseMusterQuelle(html('{"eigen":"muster-velluna","basis":""}'))), { eigen: 'muster-velluna', basis: null });
+  assert.deepEqual(plain(core.parseMusterQuelle(html('{"eigen":"","basis":" muster-velluna-teppichboden "}'))), { eigen: null, basis: 'muster-velluna-teppichboden' });
+  assert.deepEqual(plain(core.parseMusterQuelle(html('{"eigen":"","basis":""}'))), { eigen: null, basis: null });
+  for (const q of ['kaputt', 'null', '"muster-x"', '[]', '{"eigen":"velluna","basis":""}', '{"eigen":"muster-../cart","basis":""}', '{"eigen":"muster-x"}', '{"eigen":1,"basis":""}']) {
+    assert.equal(core.parseMusterQuelle(html(q)), null, q);
+  }
+  assert.equal(core.parseMusterQuelle(sectionHtml('""')), null, 'altes Section-HTML ohne Tag');
+  assert.equal(core.parseMusterQuelle(''), null);
+});
 
 test('Basis-Handle: nur ein gueltiger Handle aus dem Script-Tag zaehlt', () => {
   assert.equal(core.parseBasisHandle(sectionHtml('"velluna-teppichboden"'), 'velluna-nach-mass'), 'velluna-teppichboden');
@@ -105,7 +119,18 @@ const section = read('sections/tp-muster-basis.liquid')
   .replace(/{%-?\s*schema\s*-?%}[\s\S]*?{%-?\s*endschema\s*-?%}/g, '');
 const engine = new Liquid();
 engine.registerFilter('json', (value) => JSON.stringify(value ?? null));
-const renderSection = (product) => engine.parseAndRender(section, { product });
+const renderSection = (product, vorhanden = []) =>
+  engine.parseAndRender(section, { product, all_products: Object.fromEntries(vorhanden.map((h, i) => [h, { id: i + 1, handle: h }])) });
+
+test('Section: nennt nur vorhandene Musterprodukte, der Parser liest sie', async () => {
+  const velluna = { handle: 'velluna-nach-mass', metafields: { service: { einfass_basis: { value: { handle: 'velluna-teppichboden' } } } } };
+  const quelle = async (product, vorhanden) => plain(core.parseMusterQuelle(await renderSection(product, vorhanden)));
+  assert.deepEqual(await quelle(velluna, ['muster-velluna-nach-mass', 'muster-velluna-teppichboden']), { eigen: 'muster-velluna-nach-mass', basis: 'muster-velluna-teppichboden' });
+  assert.deepEqual(await quelle(velluna, ['muster-velluna-teppichboden']), { eigen: null, basis: 'muster-velluna-teppichboden' });
+  assert.deepEqual(await quelle(velluna, []), { eigen: null, basis: null });
+  assert.deepEqual(await quelle({ handle: 'turku-klickvinyl', metafields: {} }, ['muster-velluna-teppichboden']), { eigen: null, basis: null });
+  assert.deepEqual(await quelle(null, []), { eigen: null, basis: null }, 'ohne Produkt');
+});
 
 test('Section: liefert den Handle von service.einfass_basis, der Parser liest ihn', async () => {
   const html = await renderSection({ handle: 'velluna-nach-mass', metafields: { service: { einfass_basis: { value: { handle: 'velluna-teppichboden' } } } } });
@@ -180,7 +205,7 @@ const QUELLE = {
   ],
 };
 
-async function musterKasse({ eigen = null, sectionOk = true, sectionInhalt = '"velluna-teppichboden"', basis = null }) {
+async function musterKasse({ eigen = null, sectionOk = true, sectionInhalt = '"velluna-teppichboden"', basis = null, quelle }) {
   const requests = [];
   const antworten = {
     '/products/velluna-nach-mass.js': QUELLE,
@@ -192,7 +217,7 @@ async function musterKasse({ eigen = null, sectionOk = true, sectionInhalt = '"v
   async function fetch(url, options = {}) {
     requests.push({ url, body: options.body ? JSON.parse(options.body) : null });
     if (url === '/products/velluna-nach-mass?section_id=tp-muster-basis') {
-      return { ok: sectionOk, text: async () => sectionHtml(sectionInhalt), json: async () => { throw new Error('kein JSON'); } };
+      return { ok: sectionOk, text: async () => sectionHtml(sectionInhalt, quelle), json: async () => { throw new Error('kein JSON'); } };
     }
     if (url === '/cart/add.js') return { ok: true, json: async () => ({}) };
     const daten = antworten[url];
@@ -243,8 +268,7 @@ test('Ablauf: eigenes Musterprodukt vorhanden - keine Basis-Abfrage, Verhalten w
     basis: { options: [{ name: 'Farbe', position: 1 }], variants: [{ id: 502, option1: 'Beige', available: true }] },
   });
   assert.equal(r.fehler, null);
-  assert.ok(!r.requests.some((u) => u.includes('section_id')), 'keine Section-Abfrage');
-  assert.ok(!r.requests.includes('/products/muster-velluna-teppichboden.js'));
+  assert.ok(!r.requests.includes('/products/muster-velluna-teppichboden.js'), 'Basis wird nicht abgerufen');
   assert.equal(zeile(r.zeilen, 'grau').id, 601);
   assert.equal(zeile(r.zeilen, 'beige').id, 900, 'fehlende Farbe: Sammelprodukt wie bisher');
 });
@@ -279,4 +303,24 @@ test('Ablauf: Section nicht erreichbar, ohne Basis oder Basis ohne Musterprodukt
     assert.deepEqual(r.zeilen.map((z) => z.id), [900, 900], JSON.stringify(fall));
     assert.equal(zeile(r.zeilen, 'grau').properties.Produkt, 'Velluna Teppich nach Maß');
   }
+});
+
+test('Ablauf mit Muster-Quelle: abgerufen wird nur, was die Section nennt - kein 404-Probeabruf', async () => {
+  const eigenProdukt = { options: [{ name: 'Farbe', position: 1 }], variants: [{ id: 601, option1: 'Grau', available: true }] };
+  const basisProdukt = { options: [{ name: 'Farbe', position: 1 }], variants: [{ id: 501, option1: 'Grau', available: true }] };
+
+  let r = await musterKasse({ eigen: eigenProdukt, basis: basisProdukt, quelle: '{"eigen":"muster-velluna-nach-mass","basis":"muster-velluna-teppichboden"}' });
+  assert.equal(r.fehler, null);
+  assert.ok(r.requests.includes('/products/muster-velluna-nach-mass.js'));
+  assert.ok(!r.requests.includes('/products/muster-velluna-teppichboden.js'), 'eigenes Muster genuegt');
+  assert.equal(zeile(r.zeilen, 'grau').id, 601);
+
+  r = await musterKasse({ basis: basisProdukt, quelle: '{"eigen":"","basis":"muster-velluna-teppichboden"}' });
+  assert.ok(!r.requests.includes('/products/muster-velluna-nach-mass.js'), 'kein Abruf des fehlenden eigenen Musters');
+  assert.equal(zeile(r.zeilen, 'grau').id, 501);
+  assert.equal(zeile(r.zeilen, 'beige').id, 900);
+
+  r = await musterKasse({ quelle: '{"eigen":"","basis":""}' });
+  assert.ok(!r.requests.some((u) => u.startsWith('/products/muster-')), 'gar kein Muster-Abruf');
+  assert.deepEqual(r.zeilen.map((z) => z.id), [900, 900]);
 });

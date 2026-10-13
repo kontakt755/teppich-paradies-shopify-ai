@@ -13,6 +13,11 @@
 
   Ohne Produkt, ohne Feld oder bei Verweis auf sich selbst: leerer Text.
 
+  Zweites Tag data-tp-muster-quelle: welche Musterprodukte es gibt (eigen =
+  muster-<handle>, basis = muster-<Handle des Teppichbodens>), leer = keins.
+  Der Konfigurator ruft nur diese ab statt muster-<handle> blind zu probieren
+  (jeder Fehlgriff war ein 404 in der Konsole, Fehleranalyse 13.10.).
+
   doc-Tag ist nur in Snippets/Blocks erlaubt, nicht in Sections - deshalb
   hier comment statt doc.
 {% endcomment %}
@@ -24,8 +29,24 @@
       assign tp_mb_handle = tp_mb_basis.handle
     endif
   endif
+
+  assign tp_mb_eigen = ''
+  assign tp_mb_basis_muster = ''
+  if product != blank
+    assign tp_mb_kandidat = 'muster-' | append: product.handle
+    if all_products[tp_mb_kandidat].id != blank
+      assign tp_mb_eigen = tp_mb_kandidat
+    endif
+    if tp_mb_handle != blank
+      assign tp_mb_kandidat = 'muster-' | append: tp_mb_handle
+      if all_products[tp_mb_kandidat].id != blank
+        assign tp_mb_basis_muster = tp_mb_kandidat
+      endif
+    endif
+  endif
 -%}
 <script type="application/json" data-tp-muster-basis>{{ tp_mb_handle | json }}</script>
+<script type="application/json" data-tp-muster-quelle>{"eigen":{{ tp_mb_eigen | json }},"basis":{{ tp_mb_basis_muster | json }}}</script>
 
 {% schema %}
 {
