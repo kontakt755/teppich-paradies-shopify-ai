@@ -340,11 +340,16 @@ export function resolveLineItem({ lineItem, variant, alleZeilen = [] } = {}) {
 
   let pruefung = masspruefung({ props, quantity: lineItem.quantity, hundertstel: produkt.preis_pro_001_qm, alleZeilen });
 
-  // Bundle-Komponente (lineItemGroup): Bestandsabgang zum Bundle, kein eigener
-  // Zuschnitt und kein eigener Einkauf.
+  // Bundle-Komponente (lineItemGroup): nur die Rollenware unter "Zuschnitt
+  // von der Rolle" (Produkt mit custom.max_roll_laenge_cm) ist ein reiner
+  // Bestandsabgang ohne eigenen Zuschnitt und Einkauf. Komponenten anderer
+  // Bundles bleiben normale Positionen.
   const gruppe = lineItem.lineItemGroup ?? null;
-  const bundle = gruppe ? { titel: gruppe.title ?? null, menge: Number(gruppe.quantity) || null } : null;
-  if (gruppe) {
+  const rollenKomponente = !!gruppe && !leer(pm?.custom?.max_roll_laenge_cm);
+  const bundle = gruppe
+    ? { titel: gruppe.title ?? null, menge: Number(gruppe.quantity) || null, bestandsabgang: rollenKomponente }
+    : null;
+  if (rollenKomponente) {
     pruefung = {
       status: 'bestand', soll: 0, einheit: '', ist: Number(lineItem.quantity) || 0,
       hinweis: `Bestandsabgang zu „${gruppe.title ?? 'Bundle'}“ – nicht separat zuschneiden`,

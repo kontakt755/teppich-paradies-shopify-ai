@@ -115,7 +115,7 @@ angemeldet). Probe deshalb mit einem nicht veroeffentlichten Entwurfsprodukt:
 |---|---|
 | Multipack mit einer Komponente (`productBundleCreate` + `quantityOption`) | bestanden: 39 Varianten, Komponentenmengen 2..40, `requiresComponents: true`, Bestand aus der Rollenware berechnet, Status DRAFT, in keinem Kanal |
 | Ausweg zweite Komponente | nicht noetig |
-| Bundle-Preis 0 EUR | offen: Shopify legt die Summe der Komponenten als Preis an (41,95 x Einheiten); die Umstellung auf 0,00 EUR braucht die Freigabe des Inhabers (Preisaenderung) |
+| Bundle-Preis 0 EUR | Shopify legt die Summe der Komponenten als Preis an (41,95 x Einheiten). Alle 39 Varianten stehen auf 0,00 EUR (Freigabe Inhaber 13.10.2026, Gegenprobe per Admin API) |
 | Gemischter Warenkorb gegen den Bestand | offen: Entwurfsprodukte lassen sich nicht in den Warenkorb legen; nur mit veroeffentlichtem Bundle pruefbar |
 | Bestellzeilen, Properties der Komponente, Liquid der Mail | offen: nur mit echter Bestellung belegbar (Testkauf nicht freigegeben); die Mail deckt beide Darstellungen ab |
 | Storno mit Wiedereinlagerung bucht zurueck | offen: nur mit Bestellung; laut Doku auf Komponentenebene |
@@ -135,3 +135,18 @@ angemeldet). Probe deshalb mit einem nicht veroeffentlichten Entwurfsprodukt:
 
 Grenze: Das Bundle verwaltet nur die App, die es angelegt hat (hier die
 Shopify-CLI-Anmeldung). Komponenten nur ueber dieselbe Anmeldung aendern.
+
+Voraussetzungen fuer jede weitere Rolle mit diesem Mechanismus (Review 13.10.):
+genau eine Rollenbreite an der Meterware (`custom.rollenbreite`),
+`service.max_breite_cm` am Massprodukt = Rollenbreite (die Mail rechnet damit),
+eine Farbe je Massprodukt (der Verweis gilt fuer das ganze Produkt), und je
+Bundle-Variante `cm x Rollenbreite / 10000` Einheiten als Komponentenmenge
+(bei 4 m Breite 25 cm = 1 m2, bei 5 m waere es 20 cm = 1 m2).
+
+### Stand 13.10.2026 (Freigabe Inhaber: Ja zu 0 EUR, Bestand nur an der Rolle, Testkauf)
+
+- Bundle 0,00 EUR, Bestandsfuehrung am Massprodukt aus, `custom.zuschnitt_von_rolle`
+  gesetzt; Rollback unter `~/teppich-paradies-analyse/yasmin-sofortkauf-2026-10-13/`.
+- Bundle und Massprodukt stehen nach dem Livegang auf UNLISTED im Onlineshop:
+  kaufbar nur per Direktlink, nicht in Kollektionen, Suche oder Sitemap. Das
+  Massprodukt wird erst nach dem Testkauf (Mensch, mit Storno) auf ACTIVE gesetzt.

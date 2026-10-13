@@ -117,6 +117,7 @@ const rollFaelle = [
   ['MANIPULIERT: kleinere Zuschnittvariante (175 cm = 7)', [yasmin(600), yKettel(1000), komponente(7)], 'NICHT VOLL ABGEBUCHT', true],
   ['MANIPULIERT: Zuschnitt ohne Teppich (0 EUR Rollenware)', [komponente(8)], 'OHNE TEPPICH', true],
   ['Unlesbar: Masse des Massteppichs fehlen', [{ ...yasmin(600), properties: P({ _Gruppe: 'Y1' }) }, komponente(8)], 'NICHT PRÜFBAR', true],
+  ['MANIPULIERT: Bundle-Zeile ohne Teppich', [bundleZeile(1)], 'OHNE TEPPICH', true],
 ];
 for (const [name, items, erwartet, alarm] of rollFaelle) {
   test(`Rollenbestand – ${name}`, async () => {
@@ -132,4 +133,13 @@ test('Rollenbestand – Bestellungen ohne Zuschnitt-Bundle bleiben unveraendert'
   const html = await render([mass(600), kettel(1000), meter(12), muster()]);
   assert.ok(!html.includes('Rollenbestand'), 'kein Rollenhinweis ohne Massteppich aus der Rolle');
   assert.ok(!html.includes('Bestandsabgang'));
+});
+
+test('Rollenbestand – Preis 0 ueberschreibt keinen Alarm einer Rollenware-Zeile', async () => {
+  // Rollenware mit 100-%-Rabatt, Mass 2 x 3 m, aber nur 1 m2 bestellt: bleibt
+  // MENGE ZU KLEIN und wird nicht zum stillen Bestandsabgang.
+  const zeile = { ...mass(1, '200 × 300 cm', 'Rechteck'), title: 'Passion Yasmin Anthrazit – Sonderposten, 400 cm', product: rolleProd, final_price: 0 };
+  const html = await render([zeile]);
+  assert.ok(html.includes('MENGE PASST NICHT ZUM MASS'));
+  assert.ok(!html.includes('Bestandsabgang zum Maßteppich'));
 });

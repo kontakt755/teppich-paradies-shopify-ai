@@ -156,7 +156,7 @@ test('Rollenbestand: Komponente ist Bestandsabgang, Teppich mit passendem Abgang
   const [t, k] = aufloesen([yTeppich(), yKomponente(8)]);
   assert.equal(k.masspruefung.status, 'bestand');
   assert.match(k.masspruefung.hinweis, /nicht separat zuschneiden/);
-  assert.deepEqual(k.bundle, { titel: 'Zuschnitt von der Rolle – Passion Yasmin Anthrazit', menge: 1 });
+  assert.deepEqual(k.bundle, { titel: 'Zuschnitt von der Rolle – Passion Yasmin Anthrazit', menge: 1, bestandsabgang: true });
   assert.equal(t.masspruefung.status, 'ok');
   assert.match(t.masspruefung.hinweis, /8 m² abgebucht/);
   assert.equal(t.bundle, null);
@@ -180,4 +180,13 @@ test('Rollenbestand: Teppich nach Mass ohne Verweis bleibt bei der Flaechenpruef
   const r = resolveLineItem({ lineItem: normal, variant: normal.variant, alleZeilen: [normal] });
   assert.equal(r.masspruefung.status, 'ok');
   assert.equal(r.masspruefung.hinweis, undefined);
+});
+
+test('Rollenbestand: Komponente eines anderen Bundles bleibt normale Position', () => {
+  const fremd = { id: 'f', sku: 'SET-1', quantity: 2, customAttributes: [],
+    variant: { id: 'gid://shopify/ProductVariant/1', sku: 'SET-1', metafields: [], product: { id: 'gid://shopify/Product/1', handle: 'kleber', metafields: [] } },
+    lineItemGroup: { id: 'gid://shopify/LineItemGroup/2', title: 'Verlegeset', quantity: 1, customAttributes: [] } };
+  const r = resolveLineItem({ lineItem: fremd, variant: fremd.variant, alleZeilen: [fremd] });
+  assert.notEqual(r.masspruefung.status, 'bestand');
+  assert.equal(r.bundle.bestandsabgang, false);
 });

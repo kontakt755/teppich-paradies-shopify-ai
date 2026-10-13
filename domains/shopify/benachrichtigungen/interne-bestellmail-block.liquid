@@ -447,9 +447,14 @@
 
         # Bundle-Komponente (Rollenware zu 0 EUR) oder - falls Shopify die
         # Bundle-Zeile selbst zeigt - die Zeile mit "Rollenzuschnitt".
+        # Der Preis 0 ist nur Rueckfall, falls line.groups fehlt; er
+        # ueberschreibt nie einen schon gesetzten Alarm (z. B. eine Rollenware
+        # mit 100-%-Rabatt und unlesbarem Mass).
         assign tp_rz_komponente = false
         if line.product.metafields.custom.max_roll_laenge_cm != blank and tp_mp_laenge == ''
-          if line.groups.size > 0 or line.final_price == 0
+          if line.groups.size > 0
+            assign tp_rz_komponente = true
+          elsif line.final_price == 0 and tp_mp_status == ''
             assign tp_rz_komponente = true
           endif
         endif
@@ -498,7 +503,7 @@
     if tp_rz_bundle_cm > 0 and tp_rz_rb_ref > 0
       assign tp_rz_bundle_einh = tp_rz_bundle_cm | times: tp_rz_rb_ref | divided_by: 10000 | floor
       assign tp_rz_gebucht = tp_rz_gebucht | plus: tp_rz_bundle_einh
-    elsif tp_rz_bundle_cm > 0
+    elsif tp_rz_bundle_cm > 0 and tp_rz_teppiche > 0
       assign tp_rz_unlesbar = true
     endif
     assign tp_rz_fall = ''
@@ -507,6 +512,8 @@
     elsif tp_rz_teppiche > 0 and tp_rz_gebucht < tp_rz_bedarf
       assign tp_rz_fall = 'fehlt'
     elsif tp_rz_teppiche == 0 and tp_rz_gebucht > 0
+      assign tp_rz_fall = 'ohne-teppich'
+    elsif tp_rz_teppiche == 0 and tp_rz_bundle_cm > 0
       assign tp_rz_fall = 'ohne-teppich'
     elsif tp_rz_teppiche > 0 and tp_rz_gebucht > tp_rz_bedarf
       assign tp_rz_fall = 'zu-viel'
@@ -528,7 +535,7 @@
     {%- when 'ohne-teppich' -%}
       <div style="margin:0 0 16px;padding:12px;border:3px solid #a62020;background:#fde8e8;color:#a62020;font-size:15px;font-weight:bold;">
         ZUSCHNITT VON DER ROLLE OHNE TEPPICH – NICHTS ZUSCHNEIDEN.<br>
-        <span style="font-size:13px;font-weight:normal;color:#15171a;">{{ tp_rz_gebucht }} m² Rollenbestand wurden ohne zugehörigen Maßteppich abgebucht. Bestellung prüfen und die Zeile mit Wiedereinlagerung stornieren.</span>
+        <span style="font-size:13px;font-weight:normal;color:#15171a;">{% if tp_rz_gebucht > 0 %}{{ tp_rz_gebucht }} m²{% else %}{{ tp_rz_bundle_cm }} cm{% endif %} Rollenbestand wurden ohne zugehörigen Maßteppich abgebucht. Bestellung prüfen und die Zeile mit Wiedereinlagerung stornieren.</span>
       </div>
     {%- when 'zu-viel' -%}
       <div style="margin:0 0 16px;padding:10px 12px;border-radius:6px;background:#fff4e5;border:1px solid #f0b34c;line-height:1.5;">
