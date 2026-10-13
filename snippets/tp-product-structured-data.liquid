@@ -246,10 +246,15 @@
       {%- if tp_sd_include -%}
         {%- unless tp_sd_first -%},{%- endunless -%}
         {%- assign tp_sd_first = false -%}
+        {%- comment -%} Einzelvariante: Shopify nennt sie "Default Title" - nicht an den Namen haengen (Merchant Center zeigte "... - Default Title") {%- endcomment -%}
+        {%- assign tp_sd_name = product_resource.title -%}
+        {%- unless product_resource.has_only_default_variant -%}
+          {%- assign tp_sd_name = tp_sd_name | append: ' - ' | append: tp_sd_variant.title -%}
+        {%- endunless -%}
         {
           "@type": "Product",
           "@id": {{ tp_sd_variant_url | append: '#variant' | json }},
-          "name": {{ product_resource.title | append: ' - ' | append: tp_sd_variant.title | json }},
+          "name": {{ tp_sd_name | json }},
           "url": {{ tp_sd_variant_url | json }}
           {%- if tp_sd_image -%},
           "image": {{ tp_sd_image | image_url: width: 1920 | prepend: 'https:' | json }}
