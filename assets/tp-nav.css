@@ -622,6 +622,77 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
 }
 
 /* ------------------------------------------------------------------
+   Desktop-Lesbarkeit (Shop-Analyse 2026-10-13, Aufgabe #1188, Paket 6)
+
+   Gemessen auf Live: Menuezeile 12 px (Einstellung "type_font_primary_size"
+   in sections/header-group.json), Kartentitel 16 px, Kurztexte 13 px.
+
+   Menuezeile: Das Horizon-Menue bricht nicht um, es schiebt Punkte, die nicht
+   passen, unter "Mehr". Bei 14 Hauptpunkten ist die Breite die Grenze; ab
+   1600 px waechst die Zeile wegen "page_width: narrow" nicht weiter (1237 px).
+   Gemessen im Browser, Zahl der Punkte vor "Mehr":
+
+     Breite      12 px/10 (alt)   13 px/7   14 px/7   15 px/8
+     1100              8             9         8         8
+     1280             11            11        10         9
+     1440             12            12        12        11
+     1600-1920        13            13        12        12
+
+   Deshalb 13 px mit etwas engerem Abstand (14 statt 20 px zwischen den
+   Punkten): kein Punkt rutscht zusaetzlich unter "Mehr", bei 1100 px passt
+   einer mehr. 15-16 px gingen nur mit weniger Hauptpunkten oder einer
+   zweiten Menuezeile. Die Einstellung im Theme-Editor bleibt bei 12 px und
+   gilt unter 1100 px weiter (dort ist das Schubladenmenue aktiv).
+
+   Hier und nicht in assets/tp-mega-menu.css: jene Datei laedt nicht
+   blockierend. Spaeter geladene Schriftgroessen wuerden die Zeile breiter
+   machen, nachdem die Ueberlauf-Liste bereits gerechnet hat.
+   ------------------------------------------------------------------ */
+@media screen and (min-width: 1100px) {
+  .header-menu .menu-list:not(.menu-list--mobile) .menu-list__link {
+    font-size: 0.8125rem;
+  }
+
+  .header-menu .menu-list:not(.menu-list--mobile) .menu-list__list-item:not([slot='overflow']) .menu-list__link-title {
+    padding-inline: 7px;
+  }
+
+  /* Mega-Menue: Kartentitel 17 px, Kurztexte 14 px */
+  .header-menu .mega-menu__grid .mega-menu__list .tp-mm-card__title,
+  .header-menu .mega-menu__column > .tp-mm-card:not(.tp-mm-card--media) > .tp-mm-card__link,
+  .header-menu .tp-lnav .tp-lnav__all-title {
+    font-size: 1.0625rem;
+  }
+
+  .header-menu .mega-menu__grid .mega-menu__list .tp-mm-card__sub,
+  .header-menu .tp-lnav .tp-lnav__all-meta {
+    font-size: 0.875rem;
+  }
+
+  /* Bildkarten etwas flacher (vorher 16:9), damit mehr Titel ohne Scrollen
+     im Panel stehen */
+  .header-menu .mega-menu__grid .mega-menu__list .tp-mm-card__media,
+  .header-menu .tp-lnav .tp-lnav__all-media {
+    aspect-ratio: 2 / 1;
+  }
+}
+
+@media screen and (min-width: 1100px) and (max-height: 860px) {
+  .header-menu .mega-menu__grid .mega-menu__list .tp-mm-card__media,
+  .header-menu .tp-lnav .tp-lnav__all-media {
+    aspect-ratio: 5 / 2;
+  }
+}
+
+@media screen and (min-width: 1440px) {
+  .header-menu .mega-menu__grid .mega-menu__list .tp-mm-card__title,
+  .header-menu .mega-menu__column > .tp-mm-card:not(.tp-mm-card--media) > .tp-mm-card__link,
+  .header-menu .tp-lnav .tp-lnav__all-title {
+    font-size: 1.125rem;
+  }
+}
+
+/* ------------------------------------------------------------------
    Navigation ausserhalb des Menues (Audit 2026-09-11, B6 und B12)
    ------------------------------------------------------------------ */
 
