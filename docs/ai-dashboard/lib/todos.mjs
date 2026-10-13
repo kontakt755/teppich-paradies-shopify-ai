@@ -490,6 +490,22 @@ function ausAuslauf(quellen, jetzt) {
   return [];
 }
 
+/**
+ * Neuheiten aus der Auslauf-Pruefung: Artikel unserer Linien, die der Lieferant seit dem
+ * letzten Lauf neu fuehrt und die nicht im Shop stehen. Anlegen nach Skill produktimport.
+ */
+function ausNeuheiten(quellen, jetzt) {
+  const n = quellen.shopwache?.auslauf?.neuheiten;
+  const neu = n?.neu || [];
+  if (!neu.length) return [];
+  const namen = [...new Set(neu.map(k => k.name.split(/\s{2,}| \d{3}cm/)[0]))];
+  return [{
+    id: 'neuheiten', art: 'neuheiten', bereich: 'website', ton: '', alterTage: tageSeit(quellen.shopwache.auslauf.geprueftAm, jetzt),
+    titel: `Lieferant A: ${neu.length} neue Artikel in unseren Linien`,
+    kontext: [namen.slice(0, 3).join(', '), namen.length > 3 ? `+${namen.length - 3} weitere` : null, 'prüfen und anlegen (Skill produktimport)'].filter(Boolean).join(' · '),
+  }];
+}
+
 /** Alle ableitbaren To-dos, unsortiert und ohne Blick auf die Rolle. */
 function alleTodos(quellen, opt) {
   const k = kontext(quellen, opt);
@@ -500,6 +516,7 @@ function alleTodos(quellen, opt) {
     ...ausFreigaben(quellen, k.jetzt),
     ...ausShopwache(quellen, k.jetzt),
     ...ausAuslauf(quellen, k.jetzt),
+    ...ausNeuheiten(quellen, k.jetzt),
     ...ausTailscale(quellen),
   ];
 }
