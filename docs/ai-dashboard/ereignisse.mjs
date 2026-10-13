@@ -23,6 +23,7 @@ import { openPalette, closePalette } from './bausteine/palette.mjs';
 import { openFehlerMelden } from './bausteine/fehler-melden.mjs';
 import { einkaufKlickStatus, einkaufKlickDialoge } from './ansichten/einkauf/auftragsfluss.mjs';
 import { einkaufKlickLieferanten } from './ansichten/einkauf/lieferanten.mjs';
+import { einkaufKlickMusterlager } from './ansichten/einkauf/musterlager.mjs';
 import { lexikonKlick } from './ansichten/lexikon.mjs';
 import { kundenKlickBestellungen } from './ansichten/kunden/bestellungen.mjs';
 import { kundenKlickAkte } from './ansichten/kunden.mjs';
@@ -32,7 +33,7 @@ import {
 } from './ansichten/organisation.mjs';
 import { openMeinPasswort, teamKlick, teamAenderung } from './ansichten/team.mjs';
 import { fotosEreignisseBinden, fotosAenderung } from './ansichten/fotos.mjs';
-import { socialEingabe, socialAbsenden } from './ansichten/social.mjs';
+import { socialEingabe, socialAbsenden, socialKlick } from './ansichten/social.mjs';
 import { arbeitKlick } from './ansichten/arbeit.mjs';
 import { sonderpostenKlick } from './ansichten/sonderposten.mjs';
 import { ladeAktivitaetsdaten } from './ansichten/aktivitaet.mjs';
@@ -73,6 +74,7 @@ export function bindEvents() {
     if (dec) { const t = state.tasks.find(x => x.number === Number(dec.dataset.task)); if (t) openActionDialog(t, dec.dataset.decide); return; }
     if (einkaufKlickStatus(e)) return;
     if (einkaufKlickLieferanten(e)) return;
+    if (einkaufKlickMusterlager(e)) return;
     if (arbeitKlick(e)) return;
     if (einkaufKlickDialoge(e)) return;
     if (orgKlickZuruecksetzen(e)) return;
@@ -93,6 +95,7 @@ export function bindEvents() {
     if (druckBtn) { e.preventDefault(); window.print(); return; }
     if (orgKlickSchnell(e)) return;
     if (teamKlick(e)) return;
+    if (socialKlick(e)) return;
     if (orgKlick(e)) return;
     if (kundenKlickBestellungen(e)) return;
     if (sonderpostenKlick(e)) return;

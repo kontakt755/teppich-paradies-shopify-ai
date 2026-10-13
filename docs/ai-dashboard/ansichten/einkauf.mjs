@@ -1,5 +1,5 @@
 /**
- * Ansicht "Einkauf" (#/einkauf): Reiter Bestellungen, Produktdaten, Hilfe.
+ * Ansicht "Einkauf" (#/einkauf): Reiter Bestellungen, Musterlager, Produktdaten, Hilfe.
  * Teilmodule in ansichten/einkauf/.
  */
 import { state } from '../kern/zustand.mjs';
@@ -9,6 +9,7 @@ import { ensureAktualisierung, aktualisierenButton } from '../bausteine/aktualis
 import { viewEinkaufBestellungen } from './einkauf/bestellungen.mjs';
 import { viewEinkaufProduktdaten } from './einkauf/produktdaten.mjs';
 import { viewEinkaufLieferant } from './einkauf/lieferanten.mjs';
+import { viewEinkaufMusterlager } from './einkauf/musterlager.mjs';
 
 function viewEinkaufHilfe() {
   return `<section class="card">
@@ -25,6 +26,13 @@ function viewEinkaufHilfe() {
       <li>Sobald die Ware bei dir ankommt, setze die Position auf „Geliefert an uns"; sobald sie an den Kunden raus ist (verschickt oder abgeholt), auf „An Kunden raus"; zum Schluss auf „Erledigt".</li>
       <li>Der Filter über den Listen („Noch zu bestellen / Bestellt / Unterwegs / Erledigt") zeigt dir jederzeit, wie viele Artikel in welchem Schritt stehen. Ohne Auswahl siehst du alles, was noch nicht erledigt ist.</li>
     </ol>
+
+    <h3 style="margin-top:20px">Musterlager</h3>
+    <ul style="margin:0 0 4px;padding-left:22px;line-height:1.7">
+      <li><b>Einlagern:</b> Kommt ein Probestück 2 × 1 m (PVC, Linoleum) oder eine Bahn 4 m × 20 cm vom Lieferanten, im Reiter „Musterlager“ einlagern – mit Lagerplatz. Eingetroffene Probestücke schlägt die Seite unter „Einlagern?“ selbst vor.</li>
+      <li><b>Danach passiert es von selbst:</b> Bestellt ein Kunde ein Muster, das im Lager liegt, steht es auf „aus dem Musterlager“ mit Platz. Es geht nicht in die Bestellmail an den Lieferanten; auf „Heute“ steht „Muster verschicken an …“.</li>
+      <li><b>Leer?</b> „Ist leer“ klicken – dann gehen neue Musterbestellungen wieder an den Lieferanten. Einzelmuster zählen beim Verschicken von selbst ab.</li>
+    </ul>
 
     <h3 style="margin-top:20px">Was tun, wenn etwas fehlt?</h3>
     <ul style="margin:0 0 4px;padding-left:22px;line-height:1.7">
@@ -60,12 +68,12 @@ export function viewEinkauf() {
   // Detailseite eines Lieferanten als Parameter (#/einkauf?lieferant=A) - bleibt damit im
   // Einkauf (Navigation, Rollen, Datenstand) und braucht keine eigene Route.
   if (state.route.params.get('lieferant')) { ensureAktualisierung(); return viewEinkaufLieferant(state.route.params.get('lieferant')); }
-  const tab = ['bestellungen', 'produktdaten', 'hilfe'].includes(state.route.params.get('tab')) ? state.route.params.get('tab') : 'bestellungen';
-  const tabs = [['bestellungen', 'Bestellungen'], ['produktdaten', 'Produktdaten'], ['hilfe', 'Anleitung']];
+  const tab = ['bestellungen', 'musterlager', 'produktdaten', 'hilfe'].includes(state.route.params.get('tab')) ? state.route.params.get('tab') : 'bestellungen';
+  const tabs = [['bestellungen', 'Bestellungen'], ['musterlager', 'Musterlager'], ['produktdaten', 'Produktdaten'], ['hilfe', 'Anleitung']];
   ensureAktualisierung();
   const head = `<div class="page-head"><div><h1>Einkauf</h1><p class="sub">Was bei welchem Lieferanten zu bestellen ist – und wo Produktdaten dafür fehlen.</p></div>
       <div class="head-actions">${aktualisierenButton()}</div></div>
     <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button type="button" class="tab" role="tab" aria-selected="${tab === k}" data-param="tab" data-value="${k === 'bestellungen' ? '' : k}">${esc(l)}</button>`).join('')}</div>`;
-  const body = tab === 'bestellungen' ? viewEinkaufBestellungen() : tab === 'produktdaten' ? viewEinkaufProduktdaten() : viewEinkaufHilfe();
+  const body = tab === 'bestellungen' ? viewEinkaufBestellungen() : tab === 'musterlager' ? viewEinkaufMusterlager() : tab === 'produktdaten' ? viewEinkaufProduktdaten() : viewEinkaufHilfe();
   return head + body;
 }

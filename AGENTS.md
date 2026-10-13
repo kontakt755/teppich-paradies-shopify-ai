@@ -202,7 +202,7 @@ Die Shopify Admin API ist über MCP bzw. CLI bereits authentifiziert: nicht nach
 
 ## Shopify Theme
 
-Fertige, getestete Funktionen nicht neu bauen: €/m²-Darstellung bei Paketprodukten, Paket-/Verschnittrechner samt Warenkorblogik, deutsche Paket-/Bestellmengenanzeige, Produktvergleich (max. 3), Musterbestellung, Breadcrumb, Produktvorteile, Verkaufsbereich, technische Daten, Produktkarten-Logik mit gekürzten Titeln, Predictive Search, Startseiten-Struktur, Vinylboden-Kategoriekarussell, Mobile Peek / Karussell-Navigation.
+Fertige, getestete Funktionen nicht neu bauen: €/m²-Darstellung bei Paketprodukten, Paket-/Verschnittrechner samt Warenkorblogik, deutsche Paket-/Bestellmengenanzeige, Musterbestellung, Breadcrumb, Produktvorteile, Verkaufsbereich, technische Daten, Produktkarten-Logik mit gekürzten Titeln, Predictive Search, Startseiten-Struktur, Vinylboden-Kategoriekarussell, Mobile Peek / Karussell-Navigation. Der Produktvergleich ist bewusst vollständig entfernt (Inhaber) und wird nicht wieder eingebaut; `npm run compare:check` prüft, dass er weg bleibt.
 
 Der Paket-/Verschnittrechner und dessen Warenkorblogik sind bereits intensiv getestet. Nicht neu schreiben, außer der Benutzer beauftragt dies ausdrücklich.
 
@@ -295,7 +295,7 @@ Je nach Änderung sinnvoll und risikobasiert prüfen:
 - Links und Bilder
 - Produktkarten und Varianten
 - Warenkorb
-- Vergleich und Muster
+- Muster (und dass kein Produktvergleich mehr auftaucht)
 - Rollenware und Fixpreis
 - Teppichboden
 - Klickvinyl und Klebevinyl

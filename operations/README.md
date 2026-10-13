@@ -39,6 +39,7 @@ Grundlage: `audit/tp-operations-v3/` (02 Datenmodell, 05 Entscheidungen,
 | `lib/status.mjs` | Enum `AUFTRAG_STATUS`, Uebergaenge, `ableiten(order)` |
 | `lib/auftragsverlauf.mjs` | Zeitleiste je Auftrag (Muster-/Warenstrecke), `naechsterSchritt`, Ereignisse je Auftrag (privat, nur anhängen) |
 | `lib/musterherkunft.mjs` | Woher kommt ein Muster: Lieferant oder eigener Bestand (verschicken/vorbeibringen); privat, nur anhängen |
+| `lib/musterlager.mjs` | Musterlager (Einzelmuster, Probestück 2 × 1 m, Bahn 4 m × 20 cm, Lagerplatz); ordnet offene Musterpositionen dem Lager zu, Vorschläge zum Einlagern; privat |
 | `sync/orders.mjs` | `fetchOrdersSince`, `writeOrderState` (mit Gegenlesen) |
 
 ## Start
@@ -403,6 +404,15 @@ verschicken an <Kunde>“ mit Ort aus der Lieferadresse. In der Zeitleiste entfa
 `raus` „Persönlich übergeben“. Der nächste Schritt ist „Erledigt – Kunde hat Muster“
 (`kunde_hat_muster`); der Server setzt dabei die Positionen mit auf `raus`.
 
+**Musterlager.** `$TP_PRIVAT_DIR/musterlager.json`
+(`{version, eintraege: [{id, titel, farbe, handle, schluessel[], art, anzahl, ort, notiz, leer, angelegtAm/Von, geaendertAm/Von, verlauf}], entfernt: [...]}`),
+Teil von `npm run daten:sichern`. Steht der Schlüssel einer offenen Musterposition
+(SKU ohne `M-`) dort und ist nicht leer bzw. – bei Einzelmustern – noch nicht
+aufgebraucht, trägt die Position dieselben Felder wie „haben wir da“ (`musterHerkunft:
+eigen_versand`) plus `musterHerkunftQuelle: lager` und `musterLager`. Beim Verschicken
+schreibt der Server die Zuordnung als `musterherkunft`-Ereignis mit `lagerId` fest.
+Details und Endpunkte: `docs/control-center/ARCHITEKTUR.md`, Abschnitt 8b.
+
 ## Zeitleiste je Auftrag und nächster Schritt
 
 Logik in `lib/auftragsverlauf.mjs`, Tests in `tests/auftragsverlauf.test.mjs` und
@@ -690,8 +700,15 @@ TP_SYNC_INTERVALL_MINUTEN=5 npm run daten:sync-dienst   # Standard 10
 ```
 
 Das Lexikon (Massenabfrage ueber alle Produkte) laeuft nur alle
-`TP_SYNC_LEXIKON_MINUTEN` (Standard 60) mit, nach einem Fehlschlag gleich im
-naechsten Intervall wieder; alle anderen Teile laufen in jedem Intervall.
+`TP_SYNC_LEXIKON_MINUTEN` (Standard 60) mit, der Lagerbestand nur alle
+`TP_SYNC_BESTAND_MINUTEN` (Standard 60, seit 2026-10-12: er blaettert durch rund
+3.300 Bestandszeilen, um knapp 150 gefuehrte zu behalten, und kostete rund 90 von
+100 Sekunden je Lauf). Beide nach einem Fehlschlag gleich im naechsten Intervall
+wieder; alle anderen Teile laufen in jedem Intervall. Das Abbuchen von
+Sonderposten liest den Bestand live und haengt nicht an `bestand.json`.
+
+Jede Protokollzeile (`~/Library/Logs/teppich-paradies-sync.log`) beginnt mit der
+Uhrzeit in ISO-Form (UTC).
 
 Ablauf: sofortiger erster Lauf, danach ein Lauf je Intervall (die Wartezeit
 beginnt erst, wenn der vorherige Lauf fertig ist - kein Überlappen). Ein

@@ -46,7 +46,7 @@ import { benutzerAnlegen, schreibeBenutzer } from '../operations/lib/benutzer.mj
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..');
-const ALLE_ANSICHTEN = ['heute', 'einkauf', 'einkauf?tab=produktdaten', 'kunden', 'kunden?tab=bestellungen', 'kunden?tab=warenkoerbe', 'organisation', 'fotos', 'social', 'sonderposten', 'lexikon', 'lexikon?handle=kontura-teppichboden', 'arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet', 'shopwache', 'team', 'hilfe'];
+const ALLE_ANSICHTEN = ['heute', 'einkauf', 'einkauf?tab=musterlager', 'einkauf?tab=produktdaten', 'kunden', 'kunden?tab=bestellungen', 'kunden?tab=warenkoerbe', 'organisation', 'fotos', 'social', 'sonderposten', 'lexikon', 'lexikon?handle=kontura-teppichboden', 'arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet', 'shopwache', 'team', 'hilfe'];
 // Fensterbreiten [Breite, Hoehe, Name]. Die Namen "desktop" und "handy" bleiben fuer die
 // beiden Breiten, die es schon immer gab - Screenshots heissen dort wie bisher.
 // Seit das Control Center ueber Tailscale vom Handy aus benutzt wird (auch vom Monteur auf
@@ -55,7 +55,7 @@ const BREITEN = [[1440, 900, 'desktop'], [1024, 768, 'b1024'], [800, 1000, 'b800
 // Grosse Exporte, die das Dashboard nur liest: verlinken statt kopieren.
 const NUR_LESEN = ['einkauf-dryrun', 'einkauf-klaerung', 'lexikon', 'lieferanten'];
 // Klein oder beschreibbar: kopieren, damit Klicktests nie die echten Dateien treffen.
-const KOPIEREN = ['bestelluebersicht', 'kennzahlen', 'organisation', 'aktualisierung.json', 'auftragsstatus.json', 'auftragsverlauf.json', 'musterherkunft.json',
+const KOPIEREN = ['bestelluebersicht', 'kennzahlen', 'organisation', 'aktualisierung.json', 'auftragsstatus.json', 'auftragsverlauf.json', 'musterherkunft.json', 'musterlager.json',
   // Kunden & Auftraege, Warenkoerbe, Shop-Wache, Bestand und Erfuellung: ohne diese Ordner
   // zeigte die Pruefung leere Ansichten und Klickstrecken liefen gegen nichts.
   'kunden', 'angebote', 'warenkoerbe', 'shopwache', 'bestand', 'erfuellung',
@@ -168,8 +168,13 @@ async function main() {
     if (!args.offen) { server.kill(); fs.rmSync(daten, { recursive: true, force: true }); }
   };
   // Auch bei Fehlern im Lauf: Instanz beenden und Datenkopie loeschen (ausser mit --offen).
+  // Abbruch von aussen raeumt immer auf, auch mit --offen. Bisher nur bei Strg-C (SIGINT):
+  // ein `kill` oder ein geschlossenes Terminal liess Pruef-Instanz und Datenkopie (mit
+  // Kundendaten) im Temp-Ordner zurueck - am 2026-10-12 lief eine solche Instanz seit Stunden.
   process.on('exit', aufraeumen);
-  process.on('SIGINT', () => { args.offen = false; process.exit(130); });
+  for (const [signal, code] of [['SIGINT', 130], ['SIGTERM', 143], ['SIGHUP', 129]]) {
+    process.on(signal, () => { args.offen = false; process.exit(code); });
+  }
 
   // Wegwerf-Zugaenge je Rolle - nur in der Datenkopie, nie in der echten benutzer.json.
   const zugaenge = [];
@@ -227,10 +232,17 @@ async function main() {
           // die Seite weiter nach und der Lauf brach mit "Navigation timeout" ab. Stattdessen
           // warten, bis nichts mehr "Lade ..." zeigt, hoechstens aber ein paar Sekunden.
           await seite.goto(`${basis}/#/${ansicht}`, { waitUntil: 'domcontentloaded' });
-          await seite.waitForFunction(() => {
+          // Steht nach 6 s noch "Lade …" da, ist das ein Befund: genau so sah der Fehler aus,
+          // wenn eine Ladefunktion nach dem Laden nicht neu zeichnete (Skill, "Fallstricke").
+          // Bisher zaehlte das als OK - der Screenshot zeigte es, aber niemand sah hin.
+          const fertig = await seite.waitForFunction(() => {
             const main = document.querySelector('#main');
             return main && !main.querySelector('.skeleton') && !/Lade\b[^.]{0,40}…/.test(main.textContent);
-          }, { timeout: 6000 }).catch(() => { /* bleibt etwas im Ladezustand, zeigt es der Screenshot */ });
+          }, { timeout: 6000 }).then(() => true, () => false);
+          if (!fertig) {
+            const rest = await seite.evaluate(() => (document.querySelector('#main')?.textContent.match(/Lade\b[^.]{0,40}…/) || ['Seite lädt'])[0]).catch(() => 'Seite lädt');
+            fehler.push(`laedt nach 6 s noch: ${rest.replace(/\s+/g, ' ').trim()}`);
+          }
           await new Promise(r => setTimeout(r, 700));
           const name = `${anmeldung.rolle ? `${anmeldung.rolle}-` : ''}${geraet}-${ansicht.replace(/[?=&]/g, '_')}`;
           const datei = path.join(aus, `${name}.png`);

@@ -11,6 +11,8 @@
  * mit `technisch`, `darfAendern` und `dringlichkeit` an; hier wird das nur ausgewertet.
  */
 
+import { musterText, musterHerkunftText } from './bestellinhalt.mjs';
+
 const TAG_MS = 86400000;
 const UNGEKLAERT = 'UNGEKLAERT';
 const BEZAHLT = ['PAID', 'PARTIALLY_REFUNDED'];
@@ -266,7 +268,7 @@ function ausBestellungen(quellen, k) {
         todos.push({
           id, art: 'rausgeben', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.rausgeben), alterTage: tage,
           titel: `${x.p.istMuster ? 'Muster' : 'Ware'} ist da – an ${kundeVon(z)} rausgeben`,
-          kontext: [z.orderName, x.p.titel, tage !== null ? `liegt ${seitText(tage)} bei uns` : null].filter(Boolean).join(' · '),
+          kontext: [z.orderName, x.p.istMuster ? musterText([x.p]) : x.p.titel, tage !== null ? `liegt ${seitText(tage)} bei uns` : null].filter(Boolean).join(' · '),
           knopf: { text: 'Rausgeben', href: '#/einkauf?af=eingetroffen' },
         });
       }
@@ -280,6 +282,12 @@ function ausBestellungen(quellen, k) {
   const wasKurz = positionen => (positionen.length === 1
     ? [positionen[0].p.kundenmenge, positionen[0].p.titel].filter(Boolean).join(' ')
     : mehrzahl(positionen.length, 'Position', 'Positionen'));
+  // Muster mit Produkt und Farben statt "3 Positionen" (Inhaber 2026-10-13: klipp und klar,
+  // ohne Klick). Lange Listen werden gekuerzt - der ganze Text steht in der Bestellliste.
+  const musterKurz = positionen => {
+    const text = musterText(positionen.map(x => x.p));
+    return text.length > 120 ? `${text.slice(0, 117).replace(/[\s,·:]+\S*$/, '')} …` : text;
+  };
 
   for (const [key, positionen] of bestellen) {
     const [lieferant, art] = key.split('|');
@@ -287,7 +295,7 @@ function ausBestellungen(quellen, k) {
     todos.push({
       id: `bestellen:${key}`, art: 'bestellen', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.bestellen), alterTage: tage,
       titel: `${art === 'muster' ? 'Muster' : 'Ware'} bei ${k.lieferantName(lieferant)} bestellen`,
-      kontext: [kundenKurz(positionen), wasKurz(positionen), `bezahlt, Bestellung ${vorText(tage)}`].join(' · '),
+      kontext: [kundenKurz(positionen), art === 'muster' ? musterKurz(positionen) : wasKurz(positionen), `bezahlt, Bestellung ${vorText(tage)}`].join(' · '),
       knopf: { text: 'Bestellen', href: einkaufLink(lieferant) },
     });
   }
@@ -298,7 +306,7 @@ function ausBestellungen(quellen, k) {
     todos.push({
       id: `muster-eigen:${orderId}`, art: 'muster_eigen', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.bestellen), alterTage: tage,
       titel: vorbei ? `Muster vorbeibringen bei ${kundeVon(z)}` : `Muster verschicken an ${kundeVon(z)}`,
-      kontext: [ortVon(z), z.orderName, wasKurz(positionen), 'aus eigenem Bestand'].filter(Boolean).join(' · '),
+      kontext: [ortVon(z), z.orderName, musterKurz(positionen), musterHerkunftText(positionen.map(x => x.p)) || 'aus eigenem Bestand'].filter(Boolean).join(' · '),
       // Ein Klick traegt "Kunde hat Muster" ein (Zeitleiste); der Server setzt die Uebergabe mit.
       // Nur wenn ALLE Muster der Bestellung aus dem eigenen Bestand kommen - sonst stuende
       // "Kunde hat Muster" da, obwohl andere Muster noch beim Lieferanten liegen: dann in die Akte.
@@ -408,6 +416,38 @@ function ausShopwache(quellen, jetzt) {
   }];
 }
 
+/**
+ * Tailscale am Mac mini: ohne laufendes Tailscale ist das Control Center von unterwegs
+ * (Handy, zu Hause) nicht erreichbar. Der Server fragt `tailscale status` nur ab
+ * (operations/lib/tailscale.mjs) und liefert das Ergebnis mit der Shop-Wache aus.
+ * Text an einer Stelle: To-do, Shop-Wache und Systemzustand sagen dasselbe.
+ */
+export function tailscaleHinweis(stand) {
+  if (stand?.status === 'gestoppt') {
+    return {
+      titel: 'Tailscale ist aus – von unterwegs ist das Control Center nicht erreichbar',
+      handlung: 'Am Mac mini oben rechts in der Menüleiste auf das Tailscale-Symbol klicken und „Connect“ wählen.',
+    };
+  }
+  if (stand?.status === 'abgemeldet') {
+    return {
+      titel: 'Tailscale ist abgemeldet – von unterwegs ist das Control Center nicht erreichbar',
+      handlung: 'Am Mac mini das Tailscale-Symbol in der Menüleiste öffnen und mit dem Firmenkonto anmelden („Log in“).',
+    };
+  }
+  return null;
+}
+
+function ausTailscale(quellen) {
+  const h = tailscaleHinweis(quellen.shopwache?.tailscale);
+  if (!h) return [];
+  return [{
+    id: 'tailscale', art: 'tailscale', bereich: 'website', ton: 'warn', alterTage: null,
+    titel: h.titel, kontext: h.handlung,
+    knopf: { text: 'Ansehen', href: '#/shopwache' },
+  }];
+}
+
 /** Alle ableitbaren To-dos, unsortiert und ohne Blick auf die Rolle. */
 function alleTodos(quellen, opt) {
   const k = kontext(quellen, opt);
@@ -417,6 +457,7 @@ function alleTodos(quellen, opt) {
     ...ausAufgaben(quellen, { ich: opt.ich, jetzt: k.jetzt }),
     ...ausFreigaben(quellen, k.jetzt),
     ...ausShopwache(quellen, k.jetzt),
+    ...ausTailscale(quellen),
   ];
 }
 

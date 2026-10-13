@@ -12,6 +12,18 @@ export const fmtDate = iso => iso ? new Date(iso).toLocaleDateString('de-DE', { 
 export const fmtDateTime = iso => iso ? new Date(iso).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '–';
 export const ago = iso => { if (!iso) return '–'; const m = Math.round((Date.now() - new Date(iso)) / 60000); if (m < 60) return `vor ${m} Min.`; const h = Math.round(m / 60); if (h < 48) return `vor ${h} Std.`; return `vor ${Math.round(h / 24)} Tagen`; };
 export const since = iso => ago(iso).replace(/^vor /, 'seit ');
+/**
+ * "14:30" fuer heute, "11.10. 14:30" fuer jeden anderen Tag. Nur die Uhrzeit
+ * sah bei einem Stand von vorgestern genauso frisch aus wie einer von eben.
+ */
+export function chipZeit(iso, jetzt = new Date()) {
+  if (!iso) return '–';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '–';
+  const uhr = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  const heute = d.toDateString() === jetzt.toDateString();
+  return heute ? uhr : `${d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} ${uhr}`;
+}
 export const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 export const issueUrl = n => `${REPO_URL}/issues/${n}`;
 export const newIssueUrl = (params = {}) => `${REPO_URL}/issues/new?${new URLSearchParams(params)}`;

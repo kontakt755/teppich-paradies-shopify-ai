@@ -318,6 +318,8 @@ function schlankePosition(pos, statusAlle, jetzt) {
     // Additiv: Muster aus dem eigenen Bestand (musterherkunft.mjs) - nicht beim Lieferanten bestellen.
     musterHerkunft: pos.musterHerkunft ?? null,
     ohneLieferant: !!pos.istMuster && musterOhneLieferant(pos),
+    // Additiv: Lagerplatz, wenn das Muster aus dem Musterlager kommt (musterlager.mjs).
+    musterLager: pos.musterLager ? { artLabel: pos.musterLager.artLabel, ort: pos.musterLager.ort } : null,
     lieferantUrl: geklaert(pos.lieferantUrl),
     status,
     gruppe: GRUPPE_FELD[filterGruppe(status)] ?? 'erledigt',
@@ -564,6 +566,7 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt }) {
 const MUSTER_OHNE_LIEFERANT = new Set([ROUTE.SAMPLE_STOCK, ROUTE.SAMPLE_CUT]);
 
 function ohneBestellungGrund(p) {
+  if (p.musterLager && p.musterHerkunft !== HERKUNFT.VORBEI) return `aus dem Musterlager${p.musterLager.ort ? ` (${p.musterLager.ort})` : ''} – wird von uns verschickt`;
   if (p.musterHerkunft === HERKUNFT.VORBEI) return 'aus eigenem Bestand – wird persönlich vorbeigebracht';
   if (p.musterHerkunft === HERKUNFT.VERSAND) return 'aus eigenem Bestand – wird von uns verschickt';
   return p.route === ROUTE.SAMPLE_CUT ? 'Muster wird selbst zugeschnitten' : 'Muster aus dem eigenen Musterlager';

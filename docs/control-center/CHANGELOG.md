@@ -764,8 +764,8 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   gegen die Kopie: Schritte erfasst, Bild angehängt und gespeichert, Antwort per Skript → Zeile „Behoben – …“ und Zahl 1
   am Knopf, nach dem Öffnen weg, Bild abrufbar, „Melden“ in roter Rückmeldung öffnet den Dialog, am Handy kein ⌘V-Hinweis,
   0 JS-Fehler.
-- **Risiken/Annahmen:** Bildschirmfotos zeigen oft Kundendaten; sie bleiben deshalb im Privatordner und gehen nicht in
-  die Werkbank.
+- **Risiken/Annahmen:** Bildschirmfotos zeigen oft Kundendaten. Nachtrag (nächster Eintrag): auf Wunsch des Inhabers erscheinen
+  sie jetzt auch in der privaten Werkbank (Bildspeicher der Seite).
 - **Nächste Stufe:** keine.
 
 ## 2026-10-12 · Lexikon: Gesamtprüfung aller Produkte, Mengenhilfe für Rollenware repariert (#1157)
@@ -795,6 +795,18 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   auch ihn neu starten, sonst schreibt er den Export mit altem Code.
 - **Nächste Stufe:** 12 Artikelnummern findet Lieferant A nicht mehr (ausgelaufen oder umnummeriert);
   Lieferant B ohne Schnellzugriff.
+
+## 2026-10-12 · Bildschirmfotos auch in der Werkbank
+
+- **Geändert:** Der geplante Abgleich `fehlermeldungen-werkbank` lädt Bildschirmfotos einer Meldung in den Bildspeicher der
+  Werkbank (Fähigkeit `assets`) und trägt sie als `bilder: [{id, url}]` am Eintrag ein. Die Werkbank zeigt sie als Vorschau
+  unter der Beschreibung (Klick vergrößert) und „Bildschirmfoto“ in der Zeile. Grund: Der Inhaber konnte den Anhang der
+  Testmeldung nicht sehen. Doku in `ARCHITEKTUR.md` Abschnitt 15 nachgezogen.
+- **Getestet:** Echte Testmeldung F-002 mit Bild: Upload in den Bildspeicher, Eintrag zeigt das Bild; Rückweg „Wird bearbeitet“
+  und „Kein Fehler“ mit Erklärung im Dashboard angekommen. Werkbank-Seite mit Attrappe bei 1200 und 390 px: Bild lädt,
+  Vergrößern geht, 0 px Überlauf, keine JS-Fehler.
+- **Risiken/Annahmen:** Bildschirmfotos können Kundendaten zeigen; die Werkbank bleibt privat.
+- **Nächste Stufe:** keine.
 
 ## 2026-10-12 · Befunde der Analyse umgesetzt: Zu tun, Einkauf, Rollen, Heute, Navigation, Montage (#1154)
 
@@ -851,6 +863,122 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   nächsten Lauf; bis dahin rechnet die Kachel aus `kostenlos`.
 - **Nächste Stufe:** `WERKBANK_URL` und `AUFTRAGS_APP_URL` im Dienst setzen; Zugänge anlegen (ARCHITEKTUR §1e); in
   „Zu tun“ einen Knopf für den Zeitleisten-Schritt (wie auf „Heute“), damit „Nachfassen“/„Abschließen“ direkt geht.
+
+## 2026-10-12 · Durchsicht des ganzen Control Centers: veraltete Produktdaten, Mengen, Testwarenkörbe, Laden-Zähler (#1172)
+
+- **Geändert:** Alle 25 Ansichten und Reiter im laufenden Dashboard durchgesehen (JS-Fehler, fehlgeschlagene Abrufe,
+  „undefined/NaN“, interne Marker, Überlauf, Zahlen gegen Listen). Mechanisch war alles sauber, inhaltlich fünf Fehler:
+  - **Einkauf › Produktdaten las Dateien vom 22./23. September**, die nie erneuert wurden: „0 von 509 vollständig“ und
+    „Lieferant fehlt“ bei Produkten, die ihn längst haben; die 2.700 später angelegten Produkte fehlten. Die Liste kommt
+    jetzt aus dem Lexikon-Export, den der Sync-Dienst laufend erneuert (`produktstatusAusLexikon`), mit Datenstand. Die
+    Septemberdateien bleiben nur Rückfall, wenn es noch kein Lexikon gibt. Ergebnis heute: 2506 von 2629 vollständig,
+    0 mit Handarbeit, 123 nur mit Zusatzinfos (Produktseite des Lieferanten, Farbnummer). Der Erklärtext nennt jetzt
+    die tatsächlich blockierenden Felder; „füllt sich selbst“ hieß es auch dort, wo jemand den Link suchen muss.
+  - **„0 Stk.“ bei gelieferter Ware** in Kunden › Zu tun: gezeigt wurde die offene statt der bestellten Menge.
+  - **Einheiten:** „800 Stk. Kettelservice“ sind 8,00 lfm Kante (verkauft je 0,01 lfm), „25 Stk.“ einer Unterlage
+    „je lfm“ sind 25 lfm.
+  - **Liegengeblieben zählte Testkäufe** (qa-test@example.com aus den Shop-Prüfungen): rund 3.150 der angezeigten
+    3.338 €. Jetzt gilt dieselbe Testadress-Regel wie in der Kunden-Arbeitsliste (`istTestkontakt`, nur reservierte
+    Domänen), im Export und beim Lesen älterer Exporte; die Ansicht nennt, wie viele ausgeblendet sind.
+  - **Heute:** Das Sprungfeld „offen im Laden“ zählte die Muster-Nachfassungen nicht, die Laden-Ansicht schon (2 statt 5).
+- **Getestet:** Neue Tests (`api.test.mjs` Produktstatus aus dem Lexikon, `bestelluebersicht.test.mjs` Mengen,
+  `warenkoerbe.test.mjs` Testkäufe; der Warenkorb-Test nutzte selbst eine reservierte Testdomäne als Kundenadresse).
+  `dashboard:test` 264/264, `npm test` grün, Guards und `validate --static` PASS, `dashboard:pruefen` nur OK.
+  Kopie mit echten Daten: Produktdaten 2506/2629, Liegengeblieben 188,36 € (3 Testkäufe ausgeblendet), „5 offen im Laden“.
+- **Risiken/Annahmen:** Das Test-Sonderpostenstück SP-TEST-0001 bleibt sichtbar – es ist klar gekennzeichnet und wird
+  für Schreibtests über die Liste gebraucht (die Test-Attrappe nutzt dieselbe SKU).
+- **Nächste Stufe:** Bestellweg für Lieferant C, D und E in den Stammdaten fehlt (Karte „Bestellweg nicht hinterlegt“).
+
+## 2026-10-12 · Robustheit: kein Absturz durch Anfragen, Fehler im Protokoll, Lesefehler, Blocker, Tailscale (#1175)
+
+- **Geändert** (Befunde der Prüfung vom 12.10., Details ARCHITEKTUR §16):
+  - *Absturz:* Eine Anfrage mit `Cookie: x=%` beendete ohne Anmeldung den ganzen Dienst (URIError in
+    `parseCookies`). Kaputte Cookie-Werte werden übersprungen, `requestHandler` fängt jeden Fehler (auch aus
+    `handleApi`/`handleLogin`) als 500, `uncaughtException`/`unhandledRejection` werden protokolliert.
+  - *Fehler sichtbar:* je Fehlerantwort der API (auch 4xx), abgelehnter Anmeldung und unerwartetem Fehler eine
+    Zeile mit ISO-Zeit, Status, Methode und Pfad ohne Abfrageteil (`scripts/dashboard-log.mjs`) – keine Cookies,
+    Körper, Passwörter oder Suchbegriffe. Sync-Protokoll mit Uhrzeit je Zeile. Ein abgebrochener Klick auf „Jetzt
+    aktualisieren“ bleibt als `letzterKnopfLauf` stehen: Rückmeldung „abgebrochen“ statt „abgeschlossen“ und eine
+    Zeile im Systemzustand.
+  - *Lesefehler:* Auftragsstatus, Rückrufe, Fallmarken, Aufgaben/Notizen und Benutzer gelten nur bei fehlender
+    Datei als leer; beschädigt oder unlesbar → Fehler, die Datei wird nicht mehr mit einem Eintrag überschrieben.
+    Beschädigte `benutzer.json`: Anmeldung 503 mit Klartext, Notzugang geht, Sitzungen bleiben.
+  - *Blocker:* „Blockieren“ schreibt den Grund als `## Blocker` in den Issue-Body (vorher nur Kommentar →
+    „Blocker-Grund fehlt“). Gilt auch für `npm run task -- block`. Das Detailblatt zeigt den Abschnitt nur noch,
+    solange die Aufgabe blockiert ist.
+  - *Tempo:* Lexikon (27 MB) nach Größe/Änderungszeit zwischengespeichert statt bei jeder Anfrage gelesen.
+    Sync-Dienst holt den Lagerbestand nur noch stündlich (`TP_SYNC_BESTAND_MINUTEN`); Sonderposten buchen weiter
+    live gegen Shopify.
+  - *Aktualität:* `issues.json` wird im Dienst alle 10 Minuten neu gebaut (`TP_DASHBOARD_NEUBAU_MINUTEN`, nie
+    überlappend). Der Chip zeigt bei einem älteren Stand das Datum („10.10. 09:00“).
+  - *Handy:* Im „Mehr“-Blatt bleibt der Fuß stehen; „Fehler melden“ steht dort zuerst über die volle Breite.
+    Rückmeldungen erscheinen bei offenem Blatt oben.
+  - *Kleinigkeiten:* 413 kommt an (statt Verbindungsabbruch); Eingabefehler bei Aufgaben/Notizen 400 statt 500;
+    Anhänge nur als Bild/PDF/Text im Fenster, sonst Download, immer `nosniff`; jede Antwort mit
+    `X-Frame-Options: DENY` und `frame-ancestors 'none'`.
+  - *Tailscale-Wache:* Ist Tailscale am Mac mini gestoppt oder abgemeldet (nur gelesen über
+    `tailscale status --json`), steht beim Inhaber ein To-do in der Website-Sicht, ein Hinweis auf der
+    Shop-Wache und eine Zeile im Systemzustand – mit dem Handgriff.
+  - *Prüfwerkzeug:* `dashboard:pruefen` räumt auch bei SIGTERM/SIGHUP auf; „Lade …“ nach 6 s ist `FEHL`.
+    Verwaiste Prüf-Instanz (127.0.0.1:58704, Worktree pr1077-merge) beendet, drei Datenkopien im Temp-Ordner
+    gelöscht.
+- **Getestet:** `dashboard:test` 264 → 282 grün (neu `tests/robustheit.test.mjs`, Blocker/Lexikon/Knopf-Lauf/
+  Tailscale in `api.test.mjs`, `model.test.mjs`, `todos.test.mjs`); `npm test` 7 Suiten grün (2282 Tests, neu
+  `operations/tests/speicher-lesefehler.test.mjs`, `tailscale.test.mjs`, Sync-Takt); `secret:scan` PASS, Guards
+  und `validate --static` PASS. `dashboard:pruefen` 105 × OK vorher und nachher (21 Ansichten × 5 Breiten, jetzt
+  mit „Lade“-Prüfung), `--rollen` bei 390/1440 px 92 × OK (Inhaber 42, Mitarbeiter 26, „lesen“ 24). Gegen die Kopie: `Cookie: x=%` und `a=%E0%A4%A` → `/` 302, `/api/capabilities` 401,
+  `/api/logout` 200, Prozess-ID unverändert; `org/neu` ohne Titel 400 (vorher 500), 70-KB-Körper 413 mit Text;
+  Protokollzeilen mit ISO-Zeit. „Mehr“-Blatt mit Weiteren Dashboards: „Fehler melden“ vorher 852–900 px bei
+  844 px Fenster (unsichtbar), nachher 674–722 px (390×844), 497–545 px (375×667), 570–618 px (360×740), jeweils
+  klickbar. Tailscale (am Mac mini gerade gestoppt): To-do „Tailscale ist aus …“ in Heute › Website, Hinweis auf
+  der Shop-Wache, Zeile im Systemzustand; Heute › Laden ohne Eintrag. 0 JS-Fehler.
+- **Risiken/Annahmen:** Eine beschädigte Datei bringt die betroffene Ansicht jetzt sichtbar zum Stehen (500 mit
+  Hinweis auf die Sicherung) statt still leer zu zeigen – gewollt, aber neu. Das Lexikon liegt geparst im
+  Speicher des Dienstes. Der Blockieren-Klick schreibt in den öffentlichen Issue-Body (wie bisher der Kommentar).
+  Der Lagerbestand im Einkauf ist bis zu einer Stunde alt.
+- **Nächste Stufe:** Tailscale am Mac mini wieder verbinden (Menüleiste → Connect); danach verschwindet das To-do.
+
+## 2026-10-13 · Social Media: Upload-Link sperren
+
+- **Geändert:** Neben jedem Upload-Zugang in `#/social` steht „Sperren“ (nur Inhaber sichtbar), mit Rückfrage
+  „Link für <Name> sperren? Er funktioniert danach nicht mehr.“. `POST /api/social/sperren` (Inhaber; Mitarbeiter
+  und „lesen“ 403, steht in der write-Liste) nutzt `zugangSperren` aus `social/lib/eingang.mjs` – dieselbe Sperre wie
+  `npm run social -- zugang sperren`, also alle Links dieses Namens – und löscht den gemerkten Klartext. Der Zugang
+  verschwindet aus der Liste.
+- **Getestet:** `dashboard:test` 282/282, `npm test` grün, `dashboard:pruefen` 105 × OK. Klickstrecke gegen die Kopie:
+  Rückfrage abgebrochen → aktive Zugänge 2 → 2, bestätigt → 2 → 1, Zeile weg; Knopf bei Rolle Mitarbeiter ausgeblendet.
+- **Risiken/Annahmen:** Sperren wirkt je Name, nicht je einzelnem Link (wie die Kommandozeile).
+- **Nächste Stufe:** keine geplant.
+
+## 2026-10-13 · Muster einfacher: Inhalt auf einen Blick, Musterlager (#1179)
+
+- **Geändert:**
+  - *Bestellliste (Kunden › Bestellungen):* unter jeder Bestellung eine Zeile mit dem Inhalt – bei Mustern
+    Produkt, Farben und woher („aus dem Musterlager (Regal B)“, „haben wir da – vorbeibringen“), bei Ware die
+    Artikel. Reine Musterbestellungen „kostenlos“ statt „0,00 €“. Suche auch über Produkt und Farbe.
+  - *Heute:* „Muster bei … bestellen“ nennt Produkt und Farben statt „3 Positionen“; „Muster verschicken an …“
+    nennt den Lagerplatz.
+  - *Einkauf › Musterlager (neu):* Einzelmuster, Probestück 2 × 1 m, Bahn 4 m × 20 cm mit Lagerplatz einlagern
+    (Produktsuche im Lexikon, mehrere Farben auf einmal), „Ist leer“, „Wieder da…“, Bearbeiten, Herausnehmen.
+    Vorschläge „Einlagern?“ aus eingetroffenen PVC-/Linoleum-Probestücken und mehrfach bestellten Farben.
+  - *Automatik:* Offene Musterpositionen, deren Muster im Lager liegt, kommen von dort – nicht in die
+    Bestellmail, kein „Muster bestellen“-To-do. Einzelmuster zählen beim Verschicken ab (Ereignis mit
+    `lagerId` in `musterherkunft.json`). Lagerplatz an der Position im Einkauf und in der Bestellmail-Begründung.
+  - *Server:* `operations/lib/musterlager.mjs`, `GET/POST /api/einkauf/musterlager`,
+    `GET /api/einkauf/musterlager-farben`; `musterlager.json` in Sicherung und Prüfkopie.
+- **Getestet:** neu `operations/tests/musterlager.test.mjs` (12), `docs/ai-dashboard/tests/musterlager-api.test.mjs`
+  (5, inkl. Rolle „lesen“ 403 / „mitarbeiter“ 200), `tests/bestellinhalt.test.mjs` (5), `todos.test.mjs` +1;
+  `npm test` alle 7 Suiten grün, Guards und `validate --static` PASS. `dashboard:pruefen` (Heute, Einkauf,
+  Musterlager, Bestellungen bei 1440/390 px) nur OK, 0 px Überlauf. Klickstrecke gegen die Datenkopie:
+  Regalia Creme (511) als Einzelmuster 2 Stück „Regal B, Fach 3“ eingelagert → die offene Bestellung zeigt „1 aus dem
+  Musterlager (Regal B, Fach 3)“, Heute „Muster verschicken an … · aus dem Musterlager“, die zwei anderen Farben
+  weiter „bei Lieferant A bestellen“, Bestellmail nimmt Creme (511) mit Grund aus; Vorschlag Selene Taupe mit
+  vorbelegter Art „Probestück“ eingelagert; „Ist leer“ → Creme (511) wieder beim Lieferanten. 0 JS-Fehler.
+- **Risiken/Annahmen:** Zuordnung über die SKU – ein Muster ohne SKU (Sammelprodukt ohne Quellvariante) findet
+  das Lager nicht und läuft wie bisher. Probestück und Bahn zählen nicht ab; wer das letzte Stück aufbraucht,
+  muss „Ist leer“ klicken. Im gemeinsamen Zugang steht „Inhaber“ als handelnde Person im Verlauf.
+- **Nächste Stufe:** Inhaberfragen (PVC/Linoleum im Shop wieder mit Muster, wenn ein Probestück da ist;
+  Etiketten mit QR-Code; Mustergröße je Bahn); die zwei schon eingetroffenen Probestücke (PVC, Linoleum) einlagern.
 
 ## 2026-10-12 · Lexikon: Bestellweg als Schnellzugriff, wenn es keinen Link gibt (#1168)
 

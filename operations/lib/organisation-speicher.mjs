@@ -27,17 +27,33 @@ export function anhangOrdner(dir = privatDir()) {
 
 const LEER = { version: 1, bereiche: [...STANDARD_BEREICHE], eintraege: [] };
 
+/** Eingabefehler (fehlender Titel, unbekannter Status ...) - der Server antwortet darauf mit 400, nicht 500. */
+export class OrganisationFehler extends Error {}
+
+/**
+ * Liest alle Eintraege. Nur eine fehlende Datei gilt als "noch nichts erfasst".
+ * Eine unlesbare oder beschaedigte Datei wirft: frueher kam dann eine leere
+ * Liste zurueck, und die naechste neue Aufgabe ueberschrieb die Datei mit genau
+ * diesem einen Eintrag - alle anderen Aufgaben und Notizen waren weg.
+ */
 export function lies(datei = dateiPfad()) {
+  let text;
   try {
-    const roh = JSON.parse(fs.readFileSync(datei, 'utf8'));
-    return {
-      version: roh.version ?? 1,
-      bereiche: Array.isArray(roh.bereiche) && roh.bereiche.length ? roh.bereiche : [...STANDARD_BEREICHE],
-      eintraege: Array.isArray(roh.eintraege) ? roh.eintraege : [],
-    };
-  } catch {
-    return { ...LEER, bereiche: [...STANDARD_BEREICHE], eintraege: [] };
+    text = fs.readFileSync(datei, 'utf8');
+  } catch (e) {
+    if (e?.code === 'ENOENT') return { ...LEER, bereiche: [...STANDARD_BEREICHE], eintraege: [] };
+    throw new Error(`${path.basename(datei)} ist nicht lesbar (${e?.code || e?.message}) – bitte aus der Sicherung holen`);
   }
+  if (!text.trim()) return { ...LEER, bereiche: [...STANDARD_BEREICHE], eintraege: [] };
+  let roh;
+  try { roh = JSON.parse(text); } catch {
+    throw new Error(`${path.basename(datei)} ist beschädigt – bitte aus der Sicherung holen`);
+  }
+  return {
+    version: roh?.version ?? 1,
+    bereiche: Array.isArray(roh?.bereiche) && roh.bereiche.length ? roh.bereiche : [...STANDARD_BEREICHE],
+    eintraege: Array.isArray(roh?.eintraege) ? roh.eintraege : [],
+  };
 }
 
 export function schreib(daten, datei = dateiPfad()) {
@@ -54,14 +70,14 @@ export function neueId() {
 
 function pruefeWert(wert, erlaubt, feld) {
   if (wert === null || wert === undefined) return null;
-  if (!erlaubt.includes(wert)) throw new Error(`${feld}: "${wert}" ist nicht erlaubt`);
+  if (!erlaubt.includes(wert)) throw new OrganisationFehler(`${feld}: "${wert}" ist nicht erlaubt`);
   return wert;
 }
 
 /** Neuer Eintrag. Pflicht ist nur der Titel - Erfassen muss in Sekunden gehen. */
 export function baueEintrag(roh, { benutzer = null, jetzt = new Date() } = {}) {
   const titel = String(roh.titel || '').trim();
-  if (!titel) throw new Error('Ohne Titel geht es nicht');
+  if (!titel) throw new OrganisationFehler('Ohne Titel geht es nicht');
   const typ = pruefeWert(roh.typ, TYPEN, 'typ') || 'TASK';
   const wer = benutzer?.kuerzel || benutzer?.name || 'inhaber';
   const zeit = jetzt.toISOString();
@@ -142,7 +158,7 @@ export function aendere(eintrag, felder, { benutzer = null, jetzt = new Date() }
 
 export function kommentiere(eintrag, text, { benutzer = null, jetzt = new Date() } = {}) {
   const inhalt = String(text || '').trim();
-  if (!inhalt) throw new Error('Leerer Kommentar');
+  if (!inhalt) throw new OrganisationFehler('Leerer Kommentar');
   const wer = benutzer?.kuerzel || benutzer?.name || 'inhaber';
   const zeit = jetzt.toISOString();
   eintrag.kommentare.push({ zeit, wer, text: inhalt });
@@ -240,10 +256,10 @@ export function sichererName(name, typ) {
  * dieselbe Ablage wie die uebrigen Betriebsdaten, nie im Repository.
  */
 export function speichereAnhang(eintrag, { name, typ, daten }, { dir = privatDir(), jetzt = new Date(), benutzer = null } = {}) {
-  if (!ANHANG_TYPEN[typ]) throw new Error(`Dateityp nicht erlaubt: ${typ || 'unbekannt'}`);
+  if (!ANHANG_TYPEN[typ]) throw new OrganisationFehler(`Dateityp nicht erlaubt: ${typ || 'unbekannt'}`);
   const roh = Buffer.from(String(daten || ''), 'base64');
-  if (!roh.length) throw new Error('Datei ist leer');
-  if (roh.length > ANHANG_MAX_BYTES) throw new Error(`Datei ist zu groß (max. ${Math.round(ANHANG_MAX_BYTES / 1024 / 1024)} MB)`);
+  if (!roh.length) throw new OrganisationFehler('Datei ist leer');
+  if (roh.length > ANHANG_MAX_BYTES) throw new OrganisationFehler(`Datei ist zu groß (max. ${Math.round(ANHANG_MAX_BYTES / 1024 / 1024)} MB)`);
 
   const ordner = path.join(anhangOrdner(dir), eintrag.id);
   fs.mkdirSync(ordner, { recursive: true });
@@ -275,6 +291,6 @@ function sicherName_frei(ordner, name) {
 export function anhangPfad(eintragId, dateiname, dir = privatDir()) {
   const ordner = path.resolve(anhangOrdner(dir), eintragId);
   const ziel = path.resolve(ordner, String(dateiname || ''));
-  if (!ziel.startsWith(`${ordner}${path.sep}`)) throw new Error('Ungültiger Dateiname');
+  if (!ziel.startsWith(`${ordner}${path.sep}`)) throw new OrganisationFehler('Ungültiger Dateiname');
   return ziel;
 }

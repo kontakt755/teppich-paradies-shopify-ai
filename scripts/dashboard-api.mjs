@@ -18,16 +18,17 @@ import path from 'node:path';
 import os from 'node:os';
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
-import { normalizeTask, requirementsFor, labelChangesFor, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
+import { normalizeTask, requirementsFor, labelChangesFor, mitBlockerAbschnitt, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
 import { texteAusMarkdown } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
 import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
 import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, oeffneWieder, setzeZurueckAufOffen, STATUS_ORDER, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
+import { musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
 import { auftragsverlaufPfad, leseVerlauf, haengeEreignisAn, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
 import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden, kundenIndex } from '../operations/lib/kundensuche.mjs';
-import { faelle as kundenFaelle } from '../operations/lib/kundenfaelle.mjs';
+import { faelle as kundenFaelle, istTestkontakt } from '../operations/lib/kundenfaelle.mjs';
 import { fallmarkenPfad, leseAlle as leseFallmarken, setzeMarke as setzeFallmarke, teileAuf as teileFaelleAuf, juengsterPunkt, FALL_GRUND } from '../operations/lib/fallmarken.mjs';
 import {
   sortiere as orgSortiere, passtZuAnsicht, darfSehen, darfAendern, findeDoppelgaenger,
@@ -38,7 +39,7 @@ import { analysiere as orgAnalysiere, ausListe as orgAusListe } from '../operati
 import {
   lies as orgLies, schreib as orgSchreib, dateiPfad as orgDatei, baueEintrag,
   findeEintrag, aendere as orgAendere, kommentiere as orgKommentiere,
-  speichereAnhang, anhangPfad, ANHANG_TYPEN,
+  speichereAnhang, anhangPfad, ANHANG_TYPEN, OrganisationFehler,
 } from '../operations/lib/organisation-speicher.mjs';
 import {
   leseBenutzer as orgLeseBenutzer, schreibeBenutzer, benutzerAnlegen, passwortSetzen,
@@ -50,7 +51,7 @@ import {
   FOTO_ART, FotoFehler, passendeProdukte, produktHinweis, pruefeEingang, titelFuer,
 } from '../operations/lib/baustellenfotos.mjs';
 import { protokollPfad, protokolliere } from '../operations/lib/protokoll.mjs';
-import { findeZugang, liesZugaenge, zugangAnlegen } from '../social/lib/eingang.mjs';
+import { findeZugang, liesZugaenge, zugangAnlegen, zugangSperren } from '../social/lib/eingang.mjs';
 import { ladeUmgebung } from '../social/lib/zugang.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
@@ -61,6 +62,8 @@ import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, Sonde
 import { ohneUeberholtenFehler } from '../operations/scripts/aktualisieren.mjs';
 import { meldungenPfad, abgleichPfad, meldungAnlegen, alleMeldungen, sichtbareMeldungen, darfMeldungSehen, bildAusUpload, bildDatei, BILDER_MAX, FehlermeldungFehler } from '../operations/lib/fehlermeldungen.mjs';
 import { dashboardLinks } from './weitere-dashboards.mjs';
+import { logFehler } from './dashboard-log.mjs';
+import { leseTailscaleStatus } from '../operations/lib/tailscale.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -132,13 +135,52 @@ function readJsonIfExists(file) {
       ? 'Die Datei ist beschädigt (kein gültiges JSON).'
       : e?.code === 'EACCES' ? 'Keine Leserechte für die Datei.' : String(e?.message || e).slice(0, 200);
     leseFehlerCache.set(file, text);
-    console.error(`[daten] ${file}: ${text}`);
+    logFehler('daten', `${file}: ${text}`);
     return null;
+  }
+}
+
+/**
+ * Eingabefehler aus dem Aufgabenspeicher (fehlender Titel, leerer Kommentar,
+ * unbekannter Status) sind 400 - bisher kamen sie als 500 "Das hat nicht
+ * geklappt" an, und niemand erfuhr, was an der Eingabe fehlte.
+ */
+function mitEingabepruefung(fn) {
+  try { return fn(); } catch (e) {
+    if (e instanceof OrganisationFehler) throw new ApiError(400, e.message);
+    throw e;
   }
 }
 
 /** Grund, warum eine Datei nicht gelesen werden konnte - null, wenn sie schlicht fehlt. */
 export function leseFehler(file) { return leseFehlerCache.get(file) || null; }
+
+/**
+ * Wie readJsonIfExists, aber zwischengespeichert, solange sich die Datei nicht
+ * aendert (Groesse und Aenderungszeit). Gedacht fuer den Lexikon-Export: rund
+ * 27 MB, die bisher bei JEDER Anfrage synchron gelesen und geparst wurden -
+ * die Befehlspalette fragt beim Tippen alle 150 ms, und waehrenddessen stand
+ * der ganze Dienst fuer alle anderen still.
+ *
+ * Das Ergebnis wird von mehreren Anfragen geteilt: Aufrufer duerfen es nur
+ * lesen, nie veraendern.
+ */
+const jsonZwischenspeicher = new Map();
+export function readJsonGecacht(file) {
+  let st;
+  try { st = fs.statSync(file); } catch (e) {
+    jsonZwischenspeicher.delete(file);
+    if (e?.code === 'ENOENT') { leseFehlerCache.delete(file); return null; }
+    return readJsonIfExists(file);   // meldet den Grund wie gewohnt
+  }
+  const kennung = `${st.size}:${st.mtimeMs}`;
+  const treffer = jsonZwischenspeicher.get(file);
+  if (treffer && treffer.kennung === kennung) return treffer.daten;
+  const daten = readJsonIfExists(file);
+  if (daten === null) jsonZwischenspeicher.delete(file);
+  else jsonZwischenspeicher.set(file, { kennung, daten });
+  return daten;
+}
 
 /** Wendet dieselben Filterchips wie alleKunden() auf Freitextsuchtreffer an (kundenListenEintrag-Form). */
 function passtZuKundenFilter(filter) {
@@ -200,9 +242,32 @@ function ladeBestellModell(dir) {
   catch { return null; }
 }
 
-/** Traegt die lokale Wahl "Muster haben wir da" (musterherkunft.json) an die Muster-Positionen. */
+/**
+ * Traegt die lokale Wahl "Muster haben wir da" (musterherkunft.json) an die Muster-Positionen -
+ * und danach das Musterlager (musterlager.json): offene Muster, die wir da haben, kommen von dort.
+ */
 function mitMusterherkunft(modell, dir) {
-  return wendeAufModellAn(modell, leseMusterherkunft(musterherkunftPfad(dir)));
+  wendeAufModellAn(modell, leseMusterherkunft(musterherkunftPfad(dir)));
+  mitMusterlager(modell, dir);
+  return modell;
+}
+
+/**
+ * Musterlager an das Modell. Ein beschaedigtes Lager haelt keine Bestellansicht auf - die
+ * Muster stehen dann wie ohne Lager auf "beim Lieferanten bestellen", die Ansicht
+ * "Musterlager" meldet den Fehler. Der Stand je Eintrag (verbraucht, reserviert, Rest) haengt
+ * nicht aufzaehlbar am Modell, damit er in keiner Antwort mitwandert.
+ */
+function mitMusterlager(modell, dir) {
+  if (!modell) return modell;
+  let lager;
+  try { lager = leseLager(musterlagerPfad(dir)); } catch (e) { console.error(`[musterlager] ${e.message}`); return modell; }
+  if (!lager.eintraege.length && !lager.entfernt.length) return modell;
+  let statusAlle = {};
+  try { statusAlle = leseAuftragsstatus(auftragsstatusPfad(dir)); } catch { /* ohne Stand: nur Anzeige, geschrieben wird hier nichts */ }
+  const stand = wendeLagerAn(modell, lager, { statusAlle });
+  Object.defineProperty(modell, 'musterlagerStand', { value: stand, enumerable: false });
+  return modell;
 }
 
 /**
@@ -283,6 +348,10 @@ function einkaufNaechsterSchritt(feld, grund) {
       if (/VE oder Stueck/i.test(g)) return 'Verpackungseinheit oder Einzelstueck? Von Hand in der Preisliste pruefen';
       if (/Massteppich/i.test(g)) return 'Bestelleinheit als Zuschnitt+Einfassung von Hand festlegen (Inhaberentscheidung noetig)';
       return 'Bestelleinheit von Hand aus der Preisliste uebernehmen';
+    case 'lieferant_url':
+      return 'Produktseite beim Lieferanten suchen und als Link hinterlegen - bis dahin hilft der Suchlink im Lexikon';
+    case 'lieferant_produktname':
+      return 'Bezeichnung aus der Preisliste/Bestellbestaetigung des Lieferanten uebernehmen';
     case 'lieferant_kollektion':
       return 'Kollektion kommt automatisch, sobald die Lieferantenseite geholt ist';
     case 'hersteller':
@@ -312,6 +381,50 @@ function produktSucheTreffer(eintrag, q) {
  * Klaerungslauf (offen.json, Feld+Grund je gid - das ist die tatsaechlich
  * noch offene Menge, plan.json selbst ist ein aelterer Zwischenstand).
  */
+/**
+ * Dieselben Zeilen wie Einkauf-Dry-Run (plan.json) und Klaerungslauf
+ * (offen.json), aber aus dem Lexikon-Export, den der Sync-Dienst laufend
+ * erneuert. Die beiden Septemberdateien wurden nie wieder erzeugt: der
+ * Reiter meldete am 2026-10-12 "0 von 509 vollstaendig" und Luecken, die
+ * laengst geschlossen waren, und kannte die 2.700 spaeter angelegten
+ * Produkte nicht.
+ *
+ * Blockierend bleibt, was eine Bestellung verhindert (Lieferant,
+ * Artikelnummer, Bestelleinheit). Eine Bestellbezeichnung des Lieferanten
+ * ersetzt die Artikelnummer (Teppich nach Mass direkt vom Hersteller).
+ * Nachtragen: Lieferanten-Produktseite, Farbnummer (nur bei Farbvarianten)
+ * und Lieferanten-Produktname. Kollektion und Hersteller halten keine
+ * Bestellung auf und werden hier nicht gezaehlt. Muster, Dienstleistungen,
+ * Testprodukte und Sonderposten aus eigenem Bestand gehoeren nicht dazu.
+ */
+export function produktstatusAusLexikon(produkte = []) {
+  const planRows = [];
+  const offenRows = [];
+  for (const p of produkte) {
+    const handle = String(p?.handle ?? '');
+    if (!handle || handle.startsWith('muster-') || handle.startsWith('test-') || /-sonderposten$/.test(handle)) continue;
+    if (p.produktgruppe === 'Musterservice' || p.produktgruppe === 'Service') continue;
+    for (const v of p.varianten || []) {
+      if (v.original || !v.id) continue;
+      const titel = String(v.titel ?? '');
+      planRows.push({
+        gid: v.id, handle, product_title: p.titel || handle, sku: v.sku || null, gruppe: p.produktgruppe || 'Unbekannt',
+        // istStrukturellOffenerFall erkennt Wunschmass am Titel.
+        variant_title: v.wunschmass && !/wunschma/i.test(titel) ? `${titel} (Wunschmaß)` : titel,
+      });
+      const e = v.einkauf || {};
+      const offen = (field, reason) => offenRows.push({ gid: v.id, field, reason });
+      if (!e.lieferant) offen('lieferant', 'Lieferant nicht hinterlegt');
+      if (!e.artikelnummer && !e.produktname) offen('artikelnummer', e.lieferant ? 'Artikelnummer nicht hinterlegt' : 'Lieferant unklar');
+      if (!e.bestelleinheit) offen('bestelleinheit', 'Bestelleinheit nicht hinterlegt');
+      if (v.farbe && !e.farbnummer) offen('farbnummer', e.lieferant ? 'Farbnummer nicht hinterlegt' : 'Lieferant unklar');
+      if (!e.url) offen('lieferant_url', 'Lieferanten-Produktseite nicht hinterlegt');
+      if (!e.produktname) offen('lieferant_produktname', 'Lieferanten-Produktname nicht hinterlegt');
+    }
+  }
+  return { planRows, offenRows };
+}
+
 function produktstatusAufbauen(planRows, offenRows) {
   const dim = new Map(planRows.map(r => [r.gid, r]));
   const produkte = new Map();
@@ -395,7 +508,7 @@ function stammKontakte(dir) {
   return index;
 }
 
-export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env, shopifyZugang = null } = {}) {
+export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus } = {}) {
   let userCache = null;
   let labelCache = { at: 0, names: [] };
   // Prozesszustand des Knopfs "Jetzt aktualisieren" - genau ein Lauf gleichzeitig,
@@ -403,6 +516,25 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
   // noch laufenden Kindprozess, der aber unabhaengig weiterlaeuft und sein Ergebnis
   // ohnehin nur in aktualisierung.json schreibt).
   let aktualisierungLauf = null; // { seit, fehler, fertig } waehrend ein Lauf aktiv ist, sonst null
+  // Ergebnis des letzten Knopf-Laufs. Bisher wurde ein Fehler gesetzt und im selben
+  // Moment mit dem Lauf verworfen - die Oberflaeche meldete "abgeschlossen", auch
+  // wenn der Lauf abgebrochen war.
+  let letzterKnopfLauf = null;  // { seit, bis, fehler }
+
+  // Tailscale: hoechstens einmal je Minute fragen, gleichzeitige Anfragen teilen sich die Antwort.
+  let tailscaleStand = null;    // { at, wert }
+  let tailscaleAbfrage = null;
+  async function tailscaleZustand() {
+    if (tailscaleStand && Date.now() - tailscaleStand.at < 60_000) return tailscaleStand.wert;
+    if (!tailscaleAbfrage) {
+      tailscaleAbfrage = Promise.resolve()
+        // Bewusst process.env statt `env`: es geht um diesen Rechner, nicht um den Shop-Zugang.
+        .then(() => tailscale())
+        .catch(e => ({ status: 'unbekannt', zustand: null, meldung: String(e?.message || e).slice(0, 200) }))
+        .then(wert => { tailscaleStand = { at: Date.now(), wert }; tailscaleAbfrage = null; return wert; });
+    }
+    return tailscaleAbfrage;
+  }
 
   function manuellerZugangVorhanden() {
     const zugang = { ...ladeEnvLocal(path.join(root, '.env.local')), ...env };
@@ -527,6 +659,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (e instanceof AuftragsverlaufFehler || e instanceof AuftragsstatusFehler) throw new ApiError(400, e.message);
       throw e;
     }
+    // Muster aus dem Lager verschickt bzw. uebergeben: abzaehlen.
+    if (['raus', 'kunde_hat_muster'].includes(schritt)) lagerAbgangFestschreiben(dir, auftrag, null, actor);
     audit({ actor, action: 'auftragsschritt', orderId, schritt, positionen: anzahl });
     merke(benutzer, actor, 'Auftragsschritt', `${auftrag.name}: ${schritt}`);
     const nachher = zeitleisten(dir, modell, leseAuftragsstatus(statusDatei)).get(orderId);
@@ -565,6 +699,30 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     audit({ actor, action: 'auftragsstatus-zurueck-auf-offen', anzahl, orderIds: [...new Set(ziele.map(z => z.orderId))].slice(0, 20) });
     merke(benutzer, actor, 'Zurück auf offen', `${anzahl} Artikel${notiz ? ` · ${notiz}` : ''}`);
     return { ok: true, anzahl, eintraege };
+  }
+
+  /**
+   * Muster aus dem Musterlager ist raus: die Zuordnung festschreiben (musterherkunft-Ereignis mit
+   * lagerId). Ohne das stuende die Position nach "An Kunden raus" nicht mehr als Lagerware da,
+   * und Einzelmuster wuerden nie abgezaehlt. `auftrag` ist der Stand VOR dem Schritt.
+   */
+  function lagerAbgangFestschreiben(dir, auftrag, lineItemIds, actor) {
+    const offen = lagerFestzuschreiben(auftrag, lineItemIds);
+    for (const p of offen) {
+      haengeWahlAn(musterherkunftPfad(dir), {
+        orderId: auftrag.id, lineItemId: p.lineItemId, herkunft: p.musterHerkunft || 'eigen_versand', actor,
+        notiz: `Aus dem Musterlager${p.musterLager.ort ? ` (${p.musterLager.ort})` : ''}`, lagerId: p.musterLager.id, jetzt: now(),
+      });
+    }
+    if (offen.length) audit({ actor, action: 'musterlager-abgang', orderId: auftrag.id, anzahl: offen.length });
+    return offen.length;
+  }
+
+  /** Auftrag vor einem Statuswechsel - nur geladen, wenn das Musterlager ueberhaupt etwas enthaelt. */
+  function auftragFuerLager(dir, orderId) {
+    try { if (!leseLager(musterlagerPfad(dir)).eintraege.length) return null; } catch { return null; }
+    const modell = ladeBestellModell(dir);
+    return modell ? [...modell.auftraege, ...modell.testauftraege].find(a => a.id === orderId) || null : null;
   }
 
   /** "Muster haben wir da": Wahl je Musterbestellung (ohne lineItemId) oder Musterposition, nur anhaengen. */
@@ -693,7 +851,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
       const target = String(payload.target || '');
       if (!STATUS_BY_KEY[target]) throw new ApiError(400, `Unbekannter Zielstatus „${target}"`, { missing: [`Unbekannter Zielstatus „${target}"`] });
-      const { task } = await fetchIssue(number);
+      const { task, raw } = await fetchIssue(number);
       const missing = requirementsFor(task, target, payload);
       if (missing.length) throw new ApiError(400, 'Pflichtangaben fehlen', { missing });
       const labels = await repoLabels();
@@ -705,7 +863,16 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       for (const l of change.add) editArgs.push('--add-label', l);
       const newOwner = payload.owner && payload.owner !== task.owner ? String(payload.owner).replace(/^@/, '') : null;
       if (newOwner) editArgs.push('--add-assignee', newOwner);
-      if (change.remove.length || change.add.length || newOwner) await gh(editArgs);
+      // Der Grund stand bisher nur im Kommentar. Die Oberflaeche liest ihn aber aus
+      // dem Abschnitt "## Blocker" im Issue - "Blocker-Grund fehlt" stand dann
+      // neben einer Aufgabe, deren Grund gerade erst eingegeben worden war.
+      let neuerBody = null;
+      if (target === 'blockiert' && String(payload.reason || '').trim()) {
+        neuerBody = mitBlockerAbschnitt(raw?.body || '', payload.reason);
+        if (neuerBody !== (raw?.body || '')) editArgs.push('--body', neuerBody);
+        else neuerBody = null;
+      }
+      if (change.remove.length || change.add.length || newOwner || neuerBody !== null) await gh(editArgs);
 
       const text = payload.comment || payload.reason || null;
       const heading = payload.decision && DECISION_LABEL[payload.decision] ? DECISION_LABEL[payload.decision] : `Status ${task.statusLabel} → ${STATUS_BY_KEY[target].label}`;
@@ -1000,12 +1167,26 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      */
     einkaufProduktstatus({ page = 1, pageSize = 50, q = '', gruppe = '', filter = '' } = {}) {
       const dir = privatDirPath || privatDir();
+      const lexikonFile = path.join(dir, 'lexikon', 'produkte.json');
       const planFile = path.join(dir, 'einkauf-dryrun', 'plan.json');
       const offenFile = path.join(dir, 'einkauf-klaerung', 'offen.json');
-      const planRows = readJsonIfExists(planFile);
-      if (!Array.isArray(planRows)) return { verfuegbar: false, quelle: planFile, hinweis: 'plan.json fehlt - Einkauf-Dry-Run vorher lokal laufen lassen.' };
-      const offenRows = readJsonIfExists(offenFile);
-      if (!Array.isArray(offenRows)) return { verfuegbar: false, quelle: offenFile, hinweis: 'offen.json fehlt (einkauf-klaerung) - Klaerungslauf vorher lokal ausfuehren.' };
+      // Vorrang hat das Lexikon (laufend erneuert); die Septemberdateien nur, wenn es keins gibt.
+      const lexikon = readJsonGecacht(lexikonFile);
+      let planRows;
+      let offenRows;
+      let quelle;
+      let stand = null;
+      if (Array.isArray(lexikon?.produkte)) {
+        ({ planRows, offenRows } = produktstatusAusLexikon(lexikon.produkte));
+        quelle = lexikonFile;
+        stand = lexikon.erstellt || null;
+      } else {
+        planRows = readJsonIfExists(planFile);
+        if (!Array.isArray(planRows)) return { verfuegbar: false, quelle: lexikonFile, hinweis: 'Noch keine Lexikon-Daten exportiert.', befehl: 'npm run daten:aktualisieren -- --nur lexikon' };
+        offenRows = readJsonIfExists(offenFile);
+        if (!Array.isArray(offenRows)) return { verfuegbar: false, quelle: offenFile, hinweis: 'offen.json fehlt (einkauf-klaerung) - Klaerungslauf vorher lokal ausfuehren.' };
+        quelle = `${planFile} + ${offenFile}`;
+      }
 
       const eintraege = produktstatusAufbauen(planRows, offenRows);
       const gruppen = {};
@@ -1035,7 +1216,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const seite = offene.slice(start, start + size);
 
       return {
-        verfuegbar: true, quelle: `${planFile} + ${offenFile}`,
+        verfuegbar: true, quelle, stand,
         gesamt, gruppen: Object.values(gruppen).sort((a, b) => (b.handarbeit + b.automatisch) - (a.handarbeit + a.automatisch)),
         offen: { count: offene.length, page: p, pageSize: size, pages: Math.max(Math.ceil(offene.length / size), 1), items: seite },
       };
@@ -1149,6 +1330,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (!STATUS_ORDER.includes(status)) throw new ApiError(400, `Unbekannter Status „${status}"`, { missing: [`Status muss einer von ${STATUS_ORDER.join(', ')} sein`] });
       const dir = privatDirPath || privatDir();
       const file = auftragsstatusPfad(dir);
+      // Stand vor dem Wechsel: danach hat die Position einen Status und gilt nicht mehr als offen.
+      const vorLager = status === 'raus' ? auftragFuerLager(dir, orderId) : null;
       let eintrag;
       try {
         eintrag = setzeStatus(file, { orderId, lineItemId, status, actor, lieferantBestellnummer, notiz, jetzt: now() });
@@ -1156,9 +1339,133 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         if (e instanceof AuftragsstatusFehler) throw new ApiError(400, e.message);
         throw e;
       }
+      if (vorLager) lagerAbgangFestschreiben(dir, vorLager, [lineItemId], actor);
       audit({ actor, action: 'auftragsstatus', orderId, lineItemId, status });
       merke(benutzer, actor, 'Auftragsstatus', `${orderId}/${lineItemId}: ${status}`);
       return { ok: true, eintrag };
+    },
+
+    /**
+     * Musterlager: was wir an Mustern selbst da haben, wo es liegt, welche offenen
+     * Musterbestellungen daraus bedient werden - und Vorschlaege, was einzulagern lohnt
+     * (eingetroffene Probestuecke, mehrfach gefragte Farben). Kundennamen nur zur Anzeige.
+     */
+    einkaufMusterlager() {
+      const dir = privatDirPath || privatDir();
+      let lager;
+      try { lager = leseLager(musterlagerPfad(dir)); } catch (e) {
+        return { verfuegbar: false, fehler: true, hinweis: e.message };
+      }
+      const modell = ladeBestellModell(dir);
+      const stand = modell?.musterlagerStand || new Map();
+      let statusAlle = {};
+      try { statusAlle = leseAuftragsstatus(auftragsstatusPfad(dir)); } catch { /* Vorschlaege dann ohne "eingetroffen" */ }
+      const kunde = a => (a.details?.kunde?.name && a.details.kunde.name !== '–' ? a.details.kunde.name : null);
+      const offen = new Map();
+      for (const a of modell?.auftraege ?? []) {
+        for (const p of a.positionen ?? []) {
+          if (p.musterHerkunftQuelle !== 'lager' || !p.musterLager?.id) continue;
+          if (!offen.has(p.musterLager.id)) offen.set(p.musterLager.id, []);
+          offen.get(p.musterLager.id).push({ orderId: a.id, orderName: a.name, kunde: kunde(a) });
+        }
+      }
+      const gruppen = new Map(this._lexikonProdukte().map(x => [x.handle, x.produktgruppe || null]));
+      return {
+        verfuegbar: true,
+        arten: LAGER_ARTEN,
+        zaehlbar: LAGER_ZAEHLBAR,
+        bestellungenStand: modell?.erstellt || null,
+        eintraege: lager.eintraege.map(e => ({
+          id: e.id, titel: e.titel, farbe: e.farbe, handle: e.handle, art: e.art, artLabel: LAGER_ARTEN[e.art], anzahl: e.anzahl ?? null,
+          ort: e.ort, notiz: e.notiz, leer: !!e.leer, angelegtAm: e.angelegtAm, angelegtVon: e.angelegtVon, geaendertAm: e.geaendertAm, geaendertVon: e.geaendertVon,
+          stand: stand.get(e.id) || { verbraucht: 0, reserviert: 0, rest: null },
+          offeneBestellungen: offen.get(e.id) || [],
+          verlauf: (e.verlauf || []).slice(-5),
+        })),
+        vorschlaege: modell ? lagerVorschlaege(modell, { lager, statusAlle, produktgruppe: h => gruppen.get(h) ?? null, jetzt: now() }) : [],
+      };
+    },
+
+    /** Farben eines Lexikon-Produkts zum Einlagern, mit Kennzeichen "schon im Lager". */
+    einkaufMusterlagerFarben({ handle = '' } = {}) {
+      const dir = privatDirPath || privatDir();
+      const ziel = this._musterlagerProdukt(handle);
+      if (!ziel) return { verfuegbar: false, hinweis: 'Produkt nicht im Lexikon gefunden – Lexikon aktualisieren oder anders suchen.' };
+      let imLager = new Set();
+      try { imLager = new Set(leseLager(musterlagerPfad(dir)).eintraege.filter(e => !e.leer).flatMap(e => e.schluessel)); } catch { /* Lager kaputt: nur ohne Kennzeichen */ }
+      return {
+        verfuegbar: true, handle: ziel.produkt.handle, titel: lagerKurzTitel(ziel.produkt.titel), produktgruppe: ziel.produkt.produktgruppe || null,
+        bild: ziel.produkt.bild || null,
+        farben: ziel.farben.map(f => ({ ...f, imLager: f.schluessel.some(k => imLager.has(k)) })),
+      };
+    },
+
+    /** Lexikon-Produkt samt Musterprodukt und Farben; auch wenn das Musterprodukt selbst gewaehlt wurde. */
+    _musterlagerProdukt(handle) {
+      const h = String(handle || '').trim();
+      if (!h) return null;
+      const produkte = this._lexikonProdukte();
+      const je = new Map(produkte.map(x => [x.handle, x]));
+      const gewaehlt = je.get(h);
+      if (!gewaehlt) return null;
+      // Gewaehlt werden kann das Produkt oder sein Musterprodukt (muster-<handle>) - beide zaehlen.
+      const istMuster = h.startsWith('muster-');
+      const original = istMuster ? je.get(h.slice(7)) || null : gewaehlt;
+      const muster = istMuster ? gewaehlt : (gewaehlt.muster?.handle ? je.get(gewaehlt.muster.handle) || null : null);
+      return { produkt: original || gewaehlt, muster, farben: lagerFarbenFuer(original, muster) };
+    },
+
+    /**
+     * Musterlager schreiben: einlagern (aus dem Lexikon: handle + farben, oder aus einem
+     * Vorschlag: schluessel + titel + farbe), aendern (Platz, Anzahl, Art, Notiz, leer),
+     * entfernen. Nur lokal, Shopify wird nie geschrieben.
+     */
+    async einkaufMusterlagerSetzen(payload = {}, benutzer = null) {
+      const actor = benutzer?.name || await currentUser();
+      if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
+      const dir = privatDirPath || privatDir();
+      const file = musterlagerPfad(dir);
+      const { aktion } = payload || {};
+      try {
+        if (aktion === 'einlagern') {
+          const { handle, farben, schluessel, titel, farbe, art, anzahl, ort, notiz } = payload;
+          let ziele;
+          if (handle && Array.isArray(farben) && farben.length) {
+            const z = this._musterlagerProdukt(handle);
+            if (!z) throw new ApiError(404, 'Produkt nicht im Lexikon gefunden – Lexikon aktualisieren oder anders suchen.');
+            const gesucht = new Set(farben.map(f => String(f)));
+            ziele = z.farben.filter(f => gesucht.has(f.farbe)).map(f => ({ titel: lagerKurzTitel(z.produkt.titel), farbe: f.farbe, handle: z.produkt.handle, schluessel: f.schluessel }));
+            const fehlen = [...gesucht].filter(f => !ziele.some(x => x.farbe === f));
+            if (fehlen.length) throw new ApiError(400, `Für ${fehlen.join(', ')} fehlt die Artikelnummer – im Lexikon prüfen.`);
+          } else if (Array.isArray(schluessel) && schluessel.length) {
+            ziele = [{ titel, farbe, handle: handle || null, schluessel }];
+          } else throw new ApiError(400, 'Produkt und Farbe wählen', { missing: ['handle', 'farben'] });
+          if (ziele.length > 60) throw new ApiError(400, 'Höchstens 60 Farben auf einmal');
+          const ergebnisse = ziele.map(z => lagerEinlagern(file, { ...z, art, anzahl, ort, notiz, actor, jetzt: now() }));
+          audit({ actor, action: 'musterlager-einlagern', anzahl: ergebnisse.length });
+          merke(benutzer, actor, 'Musterlager', `eingelagert: ${ziele.map(z => [z.titel, z.farbe].filter(Boolean).join(' ')).slice(0, 5).join(', ')}${ziele.length > 5 ? ' …' : ''}`);
+          return { ok: true, anzahl: ergebnisse.length, neu: ergebnisse.filter(r => r.neu).length, eintraege: ergebnisse.map(r => r.eintrag) };
+        }
+        if (aktion === 'aendern') {
+          const { id } = payload;
+          const felder = {};
+          for (const k of ['art', 'anzahl', 'ort', 'notiz', 'leer']) if (k in payload) felder[k] = payload[k];
+          const e = lagerAendern(file, String(id || ''), felder, { actor, jetzt: now() });
+          audit({ actor, action: 'musterlager-aendern', id: e.id, felder: Object.keys(felder) });
+          merke(benutzer, actor, 'Musterlager', `${[e.titel, e.farbe].filter(Boolean).join(' ')}: ${e.verlauf?.at(-1)?.was || 'geändert'}`);
+          return { ok: true, eintrag: e };
+        }
+        if (aktion === 'entfernen') {
+          const e = lagerEntfernen(file, String(payload.id || ''), { actor, jetzt: now() });
+          audit({ actor, action: 'musterlager-entfernen', id: e.id });
+          merke(benutzer, actor, 'Musterlager', `entfernt: ${[e.titel, e.farbe].filter(Boolean).join(' ')}`);
+          return { ok: true, id: e.id };
+        }
+        throw new ApiError(400, `Unbekannte Aktion „${aktion}"`);
+      } catch (e) {
+        if (e instanceof MusterlagerFehler) throw new ApiError(400, e.message);
+        throw e;
+      }
     },
 
     /** Offene Klaerungsfaelle des Einkaufs, falls das Team sie bereits exportiert hat. */
@@ -1206,7 +1513,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     lexikonListe({ q = '', page = 1, pageSize = 20 } = {}) {
       const dir = privatDirPath || privatDir();
       const file = path.join(dir, 'lexikon', 'produkte.json');
-      const daten = readJsonIfExists(file);
+      const daten = readJsonGecacht(file);
       if (!daten || !Array.isArray(daten.produkte)) {
         const kaputt = leseFehler(file);
         return {
@@ -1240,7 +1547,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     lexikonMengenhilfe({ handle, variantenId, kundenmengeM2, kundenlaengeCm } = {}) {
       const dir = privatDirPath || privatDir();
       const file = path.join(dir, 'lexikon', 'produkte.json');
-      const daten = readJsonIfExists(file);
+      const daten = readJsonGecacht(file);
       if (!daten || !Array.isArray(daten.produkte)) {
         const kaputt = leseFehler(file);
         return {
@@ -1301,7 +1608,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     lexikonProdukt(handle) {
       const dir = privatDirPath || privatDir();
       const file = path.join(dir, 'lexikon', 'produkte.json');
-      const daten = readJsonIfExists(file);
+      const daten = readJsonGecacht(file);
       if (!daten || !Array.isArray(daten.produkte)) {
         const kaputt = leseFehler(file);
         return {
@@ -1548,7 +1855,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
 
     _lexikonProdukte() {
       const file = path.join(privatDirPath || privatDir(), 'lexikon', 'produkte.json');
-      const daten = readJsonIfExists(file);
+      const daten = readJsonGecacht(file);
       return Array.isArray(daten?.produkte) ? daten.produkte : [];
     },
 
@@ -1616,6 +1923,23 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       fs.chmodSync(this._uploadLinksDatei(), 0o600);
       merke(benutzer, null, 'Upload-Link angelegt', z.name);
       return { ok: true, ...this.socialZugaenge() };
+    },
+
+    /** Dieselbe Sperre wie `npm run social -- zugang sperren "Name"`: alle Links dieses Namens. */
+    socialSperren({ name = '' } = {}, { benutzer = null } = {}) {
+      const sauber = String(name || '').trim();
+      if (!sauber) throw new ApiError(400, 'Welcher Zugang? Der Name fehlt.');
+      const dir = this._socialDir();
+      const n = zugangSperren(sauber, { datei: path.join(dir, 'upload-zugaenge.json') });
+      if (!n) throw new ApiError(404, `Kein aktiver Zugang „${sauber}“.`);
+      // Den gemerkten Klartext gleich mit entfernen - ein gesperrter Link soll nirgends mehr liegen.
+      const links = this._uploadLinks();
+      const rest = links.filter(l => l.name.toLowerCase() !== sauber.toLowerCase());
+      if (rest.length !== links.length) {
+        fs.writeFileSync(this._uploadLinksDatei(), JSON.stringify({ links: rest }, null, 2), { mode: 0o600 });
+      }
+      merke(benutzer, null, 'Upload-Link gesperrt', sauber);
+      return { ok: true, gesperrt: n, ...this.socialZugaenge() };
     },
 
     teamListe() {
@@ -1802,7 +2126,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const anzulegen = Array.isArray(zeilen) ? zeilen : [];
       const angelegt = [];
       for (const roh of anzulegen) {
-        angelegt.push(baueEintrag(roh, { benutzer }));
+        angelegt.push(mitEingabepruefung(() => baueEintrag(roh, { benutzer })));
       }
       daten.eintraege.push(...angelegt);
       if (angelegt.length) orgSchreib(daten, datei);
@@ -1812,7 +2136,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     orgNeu(roh = {}, { benutzer = null } = {}) {
       const datei = this._orgDatei();
       const daten = orgLies(datei);
-      const eintrag = baueEintrag(roh, { benutzer });
+      const eintrag = mitEingabepruefung(() => baueEintrag(roh, { benutzer }));
       daten.eintraege.push(eintrag);
       orgSchreib(daten, datei);
       return { ok: true, eintrag };
@@ -1840,7 +2164,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         eintrag.verlauf.push({ zeit: new Date().toISOString(), wer: benutzer?.kuerzel || benutzer?.name || 'inhaber', was: regel ? `Wiederholung auf ${regel} gesetzt` : 'Wiederholung entfernt' });
         delete felder.wiederholungRegel;
       }
-      orgAendere(eintrag, felder, { benutzer });
+      mitEingabepruefung(() => orgAendere(eintrag, felder, { benutzer }));
       orgSchreib(daten, datei);
       return { ok: true, eintrag };
     },
@@ -1851,7 +2175,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const eintrag = findeEintrag(daten, id);
       if (!eintrag) throw new ApiError(404, 'Eintrag nicht gefunden');
       if (!darfSehen(eintrag, benutzer)) throw new ApiError(403, 'Keine Berechtigung für diesen Eintrag');
-      orgKommentiere(eintrag, text, { benutzer });
+      mitEingabepruefung(() => orgKommentiere(eintrag, text, { benutzer }));
       orgSchreib(daten, datei);
       return { ok: true, eintrag };
     },
@@ -1895,7 +2219,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (!eintrag || !darfSehen(eintrag, benutzer)) throw new ApiError(404, 'Nicht gefunden');
       const anhang = (eintrag.anhaenge ?? []).find(a => a.datei === datei);
       if (!anhang) throw new ApiError(404, 'Anhang nicht gefunden');
-      const pfad = anhangPfad(id, datei, privatDirPath || privatDir());
+      const pfad = mitEingabepruefung(() => anhangPfad(id, datei, privatDirPath || privatDir()));
       return { pfad, typ: anhang.typ, name: anhang.name };
     },
 
@@ -1910,14 +2234,17 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * Ergebnis der Shop-Wache (operations/scripts/shopwache.mjs). Zeigt, ob
      * der oeffentliche Shop laeuft - das sieht man den Admin-Daten nicht an.
      */
-    shopwacheStatus() {
+    async shopwacheStatus() {
       const dir = privatDirPath || privatDir();
       const file = path.join(dir, 'shopwache', 'status.json');
       const daten = readJsonIfExists(file);
+      // Tailscale gehoert nicht zum Shop, aber zur selben Frage "laeuft von aussen
+      // alles?" - und der Inhaber sieht diese Antwort als To-do auf "Heute".
+      const ts = await tailscaleZustand();
       if (!daten || !daten.geprueftAm) {
-        return { verfuegbar: false, quelle: file, hinweis: 'Shop-Wache noch nie gelaufen.', befehl: 'npm run shop:wache' };
+        return { verfuegbar: false, quelle: file, hinweis: 'Shop-Wache noch nie gelaufen.', befehl: 'npm run shop:wache', tailscale: ts };
       }
-      return { verfuegbar: true, quelle: file, ...daten };
+      return { verfuegbar: true, quelle: file, ...daten, tailscale: ts };
     },
 
     /**
@@ -2055,7 +2382,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (!daten || !Array.isArray(daten.warenkoerbe)) {
         return { verfuegbar: false, quelle: file, hinweis: 'Noch keine Warenkorb-Daten exportiert.', befehl: 'npm run daten:aktualisieren -- --nur warenkoerbe' };
       }
-      return { verfuegbar: true, quelle: file, ...daten };
+      // Auch aeltere Exporte ohne Testfilter: Testadressen nie als verlorenen Umsatz zeigen.
+      const echte = daten.warenkoerbe.filter(w => !istTestkontakt(w));
+      const ausgeblendet = daten.warenkoerbe.length - echte.length;
+      return { verfuegbar: true, quelle: file, ...daten, warenkoerbe: echte, testAusgeblendet: (daten.testAusgeblendet || 0) + ausgeblendet };
     },
 
     /** Lagerbestand je Standort/Variante - oder der Hinweis, dass der Shop keinen fuehrt. */
@@ -2175,7 +2505,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * Fehler, nur ein leerer Zustand mit dem Befehl, der sie anlegen wuerde.
      */
     aktualisierung() {
-      return leseAktualisierungsstand();
+      return { ...leseAktualisierungsstand(), letzterKnopfLauf };
     },
 
     /**
@@ -2207,8 +2537,28 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       audit({ action: 'aktualisierung-start' });
       execFileP(process.execPath, [skript], { cwd: root, timeout: 10 * 60_000, maxBuffer: 8 * 1024 * 1024 })
         .then(() => { lauf.fertig = true; })
-        .catch(err => { lauf.fertig = true; lauf.fehler = String(err?.message || err).split('\n')[0].slice(0, 500); })
-        .finally(() => { if (aktualisierungLauf === lauf) aktualisierungLauf = null; });
+        .catch(err => {
+          lauf.fertig = true;
+          // Exit 1 nach vollstaendigem Bericht heisst: einzelne Quellen scheiterten. Das steht
+          // je Quelle in aktualisierung.json und im Systemzustand - kein Abbruch des Laufs.
+          const ausgabe = String(err?.stdout || '');
+          if (!err?.killed && !err?.signal && /^Aktualisierung: /m.test(ausgabe)) {
+            const fehlgeschlagen = (ausgabe.match(/: FEHLER · /g) || []).length;
+            logFehler('aktualisierung', `Knopf-Lauf seit ${seit}: ${fehlgeschlagen} Quelle(n) fehlgeschlagen (Einzelheiten im Systemzustand)`);
+            return;
+          }
+          // Aus der Fehlerausgabe die Zeile mit der eigentlichen Meldung, nicht die Dateiposition davor.
+          const zeilen = String(err?.stderr || '').split('\n').map(z => z.trim()).filter(Boolean);
+          const meldung = zeilen.find(z => /^Fehler: |^[A-Za-z]*Error\b/.test(z)) || zeilen[0] || String(err?.message || err).split('\n')[0];
+          lauf.fehler = err?.killed || err?.signal
+            ? `nach ${Math.round((now() - new Date(seit)) / 1000)} s abgebrochen (${err.signal || 'Zeitlimit'})`
+            : meldung.slice(0, 500);
+          logFehler('aktualisierung', `Knopf-Lauf seit ${seit} abgebrochen: ${lauf.fehler}`);
+        })
+        .finally(() => {
+          letzterKnopfLauf = { seit, bis: now().toISOString(), fehler: lauf.fehler };
+          if (aktualisierungLauf === lauf) aktualisierungLauf = null;
+        });
       return { gestartet: true, laeuft: true, seit };
     },
 
@@ -2218,7 +2568,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * `aktualisierung()`). Wird per Abfrage gepollt (kein Warten im Request).
      */
     aktualisierungStatus() {
-      const stand = leseAktualisierungsstand();
+      const stand = { ...leseAktualisierungsstand(), letzterKnopfLauf };
       if (aktualisierungLauf) return { ...stand, laeuft: true, seit: aktualisierungLauf.seit };
       return { ...stand, laeuft: false, seit: null };
     },

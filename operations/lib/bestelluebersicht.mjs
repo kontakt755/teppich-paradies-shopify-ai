@@ -10,7 +10,7 @@
  * geschrieben (README "Bestelluebersicht").
  */
 
-import { resolveLineItem, metafeldMap, grosshaendlerId, propertiesMap } from './resolve.mjs';
+import { resolveLineItem, metafeldMap, grosshaendlerId, propertiesMap, ausVariantentitel } from './resolve.mjs';
 import { UNGEKLAERT, EINHEIT, paketware, rollenware, stueck, formatDe } from './umrechnung.mjs';
 import { gruppieren } from './einkauf.mjs';
 import { ableiten } from './status.mjs';
@@ -56,6 +56,14 @@ export function istOffen(order) {
   if (order?.cancelledAt) return false;
   const f = String(order?.displayFulfillmentStatus ?? '').toUpperCase();
   return f === '' || OFFEN_FULFILLMENT.has(f);
+}
+
+/** Was der Kunde bestellt hat (nach Aenderungen/Erstattungen), unabhaengig vom Versandstand. */
+function bestellteMenge(li) {
+  for (const k of ['currentQuantity', 'quantity']) {
+    if (li[k] !== undefined && li[k] !== null) return Number(li[k]) || 0;
+  }
+  return 0;
 }
 
 function offeneMenge(li) {
@@ -194,9 +202,13 @@ function procurementReadyGruppe(item) {
   return procurementReady(item).gruppe;
 }
 
-function kundenmengeText(item, menge) {
+function kundenmengeText(item, menge, variantenTitel = null) {
   const teile = [];
   if (item.produkt?.preis_pro_001_qm) teile.push(`${menge} × 0,01 m² = ${formatDe(menge / 100)} m²`);
+  // Kettelservice wird "je 0,01 laufender Meter" verkauft: 800 sind 8 m Kante, nicht 800 Stueck.
+  else if (/je\s*0,01\s*lauf/i.test(String(variantenTitel ?? ''))) teile.push(`${menge} × 0,01 lfm = ${formatDe(menge / 100)} lfm`);
+  // "80 cm breit (je lfm)": die Stueckzahl ist die Laenge in laufenden Metern.
+  else if (ausVariantentitel(variantenTitel).jeLfm) teile.push(`${menge} lfm`);
   else teile.push(`${menge} Stk.`);
   const m = item.eingaben?.masse;
   if (m) teile.push(`${m.breiteCm} × ${m.laengeCm} cm`);
@@ -298,6 +310,8 @@ function musterQuelle(item, quellMap, zuordnung) {
   const lf = lieferantFuer({ einkauf: { lieferant: vm?.einkauf?.lieferant }, grosshaendlerIdQuelle: gh.quelle }, vm, zuordnung);
   const url = vm?.einkauf?.lieferant_url;
   return { id: gh.id, quelle: gh.quelle, lieferant: lf, quellvariante: id, titel: `${n.product?.title ?? ''} – ${n.title ?? ''}`.trim(), lieferantUrl: leer(url) ? UNGEKLAERT : String(url).trim(),
+    // SKU der Quellvariante: Schluessel fuers Musterlager bei Mustern ueber das Sammelprodukt.
+    sku: leer(n.sku) ? null : String(n.sku).trim(),
     produktHandle: leer(n.product?.handle) ? null : String(n.product.handle).trim(),
     // Farbnummer der Quellvariante: die Musterbestellung beim Lieferanten nennt Artikel UND Farbe.
     farbnummer: leer(vm?.einkauf?.farbnummer) ? UNGEKLAERT : String(vm.einkauf.farbnummer).trim() };
@@ -364,7 +378,8 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         sku: item.sku,
         preis: geld(li.originalUnitPriceSet),
         menge,
-        kundenmenge: kundenmengeText(item, eigen ? offeneMenge(li) : menge),
+        // Bestellte Menge, wenn nichts mehr offen ist: bei gelieferter Ware stand sonst "0 Stk.".
+        kundenmenge: kundenmengeText(item, (eigen || !(menge > 0)) ? bestellteMenge(li) : menge, li.variantTitle ?? li.variant?.title),
         grosshaendlerId: ghId,
         grosshaendlerIdQuelle: ghQuelle,
         lieferant,
@@ -378,7 +393,9 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         bestellmenge: eigen ? { menge: 0, einheit: 'eigenleistung', text: 'Eigenleistung – nichts zu bestellen', grund: null } : istM ? { menge, einheit: 'muster', text: `${menge} Muster`, grund: null } : (li.variant ? einkaufsmenge(item, menge) : { menge: UNGEKLAERT, einheit: UNGEKLAERT, text: UNGEKLAERT, grund: "Variante in Shopify geloescht - Artikel von Hand klaeren" }),
         idGrund: ghId !== UNGEKLAERT ? null : !li.variant ? "Variante geloescht" : istM ? (mq?.quellvariante ? "Quellvariante ohne ID-Metafeld" : "Muster ohne _Quellvariante_ID - Produkt/Farbe siehe Titel") : "weder lieferant.* noch grosshandel.sku gesetzt",
       };
-      if (!istTest && offen && menge > 0) (istM ? muster : einkaufPositionen).push(pos);
+      // Rollenware als Komponente unter "Zuschnitt von der Rolle" ist ein
+      // Bestandsabgang; das Material steht schon an der Teppichzeile.
+      if (!istTest && offen && menge > 0 && !item.bundle?.bestandsabgang) (istM ? muster : einkaufPositionen).push(pos);
       return pos;
     });
 

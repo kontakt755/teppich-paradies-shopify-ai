@@ -1,6 +1,6 @@
 # Bestandsaufnahme (Phase 0)
 
-Stand 2026-09-22. Quellen: Repo `origin/main` e29037f, Shopify-Admin-API (MCP), Live-Storefront per curl, vier parallele read-only Analysen. Lieferanten nur als Pseudonyme (Lieferant A = Jordan-Seite, Lieferant B = M-Plus-Seite; Klarnamen nur lokal).
+Stand 2026-09-22. Quellen: Repo `origin/main` e29037f, Shopify-Admin-API (MCP), Live-Storefront per curl, vier parallele read-only Analysen. Lieferanten nur als Pseudonyme (Lieferant A, Lieferant B; Zuordnung der Klarnamen nur lokal).
 
 ## 0. Shop-Stammdaten (Admin-API)
 

@@ -1,0 +1,31 @@
+{%- doc -%}
+  Gemeinsamer Rollenbestand (Einfass-Konfigurator mit Zuschnitt-Bundle,
+  docs/weiterentwicklung/rollenbestand.md): Die Hauptzeile eines Teppichs nach
+  Mass nennt in _Rollenzuschnitt, wie viel Rolle (cm) ihr Zuschnitt braucht.
+  Die 0-EUR-Bundle-Zeile derselben _Gruppe traegt "Rollenzuschnitt" ("200 cm")
+  und bucht diesen Verbrauch im Checkout vom Bestand der Rollenware ab.
+
+  Gibt den Sperrtext aus, wenn die Bundle-Zeilen der Gruppe den Bedarf nicht
+  decken (entfernt oder verkleinert), sonst nichts. Ausgelagert aus
+  snippets/tp-cart-gruppe.liquid (Theme Check LiquidComplexity); gleiche Regel
+  wie zuschnittFehlt() in assets/tp-cart-gruppen.js.
+
+  @param {object} zeile - Warenkorbposition
+{%- enddoc -%}
+{%- liquid
+  assign tp_czf_bedarf = zeile.properties['_Rollenzuschnitt'] | default: '' | remove: 'cm' | strip | times: 1
+  if tp_czf_bedarf > 0
+    assign tp_czf_g = zeile.properties._Gruppe | default: '' | strip
+    assign tp_czf_gedeckt = 0
+    for tp_czf_it in cart.items
+      assign tp_czf_it_g = tp_czf_it.properties._Gruppe | default: '' | strip
+      if tp_czf_g != blank and tp_czf_it_g == tp_czf_g
+        assign tp_czf_cm = tp_czf_it.properties['Rollenzuschnitt'] | default: '' | remove: 'cm' | strip | times: tp_czf_it.quantity
+        assign tp_czf_gedeckt = tp_czf_gedeckt | plus: tp_czf_cm
+      endif
+    endfor
+    if tp_czf_gedeckt < tp_czf_bedarf
+      echo 'Der Zuschnitt von der Rolle fehlt – bitte Teppich entfernen und neu konfigurieren'
+    endif
+  endif
+-%}

@@ -1042,8 +1042,22 @@ table.tasks td { padding-top: 12px; padding-bottom: 12px; }
   .nav-more-kopf::after, .nav-more-kopf .nav-ic, .nav-more-kopf .nav-count { display: none; }
   .nav-more > .nav-more-menu { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 8px; margin: 0; padding: 0; border: 0; }
   .nav-more-menu a { min-height: 48px; font-size: 1rem; }
-  .side-foot { margin-top: 10px; }
+  /* Fuss des Blatts (Datenstand, Fehler melden, Passwort, Abmelden) bleibt unten stehen,
+     waehrend die Punkte darueber scrollen. Vorher lag "Fehler melden" beim Inhaber
+     (mit Weiteren Dashboards) unterhalb des Blattrands und war nur durch Scrollen
+     im Blatt zu finden. Zwei Spalten, damit er nicht die halbe Hoehe frisst. */
+  .side-foot {
+    position: sticky; bottom: -12px; z-index: 1;
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 8px;
+    margin: 10px -4px -12px; padding: 8px 4px 12px; background: var(--surface);
+  }
+  .side-foot .side-knopf, .side-foot .sync-chip { min-width: 0; }
+  .side-foot .side-knopf span:not(.nav-count) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* "Fehler melden" zuerst und ueber die ganze Breite - sonst wird es neben dem Datenstand abgeschnitten. */
+  .side-foot [data-fehler-melden] { grid-column: 1 / -1; order: -1; }
   .side-abmelden { display: flex; }
+  /* Rueckmeldungen nicht ueber das offene Blatt legen, sondern in den freien Streifen oben. */
+  body.nav-offen .toasts { bottom: auto; top: calc(14px + env(safe-area-inset-top)); }
 
   .topbar-inner { min-height: 56px; gap: 8px; padding: calc(6px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 6px calc(14px + env(safe-area-inset-left)); }
   .seitentitel { font-size: 1.25rem; }

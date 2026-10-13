@@ -54,7 +54,7 @@ export function abgleichDaten(liste, jetzt = new Date(), md = meldungenPfad()) {
  * Ergebnis abtippen oder in eine Shell-Zeile setzen. Fehlt eine Datei, steht die
  * Meldung unter `fehlt` - geloescht wird daraus nichts, der Lauf prueft nach.
  */
-/** Absolute Pfade der Bildschirmfotos - der Abgleich nennt nur die Zahl, wer behebt, oeffnet sie. */
+/** Absolute Pfade der Bildschirmfotos - der Abgleich laedt sie in den Bildspeicher der Werkbank. */
 function bildPfade(md, m) {
   return (m.bilder || []).map(name => bildDatei(md, name).pfad);
 }

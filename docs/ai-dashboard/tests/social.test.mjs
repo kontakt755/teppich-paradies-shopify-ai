@@ -106,9 +106,24 @@ test('Upload-Links: lesen 403, Mitarbeiter sieht und kopiert, nur Inhaber legt a
       const datei = path.join(privat, 'social', 'upload-links.json');
       assert.equal(fs.statSync(datei).mode & 0o777, 0o600);
 
-      // Gesperrt per Kommandozeile -> hier verschwindet der Link.
+      // Sperren im Dashboard: nur Inhaber, danach ist der Zugang weg und der Klartext geloescht.
+      const sperren = (keks, name) => fetch(`${base}/api/social/sperren`, {
+        method: 'POST', headers: { 'content-type': 'application/json', cookie: keks }, body: JSON.stringify({ name }),
+      });
+      assert.equal((await sperren(keksLesen, 'Team')).status, 403);
+      assert.equal((await sperren(keksMona, 'Team')).status, 403);
+      assert.equal((await fetch(`${base}/api/social/sperren`, { headers: { cookie: keksChef } })).status, 405);
+      const gesperrt = await sperren(keksChef, 'Team');
+      assert.equal(gesperrt.status, 200);
+      assert.deepEqual((await gesperrt.json()).zugaenge, []);
+      assert.deepEqual((await (await holen(keksMona)).json()).zugaenge, []);
+      assert.deepEqual(JSON.parse(fs.readFileSync(datei, 'utf8')).links, []);
+      assert.equal((await sperren(keksChef, 'Team')).status, 404, 'nichts mehr aktiv');
+
+      // Gesperrt per Kommandozeile -> hier verschwindet der Link ebenso.
+      await anlegen(keksChef, 'Bodenleger');
       const { zugangSperren } = await import('../../../social/lib/eingang.mjs');
-      zugangSperren('Team', { datei: path.join(privat, 'social', 'upload-zugaenge.json') });
+      zugangSperren('Bodenleger', { datei: path.join(privat, 'social', 'upload-zugaenge.json') });
       assert.deepEqual((await (await holen(keksMona)).json()).zugaenge, []);
     });
   } finally {

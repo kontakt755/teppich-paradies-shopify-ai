@@ -133,6 +133,15 @@ Dashboard ist dann unter `https://<name>.ts.net` erreichbar, auch am Handy über
 liegen dort und nirgendwo sonst. Das ist gewollt (keine Kundendaten in fremder Hand), aber es heißt: der
 Mac mini ist ab jetzt Betriebsmittel, nicht nur Arbeitsplatz.
 
+**Wache (seit 2026-10-12).** Ist Tailscale am Mac mini gestoppt oder abgemeldet, merkt das im Laden
+niemand. Der Server fragt deshalb mit der Shop-Wache (`GET /api/shopwache/status`, Feld `tailscale`)
+`tailscale status --json` ab – nur lesend, höchstens einmal je Minute, nie `up`/`login`
+(`operations/lib/tailscale.mjs`). Bei `Stopped` oder `NeedsLogin` erscheint beim Inhaber ein To-do in
+der Website-Sicht von „Heute“, ein Hinweis oben auf der Shop-Wache und eine Zeile im Systemzustand
+(Insights) – jeweils mit dem Handgriff („Tailscale-Symbol in der Menüleiste → Connect“). Läuft Tailscale
+oder ist es nicht installiert, steht nirgends etwas. `TP_TAILSCALE_PRUEFEN=0` schaltet die Abfrage ab
+(Tests, andere Rechner).
+
 ## 1. Leitentscheidung: Eine Wahrheit, nur noch lokaler Betrieb
 
 **GitHub Issues bleiben die führende Aufgabenquelle.** Das Control Center legt kein zweites Aufgabensystem an.
@@ -402,6 +411,55 @@ DOM in `lib/einkauf-lieferanten.mjs`, Styles in `stile/einkauf-lieferanten.css`)
   wenn es einen Eintrag gibt). Daten: `link.schnellzugriff` bzw. `original.schnellzugriff` aus
   `/api/lexikon/produkt` (`operations/README.md`, „Schnellzugriff im Lexikon“).
 
+### 8b. Muster: Inhalt auf einen Blick und Musterlager (seit 2026-10-13)
+
+Inhaber 2026-10-13: Bei einer Musterbestellung muss „ganz klipp und klar“ dastehen, welche Muster es sind –
+ohne Suchen, ohne Klick. Und Muster, die wir selbst da haben (Probestück 2 × 1 m bei PVC und Linoleum,
+künftig Bahnen 4 m × 20 cm der gängigsten Teppichboden-Farben), müssen vermerkt sein, damit sie niemand
+noch einmal beim Lieferanten bestellt.
+
+**Inhalt in der Bestellliste.** Kunden › Bestellungen zeigt unter jeder Zeile über die ganze Breite, was
+bestellt wurde: „3 Muster · Regalia Teppichboden: Beige Mittel Dunkler, Creme Dunkel · aus dem Musterlager
+(Regal B)“ bzw. bei Ware die Artikel mit Farbe und Menge (höchstens drei, dann „+N weitere“). Reine
+Musterbestellungen zeigen „kostenlos“ statt „0,00 €“. Die Suche findet auch Produkt und Farbe. Logik ohne
+DOM in `docs/ai-dashboard/lib/bestellinhalt.mjs` (`tests/bestellinhalt.test.mjs`); dieselben Texte nutzen die
+To-dos auf „Heute“ („Muster bei Lieferant A bestellen · Kunde · Regalia Teppichboden: Sand, Greige“,
+„Muster verschicken an … · aus dem Musterlager (Regal B)“).
+
+**Musterlager** (Einkauf › Reiter „Musterlager“, `ansichten/einkauf/musterlager.mjs`, Styles
+`stile/muster.css`, Server `operations/lib/musterlager.mjs`). Ablage `$TP_PRIVAT_DIR/musterlager.json`
+(Teil von `npm run daten:sichern`), Shopify wird nie geschrieben.
+
+| Art | Bedeutung | Abzählen |
+|---|---|---|
+| Einzelmuster | fertige Muster | ja – jedes verschickte zählt ab, bei 0 wieder beim Lieferanten |
+| Probestück 2 × 1 m | PVC, Linoleum: wir schneiden zu | nein – „Ist leer“ setzt jemand von Hand |
+| Bahn 4 m × 20 cm | Teppichboden: wir schneiden zu | nein – wie Probestück |
+
+- **Schlüssel** ist die SKU ohne „M-“ (Mustervarianten tragen `M-<SKU der Quellvariante>`, bei Teppich nach
+  Maß die der Teppichboden-Qualität). Beim Einlagern aus dem Lexikon kommen alle Breiten einer Farbe und das
+  Musterprodukt dazu; Muster über das Sammelprodukt „Kostenloses Muster“ nehmen die SKU der Quellvariante.
+- **Wirkung:** Eine offene Musterposition (kein Auftragsfluss-Stand, keine ausdrückliche Wahl, Auftrag offen),
+  deren Schlüssel im Lager steht, bekommt beim Laden des Modells `musterHerkunft: eigen_versand`,
+  `musterHerkunftQuelle: lager` und `musterLager {id, art, artLabel, ort, rest}` (`mitMusterlager()` in
+  `scripts/dashboard-api.mjs`, nach der Wahl aus `musterherkunft.json`). Damit gilt alles aus „Muster haben
+  wir da“: nicht in der Bestellmail (Grund „aus dem Musterlager (Regal B) – wird von uns verschickt“), nicht
+  „Muster noch zu bestellen“, To-do „Muster verschicken an …“. Die älteste Bestellung bekommt das letzte
+  Einzelmuster; die nächste geht an den Lieferanten und trägt `musterLagerLeer` („Musterlager: … leer“).
+  Die Wahl „Woher? ändern…“ geht immer vor.
+- **Festschreiben beim Verschicken:** Erreicht eine so zugeordnete Position „An Kunden raus“ (Einzelstatus,
+  Schritt `raus` oder `kunde_hat_muster`), hängt der Server ein `musterherkunft`-Ereignis mit `lagerId` an.
+  So zählt das Muster als verschickt, auch wenn der Lagereintrag später leer gesetzt oder entfernt wird.
+  „Bestellt“ ist kein Abgang.
+- **Vorschläge „Einlagern?“:** eingetroffene Probestücke von PVC/Linoleum (Stand „geliefert“, höchstens
+  45 Tage) – „den Rest einlagern?“ – und Farben, die in 120 Tagen mindestens zweimal als Muster bestellt
+  wurden. Ein Klick öffnet den Dialog vorbelegt.
+- **Endpunkte:** `GET /api/einkauf/musterlager` (Einträge mit Stand verbraucht/reserviert/Rest, offene
+  Bestellungen je Eintrag, Vorschläge), `GET /api/einkauf/musterlager-farben?handle=` (Farben eines
+  Lexikon-Produkts samt Schlüssel), `POST /api/einkauf/musterlager` mit `aktion: einlagern | aendern |
+  entfernen` (Schreibpfad: Rolle „lesen“ 403). Ein beschädigtes `musterlager.json` hält keine
+  Bestellansicht auf; nur der Reiter meldet den Fehler, und Schreiben verweigert.
+
 ## 9. Startseite „Heute" (seit 2026-09-23)
 
 `viewHeute()` in `docs/ai-dashboard/ansichten/heute.mjs` ist die Startseite und bleibt primär aufgabenbasiert
@@ -627,11 +685,26 @@ die vorherige Regel „letzte 50 Bestellungen nach `updatedAt`". Details der
 Abgrenzung und der Ratenlimit-Wartung (`wartenBeiThrottle`) stehen in
 `operations/README.md`.
 
+**Knopf „Jetzt aktualisieren“ (seit 2026-10-12):** Bricht der Lauf selbst ab (Absturz, Zeitlimit von
+10 Minuten), behält der Server das Ergebnis als `letzterKnopfLauf: { seit, bis, fehler }` in
+`/api/aktualisierung` und `/api/aktualisierung/status`. Die Oberfläche meldet dann „abgebrochen“ statt
+„abgeschlossen“ und zeigt im Systemzustand eine Zeile, bis ein späterer Lauf die Daten erneuert hat.
+Scheitern nur einzelne Quellen (Exit 1 nach vollständigem Bericht), ist das kein Abbruch – das steht je
+Quelle wie bisher.
+
+**Aufgabendaten im Dienst (seit 2026-10-12):** `issues.json` wurde im Dienst nur beim Start, nach einer
+Schreibaktion und auf „Jetzt synchronisieren“ neu gebaut. Jetzt zusätzlich alle
+`TP_DASHBOARD_NEUBAU_MINUTEN` (Standard 10, `0` = aus), nie überlappend: läuft schon ein Neubau, fällt der
+Takt aus; kommt eine Schreibaktion während eines Neubaus, folgt genau ein weiterer. Der Datenstand-Chip
+zeigt bei einem Stand von einem anderen Tag das Datum mit („10.10. 09:00“).
+
 **Häufiger als täglich:** `operations/scripts/sync-dienst.mjs`
 (`npm run daten:sync-dienst`) führt `aktualisieren()` in einer Dauerschleife
 aus statt über eine geplante Aufgabe – Intervall `TP_SYNC_INTERVALL_MINUTEN`
 (Standard 10 Minuten), damit eine am Nachmittag eingegangene Bestellung nicht
-erst am nächsten Morgen im Control Center sichtbar wird. Läuft entweder von
+erst am nächsten Morgen im Control Center sichtbar wird. Lexikon und Lagerbestand laufen nur stündlich mit
+(`TP_SYNC_LEXIKON_MINUTEN`, `TP_SYNC_BESTAND_MINUTEN`); der Bestand allein kostete vorher rund 90 von 100
+Sekunden je Lauf. Jede Zeile im Sync-Protokoll beginnt mit der Uhrzeit. Läuft entweder von
 Hand in einem Terminal oder dauerhaft über die launchd-Vorlage
 `operations/launchagents/net.teppich-paradies.sync.plist.vorlage`. Ohne Zugang
 (`SHOPIFY_ADMIN_TOKEN`/Client-Credentials) startet der Dienst nicht still –
@@ -766,7 +839,8 @@ die man für Social Media braucht. Für die Rolle „lesen“ ist sie ausgeblend
   Das Social-Modul speichert nur den Hash des Links. Den kopierbaren Klartext legt
   `POST /api/social/link-neu` (nur Inhaber) beim Anlegen in `social/upload-links.json` ab (Rechte 600) –
   ein gemerkter Link erscheint nur, solange sein Zugang aktiv ist. Ein neuer Link für einen vorhandenen
-  Namen sperrt den alten nicht. Die Adresse davor ist `SOCIAL_UPLOAD_BASIS_URL` aus `social/zugang.env`.
+  Namen sperrt den alten nicht. „Sperren“ (`POST /api/social/sperren`, nur Inhaber) sperrt wie
+  `npm run social -- zugang sperren` alle Links eines Namens und löscht den gemerkten Klartext. Die Adresse davor ist `SOCIAL_UPLOAD_BASIS_URL` aus `social/zugang.env`.
 - **Kampagnen-Link:** reines Frontend. Ziel nur auf `teppich-paradies.net`, Kanal → `utm_source`/`utm_medium`
   (social, email, print; Art „Anzeige“ → paid), Kampagnenname klein mit Bindestrichen, Art → `utm_content`.
 - **Weitere Links:** Social-Zentrale auf demselben Host, Port 8020; Instagram- und Facebook-Profil.
@@ -812,8 +886,13 @@ GET /api/fehler/liste ──> Dialog zeigt „Gemeldet“ / „Bei der Technik�
   im Browser auf 2000 px verkleinert (`bausteine/bilder.mjs`, geteilt mit „Fotos“). Der Server nimmt nur
   echte PNG/JPEG/WebP (an den ersten Bytes erkannt, höchstens 4 MB) und legt sie unter
   `$TP_PRIVAT_DIR/fehlermeldungen/F-001-1.jpg` ab (Rechte 600). `GET /api/fehler/bild?id=&nr=` liefert
-  sie nur dem Melder und dem Inhaber; eine fremde Meldung antwortet wie eine fehlende (404). Bilder
-  gehen nie in die Werkbank – dort steht nur die Zahl, `npm run -s fehler -- zeige` nennt die Pfade.
+  sie nur dem Melder und dem Inhaber; eine fremde Meldung antwortet wie eine fehlende (404).
+  **In der Werkbank** (Inhaberentscheidung 2026-10-12: „ich will den Anhang sehen“): der Abgleich lädt
+  jedes Bild in den Bildspeicher der Werkbank (`Artifact` mit `asset: true`, Fähigkeit `assets` der
+  Seite) und trägt `bilder: [{id, url}]` am Eintrag ein; die Seite zeigt sie als Vorschau, ein Klick
+  vergrößert. Bildschirmfotos können Kundendaten zeigen – die Werkbank bleibt deshalb privat (Inhaber
+  und freigegebene Mitarbeiter). Scheitert ein Upload, steht im Eintrag der Hinweis auf
+  `npm run -s fehler -- zeige`.
 - **Letzte Schritte und Version:** die letzten sechs Klicks („heute: „Einkauf““) und der Commit des
   laufenden Dienstes gehen mit. Der Dialog zeigt unter „Was automatisch mitgeht“, was das ist.
 - **Melden aus der Störung heraus:** `kern/api.mjs` merkt sich Serverfehler (5xx) und fehlende
@@ -828,3 +907,34 @@ GET /api/fehler/liste ──> Dialog zeigt „Gemeldet“ / „Bei der Technik�
   Klicks jetzt durch (`pointer-events`); vorher war „Fehler melden“ unten links dahinter nicht klickbar.
 - **Grenze:** Der Lauf ist eine geplante Aufgabe der Claude-App auf dem Mac. Ist die App zu, wartet die
   Meldung im Dialog sichtbar auf „Gemeldet“ und wird beim nächsten Lauf übertragen.
+
+## 16. Robustheit des Dienstes (seit 2026-10-12)
+
+Befunde einer Prüfung am 2026-10-12, alle mit Test (`tests/robustheit.test.mjs`,
+`operations/tests/speicher-lesefehler.test.mjs`):
+
+- **Kein Absturz durch Anfragen.** Ein Cookie `x=%` beendete ohne Anmeldung den ganzen Dienst
+  (`decodeURIComponent` in `parseCookies`). Kaputte Cookie-Werte werden übersprungen; `requestHandler`
+  fängt jeden Fehler (auch aus `handleApi`/`handleLogin`) und antwortet 500; `uncaughtException` und
+  `unhandledRejection` werden protokolliert, der Prozess läuft weiter.
+- **Fehlerprotokoll.** `scripts/dashboard-log.mjs`: eine Zeile je Fehlerantwort der API (auch 4xx),
+  je abgelehnter Anmeldung und je unerwartetem Fehler – mit ISO-Zeit, Status, Methode und Pfad **ohne**
+  Abfrageteil (dort stehen Suchbegriffe wie Kundennamen); nie Cookies, Anfragekörper oder Passwörter.
+- **Lesefehler sind keine leeren Daten.** Auftragsstatus, Rückrufe, Fallmarken, Aufgaben/Notizen und
+  Benutzer gelten nur bei fehlender (oder 0 Byte großer) Datei als leer. Eine beschädigte oder unlesbare
+  Datei wirft; der nächste Klick überschreibt sie nicht mehr mit einem einzigen Eintrag. Ist
+  `benutzer.json` beschädigt, antwortet die Anmeldung 503 mit Klartext, der Notzugang (Einzelpasswort)
+  kommt weiter herein, und Sitzungen werden nicht gelöscht.
+- **Eingabefehler sind 400**, nicht 500 (`OrganisationFehler` in `organisation-speicher.mjs`).
+- **Blockieren schreibt `## Blocker`** in den Issue-Body (`mitBlockerAbschnitt` in `lib/model.mjs`), wo
+  `parseBody` den Grund liest; vorher stand er nur im Kommentar und die Aufgabe zeigte „Blocker-Grund
+  fehlt“. Das Aufgaben-Detail zeigt den Abschnitt nur, solange die Aufgabe blockiert ist.
+- **Lexikon im Zwischenspeicher** (`readJsonGecacht`, nach Größe und Änderungszeit): die rund 27 MB
+  wurden vorher bei jeder Anfrage synchron gelesen, die Befehlspalette fragt beim Tippen alle 150 ms.
+- **Kopfzeilen.** Jede Antwort: `X-Frame-Options: DENY`, `Content-Security-Policy: frame-ancestors 'none'`,
+  `nosniff`. Anhänge (`org/anhang-lesen`, `fehler/bild`) nur als Bild, PDF oder Text im Fenster, alles
+  andere als Download. Ein zu großer Körper bekommt seine 413, statt dass die Verbindung abreißt.
+- **Prüfwerkzeug.** `dashboard:pruefen` räumt Instanz und Datenkopie auch bei `SIGTERM`/`SIGHUP` auf und
+  zählt eine Ansicht, die nach 6 s noch „Lade …“ zeigt, als `FEHL`.
+- **Handy.** Der Fuß des „Mehr“-Blatts (Datenstand, Fehler melden, Passwort, Abmelden) bleibt unten
+  stehen, zweispaltig; Rückmeldungen erscheinen bei offenem Blatt oben statt darüber.
