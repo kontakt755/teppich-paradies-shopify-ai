@@ -25,6 +25,7 @@ import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
 import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, oeffneWieder, setzeZurueckAufOffen, STATUS_ORDER, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
+import { musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
 import { auftragsverlaufPfad, leseVerlauf, haengeEreignisAn, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
 import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden, kundenIndex } from '../operations/lib/kundensuche.mjs';
 import { faelle as kundenFaelle, istTestkontakt } from '../operations/lib/kundenfaelle.mjs';
@@ -241,9 +242,32 @@ function ladeBestellModell(dir) {
   catch { return null; }
 }
 
-/** Traegt die lokale Wahl "Muster haben wir da" (musterherkunft.json) an die Muster-Positionen. */
+/**
+ * Traegt die lokale Wahl "Muster haben wir da" (musterherkunft.json) an die Muster-Positionen -
+ * und danach das Musterlager (musterlager.json): offene Muster, die wir da haben, kommen von dort.
+ */
 function mitMusterherkunft(modell, dir) {
-  return wendeAufModellAn(modell, leseMusterherkunft(musterherkunftPfad(dir)));
+  wendeAufModellAn(modell, leseMusterherkunft(musterherkunftPfad(dir)));
+  mitMusterlager(modell, dir);
+  return modell;
+}
+
+/**
+ * Musterlager an das Modell. Ein beschaedigtes Lager haelt keine Bestellansicht auf - die
+ * Muster stehen dann wie ohne Lager auf "beim Lieferanten bestellen", die Ansicht
+ * "Musterlager" meldet den Fehler. Der Stand je Eintrag (verbraucht, reserviert, Rest) haengt
+ * nicht aufzaehlbar am Modell, damit er in keiner Antwort mitwandert.
+ */
+function mitMusterlager(modell, dir) {
+  if (!modell) return modell;
+  let lager;
+  try { lager = leseLager(musterlagerPfad(dir)); } catch (e) { console.error(`[musterlager] ${e.message}`); return modell; }
+  if (!lager.eintraege.length && !lager.entfernt.length) return modell;
+  let statusAlle = {};
+  try { statusAlle = leseAuftragsstatus(auftragsstatusPfad(dir)); } catch { /* ohne Stand: nur Anzeige, geschrieben wird hier nichts */ }
+  const stand = wendeLagerAn(modell, lager, { statusAlle });
+  Object.defineProperty(modell, 'musterlagerStand', { value: stand, enumerable: false });
+  return modell;
 }
 
 /**
@@ -635,6 +659,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (e instanceof AuftragsverlaufFehler || e instanceof AuftragsstatusFehler) throw new ApiError(400, e.message);
       throw e;
     }
+    // Muster aus dem Lager verschickt bzw. uebergeben: abzaehlen.
+    if (['raus', 'kunde_hat_muster'].includes(schritt)) lagerAbgangFestschreiben(dir, auftrag, null, actor);
     audit({ actor, action: 'auftragsschritt', orderId, schritt, positionen: anzahl });
     merke(benutzer, actor, 'Auftragsschritt', `${auftrag.name}: ${schritt}`);
     const nachher = zeitleisten(dir, modell, leseAuftragsstatus(statusDatei)).get(orderId);
@@ -673,6 +699,30 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     audit({ actor, action: 'auftragsstatus-zurueck-auf-offen', anzahl, orderIds: [...new Set(ziele.map(z => z.orderId))].slice(0, 20) });
     merke(benutzer, actor, 'Zurück auf offen', `${anzahl} Artikel${notiz ? ` · ${notiz}` : ''}`);
     return { ok: true, anzahl, eintraege };
+  }
+
+  /**
+   * Muster aus dem Musterlager ist raus: die Zuordnung festschreiben (musterherkunft-Ereignis mit
+   * lagerId). Ohne das stuende die Position nach "An Kunden raus" nicht mehr als Lagerware da,
+   * und Einzelmuster wuerden nie abgezaehlt. `auftrag` ist der Stand VOR dem Schritt.
+   */
+  function lagerAbgangFestschreiben(dir, auftrag, lineItemIds, actor) {
+    const offen = lagerFestzuschreiben(auftrag, lineItemIds);
+    for (const p of offen) {
+      haengeWahlAn(musterherkunftPfad(dir), {
+        orderId: auftrag.id, lineItemId: p.lineItemId, herkunft: p.musterHerkunft || 'eigen_versand', actor,
+        notiz: `Aus dem Musterlager${p.musterLager.ort ? ` (${p.musterLager.ort})` : ''}`, lagerId: p.musterLager.id, jetzt: now(),
+      });
+    }
+    if (offen.length) audit({ actor, action: 'musterlager-abgang', orderId: auftrag.id, anzahl: offen.length });
+    return offen.length;
+  }
+
+  /** Auftrag vor einem Statuswechsel - nur geladen, wenn das Musterlager ueberhaupt etwas enthaelt. */
+  function auftragFuerLager(dir, orderId) {
+    try { if (!leseLager(musterlagerPfad(dir)).eintraege.length) return null; } catch { return null; }
+    const modell = ladeBestellModell(dir);
+    return modell ? [...modell.auftraege, ...modell.testauftraege].find(a => a.id === orderId) || null : null;
   }
 
   /** "Muster haben wir da": Wahl je Musterbestellung (ohne lineItemId) oder Musterposition, nur anhaengen. */
@@ -1280,6 +1330,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (!STATUS_ORDER.includes(status)) throw new ApiError(400, `Unbekannter Status „${status}"`, { missing: [`Status muss einer von ${STATUS_ORDER.join(', ')} sein`] });
       const dir = privatDirPath || privatDir();
       const file = auftragsstatusPfad(dir);
+      // Stand vor dem Wechsel: danach hat die Position einen Status und gilt nicht mehr als offen.
+      const vorLager = status === 'raus' ? auftragFuerLager(dir, orderId) : null;
       let eintrag;
       try {
         eintrag = setzeStatus(file, { orderId, lineItemId, status, actor, lieferantBestellnummer, notiz, jetzt: now() });
@@ -1287,9 +1339,133 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         if (e instanceof AuftragsstatusFehler) throw new ApiError(400, e.message);
         throw e;
       }
+      if (vorLager) lagerAbgangFestschreiben(dir, vorLager, [lineItemId], actor);
       audit({ actor, action: 'auftragsstatus', orderId, lineItemId, status });
       merke(benutzer, actor, 'Auftragsstatus', `${orderId}/${lineItemId}: ${status}`);
       return { ok: true, eintrag };
+    },
+
+    /**
+     * Musterlager: was wir an Mustern selbst da haben, wo es liegt, welche offenen
+     * Musterbestellungen daraus bedient werden - und Vorschlaege, was einzulagern lohnt
+     * (eingetroffene Probestuecke, mehrfach gefragte Farben). Kundennamen nur zur Anzeige.
+     */
+    einkaufMusterlager() {
+      const dir = privatDirPath || privatDir();
+      let lager;
+      try { lager = leseLager(musterlagerPfad(dir)); } catch (e) {
+        return { verfuegbar: false, fehler: true, hinweis: e.message };
+      }
+      const modell = ladeBestellModell(dir);
+      const stand = modell?.musterlagerStand || new Map();
+      let statusAlle = {};
+      try { statusAlle = leseAuftragsstatus(auftragsstatusPfad(dir)); } catch { /* Vorschlaege dann ohne "eingetroffen" */ }
+      const kunde = a => (a.details?.kunde?.name && a.details.kunde.name !== '–' ? a.details.kunde.name : null);
+      const offen = new Map();
+      for (const a of modell?.auftraege ?? []) {
+        for (const p of a.positionen ?? []) {
+          if (p.musterHerkunftQuelle !== 'lager' || !p.musterLager?.id) continue;
+          if (!offen.has(p.musterLager.id)) offen.set(p.musterLager.id, []);
+          offen.get(p.musterLager.id).push({ orderId: a.id, orderName: a.name, kunde: kunde(a) });
+        }
+      }
+      const gruppen = new Map(this._lexikonProdukte().map(x => [x.handle, x.produktgruppe || null]));
+      return {
+        verfuegbar: true,
+        arten: LAGER_ARTEN,
+        zaehlbar: LAGER_ZAEHLBAR,
+        bestellungenStand: modell?.erstellt || null,
+        eintraege: lager.eintraege.map(e => ({
+          id: e.id, titel: e.titel, farbe: e.farbe, handle: e.handle, art: e.art, artLabel: LAGER_ARTEN[e.art], anzahl: e.anzahl ?? null,
+          ort: e.ort, notiz: e.notiz, leer: !!e.leer, angelegtAm: e.angelegtAm, angelegtVon: e.angelegtVon, geaendertAm: e.geaendertAm, geaendertVon: e.geaendertVon,
+          stand: stand.get(e.id) || { verbraucht: 0, reserviert: 0, rest: null },
+          offeneBestellungen: offen.get(e.id) || [],
+          verlauf: (e.verlauf || []).slice(-5),
+        })),
+        vorschlaege: modell ? lagerVorschlaege(modell, { lager, statusAlle, produktgruppe: h => gruppen.get(h) ?? null, jetzt: now() }) : [],
+      };
+    },
+
+    /** Farben eines Lexikon-Produkts zum Einlagern, mit Kennzeichen "schon im Lager". */
+    einkaufMusterlagerFarben({ handle = '' } = {}) {
+      const dir = privatDirPath || privatDir();
+      const ziel = this._musterlagerProdukt(handle);
+      if (!ziel) return { verfuegbar: false, hinweis: 'Produkt nicht im Lexikon gefunden – Lexikon aktualisieren oder anders suchen.' };
+      let imLager = new Set();
+      try { imLager = new Set(leseLager(musterlagerPfad(dir)).eintraege.filter(e => !e.leer).flatMap(e => e.schluessel)); } catch { /* Lager kaputt: nur ohne Kennzeichen */ }
+      return {
+        verfuegbar: true, handle: ziel.produkt.handle, titel: lagerKurzTitel(ziel.produkt.titel), produktgruppe: ziel.produkt.produktgruppe || null,
+        bild: ziel.produkt.bild || null,
+        farben: ziel.farben.map(f => ({ ...f, imLager: f.schluessel.some(k => imLager.has(k)) })),
+      };
+    },
+
+    /** Lexikon-Produkt samt Musterprodukt und Farben; auch wenn das Musterprodukt selbst gewaehlt wurde. */
+    _musterlagerProdukt(handle) {
+      const h = String(handle || '').trim();
+      if (!h) return null;
+      const produkte = this._lexikonProdukte();
+      const je = new Map(produkte.map(x => [x.handle, x]));
+      const gewaehlt = je.get(h);
+      if (!gewaehlt) return null;
+      // Gewaehlt werden kann das Produkt oder sein Musterprodukt (muster-<handle>) - beide zaehlen.
+      const istMuster = h.startsWith('muster-');
+      const original = istMuster ? je.get(h.slice(7)) || null : gewaehlt;
+      const muster = istMuster ? gewaehlt : (gewaehlt.muster?.handle ? je.get(gewaehlt.muster.handle) || null : null);
+      return { produkt: original || gewaehlt, muster, farben: lagerFarbenFuer(original, muster) };
+    },
+
+    /**
+     * Musterlager schreiben: einlagern (aus dem Lexikon: handle + farben, oder aus einem
+     * Vorschlag: schluessel + titel + farbe), aendern (Platz, Anzahl, Art, Notiz, leer),
+     * entfernen. Nur lokal, Shopify wird nie geschrieben.
+     */
+    async einkaufMusterlagerSetzen(payload = {}, benutzer = null) {
+      const actor = benutzer?.name || await currentUser();
+      if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
+      const dir = privatDirPath || privatDir();
+      const file = musterlagerPfad(dir);
+      const { aktion } = payload || {};
+      try {
+        if (aktion === 'einlagern') {
+          const { handle, farben, schluessel, titel, farbe, art, anzahl, ort, notiz } = payload;
+          let ziele;
+          if (handle && Array.isArray(farben) && farben.length) {
+            const z = this._musterlagerProdukt(handle);
+            if (!z) throw new ApiError(404, 'Produkt nicht im Lexikon gefunden – Lexikon aktualisieren oder anders suchen.');
+            const gesucht = new Set(farben.map(f => String(f)));
+            ziele = z.farben.filter(f => gesucht.has(f.farbe)).map(f => ({ titel: lagerKurzTitel(z.produkt.titel), farbe: f.farbe, handle: z.produkt.handle, schluessel: f.schluessel }));
+            const fehlen = [...gesucht].filter(f => !ziele.some(x => x.farbe === f));
+            if (fehlen.length) throw new ApiError(400, `Für ${fehlen.join(', ')} fehlt die Artikelnummer – im Lexikon prüfen.`);
+          } else if (Array.isArray(schluessel) && schluessel.length) {
+            ziele = [{ titel, farbe, handle: handle || null, schluessel }];
+          } else throw new ApiError(400, 'Produkt und Farbe wählen', { missing: ['handle', 'farben'] });
+          if (ziele.length > 60) throw new ApiError(400, 'Höchstens 60 Farben auf einmal');
+          const ergebnisse = ziele.map(z => lagerEinlagern(file, { ...z, art, anzahl, ort, notiz, actor, jetzt: now() }));
+          audit({ actor, action: 'musterlager-einlagern', anzahl: ergebnisse.length });
+          merke(benutzer, actor, 'Musterlager', `eingelagert: ${ziele.map(z => [z.titel, z.farbe].filter(Boolean).join(' ')).slice(0, 5).join(', ')}${ziele.length > 5 ? ' …' : ''}`);
+          return { ok: true, anzahl: ergebnisse.length, neu: ergebnisse.filter(r => r.neu).length, eintraege: ergebnisse.map(r => r.eintrag) };
+        }
+        if (aktion === 'aendern') {
+          const { id } = payload;
+          const felder = {};
+          for (const k of ['art', 'anzahl', 'ort', 'notiz', 'leer']) if (k in payload) felder[k] = payload[k];
+          const e = lagerAendern(file, String(id || ''), felder, { actor, jetzt: now() });
+          audit({ actor, action: 'musterlager-aendern', id: e.id, felder: Object.keys(felder) });
+          merke(benutzer, actor, 'Musterlager', `${[e.titel, e.farbe].filter(Boolean).join(' ')}: ${e.verlauf?.at(-1)?.was || 'geändert'}`);
+          return { ok: true, eintrag: e };
+        }
+        if (aktion === 'entfernen') {
+          const e = lagerEntfernen(file, String(payload.id || ''), { actor, jetzt: now() });
+          audit({ actor, action: 'musterlager-entfernen', id: e.id });
+          merke(benutzer, actor, 'Musterlager', `entfernt: ${[e.titel, e.farbe].filter(Boolean).join(' ')}`);
+          return { ok: true, id: e.id };
+        }
+        throw new ApiError(400, `Unbekannte Aktion „${aktion}"`);
+      } catch (e) {
+        if (e instanceof MusterlagerFehler) throw new ApiError(400, e.message);
+        throw e;
+      }
     },
 
     /** Offene Klaerungsfaelle des Einkaufs, falls das Team sie bereits exportiert hat. */

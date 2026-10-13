@@ -1,0 +1,65 @@
+/* Muster: Inhaltszeile der Bestellliste (ansichten/kunden/bestellungen.mjs) und Reiter
+   "Musterlager" im Einkauf (ansichten/einkauf/musterlager.mjs). Nur Tokens aus app.css.
+   Auffallen darf in der Bestellliste genau eins: WAS bestellt wurde. */
+
+/* -- Bestellliste: Inhalt unter der Zeile, ueber die ganze Breite -------------------- */
+.bq-row.mit-inhalt td { border-bottom: 0; padding-bottom: 4px; }
+.bq-inhalt { cursor: pointer; }
+.bq-inhalt td { padding-top: 0; }
+.bq-row:hover + .bq-inhalt, .bq-inhalt:hover { background: var(--surface-2); }
+.bq-inhalt-zeile { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-size: .9rem; line-height: 1.45; }
+.bq-inhalt-zeile + .bq-inhalt-zeile { margin-top: 2px; }
+.bq-art { flex: none; font-weight: 600; font-size: .78rem; padding: 1px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.bq-art-ware { background: var(--surface-2); color: var(--text-2); }
+.bq-was { color: var(--text); overflow-wrap: anywhere; min-width: 0; }
+.bq-herkunft { color: var(--text-2); font-size: .85rem; }
+.bq-herkunft::before { content: "· "; }
+.bq-inhalt-mobil { margin: 4px 0 2px; }
+.bq-inhalt-mobil .bq-inhalt-zeile { font-size: .88rem; }
+
+/* -- Musterlager --------------------------------------------------------------------- */
+.ml-kopf { display: flex; gap: 12px 20px; align-items: flex-start; justify-content: space-between; margin: 4px 0 12px; }
+.ml-erklaerung { margin: 0; max-width: 70ch; }
+.ml-kopf .btn { flex: none; }
+.ml-zahlen { margin: 0 0 12px; }
+.ml-warn { color: var(--warn); font-weight: 600; }
+
+.ml-gruppe { margin: 0 0 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.ml-gruppe h3 { margin: 0; padding: 10px 14px; font-size: .98rem; background: var(--surface-2); border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.ml-liste { list-style: none; margin: 0; padding: 0; }
+.ml-zeile { display: flex; gap: 8px 16px; align-items: center; justify-content: space-between; padding: 10px 14px; }
+.ml-zeile + .ml-zeile { border-top: 1px solid var(--line); }
+.ml-zeile.ml-knapp { background: var(--warn-soft); }
+.ml-was { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ml-farbe { font-weight: 600; overflow-wrap: anywhere; }
+.ml-farbe-zusatz { font-weight: 400; color: var(--text-2); }
+.ml-angaben { display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: .88rem; color: var(--text-2); }
+.ml-fuer { font-size: .88rem; color: var(--text); }
+.ml-notiz { font-size: .85rem; color: var(--text-3); overflow-wrap: anywhere; }
+.ml-aktionen { flex: none; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+
+.ml-vorschlaege { margin-top: 22px; }
+.ml-vorschlaege .ml-liste { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
+
+/* Dialog */
+.ml-dialog .ml-gewaehlt { padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); overflow-wrap: anywhere; }
+.ml-treffer { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; max-height: 260px; overflow: auto; }
+.ml-treffer-knopf { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); cursor: pointer; font: inherit; }
+.ml-treffer-knopf:hover { background: var(--surface-2); }
+.ml-treffer-knopf:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.ml-farben { border: 0; margin: 0; padding: 0; min-width: 0; }
+.ml-farben legend { font-weight: 600; font-size: .88rem; padding: 0; margin-bottom: 6px; }
+.ml-farbliste { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 4px 12px; max-height: 240px; overflow: auto; padding: 2px; }
+.ml-farbliste label { display: flex; gap: 8px; align-items: center; min-height: 36px; font-size: .9rem; cursor: pointer; }
+.ml-farbliste input { accent-color: var(--accent); flex: none; width: 18px; height: 18px; margin: 0; }
+.ml-art-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ml-actions { flex-wrap: wrap; }
+.ml-entfernen { margin-right: auto; color: var(--crit); }
+
+@media (max-width: 640px) {
+  .ml-kopf { flex-direction: column; }
+  .ml-kopf .btn { width: 100%; min-height: 44px; }
+  .ml-zeile { flex-direction: column; align-items: stretch; }
+  .ml-aktionen { justify-content: flex-start; }
+  .ml-aktionen .btn { min-height: 40px; }
+}
