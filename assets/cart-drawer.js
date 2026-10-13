@@ -44,6 +44,23 @@ class CartDrawerComponent extends DialogComponent {
     if (!isMobileBreakpoint()) return;
 
     if (!history.state?.cartDrawerOpen) {
+      // Der Scroll-Lock hat die Seite hier schon auf 0 gesetzt; diese 0 merkt
+      // sich der Browser fuer den Eintrag, den pushState verlaesst. Beim
+      // Schliessen stellte history.back() sie wieder her und zog die Seite
+      // eine Sekunde spaeter weich nach oben - Taps in dieser Zeit trafen
+      // etwas anderes. Der Modus gilt je Eintrag und muss deshalb vor
+      // pushState stehen; nach der Rueckkehr wieder wie vorher.
+      const restoration = history.scrollRestoration;
+      history.scrollRestoration = 'manual';
+      window.addEventListener(
+        'popstate',
+        () => {
+          setTimeout(() => {
+            history.scrollRestoration = restoration;
+          }, 500);
+        },
+        { once: true }
+      );
       history.pushState({ cartDrawerOpen: true }, '');
     }
 
