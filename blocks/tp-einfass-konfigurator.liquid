@@ -13,6 +13,14 @@
     service.max_breite_cm   > 0 (Cover: Rollenbreite minus 10 cm)
     service.max_laenge_cm   > 0
     custom.preis_pro_001_qm true (Variantenpreis gilt pro 0,01 m2)
+  Optional, ohne Einfluss auf das Rendern:
+    service.lieferzeit      Text hinter "Lieferzeit:" im Preishinweis, nur
+                            belegte Werte; leer = keine Lieferzeit
+  Optional service.kante_inklusive (boolean): bei Ketteln enthaelt der m2-Preis
+  die Kettelung bereits - keine Kettelservice-Zeile, keine Kantenkosten.
+  Optional service.bandfarbe_fest (Text): bei Einfassband/Paspelband arbeitet
+  der Hersteller das Band in einer festen Farbe - keine Bandauswahl, nur der
+  Hinweis "Bandfarbe: <Wert>", der Wert geht als Property Bandfarbe mit.
   Angeboten werden nur Varianten mit service.einfassen exakt "Verfuegbar"
   (mit Umlaut) und Preis > 0. Formen aus service.formen (Rechteck, Rund,
   Oval, Schablone, Skizze); unbekannte Werte fallen weg, ohne Angabe gibt es
@@ -30,7 +38,7 @@
   # Groesste Breite kommt vom Teppichboden (snippets/tp-teppich-max-breite), hier ueber
   # alle Farben; je Farbe steht sie unten an der Variante.
   capture tp_ek_max_b
-    render 'tp-teppich-max-breite', product: product
+    render 'tp-teppich-max-breite', product: product, live: true
   endcapture
   assign tp_ek_max_b = tp_ek_max_b | strip | times: 1
   assign tp_ek_max_l = product.metafields.service.max_laenge_cm.value | times: 1
@@ -96,7 +104,16 @@
   # nicht kaufbar" - Letzteres darf den Teppich nicht stillschweigend als
   # vollstaendig gekettelt anbieten (siehe audit/ISSUES.md TP-005).
   assign tp_ek_kettel_service_failed = false
-  if tp_ek_art == 'ketteln' and block.settings.kettelservice_produkt != blank
+  # Kante inklusive (service.kante_inklusive = true): der m2-Preis des Herstellers
+  # enthaelt die Kettelung schon. Dann gibt es keine Kettelservice-Zeile, keine
+  # Kantenkosten und keinen TP-005-Abbruch - der Kettelservice wird gar nicht
+  # gebraucht. Fehlt das Feld oder ist es false, bleibt alles wie bisher.
+  assign tp_ek_kante_inkl = false
+  assign tp_ek_ki = product.metafields.service.kante_inklusive.value | append: '' | strip | downcase
+  if tp_ek_art == 'ketteln' and tp_ek_ki == 'true'
+    assign tp_ek_kante_inkl = true
+  endif
+  if tp_ek_art == 'ketteln' and tp_ek_kante_inkl == false and block.settings.kettelservice_produkt != blank
     assign tp_ek_kettel_v = block.settings.kettelservice_produkt.selected_or_first_available_variant
     unless tp_ek_kettel_v.available and tp_ek_kettel_v.price > 0
       assign tp_ek_kettel_v = nil
@@ -117,6 +134,21 @@
   endif
   assign tp_ek_kg_qm = product.metafields.service.kg_pro_qm.value | default: 0 | times: 1
   assign tp_ek_max_kg = product.metafields.service.max_gewicht_kg.value | default: 0 | times: 1
+
+  # Lieferzeit im Preishinweis (Werkbank w-018). Quelle ist das Produkt-
+  # Metafeld service.lieferzeit (Text, z. B. "ca. 5–8 Werktage inkl. Ketteln"),
+  # gesetzt nur dort, wo die Lieferzeit belegt ist - seit 10.10. fuer die
+  # gekettelten Teppiche nach Mass laut Inhaberentscheidung. Ohne Metafeld keine
+  # Angabe (fail closed), nichts wird von anderen Produkten geliehen. Serena
+  # gehoert seit 10.10. ebenfalls zum bestaetigten Wert inkl. Ketteln.
+  # Art "fertig" nennt ihre Lieferzeit schon im Hinweistext unten.
+  assign tp_ek_lieferzeit = ''
+  unless tp_ek_art == 'fertig'
+    assign tp_ek_lieferzeit = product.metafields.service.lieferzeit.value | strip
+    if tp_ek_lieferzeit == blank and product.handle == 'serena-teppich-nach-mass'
+      assign tp_ek_lieferzeit = 'ca. 5–8 Werktage inkl. Ketteln'
+    endif
+  endunless
 
   # Rohwarenbreiten der Meterware, aus der zugeschnitten wird - nur fuer die
   # interne Angabe im Warenkorb. Der Kunde waehlt keine Rolle.
@@ -146,13 +178,45 @@
     if tp_ek_art == 'einfassband' or tp_ek_art == 'paspelband'
       assign tp_ek_mit_band = true
     endif
+    # Feste Bandfarbe (service.bandfarbe_fest, Text, ohne Metafeld-Definition):
+    # der Hersteller arbeitet das Band immer in derselben Farbe, der Kunde waehlt
+    # nichts. Leer oder fehlend: Bandauswahl wie bisher.
+    assign tp_ek_band_fest = ''
+    if tp_ek_mit_band
+      assign tp_ek_band_fest = product.metafields.service.bandfarbe_fest.value | append: '' | strip
+    endif
+    assign tp_ek_band_wahl = false
+    if tp_ek_mit_band and tp_ek_band_fest == blank
+      assign tp_ek_band_wahl = true
+    endif
     assign tp_ek_mit_anfrage = false
     if tp_ek_formen contains 'schablone' or tp_ek_formen contains 'skizze'
       assign tp_ek_mit_anfrage = true
     endif
   -%}
-  {%- if tp_ek_mit_band -%}
-    {%- capture tp_ek_baender -%}{% render 'tp-bandfarben' %}{%- endcapture -%}
+  {%- if tp_ek_band_wahl -%}
+    {%- comment -%}
+      Eigene Bandfarben des Herstellers (service.bandfarben, Text "Name|#hex;Name|#hex",
+      z. B. Vorwerk-Paspel Sand/Anthrazit/Schwarz) ersetzen die Farbkarte unseres
+      Konfektionaers aus snippets/tp-bandfarben. Nur gueltige Hexwerte zaehlen
+      (das Skript prueft es noch einmal); ohne Feld bleibt alles wie bisher.
+    {%- endcomment -%}
+    {%- assign tp_ek_band_eigen = product.metafields.service.bandfarben.value | append: '' | strip -%}
+    {%- if tp_ek_band_eigen != blank -%}
+      {%- capture tp_ek_baender -%}
+        [
+        {%- assign tp_ek_bt_liste = tp_ek_band_eigen | split: ';' -%}
+        {%- for tp_ek_bt in tp_ek_bt_liste -%}
+          {%- assign tp_ek_bt_teile = tp_ek_bt | split: '|' -%}
+          {%- assign tp_ek_bt_name = tp_ek_bt_teile[0] | strip -%}
+          {%- assign tp_ek_bt_hex = tp_ek_bt_teile[1] | strip | downcase -%}
+          {"art": {{ tp_ek_art | json }}, "nr": "", "name": {{ tp_ek_bt_name | json }}, "hex": {{ tp_ek_bt_hex | json }}}{% unless forloop.last %},{% endunless %}
+        {%- endfor -%}
+        ]
+      {%- endcapture -%}
+    {%- else -%}
+      {%- capture tp_ek_baender -%}{% render 'tp-bandfarben' %}{%- endcapture -%}
+    {%- endif -%}
   {%- endif -%}
 
   <div class="tp-ek tp-kaufweg tp-ek--mass" id="tp-ek-{{ tp_ek_id }}" data-tp-ek {{ block.shopify_attributes }}>
@@ -215,12 +279,33 @@
         <p class="tp-ek__fehler" role="alert" data-fehler hidden></p>
       </div>
 
-      {%- if tp_ek_mit_band -%}
+      {%- comment -%}
+        Kantenwahl als Bildkacheln (Inhaber 2026-10-12), nur bei mehr als einer
+        Einfassart. Der Kettelservice-Preis rechnet den Endpreis einer gekettelten
+        Kachel ohne kante_inklusive - auch, wenn diese Seite selbst Paspel oder Cover ist.
+      {%- endcomment -%}
+      {%- liquid
+        assign tp_ek_kettel_cent = 0
+        if tp_ek_kettel_v
+          assign tp_ek_kettel_cent = tp_ek_kettel_v.price
+        elsif block.settings.kettelservice_produkt != blank
+          assign tp_ek_kv2 = block.settings.kettelservice_produkt.selected_or_first_available_variant
+          if tp_ek_kv2.available and tp_ek_kv2.price > 0
+            assign tp_ek_kettel_cent = tp_ek_kv2.price
+          endif
+        endif
+      -%}
+      {% render 'tp-einfass-kanten', product: product, bilder: block.settings, kettel_cent: tp_ek_kettel_cent %}
+
+      {%- if tp_ek_band_wahl -%}
         <div class="tp-ek__schritt" data-schritt="band">
           {% render 'tp-step-heading', number: 4, label: 'Bandfarbe' %}
           <div class="tp-ek__baender" role="radiogroup" aria-label="Bandfarbe" data-baender></div>
           <p class="tp-ek__bandname" data-band-name>Bitte eine Farbe wählen</p>
         </div>
+      {%- elsif tp_ek_band_fest != blank -%}
+        {%- comment -%} Feste Bandfarbe: kein Schritt, nur ein ruhiger Hinweis {%- endcomment -%}
+        <p class="tp-ek__bandfest" data-band-fest>Bandfarbe: <span>{{ tp_ek_band_fest | escape }}</span></p>
       {%- endif -%}
 
       {%- capture tp_ek_vorschau_inhalt -%}
@@ -262,7 +347,13 @@
       {%- endcomment -%}
       <div class="tp-ek__preis" aria-live="polite" data-rechnung hidden>
         <div class="tp-ek__summe"><span>Gesamtpreis für Ihr Maß</span><span class="tp-ek__summe-werte"><s class="tp-ek__summe-alt" data-summe-alt hidden></s><strong data-summe>–</strong></span></div>
-        <p class="tp-ek__preishinweis">{% if tp_ek_art == 'fertig' %}Vom Hersteller nach Ihrem Maß gefertigt und eingefasst{% if tp_ek_pauschale_v %}, inklusive Fertigungs- und Versandpauschale{% endif %}. Lieferzeit ca. 14 Tage.{% else %}Inklusive Zuschnitt und Einfassung rundum.{% endif %} Inkl. MwSt.; <a href="{{ pages['versand-lieferung'].url | default: '/pages/versand-lieferung' }}">Versand</a> in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos.{% if product.handle == 'serena-teppich-nach-mass' %}<br>Lieferzeit: ca. 4–8 Werktage.{% endif %}</p>
+        {%- comment -%}
+          Rechenzeile "Flaeche x Preis je m2" (2026-10-12, Vorlage Fachhandel) - nur, wenn
+          der Endpreis genau das ist: Kante im m2-Preis, keine Pauschale, kein Mindestpreis.
+          Sonst bleibt es bei der einen Zahl (Inhaber 2026-09-20).
+        {%- endcomment -%}
+        <p class="tp-ek__rechenzeile" data-rechenzeile hidden></p>
+        <p class="tp-ek__preishinweis">{% if tp_ek_art == 'fertig' %}Vom Hersteller nach Ihrem Maß gefertigt und eingefasst{% if tp_ek_pauschale_v %}, inklusive Fertigungs- und Versandpauschale{% endif %}. Lieferzeit ca. 14 Tage.{% elsif tp_ek_kante_inkl %}Inklusive Zuschnitt und Kettelung rundum – die Kettelung ist im Quadratmeterpreis bereits enthalten.{% else %}Inklusive Zuschnitt und Einfassung rundum.{% endif %} Inkl. MwSt.; <a href="{{ pages['versand-lieferung'].url | default: '/pages/versand-lieferung' }}">Versand</a> in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos.{% if tp_ek_lieferzeit != blank %}<br>Lieferzeit: {{ tp_ek_lieferzeit | escape }}.{% endif %}</p>
         {%- comment -%}
           Keine Rechenaufschluesselung in der Kundenansicht (Entscheidung 2026-09-20):
           sichtbar sind Endpreis und die zwei Hinweise, die den Preis erklaeren muessen.
@@ -296,6 +387,52 @@
         {% render 'tp-widerruf-massanfertigung', art: 'teppich' %}
       {%- endif -%}
       <button type="button" class="tp-ek__cta" data-cta data-add-to-cart disabled hidden>In den Warenkorb</button>
+      {%- comment -%}
+        Befestigungs-Tipp bei allen selbst zugeschnittenen Kanten (Inhaber 2026-10-12:
+        erst gekettelt, dann auch Einfassband, Paspel, Cover): frisch ausgerollt ist der
+        Teppich steif und liegt nicht sofort gerade. Nicht bei "fertig" - die fasst der
+        Hersteller ein. Freundlicher Tipp unter dem Warenkorb-Knopf, kein Warnhinweis.
+        Der Link oeffnet einen neuen Tab, damit Mass und Farbe hier erhalten bleiben.
+        Zwei Unterlagen je nach Boden (Inhaber 2026-10-12): Platz 1 fuer glatte Boeden,
+        Platz 2 fuer Teppichboden; nicht lieferbare Produkte fallen still weg.
+      {%- endcomment -%}
+      {%- assign tp_ek_tipp_arten = 'ketteln,einfassband,paspelband,cover' | split: ',' -%}
+      {%- if tp_ek_tipp_arten contains tp_ek_art and block.settings.befestigung_tipp -%}
+        <aside class="tp-ek__tipp" aria-labelledby="tp-ek-tipp-{{ tp_ek_id }}">
+          <p class="tp-ek__tipp-kopf"><span class="tp-ek__tipp-marke">Tipp</span><strong id="tp-ek-tipp-{{ tp_ek_id }}">{{ block.settings.befestigung_titel | escape }}</strong></p>
+          <p class="tp-ek__tipp-text">{{ block.settings.befestigung_text | escape }}</p>
+          {%- for tp_ek_i in (1..2) -%}
+            {%- liquid
+              assign tp_ek_suffix = ''
+              if tp_ek_i == 2
+                assign tp_ek_suffix = '_2'
+              endif
+              assign tp_ek_k = 'befestigung_produkt' | append: tp_ek_suffix
+              assign tp_ek_bef = block.settings[tp_ek_k]
+              assign tp_ek_k = 'befestigung_boden' | append: tp_ek_suffix
+              assign tp_ek_bef_boden = block.settings[tp_ek_k]
+              assign tp_ek_k = 'befestigung_link' | append: tp_ek_suffix
+              assign tp_ek_bef_link = block.settings[tp_ek_k] | default: tp_ek_bef.title
+              assign tp_ek_k = 'befestigung_einheit' | append: tp_ek_suffix
+              assign tp_ek_bef_einheit = block.settings[tp_ek_k]
+            -%}
+            {%- if tp_ek_bef.available -%}
+              <a class="tp-ek__tipp-produkt" href="{{ tp_ek_bef.url }}" target="_blank" rel="noopener">
+                {%- if tp_ek_bef.featured_image -%}
+                  {{ tp_ek_bef.featured_image | image_url: width: 112, height: 112, crop: 'center' | image_tag: width: 56, height: 56, widths: '56, 112', sizes: '56px', alt: '', loading: 'lazy', class: 'tp-ek__tipp-bild' }}
+                {%- endif -%}
+                <span class="tp-ek__tipp-name">
+                  {%- if tp_ek_bef_boden != blank -%}<span class="tp-ek__tipp-boden">{{ tp_ek_bef_boden | escape }}</span>{%- endif -%}
+                  {{- tp_ek_bef_link | escape -}}
+                  <span class="tp-ek__tipp-preis">ab {{ tp_ek_bef.price_min | money }}{% if tp_ek_bef_einheit != blank %} {{ tp_ek_bef_einheit | escape }}{% endif %}</span>
+                </span>
+                <span class="visually-hidden">(öffnet in neuem Tab)</span>
+                <svg class="tp-ek__tipp-pfeil" viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true"><path d="m6 3 5 5-5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+            {%- endif -%}
+          {%- endfor -%}
+        </aside>
+      {%- endif -%}
       <details class="tp-ek__vorschau" data-vorschau hidden>
           <summary>
             <span class="tp-ek__vorschau-titel">Ihr Maß <span>Schematische Darstellung</span></span>
@@ -348,6 +485,7 @@
         {%- comment -%} Preis je 0,01 lfm Kante, Rollenbreiten in cm {%- endcomment -%}
         "kettel": {% if tp_ek_kettel_v %}{ "id": {{ tp_ek_kettel_v.id | json }}, "price": {{ tp_ek_kettel_v.price | json }} }{% else %}null{% endif %},
         "kettel_service_failed": {{ tp_ek_kettel_service_failed | json }},
+        "kante_inklusive": {{ tp_ek_kante_inkl | json }},
         "pauschale": {% if tp_ek_pauschale_v %}{ "id": {{ tp_ek_pauschale_v.id | json }}, "price": {{ tp_ek_pauschale_v.price | json }} }{% else %}null{% endif %},
         "pauschale_failed": {{ tp_ek_pauschale_failed | json }},
         "kg_pro_qm": {{ tp_ek_kg_qm | json }},
@@ -379,13 +517,15 @@
           null
         ],
         "selected_id": {{ product.selected_or_first_available_variant.id | json }},
-        "baender": {% if tp_ek_mit_band %}{{ tp_ek_baender | strip }}{% else %}[]{% endif %},
+        "baender": {% if tp_ek_band_wahl %}{{ tp_ek_baender | strip }}{% else %}[]{% endif %},
+        "band_fest": {{ tp_ek_band_fest | json }},
+        "band_hersteller": {% if tp_ek_band_wahl and tp_ek_band_eigen != blank %}true{% else %}false{% endif %},
         "varianten": [
           {%- for tp_ek_v in product.variants -%}
             {%- if tp_ek_v.metafields.service.einfassen.value == 'Verfügbar' and tp_ek_v.price > 0 -%}
               {%- capture tp_ek_v_name -%}{% render 'tp-farbe-daten', variant: tp_ek_v, product: product, feld: 'name' %}{%- endcapture -%}
               {%- capture tp_ek_v_nr -%}{% render 'tp-farbe-daten', variant: tp_ek_v, product: product, feld: 'nummer' %}{%- endcapture -%}
-              {%- capture tp_ek_v_max -%}{% render 'tp-teppich-max-breite', product: product, farbe: tp_ek_v.option1 %}{%- endcapture -%}
+              {%- capture tp_ek_v_max -%}{% render 'tp-teppich-max-breite', product: product, farbe: tp_ek_v.option1, live: true %}{%- endcapture -%}
               {%- assign tp_ek_v_max = tp_ek_v_max | strip | times: 1 -%}
               {
                 "id": {{ tp_ek_v.id | json }},
@@ -436,6 +576,77 @@
       "info": "Nur fuer die Einfassart Ketteln. Ohne Produkt wird die Kante nicht getrennt berechnet."
     },
     {
+      "type": "header",
+      "content": "Befestigungs-Tipp"
+    },
+    {
+      "type": "checkbox",
+      "id": "befestigung_tipp",
+      "label": "Tipp unter dem Warenkorb-Knopf zeigen",
+      "info": "Gekettelt, Einfassband, Paspel und Cover (nicht Fertig): frisch ausgerollt ist der Teppich steif und liegt nicht sofort gerade.",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "befestigung_titel",
+      "label": "Überschrift",
+      "default": "Für einen perfekt glatten Sitz"
+    },
+    {
+      "type": "textarea",
+      "id": "befestigung_text",
+      "label": "Text",
+      "default": "Frisch aus der Rolle liegt ein neuer Teppich anfangs nicht ganz plan – das ist normal. Mit einer passenden Unterlage darunter liegt er sofort glatt und rutschfest."
+    },
+    {
+      "type": "product",
+      "id": "befestigung_produkt",
+      "label": "Unterlage 1 (glatte Böden)",
+      "info": "Link mit Bild und Ab-Preis; nicht lieferbar = kein Link."
+    },
+    {
+      "type": "text",
+      "id": "befestigung_boden",
+      "label": "Unterlage 1: Bodenart",
+      "default": "Für glatte Böden"
+    },
+    {
+      "type": "text",
+      "id": "befestigung_link",
+      "label": "Unterlage 1: Linktext",
+      "default": "Antirutsch-Unterlage ansehen"
+    },
+    {
+      "type": "text",
+      "id": "befestigung_einheit",
+      "label": "Unterlage 1: Einheit hinter dem Ab-Preis",
+      "default": "je Meter"
+    },
+    {
+      "type": "product",
+      "id": "befestigung_produkt_2",
+      "label": "Unterlage 2 (Teppichboden)",
+      "info": "Zweiter Link unter dem ersten; leer oder nicht lieferbar = nur Unterlage 1."
+    },
+    {
+      "type": "text",
+      "id": "befestigung_boden_2",
+      "label": "Unterlage 2: Bodenart",
+      "default": "Für Teppichboden"
+    },
+    {
+      "type": "text",
+      "id": "befestigung_link_2",
+      "label": "Unterlage 2: Linktext",
+      "default": "Teppichbremse ansehen"
+    },
+    {
+      "type": "text",
+      "id": "befestigung_einheit_2",
+      "label": "Unterlage 2: Einheit hinter dem Ab-Preis",
+      "default": "je Meter"
+    },
+    {
       "type": "product",
       "id": "pauschale_produkt",
       "label": "Pauschale je Teppich (Art Fertig)",
@@ -445,8 +656,96 @@
       "type": "text",
       "id": "whatsapp",
       "label": "WhatsApp-Nummer fuer Fotos",
-      "info": "Nur Ziffern mit Laendervorwahl, z. B. 4917657931322. Leer lassen, um den Link auszublenden.",
-      "default": "4917657931322"
+      "info": "Nur Ziffern mit Laendervorwahl, z. B. 491792612211. Leer lassen, um den Link auszublenden.",
+      "default": "491792612211"
+    },
+    {
+      "type": "header",
+      "content": "Kantenbilder"
+    },
+    {
+      "type": "paragraph",
+      "content": "Bild je Einfassart fuer die Kantenkacheln. Ohne Bild zeichnet der Konfigurator die Kante auf das Foto der gewaehlten Farbe."
+    },
+    {
+      "type": "image_picker",
+      "id": "bild_ketteln",
+      "label": "Bild Gekettelt"
+    },
+    {
+      "type": "image_picker",
+      "id": "bild_paspelband",
+      "label": "Bild Paspel"
+    },
+    {
+      "type": "image_picker",
+      "id": "bild_einfassband",
+      "label": "Bild Einfassband"
+    },
+    {
+      "type": "image_picker",
+      "id": "bild_cover",
+      "label": "Bild Cover"
+    },
+    {
+      "type": "text",
+      "id": "marke_bilder_vendor",
+      "label": "Marke mit eigenen Kantenbildern",
+      "info": "Hersteller (Vendor) exakt wie im Produkt, z. B. JAB Anstoetz. Herstellerfotos nur auf den Produkten dieser Marke.",
+      "default": "JAB Anstoetz"
+    },
+    {
+      "type": "image_picker",
+      "id": "marke_bild_ketteln",
+      "label": "Marke: Bild Gekettelt"
+    },
+    {
+      "type": "image_picker",
+      "id": "marke_bild_paspelband",
+      "label": "Marke: Bild Paspel"
+    },
+    {
+      "type": "image_picker",
+      "id": "marke_bild_einfassband",
+      "label": "Marke: Bild Einfassband"
+    },
+    {
+      "type": "image_picker",
+      "id": "marke_bild_cover",
+      "label": "Marke: Bild Cover"
+    },
+    {
+      "type": "text",
+      "id": "marke2_bilder_vendor",
+      "label": "Zweite Marke mit eigenen Kantenbildern",
+      "info": "Hersteller (Vendor) exakt wie im Produkt, z. B. Vorwerk.",
+      "default": "Vorwerk"
+    },
+    {
+      "type": "image_picker",
+      "id": "marke2_bild_ketteln",
+      "label": "Marke 2: Bild Gekettelt"
+    },
+    {
+      "type": "image_picker",
+      "id": "marke2_bild_paspelband",
+      "label": "Marke 2: Bild Paspel"
+    },
+    {
+      "type": "image_picker",
+      "id": "marke2_bild_einfassband",
+      "label": "Marke 2: Bild Einfassband"
+    },
+    {
+      "type": "image_picker",
+      "id": "marke2_bild_cover",
+      "label": "Marke 2: Bild Cover"
+    },
+    {
+      "type": "image_picker",
+      "id": "marke2_bild_paspelwahl",
+      "label": "Marke 2: Bild Paspel mit Farbwahl",
+      "info": "Paspel mit eigenen Bandfarben (service.bandfarben), z. B. Kontrastfarbe."
     },
     {
       "type": "header",

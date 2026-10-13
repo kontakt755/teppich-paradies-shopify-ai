@@ -169,7 +169,7 @@ lokal auf dem Mac. Unbekannte Flags brechen ab.
 | `npm run theme:block list\|add\|remove` | Bloecke in Templates setzen, statt im Editor zu klicken |
 | `npm run liquid:guard` | ungueltiges Liquid, das Shopify still verwirft |
 | `npm run schema:guard` | Block-Schemata, die deployen aber im Editor unsichtbar bleiben |
-| `npm run template:guard` | Kollektions-Templates, deren Produktkarte abweicht |
+| `npm run template:guard` | Kollektions-Templates, deren Produktkarte abweicht; Shopify-Blockgrenzen (50 je Section, z. B. Header-Kacheln) |
 | `npm run theme:guard` | veraltete Theme-IDs in Anweisungsdateien, ungeschuetztes Live-Theme |
 | `npm run menu:guard` | Menuelinks auf leeres Raster oder ins Nichts (braucht Netz) |
 | `npm run unmerged:guard` | Bloecke/Templates auf ungemergten Branches |
@@ -177,6 +177,7 @@ lokal auf dem Mac. Unbekannte Flags brechen ab.
 | `npm run pr:doctor [-- --fix]` | offene PRs: falsche Basis, ueberkreuzte Historie, Konflikte |
 | `npm run pr:doctor:melden` | dasselbe als idempotenter PR-Kommentar (CI: Push auf `main`, alle 6 h) |
 | `npm run -s import:pruefen` | **nach jedem Import**: neue Produkte (Standard 7 Tage) auf Veroeffentlichung, Bilder, Kategorie, SKU, Muster und uebliche Filterfelder der Produktart; nur lesend |
+| `npm run -s teppich:basis-daten` | **nach jedem Teppich-Import**: prueft `custom.teppich_basis_daten` (Gruppe, Qualitaetszeile, Breiten) gegen die Live-Regeln; `-- --pakete <ordner>` legt Schreibpakete + Rollback an → `docs/lessons/renderzeit-kollektionsseite.md` |
 | `npm run farbcode:guard` | Farbvarianten, deren Codes durchgezaehlt statt abgeschrieben wurden |
 | `npm run bewertung:guard` | Google-Bewertung, die wieder einzeln im Template steht statt in der Theme-Einstellung |
 | `npm run lighthouse:messen` | **bevor jemand "schneller/langsamer" sagt**: Lighthouse gegen Live, 3 Seiten mit und ohne Cookie-Banner, 5 Runden reihum (rund 25 min); `-- --pruefen` nur Vorpruefung |
@@ -201,7 +202,7 @@ Die Shopify Admin API ist über MCP bzw. CLI bereits authentifiziert: nicht nach
 
 ## Shopify Theme
 
-Fertige, getestete Funktionen nicht neu bauen: €/m²-Darstellung bei Paketprodukten, Paket-/Verschnittrechner samt Warenkorblogik, deutsche Paket-/Bestellmengenanzeige, Produktvergleich (max. 3), Musterbestellung, Breadcrumb, Produktvorteile, Verkaufsbereich, technische Daten, Produktkarten-Logik mit gekürzten Titeln, Predictive Search, Startseiten-Struktur, Vinylboden-Kategoriekarussell, Mobile Peek / Karussell-Navigation.
+Fertige, getestete Funktionen nicht neu bauen: €/m²-Darstellung bei Paketprodukten, Paket-/Verschnittrechner samt Warenkorblogik, deutsche Paket-/Bestellmengenanzeige, Musterbestellung, Breadcrumb, Produktvorteile, Verkaufsbereich, technische Daten, Produktkarten-Logik mit gekürzten Titeln, Predictive Search, Startseiten-Struktur, Vinylboden-Kategoriekarussell, Mobile Peek / Karussell-Navigation. Der Produktvergleich ist bewusst vollständig entfernt (Inhaber) und wird nicht wieder eingebaut; `npm run compare:check` prüft, dass er weg bleibt.
 
 Der Paket-/Verschnittrechner und dessen Warenkorblogik sind bereits intensiv getestet. Nicht neu schreiben, außer der Benutzer beauftragt dies ausdrücklich.
 
@@ -294,7 +295,7 @@ Je nach Änderung sinnvoll und risikobasiert prüfen:
 - Links und Bilder
 - Produktkarten und Varianten
 - Warenkorb
-- Vergleich und Muster
+- Muster (und dass kein Produktvergleich mehr auftaucht)
 - Rollenware und Fixpreis
 - Teppichboden
 - Klickvinyl und Klebevinyl
@@ -345,10 +346,9 @@ Abschlussberichte kompakt halten:
 Nicht automatisch bearbeiten, aber bei zukünftigen Aufgaben berücksichtigen:
 
 - Teppichboden Mobile-Menü optimieren
-- fehlendes oder graues Kategoriebild bei Teppichboden-Unterseiten endgültig beheben
 - Hochflor-/Mittelflor-Zuordnung fachlich verbessern
 - ecoVella-/Wolle-Zuordnung sauber prüfen
-- Raumplaner / Roomvo evaluieren beziehungsweise später integrieren
+- Eigenen Raumvisualisierer für Hartböden ausbauen – keine fremden Visualisierer wie Roomvo (Inhaber 09.10.)
 - Horizon 4.1.3 später separat migrieren
 - Produktbilder langfristig verbessern
 - Reste & Sonderposten später als eigenen starken Shopbereich aufbauen

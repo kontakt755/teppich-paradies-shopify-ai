@@ -9,7 +9,7 @@
  */
 import {
   lieferantenKarten, karteImFilter, ueberfaelligText, hauptAktion, bestellwegText, feldKlartext,
-  telLink, verlauf, lieferzeiten, SCHWELLEN_STANDARD, gmailLink } from '../../lib/einkauf-lieferanten.mjs';
+  telLink, verlauf, lieferzeiten, SCHWELLEN_STANDARD, gmailLink, afNorm } from '../../lib/einkauf-lieferanten.mjs';
 import { state } from '../../kern/zustand.mjs';
 import { $, esc, fmtDate, plural, toast, NICHT_HINTERLEGT } from '../../kern/helfer.mjs';
 import { fetchEinkauf } from '../../kern/api.mjs';
@@ -59,9 +59,10 @@ function wegZeile(k) {
 
 function zahlenChips(k) {
   const z = k.zahlen;
+  // Alle Zahlen hier zaehlen Positionen (eine Kundenbestellung kann mehrere haben).
   const chip = (n, text, klasse = '') => n ? `<span class="lf-zahl ${klasse}">${n} ${esc(text)}</span>` : '';
   return chip(z.zuBestellen, 'zu bestellen', 'akzent') + chip(z.musterOffen, 'Muster offen', 'akzent')
-    + chip(z.bestellt, 'bestellt') + chip(z.unterwegs, 'unterwegs') + chip(z.musterLaufend, z.musterLaufend === 1 ? 'Muster läuft' : 'Muster laufen')
+    + chip(z.bestellt, 'bestellt') + chip(z.eingetroffen, 'bei uns eingetroffen') + chip(z.musterLaufend, z.musterLaufend === 1 ? 'Muster läuft' : 'Muster laufen')
     + chip(k.musterEigen, 'Muster haben wir da');
 }
 
@@ -82,7 +83,9 @@ function postenZeile(x, namen) {
   const menge = p.bestellmenge?.menge === 'UNGEKLAERT' ? 'Menge ungeklärt' : p.bestellmenge?.text;
   // Bei Mustern auch der Ort: so sieht man, ob der Kunde in der Naehe wohnt (vorbeibringen).
   const ort = p.istMuster ? kundeUndOrt(p.orderId).ort : '';
-  const teile = [p.farbe, menge, namen.get(p.orderId), ort, p.orderName].filter(v => v && v !== 'UNGEKLAERT');
+  // Aus dem Musterlager: wo es liegt - das ist beim Verschicken die erste Frage.
+  const lager = p.musterLager && !afEintragFuer(p)?.status ? `Musterlager${p.musterLager.ort ? ` ${p.musterLager.ort}` : ''}` : '';
+  const teile = [p.farbe, menge, namen.get(p.orderId), ort, p.orderName, lager].filter(v => v && v !== 'UNGEKLAERT');
   return `<li class="lf-posten"><div class="lf-posten-text"><div class="t">${esc(anzeigeWert(p.titel))}</div><div class="s">${esc(teile.join(' · '))}</div></div>${warteChip(x)}</li>`;
 }
 
@@ -123,11 +126,11 @@ function bestellKnoepfe(k) {
 function karteHtml(k, { gruppeKarte, namen, af, alleGruppen, alleMusterGruppen }) {
   const offen = aufgeklappt.has(k.id) || state.route.params.get('lf') === k.id || !k.zugeordnet || !!af;
   const zu = [...k.ware.zuBestellen, ...k.muster.zuBestellen];
-  const laufend = nachWartezeit([...k.ware.bestellt, ...k.ware.unterwegs, ...k.muster.bestellt, ...k.muster.unterwegs]);
+  const laufend = nachWartezeit([...k.ware.bestellt, ...k.ware.eingetroffen, ...k.muster.bestellt, ...k.muster.eingetroffen]);
   const eigen = k.muster.eigen || [];
   const anzahl = af === 'erledigt' ? k.ware.erledigt.length + k.muster.erledigt.length : zu.length + laufend.length + eigen.length;
   const knoepfe = bestellKnoepfe(k);
-  const vorschau = offen ? '' : postenListe('Zu bestellen', zu, namen, 4) + postenListe('Muster haben wir da – vorbeibringen oder verschicken', eigen, namen, 3) + postenListe('Bestellt und unterwegs', laufend, namen, 3);
+  const vorschau = offen ? '' : postenListe('Zu bestellen', zu, namen, 4) + postenListe('Muster haben wir da – vorbeibringen oder verschicken', eigen, namen, 3) + postenListe('Bestellt oder bei uns eingetroffen', laufend, namen, 3);
   // Sammelaktion fuer die ganze Karte: alles, was hier schon einen Schritt hat, zurueck auf offen.
   const gesetzt = (af === 'erledigt' ? [...k.ware.erledigt, ...k.muster.erledigt] : laufend).map(x => x.pos).filter(p => p.lineItemId);
   const zurueckId = `lf-${k.id}`;
@@ -155,7 +158,7 @@ function karteHtml(k, { gruppeKarte, namen, af, alleGruppen, alleMusterGruppen }
 export function lieferantenKartenHtml({ gruppeKarte }) {
   ensureEinkaufLieferanten();
   const d = einkauf.bestellungen;
-  const af = state.route.params.get('af') || '';
+  const af = afNorm(state.route.params.get('af'));
   const alle = karten();
   const sicht = alle.filter(k => karteImFilter(k, af));
   const ruhig = af ? [] : alle.filter(k => k.zugeordnet && !karteImFilter(k, ''));
@@ -404,10 +407,10 @@ function stammdatenHinweis(k) {
 function postenKarte(k, namen) {
   const zu = [...k.ware.zuBestellen, ...k.muster.zuBestellen];
   const bestellt = nachWartezeit([...k.ware.bestellt, ...k.muster.bestellt]);
-  const unterwegs = nachWartezeit([...k.ware.unterwegs, ...k.muster.unterwegs]);
-  const n = zu.length + bestellt.length + unterwegs.length;
+  const eingetroffen = nachWartezeit([...k.ware.eingetroffen, ...k.muster.eingetroffen]);
+  const n = zu.length + bestellt.length + eingetroffen.length;
   return `<section class="card lf-block"><h2 class="lf-blocktitel">Offene Posten${n ? ` · ${n}` : ''}</h2>
-    ${n ? postenListe('Zu bestellen', zu, namen) + postenListe('Bestellt', bestellt, namen) + postenListe('Geliefert an uns / an Kunden raus', unterwegs, namen)
+    ${n ? postenListe('Zu bestellen', zu, namen) + postenListe('Bestellt', bestellt, namen) + postenListe('Bei uns eingetroffen', eingetroffen, namen)
       + `<p class="lf-rest"><a href="#/einkauf?lf=${encodeURIComponent(k.id)}">Positionen im Einkauf bearbeiten</a></p>` : '<p class="lf-rest">Nichts offen.</p>'}
   </section>`;
 }

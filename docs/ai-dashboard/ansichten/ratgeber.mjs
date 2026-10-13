@@ -27,7 +27,7 @@ function ensureBodenwissen() {
 
 export function viewRatgeber() {
   ensureBodenwissen();
-  const head = `<div class="page-head"><div><h1>Ratgeber</h1><p class="sub">Stand der Bodenwissen-Inhalte (content/ratgeber, content/lexikon, content/probleme) · Quelle: <span class="mono">node scripts/build-bodenwissen-data.mjs</span></p></div></div>`;
+  const head = `<div class="page-head"><div><h1>Ratgeber</h1><p class="sub">Stand der Bodenwissen-Inhalte: Ratgeber-Artikel, Lexikon und Problem-Finder</p></div></div>`;
   const status = ratgeberStatus(state.bodenwissen, state.bodenwissenError);
   if (status.state !== 'ok') {
     return head + emptyState(status.state === 'fehler' ? 'Ratgeber-Daten konnten nicht geladen werden.' : 'Noch keine Ratgeber-Daten erzeugt.', status.hinweis);
@@ -74,7 +74,7 @@ export function viewRatgeber() {
         ${ei.items.length ? `<ul class="small muted" style="margin:0;padding-left:18px">${ei.items.slice(0, 20).map(f => `<li><b>${esc(f.titel || f.handle)}</b> (${esc(f.quelle)}): ${esc(f.frage)}</li>`).join('')}</ul>${kappen(ei.items)}` : emptyState('Kein offener Expert Input.', '')}
       </section>
       <section class="card">
-        <div class="card-head"><h2>Problem-Finder</h2><span class="more muted">content/probleme</span></div>
+        <div class="card-head"><h2>Problem-Finder</h2></div>
         <div class="band" style="margin:0">
           ${bandItem(pf.gesamt, 'Probleme gesamt', 'info')}
           ${bandItem(pf.mitZiel, 'mit Ziel-Artikel', 'ok')}
@@ -84,10 +84,10 @@ export function viewRatgeber() {
     </div>
 
     <section class="card section">
-      <div class="card-head"><h2>Gate (bodenwissen-guard)</h2><span class="more muted">${plural(gate.zahlen?.artikel || 0, 'Artikel', 'Artikel')}, ${plural(gate.zahlen?.lexikon || 0, 'Lexikoneintrag', 'Lexikoneinträge')}, ${plural(gate.zahlen?.probleme || 0, 'Problem', 'Probleme')} geprüft</span></div>
+      <div class="card-head"><h2>Inhaltsprüfung</h2><span class="more muted">${plural(gate.zahlen?.artikel || 0, 'Artikel', 'Artikel')}, ${plural(gate.zahlen?.lexikon || 0, 'Lexikoneintrag', 'Lexikoneinträge')}, ${plural(gate.zahlen?.probleme || 0, 'Problem', 'Probleme')} geprüft</span></div>
       ${gate.fehler.length ? `<div class="notice crit" style="margin-bottom:8px"><b>${plural(gate.fehler.length, 'Fehler', 'Fehler')}:</b><ul style="margin:6px 0 0;padding-left:18px">${gate.fehler.slice(0, 20).map(f => `<li>${esc(f.ort)}: ${esc(f.text)}</li>`).join('')}</ul>${kappen(gate.fehler)}</div>` : ''}
       ${gate.hinweise.length ? `<div class="notice warn"><b>${plural(gate.hinweise.length, 'Hinweis', 'Hinweise')}:</b><ul style="margin:6px 0 0;padding-left:18px">${gate.hinweise.slice(0, 20).map(h => `<li>${esc(h.ort)}: ${esc(h.text)}</li>`).join('')}</ul>${kappen(gate.hinweise)}</div>` : ''}
-      ${!gate.fehler.length && !gate.hinweise.length ? emptyState('Gate ist sauber.', 'npm run bodenwissen:guard meldet weder Fehler noch Hinweise.') : ''}
+      ${!gate.fehler.length && !gate.hinweise.length ? emptyState('Alles in Ordnung.', 'Die Prüfung der Inhalte meldet weder Fehler noch Hinweise.') : ''}
     </section>
 
     <section class="card section">

@@ -11,6 +11,8 @@
  * mit `technisch`, `darfAendern` und `dringlichkeit` an; hier wird das nur ausgewertet.
  */
 
+import { musterText, musterHerkunftText } from './bestellinhalt.mjs';
+
 const TAG_MS = 86400000;
 const UNGEKLAERT = 'UNGEKLAERT';
 const BEZAHLT = ['PAID', 'PARTIALLY_REFUNDED'];
@@ -175,8 +177,12 @@ function kontext(quellen, opt) {
 export function werWartet(quellen = {}, opt = {}) {
   const k = kontext(quellen, opt);
   const spalten = { wir: [], lieferant: [], kunde: [] };
+  // orderIds mit faelliger Nachfrage (lib/muster-nachfassen.mjs): die Muster liegen beim Kunden,
+  // aber jetzt sind wir mit der Nachfrage dran - also nicht mehr "Kunde ist dran".
+  const nachfassen = opt.nachfassen instanceof Set ? opt.nachfassen : new Set(opt.nachfassen || []);
   for (const b of laufendeBestellungen(quellen.bestellzeilen, k.statusAlle)) {
-    const lage = lageVon(b, k);
+    let lage = lageVon(b, k);
+    if (lage.spalte === 'kunde' && nachfassen.has(b.z.orderId)) lage = { ...lage, spalte: 'wir', art: 'nachfassen', schritt: 'Muster nachfassen' };
     const lieferanten = [...new Set((lage.positionen || []).map(x => x.p.lieferant).filter(Boolean))];
     spalten[lage.spalte].push({
       id: `auftrag:${b.z.orderId}`,
@@ -262,8 +268,8 @@ function ausBestellungen(quellen, k) {
         todos.push({
           id, art: 'rausgeben', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.rausgeben), alterTage: tage,
           titel: `${x.p.istMuster ? 'Muster' : 'Ware'} ist da – an ${kundeVon(z)} rausgeben`,
-          kontext: [z.orderName, x.p.titel, tage !== null ? `liegt ${seitText(tage)} bei uns` : null].filter(Boolean).join(' · '),
-          knopf: { text: 'Rausgeben', href: '#/einkauf?af=unterwegs' },
+          kontext: [z.orderName, x.p.istMuster ? musterText([x.p]) : x.p.titel, tage !== null ? `liegt ${seitText(tage)} bei uns` : null].filter(Boolean).join(' · '),
+          knopf: { text: 'Rausgeben', href: '#/einkauf?af=eingetroffen' },
         });
       }
     }
@@ -276,6 +282,12 @@ function ausBestellungen(quellen, k) {
   const wasKurz = positionen => (positionen.length === 1
     ? [positionen[0].p.kundenmenge, positionen[0].p.titel].filter(Boolean).join(' ')
     : mehrzahl(positionen.length, 'Position', 'Positionen'));
+  // Muster mit Produkt und Farben statt "3 Positionen" (Inhaber 2026-10-13: klipp und klar,
+  // ohne Klick). Lange Listen werden gekuerzt - der ganze Text steht in der Bestellliste.
+  const musterKurz = positionen => {
+    const text = musterText(positionen.map(x => x.p));
+    return text.length > 120 ? `${text.slice(0, 117).replace(/[\s,·:]+\S*$/, '')} …` : text;
+  };
 
   for (const [key, positionen] of bestellen) {
     const [lieferant, art] = key.split('|');
@@ -283,7 +295,7 @@ function ausBestellungen(quellen, k) {
     todos.push({
       id: `bestellen:${key}`, art: 'bestellen', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.bestellen), alterTage: tage,
       titel: `${art === 'muster' ? 'Muster' : 'Ware'} bei ${k.lieferantName(lieferant)} bestellen`,
-      kontext: [kundenKurz(positionen), wasKurz(positionen), `bezahlt, Bestellung ${vorText(tage)}`].join(' · '),
+      kontext: [kundenKurz(positionen), art === 'muster' ? musterKurz(positionen) : wasKurz(positionen), `bezahlt, Bestellung ${vorText(tage)}`].join(' · '),
       knopf: { text: 'Bestellen', href: einkaufLink(lieferant) },
     });
   }
@@ -294,7 +306,7 @@ function ausBestellungen(quellen, k) {
     todos.push({
       id: `muster-eigen:${orderId}`, art: 'muster_eigen', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.bestellen), alterTage: tage,
       titel: vorbei ? `Muster vorbeibringen bei ${kundeVon(z)}` : `Muster verschicken an ${kundeVon(z)}`,
-      kontext: [ortVon(z), z.orderName, wasKurz(positionen), 'aus eigenem Bestand'].filter(Boolean).join(' · '),
+      kontext: [ortVon(z), z.orderName, musterKurz(positionen), musterHerkunftText(positionen.map(x => x.p)) || 'aus eigenem Bestand'].filter(Boolean).join(' · '),
       // Ein Klick traegt "Kunde hat Muster" ein (Zeitleiste); der Server setzt die Uebergabe mit.
       // Nur wenn ALLE Muster der Bestellung aus dem eigenen Bestand kommen - sonst stuende
       // "Kunde hat Muster" da, obwohl andere Muster noch beim Lieferanten liegen: dann in die Akte.
@@ -376,16 +388,63 @@ function ausFreigaben(quellen, jetzt) {
     });
 }
 
-/** Shop-Wache: nur wenn sie etwas meldet. */
+/** Die Shop-Wache laeuft stuendlich; ein aelterer Stand sagt nichts ueber den Shop von jetzt. */
+export const SHOPWACHE_STUMM_STUNDEN = 3;
+
+/** Shop-Wache: nur wenn sie etwas meldet - oder sich seit Stunden nicht mehr gemeldet hat. */
 function ausShopwache(quellen, jetzt) {
   const d = quellen.shopwache;
-  if (!d || !d.verfuegbar || !['rot', 'gelb'].includes(d.ampel)) return [];
+  if (!d || !d.verfuegbar) return [];
+  const stunden = d.geprueftAm ? (jetzt.getTime() - new Date(d.geprueftAm).getTime()) / 3_600_000 : null;
+  // Frueher stand dieser Hinweis in den eingeklappten "Weiteren Uebersichten" auf Heute -
+  // dort sah ihn niemand. Eine stumme Wache meldet auch keinen kaputten Shop.
+  if (d.ampel === 'gruen' && stunden !== null && stunden > SHOPWACHE_STUMM_STUNDEN) {
+    return [{
+      id: 'shopwache', art: 'shopwache', bereich: 'website', ton: 'warn', alterTage: tageSeit(d.geprueftAm, jetzt),
+      titel: 'Shop-Wache meldet sich nicht',
+      kontext: `letzte Prüfung vor ${Math.floor(stunden)} Stunden – sie läuft sonst stündlich`,
+      knopf: { text: 'Prüfen', href: '#/shopwache' },
+    }];
+  }
+  if (!['rot', 'gelb'].includes(d.ampel)) return [];
   const befunde = d.befunde || [];
   return [{
     id: 'shopwache', art: 'shopwache', bereich: 'website', ton: d.ampel === 'rot' ? 'crit' : 'warn', alterTage: tageSeit(d.geprueftAm, jetzt),
     titel: d.ampel === 'rot' ? 'Shop-Wache: der Shop hat ein Problem' : 'Shop-Wache meldet Auffälligkeiten',
     kontext: [befunde[0]?.titel, befunde.length > 1 ? `+${befunde.length - 1} weitere` : null].filter(Boolean).join(' · ') || 'Befund ansehen',
     knopf: { text: 'Prüfen', href: '#/shopwache' },
+  }];
+}
+
+/**
+ * Tailscale am Mac mini: ohne laufendes Tailscale ist das Control Center von unterwegs
+ * (Handy, zu Hause) nicht erreichbar. Der Server fragt `tailscale status` nur ab
+ * (operations/lib/tailscale.mjs) und liefert das Ergebnis mit der Shop-Wache aus.
+ * Text an einer Stelle: To-do, Shop-Wache und Systemzustand sagen dasselbe.
+ */
+export function tailscaleHinweis(stand) {
+  if (stand?.status === 'gestoppt') {
+    return {
+      titel: 'Tailscale ist aus – von unterwegs ist das Control Center nicht erreichbar',
+      handlung: 'Am Mac mini oben rechts in der Menüleiste auf das Tailscale-Symbol klicken und „Connect“ wählen.',
+    };
+  }
+  if (stand?.status === 'abgemeldet') {
+    return {
+      titel: 'Tailscale ist abgemeldet – von unterwegs ist das Control Center nicht erreichbar',
+      handlung: 'Am Mac mini das Tailscale-Symbol in der Menüleiste öffnen und mit dem Firmenkonto anmelden („Log in“).',
+    };
+  }
+  return null;
+}
+
+function ausTailscale(quellen) {
+  const h = tailscaleHinweis(quellen.shopwache?.tailscale);
+  if (!h) return [];
+  return [{
+    id: 'tailscale', art: 'tailscale', bereich: 'website', ton: 'warn', alterTage: null,
+    titel: h.titel, kontext: h.handlung,
+    knopf: { text: 'Ansehen', href: '#/shopwache' },
   }];
 }
 
@@ -398,6 +457,7 @@ function alleTodos(quellen, opt) {
     ...ausAufgaben(quellen, { ich: opt.ich, jetzt: k.jetzt }),
     ...ausFreigaben(quellen, k.jetzt),
     ...ausShopwache(quellen, k.jetzt),
+    ...ausTailscale(quellen),
   ];
 }
 

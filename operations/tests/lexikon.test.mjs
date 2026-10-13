@@ -179,6 +179,61 @@ test('Mustererkennung ueber die Mustervariante (einkauf.muster_variante), wenn d
   assert.deepEqual(modell.produkte[0].muster, { vorhanden: true, handle: 'muster-irgendwas' });
 });
 
+function musterProduktFuer(handle, status) {
+  return produkt({
+    id: 'gid://shopify/Product/9098',
+    handle,
+    title: 'Muster Fortiva Teppich nach Maß',
+    status,
+    variants: [{
+      id: 'gid://shopify/ProductVariant/6098',
+      title: 'Schwarz',
+      sku: '',
+      price: '0.00',
+      availableForSale: false,
+      selectedOptions: [{ name: 'Farbe', value: 'Schwarz' }],
+      metafields: [],
+    }],
+  });
+}
+
+test('archivierte Produkte fehlen im Lexikon, auch archivierte Muster (Export laedt muster-* unabhaengig vom Status)', () => {
+  const aktiv = produkt({ handle: 'fortiva-teppichboden' });
+  const archiviert = produkt({ id: 'gid://shopify/Product/9097', handle: 'fortiva-teppich-nach-mass', status: 'ARCHIVED' });
+  const muster = musterProduktFuer('muster-fortiva-teppich-nach-mass', 'ARCHIVED');
+  const modell = aufbereiten({ produkte: [aktiv, archiviert, muster] }, { jetzt: JETZT });
+  assert.deepEqual(modell.produkte.map((p) => p.handle), ['fortiva-teppichboden']);
+  assert.equal(modell.anzahl, 1);
+});
+
+test('archiviertes Muster zaehlt nicht als vorhandenes Muster - weder ueber den Handle noch ueber einkauf.muster_variante', () => {
+  const ueberHandle = produkt({ handle: 'fortiva-teppich-nach-mass' });
+  const ueberVariante = produkt({
+    id: 'gid://shopify/Product/9002',
+    handle: 'anderer-name',
+    variants: [{
+      id: 'gid://shopify/ProductVariant/5002',
+      title: 'Grün / 200x300',
+      sku: 'NS-200-GR',
+      price: '129.90',
+      availableForSale: true,
+      selectedOptions: [{ name: 'Farbe', value: 'Grün' }],
+      metafields: [{
+        namespace: 'einkauf',
+        key: 'muster_variante',
+        value: { id: 'gid://shopify/ProductVariant/6098', product: { handle: 'muster-fortiva-teppich-nach-mass' } },
+      }],
+    }],
+  });
+  const muster = musterProduktFuer('muster-fortiva-teppich-nach-mass', 'ARCHIVED');
+  const modell = aufbereiten({ produkte: [ueberHandle, ueberVariante, muster] }, { jetzt: JETZT });
+  for (const p of modell.produkte) assert.deepEqual(p.muster, { vorhanden: false, handle: null }, p.handle);
+
+  // Gegenprobe: dasselbe Muster als UNLISTED wird wie bisher verknuepft.
+  const mitAktivemMuster = aufbereiten({ produkte: [ueberHandle, musterProduktFuer('muster-fortiva-teppich-nach-mass', 'UNLISTED')] }, { jetzt: JETZT });
+  assert.deepEqual(mitAktivemMuster.produkte[0].muster, { vorhanden: true, handle: 'muster-fortiva-teppich-nach-mass' });
+});
+
 test('wunschmass: Option "Wunschmaß" markiert die Variante, keine Datenluecke', () => {
   const p = produkt({
     variants: [{
@@ -490,4 +545,46 @@ test('Produktgruppe: productType geht vor templateSuffix (Live-Abruf und Handexp
   assert.equal(gruppe({ productType: 'Klickvinyl' }), 'Klickvinyl');
   assert.equal(gruppe({ productType: '', templateSuffix: 'paketware' }), 'paketware');
   assert.equal(gruppe({}), null);
+});
+
+test('Muster-Original ueber die Shop-SKU, wenn die Artikelnummer eine Null mehr traegt (Tier 2)', () => {
+  // Muster-SKU = "M-" + SKU der Quellvariante. Die Lieferantennummer weicht
+  // davon teils ab (TEPTEST04_99 gegen TEPTEST04_099) - frueher fand das
+  // Lexikon dann kein Original und zeigte keinen Weg zum Lieferanten.
+  const quelle = (id, sku, artikelnummer, url) => ({
+    id: `gid://shopify/ProductVariant/${id}`, title: 'Anthrazit (99) / 400 cm', sku, price: '30.00', availableForSale: true,
+    selectedOptions: [{ name: 'Farbe', value: 'Anthrazit (99)' }],
+    metafields: [
+      { namespace: 'einkauf', key: 'lieferant', value: { kuerzel: 'A' } },
+      { namespace: 'einkauf', key: 'artikelnummer', value: artikelnummer },
+      ...(url ? [{ namespace: 'einkauf', key: 'lieferant_url', value: url }] : []),
+    ],
+  });
+  const echtes = produkt({
+    id: 'gid://shopify/Product/9300', handle: 'testboden-400cm', title: 'Testboden',
+    variants: [quelle(5300, 'TEPTEST04_99', 'TEPTEST04_099', 'https://lieferant-a.example/p/99'), quelle(5301, 'TEPTEST04_98', 'TEPTEST04_098', null)],
+  });
+  const musterVariante = (id, sku) => ({ id: `gid://shopify/ProductVariant/${id}`, title: 'Anthrazit (99)', sku, price: '0.00', availableForSale: true, selectedOptions: [], metafields: [] });
+  const muster = produkt({ id: 'gid://shopify/Product/9301', handle: 'muster-testboden-400cm', variants: [musterVariante(6300, 'M-TEPTEST04_99'), musterVariante(6301, 'M-TEPTEST04_98')] });
+  const modell = aufbereiten({ produkte: [echtes, muster] }, { jetzt: JETZT, lieferantSuchen: { A: 'https://lieferant-a.example' } });
+  const [mitLink, ohneLink] = modell.produkte.find((p) => p.handle === 'muster-testboden-400cm').varianten;
+  assert.equal(mitLink.original.gefunden, true);
+  assert.equal(mitLink.original.quelle, 'sku');
+  assert.equal(mitLink.original.artikelnummer, 'TEPTEST04_099');
+  assert.equal(mitLink.original.url, 'https://lieferant-a.example/p/99');
+  assert.equal(mitLink.original.suchlink, null);
+  // Original ohne Direktlink: der Suchlink beim Lieferanten ist der Schnellzugriff.
+  assert.equal(ohneLink.original.gefunden, true);
+  assert.equal(ohneLink.original.url, null);
+  assert.equal(ohneLink.original.suchlink, 'https://lieferant-a.example/de-DE/quicksearch?query=TEPTEST04_098');
+});
+
+test('rollenbreiteM: Breite der Variante aus custom.rollenbreite (Meter), sonst null', () => {
+  const p = produkt({ variants: [
+    { id: 'gid://shopify/ProductVariant/7001', title: 'Grau / 400 cm', sku: 'R-400', price: '20', availableForSale: true, selectedOptions: [], metafields: [{ namespace: 'custom', key: 'rollenbreite', value: '4.0' }] },
+    { id: 'gid://shopify/ProductVariant/7002', title: 'Grau / 500 cm', sku: 'R-500', price: '20', availableForSale: true, selectedOptions: [], metafields: [{ namespace: 'custom', key: 'rollenbreite', value: '5.0' }] },
+    { id: 'gid://shopify/ProductVariant/7003', title: 'Default', sku: 'R-X', price: '20', availableForSale: true, selectedOptions: [], metafields: [] },
+  ] });
+  const v = aufbereiten({ produkte: [p] }, { jetzt: JETZT }).produkte[0].varianten;
+  assert.deepEqual(v.map((x) => x.rollenbreiteM), [4, 5, null]);
 });

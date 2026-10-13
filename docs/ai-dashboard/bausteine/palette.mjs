@@ -3,13 +3,14 @@
  * Befehle ausloesen.
  */
 import { AREAS, SAVED_VIEWS } from '../lib/model.mjs';
-import { REPO_URL } from '../kern/konfig.mjs';
+import { REPO_URL, personName } from '../kern/konfig.mjs';
 import { state } from '../kern/zustand.mjs';
 import { $, esc, newIssueUrl } from '../kern/helfer.mjs';
 import { fetchEinkauf } from '../kern/api.mjs';
 import { darfAnsicht, navigate, openTask } from '../kern/router.mjs';
 import { refresh } from '../kern/daten.mjs';
 import { syncNow } from './aktualisierung.mjs';
+import { openFehlerMelden } from './fehler-melden.mjs';
 import { openOrgSchnell, openOrgListe } from '../ansichten/organisation/dialoge.mjs';
 
 // Treffer aus den Betriebsdaten - Kunden und Produkte. Die Suche ist fuer
@@ -54,7 +55,7 @@ function paletteItems(q) {
   for (const p of paletteFern.produkte) {
     items.push({ kind: 'Produkt', label: p.titel, sub: p.produktgruppe || undefined, treffer: true, run: () => navigate('lexikon', { handle: p.handle }) });
   }
-  const views = [['heute', 'Heute'], ['einkauf', 'Einkauf'], ['kunden', 'Kunden'], ['lexikon', 'Lexikon'], ['arbeit', 'Entwicklung (KI & GitHub)'], ['freigaben', 'Freigaben'], ['bereiche', 'Bereiche'], ['insights', 'Insights'], ['aktivitaet', 'Aktivität'], ['ratgeber', 'Ratgeber'], ['organisation', 'Aufgaben & Organisation'], ['shopwache', 'Shop-Wache'], ['hilfe', 'Hilfe: So arbeitest du damit']];
+  const views = [['heute', 'Heute'], ['einkauf', 'Einkauf'], ['kunden', 'Kunden'], ['lexikon', 'Lexikon'], ['arbeit', 'Entwicklung (GitHub)'], ['freigaben', 'Freigaben'], ['bereiche', 'Bereiche'], ['insights', 'Insights'], ['aktivitaet', 'Aktivität'], ['ratgeber', 'Ratgeber'], ['organisation', 'Aufgaben & Organisation'], ['shopwache', 'Shop-Wache'], ['hilfe', 'Hilfe: So arbeitest du damit']];
   for (const [k, l] of views) if (darfAnsicht(k)) items.push({ kind: 'Ansicht', label: l, run: () => navigate(k) });
   items.push({ kind: 'Ansicht', label: 'Fotos vom fertigen Raum', run: () => navigate('fotos') });
   if (darfAnsicht('team')) items.push({ kind: 'Ansicht', label: 'Team: Zugänge verwalten', run: () => navigate('team') });
@@ -66,12 +67,13 @@ function paletteItems(q) {
   }
   items.push({ kind: 'Aktion', label: 'Schnell erfassen (Aufgabe oder Notiz)', run: () => openOrgSchnell() });
   items.push({ kind: 'Aktion', label: 'Liste einfügen (mehrere Aufgaben auf einmal)', run: () => openOrgListe() });
+  items.push({ kind: 'Aktion', label: 'Fehler melden', sub: 'Etwas geht nicht – an die Technik', run: () => openFehlerMelden() });
   items.push({ kind: 'Aktion', label: 'Daten neu laden', run: () => refresh() });
   if (state.capabilities.sync && darfAnsicht('arbeit')) items.push({ kind: 'Aktion', label: 'Jetzt mit GitHub synchronisieren', run: () => syncNow() });
   if (darfAnsicht('arbeit')) {
     items.push({ kind: 'Aktion', label: 'GitHub Issues öffnen', run: () => window.open(`${REPO_URL}/issues`, '_blank', 'noopener') });
     const owners = [...new Set(state.tasks.map(t => t.owner).filter(Boolean))];
-    for (const o of owners) items.push({ kind: 'Person', label: `@${o}`, run: () => navigate('arbeit', { owner: o }) });
+    for (const o of owners) items.push({ kind: 'Person', label: personName(o), run: () => navigate('arbeit', { owner: o }) });
     for (const e of [...new Set(state.tasks.map(t => t.executor).filter(Boolean))]) items.push({ kind: 'Agent', label: e, run: () => navigate('arbeit', { q: e }) });
     for (const t of state.tasks) items.push({ kind: t.isDecision ? 'Entscheidung' : 'Aufgabe', label: `${t.id} ${t.title}`, sub: t.statusLabel, run: () => openTask(t.number) });
   }

@@ -53,7 +53,8 @@ export function ensureAktualisierung() {
  * Gesperrt und mit Ladehinweis waehrend ein Lauf aktiv ist (sowohl serverseitig als auch nach
  * einem Klick auf diesem Tab); das Ergebnis je Quelle zeigt danach aktualisierungHealth(). */
 export function aktualisierenButton({ mitHinweis = true } = {}) {
-  if (state.capabilities.mode !== 'local') return '';
+  // Rolle "lesen" darf nichts anstossen (der Server antwortet 403) - also kein Knopf.
+  if (state.capabilities.mode !== 'local' || istNurLesend()) return '';
   const laeuft = einkauf.aktualisierungLaeuft;
   const bereit = einkauf.aktualisierung?.manuellVerfuegbar === true;
   // Der Hinweis sagt, was zu tun ist - "Geplanten Export prüfen" konnte niemand im Laden ausfuehren.
@@ -70,10 +71,17 @@ export function aktualisierungHealth() {
   const aktualisierungHinweis = a.manuellVerfuegbar
     ? 'Bitte „Jetzt aktualisieren“ verwenden.'
     : `${OHNE_ZUGANG_GRUND} ${ZUGANG_EINRICHTEN}`;
+  // Ein abgebrochener Klick auf "Jetzt aktualisieren" (Zeitlimit, Absturz des Laufs) steht
+  // in keiner Quelle - ohne diese Zeile war er nirgends zu sehen. Nur solange kein
+  // spaeterer Lauf die Daten erneuert hat.
+  const knopf = a.letzterKnopfLauf;
+  const knopfZeile = knopf?.fehler && !(a.aktualisiertAm && a.aktualisiertAm > (knopf.bis || knopf.seit))
+    ? [{ level: 'warn', title: `„Jetzt aktualisieren“ abgebrochen · ${fmtDateTime(knopf.bis || knopf.seit)}`, detail: `Die bisherigen Daten bleiben stehen. Technisch: ${knopf.fehler}` }]
+    : [];
   if (!a.verfuegbar) {
-    return [{ level: 'warn', title: 'Lokale Datenquellen noch nie aktualisiert', detail: `${a.hinweis || ''} ${aktualisierungHinweis}` }];
+    return [...knopfZeile, { level: 'warn', title: 'Lokale Datenquellen noch nie aktualisiert', detail: `${a.hinweis || ''} ${aktualisierungHinweis}` }];
   }
-  return Object.entries(a.teile || {}).map(([teil, stand]) => {
+  return [...knopfZeile, ...Object.entries(a.teile || {}).map(([teil, stand]) => {
     const label = AKTUALISIERUNG_TEIL_LABEL[teil] || teil;
     if (!stand.erfolg) {
       // Ohne Zugang (z.B. kein SHOPIFY_ADMIN_TOKEN in .env.local) laeuft der Lauf ins Leere -
@@ -100,7 +108,7 @@ export function aktualisierungHealth() {
     }
     if (stand.veraltet) return { level: 'warn', title: `${label}: Stand ${fmtDateTime(stand.zeitpunkt)} – Daten veraltet`, detail: aktualisierungHinweis };
     return { level: 'ok', title: `${label}: Stand ${fmtDateTime(stand.zeitpunkt)}`, detail: stand.anzahl !== null && stand.anzahl !== undefined ? `${stand.anzahl} Datensätze${stand.meldung ? ` · ${stand.meldung}` : ''}` : (stand.meldung || '') };
-  });
+  })];
 }
 
 export async function syncNow() {
@@ -133,6 +141,7 @@ export async function aktualisierenNow() {
     if (!r.ok) { toast(`Aktualisierung fehlgeschlagen: ${j.error || r.status}`, 'crit'); return; }
     if (j.laeuft && !j.gestartet) { toast('Aktualisierung läuft bereits.'); }
     else toast('Aktualisierung gestartet …');
+    einkauf.aktualisierungSeit = j.seit || null;
     einkauf.aktualisierungLaeuft = true;
     render();
     pollAktualisierung();
@@ -176,7 +185,13 @@ function pollAktualisierung() {
     verwirfDatenspeicher();
     const geholt = Object.values(d.teile || {}).filter(t => t.erfolg).length;
     const gesamt = Object.keys(d.teile || {}).length;
-    toast(gesamt && geholt < gesamt
+    // Der Server behaelt jetzt das Ergebnis des Laufs: ist genau dieser abgebrochen,
+    // heisst es nicht mehr "abgeschlossen".
+    const lauf = d.letzterKnopfLauf;
+    const abgebrochen = Boolean(lauf?.fehler && (!einkauf.aktualisierungSeit || lauf.seit === einkauf.aktualisierungSeit));
+    einkauf.aktualisierungSeit = null;
+    if (abgebrochen) toast('Aktualisierung abgebrochen – die bisherigen Daten bleiben stehen. Bitte später noch einmal versuchen; bleibt es dabei, über „Fehler melden“ Bescheid geben.', 'crit');
+    else toast(gesamt && geholt < gesamt
       ? `Aktualisierung fertig – ${geholt} von ${gesamt} Quellen erneuert, der Rest steht im Systemzustand.`
       : 'Aktualisierung abgeschlossen – die Ansichten zeigen jetzt den neuen Stand.');
     render();

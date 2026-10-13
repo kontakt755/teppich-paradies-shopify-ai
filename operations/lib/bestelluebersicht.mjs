@@ -10,7 +10,7 @@
  * geschrieben (README "Bestelluebersicht").
  */
 
-import { resolveLineItem, metafeldMap, grosshaendlerId, propertiesMap } from './resolve.mjs';
+import { resolveLineItem, metafeldMap, grosshaendlerId, propertiesMap, ausVariantentitel } from './resolve.mjs';
 import { UNGEKLAERT, EINHEIT, paketware, rollenware, stueck, formatDe } from './umrechnung.mjs';
 import { gruppieren } from './einkauf.mjs';
 import { ableiten } from './status.mjs';
@@ -58,6 +58,14 @@ export function istOffen(order) {
   return f === '' || OFFEN_FULFILLMENT.has(f);
 }
 
+/** Was der Kunde bestellt hat (nach Aenderungen/Erstattungen), unabhaengig vom Versandstand. */
+function bestellteMenge(li) {
+  for (const k of ['currentQuantity', 'quantity']) {
+    if (li[k] !== undefined && li[k] !== null) return Number(li[k]) || 0;
+  }
+  return 0;
+}
+
 function offeneMenge(li) {
   for (const k of ['unfulfilledQuantity', 'currentQuantity', 'quantity']) {
     if (li[k] !== undefined && li[k] !== null) return Number(li[k]) || 0;
@@ -71,26 +79,41 @@ function offeneMenge(li) {
  * lieferant.bevorzugt. Sonst UNGEKLAERT.
  */
 // einkauf.lieferant ist eine Metaobjekt-Referenz (tp_lieferant), im Export also
-// eine GID. Das Kuerzel steht im Metaobjekt selbst; damit die Uebersicht ohne
-// zusaetzliche Abfrage auskommt, steht die Zuordnung hier. Kommt ein Lieferant
-// dazu, gehoert seine GID in diese Liste - sonst zeigt die Uebersicht
-// UNGEKLAERT statt eines falschen Kuerzels.
+// eine GID. Das Kuerzel steht im Metaobjekt selbst. Der Export
+// (operations/scripts/aktualisieren.mjs) liest alle tp_lieferant mit und legt
+// sie als `lieferanten` in orders.json ab; aufbereiten() nimmt diese Liste.
+// Diese feste Liste ist nur der Rueckfall fuer aeltere Exporte - sie kannte
+// bis 2026-10-12 nur A und B, und jede Position von C, D und E stand unter
+// "Lieferant nicht zugeordnet".
 export const LIEFERANT_METAOBJEKT = Object.freeze({
   'gid://shopify/Metaobject/1828679713102': 'A',
   'gid://shopify/Metaobject/1828679745870': 'B',
+  'gid://shopify/Metaobject/1845606482254': 'C',
+  'gid://shopify/Metaobject/1846305227086': 'D',
+  'gid://shopify/Metaobject/1846305259854': 'E',
 });
 
+/** Zuordnung GID -> Kuerzel: feste Liste plus die im Export mitgelieferten tp_lieferant. */
+export function lieferantenZuordnung(liste = []) {
+  const zuordnung = { ...LIEFERANT_METAOBJEKT };
+  for (const l of Array.isArray(liste) ? liste : []) {
+    const k = String(l?.kuerzel ?? '').trim().toUpperCase();
+    if (l?.id && k) zuordnung[String(l.id).trim()] = k;
+  }
+  return zuordnung;
+}
+
 /** Kuerzel aus einem Wert, der ein Kuerzel ODER eine Metaobjekt-GID sein kann. */
-export function kuerzelAus(wert) {
+export function kuerzelAus(wert, zuordnung = LIEFERANT_METAOBJEKT) {
   if (leer(wert) || wert === UNGEKLAERT) return null;
   const s = String(wert).trim();
-  if (s.startsWith('gid://shopify/Metaobject/')) return LIEFERANT_METAOBJEKT[s] ?? null;
+  if (s.startsWith('gid://shopify/Metaobject/')) return zuordnung[s] ?? null;
   return /^[a-d]$/i.test(s) ? s.toUpperCase() : s.toUpperCase();
 }
 
-export function lieferantFuer(item, variantMetafelder) {
-  const ausEinkauf = kuerzelAus(item?.einkauf?.lieferant)
-    ?? kuerzelAus(variantMetafelder?.einkauf?.lieferant);
+export function lieferantFuer(item, variantMetafelder, zuordnung = LIEFERANT_METAOBJEKT) {
+  const ausEinkauf = kuerzelAus(item?.einkauf?.lieferant, zuordnung)
+    ?? kuerzelAus(variantMetafelder?.einkauf?.lieferant, zuordnung);
   if (ausEinkauf) return ausEinkauf;
   const e = null;
   if (!leer(e) && e !== UNGEKLAERT) return String(e).toUpperCase();
@@ -100,6 +123,19 @@ export function lieferantFuer(item, variantMetafelder) {
   const b = variantMetafelder?.lieferant?.bevorzugt;
   if (!leer(b) && /^[a-d]$/i.test(String(b).trim())) return String(b).trim().toUpperCase();
   return UNGEKLAERT;
+}
+
+/**
+ * Eigenleistungen ohne Material vom Grosshaendler (Ketteln, Pauschale fuer
+ * Wunschmass): nichts zu bestellen, keine Grosshaendler-ID noetig. Bewusst
+ * eine feste Liste statt productType "Service" - die gekettelte Fussleiste
+ * ist auch ein Service, braucht aber Material und bleibt deshalb sichtbar
+ * offen.
+ */
+const EIGENLEISTUNG_HANDLES = new Set(['kettelservice', 'wunschmass-pauschale']);
+
+export function istEigenleistung(lineItem) {
+  return EIGENLEISTUNG_HANDLES.has(lineItem?.variant?.product?.handle ?? '');
 }
 
 export function istMusterPosition(item, lineItem) {
@@ -147,7 +183,8 @@ export function einkaufsmenge(item, menge) {
       const flaecheM2 = p.preis_pro_001_qm ? menge / 100 : null;
       if (!(laengeCm > 0) && !(flaecheM2 > 0)) return ungeklaert('Laenge fehlt (Property Gewuenschte Laenge oder Maße)');
       const r = rollenware({ laengeCm, flaecheM2, breiteM: breiteCm / 100 });
-      const rasterHinweis = r.raster === UNGEKLAERT ? ' (Lieferantenraster UNGEKLAERT)' : '';
+      // Lesbar, nicht als interner Marker: der Text steht so im Einkauf und in der Bestellliste.
+      const rasterHinweis = r.raster === UNGEKLAERT ? ' (Lieferantenraster ungeklärt)' : '';
       return { menge: r.lfm, einheit: EINHEIT.LFM, text: r.text + rasterHinweis, grund: r.raster === UNGEKLAERT ? 'Lieferantenraster nicht belegt' : null };
     }
     if (e.bestelleinheit === EINHEIT.STUECK) {
@@ -165,9 +202,13 @@ function procurementReadyGruppe(item) {
   return procurementReady(item).gruppe;
 }
 
-function kundenmengeText(item, menge) {
+function kundenmengeText(item, menge, variantenTitel = null) {
   const teile = [];
   if (item.produkt?.preis_pro_001_qm) teile.push(`${menge} × 0,01 m² = ${formatDe(menge / 100)} m²`);
+  // Kettelservice wird "je 0,01 laufender Meter" verkauft: 800 sind 8 m Kante, nicht 800 Stueck.
+  else if (/je\s*0,01\s*lauf/i.test(String(variantenTitel ?? ''))) teile.push(`${menge} × 0,01 lfm = ${formatDe(menge / 100)} lfm`);
+  // "80 cm breit (je lfm)": die Stueckzahl ist die Laenge in laufenden Metern.
+  else if (ausVariantentitel(variantenTitel).jeLfm) teile.push(`${menge} lfm`);
   else teile.push(`${menge} Stk.`);
   const m = item.eingaben?.masse;
   if (m) teile.push(`${m.breiteCm} × ${m.laengeCm} cm`);
@@ -256,19 +297,22 @@ function vollstaendigeDetails(order, positionen) {
 }
 
 /** Muster: Grosshaendler-ID der Quellvariante (Property _Quellvariante_ID). */
-function musterQuelle(item, quellMap) {
+function musterQuelle(item, quellMap, zuordnung) {
   const id = numerischeId(item.einkauf?.quellvariante !== UNGEKLAERT ? item.einkauf?.quellvariante : item.eingaben?.quellvarianteId);
   const qv = id ? quellMap.get(id) : null;
-  if (!qv) return { id: UNGEKLAERT, quelle: null, lieferant: UNGEKLAERT, quellvariante: id, titel: null, farbnummer: UNGEKLAERT };
+  if (!qv) return { id: UNGEKLAERT, quelle: null, lieferant: UNGEKLAERT, quellvariante: id, titel: null, produktHandle: null, farbnummer: UNGEKLAERT };
   const n = normalisiert({ variant: qv }).variant;
   const vm = metafeldMap(n.metafields);
   const pm = metafeldMap(n.product?.metafields);
   const gh = grosshaendlerId({ variantMetafelder: vm, produktMetafelder: pm, sku: n.sku });
   // Die Quellvariante traegt den Lieferanten selbst - ohne sie landet jedes
   // Muster unter "Lieferant nicht zugeordnet", obwohl die Daten da sind.
-  const lf = lieferantFuer({ einkauf: { lieferant: vm?.einkauf?.lieferant }, grosshaendlerIdQuelle: gh.quelle }, vm);
+  const lf = lieferantFuer({ einkauf: { lieferant: vm?.einkauf?.lieferant }, grosshaendlerIdQuelle: gh.quelle }, vm, zuordnung);
   const url = vm?.einkauf?.lieferant_url;
   return { id: gh.id, quelle: gh.quelle, lieferant: lf, quellvariante: id, titel: `${n.product?.title ?? ''} – ${n.title ?? ''}`.trim(), lieferantUrl: leer(url) ? UNGEKLAERT : String(url).trim(),
+    // SKU der Quellvariante: Schluessel fuers Musterlager bei Mustern ueber das Sammelprodukt.
+    sku: leer(n.sku) ? null : String(n.sku).trim(),
+    produktHandle: leer(n.product?.handle) ? null : String(n.product.handle).trim(),
     // Farbnummer der Quellvariante: die Musterbestellung beim Lieferanten nennt Artikel UND Farbe.
     farbnummer: leer(vm?.einkauf?.farbnummer) ? UNGEKLAERT : String(vm.einkauf.farbnummer).trim() };
 }
@@ -279,6 +323,7 @@ function musterQuelle(item, quellMap) {
  */
 export function aufbereiten(daten, { jetzt = new Date() } = {}) {
   const orders = Array.isArray(daten) ? daten : (daten?.orders ?? []);
+  const zuordnung = lieferantenZuordnung(Array.isArray(daten) ? [] : daten?.lieferanten);
   const quellMap = new Map();
   for (const qv of (Array.isArray(daten) ? [] : daten?.quellvarianten ?? [])) {
     const n = numerischeId(qv?.id);
@@ -298,16 +343,26 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
       const item = resolveLineItem({ lineItem: li, variant: li.variant, alleZeilen: zeilen });
       const vm = metafeldMap(li.variant?.metafields);
       const props = propertiesMap(li.customAttributes ?? li.properties);
-      const menge = offeneMenge(li);
       const istM = istMusterPosition(item, li);
+      // Fuer den Einkauf ist bei einer Eigenleistung nichts offen; die Menge 0
+      // haelt sie aus der Bestellliste und der offenen Arbeitsliste heraus.
+      const eigen = !istM && istEigenleistung(li);
+      const menge = eigen ? 0 : offeneMenge(li);
       const farbe = props.Farbe || li.variantTitle || li.variant?.title || '–';
       let ghId = item.grosshaendlerId;
       let ghQuelle = item.grosshaendlerIdQuelle;
-      let lieferant = lieferantFuer(item, vm);
+      let lieferant = lieferantFuer(item, vm, zuordnung);
       let mq = null;
+      let handle = li.variant?.product?.handle ?? null;
       if (istM) {
-        mq = musterQuelle(item, quellMap);
+        mq = musterQuelle(item, quellMap, zuordnung);
         ghId = mq.id; ghQuelle = mq.quelle ? `Quellvariante: ${mq.quelle}` : null; lieferant = mq.lieferant;
+        // Muster ohne eigenes Musterprodukt (z. B. fast alle Vinylboeden von
+        // der Rolle) laufen ueber das Sammelprodukt "Kostenloses Muster". Sein
+        // Lexikon-Eintrag hat weder Lieferant noch Lieferantenlink - der Weg
+        // "Im Lexikon ansehen" muss deshalb zum Quellprodukt fuehren. Eigene
+        // Musterprodukte (muster-<handle>) zeigen ihr Original im Lexikon selbst.
+        if (!String(handle ?? '').startsWith('muster-')) handle = mq.produktHandle ?? (leer(props._Quellprodukt) ? handle : String(props._Quellprodukt).trim());
       }
       const pos = {
         orderId: order.id,
@@ -318,22 +373,24 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         titel: istM && props.Produkt ? `Muster: ${props.Produkt}` : (li.title ?? li.variant?.product?.title ?? '–'),
         // Schluessel fuers Produktlexikon: von der Bestellposition direkt zum
         // Originalartikel beim Lieferanten, ohne Suche.
-        handle: li.variant?.product?.handle ?? null,
+        handle,
         farbe,
         sku: item.sku,
         preis: geld(li.originalUnitPriceSet),
         menge,
-        kundenmenge: kundenmengeText(item, menge),
+        // Bestellte Menge, wenn nichts mehr offen ist: bei gelieferter Ware stand sonst "0 Stk.".
+        kundenmenge: kundenmengeText(item, (eigen || !(menge > 0)) ? bestellteMenge(li) : menge, li.variantTitle ?? li.variant?.title),
         grosshaendlerId: ghId,
         grosshaendlerIdQuelle: ghQuelle,
         lieferant,
         route: item.einkauf.route,
         istMuster: istM,
+        eigenleistung: eigen,
         musterQuelle: mq,
         ohneVariante: !li.variant,
         masspruefung: item.masspruefung,
         einkauf: item.einkauf,
-        bestellmenge: istM ? { menge, einheit: 'muster', text: `${menge} Muster`, grund: null } : (li.variant ? einkaufsmenge(item, menge) : { menge: UNGEKLAERT, einheit: UNGEKLAERT, text: UNGEKLAERT, grund: "Variante in Shopify geloescht - Artikel von Hand klaeren" }),
+        bestellmenge: eigen ? { menge: 0, einheit: 'eigenleistung', text: 'Eigenleistung – nichts zu bestellen', grund: null } : istM ? { menge, einheit: 'muster', text: `${menge} Muster`, grund: null } : (li.variant ? einkaufsmenge(item, menge) : { menge: UNGEKLAERT, einheit: UNGEKLAERT, text: UNGEKLAERT, grund: "Variante in Shopify geloescht - Artikel von Hand klaeren" }),
         idGrund: ghId !== UNGEKLAERT ? null : !li.variant ? "Variante geloescht" : istM ? (mq?.quellvariante ? "Quellvariante ohne ID-Metafeld" : "Muster ohne _Quellvariante_ID - Produkt/Farbe siehe Titel") : "weder lieferant.* noch grosshandel.sku gesetzt",
       };
       if (!istTest && offen && menge > 0) (istM ? muster : einkaufPositionen).push(pos);
@@ -346,7 +403,7 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
     const verlegung = attributWert(order, 'Verlegung');
     const massAttr = attributWert(order, 'Maßprüfung');
     const massProbleme = positionen.filter(p => ['abweichung', 'unlesbar', 'waise'].includes(p.masspruefung?.status));
-    const ohneId = positionen.filter(p => p.grosshaendlerId === UNGEKLAERT);
+    const ohneId = positionen.filter(p => !p.eigenleistung && p.grosshaendlerId === UNGEKLAERT);
     const mengeOffen = positionen.filter(p => !p.istMuster && p.bestellmenge.menge === UNGEKLAERT);
 
     const hinweise = [];
@@ -407,7 +464,7 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
       auftraege: auftraege.length,
       offeneAuftraege: auftraege.filter(a => a.offen).length,
       positionen: alle.length,
-      ohneId: alle.filter(p => p.grosshaendlerId === UNGEKLAERT).length,
+      ohneId: alle.filter(p => !p.eigenleistung && p.grosshaendlerId === UNGEKLAERT).length,
       mengeUngeklaert: alle.filter(p => !p.istMuster && p.bestellmenge.menge === UNGEKLAERT).length,
       zuBestellen: einkaufPositionen.length,
       muster: muster.length,
@@ -439,6 +496,7 @@ function datumDe(iso) {
 const AMPEL_TEXT = { gruen: 'Bereit', gelb: 'Prüfen', rot: 'Blockiert', grau: 'Geschlossen', test: 'Testbestellung' };
 
 function idZelle(p) {
+  if (p.eigenleistung) return '<small>Eigenleistung</small>';
   if (p.grosshaendlerId === UNGEKLAERT) return `<span class="flag">UNGEKLAERT</span>${p.idGrund ? `<small>${esc(p.idGrund)}</small>` : ""}`;
   return `<code>${esc(p.grosshaendlerId)}</code>`;
 }

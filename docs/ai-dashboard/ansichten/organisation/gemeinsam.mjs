@@ -109,15 +109,6 @@ export function ensureOrgListe() {
   });
 }
 
-export function ensureOrgKennzahlen() {
-  if (org.kennzahlen || org.loadingKennzahlen) return;
-  org.loadingKennzahlen = true;
-  fetchEinkauf('/api/org/kennzahlen').then(d => {
-    org.kennzahlen = d; org.loadingKennzahlen = false;
-    if (['heute', 'organisation'].includes(state.route.view)) render();
-  });
-}
-
 export function ensureOrgDetail(id) {
   if (org.detailId === id && (org.detail || org.loadingDetail)) return;
   org.detailId = id; org.loadingDetail = true;

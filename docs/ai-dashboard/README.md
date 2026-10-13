@@ -4,8 +4,10 @@ Gemeinsamer Arbeitsplatz für Geschäftsführung, Mitarbeitende und KI-Agenten. 
 Was ist der Zustand? Was ist heute wichtig? Was ist blockiert und wer löst es? Wer arbeitet woran?
 Welche Freigaben fehlen? Was wurde verändert?
 
-Öffentlich (read-only): https://kontakt755.github.io/teppich-paradies-shopify-ai/ai-dashboard/
-Lokal mit Aktionen: `npm run dashboard` → http://localhost:8001
+Nur lokal: `npm run dashboard` → http://localhost:8001 (im Laden und von unterwegs über
+Tailscale, immer mit Anmeldung – `docs/control-center/ARCHITEKTUR.md`, Abschnitte 1c bis 1e).
+Eine öffentliche Fassung gibt es seit 2026-09-23 nicht mehr: die alte GitHub-Pages-Adresse zeigt
+keine Aufgabendaten, und `issues.json` liegt seit 2026-09-30 nicht mehr im Repository.
 
 8001 ist die Vorgabe, keine Bedingung: `scripts/serve-dashboard.mjs` liest `process.env.PORT`,
 das Frontend ruft `/api/*` relativ auf, und im Startbefehl steht kein Port-Flag — es haengt also
@@ -37,12 +39,11 @@ sind (`setup-dashboard.sh`), gilt: `status:blockiert` + `reviewer:mensch` = Wart
 
 ## Betriebsarten
 
-| | statisch (Pages, PWA) | lokal (`npm run dashboard`) |
+| | ohne lokalen Server (alter Pages-Link, Datei direkt geöffnet) | lokal (`npm run dashboard`) |
 |---|---|---|
-| Datenquelle | keine mehr (seit 2026-09-30 nur lokal) | `issues.json` + `bodenwissen.json`, beim Start und auf Wunsch frisch über `gh` |
-| Aktionen | keine – Links nach GitHub | Statuswechsel, Owner, Kommentar, Freigabe über `gh` |
-| Verlauf | Zeitpunkte aus `issues.json` | Issue-Events und Kommentare |
-| KI-Läufe | nicht sichtbar | Steuerzentrale + Provider-Ledger, read-only |
+| Datenquelle | keine – Hinweis „Nur lokal im Betrieb“ | `issues.json` + `bodenwissen.json`, beim Start und auf Wunsch frisch über `gh`; Betriebsdaten aus `$TP_PRIVAT_DIR` über `/api/*` |
+| Aktionen | keine | Statuswechsel, Owner, Kommentar, Freigabe über `gh`; Auftragsfluss, Rückrufe, Sonderposten |
+| Verlauf | – | Issue-Events und Kommentare |
 
 Das Frontend erkennt die Betriebsart über `GET /api/capabilities`.
 
@@ -59,6 +60,10 @@ docs/ai-dashboard/
   ansichten/                    eine Datei je Route; große Ansichten mit Teilmodulen im gleichnamigen Ordner
   lib/model.mjs                 Regeln: Status, Body-Parser, Dringlichkeit, Übergänge – Browser UND Server
   lib/todos.mjs                 To-dos und „Wer wartet auf was“ für „Heute“ – abgeleitet, nicht erfasst
+  lib/sonderposten.mjs          Rückmeldung nach „Im Laden verkauft“ – sagt nur, was belegt ist (testbar ohne DOM)
+  lib/muster-nachfassen.mjs     „Muster nachfassen“ für „Heute“: wer ist dran, Textvorlage füllen – Browser UND Server
+  lib/bestellinhalt.mjs         Inhalt einer Bestellung in einer Zeile (Muster mit Farben und Herkunft, Ware) – Bestellliste und To-dos
+  lib/kennzahlen.mjs            „Ø je bezahlter Bestellung“ (ohne kostenlose Muster) für die Kennzahlen auf „Heute“
   stile/                        Styles je Ansicht (heute.css); app.css bleibt das gemeinsame Gerüst
   issues.json, bodenwissen.json generierte Daten, nicht im Git (.gitignore)
   tests/                        node --test (npm run dashboard:test)
@@ -107,10 +112,10 @@ bausteine/
   systemzustand.mjs     Systemgesundheit (Heute, Insights)
   palette.mjs           Befehlspalette (⌘K)
 ansichten/
-  heute.mjs          + heute/{daten,bisher}.mjs
+  heute.mjs          + heute/{daten,laden,muster-nachfassen}.mjs
   arbeit.mjs  freigaben.mjs  bereiche.mjs  insights.mjs  aktivitaet.mjs
-  lexikon.mjs  ratgeber.mjs  hilfe.mjs  shopwache.mjs  team.mjs  fotos.mjs
-  einkauf.mjs        + einkauf/{auftragsfluss,bestellungen,lieferanten,produktdaten}.mjs
+  lexikon.mjs  ratgeber.mjs  hilfe.mjs  shopwache.mjs  team.mjs  fotos.mjs  sonderposten.mjs
+  einkauf.mjs        + einkauf/{auftragsfluss,bestellungen,lieferanten,musterlager,produktdaten}.mjs
   kunden.mjs         + kunden/{gemeinsam,akte,rueckrufe,bestellungen,angebote,faelle,zeitleiste}.mjs
   organisation.mjs   + organisation/{gemeinsam,dialoge}.mjs
 ```
@@ -139,10 +144,11 @@ gewinnt. Deshalb ruft der Listener die Funktionen der Ansichten in fester Reihen
 Ansicht hat zwei davon (z. B. `einkaufKlickStatus` und `einkaufKlickDialoge`).
 
 **Gerüst und Handy** (`index.html`, `app.css`): Am Rechner steht die Navigation als Seitenleiste
-links (oben Heute, Kunden & Aufträge, Einkauf, Lexikon; darunter „Seltener“ und der Sammelpunkt
-„Büro“ für die Inhaber-Ansichten). Die Kopfzeile trägt nur Seitentitel, Suche (Befehlspalette),
+links (oben Heute, Kunden, Einkauf, Lexikon; darunter „Seltener“, der Sammelpunkt „Büro“ für die
+Inhaber-Ansichten und „Weitere Dashboards“ – Werkbank, Laden, Montage, je in neuem Tab. Deren
+Adressen kommen aus `.env.local` des Dienstes über `/api/capabilities`; ohne Adresse kein Link). Die Kopfzeile trägt nur Seitentitel, Suche (Befehlspalette),
 „+ Erfassen“, Sitzung und Hell/Dunkel. Bis 860 px wird daraus eine feste Leiste unten (Heute,
-Aufträge, Lexikon, Einkauf, Mehr); „Mehr“ öffnet die Seitenleiste als Blatt. Der Seitentitel kommt
+Kunden, Lexikon, Einkauf, Mehr); „Mehr“ öffnet die Seitenleiste als Blatt. Der Seitentitel kommt
 aus dem ersten `<h1>` im `.page-head` der Ansicht – dort bleibt es für Vorleseprogramme stehen, sichtbar
 ist es nur oben. Ein Zähler am Menüpunkt wird in `app.js` über `registriereNavZaehler({ route: () => zahl })`
 angemeldet. Breite Tabellen (`.table-scroll > table.tasks.compact`, Zellen mit `data-l`) werden unter
@@ -161,9 +167,12 @@ auditierbar (Kommentar `## Control Center: …`) und zusätzlich in `.router/con
 ## Sicherheitsgrenzen
 
 - Kein Token im Frontend, in `issues.json` liegen keine Issue-Bodies, nur extrahierte Felder.
-- Server bindet nur `127.0.0.1`; schreibende Endpunkte nur POST + JSON + lokaler Origin.
+- Server bindet standardmäßig nur `127.0.0.1`; im Netzmodus (Laden, Tailscale) nur mit Anmeldung, Rollen
+  serverseitig geprüft. Schreibende Endpunkte nur POST + JSON + bekannte Herkunft.
 - Übergänge werden serverseitig geprüft (Owner für In Arbeit, Grund für Blockiert, Bestätigung für Erledigt).
 - Keine Schreibzugriffe auf Shopify, Google oder andere Systeme – nur Labels, Assignee, Kommentare in GitHub.
+  Einzige Ausnahme: „Im Laden verkauft“ (Sonderposten) setzt den Bestand eines Stücks von 1 auf 0 und
+  schreibt `sonderposten.verkauft_*` – serverseitig geprüft, siehe `docs/control-center/ARCHITEKTUR.md` Abschnitt 13.
 - Das Repository ist öffentlich: keine Kundendaten, Umsätze oder Zugangsdaten in Issues.
 
 ## Tastatur
@@ -172,8 +181,9 @@ auditierbar (Kommentar `## Control Center: …`) und zusätzlich in `.router/con
 
 ## Häufige Fragen
 
-**Der Datenstand ist alt.** „Systemgesundheit" zeigt den letzten Lauf des Sync-Workflows. War er
-erfolgreich, hat sich seitdem einfach nichts geändert. Lokal: „Jetzt synchronisieren".
+**Der Datenstand ist alt.** Die Zeile unter den To-dos auf „Heute“ nennt den Stand der Bestellungen,
+„Insights“ den aller Datenquellen. Aufgaben: „GitHub synchronisieren“ in „Entwicklung“; Betriebsdaten:
+„Jetzt aktualisieren“.
 
 **Eine Aufgabe fehlt.** Sie braucht mindestens ein `status:`-, `type:`-, `priority:`-, `area:`- oder
 `reviewer:`-Label.

@@ -20,8 +20,10 @@ import { render } from './kern/render.mjs';
 import { openActionDialog } from './bausteine/aktions-dialog.mjs';
 import { syncNow, aktualisierenNow } from './bausteine/aktualisierung.mjs';
 import { openPalette, closePalette } from './bausteine/palette.mjs';
+import { openFehlerMelden } from './bausteine/fehler-melden.mjs';
 import { einkaufKlickStatus, einkaufKlickDialoge } from './ansichten/einkauf/auftragsfluss.mjs';
 import { einkaufKlickLieferanten } from './ansichten/einkauf/lieferanten.mjs';
+import { einkaufKlickMusterlager } from './ansichten/einkauf/musterlager.mjs';
 import { lexikonKlick } from './ansichten/lexikon.mjs';
 import { kundenKlickBestellungen } from './ansichten/kunden/bestellungen.mjs';
 import { kundenKlickAkte } from './ansichten/kunden.mjs';
@@ -31,7 +33,9 @@ import {
 } from './ansichten/organisation.mjs';
 import { openMeinPasswort, teamKlick, teamAenderung } from './ansichten/team.mjs';
 import { fotosEreignisseBinden, fotosAenderung } from './ansichten/fotos.mjs';
+import { socialEingabe, socialAbsenden, socialKlick } from './ansichten/social.mjs';
 import { arbeitKlick } from './ansichten/arbeit.mjs';
+import { sonderpostenKlick } from './ansichten/sonderposten.mjs';
 import { ladeAktivitaetsdaten } from './ansichten/aktivitaet.mjs';
 
 export function bindEvents() {
@@ -42,8 +46,10 @@ export function bindEvents() {
     try { localStorage.setItem(`tp-heute-${d.dataset.collapsible}`, d.open ? '1' : '0'); } catch {}
   }, true);
   fotosEreignisseBinden();
+  document.addEventListener('submit', e => { socialAbsenden(e); });
   document.addEventListener('click', e => {
     if (e.target.closest('[data-abmelden]')) { logout(); return; }
+    if (e.target.closest('[data-fehler-melden]')) { e.preventDefault(); openFehlerMelden(); return; }
     const open = e.target.closest('[data-open]');
     if (open && !e.target.closest('[data-decide]')) { e.preventDefault(); openTask(Number(open.dataset.open)); if (open.dataset.primary) { setTimeout(() => $('#sheetRoot [data-act]')?.focus(), 50); } return; }
     if (e.target.closest('[data-close-sheet]')) { closeTask(); return; }
@@ -68,6 +74,7 @@ export function bindEvents() {
     if (dec) { const t = state.tasks.find(x => x.number === Number(dec.dataset.task)); if (t) openActionDialog(t, dec.dataset.decide); return; }
     if (einkaufKlickStatus(e)) return;
     if (einkaufKlickLieferanten(e)) return;
+    if (einkaufKlickMusterlager(e)) return;
     if (arbeitKlick(e)) return;
     if (einkaufKlickDialoge(e)) return;
     if (orgKlickZuruecksetzen(e)) return;
@@ -88,8 +95,10 @@ export function bindEvents() {
     if (druckBtn) { e.preventDefault(); window.print(); return; }
     if (orgKlickSchnell(e)) return;
     if (teamKlick(e)) return;
+    if (socialKlick(e)) return;
     if (orgKlick(e)) return;
     if (kundenKlickBestellungen(e)) return;
+    if (sonderpostenKlick(e)) return;
     const kt = e.target.closest('[data-kopiertext]');
     if (kt) {
       const text = kt.dataset.kopiertext;
@@ -102,6 +111,7 @@ export function bindEvents() {
   });
   document.addEventListener('change', e => {
     if (fotosAenderung(e)) return;
+    if (socialEingabe(e)) return;
     if (orgAenderungAnhang(e)) return;
     if (teamAenderung(e)) return;
     const el = e.target.closest('select[data-param]'); if (el) { setParam(el.dataset.param, el.value); return; }
@@ -109,6 +119,7 @@ export function bindEvents() {
   });
   let qTimer;
   document.addEventListener('input', e => {
+    if (socialEingabe(e)) return;
     const el = e.target.closest('input[type=search][data-param]');
     if (!el) return;
     const key = el.dataset.param;

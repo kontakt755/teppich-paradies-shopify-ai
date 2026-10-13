@@ -317,9 +317,11 @@
 {% endcapture %}
 
 {%- comment -%}
-  LocalBusiness statt nur Organization: Adresse und Telefon kommen aus den
-  Shop-Einstellungen (shop.address, shop.phone), damit nichts doppelt gepflegt
-  wird. Oeffnungszeiten entsprechen der Kontaktseite (Mo-Fr 8:30-18:00,
+  LocalBusiness statt nur Organization: PLZ, Ort und Land kommen aus den
+  Shop-Einstellungen (shop.address). Strasse und Telefon stehen in den
+  Theme-Einstellungen "TP Firmendaten" (tp_strasse_schema, tp_telefon_schema),
+  weil die Shop-Einstellungen die Rechnungsadresse ohne Hausnummernbereich und
+  die Mobilnummer tragen. Oeffnungszeiten entsprechen der Kontaktseite (Mo-Fr 8:30-18:00,
   Sa 8:30-14:30). Audit 2026-09-08, Befund 19.
 {%- endcomment -%}
 <script type="application/ld+json">
@@ -345,10 +347,12 @@
     {%- assign tp_schema_tel = settings.tp_telefon_schema | default: shop.phone -%}
     {% if tp_schema_tel != blank %}"telephone": {{ tp_schema_tel | json }},{% endif %}
     {% if shop.email != blank %}"email": {{ shop.email | json }},{% endif %}
-    {% if shop.address.street != blank %}
+    {%- comment -%} shop.address.street ist die Rechnungsadresse (nur Nr. 73); die Ladenadresse ist 73-81 (Inhaber 2026-10-10) {%- endcomment -%}
+    {%- assign tp_schema_strasse = settings.tp_strasse_schema | default: shop.address.street -%}
+    {% if tp_schema_strasse != blank %}
       "address": {
         "@type": "PostalAddress",
-        "streetAddress": {{ shop.address.street | json }},
+        "streetAddress": {{ tp_schema_strasse | json }},
         "postalCode": {{ shop.address.zip | json }},
         "addressLocality": {{ shop.address.city | json }},
         "addressCountry": {{ shop.address.country_code | json }}

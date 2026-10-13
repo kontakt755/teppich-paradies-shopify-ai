@@ -20,7 +20,7 @@ const pages = config.pages.filter(page => page.type === 'home' || page.type === 
 const scenarios = [
   { name: 'Ohne gespeicherten Vergleich', items: null },
   { name: 'Alte Vergleichsauswahl', items: JSON.stringify([
-    { handle: 'marlow-eiche-nordisch-klickvinyl-7mm', title: 'Klickvinyl', url: '/products/marlow-eiche-nordisch-klickvinyl-7mm', pricePerSqm: '25,00 €' },
+    { handle: 'turku-eiche-nordisch-klickvinyl-7mm', title: 'Klickvinyl', url: '/products/turku-eiche-nordisch-klickvinyl-7mm', pricePerSqm: '25,00 €' },
     { handle: 'piumera-teppichboden-400cm-500cm', title: 'Teppichboden', url: '/products/piumera-teppichboden-400cm-500cm', pricePerSqm: '20,00 €' },
     { handle: 'alvora-eiche-bernstein-klebevinyl-2-5mm', title: 'Klebevinyl', url: '/products/alvora-eiche-bernstein-klebevinyl-2-5mm', pricePerSqm: '22,00 €' },
   ]) },

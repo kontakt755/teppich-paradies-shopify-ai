@@ -41,6 +41,30 @@ function ensureLexikonProdukt(handle) {
 
 function lexWert(w) { return (w === null || w === undefined || w === '') ? NICHT_HINTERLEGT : esc(String(w)); }
 
+/**
+ * Name einer Variante in der Bestellliste. Viele Produkte unterscheiden ihre
+ * Varianten nicht nach Farbe, sondern nach Breite oder Laenge (Vinyl von der
+ * Rolle, Sockelleisten, Zubehoer) - mit der Farbe allein stand dort
+ * "nicht hinterlegt", und 200, 300 und 400 cm waren nicht auseinanderzuhalten.
+ * Der Variantentitel nennt beides ("Braun Dunkel / 200cm").
+ */
+function variantenName(v) {
+  const titel = String(v.titel ?? '').trim();
+  return titel && titel !== 'Default Title' ? titel : v.farbe;
+}
+
+/**
+ * Artikelnummer zum Antippen. Fehlt sie, aber die Bestellbezeichnung des
+ * Lieferanten ist da (Teppich nach Mass direkt vom Hersteller: "Alpaca
+ * 3799/091 gekettelt nach Mass"), ist die Bezeichnung die Bestellangabe -
+ * "nicht hinterlegt" waere dort falsch.
+ */
+function artikelAngabe(e, leerText) {
+  if (e.artikelnummer) return `<code class="lex-artnr" data-kopiertext="${esc(e.artikelnummer)}" title="Antippen zum Kopieren">${esc(e.artikelnummer)}</code>`;
+  if (e.produktname) return `<span class="small muted">Bestellbezeichnung</span> <code class="lex-artnr" data-kopiertext="${esc(e.produktname)}" title="Antippen zum Kopieren">${esc(e.produktname)}</code>`;
+  return leerText;
+}
+
 function preisText(betrag, einheit) {
   if (betrag === null || betrag === undefined) return null;
   const einheitText = einheit === 'm2' ? '€/m²' : einheit === 'stueck' ? '€/Stück' : '€';
@@ -206,7 +230,7 @@ function produktKarte(p, normaleVarianten) {
     <div class="lex-produkt-kopf">
       ${p.bild ? `<img class="lex-produkt-bild" src="${esc(p.bild)}" alt="" loading="lazy">` : ''}
       <div class="lex-produkt-titel">
-        <div class="gruppe">${p.produktgruppe ? esc(p.produktgruppe) : NICHT_HINTERLEGT}${p.status ? ` · ${esc(p.status)}` : ''}</div>
+        <div class="gruppe">${p.produktgruppe ? esc(p.produktgruppe) : NICHT_HINTERLEGT}${statusHinweis(p.status)}</div>
         <h1>${esc(p.titel)}</h1>
       </div>
       ${minPreis ? `<div class="lex-produkt-preis"><span>ab</span><b>${esc(preisText(minPreis.betrag, minPreis.einheit))}</b></div>` : ''}
@@ -218,6 +242,13 @@ function produktKarte(p, normaleVarianten) {
       ${p.adminUrl ? `<a class="btn" href="${esc(p.adminUrl)}" target="_blank" rel="noopener">Im Shopify-Admin ↗</a>` : `<span class="btn" aria-disabled="true">Im Shopify-Admin (${NICHT_HINTERLEGT})</span>`}
     </div>
   </section>`;
+}
+
+// Shopify-Status in Klartext. "Aktiv" ist der Normalfall und steht nicht da - nur Abweichungen.
+const PRODUKT_STATUS = { DRAFT: 'Entwurf – nicht im Shop', ARCHIVED: 'archiviert – nicht im Shop', UNLISTED: 'nicht gelistet' };
+function statusHinweis(status) {
+  if (!status || status === 'ACTIVE') return '';
+  return ` · ${esc(PRODUKT_STATUS[status] || String(status).toLowerCase())}`;
 }
 
 /** Was oben in der Produktkarte keinen Platz hat: Herkunft und die Angaben, die man erklaeren muss. */
@@ -240,9 +271,7 @@ function fuersKundengespraech(p, normaleVarianten) {
 
 function bestellZeile(v) {
   const e = v.einkauf || {};
-  const artikelZelle = e.artikelnummer
-    ? `<code class="lex-artnr" data-kopiertext="${esc(e.artikelnummer)}" title="Antippen zum Kopieren">${esc(e.artikelnummer)}</code>`
-    : NICHT_HINTERLEGT;
+  const artikelZelle = artikelAngabe(e, NICHT_HINTERLEGT);
   const linkZelle = v.link?.status === 'vorhanden'
     ? `<a class="btn btn-sm" href="${esc(e.url)}" target="_blank" rel="noopener">Beim Lieferanten öffnen ↗</a>`
     : `<div class="small muted">${esc(v.link?.grund || 'kein Link hinterlegt')}</div>${v.link?.suchlink ? `<a class="small" href="${esc(v.link.suchlink)}" target="_blank" rel="noopener">Beim Lieferanten suchen ↗</a>` : ''}`;
@@ -251,7 +280,7 @@ function bestellZeile(v) {
   // mit zehn Spalten auf 980 px fest - die Artikelnummer, wegen der man diese
   // Ansicht ueberhaupt oeffnet, lag ausserhalb des Bildes.
   return `<tr>
-    <td data-l="Farbe">${lexWert(v.farbe)}</td>
+    <td data-l="Variante">${lexWert(variantenName(v))}</td>
     <td data-l="Unsere SKU">${v.sku ? `<code class="mono">${esc(v.sku)}</code>` : NICHT_HINTERLEGT}</td>
     <td data-l="Lieferant">${lexWert(e.lieferant)}</td>
     <td data-l="Artikelnummer">${artikelZelle}</td>
@@ -295,14 +324,12 @@ function bestellListe(varianten) {
       lieferweg ? '' : (e.lieferweg ? esc(LIEFERWEG_LABEL[e.lieferweg] || e.lieferweg) : ''),
       v.verfuegbar === false ? '<span class="warnc">nicht verfügbar</span>' : '',
     ].filter(Boolean).join(' · ');
-    const artikel = e.artikelnummer
-      ? `<code class="lex-artnr" data-kopiertext="${esc(e.artikelnummer)}" title="Antippen zum Kopieren">${esc(e.artikelnummer)}</code>`
-      : `<span class="small muted">Art.-Nr. nicht hinterlegt</span>`;
+    const artikel = artikelAngabe(e, `<span class="small muted">Art.-Nr. nicht hinterlegt</span>`);
     const link = v.link?.status === 'vorhanden'
       ? `<a class="btn btn-sm" href="${esc(e.url)}" target="_blank" rel="noopener" aria-label="Beim Lieferanten öffnen">Lieferant ↗</a>`
       : (v.link?.suchlink ? `<a class="btn btn-sm" href="${esc(v.link.suchlink)}" target="_blank" rel="noopener" aria-label="Beim Lieferanten suchen">Suchen ↗</a>` : '');
     return `<li>
-      <div class="kopf"><b>${lexWert(v.farbe)}</b><span class="preis">${preisZelle(v)}</span></div>
+      <div class="kopf"><b>${lexWert(variantenName(v))}</b><span class="preis">${preisZelle(v)}</span></div>
       <div class="nr">${artikel}${link}</div>
       ${nebenbei ? `<div class="small muted">${nebenbei}</div>` : ''}
       ${v.link?.status === 'vorhanden' ? '' : `<div class="small muted">${esc(v.link?.grund || 'kein Link hinterlegt')}</div>`}
@@ -311,7 +338,7 @@ function bestellListe(varianten) {
   return `<div class="lex-bestell-liste">
     ${gemeinsam ? `<p class="small muted" style="margin:0 0 8px">${gemeinsam}</p>` : ''}
     <ul>${varianten.slice(0, LISTE_OFFEN).map(zeile).join('')}</ul>
-    ${varianten.length > LISTE_OFFEN ? `<details><summary>Alle ${varianten.length} Farben zeigen</summary><ul>${varianten.slice(LISTE_OFFEN).map(zeile).join('')}</ul></details>` : ''}
+    ${varianten.length > LISTE_OFFEN ? `<details><summary>Alle ${varianten.length} Varianten zeigen</summary><ul>${varianten.slice(LISTE_OFFEN).map(zeile).join('')}</ul></details>` : ''}
   </div>`;
 }
 
@@ -322,7 +349,9 @@ function musterBestellZeile(v) {
     : NICHT_HINTERLEGT;
   const linkZelle = o.gefunden && o.url
     ? `<a class="btn btn-sm" href="${esc(o.url)}" target="_blank" rel="noopener">Original beim Lieferanten ↗</a>`
-    : `<div class="small muted">${esc(o.grund || 'kein Original hinterlegt')}</div>`;
+    : o.gefunden && o.suchlink
+      ? `<a class="btn btn-sm" href="${esc(o.suchlink)}" target="_blank" rel="noopener">Beim Lieferanten suchen ↗</a>`
+      : `<div class="small muted">${esc(o.grund || 'kein Original hinterlegt')}</div>`;
   return `<tr>
     <td data-l="Unsere SKU">${v.sku ? `<code class="mono">${esc(v.sku)}</code>` : NICHT_HINTERLEGT}</td>
     <td data-l="Lieferant">${lexWert(o.lieferant)}</td>
@@ -332,13 +361,23 @@ function musterBestellZeile(v) {
 }
 
 /** Mengenhilfe-Widget: Kundenmenge -> Bestellmenge, rechnet ueber /api/lexikon/mengenhilfe (operations/lib/umrechnung.mjs). */
-function mengenhilfeWidget(p, zielVariante) {
+function mengenhilfeWidget(p, zielVariante, varianten = []) {
   if (!zielVariante || zielVariante.wunschmass) return '';
   const einheit = zielVariante.einkauf?.bestelleinheit;
   if (!einheit) return '';
+  // Mehrere Rollenbreiten (Teppichboden 400/500 cm, Vinyl 200/300/400 cm):
+  // die Bestellmenge haengt von der Rolle ab, also waehlen lassen statt
+  // stillschweigend die erste Variante zu nehmen.
+  const jeBreite = new Map();
+  for (const v of varianten) if (v.rollenbreiteM > 0 && !jeBreite.has(v.rollenbreiteM)) jeBreite.set(v.rollenbreiteM, v.id);
+  const breiten = [...jeBreite].sort((a, b) => a[0] - b[0]);
+  const auswahl = breiten.length > 1
+    ? `<select data-mh-variante aria-label="Rollenbreite" style="min-height:42px;padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);font:inherit">${breiten.map(([m, id]) => `<option value="${esc(id)}"${id === zielVariante.id ? ' selected' : ''}>Rolle ${esc(String(Math.round(m * 100)))} cm</option>`).join('')}</select>`
+    : '';
   return `<div data-mh-wrap="${esc(p.handle)}" data-mh-default-variant="${esc(zielVariante.id || '')}" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
     <div class="small" style="font-weight:600;margin-bottom:6px">Mengenhilfe: Kundenmenge → Bestellmenge beim Lieferanten</div>
     <div class="toolbar">
+      ${auswahl}
       <input type="text" inputmode="decimal" placeholder="Kundenmenge in m²" data-mh-menge aria-label="Kundenmenge in m²" style="flex:1 1 150px;max-width:220px;min-height:42px;padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);font:inherit">
       <button type="button" class="btn btn-sm" data-mh-go>Bestellmenge berechnen</button>
     </div>
@@ -402,10 +441,10 @@ function viewLexikonDetail(handle) {
   const bestellTabelle = musterVarianten.length
     ? `<div class="table-scroll"><table class="tasks compact"><thead><tr><th>Unsere SKU</th><th>Lieferant</th><th>Original-Artikelnummer</th><th>Original beim Lieferanten</th></tr></thead>
       <tbody>${musterVarianten.map(musterBestellZeile).join('')}</tbody></table></div>`
-    : `${bestellListe(normaleVarianten)}<div class="table-scroll lex-bestell-tabelle"><table class="tasks compact"><thead><tr><th>Farbe</th><th>Unsere SKU</th><th>Lieferant</th><th>Artikelnummer</th><th>Farbnummer</th><th>Bestelleinheit</th><th>Preis</th><th>Verfügbar</th><th>Lieferweg</th><th>Lieferantenseite</th></tr></thead>
+    : `${bestellListe(normaleVarianten)}<div class="table-scroll lex-bestell-tabelle"><table class="tasks compact"><thead><tr><th>Variante</th><th>Unsere SKU</th><th>Lieferant</th><th>Artikelnummer</th><th>Farbnummer</th><th>Bestelleinheit</th><th>Preis</th><th>Verfügbar</th><th>Lieferweg</th><th>Lieferantenseite</th></tr></thead>
       <tbody>${normaleVarianten.map(bestellZeile).join('') || `<tr><td colspan="10">${NICHT_HINTERLEGT}</td></tr>`}</tbody></table></div>
       ${wunschmassVarianten.length ? `<p class="small muted" style="margin:10px 0 0">Wunschmaß (${wunschmassVarianten.length} Variante${wunschmassVarianten.length === 1 ? '' : 'n'}): wird erst beim Zuschnitt bestellt, deshalb hier ohne eigene Artikelnummer – keine fehlende Angabe.</p>` : ''}
-      ${mengenhilfeWidget(p, zielVariante)}`;
+      ${mengenhilfeWidget(p, zielVariante, normaleVarianten)}`;
 
   return `${zurueck}
     ${wartendeKundenBlock(d.wartendeKunden)}
@@ -438,7 +477,7 @@ export function lexikonKlick(e) {
     const out = wrap?.querySelector('[data-mh-ergebnis]');
     if (!wrap || !out) return true;
     const handle = wrap.dataset.mhWrap;
-    const variantenId = wrap.dataset.mhDefaultVariant;
+    const variantenId = wrap.querySelector('[data-mh-variante]')?.value || wrap.dataset.mhDefaultVariant;
     const menge = wrap.querySelector('[data-mh-menge]')?.value || '';
     out.textContent = 'Rechne …';
     fetchEinkauf(`/api/lexikon/mengenhilfe?${new URLSearchParams({ handle, variantenId, kundenmengeM2: menge })}`).then((d) => {

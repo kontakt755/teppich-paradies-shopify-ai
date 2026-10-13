@@ -27,6 +27,39 @@ Inhalt nicht — **24 = 24 ist keine Pruefung**, verglichen werden die Codes
 selbst. Echte Lieferantenlisten haben Luecken, weil sie gewachsen sind.
 `npm run farbcode:guard` findet das Zaehlmuster.
 
+## Lieferantennamen im Bilddateinamen, PVC-freie Ware als PVC (2026-10-10)
+
+Rund 600 Produkte von Lieferant C gingen mit den Original-Dateinamen der
+Lieferanten-Mediendatenbank live (`PB_<Linie>_<Nummer>.jpg`). Titel, Alt-Texte
+und Beschreibungen waren sauber, aber die Linie stand in jeder Bild-URL und im
+Quelltext. 1.550 Dateien mussten nachträglich per `fileUpdate` umbenannt
+werden. Seitdem setzt der Import `files[].filename` schon im `productSet`.
+
+Am selben Tag trugen 35 Designböden „Material PVC“, obwohl die
+Artikelspezifikation „PVC-frei“ (Polyurethan) nannte. Das Material war je
+Warengruppe gesetzt statt je Artikel gelesen. Dasselbe galt für „phthalatfrei“
+bei einer CV-Qualität, deren Datenblatt die Angabe nicht enthält.
+
+Gegenprobe nach jedem Import: Live-Seite auf Linien- und Lieferantennamen
+durchsuchen, nicht nur Titel und Beschreibung prüfen. Den Plan auf Reste des
+Seitenparsers prüfen (` | `, `millimeter`); unbekannte Spezifikationsfelder
+hängen sich sonst an den Vorwert (`R10 | Florhöhe in millimeter | 2.8`).
+
+## Dieselben Dekore unter anderer Nummer (2026-10-10)
+
+Beim Linoleum der Hausmarke von C waren 38 von 89 Farben schon im Shop, als
+Farben von Lieferant A: Marenta, Kaneo, Coloria und Elastium führen dieselben
+Herstellerdekore. Lieferant A nummeriert um: eigenes Präfix plus die letzten
+zwei Ziffern der Herstellernummer (aus Herstellerfarbe 0081 wird 4381, aus
+3593 wird 1093). Ein
+Abgleich über die Farbnummer findet deshalb nichts. Mehrere Linien nutzen sogar
+pixelgleiche Herstellerfotos.
+
+Vor dem Anlegen neuer Farben gegen den ganzen Bestand derselben Produktart
+prüfen, und zwar auf drei Wegen: Bildmerkmale (ORB, findet gleiche Fotos),
+Farbabstand des Bildmittels und Endziffern-Schema. Grenzfälle mit Bild nebeneinander
+ansehen. Raumbild-Dateinamen des Bestands nennen oft den Herstellerdekor.
+
 ## Lieferantennamen (Regel des Inhabers, 2026-09-11)
 
 Repository, Issues und Dashboard sind oeffentlich; Bezugsquellen sind

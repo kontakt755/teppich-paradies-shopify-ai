@@ -157,10 +157,17 @@
                     "padding-inline-end": 0
                   },
                   "blocks": {}
+                },
+                "tp_produkt_sterne": {
+                  "type": "tp-produkt-sterne",
+                  "settings": {
+                    "ziel": "#bewertungen"
+                  }
                 }
               },
               "block_order": [
                 "text_xrnftG",
+                "tp_produkt_sterne",
                 "price_custom_Cp66p6"
               ]
             },
@@ -304,7 +311,18 @@
               "name": "TP Einfass-Konfigurator",
               "settings": {
                 "kettelservice_produkt": "kettelservice",
-                "whatsapp": "4917657931322"
+                "befestigung_produkt": "antirutsch-unterlage-fuer-teppiche-rollenware",
+                "befestigung_produkt_2": "teppichbremse-fuer-teppiche-rollenware",
+                "whatsapp": "491792612211",
+                "bild_ketteln": "shopify://shop_images/tp-kante-gekettelt.jpg",
+                "marke_bilder_vendor": "JAB Anstoetz",
+                "marke_bild_paspelband": "shopify://shop_images/tp-kante-jab-paspel.jpg",
+                "marke_bild_cover": "shopify://shop_images/tp-kante-jab-cover.jpg",
+                "marke2_bilder_vendor": "Vorwerk",
+                "marke2_bild_ketteln": "shopify://shop_images/tp-kante-vorwerk-kettel.jpg",
+                "marke2_bild_paspelband": "shopify://shop_images/tp-kante-vorwerk-premium.jpg",
+                "marke2_bild_cover": "shopify://shop_images/tp-kante-vorwerk-deluxe.jpg",
+                "marke2_bild_paspelwahl": "shopify://shop_images/tp-kante-vorwerk-paspel.jpg"
               },
               "blocks": {}
             },
@@ -382,13 +400,13 @@
             "tp_farbanzeige_tp1",
             "tp_teppich_struktur_1",
             "tp_einfass_konfigurator_1",
-            "tp_bewertungsbeleg_night1",
-            "tp_zubehoer_empfehlung",
-            "buy_buttons_eYQEYi",
             "tp_einfass_wechsel_1",
+            "tp_bewertungsbeleg_night1",
+            "buy_buttons_eYQEYi",
             "tp_vertrauen_sales1",
             "tp_vorteile_sales1",
             "tp_service_links_sales1",
+            "tp_zubehoer_empfehlung",
             "tp_produkt_akkordeon_technik",
             "text_aEtTtq"
           ]

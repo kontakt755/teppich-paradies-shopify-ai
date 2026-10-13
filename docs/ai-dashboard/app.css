@@ -94,8 +94,10 @@ button { font: inherit; color: inherit; }
 .nav-more-kopf { width: 100%; border: 0; background: none; cursor: pointer; text-align: left; }
 .mainnav a:hover, .nav-more-kopf:hover { background: var(--surface-2); text-decoration: none; color: var(--text); }
 .mainnav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); }
-/* Externer Link (Werkbank): kleiner Pfeil rechts statt eines Zaehlers. */
+/* Externe Links (Weitere Dashboards): kleiner Pfeil rechts statt eines Zaehlers. */
 .mainnav .nav-extern-ic { width: 14px; height: 14px; margin-left: auto; opacity: .55; }
+.nav-dashboards { display: flex; flex-direction: column; gap: 2px; }
+.nav-dashboards[hidden] { display: none; }
 .nav-more-kopf.current { color: var(--accent); }
 .nav-count { margin-left: auto; background: var(--accent); color: var(--accent-ink); font-size: .78rem; font-weight: 700; border-radius: 999px; padding: 1px 6px; min-width: 22px; text-align: center; font-variant-numeric: tabular-nums; }
 .nav-label { margin: 0; padding: 16px 10px 4px; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); }
@@ -618,6 +620,9 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
 
 /* "Zu tun": ein Kunde, darunter alles, was zu ihm offen ist. */
 .fall .card-head h3 { display: flex; align-items: baseline; gap: 8px; }
+/* Name, Stufe ("Kein echter Kunde") und Summe passen bei 360 px nicht in eine Zeile. */
+.fall .card-head { flex-wrap: wrap; row-gap: 2px; }
+.fall .card-head h3 { flex-wrap: wrap; min-width: 0; overflow-wrap: anywhere; }
 .fall-sofort { border-left: 3px solid var(--crit); }
 .fall-punkte { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 /* Knopfzeile der Fallkarte. Am Handy umbrechen statt herauslaufen. */
@@ -735,8 +740,11 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
   right: 12px;
   transform: none;
   align-items: center;
+  /* Die Leiste ist so breit wie der Bildschirm, aber unsichtbar - ohne das
+     verdeckte sie unten links "Fehler melden", solange ein Hinweis stand. */
+  pointer-events: none;
 }
-.toast { max-width: min(520px, 100%); }
+.toast { max-width: min(520px, 100%); pointer-events: auto; }
 
 /* Auf Fingergeraeten (Baustelle, Laden) sind 32 px zu klein zum Treffen. */
 @media (pointer: coarse) {
@@ -1032,8 +1040,22 @@ table.tasks td { padding-top: 12px; padding-bottom: 12px; }
   .nav-more-kopf::after, .nav-more-kopf .nav-ic, .nav-more-kopf .nav-count { display: none; }
   .nav-more > .nav-more-menu { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 8px; margin: 0; padding: 0; border: 0; }
   .nav-more-menu a { min-height: 48px; font-size: 1rem; }
-  .side-foot { margin-top: 10px; }
+  /* Fuss des Blatts (Datenstand, Fehler melden, Passwort, Abmelden) bleibt unten stehen,
+     waehrend die Punkte darueber scrollen. Vorher lag "Fehler melden" beim Inhaber
+     (mit Weiteren Dashboards) unterhalb des Blattrands und war nur durch Scrollen
+     im Blatt zu finden. Zwei Spalten, damit er nicht die halbe Hoehe frisst. */
+  .side-foot {
+    position: sticky; bottom: -12px; z-index: 1;
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 8px;
+    margin: 10px -4px -12px; padding: 8px 4px 12px; background: var(--surface);
+  }
+  .side-foot .side-knopf, .side-foot .sync-chip { min-width: 0; }
+  .side-foot .side-knopf span:not(.nav-count) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* "Fehler melden" zuerst und ueber die ganze Breite - sonst wird es neben dem Datenstand abgeschnitten. */
+  .side-foot [data-fehler-melden] { grid-column: 1 / -1; order: -1; }
   .side-abmelden { display: flex; }
+  /* Rueckmeldungen nicht ueber das offene Blatt legen, sondern in den freien Streifen oben. */
+  body.nav-offen .toasts { bottom: auto; top: calc(14px + env(safe-area-inset-top)); }
 
   .topbar-inner { min-height: 56px; gap: 8px; padding: calc(6px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 6px calc(14px + env(safe-area-inset-left)); }
   .seitentitel { font-size: 1.25rem; }

@@ -40,6 +40,8 @@ export const SICHERUNGSPFADE = Object.freeze([
   'auftragsstatus.json',
   'auftragsverlauf.json',
   'musterherkunft.json',
+  // Musterlager: welche Muster wir selbst da haben (operations/lib/musterlager.mjs).
+  'musterlager.json',
   'lexikon',
   'bestelluebersicht',
   'kennzahlen',
@@ -48,6 +50,10 @@ export const SICHERUNGSPFADE = Object.freeze([
   'einkauf-hersteller',
   'einkauf-kollektion',
   'aktualisierung.json',
+  // "Fehler melden": Meldungen der Mitarbeiter und ihr Stand in der Werkbank.
+  'fehlermeldungen.json',
+  'fehlermeldungen-abgleich.json',
+  'fehlermeldungen',
   // Social-Media-Modul: taeglicher, in sich stimmiger Abzug der Datenbank
   // (social/lib/ablauf.mjs, sichereDatenbank) und die Upload-Zugaenge. Die
   // Fotos selbst (social/medien) sind zu gross fuer das Tagesarchiv.

@@ -4,7 +4,7 @@
 import { normalizeTask, attentionScore, freshness } from '../lib/model.mjs';
 import { CONFIG } from './konfig.mjs';
 import { state } from './zustand.mjs';
-import { $, fmtDateTime, toast } from './helfer.mjs';
+import { $, fmtDateTime, chipZeit, toast } from './helfer.mjs';
 import { render } from './render.mjs';
 
 export async function loadData() {
@@ -25,7 +25,10 @@ export async function loadData() {
 }
 
 export async function loadAgentRuns() {
-  if (!state.capabilities.agentRuns) { state.agentRuns = null; return; }
+  // Nur der Inhaber darf die Laeufe lesen (NUR_INHABER in scripts/serve-dashboard.mjs). Fuer
+  // Mitarbeiter und "lesen" endete der Abruf auf jeder Seite in einem 403 samt Konsolenfehler.
+  const rolle = state.session?.benutzer?.rolle;
+  if (!state.capabilities.agentRuns || (rolle && rolle !== 'inhaber')) { state.agentRuns = null; return; }
   try {
     const r = await fetch('/api/agent-runs', { cache: 'no-store' });
     state.agentRuns = r.ok ? await r.json() : { error: `HTTP ${r.status}` };
@@ -56,7 +59,7 @@ export function renderSyncChip() {
   const fr = freshness(state.raw?.generated_at);
   chip.className = `sync-chip ${state.loadError ? 'fehler' : fr.level}`;
   // Kurz halten: der Chip darf in der Kopfzeile nicht umbrechen. Details stehen im Tooltip.
-  const uhrzeit = state.raw?.generated_at ? new Date(state.raw.generated_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '–';
+  const uhrzeit = chipZeit(state.raw?.generated_at);
   // "Stand 14:30" liest sich wie der Stand aller Zahlen im Dashboard. Der Wert
   // kommt aber allein aus issues.json, also von den Entwicklungsaufgaben; die
   // Betriebsdaten (Bestellungen, Kunden, Lexikon) haben eigene, meist aeltere

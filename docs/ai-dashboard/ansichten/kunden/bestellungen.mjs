@@ -15,6 +15,7 @@ import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { einkauf, AF_STATUS_LABEL, setzeAuftragsstatus } from '../einkauf/auftragsfluss.mjs';
 import { kunden, telLink, kundenAuftragKarte, ZAHLUNG_TEXT, VERSAND_TEXT, statusText } from './gemeinsam.mjs';
 import { zeitleisteBlock, auftragAusZeile, zeitleisteKlick } from './zeitleiste.mjs';
+import { bestellinhalt } from '../../lib/bestellinhalt.mjs';
 
 /** Setzt den Auftragsfluss-Status fuer ALLE Positionen einer Bestellung auf einmal (Bereich Kunden/Bestellungen). */
 async function setzeAuftragsstatusFuerBestellung(orderId, status) {
@@ -68,7 +69,9 @@ function bestellzeileGefiltert(zeilen, params) {
     : filter === 'muster' ? (z.tags.typ.some(t => /muster/i.test(t)) || (z.auftrag?.positionen || []).some(p => p.istMuster))
     : filter === 'test' ? z.testbestellung
     : !z.testbestellung);
-  if (q) liste = liste.filter(z => bqFeldTreffer([z.orderName, z.kundenname, z.email, z.telefon, z.kundenId, z.kanal, z.zustellmethode, z.zahlungsstatus, z.fulfillmentstatus, ...(z.tags.beratung || []), ...(z.tags.typ || []), ...(z.tags.sonstige || [])], q));
+  // Auch Produkt und Farbe: "wer hat das Regalia-Muster bestellt?" findet sich so ohne Aufklappen.
+  if (q) liste = liste.filter(z => bqFeldTreffer([z.orderName, z.kundenname, z.email, z.telefon, z.kundenId, z.kanal, z.zustellmethode, z.zahlungsstatus, z.fulfillmentstatus, ...(z.tags.beratung || []), ...(z.tags.typ || []), ...(z.tags.sonstige || []),
+    ...(z.auftrag?.positionen || []).flatMap(p => [p.titel, p.farbe])], q));
   const cmp = {
     datum: z => z.datum || '', orderName: z => z.orderName || '', kundenname: z => (z.kundenname || '').toLowerCase(),
     gesamtbetrag: z => z.gesamtbetrag ?? -Infinity, zahlungsstatus: z => z.zahlungsstatus || '', fulfillmentstatus: z => z.fulfillmentstatus || '', anzahlArtikel: z => z.anzahlArtikel ?? 0,
@@ -93,6 +96,15 @@ function fortschrittKlasse(stufe) {
   if (stufe === 'erledigt' || stufe === 'keine') return 'erledigt';
   if (stufe === 'offen') return 'offen';
   return 'unterwegs';
+}
+
+/**
+ * Versand: der Stand kommt aus dem Auftragsfluss, Shopify nur als Hinweis. Steht die Ware dort
+ * schon "An Kunden raus", hiess es in derselben Zeile sonst zugleich "Noch nicht versandt".
+ */
+function versandZelle(z) {
+  if (z.versandHinweis) return `<span class="small muted" title="Im Auftragsfluss an Kunden raus – in Shopify ist keine Sendung gebucht.">in Shopify nicht gebucht</span>`;
+  return statusText(z.fulfillmentstatus, VERSAND_TEXT);
 }
 
 function wertText(v) { return v === null || v === undefined ? '<span class="small muted">nicht hinterlegt</span>' : esc(v); }
@@ -157,21 +169,45 @@ function weitereAngaben(z, tagListe) {
   </div>`;
 }
 
+/**
+ * Was bestellt wurde, ohne Aufklappen (Inhaber 2026-10-13): bei Mustern Produkt und Farben und
+ * woher sie kommen, bei Ware die Artikel. Steht unter der Zeile ueber die ganze Breite.
+ */
+function inhaltHtml(z) {
+  const i = bestellinhalt(z.auftrag?.positionen);
+  const zeilen = [];
+  if (i.muster.anzahl) {
+    zeilen.push(`<div class="bq-inhalt-zeile"><span class="bq-art">${esc(i.muster.anzahl === 1 ? '1 Muster' : `${i.muster.anzahl} Muster`)}</span> <span class="bq-was">${esc(i.muster.text)}</span>${i.muster.herkunft ? ` <span class="bq-herkunft">${esc(i.muster.herkunft)}</span>` : ''}</div>`);
+  }
+  if (i.ware.anzahl) {
+    zeilen.push(`<div class="bq-inhalt-zeile"><span class="bq-art bq-art-ware">${esc(i.ware.anzahl === 1 ? '1 Artikel' : `${i.ware.anzahl} Artikel`)}</span> <span class="bq-was">${esc(i.ware.text)}</span></div>`);
+  }
+  return zeilen.join('');
+}
+
+/** Reine Musterbestellung ohne Betrag: "kostenlos" sagt mehr als "0,00 €". */
+function betragText(z) {
+  if (!z.gesamtbetrag && bestellinhalt(z.auftrag?.positionen).art === 'muster') return '<span class="small muted">kostenlos</span>';
+  return geldText({ betrag: z.gesamtbetrag, waehrung: z.waehrung });
+}
+
 function bestellzeileHtml(z) {
   const offenKlasse = kunden.erweitert.has(z.orderId) ? ' offen' : '';
   const tagListe = [...z.tags.beratung, ...z.tags.typ, ...z.tags.sonstige];
   const pk = fortschrittKlasse(z.fortschritt?.stufe);
-  return `<tr class="bq-row${offenKlasse}" data-bq-toggle="${esc(z.orderId)}" tabindex="0" role="button" aria-expanded="${kunden.erweitert.has(z.orderId)}" aria-label="Bestellung ${esc(z.orderName)} von ${esc(z.kundenname)} auf- oder zuklappen">
+  const inhalt = inhaltHtml(z);
+  return `<tr class="bq-row${offenKlasse}${inhalt ? ' mit-inhalt' : ''}" data-bq-toggle="${esc(z.orderId)}" tabindex="0" role="button" aria-expanded="${kunden.erweitert.has(z.orderId)}" aria-label="Bestellung ${esc(z.orderName)} von ${esc(z.kundenname)} auf- oder zuklappen">
       <td data-l="Bestellnr."><a href="${esc(z.adminUrl)}" target="_blank" rel="noopener">${esc(z.orderName)}</a>${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</td>
       <td data-l="Datum">${fmtDateTime(z.datum)}</td>
       <td data-l="Kunde">${z.kundenSchluessel ? `<a href="#" data-kunden-open="${esc(z.kundenSchluessel)}">${wertText(z.kundenname)}</a>` : wertText(z.kundenname)}</td>
       <td data-l="Kontakt">${kontaktZelle(z)}</td>
-      <td data-l="Betrag">${geldText({ betrag: z.gesamtbetrag, waehrung: z.waehrung })}</td>
+      <td data-l="Betrag">${betragText(z)}</td>
       <td data-l="Zahlung">${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)}</td>
-      <td data-l="Versand">${statusText(z.fulfillmentstatus, VERSAND_TEXT)}</td>
+      <td data-l="Versand">${versandZelle(z)}</td>
       <td data-l="Fortschritt"><span class="bq-fortschritt ${pk}">${esc(z.fortschritt?.text || '–')}</span></td>
       <td data-l="Was fehlt">${z.wasFehlt?.length ? `<span class="bq-fehlt">${z.wasFehlt.map(esc).join(' · ')}</span>` : '<span class="small muted">nichts</span>'}</td>
     </tr>
+    ${inhalt ? `<tr class="bq-inhalt${offenKlasse}" data-bq-toggle="${esc(z.orderId)}"><td colspan="9">${inhalt}</td></tr>` : ''}
     ${kunden.erweitert.has(z.orderId) ? `<tr class="bq-detail"><td colspan="9">${zeitleisteBlock(auftragAusZeile(z), { kontakt: true })}${weitereAngaben(z, tagListe)}${kundenAuftragKarte(z.auftrag)}${bestellzeileAktionen(z)}</td></tr>` : ''}`;
 }
 
@@ -180,7 +216,8 @@ function bestellzeileKarte(z, gruppiert = false) {
   return `<div class="row bq-karte" data-bq-toggle="${esc(z.orderId)}" tabindex="0" role="button" aria-expanded="${kunden.erweitert.has(z.orderId)}" aria-label="Bestellung ${esc(z.orderName)} von ${esc(z.kundenname || 'unbekannt')} auf- oder zuklappen">
     <div>
       <div class="t">${esc(z.orderName)}${gruppiert ? '' : ` · ${wertText(z.kundenname)}`}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</div>
-      <div class="m">${geldText({ betrag: z.gesamtbetrag, waehrung: z.waehrung })} · ${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)} · ${fmtDate(z.datum)}</div>
+      <div class="m">${betragText(z)} · ${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)} · ${fmtDate(z.datum)}</div>
+      ${inhaltHtml(z) ? `<div class="bq-inhalt-mobil">${inhaltHtml(z)}</div>` : ''}
       <div class="m"><span class="bq-fortschritt ${pk}">${esc(z.fortschritt?.text || '–')}</span></div>
       ${z.wasFehlt?.length ? `<div class="m bq-fehlt">${z.wasFehlt.map(esc).join(' · ')}</div>` : ''}
     </div>
@@ -218,9 +255,9 @@ export function viewKundenBestellungen() {
     : zeilen.map(bestellzeileKarte).join('')
     : emptyState('Keine Treffer.', '');
   return `
-    <div class="toolbar search-hero"><input type="search" placeholder="Suchen – Kunde, E-Mail, Telefon, Bestellnummer, Kunden-ID, Kanal, Tags …" value="${esc(params.get('bq') || '')}" data-param="bq" aria-label="Bestellungen durchsuchen"></div>
+    <div class="toolbar search-hero"><input type="search" placeholder="Suchen – Kunde, E-Mail, Telefon, Bestellnummer, Produkt, Farbe, Tags …" value="${esc(params.get('bq') || '')}" data-param="bq" aria-label="Bestellungen durchsuchen"></div>
     ${chips}
-    <p class="small muted" style="margin:0 0 8px">${zeilen.length} ${zeilen.length === 1 ? 'Bestellung' : 'Bestellungen'} · Sortiert nach ${esc(BQ_SORT_LABEL[sort] || 'Kunde')} ${dir === 'asc' ? 'aufsteigend' : 'absteigend'} · Zeile anklicken zeigt Positionen, Kanal, Tags und die Aktionen</p>
+    <p class="small muted" style="margin:0 0 8px">${zeilen.length} ${zeilen.length === 1 ? 'Bestellung' : 'Bestellungen'} · Sortiert nach ${esc(BQ_SORT_LABEL[sort] || 'Kunde')} ${dir === 'asc' ? 'aufsteigend' : 'absteigend'} · Zeile anklicken zeigt Zeitleiste, Kanal, Tags und die Aktionen</p>
     <div class="table-wrap kunden-table bq-table"><table><thead>${kopf}</thead>
     ${tabelle}
     </table></div>

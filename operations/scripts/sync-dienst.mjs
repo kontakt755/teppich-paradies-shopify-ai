@@ -18,7 +18,11 @@
  * fehlschlagenden Teil die vorhandene Datei stehen laesst.
  *
  * Das Lexikon (teure Massenabfrage) laeuft nur alle TP_SYNC_LEXIKON_MINUTEN
- * (Standard 60) mit, alle anderen Teile in jedem Intervall.
+ * (Standard 60) mit, der Lagerbestand nur alle TP_SYNC_BESTAND_MINUTEN
+ * (Standard 60), alle anderen Teile in jedem Intervall.
+ *
+ * Jede Protokollzeile beginnt mit der Uhrzeit (ISO, UTC) - ohne sie war im
+ * Protokoll nicht zu sehen, wann ein Lauf scheiterte.
  *
  * Ohne Token (SHOPIFY_ADMIN_TOKEN oder SHOPIFY_CLIENT_ID/SECRET in
  * .env.local) startet der Dienst NICHT still folgenlos: er meldet das
@@ -56,33 +60,62 @@ export function hatZugang(env = { ...ladeEnvLocal(path.join(REPO, '.env.local'))
 /**
  * Das Lexikon ist der teure Teil (Massenabfrage ueber alle Produkte) und
  * aendert sich selten - es laeuft deshalb nicht in jedem Intervall mit,
- * sondern hoechstens alle TP_SYNC_LEXIKON_MINUTEN (Standard 60). Bestellungen,
- * Kunden, Angebote, Warenkoerbe und Bestand bleiben im kurzen Takt.
+ * sondern hoechstens alle TP_SYNC_LEXIKON_MINUTEN (Standard 60).
+ *
+ * Der Lagerbestand ebenso (TP_SYNC_BESTAND_MINUTEN, Standard 60): er blaettert
+ * durch die Bestandsliste jedes Artikels am Standort (rund 3.300), um am Ende
+ * die knapp 150 gefuehrten zu behalten, und kostete so rund 90 von 100
+ * Sekunden je Zehn-Minuten-Lauf. Das Abbuchen von Sonderposten ("Im Laden
+ * verkauft") liest und schreibt den Bestand live in Shopify und haengt nicht
+ * an dieser Datei.
+ *
+ * Bestellungen, Kennzahlen, Kunden, Angebote und Warenkoerbe bleiben im kurzen Takt.
  */
 export const STANDARD_LEXIKON_MINUTEN = 60;
-const SCHNELLE_TEILE = ['bestellungen', 'kennzahlen', 'kunden', 'angebote', 'warenkoerbe', 'bestand'];
+export const STANDARD_BESTAND_MINUTEN = 60;
+const SCHNELLE_TEILE = ['bestellungen', 'kennzahlen', 'kunden', 'angebote', 'warenkoerbe'];
 
-export function leseLexikonMinuten(env = process.env) {
-  const roh = env.TP_SYNC_LEXIKON_MINUTEN;
-  if (roh === undefined || roh === '') return STANDARD_LEXIKON_MINUTEN;
+function leseMinuten(env, name, standard) {
+  const roh = env[name];
+  if (roh === undefined || roh === '') return standard;
   const n = Number(roh);
-  if (!(n > 0)) throw new Error(`TP_SYNC_LEXIKON_MINUTEN ungueltig: "${roh}" (muss eine Zahl > 0 sein)`);
+  if (!(n > 0)) throw new Error(`${name} ungueltig: "${roh}" (muss eine Zahl > 0 sein)`);
   return n;
 }
 
+export function leseLexikonMinuten(env = process.env) {
+  return leseMinuten(env, 'TP_SYNC_LEXIKON_MINUTEN', STANDARD_LEXIKON_MINUTEN);
+}
+
+export function leseBestandMinuten(env = process.env) {
+  return leseMinuten(env, 'TP_SYNC_BESTAND_MINUTEN', STANDARD_BESTAND_MINUTEN);
+}
+
 /**
- * Baut die Lauf-Funktion des Dienstes. Das Lexikon laeuft im ersten Lauf und
- * danach erst wieder, wenn sein letzter ERFOLGREICHER Lauf lexikonMinuten
- * zurueckliegt - nach einem Fehlschlag also gleich im naechsten Intervall.
+ * Baut die Lauf-Funktion des Dienstes. Lexikon und Bestand laufen im ersten
+ * Lauf und danach erst wieder, wenn ihr letzter ERFOLGREICHER Lauf
+ * lexikonMinuten bzw. bestandMinuten zurueckliegt - nach einem Fehlschlag also
+ * gleich im naechsten Intervall.
  */
-export function erzeugeLauf({ lexikonMinuten = leseLexikonMinuten(), aktualisiereFn = aktualisiere, jetzt = Date.now } = {}) {
-  let lexikonErfolgAm = null;
+export function erzeugeLauf({ lexikonMinuten = leseLexikonMinuten(), bestandMinuten = leseBestandMinuten(), aktualisiereFn = aktualisiere, jetzt = Date.now } = {}) {
+  const takt = { lexikon: lexikonMinuten, bestand: bestandMinuten };
+  const erfolgAm = { lexikon: null, bestand: null };
   return async () => {
-    const mitLexikon = lexikonErfolgAm === null || jetzt() - lexikonErfolgAm >= lexikonMinuten * 60000;
-    const r = await aktualisiereFn({ nur: mitLexikon ? ['lexikon', ...SCHNELLE_TEILE] : SCHNELLE_TEILE });
-    if (mitLexikon && (r?.ergebnisse ?? []).some((e) => e.teil === 'lexikon' && e.erfolg)) lexikonErfolgAm = jetzt();
+    const faellig = Object.keys(takt).filter((teil) => erfolgAm[teil] === null || jetzt() - erfolgAm[teil] >= takt[teil] * 60000);
+    // Reihenfolge wie bisher: Lexikon zuerst, Bestand zuletzt.
+    const nur = [...(faellig.includes('lexikon') ? ['lexikon'] : []), ...SCHNELLE_TEILE, ...(faellig.includes('bestand') ? ['bestand'] : [])];
+    const r = await aktualisiereFn({ nur });
+    for (const teil of faellig) {
+      if ((r?.ergebnisse ?? []).some((e) => e.teil === teil && e.erfolg)) erfolgAm[teil] = jetzt();
+    }
     return r;
   };
+}
+
+/** Protokoll mit Uhrzeit vor jeder Zeile (ISO, UTC) - fuer das Dienstprotokoll von launchd. */
+export function mitZeitstempel(ziel = console, jetzt = () => new Date()) {
+  const zeile = (art) => (text) => ziel[art]?.(`${jetzt().toISOString()} ${text}`);
+  return { log: zeile('log'), warn: zeile('warn'), error: zeile('error') };
 }
 
 function warteStandard(ms, signal) {
@@ -104,7 +137,7 @@ function warteStandard(ms, signal) {
 export async function starteDienst({
   intervallMinuten = leseIntervallMinuten(),
   lauf = erzeugeLauf(),
-  protokoll = console,
+  protokoll = mitZeitstempel(console),
   warten = warteStandard,
   signal = new AbortController().signal,
   maxLaeufe = Infinity,
@@ -136,33 +169,36 @@ export async function starteDienst({
 }
 
 async function main() {
+  const protokoll = mitZeitstempel(console);
   if (!hatZugang()) {
-    console.error(`[sync-dienst] ${KEIN_ZUGANG}`);
-    console.error(`[sync-dienst] Gesucht in: ${path.join(REPO, '.env.local')}. Ohne Zugang beendet sich der Dienst - er laeuft nie still ohne Wirkung.`);
+    protokoll.error(`[sync-dienst] ${KEIN_ZUGANG}`);
+    protokoll.error(`[sync-dienst] Gesucht in: ${path.join(REPO, '.env.local')}. Ohne Zugang beendet sich der Dienst - er laeuft nie still ohne Wirkung.`);
     process.exitCode = 1;
     return;
   }
   let intervallMinuten;
   let lexikonMinuten;
+  let bestandMinuten;
   try {
     intervallMinuten = leseIntervallMinuten();
     lexikonMinuten = leseLexikonMinuten();
+    bestandMinuten = leseBestandMinuten();
   } catch (err) {
-    console.error(`[sync-dienst] ${err.message}`);
+    protokoll.error(`[sync-dienst] ${err.message}`);
     process.exitCode = 1;
     return;
   }
-  console.log(`[sync-dienst] Start - Intervall ${intervallMinuten} Minute(n), Lexikon alle ${lexikonMinuten} Minute(n), Ziel $TP_PRIVAT_DIR`);
+  protokoll.log(`[sync-dienst] Start - Intervall ${intervallMinuten} Minute(n), Lexikon alle ${lexikonMinuten}, Lagerbestand alle ${bestandMinuten} Minute(n), Ziel $TP_PRIVAT_DIR`);
   const controller = new AbortController();
   const beenden = (signal) => {
-    console.log(`[sync-dienst] ${signal} empfangen - beende nach dem aktuellen Lauf`);
+    protokoll.log(`[sync-dienst] ${signal} empfangen - beende nach dem aktuellen Lauf`);
     controller.abort();
   };
   process.once('SIGTERM', () => beenden('SIGTERM'));
   process.once('SIGINT', () => beenden('SIGINT'));
-  await starteDienst({ intervallMinuten, lauf: erzeugeLauf({ lexikonMinuten }), signal: controller.signal });
+  await starteDienst({ intervallMinuten, lauf: erzeugeLauf({ lexikonMinuten, bestandMinuten }), protokoll, signal: controller.signal });
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main().catch((err) => { console.error(`[sync-dienst] Fehler: ${err.message}`); process.exit(1); });
+  main().catch((err) => { mitZeitstempel(console).error(`[sync-dienst] Fehler: ${err.message}`); process.exit(1); });
 }

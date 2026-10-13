@@ -9,6 +9,13 @@
  */
 
 import { alsTag, STANDARD_BEREICHE, istTechnisch } from './organisation.mjs';
+import { ladeLieferantenNamen } from '../../scripts/masstepich/lib.mjs';
+
+// Lieferanten-Klarnamen stehen nie im oeffentlichen Repository (AGENTS.md Regel 8),
+// sondern nur in der internen Liste (TP_LIEFERANTEN_NAMEN oder lokale Konfiguration).
+function interneLieferantenNamen() {
+  try { return [...(ladeLieferantenNamen() ?? [])]; } catch { return []; }
+}
 
 /** Woerter, die eine Handlung anzeigen - daran erkennt man eine Aufgabe. */
 const HANDLUNG = [
@@ -30,7 +37,7 @@ const BEREICH_WOERTER = {
   Bestellungen: ['kundenbestellung', 'bestellnummer', 'versenden', 'verschicken', 'versand', 'paket', 'retoure', 'ruecksendung', 'rücksendung', 'abholung', 'liefertermin', 'storno'],
   'Angebote / Lexware': ['angebot', 'lexware', 'rechnung', 'kostenvoranschlag'],
   Einkauf: ['einkauf', 'nachbestellen', 'nachbestellung', 'bestellen beim', 'wareneingang'],
-  Lieferanten: ['lieferant', 'jordan', 'grosshändler', 'grosshaendler', 'lieferung'],
+  Lieferanten: ['lieferant', 'grosshändler', 'grosshaendler', 'lieferung', ...interneLieferantenNamen()],
   Marketing: ['marketing', 'newsletter', 'werbung', 'google', 'anzeige', 'logo', 'social'],
   Buchhaltung: ['buchhaltung', 'buchen', 'steuer', 'datev', 'beleg'],
   Mitarbeiter: ['mitarbeiter', 'urlaub', 'schicht', 'krank', 'arbeitszeit'],

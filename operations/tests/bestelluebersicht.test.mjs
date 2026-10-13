@@ -92,7 +92,8 @@ test('Einkaufsmenge ueber umrechnung.mjs, sonst UNGEKLAERT - nie geraten', () =>
   const r = pos('TEST-ROLLE-1').bestellmenge;
   assert.equal(r.menge, 3.02); // 302 cm aus der Rolle 400 cm
   assert.equal(r.einheit, 'lfm');
-  assert.match(r.text, /Lieferantenraster UNGEKLAERT/);
+  assert.match(r.text, /Lieferantenraster ungeklärt/);
+  assert.doesNotMatch(r.text, /UNGEKLAERT/, 'kein interner Marker im angezeigten Text');
   assert.equal(pos('TEST-FREI').bestellmenge.menge, UNGEKLAERT);
   assert.match(pos('TEST-FREI').bestellmenge.grund, /bestelleinheit/);
   assert.equal(pos('Alter Testartikel').bestellmenge.menge, UNGEKLAERT);
@@ -285,4 +286,88 @@ test('Variante "je lfm": Stueckzahl ist die Laenge, Breite aus dem Variantentite
   assert.equal(r.grund, null);
   // Ohne "je lfm" bleibt es ungeklaert - geraten wird nichts.
   assert.equal(einkaufsmenge({ ...item, eingaben: ausVariantentitel('Natur') }, 25).menge, 'UNGEKLAERT');
+});
+
+// Teppich nach Mass: der Konfigurator schreibt die Rolle privat als
+// "_Zuschnitt aus Rolle", der Kettelservice haengt als eigene Zeile in
+// derselben _Gruppe dran (Fall #1031, hier mit erfundenen Daten).
+test('Teppich nach Mass: Rolle aus "_Zuschnitt aus Rolle", Kettelservice ist Eigenleistung', () => {
+  const teppich = zeile({ id: 41, sku: null, title: 'Testteppich nach Maß', variantTitle: 'Blau', quantity: 336, handle: 'testteppich-nach-mass',
+    attrs: [{ key: 'Maße', value: '120 × 280 cm' }, { key: '_Zuschnitt aus Rolle', value: '200 cm' }, { key: '_Gruppe', value: 'g1' }],
+    einkauf: [['lieferant', 'A'], ['artikelnummer', 'A-733-120'], ['bestelleinheit', 'lfm'], ['route', 'SUPPLIER_TO_TP']],
+    custom: [['preis_pro_001_qm', 'true']] });
+  const kettel = zeile({ id: 42, sku: null, title: 'Kettelservice', variantTitle: 'je 0,01 laufender Meter', quantity: 800, handle: 'kettelservice',
+    attrs: [{ key: 'Zu Teppich', value: 'Testteppich nach Maß' }, { key: 'Kante umlaufend', value: '8,00 m' }, { key: '_Gruppe', value: 'g1' }] });
+  const mm = aufbereiten({ orders: [bestellung(41, [teppich, kettel])] }, { jetzt: new Date('2026-01-07T00:00:00Z') });
+  const [t, k] = mm.auftraege[0].positionen;
+
+  // 120 cm quer zur 200-cm-Rolle, 280 cm entlang: 2,80 lfm.
+  assert.equal(t.bestellmenge.menge, 2.8);
+  assert.equal(t.bestellmenge.einheit, 'lfm');
+
+  assert.equal(k.eigenleistung, true);
+  assert.equal(k.menge, 0);
+  assert.equal(k.bestellmenge.text, 'Eigenleistung – nichts zu bestellen');
+  assert.match(k.kundenmenge, /800/);
+  assert.ok(!mm.auftraege[0].hinweise.some(h => /ohne Großhändler-ID/.test(h)), mm.auftraege[0].hinweise.join(' | '));
+  assert.equal(mm.zahlen.ohneId, 0);
+  assert.equal(mm.zahlen.zuBestellen, 1);
+  assert.ok(mm.gruppen.flatMap(g => g.positionen).every(p => p.titel !== 'Kettelservice'));
+  assert.match(renderHtml(mm), /Eigenleistung/);
+});
+
+test('"Aus Rolle" des Rollenrechners geht vor "_Zuschnitt aus Rolle"', () => {
+  const z = zeile({ id: 43, sku: 'TEST-ROLLE-2', title: 'Testboden Rolle', quantity: 1,
+    attrs: [{ key: 'Aus Rolle', value: '400 cm' }, { key: '_Zuschnitt aus Rolle', value: '200 cm' }, { key: 'Gewünschte Länge', value: '150 cm' }],
+    einkauf: [['lieferant', 'A'], ['artikelnummer', 'A-1'], ['bestelleinheit', 'lfm']] });
+  const mm = aufbereiten({ orders: [bestellung(43, [z])] }, { jetzt: new Date('2026-01-07T00:00:00Z') });
+  assert.match(mm.auftraege[0].positionen[0].bestellmenge.text, /× 4,00 m/);
+});
+
+test('Muster ueber das Sammelprodukt verweist aufs Quellprodukt (Lexikon, Lieferant, Link)', () => {
+  // Vinylboeden von der Rolle haben fast nie ein eigenes Musterprodukt: die
+  // Zeile ist "Kostenloses Muster". Dessen Lexikon-Eintrag hat weder
+  // Lieferant noch Link - "Im Lexikon ansehen" muss zum Quellprodukt fuehren.
+  const qv = {
+    id: 'gid://shopify/ProductVariant/888', sku: 'CVTEST_210', title: 'Default Title',
+    metafields: { nodes: [mf('einkauf', 'lieferant', 'gid://shopify/Metaobject/1828679713102'), mf('einkauf', 'lieferant_url', 'https://lieferant-a.example/p/1')] },
+    lieferant: { nodes: [] },
+    product: { id: 'gid://shopify/Product/88', handle: 'testvinyl-eiche-von-der-rolle', title: 'Testvinyl Eiche', grosshandel: { nodes: [mf('grosshandel', 'sku', 'CVTEST_210')] } },
+  };
+  const sammel = zeile({ id: 30, sku: 'TP-MUSTER-000', title: 'Kostenloses Muster', handle: 'kostenloses-muster',
+    attrs: [{ key: '_Muster_ID', value: 'testvinyl--eiche' }, { key: '_Quellprodukt', value: 'testvinyl-eiche-von-der-rolle' }, { key: '_Quellvariante_ID', value: '888' }, { key: 'Produkt', value: 'Testvinyl Eiche' }, { key: 'Farbe', value: 'Eiche' }] });
+  const ohneQv = zeile({ id: 31, sku: 'TP-MUSTER-000', title: 'Kostenloses Muster', handle: 'kostenloses-muster',
+    attrs: [{ key: '_Muster_ID', value: 'testvinyl2--grau' }, { key: '_Quellprodukt', value: 'testvinyl-grau-von-der-rolle' }, { key: 'Produkt', value: 'Testvinyl Grau' }] });
+  const mm = aufbereiten({ orders: [bestellung(30, [sammel, ohneQv, musterM])], quellvarianten: [qv, quellvariante] });
+  const alle = mm.auftraege.flatMap(a => a.positionen);
+  const p = alle.find(x => x.lineItemId === 'gid://shopify/LineItem/30');
+  assert.equal(p.handle, 'testvinyl-eiche-von-der-rolle');
+  assert.equal(p.lieferant, 'A');
+  assert.equal(p.lieferantUrl, 'https://lieferant-a.example/p/1');
+  assert.equal(p.grosshaendlerId, 'CVTEST_210');
+  // Quellvariante nicht geladen: der Handle aus der Property reicht fuers Lexikon.
+  assert.equal(alle.find(x => x.lineItemId === 'gid://shopify/LineItem/31').handle, 'testvinyl-grau-von-der-rolle');
+  // Eigenes Musterprodukt bleibt: das Lexikon zeigt dort das Original selbst.
+  assert.equal(alle.find(x => x.sku === 'M-TESTROLLE_1').handle, 'muster-testboden');
+});
+
+test('Lieferant aus Metaobjekt-GID: feste Liste kennt A-E, der Export liefert weitere mit', () => {
+  const gid = n => `gid://shopify/Metaobject/${n}`;
+  const mitLieferant = (id, wert) => zeile({ id, sku: `TEST-LF-${id}`, title: `Testartikel ${id}`, einkauf: [['lieferant', wert]] });
+  const orders = [bestellung(40, [mitLieferant(41, gid(1845606482254)), mitLieferant(42, gid(1846305227086)), mitLieferant(43, gid(1846305259854)), mitLieferant(44, gid(1999))])];
+  const lf = modell => Object.fromEntries(modell.auftraege.flatMap(a => a.positionen).map(p => [p.sku, p.lieferant]));
+  const ohneListe = lf(aufbereiten({ orders }));
+  assert.deepEqual(ohneListe, { 'TEST-LF-41': 'C', 'TEST-LF-42': 'D', 'TEST-LF-43': 'E', 'TEST-LF-44': UNGEKLAERT });
+  const mitListe = lf(aufbereiten({ orders, lieferanten: [{ id: gid(1999), kuerzel: 'f' }] }));
+  assert.equal(mitListe['TEST-LF-44'], 'F');
+});
+
+test('Kundenmenge: bei gelieferter Ware die bestellte Menge, Kettelservice in laufenden Metern', () => {
+  // Vorher: "0 Stk." bei gelieferter Ware (offene Menge) und "800 Stk. Kettelservice".
+  const geliefert = { ...zeile({ id: 50, sku: 'TEST-ROLLE-9', title: 'Testunterlage', variantTitle: '80 cm breit (je lfm)', quantity: 3 }), unfulfilledQuantity: 0 };
+  const kettel = zeile({ id: 51, sku: null, title: 'Kettelservice', variantTitle: 'je 0,01 laufender Meter', quantity: 800, handle: 'kettelservice' });
+  const mm = aufbereiten({ orders: [bestellung(50, [geliefert, kettel])] });
+  const pos = mm.auftraege[0].positionen;
+  assert.match(pos.find(p => p.titel === 'Testunterlage').kundenmenge, /^3 lfm/, 'je lfm: Stueckzahl ist die Laenge');
+  assert.match(pos.find(p => p.titel === 'Kettelservice').kundenmenge, /800 × 0,01 lfm = 8,00 lfm/);
 });

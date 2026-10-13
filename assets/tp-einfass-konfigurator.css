@@ -60,6 +60,69 @@
 .tp-ek__grenzen { margin: 8px 0 0; font-size: .78rem; color: var(--tp-ek-muted); }
 .tp-ek__fehler { margin: 8px 0 0; font-size: .85rem; color: #a62020; }
 
+/* Kantenwahl als Bildkacheln (snippets/tp-einfass-kanten): Bild, Name, ein Satz, Preis. */
+.tp-ek__kanten-schritt { scroll-margin-top: 96px; }
+.tp-ek__kanten { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.tp-ek__kante {
+  display: flex; flex-direction: column; min-width: 0; overflow: hidden;
+  border: 1px solid var(--tp-ek-line); border-radius: 10px; background: var(--tp-ek-surface);
+  color: var(--tp-ek-ink); text-decoration: none; transition: border-color .15s, box-shadow .15s;
+}
+.tp-ek__kante:hover { border-color: var(--tp-ek-ink); }
+.tp-ek__kante:focus-visible { outline: 2px solid var(--tp-ek-ink); outline-offset: 2px; }
+.tp-ek__kante.is-aktiv { border-color: var(--tp-ek-green); box-shadow: inset 0 0 0 1px var(--tp-ek-green); }
+.tp-ek__kante-bild { position: relative; display: block; aspect-ratio: 4 / 3; overflow: hidden; background: #ece6dc; }
+.tp-ek__kante-bild img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/*
+  Ohne Foto: der Boden ist neutral, darauf liegt die Ecke des Teppichs im Foto der
+  gewaehlten Farbe (--tp-ek-textur, setzt Liquid und das Skript). Die Kante wird je
+  Art gezeichnet - schematisch, aber in der echten Farbe.
+*/
+.tp-ek__kante-bild--zeichnung { background: linear-gradient(135deg, #efe9df, #e2d9cb); }
+.tp-ek__kante-ecke {
+  position: absolute; left: 20%; top: 24%; right: -14px; bottom: -14px;
+  border-radius: 3px; background-color: #d9d4cb; background-image: var(--tp-ek-textur, none);
+  background-size: 260% auto; background-position: center;
+  box-shadow: -6px 8px 14px rgb(43 38 34 / .22);
+}
+/* Gekettelt: dichte Schraegstiche ueber der Kante, Garn Ton in Ton (dunkler Schatten der Farbe). */
+[data-kante-art="ketteln"] .tp-ek__kante-ecke::before {
+  content: ""; position: absolute; inset: 0; border-radius: 3px; pointer-events: none;
+  border: 6px solid transparent;
+  border-image: repeating-linear-gradient(45deg, rgb(0 0 0 / .46) 0 2px, rgb(255 255 255 / .16) 2px 4px) 6;
+}
+/* Paspel: schmales, glattes Band mit leichtem Glanz. */
+[data-kante-art="paspelband"] .tp-ek__kante-ecke::before {
+  content: ""; position: absolute; inset: 0; border-radius: 3px; pointer-events: none;
+  border: 7px solid rgb(0 0 0 / .42); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .25);
+}
+/* Einfassband: breites Band. */
+[data-kante-art="einfassband"] .tp-ek__kante-ecke::before {
+  content: ""; position: absolute; inset: 0; border-radius: 3px; pointer-events: none;
+  border: 15px solid rgb(60 52 44 / .82); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .22);
+}
+[data-kante-art="cover"] .tp-ek__kante-ecke {
+  border-radius: 12px;
+  box-shadow: -6px 9px 16px rgb(43 38 34 / .28), inset 7px 7px 9px rgb(255 255 255 / .28), inset -2px -2px 6px rgb(0 0 0 / .18);
+}
+.tp-ek__kante-kopf { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 10px 12px 0; }
+.tp-ek__kante-name { font-size: .95rem; font-weight: 700; line-height: 1.25; }
+.tp-ek__kante-haken {
+  flex-shrink: 0; padding: 2px 8px; border-radius: 999px; background: var(--tp-ek-green);
+  color: #fff; font-size: .7rem; font-weight: 700;
+}
+.tp-ek__kante-text { display: block; padding: 4px 12px 0; font-size: .78rem; line-height: 1.35; color: var(--tp-ek-muted); }
+.tp-ek__kante-preis { display: flex; flex-direction: column; gap: 1px; margin-top: auto; padding: 8px 12px 12px; font-variant-numeric: tabular-nums; }
+.tp-ek__kante-preis strong { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.01em; }
+.tp-ek__kante-preis [data-kante-m2] { font-size: .9rem; font-weight: 700; }
+.tp-ek__kante-preis strong:not([hidden]) + [data-kante-m2] { font-size: .78rem; font-weight: 500; color: var(--tp-ek-muted); }
+.tp-ek__kante-inkl { font-size: .72rem; color: var(--tp-ek-muted); }
+.tp-ek__kante.is-zu-gross { opacity: .78; }
+.tp-ek__kante.is-zu-gross .tp-ek__kante-preis strong { font-size: .8rem; font-weight: 600; color: #a62020; }
+.tp-ek__kanten-hinweis { margin: 8px 0 0; font-size: .78rem; line-height: 1.4; color: var(--tp-ek-muted); }
+.tp-ek__kanten-basis { margin: 6px 0 0; font-size: .8rem; line-height: 1.45; color: var(--tp-ek-muted); }
+.tp-ek__kanten-basis a { color: var(--tp-ek-ink); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
 .tp-ek__baender { display: flex; flex-wrap: wrap; gap: 7px; }
 .tp-ek__band input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
 .tp-ek__band span { display: block; width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--tp-ek-surface); box-shadow: 0 0 0 1px var(--tp-ek-line); cursor: pointer; }
@@ -67,6 +130,9 @@
 .tp-ek__band input:focus-visible + span { outline: 2px solid var(--tp-ek-ink); outline-offset: 3px; }
 .tp-ek__bandname { margin: 10px 0 0; font-size: .88rem; font-weight: 600; }
 .tp-ek__bandname:empty { display: none; }
+/* Feste Bandfarbe (service.bandfarbe_fest): keine Wahl, nur ein ruhiger Hinweis unter den Massen. */
+.tp-ek__bandfest { margin: -8px 0 22px; font-size: .88rem; line-height: 1.45; color: var(--tp-ek-muted); }
+.tp-ek__bandfest span { color: var(--tp-ek-ink); font-weight: 600; }
 
 .tp-ek__vorschau { margin: 0 0 14px; padding: 12px 12px 10px; border-radius: 10px; background: var(--tp-ek-soft); }
 .tp-ek--mass .tp-ek__vorschau{margin:12px 0 0;padding:9px 12px;border:1px solid var(--tp-ek-line);background:var(--tp-ek-surface)}
@@ -144,6 +210,7 @@
 .tp-ek--mass .tp-ek__summe strong{font-size:1.45rem;white-space:nowrap}
 .tp-ek--mass .tp-ek__summe .tp-ek__summe-alt{font-size:.88rem}
 .tp-ek__preishinweis { margin: 6px 0 0; font-size: .82rem; line-height: 1.45; color: var(--tp-ek-muted); }
+.tp-ek__rechenzeile { margin: 2px 0 0; text-align: right; font-size: .8rem; color: var(--tp-ek-muted); font-variant-numeric: tabular-nums; }
 
 .tp-ek__cta {
   display: block; width: 100%; min-height: 52px; padding: 15px 18px; border: 0;
@@ -156,6 +223,25 @@
 .tp-ek__cta.is-error { background: #a62020; }
 .tp-ek__cta--zweit { background: var(--tp-ek-ink); }
 .tp-ek__warenkorb { display: block; margin-top: 10px; text-align: center; font-size: .85rem; text-decoration: underline; text-underline-offset: 3px; }
+
+/* Befestigungs-Tipp bei Teppichen nach Mass (alle Kanten ausser Fertig): freundlich, kein Warnhinweis */
+.tp-ek__tipp { margin: 14px 0 0; padding: 14px 16px; border: 1px solid rgb(29 107 71 / 0.22); border-radius: 10px; background: var(--tp-ek-green-soft); }
+.tp-ek__tipp-kopf { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; font-size: .95rem; line-height: 1.3; }
+.tp-ek__tipp-marke { padding: 2px 9px; border-radius: 999px; background: var(--tp-ek-green); color: #fff; font-size: .72rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
+.tp-ek__tipp-text { margin: 6px 0 0; font-size: .86rem; line-height: 1.5; color: var(--tp-ek-ink); }
+.tp-ek__tipp-produkt {
+  display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 8px 12px 8px 8px;
+  border: 1px solid var(--tp-ek-line); border-radius: 8px; background: var(--tp-ek-surface);
+  color: var(--tp-ek-ink); text-decoration: none; transition: border-color .15s;
+}
+.tp-ek__tipp-produkt:hover { border-color: var(--tp-ek-green); }
+.tp-ek__tipp-produkt:focus-visible { outline: 2px solid var(--tp-ek-ink); outline-offset: 2px; }
+.tp-ek__tipp-bild { flex-shrink: 0; width: 56px; height: 56px; border-radius: 6px; object-fit: cover; }
+.tp-ek__tipp-name { flex: 1; min-width: 0; font-size: .88rem; font-weight: 700; line-height: 1.3; color: var(--tp-ek-green); }
+.tp-ek__tipp-preis { display: block; margin-top: 2px; font-size: .8rem; font-weight: 500; color: var(--tp-ek-muted); }
+.tp-ek__tipp-boden { display: block; margin-bottom: 1px; font-size: .72rem; font-weight: 600; letter-spacing: .02em; color: var(--tp-ek-muted); }
+.tp-ek__tipp-produkt + .tp-ek__tipp-produkt { margin-top: 8px; }
+.tp-ek__tipp-pfeil { flex-shrink: 0; color: var(--tp-ek-green); }
 
 .tp-ek__anfrage { display: grid; gap: 10px; padding: 16px; border: 1px solid var(--tp-ek-line); border-radius: 10px; }
 .tp-ek__anfrage-titel { margin: 0; font-size: 1rem; font-weight: 700; }

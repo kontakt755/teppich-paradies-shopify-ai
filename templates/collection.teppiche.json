@@ -58,7 +58,7 @@
           "settings": {
             "gruppe": "robust",
             "title": "Fest & robust",
-            "kurz": "Schlinge und Nadelvlies",
+            "kurz": "Schlingenware",
             "anker": "robust"
           }
         },
@@ -70,13 +70,23 @@
             "kurz": "Wolle und Sisal",
             "anker": "natur"
           }
+        },
+        "design": {
+          "type": "gruppe",
+          "settings": {
+            "gruppe": "design",
+            "title": "Design-Teppiche",
+            "kurz": "Gemustert, im Wunschmaß bis 200 cm breit",
+            "anker": "design"
+          }
         }
       },
       "block_order": [
         "flauschig",
         "weich",
         "robust",
-        "natur"
+        "natur",
+        "design"
       ]
     },
     "tp_gruppe_flauschig": {
@@ -174,11 +184,16 @@
             "tp_card_aktion": {
               "type": "tp-card-aktion",
               "settings": {}
+            },
+            "tp_card_sterne": {
+              "type": "tp-card-sterne",
+              "settings": {}
             }
           },
           "block_order": [
             "card-gallery",
             "product_title_4nY4eT",
+            "tp_card_sterne",
             "price_EzJzMm",
             "tp_card_aktion",
             "tp_card_color_thumbs",
@@ -202,7 +217,8 @@
         "section_width": "page-width",
         "color_scheme": "scheme-1",
         "padding-block-start": 24,
-        "padding-block-end": 24
+        "padding-block-end": 24,
+        "karten_sofort": 4
       }
     },
     "tp_gruppe_weich": {
@@ -300,11 +316,16 @@
             "tp_card_aktion": {
               "type": "tp-card-aktion",
               "settings": {}
+            },
+            "tp_card_sterne": {
+              "type": "tp-card-sterne",
+              "settings": {}
             }
           },
           "block_order": [
             "card-gallery",
             "product_title_4nY4eT",
+            "tp_card_sterne",
             "price_EzJzMm",
             "tp_card_aktion",
             "tp_card_color_thumbs",
@@ -328,7 +349,8 @@
         "section_width": "page-width",
         "color_scheme": "scheme-1",
         "padding-block-start": 24,
-        "padding-block-end": 24
+        "padding-block-end": 24,
+        "karten_sofort": 4
       }
     },
     "tp_gruppe_robust": {
@@ -426,11 +448,16 @@
             "tp_card_aktion": {
               "type": "tp-card-aktion",
               "settings": {}
+            },
+            "tp_card_sterne": {
+              "type": "tp-card-sterne",
+              "settings": {}
             }
           },
           "block_order": [
             "card-gallery",
             "product_title_4nY4eT",
+            "tp_card_sterne",
             "price_EzJzMm",
             "tp_card_aktion",
             "tp_card_color_thumbs",
@@ -442,7 +469,7 @@
         "mode": "beliebt",
         "teppich_gruppe": "robust",
         "heading": "Fest & robust",
-        "intro": "Feste Schlingen- und Nadelvlies-Qualitäten – strapazierfähig für viel genutzte Räume.",
+        "intro": "Feste Schlingenqualitäten – strapazierfähig für viel genutzte Räume.",
         "link_text": "",
         "anchor": "robust",
         "max_products": 50,
@@ -454,7 +481,8 @@
         "section_width": "page-width",
         "color_scheme": "scheme-1",
         "padding-block-start": 24,
-        "padding-block-end": 24
+        "padding-block-end": 24,
+        "karten_sofort": 4
       }
     },
     "tp_gruppe_natur": {
@@ -552,11 +580,16 @@
             "tp_card_aktion": {
               "type": "tp-card-aktion",
               "settings": {}
+            },
+            "tp_card_sterne": {
+              "type": "tp-card-sterne",
+              "settings": {}
             }
           },
           "block_order": [
             "card-gallery",
             "product_title_4nY4eT",
+            "tp_card_sterne",
             "price_EzJzMm",
             "tp_card_aktion",
             "tp_card_color_thumbs",
@@ -580,7 +613,140 @@
         "section_width": "page-width",
         "color_scheme": "scheme-1",
         "padding-block-start": 24,
-        "padding-block-end": 24
+        "padding-block-end": 24,
+        "karten_sofort": 4
+      }
+    },
+    "tp_gruppe_design": {
+      "type": "tp-zubehoer-produkte",
+      "blocks": {
+        "static-product-card": {
+          "type": "_product-card",
+          "static": true,
+          "settings": {
+            "product_card_gap": 4,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "card-gallery": {
+              "type": "_product-card-gallery",
+              "settings": {
+                "image_ratio": "adapt",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "product_title_4nY4eT": {
+              "type": "tp-card-title",
+              "name": "t:names.product_title",
+              "settings": {
+                "width": "100%",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "custom",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "var(--color-foreground)",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 4,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "price_EzJzMm": {
+              "type": "price",
+              "settings": {
+                "show_sale_price_first": true,
+                "show_installments": false,
+                "show_tax_info": false,
+                "type_preset": "h6",
+                "width": "100%",
+                "alignment": "left",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "color": "var(--color-foreground)",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "tp_card_actions_priceEzJzMm": {
+              "type": "tp-card-actions",
+              "name": "TP Card-Aktionen",
+              "settings": {},
+              "blocks": {}
+            },
+            "tp_card_color_thumbs": {
+              "type": "tp-card-color-thumbs",
+              "settings": {}
+            },
+            "tp_card_aktion": {
+              "type": "tp-card-aktion",
+              "settings": {}
+            },
+            "tp_card_sterne": {
+              "type": "tp-card-sterne",
+              "settings": {}
+            }
+          },
+          "block_order": [
+            "card-gallery",
+            "product_title_4nY4eT",
+            "tp_card_sterne",
+            "price_EzJzMm",
+            "tp_card_aktion",
+            "tp_card_color_thumbs",
+            "tp_card_actions_priceEzJzMm"
+          ]
+        }
+      },
+      "settings": {
+        "mode": "beliebt",
+        "teppich_gruppe": "design",
+        "heading": "Design-Teppiche",
+        "intro": "Gemusterte Wohnteppiche in Ihrem Wunschmaß – fertig eingefasst, bis 200 cm breit.",
+        "link_text": "",
+        "anchor": "design",
+        "max_products": 50,
+        "layout_type": "grid",
+        "carousel_on_mobile": false,
+        "columns": 4,
+        "mobile_columns": "2",
+        "mobile_card_size": "44cqw",
+        "section_width": "page-width",
+        "color_scheme": "scheme-1",
+        "padding-block-start": 24,
+        "padding-block-end": 24,
+        "karten_sofort": 4
       }
     },
     "tp_gruppe_rest": {
@@ -678,11 +844,16 @@
             "tp_card_aktion": {
               "type": "tp-card-aktion",
               "settings": {}
+            },
+            "tp_card_sterne": {
+              "type": "tp-card-sterne",
+              "settings": {}
             }
           },
           "block_order": [
             "card-gallery",
             "product_title_4nY4eT",
+            "tp_card_sterne",
             "price_EzJzMm",
             "tp_card_aktion",
             "tp_card_color_thumbs",
@@ -706,7 +877,8 @@
         "section_width": "page-width",
         "color_scheme": "scheme-1",
         "padding-block-start": 24,
-        "padding-block-end": 24
+        "padding-block-end": 24,
+        "karten_sofort": 4
       }
     },
     "main": {
@@ -827,11 +999,16 @@
             "tp_card_aktion": {
               "type": "tp-card-aktion",
               "settings": {}
+            },
+            "tp_card_sterne": {
+              "type": "tp-card-sterne",
+              "settings": {}
             }
           },
           "block_order": [
             "card-gallery",
             "product_title_4nY4eT",
+            "tp_card_sterne",
             "price_EzJzMm",
             "tp_card_aktion",
             "tp_card_color_thumbs",
@@ -944,7 +1121,7 @@
         "text": "",
         "phone_label": "03301 573 37 20",
         "phone_link": "+4933015733720",
-        "whatsapp": "4917657931322",
+        "whatsapp": "491792612211",
         "sand": false
       }
     },
@@ -985,6 +1162,13 @@
             "question": "Was ist der Unterschied zum Teppichboden?",
             "answer": "<p>Der Teppichboden wird als Bahn von der Rolle verlegt und deckt den ganzen Raum. Der Teppich nach Maß wird aus demselben Material zugeschnitten, an der Kante gekettelt und liegt frei im Raum – wie ein fertiger Teppich.</p>"
           }
+        },
+        "f6": {
+          "type": "frage",
+          "settings": {
+            "question": "Liegt der Teppich nach dem Auspacken sofort flach?",
+            "answer": "<p>Frisch aus der Rolle liegt ein neuer Teppich anfangs nicht ganz plan – das ist normal, denn er wird für den Versand gerollt. Mit einer passenden Unterlage darunter liegt er sofort glatt und rutschfest: auf glatten Böden wie Parkett, Fliesen oder Vinyl die <a href=\"/products/antirutsch-unterlage-fuer-teppiche-rollenware\">Antirutsch-Unterlage</a>, auf Teppichboden die <a href=\"/products/teppichbremse-fuer-teppiche-rollenware\">Teppichbremse</a>.</p>"
+          }
         }
       },
       "block_order": [
@@ -992,7 +1176,8 @@
         "f2",
         "f3",
         "f4",
-        "f5"
+        "f5",
+        "f6"
       ],
       "settings": {
         "heading": "Häufige Fragen zu Teppichen nach Maß"
@@ -1006,6 +1191,7 @@
     "tp_gruppe_weich",
     "tp_gruppe_robust",
     "tp_gruppe_natur",
+    "tp_gruppe_design",
     "tp_gruppe_rest",
     "main",
     "tp_teppiche_schritte",

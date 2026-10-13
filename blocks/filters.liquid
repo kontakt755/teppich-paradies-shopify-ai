@@ -243,10 +243,12 @@
                         technisch nicht ohne Metafeld-Filterung sauber
                         loesbar). Gleiches gilt fuer die Teppichfliesen-
                         Collections: dort steht der €/m²-Preis auf der Karte,
-                        der Filter rechnet je Paket. Alle anderen Filter
-                        bleiben unveraendert.
+                        der Filter rechnet je Paket. Ebenso Teppiche nach Mass:
+                        der Variantenpreis gilt je 0,01 m2, der Filter bot
+                        "hoechster Preis 3,05 EUR" an (2026-10-12). Alle
+                        anderen Filter bleiben unveraendert.
                       {%- endcomment -%}
-                      {%- unless request.page_type == 'search' or collection.handle == 'vinylboden-1' or collection.handle == 'vinylboden-klickvinyl' or collection.handle == 'vinylboden-klebevinyl' or collection.handle == 'teppichfliesen' or collection.handle == 'teppichfliesen-50x50' or collection.handle == 'teppichplanken' or collection.handle == 'auslauf-teppichfliesen' -%}
+                      {%- unless request.page_type == 'search' or collection.handle == 'vinylboden-1' or collection.handle == 'vinylboden-klickvinyl' or collection.handle == 'vinylboden-klebevinyl' or collection.handle == 'teppichfliesen' or collection.handle == 'teppichfliesen-50x50' or collection.handle == 'teppichplanken' or collection.handle == 'auslauf-teppichfliesen' or collection.handle == 'teppich-nach-mass' or collection.handle == 'marken-teppiche-nach-mass' -%}
                         {%- liquid
                           if filter.min_value.value != null or filter.max_value.value != null
                             assign total_active_values = total_active_values | plus: 1
@@ -540,7 +542,7 @@
                 {%- for filter in filters -%}
                   {% case filter.type %}
                     {% when 'price_range' %}
-                      {%- unless request.page_type == 'search' or collection.handle == 'vinylboden-1' or collection.handle == 'vinylboden-klickvinyl' or collection.handle == 'vinylboden-klebevinyl' or collection.handle == 'teppichfliesen' or collection.handle == 'teppichfliesen-50x50' or collection.handle == 'teppichplanken' or collection.handle == 'auslauf-teppichfliesen' -%}
+                      {%- unless request.page_type == 'search' or collection.handle == 'vinylboden-1' or collection.handle == 'vinylboden-klickvinyl' or collection.handle == 'vinylboden-klebevinyl' or collection.handle == 'teppichfliesen' or collection.handle == 'teppichfliesen-50x50' or collection.handle == 'teppichplanken' or collection.handle == 'auslauf-teppichfliesen' or collection.handle == 'teppich-nach-mass' or collection.handle == 'marken-teppiche-nach-mass' -%}
                         {%- liquid
                           if filter.min_value.value != null or filter.max_value.value != null
                             assign total_active_values = total_active_values | plus: 1

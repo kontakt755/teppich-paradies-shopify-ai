@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { leseIntervallMinuten, leseLexikonMinuten, erzeugeLauf, hatZugang, starteDienst, STANDARD_INTERVALL_MINUTEN, STANDARD_LEXIKON_MINUTEN } from '../scripts/sync-dienst.mjs';
+import { leseIntervallMinuten, leseLexikonMinuten, leseBestandMinuten, erzeugeLauf, hatZugang, starteDienst, mitZeitstempel, STANDARD_INTERVALL_MINUTEN, STANDARD_LEXIKON_MINUTEN, STANDARD_BESTAND_MINUTEN } from '../scripts/sync-dienst.mjs';
 
 function stummesProtokoll() {
   const zeilen = { log: [], warn: [], error: [] };
@@ -113,8 +113,49 @@ test('erzeugeLauf: Lexikon im ersten Lauf, danach erst nach lexikonMinuten - nac
   t = 70 * 60000;
   await lauf();                       // 4: 60 Minuten nach dem Erfolg wieder mit
   assert.deepEqual(aufrufe.map((n) => n.includes('lexikon')), [true, true, false, true]);
-  assert.ok(aufrufe.every((n) => ['bestellungen', 'kennzahlen', 'kunden', 'angebote', 'warenkoerbe', 'bestand'].every((x) => n.includes(x))));
+  assert.ok(aufrufe.every((n) => ['bestellungen', 'kennzahlen', 'kunden', 'angebote', 'warenkoerbe'].every((x) => n.includes(x))));
   assert.equal(leseLexikonMinuten({}), STANDARD_LEXIKON_MINUTEN);
   assert.equal(leseLexikonMinuten({ TP_SYNC_LEXIKON_MINUTEN: '30' }), 30);
   assert.throws(() => leseLexikonMinuten({ TP_SYNC_LEXIKON_MINUTEN: '-1' }), /ungueltig/);
+});
+
+test('erzeugeLauf: Lagerbestand nur stuendlich - im ersten Lauf, dann erst nach bestandMinuten, nach Fehlschlag sofort', async () => {
+  let t = 0;
+  const aufrufe = [];
+  let bestandErfolg = false;
+  const lauf = erzeugeLauf({
+    lexikonMinuten: 60,
+    bestandMinuten: 60,
+    jetzt: () => t,
+    aktualisiereFn: async ({ nur }) => { aufrufe.push(nur); return { ergebnisse: nur.map((teil) => ({ teil, erfolg: teil === 'bestand' ? bestandErfolg : true })) }; },
+  });
+  await lauf();                       // 1: mit Bestand, scheitert
+  t = 10 * 60000; bestandErfolg = true;
+  await lauf();                       // 2: gleich wieder mit Bestand, klappt
+  t = 20 * 60000;
+  await lauf();                       // 3: ohne Bestand (und ohne Lexikon)
+  t = 30 * 60000;
+  await lauf();                       // 4: ohne
+  t = 71 * 60000;
+  await lauf();                       // 5: 60 Minuten nach dem Erfolg wieder mit
+  assert.deepEqual(aufrufe.map((n) => n.includes('bestand')), [true, true, false, false, true]);
+  // Bestand steht am Ende - wie bisher, wenn er mitlaeuft.
+  assert.equal(aufrufe[0].at(-1), 'bestand');
+  assert.equal(aufrufe[0][0], 'lexikon');
+  assert.deepEqual(aufrufe[2], ['bestellungen', 'kennzahlen', 'kunden', 'angebote', 'warenkoerbe']);
+  assert.equal(leseBestandMinuten({}), STANDARD_BESTAND_MINUTEN);
+  assert.equal(leseBestandMinuten({ TP_SYNC_BESTAND_MINUTEN: '15' }), 15);
+  assert.throws(() => leseBestandMinuten({ TP_SYNC_BESTAND_MINUTEN: 'nie' }), /TP_SYNC_BESTAND_MINUTEN ungueltig/);
+});
+
+test('mitZeitstempel: jede Protokollzeile beginnt mit der Uhrzeit (ISO)', () => {
+  const zeilen = [];
+  const ziel = { log: (m) => zeilen.push(['log', m]), warn: (m) => zeilen.push(['warn', m]), error: (m) => zeilen.push(['error', m]) };
+  const p = mitZeitstempel(ziel, () => new Date('2026-10-12T14:05:00.000Z'));
+  p.log('[sync-dienst] Lauf 1: OK (12ms)');
+  p.error('[sync-dienst] Lauf 2: Fehler - Netz weg');
+  assert.deepEqual(zeilen, [
+    ['log', '2026-10-12T14:05:00.000Z [sync-dienst] Lauf 1: OK (12ms)'],
+    ['error', '2026-10-12T14:05:00.000Z [sync-dienst] Lauf 2: Fehler - Netz weg'],
+  ]);
 });

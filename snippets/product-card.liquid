@@ -40,8 +40,23 @@
   assign product_card_gap_value = product_card_gap | default: block_settings.product_card_gap
 
   # Logic to determine which variant URL to use (matching swatch selection logic)
+  # Farbwort im Suchbegriff (snippets/tp-suchfarbe-variante): diese Variante
+  # hat Vorrang vor der Raumfarbe - Bild, Links und Preis nutzen dieselbe.
+  assign tp_raumteile = ''
+  capture tp_suchfarbe
+    render 'tp-suchfarbe-variante', product: product
+  endcapture
+  assign tp_suchteile = tp_suchfarbe | strip | split: '|'
+  assign tp_suchvariante = nil
+  if tp_suchteile.size == 2
+    assign tp_such_pos = tp_suchteile | first | plus: 0
+    assign tp_suchvariante = product.variants[tp_such_pos]
+  endif
+
   assign variant_to_link = product.selected_or_first_available_variant
-  if product.selected_variant == blank
+  if tp_suchvariante != nil
+    assign variant_to_link = tp_suchvariante
+  elsif product.selected_variant == blank
     capture tp_raumdaten
       render 'tp-sprint-raumdaten', product: product
     endcapture
@@ -94,6 +109,9 @@
   class="product-card size-style"
   style="{% render 'size-style', settings: block_settings %}"
   data-product-id="{{ product.id }}"
+  {% if tp_suchvariante != nil %}
+    data-tp-suchfarbe="{{ tp_suchvariante.id }}"
+  {% endif %}
   id="product-card-{{ block.id }}"
   {% if settings.transition_to_main_product %}
     data-product-transition="true"

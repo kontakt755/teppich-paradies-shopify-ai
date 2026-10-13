@@ -19,9 +19,21 @@ const seitenleiste = teil('<aside class="side"', '</aside>');
 const untereLeiste = teil('<nav class="tabbar', '</nav>');
 const links = text => [...text.matchAll(/<a href="#\/([a-z]+)" data-nav="([a-z]+)"([^>]*)>/g)].map(m => ({ ziel: m[1], nav: m[2], rest: m[3] }));
 
+// Ansichten ohne eigenen Menuepunkt - mit dem Ort, von dem aus sie verlinkt sind. "Fotos" hatte
+// nie einen Eintrag (Stand 2026-10-12: 0) und wird ueber Social Media und die Suche erreicht.
+const OHNE_MENUEPUNKT = { fotos: 'ansichten/social.mjs' };
+
 test('jede Ansicht hat einen Punkt in der Seitenleiste', () => {
   const vorhanden = links(seitenleiste).map(l => l.nav);
-  for (const r of routen) assert.ok(vorhanden.includes(r), `Ansicht "${r}" fehlt in der Seitenleiste (index.html)`);
+  for (const r of routen) {
+    if (OHNE_MENUEPUNKT[r]) {
+      const quelle = fs.readFileSync(path.join(WURZEL, OHNE_MENUEPUNKT[r]), 'utf8');
+      assert.ok(quelle.includes(`href="#/${r}"`), `Ansicht "${r}" ohne Menuepunkt muss in ${OHNE_MENUEPUNKT[r]} verlinkt sein`);
+      assert.ok(!vorhanden.includes(r), `"${r}" steht wieder in der Seitenleiste - dann aus OHNE_MENUEPUNKT nehmen`);
+      continue;
+    }
+    assert.ok(vorhanden.includes(r), `Ansicht "${r}" fehlt in der Seitenleiste (index.html)`);
+  }
   for (const l of links(seitenleiste)) {
     assert.equal(l.ziel, l.nav, `Link #/${l.ziel} traegt data-nav="${l.nav}"`);
     assert.ok(routen.includes(l.nav), `Seitenleiste verlinkt "${l.nav}", die Ansicht gibt es nicht`);
@@ -36,7 +48,19 @@ test('Inhaber-Ansichten sind in der Navigation als solche markiert', () => {
   }
 });
 
-test('untere Leiste am Handy: Heute, Auftraege, Lexikon, Einkauf und "Mehr"', () => {
+test('Kunden heisst ueberall gleich: Seitenleiste, untere Leiste und Seitenkopf', () => {
+  const name = text => [...text.matchAll(/data-nav="kunden"[^>]*>[\s\S]*?<span>([^<]+)<\/span>/g)].map(m => m[1]);
+  assert.deepEqual([...name(seitenleiste), ...name(untereLeiste)], ['Kunden', 'Kunden']);
+  const ansicht = fs.readFileSync(path.join(WURZEL, 'ansichten/kunden.mjs'), 'utf8');
+  assert.ok(![...ansicht.matchAll(/<h1>([^<]+)<\/h1>/g)].some(m => m[1] !== 'Kunden'), 'Seitenkopf der Kundenansicht heisst "Kunden"');
+});
+
+test('Weitere Dashboards: keine Adresse im Markup - die Links kommen vom Server', () => {
+  assert.match(seitenleiste, /<div class="nav-dashboards" id="navDashboards" hidden><\/div>/);
+  assert.ok(!/claude\.ai\/artifact|script\.google\.com/.test(html), 'keine Adresse von Werkbank oder Auftrags-App im oeffentlichen Repository');
+});
+
+test('untere Leiste am Handy: Heute, Kunden, Lexikon, Einkauf und "Mehr"', () => {
   assert.deepEqual(links(untereLeiste).map(l => l.nav), ['heute', 'kunden', 'lexikon', 'einkauf']);
   // Diese vier duerfen keinem vorenthalten sein - sonst stuende am Handy ein toter Punkt.
   for (const l of links(untereLeiste)) assert.ok(!l.rest.includes('data-nur-inhaber'), `"${l.nav}" in der unteren Leiste ist dem Inhaber vorbehalten`);

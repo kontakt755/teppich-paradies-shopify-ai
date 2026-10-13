@@ -25,7 +25,7 @@ import { parseRoute } from './kern/router.mjs';
 import { renderThemeButton } from './kern/thema.mjs';
 import { loadData, loadAgentRuns, refresh, renderSyncChip } from './kern/daten.mjs';
 import { registriereAnsichten, render } from './kern/render.mjs';
-import { registriereNavZaehler } from './kern/navigation.mjs';
+import { registriereNavZaehler, zeichneDashboards } from './kern/navigation.mjs';
 import { kunden } from './ansichten/kunden/gemeinsam.mjs';
 import { viewEinkauf } from './ansichten/einkauf.mjs';
 import { viewLexikon } from './ansichten/lexikon.mjs';
@@ -33,6 +33,8 @@ import { viewKunden } from './ansichten/kunden.mjs';
 import { viewOrganisation } from './ansichten/organisation.mjs';
 import { viewTeam } from './ansichten/team.mjs';
 import { viewFotos } from './ansichten/fotos.mjs';
+import { viewSonderposten } from './ansichten/sonderposten.mjs';
+import { viewSocial } from './ansichten/social.mjs';
 import { viewShopwache } from './ansichten/shopwache.mjs';
 import { viewRatgeber } from './ansichten/ratgeber.mjs';
 import { viewHilfe } from './ansichten/hilfe.mjs';
@@ -43,8 +45,9 @@ import { viewInsights } from './ansichten/insights.mjs';
 import { ladeAktivitaetsdaten, viewAktivitaet } from './ansichten/aktivitaet.mjs';
 import { viewHeute } from './ansichten/heute.mjs';
 import { bindEvents } from './ereignisse.mjs';
+import { pruefeAntworten } from './bausteine/fehler-melden.mjs';
 
-const VIEWS = { heute: viewHeute, fotos: viewFotos, team: viewTeam, hilfe: viewHilfe, organisation: viewOrganisation, shopwache: viewShopwache, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
+const VIEWS = { heute: viewHeute, fotos: viewFotos, sonderposten: viewSonderposten, social: viewSocial, team: viewTeam, hilfe: viewHilfe, organisation: viewOrganisation, shopwache: viewShopwache, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
 
 async function init() {
   registriereAnsichten(VIEWS);
@@ -55,12 +58,15 @@ async function init() {
   renderThemeButton();
   await loadSession();
   await loadCapabilities();
+  zeichneDashboards();
   await loadData();
   renderSyncChip();
   if (state.route.view === 'aktivitaet') { await ladeAktivitaetsdaten(); }
   render();
   if (state.route.view === 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus();
   loadAgentRuns().then(() => { if (state.agentRuns) render(); });
+  // Antwort auf eine eigene Fehlermeldung? Eine Zeile unten, Zahl am Knopf.
+  pruefeAntworten();
   setInterval(() => refresh({ silent: true }), CONFIG.refreshMs);
 }
 

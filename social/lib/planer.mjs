@@ -24,6 +24,46 @@ export function woche(datum) {
   return `${d.getUTCFullYear()}-W${String(Math.ceil(((d - jahresanfang) / TAG + 1) / 7)).padStart(2, '0')}`;
 }
 
+/** Montag 00:00 Ortszeit der Woche, in der `datum` liegt. */
+function wochenMontag(datum) {
+  return new Date(datum.getFullYear(), datum.getMonth(), datum.getDate() - ((datum.getDay() + 6) % 7));
+}
+
+/**
+ * Was der Status ueber geplante Termine sagt - vollstaendig, nicht nur ein Ausschnitt.
+ *
+ * Eine abgeschnittene Liste (frueher LIMIT 20) sah aus wie ein leerer Kalender:
+ * ein Redaktionslauf hielt Woche 2 fuer frei und baute neun ueberfluessige
+ * Entwuerfe. Deshalb: alle Termine der naechsten `tage` Tage einzeln, den Rest
+ * als Anzahl, und fuer den ganzen Plan die Zahl je Kalenderwoche.
+ *
+ * @param geplant {geplantAm, format, ...} - alle geplanten Beitraege, beliebig sortiert
+ * @returns {naechste, weitere, weitereBis, gesamt, wochen: [{woche, kw, von, bis, beitraege, storys}]}
+ */
+export function planAnsicht(geplant = [], { jetzt = new Date(), tage = 14 } = {}) {
+  const sortiert = geplant.filter(g => g.geplantAm).sort((a, b) => new Date(a.geplantAm) - new Date(b.geplantAm));
+  const grenze = jetzt.getTime() + tage * TAG;
+  const naechste = sortiert.filter(g => new Date(g.geplantAm).getTime() < grenze);
+  const rest = sortiert.slice(naechste.length);
+  const wochen = new Map();
+  for (const g of sortiert) {
+    const zeit = new Date(g.geplantAm);
+    const w = woche(zeit);
+    if (!wochen.has(w)) {
+      const von = wochenMontag(zeit);
+      wochen.set(w, { woche: w, kw: Number(w.slice(-2)), von, bis: new Date(von.getFullYear(), von.getMonth(), von.getDate() + 6), beitraege: 0, storys: 0 });
+    }
+    wochen.get(w)[g.format === 'story' ? 'storys' : 'beitraege'] += 1;
+  }
+  return {
+    naechste,
+    weitere: rest.length,
+    weitereBis: rest.length ? rest[rest.length - 1].geplantAm : null,
+    gesamt: sortiert.length,
+    wochen: [...wochen.values()],
+  };
+}
+
 function tagSchluessel(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }

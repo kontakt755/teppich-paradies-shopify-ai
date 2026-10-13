@@ -31,53 +31,69 @@ Quelle gibt. Ergebnis ist eine Zeile in `stand.tsv`, kein Upload.
 **Nie**: andere Online-Shops, Marktplaetze, Bildersuche. Rechtlich heikel – auch dann nicht,
 wenn dort genau das passende Bild liegt.
 
-## Ablauf
+## Ablauf (Gesamtlauf, alles im Arbeitsordner)
 
-1. **Liste aktualisieren** (nur lesend, ~1 min):
-   `python3 medien_holen.py && python3 liste_bauen.py` → `liste.tsv` (aktive Produkte
-   ohne Raumbild; Raumbild = Alt oder Dateiname enthaelt `raum`, oder Datei `RB_*`).
-   Zubehoer (Leisten, Kleber, Reinigung, Profile, Werkzeug, Unterlagen) zuletzt.
-2. **Nach Linie gruppieren**: SKU-Praefix vor dem `_` (z. B. `ABCDEF_4129` → `ABCDEF`).
-   Eine Linie = ein Rechercheschritt, auch wenn sie an mehreren Produkten haengt
-   (Teppichboden, nach Mass, Muster).
-3. **Lieferantenseite lesen**: `.venv/bin/python lieferant_lesen.py <handle> --pdf`.
+1. **Stand je Farbe** (nur lesend): `python3 medien_holen.py && .venv/bin/python -I farben_stand.py`
+   → `farben.tsv` (je aktiver Farbe: eigenes Raumbild / Linienbild / keins). Ein Bild zaehlt als
+   Raumbild, wenn Alt oder Dateiname `raum`/`RB_` enthaelt, der Alt die Farbe oder
+   `Farbnr. <SKU-Endung>` nennt, oder `bildart.py` es am Inhalt erkennt (Fotos mit „Ansicht 2“).
+   „Teppich nach Mass“ ist ausgenommen (dort laufen die Kettelbilder).
+2. **Mediendatenbank A komplett indexieren** (einmal je Lauf, ~30 min, im eingeloggten Tab per
+   Seitenschnittstelle, Ergebnis als Download) → `mdb_index.tsv`; dann `python3 mdb_abgleich.py`
+   → `mdb_treffer.tsv`. Treffer gelten nur im Ordner der passenden Warengruppe (gleiche Nummern
+   kommen in Tapeten, Tueren und anderen Bodenlinien wieder vor).
+3. **Recherche je Warengruppe parallel** an Agenten geben: Eingaben `gruppen/<gruppe>.tsv`,
+   Auftrag `AGENT-AUFTRAG.md`, Ergebnis `ergebnisse/<gruppe>.tsv` (+ `-linien.tsv`).
+4. **Plan bauen**: `.venv/bin/python -I plan_aus_ergebnissen.py <gruppe> …` – nur `sicher`,
+   max. 3 Raum + 2 Detail je Farbe, ohne `sperre.tsv`, ohne Bilder < 1000 px
+   (`zu_klein_*.json`), ohne Sammelbilder (gleiche URL bei mehreren Farben eines Produkts),
+   ohne flache Musterflaechen als „Detail“.
+5. **Sichtpruefung** jedes Plans: `.venv/bin/python -I blatt_bauen.py plan_….tsv <praefix>` und
+   alle Blaetter in `blatt/` ansehen; Fehltreffer in `sperre.tsv`.
+6. **Hochladen**: `python3 hochladen_raum.py plan_….tsv` (Trockenlauf) und mit `--ausfuehren`.
+   Das Skript laedt jedes Bild lokal, verkleinert auf ≤ 4000 px, prueft per Bildvergleich auf
+   Dubletten am Produkt, laedt per Staged Upload, wartet auf READY, sortiert (Farbprodukte:
+   Raumbilder vorn in Farbreihenfolge; Einzeldekore: Flaechenbild bleibt Bild 1) und traegt
+   `bildrechte.csv` nach. Erst ein Produkt testen, dann den Rest.
+7. **Warteschlange fuer den Bilder-Chat**: `.venv/bin/python -I warteschlange_bauen.py` →
+   `~/teppich-paradies-analyse/produktbilder/raumbilder-warteschlange/warteschlange.tsv`
+   (Auftrag dort in `AUFTRAG.md`). Jede Farbe ohne echtes Raumbild landet dort:
+   Prio 1 = Raumbild einer Schwesterfarbe im Shop, Prio 2 = Herstellerbild der Linie in
+   anderer Farbe, Prio 3 = ohne Vorlage. Der Bilder-Chat erzeugt daraus per Higgsfield
+   umgefaerbte Raumbilder; diese Recherche erzeugt selbst keine KI-Bilder.
+
+## Einzelne Linie von Hand
+
+1. **Lieferantenseite lesen**: `.venv/bin/python lieferant_lesen.py <handle> --pdf`.
    Liefert Marke, Qualitaet, Kollektion, Gewicht, Dokumente und den Text von TTD/DOP.
    PDF ohne Text → mit dem Read-Tool als Bild lesen.
-4. **Hersteller finden** – Belegkette, nicht Bauchgefuehl:
+2. **Hersteller finden** – Belegkette, nicht Bauchgefuehl:
    - Der **SKU-Praefix** ist oft der Herstellername in Kurzform (ein Kunstwort wie
      „LIN“+„ART“+„MOON“ → Linie „Lino Art Moon“).
-   - Die **Leistungserklaerung** nennt meist Lieferant A selbst → kein Beleg.
-   - Suchmerkmale aus dem TTD: Oberflaechenvergütung (Markenname!), Aufbau, Staerke,
-     Flaechengewicht, Polmaterial, Farbanzahl. Damit **einmal** googeln
-     (`WebSearch`, z. B. `"<Vergütung>" Linoleum Jute 2,5 mm`), dann den Treffer auf der
-     Herstellerseite gegenpruefen: gleiche Staerke, gleiches Gewicht, gleiche Optik.
+   - Die **Leistungserklaerung** nennt meist Lieferant A selbst → kein Beleg. Die
+     Lieferantenkategorie (z. B. „Linoleum <Hersteller>“) und Oberflaechen-Markennamen schon.
+   - Suchmerkmale aus dem TTD: Oberflaechenvergütung, Aufbau, Staerke, Flaechengewicht,
+     Polmaterial, Farbanzahl. Damit **einmal** suchen, dann auf der Herstellerseite gegenpruefen.
    - Zwei unabhaengige Merkmale muessen passen, sonst `Hersteller: offen`.
-5. **Farben zuordnen**: Musterbild-URL je Herstellerfarbe in `linien/<PRAEFIX>.tsv`
-   (`name<TAB>url`), dann
-   `.venv/bin/python farbabgleich.py <handle> linien/<PRAEFIX>.tsv`.
-   `SICHER` nur bei dE ≤ 5 **und** zweitbester Treffer mindestens doppelt so weit; das
-   Vergleichsblatt `roh/<handle>/vergleich.jpg` immer ansehen. Farbnummern des Lieferanten
-   sind oft eigene Nummern – nie fortzaehlen oder umrechnen. Grobe Farbattribute des
-   Lieferanten („Blau“, „Gelb Hell“) helfen nur als Gegenprobe.
-6. **Raumbilder suchen** fuer jede sichere Farbe – erst Quelle 1, dann 2, dann 3.
-   Ein Raumbild zaehlt nur, wenn **erkennbar dieselbe Farbe** liegt. Linienbilder in
-   anderen Farben sind kein Raumbild fuer unsere Farbe (die Galerie zeigt ein Bild nur
-   bei der Farbe, deren Name im Alt-Text steht).
-7. **`stand.tsv` fortschreiben**: Linie, Handles, Hersteller, Herstellerprodukt, Beleg,
-   Farbzuordnung, Raumbildquelle (URL), Status, Notiz. Neue Hersteller-Tricks in
-   `QUELLEN.md`.
-
-## Danach (eigener Schritt, nicht Teil dieser Recherche)
-
-- Hochladen erst nach Sichtfreigabe des Inhabers an 2–3 Farben (Gedaechtnis:
-  „Raumbilder 1:1, nie ohne Sichtfreigabe“). Upload mit
-  `~/teppich-paradies-analyse/produktbilder/bilder_hochladen.py`, Alt-Format
-  `<Titel> | Farbe: <Option> | Raumbild N (Beispielbild, Farbe kann abweichen)`.
-- Bildquelle in `~/teppich-paradies-analyse/bildrechte/bildrechte.csv` eintragen; verlangt
-  die Lizenz eine Herstellerangabe am Bild, diese sichtbar machen (`AGENTS.md`, Bilder).
-- Medienstatus per `node(id){... on MediaImage{status}}` pruefen, nie am Galerie-Eintrag.
+3. **Farben zuordnen**: `linien/<PRAEFIX>.tsv` (`name<TAB>musterbild-url`), dann
+   `.venv/bin/python farbabgleich.py <handle> linien/<PRAEFIX>.tsv`. `SICHER` nur bei
+   dE ≤ 5 **und** Zweitbester mindestens doppelt so weit; Vergleichsblatt ansehen. Endziffern
+   der Lieferanten-Farbnummer = Herstellercode ist ein Indiz, kein Beweis.
+4. **Raumbild zaehlt nur, wenn erkennbar dieselbe Farbe liegt.** Linienbilder in anderen
+   Farben gehen als Vorlage in die Warteschlange.
 
 ## Fallen
+
+- Echte Herstellerfotos der exakten Farbe duerfen direkt hoch (Inhaber hat die Freigabe der
+  Hersteller, Gedaechtnis `hersteller_bildfreigabe`). KI-Bilder nie aus dieser Recherche.
+- Viele Farben haben schon Fotos mit Alt „Ansicht 2“ oder „Raumbeispiel (Farbnr. …)“ –
+  ohne Bildvergleich entstehen Dubletten.
+- Nummernkollisionen: gleiche Dekornummer in anderer Linie, Tapete oder Tuer. Nur im Ordner
+  der passenden Warengruppe suchen und das Blatt ansehen.
+- `_mild` ist kein Milieu (`_mil`), `_mus` ist ein Musterbild, `_tep`/`_tap`/`_vog` zeigen
+  fremde Produkte.
+- Originale der Mediendatenbank haben oft 35–100 MP; Shopify nimmt max. 25 MP/20 MB –
+  deshalb immer lokal verkleinern und per Staged Upload laden.
 
 - Herstellerseiten mit Bot-Schutz (403 bei curl): im Browser-Pane oeffnen und die
   Farbseiten per `fetch()` im Seitenkontext lesen; Bild-CDNs sind meist offen.

@@ -3,7 +3,7 @@
  * bestellt werden koennen (seitenweise, serverseitig gefiltert).
  */
 import { state } from '../../kern/zustand.mjs';
-import { esc, plural } from '../../kern/helfer.mjs';
+import { esc, plural, fmtDateTime } from '../../kern/helfer.mjs';
 import { fetchEinkauf } from '../../kern/api.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState, bandItem } from '../../bausteine/karten.mjs';
@@ -75,10 +75,10 @@ export function viewEinkaufProduktdaten() {
   return `
     <div class="band">
       ${bandItem(g.handarbeit, 'Produkte brauchen Handarbeit', 'crit')}
-      ${bandItem(g.automatisch, 'nur Zusatzinfos offen (füllt sich selbst)', 'plain')}
+      ${bandItem(g.automatisch, 'nur Zusatzinfos offen (blockiert keine Bestellung)', 'plain')}
       ${bandItem(g.vollstaendig, `von ${g.anzahl} vollständig`, 'plain')}
     </div>
-    <p class="small muted" style="margin:-4px 0 14px">„Handarbeit" heißt: Lieferant, Artikelnummer, Farbnummer oder Bestellmenge fehlen – ohne sie kann nicht bestellt werden. Zusatzinfos wie Kollektion oder Hersteller halten keine Bestellung auf.</p>
+    <p class="small muted" style="margin:-4px 0 14px">„Handarbeit" heißt: Lieferant, Artikelnummer oder Bestellmenge fehlen – ohne sie kann nicht bestellt werden. Zusatzinfos wie Lieferanten-Produktseite oder Farbnummer halten keine Bestellung auf.${d.stand ? ` Stand der Produktdaten: ${esc(fmtDateTime(d.stand))}.` : ''}</p>
     ${toolbar}
     <section class="card"><div class="card-head"><h2>${esc(EINKAUF_PSFILTER_LABEL[psfilter])}</h2><span class="more muted">${offen.count} Produkte · dringendste zuerst</span></div>
       ${items ? `<div class="table-scroll"><table class="tasks compact"><thead><tr><th>Produkt</th><th>Was fehlt für die Bestellung</th><th>Außerdem offen</th></tr></thead><tbody>${items}</tbody></table></div>` : emptyState('Keine Treffer.', psfilter !== 'alle' && !p.get('psq') ? 'Hier ist gerade nichts zu tun.' : 'Suche oder Filter anpassen.')}

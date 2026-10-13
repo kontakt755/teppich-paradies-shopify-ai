@@ -15,7 +15,23 @@
       break
     endif
   endfor
+  # Ohne eine einzige Karte und ohne Material stand nur die Ueberschrift da
+  # ("Teppiche nach Art auswaehlen" ohne Auswahl, z. B. Vorwerk & JAB Teppiche
+  # nach Mass, 2026-10-12) - dann die ganze Section weglassen.
+  assign tp_st_karten = 0
+  if tp_st_arten != nil
+    for block in section.blocks
+      for tp_st_value in tp_st_arten.values
+        if tp_st_value.label == block.settings.filter_label
+          if tp_st_value.count > 0 or tp_st_value.active
+            assign tp_st_karten = tp_st_karten | plus: 1
+          endif
+        endif
+      endfor
+    endfor
+  endif
 -%}
+{%- if tp_st_karten > 0 or tp_st_material_available -%}
 <section class="tp-standardteppiche section section--page-width" data-tp-standardteppiche aria-labelledby="tp-st-heading-{{ section.id }}">
   <h2 id="tp-st-heading-{{ section.id }}">{{ section.settings.heading | escape }}</h2>
   <p class="tp-st__intro">{{ section.settings.text | escape }}</p>
@@ -68,6 +84,7 @@
     </nav>
   {%- endif -%}
 </section>
+{%- endif -%}
 
 {% stylesheet %}
   .tp-standardteppiche { padding-block: 4px 24px; }

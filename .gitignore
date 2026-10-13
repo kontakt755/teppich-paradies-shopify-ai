@@ -106,3 +106,8 @@ venv/
 # Lokal: npm run dashboard (erzeugt beide) bzw. npm run dashboard:data / bodenwissen:daten.
 docs/ai-dashboard/issues.json
 docs/ai-dashboard/bodenwissen.json
+
+# Erzeugte Pruefberichte (npm run qa / seo:check) - lokal, nicht im Git (2026-10-12)
+/QA_REPORT.md
+/SEO_REPORT.md
+/SEO_ADMIN_RECOMMENDATIONS.md

@@ -59,8 +59,12 @@ export function istFertig(auftrag, statusAlle = {}) {
   return f.stufe === 'erledigt' || f.gesamt === 0;
 }
 
-/** Was fehlt noch - Klartext-Liste zum Abarbeiten, leer = nichts offen. */
-export function wasFehlt(auftrag, rueckrufStatus) {
+/**
+ * Was fehlt noch - Klartext-Liste zum Abarbeiten, leer = nichts offen.
+ * `fortschritt` (optional, aus fortschritt()): steht die Ware im Auftragsfluss schon auf
+ * "An Kunden raus" oder weiter, fehlt kein Versand - auch wenn Shopify keine Sendung kennt.
+ */
+export function wasFehlt(auftrag, rueckrufStatus, fortschritt = null) {
   const gruende = [];
   const c = auftrag?.checks || {};
   const ohneId = (auftrag?.positionen ?? []).filter(p => p.grosshaendlerId === 'UNGEKLAERT' || p.idGrund).length;
@@ -70,7 +74,8 @@ export function wasFehlt(auftrag, rueckrufStatus) {
   if (massProbleme) gruende.push(`Maßprüfung offen (${massProbleme})`);
   if (ohneId) gruende.push(`${ohneId} Position${ohneId === 1 ? '' : 'en'} ohne Großhändler-ID`);
   if (!['PAID', 'PARTIALLY_REFUNDED'].includes(String(auftrag.bezahlt))) gruende.push('Noch nicht bezahlt');
-  if (auftrag.offen && String(auftrag.erfuellt).toUpperCase() === 'UNFULFILLED') gruende.push('Noch nicht versendet');
+  const schonRaus = (fortschritt?.minStufe ?? 0) >= STATUS_ORDER.indexOf('raus') + 1;
+  if (auftrag.offen && String(auftrag.erfuellt).toUpperCase() === 'UNFULFILLED' && !schonRaus) gruende.push('Noch nicht versendet');
   return gruende;
 }
 
@@ -143,7 +148,11 @@ export function bestellzeile(auftrag, { statusAlle = {}, rueckrufeAlle = {} } = 
     adminUrl: auftrag.adminUrl,
     fortschritt: f,
     fertig: f.stufe === 'erledigt' || f.gesamt === 0,
-    wasFehlt: wasFehlt(auftrag, rueckruf?.status),
+    wasFehlt: wasFehlt(auftrag, rueckruf?.status, f),
+    // Im Auftragsfluss schon beim Kunden, in Shopify aber ohne Sendung: nur ein Hinweis.
+    versandHinweis: auftrag.offen && f.minStufe >= STATUS_ORDER.indexOf('raus') + 1
+      && ['UNFULFILLED', 'PARTIALLY_FULFILLED'].includes(String(auftrag.erfuellt).toUpperCase())
+      ? 'In Shopify noch nicht als versendet gebucht' : null,
     auftrag,
   };
 }

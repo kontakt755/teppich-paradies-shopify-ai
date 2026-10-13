@@ -38,6 +38,7 @@ import { findeZugang, liesZugaenge, zugangAnlegen, zugangSperren } from '../lib/
 import { ersetzeBild } from '../lib/bearbeitung.mjs';
 import { freigeben, freigebenAutomatisch, holeGeplanteZurueck, verwerfen } from '../lib/freigabe.mjs';
 import { medienPfad, socialDir } from '../lib/pfade.mjs';
+import { planAnsicht } from '../lib/planer.mjs';
 import { verarbeiteEingang } from '../lib/pruefung.mjs';
 import { reelMoeglich } from '../lib/reel.mjs';
 import { rendere } from '../lib/rendern.mjs';
@@ -61,18 +62,27 @@ export function argumente(argv) {
 
 const zeit = iso => (iso ? new Date(iso).toLocaleString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '–');
 
-function zeigeStatus(db) {
+const datum = d => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+const anzahl = (n, eins, mehr) => `${n} ${n === 1 ? eins : mehr}`;
+
+/** Die Uebersicht. Geplantes vollstaendig: Zahl je Woche, die naechsten 14 Tage einzeln, der Rest als Anzahl. */
+export function zeigeStatus(db, { jetzt = new Date(), tage = 14, schreibe = console.log } = {}) {
   const u = db.uebersicht();
-  console.log('Neue Inhalte');
-  console.log(`  ${u.neu.baustellenbilder} neue Baustellenbilder (${u.neu.baustellen} Baustellen)`);
-  console.log(`  ${u.neu.produkte} neue Produktanlässe`);
-  console.log(`  ${u.neu.videos} neue Videos`);
-  console.log('Content vorbereitet');
-  console.log(`  ${u.vorbereitet.posts} Posts · ${u.vorbereitet.storys} Storys · ${u.vorbereitet.reels} Reels`);
-  console.log(`Freigabe erforderlich\n  ${u.freigabe} Inhalte${u.fehler ? `\nFehler\n  ${u.fehler} Beiträge` : ''}`);
-  console.log('Geplant');
-  if (!u.geplant.length) console.log('  –');
-  for (const g of u.geplant) console.log(`  ${zeit(g.geplantAm)} – ${g.typLabel}${g.format === 'story' ? ' (Story)' : ''}: ${g.titel}`);
+  schreibe('Neue Inhalte');
+  schreibe(`  ${u.neu.baustellenbilder} neue Baustellenbilder (${u.neu.baustellen} Baustellen)`);
+  schreibe(`  ${u.neu.produkte} neue Produktanlässe`);
+  schreibe(`  ${u.neu.videos} neue Videos`);
+  schreibe('Content vorbereitet');
+  schreibe(`  ${u.vorbereitet.posts} Posts · ${u.vorbereitet.storys} Storys · ${u.vorbereitet.reels} Reels`);
+  schreibe(`Freigabe erforderlich\n  ${u.freigabe} Inhalte${u.fehler ? `\nFehler\n  ${u.fehler} Beiträge` : ''}`);
+  const plan = planAnsicht(u.geplant, { jetzt, tage });
+  schreibe(`Geplant (${anzahl(plan.gesamt, 'Termin', 'Termine')})`);
+  if (!plan.gesamt) { schreibe('  –'); return; }
+  for (const w of plan.wochen) schreibe(`  KW ${w.kw} (${datum(w.von)}–${datum(w.bis)}): ${anzahl(w.beitraege, 'Beitrag', 'Beiträge')} · ${anzahl(w.storys, 'Story', 'Storys')}`);
+  schreibe(`Die nächsten ${tage} Tage`);
+  if (!plan.naechste.length) schreibe('  –');
+  for (const g of plan.naechste) schreibe(`  ${zeit(g.geplantAm)} – ${g.typLabel}${g.format === 'story' ? ' (Story)' : ''}: ${g.titel}`);
+  if (plan.weitere) schreibe(`  … und ${plan.weitere} weitere bis ${datum(new Date(plan.weitereBis))}`);
 }
 
 /** Was die Redaktion zu tun hat: Inhalte ohne Entwurf, mit allem, was sie zum Sichten braucht. */

@@ -12,20 +12,49 @@ export const fmtDate = iso => iso ? new Date(iso).toLocaleDateString('de-DE', { 
 export const fmtDateTime = iso => iso ? new Date(iso).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '–';
 export const ago = iso => { if (!iso) return '–'; const m = Math.round((Date.now() - new Date(iso)) / 60000); if (m < 60) return `vor ${m} Min.`; const h = Math.round(m / 60); if (h < 48) return `vor ${h} Std.`; return `vor ${Math.round(h / 24)} Tagen`; };
 export const since = iso => ago(iso).replace(/^vor /, 'seit ');
+/**
+ * "14:30" fuer heute, "11.10. 14:30" fuer jeden anderen Tag. Nur die Uhrzeit
+ * sah bei einem Stand von vorgestern genauso frisch aus wie einer von eben.
+ */
+export function chipZeit(iso, jetzt = new Date()) {
+  if (!iso) return '–';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '–';
+  const uhr = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  const heute = d.toDateString() === jetzt.toDateString();
+  return heute ? uhr : `${d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} ${uhr}`;
+}
 export const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 export const issueUrl = n => `${REPO_URL}/issues/${n}`;
 export const newIssueUrl = (params = {}) => `${REPO_URL}/issues/new?${new URLSearchParams(params)}`;
 
-export function toast(text, kind = '') {
+// Zeitpunkt der letzten Stoerung (Server antwortet 5xx, keine Verbindung,
+// JS-Fehler). Kommt gleich danach eine rote Rueckmeldung, traegt sie einen
+// Knopf "Melden": wer gerade gescheitert ist, soll das mit einem Tipp melden
+// koennen - Seite und Fehlermeldung haengt "Fehler melden" selbst an.
+let letzteStoerung = 0;
+export function merkeStoerung() { letzteStoerung = Date.now(); }
+
+export function toast(text, kind = '', { dauer = null } = {}) {
   const el = document.createElement('div');
   el.className = `toast ${kind}`; el.textContent = text;
+  // Nicht im offenen Melde-Dialog: der Knopf wuerde ihn samt Eingabe neu oeffnen.
+  const melden = kind === 'crit' && Date.now() - letzteStoerung < 3000 && !document.querySelector('.fm-dialog');
+  if (melden) {
+    const knopf = document.createElement('button');
+    knopf.type = 'button'; knopf.className = 'toast-knopf'; knopf.textContent = 'Melden';
+    knopf.dataset.fehlerMelden = '';
+    el.append(knopf);
+  }
   $('#toastRoot').appendChild(el);
-  setTimeout(() => el.remove(), 4200);
+  setTimeout(() => el.remove(), dauer || (melden ? 9000 : 4200));
 }
 
+/** Geldbetrag deutsch: "0,00 €", "1.234,50 €"; andere Waehrungen mit ihrem Kuerzel. */
 export function geldText(g) {
-  if (!g || g.betrag === null || g.betrag === undefined) return '–';
-  return `${g.betrag.toFixed(2)} ${esc(g.waehrung || 'EUR')}`;
+  if (!g || g.betrag === null || g.betrag === undefined || !Number.isFinite(Number(g.betrag))) return '–';
+  const w = g.waehrung || 'EUR';
+  return `${fmtPreis(g.betrag)} ${w === 'EUR' ? '€' : esc(w)}`;
 }
 
 export const NICHT_HINTERLEGT = '<span class="small muted">nicht hinterlegt</span>';

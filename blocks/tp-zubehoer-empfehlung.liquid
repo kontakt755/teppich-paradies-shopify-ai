@@ -93,6 +93,14 @@
       endif
     when 'Linoleumboden'
       assign tp_ze_leisten = true
+    when 'Kautschukboden'
+      assign tp_ze_leisten = true
+      # Nass- und Haftklebstoff ist laut Hersteller fuer Kautschukbelaege bis
+      # 2,5 mm Dicke freigegeben; dickere Belaege bekommen keinen Kleber.
+      assign tp_ze_kautschuk_mm = product.metafields.custom.gesamtstarke.value | append: '' | remove: 'mm' | strip | replace: ',', '.' | times: 1.0
+      if tp_ze_kautschuk_mm > 0 and tp_ze_kautschuk_mm <= 2.5
+        assign tp_ze_art = 'kautschuk-bis-2-5mm'
+      endif
     when 'Teppichboden'
       if product.tags contains 'art: teppichfliese'
         assign tp_ze_art = 'teppichfliese'
@@ -133,6 +141,8 @@
       assign tp_ze_regeln = 'kleber|haftfixierung-fuer-designboeden|Für maßstabile PVC-Designbeläge, später wieder aufnehmbar.;kleber|universal-verlegeband-70-mm|Für Ränder an Wänden und Türen sowie Trittstufen.'
     when 'vinyl-rolle'
       assign tp_ze_regeln = 'kleber|nass-und-haftklebstoff-fuer-elastische-belaege|Für PVC- und CV-Beläge, auch in stark belasteten Bereichen.;kleber|trockenklebstoff-fuer-bahnenware-rolle-75-cm|Ohne flüssigen Klebstoff – auf bestehendem Kunststein oder Terrazzo.;kleber|universal-verlegeband-70-mm|Für Ränder an Wänden und Türen sowie Trittstufen.'
+    when 'kautschuk-bis-2-5mm'
+      assign tp_ze_regeln = 'kleber|nass-und-haftklebstoff-fuer-elastische-belaege|Für Kautschukbeläge bis 2,5 mm Dicke, auch bei Stuhlrollen.'
     when 'teppichboden-rolle-textil'
       assign tp_ze_regeln = 'unterlage|komfortunterlage-fuer-teppichboden|Für dimensionsstabile Teppichböden, lose oder verklebt.;kleber|dispersionsfixierung-wasserabloesbar|Fixierung für Teppichboden, später mit Wasser lösbar.;kleber|trockenklebstoff-fuer-bahnenware-rolle-75-cm|Ohne flüssigen Klebstoff – auf bestehendem Parkett, Laminat oder Kunststein.'
     when 'teppichboden-rolle'
