@@ -132,3 +132,69 @@ export function gesamtStand(teile = [], { ohneOnline = {}, geprueftAm, dauerSek 
   const ampel = befunde.some(b => b.ergebnis === 'fehlt') ? 'rot' : befunde.length || ausfaelle.length ? 'gelb' : 'gruen';
   return { geprueftAm, dauerSek, ampel, lieferanten, ohneOnline, ausfaelle, befunde };
 }
+
+/*
+ * Neuheiten (zweite Haelfte der Inhaberregel: "danach nach neuen Produkten schauen").
+ * Artikelnummern von A haben die Form <Stamm><Breite?>_<Farbe>, z. B. CVANDANTE3_A80:
+ * Stamm CVANDANTE, Breite 3, Farbe A80. Die Schnellsuche nach dem Stamm liefert alle
+ * Breiten und Farben dieser Linie - was davon nicht im Shop steht, ist ein Kandidat.
+ */
+
+/** Stamm einer Artikelnummer von A, oder null ohne Farbteil (Zubehoer, Sammelnummern). */
+export function artikelStamm(nr) {
+  const m = String(nr || '').match(/^([^_]+)_./);
+  if (!m) return null;
+  // Nur eine einzelne Ziffer hinter Buchstaben ist die Breite (CVTEST3 = 300 cm);
+  // mehrstellige Ziffern sind Teil der Produktnummer (PAR5895, HOME30C).
+  return m[1].replace(/(\D)\d$/, '$1') || null;
+}
+
+/** Gehoert die Nummer zu diesem Stamm? Hoechstens eine Breitenziffer darf dazwischen stehen. */
+export function gehoertZuStamm(nr, stamm) {
+  const s = stamm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`^${s}\\d?_.`).test(String(nr || ''));
+}
+
+/**
+ * Staemme der aktiven A-Artikel und alle uns bekannten Nummern (auch archivierte:
+ * die sind bewusst weg und keine Neuheit).
+ */
+export function neuheitenZiele(produkte = []) {
+  const staemme = new Set();
+  const bekannt = new Set();
+  for (const p of produkte) {
+    for (const v of p.varianten || []) {
+      const e = v.einkauf || {};
+      if (e.lieferant !== 'A' || !e.artikelnummer) continue;
+      bekannt.add(e.artikelnummer);
+      if (p.status === 'ARCHIVED') continue;
+      const s = artikelStamm(e.artikelnummer);
+      if (s) staemme.add(s);
+    }
+  }
+  return { staemme: [...staemme].sort(), bekannt };
+}
+
+/** Treffer der Schnellsuche zu einem Stamm -> Artikel, die wir nicht fuehren. */
+export function neueArtikel(stamm, treffer = [], bekannt = new Set()) {
+  const gesehen = new Set();
+  const neu = [];
+  for (const t of treffer) {
+    const nr = t.material_number;
+    if (!gehoertZuStamm(nr, stamm) || bekannt.has(nr) || gesehen.has(nr)) continue;
+    gesehen.add(nr);
+    neu.push({ stamm, nr, name: String(t.name || '').replace(/\s+/g, ' ').trim() });
+  }
+  return neu;
+}
+
+/**
+ * Nur melden, was seit dem letzten Lauf dazugekommen ist: Artikel, die wir bewusst
+ * nicht fuehren (andere Breite, Auslauflinie), stuenden sonst jede Woche wieder da.
+ * Ohne Vorlauf ist alles Grundbestand und nichts "neu".
+ */
+export function neuSeitVorlauf(kandidaten = [], vorlauf = null) {
+  if (!Array.isArray(vorlauf)) return [];
+  const alt = new Set(vorlauf.map(k => k.nr));
+  return kandidaten.filter(k => !alt.has(k.nr));
+}

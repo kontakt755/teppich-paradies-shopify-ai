@@ -34,9 +34,15 @@ export function istMusterProdukt(p) {
   return String(p.handle ?? '').startsWith(MUSTER_PRAEFIX) || klein(p.productType) === 'musterservice';
 }
 
-/** UNLISTED mit Tag service: Zusatzposition im Warenkorb, keine Kundenseite. */
+/**
+ * Zusatzpositionen im Warenkorb, keine Kundenseite: UNLISTED mit Tag service
+ * (Kettelservice, Wunschmass-Pauschale) und die Einfassungen der Marken-Teppiche
+ * nach Mass (Tag marken-einfassung, nur in intern-* Sammlungen).
+ */
 export function istHilfsprodukt(p) {
-  return p.status === 'UNLISTED' && (p.tags ?? []).some((t) => klein(t) === 'service');
+  const tags = (p.tags ?? []).map(klein);
+  if (tags.includes('marken-einfassung')) return true;
+  return p.status === 'UNLISTED' && tags.includes('service');
 }
 
 /** Wortgleich zu canSample in assets/tp-sample-checkout-core.js. */
@@ -56,6 +62,15 @@ function farbeDerVariante(v, optionName) {
 /** Interne Sammlungen (intern-*) sind keine Kategorie, in der Kunden das Produkt finden. */
 export function kategorieSammlungen(p) {
   return (p.collections ?? []).filter((h) => !String(h).startsWith('intern-'));
+}
+
+/**
+ * Einfassungsart eines Marken-Teppichs nach Mass (Paspel, Cover, Deluxe):
+ * erreichbar ueber das Hauptprodukt, bewusst in keiner Kategorie - sonst
+ * stuende jede Qualitaet mehrfach im Raster (Fehleranalyse 13.10.).
+ */
+export function istEinfassungsart(p) {
+  return (p.tags ?? []).some((t) => klein(t) === 'marken-einfassung');
 }
 
 /**
@@ -98,6 +113,14 @@ function befund(p, stufe, regel, text) {
   return { handle: p.handle, titel: p.title, produktart: p.productType || '', stufe, regel, text };
 }
 
+/** Farben des Produkts, die sein Musterprodukt nicht fuehrt - die Bestellung faellt dort auf kostenloses-muster. */
+function musterFarbBefund(p, muster, option) {
+  const vorhanden = new Set((muster.variants ?? []).map((v) => klein(farbeDerVariante(v, option.name) ?? v.title)));
+  const fehlend = option.values.filter((w) => !vorhanden.has(klein(w)));
+  if (!fehlend.length) return null;
+  return befund(p, 'fehler', 'muster-farben', `Muster ohne ${fehlend.length} Farbe(n): ${fehlend.slice(0, 5).join(', ')}${fehlend.length > 5 ? ' ...' : ''}`);
+}
+
 /**
  * @param {object} eingabe
  * @param {object[]} eingabe.produkte  alle Produkte des Shops (normalisiert, siehe normalisiere())
@@ -130,6 +153,8 @@ export function pruefeImporte({ produkte, seit, handles = null }) {
     // Versteckte Hilfsprodukte (Kettelservice, Wunschmass-Pauschale) haengen
     // als Zusatzzeile an einer anderen Position - ohne Bild und Kategorie gewollt.
     if (istHilfsprodukt(p)) continue;
+    // Archiviert = aus dem Shop genommen (Auslauf, Dublette): nichts zu pruefen.
+    if (p.status === 'ARCHIVED') continue;
 
     if (p.status === 'DRAFT') befunde.push(befund(p, 'hinweis', 'entwurf', 'Entwurf - im Shop nicht sichtbar'));
     if (p.status === 'ACTIVE' && !p.onlineStoreUrl) {
@@ -137,7 +162,7 @@ export function pruefeImporte({ produkte, seit, handles = null }) {
     }
     if (!p.productType) befunde.push(befund(p, 'fehler', 'produktart', 'keine Produktart (productType)'));
     if (!p.mediaCount) befunde.push(befund(p, p.status === 'DRAFT' ? 'hinweis' : 'fehler', 'bilder', 'keine Bilder'));
-    if (p.status !== 'DRAFT' && kategorieSammlungen(p).length === 0) {
+    if (p.status !== 'DRAFT' && !istEinfassungsart(p) && kategorieSammlungen(p).length === 0) {
       befunde.push(befund(p, 'fehler', 'kategorie', 'in keiner Kategorie (nur intern-* oder gar keine Sammlung)'));
     }
     if (!p.category || p.category === 'Uncategorized') {
@@ -184,10 +209,21 @@ export function pruefeImporte({ produkte, seit, handles = null }) {
       if (!muster) {
         befunde.push(befund(p, 'fehler', 'muster-fehlt', `kein Musterprodukt ${MUSTER_PRAEFIX}${p.handle} - der Konfigurator faellt still auf kostenloses-muster zurueck (sonst Tag ohne-muster setzen)`));
       } else {
-        const vorhanden = new Set((muster.variants ?? []).map((v) => klein(farbeDerVariante(v, option.name) ?? v.title)));
-        const fehlend = option.values.filter((w) => !vorhanden.has(klein(w)));
-        if (fehlend.length) befunde.push(befund(p, 'fehler', 'muster-farben', `Muster ohne ${fehlend.length} Farbe(n): ${fehlend.slice(0, 5).join(', ')}${fehlend.length > 5 ? ' ...' : ''}`));
+        const b = musterFarbBefund(p, muster, option);
+        if (b) befunde.push(b);
       }
+    }
+  }
+  // Farben kommen auch an alten Produkten dazu - deren Musterprodukt waechst
+  // nicht mit (Alvento/Zafira/Cortessa, Fehleranalyse 13.10.). Deshalb den
+  // Musterabgleich fuer alle aktiven Produkte, nicht nur fuer die neuen.
+  if (!handles) {
+    for (const p of produkte) {
+      if (neuSet.has(p) || p.status !== 'ACTIVE' || istMusterProdukt(p) || !musterMoeglich(p)) continue;
+      const option = farbOption(p);
+      const muster = option && nachHandle.get(MUSTER_PRAEFIX + p.handle);
+      const b = muster && musterFarbBefund(p, muster, option);
+      if (b) befunde.push(b);
     }
   }
   // Ein Entwurf ist im Shop unsichtbar: seine Luecken sind Arbeitsstand
@@ -200,6 +236,8 @@ export function pruefeImporte({ produkte, seit, handles = null }) {
 export function pruefeMuster(m, nachHandle) {
   const befunde = [];
   const quelle = nachHandle.get(String(m.handle).slice(MUSTER_PRAEFIX.length));
+  // Auslaufregel (AGENTS.md, Produktdaten): Quelle archiviert -> Muster mit archiviert. Das ist kein Befund.
+  if (m.status === 'ARCHIVED' && (!quelle || quelle.status === 'ARCHIVED')) return befunde;
   if (!quelle && m.handle !== 'kostenloses-muster') befunde.push(befund(m, 'hinweis', 'muster-quelle', 'kein Quellprodukt mit gleichem Handle ohne muster-'));
   if (m.status !== 'UNLISTED') befunde.push(befund(m, 'hinweis', 'muster-status', `Status ${m.status} statt UNLISTED`));
   if (!m.onlineStoreUrl) befunde.push(befund(m, 'fehler', 'muster-nicht-veroeffentlicht', 'nicht im Onlineshop veroeffentlicht - Musterbestellung scheitert'));

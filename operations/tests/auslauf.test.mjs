@@ -72,3 +72,38 @@ test('gesamtStand: rot bei Fehlendem, gelb bei Hinweis oder Ausfall, sonst gruen
   assert.equal(rot.lieferanten.A.befunde, undefined);
   assert.deepEqual(rot.ohneOnline, { B: 3 });
 });
+
+test('artikelStamm und gehoertZuStamm: Breitenziffern gehoeren zum Stamm, andere Buchstaben nicht', async () => {
+  const { artikelStamm, gehoertZuStamm } = await import('../lib/auslauf.mjs');
+  assert.equal(artikelStamm('CVTESTA3_A80'), 'CVTESTA');
+  assert.equal(artikelStamm('CVTESTA_A21'), 'CVTESTA');
+  assert.equal(artikelStamm('PVCTEST30C_3121'), 'PVCTEST30C');
+  assert.equal(artikelStamm('ZUBTEST108'), null);
+  assert.equal(artikelStamm('PARTEST5895_E103'), 'PARTEST5895');
+  assert.equal(gehoertZuStamm('PARTEST5895_E1', 'PARTEST'), false);
+  assert.equal(gehoertZuStamm('CVTESTA4_B10', 'CVTESTA'), true);
+  assert.equal(gehoertZuStamm('CVTESTAX_B10', 'CVTESTA'), false);
+  assert.equal(gehoertZuStamm('CVTESTA', 'CVTESTA'), false);
+});
+
+test('neuheitenZiele, neueArtikel, neuSeitVorlauf: archivierte Nummern sind bekannt, gemeldet wird nur Neues seit dem Vorlauf', async () => {
+  const { neuheitenZiele, neueArtikel, neuSeitVorlauf } = await import('../lib/auslauf.mjs');
+  const z = neuheitenZiele([
+    { status: 'ACTIVE', varianten: [{ einkauf: { lieferant: 'A', artikelnummer: 'CVTESTA3_A80' } }, { einkauf: { lieferant: 'C', artikelnummer: 'X_1' } }] },
+    { status: 'ARCHIVED', varianten: [{ einkauf: { lieferant: 'A', artikelnummer: 'CVALT_A1' } }, { einkauf: { lieferant: 'A', artikelnummer: 'CVTESTA3_A99' } }] },
+  ]);
+  assert.deepEqual(z.staemme, ['CVTESTA']);
+  assert.equal(z.bekannt.has('CVTESTA3_A99'), true);
+  const neu = neueArtikel('CVTESTA', [
+    { material_number: 'CVTESTA', name: 'Elternartikel' },
+    { material_number: 'CVTESTA3_A80', name: 'bekannt' },
+    { material_number: 'CVTESTA3_A99', name: 'archiviert' },
+    { material_number: 'CVTESTA4_A80', name: 'Testboden   400cm' },
+    { material_number: 'CVTESTA4_A80', name: 'doppelt' },
+    { material_number: 'CVTESTAX_A1', name: 'andere Linie' },
+  ], z.bekannt);
+  assert.deepEqual(neu, [{ stamm: 'CVTESTA', nr: 'CVTESTA4_A80', name: 'Testboden 400cm' }]);
+  assert.deepEqual(neuSeitVorlauf(neu, null), []);
+  assert.deepEqual(neuSeitVorlauf(neu, [{ nr: 'CVTESTA4_A80' }]), []);
+  assert.deepEqual(neuSeitVorlauf(neu, []), neu);
+});

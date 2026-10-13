@@ -104,6 +104,27 @@ test('Farbprodukt: Variantenbild und Musterprodukt mit allen Farben', () => {
   assert.deepEqual(regeln(pruefeImporte({ produkte: [ohneMuster], seit: '2026-10-01' })), ['fehler:variantenbild']);
 });
 
+test('Musterfarben werden auch bei alten Produkten abgeglichen (Farbe spaeter dazugekommen)', () => {
+  const alt = produkt({
+    productType: 'Teppichboden', createdAt: '2026-08-08T08:00:00Z',
+    options: [{ name: 'Farbe', values: ['Sand', 'Rauchblau'] }],
+    variants: [
+      { id: 'a', sku: 'T-1', title: 'Sand', price: '20', image: 'u', selectedOptions: [{ name: 'Farbe', value: 'Sand' }], custom: {} },
+      { id: 'b', sku: 'T-2', title: 'Rauchblau', price: '20', image: 'u', selectedOptions: [{ name: 'Farbe', value: 'Rauchblau' }], custom: {} },
+    ],
+  });
+  const muster = produkt({
+    handle: `muster-${alt.handle}`, productType: 'Musterservice', status: 'UNLISTED', createdAt: '2026-08-08T08:00:00Z',
+    variants: [{ id: 'm', sku: 'M-T-1', title: 'Sand', price: '0.00', image: null, selectedOptions: [{ name: 'Farbe', value: 'Sand' }], custom: {} }],
+  });
+  const erg = pruefeImporte({ produkte: [alt, muster], seit: '2026-10-01' });
+  assert.equal(erg.geprueft, 0);
+  assert.deepEqual(erg.befunde.map((b) => `${b.handle}:${b.regel}`), [`${alt.handle}:muster-farben`]);
+  assert.match(erg.befunde[0].text, /Rauchblau/);
+  // --handles prueft genau die genannten Produkte, keinen Shop-Abgleich
+  assert.deepEqual(pruefeImporte({ produkte: [alt, muster], handles: [muster.handle] }).befunde.filter((b) => b.regel === 'muster-farben'), []);
+});
+
 test('Musterprodukt: Preis 0, SKU M-, UNLISTED, veroeffentlicht', () => {
   const quelle = produkt();
   const muster = produkt({
@@ -176,6 +197,20 @@ test('Variantenbilder nur dort, wo die Produktart sie sonst traegt (Profile: ein
 test('versteckte Hilfsprodukte (UNLISTED, Tag service) werden nicht geprueft', () => {
   const hilfe = produkt({ createdAt: '2026-10-07T08:00:00Z', status: 'UNLISTED', tags: ['service'], mediaCount: 0, collections: [], category: 'Uncategorized' });
   assert.deepEqual(pruefeImporte({ produkte: [...vergleich(), hilfe], seit: '2026-10-01' }).befunde, []);
+  const einfassung = produkt({ createdAt: '2026-10-07T08:00:00Z', tags: ['marken-einfassung'], collections: ['intern-einfassung'] });
+  assert.deepEqual(pruefeImporte({ produkte: [...vergleich(), einfassung], seit: '2026-10-01' }).befunde, []);
+});
+
+test('Einfassungsart (Tag marken-einfassung) braucht keine Kategorie, andere Produkte schon', () => {
+  const art = produkt({ createdAt: '2026-10-07T08:00:00Z', tags: ['marken-einfassung'], collections: ['intern-regulaerer-preis'] });
+  const ohne = produkt({ createdAt: '2026-10-07T08:00:00Z', collections: ['intern-regulaerer-preis'] });
+  const erg = pruefeImporte({ produkte: [...vergleich(), art, ohne], seit: '2026-10-01' });
+  assert.deepEqual(erg.befunde.filter((b) => b.regel === 'kategorie').map((b) => b.handle), [ohne.handle]);
+});
+
+test('archivierte Produkte werden nicht geprueft', () => {
+  const weg = produkt({ createdAt: '2026-10-07T08:00:00Z', status: 'ARCHIVED', onlineStoreUrl: null, mediaCount: 0, options: [{ name: 'Farbe', values: ['Grau'] }] });
+  assert.deepEqual(pruefeImporte({ produkte: [...vergleich(), weg], seit: '2026-10-01' }).befunde, []);
 });
 
 test('Entwuerfe liefern nur Hinweise (Vorlage mit Preis 0, Farben ohne Bild)', () => {
@@ -184,4 +219,20 @@ test('Entwuerfe liefern nur Hinweise (Vorlage mit Preis 0, Farben ohne Bild)', (
   const erg = pruefeImporte({ produkte: [...vergleich(), vorlage], seit: '2026-10-01' });
   assert.ok(erg.befunde.length > 0);
   assert.ok(erg.befunde.every((b) => b.stufe === 'hinweis'), JSON.stringify(erg.befunde));
+});
+
+test('Muster mit archivierter Quelle archiviert (Auslaufregel) ist kein Befund; aktive Quelle mit archiviertem Muster schon', () => {
+  const quelle = produkt({ status: 'ARCHIVED', onlineStoreUrl: null });
+  const muster = produkt({
+    handle: `muster-${quelle.handle}`, productType: 'Musterservice', status: 'ARCHIVED', onlineStoreUrl: null, createdAt: '2026-10-07T08:00:00Z',
+    variants: [{ id: 'm1', sku: 'M-1', title: 'Sand', price: '0.00', image: null, selectedOptions: [], custom: {} }],
+  });
+  assert.deepEqual(pruefeImporte({ produkte: [quelle, muster], seit: '2026-10-01', handles: [muster.handle] }).befunde, []);
+
+  const aktiv = produkt();
+  const weg = produkt({
+    handle: `muster-${aktiv.handle}`, productType: 'Musterservice', status: 'ARCHIVED', onlineStoreUrl: null, createdAt: '2026-10-07T08:00:00Z',
+    variants: [{ id: 'm2', sku: 'M-2', title: 'Sand', price: '0.00', image: null, selectedOptions: [], custom: {} }],
+  });
+  assert.deepEqual(regeln(pruefeImporte({ produkte: [aktiv, weg], seit: '2026-10-01', handles: [weg.handle] })), ['fehler:muster-nicht-veroeffentlicht', 'hinweis:muster-status']);
 });
