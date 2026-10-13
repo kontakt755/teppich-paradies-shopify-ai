@@ -69,15 +69,17 @@ function clip(text, max) {
  * @param {string} p.herkunft           einer aus HERKUNFT_WERTE
  * @param {string} p.actor
  * @param {string} [p.notiz]
+ * @param {string} [p.lagerId]          Muster ging aus dem Musterlager raus (musterlager.mjs) - haelt die Zuordnung fest
  * @param {Date}   [p.jetzt]
  */
-export function haengeWahlAn(file, { orderId, lineItemId = null, herkunft, actor, notiz = null, jetzt = new Date() } = {}) {
+export function haengeWahlAn(file, { orderId, lineItemId = null, herkunft, actor, notiz = null, lagerId = null, jetzt = new Date() } = {}) {
   const id = String(orderId ?? '').trim();
   if (!id) throw new MusterherkunftFehler('orderId ist Pflicht');
   if (!actor) throw new MusterherkunftFehler('actor ist Pflicht');
   if (!HERKUNFT_WERTE.includes(herkunft)) throw new MusterherkunftFehler(`Unbekannte Herkunft „${herkunft}"`);
   const ereignis = { orderId: id, lineItemId: lineItemId ? String(lineItemId) : null, herkunft, am: jetzt.toISOString(), von: String(actor) };
   if (notiz && clip(notiz, 500)) ereignis.notiz = clip(notiz, 500);
+  if (lagerId && clip(lagerId, 60)) ereignis.lagerId = clip(lagerId, 60);
   const alle = leseEreignisse(file);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
@@ -112,7 +114,8 @@ export function wahlFuer(wahl, orderId, lineItemId) {
 /**
  * Traegt die Wahl an alle Muster-Positionen des Bestellmodells (Auftraege, Testauftraege,
  * Mustergruppen) ein: `musterHerkunft`, `musterHerkunftAm`, `musterHerkunftVon`, dazu
- * `musterRoute` (die Route vor der Gruppierung - in den Mustergruppen steht dort "MUSTER").
+ * `musterRoute` (die Route vor der Gruppierung - in den Mustergruppen steht dort "MUSTER")
+ * und `musterLagerId`, wenn das Muster aus dem Musterlager verschickt wurde.
  * Veraendert das Modell an Ort und Stelle und gibt es zurueck. Ware bleibt unberuehrt.
  */
 export function wendeAufModellAn(modell, ereignisse = []) {
@@ -130,6 +133,7 @@ export function wendeAufModellAn(modell, ereignisse = []) {
     p.musterHerkunft = e.herkunft;
     p.musterHerkunftAm = e.am;
     p.musterHerkunftVon = e.von;
+    if (e.lagerId) p.musterLagerId = e.lagerId;
   };
   for (const a of auftraege) for (const p of a.positionen ?? []) setze(p);
   for (const g of modell.musterGruppen ?? []) for (const p of g.positionen ?? []) setze(p);

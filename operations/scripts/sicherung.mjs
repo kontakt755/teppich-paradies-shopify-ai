@@ -40,6 +40,8 @@ export const SICHERUNGSPFADE = Object.freeze([
   'auftragsstatus.json',
   'auftragsverlauf.json',
   'musterherkunft.json',
+  // Musterlager: welche Muster wir selbst da haben (operations/lib/musterlager.mjs).
+  'musterlager.json',
   'lexikon',
   'bestelluebersicht',
   'kennzahlen',

@@ -405,6 +405,55 @@ DOM in `lib/einkauf-lieferanten.mjs`, Styles in `stile/einkauf-lieferanten.css`)
   werden benannt; gepflegt werden sie nur in der privaten Datei, es gibt keinen Editor.
 - Rolle „lesen": Statusknöpfe und die Markier-Frage sind ausgeblendet.
 
+### 8b. Muster: Inhalt auf einen Blick und Musterlager (seit 2026-10-13)
+
+Inhaber 2026-10-13: Bei einer Musterbestellung muss „ganz klipp und klar“ dastehen, welche Muster es sind –
+ohne Suchen, ohne Klick. Und Muster, die wir selbst da haben (Probestück 2 × 1 m bei PVC und Linoleum,
+künftig Bahnen 4 m × 20 cm der gängigsten Teppichboden-Farben), müssen vermerkt sein, damit sie niemand
+noch einmal beim Lieferanten bestellt.
+
+**Inhalt in der Bestellliste.** Kunden › Bestellungen zeigt unter jeder Zeile über die ganze Breite, was
+bestellt wurde: „3 Muster · Regalia Teppichboden: Beige Mittel Dunkler, Creme Dunkel · aus dem Musterlager
+(Regal B)“ bzw. bei Ware die Artikel mit Farbe und Menge (höchstens drei, dann „+N weitere“). Reine
+Musterbestellungen zeigen „kostenlos“ statt „0,00 €“. Die Suche findet auch Produkt und Farbe. Logik ohne
+DOM in `docs/ai-dashboard/lib/bestellinhalt.mjs` (`tests/bestellinhalt.test.mjs`); dieselben Texte nutzen die
+To-dos auf „Heute“ („Muster bei Lieferant A bestellen · Kunde · Regalia Teppichboden: Sand, Greige“,
+„Muster verschicken an … · aus dem Musterlager (Regal B)“).
+
+**Musterlager** (Einkauf › Reiter „Musterlager“, `ansichten/einkauf/musterlager.mjs`, Styles
+`stile/muster.css`, Server `operations/lib/musterlager.mjs`). Ablage `$TP_PRIVAT_DIR/musterlager.json`
+(Teil von `npm run daten:sichern`), Shopify wird nie geschrieben.
+
+| Art | Bedeutung | Abzählen |
+|---|---|---|
+| Einzelmuster | fertige Muster | ja – jedes verschickte zählt ab, bei 0 wieder beim Lieferanten |
+| Probestück 2 × 1 m | PVC, Linoleum: wir schneiden zu | nein – „Ist leer“ setzt jemand von Hand |
+| Bahn 4 m × 20 cm | Teppichboden: wir schneiden zu | nein – wie Probestück |
+
+- **Schlüssel** ist die SKU ohne „M-“ (Mustervarianten tragen `M-<SKU der Quellvariante>`, bei Teppich nach
+  Maß die der Teppichboden-Qualität). Beim Einlagern aus dem Lexikon kommen alle Breiten einer Farbe und das
+  Musterprodukt dazu; Muster über das Sammelprodukt „Kostenloses Muster“ nehmen die SKU der Quellvariante.
+- **Wirkung:** Eine offene Musterposition (kein Auftragsfluss-Stand, keine ausdrückliche Wahl, Auftrag offen),
+  deren Schlüssel im Lager steht, bekommt beim Laden des Modells `musterHerkunft: eigen_versand`,
+  `musterHerkunftQuelle: lager` und `musterLager {id, art, artLabel, ort, rest}` (`mitMusterlager()` in
+  `scripts/dashboard-api.mjs`, nach der Wahl aus `musterherkunft.json`). Damit gilt alles aus „Muster haben
+  wir da“: nicht in der Bestellmail (Grund „aus dem Musterlager (Regal B) – wird von uns verschickt“), nicht
+  „Muster noch zu bestellen“, To-do „Muster verschicken an …“. Die älteste Bestellung bekommt das letzte
+  Einzelmuster; die nächste geht an den Lieferanten und trägt `musterLagerLeer` („Musterlager: … leer“).
+  Die Wahl „Woher? ändern…“ geht immer vor.
+- **Festschreiben beim Verschicken:** Erreicht eine so zugeordnete Position „An Kunden raus“ (Einzelstatus,
+  Schritt `raus` oder `kunde_hat_muster`), hängt der Server ein `musterherkunft`-Ereignis mit `lagerId` an.
+  So zählt das Muster als verschickt, auch wenn der Lagereintrag später leer gesetzt oder entfernt wird.
+  „Bestellt“ ist kein Abgang.
+- **Vorschläge „Einlagern?“:** eingetroffene Probestücke von PVC/Linoleum (Stand „geliefert“, höchstens
+  45 Tage) – „den Rest einlagern?“ – und Farben, die in 120 Tagen mindestens zweimal als Muster bestellt
+  wurden. Ein Klick öffnet den Dialog vorbelegt.
+- **Endpunkte:** `GET /api/einkauf/musterlager` (Einträge mit Stand verbraucht/reserviert/Rest, offene
+  Bestellungen je Eintrag, Vorschläge), `GET /api/einkauf/musterlager-farben?handle=` (Farben eines
+  Lexikon-Produkts samt Schlüssel), `POST /api/einkauf/musterlager` mit `aktion: einlagern | aendern |
+  entfernen` (Schreibpfad: Rolle „lesen“ 403). Ein beschädigtes `musterlager.json` hält keine
+  Bestellansicht auf; nur der Reiter meldet den Fehler, und Schreiben verweigert.
+
 ## 9. Startseite „Heute" (seit 2026-09-23)
 
 `viewHeute()` in `docs/ai-dashboard/ansichten/heute.mjs` ist die Startseite und bleibt primär aufgabenbasiert
