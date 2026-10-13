@@ -99,13 +99,16 @@ export function viewKundenRueckrufe() {
   if (!r || !r.verfuegbar) return emptyState('Keine Daten verfügbar.', r?.hinweis || 'Bestellübersicht noch nicht exportiert.');
   // Testbestellungen sind keine Arbeit - auf der Startseite waren sie schon
   // ausgenommen, in dieser Liste und im Zaehler standen sie weiter drin.
-  const offen = r.zeilen.filter(z => z.status !== 'erledigt' && !z.testbestellung);
-  const erledigt = r.zeilen.filter(z => z.status === 'erledigt');
-  const tests = r.zeilen.filter(z => z.status !== 'erledigt' && z.testbestellung);
+  const auftrag = state.route.params.get('auftrag');
+  const zeilen = auftrag ? r.zeilen.filter(z => String(z.orderId) === auftrag) : r.zeilen;
+  const offen = zeilen.filter(z => z.status !== 'erledigt' && !z.testbestellung);
+  const erledigt = zeilen.filter(z => z.status === 'erledigt');
+  const tests = zeilen.filter(z => z.status !== 'erledigt' && z.testbestellung);
   return `
+    ${auftrag ? '<p><a href="#/heute">← Zurück zu Heute</a> · <a href="#/kunden?tab=rueckrufe">Alle Rückrufe</a></p>' : ''}
     <p class="small muted" style="margin:0 0 10px">Alle Bestellungen mit Beratungswunsch, Maßprüfung „Ja" oder angefragter Verlegung – älteste zuerst. Nachgefasst wird nur hier, nicht in der Laden-Ansicht. Status und Notiz werden lokal auf diesem Mac gespeichert.</p>
     <div class="rows">${offen.length ? offen.map(rueckrufZeileHtml).join('') : emptyState('Keine offenen Rückrufe.', '')}</div>
     ${tests.length ? `<details style="margin-top:14px"><summary>${tests.length} aus Testbestellungen</summary><div class="rows">${tests.map(rueckrufZeileHtml).join('')}</div></details>` : ''}
-    ${erledigt.length ? `<details style="margin-top:14px"><summary>${erledigt.length} erledigt</summary><div class="rows">${erledigt.map(rueckrufZeileHtml).join('')}</div></details>` : ''}
+    ${erledigt.length ? `<details ${auftrag ? 'open' : ''} style="margin-top:14px"><summary>${erledigt.length} erledigt</summary><div class="rows">${erledigt.map(rueckrufZeileHtml).join('')}</div></details>` : ''}
   `;
 }

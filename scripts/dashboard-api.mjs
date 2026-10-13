@@ -65,6 +65,11 @@ import { meldungenPfad, abgleichPfad, meldungAnlegen, alleMeldungen, sichtbareMe
 import { dashboardLinks } from './weitere-dashboards.mjs';
 import { logFehler } from './dashboard-log.mjs';
 import { leseTailscaleStatus } from '../operations/lib/tailscale.mjs';
+import { bestaetigeBeschaffung, arbeitsuebernahme, BeschaffungFehler } from '../operations/lib/beschaffung.mjs';
+import { darfWeiter } from '../docs/ai-dashboard/lib/beschaffung.mjs';
+import { filtereAuftrag } from '../docs/ai-dashboard/lib/vorgangslink.mjs';
+import { musterKaufLinks } from '../docs/ai-dashboard/lib/muster-kauf-links.mjs';
+import { betriebszustand } from '../operations/lib/betriebszustand.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -825,6 +830,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // bewusste Korrektur zurueck - dann gilt er fuer alle.
       const dahinter = positionen.filter(p => stufe(p) < ziel);
       const betroffen = dahinter.length ? dahinter : positionen.filter(p => stufe(p) !== ziel);
+      if (betroffen.some(p => !darfWeiter(alle[positionKey(orderId, p.lineItemId)], status))) throw new ApiError(409, 'Die bestätigte Fehlmenge ist noch offen. Zuerst den Wareneingang vervollständigen.');
       for (const p of betroffen) {
         setzeStatus(statusDatei, { orderId, lineItemId: p.lineItemId, status, actor, lieferantBestellnummer, notiz: text, jetzt: now(),
           ...(status === 'raus' ? { sendungsnummer: angaben.sendungsnummer, versanddienst: angaben.versanddienst, versandMail } : {}) });
@@ -1270,7 +1276,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const statusAlle = leseAuftragsstatus(auftragsstatusPfad(dir));
       const rueckrufeAlle = leseRueckrufe(rueckrufePfad(dir));
       const zl = zeitleisten(dir, modell, statusAlle);
-      return { verfuegbar: true, zeilen: bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) })) };
+      let katalog = [];
+      try { katalog = this._lexikonProdukte(); } catch { /* Optionale Kaufquelle unlesbar: keine Links, Bestellliste bleibt nutzbar. */ }
+      return { verfuegbar: true, zeilen: bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) })) };
     },
 
     /**
@@ -1486,14 +1494,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     },
 
     /** Fertige Bestellung (Ware je Gruppe bzw. offene Muster) als Mailtext + mailto:-Link. Sendet nichts. */
-    einkaufBestellmail({ lieferant = '', art = 'ware', gruppe = '', ziel = '' } = {}) {
+    einkaufBestellmail({ lieferant = '', art = 'ware', gruppe = '', ziel = '', auftrag = '' } = {}) {
       const k = this._lieferantenKontext();
       if (!k.modell) return { verfuegbar: false, hinweis: k.hinweis, stammdatenDatei: k.stammdatenDatei, mails: [] };
       try {
         return {
           verfuegbar: true,
           stammdatenDatei: k.stammdatenDatei,
-          ...bestellmail({ modell: k.modell, lieferant, art, gruppe: gruppe || null, ziel: ziel || null, statusAlle: k.statusAlle, stammdaten: k.stammdaten, jetzt: now() }),
+          ...bestellmail({ modell: filtereAuftrag(k.modell, auftrag), lieferant, art, gruppe: gruppe || null, ziel: ziel || null, statusAlle: k.statusAlle, stammdaten: k.stammdaten, jetzt: now() }),
         };
       } catch (e) {
         if (e instanceof LieferantenFehler) throw new ApiError(400, e.message);
@@ -1511,12 +1519,38 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
 
     /** Setzt den Status einer Bestellposition (Bestellt/Geliefert/Raus/Erledigt). */
     async einkaufAuftragsstatusSetzen(payload = {}, benutzer = null) {
+      if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Rolle „lesen“ darf keine Änderungen vornehmen.');
       // Im Mehrbenutzerbetrieb ist der angemeldete Dashboard-Benutzer die handelnde Person -
       // gh-Anmeldung ist fuer diese rein lokale Aktion dann nicht mehr Voraussetzung. Ohne
       // Anmeldung (Notzugang) bleibt der bisherige gh-Login die handelnde Person.
       const actor = benutzer?.name || await currentUser();
       if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
       const { orderId, lineItemId, status, lieferantBestellnummer, notiz, aktion } = payload || {};
+      if (aktion === 'beschaffung' || aktion === 'uebernahme') {
+        const dir = privatDirPath || privatDir();
+        const modell = ladeBestellModell(dir);
+        if (!modell) throw new ApiError(409, 'Die Bestelldaten sind nicht lesbar. Es wurde nichts verändert.');
+        const allePositionen = [...(modell.auftraege || []), ...(modell.testauftraege || [])].flatMap(a => a.positionen || []);
+        const ziele = aktion === 'beschaffung' ? [{ orderId, lineItemId }] : payload.positionen;
+        if (!Array.isArray(ziele) || !ziele.length || ziele.length > 200 || ziele.some(p => !p || typeof p !== 'object' || !p.orderId || !p.lineItemId || !allePositionen.some(z => String(z.orderId) === String(p.orderId) && String(z.lineItemId) === String(p.lineItemId)))) throw new ApiError(400, 'Die ausgewählte Position gehört nicht zu den vorliegenden Bestellungen.');
+        try {
+          const file = auftragsstatusPfad(dir);
+          if (aktion === 'uebernahme') {
+            const eintraege = arbeitsuebernahme(file, { positionen: ziele, aktion: payload.uebernahmeAktion, person: benutzer, actor, jetzt: now() });
+            audit({ actor, action: 'einkauf-uebernahme', aktion: payload.uebernahmeAktion, anzahl: Object.keys(eintraege).length });
+            merke(benutzer, actor, payload.uebernahmeAktion === 'freigeben' ? 'Einkaufsarbeit freigegeben' : 'Einkaufsarbeit übernommen', `${Object.keys(eintraege).length} Positionen`);
+            return { ok: true, eintraege };
+          }
+          const p = allePositionen.find(z => String(z.orderId) === String(orderId) && String(z.lineItemId) === String(lineItemId));
+          const eintrag = bestaetigeBeschaffung(file, { orderId, lineItemId, felder: payload.felder, soll: p.bestellmenge?.menge, einheit: p.bestellmenge?.einheit, actor, jetzt: now() });
+          audit({ actor, action: 'beschaffung-bestaetigt', orderId, lineItemId });
+          merke(benutzer, actor, 'Liefertermin / Wareneingang bestätigt', `${p.orderName} · ${p.titel}`);
+          return { ok: true, eintrag };
+        } catch (e) {
+          if (e instanceof BeschaffungFehler) throw new ApiError(e.status, e.message);
+          throw e;
+        }
+      }
       // Zeitleiste: ein Schritt fuer den ganzen Auftrag (alle Positionen bzw. ein Ereignis je Auftrag).
       // Additiv - ohne `aktion` verhaelt sich der Endpunkt exakt wie bisher.
       if (aktion === 'schritt') return auftragsSchrittSetzen(payload, benutzer, actor);
@@ -2737,7 +2771,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * Fehler, nur ein leerer Zustand mit dem Befehl, der sie anlegen wuerde.
      */
     aktualisierung() {
-      return { ...leseAktualisierungsstand(), letzterKnopfLauf };
+      return { ...leseAktualisierungsstand(), letzterKnopfLauf, betrieb: betriebszustand(privatDirPath || privatDir(), { jetzt: now() }) };
     },
 
     /**
@@ -2800,7 +2834,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * `aktualisierung()`). Wird per Abfrage gepollt (kein Warten im Request).
      */
     aktualisierungStatus() {
-      const stand = { ...leseAktualisierungsstand(), letzterKnopfLauf };
+      const stand = { ...leseAktualisierungsstand(), letzterKnopfLauf, betrieb: betriebszustand(privatDirPath || privatDir(), { jetzt: now() }) };
       if (aktualisierungLauf) return { ...stand, laeuft: true, seit: aktualisierungLauf.seit };
       return { ...stand, laeuft: false, seit: null };
     },

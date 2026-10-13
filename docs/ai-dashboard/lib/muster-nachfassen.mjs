@@ -15,6 +15,7 @@
  * der Browser den Rest. Kundendaten kommen nur zur Laufzeit aus den lokalen Daten.
  */
 
+import { sichereMusterLinks } from './muster-kauf-links.mjs';
 const TAG_MS = 86400000;
 
 /** Erste Nachfrage ab so vielen Tagen nach Versand bzw. Uebergabe der Muster. */
@@ -99,6 +100,7 @@ export function musterNachfassen(bestellzeilen = [], { jetzt = new Date() } = {}
       kundenSchluessel: z.kundenSchluessel || null,
       datum: z.datum || null,
       muster: musterKurz(z.auftrag?.positionen),
+      produkte: sichereMusterLinks(z.musterKaufLinks),
       kontakt: kontaktweg(z),
     };
 
@@ -165,9 +167,12 @@ export function texteAusMarkdown(md) {
  * @param {string|null} [p.absender]  Name der Person, die schreibt
  * @returns {{ betreff: string, text: string }|null}
  */
-export function fuelleText(vorlage, { kundenname = null, absender = null } = {}) {
+export function fuelleText(vorlage, { kundenname = null, absender = null, produkte = [] } = {}) {
   if (!vorlage?.text) return null;
   const werte = { ...FESTE_LINKS };
+  const links = sichereMusterLinks(produkte);
+  const auswahl = links.map(p => `${[p.titel, p.farbe].filter(Boolean).join(' · ')}\n${p.url}`).join('\n\n');
+  if (links.length) werte['Link Produkt'] = auswahl;
   if (gesetzt(absender)) werte.Name = String(absender).trim();
   const ersetze = s => String(s)
     // Die Anrede (Herr/Frau) steht nicht in den Bestelldaten - "Guten Tag Vorname Nachname," ist korrekt.
@@ -180,7 +185,10 @@ export function fuelleText(vorlage, { kundenname = null, absender = null } = {})
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
-  return { betreff: ersetze(vorlage.betreff || '').replace(/\{[^{}\n]+\}/g, '').trim(), text };
+  const block = `Ihre gewählten Böden:\n${auswahl}\n\nFragen zum Maß? Wir beraten Sie gern.`;
+  const mitAuswahl = auswahl && !vorlage.text.includes('{Link Produkt}')
+    ? (/\n(?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b/.test(text) ? text.replace(/\n((?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b)/, `\n\n${block}\n\n$1`) : `${text}\n\n${block}`) : text;
+  return { betreff: ersetze(vorlage.betreff || '').replace(/\{[^{}\n]+\}/g, '').trim(), text: mitAuswahl };
 }
 
 /** mailto:-Link mit Betreff und Text - oeffnet das Mailprogramm, sendet nichts. */

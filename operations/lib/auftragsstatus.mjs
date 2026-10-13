@@ -15,6 +15,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { darfWeiter } from '../../docs/ai-dashboard/lib/beschaffung.mjs';
 
 export const STATUS_ORDER = Object.freeze(['bestellt', 'geliefert', 'raus', 'erledigt']);
 
@@ -69,7 +70,18 @@ export function leseAlle(file) {
   try { raw = JSON.parse(text); } catch {
     throw new Error(`${path.basename(file)} ist beschädigt – bitte aus der Sicherung holen (npm run daten:sichern legt sie an)`);
   }
-  return raw && typeof raw === 'object' && raw.positionen && typeof raw.positionen === 'object' ? raw.positionen : {};
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw) || !raw.positionen || typeof raw.positionen !== 'object' || Array.isArray(raw.positionen)
+    || Object.values(raw.positionen).some(e => {
+      if (!e || typeof e !== 'object' || Array.isArray(e)) return true;
+      if (e.uebernahme != null && (typeof e.uebernahme !== 'object' || Array.isArray(e.uebernahme) || typeof e.uebernahme.id !== 'string' || typeof e.uebernahme.person !== 'string')) return true;
+      const b = e.beschaffung;
+      if (b != null && (typeof b !== 'object' || Array.isArray(b))) return true;
+      const w = b?.wareneingang;
+      return w != null && (typeof w !== 'object' || ['soll', 'angekommen', 'verwendbar'].some(k => !Number.isFinite(w[k]) || w[k] < 0) || w.verwendbar > w.angekommen || w.angekommen > w.soll);
+    })) {
+    throw new Error(`${path.basename(file)} ist beschädigt (ungültiges Positionsformat) – bitte aus der Sicherung holen`);
+  }
+  return raw.positionen;
 }
 
 /** Atomarer Schreibvorgang: tmp-Datei im selben Verzeichnis, dann rename. */
@@ -115,6 +127,7 @@ export function setzeStatus(file, { orderId, lineItemId, status, actor, lieferan
 
   const alle = leseAlle(file);
   const bisher = alle[key] || {};
+  if (!darfWeiter(bisher, status)) throw new AuftragsstatusFehler('Die bestätigte Fehlmenge ist noch offen. Zuerst den Wareneingang vervollständigen.');
   const zeit = jetzt.toISOString();
   const eintrag = {
     ...bisher,

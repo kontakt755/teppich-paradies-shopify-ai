@@ -33,6 +33,7 @@
  */
 
 import fs from 'node:fs';
+import { beschaffungText, restmenge } from '../../docs/ai-dashboard/lib/beschaffung.mjs';
 import path from 'node:path';
 import os from 'node:os';
 import { positionKey, STATUS_ORDER } from './auftragsstatus.mjs';
@@ -318,7 +319,8 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
   });
 
   const ergebnis = { auftragsart: art, verlauf, verlaufNotizen: notizen, abgeschlossen, direktversand: direkt, eigenerBestand: eigen };
-  return { ...ergebnis, naechsterSchritt: naechsterSchritt(ergebnis, { auftrag, versand, nachverfolgbar: pos.gesamt > 0, jetzt }) };
+  const beschaffung = (auftrag?.positionen || []).map(p => statusAlle[positionKey(auftrag.id, p.lineItemId)]).filter(e => e?.status === 'bestellt');
+  return { ...ergebnis, naechsterSchritt: naechsterSchritt(ergebnis, { auftrag, versand, beschaffung, nachverfolgbar: pos.gesamt > 0, jetzt }) };
 }
 
 /**
@@ -336,7 +338,7 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
  *          "nachhaken" (ab 7 Tagen), "problem" (ab 14 Tagen).
  *   faelligSeitTagen: seit wie vielen Tagen der Schritt faellig ist (0 = heute), null solange gewartet wird.
  */
-export function naechsterSchritt(stand, { auftrag = null, versand = null, nachverfolgbar = true, jetzt = new Date() } = {}) {
+export function naechsterSchritt(stand, { auftrag = null, versand = null, beschaffung = [], nachverfolgbar = true, jetzt = new Date() } = {}) {
   if (!stand || stand.abgeschlossen) return null;
   const { verlauf, auftragsart: art } = stand;
   const muster = art === AUFTRAGSART.MUSTER;
@@ -365,6 +367,17 @@ export function naechsterSchritt(stand, { auftrag = null, versand = null, nachve
   };
   if (!nachverfolgbar && STATUS_ORDER.includes(aktuell.schritt)) {
     return schritt('wir', 'Stand im Shopify-Admin prüfen', 'Die Positionen dieser Bestellung haben keine Kennung – der Stand lässt sich hier nicht festhalten.', null, null, 'faellig', tage, tage);
+  }
+  if (aktuell.schritt === 'geliefert' && beschaffung.length) {
+    const schaden = beschaffung.find(e => restmenge(e) > 0 && e.beschaffung.wareneingang.angekommen > e.beschaffung.wareneingang.verwendbar);
+    if (schaden) return schritt('wir', 'Nicht verwendbare Ware / Fehlmenge klären', beschaffungText(schaden), 'geliefert', 'Wareneingang prüfen', 'problem', 0, tage);
+    if (beschaffung.every(e => e.beschaffung?.liefertermin)) {
+      const termin = beschaffung.map(e => e.beschaffung.liefertermin).sort()[0];
+      const heute = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin' }).format(jetzt);
+      const detail = beschaffung.map(beschaffungText).filter(Boolean).join(' · ');
+      return termin < heute ? schritt('wir', 'Bestätigter Liefertermin überschritten – nachhaken', detail, 'geliefert', 'Wareneingang prüfen', 'nachhaken', 0, tage)
+        : schritt('lieferant', `Lieferung zugesagt zum ${termin.split('-').reverse().join('.')}`, detail, 'geliefert', 'Wareneingang bestätigen', 'warten', null, tage);
+    }
   }
 
   if (muster) {

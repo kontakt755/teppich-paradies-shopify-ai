@@ -105,6 +105,11 @@ export function sichern({ privatDir = STANDARD_PRIVAT_DIR, ziel = null, jetzt = 
   fs.renameSync(tmp, archiv);
 
   const bytes = fs.statSync(archiv).size;
+  // Erst nach fertigem Archiv: die Oberflaeche zeigt einen belegten Erfolg, keinen Versuch.
+  const stand = path.join(privatDir, 'sicherungsstand.json');
+  const standTmp = `${stand}.${process.pid}.tmp`;
+  fs.writeFileSync(standTmp, JSON.stringify({ letzterErfolg: jetzt.toISOString(), bytes, quellenAnzahl: quellen.length }), { mode: 0o600 });
+  fs.renameSync(standTmp, stand);
   return { archiv, quellen, uebersprungen, bytes };
 }
 

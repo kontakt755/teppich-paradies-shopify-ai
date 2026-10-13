@@ -99,14 +99,15 @@ export function viewKundenDetail(key) {
   ensureKundenDetail(key);
   ensureKundenFaelle();      // der naechste Schritt liegt berechnet vor
   ensureKundenNotizen(key);  // was beim letzten Anruf besprochen wurde
-  const zurueck = `<p class="no-print" style="margin:0 0 12px"><a href="#" data-kunden-zurueck>← Zurück zur Kundensuche</a></p>`;
+  const zurueck = state.route.params.get('von') === 'heute' ? '<p><a href="#/heute">← Zurück zu Heute</a></p>' : `<p class="no-print" style="margin:0 0 12px"><a href="#" data-kunden-zurueck>← Zurück zur Kundensuche</a></p>`;
   // Nur anzeigen, was zu DIESEM Kunden gehoert: sonst stehen waehrend des
   // Ladens Name und Adresse des zuvor geoeffneten Kunden unter der neuen
   // Adresse - am Telefon liest das jemand vor.
   const d = kunden.detailKey === key ? kunden.detail : null;
   if (!d) return zurueck + `<div class="empty">Lade Kunde …</div>`;
   if (!d || !d.verfuegbar) return zurueck + emptyState('Kunde nicht gefunden.', d?.hinweis || '');
-  const k = d.kunde;
+  const auftrag = state.route.params.get('auftrag');
+  const k = auftrag ? { ...d.kunde, auftraege: (d.kunde.auftraege || []).filter(a => String(a.id) === auftrag) } : d.kunde;
   // "Was ist hier offen?" musste man sich bisher aus den Bestellkarten
   // zusammenreimen - dabei rechnet kundenfaelle.mjs es laengst aus.
   const fall = kunden.faelle?.faelle?.find(f => f.schluessel === key || f.key === key);

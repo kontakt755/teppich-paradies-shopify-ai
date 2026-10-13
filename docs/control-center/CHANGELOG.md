@@ -2,6 +2,31 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-13 · Direkte Vorgänge, Muster-Kauflinks und bestätigte Beschaffung (#1206)
+
+- **Geändert:** Heute öffnet konkrete Aufträge/Rückrufe/Fälle mit Rückweg; der Auftragsfilter begrenzt auch
+  Lieferantengruppen und Bestelltexte. Bestehende manuelle Mustertexte erhalten bis zu drei eindeutige
+  öffentliche Variantenlinks aus aktiven Lexikonquellen; fehlende/archivierte Quellen werden ausgelassen.
+  Liefertermin und kumulativer Wareneingang (angekommen/verwendbar/Grund) ergänzen den lokalen Positionsspeicher.
+  Fehlmengen bleiben bestellt und sperren Sammelaktionen; vollständig verwendbare Menge wird geliefert.
+  Einkauf und Kunden-Zeitleiste berücksichtigen Zusagen und Mängel; Wareneingang erfolgt je Position.
+  Sichtbare Arbeitsübernahme ohne versteckten Ablauf: Mitarbeiter geben nur eigene Arbeit frei; fremde
+  Übernahme nur durch bewussten Inhaber-Klick, Leser 403. Gesundheit zeigt belegte Sicherungs-/Werkbank-
+  Zeitpunkte und optionale v49-Laufzeiten; fehlend ist unbekannt. Keine neuen Shopify-Schreibaktionen/Auto-Mails.
+- **Getestet:** Neue Positions-/API-/Link-/Laufzeit-Regressionsfälle mit Attrappen; Legacy-Status-/Versand-
+  tests erhalten. Dashboard-Suite 314/314, volle Projektsuite 2433/2433; bestehende Desktop-/Mobil-QA
+  110/110 (22 Ansichten, fünf Breiten), finale Rollen-QA 98/98 bei 390/1440 px: kein Überlauf/JS-Fehler.
+  Syntaxprüfung aller 31 Module, Pflicht-Guards und statische Workflowprüfung PASS (sechs unveränderte
+  Template-Hinweise). CUA und unabhängige Root-Gegenprobe: 10 Pakete, 8 angekommen/7 verwendbar →
+  weiterhin bestellt, 3 fehlen; Mengenfenster statt blindem Geliefert-Klick, sichtbare Übernahme,
+  direkte Rückruf-/Aktenwege und zwei genaue Variantenlinks. Keine echten Daten oder Nachrichten.
+- **Risiken/Annahmen:** Produktlinks nutzen den vorhandenen Lexikonstand. Mengen sind kumulative menschliche
+  Angaben, keine Lagerkorrektur. Alte Positionsdaten bleiben kompatibel; beschädigte Zusatzfelder werden
+  nicht überschrieben. Sicherungserfolg ab nächstem erfolgreichen Lauf; Werkbank-Zeit bestätigt das Einlesen,
+  nicht jeden externen Schritt. Echt fehlende App-/Google-Konfiguration bleibt offen.
+- **Nächste Stufe:** Unabhängiger Diff-Review und Veröffentlichung durch Root. Kein eigener Push/Merge/
+  Dienstneustart oder Google-Release.
+
 ## 2026-09-08 · Phase A: Bestandsaufnahme
 
 - **Geändert:** `BESTANDSAUFNAHME.md`, `ARCHITEKTUR.md`, Screenshots des Ist-Zustands

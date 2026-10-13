@@ -12,6 +12,8 @@
  */
 
 import { musterText, musterHerkunftText } from './bestellinhalt.mjs';
+import { vorgangsLink } from './vorgangslink.mjs';
+import { lieferterminFaellig, beschaffungText, uebernahmeText } from './beschaffung.mjs';
 
 const TAG_MS = 86400000;
 const UNGEKLAERT = 'UNGEKLAERT';
@@ -124,7 +126,7 @@ function einkaufLink(lieferant) {
 }
 
 function kundenLink(z) {
-  return z.kundenSchluessel ? `#/kunden?kunde=${encodeURIComponent(z.kundenSchluessel)}` : '#/kunden?tab=bestellungen';
+  return z.kundenSchluessel ? vorgangsLink('kunden', { kunde: z.kundenSchluessel, auftrag: z.orderId }) : vorgangsLink('kunden', { tab: 'bestellungen', auftrag: z.orderId });
 }
 
 /**
@@ -231,7 +233,7 @@ function ausBestellungen(quellen, k) {
         id: `blockiert:${z.orderId}`, art: 'blockiert', bereich: 'laden', ton: 'crit', alterTage: seitBestellung,
         titel: `Zuerst klären: ${z.orderName}`,
         kontext: [kundeVon(z), ...(a.hinweise || []).slice(0, 2).map(k.klartext)].join(' · '),
-        knopf: { text: 'Klären', href: '#/einkauf' },
+        knopf: { text: 'Klären', href: vorgangsLink('einkauf', { auftrag: z.orderId }) },
       });
       continue;
     }
@@ -244,7 +246,7 @@ function ausBestellungen(quellen, k) {
         kontext: [rueckruf.thema, z.orderName, rueckruf.wunschzeit ? `Wunschzeit ${rueckruf.wunschzeit}` : null,
           rueckruf.status === 'nicht_erreicht' ? 'zuletzt nicht erreicht' : null,
           rueckruf.telefon ? null : 'keine Telefonnummer'].filter(Boolean).join(' · '),
-        knopf: { text: 'Zurückrufen', href: '#/kunden?tab=rueckrufe' },
+        knopf: { text: 'Zurückrufen', href: vorgangsLink('kunden', { auftrag: z.orderId, tab: 'rueckrufe' }) },
       });
       // Erst anrufen, dann bestellen ("Beratung gewünscht - vor Einkauf anrufen"): solange der
       // Rueckruf faellig ist, erscheint die Bestellung nicht zusaetzlich unter "bestellen".
@@ -254,12 +256,16 @@ function ausBestellungen(quellen, k) {
     for (const x of offen) {
       const status = x.eintrag?.status || null;
       const pos = { ...x, z, seitBestellung };
+      if (lieferterminFaellig(x.eintrag, k.heute)) {
+        todos.push({ id: `liefertermin:${z.orderId}:${x.p.lineItemId}`, art: 'liefertermin', bereich: 'laden', ton: 'crit', alterTage: tageSeit(x.eintrag.beschaffung.liefertermin, k.jetzt), titel: `Bestätigter Liefertermin überschritten: ${z.orderName}`, kontext: [x.p.titel, beschaffungText(x.eintrag), uebernahmeText(x.eintrag)].filter(Boolean).join(' · '), knopf: { text: 'Nachhaken', href: vorgangsLink('einkauf', { auftrag: z.orderId, af: 'bestellt' }) } });
+        continue;
+      }
       // "Haben wir da": nicht beim Lieferanten bestellen, sondern vorbeibringen bzw. verschicken.
       if (!status && musterEigen(x.p)) sammle(eigeneMuster, z.orderId, pos);
       else if (!status) sammle(bestellen, `${x.p.lieferant ?? UNGEKLAERT}|${x.p.istMuster ? 'muster' : 'ware'}`, pos);
       else if (status === 'bestellt') {
         const tage = tageSeit(x.eintrag.bestelltAm, k.jetzt);
-        if (tage !== null && tage >= k.schwellen.nachhakenTage) sammle(nachhaken, x.p.lieferant ?? UNGEKLAERT, { ...pos, tage });
+        if (!x.eintrag?.beschaffung?.liefertermin && tage !== null && tage >= k.schwellen.nachhakenTage) sammle(nachhaken, x.p.lieferant ?? UNGEKLAERT, { ...pos, tage });
       } else if (status === 'geliefert') {
         const tage = tageSeit(x.eintrag.geliefertAm, k.jetzt);
         const id = `rausgeben:${z.orderId}`;
@@ -269,7 +275,7 @@ function ausBestellungen(quellen, k) {
           id, art: 'rausgeben', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.rausgeben), alterTage: tage,
           titel: `${x.p.istMuster ? 'Muster' : 'Ware'} ist da – an ${kundeVon(z)} rausgeben`,
           kontext: [z.orderName, x.p.istMuster ? musterText([x.p]) : x.p.titel, tage !== null ? `liegt ${seitText(tage)} bei uns` : null].filter(Boolean).join(' · '),
-          knopf: { text: 'Rausgeben', href: '#/einkauf?af=eingetroffen' },
+          knopf: { text: 'Rausgeben', href: vorgangsLink('einkauf', { auftrag: z.orderId, af: 'eingetroffen' }) },
         });
       }
     }
@@ -340,7 +346,7 @@ function ausFaellen(quellen) {
       titel: `Angebot nachfassen: ${f.name || 'Kunde'}`,
       kontext: [angebote.map(p => p.bezug).filter(Boolean).join(', ') || 'Angebot', `${seitText(tage)} ohne Antwort`,
         f.telefon ? null : (f.email ? 'nur E-Mail hinterlegt' : 'kein Kontakt hinterlegt')].filter(Boolean).join(' · '),
-      knopf: { text: 'Nachfassen', href: '#/kunden?tab=angebote' },
+      knopf: { text: 'Nachfassen', href: vorgangsLink('kunden', { fall: f.schluessel }) },
     });
   }
   return todos;

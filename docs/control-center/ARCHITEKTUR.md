@@ -1018,3 +1018,31 @@ Fulfillment Orders mit offener Menge. `dashboard:pruefen` startet seine Instanz 
 ohne Shopify-Zugang (`SHOPIFY_*` entfernt, `TP_ENV_LOCAL` ins Leere) – ein Klick auf „raus“ in der Kopie bucht
 nie eine echte Sendung.
 
+## 18. Bestätigte Beschaffung und Arbeitsübernahme (#1206)
+
+`auftragsstatus.json` bleibt die einzige lokale Positionsablage. Additiv je Position:
+`beschaffung: {liefertermin, grund, wareneingang: {soll, angekommen, verwendbar, einheit,
+bestaetigtAm, bestaetigtVon}}` und `uebernahme: {id, person, seit}|null`. Version 1 bleibt lesbar;
+ohne Zusatzfelder gilt die bisherige Statuslogik. Ungültiges JSON/Positions-/Zusatzformat verweigert
+Schreiben statt als leerer Bestand zu gelten. `POST /api/einkauf/auftragsstatus`, Aktion `beschaffung`,
+validiert die Position am vorhandenen Bestellmodell und nimmt Soll/Einheit vom Server; Mengen sind
+kumulative menschliche Bestätigungen. Restmenge > 0 bleibt bestellt und sperrt geliefert/raus/erledigt,
+auch über den Sammelschritt. Neue Zustände ändern keine Shopify-Mengen/Preise/Varianten.
+
+Aktion `uebernahme` nimmt Positionen und `uebernahmeAktion: nehmen|freigeben|uebernehmen`.
+Person/Rolle kommen ausschließlich aus der Sitzung. Mitarbeiter dürfen keine fremde Übernahme
+freigeben/übernehmen; Inhaber übernimmt bewusst mit eigenem Knopf. Kein automatischer Ablauf.
+Alle Positionen einer Sammelübernahme werden vor dem einen atomaren Schreibvorgang geprüft.
+Der Endpunkt liegt weiter in der bestehenden Schreib-/Rollenprüfung; Leser erhalten 403.
+
+Heute-Links behalten rohe Auftrags-/Kunden-/Fallkennungen als URL-Parameter und führen zurück zu Heute.
+`auftrag` begrenzt Einkauf inklusive Bestelltexte; der Quellspeicher wird nicht gefiltert/verändert.
+Muster-Nachfasstexte verwenden maximal drei aktive, eindeutige Varianten aus dem lokalen Lexikon,
+nur öffentliche Produkt-URLs und keinerlei private Kundenakten-/Trackinglinks. Aussendung bleibt manuell.
+
+`aktualisierung` und dessen Status ergänzen `betrieb`. Nach erfolgreichem Archiv schreibt die bestehende
+Sicherung atomar `sicherungsstand.json` mit letztem Erfolg. Werkbank-Rückmeldungen verwenden nur ihren
+vorhandenen Aktualisierungszeitpunkt. Fehlende Basis ist unbekannt; über 48 Stunden alt ist ein Hinweis.
+Montage reicht v49 `letzterLaufMin`/`laufzeitHeuteSek` nur als Integer >= 0 durch; fehlend wird nie 0.
+Die QA-Instanz entfernt Shopify-/Auftrags-App-Zugänge und verwendet Testattrappen, nicht den Realbestand.
+

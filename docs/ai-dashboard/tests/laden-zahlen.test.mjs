@@ -189,7 +189,7 @@ test('echtes Zeitlimit: eine haengende Antwort bricht ab', async () => {
 });
 
 test('Montage: optionales Objekt, nur bekannte ganze Zahlen >= 0 je Feld; ohne gueltiges Feld null - die Laden-Zahlen bleiben unberuehrt', () => {
-  assert.deepEqual(MONTAGE_FELDER, ['einsaetzeHeute', 'einsaetzeMorgen', 'meldungenOffen', 'offenVonGestern', 'neueAuftraege', 'antraegeOffen', 'rueckmeldungenNeu']);
+  assert.deepEqual(MONTAGE_FELDER, ['einsaetzeHeute', 'einsaetzeMorgen', 'meldungenOffen', 'offenVonGestern', 'neueAuftraege', 'antraegeOffen', 'rueckmeldungenNeu', 'letzterLaufMin', 'laufzeitHeuteSek']);
   const voll = { einsaetzeHeute: 3, einsaetzeMorgen: 2, meldungenOffen: 1, offenVonGestern: 0, neueAuftraege: 4, antraegeOffen: 1, rueckmeldungenNeu: 2 };
   // Beispielantwort der App: Laden-Zahlen plus montage, dazu ein Name, der nie durchkommen darf.
   const r = zahlenAus({ stand: STAND, ...ZAHLEN_V43, montage: { ...voll, monteur: 'Max Muster', einsatzliste: ['Max Muster'] } });

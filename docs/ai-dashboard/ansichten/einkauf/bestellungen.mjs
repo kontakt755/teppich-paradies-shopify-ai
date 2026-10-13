@@ -16,6 +16,9 @@ import {
   positionsGruppe, musterEigen, MUSTER_HERKUNFT_KURZ, zurueckGruppen,
 } from './auftragsfluss.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
+import { filtereAuftrag } from '../../lib/vorgangslink.mjs';
+import { beschaffungText } from '../../lib/beschaffung.mjs';
+import { uebernahmeBlock } from './beschaffung.mjs';
 import { lieferantenKartenHtml } from './lieferanten.mjs';
 
 function kopierbutton(id, label = 'Liste kopieren') {
@@ -73,11 +76,12 @@ function afStatusZelle(p) {
   // Der Stand ist ein ruhiger Text, kein zweiter Knopf - deshalb kein "badge status" mehr.
   const zusatz = status ? ` · ${fmtDateTime(eintrag.aktualisiertAm)} · @${esc(eintrag.aktualisiertVon)}`
     : eintrag?.wiederGeoeffnetAm ? ` · wieder geöffnet ${fmtDateTime(eintrag.wiederGeoeffnetAm)} · @${esc(eintrag.wiederGeoeffnetVon)}` : '';
-  const stand = `<div class="small muted">Stand: ${esc(status ? AF_STATUS_LABEL[status] : 'Noch nicht bestellt')}${zusatz}</div>`
+  const stand = `<div class="small muted">Stand: ${esc(status ? AF_STATUS_LABEL[status] : 'Noch nicht bestellt')}${zusatz}</div><div class="small">${esc(beschaffungText(eintrag))}</div>${uebernahmeBlock([p])}`
     // Steht im Musterlager, ist aber leer bzw. aufgebraucht: deshalb wieder beim Lieferanten.
     + (!status && p.musterLagerLeer ? `<div class="small muted">Musterlager: ${esc(p.musterLagerLeer.artLabel)} leer${p.musterLagerLeer.ort ? ` (${esc(p.musterLagerLeer.ort)})` : ''}</div>` : '');
   // Zusatzknoepfe: "Zurueck auf offen" ab jedem Schritt (Versehen), "Haben wir da" bei offenen Mustern.
   const extra = lesend ? [] : [
+    `<button type="button" class="btn btn-sm btn-ghost" data-beschaffung data-af-order="${esc(p.orderId)}" ${daten}>Liefertermin / Wareneingang…</button>`,
     status ? `<button type="button" class="btn btn-sm btn-ghost" data-af-zurueck="${esc(p.orderId)}" ${daten} title="Versehentlich gesetzt? Zurück auf „Noch zu bestellen"">Zurück auf offen…</button>` : '',
     !status && p.istMuster ? `<button type="button" class="btn btn-sm btn-ghost" data-muster-herkunft="${esc(p.orderId)}" ${daten} title="Muster selbst vorrätig? Dann nicht beim Lieferanten bestellen">Haben wir da…</button>` : '',
   ].filter(Boolean);
@@ -247,7 +251,8 @@ function afFilterChips(allePositionen) {
 export function viewEinkaufBestellungen() {
   ensureEinkaufBestellungen();
   ensureEinkaufAuftragsstatus();
-  const d = einkauf.bestellungen;
+  const auftragId = state.route.params.get('auftrag');
+  const d = einkauf.bestellungen ? filtereAuftrag(einkauf.bestellungen, auftragId) : null;
   if (!d && einkauf.loadingBestellungen) return `<div class="empty">Lade Bestellübersicht …</div>`;
   if (d?.fehler) return stoerungState(d, 'Die Bestelldaten');
   if (!d || !d.verfuegbar) return emptyState('Keine Bestelldaten verfügbar.', d?.hinweis || 'Quelle fehlt oder ist leer.');
@@ -258,6 +263,7 @@ export function viewEinkaufBestellungen() {
   const af = afNorm(state.route.params.get('af'));
   const abgeschlossen = af === 'erledigt' ? abgeschlosseneAuftraegeKarte() : '';
   return `
+    ${auftragId ? `<p class="no-print"><a href="#/heute">← Zurück zu Heute</a> · <a href="#/einkauf">Alle Aufträge</a></p><p class="notice">Nur die ausgewählte Bestellung${aktiv[0]?.name ? ` ${esc(aktiv[0].name)}` : ''}. ${!aktiv.length ? 'Sie ist nicht mehr offen oder nicht in den aktuellen Daten.' : ''}</p>` : ''}
     <div class="band">
       ${bandItem(aktiv.length, 'offene Kundenaufträge', 'plain')}
       ${bandItem(ware.filter(p => gruppe(p) === 'offen').length, 'Artikel noch zu bestellen', 'warn')}
@@ -268,7 +274,7 @@ export function viewEinkaufBestellungen() {
     ${klaeren.length ? `<section class="card problem-card"><div class="card-head"><h2>Zuerst klären</h2><span class="more muted">Rot = blockiert, Gelb = vor dem Bestellen prüfen</span></div><div class="rows">${klaeren.map(einkaufAuftragZeile).join('')}</div></section>` : ''}
     <div class="section-bar"><h2 class="section-title" style="margin:0">Bestellen je Lieferant</h2>${afFilterChips([...ware, ...muster])}</div>
     ${abgeschlossen}
-    ${lieferantenKartenHtml({ gruppeKarte: einkaufGruppeKarte })}
+    ${lieferantenKartenHtml({ gruppeKarte: einkaufGruppeKarte, daten: d })}
     <details class="card section plain-details"><summary><h2>Alle offenen Aufträge</h2><span class="preview">${aktiv.length}</span></summary>
       <div class="rows" style="margin-top:10px">${aktiv.map(einkaufAuftragZeile).join('') || emptyState('Keine offenen Aufträge.', '')}</div>
     </details>

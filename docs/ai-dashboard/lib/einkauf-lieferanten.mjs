@@ -51,6 +51,12 @@ export function stufeVon(status) {
 
 /** Seit wie vielen Tagen steht die Position auf "bestellt" bzw. "geliefert"? null = wartet nicht. */
 export function wartetage(eintrag, jetzt = Date.now()) {
+  const termin = eintrag?.status === 'bestellt' ? eintrag.beschaffung?.liefertermin : null;
+  if (termin) {
+    const d = new Date(Number(jetzt));
+    const heute = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin' }).format(d);
+    return termin >= heute ? null : Math.floor((Date.parse(heute) - Date.parse(termin)) / 864e5);
+  }
   const seit = eintrag?.status === 'bestellt' ? eintrag.bestelltAm : eintrag?.status === 'geliefert' ? eintrag.geliefertAm : null;
   if (!seit) return null;
   const tage = Math.floor((Number(jetzt) - new Date(seit).getTime()) / 864e5);
