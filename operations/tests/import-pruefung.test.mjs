@@ -178,6 +178,13 @@ test('versteckte Hilfsprodukte (UNLISTED, Tag service) werden nicht geprueft', (
   assert.deepEqual(pruefeImporte({ produkte: [...vergleich(), hilfe], seit: '2026-10-01' }).befunde, []);
 });
 
+test('Einfassungsart (Tag marken-einfassung) braucht keine Kategorie, andere Produkte schon', () => {
+  const art = produkt({ createdAt: '2026-10-07T08:00:00Z', tags: ['marken-einfassung'], collections: ['intern-regulaerer-preis'] });
+  const ohne = produkt({ createdAt: '2026-10-07T08:00:00Z', collections: ['intern-regulaerer-preis'] });
+  const erg = pruefeImporte({ produkte: [...vergleich(), art, ohne], seit: '2026-10-01' });
+  assert.deepEqual(erg.befunde.filter((b) => b.regel === 'kategorie').map((b) => b.handle), [ohne.handle]);
+});
+
 test('Entwuerfe liefern nur Hinweise (Vorlage mit Preis 0, Farben ohne Bild)', () => {
   const vorlage = produkt({ createdAt: '2026-10-07T08:00:00Z', status: 'DRAFT', onlineStoreUrl: null });
   vorlage.variants[0].price = '0.00';

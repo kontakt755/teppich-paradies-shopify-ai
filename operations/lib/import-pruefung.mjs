@@ -59,6 +59,15 @@ export function kategorieSammlungen(p) {
 }
 
 /**
+ * Einfassungsart eines Marken-Teppichs nach Mass (Paspel, Cover, Deluxe):
+ * erreichbar ueber das Hauptprodukt, bewusst in keiner Kategorie - sonst
+ * stuende jede Qualitaet mehrfach im Raster (Fehleranalyse 13.10.).
+ */
+export function istEinfassungsart(p) {
+  return (p.tags ?? []).some((t) => klein(t) === 'marken-einfassung');
+}
+
+/**
  * Welche custom-Metafelder sind in einer Produktart ueblich?
  * @returns {Map<string, {anzahl:number, produkt:Set<string>, variante:Set<string>, skuAnteil:number}>}
  */
@@ -137,7 +146,7 @@ export function pruefeImporte({ produkte, seit, handles = null }) {
     }
     if (!p.productType) befunde.push(befund(p, 'fehler', 'produktart', 'keine Produktart (productType)'));
     if (!p.mediaCount) befunde.push(befund(p, p.status === 'DRAFT' ? 'hinweis' : 'fehler', 'bilder', 'keine Bilder'));
-    if (p.status !== 'DRAFT' && kategorieSammlungen(p).length === 0) {
+    if (p.status !== 'DRAFT' && !istEinfassungsart(p) && kategorieSammlungen(p).length === 0) {
       befunde.push(befund(p, 'fehler', 'kategorie', 'in keiner Kategorie (nur intern-* oder gar keine Sammlung)'));
     }
     if (!p.category || p.category === 'Uncategorized') {
