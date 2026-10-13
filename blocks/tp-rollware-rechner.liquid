@@ -553,7 +553,18 @@
     endcapture
     assign tp_rc_muster_url = tp_rc_muster_url | strip
     assign tp_rc_muster_vorlage = block.settings.muster_label | default: 'Kostenloses Muster in {farbe}'
-    assign tp_rc_start_farbe = product.selected_or_first_available_variant.options | first
+    # Farbe = erste Option, die nicht die Breite ist. Vinyl von der Rolle hat
+    # oft nur "Breite" - frueher stand dann "Kostenloses Muster in 200 cm" im
+    # Knopf. Ohne Farboption greift der Tag "farbe: ..." wie bei Default Title.
+    assign tp_rc_start_farbe = 'Default Title'
+    assign tp_rc_start_variante = product.selected_or_first_available_variant
+    for tp_rc_opt in product.options_with_values
+      assign tp_rc_opt_name = tp_rc_opt.name | downcase | strip
+      if tp_rc_opt_name != 'breite'
+        assign tp_rc_start_farbe = tp_rc_start_variante.options[forloop.index0]
+        break
+      endif
+    endfor
     if tp_rc_start_farbe == 'Default Title'
       assign tp_rc_start_farbe = ''
       for tp_rc_tag in product.tags

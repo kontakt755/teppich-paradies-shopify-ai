@@ -253,3 +253,30 @@ test('Konfigurator: in einem zweiten Tab kamen Vinyl-Muster dazu - nichts wird h
   assert.equal(k.requests.some((r) => r.url === '/cart/add.js'), false);
   assert.match(k.el('[data-sample-error]').textContent, /höchstens 3 Vinyl-Muster/);
 });
+
+// --- Rollenrechner: Beschriftung des Musterknopfs ---
+// Vinyl von der Rolle hat oft nur die Option "Breite"; der Knopf hiess dann
+// "Kostenloses Muster in 200 cm". Farbe ist die erste Option ausser Breite,
+// sonst der Tag "farbe: ...".
+const rechner = read('blocks/tp-rollware-rechner.liquid');
+const rcStart = rechner.indexOf("{%- liquid\n    capture tp_rc_muster_url");
+const rcLiquid = rechner.slice(rcStart, rechner.indexOf('-%}', rcStart) + 3)
+  .replace("render 'tp-musteroption', product: product", 'echo tp_test_url')
+  .replace("render 'tp-muster-grenze', product: product", "echo ''");
+
+async function rcKnopf(product) {
+  const out = await liquid.parseAndRender(rcLiquid + '{{ tp_rc_muster_text }}|{{ tp_rc_muster_url }}', {
+    product, block: { settings: { muster_label: 'Kostenloses Muster in {farbe}' } }, tp_test_url: '/pages/muster?produkt=x',
+  });
+  return out.trim();
+}
+
+test('Rollenrechner: Musterknopf nennt die Farbe, nicht die Breite', async () => {
+  assert.ok(rcStart > 0, 'Liquid-Block im Rechner nicht gefunden');
+  const nurBreite = { options_with_values: [{ name: 'Breite' }], selected_or_first_available_variant: { options: ['200 cm'] }, tags: ['art: vinyl', 'farbe: eiche grau'] };
+  assert.equal(await rcKnopf(nurBreite), 'Kostenloses Muster in Eiche grau|/pages/muster?produkt=x&farbe=Eiche+grau');
+  const breiteFarbe = { options_with_values: [{ name: 'Breite' }, { name: 'Farbe' }], selected_or_first_available_variant: { options: ['300 cm', 'Eiche Beige'] }, tags: [] };
+  assert.match(await rcKnopf(breiteFarbe), /^Kostenloses Muster in Eiche Beige\|/);
+  const farbeBreite = { options_with_values: [{ name: 'Farbe' }, { name: 'Breite' }], selected_or_first_available_variant: { options: ['Grau Anthrazit', '200 cm'] }, tags: [] };
+  assert.match(await rcKnopf(farbeBreite), /^Kostenloses Muster in Grau Anthrazit\|/);
+});
