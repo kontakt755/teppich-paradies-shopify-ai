@@ -280,8 +280,45 @@
     return { m2: Math.round(summe / 100) / 100, raeume: gueltig, fehler: fehler };
   }
 
+  // Nummern der Zeilen (1, 2, ...), in denen weder Breite noch Laenge steht.
+  // summeRaeume ueberspringt sie still - der Helfer sagt es dem Kunden
+  // (Shop-Analyse 13.10.: "Raum 2" blieb leer, Uebernehmen war trotzdem aktiv).
+  function leereRaeume(zeilen) {
+    var out = [];
+    (zeilen || []).forEach(function (z, i) {
+      if (leseCm(z.breite).leer && leseCm(z.laenge).leer) out.push(i + 1);
+    });
+    return out;
+  }
+
   function fmtZahl(n, stellen) {
     return Number(n).toLocaleString('de-DE', { minimumFractionDigits: stellen, maximumFractionDigits: stellen });
+  }
+
+  // "22,4" / "23" - ohne angehaengte Nullen, hoechstens 2 Stellen.
+  function fmtKurz(n) {
+    return Number(n).toLocaleString('de-DE', { maximumFractionDigits: 2 });
+  }
+
+  // Flaechenzeile eines Vorschlags (Shop-Analyse 13.10.): weicht die
+  // berechnete Menge (volle m²) vom Zuschnitt ab, stehen beide da - sonst
+  // passt "22,40 m² · 1.285,70 €" nicht zum m²-Preis.
+  // berechnet: Zahl (ein Stueck) oder Liste (Stuecke, jedes einzeln gerundet).
+  function flaecheText(zuschnittM2, berechnet) {
+    var liste = Array.isArray(berechnet) ? berechnet : [berechnet];
+    var summe = Math.round(liste.reduce(function (a, c) { return a + (c > 0 ? c : 0); }, 0) * 100) / 100;
+    if (!(summe > 0) || liste.some(function (c) { return !(c > 0); }) || Math.abs(summe - zuschnittM2) < 0.005) {
+      return fmtZahl(zuschnittM2, 2) + ' m²';
+    }
+    return fmtKurz(zuschnittM2) + ' m² Zuschnitt · berechnet ' + fmtKurz(summe) + ' m²';
+  }
+
+  // Erklaerung zu mehreren einzeln gerundeten Stuecken: "14 + 10 = 24 m²".
+  function stueckeRundungText(berechnet) {
+    if (!Array.isArray(berechnet) || berechnet.length < 2 || berechnet.some(function (c) { return !(c > 0); })) return '';
+    var summe = Math.round(berechnet.reduce(function (a, c) { return a + c; }, 0) * 100) / 100;
+    return 'Jedes Stück wird einzeln auf volle m² aufgerundet: ' +
+      berechnet.map(fmtKurz).join(' + ') + ' = ' + fmtKurz(summe) + ' m² berechnet.';
   }
 
   root.TPRaummass = {
@@ -291,6 +328,9 @@
     autoRichtung: autoRichtung,
     zweiStuecke: zweiStuecke,
     summeRaeume: summeRaeume,
+    leereRaeume: leereRaeume,
+    flaecheText: flaecheText,
+    stueckeRundungText: stueckeRundungText,
     fmtZahl: fmtZahl
   };
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -482,6 +522,47 @@ if (typeof document !== 'undefined') (function () {
 
     function euro(n) { return RM.fmtZahl(n, 2) + ' €'; }
 
+    // Berechnete m² eines Stuecks, gerundet wie die Preisbox (0 = unbekannt).
+    function berechnet(breite, laenge) {
+      return typeof rechner.tpRwcBerechnetM2 === 'function' ? rechner.tpRwcBerechnetM2(breite, laenge) : 0;
+    }
+
+    // Entwurf (Shop-Analyse 13.10.): Die Empfehlung ist erst nach
+    // "Uebernehmen" das Bestellmass. Bis dahin steht ueber den Vorschlaegen,
+    // was der Rechner gerade in den Warenkorb legen wuerde. Passt das
+    // Rechner-Mass zu einem der Vorschlaege, verschwindet der Hinweis.
+    var angebote = [];
+    var entwurf = document.createElement('p');
+    entwurf.className = 'tp-rm__entwurf';
+    entwurf.setAttribute('role', 'status');
+    entwurf.setAttribute('data-rm-entwurf', '');
+    entwurf.hidden = true;
+    function entwurfZeigen() {
+      var cur = typeof rechner.tpRwcBestellmass === 'function' ? rechner.tpRwcBestellmass() : null;
+      if (!cur || !angebote.length || !entwurf.parentNode) { entwurf.hidden = true; return; }
+      var passt = angebote.some(function (v) {
+        return v.art === cur.art && v.breite === cur.breite && v.laenge === cur.laenge;
+      });
+      if (passt) { entwurf.hidden = true; return; }
+      entwurf.textContent = '';
+      var marke = document.createElement('strong');
+      marke.textContent = 'Noch nicht übernommen.';
+      entwurf.appendChild(marke);
+      entwurf.appendChild(document.createTextNode(' ' + (cur.breite > 0 && cur.laenge > 0
+        ? 'Aktuelles Bestellmaß: ' + (cur.art === 'raum' ? 'Raummaß ' : 'Meterware ') +
+          RM.fmtZahl(cur.breite, 0) + ' × ' + RM.fmtZahl(cur.laenge, 0) + ' cm'
+        : 'Im Rechner ist noch kein Bestellmaß eingetragen.')));
+      entwurf.hidden = false;
+    }
+    // Aenderungen im Rechner selbst (Laenge, Breite, Art) - nach dessen
+    // eigenen Handlern lesen.
+    ['input', 'change'].forEach(function (typ) {
+      rechner.addEventListener(typ, function (e) {
+        if (e.target && box.contains(e.target)) return;
+        setTimeout(entwurfZeigen, 0);
+      });
+    });
+
     // knopf: Beschriftung des Uebernehmen-Knopfs; primaer = Empfehlung.
     // raum: {b, l} -> Raumskizze mit Dielen (nur Dielenoptik).
     function zeile(titel, v, text, knopf, primaer, raum) {
@@ -495,7 +576,8 @@ if (typeof document !== 'undefined') (function () {
       mass.textContent = (v.art === 'meter' ? 'Meterware ' : 'Raummaß ') + RM.fmtZahl(v.breite, 0) + ' × ' + RM.fmtZahl(v.laenge, 0) + ' cm';
       var preis = document.createElement('p');
       preis.className = 'tp-rm__preis';
-      preis.textContent = RM.fmtZahl(v.m2, 2) + ' m²' + (v.preis > 0 ? ' · ' + euro(v.preis) : '');
+      preis.textContent = RM.flaecheText(v.m2, berechnet(v.breite, v.laenge)) + (v.preis > 0 ? ' · ' + euro(v.preis) : '');
+      angebote.push(v);
       var info = document.createElement('p');
       info.className = 'tp-rm__info';
       info.textContent = text + (v.gedreht && !muster ? ' Quer zum Raum verlegt.' : '');
@@ -565,9 +647,24 @@ if (typeof document !== 'undefined') (function () {
       zw.stuecke.forEach(function (st, i) {
         t('tp-rm__mass tp-rm__mass--stueck', 'Stück ' + (i + 1) + ': ' + RM.fmtZahl(st.breite, 0) + ' × ' + RM.fmtZahl(st.laenge, 0) + ' cm');
       });
-      t('tp-rm__preis', 'Zusammen ' + RM.fmtZahl(zw.m2, 2) + ' m²' + (zw.preis > 0 ? ' · ' + euro(zw.preis) : ''));
+      // Anzeige wie im Warenkorb: verschiedene Breiten = zwei Zeilen, jede
+      // einzeln gerundet; gleiche Breiten = eine Zeile ueber die Gesamtlaenge.
+      var st1 = zw.stuecke[0], st2 = zw.stuecke[1];
+      var zwBer, zwPreis = zw.preis;
+      if (zw.gemischt) {
+        zwBer = [berechnet(st1.breite, st1.laenge), berechnet(st2.breite, st2.laenge)];
+        angebote.push(st1, st2);
+      } else {
+        zwBer = berechnet(st1.breite, 2 * st1.laenge);
+        var einZeile = typeof rechner.tpRwcPreis === 'function' ? rechner.tpRwcPreis('meter', st1.breite, 2 * st1.laenge) : 0;
+        if (einZeile > 0) zwPreis = Math.round(einZeile * 100) / 100;
+        angebote.push({ art: 'meter', breite: st1.breite, laenge: 2 * st1.laenge });
+      }
+      t('tp-rm__preis', 'Zusammen ' + RM.flaecheText(zw.m2, zwBer) + (zwPreis > 0 ? ' · ' + euro(zwPreis) : ''));
       div.appendChild(skizze(b, l, { stuecke: zw.stuecke, gedreht: zw.gedreht, breite: zw.stuecke[0].breite, laenge: zw.stuecke[0].laenge }));
       t('tp-rm__info', 'Ihr Raum ist breiter als die breiteste Rolle. Die Stücke werden nebeneinander verlegt, dazwischen entsteht eine Naht. Inkl. ' + RM.ZUGABE_CM + ' cm Zugabe.');
+      var rundung = zw.gemischt && Math.abs(zwBer[0] + zwBer[1] - zw.m2) >= 0.005 ? RM.stueckeRundungText(zwBer) : '';
+      if (rundung) t('tp-rm__info', rundung);
       if (zw.gemischt) {
         t('tp-rm__hinweis tp-rm__charge', 'Hinweis: Bei zwei verschiedenen Rollenbreiten kann es zu leichten Farbabweichungen (Charge) kommen.');
         var w1 = zw.stuecke[0], w2 = zw.stuecke[1];
@@ -662,7 +759,9 @@ if (typeof document !== 'undefined') (function () {
       mass.textContent = RM.fmtZahl(e.breite, 0) + ' × ' + RM.fmtZahl(e.laenge, 0) + ' cm';
       var preis = document.createElement('p');
       preis.className = 'tp-rm__preis';
-      preis.textContent = RM.fmtZahl(e.m2, 2) + ' m²' + (e.preis > 0 ? ' · ' + euro(e.preis) : '');
+      preis.textContent = RM.flaecheText(e.m2, berechnet(e.breite, e.laenge)) + (e.preis > 0 ? ' · ' + euro(e.preis) : '');
+      angebote.push(e);
+      if (v.teilung) angebote.push(v.teilung);
       var info = document.createElement('p');
       info.className = 'tp-rm__info';
       info.textContent = 'Inkl. ' + RM.ZUGABE_CM + ' cm Zugabe zum Anpassen an die Wand.';
@@ -690,6 +789,14 @@ if (typeof document !== 'undefined') (function () {
     }
 
     function rechnen() {
+      angebote = [];
+      rechnenInhalt();
+      // Hinweis vor die Vorschlaege, sobald es etwas zu uebernehmen gibt.
+      if (angebote.length) aus.insertBefore(entwurf, aus.firstChild);
+      entwurfZeigen();
+    }
+
+    function rechnenInhalt() {
       var b = RM.leseCm(bIn.value);
       var l = RM.leseCm(lIn.value);
       aus.innerHTML = '';
@@ -821,12 +928,34 @@ if (typeof document !== 'undefined') (function () {
       return out;
     }
 
+    // Leere Zusatzraeume zaehlen nicht mit - das steht dann sichtbar da
+    // (Shop-Analyse 13.10.). Die Summe selbst bleibt unveraendert.
+    var leerHinweis = document.createElement('p');
+    leerHinweis.className = 'tp-rm__info tp-rm__leer';
+    leerHinweis.setAttribute('data-rm-leer', '');
+    leerHinweis.hidden = true;
+    fehler.parentNode.insertBefore(leerHinweis, fehler);
+
     var letzte = null;
     function rechnen() {
-      var s = RM.summeRaeume(zeilen());
+      var zz = zeilen();
+      var s = RM.summeRaeume(zz);
       letzte = s;
       fehler.hidden = !s.fehler;
       if (s.fehler) fehler.textContent = 'Bitte jede Zeile mit Breite und Länge ausfüllen (z. B. 350 oder 3,5 m).';
+      var leer = s.raeume ? RM.leereRaeume(zz) : [];
+      var namen = [];
+      liste.querySelectorAll('[data-rm-zeile]').forEach(function (z, i) {
+        if (leer.indexOf(i + 1) !== -1) {
+          var n = z.querySelector('[data-rm-name]');
+          namen.push(n && n.textContent ? n.textContent : 'Raum ' + (i + 1));
+        }
+      });
+      leerHinweis.hidden = !namen.length;
+      if (namen.length) {
+        leerHinweis.textContent = (namen.length > 1 ? namen.slice(0, -1).join(', ') + ' und ' + namen[namen.length - 1] : namen[0]) + (namen.length > 1 ? ' sind' : ' ist') +
+          ' noch leer und ' + (namen.length > 1 ? 'werden' : 'wird') + ' nicht mitgerechnet.';
+      }
       summeEl.textContent = s.raeume
         ? RM.fmtZahl(s.m2, 2) + ' m²' + (s.raeume > 1 ? ' aus ' + s.raeume + ' Flächen' : '')
         : '–';
