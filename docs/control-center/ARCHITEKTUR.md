@@ -404,6 +404,12 @@ DOM in `lib/einkauf-lieferanten.mjs`, Styles in `stile/einkauf-lieferanten.css`)
   offene Posten je Stufe, Verlauf aus den Zeitstempeln des Auftragsflusses. Fehlende Stammdaten
   werden benannt; gepflegt werden sie nur in der privaten Datei, es gibt keinen Editor.
 - Rolle „lesen": Statusknöpfe und die Markier-Frage sind ausgeblendet.
+- **Lexikon nutzt dieselben Stammdaten (seit 2026-10-12):** Hat eine Variante weder Direkt- noch Suchlink,
+  zeigt „Zum Bestellen“ einmal den Bestellweg des Lieferanten (Weg, Kundennummer, Telefon) und je Variante
+  den Knopf des Hauptwegs – „Bestellmail“ (fertig mit Artikel- und Farbnummer, dazu „in Gmail“),
+  „Portal“ oder „Anrufen“. Ohne Stammdaten steht dort, was fehlt („Was fehlt?“ führt zum Lieferant-Detail,
+  wenn es einen Eintrag gibt). Daten: `link.schnellzugriff` bzw. `original.schnellzugriff` aus
+  `/api/lexikon/produkt` (`operations/README.md`, „Schnellzugriff im Lexikon“).
 
 ### 8b. Muster: Inhalt auf einen Blick und Musterlager (seit 2026-10-13)
 

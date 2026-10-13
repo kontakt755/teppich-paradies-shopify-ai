@@ -11,6 +11,9 @@
     Hauptzeile einer Gruppe: erste Zeile der Gruppe ohne Service-Property
     Waise:     Service mit _Gruppe ohne Hauptzeile | Service ohne _Gruppe
                | Flaechenware/Wunschmass ohne Mass-Property
+               | Hauptzeile mit _Rollenzuschnitt (cm) ohne Zeile "Rollenzuschnitt"
+                 derselben _Gruppe, die den Verbrauch deckt (Zuschnitt-Bundle,
+                 gemeinsamer Rollenbestand)
 
   Fail safe: Waisen sperren den Checkout (teil 'sperre'), ebenso fehlende,
   abweichende oder veraltete Zuschnitt-Attribute (Lieferschein liest nur
@@ -87,6 +90,13 @@
       elsif tp_gz_it_fw and tp_gz_it_mass == false
         assign tp_gz_it_waise = 'Dieser Artikel braucht eine Maßangabe – bitte über die Produktseite konfigurieren'
       endif
+      # Gemeinsamer Rollenbestand: die Bundle-Zeile "Rollenzuschnitt" derselben
+      # Gruppe muss den Verbrauch der Hauptzeile decken (eigenes Snippet,
+      # LiquidComplexity; default greift nur, solange keine Waise erkannt ist).
+      capture tp_gz_it_zs
+        render 'tp-cart-zuschnitt-fehlt', zeile: tp_gz_it
+      endcapture
+      assign tp_gz_it_waise = tp_gz_it_waise | default: tp_gz_it_zs | strip
       if tp_gz_it_waise != blank
         assign tp_gz_gesperrt = true
         assign tp_gz_sperr_text = tp_gz_sperr_text | default: tp_gz_it_waise
@@ -206,6 +216,10 @@
         assign tp_gz_waise = 'Dieser Artikel braucht eine Maßangabe – bitte über die Produktseite konfigurieren'
       endif
     endif
+    capture tp_gz_zs
+      render 'tp-cart-zuschnitt-fehlt', zeile: line_item
+    endcapture
+    assign tp_gz_waise = tp_gz_waise | default: tp_gz_zs | strip
   endif
 -%}
 {%- if teil == 'berechnet' -%}
@@ -231,6 +245,8 @@
       assign tp_gz_text = tp_gz_p['Länge'] | strip | append: ' Fußleiste'
     elsif tp_gz_service and tp_gz_p['Länge'] != blank
       assign tp_gz_text = tp_gz_p['Länge'] | strip
+    elsif tp_gz_service and tp_gz_p['Rollenzuschnitt'] != blank
+      assign tp_gz_text = tp_gz_p['Rollenzuschnitt'] | strip | append: ' von der Rolle'
     elsif tp_gz_service and tp_gz_p['Bahnen'] != blank
       assign tp_gz_bahnen = tp_gz_p['Bahnen'] | strip
       if tp_gz_bahnen == '1'
