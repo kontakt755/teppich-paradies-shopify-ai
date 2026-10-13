@@ -521,8 +521,10 @@ Inhaber** - kein Agent, weder per CLI noch per Browser.
    `daten:anreichern -- --schreiben` und im Control Center die Ansicht
    „Sonderposten“: `write_inventory` setzt beim Knopf „Im Laden verkauft“ den
    Bestand auf 0, `write_products` schreibt `sonderposten.verkauft_*`
-   (`SCHREIB_BEREICHE` in `sync/zugang.mjs`). Fehlt `write_inventory`, bucht
-   der Knopf nichts und sagt das; `npm run operations:verbindung` listet
+   (`SCHREIB_BEREICHE` in `sync/zugang.mjs`). Seit 2026-10-13 bucht „An Kunden
+   raus“ die Sendung in Shopify (`write_fulfillments`,
+   `write_merchant_managed_fulfillment_orders`; `lib/versand.mjs`). Fehlt ein
+   Schreibrecht, bucht die jeweilige Aktion nichts und sagt das; `npm run operations:verbindung` listet
    fehlende Schreibrechte getrennt auf. Ohne `read_all_orders` laesst Shopify
    Bestellungen, die aelter als 60 Tage sind, stillschweigend weg.
 2. App im Shop installieren bzw. die geaenderten Bereiche im Shop bestaetigen.

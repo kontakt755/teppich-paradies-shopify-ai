@@ -102,9 +102,12 @@ function clip(text, max) {
  * @param {string} p.actor           gh-Login, der die Aktion ausgeloest hat
  * @param {string} [p.lieferantBestellnummer]  Freitext, nur bei "bestellt" sinnvoll
  * @param {string} [p.notiz]
+ * @param {string} [p.sendungsnummer]  nur bei "raus": Sendungsnummer des Pakets (geht mit der Versandbuchung an Shopify)
+ * @param {string} [p.versanddienst]   nur bei "raus", z. B. "GLS"
+ * @param {boolean} [p.versandMail]    nur bei "raus": bekommt der Kunde die Versandmail? (gilt auch beim Nachholen)
  * @param {Date}   [p.jetzt]
  */
-export function setzeStatus(file, { orderId, lineItemId, status, actor, lieferantBestellnummer = null, notiz = null, jetzt = new Date() } = {}) {
+export function setzeStatus(file, { orderId, lineItemId, status, actor, lieferantBestellnummer = null, notiz = null, sendungsnummer = null, versanddienst = null, versandMail = null, jetzt = new Date() } = {}) {
   const key = positionKey(orderId, lineItemId);
   if (!key) throw new AuftragsstatusFehler('orderId und lineItemId sind Pflicht');
   if (!STATUS_ORDER.includes(status)) throw new AuftragsstatusFehler(`Unbekannter Status "${status}"`);
@@ -127,7 +130,51 @@ export function setzeStatus(file, { orderId, lineItemId, status, actor, lieferan
     eintrag.lieferantBestellnummer = lieferantBestellnummer ? clip(lieferantBestellnummer, 200) : (bisher.lieferantBestellnummer || null);
   }
   if (notiz) eintrag[`${status}Notiz`] = clip(notiz, 2000);
+  if (status === 'raus') {
+    // Kommt die Position von einem Schritt davor, ist es ein neuer Versand: Nummer und
+    // Buchungsvermerk eines frueheren Durchlaufs gelten nicht mehr. Ein zweiter Klick auf
+    // "raus" (oder die Korrektur von "erledigt" zurueck) ist dieselbe Sendung - der Vermerk
+    // bleibt, damit niemand doppelt bucht.
+    const neuerVersand = STATUS_ORDER.indexOf(bisher.status) < STATUS_ORDER.indexOf('raus');
+    if (neuerVersand || sendungsnummer) {
+      eintrag.sendungsnummer = sendungsnummer ? clip(sendungsnummer, 60) : null;
+      eintrag.versanddienst = sendungsnummer && versanddienst ? clip(versanddienst, 40) : null;
+    }
+    if (neuerVersand) delete eintrag.shopifyVersand;
+    if (typeof versandMail === 'boolean') eintrag.versandMail = versandMail;
+    else if (neuerVersand) delete eintrag.versandMail;
+  }
 
+  alle[key] = eintrag;
+  schreibeAlle(file, alle);
+  return eintrag;
+}
+
+/**
+ * Haengt das Ergebnis der Versandbuchung in Shopify an eine Position (operations/lib/versand.mjs),
+ * ohne ihren Schritt zu aendern. `vermerk`: { status: gebucht|bereits|fehler|unklar|uebersprungen|ausstehend,
+ * grund?, meldung?, am, fulfillmentId?, kundeBenachrichtigt? }. Daran erkennt das Control Center,
+ * dass die Position seit der Einfuehrung (13.10.) gebucht wurde - aeltere tragen keinen Vermerk und
+ * werden nie nachtraeglich gebucht.
+ */
+export function vermerkeShopifyVersand(file, { orderId, lineItemId, vermerk } = {}) {
+  const key = positionKey(orderId, lineItemId);
+  if (!key) throw new AuftragsstatusFehler('orderId und lineItemId sind Pflicht');
+  const alle = leseAlle(file);
+  const bisher = alle[key];
+  if (!bisher) return null;
+  const v = vermerk || {};
+  const eintrag = {
+    ...bisher,
+    shopifyVersand: {
+      status: String(v.status || 'fehler'),
+      grund: v.grund ? String(v.grund) : null,
+      meldung: v.meldung ? clip(v.meldung, 400) : null,
+      am: v.am || new Date().toISOString(),
+      fulfillmentId: v.fulfillmentId || null,
+      kundeBenachrichtigt: v.kundeBenachrichtigt === undefined ? null : Boolean(v.kundeBenachrichtigt),
+    },
+  };
   alle[key] = eintrag;
   schreibeAlle(file, alle);
   return eintrag;
@@ -226,6 +273,12 @@ export function setzeZurueckAufOffen(file, { orderId, lineItemId, actor, notiz =
   }
   if (rest.lieferantBestellnummer) vorher.lieferantBestellnummer = rest.lieferantBestellnummer;
   delete rest.lieferantBestellnummer;
+  // Versandangaben gehoeren zum alten Durchlauf. Eine Buchung in Shopify bleibt dort bestehen;
+  // hier wandert nur der Vermerk in den Verlauf.
+  for (const feld of ['sendungsnummer', 'versanddienst', 'versandMail', 'shopifyVersand']) {
+    if (rest[feld] !== undefined && rest[feld] !== null) vorher[feld] = rest[feld];
+    delete rest[feld];
+  }
   const protokoll = { aktion: 'zurück auf offen', am: zeit, von: actor, vonStatus: bisher.status, vorher };
   if (notiz) protokoll.notiz = clip(notiz, 2000);
   const eintrag = {

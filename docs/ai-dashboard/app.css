@@ -1058,6 +1058,9 @@ table.tasks td { padding-top: 12px; padding-bottom: 12px; }
   .side-abmelden { display: flex; }
   /* Rueckmeldungen nicht ueber das offene Blatt legen, sondern in den freien Streifen oben. */
   body.nav-offen .toasts { bottom: auto; top: calc(14px + env(safe-area-inset-top)); }
+  /* Dasselbe bei offenem Dialog: er kommt von unten, ein Hinweis dort verdeckte Knoepfe und
+     Haekchen (Versand-Dialog: "Bitte mindestens einen Artikel ankreuzen" lag ueber "Buchen"). */
+  body:has(#dialogRoot .dialog-backdrop) .toasts { bottom: auto; top: calc(14px + env(safe-area-inset-top)); }
 
   .topbar-inner { min-height: 56px; gap: 8px; padding: calc(6px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 6px calc(14px + env(safe-area-inset-left)); }
   .seitentitel { font-size: 1.25rem; }
