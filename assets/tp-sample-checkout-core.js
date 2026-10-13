@@ -231,6 +231,30 @@
     return value;
   }
 
+  // Dieselbe Section nennt, welche Musterprodukte es gibt (eigen = muster-<handle>,
+  // basis = Musterprodukt des Teppichbodens), damit der Konfigurator nichts
+  // blind abruft. Ein leerer Wert heisst: gibt es nicht. Fehlt das Tag oder ist
+  // es kaputt, null - dann gilt der alte Weg ueber den Probe-Abruf.
+  var QUELLE_RX = /<script[^>]*\bdata-tp-muster-quelle\b[^>]*>([\s\S]*?)<\/script>/i;
+
+  function parseMusterQuelle(html) {
+    var match = QUELLE_RX.exec(String(html || ''));
+    if (!match) return null;
+    var value;
+    try { value = JSON.parse(match[1]); } catch (error) { return null; }
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    function handleOderNull(entry) {
+      if (typeof entry !== 'string') return undefined;
+      entry = entry.trim();
+      if (entry === '') return null;
+      return /^muster-[a-z0-9-]+$/.test(entry) ? entry : undefined;
+    }
+    var eigen = handleOderNull(value.eigen);
+    var basis = handleOderNull(value.basis);
+    if (eigen === undefined || basis === undefined) return null;
+    return { eigen: eigen, basis: basis };
+  }
+
   // Reihenfolge der Musterquelle: das eigene Musterprodukt der Qualitaet
   // (muster-<handle>), unveraendert je Farbe wie bisher. Nur wenn es das gar
   // nicht gibt, das Musterprodukt des Teppichbodens - und auch das nur fuer
@@ -325,6 +349,7 @@
     assignSampleVariants: assignSampleVariants,
     basisSectionUrl: basisSectionUrl,
     parseBasisHandle: parseBasisHandle,
+    parseMusterQuelle: parseMusterQuelle,
     assignSampleVariantsWithBasis: assignSampleVariantsWithBasis,
     getSelectionStatus: getSelectionStatus,
     buildCartItems: buildCartItems,
