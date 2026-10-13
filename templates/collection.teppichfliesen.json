@@ -46,6 +46,7 @@
       "name": "Hero Split Features",
       "settings": {
         "heading": "Teppichfliesen",
+        "image": "shopify://shop_images/teppichfliesen-arbeitszimmer.jpg",
         "subheading": "Modulare Teppichfliesen für Wohn- und Objektbereiche",
         "body": "<p>Teppichfliesen werden einzeln verlegt und lassen sich bei Bedarf punktuell austauschen. Beim Anpassen an Raumkanten und Hindernisse kann Verschnitt entstehen. Geeignet für Wohn- und Objektbereiche.</p>",
         "content_width": 1440,

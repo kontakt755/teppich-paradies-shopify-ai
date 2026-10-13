@@ -33,6 +33,15 @@
     {%- if tp_bk_image != blank -%}
       <figure class="tp-bk-hero__visual{% if section.settings.image_crop == 'structure' %} tp-bk-hero__visual--structure{% endif %}">
         {{ tp_bk_image | image_url: width: 1400 | image_tag: widths: '400, 600, 800, 1000, 1200, 1400', sizes: '(max-width: 749px) calc(100vw - 32px), 45vw', loading: 'eager', fetchpriority: 'high', alt: tp_bk_image_alt }}
+        {%- comment -%} Optionale zweite Ansicht (z. B. Materialstruktur neben dem Raumbild) {%- endcomment -%}
+        {%- if section.settings.image_detail != blank -%}
+          <span class="tp-bk-hero__detail">
+            {{ section.settings.image_detail | image_url: width: 360 | image_tag: widths: '180, 270, 360', sizes: '(max-width: 749px) 72px, 160px', loading: 'eager', alt: section.settings.image_detail_alt }}
+            {%- if section.settings.image_detail_label != blank -%}
+              <span class="tp-bk-hero__detail-label">{{ section.settings.image_detail_label | escape }}</span>
+            {%- endif -%}
+          </span>
+        {%- endif -%}
         {%- if section.settings.image_caption != blank -%}
           <figcaption>{{ section.settings.image_caption | escape }}</figcaption>
         {%- endif -%}
@@ -56,7 +65,10 @@
     { "type": "text", "id": "primary_label", "label": "Produkt-Button", "default": "Produkte entdecken" },
     { "type": "text", "id": "secondary_label", "label": "Zweiter Button", "default": "Beratung anfragen" },
     { "type": "url", "id": "secondary_link", "label": "Link zum zweiten Button" },
-    { "type": "text", "id": "image_caption", "label": "Bildunterschrift" }
+    { "type": "text", "id": "image_caption", "label": "Bildunterschrift" },
+    { "type": "image_picker", "id": "image_detail", "label": "Zweite Ansicht (klein, z. B. Struktur)" },
+    { "type": "text", "id": "image_detail_alt", "label": "Beschreibung der zweiten Ansicht" },
+    { "type": "text", "id": "image_detail_label", "label": "Beschriftung der zweiten Ansicht" }
   ],
   "blocks": [
     {
