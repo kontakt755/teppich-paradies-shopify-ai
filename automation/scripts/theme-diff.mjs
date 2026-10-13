@@ -14,7 +14,7 @@
  * exakt vergleichbar, ohne jede Datei herunterladen zu muessen.
  *
  * Ablauf:
- *   1. Manifest holen (Admin API, siehe docs/theme-diff.md)
+ *   1. Manifest holen (Admin API, siehe .claude/skills/deploy/SKILL.md (Abschnitt theme:diff))
  *   2. node automation/scripts/theme-diff.mjs --manifest <datei>
  */
 
@@ -72,7 +72,7 @@ function localManifest() {
 const flags = parseArgs(process.argv.slice(2));
 if (!flags.manifest) {
   console.error('Nutzung: theme-diff.mjs --manifest <datei.json> [--json] [--report-only]');
-  console.error('Das Manifest wird ueber die Admin API erzeugt, siehe docs/theme-diff.md');
+  console.error('Das Manifest wird ueber die Admin API erzeugt, siehe .claude/skills/deploy/SKILL.md (Abschnitt theme:diff)');
   process.exit(2);
 }
 

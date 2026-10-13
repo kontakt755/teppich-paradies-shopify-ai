@@ -302,6 +302,7 @@ const NUR_INHABER = new Set([
   'team/aendern',
   // Ein neuer Upload-Link oeffnet einen Weg von aussen ins Haus.
   'social/link-neu',
+  'social/sperren',
   'einkauf/kennzahlen', // Umsatzzahlen
   // Das Protokoll sagt, wer wann was getan hat. Es haengt im Frontend allein an
   // der Ansicht "Aktivitaet" (inhaber-only), stand aber unter keiner
@@ -328,7 +329,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
   // Bestelltabelle, Lexikon samt Mengenhilfe und die neuen Datenarten
   // (Kunden, Angebote, Warenkoerbe, Bestand, Erfuellung) - fehlt einer,
   // antwortet der Server 404.
-  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/muster-texte|kunden\/bestellung-fertig|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|sonderposten\/liste|sonderposten\/verkauft|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/muster-texte|kunden\/bestellung-fertig|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|sonderposten\/liste|sonderposten\/verkauft|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { apiFehler(req, res, pathname, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
   // Host-Pruefung fuer JEDEN Aufruf, nicht nur fuer schreibende: sonst kann
@@ -338,7 +339,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     apiFehler(req, res, pathname, 403, { error: 'Dafür fehlt dir die Berechtigung – das macht der Inhaber.' });
     return;
   }
-  const write = simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || simple === 'kunden/fall-marke' || ['org/neu', 'org/aendern', 'org/kommentar', 'org/pruefen', 'org/analyse', 'org/liste-einfuegen', 'org/anhang', 'fotos/neu', 'social/link-neu', 'sonderposten/verkauft', 'fehler/melden'].includes(simple) || ['transition', 'assign', 'comment'].includes(taskOp);
+  const write = simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || simple === 'kunden/fall-marke' || ['org/neu', 'org/aendern', 'org/kommentar', 'org/pruefen', 'org/analyse', 'org/liste-einfuegen', 'org/anhang', 'fotos/neu', 'social/link-neu', 'social/sperren', 'sonderposten/verkauft', 'fehler/melden'].includes(simple) || ['transition', 'assign', 'comment'].includes(taskOp);
   try {
     if (write) {
       if (req.method !== 'POST') { apiFehler(req, res, pathname, 405, { error: 'POST erwartet' }); return; }
@@ -402,6 +403,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'fotos/liste') result = api.fotosListe({ offen: url.searchParams.get('offen') === '1', benutzer });
     else if (simple === 'fotos/produkt') result = api.fotosProdukt({ boden: url.searchParams.get('boden') || '' });
     else if (simple === 'social/zugaenge') result = api.socialZugaenge();
+    else if (simple === 'social/sperren') result = api.socialSperren(await readJson(req), { benutzer });
     else if (simple === 'social/link-neu') result = api.socialLinkNeu(await readJson(req), { benutzer });
     else if (simple === 'team/liste') result = api.teamListe();
     else if (simple === 'team/aendern') result = api.teamAendern(await readJson(req), { benutzer });

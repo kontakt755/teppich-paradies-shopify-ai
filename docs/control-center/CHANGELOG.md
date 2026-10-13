@@ -937,3 +937,16 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Speicher des Dienstes. Der Blockieren-Klick schreibt in den öffentlichen Issue-Body (wie bisher der Kommentar).
   Der Lagerbestand im Einkauf ist bis zu einer Stunde alt.
 - **Nächste Stufe:** Tailscale am Mac mini wieder verbinden (Menüleiste → Connect); danach verschwindet das To-do.
+
+## 2026-10-13 · Social Media: Upload-Link sperren
+
+- **Geändert:** Neben jedem Upload-Zugang in `#/social` steht „Sperren“ (nur Inhaber sichtbar), mit Rückfrage
+  „Link für <Name> sperren? Er funktioniert danach nicht mehr.“. `POST /api/social/sperren` (Inhaber; Mitarbeiter
+  und „lesen“ 403, steht in der write-Liste) nutzt `zugangSperren` aus `social/lib/eingang.mjs` – dieselbe Sperre wie
+  `npm run social -- zugang sperren`, also alle Links dieses Namens – und löscht den gemerkten Klartext. Der Zugang
+  verschwindet aus der Liste.
+- **Getestet:** `dashboard:test` 282/282, `npm test` grün, `dashboard:pruefen` 105 × OK. Klickstrecke gegen die Kopie:
+  Rückfrage abgebrochen → aktive Zugänge 2 → 2, bestätigt → 2 → 1, Zeile weg; Knopf bei Rolle Mitarbeiter ausgeblendet.
+- **Risiken/Annahmen:** Sperren wirkt je Name, nicht je einzelnem Link (wie die Kommandozeile).
+- **Nächste Stufe:** keine geplant.
+
