@@ -192,6 +192,8 @@ Metafelder oder Collection-Zuordnungen nur verändern, wenn der jeweilige Auftra
 
 Nie technische Eigenschaften erfinden oder anhand eines Produktbildes allein ableiten.
 
+**Ausgelaufenes wird nie angezeigt (Inhaber 2026-10-13).** Fuehrt der Lieferant einen Artikel nachweislich nicht mehr (exakte Suche ohne Treffer, Seite 404, Auslaufmeldung), wird das Produkt samt Musterprodukt sofort archiviert und die alte Adresse per 301 auf den Nachfolger oder die passende Kollektion umgeleitet; vorher offene Bestellungen pruefen, danach Lexikon exportieren. Faellt nur eine Variante weg, ist das eine Variantenaenderung und braucht Freigabe. Anschliessend die ganze Linie beim Lieferanten auf neue Artikel abgleichen.
+
 Bei unklaren Produktdaten:
 
 - nicht raten
