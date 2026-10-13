@@ -1,0 +1,55 @@
+{%- doc -%}
+  Klartextzeile fuer Sockelleisten im Warenkorb: "8 Leisten = 20 m".
+  Gegenstueck zu snippets/tp-cart-paketzeile.liquid (Shop-Analyse 2026-10-13:
+  die Paketzeile erklaerte ihre Umrechnung, die Leistenzeile nicht).
+
+  Laenge je Leiste nur aus dem belegten Produkt-Metafeld custom.stangenlaenge
+  (Meter, gleich fuer jede Farbe; Quellen siehe blocks/tp-zubehoer-menge.liquid).
+  Ohne Metafeld rendert der Snippet nichts - keine geschaetzte Laenge.
+  Ob die Position Stangenware ist, entscheidet snippets/tp-verkaufseinheit
+  ('stueck') - damit fallen Paketware (eigene Zeile) und Sonderposten
+  (Einzelstueck, ggf. mit kopiertem Metafeld) heraus. Menge aus item.quantity, nie aus einer Property - der Kunde
+  kann die Menge im Warenkorb aendern.
+
+  @param {object} line_item - Warenkorbposition
+{%- enddoc -%}
+{%- liquid
+  assign tp_cl_produkt = line_item.product
+  capture tp_cl_einheit
+    render 'tp-verkaufseinheit', product: tp_cl_produkt
+  endcapture
+  assign tp_cl_einheit = tp_cl_einheit | strip
+  assign tp_cl_stange = tp_cl_produkt.metafields.custom.stangenlaenge.value | times: 1.0
+  assign tp_cl_menge = line_item.quantity | times: 1
+-%}
+{%- if tp_cl_einheit == 'stueck' and tp_cl_stange > 0 and tp_cl_menge > 0 -%}
+  {%- liquid
+    # Ganzzahlig in Zentimetern rechnen: kein Gleitkomma-Rest wie 20,000000001.
+    assign tp_cl_cm = tp_cl_stange | times: 100 | round | times: tp_cl_menge
+    assign tp_cl_ganz = tp_cl_cm | divided_by: 100
+    assign tp_cl_rest_zahl = tp_cl_cm | modulo: 100
+    if tp_cl_rest_zahl == 0
+      assign tp_cl_laenge = tp_cl_ganz | append: ''
+    else
+      # "20,5" statt "20,50", "16,75" bleibt.
+      assign tp_cl_zehntel = tp_cl_rest_zahl | modulo: 10
+      if tp_cl_zehntel == 0
+        assign tp_cl_rest = tp_cl_rest_zahl | divided_by: 10 | append: ''
+      elsif tp_cl_rest_zahl < 10
+        assign tp_cl_rest = tp_cl_rest_zahl | append: '' | prepend: '0'
+      else
+        assign tp_cl_rest = tp_cl_rest_zahl | append: ''
+      endif
+      assign tp_cl_laenge = tp_cl_ganz | append: ',' | append: tp_cl_rest
+    endif
+
+    if tp_cl_menge == 1
+      assign tp_cl_wort = 'Leiste'
+    else
+      assign tp_cl_wort = 'Leisten'
+    endif
+  -%}
+  <div class="cart-items__paket">
+    <span class="cart-items__paket-menge">{{ tp_cl_menge }} {{ tp_cl_wort }} = {{ tp_cl_laenge }}&nbsp;m</span>
+  </div>
+{%- endif -%}
