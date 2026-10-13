@@ -61,18 +61,28 @@ test('Dialog-Schritt "raus" mit Auswahl: nur die angekreuzte Position, in Shopif
   assert.equal(r.versandNachholen, null);
 });
 
-test('Einzelner Statuswechsel auf "raus" (Einkauf) bucht; doppelter Klick bucht nie doppelt', async () => {
+test('Einzelweg (Status je Position, z. B. alte Oberflaeche in einer Schleife) bucht nie je Artikel: "ausstehend", dann ein Paket', async () => {
+  const u = umgebung();
+  const a = await u.setze({ orderId: BESTELLUNG, lineItemId: li(1), status: 'raus' });
+  await u.setze({ orderId: BESTELLUNG, lineItemId: li(2), status: 'raus' });
+  assert.equal(a.shopify.status, 'ausstehend');
+  assert.equal(u.z.attrappe.aufrufe.length, 0, 'keine Buchung, keine Mail je Artikel');
+  assert.deepEqual([u.eintrag(1).shopifyVersand.status, u.eintrag(2).shopifyVersand.status], ['ausstehend', 'ausstehend']);
+  const zeile = u.api.kundenBestellungen().zeilen.find(z => z.orderId === BESTELLUNG);
+  assert.equal(zeile.versandNachholen.ausstehend, true);
+  const n = await u.setze({ aktion: 'versandNachholen', orderId: BESTELLUNG });
+  assert.equal(n.shopify.gebucht, 2);
+  assert.equal(u.z.attrappe.buchungen().length, 1, 'ein Paket, eine Mail');
+  assert.equal(u.z.attrappe.buchungen()[0].variables.fulfillment.lineItemsByFulfillmentOrder[0].fulfillmentOrderLineItems.length, 2);
+});
+
+test('Doppelter Klick im Dialog bucht nie doppelt; danach nur noch der Rest', async () => {
   const u = umgebung({ attrappe: versandAttrappe({ verzoegerung: 15 }) });
-  const [a, b] = await Promise.all([
-    u.setze({ orderId: BESTELLUNG, lineItemId: li(1), status: 'raus' }),
-    u.setze({ orderId: BESTELLUNG, lineItemId: li(1), status: 'raus' }),
-  ]);
+  const klick = () => u.setze({ aktion: 'schritt', orderId: BESTELLUNG, schritt: 'raus', lineItemIds: [li(1)] });
+  const [a, b] = await Promise.all([klick(), klick()]);
   assert.equal(u.z.attrappe.buchungen().length, 1, 'genau eine Buchung in Shopify');
-  assert.equal(a.shopify.status, 'gebucht');
-  // Der zweite Klick fand die Position schon auf "raus": kein neuer Versand, keine Buchung.
-  assert.equal(b.shopify, undefined);
+  assert.deepEqual([a.shopify?.status, b.shopify?.status], ['gebucht', undefined], 'der zweite Klick fand die Position schon raus');
   assert.equal(u.eintrag(1).shopifyVersand.status, 'gebucht');
-  // Auch ueber die Zeitleiste: Position 1 ist durch, gebucht wird nur noch Position 2.
   const c = await u.setze({ aktion: 'schritt', orderId: BESTELLUNG, schritt: 'raus' });
   assert.equal(c.shopify.gebucht, 1);
   assert.equal(u.z.attrappe.buchungen().length, 2);
@@ -105,20 +115,20 @@ test('Recht fehlt: Schritt steht trotzdem, Shopify unberuehrt, Klartext, nachhol
 
 test('Netzfehler und fehlender Zugang: Schritt steht, Fehler sichtbar; unklar wird nie als "nicht gebucht" gemeldet', async () => {
   const ohne = umgebung({ zugang: false });
-  const r = await ohne.setze({ orderId: BESTELLUNG, lineItemId: li(1), status: 'raus' });
+  const r = await ohne.setze({ aktion: 'schritt', orderId: BESTELLUNG, schritt: 'raus', lineItemIds: [li(1)] });
   assert.deepEqual([r.shopify.status, r.shopify.grund], ['fehler', 'kein-zugang']);
   assert.equal(ohne.eintrag(1).status, 'raus');
   // Teillieferung (Position 2 noch nicht raus): der Hinweis steht trotzdem in der Bestellliste.
   assert.equal(ohne.api.kundenBestellungen().zeilen.find(z => z.orderId === BESTELLUNG).versandHinweis, 'Versand in Shopify nicht gebucht – in der Bestellung nachholen');
 
   const netz = umgebung({ attrappe: versandAttrappe({ antwortWeg: 'vor', lesenScheitert: [2] }) });
-  const u = await netz.setze({ orderId: BESTELLUNG, lineItemId: li(1), status: 'raus' });
+  const u = await netz.setze({ aktion: 'schritt', orderId: BESTELLUNG, schritt: 'raus', lineItemIds: [li(1)] });
   assert.equal(u.shopify.status, 'unklar');
   assert.equal(netz.eintrag(1).shopifyVersand.status, 'unklar');
   assert.ok(letzteEintraege(protokollPfad(), 5).some(e => e.aktion === 'Versand in Shopify unklar'));
 
   const verloren = umgebung({ attrappe: versandAttrappe({ antwortWeg: 'nach' }) });
-  const v = await verloren.setze({ orderId: BESTELLUNG, lineItemId: li(1), status: 'raus' });
+  const v = await verloren.setze({ aktion: 'schritt', orderId: BESTELLUNG, schritt: 'raus', lineItemIds: [li(1)] });
   assert.equal(v.shopify.status, 'gebucht', 'Antwort verloren, laut erneutem Lesen gebucht');
 });
 
@@ -200,10 +210,11 @@ test('Nachholen behaelt die Wahl "ohne Mail" und bucht je Sendungsnummer getrenn
   assert.equal(b.length, 2, 'eine Buchung je Sendung');
   assert.deepEqual(b.map(x => [x.trackingInfo.number, x.trackingInfo.company, x.notifyCustomer]), [['G1', 'GLS', true], ['D2', 'DHL', false]]);
 
-  // Einzelner Klick (Einkauf) auf ein persoenlich vorbeigebrachtes Muster: ohne Mail, auch ohne Dialog-Angabe.
+  // Persoenlich vorbeigebrachtes Muster ohne Angabe zur Mail (Einzelweg, dann Nachholen): ohne Mail.
   const v = umgebung();
   await v.setze({ aktion: 'musterHerkunft', orderId: BESTELLUNG, herkunft: 'eigen_vorbei' });
   await v.setze({ orderId: BESTELLUNG, lineItemId: li(1), status: 'raus' });
+  await v.setze({ aktion: 'versandNachholen', orderId: BESTELLUNG });
   assert.equal(v.z.attrappe.buchungen()[0].variables.fulfillment.notifyCustomer, false);
 
   // Storniert: Vermerk "uebersprungen", kein roter Hinweis, nichts nachzuholen.
@@ -213,4 +224,12 @@ test('Nachholen behaelt die Wahl "ohne Mail" und bucht je Sendungsnummer getrenn
   assert.equal(r.versandNachholen, null);
   assert.equal(s.eintrag(1).shopifyVersand.status, 'uebersprungen');
   await assert.rejects(() => s.setze({ aktion: 'versandNachholen', orderId: BESTELLUNG }), e => e.status === 409);
+});
+
+test('Nur unbekannte Positionen: "uebersprungen" in Antwort und Vermerk, kein roter Hinweis', async () => {
+  const u = umgebung({ attrappe: versandAttrappe({ fos: [fo('1', [{ n: 3 }])] }) });
+  const r = await u.setze({ aktion: 'schritt', orderId: BESTELLUNG, schritt: 'raus', lineItemIds: [li(1)] });
+  assert.deepEqual([r.shopify.status, r.shopify.grund], ['uebersprungen', 'unbekannt']);
+  assert.equal(u.eintrag(1).shopifyVersand.status, 'uebersprungen');
+  assert.equal(r.versandNachholen, null);
 });

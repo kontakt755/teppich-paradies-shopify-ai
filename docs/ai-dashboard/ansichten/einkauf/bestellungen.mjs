@@ -84,8 +84,8 @@ function afStatusZelle(p) {
   const zurueck = !status && eintrag?.zurueckGesetztAm ? `<div class="small muted">zurück auf offen ${esc(fmtDateTime(eintrag.zurueckGesetztAm))} · @${esc(eintrag.zurueckGesetztVon)}</div>` : '';
   // Versand in Shopify gescheitert (seit 13.10. bucht "raus" dort): rot, mit Knopf zum Nachholen.
   const sv = eintrag?.shopifyVersand;
-  const versandFehlt = sv && ['fehler', 'unklar'].includes(sv.status) && ['raus', 'erledigt'].includes(status);
-  const versand = versandFehlt ? `<div class="small wait-crit" title="${esc(sv.meldung || '')}">${sv.status === 'unklar' ? 'Versand in Shopify unklar' : 'Versand nicht in Shopify gebucht'}</div>` : '';
+  const versandFehlt = sv && ['fehler', 'unklar', 'ausstehend'].includes(sv.status) && ['raus', 'erledigt'].includes(status);
+  const versand = versandFehlt ? `<div class="small wait-crit" title="${esc(sv.meldung || '')}">${sv.status === 'unklar' ? 'Versand in Shopify unklar' : sv.status === 'ausstehend' ? 'Versand noch nicht in Shopify gebucht' : 'Versand nicht in Shopify gebucht'}</div>` : '';
   if (versandFehlt && !lesend) extra.unshift(`<button type="button" class="btn btn-sm" data-versand-nachholen="${esc(p.orderId)}">In Shopify buchen</button>`);
   const knoepfe = [btn, ...extra].filter(Boolean);
   return `${stand}${zurueck}${warte}${grund}${nr}${versand}${knoepfe.length ? `<div class="af-knoepfe" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">${knoepfe.join('')}</div>` : ''}`;

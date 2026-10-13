@@ -28,12 +28,13 @@ query VersandStand($id: ID!) {
   order(id: $id) {
     id name test cancelledAt displayFulfillmentStatus
     fulfillmentOrders(first: 20) {
+      pageInfo { hasNextPage }
       nodes {
         id status
         assignedLocation { location { id } }
         supportedActions { action }
         fulfillmentHolds { id reason displayReason }
-        lineItems(first: 100) { nodes { id remainingQuantity totalQuantity lineItem { id } } }
+        lineItems(first: 100) { pageInfo { hasNextPage } nodes { id remainingQuantity totalQuantity lineItem { id } } }
       }
     }
   }
@@ -66,9 +67,16 @@ const BUCHBAR = new Set(['OPEN', 'IN_PROGRESS']);
 // kann dort noch eine Restmenge stehen, die laengst in einer neuen Fulfillment Order liegt.
 const ERLEDIGT = new Set(['CLOSED', 'CANCELLED']);
 
-export const RECHT_FEHLT_VERSAND = 'Versand nicht in Shopify gebucht: dem Control Center fehlt das Shopify-Recht '
-  + 'write_merchant_managed_fulfillment_orders (Inhaber schaltet es im Dev Dashboard frei, danach den Dashboard-Dienst neu starten). '
-  + 'Bis dahin in Shopify die Bestellung öffnen und „Artikel versenden“ wählen.';
+/** Meldung, wenn Shopify "Access denied" sagt - mit dem Recht, das Shopify nennt (sonst dem ueblichen). */
+export function rechtFehltText(bereich = 'write_merchant_managed_fulfillment_orders') {
+  return `Versand nicht in Shopify gebucht: dem Control Center fehlt das Shopify-Recht ${bereich} `
+    + '(Inhaber schaltet es im Dev Dashboard frei, danach den Dashboard-Dienst neu starten). '
+    + 'Bis dahin in Shopify die Bestellung öffnen und „Artikel versenden“ wählen.';
+}
+export const RECHT_FEHLT_VERSAND = rechtFehltText();
+
+/** Hoechstens so lange wartet eine Abfrage auf Shopify; danach gilt sie als ohne Antwort (Schritt 5). */
+export const ZEITLIMIT_MS = 25_000;
 
 export const ERGEBNIS_UNKLAR_VERSAND = 'Ob der Versand in Shopify gebucht wurde, ist unklar: Shopify hat nicht geantwortet. '
   + 'Bitte die Bestellung in Shopify ansehen, bevor noch einmal gebucht wird.';
@@ -81,6 +89,18 @@ export class VersandFehler extends Error {
 /** Fehlt dem Zugang ein Recht? Shopify meldet das als "Access denied ..." (ACCESS_DENIED) oder HTTP 403. */
 export function istZugriffVerweigert(err) {
   return /access denied|ACCESS_DENIED|HTTP 403|required access/i.test(String(err?.message || err));
+}
+
+function rechtFehlt(err) {
+  const bereich = String(err?.message || err).match(/`?((?:read|write)_[a-z_]+)`?/)?.[1];
+  return new VersandFehler('recht-fehlt', rechtFehltText(bereich || undefined));
+}
+
+/** Eine Shopify-Abfrage mit Zeitlimit - eine haengende Anfrage darf den Dialog nicht minutenlang blockieren. */
+async function frage(proxy, query, variables, ms = ZEITLIMIT_MS) {
+  let uhr;
+  const grenze = new Promise((_, nein) => { uhr = setTimeout(() => nein(new Error(`Shopify hat nach ${Math.round(ms / 1000)} s nicht geantwortet (ETIMEDOUT)`)), ms); });
+  try { return await Promise.race([proxy.execute(query, variables), grenze]); } finally { clearTimeout(uhr); }
 }
 
 function knoten(conn) {
@@ -129,6 +149,9 @@ export function ordneZu(order, lineItemIds) {
       ergebnis.push({ lineItemId, klasse: 'gehalten', meldung: gruende.join(', ') || 'zurückgehalten' });
     } else if (sonst.length) {
       ergebnis.push({ lineItemId, klasse: 'nicht_buchbar', meldung: [...new Set(sonst.map(t => t.fo.status))].join(', ') });
+    } else if (new Set([...aufhebbar, ...buchbar].map(t => t.fo.assignedLocation?.location?.id)).size > 1) {
+      // Ein Artikel an zwei Standorten waere zwei Buchungen und zwei Mails - das bleibt Handarbeit.
+      ergebnis.push({ lineItemId, klasse: 'nicht_buchbar', meldung: 'Artikel liegt an mehreren Standorten' });
     } else if (aufhebbar.length) {
       ergebnis.push({ lineItemId, klasse: 'aufhebbar', zeilen: aufhebbar });
     } else {
@@ -181,43 +204,62 @@ export function buchungsEingaben(zuordnung, { benachrichtigen = true, sendungsnu
   });
 }
 
-async function lese(proxy, orderId) {
+/**
+ * Der Grund, der fuer eine Gesamtmeldung zaehlt: was jemand loesen kann, vor dem Endgueltigen.
+ * Reihenfolge: unklar, zurueckgehalten, nicht buchbar, unbekannt (Position weg = endgueltig).
+ */
+function hauptgrund(nichtGebucht) {
+  const rang = ['unklar', 'gehalten', 'nicht_buchbar', 'nicht-angekommen', 'abgelehnt', 'recht-fehlt', 'unbekannt'];
+  const stelle = g => { const i = rang.indexOf(g); return i < 0 ? rang.length : i; };
+  const n = [...nichtGebucht].sort((a, b) => stelle(a.grund) - stelle(b.grund))[0];
+  const fehlerGrund = n.grund === 'gehalten' ? 'zurueckgehalten' : n.grund === 'nicht_buchbar' ? 'nicht-buchbar' : n.grund;
+  return { ...n, fehlerGrund };
+}
+
+async function lese(proxy, orderId, ms = ZEITLIMIT_MS) {
   let data;
   try {
-    data = await proxy.execute(STAND_QUERY, { id: orderId });
+    data = await frage(proxy, STAND_QUERY, { id: orderId }, ms);
   } catch (err) {
-    if (istZugriffVerweigert(err)) throw new VersandFehler('recht-fehlt', RECHT_FEHLT_VERSAND);
+    if (istZugriffVerweigert(err)) throw rechtFehlt(err);
     throw new VersandFehler('nicht-erreichbar', 'Shopify war nicht lesbar – Versand nicht gebucht. Bitte noch einmal versuchen.', { detail: String(err?.message || err).slice(0, 200) });
   }
   if (data === null) throw new VersandFehler('kein-zugang', 'Kein Zugang zu Shopify eingerichtet – Versand nicht gebucht.');
   if (!data?.order) throw new VersandFehler('nicht-gefunden', 'Diese Bestellung gibt es in Shopify nicht (mehr) – Versand nicht gebucht.');
+  // Nur vollstaendig gelesen zaehlt: eine fehlende Zeile saehe sonst aus wie "erfuellt".
+  const fos = data.order.fulfillmentOrders;
+  if (fos?.pageInfo?.hasNextPage || knoten(fos).some(fo => fo.lineItems?.pageInfo?.hasNextPage)) {
+    throw new VersandFehler('zu-gross', 'Diese Bestellung ist zu groß für die automatische Buchung – bitte in Shopify „Artikel versenden“ wählen.');
+  }
   return data.order;
 }
 
-async function leseOderNull(proxy, orderId) {
-  try { return await lese(proxy, orderId); } catch { return null; }
+async function leseOderNull(proxy, orderId, ms = ZEITLIMIT_MS) {
+  try { return await lese(proxy, orderId, ms); } catch { return null; }
 }
 
-/** Hebt die "Bestand fehlt"-Zurueckhaltungen der betroffenen Fulfillment Orders auf. Gibt die Zahl zurueck. */
-async function hebeAuf(proxy, zuordnung) {
+/**
+ * Hebt die "Bestand fehlt"-Zurueckhaltungen der betroffenen Fulfillment Orders auf. Gibt die IDs
+ * zurueck; ob es geklappt hat, zeigt erst das erneute Lesen danach (userErrors: [] ist kein Beleg).
+ * Bewusst die ganze Fulfillment Order: bei einer Teillieferung werden die uebrigen Muster dort
+ * ebenfalls buchbar - "Bestand fehlt" haelt in einem Laden ohne Lager-App nichts auf, und beim
+ * naechsten "raus" waere die Freigabe ohnehin faellig.
+ */
+async function hebeAuf(proxy, zuordnung, ms = ZEITLIMIT_MS) {
   const fos = new Map();
   for (const z of zuordnung.filter(x => x.klasse === 'aufhebbar')) {
     for (const { fo } of z.zeilen) fos.set(fo.id, (fo.fulfillmentHolds ?? []).map(h => h.id));
   }
-  let anzahl = 0;
   for (const [id, holdIds] of fos) {
-    let antwort;
     try {
       // eslint-disable-next-line no-await-in-loop -- meist eine einzige Fulfillment Order.
-      antwort = await proxy.execute(FREIGEBEN_MUTATION, { id, holdIds });
+      await frage(proxy, FREIGEBEN_MUTATION, { id, holdIds }, ms);
     } catch (err) {
-      if (istZugriffVerweigert(err)) throw new VersandFehler('recht-fehlt', RECHT_FEHLT_VERSAND);
+      if (istZugriffVerweigert(err)) throw rechtFehlt(err);
       // Ob die Freigabe angekommen ist, klaert das erneute Lesen danach.
-      continue;
     }
-    if ((antwort?.fulfillmentOrderReleaseHold?.userErrors ?? []).length === 0) anzahl += 1;
   }
-  return anzahl;
+  return [...fos.keys()];
 }
 
 /**
@@ -231,11 +273,12 @@ async function hebeAuf(proxy, zuordnung) {
  * @param {boolean}  [p.benachrichtigen]  Versandmail an den Kunden (Standard: ja)
  * @param {string}   [p.sendungsnummer]
  * @param {string}   [p.versanddienst]    einer aus VERSANDDIENSTE oder leer
+ * @param {number}   [p.zeitlimitMs]      je Shopify-Aufruf; danach wie "keine Antwort"
  * @returns {Promise<{status: 'gebucht'|'teilweise'|'bereits', gebucht: string[], bereits: string[],
  *   nichtGebucht: {lineItemId: string, grund: string, meldung: string}[], fulfillmentIds: string[],
  *   kundeBenachrichtigt: boolean, aufgehoben: number, antwortVerloren: boolean, gegenprobe: string}>}
  */
-export async function bucheVersand(proxy, { orderId, lineItemIds, benachrichtigen = true, sendungsnummer = null, versanddienst = null } = {}) {
+export async function bucheVersand(proxy, { orderId, lineItemIds, benachrichtigen = true, sendungsnummer = null, versanddienst = null, zeitlimitMs = ZEITLIMIT_MS } = {}) {
   if (!/^gid:\/\/shopify\/Order\/\d+$/.test(String(orderId || ''))) throw new VersandFehler('eingabe', 'Ungültige Bestell-ID – Versand nicht gebucht.');
   const ids = [...new Set((lineItemIds || []).map(String))].filter(id => /^gid:\/\/shopify\/LineItem\/\d+$/.test(id));
   if (!ids.length) throw new VersandFehler('eingabe', 'Keine Position angegeben – Versand nicht gebucht.');
@@ -245,7 +288,7 @@ export async function bucheVersand(proxy, { orderId, lineItemIds, benachrichtige
   const dienst = VERSANDDIENSTE.includes(versanddienst) ? versanddienst : null;
 
   // 1./2. Frisch lesen und einordnen.
-  let order = await lese(proxy, orderId);
+  let order = await lese(proxy, orderId, zeitlimitMs);
   if (order.cancelledAt) throw new VersandFehler('storniert', 'Die Bestellung ist in Shopify storniert – Versand nicht gebucht.');
   // Testbestellung laut Shopify - auch wenn sie im Export (noch) fehlt: keine Mail an Testadressen.
   if (order.test) throw new VersandFehler('testbestellung', 'Testbestellung – in Shopify nicht gebucht.');
@@ -254,8 +297,9 @@ export async function bucheVersand(proxy, { orderId, lineItemIds, benachrichtige
   // 3. "Bestand fehlt" aufheben, dann neu lesen - der Stand nach der Freigabe zaehlt.
   let aufgehoben = 0;
   if (zuordnung.some(z => z.klasse === 'aufhebbar')) {
-    aufgehoben = await hebeAuf(proxy, zuordnung);
-    order = await lese(proxy, orderId);
+    const versucht = await hebeAuf(proxy, zuordnung, zeitlimitMs);
+    order = await lese(proxy, orderId, zeitlimitMs);
+    aufgehoben = knoten(order.fulfillmentOrders).filter(fo => versucht.includes(fo.id) && fo.status !== 'ON_HOLD').length;
     zuordnung = ordneZu(order, ids).map(z => (z.klasse === 'aufhebbar'
       ? { lineItemId: z.lineItemId, klasse: 'gehalten', meldung: 'Zurückhaltung „Bestand fehlt“ ließ sich nicht aufheben' }
       : z));
@@ -273,7 +317,8 @@ export async function bucheVersand(proxy, { orderId, lineItemIds, benachrichtige
 
   if (!zuBuchen.length) {
     if (nichtGebucht.length) {
-      throw new VersandFehler(nichtGebucht[0].grund === 'gehalten' ? 'zurueckgehalten' : 'nicht-buchbar', `Versand nicht in Shopify gebucht: ${nichtGebucht[0].meldung}.`, { nichtGebucht, bereits });
+      const n = hauptgrund(nichtGebucht);
+      throw new VersandFehler(n.fehlerGrund, `Versand nicht in Shopify gebucht: ${n.meldung}.`, { nichtGebucht, bereits });
     }
     return { status: 'bereits', gebucht: [], bereits, nichtGebucht: [], fulfillmentIds: [], kundeBenachrichtigt: false, aufgehoben, antwortVerloren: false, gegenprobe: 'ok' };
   }
@@ -293,16 +338,18 @@ export async function bucheVersand(proxy, { orderId, lineItemIds, benachrichtige
     let antwort;
     try {
       // eslint-disable-next-line no-await-in-loop -- ein Standort im Normalfall; Reihenfolge ist egal.
-      antwort = await proxy.execute(BUCHEN_MUTATION, { fulfillment });
+      antwort = await frage(proxy, BUCHEN_MUTATION, { fulfillment }, zeitlimitMs);
     } catch (err) {
-      if (istZugriffVerweigert(err)) { scheitern('recht-fehlt', RECHT_FEHLT_VERSAND, teil); continue; }
+      if (istZugriffVerweigert(err)) { const f = rechtFehlt(err); scheitern(f.grund, f.message, teil); continue; }
       // 5. Antwortverlust: erneut lesen statt "nicht gebucht" zu behaupten. Gezaehlt wird je
       // Position - nach einer Buchung verschiebt Shopify Zeilen gern in neue Fulfillment Orders.
       // eslint-disable-next-line no-await-in-loop
-      const pruef = await leseOderNull(proxy, orderId);
+      const pruef = await leseOderNull(proxy, orderId, zeitlimitMs);
       const offen = pruef ? offeneMengen(pruef, teil) : null;
       if (offen && teil.every(id => offen.get(id) === 0)) { antwortVerloren = true; gebucht.push(...teil); continue; }
-      if (offen && teil.every(id => offen.get(id) === vorher.get(id))) {
+      // Nach einem Zeitlimit kann Shopify die Buchung noch verarbeiten - "unveraendert" ist dann kein Beleg.
+      const zeitlimit = /ETIMEDOUT|nicht geantwortet|timed? ?out/i.test(String(err?.message || err));
+      if (offen && !zeitlimit && teil.every(id => offen.get(id) === vorher.get(id))) {
         scheitern('nicht-angekommen', 'Shopify hat die Buchung nicht bestätigt; laut erneutem Lesen ist noch nichts versendet. Bitte noch einmal versuchen.', teil);
         continue;
       }
@@ -313,7 +360,7 @@ export async function bucheVersand(proxy, { orderId, lineItemIds, benachrichtige
     if (fehler.length) {
       // Gleichzeitig von anderer Stelle gebucht? Dann ist es "bereits", kein Fehler.
       // eslint-disable-next-line no-await-in-loop
-      const pruef = await leseOderNull(proxy, orderId);
+      const pruef = await leseOderNull(proxy, orderId, zeitlimitMs);
       const offen = pruef ? offeneMengen(pruef, teil) : null;
       if (offen && teil.every(id => offen.get(id) === 0)) { bereits.push(...teil); continue; }
       scheitern('abgelehnt', `Shopify hat die Versandbuchung abgelehnt: ${fehler.map(e => e.message).join('; ')}`.slice(0, 400), teil);
@@ -326,13 +373,14 @@ export async function bucheVersand(proxy, { orderId, lineItemIds, benachrichtige
   if (!gebucht.length) {
     // Nichts neu gebucht: "bereits" nur, wenn auch nichts haengen blieb - sonst ist es ein Fehler.
     if (nichtGebucht.length) {
-      throw new VersandFehler(nichtGebucht[0].grund === 'gehalten' ? 'zurueckgehalten' : 'nicht-buchbar', `Versand nicht in Shopify gebucht: ${nichtGebucht[0].meldung}.`, { nichtGebucht, bereits });
+      const n = hauptgrund(nichtGebucht);
+      throw new VersandFehler(n.fehlerGrund, `Versand nicht in Shopify gebucht: ${n.meldung}.`, { nichtGebucht, bereits });
     }
     return { status: 'bereits', gebucht: [], bereits, nichtGebucht, fulfillmentIds, kundeBenachrichtigt: false, aufgehoben, antwortVerloren: false, gegenprobe: 'ok' };
   }
 
   // 6. Gegenprobe. Scheitert nur das Lesen, ist trotzdem gebucht.
-  const nachher = await leseOderNull(proxy, orderId);
+  const nachher = await leseOderNull(proxy, orderId, zeitlimitMs);
   let gegenprobe = 'fehlgeschlagen';
   if (nachher) {
     const offen = offeneMengen(nachher, gebucht);
@@ -362,18 +410,19 @@ export function versandVermerke(auftrag, statusAlle = {}) {
 }
 
 /**
- * Positionen, die raus sind, deren Versandbuchung aber scheiterte oder unklar blieb - die
- * kann das Control Center nachholen. Positionen ohne Vermerk (vor dem 13.10. raus) zaehlen
+ * Positionen, die raus sind, deren Versandbuchung aber scheiterte, unklar blieb oder noch
+ * aussteht (Einzelweg ohne Dialog) - die kann das Control Center nachholen. Positionen ohne Vermerk (vor dem 13.10. raus) zaehlen
  * nie: sie werden nicht nachtraeglich gebucht. null = nichts nachzuholen.
  */
 export function versandNachzuholen(auftrag, statusAlle = {}) {
   const offen = versandVermerke(auftrag, statusAlle)
-    .filter(e => ['raus', 'erledigt'].includes(e.status) && ['fehler', 'unklar'].includes(e.shopifyVersand.status));
+    .filter(e => ['raus', 'erledigt'].includes(e.status) && ['fehler', 'unklar', 'ausstehend'].includes(e.shopifyVersand.status));
   if (!offen.length) return null;
   const letzte = offen.reduce((a, b) => (String(b.shopifyVersand.am) > String(a.shopifyVersand.am) ? b : a));
   return {
     anzahl: offen.length,
     unklar: offen.some(e => e.shopifyVersand.status === 'unklar'),
+    ausstehend: offen.every(e => e.shopifyVersand.status === 'ausstehend'),
     grund: letzte.shopifyVersand.grund || null,
     meldung: letzte.shopifyVersand.meldung || 'Versand nicht in Shopify gebucht.',
     lineItemIds: offen.map(e => e.lineItemId),

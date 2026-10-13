@@ -953,13 +953,19 @@ Musterbestellungen genauso. Code: `operations/lib/versand.mjs` (Shopify), `versa
 `lib/versand.mjs`.
 
 **Dialog statt Ein-Klick.** Weil der Klick jetzt eine Mail an den Kunden auslöst, öffnet „Als raus zum Kunden
-markieren…“ (Einkauf), „Muster sind verschickt…“/„An Kunden raus…“ (Zeitleiste) und „raus“ unter „Etwas anderes
-ist passiert …“ den Dialog „An Kunden raus“: Artikel, die noch nicht raus sind, als Häkchen (aus dem Einkauf nur
+markieren…“ (Einkauf), „Muster sind verschickt…“/„An Kunden raus…“ (Zeitleiste), „An Kunden raus…“ in der
+Bestellliste (Kunden › Bestellungen) und „raus“ unter „Etwas anderes ist passiert …“ den Dialog „An Kunden raus“: Artikel, die noch nicht raus sind, als Häkchen (aus dem Einkauf nur
 die angeklickte Position vorgewählt; Eigenleistungen wie Kettelservice gehen mit der letzten Ware mit), optional
 Sendungsnummer und Versanddienst (Shopify-Namen, damit Shopify den Verfolgungslink baut; der Dienst wird je Gerät
-gemerkt), Häkchen „Kunde bekommt die Versandmail von Shopify“ (vorab an, bei persönlich vorbeigebrachten Mustern
-aus). Gesendet wird `aktion: "schritt", schritt: "raus", lineItemIds, versand: {sendungsnummer, versanddienst,
+gemerkt), Häkchen „Kunde bekommt die Versandmail von Shopify“ (vorab an; aus bei persönlich vorbeigebrachten Mustern
+und bei einer Versandart mit „Abholung“). Ist die angeklickte Position im Browser-Stand nicht mehr offen, gilt
+genau sie – nie eine andere und nie die ganze Bestellung. Gesendet wird `aktion: "schritt", schritt: "raus", lineItemIds, versand: {sendungsnummer, versanddienst,
 benachrichtigen}` an `POST /api/einkauf/auftragsstatus`.
+
+**Einzelweg ohne Dialog.** `POST /api/einkauf/auftragsstatus` mit `{orderId, lineItemId, status: "raus"}` (eine
+Position, z. B. eine noch zwischengespeicherte alte Oberfläche in einer Schleife) bucht **nicht** sofort – sonst
+gäbe es je Artikel eine Buchung und eine Mail. Er setzt den Vermerk „ausstehend“; „In Shopify buchen“ bucht dann
+alle wartenden Artikel der Bestellung als ein Paket.
 
 **Ablauf im Server.** Erst der lokale Schritt (die Ware ist raus, das gilt immer), dann die Buchung:
 
@@ -968,11 +974,16 @@ benachrichtigen}` an `POST /api/einkauf/auftragsstatus`.
 2. Buchungen derselben Bestellung laufen im Prozess nacheinander (`nacheinander()`); zusammen mit dem frischen
    Lesen der offenen Menge bucht ein doppelter Klick nie doppelt.
 3. `bucheVersand()`: Bestellung frisch lesen (Fulfillment Orders), je Position einordnen (buchbar, schon
-   erfüllt, zurückgehalten, nicht buchbar). Zurückhaltung „Bestand fehlt“ (`INVENTORY_OUT_OF_STOCK`, bei Mustern
-   der Normalfall) wird nach ID aufgehoben, andere Gründe (Zahlung, Betrugsverdacht, Adresse, von Hand) nicht.
-   Dann `fulfillmentCreate` je Standort mit genau diesen Zeilen und ihrer offenen Menge, `notifyCustomer`,
-   `trackingInfo`. Kommt keine Antwort, entscheidet erneutes Lesen (gebucht / nicht angekommen / unklar).
-   Gegenprobe durch erneutes Lesen.
+   erfüllt, zurückgehalten, nicht buchbar; abgeschlossene Fulfillment Orders zählen nie als offen; ein Artikel an
+   zwei Standorten bleibt Handarbeit; eine nicht vollständig gelesene Bestellung bucht gar nichts). Zurückhaltung
+   „Bestand fehlt“ (`INVENTORY_OUT_OF_STOCK`, bei Mustern der Normalfall – am 13.10. bei 2 von 21 offenen
+   Musterbestellungen) wird nach ID aufgehoben, und zwar für die ganze Fulfillment Order: bei einer Teillieferung
+   werden die übrigen Muster dort ebenfalls buchbar (bewusst; nichts versendet sich davon allein). Andere Gründe
+   (Zahlung, Betrugsverdacht, Adresse, von Hand) bleiben. Ob die Aufhebung gewirkt hat, zeigt erst das erneute
+   Lesen. Dann `fulfillmentCreate` je Standort mit genau diesen Zeilen und ihrer offenen Menge, `notifyCustomer`,
+   `trackingInfo`. Jeder Aufruf hat ein Zeitlimit von 25 s. Kommt keine Antwort, entscheidet erneutes Lesen
+   (gebucht / nicht angekommen / unklar; nach einem Zeitlimit nie „nicht angekommen“, weil Shopify noch
+   verarbeiten kann). Gegenprobe durch erneutes Lesen.
 4. Ergebnis je Position als `shopifyVersand` in `auftragsstatus.json` (`status`: gebucht, bereits, fehler,
    unklar, uebersprungen; `grund`, `meldung`, `am`, `fulfillmentId`, `kundeBenachrichtigt`), Sendungsnummer als
    `sendungsnummer`/`versanddienst`, die Mail-Wahl als `versandMail` (ohne Angabe: ja, außer bei persönlich

@@ -152,6 +152,8 @@ export function bestellzeile(auftrag, { statusAlle = {}, rueckrufeAlle = {} } = 
     wasFehlt: wasFehlt(auftrag, rueckruf?.status, f),
     // Im Auftragsfluss schon beim Kunden, in Shopify aber ohne Sendung: nur ein Hinweis.
     versandHinweis: versandHinweis(auftrag, f, statusAlle),
+    // Stand der Versandbuchung durch das Control Center (seit 13.10.): "nachholen", "gebucht" oder null.
+    shopifyVersandVermerk: versandNachzuholen(auftrag, statusAlle) ? 'nachholen' : versandGebucht(auftrag, statusAlle) ? 'gebucht' : null,
     auftrag,
   };
 }

@@ -64,7 +64,7 @@ function versandZeile(a, lesend) {
   const v = a.versandNachholen;
   if (!v) return '';
   return `<div class="zl-versand" role="status">
-    <p><b>${v.unklar ? 'Versand in Shopify unklar' : 'Versand nicht in Shopify gebucht'}</b> – ${esc(v.meldung)}</p>
+    <p><b>${v.unklar ? 'Versand in Shopify unklar' : v.ausstehend ? 'Versand noch nicht in Shopify gebucht' : 'Versand nicht in Shopify gebucht'}</b> – ${esc(v.meldung)}</p>
     ${lesend ? '' : `<button type="button" class="btn btn-sm no-print" data-versand-nachholen="${esc(a.id)}">In Shopify buchen</button>`}
   </div>`;
 }

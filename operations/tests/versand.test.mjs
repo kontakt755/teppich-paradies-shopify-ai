@@ -126,7 +126,7 @@ test('storniert, Testbestellung laut Shopify, unbekannte Position, ungueltige Ei
   await wirft(() => bucheVersand(t.proxy, { orderId: BESTELLUNG, lineItemIds: [li(1)] }), 'testbestellung');
   assert.equal(t.buchungen().length, 0);
   const b = versandAttrappe();
-  await wirft(() => bucheVersand(b.proxy, { orderId: BESTELLUNG, lineItemIds: [li(99)] }), 'nicht-buchbar');
+  await wirft(() => bucheVersand(b.proxy, { orderId: BESTELLUNG, lineItemIds: [li(99)] }), 'unbekannt');
   await wirft(() => bucheVersand(b.proxy, { orderId: 'gid://shopify/Order/x', lineItemIds: [li(1)] }), 'eingabe');
   await wirft(() => bucheVersand(b.proxy, { orderId: BESTELLUNG, lineItemIds: ['abc'] }), 'eingabe');
   await wirft(() => bucheVersand({ execute: async () => null }, { orderId: BESTELLUNG, lineItemIds: [li(1)] }), 'kein-zugang');
@@ -162,7 +162,7 @@ test('Vermerke: nachzuholen nur bei Fehlschlag nach dem 13.10., gebucht laesst d
   assert.equal(versandNachzuholen(auftrag, alt), null, 'alte Positionen ohne Vermerk nie nachbuchen');
   assert.equal(versandGebucht(auftrag, alt), false);
   const fehl = { 'O1::A': { lineItemId: 'A', status: 'raus', shopifyVersand: { status: 'fehler', meldung: 'Recht fehlt', am: '2026-10-13T10:00:00Z' } }, 'O1::B': { lineItemId: 'B', status: 'raus', shopifyVersand: { status: 'gebucht' } } };
-  assert.deepEqual(versandNachzuholen(auftrag, fehl), { anzahl: 1, unklar: false, grund: null, meldung: 'Recht fehlt', lineItemIds: ['A'] });
+  assert.deepEqual(versandNachzuholen(auftrag, fehl), { anzahl: 1, unklar: false, ausstehend: false, grund: null, meldung: 'Recht fehlt', lineItemIds: ['A'] });
   const ok = { 'O1::A': { lineItemId: 'A', status: 'raus', shopifyVersand: { status: 'bereits' } }, 'O1::B': { lineItemId: 'B', status: 'erledigt', shopifyVersand: { status: 'gebucht' } } };
   assert.equal(versandGebucht(auftrag, ok), true);
   assert.equal(versandNachzuholen(auftrag, ok), null);
@@ -192,4 +192,32 @@ test('Geschlossene oder stornierte Fulfillment Orders zaehlen nicht als offen (R
   assert.equal(z.klasse, 'buchbar');
   assert.deepEqual(z.zeilen.map(t => t.fo.id), ['NEU']);
   assert.equal(offeneMengen(order, [li(1)]).get(li(1)), 2);
+});
+
+test('Zeitlimit: haengt Shopify, gilt die Buchung als unklar (nie "nicht angekommen"), auch wenn sie spaeter ankommt', async () => {
+  const a = versandAttrappe({ buchenVerzoegerung: 120 });
+  const e = await wirft(() => bucheVersand(a.proxy, { orderId: BESTELLUNG, lineItemIds: [li(1)], zeitlimitMs: 40 }), 'unklar');
+  assert.match(e.message, /unklar/);
+  await new Promise(r => setTimeout(r, 150));
+  // Nachholen danach: die verspaetete Buchung ist angekommen - "bereits", keine zweite Buchung.
+  const r = await bucheVersand(a.proxy, { orderId: BESTELLUNG, lineItemIds: [li(1)] });
+  assert.equal(r.status, 'bereits');
+  assert.equal(a.buchungen().length, 1);
+});
+
+test('Unvollstaendig gelesen, mehrere Standorte, nur unbekannte Positionen: nichts gebucht, passender Grund', async () => {
+  const gross = versandAttrappe({ mehrSeiten: true });
+  await wirft(() => bucheVersand(gross.proxy, { orderId: BESTELLUNG, lineItemIds: [li(1)] }), 'zu-gross');
+  assert.equal(gross.buchungen().length, 0);
+  const zwei = versandAttrappe({ fos: [fo('1', [{ n: 1 }]), fo('2', [{ n: 1 }], { standort: 'gid://shopify/Location/2' })] });
+  const e = await wirft(() => bucheVersand(zwei.proxy, { orderId: BESTELLUNG, lineItemIds: [li(1)] }), 'nicht-buchbar');
+  assert.match(e.message, /mehreren Standorten/);
+  const weg = versandAttrappe();
+  await wirft(() => bucheVersand(weg.proxy, { orderId: BESTELLUNG, lineItemIds: [li(98), li(99)] }), 'unbekannt');
+});
+
+test('Recht fehlt nennt das Recht, das Shopify meldet', async () => {
+  const c = versandAttrappe({ verweigert: 'lesen' });
+  const e = await wirft(() => bucheVersand(c.proxy, { orderId: BESTELLUNG, lineItemIds: [li(1)] }), 'recht-fehlt');
+  assert.match(e.message, /read_merchant_managed_fulfillment_orders/);
 });

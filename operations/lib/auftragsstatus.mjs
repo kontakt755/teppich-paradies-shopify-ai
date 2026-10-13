@@ -152,7 +152,7 @@ export function setzeStatus(file, { orderId, lineItemId, status, actor, lieferan
 
 /**
  * Haengt das Ergebnis der Versandbuchung in Shopify an eine Position (operations/lib/versand.mjs),
- * ohne ihren Schritt zu aendern. `vermerk`: { status: gebucht|bereits|fehler|unklar|uebersprungen,
+ * ohne ihren Schritt zu aendern. `vermerk`: { status: gebucht|bereits|fehler|unklar|uebersprungen|ausstehend,
  * grund?, meldung?, am, fulfillmentId?, kundeBenachrichtigt? }. Daran erkennt das Control Center,
  * dass die Position seit der Einfuehrung (13.10.) gebucht wurde - aeltere tragen keinen Vermerk und
  * werden nie nachtraeglich gebucht.

@@ -57,9 +57,10 @@ const UNVERSANDT = ['UNFULFILLED', 'PARTIALLY_FULFILLED', null];
  * Laden - nur damit niemand ueber den Widerspruch stolpert.
  */
 export function shopifyVersandHinweis(zeile) {
-  // Die Bestellzeile (lib/bestellliste.mjs) kennt die Versandbuchungen des Control Centers
-  // und rechnet den Hinweis schon - dann gilt ihrer.
-  if (zeile && Object.hasOwn(zeile, 'versandHinweis')) return zeile.versandHinweis;
+  // Versandbuchung durch das Control Center (lib/bestellliste.mjs, seit 13.10.): gescheitert ist
+  // eine Aufgabe; gebucht heisst kein Hinweis, auch wenn der Bestellexport noch hinterherhinkt.
+  if (zeile?.shopifyVersandVermerk === 'nachholen') return 'Versand in Shopify nicht gebucht – in der Bestellung nachholen';
+  if (zeile?.shopifyVersandVermerk === 'gebucht') return null;
   const raus = (zeile?.fortschritt?.minStufe ?? 0) >= STUFE_RAUS;
   return raus && UNVERSANDT.includes(zeile?.fulfillmentstatus ?? null) ? 'In Shopify noch nicht als versendet gebucht' : null;
 }

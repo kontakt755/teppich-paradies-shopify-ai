@@ -43,8 +43,10 @@ function aktionen(f) {
  * @param {string[]|null} [o.userErrors]           fulfillmentCreate meldet diese Fehler, ohne zu buchen
  * @param {boolean} [o.gleichzeitigGebucht]        mit userErrors: jemand anders hat in dem Moment gebucht
  * @param {number} [o.verzoegerung]                ms je Aufruf (fuer gleichzeitige Klicks)
+ * @param {number} [o.buchenVerzoegerung]          ms nur fuer die Buchung (Zeitlimit; gebucht wird danach trotzdem)
+ * @param {boolean} [o.mehrSeiten]                 Shopify meldet weitere Seiten Fulfillment Orders
  */
-export function versandAttrappe({ fos = [fo('1', [{ n: 1 }, { n: 2 }])], storniert = false, test = false, verweigert = null, antwortWeg = null, lesenScheitert = [], userErrors = null, gleichzeitigGebucht = false, verzoegerung = 0 } = {}) {
+export function versandAttrappe({ fos = [fo('1', [{ n: 1 }, { n: 2 }])], storniert = false, test = false, verweigert = null, antwortWeg = null, lesenScheitert = [], userErrors = null, gleichzeitigGebucht = false, verzoegerung = 0, buchenVerzoegerung = 0, mehrSeiten = false } = {}) {
   const zustand = { fos: structuredClone(fos), fulfillments: [] };
   const aufrufe = [];
   let lesungen = 0;
@@ -52,7 +54,7 @@ export function versandAttrappe({ fos = [fo('1', [{ n: 1 }, { n: 2 }])], stornie
 
   const order = () => ({
     id: BESTELLUNG, name: '#T5001', test, cancelledAt: storniert ? '2026-10-01T00:00:00Z' : null, displayFulfillmentStatus: 'UNFULFILLED',
-    fulfillmentOrders: { nodes: zustand.fos.map(f => ({
+    fulfillmentOrders: { pageInfo: { hasNextPage: mehrSeiten }, nodes: zustand.fos.map(f => ({
       id: f.id, status: f.status,
       assignedLocation: { location: { id: f.standort } },
       supportedActions: aktionen(f).map(action => ({ action })),
@@ -100,7 +102,8 @@ export function versandAttrappe({ fos = [fo('1', [{ n: 1 }, { n: 2 }])], stornie
       }
       if (name === 'VersandBuchen') {
         if (verweigert === 'buchen') throw new Error('Shopify GraphQL: Access denied for fulfillmentCreate field. Required access: `write_merchant_managed_fulfillment_orders` access scope.');
-        if (antwortWeg === 'vor') throw new Error('Shopify Admin API: fetch failed (ETIMEDOUT)');
+        if (antwortWeg === 'vor') throw new Error('Shopify Admin API: fetch failed (ECONNREFUSED)');
+        if (buchenVerzoegerung) await new Promise(r => setTimeout(r, buchenVerzoegerung));
         if (userErrors) {
           if (gleichzeitigGebucht) buche(variables.fulfillment);
           return { fulfillmentCreate: { fulfillment: null, userErrors: userErrors.map(message => ({ field: ['fulfillment'], message })) } };

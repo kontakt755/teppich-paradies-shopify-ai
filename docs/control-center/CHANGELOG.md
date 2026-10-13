@@ -1009,7 +1009,7 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 
 - **Geändert** (Inhaber 13.10., Werkbank w-079; Details ARCHITEKTUR §17):
   - *Für die Mitarbeiter:* „Als raus zum Kunden markieren…“ (Einkauf), „Muster sind verschickt…“ bzw. „An Kunden
-    raus…“ (Zeitleiste) öffnen ein Fenster „An Kunden raus“: Häkchen für die Artikel im Paket (Teillieferung),
+    raus…“ (Zeitleiste) und „An Kunden raus…“ in Kunden › Bestellungen öffnen ein Fenster „An Kunden raus“: Häkchen für die Artikel im Paket (Teillieferung),
     Sendungsnummer und Versanddienst (optional), „Kunde bekommt die Versandmail von Shopify“. „Als verschickt
     buchen“ setzt den Schritt **und** bucht die Sendung in Shopify; Shopify schickt die Versandmail, mit
     Sendungsnummer samt Verfolgungslink. Persönlich vorbeigebrachte Muster und „Kunde hat Muster“ (eigener
@@ -1019,7 +1019,9 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
     in Shopify gebucht“ mit „In Shopify buchen“ zum Nachholen (je Sendung eine Buchung mit ihrer Nummer). Endgültige
     Gründe (storniert, Testbestellung, Artikel nicht mehr in der Bestellung) zeigen keinen roten Hinweis. Im
     Protokoll „Versand in Shopify gebucht / nicht gebucht / unklar“, Fehlschläge zusätzlich im Dienstprotokoll.
-  - *Sicherheit:* nur Positionen, die vor dem Klick noch nicht raus waren; nie rückwirkend (alte „raus“-Positionen
+  - *Sicherheit:* der alte Einzelweg je Position bucht nicht mehr sofort („ausstehend“, dann ein Paket über „In
+    Shopify buchen“) – sonst je Artikel eine Mail; Zeitlimit 25 s je Shopify-Aufruf; nur Positionen, die vor dem
+    Klick noch nicht raus waren; nie rückwirkend (alte „raus“-Positionen
     ohne Vermerk bleiben unberührt); Buchungen derselben Bestellung nacheinander und gegen die frisch gelesene offene
     Menge – doppelter Klick bucht nicht doppelt. Zurückhaltung „Bestand fehlt“ hebt das Control Center auf, andere
     Gründe nicht. Testbestellungen und stornierte Bestellungen werden nicht gebucht.
@@ -1036,7 +1038,10 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Testbestellung laut Shopify, Spedition, geschlossene Fulfillment Orders), `docs/ai-dashboard/tests/versand-api.test.mjs`
   (10: Auswahl, Einzelklick, doppelter Klick → 1 Buchung, Recht fehlt → nachholen, kein Zugang, unklar, keine
   rückwirkende Buchung, Testbestellung, Vorbeibringen ohne Mail, Nachholen mit Mail-Wahl und je Sendung, storniert,
-  Zurück auf offen), `auftragsstatus.test.mjs` (Vermerk). Review (`code-review` high, 15 Befunde) eingearbeitet.
+  Zurück auf offen), `auftragsstatus.test.mjs` (Vermerk). Zwei Review-Runden (`code-review` high, 15 + 15 Befunde) eingearbeitet; bewusst
+  belassen: Freigabe „Bestand fehlt“ für die ganze Fulfillment Order (ARCHITEKTUR §17), „erledigt“ ohne „raus“
+  bucht nichts (nur „raus“ ist beauftragt). Lesprobe der Standabfrage gegen den echten Shop (nur lesend): 3 offene
+  Bestellungen „buchbar“, die 2 zurückgehaltenen „aufhebbar“.
   `dashboard:test` und `npm test` grün (nach Rebase auf `main`), Guards, `validate --static` und `secret:scan` PASS.
   `dashboard:pruefen` 22 Ansichten × 5 Breiten = 110 × OK, 0 px Überlauf; `--rollen` bei 390/1440 px 98 × OK
   (Inhaber 44, Mitarbeiter 28, „lesen“ 26). Klickstrecke gegen die Datenkopie mit

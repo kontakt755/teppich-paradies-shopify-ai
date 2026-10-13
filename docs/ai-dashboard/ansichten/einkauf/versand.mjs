@@ -55,11 +55,19 @@ export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = 
   // still zurueck auf "raus". Mit angeklickter Position bleibt es bei genau dieser einen.
   const nichtsOffen = Boolean(auftrag) && !kandidaten.length && !lineItemId;
   const geklickt = kandidaten.find(p => p.lineItemId === lineItemId) || null;
+  // Angeklickt, aber nicht unter den offenen Artikeln (Stand im Browser veraltet): dann genau
+  // diese eine Position - nie eine andere und nie die ganze Bestellung.
+  const nurGeklickt = Boolean(lineItemId) && !geklickt;
+  const position = nurGeklickt ? (auftrag?.positionen || []).find(p => p.lineItemId === lineItemId) || null : null;
   const vor = vorauswahl(kandidaten, { geklickt: geklickt?.lineItemId || null });
   // Muster, die jemand persoenlich vorbeibringt: keine Sendungsnummer, Mail vorab aus.
-  const uebergabe = istUebergabe(geklickt ? [geklickt] : kandidaten);
+  const uebergabe = istUebergabe(geklickt ? [geklickt] : position ? [position] : kandidaten);
+  // Abholung im Laden: Mail vorab aus (eine Mail "ist unterwegs" passt nicht).
+  const abholung = /abhol|pick.?up|selbst/i.test(String(auftrag?.details?.versandart || ''));
   const dienst = letzterDienst();
-  const liste = kandidaten.length > 1
+  const liste = nurGeklickt
+    ? `<p class="small">${esc(position ? artikelText(position) : 'Dieser Artikel')}</p>`
+    : kandidaten.length > 1
     ? `<fieldset class="zl-wahl"><legend>Was ist in diesem Paket?</legend>
         ${kandidaten.map(p => `<label><input type="checkbox" name="pos" value="${esc(p.lineItemId)}"${vor.has(p.lineItemId) ? ' checked' : ''}> ${esc(artikelText(p))}</label>`).join('')}
       </fieldset>`
@@ -77,7 +85,7 @@ export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = 
     ${name || ort ? `<p class="small muted">${esc([name, ort].filter(Boolean).join(' · '))}</p>` : ''}
     ${liste}
     ${nichtsOffen ? '' : `${sendung}
-    <fieldset class="zl-wahl"><label><input type="checkbox" name="mail"${uebergabe ? '' : ' checked'}> Kunde bekommt die Versandmail von Shopify</label></fieldset>
+    <fieldset class="zl-wahl"><label><input type="checkbox" name="mail"${uebergabe || abholung ? '' : ' checked'}> Kunde bekommt die Versandmail von Shopify</label></fieldset>
     <p class="small muted">Die Artikel werden in Shopify als versendet gebucht.</p>`}
     <div class="actions"><button type="button" class="btn" data-close-dialog>${nichtsOffen ? 'Schließen' : 'Abbrechen'}</button>${nichtsOffen ? '' : `<button type="submit" class="btn btn-primary">Als ${wort} buchen</button>`}</div>
   </form></div>`;
@@ -88,7 +96,7 @@ export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = 
     const daten = new FormData(form);
     if (nichtsOffen) return;
     // Angeklickte Position, die im geladenen Stand fehlt: genau diese eine, nie die ganze Bestellung.
-    const ids = kandidaten.length > 1 ? daten.getAll('pos').map(String) : kandidaten.length === 1 ? [kandidaten[0].lineItemId] : lineItemId ? [lineItemId] : null;
+    const ids = nurGeklickt ? [lineItemId] : kandidaten.length > 1 ? daten.getAll('pos').map(String) : kandidaten.length === 1 ? [kandidaten[0].lineItemId] : null;
     if (ids && !ids.length) { toast('Bitte mindestens einen Artikel ankreuzen.', 'warn'); return; }
     const nummer = String(daten.get('nummer') || '').trim();
     const gewaehlt = String(daten.get('dienst') || '');

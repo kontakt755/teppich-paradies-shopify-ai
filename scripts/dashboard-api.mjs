@@ -628,6 +628,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
   // Gruende, bei denen Nachholen nie hilft: kein roter Hinweis, kein Knopf - nur der Vermerk.
   const VERSAND_ENDGUELTIG = new Set(['storniert', 'nicht-gefunden', 'eingabe', 'testbestellung', 'unbekannt']);
   const vermerkStatus = grund => (grund === 'unklar' ? 'unklar' : VERSAND_ENDGUELTIG.has(grund) ? 'uebersprungen' : 'fehler');
+  // Gruende je Position aus versand.mjs (ordneZu) in die Schreibweise der Gesamtgruende.
+  const positionsGrund = g => (g === 'gehalten' ? 'zurueckgehalten' : g === 'nicht_buchbar' ? 'nicht-buchbar' : g);
 
   /**
    * "An Kunden raus" -> Versand in Shopify buchen (operations/lib/versand.mjs; Inhaber
@@ -649,7 +651,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const nummer = angaben.sendungsnummer || ids.map(id => eintrag(id)?.sendungsnummer).find(Boolean) || null;
       const dienst = angaben.sendungsnummer ? angaben.versanddienst : (ids.map(id => eintrag(id)?.versanddienst).find(Boolean) || null);
       const gespeichert = ids.map(id => eintrag(id)?.versandMail).find(v => typeof v === 'boolean');
-      const benachrichtigen = typeof angaben.benachrichtigen === 'boolean' ? angaben.benachrichtigen : gespeichert ?? true;
+      const benachrichtigen = typeof angaben.benachrichtigen === 'boolean' ? angaben.benachrichtigen
+        : gespeichert ?? versandMailFuer({}, (auftrag.positionen || []).filter(p => ids.includes(p.lineItemId)));
       const vermerk = (id, v) => {
         try { vermerkeShopifyVersand(file, { orderId: auftrag.id, lineItemId: id, vermerk: { am, ...v } }); } catch (e) { logFehler('versand', `${auftrag.name}: Vermerk nicht gespeichert (${String(e?.message || e).split('\n')[0]})`); }
       };
@@ -687,7 +690,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         const einzeln = new Map((e.extra?.nichtGebucht ?? []).map(n => [n.lineItemId, n]));
         for (const id of rest) {
           const n = einzeln.get(id);
-          const grund = n ? (n.grund === 'gehalten' ? 'zurueckgehalten' : n.grund) : e.grund;
+          const grund = n ? positionsGrund(n.grund) : e.grund;
           vermerk(id, { status: vermerkStatus(grund), grund, meldung: n ? `Versand nicht in Shopify gebucht: ${n.meldung}.` : e.message });
         }
         const status = vermerkStatus(e.grund);
@@ -698,7 +701,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       for (const id of r.gebucht) vermerk(id, { status: 'gebucht', fulfillmentId: r.fulfillmentIds[0] || null, kundeBenachrichtigt: r.kundeBenachrichtigt });
       for (const id of r.bereits) vermerk(id, { status: 'bereits' });
       for (const n of r.nichtGebucht) {
-        const grund = n.grund === 'gehalten' ? 'zurueckgehalten' : n.grund;
+        const grund = positionsGrund(n.grund);
         vermerk(n.lineItemId, { status: vermerkStatus(grund), grund, meldung: `Versand nicht in Shopify gebucht: ${n.meldung}.` });
       }
       const sendung = r.sendungsnummer ? ` · Sendung ${r.versanddienst ? `${r.versanddienst} ` : ''}${r.sendungsnummer}` : '';
@@ -711,7 +714,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (r.gebucht.length) {
         merke(benutzer, actor, 'Versand in Shopify gebucht', `${auftrag.name}: ${r.gebucht.length} Artikel${r.kundeBenachrichtigt ? ' · Versandmail an Kunden' : ' · ohne Mail'}${sendung}${r.aufgehoben ? ' · Zurückhaltung „Bestand fehlt“ aufgehoben' : ''}${r.antwortVerloren ? ' · Antwort verloren, per Lesen bestätigt' : ''}${pruef}`);
       }
-      if (r.nichtGebucht.length) protokolliereFehlschlag('fehler', r.nichtGebucht[0].grund, r.nichtGebucht[0].meldung, r.nichtGebucht.length);
+      // Je Grund eine Zeile: "unklar" darf nie als "nicht gebucht" im Protokoll stehen.
+      const jeGrund = new Map();
+      for (const n of r.nichtGebucht) { const g = positionsGrund(n.grund); if (!jeGrund.has(g)) jeGrund.set(g, { meldung: n.meldung, anzahl: 0 }); jeGrund.get(g).anzahl += 1; }
+      for (const [g, { meldung: m, anzahl }] of jeGrund) protokolliereFehlschlag(vermerkStatus(g), g, m, anzahl);
       audit({ actor, action: 'versand-shopify', orderId: auftrag.id, status: r.status, gebucht: r.gebucht.length, bereits: r.bereits.length, nichtGebucht: r.nichtGebucht.length, gegenprobe: r.gegenprobe });
       return {
         status: r.status, meldung, gebucht: r.gebucht.length, bereits: r.bereits.length + (lineItemIds.length - ids.length), nichtGebucht: r.nichtGebucht.length,
@@ -761,7 +767,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
   /** Additives Feld je Auftrag: misslungene Versandbuchung, die sich nachholen laesst. */
   function versandFelder(auftrag, statusAlle) {
     const n = versandNachzuholen(auftrag, statusAlle);
-    return { versandNachholen: n ? { anzahl: n.anzahl, unklar: n.unklar, meldung: n.meldung } : null };
+    return { versandNachholen: n ? { anzahl: n.anzahl, unklar: n.unklar, ausstehend: n.ausstehend, meldung: n.meldung } : null };
   }
 
   /** Zeitleisten aller Auftraege (orderId -> { auftragsart, verlauf, naechsterSchritt, ... }). */
@@ -1542,12 +1548,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const vorLager = status === 'raus' ? auftragFuerLager(dir, orderId) : null;
       const angaben = versandAngaben(payload?.versand);
       const vorher = leseAuftragsstatus(file)[positionKey(orderId, lineItemId)];
-      const versandAuftrag = status === 'raus' ? auftragFuerVersand(dir, String(orderId)) : null;
       let eintrag;
       try {
         eintrag = setzeStatus(file, { orderId, lineItemId, status, actor, lieferantBestellnummer, notiz, jetzt: now(),
-          ...(status === 'raus' ? { sendungsnummer: angaben.sendungsnummer, versanddienst: angaben.versanddienst,
-            versandMail: versandMailFuer(angaben, versandAuftrag.positionen.filter(p => p.lineItemId === String(lineItemId))) } : {}) });
+          ...(status === 'raus' ? { sendungsnummer: angaben.sendungsnummer, versanddienst: angaben.versanddienst, versandMail: angaben.benachrichtigen } : {}) });
       } catch (e) {
         if (e instanceof AuftragsstatusFehler) throw new ApiError(400, e.message);
         throw e;
@@ -1555,11 +1559,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (vorLager) lagerAbgangFestschreiben(dir, vorLager, [lineItemId], actor);
       audit({ actor, action: 'auftragsstatus', orderId, lineItemId, status });
       merke(benutzer, actor, 'Auftragsstatus', `${orderId}/${lineItemId}: ${status}`);
-      // "An Kunden raus" bucht in Shopify - nur beim Wechsel von einem Schritt davor (neue Sendung),
-      // nicht bei der Korrektur von "erledigt" zurueck.
+      // "raus" ueber diesen Einzelweg bucht NICHT sofort: wer Positionen einzeln in einer Schleife
+      // setzt, erzeugte sonst je Artikel eine Buchung und eine Versandmail. Die Oberflaeche nimmt den
+      // Versand-Dialog (aktion "schritt"); hier steht nur der Vermerk "ausstehend", und
+      // "In Shopify buchen" bucht alle wartenden Artikel der Bestellung als ein Paket.
       if (status === 'raus' && STATUS_ORDER.indexOf(vorher?.status) < STATUS_ORDER.indexOf('raus')) {
-        const shopifyErgebnis = await versandBuchen({ dir, auftrag: versandAuftrag, lineItemIds: [String(lineItemId)], angaben, benutzer, actor });
-        return { ok: true, eintrag: leseAuftragsstatus(file)[positionKey(orderId, lineItemId)] || eintrag, shopify: shopifyErgebnis };
+        eintrag = vermerkeShopifyVersand(file, { orderId, lineItemId, vermerk: { status: 'ausstehend', grund: 'ohne-dialog', am: now().toISOString(),
+          meldung: 'Noch nicht in Shopify gebucht – „In Shopify buchen“ bucht alle wartenden Artikel dieser Bestellung als ein Paket.' } }) || eintrag;
+        return { ok: true, eintrag, shopify: { status: 'ausstehend', meldung: eintrag.shopifyVersand?.meldung || null, gebucht: 0, bereits: 0, nichtGebucht: 1 } };
       }
       return { ok: true, eintrag };
     },
