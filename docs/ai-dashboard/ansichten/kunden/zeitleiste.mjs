@@ -14,6 +14,7 @@ import { fetchEinkauf, orgSchreiben } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { einkauf, setzeZurueckAufOffen, setzeMusterHerkunft, kundeUndOrt, ladeStandNeu, MUSTER_HERKUNFT_LABEL } from '../einkauf/auftragsfluss.mjs';
+import { oeffneVersandDialog } from '../einkauf/versand.mjs';
 import { kunden } from './gemeinsam.mjs';
 
 const WER_TEXT = { wir: 'wir', lieferant: 'Lieferant', kunde: 'Kunde' };
@@ -54,10 +55,23 @@ function verlaufZeile(s, naechster) {
     ${s.notiz && s.zustand === 'erledigt' ? `<span class="zl-wann">„${esc(s.notiz)}“</span>` : ''}</li>`;
 }
 
+/**
+ * Versand in Shopify gescheitert (Recht fehlt, Netz, zurueckgehalten ...): der Schritt "raus"
+ * steht, aber der Kunde hat keine Versandmail. Sichtbar bleiben, bis es nachgeholt ist.
+ */
+function versandZeile(a, lesend) {
+  const v = a.versandNachholen;
+  if (!v) return '';
+  return `<div class="zl-versand" role="status">
+    <p><b>${v.unklar ? 'Versand in Shopify unklar' : 'Versand nicht in Shopify gebucht'}</b> – ${esc(v.meldung)}</p>
+    ${lesend ? '' : `<button type="button" class="btn btn-sm no-print" data-versand-nachholen="${esc(a.id)}">In Shopify buchen</button>`}
+  </div>`;
+}
+
 function naechsterKarte(a, kunde, lesend) {
   const n = a.naechsterSchritt;
   if (!n) {
-    return `<div class="zl-next warten"><p class="zl-titel">Stand</p><h4 class="zl-fertig">${a.storniert ? 'Storniert' : 'Abgeschlossen – nichts mehr zu tun'}</h4></div>`;
+    return `<div class="zl-next warten"><p class="zl-titel">Stand</p><h4 class="zl-fertig">${a.storniert ? 'Storniert' : 'Abgeschlossen – nichts mehr zu tun'}</h4>${versandZeile(a, lesend)}</div>`;
   }
   const titel = n.stufe === 'warten' ? `Wartet auf ${n.wer === 'lieferant' ? 'den Lieferanten' : 'den Kunden'}` : 'Nächster Schritt';
   const tel = gesetzt(kunde?.telefon) ? String(kunde.telefon).replace(/[^0-9+]/g, '') : '';
@@ -74,6 +88,7 @@ function naechsterKarte(a, kunde, lesend) {
     <p class="zl-titel">${esc(titel)}</p>
     <h4>${esc(n.text)}</h4>
     ${n.detail ? `<p>${esc(n.detail)}</p>` : ''}
+    ${versandZeile(a, lesend)}
     ${knoepfe}
   </div>`;
 }
@@ -147,7 +162,7 @@ function findeAuftrag(orderId) {
 
 /** Zeile der Bestellliste -> Auftrag mit Zeitleisten-Feldern (die Liste traegt sie an der Zeile). */
 export function auftragAusZeile(z) {
-  return { ...z.auftrag, auftragsart: z.auftragsart, verlauf: z.verlauf, verlaufNotizen: z.verlaufNotizen, naechsterSchritt: z.naechsterSchritt };
+  return { ...z.auftrag, auftragsart: z.auftragsart, verlauf: z.verlauf, verlaufNotizen: z.verlaufNotizen, naechsterSchritt: z.naechsterSchritt, versandNachholen: z.versandNachholen || null };
 }
 
 /** Nach einer Aenderung alles neu holen, was den Stand zeigt - ohne dass die Seite auf "Lade ..." springt. */
@@ -230,6 +245,8 @@ function oeffneDialog(orderId, { nurErgebnis = false } = {}) {
       if (fertig) $('#dialogRoot').innerHTML = ''; else knopf.disabled = false;
       return;
     }
+    // "raus" bucht in Shopify und schickt die Versandmail - dafuer gibt es den eigenen Dialog.
+    if (wert === 'raus') { oeffneVersandDialog(orderId, { notiz }); return; }
     const ok = wert.startsWith('zurueck:')
       ? await setzeSchritt(orderId, 'zurueck', { bezug: wert.slice('zurueck:'.length), notiz })
       : await setzeSchritt(orderId, wert, { notiz });
@@ -243,6 +260,7 @@ export function zeitleisteKlick(e) {
   if (haupt) {
     e.preventDefault();
     if (haupt.dataset.zlSchritt === 'ergebnis') { oeffneDialog(haupt.dataset.zlOrder, { nurErgebnis: true }); return true; }
+    if (haupt.dataset.zlSchritt === 'raus') { oeffneVersandDialog(haupt.dataset.zlOrder); return true; }
     haupt.disabled = true;   // gegen den Doppelklick - nach dem Neuladen steht ohnehin der naechste Schritt da
     setzeSchritt(haupt.dataset.zlOrder, haupt.dataset.zlSchritt).then(ok => { if (!ok) haupt.disabled = false; });
     return true;

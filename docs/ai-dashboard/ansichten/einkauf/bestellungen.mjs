@@ -43,7 +43,7 @@ function lieferantLinkZelle(p) {
 // Knopftext ist eine Handlung ("Als X markieren"), nicht eine Wiederholung des
 // danebenstehenden Standtexts - sonst lesen sich "Stand: Noch nicht bestellt"
 // und "→ Bestellt" wie zwei widersprüchliche Zustände (Inhaber-Feedback).
-const AF_AKTIONS_LABEL = { bestellt: 'Als bestellt markieren', geliefert: 'Als geliefert markieren', raus: 'Als raus zum Kunden markieren', erledigt: 'Als erledigt markieren' };
+const AF_AKTIONS_LABEL = { bestellt: 'Als bestellt markieren', geliefert: 'Als geliefert markieren', raus: 'Als raus zum Kunden markieren…', erledigt: 'Als erledigt markieren' };
 
 function afStatusZelle(p) {
   const eintrag = afEintragFuer(p);
@@ -60,7 +60,7 @@ function afStatusZelle(p) {
     // "Verschickt" direkt hier: bei gemischten Bestellungen (ein Muster aus dem Lager, eins vom
     // Lieferanten) gab es sonst keinen Weg, das Lagermuster allein als raus einzutragen.
     const wahl = lesend ? '' : `<div class="af-knoepfe" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">
-      <button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(p.orderId)}" data-af-status="raus" ${daten}>${esc(p.musterHerkunft === 'eigen_vorbei' ? 'Als übergeben markieren' : 'Als verschickt markieren')}</button>
+      <button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(p.orderId)}" data-af-status="raus" ${daten}>${esc(p.musterHerkunft === 'eigen_vorbei' ? 'Als übergeben markieren…' : 'Als verschickt markieren…')}</button>
       <button type="button" class="btn btn-sm btn-ghost" data-muster-herkunft="${esc(p.orderId)}" ${daten}>Woher? ändern…</button></div>`;
     const woher = p.musterLager && p.musterHerkunft !== 'eigen_vorbei'
       ? `aus dem Musterlager${p.musterLager.ort ? ` · ${p.musterLager.ort}` : ''}`
@@ -82,8 +82,13 @@ function afStatusZelle(p) {
     !status && p.istMuster ? `<button type="button" class="btn btn-sm btn-ghost" data-muster-herkunft="${esc(p.orderId)}" ${daten} title="Muster selbst vorrätig? Dann nicht beim Lieferanten bestellen">Haben wir da…</button>` : '',
   ].filter(Boolean);
   const zurueck = !status && eintrag?.zurueckGesetztAm ? `<div class="small muted">zurück auf offen ${esc(fmtDateTime(eintrag.zurueckGesetztAm))} · @${esc(eintrag.zurueckGesetztVon)}</div>` : '';
+  // Versand in Shopify gescheitert (seit 13.10. bucht "raus" dort): rot, mit Knopf zum Nachholen.
+  const sv = eintrag?.shopifyVersand;
+  const versandFehlt = sv && ['fehler', 'unklar'].includes(sv.status) && ['raus', 'erledigt'].includes(status);
+  const versand = versandFehlt ? `<div class="small wait-crit" title="${esc(sv.meldung || '')}">${sv.status === 'unklar' ? 'Versand in Shopify unklar' : 'Versand nicht in Shopify gebucht'}</div>` : '';
+  if (versandFehlt && !lesend) extra.unshift(`<button type="button" class="btn btn-sm" data-versand-nachholen="${esc(p.orderId)}">In Shopify buchen</button>`);
   const knoepfe = [btn, ...extra].filter(Boolean);
-  return `${stand}${zurueck}${warte}${grund}${nr}${knoepfe.length ? `<div class="af-knoepfe" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">${knoepfe.join('')}</div>` : ''}`;
+  return `${stand}${zurueck}${warte}${grund}${nr}${versand}${knoepfe.length ? `<div class="af-knoepfe" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">${knoepfe.join('')}</div>` : ''}`;
 }
 
 /**

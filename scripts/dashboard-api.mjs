@@ -23,7 +23,8 @@ import { texteAusMarkdown } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs
 import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
-import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, oeffneWieder, setzeZurueckAufOffen, STATUS_ORDER, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
+import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, STATUS_ORDER, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
+import { bucheVersand, versandNachzuholen, VersandFehler, VERSANDDIENSTE } from '../operations/lib/versand.mjs';
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
 import { musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
 import { auftragsverlaufPfad, leseVerlauf, haengeEreignisAn, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
@@ -585,6 +586,143 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     protokolliere(protokollPfad(), { benutzer: anzeigename(benutzer, actor), aktion, objekt, jetzt: now() });
   }
 
+  // Versandbuchungen derselben Bestellung laufen nacheinander: zwei schnelle Klicks lesen
+  // sonst beide "offen" und buchten doppelt. Es gibt genau einen Dienst - die Kette im
+  // Prozess reicht.
+  const versandKetten = new Map();
+  function nacheinander(schluessel, fn) {
+    const lauf = (versandKetten.get(schluessel) || Promise.resolve()).catch(() => {}).then(fn);
+    versandKetten.set(schluessel, lauf);
+    lauf.finally(() => { if (versandKetten.get(schluessel) === lauf) versandKetten.delete(schluessel); }).catch(() => {});
+    return lauf;
+  }
+
+  /** Angaben aus dem Versand-Dialog, begrenzt und ohne fremde Felder. */
+  function versandAngaben(v) {
+    const roh = v && typeof v === 'object' ? v : {};
+    const nummer = String(roh.sendungsnummer ?? '').replace(/\s+/g, '').slice(0, 60) || null;
+    return {
+      sendungsnummer: nummer,
+      versanddienst: nummer && VERSANDDIENSTE.includes(roh.versanddienst) ? roh.versanddienst : null,
+      benachrichtigen: typeof roh.benachrichtigen === 'boolean' ? roh.benachrichtigen : null,
+    };
+  }
+
+  /** Auftrag aus dem Bestellmodell; fehlt er (Export aelter als die Bestellung), reicht die ID fuer Shopify. */
+  function auftragFuerVersand(dir, orderId) {
+    const modell = ladeBestellModell(dir);
+    const a = modell ? [...modell.auftraege, ...modell.testauftraege].find(x => x.id === orderId) : null;
+    return a || { id: String(orderId), name: String(orderId), testbestellung: false, positionen: [] };
+  }
+
+  /**
+   * "An Kunden raus" -> Versand in Shopify buchen (operations/lib/versand.mjs; Inhaber
+   * 2026-10-13, Werkbank w-079). Laeuft NACH dem lokalen Schritt: der Schritt gilt immer,
+   * die Ware ist ja raus. Scheitert die Buchung, steht das als Vermerk an der Position, im
+   * Protokoll, im Dienstprotokoll und in der Antwort - nie still. Positionen mit Vermerk
+   * "gebucht"/"bereits" werden nicht noch einmal versucht (doppelter Klick bucht nie doppelt).
+   * Gibt die Kurzfassung fuer die Oberflaeche zurueck.
+   */
+  async function versandBuchen({ dir, auftrag, lineItemIds, angaben = {}, mailStandard = true, benutzer, actor }) {
+    const file = auftragsstatusPfad(dir);
+    return nacheinander(auftrag.id, async () => {
+      const alle = leseAuftragsstatus(file);
+      const eintrag = id => alle[positionKey(auftrag.id, id)];
+      const ids = [...new Set(lineItemIds)].filter(id => !['gebucht', 'bereits'].includes(eintrag(id)?.shopifyVersand?.status));
+      if (!ids.length) return { status: 'bereits', meldung: 'In Shopify war das schon als versendet gebucht.', gebucht: 0, bereits: lineItemIds.length, nichtGebucht: 0 };
+      const am = now().toISOString();
+      const nummer = angaben.sendungsnummer || ids.map(id => eintrag(id)?.sendungsnummer).find(Boolean) || null;
+      const dienst = angaben.sendungsnummer ? angaben.versanddienst : (ids.map(id => eintrag(id)?.versanddienst).find(Boolean) || null);
+      const benachrichtigen = angaben.benachrichtigen === null || angaben.benachrichtigen === undefined ? mailStandard : angaben.benachrichtigen;
+      const vermerk = (id, v) => {
+        try { vermerkeShopifyVersand(file, { orderId: auftrag.id, lineItemId: id, vermerk: { am, ...v } }); } catch (e) { logFehler('versand', `${auftrag.name}: Vermerk nicht gespeichert (${String(e?.message || e).split('\n')[0]})`); }
+      };
+      const fehlschlag = (status, grund, meldung) => {
+        for (const id of ids) vermerk(id, { status, grund, meldung });
+        merke(benutzer, actor, status === 'unklar' ? 'Versand in Shopify unklar' : 'Versand in Shopify nicht gebucht', `${auftrag.name}: ${ids.length} Artikel · ${meldung}`);
+        audit({ actor, action: 'versand-shopify', orderId: auftrag.id, status, grund, anzahl: ids.length });
+        logFehler('versand', `${auftrag.name}: ${status} (${grund}) - ${meldung}`);
+        return { status, grund, meldung, gebucht: 0, bereits: 0, nichtGebucht: ids.length };
+      };
+      // Testbestellungen zaehlen nirgends - und eine Versandmail an eine Testadresse hilft niemandem.
+      if (auftrag.testbestellung) {
+        const meldung = 'Testbestellung – in Shopify nicht gebucht.';
+        for (const id of ids) vermerk(id, { status: 'uebersprungen', grund: 'testbestellung', meldung });
+        return { status: 'uebersprungen', grund: 'testbestellung', meldung, gebucht: 0, bereits: 0, nichtGebucht: ids.length };
+      }
+      let zugang;
+      try { zugang = await shopify(); } catch (e) {
+        return fehlschlag('fehler', 'nicht-erreichbar', `Versand nicht in Shopify gebucht: ${mitHinweis(String(e?.message || e).split('\n')[0])}`.slice(0, 400));
+      }
+      if (zugang?.art === 'sammeln') return fehlschlag('fehler', 'kein-zugang', 'Versand nicht in Shopify gebucht: kein Zugang zu Shopify eingerichtet. Bitte in Shopify „Artikel versenden“ wählen.');
+      let r;
+      try {
+        r = await bucheVersand(zugang.proxy, { orderId: auftrag.id, lineItemIds: ids, benachrichtigen, sendungsnummer: nummer, versanddienst: dienst, scope: zugang.scope ?? null });
+      } catch (e) {
+        if (e instanceof VersandFehler) {
+          for (const id of e.extra?.bereits ?? []) vermerk(id, { status: 'bereits' });
+          const rest = ids.filter(id => !(e.extra?.bereits ?? []).includes(id));
+          const einzeln = new Map((e.extra?.nichtGebucht ?? []).map(n => [n.lineItemId, n]));
+          for (const id of rest) {
+            const n = einzeln.get(id);
+            vermerk(id, { status: e.grund === 'unklar' ? 'unklar' : 'fehler', grund: n?.grund === 'gehalten' ? 'zurueckgehalten' : e.grund, meldung: n ? `Versand nicht in Shopify gebucht: ${n.meldung}.` : e.message });
+          }
+          const status = e.grund === 'unklar' ? 'unklar' : 'fehler';
+          merke(benutzer, actor, status === 'unklar' ? 'Versand in Shopify unklar' : 'Versand in Shopify nicht gebucht', `${auftrag.name}: ${rest.length} Artikel · ${e.message}`);
+          audit({ actor, action: 'versand-shopify', orderId: auftrag.id, status, grund: e.grund, anzahl: rest.length });
+          logFehler('versand', `${auftrag.name}: ${status} (${e.grund}) - ${e.message}`);
+          return { status, grund: e.grund, meldung: e.message, gebucht: 0, bereits: ids.length - rest.length, nichtGebucht: rest.length };
+        }
+        // Unerwarteter Fehler: ob Shopify schon gebucht hat, ist offen - also "unklar", nie "nicht gebucht".
+        return fehlschlag('unklar', 'unerwartet', `Ob der Versand in Shopify gebucht wurde, ist unklar (${String(e?.message || e).split('\n')[0].slice(0, 160)}). Bitte in Shopify nachsehen.`);
+      }
+      for (const id of r.gebucht) vermerk(id, { status: 'gebucht', fulfillmentId: r.fulfillmentIds[0] || null, kundeBenachrichtigt: r.kundeBenachrichtigt });
+      for (const id of r.bereits) vermerk(id, { status: 'bereits' });
+      for (const n of r.nichtGebucht) vermerk(n.lineItemId, { status: n.grund === 'unklar' ? 'unklar' : 'fehler', grund: n.grund === 'gehalten' ? 'zurueckgehalten' : n.grund, meldung: `Versand nicht in Shopify gebucht: ${n.meldung}.` });
+      const sendung = r.sendungsnummer ? ` · Sendung ${r.versanddienst ? `${r.versanddienst} ` : ''}${r.sendungsnummer}` : '';
+      const mail = r.kundeBenachrichtigt ? ' – der Kunde bekommt die Versandmail' : ' (ohne Mail an den Kunden)';
+      const pruef = r.gegenprobe === 'ok' ? '' : r.gegenprobe === 'abweichung' ? ' · Gegenprobe weicht ab, bitte in Shopify ansehen' : ' · Gegenprobe nicht lesbar';
+      let meldung;
+      if (r.status === 'bereits') meldung = 'In Shopify war das schon als versendet gebucht.';
+      else if (r.status === 'teilweise') meldung = `${r.gebucht.length} von ${ids.length} Artikeln in Shopify als versendet gebucht${mail}. Nicht gebucht: ${r.nichtGebucht[0].meldung}.`;
+      else meldung = `In Shopify als versendet gebucht${mail}.`;
+      if (r.gebucht.length) {
+        merke(benutzer, actor, 'Versand in Shopify gebucht', `${auftrag.name}: ${r.gebucht.length} Artikel${r.kundeBenachrichtigt ? ' · Versandmail an Kunden' : ' · ohne Mail'}${sendung}${r.aufgehoben ? ' · Zurückhaltung „Bestand fehlt“ aufgehoben' : ''}${r.antwortVerloren ? ' · Antwort verloren, per Lesen bestätigt' : ''}${pruef}`);
+      }
+      if (r.nichtGebucht.length) {
+        merke(benutzer, actor, 'Versand in Shopify nicht gebucht', `${auftrag.name}: ${r.nichtGebucht.length} Artikel · ${r.nichtGebucht[0].meldung}`);
+        logFehler('versand', `${auftrag.name}: ${r.nichtGebucht.length} Artikel nicht gebucht - ${r.nichtGebucht[0].meldung}`);
+      }
+      audit({ actor, action: 'versand-shopify', orderId: auftrag.id, status: r.status, gebucht: r.gebucht.length, bereits: r.bereits.length, nichtGebucht: r.nichtGebucht.length, gegenprobe: r.gegenprobe });
+      return {
+        status: r.status, meldung, gebucht: r.gebucht.length, bereits: r.bereits.length + (lineItemIds.length - ids.length), nichtGebucht: r.nichtGebucht.length,
+        kundeBenachrichtigt: r.kundeBenachrichtigt && r.gebucht.length > 0, sendungsnummer: r.sendungsnummer, gegenprobe: r.gegenprobe,
+      };
+    });
+  }
+
+  /** Nachholen: Positionen dieses Auftrags, deren Buchung scheiterte oder unklar blieb, erneut buchen. */
+  async function versandNachholen(payload, benutzer, actor) {
+    const { orderId } = payload || {};
+    if (!orderId) throw new ApiError(400, 'orderId ist Pflicht', { missing: ['orderId'] });
+    const dir = privatDirPath || privatDir();
+    const auftrag = auftragFuerVersand(dir, String(orderId));
+    const statusAlle = leseAuftragsstatus(auftragsstatusPfad(dir));
+    // Ohne Positionen im Modell (Export aelter): die Vermerke in der Ablage selbst durchsuchen.
+    const quelle = auftrag.positionen?.length ? auftrag
+      : { ...auftrag, positionen: Object.values(statusAlle).filter(e => e?.orderId === String(orderId)).map(e => ({ lineItemId: e.lineItemId })) };
+    const offen = versandNachzuholen(quelle, statusAlle);
+    if (!offen) throw new ApiError(409, 'Hier ist nichts nachzubuchen – der Versand ist in Shopify gebucht oder wurde nie versucht.');
+    const shopifyErgebnis = await versandBuchen({ dir, auftrag, lineItemIds: offen.lineItemIds, angaben: versandAngaben(payload?.versand), benutzer, actor });
+    return { ok: true, orderId: auftrag.id, shopify: shopifyErgebnis, ...versandFelder(quelle, leseAuftragsstatus(auftragsstatusPfad(dir))) };
+  }
+
+  /** Additives Feld je Auftrag: misslungene Versandbuchung, die sich nachholen laesst. */
+  function versandFelder(auftrag, statusAlle) {
+    const n = versandNachzuholen(auftrag, statusAlle);
+    return { versandNachholen: n ? { anzahl: n.anzahl, unklar: n.unklar, meldung: n.meldung } : null };
+  }
+
   /** Zeitleisten aller Auftraege (orderId -> { auftragsart, verlauf, naechsterSchritt, ... }). */
   function zeitleisten(dir, modell, statusAlle) {
     return zeitleistenFuerModell(modell, { statusAlle, verlaufAlle: leseVerlauf(auftragsverlaufPfad(dir)), jetzt: now() });
@@ -610,8 +748,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
    * - kunde_hat_muster/nachgefasst/kunde_hat_bestellt/kein_interesse/notiz/zurueck: Ereignis je Auftrag
    *   (auftragsverlauf.json, nur anhaengen). Ein Ergebnis schliesst zusaetzlich die Positionen ab.
    */
-  function auftragsSchrittSetzen(payload, benutzer, actor) {
-    const { orderId, schritt, notiz, bezug, lieferantBestellnummer } = payload || {};
+  async function auftragsSchrittSetzen(payload, benutzer, actor) {
+    const { orderId, schritt, notiz, bezug, lieferantBestellnummer, lineItemIds } = payload || {};
     if (!orderId || !schritt) throw new ApiError(400, 'orderId und schritt sind Pflicht', { missing: ['orderId', 'schritt'] });
     if (!SCHRITT_WERTE.includes(schritt)) throw new ApiError(400, `Unbekannter Schritt „${schritt}"`);
     const dir = privatDirPath || privatDir();
@@ -624,7 +762,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     if (!['notiz', 'zurueck'].includes(schritt) && !setzbareSchritte(art).includes(schritt)) {
       throw new ApiError(400, `Der Schritt „${schritt}" gehört nicht zu ${art === 'muster' ? 'einer Musterbestellung' : 'einer Warenbestellung'}`);
     }
-    const positionen = auftrag.positionen.filter(p => p.lineItemId);
+    const allePositionen = auftrag.positionen.filter(p => p.lineItemId);
+    // Teillieferung (Versand-Dialog): nur die angekreuzten Positionen. Ohne Angabe wie bisher alle.
+    const auswahl = Array.isArray(lineItemIds) ? new Set(lineItemIds.map(String)) : null;
+    if (auswahl && schritt !== 'raus') throw new ApiError(400, 'Eine Auswahl einzelner Artikel gibt es nur beim Schritt „raus“');
+    const positionen = auswahl ? allePositionen.filter(p => auswahl.has(p.lineItemId)) : allePositionen;
+    if (auswahl && !positionen.length) throw new ApiError(400, 'Bitte mindestens einen Artikel dieser Bestellung auswählen');
+    const angaben = versandAngaben(payload?.versand);
     const setzePositionen = (status, text) => {
       if (!positionen.length) throw new ApiError(400, 'Diese Bestellung hat keine nachverfolgbaren Positionen');
       const alle = leseAuftragsstatus(statusDatei);
@@ -634,13 +778,30 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // bewusste Korrektur zurueck - dann gilt er fuer alle.
       const dahinter = positionen.filter(p => stufe(p) < ziel);
       const betroffen = dahinter.length ? dahinter : positionen.filter(p => stufe(p) !== ziel);
-      for (const p of betroffen) setzeStatus(statusDatei, { orderId, lineItemId: p.lineItemId, status, actor, lieferantBestellnummer, notiz: text, jetzt: now() });
-      return betroffen.length;
+      for (const p of betroffen) {
+        setzeStatus(statusDatei, { orderId, lineItemId: p.lineItemId, status, actor, lieferantBestellnummer, notiz: text, jetzt: now(),
+          ...(status === 'raus' ? { sendungsnummer: angaben.sendungsnummer, versanddienst: angaben.versanddienst } : {}) });
+      }
+      return betroffen.map(p => p.lineItemId);
+    };
+    // Nur eine neue Sendung wird gebucht: Positionen, die vor dem Klick noch nicht "raus" waren.
+    // Die Korrektur von "erledigt" zurueck auf "raus" bucht nichts nachtraeglich.
+    const vorRaus = () => {
+      const alle = leseAuftragsstatus(statusDatei);
+      return new Set(positionen.filter(p => STATUS_ORDER.indexOf(alle[positionKey(orderId, p.lineItemId)]?.status) < STATUS_ORDER.indexOf('raus')).map(p => p.lineItemId));
     };
     let anzahl = 0;
+    // Positionen, die in diesem Schritt raus gehen - die bucht Shopify danach als versendet.
+    let rausIds = [];
+    // Versandmail an den Kunden: ja, ausser bei Mustern, die jemand persoenlich vorbeibringt -
+    // eine Mail "ist unterwegs" fuer etwas, das der Kunde in der Hand hat, verwirrt nur.
+    let mailStandard = true;
     try {
       if (STATUS_ORDER.includes(schritt)) {
-        anzahl = setzePositionen(schritt, notiz);
+        const neu = schritt === 'raus' ? vorRaus() : null;
+        const ids = setzePositionen(schritt, notiz);
+        anzahl = ids.length;
+        if (neu) rausIds = ids.filter(id => neu.has(id));
       } else {
         haengeEreignisAn(auftragsverlaufPfad(dir), { orderId, schritt, actor, notiz, bezug, jetzt: now() });
         // Muster aus eigenem Bestand: "Erledigt – Kunde hat Muster" ist zugleich die Uebergabe
@@ -648,11 +809,16 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         if (schritt === 'kunde_hat_muster' && vorher.eigenerBestand && positionen.length) {
           const alle = leseAuftragsstatus(statusDatei);
           if (positionen.some(p => STATUS_ORDER.indexOf(alle[positionKey(orderId, p.lineItemId)]?.status) < STATUS_ORDER.indexOf('raus'))) {
-            anzahl = setzePositionen('raus', vorher.eigenerBestand === 'vorbei' ? 'Persönlich übergeben' : 'Aus eigenem Bestand verschickt');
+            const neu = vorRaus();
+            const ids = setzePositionen('raus', vorher.eigenerBestand === 'vorbei' ? 'Persönlich übergeben' : 'Aus eigenem Bestand verschickt');
+            anzahl = ids.length;
+            rausIds = ids.filter(id => neu.has(id));
+            // Persoenlich vorbeigebracht: keine Versandmail. Aus dem Bestand verschickt: doch.
+            mailStandard = vorher.eigenerBestand !== 'vorbei';
           }
         }
         if (['kunde_hat_bestellt', 'kein_interesse'].includes(schritt) && positionen.length) {
-          anzahl = setzePositionen('erledigt', `Ergebnis: ${SCHRITT_LABEL.muster[schritt]}${notiz ? ` – ${notiz}` : ''}`);
+          anzahl = setzePositionen('erledigt', `Ergebnis: ${SCHRITT_LABEL.muster[schritt]}${notiz ? ` – ${notiz}` : ''}`).length;
         }
       }
     } catch (e) {
@@ -660,11 +826,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       throw e;
     }
     // Muster aus dem Lager verschickt bzw. uebergeben: abzaehlen.
-    if (['raus', 'kunde_hat_muster'].includes(schritt)) lagerAbgangFestschreiben(dir, auftrag, null, actor);
+    if (['raus', 'kunde_hat_muster'].includes(schritt)) lagerAbgangFestschreiben(dir, auftrag, auswahl ? [...auswahl] : null, actor);
     audit({ actor, action: 'auftragsschritt', orderId, schritt, positionen: anzahl });
     merke(benutzer, actor, 'Auftragsschritt', `${auftrag.name}: ${schritt}`);
-    const nachher = zeitleisten(dir, modell, leseAuftragsstatus(statusDatei)).get(orderId);
-    return { ok: true, orderId, schritt, positionen: anzahl, ...zeitleistenFelder(nachher) };
+    // Erst jetzt nach Shopify: der lokale Schritt steht, egal wie die Buchung ausgeht.
+    const shopifyErgebnis = rausIds.length ? await versandBuchen({ dir, auftrag, lineItemIds: rausIds, angaben, mailStandard, benutzer, actor }) : null;
+    const statusNachher = leseAuftragsstatus(statusDatei);
+    const nachher = zeitleisten(dir, modell, statusNachher).get(orderId);
+    return { ok: true, orderId, schritt, positionen: anzahl, ...(shopifyErgebnis ? { shopify: shopifyErgebnis } : {}), ...zeitleistenFelder(nachher), ...versandFelder(auftrag, statusNachher) };
   }
 
   /**
@@ -1019,7 +1188,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (gefunden) {
         // Additiv je Bestellung: auftragsart, verlauf, verlaufNotizen, naechsterSchritt (operations/lib/auftragsverlauf.mjs).
         const zl = zeitleisten(dir, modell, statusAlle);
-        const kunde = { ...gefunden, auftraege: gefunden.auftraege.map(a => ({ ...a, ...zeitleistenFelder(zl.get(a.id)) })), naechsterSchritt: kundenSchritt(gefunden.auftraege, zl) };
+        const kunde = { ...gefunden, auftraege: gefunden.auftraege.map(a => ({ ...a, ...zeitleistenFelder(zl.get(a.id)), ...versandFelder(a, statusAlle) })), naechsterSchritt: kundenSchritt(gefunden.auftraege, zl) };
         return { verfuegbar: true, kunde };
       }
       // Kunde aus dem Shopify-Stamm ohne Bestellung in dieser Datei: die
@@ -1057,7 +1226,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const statusAlle = leseAuftragsstatus(auftragsstatusPfad(dir));
       const rueckrufeAlle = leseRueckrufe(rueckrufePfad(dir));
       const zl = zeitleisten(dir, modell, statusAlle);
-      return { verfuegbar: true, zeilen: bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, ...zeitleistenFelder(zl.get(z.orderId)) })) };
+      return { verfuegbar: true, zeilen: bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) })) };
     },
 
     /**
@@ -1307,6 +1476,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Zeitleiste: ein Schritt fuer den ganzen Auftrag (alle Positionen bzw. ein Ereignis je Auftrag).
       // Additiv - ohne `aktion` verhaelt sich der Endpunkt exakt wie bisher.
       if (aktion === 'schritt') return auftragsSchrittSetzen(payload, benutzer, actor);
+      if (aktion === 'versandNachholen') return versandNachholen(payload, benutzer, actor);
       if (aktion === 'zurueckAufOffen') return zurueckAufOffen(payload, benutzer, actor);
       if (aktion === 'musterHerkunft') return musterHerkunftSetzen(payload, benutzer, actor);
       if (!orderId || !lineItemId) throw new ApiError(400, 'orderId und lineItemId sind Pflicht', { missing: ['orderId', 'lineItemId'] });
@@ -1332,9 +1502,12 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const file = auftragsstatusPfad(dir);
       // Stand vor dem Wechsel: danach hat die Position einen Status und gilt nicht mehr als offen.
       const vorLager = status === 'raus' ? auftragFuerLager(dir, orderId) : null;
+      const angaben = versandAngaben(payload?.versand);
+      const vorher = leseAuftragsstatus(file)[positionKey(orderId, lineItemId)];
       let eintrag;
       try {
-        eintrag = setzeStatus(file, { orderId, lineItemId, status, actor, lieferantBestellnummer, notiz, jetzt: now() });
+        eintrag = setzeStatus(file, { orderId, lineItemId, status, actor, lieferantBestellnummer, notiz, jetzt: now(),
+          ...(status === 'raus' ? { sendungsnummer: angaben.sendungsnummer, versanddienst: angaben.versanddienst } : {}) });
       } catch (e) {
         if (e instanceof AuftragsstatusFehler) throw new ApiError(400, e.message);
         throw e;
@@ -1342,6 +1515,12 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (vorLager) lagerAbgangFestschreiben(dir, vorLager, [lineItemId], actor);
       audit({ actor, action: 'auftragsstatus', orderId, lineItemId, status });
       merke(benutzer, actor, 'Auftragsstatus', `${orderId}/${lineItemId}: ${status}`);
+      // "An Kunden raus" bucht in Shopify - nur beim Wechsel von einem Schritt davor (neue Sendung),
+      // nicht bei der Korrektur von "erledigt" zurueck.
+      if (status === 'raus' && STATUS_ORDER.indexOf(vorher?.status) < STATUS_ORDER.indexOf('raus')) {
+        const shopifyErgebnis = await versandBuchen({ dir, auftrag: auftragFuerVersand(dir, String(orderId)), lineItemIds: [String(lineItemId)], angaben, benutzer, actor });
+        return { ok: true, eintrag: leseAuftragsstatus(file)[positionKey(orderId, lineItemId)] || eintrag, shopify: shopifyErgebnis };
+      }
       return { ok: true, eintrag };
     },
 

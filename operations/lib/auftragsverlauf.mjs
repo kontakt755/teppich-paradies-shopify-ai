@@ -382,7 +382,7 @@ export function naechsterSchritt(stand, { auftrag = null, versand = null, nachve
             ? schritt('wir', `Muster vorbeibringen bei ${kunde.name}`, `Aus eigenem Bestand/Katalog${kunde.ort ? ` · ${kunde.ort}` : ''} – nicht beim Lieferanten bestellen.`, 'kunde_hat_muster', 'Erledigt – Kunde hat Muster', 'faellig', tage, tage)
             : schritt('wir', `Muster verschicken an ${kunde.name}`, `Aus eigenem Bestand/Katalog${kunde.ort ? ` · ${kunde.ort}` : ''} – nicht beim Lieferanten bestellen.`, 'kunde_hat_muster', 'Erledigt – Kunde hat Muster', 'faellig', tage, tage);
         }
-        return schritt('wir', `Muster labeln und an den Kunden schicken${teil}`, 'Neu labeln, eintüten, verschicken.', 'raus', 'Muster sind verschickt', 'faellig', tage, tage);
+        return schritt('wir', `Muster labeln und an den Kunden schicken${teil}`, 'Neu labeln, eintüten, verschicken.', 'raus', 'Muster sind verschickt…', 'faellig', tage, tage);
       case 'kunde_hat_muster':
         if (tage >= MUSTER_ANGEKOMMEN_ANNAHME_TAGE) {
           return { ...schritt('wir', `Muster vor ${tageText(tage)} verschickt – sind sie angekommen?`, 'Vermutlich ja. Bestätigen, dann läuft die Frist zum Nachfassen.', 'kunde_hat_muster', 'Ja, Kunde hat Muster', 'faellig', tage - MUSTER_ANGEKOMMEN_ANNAHME_TAGE, tage), annahme: true };
@@ -409,8 +409,8 @@ export function naechsterSchritt(stand, { auftrag = null, versand = null, nachve
     case 'geliefert':
       return beimLieferanten('Lieferant liefert die Ware an uns', 'geliefert', 'Ware ist angekommen');
     case 'raus':
-      if (stand.direktversand) return beimLieferanten('Lieferant liefert direkt an den Kunden', 'raus', 'Ist an den Kunden raus');
-      return schritt('wir', `Ware an den Kunden übergeben oder verschicken${teil}`, null, 'raus', 'An Kunden raus', 'faellig', tage, tage);
+      if (stand.direktversand) return beimLieferanten('Lieferant liefert direkt an den Kunden', 'raus', 'Ist an den Kunden raus…');
+      return schritt('wir', `Ware an den Kunden übergeben oder verschicken${teil}`, null, 'raus', 'An Kunden raus…', 'faellig', tage, tage);
     case 'erledigt':
       if (versand?.zugestellt || tage >= WARE_ABSCHLIESSEN_NACH_TAGEN) {
         return schritt('wir', 'Ware ist beim Kunden – Auftrag abschließen', versand?.zugestellt ? 'Laut Sendungsverfolgung zugestellt.' : `Seit ${tageText(tage)} an den Kunden raus.`, 'erledigt', 'Abschließen', 'faellig', versand?.zugestellt ? 0 : tage - WARE_ABSCHLIESSEN_NACH_TAGEN, tage);

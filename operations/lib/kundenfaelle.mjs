@@ -57,6 +57,9 @@ const UNVERSANDT = ['UNFULFILLED', 'PARTIALLY_FULFILLED', null];
  * Laden - nur damit niemand ueber den Widerspruch stolpert.
  */
 export function shopifyVersandHinweis(zeile) {
+  // Die Bestellzeile (lib/bestellliste.mjs) kennt die Versandbuchungen des Control Centers
+  // und rechnet den Hinweis schon - dann gilt ihrer.
+  if (zeile && Object.hasOwn(zeile, 'versandHinweis')) return zeile.versandHinweis;
   const raus = (zeile?.fortschritt?.minStufe ?? 0) >= STUFE_RAUS;
   return raus && UNVERSANDT.includes(zeile?.fulfillmentstatus ?? null) ? 'In Shopify noch nicht als versendet gebucht' : null;
 }

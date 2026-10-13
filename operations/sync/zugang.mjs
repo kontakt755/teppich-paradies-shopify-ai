@@ -71,14 +71,17 @@ export const LESE_BEREICHE = Object.freeze({
 export const LESE_BEREICHE_ZEILE = Object.keys(LESE_BEREICHE).join(',');
 
 /**
- * Schreibbereiche, die das Control Center selbst braucht - bisher keine,
- * seit der Ansicht "Sonderposten" (Knopf "Im Laden verkauft") zwei. Ohne sie
- * laufen alle Lese-Quellen weiter; nur die eine Aktion meldet, was fehlt.
+ * Schreibbereiche, die das Control Center selbst braucht: seit der Ansicht
+ * "Sonderposten" (Knopf "Im Laden verkauft") zwei, seit 2026-10-13 zwei fuer den
+ * Versand ("An Kunden raus" bucht in Shopify). Ohne sie laufen alle Lese-Quellen
+ * weiter; nur die eine Aktion meldet, was fehlt.
  * Freischalten macht ausschliesslich der Inhaber im Dev Dashboard.
  */
 export const SCHREIB_BEREICHE = Object.freeze({
   write_inventory: 'Sonderposten: "Im Laden verkauft" setzt den Bestand auf 0',
   write_products: 'Sonderposten: Verkaufsangaben (verkauft_am, verkauft_von, verkauft_kanal)',
+  write_fulfillments: 'Versand: "An Kunden raus" bucht die Sendung in Shopify (Versandmail an den Kunden)',
+  write_merchant_managed_fulfillment_orders: 'Versand: Fulfillment Orders des eigenen Standorts buchen und "Bestand fehlt"-Zurueckhaltung aufheben',
 });
 
 /** Welche Schreibbereiche fehlen in der von Shopify gemeldeten Liste? */
