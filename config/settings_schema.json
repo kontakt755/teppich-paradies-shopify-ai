@@ -2351,8 +2351,16 @@
       {
         "type": "text",
         "id": "tp_lieferdatum_annahmeschluss",
-        "label": "Annahmeschluss für das Lieferdatum (z. B. 14:00)",
-        "info": "Bestellungen ab dieser Uhrzeit (Berlin) zählen ab dem Folgetag. Leer = ohne Annahmeschluss. Nur eine belegte Uhrzeit eintragen."
+        "label": "Annahmeschluss für das Lieferdatum",
+        "default": "12:00",
+        "info": "Uhrzeit in Berlin (Inhaber 13.10.: 12:00). Bestellungen ab dieser Uhrzeit, am Wochenende oder an Feiertagen zählen ab dem nächsten Werktag. Leer = ohne Annahmeschluss."
+      },
+      {
+        "type": "text",
+        "id": "tp_lieferzeit_sonderposten",
+        "label": "Lieferzeit Sonderposten aus eigenem Bestand",
+        "default": "5–7 Werktage",
+        "info": "Gilt für Produkte mit Tag sonderposten ohne eigenes Produktfeld service.lieferzeit (Inhaber 13.10.). Leer = keine Lieferzeit."
       }
     ]
   },

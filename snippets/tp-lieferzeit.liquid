@@ -8,12 +8,18 @@
   Brandenburg), weil Shopify Seiten zwischenspeichert. Ohne JavaScript bleibt
   die Werktage-Angabe stehen.
 
-  Quelle der Lieferzeit, in dieser Reihenfolge:
+  Quelle der Lieferzeit, in dieser Reihenfolge (Inhaber 13.10., Werkbank w-071):
   1. Produkt-Metafeld service.lieferzeit (produktspezifisch belegt, z. B.
-     Teppich nach Mass "ca. 5–8 Werktage inkl. Ketteln")
-  2. der uebergebene Text (Block-Einstellung der Produktvorlage), nicht fuer
-     Produkte mit Tag "sonderposten" (eigener Bestand, Vorlagenwert gilt dort
-     nicht)
+     Teppich nach Mass "ca. 5–8 Werktage inkl. Ketteln"; Ware mit Direktversand
+     vom Hersteller traegt dort "5–7 Werktage" - das Theme liest bewusst keine
+     Einkaufsfelder, der Direktversand steht deshalb als Wert am Produkt)
+  2. Produkte mit Tag "sonderposten" (eigener Bestand): Theme-Einstellung
+     tp_lieferzeit_sonderposten (Standard "5–7 Werktage"), nie der Vorlagenwert
+  3. der uebergebene Text (Block-Einstellung der Produktvorlage, Grosshandel
+     "2–5 Werktage")
+  Im Kontext 'mass' gilt allein der uebergebene Text: der Mass-Konfigurator
+  reicht seine Variable tp_ek_lieferzeit durch, damit Preishinweis und
+  Datumszeile dieselbe Quelle haben.
   Leer = keine Zeile (fail closed).
 
   Kein Datum, nur die Werktage-Angabe:
@@ -36,13 +42,17 @@
 
 {%- liquid
   assign tp_lz_kontext = kontext | default: 'produkt'
-  assign tp_lz_text = product.metafields.service.lieferzeit.value | strip
-  # Sonderposten kommen aus eigenem Bestand, nicht vom Grosshandel: der
-  # Vorlagenwert gilt fuer sie nicht, nur ein eigenes service.lieferzeit.
-  if tp_lz_text == blank and product.tags contains 'sonderposten'
-    assign tp_lz_text = ''
-  elsif tp_lz_text == blank
+  if tp_lz_kontext == 'mass'
     assign tp_lz_text = text | strip
+  else
+    assign tp_lz_text = product.metafields.service.lieferzeit.value | strip
+    # Sonderposten kommen aus eigenem Bestand, nicht vom Grosshandel: der
+    # Vorlagenwert gilt fuer sie nicht, sondern die eigene Theme-Einstellung.
+    if tp_lz_text == blank and product.tags contains 'sonderposten'
+      assign tp_lz_text = settings.tp_lieferzeit_sonderposten | strip
+    elsif tp_lz_text == blank
+      assign tp_lz_text = text | strip
+    endif
   endif
   assign tp_lz_datum = true
   if tp_lz_text contains 'Werktag'

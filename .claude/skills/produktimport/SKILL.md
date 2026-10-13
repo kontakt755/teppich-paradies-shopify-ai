@@ -44,6 +44,11 @@ URLs als `lieferant-a.example`. Rohdaten nur unter `~/teppich-paradies-analyse/l
    Mehrere Produkte: aliasierte `productSet` in einem Request. Syntax nie raten,
    `graphql_schema` fragen. Bestehende Produkte nur mit den schmalen Mutationen
    (Tabelle in Abschnitt 5).
+   **Lieferzeit:** Ware mit Direktversand vom Hersteller (alle Varianten
+   `einkauf.route = SUPPLIER_DIRECT`) bekommt am Produkt `service.lieferzeit` =
+   `5–7 Werktage` (`single_line_text_field`, Inhaber 13.10.). Ohne das Feld zeigt die
+   Vorlage die Grosshandelszeit 2–5 Werktage samt Datum - das Theme liest keine
+   Einkaufsfelder. Teppich nach Mass traegt seinen eigenen Wert.
 7. **Medien:** `productCreateMedia` mit der Lieferanten-URL, 15-20 je Aufruf; danach
    Variantenbild per `productVariantsBulkUpdate` mit `mediaId`.
 8. **Veroeffentlichen:** `status: ACTIVE` reicht nicht - `publishablePublish` auf die

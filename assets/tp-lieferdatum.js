@@ -12,12 +12,17 @@
   - "Heute" ist der Kalendertag in Europe/Berlin, unabhaengig von der Zeitzone
     des Kunden.
   - Werktage sind Montag bis Freitag ohne bundeseinheitliche Feiertage und ohne
-    die Feiertage in Brandenburg (Sitz des Geschaefts).
-  - Der Bestelltag zaehlt nie mit: "2 Werktage" ist der zweite Werktag nach
-    dem Bestelltag.
-  - Annahmeschluss (Theme-Einstellung, optional): Bestellungen ab dieser
-    Uhrzeit (Berlin) zaehlen, als waeren sie am Folgetag eingegangen. Leer =
-    kein Annahmeschluss.
+    die Feiertage in Brandenburg (Sitz des Geschaefts). 24.12. und 31.12. sind
+    keine Feiertage, zaehlen aber als Puffertag nicht mit (Inhaber 13.10.:
+    an Weihnachten und Silvester je ein Werktag Puffer).
+  - Eingangstag: heute, wenn heute ein Werktag ist und der Annahmeschluss noch
+    nicht erreicht ist; sonst der naechste Werktag (Inhaber 13.10.: "Bestellung
+    nach 12 Uhr zaehlt ab dem naechsten Werktag"). Eine Bestellung am Freitag
+    nach Annahmeschluss oder am Wochenende gilt also als am Montag eingegangen.
+  - Der Eingangstag zaehlt nie mit: "2 Werktage" ist der zweite Werktag nach
+    dem Eingangstag.
+  - Annahmeschluss: Theme-Einstellung (Standard 12:00, Uhrzeit in Berlin).
+    Leer = kein Annahmeschluss.
   - Nur Angaben in Werktagen werden umgerechnet ("2–5 Werktage",
     "ca. 5–8 Werktage inkl. Ketteln"). Kalendertage ("ca. 14 Tage") und
     freie Texte bleiben unveraendert stehen.
@@ -91,9 +96,22 @@
     return Object.prototype.hasOwnProperty.call(feiertage(datum.getUTCFullYear()), schluessel(datum));
   }
 
+  // Heiligabend und Silvester: keine Feiertage, aber je ein Werktag Puffer
+  // (Inhaber 13.10.). Schluessel 'JJJJ-MM-TT' -> Name.
+  function puffertage(jahr) {
+    var map = {};
+    map[schluessel(utc(jahr, 12, 24))] = 'Heiligabend';
+    map[schluessel(utc(jahr, 12, 31))] = 'Silvester';
+    return map;
+  }
+
+  function istPuffertag(datum) {
+    return Object.prototype.hasOwnProperty.call(puffertage(datum.getUTCFullYear()), schluessel(datum));
+  }
+
   function istWerktag(datum) {
     var wt = datum.getUTCDay();
-    return wt !== 0 && wt !== 6 && !istFeiertag(datum);
+    return wt !== 0 && wt !== 6 && !istFeiertag(datum) && !istPuffertag(datum);
   }
 
   // n-ter Werktag nach dem Tag "datum" (datum selbst zaehlt nicht).
@@ -161,15 +179,22 @@
     return { min: min, max: max };
   }
 
+  // Eingangstag der Bestellung: heute, wenn heute ein Werktag ist und der
+  // Annahmeschluss noch nicht erreicht ist, sonst der naechste Werktag.
+  function eingangstag(jetzt, annahmeschluss) {
+    var b = berlin(jetzt);
+    var schluss = leseAnnahmeschluss(annahmeschluss);
+    var nachSchluss = schluss !== null && b.minuten >= schluss;
+    if (istWerktag(b.datum) && !nachSchluss) return b.datum;
+    return plusWerktage(b.datum, 1);
+  }
+
   // {von, bis} als UTC-Kalendertage oder null.
   function lieferspanne(optionen) {
     var w = leseWerktage(optionen.text);
     if (!w) return null;
-    var jetzt = berlin(optionen.jetzt || new Date());
-    var basis = jetzt.datum;
-    var schluss = leseAnnahmeschluss(optionen.annahmeschluss);
-    if (schluss !== null && jetzt.minuten >= schluss) basis = plusTage(basis, 1);
-    return { von: plusWerktage(basis, w.min), bis: plusWerktage(basis, w.max), werktage: w };
+    var basis = eingangstag(optionen.jetzt || new Date(), optionen.annahmeschluss);
+    return { von: plusWerktage(basis, w.min), bis: plusWerktage(basis, w.max), werktage: w, eingang: basis };
   }
 
   function zweistellig(n) {
@@ -235,7 +260,9 @@
   var api = {
     ostersonntag: ostersonntag,
     feiertage: feiertage,
+    puffertage: puffertage,
     istWerktag: istWerktag,
+    eingangstag: eingangstag,
     plusWerktage: plusWerktage,
     berlin: berlin,
     leseAnnahmeschluss: leseAnnahmeschluss,

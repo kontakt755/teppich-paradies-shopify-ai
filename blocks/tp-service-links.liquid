@@ -12,9 +12,8 @@
   assign tp_sl_neuer_holzboden = false
   if tp_sl_material == 'laminat' or tp_sl_material == 'parkett' or tp_sl_material == 'kork'
     assign tp_sl_neuer_holzboden = true
-    # Fuer diese Neuimporte ist die Standard-Lieferzeit des Planken-Templates
-    # nicht bestaetigt. Lieber keine konkrete Zeit als eine falsche Zusage.
-    assign tp_sl_delivery_time = ''
+    # Lieferzeit: seit Inhaberentscheidung 13.10. (Werkbank w-071) gilt auch
+    # hier die Grosshandels-Lieferzeit der Planken-Vorlage (2–5 Werktage).
   endif
 -%}
 
