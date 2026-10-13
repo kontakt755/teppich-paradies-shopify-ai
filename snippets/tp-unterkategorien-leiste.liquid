@@ -27,13 +27,27 @@
   assign tp_uk_bildkarten = false
   assign tp_uk_parent = null
   if collection_resource != blank
+    comment
+      Zuerst einen Hauptpunkt suchen, der selbst auf die Kollektion zeigt.
+      Erst danach die Unterpunkte durchsuchen. Teppichfliesen ist Hauptpunkt
+      und zugleich Unterpunkt von Teppichboden (Auch als Teppichfliesen);
+      ohne diesen ersten Durchlauf gewann Teppichboden, und die Fliesenseite
+      zeigte Hochflor, Wolle, Sisal usw. samt Link auf sich selbst.
+    endcomment
     for tp_uk_link in tp_uk_menu.links
-      if tp_uk_link.links.size == 0
-        continue
-      endif
-      if tp_uk_link.url == collection_resource.url
+      if tp_uk_link.links.size > 0 and tp_uk_link.url == collection_resource.url
         assign tp_uk_parent = tp_uk_link
         break
+      endif
+    endfor
+  endif
+  if collection_resource != blank
+    for tp_uk_link in tp_uk_menu.links
+      if tp_uk_parent
+        break
+      endif
+      if tp_uk_link.links.size == 0
+        continue
       endif
       for tp_uk_child in tp_uk_link.links
         if tp_uk_child.url == collection_resource.url
@@ -48,6 +62,15 @@
   endif
   if tp_uk_parent.object.handle == 'teppichboden'
     assign tp_uk_bildkarten = true
+  endif
+
+  comment
+    Rueckweg von den Fliesen zur Rollenware. Steht nicht im Menue, weil der
+    Hauptpunkt Teppichboden direkt daneben liegt; in der Leiste fehlt er sonst.
+  endcomment
+  assign tp_uk_rueckweg = false
+  if tp_uk_parent.object.handle == 'teppichfliesen'
+    assign tp_uk_rueckweg = true
   endif
 -%}
 
@@ -119,6 +142,13 @@
           </a>
         </li>
       {%- endfor -%}
+      {%- if tp_uk_rueckweg -%}
+        <li>
+          <a class="tp-uk__pill" href="{{ routes.collections_url }}/teppichboden">
+            <span>Teppichboden von der Rolle →</span>
+          </a>
+        </li>
+      {%- endif -%}
     </ul>
     {%- comment -%}
       Pfeil als Wisch-Hinweis. Steht ausserhalb der scrollenden Liste, sonst

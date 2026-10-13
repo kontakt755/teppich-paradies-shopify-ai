@@ -58,7 +58,7 @@
               "type": "text",
               "name": "t:names.header",
               "settings": {
-                "text": "<p><strong>Vinylboden: robust, pflegeleicht und vielseitig einsetzbar</strong></p>",
+                "text": "<p><strong>Welche Verlegeart passt zu Ihrem Raum?</strong></p>",
                 "width": "fit-content",
                 "max_width": "normal",
                 "alignment": "left",
@@ -325,7 +325,7 @@
       "name": "t:names.carousel",
       "settings": {
         "columns": 3,
-        "mobile_columns": "1",
+        "mobile_columns": "2",
         "section_width": "page-width",
         "columns_gap": 12,
         "color_scheme": "",
@@ -333,8 +333,8 @@
         "mobile_edge_arrows": true,
         "icons_style": "arrow",
         "icons_shape": "circle",
-        "padding-block-start": 48,
-        "padding-block-end": 48
+        "padding-block-start": 16,
+        "padding-block-end": 24
       }
     },
     "section": {
@@ -597,7 +597,7 @@
   },
   "order": [
     "section",
-    "main",
-    "carousel_N8CAmj"
+    "carousel_N8CAmj",
+    "main"
   ]
 }
