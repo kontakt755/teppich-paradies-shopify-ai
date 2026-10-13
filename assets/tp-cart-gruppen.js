@@ -40,7 +40,8 @@
   var GRUND = {
     GRUPPE_OHNE_HAUPT: 'gruppe-ohne-haupt',
     OHNE_MASS: 'ohne-mass',
-    SERVICE_OHNE_GRUPPE: 'service-ohne-gruppe'
+    SERVICE_OHNE_GRUPPE: 'service-ohne-gruppe',
+    ZUSCHNITT_FEHLT: 'zuschnitt-fehlt'
   };
 
   var TEXT = {};
@@ -49,6 +50,32 @@
   TEXT[GRUND.OHNE_MASS] =
     'Dieser Artikel braucht eine Maßangabe – bitte über die Produktseite konfigurieren';
   TEXT[GRUND.SERVICE_OHNE_GRUPPE] = TEXT[GRUND.OHNE_MASS];
+  TEXT[GRUND.ZUSCHNITT_FEHLT] =
+    'Der Zuschnitt von der Rolle fehlt – bitte Teppich entfernen und neu konfigurieren';
+
+  // Gemeinsamer Rollenbestand (Einfass-Konfigurator mit Zuschnitt-Bundle):
+  // Die Hauptzeile nennt in _Rollenzuschnitt, wie viel Rolle (cm) ihr Zuschnitt
+  // braucht; die 0-EUR-Bundle-Zeile derselben _Gruppe traegt "Rollenzuschnitt"
+  // ("200 cm"). Fehlt sie oder ist sie kleiner, bucht der Checkout zu wenig
+  // Bestand ab - die Hauptzeile wird dann wie eine Waise behandelt.
+  function zentimeter(text) {
+    var n = parseInt(String(text == null ? '' : text).replace(/[^0-9]/g, ''), 10);
+    return n > 0 ? n : 0;
+  }
+
+  function zuschnittFehlt(zeile, zeilen) {
+    var bedarf = zentimeter(prop(zeile, '_Rollenzuschnitt'));
+    if (!bedarf) return false;
+    var g = gruppe(zeile);
+    var gedeckt = 0;
+    (zeilen || []).forEach(function (z) {
+      if (z === zeile || !g || gruppe(z) !== g) return;
+      var cm = zentimeter(prop(z, 'Rollenzuschnitt'));
+      if (cm) gedeckt += cm * (Number(z.quantity) || 0);
+    });
+    // Ein Teppich je Gruppe: die Menge der Hauptzeile ist Flaeche, keine Stueckzahl.
+    return gedeckt < bedarf;
+  }
 
   function props(zeile) {
     return (zeile && zeile.properties) || {};
@@ -137,6 +164,8 @@
       var laenge = prop(zeile, 'Länge');
       if (laenge && hatProp(zeile, 'Höhe')) return laenge + ' Fußleiste';
       if (laenge) return laenge;
+      var rolle = prop(zeile, 'Rollenzuschnitt');
+      if (rolle) return rolle + ' von der Rolle';
       var bahnen = prop(zeile, 'Bahnen');
       if (bahnen) return String(zeile.quantity) + ' lfm (' + bahnen + (bahnen === '1' ? ' Bahn' : ' Bahnen') + ')';
     }
@@ -189,6 +218,8 @@
         grund = GRUND.SERVICE_OHNE_GRUPPE;
       } else if ((istFlaechenware(z) || istWunschmass(z)) && !hatMass(z)) {
         grund = GRUND.OHNE_MASS;
+      } else if (zuschnittFehlt(z, zeilen)) {
+        grund = GRUND.ZUSCHNITT_FEHLT;
       }
       if (grund) out.push({ index: i, key: z.key, grund: grund, text: TEXT[grund] });
     });
@@ -234,6 +265,7 @@
     hauptzeile: hauptzeile,
     gruppenHinweis: gruppenHinweis,
     waisen: waisen,
+    zuschnittFehlt: zuschnittFehlt,
     checkoutGesperrt: checkoutGesperrt,
     zuEntfernen: zuEntfernen,
     updateBody: updateBody
