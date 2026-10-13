@@ -1,6 +1,7 @@
 /**
  * Rueckruf-/Beratungs-Arbeitsliste: alle Auftraege, bei denen der Kunde beim
- * Bestellen "Beratung" oder "Maßprüfung" mit Ja beantwortet hat. Baut auf dem
+ * Bestellen "Beratung" oder "Maßprüfung" mit Ja beantwortet oder bei "Verlegung"
+ * "Angefragt" gewaehlt hat (Interesse an Aufmass/Verlegung). Baut auf dem
  * vorhandenen Bestellmodell (operations/lib/bestelluebersicht.mjs,
  * `auftrag.checks` und `auftrag.details.beratungsangaben`) auf - keine eigene
  * Datenabfrage.
@@ -18,10 +19,16 @@ function ersteWert(beratungsangaben, testFn) {
   return key ? beratungsangaben[key] : null;
 }
 
-/** Ja bei Beratung oder Maßprüfung = Kandidat für die Rückrufliste. */
+/**
+ * Ja bei Beratung oder Maßprüfung = Kandidat für die Rückrufliste. Dazu
+ * "Verlegung: Angefragt": Die interne Bestellmail schreibt dafuer „bitte beim
+ * Rückruf ansprechen". Bis 2026-10-13 rief der Laden diese Kunden ueber die
+ * Auftrags-App zurueck; seitdem fasst das Control Center Muster und Rueckrufe
+ * nach (Inhaber, Werkbank w-078), die Laden-Ansicht zeigt nur noch die Zahl.
+ */
 export function istRueckrufKandidat(auftrag) {
   const c = auftrag?.checks || {};
-  return c.beratung === 'Ja' || c.masspruefung === 'Ja';
+  return c.beratung === 'Ja' || c.masspruefung === 'Ja' || c.verlegung === 'Angefragt';
 }
 
 export function rueckrufZeile(auftrag) {
@@ -35,6 +42,7 @@ export function rueckrufZeile(auftrag) {
   const themen = [];
   if (c.beratung === 'Ja') themen.push(themaKey ? String(themaKey) : 'Beratung gewünscht');
   if (c.masspruefung === 'Ja') themen.push('Maßprüfung');
+  if (c.verlegung === 'Angefragt') themen.push('Interesse an Aufmaß/Verlegung');
   return {
     orderId: auftrag.id,
     orderName: auftrag.name,

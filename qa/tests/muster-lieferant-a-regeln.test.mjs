@@ -1,6 +1,9 @@
 // Musterregeln nach dem Vertretergespraech mit dem Hauptlieferanten (12.10.2026):
-// Parkett nur auf Anfrage, Klickvinyl-Muster kommt als Klebe-Ausfuehrung,
-// Vinyl von der Rolle und Linoleum ohne Muster (Tag ohne-muster).
+// Parkett nur auf Anfrage, Klickvinyl-Muster kommt als Klebe-Ausfuehrung.
+// Vinyl von der Rolle und Linoleum hatten am 12.10. den Tag ohne-muster
+// bekommen; seit 13.10. schneiden wir die Muster selbst aus einem Probestueck
+// (Inhaber) - Tag wieder entfernt, Einstiege auf der Musterseite wieder da.
+// Der Tag ohne-muster selbst wirkt weiter (z. B. Ware von Lieferant C).
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
@@ -19,14 +22,18 @@ const optionSource = option.slice(option.indexOf('{%- liquid'), option.lastIndex
 const block = read('blocks/tp-muster-cta.liquid')
   .replace(/\{% doc %\}[\s\S]*?\{% enddoc %\}/, '')
   .replace(/\{% schema %\}[\s\S]*?\{% endschema %\}/, '')
-  .replace("render 'tp-musteroption', product: product", 'echo tp_test_url');
+  .replace(/\{% stylesheet %\}[\s\S]*?\{% endstylesheet %\}/, '')
+  .replace("render 'tp-musteroption', product: product", 'echo tp_test_url')
+  .replace("render 'tp-muster-grenze', product: product", 'echo tp_test_grenze');
 assert.ok(block.includes('echo tp_test_url'), 'Snippet-Aufruf im Block nicht gefunden');
+assert.ok(block.includes('echo tp_test_grenze'), 'Grenze-Aufruf im Block nicht gefunden');
 
 async function cta(product) {
   const tp_test_url = (await liquid.parseAndRender(optionSource, { product })).trim();
   return liquid.parseAndRender(block, {
     product: { template_suffix: '', title: 'Beispiel', ...product },
     tp_test_url,
+    tp_test_grenze: '',
     block: { id: 'tp_muster_cta_1', shopify_attributes: '', settings: { label: 'Kostenloses Muster anfragen', hinweis: 'Bis zu 3 Farben, versandkostenfrei' } },
   });
 }
@@ -63,11 +70,15 @@ test('Vinyl von der Rolle und Linoleum mit ohne-muster: kein Musterknopf', async
   }
 });
 
-test('Musterseite fuehrt Vinyl von der Rolle und Linoleum nicht mehr als Einstieg', () => {
+test('Musterseite fuehrt Vinyl von der Rolle und Linoleum wieder als Einstieg (13.10.2026)', () => {
   const s = read('sections/tp-sample-checkout.liquid');
   const def = JSON.parse(s.slice(s.indexOf('{% schema %}') + 12, s.indexOf('{% endschema %}'))).settings.find(x => x.id === 'kategorien').default;
   assert.match(def, /Teppichboden\|/);
-  assert.doesNotMatch(def, /vinyl-von-der-rolle|linoleum/i);
+  assert.match(def, /Vinyl von der Rolle\|\/collections\/vinylboden-vinyl-von-der-rolle/);
+  assert.match(def, /Linoleum\|\/collections\/linoleumboden-1/);
+  for (const datei of ['sections/tp-start-muster.liquid', 'templates/index.json']) {
+    assert.match(read(datei), /Teppichboden, Vinyl oder Linoleum/, datei);
+  }
 });
 
 test('Kontaktformular kennt das Thema musteranfrage', () => {

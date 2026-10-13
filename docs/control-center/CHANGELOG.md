@@ -1005,6 +1005,24 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   als Werktage belegt). Die Trefferliste zählt Bestellweg-Varianten weiter als „Link fehlt“.
 - **Nächste Stufe:** Musterweg von B eintragen, sobald belegt.
 
+
+## 2026-10-13 · Muster und Rückrufe: das Control Center führt (w-078, #1201)
+
+- **Geändert:** Entscheidung des Inhabers (Werkbank w-078): Shop-Musterbestellungen und Rückrufwünsche werden im
+  Control Center nachgefasst (Heute → „Muster nachfassen“, Kunden → „Rückrufe“), nicht mehr in der Laden-Ansicht der
+  Auftrags-App. Die App legt dafür ab Version 50 keine Beratungsfälle mehr an und zeigt nur noch Zahl und Link hierher.
+  Damit nichts durchfällt, gehört „Verlegung: Angefragt“ jetzt in die Rückrufliste (`istRueckrufKandidat`, Thema
+  „Interesse an Aufmaß/Verlegung“) – die interne Bestellmail sagt dazu „bitte beim Rückruf ansprechen“, bisher rief
+  dafür der Laden über die App zurück. Text im Reiter „Rückrufe“ angepasst; die Laden-Kachel zählt unter „Aus dem Shop“
+  nur noch Anfragen (Kontaktformular).
+- **Getestet:** neue `operations/tests/rueckrufliste.test.mjs` (3), `dashboard:test` 295/295, `npm test` grün;
+  `dashboard:pruefen` (Heute, Kunden, Rückrufe) bei 1440 und 390 px nur `OK`, 0 px Überlauf.
+- **Risiken/Annahmen:** Eine Bestellung mit „Verlegung: Angefragt“ ohne Beratungswunsch erscheint jetzt als offener
+  Rückruf (vorher nur in der Laden-Ansicht). Muster außerhalb des Verlegegebiets standen schon immer nur hier.
+- **Nächste Stufe:** Wer die offenen Zahlen „Muster nachfassen“/„Rückrufe“ auch in der Laden-Ansicht sehen will:
+  das Control Center müsste sie beim Abruf von `?ansicht=zahlen` an die App mitgeben (eigener Schritt, braucht
+  `LADEN_ZAHLEN_SCHLUESSEL`). Bis dahin zeigt die App die Zahl der eingegangenen Muster-/Rückruf-Mails (7 Tage).
+
 ## 2026-10-13 · „An Kunden raus“ bucht den Versand in Shopify (#1185)
 
 - **Geändert** (Inhaber 13.10., Werkbank w-079; Details ARCHITEKTUR §17):
