@@ -28,7 +28,7 @@ Der optionale Wert `TP_BROWSER_EXECUTABLE` wird pro Rechner gesetzt und nicht mi
 
 - Gesamt-QA: `QA_REPORT.md`, maschinell `qa/results/latest.json` und `qa/results/latest-details.json`
 - kompakte Fehler-Evidenz: `qa/evidence/latest-failure.json`
-- SEO: `SEO_REPORT.md`, `qa/results/seo-latest.json`, `qa/MERCHANT_READINESS_REPORT.md`, `qa/TRACKING_READINESS.md`
+- SEO: `SEO_REPORT.md`, `qa/results/seo-latest.json`, `qa/MERCHANT_READINESS_REPORT.md`, `qa/TRACKING_READINESS.md` (alle erzeugt, nicht im Git)
 - Sales: `qa/results/sales-readiness.json`
 - Compare: `qa/results/compare-readiness.json`
 
