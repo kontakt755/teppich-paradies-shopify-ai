@@ -148,7 +148,7 @@ test('Fertig: Teppich und Pauschale als zwei Zeilen mit derselben Gruppe', async
   assert.equal(r.data.art, 'fertig');
   assert.equal(r.data.max_breite_cm, 200, 'ohne einfass_basis gilt service.max_breite_cm');
   assert.equal(r.requests.length, 1);
-  const [teppich, pauschale] = r.requests[0].body.items;
+  const [pauschale, teppich] = r.requests[0].body.items; // Teppich zuletzt: Shopify zeigt ihn dann oben
   assert.equal(teppich.id, 'fertig-material');
   assert.equal(teppich.quantity, 300, '1,5 x 2 m = 300 Einheiten a 0,01 m2');
   assert.equal(teppich.properties['Einfassung'], 'Fertig eingefasst');
@@ -197,7 +197,7 @@ test('Fertig: service.kante_inklusive hat keine Wirkung (nur fuer Ketteln)', asy
   const r = await runCase({ width: 150, length: 200, kanteInklusive: true });
   assert.equal(r.data.kante_inklusive, false);
   assert.equal(r.data.kettel, null);
-  const [teppich, pauschale] = r.requests[0].body.items;
+  const [pauschale, teppich] = r.requests[0].body.items; // Teppich zuletzt: Shopify zeigt ihn dann oben
   assert.equal(teppich.properties['Kettelung'], undefined);
   assert.equal(pauschale.id, 'fertig-pauschale');
 });

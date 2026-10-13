@@ -78,6 +78,12 @@
       id="cart-form"
       method="post"
     >
+      {%- comment -%}
+        Standardknopf fuer Enter: deaktiviert, damit Enter im Mengenfeld nicht
+        "Zur Kasse" ausloest (einziger anderer Submit-Knopf, form="cart-form").
+        Die Menge wird ueber change trotzdem uebernommen.
+      {%- endcomment -%}
+      <button type="submit" disabled hidden aria-hidden="true" tabindex="-1"></button>
       <div
         class="cart-items spacing-style{% if block_settings.dividers %} cart-items--dividers{% endif %}"
         style="{%  render 'spacing-style', settings: block_settings %} --cart-items-gap:{{ block_settings.gap | append: "px" }};"
@@ -337,17 +343,26 @@
                     {%- endif -%}
                   </div>
 
+                  {%- capture tp_cp_einheit -%}{%- render 'tp-cart-einzelpreis-einheit', line_item: item -%}{%- endcapture -%}
+                  {%- liquid
+                    assign tp_cp_faktor = 1
+                    assign tp_cp_einheit = tp_cp_einheit | strip
+                    if tp_cp_einheit != blank
+                      assign tp_cp_faktor = tp_cp_einheit | split: '|' | first | plus: 0
+                      assign tp_cp_einheit = tp_cp_einheit | split: '|' | last
+                    endif
+                  -%}
                   <div class="cart-items__unit-price-wrapper">
                     <div>
                       {% if item.original_price != item.final_price %}
                         <span class="visually-hidden">{{ 'content.price_sale' | t }}</span>
-                        <span class="tp-preis-neu">{{ item.final_price | money }}</span>
+                        <span class="tp-preis-neu">{{ item.final_price | times: tp_cp_faktor | money }}{{ tp_cp_einheit }}</span>
                         <span class="visually-hidden">{{ 'content.price_regular' | t }}</span>
                         <s class="compare-at-price">
                           {% if tp_cp_aktion == 'ja' and item.variant.compare_at_price > item.original_price %}
-                            {{ item.variant.compare_at_price | money }}
+                            {{ item.variant.compare_at_price | times: tp_cp_faktor | money }}{{ tp_cp_einheit }}
                           {% else %}
-                            {{ item.original_price | money }}
+                            {{ item.original_price | times: tp_cp_faktor | money }}{{ tp_cp_einheit }}
                           {% endif %}
                         </s>
                       {% else %}
@@ -357,11 +372,11 @@
                           <span class="visually-hidden">{{ 'content.price' | t }}</span>
                         {% endif %}
 
-                        <span{% if tp_cp_aktion == 'ja' and item.variant.compare_at_price > item.original_price %} class="tp-preis-neu"{% endif %}>{{ item.original_price | money }}</span>
+                        <span{% if tp_cp_aktion == 'ja' and item.variant.compare_at_price > item.original_price %} class="tp-preis-neu"{% endif %}>{{ item.original_price | times: tp_cp_faktor | money }}{{ tp_cp_einheit }}</span>
 
                         {% if tp_cp_aktion == 'ja' and item.variant.compare_at_price > item.original_price %}
                           <span class="visually-hidden">{{ 'content.price_regular' | t }}</span>
-                          <s class="compare-at-price">{{ item.variant.compare_at_price | money }}</s>
+                          <s class="compare-at-price">{{ item.variant.compare_at_price | times: tp_cp_faktor | money }}{{ tp_cp_einheit }}</s>
                         {% endif %}
                       {% endif %}
                     </div>

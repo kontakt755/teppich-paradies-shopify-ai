@@ -228,7 +228,7 @@ test('Regression: kante_inklusive = false rechnet die Kante wie bisher als zweit
   const result = await runCase({ kanteInklusive: false });
   assert.equal(result.data.kante_inklusive, false);
   assert.ok(result.data.kettel);
-  const [teppich, kante] = result.requests[0].body.items;
+  const [kante, teppich] = result.requests[0].body.items; // Teppich zuletzt: Shopify zeigt ihn dann oben
   assert.equal(teppich.quantity, 600);
   assert.equal(teppich.properties['Kettelung'], undefined);
   assert.equal(kante.id, 'audit-einfass-edge');
@@ -245,7 +245,7 @@ test('Regression: kante_inklusive = false und Kettelservice nicht verfügbar spe
 
 test('Regression: ohne Feld Mindestpreis abzüglich Kante (50 x 50 cm)', async () => {
   const result = await runCase({ width: 50, length: 50 });
-  const [teppich, kante] = result.requests[0].body.items;
+  const [kante, teppich] = result.requests[0].body.items; // Teppich zuletzt: Shopify zeigt ihn dann oben
   assert.equal(kante.quantity, 200);
   assert.equal(teppich.quantity, 69, 'ceil((9900 - 3800) / 89)');
 });
