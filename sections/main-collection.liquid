@@ -173,6 +173,14 @@
     text-align: right;
     margin-block-end: 8px;
   }
+
+  /* Telefon: results-list ist dort kein Raster, der Hinweis lief bis an den
+     Bildschirmrand. Gleicher Abstand wie die Produktkarten darunter. */
+  @media screen and (max-width: 749px) {
+    .tp-raster-preisangabe {
+      padding-inline: 16px;
+    }
+  }
 {% endstylesheet %}
 
 {% schema %}

@@ -77,9 +77,12 @@
       endif
       echo '<li ref="resultsItems[]" role="presentation" class="tp-se__item"><a role="option" class="tp-se__chip" data-tp-typ="vorschlag" href="'
       echo tp_se_v.url | escape
-      echo '">'
+      # Eigene Huelle: im inline-flex-Chip waeren <span> und <mark> sonst
+      # einzelne Flex-Elemente, und das Leerzeichen dazwischen fiele weg
+      # ("landhausgrau" statt "landhaus grau").
+      echo '"><span>'
       echo tp_se_v.styled_text
-      echo '</a></li>'
+      echo '</span></a></li>'
     endfor
   endcapture
   if tp_se_q_anzahl > 5
