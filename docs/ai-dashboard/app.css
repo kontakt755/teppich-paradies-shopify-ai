@@ -981,6 +981,8 @@ table.tasks td { padding-top: 12px; padding-bottom: 12px; }
 .lex-bestell-kopf { align-items: center; }
 /* "Zum Bestellen" je Farbe: am Rechner Tabelle, darunter Karten mit Artikelnummer zum Antippen. */
 .lex-artnr { display: inline-flex; align-items: center; min-height: 32px; padding: 3px 9px; border-radius: 7px; background: var(--surface-2); font-family: var(--mono); font-size: .9rem; cursor: copy; }
+/* Bestellweg des Lieferanten, wenn es keinen Link je Artikel gibt (einmal ueber der Liste). */
+.lex-bestellweg { margin: 0 0 10px; line-height: 1.7; overflow-wrap: anywhere; }
 .lex-bestell-liste { display: none; }
 .lex-bestell-liste ul { list-style: none; margin: 0; padding: 0; }
 .lex-bestell-liste details > summary { display: inline-flex; align-items: center; min-height: 44px; cursor: pointer; color: var(--info); font-weight: 600; }

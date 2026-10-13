@@ -157,7 +157,9 @@ test('Vinyl-Leiste bleibt an die Rollenware gebunden und wird ohne Boden gesperr
 });
 
 test('H: Liquid-Seite kennt dieselben Property-Namen und Texte wie das JS', () => {
-  const liquid = lies('snippets/tp-cart-gruppe.liquid');
+  // Die Rollenzuschnitt-Pruefung liegt seit 13.10. in einem eigenen Snippet
+  // (LiquidComplexity), das tp-cart-gruppe an beiden Stellen rendert.
+  const liquid = lies('snippets/tp-cart-gruppe.liquid') + lies('snippets/tp-cart-zuschnitt-fehlt.liquid');
   for (const key of ['_Gruppe', 'Zu Teppich', 'Zu Teppichboden', 'Zu Bodenbelag', 'Kante umlaufend', 'Maße', 'Fläche (abgerechnet)', 'Fläche (aufgerundet)', 'Ihre Breite', 'Rollenbreite', 'Länge', 'Höhe', 'Bahnen', 'Mindestpreis']) {
     assert.ok(liquid.includes(key), `Liquid kennt ${key}`);
   }
@@ -231,6 +233,30 @@ test('K: Rollenzuschnitt - Bundle-Zeile ist Service der Teppichgruppe, fehlend o
 });
 
 test('L: Liquid-Seite kennt die Rollenzuschnitt-Regel', () => {
-  const liquid = lies('snippets/tp-cart-gruppe.liquid');
-  for (const key of ['_Rollenzuschnitt', 'Rollenzuschnitt', 'von der Rolle']) assert.ok(liquid.includes(key), key);
+  const gruppe = lies('snippets/tp-cart-gruppe.liquid');
+  const zs = lies('snippets/tp-cart-zuschnitt-fehlt.liquid');
+  for (const key of ['_Rollenzuschnitt', 'Rollenzuschnitt', '_Gruppe', 'cart.items']) assert.ok(zs.includes(key), key);
+  assert.ok(gruppe.includes('von der Rolle'), 'Mengentext der Bundle-Zeile');
+  // Beide Pruefstellen (ganzer Warenkorb und einzelne Zeile) nutzen das Snippet,
+  // und es greift nur, solange keine andere Waise erkannt ist.
+  assert.equal((gruppe.match(/render 'tp-cart-zuschnitt-fehlt'/g) || []).length, 2);
+  assert.equal((gruppe.match(/\| default: tp_gz(_it)?_zs \| strip/g) || []).length, 2);
+});
+
+test('M: tp-cart-zuschnitt-fehlt rendert die Sperre nur bei fehlendem oder zu kleinem Zuschnitt', async () => {
+  const { Liquid } = await import('liquidjs');
+  // {% doc %} kennt LiquidJS nicht; der Kopf ist reine Doku.
+  const tpl = lies('snippets/tp-cart-zuschnitt-fehlt.liquid').replace(/\{%-? doc -?%\}[\s\S]*?\{%-? enddoc -?%\}/, '');
+  const eng = new Liquid();
+  const haupt = { quantity: 600, properties: { _Gruppe: 'Y1', _Rollenzuschnitt: '200' } };
+  const zs = (cm, g = 'Y1') => ({ quantity: 1, properties: { _Gruppe: g, Rollenzuschnitt: `${cm} cm`, 'Zu Teppich': 'Passion Yasmin' } });
+  const r = (items) => eng.parseAndRender(tpl, { zeile: haupt, cart: { items: [haupt, ...items] } }).then(s => s.trim());
+  assert.equal(await r([zs(200)]), '');
+  assert.equal(await r([zs(225)]), '');
+  assert.match(await r([]), /Zuschnitt von der Rolle fehlt/);
+  assert.match(await r([zs(175)]), /Zuschnitt von der Rolle fehlt/);
+  assert.match(await r([zs(200, 'Y2')]), /Zuschnitt von der Rolle fehlt/, 'andere Gruppe zaehlt nicht');
+  // Zeile ohne _Rollenzuschnitt (jeder andere Teppich): nie eine Sperre.
+  const normal = { quantity: 600, properties: { _Gruppe: 'K1' } };
+  assert.equal((await eng.parseAndRender(tpl, { zeile: normal, cart: { items: [normal] } })).trim(), '');
 });

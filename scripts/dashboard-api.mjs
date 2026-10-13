@@ -46,7 +46,7 @@ import {
   benutzerDeaktivieren, validiereRolle, BenutzerFehler, ROLLEN, pruefePasswort,
 } from '../operations/lib/benutzer.mjs';
 import { bestellliste } from '../operations/lib/bestellliste.mjs';
-import { leseStammdaten, stammdatenPfad, lieferantenUebersicht, lieferantDetail, bestellmail, LieferantenFehler } from '../operations/lib/lieferanten.mjs';
+import { leseStammdaten, stammdatenPfad, lieferantenUebersicht, lieferantDetail, bestellmail, LieferantenFehler, lexikonProduktMitSchnellzugriff } from '../operations/lib/lieferanten.mjs';
 import {
   FOTO_ART, FotoFehler, passendeProdukte, produktHinweis, pruefeEingang, titelFuer,
 } from '../operations/lib/baustellenfotos.mjs';
@@ -1628,7 +1628,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           .filter(pt => (pt.produkte ?? []).some(pr => pr.handle === handle))
           .map(pt => ({ kunde: k.name, schluessel: k.schluessel, bezug: pt.bezug, schritt: pt.schritt.text, tage: pt.tage })))
         : [];
-      return { verfuegbar: true, quelle: file, produkt, wartendeKunden: offen };
+      // Schnellzugriff zum Lieferanten auch ohne Link: der Bestellweg aus den Stammdaten
+      // (Mail, Portal, Telefon) an jeder Variante, die weder Direkt- noch Suchlink hat.
+      const stammdaten = leseStammdaten(stammdatenPfad(dir));
+      return { verfuegbar: true, quelle: file, produkt: lexikonProduktMitSchnellzugriff(produkt, stammdaten), wartendeKunden: offen };
     },
 
     /**
