@@ -20,3 +20,8 @@ process.env.TP_ENV_LOCAL = path.join(PRIVAT_DIR, 'kein-zugang.env.local');
 delete process.env.SHOPIFY_ADMIN_TOKEN;
 delete process.env.SHOPIFY_CLIENT_ID;
 delete process.env.SHOPIFY_CLIENT_SECRET;
+// Adressen der Auftrags-App und der Werkbank (Weitere Dashboards, Kachel Laden/Montage)
+// kommen in Tests nur aus dem Test selbst.
+for (const k of ['LADEN_ZAHLEN_URL', 'LADEN_ZAHLEN_SCHLUESSEL', 'AUFTRAGS_APP_URL', 'WERKBANK_URL']) delete process.env[k];
+// Tailscale-Zustand nicht vom Rechner abfragen, auf dem der Test laeuft (Shop-Wache).
+process.env.TP_TAILSCALE_PRUEFEN = '0';

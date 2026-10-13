@@ -47,14 +47,50 @@ function moechte(positionen) {
   return teile;
 }
 
+/** Stufe 3 im Auftragsfluss = "An Kunden raus" (operations/lib/auftragsstatus.mjs, STATUS_ORDER). */
+const STUFE_RAUS = 3;
+const UNVERSANDT = ['UNFULFILLED', 'PARTIALLY_FULFILLED', null];
+
+/**
+ * Shopify-Versandstatus nur als Hinweis: im Auftragsfluss ist die Ware schon beim
+ * Kunden, in Shopify aber noch keine Sendung gebucht. Kein Arbeitsschritt fuer den
+ * Laden - nur damit niemand ueber den Widerspruch stolpert.
+ */
+export function shopifyVersandHinweis(zeile) {
+  const raus = (zeile?.fortschritt?.minStufe ?? 0) >= STUFE_RAUS;
+  return raus && UNVERSANDT.includes(zeile?.fulfillmentstatus ?? null) ? 'In Shopify noch nicht als versendet gebucht' : null;
+}
+
+/**
+ * Naechster Schritt aus der Zeitleiste (operations/lib/auftragsverlauf.mjs). Sie kennt den
+ * ganzen Ablauf - Muster beim Lieferanten, bei uns, beim Kunden, nachgefasst - und nicht nur
+ * den Versandstatus aus Shopify, der fuer Muster und Abholungen oft nie gesetzt wird.
+ * null = laut Zeitleiste nichts mehr zu tun.
+ */
+function ausZeitleiste(zeile) {
+  const n = zeile.zeitleisteSchritt;
+  if (!n) return null;
+  const hinweis = shopifyVersandHinweis(zeile);
+  // Lieferant oder Kunde ist dran und die Frist laeuft noch: fuer uns nichts zu tun.
+  if (n.stufe === 'warten') return { text: n.text, dringend: DRINGEND.NORMAL, art: 'wartet', wer: n.wer, hinweis };
+  const seit = n.faelligSeitTagen ?? 0;
+  const dringend = n.stufe === 'problem' ? DRINGEND.SOFORT
+    : n.stufe === 'nachhaken' ? DRINGEND.BALD
+      : seit >= 3 ? DRINGEND.SOFORT : DRINGEND.BALD;
+  return { text: n.text, dringend, art: 'auftrag', wer: n.wer, hinweis };
+}
+
 /**
  * Was ist als Naechstes zu tun? Genau ein Satz, der eine Handlung benennt -
  * und, wo etwas fehlt, warum sie gerade nicht geht.
+ *
+ * Traegt die Zeile `zeitleisteSchritt` (der Server haengt ihn an, auch als null), bestimmt die
+ * Zeitleiste den Schritt. Ohne das Feld gilt die alte Regel aus Zahlungs- und Versandstatus.
  */
 export function naechsterSchritt(zeile, { jetzt = new Date() } = {}) {
   const alter = tageSeit(zeile.datum, jetzt) ?? 0;
   const bezahlt = zeile.zahlungsstatus === 'PAID';
-  const unversandt = ['UNFULFILLED', 'PARTIALLY_FULFILLED', null].includes(zeile.fulfillmentstatus);
+  const unversandt = UNVERSANDT.includes(zeile.fulfillmentstatus);
   const offeneArtikel = (zeile.auftrag?.positionen ?? []).filter(p => p.lineItemId);
 
   // Ein abgeschlossener Rueckruf ist erledigt, auch wenn das Bestell-Tag
@@ -64,7 +100,11 @@ export function naechsterSchritt(zeile, { jetzt = new Date() } = {}) {
       ? { text: 'Zurückrufen – Beratung gewünscht', dringend: DRINGEND.SOFORT, art: 'beratung' }
       : { text: 'Beratung gewünscht, aber keine Telefonnummer hinterlegt – per E-Mail melden', dringend: DRINGEND.SOFORT, art: 'beratung' };
   }
-  if (bezahlt && unversandt && zeile.fortschritt?.stufe !== 'erledigt') {
+  if (bezahlt && 'zeitleisteSchritt' in zeile) {
+    const s = ausZeitleiste(zeile);
+    if (s) return s;
+    // Laut Zeitleiste abgeschlossen: was dann noch fehlt (Massprüfung, ID …), steht unten.
+  } else if (bezahlt && unversandt && zeile.fortschritt?.stufe !== 'erledigt') {
     const eilig = alter >= 3;
     return {
       text: offeneArtikel.length && zeile.fortschritt?.stufe === 'offen'
@@ -181,7 +221,13 @@ export function faelle(quellen = {}, opt = {}) {
       });
   }
 
-  const liste = [...map.values()].filter(k => k.punkte.length);
+  // Wer nur Vorgaenge hat, bei denen Lieferant oder Kunde dran ist, wartet nicht auf uns:
+  // nicht in die Arbeitsliste, aber mitgezaehlt. Hat derselbe Kunde etwas zu tun, bleiben
+  // seine wartenden Vorgaenge in der Karte stehen - sonst fehlte dort die halbe Lage.
+  const mitPunkten = [...map.values()].filter(k => k.punkte.length);
+  const liste = mitPunkten.filter(k => k.punkte.some(p => p.schritt.art !== 'wartet'));
+  // Testadressen zaehlen nie; von Hand markierte Kunden nimmt der Aufrufer anhand der Schluessel heraus.
+  const wartendeSchluessel = mitPunkten.filter(k => !liste.includes(k) && !istTestkontakt(k)).map(k => k.schluessel);
   for (const k of liste) {
     // Reservierte Domaene = sicher kein Kunde. Der Fall wird nicht
     // weggeworfen, sondern markiert - die Oberflaeche blendet ihn aus und
@@ -199,6 +245,8 @@ export function faelle(quellen = {}, opt = {}) {
     erstellt: jetzt.toISOString(),
     anzahl: liste.length,
     sofort: liste.filter(k => k.dringend === DRINGEND.SOFORT).length,
+    wartend: wartendeSchluessel.length,
+    wartendeSchluessel,
     faelle: liste,
   };
 }

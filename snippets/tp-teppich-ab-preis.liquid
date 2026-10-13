@@ -38,6 +38,9 @@
   @param {object} [variant] - gewaehlte Variante (Produktseite); ohne sie zaehlt die guenstigste Farbe.
     Ohne Variante (= Produktkarte) steht ueber dem Preis die Qualitaetszeile aus
     snippets/tp-teppich-qualitaet.
+  @param {boolean} [karte] - Produktkarte mit fester Variante (Farb-Vorauswahl der Suche,
+    snippets/tp-suchfarbe-variante): Preis aus variant, Darstellung wie auf jeder Karte
+    (Qualitaetszeile, "ab" im Rueckfall; beim Preis je m2 mit Kante inklusive ohne "ab").
 {%- enddoc -%}
 {%- liquid
   assign tp_ab_breite_cm = 80
@@ -158,9 +161,10 @@
   # Konkurrenzshop). Eigene Kettelung je lfm und Wunschmass mit Pauschale behalten den
   # ab-Preis, dort waere der m2-Preis nur ein Teil.
   # Dasselbe auf Karten (ohne Variante): Karte und Produktseite zeigen denselben
-  # Preis je m2, "ab" nur, wenn die Farben unterschiedlich kosten.
+  # Preis je m2, "ab" nur, wenn die Farben unterschiedlich kosten. Karten mit
+  # Suchfarbe (karte: true) ebenso, dort gilt der Preis genau dieser Farbe - ohne "ab".
   assign tp_ab_m2_kopf = false
-  if kopf or variant == blank
+  if kopf or variant == blank or karte
     if tp_ab_einheit_cent > 0 and product.metafields.custom.preis_pro_001_qm.value == true
       if tp_ab_art == 'paspelband' or tp_ab_art == 'einfassband' or tp_ab_art == 'cover'
         assign tp_ab_m2_kopf = true
@@ -193,7 +197,7 @@
         assign tp_ab_kante_wort = 'Einfassung'
     endcase
   -%}
-  {%- if variant == blank -%}
+  {%- if variant == blank or karte -%}
     {%- capture tp_ab_qualitaet -%}{% render 'tp-teppich-qualitaet', product: product %}{%- endcapture -%}
     {%- assign tp_ab_qualitaet = tp_ab_qualitaet | strip -%}
   {%- endif -%}
@@ -219,7 +223,7 @@
     {%- endif -%}
   </span>
 {%- elsif tp_ab_belegt and tp_ab_cent > 0 -%}
-  {%- if variant == blank -%}
+  {%- if variant == blank or karte -%}
     {%- capture tp_ab_qualitaet -%}{% render 'tp-teppich-qualitaet', product: product %}{%- endcapture -%}
     {%- assign tp_ab_qualitaet = tp_ab_qualitaet | strip -%}
   {%- endif -%}
@@ -237,5 +241,5 @@
     <span class="tp-ab-preis__grund">z.&nbsp;B. {{ tp_ab_breite_cm }}&nbsp;×&nbsp;{{ tp_ab_laenge_cm }}&nbsp;cm, inkl. {% if tp_ab_art == 'ketteln' %}Kettelung{% elsif tp_ab_art == 'fertig' %}Einfassung und Pauschale{% else %}Einfassung{% endif %}</span>
   </span>
 {%- else -%}
-  <span class="tp-preis-je-m2">{% if variant == blank %}ab {% endif %}{{ tp_ab_m2_cent | money }}<span class="tp-preis-je-m2__einheit">/m²</span></span>
+  <span class="tp-preis-je-m2">{% if variant == blank or karte %}ab {% endif %}{{ tp_ab_m2_cent | money }}<span class="tp-preis-je-m2__einheit">/m²</span></span>
 {%- endif -%}

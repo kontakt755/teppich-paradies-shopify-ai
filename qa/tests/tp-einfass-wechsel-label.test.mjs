@@ -99,6 +99,43 @@ test('Kacheln: Link nimmt die Variante derselben Farbe mit, Preis je m2 aus dem 
   assert.match(html, /"500": \[21, 79\]/);
 });
 
+test('Kacheln: Herstellerfotos nur fuer die eigene Marke, sonst allgemeines Bild oder Zeichnung', async () => {
+  const bilder = {
+    bild_ketteln: 'allgemein-kette.jpg',
+    marke_bilder_vendor: 'JAB Anstoetz', marke_bild_paspelband: 'jab-paspel.jpg', marke_bild_cover: 'jab-cover.jpg',
+    marke2_bilder_vendor: 'Vorwerk', marke2_bild_paspelband: 'vw-paspel.jpg', marke2_bild_ketteln: 'vw-kette.jpg',
+  };
+  const fuer = async (vendor) => {
+    const product = { ...gruppe(), vendor };
+    const html = await engine.parseAndRender(kanten, { product, bilder, kettel_cent: 0 });
+    return [...html.matchAll(/data-kante-art="(\w+)"[\s\S]*?<span\s+class="tp-ek__kante-bild([^"]*)"[\s\S]*?(?:<img src="([^"]+)"|<span class="tp-ek__kante-ecke">)/g)]
+      .map((m) => [m[1], m[3] || 'zeichnung']);
+  };
+  assert.deepEqual(await fuer('JAB Anstoetz'), [['ketteln', 'allgemein-kette.jpg'], ['paspelband', 'jab-paspel.jpg'], ['einfassband', 'zeichnung'], ['cover', 'jab-cover.jpg']]);
+  assert.deepEqual(await fuer('Vorwerk'), [['ketteln', 'vw-kette.jpg'], ['paspelband', 'vw-paspel.jpg'], ['einfassband', 'zeichnung'], ['cover', 'zeichnung']]);
+  assert.deepEqual(await fuer('TeppichParadies'), [['ketteln', 'allgemein-kette.jpg'], ['paspelband', 'zeichnung'], ['einfassband', 'zeichnung'], ['cover', 'zeichnung']]);
+});
+
+test('Kacheln: zwei Paspel-Produkte (Premium fest, Kontrast mit Herstellerfarben) - beide, mit eigenem Text und Bild', async () => {
+  const liste = gruppe({ paspelband: 'Paspel (Premium)' }, ['Ketteln', 'Paspelband', 'Cover']);
+  const premium = liste.metafields.service.einfass_gruppe.value[1];
+  premium.metafields.service.bandfarbe_fest = val('Ton in Ton');
+  const kontrast = produkt(9, 'Paspelband', 'Paspel (Kontrast)');
+  kontrast.metafields.service.bandfarben = val('Sand|#c8b79b;Anthrazit|#43464a;Schwarz|#1f1f21');
+  liste.metafields.service.einfass_gruppe.value.push(kontrast);
+  const product = { ...liste, vendor: 'Vorwerk' };
+  const bilder = { marke2_bilder_vendor: 'Vorwerk', marke2_bild_paspelband: 'vw-premium.jpg', marke2_bild_paspelwahl: 'vw-paspel.jpg' };
+  const html = await engine.parseAndRender(kanten, { product, bilder, kettel_cent: 0 });
+  const namen = [...html.matchAll(/<span class="tp-ek__kante-name">([^<]*)<\/span>/g)].map((m) => m[1]);
+  assert.deepEqual(namen, ['Gekettelt', 'Paspel (Premium)', 'Paspel (Kontrast)', 'Cover']);
+  assert.match(html, /Farbe nach Wahl: Sand, Anthrazit oder Schwarz/);
+  assert.match(html, /in der Farbe des Teppichs/);
+  assert.match(html, /<img src="vw-premium\.jpg">[\s\S]*<img src="vw-paspel\.jpg">/);
+  // JSON-Index je Kachel passt zur Reihenfolge der Kacheln
+  const daten = JSON.parse(html.match(/<script type="application\/json" data-kanten-daten>([\s\S]*?)<\/script>/)[1]);
+  assert.deepEqual(daten.kanten.filter(Boolean).map((k) => k.url), ['/products/p1', '/products/p2', '/products/p9', '/products/p3']);
+});
+
 test('Kacheln: eine einzige Einfassart ist keine Wahl - nichts rendern', async () => {
   const product = gruppe({}, ['Ketteln']);
   const html = await engine.parseAndRender(kanten, { product, bilder: {}, kettel_cent: 0 });

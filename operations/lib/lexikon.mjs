@@ -338,6 +338,11 @@ export function aufbereiten(exportDaten, opt = {}) {
         // hier immer leer, weil die Ware erst beim Zuschnitt entsteht - keine
         // Datenluecke. Front-End muss das getrennt von echten Luecken zeigen.
         wunschmass: istWunschmass(v.selectedOptions),
+        // Rollenbreite in Metern (custom.rollenbreite an der Variante, z. B.
+        // "4.0"). Bei Produkten mit mehreren Breiten steht sie nur dort, nicht
+        // am Produkt - ohne sie fand die Mengenhilfe bei 570 Rollenprodukten
+        // keine Breite.
+        rollenbreiteM: zahl(vMap.custom?.rollenbreite),
         einkauf,
         __musterRef: musterRef,
       };
@@ -363,11 +368,19 @@ export function aufbereiten(exportDaten, opt = {}) {
   const produktByHandle = new Map(ergebnis.map((p) => [p.handle, p]));
   const variantenById = new Map();
   const variantenByArtikelnummer = new Map();
+  // Die Muster-SKU ist "M-" plus die SKU der Quellvariante, nicht deren
+  // Artikelnummer. Beide stimmen oft ueberein, aber nicht immer: die
+  // Lieferantennummer traegt teils eine Null mehr (Shop TEPLORN04_99,
+  // Lieferant TEPLORN04_099; Shop TEPDENIA4_119, Lieferant TEPDENIA04_119).
+  // Ohne diesen Index fanden 89 Mustervarianten ihr Original nicht und
+  // zeigten keinen Weg zum Lieferanten.
+  const variantenBySku = new Map();
   for (const p of ergebnis) {
     for (const v of p.varianten) {
       if (v.id) variantenById.set(v.id, { variante: v, produkt: p });
       if (!skuIstMuster(v.sku) && !leer(v.einkauf?.artikelnummer)) {
         variantenByArtikelnummer.set(v.einkauf.artikelnummer, { variante: v, produkt: p });
+        if (!leer(v.sku) && !variantenBySku.has(v.sku)) variantenBySku.set(v.sku, { variante: v, produkt: p });
       }
     }
   }
@@ -379,6 +392,9 @@ export function aufbereiten(exportDaten, opt = {}) {
     farbnummer: variante.einkauf?.farbnummer ?? null,
     lieferant: variante.einkauf?.lieferant ?? null,
     url: variante.einkauf?.url ?? null,
+    // Ohne Direktlink wenigstens die Suche beim Lieferanten - wie bei den
+    // echten Varianten (linkStatus), damit auch jedes Muster einen Weg hat.
+    suchlink: leer(variante.einkauf?.url) ? linkStatus(variante.einkauf ?? {}, lieferantSuchen, produkt.titel).suchlink : null,
     kollektion: variante.einkauf?.kollektion ?? null,
     hersteller: variante.einkauf?.hersteller ?? null,
     produktTitel: produkt.titel,
@@ -392,10 +408,11 @@ export function aufbereiten(exportDaten, opt = {}) {
       const { variante, produkt } = variantenById.get(ref.id);
       return bauOriginal(variante, produkt, 'muster_variante');
     }
-    // Tier 2: SKU ohne "M-"-Praefix gegen die Artikelnummern der echten Varianten.
+    // Tier 2: SKU ohne "M-"-Praefix - zuerst gegen die SKUs der echten
+    // Varianten (so entsteht die Muster-SKU), dann gegen deren Artikelnummern.
     if (skuIstMuster(musterVariante.sku)) {
-      const artikelnummer = musterVariante.sku.slice(2);
-      const treffer = variantenByArtikelnummer.get(artikelnummer);
+      const quellSku = musterVariante.sku.slice(2);
+      const treffer = variantenBySku.get(quellSku) ?? variantenByArtikelnummer.get(quellSku);
       if (treffer) return bauOriginal(treffer.variante, treffer.produkt, 'sku');
     }
     // Tier 3: Produkt-Handle ohne "muster-"-Praefix - nur eindeutig, wenn das

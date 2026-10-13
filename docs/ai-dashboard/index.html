@@ -35,7 +35,9 @@
   <link rel="stylesheet" href="./stile/zeitleiste.css">
   <link rel="stylesheet" href="./stile/heute.css">
   <link rel="stylesheet" href="./stile/sonderposten.css">
+  <link rel="stylesheet" href="./stile/muster.css">
   <link rel="stylesheet" href="./stile/social.css">
+  <link rel="stylesheet" href="./stile/fehler-melden.css">
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -50,16 +52,11 @@
       <nav class="mainnav" id="mainnav" aria-label="Hauptnavigation">
         <!-- Reihenfolge nach Wichtigkeit im Tagesgeschaeft; Seltenes darunter. -->
         <a href="#/heute" data-nav="heute" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1z"/></svg><span>Heute</span><span class="nav-count" data-nav-zahl="heute" hidden></span></a>
-        <a href="#/kunden" data-nav="kunden" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.900 1.800 5.500 5M16 6.500h4.500M16 10.500h4.500M17.500 14.500h3"/></svg><span>Kunden &amp; Aufträge</span><span class="nav-count" data-nav-zahl="kunden" hidden></span></a>
+        <a href="#/kunden" data-nav="kunden" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.900 1.800 5.500 5M16 6.500h4.500M16 10.500h4.500M17.500 14.500h3"/></svg><span>Kunden</span><span class="nav-count" data-nav-zahl="kunden" hidden></span></a>
         <a href="#/einkauf" data-nav="einkauf" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.500h11v9H3zM14 10.500h4l3 3v3h-7z"/><circle cx="7" cy="17.500" r="1.700"/><circle cx="17" cy="17.500" r="1.700"/></svg><span>Einkauf</span><span class="nav-count" data-nav-zahl="einkauf" hidden></span></a>
         <a href="#/lexikon" data-nav="lexikon" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.200"/><path d="m16 16 4.500 4.500"/></svg><span>Lexikon</span></a>
         <p class="nav-label">Seltener</p>
         <a href="#/organisation" data-nav="organisation"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.500h11M9 12h11M9 17.500h11M4 6.500l1 1 2-2M4 12l1 1 2-2M4 17.500l1 1 2-2"/></svg><span>Aufgaben</span></a>
-        <!-- Werkbank Shop & Technik: Ideen, Aufgaben und Fragen zwischen Inhaber und Shop-Mitarbeiter.
-             Liegt als privates claude.ai-Artefakt ausserhalb des Control Centers, deshalb neuer Tab
-             und eigene Anmeldung bei Claude. Kein data-nav: es ist keine Ansicht dieser Seite. -->
-        <a href="https://claude.ai/artifact/JZiEjCay8znJmH94FQ9inR" class="nav-extern" target="_blank" rel="noopener" data-nicht-lesen title="Werkbank Shop &amp; Technik – öffnet in Claude"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.500 10h17M6 10v9M18 10v9M6 15h12M9 10V6.500h6V10"/></svg><span>Werkbank</span><svg class="nav-ic nav-extern-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7h8v8M17 7 7 17"/></svg><span class="visually-hidden"> (öffnet in neuem Tab)</span></a>
-        <a href="#/fotos" data-nav="fotos"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.500" y="6.500" width="17" height="12.500" rx="2"/><circle cx="12" cy="12.700" r="3.200"/><path d="M8.500 6.500 10 4.500h4l1.500 2"/></svg><span>Fotos</span></a>
         <a href="#/sonderposten" data-nav="sonderposten"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.500h7.200l8.300 8.300a1.400 1.400 0 0 1 0 2l-4.700 4.700a1.400 1.400 0 0 1-2 0L4.500 11.200V4.500z"/><circle cx="8.300" cy="8.300" r="1.300"/></svg><span>Sonderposten</span></a>
         <!-- Social Media: Upload-Link fuers Team (Geheimnis, nie fuer "lesen") und Kampagnen-Links. -->
         <a href="#/social" data-nav="social" data-nicht-lesen><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="17.500" cy="6" r="2.500"/><circle cx="6.500" cy="12" r="2.500"/><circle cx="17.500" cy="18" r="2.500"/><path d="m8.700 10.800 6.600-3.600M8.700 13.200l6.600 3.600"/></svg><span>Social Media</span></a>
@@ -79,10 +76,19 @@
           </div>
         </div>
         <a href="#/hilfe" data-nav="hilfe"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.500"/><path d="M9.700 9.500a2.400 2.400 0 1 1 3.400 2.200c-.700.400-1.100.900-1.100 1.800M12 16.800v.2"/></svg><span>Hilfe</span></a>
+        <!-- Weitere Dashboards (Werkbank, Laden, Montage): eigene Anwendungen ausserhalb dieses
+             Servers, deshalb neuer Tab und eigene Anmeldung. Die Adressen stehen nicht im
+             Repository (oeffentlich), sondern in .env.local des Dienstes; /api/capabilities
+             liefert sie mit, kern/navigation.mjs fuellt diese Gruppe. Ohne Adresse kein Link. -->
+        <div class="nav-dashboards" id="navDashboards" hidden></div>
       </nav>
       <div class="side-foot">
         <button type="button" class="sync-chip" id="syncChip" title="Datenstand und Synchronisation">
           <span class="dot" aria-hidden="true"></span><span id="syncChipText">Lade …</span>
+        </button>
+        <!-- Fuer alle Rollen: Meldung geht ueber den Abgleich in die Werkbank der Technik. -->
+        <button type="button" class="side-knopf" data-fehler-melden title="Etwas geht nicht? Hier melden">
+          <svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 21 19.500H3z"/><path d="M12 10v4.500M12 17v.2"/></svg><span>Fehler melden</span><span class="nav-count" id="fehlerMeldenZahl" hidden></span>
         </button>
         <button type="button" class="side-knopf" id="meinPasswortBtn" title="Mein Passwort ändern" hidden>
           <svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="3.500"/><path d="m10.500 12.500 8-8M15.500 7.500l2.500 2.500M18 5l2 2"/></svg><span>Passwort ändern</span>
@@ -132,7 +138,7 @@
     <!-- Handy: feste Leiste unten. "Mehr" oeffnet die Seitenleiste als Blatt. -->
     <nav class="tabbar no-print" id="tabbar" aria-label="Schnellnavigation">
       <a href="#/heute" data-nav="heute"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1z"/></svg><span>Heute</span><span class="nav-count" data-nav-zahl="heute" hidden></span></a>
-      <a href="#/kunden" data-nav="kunden"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.900 1.800 5.500 5M16 6.500h4.500M16 10.500h4.500M17.500 14.500h3"/></svg><span>Aufträge</span><span class="nav-count" data-nav-zahl="kunden" hidden></span></a>
+      <a href="#/kunden" data-nav="kunden"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.900 1.800 5.500 5M16 6.500h4.500M16 10.500h4.500M17.500 14.500h3"/></svg><span>Kunden</span><span class="nav-count" data-nav-zahl="kunden" hidden></span></a>
       <a href="#/lexikon" data-nav="lexikon"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.200"/><path d="m16 16 4.500 4.500"/></svg><span>Lexikon</span></a>
       <a href="#/einkauf" data-nav="einkauf"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.500h11v9H3zM14 10.500h4l3 3v3h-7z"/><circle cx="7" cy="17.500" r="1.700"/><circle cx="17" cy="17.500" r="1.700"/></svg><span>Einkauf</span><span class="nav-count" data-nav-zahl="einkauf" hidden></span></a>
       <button type="button" id="navToggle" aria-expanded="false" aria-controls="side"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.500" cy="12" r="1.300"/><circle cx="12" cy="12" r="1.300"/><circle cx="18.500" cy="12" r="1.300"/></svg><span>Mehr</span><span class="nav-count" data-nav-zahl="mehr" hidden></span></button>

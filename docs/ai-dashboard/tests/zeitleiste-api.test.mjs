@@ -217,3 +217,26 @@ test('Muster "haben wir da": Wahl speichern (privat, nur anhaengen), raus aus "z
   await fehler({ orderId: WARE, herkunft: 'eigen_vorbei' }, 400);
   await fehler({ orderId: 'gid://shopify/Order/999', herkunft: 'eigen_vorbei' }, 404);
 });
+
+test('Kunden "Zu tun": naechster Schritt aus der Zeitleiste, Shopify-Versand nur als Hinweis', () => {
+  const { api, uhr, schritt } = umgebung();
+  // Muster: bestellt, bei uns, an den Kunden raus - Shopify kennt keine Sendung (UNFULFILLED).
+  schritt(MUSTER, 'bestellt');
+  schritt(MUSTER, 'geliefert');
+  schritt(MUSTER, 'raus');
+  uhr.jetzt = new Date('2026-01-07T10:00:00Z');
+  const r = api.kundenFaelle();
+  // Die Testkunden haben reservierte Adressen und stehen deshalb unter "ausgeblendet" - mit Punkten.
+  const fall = [...r.faelle, ...r.ausgeblendet].find(f => f.punkte.some(p => p.bezug === '#T1'));
+  const p = fall.punkte.find(x => x.bezug === '#T1');
+  assert.doesNotMatch(p.schritt.text, /Versenden/);
+  assert.match(p.schritt.text, /verschickt – sind sie angekommen/);
+  assert.equal(p.schritt.hinweis, 'In Shopify noch nicht als versendet gebucht');
+  // Die Bestellliste sagt dasselbe: kein "Noch nicht versendet", dafuer der Hinweis.
+  const z = api.kundenBestellungen().zeilen.find(x => x.orderId === MUSTER);
+  assert.ok(!z.wasFehlt.includes('Noch nicht versendet'));
+  assert.equal(z.versandHinweis, 'In Shopify noch nicht als versendet gebucht');
+  // Nur Zahlen nach aussen, keine internen Schluessellisten.
+  assert.equal(typeof r.wartend, 'number');
+  assert.equal(r.wartendeSchluessel, undefined);
+});

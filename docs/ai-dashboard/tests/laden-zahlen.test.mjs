@@ -6,8 +6,9 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import {
-  ladenKonfig, ladenUrl, zahlenAus, createLadenZahlen, LADEN_ZAHLEN_FELDER, LADEN_CACHE_MS, LADEN_FEHLER_CACHE_MS,
+  ladenKonfig, ladenUrl, zahlenAus, montageAus, ladenFehlt, createLadenZahlen, LADEN_ZAHLEN_FELDER, MONTAGE_FELDER, LADEN_CACHE_MS, LADEN_FEHLER_CACHE_MS,
 } from '../../../scripts/laden-zahlen.mjs';
+import { dashboardLinks } from '../../../scripts/weitere-dashboards.mjs';
 
 // Kachel "Laden" auf "Heute": der lokale Server holt die Zahlen aus der Auftrags-App
 // (Apps Script, ?ansicht=zahlen&s=<Schluessel>). URL und Schluessel kommen aus .env.local
@@ -19,6 +20,8 @@ const KEINE_DATEI = path.join(PRIVAT_DIR, 'gibt-es-nicht.env');
 process.env.TP_ENV_LOCAL = KEINE_DATEI;
 delete process.env.LADEN_ZAHLEN_URL;
 delete process.env.LADEN_ZAHLEN_SCHLUESSEL;
+delete process.env.AUFTRAGS_APP_URL;
+delete process.env.WERKBANK_URL;
 
 const BASIS = 'https://script.google.com/macros/s/TEST-DEPLOYMENT/exec';
 const SCHLUESSEL = 'test-schluessel-nur-fuer-tests-0123456789';
@@ -76,7 +79,7 @@ test('ladenKonfig: nicht eingerichtet ohne URL oder Schluessel; nur https://scri
 
 test('zahlenAus: genau die bekannten Felder als ganze Zahlen >= 0, alles andere faellt weg; sonst null', () => {
   const ok = zahlenAus({ stand: STAND, ...ZAHLEN_V43, kunde: 'Max Muster', telefon: '0171 9876543' });
-  assert.deepEqual(ok, { zahlen: ZAHLEN_V43, stand: STAND });
+  assert.deepEqual(ok, { zahlen: ZAHLEN_V43, stand: STAND, montage: null });
   assert.deepEqual(Object.keys(ok.zahlen), LADEN_ZAHLEN_FELDER);
   assert.deepEqual(LADEN_ZAHLEN_FELDER, ['offen', 'neu', 'angebot', 'nachfassen', 'faellig', 'ausShop7Tage', 'gewonnen30Tage', 'verloren30Tage', 'angeboteOffen', 'spamVerdacht']);
   assert.equal(zahlenAus({ ...ZAHLEN_V43, stand: 'gestern' }).stand, null);
@@ -87,7 +90,7 @@ test('zahlenAus: genau die bekannten Felder als ganze Zahlen >= 0, alles andere 
 
 test('zahlenAus: spamVerdacht fehlt (App vor Version 43) → 0, die Antwort bleibt brauchbar; ist es da, gilt dieselbe Pruefung', () => {
   const alt = zahlenAus({ stand: STAND, ...ZAHLEN });
-  assert.deepEqual(alt, { zahlen: { ...ZAHLEN, spamVerdacht: 0 }, stand: STAND });
+  assert.deepEqual(alt, { zahlen: { ...ZAHLEN, spamVerdacht: 0 }, stand: STAND, montage: null });
   assert.deepEqual(Object.keys(alt.zahlen), LADEN_ZAHLEN_FELDER);
   assert.equal(zahlenAus({ ...ZAHLEN, spamVerdacht: 0 }).zahlen.spamVerdacht, 0);
   assert.equal(zahlenAus({ ...ZAHLEN, spamVerdacht: 12 }).zahlen.spamVerdacht, 12);
@@ -101,7 +104,7 @@ test('zahlenAus: spamVerdacht fehlt (App vor Version 43) → 0, die Antwort blei
 test('Abruf: nicht eingerichtet ruft nichts ab; eingerichtet holt ?ansicht=zahlen&s=… (Weiterleitung folgen) und gibt nur Zahlen und den Link zurueck - nie den Schluessel', async () => {
   const f0 = attrappe(antwort({ stand: STAND, ...ZAHLEN }));
   const leer = createLadenZahlen({ env: { TP_ENV_LOCAL: KEINE_DATEI }, fetch: f0, log: stumm });
-  assert.deepEqual(await leer.abrufen(), { eingerichtet: false });
+  assert.deepEqual(await leer.abrufen(), { eingerichtet: false, fehlt: 'url', ladenUrl: null, montageUrl: null });
   assert.equal(f0.aufrufe.length, 0);
 
   const jetzt = uhr();
@@ -115,7 +118,7 @@ test('Abruf: nicht eingerichtet ruft nichts ab; eingerichtet holt ?ansicht=zahle
   assert.equal(u.searchParams.get('s'), SCHLUESSEL);
   assert.equal(f.aufrufe[0].opt.redirect, 'follow');
   assert.ok(f.aufrufe[0].opt.signal, 'Zeitlimit gesetzt');
-  assert.deepEqual(r, { eingerichtet: true, erreichbar: true, zahlen: ZAHLEN_V43, stand: STAND, abgerufen: new Date(jetzt()).toISOString(), ladenUrl: `${BASIS}?ansicht=laden` });
+  assert.deepEqual(r, { eingerichtet: true, erreichbar: true, zahlen: ZAHLEN_V43, stand: STAND, montage: null, abgerufen: new Date(jetzt()).toISOString(), ladenUrl: `${BASIS}?ansicht=laden`, montageUrl: BASIS });
   const text = JSON.stringify(r);
   assert.ok(!text.includes(SCHLUESSEL) && !text.includes('s=') && !text.includes('Muster'), text);
 
@@ -185,6 +188,55 @@ test('echtes Zeitlimit: eine haengende Antwort bricht ab', async () => {
   assert.equal(r.grund, 'zeitlimit');
 });
 
+test('Montage: optionales Objekt, nur bekannte ganze Zahlen >= 0 je Feld; ohne gueltiges Feld null - die Laden-Zahlen bleiben unberuehrt', () => {
+  assert.deepEqual(MONTAGE_FELDER, ['einsaetzeHeute', 'einsaetzeMorgen', 'meldungenOffen', 'offenVonGestern', 'neueAuftraege', 'antraegeOffen', 'rueckmeldungenNeu']);
+  const voll = { einsaetzeHeute: 3, einsaetzeMorgen: 2, meldungenOffen: 1, offenVonGestern: 0, neueAuftraege: 4, antraegeOffen: 1, rueckmeldungenNeu: 2 };
+  // Beispielantwort der App: Laden-Zahlen plus montage, dazu ein Name, der nie durchkommen darf.
+  const r = zahlenAus({ stand: STAND, ...ZAHLEN_V43, montage: { ...voll, monteur: 'Max Muster', einsatzliste: ['Max Muster'] } });
+  assert.deepEqual(r.zahlen, ZAHLEN_V43);
+  assert.deepEqual(r.montage, voll);
+  assert.ok(!JSON.stringify(r).includes('Muster'));
+  // Teilweise: fehlende und ungueltige Felder fallen einzeln weg.
+  assert.deepEqual(montageAus({ einsaetzeHeute: 2, meldungenOffen: -1, antraegeOffen: '3', neueAuftraege: 1.5 }), { einsaetzeHeute: 2 });
+  for (const leer of [undefined, null, [], 'text', 5, {}, { einsaetzeHeute: null }]) assert.equal(montageAus(leer), null, JSON.stringify(leer));
+  // Eine kaputte montage macht die Laden-Antwort nicht unbrauchbar.
+  assert.deepEqual(zahlenAus({ ...ZAHLEN_V43, montage: 'kaputt' }).zahlen, ZAHLEN_V43);
+});
+
+test('Laden: Adresse ohne Schluessel heisst "Schluessel fehlt"; Links in die App kommen aus AUFTRAGS_APP_URL, sonst LADEN_ZAHLEN_URL', async () => {
+  assert.equal(ladenFehlt({ LADEN_ZAHLEN_URL: BASIS }), 'schluessel');
+  assert.equal(ladenFehlt({}), 'url');
+  assert.equal(ladenFehlt({ LADEN_ZAHLEN_SCHLUESSEL: SCHLUESSEL }), 'url');
+  assert.equal(ladenFehlt({ LADEN_ZAHLEN_URL: 'https://example.test/exec' }), 'url', 'fremde Adresse zaehlt nicht');
+  const f = attrappe(antwort({ stand: STAND, ...ZAHLEN }));
+  const ohneSchluessel = await createLadenZahlen({ env: { TP_ENV_LOCAL: KEINE_DATEI, LADEN_ZAHLEN_URL: BASIS }, fetch: f, log: stumm }).abrufen();
+  assert.deepEqual(ohneSchluessel, { eingerichtet: false, fehlt: 'schluessel', ladenUrl: `${BASIS}?ansicht=laden`, montageUrl: BASIS });
+  assert.equal(f.aufrufe.length, 0, 'ohne Schluessel kein Abruf');
+  const APP = 'https://script.google.com/macros/s/TEST-APP/exec';
+  const nurApp = await createLadenZahlen({ env: { TP_ENV_LOCAL: KEINE_DATEI, AUFTRAGS_APP_URL: `${APP}?ansicht=monteur` }, fetch: f, log: stumm }).abrufen();
+  assert.deepEqual(nurApp, { eingerichtet: false, fehlt: 'url', ladenUrl: `${APP}?ansicht=laden`, montageUrl: APP });
+});
+
+test('Weitere Dashboards: Werkbank, Laden und Montage aus der Umgebung, nur https; fehlt eine Adresse, fehlt der Link', () => {
+  const ohne = dashboardLinks({ env: { TP_ENV_LOCAL: KEINE_DATEI } });
+  assert.deepEqual(ohne, { werkbank: null, laden: null, montage: null });
+  const APP = 'https://script.google.com/macros/s/TEST-APP/exec';
+  const mit = dashboardLinks({ env: { TP_ENV_LOCAL: KEINE_DATEI, WERKBANK_URL: 'https://claude.ai/artifact/TEST-WERKBANK', AUFTRAGS_APP_URL: APP } });
+  assert.deepEqual(mit, { werkbank: 'https://claude.ai/artifact/TEST-WERKBANK', laden: `${APP}?ansicht=laden`, montage: APP });
+  // http, javascript: und Unsinn werden kein Link
+  for (const kaputt of ['http://claude.ai/x', 'javascript:alert(1)', 'kein link']) {
+    assert.deepEqual(dashboardLinks({ env: { TP_ENV_LOCAL: KEINE_DATEI, WERKBANK_URL: kaputt, AUFTRAGS_APP_URL: kaputt } }), { werkbank: null, laden: null, montage: null }, kaputt);
+  }
+  // Ohne AUFTRAGS_APP_URL gilt die Adresse der Laden-Zahlen (dieselbe App), ohne deren Schluessel.
+  const ueberLaden = dashboardLinks({ env: { TP_ENV_LOCAL: KEINE_DATEI, LADEN_ZAHLEN_URL: BASIS, LADEN_ZAHLEN_SCHLUESSEL: SCHLUESSEL } });
+  assert.equal(ueberLaden.montage, BASIS);
+  assert.ok(!JSON.stringify(ueberLaden).includes(SCHLUESSEL));
+  // .env.local wird gelesen, Platzhalter aus der Vorlage zaehlen nicht.
+  const root = fs.mkdtempSync(path.join(PRIVAT_DIR, 'env-'));
+  fs.writeFileSync(path.join(root, '.env.local'), `WERKBANK_URL=<https://claude.ai/artifact/ID>\nAUFTRAGS_APP_URL=${APP}\n`);
+  assert.deepEqual(dashboardLinks({ root, env: {} }), { werkbank: null, laden: `${APP}?ansicht=laden`, montage: APP });
+});
+
 test('GET /api/laden/zahlen steht in der Pfadliste und meldet ohne Einrichtung ruhig { eingerichtet: false }; nur GET', async () => {
   const { requestHandler } = await import('../../../scripts/serve-dashboard.mjs');
   const server = http.createServer(requestHandler);
@@ -193,7 +245,7 @@ test('GET /api/laden/zahlen steht in der Pfadliste und meldet ohne Einrichtung r
     const base = `http://127.0.0.1:${server.address().port}`;
     const r = await fetch(`${base}/api/laden/zahlen`);
     assert.equal(r.status, 200);
-    assert.deepEqual(await r.json(), { eingerichtet: false });
+    assert.deepEqual(await r.json(), { eingerichtet: false, fehlt: 'url', ladenUrl: null, montageUrl: null });
     const p = await fetch(`${base}/api/laden/zahlen`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
     assert.equal(p.status, 405);
   } finally { await new Promise(r => server.close(r)); }
@@ -223,14 +275,28 @@ test('Kachel auf "Heute": fuenf Zahlen, faellige Wiedervorlagen in Bernstein, 0 
   assert.ok(!/Spam/.test(mitSpam(0)), '0 Spam-Verdacht: keine Zeile');
   const zwei = mitSpam(2);
   assert.equal((zwei.match(/class="heute-kpi"/g) || []).length, 5, 'weiter fuenf Zahlen');
-  assert.match(zwei, /<p class="heute-hinweis heute-laden-spam"><b>2<\/b> Fälle aus dem Shop mit Spam-Verdacht – in der Laden-Ansicht unter „Spam prüfen“ ansehen\. In den Zahlen oben nicht enthalten\.<\/p>/);
+  assert.match(zwei, /<p class="heute-hinweis heute-laden-spam"><b>2<\/b> Fälle aus dem Shop mit Spam-Verdacht – in den Zahlen oben nicht enthalten\. <a href="https:\/\/script\.google\.com\/macros\/s\/TEST-DEPLOYMENT\/exec\?ansicht=laden&amp;filter=spam" target="_blank" rel="noopener">Spam prüfen <span aria-hidden="true">↗<\/span><\/a><\/p>/);
   assert.ok(zwei.indexOf('heute-laden-spam') > zwei.indexOf('Gewonnen'), 'Zeile steht unter den Zahlen');
   assert.match(mitSpam(1), /<b>1<\/b> Fall aus dem Shop mit Spam-Verdacht/);
+  assert.equal((zwei.match(/target="_blank" rel="noopener"/g) || []).length, 2, 'Kopf-Link und Spam-Link, beide in neuem Tab');
+
+  // ohne ladenUrl: dieselbe Zeile ohne Link, mit dem Weg in Worten
+  ladenKachel.daten = { ...ladenKachel.daten, zahlen: ZAHLEN_V43, ladenUrl: undefined };
+  const ohneUrl = heuteLaden();
+  assert.match(ohneUrl, /<p class="heute-hinweis heute-laden-spam"><b>3<\/b> Fälle aus dem Shop mit Spam-Verdacht – in der Laden-Ansicht unter „Spam prüfen“ ansehen\. In den Zahlen oben nicht enthalten\.<\/p>/);
+  assert.ok(!/href=/.test(ohneUrl), 'ohne ladenUrl weder Kopf- noch Spam-Link');
 
   ladenKachel.daten = { eingerichtet: false };
   const leer = heuteLaden();
   assert.match(leer, /Nicht eingerichtet/);
   assert.ok(!/heute-kpi"|href=/.test(leer), 'ohne Einrichtung keine Zahlen und kein Link');
+
+  // Adresse da, Schluessel fehlt: das sagen - und die Laden-Ansicht trotzdem verlinken.
+  ladenKachel.daten = { eingerichtet: false, fehlt: 'schluessel', ladenUrl: `${BASIS}?ansicht=laden`, montageUrl: BASIS };
+  const ohneSchluessel = heuteLaden();
+  assert.match(ohneSchluessel, /Schlüssel fehlt/);
+  assert.ok(!/Nicht eingerichtet/.test(ohneSchluessel));
+  assert.match(ohneSchluessel, /href="https:\/\/script\.google\.com\/macros\/s\/TEST-DEPLOYMENT\/exec\?ansicht=laden" target="_blank" rel="noopener">Laden-Ansicht öffnen/);
 
   ladenKachel.daten = { eingerichtet: true, erreichbar: false, grund: 'kein-zugriff', abgerufen: STAND, ladenUrl: `${BASIS}?ansicht=laden` };
   const kz = heuteLaden();
@@ -245,4 +311,68 @@ test('Kachel auf "Heute": fuenf Zahlen, faellige Wiedervorlagen in Bernstein, 0 
   heuteLaden();
   await new Promise(r => setImmediate(r));
   assert.deepEqual(holt, ['/api/laden/zahlen']);
+});
+
+test('Spam-Link: aus ladenUrl per URL-API, ansicht=laden und filter=spam, weitere Parameter bleiben; sonst kein Link', async () => {
+  globalThis.document ??= { querySelector: () => null, querySelectorAll: () => [], addEventListener() {}, documentElement: { dataset: {}, setAttribute() {} } };
+  globalThis.location ??= { hash: '', search: '' };
+  const { spamUrl } = await import('../ansichten/heute/laden.mjs');
+  const params = url => Object.fromEntries(new URL(url).searchParams);
+
+  // so liefert ihn der Server (ladenUrl() oben)
+  assert.equal(spamUrl(ladenUrl(BASIS)), `${BASIS}?ansicht=laden&filter=spam`);
+  // vorhandene Parameter bleiben, ein anderer Filter wird ersetzt, ansicht wird gesetzt, wenn sie fehlt
+  assert.deepEqual(params(spamUrl(`${BASIS}?ansicht=laden&authuser=1`)), { ansicht: 'laden', authuser: '1', filter: 'spam' });
+  assert.deepEqual(params(spamUrl(`${BASIS}?ansicht=laden&filter=neu`)), { ansicht: 'laden', filter: 'spam' });
+  assert.deepEqual(params(spamUrl(BASIS)), { ansicht: 'laden', filter: 'spam' });
+  assert.equal(new URL(spamUrl(`${BASIS}?ansicht=laden`)).pathname, '/macros/s/TEST-DEPLOYMENT/exec', 'Pfad bleibt');
+  // kein oder unbrauchbarer ladenUrl: kein Link
+  for (const kaputt of [undefined, null, '', 'kein-url', '/relativ?ansicht=laden', 'javascript:alert(1)', 'http://script.google.com/macros/s/X/exec']) {
+    assert.equal(spamUrl(kaputt), '', String(kaputt));
+  }
+});
+
+test('Kachel "Montage": vorhandene Zahlen zeigen, fehlende weglassen; ohne Objekt oder Schluessel "noch nicht verbunden"; Link aus der App-Adresse', async () => {
+  globalThis.document ??= { querySelector: () => null, querySelectorAll: () => [], addEventListener() {}, documentElement: { dataset: {}, setAttribute() {} } };
+  globalThis.location ??= { hash: '', search: '' };
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ eingerichtet: false }) });
+  const { heuteMontage, ladenKachel } = await import('../ansichten/heute/laden.mjs');
+  const APP_LINK = /href="https:\/\/script\.google\.com\/macros\/s\/TEST-DEPLOYMENT\/exec" target="_blank" rel="noopener">Montage-App öffnen/;
+  ladenKachel.am = Date.now();
+
+  // Beispielantwort mit allen sieben Zahlen
+  ladenKachel.daten = { eingerichtet: true, erreichbar: true, zahlen: ZAHLEN_V43, stand: STAND, abgerufen: STAND, ladenUrl: `${BASIS}?ansicht=laden`, montageUrl: BASIS,
+    montage: { einsaetzeHeute: 3, einsaetzeMorgen: 2, meldungenOffen: 1, offenVonGestern: 0, neueAuftraege: 4, antraegeOffen: 1, rueckmeldungenNeu: 2 } };
+  const voll = heuteMontage();
+  assert.equal((voll.match(/class="heute-kpi"/g) || []).length, 7);
+  for (const t of ['Einsätze heute', 'Einsätze morgen', 'Offen von gestern', 'Meldungen offen', 'Anträge offen', 'Neue Aufträge', 'Neue Rückmeldungen']) assert.ok(voll.includes(t), t);
+  assert.match(voll, /<div class="n warn">1<\/div>\s*<div class="l">Meldungen offen/);
+  assert.match(voll, /<div class="n null">0<\/div>\s*<div class="l">Offen von gestern/);
+  assert.match(voll, /<div class="n">3<\/div>\s*<div class="l">Einsätze heute/);
+  assert.match(voll, APP_LINK);
+
+  // nur zwei Zahlen: genau zwei Kacheln
+  ladenKachel.daten = { ...ladenKachel.daten, montage: { einsaetzeHeute: 5, rueckmeldungenNeu: 1 } };
+  const zwei = heuteMontage();
+  assert.equal((zwei.match(/class="heute-kpi"/g) || []).length, 2);
+  assert.ok(!/Anträge offen/.test(zwei));
+
+  // ohne montage (aeltere App): noch nicht verbunden, Link bleibt
+  ladenKachel.daten = { ...ladenKachel.daten, montage: null };
+  const alt = heuteMontage();
+  assert.match(alt, /noch nicht verbunden/);
+  assert.ok(!/heute-kpi"/.test(alt));
+  assert.match(alt, APP_LINK);
+
+  // ohne Schluessel: noch nicht verbunden; ohne App-Adresse kein Link
+  ladenKachel.daten = { eingerichtet: false, fehlt: 'schluessel', ladenUrl: `${BASIS}?ansicht=laden`, montageUrl: BASIS };
+  assert.match(heuteMontage(), /noch nicht verbunden/);
+  ladenKachel.daten = { eingerichtet: false, fehlt: 'url', ladenUrl: null, montageUrl: null };
+  const nichts = heuteMontage();
+  assert.match(nichts, /noch nicht verbunden/);
+  assert.ok(!/href=/.test(nichts));
+
+  // App nicht erreichbar
+  ladenKachel.daten = { eingerichtet: true, erreichbar: false, grund: 'netz', abgerufen: STAND, ladenUrl: `${BASIS}?ansicht=laden`, montageUrl: BASIS };
+  assert.match(heuteMontage(), /nicht erreichbar/);
 });

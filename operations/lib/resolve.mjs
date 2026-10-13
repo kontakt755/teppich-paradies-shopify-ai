@@ -303,9 +303,14 @@ export function resolveLineItem({ lineItem, variant, alleZeilen = [] } = {}) {
   const gh = grosshaendlerId({ variantMetafelder: vm, produktMetafelder: pm, sku });
 
   const masse = parseMasse(props['Maße']);
+  // Dieselbe Angabe unter zwei Namen: der Rollenrechner schreibt sichtbar
+  // "Aus Rolle", der Konfigurator fuer Teppich nach Mass privat
+  // "_Zuschnitt aus Rolle" (assets/tp-einfass-konfigurator.js). Ohne den
+  // zweiten Namen blieb die Bestellmenge jedes Massteppichs ungeklaert.
+  const ausRolle = leer(props['Aus Rolle']) ? props['_Zuschnitt aus Rolle'] : props['Aus Rolle'];
   const eingaben = {
     masse: masse ? { breiteCm: masse.w, laengeCm: masse.l } : null,
-    ausRolleCm: leer(props['Aus Rolle']) ? null : ganzzahlCm(props['Aus Rolle']),
+    ausRolleCm: leer(ausRolle) ? null : ganzzahlCm(ausRolle),
     gewuenschteLaengeCm: leer(props['Gewünschte Länge']) ? null : ganzzahlCm(props['Gewünschte Länge']),
     ihreBreiteCm: leer(props['Ihre Breite']) ? null : ganzzahlCm(props['Ihre Breite']),
     rollenbreiteCm: leer(props['Rollenbreite']) ? null : ganzzahlCm(props['Rollenbreite']),

@@ -209,7 +209,7 @@ async function reachCheckout(page, setPhase) {
 
 async function packageFlow({ page, context, result, setPhase }) {
   setPhase('navigation');
-  await page.goto(targetUrl('/products/marlow-eiche-nordisch-klickvinyl-7mm', baseUrl), { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  await page.goto(targetUrl('/products/turku-eiche-nordisch-klickvinyl-7mm', baseUrl), { waitUntil: 'domcontentloaded', timeout: 30_000 });
   setPhase('calculator');
   // Das Flaechenfeld ist bewusst type="text" mit inputmode="decimal": in einem
   // number-Input ist "1,5" ein ungueltiger Wert und kommt als leerer String an,

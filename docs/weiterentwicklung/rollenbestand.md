@@ -53,8 +53,7 @@ Ladenverkaeufe werden in derselben Bestandsquelle als laufende Meter gebucht.
 Gebaut (2026-10-12): Control Center, Ansicht Sonderposten, Knopf "Im Laden
 verkauft" an der Restrolle - Laenge eingeben, abgezogen wird Laenge x volle
 Rollenbreite in ganzen m2 (aufgerundet). Details: `docs/control-center/ARCHITEKTUR.md`,
-Abschnitt 13. Der Control-Center-Zugang braucht dafuer `write_inventory`
-(Stand 2026-10-12 noch nicht erteilt; bis dahin sagt der Dialog das und bucht nichts).
+Abschnitt 13. Der Control-Center-Zugang hat dafuer seit 2026-10-12 `write_inventory`.
 Buchungen brauchen atomare Bestandsaenderung, Idempotenz und Gegenprobe;
 Antwortverlust darf nicht zu einer zweiten Abbuchung fuehren.
 

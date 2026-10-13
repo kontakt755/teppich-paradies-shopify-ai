@@ -285,7 +285,9 @@ export function oeffne(datei = dbPfad(), { jetzt = () => new Date() } = {}) {
     uebersicht() {
       const zahl = (q, ...w) => sql.prepare(q).get(...w).n;
       const offen = "('NEU','IN_PRUEFUNG')";
-      const geplant = lies('beitrag', 'WHERE status IN (?, ?) ORDER BY geplant_am LIMIT 20', BEITRAG_STATUS.GEPLANT, BEITRAG_STATUS.IN_ARBEIT).map(b => {
+      // Ohne LIMIT: eine abgeschnittene Liste sah aus wie ein leerer Kalender
+      // (der Planer belegt hoechstens vier Wochen, das bleibt ueberschaubar).
+      const geplant = lies('beitrag', 'WHERE status IN (?, ?) ORDER BY geplant_am', BEITRAG_STATUS.GEPLANT, BEITRAG_STATUS.IN_ARBEIT).map(b => {
         const i = db.inhalt(b.inhalt_id);
         return { id: b.id, geplantAm: b.geplant_am, format: b.format, typ: i?.typ ?? null, typLabel: TYPEN[i?.typ]?.label ?? i?.typ ?? 'Beitrag', titel: i?.titel ?? '' };
       });

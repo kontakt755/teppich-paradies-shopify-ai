@@ -18,22 +18,28 @@
  *   LADEN_ZAHLEN_URL=https://script.google.com/macros/s/<Deployment-ID>/exec
  *   LADEN_ZAHLEN_SCHLUESSEL=<derselbe Wert wie die Script-Property LADEN_ZAHLEN_SCHLUESSEL>
  *
- * Fehlt eines davon, ist die Kachel „nicht eingerichtet" - kein Fehler.
- * Die Datei wird bei jedem Abruf neu gelesen; ein Eintrag wirkt also ohne Neustart.
+ * Fehlt eines davon, ist die Kachel „nicht eingerichtet" (`fehlt: 'url'`) bzw. „Schlüssel fehlt"
+ * (`fehlt: 'schluessel'`) - kein Fehler. Die Datei wird bei jedem Abruf neu gelesen; ein Eintrag
+ * wirkt also ohne Neustart.
+ *
+ * Seit 2026-10-12 liefert die App zusaetzlich ein Objekt `montage` mit optionalen Zahlen der
+ * Montage-App (MONTAGE_FELDER). Es darf fehlen oder unvollstaendig sein: durchgereicht werden nur
+ * gueltige Zahlen, alles andere faellt weg - die Laden-Zahlen bleiben davon unberuehrt.
  *
  * Antwort an den Browser (GET /api/laden/zahlen):
- *   { eingerichtet: false }
- *   { eingerichtet: true, erreichbar: true,  zahlen: {...}, stand, abgerufen, ladenUrl }
- *   { eingerichtet: true, erreichbar: false, grund, abgerufen, ladenUrl }
+ *   { eingerichtet: false, fehlt: 'url'|'schluessel', ladenUrl, montageUrl }
+ *   { eingerichtet: true, erreichbar: true,  zahlen: {...}, montage: {...}|null, stand, abgerufen, ladenUrl, montageUrl }
+ *   { eingerichtet: true, erreichbar: false, grund, abgerufen, ladenUrl, montageUrl }
  * grund: 'kein-zugriff' (Schluessel passt nicht), 'zeitlimit', 'netz', 'http', 'antwort'.
+ * ladenUrl/montageUrl: Laden-Ansicht bzw. Startseite der App (ohne Schluessel), sobald eine
+ * App-Adresse bekannt ist (AUFTRAGS_APP_URL, sonst LADEN_ZAHLEN_URL; scripts/weitere-dashboards.mjs).
  *
  * Zwischenspeicher: eine erfolgreiche Antwort gilt 5 Minuten, ein Fehlschlag 1 Minute
  * (sonst haengt jedes Neuzeichnen von „Heute" am Zeitlimit). Gleichzeitige Anfragen
  * teilen sich einen Abruf. Geloggt wird nur der Grund, nie die URL - in ihr steht der
  * Schluessel.
  */
-import path from 'node:path';
-import { ladeEnvLocal } from '../operations/sync/zugang.mjs';
+import { umgebungswerte, auftragsAppBasis, ladenAnsichtUrl } from './weitere-dashboards.mjs';
 
 /** Felder, die durchgereicht werden - alles andere aus der Antwort faellt weg. */
 export const LADEN_ZAHLEN_FELDER = Object.freeze([
@@ -45,6 +51,10 @@ export const LADEN_ZAHLEN_FELDER = Object.freeze([
  * „nicht erreichbar". Sind sie da, gilt dieselbe Pruefung wie fuer alle anderen.
  */
 export const LADEN_ZAHLEN_SPAETER = Object.freeze(['spamVerdacht']);
+/** Zahlen der Montage-App im Objekt `montage` - jede einzeln optional, nie Namen. */
+export const MONTAGE_FELDER = Object.freeze([
+  'einsaetzeHeute', 'einsaetzeMorgen', 'meldungenOffen', 'offenVonGestern', 'neueAuftraege', 'antraegeOffen', 'rueckmeldungenNeu',
+]);
 export const LADEN_CACHE_MS = 5 * 60_000;
 export const LADEN_FEHLER_CACHE_MS = 60_000;
 export const LADEN_ZEITLIMIT_MS = 15_000;
@@ -59,8 +69,7 @@ const MAX_ANTWORT = 8 * 1024;
  * Tippfehler den Schluessel nicht an einen fremden Rechner schickt.
  */
 export function ladenKonfig({ root, env = process.env } = {}) {
-  const datei = env.TP_ENV_LOCAL || path.join(root || process.cwd(), '.env.local');
-  const werte = { ...ladeEnvLocal(datei), ...env };
+  const werte = umgebungswerte({ root, env });
   const roh = String(werte.LADEN_ZAHLEN_URL || '').trim();
   const schluessel = String(werte.LADEN_ZAHLEN_SCHLUESSEL || '').trim();
   if (!roh || !schluessel) return null;
@@ -74,9 +83,30 @@ export function ladenKonfig({ root, env = process.env } = {}) {
 
 /** Link auf die Laden-Ansicht der Auftrags-App (ohne Schluessel). */
 export function ladenUrl(basis) {
-  const u = new URL(basis);
-  u.searchParams.set('ansicht', 'laden');
-  return u.toString();
+  return ladenAnsichtUrl(basis);
+}
+
+/**
+ * Was fehlt, wenn ladenKonfig() null liefert: Adresse da, aber kein Schluessel -> 'schluessel'
+ * (die Kachel sagt dann „Schlüssel fehlt" statt „Nicht eingerichtet"); sonst 'url'.
+ */
+export function ladenFehlt(werte) {
+  const roh = String(werte.LADEN_ZAHLEN_URL || '').trim();
+  const schluessel = String(werte.LADEN_ZAHLEN_SCHLUESSEL || '').trim();
+  let urlOk = false;
+  try { const u = new URL(roh); urlOk = u.protocol === 'https:' && u.hostname === 'script.google.com'; } catch { urlOk = false; }
+  return urlOk && !schluessel ? 'schluessel' : 'url';
+}
+
+/**
+ * Zahlen der Montage-App: nur bekannte Felder, jedes eine ganze Zahl >= 0. Ungueltiges faellt
+ * einzeln weg; ohne ein einziges gueltiges Feld (oder ohne Objekt) null = „noch nicht verbunden".
+ */
+export function montageAus(m) {
+  if (!m || typeof m !== 'object' || Array.isArray(m)) return null;
+  const zahlen = {};
+  for (const f of MONTAGE_FELDER) if (Number.isInteger(m[f]) && m[f] >= 0) zahlen[f] = m[f];
+  return Object.keys(zahlen).length ? zahlen : null;
 }
 
 /**
@@ -94,7 +124,7 @@ export function zahlenAus(j) {
     zahlen[f] = n;
   }
   const stand = typeof j.stand === 'string' && !Number.isNaN(Date.parse(j.stand)) ? new Date(j.stand).toISOString() : null;
-  return { zahlen, stand };
+  return { zahlen, stand, montage: montageAus(j.montage) };
 }
 
 async function holen(konfig, fetchFn, zeitlimitMs) {
@@ -132,8 +162,12 @@ export function createLadenZahlen({ root, env = process.env, fetch: fetchFn = gl
   let laeuft = null;  // { kennung, promise }
 
   async function abrufen() {
+    const werte = umgebungswerte({ root, env });
+    // Links in die App gibt es, sobald ihre Adresse bekannt ist - auch ohne Schluessel.
+    const app = auftragsAppBasis(werte);
+    const links = { ladenUrl: ladenAnsichtUrl(app), montageUrl: app };
     const konfig = ladenKonfig({ root, env });
-    if (!konfig) return { eingerichtet: false };
+    if (!konfig) return { eingerichtet: false, fehlt: ladenFehlt(werte), ...links };
     // Andere URL oder anderer Schluessel in .env.local: alten Stand nicht weiter zeigen.
     const kennung = `${konfig.basis}\n${konfig.schluessel}`;
     if (cache && cache.kennung === kennung && jetzt() < cache.bis) return cache.antwort;
@@ -142,7 +176,7 @@ export function createLadenZahlen({ root, env = process.env, fetch: fetchFn = gl
       let erg;
       try { erg = await holen(konfig, fetchFn, zeitlimitMs); } catch { erg = { erreichbar: false, grund: 'netz' }; }
       if (!erg.erreichbar) log?.warn?.(`[laden-zahlen] Auftrags-App nicht abrufbar: ${erg.grund}`);
-      const antwort = { eingerichtet: true, ...erg, abgerufen: new Date(jetzt()).toISOString(), ladenUrl: ladenUrl(konfig.basis) };
+      const antwort = { eingerichtet: true, ...erg, abgerufen: new Date(jetzt()).toISOString(), ...links };
       cache = { kennung, bis: jetzt() + (erg.erreichbar ? LADEN_CACHE_MS : LADEN_FEHLER_CACHE_MS), antwort };
       return antwort;
     })();

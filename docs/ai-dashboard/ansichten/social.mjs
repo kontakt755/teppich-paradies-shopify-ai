@@ -46,7 +46,8 @@ function uploadKarte() {
             : `<div class="m">Gültig seit ${esc(datum(z.seit))}. Der Link wurde nur beim Anlegen angezeigt –
                 für einen kopierbaren Link einmal „Neuen Link anlegen“. Der alte bleibt gültig.</div>`}
         </div>
-        <div class="r">${z.link ? `<button type="button" class="btn btn-sm btn-primary" data-kopiertext="${esc(z.link)}">Kopieren</button>` : ''}</div>
+        <div class="r">${z.link ? `<button type="button" class="btn btn-sm btn-primary" data-kopiertext="${esc(z.link)}">Kopieren</button>` : ''}
+          <button type="button" class="btn btn-sm" data-social-sperren="${esc(z.name)}" data-nur-inhaber>Sperren</button></div>
       </div>`).join('')}</div>`;
   }
   const basisFehlt = d && !d.fehler && d.basisVorhanden === false
@@ -113,8 +114,10 @@ function weitereLinks() {
     ['https://www.instagram.com/teppich.paradies/', 'Instagram'],
     ['https://www.facebook.com/profile.php?id=100079849794255', 'Facebook'],
   ];
+  // Baustellenfotos (#/fotos) haben seit 2026-10-12 keinen eigenen Menuepunkt mehr - der Weg
+  // vom Handy ist der Upload-Link unten; die eingereichten Bilder stehen hier einen Klick weiter.
   return `<p class="social-weitere small">${links.map(([href, text]) =>
-    `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(text)}</a>`).join('<span aria-hidden="true">·</span>')}</p>`;
+    `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(text)}</a>`).join('<span aria-hidden="true">·</span>')}<span aria-hidden="true">·</span><a href="#/fotos">Baustellenfotos</a></p>`;
 }
 
 export function viewSocial() {
@@ -156,5 +159,19 @@ export function socialAbsenden(e) {
     .then(d => { social.daten = d; toast(`Link für ${name} angelegt – jetzt kopieren`); })
     .catch(err => toast(err.message, 'crit'))
     .finally(() => { social.legtAn = false; render(); });
+  return true;
+}
+
+/** "Sperren" (nur Inhaber): mit Rueckfrage, denn die Monteure koennen danach nichts mehr hochladen. */
+export function socialKlick(e) {
+  const knopf = e.target.closest?.('[data-social-sperren]');
+  if (!knopf) return false;
+  e.preventDefault();
+  const name = knopf.dataset.socialSperren;
+  if (!window.confirm(`Link für ${name} sperren? Er funktioniert danach nicht mehr.`)) return true;
+  orgSchreiben('/api/social/sperren', { name })
+    .then(d => { social.daten = d; toast(`Link für ${name} gesperrt`); })
+    .catch(err => toast(err.message, 'crit'))
+    .finally(() => render());
   return true;
 }

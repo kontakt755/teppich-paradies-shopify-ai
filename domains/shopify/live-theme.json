@@ -3,14 +3,14 @@
   "live": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-12T09:18:04Z",
-    "verifiedBy": "Shopify Admin API role MAIN nach workflow:live von main da936848 (Teppich nach Mass ohne Nadelvlies #1120); volle Preview-/Live-Gates und oeffentlicher Shop ohne Vorschau bestanden"
+    "verifiedAt": "2026-10-13T06:22:36Z",
+    "verifiedBy": "Shopify CLI theme list role live nach workflow:live von main 3625d40b (JSON-LD ohne Default Title + mobile Darstellung #1174); volle Preview-Gates (COMPARE/SEO/FULL QA/SALES PASS) und Sichtpruefung Preview mobil bestanden"
   },
   "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-12T09:18:04Z",
-    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live von main da936848; naechstes Preview-Ziel"
+    "verifiedAt": "2026-10-13T06:22:36Z",
+    "verifiedBy": "Shopify CLI theme list role unpublished nach workflow:live von main 3625d40b; naechstes Preview-Ziel"
   },
   "fallback": {
     "themeId": "206590509390",
@@ -27,6 +27,68 @@
     "note": "Einziges Ziel fuer Zwischenstaende und Ausprobieren (nur --only-Pushes). Niemals als --theme-id fuer workflow:preview/live verwenden, niemals publishen. Das Preview-Ziel ist ausschliesslich preview.themeId - wer dorthin Zwischenstaende pusht, blockiert den Livegang (PREVIEW_DRIFT/PREVIEW_DIFF, dreimal am 2026-09-21/22)."
   },
   "retired": [
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-10-13",
+      "note": "Nach Livegang JSON-LD/mobile Darstellung #1174 (main 3625d40b) abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen per Shopify CLI bestaetigt."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-10-12",
+      "note": "Nach Livegang Unterlagen-Tipp Warenkorb + FAQ #1163 (main d981fd16) abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen per Shopify Admin API bestaetigt."
+    },
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-10-12",
+      "note": "Nach Livegang Musterregeln #1160 (main 78375991) abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen per Shopify Admin API bestaetigt."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-10-12",
+      "note": "Nach Livegang Befestigungs-Tipp mit Teppichbremse #1158 (main de256c87) abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen per Shopify Admin API bestaetigt."
+    },
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-10-12",
+      "note": "Nach Livegang Befestigungs-Tipp sanfterer Text #1150 (main 6a28db25) abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen per Shopify Admin API bestaetigt."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-10-12",
+      "note": "Nach Livegang Befestigungs-Tipp alle Kanten #1146 (main 6377e2ae) abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen per Shopify Admin API bestaetigt."
+    },
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-10-12",
+      "note": "Nach Livegang Befestigungs-Tipp gekettelte Teppiche #1141 (main 1cb6b086) abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen per Shopify Admin API bestaetigt."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-10-12",
+      "note": "Nach Livegang Vorwerk Kontrast-Paspel #1136 (main 091ca571) abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen per Shopify Admin API bestaetigt."
+    },
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-10-12",
+      "note": "Nach Livegang Teppich nach Mass Vorwerk #1132, Suchfarbe #1078 (main a62788b4) abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen per Shopify Admin API bestaetigt."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "verifiedAt": "2026-10-12T09:18:04Z",
+      "verifiedBy": "Shopify Admin API role MAIN nach workflow:live von main da936848 (Teppich nach Mass ohne Nadelvlies #1120); volle Preview-/Live-Gates und oeffentlicher Shop ohne Vorschau bestanden",
+      "retiredAt": "2026-10-12T10:07:43Z",
+      "reason": "Rollentausch nach Massauswahl-Korrektur #1124; bisheriges Live-Theme bleibt als naechstes Preview-Ziel erhalten"
+    },
     {
       "themeId": "204438208846",
       "name": "preview-main-2026-09-15",

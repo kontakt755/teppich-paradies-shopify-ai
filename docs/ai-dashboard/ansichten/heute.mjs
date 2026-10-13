@@ -3,10 +3,16 @@
  *
  *   1. "N offene To-dos fuer dich" - je Zeile Titel, eine Zeile Kontext, genau ein Knopf
  *   2. Datenstand (klein) und, beim Inhaber, was im Laden und bei der Website offen ist
+ *   2a. "Muster nachfassen" (ansichten/heute/muster-nachfassen.mjs) - nicht in der Website-Sicht,
+ *       die offenen Kunden zaehlen bei N mit
  *   3. "Wer wartet auf was" - wir / Lieferant / Kunde
  *   3a. "Laden" - Zahlen aus der Auftrags-App (ansichten/heute/laden.mjs), nicht in der Website-Sicht
+ *   3b. "Montage" - Zahlen der Montage-App (ansichten/heute/laden.mjs), nicht in der Website-Sicht
  *   4. Kennzahlen (nur Inhaber, nur was der Export hergibt)
- *   5. die bisherigen Bloecke, eingeklappt (ansichten/heute/bisher.mjs)
+ *
+ * Die frueheren eingeklappten "Weiteren Uebersichten" (Einkaufszahlen, Rueckrufe, Kundenfaelle,
+ * Shop-Wache, Shop-Zahlen als Tabelle, GitHub-Arbeit) sind am 2026-10-12 entfallen: jede Zahl
+ * darin stand schon oben, in "Kunden", "Einkauf" oder "Entwicklung" - teils mit anderem Stand.
  *
  * To-dos und Spalten werden nicht erfasst, sondern abgeleitet: lib/todos.mjs rechnet sie
  * aus den Antworten der vorhandenen Endpunkte. Diese Datei laedt und zeichnet nur.
@@ -18,6 +24,7 @@ import { state } from '../kern/zustand.mjs';
 import { esc, fmtDateTime, plural } from '../kern/helfer.mjs';
 import { darfAnsicht } from '../kern/router.mjs';
 import { istNurLesend } from '../kern/sitzung.mjs';
+import { schnittJeBezahlter } from '../lib/kennzahlen.mjs';
 import { stoerungState } from '../bausteine/karten.mjs';
 import { ensureAktualisierung, aktualisierenButton, aktualisierungHealth } from '../bausteine/aktualisierung.mjs';
 import { einkauf, ensureEinkaufAuftragsstatus, ensureEinkaufKennzahlen, anzeigeWert } from './einkauf/auftragsfluss.mjs';
@@ -26,16 +33,16 @@ import { kunden } from './kunden/gemeinsam.mjs';
 import { ensureKundenBestellungen } from './kunden/bestellungen.mjs';
 import { ensureKundenRueckrufe } from './kunden/rueckrufe.mjs';
 import { ensureKundenFaelle } from './kunden/faelle.mjs';
-import { heuteLaden } from './heute/laden.mjs';
-import { shopwache } from './shopwache.mjs';
-import { heuteDaten, ensureHeuteLieferanten, ensureHeuteAufgaben } from './heute/daten.mjs';
-import { heuteBisher } from './heute/bisher.mjs';
+import { heuteLaden, heuteMontage } from './heute/laden.mjs';
+import { shopwache, ensureShopwache } from './shopwache.mjs';
+import { heuteDaten, ensureHeuteLieferanten, ensureHeuteAufgaben, ensureHeuteMusterTexte } from './heute/daten.mjs';
+import { musterNachfassenStand, musterNachfassenBlock } from './heute/muster-nachfassen.mjs';
 
 const TODOS_SICHTBAR = 7;      // "eine kurze Liste" - der Rest steht einen Klick weiter
 const SPALTE_SICHTBAR = 6;
 
 const SPALTEN = [
-  ['wir', 'Wir sind dran', 'bestellen, nachhaken, zurückrufen', 'Wir'],
+  ['wir', 'Wir sind dran', 'bestellen, nachhaken, nachfassen', 'Wir'],
   ['lieferant', 'Lieferant ist dran', 'Muster oder Ware bestellt', 'Lieferant'],
   ['kunde', 'Kunde ist dran', 'prüft Muster, zahlt oder entscheidet', 'Kunde'],
 ];
@@ -69,6 +76,9 @@ export function viewHeute() {
   ensureKundenBestellungen(); ensureEinkaufAuftragsstatus(); ensureKundenRueckrufe(); ensureKundenFaelle();
   ensureHeuteLieferanten(); ensureHeuteAufgaben(); ensureAktualisierung();
   if (istInhaber()) ensureEinkaufKennzahlen();
+  // Die Shop-Wache liefert To-dos fuer den Inhaber - geladen wurde sie bisher nur nebenbei
+  // von der eingeklappten Zeile weiter unten.
+  if (darfAnsicht('shopwache')) ensureShopwache();
 
   const q = quellen();
   const b = benutzer();
@@ -80,17 +90,24 @@ export function viewHeute() {
   const sicht = istInhaber() ? (SICHTEN.includes(gewuenscht) ? gewuenscht : 'laden') : eigeneSicht;
   const opt = { sicht, ich: heuteDaten.aufgaben?.ich || b?.kuerzel || b?.name || null, alle: istInhaber() && sicht !== 'inhaber', lieferantName, klartext: hinweisText };
   const todos = leiteTodosAb(q, opt);
-  const wartet = werWartet(q, opt);
+  // Faellige Nachfragen bei Musterkunden: dort sind wir dran, nicht der Kunde. Ohne diesen
+  // Abgleich stand derselbe Kunde unter "Muster nachfassen" und zugleich unter "Kunde ist dran".
+  const musterAlle = musterNachfassenStand();
+  const wartet = werWartet(q, { ...opt, nachfassen: new Set(musterAlle.offen.map(e => e.orderId)) });
+  // Muster nachfassen macht der Laden (Inhaberentscheidung 2026-10-10) - in der Website-Sicht nicht.
+  const muster = sicht === 'website' ? { offen: [], erledigt: [] } : musterAlle;
+  if (muster.offen.length) ensureHeuteMusterTexte();
 
   return `<div class="heute">
-    ${kopf(todos.length, sicht)}
-    ${todoListe(todos)}
-    ${istInhaber() && sicht !== 'laden' ? sprungfelder(zaehleTodos(q, opt), sicht) : ''}
+    ${kopf(todos.length + muster.offen.length, sicht)}
+    ${todoListe(todos, muster.offen.length)}
+    ${istInhaber() && sicht !== 'laden' ? sprungfelder(mitMusterImLaden(zaehleTodos(q, opt), musterAlle.offen.length), sicht) : ''}
     ${datenstandZeile(sicht)}
+    ${musterNachfassenBlock(muster)}
     ${werWartetBlock(wartet)}
     ${sicht === 'website' ? '' : heuteLaden()}
+    ${sicht === 'website' ? '' : heuteMontage()}
     ${istInhaber() ? kennzahlenBlock() : ''}
-    ${heuteBisher()}
   </div>`;
 }
 
@@ -130,7 +147,7 @@ function todoZeile(t, erste) {
   </div>`;
 }
 
-function todoListe(todos) {
+function todoListe(todos, musterOffen = 0) {
   // Solange die Bestelldaten noch laden, waere "Alles erledigt" eine Behauptung ohne Grundlage.
   const laedt = !kunden.bestellungen || !einkauf.auftragsstatus || !heuteDaten.aufgaben;
   const stoerung = [kunden.bestellungen, kunden.rueckrufe, heuteDaten.aufgaben].find(d => d?.fehler);
@@ -142,10 +159,20 @@ function todoListe(todos) {
     inhalt = oben.map((t, i) => todoZeile(t, i === 0)).join('')
       + (rest.length ? `<details class="heute-rest"><summary>Alle anzeigen (+${rest.length})</summary>${rest.map(t => todoZeile(t, false)).join('')}</details>` : '');
   } else if (laedt) inhalt = `<div class="heute-leer">Lade To-dos …</div>`;
-  else inhalt = `<div class="heute-leer"><strong>Alles erledigt.</strong> Nichts wartet auf dich.</div>`;
+  // "Alles erledigt" stimmt nicht, solange weiter unten Musterkunden aufs Nachfassen warten.
+  else if (musterOffen) inhalt = `<div class="heute-leer">Sonst nichts – nur die Musterkunden weiter unten nachfassen.</div>`;
+  else inhalt =`<div class="heute-leer"><strong>Alles erledigt.</strong> Nichts wartet auf dich.</div>`;
   return `<section class="heute-todos" aria-label="Offene To-dos">${inhalt}</section>
     ${stoerung ? stoerungState(stoerung, 'Ein Teil der Daten') : ''}
     ${ohneBestelldaten ? `<p class="heute-hinweis">Bestelldaten fehlen noch – To-dos aus Bestellungen können deshalb nicht erscheinen. ${esc(kunden.bestellungen.hinweis || '')}</p>` : ''}`;
+}
+
+/**
+ * Muster nachfassen macht der Laden und zaehlt dort in der Ueberschrift mit.
+ * Ohne sie stand im Sprungfeld "2 offen im Laden", die Laden-Ansicht zeigte 5.
+ */
+function mitMusterImLaden(zahlen, musterOffen) {
+  return { ...zahlen, laden: (zahlen.laden || 0) + musterOffen };
 }
 
 /** Inhaber: wie viel liegt im Laden, wie viel bei der Website - ein Klick wechselt die Ansicht. */
@@ -202,6 +229,13 @@ function werWartetBlock(w) {
   </section>`;
 }
 
+/** Schnitt je bezahlter Bestellung fuer die Kachel; ohne Bestellung mit Betrag ein Strich. */
+function schnittText(z, geld) {
+  if (!z) return null;
+  const n = schnittJeBezahlter(z);
+  return n ? geld(n, z) : '–';
+}
+
 /**
  * Kennzahlen: nur, was der Shop-Export (/api/einkauf/kennzahlen) wirklich enthaelt -
  * Bestellungen, Muster, Umsatz und Bestellwert fuer 7 und 30 Tage. Einen Wochenverlauf
@@ -227,7 +261,7 @@ function kennzahlenBlock() {
       ${kachel('Bestellungen', zahl(z7?.bestellungen), zahl(z30?.bestellungen))}
       ${kachel('davon kostenlose Muster', zahl(z7?.kostenlos), zahl(z30?.kostenlos))}
       ${kachel('Umsatz', geld(z7?.umsatz, z7), geld(z30?.umsatz, z30))}
-      ${kachel('Ø Bestellwert', z7?.bestellungen ? geld(z7?.durchschnitt, z7) : null, z30?.bestellungen ? geld(z30?.durchschnitt, z30) : null)}
+      ${kachel('Ø je bezahlter Bestellung', schnittText(z7, geld), schnittText(z30, geld))}
     </div>
   </section>`;
 }

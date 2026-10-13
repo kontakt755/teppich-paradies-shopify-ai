@@ -471,6 +471,26 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Nächste Stufe:** Falls gewünscht, offene Fragen an den Inhaber aus der Werkbank als Zähler an den Link
   hängen (bräuchte einen lesenden Abruf über den Server).
 
+## 2026-10-10 · „Muster nachfassen" auf „Heute"
+
+- **Geändert:** Inhaberentscheidung vom 10.10. (Werkbank w-035): der Verkauf im Laden fasst Musterkunden
+  nach. Neue Karte „Muster nachfassen" auf „Heute" (Sichten Laden und Alles) mit Kunde, Bestellnummer,
+  Bestelldatum, Versand, Mustern je Produkt, Kontaktweg, Textvorschlag (aufklappbar, kopierbar, als
+  `mailto:` vorbefüllt) und dem Knopf „Erledigt – nachgefasst". Der Knopf ist der vorhandene
+  Zeitleisten-Schritt `nachgefasst` und hält wer und wann fest; Erledigtes bleibt eine Woche mit wer/wann
+  sichtbar. Regeln (erste Nachfrage ab 4 Tagen nach Versand, eine Erinnerung nach 10 Tagen, nicht
+  länger als 30 Tage) in `lib/muster-nachfassen.mjs`. Neuer lesender Endpunkt `/api/kunden/muster-texte`
+  liest die Vorlage `muster-nachfassen-texte.md` aus dem Privatordner; `dashboard:pruefen` kopiert sie mit.
+  Die offenen Kunden zählen bei „N offene To-dos" mit; „Alles erledigt" erscheint nicht, solange welche offen sind.
+- **Getestet:** siehe PR (Testzahlen, Sichtprüfung 1440–360 px hell und dunkel, Klickstrecke gegen die Kopie).
+- **Risiken/Annahmen:** Die Kundenakte rechnet „Nachfassen" weiter 5 Tage nach „Kunde hat Muster" und bietet
+  dort „Kunden anrufen" an; die Karte folgt dem Konzept des Inhabers (E-Mail ab 4 Tagen nach Versand, Anruf
+  nur bei Rückrufwunsch). Die Anrede (Herr/Frau) steht nicht in den Bestelldaten – der Text sagt
+  „Guten Tag Vorname Nachname". Ein Link zum eigentlichen Produkt fehlt, weil Muster eigene Produkte sind.
+  Die geplante Aufgabe „musterkunden-liste-montag" wird für die Karte nicht gebraucht (sie rechnet aus den
+  Bestelldaten des Control Centers).
+- **Nächste Stufe:** Zeitpunkt in Kundenakte und Karte angleichen, sobald der Inhaber die Regel bestätigt;
+  Produktlink über die Musterzuordnung des Lexikons (`original.produktHandle`).
 ## 2026-10-08 · Sonderposten: „Im Laden verkauft“ (Teil von #978)
 
 - **Geändert:** Neue Ansicht „Sonderposten“ (`#/sonderposten`, Seitenleiste unter „Seltener“ nach „Fotos“,
@@ -614,3 +634,348 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Die Zentrale (Port 8020) ist nur im Netz des Macs bzw. über Tailscale erreichbar.
 - **Nächste Stufe:** Sperren eines Upload-Links direkt hier statt per Kommandozeile.
 
+
+## 2026-10-12 · Einkauf: Bestellmenge für Teppich nach Maß, Kettelservice als Eigenleistung
+
+- **Geändert:** `operations/lib/resolve.mjs` liest die Rollenbreite auch aus „_Zuschnitt aus Rolle“ – so schreibt
+  der Konfigurator für Teppich nach Maß sie seit Beginn; die Einkaufsübersicht kannte nur „Aus Rolle“ des
+  Rollenrechners, die Bestellmenge jedes Maßteppichs blieb deshalb ungeklärt. `operations/lib/bestelluebersicht.mjs`:
+  Kettelservice und Wunschmaß-Pauschale (feste Liste nach Handle) sind Eigenleistung – nicht in der Bestellliste,
+  nicht als „ohne Großhändler-ID“, in Auftrag und Zeitleiste als „Eigenleistung“ beschriftet. Die gekettelte
+  Fußleiste bleibt bewusst offen, sie braucht Material.
+- **Getestet:** neue Fälle in `operations/tests/bestelluebersicht.test.mjs` (Maße 120 × 280 cm aus 200-cm-Rolle →
+  2,80 lfm; „Aus Rolle“ geht vor); alle Suiten grün; `dashboard:pruefen` nur OK. Echte Daten (Kopie, nur lesend):
+  ohne ID 1 → 0, Menge ungeklärt 4 → 2, zu bestellen 3 → 2; der Maßteppich-Auftrag hat keine Warnung mehr.
+- **Risiken/Annahmen:** Länge des Maßteppichs läuft entlang der Rolle (der Konfigurator begrenzt die Breite auf
+  die Rollenbreite). Neue Eigenleistungen müssen in `EIGENLEISTUNG_HANDLES` nachgetragen werden.
+- **Nächste Stufe:** Dieselbe Kennzeichnung in der internen Bestellmail (Shopify-Benachrichtigung), dort steht
+  beim Kettelservice weiter „Großhändler-ID fehlt“.
+
+## 2026-10-12 · Sonderposten: „Wer hat verkauft?“ im gemeinsamen Zugang, Recht erteilt
+
+- **Geändert:** Das Control Center läuft ohne persönliche Konten (gemeinsames Passwort); jede Buchung stand
+  deshalb als „Inhaber“ im Protokoll. Beide Dialoge („Im Laden verkauft?“ und „Von der Rolle verkauft“) fragen
+  jetzt im gemeinsamen Zugang „Wer hat verkauft?“ – Pflicht, ohne Vorbelegung, zuletzt benutzte Namen als
+  Vorschlag. Der Server verlangt den Namen dann (400 ohne Shopify-Aufruf) und schreibt ihn in `verkauft_von`
+  und ins Protokoll (Vermerk „Name im gemeinsamen Zugang angegeben“). Mit persönlichem Konto (Kürzel) gilt
+  weiter der Name aus der Sitzung. Doku: `write_inventory` ist seit heute erteilt.
+- **Getestet:** API-Tests für Notzugang ohne/mit Namen (Stück und Rolle) und persönliches Konto schlägt
+  Anfrage; `dashboard:test` grün. Klickstrecke 1440/390 px gegen die Kopie (Liste live gelesen, Buchung
+  abgefangen): nur Länge → Knopf gesperrt, mit „Thomas“ → frei, Anfrage trägt `verkauftVon: "Thomas"`,
+  zweiter Dialog leer mit Vorschlag „Thomas“, 0 JS-Fehler, 0 px Überlauf. Echter Schreibtest nach der
+  Freischaltung nur am Testprodukt SP-TEST-0001: 0 → 1 → 0, Felder gesetzt, Gegenprobe ok; Yasmin unberührt.
+- **Risiken/Annahmen:** Der Name ist im gemeinsamen Zugang eine Angabe, keine Anmeldung. Wer es genauer will,
+  legt persönliche Konten unter „Team“ an.
+- **Nächste Stufe:** Ersten echten Rollenverkauf in Shopify (Bestandsverlauf) gegenprüfen.
+
+## 2026-10-12 · Kachel „Laden“: Spam-Zeile springt direkt in den Filter (#1138)
+
+- **Geändert:** Die Zeile „n Fälle aus dem Shop mit Spam-Verdacht“ endet jetzt mit dem Link „Spam prüfen ↗“, der die
+  Laden-Ansicht der Auftrags-App gleich mit dem Filter öffnet (`?ansicht=laden&filter=spam`, App ab Version 47), in
+  einem neuen Tab wie „Laden-Ansicht öffnen“. Der Satz dazu ist kürzer („– in den Zahlen oben nicht enthalten.“),
+  weil der Link den Weg ersetzt. `spamUrl()` in `ansichten/heute/laden.mjs` baut die Adresse per URL-API aus dem
+  `ladenUrl` des Servers: weitere Parameter bleiben, `ansicht=laden` und `filter=spam` werden gesetzt, nur `https`.
+  Ohne `ladenUrl` bleibt die bisherige Zeile ohne Link. Am Handy hat der Link wie der Kopf-Link 44 px Tippfläche.
+- **Getestet:** `laden-zahlen.test.mjs` um einen Test erweitert (Link mit `ansicht=laden` und `filter=spam`, weitere
+  Parameter bleiben, anderer Filter wird ersetzt, ohne/kaputter/relativer/`javascript:`/`http`-ladenUrl kein Link;
+  Kachel mit und ohne `ladenUrl`). `npm run dashboard:test` 249/249, `npm test` 2206/2206 (nach Rebase auf `main`), `secret:scan` PASS,
+  `validate --static` PASS. `dashboard:pruefen` für „Heute“ bei 1440, 1024, 800, 390 und 360 px (hell) und 1440/390 px (dunkel)
+  nur `OK`, 0 px Überlauf. Klickstrecke gegen die Kopie mit abgefangenem `/api/laden/zahlen` (Host `.invalid`, keine
+  Anfrage nach draußen): Zeile mit Link bei 2 und 1 (Einzahl „Fall“), keine Zeile bei 0 und ohne Feld, ohne
+  `ladenUrl` alter Text ohne Link; Link bei 1440/390/360 px nicht verdeckt (Desktop 16 px, Handy 44 px hoch),
+  Terrakotta wie der Kopf-Link (hell `#98502f`, dunkel `#d68b65`); Klick bei 390 px öffnet genau einen neuen Tab
+  auf `…/exec?ansicht=laden&authuser=1&filter=spam`, das Dashboard bleibt auf „Heute“, keine JS-Fehler.
+- **Risiken/Annahmen:** Bis die Auftrags-App Version 47 läuft, öffnet der Link die Laden-Ansicht ohne Filter – der
+  Inhaber muss dann noch auf „Spam prüfen“ tippen.
+- **Nächste Stufe:** keine.
+
+## 2026-10-12 · Einkauf und Lexikon: jedes Muster mit Weg zum Lieferanten, Lieferanten C–E zugeordnet (#1145)
+
+- **Geändert:** Muster ohne eigenes Musterprodukt – fast alle Vinylböden von der Rolle (PVC/CV) und einige
+  Designböden – laufen über das Sammelprodukt „Kostenloses Muster“. Ihre Position trug dessen Handle, „Im Lexikon
+  ansehen“ öffnete deshalb das Sammelprodukt: kein Lieferant, keine Artikelnummer, kein Link zum Lieferanten.
+  `aufbereiten()` (`operations/lib/bestelluebersicht.mjs`) setzt bei diesen Mustern jetzt den Handle des
+  Quellprodukts (aus der geladenen Quellvariante, sonst aus `_Quellprodukt`); eigene Musterprodukte `muster-*`
+  bleiben, weil das Lexikon dort das Original selbst zeigt. Damit stehen auch die wartenden Kunden am richtigen
+  Produkt. Zweitens kannte die GID-Zuordnung für `einkauf.lieferant` nur A und B; jede Position von C, D und E
+  stand unter „Lieferant nicht zugeordnet“. Die feste Liste kennt jetzt A–E, und der
+  Export (`operations/scripts/aktualisieren.mjs`) liest alle `tp_lieferant`-Metaobjekte als `lieferanten` in
+  `orders.json` mit – ein neuer Lieferant braucht keine Codeänderung mehr. Scheitert nur diese Abfrage, läuft der
+  Export weiter und die feste Liste greift.
+- **Getestet:** Zwei neue Tests in `operations/tests/bestelluebersicht.test.mjs` (Sammelprodukt-Muster →
+  Quellprodukt mit Lieferant, Link und ID; ohne geladene Quellvariante aus `_Quellprodukt`; `muster-*` unverändert;
+  C/D/E aus der festen Liste, unbekannte GID über `lieferanten` aus dem Export), Exporttest um die Lieferantenabfrage
+  erweitert. `npm run dashboard:test` 249/249, `npm test` grün, Guards und `validate --static` PASS,
+  `secret:scan` PASS. Vergleich alt/neu auf den echten Bestelldaten (nur lesend): 63 Positionen, genau 8 geändert –
+  7 Sammelprodukt-Muster zeigen aufs Quellprodukt, ein Teppichboden-Muster bekommt statt „nicht
+  zugeordnet“ seinen Lieferanten. `dashboard:pruefen` nur `OK`, 0 px Überlauf. Klickstrecke gegen die Kopie: „Lieferant nicht
+  zugeordnet“ verschwunden, Karten A, B, E; alle 7 Muster-Zeilen mit Lieferantenlink, „Im Lexikon ansehen“ beim
+  PVC-Muster öffnet den Vinylboden mit Lieferant A, Artikelnummer und „Beim Lieferanten öffnen“ (375 px: 0 px
+  Überlauf), dort „2 Kunden warten auf dieses Produkt“.
+- **Risiken/Annahmen:** Die Zuordnung C–E greift für den aktuellen Export sofort über die feste Liste; die
+  Metaobjekt-Liste kommt mit dem nächsten Lauf von `npm run daten:aktualisieren`. Für C–E fehlen ggf. noch
+  Stammdaten (Bestellweg, Mail) – die Karte zeigt dann „nicht hinterlegt“.
+- **Lexikon, Muster ohne Original:** Die Muster-SKU ist `M-` plus die SKU der Quellvariante, das Lexikon suchte das
+  Original aber nur über die Lieferanten-Artikelnummer. Wo diese eine Null mehr trägt (Shop `…04_99`, Lieferant
+  `…04_099`; Shop `…4_119`, Lieferant `…04_119`), fanden 88 Mustervarianten kein Original und zeigten keinen Weg
+  zum Lieferanten. `operations/lib/lexikon.mjs` sucht jetzt zuerst über die Shop-SKU, dann über die Artikelnummer.
+  Hat das Original keinen Direktlink, trägt es den Suchlink beim Lieferanten; die Muster-Zeile im Lexikon zeigt
+  dann „Beim Lieferanten suchen ↗“. Test in `operations/tests/lexikon.test.mjs`. Live-Export in eine Testdatei:
+  5850/5850 Mustervarianten mit Original (vorher 5762), alle mit Direkt- oder Suchlink; bisher gefundene Originale
+  unverändert.
+- **Nächste Stufe:** Lieferant B (Wohnteppiche, Dekofelle, Teppiche, Teppich nach Maß; 654 Varianten) hat keinen
+  Schnellzugriff: keine Produktseiten online, kein Bestellweg in den Stammdaten. Bestellweg in „Einkauf ›
+  Lieferanten“ hinterlegen und im Lexikon anzeigen.
+
+## 2026-10-12 · „Fehler melden“ mit Weitergabe an die Werkbank (#1149)
+
+- **Geändert:** Knopf „Fehler melden“ für alle Rollen (Seitenleiste unten, am Handy im „Mehr“-Blatt, Hilfe-Seite,
+  Befehlspalette). Dialog `bausteine/fehler-melden.mjs`: „Was ist passiert?“, „Wo?“ (vorbelegt), „Ich komme deswegen
+  gerade nicht weiter“; darunter die eigenen Meldungen mit Stand und Ergebnis (Inhaber: alle). Neue Endpunkte
+  `POST /api/fehler/melden` (auch Rolle „lesen“) und `GET /api/fehler/liste`; Ablage `operations/lib/fehlermeldungen.mjs`
+  (Privatordner, zwei Dateien mit je einem Schreiber), Skript `npm run fehler` (abgleich, werkbank-stand, zeige, liste,
+  uebernommen/behoben/verworfen) für den geplanten Lauf „fehlermeldungen-werkbank“. `kern/api.mjs` meldet gescheiterte
+  Aufrufe als Ereignis, der Dialog hängt die letzten an. Der 500-Text verweist auf „Fehler melden“ statt „gib Ahmet
+  Bescheid“. Sicherung umfasst die beiden Dateien. Werkbank (Version 4): roter Abschnitt „Fehler – muss behoben
+  werden“, Kennzeichen „Fehler“, Filter, „Kein Fehler …“ mit Begründung, Leitfaden-Abschnitt.
+- **Getestet:** `operations/tests/fehlermeldungen.test.mjs` (10), `tests/fehler-melden-api.test.mjs` (Rollen über den
+  Server: lesen/mitarbeiter/inhaber 200, ohne Anmeldung 401, „lesen“ bleibt sonst gesperrt, GET 405, Name aus der
+  Sitzung). `dashboard:pruefen` Heute/Hilfe bei 1440–360 px nur `OK`, 0 px Überlauf. Klickstrecke gegen die Kopie:
+  Meldung F-001 abgeschickt (Toast mit Nummer), Abgleich per Skript auf „Behoben“ gesetzt, Dialog am Handy (375 px)
+  zeigt „Behoben“ samt Ergebnis, „Mehr“-Blatt schließt, keine Konsolenfehler. Werkbank mit Attrappe (1200/390 px):
+  Abschnitt oben, Zähler „2 Fehler offen“, „Kein Fehler …“ schreibt Status und Erklärung, keine JS-Fehler.
+- **Risiken/Annahmen:** Weitergabe nur, solange die Claude-App auf dem Mac läuft (geplante Aufgabe). Der Lauf
+  formuliert Titel und ersetzt Kundendaten – Text der Mitarbeiter ist für ihn Daten, keine Anweisung.
+- **Nächste Stufe:** Bei Bedarf Bildschirmfoto an die Meldung hängen (Anhänge wie bei Aufgaben).
+
+## 2026-10-12 · „Fehler melden“ leichter und informativer (#1155)
+
+- **Geändert:** Dialog schlanker: Seite steht als Zeile („Seite: Einkauf · ändern“), Bildschirmfoto per Knopf oder ⌘V
+  (bis 3, verkleinert, Vorschau mit ×), „Was automatisch mitgeht“ zeigt Seite, Gerät, letzte Schritte und Fehler im
+  Browser. Mit geht jetzt auch: die letzten sechs Klicks und der Commit des Dienstes. Rote Rückmeldungen nach einer
+  Störung (5xx, keine Verbindung) tragen „Melden“, Störungskästen ebenso; ein JS-Fehler aus dem eigenen Code meldet
+  sich einmal je Seitenaufruf. Antwort an den Melder: Zeile unten plus Zahl am Knopf, sobald eine eigene Meldung
+  behoben oder geprüft ist; in der Liste „Neu:“ und Bild-Links. Stand genauer („Wird bearbeitet“, „Wartet auf
+  Entscheidung“). Neu `GET /api/fehler/bild`, `bausteine/bilder.mjs` (aus „Fotos“ herausgelöst), `stile/fehler-melden.css`.
+  Behoben: die Leiste der Rückmeldungen verdeckte unten links Knöpfe der Seitenleiste.
+- **Getestet:** Bibliothek 12 Tests (Bilder nur echte PNG/JPEG/WebP, getarntes SVG abgelehnt, höchstens 3, Pfade
+  nur eigene Namen, gemeinsamer Zugang erkennt eigene Meldungen, Werkbank-Stand), Servertest mit Bild hochladen und
+  abrufen (Melder und Inhaber 200, Fremde 404). `dashboard:pruefen` Heute/Hilfe/Fotos 1440–360 px nur `OK`. Klickstrecke
+  gegen die Kopie: Schritte erfasst, Bild angehängt und gespeichert, Antwort per Skript → Zeile „Behoben – …“ und Zahl 1
+  am Knopf, nach dem Öffnen weg, Bild abrufbar, „Melden“ in roter Rückmeldung öffnet den Dialog, am Handy kein ⌘V-Hinweis,
+  0 JS-Fehler.
+- **Risiken/Annahmen:** Bildschirmfotos zeigen oft Kundendaten. Nachtrag (nächster Eintrag): auf Wunsch des Inhabers erscheinen
+  sie jetzt auch in der privaten Werkbank (Bildspeicher der Seite).
+- **Nächste Stufe:** keine.
+
+## 2026-10-12 · Lexikon: Gesamtprüfung aller Produkte, Mengenhilfe für Rollenware repariert (#1157)
+
+- **Geändert:** Prüfung aller 3228 Lexikon-Produkte (20279 Varianten) mit dem echten Ansichtscode und gegen die
+  Lieferantenseiten. Drei Fehler im Code behoben:
+  - **Mengenhilfe rechnete Rollenware falsch oder gar nicht.** Shopify führt `custom.rollenbreite` in Metern
+    („2.0“), die Mengenhilfe teilte pauschal durch 100 – für 20 m² auf einer 2-m-Rolle kamen 1000 lfm statt 10
+    heraus (31 Produkte). Bei 570 Rollenprodukten mit mehreren Breiten steht die Breite nur an der Variante, die
+    Mengenhilfe fand sie nicht. Jetzt: Breite je Variante (`rollenbreiteM` aus dem Export), Meter und Zentimeter
+    werden erkannt (`rollenbreiteInMetern`), bei mehreren Breiten wählt man die Rolle im Widget. m²-Ware ohne
+    Paket (Teppich nach Maß direkt vom Hersteller, 284 Produkte) ergibt die Fläche selbst statt „m² pro Paket
+    fehlt“; Teppich nach Maß in lfm erklärt, dass der Einkauf die Menge aus den Maßen der Bestellung rechnet.
+  - **Varianten ohne Farbe** (Vinyl von der Rolle, Sockelleisten, Zubehör; 723 Varianten) standen als
+    „nicht hinterlegt“ da, 200/300/400 cm waren nicht zu unterscheiden. Die Bestellliste nennt jetzt die Variante.
+  - **Teppich nach Maß direkt vom Hersteller** (3112 Varianten) zeigte „Art.-Nr. nicht hinterlegt“, obwohl die
+    Bestellbezeichnung des Lieferanten da ist. Sie steht jetzt kopierbar an der Stelle der Artikelnummer.
+- **Getestet:** Alle 3228 Detailseiten mit der laufenden Ansicht gerendert: 0 Abbrüche, keine „undefined“/„NaN“.
+  Links gegen die Lieferanten: A 5510 bestätigt (Artikelnummer → offizielle Produktseite), C 1240, D 1046 (im
+  Browser, Seitentitel nennt Qualität/Farbe), E 524 – alle erreichbar. Neue Tests in `api.test.mjs`
+  (Meter/Zentimeter, mehrere Breiten, m², Teppich nach Maß) und `lexikon.test.mjs` (`rollenbreiteM`).
+  `dashboard:test`, `npm test` grün, `dashboard:pruefen` nur OK; Sichtprüfung 375 px ohne Überlauf.
+- **Daten (nicht im Repo):** 180 Lieferantenlinks von A korrigiert – 1 zeigte auf einen anderen Dekor, 1 fehlte,
+  178 zeigten auf die Sammelseite der Qualität statt auf die Farbe. Plan, Rücksicherung und Gegenprobe (180/180)
+  liegen lokal.
+- **Risiken/Annahmen:** Der Hintergrunddienst `sync` lädt Code nur beim Start – nach einem Merge ins Lexikon
+  auch ihn neu starten, sonst schreibt er den Export mit altem Code.
+- **Nächste Stufe:** 12 Artikelnummern findet Lieferant A nicht mehr (ausgelaufen oder umnummeriert);
+  Lieferant B ohne Schnellzugriff.
+
+## 2026-10-12 · Bildschirmfotos auch in der Werkbank
+
+- **Geändert:** Der geplante Abgleich `fehlermeldungen-werkbank` lädt Bildschirmfotos einer Meldung in den Bildspeicher der
+  Werkbank (Fähigkeit `assets`) und trägt sie als `bilder: [{id, url}]` am Eintrag ein. Die Werkbank zeigt sie als Vorschau
+  unter der Beschreibung (Klick vergrößert) und „Bildschirmfoto“ in der Zeile. Grund: Der Inhaber konnte den Anhang der
+  Testmeldung nicht sehen. Doku in `ARCHITEKTUR.md` Abschnitt 15 nachgezogen.
+- **Getestet:** Echte Testmeldung F-002 mit Bild: Upload in den Bildspeicher, Eintrag zeigt das Bild; Rückweg „Wird bearbeitet“
+  und „Kein Fehler“ mit Erklärung im Dashboard angekommen. Werkbank-Seite mit Attrappe bei 1200 und 390 px: Bild lädt,
+  Vergrößern geht, 0 px Überlauf, keine JS-Fehler.
+- **Risiken/Annahmen:** Bildschirmfotos können Kundendaten zeigen; die Werkbank bleibt privat.
+- **Nächste Stufe:** keine.
+
+## 2026-10-12 · Befunde der Analyse umgesetzt: Zu tun, Einkauf, Rollen, Heute, Navigation, Montage (#1154)
+
+- **Geändert:**
+  - *Kunden „Zu tun“:* Der nächste Schritt kommt aus der Zeitleiste (Auftragsfluss + Verlauf), nicht aus dem
+    Shopify-Versandstatus (`operations/lib/kundenfaelle.mjs`, `zeitleisteSchritt` aus `/api/kunden/faelle`).
+    Muster beim Kunden heißen „Nachfassen …“ bzw. „… verschickt – sind sie angekommen?“ statt „Versenden“; was beim
+    Lieferanten liegt, heißt „Beim Lieferanten nachhaken …“. Wer nur auf Lieferant oder Kunde wartet, steht nicht in
+    der Arbeitsliste, die Kopfzeile nennt die Zahl. „In Shopify noch nicht als versendet gebucht“ ist nur noch ein
+    Hinweis; die Bestellliste zeigt in derselben Zeile nicht mehr „Noch nicht versandt“ und „An Kunden raus“ zugleich.
+  - *Heute:* Kennzahl „Ø je bezahlter Bestellung“ ohne kostenlose Muster. Fällige Nachfass-Muster stehen unter „Wir
+    sind dran“, nicht zugleich unter „Kunde ist dran“. Die eingeklappten „Weiteren Übersichten“ sind weg (jede Zahl
+    stand schon oben oder in Kunden/Einkauf/Entwicklung, „bezahlt, noch nicht versandt“ sogar falsch); eine seit
+    über drei Stunden stumme Shop-Wache ist jetzt ein To-do, „GitHub synchronisieren“ steht in „Entwicklung“.
+  - *Einkauf:* endet bei „bei uns eingetroffen“ – „An Kunden raus“ zählt als erledigt statt „Unterwegs“; Filter
+    „Bei uns eingetroffen“, alter Link `af=unterwegs` landet dort. Nachhaken zählt Aufträge und Positionen getrennt.
+    „Lieferantenraster ungeklärt“ statt `UNGEKLAERT`.
+  - *Rollen:* `/api/agent-runs` fragt nur noch der Inhaber ab (vorher 403 samt Konsolenfehler für Mitarbeiter und
+    „lesen“ auf jeder Seite). „lesen“ sieht „✓ Erledigt“, „Kein echter Kunde“ und „Jetzt aktualisieren“ nicht mehr.
+  - *Navigation:* überall „Kunden“ (vorher „Kunden & Aufträge“, „Aufträge“, „Kunden“). „Fotos“ ohne eigenen Punkt,
+    verlinkt aus „Social Media“. „KI-Läufe“ (Systemzustand) und „KI wartet“ (Entwicklung) entfernt – seit dem Wegfall
+    des Routers immer 0. GitHub-Login → „Inhaber“, Lexikon-Status nur bei Abweichung und deutsch, Geldbeträge
+    „0,00 €“, Ratgeber ohne Skriptpfad und Befehl, Shop-Wache-Tabellen im Scroll-Rahmen.
+  - *Weitere Dashboards:* Gruppe in der Seitenleiste mit Werkbank, Laden, Montage (neuer Tab). Adressen aus
+    `WERKBANK_URL` und `AUFTRAGS_APP_URL` (Laden = `?ansicht=laden`; ohne `AUFTRAGS_APP_URL` gilt `LADEN_ZAHLEN_URL`),
+    über `/api/capabilities` (`scripts/weitere-dashboards.mjs`), nur https, ohne Adresse kein Link. Die Werkbank-Adresse
+    steht nicht mehr in `index.html`. Kachel „Laden“: „Schlüssel fehlt“ statt „Nicht eingerichtet“, wenn nur der
+    Schlüssel fehlt; „Laden-Ansicht öffnen“, sobald eine App-Adresse bekannt ist.
+  - *Montage:* Kachel neben „Laden“ aus dem neuen Objekt `montage` der Zahlenantwort (`MONTAGE_FELDER`): vorhandene
+    Zahlen, fehlende weggelassen, ohne Objekt/Schlüssel „noch nicht verbunden“, Link „Montage-App öffnen“. Nur Zahlen.
+  - *Prüfwerkzeug:* `dashboard:pruefen` kopiert auch `kunden/`, `angebote/`, `warenkoerbe/`, `shopwache/`, `bestand/`,
+    `erfuellung/` und die beschreibbaren Einzeldateien; `--rollen` prüft mit drei Wegwerf-Zugängen nur in der Kopie;
+    Netzfehler zählen wie Fehlerantworten. Doku: README ohne „öffentliche“ Pages-Adresse, ARCHITEKTUR §1e
+    (vorher doppelt „1d“) mit „Zugänge einrichten“, §5 und §7 auf Stand, §8/§9/§9b zu Einkauf, Heute, Zu tun.
+- **Getestet:** `npm run dashboard:test` 263/263, `npm test` 2250/2250 (7 Suiten, nach Rebase auf `main`).
+  `dashboard:pruefen` 21 Ansichten × 5 Breiten = 105 × OK, 0 px Überlauf; `--rollen` (Inhaber 21, Mitarbeiter 13,
+  „lesen“ 12 Ansichten) × 5 Breiten = 230 × OK. Vorher (origin/main, `--rollen`, 1440/390 px): 3 × FEHL –
+  403 auf `/api/agent-runs` für Mitarbeiter und „lesen“, Shop-Wache-Tabelle bei 390 px (erst sichtbar, seit die Kopie
+  `shopwache/` enthält). Klickstrecken gegen die Kopie (Zahlen):
+  „Zu tun“ 15 Kunden/10 sofort (14 × „Versenden“) → 10/2 und 6 wartend, 0 × „Versenden“; Menüzahl 10 → 2;
+  „✓ Erledigt“ 10 → 9, „Wieder einblenden“ → 10. Heute „Wir/Lieferant/Kunde“ 7/5/9 → 10/5/6; „Erledigt – nachgefasst“
+  → 9/5/7, Muster nachfassen 3 → 2. Einkauf „Alle offenen/Bestellt/Unterwegs/Erledigt“ 56/27/27/4 → 29/27/0
+  („Bei uns eingetroffen“)/31, Lieferant A „53 Muster laufen“ → 26, „15 Bestellungen warten“ → „5 Aufträge warten (15
+  Positionen)“; Position → „Geliefert an uns“: Bestellt 27 → 26, Eingetroffen 0 → 1; → „An Kunden raus“: Erledigt 31
+  → 32. Rollen: 0 × 403; Werkbank für „lesen“ ausgeblendet, Laden/Montage sichtbar; Knöpfe Erledigt/Kein echter
+  Kunde/Jetzt aktualisieren für „lesen“ 0 (Mitarbeiter 20). Laden mit Adresse ohne Schlüssel: „Schlüssel fehlt“ + Link;
+  Montage mit Beispielantwort 7 Kacheln (2 in Bernstein), mit zwei Zahlen 2 Kacheln, ohne Objekt „noch nicht
+  verbunden“. 0 JS-Fehler.
+- **Risiken/Annahmen:** „Zu tun“ zeigt weniger Kunden – wer nur wartet, steht unter „Bestellungen“ und auf „Heute“ in
+  „Wer wartet auf was“. Der Einkauf zählt „An Kunden raus“ als erledigt; `/api/einkauf/lieferanten` (Server) zählt noch
+  nach dem alten Schnitt, die Oberfläche nutzt davon nur die Stammdaten. Ohne `WERKBANK_URL` in `.env.local` des
+  Dienstes fehlt der Werkbank-Link (vorher fest im Markup). Die Montage-Felder sind mit der parallel gebauten App
+  abgestimmt, aber erst mit deren Auslieferung sichtbar. Der Kennzahlen-Export liefert `mitBetrag` erst nach dem
+  nächsten Lauf; bis dahin rechnet die Kachel aus `kostenlos`.
+- **Nächste Stufe:** `WERKBANK_URL` und `AUFTRAGS_APP_URL` im Dienst setzen; Zugänge anlegen (ARCHITEKTUR §1e); in
+  „Zu tun“ einen Knopf für den Zeitleisten-Schritt (wie auf „Heute“), damit „Nachfassen“/„Abschließen“ direkt geht.
+
+## 2026-10-12 · Durchsicht des ganzen Control Centers: veraltete Produktdaten, Mengen, Testwarenkörbe, Laden-Zähler (#1172)
+
+- **Geändert:** Alle 25 Ansichten und Reiter im laufenden Dashboard durchgesehen (JS-Fehler, fehlgeschlagene Abrufe,
+  „undefined/NaN“, interne Marker, Überlauf, Zahlen gegen Listen). Mechanisch war alles sauber, inhaltlich fünf Fehler:
+  - **Einkauf › Produktdaten las Dateien vom 22./23. September**, die nie erneuert wurden: „0 von 509 vollständig“ und
+    „Lieferant fehlt“ bei Produkten, die ihn längst haben; die 2.700 später angelegten Produkte fehlten. Die Liste kommt
+    jetzt aus dem Lexikon-Export, den der Sync-Dienst laufend erneuert (`produktstatusAusLexikon`), mit Datenstand. Die
+    Septemberdateien bleiben nur Rückfall, wenn es noch kein Lexikon gibt. Ergebnis heute: 2506 von 2629 vollständig,
+    0 mit Handarbeit, 123 nur mit Zusatzinfos (Produktseite des Lieferanten, Farbnummer). Der Erklärtext nennt jetzt
+    die tatsächlich blockierenden Felder; „füllt sich selbst“ hieß es auch dort, wo jemand den Link suchen muss.
+  - **„0 Stk.“ bei gelieferter Ware** in Kunden › Zu tun: gezeigt wurde die offene statt der bestellten Menge.
+  - **Einheiten:** „800 Stk. Kettelservice“ sind 8,00 lfm Kante (verkauft je 0,01 lfm), „25 Stk.“ einer Unterlage
+    „je lfm“ sind 25 lfm.
+  - **Liegengeblieben zählte Testkäufe** (qa-test@example.com aus den Shop-Prüfungen): rund 3.150 der angezeigten
+    3.338 €. Jetzt gilt dieselbe Testadress-Regel wie in der Kunden-Arbeitsliste (`istTestkontakt`, nur reservierte
+    Domänen), im Export und beim Lesen älterer Exporte; die Ansicht nennt, wie viele ausgeblendet sind.
+  - **Heute:** Das Sprungfeld „offen im Laden“ zählte die Muster-Nachfassungen nicht, die Laden-Ansicht schon (2 statt 5).
+- **Getestet:** Neue Tests (`api.test.mjs` Produktstatus aus dem Lexikon, `bestelluebersicht.test.mjs` Mengen,
+  `warenkoerbe.test.mjs` Testkäufe; der Warenkorb-Test nutzte selbst eine reservierte Testdomäne als Kundenadresse).
+  `dashboard:test` 264/264, `npm test` grün, Guards und `validate --static` PASS, `dashboard:pruefen` nur OK.
+  Kopie mit echten Daten: Produktdaten 2506/2629, Liegengeblieben 188,36 € (3 Testkäufe ausgeblendet), „5 offen im Laden“.
+- **Risiken/Annahmen:** Das Test-Sonderpostenstück SP-TEST-0001 bleibt sichtbar – es ist klar gekennzeichnet und wird
+  für Schreibtests über die Liste gebraucht (die Test-Attrappe nutzt dieselbe SKU).
+- **Nächste Stufe:** Bestellweg für Lieferant C, D und E in den Stammdaten fehlt (Karte „Bestellweg nicht hinterlegt“).
+
+## 2026-10-12 · Robustheit: kein Absturz durch Anfragen, Fehler im Protokoll, Lesefehler, Blocker, Tailscale (#1175)
+
+- **Geändert** (Befunde der Prüfung vom 12.10., Details ARCHITEKTUR §16):
+  - *Absturz:* Eine Anfrage mit `Cookie: x=%` beendete ohne Anmeldung den ganzen Dienst (URIError in
+    `parseCookies`). Kaputte Cookie-Werte werden übersprungen, `requestHandler` fängt jeden Fehler (auch aus
+    `handleApi`/`handleLogin`) als 500, `uncaughtException`/`unhandledRejection` werden protokolliert.
+  - *Fehler sichtbar:* je Fehlerantwort der API (auch 4xx), abgelehnter Anmeldung und unerwartetem Fehler eine
+    Zeile mit ISO-Zeit, Status, Methode und Pfad ohne Abfrageteil (`scripts/dashboard-log.mjs`) – keine Cookies,
+    Körper, Passwörter oder Suchbegriffe. Sync-Protokoll mit Uhrzeit je Zeile. Ein abgebrochener Klick auf „Jetzt
+    aktualisieren“ bleibt als `letzterKnopfLauf` stehen: Rückmeldung „abgebrochen“ statt „abgeschlossen“ und eine
+    Zeile im Systemzustand.
+  - *Lesefehler:* Auftragsstatus, Rückrufe, Fallmarken, Aufgaben/Notizen und Benutzer gelten nur bei fehlender
+    Datei als leer; beschädigt oder unlesbar → Fehler, die Datei wird nicht mehr mit einem Eintrag überschrieben.
+    Beschädigte `benutzer.json`: Anmeldung 503 mit Klartext, Notzugang geht, Sitzungen bleiben.
+  - *Blocker:* „Blockieren“ schreibt den Grund als `## Blocker` in den Issue-Body (vorher nur Kommentar →
+    „Blocker-Grund fehlt“). Gilt auch für `npm run task -- block`. Das Detailblatt zeigt den Abschnitt nur noch,
+    solange die Aufgabe blockiert ist.
+  - *Tempo:* Lexikon (27 MB) nach Größe/Änderungszeit zwischengespeichert statt bei jeder Anfrage gelesen.
+    Sync-Dienst holt den Lagerbestand nur noch stündlich (`TP_SYNC_BESTAND_MINUTEN`); Sonderposten buchen weiter
+    live gegen Shopify.
+  - *Aktualität:* `issues.json` wird im Dienst alle 10 Minuten neu gebaut (`TP_DASHBOARD_NEUBAU_MINUTEN`, nie
+    überlappend). Der Chip zeigt bei einem älteren Stand das Datum („10.10. 09:00“).
+  - *Handy:* Im „Mehr“-Blatt bleibt der Fuß stehen; „Fehler melden“ steht dort zuerst über die volle Breite.
+    Rückmeldungen erscheinen bei offenem Blatt oben.
+  - *Kleinigkeiten:* 413 kommt an (statt Verbindungsabbruch); Eingabefehler bei Aufgaben/Notizen 400 statt 500;
+    Anhänge nur als Bild/PDF/Text im Fenster, sonst Download, immer `nosniff`; jede Antwort mit
+    `X-Frame-Options: DENY` und `frame-ancestors 'none'`.
+  - *Tailscale-Wache:* Ist Tailscale am Mac mini gestoppt oder abgemeldet (nur gelesen über
+    `tailscale status --json`), steht beim Inhaber ein To-do in der Website-Sicht, ein Hinweis auf der
+    Shop-Wache und eine Zeile im Systemzustand – mit dem Handgriff.
+  - *Prüfwerkzeug:* `dashboard:pruefen` räumt auch bei SIGTERM/SIGHUP auf; „Lade …“ nach 6 s ist `FEHL`.
+    Verwaiste Prüf-Instanz (127.0.0.1:58704, Worktree pr1077-merge) beendet, drei Datenkopien im Temp-Ordner
+    gelöscht.
+- **Getestet:** `dashboard:test` 264 → 282 grün (neu `tests/robustheit.test.mjs`, Blocker/Lexikon/Knopf-Lauf/
+  Tailscale in `api.test.mjs`, `model.test.mjs`, `todos.test.mjs`); `npm test` 7 Suiten grün (2282 Tests, neu
+  `operations/tests/speicher-lesefehler.test.mjs`, `tailscale.test.mjs`, Sync-Takt); `secret:scan` PASS, Guards
+  und `validate --static` PASS. `dashboard:pruefen` 105 × OK vorher und nachher (21 Ansichten × 5 Breiten, jetzt
+  mit „Lade“-Prüfung), `--rollen` bei 390/1440 px 92 × OK (Inhaber 42, Mitarbeiter 26, „lesen“ 24). Gegen die Kopie: `Cookie: x=%` und `a=%E0%A4%A` → `/` 302, `/api/capabilities` 401,
+  `/api/logout` 200, Prozess-ID unverändert; `org/neu` ohne Titel 400 (vorher 500), 70-KB-Körper 413 mit Text;
+  Protokollzeilen mit ISO-Zeit. „Mehr“-Blatt mit Weiteren Dashboards: „Fehler melden“ vorher 852–900 px bei
+  844 px Fenster (unsichtbar), nachher 674–722 px (390×844), 497–545 px (375×667), 570–618 px (360×740), jeweils
+  klickbar. Tailscale (am Mac mini gerade gestoppt): To-do „Tailscale ist aus …“ in Heute › Website, Hinweis auf
+  der Shop-Wache, Zeile im Systemzustand; Heute › Laden ohne Eintrag. 0 JS-Fehler.
+- **Risiken/Annahmen:** Eine beschädigte Datei bringt die betroffene Ansicht jetzt sichtbar zum Stehen (500 mit
+  Hinweis auf die Sicherung) statt still leer zu zeigen – gewollt, aber neu. Das Lexikon liegt geparst im
+  Speicher des Dienstes. Der Blockieren-Klick schreibt in den öffentlichen Issue-Body (wie bisher der Kommentar).
+  Der Lagerbestand im Einkauf ist bis zu einer Stunde alt.
+- **Nächste Stufe:** Tailscale am Mac mini wieder verbinden (Menüleiste → Connect); danach verschwindet das To-do.
+
+## 2026-10-13 · Social Media: Upload-Link sperren
+
+- **Geändert:** Neben jedem Upload-Zugang in `#/social` steht „Sperren“ (nur Inhaber sichtbar), mit Rückfrage
+  „Link für <Name> sperren? Er funktioniert danach nicht mehr.“. `POST /api/social/sperren` (Inhaber; Mitarbeiter
+  und „lesen“ 403, steht in der write-Liste) nutzt `zugangSperren` aus `social/lib/eingang.mjs` – dieselbe Sperre wie
+  `npm run social -- zugang sperren`, also alle Links dieses Namens – und löscht den gemerkten Klartext. Der Zugang
+  verschwindet aus der Liste.
+- **Getestet:** `dashboard:test` 282/282, `npm test` grün, `dashboard:pruefen` 105 × OK. Klickstrecke gegen die Kopie:
+  Rückfrage abgebrochen → aktive Zugänge 2 → 2, bestätigt → 2 → 1, Zeile weg; Knopf bei Rolle Mitarbeiter ausgeblendet.
+- **Risiken/Annahmen:** Sperren wirkt je Name, nicht je einzelnem Link (wie die Kommandozeile).
+- **Nächste Stufe:** keine geplant.
+
+## 2026-10-13 · Muster einfacher: Inhalt auf einen Blick, Musterlager (#1179)
+
+- **Geändert:**
+  - *Bestellliste (Kunden › Bestellungen):* unter jeder Bestellung eine Zeile mit dem Inhalt – bei Mustern
+    Produkt, Farben und woher („aus dem Musterlager (Regal B)“, „haben wir da – vorbeibringen“), bei Ware die
+    Artikel. Reine Musterbestellungen „kostenlos“ statt „0,00 €“. Suche auch über Produkt und Farbe.
+  - *Heute:* „Muster bei … bestellen“ nennt Produkt und Farben statt „3 Positionen“; „Muster verschicken an …“
+    nennt den Lagerplatz.
+  - *Einkauf › Musterlager (neu):* Einzelmuster, Probestück 2 × 1 m, Bahn 4 m × 20 cm mit Lagerplatz einlagern
+    (Produktsuche im Lexikon, mehrere Farben auf einmal), „Ist leer“, „Wieder da…“, Bearbeiten, Herausnehmen.
+    Vorschläge „Einlagern?“ aus eingetroffenen PVC-/Linoleum-Probestücken und mehrfach bestellten Farben.
+  - *Automatik:* Offene Musterpositionen, deren Muster im Lager liegt, kommen von dort – nicht in die
+    Bestellmail, kein „Muster bestellen“-To-do. Einzelmuster zählen beim Verschicken ab (Ereignis mit
+    `lagerId` in `musterherkunft.json`). Lagerplatz an der Position im Einkauf und in der Bestellmail-Begründung.
+  - *Server:* `operations/lib/musterlager.mjs`, `GET/POST /api/einkauf/musterlager`,
+    `GET /api/einkauf/musterlager-farben`; `musterlager.json` in Sicherung und Prüfkopie.
+- **Getestet:** neu `operations/tests/musterlager.test.mjs` (12), `docs/ai-dashboard/tests/musterlager-api.test.mjs`
+  (5, inkl. Rolle „lesen“ 403 / „mitarbeiter“ 200), `tests/bestellinhalt.test.mjs` (5), `todos.test.mjs` +1;
+  `npm test` alle 7 Suiten grün, Guards und `validate --static` PASS. `dashboard:pruefen` (Heute, Einkauf,
+  Musterlager, Bestellungen bei 1440/390 px) nur OK, 0 px Überlauf. Klickstrecke gegen die Datenkopie:
+  Regalia Creme (511) als Einzelmuster 2 Stück „Regal B, Fach 3“ eingelagert → die offene Bestellung zeigt „1 aus dem
+  Musterlager (Regal B, Fach 3)“, Heute „Muster verschicken an … · aus dem Musterlager“, die zwei anderen Farben
+  weiter „bei Lieferant A bestellen“, Bestellmail nimmt Creme (511) mit Grund aus; Vorschlag Selene Taupe mit
+  vorbelegter Art „Probestück“ eingelagert; „Ist leer“ → Creme (511) wieder beim Lieferanten. 0 JS-Fehler.
+- **Risiken/Annahmen:** Zuordnung über die SKU – ein Muster ohne SKU (Sammelprodukt ohne Quellvariante) findet
+  das Lager nicht und läuft wie bisher. Probestück und Bahn zählen nicht ab; wer das letzte Stück aufbraucht,
+  muss „Ist leer“ klicken. Im gemeinsamen Zugang steht „Inhaber“ als handelnde Person im Verlauf.
+- **Nächste Stufe:** Inhaberfragen (PVC/Linoleum im Shop wieder mit Muster, wenn ein Probestück da ist;
+  Etiketten mit QR-Code; Mustergröße je Bahn); die zwei schon eingetroffenen Probestücke (PVC, Linoleum) einlagern.

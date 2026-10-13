@@ -52,7 +52,7 @@ export function kundenAuftragKarte(a) {
     <div class="chips">
       <span class="chip">Status: <b>${esc(AUFTRAG_STATUS_TEXT[a.status] || a.status)}</b></span>
       <span class="chip">Zahlung: <b>${statusText(a.bezahlt, ZAHLUNG_TEXT)}</b></span>
-      <span class="chip">Versand: <b>${statusText(a.erfuellt, VERSAND_TEXT)}</b></span>
+      <span class="chip">Versand in Shopify: <b>${statusText(a.erfuellt, VERSAND_TEXT)}</b></span>
       <span class="chip">Beratung: <b>${esc(a.checks?.beratung || '–')}</b></span>
       <span class="chip">Maßprüfung: <b>${esc(a.checks?.masspruefung || '–')}</b></span>
     </div>
@@ -74,7 +74,7 @@ export const ZAHLUNG_TEXT = {
 export const VERSAND_TEXT = {
   FULFILLED: 'Versandt', UNFULFILLED: 'Noch nicht versandt',
   PARTIALLY_FULFILLED: 'Teilweise versandt', IN_PROGRESS: 'Wird versandt',
-  SCHEDULED: 'Geplant', ON_HOLD: 'Zurueckgestellt', OPEN: 'Offen', RESTOCKED: 'Wieder eingelagert',
+  SCHEDULED: 'Geplant', ON_HOLD: 'Zurückgestellt', OPEN: 'Offen', RESTOCKED: 'Wieder eingelagert',
 };
 
 export function statusText(wert, karte) {

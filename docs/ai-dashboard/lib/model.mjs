@@ -275,6 +275,41 @@ export function parseBody(body) {
   return out;
 }
 
+/**
+ * Setzt den Blocker-Grund als Abschnitt "## Blocker" in einen Issue-Body -
+ * genau dort, wo parseBody() ihn liest. Ein vorhandener Abschnitt (auch
+ * "Blocker: …" oder "Blockiert durch") wird ersetzt, nicht verdoppelt; der
+ * Rest des Bodys bleibt Zeichen fuer Zeichen stehen. Der Grund wird zu einer
+ * Zeile, damit er keine eigenen Ueberschriften in den Body tragen kann.
+ */
+export function mitBlockerAbschnitt(body, grund) {
+  const text = String(grund ?? '').replace(/\s+/g, ' ').replace(/^#+\s*/, '').trim().slice(0, 500);
+  const vorher = String(body ?? '');
+  if (!text) return vorher;
+  const raus = [];
+  let eingefuegt = false;
+  let imBlocker = false;
+  for (const zeile of vorher.split('\n')) {
+    const h = headingField(zeile);
+    if (imBlocker) {
+      if (!h && !/^#{1,6}\s/.test(zeile.trim())) continue;   // alter Grund faellt weg
+      imBlocker = false;
+    }
+    if (h?.field === 'blocker') {
+      imBlocker = true;
+      if (!eingefuegt) { raus.push('## Blocker', text, ''); eingefuegt = true; }
+      continue;
+    }
+    raus.push(zeile);
+  }
+  if (!eingefuegt) {
+    while (raus.length && !raus[raus.length - 1].trim()) raus.pop();
+    if (raus.length) raus.push('');
+    raus.push('## Blocker', text);
+  }
+  return raus.join('\n');
+}
+
 // ---------------------------------------------------------------------------
 // Task-Normalisierung
 // ---------------------------------------------------------------------------
@@ -527,7 +562,6 @@ export const SAVED_VIEWS = Object.freeze([
   { key: 'unzugeordnet', label: 'Unzugeordnet',        filter: t => t.open && !t.owner && !['eingang', 'triage', 'beobachten'].includes(t.status) },
   { key: 'blockiert',   label: 'Blockiert',            filter: t => t.status === 'blockiert' },
   { key: 'heute',       label: 'Heute fällig',         filter: t => t.open && t.daysToDue !== null && t.daysToDue <= 0 },
-  { key: 'ki',          label: 'KI wartet',            filter: t => t.open && t.executorKind === 'ki' && ['review', 'freigabe', 'blockiert'].includes(t.status) },
   { key: 'review',      label: 'Review-Queue',         filter: t => t.status === 'review' },
   { key: 'stale',       label: 'Ohne Update seit 7 Tagen', filter: t => t.open && (t.daysSinceUpdate ?? 0) >= 7 && !['eingang', 'beobachten', 'geplant'].includes(t.status) },
   { key: 'triage',      label: 'Triage nötig',         filter: t => t.open && t.triage.length > 0 },

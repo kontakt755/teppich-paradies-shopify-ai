@@ -65,6 +65,7 @@ function fixture(o = {}) {
     einfass_basis: val({ variants: [400].map((width) => ({ metafields: { custom: { rollenbreite: val(width / 100) } } })) }),
   };
   if (o.fest !== undefined) service.bandfarbe_fest = val(o.fest);
+  if (o.bandfarben !== undefined) service.bandfarben = val(o.bandfarben);
   const product = {
     title: 'Synthetic Band fixture', variants: [variant], selected_or_first_available_variant: variant,
     options_with_values: [{ name: 'Farbe', position: 1 }],
@@ -195,6 +196,39 @@ test('Regression: leeres oder nur aus Leerzeichen bestehendes Feld zaehlt als fe
     assert.equal(r.requests.length, 0, 'ohne Bandwahl weiter gesperrt');
     assert.equal(r.ctaText, 'Bitte Bandfarbe wählen');
   }
+});
+
+// --- Bandfarben des Herstellers (service.bandfarben, z. B. Vorwerk-Paspel in Kontrastfarbe) ---
+
+const VORWERK = 'Sand|#C8B79B; Anthrazit|#43464a;Schwarz|#1f1f21';
+
+test('Herstellerbandfarben ersetzen die Farbkarte des Konfektionaers, Hex klein, ohne Nummer', async () => {
+  const data = await dataFor({ art: 'Paspelband', bandfarben: VORWERK });
+  assert.deepEqual(data.baender.map((b) => [b.art, b.nr, b.name, b.hex]), [
+    ['paspelband', '', 'Sand', '#c8b79b'],
+    ['paspelband', '', 'Anthrazit', '#43464a'],
+    ['paspelband', '', 'Schwarz', '#1f1f21'],
+  ]);
+  assert.equal(data.band_hersteller, true);
+  assert.equal(data.band_fest, '');
+});
+
+test('Herstellerbandfarben: ohne Wahl gesperrt, mit Wahl Property "Bandfarbe" = Name', async () => {
+  const ohne = await runCase({ art: 'Paspelband', bandfarben: VORWERK });
+  assert.equal(ohne.requests.length, 0);
+  assert.equal(ohne.ctaText, 'Bitte Bandfarbe wählen');
+  const mit = await runCase({ art: 'Paspelband', bandfarben: VORWERK, bandSelected: true });
+  assert.equal(mit.requests.length, 1);
+  const p = mit.requests[0].body.properties;
+  assert.equal(p.Bandfarbe, 'Sand');
+  assert.match(p._Zuschnitt, /Band Sand/);
+});
+
+test('Feste Bandfarbe hat Vorrang vor Herstellerbandfarben (Premium bleibt Ton in Ton)', async () => {
+  const data = await dataFor({ art: 'Paspelband', bandfarben: VORWERK, fest: 'Ton in Ton' });
+  assert.deepEqual(data.baender, []);
+  assert.equal(data.band_fest, 'Ton in Ton');
+  assert.equal(data.band_hersteller, false);
 });
 
 // --- Feste Bandfarbe ---

@@ -1,5 +1,5 @@
 // Shop-Kennzahlen fuer das Control Center: Bestellungen, Umsatz und
-// Durchschnittsbon je Zeitraum. Stornierte Bestellungen zaehlen nicht mit,
+// Durchschnittsbon je Zeitraum (nur ueber Bestellungen mit Betrag). Stornierte Bestellungen zaehlen nicht mit,
 // unbezahlte ebenso wenig - gezaehlt wird, was tatsaechlich Geld gebracht hat.
 
 import { istTestbestellung } from './testbestellung.mjs';
@@ -62,11 +62,15 @@ export function schnappschuss(daten, opt = {}) {
     });
     const gezaehlt = drin.filter(zaehlt);
     const umsatz = gezaehlt.reduce((s, o) => s + betrag(o), 0);
+    // Der Schnitt nur ueber Bestellungen mit Betrag: kostenlose Musterbestellungen (oft die
+    // Mehrheit) drueckten ihn sonst auf einen Wert, den kein Kunde je bezahlt hat.
+    const mitBetrag = gezaehlt.filter(o => betrag(o) > 0).length;
     zeitraeume[String(t)] = {
       bestellungen: gezaehlt.length,
       umsatz: runden(umsatz),
       waehrung,
-      durchschnitt: gezaehlt.length ? runden(umsatz / gezaehlt.length) : 0,
+      mitBetrag,
+      durchschnitt: mitBetrag ? runden(umsatz / mitBetrag) : 0,
       storniert: drin.length - gezaehlt.length,
       // Bezahlte Bestellungen ohne Betrag - in der Praxis kostenlose Musterbestellungen.
       // Damit erklaert das Dashboard "Umsatz 0 €" statt wie ein Datenfehler auszusehen.

@@ -311,11 +311,18 @@
               "name": "TP Einfass-Konfigurator",
               "settings": {
                 "kettelservice_produkt": "kettelservice",
+                "befestigung_produkt": "antirutsch-unterlage-fuer-teppiche-rollenware",
+                "befestigung_produkt_2": "teppichbremse-fuer-teppiche-rollenware",
                 "whatsapp": "491792612211",
                 "bild_ketteln": "shopify://shop_images/tp-kante-gekettelt.jpg",
                 "marke_bilder_vendor": "JAB Anstoetz",
                 "marke_bild_paspelband": "shopify://shop_images/tp-kante-jab-paspel.jpg",
-                "marke_bild_cover": "shopify://shop_images/tp-kante-jab-cover.jpg"
+                "marke_bild_cover": "shopify://shop_images/tp-kante-jab-cover.jpg",
+                "marke2_bilder_vendor": "Vorwerk",
+                "marke2_bild_ketteln": "shopify://shop_images/tp-kante-vorwerk-kettel.jpg",
+                "marke2_bild_paspelband": "shopify://shop_images/tp-kante-vorwerk-premium.jpg",
+                "marke2_bild_cover": "shopify://shop_images/tp-kante-vorwerk-deluxe.jpg",
+                "marke2_bild_paspelwahl": "shopify://shop_images/tp-kante-vorwerk-paspel.jpg"
               },
               "blocks": {}
             },

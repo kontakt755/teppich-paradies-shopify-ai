@@ -546,3 +546,45 @@ test('Produktgruppe: productType geht vor templateSuffix (Live-Abruf und Handexp
   assert.equal(gruppe({ productType: '', templateSuffix: 'paketware' }), 'paketware');
   assert.equal(gruppe({}), null);
 });
+
+test('Muster-Original ueber die Shop-SKU, wenn die Artikelnummer eine Null mehr traegt (Tier 2)', () => {
+  // Muster-SKU = "M-" + SKU der Quellvariante. Die Lieferantennummer weicht
+  // davon teils ab (TEPTEST04_99 gegen TEPTEST04_099) - frueher fand das
+  // Lexikon dann kein Original und zeigte keinen Weg zum Lieferanten.
+  const quelle = (id, sku, artikelnummer, url) => ({
+    id: `gid://shopify/ProductVariant/${id}`, title: 'Anthrazit (99) / 400 cm', sku, price: '30.00', availableForSale: true,
+    selectedOptions: [{ name: 'Farbe', value: 'Anthrazit (99)' }],
+    metafields: [
+      { namespace: 'einkauf', key: 'lieferant', value: { kuerzel: 'A' } },
+      { namespace: 'einkauf', key: 'artikelnummer', value: artikelnummer },
+      ...(url ? [{ namespace: 'einkauf', key: 'lieferant_url', value: url }] : []),
+    ],
+  });
+  const echtes = produkt({
+    id: 'gid://shopify/Product/9300', handle: 'testboden-400cm', title: 'Testboden',
+    variants: [quelle(5300, 'TEPTEST04_99', 'TEPTEST04_099', 'https://lieferant-a.example/p/99'), quelle(5301, 'TEPTEST04_98', 'TEPTEST04_098', null)],
+  });
+  const musterVariante = (id, sku) => ({ id: `gid://shopify/ProductVariant/${id}`, title: 'Anthrazit (99)', sku, price: '0.00', availableForSale: true, selectedOptions: [], metafields: [] });
+  const muster = produkt({ id: 'gid://shopify/Product/9301', handle: 'muster-testboden-400cm', variants: [musterVariante(6300, 'M-TEPTEST04_99'), musterVariante(6301, 'M-TEPTEST04_98')] });
+  const modell = aufbereiten({ produkte: [echtes, muster] }, { jetzt: JETZT, lieferantSuchen: { A: 'https://lieferant-a.example' } });
+  const [mitLink, ohneLink] = modell.produkte.find((p) => p.handle === 'muster-testboden-400cm').varianten;
+  assert.equal(mitLink.original.gefunden, true);
+  assert.equal(mitLink.original.quelle, 'sku');
+  assert.equal(mitLink.original.artikelnummer, 'TEPTEST04_099');
+  assert.equal(mitLink.original.url, 'https://lieferant-a.example/p/99');
+  assert.equal(mitLink.original.suchlink, null);
+  // Original ohne Direktlink: der Suchlink beim Lieferanten ist der Schnellzugriff.
+  assert.equal(ohneLink.original.gefunden, true);
+  assert.equal(ohneLink.original.url, null);
+  assert.equal(ohneLink.original.suchlink, 'https://lieferant-a.example/de-DE/quicksearch?query=TEPTEST04_098');
+});
+
+test('rollenbreiteM: Breite der Variante aus custom.rollenbreite (Meter), sonst null', () => {
+  const p = produkt({ variants: [
+    { id: 'gid://shopify/ProductVariant/7001', title: 'Grau / 400 cm', sku: 'R-400', price: '20', availableForSale: true, selectedOptions: [], metafields: [{ namespace: 'custom', key: 'rollenbreite', value: '4.0' }] },
+    { id: 'gid://shopify/ProductVariant/7002', title: 'Grau / 500 cm', sku: 'R-500', price: '20', availableForSale: true, selectedOptions: [], metafields: [{ namespace: 'custom', key: 'rollenbreite', value: '5.0' }] },
+    { id: 'gid://shopify/ProductVariant/7003', title: 'Default', sku: 'R-X', price: '20', availableForSale: true, selectedOptions: [], metafields: [] },
+  ] });
+  const v = aufbereiten({ produkte: [p] }, { jetzt: JETZT }).produkte[0].varianten;
+  assert.deepEqual(v.map((x) => x.rollenbreiteM), [4, 5, null]);
+});
