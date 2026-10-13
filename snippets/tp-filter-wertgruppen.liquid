@@ -1,0 +1,235 @@
+{%- doc -%}
+  Fasst Masswerte eines Listenfilters kundengerecht zusammen (Audit 13.10.2026).
+  Search & Discovery zeigt Werte, die keiner Bereichsgruppe zugeordnet sind,
+  roh neben den Bereichen ("Bis 5 mm" und daneben "4.5"), und unterscheidet
+  Schreibweisen ("0,4 mm" und "0,40 mm"). Dieses Snippet ordnet jedem Wert
+  eine Rolle zu, ohne Daten zu aendern:
+  - Ein Rohwert, der in den Bereich einer Gruppe faellt, wird in diese Gruppe
+    aufgenommen (gleiches Label-Muster wie in Search & Discovery).
+  - Gleiche Zahlen in verschiedener Schreibweise werden ein Eintrag; sichtbar
+    bleibt die laengere Schreibweise ("0,40 mm").
+  Beim Ankreuzen setzt assets/facets.js alle Werte des Eintrags gemeinsam als
+  URL-Parameter (ODER-Verknuepfung); die Trefferzahl entspricht damit der
+  Summe der Einzelwerte.
+
+  Ausgabe (ohne nur_anzahl): ein Token je Wert in filter.values, durch ";"
+  getrennt:
+  - N            normal anzeigen
+  - X<i>         ausblenden, gehoert zum Eintrag mit Index i (0-basiert)
+  - R<a><e>~w|w  Eintrag mit Mitwerten w; a = 1 wenn ein Wert aktiv,
+                 e = 1 wenn ein Wert Treffer hat
+  Mit nur_anzahl: Anzahl der aktiven sichtbaren Eintraege.
+  Gilt nur fuer Florhoehe, Gesamtstaerke und Nutzschicht; sonst leer.
+
+  @param {object} filter - der Listenfilter
+  @param {boolean} [nur_anzahl] - nur die Anzahl aktiver Eintraege ausgeben
+{%- enddoc -%}
+{%- liquid
+  assign tp_wg_an = false
+  if filter.param_name == 'filter.p.m.custom.florhoehe_mm' or filter.param_name == 'filter.p.m.custom.gesamtstarke' or filter.param_name == 'filter.p.m.custom.nutzschicht'
+    assign tp_wg_an = true
+  endif
+  if filter.values.size < 2
+    assign tp_wg_an = false
+  endif
+
+  if tp_wg_an
+    # 1. Je Wert: Art (g = Gruppe, w = Zahlwert, x = sonstiges) und Bereich
+    assign tp_wg_info = ''
+    for tp_wg_v in filter.values
+      assign tp_wg_l = tp_wg_v.label | replace: 'Über', 'ueber' | replace: 'über', 'ueber' | replace: 'ÜBER', 'ueber' | downcase | replace: ',', '.' | replace: 'mm', ' ' | strip
+      assign tp_wg_teile = tp_wg_l | split: ' '
+      assign tp_wg_worte = ''
+      assign tp_wg_zahlen = ''
+      assign tp_wg_zahl_anzahl = 0
+      for tp_wg_t in tp_wg_teile
+        assign tp_wg_rest = tp_wg_t | remove: '0' | remove: '1' | remove: '2' | remove: '3' | remove: '4' | remove: '5' | remove: '6' | remove: '7' | remove: '8' | remove: '9'
+        if tp_wg_t == '' or tp_wg_t == '.'
+          continue
+        elsif tp_wg_rest == '' or tp_wg_rest == '.'
+          assign tp_wg_zahl_anzahl = tp_wg_zahl_anzahl | plus: 1
+          assign tp_wg_zahlen = tp_wg_zahlen | append: tp_wg_t | append: ' '
+        else
+          assign tp_wg_worte = tp_wg_worte | append: tp_wg_t | append: '-'
+        endif
+      endfor
+      assign tp_wg_z = tp_wg_zahlen | strip | split: ' '
+      assign tp_wg_a = tp_wg_z[0]
+      assign tp_wg_b = tp_wg_z[1]
+      assign tp_wg_gruppe = false
+      if tp_wg_v.value contains 'FilterSettingGroup'
+        assign tp_wg_gruppe = true
+      endif
+
+      # Bereich: art,unten,unten_inkl,oben,oben_inkl
+      assign tp_wg_e = 'x,0,0,0,0'
+      if tp_wg_zahl_anzahl == 1
+        case tp_wg_worte
+          when ''
+            if tp_wg_gruppe
+              assign tp_wg_e = 'g,' | append: tp_wg_a | append: ',1,' | append: tp_wg_a | append: ',1'
+            else
+              assign tp_wg_e = 'w,' | append: tp_wg_a | append: ',1,' | append: tp_wg_a | append: ',1'
+            endif
+          when 'bis-'
+            assign tp_wg_e = 'g,-1,0,' | append: tp_wg_a | append: ',1'
+          when 'unter-'
+            assign tp_wg_e = 'g,-1,0,' | append: tp_wg_a | append: ',0'
+          when 'ab-'
+            assign tp_wg_e = 'g,' | append: tp_wg_a | append: ',1,1000000,1'
+          when 'ueber-'
+            assign tp_wg_e = 'g,' | append: tp_wg_a | append: ',0,1000000,1'
+        endcase
+      elsif tp_wg_zahl_anzahl == 2
+        case tp_wg_worte
+          when 'ueber-bis-'
+            assign tp_wg_e = 'g,' | append: tp_wg_a | append: ',0,' | append: tp_wg_b | append: ',1'
+          when 'ueber-bis-unter-'
+            assign tp_wg_e = 'g,' | append: tp_wg_a | append: ',0,' | append: tp_wg_b | append: ',0'
+          when 'ab-bis-', 'von-bis-'
+            assign tp_wg_e = 'g,' | append: tp_wg_a | append: ',1,' | append: tp_wg_b | append: ',1'
+          when 'ab-bis-unter-', 'von-bis-unter-'
+            assign tp_wg_e = 'g,' | append: tp_wg_a | append: ',1,' | append: tp_wg_b | append: ',0'
+        endcase
+      endif
+      # Nur echte Gruppen duerfen Bereiche sein, nur Einzelwerte Zahlwerte
+      if tp_wg_gruppe
+        unless tp_wg_e contains 'g,'
+          assign tp_wg_e = 'x,0,0,0,0'
+        endunless
+      elsif tp_wg_e contains 'g,'
+        assign tp_wg_e = 'x,0,0,0,0'
+      endif
+      assign tp_wg_info = tp_wg_info | append: tp_wg_e | append: ';'
+    endfor
+    assign tp_wg_info = tp_wg_info | split: ';'
+
+    # 2. Zahlwerte einer Gruppe zuordnen (erste passende Gruppe)
+    assign tp_wg_besitzer = ''
+    for tp_wg_i in tp_wg_info
+      assign tp_wg_bi = -1
+      assign tp_wg_ei = tp_wg_i | split: ','
+      if tp_wg_ei[0] == 'w'
+        assign tp_wg_n = tp_wg_ei[1] | times: 1.0
+        for tp_wg_j in tp_wg_info
+          assign tp_wg_ej = tp_wg_j | split: ','
+          if tp_wg_ej[0] != 'g'
+            continue
+          endif
+          assign tp_wg_lo = tp_wg_ej[1] | times: 1.0
+          assign tp_wg_hi = tp_wg_ej[3] | times: 1.0
+          assign tp_wg_ok_lo = false
+          if tp_wg_n > tp_wg_lo
+            assign tp_wg_ok_lo = true
+          elsif tp_wg_n == tp_wg_lo and tp_wg_ej[2] == '1'
+            assign tp_wg_ok_lo = true
+          endif
+          assign tp_wg_ok_hi = false
+          if tp_wg_n < tp_wg_hi
+            assign tp_wg_ok_hi = true
+          elsif tp_wg_n == tp_wg_hi and tp_wg_ej[4] == '1'
+            assign tp_wg_ok_hi = true
+          endif
+          if tp_wg_ok_lo and tp_wg_ok_hi
+            assign tp_wg_bi = forloop.index0
+            break
+          endif
+        endfor
+      endif
+      assign tp_wg_besitzer = tp_wg_besitzer | append: tp_wg_bi | append: ';'
+    endfor
+    assign tp_wg_besitzer = tp_wg_besitzer | split: ';'
+
+    # 3. Uebrige Zahlwerte gleicher Zahl zusammenfassen (laengstes Label vorn)
+    assign tp_wg_besitzer2 = ''
+    for tp_wg_i in tp_wg_info
+      assign tp_wg_ix = forloop.index0
+      assign tp_wg_bi = tp_wg_besitzer[tp_wg_ix] | plus: 0
+      assign tp_wg_ei = tp_wg_i | split: ','
+      if tp_wg_bi < 0 and tp_wg_ei[0] == 'w'
+        assign tp_wg_n = tp_wg_ei[1] | times: 1.0
+        assign tp_wg_best = tp_wg_ix
+        assign tp_wg_best_len = filter.values[tp_wg_ix].label.size
+        for tp_wg_j in tp_wg_info
+          assign tp_wg_jx = forloop.index0
+          assign tp_wg_bj = tp_wg_besitzer[tp_wg_jx] | plus: 0
+          assign tp_wg_ej = tp_wg_j | split: ','
+          if tp_wg_bj >= 0 or tp_wg_ej[0] != 'w'
+            continue
+          endif
+          assign tp_wg_m = tp_wg_ej[1] | times: 1.0
+          if tp_wg_m == tp_wg_n
+            assign tp_wg_len = filter.values[tp_wg_jx].label.size
+            if tp_wg_len > tp_wg_best_len
+              assign tp_wg_best = tp_wg_jx
+              assign tp_wg_best_len = tp_wg_len
+            elsif tp_wg_len == tp_wg_best_len and tp_wg_jx < tp_wg_best
+              assign tp_wg_best = tp_wg_jx
+            endif
+          endif
+        endfor
+        if tp_wg_best != tp_wg_ix
+          assign tp_wg_bi = tp_wg_best
+        endif
+      endif
+      assign tp_wg_besitzer2 = tp_wg_besitzer2 | append: tp_wg_bi | append: ';'
+    endfor
+    assign tp_wg_besitzer = tp_wg_besitzer2 | split: ';'
+
+    # 4. Tokens ausgeben
+    assign tp_wg_aus = ''
+    assign tp_wg_anzahl = 0
+    for tp_wg_v in filter.values
+      assign tp_wg_ix = forloop.index0
+      assign tp_wg_bi = tp_wg_besitzer[tp_wg_ix] | plus: 0
+      if tp_wg_bi >= 0
+        assign tp_wg_aus = tp_wg_aus | append: 'X' | append: tp_wg_bi | append: ';'
+        continue
+      endif
+      assign tp_wg_mit = ''
+      assign tp_wg_aktiv = tp_wg_v.active
+      assign tp_wg_treffer = false
+      if tp_wg_v.count > 0
+        assign tp_wg_treffer = true
+      endif
+      for tp_wg_m in filter.values
+        assign tp_wg_bm = tp_wg_besitzer[forloop.index0] | plus: 0
+        if tp_wg_bm == tp_wg_ix
+          assign tp_wg_mit = tp_wg_mit | append: tp_wg_m.value | append: '|'
+          if tp_wg_m.active
+            assign tp_wg_aktiv = true
+          endif
+          if tp_wg_m.count > 0
+            assign tp_wg_treffer = true
+          endif
+        endif
+      endfor
+      if tp_wg_aktiv
+        assign tp_wg_anzahl = tp_wg_anzahl | plus: 1
+      endif
+      if tp_wg_mit == ''
+        assign tp_wg_aus = tp_wg_aus | append: 'N;'
+      else
+        assign tp_wg_mit = tp_wg_mit | remove_last: '|'
+        assign tp_wg_aus = tp_wg_aus | append: 'R'
+        if tp_wg_aktiv
+          assign tp_wg_aus = tp_wg_aus | append: '1'
+        else
+          assign tp_wg_aus = tp_wg_aus | append: '0'
+        endif
+        if tp_wg_treffer
+          assign tp_wg_aus = tp_wg_aus | append: '1'
+        else
+          assign tp_wg_aus = tp_wg_aus | append: '0'
+        endif
+        assign tp_wg_aus = tp_wg_aus | append: '~' | append: tp_wg_mit | append: ';'
+      endif
+    endfor
+
+    if nur_anzahl
+      echo tp_wg_anzahl
+    else
+      echo tp_wg_aus
+    endif
+  endif
+-%}

@@ -42,6 +42,44 @@
   if filter.param_name contains 'kleinste_bestellmenge'
     assign tp_is_mindestmenge = true
   endif
+  # Audit 13.10.: Rohwerte in Bereiche aufnehmen, gleiche Zahlen zusammenfassen
+  # (snippets/tp-filter-wertgruppen.liquid). tp_wg ist leer, wenn nicht zutreffend.
+  capture tp_wg_roh
+    render 'tp-filter-wertgruppen', filter: filter
+  endcapture
+  assign tp_wg = tp_wg_roh | strip | split: ';'
+  assign tp_wg_genutzt = false
+  if tp_wg.size == filter.values.size and tp_wg.size > 0
+    assign tp_wg_genutzt = true
+  endif
+  assign tp_wg_sichtbar = filter.values.size
+  if tp_wg_genutzt
+    assign tp_wg_sichtbar = 0
+    assign active_value_count = 0
+    assign tp_wg_erstes_aktiv = ''
+    for tp_wg_t in tp_wg
+      assign tp_wg_art = tp_wg_t | slice: 0
+      if tp_wg_art == 'X'
+        continue
+      endif
+      assign tp_wg_sichtbar = tp_wg_sichtbar | plus: 1
+      assign tp_wg_aktiv_t = false
+      if tp_wg_art == 'R'
+        assign tp_wg_a = tp_wg_t | slice: 1
+        if tp_wg_a == '1'
+          assign tp_wg_aktiv_t = true
+        endif
+      elsif filter.values[forloop.index0].active
+        assign tp_wg_aktiv_t = true
+      endif
+      if tp_wg_aktiv_t
+        assign active_value_count = active_value_count | plus: 1
+        if tp_wg_erstes_aktiv == ''
+          assign tp_wg_erstes_aktiv = filter.values[forloop.index0].label
+        endif
+      endif
+    endfor
+  endif
 -%}
 {% capture accordion_children %}
   <details
@@ -102,7 +140,9 @@
               ref="facetStatus"
             >
               {%- liquid
-                if filter_style == 'horizontal' and active_value_count == 1
+                if filter_style == 'horizontal' and active_value_count == 1 and tp_wg_genutzt
+                  echo tp_wg_erstes_aktiv
+                elsif filter_style == 'horizontal' and active_value_count == 1
                   if tp_is_roll_width_filter
                     echo filter.active_values[0].value | times: 100 | round | append: ' cm'
                   else
@@ -146,7 +186,7 @@
           if is_swatch and show_swatch_label
             assign should_render_for_swatch = false
           endif
-          if filter.values.size > max_visible_values and should_render_for_swatch == false
+          if tp_wg_sichtbar > max_visible_values and should_render_for_swatch == false
             assign render_show_more = true
           endif
         %}
@@ -161,6 +201,12 @@
           assign should_use_pills = true
 
           for value in filter.values
+            if tp_wg_genutzt
+              assign tp_wg_art = tp_wg[forloop.index0] | slice: 0
+              if tp_wg_art == 'X'
+                continue
+              endif
+            endif
             if value.label.size > 3
               assign should_use_pills = false
               break
@@ -216,11 +262,39 @@
             {% endif %}
             name="{{ filter.label }}"
           >
+            {%- assign tp_wg_pos = 0 -%}
             {%- for value in filter.values -%}
               {%- assign tp_zimmer_filterwert = value.label | downcase | strip -%}
               {%- if filter.param_name == 'filter.p.m.custom.zimmer' and tp_zimmer_filterwert == 'treppeneignung' -%}
                 {%- continue -%}
               {%- endif -%}
+              {%- liquid
+                assign tp_wg_t = 'N'
+                if tp_wg_genutzt
+                  assign tp_wg_t = tp_wg[forloop.index0]
+                endif
+                assign tp_wg_art = tp_wg_t | slice: 0
+                if tp_wg_art == 'X'
+                  continue
+                endif
+                assign tp_wg_pos = tp_wg_pos | plus: 1
+                assign tp_wg_mitwerte = ''
+                assign tp_value_active = value.active
+                assign tp_value_count = value.count
+                if tp_wg_art == 'R'
+                  assign tp_wg_teile = tp_wg_t | split: '~'
+                  assign tp_wg_mitwerte = tp_wg_teile[1]
+                  assign tp_wg_a = tp_wg_t | slice: 1
+                  assign tp_wg_e = tp_wg_t | slice: 2
+                  assign tp_value_active = false
+                  if tp_wg_a == '1'
+                    assign tp_value_active = true
+                  endif
+                  if tp_wg_e == '1' and tp_value_count == 0
+                    assign tp_value_count = 1
+                  endif
+                endif
+              -%}
               {%- if tp_is_roll_width_filter -%}
                 {%- assign tp_filter_value_label = value.value | times: 100 | round | append: ' cm' -%}
               {%- else -%}
@@ -229,11 +303,11 @@
               {% liquid
                 assign input_id = 'Filter-' | append: filter.param_name | escape | append: '-' | append: forloop.index | replace: '.', '-' | append: '-' | append: filter_style | append: '-' | append: in_drawer
                 assign is_disabled = false
-                if value.count == 0 and value.active == false
+                if tp_value_count == 0 and tp_value_active == false
                   assign is_disabled = true
                 endif
                 assign hidden_class = null
-                if forloop.index > inital_visible_values and render_show_more
+                if tp_wg_pos > inital_visible_values and render_show_more
                   assign hidden_class = 'hidden'
                   if filter_style == 'horizontal'
                     assign hidden_class = 'mobile:hidden'
@@ -250,11 +324,14 @@
                 {% if is_disabled %}
                   title="Mit der aktuellen Auswahl nicht verf&uuml;gbar"
                 {% endif %}
+                {% if tp_wg_mitwerte != '' %}
+                  data-tp-mitwerte="{{ tp_wg_mitwerte | escape }}"
+                {% endif %}
                 {% if hidden_class %}
                   ref="showMoreItems[]"
                 {% endif %}
               >
-                {% if value.active %}
+                {% if tp_value_active %}
                   {% assign has_active_values = true %}
                 {% endif %}
                 {% if is_image %}
@@ -286,7 +363,7 @@
                       value="{{ value.value }}"
                       aria-label="{{ tp_filter_value_label }}"
                       id="{{ input_id }}"
-                      {% if value.active %}
+                      {% if tp_value_active %}
                         checked
                       {% endif %}
                       {% if is_disabled %}
@@ -323,7 +400,7 @@
                           value="{{ value.value }}"
                           aria-label="{{ tp_filter_value_label }}"
                           id="{{ input_id }}"
-                          {% if value.active %}
+                          {% if tp_value_active %}
                             checked
                           {% endif %}
                           {% if is_disabled %}
@@ -364,7 +441,7 @@
                         id="{{ input_id }}"
                         class="facets__pill-input"
                         data-label="{{ tp_filter_value_label }}"
-                        {% if value.active %}
+                        {% if tp_value_active %}
                           checked
                         {% endif %}
                         {% if is_disabled %}
@@ -397,7 +474,7 @@
                       name: value.param_name,
                       value: value.value,
                       label: tp_filter_value_label,
-                      checked: value.active,
+                      checked: tp_value_active,
                       id: input_id,
                       disabled: is_disabled,
                       inputRef: 'facetInputs[]',

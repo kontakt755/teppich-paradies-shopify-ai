@@ -10,7 +10,13 @@ document.addEventListener('click', (event) => {
   for (const key of [...destination.searchParams.keys()]) {
     if (key.startsWith('filter.') || key === 'page' || key === 'sort_by') destination.searchParams.delete(key);
   }
-  if (link.dataset.tpFlorClear !== 'true') destination.searchParams.set(heightParameter, link.dataset.tpFlorValue);
+  if (link.dataset.tpFlorClear !== 'true') {
+    destination.searchParams.set(heightParameter, link.dataset.tpFlorValue);
+    // Rohwerte im Bereich (snippets/tp-filter-wertgruppen.liquid) gehoeren dazu.
+    for (const wert of (link.dataset.tpFlorMitwerte ?? '').split('|')) {
+      if (wert) destination.searchParams.append(heightParameter, wert);
+    }
+  }
 
   for (const [key, value] of currentParameters) {
     if (key.startsWith('filter.') && key !== heightParameter) destination.searchParams.append(key, value);

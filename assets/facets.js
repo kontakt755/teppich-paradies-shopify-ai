@@ -44,6 +44,21 @@ class FacetsFormComponent extends Component {
       newParameters.set('sort_by', window.innerWidth < 750 ? sortValues[0] : sortValues[sortValues.length - 1]);
     }
 
+    // Zusammengefasste Masswerte (snippets/tp-filter-wertgruppen.liquid): ein
+    // sichtbarer Eintrag steht fuer mehrere Filterwerte, die gemeinsam gelten.
+    for (const item of this.refs.facetsForm.querySelectorAll('li[data-tp-mitwerte]')) {
+      const input = item.querySelector('input[type="checkbox"]');
+      if (!(input instanceof HTMLInputElement) || !input.name) continue;
+      if (!newParameters.getAll(input.name).includes(input.value)) continue;
+      const vorhanden = newParameters.getAll(input.name);
+      for (const wert of (item.getAttribute('data-tp-mitwerte') ?? '').split('|')) {
+        if (wert && !vorhanden.includes(wert)) {
+          newParameters.append(input.name, wert);
+          vorhanden.push(wert);
+        }
+      }
+    }
+
     if (newParameters.get('filter.v.price.gte') === '') newParameters.delete('filter.v.price.gte');
     if (newParameters.get('filter.v.price.lte') === '') newParameters.delete('filter.v.price.lte');
 
@@ -491,8 +506,20 @@ class FacetRemoveComponent extends Component {
       event.preventDefault();
     }
 
-    const url = this.dataset.url;
+    let url = this.dataset.url;
     if (!url) return;
+
+    // Chip eines zusammengefassten Masswerts: Mitwerte ebenfalls entfernen.
+    const mitwerte = this.dataset.tpMitwerte;
+    const mitwerteName = this.dataset.tpMitwerteName;
+    if (mitwerte && mitwerteName) {
+      const weg = new Set(mitwerte.split('|'));
+      const zielUrl = new URL(url, window.location.origin);
+      const bleiben = zielUrl.searchParams.getAll(mitwerteName).filter((wert) => !weg.has(wert));
+      zielUrl.searchParams.delete(mitwerteName);
+      for (const wert of bleiben) zielUrl.searchParams.append(mitwerteName, wert);
+      url = `${zielUrl.pathname}${zielUrl.search}`;
+    }
 
     const facetsForm = form ? document.getElementById(form) : this.closest('facets-form-component');
 
