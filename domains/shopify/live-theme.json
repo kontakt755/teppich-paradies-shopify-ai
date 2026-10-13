@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204438208846",
-    "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-13T08:59:10Z",
-    "verifiedBy": "Shopify Admin API role MAIN (updatedAt 2026-10-13T08:57:03Z) nach workflow:live von main 810f04e1 (Deploy aus tp-fellara-dekofell)"
-  },
-  "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-13T08:59:10Z",
-    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live von main 810f04e1; naechstes Preview-Ziel"
+    "verifiedAt": "2026-10-13T09:09:48Z",
+    "verifiedBy": "Shopify Admin API role MAIN (updatedAt 2026-10-13T09:08:33Z) nach workflow:live von main 77788f30 (enthaelt #1187, #1199, #1198)"
+  },
+  "preview": {
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-10-13T09:09:48Z",
+    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live von main 77788f30; naechstes Preview-Ziel"
   },
   "fallback": {
     "themeId": "206590509390",
@@ -28,10 +28,10 @@
   },
   "retired": [
     {
-      "themeId": "204436144462",
-      "name": "Kopie von preview-main-2026-09-04",
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
       "retiredNoticedAt": "2026-10-13",
-      "note": "Von 08:45 bis 08:57 UTC live mit main 83c88235, dann durch workflow:live von main 810f04e1 abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen per Shopify Admin API bestaetigt."
+      "note": "Von 08:57 bis 09:08 UTC live mit main 810f04e1 (#1187), dann durch workflow:live von main 77788f30 abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen per Shopify Admin API bestaetigt."
     },
     {
       "themeId": "204438208846",
