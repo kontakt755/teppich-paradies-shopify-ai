@@ -104,6 +104,27 @@ test('Farbprodukt: Variantenbild und Musterprodukt mit allen Farben', () => {
   assert.deepEqual(regeln(pruefeImporte({ produkte: [ohneMuster], seit: '2026-10-01' })), ['fehler:variantenbild']);
 });
 
+test('Musterfarben werden auch bei alten Produkten abgeglichen (Farbe spaeter dazugekommen)', () => {
+  const alt = produkt({
+    productType: 'Teppichboden', createdAt: '2026-08-08T08:00:00Z',
+    options: [{ name: 'Farbe', values: ['Sand', 'Rauchblau'] }],
+    variants: [
+      { id: 'a', sku: 'T-1', title: 'Sand', price: '20', image: 'u', selectedOptions: [{ name: 'Farbe', value: 'Sand' }], custom: {} },
+      { id: 'b', sku: 'T-2', title: 'Rauchblau', price: '20', image: 'u', selectedOptions: [{ name: 'Farbe', value: 'Rauchblau' }], custom: {} },
+    ],
+  });
+  const muster = produkt({
+    handle: `muster-${alt.handle}`, productType: 'Musterservice', status: 'UNLISTED', createdAt: '2026-08-08T08:00:00Z',
+    variants: [{ id: 'm', sku: 'M-T-1', title: 'Sand', price: '0.00', image: null, selectedOptions: [{ name: 'Farbe', value: 'Sand' }], custom: {} }],
+  });
+  const erg = pruefeImporte({ produkte: [alt, muster], seit: '2026-10-01' });
+  assert.equal(erg.geprueft, 0);
+  assert.deepEqual(erg.befunde.map((b) => `${b.handle}:${b.regel}`), [`${alt.handle}:muster-farben`]);
+  assert.match(erg.befunde[0].text, /Rauchblau/);
+  // --handles prueft genau die genannten Produkte, keinen Shop-Abgleich
+  assert.deepEqual(pruefeImporte({ produkte: [alt, muster], handles: [muster.handle] }).befunde.filter((b) => b.regel === 'muster-farben'), []);
+});
+
 test('Musterprodukt: Preis 0, SKU M-, UNLISTED, veroeffentlicht', () => {
   const quelle = produkt();
   const muster = produkt({
@@ -178,6 +199,18 @@ test('versteckte Hilfsprodukte (UNLISTED, Tag service) werden nicht geprueft', (
   assert.deepEqual(pruefeImporte({ produkte: [...vergleich(), hilfe], seit: '2026-10-01' }).befunde, []);
   const einfassung = produkt({ createdAt: '2026-10-07T08:00:00Z', tags: ['marken-einfassung'], collections: ['intern-einfassung'] });
   assert.deepEqual(pruefeImporte({ produkte: [...vergleich(), einfassung], seit: '2026-10-01' }).befunde, []);
+});
+
+test('Einfassungsart (Tag marken-einfassung) braucht keine Kategorie, andere Produkte schon', () => {
+  const art = produkt({ createdAt: '2026-10-07T08:00:00Z', tags: ['marken-einfassung'], collections: ['intern-regulaerer-preis'] });
+  const ohne = produkt({ createdAt: '2026-10-07T08:00:00Z', collections: ['intern-regulaerer-preis'] });
+  const erg = pruefeImporte({ produkte: [...vergleich(), art, ohne], seit: '2026-10-01' });
+  assert.deepEqual(erg.befunde.filter((b) => b.regel === 'kategorie').map((b) => b.handle), [ohne.handle]);
+});
+
+test('archivierte Produkte werden nicht geprueft', () => {
+  const weg = produkt({ createdAt: '2026-10-07T08:00:00Z', status: 'ARCHIVED', onlineStoreUrl: null, mediaCount: 0, options: [{ name: 'Farbe', values: ['Grau'] }] });
+  assert.deepEqual(pruefeImporte({ produkte: [...vergleich(), weg], seit: '2026-10-01' }).befunde, []);
 });
 
 test('Entwuerfe liefern nur Hinweise (Vorlage mit Preis 0, Farben ohne Bild)', () => {
