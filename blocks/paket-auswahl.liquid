@@ -267,6 +267,46 @@
     color: var(--cp-muted);
   }
 
+  /* Hinweis bei manuell geaenderter Paketzahl (Audit 2026-10-13): ruhig,
+     innerhalb des Ergebnisblocks, gleiche Bildsprache wie der Paket-Hinweis. */
+  .carpet-package__deviation-{{ package_selector_id }} {
+    margin: 8px 0 2px;
+    padding: 8px 10px;
+    border-left: 3px solid var(--cp-border-strong);
+    background: var(--cp-background);
+    border-radius: 5px;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--cp-text);
+  }
+
+  .carpet-package__deviation-{{ package_selector_id }}[hidden] {
+    display: none;
+  }
+
+  .carpet-package__deviation-{{ package_selector_id }} p {
+    margin: 0;
+  }
+
+  .carpet-package__deviation-{{ package_selector_id }} [data-package-hint-detail] {
+    margin-top: 2px;
+    color: var(--cp-muted);
+  }
+
+  .carpet-package__deviation-{{ package_selector_id }} button {
+    min-height: 44px;
+    margin-top: 2px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--cp-text);
+    font: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
   .carpet-package__results-title-{{ package_selector_id }} {
     margin: 0 0 6px;
     font-size: 13px;
@@ -542,6 +582,19 @@
       <span>Gesamtfläche</span>
       <span data-sqm-display>–</span>
     </div>
+
+    {% comment %}
+      Audit 2026-10-13: Wer die Paketzahl von Hand aendert, behaelt seine
+      eingegebene Flaeche. Hier steht, was die Abweichung fuer diese Flaeche
+      bedeutet (fehlende Flaeche, kleinere Reserve oder mehr als berechnet),
+      plus der Rueckweg zur Empfehlung. Nur Anzeige - Menge und Preis kommen
+      weiter aus derselben Paketzahl wie der Warenkorb.
+    {% endcomment %}
+    <div class="carpet-package__deviation-{{ package_selector_id }}" data-package-hint hidden>
+      <p data-package-hint-text></p>
+      <p data-package-hint-detail></p>
+      <button type="button" data-package-reset>Zurück zur empfohlenen Menge</button>
+    </div>
   </div>
 
   {% comment %}
@@ -607,9 +660,10 @@
     // Gewünschte Fläche ist der einzige Zustand ("single source of truth").
     // Paketanzahl wird daraus IMMER über computePackages() abgeleitet - dieselbe
     // Funktion wird für die Anzeige (update) und für den Warenkorb-Payload
-    // (addToCart) verwendet, damit beide niemals auseinanderlaufen. Sowohl das
-    // primäre m²-Feld als auch die sekundäre manuelle Paketanpassung verändern
-    // ausschließlich desiredSqm - es gibt keinen zweiten, unabhängigen Zustand.
+    // (addToCart) verwendet, damit beide niemals auseinanderlaufen. Einzige
+    // Ausnahme seit 2026-10-13: eine von Hand gewaehlte Paketzahl
+    // (manualPackages, siehe unten) ersetzt die Empfehlung, laesst aber die
+    // eingegebene Flaeche stehen - auch sie laeuft durch computePackages().
     // Startwert so waehlen, dass der Ruhezustand der Seite genau ein Paket
     // zeigt - AUCH mit vorausgewaehltem Verschnitt. Ein glatter Startwert von
     // einer vollen Paketflaeche wuerde mit dem Zuschlag darueber liegen und
@@ -620,6 +674,15 @@
     const initialWasteFactor = component.querySelector('[data-waste-checkbox]')?.checked ? WASTE_FACTOR : 1.0;
     let desiredSqm =
       Math.floor(((Math.max(1, initialPackages) * sqmPerPackage) / initialWasteFactor) * 100) / 100;
+
+    // Audit 2026-10-13: Von Hand gewaehlte Paketzahl. null = Empfehlung aus
+    // desiredSqm. Bis dahin schrieben die Paket-Knoepfe eine rueckgerechnete
+    // Flaeche ins Eingabefeld (18,00 -> 17,04 m2), und niemand sah, dass die
+    // eingegebenen 18 m2 nicht mehr gedeckt waren. Jetzt bleibt die Flaeche
+    // stehen, und der Hinweis nennt die Abweichung. Gilt nur, solange eine
+    // Flaeche eingegeben ist; jede neue Flaeche, der Verschnitt-Schalter und
+    // "Zurueck zur empfohlenen Menge" heben die Wahl wieder auf.
+    let manualPackages = null;
 
     const sqmInput = component.querySelector('[data-sqm-input]');
     const needLabel = component.querySelector('[data-need-label]');
@@ -637,6 +700,9 @@
     const railResult = component.querySelector('[data-rail-result]');
     const railError = component.querySelector('[data-rail-error]');
     const railLength = Number(component.dataset.railLength || 0);
+    const packageHint = component.querySelector('[data-package-hint]');
+    const packageHintText = component.querySelector('[data-package-hint-text]');
+    const packageHintDetail = component.querySelector('[data-package-hint-detail]');
 
     // Stueckangaben kommen aus den Metafeldern am Element. Fehlt die
     // Stueckzahl, ist piecesLine gar nicht gerendert - die Zeile entfaellt
@@ -725,8 +791,70 @@
       return Math.max(1, Math.ceil(requiredSqm / sqmPerPackage - FLOAT_EPSILON));
     }
 
+    // Paketzahl fuer Anzeige UND Warenkorb: die manuelle Wahl, sonst die
+    // Empfehlung. Beide Wege lesen weiter genau diese eine Funktion.
     function computePackages() {
-      return computePackagesFor(desiredSqm);
+      return manualPackages !== null ? manualPackages : computePackagesFor(desiredSqm);
+    }
+
+    // Eingegebene Flaeche so, wie der Kunde sie kennt: mindestens zwei, hoechstens
+    // so viele Nachkommastellen wie die Paketflaeche ("18,00", "18,125").
+    function formatArea(value) {
+      let text = value.toFixed(sqmDecimals);
+      while (text.length > 0 && /\.\d{3,}$/.test(text) && text.endsWith('0')) text = text.slice(0, -1);
+      return text.replace('.', ',');
+    }
+
+    // Reine Rechnung fuer den Hinweis: was bedeutet die gewaehlte Paketzahl
+    // fuer die eingegebene Flaeche? null = keine Abweichung von der Empfehlung.
+    function packageDeviation(area, wasteFactor, packages, recommended) {
+      if (packages === recommended) return null;
+      const actual = packages * sqmPerPackage;
+      if (packages > recommended) {
+        return { kind: 'mehr', extra: (packages - recommended) * sqmPerPackage, recommended: recommended };
+      }
+      const missing = area - actual;
+      if (missing > 0.0005) {
+        return { kind: 'fehlt', missing: missing, reserveDropped: wasteFactor > 1, recommended: recommended };
+      }
+      return {
+        kind: 'reserve',
+        reserve: Math.max(0, actual - area),
+        reserveTarget: area * (wasteFactor - 1),
+        recommended: recommended,
+      };
+    }
+
+    function renderDeviation(hatEingabe, packages) {
+      if (!packageHint) return;
+      const recommended = computePackagesFor(desiredSqm);
+      const deviation = hatEingabe && manualPackages !== null
+        ? packageDeviation(desiredSqm, getWasteFactor(), packages, recommended)
+        : null;
+      packageHint.hidden = !deviation;
+      if (!deviation) {
+        if (packageHintText) packageHintText.textContent = '';
+        if (packageHintDetail) packageHintDetail.textContent = '';
+        return;
+      }
+      const area = formatArea(desiredSqm) + '\u00a0m²';
+      let text;
+      if (deviation.kind === 'fehlt') {
+        text = 'Für Ihre ' + area + ' fehlen ' + formatSqm(deviation.missing) + '\u00a0m².';
+        if (deviation.reserveDropped) text += ' Die empfohlene Reserve entfällt.';
+      } else if (deviation.kind === 'reserve') {
+        text = deviation.reserve < 0.0005
+          ? 'Ihre ' + area + ' sind genau gedeckt, die Reserve entfällt.'
+          : 'Ihre ' + area + ' sind gedeckt. Reserve reduziert: ' + formatSqm(deviation.reserve) +
+            '\u00a0m² statt ' + formatSqm(deviation.reserveTarget) + '\u00a0m².';
+      } else {
+        text = formatSqm(deviation.extra) + '\u00a0m² mehr als berechnet.';
+      }
+      if (packageHintText) packageHintText.textContent = text;
+      if (packageHintDetail) {
+        packageHintDetail.textContent = 'Empfohlen: ' + deviation.recommended +
+          (deviation.recommended === 1 ? ' Originalpaket' : ' Originalpakete') + '.';
+      }
     }
 
     // TP-002: eine rechnerisch gültige, aber nicht endliche oder unsicher
@@ -821,11 +949,13 @@
         totalDisplay.textContent = formatMoney(totalCents);
       }
 
+      renderDeviation(hatEingabe, packages);
+
       return packages;
     }
 
-    // Wird von den sekundären +/- Bedienelementen (m²-Feinsteuerung und
-    // manuelle Paketanpassung) genutzt: schreibt desiredSqm zurück in das
+    // Wird von der m²-Feinsteuerung (+/- am Flaechenfeld) und nach dem
+    // Verlassen des Feldes genutzt: schreibt desiredSqm zurück in das
     // Eingabefeld, weil der Nutzer hier gerade nicht selbst tippt.
     function syncInputValue() {
       if (sqmInput) {
@@ -1029,6 +1159,8 @@
         if (result.state === 'invalid' || result.state === 'unsafe') return;
 
         desiredSqm = result.state === 'ok' ? result.value : 0;
+        // Neue Flaeche = wieder die Empfehlung.
+        manualPackages = null;
         renderResults();
       });
 
@@ -1054,7 +1186,10 @@
         setMessage('', false);
         if (result.state === 'empty' || result.state === 'reset') {
           sqmInput.value = '';
-          desiredSqm = sqmForPackages(1);
+          // Nur zuruecksetzen, wenn eine Eingabe die Flaeche geleert hat
+          // (input setzt dann 0). Ein blosses Hinein- und Hinausklicken bei
+          // leerem Feld laesst eine per Paket-Knopf gewaehlte Menge stehen.
+          if (!(desiredSqm > 0)) desiredSqm = sqmForPackages(1);
           renderResults();
           return;
         }
@@ -1067,31 +1202,46 @@
       const decreaseSqm = event.target.closest('[data-decrease-sqm]');
       const increasePackages = event.target.closest('[data-increase-packages]');
       const decreasePackages = event.target.closest('[data-decrease-packages]');
+      const resetPackages = event.target.closest('[data-package-reset]');
       const cartButton = event.target.closest('[data-add-to-cart]');
 
       if (increaseSqm) {
+        manualPackages = null;
         setDesiredSqm(desiredSqm + SQM_STEP);
         return;
       }
 
       if (decreaseSqm) {
+        manualPackages = null;
         setDesiredSqm(desiredSqm - SQM_STEP);
         return;
       }
 
-      // Sekundäre, manuelle Paketanpassung: verändert ebenfalls nur
-      // desiredSqm, kein zweiter Zustand. Der Schritt zielt auf die
-      // Paketanzahl selbst (sqmForPackages), nicht auf "plus eine
-      // Paketfläche" - sonst addierte man eine Bruttofläche auf einen
-      // Nettobedarf, und ein Klick sprang bei aktivem Verschnitt von einem
-      // auf drei Pakete.
-      if (increasePackages) {
-        setDesiredSqm(sqmForPackages(computePackages() + 1));
+      // Sekundäre, manuelle Paketanpassung. Mit eingegebener Flaeche bleibt
+      // das Feld unberuehrt und die Paketzahl wird als manuelle Wahl
+      // gefuehrt (Hinweis zeigt die Abweichung). Ohne Eingabe wie bisher:
+      // desiredSqm auf genau n Pakete stellen, aber keine erfundene Zahl
+      // ins leere Feld schreiben. Der Schritt zielt auf die Paketanzahl
+      // selbst (sqmForPackages), nicht auf "plus eine Paketfläche" - sonst
+      // sprang ein Klick bei aktivem Verschnitt von einem auf drei Pakete.
+      if (increasePackages || decreasePackages) {
+        const current = computePackages();
+        const target = increasePackages ? current + 1 : Math.max(1, current - 1);
+        const hatEingabe = !!sqmInput && sqmInput.value.trim() !== '';
+        setMessage('', false);
+        if (hatEingabe) {
+          manualPackages = target === computePackagesFor(desiredSqm) ? null : target;
+        } else {
+          manualPackages = null;
+          desiredSqm = sqmForPackages(target);
+        }
+        renderResults();
         return;
       }
 
-      if (decreasePackages) {
-        setDesiredSqm(sqmForPackages(Math.max(1, computePackages() - 1)));
+      if (resetPackages) {
+        manualPackages = null;
+        renderResults();
         return;
       }
 
@@ -1104,6 +1254,8 @@
 
     if (wasteCheckbox) {
       wasteCheckbox.addEventListener('change', function () {
+        // Anderer Bedarf = wieder die Empfehlung.
+        manualPackages = null;
         renderResults();
       });
     }

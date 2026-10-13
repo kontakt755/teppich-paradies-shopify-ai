@@ -264,6 +264,7 @@
                       {%- endif -%}
 
                       {%- render 'tp-cart-paketzeile', line_item: item -%}
+                      {%- render 'tp-cart-leistenzeile', line_item: item -%}
 
                       {%- liquid
                         assign has_visible_properties = false
