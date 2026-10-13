@@ -784,7 +784,8 @@ die man für Social Media braucht. Für die Rolle „lesen“ ist sie ausgeblend
   Das Social-Modul speichert nur den Hash des Links. Den kopierbaren Klartext legt
   `POST /api/social/link-neu` (nur Inhaber) beim Anlegen in `social/upload-links.json` ab (Rechte 600) –
   ein gemerkter Link erscheint nur, solange sein Zugang aktiv ist. Ein neuer Link für einen vorhandenen
-  Namen sperrt den alten nicht. Die Adresse davor ist `SOCIAL_UPLOAD_BASIS_URL` aus `social/zugang.env`.
+  Namen sperrt den alten nicht. „Sperren“ (`POST /api/social/sperren`, nur Inhaber) sperrt wie
+  `npm run social -- zugang sperren` alle Links eines Namens und löscht den gemerkten Klartext. Die Adresse davor ist `SOCIAL_UPLOAD_BASIS_URL` aus `social/zugang.env`.
 - **Kampagnen-Link:** reines Frontend. Ziel nur auf `teppich-paradies.net`, Kanal → `utm_source`/`utm_medium`
   (social, email, print; Art „Anzeige“ → paid), Kampagnenname klein mit Bindestrichen, Art → `utm_content`.
 - **Weitere Links:** Social-Zentrale auf demselben Host, Port 8020; Instagram- und Facebook-Profil.

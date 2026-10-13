@@ -50,7 +50,7 @@ import {
   FOTO_ART, FotoFehler, passendeProdukte, produktHinweis, pruefeEingang, titelFuer,
 } from '../operations/lib/baustellenfotos.mjs';
 import { protokollPfad, protokolliere } from '../operations/lib/protokoll.mjs';
-import { findeZugang, liesZugaenge, zugangAnlegen } from '../social/lib/eingang.mjs';
+import { findeZugang, liesZugaenge, zugangAnlegen, zugangSperren } from '../social/lib/eingang.mjs';
 import { ladeUmgebung } from '../social/lib/zugang.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
@@ -1744,6 +1744,23 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       fs.chmodSync(this._uploadLinksDatei(), 0o600);
       merke(benutzer, null, 'Upload-Link angelegt', z.name);
       return { ok: true, ...this.socialZugaenge() };
+    },
+
+    /** Dieselbe Sperre wie `npm run social -- zugang sperren "Name"`: alle Links dieses Namens. */
+    socialSperren({ name = '' } = {}, { benutzer = null } = {}) {
+      const sauber = String(name || '').trim();
+      if (!sauber) throw new ApiError(400, 'Welcher Zugang? Der Name fehlt.');
+      const dir = this._socialDir();
+      const n = zugangSperren(sauber, { datei: path.join(dir, 'upload-zugaenge.json') });
+      if (!n) throw new ApiError(404, `Kein aktiver Zugang „${sauber}“.`);
+      // Den gemerkten Klartext gleich mit entfernen - ein gesperrter Link soll nirgends mehr liegen.
+      const links = this._uploadLinks();
+      const rest = links.filter(l => l.name.toLowerCase() !== sauber.toLowerCase());
+      if (rest.length !== links.length) {
+        fs.writeFileSync(this._uploadLinksDatei(), JSON.stringify({ links: rest }, null, 2), { mode: 0o600 });
+      }
+      merke(benutzer, null, 'Upload-Link gesperrt', sauber);
+      return { ok: true, gesperrt: n, ...this.socialZugaenge() };
     },
 
     teamListe() {
