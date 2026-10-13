@@ -336,3 +336,10 @@
   font-size: 13.5px;
   font-weight: 600;
 }
+
+/* Vinyl: hoechstens 3 Muster je Bestellung (Inhaber 13.10.2026) */
+.tp-sample__vinyl {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+}

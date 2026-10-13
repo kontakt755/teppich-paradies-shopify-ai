@@ -20,6 +20,8 @@
     <p class="tp-sample__eyebrow">Kostenloser Musterservice</p>
     <h1>Bis zu <span data-sample-max>3</span> <span data-sample-term="plural">Farben</span> zu Hause vergleichen</h1>
     <p class="tp-sample__bonus" data-sample-bonus hidden>Abonnenten-Bonus: Sie können 4 statt 3 Muster bestellen.</p>
+    {%- comment -%} Vinyl: hoechstens 3 Muster je Bestellung, auch mit Bonus (Inhaber 13.10.2026, assets/tp-sample-checkout-core.js) {%- endcomment -%}
+    <p class="tp-sample__vinyl" data-sample-vinyl hidden>Vinyl-Muster sind kostenlos – höchstens 3 je Bestellung.</p>
     <p data-sample-intro>Wählen Sie Ihre <span data-sample-term="plural">Farben</span> aus. Die Nummer wird automatisch übernommen.</p>
   </header>
   {% comment %}
@@ -130,8 +132,8 @@
       "type": "textarea",
       "id": "kategorien",
       "label": "Einstiege ohne Produkt",
-      "info": "Eine Zeile je Link: Titel|URL. Erscheint nur, wenn die Seite ohne ?produkt= aufgerufen wird. Vinyl von der Rolle und Linoleum fehlen bewusst: dort sind keine Muster moeglich (Tag ohne-muster, 12.10.2026).",
-      "default": "Teppichboden|/collections/teppichboden\nKlickvinyl|/collections/vinylboden-klickvinyl\nKlebevinyl|/collections/vinylboden-klebevinyl"
+      "info": "Eine Zeile je Link: Titel|URL. Erscheint nur, wenn die Seite ohne ?produkt= aufgerufen wird.",
+      "default": "Teppichboden|/collections/teppichboden\nKlickvinyl|/collections/vinylboden-klickvinyl\nKlebevinyl|/collections/vinylboden-klebevinyl\nVinyl von der Rolle|/collections/vinylboden-vinyl-von-der-rolle\nLinoleum|/collections/linoleumboden-1"
     }
   ],
   "presets": [

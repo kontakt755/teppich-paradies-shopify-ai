@@ -1,0 +1,37 @@
+{%- doc -%}
+  Grenze fuer kostenlose Vinyl-Muster (Inhaber 13.10.2026): hoechstens 3
+  Vinyl-Muster je Bestellung, auch mit Abonnenten-Bonus. Vinyl-Muster kosten
+  uns Geld; fuer den Kunden bleiben sie kostenlos.
+
+  Gezaehlt werden Warenkorbzeilen mit der Property _Muster_Gruppe = vinyl.
+  Die setzt der Musterkonfigurator (assets/tp-sample-checkout-core.js,
+  buildCartItems); dort stehen auch dieselbe Typliste und dieselbe Grenze,
+  und dort wird die Grenze beim Hinzufuegen tatsaechlich durchgesetzt. Dieses
+  Snippet steuert nur die Knoepfe auf der Produktseite.
+
+  Alle anderen Muster (Teppichboden, Linoleum ...) laufen unveraendert ueber
+  die Gesamtgrenze des Konfigurators; hier wird fuer sie nichts ausgegeben.
+
+  Ausgabe:
+  - "voll"  Vinylboden, 3 Vinyl-Muster liegen schon im Warenkorb
+  - "vinyl" Vinylboden, Grenze noch nicht erreicht
+  - nichts  kein Vinylboden
+
+  @param {object} product - Produkt der Seite
+{%- enddoc -%}
+{%- liquid
+  assign tpmg_typ = product.type | downcase | strip
+  if tpmg_typ == 'klickvinyl' or tpmg_typ == 'klebevinyl' or tpmg_typ == 'vinyl von der rolle'
+    assign tpmg_anzahl = 0
+    for tpmg_zeile in cart.items
+      if tpmg_zeile.properties._Muster_Gruppe == 'vinyl'
+        assign tpmg_anzahl = tpmg_anzahl | plus: tpmg_zeile.quantity
+      endif
+    endfor
+    if tpmg_anzahl >= 3
+      echo 'voll'
+    else
+      echo 'vinyl'
+    endif
+  endif
+-%}
