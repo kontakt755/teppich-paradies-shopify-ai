@@ -2,7 +2,7 @@
   "name": "teppich-paradies-shopify-ai",
   "private": true,
   "scripts": {
-    "test": "npm run qa:unit:test && npm run dashboard:test && npm run operations:test && npm run automation:test && npm run workflow:test && npm run hooks:test && npm run social:test",
+    "test": "npm run qa:unit:test && npm run dashboard:test && npm run operations:test && npm run automation:test && npm run workflow:test && npm run hooks:test && npm run social:test && npm run lexware:test",
     "qa": "node qa/run-qa.mjs",
     "qa:visual": "node qa/run-qa.mjs --visual-evidence",
     "qa:unit:test": "node --test qa/tests/*.test.mjs",
@@ -49,6 +49,7 @@
     "sync:categories": "node workflow/load-grosshandel-categories.mjs",
     "sync:categories:activate": "echo 'Edit data/grosshandel-categories.json und setze active: true'",
     "hooks:test": "node --test .claude/hooks/*.test.mjs",
+    "lexware:test": "node --test domains/lexware/angebotsassistent/test/*.test.mjs",
     "dashboard:data": "node scripts/build-dashboard-data.mjs",
     "dashboard": "node scripts/build-dashboard-data.mjs && node scripts/build-bodenwissen-data.mjs && node scripts/serve-dashboard.mjs",
     "dashboard:serve": "node scripts/serve-dashboard.mjs",

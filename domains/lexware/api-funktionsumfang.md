@@ -16,7 +16,9 @@ arbeitet es über die Lexware-Oberfläche und nicht über die API.
 
 Die Tabelle weiter unten beschreibt, was die **API technisch** kann – nicht, was ein Agent hier darf.
 
-- **Heute: nichts.** Es gibt keine Lexware-Anbindung, weder im Repo noch als Connector.
+- **Heute:** Der Angebotsassistent (`domains/lexware/angebotsassistent/`, Google Apps Script) liest Artikel und legt
+  nach Vorschau, Pflichtkontrolle und ausdrücklicher Bestätigung genau einen Angebots**entwurf** an, den er
+  vollständig zurückliest. Kein Finalisieren, kein Versand, keine Artikel- oder Preisänderung.
 - **Geplanter Start: nur lesen** (`FUTURE_DOMAIN_PACKS.md` §9, Schritt 5). Schreibrechte werden erst nach
   erfolgreichen Nur-lesen-Läufen freigeschaltet.
 - **Danach laut Plan autonom vorgesehen** (§2): Exportanalyse, Plausibilitätsberichte, Angebotsentwürfe

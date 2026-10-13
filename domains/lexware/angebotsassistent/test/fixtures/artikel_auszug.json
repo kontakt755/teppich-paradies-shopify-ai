@@ -1,0 +1,775 @@
+{
+ "exportDate": "2026-10-13",
+ "source": "Testauszug aus Lexware-Artikelabruf (Belags-/Leistenbezeichnungen neutralisiert)",
+ "count": 48,
+ "articles": [
+  {
+   "id": "70649a4b-d17a-47df-b6e4-b8858389b08d",
+   "articleNumber": "MG-010",
+   "title": "Material und Grobreinigung",
+   "description": "Klein-, Verbrauchs- und Befestigungsmaterial sowie abschließende Grobreinigung des Arbeitsbereichs und Entsorgung der anfallenden Verlegereste.",
+   "type": "SERVICE",
+   "unitName": "Pauschal",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 59,
+    "grossPrice": 70.21,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "b24809c7-49b4-40d0-bdc0-e3bd5ed3f9a6",
+   "articleNumber": "FA-010",
+   "title": "An- und Abfahrt",
+   "description": null,
+   "type": "SERVICE",
+   "unitName": "Anfahrt",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 59,
+    "grossPrice": 70.21,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "c0fba70c-0f23-43e4-99dc-c7e2def8be1d",
+   "articleNumber": null,
+   "title": "An- und Abfahrt",
+   "description": null,
+   "type": "SERVICE",
+   "unitName": "Anfahrt",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 59,
+    "grossPrice": 70.21,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "62f3ffa4-fa7c-4e3d-a2b4-af024f6253bb",
+   "articleNumber": null,
+   "title": "An- und Abfahrt Berlin",
+   "description": "inkl. Park- und KFZ-Gebühren",
+   "type": "SERVICE",
+   "unitName": "x",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 69,
+    "grossPrice": 82.11,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "a8cdfc6b-8542-49c3-b001-0560105d1742",
+   "articleNumber": null,
+   "title": "Angebot Rollenware verlegen – lose Verlegung  + 1. Anfahrt inklusive",
+   "description": "Fachgerechtes Verlegen der Rollenware in loser Verlegung inklusive Zuschnitt und einer Anfahrt.",
+   "type": "SERVICE",
+   "unitName": "Angebot",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 0,
+    "grossPrice": 0,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "92798372-417c-4c52-ae98-77faa7e8ae89",
+   "articleNumber": null,
+   "title": "Zusätzlich Rollenware vollflächig fixieren",
+   "description": "inkl. Fixierung\nAngebot Zusatz",
+   "type": "SERVICE",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 5.95,
+    "grossPrice": 7.08,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "9b9e4264-b688-423a-8168-c48bc724681f",
+   "articleNumber": null,
+   "title": "Zusätzlich Teppichboden mit Klettband einspannen",
+   "description": "Angebot Zusatz",
+   "type": "SERVICE",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 3.95,
+    "grossPrice": 4.7,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "1c25f63b-e7f9-43be-a6b6-99e3c3376880",
+   "articleNumber": null,
+   "title": "Zusätzlich Teppichboden vollflächig fixieren mit Sprühkleber",
+   "description": "inkl. Sprühkleber\nAngebot Zusatz",
+   "type": "PRODUCT",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 4.95,
+    "grossPrice": 5.89,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "33a6db94-64c0-451c-b8ef-5f4f657f5178",
+   "articleNumber": "SL-102",
+   "title": "Sockelleisten- und Randanschlüsse mit Silikon abdichten",
+   "description": "Sockelleisten- und Randanschlüsse fachgerecht mit Silikon abdichten.",
+   "type": "SERVICE",
+   "unitName": "lfm",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 5,
+    "grossPrice": 5.95,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "2b8f4d56-d1dc-4ad8-b124-88e77364c4f3",
+   "articleNumber": "TZ-020",
+   "title": "Türzarge mit Silikon abdichten",
+   "description": "Anschlussbereich einer Türzarge fachgerecht mit geeignetem Silikon abdichten.",
+   "type": "SERVICE",
+   "unitName": "Stück",
+   "price": {
+    "leadingPrice": "GROSS",
+    "netPrice": 11.72,
+    "grossPrice": 13.95,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "41f18cac-0989-493f-9df3-6849bb303180",
+   "articleNumber": "PR-010",
+   "title": "Übergangs-/Rampenprofil liefern, auf Gehrung schneiden und montieren",
+   "description": "Passendes Übergangs-, Anpassungs- oder Rampenprofil liefern, vor Ort auf Maß anpassen, bei Bedarf mit der Kappsäge auf Gehrung schneiden und fachgerecht montieren. Farbe: offen.",
+   "type": "SERVICE",
+   "unitName": "lfm",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 24.95,
+    "grossPrice": 29.69,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "dd287643-8e2a-4c31-a0b8-7588d0b27a53",
+   "articleNumber": "AB-012",
+   "title": "Alte Belagsstreifen aus Einschubsockelleisten entfernen und entsorgen",
+   "description": "Die Einschubsockelleisten selbst bleiben bestehen.",
+   "type": "SERVICE",
+   "unitName": "lfm",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 1.95,
+    "grossPrice": 2.32,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "c1b6e971-cbbd-47e5-862d-a962f9bbf12b",
+   "articleNumber": "SL-101",
+   "title": "Belagsstreifen schneiden und in Einschubsockelleiste einkleben",
+   "description": "Silikonarbeiten sind nicht enthalten.",
+   "type": "SERVICE",
+   "unitName": "lfm",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 4.99,
+    "grossPrice": 5.94,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "71c82fe1-17d7-49e1-988c-36685006bc93",
+   "articleNumber": "SL-100",
+   "title": "Einschubsockelleiste liefern und montieren",
+   "description": "Belagsstreifen und Silikonarbeiten werden separat berechnet.",
+   "type": "SERVICE",
+   "unitName": "lfm",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 11.99,
+    "grossPrice": 14.27,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "227b5e3c-ef35-416b-833c-c99931daf72b",
+   "articleNumber": "TB-080",
+   "title": "Teppichboden lose verlegen",
+   "description": "Teppichboden fachgerecht zuschneiden, einpassen und lose verlegen.",
+   "type": "SERVICE",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 9.95,
+    "grossPrice": 11.84,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "f912f2b5-0ce6-4a83-8c5d-986be1bad28a",
+   "articleNumber": "TB-090",
+   "title": "Teppichboden verlegen mit Band",
+   "description": "Mit doppelseitigem Verlegeband.",
+   "type": "SERVICE",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 10.95,
+    "grossPrice": 13.03,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "25e31110-42ee-4173-94d9-d9418ebf3d6f",
+   "articleNumber": "TB-010",
+   "title": "Teppichboden mit Klettband verlegen",
+   "description": "Erforderliches Klettband inklusive.",
+   "type": "SERVICE",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 10.95,
+    "grossPrice": 13.03,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "58eb6931-b19a-4394-ae4f-94cb3f1d4049",
+   "articleNumber": "TB-020",
+   "title": "Teppichboden vollflächig fixieren",
+   "description": "Erforderliches Fixiermaterial inklusive.",
+   "type": "SERVICE",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 11.95,
+    "grossPrice": 14.22,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "a1c5faf5-9415-4bbf-8e41-d5e7f2b8be26",
+   "articleNumber": "TB-030",
+   "title": "Teppichboden vollflächig verkleben",
+   "description": "Erforderlicher Klebstoff inklusive.",
+   "type": "SERVICE",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 12.95,
+    "grossPrice": 15.41,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "57bc0a16-697c-48d4-b308-7515cd65b898",
+   "articleNumber": "TB-070",
+   "title": "Wollteppichboden vollflächig verkleben",
+   "description": "Erhöhter Klebstoffbedarf für Wollbeläge berücksichtigt.",
+   "type": "SERVICE",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 12.99,
+    "grossPrice": 15.46,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "02b2796a-3a02-4c64-a5ae-c051a7f955a0",
+   "articleNumber": "TB-050",
+   "title": "Teppichboden mit Klettband – Einzelraum bis 12 m²",
+   "description": "Pauschale bis einschließlich 12 m².",
+   "type": "SERVICE",
+   "unitName": "Pauschal",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 115,
+    "grossPrice": 136.85,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "12ffc04f-6d2c-412f-b64c-2abf2a5c12a4",
+   "articleNumber": "TB-060",
+   "title": "Teppichboden vollflächig fixieren oder verkleben – Einzelraum bis 12 m²",
+   "description": "Pauschale bis einschließlich 12 m².",
+   "type": "SERVICE",
+   "unitName": "Pauschal",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 139,
+    "grossPrice": 165.41,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "c75ac3e0-7c50-4b37-b480-fa72191db72b",
+   "articleNumber": "PVC-010",
+   "title": "PVC-/CV-Boden lose mit Band verlegen",
+   "description": "Verlegeband inklusive.",
+   "type": "SERVICE",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 9.95,
+    "grossPrice": 11.84,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "781f64ac-59f6-4182-92d7-048da940a98c",
+   "articleNumber": "PVC-020",
+   "title": "PVC-/CV-Boden vollflächig fixieren",
+   "description": "Fixiermaterial inklusive.",
+   "type": "SERVICE",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 10.95,
+    "grossPrice": 13.03,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "ae8af809-833a-43ca-81a9-6cd25e40eb34",
+   "articleNumber": "PVC-030",
+   "title": "PVC-/CV-Boden vollflächig verkleben",
+   "description": "Klebstoff inklusive.",
+   "type": "SERVICE",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 11.95,
+    "grossPrice": 14.22,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "a0293e25-87e5-41b3-b0a7-576966466810",
+   "articleNumber": "KV-010",
+   "title": "Klebevinyl/Designbelag vollflächig verkleben",
+   "description": "Erforderlicher Klebstoff inklusive.",
+   "type": "SERVICE",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 17.95,
+    "grossPrice": 21.36,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "c5fff269-3fba-4433-a12e-91e62d0a1dfb",
+   "articleNumber": "KV-030",
+   "title": "Klebevinyl/Designbelag – Einzelraum bis 12 m²",
+   "description": "Pauschale bis einschließlich 12 m².",
+   "type": "SERVICE",
+   "unitName": "Pauschal",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 219,
+    "grossPrice": 260.61,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "3d82986f-27ab-42d5-a2b9-652c16a067f7",
+   "articleNumber": "KV-020",
+   "title": "Klebevinyl/Designbelag im Fischgrätmuster vollflächig verkleben",
+   "description": "Fischgrät.",
+   "type": "SERVICE",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 37.99,
+    "grossPrice": 45.21,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "6cd4485b-4cf9-4cd4-9772-f69c021b8d46",
+   "articleNumber": "KVK-020",
+   "title": "Klickvinyl mit Dämmunterlage schwimmend verlegen",
+   "description": "Material der Dämmunterlage wird separat berechnet.",
+   "type": "SERVICE",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 18.99,
+    "grossPrice": 22.6,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "d69b566d-5220-4b50-86c1-1a6a7621e4d6",
+   "articleNumber": "KVK-010",
+   "title": "Klickvinyl/Click-Designbelag schwimmend verlegen",
+   "description": "Separate Dämmunterlagen nicht enthalten.",
+   "type": "SERVICE",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 17.99,
+    "grossPrice": 21.41,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "fdea4dfc-b00a-45c0-ac3b-acd5db71fe9b",
+   "articleNumber": "KVK-Kleinfläche",
+   "title": "Klickvinyl/Click-Designbelag – Einzelraum bis 12 m²",
+   "description": "Pauschale bis einschließlich 12 m².",
+   "type": "SERVICE",
+   "unitName": "Pauschal",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 229,
+    "grossPrice": 272.51,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "0b75f6ed-c7fd-4352-b0b4-f374135c2dd8",
+   "articleNumber": "LAM-010",
+   "title": "Laminat mit Dämmunterlage schwimmend verlegen",
+   "description": "Material separat.",
+   "type": "SERVICE",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 18.99,
+    "grossPrice": 22.6,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "a27d0c6b-6d3d-428a-ad74-ace6c0c4df61",
+   "articleNumber": "SL-095",
+   "title": "Cubu Flex Life bis 60 mm montieren",
+   "description": "Heißkleber inklusive. Material der Sockelleisten wird separat berechnet.",
+   "type": "SERVICE",
+   "unitName": "lfm",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 4.95,
+    "grossPrice": 5.89,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "61f8e6ad-c94b-46c7-a3e0-65c1f3c10a9b",
+   "articleNumber": "SL-094",
+   "title": "Zusatz: Sockelleisten-Oberkante mit Acryl abdichten",
+   "description": "Acryl inklusive. Farbe: offen.",
+   "type": "SERVICE",
+   "unitName": "lfm",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 2.48,
+    "grossPrice": 2.95,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "f9418be4-5f41-4b43-96e6-80aa340b638f",
+   "articleNumber": "AB-001",
+   "title": "Altbelag lose aufnehmen und fachgerecht entsorgen",
+   "description": "Lose verlegten Bodenbelag aufnehmen und fachgerecht entsorgen.",
+   "type": "SERVICE",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 6.95,
+    "grossPrice": 8.27,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "8a5ecef8-13d2-4576-b6e5-e69e20c27f3b-x",
+   "articleNumber": null,
+   "title": "Testplatzhalter",
+   "description": "",
+   "type": "PRODUCT",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 1,
+    "grossPrice": 1.19,
+    "taxRate": 19
+   },
+   "archived": true,
+   "usable": true
+  },
+  {
+   "id": "8a8b04f0-2a26-4b8f-8c6e-7a2a2d0a0b15",
+   "articleNumber": "AB-015",
+   "title": "Geklebten Bodenbelag aufnehmen und fachgerecht entsorgen",
+   "description": "Vollflächig geklebten Bodenbelag mechanisch aufnehmen.",
+   "type": "SERVICE",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 12.99,
+    "grossPrice": 15.46,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "7e0020d8-8319-4594-bb27-6019bcb13cbe",
+   "articleNumber": "UG-030",
+   "title": "Untergrund mit Nivelliermasse bis 5 mm ausgleichen",
+   "description": "Inklusive Material.",
+   "type": "SERVICE",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 22.49,
+    "grossPrice": 26.76,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "9849854b-7151-4dd2-9f61-f61029ad6ed3",
+   "articleNumber": "SL-010",
+   "title": "Kernsockelleiste 60 Weiß (Testauszug)",
+   "description": "Kernsockelleiste, 60 mm Höhe, Farbe Weiß, Länge 2,50 m je Leiste. Materialposition ohne Montage.",
+   "type": "PRODUCT",
+   "unitName": "Stück",
+   "price": {
+    "leadingPrice": "GROSS",
+    "netPrice": 12.56,
+    "grossPrice": 14.95,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "c919f3ca-49e8-4db0-9799-a09d00b2ab3b",
+   "articleNumber": "TB-LUMINA-85",
+   "title": "Teppichboden Testdekor 85 (Testauszug)",
+   "description": "Rollenware in 4,00 m Breite.",
+   "type": "PRODUCT",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 27.69,
+    "grossPrice": 32.95,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "a3c1e7b4-a3da-4a49-a7c5-78754a28687a",
+   "articleNumber": null,
+   "title": "PVC Testdekor – 3 m Breite (Testauszug)",
+   "description": "Rollenbreite 3,00 m.",
+   "type": "PRODUCT",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 19.91,
+    "grossPrice": 23.69,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "5ce6248b-f867-4e72-b88c-254bd53b698f",
+   "articleNumber": null,
+   "title": "Klebevinyl Testdekor 2,0 mm (Testauszug)",
+   "description": "Klebevinyl\nInhalt m² pro Paket: 3,37 m²",
+   "type": "PRODUCT",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 24.79,
+    "grossPrice": 29.5,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "77794d96-76a3-4415-b1ba-b66f00511cd6",
+   "articleNumber": null,
+   "title": "Dämmunterlage Klebevinyl 1,8 mm (Testauszug)",
+   "description": "Dämmung Rolle 6,5 m²/VE (6,5x1 m) für Klebevinyl\ninkl. Verschnitt\n6 Rollen",
+   "type": "PRODUCT",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 9.95,
+    "grossPrice": 11.84,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "675e3aab-2f33-4f9e-ac2b-14cf143f2f72",
+   "articleNumber": "DU-020",
+   "title": "Dämmunterlage für Klickbeläge (Testauszug)",
+   "description": "Dämmunterlage für geeignete Klickbeläge. Preis inklusive üblichem Verschnitt.",
+   "type": "PRODUCT",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "GROSS",
+    "netPrice": 5,
+    "grossPrice": 5.95,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "7cab9e2b-eb09-4896-92ca-4ccb2849fc05",
+   "articleNumber": null,
+   "title": "Dämmunterlage 2 mm liefern und verlegen (Altartikel)",
+   "description": "Trittschallminderung",
+   "type": "SERVICE",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 12.95,
+    "grossPrice": 12.95,
+    "taxRate": 0
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "15cd6794-14c1-4adc-9e9b-1a50ea099951",
+   "articleNumber": null,
+   "title": "Material für Treppenstufen",
+   "description": "ungefährer Preis - Farbe und Qualität offen",
+   "type": "PRODUCT",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 0,
+    "grossPrice": 0,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": true
+  },
+  {
+   "id": "5452af13-3caa-4123-8da3-f813e9c66561",
+   "articleNumber": null,
+   "title": "AUSORTIERT-001 – Altbelag fixiert",
+   "description": "Alte Dublette.",
+   "type": "SERVICE",
+   "unitName": "m²",
+   "price": {
+    "leadingPrice": "GROSS",
+    "netPrice": 7.52,
+    "grossPrice": 8.95,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": false
+  },
+  {
+   "id": "f4979502-5695-4486-8491-a695cd974cae",
+   "articleNumber": "SL-090",
+   "title": "AUSORTIERT-090 – Universelle Sockelleistenmontage bis 60 mm",
+   "description": "Alte universelle Montageposition.",
+   "type": "SERVICE",
+   "unitName": "lfm",
+   "price": {
+    "leadingPrice": "NET",
+    "netPrice": 4.95,
+    "grossPrice": 5.89,
+    "taxRate": 19
+   },
+   "archived": false,
+   "usable": false
+  }
+ ]
+}
