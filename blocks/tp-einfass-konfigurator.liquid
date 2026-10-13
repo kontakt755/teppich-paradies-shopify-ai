@@ -412,12 +412,17 @@
         Der Link oeffnet einen neuen Tab, damit Mass und Farbe hier erhalten bleiben.
         Zwei Unterlagen je nach Boden (Inhaber 2026-10-12): Platz 1 fuer glatte Boeden,
         Platz 2 fuer Teppichboden; nicht lieferbare Produkte fallen still weg.
+        Groessenvorschlag (Inhaber 2026-10-13: Unterlage rundum 5 cm kleiner): nach
+        gueltigem Mass rechnet assets/tp-unterlage-vorschlag.js je Platz die guenstigste
+        Bestellung aus Rollenware und optional abgepassten Stuecken
+        (befestigung_abgepasst[_2]) und bietet "Mit in den Warenkorb" an.
       {%- endcomment -%}
       {%- assign tp_ek_tipp_arten = 'ketteln,einfassband,paspelband,cover' | split: ',' -%}
       {%- if tp_ek_tipp_arten contains tp_ek_art and block.settings.befestigung_tipp -%}
         <aside class="tp-ek__tipp" aria-labelledby="tp-ek-tipp-{{ tp_ek_id }}">
           <p class="tp-ek__tipp-kopf"><span class="tp-ek__tipp-marke">Tipp</span><strong id="tp-ek-tipp-{{ tp_ek_id }}">{{ block.settings.befestigung_titel | escape }}</strong></p>
           <p class="tp-ek__tipp-text">{{ block.settings.befestigung_text | escape }}</p>
+          {%- assign tp_ek_uv_json = '' -%}
           {%- for tp_ek_i in (1..2) -%}
             {%- liquid
               assign tp_ek_suffix = ''
@@ -432,6 +437,8 @@
               assign tp_ek_bef_link = block.settings[tp_ek_k] | default: tp_ek_bef.title
               assign tp_ek_k = 'befestigung_einheit' | append: tp_ek_suffix
               assign tp_ek_bef_einheit = block.settings[tp_ek_k]
+              assign tp_ek_k = 'befestigung_abgepasst' | append: tp_ek_suffix
+              assign tp_ek_bef_stueck = block.settings[tp_ek_k]
             -%}
             {%- if tp_ek_bef.available -%}
               <a class="tp-ek__tipp-produkt" href="{{ tp_ek_bef.url }}" target="_blank" rel="noopener">
@@ -446,8 +453,31 @@
                 <span class="visually-hidden">(öffnet in neuem Tab)</span>
                 <svg class="tp-ek__tipp-pfeil" viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true"><path d="m6 3 5 5-5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </a>
+              <div class="tp-ek__tipp-vorschlag" data-unterlage-vorschlag="p{{ tp_ek_i }}" hidden>
+                <p class="tp-ek__tipp-vorschlag-text"><span data-uv-text></span> <strong data-uv-preis></strong></p>
+                <button type="button" class="tp-ek__tipp-knopf" data-uv-knopf>Mit in den Warenkorb</button>
+              </div>
+              {%- capture tp_ek_uv_platz -%}
+                {"key": "p{{ tp_ek_i }}", "produkte": [
+                  {"key": "rolle", "art": "rolle", "varianten": [
+                    {%- for tp_ek_uv_v in tp_ek_bef.variants -%}
+                      {"id": {{ tp_ek_uv_v.id | json }}, "title": {{ tp_ek_uv_v.title | json }}, "price": {{ tp_ek_uv_v.price | json }}, "available": {{ tp_ek_uv_v.available | json }}}{% unless forloop.last %},{% endunless %}
+                    {%- endfor -%}
+                  ]}
+                  {%- if tp_ek_bef_stueck.available -%}
+                    , {"key": "stueck", "art": "stueck", "varianten": [
+                      {%- for tp_ek_uv_v in tp_ek_bef_stueck.variants -%}
+                        {"id": {{ tp_ek_uv_v.id | json }}, "title": {{ tp_ek_uv_v.title | json }}, "price": {{ tp_ek_uv_v.price | json }}, "available": {{ tp_ek_uv_v.available | json }}}{% unless forloop.last %},{% endunless %}
+                      {%- endfor -%}
+                    ]}
+                  {%- endif -%}
+                ]}
+              {%- endcapture -%}
+              {%- if tp_ek_uv_json != blank -%}{%- assign tp_ek_uv_json = tp_ek_uv_json | append: ',' -%}{%- endif -%}
+              {%- assign tp_ek_uv_json = tp_ek_uv_json | append: tp_ek_uv_platz -%}
             {%- endif -%}
           {%- endfor -%}
+          <script type="application/json" data-tp-unterlage-daten>{"plaetze": [{{ tp_ek_uv_json }}]}</script>
         </aside>
       {%- endif -%}
       <details class="tp-ek__vorschau" data-vorschau hidden>
@@ -578,6 +608,7 @@
     </script>
     <script src="{{ 'tp-masstepich-rechnung.js' | asset_url }}" defer></script>
     <script src="{{ 'tp-zuschnitt-abgleich.js' | asset_url }}" defer></script>
+    <script src="{{ 'tp-unterlage-vorschlag.js' | asset_url }}" defer></script>
     <script src="{{ 'tp-einfass-konfigurator.js' | asset_url }}" defer></script>
   </div>
 {%- endif -%}
@@ -656,6 +687,12 @@
     },
     {
       "type": "product",
+      "id": "befestigung_abgepasst",
+      "label": "Unterlage 1: abgepasste Stücke (optional)",
+      "info": "Varianten mit Mass im Titel, z. B. 120 × 180 cm. Fließt in den Größenvorschlag ein."
+    },
+    {
+      "type": "product",
       "id": "befestigung_produkt_2",
       "label": "Unterlage 2 (Teppichboden)",
       "info": "Zweiter Link unter dem ersten; leer oder nicht lieferbar = nur Unterlage 1."
@@ -677,6 +714,12 @@
       "id": "befestigung_einheit_2",
       "label": "Unterlage 2: Einheit hinter dem Ab-Preis",
       "default": "je Meter"
+    },
+    {
+      "type": "product",
+      "id": "befestigung_abgepasst_2",
+      "label": "Unterlage 2: abgepasste Stücke (optional)",
+      "info": "Varianten mit Mass im Titel, z. B. 120 × 180 cm. Fließt in den Größenvorschlag ein."
     },
     {
       "type": "product",
