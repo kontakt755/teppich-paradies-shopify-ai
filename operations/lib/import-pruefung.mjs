@@ -34,9 +34,15 @@ export function istMusterProdukt(p) {
   return String(p.handle ?? '').startsWith(MUSTER_PRAEFIX) || klein(p.productType) === 'musterservice';
 }
 
-/** UNLISTED mit Tag service: Zusatzposition im Warenkorb, keine Kundenseite. */
+/**
+ * Zusatzpositionen im Warenkorb, keine Kundenseite: UNLISTED mit Tag service
+ * (Kettelservice, Wunschmass-Pauschale) und die Einfassungen der Marken-Teppiche
+ * nach Mass (Tag marken-einfassung, nur in intern-* Sammlungen).
+ */
 export function istHilfsprodukt(p) {
-  return p.status === 'UNLISTED' && (p.tags ?? []).some((t) => klein(t) === 'service');
+  const tags = (p.tags ?? []).map(klein);
+  if (tags.includes('marken-einfassung')) return true;
+  return p.status === 'UNLISTED' && tags.includes('service');
 }
 
 /** Wortgleich zu canSample in assets/tp-sample-checkout-core.js. */
@@ -200,6 +206,8 @@ export function pruefeImporte({ produkte, seit, handles = null }) {
 export function pruefeMuster(m, nachHandle) {
   const befunde = [];
   const quelle = nachHandle.get(String(m.handle).slice(MUSTER_PRAEFIX.length));
+  // Auslaufregel (AGENTS.md, Produktdaten): Quelle archiviert -> Muster mit archiviert. Das ist kein Befund.
+  if (m.status === 'ARCHIVED' && (!quelle || quelle.status === 'ARCHIVED')) return befunde;
   if (!quelle && m.handle !== 'kostenloses-muster') befunde.push(befund(m, 'hinweis', 'muster-quelle', 'kein Quellprodukt mit gleichem Handle ohne muster-'));
   if (m.status !== 'UNLISTED') befunde.push(befund(m, 'hinweis', 'muster-status', `Status ${m.status} statt UNLISTED`));
   if (!m.onlineStoreUrl) befunde.push(befund(m, 'fehler', 'muster-nicht-veroeffentlicht', 'nicht im Onlineshop veroeffentlicht - Musterbestellung scheitert'));
