@@ -147,6 +147,8 @@ export function pruefeImporte({ produkte, seit, handles = null }) {
     // Versteckte Hilfsprodukte (Kettelservice, Wunschmass-Pauschale) haengen
     // als Zusatzzeile an einer anderen Position - ohne Bild und Kategorie gewollt.
     if (istHilfsprodukt(p)) continue;
+    // Archiviert = aus dem Shop genommen (Auslauf, Dublette): nichts zu pruefen.
+    if (p.status === 'ARCHIVED') continue;
 
     if (p.status === 'DRAFT') befunde.push(befund(p, 'hinweis', 'entwurf', 'Entwurf - im Shop nicht sichtbar'));
     if (p.status === 'ACTIVE' && !p.onlineStoreUrl) {

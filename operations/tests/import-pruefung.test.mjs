@@ -206,6 +206,11 @@ test('Einfassungsart (Tag marken-einfassung) braucht keine Kategorie, andere Pro
   assert.deepEqual(erg.befunde.filter((b) => b.regel === 'kategorie').map((b) => b.handle), [ohne.handle]);
 });
 
+test('archivierte Produkte werden nicht geprueft', () => {
+  const weg = produkt({ createdAt: '2026-10-07T08:00:00Z', status: 'ARCHIVED', onlineStoreUrl: null, mediaCount: 0, options: [{ name: 'Farbe', values: ['Grau'] }] });
+  assert.deepEqual(pruefeImporte({ produkte: [...vergleich(), weg], seit: '2026-10-01' }).befunde, []);
+});
+
 test('Entwuerfe liefern nur Hinweise (Vorlage mit Preis 0, Farben ohne Bild)', () => {
   const vorlage = produkt({ createdAt: '2026-10-07T08:00:00Z', status: 'DRAFT', onlineStoreUrl: null });
   vorlage.variants[0].price = '0.00';
