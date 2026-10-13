@@ -31,7 +31,7 @@
     </div>
 
     {%- if tp_bk_image != blank -%}
-      <figure class="tp-bk-hero__visual{% if section.settings.image_crop == 'structure' %} tp-bk-hero__visual--structure{% endif %}">
+      <figure class="tp-bk-hero__visual{% if section.settings.image_crop == 'structure' %} tp-bk-hero__visual--structure{% endif %}{% if section.settings.image_detail != blank %} tp-bk-hero__visual--detail{% endif %}">
         {{ tp_bk_image | image_url: width: 1400 | image_tag: widths: '400, 600, 800, 1000, 1200, 1400', sizes: '(max-width: 749px) calc(100vw - 32px), 45vw', loading: 'eager', fetchpriority: 'high', alt: tp_bk_image_alt }}
         {%- comment -%} Optionale zweite Ansicht (z. B. Materialstruktur neben dem Raumbild) {%- endcomment -%}
         {%- if section.settings.image_detail != blank -%}
