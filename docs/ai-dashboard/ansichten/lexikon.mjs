@@ -8,6 +8,7 @@ import { fetchEinkauf } from '../kern/api.mjs';
 import { render } from '../kern/render.mjs';
 import { emptyState, stoerungState } from '../bausteine/karten.mjs';
 import { LIEFERWEG_LABEL } from './einkauf/auftragsfluss.mjs';
+import { telLink, gmailLink } from '../lib/einkauf-lieferanten.mjs';
 
 export const lexikon = {
   liste: null, loadingListe: false, listeKey: null,
@@ -269,12 +270,85 @@ function fuersKundengespraech(p, normaleVarianten) {
   </section>`;
 }
 
+/**
+ * Schnellzugriff zum Lieferanten fuer Varianten ohne Direkt- und ohne Suchlink (Server:
+ * lexikonSchnellzugriff in operations/lib/lieferanten.mjs). Manche Lieferanten haben online
+ * keine Artikelseiten - dann ist ihr Bestellweg aus den Stammdaten der Weg: die fertig
+ * ausgefuellte Bestellmail, das Portal oder das Telefon.
+ */
+const schnellzugriffVon = (v) => (v.original ? v.original.schnellzugriff : v.link?.schnellzugriff) || null;
+const WEG_KURZ = { mail: 'Bestellmail', portal: 'Portal', telefon: 'Anrufen' };
+const WEG_TEXT = { mail: 'Bestellung per E-Mail', portal: 'Bestellung im Händlerportal', telefon: 'Bestellung per Telefon' };
+
+function aktionHref(a) {
+  if (a.weg === 'mail') return a.mailto;
+  if (a.weg === 'telefon') return telLink(a.nummer);
+  return a.href;
+}
+
+/**
+ * Knopf fuer den Hauptweg. Kurz beschriftet ("Bestellmail"), weil Lieferant und Weg schon in
+ * der Zeile ueber der Liste stehen - "Bestellmail an Lieferant B" sprengte die Tabellenspalte.
+ * Der volle Text steht im Tooltip und fuer Screenreader.
+ */
+function schnellKnopf(sz) {
+  const a = sz?.aktionen?.[0];
+  const href = a ? aktionHref(a) : null;
+  if (!href) return '';
+  const neuerTab = a.weg === 'portal';
+  const text = a.weg === 'mail' && sz.art === 'muster' ? 'Muster per Mail' : WEG_KURZ[a.weg];
+  return `<a class="btn btn-sm" href="${esc(href)}"${neuerTab ? ' target="_blank" rel="noopener"' : ''} aria-label="${esc(a.label)}" title="${esc(a.label)}">${esc(text)}${neuerTab ? ' ↗' : ''}</a>`;
+}
+
+/** Dieselbe Mail in Gmail im Browser - fuer Rechner ohne eingerichtetes Mailprogramm (wie im Einkauf). */
+function gmailZusatz(sz) {
+  const m = sz?.aktionen?.find((a) => a.weg === 'mail');
+  const g = m ? gmailLink({ an: m.an, betreff: m.betreff, text: m.text }) : null;
+  return g?.url ? `<div class="small" style="margin-top:4px;white-space:nowrap"><a href="${esc(g.url)}" target="_blank" rel="noopener" title="Neue Nachricht in Gmail, fertig ausgefüllt">in Gmail ↗</a></div>` : '';
+}
+
+/**
+ * Einmal ueber der Bestellliste: wie bei diesem Lieferanten bestellt wird, wenn es keinen Link
+ * gibt - samt Kundennummer und Telefon, die nicht in jede Zeile gehoeren. Ohne hinterlegten
+ * Bestellweg steht hier, wo man ihn nachtraegt.
+ */
+function bestellwegKopf(varianten) {
+  const je = new Map();
+  for (const v of varianten) {
+    const sz = schnellzugriffVon(v);
+    if (sz && !je.has(sz.lieferant)) je.set(sz.lieferant, sz);
+  }
+  return [...je.values()].map((sz) => {
+    const einkaufLink = `#/einkauf?lieferant=${encodeURIComponent(sz.lieferant)}`;
+    if (!sz.aktionen.length) {
+      const wasFehlt = sz.stammdatenEintrag ? ` <a href="${einkaufLink}">Was fehlt?</a>` : '';
+      return `<p class="lex-bestellweg small"><span class="warnc">${esc(sz.hinweis || `Bestellweg von ${sz.name} nicht hinterlegt.`)}</span>${wasFehlt}</p>`;
+    }
+    const haupt = sz.aktionen[0];
+    const teile = [
+      `<b>${esc(sz.name)}</b>`,
+      esc(sz.art === 'muster' && haupt.weg === 'mail' ? 'Musterbestellung per E-Mail' : WEG_TEXT[haupt.weg]),
+      sz.kundennummer ? `Kundennr. <code class="lex-artnr" data-kopiertext="${esc(sz.kundennummer)}" title="Antippen zum Kopieren">${esc(sz.kundennummer)}</code>` : '',
+      ...sz.aktionen.slice(1).map((a) => (a.weg === 'telefon'
+        ? `<a href="${esc(telLink(a.nummer))}">Anrufen ${esc(a.nummer)}</a>`
+        : a.weg === 'portal' ? `<a href="${esc(a.href)}" target="_blank" rel="noopener">Portal ↗</a>` : '')),
+    ].filter(Boolean);
+    const erklaerung = haupt.weg !== 'mail' ? ''
+      : sz.art === 'muster' ? '„Muster per Mail“ öffnet die Musterbestellung mit Artikel- und Farbnummer.'
+        : '„Bestellmail“ an der Variante öffnet die Mail mit Artikel- und Farbnummer – Menge und Lieferanschrift ergänzen.';
+    return `<p class="lex-bestellweg small">${teile.join(' · ')}${erklaerung ? `<br><span class="muted">${esc(erklaerung)}</span>` : ''}</p>`;
+  }).join('');
+}
+
 function bestellZeile(v) {
   const e = v.einkauf || {};
   const artikelZelle = artikelAngabe(e, NICHT_HINTERLEGT);
+  const sz = schnellzugriffVon(v);
   const linkZelle = v.link?.status === 'vorhanden'
     ? `<a class="btn btn-sm" href="${esc(e.url)}" target="_blank" rel="noopener">Beim Lieferanten öffnen ↗</a>`
-    : `<div class="small muted">${esc(v.link?.grund || 'kein Link hinterlegt')}</div>${v.link?.suchlink ? `<a class="small" href="${esc(v.link.suchlink)}" target="_blank" rel="noopener">Beim Lieferanten suchen ↗</a>` : ''}`;
+    : sz?.aktionen?.length
+      ? `${schnellKnopf(sz)}${gmailZusatz(sz)}`
+      : `<div class="small muted">${esc(v.link?.grund || 'kein Link hinterlegt')}</div>${v.link?.suchlink ? `<a class="small" href="${esc(v.link.suchlink)}" target="_blank" rel="noopener">Beim Lieferanten suchen ↗</a>` : ''}`;
   // data-l traegt die Spaltenueberschrift; am Handy wird daraus eine Karte
   // (app.css, .table-scroll table.tasks.compact). Ohne sie stand die Tabelle
   // mit zehn Spalten auf 980 px fest - die Artikelnummer, wegen der man diese
@@ -309,8 +383,10 @@ function bestellListe(varianten) {
   const lieferant = gleich((v) => v.einkauf?.lieferant);
   const einheit = gleich((v) => v.einkauf?.bestelleinheit);
   const lieferweg = gleich((v) => v.einkauf?.lieferweg);
+  // Steht der Lieferant schon in der Bestellweg-Zeile darueber, nicht ein zweites Mal.
+  const lieferantOben = lieferant && varianten.some((v) => schnellzugriffVon(v)?.aktionen?.length);
   const gemeinsam = [
-    lieferant ? `Lieferant ${esc(lieferant)}` : '',
+    lieferant && !lieferantOben ? `Lieferant ${esc(lieferant)}` : '',
     einheit ? `Bestelleinheit ${esc(einheit)}` : '',
     lieferweg ? esc(LIEFERWEG_LABEL[lieferweg] || lieferweg) : '',
   ].filter(Boolean).join(' · ');
@@ -325,14 +401,15 @@ function bestellListe(varianten) {
       v.verfuegbar === false ? '<span class="warnc">nicht verfügbar</span>' : '',
     ].filter(Boolean).join(' · ');
     const artikel = artikelAngabe(e, `<span class="small muted">Art.-Nr. nicht hinterlegt</span>`);
+    const sz = schnellzugriffVon(v);
     const link = v.link?.status === 'vorhanden'
       ? `<a class="btn btn-sm" href="${esc(e.url)}" target="_blank" rel="noopener" aria-label="Beim Lieferanten öffnen">Lieferant ↗</a>`
-      : (v.link?.suchlink ? `<a class="btn btn-sm" href="${esc(v.link.suchlink)}" target="_blank" rel="noopener" aria-label="Beim Lieferanten suchen">Suchen ↗</a>` : '');
+      : (v.link?.suchlink ? `<a class="btn btn-sm" href="${esc(v.link.suchlink)}" target="_blank" rel="noopener" aria-label="Beim Lieferanten suchen">Suchen ↗</a>` : schnellKnopf(sz));
     return `<li>
       <div class="kopf"><b>${lexWert(variantenName(v))}</b><span class="preis">${preisZelle(v)}</span></div>
       <div class="nr">${artikel}${link}</div>
       ${nebenbei ? `<div class="small muted">${nebenbei}</div>` : ''}
-      ${v.link?.status === 'vorhanden' ? '' : `<div class="small muted">${esc(v.link?.grund || 'kein Link hinterlegt')}</div>`}
+      ${v.link?.status === 'vorhanden' || sz?.aktionen?.length ? '' : `<div class="small muted">${esc(v.link?.grund || 'kein Link hinterlegt')}</div>`}
     </li>`;
   };
   return `<div class="lex-bestell-liste">
@@ -351,7 +428,9 @@ function musterBestellZeile(v) {
     ? `<a class="btn btn-sm" href="${esc(o.url)}" target="_blank" rel="noopener">Original beim Lieferanten ↗</a>`
     : o.gefunden && o.suchlink
       ? `<a class="btn btn-sm" href="${esc(o.suchlink)}" target="_blank" rel="noopener">Beim Lieferanten suchen ↗</a>`
-      : `<div class="small muted">${esc(o.grund || 'kein Original hinterlegt')}</div>`;
+      : o.schnellzugriff?.aktionen?.length
+        ? `${schnellKnopf(o.schnellzugriff)}${gmailZusatz(o.schnellzugriff)}`
+        : `<div class="small muted">${esc(o.grund || 'kein Original hinterlegt')}</div>`;
   return `<tr>
     <td data-l="Unsere SKU">${v.sku ? `<code class="mono">${esc(v.sku)}</code>` : NICHT_HINTERLEGT}</td>
     <td data-l="Lieferant">${lexWert(o.lieferant)}</td>
@@ -439,9 +518,9 @@ function viewLexikonDetail(handle) {
   const zielVariante = normaleVarianten[0] || alleVarianten[0];
 
   const bestellTabelle = musterVarianten.length
-    ? `<div class="table-scroll"><table class="tasks compact"><thead><tr><th>Unsere SKU</th><th>Lieferant</th><th>Original-Artikelnummer</th><th>Original beim Lieferanten</th></tr></thead>
+    ? `${bestellwegKopf(musterVarianten)}<div class="table-scroll"><table class="tasks compact"><thead><tr><th>Unsere SKU</th><th>Lieferant</th><th>Original-Artikelnummer</th><th>Original beim Lieferanten</th></tr></thead>
       <tbody>${musterVarianten.map(musterBestellZeile).join('')}</tbody></table></div>`
-    : `${bestellListe(normaleVarianten)}<div class="table-scroll lex-bestell-tabelle"><table class="tasks compact"><thead><tr><th>Variante</th><th>Unsere SKU</th><th>Lieferant</th><th>Artikelnummer</th><th>Farbnummer</th><th>Bestelleinheit</th><th>Preis</th><th>Verfügbar</th><th>Lieferweg</th><th>Lieferantenseite</th></tr></thead>
+    : `${bestellwegKopf(normaleVarianten)}${bestellListe(normaleVarianten)}<div class="table-scroll lex-bestell-tabelle"><table class="tasks compact"><thead><tr><th>Variante</th><th>Unsere SKU</th><th>Lieferant</th><th>Artikelnummer</th><th>Farbnummer</th><th>Bestelleinheit</th><th>Preis</th><th>Verfügbar</th><th>Lieferweg</th><th>Lieferantenseite</th></tr></thead>
       <tbody>${normaleVarianten.map(bestellZeile).join('') || `<tr><td colspan="10">${NICHT_HINTERLEGT}</td></tr>`}</tbody></table></div>
       ${wunschmassVarianten.length ? `<p class="small muted" style="margin:10px 0 0">Wunschmaß (${wunschmassVarianten.length} Variante${wunschmassVarianten.length === 1 ? '' : 'n'}): wird erst beim Zuschnitt bestellt, deshalb hier ohne eigene Artikelnummer – keine fehlende Angabe.</p>` : ''}
       ${mengenhilfeWidget(p, zielVariante, normaleVarianten)}`;
