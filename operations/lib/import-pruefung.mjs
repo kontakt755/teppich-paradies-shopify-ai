@@ -107,6 +107,14 @@ function befund(p, stufe, regel, text) {
   return { handle: p.handle, titel: p.title, produktart: p.productType || '', stufe, regel, text };
 }
 
+/** Farben des Produkts, die sein Musterprodukt nicht fuehrt - die Bestellung faellt dort auf kostenloses-muster. */
+function musterFarbBefund(p, muster, option) {
+  const vorhanden = new Set((muster.variants ?? []).map((v) => klein(farbeDerVariante(v, option.name) ?? v.title)));
+  const fehlend = option.values.filter((w) => !vorhanden.has(klein(w)));
+  if (!fehlend.length) return null;
+  return befund(p, 'fehler', 'muster-farben', `Muster ohne ${fehlend.length} Farbe(n): ${fehlend.slice(0, 5).join(', ')}${fehlend.length > 5 ? ' ...' : ''}`);
+}
+
 /**
  * @param {object} eingabe
  * @param {object[]} eingabe.produkte  alle Produkte des Shops (normalisiert, siehe normalisiere())
@@ -193,10 +201,21 @@ export function pruefeImporte({ produkte, seit, handles = null }) {
       if (!muster) {
         befunde.push(befund(p, 'fehler', 'muster-fehlt', `kein Musterprodukt ${MUSTER_PRAEFIX}${p.handle} - der Konfigurator faellt still auf kostenloses-muster zurueck (sonst Tag ohne-muster setzen)`));
       } else {
-        const vorhanden = new Set((muster.variants ?? []).map((v) => klein(farbeDerVariante(v, option.name) ?? v.title)));
-        const fehlend = option.values.filter((w) => !vorhanden.has(klein(w)));
-        if (fehlend.length) befunde.push(befund(p, 'fehler', 'muster-farben', `Muster ohne ${fehlend.length} Farbe(n): ${fehlend.slice(0, 5).join(', ')}${fehlend.length > 5 ? ' ...' : ''}`));
+        const b = musterFarbBefund(p, muster, option);
+        if (b) befunde.push(b);
       }
+    }
+  }
+  // Farben kommen auch an alten Produkten dazu - deren Musterprodukt waechst
+  // nicht mit (Alvento/Zafira/Cortessa, Fehleranalyse 13.10.). Deshalb den
+  // Musterabgleich fuer alle aktiven Produkte, nicht nur fuer die neuen.
+  if (!handles) {
+    for (const p of produkte) {
+      if (neuSet.has(p) || p.status !== 'ACTIVE' || istMusterProdukt(p) || !musterMoeglich(p)) continue;
+      const option = farbOption(p);
+      const muster = option && nachHandle.get(MUSTER_PRAEFIX + p.handle);
+      const b = muster && musterFarbBefund(p, muster, option);
+      if (b) befunde.push(b);
     }
   }
   // Ein Entwurf ist im Shop unsichtbar: seine Luecken sind Arbeitsstand
