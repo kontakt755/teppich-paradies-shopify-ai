@@ -43,7 +43,7 @@ test('Ohne ausdrueckliches Produktlimit bleibt die bisherige Rollenware unveraen
 });
 
 test('Musterfarbe behandelt beide Schreibweisen des Farbtag-Praefixes gleich', async () => {
-  const start = source.indexOf('    assign tp_rc_start_farbe = product.selected_or_first_available_variant.options | first');
+  const start = source.indexOf("    assign tp_rc_start_farbe = 'Default Title'");
   const end = source.indexOf('    assign tp_rc_muster_platzhalter', start);
   assert.ok(start >= 0 && end > start);
   const template = '{% liquid\n' + source.slice(start, end) + '%}{{ tp_rc_start_farbe }}';

@@ -2,7 +2,8 @@
  * "Heute": Kacheln "Laden" und "Montage" - Zahlen aus der Auftrags-App.
  *
  * Offene Beratungen, faellige Wiedervorlagen, offene Angebote, Faelle aus dem Shop
- * (7 Tage) und gewonnen/verloren (30 Tage), darunter - nur wenn es welche gibt - die
+ * (7 Tage; seit 2026-10-13 nur noch Kontaktanfragen - Muster und Rueckrufe fasst das
+ * Control Center selbst nach, w-078) und gewonnen/verloren (30 Tage), darunter - nur wenn es welche gibt - die
  * Faelle mit Spam-Verdacht. Nur Zahlen: Namen und Kundendaten bleiben
  * in der Auftrags-App. Die Zahlen holt der lokale Server (/api/laden/zahlen,
  * scripts/laden-zahlen.mjs) - der Browser spricht die App nie direkt an und kennt
@@ -113,7 +114,7 @@ export function heuteLaden() {
       ${kachel(z.offen, 'Offene Beratungen', `davon ${z.neu} neu`)}
       ${kachel(z.faellig, 'Wiedervorlage fällig', 'heute oder früher', { warn: true })}
       ${kachel(z.angeboteOffen, 'Angebote offen', `davon ${z.nachfassen} zum Nachfassen`)}
-      ${kachel(z.ausShop7Tage, 'Aus dem Shop', 'Muster und Anfragen, 7 Tage')}
+      ${kachel(z.ausShop7Tage, 'Aus dem Shop', 'Anfragen, 7 Tage')}
       ${kachel(z.gewonnen30Tage, 'Gewonnen', `verloren ${z.verloren30Tage} · 30 Tage`)}
     </div>${spamHinweis(z.spamVerdacht, d.ladenUrl)}`;
   }

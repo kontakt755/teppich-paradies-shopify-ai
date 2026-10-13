@@ -52,13 +52,6 @@
   .kontakt-formular button:hover {
     background-color: #444;
   }
-  .google-map {
-    width: 100%;
-    height: 300px;
-    margin-top: 40px;
-    border: none;
-    border-radius: 8px;
-  }
   .whatsapp-link {
     /* #25D366 auf Weiss hatte 2:1; #0e7a5f wie die WhatsApp-Buttons, 5,3:1 */
     color: #0e7a5f;
@@ -205,6 +198,107 @@
   [data-tp-sample-request][data-mode="sample"] .tp-contact-service-links {
     display: none;
   }
+
+  /* Google-Maps-Karte erst nach Klick (Zwei-Klick-Loesung, Datenschutz) */
+  .tp-karte {
+    max-width: 1200px;
+    margin: 0 auto 40px;
+    padding: 0 20px;
+  }
+  .tp-karte__flaeche {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    padding: 28px 20px;
+    border: 1px solid var(--tp-line, #e6e0d8);
+    border-radius: 8px;
+    background: var(--tp-bg-2, #f6f2ec);
+    color: #333;
+    text-align: center;
+  }
+  .tp-karte__inhalt {
+    max-width: 520px;
+  }
+  .tp-karte__pin {
+    width: 32px;
+    height: 32px;
+    margin: 0 auto 10px;
+    color: var(--tp-red, #b0303f);
+  }
+  .tp-karte__adresse {
+    margin: 0 0 18px;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  .tp-karte__aktionen {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px 20px;
+  }
+  .tp-karte__laden {
+    min-height: 44px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    background-color: #222;
+    color: #fff;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .tp-karte__laden:hover {
+    background-color: #444;
+  }
+  .tp-karte__laden:focus-visible,
+  .tp-karte__extern:focus-visible,
+  .tp-karte__hinweis a:focus-visible {
+    outline: 2px solid #222;
+    outline-offset: 3px;
+  }
+  .tp-karte__extern {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: #222;
+    font-weight: 600;
+    text-decoration: underline;
+  }
+  .tp-karte__hinweis {
+    margin: 14px 0 0;
+    color: #555;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .tp-karte__hinweis a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  .tp-karte.is-geladen .tp-karte__flaeche {
+    display: block;
+    min-height: 0;
+    padding: 0;
+    border: none;
+    background: none;
+  }
+  .tp-karte__frame {
+    display: block;
+    width: 100%;
+    height: 300px;
+    border: none;
+    border-radius: 8px;
+  }
+  @media screen and (max-width: 749px) {
+    .tp-karte__aktionen {
+      flex-direction: column;
+    }
+    .tp-karte__laden {
+      width: 100%;
+    }
+  }
 {% endstylesheet %}
 
 <section class="kontakt-section">
@@ -305,15 +399,112 @@
   </div>
 </section>
 
-<iframe
-  class="google-map"
-  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2415.89022847034!2d13.242245077649626!3d52.73417322034972!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47a900b2dd3a3391%3A0xaec22baa10182b4!2sTeppich%20Paradies%20Oranienburg%20GmbH!5e0!3m2!1sde!2sde!4v1778188111105!5m2!1sde!2sde"
-  allowfullscreen
-  loading="lazy"
-  referrerpolicy="no-referrer-when-downgrade"
-  width="1200"
-  height="300"
-></iframe>
+{%- comment -%}
+  Google-Maps-Karte als Zwei-Klick-Loesung: Ohne Klick oder ausdrueckliche
+  Marketing-Einwilligung (Shopify Customer Privacy API) geht keine Anfrage an
+  Google. Die Embed-Adresse steht nur im data-Attribut; das iframe setzt erst
+  das Script unten ein. Der Link "In Google Maps oeffnen" ist ein normaler
+  Link und laedt nichts vorab.
+{%- endcomment -%}
+{%- liquid
+  assign tp_karte_id = 'tp-karte-' | append: section.id
+  assign tp_karte_embed = 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2415.89022847034!2d13.242245077649626!3d52.73417322034972!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47a900b2dd3a3391%3A0xaec22baa10182b4!2sTeppich%20Paradies%20Oranienburg%20GmbH!5e0!3m2!1sde!2sde!4v1778188111105!5m2!1sde!2sde'
+  assign tp_karte_link = settings.tp_google_profil | default: 'https://maps.google.com/?cid=787042219843486388'
+-%}
+<div
+  class="tp-karte"
+  id="{{ tp_karte_id }}"
+  data-tp-karte
+  data-tp-karte-src="{{ tp_karte_embed | escape }}"
+  data-tp-karte-titel="Karte: Teppich Paradies Oranienburg, Saarlandstraße 73-81, 16515 Oranienburg"
+>
+  <div class="tp-karte__flaeche" data-tp-karte-flaeche>
+    <div class="tp-karte__inhalt">
+      <svg class="tp-karte__pin" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.1-7-11.5a7 7 0 0 1 14 0C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+      <p class="tp-karte__adresse">
+        <strong>Teppich Paradies Oranienburg</strong><br>
+        Saarlandstraße 73-81, 16515&nbsp;Oranienburg
+      </p>
+      <div class="tp-karte__aktionen">
+        <button type="button" class="tp-karte__laden" data-tp-karte-laden aria-describedby="{{ tp_karte_id }}-hinweis">
+          Karte von Google Maps laden
+        </button>
+        <a class="tp-karte__extern" href="{{ tp_karte_link | escape }}" target="_blank" rel="noopener">
+          In Google Maps öffnen<span class="visually-hidden"> (öffnet in neuem Tab)</span>
+        </a>
+      </div>
+      <p class="tp-karte__hinweis" id="{{ tp_karte_id }}-hinweis">
+        Dabei werden Daten an Google übertragen. Mehr in der
+        <a href="/pages/datenschutzerklarung">Datenschutzerklärung</a>.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var box = document.getElementById({{ tp_karte_id | json }});
+    if (!box || box.hasAttribute('data-tp-karte-bereit')) return;
+    box.setAttribute('data-tp-karte-bereit', '');
+    var geladen = false;
+
+    function laden(perKlick) {
+      // isConnected: nach einem Section-Reload im Theme-Editor haengt der alte Listener noch
+      if (geladen || !box.isConnected) return;
+      geladen = true;
+      var frame = document.createElement('iframe');
+      frame.className = 'tp-karte__frame';
+      frame.title = box.getAttribute('data-tp-karte-titel');
+      frame.width = '1200';
+      frame.height = '300';
+      frame.setAttribute('allowfullscreen', '');
+      frame.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+      // Bei Einwilligung erst laden, wenn die Karte in Sichtweite kommt
+      if (!perKlick) frame.setAttribute('loading', 'lazy');
+      frame.src = box.getAttribute('data-tp-karte-src');
+      var flaeche = box.querySelector('[data-tp-karte-flaeche]');
+      flaeche.replaceChildren(frame);
+      box.classList.add('is-geladen');
+      if (perKlick) frame.focus();
+    }
+
+    var knopf = box.querySelector('[data-tp-karte-laden]');
+    if (knopf) {
+      knopf.addEventListener('click', function () {
+        laden(true);
+      });
+    }
+
+    // Direkt laden nur bei ausdruecklichem Ja zu Marketing. marketingAllowed()
+    // allein reicht nicht: es ist auch ohne Banner bzw. ohne Einwilligungspflicht true.
+    function marketingJa() {
+      try {
+        var privacy = window.Shopify && window.Shopify.customerPrivacy;
+        var consent = privacy && typeof privacy.currentVisitorConsent === 'function' && privacy.currentVisitorConsent();
+        return !!consent && consent.marketing === 'yes';
+      } catch (e) {
+        return false;
+      }
+    }
+    function einwilligungPruefen() {
+      if (geladen) return;
+      if (marketingJa()) {
+        laden(false);
+        return;
+      }
+      document.addEventListener('visitorConsentCollected', function () {
+        if (marketingJa()) laden(false);
+      });
+    }
+    if (window.Shopify && window.Shopify.customerPrivacy) {
+      einwilligungPruefen();
+    } else if (window.Shopify && typeof window.Shopify.loadFeatures === 'function') {
+      window.Shopify.loadFeatures([{ name: 'consent-tracking-api', version: '0.1' }], function (error) {
+        if (!error) einwilligungPruefen();
+      });
+    }
+  })();
+</script>
 
 <script src="{{ 'tp-sample-request.js' | asset_url }}" defer="defer"></script>
 

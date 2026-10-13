@@ -1,0 +1,314 @@
+/*
+  Voraussichtliches Lieferdatum aus einer Werktage-Spanne (Issue #165).
+
+  Rechenkern ohne DOM (UMD an globalThis.TPLieferdatum) plus ein kleiner
+  Aufwerter fuer [data-tp-lieferdatum]-Elemente aus snippets/tp-lieferzeit.
+  Dieselbe Datei rechnet im Shop und in qa/tests/lieferdatum.test.mjs.
+
+  Regeln:
+  - Gerechnet wird im Browser, nicht in Liquid: Shopify liefert Seiten aus dem
+    Cache, ein serverseitig eingesetztes Datum waere nach Mitternacht falsch.
+    Ohne JavaScript bleibt die Werktage-Angabe aus dem Liquid stehen.
+  - "Heute" ist der Kalendertag in Europe/Berlin, unabhaengig von der Zeitzone
+    des Kunden.
+  - Werktage sind Montag bis Freitag ohne bundeseinheitliche Feiertage und ohne
+    die Feiertage in Brandenburg (Sitz des Geschaefts). 24.12. und 31.12. sind
+    keine Feiertage, zaehlen aber als Puffertag nicht mit (Inhaber 13.10.:
+    an Weihnachten und Silvester je ein Werktag Puffer).
+  - Eingangstag: heute, wenn heute ein Werktag ist und der Annahmeschluss noch
+    nicht erreicht ist; sonst der naechste Werktag (Inhaber 13.10.: "Bestellung
+    nach 12 Uhr zaehlt ab dem naechsten Werktag"). Eine Bestellung am Freitag
+    nach Annahmeschluss oder am Wochenende gilt also als am Montag eingegangen.
+  - Der Eingangstag zaehlt nie mit: "2 Werktage" ist der zweite Werktag nach
+    dem Eingangstag.
+  - Annahmeschluss: Theme-Einstellung (Standard 12:00, Uhrzeit in Berlin).
+    Leer = kein Annahmeschluss.
+  - Nur Angaben, die mit einer Werktage-Spanne beginnen, werden umgerechnet
+    ("2–5 Werktage", "ca. 5–8 Werktage inkl. Ketteln"). Kalendertage
+    ("ca. 14 Tage"), Wochen und Texte mit einer zweiten Zeitangabe bleiben
+    unveraendert stehen.
+  - Das Datum wird neu gerechnet, wenn die Seite wieder sichtbar wird
+    (Zurueck-Taste, Tab-Wechsel) und jede Minute - sonst bliebe nach 12 Uhr
+    oder nach Mitternacht die alte Spanne stehen.
+*/
+(function (root) {
+  'use strict';
+
+  var TAG_MS = 86400000;
+  var WOCHENTAGE = ['So.', 'Mo.', 'Di.', 'Mi.', 'Do.', 'Fr.', 'Sa.'];
+  var MAX_WERKTAGE = 30;
+
+  function utc(y, m, d) {
+    return new Date(Date.UTC(y, m - 1, d));
+  }
+
+  function plusTage(datum, n) {
+    return new Date(datum.getTime() + n * TAG_MS);
+  }
+
+  function schluessel(datum) {
+    return datum.toISOString().slice(0, 10);
+  }
+
+  // Ostersonntag nach dem gregorianischen Algorithmus (Meeus/Jones/Butcher).
+  function ostersonntag(jahr) {
+    var a = jahr % 19;
+    var b = Math.floor(jahr / 100);
+    var c = jahr % 100;
+    var d = Math.floor(b / 4);
+    var e = b % 4;
+    var f = Math.floor((b + 8) / 25);
+    var g = Math.floor((b - f + 1) / 3);
+    var h = (19 * a + b - d - g + 15) % 30;
+    var i = Math.floor(c / 4);
+    var k = c % 4;
+    var l = (32 + 2 * e + 2 * i - h - k) % 7;
+    var m = Math.floor((a + 11 * h + 22 * l) / 451);
+    var monat = Math.floor((h + l - 7 * m + 114) / 31);
+    var tag = ((h + l - 7 * m + 114) % 31) + 1;
+    return utc(jahr, monat, tag);
+  }
+
+  var feiertagCache = {};
+
+  // Bundeseinheitliche Feiertage plus Brandenburg (Ostersonntag,
+  // Pfingstsonntag, Reformationstag). Schluessel 'JJJJ-MM-TT' -> Name.
+  function feiertage(jahr) {
+    if (feiertagCache[jahr]) return feiertagCache[jahr];
+    var ostern = ostersonntag(jahr);
+    var liste = [
+      [utc(jahr, 1, 1), 'Neujahr'],
+      [plusTage(ostern, -2), 'Karfreitag'],
+      [ostern, 'Ostersonntag'],
+      [plusTage(ostern, 1), 'Ostermontag'],
+      [utc(jahr, 5, 1), 'Tag der Arbeit'],
+      [plusTage(ostern, 39), 'Christi Himmelfahrt'],
+      [plusTage(ostern, 49), 'Pfingstsonntag'],
+      [plusTage(ostern, 50), 'Pfingstmontag'],
+      [utc(jahr, 10, 3), 'Tag der Deutschen Einheit'],
+      [utc(jahr, 10, 31), 'Reformationstag'],
+      [utc(jahr, 12, 25), '1. Weihnachtstag'],
+      [utc(jahr, 12, 26), '2. Weihnachtstag']
+    ];
+    var map = {};
+    for (var n = 0; n < liste.length; n++) map[schluessel(liste[n][0])] = liste[n][1];
+    feiertagCache[jahr] = map;
+    return map;
+  }
+
+  function istFeiertag(datum) {
+    return Object.prototype.hasOwnProperty.call(feiertage(datum.getUTCFullYear()), schluessel(datum));
+  }
+
+  // Heiligabend und Silvester: keine Feiertage, aber je ein Werktag Puffer
+  // (Inhaber 13.10.). Schluessel 'JJJJ-MM-TT' -> Name.
+  function puffertage(jahr) {
+    var map = {};
+    map[schluessel(utc(jahr, 12, 24))] = 'Heiligabend';
+    map[schluessel(utc(jahr, 12, 31))] = 'Silvester';
+    return map;
+  }
+
+  function istPuffertag(datum) {
+    return Object.prototype.hasOwnProperty.call(puffertage(datum.getUTCFullYear()), schluessel(datum));
+  }
+
+  function istWerktag(datum) {
+    var wt = datum.getUTCDay();
+    return wt !== 0 && wt !== 6 && !istFeiertag(datum) && !istPuffertag(datum);
+  }
+
+  // n-ter Werktag nach dem Tag "datum" (datum selbst zaehlt nicht).
+  function plusWerktage(datum, n) {
+    var d = datum;
+    var gezaehlt = 0;
+    while (gezaehlt < n) {
+      d = plusTage(d, 1);
+      if (istWerktag(d)) gezaehlt++;
+    }
+    return d;
+  }
+
+  var berlinFormat = null;
+
+  // Kalendertag und Uhrzeit in Berlin fuer einen Zeitpunkt.
+  function berlin(jetzt) {
+    if (!berlinFormat) {
+      berlinFormat = new Intl.DateTimeFormat('de-DE', {
+        timeZone: 'Europe/Berlin',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23'
+      });
+    }
+    var teile = berlinFormat.formatToParts(jetzt);
+    var w = {};
+    for (var n = 0; n < teile.length; n++) w[teile[n].type] = teile[n].value;
+    return {
+      datum: utc(Number(w.year), Number(w.month), Number(w.day)),
+      minuten: (Number(w.hour) % 24) * 60 + Number(w.minute)
+    };
+  }
+
+  // "14:00", "14.00", "14" -> Minuten seit Mitternacht; sonst null.
+  function leseAnnahmeschluss(wert) {
+    var t = String(wert == null ? '' : wert).trim();
+    var m = /^(\d{1,2})(?:[:.](\d{2}))?(?:\s*Uhr)?$/i.exec(t);
+    if (!m) return null;
+    var h = Number(m[1]);
+    var min = m[2] ? Number(m[2]) : 0;
+    if (h > 23 || min > 59) return null;
+    return h * 60 + min;
+  }
+
+  // "2–5 Werktage", "ca. 5-8 Werktage inkl. Ketteln", "3 bis 5 Werktage",
+  // "4 Werktage" -> {min, max}. Die Spanne muss am Anfang stehen (hoechstens
+  // "ca." davor), und dahinter darf keine weitere Zahl oder Zeiteinheit folgen:
+  // "2–3 Wochen, Muster in 2 Werktagen" oder "ca. 14 Tage" -> null.
+  function leseWerktage(text) {
+    var t = String(text == null ? '' : text).trim();
+    var m = /^(?:ca\.?\s*)?(\d{1,2})(?:\s*(?:[–—‒-]|bis)\s*(\d{1,2}))?\s*Werktag(?:e|en)?(?![a-zäöüß])(.*)$/i.exec(t);
+    if (!m) return null;
+    if (/\d|woche|monat|(^|[^a-zäöüß])tag/i.test(m[3])) return null;
+    var min = Number(m[1]);
+    var max = m[2] ? Number(m[2]) : min;
+    if (min > max) {
+      var tmp = min;
+      min = max;
+      max = tmp;
+    }
+    if (min < 1 || max > MAX_WERKTAGE) return null;
+    return { min: min, max: max };
+  }
+
+  // Eingangstag der Bestellung: heute, wenn heute ein Werktag ist und der
+  // Annahmeschluss noch nicht erreicht ist, sonst der naechste Werktag.
+  function eingangstag(jetzt, annahmeschluss) {
+    var b = berlin(jetzt);
+    var schluss = leseAnnahmeschluss(annahmeschluss);
+    var nachSchluss = schluss !== null && b.minuten >= schluss;
+    if (istWerktag(b.datum) && !nachSchluss) return b.datum;
+    return plusWerktage(b.datum, 1);
+  }
+
+  // {von, bis} als UTC-Kalendertage oder null.
+  function lieferspanne(optionen) {
+    var w = leseWerktage(optionen.text);
+    if (!w) return null;
+    var basis = eingangstag(optionen.jetzt || new Date(), optionen.annahmeschluss);
+    return { von: plusWerktage(basis, w.min), bis: plusWerktage(basis, w.max), werktage: w, eingang: basis };
+  }
+
+  function zweistellig(n) {
+    return (n < 10 ? '0' : '') + n;
+  }
+
+  // "Di., 14.10."
+  function formatiere(datum) {
+    return WOCHENTAGE[datum.getUTCDay()] + ', ' + zweistellig(datum.getUTCDate()) + '.' + zweistellig(datum.getUTCMonth() + 1) + '.';
+  }
+
+  // Kundensichtbare Teile oder null, wenn nicht umgerechnet werden kann.
+  function lieferText(optionen) {
+    var spanne = lieferspanne(optionen);
+    if (!spanne) return null;
+    var gleich = spanne.von.getTime() === spanne.bis.getTime();
+    var datum = gleich ? formatiere(spanne.von) : formatiere(spanne.von) + ' – ' + formatiere(spanne.bis);
+    var basis = String(optionen.text).trim().replace(/\s+/g, ' ').replace(/\.$/, '');
+    basis = 'ca. ' + basis.replace(/^ca\.?\s*/i, '');
+    return { datum: datum, zusatz: '(' + basis + ')', von: spanne.von, bis: spanne.bis };
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (z) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[z];
+    });
+  }
+
+  // HTML fuer ein [data-tp-lieferdatum]-Element oder null.
+  function markup(el, jetzt) {
+    var teile = lieferText({
+      text: el.getAttribute('data-text'),
+      annahmeschluss: el.getAttribute('data-annahmeschluss'),
+      jetzt: jetzt
+    });
+    if (!teile) return null;
+    var label = el.getAttribute('data-label') || 'Lieferung voraussichtlich';
+    var fett = el.getAttribute('data-fett') === '1';
+    var html = (fett ? '<strong>' + escapeHtml(label) + '</strong>' : escapeHtml(label)) + ' ' + escapeHtml(teile.datum);
+    if (el.getAttribute('data-zusatz') !== '0') {
+      html += ' <span class="tp-lieferdatum__zusatz">' + escapeHtml(teile.zusatz) + '</span>';
+    }
+    return html;
+  }
+
+  // erzwingen = false (nach DOM-Aenderungen): nur Elemente, deren Text ein
+  // Morph von Horizon (Variantenwechsel) auf den Liquid-Text zurueckgesetzt hat.
+  // erzwingen = true (Uhr, Seite wieder sichtbar): alle neu rechnen und nur
+  // schreiben, wenn sich die Spanne geaendert hat.
+  function aufwerten(wurzel, erzwingen) {
+    var liste = (wurzel || document).querySelectorAll('[data-tp-lieferdatum]');
+    var jetzt = new Date();
+    for (var n = 0; n < liste.length; n++) {
+      var el = liste[n];
+      var unveraendert = el.__tpLieferdatum && el.innerHTML === el.__tpLieferdatum;
+      if (unveraendert && !erzwingen) continue;
+      var html = markup(el, jetzt);
+      if (html === null) continue;
+      if (unveraendert && html === el.__tpLieferdatumQuelle) continue;
+      el.innerHTML = html;
+      el.__tpLieferdatum = el.innerHTML;
+      el.__tpLieferdatumQuelle = html;
+      el.hidden = false;
+      el.setAttribute('data-tp-lieferdatum-fertig', '');
+    }
+  }
+
+  var api = {
+    ostersonntag: ostersonntag,
+    feiertage: feiertage,
+    puffertage: puffertage,
+    istWerktag: istWerktag,
+    eingangstag: eingangstag,
+    plusWerktage: plusWerktage,
+    berlin: berlin,
+    leseAnnahmeschluss: leseAnnahmeschluss,
+    leseWerktage: leseWerktage,
+    lieferspanne: lieferspanne,
+    formatiere: formatiere,
+    lieferText: lieferText,
+    aufwerten: aufwerten
+  };
+
+  if (root.TPLieferdatum && root.TPLieferdatum.gestartet) return;
+  root.TPLieferdatum = api;
+
+  if (typeof document === 'undefined' || typeof document.querySelectorAll !== 'function') return;
+  api.gestartet = true;
+
+  function start() {
+    aufwerten(document);
+    if (typeof MutationObserver === 'undefined') return;
+    var geplant = false;
+    new MutationObserver(function () {
+      if (geplant) return;
+      geplant = true;
+      (root.requestAnimationFrame || setTimeout)(function () {
+        geplant = false;
+        aufwerten(document);
+      });
+    }).observe(document.body, { childList: true, subtree: true, characterData: true });
+    // Annahmeschluss und Mitternacht auf einer offenen Seite, Zurueck-Taste (bfcache)
+    setInterval(function () { aufwerten(document, true); }, 60000);
+    root.addEventListener('pageshow', function () { aufwerten(document, true); });
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) aufwerten(document, true);
+    });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})(typeof window !== 'undefined' ? window : globalThis);

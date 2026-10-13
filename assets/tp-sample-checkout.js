@@ -23,7 +23,14 @@
   var optionName = 'Farbe';
   var existingKeys = new Set();
   var cartSampleCount = 0;
+  // Alle Muster im Warenkorb (fuer den Warenkorb-Link) - cartSampleCount ist
+  // bei Vinyl nur die Zahl der Vinyl-Muster, wenn die Vinyl-Grenze bindet.
+  var cartTotalCount = 0;
   var remaining = window.TPSampleCheckoutCore ? window.TPSampleCheckoutCore.MAX_SAMPLES : 3;
+  // Grenze fuer das geladene Produkt (core.getLimit): Gesamtgrenze oder bei
+  // Vinyl die engere Vinyl-Grenze.
+  var limitMax = remaining;
+  var limitWord = 'Muster';
   var submitting = false;
 
   if (window.TPSampleCheckoutCore && window.TPSampleCheckoutCore.HAS_BONUS) {
@@ -56,12 +63,39 @@
     });
   }
 
+  // Uebernimmt den Warenkorbstand: schon bestellte Farben, Anzahl und die
+  // fuer dieses Produkt bindende Grenze.
+  function applyCart(cart) {
+    var state = core.getSampleState(cart);
+    var limit = core.getLimit(product, state);
+    existingKeys = state.keys;
+    cartSampleCount = limit.inCart;
+    cartTotalCount = state.count;
+    remaining = limit.remaining;
+    limitMax = limit.max;
+    limitWord = limit.word;
+  }
+
+  // Vinyl: Hinweis auf die Grenze von 3 je Bestellung, auch bei Bonus.
+  function showVinylLimit() {
+    if (!core.isVinyl(product)) return;
+    root.querySelectorAll('[data-sample-max]').forEach(function (el) {
+      el.textContent = String(core.VINYL_MAX);
+    });
+    var vinylEl = root.querySelector('[data-sample-vinyl]');
+    if (vinylEl) vinylEl.hidden = false;
+    var bonusEl = root.querySelector('[data-sample-bonus]');
+    if (bonusEl && core.HAS_BONUS) {
+      bonusEl.textContent = 'Abonnenten-Bonus: 4 statt 3 Muster je Bestellung – davon höchstens ' + core.VINYL_MAX + ' Vinyl-Muster.';
+    }
+  }
+
   function updateCount() {
-    var status = core.getSelectionStatus(cartSampleCount, selected.size);
+    var status = core.getSelectionStatus(cartSampleCount, selected.size, limitMax, limitWord);
     countEl.textContent = status.message;
     countEl.classList.toggle('tp-sample__count--limit', status.limitReached);
     submitEl.disabled = submitting || selected.size === 0;
-    cartLinkEl.hidden = cartSampleCount === 0;
+    cartLinkEl.hidden = cartTotalCount === 0;
 
     gridEl.querySelectorAll('[data-sample-color]').forEach(function (card) {
       var value = card.getAttribute('data-sample-color');
@@ -98,7 +132,7 @@
       checkbox.checked = false;
       return;
     }
-    if (selected.size >= remaining || selected.size >= core.MAX_SAMPLES) {
+    if (selected.size >= remaining) {
       checkbox.checked = false;
       return;
     }
@@ -176,6 +210,33 @@
     submitEl.disabled = true;
     hideError();
 
+    // Warenkorb unmittelbar vor dem Hinzufuegen neu lesen: In einem zweiten
+    // Tab koennen inzwischen Muster dazugekommen sein. Passt die Auswahl
+    // nicht mehr unter die Grenze, wird nichts hinzugefuegt, sondern die
+    // Auswahl mit dem neuen Stand angezeigt.
+    fetchJson('/cart.js').catch(function () { return null; }).then(function (cart) {
+      if (cart) {
+        applyCart(cart);
+        var doppelt = false;
+        selected.forEach(function (value) {
+          if (existingKeys.has(makeCardKey({ value: value }))) doppelt = true;
+        });
+        var ueber = selected.size > remaining;
+        if (doppelt || ueber) {
+          selected.clear();
+          submitting = false;
+          renderColors();
+          showError(ueber
+            ? 'Im Warenkorb liegen inzwischen weitere Muster. Je Bestellung sind höchstens ' + limitMax + ' ' + limitWord + ' möglich – bitte wählen Sie erneut.'
+            : 'Ein ausgewähltes Muster liegt inzwischen schon im Warenkorb. Bitte prüfen Sie Ihre Auswahl.');
+          return;
+        }
+      }
+      addSelection();
+    });
+  }
+
+  function addSelection() {
     var chosenColors = colors.filter(function (color) {
       return selected.has(color.value);
     });
@@ -277,10 +338,8 @@
           el.textContent = core.getOptionTerm(product, el.getAttribute('data-sample-term'));
         });
 
-        var state = core.getSampleState(cart);
-        existingKeys = state.keys;
-        cartSampleCount = state.count;
-        remaining = state.remaining;
+        applyCart(cart);
+        showVinylLimit();
 
         productImageEl.src = product.featured_image || '';
         productNameEl.textContent = product.title;
@@ -298,5 +357,12 @@
   }
 
   submitEl.addEventListener('click', submitSelection);
+  // Zurueck-Knopf aus dem Warenkorb: Seiten aus dem Browser-Cache tragen den
+  // alten Warenkorbstand - neu laden, damit Grenze und Auswahl stimmen.
+  if (window.addEventListener) {
+    window.addEventListener('pageshow', function (event) {
+      if (event && event.persisted) window.location.reload();
+    });
+  }
   init();
 })();
