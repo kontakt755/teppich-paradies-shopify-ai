@@ -7,8 +7,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = path.resolve(import.meta.dirname, '../..');
-const ORDNER = ['sections', 'snippets', 'blocks', 'layout', 'templates', 'config'];
-const MAPS_EMBED = /google\.[a-z.]+\/maps\/embed|maps\.google\.[a-z.]+\/maps\?[^"']*output=embed/i;
+const ORDNER = ['sections', 'snippets', 'blocks', 'layout', 'templates', 'config', 'assets'];
+// /maps/embed?pb=... sowie die alte Form /maps?q=...&output=embed (www.google.* und maps.google.*)
+const MAPS_EMBED = /google\.[a-z.]+\/maps\/embed|(?:google\.[a-z.]+\/maps|maps\.google\.[a-z.]+\/(?:maps)?)\?[^"'\s]*output=embed/i;
 
 function dateien() {
   const liste = [];
@@ -16,7 +17,7 @@ function dateien() {
     const voll = path.join(root, ordner);
     if (!fs.existsSync(voll)) continue;
     for (const name of fs.readdirSync(voll, { recursive: true })) {
-      if (!/\.(liquid|json)$/.test(name)) continue;
+      if (!/\.(liquid|json|js)$/.test(name)) continue;
       liste.push(path.join(ordner, name));
     }
   }
@@ -26,6 +27,11 @@ function dateien() {
 export function mapsIframeFunde(dateiInhalte) {
   const funde = [];
   for (const [datei, text] of dateiInhalte) {
+    // Ein Script in assets/ hat keinen Grund, eine Maps-Embed-Adresse zu kennen
+    if (datei.startsWith('assets') && MAPS_EMBED.test(text)) {
+      funde.push({ datei, tag: 'Maps-Embed-Adresse im Script' });
+      continue;
+    }
     // JSON-Templates speichern HTML escaped (custom_liquid), deshalb \" und \u003c mitnehmen
     const roh = text.replace(/\\u003c/gi, '<').replace(/\\u003e/gi, '>').replace(/\\"/g, '"');
     for (const tag of roh.match(/<iframe\b[^>]*>/gi) || []) {
@@ -47,8 +53,12 @@ test('Pruefung erkennt ein direktes Maps-iframe, auch escaped im JSON-Template',
     ['templates/page.json', '{"custom_liquid":"\\u003ciframe src=\\"https://www.google.com/maps/embed?pb=1\\"\\u003e"}'],
     ['sections/b.liquid', '<div data-tp-karte-src="https://www.google.com/maps/embed?pb=1"></div>'],
     ['sections/c.liquid', '<a href="https://www.google.com/maps/dir/?api=1&destination=x">Route</a>'],
+    ['sections/d.liquid', '<iframe src="https://www.google.com/maps?q=Oranienburg&output=embed"></iframe>'],
+    ['sections/e.liquid', '<iframe src="https://maps.google.de/maps?q=x&amp;output=embed"></iframe>'],
+    ['sections/f.liquid', '<a href="https://maps.google.com/?cid=1">Profil</a>'],
+    ['assets/karte.js', "f.src = 'https://www.google.com/maps/embed?pb=1';"],
   ]);
-  assert.deepEqual(funde.map((f) => f.datei), ['sections/a.liquid', 'templates/page.json']);
+  assert.deepEqual(funde.map((f) => f.datei), ['sections/a.liquid', 'templates/page.json', 'sections/d.liquid', 'sections/e.liquid', 'assets/karte.js']);
 });
 
 test('Kontaktseite: Platzhalter mit Knopf, Hinweis, Datenschutz-Link und Maps-Link', () => {
@@ -58,11 +68,11 @@ test('Kontaktseite: Platzhalter mit Knopf, Hinweis, Datenschutz-Link und Maps-Li
     [/<button type="button" class="tp-karte__laden"[^>]*aria-describedby=/, 'Knopf mit Hinweis-Verweis'],
     [/Karte von Google Maps laden/, 'Knopftext'],
     [/Dabei werden Daten an Google übertragen\. Mehr in der\s+<a href="\/pages\/datenschutzerklarung">Datenschutzerklärung<\/a>\./, 'Hinweis mit Datenschutz-Link'],
-    [/assign tp_karte_link = 'https:\/\/maps\.google\.com\/\?cid=\d+'/, 'Maps-Link auf das Unternehmensprofil'],
-    [/<a class="tp-karte__extern" href="\{\{ tp_karte_link \}\}" target="_blank" rel="noopener">\s*In Google Maps öffnen/, 'normaler Link "In Google Maps öffnen"'],
+    [/assign tp_karte_link = settings\.tp_google_profil \| default: 'https:\/\/maps\.google\.com\/\?cid=\d+'/, 'Maps-Link auf das Unternehmensprofil'],
+    [/<a class="tp-karte__extern" href="\{\{ tp_karte_link \| escape \}\}" target="_blank" rel="noopener">\s*In Google Maps öffnen/, 'normaler Link "In Google Maps öffnen"'],
     // Direkt laden nur bei ausdruecklichem Ja, nicht bei marketingAllowed() (true ohne Banner)
     [/consent\.marketing === 'yes'/, 'Einwilligung nur bei ausdruecklichem Ja'],
   ];
   for (const [muster, was] of muss) assert.ok(muster.test(code), `contact-form.liquid: ${was} fehlt`);
-  assert.ok(!/privacy\.marketingAllowed\(\)/.test(code), 'marketingAllowed() ist auch ohne Banner true');
+  assert.ok(!/\.marketingAllowed\b/.test(code), 'marketingAllowed ist auch ohne Banner true (auch im Event-Detail)');
 });
