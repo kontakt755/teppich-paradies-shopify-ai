@@ -14,12 +14,18 @@ const root = fileURLToPath(new URL('../../', import.meta.url));
 let source = readFileSync(path.join(root, 'snippets/tp-cart-leistenzeile.liquid'), 'utf8');
 source = source.replace(/{%-?\s*doc\s*-?%}[\s\S]*?{%-?\s*enddoc\s*-?%}/g, '');
 
-const engine = new Liquid();
+const ohneDoc = (datei) => readFileSync(path.join(root, datei), 'utf8')
+  .replace(/{%-?\s*doc\s*-?%}[\s\S]*?{%-?\s*enddoc\s*-?%}/g, '');
+// Verkaufsart kommt aus snippets/tp-verkaufseinheit (Sonderposten, Paket, Stange).
+const engine = new Liquid({ templates: {
+  'tp-verkaufseinheit': ohneDoc('snippets/tp-verkaufseinheit.liquid'),
+  'tp-ist-sonderposten': ohneDoc('snippets/tp-ist-sonderposten.liquid'),
+} });
 engine.registerFilter('divided_by', (a, b) => Math.floor(Number(a) / Number(b)));
 
-async function zeile({ stange, menge, qmProPaket = null }) {
+async function zeile({ stange, menge, qmProPaket = null, typ = 'Sockelleiste' }) {
   const html = await engine.parseAndRender(source, {
-    line_item: { quantity: menge, product: { metafields: { custom: {
+    line_item: { quantity: menge, product: { type: typ, tags: [], metafields: { custom: {
       stangenlaenge: { value: stange }, qm_pro_paket: { value: qmProPaket },
     } } } },
   });
@@ -41,4 +47,8 @@ test('ohne belegte Laenge oder bei Paketware keine Zeile', async () => {
   assert.equal(await zeile({ stange: null, menge: 8 }), null);
   assert.equal(await zeile({ stange: 0, menge: 8 }), null);
   assert.equal(await zeile({ stange: 2.5, menge: 8, qmProPaket: 1.988 }), null);
+});
+
+test('Sonderposten mit kopierter Leistenlaenge: keine Zeile', async () => {
+  assert.equal(await zeile({ stange: 2.5, menge: 1, typ: 'Sonderposten' }), null);
 });

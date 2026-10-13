@@ -6,19 +6,23 @@
   Laenge je Leiste nur aus dem belegten Produkt-Metafeld custom.stangenlaenge
   (Meter, gleich fuer jede Farbe; Quellen siehe blocks/tp-zubehoer-menge.liquid).
   Ohne Metafeld rendert der Snippet nichts - keine geschaetzte Laenge.
-  Paketware (custom.qm_pro_paket) hat ihre eigene Zeile und wird hier
-  uebersprungen. Menge aus item.quantity, nie aus einer Property - der Kunde
+  Ob die Position Stangenware ist, entscheidet snippets/tp-verkaufseinheit
+  ('stueck') - damit fallen Paketware (eigene Zeile) und Sonderposten
+  (Einzelstueck, ggf. mit kopiertem Metafeld) heraus. Menge aus item.quantity, nie aus einer Property - der Kunde
   kann die Menge im Warenkorb aendern.
 
   @param {object} line_item - Warenkorbposition
 {%- enddoc -%}
 {%- liquid
   assign tp_cl_produkt = line_item.product
-  assign tp_cl_paket = tp_cl_produkt.metafields.custom.qm_pro_paket.value | times: 1.0
+  capture tp_cl_einheit
+    render 'tp-verkaufseinheit', product: tp_cl_produkt
+  endcapture
+  assign tp_cl_einheit = tp_cl_einheit | strip
   assign tp_cl_stange = tp_cl_produkt.metafields.custom.stangenlaenge.value | times: 1.0
   assign tp_cl_menge = line_item.quantity | times: 1
 -%}
-{%- if tp_cl_paket <= 0 and tp_cl_stange > 0 and tp_cl_menge > 0 -%}
+{%- if tp_cl_einheit == 'stueck' and tp_cl_stange > 0 and tp_cl_menge > 0 -%}
   {%- liquid
     # Ganzzahlig in Zentimetern rechnen: kein Gleitkomma-Rest wie 20,000000001.
     assign tp_cl_cm = tp_cl_stange | times: 100 | round | times: tp_cl_menge

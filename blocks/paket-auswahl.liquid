@@ -791,6 +791,11 @@
       return Math.max(1, Math.ceil(requiredSqm / sqmPerPackage - FLOAT_EPSILON));
     }
 
+    // Steht eine vom Kunden eingegebene Flaeche im Feld?
+    function hatFlaechenEingabe() {
+      return !!sqmInput && sqmInput.value.trim() !== '';
+    }
+
     // Paketzahl fuer Anzeige UND Warenkorb: die manuelle Wahl, sonst die
     // Empfehlung. Beide Wege lesen weiter genau diese eine Funktion.
     function computePackages() {
@@ -897,7 +902,7 @@
       // Der Ruhezustand ist "1 Paket" - eine vorbelegte Zahl im Feld waere
       // eine erfundene Kundenangabe (und mit Verschnittzuschlag zusaetzlich
       // krumm).
-      const hatEingabe = !!sqmInput && sqmInput.value.trim() !== '';
+      const hatEingabe = hatFlaechenEingabe();
 
       if (needLabel) {
         needLabel.textContent =
@@ -1225,9 +1230,16 @@
       // selbst (sqmForPackages), nicht auf "plus eine Paketfläche" - sonst
       // sprang ein Klick bei aktivem Verschnitt von einem auf drei Pakete.
       if (increasePackages || decreasePackages) {
+        // Steht im Feld ein ungueltiger Text, zuerst die gueltige Flaeche
+        // zurueckschreiben - sonst bezoege sich der Hinweis auf eine Zahl,
+        // die der Kunde nicht sieht.
+        if (sqmInput && hatFlaechenEingabe()) {
+          const feld = evaluateSqmInput(sqmInput.value);
+          if (feld.state === 'invalid' || feld.state === 'unsafe') syncInputValue();
+        }
         const current = computePackages();
         const target = increasePackages ? current + 1 : Math.max(1, current - 1);
-        const hatEingabe = !!sqmInput && sqmInput.value.trim() !== '';
+        const hatEingabe = hatFlaechenEingabe();
         setMessage('', false);
         if (hatEingabe) {
           manualPackages = target === computePackagesFor(desiredSqm) ? null : target;
