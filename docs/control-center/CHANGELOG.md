@@ -1022,3 +1022,58 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Nächste Stufe:** Wer die offenen Zahlen „Muster nachfassen“/„Rückrufe“ auch in der Laden-Ansicht sehen will:
   das Control Center müsste sie beim Abruf von `?ansicht=zahlen` an die App mitgeben (eigener Schritt, braucht
   `LADEN_ZAHLEN_SCHLUESSEL`). Bis dahin zeigt die App die Zahl der eingegangenen Muster-/Rückruf-Mails (7 Tage).
+
+## 2026-10-13 · „An Kunden raus“ bucht den Versand in Shopify (#1185)
+
+- **Geändert** (Inhaber 13.10., Werkbank w-079; Details ARCHITEKTUR §17):
+  - *Für die Mitarbeiter:* „Als raus zum Kunden markieren…“ (Einkauf), „Muster sind verschickt…“ bzw. „An Kunden
+    raus…“ (Zeitleiste) und „An Kunden raus…“ in Kunden › Bestellungen öffnen ein Fenster „An Kunden raus“: Häkchen für die Artikel im Paket (Teillieferung),
+    Sendungsnummer und Versanddienst (optional), „Kunde bekommt die Versandmail von Shopify“. „Als verschickt
+    buchen“ setzt den Schritt **und** bucht die Sendung in Shopify; Shopify schickt die Versandmail, mit
+    Sendungsnummer samt Verfolgungslink. Persönlich vorbeigebrachte Muster und „Kunde hat Muster“ (eigener
+    Bestand): gebucht, ohne Mail; die Mail-Wahl steht an der Position und gilt auch beim Nachholen.
+  - *Wenn es nicht klappt* (Recht fehlt, kein Zugang, Netz, in Shopify zurückgehalten): Der Schritt steht trotzdem,
+    die Rückmeldung ist rot und sagt den Grund; an der Zeitleiste und an der Einkaufsposition steht „Versand nicht
+    in Shopify gebucht“ mit „In Shopify buchen“ zum Nachholen (je Sendung eine Buchung mit ihrer Nummer). Endgültige
+    Gründe (storniert, Testbestellung, Artikel nicht mehr in der Bestellung) zeigen keinen roten Hinweis. Im
+    Protokoll „Versand in Shopify gebucht / nicht gebucht / unklar“, Fehlschläge zusätzlich im Dienstprotokoll.
+  - *Sicherheit:* der alte Einzelweg je Position bucht nicht mehr sofort („ausstehend“, dann ein Paket über „In
+    Shopify buchen“) – sonst je Artikel eine Mail; Zeitlimit 25 s je Shopify-Aufruf; nur Positionen, die vor dem
+    Klick noch nicht raus waren; nie rückwirkend (alte „raus“-Positionen
+    ohne Vermerk bleiben unberührt); Buchungen derselben Bestellung nacheinander und gegen die frisch gelesene offene
+    Menge – doppelter Klick bucht nicht doppelt. Zurückhaltung „Bestand fehlt“ hebt das Control Center auf, andere
+    Gründe nicht. Testbestellungen und stornierte Bestellungen werden nicht gebucht.
+  - *Hinweis „In Shopify noch nicht als versendet gebucht“* entfällt, sobald der Vermerk „gebucht“ da ist (der
+    Bestellexport hinkt bis zum nächsten Lauf hinterher); bei gescheiterter Buchung heißt er „Versand in Shopify nicht
+    gebucht – in der Bestellung nachholen“.
+  - *Handy:* Rückmeldungen erscheinen bei offenem Dialog oben, nicht über den Knöpfen des von unten kommenden Dialogs.
+  - *Prüfwerkzeug:* `dashboard:pruefen` startet seine Instanz ohne Shopify-Zugang (auch nicht aus `.env.local`).
+  - `SCHREIB_BEREICHE` um `write_fulfillments` und `write_merchant_managed_fulfillment_orders` ergänzt
+    (`operations:verbindung` meldet sie, wenn sie fehlen). Beide sind erteilt (Lesprobe 13.10.).
+- **Getestet:** neu `operations/tests/versand.test.mjs` (15: Teillieferung, bereits erfüllt, Recht fehlt beim Lesen
+  und Buchen, Netzfehler beim Lesen / Antwort verloren nach und vor der Buchung / ohne Beleg = unklar,
+  Zurückhaltung aufheben bzw. stehen lassen, Teilergebnis, Ablehnung, gleichzeitig gebucht, storniert,
+  Testbestellung laut Shopify, Spedition, geschlossene Fulfillment Orders), `docs/ai-dashboard/tests/versand-api.test.mjs`
+  (10: Auswahl, Einzelklick, doppelter Klick → 1 Buchung, Recht fehlt → nachholen, kein Zugang, unklar, keine
+  rückwirkende Buchung, Testbestellung, Vorbeibringen ohne Mail, Nachholen mit Mail-Wahl und je Sendung, storniert,
+  Zurück auf offen), `auftragsstatus.test.mjs` (Vermerk). Zwei Review-Runden (`code-review` high, 15 + 15 Befunde) eingearbeitet; bewusst
+  belassen: Freigabe „Bestand fehlt“ für die ganze Fulfillment Order (ARCHITEKTUR §17), „erledigt“ ohne „raus“
+  bucht nichts (nur „raus“ ist beauftragt). Lesprobe der Standabfrage gegen den echten Shop (nur lesend): 3 offene
+  Bestellungen „buchbar“, die 2 zurückgehaltenen „aufhebbar“.
+  `dashboard:test` und `npm test` grün (nach Rebase auf `main`), Guards, `validate --static` und `secret:scan` PASS.
+  `dashboard:pruefen` 22 Ansichten × 5 Breiten = 110 × OK, 0 px Überlauf; `--rollen` bei 390/1440 px 98 × OK
+  (Inhaber 44, Mitarbeiter 28, „lesen“ 26). Klickstrecke gegen die Datenkopie mit
+  Shopify-Attrappe (nie echter Shop): Musterbestellung mit 3 Artikeln, 1 abgewählt, Sendungsnummer + GLS → 1 Buchung
+  mit 2 Zeilen, Mail an, Sendung GLS; Rest danach → 1 Buchung mit 1 Zeile; nächster Schritt „Muster sind unterwegs
+  zum Kunden“. Einkauf in der Prüf-Instanz ohne Zugang: 1 von 3 vorgewählt, rote Rückmeldung „… kein Zugang …“,
+  1 rote Zeile + 1 Knopf „In Shopify buchen“ an der Position; Nachholen aus der Kundenakte → 1 Buchung, rote Zeilen
+  1 → 0. Handy 390 px: Dialog 390 px breit, 0 px Überlauf, Esc schließt, Mail abgewählt → Buchung ohne Mail;
+  „Bitte mindestens einen Artikel ankreuzen“ steht bei 14–55 px, der Dialog beginnt bei 229 px (vorher lag ein
+  Hinweis über dem Häkchen). 0 JS-Fehler.
+- **Risiken/Annahmen:** Die Buchung schickt dem Kunden eine echte Mail – deshalb das Fenster statt eines Ein-Klick-
+  Knopfs. Ein versehentliches „raus“ lässt sich im Control Center zurücknehmen, die Sendung in Shopify und die Mail
+  nicht (der Dialog „Zurück auf offen“ sagt das). Musterbestellungen seit 21.09.: 21 in Shopify nicht erfüllt
+  (19 unerfüllt, 2 zurückgehalten), 12 davon stehen im Control Center schon auf „raus“ oder später – sie werden
+  bewusst nicht nachträglich gebucht.
+- **Nächste Stufe:** Entscheidung des Inhabers, ob die 12 alten Muster-Sendungen ohne Mail in Shopify nachgebucht
+  werden sollen (ein Sammelknopf wäre klein); Sendungsnummer später direkt aus dem Versandetikett übernehmen.

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { auftragsstatusPfad, leseAlle, setzeStatus, oeffneWieder, statusVorErledigt, filterGruppe, positionKey, STATUS_ORDER, AuftragsstatusFehler } from '../lib/auftragsstatus.mjs';
+import { auftragsstatusPfad, leseAlle, setzeStatus, oeffneWieder, statusVorErledigt, filterGruppe, positionKey, STATUS_ORDER, AuftragsstatusFehler, vermerkeShopifyVersand, setzeZurueckAufOffen } from '../lib/auftragsstatus.mjs';
 
 function tmpDir() { return fs.mkdtempSync(path.join(os.tmpdir(), 'cc-auftragsstatus-')); }
 
@@ -93,4 +93,30 @@ test('statusVorErledigt ignoriert Schritte nach dem Abschluss', () => {
   assert.equal(statusVorErledigt({ status: 'erledigt', erledigtAm: '2026-09-23T09:00:00Z' }), null);
   assert.equal(statusVorErledigt({ status: 'erledigt', bestelltAm: '2026-09-22T09:00:00Z', erledigtAm: '2026-09-23T09:00:00Z' }), 'bestellt');
   assert.equal(statusVorErledigt({ status: 'erledigt', rausAm: '2026-09-25T09:00:00Z', bestelltAm: '2026-09-22T09:00:00Z', erledigtAm: '2026-09-23T09:00:00Z' }), 'bestellt');
+});
+
+test('Versand: Sendungsnummer bei "raus", Shopify-Vermerk bleibt bei Wiederholung, neuer Versand faengt leer an', () => {
+  const file = auftragsstatusPfad(tmpDir());
+  const pos = { orderId: 'gid://shopify/Order/1', lineItemId: 'gid://shopify/LineItem/1', actor: 'test' };
+  setzeStatus(file, { ...pos, status: 'geliefert' });
+  const e = setzeStatus(file, { ...pos, status: 'raus', sendungsnummer: 'N1', versanddienst: 'GLS' });
+  assert.deepEqual([e.sendungsnummer, e.versanddienst], ['N1', 'GLS']);
+  assert.equal(setzeStatus(file, { ...pos, status: 'bestellt', sendungsnummer: 'X' }).sendungsnummer, 'N1', 'nur bei "raus"');
+  vermerkeShopifyVersand(file, { ...pos, vermerk: { status: 'gebucht', fulfillmentId: 'gid://shopify/Fulfillment/9', kundeBenachrichtigt: true, am: '2026-10-13T10:00:00Z' } });
+  assert.equal(leseAlle(file)[positionKey(pos.orderId, pos.lineItemId)].shopifyVersand.status, 'gebucht');
+  // Wechsel von "bestellt" auf "raus" ist ein neuer Versand: alter Vermerk weg.
+  const neu = setzeStatus(file, { ...pos, status: 'raus' });
+  assert.equal(neu.shopifyVersand, undefined);
+  assert.equal(neu.sendungsnummer, null);
+  // Zweites "raus" auf derselben Sendung: Vermerk bleibt.
+  vermerkeShopifyVersand(file, { ...pos, vermerk: { status: 'gebucht' } });
+  assert.equal(setzeStatus(file, { ...pos, status: 'raus' }).shopifyVersand.status, 'gebucht');
+  // Erledigt und zurueck auf raus (Korrektur): Vermerk bleibt.
+  setzeStatus(file, { ...pos, status: 'erledigt' });
+  assert.equal(setzeStatus(file, { ...pos, status: 'raus' }).shopifyVersand.status, 'gebucht');
+  // Zurueck auf offen: Vermerk wandert in den Verlauf.
+  const offen = setzeZurueckAufOffen(file, { ...pos, notiz: 'Versehen' });
+  assert.equal(offen.shopifyVersand, undefined);
+  assert.equal(offen.verlauf.at(-1).vorher.shopifyVersand.status, 'gebucht');
+  assert.equal(vermerkeShopifyVersand(file, { orderId: 'gid://shopify/Order/2', lineItemId: 'gid://shopify/LineItem/2', vermerk: { status: 'gebucht' } }), null, 'unbekannte Position: nichts angelegt');
 });

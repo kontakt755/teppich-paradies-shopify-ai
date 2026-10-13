@@ -11,6 +11,7 @@
 
 import { kundenSchluessel } from './kundensuche.mjs';
 import { positionKey, STATUS_ORDER, STATUS_LABEL } from './auftragsstatus.mjs';
+import { versandNachzuholen, versandGebucht } from './versand.mjs';
 
 const NICHT_HINTERLEGT = null;
 
@@ -150,11 +151,25 @@ export function bestellzeile(auftrag, { statusAlle = {}, rueckrufeAlle = {} } = 
     fertig: f.stufe === 'erledigt' || f.gesamt === 0,
     wasFehlt: wasFehlt(auftrag, rueckruf?.status, f),
     // Im Auftragsfluss schon beim Kunden, in Shopify aber ohne Sendung: nur ein Hinweis.
-    versandHinweis: auftrag.offen && f.minStufe >= STATUS_ORDER.indexOf('raus') + 1
-      && ['UNFULFILLED', 'PARTIALLY_FULFILLED'].includes(String(auftrag.erfuellt).toUpperCase())
-      ? 'In Shopify noch nicht als versendet gebucht' : null,
+    versandHinweis: versandHinweis(auftrag, f, statusAlle),
+    // Stand der Versandbuchung durch das Control Center (seit 13.10.): "nachholen", "gebucht" oder null.
+    shopifyVersandVermerk: versandNachzuholen(auftrag, statusAlle) ? 'nachholen' : versandGebucht(auftrag, statusAlle) ? 'gebucht' : null,
     auftrag,
   };
+}
+
+/**
+ * Hinweis, wenn der Auftragsfluss "raus" sagt, Shopify aber keine Sendung kennt. Seit 13.10.
+ * bucht "raus" selbst in Shopify (operations/lib/versand.mjs): ist das laut Vermerk geschehen,
+ * entfaellt der Hinweis, auch wenn der Bestellexport noch den Stand von vorher zeigt. Ist die
+ * Buchung gescheitert, sagt der Hinweis das - nachholen laesst sie sich in der Zeitleiste.
+ */
+function versandHinweis(auftrag, f, statusAlle) {
+  if (!auftrag.offen) return null;
+  // Auch bei Teillieferung: eine gescheiterte Buchung ist eine Aufgabe, kein blosser Hinweis.
+  if (versandNachzuholen(auftrag, statusAlle)) return 'Versand in Shopify nicht gebucht – in der Bestellung nachholen';
+  if (f.minStufe < STATUS_ORDER.indexOf('raus') + 1 || versandGebucht(auftrag, statusAlle)) return null;
+  return ['UNFULFILLED', 'PARTIALLY_FULFILLED'].includes(String(auftrag.erfuellt).toUpperCase()) ? 'In Shopify noch nicht als versendet gebucht' : null;
 }
 
 /**

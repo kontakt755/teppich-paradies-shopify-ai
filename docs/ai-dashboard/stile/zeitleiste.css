@@ -21,6 +21,13 @@
 .zl-next.nachhaken .zl-titel { color: var(--warn); }
 .zl-next.problem { border-color: var(--crit); background: var(--crit-soft); }
 .zl-next.problem .zl-titel { color: var(--crit); }
+/* Versand in Shopify gescheitert: rot, weil jemand handeln muss (Kunde hat keine Versandmail). */
+.zl-versand { margin: 10px 0 0; padding: 10px 12px; border: 1px solid var(--crit); border-radius: 8px; background: var(--crit-soft); display: grid; gap: 8px; justify-items: start; }
+.zl-next .zl-versand p { color: var(--text); overflow-wrap: anywhere; }
+.zl-versand b { color: var(--crit); }
+/* Versand-Dialog (ansichten/einkauf/versand.mjs): Nummer und Dienst nebeneinander, am Handy untereinander. */
+.vs-sendung { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 10px; }
+@media (max-width: 560px) { .vs-sendung { grid-template-columns: minmax(0, 1fr); } }
 .zl-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .zl-knoepfe .btn { min-height: 44px; padding-inline: 18px; font-weight: 600; }
 .zl-anders { display: inline-block; margin-top: 10px; padding: 8px 0; min-height: 36px; background: none; border: 0; cursor: pointer; font-size: .875rem; color: var(--text-2); text-decoration: underline; text-underline-offset: 3px; }

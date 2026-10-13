@@ -33,6 +33,8 @@
  *
  * Klicktests (Status setzen, Dialoge) gehoeren ebenfalls gegen diese Kopie - mit --offen
  * bleibt die Instanz dafuer stehen; Adresse und Passwort stehen dann in der Ausgabe.
+ * Die Instanz hat nie einen Shopify-Zugang (auch nicht aus .env.local): Versand buchen und
+ * Sonderposten abbuchen melden dort "kein Zugang", statt den echten Shop zu veraendern.
  */
 
 import { spawn, spawnSync } from 'node:child_process';
@@ -155,9 +157,13 @@ async function main() {
   // Prozesses ueberleben (eine Pipe zum beendeten Elternprozess wuerde ihn mitreissen).
   const logDatei = path.join(daten, 'server.log');
   const logFd = fs.openSync(logDatei, 'a');
+  // Die Pruef-Instanz spricht nie mit dem echten Shop: ein Klick auf "An Kunden raus" bucht
+  // sonst echte Sendungen samt Versandmail, "Im Laden verkauft" echten Bestand. Ohne Zugang
+  // melden beide Aktionen "kein Zugang" - der Schritt im Control Center laesst sich trotzdem pruefen.
+  const ohneShopify = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^SHOPIFY_(ADMIN_TOKEN|CLIENT_ID|CLIENT_SECRET)$/.test(k)));
   const server = spawn(process.execPath, [path.join(REPO, 'scripts/serve-dashboard.mjs')], {
     cwd: REPO,
-    env: { ...process.env, PORT: String(port), TP_DASHBOARD_HOST: '127.0.0.1', TP_PRIVAT_DIR: daten, TP_DASHBOARD_PASSWORT: passwort },
+    env: { ...ohneShopify, TP_ENV_LOCAL: path.join(daten, 'kein-shopify-zugang.env.local'), PORT: String(port), TP_DASHBOARD_HOST: '127.0.0.1', TP_PRIVAT_DIR: daten, TP_DASHBOARD_PASSWORT: passwort },
     stdio: ['ignore', logFd, logFd],
     detached: args.offen,
   });

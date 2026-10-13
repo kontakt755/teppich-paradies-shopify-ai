@@ -22,6 +22,7 @@ import { syncNow, aktualisierenNow } from './bausteine/aktualisierung.mjs';
 import { openPalette, closePalette } from './bausteine/palette.mjs';
 import { openFehlerMelden } from './bausteine/fehler-melden.mjs';
 import { einkaufKlickStatus, einkaufKlickDialoge } from './ansichten/einkauf/auftragsfluss.mjs';
+import { versandKlick } from './ansichten/einkauf/versand.mjs';
 import { einkaufKlickLieferanten } from './ansichten/einkauf/lieferanten.mjs';
 import { einkaufKlickMusterlager } from './ansichten/einkauf/musterlager.mjs';
 import { lexikonKlick } from './ansichten/lexikon.mjs';
@@ -72,6 +73,8 @@ export function bindEvents() {
     if (act) { const t = state.tasks.find(x => x.number === Number(act.dataset.task)); if (t) openActionDialog(t, act.dataset.act); return; }
     const dec = e.target.closest('[data-decide]');
     if (dec) { const t = state.tasks.find(x => x.number === Number(dec.dataset.task)); if (t) openActionDialog(t, dec.dataset.decide); return; }
+    // Vor einkaufKlickStatus: "raus" oeffnet den Versand-Dialog statt sofort zu setzen.
+    if (versandKlick(e)) return;
     if (einkaufKlickStatus(e)) return;
     if (einkaufKlickLieferanten(e)) return;
     if (einkaufKlickMusterlager(e)) return;

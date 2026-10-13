@@ -314,7 +314,9 @@ den Workflow mit Gates). Das Control Center schreibt ausschließlich Labels, Ass
 **Einzige Ausnahme seit 2026-10-08:** „Im Laden verkauft“ in der Ansicht Sonderposten setzt den Bestand
 genau eines Sonderpostens von 1 auf 0 und schreibt dessen `sonderposten.verkauft_*`-Felder (Abschnitt 13).
 Seit 2026-10-12 zieht derselbe Knopf bei einer Restrolle die verkaufte Länge × Rollenbreite (ganze m²)
-vom Bestand ab (Abschnitt 13, „Restrollen“).
+vom Bestand ab (Abschnitt 13, „Restrollen“). **Seit 2026-10-13** bucht „An Kunden raus“ die Sendung der
+betroffenen Positionen in Shopify, und Shopify schickt die Versandmail (Abschnitt 17). Beide Schreibwege
+stehen auf der `write`-Liste: Rolle „lesen“ bekommt 403.
 
 ## 6. Migrationsstrategie (keine destruktiven Schritte)
 
@@ -332,8 +334,9 @@ ist überholt: Shopify-Daten kommen als lokaler Export bzw. live (Abschnitte 8�
 gibt es seit 2026-09-24 (1e). Weiterhin **kein** Ziel:
 
 - Google Ads und GA4 im Control Center (erst nach einer Sichtbarkeitsentscheidung; Systemzustand nennt das).
-- Schreiben nach Shopify außer dem Ladenverkauf von Sonderposten (Abschnitt 13) – Preise, Produkte, Bestellungen
-  und Versand bleiben im Shopify-Admin bzw. im Workflow mit Gates.
+- Schreiben nach Shopify außer dem Ladenverkauf von Sonderposten (Abschnitt 13) und der Versandbuchung bei
+  „An Kunden raus“ (Abschnitt 17) – Preise, Produkte und Bestellungen bleiben im Shopify-Admin bzw. im Workflow
+  mit Gates.
 - KI-Automatik mit Schreibzugriff.
 - Ein zweiter Aufgabenspeicher neben GitHub Issues (Abschnitt 1); Betriebsdaten liegen nur lokal unter
   `$TP_PRIVAT_DIR`.
@@ -637,7 +640,9 @@ Zeitleiste abgeschlossen, bleibt nur, was sonst fehlt (Maßprüfung, Großhändl
 Auftragsfluss auf „An Kunden raus“, Shopify kennt aber keine Sendung, heißt es nur noch als Hinweis „In
 Shopify noch nicht als versendet gebucht“ – in der Fallkarte, als `versandHinweis` der Bestellzeile und in der
 Spalte „Versand“ der Bestellliste („in Shopify nicht gebucht“); „Noch nicht versendet“ unter „Was fehlt“
-entfällt dann. In Shopify wird nichts geschrieben.
+entfällt dann. Seit 2026-10-13 bucht „raus“ selbst in Shopify (Abschnitt 17): mit Vermerk „gebucht“ entfällt
+der Hinweis, auch wenn der Bestellexport noch den alten Stand zeigt; ist die Buchung gescheitert, heißt er
+„Versand in Shopify nicht gebucht – in der Bestellung nachholen“.
 
 ## 10. Datenaktualisierung (seit 2026-09-23)
 
@@ -938,3 +943,78 @@ Befunde einer Prüfung am 2026-10-12, alle mit Test (`tests/robustheit.test.mjs`
   zählt eine Ansicht, die nach 6 s noch „Lade …“ zeigt, als `FEHL`.
 - **Handy.** Der Fuß des „Mehr“-Blatts (Datenstand, Fehler melden, Passwort, Abmelden) bleibt unten
   stehen, zweispaltig; Rückmeldungen erscheinen bei offenem Blatt oben statt darüber.
+
+## 17. „An Kunden raus“ bucht den Versand in Shopify (seit 2026-10-13)
+
+Inhaber 2026-10-13 (Werkbank w-079): Wird im Control Center „An Kunden raus“ gesetzt, bucht Shopify die
+Erfüllung der betroffenen Positionen, und der Kunde bekommt die Versandmail von Shopify. Teillieferungen und
+Musterbestellungen genauso. Code: `operations/lib/versand.mjs` (Shopify), `versandBuchen()` in
+`scripts/dashboard-api.mjs` (Ablage, Protokoll), Dialog `ansichten/einkauf/versand.mjs`, Regeln ohne DOM
+`lib/versand.mjs`.
+
+**Dialog statt Ein-Klick.** Weil der Klick jetzt eine Mail an den Kunden auslöst, öffnet „Als raus zum Kunden
+markieren…“ (Einkauf), „Muster sind verschickt…“/„An Kunden raus…“ (Zeitleiste), „An Kunden raus…“ in der
+Bestellliste (Kunden › Bestellungen) und „raus“ unter „Etwas anderes ist passiert …“ den Dialog „An Kunden raus“: Artikel, die noch nicht raus sind, als Häkchen (aus dem Einkauf nur
+die angeklickte Position vorgewählt; Eigenleistungen wie Kettelservice gehen mit der letzten Ware mit), optional
+Sendungsnummer und Versanddienst (Shopify-Namen, damit Shopify den Verfolgungslink baut; der Dienst wird je Gerät
+gemerkt), Häkchen „Kunde bekommt die Versandmail von Shopify“ (vorab an; aus bei persönlich vorbeigebrachten Mustern
+und bei einer Versandart mit „Abholung“). Ist die angeklickte Position im Browser-Stand nicht mehr offen, gilt
+genau sie – nie eine andere und nie die ganze Bestellung. Gesendet wird `aktion: "schritt", schritt: "raus", lineItemIds, versand: {sendungsnummer, versanddienst,
+benachrichtigen}` an `POST /api/einkauf/auftragsstatus`.
+
+**Einzelweg ohne Dialog.** `POST /api/einkauf/auftragsstatus` mit `{orderId, lineItemId, status: "raus"}` (eine
+Position, z. B. eine noch zwischengespeicherte alte Oberfläche in einer Schleife) bucht **nicht** sofort – sonst
+gäbe es je Artikel eine Buchung und eine Mail. Er setzt den Vermerk „ausstehend“; „In Shopify buchen“ bucht dann
+alle wartenden Artikel der Bestellung als ein Paket.
+
+**Ablauf im Server.** Erst der lokale Schritt (die Ware ist raus, das gilt immer), dann die Buchung:
+
+1. Gebucht werden nur Positionen, die **vor** dem Klick noch nicht „raus“ waren. Die Korrektur von „erledigt“
+   zurück auf „raus“ bucht nichts; Positionen mit Vermerk „gebucht“/„bereits“ werden nie erneut versucht.
+2. Buchungen derselben Bestellung laufen im Prozess nacheinander (`nacheinander()`); zusammen mit dem frischen
+   Lesen der offenen Menge bucht ein doppelter Klick nie doppelt.
+3. `bucheVersand()`: Bestellung frisch lesen (Fulfillment Orders), je Position einordnen (buchbar, schon
+   erfüllt, zurückgehalten, nicht buchbar; abgeschlossene Fulfillment Orders zählen nie als offen; ein Artikel an
+   zwei Standorten bleibt Handarbeit; eine nicht vollständig gelesene Bestellung bucht gar nichts). Zurückhaltung
+   „Bestand fehlt“ (`INVENTORY_OUT_OF_STOCK`, bei Mustern der Normalfall – am 13.10. bei 2 von 21 offenen
+   Musterbestellungen) wird nach ID aufgehoben, und zwar für die ganze Fulfillment Order: bei einer Teillieferung
+   werden die übrigen Muster dort ebenfalls buchbar (bewusst; nichts versendet sich davon allein). Andere Gründe
+   (Zahlung, Betrugsverdacht, Adresse, von Hand) bleiben. Ob die Aufhebung gewirkt hat, zeigt erst das erneute
+   Lesen. Dann `fulfillmentCreate` je Standort mit genau diesen Zeilen und ihrer offenen Menge, `notifyCustomer`,
+   `trackingInfo`. Jeder Aufruf hat ein Zeitlimit von 25 s. Kommt keine Antwort, entscheidet erneutes Lesen
+   (gebucht / nicht angekommen / unklar; nach einem Zeitlimit nie „nicht angekommen“, weil Shopify noch
+   verarbeiten kann). Gegenprobe durch erneutes Lesen.
+4. Ergebnis je Position als `shopifyVersand` in `auftragsstatus.json` (`status`: gebucht, bereits, fehler,
+   unklar, uebersprungen; `grund`, `meldung`, `am`, `fulfillmentId`, `kundeBenachrichtigt`), Sendungsnummer als
+   `sendungsnummer`/`versanddienst`, die Mail-Wahl als `versandMail` (ohne Angabe: ja, außer bei persönlich
+   vorbeigebrachten Mustern). „uebersprungen“ heißt endgültig (storniert, Testbestellung – auch laut Shopify –,
+   Position nicht mehr in der Bestellung): kein roter Hinweis, kein Nachholen. Protokoll: „Versand in Shopify gebucht“ (mit Sendung, Mail ja/nein) bzw.
+   „… nicht gebucht“/„… unklar“ samt Grund; Fehlschläge zusätzlich im Dienstprotokoll (`[versand]`).
+5. Antwort mit `shopify: {status, meldung, …}`; die Oberfläche meldet z. B. „Als verschickt eingetragen · In
+   Shopify als versendet gebucht – der Kunde bekommt die Versandmail.“ oder rot „… – aber Versand nicht in
+   Shopify gebucht: …“.
+
+**Nicht gebucht** werden Testbestellungen (Vermerk „uebersprungen“) und stornierte Bestellungen. „Kunde hat
+Muster“ bei Mustern aus eigenem Bestand setzt „raus“ mit: gebucht wird ohne Versandmail (der Kunde hat sie
+schon); die Rückmeldung nennt das Ergebnis der Buchung. **Nichts rückwirkend:** Positionen, die vor dem 13.10. auf „raus“ standen, tragen keinen
+Vermerk und werden nie gebucht – dort bleibt der Hinweis „In Shopify noch nicht als versendet gebucht“.
+
+**Nachholen.** Scheitert die Buchung (Recht fehlt, kein Zugang, Netz, zurückgehalten), steht der Schritt
+trotzdem. Die Zeitleiste zeigt rot „Versand nicht in Shopify gebucht – …“ mit „In Shopify buchen“, die
+Einkaufsposition dasselbe; `aktion: "versandNachholen"` bucht genau die Positionen mit Vermerk „fehler“ oder
+„unklar“ (sonst 409), je Sendung (Nummer, Dienst, Mail-Wahl) eine eigene Buchung, mit der damals getroffenen
+Mail-Wahl.
+
+**Recht.** `write_fulfillments` und `write_merchant_managed_fulfillment_orders` (`SCHREIB_BEREICHE` in
+`sync/zugang.mjs`); beide sind erteilt (Lesprobe 2026-10-13 über `currentAppInstallation.accessScopes`).
+Kein Vorab-Abgleich mit der beim Start gemeldeten Rechteliste (die veraltet im laufenden Dienst) – Shopify
+lehnt ohne Recht vor jeder Änderung ab. Der Dienst hält seinen Token im Speicher: nach einer Freischaltung neu
+starten. Fehlen sie, bucht der Server nichts und sagt „dem Control Center fehlt das Shopify-Recht
+write_merchant_managed_fulfillment_orders … Bis dahin in Shopify die Bestellung öffnen und „Artikel versenden“
+wählen.“
+
+**Tests und Prüfwerkzeug** sprechen nie echtes Shopify: `operations/tests/versand-attrappe.mjs` führt
+Fulfillment Orders mit offener Menge. `dashboard:pruefen` startet seine Instanz seit 2026-10-13 ausdrücklich
+ohne Shopify-Zugang (`SHOPIFY_*` entfernt, `TP_ENV_LOCAL` ins Leere) – ein Klick auf „raus“ in der Kopie bucht
+nie eine echte Sendung.
+

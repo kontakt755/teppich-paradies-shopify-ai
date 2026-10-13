@@ -124,8 +124,11 @@ test('pruefeQuellen: je Quelle ok oder Meldung mit Handlung, wirft nie', async (
 
 test('Schreibrechte fuer Sonderposten: fehlendeSchreibBereiche und wasTun nennen write_inventory', async () => {
   const { fehlendeSchreibBereiche, SCHREIB_BEREICHE } = await import('../sync/zugang.mjs');
-  assert.deepEqual(fehlendeSchreibBereiche('read_inventory,read_locations,write_products'), ['write_inventory']);
+  assert.deepEqual(fehlendeSchreibBereiche('read_inventory,read_locations,write_products,write_fulfillments,write_merchant_managed_fulfillment_orders'), ['write_inventory']);
   assert.deepEqual(fehlendeSchreibBereiche(Object.keys(SCHREIB_BEREICHE).join(',')), []);
+  // Versand (seit 2026-10-13): beide Rechte stehen in der Liste und werden als fehlend gemeldet.
+  assert.deepEqual(fehlendeSchreibBereiche('write_inventory,write_products'), ['write_fulfillments', 'write_merchant_managed_fulfillment_orders']);
+  assert.match(wasTun('Access denied for fulfillmentCreate field. Required access: `write_merchant_managed_fulfillment_orders` access scope.'), /Schreibrecht write_merchant_managed_fulfillment_orders \(Versand/);
   const tun = wasTun('Shopify GraphQL: Access denied for inventorySetQuantities field. Required access: `write_inventory` access scope.');
   assert.match(tun, /Schreibrecht write_inventory/);
   assert.match(tun, /Inhaber/);

@@ -15,6 +15,7 @@ import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { einkauf, AF_STATUS_LABEL, setzeAuftragsstatus } from '../einkauf/auftragsfluss.mjs';
 import { kunden, telLink, kundenAuftragKarte, ZAHLUNG_TEXT, VERSAND_TEXT, statusText } from './gemeinsam.mjs';
 import { zeitleisteBlock, auftragAusZeile, zeitleisteKlick } from './zeitleiste.mjs';
+import { oeffneVersandDialog } from '../einkauf/versand.mjs';
 import { bestellinhalt } from '../../lib/bestellinhalt.mjs';
 
 /** Setzt den Auftragsfluss-Status fuer ALLE Positionen einer Bestellung auf einmal (Bereich Kunden/Bestellungen). */
@@ -116,7 +117,7 @@ function bestellzeileAktionen(z) {
   const lesend = istNurLesend();
   const af = ['bestellt', 'geliefert', 'raus'];
   return `<div class="btn-row">
-    ${lesend ? '' : af.map(s => `<button type="button" class="btn btn-sm btn-ghost" data-bq-af="${esc(z.orderId)}" data-bq-af-status="${s}" title="${esc(`Alle Artikel dieser Bestellung auf „${AF_STATUS_LABEL[s]}“`)}">${esc(AF_STATUS_LABEL[s])}</button>`).join('')}
+    ${lesend ? '' : af.map(s => `<button type="button" class="btn btn-sm btn-ghost" data-bq-af="${esc(z.orderId)}" data-bq-af-status="${s}" title="${esc(`Alle Artikel dieser Bestellung auf „${AF_STATUS_LABEL[s]}“`)}">${esc(AF_STATUS_LABEL[s])}${s === 'raus' ? '…' : ''}</button>`).join('')}
     ${!lesend && !z.fertig && z.anzahlArtikel ? `<button type="button" class="btn btn-sm btn-primary" data-bq-fertig="${esc(z.orderId)}">Kunde fertig …</button>` : ''}
     ${z.beratungOffen ? `<a class="btn btn-sm" href="#/kunden?tab=rueckrufe">Zur Rückrufliste →</a>` : ''}
   </div>`;
@@ -297,7 +298,13 @@ export function kundenKlickBestellungen(e) {
     return true;
   }
   const bqAf = e.target.closest('[data-bq-af]');
-  if (bqAf) { e.preventDefault(); e.stopPropagation(); setzeAuftragsstatusFuerBestellung(bqAf.dataset.bqAf, bqAf.dataset.bqAfStatus); return true; }
+  if (bqAf) {
+    e.preventDefault(); e.stopPropagation();
+    // "raus" bucht in Shopify und schickt die Versandmail: ein Paket, ein Fenster - nicht je Artikel.
+    if (bqAf.dataset.bqAfStatus === 'raus') oeffneVersandDialog(bqAf.dataset.bqAf);
+    else setzeAuftragsstatusFuerBestellung(bqAf.dataset.bqAf, bqAf.dataset.bqAfStatus);
+    return true;
+  }
   const bqFertig = e.target.closest('[data-bq-fertig]');
   if (bqFertig) { e.preventDefault(); e.stopPropagation(); kundeFertigSetzen(bqFertig.dataset.bqFertig); return true; }
   return false;
