@@ -236,3 +236,15 @@ test('Muster mit archivierter Quelle archiviert (Auslaufregel) ist kein Befund; 
   });
   assert.deepEqual(regeln(pruefeImporte({ produkte: [aktiv, weg], seit: '2026-10-01', handles: [weg.handle] })), ['fehler:muster-nicht-veroeffentlicht', 'hinweis:muster-status']);
 });
+
+test('archivierte Produkte und das Sammelmuster kostenloses-muster sind kein Befund', () => {
+  const alt = produkt({ createdAt: '2026-10-07T08:00:00Z', status: 'ARCHIVED', onlineStoreUrl: null, mediaCount: 0, collections: [], category: 'Uncategorized' });
+  alt.variants[0].price = '0.00';
+  const sammel = produkt({ handle: 'kostenloses-muster', productType: 'Musterservice', status: 'UNLISTED', createdAt: '2026-10-07T08:00:00Z',
+    variants: [{ id: 'k', sku: 'TP-MUSTER-000', title: 'Default Title', price: '0.00', image: null, selectedOptions: [], custom: {} }] });
+  const test = produkt({ createdAt: '2026-10-07T08:00:00Z', status: 'UNLISTED', tags: ['test'], collections: [] });
+  assert.deepEqual(pruefeImporte({ produkte: [...vergleich(), alt, sammel, test], seit: '2026-10-01' }).befunde, []);
+  // Ein aktives Produkt mit Tag test ist fuer Kunden sichtbar - das bleibt ein Befund.
+  const sichtbar = produkt({ createdAt: '2026-10-07T08:00:00Z', tags: ['test'], collections: [] });
+  assert.deepEqual(regeln(pruefeImporte({ produkte: [...vergleich(), sichtbar], seit: '2026-10-01' })), ['fehler:kategorie']);
+});
