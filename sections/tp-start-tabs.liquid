@@ -60,6 +60,9 @@
   @media (max-width: 767px) {
     .tp-tabs__list { overflow-x: auto; flex-wrap: nowrap; margin: 0 calc(-1 * var(--tp-pad)); padding: 0 var(--tp-pad) 2px; scrollbar-width: none; }
     .tp-tabs__list::-webkit-scrollbar { display: none; }
+    /* Reiter scrollen statt schrumpfen: sonst brach "Leisten & Zubehoer" auf
+       drei Zeilen um, und alle Reiter wurden 92 px hoch. */
+    .tp-tabs__tab { flex-shrink: 0; white-space: nowrap; }
   }
 {% endstylesheet %}
 
