@@ -83,7 +83,9 @@ function postenZeile(x, namen) {
   const menge = p.bestellmenge?.menge === 'UNGEKLAERT' ? 'Menge ungeklärt' : p.bestellmenge?.text;
   // Bei Mustern auch der Ort: so sieht man, ob der Kunde in der Naehe wohnt (vorbeibringen).
   const ort = p.istMuster ? kundeUndOrt(p.orderId).ort : '';
-  const teile = [p.farbe, menge, namen.get(p.orderId), ort, p.orderName].filter(v => v && v !== 'UNGEKLAERT');
+  // Aus dem Musterlager: wo es liegt - das ist beim Verschicken die erste Frage.
+  const lager = p.musterLager && !afEintragFuer(p)?.status ? `Musterlager${p.musterLager.ort ? ` ${p.musterLager.ort}` : ''}` : '';
+  const teile = [p.farbe, menge, namen.get(p.orderId), ort, p.orderName, lager].filter(v => v && v !== 'UNGEKLAERT');
   return `<li class="lf-posten"><div class="lf-posten-text"><div class="t">${esc(anzeigeWert(p.titel))}</div><div class="s">${esc(teile.join(' · '))}</div></div>${warteChip(x)}</li>`;
 }
 

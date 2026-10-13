@@ -58,7 +58,10 @@ function afStatusZelle(p) {
   const eigen = !status && musterEigen(p);
   if (eigen) {
     const wahl = lesend ? '' : `<div style="margin-top:6px"><button type="button" class="btn btn-sm btn-ghost" data-muster-herkunft="${esc(p.orderId)}" ${daten}>Woher? ändern…</button></div>`;
-    return `<div class="small muted">Stand: ${esc(MUSTER_HERKUNFT_KURZ[p.musterHerkunft] || 'aus dem eigenen Musterlager')}</div><div class="small muted">Nicht beim Lieferanten bestellen</div>${wahl}`;
+    const woher = p.musterLager && p.musterHerkunft !== 'eigen_vorbei'
+      ? `aus dem Musterlager${p.musterLager.ort ? ` · ${p.musterLager.ort}` : ''}`
+      : MUSTER_HERKUNFT_KURZ[p.musterHerkunft] || 'aus dem eigenen Musterlager';
+    return `<div class="small muted">Stand: ${esc(woher)}</div><div class="small muted">Nicht beim Lieferanten bestellen</div>${wahl}`;
   }
   const naechster = afNaechsterStatus(status);
   const btn = naechster ? `<button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="${naechster}" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}">${esc(AF_AKTIONS_LABEL[naechster])}</button>`
@@ -66,7 +69,9 @@ function afStatusZelle(p) {
   // Der Stand ist ein ruhiger Text, kein zweiter Knopf - deshalb kein "badge status" mehr.
   const zusatz = status ? ` · ${fmtDateTime(eintrag.aktualisiertAm)} · @${esc(eintrag.aktualisiertVon)}`
     : eintrag?.wiederGeoeffnetAm ? ` · wieder geöffnet ${fmtDateTime(eintrag.wiederGeoeffnetAm)} · @${esc(eintrag.wiederGeoeffnetVon)}` : '';
-  const stand = `<div class="small muted">Stand: ${esc(status ? AF_STATUS_LABEL[status] : 'Noch nicht bestellt')}${zusatz}</div>`;
+  const stand = `<div class="small muted">Stand: ${esc(status ? AF_STATUS_LABEL[status] : 'Noch nicht bestellt')}${zusatz}</div>`
+    // Steht im Musterlager, ist aber leer bzw. aufgebraucht: deshalb wieder beim Lieferanten.
+    + (!status && p.musterLagerLeer ? `<div class="small muted">Musterlager: ${esc(p.musterLagerLeer.artLabel)} leer${p.musterLagerLeer.ort ? ` (${esc(p.musterLagerLeer.ort)})` : ''}</div>` : '');
   // Zusatzknoepfe: "Zurueck auf offen" ab jedem Schritt (Versehen), "Haben wir da" bei offenen Mustern.
   const extra = lesend ? [] : [
     status ? `<button type="button" class="btn btn-sm btn-ghost" data-af-zurueck="${esc(p.orderId)}" ${daten} title="Versehentlich gesetzt? Zurück auf „Noch zu bestellen"">Zurück auf offen…</button>` : '',

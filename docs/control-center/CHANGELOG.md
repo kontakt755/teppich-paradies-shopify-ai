@@ -950,3 +950,32 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiken/Annahmen:** Sperren wirkt je Name, nicht je einzelnem Link (wie die Kommandozeile).
 - **Nächste Stufe:** keine geplant.
 
+## 2026-10-13 · Muster einfacher: Inhalt auf einen Blick, Musterlager (#1179)
+
+- **Geändert:**
+  - *Bestellliste (Kunden › Bestellungen):* unter jeder Bestellung eine Zeile mit dem Inhalt – bei Mustern
+    Produkt, Farben und woher („aus dem Musterlager (Regal B)“, „haben wir da – vorbeibringen“), bei Ware die
+    Artikel. Reine Musterbestellungen „kostenlos“ statt „0,00 €“. Suche auch über Produkt und Farbe.
+  - *Heute:* „Muster bei … bestellen“ nennt Produkt und Farben statt „3 Positionen“; „Muster verschicken an …“
+    nennt den Lagerplatz.
+  - *Einkauf › Musterlager (neu):* Einzelmuster, Probestück 2 × 1 m, Bahn 4 m × 20 cm mit Lagerplatz einlagern
+    (Produktsuche im Lexikon, mehrere Farben auf einmal), „Ist leer“, „Wieder da…“, Bearbeiten, Herausnehmen.
+    Vorschläge „Einlagern?“ aus eingetroffenen PVC-/Linoleum-Probestücken und mehrfach bestellten Farben.
+  - *Automatik:* Offene Musterpositionen, deren Muster im Lager liegt, kommen von dort – nicht in die
+    Bestellmail, kein „Muster bestellen“-To-do. Einzelmuster zählen beim Verschicken ab (Ereignis mit
+    `lagerId` in `musterherkunft.json`). Lagerplatz an der Position im Einkauf und in der Bestellmail-Begründung.
+  - *Server:* `operations/lib/musterlager.mjs`, `GET/POST /api/einkauf/musterlager`,
+    `GET /api/einkauf/musterlager-farben`; `musterlager.json` in Sicherung und Prüfkopie.
+- **Getestet:** neu `operations/tests/musterlager.test.mjs` (13), `docs/ai-dashboard/tests/musterlager-api.test.mjs`
+  (5, inkl. Rolle „lesen“ 403 / „mitarbeiter“ 200), `tests/bestellinhalt.test.mjs` (5), `todos.test.mjs` +1;
+  `npm test` alle 7 Suiten grün, Guards und `validate --static` PASS. `dashboard:pruefen` (Heute, Einkauf,
+  Musterlager, Bestellungen bei 1440/390 px) nur OK, 0 px Überlauf. Klickstrecke gegen die Datenkopie:
+  Regalia Creme (511) als Einzelmuster 2 Stück „Regal B, Fach 3“ eingelagert → die offene Bestellung zeigt „1 aus dem
+  Musterlager (Regal B, Fach 3)“, Heute „Muster verschicken an … · aus dem Musterlager“, die zwei anderen Farben
+  weiter „bei Lieferant A bestellen“, Bestellmail nimmt Creme (511) mit Grund aus; Vorschlag Selene Taupe mit
+  vorbelegter Art „Probestück“ eingelagert; „Ist leer“ → Creme (511) wieder beim Lieferanten. 0 JS-Fehler.
+- **Risiken/Annahmen:** Zuordnung über die SKU – ein Muster ohne SKU (Sammelprodukt ohne Quellvariante) findet
+  das Lager nicht und läuft wie bisher. Probestück und Bahn zählen nicht ab; wer das letzte Stück aufbraucht,
+  muss „Ist leer“ klicken. Im gemeinsamen Zugang steht „Inhaber“ als handelnde Person im Verlauf.
+- **Nächste Stufe:** Inhaberfragen (PVC/Linoleum im Shop wieder mit Muster, wenn ein Probestück da ist;
+  Etiketten mit QR-Code; Mustergröße je Bahn); die zwei schon eingetroffenen Probestücke (PVC, Linoleum) einlagern.

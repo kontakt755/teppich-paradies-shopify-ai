@@ -310,6 +310,8 @@ function musterQuelle(item, quellMap, zuordnung) {
   const lf = lieferantFuer({ einkauf: { lieferant: vm?.einkauf?.lieferant }, grosshaendlerIdQuelle: gh.quelle }, vm, zuordnung);
   const url = vm?.einkauf?.lieferant_url;
   return { id: gh.id, quelle: gh.quelle, lieferant: lf, quellvariante: id, titel: `${n.product?.title ?? ''} – ${n.title ?? ''}`.trim(), lieferantUrl: leer(url) ? UNGEKLAERT : String(url).trim(),
+    // SKU der Quellvariante: Schluessel fuers Musterlager bei Mustern ueber das Sammelprodukt.
+    sku: leer(n.sku) ? null : String(n.sku).trim(),
     produktHandle: leer(n.product?.handle) ? null : String(n.product.handle).trim(),
     // Farbnummer der Quellvariante: die Musterbestellung beim Lieferanten nennt Artikel UND Farbe.
     farbnummer: leer(vm?.einkauf?.farbnummer) ? UNGEKLAERT : String(vm.einkauf.farbnummer).trim() };

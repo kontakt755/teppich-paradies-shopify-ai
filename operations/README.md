@@ -39,6 +39,7 @@ Grundlage: `audit/tp-operations-v3/` (02 Datenmodell, 05 Entscheidungen,
 | `lib/status.mjs` | Enum `AUFTRAG_STATUS`, Uebergaenge, `ableiten(order)` |
 | `lib/auftragsverlauf.mjs` | Zeitleiste je Auftrag (Muster-/Warenstrecke), `naechsterSchritt`, Ereignisse je Auftrag (privat, nur anhängen) |
 | `lib/musterherkunft.mjs` | Woher kommt ein Muster: Lieferant oder eigener Bestand (verschicken/vorbeibringen); privat, nur anhängen |
+| `lib/musterlager.mjs` | Musterlager (Einzelmuster, Probestück 2 × 1 m, Bahn 4 m × 20 cm, Lagerplatz); ordnet offene Musterpositionen dem Lager zu, Vorschläge zum Einlagern; privat |
 | `sync/orders.mjs` | `fetchOrdersSince`, `writeOrderState` (mit Gegenlesen) |
 
 ## Start
@@ -377,6 +378,15 @@ verschicken an <Kunde>“ mit Ort aus der Lieferadresse. In der Zeitleiste entfa
 „beim Lieferanten bestellt“ und „bei uns angekommen“; beim Vorbeibringen heißt
 `raus` „Persönlich übergeben“. Der nächste Schritt ist „Erledigt – Kunde hat Muster“
 (`kunde_hat_muster`); der Server setzt dabei die Positionen mit auf `raus`.
+
+**Musterlager.** `$TP_PRIVAT_DIR/musterlager.json`
+(`{version, eintraege: [{id, titel, farbe, handle, schluessel[], art, anzahl, ort, notiz, leer, angelegtAm/Von, geaendertAm/Von, verlauf}], entfernt: [...]}`),
+Teil von `npm run daten:sichern`. Steht der Schlüssel einer offenen Musterposition
+(SKU ohne `M-`) dort und ist nicht leer bzw. – bei Einzelmustern – noch nicht
+aufgebraucht, trägt die Position dieselben Felder wie „haben wir da“ (`musterHerkunft:
+eigen_versand`) plus `musterHerkunftQuelle: lager` und `musterLager`. Beim Verschicken
+schreibt der Server die Zuordnung als `musterherkunft`-Ereignis mit `lagerId` fest.
+Details und Endpunkte: `docs/control-center/ARCHITEKTUR.md`, Abschnitt 8b.
 
 ## Zeitleiste je Auftrag und nächster Schritt
 

@@ -62,6 +62,7 @@ docs/ai-dashboard/
   lib/todos.mjs                 To-dos und „Wer wartet auf was“ für „Heute“ – abgeleitet, nicht erfasst
   lib/sonderposten.mjs          Rückmeldung nach „Im Laden verkauft“ – sagt nur, was belegt ist (testbar ohne DOM)
   lib/muster-nachfassen.mjs     „Muster nachfassen“ für „Heute“: wer ist dran, Textvorlage füllen – Browser UND Server
+  lib/bestellinhalt.mjs         Inhalt einer Bestellung in einer Zeile (Muster mit Farben und Herkunft, Ware) – Bestellliste und To-dos
   lib/kennzahlen.mjs            „Ø je bezahlter Bestellung“ (ohne kostenlose Muster) für die Kennzahlen auf „Heute“
   stile/                        Styles je Ansicht (heute.css); app.css bleibt das gemeinsame Gerüst
   issues.json, bodenwissen.json generierte Daten, nicht im Git (.gitignore)
@@ -114,7 +115,7 @@ ansichten/
   heute.mjs          + heute/{daten,laden,muster-nachfassen}.mjs
   arbeit.mjs  freigaben.mjs  bereiche.mjs  insights.mjs  aktivitaet.mjs
   lexikon.mjs  ratgeber.mjs  hilfe.mjs  shopwache.mjs  team.mjs  fotos.mjs  sonderposten.mjs
-  einkauf.mjs        + einkauf/{auftragsfluss,bestellungen,lieferanten,produktdaten}.mjs
+  einkauf.mjs        + einkauf/{auftragsfluss,bestellungen,lieferanten,musterlager,produktdaten}.mjs
   kunden.mjs         + kunden/{gemeinsam,akte,rueckrufe,bestellungen,angebote,faelle,zeitleiste}.mjs
   organisation.mjs   + organisation/{gemeinsam,dialoge}.mjs
 ```

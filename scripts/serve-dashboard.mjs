@@ -329,7 +329,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
   // Bestelltabelle, Lexikon samt Mengenhilfe und die neuen Datenarten
   // (Kunden, Angebote, Warenkoerbe, Bestand, Erfuellung) - fehlt einer,
   // antwortet der Server 404.
-  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/muster-texte|kunden\/bestellung-fertig|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|sonderposten\/liste|sonderposten\/verkauft|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|einkauf\/musterlager|einkauf\/musterlager-farben|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/muster-texte|kunden\/bestellung-fertig|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|sonderposten\/liste|sonderposten\/verkauft|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { apiFehler(req, res, pathname, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
   // Host-Pruefung fuer JEDEN Aufruf, nicht nur fuer schreibende: sonst kann
@@ -339,7 +339,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     apiFehler(req, res, pathname, 403, { error: 'Dafür fehlt dir die Berechtigung – das macht der Inhaber.' });
     return;
   }
-  const write = simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || simple === 'kunden/fall-marke' || ['org/neu', 'org/aendern', 'org/kommentar', 'org/pruefen', 'org/analyse', 'org/liste-einfuegen', 'org/anhang', 'fotos/neu', 'social/link-neu', 'social/sperren', 'sonderposten/verkauft', 'fehler/melden'].includes(simple) || ['transition', 'assign', 'comment'].includes(taskOp);
+  const write = simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'einkauf/musterlager' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || simple === 'kunden/fall-marke' || ['org/neu', 'org/aendern', 'org/kommentar', 'org/pruefen', 'org/analyse', 'org/liste-einfuegen', 'org/anhang', 'fotos/neu', 'social/link-neu', 'social/sperren', 'sonderposten/verkauft', 'fehler/melden'].includes(simple) || ['transition', 'assign', 'comment'].includes(taskOp);
   try {
     if (write) {
       if (req.method !== 'POST') { apiFehler(req, res, pathname, 405, { error: 'POST erwartet' }); return; }
@@ -374,6 +374,10 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'einkauf/lieferant') result = api.einkaufLieferant({ id: url.searchParams.get('id') || '' });
     else if (simple === 'einkauf/bestellmail') result = api.einkaufBestellmail({ lieferant: url.searchParams.get('lieferant') || '', art: url.searchParams.get('art') || 'ware', gruppe: url.searchParams.get('gruppe') || '', ziel: url.searchParams.get('ziel') || '' });
     else if (simple === 'einkauf/auftragsstatus' && req.method === 'GET') result = api.einkaufAuftragsstatus();
+    // Musterlager: lokal, Shopify bleibt unberuehrt. POST steht in der write-Liste (Rolle "lesen": 403).
+    else if (simple === 'einkauf/musterlager' && req.method === 'GET') result = api.einkaufMusterlager();
+    else if (simple === 'einkauf/musterlager' && req.method === 'POST') result = await api.einkaufMusterlagerSetzen(await readJson(req), benutzer);
+    else if (simple === 'einkauf/musterlager-farben') result = api.einkaufMusterlagerFarben({ handle: url.searchParams.get('handle') || '' });
     else if (simple === 'einkauf/auftragsstatus' && req.method === 'POST') result = await api.einkaufAuftragsstatusSetzen(await readJson(req), benutzer);
     else if (simple === 'lexikon/liste') result = api.lexikonListe({ q: url.searchParams.get('q') || '', page: url.searchParams.get('page'), pageSize: url.searchParams.get('pageSize') });
     else if (simple === 'lexikon/produkt') result = api.lexikonProdukt(url.searchParams.get('handle') || '');

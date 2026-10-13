@@ -54,8 +54,26 @@ test('bezahlt und noch nicht bestellt: ein To-do je Lieferant und Art, mit einem
   assert.equal(ware.ton, 'warn', 'ab 3 Tagen gelb');
   assert.deepEqual(ware.knopf, { text: 'Bestellen', href: '#/einkauf?lf=A' });
   const muster = todos.find(t => /Muster bei Lieferant B/.test(t.titel));
-  assert.match(muster.kontext, /Kunde Zwei · 12 m² Muster: Testvelours/);
+  // Muster: Produkt (und Farben) statt Menge und "Muster:"-Vorsatz.
+  assert.match(muster.kontext, /Kunde Zwei · Testvelours · bezahlt/);
   for (const t of todos) assert.equal(Object.keys(t.knopf).filter(k => k !== 'text').length, 1, 'genau ein Ziel je To-do');
+});
+
+test('Muster-To-dos nennen Produkt, Farben und den Lagerplatz - ohne Klick in die Bestellung', () => {
+  const bestellen = zeile({ name: 'Kunde Drei', tage: 1, positionen: [
+    { istMuster: true, titel: 'Muster Testvelours Teppichboden 400cm', farbe: 'Sand' },
+    { istMuster: true, titel: 'Muster Testvelours Teppichboden 400cm', farbe: 'Greige' },
+  ] });
+  const lager = zeile({ name: 'Kunde Vier', tage: 1, positionen: [
+    { istMuster: true, titel: 'Muster Testlino Linoleumboden 200cm', farbe: 'Grau', musterHerkunft: 'eigen_versand', musterHerkunftQuelle: 'lager', musterLager: { id: 'ml-1', ort: 'Regal B, Fach 3', artLabel: 'Probestück 2 × 1 m' } },
+  ] });
+  const todos = leiteTodosAb({ bestellzeilen: [bestellen, lager] }, { sicht: 'laden', jetzt: JETZT });
+  const b = todos.find(t => t.art === 'bestellen');
+  assert.match(b.kontext, /Kunde Drei · Testvelours Teppichboden: Sand, Greige · bezahlt/);
+  const v = todos.find(t => t.art === 'muster_eigen');
+  assert.equal(v.titel, 'Muster verschicken an Kunde Vier');
+  assert.match(v.kontext, /Testlino Linoleumboden: Grau · aus dem Musterlager \(Regal B, Fach 3\)/);
+  assert.equal(todos.filter(t => t.art === 'bestellen').length, 1, 'Lagerware wird nicht beim Lieferanten bestellt');
 });
 
 test('unbezahlt, storniert, Test oder schon bestellt: kein Bestell-To-do', () => {
