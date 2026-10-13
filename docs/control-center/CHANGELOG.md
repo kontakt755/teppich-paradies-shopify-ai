@@ -1077,3 +1077,15 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   bewusst nicht nachträglich gebucht.
 - **Nächste Stufe:** Entscheidung des Inhabers, ob die 12 alten Muster-Sendungen ohne Mail in Shopify nachgebucht
   werden sollen (ein Sammelknopf wäre klein); Sendungsnummer später direkt aus dem Versandetikett übernehmen.
+
+## 2026-10-13 · Auslauf-Prüfung (wöchentlich)
+
+- **Geändert:** `operations/lib/auslauf.mjs` (Prüfziele aus dem Lexikon, Bewertung je Lieferant,
+  Ausfallschutz ab 5 %), `operations/scripts/auslauf-pruefen.mjs` (`npm run auslauf:pruefen`:
+  A per Schnellsuche, C/E per Produktseite, D per Headless-Browser; B nur offline),
+  LaunchAgent-Vorlage `net.teppich-paradies.auslauf` (montags 4:00), `shopwacheStatus` liefert
+  `auslauf` mit, To-do `auslauf` in der Website-Sicht (Befund rot, Ausfall/stumm gelb).
+- **Getestet:** `operations/tests/auslauf.test.mjs`, To-do-Test; Probelauf je 15 Artikel bei A/C/D/E.
+- **Risiken/Annahmen:** Archiviert wird nie automatisch – eine Störung beim Lieferanten sähe sonst
+  wie ein Massenauslauf aus. Fehlcodes je Lieferant beobachtet am 13.10. (C 500, D 410, E 404).
+- **Nächste Stufe:** neue Artikel einer Linie automatisch melden.
