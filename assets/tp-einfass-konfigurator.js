@@ -703,6 +703,13 @@
       }
     }
 
+    // Gueltiges Mass an den Befestigungs-Tipp melden (assets/tp-unterlage-vorschlag.js);
+    // null, sobald kein bestellbares Mass vorliegt.
+    function massMelden(mass) {
+      if (typeof root.dispatchEvent !== 'function' || typeof CustomEvent !== 'function') return;
+      root.dispatchEvent(new CustomEvent('tp-ek:mass', { detail: mass }));
+    }
+
     function rechnen() {
       target = aktuelleVariante();
       maxW = (target && Number(target.max_breite_cm) > 0) ? Number(target.max_breite_cm) : d.max_breite_cm;
@@ -713,11 +720,12 @@
         konfig.hidden = true;
         if (anfrage) anfrage.hidden = true;
         stand = null;
+        massMelden(null);
         return;
       }
       anfrageZeigen(f);
       nummerieren();
-      if (ANFRAGE[f]) { stand = null; return; }
+      if (ANFRAGE[f]) { stand = null; massMelden(null); return; }
 
       var rund = f === 'rund';
       laengeTeile.forEach(function (el) { el.hidden = rund; });
@@ -783,6 +791,7 @@
       // Die Kacheln rechnen mit jedem eingegebenen Mass, auch wenn es nur fuer diese
       // Kante nicht passt - dann zeigen sie, welche Kante es kann.
       kantenAktualisieren(eingegeben && !eingabeFehler ? { f: f, w: b.wert, l: l.wert } : null);
+      massMelden(gueltig ? { f: f, w: b.wert, l: l.wert } : null);
 
       var bandFehlt = bandWahl && !band;
       if (!gueltig) {
