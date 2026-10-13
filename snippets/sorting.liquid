@@ -16,6 +16,13 @@
     if collection.all_types contains 'Laminat' or collection.all_types contains 'Parkett' or collection.all_types contains 'Kork' or collection.all_types contains 'Kautschukboden' or collection.all_types contains 'Klickvinyl' or collection.all_types contains 'Klebevinyl'
       assign tp_price_sort_blocked = true
     endif
+    # Teppichfliesen tragen die Produktart "Teppichboden" wie Rollenware, werden
+    # aber in Paketen verkauft: Shopify sortiert nach Paketpreis, die Karte zeigt
+    # EUR/m2 - "Preis aufsteigend" wirkte ungeordnet (84,00 -> 126,50 -> 31,50).
+    assign tp_paket_kollektionen = 'teppichfliesen,teppichfliesen-50x50,teppichfliesen-nadelfilz,teppichplanken,auslauf-teppichfliesen' | split: ','
+    if tp_paket_kollektionen contains collection.handle
+      assign tp_price_sort_blocked = true
+    endif
   endif
   assign tp_sort_options = results.sort_options
   assign default_sort_by = results.default_sort_by
