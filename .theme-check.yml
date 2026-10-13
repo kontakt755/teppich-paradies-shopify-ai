@@ -6,9 +6,10 @@ ignore:
   # Benachrichtigungsvorlage und benutzt deren Objekte (name, line_items,
   # customer ...). Theme-Check kennt die nicht und meldet sie reihenweise als
   # UndefinedObject - ein Fehlalarm, der sonst jeden Deploy blockiert.
-  - domains/**
-  - domains/*
-  - domains/**/*
+  # Das Muster muss mit / beginnen: "domains/**" oder "**/domains/**" greifen
+  # in theme-check nicht (Fehleranalyse 13.10.: 58 Fehlalarme, darunter die
+  # LiquidComplexity der Bestellmail, die "npm run qa" auf FAIL setzte).
+  - "/domains/**"
 
 JSONMissingBlock:
   # Lokal grundsaetzlich nicht aufloesbar, zwei Ursachen:

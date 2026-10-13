@@ -1089,3 +1089,13 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiken/Annahmen:** Archiviert wird nie automatisch – eine Störung beim Lieferanten sähe sonst
   wie ein Massenauslauf aus. Fehlcodes je Lieferant beobachtet am 13.10. (C 500, D 410, E 404).
 - **Nächste Stufe:** neue Artikel einer Linie automatisch melden.
+
+## 2026-10-13 · Auslauf-Prüfung: Neuheiten bei Lieferant A
+
+- **Geändert:** `operations/lib/auslauf.mjs` (`artikelStamm`, `neuheitenZiele`, `neueArtikel`,
+  `neuSeitVorlauf`), `auslauf-pruefen.mjs` sucht je Artikelstamm alle Ergebnisseiten der
+  Schnellsuche ab (`--ohne-neuheiten` schaltet das ab), To-do `neuheiten` in der Website-Sicht.
+- **Getestet:** Einheitentests; Probelauf mit 15 Stämmen (3 Kandidaten, alle plausibel).
+- **Risiken/Annahmen:** Gemeldet wird nur, was seit dem letzten Lauf dazukam – der erste Lauf ist
+  Grundbestand. Fällt die Suche aus (über 5 %), bleibt der Vorlauf stehen.
+- **Nächste Stufe:** Grundbestand einmal sichten (bewusst nicht geführt oder anlegen?).

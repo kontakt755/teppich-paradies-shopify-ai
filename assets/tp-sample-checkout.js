@@ -191,10 +191,17 @@
   // Die Produktseite haengt die dort gewaehlte Farbe als ?farbe= an
   // (assets/tp-farbauswahl.js). Vorauswahl ueber denselben Weg wie ein Tipp
   // des Kunden, damit Limit und bereits bestellte Muster weiter gelten.
-  // Unbekannter oder fehlender Wert: nichts passiert.
+  // Unbekannter Wert: nichts passiert. Ohne Wert wird nur gewaehlt, wenn es
+  // genau ein Dekor gibt (Einzeldekor wie Klickvinyl) - sonst muesste der
+  // Kunde das einzige Kaestchen selbst antippen (Fehleranalyse 13.10.).
   function vorauswahl(farbe) {
-    if (!farbe) return;
     var cards = gridEl.querySelectorAll('[data-sample-color]');
+    if (!farbe) {
+      if (cards.length !== 1) return;
+      var einzige = cards[0].querySelector('input[type="checkbox"]');
+      if (einzige && !einzige.disabled && !einzige.checked) einzige.click();
+      return;
+    }
     for (var i = 0; i < cards.length; i += 1) {
       if (cards[i].getAttribute('data-sample-color') !== farbe) continue;
       var checkbox = cards[i].querySelector('input[type="checkbox"]');
@@ -290,26 +297,48 @@
       return fetchJson(url).catch(function () { return null; });
     }
 
-    // Zwischenstufe fuer Teppiche nach Mass: nur wenn es muster-<handle> gar
-    // nicht gibt, das Musterprodukt des Teppichbodens (service.einfass_basis,
-    // gelesen ueber sections/tp-muster-basis). Scheitert etwas, bleibt es beim
-    // Sammelprodukt - die Musterbestellung bricht nie daran ab.
-    function ladeBasisMuster(musterProdukt) {
-      if (musterProdukt) return Promise.resolve(null);
+    // sections/tp-muster-basis nennt im Kontext des Produkts, welche
+    // Musterprodukte es gibt: muster-<handle> und - fuer Teppiche nach Mass -
+    // das Musterprodukt des Teppichbodens (service.einfass_basis). Abgerufen
+    // wird nur, was dort steht; ein blinder Abruf von muster-<handle> erzeugte
+    // bei jedem Produkt ohne eigenes Muster einen 404 in der Konsole
+    // (Fehleranalyse 13.10.). Scheitert die Section, bleibt es beim Sammelprodukt.
+    function ladeSection() {
       return fetch(core.basisSectionUrl(handle), { headers: { Accept: 'text/html' } })
         .then(function (response) { return response.ok ? response.text() : ''; })
-        .then(function (html) {
-          var basis = core.parseBasisHandle(html, handle);
-          return basis ? fetchOptional('/products/' + core.sampleProductHandle(basis) + '.js') : null;
-        })
-        .catch(function () { return null; });
+        .catch(function () { return ''; });
+    }
+
+    // Ergebnis: [eigenes Musterprodukt, Musterprodukt des Teppichbodens].
+    // Das Basis-Muster zaehlt nur, wenn es kein eigenes gibt.
+    function ladeMuster(html) {
+      var quelle = core.parseMusterQuelle(html);
+      if (quelle) {
+        var eigen = quelle.eigen ? fetchOptional('/products/' + quelle.eigen + '.js') : Promise.resolve(null);
+        return eigen.then(function (musterProdukt) {
+          if (musterProdukt || !quelle.basis) return [musterProdukt, null];
+          return fetchOptional('/products/' + quelle.basis + '.js').then(function (basisMuster) {
+            return [null, basisMuster];
+          });
+        });
+      }
+      // Section ohne Angabe (z. B. aelterer Theme-Stand im Cache): wie bisher
+      // erst muster-<handle> probieren, dann den Basis-Handle.
+      return fetchOptional('/products/' + core.sampleProductHandle(handle) + '.js').then(function (musterProdukt) {
+        if (musterProdukt) return [musterProdukt, null];
+        var basis = core.parseBasisHandle(html, handle);
+        if (!basis) return [null, null];
+        return fetchOptional('/products/' + core.sampleProductHandle(basis) + '.js').then(function (basisMuster) {
+          return [null, basisMuster];
+        });
+      });
     }
 
     Promise.all([
       fetchJson('/products/' + handle + '.js'),
       fetchJson('/products/kostenloses-muster.js'),
       fetchJson('/cart.js'),
-      fetchOptional('/products/' + core.sampleProductHandle(handle) + '.js'),
+      ladeSection(),
     ]).then(function (results) {
       product = results[0];
       if (!core.canSample(product)) {
@@ -319,7 +348,7 @@
       }
       var sampleProduct = results[1];
       var cart = results[2];
-      var musterProdukt = results[3];
+      var sectionHtml = results[3];
 
       var sampleVariant = (sampleProduct.variants || []).find(function (variant) {
         return variant.available;
@@ -332,8 +361,8 @@
 
       // Beschriftungen an das Sortiment anpassen: "Farben" oder "Dekore".
       optionName = core.getOptionName(product);
-      return ladeBasisMuster(musterProdukt).then(function (basisMuster) {
-        colors = core.assignSampleVariantsWithBasis(colors, musterProdukt, basisMuster, optionName);
+      return ladeMuster(sectionHtml).then(function (muster) {
+        colors = core.assignSampleVariantsWithBasis(colors, muster[0], muster[1], optionName);
         root.querySelectorAll('[data-sample-term]').forEach(function (el) {
           el.textContent = core.getOptionTerm(product, el.getAttribute('data-sample-term'));
         });

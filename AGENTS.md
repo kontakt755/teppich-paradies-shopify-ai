@@ -193,7 +193,7 @@ Metafelder oder Collection-Zuordnungen nur verändern, wenn der jeweilige Auftra
 
 Nie technische Eigenschaften erfinden oder anhand eines Produktbildes allein ableiten.
 
-**Ausgelaufenes wird nie angezeigt (Inhaber 2026-10-13).** Fuehrt der Lieferant einen Artikel nachweislich nicht mehr (exakte Suche ohne Treffer, Seite 404, Auslaufmeldung), wird das Produkt samt Musterprodukt sofort archiviert und die alte Adresse per 301 auf den Nachfolger oder die passende Kollektion umgeleitet; vorher offene Bestellungen pruefen, danach Lexikon exportieren. Faellt nur eine Variante weg, ist das eine Variantenaenderung und braucht Freigabe. Anschliessend die ganze Linie beim Lieferanten auf neue Artikel abgleichen. Die woechentliche Auslauf-Pruefung (`npm run auslauf:pruefen`, montags 4:00 per LaunchAgent) meldet Kandidaten als To-do im Control Center; sie archiviert nie selbst.
+**Ausgelaufenes wird nie angezeigt (Inhaber 2026-10-13).** Fuehrt der Lieferant einen Artikel nachweislich nicht mehr (exakte Suche ohne Treffer, Seite 404, Auslaufmeldung), wird das Produkt samt Musterprodukt sofort archiviert und die alte Adresse per 301 auf den Nachfolger oder die passende Kollektion umgeleitet; vorher offene Bestellungen pruefen, danach Lexikon exportieren. Faellt nur eine Variante weg, ist das eine Variantenaenderung und braucht Freigabe. Anschliessend die ganze Linie beim Lieferanten auf neue Artikel abgleichen. Die woechentliche Auslauf-Pruefung (`npm run auslauf:pruefen`, montags 4:00 per LaunchAgent) meldet Kandidaten als To-do im Control Center; sie archiviert nie selbst. Bei Lieferant A meldet sie ausserdem Artikel unserer Linien, die seit dem letzten Lauf neu beim Lieferanten stehen (To-do "neue Artikel", anlegen nach Skill `produktimport`).
 
 Bei unklaren Produktdaten:
 
@@ -209,7 +209,7 @@ Fertige, getestete Funktionen nicht neu bauen: €/m²-Darstellung bei Paketprod
 
 Der Paket-/Verschnittrechner und dessen Warenkorblogik sind bereits intensiv getestet. Nicht neu schreiben, außer der Benutzer beauftragt dies ausdrücklich.
 
-Globo Mega Menu funktioniert aktuell. Nicht grundsätzlich umbauen, außer der Auftrag betrifft ausdrücklich das Menü.
+Das Hauptmenü kommt aus Horizon (`sections/header-group.json`, Menü `main-menu`). Das Globo-Mega-Menu-Embed steht zwar noch in `config/settings_data.json`, gibt im Live-Shop aber nichts aus (geprüft 13.10.). Menü nicht grundsätzlich umbauen, außer der Auftrag betrifft ausdrücklich das Menü.
 
 Horizon 4.1.3 existiert als separates Update. Keine Migration durchführen, solange dies nicht ausdrücklich beauftragt wird.
 
