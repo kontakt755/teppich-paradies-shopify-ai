@@ -57,9 +57,9 @@ test('Laminat und Kork bekommen keine Musteranfrage (Regel gilt nur fuer Parkett
 test('Klickvinyl mit Tag muster-klebevariante: Zusatzzeile, Musterweg bleibt', async () => {
   const html = await cta({ handle: 'eiche-klick', type: 'Klickvinyl', tags: ['muster-klebevariante'] });
   assert.match(html, /href="\/pages\/muster\?produkt=eiche-klick"/);
-  assert.match(html, /Klebe-Ausführung, gleiches Dekor/);
+  assert.match(html, /Das Muster zeigt dasselbe Dekor in der Klebeausführung\./);
   const ohne = await cta({ handle: 'eiche-klick', type: 'Klickvinyl', tags: [] });
-  assert.doesNotMatch(ohne, /Klebe-Ausführung/);
+  assert.doesNotMatch(ohne, /Klebeausführung/);
   assert.match(ohne, /Kostenloses Muster anfragen/);
 });
 

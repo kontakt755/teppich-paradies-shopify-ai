@@ -44,6 +44,22 @@
   margin-bottom: 20px;
 }
 
+.tp-sample__product-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tp-sample__product-hinweis {
+  font-size: 14px;
+  line-height: 1.35;
+  color: #555;
+}
+
+.tp-sample__product-hinweis[hidden] {
+  display: none;
+}
+
 .tp-sample__product img {
   width: 56px;
   height: 56px;

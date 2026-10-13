@@ -20,7 +20,9 @@
     nichts steht hier "Muster anfragen" zum Kontaktformular (thema=musteranfrage,
     assets/tp-sample-request.js) - ohne "kostenlos", der Preis ist offen.
   - Tag muster-klebevariante (Klickvinyl dieses Lieferanten): Das Muster gibt es
-    nur als Klebe-Ausfuehrung im gleichen Dekor; das sagt die Zusatzzeile.
+    nur als Klebe-Ausfuehrung im gleichen Dekor; das sagt die Zusatzzeile direkt
+    im Knopf (auch mobil sichtbar). Dieselbe Zeile zeigt der Musterkonfigurator
+    (assets/tp-sample-checkout.js) unter dem Produktnamen.
 
   Vinyl-Muster hoechstens 3 je Bestellung (Inhaber 13.10.2026,
   snippets/tp-muster-grenze): Bei Vinyl steht die Grenze im Knopf; liegen
@@ -75,7 +77,7 @@
           <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">{{ block.settings.hinweis | escape }}</small>
         {%- endif -%}
         {%- if product.tags contains 'muster-klebevariante' -%}
-          <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">Muster in der Klebe-Ausführung, gleiches Dekor</small>
+          <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">Das Muster zeigt dasselbe Dekor in der Klebeausführung.</small>
         {%- endif -%}
       {%- endif -%}
     </a>
