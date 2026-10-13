@@ -143,6 +143,7 @@
         .then(function (r) { if (!r.ok) throw new Error('add'); return r.json(); })
         .then(function (erg) {
           knopf.textContent = 'Im Warenkorb';
+          setTimeout(function () { knopf.classList.remove('is-done'); knopf.textContent = 'Mit in den Warenkorb'; }, 3000);
           knopf.classList.add('is-done');
           document.dispatchEvent(new CustomEvent('cart:update', {
             bubbles: true,
@@ -150,11 +151,10 @@
           }));
         })
         .catch(function () {
+          // Fehler bleibt stehen, bis erneut geklickt wird.
           knopf.textContent = 'Nicht hinzugefügt – bitte erneut versuchen';
         })
-        .then(function () {
-          setTimeout(function () { knopf.disabled = false; knopf.classList.remove('is-done'); knopf.textContent = 'Mit in den Warenkorb'; }, 3000);
-        });
+        .then(function () { knopf.disabled = false; });
     });
 
     block.addEventListener('tp-ek:mass', function (ev) { zeigen(ev.detail || null); });
@@ -163,4 +163,7 @@
 
   function alle() { document.querySelectorAll('[data-tp-ek]').forEach(einrichten); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', alle); else alle();
+  // Theme-Editor: neu gerenderte Bloecke wie der Konfigurator neu einrichten.
+  document.addEventListener('shopify:block:select', alle);
+  document.addEventListener('shopify:section:load', alle);
 })(typeof window !== 'undefined' ? window : globalThis);
