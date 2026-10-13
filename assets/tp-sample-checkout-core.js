@@ -26,6 +26,21 @@
   var HAS_BONUS = hasSampleBonus();
   var MAX_SAMPLES = BASE_SAMPLES + (HAS_BONUS ? 1 : 0);
 
+  // Vinyl-Muster kosten uns Geld (Inhaber 13.10.2026): sie bleiben fuer den
+  // Kunden kostenlos, aber hoechstens 3 je Bestellung - auch mit
+  // Abonnenten-Bonus. Gezaehlt werden Warenkorbzeilen mit der Property
+  // _Muster_Gruppe = vinyl (setzt buildCartItems). Dieselbe Typliste steht in
+  // snippets/tp-muster-grenze.liquid (Knopf auf der Produktseite).
+  // Teppichboden und alle anderen Muster: unveraendert die Gesamtgrenze oben.
+  var VINYL_TYPES = ['klickvinyl', 'klebevinyl', 'vinyl von der rolle'];
+  var VINYL_MAX = 3;
+  var VINYL_GROUP = 'vinyl';
+
+  function isVinyl(product) {
+    if (!product) return false;
+    return VINYL_TYPES.indexOf(String(product.type || '').trim().toLowerCase()) !== -1;
+  }
+
   // Der Konfigurator listet die Werte EINER Produktoption als Muster. Welche
   // Option das ist, heisst je nach Sortiment anders: Teppich- und Vinylboden
   // fuehren "Farbe", folierte Sockelleisten "Dekor". Dieselbe Liste steht in
@@ -134,12 +149,25 @@
   // Das Sammelprodukt "Kostenloses Muster" bleibt nur als Rueckfall.
   function getSampleState(cart) {
     var keys = new Set();
-    var count = (cart.items || []).reduce(function (total, item) {
+    var vinylCount = 0;
+    var count = ((cart && cart.items) || []).reduce(function (total, item) {
       if (!item.properties || !item.properties._Muster_ID) return total;
       keys.add(item.properties._Muster_ID);
+      if (item.properties._Muster_Gruppe === VINYL_GROUP) vinylCount += Number(item.quantity || 0);
       return total + Number(item.quantity || 0);
     }, 0);
-    return { count: count, remaining: Math.max(0, MAX_SAMPLES - count), keys: keys };
+    return { count: count, vinylCount: vinylCount, remaining: Math.max(0, MAX_SAMPLES - count), keys: keys };
+  }
+
+  // Welche Grenze fuer dieses Produkt gerade bindet. Fuer Vinyl gelten zwei:
+  // die Gesamtgrenze (3, mit Bonus 4) und die Vinyl-Grenze (3). Angezeigt und
+  // gezaehlt wird die engere - bei gleichem Rest die Vinyl-Grenze, damit der
+  // Kunde liest, warum es nicht weitergeht ("3 von 3 Vinyl-Mustern").
+  function getLimit(product, state) {
+    var total = { max: MAX_SAMPLES, inCart: state.count, remaining: Math.max(0, MAX_SAMPLES - state.count), word: 'Muster' };
+    if (!isVinyl(product)) return total;
+    var vinyl = { max: VINYL_MAX, inCart: state.vinylCount, remaining: Math.max(0, VINYL_MAX - state.vinylCount), word: 'Vinyl-Muster' };
+    return vinyl.remaining <= total.remaining ? vinyl : total;
   }
 
   // Handle des Musterprodukts einer Qualitaet. Angelegt wird es je
@@ -212,33 +240,37 @@
     return assignSampleVariants(colors, ownSample || basisSample || null, optionName);
   }
 
-  function getSelectionStatus(cartCount, selectedCount) {
+  // max/word optional: ohne Angabe die Gesamtgrenze ("Muster"), fuer Vinyl
+  // die Vinyl-Grenze aus getLimit ("Vinyl-Muster").
+  function getSelectionStatus(cartCount, selectedCount, max, word) {
+    var limit = Number(max) > 0 ? Number(max) : MAX_SAMPLES;
+    var wort = word || 'Muster';
     var inCart = Math.max(0, Number(cartCount || 0));
     var newlySelected = Math.max(0, Number(selectedCount || 0));
-    var total = Math.min(MAX_SAMPLES, inCart + newlySelected);
-    var remaining = Math.max(0, MAX_SAMPLES - total);
+    var total = Math.min(limit, inCart + newlySelected);
+    var remaining = Math.max(0, limit - total);
     var message;
 
     if (total === 0) {
-      message = '0 von ' + MAX_SAMPLES + ' Mustern ausgewählt';
-    } else if (total >= MAX_SAMPLES) {
+      message = '0 von ' + limit + ' ' + wort + 'n ausgewählt';
+    } else if (total >= limit) {
       if (inCart === 0) {
-        message = MAX_SAMPLES + ' von ' + MAX_SAMPLES + ' Mustern ausgewählt. Wählen Sie eine Farbe ab, um eine andere auszuwählen.';
+        message = limit + ' von ' + limit + ' ' + wort + 'n ausgewählt. Wählen Sie eine Farbe ab, um eine andere auszuwählen.';
       } else if (newlySelected === 0) {
-        message = MAX_SAMPLES + ' von ' + MAX_SAMPLES + ' Mustern im Warenkorb. Entfernen Sie dort zuerst ein Muster, um ein anderes auszuwählen.';
+        message = limit + ' von ' + limit + ' ' + wort + 'n im Warenkorb. Entfernen Sie dort zuerst ein ' + wort + ', um ein anderes auszuwählen.';
       } else {
-        message = MAX_SAMPLES + ' von ' + MAX_SAMPLES + ' Mustern erreicht. Wählen Sie eine Farbe ab oder entfernen Sie ein Muster im Warenkorb.';
+        message = limit + ' von ' + limit + ' ' + wort + 'n erreicht. Wählen Sie eine Farbe ab oder entfernen Sie ein ' + wort + ' im Warenkorb.';
       }
     } else {
       var location = newlySelected === 0 ? ' im Warenkorb' : ' insgesamt ausgewählt';
       var possibility = remaining === 1 ? 'noch 1 weiteres möglich' : remaining + ' weitere möglich';
-      message = total + ' von ' + MAX_SAMPLES + ' Mustern' + location + ' · ' + possibility;
+      message = total + ' von ' + limit + ' ' + wort + 'n' + location + ' · ' + possibility;
     }
 
     return {
       total: total,
       remaining: remaining,
-      limitReached: total >= MAX_SAMPLES,
+      limitReached: total >= limit,
       message: message,
     };
   }
@@ -266,6 +298,8 @@
         properties.Produkt = args.product.title;
         properties[optionName] = color.value;
       }
+      // Kennzeichen fuer die Vinyl-Grenze (getSampleState, snippets/tp-muster-grenze).
+      if (isVinyl(args.product)) properties._Muster_Gruppe = VINYL_GROUP;
       return {
         id: Number(eigeneVariante ? color.sampleVariantId : args.sampleVariantId),
         quantity: 1,
@@ -278,6 +312,9 @@
     SAMPLE_HANDLE: SAMPLE_HANDLE,
     MAX_SAMPLES: MAX_SAMPLES,
     HAS_BONUS: HAS_BONUS,
+    VINYL_MAX: VINYL_MAX,
+    isVinyl: isVinyl,
+    getLimit: getLimit,
     canSample: canSample,
     getUniqueColors: getUniqueColors,
     getOptionName: getOptionName,
