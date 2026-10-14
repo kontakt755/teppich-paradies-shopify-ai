@@ -12,6 +12,13 @@ on:
       limit:
         description: Hoechstens so viele Produkte (leer = alle)
         default: ''
+      medien:
+        description: Variantenbilder ab- und wieder anhaengen statt nur neu speichern
+        type: boolean
+        default: false
+      abfrage:
+        description: Zusaetzliche Produktsuche, z. B. (vendor:Vorwerk OR vendor:JAB*)
+        default: ''
 
 permissions:
   contents: read
@@ -45,4 +52,11 @@ jobs:
           SHOPIFY_ADMIN_TOKEN: ${{ env.SHOPIFY_ADMIN_TOKEN || secrets.SHOPIFY_ADMIN_TOKEN }}
           PAUSE: ${{ inputs.pause }}
           LIMIT: ${{ inputs.limit }}
-        run: node operations/scripts/meta-bilder-auffrischen.mjs --pause "$PAUSE" ${LIMIT:+--limit "$LIMIT"}
+          MEDIEN: ${{ inputs.medien }}
+          ABFRAGE: ${{ inputs.abfrage }}
+        run: |
+          set -- --pause "$PAUSE"
+          [ -n "$LIMIT" ] && set -- "$@" --limit "$LIMIT"
+          [ "$MEDIEN" = "true" ] && set -- "$@" --medien
+          [ -n "$ABFRAGE" ] && set -- "$@" --abfrage "$ABFRAGE"
+          node operations/scripts/meta-bilder-auffrischen.mjs "$@"

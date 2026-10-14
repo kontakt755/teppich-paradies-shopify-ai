@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { produktIds, auffrischen, TAG } from '../scripts/meta-bilder-auffrischen.mjs';
+import { produktIds, auffrischen, medienNeuAnhaengen, abfrage, TAG } from '../scripts/meta-bilder-auffrischen.mjs';
 
 test('produktIds blaettert alle Seiten durch', async () => {
   const seiten = [
@@ -26,4 +26,31 @@ test('auffrischen setzt und entfernt den Tag je Produkt, pausiert dazwischen und
   assert.deepEqual(aufrufe, ['tagsAdd:p1', 'tagsRemove:p1', 'tagsAdd:p2', 'tagsRemove:p2'], 'Entfernen auch nach Fehler beim Setzen');
   assert.deepEqual(pausen, [5], 'keine Pause nach dem letzten Produkt');
   assert.equal(fehler, 1);
+});
+
+test('abfrage haengt die Zusatzsuche an den Kanal-Filter', () => {
+  assert.equal(abfrage(), 'publication_ids:376821973326 status:active');
+  assert.equal(abfrage('vendor:Vorwerk'), 'publication_ids:376821973326 status:active vendor:Vorwerk');
+});
+
+test('medienNeuAnhaengen haengt ab und wieder an und haengt fehlende ein zweites Mal an', async () => {
+  const bild = { v1: 'm1', v2: 'm2', v3: null };
+  let ersterAnhang = true;
+  const aufrufe = [];
+  const proxy = {
+    execute: async (q, v) => {
+      if (q.includes('variants(first')) {
+        return { product: { variants: { pageInfo: { hasNextPage: false }, nodes: Object.entries(bild).map(([id, m]) => ({ id, media: { nodes: m ? [{ id: m }] : [] } })) } } };
+      }
+      if (q.includes('DetachMedia')) { aufrufe.push(['ab', v.m.map((x) => x.variantId)]); v.m.forEach((x) => { bild[x.variantId] = null; }); return { productVariantDetachMedia: { userErrors: [] } }; }
+      aufrufe.push(['an', v.m.map((x) => x.variantId)]);
+      // Erster Anhang verliert v2, der zweite klappt.
+      v.m.forEach((x) => { if (!(ersterAnhang && x.variantId === 'v2')) bild[x.variantId] = x.mediaIds[0]; });
+      ersterAnhang = false;
+      return { productVariantAppendMedia: { userErrors: [] } };
+    },
+  };
+  assert.equal(await medienNeuAnhaengen(proxy, 'p1'), '');
+  assert.deepEqual(aufrufe, [['ab', ['v1', 'v2']], ['an', ['v1', 'v2']], ['an', ['v2']]]);
+  assert.deepEqual(bild, { v1: 'm1', v2: 'm2', v3: null }, 'Endzustand wie vorher, Variante ohne Bild bleibt ohne');
 });
