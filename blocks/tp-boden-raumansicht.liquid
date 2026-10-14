@@ -1,0 +1,138 @@
+{% doc %}
+  Eigene Raumansicht fuer Hartboeden (Inhaber 2026-10-09: keine fremden
+  Visualisierer). Das Dekorbild des Produkts liegt perspektivisch und im
+  echten Massstab auf dem Boden eines gezeichneten Beispielraums.
+
+  Erscheint nur, wenn die reale Breite des Dekorbildes bekannt ist
+  (Metafeld custom.dekor_breite_cm oder Pilotliste unten). Ohne Massstab
+  wirken Planken schnell doppelt oder vierfach so breit - dann lieber nichts.
+  Teppichboden bleibt bewusst draussen: Musterfotos auf Raumflaeche hat der
+  Inhaber am 2026-09-28 als "nicht wie echt" abgelehnt.
+{% enddoc %}
+
+{%- liquid
+  assign tp_br_breite = product.metafields.custom.dekor_breite_cm.value
+  if tp_br_breite == blank
+    # Pilot 2026-10-10: Breite = Fugenabstand im Dekorbild x Plankenbreite aus custom.format_cm
+    case product.handle
+      when 'turku-eiche-chalet-klickvinyl-7mm'
+        assign tp_br_breite = 108.6
+      when 'solenta-tanne-hell-klebevinyl-2-0mm'
+        assign tp_br_breite = 109
+      when 'merano-stein-grau-hell-klebevinyl-2-5mm'
+        assign tp_br_breite = 138.4
+    endcase
+  endif
+  assign tp_br_bild = product.featured_image
+  assign tp_br_ok = false
+  if tp_br_breite != blank and tp_br_bild != blank and tp_br_bild.width >= 1000
+    assign tp_br_ok = true
+  endif
+-%}
+
+{%- if tp_br_ok -%}
+  {%- liquid
+    # Rueckwand des Beispielraums = 4 m = 64 % der Bildbreite, also 1 m = 16cqw
+    assign tp_br_kachel = tp_br_breite | times: 0.16 | round: 2
+    assign tp_br_url = tp_br_bild | image_url: width: 1400
+  -%}
+  <tp-boden-raumansicht class="tp-raum" {{ block.shopify_attributes }}>
+    <button class="tp-raum__trigger" type="button" data-tp-raum-open aria-haspopup="dialog">
+      <svg class="tp-raum__icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M3 9.5 12 4l9 5.5M5 8.3V20h14V8.3M5 15.5l3.5-3h7l3.5 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      <span>Im Beispielraum ansehen</span>
+    </button>
+    <dialog class="tp-raum__dialog" aria-labelledby="tp-raum-titel-{{ block.id }}">
+      <button class="tp-raum__close" type="button" data-tp-raum-close aria-label="Raumansicht schließen">×</button>
+      <h2 class="tp-raum__heading" id="tp-raum-titel-{{ block.id }}">{{ product.title | escape }}</h2>
+      <div
+        class="tp-raum__raum"
+        role="img"
+        aria-label="Gezeichneter Beispielraum mit diesem Boden, Rückwand etwa 4 Meter breit"
+        style="--tp-raum-tex: url('{{ tp_br_url }}'); --tp-raum-kachel: {{ tp_br_kachel }}cqw;"
+      >
+        <div class="tp-raum__wand-l"></div>
+        <div class="tp-raum__wand-r"></div>
+        <div class="tp-raum__fenster"></div>
+        <div class="tp-raum__bild"></div>
+        <div class="tp-raum__boden"><div class="tp-raum__ebene"><div class="tp-raum__dekor"></div></div></div>
+        <div class="tp-raum__leiste"></div>
+        <div class="tp-raum__leiste-l"></div>
+        <div class="tp-raum__leiste-r"></div>
+        <div class="tp-raum__sofa"><i class="tp-raum__schatten"></i><i class="tp-raum__lehne"></i><i class="tp-raum__arm tp-raum__arm--l"></i><i class="tp-raum__arm tp-raum__arm--r"></i><i class="tp-raum__sitz"></i><i class="tp-raum__kissen"></i><i class="tp-raum__kissen tp-raum__kissen--2"></i><i class="tp-raum__fuss tp-raum__fuss--l"></i><i class="tp-raum__fuss tp-raum__fuss--r"></i></div>
+        <div class="tp-raum__tisch"><i class="tp-raum__schatten"></i><i class="tp-raum__bein"></i><i class="tp-raum__platte"></i></div>
+        <div class="tp-raum__pflanze"><i class="tp-raum__schatten"></i><i class="tp-raum__blatt"></i><i class="tp-raum__topf"></i></div>
+      </div>
+      <div class="tp-raum__steuerung" role="group" aria-label="Verlegerichtung">
+        <span>Verlegerichtung:</span>
+        <button type="button" data-tp-raum-richtung="laengs" aria-pressed="true">längs</button>
+        <button type="button" data-tp-raum-richtung="quer" aria-pressed="false">quer</button>
+      </div>
+      <p class="tp-raum__hinweis">Gezeichneter Beispielraum, Rückwand etwa 4&nbsp;m breit. Das Dekor liegt im Maßstab der Herstelleraufnahme; Farbe und Licht können am Bildschirm abweichen. Für die genaue Farbe bitte ein Muster bestellen.</p>
+    </dialog>
+  </tp-boden-raumansicht>
+  <script src="{{ 'tp-boden-raumansicht.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-raum { display: block; margin-block: 0.75rem 0; }
+  .tp-raum__trigger { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 44px; padding: 0.25rem 0; border: 0; background: none; color: inherit; font: inherit; font-size: 15px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .tp-raum__trigger:hover { text-decoration-thickness: 2px; }
+  .tp-raum__trigger:focus-visible, .tp-raum__close:focus-visible, .tp-raum__steuerung button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+  .tp-raum__icon { flex: none; }
+  .tp-raum__dialog { width: min(960px, calc(100vw - 24px)); max-width: none; max-height: calc(100dvh - 24px); padding: 1.25rem; border: 0; border-radius: 12px; box-shadow: 0 24px 60px rgb(0 0 0 / 0.3); overflow: auto; color: inherit; background: #fffdfa; }
+  .tp-raum__dialog::backdrop { background: rgb(22 17 15 / 0.75); }
+  .tp-raum__close { position: absolute; right: 0.5rem; top: 0.4rem; width: 44px; height: 44px; border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 2rem; line-height: 1; }
+  .tp-raum__heading { margin: 0 2.75rem 0.75rem 0; font-size: clamp(1.05rem, 2vw, 1.4rem); line-height: 1.3; }
+  .tp-raum__hinweis { margin: 0.6rem 0 0; font-size: 0.8rem; line-height: 1.45; opacity: 0.75; }
+  .tp-raum__steuerung { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 0.75rem; font-size: 0.9rem; }
+  .tp-raum__steuerung button { min-height: 40px; padding: 0.3rem 0.9rem; border: 1.5px solid currentColor; border-radius: 999px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+  .tp-raum__steuerung button[aria-pressed='true'] { background: var(--color-foreground, #222); color: var(--color-background, #fff); border-color: var(--color-foreground, #222); }
+
+  /* Beispielraum: Fluchtpunkt bei 50 % / 23 %, Rueckwand 18-82 % breit, Boden ab 57 % */
+  .tp-raum__raum { container-type: inline-size; position: relative; width: 100%; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 8px; isolation: isolate; background: linear-gradient(100deg, #efeae3, #fbf9f5 50%, #ece7df); }
+  .tp-raum__raum i { position: absolute; display: block; }
+  .tp-raum__wand-l { position: absolute; inset: 0; clip-path: polygon(0 0, 18% 0, 18% 57%, 0 76%); background: linear-gradient(90deg, #e2dbd1, #ebe5dc); }
+  .tp-raum__wand-r { position: absolute; inset: 0; clip-path: polygon(82% 0, 100% 0, 100% 76%, 82% 57%); background: linear-gradient(90deg, #e6e0d7, #ddd6cc); }
+  .tp-raum__fenster { position: absolute; inset: 0; clip-path: polygon(5% 14%, 14.5% 19%, 14.5% 50%, 5% 56%); background: linear-gradient(160deg, #dfecef, #f7f4ea 70%); }
+  .tp-raum__fenster::after { content: ''; position: absolute; inset: 0; clip-path: polygon(9.5% 16.5%, 10.1% 16.8%, 10.1% 53.3%, 9.5% 53.6%); background: #fbfaf7; }
+  .tp-raum__bild { position: absolute; left: 60%; top: 17%; width: 11%; height: 22%; background: #f4efe7; border: 0.6cqw solid #c9b59b; box-shadow: 0.3cqw 0.6cqw 1.2cqw rgb(74 63 51 / 0.15); }
+  .tp-raum__bild::after { content: ''; position: absolute; inset: 14%; background: radial-gradient(circle at 35% 40%, #c7b49a 0 22%, transparent 23%), linear-gradient(160deg, #d9cdbb, #b8bfb4); }
+  .tp-raum__boden { position: absolute; inset: 57% 0 0; clip-path: polygon(18% 0, 82% 0, 100% 44%, 100% 100%, 0 100%, 0 44%); perspective: 115cqw; perspective-origin: 50% -79%; background: #c7bdb0; }
+  .tp-raum__ebene { position: absolute; left: -10%; width: 120%; top: 0; height: 100cqw; transform-origin: 50% 0; transform: rotateX(90deg); }
+  .tp-raum__dekor { position: absolute; left: 50%; top: 50%; width: 150cqw; height: 150cqw; transform: translate(-50%, -50%); background-image: var(--tp-raum-tex); background-size: var(--tp-raum-kachel) auto; background-position: center; }
+  .tp-raum[data-richtung='quer'] .tp-raum__dekor { transform: translate(-50%, -50%) rotate(90deg); }
+  .tp-raum__boden::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 55% 70% at 12% 30%, rgb(255 255 255 / 0.4) 0, transparent 70%), linear-gradient(rgb(27 20 12 / 0.25), transparent 22%), linear-gradient(90deg, rgb(27 20 12 / 0.15), transparent 18% 82%, rgb(27 20 12 / 0.15)); }
+  .tp-raum__leiste { position: absolute; left: 18%; width: 64%; top: calc(57% - 0.9cqw); height: 0.9cqw; background: #fff; }
+  .tp-raum__leiste-l { position: absolute; inset: 0; clip-path: polygon(0 74.6%, 18% 55.6%, 18% 57%, 0 76%); background: #fbfaf7; }
+  .tp-raum__leiste-r { position: absolute; inset: 0; clip-path: polygon(82% 55.6%, 100% 74.6%, 100% 76%, 82% 57%); background: #f3f1ec; }
+  .tp-raum__sofa { position: absolute; left: 30%; top: 41%; width: 40%; height: 19%; }
+  .tp-raum__lehne { left: 0; right: 0; top: 0; height: 58%; border-radius: 1.2cqw 1.2cqw 0.4cqw 0.4cqw; background: linear-gradient(#cfc6ba, #c2b8ab); }
+  .tp-raum__sitz { left: 3%; right: 3%; top: 46%; height: 30%; border-radius: 0.6cqw; background: linear-gradient(#d8cfc4, #c9bfb2); box-shadow: 0 0.25cqw 0 #b3a99c; }
+  .tp-raum__arm { top: 30%; width: 8%; height: 52%; border-radius: 1cqw 0.6cqw 0.3cqw 0.3cqw; background: linear-gradient(#cbc2b6, #bdb3a6); }
+  .tp-raum__arm--l { left: -2%; }
+  .tp-raum__arm--r { right: -2%; }
+  .tp-raum__kissen { left: 12%; top: 18%; width: 16%; height: 34%; border-radius: 0.6cqw; background: #e9dccb; transform: rotate(-6deg); }
+  .tp-raum__kissen--2 { left: 72%; top: 20%; width: 14%; height: 32%; background: #9aa79a; transform: rotate(5deg); }
+  .tp-raum__fuss { top: 82%; width: 1.4%; height: 14%; background: #7a5f48; border-radius: 0 0 0.2cqw 0.2cqw; }
+  .tp-raum__fuss--l { left: 6%; }
+  .tp-raum__fuss--r { right: 6%; }
+  .tp-raum__sofa .tp-raum__schatten { left: -4%; right: -4%; top: 86%; height: 22%; background: radial-gradient(ellipse at 50% 30%, rgb(29 21 12 / 0.33), transparent 70%); }
+  .tp-raum__tisch { position: absolute; left: 41%; top: 68%; width: 18%; height: 7%; }
+  .tp-raum__platte { left: 0; right: 0; top: 0; height: 38%; border-radius: 50%; background: linear-gradient(#c09a74, #a27c58); }
+  .tp-raum__bein { left: 46%; width: 8%; top: 25%; height: 70%; background: #6e5440; }
+  .tp-raum__tisch .tp-raum__schatten { left: -10%; right: -10%; top: 70%; height: 60%; background: radial-gradient(ellipse, rgb(29 21 12 / 0.3), transparent 70%); }
+  .tp-raum__pflanze { position: absolute; right: 6%; top: 46%; width: 7%; height: 24%; }
+  .tp-raum__topf { left: 18%; right: 18%; bottom: 0; height: 34%; border-radius: 0 0 22% 22%; background: linear-gradient(90deg, #e7e1d8, #cfc7bb); }
+  .tp-raum__blatt { left: -40%; right: -40%; top: 0; bottom: 30%; background: radial-gradient(ellipse 22% 40% at 30% 55%, #4f6b45 98%, transparent), radial-gradient(ellipse 20% 42% at 65% 40%, #5f7c4f 98%, transparent), radial-gradient(ellipse 18% 36% at 50% 25%, #466340 98%, transparent), radial-gradient(ellipse 16% 30% at 78% 66%, #557347 98%, transparent); }
+  .tp-raum__pflanze .tp-raum__schatten { left: 0; right: -30%; bottom: -8%; height: 16%; background: radial-gradient(ellipse, rgb(29 21 12 / 0.3), transparent 70%); }
+  @media (max-width: 749px) { .tp-raum__dialog { padding: 1rem 0.75rem; } }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Boden-Raumansicht",
+  "tag": null,
+  "settings": [],
+  "presets": [{ "name": "TP Boden-Raumansicht" }]
+}
+{% endschema %}
