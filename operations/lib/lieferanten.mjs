@@ -468,12 +468,13 @@ const mailMenge = t => String(t ?? '').replace(/\s*\(Lieferantenraster ungeklär
 function positionsZeilen(p, nr, { mitKunde = true } = {}) {
   const kopf = [`Art.-Nr. ${p.artikelnummer}`];
   if (p.farbnummer) kopf.push(`Farb-Nr. ${p.farbnummer}`);
-  const bezeichnung = [p.titel, p.farbe].filter(Boolean).join(', ');
+  // Keine Shop-Produktnamen und Shop-Farbwoerter: die kennt der Lieferant nicht, sie
+  // verwirren nur (Inhaber 2026-10-14). Artikel- und Farbnummer reichen.
   const ausfuehrung = p.ausfuehrung ?? [];
   // Massanfertigung: "1 Stueck nach Mass", das Fertigmass steht in der Zeile darunter.
   const massStueck = ausfuehrung.some(z => z.startsWith('Fertigmaß:')) && p.einheit === 'stueck';
   const menge = massStueck ? `${p.menge} Stück nach Maß` : mailMenge(p.mengeText ?? `${p.menge} ${p.einheit}`);
-  const zeilen = [`${nr}. ${kopf.join(' · ')}`, `   ${bezeichnung}`, `   Menge: ${menge}`, ...ausfuehrung.map(z => `   ${z}`)];
+  const zeilen = [`${nr}. ${kopf.join(' · ')}`, `   Menge: ${menge}`, ...ausfuehrung.map(z => `   ${z}`)];
   if (p.orderName) zeilen.push(`   Kommission: ${[p.orderName, mitKunde ? p.kunde : null].filter(Boolean).join(' · ')}`);
   return zeilen;
 }
@@ -490,7 +491,7 @@ function fehltEintrag(p, gruende) {
 function hinweiseFuer(aufgenommen) {
   const h = [];
   const ohneFarbnr = aufgenommen.filter(p => !p.farbnummer).length;
-  if (ohneFarbnr) h.push(`${ohneFarbnr} Position(en) ohne Farbnummer - die Farbe steht nur als Name in der Mail.`);
+  if (ohneFarbnr) h.push(`${ohneFarbnr} Position(en) ohne Farbnummer – vor dem Senden prüfen, ob die Artikelnummer die Farbe schon enthält.`);
   for (const p of aufgenommen) if (p.mengeHinweis) h.push(`${p.orderName ?? ''} ${p.titel ?? ''}: ${p.mengeHinweis}`.trim());
   return h;
 }
