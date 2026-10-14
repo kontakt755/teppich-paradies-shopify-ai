@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { basisTitel, feedTitel, feedZeilen, grundpreis } from '../scripts/feed-titel.mjs';
+import { basisTitel, feedTitel, feedZeilen, grundpreis, tnmPreisZeilen } from '../scripts/feed-titel.mjs';
 
 const v = (opts) => ({ selectedOptions: Object.entries(opts).map(([name, value]) => ({ name, value })) });
 
@@ -51,4 +51,21 @@ test('feedZeilen: Grundpreis-Spalten aus der Bulk-Abfrage', () => {
     { id: 'gid://shopify/ProductVariant/21', __parentId: 'gid://shopify/Product/2', selectedOptions: [], showUnitPrice: true, unitPriceMeasurement: mess(2.21) },
   ].map((o) => JSON.stringify(o)).join('\n');
   assert.deepEqual(feedZeilen(jsonl), [['shopify_ZZ_2_21', 'Rostavo Eiche Rustikal – Klickvinyl 5,2mm', '2.21 sqm', '1 sqm', 'DE:50.00 EUR']]);
+});
+
+test('Teppich nach Maß: Preis je m² statt je 0,01 m², Grundpreis 1 sqm', () => {
+  const jsonl = [
+    { id: 'gid://shopify/Product/3', title: 'Piumera Teppich nach Maß', productType: 'Teppich nach Maß' },
+    { id: 'gid://shopify/ProductVariant/31', __parentId: 'gid://shopify/Product/3', price: '0.85', compareAtPrice: '0.89', selectedOptions: [], showUnitPrice: true, unitPriceMeasurement: mess(0.01) },
+    { id: 'gid://shopify/ProductVariant/32', __parentId: 'gid://shopify/Product/3', price: '0.25', compareAtPrice: null, selectedOptions: [], showUnitPrice: true, unitPriceMeasurement: mess(0.01) },
+    { id: 'gid://shopify/ProductVariant/33', __parentId: 'gid://shopify/Product/3', price: '0.00', compareAtPrice: null, selectedOptions: [] },
+    { id: 'gid://shopify/Product/4', title: 'Hestia Teppichboden 400cm', productType: 'Teppichboden' },
+    { id: 'gid://shopify/ProductVariant/41', __parentId: 'gid://shopify/Product/4', price: '0.85', compareAtPrice: null, selectedOptions: [] },
+  ].map((o) => JSON.stringify(o)).join('\n');
+  assert.deepEqual(tnmPreisZeilen(jsonl), [
+    ['shopify_ZZ_3_31', '89.00 EUR', '85.00 EUR', '1 sqm', '1 sqm'],
+    ['shopify_ZZ_3_32', '25.00 EUR', '', '1 sqm', '1 sqm'],
+  ], 'ohne Preis keine Zeile, andere Produktarten nicht');
+  const titel = feedZeilen(jsonl).filter((z) => z[0].startsWith('shopify_ZZ_3_'));
+  assert.ok(titel.every((z) => z[2] === '1 sqm' && z[3] === '1 sqm'), 'tp-feedtitel.txt setzt keinen 0,01-m²-Grundpreis');
 });
