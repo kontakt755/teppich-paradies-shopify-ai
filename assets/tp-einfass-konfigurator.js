@@ -938,7 +938,13 @@
       // Property "Fläche (abgerechnet)" nennt weiter die volle Flaeche.
       var zsEinheit = zuschnitt && zsPreisCent > 0 ? 1 : 0;
       if (zsEinheit) {
-        if (menge <= zsEinheit || parseInt(target.price, 10) !== zsPreisCent) return;
+        if (menge <= zsEinheit || parseInt(target.price, 10) !== zsPreisCent) {
+          // Sollte rechnen() schon abfangen; falls nicht, sichtbar sperren.
+          fehler.textContent = 'Dieser Teppich ist aktuell nicht bestellbar. Bitte kurz bei uns melden.';
+          fehler.hidden = false;
+          cta.disabled = true;
+          return;
+        }
         menge -= zsEinheit;
         p['_Einheit im Zuschnitt'] = String(zsEinheit);
       }

@@ -65,12 +65,15 @@ function fixture(o = {}) {
     metafields: {
       custom: { preis_pro_001_qm: val(true), zuschnitt_von_rolle: val(bundle) },
       service: {
-        einfassung: val('Fertig'), max_breite_cm: val(400), max_laenge_cm: val(1000),
+        einfassung: val(o.art ?? 'Fertig'), max_breite_cm: val(400), max_laenge_cm: val(1000),
+        ...(o.mindest ? { mindestpreis: val(o.mindest) } : {}),
         formen: val(['Rechteck']), einfass_basis: val({ variants: [rolle] }),
       },
     },
   };
-  return { product, block: { id: 'zs_block', settings: { pauschale_produkt: null } } };
+  const kettel = o.art === 'Ketteln'
+    ? { selected_or_first_available_variant: { id: 'kettel', price: 19, available: true } } : null;
+  return { product, block: { id: 'zs_block', settings: { pauschale_produkt: null, kettelservice_produkt: kettel } } };
 }
 async function dataFor(o) {
   const text = await engine.parseAndRender(liquidContract, fixture(o));
@@ -198,4 +201,32 @@ test('Rollenzuschnitt: Rolle zu kurz bleibt gesperrt (auch mit 0,57 EUR)', async
   const r = await runCase({ width: 400, length: 400, zsPreis: 57 });
   assert.equal(r.requests.length, 0);
   assert.match(r.error, /reicht die Rolle nicht/);
+});
+
+test('Rollenzuschnitt 0,57 EUR mit Kettelservice (Yasmin-Fall): drei Zeilen, Summe gleich', async () => {
+  const r = await runCase({ art: 'Ketteln', width: 200, length: 300, zsPreis: 57 });
+  assert.equal(r.error, null);
+  const items = zeilen(r);
+  const teppich = items.find(i => i.id === 'yasmin-mass');
+  const kante = items.find(i => i.id === 'kettel');
+  const zs = items.find(i => String(i.id).startsWith('zs-'));
+  assert.equal(teppich.quantity, 599);
+  assert.equal(kante.quantity, 1000, '10 m Kante in cm');
+  assert.equal(zs.id, 'zs-200');
+  assert.equal(new Set(items.map(i => i.properties._Gruppe)).size, 1, 'eine Gruppe');
+  assert.equal(items[items.length - 1].id, 'yasmin-mass', 'Teppich zuletzt gesendet = oben im Warenkorb');
+  assert.equal(summe(items, { 'yasmin-mass': 57, kettel: 19, 'zs-200': 57 }), 600 * 57 + 1000 * 19);
+});
+
+test('Rollenzuschnitt 0,57 EUR mit Mindestpreis: Mindestmenge minus eine Einheit, Summe gleich', async () => {
+  // 50 x 50 cm = 25 Einheiten, Mindestpreis 99 EUR -> 174 Einheiten a 0,57 (99,18 EUR).
+  const r = await runCase({ width: 50, length: 50, zsPreis: 57, mindest: 99, cms: [50, 100] });
+  assert.equal(r.error, null);
+  const items = zeilen(r);
+  const teppich = items.find(i => i.id === 'yasmin-mass');
+  const zs = items.find(i => String(i.id).startsWith('zs-'));
+  const voll = Math.ceil(9900 / 57);
+  assert.equal(teppich.quantity, voll - 1);
+  assert.equal(summe(items, { 'yasmin-mass': 57, [zs.id]: 57 }), voll * 57);
+  assert.match(teppich.properties['Fläche (abgerechnet)'], /Mindestpreis/);
 });

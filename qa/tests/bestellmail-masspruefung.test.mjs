@@ -139,6 +139,12 @@ test('Rollenbestand 0,57 EUR – Teppich mit einer Einheit weniger ist ehrlich',
   assert.ok(!/ROLLENBESTAND NICHT|OHNE TEPPICH – NICHTS/.test(html));
   assert.ok(html.includes('Bestandsabgang zum Maßteppich'), 'Komponente bleibt Bestandsabgang (line.groups)');
 });
+test('Rollenbestand 0,57 EUR – Komponente ohne line.groups wird trotzdem erkannt', async () => {
+  const k = { ...komponente(8, 'preis'), final_price: 7 };
+  const html = await render([yasmin(599, '200 × 300 cm', { '_Einheit im Zuschnitt': '1' }), yKettel(1000), k]);
+  assert.ok(html.includes('Bestandsabgang zum Maßteppich'));
+  assert.ok(!/ROLLENBESTAND NICHT|MENGE (ZU KLEIN|PASST NICHT)/.test(html));
+});
 test('Rollenbestand 0,57 EUR – ohne Kennzeichen oder zwei Einheiten weniger bleibt Alarm', async () => {
   const ohne = await render([yasmin(599), yKettel(1000), komponente057(8)]);
   assert.ok(/MENGE (ZU KLEIN|PASST NICHT)/.test(ohne), 'eine Einheit fehlt ohne Kennzeichen');
