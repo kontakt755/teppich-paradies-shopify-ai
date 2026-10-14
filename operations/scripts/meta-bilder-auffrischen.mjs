@@ -87,17 +87,29 @@ async function variantenMedien(proxy, id) {
   return v.nodes.filter((n) => n.media.nodes[0]).map((n) => ({ variantId: n.id, mediaIds: [n.media.nodes[0].id] }));
 }
 
+// Shopify erlaubt hoechstens 100 Varianten-Medien-Paare je Aufruf.
+export const JE_AUFRUF = 100;
+
+async function stapelweise(proxy, query, feld, id, paare) {
+  const meldungen = [];
+  for (let i = 0; i < paare.length; i += JE_AUFRUF) {
+    const f = fehler(await proxy.execute(query, { p: id, m: paare.slice(i, i + JE_AUFRUF) }), feld);
+    if (f) meldungen.push(f);
+  }
+  return meldungen.join('; ');
+}
+
 /** Haengt die Variantenbilder eines Produkts ab und wieder an; gibt eine Fehlermeldung oder '' zurueck. */
 export async function medienNeuAnhaengen(proxy, id) {
   const vorher = await variantenMedien(proxy, id);
   if (!vorher.length) return '';
-  const ab = fehler(await proxy.execute(ABHAENGEN, { p: id, m: vorher }), 'productVariantDetachMedia');
+  const ab = await stapelweise(proxy, ABHAENGEN, 'productVariantDetachMedia', id, vorher);
   // Immer wieder anhaengen, auch nach einem Fehler beim Abhaengen - keine Variante darf ohne Bild bleiben.
-  let an = fehler(await proxy.execute(ANHAENGEN, { p: id, m: vorher }), 'productVariantAppendMedia');
+  let an = await stapelweise(proxy, ANHAENGEN, 'productVariantAppendMedia', id, vorher);
   const nachher = new Set((await variantenMedien(proxy, id)).map((v) => v.variantId));
   const fehlt = vorher.filter((v) => !nachher.has(v.variantId));
   if (fehlt.length) {
-    an = fehler(await proxy.execute(ANHAENGEN, { p: id, m: fehlt }), 'productVariantAppendMedia') || an;
+    an = (await stapelweise(proxy, ANHAENGEN, 'productVariantAppendMedia', id, fehlt)) || an;
     const zweit = new Set((await variantenMedien(proxy, id)).map((v) => v.variantId));
     const immerNoch = fehlt.filter((v) => !zweit.has(v.variantId)).length;
     if (immerNoch) return `${immerNoch} Varianten ohne Bild: ${an || 'unbekannt'}`;
