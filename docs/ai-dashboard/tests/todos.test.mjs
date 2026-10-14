@@ -114,7 +114,8 @@ test('blockierte Bestellung ("Zuerst klären") ist rot und erscheint nicht zusae
   assert.deepEqual(arten(todos), ['blockiert']);
   assert.equal(todos[0].ton, 'crit');
   assert.equal(todos[0].kontext, 'Kunde Rot · 1 Position ohne Großhändler-ID · Verlegung gebucht');
-  assert.equal(todos[0].knopf.href, '#/einkauf');
+  assert.match(todos[0].knopf.href, /^#\/einkauf\?/);
+  assert.equal(new URLSearchParams(todos[0].knopf.href.split('?')[1]).get('auftrag'), rot.orderId);
 });
 
 test('Rueckrufe: nur faellige - Wiedervorlage in der Zukunft und Erledigtes ruhen', () => {
@@ -133,7 +134,8 @@ test('Rueckrufe: nur faellige - Wiedervorlage in der Zukunft und Erledigtes ruhe
   assert.equal(todos[0].titel, 'Zurückrufen: Kunde Ruf');
   assert.match(todos[0].kontext, /Beratung gewünscht · #T\d+ · Wunschzeit vormittags · zuletzt nicht erreicht/);
   assert.equal(todos[0].ton, 'warn', 'ab 2 Tagen gelb');
-  assert.equal(todos[0].knopf.href, '#/kunden?tab=rueckrufe');
+  const ziel = new URLSearchParams(todos[0].knopf.href.split('?')[1]);
+  assert.equal(ziel.get('tab'), 'rueckrufe'); assert.equal(ziel.get('auftrag'), offen.orderId);
 });
 
 test('Ware liegt bei uns: ein To-do je Bestellung, Alter seit Wareneingang', () => {
@@ -279,7 +281,8 @@ test('Wer wartet auf was: jede laufende Bestellung genau einmal, in der Spalte d
     ['K Zahlung', 'Zahlung offen', 2, ''],
   ]);
   assert.equal(w.gesamt, 10);
-  assert.equal(w.wir[0].href, `#/kunden?kunde=${encodeURIComponent(rot.kundenSchluessel)}`);
+  const ziel = new URLSearchParams(w.wir[0].href.split('?')[1]);
+  assert.equal(ziel.get('kunde'), rot.kundenSchluessel); assert.equal(ziel.get('auftrag'), rot.orderId);
   assert.equal(w.kunde[1].href, '#/kunden?tab=angebote');
 });
 

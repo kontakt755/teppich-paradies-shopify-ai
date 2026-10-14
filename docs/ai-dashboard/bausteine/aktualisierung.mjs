@@ -68,6 +68,18 @@ export function aktualisierenButton({ mitHinweis = true } = {}) {
 export function aktualisierungHealth() {
   const a = einkauf.aktualisierung;
   if (!a) return [];
+  const betrieb = Object.entries(a.betrieb || {}).map(([quelle, s]) => {
+    if (quelle === 'werkbank') return {
+      level: s.status === 'fehler' ? 'warn' : 'info',
+      title: `Werkbank-Rückmeldungen: ${s.status === 'fehler' ? 'lokaler Stand nicht lesbar' : s.letzteLokaleRueckmeldung ? `letzte lokale Rückmeldung ${fmtDateTime(s.letzteLokaleRueckmeldung)}` : 'letzte lokale Rückmeldung unbekannt'}${s.lokalerStatus === 'alt' ? ' – seit über 48 Stunden keine neue lokale Rückmeldung' : ''}`,
+      detail: 'Der vollständige automatische Abgleich mit der Werkbank ist noch nicht belegt.'
+        + (s.status === 'fehler' ? ' Bitte den Inhaber informieren; die bisherigen Betriebsdaten bleiben erhalten.' : ''),
+    };
+    const titel = quelle === 'sicherung' ? 'Betriebsdaten-Sicherung' : 'Werkbank-Rückmeldungen';
+    return { level: s.status === 'ok' ? 'ok' : s.status === 'unbekannt' ? 'info' : 'warn',
+      title: `${titel}: ${s.letzterErfolg ? `letzter Erfolg ${fmtDateTime(s.letzterErfolg)}` : s.status === 'fehler' ? 'Stand nicht lesbar' : 'Erfolg noch nicht erfasst'}${s.status === 'alt' ? ' – seit über 48 Stunden keine neue Rückmeldung' : ''}`,
+      detail: s.status === 'unbekannt' ? 'Noch keine verlässliche Zeitangabe. Beim nächsten erfolgreichen Lauf wird der Stand erfasst.' : s.status === 'ok' ? '' : 'Bitte den Inhaber informieren; die bisherigen Betriebsdaten bleiben erhalten.' };
+  });
   const aktualisierungHinweis = a.manuellVerfuegbar
     ? 'Bitte „Jetzt aktualisieren“ verwenden.'
     : `${OHNE_ZUGANG_GRUND} ${ZUGANG_EINRICHTEN}`;
@@ -79,9 +91,9 @@ export function aktualisierungHealth() {
     ? [{ level: 'warn', title: `„Jetzt aktualisieren“ abgebrochen · ${fmtDateTime(knopf.bis || knopf.seit)}`, detail: `Die bisherigen Daten bleiben stehen. Technisch: ${knopf.fehler}` }]
     : [];
   if (!a.verfuegbar) {
-    return [...knopfZeile, { level: 'warn', title: 'Lokale Datenquellen noch nie aktualisiert', detail: `${a.hinweis || ''} ${aktualisierungHinweis}` }];
+    return [...betrieb, ...knopfZeile, { level: 'warn', title: 'Lokale Datenquellen noch nie aktualisiert', detail: `${a.hinweis || ''} ${aktualisierungHinweis}` }];
   }
-  return [...knopfZeile, ...Object.entries(a.teile || {}).map(([teil, stand]) => {
+  return [...betrieb, ...knopfZeile, ...Object.entries(a.teile || {}).map(([teil, stand]) => {
     const label = AKTUALISIERUNG_TEIL_LABEL[teil] || teil;
     if (!stand.erfolg) {
       // Ohne Zugang (z.B. kein SHOPIFY_ADMIN_TOKEN in .env.local) laeuft der Lauf ins Leere -

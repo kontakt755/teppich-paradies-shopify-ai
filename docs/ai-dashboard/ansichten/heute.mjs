@@ -185,16 +185,20 @@ function sprungfelder(zahlen, sicht) {
 function datenstandZeile(sicht) {
   const a = einkauf.aktualisierung;
   if (!a) return '';
-  const auffaellig = aktualisierungHealth().filter(h => h.level !== 'ok');
+  const health = aktualisierungHealth();
+  const probleme = health.filter(h => h.level === 'warn' || h.level === 'crit');
+  const unbelegt = health.filter(h => h.level === 'info');
+  const auffaellig = [...probleme, ...unbelegt];
   const bestellungen = a.teile?.bestellungen;
   const stand = bestellungen?.erfolg && bestellungen.zeitpunkt ? `Bestellungen Stand ${fmtDateTime(bestellungen.zeitpunkt)}` : '';
-  const text = auffaellig.length
-    ? `${plural(auffaellig.length, 'Datenquelle', 'Datenquellen')} veraltet oder mit Fehler${stand ? ` · ${stand}` : ''}`
+  const text = probleme.length
+    ? `${plural(probleme.length, 'Datenquelle', 'Datenquellen')} veraltet oder mit Fehler${stand ? ` · ${stand}` : ''}`
+    : unbelegt.length ? `${plural(unbelegt.length, 'Stand', 'Stände')} noch nicht belegt${stand ? ` · ${stand}` : ''}`
     : `Daten aktuell${stand ? ` · ${stand}` : ''}`;
-  return `<div class="heute-datenstand${auffaellig.length ? ' warn' : ''}" role="status">
+  return `<div class="heute-datenstand${probleme.length ? ' warn' : ''}" role="status">
     <span class="punkt" aria-hidden="true"></span><span>${esc(text)}${auffaellig.length && darfAnsicht('insights') ? ' · <a href="#/insights">ansehen</a>' : ''}</span>
     ${/* Der erklaerende Satz nur, wenn es etwas zu tun gibt - bei aktuellen Daten waere er Rauschen. */ ''}
-    ${aktualisierenButton({ mitHinweis: auffaellig.length > 0 && sicht !== 'laden' })}
+    ${aktualisierenButton({ mitHinweis: probleme.length > 0 && sicht !== 'laden' })}
   </div>`;
 }
 

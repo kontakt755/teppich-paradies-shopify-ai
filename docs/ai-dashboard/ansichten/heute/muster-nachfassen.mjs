@@ -35,7 +35,7 @@ function kontaktText(k) {
 function zeile(e, texte, lesend, erste) {
   const vorlage = texte?.[e.stufe] || null;
   const absender = state.session?.benutzer?.name || null;
-  const mail = fuelleText(vorlage, { kundenname: e.kundenname, absender });
+  const mail = fuelleText(vorlage, { kundenname: e.kundenname, absender, produkte: e.produkte });
   const id = textId(e.orderId);
   const k = e.kontakt;
   const kontaktKnopf = k.weg === 'rueckruf'

@@ -133,6 +133,8 @@ const MONTAGE_KACHELN = [
   ['antraegeOffen', 'Anträge offen', { warn: true }],
   ['neueAuftraege', 'Neue Aufträge'],
   ['rueckmeldungenNeu', 'Neue Rückmeldungen'],
+  ['letzterLaufMin', 'Letzter Lauf vor … Minuten'],
+  ['laufzeitHeuteSek', 'Laufzeit heute (Sekunden)'],
 ];
 
 /**
@@ -154,6 +156,7 @@ export function heuteMontage() {
     const da = MONTAGE_KACHELN.filter(([k]) => Number.isInteger(m[k]));
     unterzeile = `aus der Montage-App · Stand ${fmtDateTime(d.stand || d.abgerufen)}`;
     inhalt = da.length ? `<div class="heute-kpis heute-montage-zahlen">${da.map(([k, titel, opt]) => kachel(m[k], titel, '', opt)).join('')}</div>` : '';
+    if (!Number.isInteger(m.letzterLaufMin) || !Number.isInteger(m.laufzeitHeuteSek)) inhalt += '<p class="small muted">Noch unbekannt: ' + [!Number.isInteger(m.letzterLaufMin) ? 'Zeit seit letztem Lauf' : '', !Number.isInteger(m.laufzeitHeuteSek) ? 'heutige Laufzeit' : ''].filter(Boolean).join(' und ') + '.</p>';
   }
   return `<section class="heute-block heute-laden heute-montage" aria-labelledby="heuteMontage">
     <div class="heute-block-kopf"><h2 id="heuteMontage">Montage</h2><span>${esc(unterzeile)}</span>${link}</div>

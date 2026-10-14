@@ -54,6 +54,7 @@ export const LADEN_ZAHLEN_SPAETER = Object.freeze(['spamVerdacht']);
 /** Zahlen der Montage-App im Objekt `montage` - jede einzeln optional, nie Namen. */
 export const MONTAGE_FELDER = Object.freeze([
   'einsaetzeHeute', 'einsaetzeMorgen', 'meldungenOffen', 'offenVonGestern', 'neueAuftraege', 'antraegeOffen', 'rueckmeldungenNeu',
+  'letzterLaufMin', 'laufzeitHeuteSek',
 ]);
 export const LADEN_CACHE_MS = 5 * 60_000;
 export const LADEN_FEHLER_CACHE_MS = 60_000;

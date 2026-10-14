@@ -15,6 +15,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { darfWeiter, beschaffungsStand } from '../../docs/ai-dashboard/lib/beschaffung.mjs';
 
 export const STATUS_ORDER = Object.freeze(['bestellt', 'geliefert', 'raus', 'erledigt']);
 
@@ -69,7 +70,21 @@ export function leseAlle(file) {
   try { raw = JSON.parse(text); } catch {
     throw new Error(`${path.basename(file)} ist beschädigt – bitte aus der Sicherung holen (npm run daten:sichern legt sie an)`);
   }
-  return raw && typeof raw === 'object' && raw.positionen && typeof raw.positionen === 'object' ? raw.positionen : {};
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw) || !raw.positionen || typeof raw.positionen !== 'object' || Array.isArray(raw.positionen)
+    || Object.values(raw.positionen).some(e => {
+      if (!e || typeof e !== 'object' || Array.isArray(e)) return true;
+      if (e.uebernahme != null && (typeof e.uebernahme !== 'object' || Array.isArray(e.uebernahme) || typeof e.uebernahme.id !== 'string' || typeof e.uebernahme.person !== 'string')) return true;
+      const b = e.beschaffung;
+      if (b != null && (typeof b !== 'object' || Array.isArray(b))) return true;
+      if (b?.liefertermin != null && (typeof b.liefertermin !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(b.liefertermin) || !Number.isFinite(Date.parse(b.liefertermin)) || new Date(b.liefertermin).toISOString().slice(0, 10) !== b.liefertermin)) return true;
+      if (b?.grund != null && typeof b.grund !== 'string') return true;
+      if (['bestaetigtAm', 'bestaetigtVon'].some(k => b?.[k] != null && typeof b[k] !== 'string')) return true;
+      const w = b?.wareneingang;
+      return w != null && (typeof w !== 'object' || Array.isArray(w) || !(w.soll > 0) || !['paket', 'stueck', 'muster', 'lfm', 'm2'].includes(w.einheit) || ['bestaetigtAm', 'bestaetigtVon'].some(k => w[k] != null && typeof w[k] !== 'string') || ['soll', 'angekommen', 'verwendbar'].some(k => !Number.isFinite(w[k]) || w[k] < 0) || w.verwendbar > w.angekommen || w.angekommen > w.soll);
+    })) {
+    throw new Error(`${path.basename(file)} ist beschädigt (ungültiges Positionsformat) – bitte aus der Sicherung holen`);
+  }
+  return raw.positionen;
 }
 
 /** Atomarer Schreibvorgang: tmp-Datei im selben Verzeichnis, dann rename. */
@@ -80,7 +95,9 @@ export function schreibeAlle(file, positionen) {
   fs.renameSync(tmp, file);
 }
 
-export class AuftragsstatusFehler extends Error {}
+export class AuftragsstatusFehler extends Error {
+  constructor(message, status = 400) { super(message); this.status = status; }
+}
 
 /** Begrenzt Freitext (Bestellnummer, Notiz) auf eine sinnvolle Laenge - sonst kann ein
  *  versehentlich sehr langer Text (Copy-Paste-Unfall) die gemeinsame Datei und die Anzeige
@@ -107,14 +124,15 @@ function clip(text, max) {
  * @param {boolean} [p.versandMail]    nur bei "raus": bekommt der Kunde die Versandmail? (gilt auch beim Nachholen)
  * @param {Date}   [p.jetzt]
  */
-export function setzeStatus(file, { orderId, lineItemId, status, actor, lieferantBestellnummer = null, notiz = null, sendungsnummer = null, versanddienst = null, versandMail = null, jetzt = new Date() } = {}) {
+function bereiteStatusVor(alle, { orderId, lineItemId, status, actor, bestellmenge, lieferantBestellnummer = null, notiz = null, sendungsnummer = null, versanddienst = null, versandMail = null, jetzt = new Date() } = {}) {
   const key = positionKey(orderId, lineItemId);
   if (!key) throw new AuftragsstatusFehler('orderId und lineItemId sind Pflicht');
   if (!STATUS_ORDER.includes(status)) throw new AuftragsstatusFehler(`Unbekannter Status "${status}"`);
   if (!actor) throw new AuftragsstatusFehler('actor (gh-Login) ist Pflicht');
 
-  const alle = leseAlle(file);
   const bisher = alle[key] || {};
+  const stand = bestellmenge === undefined ? bisher : beschaffungsStand(bisher, bestellmenge);
+  if (!darfWeiter(stand, status)) throw new AuftragsstatusFehler(stand.beschaffung?.klaerung || 'Die bestätigte Fehlmenge ist noch offen. Zuerst den Wareneingang vervollständigen.', 409);
   const zeit = jetzt.toISOString();
   const eintrag = {
     ...bisher,
@@ -146,8 +164,24 @@ export function setzeStatus(file, { orderId, lineItemId, status, actor, lieferan
   }
 
   alle[key] = eintrag;
-  schreibeAlle(file, alle);
   return eintrag;
+}
+
+/** Sammelschritte pruefen alle Positionen am selben frischen Stand und schreiben genau einmal. */
+export function bereiteStatusPositionenVor(file, angaben) {
+  const positionen = leseAlle(file);
+  const eintraege = angaben.map(p => bereiteStatusVor(positionen, p));
+  return { positionen, eintraege };
+}
+
+export function setzeStatusPositionen(file, angaben) {
+  const vorbereitet = bereiteStatusPositionenVor(file, angaben);
+  if (vorbereitet.eintraege.length) schreibeAlle(file, vorbereitet.positionen);
+  return vorbereitet.eintraege;
+}
+
+export function setzeStatus(file, angaben = {}) {
+  return setzeStatusPositionen(file, [angaben])[0];
 }
 
 /**

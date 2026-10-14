@@ -13,6 +13,7 @@ import {
 import { blockGruende, mengeText, ausfuehrungKurz, jeKommission } from '../../lib/einkauf-uebersicht.mjs';
 import { musterText, musterHerkunftText } from '../../lib/bestellinhalt.mjs';
 import { state } from '../../kern/zustand.mjs';
+import { uebernahmeBlock } from './beschaffung.mjs';
 import { $, esc, fmtDate, plural, toast, NICHT_HINTERLEGT } from '../../kern/helfer.mjs';
 import { fetchEinkauf } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
@@ -30,8 +31,7 @@ const aufgeklappt = new Set();
 
 const detailLink = id => `#/einkauf?lieferant=${encodeURIComponent(id)}`;
 
-function karten() {
-  const d = einkauf.bestellungen || {};
+function karten(d = einkauf.bestellungen || {}) {
   const l = einkauf.lieferanten;
   return lieferantenKarten({
     gruppen: d.gruppen, musterGruppen: d.musterGruppen,
@@ -279,11 +279,11 @@ export function nachfassenSumme() {
  * `gruppeKarte` zeichnet die bisherige Tabelle einer Gruppe (kommt von bestellungen.mjs -
  * als Parameter, damit die beiden Module nicht im Kreis voneinander abhaengen).
  */
-export function lieferantenKartenHtml({ gruppeKarte }) {
+export function lieferantenKartenHtml({ gruppeKarte, daten = einkauf.bestellungen }) {
   ensureEinkaufLieferanten();
-  const d = einkauf.bestellungen;
+  const d = daten;
   const af = afNorm(state.route.params.get('af'));
-  const alle = karten();
+  const alle = karten(d);
   const sicht = alle.filter(k => karteImFilter(k, af));
   const ruhig = af ? [] : alle.filter(k => k.zugeordnet && !karteImFilter(k, ''));
   const namen = kundenNamen();
@@ -356,6 +356,7 @@ function mailAbschnitt(m, i, mehrere) {
         <div class="lf-frage-knoepfe"><button type="button" class="btn btn-primary" data-lf-markieren="${i}">${plural(n, wort, wort)} als bestellt markieren</button><button type="button" class="btn btn-ghost" data-lf-nicht="${i}">Noch nicht</button></div>
       </div>`;
   return `<section class="lf-mail">${kopf}${zielWahl}
+    ${uebernahmeBlock(m.positionen)}
     <dl class="lf-mailkopf"><dt>An</dt><dd>${an}</dd><dt>Betreff</dt><dd>${esc(m.betreff)}</dd></dl>
     <pre class="lf-mailtext" tabindex="0">${esc(m.text)}</pre>
     ${gekuerzt}${fehlt}${ohne}${hinweise}${fertig ? '' : musterWahlListe(m)}
@@ -382,6 +383,8 @@ function zeichneDialog() {
 
 async function ladeDialog() {
   const q = new URLSearchParams({ lieferant: dialog.lieferant, art: dialog.art });
+  const auftrag = state.route.params.get('auftrag');
+  if (auftrag) q.set('auftrag', auftrag);
   if (dialog.ziel) q.set('ziel', dialog.ziel);
   const fuer = `${dialog.lieferant}|${dialog.art}|${dialog.ziel}`;
   const daten = await fetchEinkauf(`/api/einkauf/bestellmail?${q}`);

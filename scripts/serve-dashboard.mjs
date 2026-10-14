@@ -372,7 +372,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'einkauf/kennzahlen') result = api.einkaufKennzahlen();
     else if (simple === 'einkauf/lieferanten') result = api.einkaufLieferanten();
     else if (simple === 'einkauf/lieferant') result = api.einkaufLieferant({ id: url.searchParams.get('id') || '' });
-    else if (simple === 'einkauf/bestellmail') result = api.einkaufBestellmail({ lieferant: url.searchParams.get('lieferant') || '', art: url.searchParams.get('art') || 'ware', gruppe: url.searchParams.get('gruppe') || '', ziel: url.searchParams.get('ziel') || '' });
+    else if (simple === 'einkauf/bestellmail') result = api.einkaufBestellmail({ lieferant: url.searchParams.get('lieferant') || '', art: url.searchParams.get('art') || 'ware', gruppe: url.searchParams.get('gruppe') || '', ziel: url.searchParams.get('ziel') || '', auftrag: url.searchParams.get('auftrag') || '' });
     else if (simple === 'einkauf/auftragsstatus' && req.method === 'GET') result = api.einkaufAuftragsstatus();
     // Musterlager: lokal, Shopify bleibt unberuehrt. POST steht in der write-Liste (Rolle "lesen": 403).
     else if (simple === 'einkauf/musterlager' && req.method === 'GET') result = api.einkaufMusterlager();

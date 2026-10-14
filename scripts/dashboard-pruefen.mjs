@@ -57,7 +57,7 @@ const BREITEN = [[1440, 900, 'desktop'], [1024, 768, 'b1024'], [800, 1000, 'b800
 // Grosse Exporte, die das Dashboard nur liest: verlinken statt kopieren.
 const NUR_LESEN = ['einkauf-dryrun', 'einkauf-klaerung', 'lexikon', 'lieferanten'];
 // Klein oder beschreibbar: kopieren, damit Klicktests nie die echten Dateien treffen.
-const KOPIEREN = ['bestelluebersicht', 'kennzahlen', 'organisation', 'aktualisierung.json', 'auftragsstatus.json', 'auftragsverlauf.json', 'musterherkunft.json', 'musterlager.json',
+const KOPIEREN = ['bestelluebersicht', 'kennzahlen', 'organisation', 'aktualisierung.json', 'sicherungsstand.json', 'auftragsstatus.json', 'auftragsverlauf.json', 'musterherkunft.json', 'musterlager.json',
   // Kunden & Auftraege, Warenkoerbe, Shop-Wache, Bestand und Erfuellung: ohne diese Ordner
   // zeigte die Pruefung leere Ansichten und Klickstrecken liefen gegen nichts.
   'kunden', 'angebote', 'warenkoerbe', 'shopwache', 'bestand', 'erfuellung',
@@ -160,10 +160,10 @@ async function main() {
   // Die Pruef-Instanz spricht nie mit dem echten Shop: ein Klick auf "An Kunden raus" bucht
   // sonst echte Sendungen samt Versandmail, "Im Laden verkauft" echten Bestand. Ohne Zugang
   // melden beide Aktionen "kein Zugang" - der Schritt im Control Center laesst sich trotzdem pruefen.
-  const ohneShopify = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^SHOPIFY_(ADMIN_TOKEN|CLIENT_ID|CLIENT_SECRET)$/.test(k)));
+  const ohneShopify = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^(SHOPIFY_|LADEN_ZAHLEN_|AUFTRAGS_APP_URL$|WERKBANK_URL$)/.test(k)));
   const server = spawn(process.execPath, [path.join(REPO, 'scripts/serve-dashboard.mjs')], {
     cwd: REPO,
-    env: { ...ohneShopify, TP_ENV_LOCAL: path.join(daten, 'kein-shopify-zugang.env.local'), PORT: String(port), TP_DASHBOARD_HOST: '127.0.0.1', TP_PRIVAT_DIR: daten, TP_DASHBOARD_PASSWORT: passwort },
+    env: { ...ohneShopify, TP_TAILSCALE_PRUEFEN: '0', TP_ENV_LOCAL: path.join(daten, 'kein-shopify-zugang.env.local'), PORT: String(port), TP_DASHBOARD_HOST: '127.0.0.1', TP_PRIVAT_DIR: daten, TP_DASHBOARD_PASSWORT: passwort },
     stdio: ['ignore', logFd, logFd],
     detached: args.offen,
   });

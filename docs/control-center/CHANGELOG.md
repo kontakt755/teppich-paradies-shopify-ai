@@ -2,6 +2,58 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-13 · Review-Korrekturen zu Mengen, Kaufquellen und Brückenstatus (#1206)
+
+- **Geändert:** Der lokale Export liefert das aktuelle Gesamt-Soll über dieselbe bestehende Umrechnung;
+  eine neue Bestellung von 12 statt 10 Einheiten zeigt sofort 2 offen, ohne Eingang neu einzugeben.
+  Bereits versandte Mengen bleiben Teil des Gesamt-Solls. Verkleinerung unter den erfassten Eingang,
+  geänderte Einheit oder fehlende Sollquelle führen zur Klärung; kein Kürzen und keine Umrechnung
+  bestätigter Mengen. Einzel-/Sammelabschlüsse prüfen den frischen Stand vor dem Schreiben.
+  Sammelergebnisse und Eigenbestandsübergabe schreiben bei abgelehntem Eingang kein Verlaufsereignis;
+  alle Positionen werden vor einem einzigen atomaren Positions-Write geprüft. Beschädigte optionale
+  Beschaffungsfelder sowie beschädigte Verlaufsdateien bleiben unangetastet. Übernahmesperren werden
+  direkt vor dem lokalen Write frisch gelesen, ohne asynchrone Lücke.
+  Kaufquellen verlangen jetzt zusätzlich eine belegte öffentliche Shop-URL und eine eindeutige verfügbare
+  Variante. Der Werkbank-Zeitpunkt bezeichnet nur eine lokale Rückmeldung; der vollständige Abgleich
+  bleibt unbekannt. Die Gesundheitsübersicht behandelt unbekannte Zustände als neutrale Information.
+- **Getestet:** 50/50 gezielte Beschaffungs-/API-/Positions-/Zeitleistenregressionen mit Attrappen, darunter
+  10 → 12 ohne Neueingabe/mit Bestätigung, 12 → 10, Einheitenwechsel, Versand mit offener Menge 0,
+  blockierte Sammelergebnisse und Eigenbestandsübergabe, unveränderte Dateien bei Ablehnung,
+  beschädigte Zusatztypen/Verlauf und konkurrierende Übernahmen. Public-/Health-Tests separat geprüft.
+  Syntaxprüfung der betroffenen Module und Diff-Formatprüfung. Der abschließende gemeinsame Gesamt-
+  und Browserlauf erfolgt durch Root; Loopback-Servertests benötigen den erlaubten lokalen Testbetrieb.
+- **Risiken/Annahmen:** Sollabgleich nutzt den vorhandenen lokalen Export; nichts wird live aus Shopify
+  abgefragt oder geändert. Alte Lexikonexporte ohne öffentliche Shop-URL zeigen bis zum nächsten bestehenden
+  Export keine Kauflinks. Einheitenwechsel braucht fachliche Klärung; kein automatischer Datenabgleich.
+  Ein lokaler Brückenzeitpunkt belegt weder vollständigen Abgleich noch externe Schreibrechte.
+- **Nächste Stufe:** Root prüft und committet die gemeinsam abgegrenzten Korrekturen; kein eigenes Staging,
+  Commit, Push, Dienstneustart oder Google-Release.
+
+## 2026-10-13 · Direkte Vorgänge, Muster-Kauflinks und bestätigte Beschaffung (#1206)
+
+- **Geändert:** Heute öffnet konkrete Aufträge/Rückrufe/Fälle mit Rückweg; der Auftragsfilter begrenzt auch
+  Lieferantengruppen und Bestelltexte. Bestehende manuelle Mustertexte erhalten bis zu drei eindeutige
+  öffentliche Variantenlinks aus aktiven Lexikonquellen; fehlende/archivierte Quellen werden ausgelassen.
+  Liefertermin und kumulativer Wareneingang (angekommen/verwendbar/Grund) ergänzen den lokalen Positionsspeicher.
+  Fehlmengen bleiben bestellt und sperren Sammelaktionen; vollständig verwendbare Menge wird geliefert.
+  Einkauf und Kunden-Zeitleiste berücksichtigen Zusagen und Mängel; Wareneingang erfolgt je Position.
+  Sichtbare Arbeitsübernahme ohne versteckten Ablauf: Mitarbeiter geben nur eigene Arbeit frei; fremde
+  Übernahme nur durch bewussten Inhaber-Klick, Leser 403. Gesundheit zeigt belegte Sicherungs-/Werkbank-
+  Zeitpunkte und optionale v49-Laufzeiten; fehlend ist unbekannt. Keine neuen Shopify-Schreibaktionen/Auto-Mails.
+- **Getestet:** Neue Positions-/API-/Link-/Laufzeit-Regressionsfälle mit Attrappen; Legacy-Status-/Versand-
+  tests erhalten. Dashboard-Suite 314/314, volle Projektsuite 2433/2433; bestehende Desktop-/Mobil-QA
+  110/110 (22 Ansichten, fünf Breiten), finale Rollen-QA 98/98 bei 390/1440 px: kein Überlauf/JS-Fehler.
+  Syntaxprüfung aller 31 Module, Pflicht-Guards und statische Workflowprüfung PASS (sechs unveränderte
+  Template-Hinweise). CUA und unabhängige Root-Gegenprobe: 10 Pakete, 8 angekommen/7 verwendbar →
+  weiterhin bestellt, 3 fehlen; Mengenfenster statt blindem Geliefert-Klick, sichtbare Übernahme,
+  direkte Rückruf-/Aktenwege und zwei genaue Variantenlinks. Keine echten Daten oder Nachrichten.
+- **Risiken/Annahmen:** Produktlinks nutzen den vorhandenen Lexikonstand. Mengen sind kumulative menschliche
+  Angaben, keine Lagerkorrektur. Alte Positionsdaten bleiben kompatibel; beschädigte Zusatzfelder werden
+  nicht überschrieben. Sicherungserfolg ab nächstem erfolgreichen Lauf; Werkbank-Zeit bestätigt das Einlesen,
+  nicht jeden externen Schritt. Echt fehlende App-/Google-Konfiguration bleibt offen.
+- **Nächste Stufe:** Unabhängiger Diff-Review und Veröffentlichung durch Root. Kein eigener Push/Merge/
+  Dienstneustart oder Google-Release.
+
 ## 2026-09-08 · Phase A: Bestandsaufnahme
 
 - **Geändert:** `BESTANDSAUFNAHME.md`, `ARCHITEKTUR.md`, Screenshots des Ist-Zustands

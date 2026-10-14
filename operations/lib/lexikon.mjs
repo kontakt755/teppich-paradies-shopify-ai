@@ -354,6 +354,8 @@ export function aufbereiten(exportDaten, opt = {}) {
       shopUrl: handle ? `${SHOP_HOST}/products/${handle}` : null,
       adminUrl: numId ? `https://admin.shopify.com/store/${STORE_HANDLE}/products/${numId}` : null,
       status: text(p.status),
+      // Nur das Admin-Lesefeld belegt die Veroeffentlichung; kein Ersatz aus dem Handle.
+      onlineStoreUrl: text(p.onlineStoreUrl),
       produktgruppe: produktgruppe(p),
       bild: bildUrl(p),
       eigenschaften: eigenschaften(customMap),

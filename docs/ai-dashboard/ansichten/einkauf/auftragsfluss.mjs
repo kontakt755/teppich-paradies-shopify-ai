@@ -12,7 +12,7 @@ import { fetchEinkauf } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { kunden } from '../kunden/gemeinsam.mjs';
-import { musterEigen, stufeVon } from '../../lib/einkauf-lieferanten.mjs';
+import { musterEigen, stufeVon, wartetage } from '../../lib/einkauf-lieferanten.mjs';
 
 export { musterEigen };
 
@@ -104,10 +104,7 @@ function afKey(orderId, lineItemId) { return `${orderId}::${lineItemId}`; }
 export const AF_WARTE_WARN = 7;
 const AF_WARTE_CRIT = 14;
 export function afWartetage(eintrag, jetzt = Date.now()) {
-  const seit = eintrag?.status === 'bestellt' ? eintrag.bestelltAm : eintrag?.status === 'geliefert' ? eintrag.geliefertAm : null;
-  if (!seit) return null;
-  const tage = Math.floor((jetzt - new Date(seit)) / 864e5);
-  return Number.isFinite(tage) && tage >= 0 ? tage : null;
+  return wartetage(eintrag, jetzt);
 }
 export const afWarteText = tage => tage === 0 ? 'seit heute' : tage === 1 ? 'seit 1 Tag' : `seit ${tage} Tagen`;
 export const afWarteKlasse = tage => tage >= AF_WARTE_CRIT ? 'wait-crit' : tage >= AF_WARTE_WARN ? 'wait-warn' : 'muted';
@@ -324,7 +321,11 @@ export function openMusterHerkunftDialog(orderId, lineItemId = null, { danach = 
 
 /** Alle Auftraege der Bestelluebersicht, auch Testbestellungen (die "Ohne Einkauf
  * abschliessen" am haeufigsten trifft und die in keiner Lieferanten-Gruppe stehen). */
-export const alleAuftraege = () => [...(einkauf.bestellungen?.auftraege || []), ...(einkauf.bestellungen?.testauftraege || [])];
+export const alleAuftraege = () => {
+  const jeId = new Map();
+  for (const a of [...(einkauf.bestellungen?.auftraege || []), ...(einkauf.bestellungen?.testauftraege || []), ...(kunden.bestellungen?.zeilen || []).map(z => z.auftrag), ...(kunden.detail?.kunde?.auftraege || [])]) if (a?.id && !jeId.has(a.id)) jeId.set(a.id, a);
+  return [...jeId.values()];
+};
 export const erledigtePositionen = a => (a.positionen || []).filter(p => p.lineItemId && afEintragFuer({ orderId: a.id, lineItemId: p.lineItemId })?.status === 'erledigt');
 
 /** Rueckfrage vor "Wieder öffnen": zeigt, was zurueckkommt und wohin, und wer wann abgeschlossen hat. */
