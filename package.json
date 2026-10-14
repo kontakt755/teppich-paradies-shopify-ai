@@ -4,6 +4,7 @@
   "scripts": {
     "test": "npm run qa:unit:test && npm run dashboard:test && npm run operations:test && npm run automation:test && npm run workflow:test && npm run hooks:test && npm run social:test",
     "qa": "node qa/run-qa.mjs",
+    "themecheck:guard": "shopify theme check --fail-level error",
     "qa:visual": "node qa/run-qa.mjs --visual-evidence",
     "qa:unit:test": "node --test qa/tests/*.test.mjs",
     "qa:evidence:test": "node --test qa/tests/evidence-filter.test.mjs qa/tests/url-sanitizer.test.mjs qa/tests/console-classification.test.mjs qa/tests/browser-infra.test.mjs",
