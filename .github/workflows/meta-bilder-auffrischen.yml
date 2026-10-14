@@ -1,0 +1,48 @@
+name: Meta-Katalog Bilder neu abrufen
+
+# Nur manuell. Speichert jedes aktive Produkt im Kanal Facebook & Instagram einmal
+# neu (Tag setzen und sofort entfernen), damit Meta nicht geladene Bilder erneut
+# holt. Siehe operations/scripts/meta-bilder-auffrischen.mjs.
+on:
+  workflow_dispatch:
+    inputs:
+      pause:
+        description: Pause je Produkt in ms
+        default: '3000'
+      limit:
+        description: Hoechstens so viele Produkte (leer = alle)
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: meta-bilder-auffrischen
+  cancel-in-progress: false
+
+jobs:
+  auffrischen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      HAT_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Admin-Token holen (client_credentials)
+        if: ${{ env.HAT_CLIENT_ID == 'true' }}
+        env:
+          SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
+          SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
+        run: node scripts/shopify-oauth.mjs --grant client-credentials --github-env
+
+      - name: Produkte neu speichern
+        env:
+          SHOPIFY_ADMIN_TOKEN: ${{ env.SHOPIFY_ADMIN_TOKEN || secrets.SHOPIFY_ADMIN_TOKEN }}
+          PAUSE: ${{ inputs.pause }}
+          LIMIT: ${{ inputs.limit }}
+        run: node operations/scripts/meta-bilder-auffrischen.mjs --pause "$PAUSE" ${LIMIT:+--limit "$LIMIT"}
