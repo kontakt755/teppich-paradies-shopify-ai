@@ -54,3 +54,17 @@ test('medienNeuAnhaengen haengt ab und wieder an und haengt fehlende ein zweites
   assert.deepEqual(aufrufe, [['ab', ['v1', 'v2']], ['an', ['v1', 'v2']], ['an', ['v2']]]);
   assert.deepEqual(bild, { v1: 'm1', v2: 'm2', v3: null }, 'Endzustand wie vorher, Variante ohne Bild bleibt ohne');
 });
+
+test('medienNeuAnhaengen teilt mehr als 100 Varianten auf mehrere Aufrufe auf', async () => {
+  const ids = Array.from({ length: 146 }, (_, i) => `v${i}`);
+  const groessen = [];
+  const proxy = {
+    execute: async (q, v) => {
+      if (q.includes('variants(first')) return { product: { variants: { pageInfo: { hasNextPage: false }, nodes: ids.map((id) => ({ id, media: { nodes: [{ id: `m${id}` }] } })) } } };
+      groessen.push(v.m.length);
+      return q.includes('DetachMedia') ? { productVariantDetachMedia: { userErrors: [] } } : { productVariantAppendMedia: { userErrors: [] } };
+    },
+  };
+  assert.equal(await medienNeuAnhaengen(proxy, 'p'), '');
+  assert.deepEqual(groessen, [100, 46, 100, 46]);
+});
