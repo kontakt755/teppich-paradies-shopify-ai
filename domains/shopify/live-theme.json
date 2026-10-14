@@ -3,14 +3,14 @@
   "live": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-14T09:51:40Z",
-    "verifiedBy": "Shopify Admin API role MAIN (updatedAt 2026-10-14T09:51:01Z) nach workflow:live von main 4ab03a6b (#1276 Musterseite Holzboeden auf Anfrage); oeffentlicher Shop ohne Vorschau geprueft"
+    "verifiedAt": "2026-10-14T10:17:42Z",
+    "verifiedBy": "Shopify Admin API role MAIN (updatedAt 2026-10-14T10:17:09Z) nach workflow:live von main 22e96c26 (#1279 Reste-Platzhalter, #1280 Raummass-Knopf 44 px); oeffentlicher Shop ohne Vorschau geprueft"
   },
   "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-14T09:51:40Z",
-    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live von main 4ab03a6b; naechstes Preview-Ziel"
+    "verifiedAt": "2026-10-14T10:17:42Z",
+    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live von main 22e96c26; dazwischen 10:08-10:17 UTC live mit main 29b1e19f (#1279); naechstes Preview-Ziel"
   },
   "fallback": {
     "themeId": "206590509390",
