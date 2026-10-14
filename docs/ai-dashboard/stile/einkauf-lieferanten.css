@@ -12,9 +12,6 @@
 .lf-kopf { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 16px 18px 12px; }
 .lf-kopf h3 { font-size: 1.3rem; min-width: 0; overflow-wrap: anywhere; }
 .lf-kopf h3 a { color: var(--text); }
-.lf-zahlen { margin-left: auto; display: flex; flex-wrap: wrap; gap: 6px; }
-.lf-zahl { padding: 2px 10px; border-radius: 999px; font-size: .8rem; font-weight: 650; background: var(--surface-2); color: var(--text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.lf-zahl.akzent { background: var(--accent-soft); color: var(--accent); }
 .lf-weg { flex-basis: 100%; font-size: .88rem; color: var(--text-2); overflow-wrap: anywhere; }
 .lf-fehlt { color: var(--warn); }
 
@@ -36,6 +33,24 @@
 .lf-tage.warn { background: var(--warn-soft); color: var(--warn); }
 .lf-tage.crit { background: var(--crit-soft); color: var(--crit); }
 .lf-rest { padding: 4px 18px 10px; font-size: .88rem; color: var(--text-3); }
+
+/* Ware und Muster als eigene Bloecke; je Stufe eine Ueberschrift mit Zahl und dem Knopf dazu. */
+.lf-art { border-top: 1px solid var(--line); padding: 4px 0 6px; }
+.lf-art-titel { padding: 12px 18px 0; font-size: 1.05rem; font-weight: 700; }
+.lf-stufe { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 10px 18px 4px; }
+.lf-stufe .lf-abschnitt { padding: 0; }
+.lf-stufe .lf-abschnitt b { color: var(--text); font-size: .9rem; letter-spacing: 0; margin-left: 4px; }
+.lf-fuer { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text-3); }
+.lf-stufe .btn { min-height: 44px; }
+.lf-stufe a.btn:hover { text-decoration: none; }
+.lf-stufe a.btn:not(.btn-primary) { color: var(--text); }
+.lf-menge { font-weight: 650; font-size: .92rem; overflow-wrap: anywhere; }
+.lf-wer { color: var(--text-3); }
+.lf-grund { margin-top: 2px; font-size: .86rem; font-weight: 650; color: var(--crit); overflow-wrap: anywhere; }
+.lf-blockiert { box-shadow: inset 3px 0 0 var(--crit); }
+.lf-posten-rechts { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.lf-anzahl { font-size: .8rem; color: var(--text-2); white-space: nowrap; }
+.lf-zeilenknopf { min-height: 36px; }
 
 .lf-fuss { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 14px 18px 16px; margin-top: 6px; border-top: 1px solid var(--line); }
 .lf-fuss .btn { min-height: 44px; }
@@ -106,7 +121,12 @@ body.rolle-lesen [data-auftrag-erledigt] { display: none !important; }
 }
 @media (max-width: 760px) {
   .lf-kopf { padding: 14px 15px 10px; }
-  .lf-zahlen { margin-left: 0; flex-basis: 100%; }
+  .lf-art-titel, .lf-stufe { padding-left: 15px; padding-right: 15px; }
+  .lf-stufe .btn { flex: 1 1 100%; }
+  .lf-posten { align-items: flex-start; flex-wrap: wrap; }
+  /* Mit Knopf: Wartezeit und Knopf unter den Text, der Knopf ueber die Breite (Daumen). */
+  .lf-posten:has(.lf-zeilenknopf) .lf-posten-rechts { flex-basis: 100%; flex-direction: row; align-items: center; }
+  .lf-zeilenknopf { min-height: 44px; flex: 1; }
   .lf-hinweis { margin: 0 15px 10px; }
   .lf-abschnitt, .lf-posten, .lf-rest { padding-left: 15px; padding-right: 15px; }
   .lf-fuss { padding: 12px 15px 14px; }

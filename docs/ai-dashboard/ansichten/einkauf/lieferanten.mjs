@@ -10,6 +10,8 @@
 import {
   lieferantenKarten, karteImFilter, ueberfaelligText, hauptAktion, bestellwegText, feldKlartext,
   telLink, verlauf, lieferzeiten, SCHWELLEN_STANDARD, gmailLink, afNorm } from '../../lib/einkauf-lieferanten.mjs';
+import { blockGruende, mengeText, ausfuehrungKurz, jeKommission, laufendSicht } from '../../lib/einkauf-uebersicht.mjs';
+import { musterText, musterHerkunftText } from '../../lib/bestellinhalt.mjs';
 import { state } from '../../kern/zustand.mjs';
 import { $, esc, fmtDate, plural, toast, NICHT_HINTERLEGT } from '../../kern/helfer.mjs';
 import { fetchEinkauf } from '../../kern/api.mjs';
@@ -57,15 +59,6 @@ function wegZeile(k) {
   return `<p class="lf-weg">${[ware ? `Ware ${esc(ware)}` : null, muster ? `Muster ${esc(muster)}` : null].filter(Boolean).join(' · ')}</p>`;
 }
 
-function zahlenChips(k) {
-  const z = k.zahlen;
-  // Alle Zahlen hier zaehlen Positionen (eine Kundenbestellung kann mehrere haben).
-  const chip = (n, text, klasse = '') => n ? `<span class="lf-zahl ${klasse}">${n} ${esc(text)}</span>` : '';
-  return chip(z.zuBestellen, 'zu bestellen', 'akzent') + chip(z.musterOffen, 'Muster offen', 'akzent')
-    + chip(z.bestellt, 'bestellt') + chip(z.eingetroffen, 'bei uns eingetroffen') + chip(z.musterLaufend, z.musterLaufend === 1 ? 'Muster läuft' : 'Muster laufen')
-    + chip(k.musterEigen, 'Muster haben wir da');
-}
-
 function ueberfaelligHinweis(k, { mitLink = true } = {}) {
   const h = ueberfaelligText(k.ueberfaellig);
   if (!h) return '';
@@ -98,29 +91,121 @@ function postenListe(titel, liste, namen, max) {
 
 const nachWartezeit = liste => [...liste].sort((a, b) => (b.wartetage ?? -1) - (a.wartetage ?? -1));
 
+/** Knopf "Ware bestellen" je nach Bestellweg (Mail, Portal, Telefon). */
+function wareKnopf(k, klasse) {
+  const a = hauptAktion(k.stammdaten, 'ware');
+  const daten = `data-lf-mail="${esc(k.id)}" data-lf-art="ware"`;
+  // Portal und Telefon oeffnen sich direkt (neuer Tab bzw. Anruf); der Dialog mit der
+  // Bestellliste geht trotzdem auf - dort wird kopiert und danach als bestellt markiert.
+  return a.href
+    ? `<a class="${klasse}" href="${esc(a.href)}"${a.neuerTab ? ' target="_blank" rel="noopener"' : ''} ${daten}>${esc(a.label)}${a.neuerTab ? ' ↗' : ''}</a>`
+    : `<button type="button" class="${klasse}" ${daten}>${esc(a.label)}</button>`;
+}
+const musterKnopf = (k, klasse) => `<button type="button" class="${klasse}" data-lf-mail="${esc(k.id)}" data-lf-art="muster">Muster bestellen</button>`;
+
+/** Nichts zu bestellen, aber ueberfaellig: dann ist Nachhaken der naechste Schritt. */
+function nachhakKnopf(k) {
+  if (!k.zugeordnet || k.zahlen.zuBestellen || k.zahlen.musterOffen || !k.ueberfaellig.stufe) return '';
+  const w = k.stammdaten.ware;
+  if (w.telefon) return `<a class="btn" href="${esc(telLink(w.telefon))}">Anrufen</a>`;
+  if (w.mail) return `<a class="btn" href="mailto:${esc(w.mail)}">E-Mail schreiben</a>`;
+  return '';
+}
+
 /** Hauptknopf (je nach Bestellweg) und "Muster bestellen". Hoechstens einer ist die Hauptaktion. */
 function bestellKnoepfe(k) {
   if (!k.zugeordnet) return '';
+  const ware = k.zahlen.zuBestellen ? wareKnopf(k, 'btn btn-primary') : '';
+  const muster = k.zahlen.musterOffen ? musterKnopf(k, ware ? 'btn' : 'btn btn-primary') : '';
+  return ware + muster + nachhakKnopf(k);
+}
+
+// ------------------------------------------------------------ Karte auf einen Blick
+// Ware und Muster getrennt, je Stufe eine Ueberschrift mit Zahl; der Bestellknopf steht dort,
+// wo bestellt wird. Ware je Position (Menge, Mass, Einfassung, Kommission), Muster je
+// Kommission - ein Kunde bestellt drei bis fuenf auf einmal.
+
+const ok = v => v && v !== 'UNGEKLAERT' && v !== '–';
+
+function wareZeile(x, namen) {
+  const p = x.pos;
+  const block = blockGruende(p);
+  const titel = [anzeigeWert(p.titel), p.farbe].filter(ok).join(' · ');
+  const menge = mengeText(p);
+  const aus = ausfuehrungKurz(p);
+  const wer = [namen.get(p.orderId) || p.kunde, p.orderName].filter(ok).join(' · ');
+  // Bestellt und noch nicht da: "Ist eingetroffen" direkt an der Zeile (setzt "geliefert",
+  // derselbe Schritt wie "Als geliefert markieren" in der Tabelle).
+  const status = x.eintrag?.status;
+  const knopf = status === 'bestellt' && p.lineItemId && !istNurLesend()
+    ? `<button type="button" class="btn btn-sm lf-zeilenknopf" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="geliefert" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}">Ist eingetroffen</button>` : '';
+  return `<li class="lf-posten${block.length ? ' lf-blockiert' : ''}"><div class="lf-posten-text">
+      <div class="t">${esc(titel)}</div>
+      ${menge ? `<div class="lf-menge">${esc(menge)}</div>` : ''}
+      ${aus.map(z => `<div class="s">${esc(z)}</div>`).join('')}
+      ${wer ? `<div class="s lf-wer">${esc(wer)}</div>` : ''}
+      ${block.length ? `<div class="lf-grund">Blockiert: ${esc(block.join(' · '))}</div>` : ''}
+    </div><div class="lf-posten-rechts">${warteChip(x)}${knopf}</div></li>`;
+}
+
+function musterZeile(g, namen, { herkunft = false } = {}) {
+  const { ort } = kundeUndOrt(g.orderId);
+  const wer = [namen.get(g.orderId) || g.positionen[0]?.kunde, ort, g.orderName].filter(ok).join(' · ');
+  const woher = herkunft ? musterHerkunftText(g.positionen) : '';
+  return `<li class="lf-posten"><div class="lf-posten-text">
+      <div class="t">${esc(wer || 'Kunde unbekannt')}</div>
+      <div class="s">${esc(musterText(g.positionen))}</div>
+      ${woher ? `<div class="s lf-wer">${esc(woher)}</div>` : ''}
+    </div><div class="lf-posten-rechts"><span class="lf-anzahl">${esc(plural(g.positionen.length, 'Muster', 'Muster'))}</span>${warteChip(g)}</div></li>`;
+}
+
+/** Ueberschrift einer Stufe: "Zu bestellen · 3" und rechts daneben der Knopf. */
+const stufeKopf = (titel, zahl, knopf = '') => `<div class="lf-stufe"><span class="lf-abschnitt">${esc(titel)} <b>${zahl}</b></span>${knopf}</div>`;
+
+function stufeListe(zeilen, rest, restText) {
+  return `<ul class="lf-liste">${zeilen.join('')}</ul>${rest > 0 ? `<p class="lf-rest">+ ${rest} ${esc(restText)}</p>` : ''}`;
+}
+
+function wareBlock(k, namen, knopfKlasse) {
+  const w = k.ware;
+  if (!w.zuBestellen.length && !w.bestellt.length && !w.eingetroffen.length) return '';
   const teile = [];
-  let hauptVergeben = false;
-  const klasse = () => { if (hauptVergeben) return 'btn'; hauptVergeben = true; return 'btn btn-primary'; };
-  if (k.zahlen.zuBestellen) {
-    const a = hauptAktion(k.stammdaten, 'ware');
-    const daten = `data-lf-mail="${esc(k.id)}" data-lf-art="ware"`;
-    // Portal und Telefon oeffnen sich direkt (neuer Tab bzw. Anruf); der Dialog mit der
-    // Bestellliste geht trotzdem auf - dort wird kopiert und danach als bestellt markiert.
-    teile.push(a.href
-      ? `<a class="${klasse()}" href="${esc(a.href)}"${a.neuerTab ? ' target="_blank" rel="noopener"' : ''} ${daten}>${esc(a.label)}${a.neuerTab ? ' ↗' : ''}</a>`
-      : `<button type="button" class="${klasse()}" ${daten}>${esc(a.label)}</button>`);
+  if (w.zuBestellen.length) {
+    const zeigen = w.zuBestellen.slice(0, 8);
+    teile.push(stufeKopf('Zu bestellen', w.zuBestellen.length, wareKnopf(k, knopfKlasse))
+      + stufeListe(zeigen.map(x => wareZeile(x, namen)), w.zuBestellen.length - zeigen.length, 'weitere – „Positionen bearbeiten"'));
   }
-  if (k.zahlen.musterOffen) teile.push(`<button type="button" class="${klasse()}" data-lf-mail="${esc(k.id)}" data-lf-art="muster">Muster bestellen</button>`);
-  // Nichts zu bestellen, aber ueberfaellig: dann ist Nachhaken der naechste Schritt.
-  if (!teile.length && k.ueberfaellig.stufe) {
-    const w = k.stammdaten.ware;
-    if (w.telefon) teile.push(`<a class="btn" href="${esc(telLink(w.telefon))}">Anrufen</a>`);
-    else if (w.mail) teile.push(`<a class="btn" href="mailto:${esc(w.mail)}">E-Mail schreiben</a>`);
+  if (w.bestellt.length) {
+    const s = laufendSicht(nachWartezeit(w.bestellt));
+    teile.push(stufeKopf('Bestellt, noch nicht da', w.bestellt.length) + stufeListe(s.zeigen.map(x => wareZeile(x, namen)), s.rest, 'weitere im Plan'));
   }
-  return teile.join('');
+  if (w.eingetroffen.length) {
+    const zeigen = nachWartezeit(w.eingetroffen).slice(0, 2);
+    teile.push(stufeKopf('Bei uns eingetroffen', w.eingetroffen.length) + stufeListe(zeigen.map(x => wareZeile(x, namen)), w.eingetroffen.length - zeigen.length, 'weitere'));
+  }
+  return `<section class="lf-art" aria-label="Ware"><h4 class="lf-art-titel">Ware</h4>${teile.join('')}</section>`;
+}
+
+function musterBlock(k, namen, knopfKlasse) {
+  const m = k.muster;
+  const eigen = m.eigen || [];
+  const laufend = [...m.bestellt, ...m.eingetroffen];
+  if (!m.zuBestellen.length && !eigen.length && !laufend.length) return '';
+  const zahl = liste => { const n = jeKommission(liste).length; return `${liste.length}<span class="lf-fuer"> für ${plural(n, 'Kunden', 'Kunden')}</span>`; };
+  const teile = [];
+  if (m.zuBestellen.length) {
+    const g = jeKommission(m.zuBestellen);
+    teile.push(stufeKopf('Zu bestellen', zahl(m.zuBestellen), musterKnopf(k, knopfKlasse)) + stufeListe(g.slice(0, 6).map(x => musterZeile(x, namen)), g.length - Math.min(g.length, 6), 'weitere Kunden'));
+  }
+  if (eigen.length) {
+    const g = jeKommission(eigen);
+    teile.push(stufeKopf('Haben wir da – verschicken oder vorbeibringen', zahl(eigen)) + stufeListe(g.slice(0, 4).map(x => musterZeile(x, namen, { herkunft: true })), g.length - Math.min(g.length, 4), 'weitere Kunden'));
+  }
+  if (laufend.length) {
+    const s = laufendSicht(jeKommission(laufend));
+    teile.push(stufeKopf('Bestellt, unterwegs', zahl(laufend)) + stufeListe(s.zeigen.map(x => musterZeile(x, namen)), s.rest, s.rest === 1 ? 'weiterer Kunde im Plan' : 'weitere Kunden im Plan'));
+  }
+  return `<section class="lf-art" aria-label="Muster"><h4 class="lf-art-titel">Muster</h4>${teile.join('')}</section>`;
 }
 
 function karteHtml(k, { gruppeKarte, namen, af, alleGruppen, alleMusterGruppen }) {
@@ -129,8 +214,10 @@ function karteHtml(k, { gruppeKarte, namen, af, alleGruppen, alleMusterGruppen }
   const laufend = nachWartezeit([...k.ware.bestellt, ...k.ware.eingetroffen, ...k.muster.bestellt, ...k.muster.eingetroffen]);
   const eigen = k.muster.eigen || [];
   const anzahl = af === 'erledigt' ? k.ware.erledigt.length + k.muster.erledigt.length : zu.length + laufend.length + eigen.length;
-  const knoepfe = bestellKnoepfe(k);
-  const vorschau = offen ? '' : postenListe('Zu bestellen', zu, namen, 4) + postenListe('Muster haben wir da – vorbeibringen oder verschicken', eigen, namen, 3) + postenListe('Bestellt oder bei uns eingetroffen', laufend, namen, 3);
+  // Zugeklappt stehen die Bestellknoepfe bei "Zu bestellen"; aufgeklappt (Tabellen) unten im Fuss.
+  const knoepfe = offen ? bestellKnoepfe(k) : nachhakKnopf(k);
+  const wareHtml = offen || !k.zugeordnet ? '' : wareBlock(k, namen, 'btn btn-primary');
+  const vorschau = offen ? '' : wareHtml + musterBlock(k, namen, k.zahlen.zuBestellen ? 'btn' : 'btn btn-primary');
   // Sammelaktion fuer die ganze Karte: alles, was hier schon einen Schritt hat, zurueck auf offen.
   const gesetzt = (af === 'erledigt' ? [...k.ware.erledigt, ...k.muster.erledigt] : laufend).map(x => x.pos).filter(p => p.lineItemId);
   const zurueckId = `lf-${k.id}`;
@@ -142,7 +229,7 @@ function karteHtml(k, { gruppeKarte, namen, af, alleGruppen, alleMusterGruppen }
     + k.musterGruppen.map(g => gruppeKarte(g, alleMusterGruppen.indexOf(g), 'muster', { eingebettet: true })).join('');
   const kopfName = k.zugeordnet ? `<a href="${detailLink(k.id)}" title="Kontakt, Bestellweg und Verlauf">${esc(k.name)}</a>` : esc(k.name);
   return `<article class="card lf-karte${offen ? ' lf-offen' : ''}">
-    <div class="lf-kopf"><h3 class="lf-name">${kopfName}</h3><div class="lf-zahlen">${zahlenChips(k)}</div>${wegZeile(k)}</div>
+    <div class="lf-kopf"><h3 class="lf-name">${kopfName}</h3>${wegZeile(k)}</div>
     ${ueberfaelligHinweis(k)}
     ${vorschau}
     ${offen ? `<div class="lf-tabellen">${tabellen || '<p class="lf-rest">Kein Artikel in diesem Schritt.</p>'}</div>` : ''}
