@@ -299,36 +299,11 @@ export function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
 
-/**
- * Aktive Konten fuer die Kontowahl auf der Anmeldeseite (nur Name + Kuerzel,
- * Inhaber zuerst). Leere Liste, wenn die Datei fehlt oder nicht lesbar ist -
- * die Seite faellt dann auf das Textfeld zurueck.
- */
-export function anmeldeKonten({ readList = leseBenutzer, exists = benutzerDateiExistiert } = {}) {
-  try {
-    if (!exists()) return [];
-    return readList()
-      .filter(b => b.aktiv !== false && b.kuerzel)
-      .sort((a, b) => (a.rolle === 'inhaber' ? 0 : 1) - (b.rolle === 'inhaber' ? 0 : 1))
-      .map(b => ({ name: b.name || b.kuerzel, kuerzel: b.kuerzel }));
-  } catch {
-    return [];
-  }
-}
-
 /** Anmeldeseite auf Deutsch, ohne externe Ressourcen (funktioniert auch ohne Sitzung). */
-export function renderLoginPage({ error = null, mitBenutzern = benutzerDateiExistiert(), konten = mitBenutzern ? anmeldeKonten() : [] } = {}) {
+export function renderLoginPage({ error = null, mitBenutzern = benutzerDateiExistiert() } = {}) {
   const errorHtml = error
     ? `<p class="error" role="alert">${escapeHtml(error)}</p>`
     : '';
-  // Konten als Auswahlkacheln; ohne lesbare Liste das alte Textfeld.
-  const kontoHtml = !mitBenutzern ? ''
-    : konten.length
-      ? `<fieldset class="konten"><legend>Konto</legend>
-    ${konten.map((k, i) => `<label class="konto"><input type="radio" name="name" value="${escapeHtml(k.kuerzel)}"${i === 0 ? ' required' : ''}><span>Konto ${escapeHtml(k.name)}</span></label>`).join('\n    ')}
-    </fieldset>`
-      : `<label for="name">Name oder Kürzel</label>
-    <input type="text" id="name" name="name" autocomplete="username" autofocus required>`;
   return `<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -361,14 +336,6 @@ export function renderLoginPage({ error = null, mitBenutzern = benutzerDateiExis
   p.note { color:#91857d; font-size:.76rem; line-height:1.5; margin:22px 0 0; }
   label.bleiben { display:flex; align-items:flex-start; gap:9px; margin:0; font-size:.85rem; font-weight:500; line-height:1.35; color:#c7bbb3; }
   label.bleiben input { width:auto; margin:0; }
-  fieldset.konten { border:0; padding:0; margin:0 0 18px; display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
-  fieldset.konten legend { font-size:.85rem; font-weight:600; color:#d5cbc4; margin-bottom:7px; padding:0; }
-  label.konto { position:relative; margin:0; }
-  label.konto input { position:absolute; opacity:0; pointer-events:none; }
-  label.konto span { display:flex; align-items:center; justify-content:center; min-height:52px; padding:10px 12px; border:1px solid #4b433d; border-radius:11px; background:#0f0e0d; color:#f4efea; font-size:.95rem; font-weight:600; cursor:pointer; text-align:center; }
-  label.konto span:hover { border-color:#8a6a58; }
-  label.konto input:checked + span { border-color:#d68b65; background:#2a1c15; box-shadow:0 0 0 3px rgba(214,139,101,.16); }
-  label.konto input:focus-visible + span { outline:2px solid #d68b65; outline-offset:2px; }
   @media (max-width:480px) { body { padding:12px; } main { padding:25px 22px; border-radius:18px; } .brand { margin-bottom:23px; } }
 </style>
 </head>
@@ -379,9 +346,10 @@ export function renderLoginPage({ error = null, mitBenutzern = benutzerDateiExis
   <p class="hint">Hier arbeiten Inhaber und Mitarbeiter gemeinsam mit Kundenaufträgen, Einkauf und Tagesaufgaben.</p>
   ${errorHtml}
   <form id="loginForm">
-    ${kontoHtml}
+    ${mitBenutzern ? `<label for="name">Name oder Kürzel</label>
+    <input type="text" id="name" name="name" autocomplete="username" autofocus required>` : ''}
     <label for="pw">Passwort</label>
-    <input type="password" id="pw" name="pw" autocomplete="current-password"${mitBenutzern && !konten.length ? '' : ' autofocus'} required>
+    <input type="password" id="pw" name="pw" autocomplete="current-password"${mitBenutzern ? '' : ' autofocus'} required>
     <label class="bleiben"><input type="checkbox" id="bleiben" checked> An diesem Gerät angemeldet bleiben</label>
     <button type="submit" id="submitBtn">Anmelden</button>
   </form>
@@ -390,21 +358,6 @@ export function renderLoginPage({ error = null, mitBenutzern = benutzerDateiExis
 <script>
   const form = document.getElementById('loginForm');
   const btn = document.getElementById('submitBtn');
-  const pwFeld = document.getElementById('pw');
-  // Zuletzt gewaehltes Konto an diesem Geraet vorwaehlen (Ladenrechner: Konto Laden).
-  const KONTO_KEY = 'tp_login_konto';
-  const kontoFelder = Array.from(document.querySelectorAll('input[name="name"][type="radio"]'));
-  try {
-    const gemerkt = localStorage.getItem(KONTO_KEY);
-    const vorwahl = kontoFelder.find(f => f.value === gemerkt) || (kontoFelder.length === 1 ? kontoFelder[0] : null);
-    if (vorwahl) vorwahl.checked = true;
-  } catch { /* ohne Speicher keine Vorwahl */ }
-  kontoFelder.forEach(f => f.addEventListener('change', () => pwFeld.focus()));
-  function gewaehltesKonto() {
-    const radio = kontoFelder.find(f => f.checked);
-    if (radio) return radio.value;
-    return document.getElementById('name')?.value || '';
-  }
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     btn.disabled = true;
@@ -414,16 +367,12 @@ export function renderLoginPage({ error = null, mitBenutzern = benutzerDateiExis
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: gewaehltesKonto(),
-          passwort: pwFeld.value,
+          name: document.getElementById('name')?.value || '',
+          passwort: document.getElementById('pw').value,
           angemeldetBleiben: document.getElementById('bleiben').checked,
         }),
       });
-      if (res.ok) {
-        try { if (kontoFelder.length) localStorage.setItem(KONTO_KEY, gewaehltesKonto()); } catch { /* egal */ }
-        window.location.href = '/';
-        return;
-      }
+      if (res.ok) { window.location.href = '/'; return; }
       const data = await res.json().catch(() => ({}));
       window.location.href = '/login?fehler=' + encodeURIComponent(data.error || 'Anmeldung fehlgeschlagen');
     } catch {
