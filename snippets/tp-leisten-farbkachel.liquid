@@ -117,6 +117,11 @@
   title="{{ tp_fk_titel | escape }}"
   {% if tp_fk_versteckt %}hidden{% endif %}
 >
+  {%- comment -%}
+    alt="" ist Absicht: Die Kachel ist eine Schaltflaeche, deren Name direkt
+    darunter als Text steht. Das Bild ist damit dekorativ (WCAG H2/H67); das
+    Attribut bleibt trotzdem stehen, sonst liest ein Screenreader den Dateinamen.
+  {%- endcomment -%}
   <span class="tp-lfw__bild">
     {%- case tp_fk_art -%}
       {%- when 'bild' or 'swatch' -%}
