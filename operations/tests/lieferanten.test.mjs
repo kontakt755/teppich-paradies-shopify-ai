@@ -533,3 +533,41 @@ test('Lexikon-Produkt: Schnellzugriff nur an Varianten ohne Direkt- und Suchlink
   assert.equal(m1.original.schnellzugriff.aktionen[0].an, 'order@lieferant-b.example');
   assert.equal(m2.original.schnellzugriff, undefined);
 });
+
+// ------------------------------------------- Teppich nach Mass: Zuschnitt, Ketteln, Kunde
+
+function massteppichModell({ mitEinfassungAmTeppich = true } = {}) {
+  const teppich = zeile({ id: 20, sku: null, title: 'Testteppich nach Maß', variantTitle: 'Sandbeige (036)', quantity: 775, preis: '0.39',
+    einkauf: [['lieferant', 'A'], ['artikelnummer', 'A-TNM'], ['farbnummer', '036'], ['bestelleinheit', 'lfm'], ['route', 'SUPPLIER_TO_TP']],
+    custom: [['preis_pro_001_qm', 'true']],
+    attrs: [
+      ...(mitEinfassungAmTeppich ? [{ key: 'Einfassung', value: 'Gekettelt' }, { key: 'Kante umlaufend', value: '11,20 m' }, { key: 'Garn', value: 'Ton in Ton' }] : []),
+      { key: 'Form', value: 'Rechteck' }, { key: 'Maße', value: '250 × 310 cm' },
+      { key: '_Zuschnitt aus Rolle', value: '400 cm' }, { key: '_Gruppe', value: 'Kabc' },
+    ] });
+  const kettel = zeile({ id: 21, sku: null, title: 'Kettelservice', variantTitle: 'je 0,01 laufender Meter', quantity: 1120,
+    attrs: [{ key: 'Kante umlaufend', value: '11,20 m' }, { key: '_Gruppe', value: 'Kabc' }] });
+  kettel.variant.product.handle = 'kettelservice';
+  return aufbereiten({ orders: [bestellung(4, [teppich, kettel], { shippingAddress: { name: 'Testkunde 4', address1: 'Testweg 4', zip: '00000', city: 'Musterstadt', country: 'Deutschland', phone: '+49 000 0000' } })] }, { jetzt: JETZT });
+}
+
+test('Massteppich: Fertigmass, Rolle, Ketteln und Kunde stehen in der Mail, kein interner Rastervermerk', () => {
+  const mail = bestellmail({ modell: massteppichModell(), lieferant: 'A', stammdaten: STAMM, jetzt: JETZT }).mails[0];
+  assert.match(mail.text, /Menge: 1 Stück nach Maß \(Zuschnitt [^)]*\)\n {3}Fertigmaß: 250 × 310 cm \(Rechteck\)\n {3}Zuschnitt aus Rollenbreite: 400 cm\n {3}Einfassung: Gekettelt, umlaufend 11,20 m, Garn Ton in Ton\n {3}Kommission: #T4 · Testkunde 4/);
+  assert.equal(mail.text.includes('Lieferantenraster'), false);
+  assert.equal(mail.text.includes('Kettelservice'), false, 'Kettelservice ist keine eigene Bestellposition');
+  assert.equal(mail.zielWaehlbar, true);
+});
+
+test('Massteppich: Kettelung nur an der Kettelservice-Zeile wird trotzdem bestellt', () => {
+  const mail = bestellmail({ modell: massteppichModell({ mitEinfassungAmTeppich: false }), lieferant: 'A', stammdaten: STAMM, jetzt: JETZT }).mails[0];
+  assert.match(mail.text, /Einfassung: Gekettelt, umlaufend 11,20 m/);
+});
+
+test('Ware an den Kunden: Anschrift mit Telefon je Kommission statt Ladenanschrift', () => {
+  const mail = bestellmail({ modell: massteppichModell(), lieferant: 'A', ziel: 'kunde', stammdaten: STAMM, jetzt: JETZT }).mails[0];
+  assert.equal(mail.lieferziel, 'kunde');
+  assert.match(mail.text, /direkt an unsere Kunden liefern/);
+  assert.match(mail.text, /Kommission #T4 – Lieferanschrift:\n {3}Testkunde 4\n {3}Testweg 4\n {3}00000 Musterstadt\n {3}Deutschland\n {3}Tel\. \+49 000 0000/);
+  assert.equal(mail.text.includes('Beispielhandel GmbH\nMusterweg 1'), false);
+});

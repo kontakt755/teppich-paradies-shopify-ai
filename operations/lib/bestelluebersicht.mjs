@@ -296,6 +296,43 @@ function vollstaendigeDetails(order, positionen) {
   };
 }
 
+/**
+ * Was der Lieferant fuer einen Zuschnitt wissen muss: Mass, Form, Rollenbreite und
+ * Einfassung (Ketteln, Band ...) - wortgleich aus den Properties der Kundenbestellung
+ * (assets/tp-einfass-konfigurator.js). Steht die Kettelung nur an der eigenen
+ * Kettelservice-Zeile derselben _Gruppe, kommt sie von dort. Leer = Standardware.
+ */
+export function ausfuehrungFuer(props = {}, kettel = null) {
+  const w = k => (leer(props[k]) ? '' : String(props[k]).trim());
+  const zeilen = [];
+  const mass = w('Maße');
+  if (mass) zeilen.push(`Fertigmaß: ${mass}${w('Form') ? ` (${w('Form')})` : ''}`);
+  const rolle = w('_Zuschnitt aus Rolle') || w('Aus Rolle');
+  if (rolle && mass) zeilen.push(`Zuschnitt aus Rollenbreite: ${rolle}`);
+  const einfassung = w('Einfassung') || (kettel ? 'Gekettelt' : '');
+  if (einfassung) {
+    const teile = [einfassung];
+    const kante = w('Kante umlaufend') || (kettel?.kante ?? '');
+    if (kante) teile.push(`umlaufend ${kante}`);
+    if (w('Garn')) teile.push(`Garn ${w('Garn')}`);
+    if (w('Bandfarbe')) teile.push(`Bandfarbe ${w('Bandfarbe')}`);
+    if (w('Vlies')) teile.push(`Vlies ${w('Vlies')}`);
+    zeilen.push(`Einfassung: ${teile.join(', ')}`);
+  }
+  return zeilen;
+}
+
+/** Kettelservice-Zeilen einer Bestellung je _Gruppe (Kante steht dort, wenn sie am Teppich fehlt). */
+function kettelJeGruppe(zeilen) {
+  const m = new Map();
+  for (const li of zeilen) {
+    if ((li.variant?.product?.handle ?? '') !== 'kettelservice') continue;
+    const p = propertiesMap(li.customAttributes ?? li.properties);
+    if (!leer(p._Gruppe)) m.set(String(p._Gruppe).trim(), { kante: leer(p['Kante umlaufend']) ? '' : String(p['Kante umlaufend']).trim() });
+  }
+  return m;
+}
+
 /** Muster: Grosshaendler-ID der Quellvariante (Property _Quellvariante_ID). */
 function musterQuelle(item, quellMap, zuordnung) {
   const id = numerischeId(item.einkauf?.quellvariante !== UNGEKLAERT ? item.einkauf?.quellvariante : item.eingaben?.quellvarianteId);
@@ -339,6 +376,8 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
     const istTest = istTestbestellung(order);
     const zeilen = knoten(order.lineItems).map(normalisiert);
     const offen = istOffen(order);
+    const kettel = kettelJeGruppe(zeilen);
+    const kunde = order.shippingAddress?.name ?? order.customer?.displayName ?? null;
     const positionen = zeilen.map(li => {
       const item = resolveLineItem({ lineItem: li, variant: li.variant, alleZeilen: zeilen });
       const vm = metafeldMap(li.variant?.metafields);
@@ -375,6 +414,9 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         // Originalartikel beim Lieferanten, ohne Suche.
         handle,
         farbe,
+        // Fuer die Bestellmail: Kommission mit Kundennamen, Zuschnitt und Einfassung.
+        kunde,
+        ausfuehrung: istM ? [] : ausfuehrungFuer(props, leer(props._Gruppe) ? null : kettel.get(String(props._Gruppe).trim())),
         sku: item.sku,
         preis: geld(li.originalUnitPriceSet),
         menge,
