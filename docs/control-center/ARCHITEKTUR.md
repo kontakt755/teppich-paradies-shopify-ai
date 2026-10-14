@@ -1086,3 +1086,22 @@ lokaler Hinweis, beschädigte Metadaten sind ein Fehler. Unbekannt ist in der Ob
 Montage reicht v49 `letzterLaufMin`/`laufzeitHeuteSek` nur als Integer >= 0 durch; fehlend wird nie 0.
 Die QA-Instanz entfernt Shopify-/Auftrags-App-Zugänge und verwendet Testattrappen, nicht den Realbestand.
 
+## 19. Ansicht „Bildrechte“ (seit 2026-10-14, #1285)
+
+Rein lesend, für alle Rollen (auch „lesen“): `ansichten/bildrechte.mjs`, Endpunkt
+`GET /api/bildrechte/liste?liste=ungeklaert|zu-klein|ohne-alt&gruppe=<Warengruppe>&page=<n>`
+(nicht in der `write`-Liste, kein Inhaber-Pfad). Quelle ist allein das lokale Verzeichnis
+`$TP_PRIVAT_DIR/bildrechte/bildrechte.csv` aus `npm run bildrechte:inventur` und der Handpflege
+(Konzept `docs/weiterentwicklung/bilder.md` §6); es kommt nie ins Repository oder in `issues.json`.
+
+- Regeln in `prueflisten()` (`operations/lib/bildrechte.mjs`): entfernte Zeilen (Status beginnt mit
+  `entfernt` oder Notiz „nicht mehr in Shopify“) fallen weg; ungeklärt = Status `ungeklaert` oder leer;
+  zu klein = erfasste Breite < `MINDESTBREITE` (1200); ohne ALT = leerer ALT-Text. Zeilen ohne Breite
+  werden als `breiteUnbekannt` gezählt und in der Ansicht erklärt.
+- Antwort: Zähler aller drei Listen, Warengruppen der gewählten Liste (nach Anzahl), eine Seite
+  à 25 mit Titel, Handle, Warengruppe, Position, Dateiname, Maßen, Namenshinweis und Links. Admin-
+  und Shopadresse kommen aus dem Lexikon-Export; Lizenz, Quelle und Beleg verlassen den Server nicht.
+- Parameter der Oberfläche: `bl` (Liste), `bg` (Warengruppe), `bs` (Seite); ein Wechsel von `bl`
+  oder `bg` setzt die Seite zurück (`setParam`).
+- Fehlt die CSV: `verfuegbar: false` mit Befehl. Andere Lesefehler: 500 und Störungshinweis.
+

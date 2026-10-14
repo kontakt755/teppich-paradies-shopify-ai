@@ -1,0 +1,6 @@
+/* Ansicht "Bildrechte" (ansichten/bildrechte.mjs). Nur Tokens aus app.css - wirkt so auch dunkel. */
+/* Die gewaehlte Liste: Akzent nur als Auswahlzustand, die Zahl behaelt ihre Bedeutungsfarbe. */
+.br-band a[aria-current="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.br-erklaerung { margin: -10px 0 14px; }
+/* Dateinamen sind lang und ohne Leerzeichen - am Handy umbrechen statt ueberstehen. */
+.br-datei { overflow-wrap: anywhere; word-break: break-word; }

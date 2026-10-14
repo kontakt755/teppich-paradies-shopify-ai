@@ -139,7 +139,7 @@ Altbestand nicht umbenennen – Shopify-Medien-URLs würden sich ändern, ohne N
 
 ## 6. Dashboard
 
-Sinnvoll, aber klein (noch nicht gebaut, eigener PR nach der Sonderposten-Ansicht): eine Ansicht
+Gebaut am 2026-10-14 (#1285, `docs/control-center/ARCHITEKTUR.md` Abschnitt 19): eine Ansicht
 „Bildrechte“ im Control Center liest `bildrechte.csv` und zeigt nur drei Listen – **ungeklärt**, **zu klein (< 1200 px)**,
 **ohne ALT-Text** – mit Link zum Produkt. Keine Bildbearbeitung, kein Upload im Dashboard.
 

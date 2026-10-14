@@ -2,6 +2,30 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-14 · Ansicht „Bildrechte“ (#1285, Refs #978)
+
+- **Geändert:** Neue, rein lesende Ansicht `#/bildrechte` (Seitenleiste „Seltener“, für alle Rollen).
+  Drei Kacheln wählen die Liste – Herkunft/Freigabe ungeklärt, schmaler als 1.200 px, ohne ALT-Text –,
+  darunter Warengruppen-Filter und 25 Bilder je Seite mit Produkt, Bildposition, Dateiname (bei „zu klein“
+  mit Maßen) und Links „In Shopify öffnen“ / „Im Shop ansehen“ (Produkt-ID und Shopadresse aus dem
+  Lexikon, sonst Admin-Suche nach dem Handle). Neuer Endpunkt `GET /api/bildrechte/liste` liest
+  `$TP_PRIVAT_DIR/bildrechte/bildrechte.csv` (zwischengespeichert bis zur nächsten Änderung) und liefert
+  nur Listenfelder – Quellen, Lizenzen und Belege bleiben auf dem Server. Entfernte Bilder
+  (`entfernt…`, „nicht mehr in Shopify“) zählen nirgends; „ungeklärt“ heißt nur Status `ungeklaert`
+  oder leer. Fehlt die CSV: Hinweis mit `npm run bildrechte:inventur`, keine Demo-Daten.
+  Logik in `prueflisten()` (`operations/lib/bildrechte.mjs`).
+- **Getestet:** 5 neue Bibliotheks- und 4 neue Server-/API-Tests (Rolle „lesen“ 200, POST 405, ohne
+  Anmeldung 401, keine Lizenz-/Quellenfelder in der Antwort). `dashboard:test` 337/337, `npm test`
+  2573/2573. `dashboard:pruefen --rollen`: 275 OK-Zeilen, 0 px Überlauf bei 360–1440 px auf allen
+  55 Ansichten; Screenshots Desktop und 390 px gelesen. Echte Daten (Kopie): 697 ungeklärt,
+  3.114 zu klein, 0 ohne ALT-Text.
+- **Risiken/Annahmen:** Die CSV enthält keine Bild-URL, deshalb Dateiname statt Vorschau. Bei rund
+  3.150 Bildern fehlt die Breite (später ergänzte Zeilen) – die Ansicht nennt die Lücke. Im Verzeichnis
+  stehen Statuswerte, die `STATUS` nicht kennt (`freigegeben`, `entfernt`, `nein`); `zusammenfuehren()`
+  der Inventur würde sie auf `ungeklaert` zurücksetzen – eigener Fix nötig, bevor die Inventur wieder läuft.
+- **Nächste Stufe:** Bild-URL und Breite in der Inventur nachziehen (dann Vorschaubild), Statuswerte in
+  `operations/lib/bildrechte.mjs` vereinheitlichen.
+
 ## 2026-10-14 · Ungültige Fertigmaße vor dem Bestelltext klären (#1267, Folge zu #1225)
 
 - **Geändert:** Erkannte Maßanfertigungen bleiben bei fehlender, nicht endlicher oder nicht positiver

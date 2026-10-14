@@ -139,6 +139,74 @@ export function auswerten(zeilen) {
   };
 }
 
+// --- Pruefliste fuer das Control Center (Ansicht "Bildrechte", nur lesend) ---
+//
+// Im gepflegten Verzeichnis stehen inzwischen mehr Statuswerte als STATUS kennt
+// ("freigegeben", "entfernt", "entfernt (Dublette)", ...). Fuer die Ansicht gilt
+// deshalb bewusst eng: ungeklaert ist nur, was ausdruecklich so markiert ist oder
+// gar keinen Status hat - jede andere Eintragung ist eine dokumentierte Entscheidung.
+
+export const PRUEFLISTEN = Object.freeze(['ungeklaert', 'zu-klein', 'ohne-alt']);
+export const OHNE_WARENGRUPPE = 'ohne Warengruppe';
+
+/** Vom Produkt geloest oder nicht mehr in Shopify: gehoert in keine Arbeitsliste. */
+export function istEntfernt(z) {
+  return /^entfernt/i.test(String(z?.status ?? '').trim()) || String(z?.notiz ?? '').includes('nicht mehr in Shopify');
+}
+
+const PRUEFUNG = {
+  ungeklaert: (z) => { const s = String(z.status ?? '').trim(); return s === '' || s === 'ungeklaert'; },
+  'zu-klein': (z) => Number(z.breite) > 0 && Number(z.breite) < MINDESTBREITE,
+  'ohne-alt': (z) => !String(z.alt ?? '').trim(),
+};
+
+/**
+ * Zaehler aller drei Listen, Warengruppen der gewaehlten Liste und eine Seite
+ * daraus. Sortiert nach Warengruppe, Produkt und Bildposition, damit die Bilder
+ * eines Produkts beieinander stehen.
+ */
+export function prueflisten(zeilen, { liste = 'ungeklaert', gruppe = '', page = 1, pageSize = 25 } = {}) {
+  const aktiv = (zeilen ?? []).filter((z) => !istEntfernt(z));
+  const name = PRUEFLISTEN.includes(liste) ? liste : 'ungeklaert';
+  const zaehler = Object.fromEntries(PRUEFLISTEN.map((l) => [l, aktiv.filter(PRUEFUNG[l]).length]));
+  const warengruppe = (z) => String(z.produkttyp ?? '').trim() || OHNE_WARENGRUPPE;
+  const treffer = aktiv.filter(PRUEFUNG[name]);
+  const jeGruppe = new Map();
+  for (const z of treffer) jeGruppe.set(warengruppe(z), (jeGruppe.get(warengruppe(z)) ?? 0) + 1);
+  const gruppen = [...jeGruppe].map(([g, anzahl]) => ({ gruppe: g, anzahl }))
+    .sort((a, b) => b.anzahl - a.anzahl || a.gruppe.localeCompare(b.gruppe, 'de'));
+  const gewaehlt = gruppe && jeGruppe.has(gruppe) ? gruppe : '';
+  const auswahl = (gewaehlt ? treffer.filter((z) => warengruppe(z) === gewaehlt) : treffer)
+    .sort((a, b) => warengruppe(a).localeCompare(warengruppe(b), 'de')
+      || String(a.produkt_titel ?? '').localeCompare(String(b.produkt_titel ?? ''), 'de')
+      || Number(a.position) - Number(b.position));
+  const size = Math.min(Math.max(Number(pageSize) || 25, 1), 100);
+  const pages = Math.max(Math.ceil(auswahl.length / size), 1);
+  const p = Math.min(Math.max(Math.trunc(Number(page)) || 1, 1), pages);
+  return {
+    liste: name,
+    zaehler,
+    // Ohne erfasste Breite kann "zu klein" nichts sagen - die Zahl erklaert die Luecke.
+    breiteUnbekannt: aktiv.filter((z) => !(Number(z.breite) > 0)).length,
+    gruppen,
+    gruppe: gewaehlt,
+    count: auswahl.length,
+    page: p,
+    pageSize: size,
+    pages,
+    items: auswahl.slice((p - 1) * size, p * size).map((z) => ({
+      titel: z.produkt_titel || z.produkt_handle || '(ohne Titel)',
+      handle: z.produkt_handle || '',
+      gruppe: warengruppe(z),
+      position: Number(z.position) || null,
+      datei: z.datei || '',
+      breite: Number(z.breite) || null,
+      hoehe: Number(z.hoehe) || null,
+      hinweis: z.quelle_vermutet || '',
+    })),
+  };
+}
+
 // --- CSV (Semikolon, wie es Excel/Numbers auf deutschen Rechnern oeffnet) ---
 
 function feld(wert) {
