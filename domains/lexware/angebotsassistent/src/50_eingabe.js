@@ -101,7 +101,6 @@ var TP_SPALTEN_RAEUME = [
   ['Dämmung Art.-Nr./ID', 'daemmung.ref', 'ref'],
   ['Rolleninhalt m²', 'daemmung.rolleninhaltM2', 'zahl'],
   ['Nur ganze Rollen (ja)', 'daemmung.nurGanzeRollen', 'ja'],
-  ['Verschnitt im Dämmpreis (ja)', 'daemmung.verschnittImPreis', 'ja'],
   ['Silikon umlaufend (ja)', 'silikon.umlaufend', 'ja'],
   ['Türbreiten m (0,8; 0,9)', 'silikon.tuerbreitenM', 'liste'],
   ['Silikon zusätzlich lfm', 'silikon.zusatzLfm', 'zahl'],

@@ -33,7 +33,7 @@ Lexware Office API: /v1/articles (lesen), /v1/quotations (Entwurf anlegen, lesen
 
 | Datei | Inhalt | Wer pflegt |
 |---|---|---|
-| `src/00_konfig.js` | Regelparameter (649 €, 15 km, 5 %, 12 m², Zugabe 10 cm), Artikelverweise je Leistung, Reihenfolge – **keine Preise** | Regeländerung per PR |
+| `src/00_konfig.js` | Regelparameter (649 €, 15 km, 12 m², Zugabe 10 cm), Artikelverweise je Leistung, Reihenfolge – **keine Preise** | Regeländerung per PR |
 | `src/20_textbausteine.js` | Formulierungen wortgleich aus dem Skill | per PR |
 | `src/21_pflichtkontrolle.js` | jeder Punkt der Pflichtkontrolle als automatische Prüfung oder als Bestätigung | per PR |
 | `src/10_artikel.js` | Artikelstamm einlesen, AUSORTIERT/archiviert ausschließen, Preisstatus | – |
@@ -135,7 +135,7 @@ Werte für **Sockelleisten-Montage**: `cubu_bis60`, `kso_bis60`,
 | 3 Aktion 649 € | Brutto-Warenwert nur aus Teppich-/PVC-Rollenware. Bedingungen: höchstens 15 km, Privatkunde, kein rabattierter Belag. Bei unbekannter Entfernung wird die Aktion nicht angewendet, es kommt eine Rückfrage. Bei aktiver Aktion: Aktions-Verlegeposition 0 € und 1. Fahrt inklusive. |
 | 4 Fixierung | Bei Aktion „Zusätzlich Rollenware vollflächig fixieren“ bzw. Klettband-Zusatz. TB-020 bei Aktion ist ein Konflikt. Sprühkleber ist gesperrt. Bei loser Verlegung kommt ein Hinweis „Fixierung anbieten“, oder die Fixierung wird als optionale Position aufgenommen. |
 | 5 Flächen | Bestellmaß je Raum/Bahn = Rollenbreite × (Länge + 10 cm), auf volle cm. Verlegung, Fixierung und Kleber nach Netto-Verlegefläche. Eine kürzere Bestelllänge ist ein Konflikt. Ist der Raum breiter als die Rolle, müssen Bahnen angegeben werden. |
-| 5a Dämmung | (Netto × 1,05) / Rolleninhalt, auf halbe Rolle aufgerundet (optional ganze Rollen). Menge = Rollen × Inhalt, Beschreibung „entspricht ca. X Rollen à Y m²“. |
+| 5a Dämmung | Netto / Rolleninhalt ohne extra Verschnitt (Entscheidung 14.10.2026), auf halbe Rolle aufgerundet (optional ganze Rollen). Menge = Rollen × Inhalt, Beschreibung „entspricht ca. X Rollen à Y m²“. |
 | Verpackung | Paketware: Netto × (1 + Verschnitt %) / Paketinhalt → ganze Pakete. Ohne Verschnittangabe wird nichts geschätzt, das ist ein Fehler. „Anteilig“ ist bewusst wählbar. |
 | Pauschalen | Lexware-Pauschale „Einzelraum bis 12 m²“, wenn die Verlegegruppe genau ein Raum mit höchstens 12 m² ist. |
 | 6 Fahrten | FA-010 (nah), „An- und Abfahrt Berlin“, weitere Entfernung = Fehler. Mehrere Fahrten laufen über die Menge. |
@@ -188,10 +188,9 @@ Werte für **Sockelleisten-Montage**: `cubu_bis60`, `kso_bis60`,
 
 ## Befunde aus den gelieferten Daten
 
-- **Dämmunterlagen:**
-  - Die aktiven Dämmartikel nennen im Text bereits „inkl. Verschnitt“, zum Beispiel DU-020 („Preis inklusive üblichem Verschnitt“) und die Klebevinyl-Dämmung „Rolle 6,5 m² … inkl. Verschnitt“.
-  - Regel 5a addiert trotzdem 5 %. Das Programm meldet das als Konflikt.
-  - Je Raum lässt es sich mit „Verschnitt im Dämmpreis = ja“ auflösen.
+- **Dämmunterlagen:** Die aktiven Dämmartikel enthalten den Verschnitt laut Text
+  bereits. Entscheidung Inhaber 14.10.2026: kein zusätzlicher Verschnitt, weiter
+  auf die nächste halbe Rolle aufrunden. Regel 5a im Lexware-Skill entsprechend anpassen.
 - **Historische Werte nicht als Standard übernommen:**
   - Anfahrt 39 €: Der aktuelle Standard FA-010 kostet 59 €. Ein abweichender Preis braucht eine Begründung.
   - Fehlendes MG-010: wird bei Verlegeangeboten automatisch ergänzt.

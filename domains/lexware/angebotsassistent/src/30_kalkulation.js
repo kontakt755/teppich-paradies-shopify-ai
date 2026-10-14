@@ -296,18 +296,14 @@ function tpAngebotBerechnen(vorgang, stamm) {
     });
   });
 
-  // Regel 5a: Daemmunterlagen – Netto + 5 %, auf halbe Rolle aufrunden
+  // Regel 5a: Daemmunterlagen – Netto ohne extra Verschnitt (Entscheidung 14.10.2026), auf halbe Rolle aufrunden
   Object.keys(sammelDaemmung).forEach(function (dk) {
     var s = sammelDaemmung[dk];
     var f = tpArtikelFinden(stamm, s.d.ref);
     if (f.fehler) { melde('fehler', f.fehler, s.raeume.join(', ')); return; }
     var a = f.artikel;
     var netto = tpRunden2(s.netto);
-    var imPreis = tpJa(s.d.verschnittImPreis);
-    if (!imPreis && /verschnitt/i.test(a.beschreibung) && /inkl|inklusive|berücksichtigt/i.test(a.beschreibung)) {
-      melde('konflikt', '„' + a.titel + '“: Artikelbeschreibung enthält bereits Verschnitt, Regel 5a addiert 5 % – im Vorgang „Verschnitt im Preis“ entscheiden', s.raeume.join(', '));
-    }
-    var proz = imPreis ? 0 : K.daemmung.verschnittProzent;
+    var proz = K.daemmung.verschnittProzent;
     var bedarf = netto * (1 + proz / 100);
     var inhalt = tpZahl(s.d.rolleninhaltM2) || tpRolleninhaltAusArtikel(a);
     var menge, det;

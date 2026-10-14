@@ -21,7 +21,7 @@ var TP_PFLICHTKONTROLLE = [
     }
   },
   {
-    id: 'verpackung', art: 'auto', frage: 'Verpackungseinheiten korrekt; Dämmunterlage +5 %, halbe Rolle, Rollenanzahl in Beschreibung?',
+    id: 'verpackung', art: 'auto', frage: 'Verpackungseinheiten korrekt; Dämmunterlage ohne extra Verschnitt auf halbe Rolle, Rollenanzahl in Beschreibung?',
     pruefe: function (e) {
       var d = e.positionen.filter(function (p) { return p.kategorie === 'daemmung'; });
       var ohneRollen = d.filter(function (p) { return !/Rollen à/.test(p.beschreibung); });
