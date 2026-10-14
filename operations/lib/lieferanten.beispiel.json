@@ -22,7 +22,8 @@
         "weg": "portal",
         "portalUrl": "https://lieferant-a.example/haendler",
         "mail": "bestellung@lieferant-a.example",
-        "telefon": "+49 30 1111111"
+        "telefon": "+49 30 1111111",
+        "lieferung": "kunde"
       },
       "muster": {
         "weg": "mail",
