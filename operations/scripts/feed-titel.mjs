@@ -27,9 +27,10 @@
  * (x 100), so wie ihn Seitenkopf und strukturierte Daten nennen
  * (snippets/tp-product-structured-data.liquid); bei Vergleichspreis
  * price = Vergleichspreis je m2, sale_price = Preis je m2. Grundpreis dort und hier
- * "1 sqm" je "1 sqm", sonst rechnete Google 85 EUR je 0,01 m2. Nach jeder
- * Preisaenderung an Teppichen nach Mass neu erzeugen und hochladen - sonst
- * lehnt Google die Angebote wegen Preisabweichung ab.
+ * "1 sqm" je "1 sqm", sonst rechnete Google 85 EUR je 0,01 m2. Seit 14.10.2026
+ * laeuft das automatisch: operations/scripts/feed-tnm-abruf.mjs per GitHub Action
+ * (feed-tnm-preise.yml) taeglich auf den Zweig feed-daten, das Merchant Center ruft
+ * die Datei von dort ab. --tnm-aus bleibt fuer Pruefungen von Hand.
  *
  * Ablauf (nach groesseren Importen wiederholen, sonst behalten neue Produkte den Rohtitel):
  *   1. npm run -s feed:titel -- --bulk-query   -> Abfrage per bulkOperationRunQuery (Shopify-MCP) laufen lassen, JSONL laden
