@@ -287,7 +287,8 @@ test('Ware: fertige Mail, ungeklaerte Positionen getrennt als fehlt', () => {
   assert.equal(mail.positionen.length, 1);
   assert.match(mail.text, /^Guten Tag Frau Muster,\n\nwir bestellen folgende Ware:/);
   assert.match(mail.text, /Unsere Kundennummer: K-000001/);
-  assert.match(mail.text, /1\. Art\.-Nr\. A-4711 · Farb-Nr\. 012\n {3}Testdiele Eiche, Natur\n {3}Menge: 3 Paket\(e\) = 6,60 m²\n {3}Kommission: #T1/);
+  assert.equal(/Testdiele|Natur/.test(mail.text), false, 'keine Shop-Produktnamen in der Mail an den Lieferanten');
+  assert.match(mail.text, /1\. Art\.-Nr\. A-4711 · Farb-Nr\. 012\n {3}Menge: 3 Paket\(e\) = 6,60 m²\n {3}Kommission: #T1/);
   assert.match(mail.text, /Lieferanschrift:\nBeispielhandel GmbH\nMusterweg 1\n00000 Musterstadt/);
   assert.match(mail.text, /Viele Grüße\nErika Beispiel\nBeispielhandel GmbH$/);
   assert.equal(mail.text.includes('A-0815'), false, 'Position ohne Menge darf nicht in der Mail stehen');
@@ -349,7 +350,7 @@ test('Muster direkt an Kunden: Anschrift je Bestellung, fehlende Anschrift und F
   assert.equal(mail.lieferziel, 'kunde');
   assert.equal(mail.betreff, 'Musterbestellung – Kd.-Nr. K-000001 – 1 Muster – #T2');
   assert.match(mail.text, /bitte senden Sie folgende Muster direkt an unsere Kunden:/);
-  assert.match(mail.text, /Lieferanschrift \(Kommission #T2\):\nTestkunde 2\nTestweg 2\n00000 Musterstadt\nDeutschland\n\n1\. Art\.-Nr\. A-0815 · Farb-Nr\. 020\n {3}Muster: Testteppich Wolke, Grau\n {3}Menge: 1 Muster/);
+  assert.match(mail.text, /Lieferanschrift \(Kommission #T2\):\nTestkunde 2\nTestweg 2\n00000 Musterstadt\nDeutschland\n\n1\. Art\.-Nr\. A-0815 · Farb-Nr\. 020\n {3}Menge: 1 Muster/);
   assert.deepEqual(mail.fehlt.map(f => f.gruende), [['Lieferanschrift des Kunden fehlt']]);
   assert.deepEqual(mail.ohneBestellung, []);
 });
