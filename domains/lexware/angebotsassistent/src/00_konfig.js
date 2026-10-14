@@ -79,7 +79,7 @@ var TP_KONFIG = {
     // Ohne Artikelnummer in Lexware, daher per ID.
     fahrtBerlin: { id: '62f3ffa4-fa7c-4e3d-a2b4-af024f6253bb', titel: 'An- und Abfahrt Berlin' },
     aktionVerlegung: {
-      id: 'a8cdfc6b-8542-49c3-b001-0560105d1742',
+      id: 'a8cdfc6b-e55b-4859-8098-1818210a7e67',
       titel: 'Angebot Rollenware verlegen – lose Verlegung + 1. Anfahrt inklusive',
       kostenlosBestaetigt: true
     },
