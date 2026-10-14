@@ -181,10 +181,10 @@ Werte für **Sockelleisten-Montage**: `cubu_bis60`, `kso_bis60`,
   - Kontakt
   - jede Position (ID, Name, Beschreibung, Menge, Einheit, Preis, Steuer, optional)
   - Summen, Schlusstext, Datum
-- **Nicht live geprüft:** Die offizielle Doku (developers.lexware.io) war aus
-  der Entwicklungsumgebung gesperrt. Die Feldnamen stammen aus dem bekannten
-  API-Stand und `domains/lexware/api-funktionsumfang.md`. Vor dem ersten
-  Schreiben deshalb das Menü „Verbindung & Feldprüfung“ ausführen.
+- **Live geprüft am 14.10.2026:**
+  - Die Feldprüfung zeigt ✔ bei allen Kopf- und Positionsfeldern, geprüft an einer service-Position mit Artikel-ID.
+  - Der erste Testentwurf (TEST-EINFACH, 4 Positionen) wurde angelegt und zurückgelesen. Der gespeicherte Entwurf stimmte vollständig mit der Vorschau überein.
+  - Die offizielle Doku war aus der Entwicklungsumgebung gesperrt. Die Feldnamen sind deshalb durch diesen Live-Test belegt, nicht durch die Doku.
 
 ## Befunde aus den gelieferten Daten
 
