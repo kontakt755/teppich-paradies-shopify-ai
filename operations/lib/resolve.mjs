@@ -217,7 +217,8 @@ export function masspruefung({ props, quantity, hundertstel, alleZeilen = [] }) 
 /**
  * Gemeinsamer Rollenbestand (Inhaberentscheidung 2026-10-10, Nachbau der
  * internen Bestellmail): Ein Teppich nach Mass mit custom.zuschnitt_von_rolle
- * bucht seinen Rollenverbrauch ueber ein 0-EUR-Bundle ab; in der Bestellung
+ * bucht seinen Rollenverbrauch ueber ein Bundle ab (bis 2026-10-13 0 EUR, seither
+ * 0,57 EUR = eine Einheit des Teppichs); in der Bestellung
  * steht dafuer die Rollenware als Bundle-Komponente (lineItemGroup gesetzt).
  * Verglichen wird ueber die ganze Bestellung: Bedarf aller solchen Teppiche
  * (aus den Massen, Bestandseinheit 1 m2 voller Rollenbreite) gegen die Menge
@@ -355,6 +356,13 @@ export function resolveLineItem({ lineItem, variant, alleZeilen = [] } = {}) {
       hinweis: `Bestandsabgang zu „${gruppe.title ?? 'Bundle'}“ – nicht separat zuschneiden`,
     };
   } else if (!leer(pm?.custom?.zuschnitt_von_rolle)) {
+    // Zuschnitt zu 0,57 EUR (Inhaber 2026-10-14) traegt eine Einheit des
+    // Teppichs; die Hauptzeile hat dann eine weniger. Hoechstens 1 - ein
+    // fehlender Zuschnitt faellt gleich darunter bei der Rollenpruefung auf.
+    if (pruefung.status === 'abweichung' && produkt.preis_pro_001_qm &&
+        String(props['_Einheit im Zuschnitt'] ?? '').trim() === '1' && pruefung.ist >= pruefung.soll - 1) {
+      pruefung = { ...pruefung, status: 'ok' };
+    }
     const zeilen = alleZeilen.includes(lineItem) ? alleZeilen : [lineItem, ...alleZeilen];
     const rb = rollenbestand(zeilen);
     if (rb.bedarf === null) {

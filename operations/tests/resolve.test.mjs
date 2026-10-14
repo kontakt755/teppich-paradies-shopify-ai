@@ -175,6 +175,15 @@ test('Rollenbestand: fehlende oder zu kleine Komponente ist eine Abweichung', ()
   assert.equal(aufloesen([yTeppich(), yKomponente(7)])[0].masspruefung.status, 'abweichung');
 });
 
+test('Rollenbestand 0,57 EUR: eine Einheit im Zuschnitt ist ok, zwei oder ohne Kennzeichen nicht', () => {
+  const mitKennz = (menge) => { const t = yTeppich('200 × 300 cm', menge); t.customAttributes = [...t.customAttributes, { key: '_Einheit im Zuschnitt', value: '1' }]; return t; };
+  assert.equal(aufloesen([mitKennz(599), yKomponente(8)])[0].masspruefung.status, 'ok');
+  assert.equal(aufloesen([mitKennz(598), yKomponente(8)])[0].masspruefung.status, 'abweichung');
+  assert.equal(aufloesen([yTeppich('200 × 300 cm', 599), yKomponente(8)])[0].masspruefung.status, 'abweichung');
+  // Kennzeichen ohne Zuschnitt: Rollenpruefung meldet weiter.
+  assert.equal(aufloesen([mitKennz(599)])[0].masspruefung.status, 'abweichung');
+});
+
 test('Rollenbestand: Teppich nach Mass ohne Verweis bleibt bei der Flaechenpruefung', () => {
   const normal = { ...yTeppich(), variant: { ...massVariante, product: { ...massVariante.product, metafields: [mf('custom', 'preis_pro_001_qm', 'true')] } } };
   const r = resolveLineItem({ lineItem: normal, variant: normal.variant, alleZeilen: [normal] });

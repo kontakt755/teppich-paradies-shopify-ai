@@ -161,16 +161,24 @@ Bundle-Variante `cm x Rollenbreite / 10000` Einheiten als Komponentenmenge
   bis jemand storniert. Auf Basic gibt es keine eigene Checkout-Validierung.
   Vor dem Veroeffentlichen braucht es eine Entscheidung (siehe unten).
 
-### Offen: Schutz gegen Zuschnitt ohne Teppich
+### Entschieden: Schutz gegen Zuschnitt ohne Teppich (Inhaber 2026-10-14)
 
-| Weg | Wirkung | Aufwand / Freigabe |
-|---|---|---|
-| Validierungs-App aus dem App Store (Functions laufen fuer oeffentliche Apps auch auf Basic), Regel "Zuschnitt von der Rolle nur zusammen mit dem Massteppich" | verhindert den Checkout | App-Installation, ggf. Kosten - Inhaber |
-| Bundle-Preis 0,57 EUR (= 1 Einheit des Massprodukts), Konfigurator senkt die Teppichmenge um 1 | Endpreis centgenau gleich, nie 0 EUR; Missbrauch kostet Geld, bindet aber weiter Bestand | Preisaenderung - Inhaber; Code in Konfigurator, Mail, Control Center |
-| Shopify Flow (im Basic-Tarif enthalten): Bestellung mit Zuschnitt ohne Massteppich sofort stornieren, wieder einlagern, intern melden | macht den Fall in Sekunden rueckgaengig, verhindert ihn nicht | Admin-Einrichtung durch einen Menschen |
+Zuschnitt zu **0,57 EUR** plus **Shopify Flow** als Netz (keine App).
 
-Empfehlung: Flow als Netz in jedem Fall; dazu entweder die App (echte Sperre)
-oder 0,57 EUR (kein 0-EUR-Auftrag mehr).
+- Alle 39 Bundle-Varianten kosten 0,57 EUR = eine Einheit (0,01 m2) des
+  Massprodukts. Der Konfigurator legt den Teppich dann mit **einer Einheit
+  weniger** in den Warenkorb und markiert die Hauptzeile mit
+  `_Einheit im Zuschnitt = 1`; der Endpreis bleibt centgenau gleich
+  (`qa/tests/tp-einfass-rollenzuschnitt.test.mjs`). Fail closed: uneinheitliche
+  Bundle-Preise oder ein Preis ungleich dem Einheitspreis sperren den Kauf;
+  0 EUR funktioniert weiter wie bisher.
+- Interne Bestellmail und Control Center erlauben bei Teppichen mit
+  `custom.zuschnitt_von_rolle` und dieser Markierung genau eine Einheit weniger
+  als die Flaeche; ein fehlender Zuschnitt faellt weiter bei der
+  Rollenpruefung auf.
+- Ein Zuschnitt allein ist damit nie mehr ein 0-EUR-Auftrag. Flow storniert
+  eine Bestellung, die eine Zuschnittzeile ohne Teppich enthaelt, und lagert
+  wieder ein.
 
 Beobachtung am Rand (nicht Yasmin-spezifisch): Der Warenkorb nimmt von einer
 bestandsgefuehrten Variante hoechstens 50 Stueck an ("Aufgrund der

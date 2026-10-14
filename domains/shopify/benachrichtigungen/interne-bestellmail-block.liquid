@@ -41,8 +41,10 @@
   GEMEINSAMER ROLLENBESTAND (Inhaberentscheidung 2026-10-10, Sofortkauf):
   Ein Teppich nach Mass mit custom.zuschnitt_von_rolle (Sonderposten aus einer
   begrenzten Rolle) bucht seinen Rollenverbrauch ueber ein verstecktes
-  0-EUR-Bundle "Zuschnitt von der Rolle" ab. In der Bestellung steht dafuer
-  eine Zeile der ROLLENWARE (Bundle-Komponente, 0 EUR) - sie ist ein
+  Bundle "Zuschnitt von der Rolle" ab (seit 2026-10-14 zu 0,57 EUR = eine
+  Einheit des Teppichs, die Hauptzeile hat dafuer eine Einheit weniger und
+  traegt "_Einheit im Zuschnitt" = 1). In der Bestellung steht dafuer
+  eine Zeile der ROLLENWARE (Bundle-Komponente) - sie ist ein
   Bestandsabgang zum Teppich und wird NICHT separat als Meterware
   zugeschnitten. Die Mail rechnet den Verbrauch aus den Massen des Teppichs
   nach (passt die laengere Seite quer in die Rolle, nur die kuerzere; Breite =
@@ -50,7 +52,8 @@
   (1 Einheit = 1 m2 = 25 cm bei 4 m Rolle). Fehlt die Zeile oder ist sie zu
   klein (per /cart/change.js entfernt), muss der Bestand vor dem Zuschnitt
   von Hand gesenkt werden. Komponentenzeilen erkennt die Mail an line.groups
-  (Bundle) oder an Preis 0 bei einem Produkt mit custom.max_roll_laenge_cm;
+  (Bundle), bei alten Bestellungen auch an Preis 0 bei einem Produkt mit
+  custom.max_roll_laenge_cm;
   zeigt Shopify statt der Komponente die Bundle-Zeile selbst, zaehlt deren
   Property "Rollenzuschnitt". Beides ist erst mit der ersten echten
   Bestellung belegt (Testbenachrichtigung im Admin, README).
@@ -216,6 +219,7 @@
         assign tp_mp_wm_breite = ''
         assign tp_mp_wm_einzel = ''
         assign tp_rz_zeile_cm = ''
+        assign tp_mp_zs_einheit = 0
         for p in line.properties
           case p.first
             when 'Maße'
@@ -248,6 +252,8 @@
               assign tp_mp_zu = p.last
             when 'Rollenzuschnitt'
               assign tp_rz_zeile_cm = p.last
+            when '_Einheit im Zuschnitt'
+              assign tp_mp_zs_einheit = p.last | plus: 0 | floor
           endcase
         endfor
 
@@ -298,7 +304,15 @@
               assign tp_mp_einheit = 'm²'
             endif
             assign tp_mp_status = 'ok'
-            if line.quantity < tp_mp_soll
+            # Gemeinsamer Rollenbestand (Inhaber 2026-10-14): Kostet der Zuschnitt
+            # eine Einheit (0,57 EUR), traegt er sie - die Hauptzeile hat dann eine
+            # Einheit weniger. Hoechstens 1 und nur am Produkt mit Rollenbestand;
+            # ein fehlender Zuschnitt faellt unten bei der Rollenpruefung auf.
+            assign tp_mp_grenze = tp_mp_soll
+            if tp_mp_zs_einheit == 1 and tp_mp_hundertstel and line.product.metafields.custom.zuschnitt_von_rolle != blank
+              assign tp_mp_grenze = tp_mp_soll | minus: 1
+            endif
+            if line.quantity < tp_mp_grenze
               assign tp_mp_status = 'abweichung'
             endif
           endif
@@ -445,10 +459,11 @@
           endif
         endif
 
-        # Bundle-Komponente (Rollenware zu 0 EUR) oder - falls Shopify die
+        # Bundle-Komponente (Rollenware unter "Zuschnitt von der Rolle", seit
+        # 2026-10-14 zu 0,57 EUR statt 0 EUR) oder - falls Shopify die
         # Bundle-Zeile selbst zeigt - die Zeile mit "Rollenzuschnitt".
-        # Der Preis 0 ist nur Rueckfall, falls line.groups fehlt; er
-        # ueberschreibt nie einen schon gesetzten Alarm (z. B. eine Rollenware
+        # Der Preis 0 ist nur Rueckfall fuer alte Bestellungen ohne line.groups;
+        # er ueberschreibt nie einen schon gesetzten Alarm (z. B. eine Rollenware
         # mit 100-%-Rabatt und unlesbarem Mass).
         assign tp_rz_komponente = false
         if line.product.metafields.custom.max_roll_laenge_cm != blank and tp_mp_laenge == ''
