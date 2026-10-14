@@ -213,11 +213,11 @@
 
   // Dieselbe Regel wie snippets/tp-musteroption und canSample in
   // assets/tp-sample-checkout-core.js (qa/tests/muster-produktwahl.test.mjs
-  // prueft den Gleichlauf): Laminat, Parkett, Kork, Zubehoer und ohne-muster
-  // haben keinen kostenlosen Musterweg.
+  // prueft den Gleichlauf): Laminat, Kork, Zubehoer und ohne-muster haben
+  // keinen kostenlosen Musterweg (Parkett seit 14.10.2026 schon).
   function hatMusterweg(product) {
     var typ = String(product.type || '').trim().toLowerCase();
-    if (['laminat', 'parkett', 'kork'].indexOf(typ) !== -1) return false;
+    if (['laminat', 'kork'].indexOf(typ) !== -1) return false;
     var tags = Array.isArray(product.tags) ? product.tags : String(product.tags || '').split(',');
     return !tags.some(function (tag) {
       var name = String(tag || '').trim().toLowerCase();
@@ -229,8 +229,8 @@
   // Bis 2026-09-27 kam ?produkt= hier an und wurde ignoriert - die Anfrage
   // erreichte uns ohne Produkt und ohne Betreff.
   function anfrageVorbelegen(params) {
-    // musteranfrage: Belaege ohne Selbstbedienungs-Muster (Parkett, siehe
-    // blocks/tp-muster-cta) - normale Anfrage, keine kostenlose Musterbestellung.
+    // musteranfrage: bis 14.10.2026 der Parkett-Musterweg; bleibt fuer alte
+    // Links - normale Anfrage, keine kostenlose Musterbestellung.
     var themen = {
       verlegung: 'Verlegeanfrage',
       angebot: 'Angebotsanfrage',

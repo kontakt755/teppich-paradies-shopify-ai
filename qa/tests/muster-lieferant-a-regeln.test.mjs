@@ -1,5 +1,5 @@
 // Musterregeln nach dem Vertretergespraech mit dem Hauptlieferanten (12.10.2026):
-// Parkett nur auf Anfrage, Klickvinyl-Muster kommt als Klebe-Ausfuehrung.
+// Parkett seit 14.10.2026 mit normalem Musterweg, Klickvinyl-Muster kommt als Klebe-Ausfuehrung.
 // Vinyl von der Rolle und Linoleum hatten am 12.10. den Tag ohne-muster
 // bekommen; seit 13.10. schneiden wir die Muster selbst aus einem Probestueck
 // (Inhaber) - Tag wieder entfernt, Einstiege auf der Musterseite wieder da.
@@ -38,11 +38,11 @@ async function cta(product) {
   });
 }
 
-test('Parkett: statt Musterknopf eine Musteranfrage zum Kontaktformular, ohne "kostenlos"', async () => {
+test('Parkett: normaler Musterweg wie alle anderen (14.10.2026)', async () => {
   const html = await cta({ handle: 'eiche-natur-parkett', type: 'Parkett', tags: [], title: 'Eiche Natur Parkett' });
-  assert.match(html, /href="\/pages\/kontakt\?thema=musteranfrage&produkt=Eiche\+Natur\+Parkett&handle=eiche-natur-parkett"/);
-  assert.match(html, /Muster anfragen/);
-  assert.doesNotMatch(html, /kostenlos/i);
+  assert.match(html, /href="\/pages\/muster\?produkt=eiche-natur-parkett"/);
+  assert.match(html, /Kostenloses Muster anfragen/);
+  assert.doesNotMatch(html, /thema=musteranfrage/);
 });
 
 test('Parkett mit ohne-muster oder zubehoer bleibt ganz ohne Knopf', async () => {

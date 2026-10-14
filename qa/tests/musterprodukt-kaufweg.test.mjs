@@ -33,7 +33,7 @@ test('regulaerer Musterweg und Sortimentsausschluss bleiben bestehen', async () 
     product: { handle: 'piumera-teppichboden-400cm-500cm', type: 'Teppichboden', tags: [] },
   });
   const ohneMuster = await liquid.parseAndRender(optionSource, {
-    product: { handle: 'parkett', type: 'Parkett', tags: [] },
+    product: { handle: 'laminat', type: 'Laminat', tags: [] },
   });
   assert.equal(normal, '/pages/muster?produkt=piumera-teppichboden-400cm-500cm');
   assert.equal(ohneMuster, '');
