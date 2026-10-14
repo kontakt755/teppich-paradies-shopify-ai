@@ -5,7 +5,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { createAuth, loadConfiguredPassword, passwordFilePath, parseCookies, renderLoginPage, sessionCookieHeader, sessionFilePath, SESSION_COOKIE, SESSION_TTL_LANG_MS } from '../../../scripts/dashboard-auth.mjs';
+import { anmeldeKonten, createAuth, loadConfiguredPassword, passwordFilePath, parseCookies, renderLoginPage, sessionCookieHeader, sessionFilePath, SESSION_COOKIE, SESSION_TTL_LANG_MS } from '../../../scripts/dashboard-auth.mjs';
 
 // Isoliertes Privatverzeichnis, unabhaengig davon, was auf dem jeweiligen Rechner liegt.
 const TMP_PRIVAT = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-dashboard-auth-test-'));
@@ -337,6 +337,27 @@ test('Anmeldeseite zeigt das Namensfeld nur, wenn es Mitarbeiterzugaenge gibt', 
   const ohne = renderLoginPage({ mitBenutzern: false });
   assert.equal(ohne.includes('id="name"'), false);
   assert.match(ohne, /angemeldet bleiben/i);
-  const mit = renderLoginPage({ mitBenutzern: true });
+  const mit = renderLoginPage({ mitBenutzern: true, konten: [] });
   assert.match(mit, /id="name"/);
+});
+
+test('Anmeldeseite zeigt aktive Konten als Auswahl statt Textfeld', () => {
+  const html = renderLoginPage({ mitBenutzern: true, konten: [{ name: 'Ahmet', kuerzel: 'ahmet' }, { name: 'Laden', kuerzel: 'laden' }] });
+  assert.equal(html.includes('id="name"'), false);
+  assert.match(html, /type="radio" name="name" value="ahmet"/);
+  assert.match(html, /Konto Ahmet/);
+  assert.match(html, /Konto Laden/);
+  assert.equal(html.includes('Name oder Kürzel'), false);
+});
+
+test('anmeldeKonten: nur aktive, Inhaber zuerst, ohne Passwort-Hash', () => {
+  const liste = [
+    { name: 'Laden', kuerzel: 'laden', rolle: 'mitarbeiter', aktiv: true, passwortHash: 'x' },
+    { name: 'Tobias', kuerzel: 'tobias', rolle: 'inhaber', aktiv: false, passwortHash: 'x' },
+    { name: 'Ahmet', kuerzel: 'ahmet', rolle: 'inhaber', aktiv: true, passwortHash: 'x' },
+  ];
+  const konten = anmeldeKonten({ exists: () => true, readList: () => liste });
+  assert.deepEqual(konten, [{ name: 'Ahmet', kuerzel: 'ahmet' }, { name: 'Laden', kuerzel: 'laden' }]);
+  assert.deepEqual(anmeldeKonten({ exists: () => false, readList: () => liste }), []);
+  assert.deepEqual(anmeldeKonten({ exists: () => true, readList: () => { throw new Error('kaputt'); } }), []);
 });
