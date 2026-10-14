@@ -10,7 +10,7 @@
 import {
   lieferantenKarten, karteImFilter, ueberfaelligText, hauptAktion, bestellwegText, feldKlartext,
   telLink, verlauf, lieferzeiten, SCHWELLEN_STANDARD, gmailLink, afNorm } from '../../lib/einkauf-lieferanten.mjs';
-import { blockGruende, mengeText, ausfuehrungKurz, jeKommission, laufendSicht } from '../../lib/einkauf-uebersicht.mjs';
+import { blockGruende, mengeText, ausfuehrungKurz, jeKommission } from '../../lib/einkauf-uebersicht.mjs';
 import { musterText, musterHerkunftText } from '../../lib/bestellinhalt.mjs';
 import { state } from '../../kern/zustand.mjs';
 import { $, esc, fmtDate, plural, toast, NICHT_HINTERLEGT } from '../../kern/helfer.mjs';
@@ -159,53 +159,81 @@ function musterZeile(g, namen, { herkunft = false } = {}) {
     </div><div class="lf-posten-rechts"><span class="lf-anzahl">${esc(plural(g.positionen.length, 'Muster', 'Muster'))}</span>${warteChip(g)}</div></li>`;
 }
 
-/** Ueberschrift einer Stufe: "Zu bestellen · 3" und rechts daneben der Knopf. */
-const stufeKopf = (titel, zahl, knopf = '') => `<div class="lf-stufe"><span class="lf-abschnitt">${esc(titel)} <b>${zahl}</b></span>${knopf}</div>`;
+/** Ueberschrift einer Stufe: "Ware bestellen 3", darunter ein Satz, rechts der Knopf. */
+const stufeKopf = (titel, zahl, knopf = '', { klasse = '', zusatz = '' } = {}) => `<div class="lf-stufe ${klasse}"><div class="lf-stufe-titel"><h4>${esc(titel)} <b>${zahl}</b></h4>${zusatz ? `<p>${zusatz}</p>` : ''}</div>${knopf}</div>`;
 
 function stufeListe(zeilen, rest, restText) {
   return `<ul class="lf-liste">${zeilen.join('')}</ul>${rest > 0 ? `<p class="lf-rest">+ ${rest} ${esc(restText)}</p>` : ''}`;
 }
 
-function wareBlock(k, namen, knopfKlasse) {
-  const w = k.ware;
-  if (!w.zuBestellen.length && !w.bestellt.length && !w.eingetroffen.length) return '';
-  const teile = [];
-  if (w.zuBestellen.length) {
-    const zeigen = w.zuBestellen.slice(0, 8);
-    teile.push(stufeKopf('Zu bestellen', w.zuBestellen.length, wareKnopf(k, knopfKlasse))
-      + stufeListe(zeigen.map(x => wareZeile(x, namen)), w.zuBestellen.length - zeigen.length, 'weitere – „Positionen bearbeiten"'));
-  }
-  if (w.bestellt.length) {
-    const s = laufendSicht(nachWartezeit(w.bestellt));
-    teile.push(stufeKopf('Bestellt, noch nicht da', w.bestellt.length) + stufeListe(s.zeigen.map(x => wareZeile(x, namen)), s.rest, 'weitere im Plan'));
-  }
-  if (w.eingetroffen.length) {
-    const zeigen = nachWartezeit(w.eingetroffen).slice(0, 2);
-    teile.push(stufeKopf('Bei uns eingetroffen', w.eingetroffen.length) + stufeListe(zeigen.map(x => wareZeile(x, namen)), w.eingetroffen.length - zeigen.length, 'weitere'));
-  }
-  return `<section class="lf-art" aria-label="Ware"><h4 class="lf-art-titel">Ware</h4>${teile.join('')}</section>`;
+/** "3 für 2 Kunden" - Muster zaehlen einzeln, gehen aber je Kunde gemeinsam raus. */
+const fuerKunden = liste => `${liste.length}<span class="lf-fuer"> für ${plural(jeKommission(liste).length, 'Kunden', 'Kunden')}</span>`;
+
+/** Laufende Posten: Ware je Position, Muster je Kommission - Ware zuerst. */
+function laufendZeilen(liste, namen) {
+  const ware = nachWartezeit(liste.filter(x => !x.pos?.istMuster)).map(x => ({ n: 1, html: wareZeile(x, namen) }));
+  const muster = jeKommission(liste.filter(x => x.pos?.istMuster)).map(g => ({ n: g.positionen.length, html: musterZeile(g, namen) }));
+  return [...ware, ...muster];
 }
 
-function musterBlock(k, namen, knopfKlasse) {
-  const m = k.muster;
-  const eigen = m.eigen || [];
-  const laufend = [...m.bestellt, ...m.eingetroffen];
-  if (!m.zuBestellen.length && !eigen.length && !laufend.length) return '';
-  const zahl = liste => { const n = jeKommission(liste).length; return `${liste.length}<span class="lf-fuer"> für ${plural(n, 'Kunden', 'Kunden')}</span>`; };
+/** Die ersten `max` Zeilen; der Rest in Positionen, damit er zur Zahl der Ueberschrift passt. */
+function ruhigeListe(zeilen, max) {
+  const rest = zeilen.slice(max).reduce((n, z) => n + z.n, 0);
+  return stufeListe(zeilen.slice(0, max).map(z => z.html), rest, rest === 1 ? 'weitere Position' : 'weitere Positionen');
+}
+
+/** Kontakt fuers Nachfassen: Telefon vor Mail, sonst die Detailseite mit Kontakt. */
+function nachfassKnopf(k) {
+  const w = k.stammdaten.ware;
+  if (w.telefon) return `<a class="btn" href="${esc(telLink(w.telefon))}">Anrufen</a>`;
+  if (w.mail) return `<a class="btn" href="mailto:${esc(w.mail)}">E-Mail schreiben</a>`;
+  return `<a class="btn" href="${detailLink(k.id)}">Kontakt</a>`;
+}
+
+/**
+ * Die Karte in Arbeitsschritten (Inhaber 2026-10-14: "Bestellungen ganz vorne extra Zeile, fuer
+ * Muster bestellen extra Zeile, fuer Nachfassen extra Zeile"). 1. Ware bestellen, 2. Muster
+ * bestellen, 3. Nachfassen (bestellt, wartet zu lange - Ware und Muster); darunter ruhig, was
+ * im Plan laeuft. Ein Posten steht genau in einem Abschnitt.
+ */
+function arbeitsSchritte(k, namen) {
   const teile = [];
-  if (m.zuBestellen.length) {
-    const g = jeKommission(m.zuBestellen);
-    teile.push(stufeKopf('Zu bestellen', zahl(m.zuBestellen), musterKnopf(k, knopfKlasse)) + stufeListe(g.slice(0, 6).map(x => musterZeile(x, namen)), g.length - Math.min(g.length, 6), 'weitere Kunden'));
+  const w = k.ware.zuBestellen;
+  const m = k.muster.zuBestellen;
+  if (w.length) {
+    const zeigen = w.slice(0, 8);
+    teile.push(`<section class="lf-schritt">${stufeKopf('Ware bestellen', w.length, wareKnopf(k, 'btn btn-primary'))}
+      ${stufeListe(zeigen.map(x => wareZeile(x, namen)), w.length - zeigen.length, 'weitere – „Positionen bearbeiten"')}</section>`);
   }
+  if (m.length) {
+    const g = jeKommission(m);
+    teile.push(`<section class="lf-schritt">${stufeKopf('Muster bestellen', fuerKunden(m), musterKnopf(k, w.length ? 'btn' : 'btn btn-primary'))}
+      ${stufeListe(g.slice(0, 6).map(x => musterZeile(x, namen)), g.length - Math.min(g.length, 6), 'weitere Kunden')}</section>`);
+  }
+  const ue = k.ueberfaellig;
+  if (ue.stufe && k.zugeordnet) {
+    const satz = `${plural(ue.anzahl, 'Position', 'Positionen')}, die älteste seit ${plural(ue.maxTage, 'Tag', 'Tagen')} – ${ue.stufe === 'crit' ? 'überfällig' : 'beim Lieferanten nachhaken'}.`;
+    teile.push(`<section class="lf-schritt lf-nachfassen ${ue.stufe}">${stufeKopf('Nachfassen', ue.auftraege === 1 ? '1 Auftrag' : `${ue.auftraege} Aufträge`, nachfassKnopf(k), { zusatz: esc(satz) })}
+      ${stufeListe(laufendZeilen(ue.positionen, namen).map(z => z.html), 0, '')}</section>`);
+  }
+  // Ruhig darunter: was wir selbst da haben und was im Plan laeuft (nicht ueberfaellig).
+  const ruhig = [];
+  const eigen = k.muster.eigen || [];
   if (eigen.length) {
     const g = jeKommission(eigen);
-    teile.push(stufeKopf('Haben wir da – verschicken oder vorbeibringen', zahl(eigen)) + stufeListe(g.slice(0, 4).map(x => musterZeile(x, namen, { herkunft: true })), g.length - Math.min(g.length, 4), 'weitere Kunden'));
+    ruhig.push(stufeKopf('Muster haben wir da – verschicken oder vorbeibringen', fuerKunden(eigen), '', { klasse: 'lf-ruhig' })
+      + stufeListe(g.slice(0, 4).map(x => musterZeile(x, namen, { herkunft: true })), g.length - Math.min(g.length, 4), 'weitere Kunden'));
   }
-  if (laufend.length) {
-    const s = laufendSicht(jeKommission(laufend));
-    teile.push(stufeKopf('Bestellt, unterwegs', zahl(laufend)) + stufeListe(s.zeigen.map(x => musterZeile(x, namen)), s.rest, s.rest === 1 ? 'weiterer Kunde im Plan' : 'weitere Kunden im Plan'));
+  const imPlan = [...k.ware.bestellt, ...k.muster.bestellt].filter(x => !x.warnstufe);
+  if (imPlan.length) {
+    ruhig.push(stufeKopf('Bestellt, im Plan', imPlan.length, '', { klasse: 'lf-ruhig' }) + ruhigeListe(laufendZeilen(imPlan, namen), 3));
   }
-  return `<section class="lf-art" aria-label="Muster"><h4 class="lf-art-titel">Muster</h4>${teile.join('')}</section>`;
+  const da = [...k.ware.eingetroffen, ...k.muster.eingetroffen].filter(x => !x.warnstufe);
+  if (da.length) {
+    ruhig.push(stufeKopf('Bei uns eingetroffen', da.length, '', { klasse: 'lf-ruhig' }) + ruhigeListe(laufendZeilen(da, namen), 2));
+  }
+  if (ruhig.length) teile.push(`<section class="lf-schritt lf-schritt-ruhig">${ruhig.join('')}</section>`);
+  return teile.join('');
 }
 
 function karteHtml(k, { gruppeKarte, namen, af, alleGruppen, alleMusterGruppen }) {
@@ -215,9 +243,8 @@ function karteHtml(k, { gruppeKarte, namen, af, alleGruppen, alleMusterGruppen }
   const eigen = k.muster.eigen || [];
   const anzahl = af === 'erledigt' ? k.ware.erledigt.length + k.muster.erledigt.length : zu.length + laufend.length + eigen.length;
   // Zugeklappt stehen die Bestellknoepfe bei "Zu bestellen"; aufgeklappt (Tabellen) unten im Fuss.
-  const knoepfe = offen ? bestellKnoepfe(k) : nachhakKnopf(k);
-  const wareHtml = offen || !k.zugeordnet ? '' : wareBlock(k, namen, 'btn btn-primary');
-  const vorschau = offen ? '' : wareHtml + musterBlock(k, namen, k.zahlen.zuBestellen ? 'btn' : 'btn btn-primary');
+  const knoepfe = offen ? bestellKnoepfe(k) : '';
+  const vorschau = offen ? '' : arbeitsSchritte(k, namen);
   // Sammelaktion fuer die ganze Karte: alles, was hier schon einen Schritt hat, zurueck auf offen.
   const gesetzt = (af === 'erledigt' ? [...k.ware.erledigt, ...k.muster.erledigt] : laufend).map(x => x.pos).filter(p => p.lineItemId);
   const zurueckId = `lf-${k.id}`;
@@ -230,11 +257,21 @@ function karteHtml(k, { gruppeKarte, namen, af, alleGruppen, alleMusterGruppen }
   const kopfName = k.zugeordnet ? `<a href="${detailLink(k.id)}" title="Kontakt, Bestellweg und Verlauf">${esc(k.name)}</a>` : esc(k.name);
   return `<article class="card lf-karte${offen ? ' lf-offen' : ''}">
     <div class="lf-kopf"><h3 class="lf-name">${kopfName}</h3>${wegZeile(k)}</div>
-    ${ueberfaelligHinweis(k)}
+    ${offen ? ueberfaelligHinweis(k) : ''}
     ${vorschau}
     ${offen ? `<div class="lf-tabellen">${tabellen || '<p class="lf-rest">Kein Artikel in diesem Schritt.</p>'}</div>` : ''}
     <div class="lf-fuss">${knoepfe}${zurueck}<button type="button" class="btn btn-ghost lf-aufklappen" data-lf-auf="${esc(k.id)}" aria-expanded="${offen}">${offen ? 'Positionen einklappen' : `Positionen bearbeiten (${anzahl})`}</button></div>
   </article>`;
+}
+
+/**
+ * Nachfassen ueber alle Lieferanten fuer die Kachel oben: Summe der Auftraege aus den Karten,
+ * damit Kachel und Abschnitte "Nachfassen" dieselbe Menge zaehlen.
+ */
+export function nachfassenSumme() {
+  let auftraege = 0; let crit = false;
+  for (const k of karten()) if (k.ueberfaellig.stufe) { auftraege += k.ueberfaellig.auftraege; crit ||= k.ueberfaellig.stufe === 'crit'; }
+  return { auftraege, stufe: auftraege ? (crit ? 'crit' : 'warn') : null };
 }
 
 /**

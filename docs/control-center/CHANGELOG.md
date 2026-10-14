@@ -1099,3 +1099,28 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiken/Annahmen:** Gemeldet wird nur, was seit dem letzten Lauf dazukam – der erste Lauf ist
   Grundbestand. Fällt die Suche aus (über 5 %), bleibt der Vorlauf stehen.
 - **Nächste Stufe:** Grundbestand einmal sichten (bewusst nicht geführt oder anlegen?).
+
+## 2026-10-14 · Einkauf: Karte je Lieferant in Arbeitsschritten
+
+- **Geändert:** Inhaber: „teilweise alles sehr unübersichtlich“, dazu „für Nachfassen extra Zeile, für
+  Muster bestellen extra Zeile, und wichtigste natürlich Bestellungen ganz vorne“. Vorher stand auf der
+  Karte eine gemischte Liste „Zu bestellen“ (Ware und Muster durcheinander, nur 4 sichtbar), jedes Muster
+  als eigene Zeile mit doppeltem Namen, von 25 laufenden Posten 3 („+ 22 weitere“), vier Zahlen-Chips im
+  Kopf und ein gelber Kasten fürs Nachhaken; Maß und Einfassung erst in der Bestellmail, Kunde am
+  Zeilenende. Jetzt: Abschnitte „Ware bestellen“ (mit Bestellknopf, Menge, Fertigmaß, Einfassung,
+  Kunde · Auftrag, Blockiert-Grund), „Muster bestellen“ (je Kunde eine Zeile mit allen Farben),
+  „Nachfassen“ (alle überfälligen Posten, Knopf Anrufen/E-Mail/Kontakt), darunter ruhig was im Plan
+  läuft. „Ist eingetroffen“ direkt an bestellter Ware. Kacheln oben: Ware zu bestellen · Muster zu
+  bestellen · Aufträge nachfassen · Aufträge mit Problem (die Zahl offener Kundenaufträge steht unten
+  bei „Alle offenen Aufträge“). Neu `lib/einkauf-uebersicht.mjs`, Anleitung und Hilfe nachgezogen.
+  Baut auf #1248/#1251 auf; Bestellmengen- und Statuslogik unverändert.
+- **Getestet:** `tests/einkauf-uebersicht.test.mjs` (4); `dashboard:test` 313 grün, `npm test` alle
+  Suiten grün (2488 Tests); `dashboard:pruefen` 22 Ansichten × 5 Breiten = 110 × OK, 0 px Überlauf.
+  Klickstrecke gegen die Datenkopie (390 px): „Ist eingetroffen“ → Filter „Bestellt“ 26 → 25,
+  „Bei uns eingetroffen“ 0 → 1, Abschnitt „Bestellt, im Plan“ 13 → 12; Muster-Dialog öffnet, Esc
+  schließt; 0 JS-Fehler. Kachel „Aufträge nachfassen“ 4 = Abschnitt „Nachfassen 4 Aufträge“.
+- **Risiken/Annahmen:** „Blockiert“ prüft im Browser nur Artikelnummer und Menge; was die Bestellmail
+  zusätzlich ausschließt, steht weiter im Dialog. Eine Kundenbestellung mit Posten bei zwei Lieferanten
+  zählt in der Nachfass-Kachel je Lieferant. PR #1225 (offen) ändert dieselben Dateien.
+- **Nächste Stufe:** die aufgeklappte Tabelle („Positionen bearbeiten“) am Handy kürzen (bei Lieferant A
+  rund 18 000 px hoch); Heute-To-dos in derselben Reihenfolge (Bestellen, Muster, Nachhaken) sortieren.

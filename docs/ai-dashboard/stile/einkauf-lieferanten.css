@@ -34,13 +34,22 @@
 .lf-tage.crit { background: var(--crit-soft); color: var(--crit); }
 .lf-rest { padding: 4px 18px 10px; font-size: .88rem; color: var(--text-3); }
 
-/* Ware und Muster als eigene Bloecke; je Stufe eine Ueberschrift mit Zahl und dem Knopf dazu. */
-.lf-art { border-top: 1px solid var(--line); padding: 4px 0 6px; }
-.lf-art-titel { padding: 12px 18px 0; font-size: 1.05rem; font-weight: 700; }
-.lf-stufe { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 10px 18px 4px; }
-.lf-stufe .lf-abschnitt { padding: 0; }
-.lf-stufe .lf-abschnitt b { color: var(--text); font-size: .9rem; letter-spacing: 0; margin-left: 4px; }
-.lf-fuer { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text-3); }
+/* Arbeitsschritte je Karte: Ware bestellen, Muster bestellen, Nachfassen - je ein eigener
+   Abschnitt mit Zahl und Knopf. Darunter ruhig, was im Plan laeuft. */
+.lf-schritt { border-top: 1px solid var(--line); padding: 2px 0 6px; }
+.lf-stufe { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 12px 18px 4px; }
+.lf-stufe-titel { min-width: 0; }
+.lf-stufe-titel h4 { font-size: 1.05rem; font-weight: 700; }
+.lf-stufe-titel h4 b { margin-left: 4px; font-variant-numeric: tabular-nums; }
+.lf-stufe-titel p { font-size: .88rem; color: var(--text-2); }
+.lf-nachfassen.warn .lf-stufe-titel h4, .lf-nachfassen.warn .lf-stufe-titel p { color: var(--warn); }
+.lf-nachfassen.crit .lf-stufe-titel h4, .lf-nachfassen.crit .lf-stufe-titel p { color: var(--crit); }
+.lf-nachfassen.warn { box-shadow: inset 3px 0 0 var(--warn); }
+.lf-nachfassen.crit { box-shadow: inset 3px 0 0 var(--crit); }
+.lf-ruhig .lf-stufe-titel h4 { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); }
+.lf-ruhig .lf-stufe-titel h4 b { color: var(--text-2); letter-spacing: 0; }
+.lf-schritt-ruhig .lf-posten .t { font-weight: 550; }
+.lf-fuer { font-weight: 500; color: var(--text-3); }
 .lf-stufe .btn { min-height: 44px; }
 .lf-stufe a.btn:hover { text-decoration: none; }
 .lf-stufe a.btn:not(.btn-primary) { color: var(--text); }
@@ -121,7 +130,7 @@ body.rolle-lesen [data-auftrag-erledigt] { display: none !important; }
 }
 @media (max-width: 760px) {
   .lf-kopf { padding: 14px 15px 10px; }
-  .lf-art-titel, .lf-stufe { padding-left: 15px; padding-right: 15px; }
+  .lf-stufe { padding-left: 15px; padding-right: 15px; }
   .lf-stufe .btn { flex: 1 1 100%; }
   .lf-posten { align-items: flex-start; flex-wrap: wrap; }
   /* Mit Knopf: Wartezeit und Knopf unter den Text, der Knopf ueber die Breite (Daumen). */

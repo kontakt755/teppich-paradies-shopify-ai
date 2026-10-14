@@ -62,14 +62,3 @@ export function jeKommission(eintraege = []) {
   }
   return [...je.values()].sort((a, b) => (b.wartetage ?? -1) - (a.wartetage ?? -1));
 }
-
-/**
- * Welche laufenden Posten die Karte zeigt: alle, die nachhaken verlangen (warnstufe), dazu
- * hoechstens `max` weitere. Der Rest ist eine Zahl ("+ 18 weitere im Plan").
- */
-export function laufendSicht(liste = [], { max = 2 } = {}) {
-  const auffaellig = liste.filter(x => x?.warnstufe);
-  const ruhig = liste.filter(x => !x?.warnstufe);
-  const zeigen = [...auffaellig, ...ruhig.slice(0, max)];
-  return { zeigen, rest: liste.length - zeigen.length };
-}

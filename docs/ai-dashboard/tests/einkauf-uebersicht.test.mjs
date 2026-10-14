@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { blockGruende, mengeText, ausfuehrungKurz, jeKommission, laufendSicht } from '../lib/einkauf-uebersicht.mjs';
+import { blockGruende, mengeText, ausfuehrungKurz, jeKommission } from '../lib/einkauf-uebersicht.mjs';
 
 // Nur erfundene Daten.
 const pos = (extra = {}) => ({ titel: 'Testvelours Teppichboden', farbe: 'Sand', grosshaendlerId: 'TV-100', bestellmenge: { menge: 4, text: '4,00 lfm × 4,00 m' }, ...extra });
@@ -32,15 +32,4 @@ test('jeKommission: Muster einer Bestellung zusammen, laengste Wartezeit zuerst,
   const g = jeKommission([e('1', 2), e('2', 9, 'warn'), e('1', 3), e('2', 15, 'crit'), e('3', null)]);
   assert.deepEqual(g.map(k => [k.orderName, k.positionen.length, k.wartetage, k.warnstufe]),
     [['#2', 2, 15, 'crit'], ['#1', 2, 3, null], ['#3', 1, null, null]]);
-});
-
-test('laufendSicht: alle Auffaelligen, dazu hoechstens zwei weitere, Rest als Zahl', () => {
-  const x = n => Array.from({ length: n }, (_, i) => ({ i }));
-  const liste = [{ warnstufe: 'crit' }, ...x(5), { warnstufe: 'warn' }];
-  const s = laufendSicht(liste);
-  assert.equal(s.zeigen.length, 4);
-  assert.equal(s.zeigen[0].warnstufe, 'crit');
-  assert.equal(s.zeigen[1].warnstufe, 'warn');
-  assert.equal(s.rest, 3);
-  assert.deepEqual(laufendSicht([]), { zeigen: [], rest: 0 });
 });
