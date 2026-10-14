@@ -319,6 +319,25 @@ test('Teppich nach Mass: ein Stueck im Fertigmass (keine Rollenrechnung), Kettel
   assert.match(renderHtml(mm), /Eigenleistung/);
 });
 
+test('Massanfertigung: fehlende, nichtpositive und nichtendliche Fertigmasse bleiben ungeklärt', () => {
+  const item = { einkauf: { bestelleinheit: 'lfm' }, produkt: { preis_pro_001_qm: true } };
+  for (const masse of [
+    null, {},
+    { breiteCm: 0, laengeCm: 310 }, { breiteCm: 250, laengeCm: 0 },
+    { breiteCm: -250, laengeCm: 310 }, { breiteCm: 250, laengeCm: -310 },
+    { breiteCm: NaN, laengeCm: 310 }, { breiteCm: 250, laengeCm: NaN },
+    { breiteCm: Infinity, laengeCm: 310 }, { breiteCm: 250, laengeCm: -Infinity },
+  ]) {
+    // Ein vorhandener Rollenbedarf wuerde ohne den Fertigmass-Guard eine
+    // bestellbare Ersatzmenge liefern. Er darf fehlende Angaben nicht kaschieren.
+    const r = einkaufsmenge({ ...item, eingaben: { masse, rollenbreiteCm: 400, gewuenschteLaengeCm: 310 } }, 775, { massanfertigung: true });
+    assert.equal(r.menge, UNGEKLAERT);
+    assert.equal(r.einheit, UNGEKLAERT);
+    assert.equal(r.text, UNGEKLAERT);
+    assert.match(r.grund, /Fertigmaß.*Breite und Länge prüfen/);
+  }
+});
+
 test('"Aus Rolle" des Rollenrechners geht vor "_Zuschnitt aus Rolle"', () => {
   const z = zeile({ id: 43, sku: 'TEST-ROLLE-2', title: 'Testboden Rolle', quantity: 1,
     attrs: [{ key: 'Aus Rolle', value: '400 cm' }, { key: '_Zuschnitt aus Rolle', value: '200 cm' }, { key: 'Gewünschte Länge', value: '150 cm' }],

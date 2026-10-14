@@ -164,8 +164,14 @@ export function einkaufsmenge(item, menge, { massanfertigung = false } = {}) {
   // Kettel-/Massteppich: bestellt wird ein Stueck im Fertigmass. Ob der Lieferant aus
   // Rollenbreite oder Raummass schneidet, entscheidet er selbst (Inhaber 2026-10-14) -
   // deshalb hier keine lfm-Umrechnung und keine Rollenbreite.
-  if (massanfertigung && ein.masse) {
-    return { menge: 1, einheit: EINHEIT.STUECK, text: `1 Stück nach Maß · ${ein.masse.breiteCm} × ${ein.masse.laengeCm} cm`, grund: null };
+  if (massanfertigung) {
+    const { breiteCm, laengeCm } = ein.masse || {};
+    // Ein erkanntes Fertigmass darf bei fehlenden/kaputten Angaben nicht zur
+    // Rollenrechnung zurueckfallen oder als bestellbares Stueck durchgehen.
+    if (!Number.isFinite(breiteCm) || !Number.isFinite(laengeCm) || breiteCm <= 0 || laengeCm <= 0) {
+      return ungeklaert('Fertigmaß unlesbar oder nicht positiv – Breite und Länge prüfen');
+    }
+    return { menge: 1, einheit: EINHEIT.STUECK, text: `1 Stück nach Maß · ${breiteCm} × ${laengeCm} cm`, grund: null };
   }
   try {
     if (e.bestelleinheit === EINHEIT.PAKET || gruppe === GRUPPE.PAKET) {
