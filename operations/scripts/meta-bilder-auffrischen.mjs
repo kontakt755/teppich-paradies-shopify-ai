@@ -14,7 +14,16 @@
  * behalten hat. Die Pause verhindert, dass Meta wieder zu viele Bilder auf einmal
  * holt (vermutliche Ursache am 13.10.).
  *
+ * Nachtrag 14.10.: Neuspeichern allein reicht bei den Vorwerk-/JAB-Produkten aus dem
+ * Import vom 12./13.10. nicht. Meta bekommt fuer viele ihrer Varianten gar keinen
+ * Bildlink ("Bilder: Nicht vorhanden"), obwohl die Variante in Shopify dieselbe
+ * Mediendatei hat wie die "berechtigte" Nachbarvariante. Abhaengen und sofort wieder
+ * anhaengen derselben Datei behebt es (Test Lyrica Anthrazit 500 cm). Das macht
+ * --medien: je Produkt alle Variantenbilder ab- und wieder anhaengen, danach pruefen,
+ * dass jede Variante ihr Bild wieder hat (fehlende werden erneut angehaengt).
+ *
  * Aufruf: node operations/scripts/meta-bilder-auffrischen.mjs [--pause 3000] [--limit 50] [--trocken]
+ *           [--medien] [--abfrage "(vendor:Vorwerk OR vendor:JAB*)"]
  * In GitHub Actions: .github/workflows/meta-bilder-auffrischen.yml (nur manuell).
  */
 import { pathToFileURL } from 'node:url';
@@ -23,8 +32,8 @@ import { GraphQLProxy } from '../../workflow/graphql-proxy.mjs';
 export const META_KANAL = '376821973326';
 export const TAG = 'meta-sync';
 
-const LISTE = `query($nach: String) {
-  products(first: 250, after: $nach, query: "publication_ids:${META_KANAL} status:active") {
+const LISTE = `query($nach: String, $q: String!) {
+  products(first: 250, after: $nach, query: $q) {
     pageInfo { hasNextPage endCursor }
     nodes { id }
   }
@@ -33,11 +42,13 @@ const SETZEN = `mutation($id: ID!) { tagsAdd(id: $id, tags: ["${TAG}"]) { userEr
 const ENTFERNEN = `mutation($id: ID!) { tagsRemove(id: $id, tags: ["${TAG}"]) { userErrors { message } } }`;
 const UEBRIG = `{ productsCount(query: "tag:${TAG}") { count } }`;
 
-export async function produktIds(proxy) {
+export const abfrage = (zusatz = '') => `publication_ids:${META_KANAL} status:active${zusatz ? ` ${zusatz}` : ''}`;
+
+export async function produktIds(proxy, zusatz = '') {
   const ids = [];
   let nach = null;
   do {
-    const seite = (await proxy.execute(LISTE, { nach }))?.products;
+    const seite = (await proxy.execute(LISTE, { nach, q: abfrage(zusatz) }))?.products;
     if (!seite) throw new Error('Admin API lieferte keine products - Token/Scope pruefen.');
     ids.push(...seite.nodes.map((n) => n.id));
     nach = seite.pageInfo.hasNextPage ? seite.pageInfo.endCursor : null;
@@ -61,19 +72,66 @@ export async function auffrischen(proxy, ids, { pause = 3000, warte = (ms) => ne
   return fehlerZahl;
 }
 
+const VARIANTEN = `query($id: ID!) { product(id: $id) { variants(first: 250) {
+  pageInfo { hasNextPage } nodes { id media(first: 1) { nodes { id } } } } } }`;
+const ABHAENGEN = `mutation($p: ID!, $m: [ProductVariantDetachMediaInput!]!) {
+  productVariantDetachMedia(productId: $p, variantMedia: $m) { userErrors { message } } }`;
+const ANHAENGEN = `mutation($p: ID!, $m: [ProductVariantAppendMediaInput!]!) {
+  productVariantAppendMedia(productId: $p, variantMedia: $m) { userErrors { message } } }`;
+
+/** Variante -> Medien-ID, nur Varianten mit Bild. */
+async function variantenMedien(proxy, id) {
+  const v = (await proxy.execute(VARIANTEN, { id }))?.product?.variants;
+  if (!v) throw new Error(`${id}: Produkt nicht lesbar`);
+  if (v.pageInfo.hasNextPage) throw new Error(`${id}: mehr als 250 Varianten`);
+  return v.nodes.filter((n) => n.media.nodes[0]).map((n) => ({ variantId: n.id, mediaIds: [n.media.nodes[0].id] }));
+}
+
+/** Haengt die Variantenbilder eines Produkts ab und wieder an; gibt eine Fehlermeldung oder '' zurueck. */
+export async function medienNeuAnhaengen(proxy, id) {
+  const vorher = await variantenMedien(proxy, id);
+  if (!vorher.length) return '';
+  const ab = fehler(await proxy.execute(ABHAENGEN, { p: id, m: vorher }), 'productVariantDetachMedia');
+  // Immer wieder anhaengen, auch nach einem Fehler beim Abhaengen - keine Variante darf ohne Bild bleiben.
+  let an = fehler(await proxy.execute(ANHAENGEN, { p: id, m: vorher }), 'productVariantAppendMedia');
+  const nachher = new Set((await variantenMedien(proxy, id)).map((v) => v.variantId));
+  const fehlt = vorher.filter((v) => !nachher.has(v.variantId));
+  if (fehlt.length) {
+    an = fehler(await proxy.execute(ANHAENGEN, { p: id, m: fehlt }), 'productVariantAppendMedia') || an;
+    const zweit = new Set((await variantenMedien(proxy, id)).map((v) => v.variantId));
+    const immerNoch = fehlt.filter((v) => !zweit.has(v.variantId)).length;
+    if (immerNoch) return `${immerNoch} Varianten ohne Bild: ${an || 'unbekannt'}`;
+  }
+  return ab || an;
+}
+
 async function main(argv) {
-  const o = { pause: 3000, limit: Infinity, trocken: false };
+  const o = { pause: 3000, limit: Infinity, trocken: false, medien: false, abfrage: '' };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--pause') o.pause = Number(argv[++i]);
     else if (argv[i] === '--limit') o.limit = Number(argv[++i]);
     else if (argv[i] === '--trocken') o.trocken = true;
+    else if (argv[i] === '--medien') o.medien = true;
+    else if (argv[i] === '--abfrage') o.abfrage = argv[++i];
     else throw new Error(`unbekannte Option: ${argv[i]}`);
   }
   const proxy = new GraphQLProxy();
   if (!proxy.live) throw new Error('SHOPIFY_ADMIN_TOKEN fehlt.');
-  const ids = (await produktIds(proxy)).slice(0, o.limit);
-  console.log(`${ids.length} aktive Produkte im Kanal Facebook & Instagram, Pause ${o.pause} ms`);
+  const ids = (await produktIds(proxy, o.abfrage)).slice(0, o.limit);
+  console.log(`${ids.length} aktive Produkte im Kanal Facebook & Instagram (${abfrage(o.abfrage)}), Pause ${o.pause} ms${o.medien ? ', Variantenbilder neu anhaengen' : ''}`);
   if (o.trocken) return;
+  if (o.medien) {
+    let fehlerZahl = 0;
+    for (const [i, id] of ids.entries()) {
+      const f = await medienNeuAnhaengen(proxy, id);
+      if (f) { fehlerZahl++; console.log(`${id}: ${f}`); }
+      if ((i + 1) % 25 === 0) console.log(`${i + 1}/${ids.length} Produkte`);
+      if (i < ids.length - 1) await new Promise((r) => setTimeout(r, o.pause));
+    }
+    console.log(`fertig: ${ids.length - fehlerZahl} Produkte mit neu angehaengten Variantenbildern, ${fehlerZahl} Fehler`);
+    if (fehlerZahl) process.exit(1);
+    return;
+  }
   const fehlerZahl = await auffrischen(proxy, ids, { pause: o.pause });
   const uebrig = (await proxy.execute(UEBRIG))?.productsCount?.count;
   console.log(`fertig: ${ids.length - fehlerZahl} neu gespeichert, ${fehlerZahl} Fehler, Tag "${TAG}" noch an ${uebrig} Produkten`);
