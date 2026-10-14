@@ -1,5 +1,5 @@
 // Musterregeln nach dem Vertretergespraech mit dem Hauptlieferanten (12.10.2026):
-// Parkett seit 14.10.2026 mit normalem Musterweg, Klickvinyl-Muster kommt als Klebe-Ausfuehrung.
+// Laminat, Parkett, Kork nur auf Anfrage (Inhaber 14.10.2026), Klickvinyl-Muster kommt als Klebe-Ausfuehrung.
 // Vinyl von der Rolle und Linoleum hatten am 12.10. den Tag ohne-muster
 // bekommen; seit 13.10. schneiden wir die Muster selbst aus einem Probestueck
 // (Inhaber) - Tag wieder entfernt, Einstiege auf der Musterseite wieder da.
@@ -38,11 +38,16 @@ async function cta(product) {
   });
 }
 
-test('Parkett: normaler Musterweg wie alle anderen (14.10.2026)', async () => {
+test('Laminat, Parkett, Kork: statt Musterknopf eine Musteranfrage zum Kontaktformular, ohne "kostenlos"', async () => {
   const html = await cta({ handle: 'eiche-natur-parkett', type: 'Parkett', tags: [], title: 'Eiche Natur Parkett' });
-  assert.match(html, /href="\/pages\/muster\?produkt=eiche-natur-parkett"/);
-  assert.match(html, /Kostenloses Muster anfragen/);
-  assert.doesNotMatch(html, /thema=musteranfrage/);
+  assert.match(html, /href="\/pages\/kontakt\?thema=musteranfrage&produkt=Eiche\+Natur\+Parkett&handle=eiche-natur-parkett"/);
+  assert.match(html, /Muster anfragen/);
+  assert.doesNotMatch(html, /kostenlos/i);
+  for (const type of ['Laminat', 'Kork']) {
+    const h = await cta({ handle: 'beispiel', type, tags: [], title: 'Beispiel' });
+    assert.match(h, /thema=musteranfrage/, type);
+    assert.doesNotMatch(h, /kostenlos/i, type);
+  }
 });
 
 test('Parkett mit ohne-muster oder zubehoer bleibt ganz ohne Knopf', async () => {
@@ -50,9 +55,9 @@ test('Parkett mit ohne-muster oder zubehoer bleibt ganz ohne Knopf', async () =>
   assert.doesNotMatch(await cta({ handle: 'p', type: 'Parkett', tags: ['zubehoer'] }), /<a /);
 });
 
-test('Laminat und Kork bekommen keine Musteranfrage (Regel gilt nur fuer Parkett)', async () => {
-  assert.doesNotMatch(await cta({ handle: 'l', type: 'Laminat', tags: [] }), /<a /);
-  assert.doesNotMatch(await cta({ handle: 'k', type: 'Kork', tags: [] }), /<a /);
+test('Laminat und Kork mit ohne-muster bleiben ganz ohne Knopf', async () => {
+  assert.doesNotMatch(await cta({ handle: 'l', type: 'Laminat', tags: ['ohne-muster'] }), /<a /);
+  assert.doesNotMatch(await cta({ handle: 'k', type: 'Kork', tags: ['zubehoer'] }), /<a /);
 });
 
 test('Klickvinyl mit Tag muster-klebevariante: Zusatzzeile, Musterweg bleibt', async () => {
