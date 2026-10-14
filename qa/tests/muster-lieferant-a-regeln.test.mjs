@@ -38,15 +38,16 @@ async function cta(product) {
   });
 }
 
-test('Laminat, Parkett, Kork: statt Musterknopf eine Musteranfrage zum Kontaktformular, ohne "kostenlos"', async () => {
+test('Laminat, Parkett, Kork: kostenloses Muster nur per Anfrage zum Kontaktformular', async () => {
   const html = await cta({ handle: 'eiche-natur-parkett', type: 'Parkett', tags: [], title: 'Eiche Natur Parkett' });
   assert.match(html, /href="\/pages\/kontakt\?thema=musteranfrage&produkt=Eiche\+Natur\+Parkett&handle=eiche-natur-parkett"/);
-  assert.match(html, /Muster anfragen/);
-  assert.doesNotMatch(html, /kostenlos/i);
+  assert.match(html, /Kostenloses Muster anfragen/);
+  assert.match(html, /nach kurzer Anfrage/);
+  assert.doesNotMatch(html, /pages\/muster\?/);
   for (const type of ['Laminat', 'Kork']) {
     const h = await cta({ handle: 'beispiel', type, tags: [], title: 'Beispiel' });
     assert.match(h, /thema=musteranfrage/, type);
-    assert.doesNotMatch(h, /kostenlos/i, type);
+    assert.doesNotMatch(h, /pages\/muster\?/, type);
   }
 });
 
