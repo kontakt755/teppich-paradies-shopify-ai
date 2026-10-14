@@ -96,6 +96,12 @@
         <li><a href="/pages/agbs">AGB</a></li>
         <li><a href="/policies/refund-policy">Widerrufsrecht</a></li>
       {%- endif -%}
+      {%- comment -%}
+        Cookie-Einstellungen stehen fest im Block, nicht im Menue: menuUpdate
+        ersetzt den ganzen Baum und koennte den Link sonst still entfernen.
+        Die Einwilligung muss so leicht widerrufbar sein wie sie erteilt wurde.
+      {%- endcomment -%}
+      <li><a href="#cookie-einstellungen" data-tp-cookie-einstellungen>Cookie-Einstellungen</a></li>
     </ul>
   </nav>
 </div>
@@ -108,6 +114,32 @@
 <div class="tp-footer-links__preisangabe">
   {%- render 'tp-preisangabe' -%}
 </div>
+
+{% javascript %}
+  /* Cookie-Einstellungen: oeffnet den Einstellungsdialog des Shopify-Banners.
+     Greift fuer jeden Link auf #cookie-einstellungen, also auch fuer Links im
+     Text der Datenschutzerklaerung (/policies/* rendert im Theme-Layout), und
+     beim Aufruf einer Seite mit diesem Anker. Das Banner-Skript kann spaeter
+     laden als dieser Code, deshalb mehrere Versuche. */
+  (function () {
+    var ANKER = '#cookie-einstellungen';
+    function oeffnen(versuche) {
+      var banner = window.privacyBanner;
+      if (banner && typeof banner.showPreferences === 'function') {
+        banner.showPreferences();
+        return;
+      }
+      if (versuche > 0) setTimeout(function () { oeffnen(versuche - 1); }, 250);
+    }
+    document.addEventListener('click', function (event) {
+      var link = event.target.closest && event.target.closest('a[href$="' + ANKER + '"]');
+      if (!link) return;
+      event.preventDefault();
+      oeffnen(20);
+    });
+    if (window.location.hash === ANKER) oeffnen(20);
+  })();
+{% endjavascript %}
 
 {% stylesheet %}
   .tp-footer-links__preisangabe {
