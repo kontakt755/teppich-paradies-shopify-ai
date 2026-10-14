@@ -251,7 +251,8 @@ Rückenausstattung::ruecken
         die Belagsdicke aus dem Lexikon - daher "Staerke" und ohne Lexikontext.
       {% endcomment %}
       {% if metafield_key == 'gesamtstarke' and product.type == 'Sockelleisten' %}
-        {% assign row_label = 'Stärke' %}
+        {% comment %} Steht bei Sockelleisten in blocks/tp-leisten-details. {% endcomment %}
+        {% continue %}
       {% endif %}
       {% assign metafield = product.metafields.custom[metafield_key] %}
       {% comment %}

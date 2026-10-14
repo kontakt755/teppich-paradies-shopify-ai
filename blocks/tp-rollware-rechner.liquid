@@ -2300,6 +2300,8 @@ function tpRwcInit{{ tp_rc_id }}() {
     var badInput = lenFehler === 'ungueltig' || lenFehler === 'negativ';
     if (errComma) errComma.hidden = !badInput;
     zeigeGegenprobe(lengthEcho, 'Länge', lengthInput);
+    // Zu lang: keine gruene Bestaetigung neben der roten Fehlermeldung.
+    if (tooLong && lengthEcho) lengthEcho.hidden = true;
     if (mindestHint) {
       var eingabeKurz = laengeAngehoben();
       mindestHint.textContent = eingabeKurz
