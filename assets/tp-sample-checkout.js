@@ -46,6 +46,16 @@
     errorEl.hidden = false;
   }
 
+  function musterAufAnfrage(p) {
+    var typ = String((p && p.type) || '').trim().toLowerCase();
+    if (['laminat', 'parkett', 'kork'].indexOf(typ) === -1) return false;
+    var tags = Array.isArray(p.tags) ? p.tags : String(p.tags || '').split(',');
+    return !tags.some(function (tag) {
+      var name = String(tag || '').trim().toLowerCase();
+      return name === 'zubehoer' || name === 'ohne-muster';
+    });
+  }
+
   function hideError() {
     errorEl.hidden = true;
     errorEl.textContent = '';
@@ -343,6 +353,17 @@
       product = results[0];
       if (!core.canSample(product)) {
         loadingEl.hidden = true;
+        if (musterAufAnfrage(product)) {
+          // Laminat, Parkett, Kork: kostenlos, aber nur auf Anfrage
+          // (Inhaber 14.10.2026, blocks/tp-muster-cta). Alte Links landen hier.
+          showError('Muster für ' + product.title + ' sind kostenlos wie alle unsere Muster. Weil sie wertiger sind, senden wir sie nach kurzer Anfrage zu.');
+          var anfrage = document.createElement('a');
+          anfrage.href = '/pages/kontakt?thema=musteranfrage&produkt=' + encodeURIComponent(product.title) + '&handle=' + encodeURIComponent(product.handle);
+          anfrage.textContent = 'Kostenloses Muster anfragen';
+          errorEl.appendChild(document.createTextNode(' '));
+          errorEl.appendChild(anfrage);
+          return;
+        }
         showError('Für dieses Produkt bieten wir derzeit keine kostenlosen Muster an. Bitte kontaktieren Sie uns für eine persönliche Beratung.');
         return;
       }
