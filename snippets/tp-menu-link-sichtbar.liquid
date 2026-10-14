@@ -8,7 +8,7 @@
   ausgibt? Hier eintragen und die Pruefung einhaengen
   (qa/tests/tp-menu-link-sichtbar.test.mjs prueft das).
 
-  Gesteuert werden nur zwei Kollektionen (docs/weiterentwicklung/angebote.md):
+  Gesteuert wird nur eine Kollektion (docs/weiterentwicklung/angebote.md):
     angebote            - nur, wenn mindestens eines der ersten 6 Produkte
                           gerade einen Rabatt ANZEIGT (snippets/tp-angebot-sichtbar).
                           Die Kollektion selbst pflegt der naechtliche Tag-Abgleich;
@@ -17,8 +17,9 @@
                           Nur 6 Produkte: die Pruefung laeuft je Seitenaufruf an bis
                           zu sechs Menuestellen; nach dem Abgleich sind ohnehin alle
                           Produkte der Kollektion sichtbare Angebote.
-    reste-sonderposten  - nur, wenn die Kollektion Produkte hat (die Smart-Regel
-                          verlangt Bestand > 0).
+    reste-sonderposten  - seit 14.10. immer sichtbar (Inhaber): ohne Stuecke zeigt
+                          die Kollektion einen Platzhalter "demnaechst"
+                          (snippets/product-grid.liquid).
   Alle anderen Menuepunkte bleiben unberuehrt.
 
   @param {object} link - der Menuepunkt
@@ -45,9 +46,5 @@
     unless tmls_ja
       echo 'nein'
     endunless
-  elsif tmls_handle == 'reste-sonderposten'
-    if collections['reste-sonderposten'].products_count == 0
-      echo 'nein'
-    endif
   endif
 -%}
