@@ -149,6 +149,8 @@ function pruefeLieferant(id, roh, fehler) {
       portalUrl: p.url(w.portalUrl, 'ware.portalUrl'),
       mail: p.mail(w.mail, 'ware.mail'),
       telefon: p.telefon(w.telefon, 'ware.telefon'),
+      // Ohne Eintrag geht Ware direkt an die Kunden (Inhaber 2026-10-14); "laden" nur als Ausnahme.
+      lieferung: p.auswahl(w.lieferung, 'ware.lieferung', MUSTER_LIEFERUNG),
     },
     muster: {
       weg: p.auswahl(m.weg, 'muster.weg', BESTELLWEGE),
@@ -536,9 +538,11 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel }) {
   const alle = (gruppe.positionen ?? []).map(p => schlankePosition(p, statusAlle, jetzt));
   const offen = alle.filter(p => p.gruppe === 'zuBestellen');
   const direkt = ZIEL_JE_AUFTRAG.has(gruppe.route);
-  // Umschalter im Dialog: Ware, die sonst zu uns kommt, direkt an die Kunden schicken lassen
-  // (je Kommission mit Anschrift). Baustellenlieferungen bleiben, wie sie sind.
-  const anKunden = !direkt && ziel === 'kunde';
+  // Regel des Inhabers (2026-10-14): Ware geht direkt an die Kunden, je Kommission mit
+  // Anschrift. "laden" ist die seltene Ausnahme - per Umschalter im Dialog oder als
+  // ware.lieferung in den Stammdaten. Baustellenlieferungen bleiben, wie sie sind.
+  const lieferung = MUSTER_LIEFERUNG.includes(ziel) ? ziel : (st.ware.lieferung ?? 'kunde');
+  const anKunden = !direkt && lieferung === 'kunde';
   const zielAdresse = direkt ? adressen.get(gruppe.positionen?.[0]?.orderId) : absender?.lieferanschrift;
   const aufgenommen = [];
   const fehlt = [];
@@ -665,7 +669,7 @@ export class LieferantenFehler extends Error {}
  * @param {'ware'|'muster'} [p.art]
  * @param {string} [p.gruppe]      nur Ware: Gruppenschluessel "<lieferant>|<route>|<lieferziel>"; ohne Angabe alle Gruppen
  * @param {'kunde'|'laden'} [p.ziel] Muster: ueberstimmt muster.lieferung aus den Stammdaten;
- *                                 Ware: 'kunde' laesst Ware, die sonst in den Laden geht, direkt an die Kunden liefern
+ *                                 Ware: ueberstimmt ware.lieferung (Standard 'kunde' - direkt an die Kunden)
  * @returns {{lieferant:string, name:string, art:string, mails:object[]}}
  */
 export function bestellmail({ modell, lieferant, art = 'ware', gruppe = null, ziel = null, statusAlle = {}, stammdaten = null, jetzt = new Date() } = {}) {
