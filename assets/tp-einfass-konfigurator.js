@@ -107,15 +107,20 @@
     var maxKg = Number(d.max_gewicht_kg) > 0 ? Number(d.max_gewicht_kg) : 0;
     // Rollenbreiten der Meterware in cm, nur fuer die interne Warenkorbzeile.
     var rollen = (d.rollen || []).map(Number).filter(function (n) { return n > 0; });
-    // Gemeinsamer Rollenbestand: je Teppich eine 0-EUR-Variante des Bundles
-    // "Zuschnitt von der Rolle" (Komponente = Rollenware). Fail closed: genau
-    // eine Rollenbreite, jede Variante zu 0 EUR - sonst zahlte der Kunde das
-    // Material doppelt - und mindestens eine Variante.
+    // Gemeinsamer Rollenbestand: je Teppich eine Variante des Bundles
+    // "Zuschnitt von der Rolle" (Komponente = Rollenware). Alle Varianten
+    // kosten gleich viel: 0 EUR oder genau eine Einheit (0,01 m2) des
+    // Massprodukts (Inhaber 2026-10-14: 0,57 EUR, damit nie ein 0-EUR-Auftrag
+    // entsteht). Dann geht der Teppich mit einer Einheit weniger in den
+    // Warenkorb, der Endpreis bleibt centgenau gleich. Fail closed: genau eine
+    // Rollenbreite, einheitlicher Preis, mindestens eine Variante; ein Preis
+    // ungleich Einheitspreis sperrt unten in rechnen().
     var zuschnitt = d.zuschnitt || null;
     var zsVarianten = zuschnitt ? (zuschnitt.varianten || []).filter(Boolean) : [];
     var zsRolle = rollen.length === 1 ? rollen[0] : 0;
+    var zsPreisCent = zsVarianten.length ? parseInt(zsVarianten[0].price, 10) : NaN;
     var zuschnittFailed = !!zuschnitt && (zuschnitt.failed === true || !zsVarianten.length || !(zsRolle > 0) ||
-      zsVarianten.some(function (v) { return parseInt(v.price, 10) !== 0; }));
+      !(zsPreisCent >= 0) || zsVarianten.some(function (v) { return parseInt(v.price, 10) !== zsPreisCent; }));
     var zsMaxCm = 0;
     zsVarianten.forEach(function (v) { if (v.available === true && Number(v.cm) > zsMaxCm) zsMaxCm = Number(v.cm); });
     var mitBand = !!BAND_CM[art];
@@ -761,7 +766,11 @@
       // konfigurierter Service ist kein Eingabefehler des Kunden.
       if (kettelServiceFailed) fehlerListe.push('Die Kettelung ist aktuell nicht verfügbar. Bitte kurz bei uns melden.');
       if (pauschaleFailed) fehlerListe.push('Dieser Teppich ist aktuell nicht bestellbar. Bitte kurz bei uns melden.');
-      if (zuschnittFailed) fehlerListe.push('Dieser Teppich ist aktuell nicht bestellbar. Bitte kurz bei uns melden.');
+      // Zuschnitt mit Preis: nur genau eine Einheit des gewaehlten Massprodukts,
+      // sonst stimmte der Endpreis nicht mehr (fail closed).
+      var zsPreisFalsch = !!zuschnitt && !zuschnittFailed && zsPreisCent > 0 &&
+        !!target && parseInt(target.price, 10) !== zsPreisCent;
+      if (zuschnittFailed || zsPreisFalsch) fehlerListe.push('Dieser Teppich ist aktuell nicht bestellbar. Bitte kurz bei uns melden.');
       // Restbestand der Rolle: erst nach gueltiger Eingabe pruefen, sonst
       // stuende die Meldung schon vor dem ersten Mass da.
       var zs = null;
@@ -776,7 +785,7 @@
       fehler.textContent = fehlerListe.join(' ');
       // Vor der ersten Eingabe keine Meldung - ausser die Eingabe selbst ist
       // das Problem (Komma, 0, negativ) oder der Kettelservice ist ausgefallen.
-      fehler.hidden = !fehlerListe.length || (!eingegeben && !eingabeFehler && !!target && target.available && !kettelServiceFailed && !pauschaleFailed && !zuschnittFailed);
+      fehler.hidden = !fehlerListe.length || (!eingegeben && !eingabeFehler && !!target && target.available && !kettelServiceFailed && !pauschaleFailed && !zuschnittFailed && !zsPreisFalsch);
 
       // TP-005: ein ausgefallener konfigurierter Kettelservice macht die
       // Konfiguration ungueltig - stand bleibt null (unten), rechnung/cta
@@ -924,6 +933,21 @@
       if (stand.mindest) p['Mindestpreis'] = 'angewendet';
 
       var menge = stand.menge;
+      // Kostet der Zuschnitt eine Einheit (0,57 EUR), traegt er diese Einheit
+      // des Teppichs: eine weniger in der Hauptzeile, Summe unveraendert. Die
+      // Property "Fläche (abgerechnet)" nennt weiter die volle Flaeche.
+      var zsEinheit = zuschnitt && zsPreisCent > 0 ? 1 : 0;
+      if (zsEinheit) {
+        if (menge <= zsEinheit || parseInt(target.price, 10) !== zsPreisCent) {
+          // Sollte rechnen() schon abfangen; falls nicht, sichtbar sperren.
+          fehler.textContent = 'Dieser Teppich ist aktuell nicht bestellbar. Bitte kurz bei uns melden.';
+          fehler.hidden = false;
+          cta.disabled = true;
+          return;
+        }
+        menge -= zsEinheit;
+        p['_Einheit im Zuschnitt'] = String(zsEinheit);
+      }
 
       // Keine Rollenbreite an der Bestellung: bestellt wird das Fertigmass, ob aus
       // Rollenbreite oder Raummass geschnitten wird, entscheidet der Lieferant

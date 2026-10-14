@@ -129,6 +129,33 @@ for (const [name, items, erwartet, alarm] of rollFaelle) {
     if (items.some(i => i.product === rolleProd && i.final_price === 0)) assert.ok(html.includes('Bestandsabgang zum Maßteppich'));
   });
 }
+// Seit 2026-10-14 kostet der Zuschnitt 0,57 EUR = eine Einheit des Teppichs;
+// die Hauptzeile hat dafuer eine Einheit weniger und "_Einheit im Zuschnitt" = 1.
+const komponente057 = q => ({ ...komponente(q), final_price: 57 });
+test('Rollenbestand 0,57 EUR – Teppich mit einer Einheit weniger ist ehrlich', async () => {
+  const html = await render([yasmin(599, '200 × 300 cm', { '_Einheit im Zuschnitt': '1' }), yKettel(1000), komponente057(8)]);
+  assert.ok(html.includes('passt'));
+  assert.ok(!/MENGE (ZU KLEIN|PASST NICHT)/.test(html), 'keine Mengenwarnung');
+  assert.ok(!/ROLLENBESTAND NICHT|OHNE TEPPICH – NICHTS/.test(html));
+  assert.ok(html.includes('Bestandsabgang zum Maßteppich'), 'Komponente bleibt Bestandsabgang (line.groups)');
+});
+test('Rollenbestand 0,57 EUR – Komponente ohne line.groups wird trotzdem erkannt', async () => {
+  const k = { ...komponente(8, 'preis'), final_price: 7 };
+  const html = await render([yasmin(599, '200 × 300 cm', { '_Einheit im Zuschnitt': '1' }), yKettel(1000), k]);
+  assert.ok(html.includes('Bestandsabgang zum Maßteppich'));
+  assert.ok(!/ROLLENBESTAND NICHT|MENGE (ZU KLEIN|PASST NICHT)/.test(html));
+});
+test('Rollenbestand 0,57 EUR – ohne Kennzeichen oder zwei Einheiten weniger bleibt Alarm', async () => {
+  const ohne = await render([yasmin(599), yKettel(1000), komponente057(8)]);
+  assert.ok(/MENGE (ZU KLEIN|PASST NICHT)/.test(ohne), 'eine Einheit fehlt ohne Kennzeichen');
+  const zwei = await render([yasmin(598, '200 × 300 cm', { '_Einheit im Zuschnitt': '1' }), yKettel(1000), komponente057(8)]);
+  assert.ok(/MENGE (ZU KLEIN|PASST NICHT)/.test(zwei), 'mehr als eine Einheit fehlt');
+});
+test('Rollenbestand 0,57 EUR – Kennzeichen an einem normalen Teppich nach Mass wirkt nicht', async () => {
+  const html = await render([mass(599, '200 × 300 cm', 'Rechteck', { '_Einheit im Zuschnitt': '1' })]);
+  assert.ok(/MENGE (ZU KLEIN|PASST NICHT)/.test(html));
+});
+
 test('Rollenbestand – Bestellungen ohne Zuschnitt-Bundle bleiben unveraendert', async () => {
   const html = await render([mass(600), kettel(1000), meter(12), muster()]);
   assert.ok(!html.includes('Rollenbestand'), 'kein Rollenhinweis ohne Massteppich aus der Rolle');

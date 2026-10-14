@@ -55,7 +55,7 @@
 
   // Gemeinsamer Rollenbestand (Einfass-Konfigurator mit Zuschnitt-Bundle):
   // Die Hauptzeile nennt in _Rollenzuschnitt, wie viel Rolle (cm) ihr Zuschnitt
-  // braucht; die 0-EUR-Bundle-Zeile derselben _Gruppe traegt "Rollenzuschnitt"
+  // braucht; die Bundle-Zeile (0,57 EUR) derselben _Gruppe traegt "Rollenzuschnitt"
   // ("200 cm"). Fehlt sie oder ist sie kleiner, bucht der Checkout zu wenig
   // Bestand ab - die Hauptzeile wird dann wie eine Waise behandelt.
   function zentimeter(text) {
