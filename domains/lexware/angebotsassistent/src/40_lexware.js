@@ -174,14 +174,18 @@ function tpErstellungErlaubt(eintraege, vorgangId, fingerabdruck) {
  * @param {Array<Object>} angebote  Antworten von GET /v1/quotations/{id}
  */
 function tpFeldpruefungPositionen(angebote) {
+  // Bevorzugt service/material (so schreibt der Assistent, mit Artikel-ID),
+  // sonst eine freie custom-Zeile.
   var typen = {};
-  var treffer = null, quelle = null;
+  var treffer = null, quelle = null, ersatz = null, ersatzQuelle = null;
   (angebote || []).forEach(function (q) {
     (q.lineItems || []).forEach(function (li) {
       typen[li.type || '(ohne Typ)'] = (typen[li.type || '(ohne Typ)'] || 0) + 1;
-      if (!treffer && ['custom', 'material', 'service'].indexOf(li.type) >= 0) { treffer = li; quelle = q; }
+      if (!treffer && (li.type === 'service' || li.type === 'material')) { treffer = li; quelle = q; }
+      if (!ersatz && li.type === 'custom') { ersatz = li; ersatzQuelle = q; }
     });
   });
+  if (!treffer && ersatz) { treffer = ersatz; quelle = ersatzQuelle; }
   var li = treffer || {};
   var up = li.unitPrice || {};
   var felder = {

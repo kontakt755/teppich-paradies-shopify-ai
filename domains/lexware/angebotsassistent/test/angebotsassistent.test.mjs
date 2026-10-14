@@ -373,3 +373,14 @@ test('Feldprüfung überspringt Textzeilen und prüft die erste echte Artikelpos
   assert.ok(Object.values(b.felder).every(Boolean));
   assert.deepEqual(kopie(b.typen), { text: 2, service: 1 });
 });
+
+test('Feldprüfung bevorzugt service/material mit Artikel-ID vor freien custom-Zeilen', () => {
+  const q = { voucherNumber: 'AG237', lineItems: [
+    { type: 'custom', name: 'Frei', quantity: 1, unitName: 'Stück', unitPrice: { netAmount: 5, taxRatePercentage: 19 } },
+    { type: 'service', id: 'abc', name: 'MG-010', quantity: 1, unitName: 'Pauschal', unitPrice: { netAmount: 59, taxRatePercentage: 19 } }
+  ] };
+  const r = tp.tpFeldpruefungPositionen([q]);
+  assert.equal(r.positionstyp, 'service');
+  assert.equal(r.felder['lineItems[].id (Artikelbezug)'], true);
+  assert.equal(tp.tpFeldpruefungPositionen([{ lineItems: [q.lineItems[0]] }]).positionstyp, 'custom');
+});
