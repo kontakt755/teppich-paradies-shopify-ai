@@ -354,7 +354,8 @@ function tpMenueVerbindungTesten() {
       if (q.status !== 200) { bericht.push('Angebot lesen: ' + tpLexFehlerText(q.status, q.text)); return false; }
       angebote.push(q.json);
       if (!kopf) kopf = q.json;
-      return tpFeldpruefungPositionen(angebote).gefunden;
+      var stand = tpFeldpruefungPositionen(angebote);
+      return stand.positionstyp === 'service' || stand.positionstyp === 'material';
     });
     if (kopf) {
       var j = kopf;
