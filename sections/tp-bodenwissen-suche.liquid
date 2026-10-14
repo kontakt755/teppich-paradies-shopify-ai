@@ -44,7 +44,8 @@
         <button class="tp-bw-suche__knopf" type="submit">Suchen</button>
       </div>
       <p class="tp-bw-suche__hinweis" id="tp-bw-suche-hinweis-{{ section.id }}">
-        Durchsucht Ratgeber, Lexikon und den ganzen Shop.
+        {%- comment -%} Lexikon nur nennen, wenn es angebunden ist (Zeile mit lexikon_seite unten). {%- endcomment -%}
+        Durchsucht Ratgeber{% if section.settings.lexikon_seite != blank %}, Lexikon{% endif %} und den ganzen Shop.
       </p>
       <ul class="tp-bw-suche__liste" data-tp-bw-liste hidden></ul>
     </form>
