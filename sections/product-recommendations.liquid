@@ -31,7 +31,7 @@
 <product-recommendations
   id="product-recommendations-{{ section.id }}"
   class="product-recommendations"
-  data-url="{{ routes.product_recommendations_url }}?limit={{ section.settings.max_products }}"
+  data-url="{{ routes.product_recommendations_url }}?limit={% if section.settings.recommendation_type == 'related' %}10{% else %}{{ section.settings.max_products }}{% endif %}"
   data-section-id="{{ section.id }}"
   data-product-id="{{ section.settings.product.id | default: product.id }}"
   data-intent="{{ section.settings.recommendation_type }}"
@@ -80,16 +80,49 @@
 
         else
           assign products = recommendations.products
+          # "Aehnliche" Vorschlaege von Shopify mischen Bodenarten (Vinyl auf
+          # Teppichboden-Seiten, PVC-Rolle auf Klickvinyl). Bevorzugt dieselbe
+          # Produktart; erst wenn davon weniger als zwei kommen, bleibt die
+          # urspruengliche Auswahl. Dafuer laedt data-url bis zu 10 Vorschlaege.
+          if section.settings.recommendation_type == 'related'
+            assign tp_rec_typ = section.settings.product.type
+            assign tp_rec_gleich = recommendations.products | where: 'type', tp_rec_typ
+            # Zu wenige gleicher Art: aus der ersten Kategorie des Produkts
+            # auffuellen (ohne interne und Angebots-Sammlungen).
+            if tp_rec_typ != blank and tp_rec_gleich.size < section.settings.max_products
+              for tp_rec_c in section.settings.product.collections
+                if tp_rec_c.handle contains 'intern' or tp_rec_c.handle contains 'angebot' or tp_rec_c.handle == 'all' or tp_rec_c.handle == 'frontpage'
+                  continue
+                endif
+                assign tp_rec_aus_c = tp_rec_c.products | where: 'type', tp_rec_typ | reject: 'id', section.settings.product.id
+                if tp_rec_aus_c.size > 0
+                  assign tp_rec_gleich = tp_rec_gleich | concat: tp_rec_aus_c
+                  break
+                endif
+              endfor
+            endif
+            if tp_rec_typ != blank and tp_rec_gleich.size >= 2
+              assign products = tp_rec_gleich
+            endif
+          endif
         endif
       %}
       {% capture list_items %}
-        {% for product in products limit: section.settings.max_products %}
+        {%- assign tp_rec_gesehen = ',' -%}
+        {%- assign tp_rec_anzahl = 0 -%}
+        {% for product in products %}
+          {%- if tp_rec_anzahl >= section.settings.max_products -%}{%- break -%}{%- endif -%}
+          {%- comment -%} Aufgefuellte Liste kann Dubletten enthalten {%- endcomment -%}
+          {%- if product.id != blank -%}
+            {%- assign tp_rec_schluessel = ',' | append: product.id | append: ',' -%}
+            {%- if tp_rec_gesehen contains tp_rec_schluessel -%}{%- continue -%}{%- endif -%}
+            {%- assign tp_rec_gesehen = tp_rec_gesehen | append: product.id | append: ',' -%}
+          {%- endif -%}
+          {%- assign tp_rec_anzahl = tp_rec_anzahl | plus: 1 -%}
+          {%- if tp_rec_anzahl > 1 -%}<!--@list/split-->{%- endif -%}
           <div class="resource-list__item">
             {% content_for 'block', type: '_product-card', id: 'static-product-card', closest.product: product, card_index: forloop.index0 %}
           </div>
-          {% unless forloop.last %}
-            <!--@list/split-->
-          {% endunless %}
         {% endfor %}
       {% endcapture %}
 
@@ -134,7 +167,7 @@
             {% render 'resource-list-carousel',
               ref: 'resourceListCarousel',
               slides: slides,
-              slide_count: recommendations.products.size,
+              slide_count: slides.size,
               settings: section.settings
             %}
         {% endcase %}
@@ -158,7 +191,7 @@
           {% render 'resource-list-carousel',
             ref: 'resourceListCarouselMobile',
             slides: slides,
-            slide_count: recommendations.products.size,
+            slide_count: slides.size,
             settings: section.settings
           %}
         </div>
