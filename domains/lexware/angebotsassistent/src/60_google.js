@@ -45,7 +45,7 @@ function tpMenueEinrichten() {
   });
   tpBlatt(TP_BLATT.vorschau);
   var prot = tpBlatt(TP_BLATT.protokoll);
-  if (prot.getLastRow() === 0) prot.appendRow(['Zeit', 'Vorgangs-ID', 'Fingerabdruck', 'Status', 'Lexware-ID', 'Link', 'Netto', 'Brutto', 'Benutzer', 'Hinweis']);
+  if (prot.getLastRow() === 0) prot.appendRow(TP_PROTOKOLL_KOPF);
   [TP_BLATT.kopf, TP_BLATT.raeume, TP_BLATT.zusatz, TP_BLATT.protokoll].forEach(function (n) { ss.getSheetByName(n).setFrozenRows(1); });
   SpreadsheetApp.getUi().alert('Tabellenblätter angelegt. Als Nächstes: Drive-Ordner festlegen und Artikel_aktuell.json dort ablegen.');
 }
@@ -254,19 +254,31 @@ function tpLexAnfrage(methode, pfad, body) {
 
 /* ---------- Vorgangsprotokoll (Dublettenschutz) ---------- */
 
+var TP_PROTOKOLL_KOPF = ['Zeit', 'Vorgangs-ID', 'Fingerabdruck', 'Status', 'Lexware-ID', 'Link', 'Netto', 'Brutto', 'Benutzer', 'Hinweis'];
+
+// Angezeigte Werte lesen: eine ID wie "0042" oder "2026-10" bleibt so, wie sie geschrieben wurde.
+// Die Kopfzeile wird an ihrem Inhalt erkannt, nicht blind verworfen.
 function tpProtokollLesen() {
-  var w = tpWerte(TP_BLATT.protokoll);
-  return w.slice(1).map(function (z) {
-    return { zeit: z[0], vorgangId: String(z[1]), fingerabdruck: String(z[2]), status: String(z[3]), lexwareId: String(z[4]) };
+  var b = SpreadsheetApp.getActive().getSheetByName(TP_BLATT.protokoll);
+  if (!b || !b.getLastRow()) return [];
+  return b.getDataRange().getDisplayValues().filter(function (z) {
+    return z[3] && z[3] !== TP_PROTOKOLL_KOPF[3];
+  }).map(function (z) {
+    return { zeit: z[0], vorgangId: String(z[1]).trim(), fingerabdruck: String(z[2]), status: String(z[3]), lexwareId: String(z[4]) };
   });
 }
 
+// Als Nur-Text schreiben, damit Sheets IDs nicht in Zahlen oder Datumswerte umwandelt.
 function tpProtokollSchreiben(r, status, lexwareId, hinweis) {
-  tpBlatt(TP_BLATT.protokoll).appendRow([
-    new Date(), r.vorgang.vorgangId, r.fingerabdruck, status, lexwareId || '',
+  var b = tpBlatt(TP_BLATT.protokoll);
+  if (b.getLastRow() === 0) b.getRange(1, 1, 1, TP_PROTOKOLL_KOPF.length).setValues([TP_PROTOKOLL_KOPF]);
+  var zeile = b.getLastRow() + 1;
+  b.getRange(zeile, 2, 1, 4).setNumberFormat('@');
+  b.getRange(zeile, 1, 1, 10).setValues([[
+    new Date(), String(r.vorgang.vorgangId), String(r.fingerabdruck), status, lexwareId || '',
     lexwareId ? tpLexwareLink(lexwareId) : '', r.erg.summen.netto, r.erg.summen.brutto,
     Session.getActiveUser().getEmail(), hinweis || ''
-  ]);
+  ]]);
   SpreadsheetApp.flush();
 }
 

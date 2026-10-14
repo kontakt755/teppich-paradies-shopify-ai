@@ -398,3 +398,72 @@ test('Aktion 649: Warenwert wie die Angebotsposition (erst zusammenfassen, dann 
   assert.equal(erg.aktion.warenwertNetto, 952.54);
   assert.equal(erg.aktion.warenwertBrutto, 1133.52);
 });
+
+/* ---------- Befunde aus dem Code-Review 14.10.2026 ---------- */
+
+test('Payload-Prüfung: Mengen wie 25,42 oder 0,07 gelten als höchstens 4 Nachkommastellen', () => {
+  const erg = rechne(teppichVorgang([{ name: 'WZ', laengeM: 6.2, breiteM: 4.1 }], { aktion649: 'aus' }));
+  const p = tp.tpLexwarePayload(teppichVorgang([]), erg);
+  p.lineItems.forEach((li, i) => { if (li.quantity) li.quantity = [25.42, 0.07, 16.01, 20.08][i % 4]; });
+  assert.ok(!tp.tpPayloadPruefen(p).some((f) => /Nachkommastellen/.test(f)));
+  p.lineItems[0].quantity = 1.23456;
+  assert.ok(tp.tpPayloadPruefen(p).some((f) => /Menge mit mehr als 4 Nachkommastellen/.test(f)));
+});
+
+test('Dämmung ohne Rolleninhalt: Fehler statt m² als Menge', () => {
+  const v = teppichVorgang([]);
+  v.raeume = [{ name: 'WZ', nettoM2: 24, bodenart: 'klebevinyl', belag: { ref: { id: '5ce6248b-f867-4e72-b88c-254bd53b698f' }, verschnittProzent: 8 }, verlegeart: 'verklebt',
+    daemmung: { ref: { id: '77794d96-76a3-4415-b1ba-b66f00511cd6' } }, silikon: { zusatzLfm: 1 }, keineProfile: true }];
+  const st = ladeStamm(tp);
+  st.artikel.find((a) => a.id === '77794d96-76a3-4415-b1ba-b66f00511cd6').beschreibung = 'ohne Angabe';
+  const erg = tp.tpAngebotBerechnen(v, st);
+  assert.ok(stufen(erg, 'fehler').some((t) => /Rolleninhalt .* unbekannt/.test(t)));
+  assert.ok(!pos(erg, '77794d96-76a3-4415-b1ba-b66f00511cd6'));
+  assert.equal(erg.blockiert, true);
+});
+
+test('Paketware anteilig nur bei Einheit m²', () => {
+  const v = kopie(tp.TP_BEISPIELE.umfangreich);
+  v.raeume.forEach((r) => { r.belag.anteilig = 'ja'; });
+  const st = ladeStamm(tp);
+  st.artikel.find((a) => a.id === '5ce6248b-f867-4e72-b88c-254bd53b698f').einheit = 'Paket';
+  const erg = tp.tpAngebotBerechnen(v, st);
+  assert.ok(stufen(erg, 'konflikt').some((t) => /anteilig nur bei Einheit m²/.test(t)));
+  assert.ok(!pos(erg, '5ce6248b-f867-4e72-b88c-254bd53b698f'));
+});
+
+test('Paketware über mehrere Räume: Verschnitt je Raum', () => {
+  const raum = (name, vers) => ({ name, nettoM2: 20, bodenart: 'klebevinyl', belag: { ref: { id: '5ce6248b-f867-4e72-b88c-254bd53b698f' }, verschnittProzent: vers },
+    verlegeart: 'verklebt', silikon: { zusatzLfm: 1 }, keineProfile: true });
+  const v = teppichVorgang([]);
+  v.raeume = [raum('A', 5), raum('B', 15)];
+  const erg = rechne(v);
+  // 21 + 23 = 44 m² -> 14 Pakete à 3,37 (nicht 40 × 1,05 = 42 -> 13 Pakete)
+  assert.equal(pos(erg, '5ce6248b-f867-4e72-b88c-254bd53b698f').menge, 47.18);
+  assert.match(pos(erg, '5ce6248b-f867-4e72-b88c-254bd53b698f').beschreibung, /Verschnitt je Raum \(5 \/ 15 %\)/);
+});
+
+test('Angegebene Bahn mit Raumlänge ohne 10 cm Zugabe ist ein Konflikt', () => {
+  const erg = rechne(teppichVorgang([{ name: 'Saal', laengeM: 5.1, breiteM: 4.5, bahnen: [{ breiteM: 4, laengeM: 5.1 }, { breiteM: 4, laengeM: 0.5 }] }]));
+  assert.ok(stufen(erg, 'konflikt').some((t) => /Bahnlänge 5,10 m ohne Zugabe/.test(t)));
+});
+
+test('Berlin-Fahrt als Zusatzposition zählt als Anfahrt, keine zweite automatische Fahrt', () => {
+  const v = kopie(tp.TP_BEISPIELE.umfangreich);
+  const ohne = rechne(kopie(v));
+  v.zusatzpositionen = (v.zusatzpositionen || []).concat([{ ref: { id: '62f3ffa4-fa7c-4e3d-a2b4-af024f6253bb' }, menge: 1 }]);
+  const erg = rechne(v);
+  const fahrten = erg.positionen.filter((p) => p.kategorie === 'anfahrt');
+  assert.ok(fahrten.length >= 1);
+  const fest = erg.positionen.filter((p) => !p.optional);
+  assert.equal(fest[fest.length - 1].kategorie, 'anfahrt');
+  assert.equal(fahrten.length, 1);
+  assert.ok(fahrten.reduce((a, p) => a + p.menge, 0) <= pos(ohne, '62f3ffa4-fa7c-4e3d-a2b4-af024f6253bb').menge);
+});
+
+test('Rollenware bauseits (nur Verlegung) blockiert die Pflichtkontrolle nicht wegen Bestellmaß', () => {
+  const v = teppichVorgang([{ name: 'WZ', laengeM: 4, breiteM: 3.5, belag: null }], { aktion649: 'aus' });
+  const erg = rechne(v);
+  const k = tp.tpPflichtkontrolle(v, erg);
+  assert.equal(k.punkte.find((p) => p.id === 'flaechen').status, 'ok');
+});

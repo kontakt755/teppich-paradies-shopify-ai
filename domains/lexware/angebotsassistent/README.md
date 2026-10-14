@@ -214,6 +214,24 @@ Werte für **Sockelleisten-Montage**: `cubu_bis60`, `kso_bis60`,
   bestimmtes Bad wurde nicht als allgemeine Regel übernommen; sie gehört in den
   jeweiligen Vorgang.
 
+## Code-Review 14.10.2026 (behoben, mit Tests)
+
+- Mengen wie 25,42 wurden durch Rundungsfehler als „mehr als 4 Nachkommastellen“
+  abgelehnt; jetzt mit Toleranz geprüft.
+- Dämmunterlage ohne bekannten Rolleninhalt ist ein Fehler (vorher: m² als Menge).
+- Paketware „anteilig“ nur bei Artikeleinheit m², sonst Konflikt.
+- Verschnitt bei Paketware gilt je Raum; abweichender Paketinhalt, Rolleninhalt
+  oder Sockelleisten-Verschnitt zwischen Räumen ist ein Konflikt.
+- Angegebene Bahnen mit Raumlänge ohne 10 cm Zugabe sind ein Konflikt.
+- Berlin-Fahrt bzw. „An- und Abfahrt“ als Zusatzposition zählt als Anfahrt
+  (keine zweite automatische Fahrt).
+- Rollenware bauseits (nur Verlegung) braucht kein Bestellmaß.
+- Widersprüchlicher Lexware-Preis (Netto × Steuer ≠ Brutto) ist ein Konflikt,
+  solange kein begründeter abweichender Preis angegeben ist.
+- Vorgangsprotokoll wird als Nur-Text geschrieben und als angezeigter Text
+  gelesen; IDs wie „0042“ oder „2026-10“ bleiben unverändert, die Kopfzeile wird
+  am Inhalt erkannt. Datumswerte aus Zellen werden in Berliner Zeit gelesen.
+
 ## Wo noch KI hilft – und wo nicht
 
 **Ohne KI**, deterministisch in diesem Programm:

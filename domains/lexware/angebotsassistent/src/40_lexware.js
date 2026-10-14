@@ -71,7 +71,7 @@ function tpPayloadPruefen(payload) {
     if (!li.name || li.name.length > 255) fehler.push(n + ': Bezeichnung fehlt oder ist länger als 255 Zeichen');
     if (li.description && li.description.length > 2000) fehler.push(n + ': Beschreibung länger als 2000 Zeichen – kürzen');
     if (!(li.quantity > 0)) fehler.push(n + ': Menge fehlt');
-    if (Math.round(li.quantity * 10000) !== li.quantity * 10000) fehler.push(n + ': Menge mit mehr als 4 Nachkommastellen');
+    if (Math.abs(Math.round(li.quantity * 10000) - li.quantity * 10000) > 1e-6) fehler.push(n + ': Menge mit mehr als 4 Nachkommastellen');
     if (!tpHatZweiStellen(li.unitPrice.netAmount)) fehler.push(n + ': Netto-Einzelpreis mit mehr als 2 Nachkommastellen');
     if (!li.unitName) fehler.push(n + ': Einheit fehlt');
   });

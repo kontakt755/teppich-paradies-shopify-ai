@@ -18,7 +18,7 @@ function tpSetze(obj, pfad, wert) {
 
 function tpText(w) {
   if (w === null || w === undefined) return '';
-  if (w instanceof Date) return w.toISOString().slice(0, 10);
+  if (w instanceof Date) return tpDatumText(w); // lokales Datum (Europe/Berlin), nicht UTC
   return String(w).trim();
 }
 
