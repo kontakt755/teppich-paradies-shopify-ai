@@ -641,6 +641,10 @@
       "settings": {
         "mode": "beliebt",
         "collection": "zubehoer-verlegeband",
+        "produkte": [
+          "sockelklebeband-doppelseitig",
+          "trockenkleber-band-fuer-sockelleisten"
+        ],
         "heading": "Passendes Montagezubehör",
         "intro": "Klebebänder für die Montage von Sockelleisten – direkt mitbestellen.",
         "link_text": "Alles Verlegeband",

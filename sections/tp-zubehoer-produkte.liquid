@@ -54,6 +54,12 @@
   endif
 
   assign items = source.products
+  # Feste Auswahl schlaegt die Kollektion: auf Sockelleisten-Seiten nur die
+  # Baender, die laut Hersteller fuer Sockelleisten gedacht sind - die
+  # Kollektion Verlegeband enthaelt auch Bahnenware-Trockenklebstoff.
+  if section.settings.produkte != blank and section.settings.produkte.count > 0
+    assign items = section.settings.produkte
+  endif
   assign tp_tg_filter = section.settings.teppich_gruppe | default: 'alle'
   assign tp_tg_sofort = section.settings.karten_sofort | default: 0
   # Im Theme-Editor alles sofort: nachgeladen wuerde die gespeicherte Vorlage, nicht die bearbeitete.
@@ -470,6 +476,12 @@
       "type": "collection",
       "id": "collection",
       "label": "Kollektion (leer = aktuelle Kollektion bzw. Zubehoer)"
+    },
+    {
+      "type": "product_list",
+      "id": "produkte",
+      "label": "Feste Produktauswahl (statt der Kollektion)",
+      "limit": 8
     },
     {
       "type": "text",

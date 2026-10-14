@@ -154,6 +154,7 @@ Gestapelte PRs **vor** dem Merge ihrer Basis umzielen. Die CI meldet nur
 
 ```
 npm run liquid:guard && npm run schema:guard && npm run template:guard && npm run theme:guard
+npm run -s themecheck:guard                  # Theme-Check-Fehler: sonst bricht erst der Preview-Push (--strict) ab
 node workflow/cli.mjs validate --static      # Flag heisst --static, nicht --static-only
 ```
 

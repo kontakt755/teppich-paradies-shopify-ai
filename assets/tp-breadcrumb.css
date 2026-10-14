@@ -54,6 +54,14 @@
   color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.85);
 }
 
+/* Kollektionsseiten: dieselbe Spalte wie das Raster (Horizon page-width
+   1440 px + 40 px Rand). Mit 1240 px begannen die Brotkrumen bei 1440 px
+   Fensterbreite 84 px rechts von H1 und Raster. */
+.tp-bc--raster {
+  max-width: calc(1440px + 80px);
+  padding: 0 40px;
+}
+
 /* Am Handy einzeilig: ein Umbruch liess die letzte Stufe mit verwaistem Trenner in
    eine zweite Zeile rutschen. Die Eltern-Stufen bleiben ganz, die aktuelle Seite wird
    bei Platzmangel mit Auslassungspunkten gekuerzt (der volle Titel steht als H1 darunter). */
