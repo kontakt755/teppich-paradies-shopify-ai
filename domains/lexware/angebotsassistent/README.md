@@ -148,6 +148,16 @@ Werte für **Sockelleisten-Montage**: `cubu_bis60`, `kso_bis60`,
 | 15 Pflichtkontrolle | 21 Punkte, davon 4 per Bestätigung. Ohne alle Punkte kein Entwurf. |
 | 16 Lernregel | Eine neue allgemeine Regel wird eine Änderung an `00_konfig.js`, `20_` oder `21_` per PR, mit Test. So bleibt sie nachvollziehbar und gilt für alle. |
 
+## Festgelegte Werte (Inhaber, 14.10.2026)
+
+| Wert | Festlegung |
+|---|---|
+| Dämmunterlagen | ohne extra Verschnitt, auf halbe Rolle aufgerundet |
+| Sockelleisten-Verschnitt | Standard 10 %, ein Wert im Vorgang geht vor |
+| Angebotsgültigkeit | 30 Tage |
+| Pauschale „Einzelraum bis 12 m²“ | nur wenn die Verlegegruppe genau ein Raum mit höchstens 12 m² ist |
+| Aktions-Verlegeartikel | Lexware-ID `a8cdfc6b-e55b-4859-8098-1818210a7e67` |
+
 ## Lexware-Anbindung
 
 - **Endpunkt:** `POST /v1/quotations` ohne `finalize`, legt einen Entwurf an.

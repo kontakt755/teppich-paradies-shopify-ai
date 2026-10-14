@@ -20,7 +20,7 @@ var TP_KONFIG = {
     appUrl: 'https://app.lexware.de',
     // Regel aus der API-Doku: hoechstens 2 Anfragen pro Sekunde.
     pauseMs: 550,
-    // Entscheidung offen (siehe README): Angebotsgueltigkeit in Tagen.
+    // Angebotsgueltigkeit in Tagen – festgelegt vom Inhaber am 14.10.2026.
     gueltigkeitTage: 30,
     titel: 'Angebot'
   },
@@ -40,10 +40,9 @@ var TP_KONFIG = {
   // Verschnitt (die Daemmartikel enthalten ihn bereits), weiter auf halbe Rolle runden.
   daemmung: { verschnittProzent: 0, rundungRollen: 0.5 },
 
-  // Regel 9a nennt "sinnvollen Verschnitt" ohne Zahl. Dieser Wert ist eine
-  // ANNAHME und wird im Angebot als offener Punkt markiert, solange der
-  // Vorgang keinen eigenen Wert nennt.
-  sockelleiste: { verschnittProzentAnnahme: 10 },
+  // Regel 9a: Sockelleisten-Verschnitt – Standard 10 %, festgelegt vom Inhaber
+  // am 14.10.2026. Ein Wert im Vorgang geht vor.
+  sockelleiste: { verschnittProzentStandard: 10 },
 
   // Lexware-Pauschalen "Einzelraum bis 12 m2".
   pauschale: { maxFlaecheM2: 12 },
