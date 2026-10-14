@@ -58,6 +58,25 @@ test('Zusammenfuehren behaelt Handspalten, neue Bilder ungeklaert, Verschwundene
   assert.equal(zweimal.notiz.match(/nicht mehr in Shopify/g).length, 1);
 });
 
+test('gepflegte Statuswerte ueberleben den naechsten Abruf', () => {
+  const neu = ['f', 'n', 'e', 'd'].map((media_id) => ({ media_id, status: 'ungeklaert' }));
+  const alt = [
+    { media_id: 'f', status: 'freigegeben' }, { media_id: 'n', status: 'nein' },
+    { media_id: 'e', status: 'entfernt' }, { media_id: 'd', status: 'entfernt (Dublette)' },
+  ];
+  assert.deepEqual(zusammenfuehren(alt, neu).map((z) => z.status), ['freigegeben', 'nein', 'entfernt', 'entfernt (Dublette)']);
+});
+
+test('auswerten: freigegeben ist entschieden, entfernt zaehlt nicht mit', () => {
+  const a = auswerten([
+    { media_id: '1', status: 'freigegeben', alt: 'x', breite: '2000' },
+    { media_id: '2', status: 'ungeklaert', alt: 'x', breite: '2000' },
+    { media_id: '3', status: 'entfernt', alt: '', breite: '100' },
+    { media_id: '4', status: 'nein', alt: 'x', breite: '2000' },
+  ]);
+  assert.deepEqual({ b: a.bilder, u: a.ungeklaert, g: a.gesperrt, k: a.zuKlein, o: a.ohneAlt, e: a.entfernt }, { b: 3, u: 1, g: 1, k: 0, o: 0, e: 1 });
+});
+
 test('ungueltiger Status wird ungeklaert', () => {
   const neu = zeilenAusProdukten([produkt('a', [bild('m1', 'https://x/a.jpg')])]);
   assert.equal(zusammenfuehren([{ media_id: 'm1', status: 'ok' }], neu)[0].status, 'ungeklaert');

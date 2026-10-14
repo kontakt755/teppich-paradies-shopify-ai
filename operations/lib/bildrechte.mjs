@@ -16,7 +16,17 @@ export const SPALTEN = Object.freeze([
 ]);
 
 export const HANDSPALTEN = Object.freeze(['quelle', 'urheber', 'lizenz', 'beleg', 'bearbeitet', 'quellenangabe_pflicht', 'status', 'geprueft_von', 'geprueft_am', 'notiz']);
-export const STATUS = Object.freeze(['ungeklaert', 'geprueft', 'gesperrt']);
+// Gepflegte Werte (Stand 14.10.): freigegeben = Inhaberfreigabe je Quelle,
+// nein = nicht nutzen, entfernt / "entfernt (...)" = Bild vom Produkt geloest.
+// Ein Wert, den diese Liste nicht kennt, wuerde beim naechsten Abruf auf
+// ungeklaert zurueckgesetzt - neue Werte deshalb hier eintragen.
+export const STATUS = Object.freeze(['ungeklaert', 'geprueft', 'freigegeben', 'gesperrt', 'nein', 'entfernt']);
+
+/** Bekannter Status? "entfernt (Dublette)" u. Ae. zaehlen als entfernt. */
+export function statusGueltig(s) {
+  const wert = String(s ?? '').trim();
+  return STATUS.includes(wert) || /^entfernt\b/i.test(wert);
+}
 export const BILDTYPEN = Object.freeze(['produkt', 'detail', 'struktur', 'raum', 'raumki', 'hersteller', 'herstellerbearb', 'marketing', 'rest']);
 export const MINDESTBREITE = 1200;
 
@@ -110,7 +120,7 @@ export function zusammenfuehren(alt, neu) {
       for (const s of HANDSPALTEN) zeile[s] = vorher[s] ?? '';
       if (vorher.bildtyp && !z.bildtyp) zeile.bildtyp = vorher.bildtyp;
     }
-    if (!STATUS.includes(zeile.status)) zeile.status = 'ungeklaert';
+    if (!statusGueltig(zeile.status)) zeile.status = 'ungeklaert';
     gesehen.add(z.media_id);
     ergebnis.push(zeile);
   }
@@ -124,27 +134,27 @@ export function zusammenfuehren(alt, neu) {
 
 /** Pruefliste fuer Mensch und Dashboard - zaehlt nur, was vom Soll abweicht. */
 export function auswerten(zeilen) {
-  const aktiv = (zeilen ?? []).filter((z) => !String(z.notiz ?? '').includes('nicht mehr in Shopify'));
+  const aktiv = (zeilen ?? []).filter((z) => !istEntfernt(z));
   const zahl = (f) => aktiv.filter(f).length;
   return {
     bilder: aktiv.length,
     produkte: new Set(aktiv.map((z) => z.produkt_handle)).size,
-    ungeklaert: zahl((z) => z.status !== 'geprueft' && z.status !== 'gesperrt'),
-    gesperrt: zahl((z) => z.status === 'gesperrt'),
+    ungeklaert: zahl((z) => PRUEFUNG.ungeklaert(z)),
+    gesperrt: zahl((z) => z.status === 'gesperrt' || z.status === 'nein'),
     zuKlein: zahl((z) => Number(z.breite) > 0 && Number(z.breite) < MINDESTBREITE),
     ohneAlt: zahl((z) => !String(z.alt ?? '').trim()),
     ohneBildtyp: zahl((z) => !z.bildtyp),
     nameNichtNachSchema: zahl((z) => !nameNachSchema(z.datei)),
-    nichtMehrInShopify: (zeilen ?? []).length - aktiv.length,
+    nichtMehrInShopify: (zeilen ?? []).filter((z) => String(z.notiz ?? '').includes('nicht mehr in Shopify')).length,
+    entfernt: (zeilen ?? []).filter((z) => /^entfernt/i.test(String(z.status ?? '').trim())).length,
   };
 }
 
 // --- Pruefliste fuer das Control Center (Ansicht "Bildrechte", nur lesend) ---
 //
-// Im gepflegten Verzeichnis stehen inzwischen mehr Statuswerte als STATUS kennt
-// ("freigegeben", "entfernt", "entfernt (Dublette)", ...). Fuer die Ansicht gilt
-// deshalb bewusst eng: ungeklaert ist nur, was ausdruecklich so markiert ist oder
-// gar keinen Status hat - jede andere Eintragung ist eine dokumentierte Entscheidung.
+// Ungeklaert ist nur, was ausdruecklich so markiert ist oder gar keinen Status
+// hat - jede andere Eintragung ist eine dokumentierte Entscheidung (gilt auch
+// fuer auswerten()).
 
 export const PRUEFLISTEN = Object.freeze(['ungeklaert', 'zu-klein', 'ohne-alt']);
 export const OHNE_WARENGRUPPE = 'ohne Warengruppe';
