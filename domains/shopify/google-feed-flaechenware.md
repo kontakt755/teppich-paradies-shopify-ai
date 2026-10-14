@@ -30,6 +30,17 @@ Stand 2026-09-14, Agent 8 (Welle 2, Golden Product Piumera). **Empfehlung, keine
 Dasselbe Muster gilt fuer jedes weitere Produkt mit `custom.preis_pro_001_qm = true`,
 `productType = Service`/`Musterservice` oder Tag `service`.
 
+**Nachtrag 2026-10-14 (#1283): Teppich nach Maß ueber Zusatzfeed.** Der Weg zurueck in
+Google/Meta ist ein Zusatzfeed je Farbe mit Beispielgroesse (80 x 150, 120 x 170,
+160 x 230 oder 200 x 300 cm - die erste, die passt und bei der der Mindestpreis nicht
+greift): `npm run -s feed:teppich-nach-mass` (scripts/teppich-nach-mass-feed.mjs) schreibt
+Titel mit Mass, Endpreis (bei Aktion price/sale_price), Link `?variant=&breite=&laenge=`
+und Grundpreis nach `~/teppich-paradies-analyse/teppich-nach-mass-feed/`. Die Seite gibt
+denselben Endpreis aus: Konfigurator (Vorbelegung aus der URL), Product-JSON-LD und
+og:price (snippets/tp-mass-beispiel.liquid). `feed:titel` laesst diese Produktart seitdem
+aus. Erst Feed hochladen, dann im Kanal veroeffentlichen; nach jeder Preis- oder
+Aktionsaenderung neu erzeugen und hochladen.
+
 ## Was in den Feed darf - und mit welcher Preislogik
 
 **Meterware-Varianten** (Breite 400cm / 500cm, `custom.rollenbreite > 0`): Preis je m²

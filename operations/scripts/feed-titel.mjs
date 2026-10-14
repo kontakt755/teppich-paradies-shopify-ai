@@ -21,6 +21,11 @@
  * 13.10.2026); die Spalte free_shipping_threshold traegt diese Grenze je Artikel
  * nach. Aendert sich die Grenze in Shopify, hier GRATIS_AB anpassen.
  *
+ * Teppiche nach Mass (Produktart "Teppich nach Maß") fehlen hier bewusst: ihr
+ * Variantenpreis gilt je 0,01 m2, Titel, Preis, Link und Grundpreis kommen aus dem
+ * eigenen Zusatzfeed (scripts/teppich-nach-mass-feed.mjs, #1283). Hier stuende sonst
+ * ein Grundpreis "0.01 sqm" neben dem Endpreis einer Beispielgroesse.
+ *
  * Ablauf (nach groesseren Importen wiederholen, sonst behalten neue Produkte den Rohtitel):
  *   1. npm run -s feed:titel -- --bulk-query   -> Abfrage per bulkOperationRunQuery (Shopify-MCP) laufen lassen, JSONL laden
  *   2. npm run -s feed:titel -- --jsonl katalog.jsonl --aus tp-feedtitel.txt
@@ -34,7 +39,7 @@ export const BULK_QUERY = `
   products(query: "status:active") {
     edges {
       node {
-        id title
+        id title productType
         variants { edges { node {
           id selectedOptions { name value }
           showUnitPrice
@@ -46,6 +51,9 @@ export const BULK_QUERY = `
 }`;
 
 const FARB_OPTIONEN = ['farbe', 'color', 'dekor'];
+
+/** Produktart mit eigenem Zusatzfeed (scripts/teppich-nach-mass-feed.mjs). */
+export const EIGENER_FEED = 'Teppich nach Maß';
 
 export const GRATIS_AB = 'DE:50.00 EUR';
 
@@ -111,7 +119,7 @@ export function feedZeilen(jsonl) {
   const zeilen = [];
   for (const v of varianten) {
     const p = produkte.get(v.__parentId);
-    if (!p) continue;
+    if (!p || p.productType === EIGENER_FEED) continue;
     zeilen.push([`shopify_ZZ_${nummer(p.id)}_${nummer(v.id)}`, feedTitel(p.title, v, farben.get(p.id)?.size ?? 0), ...grundpreis(v), GRATIS_AB]);
   }
   return zeilen;
