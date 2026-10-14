@@ -276,7 +276,7 @@ test('feste Bandfarbe gilt nur fuer Bandarten - Ketteln und Cover ignorieren das
     assert.deepEqual(data.baender, [], art);
     const r = await runCase({ art, fest: FEST });
     assert.equal(r.requests.length, 1, art);
-    const p = (r.requests[0].body.items ? r.requests[0].body.items[0] : r.requests[0].body).properties;
+    const p = (r.requests[0].body.items ? r.requests[0].body.items.at(-1) : r.requests[0].body).properties;
     assert.equal(p.Bandfarbe, undefined, art);
     assert.equal((await markupFor({ art, fest: FEST })).includes('data-band-fest'), false, art);
   }

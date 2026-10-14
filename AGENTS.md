@@ -154,6 +154,7 @@ Gestapelte PRs **vor** dem Merge ihrer Basis umzielen. Die CI meldet nur
 
 ```
 npm run liquid:guard && npm run schema:guard && npm run template:guard && npm run theme:guard
+npm run -s themecheck:guard                  # Theme-Check-Fehler: sonst bricht erst der Preview-Push (--strict) ab
 node workflow/cli.mjs validate --static      # Flag heisst --static, nicht --static-only
 ```
 
@@ -193,7 +194,7 @@ Metafelder oder Collection-Zuordnungen nur verändern, wenn der jeweilige Auftra
 
 Nie technische Eigenschaften erfinden oder anhand eines Produktbildes allein ableiten.
 
-**Ausgelaufenes wird nie angezeigt (Inhaber 2026-10-13).** Fuehrt der Lieferant einen Artikel nachweislich nicht mehr (exakte Suche ohne Treffer, Seite 404, Auslaufmeldung), wird das Produkt samt Musterprodukt sofort archiviert und die alte Adresse per 301 auf den Nachfolger oder die passende Kollektion umgeleitet; vorher offene Bestellungen pruefen, danach Lexikon exportieren. Faellt nur eine Variante weg, ist das eine Variantenaenderung und braucht Freigabe. Anschliessend die ganze Linie beim Lieferanten auf neue Artikel abgleichen. Die woechentliche Auslauf-Pruefung (`npm run auslauf:pruefen`, montags 4:00 per LaunchAgent) meldet Kandidaten als To-do im Control Center; sie archiviert nie selbst.
+**Ausgelaufenes wird nie angezeigt (Inhaber 2026-10-13).** Fuehrt der Lieferant einen Artikel nachweislich nicht mehr (exakte Suche ohne Treffer, Seite 404, Auslaufmeldung), wird das Produkt samt Musterprodukt sofort archiviert und die alte Adresse per 301 auf den Nachfolger oder die passende Kollektion umgeleitet; vorher offene Bestellungen pruefen, danach Lexikon exportieren. Faellt nur eine Variante weg, ist das eine Variantenaenderung und braucht Freigabe. Anschliessend die ganze Linie beim Lieferanten auf neue Artikel abgleichen. Die woechentliche Auslauf-Pruefung (`npm run auslauf:pruefen`, montags 4:00 per LaunchAgent) meldet Kandidaten als To-do im Control Center; sie archiviert nie selbst. Bei Lieferant A meldet sie ausserdem Artikel unserer Linien, die seit dem letzten Lauf neu beim Lieferanten stehen (To-do "neue Artikel", anlegen nach Skill `produktimport`).
 
 Bei unklaren Produktdaten:
 

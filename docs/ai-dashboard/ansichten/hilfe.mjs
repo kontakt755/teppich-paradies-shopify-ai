@@ -32,7 +32,7 @@ export function viewHilfe() {
 
     ${hilfeKarte('Beim Lieferanten bestellen', `
       <ol style="margin:0;padding-left:20px;line-height:1.9">
-        <li>Oben auf <b>Einkauf</b>: je Lieferant eine Karte mit dem, was zu bestellen, bestellt und bei uns eingetroffen ist. Was schon beim Kunden ist, zählt dort als erledigt.</li>
+        <li>Oben auf <b>Einkauf</b>: je Lieferant eine Karte in drei Schritten – <b>Ware bestellen</b>, <b>Muster bestellen</b>, <b>Nachfassen</b> –, darunter, was im Plan läuft. Was schon beim Kunden ist, zählt dort als erledigt.</li>
         <li>Der farbige Knopf ist der Bestellweg dieses Lieferanten: <b>Bestellmail öffnen</b>, <b>Im Portal bestellen</b> oder <b>Anrufen</b>. Muster haben einen eigenen Knopf.</li>
         <li>Die Bestellung steht fertig da. <b>Im Mailprogramm öffnen</b> – abschicken tust du selbst, hier wird nie etwas gesendet. Was nicht in der Mail steht, ist mit Grund aufgelistet.</li>
         <li>Danach fragt das Dashboard <b>Als bestellt markieren?</b> – ein Klick setzt alle Artikel der Mail auf „Bestellt".</li>

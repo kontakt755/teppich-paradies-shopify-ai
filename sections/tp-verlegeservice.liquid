@@ -78,9 +78,12 @@
       <div class="tp-vs__angebot">
         <span class="tp-vs__angebot-zeichen">{% render 'tp-vs-icon', name: 'check' %}</span>
         <div>
-          <p class="tp-vs__angebot-titel">Lieferung &amp; lose Verlegung kostenlos <span>ab {{ vs_schwelle }}&nbsp;€ Warenwert im Umkreis von {{ vs_nah }}&nbsp;km</span></p>
-          <p class="tp-vs__angebot-text">Beides muss zusammenkommen. Darunter oder weiter weg: faire Festpreise ab {% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_nah %} – vorab genannt.</p>
-          <p class="tp-vs__angebot-zusatz"><span class="tp-vs__zusatz-marke">Zusatz</span> Verlegeband, Fixierung und vollflächige Verklebung sind nicht enthalten – die buchen Sie zu festen Aufpreisen dazu.</p>
+          {%- comment -%}
+            Bewusst knapp (Inhaber 2026-10-13): die Box nennt nur das Angebot
+            mit beiden Bedingungen. Die Faelle im Einzelnen erklaeren die
+            Karten direkt darunter (Snippet tp-verlegeservice-stufen).
+          {%- endcomment -%}
+          <p class="tp-vs__angebot-titel">Lieferung &amp; lose Verlegung kostenlos <span>ab {{ vs_schwelle }}&nbsp;€ Warenwert <strong>und</strong> bis {{ vs_nah }}&nbsp;km Entfernung – nur wenn beides zutrifft.</span></p>
           {%- comment -%}
             Aktionspreis-Regel des Inhabers (2026-09-20), gleicher Wortlaut wie im Produkthinweis
             blocks/tp-verlegeservice-hinweis.liquid. Steht immer da, nicht nur waehrend einer Aktion:

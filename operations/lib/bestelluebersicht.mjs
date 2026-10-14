@@ -153,7 +153,7 @@ export function istMusterPosition(item, lineItem) {
  * Einkaufsmenge aus der Kundenmenge. Nur mit belegten Stammdaten, sonst
  * UNGEKLAERT mit Grund. Nutzt ausschliesslich umrechnung.mjs.
  */
-export function einkaufsmenge(item, menge) {
+export function einkaufsmenge(item, menge, { massanfertigung = false } = {}) {
   const e = item.einkauf || {};
   const p = item.produkt || {};
   const ein = item.eingaben || {};
@@ -161,6 +161,12 @@ export function einkaufsmenge(item, menge) {
   const ungeklaert = grund => ({ menge: UNGEKLAERT, einheit: UNGEKLAERT, text: UNGEKLAERT, grund });
 
   if (!(menge > 0)) return ungeklaert('keine offene Menge');
+  // Kettel-/Massteppich: bestellt wird ein Stueck im Fertigmass. Ob der Lieferant aus
+  // Rollenbreite oder Raummass schneidet, entscheidet er selbst (Inhaber 2026-10-14) -
+  // deshalb hier keine lfm-Umrechnung und keine Rollenbreite.
+  if (massanfertigung && ein.masse) {
+    return { menge: 1, einheit: EINHEIT.STUECK, text: `1 Stück nach Maß · ${ein.masse.breiteCm} × ${ein.masse.laengeCm} cm`, grund: null };
+  }
   try {
     if (e.bestelleinheit === EINHEIT.PAKET || gruppe === GRUPPE.PAKET) {
       if (p.qm_pro_paket === UNGEKLAERT) return ungeklaert('Paketinhalt fehlt (custom.qm_pro_paket)');
@@ -296,6 +302,42 @@ function vollstaendigeDetails(order, positionen) {
   };
 }
 
+/**
+ * Was der Lieferant fuer einen Zuschnitt wissen muss: Mass, Form, Rollenbreite und
+ * Einfassung (Ketteln, Band ...) - wortgleich aus den Properties der Kundenbestellung
+ * (assets/tp-einfass-konfigurator.js). Steht die Kettelung nur an der eigenen
+ * Kettelservice-Zeile derselben _Gruppe, kommt sie von dort. Leer = Standardware.
+ */
+export function ausfuehrungFuer(props = {}, kettel = null) {
+  const w = k => (leer(props[k]) ? '' : String(props[k]).trim());
+  const zeilen = [];
+  const mass = w('Maße');
+  if (mass) zeilen.push(`Fertigmaß: ${mass}${w('Form') ? ` (${w('Form')})` : ''}`);
+  // Bewusst keine Rollenbreite: Raummass oder Rollenbreite entscheidet der Lieferant.
+  const einfassung = w('Einfassung') || (kettel ? 'Gekettelt' : '');
+  if (einfassung) {
+    const teile = [einfassung];
+    const kante = w('Kante umlaufend') || (kettel?.kante ?? '');
+    if (kante) teile.push(`umlaufend ${kante}`);
+    if (w('Garn')) teile.push(`Garn ${w('Garn')}`);
+    if (w('Bandfarbe')) teile.push(`Bandfarbe ${w('Bandfarbe')}`);
+    if (w('Vlies')) teile.push(`Vlies ${w('Vlies')}`);
+    zeilen.push(`Einfassung: ${teile.join(', ')}`);
+  }
+  return zeilen;
+}
+
+/** Kettelservice-Zeilen einer Bestellung je _Gruppe (Kante steht dort, wenn sie am Teppich fehlt). */
+function kettelJeGruppe(zeilen) {
+  const m = new Map();
+  for (const li of zeilen) {
+    if ((li.variant?.product?.handle ?? '') !== 'kettelservice') continue;
+    const p = propertiesMap(li.customAttributes ?? li.properties);
+    if (!leer(p._Gruppe)) m.set(String(p._Gruppe).trim(), { kante: leer(p['Kante umlaufend']) ? '' : String(p['Kante umlaufend']).trim() });
+  }
+  return m;
+}
+
 /** Muster: Grosshaendler-ID der Quellvariante (Property _Quellvariante_ID). */
 function musterQuelle(item, quellMap, zuordnung) {
   const id = numerischeId(item.einkauf?.quellvariante !== UNGEKLAERT ? item.einkauf?.quellvariante : item.eingaben?.quellvarianteId);
@@ -339,6 +381,8 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
     const istTest = istTestbestellung(order);
     const zeilen = knoten(order.lineItems).map(normalisiert);
     const offen = istOffen(order);
+    const kettel = kettelJeGruppe(zeilen);
+    const kunde = order.shippingAddress?.name ?? order.customer?.displayName ?? null;
     const positionen = zeilen.map(li => {
       const item = resolveLineItem({ lineItem: li, variant: li.variant, alleZeilen: zeilen });
       const vm = metafeldMap(li.variant?.metafields);
@@ -364,6 +408,10 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         // Musterprodukte (muster-<handle>) zeigen ihr Original im Lexikon selbst.
         if (!String(handle ?? '').startsWith('muster-')) handle = mq.produktHandle ?? (leer(props._Quellprodukt) ? handle : String(props._Quellprodukt).trim());
       }
+      // Mass-/Kettelteppich aus dem Konfigurator: Masse plus Einfassung (am Teppich oder als
+      // Kettelservice derselben _Gruppe). Der Rollenrechner schreibt keine "Maße".
+      const kettelDazu = leer(props._Gruppe) ? null : kettel.get(String(props._Gruppe).trim());
+      const massanfertigung = !istM && !leer(props['Maße']) && (!leer(props.Einfassung) || !!kettelDazu);
       const pos = {
         orderId: order.id,
         orderName: order.name,
@@ -375,6 +423,9 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         // Originalartikel beim Lieferanten, ohne Suche.
         handle,
         farbe,
+        // Fuer die Bestellmail: Kommission mit Kundennamen, Zuschnitt und Einfassung.
+        kunde,
+        ausfuehrung: istM ? [] : ausfuehrungFuer(props, kettelDazu),
         sku: item.sku,
         preis: geld(li.originalUnitPriceSet),
         menge,
@@ -390,7 +441,7 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         ohneVariante: !li.variant,
         masspruefung: item.masspruefung,
         einkauf: item.einkauf,
-        bestellmenge: eigen ? { menge: 0, einheit: 'eigenleistung', text: 'Eigenleistung – nichts zu bestellen', grund: null } : istM ? { menge, einheit: 'muster', text: `${menge} Muster`, grund: null } : (li.variant ? einkaufsmenge(item, menge) : { menge: UNGEKLAERT, einheit: UNGEKLAERT, text: UNGEKLAERT, grund: "Variante in Shopify geloescht - Artikel von Hand klaeren" }),
+        bestellmenge: eigen ? { menge: 0, einheit: 'eigenleistung', text: 'Eigenleistung – nichts zu bestellen', grund: null } : istM ? { menge, einheit: 'muster', text: `${menge} Muster`, grund: null } : (li.variant ? einkaufsmenge(item, menge, { massanfertigung }) : { menge: UNGEKLAERT, einheit: UNGEKLAERT, text: UNGEKLAERT, grund: "Variante in Shopify geloescht - Artikel von Hand klaeren" }),
         idGrund: ghId !== UNGEKLAERT ? null : !li.variant ? "Variante geloescht" : istM ? (mq?.quellvariante ? "Quellvariante ohne ID-Metafeld" : "Muster ohne _Quellvariante_ID - Produkt/Farbe siehe Titel") : "weder lieferant.* noch grosshandel.sku gesetzt",
       };
       // Rollenware als Komponente unter "Zuschnitt von der Rolle" ist ein

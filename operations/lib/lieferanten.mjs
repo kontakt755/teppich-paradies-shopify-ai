@@ -149,6 +149,8 @@ function pruefeLieferant(id, roh, fehler) {
       portalUrl: p.url(w.portalUrl, 'ware.portalUrl'),
       mail: p.mail(w.mail, 'ware.mail'),
       telefon: p.telefon(w.telefon, 'ware.telefon'),
+      // Ohne Eintrag geht Ware direkt an die Kunden (Inhaber 2026-10-14); "laden" nur als Ausnahme.
+      lieferung: p.auswahl(w.lieferung, 'ware.lieferung', MUSTER_LIEFERUNG),
     },
     muster: {
       weg: p.auswahl(m.weg, 'muster.weg', BESTELLWEGE),
@@ -305,6 +307,8 @@ function schlankePosition(pos, statusAlle, jetzt) {
     lineItemId: pos.lineItemId ?? null,
     titel: pos.titel ?? null,
     farbe: geklaert(pos.farbe),
+    kunde: geklaert(pos.kunde),
+    ausfuehrung: Array.isArray(pos.ausfuehrung) ? pos.ausfuehrung : [],
     sku: geklaert(pos.sku),
     artikelnummer: geklaert(pos.grosshaendlerId),
     farbnummer,
@@ -447,8 +451,9 @@ function adresseOk(a) {
   return !!(a && geklaert(a.strasse) && geklaert(a.plz) && geklaert(a.ort));
 }
 
-function adressZeilen(a) {
-  return [geklaert(a.name), geklaert(a.strasse), `${a.plz} ${a.ort}`, geklaert(a.land)].filter(Boolean);
+function adressZeilen(a, { telefon = false } = {}) {
+  const tel = telefon && geklaert(a.telefon) && a.telefon !== '–' ? `Tel. ${a.telefon}` : null;
+  return [geklaert(a.name), geklaert(a.strasse), `${a.plz} ${a.ort}`, geklaert(a.land), tel].filter(Boolean);
 }
 
 function kundenAdressen(modell) {
@@ -457,12 +462,20 @@ function kundenAdressen(modell) {
   return m;
 }
 
-function positionsZeilen(p, nr) {
+// Interne Vermerke aus der Mengenumrechnung gehoeren in die Hinweise, nicht zum Lieferanten.
+const mailMenge = t => String(t ?? '').replace(/\s*\(Lieferantenraster ungeklärt[^)]*\)/, '');
+
+function positionsZeilen(p, nr, { mitKunde = true } = {}) {
   const kopf = [`Art.-Nr. ${p.artikelnummer}`];
   if (p.farbnummer) kopf.push(`Farb-Nr. ${p.farbnummer}`);
-  const bezeichnung = [p.titel, p.farbe].filter(Boolean).join(', ');
-  const zeilen = [`${nr}. ${kopf.join(' · ')}`, `   ${bezeichnung}`, `   Menge: ${p.mengeText ?? `${p.menge} ${p.einheit}`}`];
-  if (p.orderName) zeilen.push(`   Kommission: ${p.orderName}`);
+  // Keine Shop-Produktnamen und Shop-Farbwoerter: die kennt der Lieferant nicht, sie
+  // verwirren nur (Inhaber 2026-10-14). Artikel- und Farbnummer reichen.
+  const ausfuehrung = p.ausfuehrung ?? [];
+  // Massanfertigung: "1 Stueck nach Mass", das Fertigmass steht in der Zeile darunter.
+  const massStueck = ausfuehrung.some(z => z.startsWith('Fertigmaß:')) && p.einheit === 'stueck';
+  const menge = massStueck ? `${p.menge} Stück nach Maß` : mailMenge(p.mengeText ?? `${p.menge} ${p.einheit}`);
+  const zeilen = [`${nr}. ${kopf.join(' · ')}`, `   Menge: ${menge}`, ...ausfuehrung.map(z => `   ${z}`)];
+  if (p.orderName) zeilen.push(`   Kommission: ${[p.orderName, mitKunde ? p.kunde : null].filter(Boolean).join(' · ')}`);
   return zeilen;
 }
 
@@ -478,7 +491,7 @@ function fehltEintrag(p, gruende) {
 function hinweiseFuer(aufgenommen) {
   const h = [];
   const ohneFarbnr = aufgenommen.filter(p => !p.farbnummer).length;
-  if (ohneFarbnr) h.push(`${ohneFarbnr} Position(en) ohne Farbnummer - die Farbe steht nur als Name in der Mail.`);
+  if (ohneFarbnr) h.push(`${ohneFarbnr} Position(en) ohne Farbnummer – vor dem Senden prüfen, ob die Artikelnummer die Farbe schon enthält.`);
   for (const p of aufgenommen) if (p.mengeHinweis) h.push(`${p.orderName ?? ''} ${p.titel ?? ''}: ${p.mengeHinweis}`.trim());
   return h;
 }
@@ -522,10 +535,15 @@ function fertigeMail({ st, art, an, betreff, zeilen, aufgenommen, fehlt, extra =
 
 const ZIEL_JE_AUFTRAG = new Set([ROUTE.SUPPLIER_DIRECT, ROUTE.SUPPLIER_TO_SITE]);
 
-function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt }) {
+function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel }) {
   const alle = (gruppe.positionen ?? []).map(p => schlankePosition(p, statusAlle, jetzt));
   const offen = alle.filter(p => p.gruppe === 'zuBestellen');
   const direkt = ZIEL_JE_AUFTRAG.has(gruppe.route);
+  // Regel des Inhabers (2026-10-14): Ware geht direkt an die Kunden, je Kommission mit
+  // Anschrift. "laden" ist die seltene Ausnahme - per Umschalter im Dialog oder als
+  // ware.lieferung in den Stammdaten. Baustellenlieferungen bleiben, wie sie sind.
+  const lieferung = MUSTER_LIEFERUNG.includes(ziel) ? ziel : (st.ware.lieferung ?? 'kunde');
+  const anKunden = !direkt && lieferung === 'kunde';
   const zielAdresse = direkt ? adressen.get(gruppe.positionen?.[0]?.orderId) : absender?.lieferanschrift;
   const aufgenommen = [];
   const fehlt = [];
@@ -535,15 +553,29 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt }) {
     if (!p.artikelnummer) gruende.push('Artikelnummer beim Lieferanten fehlt');
     if (p.menge === null || !p.einheit) gruende.push(`Bestellmenge ungeklärt${p.mengeHinweis ? ` (${p.mengeHinweis})` : ''}`);
     if (direkt && !adresseOk(zielAdresse)) gruende.push('Lieferanschrift des Kunden fehlt');
+    if (anKunden && !adresseOk(adressen.get(p.orderId))) gruende.push('Lieferanschrift des Kunden fehlt');
     if (gruende.length) fehlt.push(fehltEintrag(p, gruende)); else aufgenommen.push(p);
   }
   const { anrede, gruss } = rahmen({ st, absender, anredeStandard: 'Sehr geehrte Damen und Herren,' });
-  const zeilen = [anrede, '', 'wir bestellen folgende Ware:', ''];
+  const zeilen = [anrede, '', anKunden ? 'wir bestellen folgende Ware – bitte direkt an unsere Kunden liefern:' : 'wir bestellen folgende Ware:', ''];
   if (st.kundennummer) zeilen.push(`Unsere Kundennummer: ${st.kundennummer}`, '');
-  aufgenommen.forEach((p, i) => zeilen.push(...positionsZeilen(p, i + 1), ''));
+  if (anKunden) {
+    // Je Kommission ein Block: Anschrift (mit Telefon fuer die Spedition), darunter die Positionen.
+    const jeAuftrag = new Map();
+    for (const p of aufgenommen) { if (!jeAuftrag.has(p.orderId)) jeAuftrag.set(p.orderId, []); jeAuftrag.get(p.orderId).push(p); }
+    let nr = 0;
+    for (const [orderId, liste] of jeAuftrag) {
+      zeilen.push(`Kommission ${liste[0].orderName} – Lieferanschrift:`, ...adressZeilen(adressen.get(orderId), { telefon: true }).map(z => `   ${z}`), '');
+      for (const p of liste) { nr += 1; zeilen.push(...positionsZeilen(p, nr, { mitKunde: false }), ''); }
+    }
+  } else {
+    aufgenommen.forEach((p, i) => zeilen.push(...positionsZeilen(p, i + 1), ''));
+  }
   if (direkt) {
     zeilen.push(gruppe.route === ROUTE.SUPPLIER_TO_SITE ? 'Bitte liefern Sie direkt an die Baustelle:' : 'Bitte liefern Sie direkt an unseren Kunden:');
-    if (adresseOk(zielAdresse)) zeilen.push(...adressZeilen(zielAdresse));
+    if (adresseOk(zielAdresse)) zeilen.push(...adressZeilen(zielAdresse, { telefon: true }));
+  } else if (anKunden) {
+    zeilen.push('Bitte vor der Anlieferung beim Kunden telefonisch avisieren.');
   } else if (adresseOk(zielAdresse)) {
     zeilen.push('Lieferanschrift:', ...adressZeilen(zielAdresse));
   } else {
@@ -556,7 +588,9 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt }) {
     extra: {
       gruppe: gruppe.schluessel,
       route: geklaert(gruppe.route),
-      lieferziel: direkt ? (gruppe.route === ROUTE.SUPPLIER_TO_SITE ? 'baustelle' : 'kunde') : 'laden',
+      lieferziel: direkt ? (gruppe.route === ROUTE.SUPPLIER_TO_SITE ? 'baustelle' : 'kunde') : anKunden ? 'kunde' : 'laden',
+      // Nur Ware, die sonst in den Laden geht, kann im Dialog umgeschaltet werden.
+      zielWaehlbar: !direkt,
       bereitsBestellt: alle.length - offen.length,
     },
   });
@@ -635,7 +669,8 @@ export class LieferantenFehler extends Error {}
  * @param {string} p.lieferant     Kennung (z. B. "A")
  * @param {'ware'|'muster'} [p.art]
  * @param {string} [p.gruppe]      nur Ware: Gruppenschluessel "<lieferant>|<route>|<lieferziel>"; ohne Angabe alle Gruppen
- * @param {'kunde'|'laden'} [p.ziel] nur Muster: ueberstimmt muster.lieferung aus den Stammdaten
+ * @param {'kunde'|'laden'} [p.ziel] Muster: ueberstimmt muster.lieferung aus den Stammdaten;
+ *                                 Ware: ueberstimmt ware.lieferung (Standard 'kunde' - direkt an die Kunden)
  * @returns {{lieferant:string, name:string, art:string, mails:object[]}}
  */
 export function bestellmail({ modell, lieferant, art = 'ware', gruppe = null, ziel = null, statusAlle = {}, stammdaten = null, jetzt = new Date() } = {}) {

@@ -276,7 +276,7 @@ test('keine Preise und kein einkauf-Block in Uebersicht, Detail und Mail', () =>
 // --------------------------------------------------------------- Bestellmail
 
 test('Ware: fertige Mail, ungeklaerte Positionen getrennt als fehlt', () => {
-  const r = bestellmail({ modell: modell(), lieferant: 'A', art: 'ware', gruppe: 'A|SUPPLIER_TO_TP|TP', stammdaten: STAMM, jetzt: JETZT });
+  const r = bestellmail({ modell: modell(), lieferant: 'A', art: 'ware', gruppe: 'A|SUPPLIER_TO_TP|TP', ziel: 'laden', stammdaten: STAMM, jetzt: JETZT });
   assert.equal(r.automatischGesendet, false);
   assert.equal(r.mails.length, 1);
   const mail = r.mails[0];
@@ -287,7 +287,8 @@ test('Ware: fertige Mail, ungeklaerte Positionen getrennt als fehlt', () => {
   assert.equal(mail.positionen.length, 1);
   assert.match(mail.text, /^Guten Tag Frau Muster,\n\nwir bestellen folgende Ware:/);
   assert.match(mail.text, /Unsere Kundennummer: K-000001/);
-  assert.match(mail.text, /1\. Art\.-Nr\. A-4711 · Farb-Nr\. 012\n {3}Testdiele Eiche, Natur\n {3}Menge: 3 Paket\(e\) = 6,60 m²\n {3}Kommission: #T1/);
+  assert.equal(/Testdiele|Natur/.test(mail.text), false, 'keine Shop-Produktnamen in der Mail an den Lieferanten');
+  assert.match(mail.text, /1\. Art\.-Nr\. A-4711 · Farb-Nr\. 012\n {3}Menge: 3 Paket\(e\) = 6,60 m²\n {3}Kommission: #T1/);
   assert.match(mail.text, /Lieferanschrift:\nBeispielhandel GmbH\nMusterweg 1\n00000 Musterstadt/);
   assert.match(mail.text, /Viele Grüße\nErika Beispiel\nBeispielhandel GmbH$/);
   assert.equal(mail.text.includes('A-0815'), false, 'Position ohne Menge darf nicht in der Mail stehen');
@@ -313,7 +314,7 @@ test('Ware: bereits bestellte Positionen werden nicht noch einmal bestellt', () 
 });
 
 test('Ware ohne Stammdaten: Text zum Kopieren, kein Empfaenger, Luecken benannt', () => {
-  const mail = bestellmail({ modell: modell(), lieferant: 'A', jetzt: JETZT }).mails[0];
+  const mail = bestellmail({ modell: modell(), lieferant: 'A', ziel: 'laden', jetzt: JETZT }).mails[0];
   assert.equal(mail.an, null);
   assert.equal(mail.mailto, null);
   assert.equal(mail.weg, null);
@@ -349,7 +350,7 @@ test('Muster direkt an Kunden: Anschrift je Bestellung, fehlende Anschrift und F
   assert.equal(mail.lieferziel, 'kunde');
   assert.equal(mail.betreff, 'Musterbestellung – Kd.-Nr. K-000001 – 1 Muster – #T2');
   assert.match(mail.text, /bitte senden Sie folgende Muster direkt an unsere Kunden:/);
-  assert.match(mail.text, /Lieferanschrift \(Kommission #T2\):\nTestkunde 2\nTestweg 2\n00000 Musterstadt\nDeutschland\n\n1\. Art\.-Nr\. A-0815 · Farb-Nr\. 020\n {3}Muster: Testteppich Wolke, Grau\n {3}Menge: 1 Muster/);
+  assert.match(mail.text, /Lieferanschrift \(Kommission #T2\):\nTestkunde 2\nTestweg 2\n00000 Musterstadt\nDeutschland\n\n1\. Art\.-Nr\. A-0815 · Farb-Nr\. 020\n {3}Menge: 1 Muster/);
   assert.deepEqual(mail.fehlt.map(f => f.gruende), [['Lieferanschrift des Kunden fehlt']]);
   assert.deepEqual(mail.ohneBestellung, []);
 });
@@ -532,4 +533,52 @@ test('Lexikon-Produkt: Schnellzugriff nur an Varianten ohne Direkt- und Suchlink
   assert.equal(m1.original.schnellzugriff.art, 'muster');
   assert.equal(m1.original.schnellzugriff.aktionen[0].an, 'order@lieferant-b.example');
   assert.equal(m2.original.schnellzugriff, undefined);
+});
+
+// ------------------------------------------- Teppich nach Mass: Zuschnitt, Ketteln, Kunde
+
+function massteppichModell({ mitEinfassungAmTeppich = true } = {}) {
+  const teppich = zeile({ id: 20, sku: null, title: 'Testteppich nach Maß', variantTitle: 'Sandbeige (036)', quantity: 775, preis: '0.39',
+    einkauf: [['lieferant', 'A'], ['artikelnummer', 'A-TNM'], ['farbnummer', '036'], ['bestelleinheit', 'lfm'], ['route', 'SUPPLIER_TO_TP']],
+    custom: [['preis_pro_001_qm', 'true']],
+    attrs: [
+      ...(mitEinfassungAmTeppich ? [{ key: 'Einfassung', value: 'Gekettelt' }, { key: 'Kante umlaufend', value: '11,20 m' }, { key: 'Garn', value: 'Ton in Ton' }] : []),
+      { key: 'Form', value: 'Rechteck' }, { key: 'Maße', value: '250 × 310 cm' },
+      { key: '_Zuschnitt aus Rolle', value: '400 cm' }, { key: '_Gruppe', value: 'Kabc' },
+    ] });
+  const kettel = zeile({ id: 21, sku: null, title: 'Kettelservice', variantTitle: 'je 0,01 laufender Meter', quantity: 1120,
+    attrs: [{ key: 'Kante umlaufend', value: '11,20 m' }, { key: '_Gruppe', value: 'Kabc' }] });
+  kettel.variant.product.handle = 'kettelservice';
+  return aufbereiten({ orders: [bestellung(4, [teppich, kettel], { shippingAddress: { name: 'Testkunde 4', address1: 'Testweg 4', zip: '00000', city: 'Musterstadt', country: 'Deutschland', phone: '+49 000 0000' } })] }, { jetzt: JETZT });
+}
+
+test('Massteppich: Fertigmass, Rolle, Ketteln und Kunde stehen in der Mail, kein interner Rastervermerk', () => {
+  const mail = bestellmail({ modell: massteppichModell(), lieferant: 'A', ziel: 'laden', stammdaten: STAMM, jetzt: JETZT }).mails[0];
+  assert.match(mail.text, /Menge: 1 Stück nach Maß\n {3}Fertigmaß: 250 × 310 cm \(Rechteck\)\n {3}Einfassung: Gekettelt, umlaufend 11,20 m, Garn Ton in Ton\n {3}Kommission: #T4 · Testkunde 4/);
+  assert.equal(mail.text.includes('Lieferantenraster'), false);
+  assert.equal(/Rolle|lfm/.test(mail.text), false, 'Rollenbreite entscheidet der Lieferant');
+  assert.equal(mail.text.includes('Kettelservice'), false, 'Kettelservice ist keine eigene Bestellposition');
+  assert.equal(mail.zielWaehlbar, true);
+});
+
+test('Massteppich: Kettelung nur an der Kettelservice-Zeile wird trotzdem bestellt', () => {
+  const mail = bestellmail({ modell: massteppichModell({ mitEinfassungAmTeppich: false }), lieferant: 'A', stammdaten: STAMM, jetzt: JETZT }).mails[0];
+  assert.match(mail.text, /Einfassung: Gekettelt, umlaufend 11,20 m/);
+});
+
+test('Ware an den Kunden: Anschrift mit Telefon je Kommission statt Ladenanschrift', () => {
+  // Ohne ziel: Standard ist direkt an die Kunden (Inhaber 2026-10-14).
+  const mail = bestellmail({ modell: massteppichModell(), lieferant: 'A', stammdaten: STAMM, jetzt: JETZT }).mails[0];
+  assert.equal(mail.lieferziel, 'kunde');
+  assert.match(mail.text, /direkt an unsere Kunden liefern/);
+  assert.match(mail.text, /Kommission #T4 – Lieferanschrift:\n {3}Testkunde 4\n {3}Testweg 4\n {3}00000 Musterstadt\n {3}Deutschland\n {3}Tel\. \+49 000 0000/);
+  assert.equal(mail.text.includes('Beispielhandel GmbH\nMusterweg 1'), false);
+});
+
+test('Ware: ware.lieferung "laden" in den Stammdaten macht den Laden zum Standard', () => {
+  const st = pruefeStammdaten({ lieferanten: { A: { ware: { lieferung: 'laden' } } } });
+  assert.deepEqual(st.fehler, []);
+  const mail = bestellmail({ modell: massteppichModell(), lieferant: 'A', stammdaten: st, jetzt: JETZT }).mails[0];
+  assert.equal(mail.lieferziel, 'laden');
+  assert.equal(bestellmail({ modell: massteppichModell(), lieferant: 'A', ziel: 'kunde', stammdaten: st, jetzt: JETZT }).mails[0].lieferziel, 'kunde');
 });

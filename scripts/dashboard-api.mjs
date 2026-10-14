@@ -2536,7 +2536,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // dieselbe Frage "stimmt, was der Shop zeigt?", dieselbe To-do-Quelle auf "Heute".
       const aus = readJsonIfExists(path.join(dir, 'auslauf', 'status.json'));
       const auslauf = aus?.geprueftAm
-        ? { geprueftAm: aus.geprueftAm, ampel: aus.ampel, befunde: aus.befunde || [], ausfaelle: aus.ausfaelle || [] }
+        ? {
+          geprueftAm: aus.geprueftAm, ampel: aus.ampel, befunde: aus.befunde || [], ausfaelle: aus.ausfaelle || [],
+          neuheiten: aus.neuheiten ? { neu: aus.neuheiten.neu || [], ausfall: aus.neuheiten.ausfall || null } : null,
+        }
         : null;
       if (!daten || !daten.geprueftAm) {
         return { verfuegbar: false, quelle: file, hinweis: 'Shop-Wache noch nie gelaufen.', befehl: 'npm run shop:wache', tailscale: ts, auslauf };

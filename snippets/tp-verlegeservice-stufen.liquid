@@ -50,7 +50,12 @@
       Kunden aus 40 km Entfernung "ab der Schwelle ist die Verlegung frei, ich
       zahle nur die Anfahrt" - das ist die Lesart, die am Telefon die
       Diskussion ausloest. {%- endcomment -%}
-    <p class="tp-vs-stufe__bedingung">Beides muss zusammentreffen: <strong>ab {{ vss_schwelle }}&nbsp;€ Warenwert und innerhalb von {{ vss_nah }}&nbsp;km.</strong> Weiter entfernt berechnen wir Anfahrt und lose Verlegung zu den Festpreisen.</p>
+    <p class="tp-vs-stufe__bedingung">Beides muss zusammentreffen:</p>
+    <ol class="tp-vs-stufe__bedingungen" role="list">
+      <li>{% render 'tp-vs-icon', name: 'check' %}<span>Warenwert <strong>mindestens {{ vss_schwelle }}&nbsp;€</strong></span></li>
+      <li>{% render 'tp-vs-icon', name: 'check' %}<span>Lieferadresse <strong>höchstens {{ vss_nah }}&nbsp;km</strong> von unserem Geschäft in Oranienburg entfernt (Luftlinie)</span></li>
+    </ol>
+    <p class="tp-vs-stufe__bedingung">Wohnen Sie weiter weg, zahlen Sie Lieferung <strong>und</strong> lose Verlegung – auch wenn Ihr Einkauf über {{ vss_schwelle }}&nbsp;€ liegt.</p>
 
     <ul class="tp-vs-kurz" role="list">
       <li>
@@ -71,7 +76,9 @@
 
   <article class="tp-vs-stufe">
     <{{ vss_ebene }} class="tp-vs-stufe__titel">Unter {{ vss_schwelle }}&nbsp;€ Warenwert</{{ vss_ebene }}>
-    <p class="tp-vs-stufe__kern">Faire Festpreise – vorab genannt, ohne Überraschungen.</p>
+    {%- comment -%} Unter der Schwelle kosten beide Leistungen, auch in der
+      ersten Zone - ausdruecklich, sonst liest der Nachbar "15 km" als frei. {%- endcomment -%}
+    <p class="tp-vs-stufe__kern">Lieferung <strong>und</strong> lose Verlegung kosten – egal, wie nah Sie wohnen. Zu festen Preisen, vorab genannt.</p>
 
     <ul class="tp-vs-kurz" role="list">
       <li>
@@ -186,6 +193,31 @@
 
   .tp-vs-stufe__bedingung strong {
     color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.92);
+  }
+
+  .tp-vs-stufe__bedingungen {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  .tp-vs-stufe__bedingungen li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .tp-vs-stufe__bedingungen .tp-vs-icon {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    color: rgb(var(--tp-vs-gruen));
+    stroke-width: 2.6;
   }
 
   /* "Zusatzleistung" als Marke am Namen - sonst liest sich die Zeile wie ein

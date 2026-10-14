@@ -19,7 +19,7 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { filtereAuftrag } from '../../lib/vorgangslink.mjs';
 import { beschaffungText } from '../../lib/beschaffung.mjs';
 import { uebernahmeBlock } from './beschaffung.mjs';
-import { lieferantenKartenHtml } from './lieferanten.mjs';
+import { lieferantenKartenHtml, nachfassenSumme } from './lieferanten.mjs';
 
 function kopierbutton(id, label = 'Liste kopieren') {
   return `<button type="button" class="btn btn-sm" data-kopieren="${esc(id)}">${esc(label)}</button>`;
@@ -261,13 +261,16 @@ export function viewEinkaufBestellungen() {
   const klaeren = aktiv.filter(a => a.ampel === 'rot' || a.ampel === 'gelb').sort((a, b) => (a.ampel === 'rot' ? 0 : 1) - (b.ampel === 'rot' ? 0 : 1));
   const rot = klaeren.filter(a => a.ampel === 'rot').length;
   const af = afNorm(state.route.params.get('af'));
+  // Reihenfolge wie in den Karten: Ware, Muster, Nachfassen (Inhaber 2026-10-14). Die Zahl
+  // offener Kundenauftraege steht unten bei "Alle offenen Auftraege".
+  const nachfassen = nachfassenSumme();
   const abgeschlossen = af === 'erledigt' ? abgeschlosseneAuftraegeKarte(auftragId) : '';
   return `
     ${auftragId ? `<p class="no-print"><a href="#/heute">← Zurück zu Heute</a> · <a href="#/einkauf">Alle Aufträge</a></p><p class="notice">Nur die ausgewählte Bestellung${aktiv[0]?.name ? ` ${esc(aktiv[0].name)}` : ''}. ${!aktiv.length ? 'Sie ist nicht mehr offen oder nicht in den aktuellen Daten.' : ''}</p>` : ''}
     <div class="band">
-      ${bandItem(aktiv.length, 'offene Kundenaufträge', 'plain')}
-      ${bandItem(ware.filter(p => gruppe(p) === 'offen').length, 'Artikel noch zu bestellen', 'warn')}
-      ${bandItem(muster.filter(p => gruppe(p) === 'offen').length, 'Muster noch zu bestellen', 'warn')}
+      ${bandItem(ware.filter(p => gruppe(p) === 'offen').length, 'Ware zu bestellen', 'warn')}
+      ${bandItem(muster.filter(p => gruppe(p) === 'offen').length, 'Muster zu bestellen', 'warn')}
+      ${bandItem(nachfassen.auftraege, nachfassen.auftraege === 1 ? 'Auftrag nachfassen' : 'Aufträge nachfassen', nachfassen.stufe || 'warn')}
       ${muster.some(p => gruppe(p) === 'eigen') ? bandItem(muster.filter(p => gruppe(p) === 'eigen').length, 'Muster haben wir da', 'plain') : ''}
       ${bandItem(rot, rot === 1 ? 'Auftrag mit Problem' : 'Aufträge mit Problem', 'crit')}
     </div>

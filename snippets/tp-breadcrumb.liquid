@@ -154,7 +154,7 @@
 
   {%- if tp_bc_sichtbar -%}
     {{ 'tp-breadcrumb.css' | asset_url | stylesheet_tag }}
-    <nav class="tp-bc" aria-label="Brotkrumen">
+    <nav class="tp-bc{% if request.page_type == 'collection' %} tp-bc--raster{% endif %}" aria-label="Brotkrumen">
       <ol class="tp-bc__liste">
         <li class="tp-bc__stufe"><a class="tp-bc__link" href="{{ routes.root_url }}">Start</a></li>
         {%- for tp_bc_t in tp_bc_titel_liste -%}

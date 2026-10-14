@@ -393,6 +393,16 @@ DOM in `lib/einkauf-lieferanten.mjs`, Styles in `stile/einkauf-lieferanten.css`)
 - **Zahlen und Überfällig-Hinweis** werden im Browser aus `/api/einkauf/bestellungen` und dem
   Auftragsfluss-Stand gezählt, nicht aus `/api/einkauf/lieferanten` – so passen Zahl und Liste nach
   einem Statuswechsel sofort zusammen. Vom Server kommen Stammdaten und Schwellen (7/14 Tage).
+- **Karte in Arbeitsschritten (seit 2026-10-14, Inhaber):** zugeklappt zeigt jede Karte
+  1. „Ware bestellen“ (je Position Artikel · Farbe, Bestellmenge, Fertigmaß/Einfassung aus
+  `ausfuehrung`, Kunde · Auftrag; blockiert = Artikelnummer fehlt oder Menge ungeklärt, rot mit Grund),
+  2. „Muster bestellen“ (je Kommission eine Zeile mit allen Farben), 3. „Nachfassen“ (alle Posten mit
+  Wartezeit-Stufe, Ware je Position, Muster je Kommission, Knopf Anrufen/E-Mail/Kontakt). Darunter ruhig:
+  „Muster haben wir da“, „Bestellt, im Plan“, „Bei uns eingetroffen“ (je ein paar Zeilen, Rest als
+  Positionszahl). Jeder Posten steht in genau einem Abschnitt. Die Kachel „Aufträge nachfassen“ oben
+  summiert `ueberfaellig.auftraege` der Karten (`nachfassenSumme()`). Hilfsfunktionen ohne DOM in
+  `lib/einkauf-uebersicht.mjs`. „Ist eingetroffen“ an bestellter Ware setzt `geliefert` (derselbe
+  Schritt wie in der Tabelle). Aufgeklappt („Positionen bearbeiten“) bleiben die Tabellen unverändert.
 - **Ein Hauptknopf je Bestellweg** (`ware.weg`): „Bestellmail öffnen", „Im Portal bestellen" (öffnet
   das Portal in neuem Tab und zugleich den Dialog), „Anrufen". Ohne Bestellweg: „Bestellliste öffnen".
   „Muster bestellen" erscheint, wenn Muster offen sind.

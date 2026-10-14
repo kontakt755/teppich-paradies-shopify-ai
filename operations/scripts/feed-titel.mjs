@@ -8,6 +8,19 @@
  * ergaenzende Quelle "tp-feedtitel.txt" (Datei, Zuordnung ueber id) ueberschreibt
  * nur den Titel. Shopify selbst bleibt unveraendert.
  *
+ * Grundpreis: Die App uebertraegt den in Shopify gepflegten Grundpreis
+ * (unitPriceMeasurement, z. B. 2,21 m² je Paket) nicht - Google meldet bei allen
+ * Produkten "Missing unit pricing measure" (Werkbank w-076). Dieselbe Datei
+ * liefert deshalb unit_pricing_measure und unit_pricing_base_measure mit, wenn
+ * die Variante ihren Grundpreis zeigt (showUnitPrice). Leere Zelle = nichts
+ * ueberschreiben.
+ *
+ * Gratisversand: Die App schickt je Artikel "Standard 4,99 EUR" ohne Grenze und
+ * uebersteuert damit die Versandrichtlinie im Merchant Center. Shopify liefert in
+ * Deutschland ab 50 EUR Bestellwert kostenlos (Versandprofil, Inhaber w-086,
+ * 13.10.2026); die Spalte free_shipping_threshold traegt diese Grenze je Artikel
+ * nach. Aendert sich die Grenze in Shopify, hier GRATIS_AB anpassen.
+ *
  * Ablauf (nach groesseren Importen wiederholen, sonst behalten neue Produkte den Rohtitel):
  *   1. npm run -s feed:titel -- --bulk-query   -> Abfrage per bulkOperationRunQuery (Shopify-MCP) laufen lassen, JSONL laden
  *   2. npm run -s feed:titel -- --jsonl katalog.jsonl --aus tp-feedtitel.txt
@@ -22,13 +35,19 @@ export const BULK_QUERY = `
     edges {
       node {
         id title
-        variants { edges { node { id selectedOptions { name value } } } }
+        variants { edges { node {
+          id selectedOptions { name value }
+          showUnitPrice
+          unitPriceMeasurement { quantityUnit quantityValue referenceUnit referenceValue }
+        } } }
       }
     }
   }
 }`;
 
 const FARB_OPTIONEN = ['farbe', 'color', 'dekor'];
+
+export const GRATIS_AB = 'DE:50.00 EUR';
 
 export function basisTitel(titel) {
   return titel
@@ -57,7 +76,23 @@ export function feedTitel(produktTitel, variante, farbAnzahl) {
 
 const nummer = (gid) => gid.split('/').pop();
 
-/** JSONL der Bulk-Abfrage -> Zeilen [offerId, Titel]; offerId wie von der Shopify-App vergeben. */
+// Shopify-Einheit -> Einheit im Merchant Center. Was Google nicht kennt (z. B. MM),
+// bleibt leer statt geraten.
+const EINHEIT = { M2: 'sqm', M: 'm', CM: 'cm', M3: 'cbm', L: 'l', CL: 'cl', ML: 'ml', KG: 'kg', G: 'g', MG: 'mg', ITEM: 'ct' };
+
+const zahl = (x) => String(Math.round(Number(x) * 1000) / 1000);
+
+/** Grundpreis-Spalten [unit_pricing_measure, unit_pricing_base_measure] oder ['', '']. */
+export function grundpreis(variante) {
+  const m = variante?.unitPriceMeasurement;
+  if (!variante?.showUnitPrice || !m) return ['', ''];
+  const menge = EINHEIT[m.quantityUnit];
+  const basis = EINHEIT[m.referenceUnit];
+  if (!menge || !basis || !(Number(m.quantityValue) > 0) || !(Number(m.referenceValue) > 0)) return ['', ''];
+  return [`${zahl(m.quantityValue)} ${menge}`, `${zahl(m.referenceValue)} ${basis}`];
+}
+
+/** JSONL der Bulk-Abfrage -> Zeilen [offerId, Titel, Grundpreis-Menge, Grundpreis-Basis, Gratisversand ab]; offerId wie von der Shopify-App vergeben. */
 export function feedZeilen(jsonl) {
   const produkte = new Map();
   const varianten = [];
@@ -77,7 +112,7 @@ export function feedZeilen(jsonl) {
   for (const v of varianten) {
     const p = produkte.get(v.__parentId);
     if (!p) continue;
-    zeilen.push([`shopify_ZZ_${nummer(p.id)}_${nummer(v.id)}`, feedTitel(p.title, v, farben.get(p.id)?.size ?? 0)]);
+    zeilen.push([`shopify_ZZ_${nummer(p.id)}_${nummer(v.id)}`, feedTitel(p.title, v, farben.get(p.id)?.size ?? 0), ...grundpreis(v), GRATIS_AB]);
   }
   return zeilen;
 }
@@ -92,8 +127,8 @@ function main(argv) {
   if (o.bulk) { console.log(BULK_QUERY.trim()); return; }
   if (!o.jsonl || !o.aus) throw new Error('Aufruf: feed:titel -- --jsonl katalog.jsonl --aus tp-feedtitel.txt | --bulk-query');
   const zeilen = feedZeilen(fs.readFileSync(o.jsonl, 'utf8'));
-  fs.writeFileSync(o.aus, ['id\ttitle', ...zeilen.map((z) => z.join('\t'))].join('\n') + '\n');
-  console.log(`${zeilen.length} Titel nach ${o.aus}`);
+  fs.writeFileSync(o.aus, ['id\ttitle\tunit_pricing_measure\tunit_pricing_base_measure\tfree_shipping_threshold', ...zeilen.map((z) => z.join('\t'))].join('\n') + '\n');
+  console.log(`${zeilen.length} Titel nach ${o.aus}, davon ${zeilen.filter((z) => z[2]).length} mit Grundpreis`);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {

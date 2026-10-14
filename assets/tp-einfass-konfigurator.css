@@ -240,7 +240,17 @@
 .tp-ek__tipp-name { flex: 1; min-width: 0; font-size: .88rem; font-weight: 700; line-height: 1.3; color: var(--tp-ek-green); }
 .tp-ek__tipp-preis { display: block; margin-top: 2px; font-size: .8rem; font-weight: 500; color: var(--tp-ek-muted); }
 .tp-ek__tipp-boden { display: block; margin-bottom: 1px; font-size: .72rem; font-weight: 600; letter-spacing: .02em; color: var(--tp-ek-muted); }
-.tp-ek__tipp-produkt + .tp-ek__tipp-produkt { margin-top: 8px; }
+.tp-ek__tipp-produkt + .tp-ek__tipp-produkt,
+.tp-ek__tipp-vorschlag + .tp-ek__tipp-produkt { margin-top: 8px; }
+/* Groessenvorschlag direkt unter dem Produkt: Mass, Preis, Knopf */
+.tp-ek__tipp-vorschlag { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: -1px; padding: 8px 12px; border: 1px solid var(--tp-ek-line); border-top: 0; border-radius: 0 0 8px 8px; background: var(--tp-ek-surface); }
+.tp-ek__tipp-produkt:has(+ .tp-ek__tipp-vorschlag:not([hidden])) { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.tp-ek__tipp-vorschlag-text { flex: 1 1 200px; margin: 0; font-size: .82rem; line-height: 1.4; }
+.tp-ek__tipp-vorschlag-text strong { white-space: nowrap; }
+.tp-ek__tipp-knopf { min-height: 40px; padding: 8px 14px; border: 1px solid var(--tp-ek-green); border-radius: 8px; background: var(--tp-ek-surface); color: var(--tp-ek-green); font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer; }
+.tp-ek__tipp-knopf:hover:not(:disabled) { background: var(--tp-ek-green-soft); }
+.tp-ek__tipp-knopf:disabled { opacity: .7; cursor: default; }
+.tp-ek__tipp-knopf.is-done { background: var(--tp-ek-green); color: #fff; }
 .tp-ek__tipp-pfeil { flex-shrink: 0; color: var(--tp-ek-green); }
 
 .tp-ek__anfrage { display: grid; gap: 10px; padding: 16px; border: 1px solid var(--tp-ek-line); border-radius: 10px; }

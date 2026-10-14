@@ -125,6 +125,27 @@
             "ziel": "/blogs/ratgeber-teppichboden/teppichboden-verlegen-lose-fixieren-oder-kleben"
           }
         },
+        "gesucht-verschnitt": {
+          "type": "gesucht",
+          "settings": {
+            "titel": "Verschnitt richtig einplanen",
+            "ziel": "/blogs/ratgeber-teppichboden/verschnitt-bei-teppichboden"
+          }
+        },
+        "gesucht-fliesen": {
+          "type": "gesucht",
+          "settings": {
+            "titel": "Teppichboden auf Fliesen verlegen",
+            "ziel": "/blogs/ratgeber-teppichboden/teppichboden-auf-fliesen"
+          }
+        },
+        "gesucht-wellen": {
+          "type": "gesucht",
+          "settings": {
+            "titel": "Teppichboden wirft Wellen",
+            "ziel": "/blogs/ratgeber-teppichboden/teppichboden-wirft-wellen"
+          }
+        },
         "gesucht-pflege": {
           "type": "gesucht",
           "settings": {
@@ -139,8 +160,11 @@
         "rechner",
         "gesucht-ausmessen",
         "gesucht-rollenbreite",
+        "gesucht-verschnitt",
         "gesucht-raum",
         "gesucht-verlegen",
+        "gesucht-fliesen",
+        "gesucht-wellen",
         "gesucht-pflege"
       ],
       "settings": {

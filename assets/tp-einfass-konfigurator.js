@@ -591,7 +591,7 @@
       var tw = beispiel ? 104 : 88, tx = x + pw / 2 - tw / 2, ty = y + 8;
       svgEl('rect', { x: tx, y: ty, width: tw, height: 21, rx: 10.5, fill: 'rgba(255,255,255,.90)' }, svg);
       var tb = svgEl('text', { x: x + pw / 2, y: ty + 14.5, 'text-anchor': 'middle', 'font-size': 11.5, 'font-weight': 600, fill: beispiel ? '#3b3733' : '#244d31' }, svg);
-      tb.textContent = beispiel ? 'Beispielmaß' : 'Dein Maß';
+      tb.textContent = beispiel ? 'Beispielmaß' : 'Ihr Maß';
       if (!beispiel) lupe(defs);
 
       /*
@@ -703,6 +703,13 @@
       }
     }
 
+    // Gueltiges Mass an den Befestigungs-Tipp melden (assets/tp-unterlage-vorschlag.js);
+    // null, sobald kein bestellbares Mass vorliegt.
+    function massMelden(mass) {
+      if (typeof root.dispatchEvent !== 'function' || typeof CustomEvent !== 'function') return;
+      root.dispatchEvent(new CustomEvent('tp-ek:mass', { detail: mass }));
+    }
+
     function rechnen() {
       target = aktuelleVariante();
       maxW = (target && Number(target.max_breite_cm) > 0) ? Number(target.max_breite_cm) : d.max_breite_cm;
@@ -713,11 +720,12 @@
         konfig.hidden = true;
         if (anfrage) anfrage.hidden = true;
         stand = null;
+        massMelden(null);
         return;
       }
       anfrageZeigen(f);
       nummerieren();
-      if (ANFRAGE[f]) { stand = null; return; }
+      if (ANFRAGE[f]) { stand = null; massMelden(null); return; }
 
       var rund = f === 'rund';
       laengeTeile.forEach(function (el) { el.hidden = rund; });
@@ -783,6 +791,7 @@
       // Die Kacheln rechnen mit jedem eingegebenen Mass, auch wenn es nur fuer diese
       // Kante nicht passt - dann zeigen sie, welche Kante es kann.
       kantenAktualisieren(eingegeben && !eingabeFehler ? { f: f, w: b.wert, l: l.wert } : null);
+      massMelden(gueltig ? { f: f, w: b.wert, l: l.wert } : null);
 
       var bandFehlt = bandWahl && !band;
       if (!gueltig) {
@@ -916,11 +925,9 @@
 
       var menge = stand.menge;
 
-      // Intern fuer die Werkstatt: aus welcher Rollenbreite zugeschnitten wird.
-      // Die kuerzere Seite muss in die Rolle passen, der Kunde sieht das nicht.
-      var kurzeSeite = stand.form === 'rund' ? stand.w : Math.min(stand.w, stand.l);
-      var rolle = rollen.length ? M.rolleFuer(kurzeSeite, rollen) : null;
-      if (rolle) p['_Zuschnitt aus Rolle'] = rolle + ' cm';
+      // Keine Rollenbreite an der Bestellung: bestellt wird das Fertigmass, ob aus
+      // Rollenbreite oder Raummass geschnitten wird, entscheidet der Lieferant
+      // (Inhaber 2026-10-14).
 
       // Jede Konfiguration bekommt eine eigene Gruppenkennung; an ihr haengt
       // das Zuschnitt-Attribut. Mit Kettelung teilen sich Teppich und Kante
@@ -970,7 +977,10 @@
         });
         gesamtMenge += 1;
       }
-      var koerper = zeilen.length > 1 ? { items: zeilen } : zeilen[0];
+      // Shopify zeigt die zuletzt angelegte Zeile oben. Umgekehrt senden, damit
+      // der Teppich vor seinem Kettelservice/Zuschnitt steht - sonst stand die
+      // eingerueckte Kante als erste Position ueber dem Teppich.
+      var koerper = zeilen.length > 1 ? { items: zeilen.slice().reverse() } : zeilen[0];
 
       inFlight = true;
       cta.disabled = true;

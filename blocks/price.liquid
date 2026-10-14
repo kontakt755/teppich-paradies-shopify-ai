@@ -87,8 +87,13 @@
       {% render 'tp-teppich-ab-preis', product: product_resource %}
     {%- endif -%}
   {% else %}
+    {%- comment -%}
+      Grundpreis (PAngV) fuer Ware nach Gewicht, Volumen oder Laenge (kg, l, m).
+      Bei EUR/m2-Darstellung blendet snippets/price.liquid ihn selbst aus, damit
+      nichts doppelt steht (Grund fuer das fruehere show_unit_price: false).
+    {%- endcomment -%}
     {% render 'price',
-      show_unit_price: false,
+      show_unit_price: true,
       product_resource: product_resource,
       show_sale_price_first: block_settings.show_sale_price_first
     %}
