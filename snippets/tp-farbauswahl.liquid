@@ -171,7 +171,10 @@
               </span>
               <span class="tp-fa__option-text">
                 <span class="tp-fa__option-name">{{ tp_fa_wert }}</span>
-                {%- if tp_fa_nummer != '' -%}
+                {%- comment -%} Steht die Nummer schon im Namen ("Aubergine (041)"), nicht noch einmal darunter. {%- endcomment -%}
+                {%- assign tp_fa_nr_klammer = '(' | append: tp_fa_nummer | append: ')' -%}
+                {%- if tp_fa_nummer != '' and tp_fa_wert contains tp_fa_nr_klammer -%}
+                {%- elsif tp_fa_nummer != '' -%}
                   <span class="tp-fa__option-nummer">Nr. {{ tp_fa_nummer | escape }}</span>
                 {%- endif -%}
               </span>
