@@ -333,8 +333,8 @@ function tpAngebotBerechnen(vorgang, stamm) {
     var a = f.artikel;
     var vers = s.verschnitt;
     if (vers === null) {
-      vers = K.sockelleiste.verschnittProzentAnnahme;
-      melde('offen', 'Sockelleisten-Verschnitt nicht angegeben – Annahme ' + vers + ' % (bitte bestätigen)', s.raeume.join(', '));
+      vers = K.sockelleiste.verschnittProzentStandard;
+      melde('hinweis', 'Sockelleisten-Verschnitt: Standard ' + vers + ' %', s.raeume.join(', '));
     }
     var bedarf = s.lfm * (1 + vers / 100);
     var menge, det = tpFormat(s.lfm) + ' m + ' + tpFormatKurz(vers) + ' % Verschnitt = ' + tpFormat(bedarf) + ' m';

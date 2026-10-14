@@ -161,7 +161,8 @@ test('Umfangreiches Testangebot: Silikon nach Umfang, Sockelleisten Material/Mon
   assert.equal(pos(erg, 'SL-010').menge, 13); // 27,5 m + 10 % = 30,25 m -> 13 Leisten à 2,50
   assert.equal(pos(erg, 'SL-095').menge, 27.5);
   assert.match(pos(erg, 'SL-095').beschreibung, /Sockelleistenmenge wurde vorläufig geschätzt/);
-  assert.ok(stufen(erg, 'offen').some((t) => /Verschnitt nicht angegeben – Annahme 10 %/.test(t)));
+  assert.ok(stufen(erg, 'hinweis').some((t) => /Sockelleisten-Verschnitt: Standard 10 %/.test(t)));
+  assert.ok(!stufen(erg, 'offen').some((t) => /Verschnitt/.test(t)));
   assert.equal(pos(erg, 'KV-010').menge, 30.88);
   assert.equal(pos(erg, '62f3ffa4-fa7c-4e3d-a2b4-af024f6253bb').menge, 3);
   assert.equal(pos(erg, 'SL-094').optional, true);
