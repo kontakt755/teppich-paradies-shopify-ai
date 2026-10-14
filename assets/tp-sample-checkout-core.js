@@ -49,12 +49,13 @@
   var OPTION_NAMES = ['farbe', 'dekor', 'color'];
 
   // Fuer diese neu importierten Produktarten wurden bewusst keine Muster
-  // angelegt (Parkett seit 14.10.2026 wieder mit Muster wie alle anderen). Ohne Sperre wuerde der Konfigurator den generischen kostenlosen
+  // angelegt (Laminat, Parkett, Kork: Muster nur auf Anfrage, Inhaber 14.10.2026).
+  // Ohne Sperre wuerde der Konfigurator den generischen kostenlosen
   // Musterartikel fuer ein nicht vorhandenes physisches Muster verwenden.
   function canSample(product) {
     if (!product) return false;
     var type = String(product.type || '').trim().toLowerCase();
-    if (['laminat', 'kork'].indexOf(type) !== -1) return false;
+    if (['laminat', 'parkett', 'kork'].indexOf(type) !== -1) return false;
     var tags = Array.isArray(product.tags) ? product.tags : String(product.tags || '').split(',');
     return !tags.some(function (tag) {
       var name = String(tag || '').trim().toLowerCase();

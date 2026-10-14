@@ -16,8 +16,9 @@
   Kein zweites Regelwerk, das auseinanderlaufen koennte.
 
   Zwei Zusaetze nach dem Vertretergespraech mit dem Hauptlieferanten (12.10.2026):
-  - Parkett: seit 14.10.2026 normaler Musterweg wie alle anderen (vorher
-    "Muster anfragen" zum Kontaktformular).
+  - Laminat, Parkett, Kork: Muster nur auf Anfrage (Inhaber 14.10.2026). Statt
+    gar nichts steht hier "Muster anfragen" zum Kontaktformular
+    (thema=musteranfrage, assets/tp-sample-request.js) - ohne "kostenlos".
   - Tag muster-klebevariante (Klickvinyl dieses Lieferanten): Das Muster gibt es
     nur als Klebe-Ausfuehrung im gleichen Dekor; das sagt die Zusatzzeile direkt
     im Knopf (auch mobil sichtbar). Dieselbe Zeile zeigt der Musterkonfigurator
@@ -35,10 +36,24 @@
     render 'tp-musteroption', product: product
   endcapture
   assign tp_mc_url = tp_mc_url | strip
-  capture tp_mc_grenze
-    render 'tp-muster-grenze', product: product
-  endcapture
-  assign tp_mc_grenze = tp_mc_grenze | strip
+  assign tp_mc_anfrage = false
+  assign tp_mc_typ = product.type | downcase | strip
+  if tp_mc_url == blank
+    if tp_mc_typ == 'laminat' or tp_mc_typ == 'parkett' or tp_mc_typ == 'kork'
+      unless product.tags contains 'zubehoer' or product.tags contains 'ohne-muster'
+        assign tp_mc_anfrage = true
+        assign tp_mc_titel = product.title | url_encode
+        assign tp_mc_url = '/pages/kontakt?thema=musteranfrage&produkt=' | append: tp_mc_titel | append: '&handle=' | append: product.handle
+      endunless
+    endif
+  endif
+  assign tp_mc_grenze = ''
+  unless tp_mc_anfrage
+    capture tp_mc_grenze
+      render 'tp-muster-grenze', product: product
+    endcapture
+    assign tp_mc_grenze = tp_mc_grenze | strip
+  endunless
 -%}
 
 {%- if tp_mc_url != blank -%}
@@ -48,14 +63,19 @@
       nach Warenkorb-Aenderungen (Drawer, Zurueck-Knopf) um, ohne Neuladen.
     {%- endcomment -%}
     <a class="tp-muster-cta__link-{{ tp_mc_id }}" href="{{ tp_mc_url }}"{% if tp_mc_grenze != blank %} data-tp-mg-offen{% endif %}{% if tp_mc_grenze == 'voll' %} hidden{% endif %}>
-      {{ block.settings.label | default: 'Kostenloses Muster anfragen' | escape }}
-      {%- if tp_mc_grenze != blank -%}
-        <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">Höchstens 3 Vinyl-Muster je Bestellung, versandkostenfrei</small>
-      {%- elsif block.settings.hinweis != blank -%}
-        <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">{{ block.settings.hinweis | escape }}</small>
-      {%- endif -%}
-      {%- if product.tags contains 'muster-klebevariante' -%}
-        <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">Das Muster zeigt dasselbe Dekor in der Klebeausführung.</small>
+      {%- if tp_mc_anfrage -%}
+        Muster anfragen
+        <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">Muster auf Anfrage – wir melden uns zu Ihrem Dekor</small>
+      {%- else -%}
+        {{ block.settings.label | default: 'Kostenloses Muster anfragen' | escape }}
+        {%- if tp_mc_grenze != blank -%}
+          <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">Höchstens 3 Vinyl-Muster je Bestellung, versandkostenfrei</small>
+        {%- elsif block.settings.hinweis != blank -%}
+          <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">{{ block.settings.hinweis | escape }}</small>
+        {%- endif -%}
+        {%- if product.tags contains 'muster-klebevariante' -%}
+          <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">Das Muster zeigt dasselbe Dekor in der Klebeausführung.</small>
+        {%- endif -%}
       {%- endif -%}
     </a>
     {%- if tp_mc_grenze != blank -%}
