@@ -8,8 +8,8 @@ const browser = { window: {} };
 runInNewContext(source, browser);
 const { canSample } = browser.window.TPSampleCheckoutCore;
 
-test('neu importierte Holzböden können nicht als generisches Muster bestellt werden', () => {
-  for (const type of ['Laminat', 'Parkett', 'Kork']) {
+test('Laminat und Kork können nicht als generisches Muster bestellt werden', () => {
+  for (const type of ['Laminat', 'Kork']) {
     assert.equal(canSample({ type, tags: [], handle: 'beispiel' }), false, type);
   }
 });
@@ -17,6 +17,7 @@ test('neu importierte Holzböden können nicht als generisches Muster bestellt w
 test('Muster anderer Beläge bleiben verfügbar, ausgeschlossene Tags greifen weiter', () => {
   assert.equal(canSample({ type: 'Teppichboden', tags: [] }), true);
   assert.equal(canSample({ type: 'Vinylboden', tags: [] }), true);
+  assert.equal(canSample({ type: 'Parkett', tags: [] }), true);
   assert.equal(canSample({ type: 'Teppichboden', tags: ['ohne-muster'] }), false);
   assert.equal(canSample({ type: 'Teppichboden', tags: 'zubehoer, aktion' }), false);
 });
