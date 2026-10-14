@@ -106,7 +106,7 @@ test('Aktion 649: nicht für Gewerbe, > 15 km, rabattierten Belag; Entfernung mu
 test('Aktion 649: lose Verlegung + 1. Fahrt inklusive, Fixierung über Zusatzposition, nie TB-020', () => {
   const v = teppichVorgang([{ name: 'WZ', laengeM: 4.9, breiteM: 3.9, verlegeart: 'fixiert' }], { fahrten: { anzahl: 2 } });
   const erg = rechne(v);
-  assert.equal(pos(erg, 'a8cdfc6b-8542-49c3-b001-0560105d1742').preisNetto, 0);
+  assert.equal(pos(erg, 'a8cdfc6b-e55b-4859-8098-1818210a7e67').preisNetto, 0);
   assert.equal(pos(erg, '92798372-417c-4c52-ae98-77faa7e8ae89').menge, 19.11);
   assert.ok(!pos(erg, 'TB-020'));
   assert.equal(pos(erg, 'FA-010').menge, 1, 'nur die zweite Fahrt wird berechnet');
