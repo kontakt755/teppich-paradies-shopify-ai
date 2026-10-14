@@ -33,7 +33,7 @@ export function mengeText(p) {
 
 /**
  * Fertigmass und Einfassung einer Massanfertigung (aus #1248, operations/lib/bestelluebersicht.mjs).
- * "Zuschnitt aus Rollenbreite" faellt in der Zeile weg - das sagt die Bestellmenge schon.
+ * "Zuschnitt aus Rollenbreite" (nur noch in Altdaten vor 2026-10-14) faellt weg - die Rolle waehlt der Lieferant.
  */
 export function ausfuehrungKurz(p) {
   return (Array.isArray(p?.ausfuehrung) ? p.ausfuehrung : [])

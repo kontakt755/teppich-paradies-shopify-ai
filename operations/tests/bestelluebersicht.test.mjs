@@ -291,7 +291,7 @@ test('Variante "je lfm": Stueckzahl ist die Laenge, Breite aus dem Variantentite
 // Teppich nach Mass: der Konfigurator schreibt die Rolle privat als
 // "_Zuschnitt aus Rolle", der Kettelservice haengt als eigene Zeile in
 // derselben _Gruppe dran (Fall #1031, hier mit erfundenen Daten).
-test('Teppich nach Mass: Rolle aus "_Zuschnitt aus Rolle", Kettelservice ist Eigenleistung', () => {
+test('Teppich nach Mass: ein Stueck im Fertigmass (keine Rollenrechnung), Kettelservice ist Eigenleistung', () => {
   const teppich = zeile({ id: 41, sku: null, title: 'Testteppich nach Maß', variantTitle: 'Blau', quantity: 336, handle: 'testteppich-nach-mass',
     attrs: [{ key: 'Maße', value: '120 × 280 cm' }, { key: '_Zuschnitt aus Rolle', value: '200 cm' }, { key: '_Gruppe', value: 'g1' }],
     einkauf: [['lieferant', 'A'], ['artikelnummer', 'A-733-120'], ['bestelleinheit', 'lfm'], ['route', 'SUPPLIER_TO_TP']],
@@ -301,9 +301,12 @@ test('Teppich nach Mass: Rolle aus "_Zuschnitt aus Rolle", Kettelservice ist Eig
   const mm = aufbereiten({ orders: [bestellung(41, [teppich, kettel])] }, { jetzt: new Date('2026-01-07T00:00:00Z') });
   const [t, k] = mm.auftraege[0].positionen;
 
-  // 120 cm quer zur 200-cm-Rolle, 280 cm entlang: 2,80 lfm.
-  assert.equal(t.bestellmenge.menge, 2.8);
-  assert.equal(t.bestellmenge.einheit, 'lfm');
+  // Rollenbreite oder Raummass entscheidet der Lieferant (Inhaber 2026-10-14):
+  // die Kettelservice-Zeile derselben _Gruppe macht daraus eine Massanfertigung.
+  assert.equal(t.bestellmenge.menge, 1);
+  assert.equal(t.bestellmenge.einheit, 'stueck');
+  assert.equal(t.bestellmenge.text, '1 Stück nach Maß · 120 × 280 cm');
+  assert.ok(!t.ausfuehrung.some(z => /Rolle/.test(z)), t.ausfuehrung.join(' | '));
 
   assert.equal(k.eigenleistung, true);
   assert.equal(k.menge, 0);

@@ -553,8 +553,9 @@ function massteppichModell({ mitEinfassungAmTeppich = true } = {}) {
 
 test('Massteppich: Fertigmass, Rolle, Ketteln und Kunde stehen in der Mail, kein interner Rastervermerk', () => {
   const mail = bestellmail({ modell: massteppichModell(), lieferant: 'A', ziel: 'laden', stammdaten: STAMM, jetzt: JETZT }).mails[0];
-  assert.match(mail.text, /Menge: 1 Stück nach Maß \(Zuschnitt [^)]*\)\n {3}Fertigmaß: 250 × 310 cm \(Rechteck\)\n {3}Zuschnitt aus Rollenbreite: 400 cm\n {3}Einfassung: Gekettelt, umlaufend 11,20 m, Garn Ton in Ton\n {3}Kommission: #T4 · Testkunde 4/);
+  assert.match(mail.text, /Menge: 1 Stück nach Maß\n {3}Fertigmaß: 250 × 310 cm \(Rechteck\)\n {3}Einfassung: Gekettelt, umlaufend 11,20 m, Garn Ton in Ton\n {3}Kommission: #T4 · Testkunde 4/);
   assert.equal(mail.text.includes('Lieferantenraster'), false);
+  assert.equal(/Rolle|lfm/.test(mail.text), false, 'Rollenbreite entscheidet der Lieferant');
   assert.equal(mail.text.includes('Kettelservice'), false, 'Kettelservice ist keine eigene Bestellposition');
   assert.equal(mail.zielWaehlbar, true);
 });
