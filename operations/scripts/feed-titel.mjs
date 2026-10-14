@@ -15,6 +15,12 @@
  * die Variante ihren Grundpreis zeigt (showUnitPrice). Leere Zelle = nichts
  * ueberschreiben.
  *
+ * Gratisversand: Die App schickt je Artikel "Standard 4,99 EUR" ohne Grenze und
+ * uebersteuert damit die Versandrichtlinie im Merchant Center. Shopify liefert in
+ * Deutschland ab 50 EUR Bestellwert kostenlos (Versandprofil, Inhaber w-086,
+ * 13.10.2026); die Spalte free_shipping_threshold traegt diese Grenze je Artikel
+ * nach. Aendert sich die Grenze in Shopify, hier GRATIS_AB anpassen.
+ *
  * Ablauf (nach groesseren Importen wiederholen, sonst behalten neue Produkte den Rohtitel):
  *   1. npm run -s feed:titel -- --bulk-query   -> Abfrage per bulkOperationRunQuery (Shopify-MCP) laufen lassen, JSONL laden
  *   2. npm run -s feed:titel -- --jsonl katalog.jsonl --aus tp-feedtitel.txt
@@ -40,6 +46,8 @@ export const BULK_QUERY = `
 }`;
 
 const FARB_OPTIONEN = ['farbe', 'color', 'dekor'];
+
+export const GRATIS_AB = 'DE:50.00 EUR';
 
 export function basisTitel(titel) {
   return titel
@@ -84,7 +92,7 @@ export function grundpreis(variante) {
   return [`${zahl(m.quantityValue)} ${menge}`, `${zahl(m.referenceValue)} ${basis}`];
 }
 
-/** JSONL der Bulk-Abfrage -> Zeilen [offerId, Titel, Grundpreis-Menge, Grundpreis-Basis]; offerId wie von der Shopify-App vergeben. */
+/** JSONL der Bulk-Abfrage -> Zeilen [offerId, Titel, Grundpreis-Menge, Grundpreis-Basis, Gratisversand ab]; offerId wie von der Shopify-App vergeben. */
 export function feedZeilen(jsonl) {
   const produkte = new Map();
   const varianten = [];
@@ -104,7 +112,7 @@ export function feedZeilen(jsonl) {
   for (const v of varianten) {
     const p = produkte.get(v.__parentId);
     if (!p) continue;
-    zeilen.push([`shopify_ZZ_${nummer(p.id)}_${nummer(v.id)}`, feedTitel(p.title, v, farben.get(p.id)?.size ?? 0), ...grundpreis(v)]);
+    zeilen.push([`shopify_ZZ_${nummer(p.id)}_${nummer(v.id)}`, feedTitel(p.title, v, farben.get(p.id)?.size ?? 0), ...grundpreis(v), GRATIS_AB]);
   }
   return zeilen;
 }
@@ -119,7 +127,7 @@ function main(argv) {
   if (o.bulk) { console.log(BULK_QUERY.trim()); return; }
   if (!o.jsonl || !o.aus) throw new Error('Aufruf: feed:titel -- --jsonl katalog.jsonl --aus tp-feedtitel.txt | --bulk-query');
   const zeilen = feedZeilen(fs.readFileSync(o.jsonl, 'utf8'));
-  fs.writeFileSync(o.aus, ['id\ttitle\tunit_pricing_measure\tunit_pricing_base_measure', ...zeilen.map((z) => z.join('\t'))].join('\n') + '\n');
+  fs.writeFileSync(o.aus, ['id\ttitle\tunit_pricing_measure\tunit_pricing_base_measure\tfree_shipping_threshold', ...zeilen.map((z) => z.join('\t'))].join('\n') + '\n');
   console.log(`${zeilen.length} Titel nach ${o.aus}, davon ${zeilen.filter((z) => z[2]).length} mit Grundpreis`);
 }
 
