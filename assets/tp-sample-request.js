@@ -229,8 +229,8 @@
   // Bis 2026-09-27 kam ?produkt= hier an und wurde ignoriert - die Anfrage
   // erreichte uns ohne Produkt und ohne Betreff.
   function anfrageVorbelegen(params) {
-    // musteranfrage: Laminat, Parkett, Kork (Muster nur auf Anfrage, siehe
-    // blocks/tp-muster-cta) - normale Anfrage, keine kostenlose Musterbestellung.
+    // musteranfrage: Laminat, Parkett, Kork (Muster kostenlos, aber nur auf
+    // Anfrage, siehe blocks/tp-muster-cta) - Anfrage statt Musterkonfigurator.
     var themen = {
       verlegung: 'Verlegeanfrage',
       angebot: 'Angebotsanfrage',
@@ -272,7 +272,7 @@
       if (thema === 'angebot') zeilen.push('Bitte senden Sie mir ein Angebot' + (produkt ? ' für ' + produkt : '') + '.');
       else if (thema === 'beratung') zeilen.push('Ich möchte einen Beratungstermin vereinbaren' + (produkt ? ' zu ' + produkt : '') + '.');
       else if (thema === 'verlegung') zeilen.push('Ich interessiere mich für die Verlegung' + (produkt ? ' von ' + produkt : '') + '.');
-      else if (thema === 'musteranfrage') zeilen.push('Ich interessiere mich für ein Muster' + (produkt ? ' von ' + produkt : '') + '. Bitte nennen Sie mir die Möglichkeiten.');
+      else if (thema === 'musteranfrage') zeilen.push('Ich interessiere mich für ein kostenloses Muster' + (produkt ? ' von ' + produkt : '') + '. Bitte melden Sie sich zur Abstimmung.');
       var variante = params.get('variante');
       if (variante) zeilen.push('Variante: ' + variante);
       var breite = params.get('breite');
