@@ -197,7 +197,8 @@ function mailAbschnitt(m, i, mehrere) {
   const fehlt = (m.fehlt || []).length ? `<div class="notice warn lf-fehltliste"><strong>${m.text ? 'Nicht in der Mail' : 'Kann so nicht bestellt werden'} (${m.fehlt.length}):</strong>
       <ul>${m.fehlt.map(f => `<li>${esc([f.orderName, [f.titel, f.farbe].filter(Boolean).join(', ')].filter(Boolean).join(' · '))} – weil: ${esc((f.gruende || []).join('; '))}</li>`).join('')}</ul></div>` : '';
   const ohne = (m.ohneBestellung || []).length ? `<div class="small muted lf-ohne"><p style="margin:0 0 4px">Nicht beim Lieferanten zu bestellen (${m.ohneBestellung.length}):</p><ul class="lf-liste">${m.ohneBestellung.map(f => `<li class="lf-posten"><div class="lf-posten-text"><div class="t">${esc(anzeigeWert(f.titel || ''))}</div><div class="s">${esc([kundeOrtText(f.orderId), f.orderName, ...(f.gruende || [])].filter(Boolean).join(' · '))}</div></div>${istNurLesend() ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-lf-herkunft="${esc(f.orderId)}" data-af-item="${esc(f.lineItemId)}">Ändern…</button>`}</li>`).join('')}</ul></div>` : '';
-  const zielWahl = m.art === 'muster' ? `<div class="lf-zielwahl" role="group" aria-label="Wohin gehen die Muster?"><span class="small muted">Muster gehen an:</span>
+  const wahl = m.art === 'muster' || m.zielWaehlbar;
+  const zielWahl = wahl ? `<div class="lf-zielwahl" role="group" aria-label="Wohin geht die Lieferung?"><span class="small muted">${m.art === 'muster' ? 'Muster gehen an' : 'Ware geht an'}:</span>
       ${[['kunde', 'Kunden'], ['laden', 'Laden']].map(([w, l]) => `<button type="button" class="chip" data-lf-ziel="${w}" aria-pressed="${m.lieferziel === w}">${l}</button>`).join('')}</div>` : '';
   if (!m.text) {
     const schon = m.bereitsBestellt ? `${plural(m.bereitsBestellt, 'Artikel ist', 'Artikel sind')} schon bestellt.` : '';
@@ -257,7 +258,7 @@ function zeichneDialog() {
 
 async function ladeDialog() {
   const q = new URLSearchParams({ lieferant: dialog.lieferant, art: dialog.art });
-  if (dialog.art === 'muster' && dialog.ziel) q.set('ziel', dialog.ziel);
+  if (dialog.ziel) q.set('ziel', dialog.ziel);
   const fuer = `${dialog.lieferant}|${dialog.art}|${dialog.ziel}`;
   const daten = await fetchEinkauf(`/api/einkauf/bestellmail?${q}`);
   // Zwischenzeitlich geschlossen oder umgeschaltet? Dann nichts mehr zeichnen.
