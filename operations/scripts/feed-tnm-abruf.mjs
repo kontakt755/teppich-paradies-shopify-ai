@@ -15,6 +15,19 @@
  * 0,01 m2 zurueck (z. B. 0,85 EUR). Deshalb bricht das Skript ab, statt eine
  * Datei mit deutlich weniger Zeilen als die vorige zu schreiben (--vorher).
  *
+ * Neue Teppiche nach Mass (seit 14.10.): Die Datei ist nur noch die zweite
+ * Absicherung. Die Hauptquelle "Shopify App API" hat im Merchant Center
+ * Attributregeln fuer price und sale_price: bei product type "Teppich nach Mass"
+ * Wert aus der Shopify-Quelle x 100. Das greift sofort fuer neue Angebote und
+ * Preisaenderungen, ohne auf den taeglichen Abruf zu warten. In den Kanal
+ * Google & YouTube kommen neue aktive Teppiche nach Mass stuendlich per
+ * Shopify-Flow-Workflow "Teppich nach Mass automatisch in Google & YouTube"
+ * (Abfrage `product_type:'Teppich nach Mass' status:active
+ * -publication_ids:<Google-Kanal>`, dann Publish product). Der Token dieser
+ * Action hat kein write_publications, deshalb Flow statt Skript. Shop- und
+ * Facebook-Kanal bleiben bewusst ohne Teppiche nach Mass (Preis dort nicht
+ * ueberschreibbar).
+ *
  * Aufruf: node operations/scripts/feed-tnm-abruf.mjs --aus tp-tnm-preise.txt [--vorher alte.txt]
  */
 import fs from 'node:fs';
