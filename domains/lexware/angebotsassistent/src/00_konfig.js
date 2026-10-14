@@ -36,8 +36,9 @@ var TP_KONFIG = {
   // Regel 5: Bestellmass = gemessene Laenge + Zugabe, je Bahn.
   rollenware: { zugabeM: 0.10 },
 
-  // Regel 5a: Daemmunterlagen.
-  daemmung: { verschnittProzent: 5, rundungRollen: 0.5 },
+  // Regel 5a: Daemmunterlagen. Entscheidung Inhaber 14.10.2026: kein extra
+  // Verschnitt (die Daemmartikel enthalten ihn bereits), weiter auf halbe Rolle runden.
+  daemmung: { verschnittProzent: 0, rundungRollen: 0.5 },
 
   // Regel 9a nennt "sinnvollen Verschnitt" ohne Zahl. Dieser Wert ist eine
   // ANNAHME und wird im Angebot als offener Punkt markiert, solange der
