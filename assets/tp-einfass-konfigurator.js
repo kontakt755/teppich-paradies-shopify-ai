@@ -925,11 +925,9 @@
 
       var menge = stand.menge;
 
-      // Intern fuer die Werkstatt: aus welcher Rollenbreite zugeschnitten wird.
-      // Die kuerzere Seite muss in die Rolle passen, der Kunde sieht das nicht.
-      var kurzeSeite = stand.form === 'rund' ? stand.w : Math.min(stand.w, stand.l);
-      var rolle = rollen.length ? M.rolleFuer(kurzeSeite, rollen) : null;
-      if (rolle) p['_Zuschnitt aus Rolle'] = rolle + ' cm';
+      // Keine Rollenbreite an der Bestellung: bestellt wird das Fertigmass, ob aus
+      // Rollenbreite oder Raummass geschnitten wird, entscheidet der Lieferant
+      // (Inhaber 2026-10-14).
 
       // Jede Konfiguration bekommt eine eigene Gruppenkennung; an ihr haengt
       // das Zuschnitt-Attribut. Mit Kettelung teilen sich Teppich und Kante

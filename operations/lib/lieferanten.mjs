@@ -470,10 +470,10 @@ function positionsZeilen(p, nr, { mitKunde = true } = {}) {
   if (p.farbnummer) kopf.push(`Farb-Nr. ${p.farbnummer}`);
   const bezeichnung = [p.titel, p.farbe].filter(Boolean).join(', ');
   const ausfuehrung = p.ausfuehrung ?? [];
-  const menge = mailMenge(p.mengeText ?? `${p.menge} ${p.einheit}`);
-  // Massanfertigung: ein Stueck im Fertigmass; die Rollenmenge nur als Zuschnittangabe.
-  const mengeZeile = ausfuehrung.some(z => z.startsWith('Fertigmaß:')) ? `1 Stück nach Maß (Zuschnitt ${menge})` : menge;
-  const zeilen = [`${nr}. ${kopf.join(' · ')}`, `   ${bezeichnung}`, `   Menge: ${mengeZeile}`, ...ausfuehrung.map(z => `   ${z}`)];
+  // Massanfertigung: "1 Stueck nach Mass", das Fertigmass steht in der Zeile darunter.
+  const massStueck = ausfuehrung.some(z => z.startsWith('Fertigmaß:')) && p.einheit === 'stueck';
+  const menge = massStueck ? `${p.menge} Stück nach Maß` : mailMenge(p.mengeText ?? `${p.menge} ${p.einheit}`);
+  const zeilen = [`${nr}. ${kopf.join(' · ')}`, `   ${bezeichnung}`, `   Menge: ${menge}`, ...ausfuehrung.map(z => `   ${z}`)];
   if (p.orderName) zeilen.push(`   Kommission: ${[p.orderName, mitKunde ? p.kunde : null].filter(Boolean).join(' · ')}`);
   return zeilen;
 }
