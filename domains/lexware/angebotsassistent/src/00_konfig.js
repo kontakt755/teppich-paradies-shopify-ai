@@ -20,7 +20,7 @@ var TP_KONFIG = {
     appUrl: 'https://app.lexware.de',
     // Regel aus der API-Doku: hoechstens 2 Anfragen pro Sekunde.
     pauseMs: 550,
-    // Entscheidung offen (siehe README): Angebotsgueltigkeit in Tagen.
+    // Angebotsgueltigkeit in Tagen – festgelegt vom Inhaber am 14.10.2026.
     gueltigkeitTage: 30,
     titel: 'Angebot'
   },
@@ -36,13 +36,13 @@ var TP_KONFIG = {
   // Regel 5: Bestellmass = gemessene Laenge + Zugabe, je Bahn.
   rollenware: { zugabeM: 0.10 },
 
-  // Regel 5a: Daemmunterlagen.
-  daemmung: { verschnittProzent: 5, rundungRollen: 0.5 },
+  // Regel 5a: Daemmunterlagen. Entscheidung Inhaber 14.10.2026: kein extra
+  // Verschnitt (die Daemmartikel enthalten ihn bereits), weiter auf halbe Rolle runden.
+  daemmung: { verschnittProzent: 0, rundungRollen: 0.5 },
 
-  // Regel 9a nennt "sinnvollen Verschnitt" ohne Zahl. Dieser Wert ist eine
-  // ANNAHME und wird im Angebot als offener Punkt markiert, solange der
-  // Vorgang keinen eigenen Wert nennt.
-  sockelleiste: { verschnittProzentAnnahme: 10 },
+  // Regel 9a: Sockelleisten-Verschnitt – Standard 10 %, festgelegt vom Inhaber
+  // am 14.10.2026. Ein Wert im Vorgang geht vor.
+  sockelleiste: { verschnittProzentStandard: 10 },
 
   // Lexware-Pauschalen "Einzelraum bis 12 m2".
   pauschale: { maxFlaecheM2: 12 },
@@ -78,7 +78,7 @@ var TP_KONFIG = {
     // Ohne Artikelnummer in Lexware, daher per ID.
     fahrtBerlin: { id: '62f3ffa4-fa7c-4e3d-a2b4-af024f6253bb', titel: 'An- und Abfahrt Berlin' },
     aktionVerlegung: {
-      id: 'a8cdfc6b-8542-49c3-b001-0560105d1742',
+      id: 'a8cdfc6b-e55b-4859-8098-1818210a7e67',
       titel: 'Angebot Rollenware verlegen – lose Verlegung + 1. Anfahrt inklusive',
       kostenlosBestaetigt: true
     },

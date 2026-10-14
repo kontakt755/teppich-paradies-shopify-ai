@@ -71,7 +71,7 @@ function tpPayloadPruefen(payload) {
     if (!li.name || li.name.length > 255) fehler.push(n + ': Bezeichnung fehlt oder ist länger als 255 Zeichen');
     if (li.description && li.description.length > 2000) fehler.push(n + ': Beschreibung länger als 2000 Zeichen – kürzen');
     if (!(li.quantity > 0)) fehler.push(n + ': Menge fehlt');
-    if (Math.round(li.quantity * 10000) !== li.quantity * 10000) fehler.push(n + ': Menge mit mehr als 4 Nachkommastellen');
+    if (Math.abs(Math.round(li.quantity * 10000) - li.quantity * 10000) > 1e-6) fehler.push(n + ': Menge mit mehr als 4 Nachkommastellen');
     if (!tpHatZweiStellen(li.unitPrice.netAmount)) fehler.push(n + ': Netto-Einzelpreis mit mehr als 2 Nachkommastellen');
     if (!li.unitName) fehler.push(n + ': Einheit fehlt');
   });
@@ -174,14 +174,18 @@ function tpErstellungErlaubt(eintraege, vorgangId, fingerabdruck) {
  * @param {Array<Object>} angebote  Antworten von GET /v1/quotations/{id}
  */
 function tpFeldpruefungPositionen(angebote) {
+  // Bevorzugt service/material (so schreibt der Assistent, mit Artikel-ID),
+  // sonst eine freie custom-Zeile.
   var typen = {};
-  var treffer = null, quelle = null;
+  var treffer = null, quelle = null, ersatz = null, ersatzQuelle = null;
   (angebote || []).forEach(function (q) {
     (q.lineItems || []).forEach(function (li) {
       typen[li.type || '(ohne Typ)'] = (typen[li.type || '(ohne Typ)'] || 0) + 1;
-      if (!treffer && ['custom', 'material', 'service'].indexOf(li.type) >= 0) { treffer = li; quelle = q; }
+      if (!treffer && (li.type === 'service' || li.type === 'material')) { treffer = li; quelle = q; }
+      if (!ersatz && li.type === 'custom') { ersatz = li; ersatzQuelle = q; }
     });
   });
+  if (!treffer && ersatz) { treffer = ersatz; quelle = ersatzQuelle; }
   var li = treffer || {};
   var up = li.unitPrice || {};
   var felder = {

@@ -64,7 +64,7 @@ function tpAngebotBerechnen(vorgang, stamm) {
     if (preis === 0 && !o.kostenlosBestaetigt) {
       melde('fehler', '„' + a.titel + '“ hat Preis 0,00 € ohne bestätigte kostenlose Leistung – Preis klären, nicht mit 0 ansetzen', bezug);
     }
-    if (a.preisStatus === 'inkonsistent') melde('hinweis', '„' + a.titel + '“: ' + a.preisHinweise.join('; '), bezug);
+    if (a.preisStatus === 'inkonsistent') melde(override === null ? 'konflikt' : 'hinweis', '„' + a.titel + '“: ' + a.preisHinweise.join('; '), bezug);
     if (a.steuersatz !== K.steuersatzStandard) {
       melde('konflikt', '„' + a.titel + '“ hat Steuersatz ' + a.steuersatz + ' % – historische Einstellung, Artikel prüfen', bezug);
     }
@@ -115,7 +115,7 @@ function tpAngebotBerechnen(vorgang, stamm) {
     var netto = tpZahl(r.nettoM2);
     if (netto === null && L && B) netto = tpRunden2(L * B - (tpZahl(r.abzugM2) || 0));
     if (!(netto > 0)) { melde('fehler', 'Netto-Verlegefläche fehlt (Länge/Breite oder Netto m²)', name); return; }
-    var info = { name: name, bodenart: r.bodenart, nettoM2: netto, laengeM: L, breiteM: B, bestellung: null };
+    var info = { name: name, bodenart: r.bodenart, nettoM2: netto, laengeM: L, breiteM: B, bestellung: null, mitBelag: !!(r.belag && r.belag.ref) };
     erg.raeume.push(info);
     if (r.schief) melde('offen', 'Schiefer Raum – Netto-Verlegefläche und Verschnitt vor Ort prüfen', name, true);
     if (cfg.designbelag) designbelagRaeume++;
@@ -138,9 +138,15 @@ function tpAngebotBerechnen(vorgang, stamm) {
         }
       } else {
         var key = (belag.ref.id || belag.ref.nr) + '|' + (belag.preisNetto || '');
-        if (!sammelPaket[key]) sammelPaket[key] = { belag: belag, bodenart: r.bodenart, netto: 0, raeume: [] };
-        sammelPaket[key].netto += netto;
-        sammelPaket[key].raeume.push(name + ' ' + tpFormat(netto) + ' m²');
+        if (!sammelPaket[key]) sammelPaket[key] = { belag: belag, bodenart: r.bodenart, netto: 0, bedarf: 0, versListe: [], ohneVers: [], abweichend: [], raeume: [] };
+        var sp = sammelPaket[key];
+        // Verschnitt gilt je Raum; Paketinhalt und "anteilig" muessen fuer alle Raeume gleich sein
+        var rv = tpZahl(belag.verschnittProzent);
+        if (rv === null) sp.ohneVers.push(name);
+        else { sp.bedarf += netto * (1 + rv / 100); if (sp.versListe.indexOf(rv) < 0) sp.versListe.push(rv); }
+        if (String(belag.paketInhaltM2 || '') !== String(sp.belag.paketInhaltM2 || '') || tpJa(belag.anteilig) !== tpJa(sp.belag.anteilig)) sp.abweichend.push(name);
+        sp.netto += netto;
+        sp.raeume.push(name + ' ' + tpFormat(netto) + ' m²');
       }
     } else {
       melde('offen', 'Kein Bodenbelag-Artikel angegeben (bauseits oder noch offen?)', name, true);
@@ -152,8 +158,10 @@ function tpAngebotBerechnen(vorgang, stamm) {
 
     if (r.daemmung && r.daemmung.ref) {
       var dk = r.daemmung.ref.id || r.daemmung.ref.nr;
-      if (!sammelDaemmung[dk]) sammelDaemmung[dk] = { d: r.daemmung, netto: 0, raeume: [] };
-      sammelDaemmung[dk].netto += netto;
+      if (!sammelDaemmung[dk]) sammelDaemmung[dk] = { d: r.daemmung, netto: 0, raeume: [], abweichend: false };
+      var sd = sammelDaemmung[dk];
+      if (String(r.daemmung.rolleninhaltM2 || '') !== String(sd.d.rolleninhaltM2 || '') || tpJa(r.daemmung.nurGanzeRollen) !== tpJa(sd.d.nurGanzeRollen)) sd.abweichend = true;
+      sd.netto += netto;
       sammelDaemmung[dk].raeume.push(name);
     } else if (r.verlegeart === 'mit_daemmung') {
       melde('offen', 'Verlegung mit Dämmunterlage gewählt, aber kein Dämmunterlage-Artikel angegeben', name);
@@ -209,7 +217,11 @@ function tpAngebotBerechnen(vorgang, stamm) {
           if (!sammelSockel[mk]) sammelSockel[mk] = { material: sl.material, lfm: 0, verschnitt: null, raeume: [], vorlaeufig: false };
           sammelSockel[mk].lfm += slLfm;
           sammelSockel[mk].raeume.push(name + ' ' + tpFormat(slLfm) + ' m');
-          if (tpZahl(sl.verschnittProzent) !== null) sammelSockel[mk].verschnitt = tpZahl(sl.verschnittProzent);
+          var slv = tpZahl(sl.verschnittProzent);
+          if (slv !== null) {
+            if (sammelSockel[mk].verschnitt !== null && sammelSockel[mk].verschnitt !== slv) sammelSockel[mk].verschnittAbweichend = true;
+            sammelSockel[mk].verschnitt = slv;
+          }
           sammelSockel[mk].vorlaeufig = sammelSockel[mk].vorlaeufig || vorlaeufig;
         }
         if (sl.montage) {
@@ -268,25 +280,33 @@ function tpAngebotBerechnen(vorgang, stamm) {
     var f = tpArtikelFinden(stamm, s.belag.ref);
     if (f.fehler) { melde('fehler', f.fehler, s.raeume.join(', ')); return; }
     var a = f.artikel;
-    var vers = tpZahl(s.belag.verschnittProzent);
-    if (vers === null) {
-      melde('fehler', 'Verschnitt % für „' + a.titel + '“ fehlt – Bestellmenge wird nicht geschätzt', s.raeume.join(', '));
+    if (s.ohneVers.length) {
+      melde('fehler', 'Verschnitt % für „' + a.titel + '“ fehlt – Bestellmenge wird nicht geschätzt', s.ohneVers.join(', '));
+      return;
+    }
+    if (s.abweichend.length) {
+      melde('konflikt', '„' + a.titel + '“: Paketinhalt bzw. „anteilig“ in den Räumen unterschiedlich angegeben – vereinheitlichen', s.raeume.join(', '));
       return;
     }
     var netto = tpRunden2(s.netto);
-    var bedarf = netto * (1 + vers / 100);
+    var bedarf = s.bedarf;
+    var versText = s.versListe.length === 1 ? tpFormatKurz(s.versListe[0]) + ' % Verschnitt' : 'Verschnitt je Raum (' + s.versListe.map(tpFormatKurz).join(' / ') + ' %)';
     var inhalt = tpZahl(s.belag.paketInhaltM2) || tpPaketinhaltAusArtikel(a);
     var menge, det;
     if (tpJa(s.belag.anteilig)) {
+      if (a.einheit !== 'm²') {
+        melde('konflikt', '„' + a.titel + '“ hat Einheit „' + a.einheit + '“ – anteilig nur bei Einheit m² möglich', s.raeume.join(', '));
+        return;
+      }
       menge = tpAufrunden(bedarf, 0.01);
-      det = 'Netto-Verlegefläche ' + tpFormat(netto) + ' m² + ' + tpFormatKurz(vers) + ' % Verschnitt = ' + tpFormat(menge) + ' m² (anteilig kalkuliert)';
+      det = 'Netto-Verlegefläche ' + tpFormat(netto) + ' m² + ' + versText + ' = ' + tpFormat(menge) + ' m² (anteilig kalkuliert)';
     } else if (!inhalt) {
       melde('fehler', 'Paketinhalt für „' + a.titel + '“ fehlt – Pakete nicht berechenbar', s.raeume.join(', '));
       return;
     } else {
       var pakete = Math.ceil(bedarf / inhalt - 1e-9);
       menge = a.einheit === 'm²' ? tpRunden2(pakete * inhalt) : pakete;
-      det = 'Netto-Verlegefläche ' + tpFormat(netto) + ' m² + ' + tpFormatKurz(vers) + ' % Verschnitt = ' + tpFormat(bedarf) + ' m² → ' + pakete + ' Pakete à ' + tpFormat(inhalt) + ' m²';
+      det = 'Netto-Verlegefläche ' + tpFormat(netto) + ' m² + ' + versText + ' = ' + tpFormat(bedarf) + ' m² → ' + pakete + ' Pakete à ' + tpFormat(inhalt) + ' m²';
       if (a.einheit !== 'm²') melde('konflikt', '„' + a.titel + '“ hat Einheit „' + a.einheit + '“ – Menge als Paketanzahl angesetzt, bitte prüfen', s.raeume.join(', '));
     }
     position(s.belag.ref, {
@@ -296,25 +316,24 @@ function tpAngebotBerechnen(vorgang, stamm) {
     });
   });
 
-  // Regel 5a: Daemmunterlagen – Netto + 5 %, auf halbe Rolle aufrunden
+  // Regel 5a: Daemmunterlagen – Netto ohne extra Verschnitt (Entscheidung 14.10.2026), auf halbe Rolle aufrunden
   Object.keys(sammelDaemmung).forEach(function (dk) {
     var s = sammelDaemmung[dk];
+    if (s.abweichend) {
+      melde('konflikt', 'Dämmunterlage: Rolleninhalt bzw. „nur ganze Rollen“ in den Räumen unterschiedlich angegeben – vereinheitlichen', s.raeume.join(', '));
+      return;
+    }
     var f = tpArtikelFinden(stamm, s.d.ref);
     if (f.fehler) { melde('fehler', f.fehler, s.raeume.join(', ')); return; }
     var a = f.artikel;
     var netto = tpRunden2(s.netto);
-    var imPreis = tpJa(s.d.verschnittImPreis);
-    if (!imPreis && /verschnitt/i.test(a.beschreibung) && /inkl|inklusive|berücksichtigt/i.test(a.beschreibung)) {
-      melde('konflikt', '„' + a.titel + '“: Artikelbeschreibung enthält bereits Verschnitt, Regel 5a addiert 5 % – im Vorgang „Verschnitt im Preis“ entscheiden', s.raeume.join(', '));
-    }
-    var proz = imPreis ? 0 : K.daemmung.verschnittProzent;
+    var proz = K.daemmung.verschnittProzent;
     var bedarf = netto * (1 + proz / 100);
     var inhalt = tpZahl(s.d.rolleninhaltM2) || tpRolleninhaltAusArtikel(a);
     var menge, det;
     if (!inhalt) {
-      melde('offen', 'Rolleninhalt für „' + a.titel + '“ unbekannt – Rollenanzahl fehlt in der Beschreibung', s.raeume.join(', '));
-      menge = tpAufrunden(bedarf, 0.01);
-      det = 'Netto-Verlegefläche ' + tpFormat(netto) + ' m² + ' + proz + ' % Verschnitt = ' + tpFormat(menge) + ' m²';
+      melde('fehler', 'Rolleninhalt für „' + a.titel + '“ unbekannt – halbe Rollen nicht berechenbar, Spalte „Rolleninhalt m²“ ausfüllen', s.raeume.join(', '));
+      return;
     } else {
       var rollenRoh = bedarf / inhalt;
       var rollen = tpJa(s.d.nurGanzeRollen) ? Math.ceil(rollenRoh - 1e-9) : tpAufrunden(rollenRoh, K.daemmung.rundungRollen);
@@ -332,13 +351,17 @@ function tpAngebotBerechnen(vorgang, stamm) {
   // Regel 9a: Sockelleisten-Material mit Verschnitt, auf ganze Leisten
   Object.keys(sammelSockel).forEach(function (mk) {
     var s = sammelSockel[mk];
+    if (s.verschnittAbweichend) {
+      melde('konflikt', 'Sockelleisten: Verschnitt % in den Räumen unterschiedlich angegeben – vereinheitlichen', s.raeume.join(', '));
+      return;
+    }
     var f = tpArtikelFinden(stamm, s.material.ref);
     if (f.fehler) { melde('fehler', f.fehler, s.raeume.join(', ')); return; }
     var a = f.artikel;
     var vers = s.verschnitt;
     if (vers === null) {
-      vers = K.sockelleiste.verschnittProzentAnnahme;
-      melde('offen', 'Sockelleisten-Verschnitt nicht angegeben – Annahme ' + vers + ' % (bitte bestätigen)', s.raeume.join(', '));
+      vers = K.sockelleiste.verschnittProzentStandard;
+      melde('hinweis', 'Sockelleisten-Verschnitt: Standard ' + vers + ' %', s.raeume.join(', '));
     }
     var bedarf = s.lfm * (1 + vers / 100);
     var menge, det = tpFormat(s.lfm) + ' m + ' + tpFormatKurz(vers) + ' % Verschnitt = ' + tpFormat(bedarf) + ' m';
@@ -523,6 +546,12 @@ function tpBestellmass(r, L, B, zugabe) {
       var bb = tpZahl(b.breiteM), bl = tpZahl(b.laengeM);
       if (!(bb > 0 && bl > 0)) { out.meldungen.push({ stufe: 'fehler', text: 'Bahn ohne Breite/Länge' }); return; }
       if (rb && bb > rb + 1e-9) out.meldungen.push({ stufe: 'konflikt', text: 'Bahnbreite ' + tpFormat(bb) + ' m größer als Rollenbreite ' + tpFormat(rb) + ' m' });
+      // Regel 5: Bahnlaenge, die einem Raummass entspricht, aber die Zugabe nicht enthaelt
+      [L, B].forEach(function (m) {
+        if (m && bl > m - 0.005 && bl < m + zugabe - 0.005) {
+          out.meldungen.push({ stufe: 'konflikt', text: 'Bahnlänge ' + tpFormat(bl) + ' m ohne Zugabe ' + tpFormat(zugabe) + ' m zum Raummaß ' + tpFormat(m) + ' m' });
+        }
+      });
       out.bahnen.push({ breiteM: bb, laengeM: bl });
     });
   } else {
@@ -556,7 +585,17 @@ function tpAktionPruefen(v, rollenPos, melde) {
   var A = TP_KONFIG.aktion649;
   var res = { gilt: false, gruende: [], warenwertNetto: 0, warenwertBrutto: 0 };
   if (!rollenPos.length) { res.gruende.push('keine Rollenware (Teppichboden/PVC) im Angebot'); return res; }
-  var netto = rollenPos.reduce(function (a, p) { return a + tpRunden2(p.menge * p.preisNetto); }, 0);
+  // Wie im Angebot: gleiche Artikel/Preise erst zusammenfassen, dann runden
+  // (sonst weicht der Warenwert je Raum gerundet um Cent-Betraege ab).
+  var gruppen = {};
+  rollenPos.forEach(function (p) {
+    var k = p.artikel.id + '|' + p.preisNetto;
+    if (!gruppen[k]) gruppen[k] = { menge: 0, preis: p.preisNetto };
+    gruppen[k].menge += p.menge;
+  });
+  var netto = Object.keys(gruppen).reduce(function (a, k) {
+    return a + tpRunden2(tpRunden2(gruppen[k].menge) * gruppen[k].preis);
+  }, 0);
   res.warenwertNetto = tpRunden2(netto);
   res.warenwertBrutto = tpRunden2(netto * (1 + TP_KONFIG.steuersatzStandard / 100));
   var ok = true;

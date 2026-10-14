@@ -14,18 +14,18 @@ var TP_PFLICHTKONTROLLE = [
   {
     id: 'flaechen', art: 'auto', frage: 'Maße, Netto-Verlegefläche, Bestellmaße und Verschnitt getrennt?',
     pruefe: function (e) {
-      var rolle = e.raeume.filter(function (r) { return TP_KONFIG.bodenarten[r.bodenart].art === 'rolle'; });
+      var rolle = e.raeume.filter(function (r) { return r.mitBelag && TP_KONFIG.bodenarten[r.bodenart].art === 'rolle'; });
       var ohne = rolle.filter(function (r) { return !r.bestellung; });
       if (!e.raeume.length) return { status: 'fehler', hinweis: 'keine Räume' };
       return ohne.length ? { status: 'fehler', hinweis: 'ohne Bestellmaß: ' + ohne.map(function (r) { return r.name; }).join(', ') } : { status: 'ok' };
     }
   },
   {
-    id: 'verpackung', art: 'auto', frage: 'Verpackungseinheiten korrekt; Dämmunterlage +5 %, halbe Rolle, Rollenanzahl in Beschreibung?',
+    id: 'verpackung', art: 'auto', frage: 'Verpackungseinheiten korrekt; Dämmunterlage ohne extra Verschnitt auf halbe Rolle, Rollenanzahl in Beschreibung?',
     pruefe: function (e) {
       var d = e.positionen.filter(function (p) { return p.kategorie === 'daemmung'; });
       var ohneRollen = d.filter(function (p) { return !/Rollen à/.test(p.beschreibung); });
-      if (ohneRollen.length) return { status: 'offen', hinweis: 'Rollenanzahl fehlt bei ' + ohneRollen.map(function (p) { return p.name; }).join(', ') };
+      if (ohneRollen.length) return { status: 'fehler', hinweis: 'Rollenanzahl fehlt bei ' + ohneRollen.map(function (p) { return p.name; }).join(', ') };
       return { status: d.length || e.positionen.some(function (p) { return /Pakete à/.test(p.beschreibung); }) ? 'ok' : 'entfaellt' };
     }
   },

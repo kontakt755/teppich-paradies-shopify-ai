@@ -18,7 +18,7 @@ function tpSetze(obj, pfad, wert) {
 
 function tpText(w) {
   if (w === null || w === undefined) return '';
-  if (w instanceof Date) return w.toISOString().slice(0, 10);
+  if (w instanceof Date) return tpDatumText(w); // lokales Datum (Europe/Berlin), nicht UTC
   return String(w).trim();
 }
 
@@ -101,7 +101,6 @@ var TP_SPALTEN_RAEUME = [
   ['Dämmung Art.-Nr./ID', 'daemmung.ref', 'ref'],
   ['Rolleninhalt m²', 'daemmung.rolleninhaltM2', 'zahl'],
   ['Nur ganze Rollen (ja)', 'daemmung.nurGanzeRollen', 'ja'],
-  ['Verschnitt im Dämmpreis (ja)', 'daemmung.verschnittImPreis', 'ja'],
   ['Silikon umlaufend (ja)', 'silikon.umlaufend', 'ja'],
   ['Türbreiten m (0,8; 0,9)', 'silikon.tuerbreitenM', 'liste'],
   ['Silikon zusätzlich lfm', 'silikon.zusatzLfm', 'zahl'],
