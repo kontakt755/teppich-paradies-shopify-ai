@@ -166,6 +166,45 @@ function tpErstellungErlaubt(eintraege, vorgangId, fingerabdruck) {
   return { erlaubt: true };
 }
 
+/**
+ * Feldpruefung fuer "Verbindung & Feldprüfung": sucht in gelesenen Angeboten
+ * die erste echte Artikelposition (custom/material/service). Textzeilen
+ * (type "text") haben keine Menge, Einheit und keinen Preis und werden
+ * deshalb uebersprungen.
+ * @param {Array<Object>} angebote  Antworten von GET /v1/quotations/{id}
+ */
+function tpFeldpruefungPositionen(angebote) {
+  var typen = {};
+  var treffer = null, quelle = null;
+  (angebote || []).forEach(function (q) {
+    (q.lineItems || []).forEach(function (li) {
+      typen[li.type || '(ohne Typ)'] = (typen[li.type || '(ohne Typ)'] || 0) + 1;
+      if (!treffer && ['custom', 'material', 'service'].indexOf(li.type) >= 0) { treffer = li; quelle = q; }
+    });
+  });
+  var li = treffer || {};
+  var up = li.unitPrice || {};
+  var felder = {
+    'lineItems[].type': !!li.type,
+    'lineItems[].name': !!li.name,
+    'lineItems[].quantity': li.quantity !== undefined,
+    'lineItems[].unitName': !!li.unitName,
+    'lineItems[].unitPrice.netAmount': up.netAmount !== undefined,
+    'lineItems[].unitPrice.taxRatePercentage': up.taxRatePercentage !== undefined,
+    'lineItems[].id (Artikelbezug)': !!li.id
+  };
+  return {
+    gefunden: !!treffer,
+    angebotNr: quelle ? (quelle.voucherNumber || quelle.id) : null,
+    positionstyp: treffer ? treffer.type : null,
+    felder: felder,
+    typen: typen,
+    optionalFeld: (angebote || []).some(function (q) {
+      return (q.lineItems || []).some(function (x) { return Object.prototype.hasOwnProperty.call(x, 'optional'); });
+    })
+  };
+}
+
 function tpLexwareLink(id) {
   return TP_KONFIG.lexware.appUrl + '/permalink/quotations/edit/' + id;
 }

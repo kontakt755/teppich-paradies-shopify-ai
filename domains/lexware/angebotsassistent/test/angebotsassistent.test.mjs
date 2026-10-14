@@ -357,3 +357,19 @@ test('Alle drei Testvorgänge laufen über Tabellen hin und zurück zum gleichen
     assert.equal(rechne(zurueck).summen.netto, rechne(v).summen.netto, name);
   }
 });
+
+test('Feldprüfung überspringt Textzeilen und prüft die erste echte Artikelposition', () => {
+  const nurText = { voucherNumber: 'AG1', lineItems: [{ type: 'text', name: 'Wohnzimmer', optional: false }] };
+  const mitArtikel = { voucherNumber: 'AG2', lineItems: [
+    { type: 'text', name: 'Überschrift' },
+    { type: 'service', id: 'x', name: 'Verlegung', quantity: 12.5, unitName: 'm²', unitPrice: { currency: 'EUR', netAmount: 9.95, taxRatePercentage: 19 } }
+  ] };
+  const a = tp.tpFeldpruefungPositionen([nurText]);
+  assert.equal(a.gefunden, false);
+  assert.equal(a.optionalFeld, true);
+  const b = tp.tpFeldpruefungPositionen([nurText, mitArtikel]);
+  assert.equal(b.gefunden, true);
+  assert.equal(b.angebotNr, 'AG2');
+  assert.ok(Object.values(b.felder).every(Boolean));
+  assert.deepEqual(kopie(b.typen), { text: 2, service: 1 });
+});

@@ -347,20 +347,32 @@ function tpMenueVerbindungTesten() {
   } else if (!(l.json.content || []).length) {
     bericht.push('Angebotsliste: leer – Feldprüfung nicht möglich');
   } else {
-    var q = tpLexAnfrage('get', '/v1/quotations/' + l.json.content[0].id);
-    if (q.status !== 200) bericht.push('Angebot lesen: ' + tpLexFehlerText(q.status, q.text));
-    else {
-      var j = q.json, li = (j.lineItems || [])[0] || {};
-      var felder = {
+    // Bis zu 5 Angebote einzeln abrufen (die Belegliste enthaelt keine Positionen).
+    var angebote = [], kopf = null;
+    l.json.content.slice(0, 5).some(function (eintrag) {
+      var q = tpLexAnfrage('get', '/v1/quotations/' + eintrag.id);
+      if (q.status !== 200) { bericht.push('Angebot lesen: ' + tpLexFehlerText(q.status, q.text)); return false; }
+      angebote.push(q.json);
+      if (!kopf) kopf = q.json;
+      return tpFeldpruefungPositionen(angebote).gefunden;
+    });
+    if (kopf) {
+      var j = kopf;
+      var kopffelder = {
         'voucherDate': !!j.voucherDate, 'expirationDate': !!j.expirationDate, 'address': !!j.address,
         'taxConditions.taxType': !!(j.taxConditions && j.taxConditions.taxType),
-        'totalPrice.totalNetAmount': j.totalPrice && j.totalPrice.totalNetAmount !== undefined,
-        'lineItems[].type/name/quantity/unitName': !!(li.type && li.name && li.quantity !== undefined && li.unitName),
-        'lineItems[].unitPrice.netAmount': !!(li.unitPrice && li.unitPrice.netAmount !== undefined),
-        'lineItems[].unitPrice.taxRatePercentage': !!(li.unitPrice && li.unitPrice.taxRatePercentage !== undefined),
-        'lineItems[].optional (Feld vorhanden)': (j.lineItems || []).some(function (x) { return Object.prototype.hasOwnProperty.call(x, 'optional'); })
+        'totalPrice.totalNetAmount': j.totalPrice && j.totalPrice.totalNetAmount !== undefined
       };
-      Object.keys(felder).forEach(function (k) { bericht.push((felder[k] ? '✔ ' : '✘ ') + k); });
+      Object.keys(kopffelder).forEach(function (k) { bericht.push((kopffelder[k] ? '✔ ' : '✘ ') + k); });
+      var fp = tpFeldpruefungPositionen(angebote);
+      bericht.push('Positionstypen gesehen: ' + Object.keys(fp.typen).map(function (t) { return t + ' ×' + fp.typen[t]; }).join(', '));
+      if (!fp.gefunden) {
+        bericht.push('✘ In ' + angebote.length + ' Angeboten keine Artikelposition (nur Textzeilen) – Positionsfelder nicht prüfbar');
+      } else {
+        bericht.push('Geprüfte Position: Typ „' + fp.positionstyp + '“ aus Angebot ' + fp.angebotNr);
+        Object.keys(fp.felder).forEach(function (k) { bericht.push((fp.felder[k] ? '✔ ' : '✘ ') + k); });
+      }
+      bericht.push((fp.optionalFeld ? '✔ ' : '– ') + 'lineItems[].optional (Feld vorhanden)');
       bericht.push('Datumsformat Beispiel: ' + j.voucherDate);
     }
   }
