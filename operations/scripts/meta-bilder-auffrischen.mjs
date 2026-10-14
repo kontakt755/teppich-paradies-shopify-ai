@@ -14,13 +14,13 @@
  * behalten hat. Die Pause verhindert, dass Meta wieder zu viele Bilder auf einmal
  * holt (vermutliche Ursache am 13.10.).
  *
- * Nachtrag 14.10.: Neuspeichern allein reicht bei den Vorwerk-/JAB-Produkten aus dem
- * Import vom 12./13.10. nicht. Meta bekommt fuer viele ihrer Varianten gar keinen
- * Bildlink ("Bilder: Nicht vorhanden"), obwohl die Variante in Shopify dieselbe
- * Mediendatei hat wie die "berechtigte" Nachbarvariante. Abhaengen und sofort wieder
- * anhaengen derselben Datei behebt es (Test Lyrica Anthrazit 500 cm). Das macht
- * --medien: je Produkt alle Variantenbilder ab- und wieder anhaengen, danach pruefen,
- * dass jede Variante ihr Bild wieder hat (fehlende werden erneut angehaengt).
+ * Nachtrag 14.10. abends: Weder Neuspeichern noch --medien (Variantenbilder ab- und
+ * wieder anhaengen, auch mit 3 Minuten Abstand) behebt es verlaesslich. Meta bekommt
+ * fuer viele Varianten der Vorwerk-/JAB-Produkte aus dem Import vom 12./13.10. keinen
+ * Bildlink ("Bilder: Nicht vorhanden"), obwohl Shopify dieselbe Mediendatei zuordnet
+ * wie bei der "berechtigten" Nachbarvariante. Ein Einzelerfolg (Lyrica Anthrazit 500 cm)
+ * liess sich nicht wiederholen. Beide Modi bleiben als Werkzeug, die Ursache liegt in
+ * der Shopify-Meta-Synchronisierung (offen, siehe Gedaechtnis meta_katalog_bilder_neu_abrufen).
  *
  * Aufruf: node operations/scripts/meta-bilder-auffrischen.mjs [--pause 3000] [--limit 50] [--trocken]
  *           [--medien] [--abfrage "(vendor:Vorwerk OR vendor:JAB*)"]
