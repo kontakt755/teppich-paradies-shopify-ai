@@ -88,7 +88,10 @@ class CartDrawerComponent extends DialogComponent {
    * @param {CustomEvent<{ resource?: { item_count?: number } }>} event
    */
   #handleCartAdd = async (event) => {
-    if (this.hasAttribute('auto-open')) {
+    // Nur bei echtem Hinzufuegen oeffnen: der Zuschnitt-Abgleich beim Seitenladen
+    // meldet ebenfalls cart:update und oeffnete sonst einen (leeren) Warenkorb.
+    const quelle = event.detail?.data?.source;
+    if (this.hasAttribute('auto-open') && quelle !== 'tp-zuschnitt-abgleich') {
       this.showDialog();
     }
 

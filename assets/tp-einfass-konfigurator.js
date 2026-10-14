@@ -591,7 +591,7 @@
       var tw = beispiel ? 104 : 88, tx = x + pw / 2 - tw / 2, ty = y + 8;
       svgEl('rect', { x: tx, y: ty, width: tw, height: 21, rx: 10.5, fill: 'rgba(255,255,255,.90)' }, svg);
       var tb = svgEl('text', { x: x + pw / 2, y: ty + 14.5, 'text-anchor': 'middle', 'font-size': 11.5, 'font-weight': 600, fill: beispiel ? '#3b3733' : '#244d31' }, svg);
-      tb.textContent = beispiel ? 'Beispielmaß' : 'Dein Maß';
+      tb.textContent = beispiel ? 'Beispielmaß' : 'Ihr Maß';
       if (!beispiel) lupe(defs);
 
       /*

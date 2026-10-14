@@ -286,7 +286,7 @@
               "type": "tp-leisten-details",
               "settings": {
                 "heading": "Produktdetails",
-                "note": "Montagehinweise finden Sie in der Beschreibung."
+                "note": ""
               }
             },
             "ai_gen_block_b888d9b_CJbJ8X": {
@@ -674,14 +674,14 @@
           "type": "faq",
           "settings": {
             "question": "Wie viele Meter Leiste brauche ich?",
-            "answer": "<p>Messen Sie alle Wandlängen des Raums und ziehen Sie Türen und Durchgänge ab. Rechnen Sie einen Zuschlag von etwa 10 % für Zuschnitt und Ecken ein. Die Leistenlänge steht in der Produktbeschreibung.</p>"
+            "answer": "<p>Messen Sie alle Wandlängen des Raums und ziehen Sie Türen und Durchgänge ab. Rechnen Sie einen Zuschlag von etwa 10 % für Zuschnitt und Ecken ein. Die Leistenlänge steht oben unter Produktdetails; der Rechner „Benötigte Wandlänge“ ermittelt daraus die Anzahl der Leisten.</p>"
           }
         },
         "faq_montage": {
           "type": "faq",
           "settings": {
             "question": "Wie werden die Leisten befestigt?",
-            "answer": "<p>Je nach Modell durch Kleben, Schrauben oder ein Clipsystem. Welche Montage für dieses Modell vorgesehen ist, finden Sie in der Beschreibung. Passendes Klebeband finden Sie oben unter Montagezubehör.</p>"
+            "answer": "<p>Je nach Modell durch Kleben, Schrauben oder ein Clipsystem. Passendes Klebeband finden Sie oben unter Montagezubehör. Welche Befestigung zu Ihrer Wand passt, klären wir gern per Telefon oder WhatsApp.</p>"
           }
         },
         "faq_muster": {

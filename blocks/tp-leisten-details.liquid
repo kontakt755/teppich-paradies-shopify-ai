@@ -54,6 +54,10 @@
     assign tp_ld_sl = tp_ld_sl | append: ' m'
   endif
 
+  # Staerke (16 bei 16x58 mm) gehoert in diese Tabelle; tp-produktinfo-tabelle
+  # laesst die Zeile bei Sockelleisten deshalb weg (stand sonst einzeln darunter).
+  assign tp_ld_staerke = tp_ld_product.metafields.custom.gesamtstarke.value | strip
+
   assign tp_ld_farb_label = 'Farben'
   for option in tp_ld_product.options_with_values
     if option.name == 'Dekor'
@@ -77,6 +81,9 @@
         {%- endif -%}
         {%- if tp_ld_hoehe != blank -%}
           <tr><th scope="row">Höhe</th><td>{{ tp_ld_hoehe }}</td></tr>
+        {%- endif -%}
+        {%- if tp_ld_staerke != blank -%}
+          <tr><th scope="row">Stärke</th><td>{{ tp_ld_staerke | escape }}</td></tr>
         {%- endif -%}
         {%- if tp_ld_sl != blank -%}
           <tr><th scope="row">Leistenlänge</th><td>{{ tp_ld_sl }}</td></tr>
