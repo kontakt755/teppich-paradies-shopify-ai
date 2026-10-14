@@ -49,6 +49,13 @@
       assign tp_li_cols = tp_li_n
     endif
     assign tp_li_cols_tablet = tp_li_cols | at_most: 4
+    # Breite Bildschirme: wie snippets/mega-menu-list.liquid hoechstens sechs je
+    # Reihe, gleichmaessig verteilt (15 = 5 + 5 + 5)
+    assign tp_li_cols_wide = tp_li_cols
+    if tp_li_n > 6
+      assign tp_li_rows = tp_li_n | plus: 5 | divided_by: 6
+      assign tp_li_cols_wide = tp_li_n | plus: tp_li_rows | minus: 1 | divided_by: tp_li_rows
+    endif
     capture tp_li_sizes
       render 'util-mega-menu-img-sizes-attr', menu_content_type: 'collection_images', settings: settings, grid_columns: 6, grid_columns_tablet: 4, parent_links_size: 6, columns_per_item: 1
     endcapture
@@ -67,6 +74,7 @@
     .mega-menu__grid[data-menu-grid-id="{{ id }}"] {
       --tp-mm-cols: {{ tp_li_cols }};
       --tp-mm-cols-tablet: {{ tp_li_cols_tablet }};
+      --tp-mm-cols-wide: {{ tp_li_cols_wide }};
       --tp-mm-col: minmax(0, 1fr);
     }
   {% endstyle %}
