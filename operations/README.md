@@ -218,6 +218,7 @@ die Kennung aus der Bestellübersicht (`A`, `B`, … – dieselbe wie
 | `kundennummer` | unsere Kundennummer beim Lieferanten |
 | `ware.weg` | `portal` \| `mail` \| `telefon`, dazu `ware.portalUrl`, `ware.mail`, `ware.telefon` |
 | `muster.weg` | wie oben, dazu `muster.ansprechperson`, `muster.mail`, `muster.telefon`, `muster.portalUrl` |
+| `ware.lieferung` | `kunde` (Standard, auch ohne Eintrag: Lieferant liefert direkt an den Kunden) \| `laden` (Ausnahme) |
 | `muster.lieferung` | `kunde` (Lieferant schickt direkt an den Kunden) \| `laden` |
 | `lieferzeitWerktage` | übliche Lieferzeit, ganze Zahl |
 | `mindestmenge`, `hinweise` | Freitext |
@@ -298,7 +299,7 @@ Ungeklärtes ist `null` (nie der Text `UNGEKLAERT`).
 bzw. **`…&art=muster[&ziel=kunde|laden]`** – fertige Bestellung(en). Ware: eine
 Mail je Gruppe (Lieferant + Route + Lieferziel; Direktversand verschiedener
 Kunden wird nie gemischt), ohne `gruppe` alle Gruppen des Lieferanten. Muster:
-eine Mail mit allen offenen Mustern; `ziel` überstimmt `muster.lieferung`.
+eine Mail mit allen offenen Mustern; `ziel` überstimmt `muster.lieferung` bzw. bei Ware `ware.lieferung`.
 
 ```json
 {
