@@ -582,3 +582,12 @@ test('Ware: ware.lieferung "laden" in den Stammdaten macht den Laden zum Standar
   assert.equal(mail.lieferziel, 'laden');
   assert.equal(bestellmail({ modell: massteppichModell(), lieferant: 'A', ziel: 'kunde', stammdaten: st, jetzt: JETZT }).mails[0].lieferziel, 'kunde');
 });
+
+test('Ware: duzen in den Stammdaten - die ganze Mail ohne "Sie"', () => {
+  const st = pruefeStammdaten({ lieferanten: { A: { mail: { anrede: 'Hallo Testperson,', duzen: true } } } });
+  const text = bestellmail({ modell: massteppichModell(), lieferant: 'A', stammdaten: st, jetzt: JETZT }).mails[0].text;
+  assert.match(text, /^Hallo Testperson,/);
+  assert.match(text, /Bitte bestätige uns den Auftrag/);
+  assert.equal(/\bSie\b/.test(text), false, text);
+  assert.match(text, /Viele Grüße/);
+});

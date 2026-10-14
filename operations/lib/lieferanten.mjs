@@ -557,6 +557,8 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel }) {
     if (gruende.length) fehlt.push(fehltEintrag(p, gruende)); else aufgenommen.push(p);
   }
   const { anrede, gruss } = rahmen({ st, absender, anredeStandard: 'Sehr geehrte Damen und Herren,' });
+  const du = st.mail.duzen;
+  const bestaetigen = du ? 'Bitte bestätige uns den Auftrag mit dem voraussichtlichen Liefertermin.' : 'Bitte bestätigen Sie uns den Auftrag mit dem voraussichtlichen Liefertermin.';
   const zeilen = [anrede, '', anKunden ? 'wir bestellen folgende Ware – bitte direkt an unsere Kunden liefern:' : 'wir bestellen folgende Ware:', ''];
   if (st.kundennummer) zeilen.push(`Unsere Kundennummer: ${st.kundennummer}`, '');
   if (anKunden) {
@@ -572,7 +574,7 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel }) {
     aufgenommen.forEach((p, i) => zeilen.push(...positionsZeilen(p, i + 1), ''));
   }
   if (direkt) {
-    zeilen.push(gruppe.route === ROUTE.SUPPLIER_TO_SITE ? 'Bitte liefern Sie direkt an die Baustelle:' : 'Bitte liefern Sie direkt an unseren Kunden:');
+    zeilen.push(gruppe.route === ROUTE.SUPPLIER_TO_SITE ? (du ? 'Bitte liefere direkt an die Baustelle:' : 'Bitte liefern Sie direkt an die Baustelle:') : (du ? 'Bitte liefere direkt an unseren Kunden:' : 'Bitte liefern Sie direkt an unseren Kunden:'));
     if (adresseOk(zielAdresse)) zeilen.push(...adressZeilen(zielAdresse, { telefon: true }));
   } else if (anKunden) {
     zeilen.push('Bitte vor der Anlieferung beim Kunden telefonisch avisieren.');
@@ -581,7 +583,7 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel }) {
   } else {
     zeilen.push('Lieferung bitte an unsere bekannte Geschäftsadresse.');
   }
-  zeilen.push('', 'Bitte bestätigen Sie uns den Auftrag mit dem voraussichtlichen Liefertermin.', '', gruss);
+  zeilen.push('', bestaetigen, '', gruss);
   const betreff = ['Bestellung', st.kundennummer ? `Kd.-Nr. ${st.kundennummer}` : null, kurzListe(aufgenommen.map(p => p.orderName))].filter(Boolean).join(' – ');
   return fertigeMail({
     st, art: 'ware', an: st.ware.mail, betreff, zeilen, aufgenommen, fehlt,
@@ -724,7 +726,7 @@ function schnellMail(st, art, artikel, absender) {
     if (bezeichnung) zeilen.push(kopf ? `   ${bezeichnung}` : bezeichnung);
     // Menge und Anschrift kennt das Lexikon nicht - leer zum Ausfuellen, nie geraten.
     zeilen.push(`${kopf || bezeichnung ? '   ' : ''}Menge: `, '', 'Lieferanschrift: ', '',
-      'Bitte bestätigen Sie uns den Auftrag mit dem voraussichtlichen Liefertermin.', '', gruss);
+      st.mail.duzen ? 'Bitte bestätige uns den Auftrag mit dem voraussichtlichen Liefertermin.' : 'Bitte bestätigen Sie uns den Auftrag mit dem voraussichtlichen Liefertermin.', '', gruss);
   }
   const betreff = [art === 'muster' ? 'Musterbestellung' : 'Bestellung', st.kundennummer ? `Kd.-Nr. ${st.kundennummer}` : null, nr ? `Art.-Nr. ${nr}` : null].filter(Boolean).join(' – ');
   const text = zeilen.join('\n');
