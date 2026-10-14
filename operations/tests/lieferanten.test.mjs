@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { aufbereiten } from '../lib/bestelluebersicht.mjs';
 import { positionKey } from '../lib/auftragsstatus.mjs';
+import { UNGEKLAERT } from '../lib/umrechnung.mjs';
 import {
   pruefeStammdaten, leseStammdaten, stammdatenPfad, stammdatenFuer, lieferantenUebersicht, lieferantDetail,
   bestellmail, mailtoLink, wartetage, warnstufe, LieferantenFehler,
@@ -537,13 +538,13 @@ test('Lexikon-Produkt: Schnellzugriff nur an Varianten ohne Direkt- und Suchlink
 
 // ------------------------------------------- Teppich nach Mass: Zuschnitt, Ketteln, Kunde
 
-function massteppichModell({ mitEinfassungAmTeppich = true } = {}) {
-  const teppich = zeile({ id: 20, sku: null, title: 'Testteppich nach Maß', variantTitle: 'Sandbeige (036)', quantity: 775, preis: '0.39',
+function massteppichModell({ mitEinfassungAmTeppich = true, masse = '250 × 310 cm', form = 'Rechteck', quantity = 775 } = {}) {
+  const teppich = zeile({ id: 20, sku: null, title: 'Testteppich nach Maß', variantTitle: 'Sandbeige (036)', quantity, preis: '0.39',
     einkauf: [['lieferant', 'A'], ['artikelnummer', 'A-TNM'], ['farbnummer', '036'], ['bestelleinheit', 'lfm'], ['route', 'SUPPLIER_TO_TP']],
     custom: [['preis_pro_001_qm', 'true']],
     attrs: [
       ...(mitEinfassungAmTeppich ? [{ key: 'Einfassung', value: 'Gekettelt' }, { key: 'Kante umlaufend', value: '11,20 m' }, { key: 'Garn', value: 'Ton in Ton' }] : []),
-      { key: 'Form', value: 'Rechteck' }, { key: 'Maße', value: '250 × 310 cm' },
+      { key: 'Form', value: form }, { key: 'Maße', value: masse },
       { key: '_Zuschnitt aus Rolle', value: '400 cm' }, { key: '_Gruppe', value: 'Kabc' },
     ] });
   const kettel = zeile({ id: 21, sku: null, title: 'Kettelservice', variantTitle: 'je 0,01 laufender Meter', quantity: 1120,
@@ -559,6 +560,34 @@ test('Massteppich: Fertigmass, Rolle, Ketteln und Kunde stehen in der Mail, kein
   assert.equal(/Rolle|lfm/.test(mail.text), false, 'Rollenbreite entscheidet der Lieferant');
   assert.equal(mail.text.includes('Kettelservice'), false, 'Kettelservice ist keine eigene Bestellposition');
   assert.equal(mail.zielWaehlbar, true);
+});
+
+test('Massteppich: unlesbare und nichtpositive Maße fehlen im Bestelltext mit Klärgrund', () => {
+  for (const masse of ['unbekannt', '0 × 310 cm', '250 × 0 cm', '-250 × 310 cm', '250 × -310 cm', 'Infinity × 310 cm', '250 × Infinity cm']) {
+    const modell = massteppichModell({ masse });
+    const p = modell.auftraege[0].positionen[0];
+    assert.equal(p.bestellmenge.menge, UNGEKLAERT, masse);
+    assert.match(p.bestellmenge.grund, /Fertigmaß.*Breite und Länge prüfen/, masse);
+    const mail = bestellmail({ modell, lieferant: 'A', stammdaten: STAMM, jetzt: JETZT }).mails[0];
+    assert.equal(mail.positionen.length, 0, masse);
+    assert.equal(mail.fehlt.length, 1, masse);
+    assert.equal(mail.fehlt[0].lineItemId, p.lineItemId, masse);
+    assert.match(mail.fehlt[0].gruende.join(' · '), /Bestellmenge ungeklärt.*Fertigmaß/, masse);
+    assert.equal(mail.text, null, masse);
+    assert.equal(mail.mailto, null, masse);
+  }
+});
+
+test('Massteppich: gültiger runder Teppich bleibt ein Stück mit unverändertem Durchmesser im Bestelltext', () => {
+  const modell = massteppichModell({ masse: 'Ø 200 cm', form: 'Rund', quantity: 400 });
+  const p = modell.auftraege[0].positionen[0];
+  assert.equal(p.bestellmenge.menge, 1);
+  assert.equal(p.bestellmenge.einheit, 'stueck');
+  const mail = bestellmail({ modell, lieferant: 'A', stammdaten: STAMM, jetzt: JETZT }).mails[0];
+  assert.equal(mail.positionen.length, 1);
+  assert.equal(mail.fehlt.length, 0);
+  assert.match(mail.text, /Menge: 1 Stück nach Maß\n {3}Fertigmaß: Ø 200 cm \(Rund\)/);
+  assert.equal(/Rolle|lfm/.test(mail.text), false);
 });
 
 test('Massteppich: Kettelung nur an der Kettelservice-Zeile wird trotzdem bestellt', () => {

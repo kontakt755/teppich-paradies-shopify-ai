@@ -2,6 +2,23 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-14 · Ungültige Fertigmaße vor dem Bestelltext klären (#1267, Folge zu #1225)
+
+- **Geändert:** Erkannte Maßanfertigungen bleiben bei fehlender, nicht endlicher oder nicht positiver
+  Breite/Länge ungeklärt, mit Hinweis „Fertigmaß unlesbar oder nicht positiv – Breite und Länge prüfen“.
+  Die bestehende Mailprüfung führt diese Positionen unter „fehlt“; sie erzeugen keinen bestellbaren
+  Mailtext. Gültige Rechteck-/Rundmaße bleiben ein Stück nach Maß; keine Rollen-Ersatzrechnung.
+- **Getestet:** 62/62 gezielte Modell-/Lieferanten-Tests, darunter fehlende/0/negative/NaN/Infinity-Maße,
+  sieben ungültige Rohmaßangaben ohne Bestelltext/Mailto, gültiges Rechteck und Rundteppich. Dashboard
+  335/335 und Gesamtsuite 2554/2554 (nach konfliktfreiem Rebase auf frisches main); Syntax, Diff, Pflicht-Guards, statische Workflowprüfung und
+  Geheimnisprüfung PASS. Einkauf mit ausschließlich erfundenen Daten bei 390/1440 px: beide OK,
+  keine Browserfehler/kein Überlauf; Screenshots visuell gelesen.
+- **Risiken/Annahmen:** Prüfung nutzt den vorhandenen lokalen Export und die bestehende Maß-Erkennung;
+  keine neuen Größenlimits, keine Änderung der Lieferantenentscheidung über den Zuschnitt.
+  Bestehende sechs Template-Hinweise und Theme-Check-Warnungen bleiben unverändert.
+- **Nächste Stufe:** Unabhängiger PR-Zweitblick; Merge und Dienstübernahme erfolgen getrennt durch Root.
+  Keine Shopify-/Google-Schreibaktion, keine Nachricht und kein eigener Dienstneustart.
+
 ## 2026-10-13 · Review-Korrekturen zu Mengen, Kaufquellen und Brückenstatus (#1206)
 
 - **Geändert:** Der lokale Export liefert das aktuelle Gesamt-Soll über dieselbe bestehende Umrechnung;

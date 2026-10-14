@@ -1039,6 +1039,12 @@ validiert die Position am vorhandenen Bestellmodell und nimmt Soll/Einheit vom S
 kumulative menschliche Bestätigungen. Restmenge > 0 bleibt bestellt und sperrt geliefert/raus/erledigt,
 auch über den Sammelschritt. Neue Zustände ändern keine Shopify-Mengen/Preise/Varianten.
 
+**Maßanfertigung (#1267).** Ein erkannter Maßteppich wird nur bei endlicher, positiver Breite und
+Länge als ein Stück im Fertigmaß bestellt. Fehlende, unlesbare, null oder negative Maße bleiben
+mit Klärgrund ungeklärt; die Lieferanten-Mail führt diese Position unter „fehlt“ und enthält sie
+nicht im Bestelltext. Rollenbedarf ersetzt kein fehlendes Fertigmaß. Gültige Rechtecke, runde
+Teppiche und die Entscheidung des Lieferanten über den Zuschnitt bleiben unverändert.
+
 `bestellSoll` wird nur im lokalen API-Modell aus `currentQuantity` (sonst `quantity`) desselben
 Exports über die vorhandene Mengenberechnung abgeleitet. Anders als die offene Einkaufsmenge
 bleibt es nach Versand erhalten. `beschaffungsStand()` gleicht bestätigten Eingang beim Lesen
