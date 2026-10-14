@@ -3,6 +3,8 @@ name: Feed Teppich nach Mass (Preise je m2)
 # Taeglich tp-tnm-preise.txt aus Shopify erzeugen und auf den Zweig feed-daten
 # legen. Das Merchant Center ruft die Datei als ergaenzende Quelle per Link ab
 # (raw.githubusercontent.com/.../feed-daten/tp-tnm-preise.txt), siehe #1283.
+# Daneben tp-tnm-meta.tsv: vollstaendiger Feed fuer den eigenen Meta-Katalog
+# "Teppich nach Mass (Feed)", weil der Shopify-Katalog bei Meta keine Preisregeln kennt.
 # Bewusst nicht nach main: ein taeglicher Commit dort wuerde Deploy-Fenster stoeren.
 on:
   schedule:
@@ -41,11 +43,12 @@ jobs:
       - name: Bisherige Datei vom Zweig feed-daten holen
         run: |
           git fetch --depth=1 origin feed-daten && git show origin/feed-daten:tp-tnm-preise.txt > vorher.txt || echo "erster Lauf, noch kein Zweig feed-daten"
+          git show origin/feed-daten:tp-tnm-meta.tsv > vorher-meta.tsv 2>/dev/null || echo "noch kein Meta-Feed"
 
       - name: Preise erzeugen
         env:
           SHOPIFY_ADMIN_TOKEN: ${{ env.SHOPIFY_ADMIN_TOKEN || secrets.SHOPIFY_ADMIN_TOKEN }}
-        run: node operations/scripts/feed-tnm-abruf.mjs --aus tp-tnm-preise.txt --vorher vorher.txt
+        run: node operations/scripts/feed-tnm-abruf.mjs --aus tp-tnm-preise.txt --vorher vorher.txt --meta-aus tp-tnm-meta.tsv --meta-vorher vorher-meta.tsv
 
       - name: Auf feed-daten veroeffentlichen
         run: |
@@ -55,8 +58,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
           if git fetch -q --depth=1 origin feed-daten; then git checkout -q -B feed-daten FETCH_HEAD; fi
-          cp ../tp-tnm-preise.txt .
-          git add tp-tnm-preise.txt
+          cp ../tp-tnm-preise.txt ../tp-tnm-meta.tsv .
+          git add tp-tnm-preise.txt tp-tnm-meta.tsv
           if git diff --cached --quiet; then echo "keine Preisaenderung"; exit 0; fi
           git commit -q -m "Teppich-nach-Mass-Preise $(date -u +%F)"
           git push -q origin feed-daten

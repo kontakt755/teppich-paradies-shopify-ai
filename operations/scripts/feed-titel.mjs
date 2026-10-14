@@ -57,7 +57,7 @@ export const BULK_QUERY = `
   }
 }`;
 
-const FARB_OPTIONEN = ['farbe', 'color', 'dekor'];
+export const FARB_OPTIONEN = ['farbe', 'color', 'dekor'];
 
 export const GRATIS_AB = 'DE:50.00 EUR';
 
@@ -71,7 +71,7 @@ export function basisTitel(titel) {
     .trim();
 }
 
-function option(variante, namen) {
+export function option(variante, namen) {
   return variante.selectedOptions?.find((o) => namen.includes(o.name.toLowerCase()))?.value ?? null;
 }
 
@@ -86,7 +86,7 @@ export function feedTitel(produktTitel, variante, farbAnzahl) {
   return t.length > 150 ? t.slice(0, 150).trim() : t;
 }
 
-const nummer = (gid) => gid.split('/').pop();
+export const nummer = (gid) => gid.split('/').pop();
 
 // Shopify-Einheit -> Einheit im Merchant Center. Was Google nicht kennt (z. B. MM),
 // bleibt leer statt geraten.
@@ -134,7 +134,7 @@ export function feedZeilen(jsonl) {
   return zeilen;
 }
 
-const euro = (betrag) => `${(Math.round(Number(betrag) * 10000) / 100).toFixed(2)} EUR`;
+export const euro = (betrag) => `${(Math.round(Number(betrag) * 10000) / 100).toFixed(2)} EUR`;
 
 /** Teppich nach Mass: Zeilen [offerId, price, sale_price, Grundpreis-Menge, Grundpreis-Basis] je m2. */
 export function tnmPreisZeilen(jsonl) {
