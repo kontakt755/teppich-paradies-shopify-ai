@@ -10,6 +10,8 @@
 import {
   lieferantenKarten, karteImFilter, ueberfaelligText, hauptAktion, bestellwegText, feldKlartext,
   telLink, verlauf, lieferzeiten, SCHWELLEN_STANDARD, gmailLink, afNorm } from '../../lib/einkauf-lieferanten.mjs';
+import { blockGruende, mengeText, ausfuehrungKurz, jeKommission } from '../../lib/einkauf-uebersicht.mjs';
+import { musterText, musterHerkunftText } from '../../lib/bestellinhalt.mjs';
 import { state } from '../../kern/zustand.mjs';
 import { $, esc, fmtDate, plural, toast, NICHT_HINTERLEGT } from '../../kern/helfer.mjs';
 import { fetchEinkauf } from '../../kern/api.mjs';
@@ -57,15 +59,6 @@ function wegZeile(k) {
   return `<p class="lf-weg">${[ware ? `Ware ${esc(ware)}` : null, muster ? `Muster ${esc(muster)}` : null].filter(Boolean).join(' · ')}</p>`;
 }
 
-function zahlenChips(k) {
-  const z = k.zahlen;
-  // Alle Zahlen hier zaehlen Positionen (eine Kundenbestellung kann mehrere haben).
-  const chip = (n, text, klasse = '') => n ? `<span class="lf-zahl ${klasse}">${n} ${esc(text)}</span>` : '';
-  return chip(z.zuBestellen, 'zu bestellen', 'akzent') + chip(z.musterOffen, 'Muster offen', 'akzent')
-    + chip(z.bestellt, 'bestellt') + chip(z.eingetroffen, 'bei uns eingetroffen') + chip(z.musterLaufend, z.musterLaufend === 1 ? 'Muster läuft' : 'Muster laufen')
-    + chip(k.musterEigen, 'Muster haben wir da');
-}
-
 function ueberfaelligHinweis(k, { mitLink = true } = {}) {
   const h = ueberfaelligText(k.ueberfaellig);
   if (!h) return '';
@@ -98,28 +91,148 @@ function postenListe(titel, liste, namen, max) {
 
 const nachWartezeit = liste => [...liste].sort((a, b) => (b.wartetage ?? -1) - (a.wartetage ?? -1));
 
+/** Knopf "Ware bestellen" je nach Bestellweg (Mail, Portal, Telefon). */
+function wareKnopf(k, klasse) {
+  const a = hauptAktion(k.stammdaten, 'ware');
+  const daten = `data-lf-mail="${esc(k.id)}" data-lf-art="ware"`;
+  // Portal und Telefon oeffnen sich direkt (neuer Tab bzw. Anruf); der Dialog mit der
+  // Bestellliste geht trotzdem auf - dort wird kopiert und danach als bestellt markiert.
+  return a.href
+    ? `<a class="${klasse}" href="${esc(a.href)}"${a.neuerTab ? ' target="_blank" rel="noopener"' : ''} ${daten}>${esc(a.label)}${a.neuerTab ? ' ↗' : ''}</a>`
+    : `<button type="button" class="${klasse}" ${daten}>${esc(a.label)}</button>`;
+}
+const musterKnopf = (k, klasse) => `<button type="button" class="${klasse}" data-lf-mail="${esc(k.id)}" data-lf-art="muster">Muster bestellen</button>`;
+
+/** Nichts zu bestellen, aber ueberfaellig: dann ist Nachhaken der naechste Schritt. */
+function nachhakKnopf(k) {
+  if (!k.zugeordnet || k.zahlen.zuBestellen || k.zahlen.musterOffen || !k.ueberfaellig.stufe) return '';
+  const w = k.stammdaten.ware;
+  if (w.telefon) return `<a class="btn" href="${esc(telLink(w.telefon))}">Anrufen</a>`;
+  if (w.mail) return `<a class="btn" href="mailto:${esc(w.mail)}">E-Mail schreiben</a>`;
+  return '';
+}
+
 /** Hauptknopf (je nach Bestellweg) und "Muster bestellen". Hoechstens einer ist die Hauptaktion. */
 function bestellKnoepfe(k) {
   if (!k.zugeordnet) return '';
+  const ware = k.zahlen.zuBestellen ? wareKnopf(k, 'btn btn-primary') : '';
+  const muster = k.zahlen.musterOffen ? musterKnopf(k, ware ? 'btn' : 'btn btn-primary') : '';
+  return ware + muster + nachhakKnopf(k);
+}
+
+// ------------------------------------------------------------ Karte auf einen Blick
+// Ware und Muster getrennt, je Stufe eine Ueberschrift mit Zahl; der Bestellknopf steht dort,
+// wo bestellt wird. Ware je Position (Menge, Mass, Einfassung, Kommission), Muster je
+// Kommission - ein Kunde bestellt drei bis fuenf auf einmal.
+
+const ok = v => v && v !== 'UNGEKLAERT' && v !== '–';
+
+function wareZeile(x, namen) {
+  const p = x.pos;
+  const block = blockGruende(p);
+  const titel = [anzeigeWert(p.titel), p.farbe].filter(ok).join(' · ');
+  const menge = mengeText(p);
+  const aus = ausfuehrungKurz(p);
+  const wer = [namen.get(p.orderId) || p.kunde, p.orderName].filter(ok).join(' · ');
+  // Bestellt und noch nicht da: "Ist eingetroffen" direkt an der Zeile (setzt "geliefert",
+  // derselbe Schritt wie "Als geliefert markieren" in der Tabelle).
+  const status = x.eintrag?.status;
+  const knopf = status === 'bestellt' && p.lineItemId && !istNurLesend()
+    ? `<button type="button" class="btn btn-sm lf-zeilenknopf" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="geliefert" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}">Ist eingetroffen</button>` : '';
+  return `<li class="lf-posten${block.length ? ' lf-blockiert' : ''}"><div class="lf-posten-text">
+      <div class="t">${esc(titel)}</div>
+      ${menge ? `<div class="lf-menge">${esc(menge)}</div>` : ''}
+      ${aus.map(z => `<div class="s">${esc(z)}</div>`).join('')}
+      ${wer ? `<div class="s lf-wer">${esc(wer)}</div>` : ''}
+      ${block.length ? `<div class="lf-grund">Blockiert: ${esc(block.join(' · '))}</div>` : ''}
+    </div><div class="lf-posten-rechts">${warteChip(x)}${knopf}</div></li>`;
+}
+
+function musterZeile(g, namen, { herkunft = false } = {}) {
+  const { ort } = kundeUndOrt(g.orderId);
+  const wer = [namen.get(g.orderId) || g.positionen[0]?.kunde, ort, g.orderName].filter(ok).join(' · ');
+  const woher = herkunft ? musterHerkunftText(g.positionen) : '';
+  return `<li class="lf-posten"><div class="lf-posten-text">
+      <div class="t">${esc(wer || 'Kunde unbekannt')}</div>
+      <div class="s">${esc(musterText(g.positionen))}</div>
+      ${woher ? `<div class="s lf-wer">${esc(woher)}</div>` : ''}
+    </div><div class="lf-posten-rechts"><span class="lf-anzahl">${esc(plural(g.positionen.length, 'Muster', 'Muster'))}</span>${warteChip(g)}</div></li>`;
+}
+
+/** Ueberschrift einer Stufe: "Ware bestellen 3", darunter ein Satz, rechts der Knopf. */
+const stufeKopf = (titel, zahl, knopf = '', { klasse = '', zusatz = '' } = {}) => `<div class="lf-stufe ${klasse}"><div class="lf-stufe-titel"><h4>${esc(titel)} <b>${zahl}</b></h4>${zusatz ? `<p>${zusatz}</p>` : ''}</div>${knopf}</div>`;
+
+function stufeListe(zeilen, rest, restText) {
+  return `<ul class="lf-liste">${zeilen.join('')}</ul>${rest > 0 ? `<p class="lf-rest">+ ${rest} ${esc(restText)}</p>` : ''}`;
+}
+
+/** "3 für 2 Kunden" - Muster zaehlen einzeln, gehen aber je Kunde gemeinsam raus. */
+const fuerKunden = liste => `${liste.length}<span class="lf-fuer"> für ${plural(jeKommission(liste).length, 'Kunden', 'Kunden')}</span>`;
+
+/** Laufende Posten: Ware je Position, Muster je Kommission - Ware zuerst. */
+function laufendZeilen(liste, namen) {
+  const ware = nachWartezeit(liste.filter(x => !x.pos?.istMuster)).map(x => ({ n: 1, html: wareZeile(x, namen) }));
+  const muster = jeKommission(liste.filter(x => x.pos?.istMuster)).map(g => ({ n: g.positionen.length, html: musterZeile(g, namen) }));
+  return [...ware, ...muster];
+}
+
+/** Die ersten `max` Zeilen; der Rest in Positionen, damit er zur Zahl der Ueberschrift passt. */
+function ruhigeListe(zeilen, max) {
+  const rest = zeilen.slice(max).reduce((n, z) => n + z.n, 0);
+  return stufeListe(zeilen.slice(0, max).map(z => z.html), rest, rest === 1 ? 'weitere Position' : 'weitere Positionen');
+}
+
+/** Kontakt fuers Nachfassen: Telefon vor Mail, sonst die Detailseite mit Kontakt. */
+function nachfassKnopf(k) {
+  const w = k.stammdaten.ware;
+  if (w.telefon) return `<a class="btn" href="${esc(telLink(w.telefon))}">Anrufen</a>`;
+  if (w.mail) return `<a class="btn" href="mailto:${esc(w.mail)}">E-Mail schreiben</a>`;
+  return `<a class="btn" href="${detailLink(k.id)}">Kontakt</a>`;
+}
+
+/**
+ * Die Karte in Arbeitsschritten (Inhaber 2026-10-14: "Bestellungen ganz vorne extra Zeile, fuer
+ * Muster bestellen extra Zeile, fuer Nachfassen extra Zeile"). 1. Ware bestellen, 2. Muster
+ * bestellen, 3. Nachfassen (bestellt, wartet zu lange - Ware und Muster); darunter ruhig, was
+ * im Plan laeuft. Ein Posten steht genau in einem Abschnitt.
+ */
+function arbeitsSchritte(k, namen) {
   const teile = [];
-  let hauptVergeben = false;
-  const klasse = () => { if (hauptVergeben) return 'btn'; hauptVergeben = true; return 'btn btn-primary'; };
-  if (k.zahlen.zuBestellen) {
-    const a = hauptAktion(k.stammdaten, 'ware');
-    const daten = `data-lf-mail="${esc(k.id)}" data-lf-art="ware"`;
-    // Portal und Telefon oeffnen sich direkt (neuer Tab bzw. Anruf); der Dialog mit der
-    // Bestellliste geht trotzdem auf - dort wird kopiert und danach als bestellt markiert.
-    teile.push(a.href
-      ? `<a class="${klasse()}" href="${esc(a.href)}"${a.neuerTab ? ' target="_blank" rel="noopener"' : ''} ${daten}>${esc(a.label)}${a.neuerTab ? ' ↗' : ''}</a>`
-      : `<button type="button" class="${klasse()}" ${daten}>${esc(a.label)}</button>`);
+  const w = k.ware.zuBestellen;
+  const m = k.muster.zuBestellen;
+  if (w.length) {
+    const zeigen = w.slice(0, 8);
+    teile.push(`<section class="lf-schritt">${stufeKopf('Ware bestellen', w.length, wareKnopf(k, 'btn btn-primary'))}
+      ${stufeListe(zeigen.map(x => wareZeile(x, namen)), w.length - zeigen.length, 'weitere – „Positionen bearbeiten"')}</section>`);
   }
-  if (k.zahlen.musterOffen) teile.push(`<button type="button" class="${klasse()}" data-lf-mail="${esc(k.id)}" data-lf-art="muster">Muster bestellen</button>`);
-  // Nichts zu bestellen, aber ueberfaellig: dann ist Nachhaken der naechste Schritt.
-  if (!teile.length && k.ueberfaellig.stufe) {
-    const w = k.stammdaten.ware;
-    if (w.telefon) teile.push(`<a class="btn" href="${esc(telLink(w.telefon))}">Anrufen</a>`);
-    else if (w.mail) teile.push(`<a class="btn" href="mailto:${esc(w.mail)}">E-Mail schreiben</a>`);
+  if (m.length) {
+    const g = jeKommission(m);
+    teile.push(`<section class="lf-schritt">${stufeKopf('Muster bestellen', fuerKunden(m), musterKnopf(k, w.length ? 'btn' : 'btn btn-primary'))}
+      ${stufeListe(g.slice(0, 6).map(x => musterZeile(x, namen)), g.length - Math.min(g.length, 6), 'weitere Kunden')}</section>`);
   }
+  const ue = k.ueberfaellig;
+  if (ue.stufe && k.zugeordnet) {
+    const satz = `${plural(ue.anzahl, 'Position', 'Positionen')}, die älteste seit ${plural(ue.maxTage, 'Tag', 'Tagen')} – ${ue.stufe === 'crit' ? 'überfällig' : 'beim Lieferanten nachhaken'}.`;
+    teile.push(`<section class="lf-schritt lf-nachfassen ${ue.stufe}">${stufeKopf('Nachfassen', ue.auftraege === 1 ? '1 Auftrag' : `${ue.auftraege} Aufträge`, nachfassKnopf(k), { zusatz: esc(satz) })}
+      ${stufeListe(laufendZeilen(ue.positionen, namen).map(z => z.html), 0, '')}</section>`);
+  }
+  // Ruhig darunter: was wir selbst da haben und was im Plan laeuft (nicht ueberfaellig).
+  const ruhig = [];
+  const eigen = k.muster.eigen || [];
+  if (eigen.length) {
+    const g = jeKommission(eigen);
+    ruhig.push(stufeKopf('Muster haben wir da – verschicken oder vorbeibringen', fuerKunden(eigen), '', { klasse: 'lf-ruhig' })
+      + stufeListe(g.slice(0, 4).map(x => musterZeile(x, namen, { herkunft: true })), g.length - Math.min(g.length, 4), 'weitere Kunden'));
+  }
+  const imPlan = [...k.ware.bestellt, ...k.muster.bestellt].filter(x => !x.warnstufe);
+  if (imPlan.length) {
+    ruhig.push(stufeKopf('Bestellt, im Plan', imPlan.length, '', { klasse: 'lf-ruhig' }) + ruhigeListe(laufendZeilen(imPlan, namen), 3));
+  }
+  const da = [...k.ware.eingetroffen, ...k.muster.eingetroffen].filter(x => !x.warnstufe);
+  if (da.length) {
+    ruhig.push(stufeKopf('Bei uns eingetroffen', da.length, '', { klasse: 'lf-ruhig' }) + ruhigeListe(laufendZeilen(da, namen), 2));
+  }
+  if (ruhig.length) teile.push(`<section class="lf-schritt lf-schritt-ruhig">${ruhig.join('')}</section>`);
   return teile.join('');
 }
 
@@ -129,8 +242,9 @@ function karteHtml(k, { gruppeKarte, namen, af, alleGruppen, alleMusterGruppen }
   const laufend = nachWartezeit([...k.ware.bestellt, ...k.ware.eingetroffen, ...k.muster.bestellt, ...k.muster.eingetroffen]);
   const eigen = k.muster.eigen || [];
   const anzahl = af === 'erledigt' ? k.ware.erledigt.length + k.muster.erledigt.length : zu.length + laufend.length + eigen.length;
-  const knoepfe = bestellKnoepfe(k);
-  const vorschau = offen ? '' : postenListe('Zu bestellen', zu, namen, 4) + postenListe('Muster haben wir da – vorbeibringen oder verschicken', eigen, namen, 3) + postenListe('Bestellt oder bei uns eingetroffen', laufend, namen, 3);
+  // Zugeklappt stehen die Bestellknoepfe bei "Zu bestellen"; aufgeklappt (Tabellen) unten im Fuss.
+  const knoepfe = offen ? bestellKnoepfe(k) : '';
+  const vorschau = offen ? '' : arbeitsSchritte(k, namen);
   // Sammelaktion fuer die ganze Karte: alles, was hier schon einen Schritt hat, zurueck auf offen.
   const gesetzt = (af === 'erledigt' ? [...k.ware.erledigt, ...k.muster.erledigt] : laufend).map(x => x.pos).filter(p => p.lineItemId);
   const zurueckId = `lf-${k.id}`;
@@ -142,12 +256,22 @@ function karteHtml(k, { gruppeKarte, namen, af, alleGruppen, alleMusterGruppen }
     + k.musterGruppen.map(g => gruppeKarte(g, alleMusterGruppen.indexOf(g), 'muster', { eingebettet: true })).join('');
   const kopfName = k.zugeordnet ? `<a href="${detailLink(k.id)}" title="Kontakt, Bestellweg und Verlauf">${esc(k.name)}</a>` : esc(k.name);
   return `<article class="card lf-karte${offen ? ' lf-offen' : ''}">
-    <div class="lf-kopf"><h3 class="lf-name">${kopfName}</h3><div class="lf-zahlen">${zahlenChips(k)}</div>${wegZeile(k)}</div>
-    ${ueberfaelligHinweis(k)}
+    <div class="lf-kopf"><h3 class="lf-name">${kopfName}</h3>${wegZeile(k)}</div>
+    ${offen ? ueberfaelligHinweis(k) : ''}
     ${vorschau}
     ${offen ? `<div class="lf-tabellen">${tabellen || '<p class="lf-rest">Kein Artikel in diesem Schritt.</p>'}</div>` : ''}
     <div class="lf-fuss">${knoepfe}${zurueck}<button type="button" class="btn btn-ghost lf-aufklappen" data-lf-auf="${esc(k.id)}" aria-expanded="${offen}">${offen ? 'Positionen einklappen' : `Positionen bearbeiten (${anzahl})`}</button></div>
   </article>`;
+}
+
+/**
+ * Nachfassen ueber alle Lieferanten fuer die Kachel oben: Summe der Auftraege aus den Karten,
+ * damit Kachel und Abschnitte "Nachfassen" dieselbe Menge zaehlen.
+ */
+export function nachfassenSumme() {
+  let auftraege = 0; let crit = false;
+  for (const k of karten()) if (k.ueberfaellig.stufe) { auftraege += k.ueberfaellig.auftraege; crit ||= k.ueberfaellig.stufe === 'crit'; }
+  return { auftraege, stufe: auftraege ? (crit ? 'crit' : 'warn') : null };
 }
 
 /**
