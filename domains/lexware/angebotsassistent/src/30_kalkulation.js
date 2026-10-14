@@ -552,7 +552,17 @@ function tpAktionPruefen(v, rollenPos, melde) {
   var A = TP_KONFIG.aktion649;
   var res = { gilt: false, gruende: [], warenwertNetto: 0, warenwertBrutto: 0 };
   if (!rollenPos.length) { res.gruende.push('keine Rollenware (Teppichboden/PVC) im Angebot'); return res; }
-  var netto = rollenPos.reduce(function (a, p) { return a + tpRunden2(p.menge * p.preisNetto); }, 0);
+  // Wie im Angebot: gleiche Artikel/Preise erst zusammenfassen, dann runden
+  // (sonst weicht der Warenwert je Raum gerundet um Cent-Betraege ab).
+  var gruppen = {};
+  rollenPos.forEach(function (p) {
+    var k = p.artikel.id + '|' + p.preisNetto;
+    if (!gruppen[k]) gruppen[k] = { menge: 0, preis: p.preisNetto };
+    gruppen[k].menge += p.menge;
+  });
+  var netto = Object.keys(gruppen).reduce(function (a, k) {
+    return a + tpRunden2(tpRunden2(gruppen[k].menge) * gruppen[k].preis);
+  }, 0);
   res.warenwertNetto = tpRunden2(netto);
   res.warenwertBrutto = tpRunden2(netto * (1 + TP_KONFIG.steuersatzStandard / 100));
   var ok = true;

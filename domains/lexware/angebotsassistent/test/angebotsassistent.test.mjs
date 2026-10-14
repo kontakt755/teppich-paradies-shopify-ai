@@ -387,3 +387,14 @@ test('Feldprüfung bevorzugt service/material mit Artikel-ID vor freien custom-Z
   assert.equal(r.felder['lineItems[].id (Artikelbezug)'], true);
   assert.equal(tp.tpFeldpruefungPositionen([{ lineItems: [q.lineItems[0]] }]).positionstyp, 'custom');
 });
+
+test('Aktion 649: Warenwert wie die Angebotsposition (erst zusammenfassen, dann runden)', () => {
+  // Probevorgang 14.10.2026: 19,60 + 14,80 m² × 27,69 € = 952,54 € netto -> 1.133,52 € brutto
+  const erg = rechne(teppichVorgang([
+    { name: 'Wohnzimmer', laengeM: 4.8, breiteM: 3.9, verlegeart: 'fixiert' },
+    { name: 'Schlafzimmer', laengeM: 3.9, breiteM: 3.6, verlegeart: 'lose', fixierung: 'optional' }
+  ], { baustelle: { entfernungKm: 6, fahrzone: 'nah' }, fahrten: { anzahl: 2 } }));
+  assert.equal(pos(erg, 'TB-LUMINA-85').gesamtNetto, 952.54);
+  assert.equal(erg.aktion.warenwertNetto, 952.54);
+  assert.equal(erg.aktion.warenwertBrutto, 1133.52);
+});
