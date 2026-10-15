@@ -5,6 +5,13 @@
   custom.gesamtstarke ebenfalls "6 mm" ist und direkt darunter im
   Vorteilsbereich angezeigt wird). Nur entfernt, was nachweislich mit dem
   echten Metafeldwert uebereinstimmt - keine erfundene/geratene Kuerzung.
+
+  Teppichboden (Produkttyp enthaelt "teppichboden"): angehaengte Rollenbreiten
+  am Titelende entfallen, z.B. "Piumera Teppichboden 400cm 500cm" ->
+  "Piumera Teppichboden" (Shopvergleich 2026-10-15, w-096). Entfernt werden
+  nur zusammengeschriebene Woerter "<Zahl>cm" am Ende; "Sonderposten, 400 cm"
+  (mit Leerzeichen) bleibt, dort ist die Breite die Restrolle selbst. Der
+  Seitentitel (<title>) und strukturierte Daten nutzen weiter product.title.
 {% enddoc %}
 
 {% if closest.product == blank %}
@@ -21,6 +28,28 @@
       assign tp_h1_search_compact = ' ' | append: tp_h1_staerke_compact
       assign tp_h1_search_spaced = ' ' | append: tp_h1_staerke
       assign tp_h1_display = tp_h1_display | replace: tp_h1_search_compact, '' | replace: tp_h1_search_spaced, ''
+    endif
+
+    assign tp_h1_typ = closest.product.type | downcase
+    if tp_h1_typ contains 'teppichboden'
+      assign tp_h1_woerter = tp_h1_display | split: ' '
+      assign tp_h1_behalten = tp_h1_woerter.size
+      for tp_h1_i in (1..tp_h1_woerter.size)
+        assign tp_h1_pos = tp_h1_woerter.size | minus: tp_h1_i
+        assign tp_h1_wort = tp_h1_woerter[tp_h1_pos]
+        assign tp_h1_ende = tp_h1_wort | slice: -2, 2
+        assign tp_h1_zahl = tp_h1_wort | remove_last: 'cm'
+        assign tp_h1_probe = tp_h1_zahl | plus: 0 | append: ''
+        # nur "400cm": Endung cm, davor eine reine Zahl, und nie das erste Wort
+        if tp_h1_ende == 'cm' and tp_h1_zahl != blank and tp_h1_probe == tp_h1_zahl and tp_h1_pos > 0
+          assign tp_h1_behalten = tp_h1_pos
+        else
+          break
+        endif
+      endfor
+      if tp_h1_behalten < tp_h1_woerter.size
+        assign tp_h1_display = tp_h1_woerter | slice: 0, tp_h1_behalten | join: ' '
+      endif
     endif
   -%}
   {% assign product_title = '<h1>' | append: tp_h1_display | append: '</h1>' %}

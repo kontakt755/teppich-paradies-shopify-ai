@@ -12,20 +12,21 @@
     "tp_start_hero": {
       "type": "tp-start-hero",
       "settings": {
-        "eyebrow": "Fachhandel in Oranienburg",
-        "headline": "<p>Teppichboden, Vinyl & Teppich nach Maß – <em>deutschlandweit geliefert</em> vom Fachhandel.</p>",
-        "subline": "<p>Teppichboden, Vinyl und Linoleum als Meterware oder Paket – deutschlandweit geliefert. In Oranienburg und Umgebung messen wir auf, liefern und verlegen.</p>",
-        "cta1_label": "Bodenbeläge entdecken",
+        "eyebrow": "",
+        "headline": "<p>Teppichboden und Vinyl nach Maß, vom Fachgeschäft in Oranienburg.</p>",
+        "subline": "<p>Böden zugeschnitten, geliefert und auf Wunsch verlegt.</p>",
+        "cta1_label": "Boden aussuchen",
         "cta1_link": "#tp-kategorien",
-        "cta2_label": "Verlegung anfragen",
+        "cta2_label": "Verlegung anfragen (bis 50 km)",
         "cta2_link": "#tp-kontakt",
         "telefon": "03301 573 37 20",
         "whatsapp": "https://wa.me/491792612211",
         "rating_wert": "",
         "rating_text": "",
         "rating_link": "https://maps.google.com/?cid=787042219843486388",
-        "bild": "shopify://shop_images/1000012408.jpg",
-        "bild_caption": "Echtes Projekt · Teppichboden, von uns verlegt"
+        "bild": "shopify://shop_images/Teppichboden_Kurzflor.png",
+        "bild_alt": "Helles Wohnzimmer mit beigem Teppichboden",
+        "bild_caption": ""
       }
     },
     "tp_start_kategorien": {
@@ -198,7 +199,8 @@
         "t2",
         "t3",
         "t4"
-      ]
+      ],
+      "disabled": true
     },
     "tp_zwei_wege_home": {
       "type": "tp-zwei-wege",

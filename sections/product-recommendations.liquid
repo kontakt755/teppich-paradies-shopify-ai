@@ -87,21 +87,42 @@
           if section.settings.recommendation_type == 'related'
             assign tp_rec_typ = section.settings.product.type
             assign tp_rec_gleich = recommendations.products | where: 'type', tp_rec_typ
-            # Zu wenige gleicher Art: aus der ersten Kategorie des Produkts
-            # auffuellen (ohne interne und Angebots-Sammlungen).
-            if tp_rec_typ != blank and tp_rec_gleich.size < section.settings.max_products
+            # Auslaufware (Tag "auslauf") wird unten nie angezeigt (w-096) -
+            # deshalb zaehlen hier nur Vorschlaege ohne Auslauf-Tag.
+            assign tp_rec_ok = 0
+            for tp_rec_p in tp_rec_gleich
+              unless tp_rec_p.tags contains 'auslauf'
+                assign tp_rec_ok = tp_rec_ok | plus: 1
+              endunless
+            endfor
+            # Zu wenige gleicher Art: aus den Kategorien des Produkts auffuellen
+            # (ohne interne, Angebots- und Auslauf-Sammlungen), bis genug
+            # Vorschlaege ohne Auslauf-Tag da sind. Liquid liefert die Sammlungen
+            # nicht in Menue-Reihenfolge: bei Piumera kam "auslauf" zuerst, und
+            # die Empfehlungen bestanden nur aus Auslaufware (w-096). Hoechstens
+            # drei Sammlungen, damit der Abschnitt schnell bleibt.
+            if tp_rec_typ != blank and tp_rec_ok < section.settings.max_products
+              assign tp_rec_sammlungen = 0
               for tp_rec_c in section.settings.product.collections
-                if tp_rec_c.handle contains 'intern' or tp_rec_c.handle contains 'angebot' or tp_rec_c.handle == 'all' or tp_rec_c.handle == 'frontpage'
+                if tp_rec_c.handle contains 'intern' or tp_rec_c.handle contains 'angebot' or tp_rec_c.handle contains 'auslauf' or tp_rec_c.handle == 'all' or tp_rec_c.handle == 'frontpage'
                   continue
                 endif
                 assign tp_rec_aus_c = tp_rec_c.products | where: 'type', tp_rec_typ | reject: 'id', section.settings.product.id
+                assign tp_rec_sammlungen = tp_rec_sammlungen | plus: 1
+                for tp_rec_p in tp_rec_aus_c
+                  unless tp_rec_p.tags contains 'auslauf'
+                    assign tp_rec_ok = tp_rec_ok | plus: 1
+                  endunless
+                endfor
                 if tp_rec_aus_c.size > 0
                   assign tp_rec_gleich = tp_rec_gleich | concat: tp_rec_aus_c
+                endif
+                if tp_rec_ok >= section.settings.max_products or tp_rec_sammlungen >= 3
                   break
                 endif
               endfor
             endif
-            if tp_rec_typ != blank and tp_rec_gleich.size >= 2
+            if tp_rec_typ != blank and tp_rec_ok >= 2
               assign products = tp_rec_gleich
             endif
           endif
@@ -112,6 +133,11 @@
         {%- assign tp_rec_anzahl = 0 -%}
         {% for product in products %}
           {%- if tp_rec_anzahl >= section.settings.max_products -%}{%- break -%}{%- endif -%}
+          {%- comment -%}
+            Keine Auslaufware empfehlen (Shopvergleich 2026-10-15, w-096): sie ist
+            bald nicht mehr lieferbar. Bleibt nichts uebrig, blendet D6 die Sektion aus.
+          {%- endcomment -%}
+          {%- if product.tags contains 'auslauf' -%}{%- continue -%}{%- endif -%}
           {%- comment -%} Aufgefuellte Liste kann Dubletten enthalten {%- endcomment -%}
           {%- if product.id != blank -%}
             {%- assign tp_rec_schluessel = ',' | append: product.id | append: ',' -%}
