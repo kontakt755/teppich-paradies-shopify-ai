@@ -245,7 +245,7 @@
               "type": "tp-service-links",
               "name": "TP Service-Links",
               "settings": {
-                "delivery_time": "ca. 2 Wochen",
+                "delivery_time": "ca. 14 Tage",
                 "verlegeservice_ausblenden": true
               },
               "blocks": {}
@@ -309,11 +309,7 @@
               "name": "TP Einfass-Konfigurator",
               "settings": {
                 "whatsapp": "491792612211",
-                "pauschale_produkt": "wunschmass-pauschale",
-                "wort": "matte",
-                "massvorschlaege": "40x60, 50x80, 60x90, 60x100, 100x150",
-                "fertig_hinweis": "Vom Hersteller nach Ihrem Maß zugeschnitten",
-                "fertig_lieferzeit": "ca. 2 Wochen"
+                "pauschale_produkt": "wunschmass-pauschale"
               },
               "blocks": {}
             },

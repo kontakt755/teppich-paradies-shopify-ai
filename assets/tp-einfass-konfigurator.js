@@ -40,7 +40,11 @@
     }
   };
   // Beliebte Groessen als Abkuerzung - nur, was in die Grenzen des Produkts passt.
-  var GROESSEN = { eckig: [[160, 230], [200, 300], [250, 350], [300, 400]], rund: [160, 200, 240] };
+  var GROESSEN = {
+    eckig: [[160, 230], [200, 300], [250, 350], [300, 400]],
+    matte: [[40, 60], [50, 80], [60, 90], [60, 100], [100, 150]],
+    rund: [160, 200, 240]
+  };
   var BAND_CM = { einfassband: 3, paspelband: 1 };
   var BEISPIEL = { w: 200, l: 300 };
   var SVG_NS = 'http://www.w3.org/2000/svg';
@@ -85,15 +89,11 @@
     // Kleinste Seite und Wort in den Kundentexten (Matten nach Mass, 15.10.):
     // ohne Angabe wie bisher 50 cm und "Teppich".
     var minCm = Number(d.min_seite_cm) > 0 ? Math.round(Number(d.min_seite_cm)) : 50;
+    // Matten (service.produktwort = Matte) bekommen eigene Woerter und Fussmatten-Groessen.
     var W = d.wort === 'matte'
-      ? { dieser: 'Diese Matte', plural: 'Matten' }
-      : { dieser: 'Dieser Teppich', plural: 'Teppiche' };
-    // Eigene Massvorschlaege "40x60, 50x80" (Block-Einstellung), sonst die Teppichgroessen.
-    var eckigVorschlaege = String(d.massvorschlaege || '').split(',').map(function (s) {
-      var m = s.trim().match(/^(\d+)\s*[x×]\s*(\d+)$/i);
-      return m ? [Number(m[1]), Number(m[2])] : null;
-    }).filter(Boolean);
-    if (!eckigVorschlaege.length) eckigVorschlaege = GROESSEN.eckig;
+      ? { dieser: 'Diese Matte', plural: 'Matten', eckig: GROESSEN.matte }
+      : { dieser: 'Dieser Teppich', plural: 'Teppiche', eckig: GROESSEN.eckig };
+    var eckigVorschlaege = W.eckig;
     var mindestCent = parseInt(d.mindestpreis_cent, 10) || 0;
     // Preis je 0,01 laufendem Meter Kante. Ohne Service-Produkt wird die Kante
     // nicht getrennt berechnet - die Bandarten rechnen alles ueber den m2-Preis.
