@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-15T12:55:13Z",
-    "verifiedBy": "Shopify Admin API role MAIN (updatedAt 2026-10-15T12:51:22Z) nach workflow:live von main 9fb302e3 (#1332/#1334 Widerrufsfunktion „Vertrag widerrufen“); Preview-Gates COMPARE/SEO/FULL QA/SALES PASS, oeffentlicher Shop ohne Vorschau geprueft (Footer-Knopf, Test-Widerruf)"
-  },
-  "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-15T12:55:13Z",
-    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live von main 9fb302e3; naechstes Preview-Ziel"
+    "verifiedAt": "2026-10-15T13:08:11Z",
+    "verifiedBy": "Shopify Admin API role MAIN (updatedAt 2026-10-15T13:08:11Z) nach workflow:live von main c8fa1b39 (#1336 Boden-Finder); Preview-Gates COMPARE/SEO/FULL QA/SALES PASS, oeffentlicher Shop ohne Vorschau geprueft (Startseite und /collections/teppichboden, 1200 und 390 px, Finder bis Ergebnis und Formular-Validierung)"
+  },
+  "preview": {
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-10-15T13:08:11Z",
+    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live von main c8fa1b39; naechstes Preview-Ziel"
   },
   "fallback": {
     "themeId": "206590509390",
