@@ -18,6 +18,15 @@
   Abrechnung auf volle m². Das Ergebnis ist ausdruecklich ein ca.-Preis -
   abgerechnet wird wie immer im Warenkorb.
 
+  Paketware (Klick-, Klebevinyl; Bodenart mit Budget "rechnen"): Der
+  Variantenpreis ist der Paketpreis, ein Preisfilter je m² ginge also an
+  Shopify vorbei. Die Ansicht ?view=boden-finder-preise liefert je Produkt den
+  Preis je m² wie auf der Karte (Paketpreis / custom.qm_pro_paket); das Budget
+  filtert imBudget() hier im Browser. Den Raumpreis rechnet paketAngebot() wie
+  der Paketrechner (blocks/paket-auswahl.liquid): 5 % Verschnitt, auf volle
+  Pakete aufgerundet. Rollenware derselben Kollektion (Vinyl von der Rolle)
+  laeuft weiter ueber raumAngebot().
+
   Reine Funktionen stehen oben und laufen ohne DOM in den Tests
   (qa/tests/boden-finder.test.mjs).
 */
@@ -28,6 +37,10 @@
   var FARBFILTER = 'filter.v.t.shopify.color-pattern';
   var PREISFILTER = 'filter.v.price.lte';
   var EPS = 1e-9;
+  // Vorausgewaehlter Verschnitt des Paketrechners (WASTE_FACTOR in
+  // blocks/paket-auswahl.liquid). Der Test vergleicht beide Werte.
+  var PAKET_VERSCHNITT = 1.05;
+  var STUFEN = [20, 30, 45, 70];
 
   // ---------------------------------------------------------------------
   // Reine Funktionen
@@ -126,21 +139,106 @@
     return kandidaten[0] || null;
   }
 
-  // Guenstigster Meterwarepreis je m² (Rollenbreiten, ohne Wunschmass).
+  // Paketware: Raum aCm x bCm mit dem Verschnitt des Paketrechners auf volle
+  // Pakete aufgerundet - dieselbe Formel wie computePackagesFor() in
+  // blocks/paket-auswahl.liquid. paketpreis in Euro.
+  function paketRechnung(qmPaket, paketpreis, aCm, bCm) {
+    if (!(qmPaket > 0) || !(paketpreis > 0) || !(aCm > 0) || !(bCm > 0)) return null;
+    var flaeche = (aCm * bCm) / 10000;
+    var pakete = Math.max(1, Math.ceil((flaeche * PAKET_VERSCHNITT) / qmPaket - EPS));
+    return {
+      art: 'paket', pakete: pakete, qmPaket: qmPaket, qm: pakete * qmPaket, flaeche: flaeche,
+      betrag: Math.round(pakete * paketpreis * 100) / 100
+    };
+  }
+
+  // Paketangebot aus den Varianten der Treffer-Ansicht (guenstigstes
+  // verfuegbares Paket). null, wenn das Produkt keine Paketware ist.
+  function paketAngebot(produkt, aCm, bCm) {
+    var qmPaket = Number(produkt && produkt.qm_paket);
+    if (!(qmPaket > 0)) return null;
+    var preis = 0;
+    (produkt.variants || []).forEach(function (v) {
+      if (!v || v.available !== true) return;
+      var p = Number(v.price) / 100;
+      if (p > 0 && (!preis || p < preis)) preis = p;
+    });
+    return paketRechnung(qmPaket, preis, aCm, bCm);
+  }
+
+  // Raumpreis fuer jede Warenart: Paketware in ganzen Paketen, sonst Rolle.
+  function angebot(produkt, aCm, bCm) {
+    return Number(produkt && produkt.qm_paket) > 0 ? paketAngebot(produkt, aCm, bCm) : raumAngebot(produkt, aCm, bCm);
+  }
+
+  // Guenstigster Preis je m²: Meterware (Rollenbreiten, ohne Wunschmass) oder
+  // Paketpreis / m² je Paket, auf Cent gerundet wie die Produktkarte.
   function abPreisQm(produkt) {
-    var wIdx = ART.findWidthOption(produkt && produkt.options);
+    var qmPaket = Number(produkt && produkt.qm_paket);
+    var wIdx = qmPaket > 0 ? -1 : ART.findWidthOption(produkt && produkt.options);
     var best = 0;
     ((produkt && produkt.variants) || []).forEach(function (v) {
       if (!v || v.available !== true) return;
       if (wIdx >= 0 && !ART.isBreite(v.options[wIdx])) return;
-      var r = (Number(v.price) / 100) * (produkt.cm_exact === true ? 100 : 1);
+      var r = qmPaket > 0
+        ? Math.round(Number(v.price) / qmPaket) / 100
+        : (Number(v.price) / 100) * (produkt.cm_exact === true ? 100 : 1);
       if (r > 0 && (!best || r < best)) best = r;
     });
     return best || null;
   }
 
+  // Ansicht boden-finder-preise: [Handle, Cent je m², m² je Paket, Cent,
+  // Auslauf] je Produkt -> Eintraege; pos = Stelle in der Kollektion.
+  function preisEintraege(roh) {
+    return (roh || []).filter(Array.isArray).map(function (e, i) {
+      return {
+        handle: e[0],
+        qm: Number(e[1]) > 0 ? Number(e[1]) / 100 : null,
+        paket: Number(e[2]) > 0 ? Number(e[2]) : 0,
+        preis: Number(e[3]) > 0 ? Number(e[3]) / 100 : null,
+        auslauf: e[4] === 1,
+        pos: i
+      };
+    });
+  }
+
+  // Was ins Budget passt: Preis je m² hoechstens qmBudget; bei Paketware mit
+  // Raum und Gesamtbudget zaehlen die ganzen Pakete. Rollenware pruefen erst
+  // die Varianten der Treffer-Ansicht (raumAngebot).
+  function imBudget(liste, qmBudget, raum, gesamt) {
+    return (liste || []).filter(function (e) {
+      if (!(e.qm > 0) || e.qm > qmBudget + 0.005) return false;
+      if (raum && gesamt > 0 && e.paket > 0) {
+        var a = paketRechnung(e.paket, e.preis, raum.laenge, raum.breite);
+        return !!a && a.betrag <= gesamt + 0.005;
+      }
+      return true;
+    });
+  }
+
+  // Regulaere Ware vor Auslaufkollektionen, sonst Shop-Reihenfolge.
+  function regulaerZuerst(liste, istAuslauf) {
+    return liste.filter(function (x) { return !istAuslauf(x); })
+      .concat(liste.filter(function (x) { return istAuslauf(x); }));
+  }
+
+  // Seite der Treffer-Ansicht (ab 1), auf der das Produkt an Stelle pos steht.
+  function kartenSeite(pos, proSeite) {
+    return Math.floor(pos / proSeite) + 1;
+  }
+
+  // "25, 35, 45, 60" -> [25, 35, 45, 60]; ohne Angabe die Teppichboden-Stufen.
+  function budgetStufen(text) {
+    var werte = String(text || '').split(/[,;\s]+/).map(function (w) { return betrag(w); })
+      .filter(function (w, i, alle) { return w && alle.indexOf(w) === i; });
+    return werte.length ? werte.slice(0, 6) : STUFEN.slice();
+  }
+
   // "Bis 5 mm = Kurzflor | flach und ruhig" je Zeile -> Namen je Filterwert.
-  // stufe = Zeilennummer (1 = niedrigste Optik), fuer das Bildchen.
+  // stufe = Zeilennummer (1 = niedrigste Optik), fuer das Bildchen. Ein
+  // drittes Feld waehlt statt der Florhoehe ein Dekorbild (holz, stein,
+  // fliese, punkte): "Holzdekore = Holzoptik | Dielen | holz".
   function optikNamen(text) {
     var namen = {};
     String(text || '').split(/\r?\n/).forEach(function (zeile, i) {
@@ -149,9 +247,26 @@
       var schluessel = teile[0].trim().toLowerCase();
       var rest = teile.slice(1).join('=').split('|');
       if (!schluessel) return;
-      namen[schluessel] = { name: (rest[0] || '').trim(), text: (rest[1] || '').trim(), stufe: i + 1 };
+      namen[schluessel] = {
+        name: (rest[0] || '').trim(),
+        text: (rest[1] || '').trim(),
+        stufe: i + 1,
+        bild: (rest[2] || '').trim().toLowerCase()
+      };
     });
     return namen;
+  }
+
+  // Filterwerte in der Reihenfolge der Optik-Namen (Shopify liefert sie
+  // alphabetisch); Werte ohne Namen dahinter in Shopify-Reihenfolge.
+  function optikReihenfolge(werte, namen) {
+    var rang = function (w) {
+      var n = namen[String(w.label || '').trim().toLowerCase()];
+      return n ? n.stufe : 1000;
+    };
+    return werte.map(function (w, i) { return { w: w, i: i }; })
+      .sort(function (x, y) { return rang(x.w) - rang(y.w) || x.i - y.i; })
+      .map(function (x) { return x.w; });
   }
 
   // Adresse einer gefilterten Kollektion. auswahl: { farbe, optikFilter,
@@ -166,6 +281,7 @@
     if (a.raumFilter) (a.zimmer || []).forEach(function (z) { p.append(a.raumFilter, z); });
     if (x.preisBis > 0) p.set(PREISFILTER, (Math.floor(x.preisBis * 100 + EPS) / 100).toFixed(2));
     if (x.sort) p.set('sort_by', x.sort);
+    if (x.seite > 1) p.set('page', String(x.seite));
     var q = p.toString();
     return basis + (q ? '?' + q : '');
   }
@@ -181,17 +297,43 @@
     if (n >= 100) return zahl(Math.round(n), 0) + ' €';
     return zahl(n, Math.abs(n - Math.round(n)) < 0.005 ? 0 : 2) + ' €';
   }
+  // Flaeche mit zwei, bei Bedarf drei Nachkommastellen wie im Paketrechner.
+  function qmZahl(n) {
+    return Number(n).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 3 });
+  }
+
+  // Wie der Raum gedeckt wird, als eine Zeile unter dem Raumpreis.
+  function angebotText(a) {
+    if (a.art === 'paket') {
+      return a.pakete + (a.pakete === 1 ? ' Paket' : ' Pakete') + ' à ' + qmZahl(a.qmPaket) + ' m² = ' + qmZahl(a.qm) +
+        ' m² (inkl. ' + zahl((PAKET_VERSCHNITT - 1) * 100, 0) + ' % Verschnitt)';
+    }
+    if (a.naht) return a.bahnen + ' Bahnen à ' + a.rolle + ' cm, mit Naht – bitte beraten lassen';
+    if (a.art === 'raummass') return 'Raummaß ' + meter(a.quer) + ' × ' + meter(a.laenge) + ' m = ' + zahl(a.qm, a.qm % 1 ? 2 : 0) + ' m²';
+    return 'Rolle ' + a.rolle + ' cm × ' + meter(a.laenge) + ' m = ' + zahl(a.qm, a.qm % 1 ? 2 : 0) + ' m²';
+  }
 
   var logik = {
     raumMass: raumMass,
     betrag: betrag,
     proQm: proQm,
     raumAngebot: raumAngebot,
+    paketRechnung: paketRechnung,
+    paketAngebot: paketAngebot,
+    angebot: angebot,
+    angebotText: angebotText,
     abPreisQm: abPreisQm,
+    preisEintraege: preisEintraege,
+    imBudget: imBudget,
+    regulaerZuerst: regulaerZuerst,
+    kartenSeite: kartenSeite,
+    budgetStufen: budgetStufen,
     optikNamen: optikNamen,
+    optikReihenfolge: optikReihenfolge,
     filterUrl: filterUrl,
     euro: euro,
-    meter: meter
+    meter: meter,
+    PAKET_VERSCHNITT: PAKET_VERSCHNITT
   };
 
   if (typeof document === 'undefined') {
@@ -266,6 +408,25 @@
     return '<svg viewBox="0 0 66 40" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">' + linien + '<rect x="3" y="34" width="60" height="4" rx="1.5" fill="currentColor" stroke="none"/></svg>';
   }
 
+  // Bildchen fuer Dekore (Vinyl): Dielen, grosse Platten, Fliesen, Sprenkel.
+  var DEKORE = {
+    holz: '<path d="M3 14.7h60M3 25.3h60M25 4v10.7M47 14.7v10.6M15 25.3V36M41 25.3V36"/>' +
+      '<path d="M8 9.5c5-1.4 9 1 14-.2M30 9.2c6 1.3 10-1 15 .4M51 9.6c3-.8 6 .5 9 0M8 20.2c7 1.2 12-1 20 .3M33 20c5-1 9 .9 11 0M52 20.3c3 .8 6-.4 8 0M20 30.8c6-1.2 11 .9 18-.2M46 30.6c5 1 9-.6 14 .2" stroke-width="1.2" opacity=".55"/>',
+    stein: '<path d="M33 4v16M3 20h60M18 20v16M48 20v16"/>' +
+      '<path d="M9 9c5 2 9-1 14 2M39 13c6-2 11 1 18-1M25 28c4 1.5 8-.5 12 1" stroke-width="1.2" opacity=".55"/>',
+    fliese: '<path d="M18 4v32M33 4v32M48 4v32M3 14.7h60M3 25.3h60"/>' +
+      '<path d="M3 4h15v10.7H3zM33 4h15v10.7H33zM18 14.7h15v10.6H18zM48 14.7h15v10.6H48zM3 25.3h15V36H3zM33 25.3h15V36H33z" fill="currentColor" stroke="none" opacity=".3"/>',
+    punkte: '<g fill="currentColor" stroke="none">' +
+      [[9, 10], [17, 22], [24, 8], [30, 29], [38, 15], [45, 25], [52, 9], [57, 30], [12, 30], [27, 18], [48, 33], [58, 18], [36, 6], [20, 13]].map(function (q, i) {
+        return '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="' + (i % 3 ? 1.3 : 2) + '"/>';
+      }).join('') + '</g>'
+  };
+  function dekorBild(name) {
+    if (!DEKORE[name]) return '';
+    return '<svg viewBox="0 0 66 40" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<rect x="3" y="4" width="60" height="32" rx="2"/>' + DEKORE[name] + '</svg>';
+  }
+
   function Finder(wurzel) {
     this.wurzel = wurzel;
     this.dlg = wurzel.querySelector('[data-bf-dialog]');
@@ -310,6 +471,44 @@
     if (this.s.ohneBudget) return null;
     if (this.s.modus === 'qm') return betrag(this.s.qm);
     return proQm(betrag(this.s.gesamt), raumMass(this.s.laenge), raumMass(this.s.breite));
+  };
+
+  // Bodenart, deren Budget je m² der Finder selbst rechnet (Paketware).
+  Finder.prototype.rechnet = function () {
+    return !!(this.s.art && this.s.art.preis === 'rechnen');
+  };
+
+  // Budget fuer den ganzen Raum in Euro, null ohne.
+  Finder.prototype.gesamtBudget = function () {
+    return this.s.modus === 'raum' && !this.s.ohneBudget ? betrag(this.s.gesamt) : null;
+  };
+
+  // Preise je m² aller Produkte der Auswahl (Ansicht boden-finder-preise):
+  // erst Seite 1, dann die uebrigen Seiten gleichzeitig.
+  Finder.prototype.preisListe = function () {
+    var a = this.s.art;
+    var auswahl = this.auswahl();
+    var url = function (seite) { return filterUrl(a.url, auswahl, { view: 'boden-finder-preise', seite: seite }); };
+    return holen(url(1)).then(function (erste) {
+      var proSeite = erste.pro_seite || 250;
+      var seiten = Math.min(Math.ceil((erste.anzahl || 0) / proSeite), 20);
+      var weitere = [];
+      for (var s = 2; s <= seiten; s++) weitere.push(holen(url(s)));
+      return Promise.all(weitere).then(function (rest) {
+        var roh = [erste].concat(rest).reduce(function (alle, d) { return alle.concat(d.preise || []); }, []);
+        return { anzahl: erste.anzahl, liste: preisEintraege(roh) };
+      });
+    });
+  };
+
+  // Trefferzahl fuer Frage 4: Shopify filtert den Preis je m² selbst, bei
+  // Paketware zaehlt der Finder aus der Preisliste.
+  Finder.prototype.budgetZaehlen = function (qmBudget) {
+    var self = this;
+    if (!this.rechnet() || !qmBudget) return this.zaehlen({ preisBis: this.rechnet() ? null : qmBudget });
+    return this.preisListe().then(function (d) {
+      return { anzahl: imBudget(d.liste, qmBudget, self.raum(), self.gesamtBudget()).length };
+    });
   };
 
   Finder.prototype.raum = function () {
@@ -466,6 +665,7 @@
     var zimmerZiel = this.q('[data-bf-zimmer]');
     var weiterKnopf = this.q('[data-bf-weiter]');
     this.q('[data-bf-optik-frage]').textContent = art.optik_frage || 'Welche Optik soll es sein?';
+    this.q('[data-bf-zimmer-frage]').textContent = art.raum_frage || 'Für welchen Raum?';
     ziel.setAttribute('aria-busy', 'true');
     ziel.textContent = '';
     zimmerZiel.textContent = '';
@@ -476,19 +676,20 @@
       ziel.removeAttribute('aria-busy');
       var namen = optikNamen(art.optik_namen);
       var f = daten.filter[art.optik_filter];
-      var werte = f ? f.werte.filter(function (w) { return w.count > 0; }) : [];
+      var werte = optikReihenfolge(f ? f.werte.filter(function (w) { return w.count > 0; }) : [], namen);
       if (!werte.length) {
         self.s.optik = null;
         self.zeige('budget');
         return;
       }
+      ziel.classList.toggle('tp-bf-optiken--vier', werte.length === 4);
       werte.forEach(function (w, i) {
         var n = namen[w.label.trim().toLowerCase()] || { name: w.label, text: '', stufe: i + 1 };
         var knopf = el('button', 'tp-bf-optik');
         knopf.type = 'button';
         knopf.setAttribute('aria-pressed', self.s.optik && self.s.optik.value === w.value ? 'true' : 'false');
         var bild = el('span', 'tp-bf-optik__bild');
-        bild.innerHTML = optikBild(n.stufe);
+        bild.innerHTML = dekorBild(n.bild) || optikBild(n.stufe);
         knopf.appendChild(bild);
         var text = el('span', 'tp-bf-optik__text');
         text.appendChild(el('span', 'tp-bf-optik__name', n.name || w.label));
@@ -505,6 +706,7 @@
       });
       var r = art.raum_filter && daten.filter[art.raum_filter];
       var zimmer = r ? r.werte.filter(function (w) { return w.count > 0; }) : [];
+      self.s.zimmerName = (r && r.label) || 'Raum';
       zimmerBox.hidden = !zimmer.length;
       zimmer.forEach(function (w) {
         var chip = el('button', 'tp-bf-chip', w.label);
@@ -526,6 +728,21 @@
 
   // --- Frage 4: Budget ---------------------------------------------------
   Finder.prototype.zeigeBudget = function () {
+    var art = this.s.art;
+    var chips = this.q('[data-bf-qm-chips]');
+    var stufen = budgetStufen(art.stufen);
+    chips.textContent = '';
+    this.q('[data-bf-qm]').placeholder = 'z. B. ' + zahl(stufen[0], stufen[0] % 1 ? 2 : 0);
+    stufen.forEach(function (wert) {
+      var k = el('button', 'tp-bf-chip', 'bis ' + zahl(wert, wert % 1 ? 2 : 0) + ' €');
+      k.type = 'button';
+      k.setAttribute('aria-pressed', 'false');
+      k.setAttribute('data-bf-qm-wert', String(wert));
+      chips.appendChild(k);
+    });
+    var hinweis = this.q('[data-bf-raum-hinweis]');
+    if (!hinweis.hasAttribute('data-standard')) hinweis.setAttribute('data-standard', hinweis.textContent);
+    hinweis.textContent = art.raum_hinweis || hinweis.getAttribute('data-standard');
     this.modusSetzen(this.s.modus);
     this.q('[data-bf-qm]').value = this.s.qm;
     this.q('[data-bf-laenge]').value = this.s.laenge;
@@ -573,7 +790,7 @@
     window.clearTimeout(this.zaehlTimer);
     var nr = ++this.zaehlNr;
     var los = function () {
-      self.zaehlen({ preisBis: qmBudget }).then(function (daten) {
+      self.budgetZaehlen(qmBudget).then(function (daten) {
         if (nr !== self.zaehlNr) return;
         var wort = self.s.art.wort || 'Produkte';
         var was = self.beschreibung();
@@ -620,25 +837,32 @@
     var titel = this.q('[data-bf-ergebnis-titel]');
     var raum = this.raum();
     var qmBudget = this.budgetQm();
-    var gesamt = this.s.modus === 'raum' && !this.s.ohneBudget ? betrag(this.s.gesamt) : null;
+    var gesamt = this.gesamtBudget();
     this.zusammenfassungZeigen();
     ziel.textContent = '';
     ziel.setAttribute('aria-busy', 'true');
     alle.hidden = true;
+    this.q('[data-bf-mehr]').hidden = true;
     sonder.hidden = true;
     // Grundstellung: Laden-Hinweis unter den Karten.
     this.q('.tp-bf-alle-zeile').after(sonder);
     titel.textContent = 'Unsere Vorschläge für Sie';
     status.textContent = 'Vorschläge werden geladen …';
     var auswahl = this.auswahl();
+    if (this.rechnet() && qmBudget) {
+      this.ergebnisGerechnet(qmBudget, gesamt).catch(function () {
+        ziel.removeAttribute('aria-busy');
+        status.textContent = '';
+        self.fehlerZeigen(ziel, function () { self.zeigeErgebnis(); });
+      });
+      return;
+    }
     holen(filterUrl(art.url, auswahl, { view: 'boden-finder-treffer', preisBis: qmBudget })).then(function (daten) {
       var liste = daten.produkte.map(function (p) {
-        var angebot = raum ? raumAngebot(p, raum.laenge, raum.breite) : null;
-        return { p: p, angebot: angebot, passt: !gesamt || !angebot || angebot.betrag <= gesamt + 0.005 };
+        var a = raum ? angebot(p, raum.laenge, raum.breite) : null;
+        return { p: p, angebot: a, passt: !gesamt || !a || a.betrag <= gesamt + 0.005 };
       });
-      // Regulaere Ware vor Auslaufkollektionen, sonst Shop-Reihenfolge.
-      var passend = liste.filter(function (t) { return t.passt && !t.p.auslauf; })
-        .concat(liste.filter(function (t) { return t.passt && t.p.auslauf; }));
+      var passend = regulaerZuerst(liste.filter(function (t) { return t.passt; }), function (t) { return t.p.auslauf; });
       var zeigen = passend.slice(0, 3);
       var link = filterUrl(art.url, auswahl, { preisBis: qmBudget });
       if (daten.anzahl > zeigen.length) {
@@ -660,7 +884,7 @@
       titel.textContent = 'In Ihrem Budget ist online nichts dabei';
       return holen(filterUrl(art.url, auswahl, { view: 'boden-finder-treffer', sort: 'price-ascending' })).then(function (ohne) {
         var guenstig = ohne.produkte.slice(0, 3).map(function (p) {
-          return { p: p, angebot: raum ? raumAngebot(p, raum.laenge, raum.breite) : null, passt: false };
+          return { p: p, angebot: raum ? angebot(p, raum.laenge, raum.breite) : null, passt: false };
         });
         var ab = '';
         if (guenstig.length && raum && guenstig[0].angebot) ab = ' – für Ihren Raum ab ca. ' + euro(guenstig[0].angebot.betrag);
@@ -683,6 +907,140 @@
     });
   };
 
+  // Ergebnis mit Budget fuer Paketware: Die Preisliste entscheidet, was ins
+  // Budget passt; die Karten kommen von den Seiten der Treffer-Ansicht, auf
+  // denen diese Produkte stehen (gleiche Filter, gleiche Reihenfolge). Die
+  // Kategorie selbst kann nicht nach Preis je m² filtern - weitere Treffer
+  // im Budget zeigt deshalb der Knopf "Weitere Vorschlaege" hier im Finder.
+  Finder.prototype.ergebnisGerechnet = function (qmBudget, gesamt) {
+    var self = this;
+    var art = this.s.art;
+    var wort = art.wort || 'Produkte';
+    var ziel = this.q('[data-bf-treffer]');
+    var status = this.q('[data-bf-status]');
+    var alle = this.q('[data-bf-alle]');
+    var sonder = this.q('[data-bf-sonder]');
+    var titel = this.q('[data-bf-ergebnis-titel]');
+    var raum = this.raum();
+    var auswahl = this.auswahl();
+    var trefferUrl = function (seite) { return filterUrl(art.url, auswahl, { view: 'boden-finder-treffer', seite: seite }); };
+    var imRaumBudget = function (t) { return !gesamt || !t.angebot || t.angebot.betrag <= gesamt + 0.005; };
+    return Promise.all([this.preisListe(), holen(trefferUrl(1))]).then(function (r) {
+      var liste = r[0].liste;
+      var proSeite = r[1].pro_seite || 8;
+      var passend = regulaerZuerst(imBudget(liste, qmBudget, raum, gesamt), function (e) { return e.auslauf; });
+      var linkZeigen = function (gezeigt) {
+        if (liste.length <= gezeigt) return;
+        alle.href = filterUrl(art.url, auswahl, {});
+        alle.textContent = 'Alle ' + liste.length + ' ' + wort + ' in Ihrer Auswahl ansehen (ohne Budget)';
+        alle.hidden = false;
+      };
+      return self.kartenLaden(passend, 0, proSeite, trefferUrl, imRaumBudget).then(function (gefunden) {
+        if (gefunden.zeigen.length) {
+          gefunden.zeigen.forEach(function (t) { t.passt = true; });
+          var budget = ' bis ca. ' + zahl(Math.floor(qmBudget + EPS), 0) + ' €/m²';
+          status.textContent = passend.length <= gefunden.zeigen.length
+            ? 'Passend zu Ihren Angaben' + budget + ':'
+            : passend.length + ' ' + wort + ' passen' + budget + '. Hier die ersten ' + gefunden.zeigen.length + ':';
+          self.kartenZeigen(ziel, gefunden.zeigen, gefunden, gesamt, false);
+          self.mehrAnbieten(passend, gefunden.naechster, proSeite, trefferUrl, imRaumBudget, gesamt);
+          linkZeigen(passend.length);
+          sonder.hidden = gefunden.zeigen.length >= 3;
+          self.ergebnisMelden(passend.length, gefunden.zeigen.length);
+          return null;
+        }
+        // Nichts im Budget: der Laden zuerst, dann die guenstigsten je m².
+        sonder.hidden = false;
+        status.before(sonder);
+        titel.textContent = 'In Ihrem Budget ist online nichts dabei';
+        var guenstig = liste.filter(function (e) { return e.qm > 0; })
+          .sort(function (x, y) { return x.qm - y.qm || x.pos - y.pos; });
+        return self.kartenLaden(guenstig, 0, proSeite, trefferUrl, function () { return true; }).then(function (ohne) {
+          var erster = ohne.zeigen[0];
+          var ab = '';
+          if (erster && raum && erster.angebot) ab = ' – für Ihren Raum ab ca. ' + euro(erster.angebot.betrag);
+          else if (erster && abPreisQm(erster.p)) ab = ' – ab ' + euro(abPreisQm(erster.p)) + '/m²';
+          status.textContent = ohne.zeigen.length
+            ? 'Online liegen die günstigsten passenden ' + wort + ' über Ihrem Budget' + ab + ':'
+            : 'Zu Ihrer Auswahl haben wir online gerade nichts.';
+          self.kartenZeigen(ziel, ohne.zeigen, ohne, gesamt, true);
+          linkZeigen(ohne.zeigen.length);
+          self.ergebnisMelden(0, ohne.zeigen.length);
+        });
+      });
+    });
+  };
+
+  // "Weitere Vorschlaege": die naechsten drei Treffer im Budget anhaengen.
+  Finder.prototype.mehrAnbieten = function (eintraege, ab, proSeite, url, nehmen, gesamt) {
+    var self = this;
+    var mehr = this.q('[data-bf-mehr]');
+    var ziel = this.q('[data-bf-treffer]');
+    mehr.hidden = ab >= eintraege.length;
+    mehr.onclick = function () {
+      mehr.disabled = true;
+      self.kartenLaden(eintraege, ab, proSeite, url, nehmen).then(function (weitere) {
+        mehr.disabled = false;
+        weitere.zeigen.forEach(function (t) { t.passt = true; });
+        var erste = ziel.children.length;
+        self.kartenZeigen(ziel, weitere.zeigen, weitere, gesamt, false, true);
+        // Fokus auf die erste neue Karte: die Links der Karte sind
+        // display: contents und damit nicht fokussierbar.
+        var neu = ziel.children[erste];
+        if (neu) {
+          neu.setAttribute('tabindex', '-1');
+          neu.focus({ preventScroll: true });
+          neu.scrollIntoView({ block: 'nearest', inline: 'start' });
+        }
+        self.mehrAnbieten(eintraege, weitere.naechster, proSeite, url, nehmen, gesamt);
+      }, function () {
+        mehr.disabled = false;
+      });
+    };
+  };
+
+  // Bis zu drei Karten fuer die Eintraege der Preisliste ab Stelle start, in
+  // deren Reihenfolge. Laedt nur die Seiten der Treffer-Ansicht, auf denen
+  // sie stehen; nehmen() kann einen Treffer verwerfen (Rolle ueber dem
+  // Raumbudget), dann rueckt der naechste nach. Hoechstens vier Runden.
+  // naechster = erster noch nicht gepruefter Eintrag.
+  Finder.prototype.kartenLaden = function (eintraege, start, proSeite, url, nehmen) {
+    var raum = this.raum();
+    var zeigen = [];
+    var karten = {};
+    var produkte = {};
+    var i = start;
+    var runden = 0;
+    function runde() {
+      var stapel = eintraege.slice(i, i + (3 - zeigen.length) + 2);
+      var seiten = [];
+      runden++;
+      stapel.forEach(function (e) {
+        var s = kartenSeite(e.pos, proSeite);
+        if (seiten.indexOf(s) < 0) seiten.push(s);
+      });
+      return Promise.all(seiten.map(function (s) { return holen(url(s)); })).then(function (antworten) {
+        antworten.forEach(function (d) {
+          d.produkte.forEach(function (p) { produkte[p.handle] = p; });
+          Object.keys(d.karten).forEach(function (h) { karten[h] = d.karten[h]; });
+        });
+        for (var k = 0; k < stapel.length && zeigen.length < 3; k++) {
+          var e = stapel[k];
+          var p = produkte[e.handle];
+          i++;
+          // Fehlt das Produkt auf seiner Seite (Daten zwischendurch
+          // geaendert), wird es uebersprungen statt falsch gezeigt.
+          if (!p || !karten[e.handle]) continue;
+          var t = { p: p, angebot: raum ? angebot(p, raum.laenge, raum.breite) : null, passt: false };
+          if (nehmen(t)) zeigen.push(t);
+        }
+        if (zeigen.length < 3 && i < eintraege.length && runden < 4) return runde();
+        return { zeigen: zeigen, karten: karten, naechster: i };
+      });
+    }
+    return i < eintraege.length ? runde() : Promise.resolve({ zeigen: zeigen, karten: karten, naechster: i });
+  };
+
   Finder.prototype.statusText = function (anzahl, gezeigt, qmBudget) {
     var wort = this.s.art.wort || 'Produkte';
     var budget = qmBudget ? ' bis ca. ' + zahl(Math.floor(qmBudget + EPS), 0) + ' €/m²' : '';
@@ -701,12 +1059,15 @@
     });
   };
 
-  Finder.prototype.kartenZeigen = function (ziel, treffer, daten, gesamt, ueber) {
+  // anhaengen: weitere Karten hinter die vorhandenen ("Weitere Vorschlaege").
+  Finder.prototype.kartenZeigen = function (ziel, treffer, daten, gesamt, ueber, anhaengen) {
     var self = this;
-    ziel.textContent = '';
+    if (!anhaengen) {
+      ziel.textContent = '';
+      this.gezeigt = [];
+    }
     ziel.removeAttribute('aria-busy');
     var raum = this.raum();
-    this.gezeigt = [];
     treffer.forEach(function (t) {
       var vorlage = daten.karten[t.p.handle];
       if (!vorlage) return;
@@ -719,11 +1080,7 @@
         box.appendChild(el('span', 'tp-bf-raumpreis__kopf', 'Ihr Raum ' + meter(raum.laenge) + ' × ' + meter(raum.breite) + ' m:'));
         var b = el('strong', 'tp-bf-raumpreis__betrag', 'ca. ' + euro(a.betrag));
         box.appendChild(b);
-        var wie;
-        if (a.naht) wie = a.bahnen + ' Bahnen à ' + a.rolle + ' cm, mit Naht – bitte beraten lassen';
-        else if (a.art === 'raummass') wie = 'Raummaß ' + meter(a.quer) + ' × ' + meter(a.laenge) + ' m = ' + zahl(a.qm, a.qm % 1 ? 2 : 0) + ' m²';
-        else wie = 'Rolle ' + a.rolle + ' cm × ' + meter(a.laenge) + ' m = ' + zahl(a.qm, a.qm % 1 ? 2 : 0) + ' m²';
-        box.appendChild(el('span', 'tp-bf-raumpreis__wie', wie));
+        box.appendChild(el('span', 'tp-bf-raumpreis__wie', angebotText(a)));
         if (gesamt && a.betrag > gesamt + 0.005) box.appendChild(el('span', 'tp-bf-raumpreis__ueber', 'über Ihrem Budget'));
         item.appendChild(box);
       }
@@ -778,7 +1135,7 @@
     if (this.s.art) z.push('Bodenart: ' + this.s.art.titel);
     z.push('Farbe: ' + (this.s.farbe ? this.s.farbe.label : 'egal'));
     z.push('Optik: ' + (this.s.optik ? this.s.optik.label : 'egal'));
-    if (this.s.zimmer.length) z.push('Raum: ' + this.s.zimmer.map(function (w) { return w.label; }).join(', '));
+    if (this.s.zimmer.length) z.push((this.s.zimmerName || 'Raum') + ': ' + this.s.zimmer.map(function (w) { return w.label; }).join(', '));
     var raum = this.raum();
     if (raum) z.push('Raummaße: ' + meter(raum.laenge) + ' × ' + meter(raum.breite) + ' m');
     var b = this.budgetText();
@@ -913,14 +1270,14 @@
         if (e.key === 'Enter') { e.preventDefault(); self.q('[data-bf-zeigen]').click(); }
       });
     });
-    this.qa('[data-bf-qm-wert]').forEach(function (k) {
-      k.addEventListener('click', function () {
-        var feld = self.q('[data-bf-qm]');
-        feld.value = k.getAttribute('data-bf-qm-wert');
-        self.s.qm = feld.value;
-        self.s.ohneBudget = false;
-        self.budgetAktualisieren(true);
-      });
+    this.q('[data-bf-qm-chips]').addEventListener('click', function (e) {
+      var k = e.target.closest('[data-bf-qm-wert]');
+      if (!k) return;
+      var feld = self.q('[data-bf-qm]');
+      feld.value = k.getAttribute('data-bf-qm-wert').replace('.', ',');
+      self.s.qm = feld.value;
+      self.s.ohneBudget = false;
+      self.budgetAktualisieren(true);
     });
     this.q('[data-bf-zeigen]').addEventListener('click', function () {
       self.s.ohneBudget = false;

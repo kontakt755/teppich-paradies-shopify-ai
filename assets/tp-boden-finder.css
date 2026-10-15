@@ -107,6 +107,8 @@ html.tp-bf-offen { overflow: hidden; }
 
 /* Frage 3: Optik */
 .tp-bf-optiken { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; min-height: 120px; }
+/* Vier Optiken (Vinyl: Holz, Stein, Fliese, Sprenkel) in zwei Reihen statt 3 + 1 */
+.tp-bf-optiken--vier { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .tp-bf-optik { display: grid; align-content: start; gap: 10px; padding: 16px; }
 .tp-bf-optik__bild { display: block; color: var(--tp-ink-2, #4a443f); }
 .tp-bf-optik__bild svg { width: 72px; height: 44px; display: block; }
@@ -178,6 +180,9 @@ html.tp-bf-offen { overflow: hidden; }
 .tp-bf-treffer { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 16px; }
 .tp-bf-treffer__item { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .tp-bf-treffer__item > .tp-bf-karte { min-width: 0; }
+/* Fokus nach "Weitere Vorschlaege" (Skript) - Ring nur bei Tastatur */
+.tp-bf-treffer__item:focus { outline: none; }
+.tp-bf-treffer__item:focus-visible { outline: 2px solid var(--tp-ink, #1d1a17); outline-offset: 4px; border-radius: 8px; }
 .tp-bf-raumpreis {
   display: grid; gap: 1px; margin: 0; padding: 10px 12px; border-radius: 10px;
   background: var(--tp-bg-2, #f6f2ec); font-size: var(--font-size--sm); color: var(--tp-ink-2, #4a443f);
@@ -186,8 +191,11 @@ html.tp-bf-offen { overflow: hidden; }
 .tp-bf-raumpreis__wie { font-size: var(--font-size--xs); }
 .tp-bf-raumpreis--ueber { background: var(--tp-red-soft, #fbeeef); }
 .tp-bf-raumpreis__ueber { font-size: var(--font-size--xs); font-weight: 600; color: var(--tp-red-dark, #96262f); }
-.tp-bf-alle-zeile { margin: 20px 0 0; }
-.tp-bf-alle { white-space: normal; text-align: center; }
+.tp-bf-alle-zeile { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 0; }
+.tp-bf-mehr[disabled] { opacity: 0.6; cursor: progress; }
+/* Spezifischer als .tp-s-btn (nowrap): tp-startseite.css steht im Body und
+   damit nach diesem nachgeladenen Stylesheet. Lange Linktexte brechen um. */
+.tp-bf-alle-zeile .tp-s-btn { white-space: normal; text-align: center; max-width: 100%; padding-block: 8px; }
 .tp-bf-ladefehler { margin: 0; padding: 14px; border-radius: 10px; background: var(--tp-red-soft, #fbeeef); }
 .tp-bf-ladefehler .tp-bf-egal { margin: 0; min-height: 0; }
 
