@@ -385,3 +385,22 @@ test('Neuheiten: neue Artikel unserer Linien werden ein Website-To-do, ohne Neue
   assert.deepEqual(mit({ neu: [] }), []);
   assert.deepEqual(mit(null), []);
 });
+
+test('Gemischte Musterbestellung (Inhaber 2026-10-15): Lagermuster warten, bis die Lieferanten-Muster da sind, dann geht alles zusammen raus', () => {
+  const lagerMuster = { istMuster: true, titel: 'Muster Testlino Linoleumboden 200cm', farbe: 'Grau', musterHerkunft: 'eigen_versand', musterHerkunftQuelle: 'lager', musterLager: { id: 'ml-1', ort: 'Regal B', artLabel: 'Probestück 2 × 1 m' } };
+  const lieferantMuster = { istMuster: true, titel: 'Muster Testvelours Teppichboden 400cm', farbe: 'Sand', lieferant: 'B' };
+  const z = zeile({ name: 'Kunde Gemischt', tage: 2, positionen: [lagerMuster, lieferantMuster] });
+  // 1. Lieferanten-Muster noch nicht bestellt: nur "bestellen", kein "verschicken".
+  let todos = leiteTodosAb({ bestellzeilen: [z] }, { sicht: 'laden', jetzt: JETZT });
+  assert.deepEqual(arten(todos), ['bestellen']);
+  // 2. Bestellt: weiter kein "verschicken"; Wer wartet: der Lieferant.
+  const bestellt = stand(z, 1, { status: 'bestellt', bestelltAm: vorTagen(1) });
+  todos = leiteTodosAb({ bestellzeilen: [z], statusAlle: bestellt }, { sicht: 'laden', jetzt: JETZT });
+  assert.equal(todos.filter(t => t.art === 'muster_eigen').length, 0);
+  assert.equal(werWartet({ bestellzeilen: [z], statusAlle: bestellt }, { jetzt: JETZT }).lieferant.length, 1);
+  // 3. Eingetroffen: ein To-do "rausgeben", das die Lagermuster mitnennt.
+  const da = stand(z, 1, { status: 'geliefert', geliefertAm: vorTagen(0) });
+  todos = leiteTodosAb({ bestellzeilen: [z], statusAlle: da }, { sicht: 'laden', jetzt: JETZT });
+  assert.deepEqual(arten(todos), ['rausgeben']);
+  assert.match(todos[0].kontext, /zusammen mit aus dem Musterlager \(Regal B\): Testlino Linoleumboden: Grau/);
+});

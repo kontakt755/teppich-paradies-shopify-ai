@@ -188,6 +188,9 @@ test('Browser-Regeln: Kandidaten, Vorauswahl (Eigenleistung mit der letzten Ware
   assert.deepEqual([...vorauswahl(k)], ['A', 'B', 'K'], 'ganzer Auftrag: alles');
   assert.deepEqual([...vorauswahl(k, { geklickt: 'A' })], ['A'], 'B ist noch offen - Kettelservice wartet');
   assert.deepEqual([...vorauswahl(k.filter(p => p.lineItemId !== 'B'), { geklickt: 'A' })], ['A', 'K'], 'letzte Ware nimmt die Eigenleistung mit');
+  // Gemischte Musterbestellung: das eingetroffene Lieferanten-Muster nimmt die Lagermuster mit.
+  const muster = [{ lineItemId: 'M1', istMuster: true }, { lineItemId: 'M2', istMuster: true, musterHerkunft: 'eigen_versand' }, { lineItemId: 'M3', istMuster: true, musterHerkunft: 'eigen_vorbei' }, { lineItemId: 'W', titel: 'Ware' }];
+  assert.deepEqual([...vorauswahl(muster, { geklickt: 'M1' })], ['M1', 'M2'], 'Lagermuster mit ins Paket, Vorbeibringen und Ware nicht');
   assert.equal(istUebergabe([{ musterHerkunft: 'eigen_vorbei' }]), true);
   assert.equal(istUebergabe([{ musterHerkunft: 'eigen_vorbei' }, { musterHerkunft: 'lieferant' }]), false);
   assert.equal(istUebergabe([]), false);
