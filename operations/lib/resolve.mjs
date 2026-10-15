@@ -19,6 +19,8 @@ export const EINKAUF_KEYS = Object.freeze([
   'procurement_id', 'lieferant', 'hersteller', 'artikelnummer', 'farbnummer',
   'bestelleinheit', 'route', 'route_fallback', 'neutralversand',
   'muster_quelle', 'quellvariante', 'lieferant_url',
+  // Bezeichnung des Herstellers (Qualitaet + Farbnummer) fuer ware.nachBezeichnung (lieferanten.mjs).
+  'farbname',
 ]);
 
 export const CUSTOM_KEYS = Object.freeze(['qm_pro_paket', 'rollenbreite', 'stangenlaenge', 'preis_pro_001_qm']);

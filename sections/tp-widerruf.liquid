@@ -1,0 +1,266 @@
+{%- comment -%}
+  Widerrufsfunktion nach § 356a BGB (seit 19.06.2026): Seite „Vertrag widerrufen“.
+  Zweistufig: 1. Angaben (Name, Bestellnummer, E-Mail, optional Artikel)
+  2. Zusammenfassung mit der Schaltflaeche „Widerruf bestaetigen“.
+  Die Eingangsbestaetigung (Inhalt, Datum, Uhrzeit) verschickt die Web-App
+  aus domains/widerruf/apps-script an den Kunden, mit Kopie an kontakt@.
+  Erreichbar ueber den festen Footer-Link in blocks/tp-footer-links.liquid.
+  Ohne Endpunkt oder ohne JavaScript bleibt der Weg per E-Mail sichtbar.
+{%- endcomment -%}
+{%- liquid
+  assign wr_mail = section.settings.email | default: 'kontakt@teppich-paradies.net'
+  assign wr_name = ''
+  assign wr_email = ''
+  if customer
+    assign wr_name = customer.name
+    assign wr_email = customer.email
+  endif
+-%}
+
+<div class="section-background color-{{ section.settings.color_scheme }}"></div>
+<div
+  class="tp-wr section section--page-width color-{{ section.settings.color_scheme }}"
+  data-testid="tp-widerruf"
+>
+  <div class="tp-wr__inhalt">
+    <h1 class="tp-wr__titel">{{ section.settings.titel | escape }}</h1>
+    {%- if section.settings.intro != blank -%}
+      <div class="tp-wr__intro rte">{{ section.settings.intro }}</div>
+    {%- endif -%}
+
+    <tp-widerruf
+      class="tp-wr__app"
+      data-endpoint="{{ section.settings.endpoint | escape }}"
+    >
+      <noscript>
+        <p class="tp-wr__hinweis">
+          Für das Formular wird JavaScript benötigt. Sie können Ihren Widerruf auch per E-Mail an
+          <a href="mailto:{{ wr_mail }}">{{ wr_mail }}</a> erklären.
+        </p>
+      </noscript>
+
+      <form class="tp-wr__schritt" data-schritt="1" novalidate>
+        <p class="tp-wr__schrittname">Schritt 1 von 2: Ihre Angaben</p>
+        <div class="tp-wr__feld">
+          <label for="wr-name-{{ section.id }}">Ihr Name <span aria-hidden="true">*</span></label>
+          <input id="wr-name-{{ section.id }}" name="name" type="text" autocomplete="name" required maxlength="120" value="{{ wr_name | escape }}">
+        </div>
+        <div class="tp-wr__feld">
+          <label for="wr-nr-{{ section.id }}">Bestellnummer <span aria-hidden="true">*</span></label>
+          <input id="wr-nr-{{ section.id }}" name="bestellnummer" type="text" required maxlength="40" placeholder="z. B. #1234" aria-describedby="wr-nr-hilfe-{{ section.id }}">
+          <small id="wr-nr-hilfe-{{ section.id }}">Steht in Ihrer Bestellbestätigung per E-Mail.</small>
+        </div>
+        <div class="tp-wr__feld">
+          <label for="wr-mail-{{ section.id }}">E-Mail-Adresse für die Eingangsbestätigung <span aria-hidden="true">*</span></label>
+          <input id="wr-mail-{{ section.id }}" name="email" type="email" autocomplete="email" required maxlength="254" value="{{ wr_email | escape }}">
+        </div>
+        <div class="tp-wr__feld">
+          <label for="wr-datum-{{ section.id }}">Bestelldatum (optional)</label>
+          <input id="wr-datum-{{ section.id }}" name="bestelldatum" type="text" maxlength="40" placeholder="TT.MM.JJJJ">
+        </div>
+        <div class="tp-wr__feld">
+          <label for="wr-artikel-{{ section.id }}">Welche Artikel möchten Sie widerrufen? (optional)</label>
+          <textarea id="wr-artikel-{{ section.id }}" name="artikel" rows="3" maxlength="2000" aria-describedby="wr-artikel-hilfe-{{ section.id }}"></textarea>
+          <small id="wr-artikel-hilfe-{{ section.id }}">Leer lassen, wenn Sie die gesamte Bestellung widerrufen.</small>
+        </div>
+        <div class="tp-wr__honig" aria-hidden="true">
+          <label>Website <input name="website" type="text" tabindex="-1" autocomplete="off"></label>
+        </div>
+        <p class="tp-wr__fehler" role="alert" hidden></p>
+        <button type="submit" class="button tp-wr__weiter">Weiter zur Bestätigung</button>
+        <p class="tp-wr__pflicht">* Pflichtangabe</p>
+      </form>
+
+      <div class="tp-wr__schritt" data-schritt="2" hidden tabindex="-1">
+        <p class="tp-wr__schrittname">Schritt 2 von 2: Widerruf bestätigen</p>
+        <p>Bitte prüfen Sie Ihre Angaben. Mit Klick auf „Widerruf bestätigen“ erklären Sie den Widerruf.</p>
+        <p class="tp-wr__erklaerung"><em>„Hiermit widerrufe ich den Vertrag über die folgende Bestellung.“</em></p>
+        <dl class="tp-wr__zusammenfassung"></dl>
+        <p class="tp-wr__fehler" role="alert" hidden></p>
+        <div class="tp-wr__knoepfe">
+          <button type="button" class="button tp-wr__bestaetigen">Widerruf bestätigen</button>
+          <button type="button" class="button button-secondary tp-wr__zurueck">Angaben ändern</button>
+        </div>
+      </div>
+
+      <div class="tp-wr__schritt tp-wr__fertig" data-schritt="3" hidden tabindex="-1">
+        <h2>Ihr Widerruf ist bei uns eingegangen</h2>
+        <p class="tp-wr__eingang"></p>
+        <p class="tp-wr__mailinfo"></p>
+        <p>Wir melden uns mit den nächsten Schritten zur Rücksendung. Fragen? <a href="mailto:{{ wr_mail }}">{{ wr_mail }}</a></p>
+      </div>
+    </tp-widerruf>
+
+    {%- if section.settings.fusstext != blank -%}
+      <div class="tp-wr__fuss rte">{{ section.settings.fusstext }}</div>
+    {%- endif -%}
+  </div>
+</div>
+
+{% javascript %}
+  /* Widerrufsfunktion: zwei Schritte, Versand an die Web-App (POST,
+     x-www-form-urlencoded = einfache CORS-Anfrage ohne Preflight). */
+  if (!customElements.get('tp-widerruf')) {
+    customElements.define('tp-widerruf', class extends HTMLElement {
+      connectedCallback() {
+        this.form = this.querySelector('[data-schritt="1"]');
+        this.s2 = this.querySelector('[data-schritt="2"]');
+        this.s3 = this.querySelector('[data-schritt="3"]');
+        this.form.addEventListener('submit', (e) => { e.preventDefault(); this.weiter(); });
+        this.s2.querySelector('.tp-wr__zurueck').addEventListener('click', () => this.zeige(this.form));
+        this.knopf = this.s2.querySelector('.tp-wr__bestaetigen');
+        this.knopf.addEventListener('click', () => this.senden());
+      }
+
+      zeige(el) {
+        [this.form, this.s2, this.s3].forEach((s) => { s.hidden = s !== el; });
+        (el === this.form ? this.form.querySelector('input') : el).focus();
+        el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      }
+
+      fehler(el, text) {
+        const f = el.querySelector('.tp-wr__fehler');
+        f.textContent = text || '';
+        f.hidden = !text;
+      }
+
+      daten() {
+        const fd = new FormData(this.form);
+        const d = {};
+        fd.forEach((v, k) => { d[k] = String(v).trim(); });
+        return d;
+      }
+
+      weiter() {
+        const d = this.daten();
+        const felder = this.form.querySelectorAll('input[required]');
+        for (const f of felder) {
+          f.value = f.value.trim();
+          if (!f.checkValidity()) {
+            this.fehler(this.form, 'Bitte füllen Sie „' + f.labels[0].textContent.replace('*', '').trim() + '“ korrekt aus.');
+            f.focus();
+            return;
+          }
+        }
+        this.fehler(this.form, '');
+        const liste = this.s2.querySelector('.tp-wr__zusammenfassung');
+        liste.replaceChildren();
+        [['Name', d.name], ['Bestellnummer', d.bestellnummer], ['E-Mail-Adresse', d.email],
+         ['Bestelldatum', d.bestelldatum || '–'], ['Betroffene Artikel', d.artikel || 'gesamte Bestellung']]
+          .forEach(([k, v]) => {
+            const dt = document.createElement('dt'); dt.textContent = k;
+            const dd = document.createElement('dd'); dd.textContent = v;
+            liste.append(dt, dd);
+          });
+        this.fehler(this.s2, '');
+        // Je Zusammenfassung eine Kennung: ein erneuter Klick nach Netzabbruch erzeugt keinen zweiten Widerruf
+        this.kennung = (crypto.randomUUID && crypto.randomUUID()) || String(Date.now()) + '-' + Math.random().toString(36).slice(2, 10);
+        this.zeige(this.s2);
+      }
+
+      async senden() {
+        const endpoint = this.dataset.endpoint;
+        const mail = 'kontakt@teppich-paradies.net';
+        if (!endpoint) {
+          this.fehler(this.s2, 'Das Formular ist gerade nicht erreichbar. Bitte erklären Sie Ihren Widerruf per E-Mail an ' + mail + '.');
+          return;
+        }
+        const d = this.daten();
+        d.bestaetigt = 'ja';
+        d.id = this.kennung;
+        this.knopf.disabled = true;
+        this.knopf.textContent = 'Wird gesendet …';
+        try {
+          const antwort = await fetch(endpoint, { method: 'POST', body: new URLSearchParams(d) });
+          const r = await antwort.json();
+          if (!r.ok) {
+            this.fehler(this.s2, r.meldung || 'Bitte prüfen Sie Ihre Angaben (Name, Bestellnummer, E-Mail-Adresse) oder erklären Sie Ihren Widerruf per E-Mail an ' + mail + '.');
+            return;
+          }
+          this.s3.querySelector('.tp-wr__eingang').textContent =
+            'Eingegangen am ' + r.datum + ' um ' + r.uhrzeit + ' Uhr · Vorgangsnummer ' + r.ref;
+          this.s3.querySelector('.tp-wr__mailinfo').textContent = r.mail
+            ? 'Eine Eingangsbestätigung mit Inhalt, Datum und Uhrzeit haben wir an ' + d.email + ' gesendet.'
+            : 'Die Bestätigungs-E-Mail an ' + d.email + ' konnte nicht verschickt werden. Ihr Widerruf ist trotzdem eingegangen; wir melden uns.';
+          this.zeige(this.s3);
+        } catch (err) {
+          this.fehler(this.s2, 'Senden hat nicht geklappt. Bitte versuchen Sie es erneut oder erklären Sie Ihren Widerruf per E-Mail an ' + mail + '.');
+        } finally {
+          this.knopf.disabled = false;
+          this.knopf.textContent = 'Widerruf bestätigen';
+        }
+      }
+    });
+  }
+{% endjavascript %}
+
+{% stylesheet %}
+  .tp-wr { padding-block: 32px 56px; }
+  .tp-wr__inhalt { max-width: 640px; margin-inline: auto; }
+  .tp-wr__titel { margin: 0 0 12px; }
+  .tp-wr__intro { margin-bottom: 24px; }
+  .tp-wr__schrittname { font-weight: 600; margin: 0 0 16px; }
+  .tp-wr__feld { display: grid; gap: 6px; margin-bottom: 16px; }
+  .tp-wr__feld label { font-weight: 600; }
+  .tp-wr__feld input,
+  .tp-wr__feld textarea {
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 12px;
+    font: inherit;
+    font-size: max(16px, 1em);
+    color: inherit;
+    background: var(--color-input-background, #fff);
+    border: 1px solid rgb(var(--color-foreground-rgb, 0 0 0) / 0.35);
+    border-radius: 6px;
+    box-sizing: border-box;
+  }
+  .tp-wr__feld small { opacity: 0.75; }
+  .tp-wr__honig { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+  .tp-wr__fehler { color: #b3261e; font-weight: 600; }
+  .tp-wr__pflicht { font-size: 0.875em; opacity: 0.75; }
+  .tp-wr .button { min-height: 48px; }
+  .tp-wr__knoepfe { display: flex; flex-wrap: wrap; gap: 12px; }
+  .tp-wr__zusammenfassung {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 6px 16px;
+    margin: 0 0 20px;
+    padding: 16px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 0 0 0) / 0.15);
+    border-radius: 8px;
+  }
+  .tp-wr__zusammenfassung dt { font-weight: 600; }
+  .tp-wr__zusammenfassung dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .tp-wr__fertig h2 { margin-top: 0; }
+  .tp-wr__eingang { font-weight: 600; }
+  .tp-wr__fuss { margin-top: 32px; font-size: 0.9375em; }
+  .tp-wr__schritt:focus { outline: none; }
+
+  @media screen and (max-width: 749px) {
+    .tp-wr { padding-block: 20px 40px; }
+    .tp-wr__zusammenfassung { grid-template-columns: 1fr; gap: 2px; }
+    .tp-wr__zusammenfassung dd { margin-bottom: 8px; }
+    .tp-wr__knoepfe .button { width: 100%; }
+    .tp-wr__weiter { width: 100%; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Widerrufsfunktion",
+  "tag": "section",
+  "class": "tp-widerruf-section",
+  "settings": [
+    { "type": "text", "id": "titel", "label": "Ueberschrift", "default": "Vertrag widerrufen" },
+    { "type": "richtext", "id": "intro", "label": "Einleitung" },
+    { "type": "text", "id": "endpoint", "label": "Web-App-Adresse (Apps Script /exec)", "info": "Empfaenger des Formulars, siehe domains/widerruf/apps-script" },
+    { "type": "text", "id": "email", "label": "E-Mail fuer den Ausweichweg", "default": "kontakt@teppich-paradies.net" },
+    { "type": "richtext", "id": "fusstext", "label": "Hinweis unter dem Formular" },
+    { "type": "color_scheme", "id": "color_scheme", "label": "Farbschema", "default": "scheme-1" }
+  ],
+  "presets": [
+    { "name": "TP Widerrufsfunktion" }
+  ]
+}
+{% endschema %}
