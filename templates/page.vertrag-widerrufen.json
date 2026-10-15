@@ -1,0 +1,18 @@
+{
+  "sections": {
+    "main": {
+      "type": "tp-widerruf",
+      "settings": {
+        "titel": "Vertrag widerrufen",
+        "intro": "<p>Hier können Sie Ihren Kaufvertrag mit uns online widerrufen. Geben Sie dazu Ihren Namen, die Bestellnummer und Ihre E-Mail-Adresse an und bestätigen Sie im zweiten Schritt. Sie erhalten sofort eine Eingangsbestätigung mit Inhalt, Datum und Uhrzeit per E-Mail. Eine Begründung ist nicht nötig.</p>",
+        "endpoint": "https://script.google.com/macros/s/AKfycbxA1LVBQgvqOo0GZ9UDS2jfTlW8RUyS-wFZXVuOtHil_V12ZtMlc4Aftc8eZHvByvsx/exec",
+        "email": "kontakt@teppich-paradies.net",
+        "fusstext": "<p>Einzelheiten zu Frist, Rücksendung und Ausnahmen finden Sie in unserer <a href=\"/policies/refund-policy\" title=\"Widerrufsbelehrung\">Widerrufsbelehrung</a>. Sie können den Widerruf auch weiterhin per E-Mail an kontakt@teppich-paradies.net oder per Post erklären. Ihre Angaben verwenden wir nur zur Bearbeitung des Widerrufs.</p>",
+        "color_scheme": "scheme-1"
+      }
+    }
+  },
+  "order": [
+    "main"
+  ]
+}
