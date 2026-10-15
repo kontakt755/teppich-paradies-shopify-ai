@@ -215,8 +215,37 @@
     "Wunschmaß"-Variante hat (syncArtUi). Gemessen wird immer in cm - der
     cm/m-Umschalter ist entfallen; eine mitgetippte Einheit ("3,5 m") liest
     ART.parseMass trotzdem richtig.
+    Shopvergleich 2026-10-15 (w-096 E): wieder nummerierte Schritte - 1 Farbe
+    (Block tp-step vor dem Rechner), 2 Zuschnitt, 3 Breite und Laenge,
+    4 Zubehoer. Die Zahlen setzt renumberSteps() nach dem, was sichtbar ist:
+    ohne Raummass-Variante entfaellt "Zuschnitt", ohne Farbwahl beginnt es bei 1.
+    Die Ueberschriften stehen deshalb in [data-art-field], [data-length-step]
+    und [data-zubehoer]. Der Raummass-Helfer steht unter "Breite und Laenge",
+    weil er genau diese Felder befuellt.
   {%- endcomment -%}
-  <p class="tp-rwc-kopf" data-rwc-body>Zuschnitt und Maße</p>
+  <div class="tp-rwc-field" data-art-field data-rwc-body hidden>
+    {% render 'tp-step-heading', number: 2, label: 'Zuschnitt' %}
+    <div class="tp-rwc-art" role="radiogroup" aria-label="Art des Zuschnitts">
+      <input type="radio" id="tp-rwc-art-m-{{ tp_rc_id }}" name="tp-rwc-art-{{ tp_rc_id }}" value="meter" checked>
+      <label class="tp-rwc-art-card" for="tp-rwc-art-m-{{ tp_rc_id }}">
+        <span class="tp-rwc-art-text">
+          <span class="tp-rwc-art-title" data-art-title-meter>Meterware</span>
+          <span class="tp-rwc-art-sub" data-art-sub-meter>volle Rollenbreite</span>
+        </span>
+      </label>
+      <input type="radio" id="tp-rwc-art-r-{{ tp_rc_id }}" name="tp-rwc-art-{{ tp_rc_id }}" value="raum">
+      <label class="tp-rwc-art-card" for="tp-rwc-art-r-{{ tp_rc_id }}" data-art-card-raum hidden>
+        <span class="tp-rwc-art-text">
+          <span class="tp-rwc-art-title" data-art-title-raum>Raummaß</span>
+          <span class="tp-rwc-art-sub" data-art-sub-raum>eigene Breite, zentimetergenau</span>
+        </span>
+      </label>
+    </div>
+  </div>
+
+  <div class="tp-rwc-schritt" data-length-step data-rwc-body>
+    {% render 'tp-step-heading', number: 3, label: 'Breite und Länge' %}
+  </div>
   {%- comment -%}
     Raummass-Helfer (Inhaber 2026-10-02): Raummasse eingeben, Bestellmass mit
     oder ohne Zugabe uebernehmen. Befuellt nur die Felder unten.
@@ -235,24 +264,6 @@
   {%- if tp_rc_helfer -%}
     <div data-rwc-body>{% render 'tp-raummass', art: 'rolle', id: tp_rc_id, muster: tp_rc_dielen %}</div>
   {%- endif -%}
-  <div class="tp-rwc-field" data-art-field data-rwc-body hidden>
-    <div class="tp-rwc-art" role="radiogroup" aria-label="Art des Zuschnitts">
-      <input type="radio" id="tp-rwc-art-m-{{ tp_rc_id }}" name="tp-rwc-art-{{ tp_rc_id }}" value="meter" checked>
-      <label class="tp-rwc-art-card" for="tp-rwc-art-m-{{ tp_rc_id }}">
-        <span class="tp-rwc-art-text">
-          <span class="tp-rwc-art-title" data-art-title-meter>Meterware</span>
-          <span class="tp-rwc-art-sub" data-art-sub-meter>volle Rollenbreite</span>
-        </span>
-      </label>
-      <input type="radio" id="tp-rwc-art-r-{{ tp_rc_id }}" name="tp-rwc-art-{{ tp_rc_id }}" value="raum">
-      <label class="tp-rwc-art-card" for="tp-rwc-art-r-{{ tp_rc_id }}" data-art-card-raum hidden>
-        <span class="tp-rwc-art-text">
-          <span class="tp-rwc-art-title" data-art-title-raum>Raummaß</span>
-          <span class="tp-rwc-art-sub" data-art-sub-raum>eigene Breite, zentimetergenau</span>
-        </span>
-      </label>
-    </div>
-  </div>
 
   <div class="tp-rwc-masse" data-rwc-body>
   <div class="tp-rwc-field" data-width-field>
@@ -353,7 +364,11 @@
   {%- endcomment -%}
   {%- if tp_rc_leiste != blank or tp_rc_haft != blank or tp_rc_holz != blank -%}
     <div class="tp-rwc-zubehoer" id="tp-rwc-extras-{{ tp_rc_id }}" data-zubehoer hidden data-rwc-body>
-      <p class="tp-rwc-zubehoer__kopf">Zubehör <span>(optional)</span></p>
+      <div class="tp-step-heading tp-rwc-zubehoer__kopf">
+        <span class="tp-step-heading__number">4</span>
+        <span class="tp-step-heading__label">Zubehör</span>
+        <span class="tp-rwc-zubehoer__optional">(optional)</span>
+      </div>
       {%- if tp_rc_leiste != blank -%}
         <div class="tp-rwc-extra" data-extra="leiste" hidden>
           <label class="tp-rwc-karte">
@@ -930,9 +945,15 @@
   /* K3: Breite und Laenge immer in einer Zeile, auch am Handy. */
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-masse { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 12px; align-items: start; margin-bottom: 6px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-masse .tp-rwc-seg { flex-wrap: nowrap; gap: 6px; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-masse .tp-rwc-opt { flex: 1; min-width: 0; min-height: 46px; padding: 9px 6px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-masse .tp-rwc-opt { flex: 1; min-width: 0; min-height: 46px; padding: 9px 6px; white-space: nowrap; }
+  /* Ab drei Breiten (Vinyl von der Rolle: 200/300/400 cm) passt die Wahl
+     nicht in die halbe Zeile - "200 cm" brach in zwei Zeilen um (w-096 E).
+     Dann steht die Breitenwahl ueber die volle Zeile, die Laenge darunter. */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-masse:has([data-width-seg] > label:nth-of-type(3)) [data-width-field] { grid-column: 1 / -1; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-masse .tp-rwc-input-wrap { max-width: none; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-kopf { margin: 18px 0 8px; font-size: 15px; font-weight: 600; line-height: 1.3; }
+  /* Nummerierte Schritte im Rechner (w-096 E), Typografie aus snippets/tp-step-heading. */
+  .tp-rwc-{{ tp_rc_id }} [data-art-field] > .tp-step-heading,
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-schritt .tp-step-heading { margin: 18px 0 10px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-hinweis { margin: 0 0 10px; font-size: 13px; line-height: 1.45; color: #595959; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-hinweis a { color: var(--tp-rwc-ink); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-label--vorlesen {
@@ -1250,8 +1271,8 @@
 
   /* K4: Zubehoer sichtbar, Tooltip statt Aufklapptext. */
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer { margin: 4px 0 12px; border-top: 1px solid var(--tp-rwc-line); border-bottom: 1px solid var(--tp-rwc-line); }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer__kopf { display: flex; align-items: center; min-height: 44px; margin: 0; font-size: 15px; font-weight: 600; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer__kopf span { font-weight: 400; color: #595959; margin-right: auto; margin-left: 6px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer__kopf { min-height: 44px; margin: 0; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer__optional { margin-left: -4px; font-size: 13px; color: #595959; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-zubehoer .tp-rwc-extra { margin: 0 0 10px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-tip { position: relative; display: inline-block; margin: 4px 0 0 30px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-tip__knopf { display: inline-flex; align-items: center; min-height: 44px; padding: 4px 0; border: 0; background: none; color: var(--tp-rwc-ink); font: inherit; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; cursor: help; }
@@ -2227,6 +2248,8 @@ function tpRwcInit{{ tp_rc_id }}() {
     setNum(root.querySelector('[data-width-field]'));
     setNum(root.querySelector('[data-length-step]'));
     root.querySelectorAll('[data-extra]').forEach(function (x) { if (!x.hidden) setNum(x); });
+    // Zubehoer als ein Schritt (w-096 E); updateExtras() hat ihn vorher ein- oder ausgeblendet.
+    setNum(root.querySelector('[data-zubehoer]'));
   }
 
   // Bahnen aus dem Helfer: gilt nur, solange Meterware, Rolle und Gesamt-
