@@ -64,11 +64,11 @@
 {% stylesheet %}
   .tp-rein__hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center; }
   .tp-rein__h1 { margin: 6px 0 14px; }
-  .tp-rein__lead { color: #4a443f; font-size: 17px; max-width: 60ch; }
+  .tp-rein__lead { color: #4a443f; font-size: var(--tp-fs-md); max-width: 60ch; }
   .tp-rein__lead p { margin: 0 0 10px; }
   .tp-rein__fakten { list-style: none; padding: 0; margin: 16px 0 22px; display: grid; gap: 8px; }
   .tp-rein__fakten li { padding-left: 26px; position: relative; }
-  .tp-rein__fakten li::before { content: "✓"; position: absolute; left: 0; color: #b0303f; font-weight: 700; }
+  .tp-rein__fakten li::before { content: "✓"; position: absolute; left: 0; color: #1d1a17; font-weight: 700; }
   .tp-rein__ctas { display: flex; flex-wrap: wrap; gap: 10px; }
   .tp-rein__img { width: 100%; height: auto; border-radius: 12px; display: block; }
   .tp-rein__block { margin-top: 56px; }
@@ -78,7 +78,7 @@
   .tp-rein__card p { margin: 6px 0 0; color: #4a443f; }
   .tp-rein__schritte { counter-reset: s; list-style: none; padding: 0; margin: 18px 0 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px 28px; }
   .tp-rein__schritte li { counter-increment: s; display: grid; grid-template-columns: 36px 1fr; column-gap: 12px; }
-  .tp-rein__schritte li::before { content: counter(s); grid-row: span 2; width: 32px; height: 32px; border-radius: 50%; background: #b0303f; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+  .tp-rein__schritte li::before { content: counter(s); grid-row: span 2; width: 32px; height: 32px; border-radius: 50%; background: #1d1a17; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
   .tp-rein__schritte span { color: #4a443f; }
   @media (max-width: 1023px) { .tp-rein__hero { grid-template-columns: 1fr; gap: 24px; } .tp-rein__grid { grid-template-columns: 1fr 1fr; } }
   @media (max-width: 767px) { .tp-rein__grid, .tp-rein__schritte { grid-template-columns: 1fr; } .tp-rein__block { margin-top: 40px; } }

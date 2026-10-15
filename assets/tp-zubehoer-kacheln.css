@@ -15,7 +15,7 @@
   .tp-zubehoer__intro {
     margin: 0;
     color: rgb(var(--color-foreground-rgb) / 0.72);
-    font-size: 1rem;
+    font-size: var(--tp-fs-md);
     line-height: 1.5;
     text-wrap: pretty;
   }
@@ -133,7 +133,7 @@
 
   .tp-zubehoer__title {
     margin: 0;
-    font-size: 1.2rem;
+    font-size: var(--tp-fs-lg);
     font-weight: 700;
     line-height: 1.25;
     letter-spacing: -0.01em;
@@ -143,7 +143,7 @@
   .tp-zubehoer__benefit {
     margin: 0;
     color: var(--color-foreground);
-    font-size: 0.98rem;
+    font-size: var(--tp-fs-md);
     font-weight: 600;
     line-height: 1.35;
     text-wrap: balance;
@@ -152,7 +152,7 @@
   .tp-zubehoer__text {
     margin: 0;
     color: rgb(var(--color-foreground-rgb) / 0.7);
-    font-size: 0.92rem;
+    font-size: var(--tp-fs-sm);
     line-height: 1.5;
     text-wrap: pretty;
   }
@@ -172,7 +172,7 @@
     display: inline-block;
     padding: 6px 12px;
     color: var(--color-foreground);
-    font-size: 0.85rem;
+    font-size: var(--tp-fs-sm);
     font-weight: 600;
     text-decoration: none;
     border: 1px solid rgb(var(--color-foreground-rgb) / 0.18);
@@ -192,8 +192,8 @@
     margin-block-start: auto;
     padding-block-start: 10px;
     color: var(--color-foreground);
-    font-size: 0.9rem;
-    font-weight: 650;
+    font-size: var(--tp-fs-sm);
+    font-weight: 600;
   }
 
   .tp-zubehoer__cta svg {
@@ -222,7 +222,7 @@
     flex: 0 0 auto;
     padding: 9px 14px;
     color: var(--color-foreground);
-    font-size: 0.9rem;
+    font-size: var(--tp-fs-sm);
     font-weight: 600;
     line-height: 1;
     text-decoration: none;
@@ -291,11 +291,11 @@
     }
 
     .tp-zubehoer__title {
-      font-size: 1.02rem;
+      font-size: var(--tp-fs-md);
     }
 
     .tp-zubehoer__benefit {
-      font-size: 0.9rem;
+      font-size: var(--tp-fs-sm);
       font-weight: 500;
       color: rgb(var(--color-foreground-rgb) / 0.78);
     }
@@ -307,6 +307,6 @@
     }
 
     .tp-zubehoer__intro {
-      font-size: 0.95rem;
+      font-size: var(--tp-fs-md);
     }
   }

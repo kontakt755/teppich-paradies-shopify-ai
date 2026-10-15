@@ -100,9 +100,9 @@
      auf hellen Bildern (Bodenleisten, Zubehoer) sicher lesbar sind. */
   .tp-kat__card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(20, 16, 12, 0.9) 0%, rgba(20, 16, 12, 0.6) 35%, rgba(20, 16, 12, 0) 65%); }
   .tp-kat__t { position: absolute; left: 14px; right: 14px; bottom: 14px; z-index: 1; }
-  .tp-kat__t strong { display: block; font-size: 17px; font-weight: 600; line-height: 1.15; }
-  .tp-kat__t small { display: block; font-size: 13px; opacity: 0.92; margin-top: 3px; }
-  .tp-kat__n { position: absolute; top: 12px; right: 12px; z-index: 1; background: rgba(255, 255, 255, 0.92); color: #1d1a17; font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: 999px; }
+  .tp-kat__t strong { display: block; font-size: var(--tp-fs-md); font-weight: 600; line-height: 1.15; }
+  .tp-kat__t small { display: block; font-size: var(--tp-fs-sm); opacity: 0.92; margin-top: 3px; }
+  .tp-kat__n { position: absolute; top: 12px; right: 12px; z-index: 1; background: rgba(255, 255, 255, 0.92); color: #1d1a17; font-size: var(--tp-fs-xs); font-weight: 600; padding: 4px 9px; border-radius: 999px; }
   .tp-kat__dots { display: none; }
   @media (max-width: 1279px) { .tp-kat__list { grid-template-columns: repeat(4, 1fr); } }
   @media (max-width: 991px) { .tp-kat__list { grid-template-columns: repeat(3, 1fr); } }
@@ -133,19 +133,19 @@
     .tp-kat__list--gross .tp-kat__card { aspect-ratio: 1 / 1; }
     .tp-kat__list--gross .tp-kat__card--gross { grid-column: span 2; aspect-ratio: 4 / 3; }
     .tp-kat__card--gross .tp-kat__t { left: 20px; right: 20px; bottom: 18px; }
-    .tp-kat__card--gross .tp-kat__t strong { font-size: 24px; }
-    .tp-kat__card--gross .tp-kat__t small { font-size: 15px; }
+    .tp-kat__card--gross .tp-kat__t strong { font-size: var(--tp-fs-xl); }
+    .tp-kat__card--gross .tp-kat__t small { font-size: var(--tp-fs-md); }
   }
   @media (min-width: 992px) {
     .tp-kat__list--gross .tp-kat__card { aspect-ratio: 4 / 3; }
     .tp-kat__list--gross .tp-kat__card--gross { aspect-ratio: 16 / 9; }
-    .tp-kat__card--gross .tp-kat__t strong { font-size: 28px; }
+    .tp-kat__card--gross .tp-kat__t strong { font-size: var(--tp-fs-xl); }
   }
   @media (max-width: 767px) {
     .tp-kat__list { display: flex; overflow-x: auto; gap: 12px; scroll-snap-type: x mandatory; padding: 0 var(--tp-pad) 4px; margin: 0 calc(-1 * var(--tp-pad)); scrollbar-width: none; }
     .tp-kat__list::-webkit-scrollbar { display: none; }
     .tp-kat__card { flex: 0 0 68%; scroll-snap-align: start; aspect-ratio: 4 / 4.6; }
-    .tp-kat__t strong { font-size: 20px; }
+    .tp-kat__t strong { font-size: var(--tp-fs-lg); }
     .tp-kat__dots { display: flex; justify-content: center; gap: 6px; margin-top: 14px; }
     .tp-kat__dots i { width: 6px; height: 6px; border-radius: 50%; background: #d5cec4; transition: width 0.2s; }
     .tp-kat__dots i.on { background: #1d1a17; width: 18px; border-radius: 3px; }

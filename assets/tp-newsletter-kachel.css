@@ -38,16 +38,16 @@
 
 .tp-nk__eyebrow {
   margin: 0 0 6px;
-  font-size: 12.5px;
+  font-size: var(--tp-fs-xs);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #b0303f;
+  color: #595959;
 }
 
 .tp-nk__titel {
   margin: 0 0 8px;
-  font-size: 22px;
+  font-size: var(--tp-fs-lg);
   font-weight: 700;
   line-height: 1.25;
   color: #1d1a17;
@@ -55,7 +55,7 @@
 
 .tp-nk__lead {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--tp-fs-md);
   line-height: 1.5;
   color: #4a443f;
 }
@@ -89,7 +89,7 @@
   }
 
   .tp-nk__titel {
-    font-size: 19px;
+    font-size: var(--tp-fs-lg);
   }
 }
 

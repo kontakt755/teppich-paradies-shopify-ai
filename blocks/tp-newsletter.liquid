@@ -60,19 +60,19 @@
 
   .tp-nl__heading {
     margin: 0;
-    font-size: 17px;
+    font-size: var(--tp-fs-md);
     font-weight: 600;
     line-height: 1.25;
     color: var(--tp-ink, #1d1a17);
   }
 
   .tp-nl--kompakt .tp-nl__heading {
-    font-size: 15px;
+    font-size: var(--tp-fs-md);
   }
 
   .tp-nl__text {
     margin: 0;
-    font-size: 14px;
+    font-size: var(--tp-fs-sm);
     line-height: 1.45;
     color: var(--tp-ink-2, #4a443f);
   }
@@ -111,7 +111,7 @@
     flex: 1;
     min-height: 44px;
     padding: 0 14px;
-    font-size: 16px;
+    font-size: var(--tp-fs-md);
     line-height: 1.2;
     color: var(--tp-ink, #1d1a17);
     background: #fff;
@@ -137,9 +137,9 @@
     padding: 0 20px;
     border: 0;
     border-radius: var(--tp-r, 10px);
-    background: var(--tp-red, #b0303f);
+    background: var(--tp-ink, #1d1a17);
     color: #fff;
-    font-size: 15px;
+    font-size: var(--tp-fs-md);
     font-weight: 600;
     font-family: inherit;
     white-space: nowrap;
@@ -148,7 +148,7 @@
   }
 
   .tp-nl__button:hover {
-    background: var(--tp-red-dark, #96262f);
+    background: #000;
   }
 
   .tp-nl__button:focus-visible {
@@ -157,7 +157,7 @@
   }
 
   .tp-nl__hinweis {
-    font-size: 12px;
+    font-size: var(--tp-fs-xs);
     line-height: 1.5;
     color: var(--tp-ink-2, #4a443f);
   }
@@ -172,7 +172,7 @@
   }
 
   .tp-nl__hinweis a:hover {
-    color: var(--tp-red, #b0303f);
+    color: var(--tp-ink, #1d1a17);
   }
 
   .tp-nl__hinweis a:focus-visible {
@@ -183,7 +183,7 @@
   .tp-nl__status {
     margin: 0;
     padding: 12px 14px;
-    font-size: 14px;
+    font-size: var(--tp-fs-sm);
     line-height: 1.45;
     border-radius: var(--tp-r, 10px);
     background: #fff;

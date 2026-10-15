@@ -4251,7 +4251,7 @@ product-recommendations:has([data-has-recommendations='false']) {
 
 .pd-card h3 {
   margin: 0 0 10px;
-  font-size: 22px;
+  font-size: var(--tp-fs-lg);
   font-weight: 700;
   letter-spacing: -0.01em;
   color: #000;
@@ -4259,7 +4259,7 @@ product-recommendations:has([data-has-recommendations='false']) {
 
 .pd-card p {
   margin: 0 0 20px;
-  font-size: 15px;
+  font-size: var(--tp-fs-md);
   line-height: 1.65;
 }
 
@@ -4278,14 +4278,14 @@ product-recommendations:has([data-has-recommendations='false']) {
   border: 1px solid #00000018;
   border-radius: 999px;
   padding: 6px 14px;
-  font-size: 13px;
+  font-size: var(--tp-fs-sm);
   font-weight: 600;
 }
 
 .pd-specs {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: var(--tp-fs-sm);
 }
 
 .pd-specs tr {
@@ -4317,6 +4317,6 @@ product-recommendations:has([data-has-recommendations='false']) {
   }
   .pd-specs th,
   .pd-specs td {
-    font-size: 13px;
+    font-size: var(--tp-fs-xs);
   }
 }

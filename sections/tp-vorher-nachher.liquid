@@ -86,7 +86,7 @@
   .tp-vn__lage { position: absolute; inset: 0; }
   .tp-vn__lage img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .tp-vn__lage--nach { clip-path: inset(0 0 0 var(--tp-pos)); }
-  .tp-vn__marke { position: absolute; bottom: 12px; background: rgba(20, 18, 16, 0.8); color: #fff; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 11px; border-radius: 999px; }
+  .tp-vn__marke { position: absolute; bottom: 12px; background: rgba(20, 18, 16, 0.8); color: #fff; font-size: var(--tp-fs-xs); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 11px; border-radius: 999px; }
   .tp-vn__marke--links { left: 12px; }
   .tp-vn__marke--rechts { right: 12px; }
   .tp-vn__linie { position: absolute; top: 0; bottom: 0; left: var(--tp-pos); width: 2px; background: #fff; box-shadow: 0 0 0 1px rgba(20, 18, 16, 0.18); }
@@ -97,8 +97,8 @@
   .tp-vn__regler { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; appearance: none; background: transparent; }
   .tp-vn__regler::-webkit-slider-thumb { appearance: none; width: 46px; height: 100%; }
   .tp-vn__regler::-moz-range-thumb { width: 46px; height: 100%; border: 0; background: transparent; }
-  .tp-vn__regler:focus-visible { opacity: 1; outline: 3px solid var(--tp-red); outline-offset: 2px; }
-  .tp-vn__cap { margin-top: 11px; font-size: 14.5px; color: var(--tp-ink-2); }
+  .tp-vn__regler:focus-visible { opacity: 1; outline: 3px solid var(--tp-ink, #1d1a17); outline-offset: 2px; }
+  .tp-vn__cap { margin-top: 11px; font-size: var(--tp-fs-sm); color: var(--tp-ink-2); }
   .tp-vn__cap b { color: var(--tp-ink); }
   @media (max-width: 767px) {
     .tp-vn__reihe { grid-template-columns: 1fr; gap: 26px; }

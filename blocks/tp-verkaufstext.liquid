@@ -114,14 +114,14 @@
 
     .tp-verkaufstext__heading-{{ tp_vt_id }} {
       margin: 0 0 10px;
-      font-size: 19px;
+      font-size: var(--tp-fs-lg);
       font-weight: 700;
       color: var(--color-foreground);
     }
 
     .tp-verkaufstext__intro-{{ tp_vt_id }} {
       margin: 0 0 12px;
-      font-size: 16.5px;
+      font-size: var(--tp-fs-md);
       line-height: 1.6;
       color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.85);
     }
@@ -137,7 +137,7 @@
     .tp-verkaufstext__list-{{ tp_vt_id }} li {
       padding-left: 18px;
       position: relative;
-      font-size: 16.5px;
+      font-size: var(--tp-fs-md);
       line-height: 1.55;
       color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.85);
     }
@@ -155,12 +155,12 @@
 
     @media screen and (max-width: 749px) {
       .tp-verkaufstext__heading-{{ tp_vt_id }} {
-        font-size: 18px;
+        font-size: var(--tp-fs-lg);
       }
 
       .tp-verkaufstext__intro-{{ tp_vt_id }},
       .tp-verkaufstext__list-{{ tp_vt_id }} li {
-        font-size: 15.5px;
+        font-size: var(--tp-fs-md);
       }
     }
   </style>

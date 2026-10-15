@@ -42,7 +42,7 @@
 {% stylesheet %}
   .tp-sticky { position: fixed; left: 0; right: 0; bottom: 0; z-index: 55; background: #fff; border-top: 1px solid #e6e0d8; padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); display: none; grid-template-columns: 1fr 1fr 1.2fr; gap: 8px; transform: translateY(110%); transition: transform 0.25s; }
   .tp-sticky--show { transform: none; }
-  .tp-sticky .tp-s-btn { min-height: 46px; font-size: 14.5px; padding: 0 10px; }
+  .tp-sticky .tp-s-btn { min-height: 46px; font-size: var(--tp-fs-sm); padding: 0 10px; }
   @media (max-width: 767px) { .tp-sticky { display: grid; } body { padding-bottom: 70px; } }
   @media (prefers-reduced-motion: reduce) { .tp-sticky { transition: none; } }
 

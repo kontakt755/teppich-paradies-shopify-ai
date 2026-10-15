@@ -259,10 +259,10 @@
      nach Fehler aus. Erst auf dem Telefon wird daraus eine Wischleiste. */
   .tp-arb__filter { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 4px; margin-bottom: 22px; }
   .tp-arb__filter::-webkit-scrollbar { display: none; }
-  .tp-arb__chip { flex: none; scroll-snap-align: start; display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--tp-line); background: #fff; color: var(--tp-ink); font: inherit; font-size: 15px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background 0.15s, border-color 0.15s; }
+  .tp-arb__chip { flex: none; scroll-snap-align: start; display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--tp-line); background: #fff; color: var(--tp-ink); font: inherit; font-size: var(--tp-fs-md); font-weight: 500; cursor: pointer; white-space: nowrap; transition: background 0.15s, border-color 0.15s; }
   .tp-arb__chip:hover { border-color: var(--tp-line-2); background: var(--tp-bg-2); }
   .tp-arb__chip.is-aktiv { background: var(--tp-ink); border-color: var(--tp-ink); color: #fff; font-weight: 600; }
-  .tp-arb__zahl { font-size: 12.5px; opacity: 0.65; font-variant-numeric: tabular-nums; }
+  .tp-arb__zahl { font-size: var(--tp-fs-xs); opacity: 0.65; font-variant-numeric: tabular-nums; }
   .tp-arb__chip.is-aktiv .tp-arb__zahl { opacity: 0.75; }
 
   .tp-arb__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; list-style: none; margin: 0; padding: 0; }
@@ -270,11 +270,11 @@
   .tp-arb__karte { position: relative; display: block; width: 100%; padding: 0; border: 0; border-radius: var(--tp-r-lg); overflow: hidden; background: var(--tp-bg-3); cursor: pointer; text-align: left; font: inherit; aspect-ratio: 4 / 3; }
   .tp-arb__bild { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s ease; }
   .tp-arb__karte:hover .tp-arb__bild { transform: scale(1.045); }
-  .tp-arb__karte:focus-visible { outline: 3px solid var(--tp-red); outline-offset: 3px; }
+  .tp-arb__karte:focus-visible { outline: 3px solid var(--tp-ink); outline-offset: 3px; }
   .tp-arb__unten { position: absolute; inset: auto 0 0 0; display: block; padding: 42px 14px 13px; color: #fff; background: linear-gradient(to top, rgba(20, 18, 16, 0.86) 0%, rgba(20, 18, 16, 0.55) 45%, rgba(20, 18, 16, 0) 100%); }
-  .tp-arb__titel { display: block; font-weight: 650; font-size: 16px; line-height: 1.25; }
-  .tp-arb__fakten { display: block; font-size: 13px; opacity: 0.86; margin-top: 3px; }
-  .tp-arb__badge { position: absolute; top: 12px; left: 12px; background: rgba(20, 18, 16, 0.76); color: #fff; font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; }
+  .tp-arb__titel { display: block; font-weight: 600; font-size: var(--tp-fs-md); line-height: 1.25; }
+  .tp-arb__fakten { display: block; font-size: var(--tp-fs-sm); opacity: 0.86; margin-top: 3px; }
+  .tp-arb__badge { position: absolute; top: 12px; left: 12px; background: rgba(20, 18, 16, 0.76); color: #fff; font-size: var(--tp-fs-xs); font-weight: 600; padding: 5px 10px; border-radius: 999px; }
   .tp-arb__lupe { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: rgba(255, 255, 255, 0.9); color: var(--tp-ink); opacity: 0; transition: opacity 0.2s; }
   .tp-arb__lupe svg { width: 17px; height: 17px; }
   .tp-arb__karte:hover .tp-arb__lupe, .tp-arb__karte:focus-visible .tp-arb__lupe { opacity: 1; }
@@ -284,7 +284,7 @@
   dialog.tp-lb { width: min(1180px, 94vw); max-width: none; max-height: 92vh; padding: 0; border: 0; border-radius: var(--tp-r-lg); background: #fff; color: var(--tp-ink); overflow: hidden; }
   dialog.tp-lb::backdrop { background: rgba(18, 16, 14, 0.82); }
   .tp-lb__kopf { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px 10px 18px; border-bottom: 1px solid var(--tp-line); }
-  .tp-lb__zaehler { margin: 0; font-size: 13px; color: var(--tp-muted); font-variant-numeric: tabular-nums; }
+  .tp-lb__zaehler { margin: 0; font-size: var(--tp-fs-sm); color: var(--tp-muted); font-variant-numeric: tabular-nums; }
   .tp-lb__zu { width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--tp-bg-2); color: var(--tp-ink); cursor: pointer; }
   .tp-lb__zu svg { width: 20px; height: 20px; }
   .tp-lb__zu:hover { background: var(--tp-bg-3); }
@@ -297,13 +297,13 @@
   .tp-lb__pfeil--zurueck { left: 12px; }
   .tp-lb__pfeil--vor { right: 12px; }
   .tp-lb__info { padding: 22px; overflow-y: auto; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
-  .tp-lb__titel { margin: 0; font-size: 20px; font-weight: 700; line-height: 1.2; }
-  .tp-lb__fakten { margin: 0; color: var(--tp-red); font-size: 14px; font-weight: 600; }
-  .tp-lb__text { margin: 0; color: var(--tp-ink-2); font-size: 15px; line-height: 1.55; white-space: pre-line; }
+  .tp-lb__titel { margin: 0; font-size: var(--tp-fs-lg); font-weight: 700; line-height: 1.2; }
+  .tp-lb__fakten { margin: 0; color: var(--tp-ink-2); font-size: var(--tp-fs-sm); font-weight: 600; }
+  .tp-lb__text { margin: 0; color: var(--tp-ink-2); font-size: var(--tp-fs-md); line-height: 1.55; white-space: pre-line; }
   .tp-lb__thumbs { display: flex; flex-wrap: wrap; gap: 8px; }
   .tp-lb__thumb { width: 72px; height: 54px; padding: 0; border: 2px solid transparent; border-radius: 8px; overflow: hidden; background: var(--tp-bg-3); cursor: pointer; }
   .tp-lb__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .tp-lb__thumb.is-aktiv { border-color: var(--tp-red); }
+  .tp-lb__thumb.is-aktiv { border-color: var(--tp-ink); }
   .tp-lb__cta { margin-top: 6px; align-self: flex-start; }
   /* Gleicher Grund wie bei .tp-s-btn[hidden]: eigenes display schlaegt das
      Ausblenden per Attribut. Betrifft Pfeile und Miniaturen bei Projekten
@@ -323,7 +323,7 @@
     .tp-arb__filter::-webkit-scrollbar { display: none; }
     .tp-arb__grid { grid-template-columns: 1fr; gap: 14px; }
     .tp-arb__karte { aspect-ratio: 4 / 3; border-radius: var(--tp-r); }
-    .tp-arb__titel { font-size: 17px; }
+    .tp-arb__titel { font-size: var(--tp-fs-lg); }
     dialog.tp-lb { width: 100vw; max-height: 100vh; height: 100dvh; border-radius: 0; }
     .tp-lb__koerper { max-height: none; height: calc(100dvh - 65px); }
     .tp-lb__bild { max-height: 52vh; }

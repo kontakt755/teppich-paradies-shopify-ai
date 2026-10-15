@@ -141,7 +141,7 @@
    */
   .text-block .price,
   .price-item__group {
-    font-size: 1.3rem;
+    font-size: var(--tp-fs-lg);
     font-weight: 700;
     line-height: 1.2;
   }
@@ -155,22 +155,22 @@
    * von der Reihenfolge im kompilierten CSS gilt.
    */
   product-price [ref='priceContainer'] .price-card-per-unit {
-    font-size: max(0.8125rem, 0.82em);
+    font-size: var(--tp-fs-sm);
   }
   /* Teppich nach Mass auf der Karte: Qualitaetszeile, grosser Preis, Beispielmass. */
   .tp-ab-preis { display: flex; flex-direction: column; gap: 2px; }
-  .tp-ab-preis__qualitaet { font-size: 13px; line-height: 1.35; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72); margin-bottom: 4px; }
+  .tp-ab-preis__qualitaet { font-size: var(--tp-fs-sm); line-height: 1.35; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72); margin-bottom: 4px; }
   /* Schmale Karten (Mobil, 2 Spalten): Teile duerfen umbrechen, aber nie in sich - sonst "a/b" und "148,60/€". */
   .tp-ab-preis__haupt { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 6px; row-gap: 0; line-height: 1.15; }
   .tp-ab-preis__haupt > * { flex: none; white-space: nowrap; }
-  .tp-ab-preis__ab { font-size: 13px; font-weight: 400; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72); }
-  .tp-ab-preis__betrag { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
-  .tp-ab-preis__alt { font-size: 14px; font-weight: 400; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62); text-decoration: line-through; }
-  .tp-ab-preis__grund { font-size: 12px; font-weight: 400; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62); }
-  .tp-ab-preis__einheit { margin-left: 1px; font-size: 15px; font-weight: 600; }
-  @media (max-width: 749px) { .tp-ab-preis__betrag { font-size: 21px; } }
+  .tp-ab-preis__ab { font-size: var(--tp-fs-sm); font-weight: 400; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72); }
+  .tp-ab-preis__betrag { font-size: var(--tp-fs-lg); font-weight: 700; letter-spacing: -0.01em; }
+  .tp-ab-preis__alt { font-size: var(--tp-fs-sm); font-weight: 400; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62); text-decoration: line-through; }
+  .tp-ab-preis__grund { font-size: var(--tp-fs-xs); font-weight: 400; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62); }
+  .tp-ab-preis__einheit { margin-left: 1px; font-size: var(--tp-fs-md); font-weight: 600; }
+  @media (max-width: 749px) { .tp-ab-preis__betrag { font-size: var(--tp-fs-lg); } }
   .tp-preis-je-m2 { font-weight: 600; }
-  .tp-preis-je-m2__einheit { font-size: 0.8em; font-weight: 400; opacity: 0.75; }
+  .tp-preis-je-m2__einheit { font-size: var(--tp-fs-sm); font-weight: 400; opacity: 0.75; }
 {% endstylesheet %}
 
 {% schema %}

@@ -419,9 +419,9 @@
             "border_color": "#e6e6e6",
             "key_text_color": "#000000",
             "value_text_color": "#000000",
-            "key_font_size": 16,
+            "key_font_size": 14,
             "key_font_weight": "600",
-            "value_font_size": 15
+            "value_font_size": 14
           },
           "blocks": {}
         }

@@ -30,7 +30,7 @@
 </div>
 
 {% stylesheet %}
-  .tp-tb { background: var(--tp-ink, #1d1a17); color: #fff; font-size: 13.5px; }
+  .tp-tb { background: var(--tp-ink, #1d1a17); color: #fff; font-size: var(--tp-fs-sm); }
   .tp-tb__wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 36px; }
   .tp-tb__list { list-style: none; margin: 0; padding: 0; display: flex; gap: 28px; }
   .tp-tb__item { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
@@ -42,7 +42,7 @@
   @media (max-width: 1599px) { .tp-tb__zeiten { display: none; } }
   @media (max-width: 1279px) { .tp-tb__item:nth-child(3) { display: none; } }
   @media (max-width: 767px) {
-    .tp-tb { font-size: 13px; }
+    .tp-tb { font-size: var(--tp-fs-xs); }
     .tp-tb__wrap { justify-content: center; min-height: 32px; }
     .tp-tb__item:not(:first-child), .tp-tb__tel { display: none; }
   }
