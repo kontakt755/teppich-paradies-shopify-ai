@@ -3,14 +3,14 @@
   "live": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-15T13:59:33Z",
-    "verifiedBy": "Shopify CLI theme list role live + Storefront Shopify.theme nach workflow:live von main 20654301 (#1342 Gestaltung: Schriftskala, Rot, Bildzuschnitte; #1345 Breadcrumb-JSON-LD); Preview-Gates COMPARE/SEO/FULL QA/SALES PASS, oeffentlicher Shop ohne Vorschau geprueft (Desktop 1440/Handy 390, Konsole, Breadcrumb, Galerie)"
+    "verifiedAt": "2026-10-15T14:32:36Z",
+    "verifiedBy": "Shopify CLI theme list role live + Storefront Shopify.theme nach workflow:live von main 06cf3754 (#1350 Galerie unter dem Kopf; davor dfaaa985 #1347/#1351 Matte nach Mass live auf dem anderen Theme); Preview-Gates COMPARE/SEO/FULL QA/SALES PASS, oeffentlicher Shop ohne Vorschau geprueft (1024/1280/1440, Handy)"
   },
   "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-15T13:59:33Z",
-    "verifiedBy": "role UNPUBLISHED nach workflow:live von main 20654301; naechstes Preview-Ziel"
+    "verifiedAt": "2026-10-15T14:32:36Z",
+    "verifiedBy": "role UNPUBLISHED nach workflow:live von main 06cf3754; naechstes Preview-Ziel"
   },
   "fallback": {
     "themeId": "206590509390",
