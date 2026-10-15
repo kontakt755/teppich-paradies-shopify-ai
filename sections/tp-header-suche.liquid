@@ -163,10 +163,6 @@
   .tp-hs__hinweis { margin: 0; font-size: 14px; color: var(--tp-muted, #655e57); }
 
   .tp-hs__chips { display: none; }
-  /* Lupe im Kopf nur, wenn dieses Feld nicht zu sehen ist (assets/tp-suche.js setzt die Klasse). */
-  @media (min-width: 768px) {
-    html.tp-suchfeld-sichtbar #header-component search-button.search-action { display: none; }
-  }
   @media (max-width: 767px) {
     /* Kompakter Kopfbereich am Telefon: Feld 44 px, Leiste 36 px hoch
        (vorher 50 + 40 px, zusammen 219 px bis zum Inhalt). Eingabe bleibt
