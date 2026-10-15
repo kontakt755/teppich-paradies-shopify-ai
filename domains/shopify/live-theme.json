@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204438208846",
-    "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-15T10:22:36.017Z",
-    "verifiedBy": "Storefront Shopify.theme role main nach workflow:live von main 597239d2 (PR #1327: Farbfilter zeigt die gefilterte Farbe auf der Produktkarte); Preview COMPARE/SEO/FULL QA/SALES PASS, orderCompleted false; oeffentlicher Shop ohne Vorschau mit Blau-Filter (AJAX und Direktaufruf, 1440/390 px) geprueft"
-  },
-  "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-15T10:22:36.017Z",
-    "verifiedBy": "Storefront: nicht mehr role main nach workflow:live von main 597239d2; naechstes Preview-Ziel"
+    "verifiedAt": "2026-10-15T12:55:13Z",
+    "verifiedBy": "Shopify Admin API role MAIN (updatedAt 2026-10-15T12:51:22Z) nach workflow:live von main 9fb302e3 (#1332/#1334 Widerrufsfunktion „Vertrag widerrufen“); Preview-Gates COMPARE/SEO/FULL QA/SALES PASS, oeffentlicher Shop ohne Vorschau geprueft (Footer-Knopf, Test-Widerruf)"
+  },
+  "preview": {
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-10-15T12:55:13Z",
+    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live von main 9fb302e3; naechstes Preview-Ziel"
   },
   "fallback": {
     "themeId": "206590509390",
