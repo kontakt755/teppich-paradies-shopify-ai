@@ -16,6 +16,14 @@
 
   @param {string} [platzhalter] - Platzhalter im Feld
 {%- enddoc -%}
+{%- comment -%}
+  Die Klassen tp-hs__* definiert der Stylesheet von sections/tp-header-suche.liquid.
+  Diese Section steht in der Header-Gruppe und wird auf jeder Seite ausgegeben, ihr
+  Stylesheet laedt also immer. Theme Check sieht nur Stylesheets der eigenen Datei
+  und ihrer Aufrufer und meldet deshalb ValidScopedCSSClass - ein Fehlalarm. Die
+  Regeln hier zu kopieren hiesse, dieselbe Gestaltung an zwei Stellen zu pflegen.
+{%- endcomment -%}
+{% # theme-check-disable ValidScopedCSSClass %}
 <script src="{{ 'tp-suche.js' | asset_url }}" type="module" fetchpriority="low"></script>
 <div class="tp-kopf-suche">
   <tp-suche-leiste class="tp-hs__leiste tp-kopf-suche__leiste" data-tp-kopf data-tp-quelle=".tp-hs tp-suche-leiste">
@@ -50,3 +58,4 @@
     </div>
   </tp-suche-leiste>
 </div>
+{% # theme-check-enable ValidScopedCSSClass %}
