@@ -17,7 +17,9 @@ var ABSENDER_NAME = 'Teppich Paradies';
 var ZEITZONE = 'Europe/Berlin';
 var PROTOKOLL_NAME = 'Widerrufe Shop (Eingangsprotokoll)';
 
-// Missbrauchsbremse: das Formular darf keine Mailschleuder werden.
+// Missbrauchsbremse: das Formular darf keine Mailschleuder werden. Ueber der
+// Gesamtgrenze wird trotzdem protokolliert und intern gemeldet, nur die Mail an
+// die eingegebene Adresse entfaellt - so sperrt ein Angreifer keine echten Kunden aus.
 var MAX_JE_ADRESSE_STUNDE = 3;
 var MAX_GESAMT_STUNDE = 40;
 
@@ -30,15 +32,23 @@ function doGet() {
 function doPost(e) {
   try {
     var p = (e && e.parameter) || {};
-    // Honigtopf: Menschen sehen das Feld nicht. Bots bekommen "ok", es passiert nichts.
-    if (String(p.website || '').trim() !== '') return json_({ ok: true, ref: 'W-0' });
-
     var d = pruefen_(p);
     if (d.fehler) return json_({ ok: false, fehler: d.fehler });
 
-    if (!bremse_(d.email)) {
+    // Doppelt gesendet (Netzabbruch nach Verarbeitung, erneuter Klick): gleiche Antwort, keine zweite Mail
+    var cache = CacheService.getScriptCache();
+    var idSchluessel = /^[A-Za-z0-9-]{8,64}$/.test(String(p.id || '')) ? 'id:' + p.id : '';
+    var frueher = idSchluessel && cache.get(idSchluessel);
+    if (frueher) return ContentService.createTextOutput(frueher).setMimeType(ContentService.MimeType.JSON);
+
+    // Honigtopf: Menschen sehen das Feld nicht. Fuellt es ein Bot (oder ein Autofill),
+    // wird trotzdem protokolliert und intern gemeldet, nur ohne Mail an die Adresse.
+    var verdacht = String(p.website || '').trim() !== '';
+    var grenze = bremse_(d.email);
+    if (grenze === 'adresse') {
       return json_({ ok: false, fehler: 'zu_viele', meldung: 'Zu viele Einsendungen in kurzer Zeit. Bitte schreiben Sie uns an ' + KOPIE_AN + '.' });
     }
+    var kundeMailen = !verdacht && grenze === 'ok';
 
     var jetzt = new Date();
     d.datum = Utilities.formatDate(jetzt, ZEITZONE, 'dd.MM.yyyy');
@@ -47,8 +57,8 @@ function doPost(e) {
 
     var zeile = protokollieren_(d, jetzt);
 
-    var kundeOk = true;
-    try {
+    var kundeOk = kundeMailen;
+    if (kundeMailen) try {
       MailApp.sendEmail({
         to: d.email,
         replyTo: KOPIE_AN,
@@ -61,19 +71,29 @@ function doPost(e) {
       kundeOk = false;
     }
 
-    // Kopie an uns immer, auch wenn die Kundenmail scheitert
-    MailApp.sendEmail({
-      to: KOPIE_AN,
-      replyTo: d.email,
-      name: 'Shop – Widerrufsfunktion',
-      subject: 'Widerruf eingegangen: Bestellung ' + d.bestellnummer + ' (' + d.name + ')' + (kundeOk ? '' : ' – BESTÄTIGUNG AN KUNDEN FEHLGESCHLAGEN'),
-      body: mailText_(d, true) + (kundeOk ? '' : '\n\nACHTUNG: Die Eingangsbestätigung an ' + d.email + ' konnte nicht zugestellt werden. Bitte den Kunden anders erreichen.'),
-      htmlBody: mailHtml_(d, true)
-    });
+    var grund = kundeOk ? '' : verdacht ? 'Verdacht auf Bot (Honigtopffeld gefüllt), keine Mail an die Adresse geschickt.'
+      : grenze !== 'ok' ? 'Stundengrenze erreicht, keine Mail an die Adresse geschickt.'
+      : 'Die Eingangsbestätigung an ' + d.email + ' konnte nicht verschickt werden.';
+    if (zeile) zeile.getCell(1, 9).setValue(kundeOk ? 'gesendet' : 'NICHT GESENDET: ' + grund);
 
-    if (zeile) zeile.getCell(1, 9).setValue(kundeOk ? 'gesendet' : 'FEHLER');
+    // Kopie an uns immer, auch wenn die Kundenmail scheitert. Scheitert die Kopie,
+    // ist der Widerruf trotzdem protokolliert - dem Kunden keinen Fehler melden.
+    try {
+      MailApp.sendEmail({
+        to: KOPIE_AN,
+        replyTo: d.email,
+        name: 'Shop – Widerrufsfunktion',
+        subject: 'Widerruf eingegangen: Bestellung ' + d.bestellnummer + ' (' + d.name + ')' + (kundeOk ? '' : ' – OHNE BESTÄTIGUNG AN KUNDEN'),
+        body: mailText_(d, true) + (kundeOk ? '' : '\n\nACHTUNG: ' + grund + ' Bitte prüfen und den Kunden ggf. anders erreichen.'),
+        htmlBody: mailHtml_(d, true)
+      });
+    } catch (err) {
+      console.error('Kopie: ' + (err && err.stack || err));
+    }
 
-    return json_({ ok: true, ref: d.ref, datum: d.datum, uhrzeit: d.uhrzeit.slice(0, 5), mail: kundeOk });
+    var antwort = JSON.stringify({ ok: true, ref: d.ref, datum: d.datum, uhrzeit: d.uhrzeit.slice(0, 5), mail: kundeOk });
+    if (idSchluessel) cache.put(idSchluessel, antwort, 21600);
+    return ContentService.createTextOutput(antwort).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
     console.error(err && err.stack || err);
     return json_({ ok: false, fehler: 'server' });
@@ -97,6 +117,7 @@ function pruefen_(p) {
   return d;
 }
 
+/** 'ok' | 'adresse' (Adresse gesperrt, abweisen) | 'gesamt' (annehmen, aber nicht an die Adresse mailen) */
 function bremse_(email) {
   var cache = CacheService.getScriptCache();
   var schluessel = 'a:' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, email.toLowerCase()));
@@ -106,10 +127,10 @@ function bremse_(email) {
   try {
     var je = Number(cache.get(schluessel) || 0);
     var ges = Number(cache.get(stunde) || 0);
-    if (je >= MAX_JE_ADRESSE_STUNDE || ges >= MAX_GESAMT_STUNDE) return false;
+    if (je >= MAX_JE_ADRESSE_STUNDE) return 'adresse';
     cache.put(schluessel, String(je + 1), 3600);
     cache.put(stunde, String(ges + 1), 3600);
-    return true;
+    return ges >= MAX_GESAMT_STUNDE ? 'gesamt' : 'ok';
   } finally {
     lock.releaseLock();
   }

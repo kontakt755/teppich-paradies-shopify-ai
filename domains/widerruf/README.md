@@ -39,5 +39,5 @@ Firmenkonto kostet nichts und verschickt von kontakt@.
 - `GET <exec>` liefert `{"ok":true,"dienst":"widerruf"}`.
 - Test-Widerruf mit eigener Adresse über die Seite: Mail an den Kunden mit
   Datum/Uhrzeit/Vorgangsnummer, Kopie an kontakt@, Zeile im Protokoll.
-- Missbrauchsbremse: 3 Einsendungen je Adresse und 40 insgesamt pro Stunde;
-  Honigtopffeld `website`.
+- Missbrauchsbremse: 3 Einsendungen je Adresse pro Stunde (danach abgewiesen); ab 40 insgesamt pro Stunde und bei gefuelltem
+  Honigtopffeld `website` wird protokolliert und intern gemeldet, aber nicht an die Adresse gemailt. Gleiche `id` (je Zusammenfassung) = keine zweite Mail.

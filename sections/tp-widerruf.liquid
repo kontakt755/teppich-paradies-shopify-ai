@@ -153,6 +153,8 @@
             liste.append(dt, dd);
           });
         this.fehler(this.s2, '');
+        // Je Zusammenfassung eine Kennung: ein erneuter Klick nach Netzabbruch erzeugt keinen zweiten Widerruf
+        this.kennung = (crypto.randomUUID && crypto.randomUUID()) || String(Date.now()) + '-' + Math.random().toString(36).slice(2, 10);
         this.zeige(this.s2);
       }
 
@@ -165,22 +167,24 @@
         }
         const d = this.daten();
         d.bestaetigt = 'ja';
+        d.id = this.kennung;
         this.knopf.disabled = true;
         this.knopf.textContent = 'Wird gesendet …';
         try {
           const antwort = await fetch(endpoint, { method: 'POST', body: new URLSearchParams(d) });
           const r = await antwort.json();
-          if (!r.ok) throw new Error(r.meldung || r.fehler || 'Fehler');
+          if (!r.ok) {
+            this.fehler(this.s2, r.meldung || 'Bitte prüfen Sie Ihre Angaben (Name, Bestellnummer, E-Mail-Adresse) oder erklären Sie Ihren Widerruf per E-Mail an ' + mail + '.');
+            return;
+          }
           this.s3.querySelector('.tp-wr__eingang').textContent =
             'Eingegangen am ' + r.datum + ' um ' + r.uhrzeit + ' Uhr · Vorgangsnummer ' + r.ref;
           this.s3.querySelector('.tp-wr__mailinfo').textContent = r.mail
             ? 'Eine Eingangsbestätigung mit Inhalt, Datum und Uhrzeit haben wir an ' + d.email + ' gesendet.'
-            : 'Die Bestätigungs-E-Mail an ' + d.email + ' konnte nicht zugestellt werden. Ihr Widerruf ist trotzdem eingegangen; wir melden uns.';
+            : 'Die Bestätigungs-E-Mail an ' + d.email + ' konnte nicht verschickt werden. Ihr Widerruf ist trotzdem eingegangen; wir melden uns.';
           this.zeige(this.s3);
         } catch (err) {
-          const text = err && err.message && err.message.length > 20 ? err.message
-            : 'Senden hat nicht geklappt. Bitte versuchen Sie es erneut oder erklären Sie Ihren Widerruf per E-Mail an ' + mail + '.';
-          this.fehler(this.s2, text);
+          this.fehler(this.s2, 'Senden hat nicht geklappt. Bitte versuchen Sie es erneut oder erklären Sie Ihren Widerruf per E-Mail an ' + mail + '.');
         } finally {
           this.knopf.disabled = false;
           this.knopf.textContent = 'Widerruf bestätigen';
