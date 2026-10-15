@@ -1,6 +1,7 @@
 {%- comment -%}
   TP Boden-Finder: gefuehrte Beratung in hoechstens vier Fragen (Bodenart,
-  Farbe, Optik mit optionalem Raum, Budget) bis zu drei Vorschlaegen.
+  Farbe, Optik mit optionalem Raum, Raumgroesse und Preisrahmen) bis zu drei
+  Vorschlaegen. Farbe und Optik sind Mehrfachauswahl mit "Weiter".
 
   Auf der Seite steht nur der kompakte Einstieg. Der Dialog mit den Fragen
   und dem Anfrageformular liegt geschlossen im HTML. Das Formular ist das
@@ -12,8 +13,9 @@
   Daten: Filterwerte, Trefferzahlen und Produktkarten kommen aus der
   Kollektion der gewaehlten Bodenart ueber die Ansichten ?view=boden-finder
   und ?view=boden-finder-treffer (sections/tp-boden-finder-daten.liquid).
-  Angeboten werden nur Werte mit Treffern. Der ca.-Preis fuer ein Raummass
-  rechnet mit den Regeln des Rollenware-Rechners (assets/tp-rollware-art.js).
+  Angeboten werden nur Werte mit Treffern, auch bei den Preisstufen. Der
+  ca.-Preis fuer den Raum (genau zugeschnitten und von der Rolle) rechnet mit
+  den Regeln des Rollenware-Rechners (assets/tp-rollware-art.js).
 
   Bodenarten sind Bloecke: Status "aktiv" fragt weiter, "bald" fuehrt zur
   Kategorie. Neue Bodenarten (Vinyl, Teppich nach Mass ...) brauchen eine
@@ -68,7 +70,7 @@
         {%- if section.settings.text != blank -%}<p class="tp-bf__p">{{ section.settings.text | escape }}</p>{%- endif -%}
         <ol class="tp-bf__schritte" aria-label="Die Fragen">
           {%- if bf_vorwahl == blank -%}<li>Bodenart</li>{%- endif -%}
-          <li>Farbe</li><li>Optik</li><li>Budget</li>
+          <li>Farbe</li><li>Optik</li><li>Raum &amp; Preis</li>
         </ol>
       </div>
       <div class="tp-bf__aktionen">
@@ -142,64 +144,65 @@
         </div>
       </div>
 
-      {%- comment -%} Frage 2: Farbe (Werte aus dem Farbfilter der Kollektion) {%- endcomment -%}
+      {%- comment -%} Frage 2: Farbe (Werte aus dem Farbfilter der Kollektion, mehrere moeglich) {%- endcomment -%}
       <div class="tp-bf-schritt" data-bf-schritt="farbe" hidden>
         <h2 class="tp-bf-frage" tabindex="-1">Welche Farbe soll es sein?</h2>
-        <p class="tp-bf-hinweis">Es stehen nur Farben zur Wahl, die es bei uns gibt – in Klammern die Anzahl.</p>
+        <p class="tp-bf-hinweis">Gern auch mehrere. Es stehen nur Farben zur Wahl, die es bei uns gibt – in Klammern die Anzahl.</p>
         <div class="tp-bf-farben" data-bf-farben aria-busy="true"></div>
-        <button class="tp-bf-egal" type="button" data-bf-egal="farbe">Farbe ist mir noch egal</button>
+        <p class="tp-bf-zaehler" data-bf-zaehler aria-live="polite"></p>
+        <div class="tp-bf-fuss">
+          <button class="tp-s-btn tp-s-btn--primary" type="button" data-bf-weiter="farbe" disabled>Weiter</button>
+          <button class="tp-bf-egal" type="button" data-bf-egal="farbe">Farbe ist mir noch egal</button>
+        </div>
       </div>
 
-      {%- comment -%} Frage 3: Optik (z. B. Florhoehe) und optional Raum {%- endcomment -%}
+      {%- comment -%} Frage 3: Optik (z. B. Florhoehe, mehrere moeglich) und optional Raum {%- endcomment -%}
       <div class="tp-bf-schritt" data-bf-schritt="optik" hidden>
         <h2 class="tp-bf-frage" tabindex="-1" data-bf-optik-frage>Welche Optik soll es sein?</h2>
+        <p class="tp-bf-hinweis">Gern auch mehrere.</p>
         <div class="tp-bf-optiken" data-bf-optiken aria-busy="true"></div>
-        <button class="tp-bf-egal" type="button" data-bf-egal="optik">Weiß ich noch nicht</button>
         <fieldset class="tp-bf-zimmer" data-bf-zimmer-box hidden>
           <legend>Für welchen Raum? <span>(optional)</span></legend>
           <div class="tp-bf-chips" data-bf-zimmer></div>
         </fieldset>
+        <p class="tp-bf-zaehler" data-bf-zaehler aria-live="polite"></p>
         <div class="tp-bf-fuss">
-          <button class="tp-s-btn tp-s-btn--primary" type="button" data-bf-weiter disabled>Weiter</button>
+          <button class="tp-s-btn tp-s-btn--primary" type="button" data-bf-weiter="optik" disabled>Weiter</button>
+          <button class="tp-bf-egal" type="button" data-bf-egal="optik">Weiß ich noch nicht</button>
         </div>
       </div>
 
-      {%- comment -%} Frage 4: Budget pro m2 oder fuer den Raum {%- endcomment -%}
+      {%- comment -%}
+        Frage 4: Raumgroesse (Laenge x Breite in m oder cm, oder nur die
+        Flaeche) und Preisrahmen je m² - beides freiwillig.
+      {%- endcomment -%}
       <div class="tp-bf-schritt" data-bf-schritt="budget" hidden>
-        <h2 class="tp-bf-frage" tabindex="-1">Was möchten Sie ausgeben?</h2>
-        <div class="tp-bf-umschalter" role="radiogroup" aria-label="Budget angeben">
-          <button type="button" role="radio" aria-checked="false" data-bf-modus="raum">Für meinen Raum</button>
-          <button type="button" role="radio" aria-checked="true" data-bf-modus="qm">Pro m²</button>
-        </div>
-        <div class="tp-bf-budget" data-bf-feld="qm">
-          <label class="tp-bf-feld">
-            <span>Höchstens</span>
-            <span class="tp-bf-eingabe"><input type="text" inputmode="decimal" autocomplete="off" data-bf-qm placeholder="z. B. 20"><span>€/m²</span></span>
-          </label>
-          <div class="tp-bf-chips" data-bf-qm-chips>
-            <button class="tp-bf-chip" type="button" aria-pressed="false" data-bf-qm-wert="20">bis 20 €</button>
-            <button class="tp-bf-chip" type="button" aria-pressed="false" data-bf-qm-wert="30">bis 30 €</button>
-            <button class="tp-bf-chip" type="button" aria-pressed="false" data-bf-qm-wert="45">bis 45 €</button>
-            <button class="tp-bf-chip" type="button" aria-pressed="false" data-bf-qm-wert="70">bis 70 €</button>
-          </div>
-        </div>
-        <div class="tp-bf-budget" data-bf-feld="raum" hidden>
-          <div class="tp-bf-masse">
-            <label class="tp-bf-feld"><span>Länge</span><span class="tp-bf-eingabe"><input type="text" inputmode="decimal" autocomplete="off" data-bf-laenge placeholder="z. B. 5"><span>m</span></span></label>
+        <h2 class="tp-bf-frage" tabindex="-1">Raum und Preis</h2>
+        <p class="tp-bf-hinweis">Beides ist freiwillig. Mit der Raumgröße rechnen wir Ihnen bei jedem Vorschlag den Preis für Ihren Raum aus.</p>
+        <fieldset class="tp-bf-gruppe">
+          <legend>Wie groß ist der Raum?</legend>
+          <div class="tp-bf-masse" data-bf-feld="lb">
+            <label class="tp-bf-feld"><span>Länge</span><span class="tp-bf-eingabe"><input type="text" inputmode="decimal" autocomplete="off" data-bf-laenge placeholder="z. B. 4,5"><span data-bf-einheit="laenge">m</span></span></label>
             <span class="tp-bf-mal" aria-hidden="true">×</span>
-            <label class="tp-bf-feld"><span>Breite</span><span class="tp-bf-eingabe"><input type="text" inputmode="decimal" autocomplete="off" data-bf-breite placeholder="z. B. 4"><span>m</span></span></label>
+            <label class="tp-bf-feld"><span>Breite</span><span class="tp-bf-eingabe"><input type="text" inputmode="decimal" autocomplete="off" data-bf-breite placeholder="z. B. 3,8"><span data-bf-einheit="breite">m</span></span></label>
           </div>
-          <label class="tp-bf-feld">
-            <span>Budget für den ganzen Raum</span>
-            <span class="tp-bf-eingabe"><input type="text" inputmode="decimal" autocomplete="off" data-bf-gesamt placeholder="z. B. 500"><span>€</span></span>
-          </label>
+          <div class="tp-bf-masse tp-bf-masse--qm" data-bf-feld="qm" hidden>
+            <label class="tp-bf-feld"><span>Fläche</span><span class="tp-bf-eingabe"><input type="text" inputmode="decimal" autocomplete="off" data-bf-flaeche placeholder="z. B. 18"><span>m²</span></span></label>
+          </div>
           <p class="tp-bf-umrechnung" data-bf-umrechnung aria-live="polite"></p>
-          <p class="tp-bf-hinweis">Teppichboden kommt von der Rolle, meist 400 oder 500 cm breit. Passt die Raumbreite nicht genau, entsteht Verschnitt – den rechnen wir bei den Vorschlägen als ca.-Preis mit ein.</p>
-        </div>
-        <p class="tp-bf-zaehler" data-bf-zaehler aria-live="polite"></p>
+          <p class="tp-bf-hinweis tp-bf-hinweis--klein"><span data-bf-feld="lb">In Metern oder Zentimetern, z. B. 4,5 oder 450.</span>
+            <button class="tp-bf-link" type="button" data-bf-massmodus>Nur die Fläche bekannt? In m² angeben</button>
+          </p>
+        </fieldset>
+        <fieldset class="tp-bf-gruppe">
+          <legend>Welcher Preis pro m² passt?</legend>
+          <div class="tp-bf-preise" data-bf-preise aria-busy="true"></div>
+          <p class="tp-bf-hinweis tp-bf-hinweis--klein">Kleineres Budget? Im Laden haben wir Reste und Sonderposten.
+            <button class="tp-bf-link" type="button" data-bf-zur-anfrage="sonder">Fotos und Preise anfragen</button>
+          </p>
+        </fieldset>
         <div class="tp-bf-fuss">
           <button class="tp-s-btn tp-s-btn--primary" type="button" data-bf-zeigen>Vorschläge zeigen</button>
-          <button class="tp-bf-egal" type="button" data-bf-ohne-budget>Ohne Budget anzeigen</button>
         </div>
       </div>
 
@@ -314,6 +317,7 @@
               "optik_frage": {{ block.settings.optik_frage | json }},
               "optik_namen": {{ block.settings.optik_namen | json }},
               "raum_filter": {{ block.settings.raum_filter | strip | json }},
+              "preis_stufen": {{ block.settings.preis_stufen | json }},
               "rolle": {{ block.settings.rollenware | json }}
             },
           {%- endif -%}
@@ -452,7 +456,7 @@
   "settings": [
     { "type": "text", "id": "kicker", "label": "Dachzeile", "default": "Boden-Finder" },
     { "type": "text", "id": "heading", "label": "Überschrift", "default": "Welcher Teppichboden passt zu Ihnen?" },
-    { "type": "textarea", "id": "text", "label": "Text", "default": "Ein paar kurze Fragen zu Farbe, Optik und Budget – dann zeigen wir Ihnen passende Vorschläge." },
+    { "type": "textarea", "id": "text", "label": "Text", "default": "Ein paar kurze Fragen zu Farbe, Optik, Raum und Preis – dann zeigen wir Ihnen passende Vorschläge." },
     { "type": "text", "id": "button", "label": "Knopf", "default": "Boden-Finder starten" },
     { "type": "text", "id": "bequem_link", "label": "Link für persönliche Vorschläge", "default": "Oder: Vorschläge von uns anfordern" },
     { "type": "checkbox", "id": "kompakt", "label": "Kompakte Darstellung", "default": false },
@@ -485,7 +489,8 @@
           "default": "Bis 5 mm = Kurzflor | flach und ruhig\nÜber 5 bis unter 10 mm = Mittelflor | spürbar weicher\nAb 10 mm = Hochflor | besonders weich und flauschig",
           "info": "Je Zeile: Filterwert = Name | kurze Beschreibung. Reihenfolge = Bildchen von niedrig bis hoch."
         },
-        { "type": "text", "id": "raum_filter", "label": "Filter für den Raum (optional)", "default": "filter.p.m.custom.zimmer" }
+        { "type": "text", "id": "raum_filter", "label": "Filter für den Raum (optional)", "default": "filter.p.m.custom.zimmer" },
+        { "type": "text", "id": "preis_stufen", "label": "Preisstufen je m² (Frage 4)", "default": "20, 30, 45, 70", "info": "Mit Komma und Leerzeichen getrennt. Angeboten werden nur Stufen mit Treffern." }
       ]
     }
   ],
