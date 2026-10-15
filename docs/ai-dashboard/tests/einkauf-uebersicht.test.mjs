@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { blockGruende, mengeText, ausfuehrungKurz, jeKommission } from '../lib/einkauf-uebersicht.mjs';
+import { blockGruende, mengeText, ausfuehrungKurz, jeKommission, musterSchritt } from '../lib/einkauf-uebersicht.mjs';
 
 // Nur erfundene Daten.
 const pos = (extra = {}) => ({ titel: 'Testvelours Teppichboden', farbe: 'Sand', grosshaendlerId: 'TV-100', bestellmenge: { menge: 4, text: '4,00 lfm × 4,00 m' }, ...extra });
@@ -32,4 +32,31 @@ test('jeKommission: Muster einer Bestellung zusammen, laengste Wartezeit zuerst,
   const g = jeKommission([e('1', 2), e('2', 9, 'warn'), e('1', 3), e('2', 15, 'crit'), e('3', null)]);
   assert.deepEqual(g.map(k => [k.orderName, k.positionen.length, k.wartetage, k.warnstufe]),
     [['#2', 2, 15, 'crit'], ['#1', 2, 3, null], ['#3', 1, null, null]]);
+});
+
+test('musterSchritt: je Kunde ein gemeinsamer Schritt statt Klick je Muster (Innendienst 15.10.)', () => {
+  const m = (id, extra = {}) => ({ orderId: 'O', lineItemId: id, istMuster: true, ...extra });
+  const stand = map => p => map[p.lineItemId] || null;
+  // Drei Muster beim Lieferanten bestellt: alle drei auf einmal angekommen.
+  const drei = [m('A'), m('B'), m('C')];
+  const s1 = musterSchritt(drei, stand({ A: 'bestellt', B: 'bestellt', C: 'bestellt' }));
+  assert.equal(s1.schritt, 'angekommen');
+  assert.deepEqual(s1.positionen.map(p => p.lineItemId), ['A', 'B', 'C']);
+  // Eins schon da, zwei noch unterwegs: nur die bestellten.
+  assert.deepEqual(musterSchritt(drei, stand({ A: 'geliefert', B: 'bestellt', C: 'bestellt' })).positionen.map(p => p.lineItemId), ['B', 'C']);
+  // Alle da: verschicken, alle drei.
+  const s2 = musterSchritt(drei, stand({ A: 'geliefert', B: 'geliefert', C: 'geliefert' }));
+  assert.equal(s2.schritt, 'verschicken');
+  assert.equal(s2.positionen.length, 3);
+  assert.equal(s2.uebergabe, false);
+  // Lagermuster plus angekommenes Lieferanten-Muster gehen zusammen raus.
+  const gemischt = [m('A'), m('L', { musterHerkunft: 'eigen_versand' })];
+  assert.deepEqual(musterSchritt(gemischt, stand({ A: 'geliefert' })).positionen.map(p => p.lineItemId), ['A', 'L']);
+  // Noch nicht beim Lieferanten bestellt: kein gemeinsamer Schritt (erst bestellen).
+  assert.equal(musterSchritt(gemischt, stand({})), null);
+  // Persoenlich vorbeibringen: Uebergabe.
+  assert.equal(musterSchritt([m('V', { musterHerkunft: 'eigen_vorbei' })], stand({})).uebergabe, true);
+  // Schon raus oder Ware: nichts zu tun.
+  assert.equal(musterSchritt([m('A')], stand({ A: 'raus' })), null);
+  assert.equal(musterSchritt([{ orderId: 'O', lineItemId: 'W' }], stand({ W: 'bestellt' })), null);
 });

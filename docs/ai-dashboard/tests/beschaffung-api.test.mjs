@@ -123,3 +123,13 @@ test('Gleichzeitige Übernahmen lesen die Sperre erst in ihrer Reihe; nur eine P
   assert.equal(r[0].status, 'fulfilled'); assert.equal(r[1].status, 'rejected'); assert.equal(r[1].reason.status, 409);
   assert.equal(u.api.einkaufAuftragsstatus().positionen[`${O}::${L}`].uebernahme.id, 'test');
 });
+
+test('Musterbestellung ohne Wareneingang: ein Schritt "geliefert" setzt alle Muster, ohne Mengen (Innendienst 15.10.)', async () => {
+  const u = umgebung(1, 3);
+  const ids = [L, `${L}-1`, `${L}-2`];
+  for (const lineItemId of ids) await u.api.einkaufAuftragsstatusSetzen({ orderId: O, lineItemId, status: 'bestellt' }, person);
+  await u.api.einkaufAuftragsstatusSetzen({ orderId: O, aktion: 'schritt', schritt: 'geliefert' }, person);
+  const stand = u.api.einkaufAuftragsstatus().positionen;
+  assert.deepEqual(ids.map(id => stand[`${O}::${id}`].status), ['geliefert', 'geliefert', 'geliefert']);
+  assert.equal(u.aufrufe(), 0);
+});

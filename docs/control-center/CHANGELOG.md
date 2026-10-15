@@ -2,6 +2,26 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-15 · Muster je Kunde mit einem Klick (#1322)
+
+- **Geändert:** Innendienst: „zu umständlich, jetzt für jeden Artikel einzeln“. Seit #1206 öffnete
+  „angekommen“ auch bei Mustern den Wareneingangs-Dialog mit Mengenfeldern – je Muster, auch über die
+  Zeitleiste. Jetzt: Muster brauchen keine Mengen. In der Lieferantenkarte und im Kundenkopf der
+  Muster-Tabelle steht je Kunde **ein** Knopf für den gemeinsamen nächsten Schritt
+  (`musterSchritt()` in `lib/einkauf-uebersicht.mjs`): „Alle 3 angekommen“ (ein Klick, eine Meldung)
+  bzw. „Verschicken…“/„Übergeben…“, sobald kein Muster des Auftrags mehr fehlt. Der Versand-Dialog
+  kreuzt alle angekommenen Muster und Lagermuster vorab an (`vorauswahl(…, { status })`). Ein
+  einzelnes Muster „Als geliefert markieren“ setzt direkt; die Zeitleiste setzt bei reinen
+  Musterbestellungen wieder alle Muster auf einmal. Ware behält den Wareneingangs-Dialog.
+- **Getestet:** `musterSchritt` (angekommen, teilweise da, verschicken, gemischt mit Lager, noch nicht
+  bestellt, Übergabe, Ware), Vorauswahl mit Status, Servertest Zeitleisten-Schritt „geliefert“ für drei
+  Muster. Klickstrecke gegen die Datenkopie: „Alle 3 angekommen“ → Nachfassen 5 → 4 Aufträge
+  (14 → 11 Positionen); „Verschicken…“ beim selben Kunden → Dialog mit 3 von 3 angekreuzt; einzelnes
+  Muster ohne Dialog → „geliefert“; Ware öffnet weiter den Wareneingang. 390 px ohne Überlauf.
+- **Risiken/Annahmen:** „Angekommen“ gilt für alle bestellten Muster des Kunden bei diesem Lieferanten;
+  kam nur ein Teil, je Muster in der Tabelle setzen bzw. „Zurück auf offen…“.
+- **Nächste Stufe:** Rückmeldung des Innendiensts abwarten.
+
 ## 2026-10-15 · Musterlager: Antworten des Inhabers (Werkbank w-091, Folge zu #1183)
 
 - **Geändert:** Mustergröße A5 – Probestück und Bahn zeigen „reicht noch für ca. N A5-Muster“ (54 je

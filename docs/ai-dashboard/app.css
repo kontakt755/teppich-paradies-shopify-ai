@@ -479,6 +479,7 @@ table.tasks .cell-title { font-weight: 600; }
 .group-card .einkauf-kundengruppe + .einkauf-kundengruppe .einkauf-kundenkopf th { border-top: 14px solid var(--surface); }
 .einkauf-kundenkopf th > span { display: block; }
 .einkauf-kundenname { color: var(--text); font-size: .94rem; font-weight: 700; }
+.einkauf-kundenaktion { margin-top: 6px; }
 table.tasks tr.row-gap td { background: color-mix(in srgb, var(--warn-soft) 45%, transparent); }
 table.tasks code[data-kopiertext] { cursor: copy; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
 .fehlt { line-height: 1.4; }

@@ -22,7 +22,7 @@ import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import {
   einkauf, afEintragFuer, anzeigeWert, afWarteText, markiereAlsBestellt,
   ensureEinkaufBestellungen, ensureEinkaufAuftragsstatus, ensureEinkaufLieferanten,
-  setzeZurueckAufOffen, zurueckGruppen, openMusterHerkunftDialog, kundeUndOrt,
+  setzeZurueckAufOffen, zurueckGruppen, openMusterHerkunftDialog, kundeUndOrt, musterSchrittKnopf,
 } from './auftragsfluss.mjs';
 
 // Welche Karten ihre Positionen zeigen. Als Zustand im Modul (nicht <details>): jede
@@ -156,7 +156,7 @@ function musterZeile(g, namen, { herkunft = false } = {}) {
       <div class="t">${esc(wer || 'Kunde unbekannt')}</div>
       <div class="s">${esc(musterText(g.positionen))}</div>
       ${woher ? `<div class="s lf-wer">${esc(woher)}</div>` : ''}
-    </div><div class="lf-posten-rechts"><span class="lf-anzahl">${esc(plural(g.positionen.length, 'Muster', 'Muster'))}</span>${warteChip(g)}</div></li>`;
+    </div><div class="lf-posten-rechts"><span class="lf-anzahl">${esc(plural(g.positionen.length, 'Muster', 'Muster'))}</span>${warteChip(g)}${musterSchrittKnopf(g.positionen, { klasse: 'btn btn-sm lf-zeilenknopf' })}</div></li>`;
 }
 
 /** Ueberschrift einer Stufe: "Ware bestellen 3", darunter ein Satz, rechts der Knopf. */
