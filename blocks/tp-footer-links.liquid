@@ -102,6 +102,12 @@
         Die Einwilligung muss so leicht widerrufbar sein wie sie erteilt wurde.
       {%- endcomment -%}
       <li><a href="#cookie-einstellungen" data-tp-cookie-einstellungen>Cookie-Einstellungen</a></li>
+      {%- comment -%}
+        Widerrufsfunktion nach § 356a BGB: muss staendig erreichbar und
+        hervorgehoben sein, deshalb fest im Block (wie Cookie-Einstellungen)
+        und als Schaltflaeche abgesetzt. Ziel: sections/tp-widerruf.liquid.
+      {%- endcomment -%}
+      <li class="tp-footer-links__widerruf-zeile"><a class="tp-footer-links__widerruf" href="/pages/vertrag-widerrufen">Vertrag widerrufen</a></li>
     </ul>
   </nav>
 </div>
@@ -198,6 +204,26 @@
   .tp-footer-links a:hover {
     text-decoration: underline;
     text-underline-offset: 3px;
+  }
+
+  /* Widerrufsfunktion (§ 356a BGB): hervorgehoben statt einer von vielen Links */
+  .tp-footer-links__widerruf-zeile { margin-top: 8px; }
+
+  .tp-footer-links a.tp-footer-links__widerruf {
+    min-height: 40px;
+    padding: 0 16px;
+    font-weight: 600;
+    border: 2px solid currentColor;
+    border-radius: 999px;
+  }
+
+  .tp-footer-links a.tp-footer-links__widerruf:hover {
+    text-decoration: none;
+    background: rgb(var(--color-foreground-rgb) / 0.08);
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-footer-links a.tp-footer-links__widerruf { min-height: 44px; }
   }
 
   @media screen and (max-width: 749px) {
