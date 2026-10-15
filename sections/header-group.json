@@ -42,7 +42,8 @@
             "color_scheme_navigation_bar": "",
             "drawer_accordion": false,
             "drawer_accordion_expand_first": false,
-            "drawer_dividers": false
+            "drawer_dividers": false,
+            "tp_kurztexte": "Teppichboden: Meterware von Wand zu Wand\nTeppiche: Standardgrößen oder nach Maß\nTeppichfliesen: Fliesen 50 × 50 und Planken\nVinylboden: Klick, Klebe oder Rolle\nLaminat & Parkett: Laminat, Parkett und Kork\nLinoleum & Kautschuk: Elastische Bodenbeläge\nZubehör & Leisten: Leisten, Profile, Kleber\nAngebote & Reste: Reduzierte Ware und Reste\nService & Verlegung: Verlegung, Beratung, Kontakt"
           },
           "blocks": {}
         },
@@ -448,11 +449,12 @@
         }
       },
       "settings": {
-        "logo_position": "center",
+        "logo_position": "left",
         "menu_position": "center",
-        "menu_row": "top",
+        "menu_row": "bottom",
         "customer_account_menu": "customer-account-main-menu",
         "show_search": true,
+        "tp_suche_platzhalter": "Suchen: grauer Teppichboden, Vinyl Eiche, Sockelleiste weiß …",
         "search_position": "right",
         "search_row": "top",
         "show_country": false,
@@ -465,7 +467,7 @@
         "section_width": "page-width",
         "section_height": "compact",
         "enable_sticky_header": "always",
-        "divider_width": 0,
+        "divider_width": 1,
         "divider_size": "page-width",
         "border_width": 0,
         "actions_display_style": "icon",
@@ -473,7 +475,7 @@
         "actions_font": "body",
         "actions_text_case": "none",
         "color_scheme_top": "scheme-1",
-        "color_scheme_bottom": "",
+        "color_scheme_bottom": "scheme-1",
         "color_scheme_transparent": "scheme-6",
         "enable_transparent_header_home": false,
         "home_color_scheme": "inverse",

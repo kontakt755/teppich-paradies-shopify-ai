@@ -15,6 +15,12 @@
   spaete Antwort ("vi") nie die aktuelle ("vinyl") ueberschreibt; Ergebnisse
   je Begriff im Speicher (max. 50 Eintraege, nur diese Seite).
 
+  Zweite Instanz im Kopf (snippets/tp-kopf-suche.liquid, Desktop ab 1100 px):
+  data-tp-quelle nennt die Instanz der Suchzeile. Von dort kommen Leerzustand
+  (beliebte Bereiche, haeufige Suchen) und Synonyme, damit beides nur in den
+  Einstellungen der Suchzeile gepflegt wird. Die Options-IDs leiten sich aus
+  der Panel-ID ab und bleiben so je Instanz eindeutig.
+
   Sicherheit: Der Suchbegriff wird nie als HTML eingesetzt - nur per
   URLSearchParams, textContent und Liquid-escape im Snippet.
 
@@ -34,7 +40,10 @@ class TpSucheLeiste extends HTMLElement {
     this.input = this.querySelector('input[type="search"]');
     this.panel = this.querySelector('.tp-hs__panel');
     if (!this.form || !this.input || !this.panel) return;
+    this.quelle = this.dataset.tpQuelle ? document.querySelector(this.dataset.tpQuelle) : null;
     this.leer = this.panel.querySelector('[data-tp-leer]');
+    this.#leerUebernehmen();
+    this.optionPraefix = (this.panel.id || 'tp-hs-panel').replace(/-panel$/, '') + '-option';
     this.ergebnisse = this.panel.querySelector('[data-tp-ergebnisse]');
     this.meinten = this.panel.querySelector('[data-tp-meinten]');
     this.telefon = window.matchMedia('(max-width: 767px)');
@@ -379,7 +388,7 @@ class TpSucheLeiste extends HTMLElement {
     this.aktiv = -1;
     this.input.removeAttribute('aria-activedescendant');
     this.panel.querySelectorAll('a[role="option"]').forEach((el, i) => {
-      el.id = `tp-hs-option-${i}`;
+      el.id = `${this.optionPraefix}-${i}`;
       el.removeAttribute('aria-selected');
     });
   }
@@ -442,8 +451,16 @@ class TpSucheLeiste extends HTMLElement {
 
   /* ---------- "Meinten Sie" aus den Section-Einstellungen ---------- */
 
+  /** Leerzustand der Suchzeile uebernehmen, wenn diese Instanz keinen eigenen hat. */
+  #leerUebernehmen() {
+    if (!this.leer || this.leer.childElementCount > 0 || !this.quelle || this.quelle === this) return;
+    const vorlage = this.quelle.querySelector('.tp-hs__panel [data-tp-leer]');
+    if (!vorlage) return;
+    this.leer.replaceChildren(...Array.from(vorlage.children, (kind) => kind.cloneNode(true)));
+  }
+
   #synonymeLesen() {
-    const quelle = this.querySelector('script[data-tp-synonyme]');
+    const quelle = this.querySelector('script[data-tp-synonyme]') ?? this.quelle?.querySelector('script[data-tp-synonyme]');
     if (!quelle) return [];
     let text = '';
     try {

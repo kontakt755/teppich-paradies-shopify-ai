@@ -83,6 +83,8 @@
   >
     <ul class="tp-uk__list" role="list">
       {%- for tp_uk_child in tp_uk_parent.links -%}
+        {%- comment -%} Gruppen des Mega-Menues (Farbe, Raum, Rollenbreite - Link "#") sind keine Kategorie {%- endcomment -%}
+        {%- if tp_uk_child.url == '#' -%}{%- continue -%}{%- endif -%}
         {%- assign tp_uk_current = false -%}
         {%- if tp_uk_child.url == collection_resource.url -%}
           {%- assign tp_uk_current = true -%}

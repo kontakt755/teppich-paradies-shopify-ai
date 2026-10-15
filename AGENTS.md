@@ -212,6 +212,8 @@ Der Paket-/Verschnittrechner und dessen Warenkorblogik sind bereits intensiv get
 
 Das Hauptmenü kommt aus Horizon (`sections/header-group.json`, Menü `main-menu`). Das Globo-Mega-Menu-Embed steht zwar noch in `config/settings_data.json`, gibt im Live-Shop aber nichts aus (geprüft 13.10.). Menü nicht grundsätzlich umbauen, außer der Auftrag betrifft ausdrücklich das Menü.
 
+Seit w-094 (Inhaber 15.10.) steht der Kopf in zwei Zeilen (oben Logo, Suchfeld `snippets/tp-kopf-suche.liquid`, Warenkorb; darunter das Menü) mit neun Hauptpunkten. Spalten im Mega-Menü (Teppichboden: Farbe, Raum, Rollenbreite) sind Menüpunkte mit Link `#` und eigenen Unterpunkten, ausgegeben von `snippets/tp-menu-spalten.liquid` – neue Spalte = Menüpunkt anlegen, kein Theme-Code. Jeder Filterlink braucht Treffer (`npm run menu:guard`). Den Menübaum nur mit `scripts/menue-umbau.mjs` umbauen (setzt alle MenuItem-IDs wieder ein, Gegenprobe `--pruefen`), Ablauf: `docs/weiterentwicklung/hauptmenue-umbau-2026-10.md`.
+
 Horizon 4.1.3 existiert als separates Update. Keine Migration durchführen, solange dies nicht ausdrücklich beauftragt wird.
 
 ## Preislogik

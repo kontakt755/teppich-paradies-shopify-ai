@@ -1,0 +1,96 @@
+{
+  "_zweck": "Umbauplan Hauptmenue (Werkbank w-094, Inhaber-Freigabe 2026-10-15): 9 Hauptpunkte statt 15, Teppichboden mit Spalten Farbe / Raum / Rollenbreite. Anwenden nur mit scripts/menue-umbau.mjs - das Skript setzt alle bestehenden MenuItem-IDs wieder ein und bricht ab, wenn eine fehlt oder doppelt vorkommt.",
+  "_regeln": [
+    "{\"id\": ...} = bestehender Punkt; ohne \"kinder\" behaelt er seine bisherigen Unterpunkte samt IDs.",
+    "\"*\" in \"kinder\" = alle bisherigen Unterpunkte dieses Punkts, die nicht anderswo im Plan stehen, in bisheriger Reihenfolge.",
+    "{\"neu\": {...}} = neuer Punkt ohne ID. Gruppen (Spalten im Mega-Menue) haben url \"#\".",
+    "Filterlinks nur mit Treffern: gezaehlt am 2026-10-15 in /collections/teppichboden (Anzahl in _treffer). Werte unter 5 Treffern bewusst weggelassen: Weiss 2, Rosa 3, Violett 3, Rollenbreite 457 cm 2."
+  ],
+  "menu": "gid://shopify/Menu/268032508238",
+  "oben": [
+    {
+      "id": "gid://shopify/MenuItem/730052297038",
+      "_titel": "Teppichboden",
+      "kinder": [
+        "*",
+        {
+          "neu": { "title": "Farbe", "type": "HTTP", "url": "#" },
+          "kinder": [
+            { "neu": { "title": "Beige", "type": "HTTP", "url": "/collections/teppichboden?filter.v.t.shopify.color-pattern=gid%3A%2F%2Fshopify%2FTaxonomyValue%2F6" }, "_treffer": 26 },
+            { "neu": { "title": "Braun", "type": "HTTP", "url": "/collections/teppichboden?filter.v.t.shopify.color-pattern=gid%3A%2F%2Fshopify%2FTaxonomyValue%2F7" }, "_treffer": 27 },
+            { "neu": { "title": "Grau", "type": "HTTP", "url": "/collections/teppichboden?filter.v.t.shopify.color-pattern=gid%3A%2F%2Fshopify%2FTaxonomyValue%2F8" }, "_treffer": 27 },
+            { "neu": { "title": "Schwarz", "type": "HTTP", "url": "/collections/teppichboden?filter.v.t.shopify.color-pattern=gid%3A%2F%2Fshopify%2FTaxonomyValue%2F1" }, "_treffer": 13 },
+            { "neu": { "title": "Blau", "type": "HTTP", "url": "/collections/teppichboden?filter.v.t.shopify.color-pattern=gid%3A%2F%2Fshopify%2FTaxonomyValue%2F2" }, "_treffer": 15 },
+            { "neu": { "title": "Grün", "type": "HTTP", "url": "/collections/teppichboden?filter.v.t.shopify.color-pattern=gid%3A%2F%2Fshopify%2FTaxonomyValue%2F9" }, "_treffer": 16 },
+            { "neu": { "title": "Rot", "type": "HTTP", "url": "/collections/teppichboden?filter.v.t.shopify.color-pattern=gid%3A%2F%2Fshopify%2FTaxonomyValue%2F13" }, "_treffer": 10 },
+            { "neu": { "title": "Orange", "type": "HTTP", "url": "/collections/teppichboden?filter.v.t.shopify.color-pattern=gid%3A%2F%2Fshopify%2FTaxonomyValue%2F10" }, "_treffer": 11 },
+            { "neu": { "title": "Gelb", "type": "HTTP", "url": "/collections/teppichboden?filter.v.t.shopify.color-pattern=gid%3A%2F%2Fshopify%2FTaxonomyValue%2F14" }, "_treffer": 5 }
+          ]
+        },
+        {
+          "neu": { "title": "Raum", "type": "HTTP", "url": "#" },
+          "kinder": [
+            { "neu": { "title": "Wohnzimmer", "type": "HTTP", "url": "/collections/teppichboden?filter.p.m.custom.zimmer=gid%3A%2F%2Fshopify%2FMetaobject%2F1720806834510" }, "_treffer": 149 },
+            { "neu": { "title": "Schlafzimmer", "type": "HTTP", "url": "/collections/teppichboden?filter.p.m.custom.zimmer=gid%3A%2F%2Fshopify%2FMetaobject%2F1720807031118" }, "_treffer": 149 },
+            { "neu": { "title": "Kinderzimmer", "type": "HTTP", "url": "/collections/teppichboden?filter.p.m.custom.zimmer=gid%3A%2F%2Fshopify%2FMetaobject%2F1720806998350" }, "_treffer": 148 },
+            { "neu": { "title": "Arbeitszimmer", "type": "HTTP", "url": "/collections/teppichboden?filter.p.m.custom.zimmer=gid%3A%2F%2Fshopify%2FFilterSettingGroup%2F380305742" }, "_treffer": 12 },
+            { "neu": { "title": "Flur", "type": "HTTP", "url": "/collections/teppichboden?filter.p.m.custom.zimmer=gid%3A%2F%2Fshopify%2FMetaobject%2F1720807293262" }, "_treffer": 189 },
+            { "neu": { "title": "Büro", "type": "HTTP", "url": "/collections/teppichboden?filter.p.m.custom.zimmer=gid%3A%2F%2Fshopify%2FMetaobject%2F1749145616718" }, "_treffer": 176 }
+          ]
+        },
+        {
+          "neu": { "title": "Rollenbreite", "type": "HTTP", "url": "#" },
+          "kinder": [
+            { "neu": { "title": "200 cm", "type": "HTTP", "url": "/collections/teppichboden?filter.v.m.custom.rollenbreite=2.0" }, "_treffer": 13 },
+            { "neu": { "title": "400 cm", "type": "HTTP", "url": "/collections/teppichboden?filter.v.m.custom.rollenbreite=4.0" }, "_treffer": 232 },
+            { "neu": { "title": "500 cm", "type": "HTTP", "url": "/collections/teppichboden?filter.v.m.custom.rollenbreite=5.0" }, "_treffer": 107 }
+          ]
+        }
+      ]
+    },
+    { "id": "gid://shopify/MenuItem/871684145486", "_titel": "Teppiche" },
+    { "id": "gid://shopify/MenuItem/871137182030", "_titel": "Teppichfliesen" },
+    { "id": "gid://shopify/MenuItem/859123319118", "_titel": "Vinylboden" },
+    {
+      "neu": { "title": "Laminat & Parkett", "type": "COLLECTION", "resourceId": "gid://shopify/Collection/706791145806", "url": "/collections/laminat-parkett" },
+      "kinder": [
+        { "id": "gid://shopify/MenuItem/885110702414", "_titel": "Laminat" },
+        { "id": "gid://shopify/MenuItem/885110735182", "_titel": "Parkett" },
+        { "id": "gid://shopify/MenuItem/886687203662", "_titel": "Korkboden" }
+      ]
+    },
+    {
+      "neu": { "title": "Linoleum & Kautschuk", "type": "COLLECTION", "resourceId": "gid://shopify/Collection/706791178574", "url": "/collections/linoleum-kautschuk" },
+      "kinder": [
+        { "id": "gid://shopify/MenuItem/868188684622", "_titel": "Linoleumboden" },
+        { "id": "gid://shopify/MenuItem/887199039822", "_titel": "Kautschukboden" }
+      ]
+    },
+    {
+      "id": "gid://shopify/MenuItem/868583539022",
+      "_titel": "Zubehör",
+      "title": "Zubehör & Leisten",
+      "kinder": [
+        { "id": "gid://shopify/MenuItem/859123089742", "_titel": "Bodenleisten" },
+        "*"
+      ]
+    },
+    {
+      "id": "gid://shopify/MenuItem/887189668174",
+      "_titel": "Angebote",
+      "title": "Angebote & Reste",
+      "kinder": [
+        { "neu": { "title": "Aktuelle Angebote", "type": "COLLECTION", "resourceId": "gid://shopify/Collection/705490485582", "url": "/collections/angebote" } },
+        { "id": "gid://shopify/MenuItem/889373229390", "_titel": "Reste & Sonderposten" }
+      ]
+    },
+    {
+      "id": "gid://shopify/MenuItem/734281072974",
+      "_titel": "Service & Verlegung",
+      "kinder": [
+        "*",
+        { "id": "gid://shopify/MenuItem/734280614222", "_titel": "Kontakt" }
+      ]
+    }
+  ]
+}

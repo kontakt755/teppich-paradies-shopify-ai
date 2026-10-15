@@ -516,6 +516,194 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
 }
 
 /* ------------------------------------------------------------------
+   Bildkarten plus Spalten (snippets/tp-menu-spalten.liquid, w-094)
+   Teppichboden: links die Arten als kleine Bildkarten, rechts Farbe, Raum
+   und Rollenbreite. Ziel: bei 1440 x 900 ohne Scrollen (vorher 893 px
+   Inhalt bei 1920, bei 1440 ueber den Bildschirmrand).
+   ------------------------------------------------------------------ */
+.tp-ms {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 1.25rem 2.5rem;
+  align-items: start;
+  white-space: normal;
+}
+
+@media screen and (min-width: 1100px) {
+  .tp-ms {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+.mega-menu__grid .tp-ms .tp-ms__karten {
+  display: grid;
+  grid-column: auto;
+  grid-template-columns: repeat(var(--tp-ms-spalten, 5), minmax(0, 1fr));
+  gap: 0.875rem;
+}
+
+.mega-menu__grid .tp-ms .tp-ms__karten .tp-mm-card--media {
+  align-self: stretch;
+}
+
+/* Kleine Karten: Titel und Kurztext eine Stufe kleiner als in den
+   Menues mit wenigen grossen Karten */
+.header-menu .mega-menu__grid .tp-ms .mega-menu__list .tp-mm-card__title {
+  font-size: 1rem;
+}
+
+.header-menu .mega-menu__grid .tp-ms .mega-menu__list .tp-mm-card__sub {
+  font-size: 0.8125rem;
+}
+
+.tp-ms-gruppen {
+  display: grid;
+  grid-template-columns: repeat(var(--tp-ms-gruppen, 3), minmax(7.5rem, max-content));
+  gap: 0 2rem;
+  align-content: start;
+}
+
+.tp-ms-gruppe {
+  display: grid;
+  gap: 0.4rem;
+  align-content: start;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.header-menu .tp-ms-gruppe .tp-nav-link {
+  justify-content: flex-start;
+  gap: 0.55rem;
+  padding-block: 0.28rem;
+  font-size: 0.9375rem;
+}
+
+@media screen and (min-width: 1920px) {
+  .header-menu .tp-ms-gruppe .tp-nav-link {
+    font-size: 1rem;
+  }
+}
+
+/* Bis 1700 px flachere Bilder und kleinere Titel: bei 1440 x 900 brauchten
+   drei Kartenreihen sonst 668 px, Platz war 617 px */
+@media screen and (min-width: 1100px) and (max-width: 1699px) {
+  .header-menu .mega-menu__grid .tp-ms .mega-menu__list .tp-mm-card__media {
+    aspect-ratio: 5 / 2;
+  }
+
+  .header-menu .mega-menu__grid .tp-ms .mega-menu__list .tp-mm-card__title {
+    font-size: 0.9375rem;
+  }
+
+  .tp-ms {
+    column-gap: 2rem;
+  }
+
+  .tp-ms-gruppen {
+    column-gap: 1.5rem;
+  }
+
+  /* Dasselbe fuer Menues ab neun Karten (Zubehoer & Leisten, Service &
+     Verlegung): zwei Reihen mit Unterpunkten brauchten bei 1440 x 900 sonst
+     625 px bei 617 px Platz */
+  .header-menu .mega-menu__grid .mega-menu__list:has(> .mega-menu__column:nth-child(9)) .tp-mm-card__media {
+    aspect-ratio: 5 / 2;
+  }
+}
+
+.tp-farbpunkt {
+  flex: none;
+  width: 0.9em;
+  height: 0.9em;
+  border-radius: 50%;
+  background: var(--tp-farbe);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.18);
+}
+
+/* Handy: Arten als Kacheln in zwei Spalten (w-039: das Teppichboden-Menue
+   war 15 volle Zeilen lang), Farbe/Raum/Rollenbreite als Chips darunter */
+.menu-drawer .tp-dn-kacheln {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0 8px 4px;
+  list-style: none;
+}
+
+.menu-drawer .tp-dn-kachel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+  min-height: 60px;
+  padding: 8px;
+  border: 1px solid rgb(var(--color-foreground-rgb) / 0.12);
+  border-radius: 10px;
+  color: var(--color-foreground);
+  text-decoration: none;
+}
+
+.menu-drawer .tp-dn-kachel.is-current {
+  border-color: currentColor;
+}
+
+.menu-drawer .tp-dn-kachel__media {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: rgb(var(--color-foreground-rgb) / 0.06);
+}
+
+.menu-drawer .tp-dn-kachel__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.menu-drawer .tp-dn-kachel__media .tp-dn-row__initial {
+  font-size: 16px;
+}
+
+.menu-drawer .tp-dn-kachel__body {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.menu-drawer .tp-dn-kachel__title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.menu-drawer .tp-dn-kachel__count {
+  font-size: 12px;
+  line-height: 1.25;
+  color: rgb(var(--color-foreground-rgb) / 0.6);
+}
+
+.menu-drawer .tp-ms-gruppen--drawer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.menu-drawer .tp-ms-gruppe--farbe .tp-nav-chip {
+  padding-inline: 12px 16px;
+}
+
+.tp-nav-chip .tp-farbpunkt {
+  width: 14px;
+  height: 14px;
+}
+
+/* ------------------------------------------------------------------
    Desktop: Bodenleisten - vierte Spalte fuer die Profile
    ------------------------------------------------------------------ */
 @media screen and (min-width: 1200px) {
@@ -704,6 +892,80 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
   .header-menu .mega-menu__grid .mega-menu__list .tp-mm-card__media,
   .header-menu .tp-lnav .tp-lnav__all-media {
     aspect-ratio: 2 / 1;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Kopf in zwei Zeilen (Shopvergleich 2026-10-15, Werkbank w-094)
+
+   Oben Logo, Suchfeld (snippets/tp-kopf-suche.liquid), Konto und Warenkorb,
+   darunter das Hauptmenue in eigener Zeile ueber die volle Kopfbreite
+   (sections/header-group.json: menu_row "bottom"). Die Lupe im Kopf und die
+   TP-Suchzeile unter dem Kopf entfallen dort - das Feld steht ja oben.
+
+   Gilt nur fuer das waagerechte Menue ab 1100 px. Im Schubladenmodus
+   (Touch-Geraete, schmale Fenster) bleibt der Kopf einzeilig wie bisher, und
+   die TP-Suchzeile sucht.
+
+   Vor dem ersten Skriptlauf traegt der Kopf noch kein data-menu-style
+   (assets/utilities.js setHeaderMenuStyle). Die Regeln greifen deshalb bei
+   "nicht drawer" statt erst bei "menu": Das Suchfeld steht schon im ersten
+   Bild oben, und die Menuezeile hat ihre Hoehe, bevor das Menue erscheint -
+   sonst sprang die Seite beim Laden um eine Zeile.
+   ------------------------------------------------------------------ */
+.tp-kopf-suche {
+  display: none;
+}
+
+@media screen and (max-width: 1099px) {
+  #header-component .header__row--bottom {
+    display: none;
+  }
+}
+
+@media screen and (min-width: 1100px) {
+  #header-component[data-menu-style='drawer'] .header__row--bottom {
+    display: none;
+  }
+
+  #header-component:not([data-menu-style='drawer']) .tp-kopf-suche {
+    display: flex;
+    width: clamp(26rem, 40vw, 46rem);
+  }
+
+  .tp-kopf-suche .tp-hs__leiste {
+    width: 100%;
+    max-width: none;
+  }
+
+  .tp-kopf-suche .tp-hs__form {
+    height: 46px;
+    margin: 0;
+  }
+
+  #header-component:not([data-menu-style='drawer']) search-button.search-action {
+    display: none;
+  }
+
+  #header-group:has(#header-component:not([data-menu-style='drawer'])) .tp-hs {
+    display: none;
+  }
+
+  /* Menuezeile: eine Spalte ueber die volle Breite statt der drei Spalten der
+     oberen Zeile, sonst bemisst sich das Menue nach seinem Inhalt und die
+     Ueberlauf-Liste ("Mehr") greift nie. */
+  #header-component .header__row--bottom .header__columns {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'center';
+    min-height: 3rem;
+  }
+
+  #header-component .header__row--bottom .header__column--center {
+    min-width: 0;
+  }
+
+  #header-component .header__row--bottom header-menu {
+    width: 100%;
   }
 }
 

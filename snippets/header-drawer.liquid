@@ -107,7 +107,7 @@
         {%- endcomment -%}
         {% render 'tp-drawer-nav-mechanik' %}
         {% if eager_loading %}
-          {% render 'tp-drawer-nav', linklist: linklist, kacheln: kacheln %}
+          {% render 'tp-drawer-nav', linklist: linklist, kacheln: kacheln, kurztexte: block_settings.tp_kurztexte %}
         {% else %}
           <ul class="tp-dn tp-dn--vorab" role="list">
             {%- for link in linklist.links -%}

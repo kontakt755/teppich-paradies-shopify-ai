@@ -12,6 +12,7 @@
   @param {string} [localization] - Captured HTML for language/country selector
   @param {string} [search] - Captured HTML for search input
   @param {string} [drawer_search] - Captured HTML for drawer-based search
+  @param {string} [tp_suche] - Suchfeld der oberen Kopfzeile (snippets/tp-kopf-suche.liquid), steht immer in der Mitte der oberen Zeile
 {% enddoc %}
 
 {%- liquid
@@ -46,6 +47,11 @@
       endcase
     endif
   endfor
+
+  # TP: Suchfeld mittig in der oberen Zeile (Kopf in zwei Zeilen, w-094)
+  if row == 'top' and tp_suche != blank
+    assign center = center | append: 'tp_suche '
+  endif
 
   assign columns = 'left,center,right' | split: ','
 -%}
@@ -84,6 +90,8 @@
               {{ search }}
             {% when 'drawer_search' %}
               {{ drawer_search }}
+            {% when 'tp_suche' %}
+              {{ tp_suche }}
             {% when 'actions' %}
               {{ actions }}
           {% endcase %}
