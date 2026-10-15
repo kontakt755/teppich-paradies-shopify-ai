@@ -45,6 +45,12 @@
   .tp-sticky .tp-s-btn { min-height: 46px; font-size: 14.5px; padding: 0 10px; }
   @media (max-width: 767px) { .tp-sticky { display: grid; } body { padding-bottom: 70px; } }
   @media (prefers-reduced-motion: reduce) { .tp-sticky { transition: none; } }
+
+  /* Solange Menue, Warenkorb oder ein anderes Fenster offen ist (scroll-lock am
+     html-Element, assets/dialog.js), liegt die Leiste nicht darueber. Sie
+     verdeckte am Handy die letzten Eintraege im Menue, z. B. die Rollenbreiten
+     unter Teppichboden (Meldung 2026-10-15). */
+  :root[scroll-lock] .tp-sticky { display: none; }
 {% endstylesheet %}
 
 {% javascript %}

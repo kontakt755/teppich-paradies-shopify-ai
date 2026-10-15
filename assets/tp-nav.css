@@ -292,6 +292,26 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
+/* Genau eine Scrollebene je Menueebene (Handy-Meldung 2026-10-15: Untermenue
+   liess sich nicht bis unten scrollen und sprang zurueck).
+   position: relative haelt die absolut gesetzten .visually-hidden-Texte der
+   Zeilen im Scrollbereich. Ohne sie gehoerten sie zum Panel darueber
+   (.menu-drawer__submenu, ebenfalls overflow-y: auto) und machten es um bis
+   zu 84 px scrollbar - zwei Scrollebenen ineinander (gemessen: Vinylboden,
+   Zubehoer). overscroll-behavior: contain gibt das Wischen am Listenende
+   nicht an die gesperrte Seite dahinter weiter; iOS federte sonst die ganze
+   Seite statt der Liste. */
+.menu-drawer .tp-dn-panel__inner {
+  position: relative;
+}
+
+.menu-drawer,
+.menu-drawer .menu-drawer__navigation-container,
+.menu-drawer .tp-dn-panel,
+.menu-drawer .tp-dn-panel__inner {
+  overscroll-behavior-y: contain;
+}
+
 .menu-drawer .tp-dn-panel__bar {
   padding: 4px 4px 0;
 }
