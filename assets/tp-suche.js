@@ -18,6 +18,13 @@
   Sicherheit: Der Suchbegriff wird nie als HTML eingesetzt - nur per
   URLSearchParams, textContent und Liquid-escape im Snippet.
 
+  Lupe im Kopf (ab 768 px): Solange dieses Feld zu sehen ist, waere die Lupe
+  im Horizon-Kopf eine zweite Suche. Ein IntersectionObserver setzt dann
+  "tp-suchfeld-sichtbar" an <html>, die Regel dazu steht in
+  sections/tp-header-suche.liquid. Scrollt das Feld unter den klebenden Kopf,
+  erscheint die Lupe wieder. Ohne JavaScript bleibt sie immer sichtbar.
+  (Shopvergleich 2026-10-15, w-096)
+
   Tracking-Vorbereitung: Das Element loest die Ereignisse "tp:suche"
   (Begriff, Anzahl Produkte, Treffer ja/nein) und "tp:suche:klick" (Typ, URL,
   Text, Begriff) auf document aus. Es setzt keine Cookies und schreibt nichts
@@ -31,6 +38,7 @@ const CACHE_MAX = 50;
 class TpSucheLeiste extends HTMLElement {
   connectedCallback() {
     this.form = this.querySelector('form');
+    this.#lupeSteuern();
     this.input = this.querySelector('input[type="search"]');
     this.panel = this.querySelector('.tp-hs__panel');
     if (!this.form || !this.input || !this.panel) return;
@@ -63,10 +71,27 @@ class TpSucheLeiste extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.sichtbarkeit?.disconnect();
+    document.documentElement.classList.remove('tp-suchfeld-sichtbar');
     this.abbruch?.abort();
     clearTimeout(this.timer);
     clearTimeout(this.ladeTimer);
     this.laufend?.abort();
+  }
+
+  #lupeSteuern() {
+    if (!this.form || !('IntersectionObserver' in window)) return;
+    // Der Kopf klebt oben: Was unter ihm liegt, ist nicht mehr zu sehen.
+    const kopf = document.getElementById('header-component');
+    const oben = kopf ? Math.round(kopf.getBoundingClientRect().height) : 0;
+    this.sichtbarkeit?.disconnect();
+    this.sichtbarkeit = new IntersectionObserver(
+      ([eintrag]) => {
+        document.documentElement.classList.toggle('tp-suchfeld-sichtbar', eintrag.isIntersecting);
+      },
+      { rootMargin: `-${oben}px 0px 0px 0px` }
+    );
+    this.sichtbarkeit.observe(this.form);
   }
 
   /* ---------- Ereignisse ---------- */
