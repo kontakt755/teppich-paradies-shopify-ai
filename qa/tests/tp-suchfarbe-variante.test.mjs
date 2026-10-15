@@ -271,6 +271,125 @@ test('Teppich nach Mass: nur fuers Einfassen freigegebene Farben', async () => {
   assert.equal((await wahl(p, suche('grauer teppich'))).option1, 'Anthrazit');
 });
 
+// Groessensuche verwendet dieselbe Auswahlquelle; keinerlei neue Variante.
+function standardteppich() {
+  const p = produkt([
+    variante('Natur', '60 × 110 cm', { price: 7399 }),
+    variante('Natur', '120 × 170 cm', { price: 12999 }),
+    variante('Natur', '160 × 230 cm', { price: 18999 }),
+    variante('Grau', '60 × 110 cm', { price: 8399 }),
+    variante('Grau', '160 × 230 cm', { price: 19999 }),
+  ], { zweiteOption: 'Größe' });
+  p.type = 'Teppich';
+  p.options_by_name = { 'Größe': { name: 'Größe' } };
+  return p;
+}
+
+test('Standardteppich: exakte Suchgroesse mit x, ×, Leerzeichen, NBSP und cm in beiden Suchen', async () => {
+  const p = standardteppich();
+  for (const begriff of ['Teppich160x230', 'Teppich 160X230', 'Teppich 160 × 230 cm', 'Teppich 160 × 230', '160 x 230']) {
+    for (const kontext of [suche, schnellsuche]) {
+      assert.equal((await wahl(p, kontext(begriff))).id, p.variants[2].id, begriff);
+    }
+  }
+});
+
+test('Groessenwahl behaelt die bereits gewaehlte Farbe und priorisiert exakte Farbe wie bisher', async () => {
+  const p = standardteppich();
+  p.selected_variant = p.variants[3];
+  assert.equal((await wahl(p, suche('Teppich160x230'))).id, p.variants[4].id);
+  p.selected_variant = p.variants[0];
+  assert.equal((await wahl(p, suche('grauer Teppich 160x230'))).id, p.variants[4].id);
+});
+
+test('Aktiver Variantenfilter hat Vorrang vor Suchgroesse; inaktive und Produktfilter sperren sie nicht', async () => {
+  const p = standardteppich();
+  p.selected_variant = p.variants[1];
+  for (const filter of [
+    { param_name: 'filter.v.option.größe', active_values: [{ value: '120 × 170 cm' }] },
+    { param_name: 'filter.v.availability', active_values: [{ value: '1' }] },
+    { param_name: 'filter.v.price', min_value: { value: 0 }, max_value: { value: null } },
+  ]) {
+    const g = suche('Teppich 160x230');
+    g.search.filters = [filter];
+    assert.equal(await wahl(p, g), null);
+  }
+  for (const filter of [
+    { param_name: 'filter.v.option.größe', active_values: [] },
+    { param_name: 'filter.v.price', min_value: { value: null }, max_value: { value: null } },
+    { param_name: 'filter.p.product_type', active_values: [{ value: 'Teppich' }] },
+  ]) {
+    const g = suche('Teppich160x230');
+    g.search.filters = [filter];
+    assert.equal((await wahl(p, g)).id, p.variants[2].id);
+  }
+});
+
+test('Aktiver Groessenfilter behaelt die bisherige graue Variante trotz anderer Suchgroesse', async () => {
+  const p = standardteppich();
+  p.selected_variant = p.variants[0];
+  const g = suche('grauer Teppich 160x230');
+  g.search.filters = [{ param_name: 'filter.v.option.größe', active_values: [{ value: '60 × 110 cm' }] }];
+  assert.equal((await wahl(p, g)).id, p.variants[3].id);
+});
+
+test('Fehlende, vertauschte oder ungenaue Suchmasse waehlen keine Standardgroesse', async () => {
+  const p = standardteppich();
+  for (const begriff of ['160x240', '230x160', '160x2300', '1160x230', '160x230mm', '160x230m', '160x230x5', '2x160x230', '160x230,5', '160x230.5', '160x230 oder 120x170']) {
+    assert.equal(await wahl(p, suche(begriff)), null, begriff);
+  }
+});
+
+test('Groessenwahl ueberspringt ausverkaufte, unbebilderte und OPC-Varianten; Farbe wird nicht gewechselt', async () => {
+  for (const aendern of [(v) => { v.available = false; }, (v) => { v.featured_media = null; }, (v) => { v.title += ' / OPC-1'; }]) {
+    const p = standardteppich();
+    aendern(p.variants[2]);
+    assert.equal(await wahl(p, suche('Teppich160x230')), null);
+    // Die verfuegbare graue Variante derselben Groesse ist kein Ersatz fuer Natur.
+    assert.equal((await wahl(p, suche('grauer Teppich160x230'))).id, p.variants[4].id);
+  }
+});
+
+test('Nicht angebotene Groesse in Suchfarbe behaelt die bisherige Farbwahl', async () => {
+  const p = standardteppich();
+  p.variants[4].available = false;
+  assert.equal((await wahl(p, suche('grauer Teppich160x230'))).id, p.variants[3].id);
+});
+
+test('Keine neue Groessenwahl auf Collections, PDP, Rollenware oder Nichtteppichen', async () => {
+  const p = standardteppich();
+  assert.equal(await wahl(p, { request: { page_type: 'collection' }, search: { performed: true, terms: '160x230' } }), null);
+  assert.equal(await wahl(p, { request: { page_type: 'product' }, search: { performed: true, terms: '160x230' } }), null);
+  for (const typ of ['Teppichboden', 'Teppichfliese', 'Kissen']) {
+    p.type = typ;
+    assert.equal(await wahl(p, suche('160x230')), null, typ);
+  }
+});
+
+test('Mass- und Paketprodukte mit Groessenoption erhalten keine neue Groessenwahl', async () => {
+  for (const custom of [{ preis_pro_001_qm: { value: true } }, { qm_pro_paket: { value: 2.5 } }]) {
+    const p = standardteppich();
+    p.metafields = { custom };
+    assert.equal(await wahl(p, suche('160x230')), null);
+  }
+});
+
+test('Dritte Option wie Form/Einfassung wird nicht durch Groessenwahl gewechselt', async () => {
+  const p = standardteppich();
+  p.options_with_values.push({ name: 'Form', position: 3 });
+  for (const v of p.variants) v.options.push(v === p.variants[2] ? 'Oval' : 'Rechteckig');
+  assert.equal(await wahl(p, suche('Teppich160x230')), null);
+});
+
+test('Groessenoption an erster Position und Wohnteppich-Typ werden aus den Daten erkannt', async () => {
+  const p = standardteppich();
+  p.type = 'Wohnteppich';
+  p.options_with_values = [{ name: 'Größe', position: 1 }, { name: 'Farbe', position: 2 }];
+  for (const v of p.variants) v.options.reverse();
+  const out = (await engine.parseAndRender("{% render 'tp-suchfarbe-variante', product: product %}", { product: p }, { globals: suche('160x230') })).trim();
+  assert.equal(out, '2|1');
+});
+
 // --- Preis: aus der gewaehlten Farbe, nicht aus dem guenstigsten Farbton des Produkts ---
 // LiquidJS-Shim: "assign x = blank" ergibt dort keinen Wert, der "== blank" ist - die
 // Min/Max-Schleife liefe ins Leere. Shopify behandelt das wie nil.
@@ -304,6 +423,14 @@ test('Teppiche in festen Groessen: ab-Preis nur ueber die Groessen der gewaehlte
   p.options_by_name = { 'Größe': { name: 'Größe' } };
   assert.match(await preis(p, suche('teppich')), /ab 99,00 €/);
   assert.match(await preis(p, suche('grauer teppich')), /ab 129,00 €/);
+});
+
+test('Groessensuche behaelt den ab-Einstiegspreis derselben Farbe statt konkreten Groessenpreis zu behaupten', async () => {
+  const p = standardteppich();
+  const v = await wahl(p, suche('Teppich160x230'));
+  assert.equal(v.price, 18999);
+  assert.match(await preis(p, suche('Teppich160x230')), /ab 73,99 €/);
+  assert.match(await preis(p, suche('grauer Teppich160x230')), /ab 83,99 €/);
 });
 
 test('Teppich nach Mass auf der Karte: Preis der gewaehlten Farbe, Kartenoptik bleibt', async () => {
