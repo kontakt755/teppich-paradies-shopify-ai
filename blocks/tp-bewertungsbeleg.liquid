@@ -49,6 +49,8 @@
   {%- if tp_bb_link != blank -%}
     <a class="tp-bewertungsbeleg__link-{{ tp_bb_id }}" href="{{ tp_bb_link }}" target="_blank" rel="noopener noreferrer">{% if tp_bb_rating != blank %}Auf Google lesen{% else %}Kundenbewertungen auf Google lesen{% endif %}</a>
   {%- endif -%}
+  {%- comment -%} § 5b Abs. 3 UWG, Wortlaut im Snippet {%- endcomment -%}
+  <div class="tp-bewertungsbeleg__hinweis">{%- render 'tp-bewertungshinweis' -%}</div>
 </div>
 {%- endif -%}
 
@@ -64,6 +66,9 @@
   }
 
   .tp-bewertungsbeleg__label { font-weight: 600; }
+
+  .tp-bewertungsbeleg__hinweis { flex-basis: 100%; }
+  .tp-bewertungsbeleg__hinweis .tp-bewertungshinweis { margin-top: 0; }
 
   .tp-bewertungsbeleg__stars-{{ tp_bb_id }} {
     color: #ffb400;

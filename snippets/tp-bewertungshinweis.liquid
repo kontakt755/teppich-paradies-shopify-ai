@@ -1,0 +1,16 @@
+{%- comment -%}
+  Hinweis nach § 5b Abs. 3 UWG: ob und wie geprueft wird, dass Bewertungen von
+  Kunden stammen. Wortlaut vom Inhaber freigegeben (15.10.2026, Werkbank w-095)
+  - nur nach Freigabe aendern. Eine Quelle fuer Startseite und Produktseite.
+  Aufruf: {% render 'tp-bewertungshinweis' %}
+{%- endcomment -%}
+<p class="tp-bewertungshinweis">Die Bewertungen stammen aus unserem Google-Unternehmensprofil. Wir prüfen nicht, ob die Verfasser bei uns gekauft haben.</p>
+
+{% stylesheet %}
+  .tp-bewertungshinweis {
+    margin: 8px 0 0;
+    font-size: 12px;
+    line-height: 1.45;
+    color: rgb(var(--color-foreground-rgb, 0 0 0) / 0.65);
+  }
+{% endstylesheet %}
