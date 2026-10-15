@@ -89,7 +89,7 @@
 {% stylesheet %}
   .tp-standardteppiche { padding-block: 4px 24px; }
   .tp-standardteppiche > nav { min-width: 0; max-width: 100%; }
-  .tp-standardteppiche h2 { margin: 0; font-size: clamp(20px, 2vw, 26px); }
+  .tp-standardteppiche h2 { margin: 0; font-size: var(--tp-fs-xl); }
   .tp-st__intro { margin: 8px 0 16px; line-height: 1.45; }
   .tp-st__cards { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x proximity; margin: 0; padding: 4px 3px 8px; list-style: none; }
   .tp-st__cards > li { flex: 0 0 144px; scroll-snap-align: start; }
@@ -98,9 +98,9 @@
   .tp-st__card:focus-visible, .tp-st__material:focus-visible, .tp-st__reset:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
   .tp-st__media { display: block; width: 96px; height: 64px; align-self: center; }
   .tp-st__image { display: block; width: 100%; height: 100%; object-fit: contain; }
-  .tp-st__credit { font-size: 9px; line-height: 1.3; overflow-wrap: anywhere; }
-  .tp-st__card strong { font-size: 15px; line-height: 1.25; }
-  .tp-st__count, .tp-st__description, .tp-st__selected { font-size: 12px; line-height: 1.35; }
+  .tp-st__credit { font-size: var(--tp-fs-xs); line-height: 1.3; overflow-wrap: anywhere; }
+  .tp-st__card strong { font-size: var(--tp-fs-md); line-height: 1.25; }
+  .tp-st__count, .tp-st__description, .tp-st__selected { font-size: var(--tp-fs-xs); line-height: 1.35; }
   .tp-st__selected { font-weight: 600; }
   .tp-st__reset { display: inline-flex; align-items: center; min-height: 44px; margin-bottom: 8px; color: inherit; }
   .tp-st__materials { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }

@@ -65,7 +65,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 15px;
+      font-size: var(--tp-fs-md);
       font-weight: 500;
       line-height: 1.5;
       color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.85);
@@ -81,7 +81,7 @@
       background: linear-gradient(135deg, #008a2e 0%, #006b23 100%);
       border-radius: 50%;
       color: #ffffff;
-      font-size: 12px;
+      font-size: var(--tp-fs-xs);
       font-weight: 700;
       flex: 0 0 auto;
     }
@@ -97,13 +97,13 @@
       }
 
       .tp-teppich-vorteile-{{ tp_tv_id }} li {
-        font-size: 14px;
+        font-size: var(--tp-fs-sm);
       }
 
       .tp-teppich-vorteile-{{ tp_tv_id }} li::before {
         width: 18px;
         height: 18px;
-        font-size: 11px;
+        font-size: var(--tp-fs-xs);
       }
     }
   </style>

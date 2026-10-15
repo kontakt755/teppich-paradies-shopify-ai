@@ -162,26 +162,26 @@
 
   .price-with-unit .tp-ab-preis { display: flex; flex-direction: column; gap: 2px; }
   .price-with-unit .tp-ab-preis__haupt { display: flex; align-items: baseline; gap: 8px; line-height: 1.15; }
-  .price-with-unit .tp-ab-preis__ab { font-size: 15px; font-weight: 400; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72); }
-  .price-with-unit .tp-ab-preis__betrag { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; }
-  .price-with-unit .tp-ab-preis__alt { font-size: 14px; font-weight: 400; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62); text-decoration: line-through; }
-  .price-with-unit .tp-ab-preis__grund { font-size: 13px; font-weight: 400; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62); }
-  .price-with-unit .tp-ab-preis__einheit { margin-left: 1px; font-size: 18px; font-weight: 600; }
-  .price-with-unit .tp-ab-preis__lieferzeit { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 13px; font-weight: 600; color: #1d6b47; }
+  .price-with-unit .tp-ab-preis__ab { font-size: var(--tp-fs-md); font-weight: 400; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72); }
+  .price-with-unit .tp-ab-preis__betrag { font-size: var(--tp-fs-xl); font-weight: 700; letter-spacing: -0.01em; }
+  .price-with-unit .tp-ab-preis__alt { font-size: var(--tp-fs-sm); font-weight: 400; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62); text-decoration: line-through; }
+  .price-with-unit .tp-ab-preis__grund { font-size: var(--tp-fs-sm); font-weight: 400; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62); }
+  .price-with-unit .tp-ab-preis__einheit { margin-left: 1px; font-size: var(--tp-fs-lg); font-weight: 600; }
+  .price-with-unit .tp-ab-preis__lieferzeit { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; font-size: var(--tp-fs-sm); font-weight: 600; color: #1d6b47; }
   .price-with-unit .tp-ab-preis__lieferzeit svg { flex-shrink: 0; }
 
   .price-with-unit__current {
-    font-size: 1.18em;
+    font-size: var(--tp-fs-lg);
     font-weight: 700;
   }
 
-  .tp-aktion-bedingung { display: flex; align-items: center; gap: 6px; margin: 6px 0 0; font-size: 13px; line-height: 1.4; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.75); }
+  .tp-aktion-bedingung { display: flex; align-items: center; gap: 6px; margin: 6px 0 0; font-size: var(--tp-fs-sm); line-height: 1.4; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.75); }
   .tp-tip { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 24px; min-height: 24px; cursor: help; }
-  .tp-tip__text { position: absolute; bottom: calc(100% + 6px); right: -8px; z-index: 20; width: 260px; padding: 10px 12px; border-radius: 6px; background: #1d1a17; color: #fff; font-size: 13px; line-height: 1.45; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .15s; }
+  .tp-tip__text { position: absolute; bottom: calc(100% + 6px); right: -8px; z-index: 20; width: 260px; padding: 10px 12px; border-radius: 6px; background: #1d1a17; color: #fff; font-size: var(--tp-fs-sm); line-height: 1.45; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .15s; }
   .tp-tip:hover .tp-tip__text, .tp-tip:focus .tp-tip__text, .tp-tip:focus-within .tp-tip__text { opacity: 1; visibility: visible; }
   .price-with-unit__compare {
     color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.58);
-    font-size: 0.82em;
+    font-size: var(--tp-fs-sm);
     text-decoration: line-through;
   }
 </style>

@@ -82,6 +82,18 @@
     var maxW = d.max_breite_cm;
     var groessenMaxW = null;
     var maxL = d.max_laenge_cm;
+    // Kleinste Seite und Wort in den Kundentexten (Matten nach Mass, 15.10.):
+    // ohne Angabe wie bisher 50 cm und "Teppich".
+    var minCm = Number(d.min_seite_cm) > 0 ? Math.round(Number(d.min_seite_cm)) : 50;
+    var W = d.wort === 'matte'
+      ? { dieser: 'Diese Matte', plural: 'Matten' }
+      : { dieser: 'Dieser Teppich', plural: 'Teppiche' };
+    // Eigene Massvorschlaege "40x60, 50x80" (Block-Einstellung), sonst die Teppichgroessen.
+    var eckigVorschlaege = String(d.massvorschlaege || '').split(',').map(function (s) {
+      var m = s.trim().match(/^(\d+)\s*[x×]\s*(\d+)$/i);
+      return m ? [Number(m[1]), Number(m[2])] : null;
+    }).filter(Boolean);
+    if (!eckigVorschlaege.length) eckigVorschlaege = GROESSEN.eckig;
     var mindestCent = parseInt(d.mindestpreis_cent, 10) || 0;
     // Preis je 0,01 laufendem Meter Kante. Ohne Service-Produkt wird die Kante
     // nicht getrennt berechnet - die Bandarten rechnen alles ueber den m2-Preis.
@@ -228,8 +240,8 @@
       groessenMaxW = maxW;
       leeren(groessen);
       var liste = f === 'rund'
-        ? GROESSEN.rund.filter(function (x) { return x <= maxW; }).map(function (x) { return [x, x]; })
-        : GROESSEN.eckig.filter(function (p) { return Math.min(p[0], p[1]) <= maxW && Math.max(p[0], p[1]) <= maxL; });
+        ? GROESSEN.rund.filter(function (x) { return x >= minCm && x <= maxW; }).map(function (x) { return [x, x]; })
+        : eckigVorschlaege.filter(function (p) { return Math.min(p[0], p[1]) >= minCm && Math.min(p[0], p[1]) <= maxW && Math.max(p[0], p[1]) <= maxL; });
       if (groessenWrap) groessenWrap.hidden = liste.length === 0;
       liste.forEach(function (p) {
         var b = document.createElement('button');
@@ -682,7 +694,7 @@
         if (mass) {
           var separat = k.art === 'ketteln' && !k.inkl;
           var maxWk = rolleCm > 0 ? M.maxBreiteCm(rolleCm, k.art) : 0;
-          var probleme = M.pruefeMasse({ form: mass.f, w: mass.w, l: mass.l, maxW: maxWk, maxL: Number(k.max_l) || 0 });
+          var probleme = M.pruefeMasse({ form: mass.f, w: mass.w, l: mass.l, maxW: maxWk, maxL: Number(k.max_l) || 0, minW: minCm, minL: minCm });
           if (probleme.length) {
             summe.textContent = 'In diesem Maß nicht möglich';
             kachel.classList.add('is-zu-gross');
@@ -740,7 +752,7 @@
       // alte "bis 390 × 500 cm" las sich wie eine feste Zuordnung Breite/Laenge
       // und liess 500 × 390 unmoeglich aussehen, obwohl es zulaessig ist.
       grenzen.textContent = rund
-        ? 'Möglich: Ø 50 bis ' + maxW + ' cm'
+        ? 'Möglich: Ø ' + minCm + ' bis ' + maxW + ' cm'
         : 'Möglich: kürzere Seite bis ' + maxW + ' cm, längere bis ' + maxL + ' cm (Reihenfolge egal)';
       groessenAufbauen(rund ? 'rund' : 'eckig');
 
@@ -754,23 +766,23 @@
       }
       var fehlerListe = [];
       if (b.komma || l.komma) fehlerListe.push('Bitte ganze Zentimeter ohne Komma eingeben, zum Beispiel 250.');
-      if (b.ungueltig) fehlerListe.push((rund ? 'Durchmesser' : 'Breite') + ' mindestens 50 cm.');
-      if (l.ungueltig) fehlerListe.push('Länge mindestens 50 cm.');
+      if (b.ungueltig) fehlerListe.push((rund ? 'Durchmesser' : 'Breite') + ' mindestens ' + minCm + ' cm.');
+      if (l.ungueltig) fehlerListe.push('Länge mindestens ' + minCm + ' cm.');
       var eingabeFehler = fehlerListe.length > 0;
       var eingegeben = b.wert > 0 && (rund || l.wert > 0);
       if (eingegeben && !fehlerListe.length) {
-        fehlerListe = M.pruefeMasse({ form: f, w: b.wert, l: l.wert, maxW: maxW, maxL: maxL, maxKg: maxKg, kgProQm: kgProQm });
+        fehlerListe = M.pruefeMasse({ form: f, w: b.wert, l: l.wert, maxW: maxW, maxL: maxL, minW: minCm, minL: minCm, maxKg: maxKg, kgProQm: kgProQm });
       }
       if (!target.available) fehlerListe.push('Diese Farbe ist derzeit nicht lieferbar.');
       // TP-005: unabhaengig von Mass-/Farbzustand sichtbar - ein ausgefallener
       // konfigurierter Service ist kein Eingabefehler des Kunden.
       if (kettelServiceFailed) fehlerListe.push('Die Kettelung ist aktuell nicht verfügbar. Bitte kurz bei uns melden.');
-      if (pauschaleFailed) fehlerListe.push('Dieser Teppich ist aktuell nicht bestellbar. Bitte kurz bei uns melden.');
+      if (pauschaleFailed) fehlerListe.push(W.dieser + ' ist aktuell nicht bestellbar. Bitte kurz bei uns melden.');
       // Zuschnitt mit Preis: nur genau eine Einheit des gewaehlten Massprodukts,
       // sonst stimmte der Endpreis nicht mehr (fail closed).
       var zsPreisFalsch = !!zuschnitt && !zuschnittFailed && zsPreisCent > 0 &&
         !!target && parseInt(target.price, 10) !== zsPreisCent;
-      if (zuschnittFailed || zsPreisFalsch) fehlerListe.push('Dieser Teppich ist aktuell nicht bestellbar. Bitte kurz bei uns melden.');
+      if (zuschnittFailed || zsPreisFalsch) fehlerListe.push(W.dieser + ' ist aktuell nicht bestellbar. Bitte kurz bei uns melden.');
       // Restbestand der Rolle: erst nach gueltiger Eingabe pruefen, sonst
       // stuende die Meldung schon vor dem ersten Mass da.
       var zs = null;
@@ -842,8 +854,8 @@
         mh.hidden = !mindest;
         if (mindest) {
           mh.textContent = minFlaeche
-            ? 'Teppiche unter ' + fmt(minFlaeche, 0) + ' m² berechnet der Hersteller mit ' + fmt(minFlaeche, 0) + ' m².'
-            : 'Mindestpreis ' + euro(mindestCent) + ' für kleine Teppiche.';
+            ? W.plural + ' unter ' + fmt(minFlaeche, 0) + ' m² berechnet der Hersteller mit ' + fmt(minFlaeche, 0) + ' m².'
+            : 'Mindestpreis ' + euro(mindestCent) + ' für kleine ' + W.plural + '.';
         }
       }
       q('[data-summe]').textContent = euro(summe);
@@ -940,7 +952,7 @@
       if (zsEinheit) {
         if (menge <= zsEinheit || parseInt(target.price, 10) !== zsPreisCent) {
           // Sollte rechnen() schon abfangen; falls nicht, sichtbar sperren.
-          fehler.textContent = 'Dieser Teppich ist aktuell nicht bestellbar. Bitte kurz bei uns melden.';
+          fehler.textContent = W.dieser + ' ist aktuell nicht bestellbar. Bitte kurz bei uns melden.';
           fehler.hidden = false;
           cta.disabled = true;
           return;

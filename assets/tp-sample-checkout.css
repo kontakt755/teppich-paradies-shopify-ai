@@ -17,8 +17,8 @@
 
 .tp-sample__eyebrow {
   margin: 0 0 6px;
-  font-size: 13px;
-  font-weight: 650;
+  font-size: var(--tp-fs-sm);
+  font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.65);
@@ -26,13 +26,13 @@
 
 .tp-sample__header h1 {
   margin: 0 0 8px;
-  font-size: 22px;
+  font-size: var(--tp-fs-lg);
   line-height: 1.25;
 }
 
 .tp-sample__header p {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--tp-fs-sm);
   line-height: 1.5;
   color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.75);
 }
@@ -51,7 +51,7 @@
 }
 
 .tp-sample__product-hinweis {
-  font-size: 14px;
+  font-size: var(--tp-fs-sm);
   line-height: 1.35;
   color: #555;
 }
@@ -70,7 +70,7 @@
 
 .tp-sample__loading,
 .tp-sample__error {
-  font-size: 14px;
+  font-size: var(--tp-fs-sm);
   padding: 12px 14px;
   border-radius: 8px;
 }
@@ -93,13 +93,13 @@
 
 .tp-sample__fieldset legend {
   padding: 0;
-  font-size: 15px;
-  font-weight: 650;
+  font-size: var(--tp-fs-md);
+  font-weight: 600;
 }
 
 .tp-sample__count {
   margin: 6px 0 16px;
-  font-size: 14px;
+  font-size: var(--tp-fs-sm);
   color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.75);
 }
 
@@ -172,7 +172,7 @@
   border-radius: 50%;
   background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.85);
   color: #fff;
-  font-size: 12px;
+  font-size: var(--tp-fs-xs);
 }
 
 .tp-sample__card[data-selected='true'] .tp-sample__card-check {
@@ -187,7 +187,7 @@
 }
 
 .tp-sample__card-label {
-  font-size: 13px;
+  font-size: var(--tp-fs-sm);
   font-weight: 600;
   text-align: center;
 }
@@ -200,8 +200,8 @@
   border-radius: var(--style-border-radius-buttons-primary, 7px);
   background: #4f4b3f;
   color: #fff;
-  font-size: 15px;
-  font-weight: 650;
+  font-size: var(--tp-fs-md);
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -239,7 +239,7 @@
   border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.12);
   border-radius: 8px;
   background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.03);
-  font-size: 15px;
+  font-size: var(--tp-fs-md);
   line-height: 1.55;
 }
 
@@ -292,7 +292,7 @@
 
 .tp-sample__gruppe-titel {
   margin: 0 0 10px;
-  font-size: 16px;
+  font-size: var(--tp-fs-md);
   font-weight: 700;
   line-height: 1.2;
 }
@@ -336,7 +336,7 @@
 }
 
 .tp-sample__produkt-name {
-  font-size: 13px;
+  font-size: var(--tp-fs-sm);
   font-weight: 600;
   line-height: 1.25;
 }
@@ -351,7 +351,7 @@
 
 .tp-sample__gruppe-hinweis {
   margin: 0 0 8px;
-  font-size: 14px;
+  font-size: var(--tp-fs-sm);
   line-height: 1.45;
 }
 
@@ -360,15 +360,15 @@
   margin: 0 0 8px;
   padding: 4px 10px;
   border-radius: 999px;
-  background: #fbeaea;
-  color: #96262f;
-  font-size: 13.5px;
+  background: #f6f2ec;
+  color: #1d1a17;
+  font-size: var(--tp-fs-sm);
   font-weight: 600;
 }
 
 /* Vinyl: hoechstens 3 Muster je Bestellung (Inhaber 13.10.2026) */
 .tp-sample__vinyl {
   margin: 0 0 8px;
-  font-size: 14px;
+  font-size: var(--tp-fs-sm);
   font-weight: 600;
 }

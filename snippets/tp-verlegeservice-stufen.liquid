@@ -155,7 +155,7 @@
     border-radius: 999px;
     background: #8d714c;
     color: #fff;
-    font-size: 13px;
+    font-size: var(--tp-fs-sm);
     font-weight: 700;
     letter-spacing: 0.02em;
     line-height: 1.2;
@@ -165,7 +165,7 @@
   .tp-vs-stufe__titel {
     margin: 0;
     font-family: var(--font-heading--family, inherit);
-    font-size: clamp(1.3rem, 1.1rem + 0.7vw, 1.6rem);
+    font-size: var(--tp-fs-xl);
     font-weight: 700;
     letter-spacing: -0.01em;
     line-height: 1.2;
@@ -178,7 +178,7 @@
   .tp-vs-stufe__kern {
     margin: 0;
     color: var(--tp-vs-leise);
-    font-size: 16px;
+    font-size: var(--tp-fs-md);
     line-height: 1.5;
   }
 
@@ -187,7 +187,7 @@
   .tp-vs-stufe__bedingung {
     margin: 0;
     color: var(--tp-vs-leise);
-    font-size: 14px;
+    font-size: var(--tp-fs-sm);
     line-height: 1.5;
   }
 
@@ -201,7 +201,7 @@
     margin: 0;
     padding: 0;
     list-style: none;
-    font-size: 15px;
+    font-size: var(--tp-fs-md);
     line-height: 1.45;
   }
 
@@ -229,7 +229,7 @@
     border: 1px solid rgb(var(--tp-vs-ton) / 0.4);
     border-radius: 999px;
     color: #6d5536;
-    font-size: 11px;
+    font-size: var(--tp-fs-xs);
     font-weight: 700;
     letter-spacing: 0.03em;
     text-transform: uppercase;
@@ -250,14 +250,14 @@
 
   .tp-vs-stufe__gratis p {
     margin: 0;
-    font-size: 16px;
+    font-size: var(--tp-fs-md);
     line-height: 1.4;
   }
 
   .tp-vs-stufe__gratis strong {
     display: block;
     color: rgb(var(--tp-vs-gruen));
-    font-size: 18px;
+    font-size: var(--tp-fs-lg);
     font-weight: 700;
   }
 
@@ -293,7 +293,7 @@
     gap: 2px 16px;
     padding: 11px 0;
     border-top: 1px solid var(--tp-vs-linie);
-    font-size: 16px;
+    font-size: var(--tp-fs-md);
     line-height: 1.4;
   }
 
@@ -313,7 +313,7 @@
 
   .tp-vs-kurz__wert small {
     color: var(--tp-vs-leise);
-    font-size: 13px;
+    font-size: var(--tp-fs-sm);
   }
 
   /* "ab" gehoert zum Preis: in der Spalte stuende es sonst allein darueber. */
@@ -327,7 +327,7 @@
   }
 
   .tp-vs-kurz .tp-vs-preis {
-    font-size: 17px;
+    font-size: var(--tp-fs-md);
   }
 
   .tp-vs-stufe--plus .tp-vs-preis {
@@ -336,7 +336,7 @@
 
   .tp-vs-klein {
     color: var(--tp-vs-leise);
-    font-size: 13px;
+    font-size: var(--tp-fs-sm);
     font-weight: 400;
   }
 
@@ -353,7 +353,7 @@
     padding: 13px 22px;
     border: 1px solid transparent;
     border-radius: 10px;
-    font-size: 16px;
+    font-size: var(--tp-fs-md);
     font-weight: 700;
     line-height: 1.2;
     text-align: center;

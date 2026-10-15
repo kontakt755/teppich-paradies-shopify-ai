@@ -1147,14 +1147,13 @@
             "untertitel": "Klick, Klebe oder von der Rolle",
             "produktwort": "Vinylböden",
             "rollenware": false,
-            "budget_preis": "rechnen",
-            "budget_stufen": "25, 35, 45, 60",
-            "raum_hinweis": "Klick- und Klebevinyl gibt es nur in ganzen Paketen: Wir rechnen wie der Paketrechner 5 % Verschnitt ein und runden auf volle Pakete auf. Vinyl von der Rolle ist 2 bis 5 m breit – Verschnitt rechnen wir bei den Vorschlägen als ca.-Preis mit ein.",
             "optik_frage": "Welche Optik soll es sein?",
             "optik_filter": "filter.p.m.custom.optik",
             "optik_namen": "Holzdekore = Holzoptik | Dielen mit Holzmaserung | holz\nSteindekore = Steinoptik | Beton- und Steinbilder | stein\nFliesendekore = Fliesenoptik | Zementfliese, Raute, Schachbrett | fliese\nSalz und Pfeffer = Salz und Pfeffer | fein gesprenkelt | punkte",
             "raum_filter": "filter.p.m.custom.arten",
-            "raum_frage": "Wie soll er verlegt werden?"
+            "raum_frage": "Wie soll er verlegt werden?",
+            "preis_stufen": "25, 35, 45, 60",
+            "budget_preis": "rechnen"
           }
         },
         "art_tnm": {
@@ -1181,7 +1180,7 @@
       "settings": {
         "kicker": "Boden-Finder",
         "heading": "Unsicher, welcher Teppichboden passt?",
-        "text": "Drei kurze Fragen zu Farbe, Optik und Budget – dann zeigen wir Ihnen passende Vorschläge.",
+        "text": "Drei kurze Fragen zu Farbe, Optik, Raum und Preis – dann zeigen wir Ihnen passende Vorschläge.",
         "button": "Boden-Finder starten",
         "bequem_link": "Oder: Vorschläge von uns anfordern",
         "kompakt": true,

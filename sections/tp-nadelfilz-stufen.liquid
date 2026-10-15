@@ -69,20 +69,20 @@
   .tp-nf-stufen__liste { display: grid; gap: 16px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
   .tp-nf-stufe { position: relative; display: flex; flex-direction: column; gap: 10px; padding: 22px 20px 20px; border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-background); }
   .tp-nf-stufe--empfohlen { border: 2px solid #7d9480; }
-  .tp-nf-stufe__badge { position: absolute; top: -12px; left: 18px; padding: 3px 10px; border-radius: 999px; background: #7d9480; color: #fff; font-size: 0.78rem; font-weight: 600; }
-  .tp-nf-stufe__stufe { margin: 0; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #7d9480; }
-  .tp-nf-stufe__name { margin: 0; font-size: 1.25rem; line-height: 1.25; }
-  .tp-nf-stufe__preis { margin: 0; font-size: 0.95rem; }
-  .tp-nf-stufe__preis strong { font-size: 1.35rem; }
-  .tp-nf-stufe__punkte { display: grid; gap: 6px; margin: 4px 0 0; padding: 0; list-style: none; font-size: 0.93rem; line-height: 1.4; }
+  .tp-nf-stufe__badge { position: absolute; top: -12px; left: 18px; padding: 3px 10px; border-radius: 999px; background: #7d9480; color: #fff; font-size: var(--tp-fs-xs); font-weight: 600; }
+  .tp-nf-stufe__stufe { margin: 0; font-size: var(--tp-fs-xs); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #7d9480; }
+  .tp-nf-stufe__name { margin: 0; font-size: var(--tp-fs-lg); line-height: 1.25; }
+  .tp-nf-stufe__preis { margin: 0; font-size: var(--tp-fs-md); }
+  .tp-nf-stufe__preis strong { font-size: var(--tp-fs-lg); }
+  .tp-nf-stufe__punkte { display: grid; gap: 6px; margin: 4px 0 0; padding: 0; list-style: none; font-size: var(--tp-fs-sm); line-height: 1.4; }
   .tp-nf-stufe__punkte li { display: grid; grid-template-columns: 16px 1fr; gap: 8px; align-items: start; }
   .tp-nf-stufe__punkte svg { margin-top: 2px; color: #7d9480; }
-  .tp-nf-stufe__fuer { margin: 4px 0 0; font-size: 0.9rem; line-height: 1.45; }
+  .tp-nf-stufe__fuer { margin: 4px 0 0; font-size: var(--tp-fs-sm); line-height: 1.45; }
   .tp-nf-stufe__fuer span { font-weight: 600; }
-  .tp-nf-stufe__boeden { margin: 0; font-size: 0.85rem; color: rgb(var(--color-foreground-rgb) / 0.65); }
-  .tp-nf-stufe__link { display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin-top: auto; padding: 10px 14px; border: 1px solid var(--color-foreground); border-radius: var(--style-border-radius-pills, 999px); color: var(--color-foreground); font-weight: 600; font-size: 0.92rem; text-decoration: none; }
+  .tp-nf-stufe__boeden { margin: 0; font-size: var(--tp-fs-sm); color: rgb(var(--color-foreground-rgb) / 0.65); }
+  .tp-nf-stufe__link { display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin-top: auto; padding: 10px 14px; border: 1px solid var(--color-foreground); border-radius: var(--style-border-radius-pills, 999px); color: var(--color-foreground); font-weight: 600; font-size: var(--tp-fs-sm); text-decoration: none; }
   .tp-nf-stufe--empfohlen .tp-nf-stufe__link { background: var(--color-foreground); color: var(--color-background); }
-  .tp-nf-stufen__hinweis { margin: 16px 0 0; font-size: 0.85rem; color: rgb(var(--color-foreground-rgb) / 0.65); }
+  .tp-nf-stufen__hinweis { margin: 16px 0 0; font-size: var(--tp-fs-sm); color: rgb(var(--color-foreground-rgb) / 0.65); }
   @media (max-width: 899px) {
     .tp-nf-stufen__liste { grid-template-columns: 1fr; gap: 22px; }
   }

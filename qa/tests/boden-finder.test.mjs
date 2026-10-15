@@ -22,15 +22,35 @@ const produkt = (varianten, extra = {}) => ({
   ...extra
 });
 
-test('Raummass in Metern, mit Einheit auch in cm', () => {
+test('Raummass in Metern oder Zentimetern, ohne Einheit erkannt', () => {
   assert.equal(L.raumMass('4'), 400);
   assert.equal(L.raumMass('4,5'), 450);
   assert.equal(L.raumMass('3.55 m'), 355);
   assert.equal(L.raumMass('450 cm'), 450);
+  // Ohne Einheit: unter 30 sind Meter, ab 30 Zentimeter.
+  assert.equal(L.raumMass('450'), 450);
+  assert.equal(L.raumMass('380'), 380);
+  assert.equal(L.raumMass('29,5'), 2950);
+  assert.equal(L.raumMass('30'), 30);
+  assert.deepEqual(L.raumMassInfo('450'), { cm: 450, einheit: 'cm' });
+  assert.deepEqual(L.raumMassInfo('4,5'), { cm: 450, einheit: 'm' });
+  assert.deepEqual(L.raumMassInfo('4 m'), { cm: 400, einheit: 'm' });
   assert.equal(L.raumMass(''), null);
   assert.equal(L.raumMass('abc'), null);
-  // 400 ohne Einheit waeren 400 m - das ist kein Raum.
-  assert.equal(L.raumMass('400'), null);
+  // Unter 10 cm oder ueber 50 m ist kein Raum.
+  assert.equal(L.raumMass('5 cm'), null);
+  assert.equal(L.raumMass('60 m'), null);
+  assert.equal(L.raumMass('6000'), null);
+});
+
+test('Raumflaeche in m²', () => {
+  assert.equal(L.qmFlaeche('18'), 18);
+  assert.equal(L.qmFlaeche('18,5'), 18.5);
+  assert.equal(L.qmFlaeche('18 m²'), 18);
+  assert.equal(L.qmFlaeche('18qm'), 18);
+  assert.equal(L.qmFlaeche(''), null);
+  assert.equal(L.qmFlaeche('0'), null);
+  assert.equal(L.qmFlaeche('5000'), null);
 });
 
 test('Geldbetraege mit Komma, Tausenderpunkt und Euro-Zeichen', () => {
@@ -44,11 +64,23 @@ test('Geldbetraege mit Komma, Tausenderpunkt und Euro-Zeichen', () => {
   assert.equal(L.betrag('zwanzig'), null);
 });
 
-test('Budget je m²: 500 EUR fuer 4 x 5 m = 25 EUR/m², auf Cent abgerundet', () => {
-  assert.equal(L.proQm(500, 400, 500), 25);
-  assert.equal(L.proQm(500, 350, 450), 31.74);
-  assert.equal(L.proQm(null, 400, 500), null);
-  assert.equal(L.proQm(500, null, 500), null);
+test('Preisstufen aus der Einstellung: sortiert, ohne Doppelte, Dezimalkomma', () => {
+  assert.deepEqual(L.preisStufen('20, 30, 45, 70'), [20, 30, 45, 70]);
+  assert.deepEqual(L.preisStufen('45; 20 30 30'), [20, 30, 45]);
+  assert.deepEqual(L.preisStufen('19,90, 29,90'), [19.9, 29.9]);
+  assert.deepEqual(L.preisStufen(''), []);
+});
+
+test('ca.-Betrag am Preisrahmen: Rollenbreite eingerechnet, auf 10 EUR gerundet', () => {
+  // 3,5 x 4,2 m: 4-m-Rolle quer zu 3,5 m -> 4,0 x 4,2 = 16,8 m².
+  assert.equal(L.rollenFlaeche(350, 420), 16.8);
+  // 4,5 x 6 m: 5-m-Rolle quer zu 4,5 m -> 5 x 6 = 30 m².
+  assert.equal(L.rollenFlaeche(450, 600), 30);
+  // Breiter als 5 m in beiden Richtungen: Raumflaeche.
+  assert.equal(L.rollenFlaeche(600, 700), 42);
+  assert.equal(L.stufenBetrag(20, 16.8), 340);
+  assert.equal(L.stufenBetrag(30, 30), 900);
+  assert.equal(L.stufenBetrag(20, null), null);
 });
 
 test('Raum 4 x 5 m aus 400er-Rolle: 20 m² Meterware', () => {
@@ -78,6 +110,21 @@ test('Raummass gewinnt, wenn die Meterware viel Verschnitt haette', () => {
   assert.equal(a.art, 'raummass');
   assert.equal(a.qm, 8);
   assert.equal(a.betrag, 320);
+});
+
+test('Beide Zuschnittarten fuer die Anzeige: genau zugeschnitten und von der Rolle', () => {
+  // 3,5 x 4,5 m: von der Rolle 18 m² x 33 = 594; zugeschnitten 16 m² x 44,90 = 718,40.
+  const p = produkt([['400cm', 3300], ['500cm', 3300], ['Wunschmaß', 4490]]);
+  const w = L.raumWege(p, 350, 450);
+  assert.equal(w.meterware.betrag, 594);
+  assert.equal(w.meterware.rolle, 400);
+  assert.equal(w.meterware.quer, 350);
+  assert.equal(w.raummass.qm, 16);
+  assert.equal(Math.round(w.raummass.betrag * 100) / 100, 718.4);
+  // Ohne erlaubte Wunschmass-Variante gibt es nur die Rolle.
+  const ohne = produkt([['400cm', 3300], ['Wunschmaß', 4490, { wunschmass: false }]]);
+  assert.equal(L.raumWege(ohne, 350, 450).raummass, null);
+  assert.ok(L.raumWege(ohne, 350, 450).meterware);
 });
 
 test('Raummass nur ueber eine erlaubte Wunschmass-Variante (fail closed wie im Rechner)', () => {
@@ -143,6 +190,24 @@ test('Filteradresse: Farbe, Optik, Raum, Preis bis und Ansicht', () => {
   assert.equal(L.filterUrl('/collections/teppichboden', {}, {}), '/collections/teppichboden');
 });
 
+test('Filteradresse mit mehreren Farben und Optiken (Shopify: oder)', () => {
+  const url = L.filterUrl('/collections/teppichboden', {
+    farben: ['gid://shopify/TaxonomyValue/6', 'gid://shopify/TaxonomyValue/8'],
+    optikFilter: 'filter.p.m.custom.florhoehe_mm',
+    optiken: ['gid://shopify/FilterSettingGroup/380207438', 'gid://shopify/FilterSettingGroup/380240206']
+  }, { view: 'boden-finder' });
+  const u = new URL(url, 'https://example.test');
+  assert.deepEqual(u.searchParams.getAll('filter.v.t.shopify.color-pattern'), ['gid://shopify/TaxonomyValue/6', 'gid://shopify/TaxonomyValue/8']);
+  assert.deepEqual(u.searchParams.getAll('filter.p.m.custom.florhoehe_mm'), ['gid://shopify/FilterSettingGroup/380207438', 'gid://shopify/FilterSettingGroup/380240206']);
+});
+
+test('Aufzaehlung mit "oder"', () => {
+  assert.equal(L.oderListe(['Beige']), 'Beige');
+  assert.equal(L.oderListe(['Beige', 'Grau']), 'Beige oder Grau');
+  assert.equal(L.oderListe(['Beige', 'Grau', 'Blau']), 'Beige, Grau oder Blau');
+  assert.equal(L.oderListe([]), '');
+});
+
 test('Euro-Anzeige: ab 100 EUR ganze Euro', () => {
   assert.equal(L.euro(660), '660 €');
   assert.equal(L.euro(1234.4), '1.234 €');
@@ -178,30 +243,30 @@ test('Verschnitt wie der Paketrechner (blocks/paket-auswahl.liquid)', () => {
 });
 
 test('Raum 4 x 5 m in Paketen zu 1,988 m²: 21 m² mit Verschnitt -> 11 Pakete', () => {
-  const a = L.paketAngebot(paket(1.988, 10534), 400, 500);
-  assert.equal(a.art, 'paket');
+  const a = L.paketAngebot(paket(1.988, 10534), 20);
   assert.equal(a.pakete, 11);
   assert.equal(a.betrag, 1158.74);
   assert.equal(Math.round(a.qm * 1000) / 1000, 21.868);
-  assert.equal(L.angebotText(a), '11 Pakete à 1,988 m² = 21,868 m² (inkl. 5 % Verschnitt)');
+  assert.equal(L.paketText(a), '11 Pakete à 1,988 m² = 21,868 m², inkl. 5 % Verschnitt');
 });
 
 test('Pakete, die genau aufgehen, werden nicht um eines aufgerundet', () => {
   // 2 x 2 m = 4 m², mit 5 % = 4,2 m² = genau 2 Pakete zu 2,1 m².
-  assert.equal(L.paketRechnung(2.1, 50, 200, 200).pakete, 2);
+  assert.equal(L.paketRechnung(2.1, 50, 4).pakete, 2);
   // Kleiner Raum: mindestens ein Paket.
-  const klein = L.paketRechnung(2.1, 50, 50, 50);
+  const klein = L.paketRechnung(2.1, 50, 0.25);
   assert.equal(klein.pakete, 1);
-  assert.equal(L.angebotText(klein), '1 Paket à 2,10 m² = 2,10 m² (inkl. 5 % Verschnitt)');
+  assert.equal(L.paketText(klein), '1 Paket à 2,10 m² = 2,10 m², inkl. 5 % Verschnitt');
+  // Gegenprobe Paketrechner: 12 m² Klebevinyl zu 4,87 m² je Paket = 3 Pakete.
+  assert.equal(L.paketRechnung(4.87, 155.79, 12).pakete, 3);
 });
 
-test('Paketangebot: guenstigstes lieferbares Paket, Rollenware geht weiter ueber raumAngebot', () => {
+test('Paketangebot: guenstigstes lieferbares Paket, Rollenware ist keine Paketware', () => {
   const p = paket(2, 12000);
   p.variants.push({ options: ['B'], price: 9000, available: false });
-  assert.equal(L.paketAngebot(p, 200, 200).betrag, 3 * 120);
-  assert.equal(L.paketAngebot(produkt([['400cm', 3300]]), 400, 500), null);
-  assert.equal(L.angebot(produkt([['400cm', 3300]]), 500, 400).art, 'meterware');
-  assert.equal(L.angebot(paket(2, 12000), 200, 200).art, 'paket');
+  assert.equal(L.paketAngebot(p, 4).betrag, 3 * 120);
+  assert.equal(L.paketAngebot(produkt([['400cm', 3300]]), 20), null);
+  assert.equal(L.paketAngebot(p, null), null);
 });
 
 test('Preis je m² von Paketware wie auf der Karte: Paketpreis / m² je Paket, auf Cent', () => {
@@ -211,7 +276,7 @@ test('Preis je m² von Paketware wie auf der Karte: Paketpreis / m² je Paket, a
   assert.equal(L.abPreisQm(produkt([['400cm', 1799], ['500cm', 2299]])), 17.99);
 });
 
-test('Preisliste: Eintraege mit Stelle, Budget je m² und bei Paketen der ganze Raum', () => {
+test('Preisliste: Eintraege mit Stelle, Preisstufe je m², Auslauf zuletzt', () => {
   const liste = L.preisEintraege([
     ['rolle-guenstig', 1799, 0, 1799, 0],
     ['klick-teuer', 5299, 1.988, 10534, 0],
@@ -226,12 +291,11 @@ test('Preisliste: Eintraege mit Stelle, Budget je m² und bei Paketen der ganze 
   assert.equal(liste[3].auslauf, true);
   assert.equal(liste[4].qm, null);
 
-  // Nur Preis je m²: 30 EUR/m².
-  assert.deepEqual(L.imBudget(liste, 30, null, null).map((e) => e.handle), ['rolle-guenstig', 'klebe-guenstig', 'auslauf']);
-  // Raum 4 x 5 m fuer 600 EUR (30 EUR/m²): Klebevinyl braucht 21 m² -> 5 Pakete
-  // zu 143,02 = 715,10 EUR und faellt raus; Rollenware prueft erst die Kartenseite.
-  const raum = { laenge: 400, breite: 500 };
-  assert.deepEqual(L.imBudget(liste, 30, raum, 600).map((e) => e.handle), ['rolle-guenstig', 'auslauf']);
+  // Stufe bis 30 EUR/m²; ohne Preis faellt das Produkt heraus.
+  assert.deepEqual(L.imBudget(liste, 30).map((e) => e.handle), ['rolle-guenstig', 'klebe-guenstig', 'auslauf']);
+  // Grenze genau auf der Stufe gehoert dazu.
+  assert.deepEqual(L.imBudget(liste, 28.49).map((e) => e.handle), ['rolle-guenstig', 'klebe-guenstig', 'auslauf']);
+  assert.deepEqual(L.imBudget(liste, 17.99).map((e) => e.handle), ['rolle-guenstig']);
   // Regulaere Ware vor Auslauf.
   assert.deepEqual(L.regulaerZuerst(liste.slice(2, 4).reverse(), (e) => e.auslauf).map((e) => e.handle), ['klebe-guenstig', 'auslauf']);
 });
@@ -241,12 +305,6 @@ test('Kartenseite der Treffer-Ansicht aus der Stelle in der Kollektion', () => {
   assert.equal(L.kartenSeite(7, 8), 1);
   assert.equal(L.kartenSeite(8, 8), 2);
   assert.equal(L.kartenSeite(250, 8), 32);
-});
-
-test('Budget-Stufen je Bodenart', () => {
-  assert.deepEqual(L.budgetStufen('25, 35, 45, 60'), [25, 35, 45, 60]);
-  assert.deepEqual(L.budgetStufen('25;35 45'), [25, 35, 45]);
-  assert.deepEqual(L.budgetStufen(''), [20, 30, 45, 70]);
 });
 
 test('Optik-Namen mit Dekorbild', () => {
@@ -272,7 +330,7 @@ test('Filteradresse mit Seite fuer die Treffer- und Preis-Ansicht', () => {
   assert.equal(L.filterUrl('/collections/vinylboden-1', {}, { seite: 1 }), '/collections/vinylboden-1');
 });
 
-test('Vinyl im Finder: gleiche Bodenarten in allen Templates, Budget je m² gerechnet', () => {
+test('Vinyl im Finder: gleiche Bodenarten in allen Templates, Preis je m² gerechnet', () => {
   const finder = ['templates/index.json', 'templates/collection.teppichboden.json', 'templates/collection.vinylboden.json']
     .map((pfad) => [pfad, template(pfad).sections.tp_boden_finder]);
   const vinyl = finder.map(([pfad, s]) => {
@@ -285,6 +343,7 @@ test('Vinyl im Finder: gleiche Bodenarten in allen Templates, Budget je m² gere
   assert.equal(v.kollektion, 'vinylboden-1');
   // Paketpreis ist kein Preis je m²: nie per Shopify-Preisfilter.
   assert.equal(v.budget_preis, 'rechnen');
+  assert.deepEqual(L.preisStufen(v.preis_stufen), [25, 35, 45, 60]);
   assert.equal(v.optik_filter, 'filter.p.m.custom.optik');
   assert.equal(v.raum_filter, 'filter.p.m.custom.arten');
   // Teppichboden bleibt beim Shopify-Preisfilter.

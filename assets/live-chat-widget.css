@@ -84,7 +84,7 @@
 
 .live-chat-header h3 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: var(--tp-fs-md);
   font-weight: 600;
 }
 
@@ -99,7 +99,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: var(--tp-fs-lg);
   transition: background 0.2s ease;
 }
 
@@ -135,7 +135,7 @@
   text-align: center;
   color: #666;
   padding: 20px;
-  font-size: 0.9rem;
+  font-size: var(--tp-fs-sm);
   line-height: 1.5;
 }
 
@@ -190,17 +190,17 @@
   color: #856404;
   border: 1px solid #ffeaa7;
   border-bottom-left-radius: 2px;
-  font-size: 0.9rem;
+  font-size: var(--tp-fs-sm);
 }
 
 .message-content p {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: var(--tp-fs-md);
   line-height: 1.4;
 }
 
 .message-time {
-  font-size: 0.75rem;
+  font-size: var(--tp-fs-xs);
   color: #999;
   margin-top: 4px;
   display: block;
@@ -211,7 +211,7 @@
   align-items: center;
   gap: 8px;
   padding: 8px 0;
-  font-size: 0.85rem;
+  font-size: var(--tp-fs-sm);
   color: #666;
   margin-top: 8px;
   border-top: 1px solid var(--chat-border);
@@ -257,7 +257,7 @@
   border: 1px solid var(--chat-border);
   border-radius: 4px;
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: var(--tp-fs-sm);
   resize: none;
   max-height: 100px;
   line-height: 1.4;
@@ -281,7 +281,7 @@
   border-radius: 4px;
   cursor: pointer;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--tp-fs-sm);
   transition: background 0.2s ease;
   flex-shrink: 0;
 }

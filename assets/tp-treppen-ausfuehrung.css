@@ -12,13 +12,13 @@
 
   .tp-treppen-ausf__titel {
     margin: 0 0 8px;
-    font-size: clamp(22px, 2.6vw, 30px);
+    font-size: var(--tp-fs-xl);
     line-height: 1.2;
   }
 
   .tp-treppen-ausf__text {
     margin: 0 0 14px;
-    font-size: 16px;
+    font-size: var(--tp-fs-md);
     line-height: 1.55;
   }
 
@@ -27,7 +27,7 @@
     align-items: center;
     gap: 8px;
     margin: 0;
-    font-size: 14px;
+    font-size: var(--tp-fs-sm);
     opacity: 0.8;
   }
 
@@ -80,19 +80,19 @@
 
   .tp-treppen-ausf__karte-titel {
     margin: 0;
-    font-size: 18px;
+    font-size: var(--tp-fs-lg);
     line-height: 1.25;
   }
 
   .tp-treppen-ausf__karte-text {
     margin: 0;
-    font-size: 15px;
+    font-size: var(--tp-fs-md);
     line-height: 1.5;
   }
 
   .tp-treppen-ausf__detail {
     margin: 0;
-    font-size: 14px;
+    font-size: var(--tp-fs-sm);
     opacity: 0.75;
   }
 
@@ -106,7 +106,7 @@
   }
 
   .tp-treppen-ausf__belaege li {
-    font-size: 13px;
+    font-size: var(--tp-fs-sm);
     line-height: 1;
     padding: 6px 10px;
     border-radius: 999px;
@@ -120,7 +120,7 @@
 
   .tp-treppen-ausf__matrix-titel {
     margin: 0 0 12px;
-    font-size: 20px;
+    font-size: var(--tp-fs-lg);
     line-height: 1.25;
   }
 
@@ -135,7 +135,7 @@
     width: 100%;
     min-width: 440px;
     border-collapse: collapse;
-    font-size: 15px;
+    font-size: var(--tp-fs-md);
   }
 
   .tp-treppen-ausf__matrix th,
@@ -146,7 +146,7 @@
   }
 
   .tp-treppen-ausf__matrix thead th {
-    font-size: 14px;
+    font-size: var(--tp-fs-sm);
     white-space: nowrap;
   }
 
@@ -169,7 +169,7 @@
 
   .tp-treppen-ausf__matrix-hinweis {
     margin: 12px 0 0;
-    font-size: 14px;
+    font-size: var(--tp-fs-sm);
     line-height: 1.5;
     opacity: 0.8;
   }
@@ -188,7 +188,7 @@
     border: 2px solid transparent;
     background: #2e7d32;
     color: #fff;
-    font-size: 17px;
+    font-size: var(--tp-fs-md);
     font-weight: 600;
     line-height: 1.2;
     text-decoration: none;
@@ -203,7 +203,7 @@
 
   .tp-treppen-ausf__zusatz {
     margin: 10px 0 0;
-    font-size: 14px;
+    font-size: var(--tp-fs-sm);
     opacity: 0.8;
   }
 
@@ -283,7 +283,7 @@
 
   .tp-treppen-schema__legende {
     fill: currentColor;
-    font-size: 10px;
+    font-size: var(--tp-fs-xs);
     opacity: 0.6;
   }
 

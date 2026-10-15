@@ -7,18 +7,18 @@
 
   .tp-lfw__label {
     margin: 0;
-    font-size: 0.9375rem;
+    font-size: var(--tp-fs-md);
     color: rgb(var(--color-foreground-rgb) / 0.7);
   }
 
   .tp-lfw__current {
-    font-weight: 650;
+    font-weight: 600;
     color: var(--color-foreground);
   }
 
   .tp-lfw__count {
     margin-inline-start: 8px;
-    font-size: 0.8125rem;
+    font-size: var(--tp-fs-sm);
     color: rgb(var(--color-foreground-rgb) / 0.55);
   }
 
@@ -107,7 +107,7 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     overflow: hidden;
-    font-size: 0.6875rem;
+    font-size: var(--tp-fs-xs);
     line-height: 1.25;
     color: rgb(var(--color-foreground-rgb) / 0.75);
     overflow-wrap: anywhere;
@@ -115,7 +115,7 @@
   }
 
   .tp-lfw__tile[aria-pressed='true'] .tp-lfw__name {
-    font-weight: 650;
+    font-weight: 600;
     color: var(--color-foreground);
   }
 
@@ -135,7 +135,7 @@
     border: 1px solid rgb(var(--color-foreground-rgb) / 0.25);
     border-radius: 999px;
     font: inherit;
-    font-size: 0.875rem;
+    font-size: var(--tp-fs-sm);
     font-weight: 600;
     color: var(--color-foreground);
     cursor: pointer;
@@ -277,7 +277,7 @@
 
   .tp-lfw--dd .tp-lfw__name {
     display: block;
-    font-size: 0.9375rem;
+    font-size: var(--tp-fs-md);
     color: var(--color-foreground);
   }
 
@@ -288,6 +288,6 @@
     }
 
     .tp-lfw__name {
-      font-size: 0.65rem;
+      font-size: var(--tp-fs-xs);
     }
   }

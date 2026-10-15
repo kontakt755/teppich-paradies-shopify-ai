@@ -91,7 +91,7 @@
     {%- endif -%}
     {% if product.template_suffix == 'einfassung' %}
       <p class="tp-mass-beratung">Fragen zu Ihrem Maß? <a href="tel:+4933015733720">Beratung: 03301 573 37 20</a></p>
-      <style>.tp-mass-beratung{margin:8px 0 0;font-size:.83rem;line-height:1.4;color:rgb(var(--color-foreground-rgb,34 34 34)/.72)}.tp-mass-beratung a{color:inherit;text-decoration:underline;text-underline-offset:2px}</style>
+      <style>.tp-mass-beratung{margin:8px 0 0;font-size: var(--tp-fs-sm);line-height:1.4;color:rgb(var(--color-foreground-rgb,34 34 34)/.72)}.tp-mass-beratung a{color:inherit;text-decoration:underline;text-underline-offset:2px}</style>
       {%- comment -%} Teppich nach Mass hat keinen Lieferkasten im Kaufbereich: Abholung und Zahlarten stehen hier (snippets/tp-zahlung-abholung) {%- endcomment -%}
       {%- render 'tp-zahlung-abholung', kontext: 'mass' -%}
     {% endif %}
@@ -117,7 +117,7 @@
       border-radius: var(--style-border-radius-buttons-primary, 7px);
       color: var(--color-foreground, #000);
       text-decoration: none;
-      font-size: 15px;
+      font-size: var(--tp-fs-md);
       font-weight: 600;
     }
 
@@ -131,7 +131,7 @@
       display: block;
       width: 100%;
       margin: 2px 0 0;
-      font-size: 12px;
+      font-size: var(--tp-fs-xs);
       font-weight: 400;
       line-height: 1.3;
       text-align: center;
@@ -155,7 +155,7 @@
 
   .tp-muster-cta-grenze {
     margin: 6px 0 0;
-    font-size: 13px;
+    font-size: var(--tp-fs-sm);
     line-height: 1.4;
     text-align: center;
   }

@@ -61,7 +61,7 @@
     flex-wrap: wrap;
     gap: 6px;
     margin-top: 8px;
-    font-size: 13.5px;
+    font-size: var(--tp-fs-sm);
     color: var(--color-foreground);
   }
 
@@ -76,7 +76,7 @@
   }
 
   .tp-bewertungsbeleg__score-{{ tp_bb_id }} {
-    font-weight: 650;
+    font-weight: 600;
   }
 
   {%- comment -%} Die Anzahl belegt die Note, ohne sie zu ueberstrahlen {%- endcomment -%}
@@ -93,7 +93,7 @@
 
   @media screen and (max-width: 749px) {
     .tp-bewertungsbeleg-{{ tp_bb_id }} {
-      font-size: 13px;
+      font-size: var(--tp-fs-xs);
     }
   }
 </style>

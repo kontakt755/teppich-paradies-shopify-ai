@@ -16,7 +16,7 @@
 .tp-vg__eyebrow {
   margin: 0;
   color: #8d714c;
-  font-size: 13px;
+  font-size: var(--tp-fs-sm);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -125,7 +125,7 @@
   border-radius: 8px;
   background: #1c1917;
   color: #fff;
-  font-size: 13px;
+  font-size: var(--tp-fs-sm);
   font-weight: 700;
   line-height: 1.25;
   white-space: nowrap;
@@ -133,7 +133,7 @@
 
 .tp-vg__marker-name small {
   display: block;
-  font-size: 11px;
+  font-size: var(--tp-fs-xs);
   font-weight: 500;
   opacity: 0.75;
 }
@@ -148,7 +148,7 @@
   gap: 4px 24px;
   margin-top: 12px;
   color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.58);
-  font-size: 13px;
+  font-size: var(--tp-fs-sm);
   line-height: 1.5;
 }
 
@@ -180,13 +180,13 @@
 }
 
 .tp-vg__stufe-marke {
-  font-size: 15px;
+  font-size: var(--tp-fs-md);
   font-weight: 700;
 }
 
 .tp-vg__stufe-text {
   color: var(--tp-vg-leise);
-  font-size: 14px;
+  font-size: var(--tp-fs-sm);
 }
 
 /* Ohne min-width: 0 zwingt das Raster seine Mindestbreite (alle Spalten
@@ -227,7 +227,7 @@
 .tp-vg__sub {
   display: block;
   margin: 0 0 8px;
-  font-size: 16px;
+  font-size: var(--tp-fs-md);
   font-weight: 700;
 }
 
@@ -279,7 +279,7 @@
   background: #fff;
   color: inherit;
   font: inherit;
-  font-size: 16px; /* verhindert das Hineinzoomen von iOS beim Fokus */
+  font-size: var(--tp-fs-md); /* verhindert das Hineinzoomen von iOS beim Fokus */
 }
 
 .tp-vg__input:focus-visible,
@@ -292,7 +292,7 @@
 
 .tp-vg__ergebnis {
   margin: 12px 0 0;
-  font-size: 15px;
+  font-size: var(--tp-fs-md);
   font-weight: 600;
   line-height: 1.5;
 }
@@ -351,7 +351,7 @@
 .tp-vg__klein {
   margin: 10px 0 0;
   color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.6);
-  font-size: 13px;
+  font-size: var(--tp-fs-sm);
   line-height: 1.45;
 }
 
@@ -381,7 +381,7 @@
   padding: 14px 24px;
   border: 1px solid transparent;
   border-radius: 10px;
-  font-size: 16px;
+  font-size: var(--tp-fs-md);
   font-weight: 700;
   text-decoration: none;
   transition: opacity 0.2s ease, background-color 0.2s ease;
@@ -422,7 +422,7 @@
 .tp-vg__vertrauen {
   margin: 16px 0 0;
   color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62);
-  font-size: 14px;
+  font-size: var(--tp-fs-sm);
   letter-spacing: 0.02em;
   text-align: center;
 }
@@ -452,13 +452,13 @@
   }
 
   .tp-vg__marker-name {
-    font-size: 12px;
+    font-size: var(--tp-fs-xs);
   }
 
 
   .tp-vg__legende {
     gap: 2px;
-    font-size: 12px;
+    font-size: var(--tp-fs-xs);
   }
 
   /* Drei Spalten pressen die Saetze auf einem Telefon zu Schnueren. */

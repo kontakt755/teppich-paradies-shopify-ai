@@ -172,7 +172,7 @@
   /* Kartentitel auf schmalen Geraeten eine Stufe kleiner, damit zwei Spalten lesbar bleiben */
   @media screen and (max-width: 749px) {
     .product-grid .text-block[class*='product_title'] p {
-      font-size: 1rem;
+      font-size: var(--tp-fs-md);
       line-height: 1.3;
     }
   }
@@ -201,7 +201,7 @@
 
   .tp-lhero__breadcrumb {
     margin-block-end: 18px;
-    font-size: 0.8125rem;
+    font-size: var(--tp-fs-sm);
     color: rgb(var(--color-foreground-rgb) / 0.62);
   }
 
@@ -269,8 +269,8 @@
   .tp-lhero__eyebrow {
     margin: 0;
     color: rgb(var(--color-foreground-rgb) / 0.62);
-    font-size: 0.75rem;
-    font-weight: 650;
+    font-size: var(--tp-fs-xs);
+    font-weight: 600;
     letter-spacing: 0.09em;
     line-height: 1.2;
     text-transform: uppercase;
@@ -278,7 +278,7 @@
 
   .tp-lhero__title {
     margin: 0;
-    font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem);
+    font-size: var(--tp-fs-2xl);
     line-height: 1.08;
     letter-spacing: -0.02em;
     text-wrap: balance;
@@ -287,7 +287,7 @@
   .tp-lhero__lead {
     margin: 0;
     color: rgb(var(--color-foreground-rgb) / 0.78);
-    font-size: 1.0625rem;
+    font-size: var(--tp-fs-md);
     line-height: 1.55;
     text-wrap: pretty;
   }
@@ -305,7 +305,7 @@
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    font-size: 0.9375rem;
+    font-size: var(--tp-fs-md);
     font-weight: 600;
     color: var(--color-foreground);
   }
@@ -420,7 +420,7 @@
     }
 
     .tp-lhero__lead {
-      font-size: 1rem;
+      font-size: var(--tp-fs-md);
     }
 
     .tp-lhero__facts {
@@ -428,7 +428,7 @@
     }
 
     .tp-lhero__facts li {
-      font-size: 0.875rem;
+      font-size: var(--tp-fs-sm);
     }
 
     .tp-lhero__ctas {

@@ -22,7 +22,7 @@
   --tp-r-s: 10px;
   --tp-shadow: 0 1px 2px rgb(31 29 27 / 0.06), 0 8px 28px rgb(31 29 27 / 0.08);
   color: var(--tp-ink);
-  font-size: 16px;
+  font-size: var(--tp-fs-md);
   line-height: 1.5;
 }
 .tp-tep *, .tp-tep *::before, .tp-tep *::after { box-sizing: border-box; }
@@ -40,19 +40,19 @@
 .tp-tep-sec--sand { background: var(--tp-sand); }
 .tp-tep-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; margin-bottom: clamp(20px, 3vw, 36px); }
 .tp-tep-head__text { max-width: 720px; display: grid; gap: 10px; }
-.tp-tep-kicker { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--tp-accent); }
-.tp-tep-h1 { font-size: clamp(32px, 4.8vw, 56px); font-weight: 750; text-wrap: balance; }
-.tp-tep-h2 { font-size: clamp(26px, 3.4vw, 40px); font-weight: 700; text-wrap: balance; }
-.tp-tep-h3 { font-size: clamp(19px, 2vw, 22px); font-weight: 650; }
-.tp-tep-lead { font-size: clamp(16px, 1.6vw, 19px); color: var(--tp-ink-2); max-width: 640px; }
-.tp-tep-small { font-size: 14px; color: var(--tp-ink-2); }
+.tp-tep-kicker { font-size: var(--tp-fs-sm); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--tp-accent); }
+.tp-tep-h1 { font-size: var(--tp-fs-2xl); font-weight: 700; text-wrap: balance; }
+.tp-tep-h2 { font-size: var(--tp-fs-2xl); font-weight: 700; text-wrap: balance; }
+.tp-tep-h3 { font-size: var(--tp-fs-lg); font-weight: 600; }
+.tp-tep-lead { font-size: var(--tp-fs-lg); color: var(--tp-ink-2); max-width: 640px; }
+.tp-tep-small { font-size: var(--tp-fs-sm); color: var(--tp-ink-2); }
 .tp-tep-icon { display: inline-block; flex: none; vertical-align: middle; }
 
 /* Knoepfe */
 .tp-tep-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 48px; padding: 0 22px; border: 1px solid transparent; border-radius: 999px;
-  font: inherit; font-size: 15px; font-weight: 600; line-height: 1.2; text-decoration: none; white-space: nowrap;
+  font: inherit; font-size: var(--tp-fs-md); font-weight: 600; line-height: 1.2; text-decoration: none; white-space: nowrap;
   cursor: pointer; transition: background-color .2s ease, border-color .2s ease, color .2s ease;
 }
 /* Mit .tp-tep davor, sonst gewinnt ".tp-tep a { color: inherit }" und der
@@ -71,36 +71,36 @@
 .tp-tep-hero__media img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .tp-tep-hero__card {
   position: absolute; right: 16px; bottom: 16px; display: grid; gap: 2px; padding: 12px 14px; border-radius: 14px;
-  background: rgb(255 255 255 / 0.94); box-shadow: var(--tp-shadow); font-size: 13px; max-width: 240px;
+  background: rgb(255 255 255 / 0.94); box-shadow: var(--tp-shadow); font-size: var(--tp-fs-sm); max-width: 240px;
 }
-.tp-tep-hero__card strong { font-size: 14px; }
-.tp-tep-usps { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 4px; font-size: 14px; color: var(--tp-ink-2); }
+.tp-tep-hero__card strong { font-size: var(--tp-fs-sm); }
+.tp-tep-usps { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 4px; font-size: var(--tp-fs-sm); color: var(--tp-ink-2); }
 .tp-tep-usps li { display: inline-flex; align-items: center; gap: 8px; }
 .tp-tep-usps .tp-tep-icon { color: var(--tp-ok); }
 
 /* Mass-Rechner im Einstieg (sections/tp-teppiche-hero.liquid, assets/tp-teppich-rechner.js) */
 .tp-tep-rechner { display: grid; gap: 8px; padding: 16px; border-radius: var(--tp-r); background: #fff; border: 1px solid var(--tp-line); box-shadow: var(--tp-shadow); }
-.tp-tep-rechner__label { font-size: 14px; font-weight: 650; }
+.tp-tep-rechner__label { font-size: var(--tp-fs-sm); font-weight: 600; }
 .tp-tep-rechner__zeile { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto; gap: 10px; align-items: end; }
-.tp-tep-rechner__feld { display: grid; gap: 4px; font-size: 13px; color: var(--tp-ink-2); }
+.tp-tep-rechner__feld { display: grid; gap: 4px; font-size: var(--tp-fs-sm); color: var(--tp-ink-2); }
 .tp-tep .tp-tep-rechner__feld input {
   width: 100%; min-width: 0; min-height: 48px; padding: 0 14px; border: 1px solid var(--tp-line-2); border-radius: 12px;
-  font: inherit; font-size: 17px; font-weight: 600; color: var(--tp-ink); background: #fff; font-variant-numeric: tabular-nums;
+  font: inherit; font-size: var(--tp-fs-md); font-weight: 600; color: var(--tp-ink); background: #fff; font-variant-numeric: tabular-nums;
 }
-.tp-tep .tp-tep-rechner__feld input::placeholder { color: var(--tp-ink-3); font-weight: 400; font-size: 15px; }
+.tp-tep .tp-tep-rechner__feld input::placeholder { color: var(--tp-ink-3); font-weight: 400; font-size: var(--tp-fs-md); }
 .tp-tep .tp-tep-rechner__feld input:focus-visible { outline: 2px solid var(--tp-ink); outline-offset: 1px; border-color: var(--tp-ink); }
-.tp-tep-rechner__mal { padding-bottom: 12px; font-size: 18px; color: var(--tp-ink-3); }
-.tp-tep-rechner__fehler { font-size: 14px; color: #a32a2a; }
-.tp-tep-rechner__hinweis { font-size: 13px; color: var(--tp-ink-3); }
-.tp-tep .tp-tep-rechner__alle { align-self: center; font-size: 15px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.tp-tep-rechner__mal { padding-bottom: 12px; font-size: var(--tp-fs-lg); color: var(--tp-ink-3); }
+.tp-tep-rechner__fehler { font-size: var(--tp-fs-sm); color: #a32a2a; }
+.tp-tep-rechner__hinweis { font-size: var(--tp-fs-sm); color: var(--tp-ink-3); }
+.tp-tep .tp-tep-rechner__alle { align-self: center; font-size: var(--tp-fs-md); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 
 .tp-tep-rechner__ergebnis { display: grid; gap: 16px; margin-top: clamp(28px, 4vw, 44px); scroll-margin-top: 90px; }
 .tp-tep-rechner__ergebnis[hidden] { display: none; }
 .tp-tep-rechner__kopf { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
-.tp-tep-rechner__summe { font-size: clamp(17px, 1.8vw, 20px); font-weight: 650; max-width: 760px; text-wrap: balance; }
+.tp-tep-rechner__summe { font-size: var(--tp-fs-lg); font-weight: 600; max-width: 760px; text-wrap: balance; }
 .tp-tep .tp-tep-rechner__loeschen {
   min-height: 44px; padding: 0 18px; border: 1px solid var(--tp-line-2); border-radius: 999px; background: #fff;
-  font: inherit; font-size: 14px; font-weight: 600; color: var(--tp-ink); cursor: pointer;
+  font: inherit; font-size: var(--tp-fs-sm); font-weight: 600; color: var(--tp-ink); cursor: pointer;
 }
 .tp-tep .tp-tep-rechner__loeschen:hover { border-color: var(--tp-ink); }
 .tp-tep-rechner__liste { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px 16px; }
@@ -109,14 +109,14 @@
 .tp-tep-rechner__bild img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .35s ease; }
 .tp-tep-rechner__link:hover .tp-tep-rechner__bild img { transform: scale(1.03); }
 .tp-tep-rechner__text { display: grid; gap: 2px; align-content: start; }
-.tp-tep-rechner__titel { font-size: 15px; font-weight: 650; line-height: 1.3; }
-.tp-tep-rechner__qualitaet { font-size: 13px; color: var(--tp-ink-3); }
+.tp-tep-rechner__titel { font-size: var(--tp-fs-md); font-weight: 600; line-height: 1.3; }
+.tp-tep-rechner__qualitaet { font-size: var(--tp-fs-sm); color: var(--tp-ink-3); }
 .tp-tep-rechner__preis { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-top: 4px; font-variant-numeric: tabular-nums; }
-.tp-tep-rechner__ab { font-size: 14px; font-weight: 600; }
-.tp-tep-rechner__betrag { font-size: 20px; font-weight: 750; }
-.tp-tep-rechner__alt { font-size: 14px; color: var(--tp-ink-3); }
+.tp-tep-rechner__ab { font-size: var(--tp-fs-sm); font-weight: 600; }
+.tp-tep-rechner__betrag { font-size: var(--tp-fs-lg); font-weight: 700; }
+.tp-tep-rechner__alt { font-size: var(--tp-fs-sm); color: var(--tp-ink-3); }
 .tp-tep-rechner__preis:has(.tp-tep-rechner__alt) .tp-tep-rechner__betrag { color: var(--tp-hauptaktion, #b0303f); }
-.tp-tep-rechner__grund { font-size: 13px; color: var(--tp-ink-2); }
+.tp-tep-rechner__grund { font-size: var(--tp-fs-sm); color: var(--tp-ink-2); }
 .tp-tep-rechner__karte--passt-nicht { opacity: .5; }
 .tp-tep-rechner__karte--passt-nicht .tp-tep-rechner__bild img { filter: grayscale(.6); }
 /* Solange ein Mass gilt, ersetzt die sortierte Liste das normale Raster. */
@@ -132,7 +132,7 @@
   .tp-tep-rechner__zeile { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
   .tp-tep-rechner__los { grid-column: 1 / -1; }
   .tp-tep-rechner__liste { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 12px; }
-  .tp-tep-rechner__betrag { font-size: 18px; }
+  .tp-tep-rechner__betrag { font-size: var(--tp-fs-lg); }
 }
 
 /* Alle Teppiche: zwei Wege (sections/tp-teppiche-wege.liquid) */
@@ -150,9 +150,9 @@
 .tp-tep-wege__bild img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .4s ease; }
 .tp-tep-wege__link:hover .tp-tep-wege__bild img { transform: scale(1.03); }
 .tp-tep-wege__text { display: grid; gap: 4px; align-content: start; padding: 16px 64px 18px 20px; }
-.tp-tep-wege__titel { font-size: clamp(19px, 2vw, 23px); font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
-.tp-tep-wege__kurz { font-size: 15px; color: var(--tp-ink-2); }
-.tp-tep-wege__zahl { font-size: 13px; color: var(--tp-ink-3); }
+.tp-tep-wege__titel { font-size: var(--tp-fs-lg); font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
+.tp-tep-wege__kurz { font-size: var(--tp-fs-md); color: var(--tp-ink-2); }
+.tp-tep-wege__zahl { font-size: var(--tp-fs-sm); color: var(--tp-ink-3); }
 .tp-tep-wege__zahl:empty { display: none; }
 .tp-tep-wege__pfeil {
   position: absolute; right: 18px; bottom: 18px; display: grid; place-items: center; width: 40px; height: 40px;
@@ -171,7 +171,7 @@
 .tp-tep-gruppen { scroll-margin-top: 96px; padding: clamp(28px, 4vw, 52px) 0 clamp(8px, 1.5vw, 16px); }
 .tp-tep-gruppen__inner { display: grid; gap: clamp(16px, 2.2vw, 26px); }
 .tp-tep-gruppen__kopf { display: grid; gap: 8px; }
-.tp-tep-gruppen__titel { font-size: clamp(24px, 2.8vw, 34px); }
+.tp-tep-gruppen__titel { font-size: var(--tp-fs-2xl); }
 .tp-tep-gruppen__lead { color: var(--tp-ink-2); }
 /* Desktop: alle Gruppen in einer Reihe, gleich breit - egal ob 4 oder 5 Karten
    (leere Gruppen rendern keine Karte, die Anzahl steht also nicht fest). */
@@ -184,9 +184,9 @@
 .tp-tep-gruppen__bild { display: block; aspect-ratio: 4 / 3; background: var(--tp-sand-2); overflow: hidden; }
 .tp-tep-gruppen__bild img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .tp-tep-gruppen__text { display: grid; gap: 4px; align-content: start; padding: 12px 14px 14px; }
-.tp-tep-gruppen__name { font-size: clamp(17px, 1.6vw, 20px); font-weight: 700; line-height: 1.2; }
-.tp-tep-gruppen__kurz { font-size: 14px; color: var(--tp-ink-2); line-height: 1.4; }
-.tp-tep-gruppen__zahl { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 13px; font-weight: 600; color: var(--tp-accent); }
+.tp-tep-gruppen__name { font-size: var(--tp-fs-lg); font-weight: 700; line-height: 1.2; }
+.tp-tep-gruppen__kurz { font-size: var(--tp-fs-sm); color: var(--tp-ink-2); line-height: 1.4; }
+.tp-tep-gruppen__zahl { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: var(--tp-fs-sm); font-weight: 600; color: var(--tp-accent); }
 @media (max-width: 899px) {
   .tp-tep-gruppen__liste { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   /* Ungerade Anzahl (z. B. 5 Gruppen): die letzte Karte nimmt die ganze Breite,
@@ -194,7 +194,7 @@
   .tp-tep-gruppen__gruppe:last-child:nth-child(odd) { grid-column: 1 / -1; }
   .tp-tep-gruppen__gruppe:last-child:nth-child(odd) .tp-tep-gruppen__bild { aspect-ratio: 16 / 7; }
   .tp-tep-gruppen__text { padding: 10px 12px 12px; }
-  .tp-tep-gruppen__kurz { font-size: 13px; }
+  .tp-tep-gruppen__kurz { font-size: var(--tp-fs-xs); }
 }
 /* Reihen der Gruppen: Sprungziel nicht unter dem festen Kopf verstecken */
 .tp-zubehoer-produkte--teppich-gruppe { scroll-margin-top: 110px; }
@@ -202,7 +202,7 @@
 /* Schritte */
 .tp-tep-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 .tp-tep-step { position: relative; display: grid; gap: 8px; align-content: start; padding: 20px; border-radius: var(--tp-r); background: #fff; border: 1px solid var(--tp-line); }
-.tp-tep-step__num { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--tp-ink); color: #fff; font-weight: 700; font-size: 15px; }
+.tp-tep-step__num { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--tp-ink); color: #fff; font-weight: 700; font-size: var(--tp-fs-md); }
 .tp-tep-step--last { background: var(--tp-ink); color: #fff; border-color: var(--tp-ink); }
 .tp-tep-step--last .tp-tep-h3, .tp-tep-step--last p { color: #fff; }
 .tp-tep-step--last .tp-tep-step__num { background: #fff; color: var(--tp-ink); }
@@ -213,7 +213,7 @@
 .tp-tep-trust__item .tp-tep-icon { color: var(--tp-accent); margin-top: 2px; }
 a.tp-tep-trust__item:hover { border-color: var(--tp-ink); }
 .tp-tep-trust__body { display: grid; gap: 4px; }
-.tp-tep-trust__title { font-weight: 650; }
+.tp-tep-trust__title { font-weight: 600; }
 
 /* Fragen */
 .tp-tep-faq { display: grid; gap: 10px; max-width: 880px; }
