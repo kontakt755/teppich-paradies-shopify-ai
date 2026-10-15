@@ -9,6 +9,8 @@
  * lieferantenKarten() ({pos, eintrag, wartetage, warnstufe}).
  */
 
+import { musterEigen } from './einkauf-lieferanten.mjs';
+
 const UNGEKLAERT = 'UNGEKLAERT';
 const leer = v => v === null || v === undefined || String(v).trim() === '' || v === '–' || v === UNGEKLAERT;
 
@@ -61,4 +63,23 @@ export function jeKommission(eintraege = []) {
     if ((STUFE_RANG[x.warnstufe] || 0) > (STUFE_RANG[k.warnstufe] || 0)) k.warnstufe = x.warnstufe;
   }
   return [...je.values()].sort((a, b) => (b.wartetage ?? -1) - (a.wartetage ?? -1));
+}
+
+/**
+ * Der eine naechste Schritt fuer alle Muster eines Kunden (Innendienst 2026-10-15: "pro Kunde
+ * anklicken, die drei Muster sind angekommen, nicht jedes Muster einzeln"). `statusVon(p)` liefert
+ * den Auftragsfluss-Status einer Position oder null.
+ * - "angekommen": mindestens ein Muster ist beim Lieferanten bestellt - alle bestellten auf einmal.
+ * - "verschicken": nichts mehr zu bestellen oder unterwegs, mindestens eins liegt bei uns
+ *   (angekommen oder aus eigenem Bestand). `uebergabe`, wenn alle persoenlich vorbeigebracht werden.
+ * - null: es gibt fuer diese Muster gerade keinen gemeinsamen Schritt.
+ */
+export function musterSchritt(positionen = [], statusVon = () => null) {
+  const muster = (positionen || []).filter(p => p?.istMuster && p.lineItemId);
+  const bestellt = muster.filter(p => statusVon(p) === 'bestellt');
+  if (bestellt.length) return { schritt: 'angekommen', positionen: bestellt };
+  if (muster.some(p => !statusVon(p) && !musterEigen(p))) return null;
+  const bereit = muster.filter(p => statusVon(p) === 'geliefert' || (!statusVon(p) && musterEigen(p)));
+  if (!bereit.length) return null;
+  return { schritt: 'verschicken', positionen: bereit, uebergabe: bereit.every(p => p.musterHerkunft === 'eigen_vorbei') };
 }

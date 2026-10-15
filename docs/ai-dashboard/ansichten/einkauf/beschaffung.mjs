@@ -4,7 +4,9 @@ import { $, esc, toast } from '../../kern/helfer.mjs';
 import { render } from '../../kern/render.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { personId, uebernahmeText, einheitText, beschaffungsStand } from '../../lib/beschaffung.mjs';
-import { alleAuftraege, afEintragFuer, ladeStandNeu, einkauf } from './auftragsfluss.mjs';
+import { alleAuftraege, afEintragFuer, ladeStandNeu, einkauf, markiereMusterAngekommen } from './auftragsfluss.mjs';
+
+const istMusterPosition = (orderId, lineItemId) => Boolean(alleAuftraege().find(a => a.id === orderId)?.positionen?.find(p => p.lineItemId === lineItemId)?.istMuster);
 
 export function uebernahmeBlock(positionen) {
   if (!einkauf.auftragsstatus?.verfuegbar) return '<p class="small muted">Übernahmestand noch nicht verfügbar.</p>';
@@ -53,8 +55,14 @@ function openBeschaffung(orderId, lineItemId, eingang) {
 export function beschaffungKlick(e) {
   const zs = e.target.closest('[data-zl-schritt="geliefert"]');
   if (zs) {
+    // Reine Musterbestellung: ein Klick fuer alle (Zeitleiste setzt den Schritt fuer den ganzen
+    // Auftrag). Mengen bestaetigt nur, wer Ware bekommt.
+    const alle = alleAuftraege().find(a => a.id === zs.dataset.zlOrder)?.positionen || [];
+    if (alle.length && alle.every(p => p.istMuster)) return false;
     e.preventDefault(); if (istNurLesend()) return true;
-    const ps = alleAuftraege().find(a => a.id === zs.dataset.zlOrder)?.positionen || [];
+    const muster = alle.filter(p => p.istMuster && afEintragFuer(p)?.status === 'bestellt');
+    if (muster.length) markiereMusterAngekommen(muster);
+    const ps = alle.filter(p => !p.istMuster);
     if (ps.length === 1) openBeschaffung(ps[0].orderId, ps[0].lineItemId, true);
     else {
       $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="bAuswahl"><h2 id="bAuswahl">Wareneingang je Position bestätigen</h2><p>Die Bestellung ist erst vollständig geliefert, wenn jede benötigte Menge bestätigt ist.</p>${ps.map(p => `<p><button type="button" class="btn" data-beschaffung data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}">${esc(p.titel)} · ${esc(p.farbe || '')}</button></p>`).join('')}<button type="button" class="btn" data-close-dialog>Schließen</button></div></div>`;
@@ -63,6 +71,8 @@ export function beschaffungKlick(e) {
     return true;
   }
   const b = e.target.closest('[data-beschaffung], [data-af-set][data-af-status="geliefert"]');
+  // Ein einzelnes Muster "angekommen": direkt setzen (einkaufKlickStatus), kein Mengen-Dialog.
+  if (b?.matches('[data-af-set]') && istMusterPosition(b.dataset.afOrder, b.dataset.afItem)) return false;
   if (b) { e.preventDefault(); if (!istNurLesend()) openBeschaffung(b.dataset.afOrder, b.dataset.afItem, b.dataset.afStatus === 'geliefert' || !!b.closest('[aria-labelledby="bAuswahl"]')); return true; }
   const u = e.target.closest('[data-einkauf-uebernahme]');
   if (!u) return false;

@@ -13,6 +13,7 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { kunden } from '../kunden/gemeinsam.mjs';
 import { musterEigen, stufeVon, wartetage } from '../../lib/einkauf-lieferanten.mjs';
+import { musterSchritt } from '../../lib/einkauf-uebersicht.mjs';
 
 export { musterEigen };
 
@@ -402,6 +403,41 @@ export async function markiereAlsBestellt(positionen, lieferantBestellnummer = n
   return ok;
 }
 
+/**
+ * Muster eines Kunden auf einmal als angekommen eintragen - ohne Mengen-Dialog: ein Muster ist
+ * da oder nicht (Innendienst 2026-10-15, vorher ein Dialog je Muster). Meldet einmal.
+ */
+export async function markiereMusterAngekommen(positionen) {
+  let ok = 0;
+  for (const p of positionen) if (await setzeAuftragsstatus(p, 'geliefert', { still: true })) ok += 1;
+  if (ok) toast(ok === positionen.length ? `${plural(ok, 'Muster', 'Muster')} als angekommen eingetragen` : `Nur ${ok} von ${positionen.length} Mustern eingetragen`, ok === positionen.length ? '' : 'crit');
+  render();
+  return ok;
+}
+
+/**
+ * Knopf fuer den gemeinsamen naechsten Schritt aller Muster eines Kunden (musterSchritt):
+ * "Alle 3 angekommen" (ein Klick) oder "Verschicken…"/"Übergeben…" (Versand-Dialog, alle
+ * bereiten Muster angekreuzt). `hier` sind die Muster der Zeile; fuers Verschicken zaehlt der
+ * ganze Auftrag, damit nichts raus geht, solange ein Muster noch fehlt.
+ */
+export function musterSchrittKnopf(hier, { klasse = 'btn btn-sm' } = {}) {
+  if (istNurLesend() || !hier?.length) return '';
+  const statusVon = p => afEintragFuer(p)?.status || null;
+  const s = musterSchritt(hier, statusVon);
+  if (s?.schritt === 'angekommen') {
+    const daten = JSON.stringify(s.positionen.map(p => ({ orderId: p.orderId, lineItemId: p.lineItemId })));
+    const text = s.positionen.length === 1 ? 'Muster angekommen' : `Alle ${s.positionen.length} angekommen`;
+    return `<button type="button" class="${klasse}" data-muster-angekommen="${esc(daten)}" title="Die Muster sind bei uns eingetroffen">${esc(text)}</button>`;
+  }
+  const orderIds = [...new Set(hier.map(p => p.orderId).filter(Boolean))];
+  if (orderIds.length !== 1) return '';
+  const auftrag = alleAuftraege().find(a => a.id === orderIds[0]);
+  const ganz = musterSchritt((auftrag?.positionen || hier).map(p => ({ ...p, orderId: orderIds[0] })), statusVon);
+  if (ganz?.schritt !== 'verschicken') return '';
+  return `<button type="button" class="${klasse}" data-af-set data-af-status="raus" data-af-order="${esc(orderIds[0])}" data-af-item="${esc(ganz.positionen[0].lineItemId)}">${ganz.uebergabe ? 'Übergeben…' : 'Verschicken…'}</button>`;
+}
+
 export function ensureEinkaufKennzahlen() {
   if (einkauf.kennzahlen || einkauf.loadingKennzahlen) return;
   einkauf.loadingKennzahlen = true;
@@ -459,6 +495,16 @@ function openAuftragAbschliessenDialog(orderId) {
 
 /** Einkauf: Auftragsfluss-Knopf an einer Position. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function einkaufKlickStatus(e) {
+  const angekommen = e.target.closest('[data-muster-angekommen]');
+  if (angekommen) {
+    e.preventDefault();
+    let positionen = [];
+    try { positionen = JSON.parse(angekommen.dataset.musterAngekommen); } catch { /* unten gemeldet */ }
+    if (!positionen.length) { toast('Die Muster sind nicht in den aktuellen Daten. Bitte aktualisieren.', 'crit'); return true; }
+    angekommen.disabled = true;   // gegen den Doppelklick - danach wird ohnehin neu gezeichnet
+    markiereMusterAngekommen(positionen).then(ok => { if (!ok) angekommen.disabled = false; });
+    return true;
+  }
   const afBtn = e.target.closest('[data-af-set]');
   if (afBtn) {
     // Anzeige-Angaben fuer den Dialog stehen als data-Attribute am Knopf - nicht aus den

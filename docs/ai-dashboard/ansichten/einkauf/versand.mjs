@@ -59,7 +59,9 @@ export async function oeffneVersandDialog(orderId, { lineItemId = null, notiz = 
   // diese eine Position - nie eine andere und nie die ganze Bestellung.
   const nurGeklickt = Boolean(lineItemId) && !geklickt;
   const position = nurGeklickt ? (auftrag?.positionen || []).find(p => p.lineItemId === lineItemId) || null : null;
-  const vor = vorauswahl(kandidaten, { geklickt: geklickt?.lineItemId || null });
+  const stand = einkauf.auftragsstatus?.positionen || {};
+  const status = Object.fromEntries(kandidaten.map(p => [p.lineItemId, stand[`${orderId}::${p.lineItemId}`]?.status || null]));
+  const vor = vorauswahl(kandidaten, { geklickt: geklickt?.lineItemId || null, status });
   // Muster, die jemand persoenlich vorbeibringt: keine Sendungsnummer, Mail vorab aus.
   const uebergabe = istUebergabe(geklickt ? [geklickt] : position ? [position] : kandidaten);
   // Abholung im Laden: Mail vorab aus (eine Mail "ist unterwegs" passt nicht).

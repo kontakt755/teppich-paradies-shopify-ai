@@ -13,7 +13,7 @@ import {
   afNaechsterStatus, LIEFERWEG_LABEL, afWartetage, afWarteText, afWarteKlasse,
   ensureEinkaufBestellungen, ensureEinkaufAuftragsstatus, alleAuftraege, erledigtePositionen,
   sammelGruppen, anzeigeWert, afEintragFuer, hatLieferantLink, positionUnvollstaendig,
-  positionsGruppe, musterEigen, MUSTER_HERKUNFT_KURZ, zurueckGruppen,
+  positionsGruppe, musterEigen, MUSTER_HERKUNFT_KURZ, zurueckGruppen, musterSchrittKnopf,
 } from './auftragsfluss.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { filtereAuftrag } from '../../lib/vorgangslink.mjs';
@@ -147,8 +147,14 @@ function einkaufGruppeKarte(g, i, praefix, { eingebettet = false } = {}) {
       <td data-l="Lieferant">${lieferantLinkZelle(p)}</td>
       <td data-l="Stand">${afStatusZelle(p)}</td>
     </tr>`;
+  // Muster je Kunde in einem Schritt: "Alle 3 angekommen" bzw. "Verschicken…" (Innendienst 15.10.).
+  const kundenAktion = gruppe => {
+    if (praefix !== 'muster') return '';
+    const knopf = musterSchrittKnopf(gruppe.positionen);
+    return knopf ? `<span class="einkauf-kundenaktion">${knopf}</span>` : '';
+  };
   const zeilen = kundengruppen.map(gruppe => `<tbody class="einkauf-kundengruppe">
-    <tr class="einkauf-kundenkopf"><th colspan="6" scope="rowgroup"><span class="einkauf-kundenname">${esc(gruppe.name)}${gruppe.ort ? ` <span class="muted small">· ${esc(gruppe.ort)}</span>` : ''}</span><span class="small muted">${plural(gruppe.auftragsAnzahl, 'Auftrag', 'Aufträge')} · ${plural(gruppe.positionen.length, praefix === 'muster' ? 'Muster' : 'Artikel', praefix === 'muster' ? 'Muster' : 'Artikel')}</span></th></tr>
+    <tr class="einkauf-kundenkopf"><th colspan="6" scope="rowgroup"><span class="einkauf-kundenname">${esc(gruppe.name)}${gruppe.ort ? ` <span class="muted small">· ${esc(gruppe.ort)}</span>` : ''}</span><span class="small muted">${plural(gruppe.auftragsAnzahl, 'Auftrag', 'Aufträge')} · ${plural(gruppe.positionen.length, praefix === 'muster' ? 'Muster' : 'Artikel', praefix === 'muster' ? 'Muster' : 'Artikel')}</span>${kundenAktion(gruppe)}</th></tr>
     ${gruppe.positionen.map(zeile).join('')}
   </tbody>`).join('');
   return `<section class="${eingebettet ? 'lf-gruppe' : 'card'} group-card${luecken ? ' has-gap' : ''}">
