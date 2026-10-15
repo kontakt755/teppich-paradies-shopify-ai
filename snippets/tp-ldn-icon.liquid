@@ -1,0 +1,34 @@
+{% doc %}
+  Linien-Symbole fuer "Laden & Reste" (sections/tp-laden-sortiment.liquid):
+  je Warengruppe ein Zeichen statt eines Ladenfotos (Inhaber 15.10.: der Laden
+  wird nicht mit Fotos beworben). Gleicher Strich wie snippets/tp-vs-icon
+  (24er Raster, 1,8 Linie, runde Enden), damit beide nebeneinander ruhig wirken.
+
+  @param {string} name - rolle | teppich | fliesen | planken | parkett | blatt | leiste | uhr | pin | telefon | route
+{% enddoc %}
+<svg class="tp-ldn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+  {%- case name -%}
+    {%- when 'rolle' -%}
+      <path d="M8 12a1.5 1.5 0 1 1 3 0 3 3 0 1 1-6 0 4.5 4.5 0 1 1 9 0 6 6 0 0 1-6 6h14"/>
+    {%- when 'teppich' -%}
+      <rect x="4.5" y="5.5" width="15" height="13" rx="1"/><rect x="8" y="9" width="8" height="6" rx=".5"/><path d="M4.5 8.5H2M4.5 12H2M4.5 15.5H2M19.5 8.5H22M19.5 12H22M19.5 15.5H22"/>
+    {%- when 'fliesen' -%}
+      <rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="1"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="1"/><rect x="13" y="13" width="7.5" height="7.5" rx="1"/>
+    {%- when 'planken' -%}
+      <rect x="2.5" y="5" width="19" height="14" rx="1"/><path d="M2.5 9.7h19M2.5 14.3h19M9 5v4.7M16 9.7v4.6M6.5 14.3V19"/>
+    {%- when 'parkett' -%}
+      <path d="M3 8l4.5-4 4.5 4 4.5-4L21 8M3 14l4.5-4 4.5 4 4.5-4 4.5 4M3 20l4.5-4 4.5 4 4.5-4 4.5 4"/>
+    {%- when 'blatt' -%}
+      <path d="M5 19C5 11 10 5 19 5c0 9-6 14-14 14z"/><path d="M5 19l8.5-8.5"/>
+    {%- when 'leiste' -%}
+      <path d="M4 3v18h17"/><path d="M8 3v14h13"/><path d="M8 7h3"/>
+    {%- when 'uhr' -%}
+      <circle cx="12" cy="12" r="9.5"/><path d="M12 7v5l3.2 2"/>
+    {%- when 'pin' -%}
+      <path d="M12 21.5s-7-6.2-7-11.5a7 7 0 0 1 14 0c0 5.3-7 11.5-7 11.5z"/><circle cx="12" cy="10" r="2.5"/>
+    {%- when 'telefon' -%}
+      <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>
+    {%- when 'route' -%}
+      <path d="M5 19h4a3 3 0 0 0 0-6H8a3 3 0 0 1 0-6h11"/><path d="M16 4l3 3-3 3"/>
+  {%- endcase -%}
+</svg>

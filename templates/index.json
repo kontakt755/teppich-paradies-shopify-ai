@@ -1753,6 +1753,46 @@
         "service_link": "/pages/liefer-verlegeservice",
         "service_cta": "Verlegung anfragen"
       }
+    },
+    "tp_laden_band": {
+      "type": "tp-laden-sortiment",
+      "blocks": {
+        "z1": {
+          "type": "kennzahl",
+          "settings": {
+            "wert": "Über 1.000 m²",
+            "label": "Sonderposten und Lagerware im Laden"
+          }
+        },
+        "z2": {
+          "type": "kennzahl",
+          "settings": {
+            "wert": "Mo–Sa",
+            "label": "geöffnet, Beratung vor Ort"
+          }
+        },
+        "z3": {
+          "type": "kennzahl",
+          "settings": {
+            "wert": "Bis 50 km",
+            "label": "Aufmaß, Lieferung und Verlegung"
+          }
+        }
+      },
+      "block_order": [
+        "z1",
+        "z2",
+        "z3"
+      ],
+      "settings": {
+        "darstellung": "band",
+        "anker": "laden-oranienburg",
+        "eyebrow": "Vor Ort in Oranienburg",
+        "heading": "Im Laden steht noch viel mehr",
+        "band_text": "Lagerware, Sonderposten und ein Reste-Regal mit Stücken, die nicht online stehen.",
+        "band_link": "/collections/reste-sonderposten#laden",
+        "band_link_label": "Laden & Reste ansehen"
+      }
     }
   },
   "order": [
@@ -1767,6 +1807,7 @@
     "angebote_linoleum",
     "angebote_leisten",
     "tp_start_so_gehts",
+    "tp_laden_band",
     "tp_zwei_wege_home",
     "tp_start_muster",
     "tp_start_projekte",
