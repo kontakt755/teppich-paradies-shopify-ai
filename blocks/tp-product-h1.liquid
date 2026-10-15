@@ -13,6 +13,7 @@
   {% render 'text', fallback_text: product_title, block: block %}
 {% else %}
   {%- capture tp_h1_display -%}{%- render 'tp-anzeigetitel', product: closest.product -%}{%- endcapture -%}
+  {%- assign tp_h1_display = tp_h1_display | strip -%}
   {% assign product_title = '<h1>' | append: tp_h1_display | append: '</h1>' %}
   {% render 'text', fallback_text: product_title, block: block %}
   {% if closest.product.template_suffix == 'einfassung' and closest.product.metafields.service.einfassung.value != blank %}
