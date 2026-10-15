@@ -363,9 +363,28 @@
                 "label": "Kostenloses Muster anfragen",
                 "hinweis": "Bis zu 3 Farben, versandkostenfrei"
               }
+            },
+            "tp_bildnachweis_mobil": {
+              "type": "tp-bildnachweis",
+              "name": "TP Bildnachweis (Handy)",
+              "settings": {
+                "label": "Produktbilder:",
+                "sichtbarkeit": "mobil"
+              },
+              "blocks": {}
+            },
+            "tp_bildnachweis_desktop": {
+              "type": "tp-bildnachweis",
+              "name": "TP Bildnachweis (Desktop)",
+              "settings": {
+                "label": "Produktbilder:",
+                "sichtbarkeit": "desktop"
+              },
+              "blocks": {}
             }
           },
           "block_order": [
+            "tp_bildnachweis_mobil",
             "group_icgrde",
             "tp_vorteile_night1",
             "tp_aktion_hinweis",
@@ -383,7 +402,8 @@
             "ai_gen_block_72e444a_tkq6gk",
             "tp_verkaufstext_night2",
             "ai_gen_block_b888d9b_CJbJ8X",
-            "text_aEtTtq"
+            "text_aEtTtq",
+            "tp_bildnachweis_desktop"
           ]
         }
       },

@@ -343,9 +343,28 @@
             "tp_boden_raumansicht": {
               "type": "tp-boden-raumansicht",
               "settings": {}
+            },
+            "tp_bildnachweis_mobil": {
+              "type": "tp-bildnachweis",
+              "name": "TP Bildnachweis (Handy)",
+              "settings": {
+                "label": "Produktbilder:",
+                "sichtbarkeit": "mobil"
+              },
+              "blocks": {}
+            },
+            "tp_bildnachweis_desktop": {
+              "type": "tp-bildnachweis",
+              "name": "TP Bildnachweis (Desktop)",
+              "settings": {
+                "label": "Produktbilder:",
+                "sichtbarkeit": "desktop"
+              },
+              "blocks": {}
             }
           },
           "block_order": [
+            "tp_bildnachweis_mobil",
             "group_icgrde",
             "tp_vorteile_night1",
             "tp_aktion_hinweis",
@@ -362,7 +381,8 @@
             "tp_verlegen_lassen",
             "tp_zubehoer_empfehlung",
             "buy_buttons_eYQEYi",
-            "text_aEtTtq"
+            "text_aEtTtq",
+            "tp_bildnachweis_desktop"
           ]
         }
       },
