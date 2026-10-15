@@ -3,14 +3,14 @@
   "live": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-15T12:55:13Z",
-    "verifiedBy": "Shopify Admin API role MAIN (updatedAt 2026-10-15T12:51:22Z) nach workflow:live von main 9fb302e3 (#1332/#1334 Widerrufsfunktion „Vertrag widerrufen“); Preview-Gates COMPARE/SEO/FULL QA/SALES PASS, oeffentlicher Shop ohne Vorschau geprueft (Footer-Knopf, Test-Widerruf)"
+    "verifiedAt": "2026-10-15T13:18:07Z",
+    "verifiedBy": "Shopify Admin API/Storefront role MAIN nach workflow:live von main 1200db33 (#1337 Bewertungshinweis § 5b UWG, enthaelt #1336 Boden-Finder); Preview-Gates COMPARE/SEO/FULL QA/SALES PASS, oeffentlicher Shop ohne Vorschau geprueft"
   },
   "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-15T12:55:13Z",
-    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live von main 9fb302e3; naechstes Preview-Ziel"
+    "verifiedAt": "2026-10-15T13:18:07Z",
+    "verifiedBy": "role UNPUBLISHED nach workflow:live von main 1200db33; naechstes Preview-Ziel"
   },
   "fallback": {
     "themeId": "206590509390",
