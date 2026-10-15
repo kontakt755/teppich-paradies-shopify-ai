@@ -1,0 +1,175 @@
+{%- comment -%}
+  Datenschnittstelle des Boden-Finders (sections/tp-boden-finder.liquid).
+  Steht nur in den Ansichten ohne Layout templates/collection.boden-finder.json
+  (Zaehlungen) und collection.boden-finder-treffer.json (Treffer mit Karten)
+  und wird per fetch aufgerufen, z. B.
+    /collections/teppichboden?view=boden-finder&filter.v.t.shopify.color-pattern=...
+
+  Shopify wendet die Filter der Adresse auf collection.products an. Daraus
+  kommen:
+  - "anzahl": Produkte, die zu allen aktiven Filtern passen.
+  - "filter": jeder Filter der Kollektion mit Werten und Trefferzahl. Der
+    Finder bietet nur Werte mit Treffern an; so stehen nur Farben und
+    Florhoehen zur Wahl, die es in der Kollektion wirklich gibt.
+  - nur in der Treffer-Ansicht: die ersten Produkte in Shop-Reihenfolge mit
+    den Varianten der gezeigten Farbe (Optionen, Preis, verfuegbar,
+    Wunschmass erlaubt) und die Produktkarte aus dem statischen Kartenblock.
+    Die Karte ist dieselbe wie im Kategorie-Raster; bei aktivem Farbfilter
+    zeigt sie die passende Farbe (snippets/tp-suchfarbe-variante.liquid).
+
+  Gerechnet wird hier nichts. Den ca.-Preis fuer ein Raummass rechnet
+  assets/tp-boden-finder.js mit den Funktionen des Rollenware-Rechners
+  (assets/tp-rollware-art.js) aus genau diesen Variantenpreisen.
+{%- endcomment -%}
+{%- liquid
+  assign bf_treffer = section.settings.treffer
+  assign bf_max = section.settings.anzahl_karten
+-%}
+<script type="application/json" data-bf-daten>
+{
+  "anzahl": {{ collection.products_count | json }},
+  "filter": {
+    {%- for bf_filter in collection.filters -%}
+      {{ bf_filter.param_name | json }}: {
+        "label": {{ bf_filter.label | json }},
+        "typ": {{ bf_filter.type | json }},
+        {%- if bf_filter.type == 'price_range' -%}
+          "max": {{ bf_filter.range_max | divided_by: 100.0 | json }},
+        {%- endif -%}
+        "werte": [
+          {%- if bf_filter.type == 'list' or bf_filter.type == 'boolean' -%}
+            {%- for bf_wert in bf_filter.values -%}
+              {
+                "label": {{ bf_wert.label | json }},
+                "value": {{ bf_wert.value | json }},
+                "count": {{ bf_wert.count | default: 0 | json }},
+                "aktiv": {{ bf_wert.active | json }}
+                {%- if bf_wert.swatch.color -%}, "farbe": {{ bf_wert.swatch.color.rgb | prepend: 'rgb(' | append: ')' | json }}{%- endif -%}
+                {%- if bf_wert.swatch.image -%}, "bild": {{ bf_wert.swatch.image | image_url: width: 120 | json }}{%- endif -%}
+              }{%- unless forloop.last -%},{%- endunless -%}
+            {%- endfor -%}
+          {%- endif -%}
+        ]
+      }{%- unless forloop.last -%},{%- endunless -%}
+    {%- endfor -%}
+  }
+  {%- if bf_treffer -%},
+  "produkte": [
+    {%- paginate collection.products by bf_max -%}
+      {%- for product in collection.products limit: bf_max -%}
+        {%- liquid
+          # Die Variante, die auch die Karte zeigt: bei aktivem Farbfilter die
+          # passende Farbe, sonst die erste verfuegbare.
+          assign bf_v = product.selected_or_first_available_variant
+          capture bf_sf
+            render 'tp-suchfarbe-variante', product: product
+          endcapture
+          assign bf_sf = bf_sf | strip
+          if bf_sf != blank
+            assign bf_pos = bf_sf | split: '|' | first | plus: 0
+            assign bf_v = product.variants[bf_pos]
+          endif
+          assign bf_fi = -1
+          for bf_opt in product.options_with_values
+            assign bf_opt_name = bf_opt.name | downcase
+            if bf_opt_name == 'farbe' or bf_opt_name == 'color' or bf_opt_name == 'dekor'
+              assign bf_fi = bf_opt.position | minus: 1
+              break
+            endif
+          endfor
+          assign bf_farbe = ''
+          if bf_fi >= 0
+            assign bf_farbe = bf_v.options[bf_fi]
+          endif
+          # Wie im Rechner: Tag "ohne-raummass" = nur Meterware.
+          assign bf_ohne_raum = false
+          if product.tags contains 'ohne-raummass'
+            assign bf_ohne_raum = true
+          endif
+          assign bf_min_cm = product.metafields.custom.mindestlaenge_lfm.value | times: 100 | round
+        -%}
+        {
+          "handle": {{ product.handle | json }},
+          "titel": {{ product.title | json }},
+          "url": {{ bf_v.url | json }},
+          "farbe": {{ bf_farbe | json }},
+          "auslauf": {% if product.tags contains 'auslauf' %}true{% else %}false{% endif %},
+          "cm_exact": {% if product.metafields.custom.preis_pro_001_qm.value == true %}true{% else %}false{% endif %},
+          "min_cm": {{ bf_min_cm | json }},
+          "options": [
+            {%- for bf_opt in product.options_with_values -%}
+              { "name": {{ bf_opt.name | json }}, "values": {{ bf_opt.values | json }} }{%- unless forloop.last -%},{%- endunless -%}
+            {%- endfor -%}
+          ],
+          "variants": [
+            {%- for bf_var in product.variants -%}
+              {%- liquid
+                assign bf_var_titel = bf_var.title | downcase
+                assign bf_var_aus = false
+                if bf_var_titel contains 'opc-'
+                  assign bf_var_aus = true
+                endif
+                if bf_fi >= 0 and bf_var.options[bf_fi] != bf_farbe
+                  assign bf_var_aus = true
+                endif
+                if bf_ohne_raum
+                  if bf_var.options contains 'Wunschmaß' or bf_var.options contains 'Wunschmass'
+                    assign bf_var_aus = true
+                  endif
+                endif
+              -%}
+              {%- unless bf_var_aus -%}
+                { "options": {{ bf_var.options | json }}, "price": {{ bf_var.price | json }}, "available": {{ bf_var.available | json }}, "wunschmass": {% if bf_var.metafields.lieferant.wunschmass.value == false %}false{% else %}true{% endif %} },
+              {%- endunless -%}
+            {%- endfor -%}
+            null
+          ]
+        }{%- unless forloop.last -%},{%- endunless -%}
+      {%- endfor -%}
+    {%- endpaginate -%}
+  ]
+  {%- endif -%}
+}
+</script>
+{%- if bf_treffer -%}
+  <div data-bf-karten>
+    {%- paginate collection.products by bf_max -%}
+      {%- for product in collection.products limit: bf_max -%}
+        <div class="tp-bf-karte" data-handle="{{ product.handle | escape }}">
+          {% # theme-check-disable UniqueStaticBlockId %}
+          {% content_for 'block', type: '_product-card', id: 'static-product-card', closest.product: product, card_index: forloop.index0 %}
+          {% # theme-check-enable UniqueStaticBlockId %}
+        </div>
+      {%- endfor -%}
+    {%- endpaginate -%}
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Boden-Finder Daten",
+  "tag": "div",
+  "class": "tp-bf-daten",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Nur für die Ansichten boden-finder und boden-finder-treffer. Liefert dem Boden-Finder Filterwerte, Trefferzahl und Produktkarten."
+    },
+    {
+      "type": "checkbox",
+      "id": "treffer",
+      "label": "Treffer mit Karten ausgeben",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "anzahl_karten",
+      "label": "Anzahl Treffer",
+      "min": 3,
+      "max": 12,
+      "step": 1,
+      "default": 8
+    }
+  ]
+}
+{% endschema %}
