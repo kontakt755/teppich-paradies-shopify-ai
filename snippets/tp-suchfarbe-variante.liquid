@@ -1,5 +1,5 @@
 {%- doc -%}
-  Farb-Vorauswahl fuer Suchkarten (Inhaberentscheidung 2026-10-10): Wer nach
+  Farb- und exakte Groessen-Vorauswahl fuer Suchkarten. Wer nach
   "grauer Teppichboden" sucht, soll Karten in einem grauen Farbton sehen.
 
   Einzige Stelle, die die Variante waehlt. Bild, alle Links, Preis,
@@ -38,6 +38,14 @@
     4. Die erste Variante mit irgendeinem Wort der Gruppe.
   Passt keine Variante, gibt das Snippet nichts aus und die Karte bleibt wie
   bisher.
+
+  Bei Standardteppichen (Typ Teppich/Wohnteppich) mit genau den zwei Optionen
+  Farbe und Groesse kann
+  ein einzelnes exaktes rechteckiges Suchmass (160x230, 160 × 230 cm) danach
+  die Groesse innerhalb derselben Farbe waehlen. Nur vorhandene verfuegbare
+  Varianten mit eigenem Bild; keine gedrehten, gerundeten oder geratenen Masse.
+  Aktive Variantenfilter haben Vorrang. Fehlt eine passende Groesse oder nennt
+  die Suche mehrere passende Masse, bleibt die bisherige Auswahl erhalten.
 
   Ausgabe: "<Position in product.variants, ab 0>|<Index der Farboption>" oder
   nichts. Aufrufer lesen die Variante direkt als product.variants[Position],
@@ -104,6 +112,7 @@
     endfor
   endif
 
+  assign tp_sf_wahl = -1
   if tp_sf_woerter != ''
     assign tp_sf_teppich = false
     if product.metafields.custom.preis_pro_001_qm.value == true and product.metafields.service.einfassung.value != blank
@@ -208,8 +217,99 @@
     if tp_sf_wahl < 0
       assign tp_sf_wahl = tp_sf_ersatz
     endif
-    if tp_sf_wahl >= 0
-      echo tp_sf_wahl | append: '|' | append: tp_sf_index
+  endif
+
+  assign tp_sf_typ = product.type | downcase
+  assign tp_sf_groessenindex = -1
+  assign tp_sf_hat_masszeichen = false
+  if tp_sf_begriff contains 'x' or tp_sf_begriff contains '×'
+    assign tp_sf_hat_masszeichen = true
+  endif
+  if tp_sf_index >= 0 and tp_sf_hat_masszeichen and product.options_with_values.size == 2
+    if tp_sf_typ == 'teppich' or tp_sf_typ == 'wohnteppich'
+      for tp_sf_option in product.options_with_values
+        assign tp_sf_name = tp_sf_option.name | downcase
+        if tp_sf_name == 'größe' or tp_sf_name == 'groesse' or tp_sf_name == 'size'
+          assign tp_sf_groessenindex = tp_sf_option.position | minus: 1
+          break
+        endif
+      endfor
     endif
+  endif
+  if product.metafields.custom.preis_pro_001_qm.value == true or product.metafields.custom.qm_pro_paket.value > 0
+    assign tp_sf_groessenindex = -1
+  endif
+  if tp_sf_groessenindex >= 0
+    for tp_sf_filter in search.filters
+      assign tp_sf_filteranfang = tp_sf_filter.param_name | slice: 0, 9
+      if tp_sf_filteranfang == 'filter.v.'
+        if tp_sf_filter.active_values.size > 0 or tp_sf_filter.min_value.value != nil or tp_sf_filter.max_value.value != nil
+          assign tp_sf_groessenindex = -1
+          break
+        endif
+      endif
+    endfor
+  endif
+  if tp_sf_groessenindex >= 0
+    assign tp_sf_basis = product.selected_variant | default: product.selected_or_first_available_variant
+    if tp_sf_wahl >= 0
+      assign tp_sf_basis = product.variants[tp_sf_wahl]
+    endif
+    assign tp_sf_groessenbegriff = tp_sf_begriff | replace: '×', 'x' | remove: ' ' | remove: ' ' | prepend: '#' | append: '#'
+    assign tp_sf_groessenwahl = -1
+    assign tp_sf_suchmass = ''
+    assign tp_sf_mehrere_masse = false
+    for tp_sf_v in product.variants
+      if tp_sf_v.available != true or tp_sf_v.featured_media == blank
+        continue
+      endif
+      if tp_sf_v.options[tp_sf_index] != tp_sf_basis.options[tp_sf_index]
+        continue
+      endif
+      assign tp_sf_titel = tp_sf_v.title | downcase
+      if tp_sf_titel contains 'opc-'
+        continue
+      endif
+      assign tp_sf_mass = tp_sf_v.options[tp_sf_groessenindex] | downcase | replace: '×', 'x' | remove: ' ' | remove: ' ' | remove: 'cm'
+      assign tp_sf_reste = tp_sf_mass | remove: '0' | remove: '1' | remove: '2' | remove: '3' | remove: '4' | remove: '5' | remove: '6' | remove: '7' | remove: '8' | remove: '9'
+      assign tp_sf_seiten = tp_sf_mass | split: 'x'
+      assign tp_sf_b = tp_sf_seiten | first | plus: 0
+      assign tp_sf_l = tp_sf_seiten | last | plus: 0
+      if tp_sf_reste != 'x' or tp_sf_seiten.size != 2 or tp_sf_b <= 0 or tp_sf_l <= 0
+        continue
+      endif
+      unless tp_sf_groessenbegriff contains tp_sf_mass
+        continue
+      endunless
+      assign tp_sf_fund = tp_sf_groessenbegriff | split: tp_sf_mass
+      if tp_sf_fund.size != 2
+        continue
+      endif
+      assign tp_sf_davor = tp_sf_fund | first | slice: -1, 1
+      assign tp_sf_danach = tp_sf_fund | last
+      assign tp_sf_einheit = tp_sf_danach | slice: 0, 2
+      if tp_sf_einheit == 'cm'
+        assign tp_sf_danach = tp_sf_danach | remove_first: 'cm'
+      endif
+      assign tp_sf_danach = tp_sf_danach | slice: 0, 1
+      assign tp_sf_grenzen = '0123456789.,xm'
+      if tp_sf_grenzen contains tp_sf_davor or tp_sf_grenzen contains tp_sf_danach
+        continue
+      endif
+      if tp_sf_suchmass != '' and tp_sf_suchmass != tp_sf_mass
+        assign tp_sf_mehrere_masse = true
+        break
+      endif
+      assign tp_sf_suchmass = tp_sf_mass
+      if tp_sf_groessenwahl < 0 or tp_sf_v.id == tp_sf_basis.id
+        assign tp_sf_groessenwahl = forloop.index0
+      endif
+    endfor
+    if tp_sf_groessenwahl >= 0 and tp_sf_mehrere_masse == false
+      assign tp_sf_wahl = tp_sf_groessenwahl
+    endif
+  endif
+  if tp_sf_wahl >= 0
+    echo tp_sf_wahl | append: '|' | append: tp_sf_index
   endif
 -%}
