@@ -2,6 +2,28 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-15 · Herstellerware mit der Bezeichnung des Herstellers
+
+- **Geändert:** Nächste Stufe aus dem Eintrag darunter. Warenbestellungen an die Markenhersteller
+  (Lieferant D und E, Direktbezug) nannten unsere eigene SKU als Artikelnummer. Neues Stammdatenfeld
+  `ware.nachBezeichnung`: dann nennt die Warenmail (an Kunden und an den Laden) die Bezeichnung aus
+  `einkauf.farbname` der bestellten Variante, ohne Farbname (Vinyl: dort ist die Artikelnummer schon die
+  echte) weiter die Artikelnummer – dieselbe Regel `artikelKopf()` wie bei Mustern. Menge, Rollenbreite,
+  Fertigmaß, Einfassung und Kommission bleiben unverändert. Dafür führt der Einkaufsblock der Position
+  (`resolve.mjs`, `EINKAUF_KEYS`) jetzt auch `farbname`; der Export holt den Namensraum `einkauf` schon
+  vollständig.
+- **Getestet:** `operations/tests/lieferanten.test.mjs`: Rollenware, Maßteppich und Vinyl mit Feld (an
+  Kunden und an den Laden) und ohne Feld bzw. mit ungültigem Wert; Lieferant A mit gefülltem Farbnamen
+  bleibt bei „Art.-Nr. … · Farb-Nr. …“. Gegen die echten Daten (nur lesend, Stammdaten im Speicher): offene
+  Warenbestellungen bei D/E gibt es derzeit keine; die beiden echten Quellvarianten aus dem Export als
+  Probeposition ergeben bei E die Bezeichnung statt der SKU, bei D (Vinyl) die echte Artikelnummer. Im
+  Lexikon-Export tragen alle aktiven Rollenware-Varianten von D und E einen Farbnamen.
+- **Risiken/Annahmen:** Wunschmaß-Varianten von D/E haben weder Artikelnummer noch Farbname und landen wie
+  bisher unter „fehlt“ – unverändert. D und E haben in den Stammdaten noch keinen Warenweg/keine
+  Warenmail; die Mail entsteht bis dahin als Text zum Kopieren.
+- **Nächste Stufe:** Warenkontakt von D und E in den Stammdaten eintragen, sobald der erste Direktbezug
+  ansteht.
+
 ## 2026-10-15 · Herstellermuster mit der Bezeichnung des Herstellers
 
 - **Geändert:** Inhaber: Muster einiger Markenhersteller (Teppichboden und Vinyl) sind beim Hersteller
