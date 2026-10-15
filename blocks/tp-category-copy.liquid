@@ -18,7 +18,7 @@
 
   .tp-category-copy__label {
     color: rgb(var(--color-foreground-rgb) / 0.62);
-    font-size: 0.72rem;
+    font-size: var(--tp-fs-xs);
     font-weight: 650;
     line-height: 1.2;
     letter-spacing: 0.09em;
@@ -27,7 +27,7 @@
 
   .tp-category-copy__benefit {
     color: var(--color-foreground);
-    font-size: clamp(1.05rem, 1.35vw, 1.22rem);
+    font-size: var(--tp-fs-lg);
     font-weight: 700;
     line-height: 1.25;
     letter-spacing: -0.015em;
@@ -36,7 +36,7 @@
 
   .tp-category-copy__detail {
     color: rgb(var(--color-foreground-rgb) / 0.72);
-    font-size: 0.92rem;
+    font-size: var(--tp-fs-sm);
     line-height: 1.42;
     text-wrap: pretty;
   }
@@ -60,11 +60,11 @@
     }
 
     .tp-category-copy__benefit {
-      font-size: 1.05rem;
+      font-size: var(--tp-fs-md);
     }
 
     .tp-category-copy__detail {
-      font-size: 0.9rem;
+      font-size: var(--tp-fs-sm);
     }
   }
 {% endstylesheet %}

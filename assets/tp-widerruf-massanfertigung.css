@@ -4,7 +4,7 @@
   border-left: 3px solid #9b8060;
   background: #f8f6f2;
   color: #34312e;
-  font-size: .82rem;
+  font-size: var(--tp-fs-sm);
   line-height: 1.45;
 }
 .tp-widerruf-massanfertigung strong { font-weight: 650; }

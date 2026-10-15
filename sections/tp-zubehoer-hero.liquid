@@ -168,7 +168,7 @@
   .tp-zh__eyebrow {
     margin: 0;
     color: rgb(var(--color-foreground-rgb) / 0.62);
-    font-size: 0.75rem;
+    font-size: var(--tp-fs-xs);
     font-weight: 650;
     letter-spacing: 0.09em;
     line-height: 1.2;
@@ -177,7 +177,7 @@
 
   .tp-zh__title {
     margin: 0;
-    font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem);
+    font-size: var(--tp-fs-2xl);
     line-height: 1.08;
     letter-spacing: -0.02em;
     text-wrap: balance;
@@ -186,7 +186,7 @@
   .tp-zh__lead {
     margin: 0;
     color: rgb(var(--color-foreground-rgb) / 0.78);
-    font-size: 1.0625rem;
+    font-size: var(--tp-fs-md);
     line-height: 1.55;
     text-wrap: pretty;
   }
@@ -204,7 +204,7 @@
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    font-size: 0.9375rem;
+    font-size: var(--tp-fs-md);
     font-weight: 600;
     color: var(--color-foreground);
   }
@@ -309,7 +309,7 @@
 
   @media screen and (max-width: 749px) {
     .tp-zh__lead {
-      font-size: 1rem;
+      font-size: var(--tp-fs-md);
     }
 
     .tp-zh__usps {

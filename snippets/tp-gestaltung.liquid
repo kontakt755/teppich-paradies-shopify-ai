@@ -13,6 +13,54 @@
     --tp-hauptaktion-hover: {{ settings.tp_hauptaktion_hover | default: '#962836' }};
   }
 
+  /* Schriftskala (Shopvergleich F, 2026-10-15): sechs Stufen statt rund
+     20 Groessen je Seite. tp-Bausteine setzen font-size nur noch ueber
+     diese Variablen; die Horizon-Typografie (h1-h6, Absatz, feste Stufen
+     --font-size--*) zeigt auf dieselben Stufen. Die Typografie in
+     config/settings_data.json bleibt unberuehrt - sie wird nicht deployt.
+     Gewichte: Fliesstext 400, Beschriftungen 500, Ueberschriften 600/700. */
+  :root {
+    --tp-fs-xs: 12px;  /* Kleingedrucktes, Kartenmerkmale, Plaketten */
+    --tp-fs-sm: 14px;  /* Beschriftungen, Nebeninfos, Breadcrumb */
+    --tp-fs-md: 16px;  /* Fliesstext, Knoepfe, Kartentitel */
+    --tp-fs-lg: 20px;  /* Preise, Zwischenueberschriften */
+    --tp-fs-xl: 28px;  /* Seiten- und Abschnittsueberschriften */
+    --tp-fs-2xl: 40px; /* Startseiten-Titel */
+
+    --font-size--paragraph: var(--tp-fs-md);
+    --font-size--h1: var(--tp-fs-2xl);
+    --font-size--h2: var(--tp-fs-xl);
+    --font-size--h3: var(--tp-fs-xl);
+    --font-size--h4: var(--tp-fs-lg);
+    --font-size--h5: var(--tp-fs-sm);
+    --font-size--h6: var(--tp-fs-xs);
+    --font-size--3xs: var(--tp-fs-xs);
+    --font-size--2xs: var(--tp-fs-xs);
+    --font-size--xs: var(--tp-fs-sm);
+    --font-size--sm: var(--tp-fs-sm);
+    --font-size--md: var(--tp-fs-md);
+    --font-size--lg: var(--tp-fs-lg);
+    --font-size--xl: var(--tp-fs-lg);
+    --font-size--2xl: var(--tp-fs-xl);
+    --font-size--3xl: var(--tp-fs-xl);
+    --font-size--4xl: var(--tp-fs-2xl);
+    --font-size--5xl: var(--tp-fs-2xl);
+    --font-size--6xl: var(--tp-fs-2xl);
+  }
+  /* Ueberschriften brechen ausgeglichen um - mit der Skala rutschte sonst
+     z. B. "zu" aus "Mass eingeben, wir schneiden zu" allein in Zeile zwei. */
+  main :is(h1, h2, h3, h4, [role='heading']) { text-wrap: balance; }
+
+  /* Am Telefon: kleinste Stufe 13 px (V9), grosse Stufen kleiner. */
+  @media screen and (max-width: 749px) {
+    :root {
+      --tp-fs-xs: 13px;
+      --tp-fs-lg: 18px;
+      --tp-fs-xl: 24px;
+      --tp-fs-2xl: 30px;
+    }
+  }
+
   /* V2: "In den Warenkorb" ist die Hauptaktion - ueberall dieselbe Farbe,
      auch in der Kaufleiste am Telefon. Die Variablen speisen die Horizon-
      Regeln fuer .button, Hover und Fokus bleiben dadurch intakt. */
@@ -26,7 +74,7 @@
   }
 
   /* V9: Versal-Labels werden normal geschriebene, halbfette Labels in
-     14 px. Badges und Marken bleiben, wie sie sind. */
+     Stufe sm (14 px). Badges und Marken bleiben, wie sie sind. */
     html body .tp-br__label,
     html body .tp-bp__ursachen-label,
     html body .tp-bw-suche__art,
@@ -60,7 +108,7 @@
     html body .details__header {
     text-transform: none;
     letter-spacing: normal;
-    font-size: 14px;
+    font-size: var(--tp-fs-sm);
     font-weight: 600;
   }
 
@@ -106,17 +154,19 @@
   /* V9: Akkordeon-Kopfzeilen (Beschreibung, Technische Daten ...) standen
      bei 12 px - sie sind Ueberschriften, keine Fussnoten. */
   html body .accordion .details__header {
-    font-size: 15px;
+    font-size: var(--tp-fs-md);
     font-weight: 600;
   }
 
-  /* V9: kein Text unter 12 px, am Telefon nicht unter 13 px. */
+  /* V9: kein Text unter 12 px, am Telefon nicht unter 13 px (Stufe xs).
+     Grundpreis (Horizon: 0.85em der Preiszeile) stand bei 10,2 px. */
+  html body .unit-price,
   html body .tp-card-product-kind,
   html body .tp-card-roll-widths__label,
   html body .tp-card-roll-widths__values,
   html body [class*="tp-pit-lexikon__titel"],
   html body .tp-lex-inline__link {
-    font-size: 12px;
+    font-size: var(--tp-fs-xs);
   }
   @media screen and (max-width: 749px) {
     html body .tp-kat__n,
@@ -147,7 +197,7 @@
     html body .tp-product-breadcrumb,
     html body .tp-product-breadcrumb :is(a, span),
     html body main small {
-      font-size: 13px;
+      font-size: var(--tp-fs-xs);
     }
   }
 
@@ -161,13 +211,24 @@
   /* 2026-09-28: ohne :not(:has(...)) blieb das Badge im Kollektionsraster
      immer unsichtbar - das Raster-li wird nie markiert, nur die Karte darin. */
 
+  {%- if request.page_type == 'collection' -%}
+    /* F: Bildkarussells der Kategorieseiten (Unterkategorien wie Hochflor,
+       Mittelflor, Kurzflor) in einem Format - vorher "Automatisch", also
+       das Format jedes einzelnen Fotos (1,5 neben 1,33). 4:3 wie die
+       Unterkategorie-Kacheln oben auf der Seite. */
+    slideshow-component.carousel-content .image-block__image {
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+    }
+  {%- endif -%}
+
   {%- if request.page_type == 'product' or request.page_type == 'collection' -%}
     /* V5: Rich-Text in Produkt- und Kategoriebeschreibungen - klare
        Hierarchie und eine lesbare Zeilenlaenge. */
     main .text-block.rte { max-width: 680px; }
-    main .text-block.rte h2 { font-size: 22px; line-height: 1.3; margin: 1.4em 0 0.5em; }
-    main .text-block.rte h3 { font-size: 18px; line-height: 1.35; margin: 1.3em 0 0.4em; }
-    main .text-block.rte h4 { font-size: 16px; font-weight: 600; line-height: 1.4; margin: 1.2em 0 0.3em; }
+    main .text-block.rte h2 { font-size: var(--tp-fs-lg); line-height: 1.3; margin: 1.4em 0 0.5em; }
+    main .text-block.rte h3 { font-size: var(--tp-fs-md); font-weight: 600; line-height: 1.35; margin: 1.3em 0 0.4em; }
+    main .text-block.rte h4 { font-size: var(--tp-fs-md); font-weight: 600; line-height: 1.4; margin: 1.2em 0 0.3em; }
     main .text-block.rte > :first-child { margin-top: 0; }
     /* V9: Listen in Beschreibungen immer mit Punkt bzw. Nummer. */
     main .text-block.rte ul { list-style: disc; padding-left: 1.25em; }

@@ -6,13 +6,13 @@
 <style>
   {% comment %} Produktbeschreibung im Teppich-Template: Bessere Lesbarkeit {% endcomment %}
   .text-block--text_description_teppich_main {
-    font-size: 15px;
+    font-size: var(--tp-fs-md);
     line-height: 1.7;
     color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.85);
   }
 
   .text-block--text_description_teppich_main .rte {
-    font-size: 15px;
+    font-size: var(--tp-fs-md);
     line-height: 1.7;
     color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.85);
   }
@@ -41,12 +41,12 @@
 
   @media screen and (max-width: 749px) {
     .text-block--text_description_teppich_main {
-      font-size: 14px;
+      font-size: var(--tp-fs-sm);
       line-height: 1.6;
     }
 
     .text-block--text_description_teppich_main .rte {
-      font-size: 14px;
+      font-size: var(--tp-fs-sm);
       line-height: 1.6;
     }
   }

@@ -159,16 +159,16 @@
 
 {% stylesheet %}
   .tp-ew { display: grid; gap: 8px; margin: 4px 0 8px; }
-  .tp-ew__titel { margin: 0; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62); }
+  .tp-ew__titel { margin: 0; font-size: var(--tp-fs-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62); }
   .tp-ew__chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .tp-ew__chip {
     display: inline-flex; align-items: center; padding: 8px 14px;
     border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.16); border-radius: 999px;
-    font-size: .88rem; font-weight: 600; color: var(--color-foreground, #15171a); text-decoration: none;
+    font-size: var(--tp-fs-sm); font-weight: 600; color: var(--color-foreground, #15171a); text-decoration: none;
   }
   .tp-ew__chip:hover { border-color: var(--color-foreground, #15171a); }
   .tp-ew__chip.is-aktiv { border-color: #1d6b47; background: #1d6b47; color: #fff; }
-  .tp-ew__basis { margin: 0; font-size: .85rem; line-height: 1.45; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.78); }
+  .tp-ew__basis { margin: 0; font-size: var(--tp-fs-sm); line-height: 1.45; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.78); }
   .tp-ew__basis a { color: var(--color-foreground, #15171a); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 {% endstylesheet %}
 

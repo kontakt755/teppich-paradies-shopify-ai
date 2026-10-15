@@ -98,7 +98,7 @@
     border: 1.5px solid var(--color-foreground, #000);
     border-radius: 6px;
     color: var(--color-foreground, #000);
-    font-size: 13px;
+    font-size: var(--tp-fs-sm);
     font-weight: 600;
     text-decoration: none;
     white-space: nowrap;
@@ -122,13 +122,13 @@
 
     .tp-card-actions__sample {
       padding-inline: 8px;
-      font-size: 12.5px;
+      font-size: var(--tp-fs-xs);
     }
   }
 
   /* Teppich nach Mass: Hinweis, Hauptknopf, darunter ein ruhiger Muster-Link. */
   .tp-card-actions--teppich { flex-wrap: wrap; gap: 6px 14px; }
-  .tp-card-actions__hinweis { flex: 0 1 auto; display: inline-flex; align-items: center; gap: 6px; margin: 0 auto 2px 0; padding: 5px 10px; border-radius: 6px; background: rgb(0 0 0 / 0.05); color: var(--color-foreground, #000); font-size: 13px; font-weight: 600; line-height: 1.3; }
+  .tp-card-actions__hinweis { flex: 0 1 auto; display: inline-flex; align-items: center; gap: 6px; margin: 0 auto 2px 0; padding: 5px 10px; border-radius: 6px; background: rgb(0 0 0 / 0.05); color: var(--color-foreground, #000); font-size: var(--tp-fs-sm); font-weight: 600; line-height: 1.3; }
   .tp-card-actions__hinweis-icon { flex: none; }
   .tp-card-actions__konfig {
     flex: 1 0 100%;
@@ -141,7 +141,7 @@
     border: 1.5px solid var(--color-foreground, #000);
     background: transparent;
     color: var(--color-foreground, #000);
-    font-size: 14px;
+    font-size: var(--tp-fs-sm);
     font-weight: 600;
     line-height: 1.2;
     text-decoration: none;
@@ -158,7 +158,7 @@
     border-radius: 0;
     background: none;
     color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.78);
-    font-size: 13px;
+    font-size: var(--tp-fs-sm);
     font-weight: 500;
     text-decoration: underline;
     text-underline-offset: 3px;

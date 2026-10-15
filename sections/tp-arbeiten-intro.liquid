@@ -43,20 +43,20 @@
 {% stylesheet %}
   /* Kopfsection: der Abstand nach unten kommt von der folgenden Galerie. */
   .tp-s-sec.tp-arbintro { padding-bottom: 28px; }
-  .tp-arbintro__brot { font-size: 13.5px; color: var(--tp-muted); margin-bottom: 14px; display: flex; gap: 7px; flex-wrap: wrap; }
+  .tp-arbintro__brot { font-size: var(--tp-fs-sm); color: var(--tp-muted); margin-bottom: 14px; display: flex; gap: 7px; flex-wrap: wrap; }
   .tp-arbintro__brot a { color: var(--tp-muted); text-decoration: none; border-bottom: 1px solid var(--tp-line-2); }
   .tp-arbintro__brot a:hover { color: var(--tp-ink); }
-  .tp-arbintro__h1 { font-size: clamp(28px, 3.4vw, 44px); font-weight: 700; line-height: 1.1; letter-spacing: -0.015em; margin: 0; color: var(--tp-ink); text-wrap: balance; }
-  .tp-arbintro__text { max-width: 66ch; color: var(--tp-ink-2); font-size: 17px; line-height: 1.6; margin: 14px 0 0; }
+  .tp-arbintro__h1 { font-size: var(--tp-fs-2xl); font-weight: 700; line-height: 1.1; letter-spacing: -0.015em; margin: 0; color: var(--tp-ink); text-wrap: balance; }
+  .tp-arbintro__text { max-width: 66ch; color: var(--tp-ink-2); font-size: var(--tp-fs-md); line-height: 1.6; margin: 14px 0 0; }
   /* Die Absaetze kommen aus dem Richtext-Feld; der aeussere Abstand steht oben. */
   .tp-arbintro__text p { margin: 0; }
   .tp-arbintro__text p + p { margin-top: 0.7em; }
   .tp-arbintro__punkte { list-style: none; margin: 22px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px 26px; }
-  .tp-arbintro__punkte li { display: flex; align-items: flex-start; gap: 8px; font-size: 15px; font-weight: 500; color: var(--tp-ink); }
+  .tp-arbintro__punkte li { display: flex; align-items: flex-start; gap: 8px; font-size: var(--tp-fs-md); font-weight: 500; color: var(--tp-ink); }
   .tp-arbintro__punkte svg { color: var(--tp-green); }
   @media (max-width: 767px) {
     .tp-s-sec.tp-arbintro { padding-bottom: 20px; }
-    .tp-arbintro__text { font-size: 16px; }
+    .tp-arbintro__text { font-size: var(--tp-fs-md); }
     .tp-arbintro__punkte { flex-direction: column; gap: 9px; }
   }
 {% endstylesheet %}

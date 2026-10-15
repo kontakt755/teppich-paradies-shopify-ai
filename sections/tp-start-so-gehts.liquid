@@ -88,9 +88,9 @@
   .tp-sg__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
   .tp-sg__text { display: flex; flex: 1; flex-direction: column; gap: 8px; padding: 18px 20px 14px; }
   .tp-sg__kopf { display: flex; align-items: center; gap: 10px; }
-  .tp-sg__nr { display: inline-flex; flex: 0 0 28px; align-items: center; justify-content: center; height: 28px; border-radius: 50%; background: var(--tp-ink, #1d1a17); color: #fff; font-size: 14px; font-weight: 700; }
-  .tp-sg__titel { margin: 0; font-size: 19px; font-weight: 700; line-height: 1.2; color: var(--tp-ink, #1d1a17); }
-  .tp-sg__beschreibung { font-size: 15.5px; line-height: 1.5; color: var(--tp-ink-2, #4a443f); }
+  .tp-sg__nr { display: inline-flex; flex: 0 0 28px; align-items: center; justify-content: center; height: 28px; border-radius: 50%; background: var(--tp-ink, #1d1a17); color: #fff; font-size: var(--tp-fs-sm); font-weight: 700; }
+  .tp-sg__titel { margin: 0; font-size: var(--tp-fs-lg); font-weight: 700; line-height: 1.2; color: var(--tp-ink, #1d1a17); }
+  .tp-sg__beschreibung { font-size: var(--tp-fs-md); line-height: 1.5; color: var(--tp-ink-2, #4a443f); }
   .tp-sg__beschreibung p { margin: 0; }
   .tp-sg__link { display: inline-flex; align-items: center; align-self: flex-start; min-height: 44px; margin-top: auto; font-weight: 600; color: var(--tp-ink, #1d1a17); text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
   .tp-sg__plz { margin-top: 20px; }
@@ -101,13 +101,15 @@
     .tp-sg__schritt { flex-direction: row; }
     .tp-sg__bild { flex: 0 0 38%; aspect-ratio: auto; min-height: 150px; }
   }
+  /* F: am Telefon alle drei Bilder im selben Format (vorher streckte der
+     Text jedes Bild auf eigene Hoehe: 0,49 bis 0,76). Quadrat oben links. */
   @media (max-width: 767px) {
-    .tp-sg__bild { flex-basis: 36%; min-height: 0; }
+    .tp-sg__bild { flex-basis: 36%; min-height: 0; aspect-ratio: 1 / 1; align-self: flex-start; }
     .tp-sg__text { gap: 6px; padding: 12px 14px 6px; }
     .tp-sg__kopf { gap: 8px; }
-    .tp-sg__nr { flex-basis: 24px; height: 24px; font-size: 13px; }
-    .tp-sg__titel { font-size: 16.5px; }
-    .tp-sg__beschreibung { font-size: 14.5px; line-height: 1.45; }
+    .tp-sg__nr { flex-basis: 24px; height: 24px; font-size: var(--tp-fs-xs); }
+    .tp-sg__titel { font-size: var(--tp-fs-md); }
+    .tp-sg__beschreibung { font-size: var(--tp-fs-sm); line-height: 1.45; }
   }
 {% endstylesheet %}
 

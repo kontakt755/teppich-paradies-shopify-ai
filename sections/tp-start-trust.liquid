@@ -35,18 +35,18 @@
   .tp-trust__wrap { display: grid; grid-template-columns: auto 1fr; gap: 32px; align-items: center; padding-top: 18px; padding-bottom: 18px; }
   .tp-trust__wrap--ohne-rating { grid-template-columns: 1fr; }
   .tp-trust__list { list-style: none; margin: 0; padding: 0; display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
-  .tp-trust__list li { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 500; color: #4a443f; }
-  .tp-trust__list svg { width: 20px; height: 20px; color: #b0303f; flex: none; }
+  .tp-trust__list li { display: flex; align-items: center; gap: 10px; font-size: var(--tp-fs-md); font-weight: 500; color: #4a443f; }
+  .tp-trust__list svg { width: 20px; height: 20px; color: #1d1a17; flex: none; }
   .tp-trust__rating { display: flex; align-items: center; gap: 12px; padding-right: 32px; border-right: 1px solid #e6e0d8; text-decoration: none; color: #1d1a17; }
-  .tp-trust__g { width: 40px; height: 40px; border-radius: 50%; background: #fff; border: 1px solid #e6e0d8; display: grid; place-items: center; font-weight: 700; font-size: 20px; color: #4285f4; }
-  .tp-trust__rating b { display: block; font-size: 15px; }
+  .tp-trust__g { width: 40px; height: 40px; border-radius: 50%; background: #fff; border: 1px solid #e6e0d8; display: grid; place-items: center; font-weight: 700; font-size: var(--tp-fs-lg); color: #4285f4; }
+  .tp-trust__rating b { display: block; font-size: var(--tp-fs-md); }
   .tp-trust__stars { color: #e5a51c; }
-  .tp-trust__rating small { color: var(--tp-muted, #655e57); font-size: 12.5px; }
+  .tp-trust__rating small { color: var(--tp-muted, #655e57); font-size: var(--tp-fs-xs); }
   @media (max-width: 767px) {
     .tp-trust__wrap { grid-template-columns: 1fr; gap: 14px; padding-top: 16px; padding-bottom: 16px; }
     .tp-trust__rating { border-right: 0; padding-right: 0; border-bottom: 1px solid #e6e0d8; padding-bottom: 14px; }
     .tp-trust__list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .tp-trust__list li { font-size: 14px; }
+    .tp-trust__list li { font-size: var(--tp-fs-sm); }
   }
   @media (max-width: 389px) { .tp-trust__list { grid-template-columns: 1fr; } }
 {% endstylesheet %}

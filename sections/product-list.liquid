@@ -60,9 +60,22 @@
               assign tp_ln_ohne_sp = false
             endif
           -%}
+          {%- comment -%}
+            Auslaufartikel (Tag "auslauf") ans Ende, wie in den Kategorien
+            (dort per auslauf:sortieren, PR #1315): Runde 1 zeigt alle anderen,
+            Runde 2 fuellt mit Auslaufware auf. Shopvergleich, Restpunkt 4c.
+          {%- endcomment -%}
+          {%- for tp_ln_runde in (1..2) -%}
           {%- for product in section.settings.collection.products -%}
             {%- liquid
               if tp_ln_vorlage != blank and product.template_suffix != tp_ln_vorlage
+                continue
+              endif
+              if product.tags contains 'auslauf'
+                if tp_ln_runde == 1
+                  continue
+                endif
+              elsif tp_ln_runde == 2
                 continue
               endif
               assign tp_ln_key = product.title | split: ' ' | first | downcase
@@ -96,6 +109,7 @@
                 <a class="tp-linie-mehr" href="{{ routes.search_url }}?q={{ tp_ln_key | url_encode }}&type=product">+{{ tp_ln_mehr }} Farben</a>
               {%- endif -%}
             </div>
+          {%- endfor -%}
           {%- endfor -%}
         {%- endpaginate -%}
       {%- else -%}
@@ -158,7 +172,7 @@
 
 {% stylesheet %}
   .tp-linie-item { display: flex; flex-direction: column; }
-  .tp-linie-mehr { align-self: flex-start; margin-top: 6px; font-size: 13px; font-weight: 500; color: var(--tp-ink, #1d1a17); text-decoration: underline; text-underline-offset: 3px; }
+  .tp-linie-mehr { align-self: flex-start; margin-top: 6px; font-size: var(--tp-fs-sm); font-weight: 500; color: var(--tp-ink, #1d1a17); text-decoration: underline; text-underline-offset: 3px; }
 {% endstylesheet %}
 
 {% schema %}
