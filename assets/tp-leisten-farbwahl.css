@@ -12,7 +12,7 @@
   }
 
   .tp-lfw__current {
-    font-weight: 650;
+    font-weight: 600;
     color: var(--color-foreground);
   }
 
@@ -115,7 +115,7 @@
   }
 
   .tp-lfw__tile[aria-pressed='true'] .tp-lfw__name {
-    font-weight: 650;
+    font-weight: 600;
     color: var(--color-foreground);
   }
 

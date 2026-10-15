@@ -51,6 +51,11 @@
      z. B. "zu" aus "Mass eingeben, wir schneiden zu" allein in Zeile zwei. */
   main :is(h1, h2, h3, h4, [role='heading']) { text-wrap: balance; }
 
+  /* Gewichte nur 400/500/600/700: <b>/<strong> sind im Browser "bolder" und
+     wurden in halbfettem Umfeld 900 (z. B. "4,9" in der Startseiten-
+     Bewertung). Ohne Spezifitaet - jede eigene Regel geht vor. */
+  :where(main) :where(b, strong) { font-weight: 700; }
+
   /* Am Telefon: kleinste Stufe 13 px (V9), grosse Stufen kleiner. */
   @media screen and (max-width: 749px) {
     :root {

@@ -47,7 +47,7 @@
 
 .tp-ek__groessen-wrap { margin-top: 10px; }
 .tp-ek__groessen-wrap[hidden] { display: none; }
-.tp-ek__groessen-label { margin: 0 0 6px; font-size: var(--tp-fs-sm); font-weight: 650; }
+.tp-ek__groessen-label { margin: 0 0 6px; font-size: var(--tp-fs-sm); font-weight: 600; }
 .tp-ek__groessen { display: flex; flex-wrap: wrap; gap: 6px; }
 .tp-ek__groessen-hinweis { margin: 6px 0 0; font-size: var(--tp-fs-xs); line-height: 1.4; color: var(--tp-ek-muted); }
 .tp-ek__groesse {
@@ -113,7 +113,7 @@
 }
 .tp-ek__kante-text { display: block; padding: 4px 12px 0; font-size: var(--tp-fs-xs); line-height: 1.35; color: var(--tp-ek-muted); }
 .tp-ek__kante-preis { display: flex; flex-direction: column; gap: 1px; margin-top: auto; padding: 8px 12px 12px; font-variant-numeric: tabular-nums; }
-.tp-ek__kante-preis strong { font-size: var(--tp-fs-md); font-weight: 800; letter-spacing: -0.01em; }
+.tp-ek__kante-preis strong { font-size: var(--tp-fs-md); font-weight: 700; letter-spacing: -0.01em; }
 .tp-ek__kante-preis [data-kante-m2] { font-size: var(--tp-fs-sm); font-weight: 700; }
 .tp-ek__kante-preis strong:not([hidden]) + [data-kante-m2] { font-size: var(--tp-fs-xs); font-weight: 500; color: var(--tp-ek-muted); }
 .tp-ek__kante-inkl { font-size: var(--tp-fs-xs); color: var(--tp-ek-muted); }
@@ -204,7 +204,7 @@
 .tp-ek__summe .tp-ek__summe-werte { display: inline-flex; align-items: baseline; gap: 10px; text-transform: none; letter-spacing: 0; }
 .tp-ek__summe .tp-ek__summe-alt { font-size: var(--tp-fs-md); font-weight: 400; color: var(--tp-ek-muted); text-decoration: line-through; font-variant-numeric: tabular-nums; }
 .tp-ek__summe .tp-ek__summe-alt[hidden] { display: none; }
-.tp-ek__summe strong { font-size: var(--tp-fs-xl); font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.tp-ek__summe strong { font-size: var(--tp-fs-xl); font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
 .tp-ek--mass .tp-ek__summe{align-items:center;gap:6px}
 .tp-ek--mass .tp-ek__summe .tp-ek__summe-werte{gap:5px;white-space:nowrap}
 .tp-ek--mass .tp-ek__summe strong{font-size: var(--tp-fs-lg);white-space:nowrap}

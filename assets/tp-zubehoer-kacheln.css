@@ -193,7 +193,7 @@
     padding-block-start: 10px;
     color: var(--color-foreground);
     font-size: var(--tp-fs-sm);
-    font-weight: 650;
+    font-weight: 600;
   }
 
   .tp-zubehoer__cta svg {

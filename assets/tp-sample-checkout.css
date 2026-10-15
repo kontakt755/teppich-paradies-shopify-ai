@@ -18,7 +18,7 @@
 .tp-sample__eyebrow {
   margin: 0 0 6px;
   font-size: var(--tp-fs-sm);
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.65);
@@ -94,7 +94,7 @@
 .tp-sample__fieldset legend {
   padding: 0;
   font-size: var(--tp-fs-md);
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .tp-sample__count {
@@ -201,7 +201,7 @@
   background: #4f4b3f;
   color: #fff;
   font-size: var(--tp-fs-md);
-  font-weight: 650;
+  font-weight: 600;
   cursor: pointer;
 }
 
