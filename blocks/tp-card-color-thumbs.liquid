@@ -41,12 +41,44 @@
   {%- liquid
     assign tp_ct_index = tp_ct_position | minus: 1
     assign tp_ct_shown = 0
+
+    # Farbe, die Bild und Links der Karte zeigen (Suchbegriff oder Farbfilter,
+    # snippets/tp-suchfarbe-variante): steht vorn und ist markiert - sonst
+    # laege sie am Handy oft hinter "+N".
+    capture tp_ct_suchfarbe
+      render 'tp-suchfarbe-variante', product: tp_ct_product
+    endcapture
+    assign tp_ct_suchteile = tp_ct_suchfarbe | strip | split: '|'
+    assign tp_ct_aktiv = ''
+    if tp_ct_suchteile.size == 2
+      assign tp_ct_such_pos = tp_ct_suchteile | first | plus: 0
+      assign tp_ct_such_index = tp_ct_suchteile | last | plus: 0
+      assign tp_ct_aktiv = tp_ct_product.variants[tp_ct_such_pos].options[tp_ct_such_index] | append: ''
+    endif
   -%}
 
   {%- capture tp_ct_felder -%}
+    {%- for tp_ct_durchgang in (1..2) -%}
+    {%- if tp_ct_durchgang == 1 and tp_ct_aktiv == blank -%}
+      {%- continue -%}
+    {%- endif -%}
     {%- for tp_ct_value in tp_ct_values -%}
       {%- if tp_ct_shown >= tp_ct_max -%}
         {%- break -%}
+      {%- endif -%}
+      {%- liquid
+        # Durchgang 1 nur die gewaehlte Farbe, Durchgang 2 alle anderen.
+        assign tp_ct_wert = tp_ct_value | append: ''
+        assign tp_ct_ist_aktiv = false
+        if tp_ct_aktiv != blank and tp_ct_wert == tp_ct_aktiv
+          assign tp_ct_ist_aktiv = true
+        endif
+      -%}
+      {%- if tp_ct_durchgang == 1 and tp_ct_ist_aktiv == false -%}
+        {%- continue -%}
+      {%- endif -%}
+      {%- if tp_ct_durchgang == 2 and tp_ct_ist_aktiv -%}
+        {%- continue -%}
       {%- endif -%}
 
       {%- liquid
@@ -83,7 +115,8 @@
       {%- if tp_ct_match == null and tp_ct_swatch != blank -%}
         {%- assign tp_ct_shown = tp_ct_shown | plus: 1 -%}
         <a
-          class="tp-card-color-thumbs__item tp-card-color-thumbs__item--farbe"
+          class="tp-card-color-thumbs__item tp-card-color-thumbs__item--farbe{% if tp_ct_ist_aktiv %} tp-card-color-thumbs__item--aktiv{% endif %}"
+          {% if tp_ct_ist_aktiv %}aria-current="true"{% endif %}
           href="{{ tp_ct_fallback.url }}"
           title="{{ tp_ct_value | escape }}"
           aria-label="{{ tp_ct_value | escape }}"
@@ -92,7 +125,8 @@
       {%- elsif tp_ct_match -%}
         {%- assign tp_ct_shown = tp_ct_shown | plus: 1 -%}
         <a
-          class="tp-card-color-thumbs__item"
+          class="tp-card-color-thumbs__item{% if tp_ct_ist_aktiv %} tp-card-color-thumbs__item--aktiv{% endif %}"
+          {% if tp_ct_ist_aktiv %}aria-current="true"{% endif %}
           href="{{ tp_ct_match.url }}"
           title="{{ tp_ct_value | escape }}"
           aria-label="{{ tp_ct_value | escape }}"
@@ -114,6 +148,7 @@
           {%- endif -%}
         </a>
       {%- endif -%}
+    {%- endfor -%}
     {%- endfor -%}
   {%- endcapture -%}
 
@@ -189,6 +224,11 @@
   .tp-card-color-thumbs__item:focus-visible {
     border-color: var(--color-foreground);
     transform: scale(1.08);
+  }
+
+  /* Gewaehlte Farbe (Suche oder Farbfilter): Rahmen wie beim Zeigen, ohne Zoom. */
+  .tp-card-color-thumbs__item--aktiv {
+    border-color: var(--color-foreground);
   }
 
   /* Zwei Bildsorten liegen an den Varianten: flache Farbkacheln und
