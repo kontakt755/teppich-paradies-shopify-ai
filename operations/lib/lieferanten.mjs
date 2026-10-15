@@ -151,6 +151,8 @@ function pruefeLieferant(id, roh, fehler) {
       telefon: p.telefon(w.telefon, 'ware.telefon'),
       // Ohne Eintrag geht Ware direkt an die Kunden (Inhaber 2026-10-14); "laden" nur als Ausnahme.
       lieferung: p.auswahl(w.lieferung, 'ware.lieferung', MUSTER_LIEFERUNG),
+      // Wie muster.nachBezeichnung: die Warenmail nennt die Bezeichnung des Herstellers.
+      nachBezeichnung: w.nachBezeichnung === true,
     },
     muster: {
       weg: p.auswahl(m.weg, 'muster.weg', BESTELLWEGE),
@@ -315,7 +317,7 @@ function schlankePosition(pos, statusAlle, jetzt) {
     sku: geklaert(pos.sku),
     artikelnummer: geklaert(pos.grosshaendlerId),
     farbnummer,
-    bezeichnung: pos.istMuster ? geklaert(pos.musterQuelle?.bezeichnung) : null,
+    bezeichnung: geklaert(pos.istMuster ? pos.musterQuelle?.bezeichnung : pos.einkauf?.farbname),
     menge: geklaert(pos.bestellmenge?.menge),
     einheit: geklaert(pos.bestellmenge?.einheit),
     mengeText: geklaert(pos.bestellmenge?.text),
@@ -471,7 +473,7 @@ const mailMenge = t => String(t ?? '').replace(/\s*\(Lieferantenraster ungeklär
 
 /**
  * Woran der Lieferant den Artikel erkennt: Artikel- und Farbnummer, bei Herstellern mit
- * muster.nachBezeichnung deren eigene Bezeichnung. Keine Shop-Produktnamen und
+ * muster.nachBezeichnung bzw. ware.nachBezeichnung deren eigene Bezeichnung. Keine Shop-Produktnamen und
  * Shop-Farbwoerter: die kennt der Lieferant nicht, sie verwirren nur (Inhaber 2026-10-14).
  */
 function artikelKopf(p, { nachBezeichnung = false } = {}) {
@@ -576,6 +578,7 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel }) {
   const bestaetigen = du ? 'Bitte bestätige uns den Auftrag mit dem voraussichtlichen Liefertermin.' : 'Bitte bestätigen Sie uns den Auftrag mit dem voraussichtlichen Liefertermin.';
   const zeilen = [anrede, '', anKunden ? 'wir bestellen folgende Ware – bitte direkt an unsere Kunden liefern:' : 'wir bestellen folgende Ware:', ''];
   if (st.kundennummer) zeilen.push(`Unsere Kundennummer: ${st.kundennummer}`, '');
+  const nachBezeichnung = st.ware.nachBezeichnung;
   if (anKunden) {
     // Je Kommission ein Block: Anschrift (mit Telefon fuer die Spedition), darunter die Positionen.
     const jeAuftrag = new Map();
@@ -583,10 +586,10 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel }) {
     let nr = 0;
     for (const [orderId, liste] of jeAuftrag) {
       zeilen.push(`Kommission ${liste[0].orderName} – Lieferanschrift:`, ...adressZeilen(adressen.get(orderId), { telefon: true }).map(z => `   ${z}`), '');
-      for (const p of liste) { nr += 1; zeilen.push(...positionsZeilen(p, nr, { mitKunde: false }), ''); }
+      for (const p of liste) { nr += 1; zeilen.push(...positionsZeilen(p, nr, { mitKunde: false, nachBezeichnung }), ''); }
     }
   } else {
-    aufgenommen.forEach((p, i) => zeilen.push(...positionsZeilen(p, i + 1), ''));
+    aufgenommen.forEach((p, i) => zeilen.push(...positionsZeilen(p, i + 1, { nachBezeichnung }), ''));
   }
   if (direkt) {
     zeilen.push(gruppe.route === ROUTE.SUPPLIER_TO_SITE ? (du ? 'Bitte liefere direkt an die Baustelle:' : 'Bitte liefern Sie direkt an die Baustelle:') : (du ? 'Bitte liefere direkt an unseren Kunden:' : 'Bitte liefern Sie direkt an unseren Kunden:'));
