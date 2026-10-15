@@ -79,12 +79,18 @@
           assign tp_aktive_filter = true
         endif
     endcase
-    for value in filter.values
-      if value.count == 0 and value.active == false
-        assign tp_gesperrte_werte = true
-        break
-      endif
-    endfor
+    # Verfuegbarkeit zaehlt nicht: "Nicht vorraetig" ist grau, weil alles
+    # lieferbar ist - keine Datenluecke, und es stand dadurch auf jeder
+    # Kategorieseite ein Hinweis (Shopvergleich 2026-10-15). Der Wert selbst
+    # bleibt sichtbar.
+    if filter.param_name != 'filter.v.availability'
+      for value in filter.values
+        if value.count == 0 and value.active == false
+          assign tp_gesperrte_werte = true
+          break
+        endif
+      endfor
+    endif
   endfor
 
   for filter in filters
@@ -234,10 +240,9 @@
               {%- if tp_gesperrte_werte -%}
                 <p class="facets__disabled-hint" role="note">
                   {%- if tp_aktive_filter -%}
-                    Ausgegraute Optionen sind mit der aktuellen Auswahl nicht kombinierbar.
-                    Filter zur&uuml;cksetzen, um alle Optionen zu sehen.
+                    Grau = nicht kombinierbar mit Ihrer Auswahl.
                   {%- else -%}
-                    Ausgegraute Optionen gibt es {% if request.page_type == 'search' %}in diesen Suchergebnissen{% else %}in dieser Kategorie{% endif %} nicht.
+                    Grau = {% if request.page_type == 'search' %}in diesen Treffern{% else %}in dieser Kategorie{% endif %} nicht vorhanden.
                   {%- endif -%}
                 </p>
               {%- endif -%}
@@ -549,10 +554,9 @@
                 {%- if tp_gesperrte_werte -%}
                   <p class="facets__disabled-hint" role="note">
                     {%- if tp_aktive_filter -%}
-                      Ausgegraute Optionen sind mit der aktuellen Auswahl nicht kombinierbar.
-                      Filter zur&uuml;cksetzen, um alle Optionen zu sehen.
+                      Grau = nicht kombinierbar mit Ihrer Auswahl.
                     {%- else -%}
-                      Ausgegraute Optionen gibt es {% if request.page_type == 'search' %}in diesen Suchergebnissen{% else %}in dieser Kategorie{% endif %} nicht.
+                      Grau = {% if request.page_type == 'search' %}in diesen Treffern{% else %}in dieser Kategorie{% endif %} nicht vorhanden.
                     {%- endif -%}
                   </p>
                 {%- endif -%}
@@ -669,6 +673,18 @@
     font-size: 0.8125rem;
     line-height: 1.4;
     color: rgb(var(--color-foreground-rgb) / var(--opacity-60));
+  }
+
+  /* Nur zeigen, wenn wirklich ein ausgegrauter Wert zu sehen ist: in einer
+     offenen Filtergruppe und nicht hinter "Mehr anzeigen". Die Werte selbst
+     bleiben sichtbar - ein grauer Wert ist eine Datenluecke, kein Fehler der
+     Darstellung (Shopvergleich 2026-10-15). Browser ohne :has() zeigen den
+     Hinweis wie bisher immer. */
+  .facets__form:not(
+      :has(.facets__panel[open]:not([id$='filter-v-availability']) .facets__inputs-list-item--disabled:not(.hidden))
+    )
+    .facets__disabled-hint {
+    display: none;
   }
 
   .facets:not(.facets--drawer) .facets__disabled-hint,

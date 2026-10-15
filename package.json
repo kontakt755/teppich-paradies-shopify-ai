@@ -85,6 +85,7 @@
     "bodenwissen:daten": "node scripts/build-bodenwissen-data.mjs",
     "shop:wache": "node operations/scripts/shopwache.mjs",
     "auslauf:pruefen": "node operations/scripts/auslauf-pruefen.mjs",
+    "auslauf:sortieren": "node scripts/auslauf-sortieren.mjs",
     "aufgaben:pruefen": "node operations/scripts/aufgaben-pruefen.mjs",
     "daten:bulk": "node operations/scripts/bulk-zu-eingabe.mjs",
     "kurz": "node scripts/kurz.mjs",

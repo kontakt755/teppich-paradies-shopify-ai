@@ -72,6 +72,9 @@ URLs als `lieferant-a.example`. Rohdaten nur unter `~/teppich-paradies-analyse/l
     Hinweise belegt nachtragen oder als offenen Fall notieren. Ohne `.env.local` im
     Worktree: `TP_ENV_LOCAL=<Betriebskopie>/.env.local` oder `--bulk-query` ueber den
     Shopify-MCP und das JSONL per `--jsonl` uebergeben.
+    Danach `npm run -s auslauf:sortieren`: Neue Produkte landen in manuell sortierten
+    Kategorien hinten, also hinter den Auslaufartikeln. Meldet es "TUN", mit
+    `-- --schreiben` nachziehen.
 
 Mehr als etwa 50 Werte auf bestehenden Produkten (Metafelder, Tags, Einkaufsfelder):
 Skill `shopify-massendaten` (Plan, Rollback, Batchdateien).
