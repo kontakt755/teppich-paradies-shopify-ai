@@ -246,3 +246,15 @@ test('reichtNoch: Zuschnitt-Vorrat minus verschickte seit dem letzten Auffuellen
   st = wendeLagerAn(modell(), leseLager(lagerDatei)).get(eintrag.id);
   assert.equal(st.reichtNoch, 0);
 });
+
+test('Einlagern in ein leer gesetztes Zuschnitt-Stueck ersetzt den Rest statt ihn dazuzuzaehlen', () => {
+  const file = musterlagerPfad(tmp());
+  const { eintrag } = einlagern(file, { titel: 'Testvelours', farbe: 'Sand', schluessel: ['TESTVEL4_102'], art: 'bahn', anzahl: 1, actor: 'x', jetzt: AM });
+  aendern(file, eintrag.id, { leer: true }, { actor: 'x', jetzt: AM });
+  const NEU = new Date('2026-10-20T08:00:00Z');
+  const r = einlagern(file, { titel: 'Testvelours', farbe: 'Sand', schluessel: ['TESTVEL4_102'], art: 'bahn', anzahl: 1, actor: 'x', jetzt: NEU });
+  assert.equal(r.neu, false);
+  assert.equal(r.eintrag.anzahl, 1);
+  assert.equal(r.eintrag.leer, false);
+  assert.equal(r.eintrag.basisAm, NEU.toISOString());
+});

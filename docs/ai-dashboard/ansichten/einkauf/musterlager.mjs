@@ -31,8 +31,8 @@ const FRISCH_MS = 30000;
 const ARTEN_STANDARD = { einzel: 'Einzelmuster', probestueck: 'Probestück 2 × 1 m', bahn: 'Bahn 4 m × 20 cm' };
 const ART_HINWEIS = {
   einzel: 'fertige Muster – jedes verschickte zählt ab',
-  probestueck: 'z. B. PVC, Linoleum – wir schneiden A5-Muster zu (ca. 54 je Stück)',
-  bahn: 'z. B. Teppichboden – wir schneiden A5-Muster zu (ca. 27 je Bahn)',
+  probestueck: 'z. B. PVC, Linoleum – wir schneiden A5-Muster zu',
+  bahn: 'z. B. Teppichboden – wir schneiden A5-Muster zu',
 };
 
 export function ensureMusterlager({ neu = false } = {}) {

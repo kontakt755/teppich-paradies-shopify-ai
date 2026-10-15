@@ -167,7 +167,10 @@ export function einlagern(file, { titel, farbe, handle = null, schluessel = [], 
   const vorhanden = lager.eintraege.find(e => e.art === art && e.schluessel.some(k => keys.includes(k)));
   if (vorhanden) {
     vorhanden.schluessel = [...new Set([...vorhanden.schluessel, ...keys])];
-    vorhanden.anzahl = (vorhanden.anzahl ?? 0) + n;
+    // Leeres Zuschnitt-Stueck: das Neue ersetzt den Rest, und Abgeschnittenes zaehlt ab jetzt neu.
+    const ersetzt = vorhanden.leer && !ZAEHLBAR.includes(art);
+    vorhanden.anzahl = ersetzt ? n : (vorhanden.anzahl ?? 0) + n;
+    if (ersetzt) vorhanden.basisAm = am;
     if (clip(ort, 80)) vorhanden.ort = clip(ort, 80);
     if (clip(notiz, 300)) vorhanden.notiz = clip(notiz, 300);
     vorhanden.leer = false;
@@ -381,6 +384,13 @@ export function festzuschreiben(auftrag, lineItemIds = null) {
 }
 
 const LIEFERANT_UNTERWEGS = [undefined, null, '', 'bestellt'];
+const ROUTEN_OHNE_LIEFERANT = ['SAMPLE_STOCK', 'SAMPLE_CUT'];
+/** "Haben wir da" - wie musterEigen() in docs/ai-dashboard/lib/todos.mjs. */
+function musterEigen(p) {
+  if (p.musterHerkunft === 'eigen_versand' || p.musterHerkunft === 'eigen_vorbei') return true;
+  if (p.musterHerkunft === 'lieferant') return false;
+  return ROUTEN_OHNE_LIEFERANT.includes(p.route) || ROUTEN_OHNE_LIEFERANT.includes(p.musterRoute);
+}
 
 /**
  * Gemischte Musterbestellung (Inhaber 2026-10-15): ein Teil liegt im Lager, ein Teil kommt vom
@@ -390,7 +400,7 @@ const LIEFERANT_UNTERWEGS = [undefined, null, '', 'bestellt'];
  */
 export function wartetAufLieferant(auftrag, statusAlle = {}) {
   return (auftrag?.positionen ?? []).some(p => p?.istMuster && p.lineItemId && (p.menge ?? 1) > 0
-    && !p.musterLager && p.musterHerkunft !== 'eigen_versand' && p.musterHerkunft !== 'eigen_vorbei'
+    && !p.musterLager && !musterEigen(p)
     && LIEFERANT_UNTERWEGS.includes(statusAlle[posKey(auftrag.id, p.lineItemId)]?.status));
 }
 

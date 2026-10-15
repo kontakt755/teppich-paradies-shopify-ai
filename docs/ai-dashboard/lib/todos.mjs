@@ -149,7 +149,10 @@ function lageVon({ z, a, offen }, { statusAlle, rueckrufJeOrder, heute, jetzt, s
   const mit = status => offen.filter(x => (x.eintrag?.status || null) === status);
   const eigen = mit(null).filter(x => musterEigen(x.p));
   const unbestellt = mit(null).filter(x => !musterEigen(x.p));
-  if (eigen.length && !unbestellt.length && !lieferantMusterAusstehend(offen)) {
+  // Gemischt: Lagermuster gehen mit den Lieferanten-Mustern raus - solange die ausstehen oder
+  // schon da sind, ist der Schritt "bestellt" bzw. "rausgeben", nicht "verschicken".
+  const lieferantMusterDa = mit('geliefert').some(x => x.p.istMuster);
+  if (eigen.length && !unbestellt.length && !lieferantMusterAusstehend(offen) && !lieferantMusterDa) {
     const vorbei = eigen.every(x => x.p.musterHerkunft === 'eigen_vorbei');
     return { spalte: 'wir', art: 'muster_eigen', schritt: vorbei ? 'Muster vorbeibringen' : 'Muster verschicken', alterTage: seitBestellung, positionen: eigen };
   }
@@ -282,7 +285,7 @@ function ausBestellungen(quellen, k) {
         const vorhanden = todos.find(t => t.id === id);
         if (vorhanden) { vorhanden.alterTage = Math.max(vorhanden.alterTage ?? 0, tage ?? 0); vorhanden.ton = tonNachAlter(vorhanden.alterTage, ...FRISTEN.rausgeben); continue; }
         // Gemischt: die Lagermuster derselben Bestellung gehen jetzt mit raus.
-        const ausLager = x.p.istMuster ? offen.filter(y => !y.eintrag?.status && musterEigen(y.p)).map(y => y.p) : [];
+        const ausLager = x.p.istMuster ? offen.filter(y => !y.eintrag?.status && musterEigen(y.p) && y.p.musterHerkunft !== 'eigen_vorbei').map(y => y.p) : [];
         if (ausLager.length) wartenAufLieferant.add(z.orderId);
         todos.push({
           id, art: 'rausgeben', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.rausgeben), alterTage: tage,

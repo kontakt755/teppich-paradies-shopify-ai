@@ -403,4 +403,5 @@ test('Gemischte Musterbestellung (Inhaber 2026-10-15): Lagermuster warten, bis d
   todos = leiteTodosAb({ bestellzeilen: [z], statusAlle: da }, { sicht: 'laden', jetzt: JETZT });
   assert.deepEqual(arten(todos), ['rausgeben']);
   assert.match(todos[0].kontext, /zusammen mit aus dem Musterlager \(Regal B\): Testlino Linoleumboden: Grau/);
+  assert.equal(werWartet({ bestellzeilen: [z], statusAlle: da }, { jetzt: JETZT }).wir[0].schritt, 'An Kunden rausgeben', 'Wer wartet sagt dasselbe wie das To-do');
 });
