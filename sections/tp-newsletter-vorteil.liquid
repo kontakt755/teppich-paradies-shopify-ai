@@ -18,7 +18,7 @@
   assign tp_nv_betrag = section.settings.betrag | default: 15
   assign tp_nv_ab = section.settings.mindestwert | default: 100
   capture tp_nv_hinweis
-    echo '<p>Mit der Anmeldung willigen Sie ein, unseren Newsletter per E-Mail zu erhalten. Abmeldung jederzeit über den Link in jeder E-Mail. Gutschein: einmalig einlösbar, wenn nicht reduzierte Artikel zusammen mindestens '
+    echo '<p>Mit der Anmeldung willigen Sie ein, unseren Newsletter per E-Mail zu erhalten. Abmeldung jederzeit über den Link in jeder E-Mail. Gutschein: einmal pro Kunde einlösbar, wenn nicht reduzierte Artikel zusammen mindestens '
     echo tp_nv_ab
     echo ' € kosten; nicht mit anderen Rabatten kombinierbar. Näheres in unserer <a href="/pages/datenschutzerklarung">Datenschutzerklärung</a>.</p>'
   endcapture
@@ -35,8 +35,8 @@
       </h2>
       <ul class="tp-nv__vorteile">
         <li>
-          <b>{{ tp_nv_betrag }} € Gutschein, einmalig einlösbar</b>
-          <small>wenn nicht reduzierte Artikel zusammen mindestens {{ tp_nv_ab }} € kosten; einmal pro Kunde</small>
+          <b>{{ tp_nv_betrag }} € Gutschein, einmal pro Kunde</b>
+          <small>wenn nicht reduzierte Artikel zusammen mindestens {{ tp_nv_ab }} € kosten</small>
         </li>
         <li>
           <b>4 statt 3 Muster gratis</b>
