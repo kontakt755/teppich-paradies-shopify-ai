@@ -595,13 +595,21 @@
      lagen dauerhaft unter dem Fensterrand, links wirkte alles leer. Jetzt
      klebt sie unter dem Kopf, und das Hauptbild ist so hoch begrenzt, dass
      Bild und Vorschaubilder zusammen ins Fenster passen
-     (constrain_to_viewport in den Produktvorlagen). */
+     (constrain_to_viewport in den Produktvorlagen).
+     Abstand nach oben = Kopfhoehe, und zwar mit denselben Bedingungen, mit
+     denen sections/header.liquid den Kopf festsetzt: "always" immer,
+     "scroll-up" nur solange er sichtbar ist. Nicht an data-sticky-state
+     allein haengen - im Modus "always" setzt Horizon das per
+     IntersectionObserver (Schwelle 1) und blieb je nach Browser auf
+     "inactive": dann rutschte die Galerie unter den Kopf (1024 px, 15.10.). */
   @media screen and (min-width: 750px) {
     .product-information__media media-gallery.sticky-content {
-      top: calc(var(--tp-galerie-oben, 0px) + 16px);
+      --tp-galerie-oben: 0px;
+      top: calc(var(--tp-galerie-oben) + 16px);
     }
 
-    body:has(#header-group #header-component[data-sticky-state='active']) .product-information__media media-gallery.sticky-content {
+    body:has(#header-component[sticky='always']) .product-information__media media-gallery.sticky-content,
+    body:has(#header-component[sticky='scroll-up'][data-sticky-state='active']) .product-information__media media-gallery.sticky-content {
       --tp-galerie-oben: var(--header-height, 0px);
     }
 
