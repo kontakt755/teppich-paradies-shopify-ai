@@ -25,3 +25,11 @@ Produktdaten veraendert, ohne den Link zu reparieren.
 auslesen und alle anderen Zweige mit ihren MenuItem-IDs unveraendert
 zurueckschreiben. Gegenprobe ist, dass die Menge der MenuItem-IDs vorher und
 nachher identisch ist — nicht `userErrors: []`.
+
+Verschieben geht mit denselben IDs (am Entwurfsmenue belegt, 2026-10-15): Ein
+bestehender Punkt, der mit seiner `id` unter einem anderen Oberpunkt steht,
+behaelt ID, Ziel und Unterpunkte. Neue Punkte kommen ohne `id`. Gruppen
+(Spalten im Mega-Menue) sind HTTP-Punkte mit `url: "#"` - Shopify nimmt das an.
+Den neuen Baum baut `scripts/menue-umbau.mjs` aus dem gelesenen Menue und
+einem Plan; es bricht ab, wenn eine ID fehlt oder doppelt vorkommt, und
+`--pruefen` ist genau diese Gegenprobe.

@@ -107,6 +107,14 @@
     render 'search', style: search_style, class: search_class, display_style: section.settings.actions_display_style
   endcapture
 
+  # TP: Suchfeld in der oberen Kopfzeile, nur wenn das Menue in der unteren Zeile steht
+  # (Kopf in zwei Zeilen, w-094). Sichtbarkeit je Breite: assets/tp-nav.css.
+  if section.settings.menu_row == 'bottom'
+    capture tp_kopf_suche
+      render 'tp-kopf-suche', platzhalter: section.settings.tp_suche_platzhalter
+    endcapture
+  endif
+
   # Skip drawer search under specific conditions:
   # Always render if search_row is bottom
   # Don't render when shop.customer_accounts_enabled is false and search_position is left and search_style is not none
@@ -518,7 +526,8 @@
         actions: actions,
         localization: localization_markup,
         search: search,
-        drawer_search: drawer_search
+        drawer_search: drawer_search,
+        tp_suche: tp_kopf_suche
       %}
     {% endcapture %}
 
@@ -1389,6 +1398,13 @@
       "id": "show_search",
       "label": "t:settings.search_icon",
       "default": true
+    },
+    {
+      "type": "text",
+      "id": "tp_suche_platzhalter",
+      "label": "Platzhalter im Suchfeld der oberen Kopfzeile",
+      "info": "Nur mit Menü in der unteren Zeile (Desktop ab 1100 px). Vorschläge und Synonyme kommen aus der Section „TP Suche + Kategorien“.",
+      "default": "Suchen: grauer Teppichboden, Vinyl Eiche, Sockelleiste weiß …"
     },
     {
       "type": "select",

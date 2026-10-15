@@ -34,3 +34,28 @@ test('jede Schleife ueber Hauptmenue-Links prueft tp-menu-link-sichtbar', () => 
   }
   assert.deepEqual(offen, [], 'Schleife ohne Sichtbarkeitspruefung');
 });
+
+// Seit w-094 (2026-10-15) steht "Aktuelle Angebote" als Unterpunkt unter
+// "Angebote & Reste". Ausgeblendet wird nur der Unterpunkt, nie der Oberpunkt
+// mit Unterpunkten - sonst verschwaende "Reste & Sonderposten" mit.
+test('Unterpunkt-Schleifen der Menues pruefen tp-menu-link-sichtbar', () => {
+  const stellen = {
+    'snippets/mega-menu-list.liquid': /{%\s*for link in parent_link\.links\s*%}/,
+    'snippets/tp-drawer-liste.liquid': /{%-\s*for c in parent_link\.links\s*-%}/,
+  };
+  for (const [datei, muster] of Object.entries(stellen)) {
+    const text = readFileSync(path.join(root, datei), 'utf8');
+    const m = text.match(muster);
+    assert.ok(m, `${datei}: Schleife nicht gefunden`);
+    const danach = text.slice(m.index, m.index + 600);
+    assert.match(danach, /render 'tp-menu-link-sichtbar', link: (link|c)\b/, `${datei}: Unterpunkt ohne Sichtbarkeitspruefung`);
+  }
+  const spalten = readFileSync(path.join(root, 'snippets/tp-menu-spalten.liquid'), 'utf8');
+  const pruefungen = spalten.match(/render 'tp-menu-link-sichtbar'/g) ?? [];
+  assert.ok(pruefungen.length >= 3, 'tp-menu-spalten: Karten, Kacheln und Gruppenlinks pruefen die Sichtbarkeit');
+});
+
+test('Oberpunkte mit Unterpunkten werden nie ausgeblendet', () => {
+  const text = readFileSync(path.join(root, 'snippets/tp-menu-link-sichtbar.liquid'), 'utf8');
+  assert.match(text, /if tmls_handle == 'angebote' and link\.links == blank/);
+});

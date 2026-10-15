@@ -1,0 +1,52 @@
+{%- doc -%}
+  Suchfeld in der oberen Kopfzeile (Desktop, waagerechtes Menue ab 1100 px).
+
+  Kopf in zwei Zeilen (Shopvergleich 2026-10-15, Werkbank w-094): oben Logo,
+  Suchfeld, Konto und Warenkorb, darunter das Hauptmenue in eigener Zeile. Die
+  Lupe im Kopf entfaellt dort, die TP-Suchzeile unter dem Kopf
+  (sections/tp-header-suche.liquid) ebenfalls - beides regelt assets/tp-nav.css.
+  Unter 1100 px und im Schubladenmodus (Touch) bleibt alles wie bisher: dieses
+  Feld ist ausgeblendet, die Suchzeile darunter sucht.
+
+  Dasselbe Element wie die Suchzeile (tp-suche-leiste, assets/tp-suche.js) und
+  dieselben Klassen, damit Schnellsuche und Gestaltung nicht doppelt gepflegt
+  werden. Beliebte Bereiche, haeufige Suchen und Synonyme kommen per
+  data-tp-quelle aus der Suchzeile - deren Einstellungen bleiben die einzige
+  Quelle. Ohne JavaScript ist es ein normales Suchformular.
+
+  @param {string} [platzhalter] - Platzhalter im Feld
+{%- enddoc -%}
+<script src="{{ 'tp-suche.js' | asset_url }}" type="module" fetchpriority="low"></script>
+<div class="tp-kopf-suche">
+  <tp-suche-leiste class="tp-hs__leiste tp-kopf-suche__leiste" data-tp-kopf data-tp-quelle=".tp-hs tp-suche-leiste">
+    <form class="tp-hs__form" role="search" action="{{ routes.search_url }}" method="get">
+      <input type="hidden" name="type" value="product,collection,page,article">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" class="tp-hs__lupe"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <label class="visually-hidden" for="tp-ks-q">Produkte suchen</label>
+      <input
+        id="tp-ks-q"
+        class="tp-hs__input"
+        type="search"
+        name="q"
+        placeholder="{{ platzhalter | default: 'Suchen: Teppichboden, Vinyl, Sockelleiste …' | escape }}"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+        role="combobox"
+        aria-expanded="false"
+        aria-controls="tp-ks-panel"
+        aria-autocomplete="list"
+        aria-haspopup="listbox"
+      >
+      <button class="tp-hs__btn" type="submit" aria-label="Suchen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      </button>
+    </form>
+    <div class="tp-hs__panel" id="tp-ks-panel" hidden>
+      <div class="tp-hs__laden" aria-hidden="true"></div>
+      <div class="tp-hs__meinten" data-tp-meinten hidden></div>
+      <div class="tp-hs__leer" data-tp-leer role="listbox" aria-label="Beliebte Bereiche und Suchbegriffe"></div>
+      <div class="tp-hs__ergebnisse" data-tp-ergebnisse></div>
+    </div>
+  </tp-suche-leiste>
+</div>

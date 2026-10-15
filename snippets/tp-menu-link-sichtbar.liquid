@@ -22,6 +22,13 @@
                           (snippets/product-grid.liquid).
   Alle anderen Menuepunkte bleiben unberuehrt.
 
+  Nur Punkte ohne Unterpunkte werden ausgeblendet (seit w-094, 2026-10-15):
+  "Angebote & Reste" fuehrt zur Angebotskollektion, traegt aber "Reste &
+  Sonderposten" als Unterpunkt - der muss auch ohne Angebot erreichbar
+  bleiben. Ausgeblendet wird dann der Unterpunkt "Aktuelle Angebote"; deshalb
+  pruefen auch die Schleifen ueber Unterpunkte (mega-menu-list,
+  tp-drawer-liste, tp-menu-spalten).
+
   @param {object} link - der Menuepunkt
 {%- enddoc -%}
 {%- liquid
@@ -32,7 +39,7 @@
     assign tmls_handle = link.url | split: '/collections/' | last | split: '?' | first | split: '/' | first | split: '#' | first
   endif
 
-  if tmls_handle == 'angebote'
+  if tmls_handle == 'angebote' and link.links == blank
     assign tmls_ja = false
     for tmls_p in collections['angebote'].products limit: 6
       capture tmls_angebot

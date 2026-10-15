@@ -60,11 +60,21 @@
     {%- if forloop.index == tp_dl_all_i -%}
       {%- continue -%}
     {%- endif -%}
+    {%- capture tp_mls -%}{%- render 'tp-menu-link-sichtbar', link: c -%}{%- endcapture -%}
+    {%- if tp_mls contains 'nein' -%}{%- continue -%}{%- endif -%}
     {%- liquid
       capture c_sub
         render 'tp-menu-kurztext', link: c, kacheln: kacheln
       endcapture
       assign c_sub = c_sub | strip
+      # Kontakt (seit w-094 unter Service): Symbol und Kurztext wie frueher auf der Hauptebene
+      assign c_icon = ''
+      if c.title == 'Kontakt'
+        assign c_icon = 'phone'
+        if c_sub == blank
+          assign c_sub = 'Anrufen, WhatsApp, vor Ort'
+        endif
+      endif
       assign c_count = 0
       if c.type == 'collection_link'
         assign c_count = c.object.all_products_count
@@ -76,7 +86,7 @@
         render 'tp-menu-label', link: c
       endcapture
     -%}
-    {%- render 'tp-drawer-zeile', url: c.url, title: c_title, sub: c_sub, count: c_count, image_html: c_img, current: c.active -%}
+    {%- render 'tp-drawer-zeile', url: c.url, title: c_title, sub: c_sub, count: c_count, image_html: c_img, icon: c_icon, current: c.active -%}
     {%- if c.links != blank -%}
       <li class="tp-dn-list__sub">
         <ul class="tp-nav-chips list-unstyled" role="list" aria-label="{{ c.title | escape }}">
