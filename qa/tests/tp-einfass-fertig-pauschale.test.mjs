@@ -59,6 +59,8 @@ function fixture(o = {}) {
         einfassung: val('Fertig'), max_breite_cm: val(200), max_laenge_cm: val(600),
         formen: val(['Rechteck']), kg_pro_qm: val(o.kg ?? 4.4), max_gewicht_kg: val(30),
         ...(o.kanteInklusive === undefined ? {} : { kante_inklusive: val(o.kanteInklusive) }),
+        ...(o.produktwort === undefined ? {} : { produktwort: val(o.produktwort) }),
+        ...(o.minSeite === undefined ? {} : { min_seite_cm: val(o.minSeite) }),
       },
     },
   };
@@ -200,4 +202,35 @@ test('Fertig: service.kante_inklusive hat keine Wirkung (nur fuer Ketteln)', asy
   const [pauschale, teppich] = r.requests[0].body.items; // Teppich zuletzt: Shopify zeigt ihn dann oben
   assert.equal(teppich.properties['Kettelung'], undefined);
   assert.equal(pauschale.id, 'fertig-pauschale');
+});
+
+test('Matte nach Mass: zugeschnitten, ohne Kante, Mindestseite aus service.min_seite_cm', async () => {
+  const r = await runCase({ width: 40, length: 60, produktwort: 'Matte', minSeite: 30 });
+  assert.equal(r.error, null);
+  assert.equal(r.data.wort, 'matte');
+  assert.equal(r.data.min_seite_cm, 30);
+  const [pauschale, matte] = r.requests[0].body.items;
+  assert.equal(matte.quantity, 24, '0,4 x 0,6 m = 24 Einheiten a 0,01 m2');
+  assert.equal(matte.properties['Einfassung'], 'Zugeschnitten', 'Matten werden nicht eingefasst');
+  assert.equal(matte.properties['Kante umlaufend'], undefined, 'keine Kante in Bestellung und Lieferantenuebersicht');
+  assert.match(matte.properties._Zuschnitt, /Zugeschnitten/);
+  assert.equal(pauschale.id, 'fertig-pauschale');
+  assert.equal(pauschale.properties._Gruppe, matte.properties._Gruppe);
+});
+
+test('Matte nach Mass: unter der Mindestseite wird abgelehnt', async () => {
+  const r = await runCase({ width: 25, length: 60, produktwort: 'Matte', minSeite: 30 });
+  assert.equal(r.requests.length, 0);
+  assert.match(r.error, /mindestens 30 cm/);
+});
+
+test('Teppich ohne Matten-Felder: weiter 50 cm Mindestseite und Kante in der Bestellung', async () => {
+  const klein = await runCase({ width: 40, length: 60 });
+  assert.equal(klein.data.wort, 'teppich');
+  assert.equal(klein.data.min_seite_cm, 50);
+  assert.equal(klein.requests.length, 0);
+  assert.match(klein.error, /mindestens 50 cm/);
+  const r = await runCase({ width: 150, length: 200 });
+  const teppich = r.requests[0].body.items[1];
+  assert.equal(teppich.properties['Kante umlaufend'], '7,00 m');
 });

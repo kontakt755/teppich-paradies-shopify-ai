@@ -90,9 +90,11 @@
     // ohne Angabe wie bisher 50 cm und "Teppich".
     var minCm = Number(d.min_seite_cm) > 0 ? Math.round(Number(d.min_seite_cm)) : 50;
     // Matten (service.produktwort = Matte) bekommen eigene Woerter und Fussmatten-Groessen.
+    // Matten werden nur zugeschnitten: kein "eingefasst" in Anzeige, Warenkorb und
+    // Bestellung, keine umlaufende Kante (die Lieferantenuebersicht liest beides).
     var W = d.wort === 'matte'
-      ? { dieser: 'Diese Matte', plural: 'Matten', eckig: GROESSEN.matte }
-      : { dieser: 'Dieser Teppich', plural: 'Teppiche', eckig: GROESSEN.eckig };
+      ? { dieser: 'Diese Matte', plural: 'Matten', eckig: GROESSEN.matte, art: 'Zugeschnitten', kante: 'ohne Einfassung', rundum: '' }
+      : { dieser: 'Dieser Teppich', plural: 'Teppiche', eckig: GROESSEN.eckig, art: ART[art], kante: KANTE[art], rundum: ' rundum' };
     var eckigVorschlaege = W.eckig;
     var mindestCent = parseInt(d.mindestpreis_cent, 10) || 0;
     // Preis je 0,01 laufendem Meter Kante. Ohne Service-Produkt wird die Kante
@@ -532,7 +534,7 @@
         else svgEl('rect', Object.assign({ x: xSchema, y: ySchema, width: pwSchema, height: phSchema, rx: 2 }, outline), svg);
         masslinie(xSchema, 32, xSchema + pwSchema, 32, f === 'rund' ? 'Ø ' + w + ' cm' : l + ' cm');
         if (f !== 'rund') masslinie(54, ySchema, 54, ySchema + phSchema, w + ' cm');
-        legende.textContent = 'Ihr Maß · ' + (f === 'rund' ? 'Ø ' + w : w + ' × ' + l) + ' cm · ' + ART[art] + ' rundum' + (band ? ' · ' + band.name : '');
+        legende.textContent = 'Ihr Maß · ' + (f === 'rund' ? 'Ø ' + w : w + ' × ' + l) + ' cm · ' + W.art + W.rundum + (band ? ' · ' + band.name : '');
         vorschau.hidden = false;
         return;
       }
@@ -622,7 +624,7 @@
       if (farbe) teile.push(farbe);
       teile.push(f === 'rund' ? 'Ø ' + w + ' cm' : w + ' × ' + l + ' cm');
       // Herstellerbaender (service.bandfarben): Breite nicht belegt - keine cm-Angabe.
-      teile.push(ART[art] + (band ? ' ' + bandText(band, ' ') : '') + ' (' + (d.band_hersteller ? 'schmales Band' : KANTE[art]) + ')');
+      teile.push(W.art + (band ? ' ' + bandText(band, ' ') : '') + ' (' + (d.band_hersteller ? 'schmales Band' : W.kante) + ')');
       if (!band && bandFest) teile.push('Bandfarbe: ' + bandFest);
       legende.textContent = teile.join(' · ');
       raumZeichnen(f, w, l);
@@ -637,7 +639,7 @@
       q('[data-anfrage-titel]').textContent = ANFRAGE[f].titel;
       q('[data-anfrage-text]').textContent = ANFRAGE[f].text;
       var farbe = target ? [target.farbe, target.farbnummer].filter(Boolean).join(' ') : '';
-      q('[data-anfrage-form]').value = FORM[f] + ' · ' + ART[art];
+      q('[data-anfrage-form]').value = FORM[f] + ' · ' + W.art;
       q('[data-anfrage-farbe]').value = farbe;
       var wa = q('[data-whatsapp]');
       if (wa) {
@@ -926,7 +928,7 @@
       if (inFlight) return;
       if (!stand || !target || !target.available || (bandWahl && !band)) return;
       var p = {
-        'Einfassung': ART[art],
+        'Einfassung': W.art,
         'Form': FORM[stand.form],
         'Maße': stand.masse,
         // Bei angewandtem Mindestpreis ist die Warenkorbmenge groesser als die
@@ -937,6 +939,7 @@
           : fmt(stand.flaeche) + ' m²',
         'Kante umlaufend': fmt(stand.kante) + ' m'
       };
+      if (d.wort === 'matte') delete p['Kante umlaufend'];
       if (target.farbnummer) p['Farbnummer'] = target.farbnummer;
       if (mitBand) p['Bandfarbe'] = bandFest || bandText(band, ' ');
       if (art === 'ketteln') p['Garn'] = 'Ton in Ton';
