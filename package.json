@@ -16,6 +16,7 @@
     "schema:guard": "node qa/run-schema-guard.mjs",
     "template:guard": "node qa/run-template-guard.mjs",
     "bewertung:guard": "node qa/run-bewertung-guard.mjs",
+    "schrift:guard": "node qa/run-schriftskala-guard.mjs",
     "theme:guard": "node qa/run-live-theme-guard.mjs",
     "shopify:token": "node scripts/shopify-oauth.mjs",
     "menu:guard": "node qa/run-menu-link-guard.mjs",

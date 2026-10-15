@@ -153,7 +153,7 @@ Gestapelte PRs **vor** dem Merge ihrer Basis umzielen. Die CI meldet nur
 ## Vor jedem Commit
 
 ```
-npm run liquid:guard && npm run schema:guard && npm run template:guard && npm run theme:guard
+npm run liquid:guard && npm run schema:guard && npm run template:guard && npm run theme:guard && npm run schrift:guard
 npm run -s themecheck:guard                  # Theme-Check-Fehler: sonst bricht erst der Preview-Push (--strict) ab
 node workflow/cli.mjs validate --static      # Flag heisst --static, nicht --static-only
 ```
@@ -172,6 +172,7 @@ lokal auf dem Mac. Unbekannte Flags brechen ab.
 | `npm run schema:guard` | Block-Schemata, die deployen aber im Editor unsichtbar bleiben |
 | `npm run template:guard` | Kollektions-Templates, deren Produktkarte abweicht; Shopify-Blockgrenzen (50 je Section, z. B. Header-Kacheln) |
 | `npm run theme:guard` | veraltete Theme-IDs in Anweisungsdateien, ungeschuetztes Live-Theme |
+| `npm run schrift:guard` | feste Schriftgroessen (px/rem/clamp) statt der Skala `var(--tp-fs-*)` |
 | `npm run menu:guard` | Menuelinks auf leeres Raster oder ins Nichts (braucht Netz) |
 | `npm run unmerged:guard` | Bloecke/Templates auf ungemergten Branches |
 | `npm run essential:guard` | Pflichtdateien und Template-Verweise vor dem Push |
@@ -342,6 +343,8 @@ Abschlussberichte kompakt halten:
 
 - Eigene Bloecke/Snippets tragen das Praefix `tp-`; `_`-Praefix ist privat (keine `presets` noetig).
 - CSS gehoert in `{% stylesheet %}`, nicht in ein inline `<style>` pro Karte.
+- Schriftgroessen nur aus der Skala in `snippets/tp-gestaltung.liquid`: `var(--tp-fs-xs|sm|md|lg|xl|2xl)` (Desktop 12/14/16/20/28/40 px, Telefon 13/14/16/18/24/30 px); Fliesstext 400, Beschriftungen 500, Ueberschriften 600/700. Keine festen px/rem-Werte (`npm run schrift:guard`).
+- Rot (`--tp-hauptaktion`, `#c8102e`, `#b3261e`) nur fuer Preis, Rabatt, den Hauptknopf „In den Warenkorb“, den aktiven Menuepunkt, Fehlermeldungen und den gesetzlichen Knopf „Vertrag widerrufen“. Kleinueberschriften grau (`#595959`), Nebenknoepfe, Links und Symbole in der dunklen Grundfarbe `--tp-ink`.
 - Kommentare und Commit-Messages auf Deutsch, ohne Umlaute in Liquid-Kommentaren.
 - Immer im aktuellen Repository-Root arbeiten; keine absoluten Pfade — das Repo
   liegt auf Windows, macOS und Linux.
