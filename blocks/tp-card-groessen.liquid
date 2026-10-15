@@ -23,6 +23,14 @@
 {%- endif -%}
 
 {% stylesheet %}
+  /* Huelle der Groessenauswahl; Zeile und Abstand im Kartenraster setzt
+     snippets/tp-kartenraster. Die Regel hier haelt lange Groessenlisten in der
+     Kartenbreite und definiert die Klasse dort, wo sie ausgegeben wird
+     (Theme Check ValidScopedCSSClass, Preview-Gate 2026-10-15). */
+  .tp-card-groessen {
+    min-width: 0;
+  }
+
   .tp-groessen {
     display: flex;
     flex-wrap: wrap;
