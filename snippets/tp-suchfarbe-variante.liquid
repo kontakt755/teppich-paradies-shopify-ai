@@ -13,9 +13,21 @@
     (Konfigurator- und Musterlink), snippets/tp-suche-ergebnisse.liquid
     (Schnellsuche).
 
-  Wirkt nur mit Suchbegriff: Suchergebnisseite (search.terms) und Schnellsuche
-  (predictive_search.terms). Kollektionen, Filter und Produktseite bleiben
-  unberuehrt.
+  Wirkt mit Suchbegriff (Suchergebnisseite search.terms, Schnellsuche
+  predictive_search.terms) und mit aktivem Farbfilter
+  (filter.v.t.shopify.color-pattern) auf Kategorie- und Suchseiten. Ohne
+  beides bleiben Kategorien und Produktseite unberuehrt. Ergibt der
+  Suchbegriff eine Farbgruppe, gilt er vor dem Filter.
+
+  Farbfilter (2026-10-15): Das Kategorie-Metafeld color-pattern steht am
+  Produkt (Liste der Grundfarben aller Varianten), nicht an der Variante.
+  Welche Variante blau ist, steht nur in ihrem Farbnamen. Deshalb gilt der
+  Name des Filterwerts ("Blau") wie ein Suchwort: Hat er eine Farbgruppe
+  (grau), gilt die Gruppe; dazu immer der Name selbst am Ende eines Wortes im
+  Farbnamen ("Jeansblau", "Blau Tief") und, nur wenn keine solche Farbe
+  passt, am Wortanfang ("Blaugrau" - im Deutschen ein Grau). Bei "Rot" nie
+  "Karotte". Keine eigenen Synonyme wie Petrol oder Navy - Gruppen
+  entscheidet der Inhaber. Musterprodukte (Typ Musterservice) nie.
 
   Farbgruppen: snippets/tp-suchfarbe-gruppen.liquid. Enthaelt der Suchbegriff
   ein Wort einer Gruppe, gilt die Gruppe. Ein Wort trifft als Teilwort ("grau"
@@ -65,10 +77,35 @@
   # mit * ("stein*") wird zu "#stein" und trifft so nur am Wortanfang.
   assign tp_sf_begriff_n = tp_sf_begriff | replace: ' ', '#' | replace: '-', '#' | replace: '/', '#' | replace: '(', '#' | replace: ',', '#' | prepend: '#'
 
+  # Farbfilter (siehe oben): Namen der aktiven Werte, z. B. "blau grau".
+  assign tp_sf_filterbegriff = ''
+  if request.page_type == 'collection' or request.page_type == 'search'
+    assign tp_sf_filterliste = collection.filters
+    if request.page_type == 'search'
+      assign tp_sf_filterliste = search.filters
+    endif
+    for tp_sf_filter in tp_sf_filterliste
+      if tp_sf_filter.param_name == 'filter.v.t.shopify.color-pattern'
+        for tp_sf_filterwert in tp_sf_filter.active_values
+          assign tp_sf_filterbegriff = tp_sf_filterbegriff | append: ' ' | append: tp_sf_filterwert.label
+        endfor
+        break
+      endif
+    endfor
+    assign tp_sf_filterbegriff = tp_sf_filterbegriff | downcase | strip
+  endif
+
   # Erst die Farboption: ohne sie gibt es nichts zu waehlen, und die Gruppen
   # muessen gar nicht gelesen werden.
   assign tp_sf_index = -1
-  if tp_sf_begriff != blank and product != blank
+  assign tp_sf_anlass = false
+  if tp_sf_begriff != blank or tp_sf_filterbegriff != blank
+    assign tp_sf_anlass = true
+  endif
+  if product == blank or product.type == 'Musterservice'
+    assign tp_sf_anlass = false
+  endif
+  if tp_sf_anlass
     for tp_sf_option in product.options_with_values
       assign tp_sf_name = tp_sf_option.name | downcase
       if tp_sf_name == 'farbe' or tp_sf_name == 'color' or tp_sf_name == 'dekor'
@@ -79,35 +116,59 @@
   endif
 
   # Muster aller Gruppen, von denen der Suchbegriff mindestens eines enthaelt.
+  # Ergibt der Suchbegriff keine, zweite Runde mit den Namen der aktiven
+  # Farbfilterwerte; dort zaehlt dazu jeder Name selbst am Wortanfang ("#blau")
+  # oder Wortende ("blau#") des Farbnamens.
   assign tp_sf_woerter = ''
   if tp_sf_index >= 0
     capture tp_sf_daten
       render 'tp-suchfarbe-gruppen'
     endcapture
     assign tp_sf_zeilen = tp_sf_daten | newline_to_br | split: '<br />'
-    for tp_sf_zeile in tp_sf_zeilen
-      assign tp_sf_teile = tp_sf_zeile | split: ':'
-      if tp_sf_teile.size != 2
-        continue
-      endif
-      assign tp_sf_liste = tp_sf_teile | last | downcase | split: ','
-      assign tp_sf_muster = ''
-      assign tp_sf_gilt = false
-      for tp_sf_eintrag in tp_sf_liste
-        assign tp_sf_wort = tp_sf_eintrag | strip
-        if tp_sf_wort == blank
+    for tp_sf_runde in (1..2)
+      if tp_sf_runde == 1
+        if tp_sf_begriff == blank
           continue
         endif
-        if tp_sf_wort contains '*'
-          assign tp_sf_wort = tp_sf_wort | remove: '*' | prepend: '#'
+      else
+        if tp_sf_woerter != '' or tp_sf_filterbegriff == blank
+          break
         endif
-        assign tp_sf_muster = tp_sf_muster | append: ',' | append: tp_sf_wort
-        if tp_sf_begriff_n contains tp_sf_wort
-          assign tp_sf_gilt = true
+        # "blau# grau#": Ein Name am Wortende ("Marineblau", "Blau Tief") steht
+        # damit "im Begriff" und geht vor; am Wortanfang ("Blaugrau" - im
+        # Deutschen ein Grau) zaehlt er nur als Ersatz.
+        assign tp_sf_begriff_n = tp_sf_filterbegriff | replace: ' ', '# ' | append: '#'
+      endif
+      for tp_sf_zeile in tp_sf_zeilen
+        assign tp_sf_teile = tp_sf_zeile | split: ':'
+        if tp_sf_teile.size != 2
+          continue
+        endif
+        assign tp_sf_liste = tp_sf_teile | last | downcase | split: ','
+        assign tp_sf_muster = ''
+        assign tp_sf_gilt = false
+        for tp_sf_eintrag in tp_sf_liste
+          assign tp_sf_wort = tp_sf_eintrag | strip
+          if tp_sf_wort == blank
+            continue
+          endif
+          if tp_sf_wort contains '*'
+            assign tp_sf_wort = tp_sf_wort | remove: '*' | prepend: '#'
+          endif
+          assign tp_sf_muster = tp_sf_muster | append: ',' | append: tp_sf_wort
+          if tp_sf_begriff_n contains tp_sf_wort
+            assign tp_sf_gilt = true
+          endif
+        endfor
+        if tp_sf_gilt
+          assign tp_sf_woerter = tp_sf_woerter | append: tp_sf_muster
         endif
       endfor
-      if tp_sf_gilt
-        assign tp_sf_woerter = tp_sf_woerter | append: tp_sf_muster
+      if tp_sf_runde == 2
+        assign tp_sf_filternamen = tp_sf_filterbegriff | split: ' '
+        for tp_sf_filtername in tp_sf_filternamen
+          assign tp_sf_woerter = tp_sf_woerter | append: ',#' | append: tp_sf_filtername | append: ',' | append: tp_sf_filtername | append: '#'
+        endfor
       endif
     endfor
   endif
@@ -148,7 +209,7 @@
       endif
 
       # Farbe pruefen: in der Gruppe? Steht das Wort auch im Suchbegriff?
-      assign tp_sf_farbe = tp_sf_v.options[tp_sf_index] | downcase | replace: ' ', '#' | replace: '-', '#' | replace: '/', '#' | replace: '(', '#' | replace: ',', '#' | prepend: '#'
+      assign tp_sf_farbe = tp_sf_v.options[tp_sf_index] | downcase | replace: ' ', '#' | replace: '-', '#' | replace: '/', '#' | replace: '(', '#' | replace: ',', '#' | prepend: '#' | append: '#'
       assign tp_sf_in_gruppe = false
       assign tp_sf_im_begriff = false
       for tp_sf_wort in tp_sf_gruppe

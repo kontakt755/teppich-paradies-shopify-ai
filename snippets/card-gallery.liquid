@@ -146,8 +146,19 @@
       assign tp_card_variant = product.selected_or_first_available_variant
       if tp_suchvariante != nil and tp_suchvariante.featured_media != blank
         assign tp_card_variant = tp_suchvariante
-        assign other_media = product.media | reject: 'src', tp_suchvariante.featured_media.src
-        assign media_list_to_show = tp_suchvariante.featured_media | concat: other_media
+        # Raumbild dieser Farbe vor dem Variantenfoto (snippets/tp-farbe-raumbild).
+        assign tp_such_bild = tp_suchvariante.featured_media
+        assign tp_such_index = tp_suchteile | last | plus: 0
+        capture tp_such_raum
+          render 'tp-farbe-raumbild', product: product, variant: tp_suchvariante, index: tp_such_index
+        endcapture
+        assign tp_such_raum = tp_such_raum | strip
+        if tp_such_raum != blank
+          assign tp_such_raum_pos = tp_such_raum | plus: 0
+          assign tp_such_bild = product.media[tp_such_raum_pos]
+        endif
+        assign other_media = product.media | reject: 'src', tp_such_bild.src
+        assign media_list_to_show = tp_such_bild | concat: other_media
       elsif product.selected_variant == blank
         capture tp_raumdaten
           render 'tp-sprint-raumdaten', product: product
