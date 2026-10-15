@@ -11,6 +11,8 @@
   assign tp_fl_recht = block.settings.rechtliches_menu
   assign tp_fl_sonderposten = collections['sonderposten-im-laden']
   assign tp_fl_sonderposten_verlinkt = false
+  # Geschenkgutschein (Werkbank w-034): Link erscheint erst, wenn das Produkt veroeffentlicht ist; Entwuerfe liefert all_products nicht
+  assign tp_fl_gutschein = all_products['geschenkgutschein']
 -%}
 
 <div class="tp-footer-links" {{ block.shopify_attributes }}>
@@ -54,6 +56,9 @@
         {%- endif -%}
         <li><a href="/pages/ratgeber">Ratgeber</a></li>
         <li><a href="/pages/kontakt">Kontakt</a></li>
+      {%- endif -%}
+      {%- if tp_fl_gutschein.id != blank and tp_fl_gutschein.gift_card? and tp_fl_gutschein.available -%}
+        <li><a href="{{ tp_fl_gutschein.url }}">Geschenkgutschein</a></li>
       {%- endif -%}
     </ul>
   </nav>
