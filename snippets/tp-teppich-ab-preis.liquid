@@ -3,7 +3,9 @@
 
   Der Preis gilt fuer das Einstiegsmass 80 x 150 cm (Entscheidung des Inhabers
   2026-09-20: beim technisch kleinsten Mass 50 x 50 cm greift fast ueberall der
-  Mindestpreis, alle Karten zeigten "ab 99,xx EUR"). Er ist real kaufbar und rechnet
+  Mindestpreis, alle Karten zeigten "ab 99,xx EUR"). Matten nach Mass
+  (service.produktwort = Matte) rechnen mit der Fussmatten-Groesse 60 x 90 cm und
+  heissen zugeschnitten statt eingefasst. Er ist real kaufbar und rechnet
   wie assets/tp-masstepich-rechnung.js (mengeMitMindestpreis):
     - Flaeche in Einheiten a 0,01 m2, aufgerundet (80 x 150 cm = 120 Einheiten)
     - guenstigste Farbe (price_min, Preis je 0,01 m2)
@@ -45,6 +47,13 @@
 {%- liquid
   assign tp_ab_breite_cm = 80
   assign tp_ab_laenge_cm = 150
+  assign tp_ab_inkl_fertig = 'Einfassung und Pauschale'
+  assign tp_ab_wort = product.metafields.service.produktwort.value | default: '' | strip | downcase
+  if tp_ab_wort == 'matte'
+    assign tp_ab_breite_cm = 60
+    assign tp_ab_laenge_cm = 90
+    assign tp_ab_inkl_fertig = 'Zuschnitt und Pauschale'
+  endif
   # Guenstigste KAUFBARE Farbe: verfuegbar, bepreist und fuers Einfassen freigegeben -
   # dieselbe Auswahl wie im Konfigurator. product.price_min zaehlte auch gesperrte Farben
   # mit und konnte einen Preis bewerben, den niemand kaufen kann (Codex-Review 2026-09-20).
@@ -238,7 +247,7 @@
         <s class="tp-ab-preis__alt" data-tp-ab-alt-cent="{{ tp_ab_alt_cent }}"><span class="visually-hidden">statt </span>{{ tp_ab_alt_cent | money_without_trailing_zeros }}</s>
       {%- endif -%}
     </span>
-    <span class="tp-ab-preis__grund">z.&nbsp;B. {{ tp_ab_breite_cm }}&nbsp;×&nbsp;{{ tp_ab_laenge_cm }}&nbsp;cm, inkl. {% if tp_ab_art == 'ketteln' %}Kettelung{% elsif tp_ab_art == 'fertig' %}Einfassung und Pauschale{% else %}Einfassung{% endif %}</span>
+    <span class="tp-ab-preis__grund">z.&nbsp;B. {{ tp_ab_breite_cm }}&nbsp;×&nbsp;{{ tp_ab_laenge_cm }}&nbsp;cm, inkl. {% if tp_ab_art == 'ketteln' %}Kettelung{% elsif tp_ab_art == 'fertig' %}{{ tp_ab_inkl_fertig }}{% else %}Einfassung{% endif %}</span>
   </span>
 {%- else -%}
   <span class="tp-preis-je-m2">{% if variant == blank or karte %}ab {% endif %}{{ tp_ab_m2_cent | money }}<span class="tp-preis-je-m2__einheit">/m²</span></span>
