@@ -181,6 +181,8 @@
     -%}
     {%- comment -%} Letztes Glied wie die H1: gekuerzter Anzeigetitel (Shopvergleich, Restpunkt 4b) {%- endcomment -%}
     {%- capture tp_crumb_titel -%}{%- render 'tp-anzeigetitel', product: product -%}{%- endcapture -%}
+    {%- comment -%} strip: das Snippet liefert nach dem doc-Block einen Zeilenumbruch mit, der sonst im JSON-LD-Namen landet {%- endcomment -%}
+    {%- assign tp_crumb_titel = tp_crumb_titel | strip -%}
     <nav class="tp-product-breadcrumb" aria-label="Breadcrumb">
       <a href="{{ routes.root_url }}">Start</a>
       {%- if tp_crumb_1 -%}
