@@ -11,6 +11,13 @@
 
   Faellt still aus, wenn das Produkt keine Farboption hat: Fixpreis- und
   Rollenware-Karten ohne Farbauswahl bleiben damit unveraendert.
+
+  Genau eine Zeile (Shopvergleich 2026-10-15): Vorher brachen die Felder um,
+  auf dem Handy in drei Zeilen, und schoben den Musterknopf je Karte anders
+  weit nach unten. Wie viele Felder neben "+N" passen, haengt von der
+  Kartenbreite ab - die kennt nur der Browser. Deshalb rechnet Liquid fuer
+  jede moegliche Platzzahl den Rest vor (data-rest-N, Klasse --eng-N) und
+  eine Container Query auf die Feldzeile waehlt die passende Stufe.
 {% enddoc %}
 
 {%- liquid
@@ -36,7 +43,7 @@
     assign tp_ct_shown = 0
   -%}
 
-  <div class="tp-card-color-thumbs" {{ block.shopify_attributes }}>
+  {%- capture tp_ct_felder -%}
     {%- for tp_ct_value in tp_ct_values -%}
       {%- if tp_ct_shown >= tp_ct_max -%}
         {%- break -%}
@@ -108,21 +115,58 @@
         </a>
       {%- endif -%}
     {%- endfor -%}
+  {%- endcapture -%}
 
-    {%- assign tp_ct_rest = tp_ct_values.size | minus: tp_ct_shown -%}
-    {%- if tp_ct_rest > 0 and tp_ct_shown > 0 -%}
-      <span class="tp-card-color-thumbs__more">+{{ tp_ct_rest }}</span>
-    {%- endif -%}
-  </div>
+  {%- liquid
+    assign tp_ct_gesamt = tp_ct_values.size
+    assign tp_ct_rest = tp_ct_gesamt | minus: tp_ct_shown
+    # Plaetze, die die volle Zeile braucht: alle gezeigten Felder plus "+N".
+    assign tp_ct_bedarf = tp_ct_shown
+    if tp_ct_rest > 0
+      assign tp_ct_bedarf = tp_ct_bedarf | plus: 1
+    endif
+    # Je Platzzahl n (1 bis 12, siehe Stylesheet), die nicht reicht: Klasse
+    # --eng-n und der Rest, wenn nur n - 1 Felder plus "+N" stehen.
+    assign tp_ct_klassen = ''
+    assign tp_ct_daten = ''
+    for tp_ct_n in (1..12)
+      if tp_ct_bedarf > tp_ct_n
+        assign tp_ct_rest_n = tp_ct_gesamt | minus: tp_ct_n | plus: 1
+        assign tp_ct_klassen = tp_ct_klassen | append: ' tp-card-color-thumbs--eng-' | append: tp_ct_n
+        assign tp_ct_daten = tp_ct_daten | append: ' data-rest-' | append: tp_ct_n | append: '="+' | append: tp_ct_rest_n | append: '"'
+      endif
+    endfor
+  -%}
+
+  {%- if tp_ct_shown > 0 -%}
+    <div
+      class="tp-card-color-thumbs{% if tp_ct_rest > 0 %} tp-card-color-thumbs--rest{% endif %}{{ tp_ct_klassen }}"
+      {{ block.shopify_attributes }}
+    >
+      {{- tp_ct_felder -}}
+      {%- if tp_ct_bedarf > 1 -%}
+        <span class="tp-card-color-thumbs__more" aria-hidden="true" data-rest="+{{ tp_ct_rest }}"{{ tp_ct_daten }}></span>
+      {%- endif -%}
+      <span class="visually-hidden">{{ tp_ct_gesamt }} Farben</span>
+    </div>
+  {%- endif -%}
 {%- endif -%}
 
 {% stylesheet %}
+  /* Eine Zeile: Feld 44 px, Abstand 6 px, also 50 px je Platz. Die Zeile ist
+     ihr eigener Container (tp-farben); width: 100 %, weil eine Flexspalte mit
+     align-items: flex-start sie sonst auf ihren Inhalt schrumpfen liesse - mit
+     inline-size-Containment hiesse das Breite 0. */
   .tp-card-color-thumbs {
+    container: tp-farben / inline-size;
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 6px;
+    width: 100%;
+    align-self: stretch;
     margin: 4px 0 0;
+    overflow: hidden;
   }
 
   .tp-card-color-thumbs__item {
@@ -162,10 +206,13 @@
     object-position: center;
   }
 
+  /* "+N": Zahl aus data-rest bzw. data-rest-N (Stufe je nach Breite). Fuer
+     Screenreader steht die Gesamtzahl der Farben unsichtbar daneben. */
   .tp-card-color-thumbs__more {
-    display: inline-flex;
+    display: none;
     align-items: center;
     justify-content: center;
+    flex: 0 0 auto;
     min-width: 44px;
     height: 44px;
     padding-inline: 6px;
@@ -174,10 +221,91 @@
     font-size: var(--font-size--xs);
     font-weight: 600;
     color: var(--color-foreground);
+    white-space: nowrap;
+  }
+
+  .tp-card-color-thumbs--rest > .tp-card-color-thumbs__more {
+    display: inline-flex;
+  }
+
+  .tp-card-color-thumbs__more::before {
+    content: attr(data-rest);
   }
 
   /* Kein Verkleinern auf dem Handy: 44 px ist die kleinste Flaeche, die sich
-     zuverlaessig treffen laesst. Die Reihe bricht stattdessen um. */
+     zuverlaessig treffen laesst. Bei zwei Karten je Reihe stehen dort zwei
+     Felder plus "+N". Stufen absteigend: die schmalere gewinnt. */
+  @container tp-farben (width < 644px) {
+    .tp-card-color-thumbs--eng-12 > .tp-card-color-thumbs__item:nth-of-type(n + 12) { display: none; }
+    .tp-card-color-thumbs--eng-12 > .tp-card-color-thumbs__more { display: inline-flex; }
+    .tp-card-color-thumbs--eng-12 > .tp-card-color-thumbs__more::before { content: attr(data-rest-12); }
+  }
+
+  @container tp-farben (width < 594px) {
+    .tp-card-color-thumbs--eng-11 > .tp-card-color-thumbs__item:nth-of-type(n + 11) { display: none; }
+    .tp-card-color-thumbs--eng-11 > .tp-card-color-thumbs__more { display: inline-flex; }
+    .tp-card-color-thumbs--eng-11 > .tp-card-color-thumbs__more::before { content: attr(data-rest-11); }
+  }
+
+  @container tp-farben (width < 544px) {
+    .tp-card-color-thumbs--eng-10 > .tp-card-color-thumbs__item:nth-of-type(n + 10) { display: none; }
+    .tp-card-color-thumbs--eng-10 > .tp-card-color-thumbs__more { display: inline-flex; }
+    .tp-card-color-thumbs--eng-10 > .tp-card-color-thumbs__more::before { content: attr(data-rest-10); }
+  }
+
+  @container tp-farben (width < 494px) {
+    .tp-card-color-thumbs--eng-9 > .tp-card-color-thumbs__item:nth-of-type(n + 9) { display: none; }
+    .tp-card-color-thumbs--eng-9 > .tp-card-color-thumbs__more { display: inline-flex; }
+    .tp-card-color-thumbs--eng-9 > .tp-card-color-thumbs__more::before { content: attr(data-rest-9); }
+  }
+
+  @container tp-farben (width < 444px) {
+    .tp-card-color-thumbs--eng-8 > .tp-card-color-thumbs__item:nth-of-type(n + 8) { display: none; }
+    .tp-card-color-thumbs--eng-8 > .tp-card-color-thumbs__more { display: inline-flex; }
+    .tp-card-color-thumbs--eng-8 > .tp-card-color-thumbs__more::before { content: attr(data-rest-8); }
+  }
+
+  @container tp-farben (width < 394px) {
+    .tp-card-color-thumbs--eng-7 > .tp-card-color-thumbs__item:nth-of-type(n + 7) { display: none; }
+    .tp-card-color-thumbs--eng-7 > .tp-card-color-thumbs__more { display: inline-flex; }
+    .tp-card-color-thumbs--eng-7 > .tp-card-color-thumbs__more::before { content: attr(data-rest-7); }
+  }
+
+  @container tp-farben (width < 344px) {
+    .tp-card-color-thumbs--eng-6 > .tp-card-color-thumbs__item:nth-of-type(n + 6) { display: none; }
+    .tp-card-color-thumbs--eng-6 > .tp-card-color-thumbs__more { display: inline-flex; }
+    .tp-card-color-thumbs--eng-6 > .tp-card-color-thumbs__more::before { content: attr(data-rest-6); }
+  }
+
+  @container tp-farben (width < 294px) {
+    .tp-card-color-thumbs--eng-5 > .tp-card-color-thumbs__item:nth-of-type(n + 5) { display: none; }
+    .tp-card-color-thumbs--eng-5 > .tp-card-color-thumbs__more { display: inline-flex; }
+    .tp-card-color-thumbs--eng-5 > .tp-card-color-thumbs__more::before { content: attr(data-rest-5); }
+  }
+
+  @container tp-farben (width < 244px) {
+    .tp-card-color-thumbs--eng-4 > .tp-card-color-thumbs__item:nth-of-type(n + 4) { display: none; }
+    .tp-card-color-thumbs--eng-4 > .tp-card-color-thumbs__more { display: inline-flex; }
+    .tp-card-color-thumbs--eng-4 > .tp-card-color-thumbs__more::before { content: attr(data-rest-4); }
+  }
+
+  @container tp-farben (width < 194px) {
+    .tp-card-color-thumbs--eng-3 > .tp-card-color-thumbs__item:nth-of-type(n + 3) { display: none; }
+    .tp-card-color-thumbs--eng-3 > .tp-card-color-thumbs__more { display: inline-flex; }
+    .tp-card-color-thumbs--eng-3 > .tp-card-color-thumbs__more::before { content: attr(data-rest-3); }
+  }
+
+  @container tp-farben (width < 144px) {
+    .tp-card-color-thumbs--eng-2 > .tp-card-color-thumbs__item:nth-of-type(n + 2) { display: none; }
+    .tp-card-color-thumbs--eng-2 > .tp-card-color-thumbs__more { display: inline-flex; }
+    .tp-card-color-thumbs--eng-2 > .tp-card-color-thumbs__more::before { content: attr(data-rest-2); }
+  }
+
+  @container tp-farben (width < 94px) {
+    .tp-card-color-thumbs--eng-1 > .tp-card-color-thumbs__item:nth-of-type(n + 1) { display: none; }
+    .tp-card-color-thumbs--eng-1 > .tp-card-color-thumbs__more { display: inline-flex; }
+    .tp-card-color-thumbs--eng-1 > .tp-card-color-thumbs__more::before { content: attr(data-rest-1); }
+  }
 {% endstylesheet %}
 
 {% schema %}

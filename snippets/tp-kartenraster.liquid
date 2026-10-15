@@ -1,0 +1,183 @@
+{%- doc -%}
+  Feste Zeilen fuer die Produktkarten im Kategorie- und Suchraster
+  (snippets/product-grid, Klasse tp-kartenraster am Raster). Gibt nur CSS aus.
+
+  Shopvergleich 2026-10-15: Die Karten einer Reihe waren zwar gleich hoch,
+  aber Preis, Farben und Musterknopf standen je Karte auf anderer Hoehe -
+  eine Zeile "Auslaufkollektion", ein zweizeiliger Titel oder umbrechende
+  Farbfelder verschoben alles darunter.
+
+  Loesung: CSS-Subgrid. Jede Karte (li > product-card > .product-card__content)
+  ueberspannt dieselben 16 Zeilenspuren des Rasters, jedes Kartenelement hat
+  seine feste Spur. Eine Spur ist so hoch wie ihr hoechster Eintrag in der
+  Reihe; fehlt ein Element in allen Karten der Reihe, ist die Spur 0 hoch.
+  Reihenfolge: Bild, Linie, Titel, Bewertung, Eigenschaften (Art, Merkmale,
+  Leisten), Verkaufseinheit (Rollenbreite, Groessen), Preis, Aktion,
+  Sonderposten, Farben, Musterknopf.
+
+  Abstaende stehen deshalb als margin am Element, nicht als gap: Ein gap
+  zwischen leeren Spuren wuerde sich zu Leerraum aufsummieren. Aus demselben
+  Grund hat das Raster selbst keinen Zeilenabstand; den Abstand zwischen zwei
+  Kartenreihen traegt das li als padding-block-end.
+
+  Sicherheitsnetz: Eine Karte mit einem Element, das hier keine Spur hat,
+  bleibt beim bisherigen Flex-Layout (sie ueberspannt die Spuren als Ganzes),
+  statt dass der Browser das Element in irgendeine freie Spur legt. Ein neuer
+  Kartenblock braucht daher eine Zeile in der Liste unten.
+
+  Ohne Subgrid-Unterstuetzung (alte Browser) greift nichts davon.
+{%- enddoc -%}
+
+{% stylesheet %}
+  .tp-kartenraster {
+    --tp-raster-reihenabstand: var(--tp-raster-reihenabstand-mobile, 12px);
+  }
+
+  @media screen and (min-width: 750px) {
+    .tp-kartenraster {
+      --tp-raster-reihenabstand: var(--tp-raster-reihenabstand-desktop, 24px);
+    }
+  }
+
+  @supports (grid-template-rows: subgrid) and selector(:has(*)) {
+    .tp-kartenraster:not([product-grid-view='zoom-out']) {
+      row-gap: 0;
+    }
+
+    .tp-kartenraster:not([product-grid-view='zoom-out']) > .product-grid__item {
+      grid-row: span 16;
+      padding-block-end: var(--tp-raster-reihenabstand);
+    }
+
+    /* Nur Karten, deren Elemente alle eine Spur haben (Liste wie unten). Die
+       Bedingung steht an allen drei Ebenen: ein halbes Subgrid (li ja, Karte
+       nein) wuerde die Spuren der Karte zusammenfallen lassen. */
+    .tp-kartenraster:not([product-grid-view='zoom-out'])
+      > .product-grid__item:not(:has(.product-card__content > :not(.card-gallery, .product-grid-view-zoom-out--details, .tp-card-leisten-bild, .tp-card-title__linie, a.contents, .tp-card-sterne, .tp-card-product-kind, .tp-card-specs, .tp-card-leisten, .tp-card-roll-widths, .tp-card-fixgroessen, .tp-card-groessen, product-price, .tp-card-aktion, .tp-card-sp, .tp-card-color-thumbs, .tp-card-actions, script, style, link, template))) {
+      display: grid;
+      grid-template-rows: subgrid;
+    }
+
+    .tp-kartenraster:not([product-grid-view='zoom-out'])
+      > .product-grid__item:not(:has(.product-card__content > :not(.card-gallery, .product-grid-view-zoom-out--details, .tp-card-leisten-bild, .tp-card-title__linie, a.contents, .tp-card-sterne, .tp-card-product-kind, .tp-card-specs, .tp-card-leisten, .tp-card-roll-widths, .tp-card-fixgroessen, .tp-card-groessen, product-price, .tp-card-aktion, .tp-card-sp, .tp-card-color-thumbs, .tp-card-actions, script, style, link, template)))
+      > product-card {
+      display: grid;
+      grid-template-rows: subgrid;
+      grid-row: 1 / -1;
+      height: auto;
+    }
+
+    .tp-kartenraster:not([product-grid-view='zoom-out'])
+      > .product-grid__item:not(:has(.product-card__content > :not(.card-gallery, .product-grid-view-zoom-out--details, .tp-card-leisten-bild, .tp-card-title__linie, a.contents, .tp-card-sterne, .tp-card-product-kind, .tp-card-specs, .tp-card-leisten, .tp-card-roll-widths, .tp-card-fixgroessen, .tp-card-groessen, product-price, .tp-card-aktion, .tp-card-sp, .tp-card-color-thumbs, .tp-card-actions, script, style, link, template)))
+      > product-card
+      > .product-card__content {
+      display: grid;
+      grid-template-rows: subgrid;
+      grid-row: 1 / -1;
+      row-gap: 0;
+      height: auto;
+      min-height: 0;
+    }
+
+    /* Spuren: eine je Element (siehe Liste oben). */
+    .tp-kartenraster .product-card__content > :is(.card-gallery, .tp-card-leisten-bild) {
+      grid-row: 1;
+      margin: 0 0 10px;
+    }
+
+    .tp-kartenraster .product-card__content > .tp-card-title__linie {
+      grid-row: 2;
+      margin: 0 0 2px;
+    }
+
+    .tp-kartenraster .product-card__content > a.contents > * {
+      grid-row: 3;
+      margin: 0;
+    }
+
+    .tp-kartenraster .product-card__content > .tp-card-sterne {
+      grid-row: 4;
+      margin: 2px 0 0;
+    }
+
+    .tp-kartenraster .product-card__content > .tp-card-product-kind {
+      grid-row: 5;
+      margin: 4px 0 0;
+    }
+
+    .tp-kartenraster .product-card__content > .tp-card-specs {
+      grid-row: 6;
+      margin: 4px 0 0;
+    }
+
+    .tp-kartenraster .product-card__content > .tp-card-leisten {
+      grid-row: 7;
+      margin: 4px 0 0;
+    }
+
+    .tp-kartenraster .product-card__content > .tp-card-roll-widths {
+      grid-row: 8;
+      margin: 3px 0 0;
+    }
+
+    .tp-kartenraster .product-card__content > .tp-card-fixgroessen {
+      grid-row: 9;
+      margin: 4px 0 0;
+    }
+
+    .tp-kartenraster .product-card__content > .tp-card-groessen {
+      grid-row: 10;
+      margin: 4px 0 0;
+    }
+
+    /* Doppelte Klasse: snippets/tp-card-roll-widths setzt fuer Rollenware
+       margin-block-start 3px mit hoeherer Spezifitaet - in gemischten Reihen
+       stand der Preis dadurch 3 px versetzt. */
+    .tp-kartenraster .product-card__content > product-price,
+    .tp-kartenraster.product-grid .product-card__content > product-price.spacing-style {
+      grid-row: 11;
+      margin: 6px 0 0;
+    }
+
+    .tp-kartenraster .product-card__content > .tp-card-aktion {
+      grid-row: 12;
+      margin: 4px 0 0;
+    }
+
+    .tp-kartenraster .product-card__content > .tp-card-sp {
+      grid-row: 13;
+      margin: 4px 0 0;
+    }
+
+    .tp-kartenraster .product-card__content > .tp-card-color-thumbs {
+      grid-row: 14;
+      margin: 8px 0 0;
+    }
+
+    /* Spur 15 bleibt frei: so steht der Musterknopf immer in der letzten Spur,
+       auch wenn spaeter ein Element davor dazukommt. */
+    .tp-kartenraster .product-card__content > .tp-card-actions {
+      grid-row: 16;
+      align-self: end;
+      margin: 12px 0 0;
+      padding-top: 0;
+    }
+
+    /* Zweizeilige Reserve fuer den Titel ist hier unnoetig: die Titelspur ist
+       so hoch wie der laengste Titel der Reihe. */
+    .tp-kartenraster .product-card__content :where(.tp-card-title__link) [role='heading'] {
+      min-height: 0;
+    }
+  }
+
+  /* Eine Titelgroesse fuer alle Karten im Raster. Bisher bekamen nur Karten
+     mit Rollenbreite den kleineren Titel (snippets/tp-card-roll-widths), Zubehoer
+     und Teppiche standen eine Stufe groesser daneben - in gemischten Reihen
+     (Angebote, Suche) liefen die Titel dadurch unterschiedlich hoch. */
+  .tp-kartenraster .product-card__content > a.contents [role='heading'] {
+    font-size: clamp(1rem, 0.96rem + 0.15vw, 1.075rem);
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+{% endstylesheet %}
