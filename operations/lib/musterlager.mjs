@@ -40,6 +40,34 @@ export const LAGER_ART_WERTE = Object.freeze(Object.keys(LAGER_ARTEN));
 /** Einzelmuster werden abgezaehlt; von Probestueck und Bahn schneiden wir zu. */
 export const ZAEHLBAR = Object.freeze(['einzel']);
 
+/**
+ * Inhaber 2026-10-15: ein zugeschnittenes Muster ist A5 (14,8 x 21 cm). Damit rechnet das Lager
+ * "reicht noch fuer ca. N Muster". Masse in cm.
+ * - Probestueck 2 x 1 m: 13 x 4 = 52 hochkant, 9 x 6 = 54 quer - die bessere Lage zaehlt.
+ * - Bahn 4 m x 20 cm: die Bahnbreite ist die lange A5-Seite (20 statt 21 cm, der Zentimeter
+ *   faellt nicht ins Gewicht); abgeschnitten wird alle 14,8 cm -> 27 Muster.
+ */
+export const MUSTER_GROESSE = Object.freeze({ name: 'A5', breite: 14.8, hoehe: 21 });
+const STUECK_MASSE = Object.freeze({ probestueck: [200, 100], bahn: [400, 20] });
+/** Toleranz fuer die Bahn: 20 cm Bahnbreite gelten als volle A5-Hoehe. */
+const TOLERANZ_CM = 1;
+
+/** Wie viele A5-Muster aus einem Probestueck bzw. einer Bahn kommen; null bei Einzelmustern. */
+export function musterJeStueck(art) {
+  const m = STUECK_MASSE[art];
+  if (!m) return null;
+  const [l, b] = m;
+  const { breite: kurz, hoehe: lang } = MUSTER_GROESSE;
+  const passt = (laenge, seite) => Math.floor((laenge + TOLERANZ_CM) / seite);
+  return Math.max(passt(l, kurz) * passt(b, lang), passt(l, lang) * passt(b, kurz));
+}
+
+/** Ab so wenigen restlichen Mustern steht ein Zuschnitt-Stueck auf "knapp". */
+export const KNAPP_AB = 5;
+
+/** Preis eines Probestuecks 2 x 1 m beim Lieferanten (Inhaber 2026-10-15), nur zur Anzeige. */
+export const PROBESTUECK_PREIS = '8–15 € je nach Qualität';
+
 /** Produktgruppen, bei denen der Lieferant statt eines Musters ein grosses Stueck schickt (Rest einlagern). */
 export const GROSSE_STUECKE = Object.freeze(['Vinyl von der Rolle', 'Linoleumboden']);
 
@@ -139,7 +167,10 @@ export function einlagern(file, { titel, farbe, handle = null, schluessel = [], 
   const vorhanden = lager.eintraege.find(e => e.art === art && e.schluessel.some(k => keys.includes(k)));
   if (vorhanden) {
     vorhanden.schluessel = [...new Set([...vorhanden.schluessel, ...keys])];
-    vorhanden.anzahl = (vorhanden.anzahl ?? 0) + n;
+    // Leeres Zuschnitt-Stueck: das Neue ersetzt den Rest, und Abgeschnittenes zaehlt ab jetzt neu.
+    const ersetzt = vorhanden.leer && !ZAEHLBAR.includes(art);
+    vorhanden.anzahl = ersetzt ? n : (vorhanden.anzahl ?? 0) + n;
+    if (ersetzt) vorhanden.basisAm = am;
     if (clip(ort, 80)) vorhanden.ort = clip(ort, 80);
     if (clip(notiz, 300)) vorhanden.notiz = clip(notiz, 300);
     vorhanden.leer = false;
@@ -165,6 +196,8 @@ export function einlagern(file, { titel, farbe, handle = null, schluessel = [], 
     geaendertAm: am,
     geaendertVon: String(actor),
     verlauf: [{ am, von: String(actor), was: `${n} eingelagert` }],
+    // Ab hier zaehlen verschickte Muster gegen den Zuschnitt-Vorrat (siehe wendeLagerAn).
+    basisAm: am,
   };
   lager.eintraege.push(eintrag);
   schreibeLager(file, lager);
@@ -178,19 +211,23 @@ export function aendern(file, id, felder = {}, { actor, jetzt = new Date() } = {
   const e = lager.eintraege.find(x => x.id === id);
   if (!e) throw new MusterlagerFehler('Dieses Muster steht nicht (mehr) im Musterlager');
   const was = [];
+  let neuGezaehlt = false;
   if ('art' in felder) {
     if (!LAGER_ART_WERTE.includes(felder.art)) throw new MusterlagerFehler(`Unbekannte Art „${felder.art}"`);
-    if (felder.art !== e.art) { e.art = felder.art; was.push(`Art: ${LAGER_ARTEN[e.art]}`); }
+    if (felder.art !== e.art) { e.art = felder.art; was.push(`Art: ${LAGER_ARTEN[e.art]}`); neuGezaehlt = true; }
   }
   if ('anzahl' in felder) {
     const n = anzahlAus(felder.anzahl);
-    if (n !== null && n !== e.anzahl) { e.anzahl = n; was.push(`Anzahl ${n}`); }
+    if (n !== null && n !== e.anzahl) { e.anzahl = n; was.push(`Anzahl ${n}`); neuGezaehlt = true; }
   }
   if ('ort' in felder) { const o = clip(felder.ort, 80) || null; if (o !== e.ort) { e.ort = o; was.push(o ? `Platz: ${o}` : 'Platz entfernt'); } }
   if ('notiz' in felder) { const nz = clip(felder.notiz, 300) || null; if (nz !== e.notiz) { e.notiz = nz; was.push('Notiz'); } }
-  if ('leer' in felder) { const l = !!felder.leer; if (l !== !!e.leer) { e.leer = l; was.push(l ? 'leer' : 'wieder da'); } }
+  if ('leer' in felder) { const l = !!felder.leer; if (l !== !!e.leer) { e.leer = l; was.push(l ? 'leer' : 'wieder da'); if (!l) neuGezaehlt = true; } }
   if (!was.length) return e;
   const am = jetzt.toISOString();
+  // Zuschnitt-Stueck neu gezaehlt oder wieder aufgefuellt: was vorher abgeschnitten wurde, zaehlt
+  // nicht mehr gegen den Vorrat. Bei Einzelmustern ist `anzahl` die Gesamtzahl - dort nie.
+  if (neuGezaehlt && !ZAEHLBAR.includes(e.art)) e.basisAm = am;
   e.geaendertAm = am;
   e.geaendertVon = String(actor);
   e.verlauf = verlaufMit(e, { am, von: String(actor), was: was.join(', ') });
@@ -237,13 +274,16 @@ const posKey = (orderId, lineItemId) => `${orderId}::${lineItemId}`;
  * @param {{eintraege: object[]}} lager
  * @param {object} [opt]
  * @param {object} [opt.statusAlle] auftragsstatus.json -> positionen
- * @returns {Map<string, {verbraucht: number, reserviert: number, rest: number|null}>} je Lagereintrag
+ * Zuschnitt-Stuecke (Probestueck, Bahn): `reichtNoch` = anzahl x Muster je Stueck (A5) minus
+ * verschickte seit `basisAm` minus reservierte - eine Schaetzung ("ca."), kein Abzaehlen.
+ *
+ * @returns {Map<string, {verbraucht: number, reserviert: number, rest: number|null, reichtNoch: number|null, jeStueck: number|null}>} je Lagereintrag
  */
 export function wendeLagerAn(modell, lager, { statusAlle = {} } = {}) {
   const stand = new Map();
   if (!modell) return stand;
   const eintraege = lager?.eintraege ?? [];
-  for (const e of eintraege) stand.set(e.id, { verbraucht: 0, reserviert: 0, rest: null });
+  for (const e of eintraege) stand.set(e.id, { verbraucht: 0, reserviert: 0, rest: null, reichtNoch: null, jeStueck: musterJeStueck(e.art), seitBasis: 0 });
   if (!eintraege.length && !(lager?.entfernt ?? []).length) return stand;
   const jeId = new Map([...(lager?.entfernt ?? []), ...eintraege].map(e => [e.id, e]));
   const jeSchluessel = new Map();
@@ -265,7 +305,11 @@ export function wendeLagerAn(modell, lager, { statusAlle = {} } = {}) {
         const e = jeId.get(p.musterLagerId);
         if (e) {
           p.musterLager = lagerInfo(e);
-          if (!test && stand.has(e.id)) stand.get(e.id).verbraucht += 1;
+          if (!test && stand.has(e.id)) {
+            const st = stand.get(e.id);
+            st.verbraucht += 1;
+            if (!e.basisAm || !p.musterHerkunftAm || String(p.musterHerkunftAm) >= String(e.basisAm)) st.seitBasis += 1;
+          }
           gesetzt.set(posKey(a.id, p.lineItemId), { musterLager: p.musterLager });
         }
         continue;
@@ -318,7 +362,12 @@ export function wendeLagerAn(modell, lager, { statusAlle = {} } = {}) {
       if (f) Object.assign(p, f);
     }
   }
-  for (const e of eintraege) if (ZAEHLBAR.includes(e.art)) stand.get(e.id).rest = rest.get(e.id);
+  for (const e of eintraege) {
+    const st = stand.get(e.id);
+    if (ZAEHLBAR.includes(e.art)) st.rest = rest.get(e.id);
+    else if (st.jeStueck) st.reichtNoch = e.leer ? 0 : Math.max(0, (e.anzahl ?? 1) * st.jeStueck - st.seitBasis - st.reserviert);
+    delete st.seitBasis;
+  }
   return stand;
 }
 
@@ -332,6 +381,27 @@ export function wendeLagerAn(modell, lager, { statusAlle = {} } = {}) {
 export function festzuschreiben(auftrag, lineItemIds = null) {
   return (auftrag?.positionen ?? []).filter(p => p.istMuster && p.lineItemId && p.musterHerkunftQuelle === 'lager'
     && p.musterLager?.id && !p.musterLagerId && (!lineItemIds || lineItemIds.includes(p.lineItemId)));
+}
+
+const LIEFERANT_UNTERWEGS = [undefined, null, '', 'bestellt'];
+const ROUTEN_OHNE_LIEFERANT = ['SAMPLE_STOCK', 'SAMPLE_CUT'];
+/** "Haben wir da" - wie musterEigen() in docs/ai-dashboard/lib/todos.mjs. */
+function musterEigen(p) {
+  if (p.musterHerkunft === 'eigen_versand' || p.musterHerkunft === 'eigen_vorbei') return true;
+  if (p.musterHerkunft === 'lieferant') return false;
+  return ROUTEN_OHNE_LIEFERANT.includes(p.route) || ROUTEN_OHNE_LIEFERANT.includes(p.musterRoute);
+}
+
+/**
+ * Gemischte Musterbestellung (Inhaber 2026-10-15): ein Teil liegt im Lager, ein Teil kommt vom
+ * Lieferanten - alles geht zusammen raus, sobald die Lieferanten-Muster da sind. True, solange
+ * ein Muster dieser Bestellung noch beim Lieferanten aussteht (nicht bestellt oder bestellt).
+ * Spiegel von lieferantMusterAusstehend() in docs/ai-dashboard/lib/todos.mjs.
+ */
+export function wartetAufLieferant(auftrag, statusAlle = {}) {
+  return (auftrag?.positionen ?? []).some(p => p?.istMuster && p.lineItemId && (p.menge ?? 1) > 0
+    && !p.musterLager && !musterEigen(p)
+    && LIEFERANT_UNTERWEGS.includes(statusAlle[posKey(auftrag.id, p.lineItemId)]?.status));
 }
 
 /** Titel ohne angehaengte Rollenbreiten ("Vellana Teppichboden 400cm 500cm" -> "Vellana Teppichboden"). */

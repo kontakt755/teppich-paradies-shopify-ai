@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   musterSchluessel, leseLager, einlagern, aendern, entfernen, wendeLagerAn, festzuschreiben, farbenFuer, vorschlaege,
-  kurzTitel, musterlagerPfad, MusterlagerFehler, LAGER_ARTEN,
+  kurzTitel, musterlagerPfad, MusterlagerFehler, LAGER_ARTEN, musterJeStueck, MUSTER_GROESSE,
 } from '../lib/musterlager.mjs';
 import { haengeWahlAn, leseEreignisse, wendeAufModellAn, musterOhneLieferant, musterherkunftPfad } from '../lib/musterherkunft.mjs';
 
@@ -134,7 +134,7 @@ test('wendeLagerAn: Einzelmuster zaehlen ab - das aelteste wartende bekommt das 
   assert.equal(pNeu.musterLagerLeer.ort, 'Schublade 1');
   assert.equal(m.auftraege[0].positionen[0].musterLager.id, eintrag.id);
   assert.equal(m.testauftraege[0].positionen[0].musterHerkunftQuelle, 'lager', 'Testbestellungen zeigen es, verbrauchen aber nichts');
-  assert.deepEqual(stand.get(eintrag.id), { verbraucht: 1, reserviert: 1, rest: 0 });
+  assert.deepEqual(stand.get(eintrag.id), { verbraucht: 1, reserviert: 1, rest: 0, reichtNoch: null, jeStueck: null });
 });
 
 test('wendeLagerAn: leer gesetzt heisst wieder beim Lieferanten bestellen', () => {
@@ -166,7 +166,7 @@ test('Verschicken haelt die Zuordnung fest: Ereignis mit lagerId, danach zaehlt 
   const stand = wendeLagerAn(m2, leseLager(lagerDatei), { statusAlle: { 'O1::L1': { status: 'raus' } } });
   assert.equal(m2.auftraege[0].positionen[0].musterLagerId, eintrag.id);
   assert.equal(festzuschreiben(m2.auftraege[0]).length, 0, 'nicht zweimal festschreiben');
-  assert.deepEqual(stand.get(eintrag.id), { verbraucht: 1, reserviert: 0, rest: 0 });
+  assert.deepEqual(stand.get(eintrag.id), { verbraucht: 1, reserviert: 0, rest: 0, reichtNoch: null, jeStueck: null });
 });
 
 test('farbenFuer: Mustervarianten liefern die SKU, alle Breiten einer Farbe teilen sich einen Eintrag', () => {
@@ -211,4 +211,50 @@ test('kurzTitel: Muster-Vorsatz und Rollenbreiten fallen weg', () => {
   assert.equal(kurzTitel('Muster: Selene Linoleumboden 200cm'), 'Selene Linoleumboden');
   assert.equal(kurzTitel('Elastium Linoleumboden 200cm-1'), 'Elastium Linoleumboden');
   assert.equal(kurzTitel('Palenza Teppich nach Maß'), 'Palenza Teppich nach Maß');
+});
+
+test('A5 (Inhaber 2026-10-15): Probestueck 2 x 1 m ergibt 54, Bahn 4 m x 20 cm 27 Muster', () => {
+  assert.equal(MUSTER_GROESSE.name, 'A5');
+  assert.equal(musterJeStueck('probestueck'), 54);
+  assert.equal(musterJeStueck('bahn'), 27);
+  assert.equal(musterJeStueck('einzel'), null);
+});
+
+test('reichtNoch: Zuschnitt-Vorrat minus verschickte seit dem letzten Auffuellen minus reservierte', () => {
+  const dir = tmp();
+  const lagerDatei = musterlagerPfad(dir);
+  const { eintrag } = einlagern(lagerDatei, { titel: 'Testvelours', farbe: 'Sand', schluessel: ['TESTVEL4_102'], art: 'bahn', anzahl: 1, actor: 'x', jetzt: AM });
+  // Ein Muster ging raus (Ereignis mit lagerId, nach dem Einlagern), eines ist offen und reserviert.
+  const SPAETER = new Date('2026-10-14T08:00:00Z');
+  haengeWahlAn(musterherkunftPfad(dir), { orderId: 'O1', lineItemId: 'L1', herkunft: 'eigen_versand', actor: 'x', lagerId: eintrag.id, jetzt: SPAETER });
+  const modell = () => modellMit([
+    auftrag('O1', '2026-10-11', [muster('O1', 'L1', 'M-TESTVEL4_102')]),
+    auftrag('O2', '2026-10-12', [muster('O2', 'L1', 'M-TESTVEL4_102')]),
+  ]);
+  const m = modell();
+  wendeAufModellAn(m, leseEreignisse(musterherkunftPfad(dir)));
+  let st = wendeLagerAn(m, leseLager(lagerDatei), { statusAlle: { 'O1::L1': { status: 'raus' } } }).get(eintrag.id);
+  assert.deepEqual([st.jeStueck, st.verbraucht, st.reserviert, st.reichtNoch], [27, 1, 1, 25]);
+  // Neue Bahn hingelegt und neu gezaehlt: Verschicktes von vorher zaehlt nicht mehr dagegen.
+  aendern(lagerDatei, eintrag.id, { anzahl: 2 }, { actor: 'x', jetzt: new Date('2026-10-15T08:00:00Z') });
+  const m2 = modell();
+  wendeAufModellAn(m2, leseEreignisse(musterherkunftPfad(dir)));
+  st = wendeLagerAn(m2, leseLager(lagerDatei), { statusAlle: { 'O1::L1': { status: 'raus' } } }).get(eintrag.id);
+  assert.equal(st.reichtNoch, 53);
+  // Leer gesetzt: reicht fuer nichts mehr.
+  aendern(lagerDatei, eintrag.id, { leer: true }, { actor: 'x', jetzt: new Date('2026-10-15T09:00:00Z') });
+  st = wendeLagerAn(modell(), leseLager(lagerDatei)).get(eintrag.id);
+  assert.equal(st.reichtNoch, 0);
+});
+
+test('Einlagern in ein leer gesetztes Zuschnitt-Stueck ersetzt den Rest statt ihn dazuzuzaehlen', () => {
+  const file = musterlagerPfad(tmp());
+  const { eintrag } = einlagern(file, { titel: 'Testvelours', farbe: 'Sand', schluessel: ['TESTVEL4_102'], art: 'bahn', anzahl: 1, actor: 'x', jetzt: AM });
+  aendern(file, eintrag.id, { leer: true }, { actor: 'x', jetzt: AM });
+  const NEU = new Date('2026-10-20T08:00:00Z');
+  const r = einlagern(file, { titel: 'Testvelours', farbe: 'Sand', schluessel: ['TESTVEL4_102'], art: 'bahn', anzahl: 1, actor: 'x', jetzt: NEU });
+  assert.equal(r.neu, false);
+  assert.equal(r.eintrag.anzahl, 1);
+  assert.equal(r.eintrag.leer, false);
+  assert.equal(r.eintrag.basisAm, NEU.toISOString());
 });

@@ -110,6 +110,14 @@ function musterEigen(p) {
   if (p.musterHerkunft === 'lieferant') return false;
   return ROUTEN_OHNE_LIEFERANT.includes(p.route) || ROUTEN_OHNE_LIEFERANT.includes(p.musterRoute);
 }
+/**
+ * Gemischte Musterbestellung (Inhaber 2026-10-15): alles geht zusammen raus, sobald die Muster
+ * vom Lieferanten da sind. True, solange ein Muster der Bestellung noch beim Lieferanten aussteht
+ * (nicht bestellt oder bestellt). Spiegel von wartetAufLieferant() in operations/lib/musterlager.mjs.
+ */
+function lieferantMusterAusstehend(offen) {
+  return offen.some(x => x.p.istMuster && !musterEigen(x.p) && (!x.eintrag?.status || x.eintrag.status === 'bestellt'));
+}
 const ortVon = z => { const o = z?.auftrag?.details?.lieferadresse?.ort; return o && o !== '–' ? o : null; };
 const istBezahlt = z => BEZAHLT.includes(String(z.zahlungsstatus));
 const artWort = positionen => (positionen.every(x => x.p.istMuster) ? 'Muster' : 'Ware');
@@ -141,7 +149,10 @@ function lageVon({ z, a, offen }, { statusAlle, rueckrufJeOrder, heute, jetzt, s
   const mit = status => offen.filter(x => (x.eintrag?.status || null) === status);
   const eigen = mit(null).filter(x => musterEigen(x.p));
   const unbestellt = mit(null).filter(x => !musterEigen(x.p));
-  if (eigen.length && !unbestellt.length) {
+  // Gemischt: Lagermuster gehen mit den Lieferanten-Mustern raus - solange die ausstehen oder
+  // schon da sind, ist der Schritt "bestellt" bzw. "rausgeben", nicht "verschicken".
+  const lieferantMusterDa = mit('geliefert').some(x => x.p.istMuster);
+  if (eigen.length && !unbestellt.length && !lieferantMusterAusstehend(offen) && !lieferantMusterDa) {
     const vorbei = eigen.every(x => x.p.musterHerkunft === 'eigen_vorbei');
     return { spalte: 'wir', art: 'muster_eigen', schritt: vorbei ? 'Muster vorbeibringen' : 'Muster verschicken', alterTage: seitBestellung, positionen: eigen };
   }
@@ -221,6 +232,7 @@ function ausBestellungen(quellen, k) {
   const bestellen = new Map();   // lieferant|art -> Positionen, noch nicht beim Lieferanten bestellt
   const nachhaken = new Map();   // lieferant -> Positionen, zu lange bestellt
   const eigeneMuster = new Map(); // orderId -> Muster aus eigenem Bestand, noch nicht beim Kunden
+  const wartenAufLieferant = new Set(); // orderIds: eigene Muster gehen mit denen vom Lieferanten raus
   const sammle = (map, key, wert) => { if (!map.has(key)) map.set(key, []); map.get(key).push(wert); };
 
   for (const b of laufendeBestellungen(quellen.bestellzeilen, k.statusAlle)) {
@@ -253,6 +265,7 @@ function ausBestellungen(quellen, k) {
       continue;
     }
     if (!istBezahlt(z)) continue;   // unbezahlt: der Kunde ist dran, nichts zu bestellen
+    if (lieferantMusterAusstehend(offen)) wartenAufLieferant.add(z.orderId);
     for (const x of offen) {
       const status = x.eintrag?.status || null;
       const pos = { ...x, z, seitBestellung };
@@ -271,10 +284,14 @@ function ausBestellungen(quellen, k) {
         const id = `rausgeben:${z.orderId}`;
         const vorhanden = todos.find(t => t.id === id);
         if (vorhanden) { vorhanden.alterTage = Math.max(vorhanden.alterTage ?? 0, tage ?? 0); vorhanden.ton = tonNachAlter(vorhanden.alterTage, ...FRISTEN.rausgeben); continue; }
+        // Gemischt: die Lagermuster derselben Bestellung gehen jetzt mit raus.
+        const ausLager = x.p.istMuster ? offen.filter(y => !y.eintrag?.status && musterEigen(y.p) && y.p.musterHerkunft !== 'eigen_vorbei').map(y => y.p) : [];
+        if (ausLager.length) wartenAufLieferant.add(z.orderId);
         todos.push({
           id, art: 'rausgeben', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.rausgeben), alterTage: tage,
           titel: `${x.p.istMuster ? 'Muster' : 'Ware'} ist da – an ${kundeVon(z)} rausgeben`,
-          kontext: [z.orderName, x.p.istMuster ? musterText([x.p]) : x.p.titel, tage !== null ? `liegt ${seitText(tage)} bei uns` : null].filter(Boolean).join(' · '),
+          kontext: [z.orderName, x.p.istMuster ? musterText([x.p]) : x.p.titel, tage !== null ? `liegt ${seitText(tage)} bei uns` : null,
+            ausLager.length ? `zusammen mit ${musterHerkunftText(ausLager) || 'Mustern aus eigenem Bestand'}: ${musterText(ausLager)}` : null].filter(Boolean).join(' · '),
           knopf: { text: 'Rausgeben', href: vorgangsLink('einkauf', { auftrag: z.orderId, af: 'eingetroffen' }) },
         });
       }
@@ -307,6 +324,9 @@ function ausBestellungen(quellen, k) {
   }
   for (const [orderId, positionen] of eigeneMuster) {
     const z = positionen[0].z;
+    // Gemischt: die Lagermuster gehen mit den Lieferanten-Mustern raus - solange die ausstehen,
+    // gar nicht, danach im To-do "rausgeben" (sonst stuende dieselbe Sendung zweimal da).
+    if (wartenAufLieferant.has(orderId)) continue;
     const tage = Math.max(...positionen.map(x => x.seitBestellung ?? 0));
     const vorbei = positionen.every(x => x.p.musterHerkunft === 'eigen_vorbei');
     todos.push({

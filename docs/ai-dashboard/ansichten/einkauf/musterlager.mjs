@@ -8,6 +8,10 @@
  * passende Musterbestellung steht automatisch auf "aus dem Musterlager" (Server,
  * operations/lib/musterlager.mjs). Einzelmuster zaehlen beim Verschicken ab.
  *
+ * Mustergroesse A5 (Inhaber 2026-10-15): bei Probestueck und Bahn steht "reicht noch fuer ca. N
+ * Muster" (Server rechnet, operations/lib/musterlager.mjs). Gemischte Bestellungen gehen
+ * zusammen raus - das Lagermuster steht dann als "zurueckgelegt" da.
+ *
  * Darunter Vorschlaege aus den Bestellungen: eingetroffene Probestuecke ("Rest einlagern?")
  * und Farben, die mehrfach als Muster bestellt wurden. Nur lokal, Shopify bleibt unberuehrt.
  */
@@ -27,8 +31,8 @@ const FRISCH_MS = 30000;
 const ARTEN_STANDARD = { einzel: 'Einzelmuster', probestueck: 'Probestück 2 × 1 m', bahn: 'Bahn 4 m × 20 cm' };
 const ART_HINWEIS = {
   einzel: 'fertige Muster – jedes verschickte zählt ab',
-  probestueck: 'z. B. PVC, Linoleum – wir schneiden zu',
-  bahn: 'z. B. Teppichboden – wir schneiden zu',
+  probestueck: 'z. B. PVC, Linoleum – wir schneiden A5-Muster zu',
+  bahn: 'z. B. Teppichboden – wir schneiden A5-Muster zu',
 };
 
 export function ensureMusterlager({ neu = false } = {}) {
@@ -59,8 +63,15 @@ function bestandVon(e) {
     return { text: `noch ${da} Stück${zurueck > 0 ? ` (${zurueck} zurückgelegt)` : ''}`, warn: frei <= 0 };
   }
   const n = e.anzahl ?? 1;
-  return { text: e.art === 'bahn' ? `${n} ${n === 1 ? 'Bahn' : 'Bahnen'}` : `${n} Stück`, warn: false };
+  const stueck = e.art === 'bahn' ? `${n} ${n === 1 ? 'Bahn' : 'Bahnen'}` : `${n} Stück`;
+  // Zuschnitt: A5-Muster je Stueck (Inhaber 2026-10-15), Schaetzung aus dem Verschickten.
+  const reicht = e.stand?.reichtNoch;
+  if (reicht === null || reicht === undefined) return { text: stueck, warn: false };
+  if (reicht <= 0) return { text: `${stueck} · rechnerisch aufgebraucht – nachsehen`, warn: true };
+  return { text: `${stueck} · reicht noch für ca. ${reicht} ${musterGroesse()}-Muster`, warn: reicht <= (musterlager.daten?.knappAb ?? 5) };
 }
+
+const musterGroesse = () => musterlager.daten?.musterGroesse?.name || 'A5';
 
 const passt = (e, q) => !q || [e.titel, e.farbe, e.ort, e.notiz, e.artLabel].some(v => String(v || '').toLowerCase().includes(q));
 
@@ -68,7 +79,11 @@ function zeileHtml(e) {
   const b = bestandVon(e);
   const lesend = istNurLesend();
   const verschickt = e.stand?.verbraucht ? `${e.stand.verbraucht}× verschickt` : '';
-  const fuer = (e.offeneBestellungen || []).map(o => `${o.orderName}${o.kunde ? ` ${o.kunde}` : ''}`);
+  const offene = e.offeneBestellungen || [];
+  const fuer = offene.filter(o => !o.wartetAufLieferant).map(o => `${o.orderName}${o.kunde ? ` ${o.kunde}` : ''}`);
+  // Gemischte Bestellung: geht zusammen mit den Lieferanten-Mustern raus (Inhaber 2026-10-15).
+  const wartet = offene.filter(o => o.wartetAufLieferant).map(o => `${o.orderName}${o.kunde ? ` ${o.kunde}` : ''}`);
+  const nachkaufen = e.art === 'probestueck' && b.warn && musterlager.daten?.probestueckPreis ? `Neues Probestück beim Lieferanten: ${musterlager.daten.probestueckPreis}` : '';
   const knoepfe = lesend ? '' : `<div class="ml-aktionen">
       ${e.leer || (zaehlbar(e) && nochDa(e) <= 0)
         ? `<button type="button" class="btn btn-sm" data-ml-wieder="${esc(e.id)}">Wieder da…</button>`
@@ -85,6 +100,8 @@ function zeileHtml(e) {
         ${verschickt ? `<span class="muted">${esc(verschickt)}</span>` : ''}
       </div>
       ${fuer.length ? `<div class="ml-fuer">Verschicken an: ${esc(fuer.join(', '))}</div>` : ''}
+      ${wartet.length ? `<div class="small muted">Zurückgelegt, geht mit den Mustern vom Lieferanten zusammen raus: ${esc(wartet.join(', '))}</div>` : ''}
+      ${nachkaufen ? `<div class="small muted">${esc(nachkaufen)}</div>` : ''}
       ${e.notiz ? `<div class="ml-notiz">${esc(e.notiz)}</div>` : ''}
     </div>
     ${knoepfe}
@@ -117,7 +134,7 @@ export function viewEinkaufMusterlager() {
   const leer = d.eintraege.filter(e => bestandVon(e).warn).length;
 
   const kopf = `<div class="ml-kopf">
-    <p class="small muted ml-erklaerung">Muster, die wir selbst da haben. Kommt eine Musterbestellung für eines davon, steht sie automatisch auf „aus dem Musterlager“ – sie geht nicht in die Bestellung an den Lieferanten. Einzelmuster zählen beim Verschicken ab; von Probestück und Bahn schneiden wir zu.</p>
+    <p class="small muted ml-erklaerung">Muster, die wir selbst da haben. Kommt eine Musterbestellung für eines davon, steht sie automatisch auf „aus dem Musterlager“ – sie geht nicht in die Bestellung an den Lieferanten. Einzelmuster zählen beim Verschicken ab; von Probestück und Bahn schneiden wir A5-Muster zu. Gemischte Bestellungen gehen zusammen raus, sobald die Lieferanten-Muster da sind.</p>
     ${istNurLesend() ? '' : '<button type="button" class="btn btn-primary" data-ml-neu>Muster einlagern…</button>'}
   </div>`;
   // Eine Zeile mit den drei Zahlen, die vom Normalfall abweichen; 0 faellt weg.

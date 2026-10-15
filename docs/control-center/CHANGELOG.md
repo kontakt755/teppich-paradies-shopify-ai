@@ -2,6 +2,21 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-15 · Musterlager: Antworten des Inhabers (Werkbank w-091, Folge zu #1183)
+
+- **Geändert:** Mustergröße A5 – Probestück und Bahn zeigen „reicht noch für ca. N A5-Muster“ (54 je
+  Probestück, 27 je Bahn; `musterJeStueck()`, `reichtNoch` in `wendeLagerAn()`), knapp ab 5, beim
+  Probestück mit Nachkaufpreis 8–15 €. Gemischte Musterbestellungen gehen zusammen raus: kein To-do
+  „Muster verschicken“, solange Lieferanten-Muster ausstehen; „rausgeben“ nennt die Lagermuster mit,
+  der Versand-Dialog kreuzt sie vorab an; im Musterlager stehen sie als „zurückgelegt“. Keine
+  Vorratsmuster in der Bestellmail und Etiketten (nur Name + Farbe, Gerät offen) als Entscheidung in
+  ARCHITEKTUR 8b festgehalten.
+- **Getestet:** neue Tests für A5, `reichtNoch` (Auffüllen setzt `basisAm`, leer = 0), gemischte Bestellung
+  in drei Stufen (nicht bestellt, bestellt, eingetroffen) und Versand-Vorauswahl.
+- **Risiken/Annahmen:** „reicht noch“ ist eine Schätzung aus verschickten Mustern; Verschnitt und Muster,
+  die am Dashboard vorbei rausgehen, zählt sie nicht. Bahnbreite 20 cm gilt als A5-Höhe (21 cm).
+- **Nächste Stufe:** Etikettendruck, sobald das Gerät feststeht; Bahnen nach Ahmets Freigabe einlagern.
+
 ## 2026-10-14 · Ansicht „Bildrechte“ (#1285, Refs #978)
 
 - **Geändert:** Neue, rein lesende Ansicht `#/bildrechte` (Seitenleiste „Seltener“, für alle Rollen).
