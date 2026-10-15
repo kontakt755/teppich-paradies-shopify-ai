@@ -3,7 +3,11 @@
 
   Liquid gibt die Werktage-Angabe aus wie bisher ("Lieferzeit: 2–5 Werktage").
   assets/tp-lieferdatum.js ersetzt sie im Browser durch
-  "Lieferung voraussichtlich Di., 13.10. – Fr., 16.10. (ca. 2–5 Werktage)".
+  "Lieferung voraussichtlich Di., 13.10. – Fr., 16.10.".
+  Shopvergleich 2026-10-15 (w-096 E): die Werktage stehen nicht mehr in
+  Klammern hinter dem Datum, wenn die Angabe nur eine Spanne ist ("2–5
+  Werktage") - die Datumsspanne sagt dasselbe konkreter. Steht mehr in der
+  Angabe ("ca. 5–8 Werktage inkl. Ketteln"), bleibt der Zusatz stehen.
   Gerechnet wird dort (Berlin-Zeit, Wochenenden und Feiertage bundesweit plus
   Brandenburg), weil Shopify Seiten zwischenspeichert. Ohne JavaScript bleibt
   die Werktage-Angabe stehen.
@@ -67,11 +71,22 @@
     assign tp_lz_datum = false
   endif
   assign tp_lz_schluss = settings.tp_lieferdatum_annahmeschluss | strip
+
+  # Nur eine Spanne? Dann ohne Zusatz in Klammern (siehe oben).
+  assign tp_lz_rest = tp_lz_klein | remove: 'werktage' | remove: 'werktag' | remove: 'ca.' | remove: 'ca' | remove: 'bis' | remove: '–' | remove: '-' | remove: ' '
+  for tp_lz_ziffer in (0..9)
+    assign tp_lz_ziffer_text = tp_lz_ziffer | append: ''
+    assign tp_lz_rest = tp_lz_rest | remove: tp_lz_ziffer_text
+  endfor
+  assign tp_lz_zusatz = ''
+  if tp_lz_rest == blank
+    assign tp_lz_zusatz = ' data-zusatz="0"'
+  endif
 -%}
 
 {%- if tp_lz_text != blank -%}
   {%- capture tp_lz_attr -%}
-    {%- if tp_lz_datum %} data-tp-lieferdatum data-text="{{ tp_lz_text | escape }}" data-annahmeschluss="{{ tp_lz_schluss | escape }}"{% endif -%}
+    {%- if tp_lz_datum %} data-tp-lieferdatum data-text="{{ tp_lz_text | escape }}" data-annahmeschluss="{{ tp_lz_schluss | escape }}"{% unless tp_lz_kontext == 'mass' %}{{ tp_lz_zusatz }}{% endunless %}{% endif -%}
   {%- endcapture -%}
   {%- case tp_lz_kontext -%}
     {%- when 'rechner' -%}

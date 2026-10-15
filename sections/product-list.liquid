@@ -36,8 +36,15 @@
         {%- endcomment -%}
         {%- paginate section.settings.collection.products by 250 -%}
           {%- liquid
+            # TP: nur eine Kartenart je Liste (Shopvergleich 2026-10-15, w-096) -
+            # Rollenware-, Paket- und Fliesenkarten sehen verschieden aus und
+            # standen in "Aktuelle Angebote" nebeneinander.
+            assign tp_ln_vorlage = section.settings.tp_nur_vorlage | strip | downcase
             assign tp_ln_alle = '|'
             for tp_ln_p in section.settings.collection.products
+              if tp_ln_vorlage != blank and tp_ln_p.template_suffix != tp_ln_vorlage
+                continue
+              endif
               assign tp_ln_key = tp_ln_p.title | split: ' ' | first | downcase
               assign tp_ln_alle = tp_ln_alle | append: '|' | append: tp_ln_key | append: '|'
             endfor
@@ -55,6 +62,9 @@
           -%}
           {%- for product in section.settings.collection.products -%}
             {%- liquid
+              if tp_ln_vorlage != blank and product.template_suffix != tp_ln_vorlage
+                continue
+              endif
               assign tp_ln_key = product.title | split: ' ' | first | downcase
               assign tp_ln_marke = '|' | append: tp_ln_key | append: '|'
               if tp_ln_gezeigt contains tp_ln_marke
@@ -182,6 +192,12 @@
       "label": "Je Produktlinie nur ein Dekor",
       "info": "Linie = erstes Wort im Titel. Weitere Dekore erscheinen als +N Farben.",
       "default": false
+    },
+    {
+      "type": "text",
+      "id": "tp_nur_vorlage",
+      "label": "Nur Produktvorlage (z. B. rolle)",
+      "info": "Zeigt nur Produkte mit dieser Produktvorlage, damit keine verschiedenen Kartenarten nebeneinander stehen. Wirkt mit \"Je Produktlinie nur ein Dekor\"."
     },
     {
       "type": "collection",

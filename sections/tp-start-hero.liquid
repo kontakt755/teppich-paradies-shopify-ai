@@ -4,6 +4,10 @@
   WhatsApp als Textlinks. Kein Overlay auf dem Bild. Shopvergleich 2026-10-15
   (w-096): ein Ziel je Bildschirm, Rot nur fuer Preis, Rabatt und Hauptknopf -
   deshalb ist <em> in der Ueberschrift nicht mehr rot.
+  Aufbau "kompakt" (Startseiten-Umbau C, w-096): ohne Bild, Ueberschrift ueber
+  die volle Breite, Unterzeile, Textlink und Bewertung in einer Zeile - damit
+  die Kategorien mit grossen Bildern in den ersten Bildschirm ruecken. Das Bild
+  wird dann gar nicht ausgegeben, LCP ist die erste Kategoriekarte.
   Das Bild ist das LCP-Element und laedt deshalb eager mit hoher Prioritaet.
   Die Google-Bewertung wird nur angezeigt, wenn ein Wert eingetragen ist - und dann
   als Zahl aus dem Unternehmensprofil, die der Betreiber selbst pflegt.
@@ -16,6 +20,10 @@
   # bleiben erhalten. Mehrere Absaetze wuerden dabei zu einer Zeile verschmelzen;
   # fuer eine Ueberschrift ist das richtig.
   assign h1_text = section.settings.headline | replace: '<p>', '' | replace: '</p>', ''
+  assign hero_kompakt = false
+  if section.settings.layout == 'kompakt'
+    assign hero_kompakt = true
+  endif
 
   # Google-Bewertung aus einer Quelle. Steht am Abschnitt selbst nichts, gilt
   # die Theme-Einstellung (TP Google-Bewertung). Bis 2026-09-16 wurde der Wert
@@ -29,7 +37,7 @@
   assign tp_rating_text = section.settings.rating_text | strip | default: tp_rating_standard | strip
 -%}
 
-<section class="tp-hero" aria-labelledby="tp-hero-h1">
+<section class="tp-hero{% if hero_kompakt %} tp-hero--kompakt{% endif %}" aria-labelledby="tp-hero-h1">
   <div class="tp-s-wrap tp-hero__wrap">
     <div class="tp-hero__copy">
       {%- if section.settings.eyebrow != blank -%}
@@ -66,6 +74,7 @@
         {%- endif -%}
       </div>
     </div>
+    {%- unless hero_kompakt -%}
     <div class="tp-hero__media">
       {%- if section.settings.bild != blank -%}
         {%- comment -%}
@@ -93,6 +102,7 @@
         <span class="tp-hero__cap">{{ section.settings.bild_caption | escape }}</span>
       {%- endif -%}
     </div>
+    {%- endunless -%}
   </div>
 </section>
 
@@ -134,6 +144,21 @@
     .tp-hero__meta { gap: 12px 16px; font-size: 14.5px; margin-top: 8px; }
   }
   @media (max-width: 389px) { .tp-hero__h1 { font-size: 24px; } .tp-hero__rating { width: 100%; } }
+
+  /* Kompakt: eine Spalte, Unterzeile + Textlink + Bewertung als eine Zeile. */
+  .tp-hero.tp-hero--kompakt .tp-hero__wrap { display: block; min-height: 0; padding-top: 28px; padding-bottom: 20px; }
+  .tp-hero--kompakt .tp-hero__copy { display: flex; flex-wrap: wrap; align-items: center; gap: 0 28px; }
+  .tp-hero--kompakt .tp-hero__eyebrow, .tp-hero--kompakt .tp-hero__h1 { flex: 1 1 100%; }
+  .tp-hero--kompakt .tp-hero__h1 { margin-bottom: 8px; }
+  .tp-hero--kompakt .tp-hero__sub { margin: 0; font-size: 17px; }
+  .tp-hero--kompakt .tp-hero__meta { margin-top: 0; }
+  @media (max-width: 767px) {
+    .tp-hero.tp-hero--kompakt .tp-hero__wrap { padding-top: 18px; padding-bottom: 12px; }
+    .tp-hero--kompakt .tp-hero__copy { column-gap: 18px; }
+    .tp-hero--kompakt .tp-hero__sub { flex: 1 1 100%; font-size: 16px; margin-bottom: 2px; }
+    .tp-hero--kompakt .tp-hero__ctas { flex: 0 1 auto; }
+    .tp-hero--kompakt .tp-hero__ctas .tp-s-btn { flex: 0 1 auto; }
+  }
 {% endstylesheet %}
 
 {% schema %}
@@ -141,6 +166,7 @@
   "name": "TP Start-Hero",
   "tag": "section",
   "settings": [
+    { "type": "select", "id": "layout", "label": "Aufbau", "options": [ { "value": "bild", "label": "Text und Bild" }, { "value": "kompakt", "label": "Kompakt ohne Bild" } ], "default": "bild", "info": "Kompakt: Kategorien mit grossen Bildern direkt darunter im ersten Bildschirm." },
     { "type": "text", "id": "eyebrow", "label": "Kleine Zeile darueber", "default": "Fachhandel in Oranienburg" },
     { "type": "richtext", "id": "headline", "label": "Ueberschrift (H1)", "info": "Hoechstens zwei Zeilen. Keine farbige Hervorhebung: Rot bleibt Preis, Rabatt und Hauptknopf vorbehalten.", "default": "<p>Teppichboden und Vinyl nach Maß, vom Fachgeschäft in Oranienburg.</p>" },
     { "type": "richtext", "id": "subline", "label": "Unterzeile", "default": "<p>Böden zugeschnitten, geliefert und auf Wunsch verlegt.</p>" },
