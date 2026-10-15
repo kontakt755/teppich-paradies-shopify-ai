@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-15T13:18:07Z",
-    "verifiedBy": "Shopify Admin API/Storefront role MAIN nach workflow:live von main 1200db33 (#1337 Bewertungshinweis § 5b UWG, enthaelt #1336 Boden-Finder); Preview-Gates COMPARE/SEO/FULL QA/SALES PASS, oeffentlicher Shop ohne Vorschau geprueft"
-  },
-  "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-15T13:18:07Z",
-    "verifiedBy": "role UNPUBLISHED nach workflow:live von main 1200db33; naechstes Preview-Ziel"
+    "verifiedAt": "2026-10-15T13:59:33Z",
+    "verifiedBy": "Shopify CLI theme list role live + Storefront Shopify.theme nach workflow:live von main 20654301 (#1342 Gestaltung: Schriftskala, Rot, Bildzuschnitte; #1345 Breadcrumb-JSON-LD); Preview-Gates COMPARE/SEO/FULL QA/SALES PASS, oeffentlicher Shop ohne Vorschau geprueft (Desktop 1440/Handy 390, Konsole, Breadcrumb, Galerie)"
+  },
+  "preview": {
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-10-15T13:59:33Z",
+    "verifiedBy": "role UNPUBLISHED nach workflow:live von main 20654301; naechstes Preview-Ziel"
   },
   "fallback": {
     "themeId": "206590509390",
