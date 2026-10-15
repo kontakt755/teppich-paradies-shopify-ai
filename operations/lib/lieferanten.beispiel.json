@@ -31,7 +31,8 @@
         "mail": "muster@lieferant-a.example",
         "telefon": "",
         "portalUrl": "",
-        "lieferung": "kunde"
+        "lieferung": "kunde",
+        "nachBezeichnung": false
       },
       "lieferzeitWerktage": 5,
       "mindestmenge": "Rollenware ab 1 lfm, Pakete nur ganz",

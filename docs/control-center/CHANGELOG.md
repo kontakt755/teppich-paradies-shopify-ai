@@ -2,6 +2,27 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-15 · Herstellermuster mit der Bezeichnung des Herstellers
+
+- **Geändert:** Inhaber: Muster einiger Markenhersteller (Teppichboden und Vinyl) sind beim Hersteller
+  kostenlos und werden getrennt dort bestellt. Deren Quellvarianten tragen bereits einen eigenen
+  Lieferanten, die Karten und „Muster bestellen“ gab es also schon – nur nannte die Mail unsere
+  eigene SKU als Artikelnummer, die der Hersteller nicht kennt. Neues Stammdatenfeld
+  `muster.nachBezeichnung`: dann steht in der Mustermail (an Kunden und an den Laden) die Bezeichnung des
+  Herstellers aus `einkauf.farbname` (Qualität plus Farbnummer, z. B. „Testquali 1Q00“), ohne Farbname weiter die
+  Artikelnummer. Eine Farbnummer, die schon in Bezeichnung oder Artikelnummer steckt, steht nicht doppelt
+  da (ganzes Wort bzw. gleiche Nummer – kein Teilstring). Kontakte und Musterweg stehen nur in der privaten
+  Stammdatendatei.
+- **Getestet:** `operations/tests/lieferanten.test.mjs`: Bezeichnung statt SKU (Kunde und Laden),
+  Rückfall auf die Artikelnummer, ohne Feld unverändert, Farbnummer „4“ bei „TEST4_004“ bleibt stehen.
+  Gegen die echten Bestelldaten (nur lesend): die beiden offenen Herstellermuster ergeben je eine Mail
+  mit hinterlegtem Empfänger, Kundennummer und der Bezeichnung bzw. echten Artikelnummer.
+- **Risiken/Annahmen:** `einkauf.farbname` ist bei Lieferant A und B ebenfalls gefüllt (Dekor- bzw.
+  Farbwörter) – deshalb nur per Feld je Lieferant, nicht für alle. Warenbestellungen nennen weiter die
+  Artikelnummer.
+- **Nächste Stufe:** Warenmail für dieselben Hersteller genauso umstellen, wenn der erste Direktbezug
+  ansteht.
+
 ## 2026-10-15 · Muster je Kunde mit einem Klick (#1322)
 
 - **Geändert:** Innendienst: „zu umständlich, jetzt für jeden Artikel einzeln“. Seit #1206 öffnete

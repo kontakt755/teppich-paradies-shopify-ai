@@ -348,7 +348,7 @@ function kettelJeGruppe(zeilen) {
 function musterQuelle(item, quellMap, zuordnung) {
   const id = numerischeId(item.einkauf?.quellvariante !== UNGEKLAERT ? item.einkauf?.quellvariante : item.eingaben?.quellvarianteId);
   const qv = id ? quellMap.get(id) : null;
-  if (!qv) return { id: UNGEKLAERT, quelle: null, lieferant: UNGEKLAERT, quellvariante: id, titel: null, produktHandle: null, farbnummer: UNGEKLAERT };
+  if (!qv) return { id: UNGEKLAERT, quelle: null, lieferant: UNGEKLAERT, quellvariante: id, titel: null, produktHandle: null, farbnummer: UNGEKLAERT, bezeichnung: null };
   const n = normalisiert({ variant: qv }).variant;
   const vm = metafeldMap(n.metafields);
   const pm = metafeldMap(n.product?.metafields);
@@ -362,7 +362,10 @@ function musterQuelle(item, quellMap, zuordnung) {
     sku: leer(n.sku) ? null : String(n.sku).trim(),
     produktHandle: leer(n.product?.handle) ? null : String(n.product.handle).trim(),
     // Farbnummer der Quellvariante: die Musterbestellung beim Lieferanten nennt Artikel UND Farbe.
-    farbnummer: leer(vm?.einkauf?.farbnummer) ? UNGEKLAERT : String(vm.einkauf.farbnummer).trim() };
+    farbnummer: leer(vm?.einkauf?.farbnummer) ? UNGEKLAERT : String(vm.einkauf.farbnummer).trim(),
+    // Bezeichnung des Herstellers (Qualitaet + Farbnummer, z. B. "Testquali 1Q00"). Wo es sie gibt, ist die
+    // Artikelnummer unsere eigene SKU - der Hersteller erkennt das Muster nur an seiner Bezeichnung.
+    bezeichnung: leer(vm?.einkauf?.farbname) ? null : String(vm.einkauf.farbname).trim() };
 }
 
 /**
