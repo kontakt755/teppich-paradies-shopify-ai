@@ -192,6 +192,41 @@
   text-align: center;
 }
 
+/* Deaktivierte Karten: schon im Warenkorb, Grenze erreicht oder Muster
+   gesperrt (Mustervariante nicht verfuegbar, Inhaber 16.10.2026). */
+.tp-sample__card[aria-disabled='true'],
+.tp-sample__card[aria-disabled='true'] .tp-sample__card-input {
+  cursor: not-allowed;
+}
+
+.tp-sample__card[data-sample-unavailable] {
+  background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.03);
+}
+
+.tp-sample__card[data-sample-unavailable] img {
+  opacity: 0.55;
+}
+
+/* Grau wie Kleinueberschriften, kein Rot: kein Fehler, nur ein Zustand. */
+.tp-sample__card-status {
+  font-size: var(--tp-fs-xs);
+  font-weight: 500;
+  line-height: 1.3;
+  text-align: center;
+  color: var(--tp-muted, #595959);
+}
+
+.tp-sample__keine {
+  margin: 0 0 20px;
+  padding: 16px;
+  border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.12);
+  border-radius: 8px;
+  background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.03);
+  font-size: var(--tp-fs-md);
+  line-height: 1.5;
+  color: var(--tp-muted, #595959);
+}
+
 .tp-sample__submit {
   width: 100%;
   min-height: 44px;
