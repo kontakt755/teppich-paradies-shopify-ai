@@ -570,7 +570,7 @@ function stammKontakte(dir) {
   return index;
 }
 
-export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus } = {}) {
+export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus, verbrauchSammeln = null } = {}) {
   let userCache = null;
   let labelCache = { at: 0, names: [] };
   // Prozesszustand des Knopfs "Jetzt aktualisieren" - genau ein Lauf gleichzeitig,
@@ -582,6 +582,25 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
   // Moment mit dem Lauf verworfen - die Oberflaeche meldete "abgeschlossen", auch
   // wenn der Lauf abgebrochen war.
   let letzterKnopfLauf = null;  // { seit, bis, fehler }
+
+  // Claude-Verbrauch (#671): veraltet die Datei, rechnet sie ein Kindprozess im
+  // Hintergrund neu (rund 10 s fuer eine Woche). Die Anfrage wartet nicht darauf,
+  // und es laeuft hoechstens ein Lauf gleichzeitig.
+  let verbrauchLauf = null;
+  function verbrauchErneuern(dir) {
+    if (verbrauchLauf) return true;
+    const sammeln = verbrauchSammeln || (process.env.TP_VERBRAUCH_AUTO === '0' ? null
+      : () => execFileP(process.execPath, [path.join(root, 'operations', 'scripts', 'claude-verbrauch.mjs')], {
+        cwd: root, timeout: 3 * 60_000, maxBuffer: 1024 * 1024, env: { ...process.env, TP_PRIVAT_DIR: dir },
+      }));
+    if (!sammeln) return false;
+    let lauf;
+    try { lauf = Promise.resolve(sammeln(dir)); } catch (e) { lauf = Promise.reject(e); }
+    verbrauchLauf = lauf
+      .catch(e => logFehler('verbrauch', `Sammeln abgebrochen: ${String(e?.stderr || e?.message || e).split('\n')[0].slice(0, 300)}`))
+      .finally(() => { verbrauchLauf = null; });
+    return true;
+  }
 
   // Tailscale: hoechstens einmal je Minute fragen, gleichzeitige Anfragen teilen sich die Antwort.
   let tailscaleStand = null;    // { at, wert }
@@ -2586,6 +2605,26 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const eintrag = findeEintrag(daten, id);
       if (!eintrag || !darfSehen(eintrag, benutzer)) return { verfuegbar: false, hinweis: 'Eintrag nicht gefunden oder nicht freigegeben.' };
       return { verfuegbar: true, eintrag, darfAendern: darfAendern(eintrag, benutzer) };
+    },
+
+    /**
+     * Claude-Verbrauch der letzten 7 Tage (operations/scripts/claude-verbrauch.mjs,
+     * #671): Sitzungen, Langsitzungen, Tokens je Modell, Klasse und Aufgabe - nur
+     * Zahlen und Titel aus den lokalen Sitzungsprotokollen. Ist die Datei aelter
+     * als 30 Minuten, wird sie im Hintergrund neu gerechnet; die Antwort kommt
+     * sofort mit dem vorhandenen Stand und `wirdErneuert`.
+     */
+    verbrauchClaude() {
+      const dir = privatDirPath || privatDir();
+      const file = path.join(dir, 'verbrauch', 'claude.json');
+      const daten = readJsonIfExists(file);
+      const stand = daten?.erzeugtAm ? Date.parse(daten.erzeugtAm) : NaN;
+      const veraltet = !Number.isFinite(stand) || now().getTime() - stand > 30 * 60_000;
+      const wirdErneuert = veraltet ? verbrauchErneuern(dir) : false;
+      if (!daten || daten.schema !== 1 || !daten.erzeugtAm) {
+        return { verfuegbar: false, wirdErneuert, befehl: 'npm run verbrauch:sammeln', fehler: leseFehler(file) };
+      }
+      return { verfuegbar: true, wirdErneuert, ...daten };
     },
 
     /**

@@ -57,7 +57,7 @@ const BREITEN = [[1440, 900, 'desktop'], [1024, 768, 'b1024'], [800, 1000, 'b800
 // Grosse Exporte, die das Dashboard nur liest: verlinken statt kopieren.
 const NUR_LESEN = ['einkauf-dryrun', 'einkauf-klaerung', 'lexikon', 'lieferanten', 'bildrechte'];
 // Klein oder beschreibbar: kopieren, damit Klicktests nie die echten Dateien treffen.
-const KOPIEREN = ['bestelluebersicht', 'kennzahlen', 'organisation', 'aktualisierung.json', 'sicherungsstand.json', 'auftragsstatus.json', 'auftragsverlauf.json', 'musterherkunft.json', 'musterlager.json',
+const KOPIEREN = ['verbrauch', 'bestelluebersicht', 'kennzahlen', 'organisation', 'aktualisierung.json', 'sicherungsstand.json', 'auftragsstatus.json', 'auftragsverlauf.json', 'musterherkunft.json', 'musterlager.json',
   // Kunden & Auftraege, Warenkoerbe, Shop-Wache, Bestand und Erfuellung: ohne diese Ordner
   // zeigte die Pruefung leere Ansichten und Klickstrecken liefen gegen nichts.
   'kunden', 'angebote', 'warenkoerbe', 'shopwache', 'bestand', 'erfuellung',
