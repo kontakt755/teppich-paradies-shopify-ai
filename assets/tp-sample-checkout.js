@@ -112,7 +112,9 @@
       var checkbox = card.querySelector('input[type="checkbox"]');
       var alreadyInCart = existingKeys.has(makeCardKey({ value: value }));
       var blockedByLimit = status.limitReached && !selected.has(value);
-      checkbox.disabled = alreadyInCart || blockedByLimit;
+      // Gesperrtes Muster (Mustervariante nicht verfuegbar): immer deaktiviert.
+      var unavailable = card.getAttribute('data-sample-unavailable') !== null;
+      checkbox.disabled = unavailable || alreadyInCart || blockedByLimit;
       if (checkbox.disabled) {
         card.setAttribute('aria-disabled', 'true');
       } else {
@@ -129,6 +131,11 @@
     var key = makeCardKey(color);
     var isSelected = selected.has(color.value);
     var checkbox = card.querySelector('input[type="checkbox"]');
+
+    if (!core.isSelectable(color)) {
+      checkbox.checked = false;
+      return;
+    }
 
     if (isSelected) {
       selected.delete(color.value);
@@ -158,12 +165,16 @@
 
     colors.forEach(function (color) {
       var key = makeCardKey(color);
-      var disabled = existingKeys.has(key);
+      // Gesperrte Farbe bleibt sichtbar, damit der Kunde sieht, dass es sie
+      // gibt - nur das Muster ist derzeit nicht lieferbar.
+      var unavailable = !core.isSelectable(color);
+      var disabled = unavailable || existingKeys.has(key);
 
       var card = document.createElement('label');
       card.className = 'tp-sample__card';
       card.setAttribute('data-sample-color', color.value);
       card.setAttribute('data-selected', 'false');
+      if (unavailable) card.setAttribute('data-sample-unavailable', '');
       if (disabled) card.setAttribute('aria-disabled', 'true');
 
       var checkbox = document.createElement('input');
@@ -191,6 +202,12 @@
       card.appendChild(checkbox);
       card.appendChild(image);
       card.appendChild(label);
+      if (unavailable) {
+        var status = document.createElement('span');
+        status.className = 'tp-sample__card-status';
+        status.textContent = 'Kein Muster verfügbar';
+        card.appendChild(status);
+      }
       card.appendChild(check);
       gridEl.appendChild(card);
     });
@@ -255,7 +272,7 @@
 
   function addSelection() {
     var chosenColors = colors.filter(function (color) {
-      return selected.has(color.value);
+      return selected.has(color.value) && core.isSelectable(color);
     });
 
     fetch('/cart/add.js', {
@@ -398,6 +415,20 @@
         productWrapEl.hidden = false;
 
         loadingEl.hidden = true;
+        // Alle Farben gesperrt: Hinweis statt Karten, kein Bestellknopf.
+        if (core.allSamplesUnavailable(colors)) {
+          var noneEl = root.querySelector('[data-sample-none]');
+          var introEl = root.querySelector('[data-sample-intro]');
+          if (introEl) introEl.hidden = true;
+          submitEl.hidden = true;
+          cartLinkEl.hidden = cartTotalCount === 0;
+          if (noneEl) {
+            noneEl.hidden = false;
+          } else {
+            showError('Für dieses Produkt sind derzeit keine Muster verfügbar.');
+          }
+          return;
+        }
         fieldsetEl.hidden = false;
         renderColors();
         vorauswahl(getParam('farbe'));

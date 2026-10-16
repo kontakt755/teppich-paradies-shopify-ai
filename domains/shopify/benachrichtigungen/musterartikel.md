@@ -53,6 +53,24 @@ Properties. Bestellbar bleibt es also immer — nur ohne eigene SKU.
 Das Sammelprodukt `kostenloses-muster` bleibt deshalb bestehen und darf nicht
 geloescht werden.
 
+### Gesperrte Muster (ab 2026-10-16)
+
+Liefert der Lieferant das Muster einer Farbe nicht mehr, bleibt die
+Mustervariante bestehen, ist aber **nicht verfuegbar** (Bestand 0, Richtlinie
+deny; gesetzt vom Control Center). Der Konfigurator unterscheidet je Farbe:
+
+| Mustervariante | Konfigurator | Warenkorb |
+|---|---|---|
+| vorhanden, verfuegbar | waehlbar | eigene Variante |
+| fehlt | waehlbar | Rueckfall `kostenloses-muster` |
+| vorhanden, nicht verfuegbar | sichtbar, deaktiviert, „Kein Muster verfügbar“ | nie, auch kein Rueckfall |
+
+Sind alle Farben gesperrt, steht statt der Karten „Für dieses Produkt sind
+derzeit keine Muster verfügbar.“ Der Muster-Knopf auf der Produktseite bleibt
+unveraendert. Code: `assignSampleVariants`, `isSelectable`,
+`allSamplesUnavailable` in `assets/tp-sample-checkout-core.js`. Tests:
+`qa/tests/muster-gesperrt.test.mjs`.
+
 ### Teppich nach Maß: Musterprodukt des Teppichbodens (ab 2026-10-10)
 
 Ein Teppich nach Maß wird aus einem Teppichboden zugeschnitten
