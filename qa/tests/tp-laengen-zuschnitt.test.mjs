@@ -252,3 +252,134 @@ test('JSON-LD und og:price: Meterpreis mit referenceQuantity 1 MTR', async () =>
   assert.equal(off.priceSpecification.referenceQuantity.unitCode, 'MTR');
   assert.match(lies('snippets/meta-tags.liquid'), /preis_pro_001_qm\.value == true or product\.metafields\.custom\.preis_pro_001_lfm\.value == true/);
 });
+
+// Laeufer nach Mass (seit 2026-10-16, domains/shopify/laeufer-nach-mass.md):
+// derselbe Block mit modus = laeufer. Statt Bohrung die Einfassung der beiden
+// Schnittkanten (Variante des Einfass-Produkts zur Breite) und je Laeufer die
+// Pauschale - beide als Servicezeilen derselben _Gruppe.
+const einfassProdukt = () => ({
+  handle: 'einfassung-laeufer-schnittkanten',
+  metafields: { service: { bandfarben: val({ Baumwollband: ['Mohn', 'Tanne'], Juteband: ['Natur'] }) } },
+  variants: [
+    { id: 801, option1: '65 cm', option2: 'Baumwollband', price: 1053, available: true },
+    { id: 802, option1: '90 cm', option2: 'Baumwollband', price: 1458, available: true },
+    { id: 803, option1: '65 cm', option2: 'Juteband', price: 1053, available: true },
+    { id: 804, option1: '90 cm', option2: 'Juteband', price: 1458, available: false },
+  ],
+});
+const pauschaleProdukt = (o = {}) => ({ selected_or_first_available_variant: { id: 901, price: o.price ?? 1499, available: o.available ?? true } });
+function laeufer(o = {}) {
+  const varianten = [
+    { ...variante({ id: 21, title: 'Natur / 65 cm / ohne Rücken', price: 39 }), options: ['Natur', '65 cm', 'ohne Rücken'] },
+    { ...variante({ id: 22, title: 'Natur / 90 cm / ohne Rücken', price: 35 }), options: ['Natur', '90 cm', 'ohne Rücken'] },
+  ];
+  const p = produkt({ varianten, bohrung: null, max: 2500, min: 50 });
+  p.title = 'Cocora Kokosläufer Fischgrat nach Maß';
+  p.options_with_values = [{ name: 'Farbe' }, { name: 'Breite' }, { name: 'Rücken' }];
+  return p;
+}
+const laeuferRendern = (p, s = {}) => engine.parseAndRender(blockOhneSchema, {
+  product: p,
+  block: { id: 'abc_1', shopify_attributes: '', settings: {
+    max_stueck: 20, messhilfe: '', preishinweis: 'Pauschale je Läufer.', modus: 'laeufer',
+    titel_masse: 'Länge und Anzahl', label_laenge: 'Länge des Läufers',
+    einfass_produkt: s.einfass === undefined ? einfassProdukt() : s.einfass,
+    pauschale_produkt: s.pauschale === undefined ? pauschaleProdukt() : s.pauschale,
+  } },
+  settings: { tp_versand_frei_ab: 150 }, pages: {}, routes: { cart_url: '/cart' },
+});
+
+test('Laeufer: Rechenkern rechnet Einfassung und Pauschale je Laeufer obendrauf', () => {
+  const r = L.rechnen({ laenge: '350', anzahl: '2', preisCent: 39, zusatzCent: 1053 + 1499, minCm: 50, maxCm: 2500, maxStueck: 20 });
+  assert.equal(r.menge, 700);
+  assert.equal(r.materialCent, 27300);
+  assert.equal(r.zusatzCent, 5104);
+  assert.equal(r.summeCent, 32404);
+  // Streichsumme nur auf das Material, Zusatz unveraendert
+  const a = L.rechnen({ laenge: '100', anzahl: '1', preisCent: 39, vergleichCent: 45, zusatzCent: 1499, minCm: 50, maxCm: 2500, maxStueck: 20 });
+  assert.equal(a.altSummeCent, 4500 + 1499);
+  // ohne Zusatz bleibt die Profil-Rechnung gleich
+  assert.equal(L.rechnen({ laenge: '95', anzahl: '10', preisCent: 26, minCm: 10, maxCm: 503, maxStueck: 50 }).summeCent, 24700);
+});
+
+test('Laeufer: Bandfarben je Ausfuehrung, leer ohne Angabe', () => {
+  const b = { Baumwollband: ['Mohn', '', 'Tanne'], Juteband: ['Natur'] };
+  assert.deepEqual(L.bandfarbenFuer(b, 'Baumwollband'), ['Mohn', 'Tanne']);
+  assert.deepEqual(L.bandfarbenFuer(b, 'Juteband'), ['Natur']);
+  assert.deepEqual(L.bandfarbenFuer(b, 'Gummi'), []);
+  assert.deepEqual(L.bandfarbenFuer(null, 'Juteband'), []);
+});
+
+test('Laeufer: Einfassungen nur zur Breite der Variante', () => {
+  const e = [{ id: 1, breite: '65 cm', art: 'A' }, { id: 2, breite: '90 cm', art: 'A' }, null];
+  assert.deepEqual(L.einfassungenFuer(e, '65 cm').map((x) => x.id), [1]);
+  assert.deepEqual(L.einfassungenFuer(e, '67 cm'), []);
+  assert.deepEqual(L.einfassungenFuer(e, null), []);
+});
+
+test('Laeufer: Warenkorbzeilen Laeufer + Einfassung + Pauschale in einer Gruppe', () => {
+  const erg = L.rechnen({ laenge: '350', anzahl: '2', preisCent: 39, zusatzCent: 2552, minCm: 50, maxCm: 2500, maxStueck: 20 });
+  const z = L.laeuferZeilen({
+    erg, varianteId: 21, variantenTitel: 'Natur / 65 cm / ohne Rücken', produkt: 'Cocora Kokosläufer',
+    einfassung: { id: 801, art: 'Baumwollband' }, bandfarbe: 'Mohn', pauschale: { id: 901 }, gruppe: 'Lx',
+  });
+  assert.deepEqual(z.map((x) => [x.id, x.quantity]), [[21, 700], [801, 2], [901, 2]]);
+  assert.deepEqual(z[0].properties, { 'Länge je Stück': '350 cm', 'Anzahl': '2 Stück', 'Gesamtlänge': '7,00 m', 'Einfassung': 'Baumwollband', 'Bandfarbe': 'Mohn', '_Gruppe': 'Lx' });
+  assert.equal(z[1].properties['Zu Teppich'], 'Cocora Kokosläufer');
+  assert.equal(z[1].properties.Einfassung, 'Baumwollband');
+  assert.equal(z[1].properties.Bandfarbe, 'Mohn');
+  assert.equal(z[2].properties['Zu Teppich'], 'Cocora Kokosläufer');
+  assert.equal(z[2].properties['Maße'], undefined, '"Maße" liest die Masspruefung als Flaeche');
+  assert.ok(z.every((x) => x.properties._Gruppe === 'Lx'));
+  const ohne = L.laeuferZeilen({ erg, varianteId: 21, produkt: 'X', einfassung: null, bandfarbe: 'Mohn', pauschale: { id: 901 }, gruppe: 'Ly' });
+  assert.deepEqual(ohne.map((x) => x.id), [21, 901]);
+  assert.equal(ohne[0].properties.Einfassung, 'ohne Einfassung');
+  assert.equal(ohne[0].properties.Bandfarbe, undefined, 'ohne Einfassung keine Bandfarbe');
+});
+
+test('Laeufer (JS-Spiegel): Servicezeilen haengen am Laeufer, ohne Laeufer verwaist', () => {
+  const haupt = { key: 'a', quantity: 700, preisPro001Lfm: true, properties: { 'Länge je Stück': '350 cm', 'Anzahl': '2 Stück', 'Einfassung': 'Baumwollband Mohn', _Gruppe: 'Lx' } };
+  const band = { key: 'b', quantity: 2, properties: { 'Zu Teppich': 'Cocora', 'Einfassung': 'Baumwollband Mohn', _Gruppe: 'Lx' } };
+  const pauschale = { key: 'c', quantity: 2, properties: { 'Zu Teppich': 'Cocora', 'Läufer': '2 × 350 cm', _Gruppe: 'Lx' } };
+  assert.deepEqual(G.waisen([haupt, band, pauschale]), []);
+  assert.equal(G.waisen([band, pauschale]).length, 2);
+});
+
+test('Laeufer: Block rendert ohne service.bohrung, mit Breite je Variante und Einfassungen', async () => {
+  const html = await laeuferRendern(laeufer());
+  const d = daten(html);
+  assert.equal(d.modus, 'laeufer');
+  assert.equal(d.produkt, 'Cocora Kokosläufer Fischgrat nach Maß');
+  assert.deepEqual(d.pauschale, { id: 901, price: 1499 });
+  assert.deepEqual(d.einfassungen.filter(Boolean).map((e) => [e.id, e.breite, e.art]),
+    [[801, '65 cm', 'Baumwollband'], [802, '90 cm', 'Baumwollband'], [803, '65 cm', 'Juteband']], 'nur kaufbare');
+  assert.deepEqual(d.bandfarben, { Baumwollband: ['Mohn', 'Tanne'], Juteband: ['Natur'] });
+  assert.match(html, /data-bandfarbe-feld hidden/);
+  assert.deepEqual(d.varianten.filter(Boolean).map((v) => v.breite), ['65 cm', '90 cm']);
+  assert.match(html, /data-einfassung/);
+  assert.match(html, /Einfassung der Schnittkanten/);
+  assert.match(html, /Länge des Läufers/);
+  assert.match(html, /cm je Läufer\./);
+  assert.doesNotMatch(html, /Bohrung/);
+});
+
+test('Laeufer: fail closed ohne Einfass- oder Pauschale-Produkt', async () => {
+  assert.equal((await laeuferRendern(laeufer(), { einfass: '' })).trim(), '');
+  assert.equal((await laeuferRendern(laeufer(), { pauschale: '' })).trim(), '');
+  assert.equal((await laeuferRendern(laeufer(), { pauschale: pauschaleProdukt({ available: false }) })).trim(), '');
+  assert.equal((await laeuferRendern(laeufer(), { pauschale: pauschaleProdukt({ price: 0 }) })).trim(), '');
+  // Profil-Modus ohne Bohrung bleibt leer wie bisher
+  assert.equal((await blockRendern(laeufer())).trim(), '');
+});
+
+test('Laeufer: Vorlage mit Einfass- und Pauschale-Produkt, Kaufknoepfe aus', () => {
+  const s = lies('templates/product.laeufer-nach-mass.json');
+  const d = JSON.parse(s.slice(s.indexOf('{')));
+  const pd = d.sections.main.blocks['product-details'];
+  const lz = Object.values(pd.blocks).find((b) => b.type === 'tp-laengen-zuschnitt');
+  assert.equal(lz.settings.modus, 'laeufer');
+  assert.equal(lz.settings.einfass_produkt, 'einfassung-laeufer-schnittkanten');
+  assert.equal(lz.settings.pauschale_produkt, 'wunschmass-pauschale');
+  const kauf = pd.block_order.find((k) => pd.blocks[k].type === 'buy-buttons');
+  assert.equal(pd.blocks[kauf].disabled, true);
+});

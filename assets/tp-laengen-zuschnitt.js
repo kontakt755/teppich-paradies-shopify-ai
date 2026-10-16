@@ -1,9 +1,15 @@
 /*
-  Laengen-Zuschnitt fuer Profile nach Mass (blocks/tp-laengen-zuschnitt.liquid).
+  Laengen-Zuschnitt fuer Profile und Laeufer nach Mass
+  (blocks/tp-laengen-zuschnitt.liquid).
 
   Abgerechnet wird wie beim Kettelservice: Variantenpreis je 0,01 laufendem
   Meter (1 cm), Menge = Laenge je Stueck x Stueckzahl in cm. Shopify rechnet
   Variantenpreis x Menge - der Preis hier ist nur die Vorschau davon.
+
+  Laeufer (Block-Einstellung modus = laeufer): je Laeufer kommen die Einfassung
+  der beiden Schnittkanten (Variante des Einfass-Produkts zur Breite des
+  Laeufers, Bandfarbe als Property) und die Pauschale als eigene Zeilen
+  derselben _Gruppe dazu.
 
   Der Rechenkern (TPLaengenZuschnitt.rechnen) ist rein und laeuft auch in den
   Tests (qa/tests/tp-laengen-zuschnitt.test.mjs); die Bedienung startet nur im
@@ -35,9 +41,11 @@
   }
 
   // Eingaben pruefen und rechnen. Gibt {ok, fehler, menge, summeCent,
-  // meterpreisCent, altSummeCent} zurueck; fehler ist leer, solange nur etwas fehlt.
+  // meterpreisCent, altSummeCent, materialCent, zusatzCent} zurueck; fehler ist
+  // leer, solange nur etwas fehlt. e.zusatzCent: Betrag je Stueck obendrauf
+  // (Laeufer: Einfassung + Pauschale), ohne Streichpreis.
   function rechnen(e) {
-    var erg = { ok: false, fehler: '', menge: 0, summeCent: 0, meterpreisCent: 0, altSummeCent: 0 };
+    var erg = { ok: false, fehler: '', menge: 0, summeCent: 0, meterpreisCent: 0, altSummeCent: 0, materialCent: 0, zusatzCent: 0 };
     var laenge = ganzzahl(e.laenge);
     var anzahl = ganzzahl(e.anzahl);
     var preis = Number(e.preisCent) || 0;
@@ -52,26 +60,66 @@
     erg.laenge = laenge;
     erg.anzahl = anzahl;
     erg.menge = laenge * anzahl;
-    erg.summeCent = preis * erg.menge;
+    erg.materialCent = preis * erg.menge;
+    erg.zusatzCent = (Number(e.zusatzCent) || 0) * anzahl;
+    erg.summeCent = erg.materialCent + erg.zusatzCent;
     erg.meterpreisCent = preis * 100;
     var alt = Number(e.vergleichCent) || 0;
-    if (alt > preis) erg.altSummeCent = alt * erg.menge;
+    if (alt > preis) erg.altSummeCent = alt * erg.menge + erg.zusatzCent;
     return erg;
   }
 
   // Properties der Warenkorbzeile - dieselben Namen liest
-  // snippets/tp-cart-gruppe.liquid ("Länge je Stück").
-  function eigenschaften(erg, bohrung, gruppe) {
-    return {
+  // snippets/tp-cart-gruppe.liquid ("Länge je Stück"). schluessel: "Bohrung"
+  // (Profile, Standard) oder "Einfassung" (Laeufer).
+  function eigenschaften(erg, ausfuehrung, gruppe, schluessel, bandfarbe) {
+    var p = {
       'Länge je Stück': erg.laenge + ' cm',
       'Anzahl': erg.anzahl + ' Stück',
-      'Gesamtlänge': meter(erg.menge) + ' m',
-      'Bohrung': bohrung,
-      '_Gruppe': gruppe
+      'Gesamtlänge': meter(erg.menge) + ' m'
     };
+    p[schluessel || 'Bohrung'] = ausfuehrung;
+    if (bandfarbe) p.Bandfarbe = bandfarbe;
+    p._Gruppe = gruppe;
+    return p;
   }
 
-  root.TPLaengenZuschnitt = { rechnen: rechnen, eigenschaften: eigenschaften, euro: euro, meter: meter };
+  // Bandfarben einer Ausfuehrung aus dem JSON des Einfass-Produkts
+  // ({"Baumwollband": ["Mohn", ...], "Juteband": ["Natur"]}); leer = ohne Farbe.
+  function bandfarbenFuer(bandfarben, art) {
+    var l = bandfarben && art ? bandfarben[art] : null;
+    return Array.isArray(l) ? l.filter(Boolean) : [];
+  }
+
+  // Einfassungen, die zur Breite des Laeufers passen ("65 cm" == "65 cm").
+  function einfassungenFuer(einfassungen, breite) {
+    if (!breite) return [];
+    return (einfassungen || []).filter(function (x) { return x && x.breite === breite; });
+  }
+
+  // Warenkorbzeilen eines Laeufers: Laeufer, Einfassung (fehlt bei "ohne"),
+  // Pauschale - je Laeufer eine Einheit, alle in derselben _Gruppe. Die
+  // Servicezeilen tragen "Zu Teppich" wie im Einfass-Konfigurator, damit
+  // Warenkorb, Einkauf und interne Mail sie dem Laeufer zuordnen. Bewusst kein
+  // "Maße" an der Pauschale: das liest die Masspruefung als Flaeche.
+  function laeuferZeilen(a) {
+    var band = a.einfassung ? a.bandfarbe || '' : '';
+    var p = eigenschaften(a.erg, a.einfassung ? a.einfassung.art : OHNE, a.gruppe, 'Einfassung', band);
+    var zeilen = [{ id: a.varianteId, quantity: a.erg.menge, properties: p }];
+    var bezug = { 'Zu Teppich': a.produkt, 'Ausführung': a.variantenTitel || '' };
+    if (a.einfassung) {
+      var ep = Object.assign({}, bezug, { 'Einfassung': a.einfassung.art });
+      if (band) ep.Bandfarbe = band;
+      ep._Gruppe = a.gruppe;
+      zeilen.push({ id: a.einfassung.id, quantity: a.erg.anzahl, properties: ep });
+    }
+    zeilen.push({ id: a.pauschale.id, quantity: a.erg.anzahl, properties: Object.assign({}, bezug, { 'Läufer': a.erg.anzahl + ' × ' + a.erg.laenge + ' cm', '_Gruppe': a.gruppe }) });
+    return zeilen;
+  }
+
+  var OHNE = 'ohne Einfassung';
+
+  root.TPLaengenZuschnitt = { rechnen: rechnen, eigenschaften: eigenschaften, einfassungenFuer: einfassungenFuer, bandfarbenFuer: bandfarbenFuer, laeuferZeilen: laeuferZeilen, euro: euro, meter: meter, OHNE: OHNE };
 
   if (typeof document === 'undefined') return;
 
@@ -98,6 +146,17 @@
     var inFlight = false;
     var stand = null;
 
+    // Laeufer: Einfassung je Breite (Auswahlliste) und Pauschale je Stueck.
+    var laeufer = d.modus === 'laeufer';
+    var auswahl = el.querySelector('[data-einfassung]');
+    var farbFeld = el.querySelector('[data-bandfarbe-feld]');
+    var farbAuswahl = el.querySelector('[data-bandfarbe]');
+    var ohneHinweis = el.querySelector('[data-ohne-hinweis]');
+    var artFarben = null;
+    var einfassungen = (d.einfassungen || []).filter(Boolean);
+    var pauschale = d.pauschale && d.pauschale.id && d.pauschale.price > 0 ? d.pauschale : null;
+    var breiteAngeboten = null;
+
     // Wie im Einfass-Konfigurator: Farbwahl meldet ihre Variante per
     // tp:farbe-wechsel, sonst gilt ?variant=. Eine fremde ID fuehrt zu keiner
     // Auswahl statt zu einer geratenen.
@@ -116,14 +175,88 @@
       return (d.bohrungen || [])[0] || '';
     }
 
+    // Auswahlliste der Einfassungen zur Breite der gewaehlten Variante neu
+    // aufbauen; eine gewaehlte Art bleibt erhalten, solange es sie gibt.
+    function einfassListe(v) {
+      var breite = v ? v.breite : null;
+      if (!auswahl || breite === breiteAngeboten) return;
+      breiteAngeboten = breite;
+      var vorher = auswahl.value;
+      var passend = einfassungenFuer(einfassungen, breite);
+      auswahl.textContent = '';
+      var leer = document.createElement('option');
+      leer.value = '';
+      leer.textContent = 'Bitte wählen';
+      auswahl.appendChild(leer);
+      passend.forEach(function (x) {
+        var o = document.createElement('option');
+        o.value = String(x.id);
+        o.textContent = x.art + ' (+ ' + euro(x.price) + ')';
+        auswahl.appendChild(o);
+      });
+      var ohne = document.createElement('option');
+      ohne.value = 'ohne';
+      ohne.textContent = OHNE + ' – Schnittkanten offen';
+      auswahl.appendChild(ohne);
+      var art = vorher && vorher !== 'ohne' ? (einfassungen.filter(function (x) { return String(x.id) === vorher; })[0] || {}).art : null;
+      var gleich = art ? passend.filter(function (x) { return x.art === art; })[0] : null;
+      auswahl.value = gleich ? String(gleich.id) : (vorher === 'ohne' ? 'ohne' : '');
+    }
+
+    // Bandfarben zur gewaehlten Ausfuehrung: eine Farbe ist fest, mehrere zur Wahl.
+    function farbListe(ef) {
+      var farben = ef ? bandfarbenFuer(d.bandfarben, ef.art) : [];
+      var schluessel = ef ? ef.art : null;
+      if (!farbAuswahl || schluessel === artFarben) return farben;
+      artFarben = schluessel;
+      var vorher = farbAuswahl.value;
+      farbAuswahl.textContent = '';
+      if (farben.length > 1) {
+        var leer = document.createElement('option');
+        leer.value = '';
+        leer.textContent = 'Bitte wählen';
+        farbAuswahl.appendChild(leer);
+      }
+      farben.forEach(function (f) {
+        var o = document.createElement('option');
+        o.value = f;
+        o.textContent = f;
+        farbAuswahl.appendChild(o);
+      });
+      farbAuswahl.value = farben.indexOf(vorher) >= 0 ? vorher : (farben.length === 1 ? farben[0] : '');
+      if (farbFeld) farbFeld.hidden = farben.length === 0;
+      return farben;
+    }
+
+    // null = noch nichts gewaehlt, false = ohne Einfassung, sonst die Variante.
+    function einfassung() {
+      if (!auswahl || !auswahl.value) return null;
+      if (auswahl.value === 'ohne') return false;
+      return einfassungen.filter(function (x) { return String(x.id) === auswahl.value; })[0] || null;
+    }
+
     function zeigen() {
       var v = aktuelleVariante();
       stand = null;
+      var ef = null;
+      var zusatz = 0;
+      var band = '';
+      var farbeFehlt = false;
+      if (laeufer) {
+        einfassListe(v);
+        ef = einfassung();
+        var farben = farbListe(ef);
+        band = farbAuswahl && farben.length ? farbAuswahl.value : '';
+        farbeFehlt = !!ef && farben.length > 0 && !band;
+        if (ohneHinweis) ohneHinweis.hidden = ef !== false;
+        zusatz = (ef ? ef.price : 0) + (pauschale ? pauschale.price : 0);
+      }
       var erg = rechnen({
         laenge: inLaenge.value,
         anzahl: inAnzahl.value,
-        preisCent: v && v.available ? v.price : 0,
+        preisCent: v && v.available && (!laeufer || pauschale) ? v.price : 0,
         vergleichCent: v ? v.compare_at_price : 0,
+        zusatzCent: zusatz,
         minCm: d.min_cm,
         maxCm: d.max_cm,
         maxStueck: d.max_stueck
@@ -135,24 +268,44 @@
         cta.disabled = true;
         return;
       }
-      stand = { erg: erg, variante: v };
+      stand = { erg: erg, variante: v, einfassung: ef, bandfarbe: band };
       summe.textContent = euro(erg.summeCent);
       summeAlt.textContent = erg.altSummeCent ? euro(erg.altSummeCent) : '';
       summeAlt.hidden = !erg.altSummeCent;
-      rechenzeile.textContent = erg.anzahl + ' × ' + erg.laenge + ' cm = ' + meter(erg.menge) + ' m × ' + euro(erg.meterpreisCent) + '/m';
+      var zeilen = [erg.anzahl + ' × ' + erg.laenge + ' cm = ' + meter(erg.menge) + ' m × ' + euro(erg.meterpreisCent) + '/m'];
+      if (laeufer) {
+        zeilen[0] += ' = ' + euro(erg.materialCent);
+        if (ef) zeilen.push('Einfassung ' + ef.art + (band ? ' ' + band : '') + ': ' + erg.anzahl + ' × ' + euro(ef.price) + ' = ' + euro(ef.price * erg.anzahl));
+        else if (ef === null) zeilen.push('Einfassung: bitte wählen');
+        zeilen.push('Pauschale je Läufer: ' + erg.anzahl + ' × ' + euro(pauschale.price) + ' = ' + euro(pauschale.price * erg.anzahl));
+      }
+      rechenzeile.textContent = zeilen.join('\n');
       rechnung.hidden = false;
       if (!inFlight) {
-        cta.disabled = false;
-        cta.textContent = 'In den Warenkorb';
+        cta.disabled = laeufer && (ef === null || farbeFehlt);
+        cta.textContent = !cta.disabled ? 'In den Warenkorb' : (ef === null ? 'Bitte Einfassung wählen' : 'Bitte Bandfarbe wählen');
       }
     }
 
     function hinzufuegen() {
       if (inFlight || !stand) return;
-      var b = bohrung();
-      if (!b) return;
       var gruppe = 'L' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-      var zeile = { id: stand.variante.id, quantity: stand.erg.menge, properties: eigenschaften(stand.erg, b, gruppe) };
+      var zeile;
+      if (laeufer) {
+        if (stand.einfassung === null || !pauschale || cta.disabled) return;
+        var zeilen = laeuferZeilen({
+          erg: stand.erg, varianteId: stand.variante.id, variantenTitel: stand.variante.titel,
+          produkt: d.produkt, einfassung: stand.einfassung || null, bandfarbe: stand.bandfarbe,
+          pauschale: pauschale, gruppe: gruppe
+        });
+        // Shopify zeigt die zuletzt angelegte Zeile oben: umgekehrt senden, damit
+        // der Laeufer vor Einfassung und Pauschale steht.
+        zeile = { items: zeilen.slice().reverse() };
+      } else {
+        var b = bohrung();
+        if (!b) return;
+        zeile = { id: stand.variante.id, quantity: stand.erg.menge, properties: eigenschaften(stand.erg, b, gruppe) };
+      }
       inFlight = true;
       cta.disabled = true;
       cta.textContent = 'Wird hinzugefügt …';
@@ -168,9 +321,10 @@
           cta.textContent = 'Im Warenkorb';
           cta.classList.add('is-done');
           warenkorb.hidden = false;
+          var stueck = zeile.items ? zeile.items.reduce(function (n, z) { return n + z.quantity; }, 0) : zeile.quantity;
           document.dispatchEvent(new CustomEvent('cart:update', {
             bubbles: true,
-            detail: { resource: item, sourceId: el.id, data: { itemCount: zeile.quantity, source: 'product-form-component' } }
+            detail: { resource: item, sourceId: el.id, data: { itemCount: stueck, source: 'product-form-component' } }
           }));
           var drawer = document.querySelector('cart-drawer-component');
           if (drawer && typeof drawer.open === 'function') drawer.open();

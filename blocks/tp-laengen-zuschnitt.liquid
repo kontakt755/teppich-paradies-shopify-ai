@@ -1,9 +1,17 @@
 {% doc %}
-  Laengen-Zuschnitt fuer Profile nach Mass (Treppenkanten). Der Kunde gibt die
-  Laenge je Stueck in cm, die Stueckzahl und die Bohrung an; abgerechnet wird
-  wie beim Kettelservice: Variantenpreis je 0,01 laufendem Meter (1 cm),
-  Menge = Laenge je Stueck x Stueckzahl in cm. Rechenkern und Bedienung:
-  assets/tp-laengen-zuschnitt.js.
+  Laengen-Zuschnitt fuer Profile nach Mass (Treppenkanten) und Laeufer nach
+  Mass. Der Kunde gibt die Laenge je Stueck in cm, die Stueckzahl und die
+  Bohrung bzw. Einfassung an; abgerechnet wird wie beim Kettelservice:
+  Variantenpreis je 0,01 laufendem Meter (1 cm), Menge = Laenge je Stueck x
+  Stueckzahl in cm. Rechenkern und Bedienung: assets/tp-laengen-zuschnitt.js.
+
+  Laeufer (Einstellung modus = laeufer, domains/shopify/laeufer-nach-mass.md):
+  statt service.bohrung gibt es die Einfassung der beiden Schnittkanten - die
+  Varianten des Einfass-Produkts (Option 1 Breite wie die Option "Breite" des
+  Laeufers, Option 2 Ausfuehrung; Bandfarben je Ausfuehrung im JSON-Metafeld
+  service.bandfarben des Einfass-Produkts) - und je Laeufer die Pauschale.
+  Fehlt eines der beiden Produkte oder ist es nicht kaufbar, rendert der Block
+  nichts.
 
   Fail closed - der Block rendert nichts, sobald eine Angabe fehlt:
     custom.preis_pro_001_lfm  true (Variantenpreis gilt je 0,01 lfm)
@@ -27,8 +35,28 @@
   assign tp_lz_bohrungen = product.metafields.service.bohrung.value
   assign tp_lz_max_stueck = block.settings.max_stueck | default: 50 | times: 1
 
+  # Laeufer: Einfassung und Pauschale aus zwei Service-Produkten statt Bohrung.
+  assign tp_lz_laeufer = false
+  assign tp_lz_ausf_ok = false
+  if block.settings.modus == 'laeufer'
+    assign tp_lz_laeufer = true
+    assign tp_lz_pv = block.settings.pauschale_produkt.selected_or_first_available_variant
+    if block.settings.einfass_produkt != blank and tp_lz_pv.available and tp_lz_pv.price > 0
+      assign tp_lz_ausf_ok = true
+    endif
+  elsif tp_lz_bohrungen.size > 0
+    assign tp_lz_ausf_ok = true
+  endif
+  # Breite des Laeufers = Wert der Option "Breite" (zum Abgleich mit der Einfassung).
+  assign tp_lz_bi = -1
+  for tp_lz_o in product.options_with_values
+    if tp_lz_o.name == 'Breite'
+      assign tp_lz_bi = forloop.index0
+    endif
+  endfor
+
   assign tp_lz_ok = false
-  if product.metafields.custom.preis_pro_001_lfm.value == true and tp_lz_max > tp_lz_min and tp_lz_bohrungen.size > 0
+  if product.metafields.custom.preis_pro_001_lfm.value == true and tp_lz_max > tp_lz_min and tp_lz_ausf_ok
     for tp_lz_v in product.variants
       if tp_lz_v.price > 0
         assign tp_lz_ok = true
@@ -47,10 +75,10 @@
 {%- if tp_lz_ok -%}
   <div class="tp-ek tp-lz" id="tp-lz-{{ tp_lz_id }}" data-tp-lz {{ block.shopify_attributes }}>
     <div class="tp-ek__schritt" data-schritt="mass">
-      {% render 'tp-step-heading', number: 2, label: 'Länge und Stückzahl' %}
+      {% render 'tp-step-heading', number: 2, label: block.settings.titel_masse %}
       <div class="tp-ek__masse">
         <label class="tp-ek__mass">
-          <span class="tp-ek__mass-label">Länge je Stück</span>
+          <span class="tp-ek__mass-label">{{ block.settings.label_laenge | escape }}</span>
           <span class="tp-ek__eingabe">
             <input type="number" inputmode="numeric" min="{{ tp_lz_min }}" max="{{ tp_lz_max }}" step="1" placeholder="100" data-laenge>
             <span>cm</span>
@@ -65,11 +93,25 @@
           </span>
         </label>
       </div>
-      <p class="tp-ek__grenzen">Zentimetergenau von {{ tp_lz_min }} bis {{ tp_lz_max }} cm je Stück.{% if block.settings.messhilfe != blank %} {{ block.settings.messhilfe | escape }}{% endif %}</p>
+      <p class="tp-ek__grenzen">Zentimetergenau von {{ tp_lz_min }} bis {{ tp_lz_max }} cm je {% if tp_lz_laeufer %}Läufer{% else %}Stück{% endif %}.{% if block.settings.messhilfe != blank %} {{ block.settings.messhilfe | escape }}{% endif %}</p>
       <p class="tp-ek__fehler" role="alert" data-fehler hidden></p>
     </div>
 
-    {%- if tp_lz_bohrungen.size > 1 -%}
+    {%- if tp_lz_laeufer -%}
+      <div class="tp-ek__schritt" data-schritt="einfassung">
+        {% render 'tp-step-heading', number: 3, label: 'Einfassung der Schnittkanten' %}
+        <label class="tp-ek__mass tp-lz__einfassung">
+          <span class="tp-ek__mass-label">Band an beiden Enden</span>
+          <select data-einfassung><option value="">Bitte wählen</option></select>
+        </label>
+        <label class="tp-ek__mass tp-lz__einfassung" data-bandfarbe-feld hidden>
+          <span class="tp-ek__mass-label">Bandfarbe</span>
+          <select data-bandfarbe></select>
+        </label>
+        {%- if block.settings.einfass_hinweis != blank -%}<p class="tp-ek__grenzen">{{ block.settings.einfass_hinweis | escape }}</p>{%- endif -%}
+        <p class="tp-ek__grenzen" data-ohne-hinweis hidden>Ohne Einfassung bleiben die Schnittkanten offen und fransen aus – nur wählen, wenn Sie selbst einfassen.</p>
+      </div>
+    {%- elsif tp_lz_bohrungen.size > 1 -%}
       <div class="tp-ek__schritt" data-schritt="bohrung">
         {% render 'tp-step-heading', number: 3, label: 'Bohrung' %}
         <div class="tp-ek__formen" role="radiogroup" aria-label="Bohrung">
@@ -110,6 +152,20 @@
         "max_cm": {{ tp_lz_max | json }},
         "max_stueck": {{ tp_lz_max_stueck | json }},
         "bohrungen": {{ tp_lz_bohrungen | json }},
+        "modus": {% if tp_lz_laeufer %}"laeufer"{% else %}"profil"{% endif %},
+        "produkt": {{ product.title | json }},
+        {%- if tp_lz_laeufer %}
+        "pauschale": { "id": {{ tp_lz_pv.id | json }}, "price": {{ tp_lz_pv.price | json }} },
+        "bandfarben": {{ block.settings.einfass_produkt.metafields.service.bandfarben.value | json }},
+        "einfassungen": [
+          {%- for tp_lz_e in block.settings.einfass_produkt.variants -%}
+            {%- if tp_lz_e.available and tp_lz_e.price > 0 -%}
+              { "id": {{ tp_lz_e.id | json }}, "price": {{ tp_lz_e.price | json }}, "breite": {{ tp_lz_e.option1 | json }}, "art": {{ tp_lz_e.option2 | json }} },
+            {%- endif -%}
+          {%- endfor -%}
+          null
+        ],
+        {%- endif %}
         "selected_id": {{ product.selected_or_first_available_variant.id | json }},
         "varianten": [
           {%- for tp_lz_v in product.variants -%}
@@ -119,6 +175,7 @@
                 "price": {{ tp_lz_v.price | json }},
                 "compare_at_price": {% if tp_lz_aktion == 'ja' and tp_lz_v.compare_at_price > tp_lz_v.price %}{{ tp_lz_v.compare_at_price | json }}{% else %}null{% endif %},
                 "available": {{ tp_lz_v.available | json }},
+                "breite": {% if tp_lz_bi >= 0 %}{{ tp_lz_v.options[tp_lz_bi] | json }}{% else %}null{% endif %},
                 "titel": {{ tp_lz_v.title | json }}
               },
             {%- endif -%}
@@ -135,7 +192,9 @@
 {% stylesheet %}
   .tp-lz .tp-ek__formen { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
   .tp-lz .tp-ek__form-karte svg circle { fill: currentColor; stroke: none; }
-  .tp-lz .tp-ek__rechenzeile { margin: 6px 0 0; font-size: var(--tp-fs-sm); color: var(--tp-ek-muted); }
+  .tp-lz .tp-ek__rechenzeile { margin: 6px 0 0; font-size: var(--tp-fs-sm); color: var(--tp-ek-muted); white-space: pre-line; }
+  .tp-lz__einfassung { display: flex; flex-direction: column; gap: 6px; max-width: 420px; }
+  .tp-lz__einfassung select { min-height: 44px; padding: 0 12px; border: 1px solid var(--tp-ek-border, #d8d6d2); border-radius: 8px; background: #fff; font: inherit; font-size: var(--tp-fs-base); }
 {% endstylesheet %}
 
 {% schema %}
@@ -145,7 +204,45 @@
   "settings": [
     {
       "type": "paragraph",
-      "content": "Rendert nur bei vollstaendigen Metafeldern: custom.preis_pro_001_lfm = true (Variantenpreis je 0,01 lfm), service.max_laenge_cm und service.bohrung (Liste, z. B. gebohrt, ungebohrt)."
+      "content": "Rendert nur bei vollstaendigen Metafeldern: custom.preis_pro_001_lfm = true (Variantenpreis je 0,01 lfm), service.max_laenge_cm und service.bohrung (Liste, z. B. gebohrt, ungebohrt). Laeufer: statt service.bohrung das Einfass- und das Pauschale-Produkt."
+    },
+    {
+      "type": "select",
+      "id": "modus",
+      "label": "Art",
+      "options": [
+        { "value": "profil", "label": "Profil (Bohrung)" },
+        { "value": "laeufer", "label": "Läufer (Einfassung + Pauschale)" }
+      ],
+      "default": "profil"
+    },
+    {
+      "type": "product",
+      "id": "einfass_produkt",
+      "label": "Läufer: Einfass-Produkt",
+      "info": "Varianten: Option 1 = Breite wie am Läufer (z. B. 65 cm), Option 2 = Ausführung, Bandfarben je Ausführung im JSON-Metafeld service.bandfarben. Eine Einheit je Läufer."
+    },
+    {
+      "type": "product",
+      "id": "pauschale_produkt",
+      "label": "Läufer: Pauschale je Läufer"
+    },
+    {
+      "type": "text",
+      "id": "einfass_hinweis",
+      "label": "Läufer: Hinweis unter der Einfassung"
+    },
+    {
+      "type": "text",
+      "id": "titel_masse",
+      "label": "Überschrift der Maßeingabe",
+      "default": "Länge und Stückzahl"
+    },
+    {
+      "type": "text",
+      "id": "label_laenge",
+      "label": "Bezeichnung des Längenfelds",
+      "default": "Länge je Stück"
     },
     {
       "type": "range",
