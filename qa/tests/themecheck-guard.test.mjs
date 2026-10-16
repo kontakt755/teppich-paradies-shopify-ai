@@ -43,6 +43,39 @@ test('bekannte Warnungen bleiben still, auch wenn sich die Zeile verschiebt', ()
   assert.deepEqual(result.blocking, []);
 });
 
+// Die Baseline kennt drei gleiche HardcodedRoutes in vinylboden-verlegen.
+// Frueher lief der Vergleich ueber ein Set ohne Position: ein viertes
+// gleiches Vorkommen fiel mit den dreien zusammen und blieb still.
+const ohneEinfass = () => readJson('theme-check.json').filter(file => !file.path.endsWith('tp-einfass-konfigurator.liquid'));
+const vinylFile = files => files.find(file => file.path.endsWith('sections/vinylboden-verlegen.liquid'));
+
+test('ein viertes gleiches Vorkommen in derselben Datei ist neu', () => {
+  const files = ohneEinfass();
+  const vinyl = vinylFile(files);
+  assert.equal(vinyl.offenses.filter(x => x.check === 'HardcodedRoutes').length, 3);
+  vinyl.offenses.push({ ...vinyl.offenses[0], start_row: 230 });
+  const result = evaluateGuard(findingsFromFiles(themeRoot, files), ca52Baseline());
+  assert.equal(result.exitCode, 1);
+  assert.deepEqual(result.blocking.map(x => [x.file, x.check, x.line]), [['sections/vinylboden-verlegen.liquid', 'HardcodedRoutes', 231]]);
+  assert.match(result.lines[0], /^NEU warning sections\/vinylboden-verlegen\.liquid:231 HardcodedRoutes – .*\(gleicher Befund jetzt 4-mal in der Datei, Baseline kennt 3\)$/);
+});
+
+test('gezaehlt wird auch, wenn sich alle Zeilen verschieben', () => {
+  const files = ohneEinfass();
+  const vinyl = vinylFile(files);
+  vinyl.offenses.unshift({ ...vinyl.offenses[0], start_row: 120 });
+  for (const offense of vinyl.offenses) offense.start_row += 7;
+  const result = evaluateGuard(findingsFromFiles(themeRoot, files), ca52Baseline());
+  assert.equal(result.exitCode, 1);
+  assert.deepEqual(result.blocking.map(x => [x.file, x.check]), [['sections/vinylboden-verlegen.liquid', 'HardcodedRoutes']]);
+});
+
+test('weniger gleiche Vorkommen als in der Baseline bleiben still', () => {
+  const files = ohneEinfass();
+  vinylFile(files).offenses.pop();
+  assert.equal(evaluateGuard(findingsFromFiles(themeRoot, files), ca52Baseline()).exitCode, 0);
+});
+
 test('mehr Einstellungen als in der Baseline ist ein neuer Befund', () => {
   const files = [{
     path: '/theme/blocks/tp-kachel-raster.liquid',

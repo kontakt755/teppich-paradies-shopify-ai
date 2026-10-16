@@ -10,6 +10,8 @@ import { parseJsonProcessOutput, runProcess, shopifyInvocations } from './proces
  * Neu ist jeder Befund, dessen Fingerabdruck ohne Zeile/Spalte nicht in
  * qa/theme-check-baseline.json steht. Die Meldung gehoert zum Abdruck: steigt
  * z. B. ExcessiveSettingsCount von 44 auf 45, ist das ein neuer Befund.
+ * Gleiche Abdruecke werden gezaehlt: Kennt die Baseline drei gleiche
+ * HardcodedRoutes in einer Datei, ist die vierte neu.
  * Vorfall 15.10.2026: Der Guard pruefte nur Fehler, FULL_QA brach an zwei
  * neuen Warnungen ab und main war bis zum Folge-PR blockiert.
  */
@@ -73,9 +75,39 @@ export function writeBaseline(baselinePath, findings, generatedAt = new Date()) 
   }, null, 2) + '\n');
 }
 
+function countBy(values) {
+  const counts = new Map();
+  for (const value of values) counts.set(value, (counts.get(value) || 0) + 1);
+  return counts;
+}
+
+function take(counts, key) {
+  const left = counts.get(key) || 0;
+  if (left) counts.set(key, left - 1);
+  return left > 0;
+}
+
+// Die Baseline ist eine Multimenge: jeder Eintrag deckt genau einen Befund.
+// Zuerst gleiche Position paaren, damit bei unverschobenen Zeilen genau das
+// hinzugekommene Vorkommen gemeldet wird, danach den Rest ohne Position.
 export function newFindings(findings, baseline) {
-  const known = new Set((baseline.fingerprints || []).map(stableFingerprint));
-  return findings.filter(x => !known.has(stableFingerprint(x.fingerprint)));
+  const fingerprints = baseline.fingerprints || [];
+  const exact = countBy(fingerprints);
+  const stable = countBy(fingerprints.map(stableFingerprint));
+  const paired = new Set(findings.filter(x => take(exact, x.fingerprint)));
+  for (const x of paired) take(stable, stableFingerprint(x.fingerprint));
+  return findings.filter(x => !paired.has(x) && !take(stable, stableFingerprint(x.fingerprint)));
+}
+
+// Fuer die Meldung: Wie oft steht ein neuer Befund schon in der Baseline,
+// wie oft kommt er jetzt vor? Sonst sieht ein gezaehltes Vorkommen aus wie
+// eine bekannte Warnung.
+function repeatNote(x, findings, baseline) {
+  const key = stableFingerprint(x.fingerprint);
+  const known = (baseline.fingerprints || []).filter(value => stableFingerprint(value) === key).length;
+  if (!known) return '';
+  const now = findings.filter(y => stableFingerprint(y.fingerprint) === key).length;
+  return ` (gleicher Befund jetzt ${now}-mal in der Datei, Baseline kennt ${known})`;
 }
 
 // Guard vor dem Commit: blockiert, was die Deploy-Kette spaeter abbricht -
@@ -84,14 +116,15 @@ export function newFindings(findings, baseline) {
 export function evaluateGuard(findings, baseline) {
   const fresh = new Set(newFindings(findings, baseline));
   const blocking = findings.filter(x => x.severity === 'error' || fresh.has(x));
-  const lines = blocking.map(x => `${fresh.has(x) ? 'NEU' : 'FEHLER'} ${x.severity} ${x.file}:${x.line} ${x.check} – ${x.message}`);
+  const lines = blocking.map(x => `${fresh.has(x) ? 'NEU' : 'FEHLER'} ${x.severity} ${x.file}:${x.line} ${x.check} – ${x.message}`
+    + (fresh.has(x) ? repeatNote(x, findings, baseline) : ''));
   const current = summarizeFindings(findings);
   const freshCount = summarizeFindings([...fresh]);
   lines.push(`Theme-Check-Guard: ${current.errors} Fehler, ${freshCount.warnings} neue Warnungen `
     + `(Baseline ${baseline.errors ?? 0} Fehler / ${baseline.warnings ?? 0} Warnungen, aktuell ${current.errors} / ${current.warnings}).`);
   if (blocking.length) {
     lines.push('An diesen Befunden bricht die Deploy-Kette ab (FULL_QA in workflow preview bzw. theme push --strict). '
-      + 'Beheben; bleibt eine Warnung bewusst, die Baseline mit "npm run qa -- --update-baseline" neu schreiben und mitcommitten.');
+      + 'Beheben; bleibt eine Warnung bewusst, die Baseline mit "npm run themecheck:guard -- --update-baseline" neu schreiben und mitcommitten.');
   }
   return { newFindings: [...fresh], blocking, lines, exitCode: blocking.length ? 1 : 0 };
 }
