@@ -101,6 +101,11 @@ export function viewHeute() {
   return `<div class="heute">
     ${kopf(todos.length + muster.offen.length, sicht)}
     ${todoListe(todos, muster.offen.length)}
+    <nav class="arbeitsplatz-schnellstart" aria-label="Arbeitsplatz: Aufgabe vorbereiten">
+      <a class="btn btn-sm" href="#/prozesse?prozess=email">E-Mail vorbereiten</a>
+      <a class="btn btn-sm" href="#/prozesse?prozess=angebot">Angebot vorbereiten</a>
+      <a class="btn btn-sm" href="#/prozesse?prozess=recherche">Recherche starten</a>
+    </nav>
     ${istInhaber() && sicht !== 'laden' ? sprungfelder(mitMusterImLaden(zaehleTodos(q, opt), musterAlle.offen.length), sicht) : ''}
     ${datenstandZeile(sicht)}
     ${musterNachfassenBlock(muster)}

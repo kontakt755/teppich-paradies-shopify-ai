@@ -57,6 +57,10 @@ function paletteItems(q) {
   }
   const views = [['heute', 'Heute'], ['einkauf', 'Einkauf'], ['kunden', 'Kunden'], ['lexikon', 'Lexikon'], ['arbeit', 'Entwicklung (GitHub)'], ['freigaben', 'Freigaben'], ['bereiche', 'Bereiche'], ['insights', 'Insights'], ['aktivitaet', 'Aktivität'], ['ratgeber', 'Ratgeber'], ['organisation', 'Aufgaben & Organisation'], ['shopwache', 'Shop-Wache'], ['bildrechte', 'Bildrechte (Herkunft, Bildgröße, ALT-Text)'], ['hilfe', 'Hilfe: So arbeitest du damit']];
   for (const [k, l] of views) if (darfAnsicht(k)) items.push({ kind: 'Ansicht', label: l, run: () => navigate(k) });
+  items.push({ kind: 'Ansicht', label: 'Arbeitsplatz: E-Mail, Angebot oder Recherche vorbereiten', run: () => navigate('prozesse') });
+  for (const [prozess, label] of [['email', 'E-Mail vorbereiten'], ['angebot', 'Angebot vorbereiten'], ['recherche', 'Recherche starten']]) {
+    items.push({ kind: 'Arbeitsplatz', label, run: () => navigate('prozesse', { prozess }) });
+  }
   items.push({ kind: 'Ansicht', label: 'Fotos vom fertigen Raum', run: () => navigate('fotos') });
   if (darfAnsicht('team')) items.push({ kind: 'Ansicht', label: 'Team: Zugänge verwalten', run: () => navigate('team') });
   if (darfAnsicht('arbeit')) {

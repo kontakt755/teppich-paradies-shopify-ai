@@ -45,10 +45,11 @@ import { viewBereiche } from './ansichten/bereiche.mjs';
 import { viewInsights } from './ansichten/insights.mjs';
 import { ladeAktivitaetsdaten, viewAktivitaet } from './ansichten/aktivitaet.mjs';
 import { viewHeute } from './ansichten/heute.mjs';
+import { viewProzesse } from './ansichten/prozesse.mjs';
 import { bindEvents } from './ereignisse.mjs';
 import { pruefeAntworten } from './bausteine/fehler-melden.mjs';
 
-const VIEWS = { heute: viewHeute, fotos: viewFotos, sonderposten: viewSonderposten, bildrechte: viewBildrechte, social: viewSocial, team: viewTeam, hilfe: viewHilfe, organisation: viewOrganisation, shopwache: viewShopwache, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
+const VIEWS = { heute: viewHeute, prozesse: viewProzesse, fotos: viewFotos, sonderposten: viewSonderposten, bildrechte: viewBildrechte, social: viewSocial, team: viewTeam, hilfe: viewHilfe, organisation: viewOrganisation, shopwache: viewShopwache, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
 
 async function init() {
   registriereAnsichten(VIEWS);

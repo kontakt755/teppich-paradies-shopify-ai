@@ -2,6 +2,31 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-16 · Arbeitsplatz als Prozesszentrale (#1390)
+
+- **Geändert:** Neuer Arbeitsplatz fuer E-Mail, Angebotsvorbereitung und Recherche, erreichbar
+  aus „Heute“, Seitenleiste und Befehlspalette. Angaben ergeben eine pruefbare Arbeitsanweisung;
+  getrennte Knoepfe kopieren den Text und oeffnen die passende App bzw. ein hinterlegtes Projekt.
+  App-/Projektziele werden ausschliesslich privat in `prozesslinks.json` gespeichert, geprueft und
+  mitgesichert. Kein Hintergrundlauf, keine neuen API-Schluessel, kein automatischer Versand.
+  Lokale Eingaben werden bei Ansichtswechsel, Abmelden, `pagehide` und einer erhaltenen 401
+  verworfen. Ein Datenabgleich erhaelt Fokus und Textauswahl. Details: Architektur „Arbeitsplatz“.
+- **Getestet:** `npm test` 2.850/2.850, gemeinsame Linkvalidierung (auch native App-Ziele),
+  Schreibrechte/Herkunft, atomare Ablage und beschaedigte Datei. Browserpruefung gegen Datenkopie:
+  60 helle und 45 dunkle Ansichts-/Rollen-/Breitenkombinationen (360–1440 px), keine JS-Fehler,
+  kein seitlicher Ueberlauf. Klickstrecke: Text kopiert, Ziel ohne Kontext, Konfiguration gespeichert,
+  ungueltiges Ziel abgewiesen, Heute-Einstieg, Fokus/Auswahl nach Datenabgleich, Kontext nach
+  Ansichtswechsel/`pagehide`/echter 401 leer. Screenshots Desktop und Handy gelesen.
+- **Risiken/Annahmen:** Allgemeine App-Ziele waehlen noch kein Cloud-Projekt. Die konkreten
+  Projektadressen muessen im privaten Einrichtungsbereich hinterlegt werden; sie werden nicht aus
+  internen Kennungen geraten. Native Ordnerlinks beziehen sich auf das oeffnende Geraet; der
+  App-Start selbst wurde nicht automatisiert ausgeloest. Der Lexware-Skill muss im Zielprojekt
+  tatsaechlich vorhanden sein; das Dashboard prueft oder installiert ihn nicht. Bei einer parallel
+  belasteten Wiederholung scheiterte einmal der bestehende 500-ms-Aktualisierungstest; die
+  vollstaendige Testsuite war gruen, die Dashboard-Suite wurde anschliessend separat geprueft.
+- **Nächste Stufe:** Gewuenschte Cloud-Projekte gemeinsam zuordnen und den E-Mail-Ablauf mit dem
+  Team erproben; erst danach echte KI-Hintergrundausfuehrung separat planen.
+
 ## 2026-10-16 · „Muster nicht verfügbar – Kunde informiert“ schließt ab und sperrt die Farbe im Shop (#1385)
 
 - **Geändert:** Inhaber 16.10.: Im Dialog „Etwas anderes ist passiert …“ gibt es direkt nach „Ergebnis:

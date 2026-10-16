@@ -331,7 +331,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
   // Bestelltabelle, Lexikon samt Mengenhilfe und die neuen Datenarten
   // (Kunden, Angebote, Warenkoerbe, Bestand, Erfuellung) - fehlt einer,
   // antwortet der Server 404.
-  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|einkauf\/musterlager|einkauf\/musterlager-farben|einkauf\/mustersperre|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/serviceanfragen|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|verbrauch\/claude|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/muster-texte|kunden\/bestellung-fertig|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|sonderposten\/liste|sonderposten\/verkauft|bildrechte\/liste|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|prozesse\/links|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|einkauf\/musterlager|einkauf\/musterlager-farben|einkauf\/mustersperre|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/serviceanfragen|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|verbrauch\/claude|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/muster-texte|kunden\/bestellung-fertig|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|sonderposten\/liste|sonderposten\/verkauft|bildrechte\/liste|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { apiFehler(req, res, pathname, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
   // Host-Pruefung fuer JEDEN Aufruf, nicht nur fuer schreibende: sonst kann
@@ -341,8 +341,20 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     apiFehler(req, res, pathname, 403, { error: 'Dafür fehlt dir die Berechtigung – das macht der Inhaber.' });
     return;
   }
-  const write = simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'einkauf/musterlager' && req.method === 'POST') || (simple === 'einkauf/mustersperre' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || (simple === 'kunden/serviceanfragen' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || simple === 'kunden/fall-marke' || ['org/neu', 'org/aendern', 'org/kommentar', 'org/pruefen', 'org/analyse', 'org/liste-einfuegen', 'org/anhang', 'fotos/neu', 'social/link-neu', 'social/sperren', 'sonderposten/verkauft', 'fehler/melden'].includes(simple) || ['transition', 'assign', 'comment'].includes(taskOp);
+  const write = (simple === 'prozesse/links' && req.method === 'POST') || simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'einkauf/musterlager' && req.method === 'POST') || (simple === 'einkauf/mustersperre' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || (simple === 'kunden/serviceanfragen' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || simple === 'kunden/fall-marke' || ['org/neu', 'org/aendern', 'org/kommentar', 'org/pruefen', 'org/analyse', 'org/liste-einfuegen', 'org/anhang', 'fotos/neu', 'social/link-neu', 'social/sperren', 'sonderposten/verkauft', 'fehler/melden'].includes(simple) || ['transition', 'assign', 'comment'].includes(taskOp);
   try {
+    // Lesen darf jeder. Einrichtungsziele aendern ausschliesslich der Inhaber
+    // oder der bestehende Einzelpasswort-Zugang; kein neues Benutzerkonto noetig.
+    if (simple === 'prozesse/links' && req.method === 'POST') {
+      if (benutzer && benutzer.rolle !== 'inhaber') {
+        throw new ApiError(403, 'Prozessverknüpfungen kann nur der Inhaber ändern.');
+      }
+      // Auch ein anderer freigegebener LAN-Ursprung ist nicht diese Seite.
+      const origin = req.headers.origin;
+      if (origin && new URL(origin).host.toLowerCase() !== String(req.headers.host).toLowerCase()) {
+        throw new ApiError(403, 'Nur von derselben Dashboard-Adresse erlaubt.');
+      }
+    }
     if (write) {
       if (req.method !== 'POST') { apiFehler(req, res, pathname, 405, { error: 'POST erwartet' }); return; }
       // Rolle "lesen" darf serverseitig nichts veraendern - unabhaengig davon, ob das
@@ -362,7 +374,9 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     } else if (req.method !== 'GET') { apiFehler(req, res, pathname, 405, { error: 'GET erwartet' }); return; }
     let result;
     const url = new URL(req.url, `http://${req.headers.host || HOST}`);
-    if (simple === 'capabilities') result = await api.capabilities();
+    if (simple === 'prozesse/links' && req.method === 'GET') result = api.prozessLinks({ benutzer });
+    else if (simple === 'prozesse/links' && req.method === 'POST') result = api.prozessLinksSetzen(await readJson(req), { benutzer });
+    else if (simple === 'capabilities') result = await api.capabilities();
     else if (simple === 'sync') result = await api.sync();
     else if (simple === 'activity') result = await api.activity();
     else if (simple === 'agent-runs') result = api.agentRuns();
