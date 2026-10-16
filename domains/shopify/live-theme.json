@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-16T10:09:30Z",
-    "verifiedBy": "Shopify Admin API themes(roles: MAIN) um 10:09 UTC nach workflow:live von main 8f164a93 (#1386 Musterkonfigurator: gesperrte Farben als kein Muster verfuegbar); Preview-Gates COMPARE/SEO/FULL QA/SALES PASS (SALES im ersten Lauf externe Stoerung, Wiederholung PASS), P0/P1 0, updatedAt 2026-10-16T10:08:11Z"
-  },
-  "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-16T10:09:30Z",
-    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live von main 8f164a93; naechstes Preview-Ziel"
+    "verifiedAt": "2026-10-16T11:09:30Z",
+    "verifiedBy": "Shopify Admin API themes(roles: MAIN) um 11:09 UTC nach workflow:live von main 62e6d04c (#1389, #1394, #1396 Boden-Finder: Stufenbetraege bei Paket- und Rollenvinyl, Mindestlaenge bei Naht); Preview-Gates COMPARE/SEO/FULL QA/SALES PASS, P0/P1 0, updatedAt 2026-10-16T11:07:05Z"
+  },
+  "preview": {
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-10-16T11:09:30Z",
+    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live von main 62e6d04c; naechstes Preview-Ziel"
   },
   "fallback": {
     "themeId": "206590509390",
