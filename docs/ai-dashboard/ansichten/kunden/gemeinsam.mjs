@@ -8,6 +8,7 @@ export const kunden = {
   suche: null, loadingSuche: false, sucheKey: null,
   detail: null, loadingDetail: false, detailKey: null,
   rueckrufe: null, loadingRueckrufe: false,
+  serviceanfragen: null, loadingServiceanfragen: false,
   bestellungen: null, loadingBestellungen: false,
   angebote: null, loadingAngebote: false,
   faelle: null, loadingFaelle: false,

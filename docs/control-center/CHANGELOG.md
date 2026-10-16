@@ -2,6 +2,28 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-16 · Service-Anfragen unter „Kunden“ (#1361, Werkbank w-030)
+
+- **Geändert:** Inhaber 15.10.: Service-Anfragen (Verlegeservice, Treppe, Aufmaß) im Control Center
+  führen. Neuer Reiter „Service-Anfragen“ unter Kunden: Liste mit Datum, Kontakt, Leistung, Quelle,
+  Status (neu → kontaktiert → Termin → Angebot → gewonnen/verloren), Notiz und nächstem Schritt;
+  Standardfilter „Offen“, Zähler am Reiter = neue Anfragen. Oben die Auswertung der letzten 8 Wochen
+  je Woche und je Quelle. Erfassen von Hand; eine Shopify-Formular-Mail lässt sich einfügen und füllt
+  die Felder. Ablage `serviceanfragen.json` im Privatordner, gesichert von `daten:sichern`.
+  Details: `ARCHITEKTUR.md` Abschnitt 20.
+- **Getestet:** `tests/serviceanfragen.test.mjs` (Mail lesen inkl. Musteranfrage, Leistung aus
+  Betreff/Anliegen, Feldprüfung, KW/Wochenbeginn, Auswertung, Server mit Rollen „lesen“ 403 /
+  „mitarbeiter“ 200), `operations/tests/serviceanfragen.test.mjs` (Nummern, Mail nur einmal, Verlauf,
+  beschädigte Datei). `dashboard:pruefen` für Kunden/Service/Rückrufe: nur OK, 0 px Überlauf bei
+  360–1440 px. Klickstrecke gegen die Kopie mit erfundenen Daten: Mail einfügen → Felder gefüllt →
+  angelegt (Liste 3 → 4) → Status geändert, keine JS-Fehler, 390 px ohne Überlauf.
+- **Risiken/Annahmen:** Der Leser kennt den Mailaufbau von Shopify vom 29.09.–09.10.2026; ändert
+  Shopify ihn, bleibt die Handeingabe. Hinweise unten (Toasts) liegen kurz über dem Dialog-Knopf –
+  wie überall im Dashboard.
+- **Nächste Stufe:** Formular-Mails automatisch übernehmen (geplanter Lauf liest das Postfach und
+  legt per `mailId` an) und Kampagnenangabe (UTM/gclid) als verstecktes Feld ins Anfrageformular –
+  beides wartet auf die Entscheidung in Werkbank w-030.
+
 ## 2026-10-15 · Herstellerware mit der Bezeichnung des Herstellers
 
 - **Geändert:** Nächste Stufe aus dem Eintrag darunter. Warenbestellungen an die Markenhersteller

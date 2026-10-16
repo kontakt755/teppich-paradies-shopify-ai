@@ -10,6 +10,7 @@ import { viewKundenSuche, viewKundenDetail } from './kunden/akte.mjs';
 import { viewKundenBestellungen } from './kunden/bestellungen.mjs';
 import { viewKundenAngebote, viewKundenWarenkoerbe } from './kunden/angebote.mjs';
 import { fallMarkeSetzen, viewKundenFaelle } from './kunden/faelle.mjs';
+import { ensureServiceanfragen, serviceKlick, serviceNeuAnzahl, viewKundenServiceanfragen } from './kunden/serviceanfragen.mjs';
 
 export function viewKunden() {
   if (state.capabilities.mode !== 'local') {
@@ -25,19 +26,22 @@ export function viewKunden() {
   const tabRaw = state.route.params.get('tab');
   // Standard ist die Arbeitsansicht: wer wartet auf was. Einen Kunden am
   // Telefon findet man ueber die Schnellsuche oder den Reiter "Suche".
-  const tab = ['bestellungen', 'rueckrufe', 'angebote', 'warenkoerbe', 'suche'].includes(tabRaw) ? tabRaw : 'zutun';
+  const tab = ['bestellungen', 'rueckrufe', 'service', 'angebote', 'warenkoerbe', 'suche'].includes(tabRaw) ? tabRaw : 'zutun';
   ensureKundenRueckrufe();
+  ensureServiceanfragen();
   const head = `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kunden am Telefon schnell finden, alle Bestellungen im Überblick – und wer zurückgerufen werden möchte.</p></div></div>
     <div class="tabs no-print" role="tablist">
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'zutun'}" data-param="tab" data-value="">Zu tun${f_badge()}</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'suche'}" data-param="tab" data-value="suche">Suche</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'bestellungen'}" data-param="tab" data-value="bestellungen">Bestellungen</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'rueckrufe'}" data-param="tab" data-value="rueckrufe">Rückrufe &amp; Beratungen${r_badge()}</button>
+      <button type="button" class="tab" role="tab" aria-selected="${tab === 'service'}" data-param="tab" data-value="service">Service-Anfragen${s_badge()}</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'angebote'}" data-param="tab" data-value="angebote">Angebote</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'warenkoerbe'}" data-param="tab" data-value="warenkoerbe">Liegengeblieben</button>
     </div>`;
   const body = tab === 'bestellungen' ? viewKundenBestellungen()
     : tab === 'rueckrufe' ? viewKundenRueckrufe()
+    : tab === 'service' ? viewKundenServiceanfragen()
     : tab === 'angebote' ? viewKundenAngebote()
     : tab === 'warenkoerbe' ? viewKundenWarenkoerbe()
     : tab === 'suche' ? viewKundenSuche()
@@ -58,6 +62,11 @@ function r_badge() {
   return n ? ` <span class="badge gap">${n}</span>` : '';
 }
 
+function s_badge() {
+  const n = serviceNeuAnzahl();
+  return n ? ` <span class="badge gap">${n}</span>` : '';
+}
+
 /** Kunden: Akte oeffnen/schliessen, Fall markieren, Rueckruf-Dialog. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function kundenKlickAkte(e) {
   const kundenOpen = e.target.closest('[data-kunden-open]');
@@ -66,6 +75,7 @@ export function kundenKlickAkte(e) {
   if (kundenZurueck) { e.preventDefault(); location.hash = `#/kunden${state.route.params.get('kq') ? `?${new URLSearchParams({ kq: state.route.params.get('kq') })}` : ''}`; return true; }
   const fallMarke = e.target.closest('[data-fall-marke]');
   if (fallMarke) { e.preventDefault(); fallMarkeSetzen(fallMarke.dataset.fallMarke, fallMarke.dataset.grund); return true; }
+  if (serviceKlick(e)) return true;
   const rueckrufBtn = e.target.closest('[data-rueckruf-open]');
   if (rueckrufBtn) { e.preventDefault(); openRueckrufDialog(rueckrufBtn.dataset.rueckrufOpen, rueckrufBtn.dataset.rueckrufStatus); return true; }
   return false;
