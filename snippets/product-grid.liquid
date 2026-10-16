@@ -109,19 +109,22 @@
       TP: Reste-Kollektion ohne ein einziges Stueck (nicht nur weggefiltert):
       Platzhalter "demnaechst" statt "Keine Produkte gefunden" (Inhaber 14.10.,
       der Menuepunkt ist schon sichtbar, Stuecke folgen spaeter).
+      Seit 15.10. steht darunter die Section "TP Laden & Reste" (Sprungmarke
+      #reste-regal); der Text verweist deshalb aufs Reste-Regal im Laden, und
+      die Ueberschrift ist klein (h4-Optik), damit der Ladenteil auf dem Handy
+      nicht erst nach einer bildschirmhohen Ankuendigung beginnt.
     {%- endcomment -%}
     {% if products.size == 0
       and collection.template_suffix == 'sonderposten'
       and collection.all_products_count == 0
     %}
       <div class="main-collection-grid__empty">
-        <h2 class="main-collection-grid__empty-title h2">Demnächst: Reste und Sonderposten zu günstigen Preisen</h2>
+        <h2 class="main-collection-grid__empty-title h4">Demnächst: Reste und Sonderposten zu günstigen Preisen</h2>
         <p>
-          Hier finden Sie bald Reststücke und Sonderposten aus unserem Lager – Einzelstücke zum
-          kleinen Preis. Bis dahin lohnt sich ein Blick in die
-          <a href="{{ routes.collections_url }}/angebote" class="main-collection-grid__empty-link">aktuellen Angebote</a>,
-          oder <a href="/pages/kontakt" class="main-collection-grid__empty-link">fragen Sie uns</a>
-          nach Resten im Laden in Oranienburg.
+          Einzelne Reststücke stehen bald hier zum Bestellen. Bis dahin finden Sie Reste und
+          Sonderposten im <a href="#reste-regal" class="main-collection-grid__empty-link">Reste-Regal in unserem Laden</a>
+          in Oranienburg – und online die
+          <a href="{{ routes.collections_url }}/angebote" class="main-collection-grid__empty-link">aktuellen Angebote</a>.
         </p>
       </div>
     {% elsif products.size == 0 %}
