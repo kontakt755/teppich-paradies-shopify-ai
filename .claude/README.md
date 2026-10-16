@@ -18,6 +18,9 @@
 | `skills/lieferant-a-recherche/SKILL.md` | Artikel- und Farbnummern bei Lieferant A belegt klären |
 | `skills/shopify-massendaten/SKILL.md` | viele Metafelder/Tags auf einmal schreiben, mit Plan und Rollback |
 | `skills/raumbilder-recherche/SKILL.md` | Produkte ohne Raumbild: Hersteller hinter dem Lieferantenprodukt finden, farbgenaue Raumbilder aus erlaubten Quellen suchen |
+| `skills/theme-regeln/SKILL.md` | aus `AGENTS.md` ausgelagert (2026-10-16): Fallstricke 1–3, Shopify Theme, Produktkarten, UX/Design, Bilder, Tests, Schrift und Rot |
+| `skills/preislogik/SKILL.md` | aus `AGENTS.md` ausgelagert (2026-10-16): Aktionen/Streichpreise Teppichboden, Fussleiste, Paketprodukte, Vinyl-Preisfilter |
+| `skills/werkzeuge/SKILL.md` | aus `AGENTS.md` ausgelagert (2026-10-16): Werkzeugtabelle aller `npm run`-Befehle |
 | `skills/theme-audit/` | nur lesendes Theme-Audit mit Pruefliste; uebernommen aus zwei MIT-Skills (Quellen in `QUELLEN.md`), Bericht nach `docs/audits/` |
 | `hooks/pre-commit-unmerged-branch.sh`, `hooks/SETUP.md` | Git-Pre-Commit-Hook gegen Commits auf alten, nie gemergten Branches (warnt ab 7, blockiert ab 30 Tagen; AGENTS.md Fallstrick 6). Vergleicht seit 16.10. mit `origin/main` statt dem lokalen `main`. Wirkt nur, wenn er je Rechner installiert ist (`hooks/SETUP.md`; auf dem Mac seit 16.10.) |
 | `agents/control-center.md` | Dashboard-Mitarbeiter (Subagent), arbeitet nach dem Skill oben |

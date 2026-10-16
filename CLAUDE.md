@@ -31,6 +31,9 @@ oben eingebunden. Hier steht nur, was Claude Code zusaetzlich betrifft.
 | `lieferant-a-recherche` | Artikel- und Farbnummern bei Lieferant A belegt klaeren |
 | `shopify-massendaten` | viele Metafelder/Tags auf einmal, mit Plan und Rollback |
 | `raumbilder-recherche` | Produkte ohne Raumbild: Hersteller hinter dem Lieferantenprodukt finden, farbgenaue Raumbilder aus erlaubten Quellen suchen |
+| `theme-regeln` | vor jeder Theme-Aenderung: Bloecke/Schemata, fertige Funktionen, Menue, Produktkarten, UX/Design, Bilder, Schrift/Rot, Testumfang |
+| `preislogik` | Preise, Streich-/Vergleichspreise, Aktionen, Fussleiste, Paketprodukte (€/m²), Vinyl-Preisfilter |
+| `werkzeuge` | alle `npm run`-Guards, Doctors und Pruefungen mit Zweck und Zeitpunkt |
 | `theme-audit` | nur lesendes Audit (Performance, SEO, JSON-LD, KI-Abrufbarkeit, App-Last) ergaenzend zu den Guards; Bericht nach `docs/audits/` |
 
 ## Review

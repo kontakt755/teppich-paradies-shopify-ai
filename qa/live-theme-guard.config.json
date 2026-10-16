@@ -12,7 +12,10 @@
     ".claude/skills/produktimport/SKILL.md",
     ".claude/skills/produktimport/shopify-daten.md",
     ".claude/skills/theme-audit/SKILL.md",
-    ".claude/skills/theme-audit/pruefliste.md"
+    ".claude/skills/theme-audit/pruefliste.md",
+    ".claude/skills/theme-regeln/SKILL.md",
+    ".claude/skills/preislogik/SKILL.md",
+    ".claude/skills/werkzeuge/SKILL.md"
   ],
   "registry": "domains/shopify/live-theme.json",
   "riskMap": "domains/shopify/risk-map.json"
