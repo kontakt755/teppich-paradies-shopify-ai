@@ -134,6 +134,7 @@ MASS – NICHT ZUSCHNEIDEN"**. Die Bestellung wird nicht blockiert.
 | Teppich Wunschmaß (Teppich-Vorlage) | **echte** Fläche in 0,01 m² – Rechteck/Quadrat exakt, rund und oval über π/4 (355/452); Formzuschlag darf die Menge erhöhen | `Breite`+`Länge`, `Durchmesser` oder `Seitenlänge`, dazu `Form` |
 | Kettelservice | Umfang in 0,01 m (Rechteck exakt, rund über 355/113, oval nach Ramanujan mit ganzzahliger Wurzel, 3 cm Spiel) | `Maße` der **Hauptzeile** derselben `_Gruppe` |
 | Fußleiste | Länge in m | `Länge` |
+| Profile nach Maß (`custom.preis_pro_001_lfm`) | **genau** Länge je Stück × Anzahl in 0,01 m (cm); zu viel ist ebenfalls ein Alarm, weil dann offen ist, was zugeschnitten wird. Ohne `Länge je Stück`: „Maßangabe fehlt“. Die Zeile zeigt „Zuschnitt: N × L cm“ und „Bohrung“ | `Länge je Stück`, `Anzahl` – den Zweig wählt das Metafeld, nicht die Properties |
 | Haftunterlage, Stückware, Muster | keine Prüfung – die Menge *ist* die Bestellung | – |
 
 Drei Regeln, die nicht aufgeweicht werden dürfen:
@@ -148,7 +149,7 @@ Drei Regeln, die nicht aufgeweicht werden dürfen:
    in Ordnung.
 
 Nicht lesbare Maße, ein Kettelservice ohne seinen Teppich und ein Produkt mit
-`preis_pro_001_qm` **ganz ohne Maßangabe** lösen ebenfalls den Alarm aus –
+`preis_pro_001_qm` oder `preis_pro_001_lfm` **ganz ohne Maßangabe** lösen ebenfalls den Alarm aus –
 wer alle Properties entfernt, entkommt der Prüfung so nicht.
 
 **Grenzen:** Das hilft nur, solange jemand die Mail liest, bevor Ware bestellt
