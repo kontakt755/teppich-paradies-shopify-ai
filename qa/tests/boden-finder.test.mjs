@@ -345,7 +345,103 @@ test('ca.-Betrag der Preisstufe liegt nie unter einem Paketvorschlag der Stufe',
 
 test('Preisstufen im Finder: Paketware ueber stufenMaximum, Teppichboden wie bisher', () => {
   const js = lesen('assets/tp-boden-finder.js');
-  assert.match(js, /paket \? stufenMaximum\(liste, stufe, flaeche, qm\) : stufenBetrag\(stufe, qm\)/);
+  assert.match(js, /paket \? stufenMaximum\(liste, stufe, flaeche, qm, raum\) : stufenBetrag\(stufe, qm\)/);
+  assert.match(js, /var raum = this\.raum\(\);\s+this\.qa\('\.tp-bf-preis'\)/);
+});
+
+// Rollenware wie aus ?view=boden-finder-preise: [..., [[Breite, Cent]], Mindestlaenge cm, je 0,01 m²].
+// Daneben das Produkt, wie es die Treffer-Ansicht fuer die Karte liefert.
+const rollen = [
+  // Nur 2 m breit, Mindestlaenge 8 m (homogener PVC-Boden, live 16.10.).
+  { roh: ['pvc-2m', 4749, 0, 4749, 0, [['200cm', 4749]], 800, 0], karte: produkt([['200cm', 4749]], { min_cm: 800 }) },
+  // 2 m und 4 m, ohne Mindestlaenge.
+  { roh: ['rolle-2-4', 1999, 0, 1999, 0, [['200 cm', 1999], ['400 cm', 1999]], 0, 0], karte: produkt([['200 cm', 1999], ['400 cm', 1999]]) },
+  // 5-m-Rolle teurer als die 4-m-Rolle.
+  { roh: ['rolle-4-5', 1799, 0, 1799, 0, [['400 cm', 1799], ['500 cm', 2299]], 0, 0], karte: produkt([['400 cm', 1799], ['500 cm', 2299]]) },
+  // Nur 4 m.
+  { roh: ['rolle-4', 3290, 0, 3290, 0, [['400 cm', 3290]], 0, 0], karte: produkt([['400 cm', 3290]]) },
+  // Preis je 0,01 m² (cm-genau abgerechnet).
+  { roh: ['rolle-cm', 2500, 0, 25, 0, [['400 cm', 25]], 0, 1], karte: produkt([['400 cm', 25]], { cm_exact: true }) }
+];
+
+test('Preisliste: Rollenware bringt Breiten, Preise und Mindestlaenge fuer raumKandidaten mit', () => {
+  const liste = L.preisEintraege(rollen.map((r) => r.roh).concat([
+    ['klick', 2490, 1.77, 4407, 0],
+    ['rolle-alt', 1799, 0, 1799, 0],
+    ['rolle-wunsch', 3000, 0, 3000, 0, [['Wunschmaß', 4000], ['500cm', 3000]], 0, 0],
+    ['ohne-breite', 3000, 0, 3000, 0, [['Wunschmaß', 4000]], 0, 0]
+  ]));
+  assert.equal(liste[0].rolle.min_cm, 800);
+  assert.equal(liste[0].rolle.cm_exact, false);
+  assert.deepEqual(liste[0].rolle.variants, [{ options: ['200cm'], price: 4749, available: true }]);
+  assert.equal(liste[4].rolle.cm_exact, true);
+  // Paketware und alte Eintraege ohne Rollendaten: kein Rollenprodukt.
+  assert.equal(liste[5].rolle, null);
+  assert.equal(liste[6].rolle, null);
+  // Wunschmass faellt heraus; ohne Rollenbreite bleibt nichts.
+  assert.deepEqual(liste[7].rolle.options[0].values, ['500cm']);
+  assert.equal(liste[8].rolle, null);
+  // Je Eintrag derselbe Raumpreis wie unter der Karte.
+  rollen.forEach((r, i) => {
+    assert.equal(L.raumAngebot(liste[i].rolle, 400, 300).betrag, L.raumAngebot(r.karte, 400, 300).betrag, r.roh[0]);
+  });
+});
+
+test('ca.-Betrag der Preisstufe bei Rollenware: guenstigster Weg je Rolle, auch Bahnen mit Naht', () => {
+  const liste = L.preisEintraege(rollen.map((r) => r.roh));
+  const raum = { laenge: 400, breite: 300 };
+  const qmRolle = L.rollenFlaeche(400, 300);
+  // Live 16.10., 4 x 3 m bis 60 EUR/m²: bisher Preis je m² x 12 m² = ca. 570 EUR,
+  // die 2-m-Rolle kostet aber 2 Bahnen mit Naht x 2 m x 8 m = 32 m² = 1.519,68 EUR.
+  const naht = L.raumAngebot(liste[0].rolle, 400, 300);
+  assert.equal(naht.naht, true);
+  assert.equal(naht.qm, 32);
+  assert.equal(L.stufenMaximum(liste, 60, 12, qmRolle), 570);
+  assert.equal(L.stufenMaximum(liste, 60, 12, qmRolle, raum), 1520);
+  // Bis 35 EUR/m²: 4-m-Rolle zu 32,90 x 12 m² = 394,80 EUR.
+  assert.equal(L.stufenMaximum(liste, 35, 12, qmRolle, raum), 400);
+  // 3,5 x 4,5 m: rollenFlaeche rechnet mit der 5-m-Rolle (17,5 m²), die Rollen
+  // ohne 5 m brauchen 4 x 4,5 = 18 m².
+  assert.equal(L.rollenFlaeche(350, 450), 17.5);
+  assert.equal(L.stufenMaximum(liste, 20, 15.75, 17.5, { laenge: 350, breite: 450 }), 360);
+  // 7 x 5 m: nur die 5-m-Rolle passt quer, und die kostet 22,99 statt 17,99.
+  assert.equal(L.stufenMaximum(liste.slice(2, 3), 20, 35, L.rollenFlaeche(700, 500), { laenge: 700, breite: 500 }), 810);
+  // Nur Flaeche ohne Laenge und Breite: Preis je m² x Flaeche wie unter der Karte.
+  assert.equal(L.stufenMaximum(liste, 35, 12, 12, null), 400);
+});
+
+test('ca.-Betrag der Preisstufe liegt nie unter einem Rollen- oder Paketvorschlag der Stufe', () => {
+  const liste = L.preisEintraege(rollen.map((r) => r.roh).concat([
+    ['klebe-a', 3199, 4.87, 15579, 0],
+    ['klick-b', 2490, 1.77, 4407, 0],
+    ['klick-teuer', 5299, 1.988, 10534, 0]
+  ]));
+  const karten = rollen.map((r) => r.karte);
+  for (const stufe of [20, 25, 35, 45, 60]) {
+    for (let a = 100; a <= 1000; a += 70) {
+      for (let b = 100; b <= 800; b += 90) {
+        const flaeche = (a * b) / 10000;
+        const betrag = L.stufenMaximum(liste, stufe, flaeche, L.rollenFlaeche(a, b), { laenge: a, breite: b });
+        const drin = L.imBudget(liste, stufe);
+        const preise = drin.filter((e) => e.paket > 0)
+          .map((e) => L.paketAngebot(paket(e.paket, Math.round(e.preis * 100)), flaeche).betrag)
+          .concat(drin.filter((e) => e.rolle).map((e) => L.raumAngebot(karten[e.pos], a, b).betrag));
+        preise.forEach((p) => assert.ok(betrag >= p, `bis ${stufe} €/m², ${a} x ${b} cm: ${betrag} < ${p}`));
+        // Hoechstens bis zur naechsten vollen 10 EUR darueber.
+        if (preise.length) assert.ok(betrag < Math.max(...preise) + 10, `bis ${stufe} €/m², ${a} x ${b} cm: ${betrag}`);
+      }
+    }
+  }
+});
+
+test('Preis-Ansicht liefert Rollenbreiten und Mindestlaenge wie die Treffer-Ansicht', () => {
+  const daten = lesen('sections/tp-boden-finder-daten.liquid');
+  const preise = daten.slice(daten.indexOf('"preise": ['), daten.indexOf('{%- endpaginate -%}'));
+  // Breitenoption nur bei Rollenware, Paare ohne Doppelte, Mindestlaenge wie in der Treffer-Ansicht.
+  assert.match(preise, /if bf_qm == 0\s+for bf_opt in product\.options_with_values/);
+  assert.match(preise, /unless bf_rolle contains bf_paar/);
+  assert.match(preise, /mindestlaenge_lfm\.value \| times: 100 \| round/);
+  assert.match(preise, /\[\{\{ bf_rolle \}\}\], \{\{ bf_min_cm \| json \}\}, \{% if product\.metafields\.custom\.preis_pro_001_qm\.value == true %\}1/);
 });
 
 test('Kartenseite der Treffer-Ansicht aus der Stelle in der Kollektion', () => {
