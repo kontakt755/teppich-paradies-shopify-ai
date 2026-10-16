@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-16T06:32:26Z",
-    "verifiedBy": "Shopify Admin API themes(roles: MAIN) um 06:32 UTC nach workflow:live von main 4144d59c (#1343 Laden-Sortiment und Reste-Regal, Freigabe Inhaber 16.10.); Preview-Gates COMPARE/SEO/FULL QA/SALES PASS, P0/P1 0, publishedAt 2026-10-16T06:32:04Z"
-  },
-  "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-16T06:32:26Z",
-    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live von main 4144d59c; naechstes Preview-Ziel"
+    "verifiedAt": "2026-10-16T06:44:39Z",
+    "verifiedBy": "Shopify Admin API themes(roles: MAIN) um 06:43 UTC nach workflow:live von main 84a62c49 (#1370 Gutscheinseite, #1372 Kampagnenfeld Anfrageformular, #1375 Schriftskala Laden-Section); Preview-Gates COMPARE/SEO/FULL QA/SALES PASS, P0/P1 0, publishedAt 2026-10-16T06:43:41Z"
+  },
+  "preview": {
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-10-16T06:44:39Z",
+    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live von main 84a62c49; naechstes Preview-Ziel"
   },
   "fallback": {
     "themeId": "206590509390",
