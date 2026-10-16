@@ -2,6 +2,29 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-16 · Claude-Verbrauch auf „Insights“ (#671)
+
+- **Geändert:** Neue Kachel „Claude-Verbrauch“ auf Insights (nur Inhaber): Sitzungen und
+  Langsitzungen der letzten 7 Tage (je Tag), Tokens gesamt und vom Modell geschrieben, Modell und
+  Denkstufe je Klasse (Gespräche, geplante Aufgaben, Subagenten), die fünf größten Sitzungen mit
+  Aufgabe, aktiver Zeit und Werkzeugaufrufen, Tokens je Aufgabe und je Modell, aufklappbar die
+  übrigen Langsitzungen. Daten aus den lokalen Sitzungsprotokollen von Claude Code
+  (`npm run verbrauch:sammeln` → `$TP_PRIVAT_DIR/verbrauch/claude.json`); der Server rechnet einen
+  Stand älter als 30 Minuten im Hintergrund neu. Details: `ARCHITEKTUR.md` Abschnitt 21.
+- **Getestet:** `operations/tests/claude-verbrauch.test.mjs` (Berliner Tage, doppelte Zeilen und
+  mitkopierte Antworten einmal, Zeitraum, Klassen, Langsitzung über Zeit und über Aufrufe, Aufgaben nur
+  aus `npm run task`, Worktree- und Subagenten-Dateien, kein Prompttext in der Ausgabe),
+  `tests/verbrauch-api.test.mjs` (ohne Datei Hinweis statt Zahlen, frisch/veraltet, ein Lauf
+  gleichzeitig, beschädigte Datei), `auth.test.mjs` (Mitarbeiter 403, Inhaber 200). Gegen die echten
+  Protokolle: 645 Dateien in 8 s, 225 Sitzungen, 32 lang. `dashboard:pruefen` Insights: nur OK, 0 px
+  Überlauf bei 360–1440 px.
+- **Risiken/Annahmen:** Das Protokollformat von Claude Code ist nicht dokumentiert; ändert es sich,
+  fehlen Zahlen (es wird nichts geschätzt). Nur 28 von 225 Sitzungen nennen ihre Aufgabe – Tokens je
+  Aufgabe ist deshalb unvollständig. Cache-Lesen macht 98 % der Tokens aus; wie stark das aufs
+  Wochenlimit drückt, ist nicht veröffentlicht.
+- **Nächste Stufe:** Mehr Sitzungen einer Aufgabe zuordnen (z. B. `npm run task -- start` beim
+  Sitzungsbeginn per Hook nahelegen) und eine Vorwoche zum Vergleich, sobald zwei Wochen Daten vorliegen.
+
 ## 2026-10-16 · Service-Anfragen kommen von selbst, Anzeigen werden erkannt (Werkbank w-030)
 
 - **Geändert:** Inhaber 16.10.: ja zur automatischen Übernahme und zum Kampagnenfeld. Neuer geplanter

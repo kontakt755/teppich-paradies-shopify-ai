@@ -25,3 +25,5 @@ delete process.env.SHOPIFY_CLIENT_SECRET;
 for (const k of ['LADEN_ZAHLEN_URL', 'LADEN_ZAHLEN_SCHLUESSEL', 'AUFTRAGS_APP_URL', 'WERKBANK_URL']) delete process.env[k];
 // Tailscale-Zustand nicht vom Rechner abfragen, auf dem der Test laeuft (Shop-Wache).
 process.env.TP_TAILSCALE_PRUEFEN = '0';
+// Claude-Verbrauch nicht aus den echten Sitzungsprotokollen dieses Rechners nachrechnen.
+process.env.TP_VERBRAUCH_AUTO = '0';

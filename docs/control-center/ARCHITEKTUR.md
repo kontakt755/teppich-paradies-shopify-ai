@@ -1167,3 +1167,29 @@ Styles `stile/serviceanfragen.css`.
   wird auf dem Gerät gespeichert, Klick-IDs gehen nicht mit. Steht „Anzeige“ darin, wird die Quelle
   „Werbung“. Grenze: erfasst ist nur, wer auf der Seite mit der Anzeigenadresse anfragt; wer erst
   weiterklickt, zählt als Formular.
+
+## 21. Insights › „Claude-Verbrauch“ (seit 2026-10-16, #671)
+
+- **Frage:** Wohin geht das Wochenbudget des Max-Plans? Gezeigt wird nur, was die lokalen
+  Sitzungsprotokolle von Claude Code belegen.
+- **Quelle:** `~/.claude/projects/<Hauptcheckout>*/` (Hauptcheckout, `.claude/worktrees/*`) und
+  `~/.claude/projects/<home>-Developer-tp-*` – je Sitzung `<id>.jsonl`, Subagenten unter
+  `<id>/subagents/**.jsonl` (Typ aus `.meta.json`), Titel aus `custom-title.json`.
+- **Sammeln:** `npm run verbrauch:sammeln` (`operations/scripts/claude-verbrauch.mjs`, Logik in
+  `operations/lib/claude-verbrauch.mjs`) liest nur lesend und schreibt
+  `$TP_PRIVAT_DIR/verbrauch/claude.json` (Schema 1, nicht im Git). Rund 8 s für eine Woche.
+  `/api/verbrauch/claude` (nur Inhaber) liefert die Datei; ist sie älter als 30 Minuten, rechnet der
+  Server sie im Hintergrund neu (`TP_VERBRAUCH_AUTO=0` schaltet das ab, die Tests tun das).
+- **Regeln:** Zeitraum 7 Kalendertage (Berlin). Eine Antwort zählt einmal (`message.id`, auch wenn
+  eine fortgesetzte Sitzung sie mitkopiert). Tokens = Eingabe + Cache schreiben + Cache lesen +
+  Ausgabe. Klasse: „Gespräch“, „Geplante Aufgabe“ (erster Auftrag kam vom Zeitplan, Name aus
+  `<scheduled-task name=…>`), „Subagent“. Aktive Zeit = Summe der Abstände zwischen Anfragen und
+  Antworten bis 15 Minuten. Langsitzung = über 2 h aktiv oder über 500 Werkzeugaufrufe der
+  Hauptsitzung. Aufgabe = Nummer aus `npm run task -- <aktion> <n>` in der Sitzung oder Branch
+  `task/<n>-…`; Branchnamen sonst nicht (dort stehen PR-Nummern).
+- **Datenschutz:** Übernommen werden Zahlen, Modellnamen, Denkstufe, Sitzungstitel, Namen geplanter
+  Aufgaben und Aufgabennummern – kein Text aus Anfragen, Antworten oder Werkzeugergebnissen.
+- **Nicht belegt, deshalb nicht gezeigt:** Stand des Wochenlimits in Prozent (steht in keiner lokalen
+  Datei) und die Gewichtung der Tokenarten auf das Limit (nicht veröffentlicht). Die
+  Dollar-Angabe `cost-state` in den Protokollen ist ein API-Listenpreis und kein Abo-Verbrauch –
+  bewusst weggelassen.

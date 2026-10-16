@@ -313,6 +313,8 @@ const NUR_INHABER = new Set([
   // Inhabers, gibt deren Titel zurueck und schreibt ihren Status. Der Knopf
   // dafuer traegt im Frontend data-nur-inhaber, der Pfad war es nicht.
   'org/pruefen',
+  // Claude-Verbrauch (#671): Sitzungstitel aller KI-Sitzungen - Inhabersache wie "Insights".
+  'verbrauch/claude',
 ]);
 
 function darfPfad(benutzer, simple, taskOp) {
@@ -329,7 +331,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
   // Bestelltabelle, Lexikon samt Mengenhilfe und die neuen Datenarten
   // (Kunden, Angebote, Warenkoerbe, Bestand, Erfuellung) - fehlt einer,
   // antwortet der Server 404.
-  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|einkauf\/musterlager|einkauf\/musterlager-farben|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/serviceanfragen|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/muster-texte|kunden\/bestellung-fertig|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|sonderposten\/liste|sonderposten\/verkauft|bildrechte\/liste|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|einkauf\/musterlager|einkauf\/musterlager-farben|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/serviceanfragen|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|verbrauch\/claude|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/muster-texte|kunden\/bestellung-fertig|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|sonderposten\/liste|sonderposten\/verkauft|bildrechte\/liste|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { apiFehler(req, res, pathname, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
   // Host-Pruefung fuer JEDEN Aufruf, nicht nur fuer schreibende: sonst kann
@@ -435,6 +437,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'warenkoerbe/liste') result = api.warenkoerbeListe();
     else if (simple === 'bestand/liste') result = api.bestandListe();
     else if (simple === 'shopwache/status') result = await api.shopwacheStatus();
+    else if (simple === 'verbrauch/claude') result = api.verbrauchClaude();
     else if (simple === 'laden/zahlen') result = await ladenZahlen.abrufen();
     else if (simple === 'erfuellung/liste') result = api.erfuellungListe();
     else if (simple === 'sonderposten/liste') result = await api.sonderpostenListe();
