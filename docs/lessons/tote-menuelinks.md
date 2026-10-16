@@ -4,6 +4,17 @@
 tragen, dann entscheiden. `npm run menu:guard` findet den Zustand; die Ursache
 klaert nur eine Abfrage. `menuUpdate` ersetzt den gesamten Item-Baum.
 
+## Regeltext (bis 2026-10-16 in AGENTS.md, Punkt 6b)
+
+**6b. Ein toter Menuelink sieht im Editor genauso aus wie ein lebender.**
+Filter-Links (`?filter.p.m.custom.<feld>=<Metaobjekt>`) mit leerem Raster haben
+zwei moegliche Ursachen: kein Produkt traegt den Wert, oder die Produkte liegen
+in einer anderen Kollektion. **Erst zaehlen, welche Werte die Produkte der
+Kollektion tatsaechlich tragen**, dann entscheiden. `npm run menu:guard` findet
+den Zustand. `menuUpdate` ersetzt den **gesamten** Item-Baum: vorher alles
+auslesen, alle Zweige mit MenuItem-IDs zurueckschreiben, Gegenprobe ist die
+identische ID-Menge — nicht `userErrors: []`.
+
 ## Was passierte
 
 Zweimal ist derselbe Fehler wochenlang live gestanden: Menuepunkte filtern per

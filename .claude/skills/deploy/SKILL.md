@@ -7,6 +7,16 @@ description: Theme-Aenderungen von main ueber Preview ins Live-Theme bringen (wo
 
 Ausgelagert aus CLAUDE.md (#670). Die Punkte 4 und 5 aus `AGENTS.md` („Was hier immer wieder schiefging“) gelten weiter; Live-Theme nur ueber `domains/shopify/live-theme.json` bestimmen.
 
+## Preview-Theme (bis 2026-10-16 in AGENTS.md, Punkt 4)
+
+**4. Nie von Hand ins Preview-Theme pushen.**
+Das Live-Gate verlangt `previewDiffCount === 0`, also Preview exakt gleich
+`origin/main`. Ein Direktpush erzeugt die Drift, die `PREVIEW_DRIFT` abfangen soll.
+Zwischenstaende und Ausprobieren gehen ausschliesslich ins Arbeitstheme
+(`arbeit` in `domains/shopify/live-theme.json`, nur mit `--only`) oder in ein
+eigenes Development-Theme (`theme push --development --development-context
+<branch>`). Das Arbeitstheme ist nie Preview-Ziel und wird nie publiziert.
+
 ## Deploy-Kette
 
 ```
