@@ -242,10 +242,137 @@
         "padding-block-start": 0,
         "padding-block-end": 32
       }
+    },
+    "tp_laden": {
+      "type": "tp-laden-sortiment",
+      "blocks": {
+        "z1": {
+          "type": "kennzahl",
+          "settings": {
+            "wert": "Über 1.000 m²",
+            "label": "Sonderposten und Lagerware im Laden"
+          }
+        },
+        "z2": {
+          "type": "kennzahl",
+          "settings": {
+            "wert": "Mo–Sa",
+            "label": "geöffnet, Beratung vor Ort"
+          }
+        },
+        "z3": {
+          "type": "kennzahl",
+          "settings": {
+            "wert": "Bis 50 km",
+            "label": "Aufmaß, Lieferung und Verlegung rund um Oranienburg"
+          }
+        },
+        "g1": {
+          "type": "warengruppe",
+          "settings": {
+            "symbol": "rolle",
+            "titel": "Teppichboden",
+            "arten": "Velours, Schlinge, Hochflor, Wolle, Nadelfilz",
+            "collection": "teppichboden",
+            "zahl_wort": "Qualitäten"
+          }
+        },
+        "g2": {
+          "type": "warengruppe",
+          "settings": {
+            "symbol": "teppich",
+            "titel": "Teppiche",
+            "arten": "Standardgrößen und nach Maß",
+            "collection": "teppiche",
+            "zahl_wort": "Qualitäten"
+          }
+        },
+        "g3": {
+          "type": "warengruppe",
+          "settings": {
+            "symbol": "fliesen",
+            "titel": "Teppichfliesen",
+            "arten": "Fliesen 50 × 50 cm und Planken",
+            "collection": "teppichfliesen",
+            "zahl_wort": "Qualitäten"
+          }
+        },
+        "g4": {
+          "type": "warengruppe",
+          "settings": {
+            "symbol": "planken",
+            "titel": "Vinylboden",
+            "arten": "Klick-, Klebe- und Rollenvinyl",
+            "collection": "vinylboden-1",
+            "zahl_wort": "Dekore"
+          }
+        },
+        "g5": {
+          "type": "warengruppe",
+          "settings": {
+            "symbol": "parkett",
+            "titel": "Laminat & Parkett",
+            "arten": "Laminat, Parkett, Kork",
+            "collection": "laminat-parkett",
+            "zahl_wort": "Böden"
+          }
+        },
+        "g6": {
+          "type": "warengruppe",
+          "settings": {
+            "symbol": "blatt",
+            "titel": "Linoleum & Kautschuk",
+            "arten": "Linoleum, Kautschuk",
+            "collection": "linoleum-kautschuk",
+            "zahl_wort": "Qualitäten"
+          }
+        },
+        "g7": {
+          "type": "warengruppe",
+          "settings": {
+            "symbol": "leiste",
+            "titel": "Zubehör & Leisten",
+            "arten": "Leisten, Profile, Kleber, Unterlagen",
+            "collection": "zubehoer",
+            "zahl_wort": "Artikel"
+          }
+        }
+      },
+      "block_order": [
+        "z1",
+        "z2",
+        "z3",
+        "g1",
+        "g2",
+        "g3",
+        "g4",
+        "g5",
+        "g6",
+        "g7"
+      ],
+      "settings": {
+        "darstellung": "voll",
+        "anker": "laden",
+        "eyebrow": "Vor Ort in Oranienburg",
+        "heading": "Im Laden steht noch viel mehr",
+        "text": "<p>Im Online-Shop steht nur ein Teil dessen, was wir haben. In unserem Laden in Oranienburg ist sehr viel mehr auf Lager – Lagerware, Sonderposten und Reste, die nicht online stehen.</p>",
+        "band_text": "Lagerware, Sonderposten und Reste, die nicht online stehen – im Laden in Oranienburg.",
+        "band_link_label": "Laden & Reste ansehen",
+        "register_titel": "Was wir führen",
+        "register_text": "Jede Warengruppe können Sie online ansehen und bestellen. Im Laden steht zusätzlich Lagerware.",
+        "marken_titel": "Marken im Laden",
+        "reste_eyebrow": "Reste & Sonderposten",
+        "reste_titel": "Das Reste-Regal",
+        "reste_text": "<p>Reststücke und Rollenreste, die nicht online stehen – jedes Stück gibt es nur einmal. Schicken Sie uns Ihr Raummaß: Wir schauen nach, was passt, und senden Ihnen Fotos und Preise.</p>",
+        "reste_wa_text": "Hallo, ich suche einen Rest aus dem Reste-Regal. Raum ca. … × … m, gewünschter Boden: …",
+        "zeiten": "Mo–Fr 8:30–18:00 · Sa 8:30–14:30",
+        "shop_link_label": "Lieber gleich online stöbern"
+      }
     }
   },
   "order": [
     "section",
-    "main"
+    "main",
+    "tp_laden"
   ]
 }

@@ -50,6 +50,10 @@ export const SICHERUNGSPFADE = Object.freeze([
   'einkauf-hersteller',
   'einkauf-kollektion',
   'aktualisierung.json',
+  // Service-Anfragen (Kunden > Service-Anfragen): gibt es nur hier.
+  'serviceanfragen.json',
+  // ... und welche Formular-Mails der Postfach-Abgleich schon geprueft hat.
+  'serviceanfragen-postfach.json',
   // "Fehler melden": Meldungen der Mitarbeiter und ihr Stand in der Werkbank.
   'fehlermeldungen.json',
   'fehlermeldungen-abgleich.json',

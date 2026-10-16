@@ -284,9 +284,14 @@ test('Mehrbenutzerbetrieb: Anmeldung mit Name+Passwort, Rolle "lesen" bekommt 40
     assert.equal(protokollMona.status, 403, 'Mitarbeiter duerfen das Protokoll nicht lesen');
     const protokollLesen = await fetch(`${base}/api/protokoll`, { headers: { cookie: cookieLesen } });
     assert.equal(protokollLesen.status, 403, 'Rolle "lesen" erst recht nicht');
+    // Claude-Verbrauch nennt die Titel aller KI-Sitzungen - Inhabersache wie "Insights" (#671).
+    const verbrauchMona = await fetch(`${base}/api/verbrauch/claude`, { headers: { cookie: cookieMona } });
+    assert.equal(verbrauchMona.status, 403, 'Mitarbeiter sehen den Claude-Verbrauch nicht');
 
     // Protokoll zeigt dem Inhaber den zuletzt geschriebenen Eintrag mit Anzeigenamen
     const protokoll = await (await fetch(`${base}/api/protokoll`, { headers: { cookie: cookieChef } })).json();
+    const verbrauchChef = await fetch(`${base}/api/verbrauch/claude`, { headers: { cookie: cookieChef } });
+    assert.equal(verbrauchChef.status, 200, 'der Inhaber schon');
     assert.ok(protokoll.eintraege.some(e => e.benutzer === 'Mona Mitarbeiter' && e.aktion === 'Auftragsstatus'));
   });
 });

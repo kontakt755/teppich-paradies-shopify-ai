@@ -1,0 +1,28 @@
+/* Kachel "Claude-Verbrauch" auf Insights (ansichten/insights/verbrauch.mjs, #671).
+   Zahlenzellen wie auf "Heute" (.heute-kpis), sonst nur Tokens aus app.css. */
+.verbrauch h3 { font-size: .9rem; margin: 18px 0 8px; }
+.verbrauch .heute-kpis { margin-top: 4px; }
+.verbrauch-raster { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 24px; }
+.verbrauch-tage { display: flex; flex-direction: column; gap: 6px; }
+.verbrauch-tag { display: grid; grid-template-columns: 72px minmax(0, 1fr) 92px; gap: 10px; align-items: center; font-size: .85rem; }
+.verbrauch-tag .num { text-align: left; }
+.verbrauch-klein { max-width: none; }
+/* table.kpi setzt grosse, fette Zahlen - hier sind es Tabellen, keine Kennzahlen. */
+table.kpi.verbrauch-klein td, table.kpi.verbrauch-klein th { font-size: .85rem; }
+table.kpi.verbrauch-klein td { font-weight: 500; }
+table.kpi.verbrauch-klein .num { text-align: right; }
+.verbrauch-aufgabe .t { font-weight: 500; }
+.verbrauch-titel { overflow-wrap: anywhere; }
+.verbrauch-aufgabe { cursor: default; }
+.verbrauch-aufgabe .num { align-self: center; font-variant-numeric: tabular-nums; }
+.verbrauch-lang { margin-top: 14px; }
+.verbrauch-lang summary { cursor: pointer; font-size: .85rem; color: var(--text-2); }
+.verbrauch-fuss { margin: 14px 0 0; }
+
+@media (max-width: 600px) {
+  /* Am Handy reichen "geschrieben" und "gesamt" - die Zahl der Antworten passt nicht mehr daneben. */
+  .verbrauch-modelle th:nth-child(2), .verbrauch-modelle td:nth-child(2) { display: none; }
+}
+@media (max-width: 900px) {
+  .verbrauch-raster { grid-template-columns: minmax(0, 1fr); }
+}

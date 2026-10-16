@@ -179,12 +179,19 @@
     return 'muster-' + slug(productHandle);
   }
 
-  // Ordnet jeder Farbe die passende Variante des Musterprodukts zu. Fehlt
-  // dort eine Farbe (Farbe im Quellprodukt neu, Musterprodukt noch nicht
-  // nachgezogen), bleibt sampleVariantId leer und buildCartItems nimmt den
-  // Rueckfall - das Muster ist dann weiter bestellbar, nur ohne eigene SKU.
+  // Ordnet jeder Farbe die passende Variante des Musterprodukts zu. Drei Faelle
+  // je Farbe (Inhaber 16.10.2026):
+  // - Mustervariante vorhanden und verfuegbar: sampleVariantId = ihre ID.
+  // - Mustervariante fehlt (Farbe im Quellprodukt neu, Musterprodukt noch nicht
+  //   nachgezogen): sampleVariantId null, buildCartItems nimmt den Rueckfall -
+  //   das Muster ist weiter bestellbar, nur ohne eigene SKU.
+  // - Mustervariante vorhanden, aber nicht verfuegbar (Bestand 0, Richtlinie
+  //   deny - so sperrt das Control Center ein Muster, das der Lieferant nicht
+  //   mehr liefern kann): sampleUnavailable true, sampleVariantId null und KEIN
+  //   Rueckfall. Der Konfigurator zeigt die Farbe als "Kein Muster verfuegbar".
   function assignSampleVariants(colors, sampleProduct, optionName) {
-    var index = Object.create(null);
+    var available = Object.create(null);
+    var known = Object.create(null);
     var position = 0;
     (sampleProduct && sampleProduct.options || []).forEach(function (entry) {
       if (String(entry.name || '').trim().toLowerCase() === String(optionName || '').trim().toLowerCase()) {
@@ -194,16 +201,32 @@
     if (position) {
       (sampleProduct.variants || []).forEach(function (variant) {
         var value = String(variant['option' + position] || '').trim().toLowerCase();
-        if (value && variant.available) index[value] = variant.id;
+        if (!value) return;
+        known[value] = true;
+        if (variant.available && !available[value]) available[value] = variant.id;
       });
     }
     return colors.map(function (color) {
-      var hit = index[String(color.value || '').trim().toLowerCase()];
+      var key = String(color.value || '').trim().toLowerCase();
+      var hit = available[key];
       var copy = {};
-      Object.keys(color).forEach(function (key) { copy[key] = color[key]; });
+      Object.keys(color).forEach(function (name) { copy[name] = color[name]; });
       copy.sampleVariantId = hit || null;
+      copy.sampleUnavailable = !hit && known[key] === true;
       return copy;
     });
+  }
+
+  // Gesperrte Farben (sampleUnavailable) sind nie waehlbar und zaehlen nicht
+  // zur Auswahlgrenze.
+  function isSelectable(color) {
+    return Boolean(color) && color.sampleUnavailable !== true;
+  }
+
+  // Alle Farben gesperrt: der Konfigurator zeigt statt der Karten den Hinweis
+  // "Fuer dieses Produkt sind derzeit keine Muster verfuegbar."
+  function allSamplesUnavailable(colors) {
+    return Array.isArray(colors) && colors.length > 0 && !colors.some(isSelectable);
   }
 
   // Teppich nach Mass, Zwischenstufe vor dem Sammelprodukt: fehlt das
@@ -260,7 +283,8 @@
   // (muster-<handle>), unveraendert je Farbe wie bisher. Nur wenn es das gar
   // nicht gibt, das Musterprodukt des Teppichbodens - und auch das nur fuer
   // Farben, die es mit demselben Optionswert fuehrt. Alles Uebrige bleibt
-  // ohne sampleVariantId und geht auf das Sammelprodukt kostenloses-muster.
+  // ohne sampleVariantId und geht auf das Sammelprodukt kostenloses-muster -
+  // ausser die Farbe steht im Musterprodukt als nicht verfuegbar (gesperrt).
   function assignSampleVariantsWithBasis(colors, ownSample, basisSample, optionName) {
     return assignSampleVariants(colors, ownSample || basisSample || null, optionName);
   }
@@ -300,9 +324,11 @@
     };
   }
 
+  // Gesperrte Farben (sampleUnavailable) kommen nie in den Warenkorb, auch
+  // nicht ueber den Rueckfall auf das Sammelprodukt.
   function buildCartItems(args) {
     var optionName = args.optionName || getOptionName(args.product);
-    return args.colors.map(function (color) {
+    return args.colors.filter(isSelectable).map(function (color) {
       var eigeneVariante = Boolean(color.sampleVariantId);
       var properties = {
         _Muster_ID: sampleKey(args.product.handle, color.value),
@@ -348,6 +374,8 @@
     getSampleState: getSampleState,
     sampleProductHandle: sampleProductHandle,
     assignSampleVariants: assignSampleVariants,
+    isSelectable: isSelectable,
+    allSamplesUnavailable: allSamplesUnavailable,
     basisSectionUrl: basisSectionUrl,
     parseBasisHandle: parseBasisHandle,
     parseMusterQuelle: parseMusterQuelle,

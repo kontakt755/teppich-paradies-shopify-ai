@@ -61,88 +61,18 @@ Harte technische Grenzen (force-push, `reset --hard`, Branch löschen, Theme lö
 
 ## Was hier immer wieder schiefging
 
-Jeder Punkt hat eine komplette Sitzung gekostet. Vor dem Loslegen lesen. Die Vorfälle dahinter stehen in `docs/lessons/`.
+Jeder Punkt hat eine komplette Sitzung gekostet. Vor dem Loslegen lesen. Die Vorfälle dahinter stehen in `docs/lessons/`, Befehle und Einzelheiten am verlinkten Ort.
 
-**1. Der Theme-Editor ist nur eine Oberflaeche ueber `templates/*.json`.**
-Ein Block ist ein Eintrag in `blocks` plus einer in `block_order`. Bloecke
-hinzufuegen ist ein Code-Edit, kein Klickvorgang.
-
-```
-npm run theme:block list                                  # zeigt Drift sofort
-npm run theme:block add tp-card-color-thumbs --after price
-npm run theme:block remove tp-card-color-thumbs
-```
-
-**2. Ein Block ohne `"presets"` im Schema wird deployed und ist trotzdem unsichtbar.**
-Unbekannte Schema-Keys (z. B. `"target"`) werden stillschweigend ignoriert.
-Vorlage ist das Schema von `blocks/tp-card-specs.liquid`. `npm run schema:guard` faengt beides.
-
-**3. `{% render 'x' ... as var %}` gibt es in Liquid nicht.**
-Shopify verwirft die Datei beim Push ohne Fehlermeldung; `shopify theme check`
-sieht das nicht, `npm run liquid:guard` schon. Korrekt ist
-`{% capture var %}{% render 'x' %}{% endcapture %}`.
-
-**4. Nie von Hand ins Preview-Theme pushen.**
-Das Live-Gate verlangt `previewDiffCount === 0`, also Preview exakt gleich
-`origin/main`. Ein Direktpush erzeugt die Drift, die `PREVIEW_DRIFT` abfangen soll.
-Zwischenstaende und Ausprobieren gehen ausschliesslich ins Arbeitstheme
-(`arbeit` in `domains/shopify/live-theme.json`, nur mit `--only`) oder in ein
-eigenes Development-Theme (`theme push --development --development-context
-<branch>`). Das Arbeitstheme ist nie Preview-Ziel und wird nie publiziert.
-
-**5. Eine Theme-ID in Prosa veraltet, ohne dass es jemand merkt.** Siehe „Welches Theme ist live?“ — das gilt auch für Notizen im Gedächtnis-Vault.
-
-**6. Fertige Arbeit liegt auf Branches, die nie gemergt wurden.**
-Der Shop zeigt nur, was in `main` ist. Suchen im Git-Verlauf, nicht in der Erinnerung:
-
-```
-git log --all --oneline --diff-filter=A -- <pfad>   # wo entstand die Datei
-git branch -a --contains <commit>                   # auf welchem Branch liegt sie
-git branch -r --no-merged main                      # was ist sonst noch ungemergt
-```
-
-Beim Zurueckholen **die ganze Gruppe nehmen, nie die eine Datei** — sonst lehnt
-Shopify den gesamten Template-Push ab. Theme-Dateien vom Branch, Infrastruktur
-(`workflow/`, `qa/`, `package.json`, `AGENTS.md`) von `main`. Gates:
-`npm run essential:guard`, `npm run unmerged:guard`, Pre-Commit-Hook (warnt ab
-7, blockiert ab 30 Tagen). → `docs/lessons/ungemergte-branches.md`
-
-**6b. Ein toter Menuelink sieht im Editor genauso aus wie ein lebender.**
-Filter-Links (`?filter.p.m.custom.<feld>=<Metaobjekt>`) mit leerem Raster haben
-zwei moegliche Ursachen: kein Produkt traegt den Wert, oder die Produkte liegen
-in einer anderen Kollektion. **Erst zaehlen, welche Werte die Produkte der
-Kollektion tatsaechlich tragen**, dann entscheiden. `npm run menu:guard` findet
-den Zustand. `menuUpdate` ersetzt den **gesamten** Item-Baum: vorher alles
-auslesen, alle Zweige mit MenuItem-IDs zurueckschreiben, Gegenprobe ist die
-identische ID-Menge — nicht `userErrors: []`. → `docs/lessons/tote-menuelinks.md`
-
-**7. Ein Produktimport ohne geklaerte Namensregeln wird zweimal gebaut.**
-Das naechstliegende fertige Produkt abfragen und daran entlangbauen.
-Lieferantenseiten mit `curl` lesen; `productSet` nur fuer **neue** Produkte;
-nach jedem Schreibvorgang gegenpruefen — `userErrors: []` ist kein Beleg.
-→ `domains/shopify/produktimport-arbeitsweise.md`, `docs/lessons/produktimport.md`
-
-**8. Lieferantennamen gehoeren nicht ins Repository.**
-Repository, Issues und Dashboard sind oeffentlich. In Dateien, Commit-/PR-Texten
-und `npm run task`-Notizen nur Pseudonyme: **Lieferant A** bis **D**, **Hausmarke
-von A**, Linien **A-1** bis **A-3**, URLs als `lieferant-a.example`. SKUs bleiben
-unveraendert. Rohdaten nur lokal unter `~/teppich-paradies-analyse/lieferantendaten/`
-(`domains/lieferanten/AUSGELAGERT.md`). Die Git-Historie wird nicht umgeschrieben.
-
-**9. Ein PR, der gegen `main` sauber ist, kann trotzdem nie geprueft werden.**
-Falsche Basis, geloeschte Basis, ueberkreuzte Historie — alle mechanisch, und
-jeder Merge nach `main` erzeugt neue Konflikte in anderen PRs.
-
-```
-npm run pr:doctor              # alle offenen PRs: Basis, Merge-Basen, Konflikte, Checks
-npm run pr:doctor -- --fix     # umzielen auf main, ueberkreuzte Historie begradigen
-```
-
-Nach jedem Merge neu rechnen. `--fix` erledigt nur, was ohne Urteil geht;
-Inhaltskonflikte in einem Wegwerf-Worktree loesen, nie im geteilten Checkout.
-Gestapelte PRs **vor** dem Merge ihrer Basis umzielen. Die CI meldet nur
-(`pr-doctor.yml`, `npm run pr:doctor:melden`), repariert bewusst nicht.
-→ `docs/lessons/pr-basis-und-historie.md`
+- **1. Der Theme-Editor ist nur eine Oberflaeche ueber `templates/*.json`** — Bloecke per `npm run theme:block` setzen, nicht klicken. → Skill `theme-regeln`
+- **2. Ein Block ohne `"presets"` im Schema wird deployed und ist trotzdem unsichtbar** (`npm run schema:guard`). → Skill `theme-regeln`
+- **3. `{% render 'x' ... as var %}` gibt es in Liquid nicht** — `{% capture %}` nehmen (`npm run liquid:guard`). → Skill `theme-regeln`
+- **4. Nie von Hand ins Preview-Theme pushen** — Ausprobieren nur im Arbeitstheme (`--only`) oder in einem eigenen Development-Theme. → Skill `deploy`
+- **5. Eine Theme-ID in Prosa veraltet, ohne dass es jemand merkt.** Siehe „Welches Theme ist live?“ — das gilt auch für Notizen im Gedächtnis-Vault. → `docs/lessons/theme-id-drift.md`
+- **6. Fertige Arbeit liegt auf Branches, die nie gemergt wurden** — der Shop zeigt nur `main`; beim Zurueckholen die ganze Gruppe nehmen, nie die eine Datei. → `docs/lessons/ungemergte-branches.md`
+- **6b. Ein toter Menuelink sieht im Editor genauso aus wie ein lebender** — erst zaehlen, welche Werte die Produkte der Kollektion tragen; `menuUpdate` ersetzt den gesamten Item-Baum. → `docs/lessons/tote-menuelinks.md`
+- **7. Ein Produktimport ohne geklaerte Namensregeln wird zweimal gebaut** — am naechstliegenden fertigen Produkt entlangbauen. → `docs/lessons/produktimport.md`, `domains/shopify/produktimport-arbeitsweise.md`
+- **8. Lieferantennamen gehoeren nicht ins Repository.** In Dateien, Commit-/PR-Texten und `npm run task`-Notizen nur Pseudonyme: **Lieferant A** bis **D**, **Hausmarke von A**, Linien **A-1** bis **A-3**, URLs als `lieferant-a.example`; SKUs bleiben unveraendert. → `docs/lessons/produktimport.md`, `domains/lieferanten/AUSGELAGERT.md`
+- **9. Ein PR, der gegen `main` sauber ist, kann trotzdem nie geprueft werden** — nach jedem Merge `npm run pr:doctor [-- --fix]`. → `docs/lessons/pr-basis-und-historie.md`
 
 ## Deploy
 
@@ -161,34 +91,11 @@ node workflow/cli.mjs validate --static      # Flag heisst --static, nicht --sta
 Der volle Lauf (`validate` ohne `--static`) braucht die Storefront und laeuft nur
 lokal auf dem Mac. Unbekannte Flags brechen ab.
 
+Vor einem Commit sollte `npm run secret:scan` laufen, wenn neue Dateien mit potenziell sensiblem Inhalt hinzugekommen sind.
+
 ## Werkzeuge
 
-| Befehl | Zweck |
-|---|---|
-| `npm run workflow:doctor` | **vor jedem Deploy**: alle Voraussetzungen in einem Lauf |
-| `npm run -s deploy:frei` | **vor jedem Merge nach main**: läuft gerade ein Deploy (Preview bis Live)? Exit 1 = nicht mergen |
-| `npm run theme:block list\|add\|remove` | Bloecke in Templates setzen, statt im Editor zu klicken |
-| `npm run liquid:guard` | ungueltiges Liquid, das Shopify still verwirft |
-| `npm run schema:guard` | Block-Schemata, die deployen aber im Editor unsichtbar bleiben |
-| `npm run template:guard` | Kollektions-Templates, deren Produktkarte abweicht; Shopify-Blockgrenzen (50 je Section, z. B. Header-Kacheln) |
-| `npm run theme:guard` | veraltete Theme-IDs in Anweisungsdateien, ungeschuetztes Live-Theme |
-| `npm run schrift:guard` | feste Schriftgroessen (px/rem/clamp) statt der Skala `var(--tp-fs-*)` |
-| `npm run menu:guard` | Menuelinks auf leeres Raster oder ins Nichts (braucht Netz) |
-| `npm run unmerged:guard` | Bloecke/Templates auf ungemergten Branches |
-| `npm run essential:guard` | Pflichtdateien und Template-Verweise vor dem Push |
-| `npm run pr:doctor [-- --fix]` | offene PRs: falsche Basis, ueberkreuzte Historie, Konflikte |
-| `npm run pr:doctor:melden` | dasselbe als idempotenter PR-Kommentar (CI: Push auf `main`, alle 6 h) |
-| `npm run auslauf:pruefen` | **woechentlich automatisch**: gibt es jeden Artikel noch beim Lieferanten (A Schnellsuche, C/D/E Produktseite; B nur offline)? Schreibt `$TP_PRIVAT_DIR/auslauf/status.json`, Befunde als To-do; nur lesend |
-| `npm run -s auslauf:sortieren [-- --schreiben]` | **nach jedem neuen Tag `auslauf` und jedem Import in Teppichboden/Teppiche**: Auslaufartikel ans Ende der manuell sortierten Kategorien (Shopify haengt Neues hinten an, also hinter sie); ohne `--schreiben` nur pruefen (Exit 1 = zu tun), mit Rollback-Datei und Gegenprobe |
-| `npm run -s import:pruefen` | **nach jedem Import**: neue Produkte (Standard 7 Tage) auf Veroeffentlichung, Bilder, Kategorie, SKU, Muster und uebliche Filterfelder der Produktart; nur lesend |
-| `npm run -s teppich:basis-daten` | **nach jedem Teppich-Import**: prueft `custom.teppich_basis_daten` (Gruppe, Qualitaetszeile, Breiten) gegen die Live-Regeln; `-- --pakete <ordner>` legt Schreibpakete + Rollback an → `docs/lessons/renderzeit-kollektionsseite.md` |
-| `npm run farbcode:guard` | Farbvarianten, deren Codes durchgezaehlt statt abgeschrieben wurden |
-| `npm run bewertung:guard` | Google-Bewertung, die wieder einzeln im Template steht statt in der Theme-Einstellung |
-| `npm run lighthouse:messen` | **bevor jemand "schneller/langsamer" sagt**: Lighthouse gegen Live, 3 Seiten mit und ohne Cookie-Banner, 5 Runden reihum (rund 25 min); `-- --pruefen` nur Vorpruefung |
-| `npm run -s kurz -- <art>` | Theme-Rollen, Push-Ergebnis, Worktrees gefiltert statt als Rohdump |
-| `npm run -s handoff` | Uebergabetext fuer die naechste Sitzung aus dem Git-Stand |
-| `npm run theme:diff -- --manifest <datei>` | Theme gegen Repository abgleichen |
-| `npm run workflow:scratch -- --theme-id <id>` | Wegwerf-Theme zum Ausprobieren, ohne Evidence |
+Alle `npm run`-Werkzeuge mit Zweck: Skill `werkzeuge`. Feste Zeitpunkte: `workflow:doctor` vor jedem Deploy, `-s deploy:frei` vor jedem Merge nach main, `-s import:pruefen` nach jedem Import, `-s teppich:basis-daten` nach jedem Teppich-Import, `-s auslauf:sortieren` nach jedem neuen Tag `auslauf` und jedem Import in Teppichboden/Teppiche, `lighthouse:messen` bevor jemand „schneller/langsamer“ sagt.
 
 ## Produktdaten
 
@@ -206,109 +113,17 @@ Bei unklaren Produktdaten:
 
 Die Shopify Admin API ist über MCP bzw. CLI bereits authentifiziert: nicht nach einem Token suchen, der Browser ist nie der Ausweichweg. Bevor „die API kann das nicht“ fällt, im GraphQL-Schema nachschlagen. Farben sind die Produktoption `Farbe`; Produkteigenschaften und Farbcodes nie erfinden oder fortzählen. Nach jedem Schreibvorgang gegenprüfen — `userErrors: []` ist kein Beleg. GraphQL nur mit den Feldern, die die Entscheidung braucht; zählen per `productsCount(query:)`. Details: Skill `produktimport`, `docs/lessons/shopify-schreibzugriff.md`.
 
-## Shopify Theme
+## Theme, Produktkarten, Design, Bilder
 
-Fertige, getestete Funktionen nicht neu bauen: €/m²-Darstellung bei Paketprodukten, Paket-/Verschnittrechner samt Warenkorblogik, deutsche Paket-/Bestellmengenanzeige, Musterbestellung, Breadcrumb, Produktvorteile, Verkaufsbereich, technische Daten, Produktkarten-Logik mit gekürzten Titeln, Predictive Search, Startseiten-Struktur, Vinylboden-Kategoriekarussell, Mobile Peek / Karussell-Navigation. Der Produktvergleich ist bewusst vollständig entfernt (Inhaber) und wird nicht wieder eingebaut; `npm run compare:check` prüft, dass er weg bleibt.
-
-Der Paket-/Verschnittrechner und dessen Warenkorblogik sind bereits intensiv getestet. Nicht neu schreiben, außer der Benutzer beauftragt dies ausdrücklich.
-
-Das Hauptmenü kommt aus Horizon (`sections/header-group.json`, Menü `main-menu`). Das Globo-Mega-Menu-Embed steht zwar noch in `config/settings_data.json`, gibt im Live-Shop aber nichts aus (geprüft 13.10.). Menü nicht grundsätzlich umbauen, außer der Auftrag betrifft ausdrücklich das Menü.
-
-Seit w-094 (Inhaber 15.10.) steht der Kopf in zwei Zeilen (oben Logo, Suchfeld `snippets/tp-kopf-suche.liquid`, Warenkorb; darunter das Menü) mit neun Hauptpunkten. Spalten im Mega-Menü (Teppichboden: Farbe, Raum, Rollenbreite) sind Menüpunkte mit Link `#` und eigenen Unterpunkten, ausgegeben von `snippets/tp-menu-spalten.liquid` – neue Spalte = Menüpunkt anlegen, kein Theme-Code. Jeder Filterlink braucht Treffer (`npm run menu:guard`). Den Menübaum nur mit `scripts/menue-umbau.mjs` umbauen (setzt alle MenuItem-IDs wieder ein, Gegenprobe `--pruefen`), Ablauf: `docs/weiterentwicklung/hauptmenue-umbau-2026-10.md`.
-
-Horizon 4.1.3 existiert als separates Update. Keine Migration durchführen, solange dies nicht ausdrücklich beauftragt wird.
+Vor jeder Theme-Änderung den Skill `theme-regeln` laden: Blöcke und Schemata, fertige Funktionen, die nicht neu gebaut werden (u. a. Paket-/Verschnittrechner samt Warenkorblogik; der Produktvergleich bleibt entfernt), Hauptmenü nur mit `scripts/menue-umbau.mjs`, Horizon 4.1.3 nicht migrieren, Produktkarten, UX/Design, Bilder und Testumfang.
 
 ## Preislogik
 
-Bei Teppichboden mit Meterware (Rollenbreiten) und Raummaß (Wunschmaß-Variante)
-gilt für jede Farbe und Breite dieselbe Produktaktion mit demselben
-Rabattprozentsatz. Der normale Raummaß-Aufschlag bleibt im regulären Preis;
-der Rabatt wird anschließend auf beide Zuschnittarten gleichermaßen angewandt.
-Raummaß allein ist keine Aktion. Streichpreise und Rabattkennzeichen dürfen
-nur bei einer tatsächlich aktiven Produktaktion erscheinen, wenn beide
-Zuschnittarten reduziert sind und die Vergleichspreise belegte Vorpreise sind.
-Rundung auf Cent darf zu kleinen rechnerischen Prozentabweichungen führen.
-Vor einer Änderung der Shopify-Variantenpreise oder Vergleichspreise ist eine
-konkrete Produkttabelle zu prüfen und die ausdrückliche Freigabe des Inhabers
-einzuholen. Produkttexte dürfen keinen abweichenden Rabatt versprechen.
-
-Bei Paketprodukten:
-
-- €/m² ist die primäre Kundendarstellung.
-- Der interne Shopify-Preis bleibt der Paketpreis.
-- Den Paketpreis auf Collection-Karten normalerweise nicht prominent anzeigen.
-- Die Produktdetailseite darf den Paketpreis sekundär zeigen.
-- Warenkorb und Checkout müssen mit echten ganzen Paketen arbeiten.
-
-Der Preisfilter bei Vinylboden ist bewusst ausgeblendet, solange Shopify nach Paketpreis statt sichtbarem €/m² filtert. Diese Logik nicht versehentlich zurückbauen.
-
-## Produktkarten
-
-Ziele:
-
-- kurze sichtbare Titel
-- echten vollständigen Produkttitel für Link und Barrierefreiheit erhalten
-- klare €/m²-Darstellung
-- nicht überladen
-- Muster und Vergleichen nur dort, wo sinnvoll
-- auf Mobile nichts abschneiden
-
-Teppichboden-Titel mit angehängten Breiten wie „Piumera Teppichboden 400cm 500cm“ dürfen in der sichtbaren Karte beispielsweise als „Piumera“ dargestellt werden, ohne den echten Shopify-Produkttitel zu verändern.
-
-## UX / Design
-
-Stil:
-
-- moderner Fachhandel
-- hochwertig
-- ruhig
-- verständlich
-- nicht überladen
-- keine unnötige Marketing-Sprache
-- vorhandene Teppich-Paradies-Farbwelt nutzen
-
-Prioritäten:
-
-1. Verständlichkeit
-2. Kaufentscheidung erleichtern
-3. Mobile Bedienbarkeit
-4. Fachhandels-Vertrauen
-5. saubere technische Umsetzung
-
-Gute Konkurrenzseiten dürfen als UX-Benchmark untersucht werden. Keine Texte, Bilder oder Designs 1:1 kopieren.
-
-## Bilder
-
-- Vorhandene echte Produkt- und Herstellerbilder bevorzugen.
-- Wenn die Bildlizenz eine Herstellerangabe am Bild verlangt, diese unmittelbar am Bild sichtbar machen. Die genaue JOKA-Quellenangabe ist dafür im Theme-Guard eng begrenzt freigegeben; andere Lieferantennamen bleiben gesperrt.
-- Keine Produkteigenschaften durch erfundene Bilder falsch darstellen.
-- Erklärende Kategorievisuals dürfen verwendet werden, wenn sie technisch korrekt sind.
-- Above-the-fold-Bilder beim ersten Laden sinnvoll priorisieren.
-- Lazy Loading nicht pauschal abschalten.
+Aktionen und Streichpreise bei Teppichboden, Preisstufen der gekettelten Fußleiste, Paketprodukte (€/m² für Kunden, intern Paketpreis) und der bewusst ausgeblendete Preisfilter bei Vinylboden: Skill `preislogik`.
 
 ## Tests
 
-`npm test` startet alle Suiten (rund 20 s); `qa/tests/npm-test-deckung.test.mjs` prüft, dass jedes Verzeichnis mit `*.test.mjs` in der Kette hängt.
-
-Vor bzw. nach relevanten Theme-Änderungen bevorzugt `npm run qa` verwenden, statt dieselben mechanischen Browser- und Theme-Checks manuell mit Modellarbeit zu wiederholen.
-
-Weitere verfügbare, rein lesende lokale Checks: `npm run seo:check`, `npm run compare:check`, `npm run qa:evidence:test`, `npm run secret:scan`. `npm run sales:check` ist ein Live-Storefront-Test ohne Kaufabschluss: Er verändert einen anonymen Test-Warenkorb und kann bis zum Checkout navigieren. Vor einem Commit sollte `npm run secret:scan` laufen, wenn neue Dateien mit potenziell sensiblem Inhalt hinzugekommen sind.
-
-Je nach Änderung sinnvoll und risikobasiert prüfen:
-
-- Desktop
-- Mobile bei ca. 390 px
-- Browser-Konsole
-- Theme Check
-- Links und Bilder
-- Produktkarten und Varianten
-- Warenkorb
-- Muster (und dass kein Produktvergleich mehr auftaucht)
-- Rollenware und Fixpreis
-- Teppichboden
-- Klickvinyl und Klebevinyl
-
-Nicht für jede Miniänderung den gesamten Shop unnötig testen.
+`npm test` startet alle Suiten (rund 20 s). Was je Änderung risikobasiert zu prüfen ist (Desktop, Mobile ca. 390 px, Warenkorb, Muster …) und welche weiteren Checks es gibt: Skill `theme-regeln`.
 
 ## Gedächtnis, Übergaben und Review
 
@@ -343,8 +158,7 @@ Abschlussberichte kompakt halten:
 
 - Eigene Bloecke/Snippets tragen das Praefix `tp-`; `_`-Praefix ist privat (keine `presets` noetig).
 - CSS gehoert in `{% stylesheet %}`, nicht in ein inline `<style>` pro Karte.
-- Schriftgroessen nur aus der Skala in `snippets/tp-gestaltung.liquid`: `var(--tp-fs-xs|sm|md|lg|xl|2xl)` (Desktop 12/14/16/20/28/40 px, Telefon 13/14/16/18/24/30 px); Fliesstext 400, Beschriftungen 500, Ueberschriften 600/700. Keine festen px/rem-Werte (`npm run schrift:guard`).
-- Rot (`--tp-hauptaktion`, `#c8102e`, `#b3261e`) nur fuer Preis, Rabatt, den Hauptknopf „In den Warenkorb“, den aktiven Menuepunkt, Fehlermeldungen und den gesetzlichen Knopf „Vertrag widerrufen“. Kleinueberschriften grau (`#595959`), Nebenknoepfe, Links und Symbole in der dunklen Grundfarbe `--tp-ink`.
+- Schriftgroessen nur aus der Skala `var(--tp-fs-*)` (`npm run schrift:guard`); Rot nur fuer Preis, Rabatt und wenige Hauptaktionen. Genaue Werte und Liste: Skill `theme-regeln`.
 - Kommentare und Commit-Messages auf Deutsch, ohne Umlaute in Liquid-Kommentaren.
 - Immer im aktuellen Repository-Root arbeiten; keine absoluten Pfade — das Repo
   liegt auf Windows, macOS und Linux.
@@ -356,9 +170,9 @@ Abschlussberichte kompakt halten:
 Nicht automatisch bearbeiten, aber bei zukünftigen Aufgaben berücksichtigen:
 
 - Teppichboden Mobile-Menü optimieren
-- Hochflor-/Mittelflor-Zuordnung fachlich verbessern
+- Hochflor-/Mittelflor-Zuordnung fachlich verbessern (Mittelflor ist seit 07.10. eigene Kategorie, die Zuordnung je Produkt bleibt offen)
 - ecoVella-/Wolle-Zuordnung sauber prüfen
 - Eigenen Raumvisualisierer für Hartböden ausbauen – keine fremden Visualisierer wie Roomvo (Inhaber 09.10.)
 - Horizon 4.1.3 später separat migrieren
 - Produktbilder langfristig verbessern
-- Reste & Sonderposten später als eigenen starken Shopbereich aufbauen
+- Reste & Sonderposten später als eigenen starken Shopbereich aufbauen (seit 14.10. nur Platzhalter „demnächst“ im Menü)

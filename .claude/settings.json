@@ -63,6 +63,16 @@
         ]
       },
       {
+        "matcher": "mcp__.*__graphql_mutation",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/shopify-mcp-guard.mjs\"",
+            "statusMessage": "Shopify-Mutation pruefen"
+          }
+        ]
+      },
+      {
         "matcher": "Bash",
         "hooks": [
           {

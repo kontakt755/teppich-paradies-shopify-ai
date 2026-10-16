@@ -1,0 +1,27 @@
+{%- doc -%}
+  Laengenware im Warenkorb: Profile nach Mass (custom.preis_pro_001_lfm,
+  blocks/tp-laengen-zuschnitt), Preis je 0,01 lfm, Menge = Laenge je Stueck x
+  Stueckzahl in cm. Eigenes Snippet, weil snippets/tp-cart-gruppe.liquid an der
+  Grenze der Theme-Check-LiquidComplexity steht; gleiche Regel wie
+  assets/tp-cart-gruppen.js (istLaengenware, kundeneinheit).
+
+  Konfigurierte Zeilen tragen eine eigene _Gruppe und gelten damit als
+  berechnet (Menge gesperrt).
+
+  @param {object} zeile - Warenkorbposition
+  @param {string} teil - 'waise': Text, wenn eine Zeile dieses Produkts keine
+    "Laenge je Stueck" traegt (sperrt den Checkout), sonst nichts;
+    'menge': "10 × 95 cm", ohne Laengenangabe die Stueckzahl ("2 Stück")
+{%- enddoc -%}
+{%- liquid
+  assign tp_lw_laenge = zeile.properties['Länge je Stück'] | default: '' | strip
+  if teil == 'menge'
+    if tp_lw_laenge != blank
+      echo zeile.properties['Anzahl'] | default: '1' | remove: 'Stück' | strip | append: ' × ' | append: tp_lw_laenge
+    else
+      echo zeile.quantity | append: ' Stück'
+    endif
+  elsif tp_lw_laenge == blank and zeile.product.metafields.custom.preis_pro_001_lfm.value == true
+    echo 'Dieser Artikel braucht eine Maßangabe – bitte über die Produktseite konfigurieren'
+  endif
+-%}

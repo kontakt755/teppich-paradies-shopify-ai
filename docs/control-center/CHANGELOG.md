@@ -2,6 +2,73 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-16 · Claude-Verbrauch auf „Insights“ (#671)
+
+- **Geändert:** Neue Kachel „Claude-Verbrauch“ auf Insights (nur Inhaber): Sitzungen und
+  Langsitzungen der letzten 7 Tage (je Tag), Tokens gesamt und vom Modell geschrieben, Modell und
+  Denkstufe je Klasse (Gespräche, geplante Aufgaben, Subagenten), die fünf größten Sitzungen mit
+  Aufgabe, aktiver Zeit und Werkzeugaufrufen, Tokens je Aufgabe und je Modell, aufklappbar die
+  übrigen Langsitzungen. Daten aus den lokalen Sitzungsprotokollen von Claude Code
+  (`npm run verbrauch:sammeln` → `$TP_PRIVAT_DIR/verbrauch/claude.json`); der Server rechnet einen
+  Stand älter als 30 Minuten im Hintergrund neu. Details: `ARCHITEKTUR.md` Abschnitt 21.
+- **Getestet:** `operations/tests/claude-verbrauch.test.mjs` (Berliner Tage, doppelte Zeilen und
+  mitkopierte Antworten einmal, Zeitraum, Klassen, Langsitzung über Zeit und über Aufrufe, Aufgaben nur
+  aus `npm run task`, Worktree- und Subagenten-Dateien, kein Prompttext in der Ausgabe),
+  `tests/verbrauch-api.test.mjs` (ohne Datei Hinweis statt Zahlen, frisch/veraltet, ein Lauf
+  gleichzeitig, beschädigte Datei), `auth.test.mjs` (Mitarbeiter 403, Inhaber 200). Gegen die echten
+  Protokolle: 645 Dateien in 8 s, 225 Sitzungen, 32 lang. `dashboard:pruefen` Insights: nur OK, 0 px
+  Überlauf bei 360–1440 px.
+- **Risiken/Annahmen:** Das Protokollformat von Claude Code ist nicht dokumentiert; ändert es sich,
+  fehlen Zahlen (es wird nichts geschätzt). Nur 28 von 225 Sitzungen nennen ihre Aufgabe – Tokens je
+  Aufgabe ist deshalb unvollständig. Cache-Lesen macht 98 % der Tokens aus; wie stark das aufs
+  Wochenlimit drückt, ist nicht veröffentlicht.
+- **Nächste Stufe:** Mehr Sitzungen einer Aufgabe zuordnen (z. B. `npm run task -- start` beim
+  Sitzungsbeginn per Hook nahelegen) und eine Vorwoche zum Vergleich, sobald zwei Wochen Daten vorliegen.
+
+## 2026-10-16 · Service-Anfragen kommen von selbst, Anzeigen werden erkannt (Werkbank w-030)
+
+- **Geändert:** Inhaber 16.10.: ja zur automatischen Übernahme und zum Kampagnenfeld. Neuer geplanter
+  Lauf `serviceanfragen-postfach` (Mo–Sa stündlich) liest Formular-Mails nur lesend und übergibt sie an
+  `npm run -s service -- uebernehmen`; übernommen werden nur die festen Betreffe der Serviceseiten und
+  die Startseite mit Service-Anliegen, ohne Dubletten (Mail-ID, gleicher Kontakt innerhalb 7 Tagen).
+  Das Anfrageformular schickt jetzt ein verstecktes Feld „Herkunft“ (Anzeige/Kampagne aus der Adresse,
+  ohne Speicherung, ohne Klick-ID); „Anzeige“ zählt als Quelle Werbung. Zeilen aus dem Postfach sind
+  gekennzeichnet. Fremde Felder anderer Formulare („Phone:“) hängen nicht mehr am vorigen Wert.
+  Details: `ARCHITEKTUR.md` Abschnitt 20.
+- **Getestet:** Lib-Tests (Herkunft → Werbung, Betreff-Freigabe, alle Template-Betreffe eingeordnet,
+  Formularskript mit gclid/utm/fbclid ohne Speicher und ohne Klick-ID), Postfach-Test (nur Service,
+  Absender, von Hand Erfasstes, zweiter Lauf leer, Berliner Datum). Gegenprobe mit den echten Mails
+  29.09.–09.10. in einem Wegwerf-Ordner: 4 Service-Anfragen angelegt, Musteranfrage übersprungen,
+  zweiter Lauf ohne Änderung.
+- **Risiken/Annahmen:** Der Lauf braucht beim ersten Mal Freigaben (Gmail lesen, Bash, Schreiben ins
+  Scratchpad) – einmal „Jetzt ausführen“. Bis der PR in `~/tp-dashboard` nachgezogen ist, endet er mit
+  „Skript noch nicht im Dienst“. Das Kampagnenfeld wirkt erst nach dem Theme-Deploy.
+- **Nächste Stufe:** Nach zwei Wochen prüfen, wie viele Anfragen „Werbung“ tragen; erfasst nur der
+  Landeseite-Fall zu wenig, die Anzeigenherkunft über Seitenwechsel tragen (bräuchte Speicherung im
+  Browser, also Einwilligung).
+
+## 2026-10-16 · Service-Anfragen unter „Kunden“ (#1361, Werkbank w-030)
+
+- **Geändert:** Inhaber 15.10.: Service-Anfragen (Verlegeservice, Treppe, Aufmaß) im Control Center
+  führen. Neuer Reiter „Service-Anfragen“ unter Kunden: Liste mit Datum, Kontakt, Leistung, Quelle,
+  Status (neu → kontaktiert → Termin → Angebot → gewonnen/verloren), Notiz und nächstem Schritt;
+  Standardfilter „Offen“, Zähler am Reiter = neue Anfragen. Oben die Auswertung der letzten 8 Wochen
+  je Woche und je Quelle. Erfassen von Hand; eine Shopify-Formular-Mail lässt sich einfügen und füllt
+  die Felder. Ablage `serviceanfragen.json` im Privatordner, gesichert von `daten:sichern`.
+  Details: `ARCHITEKTUR.md` Abschnitt 20.
+- **Getestet:** `tests/serviceanfragen.test.mjs` (Mail lesen inkl. Musteranfrage, Leistung aus
+  Betreff/Anliegen, Feldprüfung, KW/Wochenbeginn, Auswertung, Server mit Rollen „lesen“ 403 /
+  „mitarbeiter“ 200), `operations/tests/serviceanfragen.test.mjs` (Nummern, Mail nur einmal, Verlauf,
+  beschädigte Datei). `dashboard:pruefen` für Kunden/Service/Rückrufe: nur OK, 0 px Überlauf bei
+  360–1440 px. Klickstrecke gegen die Kopie mit erfundenen Daten: Mail einfügen → Felder gefüllt →
+  angelegt (Liste 3 → 4) → Status geändert, keine JS-Fehler, 390 px ohne Überlauf.
+- **Risiken/Annahmen:** Der Leser kennt den Mailaufbau von Shopify vom 29.09.–09.10.2026; ändert
+  Shopify ihn, bleibt die Handeingabe. Hinweise unten (Toasts) liegen kurz über dem Dialog-Knopf –
+  wie überall im Dashboard.
+- **Nächste Stufe:** Formular-Mails automatisch übernehmen (geplanter Lauf liest das Postfach und
+  legt per `mailId` an) und Kampagnenangabe (UTM/gclid) als verstecktes Feld ins Anfrageformular –
+  beides wartet auf die Entscheidung in Werkbank w-030.
+
 ## 2026-10-15 · Herstellerware mit der Bezeichnung des Herstellers
 
 - **Geändert:** Nächste Stufe aus dem Eintrag darunter. Warenbestellungen an die Markenhersteller

@@ -24,7 +24,12 @@
   Regeln hier zu kopieren hiesse, dieselbe Gestaltung an zwei Stellen zu pflegen.
 {%- endcomment -%}
 {% # theme-check-disable ValidScopedCSSClass %}
-<script src="{{ 'tp-suche.js' | asset_url }}" type="module" fetchpriority="low"></script>
+{%- comment -%}
+  Das Modul assets/tp-suche.js laedt sections/tp-header-suche.liquid (immer in
+  sections/header-group.json, diese Zeile spiegelt dessen Suchleiste per
+  data-tp-quelle). Eine zweite Einbindung hier fuehrte der Browser zwar nur
+  einmal aus, erzeugte aber je Seite eine DUPLICATE_SCRIPT-Warnung in seo:check.
+{%- endcomment -%}
 <div class="tp-kopf-suche">
   <tp-suche-leiste class="tp-hs__leiste tp-kopf-suche__leiste" data-tp-kopf data-tp-quelle=".tp-hs tp-suche-leiste">
     <form class="tp-hs__form" role="search" action="{{ routes.search_url }}" method="get">

@@ -4,6 +4,17 @@
 Gruppe nehmen, nie die eine Datei. Theme-Dateien vom Branch, Infrastruktur von
 `main`. Gates: `essential:guard`, `unmerged:guard`, Pre-Commit-Hook.
 
+## Regeltext (bis 2026-10-16 in AGENTS.md, Punkt 6)
+
+**6. Fertige Arbeit liegt auf Branches, die nie gemergt wurden.**
+Der Shop zeigt nur, was in `main` ist. Suchen im Git-Verlauf, nicht in der
+Erinnerung (Befehle unter „Was passierte“).
+Beim Zurueckholen **die ganze Gruppe nehmen, nie die eine Datei** — sonst lehnt
+Shopify den gesamten Template-Push ab. Theme-Dateien vom Branch, Infrastruktur
+(`workflow/`, `qa/`, `package.json`, `AGENTS.md`) von `main`. Gates:
+`npm run essential:guard`, `npm run unmerged:guard`, Pre-Commit-Hook (warnt ab
+7, blockiert ab 30 Tagen).
+
 ## Was passierte
 
 Zwei Faelle am 2026-09-05, beide ueber Wochen unbemerkt:

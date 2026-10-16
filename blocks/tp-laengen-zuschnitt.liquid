@@ -1,0 +1,185 @@
+{% doc %}
+  Laengen-Zuschnitt fuer Profile nach Mass (Treppenkanten). Der Kunde gibt die
+  Laenge je Stueck in cm, die Stueckzahl und die Bohrung an; abgerechnet wird
+  wie beim Kettelservice: Variantenpreis je 0,01 laufendem Meter (1 cm),
+  Menge = Laenge je Stueck x Stueckzahl in cm. Rechenkern und Bedienung:
+  assets/tp-laengen-zuschnitt.js.
+
+  Fail closed - der Block rendert nichts, sobald eine Angabe fehlt:
+    custom.preis_pro_001_lfm  true (Variantenpreis gilt je 0,01 lfm)
+    service.max_laenge_cm     > 0, groesste Laenge je Stueck
+    service.bohrung           Liste der lieferbaren Ausfuehrungen, z. B.
+                              ["gebohrt", "ungebohrt"]; der erste Wert ist
+                              vorgewaehlt, ein einzelner Wert wird nur genannt
+  Optional service.min_seite_cm (Zahl): kleinste Laenge je Stueck, sonst 10 cm.
+  Angeboten werden nur Varianten mit Preis > 0.
+
+  Die Warenkorbzeile traegt "Laenge je Stueck", "Anzahl", "Gesamtlaenge",
+  "Bohrung" und eine eigene _Gruppe (Menge gesperrt, siehe
+  snippets/tp-cart-gruppe.liquid). Eine Zeile dieses Produkts ohne
+  "Laenge je Stueck" sperrt den Checkout.
+{% enddoc %}
+
+{%- liquid
+  assign tp_lz_id = block.id | replace: '_', '' | downcase
+  assign tp_lz_max = product.metafields.service.max_laenge_cm.value | times: 1
+  assign tp_lz_min = product.metafields.service.min_seite_cm.value | default: 10 | times: 1 | at_least: 1
+  assign tp_lz_bohrungen = product.metafields.service.bohrung.value
+  assign tp_lz_max_stueck = block.settings.max_stueck | default: 50 | times: 1
+
+  assign tp_lz_ok = false
+  if product.metafields.custom.preis_pro_001_lfm.value == true and tp_lz_max > tp_lz_min and tp_lz_bohrungen.size > 0
+    for tp_lz_v in product.variants
+      if tp_lz_v.price > 0
+        assign tp_lz_ok = true
+        break
+      endif
+    endfor
+  endif
+
+  # Streichpreis nur bei aktiver Aktion - dieselbe Quelle wie ueberall (S-20).
+  capture tp_lz_aktion
+    render 'tp-rabatt-sichtbar', product: product
+  endcapture
+  assign tp_lz_aktion = tp_lz_aktion | strip
+-%}
+
+{%- if tp_lz_ok -%}
+  <div class="tp-ek tp-lz" id="tp-lz-{{ tp_lz_id }}" data-tp-lz {{ block.shopify_attributes }}>
+    <div class="tp-ek__schritt" data-schritt="mass">
+      {% render 'tp-step-heading', number: 2, label: 'Länge und Stückzahl' %}
+      <div class="tp-ek__masse">
+        <label class="tp-ek__mass">
+          <span class="tp-ek__mass-label">Länge je Stück</span>
+          <span class="tp-ek__eingabe">
+            <input type="number" inputmode="numeric" min="{{ tp_lz_min }}" max="{{ tp_lz_max }}" step="1" placeholder="100" data-laenge>
+            <span>cm</span>
+          </span>
+        </label>
+        <span class="tp-ek__mal" aria-hidden="true">×</span>
+        <label class="tp-ek__mass">
+          <span class="tp-ek__mass-label">Anzahl</span>
+          <span class="tp-ek__eingabe">
+            <input type="number" inputmode="numeric" min="1" max="{{ tp_lz_max_stueck }}" step="1" value="1" data-anzahl>
+            <span>Stück</span>
+          </span>
+        </label>
+      </div>
+      <p class="tp-ek__grenzen">Zentimetergenau von {{ tp_lz_min }} bis {{ tp_lz_max }} cm je Stück.{% if block.settings.messhilfe != blank %} {{ block.settings.messhilfe | escape }}{% endif %}</p>
+      <p class="tp-ek__fehler" role="alert" data-fehler hidden></p>
+    </div>
+
+    {%- if tp_lz_bohrungen.size > 1 -%}
+      <div class="tp-ek__schritt" data-schritt="bohrung">
+        {% render 'tp-step-heading', number: 3, label: 'Bohrung' %}
+        <div class="tp-ek__formen" role="radiogroup" aria-label="Bohrung">
+          {%- for tp_lz_b in tp_lz_bohrungen -%}
+            <label class="tp-ek__form">
+              <input type="radio" name="tp-lz-bohrung-{{ tp_lz_id }}" value="{{ tp_lz_b | escape }}"{% if forloop.first %} checked{% endif %}>
+              <span class="tp-ek__form-karte">
+                <svg viewBox="0 0 40 28" aria-hidden="true" focusable="false">
+                  <rect x="3" y="9" width="34" height="10" rx="1.5"/>
+                  {%- assign tp_lz_bk = tp_lz_b | downcase -%}
+                  {%- unless tp_lz_bk contains 'ungebohrt' -%}<circle cx="10" cy="14" r="1.8"/><circle cx="20" cy="14" r="1.8"/><circle cx="30" cy="14" r="1.8"/>{%- endunless -%}
+                </svg>
+                <span>{{ tp_lz_b | escape }}</span>
+              </span>
+            </label>
+          {%- endfor -%}
+        </div>
+      </div>
+    {%- else -%}
+      <p class="tp-ek__bandfest">Bohrung: <span>{{ tp_lz_bohrungen.first | escape }}</span></p>
+    {%- endif -%}
+
+    <div class="tp-ek__preis" aria-live="polite" data-rechnung hidden>
+      <div class="tp-ek__summe"><span>Gesamtpreis</span><span class="tp-ek__summe-werte"><s class="tp-ek__summe-alt" data-summe-alt hidden></s><strong data-summe>–</strong></span></div>
+      <p class="tp-ek__rechenzeile" data-rechenzeile></p>
+      <p class="tp-ek__preishinweis">{{ block.settings.preishinweis | escape }} Inkl. MwSt.; <a href="{{ pages['versand-lieferung'].url | default: '/pages/versand-lieferung' }}">Versand</a> in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos.</p>
+    </div>
+
+    {%- if block.settings.widerruf_hinweis -%}
+      {% render 'tp-widerruf-massanfertigung', art: 'zuschnitt' %}
+    {%- endif -%}
+    <button type="button" class="tp-ek__cta" data-cta disabled>In den Warenkorb</button>
+    <a href="{{ routes.cart_url }}" class="tp-ek__warenkorb" data-warenkorb hidden>Warenkorb ansehen</a>
+
+    <script type="application/json" data-tp-lz-daten>
+      {
+        "min_cm": {{ tp_lz_min | json }},
+        "max_cm": {{ tp_lz_max | json }},
+        "max_stueck": {{ tp_lz_max_stueck | json }},
+        "bohrungen": {{ tp_lz_bohrungen | json }},
+        "selected_id": {{ product.selected_or_first_available_variant.id | json }},
+        "varianten": [
+          {%- for tp_lz_v in product.variants -%}
+            {%- if tp_lz_v.price > 0 -%}
+              {
+                "id": {{ tp_lz_v.id | json }},
+                "price": {{ tp_lz_v.price | json }},
+                "compare_at_price": {% if tp_lz_aktion == 'ja' and tp_lz_v.compare_at_price > tp_lz_v.price %}{{ tp_lz_v.compare_at_price | json }}{% else %}null{% endif %},
+                "available": {{ tp_lz_v.available | json }},
+                "titel": {{ tp_lz_v.title | json }}
+              },
+            {%- endif -%}
+          {%- endfor -%}
+          null
+        ]
+      }
+    </script>
+    <script src="{{ 'tp-laengen-zuschnitt.js' | asset_url }}" defer></script>
+  </div>
+  {{ 'tp-einfass-konfigurator.css' | asset_url | stylesheet_tag }}
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-lz .tp-ek__formen { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+  .tp-lz .tp-ek__form-karte svg circle { fill: currentColor; stroke: none; }
+  .tp-lz .tp-ek__rechenzeile { margin: 6px 0 0; font-size: var(--tp-fs-sm); color: var(--tp-ek-muted); }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Längen-Zuschnitt",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Rendert nur bei vollstaendigen Metafeldern: custom.preis_pro_001_lfm = true (Variantenpreis je 0,01 lfm), service.max_laenge_cm und service.bohrung (Liste, z. B. gebohrt, ungebohrt)."
+    },
+    {
+      "type": "range",
+      "id": "max_stueck",
+      "label": "Höchste Stückzahl je Bestellung",
+      "min": 5,
+      "max": 99,
+      "step": 1,
+      "default": 50
+    },
+    {
+      "type": "text",
+      "id": "messhilfe",
+      "label": "Messhilfe unter den Eingabefeldern",
+      "default": "Gemessen wird die Länge der Stufenkante."
+    },
+    {
+      "type": "text",
+      "id": "preishinweis",
+      "label": "Hinweis unter dem Preis",
+      "default": "Zuschnitt und Bohrung nach Ihrem Maß ohne Aufpreis."
+    },
+    {
+      "type": "checkbox",
+      "id": "widerruf_hinweis",
+      "label": "Hinweis \"kein Widerrufsrecht\" über dem Warenkorb-Knopf",
+      "info": "Wie beim Einfass-Konfigurator standardmaessig aus (Inhaber 2026-10-02).",
+      "default": false
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Längen-Zuschnitt"
+    }
+  ]
+}
+{% endschema %}
