@@ -5,6 +5,10 @@ set -euo pipefail
 
 cd "${CLAUDE_PROJECT_DIR:-$(dirname "$0")/../..}"
 
+# Hauptcheckout (losgeloest, sauber) still auf origin/main nachziehen; in
+# Worktrees, auf Branches und ohne Netz passiert nichts. Details im Skript.
+bash .claude/hooks/hauptcheckout-nachziehen.sh >/dev/null 2>&1 || true
+
 # Laeuft IMMER, auch lokal: am 2026-09-04 lag ein Checkout unter iCloud-
 # synchronisiertem ~/Documents, was Git-Sperren mit der Cloud-Synchronisation
 # kollidieren liess (minutenlange Haenger, am Ende eine beschaedigte
