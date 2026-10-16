@@ -1193,3 +1193,57 @@ Styles `stile/serviceanfragen.css`.
   Datei) und die Gewichtung der Tokenarten auf das Limit (nicht veröffentlicht). Die
   Dollar-Angabe `cost-state` in den Protokollen ist ein API-Listenpreis und kein Abo-Verbrauch –
   bewusst weggelassen.
+
+## 22. „Muster nicht verfügbar“: Abschluss in der Zeitleiste und Sperre im Shop (seit 2026-10-16, #1385)
+
+Inhaber 2026-10-16: Hat der Lieferant eine Musterfarbe nicht, wird der Kunde informiert und bestellt bei
+Bedarf neue Muster. Bis dahin stand so ein Auftrag nur als Notiz da und blieb in „Muster nachhaken“ und
+„beim Lieferanten bestellen“ hängen; die Farbe war im Shop weiter als Muster bestellbar.
+
+- **Schritt** `muster_nicht_verfuegbar` („Muster nicht verfügbar – Kunde informiert“,
+  `operations/lib/auftragsverlauf.mjs`): gehört zu `AUFTRAGS_SCHRITTE` und `ERGEBNIS_SCHRITTE`, schließt
+  die Musterstrecke ab wie „kein Interesse“ (Positionen auf `erledigt`, Zeitleiste abgeschlossen) – damit
+  fällt der Auftrag aus „Muster noch zu bestellen“, den To-dos „Muster bei … bestellen“/„nachhaken“,
+  „Muster nachfassen“ und Kunden › „Zu tun“. Die Notiz ist Pflicht (`NOTIZ_PFLICHT`) und nennt die
+  Farben: der Server baut sie aus den angekreuzten Mustern („Nicht verfügbar: Produkt: Farbe, …“) plus
+  Freitext. Zurücknehmen geht wie bei den anderen Ergebnissen; die Shop-Sperre bleibt davon unberührt.
+- **Dialog** „Etwas anderes ist passiert …“ (`ansichten/kunden/zeitleiste.mjs`): Wahl direkt nach
+  „Ergebnis: kein Interesse“ mit Hinweiszeile; gewählt erscheinen alle Musterpositionen als Kästchen
+  (vorausgewählt) und ein Textvorschlag für die Mail mit „Text kopieren“ und „E-Mail öffnen“ (mailto,
+  nichts wird gesendet). Der Text kommt aus der Vorlage des Inhabers (Abschnitt mit „nicht verfügbar“ in
+  `muster-nachfassen-texte.md`), sonst aus `NICHT_VERFUEGBAR_VORLAGE` (`lib/muster-nachfassen.mjs`) –
+  Farben eingesetzt, ohne Terminversprechen. `GET /api/kunden/muster-texte` liefert ihn als
+  `nichtVerfuegbar`, auch wenn die übrige Vorlage fehlt.
+- **Sperre im Shop** (`operations/lib/mustersperre.mjs`): Jedes Muster ist eine Variante des Musterprodukts
+  `muster-<handle>` mit SKU `M-<Quell-SKU>`; der Musterkonfigurator wertet `variant.available` aus.
+  Lesprobe 16.10.: alle 249 Mustervarianten ohne Bestandsverfolgung, `DENY`, Bestand 0 – also immer
+  bestellbar. Gesperrt = Bestand 0 (`inventorySetQuantities`, Compare-and-swap, `@idempotent`),
+  Richtlinie `DENY`, Verfolgung an (`inventoryItemUpdate`) – in dieser Reihenfolge, erst die Verfolgung
+  macht die Sperre wirksam. Vorher: Rechte prüfen (`currentAppInstallation.accessScopes`,
+  `write_inventory` + `write_products`; einmal je Prozess bestätigt) und die Variante per SKU frisch lesen
+  (nur exakter Treffer, bei Gleichstand die aus `muster-*`). Danach Gegenprobe: `availableForSale` muss
+  `false` sein. Nie werden Varianten gelöscht, Preise/SKUs geändert oder das Quellprodukt angefasst.
+  Testbestellungen sperren nichts. Muster über das Sammelprodukt „Kostenloses Muster“ haben keine eigene
+  Variante je Farbe (`keine-mustervariante`) – sie stehen nur in der Liste.
+- **Ablage** `$TP_PRIVAT_DIR/mustersperre.json` (nur anhängen, Teil von `daten:sichern`): je Ereignis SKU,
+  Farbe, Produkt, Auftrag, wer, wann, Grund („nicht verfuegbar“ | „wieder verfuegbar“) und
+  `shopify {geschrieben, fehler, fehlerGrund, variantId, productId, vorher, nachher, verfuegbar}`. Der Stand
+  je SKU ergibt sich aus der Folge (`stand()`); `vorher` stammt aus dem ersten Sperr-Ereignis. Dieselbe SKU
+  für denselben Auftrag noch einmal = nichts zu tun. Nur eine fehlende Datei gilt als leer; eine
+  beschädigte lehnt den Schritt ab (es wird gar nichts geschrieben) und meldet sich im Musterlager.
+- **Ohne Recht, ohne Zugang, bei Fehlern** gilt der Schritt trotzdem; die Sperre steht als „im Shop noch
+  zu sperren“ samt Grund. Einkauf › Musterlager zeigt dann oben „Im Shop sperren“ mit „In Shopify öffnen“
+  (Admin-Link zur Variante, sonst Produktsuche nach der SKU), „Erneut sperren“ und „Wieder verfügbar“.
+- **Wieder verfügbar** (Einkauf › Musterlager › „Im Shop gesperrte Muster“) stellt den Stand vor der
+  Sperre her: war die Variante ohne Bestandsverfolgung, wird sie es wieder (sonst wäre sie nach der
+  nächsten Musterbestellung mit Bestand 1 von selbst wieder gesperrt); war sie verfolgt, kommt die alte
+  Menge zurück, mindestens 1. Gegenprobe, Protokoll („Muster wieder verfügbar“), Audit.
+- **Endpunkte:** `GET /api/einkauf/mustersperre` (`gesperrt`, `offen`, `fehler`; dieselbe Liste hängt als
+  `sperren` an `GET /api/einkauf/musterlager`), `POST /api/einkauf/mustersperre` mit
+  `aktion: freigeben | nachholen` und `sku` (Schreibpfad: Rolle „lesen“ 403). Der Schritt selbst läuft wie
+  bisher über `POST /api/einkauf/auftragsstatus` (`aktion: "schritt"`, `schritt: "muster_nicht_verfuegbar"`,
+  `muster: [lineItemId]`, `notiz`); die Antwort trägt `mustersperre {status, meldung, gesperrt, bereits,
+  offen, ohneSku, fehlendeRechte?}`, die Rückmeldung lautet z. B. „Ergebnis: Muster nicht verfügbar ·
+  2 Farben im Shop gesperrt“.
+- **Tests und Prüfwerkzeug** sprechen nie echtes Shopify (`operations/tests/mustersperre-attrappe.mjs`);
+  `dashboard:pruefen` hat keinen Zugang, dort landet jede Sperre unter „Im Shop sperren“.

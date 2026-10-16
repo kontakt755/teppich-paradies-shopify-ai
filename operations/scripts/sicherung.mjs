@@ -42,6 +42,8 @@ export const SICHERUNGSPFADE = Object.freeze([
   'musterherkunft.json',
   // Musterlager: welche Muster wir selbst da haben (operations/lib/musterlager.mjs).
   'musterlager.json',
+  // Mustersperre: im Shop gesperrte Muster samt Stand vor der Sperre (operations/lib/mustersperre.mjs).
+  'mustersperre.json',
   'lexikon',
   'bestelluebersicht',
   'kennzahlen',

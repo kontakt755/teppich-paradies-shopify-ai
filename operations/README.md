@@ -501,9 +501,13 @@ wie bisher: `lesen` bekommt 403). Ohne `aktion` verhält sich der Endpunkt unver
 
 `schritt`: `bestellt` \| `geliefert` \| `raus` \| `erledigt` (setzt alle Positionen des
 Auftrags, die noch nicht so weit sind – wie Einzelklicks im Einkauf), `kunde_hat_muster`
-\| `nachgefasst` \| `kunde_hat_bestellt` \| `kein_interesse` (Ereignis je Auftrag; ein
-Ergebnis setzt zusätzlich die Positionen auf `erledigt`), `notiz` (braucht `notiz`),
+\| `nachgefasst` \| `kunde_hat_bestellt` \| `kein_interesse` \| `muster_nicht_verfuegbar` (Ereignis je
+Auftrag; ein Ergebnis setzt zusätzlich die Positionen auf `erledigt`), `notiz` (braucht `notiz`),
 `zurueck` (braucht `bezug`). Antwort: `{ok, orderId, schritt, positionen, auftragsart, verlauf, verlaufNotizen, naechsterSchritt, zeitleisteAbgeschlossen}`.
+`muster_nicht_verfuegbar` nimmt zusätzlich `muster: [lineItemId, …]` (Musterpositionen dieses
+Auftrags); deren Farben stehen in der Notiz („Nicht verfügbar: Produkt: Farbe, …“), und die
+Mustervarianten werden im Shop gesperrt (`lib/mustersperre.mjs`, Ergebnis in `mustersperre`).
+Ohne angekreuzte Farbe ist der Freitext in `notiz` Pflicht (sonst `400`).
 `400` bei unbekanntem oder nicht zur Strecke passendem Schritt, `404` bei unbekannter Bestellung.
 
 ## Zugang einrichten (einmalig)

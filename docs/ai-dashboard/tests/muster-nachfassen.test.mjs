@@ -164,7 +164,7 @@ test('Vorlage lesen: Betreff und Text der ersten Mail und der Erinnerung', () =>
   assert.doesNotMatch(t.erste.text, /Text 2|---/);
   assert.equal(t.erinnerung.betreff, 'Noch Fragen zu Ihrem neuen Boden?');
   assert.match(t.erinnerung.text, /entschieden\?\n\nFreundliche Grüße\n\{Name\}$/);
-  assert.deepEqual(texteAusMarkdown('# nur eine Überschrift'), { erste: null, erinnerung: null });
+  assert.deepEqual(texteAusMarkdown('# nur eine Überschrift'), { erste: null, erinnerung: null, nichtVerfuegbar: null });
 });
 
 test('Text fuellen: Name und Links, Unbekanntes faellt mit seiner Zeile weg', () => {

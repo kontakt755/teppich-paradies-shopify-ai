@@ -294,3 +294,36 @@ test('naechsterSchritt ist rein und waehlbar: dringendster Schritt ueber mehrere
   assert.equal(dringendsterSchritt([warten, faellig]), faellig);
   assert.equal(dringendsterSchritt([]), null);
 });
+
+test('Muster nicht verfuegbar: Ergebnis-Schritt mit Pflichtnotiz, schliesst ab (Stufe erledigt), auch ganz am Anfang', () => {
+  const a = einAuftrag(bestellung(1, [muster(1), muster(2)]));
+  assert.ok(setzbareSchritte('muster').includes('muster_nicht_verfuegbar'));
+  assert.ok(!setzbareSchritte('ware').includes('muster_nicht_verfuegbar'));
+  // Noch nichts beim Lieferanten bestellt: Musterstrecke steht auf "bestellen".
+  const offen = zeitleiste(a, { jetzt: am(2) });
+  assert.equal(offen.naechsterSchritt.aktion, 'bestellt');
+  // Ohne Notiz lehnt die Ablage ab - die Notiz nennt die Farben.
+  const file = auftragsverlaufPfad(tmp());
+  assert.throws(() => haengeEreignisAn(file, { orderId: a.id, schritt: 'muster_nicht_verfuegbar', actor: 'Mitarbeiter 1', notiz: '  ' }), e => e instanceof AuftragsverlaufFehler && /Farben/.test(e.message));
+  const ev = haengeEreignisAn(file, { orderId: a.id, schritt: 'muster_nicht_verfuegbar', actor: 'Mitarbeiter 1', notiz: 'Nicht verfügbar: Testteppich: Grau', jetzt: new Date(tag(3)) });
+  const z = zeitleiste(a, { ereignisse: leseVerlauf(file)[a.id].ereignisse, jetzt: am(4) });
+  assert.equal(z.abgeschlossen, true);
+  assert.equal(z.naechsterSchritt, null, 'faellt aus "Muster bestellen"/"nachhaken" - kein naechster Schritt');
+  const ergebnis = z.verlauf.at(-1);
+  assert.deepEqual([ergebnis.ergebnis, ergebnis.label, ergebnis.zustand, ergebnis.von, ergebnis.am, ergebnis.notiz],
+    ['muster_nicht_verfuegbar', 'Muster nicht verfügbar – Kunde informiert', 'erledigt', 'Mitarbeiter 1', ev.am, 'Nicht verfügbar: Testteppich: Grau']);
+  // Zuruecknehmen oeffnet den Auftrag wieder.
+  haengeEreignisAn(file, { orderId: a.id, schritt: 'zurueck', bezug: 'muster_nicht_verfuegbar', actor: 'Mitarbeiter 1', jetzt: new Date(tag(4)) });
+  assert.equal(zeitleiste(a, { ereignisse: leseVerlauf(file)[a.id].ereignisse, jetzt: am(4) }).abgeschlossen, false);
+});
+
+test('Muster nicht verfuegbar: beim Lieferanten bestellt und seit 14 Tagen nicht da -> nach dem Ergebnis kein Nachhaken mehr', () => {
+  const a = einAuftrag(bestellung(1, [muster(1)]));
+  const statusAlle = statusBis(a, 'bestellt');
+  const vorher = zeitleiste(a, { statusAlle, jetzt: am(2 + WARTE_PROBLEM_TAGE) });
+  assert.equal(vorher.naechsterSchritt.stufe, 'problem');
+  const nachher = zeitleiste(a, { statusAlle, ereignisse: [{ schritt: 'muster_nicht_verfuegbar', am: tag(10), von: 'Mitarbeiter 2', notiz: 'Grau' }], jetzt: am(2 + WARTE_PROBLEM_TAGE) });
+  assert.equal(nachher.abgeschlossen, true);
+  assert.equal(nachher.naechsterSchritt, null);
+  assert.equal(dringendsterSchritt([vorher.naechsterSchritt, nachher.naechsterSchritt]), vorher.naechsterSchritt);
+});

@@ -51,8 +51,9 @@ const erledigt = s => s?.zustand === 'erledigt';
 /**
  * Je Produkt eine Angabe mit seinen Farben: "Testvelours Teppich nach Maß: Sand, Greige".
  * "Muster: X" bzw. "Muster X" ohne das Wort Muster; steckt die Farbe schon im Titel, nur der Titel.
+ * Auch fuer "Muster nicht verfuegbar" (Notiz, Mailtext, Server).
  */
-function musterKurz(positionen) {
+export function musterKurz(positionen) {
   const jeProdukt = new Map();
   for (const p of positionen || []) {
     if (!p?.istMuster) continue;
@@ -138,6 +139,29 @@ export function musterNachfassen(bestellzeilen = [], { jetzt = new Date() } = {}
  * @param {string} md
  * @returns {{ erste: {betreff, text}|null, erinnerung: {betreff, text}|null }}
  */
+/**
+ * Vorschlag "Muster nicht verfuegbar" (Inhaber 2026-10-16): der Lieferant hat eine Farbe nicht,
+ * der Kunde erfaehrt es per Mail und bestellt bei Bedarf andere Muster. Bewusst ohne Termin -
+ * wann die Farbe wiederkommt, weiss niemand. Gilt, solange die Vorlage des Inhabers keinen
+ * eigenen Abschnitt "nicht verfuegbar" hat. Keine Kundendaten: alles in {} fuellt fuelleText().
+ */
+export const NICHT_VERFUEGBAR_VORLAGE = Object.freeze({
+  betreff: 'Ihre Musterbestellung bei Teppich Paradies',
+  text: `Guten Tag {Anrede} {Nachname},
+
+vielen Dank für Ihre Musterbestellung. Leider sind diese Muster derzeit nicht verfügbar:
+
+{Farben}
+
+Wann sie wieder lieferbar sind, können wir im Moment nicht sagen. Gern schicken wir Ihnen Muster in anderen Farben – Sie können sie direkt im Shop bestellen: {Link Muster}
+
+Bei Fragen helfen wir Ihnen gern weiter, auch telefonisch.
+
+Freundliche Grüße
+{Name}
+Teppich Paradies`,
+});
+
 export function texteAusMarkdown(md) {
   const abschnitte = String(md || '').split(/^##\s+/m).slice(1).map((a) => {
     const [kopf, ...rest] = a.split('\n');
@@ -151,10 +175,11 @@ export function texteAusMarkdown(md) {
     const text = vorLinie.slice(m.index + m[0].length).replace(/^\s*\n/, '').trim();
     return text ? { betreff: m[1].trim(), text } : null;
   };
-  const erinnerung = abschnitte.find(a => /erinnerung/i.test(a.kopf));
-  const erste = abschnitte.find(a => a !== erinnerung && /^text\s*1\b/i.test(a.kopf))
-    || abschnitte.find(a => a !== erinnerung && /e-?mail/i.test(a.kopf));
-  return { erste: lies(erste), erinnerung: lies(erinnerung) };
+  const nichtVerfuegbar = abschnitte.find(a => /nicht\s+verf[uü]e?gbar/i.test(a.kopf));
+  const erinnerung = abschnitte.find(a => a !== nichtVerfuegbar && /erinnerung/i.test(a.kopf));
+  const erste = abschnitte.find(a => a !== erinnerung && a !== nichtVerfuegbar && /^text\s*1\b/i.test(a.kopf))
+    || abschnitte.find(a => a !== erinnerung && a !== nichtVerfuegbar && /e-?mail/i.test(a.kopf));
+  return { erste: lies(erste), erinnerung: lies(erinnerung), nichtVerfuegbar: lies(nichtVerfuegbar) };
 }
 
 /**
@@ -165,11 +190,15 @@ export function texteAusMarkdown(md) {
  * @param {object} p
  * @param {string|null} p.kundenname
  * @param {string|null} [p.absender]  Name der Person, die schreibt
+ * @param {string[]} [p.farben]  nur "Muster nicht verfuegbar": betroffene Muster, je Eintrag "Produkt: Farbe"
  * @returns {{ betreff: string, text: string }|null}
  */
-export function fuelleText(vorlage, { kundenname = null, absender = null, produkte = [] } = {}) {
+export function fuelleText(vorlage, { kundenname = null, absender = null, produkte = [], farben = [] } = {}) {
   if (!vorlage?.text) return null;
   const werte = { ...FESTE_LINKS };
+  // "Muster nicht verfuegbar": je Produkt eine Zeile mit seinen Farben (mehrzeilig, ohne Platzhalter).
+  const farbZeilen = (farben || []).map(f => String(f ?? '').replace(/[{}]/g, '').trim()).filter(Boolean);
+  if (farbZeilen.length) werte.Farben = farbZeilen.map(f => `– ${f}`).join('\n');
   const links = sichereMusterLinks(produkte);
   const auswahl = links.map(p => `${[p.titel, p.farbe].filter(Boolean).join(' · ')}\n${p.url}`).join('\n\n');
   if (links.length) werte['Link Produkt'] = auswahl;
