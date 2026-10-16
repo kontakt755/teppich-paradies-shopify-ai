@@ -7,15 +7,18 @@
 | `settings.json` | registriert die Hooks und die Freigaben (`permissions.allow`) |
 | `hooks/session-start.sh` | zeigt den Kurzstand des Control Centers (immer) und in Remote-Sessions den Projektzustand samt Abhängigkeiten (siehe unten) |
 | `hooks/gedaechtnis-sync.sh` | Gedächtnis-Ordner (Obsidian-Vault) per Git: pull bei SessionStart, push bei SessionEnd |
-| `hooks/git-gh-guard.mjs`, `theme-delete-guard.mjs`, `deploy-command-guard.mjs` | harte Grenzen (`deny`) und Deploy-Hinweise für Bash-Befehle (nur Bash: Aufrufe über den Shopify-MCP prüfen sie nicht) |
-| `hooks/*.test.mjs` | Tests der Hooks (`npm run hooks:test`, Teil von `npm test`) |
+| `hooks/hauptcheckout-nachziehen.sh` | aus `session-start.sh`: zieht den Hauptcheckout still auf `origin/main`, nur wenn er losgelöst und sauber ist (nie Worktrees, Branches oder geänderte Dateien; ohne Netz nichts) |
+| `hooks/git-gh-guard.mjs`, `theme-delete-guard.mjs` | harte Grenzen (`deny`) für Bash-Befehle |
+| `hooks/deploy-command-guard.mjs` | Hinweis auf `workflow:doctor` bzw. die Troubleshooting-Datei, nur bei Befehlen, die wirklich deployen (`npm run workflow:preview\|live`, `node workflow/cli.mjs preview\|live`, `shopify theme push\|publish`), nicht bei grep/sed/echo/PR-Texten, die die Wörter enthalten |
+| `hooks/shopify-mcp-guard.mjs` | harte Grenze (`deny`) für den Shopify-MCP (`mcp__*__graphql_mutation`): `themeDelete`, jede Mutation mit der Fallback-Theme-ID, Löschmutationen mit IDs (`productDelete`, `productVariantsBulkDelete`, `collectionDelete`, `menuDelete`, `discountCodeDelete`, `fileDelete`); Preise, `productSet`, Metafelder, Veröffentlichen laufen durch |
+| `hooks/*.test.mjs` | Tests der Hooks (`npm run hooks:test`, Teil von `npm test`); weitere unter `qa/tests/` (`theme-delete-guard`, `shopify-mcp-guard`, `deploy-command-guard`, `git-hook-skripte`) |
 | `skills/deploy/SKILL.md` | Deploy-Kette main → Preview → Live, Gates, Wegwerf-Themes |
 | `skills/control-center/SKILL.md` | Regeln, Gestaltung, Ablauf und Fallstricke für das Control Center |
 | `skills/produktimport/SKILL.md` | Ablauf für neue Produkte aus Lieferantenquellen (verweist auf `domains/shopify/produktimport-arbeitsweise.md`) |
 | `skills/lieferant-a-recherche/SKILL.md` | Artikel- und Farbnummern bei Lieferant A belegt klären |
 | `skills/shopify-massendaten/SKILL.md` | viele Metafelder/Tags auf einmal schreiben, mit Plan und Rollback |
 | `skills/raumbilder-recherche/SKILL.md` | Produkte ohne Raumbild: Hersteller hinter dem Lieferantenprodukt finden, farbgenaue Raumbilder aus erlaubten Quellen suchen |
-| `hooks/pre-commit-unmerged-branch.sh`, `hooks/SETUP.md` | Git-Pre-Commit-Hook gegen Commits auf alten, nie gemergten Branches (warnt ab 7, blockiert ab 30 Tagen; AGENTS.md Fallstrick 6). Wirkt nur, wenn er je Rechner installiert ist (`hooks/SETUP.md`) |
+| `hooks/pre-commit-unmerged-branch.sh`, `hooks/SETUP.md` | Git-Pre-Commit-Hook gegen Commits auf alten, nie gemergten Branches (warnt ab 7, blockiert ab 30 Tagen; AGENTS.md Fallstrick 6). Vergleicht seit 16.10. mit `origin/main` statt dem lokalen `main`. Wirkt nur, wenn er je Rechner installiert ist (`hooks/SETUP.md`; auf dem Mac seit 16.10.) |
 | `agents/control-center.md` | Dashboard-Mitarbeiter (Subagent), arbeitet nach dem Skill oben |
 
 ## Was bewusst nicht mehr hier liegt
@@ -91,6 +94,8 @@ Produktdaten abfragen, in unpublished Themes schreiben).
 
 Läuft in **jeder** Session zweistufig:
 
+- **Immer lokal, zuerst:** Hauptcheckout still nachziehen
+  (`hooks/hauptcheckout-nachziehen.sh`, siehe Tabelle oben).
 - **Immer (auch lokal):** Sync-Pfad-Wächter (warnt, wenn der Checkout in einem
   Cloud-Ordner liegt) und die Kurzfassung des Control Centers
   (`scripts/dashboard-brief.mjs`, rund fünf Zeilen; ist
