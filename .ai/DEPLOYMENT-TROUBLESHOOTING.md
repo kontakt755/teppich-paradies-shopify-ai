@@ -167,4 +167,4 @@ Ein Deploy einer zweizeiligen Änderung an `config/settings_data.json` brauchte 
 
 Die Konsequenz daraus war nicht mehr Dokumentation, sondern die Remediation direkt im Code (`GATE_REMEDIATION`). Der Sammel-Preflight `npm run workflow:doctor` existiert seit 2026-09-04 und schliesst die Luecke: Er prüft alle Voraussetzungen in **einem** Durchlauf und meldet jeden offenen Punkt samt Fix, statt sechsmal nacheinander an je einem Gate zu scheitern.
 
-**Vor jedem Deploy zuerst `npm run workflow:doctor` laufen lassen.** Erst wenn dort `PREFLIGHT: BEREIT` steht, `workflow:preview` starten.
+**Vor jedem Deploy zuerst `npm run workflow:doctor` laufen lassen.** Vor der Preview darf genau ein Punkt offen sein: `Preview-Evidence passt zum aktuellen origin/main` – diese Evidence entsteht erst durch `workflow:preview`, der Doctor meldet deshalb vor jeder neuen Preview `PREFLIGHT: 1 offen`. Alle anderen Punkte muessen `OK` sein. `PREFLIGHT: BEREIT` (alles gruen) ist die Bedingung fuer `workflow:live`.
