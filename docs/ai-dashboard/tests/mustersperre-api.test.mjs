@@ -43,9 +43,9 @@ function privat() {
 function umgebung({ rechte, zugang = true } = {}) {
   const dir = privat();
   const shop = attrappe({ varianten: [variante('M-TEST-1'), variante('M-TEST-2'), variante('M-TEST-3')], ...(rechte ? { rechte } : {}) });
-  const z = { zugang };
+  const z = { zugang, proxy: shop.proxy };
   const api = createApi({ gh: async () => '', root: dir, privatDirPath: dir, env: {}, now: () => new Date('2026-10-16T10:00:00Z'),
-    shopifyZugang: async () => (z.zugang ? { proxy: shop.proxy, art: 'client-credentials' } : { proxy: { execute: async () => null }, art: 'sammeln' }) });
+    shopifyZugang: async () => (z.zugang ? { proxy: z.proxy, art: 'client-credentials' } : { proxy: { execute: async () => null }, art: 'sammeln' }) });
   const schritt = (orderId, extra = {}) => api.einkaufAuftragsstatusSetzen({ aktion: 'schritt', orderId, schritt: 'muster_nicht_verfuegbar', ...extra }, ICH);
   return { dir, shop, api, schritt, z };
 }
@@ -239,4 +239,89 @@ test('Server: Rolle "lesen" bekommt 403 (Sperre und Schritt), Mitarbeiter ohne N
     mod.ersetzeShopifyZugang(null);
     process.env.TP_PRIVAT_DIR = PRIVAT_DIR;
   }
+});
+
+test('Unlesbare Sperr-Gegenprobe: persistierter offener Fall wird im Shop wiederhergestellt, auch aus alter Ablage', async () => {
+  const { dir, shop, api, schritt, z } = umgebung();
+  let lesen = 0;
+  z.proxy = { live: true, async execute(q, v) {
+    if (q.includes('query MustersperreVariante') && ++lesen === 2) throw new Error('Gegenprobe nicht erreichbar');
+    return shop.proxy.execute(q, v);
+  } };
+  const r = await schritt(AUFTRAG, { muster: ['gid://shopify/LineItem/1'] });
+  assert.equal(r.mustersperre.status, 'offen');
+  assert.equal(shop.varianten[0].tracked, true, 'Sperrmutation war trotz unlesbarer Gegenprobe erfolgreich');
+  assert.equal(sperrDatei(dir)[0].shopify.aenderungMoeglich, true);
+  assert.equal(api.einkaufMustersperre().offen[0].shopPruefen, true);
+  z.zugang = false;
+  await assert.rejects(api.einkaufMustersperreSetzen({ aktion: 'freigeben', sku: 'M-TEST-1' }, ICH), e => e.status === 503);
+  assert.equal(api.einkaufMustersperre().offen.length, 1, 'kein Zugang darf unklaren Fall nicht entfernen');
+
+  // Der alte Dateistand kennt den neuen Marker nicht; der Vorstand beweist die Pruefpflicht.
+  const alt = JSON.parse(fs.readFileSync(path.join(dir, 'mustersperre.json'), 'utf8'));
+  delete alt.ereignisse[0].shopify.aenderungMoeglich;
+  fs.writeFileSync(path.join(dir, 'mustersperre.json'), JSON.stringify(alt));
+  const neu = createApi({ gh: async () => '', root: dir, privatDirPath: dir, env: {}, shopifyZugang: async () => ({ proxy: shop.proxy, art: 'client-credentials' }) });
+  const vorher = shop.aufrufe.length;
+  const f = await neu.einkaufMustersperreSetzen({ aktion: 'freigeben', sku: 'M-TEST-1' }, ICH);
+  assert.match(f.meldung, /wieder bestellbar/);
+  assert.equal(shop.varianten[0].tracked, false, 'urspruenglicher untracked-Stand wiederhergestellt');
+  assert.ok(shop.aufrufe.length > vorher, 'frische Shopify-Pruefung statt lokalem Entfernen');
+  assert.deepEqual(neu.einkaufMustersperre().offen, []);
+});
+
+test('Freigabe nur teilweise ausgefuehrt: Fehler bleibt offen sichtbar, Wiederholung stellt exakten Vorstand her', async () => {
+  const { dir, shop, api, schritt, z } = umgebung();
+  shop.varianten[0].menge = 3;
+  await schritt(AUFTRAG, { muster: ['gid://shopify/LineItem/1'] });
+  z.proxy = { live: true, async execute(q, v) {
+    if (q.includes('mutation MustersperreVerfolgung')) throw new Error('timeout before write');
+    return shop.proxy.execute(q, v);
+  } };
+  await assert.rejects(api.einkaufMustersperreSetzen({ aktion: 'freigeben', sku: 'M-TEST-1' }, ICH), e => e.status === 502 && /wiederhergestellt/.test(e.message));
+  const offen = api.einkaufMustersperre().offen;
+  assert.equal(offen.length, 1);
+  assert.match(offen[0].freigabeFehler, /wiederhergestellt/);
+  assert.equal(api.einkaufMustersperre().gesperrt.length, 0, 'Teilfeigabe ist keine bestaetigte Sperre mehr');
+  assert.deepEqual(sperrDatei(dir)[0].shopify.vorher, { tracked: false, policy: 'DENY', menge: 3 });
+  z.proxy = shop.proxy;
+  const f = await api.einkaufMustersperreSetzen({ aktion: 'freigeben', sku: 'M-TEST-1' }, ICH);
+  assert.match(f.meldung, /wieder bestellbar/);
+  assert.deepEqual([shop.varianten[0].tracked, shop.varianten[0].menge], [false, 3]);
+  assert.equal(api.einkaufMustersperre().offen.length, 0);
+});
+
+test('Sicher nicht geschrieben: fehlende Rechte, initialer Lesefehler und erste Mutationsablehnung lokal entfernbar', async () => {
+  for (const fall of ['rechte', 'lesen', 'mutation']) {
+    const { shop, api, schritt, z } = umgebung(fall === 'rechte' ? { rechte: ['read_products'] } : {});
+    if (fall !== 'rechte') z.proxy = { live: true, async execute(q, v) {
+      if (fall === 'lesen' && q.includes('query MustersperreVariante')) throw new Error('Lesetimeout vor Mutation');
+      if (fall === 'mutation' && q.includes('mutation MustersperreVerfolgung')) throw new Error('ACCESS_DENIED write_inventory');
+      return shop.proxy.execute(q, v);
+    } };
+    await schritt(AUFTRAG, { muster: ['gid://shopify/LineItem/1'] });
+    assert.equal(shop.varianten[0].tracked, false);
+    assert.equal(api.einkaufMustersperre().offen[0].shopPruefen, false, fall);
+    const vorher = shop.aufrufe.length;
+    const f = await api.einkaufMustersperreSetzen({ aktion: 'freigeben', sku: 'M-TEST-1' }, ICH);
+    assert.match(f.meldung, /aus der Liste genommen/);
+    assert.equal(shop.aufrufe.length, vorher, 'lokales Entfernen ohne Shopify-Aufruf');
+    assert.equal(api.einkaufMustersperre().offen.length, 0);
+  }
+});
+
+test('Globale Bestellbarkeit trotz Bestand 0: Erst- und Nachholversuch bleiben offen', async () => {
+  const { shop, api, schritt, z } = umgebung();
+  shop.varianten[0].tracked = true;
+  z.proxy = { live: true, async execute(q, v) {
+    const d = await shop.proxy.execute(q, v);
+    for (const n of d.productVariants?.nodes || []) n.availableForSale = true;
+    return d;
+  } };
+  const r = await schritt(AUFTRAG, { muster: ['gid://shopify/LineItem/1'] });
+  assert.equal(r.mustersperre.offen, 1);
+  await assert.rejects(api.einkaufMustersperreSetzen({ aktion: 'nachholen', sku: 'M-TEST-1' }, ICH), e => e.status === 502 && /Standorte/.test(e.message));
+  assert.equal(api.einkaufMustersperre().offen.length, 1);
+  assert.equal(api.einkaufMustersperre().gesperrt.length, 0);
+  assert.equal(shop.mutationen().length, 0);
 });

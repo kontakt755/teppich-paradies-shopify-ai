@@ -2,6 +2,26 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-16 · Unklare Mustersperren und Teilfreigaben absichern (#1400)
+
+- **Geändert:** Eine unlesbare Sperr-Gegenprobe gilt nicht mehr als nie geschriebene Sperre.
+  Moegliche Shopify-Aenderungen werden getrennt von bestaetigten Sperren gespeichert; auch alte
+  unklare Eintraege behalten den ersten Vorstand. „Wieder verfügbar“ stellt diesen Stand frisch
+  geprueft wieder her und entfernt den Eintrag erst bei exaktem Zielstand plus Bestellbarkeit.
+  Teilfreigaben bleiben mit Fehler offen sichtbar und lassen sich erneut ausfuehren. Sicher nie
+  geschriebene Versuche bleiben lokal entfernbar. Global bestellbare Varianten werden auch bei
+  lokalem Bestand 0 und erneutem Versuch nicht als gesperrt bestaetigt.
+- **Getestet:** Gezielte Mustersperren-/API-/Konfigurator-Suiten: 40/40, darunter Gegenprobe-Timeout,
+  alte Ablage, fehlender Zugang, sichere Nicht-Mutation, Teilfreigabe, Wiederholung, verlorene
+  Antwort und globale Bestellbarkeit. `npm test`: 2917/2917, Pflichtguards und statische
+  Workflowpruefung gruen. Browser-Datenkopie: 24 Rollen-/Ansichts-/Breitenkombinationen (390/1440 px),
+  0 px Ueberlauf. Synthetischer Klicktest: unklare Sperre, misslungene Teilfreigabe nach Neuladen
+  sichtbar (390/1440 px), erneute Freigabe stellt untracked/Bestand 3 her, offene Liste 1 → 0;
+  keine JavaScript-Fehler. Screenshots ausserhalb des Repositorys.
+- **Risiken/Annahmen:** Nur Attrappen und isolierte Datenkopie, keine echte Shopify-Mutation.
+  Eine reale Schreib-/Rueckwegprobe und die laufende Dienstversion sind damit nicht bestaetigt.
+- **Nächste Stufe:** Unabhaengigen PR-Diff pruefen; kein Merge, Preview oder Live in diesem Auftrag.
+
 ## 2026-10-16 · Arbeitsplatz als Prozesszentrale (#1390)
 
 - **Geändert:** Neuer Arbeitsplatz fuer E-Mail, Angebotsvorbereitung und Recherche, erreichbar
