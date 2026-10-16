@@ -1,0 +1,19 @@
+{%- doc -%}
+  Kurze Uebersetzung der nativen Checkout-Menge in die Kundeneinheit.
+  Nutzt dieselbe belegte Hundertstel-Einheit wie der Einzelpreis; keine
+  Preisberechnung und keine Aenderung an der Warenkorbmenge.
+
+  @param {object} line_item - Warenkorbposition
+{%- enddoc -%}
+{%- capture tp_cm_einheit -%}
+  {%- render 'tp-cart-einzelpreis-einheit', line_item: line_item -%}
+{%- endcapture -%}
+{%- assign tp_cm_teile = tp_cm_einheit | strip | split: '|' -%}
+{%- if tp_cm_teile.first == '100' and line_item.quantity > 0 -%}
+  {%- assign tp_cm_menge = line_item.quantity | times: 0.01 -%}
+  {%- assign tp_cm_name = tp_cm_teile.last | remove_first: '/' -%}
+  {%- if tp_cm_name == 'lfm' -%}{%- assign tp_cm_name = 'm' -%}{%- endif -%}
+  <p class="tp-cart-mengenhinweis" data-tp-checkout-menge>
+    An der Kasse steht die Menge {{ line_item.quantity }} für {% render 'tp-zahl-de', zahl: tp_cm_menge %} {{ tp_cm_name | escape }}.
+  </p>
+{%- endif -%}
