@@ -257,15 +257,15 @@
 
   /* Kopf und Kennzahlen */
   .tp-ldn__kopf { max-width: 68ch; }
-  .tp-ldn__intro { color: var(--tp-ink-2, #4a443f); margin-top: 12px; font-size: 17px; line-height: 1.55; }
+  .tp-ldn__intro { color: var(--tp-ink-2, #4a443f); margin-top: 12px; font-size: var(--tp-fs-md); line-height: 1.55; }
   .tp-ldn__intro p { margin: 0 0 8px; }
   .tp-ldn__zahlen { list-style: none; margin: 32px 0 0; padding: 22px 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 18px 28px; border-top: 1px solid var(--tp-line, #e6e0d8); border-bottom: 1px solid var(--tp-line, #e6e0d8); }
-  .tp-ldn__zahl b { display: block; font-size: clamp(26px, 2.6vw, 36px); font-weight: 700; line-height: 1.05; letter-spacing: -0.015em; color: var(--tp-ink, #1d1a17); }
-  .tp-ldn__zahl span { display: block; margin-top: 6px; font-size: 14px; line-height: 1.35; color: var(--tp-muted, #595959); }
+  .tp-ldn__zahl b { display: block; font-size: var(--tp-fs-xl); font-weight: 700; line-height: 1.05; letter-spacing: -0.015em; color: var(--tp-ink, #1d1a17); }
+  .tp-ldn__zahl span { display: block; margin-top: 6px; font-size: var(--tp-fs-sm); line-height: 1.35; color: var(--tp-muted, #595959); }
 
   /* Register und Reste-Regal */
   .tp-ldn__raster { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 40px; align-items: start; margin-top: 40px; }
-  .tp-ldn__register-text { color: var(--tp-muted, #595959); margin: 6px 0 14px; font-size: 15px; }
+  .tp-ldn__register-text { color: var(--tp-muted, #595959); margin: 6px 0 14px; font-size: var(--tp-fs-sm); }
   .tp-ldn__gruppen { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--tp-line, #e6e0d8); }
   .tp-ldn__gruppen > li { border-bottom: 1px solid var(--tp-line, #e6e0d8); }
   .tp-ldn__gruppe { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto 18px; align-items: center; gap: 14px; padding: 14px 6px; color: var(--tp-ink, #1d1a17); text-decoration: none; border-radius: 8px; }
@@ -273,13 +273,13 @@
   a.tp-ldn__gruppe:focus-visible { outline: 2px solid var(--tp-ink, #1d1a17); outline-offset: 2px; }
   .tp-ldn__symbol { width: 44px; height: 44px; border-radius: 50%; background: var(--tp-bg-2, #f6f2ec); display: inline-flex; align-items: center; justify-content: center; color: var(--tp-ink, #1d1a17); flex: none; }
   .tp-ldn__gruppe-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  .tp-ldn__gruppe-titel { font-size: 17px; font-weight: 600; line-height: 1.25; }
-  .tp-ldn__arten { font-size: 14px; color: var(--tp-muted, #595959); line-height: 1.35; }
-  .tp-ldn__laden { margin-top: 4px; font-size: 14px; line-height: 1.4; color: var(--tp-ink-2, #4a443f); }
-  .tp-ldn__laden-marke { display: inline-block; margin-right: 4px; padding: 1px 7px; border-radius: 999px; background: var(--tp-sand, #e9c8a1); color: var(--tp-ink, #1d1a17); font-size: 12px; font-weight: 600; }
+  .tp-ldn__gruppe-titel { font-size: var(--tp-fs-md); font-weight: 600; line-height: 1.25; }
+  .tp-ldn__arten { font-size: var(--tp-fs-sm); color: var(--tp-muted, #595959); line-height: 1.35; }
+  .tp-ldn__laden { margin-top: 4px; font-size: var(--tp-fs-sm); line-height: 1.4; color: var(--tp-ink-2, #4a443f); }
+  .tp-ldn__laden-marke { display: inline-block; margin-right: 4px; padding: 1px 7px; border-radius: 999px; background: var(--tp-sand, #e9c8a1); color: var(--tp-ink, #1d1a17); font-size: var(--tp-fs-xs); font-weight: 600; }
   .tp-ldn__online { text-align: right; line-height: 1.15; white-space: nowrap; }
-  .tp-ldn__online b { display: block; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .tp-ldn__online span { font-size: 12.5px; color: var(--tp-muted, #595959); }
+  .tp-ldn__online b { display: block; font-size: var(--tp-fs-lg); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tp-ldn__online span { font-size: var(--tp-fs-xs); color: var(--tp-muted, #595959); }
   .tp-ldn__pfeil { width: 18px; height: 18px; color: var(--tp-muted, #595959); }
   .tp-ldn__marken { margin-top: 28px; }
   .tp-ldn__marken ul { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
@@ -296,24 +296,24 @@
   .tp-ldn__illu-ring { fill: none; stroke: rgba(29, 26, 23, 0.22); stroke-width: 2; }
   .tp-ldn__illu-kern { fill: var(--tp-bg-2, #f6f2ec); }
   .tp-ldn__reste-text { padding: 22px 24px 24px; }
-  .tp-ldn__reste-absatz { color: var(--tp-ink-2, #4a443f); margin-top: 8px; font-size: 15.5px; line-height: 1.55; }
+  .tp-ldn__reste-absatz { color: var(--tp-ink-2, #4a443f); margin-top: 8px; font-size: var(--tp-fs-md); line-height: 1.55; }
   .tp-ldn__reste-absatz p { margin: 0 0 8px; }
   .tp-ldn__wege { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
 
   /* Besuch */
   .tp-ldn__besuch { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 32px; margin-top: 40px; padding: 18px 22px; border-radius: var(--tp-r-lg, 16px); background: var(--tp-bg-2, #f6f2ec); }
-  .tp-ldn__besuch-punkt { display: flex; align-items: center; gap: 12px; font-size: 15px; color: var(--tp-ink-2, #4a443f); }
+  .tp-ldn__besuch-punkt { display: flex; align-items: center; gap: 12px; font-size: var(--tp-fs-md); color: var(--tp-ink-2, #4a443f); }
   .tp-ldn__besuch-punkt .tp-ldn__symbol { background: #fff; }
-  .tp-ldn__besuch-punkt b { display: block; color: var(--tp-ink, #1d1a17); font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .tp-ldn__besuch-punkt b { display: block; color: var(--tp-ink, #1d1a17); font-size: var(--tp-fs-xs); letter-spacing: 0.04em; text-transform: uppercase; }
   .tp-ldn__besuch-wege { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 24px; margin-left: auto; }
 
   /* Band (Startseite) */
   .tp-ldn__band { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); align-items: center; gap: 24px 48px; padding: 28px 32px; border: 1px solid var(--tp-line, #e6e0d8); border-radius: var(--tp-r-lg, 16px); background: var(--tp-bg-2, #f6f2ec); }
-  .tp-ldn__band-h2 { font-size: clamp(22px, 2vw, 28px); }
-  .tp-ldn__band-text p { margin: 8px 0 0; color: var(--tp-ink-2, #4a443f); font-size: 15.5px; line-height: 1.5; }
+  .tp-ldn__band-h2 { font-size: var(--tp-fs-xl); }
+  .tp-ldn__band-text p { margin: 8px 0 0; color: var(--tp-ink-2, #4a443f); font-size: var(--tp-fs-md); line-height: 1.5; }
   .tp-ldn__band-link { margin-top: 16px; }
   .tp-ldn--band .tp-ldn__zahlen { margin: 0; padding: 0; border: 0; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
-  .tp-ldn--band .tp-ldn__zahl b { font-size: clamp(22px, 2vw, 28px); white-space: nowrap; }
+  .tp-ldn--band .tp-ldn__zahl b { font-size: var(--tp-fs-xl); white-space: nowrap; }
 
   @media (max-width: 1023px) {
     .tp-ldn__raster { grid-template-columns: 1fr; gap: 32px; }
@@ -321,15 +321,15 @@
     .tp-ldn__besuch-wege { margin-left: 0; }
   }
   @media (max-width: 767px) {
-    .tp-ldn__intro { font-size: 16px; }
+    .tp-ldn__intro { font-size: var(--tp-fs-md); }
     .tp-ldn__zahlen { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 18px; margin-top: 24px; padding: 18px 0; }
     .tp-ldn__zahl:first-child:nth-last-child(odd) { grid-column: 1 / -1; }
     .tp-ldn__raster { margin-top: 28px; }
     .tp-ldn__gruppe { grid-template-columns: 40px minmax(0, 1fr) auto; gap: 12px; padding: 12px 2px; }
     .tp-ldn__symbol { width: 40px; height: 40px; }
     .tp-ldn__pfeil { display: none; }
-    .tp-ldn__gruppe-titel { font-size: 16px; }
-    .tp-ldn__online b { font-size: 17px; }
+    .tp-ldn__gruppe-titel { font-size: var(--tp-fs-md); }
+    .tp-ldn__online b { font-size: var(--tp-fs-lg); }
     .tp-ldn__reste-text { padding: 18px 18px 20px; }
     .tp-ldn__besuch { flex-direction: column; align-items: flex-start; padding: 18px; margin-top: 28px; }
     .tp-ldn__band { padding: 22px 18px; gap: 20px; }
