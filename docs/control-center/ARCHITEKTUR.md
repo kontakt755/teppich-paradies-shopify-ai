@@ -7,9 +7,9 @@ Direkte Einstiege stehen auf „Heute“ und in der Befehlspalette, die vollstae
 Seitenleiste unter „Arbeitsplatz“ (am Handy hinter „Mehr“). Heute bleibt die betriebliche Startseite.
 
 Je Aufgabe werden vorhandene Angaben in eine pruefbare Arbeitsanweisung eingebettet. Originaltexte
-sind als Quellen markiert; sie ersetzen keine Projektregeln. Der erste Knopf kopiert den Auftrag,
-ein separater nativer Link oeffnet die gewaehlte App oder das hinterlegte Projekt. Einfuegen und
-Starten erfolgen dort durch die Person. Es gibt keinen KI-Hintergrunddienst, keine neuen
+sind als Quellen markiert; sie ersetzen keine Projektregeln. Je nach Ziel uebernimmt der
+Browserbegleiter den Text oder ein offizieller App-Link oeffnet einen Entwurf. Der manuelle Weg
+bleibt als Alternative erhalten. Starten erfolgt dort durch die Person. Es gibt keinen KI-Hintergrunddienst, keine neuen
 API-Schluessel und keinen automatischen Versand oder Schreibzugriff auf Fachsysteme.
 
 Die Angebotsvorbereitung verlangt den tatsaechlich verfuegbaren, gelesenen Lexware-Skill des
@@ -28,8 +28,8 @@ behandelt oder ueberschrieben.
 
 Erlaubt sind HTTPS-Adressen von `chatgpt.com` bzw. `claude.ai` sowie die dokumentierten nativen
 App-Links fuer neue/gespeicherte Codex-Chats und Claude-Projekte bzw. lokale Ordner. Abfragen mit
-Prompttext, fremde Hosts, Zugangsdaten oder Textfragmente werden abgewiesen. Kontext wird nie in
-einen Link geschrieben. Leere Ziele bleiben sichtbar unkonfiguriert. Allgemeine App-Adressen
+Prompttext, fremde Hosts, Zugangsdaten oder Textfragmente werden abgewiesen. Gespeicherte
+Navigationslinks enthalten keinen Kontext. Leere Ziele bleiben sichtbar unkonfiguriert. Allgemeine App-Adressen
 sagen ausdruecklich, dass das passende Projekt dort noch auszuwaehlen ist. Native Ordnerziele sind
 geraetebezogen; sie uebernehmen weder Cloud-Chats noch deren Quellen oder Skills automatisch.
 Referenzen: [Codex-App-Links](https://learn.chatgpt.com/docs/reference/commands),
@@ -50,8 +50,8 @@ Der optionale Browserbegleiter unter `operations/browser-uebergabe/` ersetzt auf
 Chrome-Arbeitsplatz Kopieren und Einfuegen. Er verwendet dieselben privaten Projektverknuepfungen
 und denselben vorbereiteten Auftrag. Ein bewusster Klick auf „Im Projekt einfuegen“ oeffnet eine
 neue Projektseite und fuellt dort das noch leere Eingabefeld. Er sendet keine Nachricht und startet
-keine KI. Die manuellen Knoepfe bleiben als Alternative erreichbar. Fuer lokale Codex- und
-Claude-Ziele bleibt der bisherige Weg erhalten.
+keine KI. Die manuellen Knoepfe bleiben als Alternative erreichbar. Native Codex- und Claude-Ziele
+verwenden die unten beschriebene App-Uebergabe.
 
 Die Erweiterung laeuft nur auf explizit eingerichteten Dashboard-Urspruengen und auf ChatGPT-
 Projektseiten. Der Generator `operations/scripts/browser-uebergabe-paket.mjs` erzeugt ihre private
@@ -78,6 +78,29 @@ Dieser Weg bedient die ChatGPT-Oberflaeche; eine offizielle Projekt-Prompt-API i
 Die [dokumentierten App-Links](https://learn.chatgpt.com/docs/reference/commands) mit `prompt`
 betreffen lokale Chats und ersetzen keine ChatGPT-Projektzuordnung. Einrichtung, Pruefung und
 Grenzen stehen in [BROWSER-UEBERGABE.md](BROWSER-UEBERGABE.md).
+
+### Direkte Entwuerfe in Codex und Claude (#1404)
+
+`prozess-app-entwurf.mjs` ergaenzt im echten Uebergabeklick einen fluechtigen offiziellen App-Link.
+Codex bekommt `prompt` und behaelt den eingerichteten `path` bzw. `originUrl`. Claude bekommt `q`;
+bei Claude Code bleibt `folder` erhalten. Unterstuetzt werden ausschliesslich neue Chats/Code-
+Entwuerfe. Bestehende Chats oder Cloud-Projektadressen bekommen keinen vorgetaeuschten Direktweg.
+Ein allgemeines neues Chat-Ziel zeigt ausdruecklich, dass noch kein Projekt hinterlegt ist.
+
+Das Dashboard erzeugt den Textparameter des nativen App-Links erst beim Klick. Es schreibt ihn weder in
+seine HTTP-Adresse noch in einen dauerhaften `href`, die Konfiguration, Browserablagen oder einen
+API-Aufruf. Anders als der ChatGPT-Begleiter verwendet dieser Weg die Textparameter des jeweiligen
+App-Protokolls. Betriebssystem und Ziel-App verarbeiten diesen Link; deren Speicherverhalten kann
+das Dashboard nicht steuern. Die gemeinsame Validierung gespeicherter Ziele bleibt unveraendert
+streng und verbietet darin weiterhin Prompt-Parameter.
+
+Die App-Uebergabe hat keinen Erfolgsrueckkanal. Das Dashboard meldet deshalb nur „Uebergabe
+angefordert“, niemals eine bestaetigte Einfuegung. Die Person prueft den Entwurf und startet selbst.
+Claude Code verlangt bei Ordnerlinks einen eigenen Bestaetigungsdialog; das Dashboard bestaetigt
+ihn nicht. Das vollstaendig kodierte Ziel ist auf 12.000 Zeichen begrenzt, damit insbesondere
+Claudes dokumentierte Textkuerzung vermieden wird. Zu lange oder nicht verlustfrei uebertragbare
+Angaben bleiben vollstaendig im Eingabefeld und ergeben eine klare Fehlermeldung mit Alternative.
+Details und Quellen: [APP-UEBERGABE.md](APP-UEBERGABE.md).
 
 ## Starten (Mitarbeiter/Admins)
 
