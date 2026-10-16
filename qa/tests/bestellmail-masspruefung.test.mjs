@@ -220,6 +220,28 @@ test('Laengenware – fehlende Bohrung faellt auf, Bohrung wird escaped', async 
   assert.ok(markup.includes('Bohrung: &lt;b&gt;x&lt;/b&gt;'));
 });
 
+test('Laeufer – Einfassung statt Bohrung, Service- und Pauschalezeile ohne Alarm', async () => {
+  const lauf = profil(700, { 'Länge je Stück': '350 cm', 'Anzahl': '2 Stück', 'Gesamtlänge': '7,00 m', 'Einfassung': 'Baumwollband', 'Bandfarbe': 'Mohn', _Gruppe: 'L2' });
+  const band = { title: 'Einfassung Läufer-Schnittkanten', quantity: 2, sku: 'TEST-EINF-65', variant_title: '65 cm / Baumwollband Mohn',
+    properties: P({ 'Zu Teppich': 'Testläufer', 'Einfassung': 'Baumwollband', 'Bandfarbe': 'Mohn', _Gruppe: 'L2' }), product: { metafields: { grosshandel: { sku: 'G-2' } } }, variant: { metafields: { lieferant: {} } } };
+  const pausch = { title: 'Pauschale', quantity: 2, sku: 'TEST-PAUSCH', variant_title: 'Default Title',
+    properties: P({ 'Zu Teppich': 'Testläufer', 'Läufer': '2 × 350 cm', _Gruppe: 'L2' }), product: { metafields: {} }, variant: { metafields: { lieferant: {} } } };
+  const html = await render([lauf, band, pausch]);
+  assert.match(html, /<strong>Zuschnitt: 2 × 350 cm<\/strong>/);
+  assert.match(html, /<strong>Einfassung: Baumwollband, Bandfarbe Mohn<\/strong>/);
+  assert.ok(!html.includes('Bohrung'), 'bei Laeufern keine Bohrung');
+  assert.ok(!html.includes('MENGE PASST NICHT ZUM MASS'));
+  assert.ok(html.includes('Soll genau 700 × 0,01 m'));
+});
+
+test('Laeufer ohne Einfassung-Angabe: "Einfassung: keine Angabe" statt Bohrung', async () => {
+  const lauf = profil(700, { 'Länge je Stück': '350 cm', 'Anzahl': '2 Stück', _Gruppe: 'L3' });
+  lauf.product.type = 'Läufer nach Maß';
+  const html = await render([lauf]);
+  assert.match(html, /<strong>Einfassung: <span style="color:#a62020;">keine Angabe<\/span><\/strong>/);
+  assert.ok(!html.includes('Bohrung'));
+});
+
 test('Laengenware – ohne Metafeld bleibt die Zeile ungeprueft wie bisher', async () => {
   const html = await render([profil(1, undefined, false)]);
   assert.ok(!html.includes('Zuschnitt:') && !html.includes('NICHT ZUSCHNEIDEN'));

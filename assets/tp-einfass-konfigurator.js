@@ -7,6 +7,17 @@
 (function () {
   'use strict';
 
+  // Variante aus Horizons variant:update fuer dieses Produkt: ihre ID, oder
+  // 'keine', wenn es die gewaehlte Kombination nicht gibt. Meldungen ohne
+  // oder mit fremder Produkt-ID aendern nichts (bisher bleibt). Gleiche Regel
+  // wie TPLaengenZuschnitt.variantVonHorizon (dort getestet).
+  function variantVonHorizon(e, produktId, bisher) {
+    var det = e && e.detail;
+    var pid = det && det.data ? det.data.productId : null;
+    if (!pid || !produktId || String(pid) !== String(produktId)) return bisher;
+    return det.resource && det.resource.id ? String(det.resource.id) : 'keine';
+  }
+
   var ART = { cover: 'Cover', ketteln: 'Gekettelt', einfassband: 'Einfassband', paspelband: 'Paspelband', fertig: 'Fertig eingefasst' };
   // Vergroesserung in der Kantenlupe und Rand, damit die Kachel auch die
   // aussen liegende Cover-Kontur (stroke-width 9) noch mit abdeckt.
@@ -1086,7 +1097,15 @@
     document.addEventListener('change', function (e) {
       if (!root.contains(e.target)) setTimeout(rechnen, 120);
     });
-    document.addEventListener('variant:update', function () { setTimeout(rechnen, 60); });
+    // Horizon-Variantenwahl (Breite, Staerke ...) meldet ihre Variante per
+    // variant:update - die gilt, auch wenn vorher die Farbwahl eine gemeldet
+    // hat (sonst blieb nach Farbe -> Breite die alte Breite im Warenkorb).
+    // Keine Variante (Kombination gibt es nicht) = keine Auswahl. Meldungen
+    // anderer Produkte (Schnellkauf, Empfehlungen) zaehlen nicht.
+    document.addEventListener('variant:update', function (e) {
+      gewaehlt = variantVonHorizon(e, d.produkt_id, gewaehlt);
+      setTimeout(rechnen, 60);
+    });
     window.addEventListener('popstate', function () { gewaehlt = null; rechnen(); });
 
     // Mass von der Kategorieseite (Mass-Rechner, ?breite=&laenge=, assets/tp-teppich-rechner.js):
