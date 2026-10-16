@@ -170,3 +170,68 @@ test('Rollenbestand – Preis 0 ueberschreibt keinen Alarm einer Rollenware-Zeil
   assert.ok(html.includes('MENGE PASST NICHT ZUM MASS'));
   assert.ok(!html.includes('Bestandsabgang zum Maßteppich'));
 });
+
+// Laengenware (Profile nach Mass, custom.preis_pro_001_lfm, seit 2026-10-16):
+// Menge = "Länge je Stück" x "Anzahl" in cm, und zwar genau. Vorbild:
+// operations/lib/resolve.mjs (masspruefung) - nur synthetische Testdaten.
+const lfmProd = (feld = true) => ({ metafields: { custom: { preis_pro_001_lfm: feld }, grosshandel: { sku: 'G-1' } } });
+const profil = (q, props = { 'Länge je Stück': '95 cm', 'Anzahl': '10 Stück', 'Gesamtlänge': '9,50 m', 'Bohrung': 'gebohrt', _Gruppe: 'L1' }, feld = true) =>
+  ({ title: 'Testkante nach Maß', quantity: q, sku: 'TEST-PROFIL-1', variant_title: 'Messing poliert', properties: P(props), product: lfmProd(feld), variant: { metafields: { lieferant: {} } } });
+const lfmFaelle = [
+  ['ehrlich: 10 × 95 cm = 950', [profil(950)], 'passt', null],
+  ['ehrlich: Metafeld als Objekt mit value', [profil(950, undefined, { value: true })], 'passt', null],
+  ['ehrlich: gemischt mit Teppich nach Mass, Kettel, Meterware, Muster', [profil(950), mass(600), kettel(1000), meter(12), muster()], 'passt', null],
+  ['MANIPULIERT: /cart/change.js 950 -> 1', [profil(1)], 'MENGE ZU KLEIN', 'kleiner'],
+  ['MANIPULIERT: knapp 950 -> 940', [profil(940)], 'MENGE ZU KLEIN', 'kleiner'],
+  ['Grenze: Menge UND Anzahl gefaelscht = kleinerer Zuschnitt zum richtigen Preis', [profil(95, { 'Länge je Stück': '95 cm', 'Anzahl': '1 Stück', 'Gesamtlänge': '9,50 m', 'Bohrung': 'gebohrt', _Gruppe: 'L1' })], 'passt', null],
+  ['Abweichung: Menge 960 statt 950', [profil(960)], 'MENGE ZU GROSS', 'mehr'],
+  ['MANIPULIERT: "Länge je Stück" entfernt', [profil(950, { 'Anzahl': '10 Stück', 'Bohrung': 'gebohrt', _Gruppe: 'L1' })], 'Maßangabe fehlt', 'kleiner'],
+  ['MANIPULIERT: alle Properties entfernt', [profil(1, {})], 'Maßangabe fehlt', 'kleiner'],
+  ['MANIPULIERT: "Maße" statt Laenge (Flaechenrechnung umgehen)', [profil(1, { 'Maße': '1 × 1 cm', _Gruppe: 'L1' })], 'Maßangabe fehlt', 'kleiner'],
+  ['Unlesbar: Anzahl fehlt', [profil(950, { 'Länge je Stück': '95 cm', 'Bohrung': 'gebohrt' })], 'Maß fehlt oder nicht lesbar', 'kleiner'],
+  ['Unlesbar: Laenge ist Markup', [profil(950, { 'Länge je Stück': '<b>x</b>', 'Anzahl': '10 Stück' })], 'Maß fehlt oder nicht lesbar', 'kleiner'],
+];
+for (const [name, items, erwartet, banner] of lfmFaelle) {
+  test(`Laengenware – ${name}`, async () => {
+    const html = await render(items);
+    assert.ok(html.includes(erwartet), `erwartet "${erwartet}"`);
+    assert.equal(html.includes('MENGE PASST NICHT ZUM MASS'), banner !== null, 'Warnbanner');
+    if (banner === 'kleiner') assert.ok(html.includes('mit kleinerer Menge bezahlt'));
+    if (banner === 'mehr') assert.ok(html.includes('Bei Längenware ist mehr bezahlt') && !html.includes('mit kleinerer Menge bezahlt'));
+    assert.ok(!html.includes('<b>x</b>'), 'Kundeneingaben muessen escaped sein');
+  });
+}
+
+test('Laengenware – Zuschnitt und Bohrung statt der Rohangaben, Soll genau', async () => {
+  const html = await render([profil(950)]);
+  assert.match(html, /<strong>Zuschnitt: 10 × 95 cm<\/strong>/);
+  assert.match(html, /<strong>Bohrung: gebohrt<\/strong>/);
+  assert.ok(html.includes('Soll genau 950 × 0,01 m'));
+  assert.ok(!html.includes('Länge je Stück: 95 cm') && !html.includes('Anzahl: 10 Stück'), 'Rohangaben nicht doppelt');
+  assert.ok(html.includes('Gesamtlänge: 9,50 m'), 'uebrige Properties bleiben');
+  const zu = await render([profil(940)]);
+  assert.ok(zu.includes('bestellt 940, zum Maß gehören genau 950 × 0,01 m'));
+});
+
+test('Laengenware – fehlende Bohrung faellt auf, Bohrung wird escaped', async () => {
+  const ohne = await render([profil(950, { 'Länge je Stück': '95 cm', 'Anzahl': '10 Stück' })]);
+  assert.match(ohne, /Bohrung: <span style="color:#a62020;">keine Angabe<\/span>/);
+  const markup = await render([profil(950, { 'Länge je Stück': '95 cm', 'Anzahl': '10 Stück', 'Bohrung': '<b>x</b>' })]);
+  assert.ok(markup.includes('Bohrung: &lt;b&gt;x&lt;/b&gt;'));
+});
+
+test('Laengenware – ohne Metafeld bleibt die Zeile ungeprueft wie bisher', async () => {
+  const html = await render([profil(1, undefined, false)]);
+  assert.ok(!html.includes('Zuschnitt:') && !html.includes('NICHT ZUSCHNEIDEN'));
+  assert.ok(html.includes('Länge je Stück: 95 cm'), 'Rohangaben wie bei jedem Produkt');
+});
+
+test('Laengenware – zu klein und zu gross zugleich: Banner fuer zu wenig gewinnt', async () => {
+  const html = await render([profil(960), mass(75)]);
+  assert.ok(html.includes('MENGE ZU GROSS') && html.includes('MENGE ZU KLEIN'));
+  assert.ok(html.includes('mit kleinerer Menge bezahlt'));
+});
+
+test('Laengenware – die Mail liest das Metafeld, nicht nur die Properties', () => {
+  assert.match(tpl, /line\.product\.metafields\.custom\.preis_pro_001_lfm/);
+});

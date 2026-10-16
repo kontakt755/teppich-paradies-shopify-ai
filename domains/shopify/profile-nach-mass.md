@@ -47,11 +47,13 @@ Im Einkauf (Control Center, `operations/lib/bestelluebersicht.mjs`) wird daraus
 „10 Stück à 95 cm, gebohrt“ und in der Ausführung „Zuschnitt: 10 × 95 cm“ und
 „Bohrung: gebohrt“; die Maßprüfung vergleicht die Menge mit Länge × Stückzahl.
 
-Grenze: Die interne Bestellmail (Admin-Vorlage,
-`domains/shopify/benachrichtigungen/interne-bestellmail-block.liquid`) kennt
-Längenware noch nicht; ihre Auffangregel greift nur bei `preis_pro_001_qm`. Eine
-per `/cart/change.js` verkleinerte Menge fällt dort nicht auf, im Control Center
-(Maßprüfung) schon.
+Die interne Bestellmail (Admin-Vorlage,
+`domains/shopify/benachrichtigungen/interne-bestellmail-block.liquid`) zeigt seit
+2026-10-16 ebenfalls „Zuschnitt: 10 × 95 cm“ und „Bohrung: gebohrt“ und prüft die
+Menge: Sie muss **genau** Länge je Stück × Anzahl in cm sein. Zu wenig (per
+`/cart/change.js` verkleinert) und zu viel lösen den Alarm „NICHT ZUSCHNEIDEN“
+aus, eine Zeile ohne `Länge je Stück` zeigt „Maßangabe fehlt“. Den Zweig wählt
+das Metafeld `custom.preis_pro_001_lfm`, nicht die Properties.
 
 ## Offen beim Anlegen
 

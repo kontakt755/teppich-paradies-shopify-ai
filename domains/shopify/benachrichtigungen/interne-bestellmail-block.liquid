@@ -38,6 +38,18 @@
   "zu wenig bezahlt"; eine hoehere Menge (Mindestpreis) ist in Ordnung.
   Das blockiert keine Bestellung. Es ist ein Auffangnetz vor dem Zuschnitt.
 
+  LAENGENWARE (Profile nach Mass, seit 2026-10-16,
+  domains/shopify/profile-nach-mass.md):
+  Ein Produkt mit custom.preis_pro_001_lfm rechnet je 0,01 lfm (1 cm); die
+  Menge ist "Länge je Stück" x "Anzahl" in cm. Den Zweig waehlt das
+  Metafeld, nicht die Properties - wer "Maße" dazuschreibt, landet so nicht in
+  der Flaechenrechnung. Die Menge muss GENAU stimmen: zu wenig ist bezahlter
+  Rabatt, zu viel laesst offen, was zugeschnitten wird (der Einkauf im Control
+  Center bleibt dann ungeklaert). Fehlt "Länge je Stück", steht "Maßangabe
+  fehlt". Statt der Rohangaben zeigt die Zeile "Zuschnitt: N × L cm" aus genau
+  den Zahlen, die geprueft wurden; "Bohrung" steht darunter. Vorbild:
+  operations/lib/resolve.mjs (masspruefung) und bestelluebersicht.mjs.
+
   GEMEINSAMER ROLLENBESTAND (Inhaberentscheidung 2026-10-10, Sofortkauf):
   Ein Teppich nach Mass mit custom.zuschnitt_von_rolle (Sonderposten aus einer
   begrenzten Rolle) bucht seinen Rollenverbrauch ueber ein verstecktes
@@ -149,6 +161,7 @@
   </div>
 
   {%- assign tp_mp_alarm = false -%}
+  {%- assign tp_mp_gross = false -%}
   {%- liquid
     assign tp_rz_bedarf = 0
     assign tp_rz_gebucht = 0
@@ -205,7 +218,8 @@
         Gleitkomma-Rundung eine Fehlmeldung erzeugt. Nach jeder Division steht
         ausdruecklich floor: Shopify rundet int/int von selbst ab, andere
         Liquid-Engines (LiquidJS im Test) nicht. tp_mp_status:
-        '' = keine berechnete Zeile, 'ok', 'abweichung', 'unlesbar', 'waise'.
+        '' = keine berechnete Zeile, 'ok', 'abweichung', 'unlesbar', 'waise',
+        bei Laengenware ausserdem 'fehlt' und 'zu-gross'.
       {%- endcomment -%}
       {%- liquid
         assign tp_mp_masse = ''
@@ -220,6 +234,10 @@
         assign tp_mp_wm_einzel = ''
         assign tp_rz_zeile_cm = ''
         assign tp_mp_zs_einheit = 0
+        assign tp_mp_lw_stueck = ''
+        assign tp_mp_lw_anzahl = ''
+        assign tp_mp_lw_bohrung = ''
+        assign tp_mp_lw_zuschnitt = ''
         for p in line.properties
           case p.first
             when 'Maße'
@@ -254,6 +272,12 @@
               assign tp_rz_zeile_cm = p.last
             when '_Einheit im Zuschnitt'
               assign tp_mp_zs_einheit = p.last | plus: 0 | floor
+            when 'Länge je Stück'
+              assign tp_mp_lw_stueck = p.last
+            when 'Anzahl'
+              assign tp_mp_lw_anzahl = p.last
+            when 'Bohrung'
+              assign tp_mp_lw_bohrung = p.last
           endcase
         endfor
 
@@ -262,15 +286,45 @@
         if tp_mp_feld == true or tp_mp_feld == 'true' or tp_mp_feld.value == true
           assign tp_mp_hundertstel = true
         endif
+        assign tp_mp_lfm = false
+        assign tp_mp_feld = line.product.metafields.custom.preis_pro_001_lfm
+        if tp_mp_feld == true or tp_mp_feld == 'true' or tp_mp_feld.value == true
+          assign tp_mp_lfm = true
+        endif
 
         assign tp_mp_status = ''
         assign tp_mp_soll = 0
+        assign tp_mp_soll_art = 'mind.'
         assign tp_mp_einheit = ''
         assign tp_mp_w = 0
         assign tp_mp_l = 0
         assign tp_mp_auf = 99
 
-        if tp_mp_masse != '' or tp_mp_laenge != ''
+        if tp_mp_lfm
+          # Laengenware (blocks/tp-laengen-zuschnitt): Menge = Laenge je Stueck x
+          # Anzahl in cm, und zwar genau. Lesen wie ganzzahlCm in resolve.mjs.
+          assign tp_mp_einheit = '× 0,01 m'
+          assign tp_mp_soll_art = 'genau'
+          if tp_mp_lw_stueck == blank
+            assign tp_mp_status = 'fehlt'
+          else
+            assign tp_mp_l = tp_mp_lw_stueck | remove: 'cm' | remove: '.' | strip | plus: 0 | floor
+            assign tp_mp_w = tp_mp_lw_anzahl | remove: 'Stück' | remove: 'Stueck' | remove: '.' | strip | plus: 0 | floor
+            if tp_mp_l <= 0 or tp_mp_w <= 0
+              assign tp_mp_status = 'unlesbar'
+            else
+              assign tp_mp_soll = tp_mp_l | times: tp_mp_w
+              assign tp_mp_lw_zuschnitt = tp_mp_w | append: ' × ' | append: tp_mp_l | append: ' cm'
+              if line.quantity < tp_mp_soll
+                assign tp_mp_status = 'abweichung'
+              elsif line.quantity > tp_mp_soll
+                assign tp_mp_status = 'zu-gross'
+              else
+                assign tp_mp_status = 'ok'
+              endif
+            endif
+          endif
+        elsif tp_mp_masse != '' or tp_mp_laenge != ''
           # Hauptzeile: Flaeche aus den Massen.
           if tp_mp_masse != ''
             assign tp_mp_roh = tp_mp_masse | remove: 'cm' | remove: 'Ø' | strip
@@ -484,8 +538,13 @@
           assign tp_mp_status = 'bestand'
         endif
 
-        if tp_mp_status == 'abweichung' or tp_mp_status == 'unlesbar' or tp_mp_status == 'waise'
+        assign tp_mp_rot = false
+        if tp_mp_status == 'abweichung' or tp_mp_status == 'unlesbar' or tp_mp_status == 'waise' or tp_mp_status == 'fehlt'
           assign tp_mp_alarm = true
+          assign tp_mp_rot = true
+        elsif tp_mp_status == 'zu-gross'
+          assign tp_mp_gross = true
+          assign tp_mp_rot = true
         endif
       -%}
       <tr>
@@ -493,7 +552,7 @@
         <td style="padding:6px;border:1px solid #d8d6d2;">
           {{ line.title | escape }}
           {% if line.variant_title and line.variant_title != "Default Title" %}<br><span style="color:#6b6b6b;">{{ line.variant_title | escape }}</span>{% endif %}
-          {% for p in line.properties %}{% unless p.first contains '_' or p.last == blank %}<br><span style="color:#6b6b6b;font-size:12px;">{{ p.first | escape }}: {{ p.last | escape }}</span>{% endunless %}{% endfor %}
+          {% if tp_mp_lw_zuschnitt != '' %}<br><strong>Zuschnitt: {{ tp_mp_lw_zuschnitt }}</strong><br><strong>Bohrung: {% if tp_mp_lw_bohrung != blank %}{{ tp_mp_lw_bohrung | escape }}{% else %}<span style="color:#a62020;">keine Angabe</span>{% endif %}</strong>{% endif %}{% for p in line.properties %}{% unless p.first contains '_' or p.last == blank %}{% if tp_mp_lw_zuschnitt != '' %}{% if p.first == 'Länge je Stück' or p.first == 'Anzahl' or p.first == 'Bohrung' %}{% continue %}{% endif %}{% endif %}<br><span style="color:#6b6b6b;font-size:12px;">{{ p.first | escape }}: {{ p.last | escape }}</span>{% endunless %}{% endfor %}
         </td>
         <td style="padding:6px;border:1px solid #d8d6d2;">{% if line.sku != blank %}{{ line.sku | escape }}{% else %}–{% endif %}</td>
         <td style="padding:6px;border:1px solid #d8d6d2;">
@@ -501,10 +560,12 @@
           {% elsif quelle != '' %}<strong style="color:#8a6a12;">Muster – keine eigene ID</strong><br><span style="color:#6b6b6b;font-size:12px;">ID am Quellprodukt nachsehen:</span><br>{{ quelle | escape }}
           {% else %}<strong style="color:#a62020;">Großhändler-ID fehlt</strong>{% endif %}
         </td>
-        <td style="padding:6px;border:1px solid #d8d6d2;{% if tp_mp_status == 'abweichung' or tp_mp_status == 'unlesbar' or tp_mp_status == 'waise' %}background:#fde8e8;{% endif %}">
+        <td style="padding:6px;border:1px solid #d8d6d2;{% if tp_mp_rot %}background:#fde8e8;{% endif %}">
           {% case tp_mp_status %}
-            {% when 'ok' %}<span style="color:#1d6b35;">passt</span><br><span style="color:#6b6b6b;font-size:12px;">Soll mind. {{ tp_mp_soll }} {{ tp_mp_einheit }}</span>
-            {% when 'abweichung' %}<strong style="color:#a62020;">MENGE ZU KLEIN</strong><br><span style="font-size:12px;">bestellt {{ line.quantity }}, zum Maß gehören mind. {{ tp_mp_soll }} {{ tp_mp_einheit }}</span>
+            {% when 'ok' %}<span style="color:#1d6b35;">passt</span><br><span style="color:#6b6b6b;font-size:12px;">Soll {{ tp_mp_soll_art }} {{ tp_mp_soll }} {{ tp_mp_einheit }}</span>
+            {% when 'abweichung' %}<strong style="color:#a62020;">MENGE ZU KLEIN</strong><br><span style="font-size:12px;">bestellt {{ line.quantity }}, zum Maß gehören {{ tp_mp_soll_art }} {{ tp_mp_soll }} {{ tp_mp_einheit }}</span>
+            {% when 'zu-gross' %}<strong style="color:#a62020;">MENGE ZU GROSS</strong><br><span style="font-size:12px;">bestellt {{ line.quantity }}, zum Zuschnitt gehören genau {{ tp_mp_soll }} {{ tp_mp_einheit }}</span>
+            {% when 'fehlt' %}<strong style="color:#a62020;">Maßangabe fehlt</strong><br><span style="font-size:12px;">„Länge je Stück“ fehlt – Zuschnitt beim Kunden erfragen</span>
             {% when 'unlesbar' %}<strong style="color:#a62020;">Maß fehlt oder nicht lesbar</strong><br><span style="font-size:12px;">von Hand nachrechnen</span>
             {% when 'waise' %}<strong style="color:#a62020;">Service ohne Teppich</strong><br><span style="font-size:12px;">zugehörige Zeile fehlt</span>
             {% when 'bestand' %}<strong>Bestandsabgang zum Maßteppich</strong><br><span style="font-size:12px;">nicht separat zuschneiden</span>
@@ -565,6 +626,11 @@
     <div style="margin:0 0 16px;padding:12px;border:3px solid #a62020;background:#fde8e8;color:#a62020;font-size:15px;font-weight:bold;">
       MENGE PASST NICHT ZUM MASS – NICHT ZUSCHNEIDEN.<br>
       <span style="font-size:13px;font-weight:normal;color:#15171a;">Mindestens eine Zeile ist mit kleinerer Menge bezahlt, als ihre Maße verlangen (siehe Spalte „Maßprüfung"). Bestellung prüfen, bevor Ware bestellt oder zugeschnitten wird; im Zweifel stornieren und erstatten.</span>
+    </div>
+  {%- elsif tp_mp_gross -%}
+    <div style="margin:0 0 16px;padding:12px;border:3px solid #a62020;background:#fde8e8;color:#a62020;font-size:15px;font-weight:bold;">
+      MENGE PASST NICHT ZUM MASS – NICHT ZUSCHNEIDEN.<br>
+      <span style="font-size:13px;font-weight:normal;color:#15171a;">Bei Längenware ist mehr bezahlt, als „Länge je Stück“ × „Anzahl“ ergibt (siehe Spalte „Maßprüfung"). Vor der Bestellung beim Lieferanten mit dem Kunden klären, was zugeschnitten wird; den Rest erstatten.</span>
     </div>
   {%- endif -%}
   {{ tp_mp_tabelle }}
