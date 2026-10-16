@@ -47,7 +47,10 @@
   Rabatt, zu viel laesst offen, was zugeschnitten wird (der Einkauf im Control
   Center bleibt dann ungeklaert). Fehlt "Länge je Stück", steht "Maßangabe
   fehlt". Statt der Rohangaben zeigt die Zeile "Zuschnitt: N × L cm" aus genau
-  den Zahlen, die geprueft wurden; "Bohrung" steht darunter. Vorbild:
+  den Zahlen, die geprueft wurden; "Bohrung" steht darunter, bei Laeufern
+  (seit 2026-10-16, domains/shopify/laeufer-nach-mass.md) stattdessen
+  "Einfassung" - Einfassung und Pauschale je Laeufer sind eigene Zeilen mit
+  "Zu Teppich". Vorbild:
   operations/lib/resolve.mjs (masspruefung) und bestelluebersicht.mjs.
 
   GEMEINSAMER ROLLENBESTAND (Inhaberentscheidung 2026-10-10, Sofortkauf):
@@ -237,6 +240,8 @@
         assign tp_mp_lw_stueck = ''
         assign tp_mp_lw_anzahl = ''
         assign tp_mp_lw_bohrung = ''
+        assign tp_mp_lw_einfassung = ''
+        assign tp_mp_lw_band = ''
         assign tp_mp_lw_zuschnitt = ''
         for p in line.properties
           case p.first
@@ -278,6 +283,10 @@
               assign tp_mp_lw_anzahl = p.last
             when 'Bohrung'
               assign tp_mp_lw_bohrung = p.last
+            when 'Einfassung'
+              assign tp_mp_lw_einfassung = p.last
+            when 'Bandfarbe'
+              assign tp_mp_lw_band = p.last
           endcase
         endfor
 
@@ -552,7 +561,7 @@
         <td style="padding:6px;border:1px solid #d8d6d2;">
           {{ line.title | escape }}
           {% if line.variant_title and line.variant_title != "Default Title" %}<br><span style="color:#6b6b6b;">{{ line.variant_title | escape }}</span>{% endif %}
-          {% if tp_mp_lw_zuschnitt != '' %}<br><strong>Zuschnitt: {{ tp_mp_lw_zuschnitt }}</strong><br><strong>Bohrung: {% if tp_mp_lw_bohrung != blank %}{{ tp_mp_lw_bohrung | escape }}{% else %}<span style="color:#a62020;">keine Angabe</span>{% endif %}</strong>{% endif %}{% for p in line.properties %}{% unless p.first contains '_' or p.last == blank %}{% if tp_mp_lw_zuschnitt != '' %}{% if p.first == 'Länge je Stück' or p.first == 'Anzahl' or p.first == 'Bohrung' %}{% continue %}{% endif %}{% endif %}<br><span style="color:#6b6b6b;font-size:12px;">{{ p.first | escape }}: {{ p.last | escape }}</span>{% endunless %}{% endfor %}
+          {% if tp_mp_lw_zuschnitt != '' %}<br><strong>Zuschnitt: {{ tp_mp_lw_zuschnitt }}</strong><br><strong>{% if tp_mp_lw_einfassung != blank %}Einfassung: {{ tp_mp_lw_einfassung | escape }}{% if tp_mp_lw_band != blank %}, Bandfarbe {{ tp_mp_lw_band | escape }}{% endif %}{% elsif line.product.type == 'Läufer nach Maß' %}Einfassung: <span style="color:#a62020;">keine Angabe</span>{% else %}Bohrung: {% if tp_mp_lw_bohrung != blank %}{{ tp_mp_lw_bohrung | escape }}{% else %}<span style="color:#a62020;">keine Angabe</span>{% endif %}{% endif %}</strong>{% endif %}{% for p in line.properties %}{% unless p.first contains '_' or p.last == blank %}{% if tp_mp_lw_zuschnitt != '' %}{% if p.first == 'Länge je Stück' or p.first == 'Anzahl' or p.first == 'Bohrung' or p.first == 'Einfassung' or p.first == 'Bandfarbe' %}{% continue %}{% endif %}{% endif %}<br><span style="color:#6b6b6b;font-size:12px;">{{ p.first | escape }}: {{ p.last | escape }}</span>{% endunless %}{% endfor %}
         </td>
         <td style="padding:6px;border:1px solid #d8d6d2;">{% if line.sku != blank %}{{ line.sku | escape }}{% else %}–{% endif %}</td>
         <td style="padding:6px;border:1px solid #d8d6d2;">

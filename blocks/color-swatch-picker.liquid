@@ -760,7 +760,21 @@
         if (!input.matches('input[type="radio"]')) return;
 
         const variant = findMatchingVariant(input.value);
-        if (!variant) return;
+        if (!variant) {
+          // Die Kombination gibt es nicht (z. B. Laeufer: nicht jede Farbe in
+          // jeder Breite). Frueher brach der Handler hier still ab: Die neue
+          // Farbe sah angeklickt aus, bestellt wurde die alte. Jetzt entscheidet
+          // Horizons Variantenwahl - sie zeigt die Kombination als nicht
+          // lieferbar und meldet per variant:update keine Variante. Ohne native
+          // Farbfelder springt die Anzeige auf die geltende Farbe zurueck.
+          if (getNativeOptionInputs(colorOptionName).length > 0) {
+            syncSwatchUI(input.value);
+            setNativeColorValue(input.value);
+          } else {
+            syncSwatchUI(getCurrentOptionValues()[colorOptionIndex]);
+          }
+          return;
+        }
 
         syncSwatchUI(input.value);
         setVariantIdInput(variant.id);
