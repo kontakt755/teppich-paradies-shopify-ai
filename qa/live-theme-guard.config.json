@@ -10,7 +10,9 @@
     ".claude/skills/deploy/SKILL.md",
     ".claude/skills/control-center/SKILL.md",
     ".claude/skills/produktimport/SKILL.md",
-    ".claude/skills/produktimport/shopify-daten.md"
+    ".claude/skills/produktimport/shopify-daten.md",
+    ".claude/skills/theme-audit/SKILL.md",
+    ".claude/skills/theme-audit/pruefliste.md"
   ],
   "registry": "domains/shopify/live-theme.json",
   "riskMap": "domains/shopify/risk-map.json"
