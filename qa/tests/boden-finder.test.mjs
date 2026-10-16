@@ -158,6 +158,37 @@ test('Mindestlaenge hebt die Laenge an wie im Rechner', () => {
   assert.equal(a.qm, 32);
 });
 
+test('Bahnen mit Naht: Mindestlaenge gilt fuer die Gesamtlaenge, nicht je Bahn', () => {
+  // 2-m-Rolle, 8 m Mindestlaenge, Raum 4 x 3 m: 2 Bahnen x 4 m = 8 m am
+  // Stueck = 16 m² (frueher je Bahn 8 m = 32 m²).
+  const p = produkt([['200cm', 4750]], { min_cm: 800 });
+  const a = L.raumAngebot(p, 400, 300);
+  assert.equal(a.naht, true);
+  assert.equal(a.bahnen, 2);
+  assert.equal(a.gesamt, 800);
+  assert.equal(a.qm, 16);
+  assert.equal(a.betrag, 760);
+  // Gesamtlaenge unter der Mindestlaenge: auf 8 m angehoben, nicht 2 x 8 m.
+  const b = L.raumAngebot(p, 300, 250);
+  assert.equal(b.gesamt, 800);
+  assert.equal(b.qm, 16);
+  // Gesamtlaenge darueber: nichts angehoben. 3 Bahnen x 3 m = 9 m = 18 m².
+  const c = L.raumAngebot(produkt([['200cm', 4750]], { min_cm: 500 }), 500, 300);
+  assert.equal(c.bahnen, 3);
+  assert.equal(c.laenge, 300);
+  assert.equal(c.gesamt, 900);
+  assert.equal(c.qm, 18);
+});
+
+test('Bahnen mit Naht: auf volle m² gerundet wird die Gesamtlaenge wie eine Zeile im Rechner', () => {
+  // 2 Bahnen x 3,25 m von der 2-m-Rolle = 13 m² (je Bahn gerundet waeren es 2 x 7).
+  const a = L.raumAngebot(produkt([['200cm', 2000]]), 330, 325);
+  assert.equal(a.naht, true);
+  assert.equal(a.gesamt, 650);
+  assert.equal(a.qm, 13);
+  assert.equal(a.betrag, 260);
+});
+
 test('Ohne Rollenbreiten kein Raumangebot', () => {
   const p = { options: [{ name: 'Groesse', values: ['200x300'] }], variants: [{ options: ['200x300'], price: 10000, available: true }] };
   assert.equal(L.raumAngebot(p, 200, 300), null);
@@ -392,12 +423,13 @@ test('ca.-Betrag der Preisstufe bei Rollenware: guenstigster Weg je Rolle, auch 
   const raum = { laenge: 400, breite: 300 };
   const qmRolle = L.rollenFlaeche(400, 300);
   // Live 16.10., 4 x 3 m bis 60 EUR/m²: bisher Preis je m² x 12 m² = ca. 570 EUR,
-  // die 2-m-Rolle kostet aber 2 Bahnen mit Naht x 2 m x 8 m = 32 m² = 1.519,68 EUR.
+  // die 2-m-Rolle kostet aber 2 Bahnen mit Naht x 4 m = 8 m am Stueck (genau die
+  // Mindestlaenge) x 2 m = 16 m² = 759,84 EUR.
   const naht = L.raumAngebot(liste[0].rolle, 400, 300);
   assert.equal(naht.naht, true);
-  assert.equal(naht.qm, 32);
+  assert.equal(naht.qm, 16);
   assert.equal(L.stufenMaximum(liste, 60, 12, qmRolle), 570);
-  assert.equal(L.stufenMaximum(liste, 60, 12, qmRolle, raum), 1520);
+  assert.equal(L.stufenMaximum(liste, 60, 12, qmRolle, raum), 760);
   // Bis 35 EUR/m²: 4-m-Rolle zu 32,90 x 12 m² = 394,80 EUR.
   assert.equal(L.stufenMaximum(liste, 35, 12, qmRolle, raum), 400);
   // 3,5 x 4,5 m: rollenFlaeche rechnet mit der 5-m-Rolle (17,5 m²), die Rollen
