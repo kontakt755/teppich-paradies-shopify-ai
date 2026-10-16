@@ -131,7 +131,8 @@
   // Alle Wege, einen Raum aCm x bCm aus diesem Produkt zu decken. Beide Lagen
   // werden probiert (Raumbreite quer zur Rolle oder die Laenge). Je Weg:
   // { art: 'meterware'|'raummass', rolle, quer, laenge, qm, betrag, naht,
-  // bahnen }. Leer, wenn das Produkt keine Rollenbreiten hat.
+  // bahnen }, mit Naht zusaetzlich gesamt (bestellte Laenge aller Bahnen,
+  // laenge ist dann je Bahn). Leer, wenn das Produkt keine Rollenbreiten hat.
   function raumKandidaten(produkt, aCm, bCm) {
     if (!produkt || !(aCm > 0) || !(bCm > 0)) return [];
     var vars = (produkt.variants || []).filter(function (v) { return v && v.available === true; });
@@ -180,15 +181,18 @@
       }
     });
     // Breiter als jede Rolle: Bahnen nebeneinander, mit Naht - grobe Naeherung.
+    // Die Bahnen kommen am Stueck von der Rolle (eine Laenge im Rechner, vor
+    // Ort geteilt): Mindestlaenge und Rundung gelten fuer die Gesamtlaenge,
+    // nicht je Bahn - 2 x 4 m bei 8 m Mindestlaenge sind 8 m, nicht 2 x 8 m.
     if (!kandidaten.length && breiten.length) {
       var rmax = breiten[breiten.length - 1];
       var rm = rate(rmax);
       if (rm > 0) {
         lagen.forEach(function (lage) {
           var bahnen = Math.ceil(lage[0] / rmax - EPS);
-          var laenge = ART.mitMindestlaenge(lage[1], produkt.min_cm).cm;
-          var qm = bahnen * abgerechnet((rmax * laenge) / 10000);
-          kandidaten.push({ art: 'meterware', rolle: rmax, quer: lage[0], laenge: laenge, qm: qm, betrag: qm * rm, naht: true, bahnen: bahnen });
+          var gesamt = ART.mitMindestlaenge(bahnen * lage[1], produkt.min_cm).cm;
+          var qm = abgerechnet((rmax * gesamt) / 10000);
+          kandidaten.push({ art: 'meterware', rolle: rmax, quer: lage[0], laenge: lage[1], gesamt: gesamt, qm: qm, betrag: qm * rm, naht: true, bahnen: bahnen });
         });
       }
     }
