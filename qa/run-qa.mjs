@@ -9,7 +9,7 @@ import { resolveBrowserExecutable } from './browser-resolver.mjs';
 import { closeBrowserSafely, closeContextSafely, installHardProcessTimeout } from './browser-lifecycle.mjs';
 import { isKnownShopifyLoginXFrameWarning } from './console-classification.mjs';
 import { sanitizeDeep, sanitizeText, sanitizeUrl } from '../automation/core/url-sanitizer.mjs';
-import { parseJsonProcessOutput, runProcess, shopifyInvocations } from './process-runner.mjs';
+import { BASELINE_FILE, newFindings, readBaseline, runThemeCheck, writeBaseline } from './theme-check.mjs';
 import { qaImpactSummary, selectImpactedPages } from './impact-router.mjs';
 import { hasCartPurchasePath } from './cart-readiness.mjs';
 import { compareDomIsAbsent, inspectCompareDom } from './compare-absence.mjs';
@@ -21,7 +21,7 @@ const artifactsDir = path.join(qaDir, 'artifacts');
 const resultsDir = path.join(qaDir, 'results');
 const workflowReportDir = process.env.WORKFLOW_REPORT_DIR ? path.resolve(process.env.WORKFLOW_REPORT_DIR) : null;
 const reportPath = workflowReportDir ? path.join(workflowReportDir, 'QA_REPORT.md') : path.join(root, 'QA_REPORT.md');
-const baselinePath = path.join(qaDir, 'theme-check-baseline.json');
+const baselinePath = path.join(root, BASELINE_FILE);
 const config = JSON.parse(fs.readFileSync(path.join(qaDir, 'qa.config.json'), 'utf8'));
 if (process.env.WORKFLOW_BASE_URL) config.baseUrl = process.env.WORKFLOW_BASE_URL;
 const rawArgs = process.argv.slice(2);
@@ -55,52 +55,11 @@ if (workflowReportDir) fs.mkdirSync(workflowReportDir, { recursive: true });
 fs.rmSync(artifactsDir, { recursive: true, force: true });
 fs.mkdirSync(artifactsDir, { recursive: true });
 
-function fingerprint(file, offense) {
-  const relative = path.relative(root, file.path || file).replaceAll('\\', '/');
-  return `${offense.severity}|${offense.check}|${relative}|${offense.start_row}:${offense.start_column}|${offense.message}`;
-}
-
-// Theme pulls can shift JSON/Liquid lines without changing a finding. Keep the
-// recorded position for diagnostics, but exclude it when matching the baseline.
-function stableFingerprint(value) {
-  return value.replace(/\|\d+:\d+\|/, '|*|');
-}
-
-async function runThemeCheck() {
-  const themeArgs = ['theme', 'check', '--output', 'json', '--no-color'];
-  const attempts = [];
-  let parsed;
-  for (const invocation of shopifyInvocations()) {
-    const result = await runProcess(invocation.command, [...invocation.args, ...themeArgs], { cwd: root });
-    parsed = parseJsonProcessOutput(result, { label: `Theme Check (${invocation.label})`, allowedExitCodes: [0, 1] });
-    attempts.push({ label: invocation.label, failed: parsed.failed, kind: parsed.kind });
-    if (!parsed.failed) break;
-  }
-  if (parsed?.failed) return { ...parsed, attempts };
-  const files = parsed?.value;
-  if (!Array.isArray(files)) return { failed: true, kind: 'invalid-output', error: 'Theme Check: JSON-Ausgabe ist kein Datei-Array' };
-  const findings = files.flatMap(file => file.offenses.map(offense => ({
-    fingerprint: fingerprint(file, offense), file: path.relative(root, file.path).replaceAll('\\', '/'),
-    check: offense.check, severity: offense.severity, line: offense.start_row + 1, message: offense.message
-  })));
-  return {
-    failed: false, findings,
-    errors: findings.filter(x => x.severity === 'error').length,
-    warnings: findings.filter(x => x.severity === 'warning').length,
-    recoveredProcessFailures: attempts.filter(attempt => attempt.failed)
-  };
-}
-
-const themeCheck = await runThemeCheck();
-if (updateBaseline && !themeCheck.failed) {
-  fs.writeFileSync(baselinePath, JSON.stringify({
-    generatedAt: new Date().toISOString(), errors: themeCheck.errors, warnings: themeCheck.warnings,
-    fingerprints: themeCheck.findings.map(x => x.fingerprint).sort()
-  }, null, 2) + '\n');
-}
-let baseline = fs.existsSync(baselinePath) ? JSON.parse(fs.readFileSync(baselinePath, 'utf8')) : { errors: 0, warnings: 0, fingerprints: [] };
-const known = new Set((baseline.fingerprints || []).map(stableFingerprint));
-themeCheck.newFindings = themeCheck.failed ? [] : themeCheck.findings.filter(x => !known.has(stableFingerprint(x.fingerprint)));
+// Baseline-Vergleich in qa/theme-check.mjs, gemeinsam mit npm run themecheck:guard.
+const themeCheck = await runThemeCheck({ root });
+if (updateBaseline && !themeCheck.failed) writeBaseline(baselinePath, themeCheck.findings);
+const baseline = readBaseline(baselinePath);
+themeCheck.newFindings = themeCheck.failed ? [] : newFindings(themeCheck.findings, baseline);
 
 const matchesAny = (value, patterns = []) => patterns.some(pattern => {
   try { return new RegExp(pattern, 'i').test(value); } catch { return value.includes(pattern); }

@@ -84,7 +84,7 @@ Jeder Punkt hat eine komplette Sitzung gekostet. Vor dem Loslegen lesen. Die Vor
 
 ```
 npm run liquid:guard && npm run schema:guard && npm run template:guard && npm run theme:guard && npm run schrift:guard
-npm run -s themecheck:guard                  # Theme-Check-Fehler: sonst bricht erst der Preview-Push (--strict) ab
+npm run -s themecheck:guard                  # Theme-Check-Fehler und neue Warnungen gegen qa/theme-check-baseline.json - dieselbe Pruefung wie FULL_QA in workflow preview
 node workflow/cli.mjs validate --static      # Flag heisst --static, nicht --static-only
 ```
 
