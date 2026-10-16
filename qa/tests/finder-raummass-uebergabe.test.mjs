@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
 
 const require = createRequire(import.meta.url);
 require('../../assets/tp-rollware-art.js');
@@ -87,4 +89,34 @@ test('Direkte m²-Eingabe an der Paketgrenze wird ohne Raumseiten unveraendert b
   assert.equal(finder.paketAngebot(produkt, qm, { breite: 104, laenge: 364 }).pakete, 3);
   const liste = finder.preisEintraege([['beispiel', 5030, 1.988, 10000, 0]]);
   assert.equal(finder.stufenMaximum(liste, 60, qm, qm, null), 200);
+});
+
+test('Ohne Budgettreffer nennt der Status denselben Paketbetrag wie Karte und Raumhilfe', async () => {
+  // Originale DOM-Methoden mit synthetischen Daten ausfuehren, keine zweite
+  // Status- oder Preislogik im Test nachbauen.
+  const source = readFileSync(new URL('../../assets/tp-boden-finder.js', import.meta.url), 'utf8');
+  const context = vm.createContext({ ...finder, holen: async () => ({ pro_seite: 8 }) });
+  const methode = name => vm.runInContext(`(${source.match(new RegExp(`Finder\\.prototype\\.${name} = (function \\([^)]*\\) \\{[\\s\\S]*?\\n  \\});`))[1]})`, context);
+  const produkt = { qm_paket: 1.988, variants: [{ available: true, price: 10000 }] };
+  const raum = { breite: 104, laenge: 364 };
+  const roh = raum.breite * raum.laenge / 10000;
+  const liste = finder.preisEintraege([['beispiel', 5030, 1.988, 10000, 0]]);
+  const status = { before() {} };
+  const self = {
+    s: { art: { url: '/collections/beispiel', wort: 'Böden' } },
+    q: selector => selector === '[data-bf-status]' ? status : {},
+    auswahl: () => ({}), preisListe: async () => ({ anzahl: 1, liste }),
+    kartenLaden: async eintraege => ({ zeigen: eintraege.length ? [produkt] : [] }),
+    kartenZeigen() {}, ergebnisMelden() {},
+    raum: () => raum, flaeche: () => roh, abText: methode('abText')
+  };
+  await methode('ergebnisGerechnet').call(self, 20);
+  assert.equal(status.textContent, 'Online liegen die günstigsten passenden Böden darüber – für Ihren Raum ab ca. 300 €:');
+  const uebernommen = raumhilfe.summeRaeume([{ breite: '104', laenge: '364' }]).m2;
+  assert.equal(finder.paketAngebot(produkt, roh, raum).betrag, 300);
+  assert.equal(finder.paketRechnung(1.988, 100, uebernommen).betrag, 300);
+  // Ohne Seiten bleibt die reine m²-Eingabe auch im Fallback unveraendert.
+  self.raum = () => null;
+  await methode('ergebnisGerechnet').call(self, 20);
+  assert.equal(status.textContent, 'Online liegen die günstigsten passenden Böden darüber – für Ihren Raum ab ca. 200 €:');
 });

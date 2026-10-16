@@ -1175,7 +1175,7 @@
   Finder.prototype.abText = function (p) {
     var raum = this.raum();
     var qm = this.flaeche();
-    var a = qm ? paketAngebot(p, qm) : null;
+    var a = qm ? paketAngebot(p, qm, raum) : null;
     if (!a && raum) a = raumAngebot(p, raum.laenge, raum.breite);
     if (a) return ' – für Ihren Raum ab ca. ' + euro(a.betrag);
     return abPreisQm(p) ? ' – ab ' + euro(abPreisQm(p)) + '/m²' : '';
