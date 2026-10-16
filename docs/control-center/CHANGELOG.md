@@ -2,6 +2,34 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-16 · Angaben direkt ins ChatGPT-Projekt uebergeben (#1397)
+
+- **Geaendert:** „Im Projekt einfuegen“ uebergibt den vorbereiteten Auftrag ohne Zwischenablage an
+  einen optionalen Chrome-Begleiter. Dieser oeffnet die hinterlegte ChatGPT-Projektseite, prueft
+  deren leeres Eingabefeld und fuegt den vollstaendigen Text als Entwurf ein. Er sendet nichts ab.
+  Die private Erweiterung wird ausserhalb des Repositorys mit ausdruecklichen Dashboard-Urspruengen
+  erzeugt. Kein neuer Server-Endpunkt, API-Schluessel oder Text in der URL. Inhalte liegen nur
+  kurz in `storage.session`; Abbruch, Verfall und Tab-Schliessen raeumen wartende Auftraege auf.
+  Die manuellen Knoepfe bleiben aufklappbar; lokale Codex-/Claude-Ziele behalten ihren bisherigen Weg.
+- **Getestet:** `npm test`: 2.930/2.930. Darunter 18 gezielte Dashboard-Tests sowie 15 Tests des
+  Begleiters inklusive echter isolierter DOM-Pruefungen. Zusaetzlicher MV3-Start im temporaeren
+  Testbrowser bestaetigt Statusnachricht, Portgrenze und Ablehnung kuenstlicher Klicks. Browserpruefung
+  gegen Datenkopie: 36 Ansichts-/Rollen-/Breitenkombinationen (360, 390, 1440 px), kein Ueberlauf
+  oder JS-Fehler; Desktop-/Handy-Screenshots gelesen. Klickstrecke: Ohne Begleiter bleibt der
+  Direktknopf gesperrt, manuelle Alternative ist erreichbar und Anbieterwechsel erhaelt die Eingabe.
+  Pflicht-Guards und Secret-Scan bestanden. Der erste Durchlauf im eingerichteten Profil fand
+  einen Ladeabbruch: Ein spaetes `loading` wurde als Dokumentwechsel gewertet. Korrigiert und mit
+  drei Regressionstests fuer Erstladen, URL-Wechsel und neue Dokumente abgesichert. Danach drei
+  echte Uebergaben aus der Datenkopie im eingerichteten Chrome-Profil bestaetigt: alle Texte stimmen
+  mit der Dashboard-Vorschau ueberein (1.689, 1.329 und 1.442 Zeichen), richtige Projektueberschrift,
+  aktiver Sendeknopf und jeweils null abgesendete Nachrichten. Testentwuerfe anschliessend geleert.
+- **Risiken/Annahmen:** Einmaliges Laden des privaten Pakets im Chrome-Profil des Arbeitsplatzes
+  ist erforderlich. Die automatische Browsersteuerung darf Chromes Erweiterungsverwaltung nicht
+  bedienen; Installation und spaeteres Neuladen bleiben beim Inhaber. Geaenderte ChatGPT-Oberflaechen
+  koennen eine Adapterkorrektur erfordern. Andere Rechner brauchen ihre eigene Browser-Einrichtung.
+- **Naechste Stufe:** Im Arbeitsalltag nutzen; fuer weitere Anbieter bleibt die direkte Texteingabe
+  eine eigene Erweiterung.
+
 ## 2026-10-16 · Arbeitsplatz als Prozesszentrale (#1390)
 
 - **Geändert:** Neuer Arbeitsplatz fuer E-Mail, Angebotsvorbereitung und Recherche, erreichbar

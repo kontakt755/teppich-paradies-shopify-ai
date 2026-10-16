@@ -35,7 +35,7 @@ geraetebezogen; sie uebernehmen weder Cloud-Chats noch deren Quellen oder Skills
 Referenzen: [Codex-App-Links](https://learn.chatgpt.com/docs/reference/commands),
 [Claude-App-Links](https://support.claude.com/en/articles/14729294-open-claude-desktop-with-a-link).
 
-**Fluechtiger Kontext:** Kunde/Vorgang und Quelltext liegen ausschliesslich im Browser-Arbeitsspeicher,
+**Fluechtiger Kontext im manuellen Weg:** Kunde/Vorgang und Quelltext liegen ausschliesslich im Browser-Arbeitsspeicher,
 nicht in URL, Browserablagen, API-Aufrufen, Protokollen oder einer Vorgangsdatenbank. Verlassen,
 Abmelden, `pagehide` (einschliesslich DOM-Standardwerten fuer den Rueckwaerts-Cache) und eine erhaltene
 401 verwerfen die Eingaben. Die Zwischenablage entsteht nur nach dem bewussten Kopierknopf und
@@ -43,6 +43,41 @@ wird dabei nicht automatisch wieder geloescht. Scheitert der Browser-Kopierweg, 
 der aufklappbaren Vorschau manuell markierbar. Verzoegerte Kopierantworten duerfen nach einem
 Kontextwechsel keinen neuen Text kopieren. Stille Datenabgleiche erhalten Wert, Fokus und Cursor
 der mit `data-focus-erhalten` markierten Felder.
+
+### Direkte Texteingabe in ein ChatGPT-Projekt (#1397)
+
+Der optionale Browserbegleiter unter `operations/browser-uebergabe/` ersetzt auf einem eingerichteten
+Chrome-Arbeitsplatz Kopieren und Einfuegen. Er verwendet dieselben privaten Projektverknuepfungen
+und denselben vorbereiteten Auftrag. Ein bewusster Klick auf „Im Projekt einfuegen“ oeffnet eine
+neue Projektseite und fuellt dort das noch leere Eingabefeld. Er sendet keine Nachricht und startet
+keine KI. Die manuellen Knoepfe bleiben als Alternative erreichbar. Fuer lokale Codex- und
+Claude-Ziele bleibt der bisherige Weg erhalten.
+
+Die Erweiterung laeuft nur auf explizit eingerichteten Dashboard-Urspruengen und auf ChatGPT-
+Projektseiten. Der Generator `operations/scripts/browser-uebergabe-paket.mjs` erzeugt ihre private
+Konfiguration ausserhalb des Repositorys. Sie erhaelt keine Cookie-, Zwischenablage- oder allgemeinen
+Tab-Leserechte. Die Einrichtung und Standortfreigabe im Browser erfolgen einmalig durch den Inhaber.
+Es gibt keinen neuen Server-Endpunkt, keinen API-Schluessel und keine Uebertragung ueber einen
+Hintergrundagenten auf einem anderen Rechner.
+
+**Datenweg:** Auf den bewussten Klick folgen eine Nachricht an das isolierte Inhaltsskript, eine
+kurzlebige Ablage im Arbeitsspeicher der Erweiterung (`chrome.storage.session`) und die Einfuegung im
+neuen Tab. Weder Zieladresse noch Protokolle enthalten den Auftrag. Die Erweiterung verwendet weder
+`storage.local` noch Synchronisierung. Wartende Auftraege verfallen nach zwei Minuten; Abschluss,
+Fehler, Abbruch und geschlossene Tabs entfernen die Ablage. Nach Einfuegung gehoert der Text zum
+ChatGPT-Entwurf und unterliegt dessen Speicherverhalten.
+
+**Erfolgspruefung:** Projektadresse, sichtbare Projektueberschrift, zugehoeriges leeres Eingabefeld,
+vollstaendiger Text und aktiver Sendeknopf muessen passen. „Bereit“ bestaetigt nur die Verbindung
+zum Begleiter; „eingefuegt“ erst die kontrollierte Texteingabe. Anmeldung, geaenderte Oberflaeche oder
+ein bestehender Entwurf werden nicht als Erfolg behandelt. Kontextwechsel, Abmeldung und erhaltene
+401 brechen noch wartende Uebergaben ab. Ein bereits eingefuegter ChatGPT-Entwurf wird dabei nicht
+geloescht oder ueberschrieben.
+
+Dieser Weg bedient die ChatGPT-Oberflaeche; eine offizielle Projekt-Prompt-API ist nicht belegt.
+Die [dokumentierten App-Links](https://learn.chatgpt.com/docs/reference/commands) mit `prompt`
+betreffen lokale Chats und ersetzen keine ChatGPT-Projektzuordnung. Einrichtung, Pruefung und
+Grenzen stehen in [BROWSER-UEBERGABE.md](BROWSER-UEBERGABE.md).
 
 ## Starten (Mitarbeiter/Admins)
 

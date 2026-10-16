@@ -5,13 +5,16 @@ import { fetchEinkauf, orgSchreiben } from '../kern/api.mjs';
 import { render } from '../kern/render.mjs';
 import { ANBIETER, PROZESSE, prozessProfil, prozessZielBeschreibung, baueProzessAuftrag } from '../lib/prozesse.mjs';
 import { istProzessZiel } from '../lib/prozesslinks.mjs';
+import { istChatgptProjektZiel, erstelleProzessUebergabe, uebergabeFehlerText } from '../lib/prozess-uebergabe.mjs';
 
 const arbeitsplatz = {
   daten: null, laedt: false, speichert: false, einstellungenOffen: false,
   prozess: 'email', anbieter: null, vorgang: '', quelle: '', kopiert: false,
   linksEntwurf: null, standardEntwurf: null, vorschauOffen: false, anweisungOffen: false,
   generation: 0,
+  direktStatus: 'unbekannt', direktCode: null, alternativeOffen: false,
 };
+let begleiter = null;
 
 function zeichneWennOffen() {
   if (state.route.view !== 'prozesse') return;
@@ -57,24 +60,82 @@ function anbieterAuswahl(id, aktuell, attribut = '') {
     `<option value="${esc(wert)}"${wert === aktuell ? ' selected' : ''}>${esc(text)}</option>`).join('')}</select>`;
 }
 
+function direktMoeglich() {
+  return aktuellerAnbieter() === 'chatgpt' && istChatgptProjektZiel(ziel());
+}
+
+function aktualisiereDirekt() {
+  if (state.route.view !== 'prozesse' || !direktMoeglich()) return;
+  const el = document.getElementById('prozessDirekt');
+  if (el) el.innerHTML = direktHtml();
+}
+
+function ensureBegleiter() {
+  if (begleiter || typeof window === 'undefined') return;
+  begleiter = erstelleProzessUebergabe({ onStatus: ({ status, code }) => {
+    arbeitsplatz.direktStatus = status;
+    arbeitsplatz.direktCode = code;
+    aktualisiereDirekt();
+  } });
+  begleiter.pruefen();
+}
+
+/** Vor jeder Kontextersetzung aufrufen; ein schon eingefuegter Fremdentwurf bleibt dort. */
+function stoppeDirekt({ beenden = false } = {}) {
+  begleiter?.abbrechen();
+  if (beenden) {
+    begleiter?.beenden();
+    begleiter = null;
+    arbeitsplatz.direktStatus = 'unbekannt';
+    arbeitsplatz.direktCode = null;
+  } else if (begleiter?.bereit) {
+    arbeitsplatz.direktStatus = 'bereit';
+    arbeitsplatz.direktCode = null;
+  }
+}
+
+function direktHtml() {
+  const status = arbeitsplatz.direktStatus;
+  const laeuft = Boolean(begleiter?.laeuft);
+  const bereit = Boolean(begleiter?.bereit);
+  const meldung = {
+    unbekannt: 'Der Chrome-Begleiter muss einmalig vom Inhaber eingerichtet werden.',
+    prueft: 'Chrome-Begleiter wird geprüft …',
+    bereit: auftrag() ? 'Bereit zum Einfügen.' : 'Bitte zuerst Angaben eintragen.',
+    startet: 'Das ChatGPT-Projekt wird geöffnet …',
+    oeffnet: 'Der Text wird im Projekt eingefügt …',
+    eingefuegt: 'Im Projekt eingefügt. In ChatGPT prüfen und selbst absenden.',
+    fehler: uebergabeFehlerText(arbeitsplatz.direktCode),
+  }[status] || uebergabeFehlerText();
+  return `<div class="prozess-aktionen"><button type="button" class="btn btn-primary" data-prozess-direkt${!auftrag() || !bereit || laeuft || status === 'eingefuegt' ? ' disabled' : ''}>${laeuft ? 'Wird eingefügt …' : status === 'eingefuegt' ? 'Im Projekt eingefügt' : 'Im Projekt einfügen'}</button>${laeuft ? '<button type="button" class="btn" data-prozess-uebergabe-abbrechen>Übergabe stoppen</button>' : ''}</div>
+    <p class="${status === 'fehler' ? 'notice warn' : 'small muted'}" data-prozess-direkt-status role="status">${esc(meldung)}</p>
+    ${!bereit && status !== 'prueft' ? '<div><button type="button" class="btn btn-sm" data-prozess-begleiter-pruefen>Begleiter prüfen</button></div>' : ''}
+    <p class="small muted">Der Text wird als Entwurf eingefügt. Du startest ChatGPT selbst.</p>`;
+}
+
 function uebergabe() {
   const text = auftrag();
   const url = ziel();
   const anbieter = ANBIETER[aktuellerAnbieter()];
   const beschreibung = prozessZielBeschreibung(aktuellerAnbieter(), url);
   const d = arbeitsplatz.daten;
+  const direkt = direktMoeglich();
+  if (direkt) ensureBegleiter();
+  const alternative = document.getElementById('prozessAlternative');
+  if (alternative) arbeitsplatz.alternativeOffen = alternative.open;
   let hinweis = '';
   if (arbeitsplatz.laedt) hinweis = '<p class="small muted">Projektverknüpfungen werden geladen …</p>';
   else if (d?.fehler) hinweis = `<div class="notice warn"><p>${esc(d.hinweis || 'Die Projektverknüpfungen konnten nicht geladen werden.')}</p><button type="button" class="btn btn-sm" data-prozess-neuladen>Erneut laden</button></div>`;
   else if (!url) hinweis = `<div class="notice warn"><p><strong>Projektverknüpfung fehlt.</strong> Für ${esc(anbieter)} und „${esc(prozessProfil(arbeitsplatz.prozess).titel)}“ ist noch kein Ziel hinterlegt.</p>${d?.bearbeitbar ? '<button type="button" class="btn btn-sm" data-prozess-einrichten>Verknüpfung einrichten</button>' : '<p>Der Inhaber kann die Verknüpfung hier einrichten.</p>'}</div>`;
-  return `<div class="field"><label for="prozessAnbieter">Weiterarbeiten mit</label>${anbieterAuswahl('prozessAnbieter', aktuellerAnbieter(), 'data-prozess-feld="anbieter"')}</div>
-    ${hinweis}
-    <div class="prozess-aktionen">
-      <button type="button" class="btn btn-primary" data-prozess-kopieren${text ? '' : ' disabled'}>${arbeitsplatz.kopiert ? 'Text erneut kopieren' : '1. Text kopieren'}</button>
+  const manuell = `<div class="prozess-aktionen">
+      <button type="button" class="btn${direkt ? '' : ' btn-primary'}" data-prozess-kopieren${text ? '' : ' disabled'}>${arbeitsplatz.kopiert ? 'Text erneut kopieren' : '1. Text kopieren'}</button>
       ${url ? `<a class="btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">2. ${esc(beschreibung.aktion)}</a>` : `<button type="button" class="btn" disabled>2. ${esc(anbieter)} öffnen</button>`}
     </div>
     ${url && beschreibung.hinweis ? `<p class="small muted">${esc(beschreibung.hinweis)}</p>` : ''}
     <p class="small muted" data-prozess-status role="status">${arbeitsplatz.kopiert ? 'Kopiert. Jetzt die App öffnen, den Text einfügen und dort starten.' : 'Text kopieren, App öffnen und dort einfügen. Du startest die KI selbst.'}</p>`;
+  return `<div class="field"><label for="prozessAnbieter">Weiterarbeiten mit</label>${anbieterAuswahl('prozessAnbieter', aktuellerAnbieter(), 'data-prozess-feld="anbieter"')}</div>
+    ${hinweis}
+    ${direkt ? `<div class="prozess-direkt" id="prozessDirekt">${direktHtml()}</div><details class="prozess-alternative" id="prozessAlternative"${arbeitsplatz.alternativeOffen ? ' open' : ''}><summary>Alternativ manuell kopieren und öffnen</summary><div class="prozess-manuell">${manuell}</div></details>` : manuell}`;
 }
 
 function einstellungen() {
@@ -103,6 +164,7 @@ export function viewProzesse() {
   ensureLinks();
   const parameter = state.route.params.get('prozess');
   if (PROZESSE.some(p => p.id === parameter) && parameter !== arbeitsplatz.prozess) {
+    stoppeDirekt();
     arbeitsplatz.prozess = parameter;
     arbeitsplatz.kopiert = false;
     arbeitsplatz.generation += 1;
@@ -146,6 +208,8 @@ export function prozesseEingabe(e) {
   const feld = el.dataset.prozessFeld;
   if (!['vorgang', 'quelle', 'anbieter'].includes(feld)) return false;
   if (feld === 'anbieter' && !Object.hasOwn(ANBIETER, el.value)) return false;
+  if (feld === 'anbieter' ? aktuellerAnbieter() === el.value : arbeitsplatz[feld] === el.value) return true;
+  stoppeDirekt();
   arbeitsplatz[feld] = el.value;
   arbeitsplatz.kopiert = false;
   arbeitsplatz.generation += 1;
@@ -159,6 +223,7 @@ export function prozesseEingabe(e) {
     if (uebergabeElement) uebergabeElement.innerHTML = uebergabe();
     document.getElementById('prozessAnbieter')?.focus();
   } else {
+    aktualisiereDirekt();
     const kopieren = uebergabeElement?.querySelector('[data-prozess-kopieren]');
     if (kopieren) { kopieren.disabled = !auftrag(); kopieren.textContent = '1. Text kopieren'; }
     const status = uebergabeElement?.querySelector('[data-prozess-status]');
@@ -169,10 +234,22 @@ export function prozesseEingabe(e) {
 
 /** Oeffnen ist ein nativer Link und braucht keinen asynchronen Fensteraufruf. */
 export function prozesseKlick(e) {
-  const el = e.target.closest?.('[data-prozess-kopieren], [data-prozess-verwerfen], [data-prozess-einrichten], [data-prozess-neuladen]');
+  const el = e.target.closest?.('[data-prozess-kopieren], [data-prozess-verwerfen], [data-prozess-einrichten], [data-prozess-neuladen], [data-prozess-direkt], [data-prozess-begleiter-pruefen], [data-prozess-uebergabe-abbrechen]');
   if (!el) return false;
   e.preventDefault();
-  if (el.hasAttribute('data-prozess-verwerfen')) {
+  if (el.hasAttribute('data-prozess-direkt')) {
+    if (!e.isTrusted) {
+      arbeitsplatz.direktStatus = 'fehler'; arbeitsplatz.direktCode = 'klick_fehlt';
+      aktualisiereDirekt(); return true;
+    }
+    if (direktMoeglich() && auftrag() && begleiter?.bereit && !begleiter.laeuft && arbeitsplatz.direktStatus !== 'eingefuegt') begleiter.einfuegen(ziel(), auftrag());
+  } else if (el.hasAttribute('data-prozess-begleiter-pruefen')) {
+    if (begleiter) begleiter.pruefen(); else ensureBegleiter();
+  } else if (el.hasAttribute('data-prozess-uebergabe-abbrechen')) {
+    stoppeDirekt();
+    arbeitsplatz.direktStatus = 'fehler'; arbeitsplatz.direktCode = 'abgebrochen';
+    aktualisiereDirekt();
+  } else if (el.hasAttribute('data-prozess-verwerfen')) {
     verwerfeProzessKontext();
     zeichneWennOffen();
     document.getElementById('prozessQuelle')?.focus();
@@ -186,6 +263,7 @@ export function prozesseKlick(e) {
       details.scrollIntoView({ block: 'nearest', behavior: 'instant' });
     }
   } else if (el.hasAttribute('data-prozess-neuladen')) {
+    stoppeDirekt();
     arbeitsplatz.daten = null;
     ensureLinks();
     zeichneWennOffen();
@@ -248,6 +326,7 @@ export function prozesseAbsenden(e) {
   const button = form.querySelector('[type="submit"]');
   button.disabled = true; button.textContent = 'Wird gespeichert …';
   orgSchreiben('/api/prozesse/links', konfig).then(d => {
+    stoppeDirekt();
     arbeitsplatz.daten = { ...konfig, ...d, bearbeitbar: true };
     arbeitsplatz.linksEntwurf = null;
     arbeitsplatz.standardEntwurf = null;
@@ -268,6 +347,7 @@ export function prozesseAbsenden(e) {
 
 /** Aufrufen beim Verlassen, Abmelden und pagehide; kein Inhalt ueberlebt die Ansicht. */
 export function verwerfeProzessKontext() {
+  stoppeDirekt({ beenden: true });
   arbeitsplatz.generation += 1;
   arbeitsplatz.prozess = 'email';
   arbeitsplatz.vorgang = '';
@@ -279,6 +359,7 @@ export function verwerfeProzessKontext() {
   arbeitsplatz.standardEntwurf = null;
   arbeitsplatz.vorschauOffen = false;
   arbeitsplatz.anweisungOffen = false;
+  arbeitsplatz.alternativeOffen = false;
   // pagehide kann die Seite im Rueckwaerts-Cache behalten: auch deren DOM leeren.
   for (const id of ['prozessVorgang', 'prozessQuelle', 'prozessVorschau']) {
     const el = document.getElementById(id);
@@ -288,7 +369,7 @@ export function verwerfeProzessKontext() {
     if (el.tagName === 'TEXTAREA') el.textContent = '';
     else el.removeAttribute('value');
   }
-  for (const id of ['prozessEinstellungen', 'prozessVorschauDetails', 'prozessAnweisung']) {
+  for (const id of ['prozessEinstellungen', 'prozessVorschauDetails', 'prozessAnweisung', 'prozessAlternative']) {
     const el = document.getElementById(id);
     if (el) el.open = false;
   }
@@ -296,4 +377,6 @@ export function verwerfeProzessKontext() {
   if (kopieren) { kopieren.disabled = true; kopieren.textContent = '1. Text kopieren'; }
   const status = document.querySelector('[data-prozess-status]');
   if (status) status.textContent = 'Text kopieren, App öffnen und dort einfügen. Du startest die KI selbst.';
+  const direkt = document.getElementById('prozessDirekt');
+  if (direkt) direkt.innerHTML = direktHtml();
 }
