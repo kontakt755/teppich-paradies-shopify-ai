@@ -72,6 +72,24 @@
     return r ? r.cm : null;
   }
 
+  // Gemessene Raumseiten, kein Bestellmass: nur an eigene Produktlinks
+  // haengen. Varianten, andere Parameter und Sprungmarken bleiben erhalten.
+  function produktUrl(href, raum, ursprung) {
+    try {
+      var u = new URL(href, ursprung);
+      if (u.origin !== ursprung || !/\/products\/[^/]+\/?$/.test(u.pathname)) return href;
+      u.searchParams.delete('tp_raum_b');
+      u.searchParams.delete('tp_raum_l');
+      if (raum && [raum.breite, raum.laenge].every(function (cm) {
+        return Number.isInteger(cm) && cm >= 50 && cm <= 5000;
+      })) {
+        u.searchParams.set('tp_raum_b', String(raum.breite));
+        u.searchParams.set('tp_raum_l', String(raum.laenge));
+      }
+      return u.pathname + u.search + u.hash;
+    } catch (e) { return href; }
+  }
+
   // Geldbetrag: "500", "500,50", "1.200", "1.200,50 €". null, wenn unklar.
   function betrag(text) {
     var t = String(text == null ? '' : text).replace(/ /g, '').replace(/\s|€|euro?/gi, '');
@@ -368,6 +386,7 @@
   var logik = {
     raumMass: raumMass,
     raumMassInfo: raumMassInfo,
+    produktUrl: produktUrl,
     qmFlaeche: qmFlaeche,
     preisStufen: preisStufen,
     rollenFlaeche: rollenFlaeche,
@@ -1180,6 +1199,13 @@
   };
 
   // anhaengen: weitere Karten hinter die vorhandenen ("Weitere Vorschlaege").
+  Finder.prototype.raumLinks = function (ziel) {
+    var raum = this.raum();
+    ziel.querySelectorAll('a[href]').forEach(function (a) {
+      a.setAttribute('href', produktUrl(a.getAttribute('href'), raum, window.location.origin));
+    });
+  };
+
   Finder.prototype.kartenZeigen = function (ziel, produkte, daten, ueber, anhaengen) {
     var self = this;
     if (!anhaengen) {
@@ -1193,6 +1219,7 @@
       self.gezeigt.push(p.titel);
       var item = el('div', 'tp-bf-treffer__item');
       item.appendChild(document.importNode(vorlage, true));
+      self.raumLinks(item);
       var box = self.raumpreisBox(p);
       if (box) item.appendChild(box);
       ziel.appendChild(item);
@@ -1360,6 +1387,14 @@
   Finder.prototype.verbinden = function () {
     var self = this;
     var dlg = this.dlg;
+    // Farbwahl in einer Karte kann ihre Links neu setzen. Vor Navigation,
+    // neuem Tab oder Kontextmenue die aktuellen Raumseiten erneut anhaengen.
+    ['click', 'auxclick', 'contextmenu'].forEach(function (typ) {
+      dlg.addEventListener(typ, function (e) {
+        var item = e.target.closest && e.target.closest('.tp-bf-treffer__item');
+        if (item) self.raumLinks(item);
+      }, true);
+    });
     dlg.addEventListener('close', function () {
       document.documentElement.classList.remove('tp-bf-offen');
     });
