@@ -68,6 +68,8 @@
     {%- endunless -%}
   </div>
 
+  {%- comment -%} Geschenkgutschein: Zustellung per E-Mail, kein Versand, keine Abholung (w-034) {%- endcomment -%}
+  {%- unless product.gift_card? -%}
   <div class="tp-service-links__shipping-{{ tp_sl_id }}" aria-label="Lieferung und Versand">
     {%- comment -%} Lieferzeit samt voraussichtlichem Datum, Quelle siehe snippets/tp-lieferzeit (#165) {%- endcomment -%}
     {%- render 'tp-lieferzeit', text: tp_sl_delivery_time, product: product, kontext: 'produkt' -%}
@@ -149,6 +151,7 @@
     </details>
     {%- endif -%}
   </div>
+  {%- endunless -%}
 
 </div>{% endunless %}
 

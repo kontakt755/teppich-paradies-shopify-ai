@@ -55,6 +55,10 @@
     endcapture
     assign tp_mc_grenze = tp_mc_grenze | strip
   endunless
+  # Geschenkgutschein: kein Muster (w-034)
+  if product.gift_card?
+    assign tp_mc_url = ''
+  endif
 -%}
 
 {%- if tp_mc_url != blank -%}

@@ -91,7 +91,7 @@
 
 {%- if tp_vt_intro != blank or tp_vt_count > 0 -%}
   <div class="tp-verkaufstext-{{ tp_vt_id }}" {{ block.shopify_attributes }}>
-    <h2 class="tp-verkaufstext__heading-{{ tp_vt_id }}">Warum dieser Boden zu Ihnen passt</h2>
+    <h2 class="tp-verkaufstext__heading-{{ tp_vt_id }}">{% if product.gift_card? %}So funktioniert der Gutschein{% else %}Warum dieser Boden zu Ihnen passt{% endif %}</h2>
     {%- if tp_vt_intro != blank -%}
       <p class="tp-verkaufstext__intro-{{ tp_vt_id }}">{{ tp_vt_intro }}</p>
     {%- endif -%}
