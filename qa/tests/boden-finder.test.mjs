@@ -423,12 +423,13 @@ test('ca.-Betrag der Preisstufe bei Rollenware: guenstigster Weg je Rolle, auch 
   const raum = { laenge: 400, breite: 300 };
   const qmRolle = L.rollenFlaeche(400, 300);
   // Live 16.10., 4 x 3 m bis 60 EUR/m²: bisher Preis je m² x 12 m² = ca. 570 EUR,
-  // die 2-m-Rolle kostet aber 2 Bahnen mit Naht x 2 m x 8 m = 32 m² = 1.519,68 EUR.
+  // die 2-m-Rolle kostet aber 2 Bahnen mit Naht x 4 m = 8 m am Stueck (genau die
+  // Mindestlaenge) x 2 m = 16 m² = 759,84 EUR.
   const naht = L.raumAngebot(liste[0].rolle, 400, 300);
   assert.equal(naht.naht, true);
-  assert.equal(naht.qm, 32);
+  assert.equal(naht.qm, 16);
   assert.equal(L.stufenMaximum(liste, 60, 12, qmRolle), 570);
-  assert.equal(L.stufenMaximum(liste, 60, 12, qmRolle, raum), 1520);
+  assert.equal(L.stufenMaximum(liste, 60, 12, qmRolle, raum), 760);
   // Bis 35 EUR/m²: 4-m-Rolle zu 32,90 x 12 m² = 394,80 EUR.
   assert.equal(L.stufenMaximum(liste, 35, 12, qmRolle, raum), 400);
   // 3,5 x 4,5 m: rollenFlaeche rechnet mit der 5-m-Rolle (17,5 m²), die Rollen
