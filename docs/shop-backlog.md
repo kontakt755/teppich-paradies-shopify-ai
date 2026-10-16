@@ -3,6 +3,7 @@
 Zentrale Liste der Orchestrator-Session. Immer nur **ein** aktives Arbeitspaket.
 Status: `offen` · `aktiv` · `review` (PR offen) · `erledigt` · `blockiert`.
 GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfolge.
+Stand 2026-10-16: Liste abgeschlossen bis auf S-10 (EK-Rest) und S-16 (eigener Visualisierer); offene Inhaberpunkte laufen in der Werkbank „Shop & Technik“.
 
 | ID | Aufgabe | Prio | Status | Abhaengig von | Codebereich | Agent | Test |
 |---|---|---|---|---|---|---|---|
@@ -16,13 +17,13 @@ GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfo
 | S-17 | Live-Fehler: PAngV-Hinweis "Alle Preise inkl. MwSt." mobil 16 px breit neben dem Titel, alle Produktseiten (seit 2026-09-16) | P0 | erledigt, live 2026-09-20 (PR #391) | - | `sections/product-information.liquid`, `blocks/_product-details.liquid` | Fable | Scratch Desktop+Mobil ok |
 | S-08 | Rabatt-Datenmodell: bestehende Metafelder inventarisieren, Vorschlag fuer Aktions-Felder | P1 | erledigt: Datenmodell `aktion.start/ende/klasse` angelegt (Definitionen in Shopify, kein Produkt befuellt) | - | Metafelder (nur Analyse) | Worker + Fable-Entscheid | - |
 | S-09 | Verlegeservice-Logik verstehen, Aktionspreis-Hinweis daran anbinden (keine zweite Logik) | P1 | erledigt, geht mit S-21 live | S-08 | Service-Bloecke | Fable plant | - |
-| S-10 | Produkttabelle VK/EK/Marge/Rabattklasse (EK nur aus belegter Quelle, nie geraten) | P1 | offen - EK-Liste reicht Ahmet nach (#397). Welle 1 lief auf seine Entscheidung OHNE EK; Marge bleibt unbekannt | S-08 | Daten, lokal ausserhalb des Repos | Worker | - |
+| S-10 | Produkttabelle VK/EK/Marge/Rabattklasse (EK nur aus belegter Quelle, nie geraten) | P1 | teilweise (15.10.): EK fuer Vorwerk, JAB und Lieferant B belegt, Lieferant A abgeleitet; Rest A und Lieferant C offen (#397, Werkbank w-100). Welle 1 lief OHNE EK | S-08 | Daten, lokal ausserhalb des Repos | Worker | - |
 | S-11 | Collection-Sortierung/Merchandising Teppichboden analysieren (Einstieg nicht ueber 200 EUR/m2) | P1 | erledigt 2026-09-20: 5 Unterkollektionen manuell kuratiert (unten) | - | Collections, Sortierung (Analyse) | Worker | - |
-| S-12 | Streichpreis-Struktur: belegbare Referenzpreise (30-Tage-Tiefstpreis), keine Fantasiepreise | P1 | Bestand bereinigt 2026-09-20 (unten); Struktur fuer kuenftige Aktionen offen, haengt an S-08 | S-08 | Preis-Snippets | Fable | - |
+| S-12 | Streichpreis-Struktur: belegbare Referenzpreise (30-Tage-Tiefstpreis), keine Fantasiepreise | P1 | erledigt: Bestand bereinigt 2026-09-20 (unten); Struktur `aktion.start/ende/klasse` + `compareAtPrice` seit Welle 1 in Betrieb, Karten zeigen Streichpreis nur bei aktiver Aktion (S-20) | S-08 | Preis-Snippets | Fable | - |
 | S-13 | Kettelungsbilder inventarisieren (Produkt, Bild, Zweck, Problem, Wunsch) | P2 | Zahlen erledigt (unten); Qualitaetsurteil per Stichprobe in `docs/shop-bildworkflow.md` | - | nur Daten | Worker | - |
-| S-14 | Externer Bild-Workflow fuer Kettelbilder vorbereiten | P2 | Konzept fertig (`docs/shop-bildworkflow.md`), Typ A (Struktur-Foto) im Theme; wartet auf 10 Kantenfotos vom Inhaber ODER Freigabe der KI-Testreihe | S-13 | - | Fable plant | - |
-| S-15 | Rabattaktionen ausrollen | P2 | Welle 1 live 2026-09-20 bis 2026-10-18 (unten); Ende = Issue #413 | S-08 bis S-12, Freigabe Ahmet | Preise | - | - |
-| S-16 | Bessere Raumvisualisierung (Ersatz fuer S-01) | P3 | zurueckgestellt (Ahmet 2026-09-20: erstmal sein lassen; #339 geschlossen) | S-14 | Einfass-Konfigurator | - | - |
+| S-14 | Externer Bild-Workflow fuer Kettelbilder vorbereiten | P2 | erledigt 2026-10-11: KI-Kettelbilder (Kante + Kettelecke) fuer 880 Farben in 93 Linien nach Sichtfreigabe live; Rest (19 Farben, Musterlinien, Wohnteppich nach Mass) in der Werkbank | S-13 | - | Fable plant | - |
+| S-15 | Rabattaktionen ausrollen | P2 | Welle 1 live 2026-09-20 bis 2026-10-18 (unten); Rueckstellung #413 am 13.10. freigegeben, laeuft 19.10. per geplanter Aufgaben | S-08 bis S-12, Freigabe Ahmet | Preise | - | - |
+| S-16 | Bessere Raumvisualisierung (Ersatz fuer S-01) | P3 | offen als eigener Raumvisualisierer (Inhaber 09.10.: keine fremden Visualisierer, AGENTS.md Backlog); Raumansicht Hartboeden mit Massstab seit 14.10. live | S-14 | Einfass-Konfigurator | - | - |
 | S-18 | Sales-Check mobil wackelt: Cookie-Banner faengt den Klick auf "In den Warenkorb" ab (1 von 3 Laeufen am 2026-09-20), kostet einen ganzen Preview-Lauf | P2 | erledigt 2026-09-20 (CSS-Regel statt nur Beobachter, nach dem zweiten Fehlschlag am selben Tag) | - | `qa/run-sales-readiness.mjs` | mittleres Modell | - |
 | S-19 | Seite /pages/liefer-verlegeservice um den Satz zur Aktionspreis-Regel ergaenzen (liegt doch im Theme: `sections/tp-verlegeservice.liquid`) | P2 | erledigt, live 2026-09-20 | S-09 | Shopify-Seite | - | - |
 | S-20 | Sale-Badge/Streichpreis auf Karten nur zeigen, wenn `tp-aktion-aktiv` ja sagt (verhindert unbelegte Streichpreise technisch) | P2 | erledigt, live 2026-09-20 | S-09 | `_product-card-gallery.liquid`, `snippets/price.liquid` | mittleres Modell | - |
@@ -30,25 +31,25 @@ GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfo
 | S-22 | 49 Teppich-Beschreibungen: Abschnitt "So funktioniert der Rechner" nennt Material-EUR/m2 und Kettelung je lfm; ebenso die Meta-Descriptions ("117 EUR/m2 plus Kettelung"). Textvorschlag an Ahmet, dann Bulk-Update mit Sicherung der Originale | P1 | erledigt 2026-09-20: 49/49 Beschreibungen + Meta-Descriptions, Originale gesichert | S-21 | Produktdaten (descriptionHtml, global.description_tag) | guenstiger Worker nach Freigabe | - |
 | S-23 | Teppich-Karte aufwerten: Preis groesser, Qualitaetszeile (Material/Art/Flor aus `service.einfass_basis`), Wunschmass sichtbarer - Variante A/B/C von Ahmet waehlen lassen | P1 | erledigt, live 2026-09-20 | S-21 | `blocks/tp-card-actions.liquid`, `snippets/tp-teppich-ab-preis.liquid`, `blocks/price.liquid` | Fable | - |
 | S-24 | Groesste Teppichbreite vom Teppichboden ableiten (500er Rollen), je Farbe, Karte + Konfigurator | P1 | erledigt, live 2026-09-20 | - | `snippets/tp-teppich-max-breite.liquid`, Konfigurator | Fable | 6 Unit-Tests, Scratch ok |
-| S-25 | Datenpflege: `service.max_breite_cm` an den Teppichen ist jetzt nur noch Rueckfall; Wovena-, Callista- und Rubira-Teppichboden haben kein Fasermaterial gepflegt (Art "Wolle" ist gepflegt, die genaue Faser nicht belegt) - Anzeige nutzt seit 2026-09-20 die zweite Art; das Metafeld `custom.fasermaterial` fuellt der Inhaber aus belegter Quelle | P3 | Anzeige erledigt, Datenpflege offen (Inhaber) | - | Produktdaten | Worker | - |
+| S-25 | Datenpflege: `service.max_breite_cm` an den Teppichen ist jetzt nur noch Rueckfall; Wovena-, Callista- und Rubira-Teppichboden haben kein Fasermaterial gepflegt (Art "Wolle" ist gepflegt, die genaue Faser nicht belegt) - Anzeige nutzt seit 2026-09-20 die zweite Art; das Metafeld `custom.fasermaterial` fuellt der Inhaber aus belegter Quelle | P3 | erledigt: `custom.fasermaterial` = „Schurwolle“ bei allen drei (Admin API 2026-10-16) | - | Produktdaten | Worker | - |
 | S-26 | Kollektion `teppiche` (50 Produkte, BEST_SELLING) nach derselben Regel kuratieren - jetzt mit ab-Preisen sinnvoll | P2 | erledigt 2026-09-20 | S-11 | Shopify-Kollektion | Fable | - |
 | S-27 | Konfigurator: Preis stand doppelt ("Ihr Preis" + "In den Warenkorb – 724 EUR"), Gedankenstrich im Knopf | P1 | erledigt, live 2026-09-20 | - | `assets/tp-einfass-konfigurator.js` | Fable | Scratch ok |
 | S-28 | Teppich-PDP mobil: Farbwahl und Galerie zu weit auseinander - grosses Farbbild direkt unter der Farbwahl, Strukturfoto als Lupe | P1 | erledigt, live 2026-09-20 | S-14 | `blocks/tp-teppich-struktur.liquid` | Fable | 5 Unit-Tests, Scratch ok |
 | S-29 | Link "Lieber als Meterware von der Rolle" unverstaendlich -> Frage + klarer Link | P1 | erledigt, live 2026-09-20 | - | `blocks/tp-einfass-wechsel.liquid` | Fable | Scratch ok |
 | S-30 | Teppiche nach Mass: Streichpreis im ab-Preis darstellen, damit auch dort Aktionen moeglich sind | P2 | erledigt, live 2026-09-20 | S-15 | `snippets/tp-teppich-ab-preis.liquid` | Fable | - |
-| S-31 | Ahmet prueft: Merchant Center uebernimmt die Aktionspreise korrekt (Issue #415) | P2 | offen (Inhaber) | S-15 | Google Merchant Center | Ahmet | - |
+| S-31 | Ahmet prueft: Merchant Center uebernimmt die Aktionspreise korrekt (Issue #415) | P2 | erledigt (#415 geschlossen; Merchant Center seit 13.10. nur Shopify-Quelle) | S-15 | Google Merchant Center | Ahmet | - |
 | S-32 | Konfigurator "Ihr Preis": bei aktiver Aktion den alten Preis durchgestrichen dazu zeigen (heute nur im ab-Preis) | P3 | erledigt, live 2026-09-20 | S-30 | `assets/tp-einfass-konfigurator.js` | Fable | - |
 
 ## S-03 Ergebnis (2026-09-20)
 | Issue | Befund | Empfehlung |
 |---|---|---|
 | #199 Teppiche-Bereich | komplett live (ueber PR #281) | schliessen |
-| #339 Visualisierer | gebaut (PR #338), seit PR #388 abgeschaltet | offen: Entscheidung Ahmet Kauf-Tool vs. Eigenbau, gehoert zu S-16 |
-| #188 Massteppich/Raummass | gemergt (PRs #195, #276, #281, Fixes #384/#385) | Abnahme durch Ahmet, dann schliessen |
-| #282 Piumera | Basis da, Rechner/Warenkorb/Structured Data unvollstaendig | offen lassen |
-| #162 Kaufbox Rollenware | Live-Gesamtpreis da; Rechenbeispiel und Eingabegrenzen-Text nicht belegbar | offen mit diesen zwei Resten |
-| #164 Verschnitt-Option | nicht gebaut | offen |
-| #264 Kettelservice-Zweig | Issue ohne Inhalt | zurueck in Triage |
+| #339 Visualisierer | gebaut (PR #338), seit PR #388 abgeschaltet | geschlossen; Entscheidung 09.10.: Eigenbau, kein Kauf-Tool (S-16) |
+| #188 Massteppich/Raummass | gemergt (PRs #195, #276, #281, Fixes #384/#385) | geschlossen |
+| #282 Piumera | Basis da, Rechner/Warenkorb/Structured Data unvollstaendig | geschlossen (Rechner, Warenkorb und JSON-LD seit #495 live) |
+| #162 Kaufbox Rollenware | Live-Gesamtpreis da; Rechenbeispiel und Eingabegrenzen-Text nicht belegbar | geschlossen |
+| #164 Verschnitt-Option | nicht gebaut | geschlossen |
+| #264 Kettelservice-Zweig | Issue ohne Inhalt | geschlossen |
 
 ## S-08 Inventar (2026-09-20)
 - Keine Metafelder fuer Aktion/Rabatt/Verlegung an Produkt oder Variante. Vorhanden: `custom.qm_pro_paket`, `custom.preis_pro_001_qm`, `service.*` (Einfassung, Masse, `mindestpreis`).

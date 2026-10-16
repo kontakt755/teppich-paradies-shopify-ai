@@ -356,9 +356,9 @@ Abschlussberichte kompakt halten:
 Nicht automatisch bearbeiten, aber bei zukünftigen Aufgaben berücksichtigen:
 
 - Teppichboden Mobile-Menü optimieren
-- Hochflor-/Mittelflor-Zuordnung fachlich verbessern
+- Hochflor-/Mittelflor-Zuordnung fachlich verbessern (Mittelflor ist seit 07.10. eigene Kategorie, die Zuordnung je Produkt bleibt offen)
 - ecoVella-/Wolle-Zuordnung sauber prüfen
 - Eigenen Raumvisualisierer für Hartböden ausbauen – keine fremden Visualisierer wie Roomvo (Inhaber 09.10.)
 - Horizon 4.1.3 später separat migrieren
 - Produktbilder langfristig verbessern
-- Reste & Sonderposten später als eigenen starken Shopbereich aufbauen
+- Reste & Sonderposten später als eigenen starken Shopbereich aufbauen (seit 14.10. nur Platzhalter „demnächst“ im Menü)

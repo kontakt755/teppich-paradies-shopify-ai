@@ -7,13 +7,13 @@ oben eingebunden. Hier steht nur, was Claude Code zusaetzlich betrifft.
 
 ## Sitzung
 
-- **Ein Modell fuer alles.** Standard kommt aus `~/.claude/settings.json`
-  (Opus, Effort xhigh). Es gibt keinen Router, keine Voranalyse und keinen
-  Modellwechsel mitten in der Sitzung (entfernt 2026-09-30, siehe `.claude/README.md`).
+- **Ein Modell fuer alles.** Standard kommt aus `~/.claude/settings.json`.
+  Es gibt keinen Router, keine Voranalyse und keinen Modellwechsel mitten in
+  der Sitzung (entfernt 2026-09-30, siehe `.claude/README.md`).
 - **Sitzungen im Repository starten**, nicht auf dem Schreibtisch oder im
   Home-Ordner — sonst fehlen Hooks, Skills und das Projekt-Gedaechtnis.
-- **Eine Aufgabe pro Sitzung, eigener Worktree** (App-Worktree unter
-  `.claude/worktrees/`). Den Hauptcheckout nie bearbeiten.
+  App-Worktrees liegen unter `.claude/worktrees/`; die Regeln zu Arbeitskopien
+  (eine Aufgabe = ein Worktree, Hauptcheckout nie bearbeiten) stehen in `AGENTS.md`.
 - **Grosse Ausgaben aus dem Kontext halten:** breite Suchen ueber viele Dateien
   an einen Subagenten geben; gefiltert statt roh
   (`npm run -s kurz -- themes-query | themes | push | worktrees`);
