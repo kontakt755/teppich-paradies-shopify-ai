@@ -19,15 +19,16 @@ import os from 'node:os';
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { normalizeTask, requirementsFor, labelChangesFor, mitBlockerAbschnitt, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
-import { texteAusMarkdown } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
+import { texteAusMarkdown, musterKurz, NICHT_VERFUEGBAR_VORLAGE } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
 import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
 import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, setzeStatusPositionen, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, STATUS_ORDER, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
 import { bucheVersand, versandNachzuholen, VersandFehler, VERSANDDIENSTE } from '../operations/lib/versand.mjs';
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
-import { musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MUSTER_GROESSE, KNAPP_AB as LAGER_KNAPP_AB, PROBESTUECK_PREIS, wartetAufLieferant as lagerWartetAufLieferant, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
-import { auftragsverlaufPfad, leseVerlauf, bereiteEreignisVor, schreibeVerlauf, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
+import { musterSchluessel, musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MUSTER_GROESSE, KNAPP_AB as LAGER_KNAPP_AB, PROBESTUECK_PREIS, wartetAufLieferant as lagerWartetAufLieferant, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
+import { auftragsverlaufPfad, leseVerlauf, bereiteEreignisVor, schreibeVerlauf, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, ERGEBNIS_SCHRITTE, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
+import { mustersperrePfad, leseSperren, haengeAn as sperreAnhaengen, ereignis as sperrEreignis, stand as sperrStand, schonErledigt as sperreSchonErledigt, adminLink as sperrAdminLink, pruefeRechte as pruefeSperrRechte, rechtFehltText as sperrRechtFehlt, sperreImShop, freigebenImShop, GRUND as SPERR_GRUND, MustersperreFehler } from '../operations/lib/mustersperre.mjs';
 import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden, kundenIndex } from '../operations/lib/kundensuche.mjs';
 import { faelle as kundenFaelle, istTestkontakt } from '../operations/lib/kundenfaelle.mjs';
 import { fallmarkenPfad, leseAlle as leseFallmarken, setzeMarke as setzeFallmarke, teileAuf as teileFaelleAuf, juengsterPunkt, FALL_GRUND } from '../operations/lib/fallmarken.mjs';
@@ -896,6 +897,23 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     const positionen = auswahl ? allePositionen.filter(p => auswahl.has(p.lineItemId)) : allePositionen;
     if (auswahl && !positionen.length) throw new ApiError(400, 'Bitte mindestens einen Artikel dieser Bestellung auswählen');
     const angaben = versandAngaben(payload?.versand);
+    // "Muster nicht verfuegbar": die angekreuzten Muster werden im Shop gesperrt; die Notiz nennt
+    // ihre Farben (Pflicht - aus den Kaestchen, dazu der Freitext).
+    let notizText = notiz;
+    let sperrPositionen = [];
+    if (schritt === 'muster_nicht_verfuegbar') {
+      const gewaehlt = new Set((Array.isArray(payload?.muster) ? payload.muster : []).map(String));
+      sperrPositionen = allePositionen.filter(p => p.istMuster && gewaehlt.has(p.lineItemId));
+      if (sperrPositionen.length !== gewaehlt.size) throw new ApiError(400, 'Bitte nur Muster dieser Bestellung ankreuzen');
+      const frei = String(notiz ?? '').trim();
+      const farben = musterKurz(sperrPositionen).join('; ');
+      notizText = [farben ? `Nicht verfügbar: ${farben}` : null, frei || null].filter(Boolean).join(' – ') || null;
+      if (!notizText) throw new ApiError(400, 'Bitte die betroffenen Farben ankreuzen oder in der Notiz nennen');
+      // Ablage vorher lesen: ist sie beschaedigt, wird gar nichts geschrieben - auch kein Schritt.
+      if (sperrPositionen.length) {
+        try { leseSperren(mustersperrePfad(dir)); } catch (e) { throw new ApiError(e.status || 500, e.message); }
+      }
+    }
     const setzePositionen = (status, text, versandMail = null) => {
       if (!positionen.length) throw new ApiError(400, 'Diese Bestellung hat keine nachverfolgbaren Positionen');
       const alle = leseAktuellenStatus(statusDatei, modell);
@@ -928,7 +946,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         if (neu) rausIds = ids.filter(id => neu.has(id));
       } else {
         // Verlauf und alle Positionsregeln pruefen, bevor irgendeine der beiden Dateien geschrieben wird.
-        const ereignis = bereiteEreignisVor(auftragsverlaufPfad(dir), { orderId, schritt, actor, notiz, bezug, jetzt: now() });
+        const ereignis = bereiteEreignisVor(auftragsverlaufPfad(dir), { orderId, schritt, actor, notiz: notizText, bezug, jetzt: now() });
         // Muster aus eigenem Bestand: "Erledigt – Kunde hat Muster" ist zugleich die Uebergabe
         // (vorbeigebracht bzw. verschickt) - sonst bliebe "raus" als Luecke im Verlauf stehen.
         if (schritt === 'kunde_hat_muster' && vorher.eigenerBestand && positionen.length) {
@@ -942,8 +960,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
             rausIds = ids.filter(id => neu.has(id));
           }
         }
-        if (['kunde_hat_bestellt', 'kein_interesse'].includes(schritt) && positionen.length) {
-          anzahl = setzePositionen('erledigt', `Ergebnis: ${SCHRITT_LABEL.muster[schritt]}${notiz ? ` – ${notiz}` : ''}`).length;
+        if (ERGEBNIS_SCHRITTE.includes(schritt) && positionen.length) {
+          anzahl = setzePositionen('erledigt', `Ergebnis: ${SCHRITT_LABEL.muster[schritt]}${notizText ? ` – ${notizText}` : ''}`).length;
         }
         schreibeVerlauf(auftragsverlaufPfad(dir), ereignis.auftraege);
       }
@@ -957,9 +975,118 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     merke(benutzer, actor, 'Auftragsschritt', `${auftrag.name}: ${schritt}`);
     // Erst jetzt nach Shopify: der lokale Schritt steht, egal wie die Buchung ausgeht.
     const shopifyErgebnis = rausIds.length ? await versandBuchen({ dir, auftrag, lineItemIds: rausIds, angaben, benutzer, actor }) : null;
+    // Muster nicht verfuegbar: die Farben im Shop sperren - nach dem lokalen Schritt, der gilt immer.
+    const sperre = sperrPositionen.length ? await musterSperren({ dir, auftrag, positionen: sperrPositionen, benutzer, actor }) : null;
     const statusNachher = leseAktuellenStatus(statusDatei, modell);
     const nachher = zeitleisten(dir, modell, statusNachher).get(orderId);
-    return { ok: true, orderId, schritt, positionen: anzahl, ...(shopifyErgebnis ? { shopify: shopifyErgebnis } : {}), ...zeitleistenFelder(nachher), ...versandFelder(auftrag, statusNachher) };
+    return { ok: true, orderId, schritt, positionen: anzahl, ...(shopifyErgebnis ? { shopify: shopifyErgebnis } : {}), ...(sperre ? { mustersperre: sperre } : {}), ...zeitleistenFelder(nachher), ...versandFelder(auftrag, statusNachher) };
+  }
+
+  // Rechte fuer die Mustersperre: einmal je Prozess bestaetigt (der Dienst haelt seinen Token im
+  // Speicher - nach einer Freischaltung startet er ohnehin neu). Fehlende Rechte werden jedes Mal neu gefragt.
+  let sperrRechteOk = false;
+
+  /** Zugang fuer die Mustersperre: { proxy } oder { hindernis: { grund, fehler } } - nie eine Ausnahme. */
+  async function sperrZugang() {
+    let zugang;
+    try { zugang = await shopify(); } catch (e) {
+      return { hindernis: { grund: 'nicht-erreichbar', fehler: `Im Shop nicht gesperrt: ${mitHinweis(String(e?.message || e).split('\n')[0])}`.slice(0, 400) } };
+    }
+    if (zugang?.art === 'sammeln') return { hindernis: { grund: 'kein-zugang', fehler: 'Im Shop nicht gesperrt: kein Zugang zu Shopify eingerichtet. Bitte die Variante über den Link in Shopify sperren.' } };
+    if (!sperrRechteOk) {
+      try {
+        const { fehlend } = await pruefeSperrRechte(zugang.proxy);
+        if (fehlend.length) return { hindernis: { grund: 'recht-fehlt', fehler: sperrRechtFehlt(fehlend), fehlend } };
+        sperrRechteOk = true;
+      } catch (e) {
+        return { hindernis: { grund: 'nicht-erreichbar', fehler: `Im Shop nicht gesperrt: Rechte nicht lesbar (${String(e?.message || e).split('\n')[0].slice(0, 160)})` } };
+      }
+    }
+    return { proxy: zugang.proxy };
+  }
+
+  /**
+   * Eine SKU sperren (oder es versuchen) und das Ereignis anhaengen. Laeuft je SKU nacheinander,
+   * damit zwei Klicks nie gleichzeitig denselben Bestand setzen. Gibt das Ereignis zurueck,
+   * oder null, wenn genau diese Sperre schon steht (zweiter Klick: nichts zu tun).
+   */
+  function sperreEine({ dir, sku, info, orderId, orderName, zugang, actor }) {
+    const file = mustersperrePfad(dir);
+    return nacheinander(`mustersperre:${sku}`, async () => {
+      const aktiv = sperrStand(leseSperren(file));
+      if (sperreSchonErledigt(aktiv, sku, orderId)) return null;
+      let sh;
+      if (zugang.hindernis) sh = { geschrieben: false, fehler: zugang.hindernis.fehler, fehlerGrund: zugang.hindernis.grund, variantId: aktiv.get(sku)?.variantId, productId: aktiv.get(sku)?.productId };
+      else {
+        try {
+          const r = await sperreImShop(zugang.proxy, { sku, referenz: orderId || null });
+          sh = { geschrieben: true, bereits: r.status === 'bereits', variantId: r.variantId, productId: r.productId, vorher: r.vorher, nachher: r.nachher, verfuegbar: r.verfuegbar };
+        } catch (e) {
+          const bekannt = e instanceof MustersperreFehler;
+          sh = { geschrieben: false, fehler: bekannt ? e.message : `Ob das Muster im Shop gesperrt ist, ist unklar (${String(e?.message || e).split('\n')[0].slice(0, 160)}). Bitte in Shopify nachsehen.`,
+            fehlerGrund: bekannt ? e.grund : 'unklar', variantId: e?.extra?.variantId, productId: e?.extra?.productId, vorher: e?.extra?.vorher, nachher: e?.extra?.nachher };
+          logFehler('mustersperre', `${sku}: ${sh.fehlerGrund} - ${sh.fehler}`);
+        }
+      }
+      const [ev] = sperreAnhaengen(file, [sperrEreignis({ sku, ...info, orderId, orderName, von: actor, grund: SPERR_GRUND.GESPERRT, shopify: sh, jetzt: now() })]);
+      audit({ actor, action: 'mustersperre', sku, orderId, geschrieben: sh.geschrieben, bereits: Boolean(sh.bereits), grund: sh.fehlerGrund || null });
+      return ev;
+    });
+  }
+
+  /** Kurztext fuer die Rueckmeldung: "2 Farben im Shop gesperrt · 1 Farbe im Shop noch zu sperren: …" */
+  function sperrMeldung({ gesperrt, bereits, offen, ohneSku, fehler }) {
+    const farben = n => (n === 1 ? '1 Farbe' : `${n} Farben`);
+    const teile = [];
+    if (gesperrt) teile.push(`${farben(gesperrt)} im Shop gesperrt`);
+    if (bereits) teile.push(`${farben(bereits)} ${bereits === 1 ? 'war' : 'waren'} schon gesperrt`);
+    if (offen) teile.push(`${farben(offen)} im Shop noch zu sperren${fehler ? ` – ${fehler}` : ''}`);
+    if (ohneSku) teile.push(`${farben(ohneSku)} ohne Artikelnummer – im Shop von Hand sperren`);
+    return teile.join(' · ');
+  }
+
+  /**
+   * "Muster nicht verfuegbar": die angekreuzten Muster je SKU im Shop sperren (operations/lib/mustersperre.mjs).
+   * Ohne Recht oder Zugang wird nichts geschrieben; die Sperre steht dann als "im Shop noch zu sperren"
+   * in Einkauf > Musterlager. Testbestellungen sperren nie echte Varianten.
+   */
+  async function musterSperren({ dir, auftrag, positionen, benutzer, actor }) {
+    if (auftrag.testbestellung) return { status: 'uebersprungen', meldung: 'Testbestellung – im Shop nichts gesperrt.', gesperrt: 0, bereits: 0, offen: 0, ohneSku: 0 };
+    const jeSku = new Map();
+    let ohneSku = 0;
+    for (const p of positionen) {
+      const k = musterSchluessel(p);
+      if (!k) { ohneSku += 1; continue; }
+      const sku = `M-${k}`;
+      if (!jeSku.has(sku)) jeSku.set(sku, { farbe: p.farbe && p.farbe !== '–' ? p.farbe : null, produkt: String(p.titel || '').replace(/^\s*Muster\s*:?\s*/i, '') || null, handle: p.handle || null });
+    }
+    const zugang = jeSku.size ? await sperrZugang() : {};
+    const z = { gesperrt: 0, bereits: 0, offen: 0, ohneSku, fehler: null };
+    const gesperrtText = [];
+    for (const [sku, info] of jeSku) {
+      // eslint-disable-next-line no-await-in-loop -- je SKU nacheinander, wenige Muster je Auftrag.
+      const ev = await sperreEine({ dir, sku, info, orderId: auftrag.id, orderName: auftrag.name, zugang, actor });
+      if (!ev) { z.bereits += 1; continue; }
+      if (ev.shopify.geschrieben && ev.shopify.bereits) z.bereits += 1;
+      else if (ev.shopify.geschrieben) { z.gesperrt += 1; gesperrtText.push([info.produkt, info.farbe].filter(Boolean).join(' ')); }
+      else { z.offen += 1; z.fehler ||= ev.shopify.fehler; }
+    }
+    if (gesperrtText.length) merke(benutzer, actor, 'Muster im Shop gesperrt', `${auftrag.name}: ${gesperrtText.join(', ')}`);
+    if (z.offen) merke(benutzer, actor, 'Muster im Shop nicht gesperrt', `${auftrag.name}: ${z.offen} Farbe(n) · ${z.fehler}`);
+    const status = z.offen || ohneSku ? (z.gesperrt || z.bereits ? 'teilweise' : 'offen') : 'gesperrt';
+    return { status, meldung: sperrMeldung(z), gesperrt: z.gesperrt, bereits: z.bereits, offen: z.offen, ohneSku, ...(zugang.hindernis?.fehlend ? { fehlendeRechte: zugang.hindernis.fehlend } : {}) };
+  }
+
+  /** Aktive Sperren fuer Einkauf > Musterlager: im Shop gesperrt bzw. noch zu sperren. */
+  function sperrenListe(dir) {
+    let aktiv;
+    try { aktiv = sperrStand(leseSperren(mustersperrePfad(dir))); } catch (e) { return { fehler: e.message, gesperrt: [], offen: [] }; }
+    const zeilen = [...aktiv.values()].sort((a, b) => String(b.seit).localeCompare(String(a.seit))).map(s => ({
+      sku: s.sku, farbe: s.farbe, produkt: s.produkt, seit: s.seit, von: s.von, auftraege: s.auftraege,
+      imShop: s.imShop, fehler: s.fehler, fehlerGrund: s.fehlerGrund, freigabeFehler: s.freigabeFehler,
+      adminLink: sperrAdminLink({ sku: s.sku, variantId: s.variantId, productId: s.productId }),
+    }));
+    return { fehler: null, gesperrt: zeilen.filter(x => x.imShop), offen: zeilen.filter(x => !x.imShop) };
   }
 
   /**
@@ -1365,18 +1492,20 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     kundenMusterTexte() {
       const dir = privatDirPath || privatDir();
       const file = path.join(dir, 'muster-nachfassen-texte.md');
+      // "Muster nicht verfuegbar" gibt es immer: aus der Vorlage, wenn sie den Abschnitt hat, sonst der eingebaute Vorschlag.
       let md;
       try { md = fs.readFileSync(file, 'utf8'); }
       catch (e) {
-        if (e?.code === 'ENOENT') return { verfuegbar: false, hinweis: 'Die Textvorlage fehlt: muster-nachfassen-texte.md im Privatordner ablegen.' };
+        if (e?.code === 'ENOENT') return { verfuegbar: false, hinweis: 'Die Textvorlage fehlt: muster-nachfassen-texte.md im Privatordner ablegen.', nichtVerfuegbar: NICHT_VERFUEGBAR_VORLAGE };
         console.error(`[daten] ${file}: ${e?.message || e}`);
-        return { verfuegbar: false, hinweis: 'Die Textvorlage ist nicht lesbar.' };
+        return { verfuegbar: false, hinweis: 'Die Textvorlage ist nicht lesbar.', nichtVerfuegbar: NICHT_VERFUEGBAR_VORLAGE };
       }
       const texte = texteAusMarkdown(md);
+      const nichtVerfuegbar = texte.nichtVerfuegbar || NICHT_VERFUEGBAR_VORLAGE;
       if (!texte.erste && !texte.erinnerung) {
-        return { verfuegbar: false, hinweis: 'In der Textvorlage fehlen die Abschnitte „Text 1“ und „Erinnerung“ mit einer Zeile „**Betreff:**“.' };
+        return { verfuegbar: false, hinweis: 'In der Textvorlage fehlen die Abschnitte „Text 1“ und „Erinnerung“ mit einer Zeile „**Betreff:**“.', nichtVerfuegbar };
       }
-      return { verfuegbar: true, texte };
+      return { verfuegbar: true, texte, nichtVerfuegbar };
     },
 
     /**
@@ -1760,8 +1889,69 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           verlauf: (e.verlauf || []).slice(-5),
         })),
         vorschlaege: modell ? lagerVorschlaege(modell, { lager, statusAlle, produktgruppe: h => gruppen.get(h) ?? null, jetzt: now() }) : [],
+        // Im Shop gesperrte Muster ("Muster nicht verfuegbar") - eine beschaedigte Ablage meldet nur diesen Block.
+        sperren: sperrenListe(dir),
       };
     },
+
+    /** Sperren allein (GET /api/einkauf/mustersperre). */
+    einkaufMustersperre() {
+      return { verfuegbar: true, ...sperrenListe(privatDirPath || privatDir()) };
+    },
+
+    /**
+     * Mustersperre schreiben: "freigeben" (Wieder verfuegbar - Stand vor der Sperre im Shop
+     * zurueck) oder "nachholen" (eine noch nicht im Shop stehende Sperre erneut versuchen).
+     * Beides nur anhaengen, protokolliert.
+     */
+    async einkaufMustersperreSetzen(payload = {}, benutzer = null) {
+      const actor = benutzer?.name || await currentUser();
+      if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
+      const dir = privatDirPath || privatDir();
+      const file = mustersperrePfad(dir);
+      const { aktion } = payload || {};
+      const sku = String(payload?.sku ?? '').trim().toUpperCase();
+      if (!sku) throw new ApiError(400, 'sku ist Pflicht', { missing: ['sku'] });
+      if (!['freigeben', 'nachholen'].includes(aktion)) throw new ApiError(400, `Unbekannte Aktion „${aktion}"`);
+      let aktiv;
+      try { aktiv = sperrStand(leseSperren(file)); } catch (e) { throw new ApiError(e.status || 500, e.message); }
+      const s = aktiv.get(sku);
+      if (!s) throw new ApiError(409, 'Dieses Muster ist nicht (mehr) gesperrt – bitte neu laden.');
+      const info = { farbe: s.farbe, produkt: s.produkt, handle: s.handle };
+      const name = [s.produkt, s.farbe].filter(Boolean).join(' · ') || sku;
+      if (aktion === 'nachholen') {
+        if (s.imShop) throw new ApiError(409, 'Dieses Muster ist im Shop schon gesperrt.');
+        const zugang = await sperrZugang();
+        const letzter = s.auftraege.at(-1) || {};
+        const ev = await sperreEine({ dir, sku, info, orderId: letzter.orderId || null, orderName: letzter.orderName || null, zugang, actor });
+        if (!ev?.shopify?.geschrieben) throw new ApiError(502, ev?.shopify?.fehler || 'Im Shop nicht gesperrt.');
+        merke(benutzer, actor, 'Muster im Shop gesperrt', `${name} (nachgeholt)`);
+        return { ok: true, meldung: ev.shopify.bereits ? `${name}: war im Shop schon gesperrt` : `${name}: im Shop gesperrt` };
+      }
+      // freigeben
+      return nacheinander(`mustersperre:${sku}`, async () => {
+        let sh = { geschrieben: false };
+        if (s.imShop) {
+          const zugang = await sperrZugang();
+          if (zugang.hindernis) throw new ApiError(503, zugang.hindernis.fehler.replace('Im Shop nicht gesperrt', 'Im Shop nicht freigegeben').replace('die Variante über den Link in Shopify sperren', 'die Variante über den Link in Shopify freigeben'));
+          try {
+            const r = await freigebenImShop(zugang.proxy, { sku, vorher: s.vorher });
+            sh = { geschrieben: true, bereits: r.status === 'bereits', variantId: r.variantId, productId: r.productId, nachher: r.nachher, verfuegbar: r.verfuegbar };
+          } catch (e) {
+            const meldung = e instanceof MustersperreFehler ? e.message : `Ob das Muster wieder freigegeben ist, ist unklar (${String(e?.message || e).split('\n')[0].slice(0, 160)}).`;
+            sperreAnhaengen(file, [sperrEreignis({ sku, ...info, von: actor, grund: SPERR_GRUND.FREI, shopify: { geschrieben: false, fehler: meldung, fehlerGrund: e?.grund || 'unklar' }, jetzt: now() })]);
+            audit({ actor, action: 'mustersperre-frei', sku, geschrieben: false });
+            logFehler('mustersperre', `${sku} freigeben: ${meldung}`);
+            throw new ApiError(502, meldung);
+          }
+        }
+        sperreAnhaengen(file, [sperrEreignis({ sku, ...info, von: actor, grund: SPERR_GRUND.FREI, shopify: sh, jetzt: now() })]);
+        audit({ actor, action: 'mustersperre-frei', sku, geschrieben: sh.geschrieben });
+        merke(benutzer, actor, 'Muster wieder verfügbar', `${name}${s.imShop ? ' · im Shop freigegeben' : ' · war im Shop nicht gesperrt'}`);
+        return { ok: true, meldung: s.imShop ? `${name}: im Shop wieder bestellbar` : `${name}: aus der Liste genommen` };
+      });
+    },
+
 
     /** Farben eines Lexikon-Produkts zum Einlagern, mit Kennzeichen "schon im Lager". */
     einkaufMusterlagerFarben({ handle = '' } = {}) {

@@ -38,6 +38,16 @@
 .ml-notiz { font-size: .85rem; color: var(--text-3); overflow-wrap: anywhere; }
 .ml-aktionen { flex: none; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
 
+/* Mustersperre ("Muster nicht verfuegbar"): offen oben, gesperrte unter dem Lager */
+.ml-sperren { margin: 0 0 18px; }
+.ml-sperren:not(.ml-sperren-offen) { margin-top: 22px; }
+.ml-sperren .ml-liste { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.ml-sperren-offen .ml-liste { border-color: var(--warn); }
+.ml-sperren .section-title { margin-bottom: 4px; }
+.ml-sperren > p { margin: 0 0 10px; max-width: 70ch; }
+.ml-sperren a.btn { color: var(--text); }
+.ml-sperren a.btn:hover { text-decoration: none; }
+
 .ml-vorschlaege { margin-top: 22px; }
 .ml-vorschlaege .ml-liste { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
 

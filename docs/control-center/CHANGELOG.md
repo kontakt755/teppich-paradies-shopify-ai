@@ -2,6 +2,41 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-16 · „Muster nicht verfügbar – Kunde informiert“ schließt ab und sperrt die Farbe im Shop (#1385)
+
+- **Geändert:** Inhaber 16.10.: Im Dialog „Etwas anderes ist passiert …“ gibt es direkt nach „Ergebnis:
+  kein Interesse“ die Wahl „Muster nicht verfügbar – Kunde informiert“ („Der Kunde meldet sich und bestellt
+  neue Muster; der Auftrag ist damit abgeschlossen.“). Darunter alle Muster des Auftrags als Kästchen
+  (vorausgewählt) und ein Mailvorschlag mit den Farben zum Kopieren bzw. „E-Mail öffnen“ – nichts wird
+  gesendet. Der Auftrag ist danach abgeschlossen wie bei „kein Interesse“ und fällt aus „Muster
+  bestellen“, „nachhaken“, „Muster nachfassen“ und Kunden › „Zu tun“; die Zeitleiste zeigt das Ergebnis
+  mit Datum, Person und der Notiz („Nicht verfügbar: Produkt: Farben – Freitext“, Pflicht). Die
+  angekreuzten Farben werden im Shop sofort gesperrt (Mustervariante `M-…`: Bestand verfolgen, Bestand 0,
+  nicht verkaufen wenn ausverkauft; Gegenprobe `availableForSale` false). Einkauf › Musterlager: oben „Im
+  Shop sperren“, falls das nicht ging (mit Link zur Variante, „Erneut sperren“), unten „Im Shop gesperrte
+  Muster“ mit „Wieder verfügbar“ (stellt den Stand vor der Sperre her). Ablage `mustersperre.json`, nur
+  anhängen, in `daten:sichern`. Details: `ARCHITEKTUR.md` Abschnitt 22.
+- **Getestet:** `operations/tests/mustersperre.test.mjs` (11: Ablage fehlend/leer/beschädigt/ohne
+  Leserecht, nur anhängen, Stand je SKU mit Vorstand der ersten Sperre, Idempotenz, Rechteprüfung,
+  Sperren/Freigeben gegen Attrappe inkl. verlorener Antwort, mehrdeutiger SKU, fehlendem Recht),
+  `auftragsverlauf.test.mjs` (+2: Pflichtnotiz, Stufe erledigt, kein Nachhaken mehr),
+  `docs/ai-dashboard/tests/mustersperre-api.test.mjs` (9: To-do und Kundenfall verschwinden, 2 Farben
+  gesperrt, zweiter Klick schreibt nichts, Pflichtangaben 400, Rechte fehlen → nichts geschrieben,
+  kein Zugang, Wieder verfügbar, Testbestellung, beschädigte Ablage, Mailtext, Server: Rolle „lesen“ 403,
+  Mitarbeiter ohne Notiz 400). `npm test`: 2861 Tests grün (nach Rebase auf main). `dashboard:pruefen` (Heute, Einkauf,
+  Musterlager, Kunden, Bestellungen, mit `--rollen`): nur OK, 0 px Überlauf bei 360–1440 px.
+  Klickstrecke gegen die Kopie (390 px, ohne Shopify-Zugang): offene Musteraufträge 21 → 20, „Muster
+  bestellen“ 2 → 1, „Im Shop sperren“ 0 → 3, Kästchen 3 von 3 vorausgewählt, Mailtext ohne Platzhalter
+  und folgt der Auswahl; Beispiel des Inhabers #1021: „nachhaken“ 4 → 3; „Wieder verfügbar“ 5 → 4;
+  keine JS-Fehler, keine Fehlerantworten. Shopify-Rechte des Dienstes nur lesend geprüft:
+  `write_inventory` und `write_products` sind erteilt.
+- **Risiken/Annahmen:** Die Shop-Anzeige „kein Muster verfügbar“ baut eine andere Sitzung im Theme; bis
+  dahin ist eine gesperrte Farbe im Konfigurator einfach nicht bestellbar. Muster über „Kostenloses
+  Muster“ (Vinyl von der Rolle) haben keine Variante je Farbe – dort steht nur der Hinweis. Die Sperre
+  wurde nie gegen den echten Shop geschrieben (nur Attrappe und Kopie ohne Zugang); der erste echte Klick
+  nach dem Merge ist die Probe – danach die Variante im Admin ansehen. Der Dienst muss neu starten.
+- **Nächste Stufe:** „Im Shop sperren“ als To-do auf „Heute“, falls dort etwas liegen bleibt.
+
 ## 2026-10-16 · Claude-Verbrauch auf „Insights“ (#671)
 
 - **Geändert:** Neue Kachel „Claude-Verbrauch“ auf Insights (nur Inhaber): Sitzungen und

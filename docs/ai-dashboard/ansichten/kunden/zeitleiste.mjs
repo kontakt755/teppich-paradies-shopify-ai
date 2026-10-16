@@ -16,6 +16,7 @@ import { render } from '../../kern/render.mjs';
 import { einkauf, setzeZurueckAufOffen, setzeMusterHerkunft, kundeUndOrt, ladeStandNeu, MUSTER_HERKUNFT_LABEL } from '../einkauf/auftragsfluss.mjs';
 import { oeffneVersandDialog } from '../einkauf/versand.mjs';
 import { versandRueckmeldung } from '../../lib/versand.mjs';
+import { musterKurz, fuelleText, mailtoLink, NICHT_VERFUEGBAR_VORLAGE } from '../../lib/muster-nachfassen.mjs';
 import { kunden } from './gemeinsam.mjs';
 
 const WER_TEXT = { wir: 'wir', lieferant: 'Lieferant', kunde: 'Kunde' };
@@ -23,15 +24,20 @@ const ART_TEXT = { muster: 'Musterbestellung', ware: 'Bestellung' };
 // Was "Etwas anderes ist passiert ..." anbietet - Reihenfolge wie der Ablauf.
 const WAHL = {
   muster: [['bestellt', 'Muster beim Lieferanten bestellt'], ['geliefert', 'Muster sind bei uns angekommen'], ['raus', 'Gelabelt und an den Kunden verschickt'],
-    ['kunde_hat_muster', 'Kunde hat die Muster'], ['nachgefasst', 'Nachgefasst'], ['kunde_hat_bestellt', 'Ergebnis: Kunde hat bestellt'], ['kein_interesse', 'Ergebnis: kein Interesse']],
+    ['kunde_hat_muster', 'Kunde hat die Muster'], ['nachgefasst', 'Nachgefasst'], ['kunde_hat_bestellt', 'Ergebnis: Kunde hat bestellt'], ['kein_interesse', 'Ergebnis: kein Interesse'],
+    ['muster_nicht_verfuegbar', 'Muster nicht verfügbar – Kunde informiert']],
   ware: [['bestellt', 'Ware beim Lieferanten bestellt'], ['geliefert', 'Ware ist bei uns angekommen'], ['raus', 'An den Kunden raus'], ['erledigt', 'Erledigt – Auftrag abschließen']],
 };
+// Hinweiszeile unter einer Wahl (Inhaber 2026-10-16).
+const WAHL_HINWEIS = { muster_nicht_verfuegbar: 'Der Kunde meldet sich und bestellt neue Muster; der Auftrag ist damit abgeschlossen.' };
+// Ergebnisse, die nur am Auftrag haengen - der letzte davon laesst sich zuruecknehmen.
+const ERGEBNISSE = ['kunde_hat_bestellt', 'kein_interesse', 'muster_nicht_verfuegbar'];
 const ERGEBNIS_WAHL = [['kunde_hat_bestellt', 'Kunde hat bestellt'], ['kein_interesse', 'Kein Interesse'], ['nachgefasst', 'Nochmal nachgefasst – er überlegt noch']];
 // Rueckmeldung nimmt das Wort des Knopfs auf.
 const GESETZT_TEXT = {
   bestellt: 'Als bestellt eingetragen', geliefert: 'Als angekommen eingetragen', raus: 'Als verschickt eingetragen', erledigt: 'Abgeschlossen',
   kunde_hat_muster: 'Kunde hat Muster – eingetragen', nachgefasst: 'Nachgefasst – eingetragen', kunde_hat_bestellt: 'Ergebnis: Kunde hat bestellt',
-  kein_interesse: 'Ergebnis: kein Interesse', notiz: 'Notiz gespeichert', zurueck: 'Schritt zurückgenommen',
+  kein_interesse: 'Ergebnis: kein Interesse', muster_nicht_verfuegbar: 'Ergebnis: Muster nicht verfügbar', notiz: 'Notiz gespeichert', zurueck: 'Schritt zurückgenommen',
 };
 
 const tagMonat = iso => iso ? new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) : '';
@@ -182,10 +188,10 @@ async function ladeNeu() {
   if (['kunden', 'heute'].includes(state.route.view)) render();
 }
 
-async function setzeSchritt(orderId, schritt, { notiz = null, bezug = null } = {}) {
+async function setzeSchritt(orderId, schritt, { notiz = null, bezug = null, muster = null } = {}) {
   let antwort;
   try {
-    antwort = await orgSchreiben('/api/einkauf/auftragsstatus', { aktion: 'schritt', orderId, schritt, notiz, bezug });
+    antwort = await orgSchreiben('/api/einkauf/auftragsstatus', { aktion: 'schritt', orderId, schritt, notiz, bezug, ...(muster ? { muster } : {}) });
   } catch (e) {
     toast(`Nicht gespeichert: ${e.message}`, 'crit');
     return false;
@@ -193,9 +199,74 @@ async function setzeSchritt(orderId, schritt, { notiz = null, bezug = null } = {
   // "Kunde hat Muster" bei Mustern aus eigenem Bestand setzt "raus" mit und bucht in Shopify -
   // was dabei herauskam, gehoert in dieselbe Rueckmeldung.
   const r = versandRueckmeldung(GESETZT_TEXT[schritt] || 'Gespeichert', antwort?.shopify);
+  // "Muster nicht verfuegbar": was im Shop gesperrt wurde (oder warum nicht) gehoert dazu.
+  const sp = antwort?.mustersperre;
+  if (sp?.meldung) {
+    r.text = `${r.text} · ${sp.meldung}`;
+    if (['offen', 'teilweise'].includes(sp.status)) r.ton = r.ton || 'warn';
+  }
   toast(r.text, r.ton, r.ton ? { dauer: 9000 } : {});
   await ladeNeu();
   return true;
+}
+
+// Textvorschlag "Muster nicht verfuegbar": einmal je Sitzung vom Server (Vorlage des Inhabers oder eingebauter Vorschlag).
+let nvVorlage = null;
+const nvText = (a, positionen) => fuelleText(nvVorlage || NICHT_VERFUEGBAR_VORLAGE, {
+  kundenname: gesetzt(a.details?.kunde?.name) ? a.details.kunde.name : null,
+  absender: state.session?.benutzer?.name || null,
+  farben: musterKurz(positionen),
+});
+
+/**
+ * Zusatz fuer "Muster nicht verfuegbar" (Inhaber 2026-10-16): welche Muster betroffen sind (alle
+ * vorausgewaehlt) - sie werden im Shop gesperrt -, und der Mailtext zum Kopieren. Sichtbar nur,
+ * wenn die Wahl getroffen ist; gesendet wird nichts.
+ */
+function nichtVerfuegbarBlock(a, muster) {
+  const mail = nvText(a, muster);
+  const email = gesetzt(a.details?.kunde?.email) ? a.details.kunde.email : null;
+  return `<div class="zl-nv" data-zl-nv hidden>
+    ${muster.length ? `<fieldset class="zl-nv-farben"><legend>Welche Muster sind nicht verfügbar?</legend>
+      ${muster.map(p => `<label><input type="checkbox" name="nvMuster" value="${esc(p.lineItemId)}" checked> ${esc(musterKurz([p])[0] || p.titel)}</label>`).join('')}
+      <p class="small muted">Die angekreuzten Farben stehen in der Notiz und werden im Shop sofort gesperrt („kein Muster verfügbar“). Wieder freigeben: Einkauf › Musterlager.</p>
+    </fieldset>` : ''}
+    <details class="zl-nv-mail">
+      <summary>Textvorschlag für die Mail an den Kunden</summary>
+      <p class="small"><span class="muted">Betreff:</span> <span data-zl-nv-betreff>${esc(mail?.betreff || '')}</span></p>
+      <label class="visually-hidden" for="zlNvText">Text der E-Mail</label>
+      <textarea id="zlNvText" readonly rows="9">${esc(mail?.text || '')}</textarea>
+      <div class="zl-nv-knoepfe"><button type="button" class="btn btn-sm" data-kopieren="zlNvText">Text kopieren</button>
+        ${email ? `<a class="btn btn-sm" data-zl-nv-mailto href="${esc(mailtoLink(email, mail || {}))}">E-Mail öffnen</a>` : ''}</div>
+    </details>
+  </div>`;
+}
+
+/** Zusatz ein-/ausblenden und den Mailtext den angekreuzten Farben nachfuehren. */
+function nichtVerfuegbarVerdrahten(form, a) {
+  const box = form.querySelector('[data-zl-nv]');
+  const label = form.querySelector('[data-zl-notiz-label]');
+  const aktualisiere = () => {
+    const gewaehlt = new Set([...form.querySelectorAll('input[name=nvMuster]:checked')].map(i => i.value));
+    const mail = nvText(a, (a.positionen || []).filter(p => gewaehlt.has(p.lineItemId)));
+    form.querySelector('#zlNvText').value = mail?.text || '';
+    form.querySelector('[data-zl-nv-betreff]').textContent = mail?.betreff || '';
+    const link = form.querySelector('[data-zl-nv-mailto]');
+    if (link) link.href = mailtoLink(a.details.kunde.email, mail || {});
+  };
+  form.addEventListener('change', ev => {
+    if (ev.target.name === 'schritt') {
+      const an = ev.target.value === 'muster_nicht_verfuegbar';
+      box.hidden = !an;
+      label.textContent = an ? 'Notiz (z. B. was der Kunde gesagt hat)' : 'Notiz (optional)';
+    }
+    if (ev.target.name === 'nvMuster') aktualisiere();
+  });
+  if (!nvVorlage) {
+    fetchEinkauf('/api/kunden/muster-texte').then(d => {
+      if (d?.nichtVerfuegbar?.text) { nvVorlage = d.nichtVerfuegbar; if (form.isConnected) aktualisiere(); }
+    }).catch(() => { /* eingebauter Vorschlag bleibt */ });
+  }
 }
 
 /** Dialog: "Etwas anderes ist passiert ..." (alle Schritte + Notiz) bzw. "Ergebnis eintragen ..." (nur die Ergebnisse). */
@@ -205,7 +276,7 @@ function oeffneDialog(orderId, { nurErgebnis = false } = {}) {
   const art = a.auftragsart === 'muster' ? 'muster' : 'ware';
   // Zuruecknehmen laesst sich der letzte Schritt, der nur am Auftrag haengt (nicht an den Positionen).
   const letzter = [...(a.verlauf || [])].reverse().find(s => s.zustand === 'erledigt' && !s.automatisch
-    && (['kunde_hat_muster', 'nachgefasst'].includes(s.schritt) || (s.schritt === 'ergebnis' && ['kunde_hat_bestellt', 'kein_interesse'].includes(s.ergebnis))));
+    && (['kunde_hat_muster', 'nachgefasst'].includes(s.schritt) || (s.schritt === 'ergebnis' && ERGEBNISSE.includes(s.ergebnis))));
   const letzterWert = letzter ? (letzter.schritt === 'ergebnis' ? letzter.ergebnis : letzter.schritt) : null;
   const wahl = nurErgebnis ? ERGEBNIS_WAHL : WAHL[art];
   // "Zurueck auf offen" nur, wenn eine Position schon einen Schritt hat.
@@ -214,7 +285,11 @@ function oeffneDialog(orderId, { nurErgebnis = false } = {}) {
     || (a.verlauf || []).some(s => ['bestellt', 'geliefert', 'raus', 'erledigt'].includes(s.schritt) && (s.zustand === 'erledigt' && !s.automatisch || s.teil));
   const ort = kundeUndOrt(a.id);
   const herkunftJetzt = (a.positionen || []).find(p => p.istMuster)?.musterHerkunft || 'lieferant';
-  const radio = (wert, text, extra = '') => `<label${extra}><input type="radio" name="schritt" value="${esc(wert)}" required> ${esc(text)}</label>`;
+  const radio = (wert, text, extra = '') => (WAHL_HINWEIS[wert]
+    ? `<label${extra}><input type="radio" name="schritt" value="${esc(wert)}" required><span class="zl-wahl-text"><span>${esc(text)}</span><span class="small muted">${esc(WAHL_HINWEIS[wert])}</span></span></label>`
+    : `<label${extra}><input type="radio" name="schritt" value="${esc(wert)}" required> ${esc(text)}</label>`);
+  const muster = (a.positionen || []).filter(p => p.istMuster && p.lineItemId);
+  const nichtVerfuegbar = !nurErgebnis && art === 'muster' ? nichtVerfuegbarBlock(a, muster) : '';
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="zlTitel" data-dialog>
     <h2 id="zlTitel">${nurErgebnis ? 'Ergebnis eintragen' : 'Etwas anderes ist passiert'} · ${esc(a.name)}</h2>
     <fieldset class="zl-wahl"><legend>Was ist passiert?</legend>
@@ -226,17 +301,22 @@ function oeffneDialog(orderId, { nurErgebnis = false } = {}) {
     ${!nurErgebnis && art === 'muster' ? `<fieldset class="zl-wahl"><legend>Woher kommen die Muster?${ort.name || ort.ort ? ` <span class="muted small">${esc([ort.name, ort.ort].filter(Boolean).join(' · '))}</span>` : ''}</legend>
       ${Object.entries(MUSTER_HERKUNFT_LABEL).map(([w, t]) => radio(`herkunft:${w}`, `${t}${w === herkunftJetzt ? ' (aktuell)' : ''}`)).join('')}
     </fieldset>` : ''}
-    <div class="field"><label for="zlNotiz">Notiz (optional)</label><textarea id="zlNotiz" name="notiz" maxlength="2000" placeholder="z. B. Kunde meldet sich nach dem Urlaub"></textarea></div>
+    ${nichtVerfuegbar}
+    <div class="field"><label for="zlNotiz" data-zl-notiz-label>Notiz (optional)</label><textarea id="zlNotiz" name="notiz" maxlength="2000" placeholder="z. B. Kunde meldet sich nach dem Urlaub"></textarea></div>
     <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Eintragen</button></div>
   </form></div>`;
   const form = $('#dialogRoot form');
   form.querySelector('input[type=radio]')?.focus();
+  if (nichtVerfuegbar) nichtVerfuegbarVerdrahten(form, a);
   form.addEventListener('submit', async ev => {
     ev.preventDefault();
     const daten = new FormData(form);
     const wert = String(daten.get('schritt') || '');
     const notiz = String(daten.get('notiz') || '').trim() || null;
     if (wert === 'notiz' && !notiz) { toast('Bitte die Notiz eintragen', 'warn'); form.querySelector('textarea').focus(); return; }
+    // Die angekreuzten Farben stehen in der Notiz; ohne Farbe muss der Freitext sie nennen.
+    const nvMuster = wert === 'muster_nicht_verfuegbar' ? daten.getAll('nvMuster').map(String) : null;
+    if (nvMuster && !nvMuster.length && !notiz) { toast('Bitte die betroffenen Farben ankreuzen oder in der Notiz nennen', 'warn'); form.querySelector('textarea').focus(); return; }
     const knopf = form.querySelector('[type=submit]');
     knopf.disabled = true;
     if (wert === 'zurueckAufOffen' || wert.startsWith('herkunft:')) {
@@ -254,7 +334,7 @@ function oeffneDialog(orderId, { nurErgebnis = false } = {}) {
     if (wert === 'raus') { oeffneVersandDialog(orderId, { notiz }); return; }
     const ok = wert.startsWith('zurueck:')
       ? await setzeSchritt(orderId, 'zurueck', { bezug: wert.slice('zurueck:'.length), notiz })
-      : await setzeSchritt(orderId, wert, { notiz });
+      : await setzeSchritt(orderId, wert, { notiz, muster: nvMuster });
     if (ok) $('#dialogRoot').innerHTML = ''; else knopf.disabled = false;
   });
 }
