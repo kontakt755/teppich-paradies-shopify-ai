@@ -19,7 +19,9 @@ import os from 'node:os';
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { normalizeTask, requirementsFor, labelChangesFor, mitBlockerAbschnitt, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
-import { texteAusMarkdown, musterKurz, NICHT_VERFUEGBAR_VORLAGE } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
+import { texteAusMarkdown, musterKurz, musterNachfassen, fuelleText, platzhalterFrei, STUFE_LABEL, NICHT_VERFUEGBAR_VORLAGE } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
+import { postfachPfad, stopplistePfad, versandPfad, lesePostfach, leseStoppliste, abgemeldeteAdressen, trageAbmeldungEin, leseVersand, schreibeVersand, schonVerschickt, kopieNoetig, versandStand as nachfassVersandStand, AUTOMATISCH, UNTERSCHRIFT_STANDARD, NachfassFehler } from '../operations/lib/nachfass-versand.mjs';
+import { sendeMail as smtpSenden } from '../operations/lib/smtp.mjs';
 import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
@@ -1514,20 +1516,168 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     kundenMusterTexte() {
       const dir = privatDirPath || privatDir();
       const file = path.join(dir, 'muster-nachfassen-texte.md');
+      // Seit w-119 (automatischer Versand) haengen zwei Dinge mit dran, die die Karte ebenfalls
+      // zeigt: der Stand des Versands (eingerichtet? letzter Lauf?) und die Stoppliste.
+      const zusatz = () => {
+        let abgemeldet = [];
+        let stopplisteFehler = null;
+        try { abgemeldet = Object.entries(leseStoppliste(stopplistePfad(dir))).map(([email, e]) => ({ email, am: e.am || null, von: e.von || null })); }
+        catch (e) { stopplisteFehler = e.message; }
+        const versand = nachfassVersandStand(dir, { jetzt: now() });
+        return { versand: stopplisteFehler ? { ...versand, hinweis: versand.hinweis || stopplisteFehler } : versand, abgemeldet };
+      };
       // "Muster nicht verfuegbar" gibt es immer: aus der Vorlage, wenn sie den Abschnitt hat, sonst der eingebaute Vorschlag.
       let md;
       try { md = fs.readFileSync(file, 'utf8'); }
       catch (e) {
-        if (e?.code === 'ENOENT') return { verfuegbar: false, hinweis: 'Die Textvorlage fehlt: muster-nachfassen-texte.md im Privatordner ablegen.', nichtVerfuegbar: NICHT_VERFUEGBAR_VORLAGE };
+        if (e?.code === 'ENOENT') return { verfuegbar: false, hinweis: 'Die Textvorlage fehlt: muster-nachfassen-texte.md im Privatordner ablegen.', nichtVerfuegbar: NICHT_VERFUEGBAR_VORLAGE, ...zusatz() };
         console.error(`[daten] ${file}: ${e?.message || e}`);
-        return { verfuegbar: false, hinweis: 'Die Textvorlage ist nicht lesbar.', nichtVerfuegbar: NICHT_VERFUEGBAR_VORLAGE };
+        return { verfuegbar: false, hinweis: 'Die Textvorlage ist nicht lesbar.', nichtVerfuegbar: NICHT_VERFUEGBAR_VORLAGE, ...zusatz() };
       }
       const texte = texteAusMarkdown(md);
       const nichtVerfuegbar = texte.nichtVerfuegbar || NICHT_VERFUEGBAR_VORLAGE;
       if (!texte.erste && !texte.erinnerung) {
-        return { verfuegbar: false, hinweis: 'In der Textvorlage fehlen die Abschnitte „Text 1“ und „Erinnerung“ mit einer Zeile „**Betreff:**“.', nichtVerfuegbar };
+        return { verfuegbar: false, hinweis: 'In der Textvorlage fehlen die Abschnitte „Text 1“ und „Erinnerung“ mit einer Zeile „**Betreff:**“.', nichtVerfuegbar, ...zusatz() };
       }
-      return { verfuegbar: true, texte, nichtVerfuegbar };
+      return { verfuegbar: true, texte, nichtVerfuegbar, ...zusatz() };
+    },
+
+    /**
+     * Stoppliste "Muster nachfassen": der Kunde hat mit "Abmelden" geantwortet (Knopf
+     * "Abgemeldet" in der Karte). Ab jetzt schreibt ihn weder der Lauf noch jemand per Klick
+     * an; die Karte zeigt ihn unter "abgemeldet". Antwort traegt den frischen Stand der Karte.
+     */
+    kundenNachfassenAbmelden(payload = {}, benutzer = null) {
+      if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Rolle „lesen“ darf keine Änderungen vornehmen.');
+      const actor = benutzer?.name || null;
+      if (!actor) throw new ApiError(403, 'Bitte anmelden – wer die Abmeldung einträgt, wird festgehalten.');
+      const dir = privatDirPath || privatDir();
+      let r;
+      try {
+        r = trageAbmeldungEin(stopplistePfad(dir), { email: payload?.email, von: actor, grund: payload?.grund || undefined, orderId: payload?.orderId || null, jetzt: now() });
+      } catch (e) {
+        if (e instanceof NachfassFehler) throw new ApiError(e.status, e.message);
+        throw e;
+      }
+      audit({ actor, action: 'nachfassen-abgemeldet', orderId: payload?.orderId || null, neu: r.neu });
+      merke(benutzer, actor, 'Nachfassen abgemeldet', payload?.orderId ? String(payload.orderName || payload.orderId) : 'Kunde');
+      return { ok: true, neu: r.neu, eintrag: r.eintrag, stand: this.kundenMusterTexte() };
+    },
+
+    /**
+     * Der Versandlauf (taeglich, scripts/muster-nachfassen-senden.mjs; Inhaber w-119, Option A):
+     * faellige Nachfragen aus musterNachfassen() (Kaufpruefung steckt in der Zeitleiste), Text 1
+     * bzw. Erinnerung aus der Vorlage, Versand ueber das Firmenpostfach, danach der
+     * Zeitleisten-Schritt "nachgefasst" mit von = "automatisch".
+     *
+     * Reihenfolge je Kunde: erst der Vermerk "sendet" im Versandprotokoll, dann die Mail, dann
+     * "gesendet", dann die Zeitleiste, dann "vermerkt". Bricht der Lauf dazwischen ab, schickt
+     * der naechste keine zweite Mail, sondern holt nur den Zeitleisten-Schritt nach.
+     *
+     * Nichts geht raus, wenn: die Vorlage fehlt, das Postfach nicht eingerichtet ist, die
+     * Stoppliste nicht lesbar ist, ein Platzhalter stehen bliebe. --probe listet nur.
+     *
+     * @param {object} [p]
+     * @param {boolean} [p.probe]   nur auflisten, nichts senden, nichts schreiben
+     * @param {Function} [p.senden] Versandfunktion (Tests: Fake-Server oder Attrappe)
+     */
+    async kundenNachfassenSenden({ probe = false, senden = smtpSenden } = {}) {
+      const dir = privatDirPath || privatDir();
+      const jetzt = now();
+      const ergebnis = { status: 'ok', probe, hinweis: null, kopie: null, geplant: [], verschickt: [], nachgetragen: [], uebersprungen: [], fehler: [] };
+      const abbruch = (status, hinweis) => ({ ...ergebnis, status, hinweis });
+
+      const vorlage = this.kundenMusterTexte();
+      if (!vorlage.verfuegbar) return abbruch('keine-vorlage', vorlage.hinweis);
+      const pf = lesePostfach(postfachPfad(dir));
+      // Ohne Postfach wird nichts verschickt - die Probe zeigt trotzdem, was anstuende.
+      if (!pf.zugang && !probe) return abbruch('kein-zugang', pf.hinweis);
+      let stoppliste;
+      let versand;
+      try {
+        stoppliste = abgemeldeteAdressen(leseStoppliste(stopplistePfad(dir)));
+        versand = leseVersand(versandPfad(dir));
+      } catch (e) {
+        // Stoppliste oder Protokoll unlesbar: lieber niemanden anschreiben als einen Abgemeldeten.
+        return abbruch('stoerung', e.message);
+      }
+      const bestellungen = this.kundenBestellungen();
+      if (!bestellungen.verfuegbar) return abbruch('keine-daten', bestellungen.hinweis || 'Bestelldaten fehlen.');
+
+      const { offen, abgemeldet } = musterNachfassen(bestellungen.zeilen, { jetzt, abgemeldet: stoppliste });
+      for (const e of abgemeldet) ergebnis.uebersprungen.push({ orderId: e.orderId, orderName: e.orderName, stufe: e.stufe, grund: 'abgemeldet' });
+      const kopieAn = pf.zugang && kopieNoetig({ ersterVersandAm: versand.ersterVersandAm, jetzt, immer: pf.zugang.kopieImmer }) ? pf.zugang.kopie : null;
+      ergebnis.kopie = kopieAn;
+      // Probe ohne Postfach: dieselbe Unterschrift wie der echte Lauf ohne eigene Angabe.
+      const unterschrift = pf.zugang?.unterschrift || UNTERSCHRIFT_STANDARD;
+      const schrittSetzen = (e, betreff) => auftragsSchrittSetzen(
+        { orderId: e.orderId, schritt: 'nachgefasst', notiz: `${STUFE_LABEL[e.stufe]} automatisch per E-Mail: „${betreff}“` },
+        { name: AUTOMATISCH, rolle: 'system' }, AUTOMATISCH,
+      );
+      const sichern = () => { if (!probe) schreibeVersand(versandPfad(dir), versand); };
+
+      for (const e of offen) {
+        const kurz = { orderId: e.orderId, orderName: e.orderName, stufe: e.stufe, kundenname: e.kundenname };
+        if (e.kontakt.weg !== 'email') {
+          ergebnis.uebersprungen.push({ ...kurz, grund: e.kontakt.weg === 'rueckruf' ? 'Rückruf gewünscht – anrufen' : 'keine E-Mail-Adresse' });
+          continue;
+        }
+        const mail = fuelleText(vorlage.texte[e.stufe], { kundenname: e.kundenname, absender: unterschrift, produkte: e.produkte });
+        if (!platzhalterFrei(mail)) {
+          ergebnis.fehler.push({ ...kurz, fehler: mail ? 'In der Vorlage bliebe ein Platzhalter stehen – nicht verschickt.' : `Die Vorlage für „${STUFE_LABEL[e.stufe]}“ fehlt.` });
+          continue;
+        }
+        const an = e.kontakt.email;
+        const vorher = schonVerschickt(versand, e.orderId, e.stufe);
+        if (vorher) {
+          // Mail ging schon raus, nur der Zeitleisten-Schritt fehlt (Abbruch im letzten Lauf): nachtragen, nicht neu senden.
+          if (probe) { ergebnis.nachgetragen.push({ ...kurz, am: vorher.am }); continue; }
+          try {
+            await schrittSetzen(e, vorher.betreff || mail.betreff);
+            vorher.status = 'vermerkt';
+            ergebnis.nachgetragen.push({ ...kurz, am: vorher.am });
+          } catch (err) {
+            ergebnis.fehler.push({ ...kurz, fehler: `Zeitleiste nicht nachgetragen: ${err?.message || err}` });
+          }
+          sichern();
+          continue;
+        }
+        if (probe) { ergebnis.geplant.push({ ...kurz, an, betreff: mail.betreff, text: mail.text }); continue; }
+
+        const eintrag = { am: jetzt.toISOString(), orderId: e.orderId, orderName: e.orderName, stufe: e.stufe, an, betreff: mail.betreff, kopie: kopieAn, status: 'sendet', messageId: null, fehler: null };
+        versand.sendungen.push(eintrag);
+        sichern();
+        try {
+          const r = await senden(pf.zugang, { von: { name: pf.zugang.absenderName, adresse: pf.zugang.absender }, an: [an], bcc: kopieAn ? [kopieAn] : [], betreff: mail.betreff, text: mail.text, datum: jetzt });
+          eintrag.status = 'gesendet';
+          eintrag.messageId = r?.messageId || null;
+          if (!versand.ersterVersandAm) versand.ersterVersandAm = jetzt.toISOString();
+        } catch (err) {
+          eintrag.status = 'fehler';
+          eintrag.fehler = String(err?.message || err).slice(0, 300);
+          sichern();
+          ergebnis.fehler.push({ ...kurz, fehler: eintrag.fehler });
+          continue;
+        }
+        sichern();
+        try {
+          await schrittSetzen(e, mail.betreff);
+          eintrag.status = 'vermerkt';
+        } catch (err) {
+          // Die Mail ist raus - das bleibt im Protokoll stehen, der naechste Lauf traegt die Zeitleiste nach.
+          ergebnis.fehler.push({ ...kurz, fehler: `E-Mail verschickt, Zeitleiste nicht geschrieben: ${err?.message || err}` });
+        }
+        sichern();
+        ergebnis.verschickt.push({ ...kurz, an, betreff: mail.betreff, kopie: kopieAn });
+      }
+      if (!probe) {
+        versand.letzterLauf = { am: jetzt.toISOString(), verschickt: ergebnis.verschickt.length, nachgetragen: ergebnis.nachgetragen.length, uebersprungen: ergebnis.uebersprungen.length, fehler: ergebnis.fehler.length, kopie: kopieAn };
+        // Protokoll schlank halten: die letzten 500 Sendungen reichen fuer Doppelschutz und Rueckblick.
+        if (versand.sendungen.length > 500) versand.sendungen = versand.sendungen.slice(-500);
+        sichern();
+        audit({ actor: AUTOMATISCH, action: 'nachfassen-lauf', ...versand.letzterLauf });
+      }
+      return ergebnis;
     },
 
     /**

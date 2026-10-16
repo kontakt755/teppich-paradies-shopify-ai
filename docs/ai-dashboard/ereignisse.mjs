@@ -28,6 +28,7 @@ import { einkaufKlickLieferanten } from './ansichten/einkauf/lieferanten.mjs';
 import { einkaufKlickMusterlager } from './ansichten/einkauf/musterlager.mjs';
 import { lexikonKlick } from './ansichten/lexikon.mjs';
 import { kundenKlickBestellungen } from './ansichten/kunden/bestellungen.mjs';
+import { musterNachfassenKlick } from './ansichten/heute/muster-nachfassen.mjs';
 import { kundenKlickAkte } from './ansichten/kunden.mjs';
 import { openOrgSchnell } from './ansichten/organisation/dialoge.mjs';
 import {
@@ -107,6 +108,7 @@ export function bindEvents() {
     if (socialKlick(e)) return;
     if (orgKlick(e)) return;
     if (kundenKlickBestellungen(e)) return;
+    if (musterNachfassenKlick(e)) return;
     if (sonderpostenKlick(e)) return;
     const kt = e.target.closest('[data-kopiertext]');
     if (kt) {

@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
-  musterNachfassen, kontaktweg, texteAusMarkdown, fuelleText, mailtoLink,
+  musterNachfassen, kontaktweg, texteAusMarkdown, fuelleText, mailtoLink, platzhalterFrei,
   ERSTE_NACH_TAGEN, ERINNERUNG_NACH_TAGEN, HOECHSTENS_TAGE, ERLEDIGT_ZEIGEN_TAGE, SHOP_URL,
 } from '../lib/muster-nachfassen.mjs';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
@@ -89,7 +89,27 @@ test('nicht auf der Liste: Ware, Test, storniert, Ergebnis schon da, abgeschloss
     zeile({ art: 'ware' }), zeile({ test: true }), zeile({ storniert: true }),
     zeile({ ergebnis: true }), zeile({ abgeschlossen: true }),
   ], { jetzt: JETZT });
-  assert.deepEqual(r, { offen: [], erledigt: [] });
+  assert.deepEqual(r, { offen: [], erledigt: [], abgemeldet: [] });
+});
+
+test('Stoppliste: wer "Abmelden" geantwortet hat, steht unter abgemeldet statt offen - Adresse ohne Gross/Klein', () => {
+  const dran = zeile({ raus: 6, email: 'Dran@example.invalid' });
+  const raus = zeile({ raus: 7, email: 'Weg@example.invalid' });
+  const erinnerung = zeile({ raus: 16, nach: [{ tage: 10 }], email: 'weg@example.invalid' });
+  const r = musterNachfassen([dran, raus, erinnerung], { jetzt: JETZT, abgemeldet: new Map([['weg@example.invalid', { am: vorTagen(3) }]]) });
+  assert.deepEqual(ids(r.offen), [dran.orderName]);
+  assert.deepEqual(r.abgemeldet.map(e => [e.orderName, e.stufe, e.abgemeldetAm]), [[erinnerung.orderName, 'erinnerung', vorTagen(3)], [raus.orderName, 'erste', vorTagen(3)]]);
+  // Auch als Set oder Liste nutzbar (ohne Datum).
+  assert.equal(musterNachfassen([raus], { jetzt: JETZT, abgemeldet: new Set(['weg@example.invalid']) }).abgemeldet[0].abgemeldetAm, null);
+  assert.equal(musterNachfassen([raus], { jetzt: JETZT, abgemeldet: ['weg@example.invalid'] }).offen.length, 0);
+});
+
+test('platzhalterFrei: erst ohne {…} in Betreff und Text darf eine Mail raus', () => {
+  assert.equal(platzhalterFrei({ betreff: 'Passt die Farbe?', text: 'Guten Tag,\n\nalles gut.' }), true);
+  assert.equal(platzhalterFrei({ betreff: 'Hallo {Nachname}', text: 'x' }), false);
+  assert.equal(platzhalterFrei({ betreff: 'x', text: 'Hier: {Link Produkt}' }), false);
+  assert.equal(platzhalterFrei({ betreff: 'x', text: '' }), false);
+  assert.equal(platzhalterFrei(null), false);
 });
 
 test('Muster gekuerzt: ohne das Wort "Muster", je Produkt einmal mit seinen Farben', () => {
@@ -206,4 +226,9 @@ test('API /api/kunden/muster-texte: liest die Vorlage aus dem Privatordner, fehl
   assert.equal(r.verfuegbar, true);
   assert.equal(r.texte.erste.betreff, 'Ihre Muster – passt die Farbe?');
   assert.equal(r.texte.erinnerung.betreff, 'Noch Fragen zu Ihrem neuen Boden?');
+  // Seit w-119 haengen Versandstand und Stoppliste dran - ohne Postfach: nicht eingerichtet, Hinweis nennt die Datei.
+  assert.equal(r.versand.eingerichtet, false);
+  assert.match(r.versand.hinweis, /nachfassen\/postfach\.json/);
+  assert.deepEqual(r.abgemeldet, []);
+  assert.equal(fehlt.versand.eingerichtet, false, 'auch ohne Vorlage steht der Versandstand in der Antwort');
 });
