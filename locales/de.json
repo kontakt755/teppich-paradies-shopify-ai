@@ -285,7 +285,7 @@
   },
   "gift_cards": {
     "issued": {
-      "how_to_use_gift_card": "Verwende diesen Geschenkgutscheincode online oder verwende den QR-Code im Shop",
+      "how_to_use_gift_card": "Lösen Sie den Gutscheincode an der Kasse in unserem Onlineshop ein. Ein Restbetrag bleibt auf dem Gutschein erhalten.",
       "title": "Hier ist Ihr {{ value }}-Gutschein für {{ shop }}!",
       "subtext": "Ihr Gutschein",
       "shop_link": "Onlineshop besuchen",
