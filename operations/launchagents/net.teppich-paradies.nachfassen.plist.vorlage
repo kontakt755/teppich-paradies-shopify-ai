@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>net.teppich-paradies.nachfassen</string>
+
+  <!-- Muster nachfassen, automatischer Versand (scripts/muster-nachfassen-senden.mjs;
+       Inhaberentscheidung w-119 vom 2026-10-16, Option A): Text 1 vier Tage nach
+       Versand der Muster, eine Erinnerung zehn Tage spaeter, nichts nach Kauf oder
+       Abmeldung. Versand ueber das Firmenpostfach aus
+       $TP_PRIVAT_DIR/nachfassen/postfach.json - fehlt die Datei, verschickt der Lauf
+       nichts und sagt das im Protokoll. Laeuft aus dem Dienst-Checkout ~/tp-dashboard.
+       Einrichten: Platzhalter __HOME__ ersetzen, nach ~/Library/LaunchAgents kopieren,
+       launchctl load <datei>. Vorher einmal von Hand: npm run -s muster:nachfassen -\- -\-probe -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-lc</string>
+    <string>cd "$HOME/tp-dashboard" &amp;&amp; date &amp;&amp; exec npm run -s muster:nachfassen</string>
+  </array>
+
+  <!-- Montag bis Samstag 9:30 Ortszeit: die Bestelldaten sind dann vom Sync-Dienst frisch,
+       und eine Mail am Vormittag wirkt wie vom Buero geschrieben. Sonntags nichts. -->
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>30</integer></dict>
+    <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>30</integer></dict>
+    <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>30</integer></dict>
+    <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>30</integer></dict>
+    <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>30</integer></dict>
+    <dict><key>Weekday</key><integer>6</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>30</integer></dict>
+  </array>
+
+  <key>StandardOutPath</key>
+  <string>__HOME__/teppich-paradies-analyse/nachfassen/versand.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/teppich-paradies-analyse/nachfassen/versand.log</string>
+</dict>
+</plist>

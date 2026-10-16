@@ -2,6 +2,34 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-16 · „Muster nachfassen“ verschickt automatisch vom Firmenpostfach (Werkbank w-119)
+
+- **Geändert:** Inhaber 16.10. (w-119, Option A): Text 1 und die Erinnerung gehen täglich automatisch
+  vom Firmenpostfach raus, mit Abmelde-Satz. Neuer Lauf `npm run -s muster:nachfassen` (`--probe` =
+  Trockenlauf) über `kundenNachfassenSenden()` im Server: fällige Kunden aus `musterNachfassen()`
+  (Kaufprüfung, 30 Tage, eine Erinnerung), Text aus der Vorlage des Inhabers, Versand per SMTP ohne
+  Fremdpaket (`operations/lib/smtp.mjs`), danach Zeitleiste „nachgefasst“ von „automatisch“. Zugang
+  nur aus `$TP_PRIVAT_DIR/nachfassen/postfach.json` (Rechte 600) – fehlt sie, verschickt der Lauf nichts
+  und die Karte sagt es. Erste Woche nach dem ersten Versand: jede Mail als Blindkopie ans Büro.
+  Stoppliste (`nachfassen/stoppliste.json`) per Knopf „Abgemeldet“ in der Karte
+  (`POST /api/kunden/nachfassen-abmelden`, write-Liste); Abgemeldete stehen getrennt und werden nie
+  angeschrieben. Versandprotokoll mit Doppelschutz (kein zweiter Versand nach Abbruch, nur Zeitleiste
+  nachtragen). Ein Platzhalter erreicht nie den Kunden (`platzhalterFrei()`; unbekannter Platzhalter im
+  Betreff bleibt sichtbar statt still zu verschwinden). LaunchAgent-Vorlage
+  `net.teppich-paradies.nachfassen.plist.vorlage` (Mo–Sa 9:30). Details: Architektur Abschnitt 23.
+- **Getestet:** `npm test` grün (siehe PR). Neu: Trockenlauf ohne Postfach, echter Lauf gegen eine
+  SMTP-Attrappe (Umschlag mit Blindkopie, Betreff/Text, Zeitleiste „automatisch“, kein zweites Mal,
+  Erinnerung nach 10 Tagen ohne Kopie, danach Schluss), Doppelschutz nach Abbruch, Platzhalter,
+  abgelehnte Anmeldung (535), kaputte Stoppliste stoppt alles, Rollen am Server (lesen 403). Trockenlauf
+  gegen die echten Daten: 6 erste Nachfragen stehen an, 0 Fehler. Browserprüfung „Heute“ gegen die
+  Datenkopie (Desktop und Handy) siehe PR.
+- **Risiken/Annahmen:** Das Postfach legt der Inhaber selbst an; bis dahin läuft alles wie bisher per
+  Klick. Die Abmeldung erfasst ein Mensch per Knopf (kein Posteingangs-Abgleich). Der LaunchAgent wird
+  erst nach dem Merge im Dienst-Checkout eingerichtet, nach einem Trockenlauf von Hand. Rechtliche
+  Einordnung der Mail ohne Newsletter-Einwilligung klärt der Inhaber (w-083).
+- **Nächste Stufe:** Erste Woche mitlesen, dann `kopieImmer` entscheiden; Antworten „Abmelden“ zählen;
+  Anteil Muster → Kauf aus der Zeitleiste auswerten.
+
 ## 2026-10-16 · Angaben direkt ins ChatGPT-Projekt uebergeben (#1397)
 
 - **Geaendert:** „Im Projekt einfuegen“ uebergibt den vorbereiteten Auftrag ohne Zwischenablage an
