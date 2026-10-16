@@ -75,9 +75,10 @@ test('Skript: Pflichtfeld nur im Mustermodus, Text und Auswahl belegen die verst
   assert.match(einrichten, /filter\(hatMusterweg\)/);
 });
 
-test('Musterseite: Gruppe ohne gelistete Dekore verweist zuerst auf die Produktseite', () => {
-  assert.match(musterseite, /Öffnen Sie das Dekor und tippen Sie dort auf „Kostenloses Muster anfragen“/);
-  assert.match(musterseite, /<a href="\/pages\/kontakt\?thema=muster">nennen Sie uns das Dekor<\/a>/);
+test('Musterseite: Gruppe ohne gelistete Dekore verweist bedingt auf Muster und sonst auf Beratung', () => {
+  assert.match(musterseite, /Öffnen Sie das Dekor\. Wenn dafür ein Muster verfügbar ist,/);
+  assert.match(musterseite, /<a href="\/pages\/kontakt\?thema=beratung">beraten wir Sie gern<\/a>/);
+  assert.doesNotMatch(musterseite, /wir schicken das Muster zu/);
 });
 
 test('Kategorie-Einstiege versprechen keinen Musterservice fuer alle Produkte', () => {

@@ -158,6 +158,17 @@
     var list = document.getElementById('tp-kat-list');
     var dots = document.querySelectorAll('#tp-kat-dots i');
     if (!list || !dots.length) return;
+    // Der automatische Fokusscroll kann zwischen zwei Snap-Punkten enden.
+    // Die aktive Karte soll samt Titel und Unterzeile voll sichtbar sein.
+    list.addEventListener('focusin', function (event) {
+      var card = event.target.closest('.tp-kat__card');
+      if (!card || list.scrollWidth <= list.clientWidth) return;
+      requestAnimationFrame(function () {
+        if (document.activeElement === card) {
+          card.scrollIntoView({ block: 'nearest', inline: 'start', behavior: 'auto' });
+        }
+      });
+    });
     list.addEventListener('scroll', function () {
       var first = list.firstElementChild;
       if (!first) return;

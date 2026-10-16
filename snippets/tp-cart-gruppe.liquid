@@ -297,6 +297,7 @@
       <a href="{{ line_item.url }}">Zum Produkt</a>
     </p>
   {%- endif -%}
+  {%- render 'tp-cart-checkout-menge', line_item: line_item -%}
 {%- elsif teil == 'hinweis' -%}
   {%- if tp_gz_waise != blank -%}
     <p class="tp-cart-waise" role="alert" data-tp-waise="1">{{ tp_gz_waise }}</p>

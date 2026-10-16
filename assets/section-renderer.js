@@ -48,7 +48,7 @@ class SectionRenderer {
     if (!abortController.signal.aborted) {
       this.#abortControllersBySectionId.delete(sectionId);
 
-      morphSection(sectionId, sectionHTML, { mode });
+      await morphSection(sectionId, sectionHTML, { mode });
     }
 
     return sectionHTML;
