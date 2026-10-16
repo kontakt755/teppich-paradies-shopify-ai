@@ -19,13 +19,16 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Direktknopf gesperrt, manuelle Alternative ist erreichbar und Anbieterwechsel erhaelt die Eingabe.
   Pflicht-Guards und Secret-Scan bestanden. Der erste Durchlauf im eingerichteten Profil fand
   einen Ladeabbruch: Ein spaetes `loading` wurde als Dokumentwechsel gewertet. Korrigiert und mit
-  drei Regressionstests fuer Erstladen, URL-Wechsel und neue Dokumente abgesichert.
+  drei Regressionstests fuer Erstladen, URL-Wechsel und neue Dokumente abgesichert. Danach drei
+  echte Uebergaben aus der Datenkopie im eingerichteten Chrome-Profil bestaetigt: alle Texte stimmen
+  mit der Dashboard-Vorschau ueberein (1.689, 1.329 und 1.442 Zeichen), richtige Projektueberschrift,
+  aktiver Sendeknopf und jeweils null abgesendete Nachrichten. Testentwuerfe anschliessend geleert.
 - **Risiken/Annahmen:** Einmaliges Laden des privaten Pakets im Chrome-Profil des Arbeitsplatzes
   ist erforderlich. Die automatische Browsersteuerung darf Chromes Erweiterungsverwaltung nicht
-  bedienen; Installation bleibt beim Inhaber. Die Ende-zu-Ende-Abnahme der Korrektur im angemeldeten
-  ChatGPT-Konto steht noch aus. Geaenderte ChatGPT-Oberflaechen koennen eine Adapterkorrektur erfordern.
-- **Naechste Stufe:** Aktualisierten Begleiter neu laden und die drei Projektziele mit ausschliesslich
-  erfundenen Angaben bis zum sichtbaren Entwurf pruefen; danach Dashboard-Dienst aktualisieren.
+  bedienen; Installation und spaeteres Neuladen bleiben beim Inhaber. Geaenderte ChatGPT-Oberflaechen
+  koennen eine Adapterkorrektur erfordern. Andere Rechner brauchen ihre eigene Browser-Einrichtung.
+- **Naechste Stufe:** Im Arbeitsalltag nutzen; fuer weitere Anbieter bleibt die direkte Texteingabe
+  eine eigene Erweiterung.
 
 ## 2026-10-16 · Arbeitsplatz als Prozesszentrale (#1390)
 
