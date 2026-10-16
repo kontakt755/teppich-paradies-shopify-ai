@@ -5,6 +5,7 @@ Die Checks lesen den öffentlichen Shop ohne Preview-Parameter. Sie verändern k
 ## Befehle
 
 - `npm run qa`: Theme Check plus Desktop-/Mobile-Smoke-Test. `--screenshots` erzeugt alle Screenshots, `--update-baseline` aktualisiert die Theme-Check-Baseline bewusst.
+- `npm run themecheck:guard`: vor jedem Commit; meldet Theme-Check-Fehler und neue Warnungen gegenüber `qa/theme-check-baseline.json` mit Datei, Zeile und Check. Der Vergleich steht in `qa/theme-check.mjs` und ist derselbe wie im Theme-Check-Teil von `npm run qa` (FULL_QA in `workflow preview`).
 - `npm run qa:evidence:test`: Sanitizer-, Evidence-, X-Frame- und Browser-Infrastruktur-Regressionstests.
 - `npm run secret:scan`: prüft commitfähige Dateien einschließlich sensitiver Auth-/Token-Queries in URLs.
 - `npm run seo:check`: technischer SEO-, Merchant- und Tracking-Check.
