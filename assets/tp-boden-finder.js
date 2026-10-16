@@ -30,10 +30,12 @@
   den Preis je m² wie auf der Karte (Paketpreis / custom.qm_pro_paket); die
   Preisstufen zaehlt und filtert imBudget() hier im Browser. Den Raumpreis
   rechnet paketRechnung() wie der Paketrechner (blocks/paket-auswahl.liquid):
-  5 % Verschnitt, auf volle Pakete aufgerundet. Den ca.-Betrag an der Stufe
-  setzt stufenMaximum() auf den teuersten Raumpreis darin - ganze Pakete
-  kosten oft mehr als Flaeche x Stufe. Rollenware derselben Kollektion
-  (Vinyl von der Rolle) laeuft weiter ueber raumWege().
+  5 % Verschnitt, auf volle Pakete aufgerundet. Rollenware derselben
+  Kollektion (Vinyl von der Rolle) laeuft weiter ueber raumWege(). Den
+  ca.-Betrag an der Stufe setzt stufenMaximum() auf den teuersten Raumpreis
+  darin - ganze Pakete kosten oft mehr als Flaeche x Stufe, Rollen nur in 2 m
+  Breite (Bahnen mit Naht), mit Mindestlaenge oder ohne 5-m-Rolle auch. Dafuer
+  liefert die Preisliste je Rolle Breiten, Preise und Mindestlaenge.
 
   Reine Funktionen stehen oben und laufen ohne DOM in den Tests
   (qa/tests/boden-finder.test.mjs).
@@ -252,8 +254,26 @@
     return best || null;
   }
 
+  // Rollenware aus der Preisliste: [[Breite, Cent], ...], Mindestlaenge in cm,
+  // Preis je 0,01 m² 1/0 -> Produkt fuer raumKandidaten() wie aus der
+  // Treffer-Ansicht, nur mit lieferbaren Rollenbreiten. Wunschmass bleibt weg:
+  // ohne ihn ist der guenstigste Weg hoechstens teurer, der Betrag der Stufe
+  // also nie zu niedrig. null ohne Rollenbreiten.
+  function rollenProdukt(paare, minCm, cmExact) {
+    var vars = (paare || []).filter(function (p) { return Array.isArray(p) && ART.isBreite(p[0]) && Number(p[1]) > 0; })
+      .map(function (p) { return { options: [p[0]], price: Number(p[1]), available: true }; });
+    if (!vars.length) return null;
+    return {
+      cm_exact: cmExact === 1,
+      min_cm: Number(minCm) > 0 ? Number(minCm) : 0,
+      options: [{ name: 'Breite', values: vars.map(function (v) { return v.options[0]; }) }],
+      variants: vars
+    };
+  }
+
   // Ansicht boden-finder-preise: [Handle, Cent je m², m² je Paket, Cent,
-  // Auslauf] je Produkt -> Eintraege; pos = Stelle in der Kollektion.
+  // Auslauf, bei Rollenware Breiten, Mindestlaenge, je 0,01 m²] je Produkt ->
+  // Eintraege; pos = Stelle in der Kollektion.
   function preisEintraege(roh) {
     return (roh || []).filter(Array.isArray).map(function (e, i) {
       return {
@@ -262,6 +282,7 @@
         paket: Number(e[2]) > 0 ? Number(e[2]) : 0,
         preis: Number(e[3]) > 0 ? Number(e[3]) / 100 : null,
         auslauf: e[4] === 1,
+        rolle: Number(e[2]) > 0 ? null : rollenProdukt(e[5], e[6], e[7]),
         pos: i
       };
     });
@@ -274,18 +295,22 @@
 
   // ca.-Betrag einer Preisstufe bei Paketware: der teuerste Raumpreis unter
   // den Eintraegen der Stufe, damit kein Vorschlag darueber liegt. Pakete in
-  // ganzen Paketen wie paketRechnung() fuer die Raumflaeche, Rollenware Preis
-  // je m² x qmRolle (wie stufenBetrag). Auf volle 10 EUR aufgerundet, nie
+  // ganzen Paketen wie paketRechnung() fuer die Raumflaeche. Rollenware mit
+  // Laenge und Breite (raum in cm) wie die Karte: guenstigster Weg aus
+  // raumAngebot(), auch Bahnen mit Naht und Mindestlaenge; sonst Preis je m²
+  // x qmRolle (wie stufenBetrag). Auf volle 10 EUR aufgerundet, nie
   // abgerundet; null ohne Raumgroesse oder ohne Treffer.
-  function stufenMaximum(liste, qmStufe, flaeche, qmRolle) {
+  function stufenMaximum(liste, qmStufe, flaeche, qmRolle, raum) {
     var max = 0;
     imBudget(liste, qmStufe).forEach(function (e) {
       var b = 0;
       if (e.paket > 0) {
         var a = paketRechnung(e.paket, e.preis, flaeche);
         if (a) b = a.betrag;
-      } else if (qmRolle > 0) {
-        b = e.qm * qmRolle;
+      } else {
+        var weg = e.rolle && raum ? raumAngebot(e.rolle, raum.laenge, raum.breite) : null;
+        if (weg) b = weg.betrag;
+        else if (qmRolle > 0) b = e.qm * qmRolle;
       }
       if (b > max) max = b;
     });
@@ -970,10 +995,11 @@
     var paket = this.rechnet();
     var liste = this.preisDaten;
     var flaeche = this.flaeche();
+    var raum = this.raum();
     this.qa('.tp-bf-preis').forEach(function (k) {
       var stufe = Number(k.getAttribute('data-bf-stufe'));
       var b = null;
-      if (stufe > 0) b = paket ? stufenMaximum(liste, stufe, flaeche, qm) : stufenBetrag(stufe, qm);
+      if (stufe > 0) b = paket ? stufenMaximum(liste, stufe, flaeche, qm, raum) : stufenBetrag(stufe, qm);
       var ziel = k.querySelector('.tp-bf-preis__raum');
       ziel.textContent = b ? 'Ihr Raum: bis ca. ' + euro(b) : '';
       ziel.hidden = !b;
