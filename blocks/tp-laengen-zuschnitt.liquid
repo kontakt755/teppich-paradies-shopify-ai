@@ -54,6 +54,11 @@
       assign tp_lz_bi = forloop.index0
     endif
   endfor
+  # Ohne Option "Breite" findet der Laeufer keine Einfassung - nicht rendern,
+  # statt einen Knopf zu zeigen, der nie freigeht.
+  if tp_lz_laeufer and tp_lz_bi < 0
+    assign tp_lz_ausf_ok = false
+  endif
 
   assign tp_lz_ok = false
   if product.metafields.custom.preis_pro_001_lfm.value == true and tp_lz_max > tp_lz_min and tp_lz_ausf_ok
@@ -154,6 +159,7 @@
         "bohrungen": {{ tp_lz_bohrungen | json }},
         "modus": {% if tp_lz_laeufer %}"laeufer"{% else %}"profil"{% endif %},
         "produkt": {{ product.title | json }},
+        "produkt_id": {{ product.id | json }},
         {%- if tp_lz_laeufer %}
         "pauschale": { "id": {{ tp_lz_pv.id | json }}, "price": {{ tp_lz_pv.price | json }} },
         "bandfarben": {{ block.settings.einfass_produkt.metafields.service.bandfarben.value | json }},

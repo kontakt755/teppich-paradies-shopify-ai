@@ -234,6 +234,14 @@ test('Laeufer – Einfassung statt Bohrung, Service- und Pauschalezeile ohne Ala
   assert.ok(html.includes('Soll genau 700 × 0,01 m'));
 });
 
+test('Laeufer ohne Einfassung-Angabe: "Einfassung: keine Angabe" statt Bohrung', async () => {
+  const lauf = profil(700, { 'Länge je Stück': '350 cm', 'Anzahl': '2 Stück', _Gruppe: 'L3' });
+  lauf.product.type = 'Läufer nach Maß';
+  const html = await render([lauf]);
+  assert.match(html, /<strong>Einfassung: <span style="color:#a62020;">keine Angabe<\/span><\/strong>/);
+  assert.ok(!html.includes('Bohrung'));
+});
+
 test('Laengenware – ohne Metafeld bleibt die Zeile ungeprueft wie bisher', async () => {
   const html = await render([profil(1, undefined, false)]);
   assert.ok(!html.includes('Zuschnitt:') && !html.includes('NICHT ZUSCHNEIDEN'));

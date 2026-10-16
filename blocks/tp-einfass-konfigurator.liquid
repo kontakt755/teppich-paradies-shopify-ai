@@ -570,6 +570,7 @@
         "rollen": {{ tp_ek_rollen_liste | json }},
         "formen": {{ tp_ek_formen | json }},
         "produkt": {{ product.title | json }},
+        "produkt_id": {{ product.id | json }},
         {%- comment -%}
           Raumansicht: Foto je Raum kommt aus den Block-Einstellungen, damit es ohne
           Code-Deploy austauschbar ist. Ohne Foto zeichnet das Skript eine Kulisse -

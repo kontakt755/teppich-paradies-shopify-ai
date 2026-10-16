@@ -383,3 +383,51 @@ test('Laeufer: Vorlage mit Einfass- und Pauschale-Produkt, Kaufknoepfe aus', () 
   const kauf = pd.block_order.find((k) => pd.blocks[k].type === 'buy-buttons');
   assert.equal(pd.blocks[kauf].disabled, true);
 });
+
+// Review #1401: Nach einer Farbwahl (tp:farbe-wechsel) blieb deren Variante
+// gesetzt - ein anschliessender Wechsel von Breite/Staerke in Horizons
+// Variantenwahl kam nicht an, im Warenkorb landete die alte Breite.
+test('variant:update: Horizons Variante gilt auch nach einer Farbwahl', () => {
+  const ev = (productId, resource) => ({ detail: { resource, data: { productId } } });
+  assert.equal(L.variantVonHorizon(ev('77', { id: 22 }), 77, '21'), '22', 'neue Breite ersetzt die Farbwahl');
+  assert.equal(L.variantVonHorizon(ev('77', null), 77, '21'), 'keine', 'Kombination gibt es nicht: keine Auswahl');
+  assert.equal(L.variantVonHorizon(ev('99', { id: 5 }), 77, '21'), '21', 'fremdes Produkt (Schnellkauf) aendert nichts');
+  assert.equal(L.variantVonHorizon({ detail: { resource: { id: 5 } } }, 77, null), null, 'ohne Produkt-ID nichts');
+  assert.equal(L.variantVonHorizon(ev('77', { id: 22 }), null, '21'), '21', 'ohne eigene ID nichts');
+});
+
+test('variant:update: beide Konfiguratoren nutzen die Regel, Bloecke liefern die Produkt-ID', async () => {
+  for (const js of ['assets/tp-laengen-zuschnitt.js', 'assets/tp-einfass-konfigurator.js']) {
+    const s = lies(js);
+    assert.match(s, /addEventListener\('variant:update', function \(e\) \{\s+gewaehlt = variantVonHorizon\(e, d\.produkt_id, gewaehlt\);/, js);
+  }
+  assert.match(lies('blocks/tp-einfass-konfigurator.liquid'), /"produkt_id": \{\{ product\.id \| json \}\}/);
+  const p = laeufer();
+  p.id = 4711;
+  assert.equal(daten(await laeuferRendern(p)).produkt_id, 4711);
+});
+
+test('Farbwahl: fehlende Kombination wird an Horizon uebergeben statt still verworfen', () => {
+  const s = lies('blocks/color-swatch-picker.liquid');
+  const i = s.indexOf('const variant = findMatchingVariant(input.value);');
+  assert.ok(i > 0);
+  const zweig = s.slice(i, s.indexOf('syncSwatchUI(input.value);\n        setVariantIdInput', i));
+  assert.match(zweig, /if \(!variant\) \{/);
+  assert.match(zweig, /setNativeColorValue\(input\.value\);/, 'Horizon entscheidet ueber die Kombination');
+  assert.match(zweig, /syncSwatchUI\(getCurrentOptionValues\(\)\[colorOptionIndex\]\)/, 'ohne native Felder zurueck zur geltenden Farbe');
+});
+
+test('Laeufer: Fehlertexte sprechen von Laeufern, Profile bleiben bei Stueck', () => {
+  const b = { preisCent: 39, minCm: 50, maxCm: 1000, maxStueck: 20, je: 'Läufer' };
+  assert.equal(L.rechnen({ ...b, laenge: '40', anzahl: '1' }).fehler, 'Mindestens 50 cm je Läufer.');
+  assert.equal(L.rechnen({ ...b, laenge: '1200', anzahl: '1' }).fehler, 'Höchstens 1000 cm je Läufer.');
+  assert.equal(L.rechnen({ ...b, laenge: '100', anzahl: '' }).fehler, 'Bitte die Anzahl angeben.');
+  assert.match(L.rechnen({ ...b, laenge: '100', anzahl: '21' }).fehler, /^Höchstens 20 Läufer je Bestellung/);
+  assert.equal(L.rechnen({ ...b, je: '', laenge: '40', anzahl: '1' }).fehler, 'Mindestens 50 cm je Stück.');
+});
+
+test('Laeufer: fail closed ohne Option "Breite"', async () => {
+  const p = laeufer();
+  p.options_with_values = [{ name: 'Farbe' }, { name: 'Größe' }];
+  assert.equal((await laeuferRendern(p)).trim(), '');
+});

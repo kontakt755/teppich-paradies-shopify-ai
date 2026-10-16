@@ -43,19 +43,21 @@
   // Eingaben pruefen und rechnen. Gibt {ok, fehler, menge, summeCent,
   // meterpreisCent, altSummeCent, materialCent, zusatzCent} zurueck; fehler ist
   // leer, solange nur etwas fehlt. e.zusatzCent: Betrag je Stueck obendrauf
-  // (Laeufer: Einfassung + Pauschale), ohne Streichpreis.
+  // (Laeufer: Einfassung + Pauschale), ohne Streichpreis. e.je: Wort fuer ein
+  // Stueck in den Fehlertexten (Standard "Stück", Laeufer "Läufer").
   function rechnen(e) {
     var erg = { ok: false, fehler: '', menge: 0, summeCent: 0, meterpreisCent: 0, altSummeCent: 0, materialCent: 0, zusatzCent: 0 };
     var laenge = ganzzahl(e.laenge);
     var anzahl = ganzzahl(e.anzahl);
     var preis = Number(e.preisCent) || 0;
+    var je = e.je || 'Stück';
     if (!(preis > 0)) { erg.fehler = 'Diese Ausführung ist gerade nicht bestellbar.'; return erg; }
     if (e.laenge == null || String(e.laenge).trim() === '') return erg;
     if (laenge === null) { erg.fehler = 'Bitte die Länge in ganzen Zentimetern angeben.'; return erg; }
-    if (laenge < e.minCm) { erg.fehler = 'Mindestens ' + e.minCm + ' cm je Stück.'; return erg; }
-    if (laenge > e.maxCm) { erg.fehler = 'Höchstens ' + e.maxCm + ' cm je Stück.'; return erg; }
-    if (anzahl === null || anzahl < 1) { erg.fehler = 'Bitte die Stückzahl angeben.'; return erg; }
-    if (anzahl > e.maxStueck) { erg.fehler = 'Höchstens ' + e.maxStueck + ' Stück je Bestellung – für mehr bitte kurz bei uns melden.'; return erg; }
+    if (laenge < e.minCm) { erg.fehler = 'Mindestens ' + e.minCm + ' cm je ' + je + '.'; return erg; }
+    if (laenge > e.maxCm) { erg.fehler = 'Höchstens ' + e.maxCm + ' cm je ' + je + '.'; return erg; }
+    if (anzahl === null || anzahl < 1) { erg.fehler = e.je ? 'Bitte die Anzahl angeben.' : 'Bitte die Stückzahl angeben.'; return erg; }
+    if (anzahl > e.maxStueck) { erg.fehler = 'Höchstens ' + e.maxStueck + ' ' + je + ' je Bestellung – für mehr bitte kurz bei uns melden.'; return erg; }
     erg.ok = true;
     erg.laenge = laenge;
     erg.anzahl = anzahl;
@@ -117,9 +119,19 @@
     return zeilen;
   }
 
+  // Variante aus Horizons variant:update fuer dieses Produkt: ihre ID, oder
+  // 'keine', wenn es die gewaehlte Kombination nicht gibt. Meldungen ohne
+  // oder mit fremder Produkt-ID aendern nichts (bisher bleibt).
+  function variantVonHorizon(e, produktId, bisher) {
+    var det = e && e.detail;
+    var pid = det && det.data ? det.data.productId : null;
+    if (!pid || !produktId || String(pid) !== String(produktId)) return bisher;
+    return det.resource && det.resource.id ? String(det.resource.id) : 'keine';
+  }
+
   var OHNE = 'ohne Einfassung';
 
-  root.TPLaengenZuschnitt = { rechnen: rechnen, eigenschaften: eigenschaften, einfassungenFuer: einfassungenFuer, bandfarbenFuer: bandfarbenFuer, laeuferZeilen: laeuferZeilen, euro: euro, meter: meter, OHNE: OHNE };
+  root.TPLaengenZuschnitt = { rechnen: rechnen, eigenschaften: eigenschaften, einfassungenFuer: einfassungenFuer, bandfarbenFuer: bandfarbenFuer, laeuferZeilen: laeuferZeilen, variantVonHorizon: variantVonHorizon, euro: euro, meter: meter, OHNE: OHNE };
 
   if (typeof document === 'undefined') return;
 
@@ -259,7 +271,8 @@
         zusatzCent: zusatz,
         minCm: d.min_cm,
         maxCm: d.max_cm,
-        maxStueck: d.max_stueck
+        maxStueck: d.max_stueck,
+        je: laeufer ? 'Läufer' : ''
       });
       fehler.textContent = erg.fehler;
       fehler.hidden = !erg.fehler;
@@ -349,7 +362,15 @@
     document.addEventListener('change', function (e) {
       if (!el.contains(e.target)) setTimeout(zeigen, 120);
     });
-    document.addEventListener('variant:update', function () { setTimeout(zeigen, 60); });
+    // Horizon-Variantenwahl (Breite, Staerke ...) meldet ihre Variante per
+    // variant:update - die gilt, auch wenn vorher die Farbwahl eine gemeldet
+    // hat (sonst blieb nach Farbe -> Breite die alte Breite im Warenkorb).
+    // Keine Variante (Kombination gibt es nicht) = keine Auswahl. Meldungen
+    // anderer Produkte (Schnellkauf, Empfehlungen) zaehlen nicht.
+    document.addEventListener('variant:update', function (e) {
+      gewaehlt = variantVonHorizon(e, d.produkt_id, gewaehlt);
+      setTimeout(zeigen, 60);
+    });
     window.addEventListener('popstate', function () { gewaehlt = null; zeigen(); });
     zeigen();
   }
