@@ -31,6 +31,7 @@ oben eingebunden. Hier steht nur, was Claude Code zusaetzlich betrifft.
 | `lieferant-a-recherche` | Artikel- und Farbnummern bei Lieferant A belegt klaeren |
 | `shopify-massendaten` | viele Metafelder/Tags auf einmal, mit Plan und Rollback |
 | `raumbilder-recherche` | Produkte ohne Raumbild: Hersteller hinter dem Lieferantenprodukt finden, farbgenaue Raumbilder aus erlaubten Quellen suchen |
+| `theme-audit` | nur lesendes Audit (Performance, SEO, JSON-LD, KI-Abrufbarkeit, App-Last) ergaenzend zu den Guards; Bericht nach `docs/audits/` |
 
 ## Review
 
