@@ -44,6 +44,8 @@ export const SICHERUNGSPFADE = Object.freeze([
   'musterlager.json',
   // Mustersperre: im Shop gesperrte Muster samt Stand vor der Sperre (operations/lib/mustersperre.mjs).
   'mustersperre.json',
+  // Private App-/Projektadressen des Arbeitsplatzes.
+  'prozesslinks.json',
   'lexikon',
   'bestelluebersicht',
   'kennzahlen',

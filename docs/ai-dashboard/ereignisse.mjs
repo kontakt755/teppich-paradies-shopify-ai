@@ -39,6 +39,7 @@ import { socialEingabe, socialAbsenden, socialKlick } from './ansichten/social.m
 import { arbeitKlick } from './ansichten/arbeit.mjs';
 import { sonderpostenKlick } from './ansichten/sonderposten.mjs';
 import { ladeAktivitaetsdaten } from './ansichten/aktivitaet.mjs';
+import { prozesseKlick, prozesseEingabe, prozesseAbsenden, verwerfeProzessKontext } from './ansichten/prozesse.mjs';
 
 export function bindEvents() {
   // Aufklappbare Startseiten-Abschnitte merken sich Auf/Zu je Abschnitt (nicht je Aufgabe).
@@ -48,9 +49,12 @@ export function bindEvents() {
     try { localStorage.setItem(`tp-heute-${d.dataset.collapsible}`, d.open ? '1' : '0'); } catch {}
   }, true);
   fotosEreignisseBinden();
-  document.addEventListener('submit', e => { socialAbsenden(e); });
+  document.addEventListener('submit', e => { if (prozesseAbsenden(e)) return; socialAbsenden(e); });
+  window.addEventListener('pagehide', verwerfeProzessKontext);
+  window.addEventListener('tp-sitzung-beendet', verwerfeProzessKontext);
   document.addEventListener('click', e => {
-    if (e.target.closest('[data-abmelden]')) { logout(); return; }
+    if (e.target.closest('[data-abmelden]')) { verwerfeProzessKontext(); logout(); return; }
+    if (prozesseKlick(e)) return;
     if (e.target.closest('[data-fehler-melden]')) { e.preventDefault(); openFehlerMelden(); return; }
     const open = e.target.closest('[data-open]');
     if (open && !e.target.closest('[data-decide]')) { e.preventDefault(); openTask(Number(open.dataset.open)); if (open.dataset.primary) { setTimeout(() => $('#sheetRoot [data-act]')?.focus(), 50); } return; }
@@ -115,6 +119,7 @@ export function bindEvents() {
     if (a) { if (a.dataset.action === 'sync') syncNow(); if (a.dataset.action === 'refresh') refresh(); if (a.dataset.action === 'aktualisieren') aktualisierenNow(); if (a.dataset.action === 'reload') location.reload(); if (a.dataset.action === 'clear-filters') navigate('arbeit', { mode: state.route.params.get('mode') || '' }); }
   });
   document.addEventListener('change', e => {
+    if (prozesseEingabe(e)) return;
     if (fotosAenderung(e)) return;
     if (socialEingabe(e)) return;
     if (orgAenderungAnhang(e)) return;
@@ -124,6 +129,7 @@ export function bindEvents() {
   });
   let qTimer;
   document.addEventListener('input', e => {
+    if (prozesseEingabe(e)) return;
     if (socialEingabe(e)) return;
     const el = e.target.closest('input[type=search][data-param]');
     if (!el) return;
@@ -178,13 +184,13 @@ export function bindEvents() {
   });
   $('#searchBtn').addEventListener('click', openPalette);
   $('#themeBtn')?.addEventListener('click', toggleTheme);
-  $('#sessionBtn').addEventListener('click', logout);
+  $('#sessionBtn').addEventListener('click', () => { verwerfeProzessKontext(); logout(); });
   $('#meinPasswortBtn')?.addEventListener('click', openMeinPasswort);
   // Der Chip fuehrt in den Systemzustand - fuer Mitarbeiter gibt es dort nichts,
   // also fuehrt er sie auf die Startseite statt in eine leere Umleitung.
   $('#syncChip').addEventListener('click', () => navigate(darfAnsicht('insights') ? 'insights' : 'heute'));
   bindeNavigation();
   folgeGeraet();
-  window.addEventListener('hashchange', async () => { clearTimeout(qTimer); const prev = state.route.view; parseRoute(); state.selectedRow = -1; if (state.route.view === 'aktivitaet' && prev !== 'aktivitaet') { await ladeAktivitaetsdaten(); } render(); if (state.route.view === 'lexikon' && prev !== 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus(); });
+  window.addEventListener('hashchange', async () => { clearTimeout(qTimer); const prev = state.route.view; parseRoute(); if (prev === 'prozesse' && state.route.view !== 'prozesse') verwerfeProzessKontext(); state.selectedRow = -1; if (state.route.view === 'aktivitaet' && prev !== 'aktivitaet') { await ladeAktivitaetsdaten(); } render(); if (state.route.view === 'lexikon' && prev !== 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh({ silent: true }); });
 }

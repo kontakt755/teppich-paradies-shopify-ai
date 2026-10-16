@@ -28,12 +28,20 @@ export function render() {
 function zeichne() {
   const main = $('#main');
   const eingabe = merkeEingabe(document.activeElement, (el) => main.contains(el));
+  const aktiv = document.activeElement;
+  // Manche Formulare halten Werte im Modul statt in der Adresszeile. Auch bei
+  // einem stillen Datenabgleich bleiben ihre Tastatur und Textauswahl erhalten.
+  const lokalerFokus = aktiv?.matches?.('[data-focus-erhalten]') && main.contains(aktiv)
+    ? { id: aktiv.id, start: aktiv.selectionStart, ende: aktiv.selectionEnd } : null;
   aktualisiereNavigation();
   // Ein Satz oben ist ehrlicher als lauter fehlende Knoepfe ohne Erklaerung.
   const lesenHinweis = $('#lesenHinweis');
   if (lesenHinweis) lesenHinweis.hidden = !istNurLesend();
   if (state.capabilities.mode === 'ausgeloggt') {
-    main.innerHTML = `<div class="page-head"><h1>Sitzung abgelaufen</h1></div><div class="notice warn">Die Anmeldung ist abgelaufen oder das Passwort hat sich geändert. Bereits eingegebene Angaben auf dieser Seite bleiben erhalten, bis neu geladen wird. <a href="/login" class="btn btn-sm" style="margin-left:8px">Neu anmelden</a></div>`;
+    // Lokale Arbeitsanweisungen koennen eingefuegte Nachrichten enthalten.
+    // Die Ansicht verwirft sie auch, wenn die Sitzung ohne Abmelden ablaeuft.
+    window.dispatchEvent(new Event('tp-sitzung-beendet'));
+    main.innerHTML = `<div class="page-head"><h1>Sitzung abgelaufen</h1></div><div class="notice warn">Die Anmeldung ist abgelaufen oder das Passwort hat sich geändert. Bitte neu anmelden. <a href="/login" class="btn btn-sm" style="margin-left:8px">Neu anmelden</a></div>`;
     document.title = 'Sitzung abgelaufen · Teppich Dashboard';
     return;
   }
@@ -47,8 +55,17 @@ function zeichne() {
     return;
   }
   main.innerHTML = (state.loadError ? `<div class="notice crit" style="margin-bottom:12px">Aktualisierung fehlgeschlagen: ${esc(state.loadError)} – es wird der letzte geladene Stand gezeigt.</div>` : '') + ansichten[state.route.view]();
-  document.title = `${{ heute: 'Heute', arbeit: 'Entwicklung', freigaben: 'Freigaben', bereiche: 'Bereiche', insights: 'Insights', aktivitaet: 'Aktivität', einkauf: 'Einkauf', kunden: 'Kunden', lexikon: 'Lexikon', ratgeber: 'Ratgeber', hilfe: 'Hilfe', shopwache: 'Shop-Wache', organisation: 'Aufgaben & Organisation', sonderposten: 'Sonderposten', bildrechte: 'Bildrechte' }[state.route.view] || 'Teppich Paradies'} · Teppich Dashboard`;
+  document.title = `${{ heute: 'Heute', prozesse: 'Arbeitsplatz', arbeit: 'Entwicklung', freigaben: 'Freigaben', bereiche: 'Bereiche', insights: 'Insights', aktivitaet: 'Aktivität', einkauf: 'Einkauf', kunden: 'Kunden', lexikon: 'Lexikon', ratgeber: 'Ratgeber', hilfe: 'Hilfe', shopwache: 'Shop-Wache', organisation: 'Aufgaben & Organisation', sonderposten: 'Sonderposten', bildrechte: 'Bildrechte' }[state.route.view] || 'Teppich Paradies'} · Teppich Dashboard`;
   renderSheet();
+  if (lokalerFokus?.id) {
+    const feld = document.getElementById(lokalerFokus.id);
+    if (feld && main.contains(feld)) {
+      feld.focus();
+      if (typeof lokalerFokus.start === 'number') {
+        try { feld.setSelectionRange(lokalerFokus.start, lokalerFokus.ende); } catch { /* Auswahl nur fuer Textfelder */ }
+      }
+    }
+  }
   // Zuerst weitertippen lassen, wo jemand gerade tippt.
   if (eingabe && stelleEingabeWiederHer(main.querySelector(`input[data-param="${eingabe.param}"]`), eingabe)) return;
   // Kundensuche: Feld soll beim Öffnen sofort tippbereit sein (Telefon-Arbeitsplatz)

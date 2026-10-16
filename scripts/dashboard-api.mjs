@@ -73,6 +73,7 @@ import { filtereAuftrag } from '../docs/ai-dashboard/lib/vorgangslink.mjs';
 import { musterKaufLinks } from '../docs/ai-dashboard/lib/muster-kauf-links.mjs';
 import { betriebszustand } from '../operations/lib/betriebszustand.mjs';
 import { ausCsv as bildrechteAusCsv, prueflisten as bildrechtePrueflisten } from '../operations/lib/bildrechte.mjs';
+import { prozesslinksPfad, leseProzesslinks, schreibeProzesslinks, ProzesslinksFehler, ProzesslinksSpeicherFehler } from '../operations/lib/prozesslinks.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -1205,6 +1206,27 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
   }
 
   return {
+    /** Private Navigation fuer alle Rollen; das gemeinsame Passwort bleibt Inhaberzugang. */
+    prozessLinks({ benutzer = null } = {}) {
+      try {
+        return { ...leseProzesslinks(prozesslinksPfad(privatDirPath || privatDir())), bearbeitbar: !benutzer || benutzer.rolle === 'inhaber' };
+      } catch (e) {
+        if (e instanceof ProzesslinksSpeicherFehler) throw new ApiError(500, e.message);
+        throw e;
+      }
+    },
+
+    prozessLinksSetzen(payload, { benutzer = null } = {}) {
+      if (benutzer && benutzer.rolle !== 'inhaber') throw new ApiError(403, 'Prozessverknüpfungen kann nur der Inhaber ändern.');
+      try {
+        return { ...schreibeProzesslinks(prozesslinksPfad(privatDirPath || privatDir()), payload), bearbeitbar: true };
+      } catch (e) {
+        if (e instanceof ProzesslinksFehler) throw new ApiError(400, e.message);
+        if (e instanceof ProzesslinksSpeicherFehler) throw new ApiError(500, e.message);
+        throw e;
+      }
+    },
+
     async capabilities() {
       const user = await currentUser();
       let labelsAvailable = [];

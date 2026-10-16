@@ -1,5 +1,49 @@
 # Control Center – Zielarchitektur und Migrationsstrategie
 
+## Arbeitsplatz: Aufgaben vorbereiten (seit 2026-10-16, #1390)
+
+`#/prozesse` buendelt „E-Mail vorbereiten“, „Angebot vorbereiten“ und „Recherche starten“.
+Direkte Einstiege stehen auf „Heute“ und in der Befehlspalette, die vollstaendige Ansicht in der
+Seitenleiste unter „Arbeitsplatz“ (am Handy hinter „Mehr“). Heute bleibt die betriebliche Startseite.
+
+Je Aufgabe werden vorhandene Angaben in eine pruefbare Arbeitsanweisung eingebettet. Originaltexte
+sind als Quellen markiert; sie ersetzen keine Projektregeln. Der erste Knopf kopiert den Auftrag,
+ein separater nativer Link oeffnet die gewaehlte App oder das hinterlegte Projekt. Einfuegen und
+Starten erfolgen dort durch die Person. Es gibt keinen KI-Hintergrunddienst, keine neuen
+API-Schluessel und keinen automatischen Versand oder Schreibzugriff auf Fachsysteme.
+
+Die Angebotsvorbereitung verlangt den tatsaechlich verfuegbaren, gelesenen Lexware-Skill des
+Zielprojekts und stoppt bei dessen Fehlen. Das Dashboard selbst prueft oder installiert diesen Skill
+nicht und fuehrt keine Kalkulation aus. Der Kunden-Reiter „Angebote“ bleibt die bestehende
+Shopify-Entwurfsbestellungsansicht.
+
+**Private Verknuepfungen:** `GET /api/prozesse/links` liefert
+`{standardAnbieter, ziele:{email,angebot,recherche}, bearbeitbar}` mit je `chatgpt`, `codex`, `claude`.
+`POST` speichert nur diese Konfiguration atomar und mit Rechten `0600` in
+`$TP_PRIVAT_DIR/prozesslinks.json`. Jeder angemeldete Dashboard-Zugang darf sie lesen; aendern darf
+nur der Inhaber bzw. der bestehende gemeinsame Passwortzugang. JSON, Herkunft und Ziele werden
+serverseitig geprueft. Die Sicherung und die Datenkopie der Browserpruefung enthalten die Datei.
+Nur eine fehlende Datei bedeutet Erstbetrieb; beschaedigte Konfigurationen werden nicht als leer
+behandelt oder ueberschrieben.
+
+Erlaubt sind HTTPS-Adressen von `chatgpt.com` bzw. `claude.ai` sowie die dokumentierten nativen
+App-Links fuer neue/gespeicherte Codex-Chats und Claude-Projekte bzw. lokale Ordner. Abfragen mit
+Prompttext, fremde Hosts, Zugangsdaten oder Textfragmente werden abgewiesen. Kontext wird nie in
+einen Link geschrieben. Leere Ziele bleiben sichtbar unkonfiguriert. Allgemeine App-Adressen
+sagen ausdruecklich, dass das passende Projekt dort noch auszuwaehlen ist. Native Ordnerziele sind
+geraetebezogen; sie uebernehmen weder Cloud-Chats noch deren Quellen oder Skills automatisch.
+Referenzen: [Codex-App-Links](https://learn.chatgpt.com/docs/reference/commands),
+[Claude-App-Links](https://support.claude.com/en/articles/14729294-open-claude-desktop-with-a-link).
+
+**Fluechtiger Kontext:** Kunde/Vorgang und Quelltext liegen ausschliesslich im Browser-Arbeitsspeicher,
+nicht in URL, Browserablagen, API-Aufrufen, Protokollen oder einer Vorgangsdatenbank. Verlassen,
+Abmelden, `pagehide` (einschliesslich DOM-Standardwerten fuer den Rueckwaerts-Cache) und eine erhaltene
+401 verwerfen die Eingaben. Die Zwischenablage entsteht nur nach dem bewussten Kopierknopf und
+wird dabei nicht automatisch wieder geloescht. Scheitert der Browser-Kopierweg, bleibt der Text in
+der aufklappbaren Vorschau manuell markierbar. Verzoegerte Kopierantworten duerfen nach einem
+Kontextwechsel keinen neuen Text kopieren. Stille Datenabgleiche erhalten Wert, Fokus und Cursor
+der mit `data-focus-erhalten` markierten Felder.
+
 ## Starten (Mitarbeiter/Admins)
 
 ```
