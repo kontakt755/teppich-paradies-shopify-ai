@@ -26,6 +26,10 @@
 .prozess-aktionen { display: flex; flex-wrap: wrap; gap: 10px; }
 .prozess-aktionen > .btn { min-height: 42px; overflow-wrap: anywhere; }
 .prozess-aktionen > a { color: var(--text); }
+.prozess-direkt, .prozess-manuell { display: grid; gap: 10px; min-width: 0; }
+.prozess-alternative { min-width: 0; border-top: 1px solid var(--line); padding-top: 12px; }
+.prozess-alternative summary { cursor: pointer; color: var(--text-2); font-size: .9rem; }
+.prozess-manuell { margin-top: 12px; }
 .prozess-einstellungen { min-width: 0; box-shadow: none; }
 .prozess-einstellungen summary { color: var(--text-2); font-size: .9rem; }
 .prozess-einstellungsform { display: grid; gap: 16px; min-width: 0; }
