@@ -300,6 +300,54 @@ test('Preisliste: Eintraege mit Stelle, Preisstufe je m², Auslauf zuletzt', () 
   assert.deepEqual(L.regulaerZuerst(liste.slice(2, 4).reverse(), (e) => e.auslauf).map((e) => e.handle), ['klebe-guenstig', 'auslauf']);
 });
 
+// Preisliste wie aus ?view=boden-finder-preise (Klebe-, Klickvinyl, Rolle, teuer).
+const vinylListe = () => L.preisEintraege([
+  ['klebe-a', 3199, 4.87, 15579, 0],
+  ['klick-b', 2490, 1.77, 4407, 0],
+  ['rolle-c', 2999, 0, 2999, 0],
+  ['klick-teuer', 5299, 1.988, 10534, 0]
+]);
+
+test('ca.-Betrag der Preisstufe bei Paketware: teuerster Raumpreis der Stufe in ganzen Paketen', () => {
+  const liste = vinylListe();
+  // Live 16.10.: 4 x 3 m bis 35 EUR/m². Flaeche x 1,05 x Stufe waeren ca. 440 EUR,
+  // der Klebevinyl-Vorschlag kostet 3 Pakete a 4,87 m² = 467,37 EUR.
+  const qmRolle = L.rollenFlaeche(400, 300);
+  assert.equal(qmRolle, 12);
+  assert.equal(L.stufenBetrag(35, 12 * L.PAKET_VERSCHNITT), 440);
+  assert.equal(L.paketRechnung(4.87, 155.79, 12).betrag, 467.37);
+  assert.equal(L.stufenMaximum(liste, 35, 12, qmRolle), 470);
+  // Bis 25 EUR/m² nur Klickvinyl: 12,6 m² / 1,77 = 8 Pakete = 352,56 EUR.
+  assert.equal(L.stufenMaximum(liste, 25, 12, qmRolle), 360);
+  // Rollenware: Preis je m² x Rollenflaeche, wie bisher am Preisrahmen.
+  assert.equal(L.stufenMaximum(liste.filter((e) => e.paket === 0), 35, 12, qmRolle), 360);
+  // Glatte Betraege werden nicht um 10 EUR angehoben: 2 Pakete a 50 EUR.
+  assert.equal(L.stufenMaximum(L.preisEintraege([['p', 2381, 2.1, 5000, 0]]), 25, 4, 4), 100);
+  // Ohne Raumgroesse, ohne Liste oder ohne Treffer in der Stufe kein Betrag.
+  assert.equal(L.stufenMaximum(liste, 35, null, null), null);
+  assert.equal(L.stufenMaximum(null, 35, 12, 12), null);
+  assert.equal(L.stufenMaximum(liste, 20, 12, 12), null);
+});
+
+test('ca.-Betrag der Preisstufe liegt nie unter einem Paketvorschlag der Stufe', () => {
+  const liste = vinylListe();
+  [25, 35, 45, 60].forEach((stufe) => {
+    for (let qm = 0.5; qm <= 60; qm += 0.5) {
+      const betrag = L.stufenMaximum(liste, stufe, qm, qm);
+      const preise = L.imBudget(liste, stufe).filter((e) => e.paket > 0)
+        // Wie der Vorschlag unter der Karte: paketAngebot() mit dem Paketpreis.
+        .map((e) => L.paketAngebot(paket(e.paket, Math.round(e.preis * 100)), qm).betrag);
+      preise.forEach((p) => assert.ok(betrag >= p, `bis ${stufe} €/m², ${qm} m²: ${betrag} < ${p}`));
+      if (preise.length) assert.ok(betrag < Math.max(...preise, qm * 29.99) + 10);
+    }
+  });
+});
+
+test('Preisstufen im Finder: Paketware ueber stufenMaximum, Teppichboden wie bisher', () => {
+  const js = lesen('assets/tp-boden-finder.js');
+  assert.match(js, /paket \? stufenMaximum\(liste, stufe, flaeche, qm\) : stufenBetrag\(stufe, qm\)/);
+});
+
 test('Kartenseite der Treffer-Ansicht aus der Stelle in der Kollektion', () => {
   assert.equal(L.kartenSeite(0, 8), 1);
   assert.equal(L.kartenSeite(7, 8), 1);
