@@ -48,6 +48,7 @@ Sonderfälle.
 | `angebot` | Angebot (Beitrag, Story) | Doppelbild Rolle + Teppich mit Einfassung, Abzeichen −XX %, Aktionspreis groß in Rot, alter Preis fett durchgestrichen, Aktionsende in der Zeile |
 | `highlight` | Titelbild eines Instagram-Highlights | roter Kreis mit einem Wort in der Bildmitte – Instagram zeigt nur diesen Kreis; `npm run social -- highlights` legt alle fünf unter `$TP_PRIVAT_DIR/social/highlights` ab |
 | `story_foto` | Story, Reel-Standbild | Foto bildfüllend, oben Logo und Marke („Von uns verlegt"), unten eine Zeile; die Bedienflächen von Instagram bleiben frei |
+| `reel_zoom` | Produkt-Reel (10 s, ohne Ton) | eigenes Werkzeug (`werkzeuge/reel_zoom.py`), keine HTML-Vorlage: Logo oben, Raumbild im abgerundeten Kasten (4:5 oder 1:1) mit langsamem Zoom 1,00 → 1,08, darunter nacheinander eingeblendet Kicker, Name, Preis groß in Rot (Paketware: m²-Preis groß, Paketpreis darunter), Merkmale, Pflichtzeile „Preise inkl. MwSt., zzgl. Versand … · Stand“, Domain. Keine Streichpreise, keine Prozente, kein KI-Hinweis (Inhaber 16.10.2026) |
 
 Welche Inhaltsart welche Vorlage bekommt, legt `standardBauplan` in
 `lib/werkstatt.mjs` fest; die Redaktion kann je Beitrag davon abweichen.
