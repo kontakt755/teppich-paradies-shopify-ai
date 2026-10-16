@@ -1,14 +1,17 @@
 {%- doc -%}
   Einheit des Einzelpreises einer Warenkorbzeile. Konfigurator-Zeilen kosten je
   0,01 m2 (Teppich nach Mass, Marken-Einfassung) bzw. je 0,01 lfm
-  (Kettelservice); der nackte Einzelpreis ("0,71 EUR") las sich wie ein
-  Kaufpreis. Ausgabe "100|/m²" bzw. "100|/lfm", sonst leer.
+  (Kettelservice, Profile nach Mass mit custom.preis_pro_001_lfm); der nackte
+  Einzelpreis ("0,71 EUR") las sich wie ein Kaufpreis. Ausgabe "100|/m²",
+  "100|/lfm" bzw. "100|/m", sonst leer.
 
   @param {object} line_item - Warenkorbzeile
 {%- enddoc -%}
 {%- liquid
   if line_item.variant.title contains '0,01 laufender Meter'
     echo '100|/lfm'
+  elsif line_item.product.metafields.custom.preis_pro_001_lfm.value == true
+    echo '100|/m'
   elsif line_item.product.metafields.custom.preis_pro_001_qm.value == true
     echo '100|/m²'
   endif
