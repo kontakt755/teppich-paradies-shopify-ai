@@ -446,8 +446,25 @@ To-dos auf „Heute“ („Muster bei Lieferant A bestellen · Kunde · Regalia 
 | Art | Bedeutung | Abzählen |
 |---|---|---|
 | Einzelmuster | fertige Muster | ja – jedes verschickte zählt ab, bei 0 wieder beim Lieferanten |
-| Probestück 2 × 1 m | PVC, Linoleum: wir schneiden zu | nein – „Ist leer“ setzt jemand von Hand |
-| Bahn 4 m × 20 cm | Teppichboden: wir schneiden zu | nein – wie Probestück |
+| Probestück 2 × 1 m | PVC, Linoleum: wir schneiden zu | geschätzt: „reicht noch für ca. N A5-Muster“ (54 je Stück); „Ist leer“ von Hand |
+| Bahn 4 m × 20 cm | Teppichboden: wir schneiden zu | geschätzt wie Probestück (27 je Bahn) |
+
+- **Mustergröße A5** (Inhaber 2026-10-15): 14,8 × 21 cm. `musterJeStueck()` nimmt die bessere Lage im
+  Stück (Probestück 9 × 6 = 54); bei der Bahn gilt die Bahnbreite 20 cm als lange A5-Seite (1 cm Toleranz),
+  abgeschnitten wird alle 14,8 cm (27). `reichtNoch` = Anzahl × Muster je Stück − seit `basisAm` verschickte
+  − reservierte. `basisAm` setzt das Anlegen, eine neue Anzahl, ein Artwechsel und „Wieder da“ – dann zählt
+  das vorher Abgeschnittene nicht mehr. Ab 5 restlichen Mustern steht der Eintrag auf knapp; ein
+  Probestück nennt dann den Nachkaufpreis beim Lieferanten (8–15 € je nach Qualität).
+- **Gemischte Musterbestellung** (Inhaber 2026-10-15): Liegt ein Teil im Lager und ein Teil kommt vom
+  Lieferanten, geht alles zusammen raus, sobald die Lieferanten-Muster da sind. Solange eines davon nicht
+  bestellt oder bestellt ist, gibt es kein To-do „Muster verschicken“ (`lieferantMusterAusstehend()` in
+  `lib/todos.mjs`, Server-Spiegel `wartetAufLieferant()`); das Musterlager zeigt die Bestellung als
+  „zurückgelegt“. Ist die Ware da, nennt das To-do „rausgeben“ die Lagermuster mit, und der Versand-Dialog
+  kreuzt sie vorab an (`vorauswahl()` in `lib/versand.mjs`).
+- **Keine Vorratsmuster beim Lieferanten** (Inhaber 2026-10-15): Die Bestellmail bestellt nur, was Kunden
+  bestellt haben – kein Hinweis „2–3 Muster mehr zum Einlagern“.
+- **Etiketten** (Inhaber 2026-10-15): kleines Etikettengerät, darauf nur Produktname und Farbe – kein
+  QR-Code, keine Artikelnummer. Größe und Druck werden erst gebaut, wenn das Gerät feststeht.
 
 - **Schlüssel** ist die SKU ohne „M-“ (Mustervarianten tragen `M-<SKU der Quellvariante>`, bei Teppich nach
   Maß die der Teppichboden-Qualität). Beim Einlagern aus dem Lexikon kommen alle Breiten einer Farbe und das
@@ -467,8 +484,8 @@ To-dos auf „Heute“ („Muster bei Lieferant A bestellen · Kunde · Regalia 
 - **Vorschläge „Einlagern?“:** eingetroffene Probestücke von PVC/Linoleum (Stand „geliefert“, höchstens
   45 Tage) – „den Rest einlagern?“ – und Farben, die in 120 Tagen mindestens zweimal als Muster bestellt
   wurden. Ein Klick öffnet den Dialog vorbelegt.
-- **Endpunkte:** `GET /api/einkauf/musterlager` (Einträge mit Stand verbraucht/reserviert/Rest, offene
-  Bestellungen je Eintrag, Vorschläge), `GET /api/einkauf/musterlager-farben?handle=` (Farben eines
+- **Endpunkte:** `GET /api/einkauf/musterlager` (Einträge mit Stand verbraucht/reserviert/Rest/reichtNoch,
+  offene Bestellungen je Eintrag samt `wartetAufLieferant`, Mustergröße, Vorschläge), `GET /api/einkauf/musterlager-farben?handle=` (Farben eines
   Lexikon-Produkts samt Schlüssel), `POST /api/einkauf/musterlager` mit `aktion: einlagern | aendern |
   entfernen` (Schreibpfad: Rolle „lesen“ 403). Ein beschädigtes `musterlager.json` hält keine
   Bestellansicht auf; nur der Reiter meldet den Fehler, und Schreiben verweigert.
@@ -1085,4 +1102,23 @@ Brückenabgleich oder externe Schreibrechte. Fehlende Basis ist unbekannt; über
 lokaler Hinweis, beschädigte Metadaten sind ein Fehler. Unbekannt ist in der Oberfläche neutral.
 Montage reicht v49 `letzterLaufMin`/`laufzeitHeuteSek` nur als Integer >= 0 durch; fehlend wird nie 0.
 Die QA-Instanz entfernt Shopify-/Auftrags-App-Zugänge und verwendet Testattrappen, nicht den Realbestand.
+
+## 19. Ansicht „Bildrechte“ (seit 2026-10-14, #1285)
+
+Rein lesend, für alle Rollen (auch „lesen“): `ansichten/bildrechte.mjs`, Endpunkt
+`GET /api/bildrechte/liste?liste=ungeklaert|zu-klein|ohne-alt&gruppe=<Warengruppe>&page=<n>`
+(nicht in der `write`-Liste, kein Inhaber-Pfad). Quelle ist allein das lokale Verzeichnis
+`$TP_PRIVAT_DIR/bildrechte/bildrechte.csv` aus `npm run bildrechte:inventur` und der Handpflege
+(Konzept `docs/weiterentwicklung/bilder.md` §6); es kommt nie ins Repository oder in `issues.json`.
+
+- Regeln in `prueflisten()` (`operations/lib/bildrechte.mjs`): entfernte Zeilen (Status beginnt mit
+  `entfernt` oder Notiz „nicht mehr in Shopify“) fallen weg; ungeklärt = Status `ungeklaert` oder leer;
+  zu klein = erfasste Breite < `MINDESTBREITE` (1200); ohne ALT = leerer ALT-Text. Zeilen ohne Breite
+  werden als `breiteUnbekannt` gezählt und in der Ansicht erklärt.
+- Antwort: Zähler aller drei Listen, Warengruppen der gewählten Liste (nach Anzahl), eine Seite
+  à 25 mit Titel, Handle, Warengruppe, Position, Dateiname, Maßen, Namenshinweis und Links. Admin-
+  und Shopadresse kommen aus dem Lexikon-Export; Lizenz, Quelle und Beleg verlassen den Server nicht.
+- Parameter der Oberfläche: `bl` (Liste), `bg` (Warengruppe), `bs` (Seite); ein Wechsel von `bl`
+  oder `bg` setzt die Seite zurück (`setParam`).
+- Fehlt die CSV: `verfuegbar: false` mit Befehl. Andere Lesefehler: 500 und Störungshinweis.
 

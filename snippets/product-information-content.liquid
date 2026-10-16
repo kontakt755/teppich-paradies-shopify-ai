@@ -179,6 +179,10 @@
         endif
       endif
     -%}
+    {%- comment -%} Letztes Glied wie die H1: gekuerzter Anzeigetitel (Shopvergleich, Restpunkt 4b) {%- endcomment -%}
+    {%- capture tp_crumb_titel -%}{%- render 'tp-anzeigetitel', product: product -%}{%- endcapture -%}
+    {%- comment -%} strip: das Snippet liefert nach dem doc-Block einen Zeilenumbruch mit, der sonst im JSON-LD-Namen landet {%- endcomment -%}
+    {%- assign tp_crumb_titel = tp_crumb_titel | strip -%}
     <nav class="tp-product-breadcrumb" aria-label="Breadcrumb">
       <a href="{{ routes.root_url }}">Start</a>
       {%- if tp_crumb_1 -%}
@@ -190,7 +194,7 @@
         <a class="tp-product-breadcrumb__sub" href="{{ tp_crumb_2.url }}">{{ tp_crumb_2_label }}</a>
       {%- endif -%}
       <span aria-hidden="true">/</span>
-      <span aria-current="page">{{ product.title }}</span>
+      <span aria-current="page">{{ tp_crumb_titel }}</span>
     </nav>
     {%- comment -%} Dieselben Stufen wie die sichtbare Breadcrumb als BreadcrumbList (Audit B-15) {%- endcomment -%}
     {%- assign tp_crumb_pos = 1 -%}
@@ -206,7 +210,7 @@
           ,{"@type":"ListItem","position":{{ tp_crumb_pos }},"name":{{ tp_crumb_2_label | json }},"item":{{ request.origin | append: tp_crumb_2.url | json }}}
         {%- endif -%}
         {%- assign tp_crumb_pos = tp_crumb_pos | plus: 1 -%}
-        ,{"@type":"ListItem","position":{{ tp_crumb_pos }},"name":{{ product.title | json }},"item":{{ request.origin | append: product.url | json }}}
+        ,{"@type":"ListItem","position":{{ tp_crumb_pos }},"name":{{ tp_crumb_titel | json }},"item":{{ request.origin | append: product.url | json }}}
       ]}
     </script>
   {%- endif -%}
@@ -247,7 +251,7 @@
     align-items: center;
     gap: 6px;
     margin-bottom: 12px;
-    font-size: 13px;
+    font-size: var(--tp-fs-sm);
     line-height: 1.4;
     color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62);
   }
@@ -268,7 +272,7 @@
   @media screen and (max-width: 749px) {
     .tp-product-breadcrumb {
       margin-bottom: 8px;
-      font-size: 12px;
+      font-size: var(--tp-fs-xs);
       flex-wrap: nowrap;
       white-space: nowrap;
       overflow: hidden;
@@ -582,5 +586,35 @@
   /* If the header is sticky, make product details content stick underneath the header */
   body:has(#header-group #header-component[data-sticky-state='active']) .product-details.sticky-content--desktop {
     --sticky-header-offset: var(--header-height);
+  }
+
+  /* TP Shopvergleich 4a: Die Galerie klebt beim Scrollen neben der langen
+     Detailspalte (Rechner, Zubehoer, Beschreibung). Horizon setzte sie auf
+     top 0 - der Kopf (immer sichtbar) deckte den oberen Bildrand ab, und mit
+     969 px war die Galerie hoeher als ein 900-px-Fenster: die Vorschaubilder
+     lagen dauerhaft unter dem Fensterrand, links wirkte alles leer. Jetzt
+     klebt sie unter dem Kopf, und das Hauptbild ist so hoch begrenzt, dass
+     Bild und Vorschaubilder zusammen ins Fenster passen
+     (constrain_to_viewport in den Produktvorlagen).
+     Abstand nach oben = Kopfhoehe, und zwar mit denselben Bedingungen, mit
+     denen sections/header.liquid den Kopf festsetzt: "always" immer,
+     "scroll-up" nur solange er sichtbar ist. Nicht an data-sticky-state
+     allein haengen - im Modus "always" setzt Horizon das per
+     IntersectionObserver (Schwelle 1) und blieb je nach Browser auf
+     "inactive": dann rutschte die Galerie unter den Kopf (1024 px, 15.10.). */
+  @media screen and (min-width: 750px) {
+    .product-information__media media-gallery.sticky-content {
+      --tp-galerie-oben: 0px;
+      top: calc(var(--tp-galerie-oben) + 16px);
+    }
+
+    body:has(#header-component[sticky='always']) .product-information__media media-gallery.sticky-content,
+    body:has(#header-component[sticky='scroll-up'][data-sticky-state='active']) .product-information__media media-gallery.sticky-content {
+      --tp-galerie-oben: var(--header-height, 0px);
+    }
+
+    .product-information__media .product-media-container.constrain-height {
+      --viewport-offset: calc(var(--header-height, 100px) + 120px);
+    }
   }
 {% endstylesheet %}

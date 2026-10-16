@@ -23,7 +23,8 @@
         "portalUrl": "https://lieferant-a.example/haendler",
         "mail": "bestellung@lieferant-a.example",
         "telefon": "+49 30 1111111",
-        "lieferung": "kunde"
+        "lieferung": "kunde",
+        "nachBezeichnung": false
       },
       "muster": {
         "weg": "mail",
@@ -31,7 +32,8 @@
         "mail": "muster@lieferant-a.example",
         "telefon": "",
         "portalUrl": "",
-        "lieferung": "kunde"
+        "lieferung": "kunde",
+        "nachBezeichnung": false
       },
       "lieferzeitWerktage": 5,
       "mindestmenge": "Rollenware ab 1 lfm, Pakete nur ganz",

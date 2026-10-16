@@ -26,7 +26,7 @@ import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
 import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, setzeStatusPositionen, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, STATUS_ORDER, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
 import { bucheVersand, versandNachzuholen, VersandFehler, VERSANDDIENSTE } from '../operations/lib/versand.mjs';
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
-import { musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
+import { musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MUSTER_GROESSE, KNAPP_AB as LAGER_KNAPP_AB, PROBESTUECK_PREIS, wartetAufLieferant as lagerWartetAufLieferant, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
 import { auftragsverlaufPfad, leseVerlauf, bereiteEreignisVor, schreibeVerlauf, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
 import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden, kundenIndex } from '../operations/lib/kundensuche.mjs';
 import { faelle as kundenFaelle, istTestkontakt } from '../operations/lib/kundenfaelle.mjs';
@@ -70,6 +70,7 @@ import { darfWeiter, beschaffungsStand } from '../docs/ai-dashboard/lib/beschaff
 import { filtereAuftrag } from '../docs/ai-dashboard/lib/vorgangslink.mjs';
 import { musterKaufLinks } from '../docs/ai-dashboard/lib/muster-kauf-links.mjs';
 import { betriebszustand } from '../operations/lib/betriebszustand.mjs';
+import { ausCsv as bildrechteAusCsv, prueflisten as bildrechtePrueflisten } from '../operations/lib/bildrechte.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -186,6 +187,36 @@ export function readJsonGecacht(file) {
   if (daten === null) jsonZwischenspeicher.delete(file);
   else jsonZwischenspeicher.set(file, { kennung, daten });
   return daten;
+}
+
+/**
+ * Bildrechte-Verzeichnis ($TP_PRIVAT_DIR/bildrechte/bildrechte.csv, rund 13 MB):
+ * zwischengespeichert, solange sich die Datei nicht aendert - sonst laese jeder
+ * Seitenwechsel in der Ansicht die ganze Datei neu. null = Datei fehlt; andere
+ * Lesefehler werfen, damit die Ansicht eine Stoerung statt "nichts da" zeigt.
+ */
+let bildrechteZwischenspeicher = null;
+function leseBildrechte(file) {
+  let st;
+  try { st = fs.statSync(file); } catch (e) {
+    if (e?.code === 'ENOENT') { bildrechteZwischenspeicher = null; return null; }
+    throw e;
+  }
+  const kennung = `${file}:${st.size}:${st.mtimeMs}`;
+  if (bildrechteZwischenspeicher?.kennung !== kennung) {
+    bildrechteZwischenspeicher = { kennung, zeilen: bildrechteAusCsv(fs.readFileSync(file, 'utf8')), stand: st.mtime.toISOString() };
+  }
+  return bildrechteZwischenspeicher;
+}
+
+/** Handle -> Links ins Shopify-Admin und in den Shop, aus dem Lexikon-Export (einmal je Exportstand). */
+const lexikonLinks = new WeakMap();
+function linksAusLexikon(lexikon) {
+  if (!Array.isArray(lexikon?.produkte)) return new Map();
+  if (!lexikonLinks.has(lexikon)) {
+    lexikonLinks.set(lexikon, new Map(lexikon.produkte.filter(p => p?.handle).map(p => [p.handle, { adminUrl: p.adminUrl || null, shopUrl: p.onlineStoreUrl || null }])));
+  }
+  return lexikonLinks.get(lexikon);
 }
 
 /** Wendet dieselben Filterchips wie alleKunden() auf Freitextsuchtreffer an (kundenListenEintrag-Form). */
@@ -1657,7 +1688,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         for (const p of a.positionen ?? []) {
           if (p.musterHerkunftQuelle !== 'lager' || !p.musterLager?.id) continue;
           if (!offen.has(p.musterLager.id)) offen.set(p.musterLager.id, []);
-          offen.get(p.musterLager.id).push({ orderId: a.id, orderName: a.name, kunde: kunde(a) });
+          // Gemischte Bestellung: das Lagermuster wartet, bis die Lieferanten-Muster da sind.
+          offen.get(p.musterLager.id).push({ orderId: a.id, orderName: a.name, kunde: kunde(a), wartetAufLieferant: lagerWartetAufLieferant(a, statusAlle) });
         }
       }
       const gruppen = new Map(this._lexikonProdukte().map(x => [x.handle, x.produktgruppe || null]));
@@ -1665,11 +1697,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         verfuegbar: true,
         arten: LAGER_ARTEN,
         zaehlbar: LAGER_ZAEHLBAR,
+        musterGroesse: MUSTER_GROESSE,
+        knappAb: LAGER_KNAPP_AB,
+        probestueckPreis: PROBESTUECK_PREIS,
         bestellungenStand: modell?.erstellt || null,
         eintraege: lager.eintraege.map(e => ({
           id: e.id, titel: e.titel, farbe: e.farbe, handle: e.handle, art: e.art, artLabel: LAGER_ARTEN[e.art], anzahl: e.anzahl ?? null,
           ort: e.ort, notiz: e.notiz, leer: !!e.leer, angelegtAm: e.angelegtAm, angelegtVon: e.angelegtVon, geaendertAm: e.geaendertAm, geaendertVon: e.geaendertVon,
-          stand: stand.get(e.id) || { verbraucht: 0, reserviert: 0, rest: null },
+          stand: stand.get(e.id) || { verbraucht: 0, reserviert: 0, rest: null, reichtNoch: null, jeStueck: null },
           offeneBestellungen: offen.get(e.id) || [],
           verlauf: (e.verlauf || []).slice(-5),
         })),
@@ -2686,6 +2721,29 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const echte = daten.warenkoerbe.filter(w => !istTestkontakt(w));
       const ausgeblendet = daten.warenkoerbe.length - echte.length;
       return { verfuegbar: true, quelle: file, ...daten, warenkoerbe: echte, testAusgeblendet: (daten.testAusgeblendet || 0) + ausgeblendet };
+    },
+
+    /**
+     * Bildrechte (nur lesend): drei Prueflisten aus dem lokalen Verzeichnis -
+     * ungeklaert, schmaler als 1200 px, ohne ALT-Text. Quellen und Lizenzen
+     * bleiben auf dem Server; ausgeliefert wird nur, was die Liste braucht.
+     * Links kommen aus dem Lexikon (Produkt-ID fuers Admin, Shopadresse nur bei
+     * veroeffentlichten Produkten); fehlt das Produkt dort, sucht das Admin nach dem Handle.
+     */
+    bildrechteListe({ liste = '', gruppe = '', page = 1 } = {}) {
+      const dir = privatDirPath || privatDir();
+      const daten = leseBildrechte(path.join(dir, 'bildrechte', 'bildrechte.csv'));
+      if (!daten) {
+        return { verfuegbar: false, hinweis: 'Das Bildrechte-Verzeichnis ist auf diesem Mac noch nicht angelegt.', befehl: 'npm run bildrechte:inventur' };
+      }
+      const ergebnis = bildrechtePrueflisten(daten.zeilen, { liste, gruppe, page, pageSize: 25 });
+      const links = linksAusLexikon(readJsonGecacht(path.join(dir, 'lexikon', 'produkte.json')));
+      const items = ergebnis.items.map(e => {
+        const l = links.get(e.handle);
+        const adminUrl = l?.adminUrl || (e.handle ? `https://admin.shopify.com/store/sjjyq1-6w/products?query=${encodeURIComponent(e.handle)}` : null);
+        return { ...e, adminUrl, shopUrl: l?.shopUrl || null };
+      });
+      return { verfuegbar: true, stand: daten.stand, ...ergebnis, items };
     },
 
     /** Lagerbestand je Standort/Variante - oder der Hinweis, dass der Shop keinen fuehrt. */

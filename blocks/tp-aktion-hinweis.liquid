@@ -39,6 +39,10 @@
   ist und eine nicht mehr lieferbare Bestellung kostenfrei storniert wird.
   Inhaber 2026-10-07: bei Nichtverfuegbarkeit Rueckmeldung binnen eines
   Werktags nach Bestellung durch das Shop-Team.
+  Shopvergleich 2026-10-15 (w-096): der Kasten schob den Konfigurator nach
+  unten. Sichtbar bleiben zwei Zeilen - Titel und die Zusage "kostenfrei
+  stornieren" -, der volle Text mit Ablauf und Telefon steht unter "Mehr
+  erfahren" (details, ohne JavaScript).
 {%- endcomment -%}
 {%- if tah_produkt.tags contains 'auslauf' -%}
   {%- liquid
@@ -50,11 +54,15 @@
   -%}
   <div class="tp-auslauf-hinweis" data-tp-auslauf>
     <p class="tp-auslauf-hinweis__titel">Auslaufkollektion – bald nicht mehr erhältlich</p>
-    <p class="tp-auslauf-hinweis__text">
-      Der Hersteller stellt diese Kollektion ein, die Restbestände sind begrenzt. Nach Ihrer Bestellung prüfen wir, ob Ihre Farbe in der gewünschten Menge noch lieferbar ist. Falls nicht, melden wir uns innerhalb eines Werktags nach Ihrer Bestellung persönlich bei Ihnen: Sie können eine andere Farbe wählen oder die Bestellung kostenfrei stornieren – Sie erhalten dann den vollen Betrag zurück.
-      {%- if tah_tel != blank %} Vorab fragen? Rufen Sie uns gern an: <a href="tel:{{ tah_tel_href }}">{{ tah_tel | escape }}</a>.{% endif -%}
-      {%- if tah_produkt.tags contains 'ohne-raummass' %} Erhältlich als Meterware in voller Rollenbreite.{% endif -%}
-    </p>
+    <p class="tp-auslauf-hinweis__kurz">Nicht mehr lieferbar? Wir stornieren kostenfrei.</p>
+    <details class="tp-auslauf-hinweis__mehr">
+      <summary>Mehr erfahren</summary>
+      <p class="tp-auslauf-hinweis__text">
+        Der Hersteller stellt diese Kollektion ein, die Restbestände sind begrenzt. Nach Ihrer Bestellung prüfen wir, ob Ihre Farbe in der gewünschten Menge noch lieferbar ist. Falls nicht, melden wir uns innerhalb eines Werktags nach Ihrer Bestellung persönlich bei Ihnen: Sie können eine andere Farbe wählen oder die Bestellung kostenfrei stornieren – Sie erhalten dann den vollen Betrag zurück.
+        {%- if tah_tel != blank %} Vorab fragen? Rufen Sie uns gern an: <a href="tel:{{ tah_tel_href }}">{{ tah_tel | escape }}</a>.{% endif -%}
+        {%- if tah_produkt.tags contains 'ohne-raummass' %} Erhältlich als Meterware in voller Rollenbreite.{% endif -%}
+      </p>
+    </details>
   </div>
 {%- endif -%}
 
@@ -105,13 +113,18 @@
     border-radius: 4px;
     background: #fdf6e7;
     color: #1d1d1d;
-    font-size: 0.9rem;
+    font-size: var(--tp-fs-sm);
     line-height: 1.45;
   }
 
   .tp-auslauf-hinweis p { margin: 0; }
   .tp-auslauf-hinweis__titel { font-weight: 700; }
   .tp-auslauf-hinweis__text a { color: inherit; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+  .tp-auslauf-hinweis__mehr summary { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; margin-top: 2px; padding: 0; cursor: pointer; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; list-style: none; }
+  .tp-auslauf-hinweis__mehr summary::-webkit-details-marker { display: none; }
+  .tp-auslauf-hinweis__mehr summary::after { content: ''; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform 0.15s; }
+  .tp-auslauf-hinweis__mehr[open] summary::after { transform: translateY(1px) rotate(-135deg); }
+  .tp-auslauf-hinweis__mehr[open] .tp-auslauf-hinweis__text { margin-top: 4px; }
 
   .tp-aktion-hinweis {
     display: flex;
@@ -119,7 +132,7 @@
     align-items: center;
     gap: 6px 10px;
     margin: 0;
-    font-size: 0.9rem;
+    font-size: var(--tp-fs-sm);
     line-height: 1.35;
   }
 

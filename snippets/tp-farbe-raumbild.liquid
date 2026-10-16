@@ -1,0 +1,38 @@
+{%- doc -%}
+  Raumbild einer Farbe fuer das Kartenbild, wenn Suche oder Farbfilter eine
+  Variante gewaehlt haben (snippets/tp-suchfarbe-variante). Ohne Wahl zeigt die
+  Karte ein Raumbild; mit Wahl soll sie dasselbe zeigen, nur in der gewaehlten
+  Farbe - nicht das flache Variantenfoto.
+
+  Zuordnung wie auf der Produktseite (snippets/tp-galerie-fremde-farbe): Der
+  Alt-Text nennt die Farbe als " | Farbe: <Farbe> |". Bevorzugt "Raumansicht",
+  sonst das erste "Raumbild". Ohne solches Bild bleibt es beim Variantenfoto.
+
+  Ausgabe: Position in product.media (ab 0) oder nichts.
+
+  @param {object} product - Produkt der Karte
+  @param {object} variant - gewaehlte Variante
+  @param {number} index - Index der Farboption
+{%- enddoc -%}
+{%- liquid
+  assign tp_fr_farbe = variant.options[index]
+  assign tp_fr_raumbild = -1
+  if tp_fr_farbe != blank
+    assign tp_fr_marker = ' | Farbe: ' | append: tp_fr_farbe | append: ' |'
+    for tp_fr_media in product.media
+      unless tp_fr_media.alt contains tp_fr_marker
+        continue
+      endunless
+      if tp_fr_media.alt contains 'Raumansicht'
+        assign tp_fr_raumbild = forloop.index0
+        break
+      endif
+      if tp_fr_raumbild < 0 and tp_fr_media.alt contains 'Raumbild'
+        assign tp_fr_raumbild = forloop.index0
+      endif
+    endfor
+  endif
+  if tp_fr_raumbild >= 0
+    echo tp_fr_raumbild
+  endif
+-%}

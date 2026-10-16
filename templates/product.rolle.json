@@ -27,7 +27,7 @@
             "thumbnail_width": 64,
             "thumbnail_radius": 6,
             "aspect_ratio": "1",
-            "constrain_to_viewport": false,
+            "constrain_to_viewport": true,
             "media_fit": "cover",
             "media_radius": 8,
             "extend_media": false,
@@ -335,9 +335,28 @@
                 "satz": "Dieselbe Qualität, zentimetergenau zugeschnitten und rundum eingefasst.",
                 "bild": "shopify://shop_images/tp-kante-gekettelt.jpg"
               }
+            },
+            "tp_bildnachweis_mobil": {
+              "type": "tp-bildnachweis",
+              "name": "TP Bildnachweis (Handy)",
+              "settings": {
+                "label": "Produktbilder:",
+                "sichtbarkeit": "mobil"
+              },
+              "blocks": {}
+            },
+            "tp_bildnachweis_desktop": {
+              "type": "tp-bildnachweis",
+              "name": "TP Bildnachweis (Desktop)",
+              "settings": {
+                "label": "Produktbilder:",
+                "sichtbarkeit": "desktop"
+              },
+              "blocks": {}
             }
           },
           "block_order": [
+            "tp_bildnachweis_mobil",
             "group_icgrde",
             "tp_aktion_hinweis",
             "divider_VJhene",
@@ -346,7 +365,8 @@
             "tp_nachmass_hinweis",
             "tp_zubehoer_empfehlung",
             "tp_muster_cta_1",
-            "buy_buttons_eYQEYi"
+            "buy_buttons_eYQEYi",
+            "tp_bildnachweis_desktop"
           ]
         }
       },
@@ -605,7 +625,7 @@
               "type": "_accordion-row",
               "settings": {
                 "heading": "Technische Daten",
-                "open_by_default": false
+                "open_by_default": true
               },
               "blocks": {
                 "ai_gen_block_b888d9b_CJbJ8X": {

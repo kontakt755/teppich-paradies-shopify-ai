@@ -166,7 +166,7 @@
     border-radius: 8px;
     background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.025);
     color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.76);
-    font-size: 13px;
+    font-size: var(--tp-fs-sm);
     line-height: 1.45;
   }
 
@@ -211,7 +211,7 @@
     flex-wrap: wrap;
     gap: 5px 8px;
     margin-bottom: 10px;
-    font-size: 13px;
+    font-size: var(--tp-fs-sm);
     color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
   }
 
@@ -224,7 +224,7 @@
   @media screen and (max-width: 749px) {
     .tp-service-links__shipping-{{ tp_sl_id }},
     .tp-service-links__secondary-{{ tp_sl_id }} {
-      font-size: 12.5px;
+      font-size: var(--tp-fs-xs);
     }
   }
 </style>

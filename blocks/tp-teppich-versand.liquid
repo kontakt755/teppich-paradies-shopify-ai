@@ -95,7 +95,7 @@
     border-radius: 8px;
     color: #ffffff;
     text-decoration: none;
-    font-size: 16px;
+    font-size: var(--tp-fs-md);
     font-weight: 600;
     letter-spacing: 0.3px;
     box-shadow: 0 2px 8px rgba(180, 151, 108, 0.15);
@@ -115,7 +115,7 @@
     background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(10px);
     color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.8);
-    font-size: 14px;
+    font-size: var(--tp-fs-sm);
     line-height: 1.6;
   }
 
@@ -183,7 +183,7 @@
     flex-wrap: wrap;
     gap: 8px 12px;
     margin-top: 20px;
-    font-size: 13px;
+    font-size: var(--tp-fs-sm);
     color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.6);
   }
 
@@ -207,7 +207,7 @@
     }
 
     .tp-teppich-versand__sample-{{ tp_tv2_id }} {
-      font-size: 15px;
+      font-size: var(--tp-fs-md);
       min-height: 44px;
       padding: 10px 16px;
     }
@@ -215,11 +215,11 @@
     .tp-teppich-versand__shipping-{{ tp_tv2_id }} {
       margin-top: 20px;
       padding: 16px;
-      font-size: 13px;
+      font-size: var(--tp-fs-xs);
     }
 
     .tp-teppich-versand__secondary-{{ tp_tv2_id }} {
-      font-size: 12px;
+      font-size: var(--tp-fs-xs);
       margin-top: 16px;
     }
   }

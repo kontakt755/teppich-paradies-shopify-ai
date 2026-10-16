@@ -5,7 +5,8 @@
   feuert danach `variant:update` mit dem komplett geladenen Dokument der neuen
   Variante (event.detail.data.html). Dieser Block steht darin bereits fertig
   gerendert - mit Bild, Art und Beschriftung fuer genau diese Farbe. Die
-  Vorschau uebernimmt daraus nur die vier Stellen, die sich aendern. Es gibt
+  Vorschau uebernimmt daraus nur die Stellen, die sich aendern: Art, Foto
+  (das img gibt es nur bei Art "foto"), Farbmuster und Beschriftung. Es gibt
   keine zweite Bildzuordnung im Browser; die Entscheidung trifft allein das
   Liquid.
 
@@ -41,29 +42,51 @@
       this.classList.remove('tp-lv--ohne', 'tp-lv--foto', 'tp-lv--muster');
       this.classList.add('tp-lv--' + art);
 
-      var paare = [
-        ['[data-tp-vorschau-foto]', 'src'],
-        ['[data-tp-vorschau-foto]', 'alt'],
-        ['[data-tp-vorschau-bild]', 'href']
-      ];
-      paare.forEach(function (paar) {
-        var alt = this.querySelector(paar[0]);
-        var frisch = neu.querySelector(paar[0]);
-        if (!alt || !frisch) return;
-        var wert = frisch.getAttribute(paar[1]);
-        if (wert === null || wert === '') {
-          if (paar[1] === 'href') alt.setAttribute('href', '');
-          else alt.removeAttribute(paar[1]);
-        } else if (alt.getAttribute(paar[1]) !== wert) {
-          alt.setAttribute(paar[1], wert);
-        }
-      }, this);
+      this.fotoUebernehmen(neu);
+
+      // Farbmuster im Schema: ohne Muster steht kein href (statt eines leeren).
+      var bildAlt = this.querySelector('[data-tp-vorschau-bild]');
+      var bildNeu = neu.querySelector('[data-tp-vorschau-bild]');
+      if (bildAlt && bildNeu) {
+        var href = bildNeu.getAttribute('href');
+        if (!href) bildAlt.removeAttribute('href');
+        else if (bildAlt.getAttribute('href') !== href) bildAlt.setAttribute('href', href);
+      }
 
       ['[data-tp-vorschau-art]', '[data-tp-vorschau-name]'].forEach(function (sel) {
         var alt = this.querySelector(sel);
         var frisch = neu.querySelector(sel);
         if (alt && frisch && alt.textContent !== frisch.textContent) alt.textContent = frisch.textContent;
       }, this);
+    }
+
+    /**
+     * Das Foto-img steht nur im HTML, wenn die Farbe ein eigenes Foto hat
+     * (Art "foto"). Hat die neue Farbe eins, wird es angeglichen oder aus der
+     * Antwort uebernommen; hat sie keins, faellt das alte weg. So steht nie ein
+     * img ohne src im Dokument.
+     *
+     * @param {Element} neu - frisch gerenderter Block der neuen Variante
+     */
+    fotoUebernehmen(neu) {
+      var fotoAlt = this.querySelector('[data-tp-vorschau-foto]');
+      var fotoNeu = neu.querySelector('[data-tp-vorschau-foto]');
+
+      if (!fotoNeu || !fotoNeu.getAttribute('src')) {
+        if (fotoAlt) fotoAlt.remove();
+        return;
+      }
+
+      if (fotoAlt) {
+        ['src', 'alt'].forEach(function (attr) {
+          var wert = fotoNeu.getAttribute(attr) || '';
+          if (fotoAlt.getAttribute(attr) !== wert) fotoAlt.setAttribute(attr, wert);
+        });
+        return;
+      }
+
+      var rahmen = this.querySelector('.tp-lv__frame');
+      if (rahmen) rahmen.insertBefore(document.importNode(fotoNeu, true), rahmen.firstChild);
     }
   }
 

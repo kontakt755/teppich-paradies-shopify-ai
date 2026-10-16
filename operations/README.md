@@ -220,6 +220,8 @@ die Kennung aus der Bestellübersicht (`A`, `B`, … – dieselbe wie
 | `muster.weg` | wie oben, dazu `muster.ansprechperson`, `muster.mail`, `muster.telefon`, `muster.portalUrl` |
 | `ware.lieferung` | `kunde` (Standard, auch ohne Eintrag: Lieferant liefert direkt an den Kunden) \| `laden` (Ausnahme) |
 | `muster.lieferung` | `kunde` (Lieferant schickt direkt an den Kunden) \| `laden` |
+| `muster.nachBezeichnung` | `true` für Hersteller, die unsere Artikelnummer nicht kennen (dort ist sie unsere eigene SKU): die Mustermail nennt statt „Art.-Nr. … · Farb-Nr. …“ die Bezeichnung aus `einkauf.farbname` der Quellvariante (Qualität plus Farbnummer), ohne Farbname bleibt es bei der Artikelnummer. Standard `false` |
+| `ware.nachBezeichnung` | dasselbe für die Warenbestellmail: Bezeichnung aus `einkauf.farbname` der bestellten Variante statt „Art.-Nr. … · Farb-Nr. …“; Menge, Rollenbreite und Fertigmaß bleiben unverändert. Standard `false` |
 | `lieferzeitWerktage` | übliche Lieferzeit, ganze Zahl |
 | `mindestmenge`, `hinweise` | Freitext |
 | `mail.anrede`, `mail.gruss` | überschreiben Anrede/Grußformel der Mails |
@@ -251,8 +253,8 @@ Positionen; nicht zugeordnete Positionen als `id: "UNGEKLAERT"` am Ende.
     "zugeordnet": true,
     "stammdaten": {
       "id": "A", "name": "Lieferant A", "anzeigename": "Lieferant A", "kundennummer": "K-000001",
-      "ware": { "weg": "portal", "portalUrl": "https://lieferant-a.example/haendler", "mail": "bestellung@lieferant-a.example", "telefon": "+49 30 1111111" },
-      "muster": { "weg": "mail", "ansprechperson": "Frau Muster", "mail": "muster@lieferant-a.example", "telefon": null, "portalUrl": null, "lieferung": "kunde" },
+      "ware": { "weg": "portal", "portalUrl": "https://lieferant-a.example/haendler", "mail": "bestellung@lieferant-a.example", "telefon": "+49 30 1111111", "nachBezeichnung": false },
+      "muster": { "weg": "mail", "ansprechperson": "Frau Muster", "mail": "muster@lieferant-a.example", "telefon": null, "portalUrl": null, "lieferung": "kunde", "nachBezeichnung": false },
       "lieferzeitWerktage": 5, "mindestmenge": "…", "hinweise": "…",
       "mail": { "anrede": "Guten Tag Frau Muster,", "gruss": "…" },
       "fehlend": [], "hinterlegt": true

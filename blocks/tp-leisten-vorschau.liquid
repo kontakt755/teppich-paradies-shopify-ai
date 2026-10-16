@@ -145,15 +145,24 @@
   >
     <figure class="tp-lv__figure">
       <div class="tp-lv__frame">
-        <img
-          class="tp-lv__foto"
-          data-tp-vorschau-foto
-          {% if tp_lv_art == 'foto' %}src="{{ tp_lv_src }}"{% endif %}
-          alt="{{ tp_lv_label | escape }} {{ tp_lv_farbname | escape }}"
-          width="900"
-          height="495"
-          loading="lazy"
-        >
+        {%- comment -%}
+          Das Foto-Element gibt es nur bei Art "foto". Bei "muster" und "ohne"
+          stand hier frueher ein verstecktes img ohne src als Platzhalter fuer
+          einen spaeteren Farbwechsel - ein Bild ohne Quelle im HTML. Wechselt
+          der Kunde auf eine Farbe mit Foto, uebernimmt
+          assets/tp-leisten-vorschau.js das fertige img aus der Antwort.
+        {%- endcomment -%}
+        {%- if tp_lv_art == 'foto' -%}
+          <img
+            class="tp-lv__foto"
+            data-tp-vorschau-foto
+            src="{{ tp_lv_src }}"
+            alt="{{ tp_lv_product.title | escape }}, {{ tp_lv_label | escape }} {{ tp_lv_farbname | escape }}"
+            width="900"
+            height="495"
+            loading="lazy"
+          >
+        {%- endif -%}
         <svg class="tp-lv__svg" viewBox="0 0 600 330" role="img" aria-labelledby="tp-lv-title-{{ tp_lv_id }}">
           <title id="tp-lv-title-{{ tp_lv_id }}">Schematische Ansicht der Sockelleiste in der gewählten Farbe</title>
           <defs>
@@ -175,7 +184,7 @@
               einmal darueber gelegt (slice) - keine Wiederholung.
             {%- endcomment -%}
             <pattern id="tp-lv-muster-{{ tp_lv_id }}" patternUnits="userSpaceOnUse" x="60" y="{{ tp_lv_board_top }}" width="480" height="{{ tp_lv_board_h }}">
-              <image data-tp-vorschau-bild href="{% if tp_lv_art == 'muster' %}{{ tp_lv_src }}{% endif %}" x="0" y="0" width="480" height="{{ tp_lv_board_h }}" preserveAspectRatio="xMidYMid slice"/>
+              <image data-tp-vorschau-bild{% if tp_lv_art == 'muster' %} href="{{ tp_lv_src }}"{% endif %} x="0" y="0" width="480" height="{{ tp_lv_board_h }}" preserveAspectRatio="xMidYMid slice"/>
             </pattern>
           </defs>
           <rect x="0" y="0" width="600" height="262" fill="url(#tp-lv-wall-{{ tp_lv_id }})"/>
@@ -248,7 +257,7 @@
     padding: 8px 12px;
     background: rgb(255 255 255 / 0.92);
     border-radius: 6px;
-    font-size: 0.8125rem;
+    font-size: var(--tp-fs-sm);
     color: rgb(var(--color-foreground-rgb) / 0.75);
     text-align: center;
   }
@@ -286,7 +295,7 @@
     justify-content: space-between;
     gap: 4px 12px;
     margin-block-start: 6px;
-    font-size: 0.8125rem;
+    font-size: var(--tp-fs-sm);
     color: rgb(var(--color-foreground-rgb) / 0.65);
   }
 

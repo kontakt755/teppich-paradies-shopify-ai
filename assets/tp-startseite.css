@@ -32,17 +32,18 @@
 .tp-s-sec { padding: var(--tp-sec) 0; }
 .tp-s-sec--tight { padding: 56px 0; }
 .tp-s-sec--band { background: var(--tp-bg-2); }
-.tp-s-h2 { font-size: clamp(24px, 2.3vw, 32px); font-weight: 700; line-height: 1.12; margin: 0; letter-spacing: -0.01em; color: var(--tp-ink); text-wrap: balance; }
-.tp-s-h3 { font-size: 19px; font-weight: 600; line-height: 1.2; margin: 0; color: var(--tp-ink); }
-.tp-s-eyebrow { display: block; font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--tp-red); margin-bottom: 10px; }
+.tp-s-h2 { font-size: var(--tp-fs-xl); font-weight: 700; line-height: 1.12; margin: 0; letter-spacing: -0.01em; color: var(--tp-ink); text-wrap: balance; }
+.tp-s-h3 { font-size: var(--tp-fs-lg); font-weight: 600; line-height: 1.2; margin: 0; color: var(--tp-ink); }
+/* Kleinueberschrift dunkel statt rot (Shopvergleich 2026-10-15, w-096): Rot nur fuer Preis, Rabatt und Hauptknopf. */
+.tp-s-eyebrow { display: block; font-size: var(--tp-fs-xs); font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--tp-ink-2); margin-bottom: 10px; }
 .tp-s-sec-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
 .tp-s-sec-head p { color: var(--tp-muted); margin: 6px 0 0; max-width: 60ch; }
 .tp-s-link { font-weight: 600; color: var(--tp-ink); border-bottom: 2px solid var(--tp-line-2); padding-bottom: 2px; white-space: nowrap; text-decoration: none; display: inline-flex; align-items: center; min-height: 44px; margin: -12px 0; }
-.tp-s-link:hover { border-color: var(--tp-red); }
-.tp-s-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 50px; padding: 0 22px; border-radius: var(--tp-r); font-weight: 600; font-size: 16px; text-decoration: none; border: 0; cursor: pointer; font-family: inherit; white-space: nowrap; transition: background 0.15s; }
+.tp-s-link:hover { border-color: var(--tp-ink); }
+.tp-s-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 50px; padding: 0 22px; border-radius: var(--tp-r); font-weight: 600; font-size: var(--tp-fs-md); text-decoration: none; border: 0; cursor: pointer; font-family: inherit; white-space: nowrap; transition: background 0.15s; }
 .tp-s-btn svg { width: 18px; height: 18px; flex: none; }
-.tp-s-btn--primary { background: var(--tp-red); color: #fff; }
-.tp-s-btn--primary:hover { background: var(--tp-red-dark); color: #fff; }
+.tp-s-btn--primary { background: var(--tp-ink); color: #fff; }
+.tp-s-btn--primary:hover { background: #000; color: #fff; }
 .tp-s-btn--dark { background: var(--tp-ink); color: #fff; }
 .tp-s-btn--dark:hover { background: #000; color: #fff; }
 .tp-s-btn--ghost { background: #fff; color: var(--tp-ink); border: 1.5px solid var(--tp-ink); }
@@ -54,14 +55,14 @@
 .tp-s-btn--wa { background: #fff; color: var(--tp-ink); border: 1.5px solid var(--tp-ink); }
 .tp-s-btn--wa svg { color: #1a8d4a; }
 .tp-s-btn--wa:hover { background: #f5f5f5; color: var(--tp-ink); }
-.tp-s-btn--sm { min-height: 42px; padding: 0 16px; font-size: 15px; }
+.tp-s-btn--sm { min-height: 42px; padding: 0 16px; font-size: var(--tp-fs-md); }
 /* Das Attribut hidden blendet sonst nicht aus: display aus .tp-s-btn gewinnt gegen
    das display:none des Browsers. Ohne diese Regel bleibt z. B. der Nachladeknopf
    der Referenzgalerie als "Weitere 0 Arbeiten anzeigen" sichtbar und anklickbar. */
 .tp-s-btn[hidden] { display: none; }
-.tp-s-note { font-size: 12.5px; color: var(--tp-muted); margin: 0; }
+.tp-s-note { font-size: var(--tp-fs-xs); color: var(--tp-muted); margin: 0; }
 .tp-s-check { width: 18px; height: 18px; flex: none; margin-top: 3px; }
 @media (max-width: 767px) {
   .tp-s-sec-head { flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 20px; }
-  .tp-s-btn { font-size: 15px; }
+  .tp-s-btn { font-size: var(--tp-fs-md); }
 }

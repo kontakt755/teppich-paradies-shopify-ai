@@ -49,6 +49,8 @@
   {%- if tp_bb_link != blank -%}
     <a class="tp-bewertungsbeleg__link-{{ tp_bb_id }}" href="{{ tp_bb_link }}" target="_blank" rel="noopener noreferrer">{% if tp_bb_rating != blank %}Auf Google lesen{% else %}Kundenbewertungen auf Google lesen{% endif %}</a>
   {%- endif -%}
+  {%- comment -%} § 5b Abs. 3 UWG, Wortlaut im Snippet {%- endcomment -%}
+  <div class="tp-bewertungsbeleg__hinweis">{%- render 'tp-bewertungshinweis' -%}</div>
 </div>
 {%- endif -%}
 
@@ -59,11 +61,14 @@
     flex-wrap: wrap;
     gap: 6px;
     margin-top: 8px;
-    font-size: 13.5px;
+    font-size: var(--tp-fs-sm);
     color: var(--color-foreground);
   }
 
   .tp-bewertungsbeleg__label { font-weight: 600; }
+
+  .tp-bewertungsbeleg__hinweis { flex-basis: 100%; }
+  .tp-bewertungsbeleg__hinweis .tp-bewertungshinweis { margin-top: 0; }
 
   .tp-bewertungsbeleg__stars-{{ tp_bb_id }} {
     color: #ffb400;
@@ -71,7 +76,7 @@
   }
 
   .tp-bewertungsbeleg__score-{{ tp_bb_id }} {
-    font-weight: 650;
+    font-weight: 600;
   }
 
   {%- comment -%} Die Anzahl belegt die Note, ohne sie zu ueberstrahlen {%- endcomment -%}
@@ -88,7 +93,7 @@
 
   @media screen and (max-width: 749px) {
     .tp-bewertungsbeleg-{{ tp_bb_id }} {
-      font-size: 13px;
+      font-size: var(--tp-fs-xs);
     }
   }
 </style>

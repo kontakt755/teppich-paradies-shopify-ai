@@ -140,6 +140,10 @@ function tpLeistenlaengeAusArtikel(a) {
 
 /** Kategorie aus der Artikelnummer ableiten (AB-, UG-, SL- …). */
 function tpKategorieAusArtikel(a) {
+  // Fahrten ohne Artikelnummer (z. B. Berlin) sonst als "zusatz" eingeordnet und doppelt berechnet
+  var fa = TP_KONFIG.artikel;
+  if (a.id && (a.id === fa.fahrtBerlin.id || a.id === fa.fahrtNah.id)) return 'anfahrt';
+  if (/^an- und abfahrt/i.test(a.titel || '')) return 'anfahrt';
   if (!a.nr) return 'zusatz';
   var praefix = a.nr.split('-')[0].toUpperCase();
   return TP_KONFIG.praefixKategorie[praefix] || 'zusatz';

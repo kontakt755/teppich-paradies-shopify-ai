@@ -49,6 +49,17 @@
   endcapture
   assign tp_ek_max_b = tp_ek_max_b | strip | times: 1
   assign tp_ek_max_l = product.metafields.service.max_laenge_cm.value | times: 1
+  # Kleinste Seite (service.min_seite_cm, Zahl): Matten nach Mass gehen unter
+  # 50 cm (Inhaber 15.10.). Ohne Metafeld bleibt es bei 50 cm wie bei allen Teppichen.
+  assign tp_ek_min_cm = product.metafields.service.min_seite_cm.value | default: 50 | times: 1 | at_least: 10
+  # Matten nach Mass (service.produktwort = Matte): andere Woerter, Platzhalter und
+  # Hinweis, Massvorschlaege im Skript. Produktdaten statt Block-Einstellungen, weil der
+  # Block an der Grenze von 40 Einstellungen steht. Nur eine Abfrage (LiquidComplexity).
+  assign tp_ek_wort = product.metafields.service.produktwort.value | default: 'teppich' | strip | downcase
+  assign tp_ek_ph = '250,400,Teppiche,Ihres Teppichs,gefertigt und eingefasst' | split: ','
+  if tp_ek_wort == 'matte'
+    assign tp_ek_ph = '60,90,Matten,Ihrer Matte,zugeschnitten' | split: ','
+  endif
 
   assign tp_ek_raum_keys = 'wohnzimmer,esszimmer,schlafzimmer,kinderzimmer,flur' | split: ','
   assign tp_ek_raum_namen = 'Wohnzimmer,Esszimmer,Schlafzimmer,Kinderzimmer,Flur' | split: ','
@@ -283,7 +294,7 @@
           <label class="tp-ek__mass">
             <span class="tp-ek__mass-label" data-label-breite>Breite</span>
             <span class="tp-ek__eingabe">
-              <input type="number" inputmode="numeric" min="50" step="1" placeholder="250" data-breite>
+              <input type="number" inputmode="numeric" min="{{ tp_ek_min_cm }}" step="1" placeholder="{{ tp_ek_ph[0] }}" data-breite>
               <span>cm</span>
             </span>
           </label>
@@ -291,7 +302,7 @@
           <label class="tp-ek__mass" data-feld-laenge>
             <span class="tp-ek__mass-label">Länge</span>
             <span class="tp-ek__eingabe">
-              <input type="number" inputmode="numeric" min="50" step="1" placeholder="400" data-laenge>
+              <input type="number" inputmode="numeric" min="{{ tp_ek_min_cm }}" step="1" placeholder="{{ tp_ek_ph[1] }}" data-laenge>
               <span>cm</span>
             </span>
           </label>
@@ -299,7 +310,7 @@
         <div class="tp-ek__groessen-wrap" data-groessen-wrap hidden>
           <p class="tp-ek__groessen-label">Beliebte Maßvorschläge</p>
           <div class="tp-ek__groessen" data-groessen></div>
-          <p class="tp-ek__groessen-hinweis">Ein Klick übernimmt die Maße. Auch diese Teppiche fertigen wir erst nach Ihrer Bestellung.</p>
+          <p class="tp-ek__groessen-hinweis">Ein Klick übernimmt die Maße. Auch diese {{ tp_ek_ph[2] }} fertigen wir erst nach Ihrer Bestellung.</p>
         </div>
         <p class="tp-ek__grenzen" data-grenzen></p>
         <p class="tp-ek__fehler" role="alert" data-fehler hidden></p>
@@ -361,7 +372,7 @@
         <div class="tp-ek__raeume" role="group" aria-label="Raum wählen" data-raeume></div>
         {%- endif -%}
 
-        <svg class="tp-ek__svg is-aus" viewBox="0 0 360 250" role="img" aria-label="Vorschau Ihres Teppichs" data-svg></svg>
+        <svg class="tp-ek__svg is-aus" viewBox="0 0 360 250" role="img" aria-label="Vorschau {{ tp_ek_ph[3] }}" data-svg></svg>
         <figcaption class="tp-ek__legende" data-legende></figcaption>
       {%- endcapture -%}
 
@@ -379,7 +390,7 @@
           Sonst bleibt es bei der einen Zahl (Inhaber 2026-09-20).
         {%- endcomment -%}
         <p class="tp-ek__rechenzeile" data-rechenzeile hidden></p>
-        <p class="tp-ek__preishinweis">{% if tp_ek_art == 'fertig' %}Vom Hersteller nach Ihrem Maß gefertigt und eingefasst{% if tp_ek_pauschale_v %}, inklusive Fertigungs- und Versandpauschale{% endif %}. Lieferzeit ca. 14 Tage.{% elsif tp_ek_kante_inkl %}Inklusive Zuschnitt und Kettelung rundum – die Kettelung ist im Quadratmeterpreis bereits enthalten.{% else %}Inklusive Zuschnitt und Einfassung rundum.{% endif %} Inkl. MwSt.; <a href="{{ pages['versand-lieferung'].url | default: '/pages/versand-lieferung' }}">Versand</a> in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos.{% if tp_ek_lieferzeit != blank %}<br>Lieferzeit: {{ tp_ek_lieferzeit | escape }}.{% endif %}</p>
+        <p class="tp-ek__preishinweis">{% if tp_ek_art == 'fertig' %}Vom Hersteller nach Ihrem Maß {{ tp_ek_ph[4] }}{% if tp_ek_pauschale_v %}, inklusive Fertigungs- und Versandpauschale{% endif %}. Lieferzeit ca. 14 Tage.{% elsif tp_ek_kante_inkl %}Inklusive Zuschnitt und Kettelung rundum – die Kettelung ist im Quadratmeterpreis bereits enthalten.{% else %}Inklusive Zuschnitt und Einfassung rundum.{% endif %} Inkl. MwSt.; <a href="{{ pages['versand-lieferung'].url | default: '/pages/versand-lieferung' }}">Versand</a> in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos.{% if tp_ek_lieferzeit != blank %}<br>Lieferzeit: {{ tp_ek_lieferzeit | escape }}.{% endif %}</p>
         {%- comment -%}
           Keine Rechenaufschluesselung in der Kundenansicht (Entscheidung 2026-09-20):
           sichtbar sind Endpreis und die zwei Hinweise, die den Preis erklaeren muessen.
@@ -530,6 +541,8 @@
         "art": {{ tp_ek_art | json }},
         "max_breite_cm": {{ tp_ek_max_b | json }},
         "max_laenge_cm": {{ tp_ek_max_l | json }},
+        "min_seite_cm": {{ tp_ek_min_cm | json }},
+        "wort": {{ tp_ek_wort | json }},
         "mindestpreis_cent": {{ tp_ek_mindest_cent | json }},
         {%- comment -%} Preis je 0,01 lfm Kante, Rollenbreiten in cm {%- endcomment -%}
         "kettel": {% if tp_ek_kettel_v %}{ "id": {{ tp_ek_kettel_v.id | json }}, "price": {{ tp_ek_kettel_v.price | json }} }{% else %}null{% endif %},

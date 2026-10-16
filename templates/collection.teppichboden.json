@@ -1118,6 +1118,76 @@
         "padding-block-end": 48
       }
     },
+    "tp_boden_finder": {
+      "type": "tp-boden-finder",
+      "blocks": {
+        "art_teppichboden": {
+          "type": "art",
+          "settings": {
+            "titel": "Teppichboden",
+            "kollektion": "teppichboden",
+            "bild": "shopify://shop_images/ratgeber-teppichboden-wohnzimmer-titel.png",
+            "status": "aktiv",
+            "untertitel": "Meterware von der Rolle",
+            "produktwort": "Teppichböden",
+            "rollenware": true,
+            "optik_frage": "Welche Optik soll es sein?",
+            "optik_filter": "filter.p.m.custom.florhoehe_mm",
+            "optik_namen": "Bis 5 mm = Kurzflor | flach und ruhig\nÜber 5 bis unter 10 mm = Mittelflor | spürbar weicher\nAb 10 mm = Hochflor | besonders weich und flauschig",
+            "raum_filter": "filter.p.m.custom.zimmer"
+          }
+        },
+        "art_vinyl": {
+          "type": "art",
+          "settings": {
+            "titel": "Vinylboden",
+            "kollektion": "vinylboden-1",
+            "bild": "shopify://shop_images/ratgeber-klick-oder-klebevinyl-titel.png",
+            "status": "aktiv",
+            "untertitel": "Klick, Klebe oder von der Rolle",
+            "produktwort": "Vinylböden",
+            "rollenware": false,
+            "optik_frage": "Welche Optik soll es sein?",
+            "optik_filter": "filter.p.m.custom.optik",
+            "optik_namen": "Holzdekore = Holzoptik | Dielen mit Holzmaserung | holz\nSteindekore = Steinoptik | Beton- und Steinbilder | stein\nFliesendekore = Fliesenoptik | Zementfliese, Raute, Schachbrett | fliese\nSalz und Pfeffer = Salz und Pfeffer | fein gesprenkelt | punkte",
+            "raum_filter": "filter.p.m.custom.arten",
+            "raum_frage": "Wie soll er verlegt werden?",
+            "preis_stufen": "25, 35, 45, 60",
+            "budget_preis": "rechnen"
+          }
+        },
+        "art_tnm": {
+          "type": "art",
+          "settings": {
+            "titel": "Teppich nach Maß",
+            "kollektion": "teppich-nach-mass",
+            "status": "bald",
+            "untertitel": "",
+            "produktwort": "Teppiche",
+            "rollenware": false,
+            "optik_frage": "Welche Optik soll es sein?",
+            "optik_filter": "",
+            "optik_namen": "",
+            "raum_filter": ""
+          }
+        }
+      },
+      "block_order": [
+        "art_teppichboden",
+        "art_vinyl",
+        "art_tnm"
+      ],
+      "settings": {
+        "kicker": "Boden-Finder",
+        "heading": "Unsicher, welcher Teppichboden passt?",
+        "text": "Drei kurze Fragen zu Farbe, Optik, Raum und Preis – dann zeigen wir Ihnen passende Vorschläge.",
+        "button": "Boden-Finder starten",
+        "bequem_link": "Oder: Vorschläge von uns anfordern",
+        "kompakt": true,
+        "abstand_oben": 0,
+        "abstand_unten": 16
+      }
+    },
     "tbk_muster": {
       "type": "tp-teppichboden-kampagne",
       "settings": {}
@@ -1452,6 +1522,7 @@
   },
   "order": [
     "section",
+    "tp_boden_finder",
     "tbk_muster",
     "main",
     "tp_fliesen_hinweis",

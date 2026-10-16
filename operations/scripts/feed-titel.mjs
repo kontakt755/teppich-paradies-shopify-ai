@@ -21,15 +21,24 @@
  * 13.10.2026); die Spalte free_shipping_threshold traegt diese Grenze je Artikel
  * nach. Aendert sich die Grenze in Shopify, hier GRATIS_AB anpassen.
  *
- * Teppiche nach Mass (Produktart "Teppich nach Maß") fehlen hier bewusst: ihr
- * Variantenpreis gilt je 0,01 m2, Titel, Preis, Link und Grundpreis kommen aus dem
- * eigenen Zusatzfeed (scripts/teppich-nach-mass-feed.mjs, #1283). Hier stuende sonst
- * ein Grundpreis "0.01 sqm" neben dem Endpreis einer Beispielgroesse.
+ * Teppiche nach Mass (Produktart "Teppich nach Maß") fehlen in tp-feedtitel.txt
+ * bewusst: ihr Variantenpreis gilt je 0,01 m2, Titel, Preis, Link und Grundpreis
+ * kommen aus dem eigenen Zusatzfeed (scripts/teppich-nach-mass-feed.mjs, #1283).
+ * Hier stuende sonst ein Grundpreis neben dem Endpreis einer Beispielgroesse.
+ *
+ * Preis je m2 (#1283, seit 14.10.2026): Mit --tnm-aus entsteht daneben die Quelle
+ * "tp-tnm-preise.txt" mit dem Preis je m2 (x 100); bei Vergleichspreis
+ * price = Vergleichspreis je m2, sale_price = Preis je m2, Grundpreis "1 sqm" je
+ * "1 sqm", sonst rechnete Google 85 EUR je 0,01 m2. Das laeuft automatisch:
+ * operations/scripts/feed-tnm-abruf.mjs per GitHub Action (feed-tnm-preise.yml)
+ * taeglich auf den Zweig feed-daten, das Merchant Center ruft die Datei von dort ab.
+ * --tnm-aus bleibt fuer Pruefungen von Hand.
  *
  * Ablauf (nach groesseren Importen wiederholen, sonst behalten neue Produkte den Rohtitel):
  *   1. npm run -s feed:titel -- --bulk-query   -> Abfrage per bulkOperationRunQuery (Shopify-MCP) laufen lassen, JSONL laden
- *   2. npm run -s feed:titel -- --jsonl katalog.jsonl --aus tp-feedtitel.txt
- *   3. Merchant Center -> Datenquellen -> Zusaetzliche Quellen -> tp-feedtitel.txt -> Aktualisieren -> Datei hochladen
+ *   2. npm run -s feed:titel -- --jsonl katalog.jsonl --aus tp-feedtitel.txt --tnm-aus tp-tnm-preise.txt
+ *   3. Merchant Center -> Datenquellen -> Zusaetzliche Quellen -> tp-feedtitel.txt und tp-tnm-preise.txt
+ *      -> jeweils Aktualisieren -> Datei hochladen (greift nur fuer Angebote, die dort schon existieren)
  */
 import fs from 'node:fs';
 import { pathToFileURL } from 'node:url';
@@ -41,7 +50,7 @@ export const BULK_QUERY = `
       node {
         id title productType
         variants { edges { node {
-          id selectedOptions { name value }
+          id price compareAtPrice selectedOptions { name value }
           showUnitPrice
           unitPriceMeasurement { quantityUnit quantityValue referenceUnit referenceValue }
         } } }
@@ -50,10 +59,10 @@ export const BULK_QUERY = `
   }
 }`;
 
-const FARB_OPTIONEN = ['farbe', 'color', 'dekor'];
+export const FARB_OPTIONEN = ['farbe', 'color', 'dekor'];
 
 /** Produktart mit eigenem Zusatzfeed (scripts/teppich-nach-mass-feed.mjs). */
-export const EIGENER_FEED = 'Teppich nach Maß';
+export const EIGENER_FEED = 'Teppich nach Maß'; // = TNM_TYP, bleibt fuer Aufrufer
 
 export const GRATIS_AB = 'DE:50.00 EUR';
 
@@ -67,7 +76,7 @@ export function basisTitel(titel) {
     .trim();
 }
 
-function option(variante, namen) {
+export function option(variante, namen) {
   return variante.selectedOptions?.find((o) => namen.includes(o.name.toLowerCase()))?.value ?? null;
 }
 
@@ -82,7 +91,7 @@ export function feedTitel(produktTitel, variante, farbAnzahl) {
   return t.length > 150 ? t.slice(0, 150).trim() : t;
 }
 
-const nummer = (gid) => gid.split('/').pop();
+export const nummer = (gid) => gid.split('/').pop();
 
 // Shopify-Einheit -> Einheit im Merchant Center. Was Google nicht kennt (z. B. MM),
 // bleibt leer statt geraten.
@@ -90,8 +99,13 @@ const EINHEIT = { M2: 'sqm', M: 'm', CM: 'cm', M3: 'cbm', L: 'l', CL: 'cl', ML: 
 
 const zahl = (x) => String(Math.round(Number(x) * 1000) / 1000);
 
+export const TNM_TYP = 'Teppich nach Maß';
+export const istTnm = (produkt) => produkt?.productType === TNM_TYP;
+
 /** Grundpreis-Spalten [unit_pricing_measure, unit_pricing_base_measure] oder ['', '']. */
-export function grundpreis(variante) {
+export function grundpreis(variante, produkt) {
+  // Teppich nach Mass: im Feed gilt der Preis je m2 (tp-tnm-preise.txt), nicht je 0,01 m2.
+  if (istTnm(produkt)) return ['1 sqm', '1 sqm'];
   const m = variante?.unitPriceMeasurement;
   if (!variante?.showUnitPrice || !m) return ['', ''];
   const menge = EINHEIT[m.quantityUnit];
@@ -119,8 +133,27 @@ export function feedZeilen(jsonl) {
   const zeilen = [];
   for (const v of varianten) {
     const p = produkte.get(v.__parentId);
-    if (!p || p.productType === EIGENER_FEED) continue;
-    zeilen.push([`shopify_ZZ_${nummer(p.id)}_${nummer(v.id)}`, feedTitel(p.title, v, farben.get(p.id)?.size ?? 0), ...grundpreis(v), GRATIS_AB]);
+    if (!p || istTnm(p)) continue;
+    zeilen.push([`shopify_ZZ_${nummer(p.id)}_${nummer(v.id)}`, feedTitel(p.title, v, farben.get(p.id)?.size ?? 0), ...grundpreis(v, p), GRATIS_AB]);
+  }
+  return zeilen;
+}
+
+export const euro = (betrag) => `${(Math.round(Number(betrag) * 10000) / 100).toFixed(2)} EUR`;
+
+/** Teppich nach Mass: Zeilen [offerId, price, sale_price, Grundpreis-Menge, Grundpreis-Basis] je m2. */
+export function tnmPreisZeilen(jsonl) {
+  const produkte = new Map();
+  const zeilen = [];
+  for (const zeile of jsonl.split('\n')) {
+    if (!zeile.trim()) continue;
+    const o = JSON.parse(zeile);
+    if (!o.__parentId) { produkte.set(o.id, o); continue; }
+    const p = produkte.get(o.__parentId);
+    if (!istTnm(p) || !(Number(o.price) > 0)) continue;
+    const id = `shopify_ZZ_${nummer(p.id)}_${nummer(o.id)}`;
+    const alt = Number(o.compareAtPrice) > Number(o.price);
+    zeilen.push(alt ? [id, euro(o.compareAtPrice), euro(o.price), '1 sqm', '1 sqm'] : [id, euro(o.price), '', '1 sqm', '1 sqm']);
   }
   return zeilen;
 }
@@ -129,14 +162,20 @@ function main(argv) {
   const o = {};
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--bulk-query') o.bulk = true;
-    else if (argv[i] === '--jsonl' || argv[i] === '--aus') o[argv[i].slice(2)] = argv[++i];
+    else if (argv[i] === '--jsonl' || argv[i] === '--aus' || argv[i] === '--tnm-aus') o[argv[i].slice(2)] = argv[++i];
     else throw new Error(`unbekannte Option: ${argv[i]}`);
   }
   if (o.bulk) { console.log(BULK_QUERY.trim()); return; }
-  if (!o.jsonl || !o.aus) throw new Error('Aufruf: feed:titel -- --jsonl katalog.jsonl --aus tp-feedtitel.txt | --bulk-query');
-  const zeilen = feedZeilen(fs.readFileSync(o.jsonl, 'utf8'));
+  if (!o.jsonl || !o.aus) throw new Error('Aufruf: feed:titel -- --jsonl katalog.jsonl --aus tp-feedtitel.txt [--tnm-aus tp-tnm-preise.txt] | --bulk-query');
+  const jsonl = fs.readFileSync(o.jsonl, 'utf8');
+  const zeilen = feedZeilen(jsonl);
   fs.writeFileSync(o.aus, ['id\ttitle\tunit_pricing_measure\tunit_pricing_base_measure\tfree_shipping_threshold', ...zeilen.map((z) => z.join('\t'))].join('\n') + '\n');
   console.log(`${zeilen.length} Titel nach ${o.aus}, davon ${zeilen.filter((z) => z[2]).length} mit Grundpreis`);
+  if (o['tnm-aus']) {
+    const tnm = tnmPreisZeilen(jsonl);
+    fs.writeFileSync(o['tnm-aus'], ['id\tprice\tsale_price\tunit_pricing_measure\tunit_pricing_base_measure', ...tnm.map((z) => z.join('\t'))].join('\n') + '\n');
+    console.log(`${tnm.length} Teppich-nach-Mass-Preise je m2 nach ${o['tnm-aus']}, davon ${tnm.filter((z) => z[2]).length} mit Vergleichspreis`);
+  }
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {

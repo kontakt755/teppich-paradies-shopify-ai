@@ -74,7 +74,7 @@ test('Einlagern -> aelteste offene Musterbestellung kommt aus dem Lager, verschi
   assert.equal(position(NEU, 22).musterLager, undefined, 'andere Farbe bleibt unberuehrt');
 
   let lager = api.einkaufMusterlager();
-  assert.deepEqual(lager.eintraege[0].stand, { verbraucht: 0, reserviert: 1, rest: 0 });
+  assert.deepEqual(lager.eintraege[0].stand, { verbraucht: 0, reserviert: 1, rest: 0, reichtNoch: null, jeStueck: null });
   assert.deepEqual(lager.eintraege[0].offeneBestellungen.map(o => o.orderName), ['#T1']);
 
   // Verschickt (ein Klick auf Heute): die Zuordnung wird festgeschrieben.
@@ -83,7 +83,7 @@ test('Einlagern -> aelteste offene Musterbestellung kommt aus dem Lager, verschi
   const ereignisse = JSON.parse(fs.readFileSync(path.join(dir, 'musterherkunft.json'), 'utf8')).ereignisse;
   assert.deepEqual(ereignisse.map(e => [e.orderId, e.lagerId, e.von]), [[ALT, id, 'Mona Mitarbeiter']]);
   lager = api.einkaufMusterlager();
-  assert.deepEqual(lager.eintraege[0].stand, { verbraucht: 1, reserviert: 0, rest: 0 });
+  assert.deepEqual(lager.eintraege[0].stand, { verbraucht: 1, reserviert: 0, rest: 0, reichtNoch: null, jeStueck: null });
   assert.equal(position(ALT, 11).musterLager.id, id, 'bleibt als Lagerware erkennbar');
 
   // Nachgefuellt: "noch 1 da" -> Gesamtzahl 2, die neuere Bestellung kommt jetzt aus dem Lager.
@@ -109,7 +109,7 @@ test('Einzelposition "An Kunden raus" schreibt die Lagerzuordnung ebenfalls fest
   const e = JSON.parse(fs.readFileSync(path.join(dir, 'musterherkunft.json'), 'utf8')).ereignisse;
   assert.deepEqual(e.map(x => [x.lineItemId, x.herkunft, !!x.lagerId]), [['gid://shopify/LineItem/21', 'eigen_versand', true]]);
   // Von einer Bahn schneiden wir zu: kein Abzaehlen, aber "1x verschickt".
-  assert.deepEqual(api.einkaufMusterlager().eintraege[0].stand, { verbraucht: 1, reserviert: 1, rest: null });
+  assert.deepEqual(api.einkaufMusterlager().eintraege[0].stand, { verbraucht: 1, reserviert: 1, rest: null, reichtNoch: 25, jeStueck: 27 }, 'Bahn: 27 A5-Muster minus verschickt minus reserviert');
 });
 
 test('Fehlerfaelle: unbekannte Aktion, fehlende Farbe, beschaedigtes Lager haelt keine Bestellansicht auf', async () => {

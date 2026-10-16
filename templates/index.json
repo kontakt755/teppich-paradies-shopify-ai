@@ -12,29 +12,32 @@
     "tp_start_hero": {
       "type": "tp-start-hero",
       "settings": {
-        "eyebrow": "Fachhandel in Oranienburg",
-        "headline": "<p>Teppichboden, Vinyl & Teppich nach Maß – <em>deutschlandweit geliefert</em> vom Fachhandel.</p>",
-        "subline": "<p>Teppichboden, Vinyl und Linoleum als Meterware oder Paket – deutschlandweit geliefert. In Oranienburg und Umgebung messen wir auf, liefern und verlegen.</p>",
-        "cta1_label": "Bodenbeläge entdecken",
+        "eyebrow": "",
+        "headline": "<p>Teppichboden und Vinyl nach Maß, vom Fachgeschäft in Oranienburg.</p>",
+        "subline": "<p>Böden zugeschnitten, geliefert und auf Wunsch verlegt.</p>",
+        "cta1_label": "",
         "cta1_link": "#tp-kategorien",
-        "cta2_label": "Verlegung anfragen",
+        "cta2_label": "Verlegung anfragen (bis 50 km)",
         "cta2_link": "#tp-kontakt",
-        "telefon": "03301 573 37 20",
-        "whatsapp": "https://wa.me/491792612211",
+        "telefon": "",
+        "whatsapp": "",
         "rating_wert": "",
         "rating_text": "",
         "rating_link": "https://maps.google.com/?cid=787042219843486388",
-        "bild": "shopify://shop_images/1000012408.jpg",
-        "bild_caption": "Echtes Projekt · Teppichboden, von uns verlegt"
+        "bild": "shopify://shop_images/Teppichboden_Kurzflor.png",
+        "bild_alt": "Helles Wohnzimmer mit beigem Teppichboden",
+        "bild_caption": "",
+        "layout": "kompakt"
       }
     },
     "tp_start_kategorien": {
       "type": "tp-start-kategorien",
       "settings": {
         "heading": "Womit möchten Sie starten?",
-        "text": "Zehn Kategorien, direkt zur Auswahl. Preise und Verkaufseinheiten stehen am Produkt. Kostenlose Muster bei vielen Produkten.",
+        "text": "",
         "link_label": "Alle Produkte ansehen",
-        "link": "shopify://collections/all"
+        "link": "shopify://collections/all",
+        "gross_vorne": true
       },
       "blocks": {
         "k1": {
@@ -149,9 +152,9 @@
       },
       "block_order": [
         "k1",
+        "k3",
         "k0",
         "k2",
-        "k3",
         "k7",
         "k8",
         "k9",
@@ -159,6 +162,76 @@
         "k5",
         "k6"
       ]
+    },
+    "tp_boden_finder": {
+      "type": "tp-boden-finder",
+      "blocks": {
+        "art_teppichboden": {
+          "type": "art",
+          "settings": {
+            "titel": "Teppichboden",
+            "kollektion": "teppichboden",
+            "bild": "shopify://shop_images/ratgeber-teppichboden-wohnzimmer-titel.png",
+            "status": "aktiv",
+            "untertitel": "Meterware von der Rolle",
+            "produktwort": "Teppichböden",
+            "rollenware": true,
+            "optik_frage": "Welche Optik soll es sein?",
+            "optik_filter": "filter.p.m.custom.florhoehe_mm",
+            "optik_namen": "Bis 5 mm = Kurzflor | flach und ruhig\nÜber 5 bis unter 10 mm = Mittelflor | spürbar weicher\nAb 10 mm = Hochflor | besonders weich und flauschig",
+            "raum_filter": "filter.p.m.custom.zimmer"
+          }
+        },
+        "art_vinyl": {
+          "type": "art",
+          "settings": {
+            "titel": "Vinylboden",
+            "kollektion": "vinylboden-1",
+            "bild": "shopify://shop_images/ratgeber-klick-oder-klebevinyl-titel.png",
+            "status": "aktiv",
+            "untertitel": "Klick, Klebe oder von der Rolle",
+            "produktwort": "Vinylböden",
+            "rollenware": false,
+            "optik_frage": "Welche Optik soll es sein?",
+            "optik_filter": "filter.p.m.custom.optik",
+            "optik_namen": "Holzdekore = Holzoptik | Dielen mit Holzmaserung | holz\nSteindekore = Steinoptik | Beton- und Steinbilder | stein\nFliesendekore = Fliesenoptik | Zementfliese, Raute, Schachbrett | fliese\nSalz und Pfeffer = Salz und Pfeffer | fein gesprenkelt | punkte",
+            "raum_filter": "filter.p.m.custom.arten",
+            "raum_frage": "Wie soll er verlegt werden?",
+            "preis_stufen": "25, 35, 45, 60",
+            "budget_preis": "rechnen"
+          }
+        },
+        "art_tnm": {
+          "type": "art",
+          "settings": {
+            "titel": "Teppich nach Maß",
+            "kollektion": "teppich-nach-mass",
+            "status": "bald",
+            "untertitel": "",
+            "produktwort": "Teppiche",
+            "rollenware": false,
+            "optik_frage": "Welche Optik soll es sein?",
+            "optik_filter": "",
+            "optik_namen": "",
+            "raum_filter": ""
+          }
+        }
+      },
+      "block_order": [
+        "art_teppichboden",
+        "art_vinyl",
+        "art_tnm"
+      ],
+      "settings": {
+        "kicker": "Boden-Finder",
+        "heading": "Welcher Boden passt zu Ihnen?",
+        "text": "Ein paar kurze Fragen zu Farbe, Optik, Raum und Preis – dann zeigen wir Ihnen passende Vorschläge.",
+        "button": "Boden-Finder starten",
+        "bequem_link": "Oder: Vorschläge von uns anfordern",
+        "kompakt": false,
+        "abstand_oben": 0,
+        "abstand_unten": 8
+      }
     },
     "tp_start_trust": {
       "type": "tp-start-trust",
@@ -198,7 +271,8 @@
         "t2",
         "t3",
         "t4"
-      ]
+      ],
+      "disabled": true
     },
     "tp_zwei_wege_home": {
       "type": "tp-zwei-wege",
@@ -220,7 +294,8 @@
         "service_telefon": "03301 573 37 20",
         "service_telefon_label": "03301 573 37 20",
         "plz_pruefung": true
-      }
+      },
+      "disabled": true
     },
     "tp_start_projekte": {
       "type": "tp-start-projekte",
@@ -230,7 +305,7 @@
         "text": "Treppen, Wohnräume, Gastronomie, Läden und Kirchen – alles echte Baustellen unseres Teams, keine Stockfotos.",
         "link_label": "Alle Referenzen ansehen",
         "link": "shopify://pages/unsere-arbeit",
-        "cta_label": "Verlegung anfragen",
+        "cta_label": "",
         "cta_link": "#tp-kontakt",
         "treppen_label": "Unsere Treppenarbeiten ansehen",
         "treppen_link": ""
@@ -263,9 +338,9 @@
         "p4": {
           "type": "projekt",
           "settings": {
-            "bild": "shopify://shop_images/20230327_132924.jpg",
-            "objekt": "Wohnhaus",
-            "belag": "Treppe"
+            "bild": "shopify://shop_images/1000012408.jpg",
+            "objekt": "Kirche",
+            "belag": "Teppichboden"
           }
         },
         "p5": {
@@ -356,14 +431,14 @@
         "fh_bild": "shopify://shop_images/PHOTO-2025-06-13-09-30-06.jpg",
         "fh_eyebrow": "Warum Teppich Paradies",
         "fh_heading": "Ein echtes Fachgeschäft – kein anonymer Online-Shop",
-        "fh_text": "<p>Wir beraten in der Saarlandstraße in Oranienburg. Wer online bestellt, spricht mit denselben Menschen, die hier täglich Böden zuschneiden und verlegen. Im Laden stehen über 1.000 m² Sonderposten und Lagerware, sofort verfügbar – was gerade da ist, zeigen wir Ihnen vor Ort.</p>"
+        "fh_text": "<p>Wir beraten in der Saarlandstraße in Oranienburg. Wer online bestellt, spricht mit denselben Menschen, die hier täglich Böden zuschneiden und verlegen. Was gerade an Sonderposten da ist, zeigen wir Ihnen vor Ort.</p>"
       },
       "blocks": {
         "f1": {
           "type": "fakt",
           "settings": {
             "wert": "400+",
-            "label": "Bodenbeläge online, Muster kostenlos"
+            "label": "Bodenbeläge online"
           }
         },
         "f2": {
@@ -383,8 +458,8 @@
         "f4": {
           "type": "fakt",
           "settings": {
-            "wert": "Bis 50 km",
-            "label": "Verlegeservice um Oranienburg"
+            "wert": "Über 1.000 m²",
+            "label": "Sonderposten und Lagerware im Laden"
           }
         }
       },
@@ -517,7 +592,8 @@
         "cta_text": "Muster bestellen",
         "cta_link": "/pages/muster",
         "hinweis": "Bis zu 3 Muster kostenlos · Versand innerhalb Deutschlands"
-      }
+      },
+      "disabled": true
     },
     "angebote_teppichboden": {
       "type": "product-list",
@@ -727,7 +803,8 @@
         "padding-block-start": 48,
         "padding-block-end": 48,
         "tp_leer_ausblenden": true,
-        "tp_je_linie_eins": true
+        "tp_je_linie_eins": true,
+        "tp_nur_vorlage": "rolle"
       }
     },
     "angebote_vinyl": {
@@ -938,7 +1015,8 @@
         "padding-block-start": 48,
         "padding-block-end": 48,
         "tp_leer_ausblenden": true,
-        "tp_je_linie_eins": true
+        "tp_je_linie_eins": true,
+        "tp_nur_vorlage": "planken"
       }
     },
     "angebote_linoleum": {
@@ -1397,32 +1475,308 @@
             "label": "Leisten & Zubehör",
             "section_id": "angebote_leisten"
           }
+        },
+        "a5": {
+          "type": "tab",
+          "settings": {
+            "label": "Teppichfliesen",
+            "section_id": "angebote_fliesen"
+          }
         }
       },
       "block_order": [
         "a1",
+        "a5",
         "a2",
         "a3",
         "a4"
       ]
+    },
+    "angebote_fliesen": {
+      "type": "product-list",
+      "blocks": {
+        "static-header": {
+          "type": "_product-list-content",
+          "name": "t:names.header",
+          "static": true,
+          "settings": {
+            "content_direction": "row",
+            "vertical_on_mobile": false,
+            "horizontal_alignment": "space-between",
+            "vertical_alignment": "flex-end",
+            "align_baseline": true,
+            "horizontal_alignment_flex_direction_column": "flex-start",
+            "vertical_alignment_flex_direction_column": "center",
+            "gap": 12,
+            "width": "fill",
+            "custom_width": 100,
+            "width_mobile": "fill",
+            "custom_width_mobile": 100,
+            "height": "fit",
+            "custom_height": 100,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "background_media": "none",
+            "video_position": "cover",
+            "background_image_position": "cover",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "product_list_text_YFtzcL": {
+              "type": "_product-list-text",
+              "name": "t:names.collection_title",
+              "settings": {
+                "text": "<h3>{{ closest.collection.title }}</h3>",
+                "width": "fit-content",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "h3",
+                "font": "var(--font-body--family)",
+                "font_size": "",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "var(--color-foreground)",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {},
+              "disabled": true
+            },
+            "product_list_button_MWeP9V": {
+              "type": "_product-list-button",
+              "name": "t:names.product_list_button",
+              "settings": {
+                "label": "Alle Angebote ansehen",
+                "open_in_new_tab": false,
+                "style_class": "link",
+                "width": "fit-content",
+                "custom_width": 100,
+                "width_mobile": "fit-content",
+                "custom_width_mobile": 100
+              },
+              "blocks": {}
+            }
+          },
+          "block_order": [
+            "product_list_text_YFtzcL",
+            "product_list_button_MWeP9V"
+          ]
+        },
+        "static-product-card": {
+          "type": "_product-card",
+          "name": "t:names.product_card",
+          "static": true,
+          "settings": {
+            "product_card_gap": 4,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "product_card_gallery_677WP3": {
+              "type": "_product-card-gallery",
+              "name": "t:names.product_card_media",
+              "settings": {
+                "image_ratio": "square",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "product_title_YXxMTj": {
+              "type": "tp-card-title",
+              "name": "t:names.product_title",
+              "settings": {
+                "width": "100%",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "rte",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "var(--color-foreground)",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 4,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "price_JQzVV4": {
+              "type": "price",
+              "name": "t:names.product_price",
+              "settings": {
+                "show_sale_price_first": true,
+                "show_installments": false,
+                "show_tax_info": false,
+                "type_preset": "h6",
+                "width": "100%",
+                "alignment": "left",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "color": "var(--color-foreground)",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "tp_card_specs_home_teppich": {
+              "type": "tp-card-specs",
+              "name": "TP Card-Merkmale",
+              "settings": {},
+              "blocks": {}
+            },
+            "tp_card_actions_home_teppich": {
+              "type": "tp-card-actions",
+              "name": "TP Card-Aktionen",
+              "settings": {},
+              "blocks": {}
+            }
+          },
+          "block_order": [
+            "product_card_gallery_677WP3",
+            "product_title_YXxMTj",
+            "price_JQzVV4",
+            "tp_card_specs_home_teppich",
+            "tp_card_actions_home_teppich"
+          ]
+        }
+      },
+      "name": "Featured collection",
+      "settings": {
+        "collection": "angebote-teppichboden",
+        "layout_type": "carousel",
+        "carousel_on_mobile": true,
+        "max_products": 4,
+        "columns": 4,
+        "mobile_columns": "2",
+        "mobile_card_size": "60cqw",
+        "columns_gap": 8,
+        "rows_gap": 24,
+        "icons_style": "arrow",
+        "icons_shape": "none",
+        "section_width": "page-width",
+        "horizontal_alignment": "flex-start",
+        "gap": 28,
+        "color_scheme": "scheme-1",
+        "padding-block-start": 48,
+        "padding-block-end": 48,
+        "tp_leer_ausblenden": true,
+        "tp_je_linie_eins": true,
+        "tp_nur_vorlage": "fliese"
+      }
+    },
+    "tp_start_so_gehts": {
+      "type": "tp-start-so-gehts",
+      "blocks": {
+        "s1": {
+          "type": "schritt",
+          "settings": {
+            "bild": "shopify://shop_images/teppich-nach-mass-muster-massband-kante.jpg",
+            "bild_alt": "Teppichmuster in mehreren Farben neben einem Maßband",
+            "fokus": "object-position: 50% 50%",
+            "titel": "Muster bestellen",
+            "text": "<p>Bis zu drei Farben eines Produkts kostenlos nach Hause bestellen und im eigenen Licht vergleichen.</p>",
+            "link_label": "Muster bestellen",
+            "link": "/pages/muster"
+          }
+        },
+        "s2": {
+          "type": "schritt",
+          "settings": {
+            "bild": "shopify://shop_images/teppich-nach-mass-kante-massband.jpg",
+            "bild_alt": "Maßband an der Kante eines Teppichs",
+            "fokus": "object-position: 50% 50%",
+            "titel": "Maß eingeben, wir schneiden zu",
+            "text": "<p>Rollenware schneiden wir auf Ihr Wunschmaß zu. Bei Paketware rechnet der Rechner die Pakete inklusive Verschnitt aus.</p>",
+            "link_label": "",
+            "link": ""
+          }
+        },
+        "s3": {
+          "type": "schritt",
+          "settings": {
+            "bild": "shopify://shop_images/image-0-compressed.jpg",
+            "bild_alt": "Unser Team verlegt einen Vinylboden",
+            "fokus": "object-position: 50% 20%",
+            "titel": "Liefern oder verlegen lassen",
+            "text": "<p>Versand in ganz Deutschland, ab [versandfrei] € Bestellwert versandkostenfrei. Rund um Oranienburg verlegt unser eigenes Team, regulär bis 50 km.</p>",
+            "link_label": "Liefer- & Verlegeservice",
+            "link": "/pages/liefer-verlegeservice"
+          }
+        }
+      },
+      "block_order": [
+        "s1",
+        "s2",
+        "s3"
+      ],
+      "settings": {
+        "heading": "So geht's",
+        "text": "Vom Muster bis zum verlegten Boden in drei Schritten.",
+        "plz_pruefung": true,
+        "service_link": "/pages/liefer-verlegeservice",
+        "service_cta": "Verlegung anfragen"
+      }
     }
   },
   "order": [
     "tp_start_hero",
     "tp_start_trust",
     "tp_start_kategorien",
-    "tp_start_projekte",
+    "tp_boden_finder",
     "tp_angebote_tabs",
     "angebote_teppichboden",
+    "angebote_fliesen",
     "angebote_vinyl",
     "angebote_linoleum",
     "angebote_leisten",
+    "tp_start_so_gehts",
     "tp_zwei_wege_home",
     "tp_start_muster",
+    "tp_start_projekte",
     "tp_start_bewertungen",
+    "tp_start_kontakt",
     "tp_start_fachhandel",
     "tp_start_faq",
-    "tp_start_kontakt",
     "tp_start_seo"
   ]
 }

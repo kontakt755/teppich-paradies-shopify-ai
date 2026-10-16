@@ -1,0 +1,293 @@
+/* Boden-Finder: Dialog mit Fragen, Vorschlaegen und Anfrage.
+   Laedt erst mit dem Klick auf den Einstieg (sections/tp-boden-finder.liquid).
+   Farben und Knoepfe aus assets/tp-startseite.css (--tp-*, .tp-s-btn). */
+
+html.tp-bf-offen { overflow: hidden; }
+
+.tp-bf-dlg {
+  box-sizing: border-box;
+  width: min(880px, calc(100vw - 48px));
+  max-width: none;
+  /* Feste Hoehe, oben verankert: das Fenster springt nicht, wenn eine Frage
+     laenger oder kuerzer ist als die vorige. */
+  height: min(740px, calc(100dvh - 48px));
+  max-height: none;
+  margin: max(24px, min(6vh, calc(100dvh - 764px))) auto auto;
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  background: #fff;
+  color: var(--tp-ink, #1d1a17);
+  box-shadow: 0 24px 60px rgba(29, 26, 23, 0.28);
+  overflow: hidden;
+  font-size: var(--font-size--md);
+  line-height: 1.45;
+}
+.tp-bf-dlg[open] { display: flex; flex-direction: column; }
+.tp-bf-dlg::backdrop { background: rgba(29, 26, 23, 0.55); }
+.tp-bf-dlg *, .tp-bf-dlg *::before, .tp-bf-dlg *::after { box-sizing: border-box; }
+.tp-bf-dlg [hidden] { display: none !important; }
+
+/* Kopf: Zurueck, Titel mit Fortschritt, Schliessen */
+.tp-bf-dlg__kopf {
+  display: grid; grid-template-columns: minmax(88px, auto) 1fr minmax(88px, auto); align-items: center; gap: 8px;
+  padding: 6px 8px; border-bottom: 1px solid var(--tp-line, #e6e0d8); flex: none;
+}
+.tp-bf-dlg__titel { margin: 0; text-align: center; font-weight: 700; font-size: var(--font-size--md); }
+.tp-bf-dlg__fortschritt { font-weight: 400; color: var(--tp-muted, #595959); white-space: nowrap; }
+.tp-bf-dlg__fortschritt:not(:empty)::before { content: ' · '; }
+.tp-bf-dlg__zurueck, .tp-bf-dlg__zu {
+  display: inline-flex; align-items: center; gap: 2px; min-height: 44px; min-width: 44px; padding: 0 10px;
+  border: 0; border-radius: 8px; background: none; color: var(--tp-ink, #1d1a17); font: inherit; font-size: var(--font-size--md); cursor: pointer;
+}
+.tp-bf-dlg__zurueck { justify-self: start; }
+.tp-bf-dlg__zurueck[hidden] { display: inline-flex !important; visibility: hidden; }
+.tp-bf-dlg__zu { justify-self: end; }
+.tp-bf-dlg__zurueck svg, .tp-bf-dlg__zu svg { width: 22px; height: 22px; }
+.tp-bf-dlg__zurueck:hover, .tp-bf-dlg__zu:hover { background: var(--tp-bg-2, #f6f2ec); }
+.tp-bf-dlg__balken { height: 3px; background: var(--tp-bg-3, #ede7de); flex: none; }
+.tp-bf-dlg__balken span { display: block; height: 100%; width: 0; background: var(--tp-green, #2f7a4c); transition: width 0.25s ease; }
+
+.tp-bf-dlg__inhalt { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 22px 28px 0; display: flex; flex-direction: column; }
+/* Jede Frage fuellt das Fenster; der naechste Schritt steht unten am Rand. */
+.tp-bf-schritt { flex: 1 0 auto; display: flex; flex-direction: column; }
+.tp-bf-schritt > * { flex: none; }
+
+.tp-bf-frage { margin: 0 0 6px; font-size: clamp(var(--font-size--xl), 2.4vw, var(--font-size--2xl)); line-height: 1.2; font-weight: 700; outline: none; text-wrap: balance; }
+.tp-bf-hinweis { margin: 0 0 16px; color: var(--tp-muted, #595959); font-size: var(--font-size--sm); }
+.tp-bf-schritt > .tp-bf-frage + :not(.tp-bf-hinweis) { margin-top: 16px; }
+.tp-bf-schritt[data-bf-schritt='art'] { padding-bottom: 28px; }
+
+/* Laden: ruhiger Schimmer statt leerer Flaeche */
+.tp-bf-farben[aria-busy='true'], .tp-bf-optiken[aria-busy='true'], .tp-bf-treffer[aria-busy='true'], .tp-bf-preise[aria-busy='true'] {
+  min-height: 200px; border-radius: 12px;
+  background: linear-gradient(90deg, var(--tp-bg-2, #f6f2ec), #fff, var(--tp-bg-2, #f6f2ec)) 0 0 / 200% 100%;
+  animation: tp-bf-laden 1.4s linear infinite;
+}
+@keyframes tp-bf-laden { to { background-position: -200% 0; } }
+
+/* Gemeinsamer Zustand fuer alle waehlbaren Kacheln */
+.tp-bf-art, .tp-bf-farbe, .tp-bf-optik, .tp-bf-chip, .tp-bf-preis {
+  position: relative; font: inherit; color: inherit; text-align: left; cursor: pointer;
+  background: #fff; border: 1.5px solid var(--tp-line-2, #d5cec4); border-radius: 12px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.tp-bf-art:hover, .tp-bf-farbe:hover, .tp-bf-optik:hover, .tp-bf-chip:hover, .tp-bf-preis:hover { border-color: var(--tp-ink-2, #4a443f); }
+.tp-bf-art[aria-pressed='true'], .tp-bf-farbe[aria-pressed='true'], .tp-bf-optik[aria-pressed='true'], .tp-bf-chip[aria-pressed='true'], .tp-bf-preis[aria-pressed='true'] {
+  border-color: var(--tp-ink, #1d1a17); box-shadow: inset 0 0 0 1px var(--tp-ink, #1d1a17);
+}
+.tp-bf-farbe[aria-pressed='true']::after, .tp-bf-optik[aria-pressed='true']::after, .tp-bf-preis[aria-pressed='true']::after {
+  content: ''; position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--tp-ink, #1d1a17) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E") center / 13px no-repeat;
+}
+.tp-bf-art:focus-visible, .tp-bf-farbe:focus-visible, .tp-bf-optik:focus-visible, .tp-bf-chip:focus-visible,
+.tp-bf-preis:focus-visible, .tp-bf-link:focus-visible, .tp-bf-egal:focus-visible { outline: 2px solid var(--tp-ink, #1d1a17); outline-offset: 2px; }
+
+/* Frage 1: Bodenart */
+.tp-bf-arten { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.tp-bf-art { display: flex; flex-direction: column; overflow: hidden; padding: 0; text-decoration: none; min-height: 44px; }
+.tp-bf-art__bild { display: block; aspect-ratio: 4 / 3; background: var(--tp-bg-3, #ede7de); }
+.tp-bf-art__bild img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tp-bf-art__text { display: grid; gap: 2px; padding: 12px 14px 14px; }
+.tp-bf-art__titel { font-weight: 700; font-size: var(--font-size--lg); }
+.tp-bf-art__zeile { font-size: var(--font-size--sm); color: var(--tp-muted, #595959); }
+.tp-bf-art--bald { border-style: dashed; }
+.tp-bf-art--bald .tp-bf-art__bild { opacity: 0.75; }
+
+/* Frage 2: Farbe */
+.tp-bf-farben { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; min-height: 120px; }
+.tp-bf-farbe { display: grid; justify-items: center; align-content: start; gap: 6px; padding: 14px 8px 12px; text-align: center; }
+.tp-bf-farbe__feld {
+  width: 56px; height: 56px; border-radius: 50%; background: var(--tp-bg-3, #ede7de) center / cover;
+  box-shadow: inset 0 0 0 1px rgba(29, 26, 23, 0.12);
+}
+.tp-bf-farbe__feld--hell { box-shadow: inset 0 0 0 1px rgba(29, 26, 23, 0.28); }
+.tp-bf-farbe__name { font-weight: 600; font-size: var(--font-size--md); line-height: 1.2; }
+.tp-bf-farbe__zahl { font-size: var(--font-size--xs); color: var(--tp-muted, #595959); }
+
+/* Frage 3: Optik */
+.tp-bf-optiken { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; min-height: 120px; }
+/* Vier Optiken (Vinyl: Holz, Stein, Fliese, Sprenkel) in zwei Reihen statt 3 + 1 */
+.tp-bf-optiken--vier { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tp-bf-optik { display: grid; align-content: start; gap: 10px; padding: 16px; }
+.tp-bf-optik__bild { display: block; color: var(--tp-ink-2, #4a443f); }
+.tp-bf-optik__bild svg { width: 72px; height: 44px; display: block; }
+.tp-bf-optik__text { display: grid; gap: 2px; }
+.tp-bf-optik__name { font-weight: 700; font-size: var(--font-size--lg); }
+.tp-bf-optik__wert { font-size: var(--font-size--sm); color: var(--tp-ink-2, #4a443f); }
+.tp-bf-optik__zeile { font-size: var(--font-size--sm); color: var(--tp-muted, #595959); }
+.tp-bf-optik__zahl { font-size: var(--font-size--xs); color: var(--tp-muted, #595959); }
+
+.tp-bf-egal {
+  display: inline-flex; align-items: center; min-height: 44px; margin: 8px 0 0; padding: 0 4px;
+  border: 0; background: none; font: inherit; font-size: var(--font-size--md); color: var(--tp-ink, #1d1a17);
+  text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+
+.tp-bf-zimmer { margin: 20px 0 0; padding: 0; border: 0; min-width: 0; }
+.tp-bf-zimmer legend { padding: 0; margin: 0 0 10px; font-weight: 700; font-size: var(--font-size--md); }
+.tp-bf-zimmer legend span { font-weight: 400; color: var(--tp-muted, #595959); }
+.tp-bf-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.tp-bf-chip { display: inline-flex; align-items: center; min-height: 42px; padding: 0 16px; border-radius: 999px; font-size: var(--font-size--md); }
+
+/* Fusszeile mit dem naechsten Schritt: bleibt beim Scrollen sichtbar */
+.tp-bf-fuss {
+  position: sticky; bottom: 0; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px;
+  margin: auto -28px 0; padding: 14px 28px calc(16px + env(safe-area-inset-bottom));
+  background: linear-gradient(rgba(255, 255, 255, 0.86), #fff 35%);
+  border-top: 1px solid var(--tp-line, #e6e0d8);
+}
+.tp-bf-schritt > .tp-bf-fuss { margin-top: auto; }
+.tp-bf-schritt > :has(+ .tp-bf-fuss) { margin-bottom: 18px; }
+.tp-bf-fuss .tp-s-btn { min-width: 200px; }
+.tp-bf-fuss .tp-s-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.tp-bf-fuss .tp-bf-egal { margin: 0; }
+
+/* Frage 4: Raum und Preis */
+.tp-bf-gruppe { margin: 18px 0 0; padding: 0; border: 0; min-width: 0; }
+.tp-bf-gruppe + .tp-bf-gruppe { margin-top: 26px; }
+.tp-bf-gruppe legend { padding: 0; margin: 0 0 10px; font-weight: 700; font-size: var(--font-size--lg); }
+.tp-bf-feld { display: grid; gap: 6px; margin: 0; min-width: 0; }
+.tp-bf-feld > span:first-child, .tp-bf-feld legend { font-weight: 600; font-size: var(--font-size--sm); }
+.tp-bf-feld em { font-style: normal; font-weight: 400; color: var(--tp-muted, #595959); }
+.tp-bf-eingabe { display: flex; align-items: stretch; border: 1.5px solid var(--tp-line-2, #d5cec4); border-radius: 10px; background: #fff; overflow: hidden; }
+.tp-bf-eingabe:focus-within { border-color: var(--tp-ink, #1d1a17); box-shadow: inset 0 0 0 1px var(--tp-ink, #1d1a17); }
+.tp-bf-eingabe input { flex: 1; min-width: 0; min-height: 50px; padding: 0 14px; border: 0; background: none; font: inherit; font-size: var(--font-size--lg); outline: none; }
+.tp-bf-eingabe > span { display: flex; align-items: center; min-width: 52px; justify-content: center; padding: 0 12px; background: var(--tp-bg-2, #f6f2ec); color: var(--tp-ink-2, #4a443f); font-weight: 600; }
+/* Beispielwerte zuruecknehmen: sie sollen nicht wie eine Eingabe wirken. */
+.tp-bf-dlg input::placeholder, .tp-bf-dlg textarea::placeholder { color: #aaa29a; opacity: 1; font-weight: 400; }
+.tp-bf-masse { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 10px; max-width: 560px; }
+.tp-bf-masse--qm { grid-template-columns: minmax(0, 260px); }
+.tp-bf-mal { padding-bottom: 13px; font-size: var(--font-size--xl); color: var(--tp-muted, #595959); }
+.tp-bf-umrechnung { margin: 10px 0 0; min-height: 1.45em; font-weight: 600; }
+.tp-bf-umrechnung:empty { display: none; }
+.tp-bf-umrechnung--fehler { color: var(--tp-red, #b0303f); }
+.tp-bf-hinweis--klein { margin: 10px 0 0; }
+.tp-bf-link {
+  display: inline; padding: 0; border: 0; background: none; font: inherit; color: var(--tp-ink, #1d1a17);
+  text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+.tp-bf-preise { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; min-height: 88px; }
+.tp-bf-preise[aria-busy='true'] { min-height: 88px; }
+.tp-bf-preis { display: grid; align-content: start; gap: 2px; padding: 12px 34px 12px 14px; }
+.tp-bf-preis__stufe { font-weight: 700; font-size: var(--font-size--lg); line-height: 1.25; white-space: nowrap; }
+.tp-bf-preis__raum { font-size: var(--font-size--sm); color: var(--tp-ink-2, #4a443f); }
+.tp-bf-preis__zahl { font-size: var(--font-size--xs); color: var(--tp-muted, #595959); }
+.tp-bf-zaehler { margin: 16px 0 0; min-height: 1.45em; color: var(--tp-green, #2f7a4c); font-weight: 600; }
+.tp-bf-zaehler--leer { color: var(--tp-ink-2, #4a443f); }
+.tp-bf-zaehler--fehler { color: var(--tp-red, #b0303f); }
+
+/* Ergebnis */
+.tp-bf-auswahl { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 10px 0 0; padding: 0; }
+.tp-bf-chip--aendern { min-height: 36px; padding: 0 12px 0 14px; gap: 6px; font-size: var(--font-size--sm); background: var(--tp-bg-2, #f6f2ec); border-color: var(--tp-line, #e6e0d8); }
+.tp-bf-chip--aendern::after {
+  content: ''; width: 14px; height: 14px; opacity: 0.7;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231d1a17' stroke-width='2'%3E%3Cpath d='M4 20h4L19 9l-4-4L4 16v4z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.tp-bf-status { margin: 14px 0 12px; color: var(--tp-ink-2, #4a443f); }
+.tp-bf-treffer { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 16px; }
+.tp-bf-treffer__item { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.tp-bf-treffer__item > .tp-bf-karte { min-width: 0; }
+/* Fokus nach "Weitere Vorschlaege" (Skript) - Ring nur bei Tastatur */
+.tp-bf-treffer__item:focus { outline: none; }
+.tp-bf-treffer__item:focus-visible { outline: 2px solid var(--tp-ink, #1d1a17); outline-offset: 4px; border-radius: 8px; }
+.tp-bf-raumpreis {
+  display: grid; gap: 6px; margin: 0; padding: 10px 12px; border-radius: 10px;
+  background: var(--tp-bg-2, #f6f2ec); font-size: var(--font-size--sm); color: var(--tp-ink-2, #4a443f);
+}
+.tp-bf-raumpreis__kopf { margin: 0; font-size: var(--font-size--xs); font-weight: 600; color: var(--tp-ink-2, #4a443f); }
+/* Je Zuschnittart: Name und Preis in einer Zeile, darunter die Masse. */
+.tp-bf-raumpreis__zeile { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 10px; }
+.tp-bf-raumpreis__zeile + .tp-bf-raumpreis__zeile { padding-top: 6px; border-top: 1px solid var(--tp-line, #e6e0d8); }
+.tp-bf-raumpreis__name { color: var(--tp-ink, #1d1a17); line-height: 1.3; }
+.tp-bf-raumpreis__wie { grid-column: 1 / -1; font-size: var(--font-size--xs); color: var(--tp-muted, #595959); line-height: 1.35; }
+.tp-bf-raumpreis__betrag { flex: none; font-size: var(--font-size--md); color: var(--tp-ink, #1d1a17); white-space: nowrap; }
+.tp-bf-raumpreis__zeile--best .tp-bf-raumpreis__name { font-weight: 600; }
+.tp-bf-raumpreis__zeile--best .tp-bf-raumpreis__betrag { font-size: var(--font-size--lg); }
+.tp-bf-alle-zeile { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 0; }
+.tp-bf-mehr[disabled] { opacity: 0.6; cursor: progress; }
+/* Spezifischer als .tp-s-btn (nowrap): tp-startseite.css steht im Body und
+   damit nach diesem nachgeladenen Stylesheet. Lange Linktexte brechen um. */
+.tp-bf-alle-zeile .tp-s-btn { white-space: normal; text-align: center; max-width: 100%; padding-block: 8px; }
+.tp-bf-ladefehler { margin: 0; padding: 14px; border-radius: 10px; background: var(--tp-red-soft, #fbeeef); }
+.tp-bf-ladefehler .tp-bf-egal { margin: 0; min-height: 0; }
+
+.tp-bf-sonder, .tp-bf-bequem, .tp-bf-schneller {
+  margin: 24px 0 0; padding: 18px 20px; border-radius: 14px; background: var(--tp-bg-2, #f6f2ec);
+}
+.tp-bf-sonder { border-left: 4px solid var(--tp-sand, #e9c8a1); }
+.tp-bf-sonder + .tp-bf-status { margin-top: 24px; }
+.tp-bf-bequem { margin-bottom: 28px; background: #fff; border: 1.5px solid var(--tp-line-2, #d5cec4); }
+.tp-bf-sonder h3, .tp-bf-bequem h3 { margin: 0 0 4px; font-size: var(--font-size--lg); }
+.tp-bf-sonder p, .tp-bf-bequem p, .tp-bf-schneller p { margin: 0 0 14px; color: var(--tp-ink-2, #4a443f); }
+.tp-bf-wege { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* Anfrage */
+.tp-bf-form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; margin-top: 8px; }
+.tp-bf-feld--voll { grid-column: 1 / -1; }
+.tp-bf-form input[type='text'], .tp-bf-form input[type='email'], .tp-bf-form input[type='tel'], .tp-bf-form textarea {
+  width: 100%; min-height: 50px; padding: 12px 14px; border: 1.5px solid var(--tp-line-2, #d5cec4); border-radius: 10px;
+  background: #fff; font: inherit; font-size: var(--font-size--md); color: inherit;
+}
+.tp-bf-form textarea { min-height: 96px; resize: vertical; }
+.tp-bf-form input:focus, .tp-bf-form textarea:focus { outline: none; border-color: var(--tp-ink, #1d1a17); box-shadow: inset 0 0 0 1px var(--tp-ink, #1d1a17); }
+.tp-bf-form input:user-invalid, .tp-bf-form textarea:user-invalid { border-color: var(--tp-red, #b0303f); }
+.tp-bf-kontaktweg { border: 0; padding: 0; }
+.tp-bf-kontaktweg legend { padding: 0; margin-bottom: 8px; }
+.tp-bf-kontaktweg label { position: relative; }
+.tp-bf-kontaktweg input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.tp-bf-kontaktweg span {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 999px;
+  border: 1.5px solid var(--tp-line-2, #d5cec4); background: #fff; font-size: var(--font-size--md);
+}
+.tp-bf-kontaktweg input:checked + span { border-color: var(--tp-ink, #1d1a17); box-shadow: inset 0 0 0 1px var(--tp-ink, #1d1a17); font-weight: 600; }
+.tp-bf-kontaktweg input:focus-visible + span { outline: 2px solid var(--tp-ink, #1d1a17); outline-offset: 2px; }
+.tp-bf-uebernahme { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--tp-bg-2, #f6f2ec); font-size: var(--font-size--sm); color: var(--tp-ink-2, #4a443f); }
+.tp-bf-datenschutz { margin: 0; font-size: var(--font-size--xs); color: var(--tp-muted, #595959); }
+.tp-bf-datenschutz a { color: inherit; text-decoration: underline; }
+.tp-bf-fehler { grid-column: 1 / -1; margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--tp-red-soft, #fbeeef); color: var(--tp-red-dark, #96262f); }
+.tp-bf-form .tp-bf-fuss { margin-top: 4px; }
+.tp-bf-schneller { margin-bottom: 28px; }
+
+/* Telefon und schmale Tablets: ganzer Bildschirm, eine Spalte */
+@media (max-width: 749px) {
+  .tp-bf-dlg { width: 100vw; height: 100dvh; max-height: 100dvh; border-radius: 0; margin: 0; }
+  .tp-bf-dlg__kopf { grid-template-columns: minmax(78px, auto) 1fr minmax(78px, auto); }
+  .tp-bf-dlg__titel { font-size: var(--font-size--sm); line-height: 1.25; }
+  .tp-bf-dlg__fortschritt { display: block; font-size: var(--font-size--xs); }
+  .tp-bf-dlg__fortschritt:not(:empty)::before { content: none; }
+  .tp-bf-dlg__inhalt { padding: 18px 16px 0; }
+  .tp-bf-fuss { margin: auto -16px 0; padding: 12px 16px calc(14px + env(safe-area-inset-bottom)); }
+  .tp-bf-fuss .tp-s-btn { flex: 1 1 100%; min-width: 0; }
+  .tp-bf-fuss .tp-bf-egal { margin: 0 auto; }
+  .tp-bf-arten { grid-template-columns: 1fr; gap: 10px; }
+  .tp-bf-art { flex-direction: row; align-items: stretch; }
+  .tp-bf-art__bild { width: 112px; flex: none; aspect-ratio: auto; min-height: 84px; }
+  .tp-bf-art__text { align-content: center; }
+  .tp-bf-farben { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .tp-bf-farbe { padding: 12px 4px 10px; }
+  .tp-bf-farbe__feld { width: 48px; height: 48px; }
+  .tp-bf-optiken { grid-template-columns: 1fr; gap: 10px; }
+  .tp-bf-optik { grid-template-columns: 72px 1fr; align-items: center; column-gap: 14px; padding: 14px 40px 14px 14px; }
+  .tp-bf-optik__zahl { grid-column: 2; }
+  /* Preisstufen als Zeilen: Stufe und Anzahl oben, der Raumbetrag darunter. */
+  .tp-bf-preise { grid-template-columns: 1fr; gap: 8px; }
+  .tp-bf-preis { grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 12px; padding: 10px 40px 10px 14px; }
+  .tp-bf-preis__zahl { grid-column: 2; grid-row: 1; }
+  .tp-bf-preis__raum { grid-column: 1 / -1; }
+  .tp-bf-treffer {
+    grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: min(66%, 270px); gap: 12px;
+    overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none;
+    margin: 0 -16px; padding: 0 16px 6px; scroll-padding-inline: 16px;
+  }
+  .tp-bf-treffer::-webkit-scrollbar { display: none; }
+  .tp-bf-treffer__item { scroll-snap-align: start; }
+  .tp-bf-form { grid-template-columns: 1fr; }
+  .tp-bf-sonder, .tp-bf-bequem, .tp-bf-schneller { padding: 16px; }
+  .tp-bf-wege .tp-s-btn { flex: 1 1 auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tp-bf-dlg__balken span { transition: none; }
+  .tp-bf-farben[aria-busy='true'], .tp-bf-optiken[aria-busy='true'], .tp-bf-treffer[aria-busy='true'], .tp-bf-preise[aria-busy='true'] { animation: none; }
+}

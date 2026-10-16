@@ -122,7 +122,7 @@
   }
 
   .tp-farbanzeige__label {
-    font-size: 0.8125rem;
+    font-size: var(--tp-fs-sm);
     letter-spacing: 0.02em;
     text-transform: uppercase;
     color: rgb(var(--color-foreground-rgb, 28 25 23) / 0.6);
@@ -130,19 +130,19 @@
 
   .tp-farbanzeige__name {
     font-weight: 600;
-    font-size: 1rem;
+    font-size: var(--tp-fs-md);
   }
 
   .tp-farbanzeige--klein .tp-farbanzeige__name {
-    font-size: 0.9rem;
+    font-size: var(--tp-fs-sm);
   }
 
   .tp-farbanzeige--gross .tp-farbanzeige__name {
-    font-size: 1.125rem;
+    font-size: var(--tp-fs-lg);
   }
 
   .tp-farbanzeige__nummer {
-    font-size: 0.75rem;
+    font-size: var(--tp-fs-xs);
     font-variant-numeric: tabular-nums;
     color: rgb(var(--color-foreground-rgb, 28 25 23) / 0.5);
     border: 1px solid rgb(var(--color-foreground-rgb, 28 25 23) / 0.15);
@@ -157,7 +157,7 @@
   .tp-farbanzeige__hinweis {
     margin: 0.1rem 0 0;
     max-width: 44ch;
-    font-size: 0.8125rem;
+    font-size: var(--tp-fs-sm);
     line-height: 1.45;
     color: rgb(var(--color-foreground-rgb, 28 25 23) / 0.6);
     text-wrap: pretty;

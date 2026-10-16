@@ -134,26 +134,26 @@
 {% stylesheet %}
   .tp-lex { padding: 16px 0 var(--tp-sec, 64px); color: var(--tp-ink-2, #4a443f); overflow-wrap: break-word; }
   .tp-lex__kopf { margin: 8px 0 28px; max-width: 760px; }
-  .tp-lex__h1 { margin: 0 0 12px; font-size: clamp(28px, 4.2vw, 42px); font-weight: 700; line-height: 1.12; letter-spacing: -0.01em; color: var(--tp-ink, #1d1a17); text-wrap: balance; }
-  .tp-lex__intro { font-size: 17px; line-height: 1.65; }
+  .tp-lex__h1 { margin: 0 0 12px; font-size: var(--tp-fs-2xl); font-weight: 700; line-height: 1.12; letter-spacing: -0.01em; color: var(--tp-ink, #1d1a17); text-wrap: balance; }
+  .tp-lex__intro { font-size: var(--tp-fs-md); line-height: 1.65; }
   .tp-lex__intro p { margin: 0 0 10px; }
   .tp-lex__leer { color: var(--tp-muted, #655e57); padding: 24px 0; }
 
   .tp-lex-nav { margin: 0 0 32px; padding: 16px 18px; background: var(--tp-bg-2, #f6f2ec); border: 1px solid var(--tp-line, #e6e0d8); border-radius: var(--tp-r-lg, 16px); }
-  .tp-lex-nav__gruppe { margin: 14px 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tp-muted, #655e57); }
+  .tp-lex-nav__gruppe { margin: 14px 0 6px; font-size: var(--tp-fs-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tp-muted, #655e57); }
   .tp-lex-nav__gruppe:first-child { margin-top: 0; }
   .tp-lex-nav__liste { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 8px; }
-  .tp-lex-nav__link { display: inline-flex; align-items: center; min-height: 36px; padding: 4px 12px; border-radius: 999px; background: #fff; border: 1px solid var(--tp-line, #e6e0d8); color: var(--tp-ink, #1d1a17); font-size: 14px; text-decoration: none; }
+  .tp-lex-nav__link { display: inline-flex; align-items: center; min-height: 36px; padding: 4px 12px; border-radius: 999px; background: #fff; border: 1px solid var(--tp-line, #e6e0d8); color: var(--tp-ink, #1d1a17); font-size: var(--tp-fs-sm); text-decoration: none; }
   .tp-lex-nav__link:hover { border-color: var(--tp-line-2, #d5cec4); background: var(--tp-bg-3, #ede7de); }
   .tp-lex-nav__link:focus-visible { outline: 2px solid var(--tp-ink, #1d1a17); outline-offset: 2px; }
 
-  .tp-lex-gruppe__titel { margin: 40px 0 4px; font-size: 22px; font-weight: 700; color: var(--tp-ink, #1d1a17); scroll-margin-top: 96px; }
+  .tp-lex-gruppe__titel { margin: 40px 0 4px; font-size: var(--tp-fs-lg); font-weight: 700; color: var(--tp-ink, #1d1a17); scroll-margin-top: 96px; }
   .tp-lex-gruppe__liste:first-of-type .tp-lex-gruppe__titel { margin-top: 0; }
   .tp-lex-gruppe__liste { max-width: 760px; }
 
   @media (max-width: 639px) {
     .tp-lex-nav { padding: 14px; }
-    .tp-lex-gruppe__titel { font-size: 20px; margin-top: 32px; }
+    .tp-lex-gruppe__titel { font-size: var(--tp-fs-lg); margin-top: 32px; }
   }
 {% endstylesheet %}
 

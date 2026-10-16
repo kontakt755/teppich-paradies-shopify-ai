@@ -292,6 +292,26 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
+/* Genau eine Scrollebene je Menueebene (Handy-Meldung 2026-10-15: Untermenue
+   liess sich nicht bis unten scrollen und sprang zurueck).
+   position: relative haelt die absolut gesetzten .visually-hidden-Texte der
+   Zeilen im Scrollbereich. Ohne sie gehoerten sie zum Panel darueber
+   (.menu-drawer__submenu, ebenfalls overflow-y: auto) und machten es um bis
+   zu 84 px scrollbar - zwei Scrollebenen ineinander (gemessen: Vinylboden,
+   Zubehoer). overscroll-behavior: contain gibt das Wischen am Listenende
+   nicht an die gesperrte Seite dahinter weiter; iOS federte sonst die ganze
+   Seite statt der Liste. */
+.menu-drawer .tp-dn-panel__inner {
+  position: relative;
+}
+
+.menu-drawer,
+.menu-drawer .menu-drawer__navigation-container,
+.menu-drawer .tp-dn-panel,
+.menu-drawer .tp-dn-panel__inner {
+  overscroll-behavior-y: contain;
+}
+
 .menu-drawer .tp-dn-panel__bar {
   padding: 4px 4px 0;
 }
@@ -516,6 +536,194 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
 }
 
 /* ------------------------------------------------------------------
+   Bildkarten plus Spalten (snippets/tp-menu-spalten.liquid, w-094)
+   Teppichboden: links die Arten als kleine Bildkarten, rechts Farbe, Raum
+   und Rollenbreite. Ziel: bei 1440 x 900 ohne Scrollen (vorher 893 px
+   Inhalt bei 1920, bei 1440 ueber den Bildschirmrand).
+   ------------------------------------------------------------------ */
+.tp-ms {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 1.25rem 2.5rem;
+  align-items: start;
+  white-space: normal;
+}
+
+@media screen and (min-width: 1100px) {
+  .tp-ms {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+.mega-menu__grid .tp-ms .tp-ms__karten {
+  display: grid;
+  grid-column: auto;
+  grid-template-columns: repeat(var(--tp-ms-spalten, 5), minmax(0, 1fr));
+  gap: 0.875rem;
+}
+
+.mega-menu__grid .tp-ms .tp-ms__karten .tp-mm-card--media {
+  align-self: stretch;
+}
+
+/* Kleine Karten: Titel und Kurztext eine Stufe kleiner als in den
+   Menues mit wenigen grossen Karten */
+.header-menu .mega-menu__grid .tp-ms .mega-menu__list .tp-mm-card__title {
+  font-size: 1rem;
+}
+
+.header-menu .mega-menu__grid .tp-ms .mega-menu__list .tp-mm-card__sub {
+  font-size: 0.8125rem;
+}
+
+.tp-ms-gruppen {
+  display: grid;
+  grid-template-columns: repeat(var(--tp-ms-gruppen, 3), minmax(7.5rem, max-content));
+  gap: 0 2rem;
+  align-content: start;
+}
+
+.tp-ms-gruppe {
+  display: grid;
+  gap: 0.4rem;
+  align-content: start;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.header-menu .tp-ms-gruppe .tp-nav-link {
+  justify-content: flex-start;
+  gap: 0.55rem;
+  padding-block: 0.28rem;
+  font-size: 0.9375rem;
+}
+
+@media screen and (min-width: 1920px) {
+  .header-menu .tp-ms-gruppe .tp-nav-link {
+    font-size: 1rem;
+  }
+}
+
+/* Bis 1700 px flachere Bilder und kleinere Titel: bei 1440 x 900 brauchten
+   drei Kartenreihen sonst 668 px, Platz war 617 px */
+@media screen and (min-width: 1100px) and (max-width: 1699px) {
+  .header-menu .mega-menu__grid .tp-ms .mega-menu__list .tp-mm-card__media {
+    aspect-ratio: 5 / 2;
+  }
+
+  .header-menu .mega-menu__grid .tp-ms .mega-menu__list .tp-mm-card__title {
+    font-size: 0.9375rem;
+  }
+
+  .tp-ms {
+    column-gap: 2rem;
+  }
+
+  .tp-ms-gruppen {
+    column-gap: 1.5rem;
+  }
+
+  /* Dasselbe fuer Menues ab neun Karten (Zubehoer & Leisten, Service &
+     Verlegung): zwei Reihen mit Unterpunkten brauchten bei 1440 x 900 sonst
+     625 px bei 617 px Platz */
+  .header-menu .mega-menu__grid .mega-menu__list:has(> .mega-menu__column:nth-child(9)) .tp-mm-card__media {
+    aspect-ratio: 5 / 2;
+  }
+}
+
+.tp-farbpunkt {
+  flex: none;
+  width: 0.9em;
+  height: 0.9em;
+  border-radius: 50%;
+  background: var(--tp-farbe);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.18);
+}
+
+/* Handy: Arten als Kacheln in zwei Spalten (w-039: das Teppichboden-Menue
+   war 15 volle Zeilen lang), Farbe/Raum/Rollenbreite als Chips darunter */
+.menu-drawer .tp-dn-kacheln {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0 8px 4px;
+  list-style: none;
+}
+
+.menu-drawer .tp-dn-kachel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+  min-height: 60px;
+  padding: 8px;
+  border: 1px solid rgb(var(--color-foreground-rgb) / 0.12);
+  border-radius: 10px;
+  color: var(--color-foreground);
+  text-decoration: none;
+}
+
+.menu-drawer .tp-dn-kachel.is-current {
+  border-color: currentColor;
+}
+
+.menu-drawer .tp-dn-kachel__media {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: rgb(var(--color-foreground-rgb) / 0.06);
+}
+
+.menu-drawer .tp-dn-kachel__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.menu-drawer .tp-dn-kachel__media .tp-dn-row__initial {
+  font-size: 16px;
+}
+
+.menu-drawer .tp-dn-kachel__body {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.menu-drawer .tp-dn-kachel__title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.menu-drawer .tp-dn-kachel__count {
+  font-size: 12px;
+  line-height: 1.25;
+  color: rgb(var(--color-foreground-rgb) / 0.6);
+}
+
+.menu-drawer .tp-ms-gruppen--drawer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.menu-drawer .tp-ms-gruppe--farbe .tp-nav-chip {
+  padding-inline: 12px 16px;
+}
+
+.tp-nav-chip .tp-farbpunkt {
+  width: 14px;
+  height: 14px;
+}
+
+/* ------------------------------------------------------------------
    Desktop: Bodenleisten - vierte Spalte fuer die Profile
    ------------------------------------------------------------------ */
 @media screen and (min-width: 1200px) {
@@ -583,7 +791,7 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
 }
 
 .header-menu .mega-menu__grid .mega-menu__list .tp-mm-card__icon--pin {
-  background: linear-gradient(135deg, #c24a53, #962f38);
+  background: linear-gradient(135deg, #8d714c, #6d5536);
 }
 
 .header-menu .mega-menu__grid .mega-menu__list .tp-mm-card__icon--phone svg,
@@ -622,39 +830,69 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
 }
 
 /* ------------------------------------------------------------------
-   Desktop-Lesbarkeit (Shop-Analyse 2026-10-13, Aufgabe #1188, Paket 6)
+   Desktop-Lesbarkeit (Shop-Analyse 2026-10-13, Aufgabe #1188, Paket 6;
+   Menuezeile groesser 2026-10-14)
 
    Gemessen auf Live: Menuezeile 12 px (Einstellung "type_font_primary_size"
    in sections/header-group.json), Kartentitel 16 px, Kurztexte 13 px.
 
    Menuezeile: Das Horizon-Menue bricht nicht um, es schiebt Punkte, die nicht
-   passen, unter "Mehr". Bei 14 Hauptpunkten ist die Breite die Grenze; ab
-   1600 px waechst die Zeile wegen "page_width: narrow" nicht weiter (1237 px).
-   Gemessen im Browser, Zahl der Punkte vor "Mehr":
+   passen, unter "Mehr". Bei 15 Hauptpunkten ist die Breite die Grenze. Bis
+   2026-10-14 wuchs der Kopf wegen "page_width: narrow" ab 1520 px nicht
+   weiter (Menue hoechstens 1237 px): Auf grossen Bildschirmen standen 13 px
+   Schrift in einer schmalen Mittelspalte, zwei Punkte unter "Mehr".
 
-     Breite      12 px/10 (alt)   13 px/7   14 px/7   15 px/8
-     1100              8             9         8         8
-     1280             11            11        10         9
-     1440             12            12        12        11
-     1600-1920        13            13        12        12
+   Seitdem darf der Kopf (Menuezeile und Mega-Menue) breiter werden als der
+   Seiteninhalt, hoechstens 2000 px Inhalt. Die Schrift waechst stufenweise
+   mit und ist ab 1280 px halbfett (Inter 500 laedt ohnehin). Gemessen mit
+   Playwright auf Live, Zahl der Punkte vor "Mehr" (von 15):
 
-   Deshalb 13 px mit etwas engerem Abstand (14 statt 20 px zwischen den
-   Punkten): kein Punkt rutscht zusaetzlich unter "Mehr", bei 1100 px passt
-   einer mehr. 15-16 px gingen nur mit weniger Hauptpunkten oder einer
-   zweiten Menuezeile. Die Einstellung im Theme-Editor bleibt bei 12 px und
-   gilt unter 1100 px weiter (dort ist das Schubladenmenue aktiv).
+     Breite      vorher (13 px)   jetzt
+     1100               9           9    13 px normal
+     1280-1366      11-12       11-12    13 px halbfett
+     1440              12          12    14 px halbfett
+     1536              13          12    14 px (Reste & Sonderposten unter "Mehr")
+     1600-1728         13       13-14    14 px
+     1792              13          15    14 px
+     1920              13          15    15 px
+     ab 2048           13          15    16 px
+
+   Der Abstand zwischen den Punkten bleibt eng (14-16 px); mehr Luft kostet
+   Punkte. Die Einstellung im Theme-Editor bleibt bei 12 px und gilt unter
+   1100 px weiter (dort ist das Schubladenmenue aktiv).
 
    Hier und nicht in assets/tp-mega-menu.css: jene Datei laedt nicht
    blockierend. Spaeter geladene Schriftgroessen wuerden die Zeile breiter
    machen, nachdem die Ueberlauf-Liste bereits gerechnet hat.
    ------------------------------------------------------------------ */
 @media screen and (min-width: 1100px) {
+  /* Kopf breiter als der Seiteninhalt: --page-width steuert das Raster aller
+     .section darunter (Kopfzeile und Mega-Menue), Topleiste und Suchzeile
+     sind eigene Sections und bleiben schmal. Wirkt erst ab 1520 px, darunter
+     ist der Kopf ohnehin bildschirmbreit. */
+  #header-component {
+    --page-width: calc(125rem + var(--page-margin) * 2);
+  }
+
   .header-menu .menu-list:not(.menu-list--mobile) .menu-list__link {
     font-size: 0.8125rem;
   }
 
   .header-menu .menu-list:not(.menu-list--mobile) .menu-list__list-item:not([slot='overflow']) .menu-list__link-title {
     padding-inline: 7px;
+    text-decoration-line: underline;
+    text-decoration-color: transparent;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.55em;
+    transition: text-decoration-color 150ms ease;
+  }
+
+  /* Geoeffneter Punkt rot unterstrichen - bleibt stehen, waehrend die Maus im
+     Mega-Menue ist (aria-expanded). Ohne Hover traegt der aktive Bereich die
+     Linie. */
+  .header-menu .menu-list:not(.menu-list--mobile) .menu-list__list-item:not([slot='overflow']) .menu-list__link:is(:hover, :focus-visible, [aria-expanded='true']) .menu-list__link-title,
+  .header-menu .menu-list:not(.menu-list--mobile):not(:has(.menu-list__list-item:hover)) .menu-list__list-item:not([slot='overflow']) .menu-list__link--active .menu-list__link-title {
+    text-decoration-color: var(--tp-red, #b0303f);
   }
 
   /* Mega-Menue: Kartentitel 17 px, Kurztexte 14 px */
@@ -677,6 +915,89 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
   }
 }
 
+/* ------------------------------------------------------------------
+   Kopf in zwei Zeilen (Shopvergleich 2026-10-15, Werkbank w-094)
+
+   Oben Logo, Suchfeld (snippets/tp-kopf-suche.liquid), Konto und Warenkorb,
+   darunter das Hauptmenue in eigener Zeile ueber die volle Kopfbreite
+   (sections/header-group.json: menu_row "bottom"). Die Lupe im Kopf und die
+   TP-Suchzeile unter dem Kopf entfallen dort - das Feld steht ja oben.
+
+   Gilt nur fuer das waagerechte Menue ab 1100 px. Im Schubladenmodus
+   (Touch-Geraete, schmale Fenster) bleibt der Kopf einzeilig wie bisher, und
+   die TP-Suchzeile sucht.
+
+   Vor dem ersten Skriptlauf traegt der Kopf noch kein data-menu-style
+   (assets/utilities.js setHeaderMenuStyle). Die Regeln greifen deshalb bei
+   "nicht drawer" statt erst bei "menu": Das Suchfeld steht schon im ersten
+   Bild oben, und die Menuezeile hat ihre Hoehe, bevor das Menue erscheint -
+   sonst sprang die Seite beim Laden um eine Zeile.
+   ------------------------------------------------------------------ */
+.tp-kopf-suche {
+  display: none;
+}
+
+@media screen and (max-width: 1099px) {
+  #header-component .header__row--bottom {
+    display: none;
+  }
+}
+
+@media screen and (min-width: 1100px) {
+  #header-component[data-menu-style='drawer'] .header__row--bottom {
+    display: none;
+  }
+
+  #header-component:not([data-menu-style='drawer']) .tp-kopf-suche {
+    display: flex;
+    width: clamp(26rem, 40vw, 46rem);
+  }
+
+  .tp-kopf-suche .tp-hs__leiste {
+    width: 100%;
+    max-width: none;
+  }
+
+  .tp-kopf-suche .tp-hs__form {
+    height: 46px;
+    margin: 0;
+  }
+
+  #header-component:not([data-menu-style='drawer']) search-button.search-action {
+    display: none;
+  }
+
+  #header-group:has(#header-component:not([data-menu-style='drawer'])) .tp-hs {
+    display: none;
+  }
+
+  /* Menuezeile: eine Spalte ueber die volle Breite statt der drei Spalten der
+     oberen Zeile, sonst bemisst sich das Menue nach seinem Inhalt und die
+     Ueberlauf-Liste ("Mehr") greift nie. */
+  #header-component .header__row--bottom .header__columns {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'center';
+    min-height: 3rem;
+  }
+
+  #header-component .header__row--bottom .header__column--center {
+    min-width: 0;
+  }
+
+  #header-component .header__row--bottom header-menu {
+    width: 100%;
+  }
+}
+
+/* Breiter Bildschirm: Teppichboden und Linoleum (je 15 Karten) stehen dort in
+   drei Fuenferreihen (snippets/mega-menu-list.liquid). Bei 80 vh war die dritte
+   Reihe angeschnitten (1920 x 1080: 893 px Inhalt, 812 px Platz). */
+@media screen and (min-width: 1700px) {
+  .header-menu .menu-list__submenu-inner.menu-list__submenu-inner {
+    max-height: calc(100vh - var(--header-height, 88px) - 16px);
+  }
+}
+
 @media screen and (min-width: 1100px) and (max-height: 860px) {
   .header-menu .mega-menu__grid .mega-menu__list .tp-mm-card__media,
   .header-menu .tp-lnav .tp-lnav__all-media {
@@ -684,11 +1005,49 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
   }
 }
 
+/* Menuezeile halbfett - unter 1280 px kostete das einen Punkt */
+@media screen and (min-width: 1280px) {
+  .header-menu .menu-list:not(.menu-list--mobile) .menu-list__link {
+    font-weight: 500;
+  }
+}
+
 @media screen and (min-width: 1440px) {
+  .header-menu .menu-list:not(.menu-list--mobile) .menu-list__link {
+    font-size: 0.875rem;
+  }
+
   .header-menu .mega-menu__grid .mega-menu__list .tp-mm-card__title,
   .header-menu .mega-menu__column > .tp-mm-card:not(.tp-mm-card--media) > .tp-mm-card__link,
   .header-menu .tp-lnav .tp-lnav__all-title {
     font-size: 1.125rem;
+  }
+}
+
+@media screen and (min-width: 1920px) {
+  .header-menu .menu-list:not(.menu-list--mobile) .menu-list__link {
+    font-size: 0.9375rem;
+  }
+
+  .header-menu .menu-list:not(.menu-list--mobile) .menu-list__list-item:not([slot='overflow']) .menu-list__link-title {
+    padding-inline: 8px;
+  }
+
+  .header-menu .mega-menu__grid .mega-menu__list .tp-mm-card__title,
+  .header-menu .mega-menu__column > .tp-mm-card:not(.tp-mm-card--media) > .tp-mm-card__link,
+  .header-menu .tp-lnav .tp-lnav__all-title {
+    font-size: 1.1875rem;
+  }
+
+  .header-menu .mega-menu__grid .mega-menu__list .tp-mm-card__sub,
+  .header-menu .tp-lnav .tp-lnav__all-meta {
+    font-size: 0.9375rem;
+  }
+}
+
+@media screen and (min-width: 2048px) {
+  .header-menu .menu-list:not(.menu-list--mobile) .menu-list__link {
+    font-size: 1rem;
   }
 }
 
@@ -729,7 +1088,8 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
 @media (prefers-reduced-motion: reduce) {
   .tp-nav-link,
   .tp-nav-chip,
-  .menu-drawer .tp-dn-row {
+  .menu-drawer .tp-dn-row,
+  .header-menu .menu-list:not(.menu-list--mobile) .menu-list__list-item:not([slot='overflow']) .menu-list__link-title {
     transition: none;
   }
 }

@@ -11,6 +11,8 @@
   assign tp_fl_recht = block.settings.rechtliches_menu
   assign tp_fl_sonderposten = collections['sonderposten-im-laden']
   assign tp_fl_sonderposten_verlinkt = false
+  # Geschenkgutschein (Werkbank w-034): Link erscheint erst, wenn das Produkt veroeffentlicht ist; Entwuerfe liefert all_products nicht
+  assign tp_fl_gutschein = all_products['geschenkgutschein']
 -%}
 
 <div class="tp-footer-links" {{ block.shopify_attributes }}>
@@ -55,6 +57,9 @@
         <li><a href="/pages/ratgeber">Ratgeber</a></li>
         <li><a href="/pages/kontakt">Kontakt</a></li>
       {%- endif -%}
+      {%- if tp_fl_gutschein.id != blank and tp_fl_gutschein.gift_card? and tp_fl_gutschein.available -%}
+        <li><a href="{{ tp_fl_gutschein.url }}">Geschenkgutschein</a></li>
+      {%- endif -%}
     </ul>
   </nav>
 
@@ -96,6 +101,18 @@
         <li><a href="/pages/agbs">AGB</a></li>
         <li><a href="/policies/refund-policy">Widerrufsrecht</a></li>
       {%- endif -%}
+      {%- comment -%}
+        Cookie-Einstellungen stehen fest im Block, nicht im Menue: menuUpdate
+        ersetzt den ganzen Baum und koennte den Link sonst still entfernen.
+        Die Einwilligung muss so leicht widerrufbar sein wie sie erteilt wurde.
+      {%- endcomment -%}
+      <li><a href="#cookie-einstellungen" data-tp-cookie-einstellungen>Cookie-Einstellungen</a></li>
+      {%- comment -%}
+        Widerrufsfunktion nach § 356a BGB: muss staendig erreichbar und
+        hervorgehoben sein, deshalb fest im Block (wie Cookie-Einstellungen)
+        und als Schaltflaeche abgesetzt. Ziel: sections/tp-widerruf.liquid.
+      {%- endcomment -%}
+      <li class="tp-footer-links__widerruf-zeile"><a class="tp-footer-links__widerruf" href="/pages/vertrag-widerrufen">Vertrag widerrufen</a></li>
     </ul>
   </nav>
 </div>
@@ -108,6 +125,32 @@
 <div class="tp-footer-links__preisangabe">
   {%- render 'tp-preisangabe' -%}
 </div>
+
+{% javascript %}
+  /* Cookie-Einstellungen: oeffnet den Einstellungsdialog des Shopify-Banners.
+     Greift fuer jeden Link auf #cookie-einstellungen, also auch fuer Links im
+     Text der Datenschutzerklaerung (/policies/* rendert im Theme-Layout), und
+     beim Aufruf einer Seite mit diesem Anker. Das Banner-Skript kann spaeter
+     laden als dieser Code, deshalb mehrere Versuche. */
+  (function () {
+    var ANKER = '#cookie-einstellungen';
+    function oeffnen(versuche) {
+      var banner = window.privacyBanner;
+      if (banner && typeof banner.showPreferences === 'function') {
+        banner.showPreferences();
+        return;
+      }
+      if (versuche > 0) setTimeout(function () { oeffnen(versuche - 1); }, 250);
+    }
+    document.addEventListener('click', function (event) {
+      var link = event.target.closest && event.target.closest('a[href$="' + ANKER + '"]');
+      if (!link) return;
+      event.preventDefault();
+      oeffnen(20);
+    });
+    if (window.location.hash === ANKER) oeffnen(20);
+  })();
+{% endjavascript %}
 
 {% stylesheet %}
   .tp-footer-links__preisangabe {
@@ -166,6 +209,29 @@
   .tp-footer-links a:hover {
     text-decoration: underline;
     text-underline-offset: 3px;
+  }
+
+  /* Widerrufsfunktion (§ 356a BGB): hervorgehoben statt einer von vielen Links */
+  .tp-footer-links__widerruf-zeile { margin-top: 8px; }
+
+  .tp-footer-links a.tp-footer-links__widerruf {
+    min-height: 40px;
+    padding: 0 16px;
+    font-weight: 600;
+    color: var(--tp-red, #b0303f);
+    border: 2px solid currentColor;
+    border-radius: 999px;
+  }
+
+  .tp-footer-links a.tp-footer-links__widerruf:hover {
+    text-decoration: none;
+    color: #fff;
+    background: var(--tp-red, #b0303f);
+    border-color: var(--tp-red, #b0303f);
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-footer-links a.tp-footer-links__widerruf { min-height: 44px; }
   }
 
   @media screen and (max-width: 749px) {

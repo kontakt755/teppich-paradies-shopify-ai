@@ -30,7 +30,7 @@ export function darfAnsicht(view) {
 export function parseRoute() {
   const hash = location.hash.replace(/^#\/?/, '');
   const [path, query = ''] = hash.split('?');
-  const bekannt = ['heute', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber', 'hilfe', 'shopwache', 'organisation', 'fotos', 'sonderposten', 'social', 'team'].includes(path) ? path : 'heute';
+  const bekannt = ['heute', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber', 'hilfe', 'shopwache', 'organisation', 'fotos', 'sonderposten', 'bildrechte', 'social', 'team'].includes(path) ? path : 'heute';
   const view = darfAnsicht(bekannt) ? bekannt : 'heute';
   state.route = { view, params: new URLSearchParams(query) };
 }
@@ -57,6 +57,7 @@ export function setParam(key, value) {
   // Ein neuer Filter beginnt wieder auf Seite 1 - sonst landet man auf einer leeren Seite.
   if (['psfilter', 'gruppe', 'psq'].includes(key)) p.delete('seite');
   if (key === 'lq') p.delete('lseite');
+  if (['bl', 'bg'].includes(key)) p.delete('bs');
   if (key !== 'view' && key !== 'task' && p.get('view') && ['status'].includes(key)) p.delete('view');
   location.hash = `#/${state.route.view}?${p}`;
 }

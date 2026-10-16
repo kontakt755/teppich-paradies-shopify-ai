@@ -1,0 +1,192 @@
+{%- doc -%}
+  Untermenue mit Bildkarten und Spalten - Desktop-Megamenue und Handy-Menue aus
+  einer Quelle (Shopvergleich 2026-10-15, Werkbank w-094).
+
+  Greift fuer jeden Hauptpunkt, der in der Navigation mindestens eine Gruppe
+  traegt: einen Unterpunkt mit eigenen Unterpunkten und der Adresse "#"
+  (Shopify-Menue: Link "#"). Heute ist das Teppichboden mit den Gruppen Farbe,
+  Raum und Rollenbreite. Alle uebrigen Unterpunkte sind die Arten und werden
+  kleine Bildkarten (Desktop) bzw. Kacheln in zwei Spalten (Handy).
+
+  Warum Gruppen im Menue und nicht im Theme: Die Filterlinks sind Daten, die
+  der Inhaber im Shopify-Admin pflegen kann; das Theme ordnet nur. Jeder
+  Filterlink braucht echte Treffer (npm run menu:guard, docs/lessons/tote-menuelinks.md).
+
+  Farbpunkte: Gruppen, deren Titel mit "Farb" beginnt, zeigen vor jedem Eintrag
+  einen Punkt in der Farbe der Shopify-Farbfilter (dieselben Werte wie die
+  Farbmuster auf der Kategorieseite). Unbekannte Farben bleiben ohne Punkt.
+
+  Handy (w-039, Teppichboden-Menue zu lang): Arten als Kacheln in zwei Spalten
+  statt als volle Zeilen, Gruppen als Chips darunter.
+
+  @param {object} parent_link - Menuepunkt der ersten Ebene
+  @param {string} [kacheln] - Datensaetze der Bildkacheln (siehe tp-menu-kachel-index)
+  @param {string} [variant] - 'drawer' fuer das Handy-Menue, sonst Desktop-Megamenue
+{%- enddoc -%}
+
+{%- liquid
+  assign tp_ms_farben = 'beige:234 216 171|braun:154 86 48|grau:128 128 128|schwarz:0 0 0|blau:0 91 211|grün:5 170 61|rot:246 31 31|orange:255 138 0|gelb:255 229 0|weiß:255 255 255|rosa:255 192 203|violett:165 77 207' | split: '|'
+
+  # Einstieg "Alle ...": gleiches Ziel wie der Hauptpunkt oder Titel mit Alle/Alles
+  assign tp_ms_all_i = 0
+  assign tp_ms_karten = 0
+  assign tp_ms_gruppen = 0
+  for c in parent_link.links
+    if c.links != blank and c.url == '#'
+      assign tp_ms_gruppen = tp_ms_gruppen | plus: 1
+      continue
+    endif
+    assign tp_ms_karten = tp_ms_karten | plus: 1
+    assign c_first = c.title | split: ' ' | first
+    if tp_ms_all_i == 0
+      if c.url == parent_link.url or c_first == 'Alle' or c_first == 'Alles'
+        assign tp_ms_all_i = forloop.index
+      endif
+    endif
+  endfor
+
+  # Desktop: hoechstens fuenf Karten je Reihe, gleichmaessig verteilt
+  # (15 = 5 + 5 + 5, 12 = 4 + 4 + 4): Reihen = aufgerundet n / 5,
+  # Spalten = aufgerundet n / Reihen
+  assign tp_ms_reihen = tp_ms_karten | plus: 4 | divided_by: 5 | at_least: 1
+  assign tp_ms_spalten = tp_ms_karten | plus: tp_ms_reihen | minus: 1 | divided_by: tp_ms_reihen | at_least: 1
+-%}
+
+{%- capture tp_ms_gruppen_html -%}
+  {%- for g in parent_link.links -%}
+    {%- unless g.links != blank and g.url == '#' -%}{%- continue -%}{%- endunless -%}
+    {%- assign g_farbe = false -%}
+    {%- assign g_t = g.title | downcase -%}
+    {%- if g_t contains 'farb' -%}{%- assign g_farbe = true -%}{%- endif -%}
+    <div class="tp-ms-gruppe{% if g_farbe %} tp-ms-gruppe--farbe{% endif %}">
+      <p class="tp-nav-group" id="tp-ms-{{ variant | default: 'mm' }}-{{ forloop.index }}">{{ g.title | escape }}</p>
+      <ul class="{% if variant == 'drawer' %}tp-nav-chips{% else %}tp-nav-links{% endif %} list-unstyled" role="list" aria-labelledby="tp-ms-{{ variant | default: 'mm' }}-{{ forloop.index }}">
+        {%- for l in g.links -%}
+          {%- capture tp_mls -%}{%- render 'tp-menu-link-sichtbar', link: l -%}{%- endcapture -%}
+          {%- if tp_mls contains 'nein' -%}{%- continue -%}{%- endif -%}
+          {%- liquid
+            assign l_rgb = ''
+            if g_farbe
+              assign l_t = l.title | strip | downcase
+              for f in tp_ms_farben
+                assign f_name = f | split: ':' | first
+                if f_name == l_t
+                  assign l_rgb = f | split: ':' | last
+                  break
+                endif
+              endfor
+            endif
+          -%}
+          <li>
+            <a class="{% if variant == 'drawer' %}tp-nav-chip{% else %}tp-nav-link{% endif %}" href="{{ l.url }}">
+              {%- if l_rgb != blank -%}<span class="tp-farbpunkt" style="--tp-farbe: rgb({{ l_rgb }});" aria-hidden="true"></span>{%- endif -%}
+              <span class="tp-nav-link__text">{%- render 'tp-menu-label', link: l -%}</span>
+            </a>
+          </li>
+        {%- endfor -%}
+      </ul>
+    </div>
+  {%- endfor -%}
+{%- endcapture -%}
+
+{%- if variant == 'drawer' -%}
+  {%- liquid
+    if tp_ms_all_i > 0
+      assign tp_ms_all_idx = tp_ms_all_i | minus: 1
+      assign tp_ms_all = parent_link.links[tp_ms_all_idx]
+      assign tp_ms_cta_url = tp_ms_all.url
+      capture tp_ms_cta_label
+        render 'tp-menu-label', link: tp_ms_all
+      endcapture
+      assign tp_ms_cta_label = tp_ms_cta_label | strip | append: ' ansehen'
+    else
+      assign tp_ms_cta_url = parent_link.url
+      assign tp_ms_cta_label = parent_link.title | escape | append: ' im Überblick'
+    endif
+    assign tp_ms_count = 0
+    if parent_link.type == 'collection_link'
+      assign tp_ms_count = parent_link.object.all_products_count
+    endif
+  -%}
+  <a class="tp-dn-cta" href="{{ tp_ms_cta_url }}">
+    <span class="tp-dn-cta__text">{{ tp_ms_cta_label }}</span>
+    {%- if tp_ms_count > 0 -%}
+      <span class="tp-dn-cta__count" aria-hidden="true">{{ tp_ms_count }}</span>
+      <span class="visually-hidden">{%- render 'tp-produktzahl', anzahl: tp_ms_count -%}</span>
+    {%- endif -%}
+  </a>
+
+  <p class="tp-nav-group" id="tp-ms-drawer-arten">Nach Art</p>
+  <ul class="tp-dn-kacheln list-unstyled" role="list" aria-labelledby="tp-ms-drawer-arten">
+    {%- for c in parent_link.links -%}
+      {%- if forloop.index == tp_ms_all_i -%}{%- continue -%}{%- endif -%}
+      {%- if c.links != blank and c.url == '#' -%}{%- continue -%}{%- endif -%}
+      {%- capture tp_mls -%}{%- render 'tp-menu-link-sichtbar', link: c -%}{%- endcapture -%}
+      {%- if tp_mls contains 'nein' -%}{%- continue -%}{%- endif -%}
+      {%- liquid
+        capture c_img
+          render 'tp-menu-bild', link: c, kacheln: kacheln, class: 'tp-dn-kachel__img', sizes: '40px', widths: '80,120'
+        endcapture
+        assign c_count = 0
+        if c.type == 'collection_link'
+          assign c_count = c.object.all_products_count
+        endif
+      -%}
+      <li>
+        <a class="tp-dn-kachel{% if c.active %} is-current{% endif %}" href="{{ c.url }}"{% if c.active %} aria-current="page"{% endif %}>
+          <span class="tp-dn-kachel__media" aria-hidden="true">
+            {%- if c_img contains '<img' -%}{{ c_img }}{%- else -%}<span class="tp-dn-row__initial">{{ c.title | strip | slice: 0, 1 | upcase }}</span>{%- endif -%}
+          </span>
+          <span class="tp-dn-kachel__body">
+            <span class="tp-dn-kachel__title">{%- render 'tp-menu-label', link: c -%}</span>
+            {%- if c_count > 0 -%}
+              <span class="tp-dn-kachel__count">{%- render 'tp-produktzahl', anzahl: c_count -%}</span>
+            {%- endif -%}
+          </span>
+        </a>
+      </li>
+    {%- endfor -%}
+  </ul>
+  <div class="tp-ms-gruppen tp-ms-gruppen--drawer">
+    {{- tp_ms_gruppen_html -}}
+  </div>
+{%- else -%}
+  <div class="tp-ms" data-testid="tp-menu-spalten" style="--tp-ms-spalten: {{ tp_ms_spalten }}; --tp-ms-gruppen: {{ tp_ms_gruppen }};">
+    <ul class="mega-menu__list list-unstyled tp-ms__karten">
+      {%- for c in parent_link.links -%}
+        {%- if c.links != blank and c.url == '#' -%}{%- continue -%}{%- endif -%}
+        {%- capture tp_mls -%}{%- render 'tp-menu-link-sichtbar', link: c -%}{%- endcapture -%}
+        {%- if tp_mls contains 'nein' -%}{%- continue -%}{%- endif -%}
+        {%- liquid
+          # tp-menu-karte escaped selbst: Titel und Kurztext hier roh uebergeben
+          # (tp-menu-label und tp-menu-kurztext liefern bereits escaped)
+          assign c_sub = ''
+          capture c_idx
+            render 'tp-menu-kachel-index', link: c, kacheln: kacheln
+          endcapture
+          assign c_idx = c_idx | strip | plus: 0
+          if c_idx > 0
+            assign c_i = c_idx | minus: 1
+            assign c_rec = kacheln | split: '~~'
+            assign c_feld = c_rec[c_i] | split: '|~|'
+            assign c_sub = c_feld[2] | default: '' | strip
+          endif
+          if c_sub == blank and c.type == 'collection_link'
+            capture c_sub
+              render 'tp-produktzahl', anzahl: c.object.all_products_count
+            endcapture
+          endif
+          capture c_img
+            render 'tp-menu-bild', link: c, kacheln: kacheln, class: 'mega-menu__link-image', sizes: '(min-width: 1700px) 11vw, 13vw', widths: '200,300,400'
+          endcapture
+        -%}
+        {%- render 'tp-menu-karte', url: c.url, title: c.title, sub: c_sub, image_html: c_img -%}
+      {%- endfor -%}
+    </ul>
+    {%- if tp_ms_gruppen > 0 -%}
+      <div class="tp-ms-gruppen">
+        {{- tp_ms_gruppen_html -}}
+      </div>
+    {%- endif -%}
+  </div>
+{%- endif -%}

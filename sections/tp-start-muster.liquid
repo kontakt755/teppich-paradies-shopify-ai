@@ -85,23 +85,24 @@
 
   .tp-muster__eyebrow {
     margin: 0 0 8px;
-    font-size: 12.5px;
+    font-size: var(--tp-fs-xs);
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #b0303f;
+    /* dunkel statt rot: Rot nur fuer Preis, Rabatt und Hauptknopf (w-096) */
+    color: #4a443f;
   }
 
   .tp-muster__titel {
     margin: 0 0 10px;
-    font-size: 26px;
+    font-size: var(--tp-fs-xl);
     line-height: 1.22;
     color: #1d1a17;
   }
 
   .tp-muster__lead {
     margin: 0 0 18px;
-    font-size: 15.5px;
+    font-size: var(--tp-fs-md);
     line-height: 1.55;
     color: #4a443f;
   }
@@ -121,7 +122,7 @@
     background: #fff;
     color: #1d1a17;
     border: 1.5px solid #1d1a17;
-    font-size: 15px;
+    font-size: var(--tp-fs-md);
     font-weight: 700;
     text-decoration: none;
   }
@@ -143,7 +144,7 @@
 
   .tp-muster__hinweis {
     margin: 10px 0 0;
-    font-size: 12.5px;
+    font-size: var(--tp-fs-xs);
     color: var(--tp-muted, #655e57);
   }
 
@@ -170,14 +171,14 @@
     border: 1px solid #e6e0d8;
     display: grid;
     place-items: center;
-    font-size: 13.5px;
+    font-size: var(--tp-fs-sm);
     font-weight: 700;
-    color: #b0303f;
+    color: #1d1a17;
   }
 
   .tp-muster__schritt-text b {
     display: block;
-    font-size: 15px;
+    font-size: var(--tp-fs-md);
     font-weight: 600;
     color: #1d1a17;
     line-height: 1.35;
@@ -186,7 +187,7 @@
   .tp-muster__schritt-text small {
     display: block;
     margin-top: 2px;
-    font-size: 13.5px;
+    font-size: var(--tp-fs-sm);
     line-height: 1.45;
     color: var(--tp-muted, #655e57);
   }
@@ -203,11 +204,11 @@
     }
 
     .tp-muster__titel {
-      font-size: 21px;
+      font-size: var(--tp-fs-xl);
     }
 
     .tp-muster__lead {
-      font-size: 14.5px;
+      font-size: var(--tp-fs-sm);
     }
 
     .tp-muster__cta {

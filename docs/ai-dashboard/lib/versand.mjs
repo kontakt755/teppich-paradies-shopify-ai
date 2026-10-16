@@ -29,10 +29,18 @@ export function versandKandidaten(auftrag, statusPositionen = {}) {
  *   das war bisher das Verhalten des Knopfs.
  * - Mit angeklickter Position (Einkauf): nur diese. Eigenleistungen (Kettelservice o. ae.) gehen
  *   mit der letzten Ware raus - sonst bliebe die Bestellung in Shopify ewig "teilweise versendet".
+ *   Ist die angeklickte Position ein Muster, gehen die Muster aus eigenem Bestand (Musterlager,
+ *   "haben wir da") mit ins Paket: gemischte Musterbestellungen gehen zusammen raus (Inhaber 2026-10-15).
+ *   Ebenso alle Muster, die schon bei uns angekommen sind (`status`: lineItemId -> Auftragsfluss-Status).
  */
-export function vorauswahl(kandidaten, { geklickt = null } = {}) {
+export function vorauswahl(kandidaten, { geklickt = null, status = {} } = {}) {
   if (!geklickt) return new Set(kandidaten.map(p => p.lineItemId));
   const ids = new Set([geklickt]);
+  if (kandidaten.find(p => p.lineItemId === geklickt)?.istMuster) {
+    // Alle Muster, die fertig zum Verschicken sind, gleich mit ankreuzen (Innendienst 15.10.:
+    // "nicht fuer jedes Muster einzeln klicken"): Lagermuster und alle, die bei uns angekommen sind.
+    for (const p of kandidaten) if (p.istMuster && (p.musterHerkunft === 'eigen_versand' || status[p.lineItemId] === 'geliefert')) ids.add(p.lineItemId);
+  }
   const restWare = kandidaten.filter(p => !p.eigenleistung && p.lineItemId !== geklickt);
   if (!restWare.length) for (const p of kandidaten) if (p.eigenleistung) ids.add(p.lineItemId);
   return ids;

@@ -71,7 +71,7 @@
 
   .ai-carpet-preview__dimensions-{{ ai_gen_id }} {
     position: absolute;
-    font-size: 12px;
+    font-size: var(--tp-fs-xs);
     color: {{ dimension_text_color }};
     font-weight: 600;
     background-color: {{ dimension_background_color }};
@@ -107,14 +107,14 @@
   }
 
   .ai-carpet-preview__info-label-{{ ai_gen_id }} {
-    font-size: 12px;
+    font-size: var(--tp-fs-xs);
     color: {{ text_color }};
     opacity: 0.7;
     margin-bottom: 4px;
   }
 
   .ai-carpet-preview__info-value-{{ ai_gen_id }} {
-    font-size: 20px;
+    font-size: var(--tp-fs-lg);
     font-weight: 600;
     color: {{ text_color }};
   }
@@ -123,7 +123,7 @@
     text-align: center;
     color: {{ text_color }};
     opacity: 0.5;
-    font-size: 14px;
+    font-size: var(--tp-fs-sm);
   }
 
   @media screen and (max-width: 749px) {

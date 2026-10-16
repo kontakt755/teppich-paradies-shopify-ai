@@ -2,6 +2,108 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-15 · Herstellerware mit der Bezeichnung des Herstellers
+
+- **Geändert:** Nächste Stufe aus dem Eintrag darunter. Warenbestellungen an die Markenhersteller
+  (Lieferant D und E, Direktbezug) nannten unsere eigene SKU als Artikelnummer. Neues Stammdatenfeld
+  `ware.nachBezeichnung`: dann nennt die Warenmail (an Kunden und an den Laden) die Bezeichnung aus
+  `einkauf.farbname` der bestellten Variante, ohne Farbname (Vinyl: dort ist die Artikelnummer schon die
+  echte) weiter die Artikelnummer – dieselbe Regel `artikelKopf()` wie bei Mustern. Menge, Rollenbreite,
+  Fertigmaß, Einfassung und Kommission bleiben unverändert. Dafür führt der Einkaufsblock der Position
+  (`resolve.mjs`, `EINKAUF_KEYS`) jetzt auch `farbname`; der Export holt den Namensraum `einkauf` schon
+  vollständig.
+- **Getestet:** `operations/tests/lieferanten.test.mjs`: Rollenware, Maßteppich und Vinyl mit Feld (an
+  Kunden und an den Laden) und ohne Feld bzw. mit ungültigem Wert; Lieferant A mit gefülltem Farbnamen
+  bleibt bei „Art.-Nr. … · Farb-Nr. …“. Gegen die echten Daten (nur lesend, Stammdaten im Speicher): offene
+  Warenbestellungen bei D/E gibt es derzeit keine; die beiden echten Quellvarianten aus dem Export als
+  Probeposition ergeben bei E die Bezeichnung statt der SKU, bei D (Vinyl) die echte Artikelnummer. Im
+  Lexikon-Export tragen alle aktiven Rollenware-Varianten von D und E einen Farbnamen.
+- **Risiken/Annahmen:** Wunschmaß-Varianten von D/E haben weder Artikelnummer noch Farbname und landen wie
+  bisher unter „fehlt“ – unverändert. D und E haben in den Stammdaten noch keinen Warenweg/keine
+  Warenmail; die Mail entsteht bis dahin als Text zum Kopieren.
+- **Nächste Stufe:** Warenkontakt von D und E in den Stammdaten eintragen, sobald der erste Direktbezug
+  ansteht.
+
+## 2026-10-15 · Herstellermuster mit der Bezeichnung des Herstellers
+
+- **Geändert:** Inhaber: Muster einiger Markenhersteller (Teppichboden und Vinyl) sind beim Hersteller
+  kostenlos und werden getrennt dort bestellt. Deren Quellvarianten tragen bereits einen eigenen
+  Lieferanten, die Karten und „Muster bestellen“ gab es also schon – nur nannte die Mail unsere
+  eigene SKU als Artikelnummer, die der Hersteller nicht kennt. Neues Stammdatenfeld
+  `muster.nachBezeichnung`: dann steht in der Mustermail (an Kunden und an den Laden) die Bezeichnung des
+  Herstellers aus `einkauf.farbname` (Qualität plus Farbnummer, z. B. „Testquali 1Q00“), ohne Farbname weiter die
+  Artikelnummer. Eine Farbnummer, die schon in Bezeichnung oder Artikelnummer steckt, steht nicht doppelt
+  da (ganzes Wort bzw. gleiche Nummer – kein Teilstring). Kontakte und Musterweg stehen nur in der privaten
+  Stammdatendatei.
+- **Getestet:** `operations/tests/lieferanten.test.mjs`: Bezeichnung statt SKU (Kunde und Laden),
+  Rückfall auf die Artikelnummer, ohne Feld unverändert, Farbnummer „4“ bei „TEST4_004“ bleibt stehen.
+  Gegen die echten Bestelldaten (nur lesend): die beiden offenen Herstellermuster ergeben je eine Mail
+  mit hinterlegtem Empfänger, Kundennummer und der Bezeichnung bzw. echten Artikelnummer.
+- **Risiken/Annahmen:** `einkauf.farbname` ist bei Lieferant A und B ebenfalls gefüllt (Dekor- bzw.
+  Farbwörter) – deshalb nur per Feld je Lieferant, nicht für alle. Warenbestellungen nennen weiter die
+  Artikelnummer.
+- **Nächste Stufe:** Warenmail für dieselben Hersteller genauso umstellen, wenn der erste Direktbezug
+  ansteht.
+
+## 2026-10-15 · Muster je Kunde mit einem Klick (#1322)
+
+- **Geändert:** Innendienst: „zu umständlich, jetzt für jeden Artikel einzeln“. Seit #1206 öffnete
+  „angekommen“ auch bei Mustern den Wareneingangs-Dialog mit Mengenfeldern – je Muster, auch über die
+  Zeitleiste. Jetzt: Muster brauchen keine Mengen. In der Lieferantenkarte und im Kundenkopf der
+  Muster-Tabelle steht je Kunde **ein** Knopf für den gemeinsamen nächsten Schritt
+  (`musterSchritt()` in `lib/einkauf-uebersicht.mjs`): „Alle 3 angekommen“ (ein Klick, eine Meldung)
+  bzw. „Verschicken…“/„Übergeben…“, sobald kein Muster des Auftrags mehr fehlt. Der Versand-Dialog
+  kreuzt alle angekommenen Muster und Lagermuster vorab an (`vorauswahl(…, { status })`). Ein
+  einzelnes Muster „Als geliefert markieren“ setzt direkt; die Zeitleiste setzt bei reinen
+  Musterbestellungen wieder alle Muster auf einmal. Ware behält den Wareneingangs-Dialog.
+- **Getestet:** `musterSchritt` (angekommen, teilweise da, verschicken, gemischt mit Lager, noch nicht
+  bestellt, Übergabe, Ware), Vorauswahl mit Status, Servertest Zeitleisten-Schritt „geliefert“ für drei
+  Muster. Klickstrecke gegen die Datenkopie: „Alle 3 angekommen“ → Nachfassen 5 → 4 Aufträge
+  (14 → 11 Positionen); „Verschicken…“ beim selben Kunden → Dialog mit 3 von 3 angekreuzt; einzelnes
+  Muster ohne Dialog → „geliefert“; Ware öffnet weiter den Wareneingang. 390 px ohne Überlauf.
+- **Risiken/Annahmen:** „Angekommen“ gilt für alle bestellten Muster des Kunden bei diesem Lieferanten;
+  kam nur ein Teil, je Muster in der Tabelle setzen bzw. „Zurück auf offen…“.
+- **Nächste Stufe:** Rückmeldung des Innendiensts abwarten.
+
+## 2026-10-15 · Musterlager: Antworten des Inhabers (Werkbank w-091, Folge zu #1183)
+
+- **Geändert:** Mustergröße A5 – Probestück und Bahn zeigen „reicht noch für ca. N A5-Muster“ (54 je
+  Probestück, 27 je Bahn; `musterJeStueck()`, `reichtNoch` in `wendeLagerAn()`), knapp ab 5, beim
+  Probestück mit Nachkaufpreis 8–15 €. Gemischte Musterbestellungen gehen zusammen raus: kein To-do
+  „Muster verschicken“, solange Lieferanten-Muster ausstehen; „rausgeben“ nennt die Lagermuster mit,
+  der Versand-Dialog kreuzt sie vorab an; im Musterlager stehen sie als „zurückgelegt“. Keine
+  Vorratsmuster in der Bestellmail und Etiketten (nur Name + Farbe, Gerät offen) als Entscheidung in
+  ARCHITEKTUR 8b festgehalten.
+- **Getestet:** neue Tests für A5, `reichtNoch` (Auffüllen setzt `basisAm`, leer = 0), gemischte Bestellung
+  in drei Stufen (nicht bestellt, bestellt, eingetroffen) und Versand-Vorauswahl.
+- **Risiken/Annahmen:** „reicht noch“ ist eine Schätzung aus verschickten Mustern; Verschnitt und Muster,
+  die am Dashboard vorbei rausgehen, zählt sie nicht. Bahnbreite 20 cm gilt als A5-Höhe (21 cm).
+- **Nächste Stufe:** Etikettendruck, sobald das Gerät feststeht; Bahnen nach Ahmets Freigabe einlagern.
+
+## 2026-10-14 · Ansicht „Bildrechte“ (#1285, Refs #978)
+
+- **Geändert:** Neue, rein lesende Ansicht `#/bildrechte` (Seitenleiste „Seltener“, für alle Rollen).
+  Drei Kacheln wählen die Liste – Herkunft/Freigabe ungeklärt, schmaler als 1.200 px, ohne ALT-Text –,
+  darunter Warengruppen-Filter und 25 Bilder je Seite mit Produkt, Bildposition, Dateiname (bei „zu klein“
+  mit Maßen) und Links „In Shopify öffnen“ / „Im Shop ansehen“ (Produkt-ID und Shopadresse aus dem
+  Lexikon, sonst Admin-Suche nach dem Handle). Neuer Endpunkt `GET /api/bildrechte/liste` liest
+  `$TP_PRIVAT_DIR/bildrechte/bildrechte.csv` (zwischengespeichert bis zur nächsten Änderung) und liefert
+  nur Listenfelder – Quellen, Lizenzen und Belege bleiben auf dem Server. Entfernte Bilder
+  (`entfernt…`, „nicht mehr in Shopify“) zählen nirgends; „ungeklärt“ heißt nur Status `ungeklaert`
+  oder leer. Fehlt die CSV: Hinweis mit `npm run bildrechte:inventur`, keine Demo-Daten.
+  Logik in `prueflisten()` (`operations/lib/bildrechte.mjs`).
+- **Getestet:** 5 neue Bibliotheks- und 4 neue Server-/API-Tests (Rolle „lesen“ 200, POST 405, ohne
+  Anmeldung 401, keine Lizenz-/Quellenfelder in der Antwort). `dashboard:test` 337/337, `npm test`
+  2573/2573. `dashboard:pruefen --rollen`: 275 OK-Zeilen, 0 px Überlauf bei 360–1440 px auf allen
+  55 Ansichten; Screenshots Desktop und 390 px gelesen. Echte Daten (Kopie): 697 ungeklärt,
+  3.114 zu klein, 0 ohne ALT-Text.
+- **Risiken/Annahmen:** Die CSV enthält keine Bild-URL, deshalb Dateiname statt Vorschau. Bei rund
+  3.150 Bildern fehlt die Breite (später ergänzte Zeilen) – die Ansicht nennt die Lücke. Im Verzeichnis
+  stehen Statuswerte, die `STATUS` nicht kennt (`freigegeben`, `entfernt`, `nein`); `zusammenfuehren()`
+  der Inventur würde sie auf `ungeklaert` zurücksetzen – eigener Fix nötig, bevor die Inventur wieder läuft.
+- **Nächste Stufe:** Bild-URL und Breite in der Inventur nachziehen (dann Vorschaubild), Statuswerte in
+  `operations/lib/bildrechte.mjs` vereinheitlichen.
+
 ## 2026-10-14 · Ungültige Fertigmaße vor dem Bestelltext klären (#1267, Folge zu #1225)
 
 - **Geändert:** Erkannte Maßanfertigungen bleiben bei fehlender, nicht endlicher oder nicht positiver

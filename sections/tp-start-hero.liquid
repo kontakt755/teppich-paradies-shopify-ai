@@ -1,7 +1,14 @@
 {%- comment -%}
-  TP Start-Hero (Konzept C): Text links, echtes Projektfoto rechts, zwei Wege als
-  Buttons, Telefon und WhatsApp als Textlinks. Kein Rendering, kein Overlay auf
-  dem Bild. Das Bild ist das LCP-Element und laedt deshalb eager mit hoher Prioritaet.
+  TP Start-Hero (Konzept C): Text links, helles Wohnraumbild rechts, ein
+  Hauptknopf, der zweite Weg (Verlegung) als Textlink daneben, Telefon und
+  WhatsApp als Textlinks. Kein Overlay auf dem Bild. Shopvergleich 2026-10-15
+  (w-096): ein Ziel je Bildschirm, Rot nur fuer Preis, Rabatt und Hauptknopf -
+  deshalb ist <em> in der Ueberschrift nicht mehr rot.
+  Aufbau "kompakt" (Startseiten-Umbau C, w-096): ohne Bild, Ueberschrift ueber
+  die volle Breite, Unterzeile, Textlink und Bewertung in einer Zeile - damit
+  die Kategorien mit grossen Bildern in den ersten Bildschirm ruecken. Das Bild
+  wird dann gar nicht ausgegeben, LCP ist die erste Kategoriekarte.
+  Das Bild ist das LCP-Element und laedt deshalb eager mit hoher Prioritaet.
   Die Google-Bewertung wird nur angezeigt, wenn ein Wert eingetragen ist - und dann
   als Zahl aus dem Unternehmensprofil, die der Betreiber selbst pflegt.
 {%- endcomment -%}
@@ -13,6 +20,10 @@
   # bleiben erhalten. Mehrere Absaetze wuerden dabei zu einer Zeile verschmelzen;
   # fuer eine Ueberschrift ist das richtig.
   assign h1_text = section.settings.headline | replace: '<p>', '' | replace: '</p>', ''
+  assign hero_kompakt = false
+  if section.settings.layout == 'kompakt'
+    assign hero_kompakt = true
+  endif
 
   # Google-Bewertung aus einer Quelle. Steht am Abschnitt selbst nichts, gilt
   # die Theme-Einstellung (TP Google-Bewertung). Bis 2026-09-16 wurde der Wert
@@ -26,7 +37,7 @@
   assign tp_rating_text = section.settings.rating_text | strip | default: tp_rating_standard | strip
 -%}
 
-<section class="tp-hero" aria-labelledby="tp-hero-h1">
+<section class="tp-hero{% if hero_kompakt %} tp-hero--kompakt{% endif %}" aria-labelledby="tp-hero-h1">
   <div class="tp-s-wrap tp-hero__wrap">
     <div class="tp-hero__copy">
       {%- if section.settings.eyebrow != blank -%}
@@ -46,7 +57,7 @@
           <a class="tp-s-btn tp-s-btn--primary" href="{{ section.settings.cta1_link | default: '/collections/all' }}">{{ section.settings.cta1_label | escape }}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
         {%- endif -%}
         {%- if section.settings.cta2_label != blank -%}
-          <a class="tp-s-btn tp-s-btn--ghost" href="{{ section.settings.cta2_link | default: '/pages/teppichboden-verlegen-lassen' }}">{{ section.settings.cta2_label | escape }}</a>
+          <a class="tp-hero__textlink" href="{{ section.settings.cta2_link | default: '/pages/teppichboden-verlegen-lassen' }}">{{ section.settings.cta2_label | escape }}</a>
         {%- endif -%}
       </div>
       <div class="tp-hero__meta">
@@ -63,13 +74,14 @@
         {%- endif -%}
       </div>
     </div>
+    {%- unless hero_kompakt -%}
     <div class="tp-hero__media">
       {%- if section.settings.bild != blank -%}
         {%- comment -%}
           alt zuerst zuweisen: eine Filterkette im alt-Argument verschluckt alle
           folgenden Argumente von image_tag - class kam sonst nie am Bild an.
         {%- endcomment -%}
-        {%- assign hero_alt = section.settings.bild.alt | default: section.settings.bild_caption -%}
+        {%- assign hero_alt = section.settings.bild.alt | default: section.settings.bild_alt | default: section.settings.bild_caption -%}
         {%- comment -%}
           sizes folgt dem Raster: mobil volle Breite minus 2x16px Rand, darueber
           die rechte Spalte (1fr von 2.05fr abzueglich Luecke), gedeckelt durch
@@ -90,6 +102,7 @@
         <span class="tp-hero__cap">{{ section.settings.bild_caption | escape }}</span>
       {%- endif -%}
     </div>
+    {%- endunless -%}
   </div>
 </section>
 
@@ -97,33 +110,55 @@
   .tp-hero { background: #f6f2ec; border-bottom: 1px solid #e6e0d8; }
   .tp-hero__wrap { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 48px; align-items: center; min-height: 480px; padding-top: 40px; padding-bottom: 40px; }
   .tp-hero__eyebrow { color: #4a443f; }
-  .tp-hero__h1 { font-size: clamp(30px, 3.4vw, 46px); font-weight: 700; line-height: 1.12; letter-spacing: -0.01em; margin: 0; color: #1d1a17; text-wrap: balance; }
-  .tp-hero__h1 em { font-style: normal; color: #b0303f; }
-  .tp-hero__sub { font-size: 18px; color: #4a443f; max-width: 52ch; margin: 16px 0 26px; line-height: 1.5; }
+  /* Hoechstens zwei Zeilen ab 1024 px (gemessen 2026-10-15: 28 px bei 1024, 36 px ab 1280 bei 586 px Spalte); am Telefon drei. */
+  .tp-hero__h1 { font-size: var(--tp-fs-2xl); font-weight: 700; line-height: 1.12; letter-spacing: -0.01em; margin: 0; color: #1d1a17; text-wrap: balance; }
+  .tp-hero__h1 em { font-style: normal; color: inherit; }
+  .tp-hero__sub { font-size: var(--tp-fs-lg); color: #4a443f; max-width: 52ch; margin: 16px 0 26px; line-height: 1.5; }
   /* Die Absaetze kommen aus dem Richtext-Feld; der aeussere Abstand steht oben. */
   .tp-hero__sub p { margin: 0; }
   .tp-hero__sub p + p { margin-top: 0.6em; }
-  .tp-hero__ctas { display: flex; gap: 12px; flex-wrap: wrap; }
-  .tp-hero__meta { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 22px; font-size: 15px; color: #4a443f; }
+  .tp-hero__ctas { display: flex; align-items: center; gap: 12px 24px; flex-wrap: wrap; }
+  .tp-hero__textlink { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; color: #1d1a17; text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
+  .tp-hero__textlink:hover { text-decoration-thickness: 2px; }
+  .tp-hero__meta { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 22px; font-size: var(--tp-fs-md); color: #4a443f; }
   .tp-hero__meta a { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; color: #1d1a17; text-decoration: none; min-height: 44px; }
   .tp-hero__meta svg { width: 17px; height: 17px; }
-  .tp-hero__rating { background: #fff; border: 1px solid #e6e0d8; border-radius: 999px; padding: 0 12px 0 8px; font-size: 14px; }
-  .tp-hero__stars { color: #e5a51c; letter-spacing: 1px; font-size: 15px; }
-  .tp-hero__rating small { color: var(--tp-muted, #655e57); font-size: 12px; font-weight: 400; }
+  .tp-hero__rating { background: #fff; border: 1px solid #e6e0d8; border-radius: 999px; padding: 0 12px 0 8px; font-size: var(--tp-fs-sm); }
+  .tp-hero__stars { color: #e5a51c; letter-spacing: 1px; font-size: var(--tp-fs-md); }
+  .tp-hero__rating small { color: var(--tp-muted, #655e57); font-size: var(--tp-fs-xs); font-weight: 400; }
   .tp-hero__media { position: relative; border-radius: 16px; overflow: hidden; aspect-ratio: 5 / 4; box-shadow: 0 10px 30px rgba(29, 26, 23, 0.1); background: #ede7de; }
   .tp-hero__img, .tp-hero__platzhalter svg { width: 100%; height: 100%; object-fit: cover; object-position: center 60%; display: block; }
-  .tp-hero__cap { position: absolute; left: 14px; bottom: 14px; background: rgba(29, 26, 23, 0.82); color: #fff; font-size: 13px; padding: 7px 12px; border-radius: 999px; }
-  @media (max-width: 1023px) { .tp-hero__wrap { gap: 28px; min-height: 0; } }
+  .tp-hero__cap { position: absolute; left: 14px; bottom: 14px; background: rgba(29, 26, 23, 0.82); color: #fff; font-size: var(--tp-fs-sm); padding: 7px 12px; border-radius: 999px; }
+  /* .tp-hero davor: .tp-s-wrap (tp-startseite.css, laedt spaeter) setzt sonst
+     padding: 0 und der Text klebt an der Suchleiste - am Desktop haelt die
+     min-height den Abstand, darunter nicht. */
+  @media (max-width: 1023px) { .tp-hero__wrap { gap: 28px; min-height: 0; } .tp-hero .tp-hero__wrap { padding-top: 28px; padding-bottom: 28px; } }
   @media (max-width: 767px) {
-    .tp-hero__wrap { grid-template-columns: 1fr; padding-top: 20px; padding-bottom: 28px; gap: 20px; }
+    .tp-hero__wrap { grid-template-columns: 1fr; gap: 20px; }
+    .tp-hero .tp-hero__wrap { padding-top: 20px; padding-bottom: 28px; }
     /* Text vor Bild: H1 und Buttons gehoeren in den ersten Bildschirm (Audit B-06) */
     .tp-hero__media { aspect-ratio: 16 / 10; border-radius: 12px; }
-    .tp-hero__h1 { font-size: 30px; }
-    .tp-hero__sub { font-size: 16.5px; margin: 12px 0 18px; }
+    .tp-hero__h1 { font-size: var(--tp-fs-xl); }
+    .tp-hero__sub { font-size: var(--tp-fs-md); margin: 12px 0 18px; }
     .tp-hero__ctas .tp-s-btn { flex: 1 1 100%; }
-    .tp-hero__meta { gap: 12px 16px; font-size: 14.5px; }
+    .tp-hero__meta { gap: 12px 16px; font-size: var(--tp-fs-sm); margin-top: 8px; }
   }
-  @media (max-width: 389px) { .tp-hero__h1 { font-size: 27px; } .tp-hero__rating { width: 100%; } }
+  @media (max-width: 389px) { .tp-hero__h1 { font-size: var(--tp-fs-xl); } .tp-hero__rating { width: 100%; } }
+
+  /* Kompakt: eine Spalte, Unterzeile + Textlink + Bewertung als eine Zeile. */
+  .tp-hero.tp-hero--kompakt .tp-hero__wrap { display: block; min-height: 0; padding-top: 28px; padding-bottom: 20px; }
+  .tp-hero--kompakt .tp-hero__copy { display: flex; flex-wrap: wrap; align-items: center; gap: 0 28px; }
+  .tp-hero--kompakt .tp-hero__eyebrow, .tp-hero--kompakt .tp-hero__h1 { flex: 1 1 100%; }
+  .tp-hero--kompakt .tp-hero__h1 { margin-bottom: 8px; }
+  .tp-hero--kompakt .tp-hero__sub { margin: 0; font-size: var(--tp-fs-md); }
+  .tp-hero--kompakt .tp-hero__meta { margin-top: 0; }
+  @media (max-width: 767px) {
+    .tp-hero.tp-hero--kompakt .tp-hero__wrap { padding-top: 18px; padding-bottom: 12px; }
+    .tp-hero--kompakt .tp-hero__copy { column-gap: 18px; }
+    .tp-hero--kompakt .tp-hero__sub { flex: 1 1 100%; font-size: var(--tp-fs-md); margin-bottom: 2px; }
+    .tp-hero--kompakt .tp-hero__ctas { flex: 0 1 auto; }
+    .tp-hero--kompakt .tp-hero__ctas .tp-s-btn { flex: 0 1 auto; }
+  }
 {% endstylesheet %}
 
 {% schema %}
@@ -131,13 +166,14 @@
   "name": "TP Start-Hero",
   "tag": "section",
   "settings": [
+    { "type": "select", "id": "layout", "label": "Aufbau", "options": [ { "value": "bild", "label": "Text und Bild" }, { "value": "kompakt", "label": "Kompakt ohne Bild" } ], "default": "bild", "info": "Kompakt: Kategorien mit grossen Bildern direkt darunter im ersten Bildschirm." },
     { "type": "text", "id": "eyebrow", "label": "Kleine Zeile darueber", "default": "Fachhandel in Oranienburg" },
-    { "type": "richtext", "id": "headline", "label": "Ueberschrift (H1)", "info": "Rot hervorheben mit <em>…</em>", "default": "<p>Bodenbeläge vom Fachhandel – <em>online kaufen</em> oder <em>verlegen lassen</em>.</p>" },
-    { "type": "richtext", "id": "subline", "label": "Unterzeile", "default": "<p>Teppichboden, Vinyl und Linoleum als Meterware oder Paket – deutschlandweit geliefert. In Oranienburg und Umgebung messen wir auf, liefern und verlegen.</p>" },
-    { "type": "text", "id": "cta1_label", "label": "Button 1", "default": "Bodenbeläge entdecken" },
-    { "type": "url", "id": "cta1_link", "label": "Button 1 Ziel" },
-    { "type": "text", "id": "cta2_label", "label": "Button 2", "default": "Verlegung anfragen" },
-    { "type": "url", "id": "cta2_link", "label": "Button 2 Ziel" },
+    { "type": "richtext", "id": "headline", "label": "Ueberschrift (H1)", "info": "Hoechstens zwei Zeilen. Keine farbige Hervorhebung: Rot bleibt Preis, Rabatt und Hauptknopf vorbehalten.", "default": "<p>Teppichboden und Vinyl nach Maß, vom Fachgeschäft in Oranienburg.</p>" },
+    { "type": "richtext", "id": "subline", "label": "Unterzeile", "default": "<p>Böden zugeschnitten, geliefert und auf Wunsch verlegt.</p>" },
+    { "type": "text", "id": "cta1_label", "label": "Hauptknopf", "default": "Boden aussuchen" },
+    { "type": "url", "id": "cta1_link", "label": "Hauptknopf Ziel" },
+    { "type": "text", "id": "cta2_label", "label": "Textlink daneben", "default": "Verlegung anfragen (bis 50 km)" },
+    { "type": "url", "id": "cta2_link", "label": "Textlink Ziel" },
     { "type": "text", "id": "telefon", "label": "Telefon", "default": "03301 573 37 20" },
     { "type": "url", "id": "whatsapp", "label": "WhatsApp-Link (wa.me/…)" },
     { "type": "header", "content": "Google-Bewertung (leer = ausgeblendet)" },
@@ -145,8 +181,9 @@
     { "type": "text", "id": "rating_text", "label": "Text daneben", "default": "Google-Bewertungen" },
     { "type": "url", "id": "rating_link", "label": "Link zum Google-Profil" },
     { "type": "header", "content": "Bild" },
-    { "type": "image_picker", "id": "bild", "label": "Echtes Projektfoto (Boden im Vordergrund)" },
-    { "type": "text", "id": "bild_caption", "label": "Bildunterschrift", "default": "Echtes Projekt · Teppichboden, von uns verlegt" }
+    { "type": "image_picker", "id": "bild", "label": "Helles Wohnraumbild (Boden im Vordergrund)" },
+    { "type": "text", "id": "bild_alt", "label": "Bildbeschreibung (Alt-Text)", "info": "Gilt, wenn das Bild in Shopify keinen Alt-Text hat." },
+    { "type": "text", "id": "bild_caption", "label": "Bildunterschrift", "info": "\"Echtes Projekt\" nur bei eigenen Projektfotos." }
   ],
   "presets": [ { "name": "TP Start-Hero" } ]
 }

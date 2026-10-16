@@ -16,12 +16,21 @@
 -%}
 
 {%- if tp_cg_role != blank -%}
-  <div {{ block.shopify_attributes }}>
+  {%- comment -%} Klasse fuer die feste Zeile im Kartenraster (snippets/tp-kartenraster) {%- endcomment -%}
+  <div class="tp-card-groessen" {{ block.shopify_attributes }}>
     {% render 'tp-produktgruppe-liste', product: tp_cg_product, style: 'card' %}
   </div>
 {%- endif -%}
 
 {% stylesheet %}
+  /* Huelle der Groessenauswahl; Zeile und Abstand im Kartenraster setzt
+     snippets/tp-kartenraster. Die Regel hier haelt lange Groessenlisten in der
+     Kartenbreite und definiert die Klasse dort, wo sie ausgegeben wird
+     (Theme Check ValidScopedCSSClass, Preview-Gate 2026-10-15). */
+  .tp-card-groessen {
+    min-width: 0;
+  }
+
   .tp-groessen {
     display: flex;
     flex-wrap: wrap;
@@ -31,7 +40,7 @@
   }
 
   .tp-groessen__label {
-    font-size: 13.5px;
+    font-size: var(--tp-fs-sm);
     font-weight: 600;
     color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.75);
   }
@@ -51,7 +60,7 @@
     gap: 2px;
     padding: 5px 10px;
     color: var(--color-foreground);
-    font-size: 13.5px;
+    font-size: var(--tp-fs-sm);
     line-height: 1.3;
     text-decoration: none;
     white-space: nowrap;
@@ -77,12 +86,12 @@
   }
 
   .tp-groessen__price {
-    font-size: 12.5px;
+    font-size: var(--tp-fs-xs);
     opacity: 0.8;
   }
 
   .tp-groessen__hint {
-    font-size: 12px;
+    font-size: var(--tp-fs-xs);
     opacity: 0.75;
   }
 
@@ -95,7 +104,7 @@
   .tp-groessen--pdp .tp-groessen__label {
     display: block;
     margin-block-end: 8px;
-    font-size: 1rem;
+    font-size: var(--tp-fs-md);
   }
 
   .tp-groessen--pdp .tp-groessen__list {
@@ -105,13 +114,13 @@
   .tp-groessen--pdp .tp-groessen__option {
     align-items: flex-start;
     padding: 10px 16px;
-    font-size: 1rem;
+    font-size: var(--tp-fs-md);
     border-radius: var(--style-border-radius-md, 8px);
   }
 
   @media screen and (max-width: 749px) {
     .tp-groessen__option {
-      font-size: 13px;
+      font-size: var(--tp-fs-xs);
     }
 
     .tp-groessen--pdp .tp-groessen__list {
@@ -122,7 +131,7 @@
     .tp-groessen--pdp .tp-groessen__option {
       white-space: normal;
       padding: 9px 12px;
-      font-size: 0.95rem;
+      font-size: var(--tp-fs-md);
     }
   }
 {% endstylesheet %}

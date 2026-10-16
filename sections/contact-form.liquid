@@ -12,12 +12,12 @@
     min-width: 300px;
   }
   .kontakt-info h2 {
-    font-size: 28px;
+    font-size: var(--tp-fs-xl);
     margin-bottom: 20px;
     color: #333;
   }
   .kontakt-info p {
-    font-size: 16px;
+    font-size: var(--tp-fs-md);
     margin: 6px 0;
     color: #555;
   }
@@ -37,7 +37,7 @@
     border: 1px solid #ccc;
     border-radius: 6px;
     /* 16px: darunter zoomt iOS Safari beim Antippen in das Feld */
-    font-size: 16px;
+    font-size: var(--tp-fs-md);
   }
   .kontakt-formular button {
     margin-top: 20px;
@@ -47,7 +47,7 @@
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: var(--tp-fs-md);
   }
   .kontakt-formular button:hover {
     background-color: #444;
@@ -79,7 +79,7 @@
      damit der Kunde sieht, worauf sich seine Nachricht bezieht. */
   .tp-anfrage-hinweis {
     margin: 0 0 12px;
-    font-size: 17px;
+    font-size: var(--tp-fs-md);
     font-weight: 600;
     color: #222;
   }
@@ -93,7 +93,7 @@
   }
 
   .tp-sample-intro__heading {
-    font-size: 22px;
+    font-size: var(--tp-fs-lg);
     margin: 0 0 8px;
     color: #222;
   }
@@ -116,13 +116,13 @@
 
   .tp-sample-intro__product-name {
     font-weight: 700;
-    font-size: 15px;
+    font-size: var(--tp-fs-md);
   }
 
   .tp-sample-intro__text {
     margin: 0;
     color: #555;
-    font-size: 15px;
+    font-size: var(--tp-fs-md);
   }
 
   [data-sample-field] {
@@ -141,7 +141,7 @@
     padding: 12px 14px;
     border-radius: 8px;
     margin-bottom: 12px;
-    font-size: 14.5px;
+    font-size: var(--tp-fs-sm);
   }
 
   .tp-form-success {
@@ -185,7 +185,7 @@
   .tp-contact-service-links {
     margin: 0 0 18px;
     color: #333;
-    font-size: 16px;
+    font-size: var(--tp-fs-md);
   }
   .tp-contact-service-links p { margin: 0 0 4px; }
 
@@ -200,7 +200,7 @@
   .tp-produktwahl__hinweis,
   .tp-produktwahl__direkt {
     margin: 6px 0 0;
-    font-size: 14px;
+    font-size: var(--tp-fs-sm);
     line-height: 1.4;
     color: #555;
   }
@@ -236,7 +236,7 @@
     border-radius: 4px;
     background: transparent;
     color: #222;
-    font-size: 15px;
+    font-size: var(--tp-fs-md);
     font-weight: 400;
     line-height: 1.3;
     text-align: left;
@@ -289,11 +289,11 @@
     width: 32px;
     height: 32px;
     margin: 0 auto 10px;
-    color: var(--tp-red, #b0303f);
+    color: var(--tp-ink, #1d1a17);
   }
   .tp-karte__adresse {
     margin: 0 0 18px;
-    font-size: 16px;
+    font-size: var(--tp-fs-md);
     line-height: 1.5;
   }
   .tp-karte__aktionen {
@@ -311,7 +311,7 @@
     background-color: #222;
     color: #fff;
     font: inherit;
-    font-size: 16px;
+    font-size: var(--tp-fs-md);
     font-weight: 600;
     cursor: pointer;
   }
@@ -335,7 +335,7 @@
   .tp-karte__hinweis {
     margin: 14px 0 0;
     color: #555;
-    font-size: 14px;
+    font-size: var(--tp-fs-sm);
     line-height: 1.5;
   }
   .tp-karte__hinweis a {

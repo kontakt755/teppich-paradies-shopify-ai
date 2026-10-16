@@ -114,8 +114,22 @@
   if parent_link.type == 'collection_link' and parent_link.object.handle == 'vinylboden-1'
     assign tp_vinyl_nav = true
   endif
+  # Gruppen im Menue (Unterpunkt mit Link "#" und eigenen Unterpunkten, z. B.
+  # Teppichboden > Farbe): Bildkarten plus Spalten, siehe snippets/tp-menu-spalten.liquid
+  assign tp_spalten_nav = false
+  for tp_sp in parent_link.links
+    if tp_sp.links != blank and tp_sp.url == '#'
+      assign tp_spalten_nav = true
+      break
+    endif
+  endfor
 -%}
-{%- if tp_leisten_nav -%}
+{%- if tp_spalten_nav -%}
+  <div class="mega-menu__intro">
+    <p class="mega-menu__intro-title">{{ parent_link.title | escape }}</p>
+  </div>
+  {% render 'tp-menu-spalten', parent_link: parent_link, kacheln: kacheln %}
+{%- elsif tp_leisten_nav -%}
   <div class="mega-menu__intro">
     <p class="mega-menu__intro-title">{{ parent_link.title | escape }}</p>
   </div>
@@ -145,6 +159,9 @@
   style="--menu-image-border-radius: {{ image_border_radius }}px;"
 >
   {% for link in parent_link.links %}
+    {%- comment -%} Saisonale Unterpunkte (Aktuelle Angebote) nur mit Inhalt: snippets/tp-menu-link-sichtbar {%- endcomment -%}
+    {%- capture tp_mls -%}{%- render 'tp-menu-link-sichtbar', link: link -%}{%- endcapture -%}
+    {%- if tp_mls contains 'nein' -%}{%- continue -%}{%- endif -%}
     {% liquid
       # Decide whether to open a column span, and how many columns of the grid to span
       if forloop.first or open_column_span == false
@@ -197,6 +214,9 @@
             render 'tp-produktzahl', anzahl: link.object.all_products_count
           endcapture
         endif
+        if tp_card_sub == blank and link.title == 'Kontakt'
+          assign tp_card_sub = 'Anrufen, WhatsApp, vor Ort'
+        endif
       endif
     -%}
     <div class="tp-mm-card{% if menu_content_type == 'collection_images' %} tp-mm-card--media{% endif %}">
@@ -225,7 +245,12 @@
             {%- render 'tp-menu-bild', link: link, kacheln: kacheln, class: 'mega-menu__link-image', sizes: collection_image_sizes -%}
           {%- endcapture -%}
           <span class="tp-mm-card__media">
-            {%- if tp_card_img contains '<img' -%}
+            {%- if link.title == 'Kontakt' -%}
+              {%- comment -%} Kontakt (seit w-094 unter Service): Symbol wie in tp-kontakt-nav {%- endcomment -%}
+              <span class="tp-mm-card__icon tp-mm-card__icon--phone mega-menu__link-image" aria-hidden="true">
+                {%- render 'tp-drawer-icon', name: 'phone' -%}
+              </span>
+            {%- elsif tp_card_img contains '<img' -%}
               {{ tp_card_img }}
             {%- else -%}
               {%- comment -%} Kein Bild aus keiner Quelle: farbige Kachel mit Initiale statt grauer Flaeche. {%- endcomment -%}
@@ -251,6 +276,8 @@
           {% endif %}
         >
           {% for childLink in link.links %}
+            {%- comment -%} "Alle Bodenleisten" fuehrt dorthin, wohin schon die Karte fuehrt {%- endcomment -%}
+            {%- if childLink.url == link.url -%}{%- continue -%}{%- endif -%}
             {% assign break_after_modulo = forloop.index | modulo: links_before_wrap %}
             <li
               {% if break_after_modulo == 0 and should_break_columns %}
@@ -379,16 +406,29 @@
     {%- liquid
       # Bildkarten: Spaltenzahl nach Anzahl der Punkte, damit keine Reihe aus einer
       # einzelnen schmalen Karte neben leerer Flaeche besteht. Bis sechs Punkte stehen
-      # in einer Reihe, ab sieben in Vierergruppen (7 = 4 + 3, 8 = 4 + 4). Bei bis zu
-      # drei Punkten begrenzt --tp-mm-col die Kartenbreite, sonst wuerde eine Karte
-      # die halbe Seite fuellen.
+      # in einer Reihe, ab sieben hoechstens fuenf je Reihe, gleichmaessig verteilt
+      # (7 = 4 + 3, 8 = 4 + 4, 9 = 5 + 4, 10 = 5 + 5). Bis 2026-10-15 waren es
+      # Vierergruppen; seit dem Umbau auf neun Hauptpunkte (w-094) haben Zubehoer & Leisten
+      # (10) und Service & Verlegung (9 mit Kontakt) eine dritte Reihe, die bei
+      # 1440 x 900 nicht mehr ins Panel passte. Bei bis zu drei Punkten begrenzt
+      # --tp-mm-col die Kartenbreite, sonst wuerde eine Karte die halbe Seite fuellen.
       assign tp_mm_n = parent_link.links.size | at_least: 1
       if tp_mm_n <= 6
         assign tp_mm_cols = tp_mm_n
       else
-        assign tp_mm_cols = 4
+        assign tp_mm_rows5 = tp_mm_n | plus: 4 | divided_by: 5
+        assign tp_mm_cols = tp_mm_n | plus: tp_mm_rows5 | minus: 1 | divided_by: tp_mm_rows5
       endif
       assign tp_mm_cols_tablet = tp_mm_cols | at_most: 4
+      # Breite Bildschirme (Kopf bis 2000 px, assets/tp-nav.css): Vierergruppen
+      # wuerden dort riesige Karten und vier Reihen ergeben. Stattdessen hoechstens
+      # sechs je Reihe, gleichmaessig verteilt: Reihen = aufgerundet n / 6,
+      # Spalten = aufgerundet n / Reihen (8 = 4 + 4, 9 = 5 + 4, 15 = 5 + 5 + 5).
+      assign tp_mm_cols_wide = tp_mm_cols
+      if tp_mm_n > 6
+        assign tp_mm_rows = tp_mm_n | plus: 5 | divided_by: 6
+        assign tp_mm_cols_wide = tp_mm_n | plus: tp_mm_rows | minus: 1 | divided_by: tp_mm_rows
+      endif
       assign tp_mm_col = 'minmax(0, 1fr)'
       if tp_mm_n <= 3
         assign tp_mm_col = 'minmax(0, 22rem)'
@@ -397,6 +437,7 @@
     .mega-menu__grid[data-menu-grid-id="{{ id }}"] {
       --tp-mm-cols: {{ tp_mm_cols }};
       --tp-mm-cols-tablet: {{ tp_mm_cols_tablet }};
+      --tp-mm-cols-wide: {{ tp_mm_cols_wide }};
       --tp-mm-col: {{ tp_mm_col }};
     }
   {%- endif -%}

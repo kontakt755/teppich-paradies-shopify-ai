@@ -99,6 +99,8 @@
       grid-column: var(--full-width);
       --product-grid-gap-mobile: {{ section.settings.columns_gap_vertical | at_most: 12 }}px {{ section.settings.columns_gap_horizontal | at_most: 12 }}px;
       --product-grid-gap-desktop: {{ section.settings.columns_gap_vertical }}px {{ section.settings.columns_gap_horizontal }}px;
+      --tp-raster-reihenabstand-mobile: {{ section.settings.columns_gap_vertical | at_most: 12 }}px;
+      --tp-raster-reihenabstand-desktop: {{ section.settings.columns_gap_vertical }}px;
       container-type: inline-size;
       container-name: product-grid;
     "
@@ -146,8 +148,13 @@
       {% else %}
         <h2 class="visually-hidden">Produkte</h2>
       {% endif %}
+      {%- comment -%}
+        TP: tp-kartenraster = feste Zeilen in den Karten (snippets/tp-kartenraster),
+        nur im gleichmaessigen Raster - im Layout "organic" sind Karten
+        unterschiedlich gross.
+      {%- endcomment -%}
       <ul
-        class="product-grid product-grid--{{ section.id }} product-grid--{{ section.settings.layout_type }} {% if section.settings.mobile_product_card_size == 'large' %} product-grid-mobile--large{% endif %}"
+        class="product-grid product-grid--{{ section.id }} product-grid--{{ section.settings.layout_type }} {% if section.settings.mobile_product_card_size == 'large' %} product-grid-mobile--large{% endif %}{% if section.settings.layout_type == 'grid' %} tp-kartenraster{% endif %}"
         data-testid="product-grid"
         product-grid-view="default"
         ref="grid"
@@ -196,6 +203,8 @@
     {% endif %}
   </div>
 </div>
+
+{% render 'tp-kartenraster' %}
 
 {% stylesheet %}
   .product-grid {

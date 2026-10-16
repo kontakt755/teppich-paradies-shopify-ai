@@ -23,8 +23,17 @@
   und Skripte stehen deshalb in tp-drawer-nav-mechanik - ein nachgemorphtes
   script-Tag laeuft nicht.
 
+  Unterzeile der Hauptebene (w-094, einheitlich statt gemischt aus Kurztext,
+  Aufzaehlung und Produktzahl): zuerst die Einstellung "Handy-Menue: Unterzeile je
+  Hauptpunkt" am Menue-Block (Zeilen "Titel: Text"), dann der Kurztext der
+  Bildkachel, dann bis zu drei Unterpunkte, zuletzt die Produktzahl.
+
+  Bereiche mit Gruppen im Menue (Unterpunkt mit Link "#", z. B. Teppichboden >
+  Farbe) zeigen Kacheln plus Chips aus snippets/tp-menu-spalten.liquid.
+
   @param {object} linklist - Hauptmenue
   @param {string} [kacheln] - Datensaetze der Bildkacheln (siehe tp-menu-kachel-index)
+  @param {string} [kurztexte] - Einstellung tp_kurztexte des Menue-Blocks
 {%- enddoc -%}
 
 <ul class="tp-dn" role="list">
@@ -34,7 +43,16 @@
     {%- if tp_mls contains 'nein' -%}{%- continue -%}{%- endif -%}
     {%- liquid
       assign tp_dn_kind = 'liste'
-      if link.type == 'collection_link' and link.object.handle == 'vinylboden-1'
+      assign tp_dn_gruppen = false
+      for c in link.links
+        if c.links != blank and c.url == '#'
+          assign tp_dn_gruppen = true
+          break
+        endif
+      endfor
+      if tp_dn_gruppen
+        assign tp_dn_kind = 'spalten'
+      elsif link.type == 'collection_link' and link.object.handle == 'vinylboden-1'
         assign tp_dn_kind = 'vinyl'
       elsif link.type == 'collection_link' and link.object.handle == 'bodenleisten'
         assign tp_dn_kind = 'leisten'
@@ -93,7 +111,7 @@
       else
         for c in link.links
           assign c_first = c.title | split: ' ' | first
-          if c.url == link.url or c_first == 'Alle' or c_first == 'Alles'
+          if c.url == link.url or c.url == '#' or c_first == 'Alle' or c_first == 'Alles'
             continue
           endif
           assign tp_dn_seen = tp_dn_seen | plus: 1
@@ -139,6 +157,23 @@
         if tp_dn_kurz != blank
           assign tp_dn_sub = tp_dn_kurz
         endif
+      endif
+
+      # Einstellung am Menue-Block schlaegt alles (eine Art Unterzeile fuer alle)
+      if kurztexte != blank
+        assign tp_dn_kt_titel = link.title | strip
+        assign tp_dn_kt_zeilen = kurztexte | newline_to_br | split: '<br />'
+        for z in tp_dn_kt_zeilen
+          assign z = z | strip
+          assign z_titel = z | split: ':' | first | strip
+          if z_titel == tp_dn_kt_titel
+            assign tp_dn_kt = z | remove_first: z_titel | strip | remove_first: ':' | strip
+            if tp_dn_kt != blank
+              assign tp_dn_sub = tp_dn_kt | escape
+            endif
+            break
+          endif
+        endfor
       endif
       assign tp_dn_img = ''
       if tp_dn_kind != 'kontakt'
@@ -238,6 +273,8 @@
               </div>
               <div class="tp-dn-panel__body">
                 {%- case tp_dn_kind -%}
+                  {%- when 'spalten' -%}
+                    {%- render 'tp-menu-spalten', variant: 'drawer', parent_link: link, kacheln: kacheln -%}
                   {%- when 'vinyl' -%}
                     {%- render 'tp-vinyl-nav', variant: 'drawer', parent_link: link, kacheln: kacheln -%}
                   {%- when 'leisten' -%}

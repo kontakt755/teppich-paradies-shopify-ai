@@ -6,7 +6,7 @@
   max-width: var(--tp-container, 1240px);
   margin: 0 auto;
   padding: 0 var(--tp-pad, 24px);
-  font-size: 13px;
+  font-size: var(--tp-fs-sm);
   line-height: 1.4;
   color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62);
 }

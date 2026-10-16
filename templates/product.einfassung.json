@@ -389,9 +389,28 @@
               "block_order": [
                 "tp_row_technik"
               ]
+            },
+            "tp_bildnachweis_mobil": {
+              "type": "tp-bildnachweis",
+              "name": "TP Bildnachweis (Handy)",
+              "settings": {
+                "label": "Produktbilder:",
+                "sichtbarkeit": "mobil"
+              },
+              "blocks": {}
+            },
+            "tp_bildnachweis_desktop": {
+              "type": "tp-bildnachweis",
+              "name": "TP Bildnachweis (Desktop)",
+              "settings": {
+                "label": "Produktbilder:",
+                "sichtbarkeit": "desktop"
+              },
+              "blocks": {}
             }
           },
           "block_order": [
+            "tp_bildnachweis_mobil",
             "group_icgrde",
             "tp_aktion_hinweis",
             "divider_VJhene",
@@ -409,7 +428,8 @@
             "tp_service_links_sales1",
             "tp_zubehoer_empfehlung",
             "tp_produkt_akkordeon_technik",
-            "text_aEtTtq"
+            "text_aEtTtq",
+            "tp_bildnachweis_desktop"
           ]
         }
       },

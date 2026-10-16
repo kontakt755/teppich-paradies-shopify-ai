@@ -33,7 +33,7 @@ Lexware Office API: /v1/articles (lesen), /v1/quotations (Entwurf anlegen, lesen
 
 | Datei | Inhalt | Wer pflegt |
 |---|---|---|
-| `src/00_konfig.js` | Regelparameter (649 €, 15 km, 5 %, 12 m², Zugabe 10 cm), Artikelverweise je Leistung, Reihenfolge – **keine Preise** | Regeländerung per PR |
+| `src/00_konfig.js` | Regelparameter (649 €, 15 km, 12 m², Zugabe 10 cm), Artikelverweise je Leistung, Reihenfolge – **keine Preise** | Regeländerung per PR |
 | `src/20_textbausteine.js` | Formulierungen wortgleich aus dem Skill | per PR |
 | `src/21_pflichtkontrolle.js` | jeder Punkt der Pflichtkontrolle als automatische Prüfung oder als Bestätigung | per PR |
 | `src/10_artikel.js` | Artikelstamm einlesen, AUSORTIERT/archiviert ausschließen, Preisstatus | – |
@@ -135,7 +135,7 @@ Werte für **Sockelleisten-Montage**: `cubu_bis60`, `kso_bis60`,
 | 3 Aktion 649 € | Brutto-Warenwert nur aus Teppich-/PVC-Rollenware. Bedingungen: höchstens 15 km, Privatkunde, kein rabattierter Belag. Bei unbekannter Entfernung wird die Aktion nicht angewendet, es kommt eine Rückfrage. Bei aktiver Aktion: Aktions-Verlegeposition 0 € und 1. Fahrt inklusive. |
 | 4 Fixierung | Bei Aktion „Zusätzlich Rollenware vollflächig fixieren“ bzw. Klettband-Zusatz. TB-020 bei Aktion ist ein Konflikt. Sprühkleber ist gesperrt. Bei loser Verlegung kommt ein Hinweis „Fixierung anbieten“, oder die Fixierung wird als optionale Position aufgenommen. |
 | 5 Flächen | Bestellmaß je Raum/Bahn = Rollenbreite × (Länge + 10 cm), auf volle cm. Verlegung, Fixierung und Kleber nach Netto-Verlegefläche. Eine kürzere Bestelllänge ist ein Konflikt. Ist der Raum breiter als die Rolle, müssen Bahnen angegeben werden. |
-| 5a Dämmung | (Netto × 1,05) / Rolleninhalt, auf halbe Rolle aufgerundet (optional ganze Rollen). Menge = Rollen × Inhalt, Beschreibung „entspricht ca. X Rollen à Y m²“. |
+| 5a Dämmung | Netto / Rolleninhalt ohne extra Verschnitt (Entscheidung 14.10.2026), auf halbe Rolle aufgerundet (optional ganze Rollen). Menge = Rollen × Inhalt, Beschreibung „entspricht ca. X Rollen à Y m²“. |
 | Verpackung | Paketware: Netto × (1 + Verschnitt %) / Paketinhalt → ganze Pakete. Ohne Verschnittangabe wird nichts geschätzt, das ist ein Fehler. „Anteilig“ ist bewusst wählbar. |
 | Pauschalen | Lexware-Pauschale „Einzelraum bis 12 m²“, wenn die Verlegegruppe genau ein Raum mit höchstens 12 m² ist. |
 | 6 Fahrten | FA-010 (nah), „An- und Abfahrt Berlin“, weitere Entfernung = Fehler. Mehrere Fahrten laufen über die Menge. |
@@ -147,6 +147,16 @@ Werte für **Sockelleisten-Montage**: `cubu_bis60`, `kso_bis60`,
 | 13 Preise | Netto mit 2 Stellen. Sonderpreise brauchen eine Begründung und werden in der Vorschau gelb sowie im Protokoll markiert. |
 | 15 Pflichtkontrolle | 21 Punkte, davon 4 per Bestätigung. Ohne alle Punkte kein Entwurf. |
 | 16 Lernregel | Eine neue allgemeine Regel wird eine Änderung an `00_konfig.js`, `20_` oder `21_` per PR, mit Test. So bleibt sie nachvollziehbar und gilt für alle. |
+
+## Festgelegte Werte (Inhaber, 14.10.2026)
+
+| Wert | Festlegung |
+|---|---|
+| Dämmunterlagen | ohne extra Verschnitt, auf halbe Rolle aufgerundet |
+| Sockelleisten-Verschnitt | Standard 10 %, ein Wert im Vorgang geht vor |
+| Angebotsgültigkeit | 30 Tage |
+| Pauschale „Einzelraum bis 12 m²“ | nur wenn die Verlegegruppe genau ein Raum mit höchstens 12 m² ist |
+| Aktions-Verlegeartikel | Lexware-ID `a8cdfc6b-e55b-4859-8098-1818210a7e67` |
 
 ## Lexware-Anbindung
 
@@ -181,17 +191,16 @@ Werte für **Sockelleisten-Montage**: `cubu_bis60`, `kso_bis60`,
   - Kontakt
   - jede Position (ID, Name, Beschreibung, Menge, Einheit, Preis, Steuer, optional)
   - Summen, Schlusstext, Datum
-- **Nicht live geprüft:** Die offizielle Doku (developers.lexware.io) war aus
-  der Entwicklungsumgebung gesperrt. Die Feldnamen stammen aus dem bekannten
-  API-Stand und `domains/lexware/api-funktionsumfang.md`. Vor dem ersten
-  Schreiben deshalb das Menü „Verbindung & Feldprüfung“ ausführen.
+- **Live geprüft am 14.10.2026:**
+  - Die Feldprüfung zeigt ✔ bei allen Kopf- und Positionsfeldern, geprüft an einer service-Position mit Artikel-ID.
+  - Der erste Testentwurf (TEST-EINFACH, 4 Positionen) wurde angelegt und zurückgelesen. Der gespeicherte Entwurf stimmte vollständig mit der Vorschau überein.
+  - Die offizielle Doku war aus der Entwicklungsumgebung gesperrt. Die Feldnamen sind deshalb durch diesen Live-Test belegt, nicht durch die Doku.
 
 ## Befunde aus den gelieferten Daten
 
-- **Dämmunterlagen:**
-  - Die aktiven Dämmartikel nennen im Text bereits „inkl. Verschnitt“, zum Beispiel DU-020 („Preis inklusive üblichem Verschnitt“) und die Klebevinyl-Dämmung „Rolle 6,5 m² … inkl. Verschnitt“.
-  - Regel 5a addiert trotzdem 5 %. Das Programm meldet das als Konflikt.
-  - Je Raum lässt es sich mit „Verschnitt im Dämmpreis = ja“ auflösen.
+- **Dämmunterlagen:** Die aktiven Dämmartikel enthalten den Verschnitt laut Text
+  bereits. Entscheidung Inhaber 14.10.2026: kein zusätzlicher Verschnitt, weiter
+  auf die nächste halbe Rolle aufrunden. Regel 5a im Lexware-Skill entsprechend anpassen.
 - **Historische Werte nicht als Standard übernommen:**
   - Anfahrt 39 €: Der aktuelle Standard FA-010 kostet 59 €. Ein abweichender Preis braucht eine Begründung.
   - Fehlendes MG-010: wird bei Verlegeangeboten automatisch ergänzt.
@@ -204,6 +213,24 @@ Werte für **Sockelleisten-Montage**: `cubu_bis60`, `kso_bis60`,
 - **Kundenspezifische Einzelfreigabe in Regel 8:** 10 lfm Silikon für ein
   bestimmtes Bad wurde nicht als allgemeine Regel übernommen; sie gehört in den
   jeweiligen Vorgang.
+
+## Code-Review 14.10.2026 (behoben, mit Tests)
+
+- Mengen wie 25,42 wurden durch Rundungsfehler als „mehr als 4 Nachkommastellen“
+  abgelehnt; jetzt mit Toleranz geprüft.
+- Dämmunterlage ohne bekannten Rolleninhalt ist ein Fehler (vorher: m² als Menge).
+- Paketware „anteilig“ nur bei Artikeleinheit m², sonst Konflikt.
+- Verschnitt bei Paketware gilt je Raum; abweichender Paketinhalt, Rolleninhalt
+  oder Sockelleisten-Verschnitt zwischen Räumen ist ein Konflikt.
+- Angegebene Bahnen mit Raumlänge ohne 10 cm Zugabe sind ein Konflikt.
+- Berlin-Fahrt bzw. „An- und Abfahrt“ als Zusatzposition zählt als Anfahrt
+  (keine zweite automatische Fahrt).
+- Rollenware bauseits (nur Verlegung) braucht kein Bestellmaß.
+- Widersprüchlicher Lexware-Preis (Netto × Steuer ≠ Brutto) ist ein Konflikt,
+  solange kein begründeter abweichender Preis angegeben ist.
+- Vorgangsprotokoll wird als Nur-Text geschrieben und als angezeigter Text
+  gelesen; IDs wie „0042“ oder „2026-10“ bleiben unverändert, die Kopfzeile wird
+  am Inhalt erkannt. Datumswerte aus Zellen werden in Berliner Zeit gelesen.
 
 ## Wo noch KI hilft – und wo nicht
 

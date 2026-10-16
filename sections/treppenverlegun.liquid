@@ -171,17 +171,17 @@
   max-width: 1200px;
   margin: 80px auto;
   padding: 0 20px;
-  font-size: 1.4rem;
+  font-size: var(--tp-fs-lg);
 }
 .treppen-title {
   text-align: center;
-  font-size: 3.2rem;
+  font-size: var(--tp-fs-2xl);
   margin-bottom: 30px;
   color: #2a2a2a;
 }
 .treppen-einleitung {
   text-align: center;
-  font-size: 1.8rem;
+  font-size: var(--tp-fs-xl);
   color: #555;
   margin-bottom: 50px;
   max-width: 800px;
@@ -195,7 +195,7 @@
   padding: 16px 32px;
   border-radius: 6px;
   text-decoration: none;
-  font-size: 1.6rem;
+  font-size: var(--tp-fs-xl);
   font-weight: 600;
   transition: background 0.2s ease;
   border: 2px solid transparent;
@@ -236,13 +236,13 @@
 
   .treppen-hero__text h1 {
     margin: 0 0 10px;
-    font-size: clamp(26px, 3.4vw, 38px);
+    font-size: var(--tp-fs-2xl);
     line-height: 1.15;
   }
 
   .treppen-hero__lead {
     margin: 0 0 16px;
-    font-size: 17px;
+    font-size: var(--tp-fs-md);
     line-height: 1.5;
     max-width: 46ch;
   }
@@ -260,7 +260,7 @@
     display: flex;
     align-items: flex-start;
     gap: 8px;
-    font-size: 16px;
+    font-size: var(--tp-fs-md);
     line-height: 1.4;
   }
 
@@ -287,7 +287,7 @@
     justify-content: center;
     min-height: 48px;
     padding: 12px 24px;
-    font-size: 17px;
+    font-size: var(--tp-fs-md);
     line-height: 1.2;
   }
 
@@ -301,13 +301,13 @@
 
   .treppen-hero__beleg {
     margin: 14px 0 0;
-    font-size: 14px;
+    font-size: var(--tp-fs-sm);
     opacity: 0.75;
   }
 
   .treppen-belag-titel {
     margin: 0 0 8px;
-    font-size: 24px;
+    font-size: var(--tp-fs-xl);
     line-height: 1.2;
     text-align: left;
   }
@@ -317,7 +317,7 @@
      Ueberschrift sieht das aus wie zwei verschiedene Seiten. */
   .treppen-belag-text {
     margin: 0 0 28px;
-    font-size: 16px;
+    font-size: var(--tp-fs-md);
     line-height: 1.5;
     max-width: 60ch;
     text-align: left;
@@ -360,19 +360,19 @@
 
   .belagsart__inhalt h3 {
     margin: 0;
-    font-size: 18px;
+    font-size: var(--tp-fs-lg);
     line-height: 1.25;
   }
 
   .belagsart__text {
     margin: 0;
-    font-size: 15px;
+    font-size: var(--tp-fs-md);
     line-height: 1.5;
   }
 
   .belagsart__ausf-titel {
     margin: 4px 0 0;
-    font-size: 13px;
+    font-size: var(--tp-fs-sm);
     font-weight: 600;
     letter-spacing: 0.02em;
     text-transform: uppercase;
@@ -389,7 +389,7 @@
   }
 
   .belagsart__ausf li {
-    font-size: 13px;
+    font-size: var(--tp-fs-sm);
     line-height: 1;
     padding: 6px 10px;
     border-radius: 999px;
@@ -413,7 +413,7 @@
 
   .treppen-why-highlight h2 {
     margin: 0 0 14px;
-    font-size: clamp(19px, 2.2vw, 22px);
+    font-size: var(--tp-fs-lg);
     line-height: 1.25;
     color: inherit;
   }
@@ -423,7 +423,7 @@
     padding: 0;
     margin: 0 0 18px;
     max-width: none;
-    font-size: 16px;
+    font-size: var(--tp-fs-md);
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 8px 24px;
@@ -453,7 +453,7 @@
     justify-content: center;
     min-height: 48px;
     padding: 12px 24px;
-    font-size: 17px;
+    font-size: var(--tp-fs-md);
     line-height: 1.2;
   }
 
@@ -480,7 +480,7 @@
     }
 
     .treppen-hero__lead {
-      font-size: 16px;
+      font-size: var(--tp-fs-md);
     }
   }
 {% endstylesheet %}

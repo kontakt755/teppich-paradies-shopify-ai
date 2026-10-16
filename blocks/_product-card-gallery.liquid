@@ -43,6 +43,17 @@
         </div>
       {%- endif -%}
     </div>
+    {%- comment -%}
+      Auslaufkollektion (Tag "auslauf") als kleine, ruhige Plakette links unten
+      im Bild - die Rabatt-Plakette sitzt rechts oben. Vorher eine eigene
+      Textzeile unter dem Titel, die die Zeilen der Karte gegenueber den
+      Nachbarkarten verschob (Shopvergleich 2026-10-15).
+    {%- endcomment -%}
+    {%- if product.tags contains 'auslauf' -%}
+      <div class="product-badges product-badges--bottom-left tp-auslauf-plakette-ort">
+        <span class="tp-auslauf-plakette">Auslaufkollektion</span>
+      </div>
+    {%- endif -%}
     {%  if settings.quick_add or settings.mobile_quick_add %}
       {% render 'quick-add', product: product, section_id: section.id %}
     {% endif %}
@@ -87,6 +98,32 @@
 {% render 'tp-rabatt-badge-styles' %}
 
 {% stylesheet %}
+  /* Klicks gehen durch die Plakette auf das Kartenbild (Link zur Produktseite). */
+  .tp-auslauf-plakette-ort {
+    pointer-events: none;
+  }
+
+  .tp-auslauf-plakette {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgb(255 255 255 / 0.92);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
+    color: #3a3a3a;
+    font-size: var(--tp-fs-xs);
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-auslauf-plakette {
+      padding: 2px 6px;
+      font-size: var(--tp-fs-xs);
+    }
+  }
 {% endstylesheet %}
 
 {% schema %}

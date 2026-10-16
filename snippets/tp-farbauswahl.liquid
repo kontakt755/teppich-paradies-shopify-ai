@@ -153,6 +153,13 @@
               data-suchtext="{{ tp_fa_wert | downcase | escape }} {{ tp_fa_nummer | escape }}"
               aria-selected="{% if tp_fa_wert == selected %}true{% else %}false{% endif %}"
             >
+              {%- comment -%}
+                alt="" ist Absicht, kein fehlender Alt-Text: Das Bild steht in einer
+                Option, deren Name (Farbname, Nummer) als Text daneben steht, und der
+                Rahmen ist aria-hidden. Nach WCAG (H2/H67) ist es damit dekorativ; ein
+                Alt-Text mit dem Farbnamen wuerde ihn doppelt vorlesen. Das Attribut
+                aber nie weglassen - ohne alt liest ein Screenreader den Dateinamen.
+              {%- endcomment -%}
               <span class="tp-fa__bild" data-tp-fa-bild aria-hidden="true">
                 {%- if tp_fa_bild != blank -%}
                   <img
@@ -207,7 +214,7 @@
 
   .tp-fa__titel {
     margin: 0 0 8px;
-    font-size: 0.9375rem;
+    font-size: var(--tp-fs-md);
     font-weight: 600;
   }
 
@@ -307,7 +314,7 @@
 
   .tp-fa__ausloeser-anzahl,
   .tp-fa__option-nummer {
-    font-size: 0.8125rem;
+    font-size: var(--tp-fs-sm);
     opacity: 0.7;
   }
 
@@ -344,7 +351,7 @@
 
   .tp-fa__kopf-titel {
     margin: 0;
-    font-size: 1.0625rem;
+    font-size: var(--tp-fs-md);
     font-weight: 600;
   }
 
@@ -372,7 +379,7 @@
     background: var(--color-background);
     color: inherit;
     font: inherit;
-    font-size: 1rem;
+    font-size: var(--tp-fs-md);
   }
 
   .tp-fa__liste {

@@ -369,6 +369,116 @@ test('Muster an den Laden (ziel ueberstimmt Stammdaten): alle in einer Liste, Fa
   assert.match(mail.hinweise[0], /1 Position\(en\) ohne Farbnummer/);
 });
 
+// Hersteller, bei denen einkauf.artikelnummer unsere eigene SKU ist: die Mustermail nennt
+// ihre Bezeichnung (einkauf.farbname), sonst erkennt der Hersteller das Muster nicht.
+const herstellerQuelle = (id, { lieferant = 'E', artikel, farbnr, farbname = null }) => ({
+  id: `gid://shopify/ProductVariant/${id}`, sku: artikel, title: 'Quelle',
+  metafields: { nodes: [mf('einkauf', 'lieferant', lieferant), mf('einkauf', 'artikelnummer', artikel), mf('einkauf', 'farbnummer', farbnr), ...(farbname ? [mf('einkauf', 'farbname', farbname)] : [])] },
+  lieferant: { nodes: [] },
+  product: { id: `gid://shopify/Product/${id}`, handle: `herstellerprodukt-${id}`, title: 'Herstellerprodukt', metafields: { nodes: [] }, grosshandel: { nodes: [] } },
+});
+const herstellerMuster = (id, quelle) => zeile({ id, sku: `M-H-${id}`, title: 'Muster Herstellerprodukt', variantTitle: 'Farbe', preis: '0.00',
+  attrs: [{ key: '_Quellvariante_ID', value: String(quelle) }] });
+function herstellerModell(lieferant = 'E') {
+  return aufbereiten({
+    orders: [bestellung(4, [herstellerMuster(41, 901), herstellerMuster(42, 902), herstellerMuster(43, 903)])],
+    quellvarianten: [
+      herstellerQuelle(901, { lieferant, artikel: 'TEST-QUALI-1Q00-400', farbnr: '1Q00', farbname: 'Testquali 1Q00' }),
+      herstellerQuelle(902, { lieferant, artikel: 'TEST-3786-072', farbnr: '072', farbname: 'Testflor 3786/072' }),
+      // Ohne Bezeichnung (Vinyl): die Artikelnummer ist die echte, die gleiche Farbnummer nicht doppelt.
+      herstellerQuelle(903, { lieferant, artikel: 'J-0000-03', farbnr: 'J-0000-03' }),
+    ],
+  }, { jetzt: JETZT });
+}
+const herstellerStamm = nachBezeichnung => pruefeStammdaten({ lieferanten: { E: { kundennummer: 'K-5', muster: { weg: 'mail', mail: 'muster@lieferant-e.example', ansprechperson: 'Frau Beispiel', lieferung: 'kunde', nachBezeichnung } } } });
+
+test('Herstellermuster (muster.nachBezeichnung): Mail nennt die Bezeichnung des Herstellers statt unserer SKU', () => {
+  const st = herstellerStamm(true);
+  assert.deepEqual(st.fehler, []);
+  assert.equal(st.lieferanten.E.muster.nachBezeichnung, true);
+  const mail = bestellmail({ modell: herstellerModell(), lieferant: 'E', art: 'muster', stammdaten: st, jetzt: JETZT }).mails[0];
+  assert.equal(mail.an, 'muster@lieferant-e.example');
+  assert.equal(mail.positionen.length, 3);
+  assert.match(mail.text, /^Guten Tag Frau Beispiel,/);
+  assert.match(mail.text, /Lieferanschrift \(Kommission #T4\):\nTestkunde 4\nTestweg 4\n00000 Musterstadt/);
+  assert.match(mail.text, /\n1\. Testquali 1Q00\n {3}Menge: 1 Muster\n/);
+  assert.match(mail.text, /\n2\. Testflor 3786\/072\n/);
+  assert.match(mail.text, /\n3\. Art\.-Nr\. J-0000-03\n/);
+  assert.equal(/TEST-QUALI|TEST-3786|Farb-Nr\./.test(mail.text), false, 'keine eigene SKU, keine doppelte Farbnummer');
+  const laden = bestellmail({ modell: herstellerModell(), lieferant: 'E', art: 'muster', ziel: 'laden', stammdaten: st, jetzt: JETZT }).mails[0];
+  assert.match(laden.text, /\n1× Testquali 1Q00\n1× Testflor 3786\/072\n1× Art\.-Nr\. J-0000-03\n/);
+});
+
+test('Ohne muster.nachBezeichnung bleibt es bei Artikel- und Farbnummer, auch wenn ein Farbname da ist', () => {
+  const st = herstellerStamm(false);
+  assert.equal(st.lieferanten.E.muster.nachBezeichnung, false);
+  const mail = bestellmail({ modell: herstellerModell(), lieferant: 'E', art: 'muster', ziel: 'laden', stammdaten: st, jetzt: JETZT }).mails[0];
+  assert.match(mail.text, /\n1× Art\.-Nr\. TEST-QUALI-1Q00-400 · Farb-Nr\. 1Q00\n1× Art\.-Nr\. TEST-3786-072 · Farb-Nr\. 072\n1× Art\.-Nr\. J-0000-03\n/);
+  assert.equal(mail.text.includes('Testquali'), false);
+  // Teilstring ist kein Treffer: Farbnummer "4" bleibt bei "TEPDOLCE4_004" stehen (eigener Fall A).
+  const a = aufbereiten({ orders: [bestellung(2, [muster1])], quellvarianten: [quellvariante(777, 'TEST4_004', '4')] }, { jetzt: JETZT });
+  assert.match(bestellmail({ modell: a, lieferant: 'A', art: 'muster', ziel: 'laden', stammdaten: STAMM, jetzt: JETZT }).mails[0].text, /\n1× Art\.-Nr\. TEST4_004 · Farb-Nr\. 4\n/);
+});
+
+// Dieselben Hersteller bei Ware: einkauf.artikelnummer ist unsere SKU je Breite, die
+// Bezeichnung steht in einkauf.farbname. Menge, Rollenbreite und Fertigmass bleiben, wie sie sind.
+function herstellerWareModell(lieferant = 'E') {
+  const e = (artikel, farbnr, farbname, einheit) => [['lieferant', lieferant], ['artikelnummer', artikel], ['farbnummer', farbnr], ...(farbname ? [['farbname', farbname]] : []), ['bestelleinheit', einheit], ['route', 'SUPPLIER_TO_TP']];
+  const rolle = zeile({ id: 30, sku: 'TEST-QUALI-1Q00-400', title: 'Testquali Teppichboden', variantTitle: '400 cm', quantity: 1,
+    einkauf: e('TEST-QUALI-1Q00-400', '1Q00', 'Testquali 1Q00', 'lfm'), custom: [['rollenbreite', '4']],
+    attrs: [{ key: 'Gewünschte Länge', value: '500 cm' }] });
+  const mass = zeile({ id: 31, sku: null, title: 'Testflor nach Maß', variantTitle: 'Blau', quantity: 775, preis: '0.39',
+    einkauf: e('TEST-3786-072', '072', 'Testflor 3786/072', 'lfm'), custom: [['preis_pro_001_qm', 'true']],
+    attrs: [{ key: 'Einfassung', value: 'Gekettelt' }, { key: 'Form', value: 'Rechteck' }, { key: 'Maße', value: '250 × 310 cm' }] });
+  // Ohne Bezeichnung (Vinyl): die Artikelnummer ist schon die echte, die gleiche Farbnummer nicht doppelt.
+  const vinyl = zeile({ id: 32, sku: 'J-0000-03', title: 'Testvinyl', variantTitle: 'Eiche', quantity: 2,
+    einkauf: e('J-0000-03', 'J-0000-03', null, 'paket'), custom: [['qm_pro_paket', '2,2']] });
+  return aufbereiten({ orders: [bestellung(4, [rolle, mass, vinyl], { shippingAddress: { name: 'Testkunde 4', address1: 'Testweg 4', zip: '00000', city: 'Musterstadt', country: 'Deutschland', phone: '+49 000 0000' } })] }, { jetzt: JETZT });
+}
+const herstellerWareStamm = nachBezeichnung => pruefeStammdaten({ lieferanten: { E: { kundennummer: 'K-5', ware: { weg: 'mail', mail: 'bestellung@lieferant-e.example', nachBezeichnung } } } });
+
+test('Herstellerware (ware.nachBezeichnung): Mail nennt die Bezeichnung des Herstellers statt unserer SKU', () => {
+  const st = herstellerWareStamm(true);
+  assert.deepEqual(st.fehler, []);
+  assert.equal(st.lieferanten.E.ware.nachBezeichnung, true);
+  assert.equal(st.lieferanten.E.muster.nachBezeichnung, false, 'Ware und Muster getrennt');
+  // Standard: direkt an den Kunden, je Kommission ein Block.
+  const mail = bestellmail({ modell: herstellerWareModell(), lieferant: 'E', art: 'ware', stammdaten: st, jetzt: JETZT }).mails[0];
+  assert.equal(mail.an, 'bestellung@lieferant-e.example');
+  assert.equal(mail.lieferziel, 'kunde');
+  assert.equal(mail.positionen.length, 3);
+  assert.deepEqual(mail.fehlt, []);
+  assert.match(mail.text, /\n1\. Testquali 1Q00\n {3}Menge: 5,00 lfm × 4,00 m\n {3}Kommission: #T4\n/);
+  assert.match(mail.text, /\n2\. Testflor 3786\/072\n {3}Menge: 1 Stück nach Maß\n {3}Fertigmaß: 250 × 310 cm \(Rechteck\)\n {3}Einfassung: Gekettelt\n/);
+  assert.match(mail.text, /\n3\. Art\.-Nr\. J-0000-03\n {3}Menge: 2 Paket\(e\) = 4,40 m²\n/);
+  assert.equal(/TEST-QUALI|TEST-3786|Farb-Nr\./.test(mail.text), false, 'keine eigene SKU, keine doppelte Farbnummer');
+  // An den Laden: dieselben Kopfzeilen, die Kommission bleibt.
+  const laden = bestellmail({ modell: herstellerWareModell(), lieferant: 'E', art: 'ware', ziel: 'laden', stammdaten: st, jetzt: JETZT }).mails[0];
+  assert.match(laden.text, /\n1\. Testquali 1Q00\n {3}Menge: 5,00 lfm × 4,00 m\n {3}Kommission: #T4 · Testkunde 4\n/);
+  assert.match(laden.text, /\n3\. Art\.-Nr\. J-0000-03\n/);
+  assert.equal(/TEST-QUALI|TEST-3786/.test(laden.text), false);
+});
+
+test('Ohne ware.nachBezeichnung bleibt es bei Artikel- und Farbnummer; Lieferant A unveraendert', () => {
+  for (const wert of [false, 'ja', undefined]) {
+    const st = herstellerWareStamm(wert);
+    assert.deepEqual(st.fehler, []);
+    assert.equal(st.lieferanten.E.ware.nachBezeichnung, false, String(wert));
+    const mail = bestellmail({ modell: herstellerWareModell(), lieferant: 'E', art: 'ware', ziel: 'laden', stammdaten: st, jetzt: JETZT }).mails[0];
+    assert.match(mail.text, /\n1\. Art\.-Nr\. TEST-QUALI-1Q00-400 · Farb-Nr\. 1Q00\n {3}Menge: 5,00 lfm × 4,00 m\n/);
+    assert.match(mail.text, /\n2\. Art\.-Nr\. TEST-3786-072 · Farb-Nr\. 072\n/);
+    assert.match(mail.text, /\n3\. Art\.-Nr\. J-0000-03\n/);
+    assert.equal(/Testquali|Testflor/.test(mail.text), false, String(wert));
+  }
+  // Lieferant A fuellt einkauf.farbname ebenfalls (Dekorwoerter): ohne Feld bleibt die Mail, wie sie war.
+  assert.equal(STAMM.lieferanten.A.ware.nachBezeichnung, false);
+  const mitFarbname = { ...paket, variant: { ...paket.variant, metafields: { nodes: [...paket.variant.metafields.nodes, mf('einkauf', 'farbname', 'Testdekor Eiche')] } } };
+  const a = aufbereiten({ orders: [bestellung(1, [mitFarbname])] }, { jetzt: JETZT });
+  const text = bestellmail({ modell: a, lieferant: 'A', art: 'ware', ziel: 'laden', stammdaten: STAMM, jetzt: JETZT }).mails[0].text;
+  assert.match(text, /\n1\. Art\.-Nr\. A-4711 · Farb-Nr\. 012\n {3}Menge: 3 Paket\(e\) = 6,60 m²\n/);
+  assert.equal(text.includes('Testdekor'), false);
+});
+
 test('Muster ohne festgelegtes Lieferziel: nichts wird aufgenommen', () => {
   const mail = bestellmail({ modell: modell(), lieferant: 'A', art: 'muster', jetzt: JETZT }).mails[0];
   assert.equal(mail.positionen.length, 0);

@@ -64,21 +64,21 @@
   .tp-rg-karte__bild { aspect-ratio: 3 / 2; background: var(--tp-bg-3, #ede7de); overflow: hidden; }
   .tp-rg-karte__img { display: block; width: 100%; height: 100%; object-fit: cover; }
   .tp-rg-karte__text { display: flex; flex-direction: column; gap: 8px; padding: 16px 18px 20px; }
-  .tp-rg-karte__art { align-self: flex-start; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--tp-red-dark, #96262f); }
-  .tp-rg-karte__titel { margin: 0; font-size: 18px; font-weight: 600; line-height: 1.3; color: var(--tp-ink, #1d1a17); text-wrap: balance; }
+  .tp-rg-karte__art { align-self: flex-start; font-size: var(--tp-fs-xs); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #595959; }
+  .tp-rg-karte__titel { margin: 0; font-size: var(--tp-fs-lg); font-weight: 600; line-height: 1.3; color: var(--tp-ink, #1d1a17); text-wrap: balance; }
   .tp-rg-karte__link { color: inherit; text-decoration: none; }
   .tp-rg-karte__link::after { content: ""; position: absolute; inset: 0; }
   .tp-rg-karte__link:hover { text-decoration: underline; }
   .tp-rg-karte__link:focus-visible { outline: 0; }
-  .tp-rg-karte__auszug { margin: 0; font-size: 15px; line-height: 1.5; color: var(--tp-ink-2, #4a443f); }
+  .tp-rg-karte__auszug { margin: 0; font-size: var(--tp-fs-md); line-height: 1.5; color: var(--tp-ink-2, #4a443f); }
   /* Handy: kompakte Zeile (Bild links) statt hoher Kachel - eine Themenliste bleibt so ueberschaubar */
   @media (max-width: 639px) {
     .tp-rg-karte { flex-direction: row; align-items: stretch; }
     .tp-rg-karte__bild { flex: none; width: 108px; aspect-ratio: auto; min-height: 108px; }
     .tp-rg-karte__bild--leer { display: none; }
     .tp-rg-karte__text { flex: 1; min-width: 0; gap: 6px; padding: 12px 14px 14px; }
-    .tp-rg-karte__titel { font-size: 16.5px; }
-    .tp-rg-karte__auszug { font-size: 14.5px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+    .tp-rg-karte__titel { font-size: var(--tp-fs-md); }
+    .tp-rg-karte__auszug { font-size: var(--tp-fs-sm); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
   }
   @media (prefers-reduced-motion: no-preference) {
     .tp-rg-karte { transition: box-shadow 0.15s, border-color 0.15s; }

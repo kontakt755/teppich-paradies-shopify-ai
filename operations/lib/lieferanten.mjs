@@ -151,6 +151,8 @@ function pruefeLieferant(id, roh, fehler) {
       telefon: p.telefon(w.telefon, 'ware.telefon'),
       // Ohne Eintrag geht Ware direkt an die Kunden (Inhaber 2026-10-14); "laden" nur als Ausnahme.
       lieferung: p.auswahl(w.lieferung, 'ware.lieferung', MUSTER_LIEFERUNG),
+      // Wie muster.nachBezeichnung: die Warenmail nennt die Bezeichnung des Herstellers.
+      nachBezeichnung: w.nachBezeichnung === true,
     },
     muster: {
       weg: p.auswahl(m.weg, 'muster.weg', BESTELLWEGE),
@@ -159,6 +161,9 @@ function pruefeLieferant(id, roh, fehler) {
       telefon: p.telefon(m.telefon, 'muster.telefon'),
       portalUrl: p.url(m.portalUrl, 'muster.portalUrl'),
       lieferung: p.auswahl(m.lieferung, 'muster.lieferung', MUSTER_LIEFERUNG),
+      // Hersteller, die unsere Artikelnummer nicht kennen (sie ist dort unsere eigene SKU):
+      // die Mustermail nennt ihre Bezeichnung aus einkauf.farbname (Qualitaet + Farbnummer).
+      nachBezeichnung: m.nachBezeichnung === true,
     },
     lieferzeitWerktage: p.werktage(roh.lieferzeitWerktage, 'lieferzeitWerktage'),
     mindestmenge: p.text(roh.mindestmenge, 'mindestmenge', 500),
@@ -312,6 +317,7 @@ function schlankePosition(pos, statusAlle, jetzt) {
     sku: geklaert(pos.sku),
     artikelnummer: geklaert(pos.grosshaendlerId),
     farbnummer,
+    bezeichnung: geklaert(pos.istMuster ? pos.musterQuelle?.bezeichnung : pos.einkauf?.farbname),
     menge: geklaert(pos.bestellmenge?.menge),
     einheit: geklaert(pos.bestellmenge?.einheit),
     mengeText: geklaert(pos.bestellmenge?.text),
@@ -465,16 +471,27 @@ function kundenAdressen(modell) {
 // Interne Vermerke aus der Mengenumrechnung gehoeren in die Hinweise, nicht zum Lieferanten.
 const mailMenge = t => String(t ?? '').replace(/\s*\(Lieferantenraster ungeklärt[^)]*\)/, '');
 
-function positionsZeilen(p, nr, { mitKunde = true } = {}) {
-  const kopf = [`Art.-Nr. ${p.artikelnummer}`];
-  if (p.farbnummer) kopf.push(`Farb-Nr. ${p.farbnummer}`);
-  // Keine Shop-Produktnamen und Shop-Farbwoerter: die kennt der Lieferant nicht, sie
-  // verwirren nur (Inhaber 2026-10-14). Artikel- und Farbnummer reichen.
+/**
+ * Woran der Lieferant den Artikel erkennt: Artikel- und Farbnummer, bei Herstellern mit
+ * muster.nachBezeichnung bzw. ware.nachBezeichnung deren eigene Bezeichnung. Keine Shop-Produktnamen und
+ * Shop-Farbwoerter: die kennt der Lieferant nicht, sie verwirren nur (Inhaber 2026-10-14).
+ */
+function artikelKopf(p, { nachBezeichnung = false } = {}) {
+  const mitBezeichnung = nachBezeichnung && !!p.bezeichnung;
+  const kopf = [mitBezeichnung ? p.bezeichnung : `Art.-Nr. ${p.artikelnummer}`];
+  // Farbnummer nicht doppelt nennen: als ganzes Wort in der Bezeichnung ("Testflor 3786/072")
+  // oder gleich der Artikelnummer. Kein Teilstring - "4" steckt auch in "TEPDOLCE4_004".
+  const schonDrin = mitBezeichnung ? p.bezeichnung.split(/[\s/]+/).includes(p.farbnummer) : p.farbnummer === p.artikelnummer;
+  if (p.farbnummer && !schonDrin) kopf.push(`Farb-Nr. ${p.farbnummer}`);
+  return kopf.join(' · ');
+}
+
+function positionsZeilen(p, nr, { mitKunde = true, nachBezeichnung = false } = {}) {
   const ausfuehrung = p.ausfuehrung ?? [];
   // Massanfertigung: "1 Stueck nach Mass", das Fertigmass steht in der Zeile darunter.
   const massStueck = ausfuehrung.some(z => z.startsWith('Fertigmaß:')) && p.einheit === 'stueck';
   const menge = massStueck ? `${p.menge} Stück nach Maß` : mailMenge(p.mengeText ?? `${p.menge} ${p.einheit}`);
-  const zeilen = [`${nr}. ${kopf.join(' · ')}`, `   Menge: ${menge}`, ...ausfuehrung.map(z => `   ${z}`)];
+  const zeilen = [`${nr}. ${artikelKopf(p, { nachBezeichnung })}`, `   Menge: ${menge}`, ...ausfuehrung.map(z => `   ${z}`)];
   if (p.orderName) zeilen.push(`   Kommission: ${[p.orderName, mitKunde ? p.kunde : null].filter(Boolean).join(' · ')}`);
   return zeilen;
 }
@@ -561,6 +578,7 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel }) {
   const bestaetigen = du ? 'Bitte bestätige uns den Auftrag mit dem voraussichtlichen Liefertermin.' : 'Bitte bestätigen Sie uns den Auftrag mit dem voraussichtlichen Liefertermin.';
   const zeilen = [anrede, '', anKunden ? 'wir bestellen folgende Ware – bitte direkt an unsere Kunden liefern:' : 'wir bestellen folgende Ware:', ''];
   if (st.kundennummer) zeilen.push(`Unsere Kundennummer: ${st.kundennummer}`, '');
+  const nachBezeichnung = st.ware.nachBezeichnung;
   if (anKunden) {
     // Je Kommission ein Block: Anschrift (mit Telefon fuer die Spedition), darunter die Positionen.
     const jeAuftrag = new Map();
@@ -568,10 +586,10 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel }) {
     let nr = 0;
     for (const [orderId, liste] of jeAuftrag) {
       zeilen.push(`Kommission ${liste[0].orderName} – Lieferanschrift:`, ...adressZeilen(adressen.get(orderId), { telefon: true }).map(z => `   ${z}`), '');
-      for (const p of liste) { nr += 1; zeilen.push(...positionsZeilen(p, nr, { mitKunde: false }), ''); }
+      for (const p of liste) { nr += 1; zeilen.push(...positionsZeilen(p, nr, { mitKunde: false, nachBezeichnung }), ''); }
     }
   } else {
-    aufgenommen.forEach((p, i) => zeilen.push(...positionsZeilen(p, i + 1), ''));
+    aufgenommen.forEach((p, i) => zeilen.push(...positionsZeilen(p, i + 1, { nachBezeichnung }), ''));
   }
   if (direkt) {
     zeilen.push(gruppe.route === ROUTE.SUPPLIER_TO_SITE ? (du ? 'Bitte liefere direkt an die Baustelle:' : 'Bitte liefern Sie direkt an die Baustelle:') : (du ? 'Bitte liefere direkt an unseren Kunden:' : 'Bitte liefern Sie direkt an unseren Kunden:'));
@@ -629,8 +647,9 @@ function musterMail(gruppen, { st, absender, statusAlle, adressen, jetzt, ziel }
   const du = st.mail.duzen;
   const zeilen = [anrede, '', du ? 'bitte schick uns folgende Muster:' : 'bitte senden Sie uns folgende Muster:', ''];
   if (st.kundennummer) zeilen.push(`Unsere Kundennummer: ${st.kundennummer}`, '');
+  const nachBezeichnung = st.muster.nachBezeichnung;
   const musterZeile = (p, nr) => {
-    const z = positionsZeilen({ ...p, mengeText: `${p.menge} Muster` }, nr);
+    const z = positionsZeilen({ ...p, mengeText: `${p.menge} Muster` }, nr, { nachBezeichnung });
     return lieferung === 'kunde' ? z.filter(t => !t.startsWith('   Kommission:')) : z;
   };
   if (lieferung === 'kunde') {
@@ -646,9 +665,10 @@ function musterMail(gruppen, { st, absender, statusAlle, adressen, jetzt, ziel }
   } else {
     // An den Laden: bewusst kurz - eine Zeile je Muster, ohne Kommission, ohne
     // Anschrift und ohne unsere Shop-Namen, die der Lieferant nicht kennt
-    // (Inhaberentscheidung 2026-10-01). Auch kein Farbname: es sind unsere Shop-Farbwoerter.
+    // (Inhaberentscheidung 2026-10-01). Auch kein Farbname: es sind unsere Shop-Farbwoerter -
+    // die Bezeichnung des Herstellers (muster.nachBezeichnung) ist dagegen seine eigene.
     for (const p of aufgenommen) {
-      zeilen.push([`${p.menge}× Art.-Nr. ${p.artikelnummer}`, p.farbnummer ? `Farb-Nr. ${p.farbnummer}` : null].filter(Boolean).join(' · '));
+      zeilen.push(`${p.menge}× ${artikelKopf(p, { nachBezeichnung })}`);
     }
     zeilen.push('');
   }

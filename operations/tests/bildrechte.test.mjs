@@ -58,6 +58,25 @@ test('Zusammenfuehren behaelt Handspalten, neue Bilder ungeklaert, Verschwundene
   assert.equal(zweimal.notiz.match(/nicht mehr in Shopify/g).length, 1);
 });
 
+test('gepflegte Statuswerte ueberleben den naechsten Abruf', () => {
+  const neu = ['f', 'n', 'e', 'd'].map((media_id) => ({ media_id, status: 'ungeklaert' }));
+  const alt = [
+    { media_id: 'f', status: 'freigegeben' }, { media_id: 'n', status: 'nein' },
+    { media_id: 'e', status: 'entfernt' }, { media_id: 'd', status: 'entfernt (Dublette)' },
+  ];
+  assert.deepEqual(zusammenfuehren(alt, neu).map((z) => z.status), ['freigegeben', 'nein', 'entfernt', 'entfernt (Dublette)']);
+});
+
+test('auswerten: freigegeben ist entschieden, entfernt zaehlt nicht mit', () => {
+  const a = auswerten([
+    { media_id: '1', status: 'freigegeben', alt: 'x', breite: '2000' },
+    { media_id: '2', status: 'ungeklaert', alt: 'x', breite: '2000' },
+    { media_id: '3', status: 'entfernt', alt: '', breite: '100' },
+    { media_id: '4', status: 'nein', alt: 'x', breite: '2000' },
+  ]);
+  assert.deepEqual({ b: a.bilder, u: a.ungeklaert, g: a.gesperrt, k: a.zuKlein, o: a.ohneAlt, e: a.entfernt }, { b: 3, u: 1, g: 1, k: 0, o: 0, e: 1 });
+});
+
 test('ungueltiger Status wird ungeklaert', () => {
   const neu = zeilenAusProdukten([produkt('a', [bild('m1', 'https://x/a.jpg')])]);
   assert.equal(zusammenfuehren([{ media_id: 'm1', status: 'ok' }], neu)[0].status, 'ungeklaert');
@@ -77,4 +96,52 @@ test('CSV hin und zurueck, auch mit Semikolon, Anfuehrungszeichen und Zeilenumbr
   assert.equal(zurueck[0].produkt_handle, 'a;b');
   assert.equal(zurueck[0].alt, 'Serena "Taupe"\nRaum');
   assert.equal(zurueck[0].status, 'ungeklaert');
+});
+
+// --- Pruefliste fuer das Control Center ---
+import { prueflisten, istEntfernt } from '../lib/bildrechte.mjs';
+
+const z = (felder) => ({ produkt_handle: 'a', produkt_titel: 'A', produkttyp: 'Teppichboden', position: '1', datei: 'a.jpg', breite: '2000', hoehe: '2000', alt: 'Alt', status: 'geprueft', notiz: '', quelle_vermutet: '', ...felder });
+
+test('Pruefliste: entfernte Bilder zaehlen nirgends mit', () => {
+  assert.equal(istEntfernt(z({ status: 'entfernt' })), true);
+  assert.equal(istEntfernt(z({ status: 'entfernt (Dublette)' })), true);
+  assert.equal(istEntfernt(z({ notiz: 'nicht mehr in Shopify' })), true);
+  const r = prueflisten([z({ status: 'entfernt', breite: '500', alt: '' }), z({ status: 'ungeklaert' })]);
+  assert.deepEqual(r.zaehler, { ungeklaert: 1, 'zu-klein': 0, 'ohne-alt': 0 });
+});
+
+test('Pruefliste: ungeklaert ist nur, was so markiert ist oder keinen Status hat', () => {
+  const r = prueflisten([z({ status: 'ungeklaert' }), z({ status: '' }), z({ status: 'freigegeben' }), z({ status: 'geprueft' }), z({ status: 'gesperrt' })]);
+  assert.equal(r.zaehler.ungeklaert, 2, 'freigegeben/geprueft/gesperrt sind dokumentierte Entscheidungen');
+});
+
+test('Pruefliste: zu klein nur mit erfasster Breite, Luecke wird gezaehlt', () => {
+  const r = prueflisten([z({ breite: '1199' }), z({ breite: '1200' }), z({ breite: '' })], { liste: 'zu-klein' });
+  assert.equal(r.zaehler['zu-klein'], 1);
+  assert.equal(r.breiteUnbekannt, 1);
+  assert.equal(r.items[0].breite, 1199);
+});
+
+test('Pruefliste: Warengruppen der gewaehlten Liste, Filter, Sortierung und Seiten', () => {
+  const zeilen = [
+    ...Array.from({ length: 30 }, (_, i) => z({ produkt_titel: `T${String(i).padStart(2, '0')}`, alt: '' })),
+    z({ produkttyp: 'Sockelleisten', alt: '' }),
+    z({ produkttyp: '', alt: '' }),
+  ];
+  const r = prueflisten(zeilen, { liste: 'ohne-alt' });
+  assert.deepEqual(r.gruppen, [{ gruppe: 'Teppichboden', anzahl: 30 }, { gruppe: 'ohne Warengruppe', anzahl: 1 }, { gruppe: 'Sockelleisten', anzahl: 1 }]);
+  assert.equal(r.count, 32);
+  assert.equal(r.pages, 2);
+  assert.equal(r.items.length, 25);
+  const s2 = prueflisten(zeilen, { liste: 'ohne-alt', gruppe: 'Teppichboden', page: 9 });
+  assert.equal(s2.page, 2, 'zu grosse Seite landet auf der letzten');
+  assert.deepEqual(s2.items.map((e) => e.titel), ['T25', 'T26', 'T27', 'T28', 'T29']);
+  assert.equal(prueflisten(zeilen, { liste: 'ohne-alt', gruppe: 'gibt-es-nicht' }).gruppe, '', 'unbekannte Gruppe = alle');
+  assert.equal(prueflisten(zeilen, { liste: 'quatsch' }).liste, 'ungeklaert');
+});
+
+test('Pruefliste: Eintraege tragen keine Lizenz- oder Quellenangaben', () => {
+  const [e] = prueflisten([z({ status: 'ungeklaert', quelle: 'Lieferant A', lizenz: 'x', beleg: 'y' })]).items;
+  assert.deepEqual(Object.keys(e).sort(), ['breite', 'datei', 'gruppe', 'handle', 'hinweis', 'hoehe', 'position', 'titel']);
 });

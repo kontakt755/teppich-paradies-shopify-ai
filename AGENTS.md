@@ -153,7 +153,7 @@ Gestapelte PRs **vor** dem Merge ihrer Basis umzielen. Die CI meldet nur
 ## Vor jedem Commit
 
 ```
-npm run liquid:guard && npm run schema:guard && npm run template:guard && npm run theme:guard
+npm run liquid:guard && npm run schema:guard && npm run template:guard && npm run theme:guard && npm run schrift:guard
 npm run -s themecheck:guard                  # Theme-Check-Fehler: sonst bricht erst der Preview-Push (--strict) ab
 node workflow/cli.mjs validate --static      # Flag heisst --static, nicht --static-only
 ```
@@ -172,12 +172,14 @@ lokal auf dem Mac. Unbekannte Flags brechen ab.
 | `npm run schema:guard` | Block-Schemata, die deployen aber im Editor unsichtbar bleiben |
 | `npm run template:guard` | Kollektions-Templates, deren Produktkarte abweicht; Shopify-Blockgrenzen (50 je Section, z. B. Header-Kacheln) |
 | `npm run theme:guard` | veraltete Theme-IDs in Anweisungsdateien, ungeschuetztes Live-Theme |
+| `npm run schrift:guard` | feste Schriftgroessen (px/rem/clamp) statt der Skala `var(--tp-fs-*)` |
 | `npm run menu:guard` | Menuelinks auf leeres Raster oder ins Nichts (braucht Netz) |
 | `npm run unmerged:guard` | Bloecke/Templates auf ungemergten Branches |
 | `npm run essential:guard` | Pflichtdateien und Template-Verweise vor dem Push |
 | `npm run pr:doctor [-- --fix]` | offene PRs: falsche Basis, ueberkreuzte Historie, Konflikte |
 | `npm run pr:doctor:melden` | dasselbe als idempotenter PR-Kommentar (CI: Push auf `main`, alle 6 h) |
 | `npm run auslauf:pruefen` | **woechentlich automatisch**: gibt es jeden Artikel noch beim Lieferanten (A Schnellsuche, C/D/E Produktseite; B nur offline)? Schreibt `$TP_PRIVAT_DIR/auslauf/status.json`, Befunde als To-do; nur lesend |
+| `npm run -s auslauf:sortieren [-- --schreiben]` | **nach jedem neuen Tag `auslauf` und jedem Import in Teppichboden/Teppiche**: Auslaufartikel ans Ende der manuell sortierten Kategorien (Shopify haengt Neues hinten an, also hinter sie); ohne `--schreiben` nur pruefen (Exit 1 = zu tun), mit Rollback-Datei und Gegenprobe |
 | `npm run -s import:pruefen` | **nach jedem Import**: neue Produkte (Standard 7 Tage) auf Veroeffentlichung, Bilder, Kategorie, SKU, Muster und uebliche Filterfelder der Produktart; nur lesend |
 | `npm run -s teppich:basis-daten` | **nach jedem Teppich-Import**: prueft `custom.teppich_basis_daten` (Gruppe, Qualitaetszeile, Breiten) gegen die Live-Regeln; `-- --pakete <ordner>` legt Schreibpakete + Rollback an → `docs/lessons/renderzeit-kollektionsseite.md` |
 | `npm run farbcode:guard` | Farbvarianten, deren Codes durchgezaehlt statt abgeschrieben wurden |
@@ -194,7 +196,7 @@ Metafelder oder Collection-Zuordnungen nur verändern, wenn der jeweilige Auftra
 
 Nie technische Eigenschaften erfinden oder anhand eines Produktbildes allein ableiten.
 
-**Ausgelaufenes wird nie angezeigt (Inhaber 2026-10-13).** Fuehrt der Lieferant einen Artikel nachweislich nicht mehr (exakte Suche ohne Treffer, Seite 404, Auslaufmeldung), wird das Produkt samt Musterprodukt sofort archiviert und die alte Adresse per 301 auf den Nachfolger oder die passende Kollektion umgeleitet; vorher offene Bestellungen pruefen, danach Lexikon exportieren. Faellt nur eine Variante weg, ist das eine Variantenaenderung und braucht Freigabe. Anschliessend die ganze Linie beim Lieferanten auf neue Artikel abgleichen. Die woechentliche Auslauf-Pruefung (`npm run auslauf:pruefen`, montags 4:00 per LaunchAgent) meldet Kandidaten als To-do im Control Center; sie archiviert nie selbst. Bei Lieferant A meldet sie ausserdem Artikel unserer Linien, die seit dem letzten Lauf neu beim Lieferanten stehen (To-do "neue Artikel", anlegen nach Skill `produktimport`).
+**Ausgelaufenes wird nie angezeigt (Inhaber 2026-10-13).** Fuehrt der Lieferant einen Artikel nachweislich nicht mehr (exakte Suche ohne Treffer, Seite 404, Auslaufmeldung), wird das Produkt samt Musterprodukt sofort archiviert und die alte Adresse per 301 auf den Nachfolger oder die passende Kollektion umgeleitet; vorher offene Bestellungen pruefen, danach Lexikon exportieren. Faellt nur eine Variante weg, ist das eine Variantenaenderung und braucht Freigabe. Anschliessend die ganze Linie beim Lieferanten auf neue Artikel abgleichen. Die woechentliche Auslauf-Pruefung (`npm run auslauf:pruefen`, montags 4:00 per LaunchAgent) meldet Kandidaten als To-do im Control Center; sie archiviert nie selbst. Bei Lieferant A meldet sie ausserdem Artikel unserer Linien, die seit dem letzten Lauf neu beim Lieferanten stehen (To-do "neue Artikel", anlegen nach Skill `produktimport`). Auslaufkollektionen mit Restbestand (Tag `auslauf`, noch aktiv) stehen in den Kategorien hinten und tragen im Kartenbild die Plakette "Auslaufkollektion": nach jedem neuen Tag `npm run -s auslauf:sortieren -- --schreiben`.
 
 Bei unklaren Produktdaten:
 
@@ -211,6 +213,8 @@ Fertige, getestete Funktionen nicht neu bauen: €/m²-Darstellung bei Paketprod
 Der Paket-/Verschnittrechner und dessen Warenkorblogik sind bereits intensiv getestet. Nicht neu schreiben, außer der Benutzer beauftragt dies ausdrücklich.
 
 Das Hauptmenü kommt aus Horizon (`sections/header-group.json`, Menü `main-menu`). Das Globo-Mega-Menu-Embed steht zwar noch in `config/settings_data.json`, gibt im Live-Shop aber nichts aus (geprüft 13.10.). Menü nicht grundsätzlich umbauen, außer der Auftrag betrifft ausdrücklich das Menü.
+
+Seit w-094 (Inhaber 15.10.) steht der Kopf in zwei Zeilen (oben Logo, Suchfeld `snippets/tp-kopf-suche.liquid`, Warenkorb; darunter das Menü) mit neun Hauptpunkten. Spalten im Mega-Menü (Teppichboden: Farbe, Raum, Rollenbreite) sind Menüpunkte mit Link `#` und eigenen Unterpunkten, ausgegeben von `snippets/tp-menu-spalten.liquid` – neue Spalte = Menüpunkt anlegen, kein Theme-Code. Jeder Filterlink braucht Treffer (`npm run menu:guard`). Den Menübaum nur mit `scripts/menue-umbau.mjs` umbauen (setzt alle MenuItem-IDs wieder ein, Gegenprobe `--pruefen`), Ablauf: `docs/weiterentwicklung/hauptmenue-umbau-2026-10.md`.
 
 Horizon 4.1.3 existiert als separates Update. Keine Migration durchführen, solange dies nicht ausdrücklich beauftragt wird.
 
@@ -339,6 +343,8 @@ Abschlussberichte kompakt halten:
 
 - Eigene Bloecke/Snippets tragen das Praefix `tp-`; `_`-Praefix ist privat (keine `presets` noetig).
 - CSS gehoert in `{% stylesheet %}`, nicht in ein inline `<style>` pro Karte.
+- Schriftgroessen nur aus der Skala in `snippets/tp-gestaltung.liquid`: `var(--tp-fs-xs|sm|md|lg|xl|2xl)` (Desktop 12/14/16/20/28/40 px, Telefon 13/14/16/18/24/30 px); Fliesstext 400, Beschriftungen 500, Ueberschriften 600/700. Keine festen px/rem-Werte (`npm run schrift:guard`).
+- Rot (`--tp-hauptaktion`, `#c8102e`, `#b3261e`) nur fuer Preis, Rabatt, den Hauptknopf „In den Warenkorb“, den aktiven Menuepunkt, Fehlermeldungen und den gesetzlichen Knopf „Vertrag widerrufen“. Kleinueberschriften grau (`#595959`), Nebenknoepfe, Links und Symbole in der dunklen Grundfarbe `--tp-ink`.
 - Kommentare und Commit-Messages auf Deutsch, ohne Umlaute in Liquid-Kommentaren.
 - Immer im aktuellen Repository-Root arbeiten; keine absoluten Pfade — das Repo
   liegt auf Windows, macOS und Linux.
