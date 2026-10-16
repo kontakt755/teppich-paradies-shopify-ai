@@ -14,7 +14,8 @@ ohne App, mit Shopify-Geschenkkarten.
   Apple Wallet) liegen unter Einstellungen → Zahlungen und sind unveraendert.
   Lesen per API scheitert ohne den Zugriffsbereich `read_gift_cards`.
 - Entwurf angelegt 2026-10-16: Produkt `gid://shopify/Product/16160748994894`
-  (Status DRAFT, in keinem Kanal, ohne Bild), Daten wie unten.
+  (Status DRAFT, in keinem Kanal), Daten wie unten; Bild aus der Werkbank
+  (Gutscheinkarte mit Logo, ohne Betrag) haengt dran.
 - Footer, Spalte „Service": Link „Geschenkgutschein“ erscheint automatisch,
   sobald das Produkt `geschenkgutschein` veroeffentlicht und verfuegbar ist
   (`blocks/tp-footer-links.liquid`). Kein Menueumbau.
