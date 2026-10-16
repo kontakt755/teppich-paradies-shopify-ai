@@ -3,8 +3,9 @@
  * Verlegeservice, Treppe und Aufmass mit Quelle und Status, oben die
  * Auswertung je Woche und je Quelle (Werkbank w-030).
  *
- * Erfasst wird von Hand - Formular-Mails von Shopify lassen sich einfuegen und
- * fuellen dann die Felder. Ablage: $TP_PRIVAT_DIR/serviceanfragen.json ueber
+ * Formular-Mails der Serviceseiten uebernimmt der geplante Lauf
+ * "serviceanfragen-postfach" (operations/scripts/serviceanfragen.mjs); alles
+ * andere wird von Hand erfasst, eine Formular-Mail laesst sich auch einfuegen. Ablage: $TP_PRIVAT_DIR/serviceanfragen.json ueber
  * /api/kunden/serviceanfragen (operations/lib/serviceanfragen.mjs).
  */
 import { state } from '../../kern/zustand.mjs';
@@ -81,7 +82,7 @@ function zeileHtml(e) {
   return `<div class="row sa-row" data-sa-bearbeiten="${esc(e.id)}">
     <div class="sa-inhalt">
       <div class="t">${esc(e.name || 'ohne Namen')}${e.plz ? ` <span class="muted small">${esc(e.plz)}</span>` : ''}</div>
-      <div class="m"><span class="badge plain">${esc(LEISTUNG_LABEL[e.leistung] || e.leistung)}</span><span>${esc(QUELLE_LABEL[e.quelle] || e.quelle)}${e.herkunft ? ` · ${esc(e.herkunft)}` : ''}</span><span>${esc(fmtDate(e.datum))}</span></div>
+      <div class="m"><span class="badge plain">${esc(LEISTUNG_LABEL[e.leistung] || e.leistung)}</span><span>${esc(QUELLE_LABEL[e.quelle] || e.quelle)}${e.herkunft ? ` · ${esc(e.herkunft)}` : ''}</span><span>${esc(fmtDate(e.datum))}</span>${e.mailId ? '<span>aus dem Postfach übernommen</span>' : ''}</div>
       ${kontakt ? `<div class="sa-kontakt">${kontakt}</div>` : ''}
       ${e.naechsterSchritt ? `<div class="next">${esc(e.naechsterSchritt)}</div>` : ''}
       ${notiz ? `<div class="small muted sa-notiz">${esc(notiz)}</div>` : ''}
@@ -114,7 +115,7 @@ export function viewKundenServiceanfragen() {
     ? emptyState('Keine offenen Anfragen.', eintraege.length ? 'Alles bearbeitet.' : 'Kommt eine Anfrage per Formular, Telefon oder WhatsApp herein: „+ Anfrage erfassen“.')
     : emptyState('Keine Anfragen in dieser Auswahl.', '');
   return `
-    <p class="small muted" style="margin:0 0 10px">Anfragen für Verlegeservice, Treppen und Aufmaß – egal ob per Formular, Mail, Telefon, WhatsApp oder im Laden. Jede Anfrage hier eintragen, dann zeigt die Auswertung, was Serviceseiten und Werbung bringen.</p>
+    <p class="small muted" style="margin:0 0 10px">Anfragen für Verlegeservice, Treppen und Aufmaß. Formular-Anfragen der Serviceseiten kommen von selbst (stündlich aus dem Postfach); Anrufe, WhatsApp und Laden hier eintragen – dann zeigt die Auswertung, was Serviceseiten und Werbung bringen.</p>
     ${auswertungHtml(eintraege)}
     <div class="sa-leiste">
       <div class="chips" style="margin:0">${chips}</div>

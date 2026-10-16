@@ -95,3 +95,50 @@ export function aendern(datei, id, roh, { actor, jetzt = new Date() } = {}) {
   schreibeAlle(datei, alle);
   return neu;
 }
+
+// --- Postfach-Abgleich ----------------------------------------------------------
+
+/**
+ * Gibt es dieselbe Anfrage schon (von Hand erfasst, bevor der Abgleich lief)?
+ * Gleiche E-Mail oder Telefonnummer innerhalb von 7 Tagen. Lieber eine Anfrage
+ * einmal zu wenig automatisch anlegen als doppelt zaehlen.
+ */
+export function aehnlicheAnfrage(alle, felder) {
+  const mail = String(felder.email || '').trim().toLowerCase();
+  const tel = String(felder.telefon || '').replace(/\D/g, '');
+  const tag = d => Date.parse(`${d}T00:00:00Z`) / 86_400_000;
+  return alle.find(e => {
+    if (Math.abs(tag(e.datum) - tag(felder.datum)) > 7) return false;
+    if (mail && String(e.email || '').trim().toLowerCase() === mail) return true;
+    return tel.length >= 6 && String(e.telefon || '').replace(/\D/g, '') === tel;
+  }) || null;
+}
+
+/**
+ * Gepruefte Mails ($TP_PRIVAT_DIR/serviceanfragen-postfach.json): schreibt nur
+ * der Abgleich (operations/scripts/serviceanfragen.mjs), damit eine einmal
+ * uebersprungene Mail (Musteranfrage, kein Service) nicht bei jedem Lauf neu
+ * geholt wird. Angelegte Anfragen tragen ihre mailId selbst.
+ */
+export function postfachPfad(privatDir) {
+  return path.join(path.dirname(serviceanfragenPfad(privatDir)), 'serviceanfragen-postfach.json');
+}
+
+export function leseGeprueft(datei) {
+  let roh;
+  try { roh = fs.readFileSync(datei, 'utf8'); } catch (e) {
+    if (e?.code === 'ENOENT') return {};
+    throw new Error(`${path.basename(datei)} ist nicht lesbar (${e?.code || e?.message})`);
+  }
+  if (!roh.trim()) return {};
+  try { return JSON.parse(roh).geprueft || {}; } catch {
+    throw new Error(`${path.basename(datei)} ist beschädigt – bitte aus der Sicherung holen`);
+  }
+}
+
+export function schreibeGeprueft(datei, geprueft) {
+  fs.mkdirSync(path.dirname(datei), { recursive: true });
+  const tmp = `${datei}.${process.pid}.${Date.now()}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify({ version: 1, geprueft }, null, 2));
+  fs.renameSync(tmp, datei);
+}

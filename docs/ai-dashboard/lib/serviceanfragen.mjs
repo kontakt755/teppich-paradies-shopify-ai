@@ -73,8 +73,15 @@ export function pruefeFelder(roh = {}, { teil = false } = {}) {
  * (geprueft an echten Mails vom 29.09.-09.10.2026). Nur diese gelten als
  * Feldanfang - eine Zeile "Folgendes:" im Kundentext bleibt Text.
  */
-const MAILFELDER = ['Ländercode', 'Id', 'Betreff', 'Produkt', 'Produkt Handle', 'Produkt Link', 'Name', 'Plz', 'E-Mail', 'Telefon', 'Anliegen', 'Text', 'Nachricht'];
+const MAILFELDER = ['Ländercode', 'Id', 'Betreff', 'Herkunft', 'Produkt', 'Produkt Handle', 'Produkt Link', 'Name', 'Plz', 'E-Mail', 'Telefon', 'Anliegen', 'Text', 'Nachricht'];
 const FELD_ZEILE = new RegExp(`^\\s*(${MAILFELDER.map(f => f.replace(/[.*+?^${}()|[\]\\-]/g, '\\$&')).join('|')})\\s*:\\s*(.*)$`);
+
+/**
+ * Andere Formulare schicken weitere Felder ("Straße Und Hausnummer:", "Phone:").
+ * Vor dem Kundentext ist jede Zeile der Form "Wort Wort:" ein Feldanfang - sonst
+ * landete der Wert im vorigen Feld (z. B. hinter der E-Mail-Adresse).
+ */
+const FREMDES_FELD = /^\s*([A-ZÄÖÜ][A-Za-zÄÖÜäöüß -]{0,40}):\s*()$/;
 
 const MONATE = { januar: 1, februar: 2, märz: 3, maerz: 3, april: 4, mai: 5, juni: 6, juli: 7, august: 8, september: 9, oktober: 10, november: 11, dezember: 12 };
 
@@ -113,7 +120,8 @@ export function ausFormularMail(roh) {
   const felder = {};
   let aktuell = null;
   for (const zeile of zeilen) {
-    const m = aktuell === 'Text' || aktuell === 'Nachricht' ? null : FELD_ZEILE.exec(zeile);
+    const imText = aktuell === 'Text' || aktuell === 'Nachricht';
+    const m = imText ? null : FELD_ZEILE.exec(zeile) || FREMDES_FELD.exec(zeile);
     if (m) { aktuell = m[1]; felder[aktuell] = m[2] ? [m[2]] : []; continue; }
     if (aktuell) felder[aktuell].push(zeile);
   }
@@ -126,22 +134,64 @@ export function ausFormularMail(roh) {
   }
   const betreff = wert('Betreff');
   const anliegen = wert('Anliegen');
+  // Feld "Herkunft" setzt das Anfrageformular seit 16.10.2026 selbst
+  // (sections/tp-start-kontakt.liquid), z. B. "Google-Anzeige · Kampagne Treppen".
+  const kampagne = wert('Herkunft');
   const nachricht = wert('Text') || wert('Nachricht');
   const notiz = [anliegen && `Anliegen: ${anliegen}`, nachricht].filter(Boolean).join('\n');
   return {
     erkannt: true,
+    betreff, anliegen,
     felder: {
       datum: datumAusBetreffzeile(roh),
       name: text(wert('Name'), GRENZEN.name),
       telefon: text(wert('Telefon'), GRENZEN.telefon),
       email: text(wert('E-Mail'), GRENZEN.email),
       plz: text(wert('Plz'), GRENZEN.plz),
-      herkunft: text(betreff, GRENZEN.herkunft),
+      herkunft: text([betreff, kampagne].filter(Boolean).join(' · '), GRENZEN.herkunft),
       leistung: leistungAus({ betreff, anliegen }),
-      quelle: 'formular',
+      quelle: istAnzeige(kampagne) ? 'werbung' : 'formular',
       notiz: text(notiz, GRENZEN.notiz),
     },
   };
+}
+
+/** Das Formular schreibt "…-Anzeige" bzw. "Anzeige (…)" nur bei Klick-ID oder bezahltem utm_medium. */
+export function istAnzeige(herkunft) {
+  return /Anzeige/.test(String(herkunft || ''));
+}
+
+// --- Automatische Uebernahme aus dem Postfach ---------------------------------
+
+/**
+ * Betreffe, die eine Serviceseite fest setzt (templates/page.*.json, Abschnitt
+ * tp-start-kontakt, Einstellung "betreff") - nur diese werden automatisch
+ * uebernommen. tests/serviceanfragen.test.mjs prueft, dass jeder Betreff aus
+ * den Templates hier oder in BETREFF_KEIN_SERVICE steht: eine neue
+ * Serviceseite faellt so beim naechsten Testlauf auf.
+ */
+export const BETREFF_SERVICE = Object.freeze([
+  'Anfrage Liefer- und Verlegeservice',
+  'Anfrage Teppichboden verlegen',
+  'Anfrage Vinylboden verlegen',
+  'Anfrage Treppenverlegung',
+]);
+/** Startseite: Formular ohne eigenen Betreff - Service nur bei diesem Anliegen. */
+export const BETREFF_STARTSEITE = 'Anfrage von der Startseite';
+export const ANLIEGEN_SERVICE = Object.freeze(['Boden verlegen lassen', 'Aufmaß und Angebot', 'Treppe belegen lassen']);
+/** Bekannte Betreffe ohne Service-Anfrage (Reinigung, Boden-Finder, Musterberatung). */
+export const BETREFF_KEIN_SERVICE = Object.freeze(['Anfrage Teppichreinigung', 'Boden-Finder: persönliche Vorschläge', 'RÜCKRUF – Musterberatung']);
+
+/** Ergebnis von ausFormularMail() -> darf es ohne Menschen in die Liste? */
+export function automatischUebernehmbar(ergebnis) {
+  if (!ergebnis?.erkannt) return { ok: false, grund: ergebnis?.grund || 'keine Formular-Mail' };
+  if (BETREFF_SERVICE.includes(ergebnis.betreff)) return { ok: true };
+  if (ergebnis.betreff === BETREFF_STARTSEITE) {
+    return ANLIEGEN_SERVICE.includes(ergebnis.anliegen)
+      ? { ok: true }
+      : { ok: false, grund: `Startseite, Anliegen „${ergebnis.anliegen || 'leer'}“ ist kein Service` };
+  }
+  return { ok: false, grund: `Betreff „${ergebnis.betreff || 'leer'}“ ist kein Service-Betreff` };
 }
 
 // --- Auswertung ----------------------------------------------------------------

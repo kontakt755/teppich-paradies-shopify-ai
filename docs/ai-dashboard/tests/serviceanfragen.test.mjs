@@ -10,7 +10,10 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   ausFormularMail, leistungAus, pruefeFelder, auswertung, kalenderwoche, wochenStart, ServiceanfrageFehler,
+  automatischUebernehmbar, istAnzeige, BETREFF_SERVICE, BETREFF_STARTSEITE, BETREFF_KEIN_SERVICE,
 } from '../lib/serviceanfragen.mjs';
+
+const REPO = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..', '..');
 
 // Aufbau wie die Mail "Neue Kundennachricht" von Shopify (Klartextteil).
 const TREPPEN_MAIL = `Neue Kundennachricht vom 9. Oktober 2026 um 11:34
@@ -66,6 +69,72 @@ test('Formular-Mail: Musteranfrage und fremder Text werden nicht uebernommen', (
   assert.equal(muster.erkannt, false);
   assert.match(muster.grund, /Musteranfrage/);
   assert.equal(ausFormularMail('Hallo, bitte rufen Sie zurück.').erkannt, false);
+});
+
+test('Formular-Mail: fremde Felder vor dem Text haengen nicht am vorigen Wert', () => {
+  const r = ausFormularMail('Betreff:\nAnfrage Treppenverlegung\n\nName:\nA B\n\nE-Mail:\na@example.com\n\nStraße Und Hausnummer:\nWeg 1\n\nPhone:\n\nText:\nHinweis:\nzweite Zeile');
+  assert.equal(r.felder.email, 'a@example.com');
+  assert.equal(r.felder.notiz, 'Hinweis:\nzweite Zeile', 'im Kundentext bleibt "Hinweis:" Text');
+});
+
+test('Formular-Mail mit Herkunft aus dem Formular: Anzeige zaehlt als Werbung', () => {
+  const r = ausFormularMail(TREPPEN_MAIL.replace('Name:\n', 'Herkunft:\nGoogle-Anzeige · Kampagne Treppen\n\nName:\n'));
+  assert.equal(r.felder.quelle, 'werbung');
+  assert.equal(r.felder.herkunft, 'Anfrage Treppenverlegung · Google-Anzeige · Kampagne Treppen');
+  assert.equal(r.felder.name, 'Erika Beispiel');
+  const link = ausFormularMail(TREPPEN_MAIL.replace('Name:\n', 'Herkunft:\nLink (newsletter)\n\nName:\n'));
+  assert.equal(link.felder.quelle, 'formular', 'ein Kampagnenlink ohne Anzeige bleibt Formular');
+  assert.equal(istAnzeige('Anzeige (facebook)'), true);
+  assert.equal(istAnzeige(''), false);
+});
+
+test('Automatisch nur die festen Service-Betreffe, Startseite nur mit Service-Anliegen', () => {
+  assert.deepEqual(automatischUebernehmbar(ausFormularMail(TREPPEN_MAIL)), { ok: true });
+  const start = anliegen => automatischUebernehmbar(ausFormularMail(`Betreff:\n${BETREFF_STARTSEITE}\n\nName:\nA B\n\nE-Mail:\na@example.com\n\nAnliegen:\n${anliegen}`));
+  assert.equal(start('Boden verlegen lassen').ok, true);
+  assert.equal(start('Aufmaß und Angebot').ok, true);
+  assert.equal(start('Muster bestellen').ok, false);
+  assert.match(start('Rückruf').grund, /kein Service/);
+  assert.equal(automatischUebernehmbar(ausFormularMail(TREPPEN_MAIL.replace('Anfrage Treppenverlegung', 'Anfrage Teppichreinigung'))).ok, false);
+  assert.equal(automatischUebernehmbar(ausFormularMail('Hallo')).ok, false);
+});
+
+test('Jeder Betreff aus den Theme-Templates ist eingeordnet (Service oder bewusst nicht)', () => {
+  const bekannt = new Set([...BETREFF_SERVICE, BETREFF_STARTSEITE, ...BETREFF_KEIN_SERVICE]);
+  const gefunden = [];
+  for (const datei of fs.readdirSync(path.join(REPO, 'templates')).filter(d => d.endsWith('.json'))) {
+    const roh = fs.readFileSync(path.join(REPO, 'templates', datei), 'utf8').replace(/^\/\*[\s\S]*?\*\//, '');
+    for (const s of Object.values(JSON.parse(roh).sections || {})) {
+      if (s.type === 'tp-start-kontakt' && s.settings?.betreff) gefunden.push([datei, s.settings.betreff]);
+    }
+  }
+  assert.ok(gefunden.length >= 5, 'die Serviceseiten tragen ihren Betreff');
+  for (const [datei, betreff] of gefunden) assert.ok(bekannt.has(betreff), `${datei}: Betreff „${betreff}“ in lib/serviceanfragen.mjs einordnen`);
+  // Feste Betreffe anderer Formulare im Theme
+  const theme = ['sections/tp-boden-finder.liquid', 'snippets/tp-muster-beratungsanfrage.liquid'].map(d => fs.readFileSync(path.join(REPO, d), 'utf8')).join('\n');
+  for (const [, wert] of theme.matchAll(/name="contact\[Betreff\]" value="([^"{]+)"/g)) assert.ok(bekannt.has(wert), `Betreff „${wert}“ einordnen`);
+});
+
+test('Theme: Herkunft-Feld liest nur die Adresse, speichert nichts, schickt keine Klick-ID', () => {
+  const quelle = fs.readFileSync(path.join(REPO, 'sections/tp-start-kontakt.liquid'), 'utf8');
+  assert.match(quelle, /<input type="hidden" name="contact\[Herkunft\]" value="" data-tp-herkunft>/);
+  const start = quelle.indexOf('Herkunft fuer die Anfrage-Mail');
+  const code = quelle.slice(quelle.indexOf('(function', start), quelle.indexOf('})();', start) + 5);
+  assert.doesNotMatch(code, /Storage|cookie/i);
+  const lauf = suche => {
+    const feld = { value: '' };
+    const document = { querySelectorAll: () => [feld] };
+    new Function('window', 'document', 'URLSearchParams', code)({ location: { search: suche } }, document, URLSearchParams);
+    return feld.value;
+  };
+  assert.equal(lauf('?gclid=abc123&utm_campaign=Treppen'), 'Google-Anzeige · Kampagne Treppen');
+  assert.equal(lauf('?utm_source=facebook&utm_medium=paid_social'), 'Anzeige (facebook)');
+  assert.equal(lauf('?fbclid=xyz'), 'Link von Facebook/Instagram');
+  assert.equal(lauf('?utm_source=newsletter'), 'Link (newsletter)');
+  assert.equal(lauf(''), '');
+  assert.doesNotMatch(lauf('?gclid=geheim-123'), /geheim/);
+  for (const w of ['Google-Anzeige · Kampagne Treppen', 'Anzeige (facebook)']) assert.equal(istAnzeige(w), true);
+  assert.equal(istAnzeige(lauf('?fbclid=xyz')), false);
 });
 
 test('Leistung: Betreff der Serviceseite gewinnt, sonst das Anliegen', () => {
