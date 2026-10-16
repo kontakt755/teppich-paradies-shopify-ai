@@ -323,9 +323,11 @@
         "description": {{ tp_sd_description | json }},
         {%- endif -%}
         "url": {{ tp_sd_product_url | json }},
+        {%- comment -%} Marke wie in Titeln, og:site_name und Organization (sections/header.liquid): Hausware steht im Admin als "TeppichParadies" {%- endcomment -%}
+        {%- assign tp_sd_marke = product_resource.vendor | replace: 'TeppichParadies', 'Teppich Paradies' -%}
         "brand": {
           "@type": "Brand",
-          "name": {{ product_resource.vendor | json }}
+          "name": {{ tp_sd_marke | json }}
         },
         {%- if product_resource.images.size > 0 -%}
         "image": [
