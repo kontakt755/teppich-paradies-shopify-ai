@@ -1148,6 +1148,22 @@ Styles `stile/serviceanfragen.css`.
   sonst aus dem Anliegen. Musteranfragen (`Id: ContactForm-sample`) werden abgelehnt.
 - **Auswertung oben:** letzte 8 Kalenderwochen inklusive der laufenden, je Woche und je Quelle
   (mit gewonnen/verloren); beide zählen dieselbe Menge.
-- **Nicht automatisch:** Der Dienst liest kein Postfach. Werbung/UTM ist aus der Formular-Mail nicht
-  erkennbar (das Formular schickt keine Kampagnenangabe mit) – Quelle „Werbung“ nur, wenn der Kunde
-  es sagt. Beides ist offen (Werkbank w-030).
+- **Automatische Übernahme (seit 2026-10-16, Inhaber: ja):** Der Dienst liest kein Postfach. Das tut
+  der geplante Claude-Lauf `serviceanfragen-postfach` (Mo–Sa stündlich 8–18 Uhr, nur lesend über
+  Gmail): `npm run -s service -- bekannt` liefert die schon geprüften Mail-IDs, der Lauf holt nur neue
+  Mails von `mailer@shopify.com`, legt sie als JSON in sein Scratchpad und ruft
+  `npm run -s service -- uebernehmen --datei <json>` (`operations/scripts/serviceanfragen.mjs`).
+  Übernommen wird nur, was `automatischUebernehmbar()` erlaubt: die festen Betreffe der Serviceseiten
+  (`BETREFF_SERVICE`) und die Startseite mit Anliegen Verlegen/Aufmaß/Treppe. Eine Mail nie zweimal
+  (`mailId`), eine schon von Hand erfasste Anfrage nicht noch einmal (gleiche E-Mail oder Telefonnummer
+  innerhalb von 7 Tagen). Übersprungene Mails merkt sich `serviceanfragen-postfach.json` (schreibt nur
+  das Skript; gesichert). Angelegt wird mit Status „neu“ und „Postfach (automatisch)“ als Urheber; die
+  Zeile zeigt „aus dem Postfach übernommen“. Ein Test prüft, dass jeder Betreff aus `templates/` in
+  der Liste steht oder bewusst ausgenommen ist – eine neue Serviceseite fällt so auf.
+- **Kampagnenfeld:** Das Anfrageformular (`sections/tp-start-kontakt.liquid`) füllt das versteckte
+  Feld `contact[Herkunft]` aus der Adresse der Seite: „Google-Anzeige“ (gclid/gbraid/wbraid),
+  „Microsoft-Anzeige“ (msclkid), „Anzeige (<utm_source>)“ bei bezahltem `utm_medium`, sonst „Link
+  (<utm_source>)“ bzw. „Link von Facebook/Instagram“, jeweils mit „· Kampagne <utm_campaign>“. Nichts
+  wird auf dem Gerät gespeichert, Klick-IDs gehen nicht mit. Steht „Anzeige“ darin, wird die Quelle
+  „Werbung“. Grenze: erfasst ist nur, wer auf der Seite mit der Anzeigenadresse anfragt; wer erst
+  weiterklickt, zählt als Formular.

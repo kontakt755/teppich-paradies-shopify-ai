@@ -2,6 +2,28 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-16 · Service-Anfragen kommen von selbst, Anzeigen werden erkannt (Werkbank w-030)
+
+- **Geändert:** Inhaber 16.10.: ja zur automatischen Übernahme und zum Kampagnenfeld. Neuer geplanter
+  Lauf `serviceanfragen-postfach` (Mo–Sa stündlich) liest Formular-Mails nur lesend und übergibt sie an
+  `npm run -s service -- uebernehmen`; übernommen werden nur die festen Betreffe der Serviceseiten und
+  die Startseite mit Service-Anliegen, ohne Dubletten (Mail-ID, gleicher Kontakt innerhalb 7 Tagen).
+  Das Anfrageformular schickt jetzt ein verstecktes Feld „Herkunft“ (Anzeige/Kampagne aus der Adresse,
+  ohne Speicherung, ohne Klick-ID); „Anzeige“ zählt als Quelle Werbung. Zeilen aus dem Postfach sind
+  gekennzeichnet. Fremde Felder anderer Formulare („Phone:“) hängen nicht mehr am vorigen Wert.
+  Details: `ARCHITEKTUR.md` Abschnitt 20.
+- **Getestet:** Lib-Tests (Herkunft → Werbung, Betreff-Freigabe, alle Template-Betreffe eingeordnet,
+  Formularskript mit gclid/utm/fbclid ohne Speicher und ohne Klick-ID), Postfach-Test (nur Service,
+  Absender, von Hand Erfasstes, zweiter Lauf leer, Berliner Datum). Gegenprobe mit den echten Mails
+  29.09.–09.10. in einem Wegwerf-Ordner: 4 Service-Anfragen angelegt, Musteranfrage übersprungen,
+  zweiter Lauf ohne Änderung.
+- **Risiken/Annahmen:** Der Lauf braucht beim ersten Mal Freigaben (Gmail lesen, Bash, Schreiben ins
+  Scratchpad) – einmal „Jetzt ausführen“. Bis der PR in `~/tp-dashboard` nachgezogen ist, endet er mit
+  „Skript noch nicht im Dienst“. Das Kampagnenfeld wirkt erst nach dem Theme-Deploy.
+- **Nächste Stufe:** Nach zwei Wochen prüfen, wie viele Anfragen „Werbung“ tragen; erfasst nur der
+  Landeseite-Fall zu wenig, die Anzeigenherkunft über Seitenwechsel tragen (bräuchte Speicherung im
+  Browser, also Einwilligung).
+
 ## 2026-10-16 · Service-Anfragen unter „Kunden“ (#1361, Werkbank w-030)
 
 - **Geändert:** Inhaber 15.10.: Service-Anfragen (Verlegeservice, Treppe, Aufmaß) im Control Center
