@@ -47,7 +47,7 @@ arbeiteten zwei Sitzungen gleichzeitig im selben Worktree — die
 Theme-Check-Baseline wurde zwischen Schreiben und Lesen ueberschrieben, HEAD
 sprang mitten im Lauf weg, und das freigegebene Preview-Theme wurde von der
 anderen Sitzung publiziert. Eine verwaiste Sperre uebernimmt der naechste Lauf
-selbst; sofort geht es mit Loeschen der Datei. `doctor`, `route` und
+selbst; sofort geht es mit Loeschen der Datei. `doctor` und
 `validate --static` sind absichtlich frei und geben auch waehrend eines Deploys
 Auskunft.
 

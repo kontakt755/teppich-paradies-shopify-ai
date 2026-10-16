@@ -4,27 +4,26 @@ Dieses Verzeichnis enthält Sicherheits-Hooks, die verhindern, dass Änderungen 
 
 ## Installation
 
-### Option 1: Automatisch mit Husky (empfohlen)
+Der Hook wirkt nur auf Rechnern, auf denen er installiert ist – Git uebernimmt
+ihn nicht aus dem Repository. Stand 2026-10-16 ist er auf dem Mac **nicht**
+installiert (im Hauptcheckout liegen unter `.git/hooks/` nur `*.sample`,
+`core.hooksPath` ist leer). Husky ist nicht im Projekt.
+
+### Manuell in `.git/hooks/pre-commit` (im Hauptcheckout)
+
+Worktrees teilen sich das Hook-Verzeichnis des Hauptcheckouts; dort einmal
+installieren (in einem Worktree ist `.git` eine Datei, kein Ordner):
 
 ```bash
-npm install husky --save-dev
-npx husky install
-npx husky add .husky/pre-commit "./.claude/hooks/pre-commit-unmerged-branch.sh"
+cp .claude/hooks/pre-commit-unmerged-branch.sh "$(git rev-parse --git-common-dir)/hooks/pre-commit"
+chmod +x "$(git rev-parse --git-common-dir)/hooks/pre-commit"
 ```
 
-### Option 2: Manuell in `.git/hooks/pre-commit`
+### Nicht verwenden: `core.hooksPath .claude/hooks`
 
-```bash
-cp .claude/hooks/pre-commit-unmerged-branch.sh .git/hooks/pre-commit
-chmod +x .git/hooks/pre-commit
-```
-
-### Option 3: Mit Git-Config (lokal aktivieren)
-
-```bash
-git config core.hooksPath .claude/hooks
-chmod +x .claude/hooks/pre-commit-unmerged-branch.sh
-```
+Git sucht dort eine Datei namens `pre-commit`; das Skript heisst
+`pre-commit-unmerged-branch.sh` und wuerde nie aufgerufen. Zugleich waeren alle
+anderen Git-Hooks des Rechners abgeschaltet.
 
 ## Was die Hooks tun
 

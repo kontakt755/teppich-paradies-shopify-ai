@@ -5,9 +5,10 @@
 | Datei | Zweck |
 |---|---|
 | `settings.json` | registriert die Hooks und die Freigaben (`permissions.allow`) |
-| `hooks/session-start.sh` | installiert Abhängigkeiten und zeigt den Projektzustand |
+| `hooks/session-start.sh` | zeigt den Kurzstand des Control Centers (immer) und in Remote-Sessions den Projektzustand samt Abhängigkeiten (siehe unten) |
 | `hooks/gedaechtnis-sync.sh` | Gedächtnis-Ordner (Obsidian-Vault) per Git: pull bei SessionStart, push bei SessionEnd |
-| `hooks/git-gh-guard.mjs`, `theme-delete-guard.mjs`, `deploy-command-guard.mjs` | harte Grenzen (`deny`) und Deploy-Hinweise für Bash-Befehle |
+| `hooks/git-gh-guard.mjs`, `theme-delete-guard.mjs`, `deploy-command-guard.mjs` | harte Grenzen (`deny`) und Deploy-Hinweise für Bash-Befehle (nur Bash: Aufrufe über den Shopify-MCP prüfen sie nicht) |
+| `hooks/*.test.mjs` | Tests der Hooks (`npm run hooks:test`, Teil von `npm test`) |
 | `skills/deploy/SKILL.md` | Deploy-Kette main → Preview → Live, Gates, Wegwerf-Themes |
 | `skills/control-center/SKILL.md` | Regeln, Gestaltung, Ablauf und Fallstricke für das Control Center |
 | `skills/produktimport/SKILL.md` | Ablauf für neue Produkte aus Lieferantenquellen (verweist auf `domains/shopify/produktimport-arbeitsweise.md`) |
@@ -15,7 +16,7 @@
 | `skills/shopify-massendaten/SKILL.md` | viele Metafelder/Tags auf einmal schreiben, mit Plan und Rollback |
 | `skills/raumbilder-recherche/SKILL.md` | Produkte ohne Raumbild: Hersteller hinter dem Lieferantenprodukt finden, farbgenaue Raumbilder aus erlaubten Quellen suchen |
 | `skills/theme-audit/` | nur lesendes Theme-Audit mit Pruefliste; uebernommen aus zwei MIT-Skills (Quellen in `QUELLEN.md`), Bericht nach `docs/audits/` |
-| `hooks/pre-commit-unmerged-branch.sh`, `hooks/SETUP.md` | Git-Pre-Commit-Hook gegen Commits auf alten, nie gemergten Branches (warnt ab 7, blockiert ab 30 Tagen; AGENTS.md Fallstrick 6) |
+| `hooks/pre-commit-unmerged-branch.sh`, `hooks/SETUP.md` | Git-Pre-Commit-Hook gegen Commits auf alten, nie gemergten Branches (warnt ab 7, blockiert ab 30 Tagen; AGENTS.md Fallstrick 6). Wirkt nur, wenn er je Rechner installiert ist (`hooks/SETUP.md`) |
 | `agents/control-center.md` | Dashboard-Mitarbeiter (Subagent), arbeitet nach dem Skill oben |
 
 ## Was bewusst nicht mehr hier liegt
@@ -89,13 +90,20 @@ Produktdaten abfragen, in unpublished Themes schreiben).
 
 ## SessionStart-Hook
 
-Läuft nur in Remote-Sessions (`$CLAUDE_CODE_REMOTE`); lokal ist die Umgebung
-ohnehin eingerichtet. Er installiert fehlende npm-Abhängigkeiten und gibt aus:
+Läuft in **jeder** Session zweistufig:
 
-- die Ergebnisse von Liquid-, Schema-, Template- und Live-Theme-Guard,
-- welches Theme laut `domains/shopify/live-theme.json` live ist (samt Prüfdatum),
-- die Produktkarten-Blöcke je Kollektions-Template (macht Drift sichtbar),
-- den Hinweis auf die gesperrte Storefront.
+- **Immer (auch lokal):** Sync-Pfad-Wächter (warnt, wenn der Checkout in einem
+  Cloud-Ordner liegt) und die Kurzfassung des Control Centers
+  (`scripts/dashboard-brief.mjs`, rund fünf Zeilen; ist
+  `docs/ai-dashboard/issues.json` älter als eine Stunde, wird sie im
+  Hintergrund neu erzeugt).
+- **Nur in Remote-Sessions (`$CLAUDE_CODE_REMOTE`):** installiert fehlende
+  npm-Abhängigkeiten und gibt aus:
+  - die Ergebnisse von Liquid-, Schema-, Template- und Live-Theme-Guard,
+  - welches Theme laut `domains/shopify/live-theme.json` live ist (samt Prüfdatum),
+  - Drift der Produktkarten-Blöcke über die Kollektions-Templates (nur die
+    `BLOCK_DRIFT`-Zeilen; volle Liste: `npm run theme:block list`),
+  - den Hinweis auf die gesperrte Storefront.
 
 Der Live-Theme-Guard steht in dieser Liste, weil eine veraltete Theme-ID in
 CLAUDE.md dazu geführt hat, dass Sessions monatelang ein längst gelöschtes
