@@ -26,8 +26,8 @@ einzuholen. Produkttexte dürfen keinen abweichenden Rabatt versprechen.
 ## Gekettelte Fußleiste
 
 Gekettelte Fußleiste: Meterpreis inklusive Material = Fertigung + Höhe ×
-m²-Preis des Teppichbodens, als fünf Preisstufen je Höhe; die Länge geht auf
-ganze Streifen quer zur Rolle, über 100 €/m² gibt es keine Leiste
+m²-Preis des Teppichbodens, als sieben Preisstufen je Höhe (bis 250 €/m²);
+die Länge geht auf ganze Streifen quer zur Rolle, über 250 €/m² gibt es keine Leiste
 → `domains/shopify/fussleiste-preisstufen.md`.
 
 ## Paketprodukte

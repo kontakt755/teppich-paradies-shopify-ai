@@ -31,7 +31,11 @@
   Preisstufen zaehlt und filtert imBudget() hier im Browser. Den Raumpreis
   rechnet paketRechnung() wie der Paketrechner (blocks/paket-auswahl.liquid):
   5 % Verschnitt, auf volle Pakete aufgerundet. Rollenware derselben
-  Kollektion (Vinyl von der Rolle) laeuft weiter ueber raumWege().
+  Kollektion (Vinyl von der Rolle) laeuft weiter ueber raumWege(). Den
+  ca.-Betrag an der Stufe setzt stufenMaximum() auf den teuersten Raumpreis
+  darin - ganze Pakete kosten oft mehr als Flaeche x Stufe, Rollen nur in 2 m
+  Breite (Bahnen mit Naht), mit Mindestlaenge oder ohne 5-m-Rolle auch. Dafuer
+  liefert die Preisliste je Rolle Breiten, Preise und Mindestlaenge.
 
   Reine Funktionen stehen oben und laufen ohne DOM in den Tests
   (qa/tests/boden-finder.test.mjs).
@@ -127,7 +131,8 @@
   // Alle Wege, einen Raum aCm x bCm aus diesem Produkt zu decken. Beide Lagen
   // werden probiert (Raumbreite quer zur Rolle oder die Laenge). Je Weg:
   // { art: 'meterware'|'raummass', rolle, quer, laenge, qm, betrag, naht,
-  // bahnen }. Leer, wenn das Produkt keine Rollenbreiten hat.
+  // bahnen }, mit Naht zusaetzlich gesamt (bestellte Laenge aller Bahnen,
+  // laenge ist dann je Bahn). Leer, wenn das Produkt keine Rollenbreiten hat.
   function raumKandidaten(produkt, aCm, bCm) {
     if (!produkt || !(aCm > 0) || !(bCm > 0)) return [];
     var vars = (produkt.variants || []).filter(function (v) { return v && v.available === true; });
@@ -176,15 +181,18 @@
       }
     });
     // Breiter als jede Rolle: Bahnen nebeneinander, mit Naht - grobe Naeherung.
+    // Die Bahnen kommen am Stueck von der Rolle (eine Laenge im Rechner, vor
+    // Ort geteilt): Mindestlaenge und Rundung gelten fuer die Gesamtlaenge,
+    // nicht je Bahn - 2 x 4 m bei 8 m Mindestlaenge sind 8 m, nicht 2 x 8 m.
     if (!kandidaten.length && breiten.length) {
       var rmax = breiten[breiten.length - 1];
       var rm = rate(rmax);
       if (rm > 0) {
         lagen.forEach(function (lage) {
           var bahnen = Math.ceil(lage[0] / rmax - EPS);
-          var laenge = ART.mitMindestlaenge(lage[1], produkt.min_cm).cm;
-          var qm = bahnen * abgerechnet((rmax * laenge) / 10000);
-          kandidaten.push({ art: 'meterware', rolle: rmax, quer: lage[0], laenge: laenge, qm: qm, betrag: qm * rm, naht: true, bahnen: bahnen });
+          var gesamt = ART.mitMindestlaenge(bahnen * lage[1], produkt.min_cm).cm;
+          var qm = abgerechnet((rmax * gesamt) / 10000);
+          kandidaten.push({ art: 'meterware', rolle: rmax, quer: lage[0], laenge: lage[1], gesamt: gesamt, qm: qm, betrag: qm * rm, naht: true, bahnen: bahnen });
         });
       }
     }
@@ -250,8 +258,26 @@
     return best || null;
   }
 
+  // Rollenware aus der Preisliste: [[Breite, Cent], ...], Mindestlaenge in cm,
+  // Preis je 0,01 m² 1/0 -> Produkt fuer raumKandidaten() wie aus der
+  // Treffer-Ansicht, nur mit lieferbaren Rollenbreiten. Wunschmass bleibt weg:
+  // ohne ihn ist der guenstigste Weg hoechstens teurer, der Betrag der Stufe
+  // also nie zu niedrig. null ohne Rollenbreiten.
+  function rollenProdukt(paare, minCm, cmExact) {
+    var vars = (paare || []).filter(function (p) { return Array.isArray(p) && ART.isBreite(p[0]) && Number(p[1]) > 0; })
+      .map(function (p) { return { options: [p[0]], price: Number(p[1]), available: true }; });
+    if (!vars.length) return null;
+    return {
+      cm_exact: cmExact === 1,
+      min_cm: Number(minCm) > 0 ? Number(minCm) : 0,
+      options: [{ name: 'Breite', values: vars.map(function (v) { return v.options[0]; }) }],
+      variants: vars
+    };
+  }
+
   // Ansicht boden-finder-preise: [Handle, Cent je m², m² je Paket, Cent,
-  // Auslauf] je Produkt -> Eintraege; pos = Stelle in der Kollektion.
+  // Auslauf, bei Rollenware Breiten, Mindestlaenge, je 0,01 m²] je Produkt ->
+  // Eintraege; pos = Stelle in der Kollektion.
   function preisEintraege(roh) {
     return (roh || []).filter(Array.isArray).map(function (e, i) {
       return {
@@ -260,6 +286,7 @@
         paket: Number(e[2]) > 0 ? Number(e[2]) : 0,
         preis: Number(e[3]) > 0 ? Number(e[3]) / 100 : null,
         auslauf: e[4] === 1,
+        rolle: Number(e[2]) > 0 ? null : rollenProdukt(e[5], e[6], e[7]),
         pos: i
       };
     });
@@ -268,6 +295,30 @@
   // Eintraege mit einem Preis je m² von hoechstens qmStufe.
   function imBudget(liste, qmStufe) {
     return (liste || []).filter(function (e) { return e.qm > 0 && e.qm <= qmStufe + 0.005; });
+  }
+
+  // ca.-Betrag einer Preisstufe bei Paketware: der teuerste Raumpreis unter
+  // den Eintraegen der Stufe, damit kein Vorschlag darueber liegt. Pakete in
+  // ganzen Paketen wie paketRechnung() fuer die Raumflaeche. Rollenware mit
+  // Laenge und Breite (raum in cm) wie die Karte: guenstigster Weg aus
+  // raumAngebot(), auch Bahnen mit Naht und Mindestlaenge; sonst Preis je m²
+  // x qmRolle (wie stufenBetrag). Auf volle 10 EUR aufgerundet, nie
+  // abgerundet; null ohne Raumgroesse oder ohne Treffer.
+  function stufenMaximum(liste, qmStufe, flaeche, qmRolle, raum) {
+    var max = 0;
+    imBudget(liste, qmStufe).forEach(function (e) {
+      var b = 0;
+      if (e.paket > 0) {
+        var a = paketRechnung(e.paket, e.preis, flaeche);
+        if (a) b = a.betrag;
+      } else {
+        var weg = e.rolle && raum ? raumAngebot(e.rolle, raum.laenge, raum.breite) : null;
+        if (weg) b = weg.betrag;
+        else if (qmRolle > 0) b = e.qm * qmRolle;
+      }
+      if (b > max) max = b;
+    });
+    return max > 0 ? Math.ceil(max / 10 - EPS) * 10 : null;
   }
 
   // Regulaere Ware vor Auslaufkollektionen, sonst Shop-Reihenfolge.
@@ -382,6 +433,7 @@
     abPreisQm: abPreisQm,
     preisEintraege: preisEintraege,
     imBudget: imBudget,
+    stufenMaximum: stufenMaximum,
     regulaerZuerst: regulaerZuerst,
     kartenSeite: kartenSeite,
     optikNamen: optikNamen,
@@ -515,6 +567,8 @@
     this.aktuell = null;
     this.zaehlNr = 0;
     this.preisNr = 0;
+    // Preisliste der Paketware aus preiseZeigen() fuer preiseBetraege().
+    this.preisDaten = null;
     if (cfg.vorwahl) this.s.art = this.artFuer(cfg.vorwahl);
     this.verbinden();
   }
@@ -587,14 +641,10 @@
   };
 
   // Flaeche fuer den ca.-Betrag am Preisrahmen: bei Laenge und Breite mit der
-  // Rollenbreite gerundet, sonst die eingegebene Flaeche. Paketware: Flaeche
-  // mit dem Verschnitt des Paketrechners.
+  // Rollenbreite gerundet, sonst die eingegebene Flaeche. Paketware rechnet
+  // stufenMaximum() mit ganzen Paketen aus der Raumflaeche.
   Finder.prototype.preisFlaeche = function () {
     var r = this.raum();
-    if (this.rechnet()) {
-      var f = this.flaeche();
-      return f ? f * PAKET_VERSCHNITT : null;
-    }
     return r ? rollenFlaeche(r.laenge, r.breite) : this.flaeche();
   };
 
@@ -900,8 +950,10 @@
     var nr = ++this.preisNr;
     ziel.setAttribute('aria-busy', 'true');
     ziel.textContent = '';
+    this.preisDaten = null;
     var zaehlen = this.rechnet()
       ? this.preisListe().then(function (d) {
+        if (nr === self.preisNr) self.preisDaten = d.liste;
         return [d.anzahl].concat(stufen.map(function (st) { return imBudget(d.liste, st).length; }));
       })
       : Promise.all([this.daten(auswahl)].concat(stufen.map(function (st) { return self.daten(auswahl, st); })))
@@ -941,11 +993,17 @@
   };
 
   // ca.-Betrag fuer den Raum je Preisstufe, sobald die Raumgroesse bekannt ist.
+  // Paketware: der teuerste Raumpreis der Stufe aus der Preisliste.
   Finder.prototype.preiseBetraege = function () {
     var qm = this.preisFlaeche();
+    var paket = this.rechnet();
+    var liste = this.preisDaten;
+    var flaeche = this.flaeche();
+    var raum = this.raum();
     this.qa('.tp-bf-preis').forEach(function (k) {
       var stufe = Number(k.getAttribute('data-bf-stufe'));
-      var b = stufe > 0 ? stufenBetrag(stufe, qm) : null;
+      var b = null;
+      if (stufe > 0) b = paket ? stufenMaximum(liste, stufe, flaeche, qm, raum) : stufenBetrag(stufe, qm);
       var ziel = k.querySelector('.tp-bf-preis__raum');
       ziel.textContent = b ? 'Ihr Raum: bis ca. ' + euro(b) : '';
       ziel.hidden = !b;

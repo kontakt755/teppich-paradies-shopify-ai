@@ -33,6 +33,11 @@
   Kartenseite eines Treffers kennt. Je Produkt:
     [Handle, Preis je m2 in Cent, m2 je Paket (0 = keine Paketware),
      kleinster Variantenpreis in Cent, Auslauf 1/0]
+  Rollenware (Option "Breite") zusaetzlich, damit der ca.-Betrag der
+  Preisstufe mit raumKandidaten() rechnen kann wie die Karte:
+    ..., [[Breite, Variantenpreis in Cent], ...], Mindestlaenge in cm,
+    Preis je 0,01 m2 1/0]
+  Die Paare kommen aus denselben Varianten wie der Preis je m2, ohne Doppelte.
 {%- endcomment -%}
 {%- liquid
   assign bf_treffer = section.settings.treffer
@@ -62,7 +67,19 @@
             assign bf_fi = bf_sf | split: '|' | last | plus: 0
             assign bf_farbe = product.variants[bf_pos].options[bf_fi]
           endif
+          # Rollenware: Index der Breitenoption (sonst -1).
+          assign bf_bi = -1
+          if bf_qm == 0
+            for bf_opt in product.options_with_values
+              assign bf_opt_name = bf_opt.name | downcase
+              if bf_opt_name contains 'breite'
+                assign bf_bi = bf_opt.position | minus: 1
+                break
+              endif
+            endfor
+          endif
           assign bf_min = 0
+          assign bf_rolle = ''
           for bf_var in product.variants
             assign bf_var_titel = bf_var.title | downcase
             if bf_var_titel contains 'opc-' or bf_var.available == false
@@ -74,6 +91,21 @@
             if bf_min == 0 or bf_var.price < bf_min
               assign bf_min = bf_var.price
             endif
+            if bf_bi >= 0
+              capture bf_paar
+                echo '['
+                echo bf_var.options[bf_bi] | json
+                echo ','
+                echo bf_var.price
+                echo ']'
+              endcapture
+              unless bf_rolle contains bf_paar
+                if bf_rolle != ''
+                  assign bf_rolle = bf_rolle | append: ','
+                endif
+                assign bf_rolle = bf_rolle | append: bf_paar
+              endunless
+            endif
           endfor
           # Preis je m2 in Cent, wie die Karte ihn zeigt.
           assign bf_qmp = bf_min
@@ -82,8 +114,11 @@
           elsif product.metafields.custom.preis_pro_001_qm.value == true
             assign bf_qmp = bf_min | times: 100
           endif
+          assign bf_min_cm = product.metafields.custom.mindestlaenge_lfm.value | times: 100 | round
         -%}
-        [{{ product.handle | json }}, {{ bf_qmp | json }}, {{ bf_qm | json }}, {{ bf_min | json }}, {% if product.tags contains 'auslauf' %}1{% else %}0{% endif %}]{%- unless forloop.last -%},{%- endunless -%}
+        [{{ product.handle | json }}, {{ bf_qmp | json }}, {{ bf_qm | json }}, {{ bf_min | json }}, {% if product.tags contains 'auslauf' %}1{% else %}0{% endif %}
+        {%- if bf_rolle != '' -%}, [{{ bf_rolle }}], {{ bf_min_cm | json }}, {% if product.metafields.custom.preis_pro_001_qm.value == true %}1{% else %}0{% endif %}{%- endif -%}
+        ]{%- unless forloop.last -%},{%- endunless -%}
       {%- endfor -%}
   ]
   {%- endpaginate -%}
