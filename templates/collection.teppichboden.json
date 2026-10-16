@@ -1143,14 +1143,17 @@
             "titel": "Vinylboden",
             "kollektion": "vinylboden-1",
             "bild": "shopify://shop_images/ratgeber-klick-oder-klebevinyl-titel.png",
-            "status": "bald",
-            "untertitel": "",
+            "status": "aktiv",
+            "untertitel": "Klick, Klebe oder von der Rolle",
             "produktwort": "Vinylböden",
             "rollenware": false,
             "optik_frage": "Welche Optik soll es sein?",
-            "optik_filter": "",
-            "optik_namen": "",
-            "raum_filter": ""
+            "optik_filter": "filter.p.m.custom.optik",
+            "optik_namen": "Holzdekore = Holzoptik | Dielen mit Holzmaserung | holz\nSteindekore = Steinoptik | Beton- und Steinbilder | stein\nFliesendekore = Fliesenoptik | Zementfliese, Raute, Schachbrett | fliese\nSalz und Pfeffer = Salz und Pfeffer | fein gesprenkelt | punkte",
+            "raum_filter": "filter.p.m.custom.arten",
+            "raum_frage": "Wie soll er verlegt werden?",
+            "preis_stufen": "25, 35, 45, 60",
+            "budget_preis": "rechnen"
           }
         },
         "art_tnm": {

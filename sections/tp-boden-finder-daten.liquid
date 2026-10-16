@@ -1,8 +1,9 @@
 {%- comment -%}
   Datenschnittstelle des Boden-Finders (sections/tp-boden-finder.liquid).
   Steht nur in den Ansichten ohne Layout templates/collection.boden-finder.json
-  (Zaehlungen) und collection.boden-finder-treffer.json (Treffer mit Karten)
-  und wird per fetch aufgerufen, z. B.
+  (Zaehlungen), collection.boden-finder-treffer.json (Treffer mit Karten) und
+  collection.boden-finder-preise.json (Preise je m2, siehe unten) und wird
+  per fetch aufgerufen, z. B.
     /collections/teppichboden?view=boden-finder&filter.v.t.shopify.color-pattern=...
 
   Shopify wendet die Filter der Adresse auf collection.products an. Daraus
@@ -17,17 +18,76 @@
     Die Karte ist dieselbe wie im Kategorie-Raster; bei aktivem Farbfilter
     zeigt sie die passende Farbe (snippets/tp-suchfarbe-variante.liquid).
 
-  Gerechnet wird hier nichts. Den ca.-Preis fuer ein Raummass rechnet
-  assets/tp-boden-finder.js mit den Funktionen des Rollenware-Rechners
-  (assets/tp-rollware-art.js) aus genau diesen Variantenpreisen.
+  Den ca.-Preis fuer ein Raummass rechnet assets/tp-boden-finder.js mit den
+  Funktionen des Rollenware-Rechners (assets/tp-rollware-art.js) bzw. bei
+  Paketware mit den Regeln des Paketrechners aus genau diesen Preisen.
+
+  Paketware (Klick-, Klebevinyl): Der Variantenpreis ist der Paketpreis, der
+  Preisfilter der Kategorie deshalb ausgeblendet (blocks/filters.liquid). Fuer
+  ein Budget je m2 liefert die dritte Ansicht ?view=boden-finder-preise
+  (collection.boden-finder-preise.json) je Produkt den Preis je m2 - genau
+  wie die Produktkarte: Paketpreis / custom.qm_pro_paket, gerundet auf Cent
+  (snippets/price.liquid). Der Finder filtert damit im Browser; Shopify
+  filtert hier nur nach Farbe und Optik. Bis 250 Produkte je Seite
+  (Plattformgrenze), Reihenfolge wie im Raster, damit der Finder die
+  Kartenseite eines Treffers kennt. Je Produkt:
+    [Handle, Preis je m2 in Cent, m2 je Paket (0 = keine Paketware),
+     kleinster Variantenpreis in Cent, Auslauf 1/0]
 {%- endcomment -%}
 {%- liquid
   assign bf_treffer = section.settings.treffer
+  assign bf_preise = section.settings.preise
   assign bf_max = section.settings.anzahl_karten
 -%}
 <script type="application/json" data-bf-daten>
 {
   "anzahl": {{ collection.products_count | json }},
+  {%- if bf_preise -%}
+  {%- paginate collection.products by 250 -%}
+  "pro_seite": {{ paginate.page_size | json }},
+  "preise": [
+      {%- for product in collection.products -%}
+        {%- liquid
+          # Varianten wie in der Treffer-Ansicht: bei aktivem Farbfilter nur
+          # die passende Farbe, nie OPC-Konfiguratorvarianten.
+          assign bf_qm = product.metafields.custom.qm_pro_paket.value | times: 1.0
+          capture bf_sf
+            render 'tp-suchfarbe-variante', product: product
+          endcapture
+          assign bf_sf = bf_sf | strip
+          assign bf_fi = -1
+          assign bf_farbe = ''
+          if bf_sf != blank
+            assign bf_pos = bf_sf | split: '|' | first | plus: 0
+            assign bf_fi = bf_sf | split: '|' | last | plus: 0
+            assign bf_farbe = product.variants[bf_pos].options[bf_fi]
+          endif
+          assign bf_min = 0
+          for bf_var in product.variants
+            assign bf_var_titel = bf_var.title | downcase
+            if bf_var_titel contains 'opc-' or bf_var.available == false
+              continue
+            endif
+            if bf_fi >= 0 and bf_var.options[bf_fi] != bf_farbe
+              continue
+            endif
+            if bf_min == 0 or bf_var.price < bf_min
+              assign bf_min = bf_var.price
+            endif
+          endfor
+          # Preis je m2 in Cent, wie die Karte ihn zeigt.
+          assign bf_qmp = bf_min
+          if bf_qm > 0
+            assign bf_qmp = bf_min | times: 1.0 | divided_by: bf_qm | round
+          elsif product.metafields.custom.preis_pro_001_qm.value == true
+            assign bf_qmp = bf_min | times: 100
+          endif
+        -%}
+        [{{ product.handle | json }}, {{ bf_qmp | json }}, {{ bf_qm | json }}, {{ bf_min | json }}, {% if product.tags contains 'auslauf' %}1{% else %}0{% endif %}]{%- unless forloop.last -%},{%- endunless -%}
+      {%- endfor -%}
+  ]
+  {%- endpaginate -%}
+  {%- else -%}
   "filter": {
     {%- for bf_filter in collection.filters -%}
       {{ bf_filter.param_name | json }}: {
@@ -54,6 +114,7 @@
     {%- endfor -%}
   }
   {%- if bf_treffer -%},
+  "pro_seite": {{ bf_max | json }},
   "produkte": [
     {%- paginate collection.products by bf_max -%}
       {%- for product in collection.products limit: bf_max -%}
@@ -96,6 +157,7 @@
           "auslauf": {% if product.tags contains 'auslauf' %}true{% else %}false{% endif %},
           "cm_exact": {% if product.metafields.custom.preis_pro_001_qm.value == true %}true{% else %}false{% endif %},
           "min_cm": {{ bf_min_cm | json }},
+          "qm_paket": {{ product.metafields.custom.qm_pro_paket.value | times: 1.0 | json }},
           "options": [
             {%- for bf_opt in product.options_with_values -%}
               { "name": {{ bf_opt.name | json }}, "values": {{ bf_opt.values | json }} }{%- unless forloop.last -%},{%- endunless -%}
@@ -129,6 +191,7 @@
     {%- endpaginate -%}
   ]
   {%- endif -%}
+  {%- endif -%}
 }
 </script>
 {%- if bf_treffer -%}
@@ -153,12 +216,18 @@
   "settings": [
     {
       "type": "paragraph",
-      "content": "Nur für die Ansichten boden-finder und boden-finder-treffer. Liefert dem Boden-Finder Filterwerte, Trefferzahl und Produktkarten."
+      "content": "Nur für die Ansichten boden-finder, boden-finder-treffer und boden-finder-preise. Liefert dem Boden-Finder Filterwerte, Trefferzahl, Produktkarten und Preise je m²."
     },
     {
       "type": "checkbox",
       "id": "treffer",
       "label": "Treffer mit Karten ausgeben",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "preise",
+      "label": "Preise je m² aller Produkte ausgeben (statt Filter und Treffer)",
       "default": false
     },
     {
