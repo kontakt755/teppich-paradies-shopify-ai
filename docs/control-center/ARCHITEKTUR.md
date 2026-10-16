@@ -1274,7 +1274,9 @@ Bedarf neue Muster. Bis dahin stand so ein Auftrag nur als Notiz da und blieb in
   `shopify {geschrieben, aenderungMoeglich?, fehler, fehlerGrund, variantId, productId, vorher, nachher, verfuegbar}`.
   `geschrieben` bestaetigt die Sperre; `aenderungMoeglich` erfasst auch Teilmutationen und unlesbare
   Gegenproben. Alte unklare Ereignisse, insbesondere mit gespeichertem Vorstand, bleiben pruefpflichtig. Der Stand
-  je SKU ergibt sich aus der Folge (`stand()`); `vorher` stammt aus dem ersten Sperr-Ereignis. Dieselbe SKU
+  je SKU ergibt sich aus der Folge (`stand()`); `vorher` stammt aus dem ersten Sperr-Ereignis mit bestaetigter oder moeglicher Aenderung.
+  Ein ausdruecklich sicher ungeschriebener Versuch friert keinen Vorstand ein; vor einer spaeteren
+  echten Sperre zaehlt dann die frisch gelesene Ausgangslage. Dieselbe SKU
   für denselben Auftrag noch einmal = nichts zu tun. Nur eine fehlende Datei gilt als leer; eine
   beschädigte lehnt den Schritt ab (es wird gar nichts geschrieben) und meldet sich im Musterlager.
 - **Ohne Recht, ohne Zugang, bei Fehlern** gilt der Schritt trotzdem; die Sperre steht als „im Shop noch

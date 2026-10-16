@@ -152,15 +152,17 @@ export function stand(ereignisse = []) {
     // Ein bekannter Vorstand bleibt deshalb auch nach spaeter fehlendem Zugang pruefpflichtig.
     const altUnklar = typeof sh.aenderungMoeglich !== 'boolean' && (Boolean(sh.vorher)
       || !['kein-zugang', 'nicht-erreichbar', 'recht-fehlt', 'keine-mustervariante', 'mehrdeutig', 'kein-standort'].includes(sh.fehlerGrund));
-    s.shopPruefen ||= sh.geschrieben === true || sh.aenderungMoeglich === true || altUnklar;
+    const aenderungMoeglich = sh.geschrieben === true || sh.aenderungMoeglich === true || altUnklar;
+    s.shopPruefen ||= aenderungMoeglich;
     s.farbe = e.farbe || s.farbe;
     s.produkt = e.produkt || s.produkt;
     s.handle = e.handle || s.handle;
     if (e.orderId && !s.auftraege.some(a => a.orderId === e.orderId)) s.auftraege.push({ orderId: e.orderId, orderName: e.orderName || null });
     s.variantId = sh.variantId || s.variantId;
     s.productId = sh.productId || s.productId;
-    // Der Stand VOR der ersten Sperre zaehlt fuer "wieder verfuegbar" - spaetere Ereignisse lesen schon den gesperrten Stand.
-    if (!s.vorher && sh.vorher && !sh.bereits) s.vorher = sh.vorher;
+    // Erst die erste moegliche Aenderung legt den Rueckweg fest. Ein sicher abgelehnter
+    // Versuch darf spaeter frisch gelesenen Bestand nicht durch einen alten Vorstand ersetzen.
+    if (!s.vorher && sh.vorher && !sh.bereits && aenderungMoeglich) s.vorher = sh.vorher;
     if (sh.geschrieben) { s.imShop = true; s.fehler = null; s.fehlerGrund = null; s.freigabeFehler = null; }
     else if (!s.imShop) { s.fehler = sh.fehler || s.fehler; s.fehlerGrund = sh.fehlerGrund || s.fehlerGrund; }
   }

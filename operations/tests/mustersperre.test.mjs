@@ -239,3 +239,38 @@ test('Stand: alte unklare Ereignisse und spaeter fehlender Zugang verlieren Vors
   assert.deepEqual(s.vorher, vorher);
   assert.equal(s.freigabeFehler, 'nicht geprueft');
 });
+
+test('Stand: sicher ungeschriebener Versuch friert keinen Vorstand fuer spaetere echte Sperre ein', () => {
+  const alt = { tracked: true, policy: 'DENY', menge: 3 };
+  const frisch = { tracked: true, policy: 'DENY', menge: 7 };
+  const ev = [ereignis({ sku: 'M-FRISCH', von: 'Test', grund: GRUND.GESPERRT,
+    shopify: { geschrieben: false, aenderungMoeglich: false, vorher: alt, fehlerGrund: 'recht-fehlt' }, jetzt: zeit('10:00') })];
+  assert.equal(stand(ev).get('M-FRISCH').vorher, null, 'sicher erfolgloser Versuch hat noch keinen Rueckweg');
+  ev.push(ereignis({ sku: 'M-FRISCH', von: 'Test', grund: GRUND.GESPERRT,
+    shopify: { geschrieben: true, vorher: frisch }, jetzt: zeit('11:00') }));
+  assert.deepEqual(stand(ev).get('M-FRISCH').vorher, frisch);
+});
+
+test('Stand: alte unklare, teilweise und bestaetigte Aenderungen behalten ersten Vorstand trotz sicher erfolgloser Wiederholung', () => {
+  const vorher = { tracked: true, policy: 'CONTINUE', menge: 3 };
+  const spaeter = { tracked: true, policy: 'CONTINUE', menge: 7 };
+  for (const erste of [
+    { geschrieben: false, fehlerGrund: 'unklar' },
+    { geschrieben: false, aenderungMoeglich: true, fehlerGrund: 'recht-fehlt' },
+    { geschrieben: true },
+  ]) {
+    const ev = [
+      ereignis({ sku: 'M-BEHALTEN', von: 'Test', grund: GRUND.GESPERRT,
+        shopify: { ...erste, vorher }, jetzt: zeit('10:00') }),
+      ereignis({ sku: 'M-BEHALTEN', von: 'Test', grund: GRUND.GESPERRT,
+        shopify: { geschrieben: false, aenderungMoeglich: false, vorher: spaeter, fehlerGrund: 'recht-fehlt' }, jetzt: zeit('11:00') }),
+      ereignis({ sku: 'M-BEHALTEN', von: 'Test', grund: GRUND.GESPERRT,
+        shopify: { geschrieben: false, aenderungMoeglich: false, fehlerGrund: 'kein-zugang' }, jetzt: zeit('12:00') }),
+      ereignis({ sku: 'M-BEHALTEN', von: 'Test', grund: GRUND.GESPERRT,
+        shopify: { geschrieben: true, vorher: spaeter }, jetzt: zeit('13:00') }),
+    ];
+    const s = stand(ev).get('M-BEHALTEN');
+    assert.deepEqual(s.vorher, vorher);
+    assert.equal(s.shopPruefen, true);
+  }
+});

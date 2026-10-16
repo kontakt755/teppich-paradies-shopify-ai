@@ -325,3 +325,43 @@ test('Globale Bestellbarkeit trotz Bestand 0: Erst- und Nachholversuch bleiben o
   assert.equal(api.einkaufMustersperre().gesperrt.length, 0);
   assert.equal(shop.mutationen().length, 0);
 });
+
+test('Sicher abgelehnte Sperre, neuer Bestand, Nachholen: Freigabe stellt frischen statt verworfenen Vorstand her', async () => {
+  const { dir, shop, api, schritt, z } = umgebung();
+  Object.assign(shop.varianten[0], { tracked: true, menge: 3 });
+  z.proxy = { live: true, async execute(q, v) {
+    if (q.includes('mutation MustersperreBestand')) throw new Error('ACCESS_DENIED write_inventory');
+    return shop.proxy.execute(q, v);
+  } };
+  await schritt(AUFTRAG, { muster: ['gid://shopify/LineItem/1'] });
+  assert.equal(shop.varianten[0].menge, 3, 'erste Mutation sicher nicht ausgefuehrt');
+  assert.equal(sperrDatei(dir)[0].shopify.aenderungMoeglich, false);
+  assert.equal(api.einkaufMustersperre().offen[0].shopPruefen, false);
+  // Synthetischer Wareneingang vor dem ersten tatsaechlichen Sperren.
+  shop.varianten[0].menge = 7;
+  z.proxy = shop.proxy;
+  await api.einkaufMustersperreSetzen({ aktion: 'nachholen', sku: 'M-TEST-1' }, ICH);
+  assert.equal(shop.varianten[0].menge, 0);
+  assert.equal(sperrDatei(dir)[1].shopify.vorher.menge, 7, 'frisch gelesene Ausgangslage vor echter Sperre');
+  await api.einkaufMustersperreSetzen({ aktion: 'freigeben', sku: 'M-TEST-1' }, ICH);
+  assert.deepEqual([shop.varianten[0].tracked, shop.varianten[0].policy, shop.varianten[0].menge], [true, 'DENY', 7]);
+  assert.equal(api.einkaufMustersperre().offen.length + api.einkaufMustersperre().gesperrt.length, 0);
+});
+
+test('Teilweise ausgefuehrte Sperre behaelt ersten Vorstand trotz neuer Menge vor dem Nachholen', async () => {
+  const { dir, shop, api, schritt, z } = umgebung();
+  Object.assign(shop.varianten[0], { tracked: true, policy: 'CONTINUE', menge: 3 });
+  z.proxy = { live: true, async execute(q, v) {
+    if (q.includes('mutation MustersperreRichtlinie')) throw new Error('ACCESS_DENIED write_products');
+    return shop.proxy.execute(q, v);
+  } };
+  await schritt(AUFTRAG, { muster: ['gid://shopify/LineItem/1'] });
+  assert.equal(shop.varianten[0].menge, 0, 'Bestandsmutation vor Richtlinienfehler erfolgreich');
+  assert.equal(sperrDatei(dir)[0].shopify.aenderungMoeglich, true);
+  assert.equal(api.einkaufMustersperre().offen[0].shopPruefen, true);
+  shop.varianten[0].menge = 7;
+  z.proxy = shop.proxy;
+  await api.einkaufMustersperreSetzen({ aktion: 'nachholen', sku: 'M-TEST-1' }, ICH);
+  await api.einkaufMustersperreSetzen({ aktion: 'freigeben', sku: 'M-TEST-1' }, ICH);
+  assert.deepEqual([shop.varianten[0].tracked, shop.varianten[0].policy, shop.varianten[0].menge], [true, 'CONTINUE', 3], 'Teilmutation muss auf echten ersten Vorstand zurueck');
+});
