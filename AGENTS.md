@@ -232,6 +232,11 @@ Vor einer Änderung der Shopify-Variantenpreise oder Vergleichspreise ist eine
 konkrete Produkttabelle zu prüfen und die ausdrückliche Freigabe des Inhabers
 einzuholen. Produkttexte dürfen keinen abweichenden Rabatt versprechen.
 
+Gekettelte Fußleiste: Meterpreis inklusive Material = Fertigung + Höhe ×
+m²-Preis des Teppichbodens, als fünf Preisstufen je Höhe; die Länge geht auf
+ganze Streifen quer zur Rolle, über 100 €/m² gibt es keine Leiste
+→ `domains/shopify/fussleiste-preisstufen.md`.
+
 Bei Paketprodukten:
 
 - €/m² ist die primäre Kundendarstellung.
