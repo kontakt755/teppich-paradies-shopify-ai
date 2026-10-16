@@ -241,7 +241,7 @@ test('5-m-Rolle: 17 m = 4 Streifen à 5 m = 20 m', async () => {
   assert.equal(leiste.properties['Zuschnitt'], '4 Streifen à 5 m');
 });
 
-test('Über 100 €/m²: keine Fußleiste, auch wenn sie angehakt war (fail closed)', async () => {
+test('Über der höchsten Stufe (hier 100 €/m²): keine Fußleiste, auch wenn sie angehakt war (fail closed)', async () => {
   const result = await rollCase('17', true, null, { w: 400, len: 450 }, { leiste: STUFEN_LEISTE, preis: 18600, hoehe: '6 cm' });
   assert.equal(result.leisteInvalid, false);
   assert.equal(result.extraItems.length, 0);
