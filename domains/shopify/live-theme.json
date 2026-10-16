@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204438208846",
-    "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-16T05:20:41Z",
-    "verifiedBy": "Shopify CLI theme list role live + Storefront Shopify.theme (role main) nach workflow:live von main 0df5f70a (#1346 Boden-Finder Vinyl: Preis je m2 bei Paketware, Raumpreis in ganzen Paketen); Preview-Gates COMPARE/SEO/FULL QA/SALES PASS, oeffentlicher Shop ohne Vorschau geprueft (Desktop/Handy 390, Konsole, Finder auf vinylboden-1)"
-  },
-  "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-16T05:20:41Z",
-    "verifiedBy": "role UNPUBLISHED nach workflow:live von main 0df5f70a; naechstes Preview-Ziel"
+    "verifiedAt": "2026-10-16T05:46:30Z",
+    "verifiedBy": "Shopify Admin API themes(roles: MAIN) + Storefront Shopify.theme (role main) nach workflow:live von main 1ac961cc (#1358 Fussleiste: Preisstufen nach Teppichpreis, ganze Streifen); Preview-Gates COMPARE/SEO/FULL QA/SALES PASS, oeffentlicher Shop ohne Vorschau geprueft (Kontura, Altessa, Regalia, Warenkorb, Handy 390, Konsole)"
+  },
+  "preview": {
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-10-16T05:46:30Z",
+    "verifiedBy": "role UNPUBLISHED nach workflow:live von main 1ac961cc; naechstes Preview-Ziel"
   },
   "fallback": {
     "themeId": "206590509390",
