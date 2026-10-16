@@ -80,11 +80,19 @@ Code: `lib/texte.mjs` (Regeln, Hashtags, Handlungsaufruf, Prüfung), `REDAKTION.
 | **Output** | JPEG 1080 × 1350 (Beitrag, Karussell) bzw. 1080 × 1920 (Story, Reel-Standbild) unter `medien/<inhalt>/beitrag-<n>/`; bei Reels zusätzlich `reel.mp4` (H.264/AAC, 30 fps), die Standbilder heißen dort `rahmen-*.jpg` und werden nie einzeln veröffentlicht; ein Beitrag im Status `FREIGABE`. |
 | **Trigger** | jeder `entwurf`-Aufruf (Redaktion, Zentrale). |
 | **Schnittstellen** | Headless-Chrome über das vorhandene `puppeteer`; `ffmpeg` für Reels (`brew install ffmpeg`). |
-| **Regeln** | Baustellenfotos: Zuschnitt, kleine Signatur, Helligkeit bis 10 % und eine Spur Kontrast; seit 01.10.2026 zusätzlich KI-Aufwertung über Higgsfield (`REDAKTION.md` 2b) – der Boden behält Material, Farbe und Struktur; Herstellerbilder bleiben ganz unberührt. Text im Bild nur, wo er etwas sagt (Farbname, „Vorher", Preis). Preis im Bild nur als Euro je Quadratmeter, nie der Paketpreis. Fertige Bilder tragen keine Metadaten (kein GPS aus dem Handyfoto). Ein Bild mit Datenschutz-Bedenken lässt sich nicht verbauen. |
+| **Regeln** | Baustellenfotos: Zuschnitt, kleine Signatur, Helligkeit bis 10 % und eine Spur Kontrast; seit 01.10.2026 zusätzlich KI-Aufwertung über Higgsfield (`REDAKTION.md` 2b) – der Boden behält Material, Farbe und Struktur; Herstellerbilder bleiben ganz unberührt. Text im Bild nur, wo er etwas sagt (Farbname, „Vorher", Preis). Preis im Bild nur als Euro je Quadratmeter, nie der Paketpreis – Ausnahme Produkt-Reel (Inhaber 16.10.2026): Paketware zeigt den Quadratmeter- und den Paketpreis, jeder Betrag muss so auf der Produktseite stehen. Fertige Bilder tragen keine Metadaten (kein GPS aus dem Handyfoto). Ein Bild mit Datenschutz-Bedenken lässt sich nicht verbauen. |
 | **Fehlerbehandlung** | Lädt ein Bild nicht, entsteht kein Beitrag (nie ein Bild mit Lücke). Bei ausgetauschten Shop-Bildern → siehe Shop-Scout. |
 | **Mensch nötig** | nein. |
 
 Code: `lib/vorlagen.mjs`, `lib/rendern.mjs`, `lib/werkstatt.mjs`, `lib/reel.mjs`, `DESIGNSYSTEM.md`.
+
+**Produkt-Reels** (seit 16.10.2026, `lib/produkt-reel.mjs`, `werkzeuge/reel_zoom.py`): aus einem
+scharfen Raumbild des Shops, nur mit Werbefreigabe aus der Bildrechte-Liste. Bewegung nur durch einen
+langsamen Zoom – KI-Videos verformen den Boden und sind verworfen. Vor dem Bauen werden Preis, Variante
+und jede Angabe im Bild live gegen die Produktseite geprüft, kein Produkt mit Aktion oder Auslauf. Danach
+misst das Werkzeug jedes Bild der fertigen MP4 gegen das Standbild (Schärfe ≥ 0,95, Kodierverlust,
+Ruckeln) und legt ein Prüfblatt daneben; ein weicheres Video wird nicht angelegt. KI-bearbeitete oder
+umgefärbte Raumbilder nur nach Abgleich mit dem echten Musterfoto und nie ohne den Inhaber.
 
 ## 5 · Planer (Content-Planer)
 
@@ -112,7 +120,7 @@ Code: `lib/planer.mjs`, `lib/konfig.mjs` (`RASTER`).
 | **Schnittstellen** | Zentrale (Port 8020, Anmeldung des Control Centers); Meta Graph API: Seiten-Fotos, Seiten-Feed, Foto-Storys, Instagram Content Publishing. |
 | **Regeln** | **Sperren** (Freigabe nicht möglich): fehlende Einwilligung, ungesichtete oder bedenkliche Baustellenbilder, Floskel oder Adresse im Text. **Hinweise** (Freigabe möglich, aber zu lesen): Preis im Text, Angebot, Duzen, Superlativ, unbekannter Ort, Reel. Freigeben darf nur die Rolle Inhaber. Der Publisher prüft unmittelbar vor dem Veröffentlichen noch einmal – bekommt ein Bild nach der Freigabe Bedenken oder wird das Material verworfen, geht der Beitrag zurück in die Freigabe. Er nimmt jeden Beitrag erst in Arbeit („Wird veröffentlicht“), sodass von zwei gleichzeitigen Läufen nur einer postet, und speichert das Ergebnis jeder Plattform sofort. Höchstens ein Feed-Beitrag je Lauf, nichts, was länger als 36 Stunden überfällig ist. |
 | **Fehlerbehandlung** | Vorübergehender Meta-Fehler (Last, Ratenlimit) → bis zu drei Versuche im 15-Minuten-Takt. **Unklarer** Fehler – die Antwort auf den eigentlichen Veröffentlichungsaufruf kam nie an, oder der Lauf wurde unterbrochen – → nie automatisch wiederholen, sondern `FEHLER` mit der Bitte, auf der Plattform nachzusehen: lieber ein Beitrag zu wenig als einer doppelt. Endgültiger Fehler oder abgelaufener Token → Status `FEHLER`, sichtbar oben in der Freigabe; bei Token-Fehlern bricht der Lauf ab, statt weitere Beiträge zu verbrennen. Verpasster Termin → zurück in die Freigabe. Ohne Meta-Zugang verändert der Publisher nichts. |
-| **Mensch nötig** | **ja, immer** – in der Lernphase für jeden Beitrag. Die automatische Freigabe ist gebaut, aber aus (`SOCIAL_AUTO_FREIGABE=1`); sie käme nur für Shop-Inhalte ohne Preis in Frage (Farbvorstellung, Wohnidee, Produkt der Woche) und nie für Angebote. Seit 02.10.2026 Stufe 2: auch Baustellen und Reels mit Einwilligung und Sichtung. |
+| **Mensch nötig** | **ja, immer** – in der Lernphase für jeden Beitrag. Die automatische Freigabe ist gebaut, aber aus (`SOCIAL_AUTO_FREIGABE=1`); sie käme nur für Shop-Inhalte ohne Preis in Frage (Farbvorstellung, Wohnidee, Produkt der Woche) und nie für Angebote. Seit 02.10.2026 Stufe 2: auch Baustellen und Reels mit Einwilligung und Sichtung. Seit 16.10.2026 laufen Produkt-Reels mit echtem Foto und bestandener Schärfeprüfung mit; der Publisher prüft ihren Preis unmittelbar vor dem Posten live und schickt sie bei jeder Abweichung oder einem Preisstand über 10 Tage zurück in die Freigabe. |
 
 Code: `lib/freigabe.mjs`, `lib/meta.mjs`, `lib/ablauf.mjs` (`veroeffentlicheFaellige`), `scripts/server.mjs`, `ui/zentrale.*`.
 

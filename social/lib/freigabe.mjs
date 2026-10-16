@@ -9,8 +9,11 @@
  *   2  zusaetzlich Baustellen, Referenzen, Laden - nur mit Einwilligung und
  *      vollstaendig gesichteten Bildern (Datenschutz ok)
  * Reels laufen wie ihre Quelle mit (Inhaberentscheidung 02.10.2026: er schaut
- * nachtraeglich rein und korrigiert). Nie automatisch: Angebote (Preisangaben), alles mit Sperre oder
- * einem Hinweis, der einen Menschen braucht.
+ * nachtraeglich rein und korrigiert). Produkt-Reels (Standbild-Zoom mit Preis) laufen wie
+ * "Produkt der Woche" mit, weil der Publisher den Preis im Video direkt vor dem Posten live
+ * prueft - aber nur mit echtem Foto und bestandener Schaerfepruefung; ein KI-bearbeitetes oder
+ * umgefaerbtes Raumbild sieht immer ein Mensch. Nie automatisch: Angebote (Preisangaben), alles
+ * mit Sperre oder einem Hinweis, der einen Menschen braucht.
  */
 
 import { BEITRAG_STATUS, PLATTFORMEN } from './status.mjs';
@@ -42,6 +45,14 @@ export function pruefe({ beitrag, inhalt, medien }) {
     else if (inhalt.ort && inhalt.daten?.ortBekannt === false) hinweise.push(`Ort „${inhalt.ort}“ ist nicht in der Ortsliste – bitte Schreibweise prüfen.`);
   }
   if (inhalt.typ === 'angebot') hinweise.push('Angebot mit Preis oder Rabatt – Angaben gegen den Shop prüfen (Preisangabenverordnung).');
+  if (inhalt.typ === 'produkt_reel') {
+    const d = inhalt.daten ?? {};
+    if (d.pruefung?.ok !== true) sperren.push('Schärfeprüfung des Videos fehlt oder ist nicht bestanden.');
+    if (d.liveFehler) sperren.push(`Preis oder Angaben im Video stimmen nicht mehr mit dem Shop überein (${d.liveFehler}) – Reel neu bauen.`);
+    if (d.bild?.bearbeitet) hinweise.push(`Raumbild ist KI-bearbeitet oder umgefärbt – Abgleich mit dem Musterfoto laut Redaktion: „${d.bild.kiAbgleich ?? '–'}“. Bitte selbst vergleichen.`);
+    if (d.bildrechtGeprueft === false) hinweise.push(`Eigenes Bild, nicht in der Bildrechte-Liste: „${d.bild?.lizenz ?? '–'}“.`);
+    hinweise.push(`Preise im Video (Stand ${d.auftrag?.stand ?? d.stand ?? '?'}) – werden unmittelbar vor dem Veröffentlichen live gegen den Shop geprüft.`);
+  }
   if (beitrag.format === 'reel') hinweise.push('Reel – bitte einmal ganz ansehen.');
   return { sperren, hinweise };
 }
@@ -52,6 +63,8 @@ export function pruefe({ beitrag, inhalt, medien }) {
  */
 // Hinweise, die bei eigenen Fotos keinen Menschen brauchen: der Beitrag nennt dann einfach keinen Ort.
 const HARMLOS = [/^Ort „/, /^Der Monteur hatte eine Adresse angegeben/, /^Reel – /];
+// Produkt-Reels: der Preis im Video wird vor dem Veroeffentlichen live geprueft (ablauf.mjs) - das braucht keinen Menschen.
+const HARMLOS_SHOP = [/^Reel – /, /^Preise im Video \(Stand /];
 
 export function autoFreigabeMoeglich({ beitrag, inhalt, medien }, env = process.env) {
   const stufe = env.SOCIAL_AUTO_FREIGABE;
@@ -60,7 +73,7 @@ export function autoFreigabeMoeglich({ beitrag, inhalt, medien }, env = process.
   const { sperren, hinweise } = pruefe({ beitrag, inhalt, medien });
   if (sperren.length) return false;
   if (inhalt.quelle === 'shopify') {
-    return ['produkt_farben', 'raumidee', 'produkt_woche', 'produkt_neu'].includes(inhalt.typ) && hinweise.every(h => /^Reel – /.test(h));
+    return ['produkt_farben', 'raumidee', 'produkt_woche', 'produkt_neu', 'produkt_reel'].includes(inhalt.typ) && hinweise.every(h => HARMLOS_SHOP.some(r => r.test(h)));
   }
   if (stufe !== '2' || !['baustelle', 'referenz', 'laden'].includes(inhalt.quelle)) return false;
   // Eigene Fotos nur, wenn jedes verwendete Bild gesichtet ist - auch Referenzbilder der Website.
