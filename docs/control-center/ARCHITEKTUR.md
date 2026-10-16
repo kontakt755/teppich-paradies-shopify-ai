@@ -1122,3 +1122,32 @@ Rein lesend, für alle Rollen (auch „lesen“): `ansichten/bildrechte.mjs`, En
   oder `bg` setzt die Seite zurück (`setParam`).
 - Fehlt die CSV: `verfuegbar: false` mit Befehl. Andere Lesefehler: 500 und Störungshinweis.
 
+
+## 20. Kunden › „Service-Anfragen“ (seit 2026-10-16, #1361, Werkbank w-030)
+
+Anfragen für Verlegeservice, Treppe und Aufmaß an einer Stelle, mit Quelle und Status – damit
+messbar wird, was die Serviceseiten und die Werbung bringen (Inhaber 15.10.: im Control Center
+unter „Kunden“). Reiter `#/kunden?tab=service`, Modul `ansichten/kunden/serviceanfragen.mjs`,
+Styles `stile/serviceanfragen.css`.
+
+- **Ablage:** `$TP_PRIVAT_DIR/serviceanfragen.json` (`operations/lib/serviceanfragen.mjs`, Bauart wie
+  `rueckrufe.json`: atomar, beschädigt → Fehler statt leer). In `SICHERUNGSPFADE` von
+  `npm run daten:sichern`. Nummern `S-001` fortlaufend; Statuswechsel landen im `verlauf` (max. 30).
+- **API:** `GET /api/kunden/serviceanfragen` (alle Rollen), `POST` derselbe Pfad: ohne `id` anlegen,
+  mit `id` ändern (in der `write`-Liste, Rolle „lesen“ → 403). Wer angelegt/geändert hat, kommt aus der
+  Sitzung. Optionales Feld `mailId`: dieselbe Mail wird nur einmal angelegt (für einen späteren
+  automatischen Abgleich).
+- **Werte** (`lib/serviceanfragen.mjs`, Browser und Server): Leistung `verlegeservice | treppe |
+  aufmass | sonstiges`, Quelle `formular | mail | telefon | whatsapp | laden | werbung`, Status `neu |
+  kontaktiert | termin | angebot | gewonnen | verloren`. Pflicht: Datum, Leistung, Quelle und eins von
+  Name/Telefon/E-Mail. „Herkunft“ ist Freitext (Betreff der Serviceseite, Anzeige, Empfehlung).
+- **Formular-Mail einfügen:** Shopify schickt jede Formularanfrage als „Neue Kundennachricht vom …“
+  von `mailer@shopify.com`; der Mailtext enthält `Betreff:` (je Serviceseite fest gesetzt im Abschnitt
+  `tp-start-kontakt`, z. B. „Anfrage Treppenverlegung“), `Name:`, `Plz:`, `E-Mail:`, `Telefon:`,
+  `Anliegen:`, `Text:`. `ausFormularMail()` füllt daraus den Dialog; Leistung zuerst aus dem Betreff,
+  sonst aus dem Anliegen. Musteranfragen (`Id: ContactForm-sample`) werden abgelehnt.
+- **Auswertung oben:** letzte 8 Kalenderwochen inklusive der laufenden, je Woche und je Quelle
+  (mit gewonnen/verloren); beide zählen dieselbe Menge.
+- **Nicht automatisch:** Der Dienst liest kein Postfach. Werbung/UTM ist aus der Formular-Mail nicht
+  erkennbar (das Formular schickt keine Kampagnenangabe mit) – Quelle „Werbung“ nur, wenn der Kunde
+  es sagt. Beides ist offen (Werkbank w-030).

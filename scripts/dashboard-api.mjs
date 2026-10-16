@@ -55,6 +55,7 @@ import { protokollPfad, protokolliere } from '../operations/lib/protokoll.mjs';
 import { findeZugang, liesZugaenge, zugangAnlegen, zugangSperren } from '../social/lib/eingang.mjs';
 import { ladeUmgebung } from '../social/lib/zugang.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
+import { serviceanfragenPfad, leseAlle as leseServiceanfragen, anlegen as serviceanfrageAnlegen, aendern as serviceanfrageAendern, ServiceanfrageFehler } from '../operations/lib/serviceanfragen.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
 import { ausVariantentitel } from '../operations/lib/resolve.mjs';
@@ -1430,6 +1431,37 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       audit({ actor, action: 'rueckruf', orderId, status });
       merke(benutzer, actor, 'Rückruf', `${orderId}: ${status}`);
       return { ok: true, eintrag };
+    },
+
+    /** Service-Anfragen (Verlegeservice, Treppe, Aufmass): alle, neueste zuerst. */
+    kundenServiceanfragen() {
+      const dir = privatDirPath || privatDir();
+      const eintraege = leseServiceanfragen(serviceanfragenPfad(dir))
+        .slice().sort((a, b) => (b.datum || '').localeCompare(a.datum || '') || (b.id || '').localeCompare(a.id || ''));
+      return { verfuegbar: true, eintraege };
+    },
+
+    /**
+     * Anfrage anlegen (ohne `id`) oder aendern (mit `id`). Rein lokal - die
+     * Datei enthaelt Namen und Telefonnummern und gehoert nicht ins Repository.
+     */
+    kundenServiceanfrageSetzen(payload = {}, benutzer = null) {
+      const actor = benutzer?.name || benutzer?.kuerzel || 'Inhaber';
+      const { id = null, ...felder } = payload || {};
+      const file = serviceanfragenPfad(privatDirPath || privatDir());
+      try {
+        if (id) {
+          const eintrag = serviceanfrageAendern(file, String(id), felder, { actor, jetzt: now() });
+          merke(benutzer, actor, 'Service-Anfrage', `${eintrag.id}: ${eintrag.status}`);
+          return { ok: true, eintrag };
+        }
+        const { eintrag, doppelt } = serviceanfrageAnlegen(file, felder, { actor, jetzt: now() });
+        if (!doppelt) merke(benutzer, actor, 'Service-Anfrage', `${eintrag.id}: angelegt`);
+        return { ok: true, eintrag, doppelt };
+      } catch (e) {
+        if (e instanceof ServiceanfrageFehler) throw new ApiError(400, e.message);
+        throw e;
+      }
     },
 
     /**

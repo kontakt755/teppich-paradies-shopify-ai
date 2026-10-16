@@ -64,6 +64,7 @@ docs/ai-dashboard/
   lib/muster-nachfassen.mjs     „Muster nachfassen“ für „Heute“: wer ist dran, Textvorlage füllen – Browser UND Server
   lib/bestellinhalt.mjs         Inhalt einer Bestellung in einer Zeile (Muster mit Farben und Herkunft, Ware) – Bestellliste und To-dos
   lib/kennzahlen.mjs            „Ø je bezahlter Bestellung“ (ohne kostenlose Muster) für die Kennzahlen auf „Heute“
+  lib/serviceanfragen.mjs       Service-Anfragen: Werte, Prüfung, Formular-Mail lesen, Auswertung je Woche/Quelle – Browser UND Server
   stile/                        Styles je Ansicht (heute.css); app.css bleibt das gemeinsame Gerüst
   issues.json, bodenwissen.json generierte Daten, nicht im Git (.gitignore)
   tests/                        node --test (npm run dashboard:test)
@@ -116,7 +117,7 @@ ansichten/
   arbeit.mjs  freigaben.mjs  bereiche.mjs  insights.mjs  aktivitaet.mjs
   lexikon.mjs  ratgeber.mjs  hilfe.mjs  shopwache.mjs  team.mjs  fotos.mjs  sonderposten.mjs  bildrechte.mjs
   einkauf.mjs        + einkauf/{auftragsfluss,bestellungen,lieferanten,musterlager,produktdaten}.mjs
-  kunden.mjs         + kunden/{gemeinsam,akte,rueckrufe,bestellungen,angebote,faelle,zeitleiste}.mjs
+  kunden.mjs         + kunden/{gemeinsam,akte,rueckrufe,serviceanfragen,bestellungen,angebote,faelle,zeitleiste}.mjs
   organisation.mjs   + organisation/{gemeinsam,dialoge}.mjs
 ```
 
