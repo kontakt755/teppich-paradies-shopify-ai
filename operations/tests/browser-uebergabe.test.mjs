@@ -108,6 +108,60 @@ test('Worker: falsches Projekt bekommt keinen Text und beendet die Uebergabe', a
   assert.equal(Object.keys(w.snapshot().jobs).length, 0);
 });
 
+test('Worker: verspaetetes loading des ersten Zieldokuments verwirft keine gebundene Uebergabe', async () => {
+  const w = worker(), m = eingabe();
+  await w.sende(m);
+  const job = w.snapshot().jobs[m.id];
+  const sender = w.empfaenger(job);
+  // Chrome kann den Ladezustand erst nach der bereit-Nachricht liefern. Beide
+  // Ereignisse gehen in dieselbe Queue; loading darf die spaetere Bindung nicht loeschen.
+  const bereitschaft = w.sende({ kanal: 'empfaenger', aktion: 'bereit' }, sender);
+  w.ereignisse.tabAenderung(job.zielTab, { status: 'loading' });
+  const meta = await bereitschaft;
+  await w.status();
+  assert.equal(meta.status, 'wartet');
+  assert.equal(w.snapshot().jobs[m.id].zielDokument, sender.documentId);
+  w.ereignisse.tabAenderung(job.zielTab, { status: 'loading', url: ZIEL });
+  await w.status();
+  const inhalt = await w.sende({ kanal: 'empfaenger', aktion: 'holen', id: m.id, token: meta.token }, sender);
+  assert.equal(inhalt.status, 'einsetzen');
+  assert.equal(inhalt.text, m.text);
+  assert.equal(w.antworten.length, 0, 'kein falscher Abbruch fuer dasselbe Ziel');
+});
+
+test('Worker: andere Ziel-URL und Laden des Quelldokuments brechen weiterhin ab', async () => {
+  for (const [seite, aenderung] of [
+    ['zielTab', { url: 'https://chatgpt.com/' }],
+    ['zielTab', { status: 'loading', url: ZIEL + '?anderes-ziel' }],
+    ['quellTab', { status: 'loading' }],
+  ]) {
+    const w = worker(), m = eingabe();
+    await w.sende(m);
+    const job = w.snapshot().jobs[m.id];
+    await w.sende({ kanal: 'empfaenger', aktion: 'bereit' }, w.empfaenger(job));
+    w.ereignisse.tabAenderung(job[seite], aenderung);
+    await w.status();
+    assert.equal(Object.keys(w.snapshot().jobs).length, 0);
+    assert.equal(JSON.stringify(w.snapshot()).includes(m.text), false);
+    assert.equal(w.antworten.at(-1)[1].code, 'abgebrochen');
+  }
+});
+
+test('Worker: neues Dokument an gleicher Ziel-URL erhaelt keinen alten Auftrag', async () => {
+  const w = worker(), m = eingabe();
+  await w.sende(m);
+  const job = w.snapshot().jobs[m.id];
+  const sender = w.empfaenger(job);
+  const meta = await w.sende({ kanal: 'empfaenger', aktion: 'bereit' }, sender);
+  const neu = { ...sender, documentId: 'neues-ziel-dokument' };
+  w.ereignisse.tabAenderung(job.zielTab, { status: 'loading' });
+  assert.equal((await w.sende({ kanal: 'empfaenger', aktion: 'bereit' }, neu)).code, 'ziel_falsch');
+  assert.equal(Object.keys(w.snapshot().jobs).length, 0);
+  assert.equal((await w.sende({ kanal: 'empfaenger', aktion: 'holen', id: m.id, token: meta.token }, neu)).code, 'abgebrochen');
+  assert.equal((await w.sende({ kanal: 'empfaenger', aktion: 'holen', id: m.id, token: meta.token }, sender)).code, 'abgebrochen');
+  assert.equal(JSON.stringify(w.antworten).includes(m.text), false);
+});
+
 test('Worker: Abbruch gehoert zum Dashboarddokument; Ablauf und Tab-Schliessen loeschen Inhalt', async () => {
   const w = worker(), m = eingabe();
   await w.sende(m);

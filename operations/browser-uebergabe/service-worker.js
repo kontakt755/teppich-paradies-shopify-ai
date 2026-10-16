@@ -129,13 +129,19 @@ chrome.tabs.onRemoved.addListener(tabId => {
     for (const job of Object.values(s.jobs)) if (job.quellTab === tabId || job.zielTab === tabId) await entferne(s, job, 'abgebrochen');
   }).catch(() => {});
 });
-// Eine neue Dokumentnavigation darf einen alten Auftrag nicht erneut empfangen.
+// "loading" kann fuer das Erstladen noch nach der Empfaengerbindung eintreffen.
+// Es bezeichnet kein Dokument: Im Ziel deshalb nur eine andere URL abbrechen.
+// Ein neues Dokument an derselben URL bleibt durch documentId+Token gesperrt;
+// der alte Empfaenger stoppt beim pagehide vor einer weiteren DOM-Aenderung.
 chrome.tabs.onUpdated.addListener((tabId, aenderung) => {
-  if (aenderung.status !== 'loading') return;
+  if (aenderung.status !== 'loading' && typeof aenderung.url !== 'string') return;
   seriell(async () => {
     const s = await lade();
     for (const job of Object.values(s.jobs)) {
-      if (job.quellTab === tabId || (job.zielTab === tabId && job.zielDokument)) await entferne(s, job, 'abgebrochen');
+      if ((job.quellTab === tabId && aenderung.status === 'loading')
+        || (job.zielTab === tabId && typeof aenderung.url === 'string' && aenderung.url !== job.ziel)) {
+        await entferne(s, job, 'abgebrochen');
+      }
     }
   }).catch(() => {});
 });

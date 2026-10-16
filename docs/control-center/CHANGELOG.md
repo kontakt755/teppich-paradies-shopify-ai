@@ -11,19 +11,21 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   erzeugt. Kein neuer Server-Endpunkt, API-Schluessel oder Text in der URL. Inhalte liegen nur
   kurz in `storage.session`; Abbruch, Verfall und Tab-Schliessen raeumen wartende Auftraege auf.
   Die manuellen Knoepfe bleiben aufklappbar; lokale Codex-/Claude-Ziele behalten ihren bisherigen Weg.
-- **Getestet:** `npm test`: 2.927/2.927. Darunter 18 gezielte Dashboard-Tests sowie 12 Tests des
+- **Getestet:** `npm test`: 2.930/2.930. Darunter 18 gezielte Dashboard-Tests sowie 15 Tests des
   Begleiters inklusive echter isolierter DOM-Pruefungen. Zusaetzlicher MV3-Start im temporaeren
   Testbrowser bestaetigt Statusnachricht, Portgrenze und Ablehnung kuenstlicher Klicks. Browserpruefung
   gegen Datenkopie: 36 Ansichts-/Rollen-/Breitenkombinationen (360, 390, 1440 px), kein Ueberlauf
   oder JS-Fehler; Desktop-/Handy-Screenshots gelesen. Klickstrecke: Ohne Begleiter bleibt der
   Direktknopf gesperrt, manuelle Alternative ist erreichbar und Anbieterwechsel erhaelt die Eingabe.
-  Pflicht-Guards und Secret-Scan bestanden.
+  Pflicht-Guards und Secret-Scan bestanden. Der erste Durchlauf im eingerichteten Profil fand
+  einen Ladeabbruch: Ein spaetes `loading` wurde als Dokumentwechsel gewertet. Korrigiert und mit
+  drei Regressionstests fuer Erstladen, URL-Wechsel und neue Dokumente abgesichert.
 - **Risiken/Annahmen:** Einmaliges Laden des privaten Pakets im Chrome-Profil des Arbeitsplatzes
   ist erforderlich. Die automatische Browsersteuerung darf Chromes Erweiterungsverwaltung nicht
-  bedienen; Installation bleibt beim Inhaber. Der gesamte Weg in dessen angemeldetem ChatGPT-Konto
-  wurde noch nicht ausgefuehrt. Geaenderte ChatGPT-Oberflaechen koennen eine Adapterkorrektur erfordern.
-- **Naechste Stufe:** Paket installieren und die drei Projektziele mit ausschliesslich erfundenen
-  Angaben bis zum sichtbaren Entwurf pruefen; danach Dashboard-Dienst aktualisieren.
+  bedienen; Installation bleibt beim Inhaber. Die Ende-zu-Ende-Abnahme der Korrektur im angemeldeten
+  ChatGPT-Konto steht noch aus. Geaenderte ChatGPT-Oberflaechen koennen eine Adapterkorrektur erfordern.
+- **Naechste Stufe:** Aktualisierten Begleiter neu laden und die drei Projektziele mit ausschliesslich
+  erfundenen Angaben bis zum sichtbaren Entwurf pruefen; danach Dashboard-Dienst aktualisieren.
 
 ## 2026-10-16 · Arbeitsplatz als Prozesszentrale (#1390)
 
