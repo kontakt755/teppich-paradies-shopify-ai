@@ -22,6 +22,8 @@
      - einer echten Variante mit custom.rollenbreite > 0 (Meterware,
        Variantenpreis = Preis je m2, seit dem Rollenware-Kaufbereich
        direkt bestellbar).
+     Laengenware (custom.preis_pro_001_lfm, Profile nach Mass) fuehrt den
+     Preis je laufendem Meter: x100, referenceQuantity 1 MTR.
      Ausgeschlossen aus den Offers: Varianten mit Breitenwert "Wunschmass"
      (Zuschnittpreis, kein eigenstaendiges Angebot), opc-*-Rechnervarianten
      und Varianten ohne Preis. Bleibt kein Offer uebrig, wird nichts
@@ -91,6 +93,12 @@
   assign tp_sd_per_001 = false
   if product_resource.metafields.custom.preis_pro_001_qm.value == true
     assign tp_sd_per_001 = true
+  endif
+  # Laengenware (Profile nach Mass): Variantenpreis je 0,01 lfm, die Seite
+  # fuehrt EUR/m (snippets/tp-laengen-preis) - Preis x100, Einheit Meter.
+  assign tp_sd_lfm = false
+  if product_resource.metafields.custom.preis_pro_001_lfm.value == true
+    assign tp_sd_lfm = true
   endif
 
   assign tp_sd_is_roll = false
@@ -187,7 +195,7 @@
           assign tp_sd_include = false
         endif
         assign tp_sd_cents = tp_sd_variant.price
-        if tp_sd_per_001
+        if tp_sd_per_001 or tp_sd_lfm
           assign tp_sd_cents = tp_sd_cents | times: 100
         endif
         # Paketpreis -> Quadratmeterpreis, gerundet auf ganze Cent. Dieselbe
@@ -274,7 +282,7 @@
             "url": {{ tp_sd_variant_url | json }},
             "price": {{ tp_sd_price }},
             "priceCurrency": {{ cart.currency.iso_code | json }},
-            {%- if tp_sd_per_001 or tp_sd_is_roll or tp_sd_is_paket -%}
+            {%- if tp_sd_per_001 or tp_sd_is_roll or tp_sd_is_paket or tp_sd_lfm -%}
             "priceSpecification": {
               "@type": "UnitPriceSpecification",
               "price": {{ tp_sd_price }},
@@ -282,7 +290,7 @@
               "referenceQuantity": {
                 "@type": "QuantitativeValue",
                 "value": 1,
-                "unitCode": "MTK"
+                "unitCode": {% if tp_sd_lfm %}"MTR"{% else %}"MTK"{% endif %}
               }
             },
             {%- endif -%}

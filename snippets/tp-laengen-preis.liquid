@@ -1,0 +1,70 @@
+{%- doc -%}
+  Preis von Laengenware (custom.preis_pro_001_lfm: Variantenpreis je 0,01 lfm,
+  Profile nach Mass) als Meterpreis "25,00 €/m". Ohne diesen Zweig zeigten
+  Karte, Suche und Produktseite den Preis je Zentimeter (0,25 EUR) wie einen
+  Kaufpreis - derselbe Fehler wie 2026-09 beim Teppich nach Mass.
+
+  Mit variant: Preis dieser Variante (eigene Produktseite). Ohne: kleinster
+  Preis aller Varianten mit Preis, "ab", wenn die Preise abweichen (Karten).
+  Streichpreis nur bei aktiver Aktion (snippets/tp-rabatt-sichtbar).
+
+  @param {product} product - Produkt mit custom.preis_pro_001_lfm
+  @param {variant} [variant] - gewaehlte Variante (Produktseite)
+{%- enddoc -%}
+{%- liquid
+  assign tp_lp_ab = false
+  if variant != blank
+    assign tp_lp_preis = variant.price
+    assign tp_lp_alt = variant.compare_at_price
+  else
+    assign tp_lp_preis = nil
+    assign tp_lp_max = 0
+    for tp_lp_v in product.variants
+      if tp_lp_v.price <= 0
+        continue
+      endif
+      if tp_lp_preis == nil or tp_lp_v.price < tp_lp_preis
+        assign tp_lp_preis = tp_lp_v.price
+        assign tp_lp_alt = tp_lp_v.compare_at_price
+      endif
+      if tp_lp_v.price > tp_lp_max
+        assign tp_lp_max = tp_lp_v.price
+      endif
+    endfor
+    if tp_lp_max > tp_lp_preis
+      assign tp_lp_ab = true
+    endif
+  endif
+  assign tp_lp_preis = tp_lp_preis | default: 0 | times: 100
+  assign tp_lp_alt = tp_lp_alt | default: 0 | times: 100
+
+  capture tp_lp_aktion
+    render 'tp-rabatt-sichtbar', product: product
+  endcapture
+  assign tp_lp_streich = false
+  if tp_lp_aktion contains 'ja' and tp_lp_alt > tp_lp_preis
+    assign tp_lp_streich = true
+  endif
+-%}
+<div ref="priceContainer">
+  {%- if tp_lp_streich -%}
+    <div class="price__sale">
+      <span class="price-item__group">
+        <span class="visually-hidden">{{ 'content.price_regular' | t }}&nbsp;</span>
+        <span class="price-item--regular compare-at-price">{{ tp_lp_alt | money_without_currency }}&nbsp;€/m</span>
+      </span>
+      <span class="price-item__group">
+        <span class="visually-hidden">{{ 'content.price_sale' | t }}&nbsp;</span>
+        <span class="price-item--sale price">{% if tp_lp_ab %}<span class="price-card-from">ab&nbsp;</span>{% endif %}{{ tp_lp_preis | money_without_currency }}<span class="price-card-per-unit">&nbsp;€/m</span></span>
+      </span>
+    </div>
+  {%- else -%}
+    <div class="price__regular">
+      <span class="price">
+        {%- if tp_lp_ab %}<span class="price-card-from">ab&nbsp;</span>{% endif -%}
+        {{- tp_lp_preis | money_without_currency -}}
+      </span>
+      <span class="price-card-per-unit">&nbsp;€/m</span>
+    </div>
+  {%- endif -%}
+</div>

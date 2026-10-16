@@ -161,6 +161,15 @@ export function einkaufsmenge(item, menge, { massanfertigung = false } = {}) {
   const ungeklaert = grund => ({ menge: UNGEKLAERT, einheit: UNGEKLAERT, text: UNGEKLAERT, grund });
 
   if (!(menge > 0)) return ungeklaert('keine offene Menge');
+  // Profile nach Mass (custom.preis_pro_001_lfm): Shopify-Menge sind Zentimeter
+  // (Laenge je Stueck x Stueckzahl). Bestellt werden Stuecke im Zuschnittmass.
+  if (p.preis_pro_001_lfm) {
+    const l = ein.laengeJeStueckCm;
+    if (!(l > 0)) return ungeklaert('Länge je Stück fehlt (Property der Bestellung)');
+    if (menge % l !== 0) return ungeklaert(`Menge ${menge} cm passt nicht zu ${l} cm je Stück – von Hand prüfen`);
+    const n = menge / l;
+    return { menge: n, einheit: EINHEIT.STUECK, text: `${n} Stück à ${l} cm${ein.bohrung ? `, ${ein.bohrung}` : ''}`, grund: null };
+  }
   // Kettel-/Massteppich: bestellt wird ein Stueck im Fertigmass. Ob der Lieferant aus
   // Rollenbreite oder Raummass schneidet, entscheidet er selbst (Inhaber 2026-10-14) -
   // deshalb hier keine lfm-Umrechnung und keine Rollenbreite.
@@ -218,7 +227,8 @@ function kundenmengeText(item, menge, variantenTitel = null) {
   const teile = [];
   if (item.produkt?.preis_pro_001_qm) teile.push(`${menge} × 0,01 m² = ${formatDe(menge / 100)} m²`);
   // Kettelservice wird "je 0,01 laufender Meter" verkauft: 800 sind 8 m Kante, nicht 800 Stueck.
-  else if (/je\s*0,01\s*lauf/i.test(String(variantenTitel ?? ''))) teile.push(`${menge} × 0,01 lfm = ${formatDe(menge / 100)} lfm`);
+  // Profile nach Mass (custom.preis_pro_001_lfm) ebenso: die Menge sind Zentimeter.
+  else if (item.produkt?.preis_pro_001_lfm || /je\s*0,01\s*lauf/i.test(String(variantenTitel ?? ''))) teile.push(`${menge} × 0,01 lfm = ${formatDe(menge / 100)} lfm`);
   // "80 cm breit (je lfm)": die Stueckzahl ist die Laenge in laufenden Metern.
   else if (ausVariantentitel(variantenTitel).jeLfm) teile.push(`${menge} lfm`);
   else teile.push(`${menge} Stk.`);
@@ -319,6 +329,10 @@ export function ausfuehrungFuer(props = {}, kettel = null) {
   const zeilen = [];
   const mass = w('Maße');
   if (mass) zeilen.push(`Fertigmaß: ${mass}${w('Form') ? ` (${w('Form')})` : ''}`);
+  // Profile nach Mass (blocks/tp-laengen-zuschnitt): Zuschnitt je Stueck und Bohrung.
+  const stueckLaenge = w('Länge je Stück');
+  if (stueckLaenge) zeilen.push(`Zuschnitt: ${(w('Anzahl') || '1').replace(/\s*Stück$/, '')} × ${stueckLaenge}`);
+  if (w('Bohrung')) zeilen.push(`Bohrung: ${w('Bohrung')}`);
   // Bewusst keine Rollenbreite: Raummass oder Rollenbreite entscheidet der Lieferant.
   const einfassung = w('Einfassung') || (kettel ? 'Gekettelt' : '');
   if (einfassung) {
