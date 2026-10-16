@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204438208846",
-    "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-16T05:55:41Z",
-    "verifiedBy": "Shopify Admin API role MAIN + Storefront Shopify.theme (role main) nach workflow:live von main 79c4b902 (#1360 Treppenkante nach Mass: Laengen-Zuschnitt in cm; #1366 Yasmin-Nach-Mass-Hinweis; dazwischen live 1ac961cc auf 204436144462); Preview-Gates COMPARE/SEO/FULL QA/SALES PASS, oeffentlicher Shop ohne Vorschau geprueft (Warenkorb mit Bestandsprodukt: Mengenfeld, Kasse frei, Konsole ohne Fehler)"
-  },
-  "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-16T05:55:41Z",
-    "verifiedBy": "role UNPUBLISHED nach workflow:live von main 79c4b902; naechstes Preview-Ziel"
+    "verifiedAt": "2026-10-16T06:32:26Z",
+    "verifiedBy": "Shopify Admin API themes(roles: MAIN) um 06:32 UTC nach workflow:live von main 4144d59c (#1343 Laden-Sortiment und Reste-Regal, Freigabe Inhaber 16.10.); Preview-Gates COMPARE/SEO/FULL QA/SALES PASS, P0/P1 0, publishedAt 2026-10-16T06:32:04Z"
+  },
+  "preview": {
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-10-16T06:32:26Z",
+    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live von main 4144d59c; naechstes Preview-Ziel"
   },
   "fallback": {
     "themeId": "206590509390",
