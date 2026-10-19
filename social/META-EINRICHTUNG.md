@@ -101,3 +101,36 @@ Publisher wartet bis zu zehn Minuten, sonst versucht es der nächste Takt.
 
 Wie beim ersten Bildbeitrag: das erste Reel beobachtet veröffentlichen. Der
 Upload-Weg ist nur gegen einen Nachbau der API getestet.
+
+## Produkt-Tags (anklickbare Produkte)
+
+Reels, Einzelbilder und das erste Karussellbild bekommen automatisch
+Produkt-Tags: Wer im Beitrag auf das Produkt tippt, landet auf der
+Produktseite im Shop. Der Publisher nimmt die Produkte des Beitrags
+(`produkt_handle` bzw. `daten.produkte`, höchstens fünf), sucht sie im
+Instagram-Katalog und hängt sie an. Zugeordnet wird nur, wenn die Katalog-ID
+die Shopify-Produkt-ID enthält. So kann ein gleich benanntes Produkt nicht
+verwechselt werden. Fehlt etwas oder lehnt Meta die Tags ab, geht der Beitrag
+ohne Tags raus. Ein Tag hält nie eine Veröffentlichung auf.
+
+Damit das greift, muss Instagram Shopping einmalig eingerichtet sein. Das
+macht der Inhaber im Browser, es ist eine Kontoeinstellung:
+
+1. `business.facebook.com/commerce` → **Commerce Manager** → Shop anlegen bzw.
+   den vorhandenen „Shopify Product Catalog“ (aus der Shopify-App
+   „Facebook & Instagram“) als Katalog wählen, Kanal **Instagram**
+   (`@teppich.paradies`) hinzufügen, Kasse **„Auf der Website“**.
+2. Meta prüft das Konto (einige Tage). Danach steht in der Instagram-App unter
+   Einstellungen → Unternehmen → **Shopping** der Katalog.
+3. Unternehmenseinstellungen → Datenquellen → **Kataloge** → den Katalog dem
+   Systemnutzer „Teppich Paradies Poster“ zuweisen.
+
+Die Rechte `catalog_management` und `instagram_shopping_tag_products` hat der
+Token bereits. Ob alles bereit ist, zeigt:
+
+```
+npm run social -- meta-pruefen    # letzte Zeile: „Produkt-Tags: bereit …“ oder der Grund
+```
+
+**Storys:** Link-Sticker und Produkt-Sticker setzt die Graph API nicht. Bei
+einer Story mit Produktbezug klebt man sie in der Instagram-App von Hand.
