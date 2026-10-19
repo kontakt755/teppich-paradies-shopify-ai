@@ -311,6 +311,17 @@
       return { wert: roh > 0 ? Math.ceil(roh) : 0, komma: komma, ungueltig: !komma && !leer && !(roh > 0) };
     }
 
+    // Berechnet und bestellt werden schon immer ganze Zentimeter. Beim
+    // Verlassen auch im Feld das tatsaechlich verwendete Mass anzeigen.
+    function massFeldAbschliessen(input) {
+      var mass = lesen(input);
+      if (mass.komma || mass.ungueltig || !mass.wert || !Number.isFinite(mass.wert)) return;
+      if (input.value !== String(mass.wert)) {
+        input.value = String(mass.wert);
+        rechnen();
+      }
+    }
+
     /*
       Eine Kachel, nie mehrere. patternUnits userSpaceOnUse wiederholt die Kachel,
       sobald die gefuellte Flaeche groesser ist als width/height - genau so entstand
@@ -1087,7 +1098,11 @@
     root.addEventListener('change', function (e) {
       if (e.target && e.target.name && e.target.name.indexOf('tp-ek-form-') === 0) rechnen();
     });
-    [inBreite, inLaenge].forEach(function (i) { if (i) i.addEventListener('input', rechnen); });
+    [inBreite, inLaenge].forEach(function (i) {
+      if (!i) return;
+      i.addEventListener('input', rechnen);
+      i.addEventListener('blur', function () { massFeldAbschliessen(i); });
+    });
     cta.addEventListener('click', hinzufuegen);
     document.addEventListener('tp:farbe-wechsel', function (e) {
       gewaehlt = e.detail && e.detail.variantId ? String(e.detail.variantId) : null;
