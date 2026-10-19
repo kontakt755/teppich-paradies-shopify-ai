@@ -138,6 +138,12 @@
     "quantity": "Adet",
     "product_total": "Ürün toplamı",
     "cart_estimated_total": "Tahmini toplam",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Vergiler ödeme sırasında hesaplanır.",
+      "duties_included": "Gümrük vergileri dahildir.",
+      "discounts_at_checkout": "İndirimler ödeme sırasında hesaplanır.",
+      "shipping_details_html": "<a href=\"{{ link }}\">Kargo ve teslimat</a> ayrıntıları."
+    },
     "seller_note": "Özel talimatlar",
     "cart_subtotal": "Alt toplam",
     "discounts": "İndirimler",

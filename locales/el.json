@@ -138,6 +138,12 @@
     "quantity": "Ποσότητα",
     "product_total": "Συνολική ποσότητα για το προϊόν",
     "cart_estimated_total": "Εκτιμώμενο σύνολο",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Οι φόροι υπολογίζονται στο ταμείο.",
+      "duties_included": "Οι δασμοί περιλαμβάνονται.",
+      "discounts_at_checkout": "Οι εκπτώσεις υπολογίζονται στο ταμείο.",
+      "shipping_details_html": "Λεπτομέρειες για την <a href=\"{{ link }}\">αποστολή και την παράδοση</a>."
+    },
     "seller_note": "Ειδικές οδηγίες",
     "cart_subtotal": "Υποσύνολο",
     "discounts": "Εκπτώσεις",

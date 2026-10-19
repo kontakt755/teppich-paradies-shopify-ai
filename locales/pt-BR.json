@@ -136,6 +136,12 @@
     "cart_total": "Total do carrinho",
     "your_cart_is_empty": "O carrinho está vazio",
     "cart_estimated_total": "Total estimado",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Os tributos são calculados no checkout.",
+      "duties_included": "Taxas de importação incluídas.",
+      "discounts_at_checkout": "Os descontos são calculados no checkout.",
+      "shipping_details_html": "Detalhes sobre <a href=\"{{ link }}\">envio e entrega</a>."
+    },
     "seller_note": "Instruções especiais",
     "cart_subtotal": "Subtotal",
     "discounts": "Descontos",

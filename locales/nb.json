@@ -138,6 +138,12 @@
     "quantity": "Antall",
     "product_total": "Sum for produkt",
     "cart_estimated_total": "Estimert totalsum",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Avgifter beregnes i kassen.",
+      "duties_included": "Toll er inkludert.",
+      "discounts_at_checkout": "Rabatter beregnes i kassen.",
+      "shipping_details_html": "Informasjon om <a href=\"{{ link }}\">frakt og levering</a>."
+    },
     "seller_note": "Spesielle instruksjoner",
     "cart_subtotal": "Delsum",
     "discounts": "Rabatter",

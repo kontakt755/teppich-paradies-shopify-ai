@@ -142,6 +142,12 @@
     "quantity": "Ilość",
     "product_total": "Produkt łącznie",
     "cart_estimated_total": "Przewidywana suma",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Podatki są obliczane przy realizacji zakupu.",
+      "duties_included": "Cło jest wliczone.",
+      "discounts_at_checkout": "Rabaty są obliczane przy realizacji zakupu.",
+      "shipping_details_html": "Szczegóły dotyczące <a href=\"{{ link }}\">wysyłki i dostawy</a>."
+    },
     "seller_note": "Specjalne instrukcje",
     "cart_subtotal": "Suma częściowa",
     "discounts": "Rabaty",

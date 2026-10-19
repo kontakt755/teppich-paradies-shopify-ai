@@ -138,6 +138,12 @@
     "quantity": "Mennyiség",
     "product_total": "Termék végösszege",
     "cart_estimated_total": "Becsült végösszeg",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Az adók kiszámítása a pénztárnál történik.",
+      "duties_included": "A vámokat az ár tartalmazza.",
+      "discounts_at_checkout": "A kedvezmények kiszámítása a pénztárnál történik.",
+      "shipping_details_html": "Részletek a <a href=\"{{ link }}\">szállításról és kézbesítésről</a>."
+    },
     "seller_note": "Különleges utasítások",
     "cart_subtotal": "Részösszeg",
     "discounts": "Kedvezmények",
