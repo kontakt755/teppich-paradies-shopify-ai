@@ -25,8 +25,9 @@ import { sendeMail as smtpSenden } from '../operations/lib/smtp.mjs';
 import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
-import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, setzeStatusPositionen, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, STATUS_ORDER, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
+import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, schreibeAlle as schreibeAuftragsstatus, setzeStatus, setzeStatusPositionen, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, STATUS_ORDER, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
 import { bucheVersand, versandNachzuholen, VersandFehler, VERSANDDIENSTE } from '../operations/lib/versand.mjs';
+import { uebernimmAusShopify, abweichungen as shopifyAbweichungen, ABGLEICH_VON } from '../operations/lib/shopify-abgleich.mjs';
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
 import { musterSchluessel, musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MUSTER_GROESSE, KNAPP_AB as LAGER_KNAPP_AB, PROBESTUECK_PREIS, wartetAufLieferant as lagerWartetAufLieferant, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
 import { auftragsverlaufPfad, leseVerlauf, bereiteEreignisVor, schreibeVerlauf, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, ERGEBNIS_SCHRITTE, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
@@ -284,6 +285,15 @@ function ladeBestellModell(dir) {
   if (!daten) return null;
   try { return bereiteBestellModell(daten, dir, new Date()); }
   catch { return null; }
+}
+
+/** Bestellungen aus orders.json in jeder Form, die ladeExport kennt - ohne Umweg ueber Text. null = unbrauchbar. */
+function exportOrders(daten) {
+  if (Array.isArray(daten)) return daten;
+  if (Array.isArray(daten?.data?.orders?.nodes)) return daten.data.orders.nodes;
+  if (Array.isArray(daten?.orders)) return daten.orders;
+  if (Array.isArray(daten?.orders?.nodes)) return daten.orders.nodes;
+  return null;
 }
 
 function bereiteBestellModell(daten, dir, jetzt) {
@@ -726,12 +736,15 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
    * Sendungsnummer und Mail-Wahl kommen aus dem Dialog, sonst von der Position (Nachholen).
    * Gibt die Kurzfassung fuer die Oberflaeche zurueck.
    */
-  async function versandBuchen({ dir, auftrag, lineItemIds, angaben = {}, benutzer, actor }) {
+  async function versandBuchen({ dir, auftrag, lineItemIds, angaben = {}, benutzer, actor, trotzVermerk = false }) {
     const file = auftragsstatusPfad(dir);
     return nacheinander(auftrag.id, async () => {
       const alle = leseAuftragsstatus(file);
       const eintrag = id => alle[positionKey(auftrag.id, id)];
-      const ids = [...new Set(lineItemIds)].filter(id => !['gebucht', 'bereits'].includes(eintrag(id)?.shopifyVersand?.status));
+      // trotzVermerk: "In Shopify nachbuchen" aus der Abweichungsliste - dort steht fest, dass
+      // Shopify die Position offen fuehrt, auch wenn der Vermerk anderes sagt (Sendung in Shopify
+      // storniert). bucheVersand liest frisch; doppelt gebucht wird auch dann nie.
+      const ids = [...new Set(lineItemIds)].filter(id => trotzVermerk || !['gebucht', 'bereits'].includes(eintrag(id)?.shopifyVersand?.status));
       if (!ids.length) return { status: 'bereits', meldung: 'In Shopify war das schon als versendet gebucht.', gebucht: 0, bereits: lineItemIds.length, nichtGebucht: 0 };
       const am = now().toISOString();
       const nummer = angaben.sendungsnummer || ids.map(id => eintrag(id)?.sendungsnummer).find(Boolean) || null;
@@ -856,6 +869,108 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     return { versandNachholen: n ? { anzahl: n.anzahl, unklar: n.unklar, ausstehend: n.ausstehend, meldung: n.meldung } : null };
   }
 
+  /**
+   * "Erledigt" -> Versand in Shopify buchen (Inhaber 2026-10-19, operations/lib/shopify-abgleich.mjs):
+   * Positionen, die gerade auf "Erledigt" gegangen sind und in Shopify noch nicht als versendet
+   * gelten, bucht derselbe Weg wie "raus" - mit Gegenprobe und Vermerk, aber ohne Mail an den
+   * Kunden (bereiteStatusVor merkt sich das als versandMail: false, auch fuers Nachholen).
+   * Gilt fuer Ware und Muster. Testbestellungen und stornierte Bestellungen bucht versandBuchen
+   * ohnehin nicht. Ist danach keine Ware mehr offen, gehen Eigenleistungen (Kettelservice) mit -
+   * sonst bliebe die Bestellung in Shopify "teilweise versendet". null = nichts zu buchen.
+   */
+  async function erledigtBuchen({ dir, auftrag, lineItemIds, benutzer, actor }) {
+    if (!auftrag || !lineItemIds?.length) return null;
+    const alle = leseAuftragsstatus(auftragsstatusPfad(dir));
+    const eintrag = id => alle[positionKey(auftrag.id, id)];
+    const fertig = id => ['gebucht', 'bereits', 'uebersprungen'].includes(eintrag(id)?.shopifyVersand?.status);
+    const ids = new Set(lineItemIds.filter(id => !fertig(id)));
+    const stufe = id => STATUS_ORDER.indexOf(eintrag(id)?.status);
+    const positionen = (auftrag.positionen || []).filter(p => p.lineItemId);
+    const wareOffen = positionen.some(p => !p.eigenleistung && (p.menge ?? 1) > 0 && stufe(p.lineItemId) < STATUS_ORDER.indexOf('raus'));
+    if (ids.size && !wareOffen) {
+      for (const p of positionen) if (p.eigenleistung && stufe(p.lineItemId) < STATUS_ORDER.indexOf('raus') && !fertig(p.lineItemId)) ids.add(p.lineItemId);
+    }
+    if (!ids.size) return null;
+    return versandBuchen({ dir, auftrag, lineItemIds: [...ids], angaben: { benachrichtigen: false }, benutzer, actor });
+  }
+
+  /**
+   * Shopify -> Control Center: einmal je neuem Bestellexport (Groesse und Aenderungszeit von
+   * orders.json). Der Dienst ist der einzige Schreiber von auftragsstatus.json - deshalb laeuft
+   * der Abgleich hier und nicht im Sync-Dienst. Zwischen Lesen und Schreiben steht kein await,
+   * ein Klick im selben Prozess kann sich nicht dazwischenschieben. Eine unlesbare Ablage wird
+   * nie ueberschrieben (leseAlle wirft); der Fehler steht im Dienstprotokoll.
+   */
+  let abgleichKennung = null;
+  let letzterAbgleich = null;
+  function shopifyAbgleichen(dir = privatDirPath || privatDir()) {
+    const ordersDatei = path.join(dir, 'bestelluebersicht', 'orders.json');
+    let st;
+    try { st = fs.statSync(ordersDatei); } catch { return letzterAbgleich; }
+    const kennung = `${dir}:${st.size}:${st.mtimeMs}:${st.ctimeMs}:${st.ino}`;
+    if (kennung === abgleichKennung) return letzterAbgleich;
+    abgleichKennung = kennung;
+    const orders = exportOrders(readJsonIfExists(ordersDatei));
+    if (!orders) return letzterAbgleich;
+    const statusDatei = auftragsstatusPfad(dir);
+    const am = now().toISOString();
+    let r;
+    try {
+      r = uebernimmAusShopify(leseAuftragsstatus(statusDatei), orders, { jetzt: now() });
+      if (r.gehoben.length || r.storniert.length || r.vermerkt.length) schreibeAuftragsstatus(statusDatei, r.positionen);
+    } catch (e) {
+      logFehler('abgleich', `Shopify-Abgleich nicht geschrieben: ${String(e?.message || e).split('\n')[0]}`);
+      letzterAbgleich = { am, fehler: String(e?.message || e).split('\n')[0], gehoben: 0, storniert: 0, vermerkt: 0 };
+      return letzterAbgleich;
+    }
+    // Protokoll je Bestellung - wer im Dashboard nachsieht, warum etwas "raus" steht, findet es dort.
+    const jeAuftrag = (liste) => {
+      const m = new Map();
+      for (const x of liste) m.set(x.orderName || x.orderId, (m.get(x.orderName || x.orderId) || 0) + 1);
+      return m;
+    };
+    for (const [name, n] of jeAuftrag(r.gehoben)) merke(null, ABGLEICH_VON, 'Aus Shopify übernommen', `${name}: ${n} Artikel → An Kunden raus (in Shopify versendet)`);
+    for (const [name, n] of jeAuftrag(r.storniert)) merke(null, ABGLEICH_VON, 'Aus Shopify übernommen', `${name}: ${n} Artikel → Erledigt (in Shopify storniert)`);
+    if (r.gehoben.length || r.storniert.length || r.vermerkt.length) {
+      audit({ actor: ABGLEICH_VON, action: 'shopify-abgleich', gehoben: r.gehoben.length, storniert: r.storniert.length, vermerkt: r.vermerkt.length });
+    }
+    letzterAbgleich = { am, fehler: null, gehoben: r.gehoben.length, storniert: r.storniert.length, vermerkt: r.vermerkt.length };
+    return letzterAbgleich;
+  }
+
+  /** Abweichungsliste "im Dashboard abgehakt, in Shopify offen" (je Bestellung), mit Artikeltexten aus dem Modell. */
+  function abweichungsListe(dir) {
+    const daten = readJsonIfExists(path.join(dir, 'bestelluebersicht', 'orders.json'));
+    const orders = exportOrders(daten);
+    if (!orders) return null;
+    const modell = ladeBestellModell(dir);
+    const auftraege = new Map([...(modell?.auftraege || []), ...(modell?.testauftraege || [])].map(a => [a.id, a]));
+    return shopifyAbweichungen(leseAuftragsstatus(auftragsstatusPfad(dir)), orders, { exportiertAm: daten.exportiertAm || null }).map(z => {
+      const a = auftraege.get(z.orderId);
+      const artikel = z.positionen.map(p => {
+        const m = (a?.positionen || []).find(x => x.lineItemId === p.lineItemId);
+        return { ...p, titel: m?.titel || null, farbe: m?.farbe && m.farbe !== '–' ? m.farbe : null };
+      });
+      return { ...z, positionen: artikel, exportiertAm: daten.exportiertAm || null };
+    });
+  }
+
+  /**
+   * "In Shopify nachbuchen" aus der Abweichungsliste: genau die Positionen dieser Bestellung,
+   * die im Dashboard raus/erledigt sind und in Shopify offen - ohne Mail an den Kunden.
+   */
+  async function shopifyNachbuchen(payload, benutzer, actor) {
+    const { orderId } = payload || {};
+    if (!orderId) throw new ApiError(400, 'orderId ist Pflicht', { missing: ['orderId'] });
+    const dir = privatDirPath || privatDir();
+    const zeile = (abweichungsListe(dir) || []).find(z => z.orderId === String(orderId));
+    if (!zeile) throw new ApiError(409, 'Diese Bestellung weicht nicht mehr ab – im Dashboard und in Shopify steht dasselbe.');
+    const auftrag = auftragFuerVersand(dir, String(orderId));
+    const shopifyErgebnis = await versandBuchen({ dir, auftrag, lineItemIds: zeile.lineItemIds, angaben: { benachrichtigen: false }, benutzer, actor, trotzVermerk: true });
+    const offen = (abweichungsListe(dir) || []).length;
+    return { ok: true, orderId: String(orderId), shopify: shopifyErgebnis, abweichungen: offen };
+  }
+
   /** Zeitleisten aller Auftraege (orderId -> { auftragsart, verlauf, naechsterSchritt, ... }). */
   function zeitleisten(dir, modell, statusAlle) {
     return zeitleistenFuerModell(modell, { statusAlle, verlaufAlle: leseVerlauf(auftragsverlaufPfad(dir)), jetzt: now() });
@@ -943,12 +1058,21 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     let anzahl = 0;
     // Positionen, die in diesem Schritt raus gehen - die bucht Shopify danach als versendet.
     let rausIds = [];
+    // Positionen, die in diesem Schritt erledigt werden - die bucht Shopify ohne Kundenmail, wenn
+    // dort noch offen (erledigtBuchen). Ein zweiter Klick auf "Erledigt" bucht nichts erneut.
+    let erledigtIds = [];
+    const vorErledigt = () => {
+      const alle = leseAktuellenStatus(statusDatei, modell);
+      return new Set(positionen.filter(p => alle[positionKey(orderId, p.lineItemId)]?.status !== 'erledigt').map(p => p.lineItemId));
+    };
     try {
       if (STATUS_ORDER.includes(schritt)) {
         const neu = schritt === 'raus' ? vorRaus() : null;
+        const offenVorher = schritt === 'erledigt' ? vorErledigt() : null;
         const ids = setzePositionen(schritt, notiz, schritt === 'raus' ? versandMailFuer(angaben, positionen) : null);
         anzahl = ids.length;
         if (neu) rausIds = ids.filter(id => neu.has(id));
+        if (offenVorher) erledigtIds = ids.filter(id => offenVorher.has(id));
       } else {
         // Verlauf und alle Positionsregeln pruefen, bevor irgendeine der beiden Dateien geschrieben wird.
         const ereignis = bereiteEreignisVor(auftragsverlaufPfad(dir), { orderId, schritt, actor, notiz: notizText, bezug, jetzt: now() });
@@ -966,7 +1090,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           }
         }
         if (ERGEBNIS_SCHRITTE.includes(schritt) && positionen.length) {
-          anzahl = setzePositionen('erledigt', `Ergebnis: ${SCHRITT_LABEL.muster[schritt]}${notizText ? ` – ${notizText}` : ''}`).length;
+          const offenVorher = vorErledigt();
+          const ids = setzePositionen('erledigt', `Ergebnis: ${SCHRITT_LABEL.muster[schritt]}${notizText ? ` – ${notizText}` : ''}`);
+          anzahl = ids.length;
+          erledigtIds = ids.filter(id => offenVorher.has(id));
         }
         schreibeVerlauf(auftragsverlaufPfad(dir), ereignis.auftraege);
       }
@@ -979,7 +1106,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     audit({ actor, action: 'auftragsschritt', orderId, schritt, positionen: anzahl });
     merke(benutzer, actor, 'Auftragsschritt', `${auftrag.name}: ${schritt}`);
     // Erst jetzt nach Shopify: der lokale Schritt steht, egal wie die Buchung ausgeht.
-    const shopifyErgebnis = rausIds.length ? await versandBuchen({ dir, auftrag, lineItemIds: rausIds, angaben, benutzer, actor }) : null;
+    const shopifyErgebnis = rausIds.length ? await versandBuchen({ dir, auftrag, lineItemIds: rausIds, angaben, benutzer, actor })
+      : await erledigtBuchen({ dir, auftrag, lineItemIds: erledigtIds, benutzer, actor });
     // Muster nicht verfuegbar: die Farben im Shop sperren - nach dem lokalen Schritt, der gilt immer.
     const sperre = sperrPositionen.length ? await musterSperren({ dir, auftrag, positionen: sperrPositionen, benutzer, actor }) : null;
     const statusNachher = leseAktuellenStatus(statusDatei, modell);
@@ -1413,6 +1541,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     /** Bestelluebersicht: offene Kundenbestellungen, gruppiert je Lieferant, plus Muster. */
     einkaufBestellungen() {
       const dir = privatDirPath || privatDir();
+      shopifyAbgleichen(dir);
       const file = path.join(dir, 'bestelluebersicht', 'orders.json');
       const daten = readJsonIfExists(file);
       if (!daten) return { verfuegbar: false, quelle: file, hinweis: 'orders.json fehlt - siehe operations/lib/bestelluebersicht.mjs bzw. den Export-Lauf dafuer.' };
@@ -1460,6 +1589,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     /** Kunden-Detailansicht: Kontakt, Anschriften, alle Bestellungen mit Positionen. */
     kundenDetail({ key = '' } = {}) {
       const dir = privatDirPath || privatDir();
+      shopifyAbgleichen(dir);
       const modell = ladeBestellModell(dir);
       if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
       const statusAlle = leseAktuellenStatus(auftragsstatusPfad(dir), modell);
@@ -1500,6 +1630,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     /** Vollstaendige Bestelluebersicht (eine Zeile je Bestellung) fuer die Tabellenansicht - Sortierung/Filter/Suche laufen im Browser, das lokale Datenvolumen ist klein. */
     kundenBestellungen() {
       const dir = privatDirPath || privatDir();
+      shopifyAbgleichen(dir);
       const modell = ladeBestellModell(dir);
       if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
       const statusAlle = leseAktuellenStatus(auftragsstatusPfad(dir), modell);
@@ -1786,17 +1917,25 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const dir = privatDirPath || privatDir();
       const file = auftragsstatusPfad(dir);
       const modell = ladeBestellModell(dir);
-      const positionen = [...(modell?.auftraege || []), ...(modell?.testauftraege || [])].find(a => a.id === orderId)?.positionen || [];
+      const auftrag = [...(modell?.auftraege || []), ...(modell?.testauftraege || [])].find(a => a.id === orderId) || null;
+      const positionen = auftrag?.positionen || [];
+      const ids = [...new Set(lineItemIds.map(String))];
+      // Was vorher noch nicht erledigt war, wird gleich in Shopify gebucht (ohne Kundenmail).
+      const vorher = leseAuftragsstatus(file);
+      const neuErledigt = ids.filter(id => vorher[positionKey(orderId, id)]?.status !== 'erledigt');
       let eintraege;
       try {
-        eintraege = setzeStatusPositionen(file, [...new Set(lineItemIds)].map(lineItemId => { const p = positionen.find(p => p.lineItemId === lineItemId); return { orderId, lineItemId, status: 'erledigt', actor, bestellmenge: p?.bestellSoll || p?.bestellmenge || null, notiz: notiz || 'Kunde fertig (Sammelschritt)', jetzt: now() }; }));
+        eintraege = setzeStatusPositionen(file, ids.map(lineItemId => { const p = positionen.find(p => p.lineItemId === lineItemId); return { orderId, lineItemId, status: 'erledigt', actor, bestellmenge: p?.bestellSoll || p?.bestellmenge || null, notiz: notiz || 'Kunde fertig (Sammelschritt)', jetzt: now() }; }));
       } catch (e) {
         if (e instanceof AuftragsstatusFehler) throw new ApiError(e.status, e.message);
         throw e;
       }
       audit({ actor, action: 'auftragsstatus-kunde-fertig', orderId, anzahl: eintraege.length });
-      merke(benutzer, actor, 'Kunde fertig', `${orderId}: ${eintraege.length} Artikel`);
-      return { ok: true, anzahl: eintraege.length, eintraege };
+      merke(benutzer, actor, 'Kunde fertig', `${auftrag?.name || orderId}: ${eintraege.length} Artikel`);
+      const shopifyErgebnis = await erledigtBuchen({ dir, auftrag: auftrag || auftragFuerVersand(dir, String(orderId)), lineItemIds: neuErledigt, benutzer, actor });
+      const stand = leseAuftragsstatus(file);
+      // Eintraege nach der Buchung (mit Versandvermerk), in derselben Reihenfolge wie bisher.
+      return { ok: true, anzahl: eintraege.length, eintraege: eintraege.map(e => stand[positionKey(e.orderId, e.lineItemId)] || e), ...(shopifyErgebnis ? { shopify: shopifyErgebnis } : {}) };
     },
 
     /** Rueckruf-/Beratungs-Arbeitsliste, aelteste Bestellung zuerst, mit lokalem Bearbeitungsstatus. */
@@ -2066,9 +2205,34 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     /** Auftragsfluss-Status je Position, rein lokal (nie im Repository). */
     einkaufAuftragsstatus() {
       const dir = privatDirPath || privatDir();
+      shopifyAbgleichen(dir);
       const file = auftragsstatusPfad(dir);
       const positionen = leseAktuellenStatus(file);
       return { verfuegbar: true, quelle: file, positionen };
+    },
+
+    /**
+     * Abgleich mit Shopify (operations/lib/shopify-abgleich.mjs): Bestellungen, die im Dashboard
+     * abgehakt sind (raus/erledigt), in Shopify aber offen - je Bestellung eine Zeile, dazu der
+     * letzte Lauf Shopify -> Dashboard. Lesend fuer alle Rollen; nachgebucht wird ueber
+     * POST /api/einkauf/auftragsstatus (aktion "shopifyNachbuchen", Schreibpfad).
+     */
+    einkaufShopifyAbgleich() {
+      const dir = privatDirPath || privatDir();
+      const quelle = path.join(dir, 'bestelluebersicht', 'orders.json');
+      const lauf = shopifyAbgleichen(dir);
+      let liste;
+      try { liste = abweichungsListe(dir); } catch (e) {
+        // Beschaedigte Ablage: sichtbar als Stoerung, nie als "alles gleich".
+        return { verfuegbar: true, fehler: String(e?.message || e).split('\n')[0], abweichungen: [], letzterAbgleich: lauf || null };
+      }
+      if (!liste) return { verfuegbar: false, quelle, hinweis: leseFehler(quelle) || 'orders.json fehlt.' };
+      return { verfuegbar: true, fehler: null, abweichungen: liste, letzterAbgleich: lauf || null };
+    },
+
+    /** Fuer den Zeitgeber im Dienst: Shopify -> Dashboard nach jedem neuen Export, auch ohne offene Seite. */
+    shopifyAbgleich() {
+      return shopifyAbgleichen();
     },
 
     /** Setzt den Status einer Bestellposition (Bestellt/Geliefert/Raus/Erledigt). */
@@ -2079,6 +2243,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Anmeldung (Notzugang) bleibt der bisherige gh-Login die handelnde Person.
       const actor = benutzer?.name || await currentUser();
       if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
+      // Erst den neuesten Shopify-Stand uebernehmen, dann die Aenderung darauf anwenden.
+      shopifyAbgleichen();
       // Bis zu den lokalen Writes kein await: Vorpruefung und Uebernahmesperre werden
       // im selben JS-Schritt frisch gelesen; asynchron bleibt nur die bestehende Versandbuchung.
       const { orderId, lineItemId, status, lieferantBestellnummer, notiz, aktion } = payload || {};
@@ -2114,6 +2280,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Additiv - ohne `aktion` verhaelt sich der Endpunkt exakt wie bisher.
       if (aktion === 'schritt') return auftragsSchrittSetzen(payload, benutzer, actor);
       if (aktion === 'versandNachholen') return versandNachholen(payload, benutzer, actor);
+      if (aktion === 'shopifyNachbuchen') return shopifyNachbuchen(payload, benutzer, actor);
       if (aktion === 'zurueckAufOffen') return zurueckAufOffen(payload, benutzer, actor);
       if (aktion === 'musterHerkunft') return musterHerkunftSetzen(payload, benutzer, actor);
       if (!orderId || !lineItemId) throw new ApiError(400, 'orderId und lineItemId sind Pflicht', { missing: ['orderId', 'lineItemId'] });
@@ -2162,6 +2329,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         eintrag = vermerkeShopifyVersand(file, { orderId, lineItemId, vermerk: { status: 'ausstehend', grund: 'ohne-dialog', am: now().toISOString(),
           meldung: 'Noch nicht in Shopify gebucht – „In Shopify buchen“ bucht alle wartenden Artikel dieser Bestellung als ein Paket.' } }) || eintrag;
         return { ok: true, eintrag, shopify: { status: 'ausstehend', meldung: eintrag.shopifyVersand?.meldung || null, gebucht: 0, bereits: 0, nichtGebucht: 1 } };
+      }
+      // "Erledigt" bucht in Shopify, wenn dort noch offen - ohne Mail, deshalb auch je Artikel unbedenklich.
+      if (status === 'erledigt' && vorher?.status !== 'erledigt') {
+        const shopifyErgebnis = await erledigtBuchen({ dir, auftrag: auftragFuerVersand(dir, String(orderId)), lineItemIds: [lineItemId], benutzer, actor });
+        if (shopifyErgebnis) return { ok: true, eintrag: leseAuftragsstatus(file)[positionKey(orderId, lineItemId)] || eintrag, shopify: shopifyErgebnis };
       }
       return { ok: true, eintrag };
     },

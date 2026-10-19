@@ -4,7 +4,8 @@
  *
  *   1. "Heute zu erledigen" - N ist genau die Zahl der Zeilen darunter. Jede Zeile: was, fuer
  *      wen, eine Zeile Kontext, genau ein Knopf. To-dos (lib/todos.mjs), Nachfragen, bei denen
- *      ein Mensch ran muss (lib/muster-nachfassen.mjs), und neue Service-Anfragen.
+ *      ein Mensch ran muss (lib/muster-nachfassen.mjs), neue Service-Anfragen, Lieferantenbelege
+ *      (Storno, Lieferschein ohne Haken) und "In Shopify noch offen" (einkauf/shopify-abgleich.mjs).
  *   2. "Im Hintergrund" - was ohne uns laeuft, je eine ruhige Zeile zum Aufklappen:
  *      automatische Muster-Nachfragen (die volle Karte aus heute/muster-nachfassen.mjs),
  *      "wartet auf Lieferant/Kunde" (die Spalte "Wir sind dran" ist die Liste oben selbst)
@@ -41,6 +42,7 @@ import { heuteLaden, heuteMontage, ladenKachel, ensureLadenZahlen } from './heut
 import { shopwache, ensureShopwache } from './shopwache.mjs';
 import { heuteDaten, ensureHeuteLieferanten, ensureHeuteAufgaben, ensureHeuteMusterTexte } from './heute/daten.mjs';
 import { musterNachfassenStand, musterNachfassenBlock } from './heute/muster-nachfassen.mjs';
+import { ensureShopifyAbgleich, shopifyAbgleichTodos } from './einkauf/shopify-abgleich.mjs';
 
 const TODOS_SICHTBAR = 7;      // "eine kurze Liste" - der Rest steht einen Klick weiter
 const SPALTE_SICHTBAR = 8;
@@ -132,7 +134,7 @@ function versandFehlerTodo(lauf) {
 export function viewHeute() {
   ensureKundenBestellungen(); ensureEinkaufAuftragsstatus(); ensureKundenRueckrufe(); ensureKundenFaelle();
   ensureServiceanfragen(); ensureHeuteLieferanten(); ensureHeuteAufgaben(); ensureAktualisierung();
-  ensureLadenZahlen();
+  ensureLadenZahlen(); ensureShopifyAbgleich();
   if (istInhaber()) ensureEinkaufKennzahlen();
   if (darfAnsicht('shopwache')) ensureShopwache();
   if (darfAnsicht('einkauf')) ensureBelege();
@@ -152,6 +154,8 @@ export function viewHeute() {
     ...nfLaden.mensch.map(e => nachfassTodo(e, { ansehenHref: heuteHref('mn', '1') })),
     ...(nfLaden.versandFehler ? [versandFehlerTodo(nfLaden.versandFehler)] : []),
     ...(darfAnsicht('einkauf') ? belegTodos(belege.daten) : []),
+    // Im Dashboard abgehakt, in Shopify offen (#1424) - je Bestellung eine Zeile mit "In Shopify nachbuchen".
+    ...shopifyAbgleichTodos(),
   ];
   const eigene = sicht === 'website' ? [] : eigeneLaden;
   const liste = sortiereTodos([...leiteTodosAb(q, opt), ...eigene]);
@@ -201,11 +205,14 @@ function todoZeile(t, erste) {
   const klasse = `btn btn-sm${erste ? ' btn-primary' : ''}`;
   // k.schritt: Zeitleisten-Schritt direkt ausloesen (z. B. "Erledigt – Kunde hat Muster");
   // der Klick laeuft ueber zeitleisteKlick (ansichten/kunden/zeitleiste.mjs). Rolle "lesen" bekommt den Link.
-  const knopf = k.aufgabe
+  // k.nachbuchen: "In Shopify nachbuchen" direkt in der Zeile (shopifyAbgleichKlick, einkauf/shopify-abgleich.mjs).
+  const knopf = k.nachbuchen && !istNurLesend()
+    ? `<button type="button" class="${klasse}" data-shopify-nachbuchen="${esc(k.nachbuchen)}" title="Bucht diese Artikel in Shopify als versendet – ohne Mail an den Kunden">${esc(k.text)}</button>`
+    : k.aufgabe
     ? `<button type="button" class="${klasse}" data-open="${esc(k.aufgabe)}" data-primary="1">${esc(k.text)}</button>`
     : k.schritt && !istNurLesend()
       ? `<button type="button" class="${klasse}" data-zl-schritt="${esc(k.schritt.aktion)}" data-zl-order="${esc(k.schritt.orderId)}">${esc(k.text)}</button>`
-      : `<a class="${klasse}" href="${esc(k.href)}">${esc(k.schritt ? 'Ansehen' : k.text)}</a>`;
+      : `<a class="${klasse}" href="${esc(k.href)}">${esc(k.schritt || k.nachbuchen ? 'Ansehen' : k.text)}</a>`;
   const alter = t.alterTage === null || t.alterTage === undefined ? '' : `<span class="heute-alter ${esc(t.ton)}">${esc(alterText(t.alterTage))}</span>`;
   return `<div class="heute-todo ${esc(t.ton)}" data-todo="${esc(t.art)}">
     <div class="heute-todo-text"><div class="t">${esc(t.titel)}</div><div class="s">${esc(t.kontext)}</div></div>

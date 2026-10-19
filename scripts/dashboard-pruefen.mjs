@@ -66,7 +66,8 @@ const KOPIEREN = ['verbrauch', 'bestelluebersicht', 'kennzahlen', 'organisation'
   'rueckrufe.json', 'serviceanfragen.json', 'lieferbelege', 'fallmarken.json', 'fehlermeldungen.json', 'fehlermeldungen-abgleich.json', 'fehlermeldungen',
   // Upload-Links der Ansicht "Social Media": ein Klick auf "Neuen Link anlegen" schreibt hierhin.
   'social/upload-zugaenge.json', 'social/upload-links.json',
-  // Textvorlage fuer "Muster nachfassen" auf Heute
+  // Textvorlage fuer "Muster nachfassen" auf Heute. Der Ordner nachfassen/ bleibt bewusst draussen:
+  // mit der echten postfach.json schickte ein Klick auf "Jetzt senden" in der Pruefung echte Mails.
   'muster-nachfassen-texte.md'];
 
 // Spiegel von ANSICHT_ROLLEN in docs/ai-dashboard/kern/router.mjs: diese Ansichten sieht nur der

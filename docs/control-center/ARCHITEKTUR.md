@@ -7,9 +7,9 @@ Direkte Einstiege stehen auf „Heute“ und in der Befehlspalette, die vollstae
 Seitenleiste unter „Arbeitsplatz“ (am Handy hinter „Mehr“). Heute bleibt die betriebliche Startseite.
 
 Je Aufgabe werden vorhandene Angaben in eine pruefbare Arbeitsanweisung eingebettet. Originaltexte
-sind als Quellen markiert; sie ersetzen keine Projektregeln. Der erste Knopf kopiert den Auftrag,
-ein separater nativer Link oeffnet die gewaehlte App oder das hinterlegte Projekt. Einfuegen und
-Starten erfolgen dort durch die Person. Es gibt keinen KI-Hintergrunddienst, keine neuen
+sind als Quellen markiert; sie ersetzen keine Projektregeln. Je nach Ziel uebernimmt der
+Browserbegleiter den Text oder ein offizieller App-Link oeffnet einen Entwurf. Der manuelle Weg
+bleibt als Alternative erhalten. Starten erfolgt dort durch die Person. Es gibt keinen KI-Hintergrunddienst, keine neuen
 API-Schluessel und keinen automatischen Versand oder Schreibzugriff auf Fachsysteme.
 
 Die Angebotsvorbereitung verlangt den tatsaechlich verfuegbaren, gelesenen Lexware-Skill des
@@ -28,8 +28,8 @@ behandelt oder ueberschrieben.
 
 Erlaubt sind HTTPS-Adressen von `chatgpt.com` bzw. `claude.ai` sowie die dokumentierten nativen
 App-Links fuer neue/gespeicherte Codex-Chats und Claude-Projekte bzw. lokale Ordner. Abfragen mit
-Prompttext, fremde Hosts, Zugangsdaten oder Textfragmente werden abgewiesen. Kontext wird nie in
-einen Link geschrieben. Leere Ziele bleiben sichtbar unkonfiguriert. Allgemeine App-Adressen
+Prompttext, fremde Hosts, Zugangsdaten oder Textfragmente werden abgewiesen. Gespeicherte
+Navigationslinks enthalten keinen Kontext. Leere Ziele bleiben sichtbar unkonfiguriert. Allgemeine App-Adressen
 sagen ausdruecklich, dass das passende Projekt dort noch auszuwaehlen ist. Native Ordnerziele sind
 geraetebezogen; sie uebernehmen weder Cloud-Chats noch deren Quellen oder Skills automatisch.
 Referenzen: [Codex-App-Links](https://learn.chatgpt.com/docs/reference/commands),
@@ -50,8 +50,8 @@ Der optionale Browserbegleiter unter `operations/browser-uebergabe/` ersetzt auf
 Chrome-Arbeitsplatz Kopieren und Einfuegen. Er verwendet dieselben privaten Projektverknuepfungen
 und denselben vorbereiteten Auftrag. Ein bewusster Klick auf „Im Projekt einfuegen“ oeffnet eine
 neue Projektseite und fuellt dort das noch leere Eingabefeld. Er sendet keine Nachricht und startet
-keine KI. Die manuellen Knoepfe bleiben als Alternative erreichbar. Fuer lokale Codex- und
-Claude-Ziele bleibt der bisherige Weg erhalten.
+keine KI. Die manuellen Knoepfe bleiben als Alternative erreichbar. Native Codex- und Claude-Ziele
+verwenden die unten beschriebene App-Uebergabe.
 
 Die Erweiterung laeuft nur auf explizit eingerichteten Dashboard-Urspruengen und auf ChatGPT-
 Projektseiten. Der Generator `operations/scripts/browser-uebergabe-paket.mjs` erzeugt ihre private
@@ -78,6 +78,29 @@ Dieser Weg bedient die ChatGPT-Oberflaeche; eine offizielle Projekt-Prompt-API i
 Die [dokumentierten App-Links](https://learn.chatgpt.com/docs/reference/commands) mit `prompt`
 betreffen lokale Chats und ersetzen keine ChatGPT-Projektzuordnung. Einrichtung, Pruefung und
 Grenzen stehen in [BROWSER-UEBERGABE.md](BROWSER-UEBERGABE.md).
+
+### Direkte Entwuerfe in Codex und Claude (#1404)
+
+`prozess-app-entwurf.mjs` ergaenzt im echten Uebergabeklick einen fluechtigen offiziellen App-Link.
+Codex bekommt `prompt` und behaelt den eingerichteten `path` bzw. `originUrl`. Claude bekommt `q`;
+bei Claude Code bleibt `folder` erhalten. Unterstuetzt werden ausschliesslich neue Chats/Code-
+Entwuerfe. Bestehende Chats oder Cloud-Projektadressen bekommen keinen vorgetaeuschten Direktweg.
+Ein allgemeines neues Chat-Ziel zeigt ausdruecklich, dass noch kein Projekt hinterlegt ist.
+
+Das Dashboard erzeugt den Textparameter des nativen App-Links erst beim Klick. Es schreibt ihn weder in
+seine HTTP-Adresse noch in einen dauerhaften `href`, die Konfiguration, Browserablagen oder einen
+API-Aufruf. Anders als der ChatGPT-Begleiter verwendet dieser Weg die Textparameter des jeweiligen
+App-Protokolls. Betriebssystem und Ziel-App verarbeiten diesen Link; deren Speicherverhalten kann
+das Dashboard nicht steuern. Die gemeinsame Validierung gespeicherter Ziele bleibt unveraendert
+streng und verbietet darin weiterhin Prompt-Parameter.
+
+Die App-Uebergabe hat keinen Erfolgsrueckkanal. Das Dashboard meldet deshalb nur „Uebergabe
+angefordert“, niemals eine bestaetigte Einfuegung. Die Person prueft den Entwurf und startet selbst.
+Claude Code verlangt bei Ordnerlinks einen eigenen Bestaetigungsdialog; das Dashboard bestaetigt
+ihn nicht. Das vollstaendig kodierte Ziel ist auf 12.000 Zeichen begrenzt, damit insbesondere
+Claudes dokumentierte Textkuerzung vermieden wird. Zu lange oder nicht verlustfrei uebertragbare
+Angaben bleiben vollstaendig im Eingabefeld und ergeben eine klare Fehlermeldung mit Alternative.
+Details und Quellen: [APP-UEBERGABE.md](APP-UEBERGABE.md).
 
 ## Starten (Mitarbeiter/Admins)
 
@@ -413,9 +436,10 @@ ist überholt: Shopify-Daten kommen als lokaler Export bzw. live (Abschnitte 8�
 gibt es seit 2026-09-24 (1e). Weiterhin **kein** Ziel:
 
 - Google Ads und GA4 im Control Center (erst nach einer Sichtbarkeitsentscheidung; Systemzustand nennt das).
-- Schreiben nach Shopify außer dem Ladenverkauf von Sonderposten (Abschnitt 13) und der Versandbuchung bei
-  „An Kunden raus“ (Abschnitt 17) – Preise, Produkte und Bestellungen bleiben im Shopify-Admin bzw. im Workflow
-  mit Gates.
+- Schreiben nach Shopify außer dem Ladenverkauf von Sonderposten (Abschnitt 13), der Versandbuchung bei
+  „An Kunden raus“ (Abschnitt 17) und bei „Erledigt“ samt Abgleich (Abschnitt 24) – Preise, Produkte und
+  Bestellungen bleiben im Shopify-Admin bzw. im Workflow mit Gates. Storniert oder zurückgenommen wird in
+  Shopify nie automatisch.
 - KI-Automatik mit Schreibzugriff.
 - Ein zweiter Aufgabenspeicher neben GitHub Issues (Abschnitt 1); Betriebsdaten liegen nur lokal unter
   `$TP_PRIVAT_DIR`.
@@ -663,12 +687,14 @@ fälligen Muster-Nachfragen und Belege zählen zu Laden). Sieben Zeilen, der Res
 Fehlt eine Quelle (Bestellungen, Auftragsfluss, Fälle …), steht „Liste unvollständig“ statt „Alles
 erledigt“. Darunter ruhig **„Im Hintergrund“**: Muster-Nachfragen (was der automatische Versand
 übernimmt; nur was ein Mensch tun muss, steht oben als To-do – `teileNachfassen()`), „Wartet auf andere“
-(Lieferant/Kunde, aufklappbar per `?ww=1`), Lieferantenpostfach (§ 24) und der Datenstand. Laden- und
+(Lieferant/Kunde, aufklappbar per `?ww=1`), Lieferantenpostfach (§ 25) und der Datenstand. Laden- und
 Montage-Kacheln nur, wenn die Apps eingerichtet sind. „Alles“ zeigt die Vereinigung aller Bereiche
 (`fuerSicht('alles')`), nicht mehr die frühere Inhaber-Auswahl.
 
 Ein Liefertermin in der Zukunft heißt „kommt bis …“ (Lieferant ist dran), ein überschrittener ist rot
 in der Liste – vorher sagte die Warteübersicht „Nachhaken“, während die Liste schwieg.
+„In Shopify noch offen“ (§ 24) steht seither als Zeilen dieser Liste (`shopifyAbgleichTodos()`), nicht
+als eigener Block.
 
 ### 9a. „Heute" mit To-dos (seit 2026-10-01)
 
@@ -701,9 +727,10 @@ To-dos werden nicht erfasst, sondern abgeleitet: `docs/ai-dashboard/lib/todos.mj
 | Freigabe | Entwicklungsaufgaben (`issues.json`) | Status Freigabe oder Review durch Mensch; nur Inhaber |
 | Shop-Wache | `/api/shopwache/status` | Ampel gelb/rot; nur Inhaber |
 | Neue Service-Anfrage | `/api/kunden/serviceanfragen` | Status „neu“; gelb ab 1, rot ab 3 Tagen (seit 2026-10-19) |
-| Storno vom Lieferanten | `/api/einkauf/belege` | Storno-Beleg zu einer Shop-Bestellung, nicht erledigt; immer rot (§ 24) |
-| Lieferschein da – Ware angekommen? | `/api/einkauf/belege` | Lieferschein, bei uns noch „bestellt“; gelb (§ 24) |
-| Lieferantenbelege zuordnen | `/api/einkauf/belege` | Vorschläge („gehört zu #1041?“), eine Sammelzeile (§ 24) |
+| Storno vom Lieferanten | `/api/einkauf/belege` | Storno-Beleg zu einer Shop-Bestellung, nicht erledigt; immer rot (§ 25) |
+| Lieferschein da – Ware angekommen? | `/api/einkauf/belege` | Lieferschein, bei uns noch „bestellt“; gelb (§ 25) |
+| Lieferantenbelege zuordnen | `/api/einkauf/belege` | Vorschläge („gehört zu #1041?“), eine Sammelzeile (§ 25) |
+| In Shopify noch offen | `/api/einkauf/shopify-abgleich` | im Dashboard „raus“/„erledigt“, in Shopify offen; gelb, Knopf „In Shopify nachbuchen“ in der Zeile (§ 24) |
 
 Sortierung: rot vor gelb vor normal, darin das Älteste zuerst.
 
@@ -1123,8 +1150,9 @@ alle wartenden Artikel der Bestellung als ein Paket.
 
 **Nicht gebucht** werden Testbestellungen (Vermerk „uebersprungen“) und stornierte Bestellungen. „Kunde hat
 Muster“ bei Mustern aus eigenem Bestand setzt „raus“ mit: gebucht wird ohne Versandmail (der Kunde hat sie
-schon); die Rückmeldung nennt das Ergebnis der Buchung. **Nichts rückwirkend:** Positionen, die vor dem 13.10. auf „raus“ standen, tragen keinen
-Vermerk und werden nie gebucht – dort bleibt der Hinweis „In Shopify noch nicht als versendet gebucht“.
+schon); die Rückmeldung nennt das Ergebnis der Buchung. **Rückwirkend nur auf Klick (seit 2026-10-19):** Positionen, die vor dem 13.10. auf
+„raus“ standen, tragen keinen Vermerk. Sie werden gebucht, wenn jemand sie auf „Erledigt“ setzt, oder über „In Shopify nachbuchen“ in der
+Abweichungsliste (Abschnitt 24) – nie still im Hintergrund.
 
 **Nachholen.** Scheitert die Buchung (Recht fehlt, kein Zugang, Netz, zurückgehalten), steht der Schritt
 trotzdem. Die Zeitleiste zeigt rot „Versand nicht in Shopify gebucht – …“ mit „In Shopify buchen“, die
@@ -1433,7 +1461,70 @@ Abmeldung, mit Abmelde-Satz in jeder Mail. WhatsApp und Shopify Messaging waren 
   liegt; ein Posteingangs-Abgleich ist nicht gebaut. Die rechtliche Einordnung (§ 7 UWG, Mail ohne
   Newsletter-Einwilligung) klärt der Inhaber mit dem Rechtstexter (w-083).
 
-## 24. Lieferantenbelege aus dem Postfach (seit 2026-10-19, #1427)
+## 24. Zwei-Wege-Abgleich der Bestellungen mit Shopify (seit 2026-10-19, #1419)
+
+Inhaber 2026-10-19: „Gleich alles in unserem Dashboard immer mit Shopify ab, was Bestellungen angeht – dort
+synchron arbeiten und abhaken.“ Regeln ohne Datei und ohne Shopify in `operations/lib/shopify-abgleich.mjs`
+(`uebernimmAusShopify()`, `abweichungen()`), Anbindung in `scripts/dashboard-api.mjs`, Liste
+`ansichten/einkauf/shopify-abgleich.mjs` (auf „Heute“).
+
+**Konfliktregel: „Versendet“ gewinnt in beide Richtungen.** Wer zuerst erfüllt, gilt. Nichts wird automatisch
+zurückgenommen – weder hier noch in Shopify (kein `fulfillmentCancel`).
+
+**Shopify → Control Center (automatisch).** Nach jedem neuen Bestellexport (`orders.json`, Größe/Zeit/Inode als
+Kennung) wendet der Dashboard-Dienst den Shopify-Stand an: beim ersten Lesen (Einkauf, Bestellungen, Akte,
+Statuswechsel) und zusätzlich jede Minute per Zeitgeber, auch ohne offene Seite. Bewusst im Dienst und nicht im
+Sync-Dienst: so hat `auftragsstatus.json` genau einen Schreiber; zwischen Lesen und Schreiben steht kein
+`await`.
+- Position in Shopify vollständig erfüllt (aktuelle Menge > 0, `unfulfilledQuantity` 0) und lokal vor „raus“
+  (auch ohne Stand) → `status: raus`, `rausVon: Shopify`, `rausNotiz: „aus Shopify übernommen“`, `rausAm` =
+  Zeitpunkt der Sendung laut Shopify, `ausShopify {am, grund, vonStatus, shopifyAm}`, Vermerk
+  `shopifyVersand.status: bereits` (`grund: aus-shopify`).
+- Schon „raus“/„erledigt“: der Schritt bleibt; ein Vermerk „fehler“/„unklar“/„ausstehend“ oder gar keiner wird
+  auf „bereits“ richtiggestellt (der rote Hinweis „Versand nicht gebucht“ fällt dann weg).
+- Teilmengen, aus der Bestellung entfernte Zeilen und Exporte ohne Mengen entscheiden nichts. Nie herabstufen,
+  „erledigt“ nie überschreiben.
+- Stornierte Bestellung: Positionen mit begonnenem Stand werden „erledigt“ (`erledigtNotiz: „In Shopify
+  storniert – aus Shopify übernommen“`), Positionen ohne Stand bleiben ohne Eintrag (die Bestellung ist ohnehin
+  keine offene Arbeit).
+- Hat jemand die Position **nach** der Sendung/Stornierung von Hand zurückgesetzt („Zurück auf offen“) oder
+  wieder geöffnet, gilt seine Entscheidung – sonst höbe jeder Lauf sie wieder an.
+- Idempotent; Protokoll je Bestellung „Aus Shopify übernommen · #… : N Artikel → An Kunden raus“ (Person
+  „Shopify“), Audit `shopify-abgleich`. Eine beschädigte Ablage wird nie überschrieben (Dienstprotokoll
+  `[abgleich]`, die Liste meldet den Fehler).
+
+**Control Center → Shopify bei „Erledigt“.** Jeder Weg auf „Erledigt“ – Einzelschritt im Einkauf, Zeitleiste
+(Ware „erledigt“, Muster-Ergebnisse „Kunde hat bestellt“/„kein Interesse“/„nicht verfügbar“), „Kunde fertig“
+(Bestellliste, Haken auf „Heute“) und „Ohne Einkauf abschließen…“ – bucht die Positionen, die in diesem Klick
+erledigt wurden, über denselben `versandBuchen()`-/`bucheVersand()`-Weg wie „raus“ (frisch lesen, Gegenprobe,
+Vermerk `shopifyVersand`), **ohne Mail an den Kunden** (`versandMail: false` an der Position, gilt auch beim
+Nachholen). Ware und Muster gleich. Ist danach keine Ware der Bestellung mehr offen, geht die Eigenleistung
+(Kettelservice) mit. Positionen mit Vermerk gebucht/bereits/übersprungen werden nicht erneut versucht;
+Testbestellungen und stornierte Bestellungen bucht Shopify nie. „Ohne Einkauf abschließen…“ schickt seit
+2026-10-19 einen Aufruf für alle Artikel (`POST /api/kunden/bestellung-fertig`) statt einen je Artikel – eine
+Buchung statt N. Die Antwort trägt `shopify {status, meldung, …}`; die Rückmeldung lautet z. B.
+„Status: Erledigt · In Shopify als versendet gebucht (ohne Mail an den Kunden).“
+
+**Rücknahme.** „Wieder öffnen…“ und „Zurück auf offen…“ ändern nur das Control Center. Ist der Versand gebucht,
+sagt der Dialog: „In Shopify bleibt die Bestellung als versendet gebucht – das Control Center storniert dort
+nichts.“
+
+**Abweichungsliste „In Shopify noch offen“.** Auf „Heute“ (nicht in der Website-Sicht), nur wenn es Zeilen gibt;
+je Bestellung eine Zeile mit Artikeln, Stand und Datum, Knopf „In Shopify nachbuchen“ (ohne Mail). Die Zahl im
+Kopf ist die Zahl der Zeilen. Gezählt wird: lokal „raus“/„erledigt“, laut Export in Shopify offen, nicht storniert,
+keine Testbestellung, Vermerk nicht „übersprungen“, und keine Buchung, die jünger ist als der Export minus
+30 Minuten (`EXPORT_NACHLAUF_MS` – die kennt der Export noch nicht). Deckt Altfälle vor dem 13.10. und
+gescheiterte Buchungen ab. Endpunkte: `GET /api/einkauf/shopify-abgleich` (alle Rollen, lesend;
+`{verfuegbar, fehler, abweichungen: [{orderId, orderName, kunde, lineItemIds, positionen, seit}],
+letzterAbgleich}`), `POST /api/einkauf/auftragsstatus` mit `aktion: "shopifyNachbuchen", orderId` (Schreibpfad,
+Rolle „lesen“ 403; 409, wenn die Bestellung nicht mehr abweicht). Nachbuchen bucht auch Positionen mit altem
+Vermerk „gebucht“, wenn Shopify sie offen führt (Sendung dort storniert) – `bucheVersand` liest frisch, doppelt
+gebucht wird nie.
+
+**Tests** sprechen nie echtes Shopify (`operations/tests/shopify-abgleich.test.mjs`,
+`docs/ai-dashboard/tests/shopify-abgleich-api.test.mjs` mit `versand-attrappe.mjs`).
+
+## 25. Lieferantenbelege aus dem Postfach (seit 2026-10-19, #1427)
 
 Inhaber 19.10.: „Schnittstelle zu Gmail – wo kommen Lieferscheine, Auftragsbestätigungen, wurde es
 abgehakt, ist es mit Shopify synchron“. Neuer Reiter **Einkauf › Belege** (`ansichten/einkauf/belege.mjs`).

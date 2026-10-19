@@ -10,7 +10,7 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
     „Im Hintergrund“ statt Musterkarten und Warteübersicht, „Liste unvollständig“ statt falschem „Alles
     erledigt“. Fehler behoben: „Alles“ verschwieg Laden-Arbeit; neue Service-Anfragen fehlten auf Heute
     (vier hingen seit drei Tagen auf „neu“); Liefertermin in der Zukunft hieß „Nachhaken“.
-  - **Einkauf › Belege** (neu, Architektur § 24): ABs, Lieferscheine, Stornos aus dem Postfach, zugeordnet
+  - **Einkauf › Belege** (neu, Architektur § 25): ABs, Lieferscheine, Stornos aus dem Postfach, zugeordnet
     zu Shop-Bestellungen und abgeglichen mit unserem Stand und Shopify. Storno und Lieferschein ohne Haken
     werden To-dos auf Heute, Vorschläge eine Sammelzeile. Marke „AB 14.10. · LS 16.10.“ an bestellten
     Posten im Einkauf.
@@ -30,6 +30,42 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Bestellnummer im Betreff steht. Anhänge (PDF) werden nicht gelesen.
 - **Nächste Stufe:** Postfach-Lauf einrichten (nach dem Merge), eine Woche beobachten, dann entscheiden,
   ob „AB fehlt seit N Tagen“ eine Regel wird.
+
+## 2026-10-19 · „Muster nachfassen“: Karte nach einem Versandlauf aktuell
+
+- **Geändert:** Nach dem ersten Lauf (4 Mails) standen die Kunden in einem offenen Tab weiter als „offen“ –
+  die Bestellzeilen werden je Tab nur einmal geladen, nur die Vorlage (mit „letzter Lauf“) alle 30 s.
+  Meldet `/api/kunden/muster-texte` einen neuen Lauf (`neuerVersandlauf()`), lädt „Heute“ die
+  Bestellzeilen nach (`ladeBestellzeilenNeu()`); ebenso nach einem abgelehnten „Jetzt senden“.
+  `dashboard:pruefen` kopiert `nachfassen/` weiterhin nicht (Kommentar: sonst echte Mails aus der Prüfung).
+- **Getestet:** Unit-Test `neuerVersandlauf` (erster Abruf, erster Lauf, neuer Lauf, gleicher Lauf),
+  `npm test` grün, `dashboard:pruefen` Heute/Kunden alle Breiten OK.
+- **Risiken/Annahmen:** Aktualisiert wird, solange „Heute“ offen ist und offene Zeilen zeigt.
+- **Nächste Stufe:** —
+
+## 2026-10-19 · Bestellungen: Zwei-Wege-Abgleich mit Shopify (#1419)
+
+- **Geändert:** Was in Shopify versendet ist, steht im Control Center nach dem nächsten Bestellexport
+  mindestens auf „An Kunden raus“ („aus Shopify übernommen“); stornierte Bestellungen sind keine offene Arbeit
+  mehr. Umgekehrt bucht jedes „Erledigt“ (Einkauf, Zeitleiste, Muster-Ergebnis, „Kunde fertig“, „Ohne Einkauf
+  abschließen…“) den Versand in Shopify, falls dort noch offen – ohne Mail an den Kunden. „Wieder öffnen“ und
+  „Zurück auf offen“ storniert in Shopify nichts und sagt das. Auf „Heute“ steht, nur wenn es sie gibt, die
+  Liste „In Shopify noch offen“ (im Dashboard abgehakt, in Shopify offen) mit „In Shopify nachbuchen“.
+  Konfliktregel: „Versendet“ gewinnt, nichts wird automatisch zurückgenommen (ARCHITEKTUR §24).
+- **Getestet:** 7 neue Regeltests, 11 neue API-Tests (Attrappe, nie echtes Shopify), 2 Tests an die neue Regel
+  angepasst; `npm test` 3067/3067, `dashboard:test` 413/413, `dashboard:pruefen` nur OK (28 Ansichten,
+  0 px Überlauf bis 360 px). Trockenlauf gegen eine Datenkopie: 1 Position „bestellt“ → „raus“ (der Fall
+  von heute), 36 Vermerke richtiggestellt, 0 Stornos, zweiter Lauf 0 Änderungen; Abweichungsliste 1 Bestellung
+  (Muster, abgeschlossen ohne Versand, in Shopify zurückgehalten). Klickstrecke gegen die Kopie mit
+  Shopify-Attrappe: „In Shopify nachbuchen“ 1 → 0 (eine Buchung, ohne Mail); „Kunde fertig“ an einer
+  Kundenbestellung: eine Buchung für 3 Artikel, ohne Mail, Rückfrage nennt Shopify; „Ohne Einkauf
+  abschließen“ an einer Testbestellung: nichts gebucht; 390 px ohne Überlauf, 0 JS-Fehler.
+- **Risiken/Annahmen:** Eine Position zählt erst als in Shopify erfüllt, wenn die ganze Menge erfüllt ist.
+  „Ohne Einkauf abschließen“ für eine Bestellung, die in Wahrheit storniert ist, bucht sie als versendet – der
+  Dialog sagt deshalb „zuerst in Shopify stornieren“. Bestellungen, die lokal storniert erledigt werden, könnten
+  beim Lieferanten noch bestellt sein (Abbestellen bleibt Handarbeit).
+- **Nächste Stufe:** Bei „in Shopify storniert, beim Lieferanten bestellt“ einen Hinweis „beim Lieferanten
+  abbestellen?“ zeigen.
 
 ## 2026-10-19 · „Muster nachfassen“: Blindkopie abschaltbar
 
@@ -124,6 +160,31 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Seite gelesen (gerollt als Paket); Nähe = PLZ 10–14 und 16.
 - **Nächste Stufe:** Echte Kettelpreise des Kettlers eintragen und je Auftrag „Kettler lohnt
   sich“ mit Fahrtkosten rechnen.
+
+## 2026-10-16 · Angaben als Codex- und Claude-App-Entwurf oeffnen (#1404)
+
+- **Geaendert:** Neue App-Ziele erhalten „Mit Angaben in … oeffnen“. Ein echter Klick uebergibt
+  den vollstaendigen Auftrag mit Projektordner bzw. Repository-Zuordnung an die dokumentierten
+  App-Protokolle. Keine Zwischenablage, kein neuer Server-Endpunkt und kein automatischer KI-Start.
+  Gespeicherte Ziele bleiben promptfrei. Ein allgemeiner neuer Claude-Chat benennt das fehlende
+  Projekt; vorhandene Chats und nicht unterstuetzte Cloud-Projekte behalten den manuellen Weg.
+  Der native Link wird bei 12.000 kodierten Zeichen ohne Kuerzung abgewiesen; alle Angaben bleiben
+  erhalten. Details: [APP-UEBERGABE.md](APP-UEBERGABE.md).
+- **Getestet:** `npm test` 2.960/2.960, darunter 15 neue gezielte Pruefungen fuer Texttreue,
+  Prozentkodierung, Projektparameter, echte Klicks, Laengengrenzen und Kontext-/Sitzungswechsel.
+  Ein vorheriger einzelner Dashboard-Lauf traf den bestehenden 500-ms-Aktualisierungstest;
+  zwei anschliessende vollstaendige Laeufe waren gruen. Browserpruefung gegen Datenkopie:
+  36 Ansichts-/Rollen-/Breitenkombinationen (360, 390, 1440 px), kein Ueberlauf oder JS-Fehler.
+  Der echte Codex-Knopf loest den nativen Aufruf aus und meldet ausschliesslich „Uebergabe
+  angefordert“. Der Sichtvergleich in der Ziel-App ist noch offen: Codex darf die eigene
+  Oberflaeche nicht auslesen; Claude zeigte beim bisherigen Aufruf keinen verifizierbaren Entwurf.
+- **Risiken/Annahmen:** Die App muss am betreffenden Geraet installiert und das Projekt verfuegbar
+  sein. Die Dashboard-Rueckmeldung bestaetigt keine Einfuegung. Claude Code fragt bei Ordnerlinks
+  separat nach; ein ausgewaehlter Ordner-Chip beweist kein spaeter ausgefuehrtes Arbeitsverzeichnis.
+  Der Text steht im fluechtigen nativen Protokoll-Link; Betriebssystem und Ziel-App verarbeiten ihn
+  ausserhalb des Dashboard-Speicherverhaltens. Lokale Ordner uebernehmen keine alten Cloud-Chats.
+- **Naechste Stufe:** Vollstaendigen Text und Ziel in den echten Apps bestaetigen, Claude-Ziele
+  abschliessend zuordnen und erst danach den Dienst nachziehen.
 
 ## 2026-10-16 · Unklare Mustersperren und Teilfreigaben absichern (#1400)
 

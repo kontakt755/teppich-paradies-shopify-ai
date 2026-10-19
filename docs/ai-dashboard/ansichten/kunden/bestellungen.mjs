@@ -17,6 +17,7 @@ import { kunden, telLink, kundenAuftragKarte, ZAHLUNG_TEXT, VERSAND_TEXT, status
 import { zeitleisteBlock, auftragAusZeile, zeitleisteKlick } from './zeitleiste.mjs';
 import { oeffneVersandDialog } from '../einkauf/versand.mjs';
 import { bestellinhalt } from '../../lib/bestellinhalt.mjs';
+import { versandRueckmeldung } from '../../lib/versand.mjs';
 
 /** Setzt den Auftragsfluss-Status fuer ALLE Positionen einer Bestellung auf einmal (Bereich Kunden/Bestellungen). */
 async function setzeAuftragsstatusFuerBestellung(orderId, status) {
@@ -129,7 +130,8 @@ async function kundeFertigSetzen(orderId) {
   const zeile = (kunden.bestellungen?.zeilen || []).find(z => z.orderId === orderId);
   const ids = (zeile?.auftrag?.positionen || []).filter(p => p.lineItemId).map(p => p.lineItemId);
   if (!ids.length) return;
-  if (!window.confirm(`${zeile.orderName}: alle ${ids.length} Artikel dieser Bestellung wirklich auf „Erledigt" setzen?`)) return;
+  const test = zeile.auftrag?.testbestellung;
+  if (!window.confirm(`${zeile.orderName}: alle ${ids.length} Artikel dieser Bestellung wirklich auf „Erledigt" setzen?${test ? '' : '\n\nIn Shopify wird die Bestellung als versendet gebucht, falls noch nicht geschehen – ohne Mail an den Kunden.'}`)) return;
   try {
     const r = await fetch('/api/kunden/bestellung-fertig', {
       method: 'POST', headers: { 'content-type': 'application/json' },
@@ -137,7 +139,8 @@ async function kundeFertigSetzen(orderId) {
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) { toast(`Fehler: ${j.error || r.status}`, 'crit'); return; }
-    toast(`${zeile.orderName}: ${j.anzahl} Artikel abgeschlossen`);
+    const rm = versandRueckmeldung(`${zeile.orderName}: ${j.anzahl} Artikel abgeschlossen`, j.shopify);
+    toast(rm.text, rm.ton, rm.ton ? { dauer: 9000 } : {});
     kunden.bestellungen = null;
     einkauf.auftragsstatus = null;
     ensureKundenBestellungen();

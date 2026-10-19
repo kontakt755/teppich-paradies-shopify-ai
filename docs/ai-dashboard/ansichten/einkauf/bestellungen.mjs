@@ -73,7 +73,7 @@ function afStatusZelle(p) {
   }
   const naechster = afNaechsterStatus(status);
   const aktion = naechster === 'geliefert' && istUeberKettler(eintrag) ? 'Als beim Kettler abgeholt markieren' : AF_AKTIONS_LABEL[naechster];
-  const btn = naechster ? `<button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="${naechster}" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}">${esc(aktion)}</button>`
+  const btn = naechster ? `<button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="${naechster}" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}"${naechster === 'erledigt' ? ' title="Ist der Versand in Shopify noch nicht gebucht, wird er dort ohne Mail an den Kunden gebucht"' : ''}>${esc(aktion)}</button>`
     : status === 'erledigt' ? `<button type="button" class="btn btn-sm btn-ghost" data-af-reopen="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" title="Abschluss rückgängig machen">Wieder öffnen…</button>` : '';
   // Der Stand ist ein ruhiger Text, kein zweiter Knopf - deshalb kein "badge status" mehr.
   const zusatz = status ? ` · ${fmtDateTime(eintrag.aktualisiertAm)} · @${esc(eintrag.aktualisiertVon)}`
