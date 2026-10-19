@@ -59,8 +59,8 @@ wenn dort genau das passende Bild liegt.
    `~/teppich-paradies-analyse/produktbilder/raumbilder-warteschlange/warteschlange.tsv`
    (Auftrag dort in `AUFTRAG.md`). Jede Farbe ohne echtes Raumbild landet dort:
    Prio 1 = Raumbild einer Schwesterfarbe im Shop, Prio 2 = Herstellerbild der Linie in
-   anderer Farbe, Prio 3 = ohne Vorlage. Der Bilder-Chat erzeugt daraus per Higgsfield
-   umgefaerbte Raumbilder; diese Recherche erzeugt selbst keine KI-Bilder.
+   anderer Farbe, Prio 3 = ohne Vorlage. Der Bilder-Chat erzeugt daraus per Gemini (seit
+   19.10.2026, vorher Higgsfield) umgefaerbte Raumbilder; gemusterte Ware nie generativ; diese Recherche erzeugt selbst keine KI-Bilder.
 
 ## Einzelne Linie von Hand
 
