@@ -17,6 +17,7 @@ import { metaBereit, metaKonfig } from './konfig.mjs';
 import { erstelleClient, veroeffentliche } from './meta.mjs';
 import { lernstandPfad, medienPfad, socialDir } from './pfade.mjs';
 import { plane } from './planer.mjs';
+import { produktReelSperren } from './produkt-reel.mjs';
 import { findeKandidaten, REGELN, standAus } from './produkt-auswahl.mjs';
 import { ladeLexikonPreise, ladeMusterNachfrage, ladeProdukte, normalisiere } from './shop-quelle.mjs';
 import { BEITRAG_STATUS, INHALT_STATUS, TYPEN } from './status.mjs';
@@ -154,13 +155,14 @@ function texteFuer(beitrag) {
  *     Laeufen postet genau einer, und die Zentrale kann den Beitrag waehrenddessen
  *     nicht veraendern.
  *   - Noch einmal pruefen: eine Freigabe von gestern gilt nicht, wenn heute ein
- *     Bild Bedenken bekommen hat oder das Material verworfen wurde.
+ *     Bild Bedenken bekommen hat oder das Material verworfen wurde. Produkt-Reels
+ *     zusaetzlich live gegen den Shop (Preis, Variante, keine Aktion, Preisstand <= 21 Tage).
  *   - Das Ergebnis jeder Plattform wird sofort gespeichert.
  *   - Unklare Fehler (Antwort nie gesehen) werden nie automatisch wiederholt.
  *   - Hoechstens ein Feed-Beitrag je Lauf; was laenger als 36 Stunden
  *     ueberfaellig ist, geht zurueck in die Freigabe.
  */
-export async function veroeffentlicheFaellige(db, { env = process.env, jetzt = new Date(), trocken = false, dir = socialDir(), client = null, melde = () => {} } = {}) {
+export async function veroeffentlicheFaellige(db, { env = process.env, jetzt = new Date(), trocken = false, dir = socialDir(), client = null, melde = () => {}, holen = globalThis.fetch } = {}) {
   const meta = client ? { client, bereit: true } : clientAus(env, { trocken, protokoll: melde });
   const bericht = { faellig: 0, veroeffentlicht: [], fehler: [], zurueck: [], uebersprungen: [], trocken };
 
@@ -200,6 +202,15 @@ export async function veroeffentlicheFaellige(db, { env = process.env, jetzt = n
     const inhalt = db.inhalt(beitrag.inhalt_id);
     const { sperren } = pruefe({ beitrag, inhalt, medien: medienZuBeitrag(db, beitrag) });
     if (inhalt.status === INHALT_STATUS.VERWORFEN) sperren.push('Das Material wurde nach der Freigabe verworfen.');
+    // Produkt-Reel: der Preis steht fest im Video - stimmt er mit dem Shop von jetzt noch ueberein?
+    if (inhalt.typ === 'produkt_reel' && !sperren.length) {
+      const live = await produktReelSperren(inhalt, { holen, jetzt });
+      sperren.push(...live);
+      // Ein falscher Preis im Video bleibt falsch: festhalten, damit die automatische Freigabe ihn nicht
+      // wieder einplant. Nur "nicht moeglich" (Shop kurz nicht erreichbar) darf beim naechsten Takt neu versuchen.
+      const bleibend = live.filter(f => !/^Live-Prüfung nicht möglich/.test(f));
+      if (bleibend.length && !trocken) db.inhaltAendern(inhalt.id, { daten: { ...inhalt.daten, liveFehler: bleibend.join(' · ') } });
+    }
     if (sperren.length) {
       if (!trocken) {
         db.beitragAendern(beitrag.id, { status: BEITRAG_STATUS.FREIGABE, fehler: `Nach der Freigabe gesperrt: ${sperren.join(' · ')}` });

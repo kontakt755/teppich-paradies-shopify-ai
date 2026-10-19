@@ -76,6 +76,24 @@
     return r ? r.cm : null;
   }
 
+  // Gemessene Raumseiten, kein Bestellmass: nur an eigene Produktlinks
+  // haengen. Varianten, andere Parameter und Sprungmarken bleiben erhalten.
+  function produktUrl(href, raum, ursprung) {
+    try {
+      var u = new URL(href, ursprung);
+      if (u.origin !== ursprung || !/\/products\/[^/]+\/?$/.test(u.pathname)) return href;
+      u.searchParams.delete('tp_raum_b');
+      u.searchParams.delete('tp_raum_l');
+      if (raum && [raum.breite, raum.laenge].every(function (cm) {
+        return Number.isInteger(cm) && cm >= 50 && cm <= 5000;
+      })) {
+        u.searchParams.set('tp_raum_b', String(raum.breite));
+        u.searchParams.set('tp_raum_l', String(raum.laenge));
+      }
+      return u.pathname + u.search + u.hash;
+    } catch (e) { return href; }
+  }
+
   // Geldbetrag: "500", "500,50", "1.200", "1.200,50 €". null, wenn unklar.
   function betrag(text) {
     var t = String(text == null ? '' : text).replace(/ /g, '').replace(/\s|€|euro?/gi, '');
@@ -227,9 +245,15 @@
     };
   }
 
+  // Raumseiten wie summeRaeume() der Raumhilfe auf 0,01 m² runden, bevor
+  // ganze Pakete berechnet werden. Eine direkte m²-Eingabe bleibt erhalten.
+  function paketFlaeche(flaeche, raum) {
+    return raum ? Math.round(raum.breite * raum.laenge / 100) / 100 : flaeche;
+  }
+
   // Paketrechnung mit dem guenstigsten lieferbaren Paket aus den Varianten der
   // Treffer-Ansicht. null, wenn das Produkt keine Paketware ist.
-  function paketAngebot(produkt, flaeche) {
+  function paketAngebot(produkt, flaeche, raum) {
     var qmPaket = Number(produkt && produkt.qm_paket);
     if (!(qmPaket > 0)) return null;
     var preis = 0;
@@ -238,7 +262,7 @@
       var p = Number(v.price) / 100;
       if (p > 0 && (!preis || p < preis)) preis = p;
     });
-    return paketRechnung(qmPaket, preis, flaeche);
+    return paketRechnung(qmPaket, preis, paketFlaeche(flaeche, raum));
   }
 
   // Guenstigster Preis je m²: Meterware (Rollenbreiten, ohne Wunschmass) oder
@@ -309,7 +333,7 @@
     imBudget(liste, qmStufe).forEach(function (e) {
       var b = 0;
       if (e.paket > 0) {
-        var a = paketRechnung(e.paket, e.preis, flaeche);
+        var a = paketRechnung(e.paket, e.preis, paketFlaeche(flaeche, raum));
         if (a) b = a.betrag;
       } else {
         var weg = e.rolle && raum ? raumAngebot(e.rolle, raum.laenge, raum.breite) : null;
@@ -419,6 +443,7 @@
   var logik = {
     raumMass: raumMass,
     raumMassInfo: raumMassInfo,
+    produktUrl: produktUrl,
     qmFlaeche: qmFlaeche,
     preisStufen: preisStufen,
     rollenFlaeche: rollenFlaeche,
@@ -1150,7 +1175,7 @@
   Finder.prototype.abText = function (p) {
     var raum = this.raum();
     var qm = this.flaeche();
-    var a = qm ? paketAngebot(p, qm) : null;
+    var a = qm ? paketAngebot(p, qm, raum) : null;
     if (!a && raum) a = raumAngebot(p, raum.laenge, raum.breite);
     if (a) return ' – für Ihren Raum ab ca. ' + euro(a.betrag);
     return abPreisQm(p) ? ' – ab ' + euro(abPreisQm(p)) + '/m²' : '';
@@ -1238,6 +1263,13 @@
   };
 
   // anhaengen: weitere Karten hinter die vorhandenen ("Weitere Vorschlaege").
+  Finder.prototype.raumLinks = function (ziel) {
+    var raum = this.raum();
+    ziel.querySelectorAll('a[href]').forEach(function (a) {
+      a.setAttribute('href', produktUrl(a.getAttribute('href'), raum, window.location.origin));
+    });
+  };
+
   Finder.prototype.kartenZeigen = function (ziel, produkte, daten, ueber, anhaengen) {
     var self = this;
     if (!anhaengen) {
@@ -1251,6 +1283,7 @@
       self.gezeigt.push(p.titel);
       var item = el('div', 'tp-bf-treffer__item');
       item.appendChild(document.importNode(vorlage, true));
+      self.raumLinks(item);
       var box = self.raumpreisBox(p);
       if (box) item.appendChild(box);
       ziel.appendChild(item);
@@ -1276,7 +1309,7 @@
     }
     if (Number(p.qm_paket) > 0) {
       var qmRaum = this.flaeche();
-      var pa = qmRaum ? paketAngebot(p, qmRaum) : null;
+      var pa = qmRaum ? paketAngebot(p, qmRaum, raum) : null;
       if (!pa) return null;
       box.appendChild(el('p', 'tp-bf-raumpreis__kopf', raum ? 'Für Ihren Raum ' + meter(raum.laenge) + ' × ' + meter(raum.breite) + ' m' : 'Für ca. ' + qmText(qmRaum)));
       zeile('In ganzen Paketen', paketText(pa), 'ca. ' + euro(pa.betrag), false);
@@ -1418,6 +1451,14 @@
   Finder.prototype.verbinden = function () {
     var self = this;
     var dlg = this.dlg;
+    // Farbwahl in einer Karte kann ihre Links neu setzen. Vor Navigation,
+    // neuem Tab oder Kontextmenue die aktuellen Raumseiten erneut anhaengen.
+    ['click', 'auxclick', 'contextmenu'].forEach(function (typ) {
+      dlg.addEventListener(typ, function (e) {
+        var item = e.target.closest && e.target.closest('.tp-bf-treffer__item');
+        if (item) self.raumLinks(item);
+      }, true);
+    });
     dlg.addEventListener('close', function () {
       document.documentElement.classList.remove('tp-bf-offen');
     });

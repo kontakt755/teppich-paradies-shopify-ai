@@ -68,7 +68,9 @@ Umgebung, `$TP_PRIVAT_DIR/social/zugang.env` oder `.env.local` (in dieser Reihen
 | `SOCIAL_UPLOAD_BASIS_URL` | Adresse, die `zugang anlegen` in den Link schreibt | Platzhalter |
 | `SOCIAL_WHATSAPP_GRUPPE` | Name der Firmengruppe, deren Fotos übernommen werden (`WHATSAPP.md`) | – (aus) |
 | `SOCIAL_WHATSAPP_DIR` | Datenordner der WhatsApp-Mac-App | `~/Library/Group Containers/group.net.whatsapp.WhatsApp.shared` |
-| `SOCIAL_AUTO_FREIGABE` | `1` Shop-Inhalte ohne Preisrisiko automatisch freigeben, `2` zusätzlich eigene Fotos mit Einwilligung und Sichtung (Reels laufen mit, nie Angebote) | aus |
+| `SOCIAL_AUTO_FREIGABE` | `1` Shop-Inhalte ohne Preisrisiko automatisch freigeben, `2` zusätzlich eigene Fotos mit Einwilligung und Sichtung (Reels laufen mit, nie Angebote). Produkt-Reels mit echtem Foto laufen ab `1` mit – der Publisher prüft ihren Preis direkt vor dem Posten live | aus |
+| `SOCIAL_REEL_PYTHON` | Python mit numpy, OpenCV und Pillow für `werkzeuge/reel_zoom.py` | – (dann `uv run --script`) |
+| `SOCIAL_REEL_SCHRIFT`, `SOCIAL_REEL_LOGO` | Schrift (Inter) und Logo der Produkt-Reels | `$TP_PRIVAT_DIR/social/werkzeug/inter-variable-font.woff2`, `…/logo.png` |
 | `TP_SOCIAL_DIR` | abweichendes Datenverzeichnis (Tests, Probeläufe) | `$TP_PRIVAT_DIR/social` |
 
 Die Zentrale verlangt im Netz die Zugänge des Control Centers
@@ -81,14 +83,20 @@ lib/       pfade · konfig · status · db            Grundlagen
            eingang · bildpruefung · pruefung       Baustellen-Eingang
            shop-quelle · produkt-auswahl           Shop-Scout
            vorlagen · rendern · werkstatt · reel   Bild-Werkstatt
+           produkt-reel                            Produkt-Reels aus einem Standbild (Zoom, Preis live geprüft)
+           highlights                              was in den Instagram-Highlights fehlt
            texte · planer · freigabe               Regeln
            meta · auswertung · ablauf · zugang     Veröffentlichen, Messen, Abläufe
            whatsapp                                Auffangnetz aus der Firmengruppe
 scripts/   social.mjs (Kommandozeile) · server.mjs (Zentrale + Upload) · dienste-einrichten.sh
+werkzeuge/ reel_zoom.py (Zoom-Reel zeichnen und die Schärfe prüfen; Python über uv)
 ui/        zentrale.* · anmelden.html · upload.html
 tests/     node --test, ohne Netz und ohne Browser
 ```
 
 Voraussetzungen: macOS (für `sips` und launchd), Node 24 oder neuer
 (`node:sqlite`), die vorhandenen devDependencies (`puppeteer`). Für Reels
-zusätzlich `ffmpeg`.
+zusätzlich `ffmpeg`, für Produkt-Reels `uv` (`brew install uv`; holt numpy, OpenCV
+und Pillow beim ersten Lauf selbst) sowie Schrift und Logo unter
+`$TP_PRIVAT_DIR/social/werkzeug/` (Inter-Variable als `inter-variable-font.woff2`,
+Logo als `logo.png`, 400 px breit, transparent).

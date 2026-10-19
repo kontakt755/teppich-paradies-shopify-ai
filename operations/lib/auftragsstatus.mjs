@@ -122,9 +122,11 @@ function clip(text, max) {
  * @param {string} [p.sendungsnummer]  nur bei "raus": Sendungsnummer des Pakets (geht mit der Versandbuchung an Shopify)
  * @param {string} [p.versanddienst]   nur bei "raus", z. B. "GLS"
  * @param {boolean} [p.versandMail]    nur bei "raus": bekommt der Kunde die Versandmail? (gilt auch beim Nachholen)
+ * @param {'kettler'|null} [p.ueber]   nur bei "bestellt": Ware geht erst an unseren Kettelservice.
+ *                                     null nimmt den Vermerk zurueck, ohne Angabe bleibt er, wie er war.
  * @param {Date}   [p.jetzt]
  */
-function bereiteStatusVor(alle, { orderId, lineItemId, status, actor, bestellmenge, lieferantBestellnummer = null, notiz = null, sendungsnummer = null, versanddienst = null, versandMail = null, jetzt = new Date() } = {}) {
+function bereiteStatusVor(alle, { orderId, lineItemId, status, actor, bestellmenge, lieferantBestellnummer = null, notiz = null, sendungsnummer = null, versanddienst = null, versandMail = null, ueber, jetzt = new Date() } = {}) {
   const key = positionKey(orderId, lineItemId);
   if (!key) throw new AuftragsstatusFehler('orderId und lineItemId sind Pflicht');
   if (!STATUS_ORDER.includes(status)) throw new AuftragsstatusFehler(`Unbekannter Status "${status}"`);
@@ -146,6 +148,7 @@ function bereiteStatusVor(alle, { orderId, lineItemId, status, actor, bestellmen
   };
   if (status === 'bestellt') {
     eintrag.lieferantBestellnummer = lieferantBestellnummer ? clip(lieferantBestellnummer, 200) : (bisher.lieferantBestellnummer || null);
+    if (ueber !== undefined) eintrag.ueber = ueber === 'kettler' ? 'kettler' : null;
   }
   if (notiz) eintrag[`${status}Notiz`] = clip(notiz, 2000);
   if (status === 'raus') {

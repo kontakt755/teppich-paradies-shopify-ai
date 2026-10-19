@@ -1019,14 +1019,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const aktiv = sperrStand(leseSperren(file));
       if (sperreSchonErledigt(aktiv, sku, orderId)) return null;
       let sh;
-      if (zugang.hindernis) sh = { geschrieben: false, fehler: zugang.hindernis.fehler, fehlerGrund: zugang.hindernis.grund, variantId: aktiv.get(sku)?.variantId, productId: aktiv.get(sku)?.productId };
+      if (zugang.hindernis) sh = { geschrieben: false, aenderungMoeglich: false, fehler: zugang.hindernis.fehler, fehlerGrund: zugang.hindernis.grund, variantId: aktiv.get(sku)?.variantId, productId: aktiv.get(sku)?.productId };
       else {
         try {
           const r = await sperreImShop(zugang.proxy, { sku, referenz: orderId || null });
           sh = { geschrieben: true, bereits: r.status === 'bereits', variantId: r.variantId, productId: r.productId, vorher: r.vorher, nachher: r.nachher, verfuegbar: r.verfuegbar };
         } catch (e) {
           const bekannt = e instanceof MustersperreFehler;
-          sh = { geschrieben: false, fehler: bekannt ? e.message : `Ob das Muster im Shop gesperrt ist, ist unklar (${String(e?.message || e).split('\n')[0].slice(0, 160)}). Bitte in Shopify nachsehen.`,
+          sh = { geschrieben: false, aenderungMoeglich: e?.extra?.aenderungMoeglich !== false, fehler: bekannt ? e.message : `Ob das Muster im Shop gesperrt ist, ist unklar (${String(e?.message || e).split('\n')[0].slice(0, 160)}). Bitte in Shopify nachsehen.`,
             fehlerGrund: bekannt ? e.grund : 'unklar', variantId: e?.extra?.variantId, productId: e?.extra?.productId, vorher: e?.extra?.vorher, nachher: e?.extra?.nachher };
           logFehler('mustersperre', `${sku}: ${sh.fehlerGrund} - ${sh.fehler}`);
         }
@@ -1086,7 +1086,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     try { aktiv = sperrStand(leseSperren(mustersperrePfad(dir))); } catch (e) { return { fehler: e.message, gesperrt: [], offen: [] }; }
     const zeilen = [...aktiv.values()].sort((a, b) => String(b.seit).localeCompare(String(a.seit))).map(s => ({
       sku: s.sku, farbe: s.farbe, produkt: s.produkt, seit: s.seit, von: s.von, auftraege: s.auftraege,
-      imShop: s.imShop, fehler: s.fehler, fehlerGrund: s.fehlerGrund, freigabeFehler: s.freigabeFehler,
+      imShop: s.imShop, shopPruefen: s.shopPruefen, fehler: s.fehler, fehlerGrund: s.fehlerGrund, freigabeFehler: s.freigabeFehler,
       adminLink: sperrAdminLink({ sku: s.sku, variantId: s.variantId, productId: s.productId }),
     }));
     return { fehler: null, gesperrt: zeilen.filter(x => x.imShop), offen: zeilen.filter(x => !x.imShop) };
@@ -1937,6 +1937,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Bis zu den lokalen Writes kein await: Vorpruefung und Uebernahmesperre werden
       // im selben JS-Schritt frisch gelesen; asynchron bleibt nur die bestehende Versandbuchung.
       const { orderId, lineItemId, status, lieferantBestellnummer, notiz, aktion } = payload || {};
+      // Ware ueber unseren Kettelservice: nur dieser eine Wert, alles andere nimmt den Vermerk zurueck.
+      const ueber = payload?.ueber === undefined ? undefined : payload.ueber === 'kettler' ? 'kettler' : null;
       if (aktion === 'beschaffung' || aktion === 'uebernahme') {
         const dir = privatDirPath || privatDir();
         const modell = ladeBestellModell(dir);
@@ -1998,7 +2000,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const vorher = leseAktuellenStatus(file, modell)[positionKey(orderId, lineItemId)];
       let eintrag;
       try {
-        eintrag = setzeStatus(file, { orderId, lineItemId, status, actor, bestellmenge: p?.bestellSoll || p?.bestellmenge || null, lieferantBestellnummer, notiz, jetzt: now(),
+        eintrag = setzeStatus(file, { orderId, lineItemId, status, actor, bestellmenge: p?.bestellSoll || p?.bestellmenge || null, lieferantBestellnummer, notiz, ueber, jetzt: now(),
           ...(status === 'raus' ? { sendungsnummer: angaben.sendungsnummer, versanddienst: angaben.versanddienst, versandMail: angaben.benachrichtigen } : {}) });
       } catch (e) {
         if (e instanceof AuftragsstatusFehler) throw new ApiError(e.status, e.message);
@@ -2102,8 +2104,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       }
       // freigeben
       return nacheinander(`mustersperre:${sku}`, async () => {
+        // Ein vorher wartender Sperr-/Freigabeversuch kann den persistierten Stand geaendert haben.
+        const s = sperrStand(leseSperren(file)).get(sku);
+        if (!s) throw new ApiError(409, 'Dieses Muster ist nicht (mehr) gesperrt – bitte neu laden.');
+        const info = { farbe: s.farbe, produkt: s.produkt, handle: s.handle };
+        const name = [s.produkt, s.farbe].filter(Boolean).join(' · ') || sku;
         let sh = { geschrieben: false };
-        if (s.imShop) {
+        if (s.shopPruefen) {
           const zugang = await sperrZugang();
           if (zugang.hindernis) throw new ApiError(503, zugang.hindernis.fehler.replace('Im Shop nicht gesperrt', 'Im Shop nicht freigegeben').replace('die Variante über den Link in Shopify sperren', 'die Variante über den Link in Shopify freigeben'));
           try {
@@ -2119,8 +2126,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         }
         sperreAnhaengen(file, [sperrEreignis({ sku, ...info, von: actor, grund: SPERR_GRUND.FREI, shopify: sh, jetzt: now() })]);
         audit({ actor, action: 'mustersperre-frei', sku, geschrieben: sh.geschrieben });
-        merke(benutzer, actor, 'Muster wieder verfügbar', `${name}${s.imShop ? ' · im Shop freigegeben' : ' · war im Shop nicht gesperrt'}`);
-        return { ok: true, meldung: s.imShop ? `${name}: im Shop wieder bestellbar` : `${name}: aus der Liste genommen` };
+        merke(benutzer, actor, 'Muster wieder verfügbar', `${name}${s.shopPruefen ? ' · im Shop freigegeben' : ' · war im Shop nicht gesperrt'}`);
+        return { ok: true, meldung: s.shopPruefen ? `${name}: im Shop wieder bestellbar` : `${name}: aus der Liste genommen` };
       });
     },
 
