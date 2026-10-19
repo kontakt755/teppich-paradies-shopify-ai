@@ -1082,10 +1082,15 @@
             "padding-inline-end": 0
           },
           "blocks": {}
+        },
+        "tp_kategorie_produktsprung": {
+          "type": "tp-kategorie-produktsprung",
+          "settings": {}
         }
       },
       "block_order": [
         "text_tqQTNE",
+        "tp_kategorie_produktsprung",
         "text_twGGkJ",
         "tp_unterkategorien"
       ],

@@ -275,9 +275,10 @@
   <div class="tp-rwc-field tp-rwc-wunsch" data-wunsch-box hidden>
     <label class="tp-rwc-label" for="tp-rwc-wb-{{ tp_rc_id }}">Raumbreite</label>
     <div class="tp-rwc-input-wrap">
-      <input type="text" id="tp-rwc-wb-{{ tp_rc_id }}" class="tp-rwc-input" inputmode="decimal" autocomplete="off" placeholder="z. B. 250" aria-describedby="tp-rwc-wb-echo-{{ tp_rc_id }}" data-wunsch-input>
+      <input type="text" id="tp-rwc-wb-{{ tp_rc_id }}" class="tp-rwc-input" inputmode="decimal" autocomplete="off" placeholder="z. B. 250" aria-describedby="tp-rwc-wb-grenze-{{ tp_rc_id }} tp-rwc-wb-echo-{{ tp_rc_id }}" data-wunsch-input>
       <span class="tp-rwc-unit" data-mass-unit>cm</span>
     </div>
+    <p class="tp-rwc-note" id="tp-rwc-wb-grenze-{{ tp_rc_id }}" data-wunsch-hint></p>
     <p class="tp-rwc-note tp-rwc-gegen" id="tp-rwc-wb-echo-{{ tp_rc_id }}" data-wunsch-echo hidden></p>
     <p class="tp-rwc-note tp-rwc-note-error" data-wunsch-error hidden></p>
   </div>
@@ -294,10 +295,19 @@
           inputmode="decimal"
           autocomplete="off"
           placeholder="z. B. 400"
-          aria-describedby="tp-rwc-len-echo-{{ tp_rc_id }}"
+          aria-describedby="tp-rwc-len-grenze-{{ tp_rc_id }} tp-rwc-len-echo-{{ tp_rc_id }}"
           data-length-input>
         <span class="tp-rwc-unit" data-mass-unit>cm</span>
       </div>
+      <p class="tp-rwc-note" id="tp-rwc-len-grenze-{{ tp_rc_id }}"{% if tp_rc_max_laenge_cm < 100 %} hidden{% endif %}>
+        {%- if tp_rc_max_laenge_cm >= 100 -%}
+          {%- if tp_rc_min_laenge_cm > 0 -%}
+            Länge bis {{ tp_rc_max_laenge_cm }} cm.
+          {%- else -%}
+            Länge von 100 bis {{ tp_rc_max_laenge_cm }} cm.
+          {%- endif -%}
+        {%- endif -%}
+      </p>
       <p class="tp-rwc-note tp-rwc-gegen" id="tp-rwc-len-echo-{{ tp_rc_id }}" data-length-echo hidden></p>
       {%- if tp_rc_bestand_gefuehrt -%}
         <p class="tp-rwc-note" data-rollbestand>
@@ -338,20 +348,6 @@
   </div>
   </div>
 
-  {%- comment -%}
-    Eine Hinweiszeile statt Messhinweis, Wunschmass-Hinweis und Preisbeispiel.
-    Der Zugabe-Satz gilt nur im Raummass (ZUGABE_CM in tp-rollware-art.js
-    entscheidet nur die Rolle; berechnet wird das angegebene Mass) und
-    erscheint deshalb nur dort. Der Link kommt aus der Block-Einstellung.
-  {%- endcomment -%}
-  {%- comment -%}
-    Messhinweis und Link "Richtig messen" entfernt (Inhaber 2026-09-28):
-    kein Ablenken vom Kauf. Die Zeile traegt nur noch den Wunschmass-Hinweis
-    und ist unsichtbar, solange der verborgen ist.
-  {%- endcomment -%}
-  <p class="tp-rwc-hinweis" data-rwc-body>
-    <span data-wunsch-hint hidden></span>
-  </p>
   <p class="tp-rwc-note tp-rwc-note-tipp" data-meter-tipp hidden data-rwc-body></p>
 
   <p class="tp-rwc-note tp-rwc-note-error" data-error-stock hidden></p>
@@ -955,8 +951,6 @@
   /* Nummerierte Schritte im Rechner (w-096 E), Typografie aus snippets/tp-step-heading. */
   .tp-rwc-{{ tp_rc_id }} [data-art-field] > .tp-step-heading,
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-schritt .tp-step-heading { margin: 18px 0 10px; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-hinweis { margin: 0 0 10px; font-size: var(--tp-fs-sm); line-height: 1.45; color: #595959; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-hinweis a { color: var(--tp-rwc-ink); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-label--vorlesen {
     position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
     overflow: hidden; clip-path: inset(50%); white-space: nowrap;
@@ -1143,7 +1137,6 @@
     content: "Fragen?";
     align-self: center;
   }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-hinweis:has(> [data-wunsch-hint][hidden]) { display: none; }
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-beratung__frage {
     margin: 0 0 8px;
@@ -1792,10 +1785,10 @@ function tpRwcInit{{ tp_rc_id }}() {
     if (lengthNumber) lengthNumber.textContent = (raumOk || multi) ? '3' : '2';
     if (wunschBox) wunschBox.hidden = !raum;
     if (raum && wunschHint) {
-      var r = ART.rolleFuer(selectedWidth(), farbBreiten);
-      wunschHint.textContent = r
-        ? 'Wir schneiden Ihr Stück zentimetergenau aus der ' + r + '-cm-Rolle.'
-        : 'Breite von ' + WUNSCH_MIN_CM + ' bis ' + maxRaumBreite() + ' cm – die volle Rollenbreite gibt es als Meterware.';
+      var maxRaum = maxRaumBreite();
+      wunschHint.textContent = maxRaum >= WUNSCH_MIN_CM
+        ? 'Breite von ' + WUNSCH_MIN_CM + ' bis ' + maxRaum + ' cm.'
+        : 'Für diese Farbe ist kein Raummaß verfügbar.';
     }
   }
 
