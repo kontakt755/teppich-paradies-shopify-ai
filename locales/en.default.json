@@ -169,6 +169,12 @@
     "account_profile": "Profile",
     "blog_details_separator": "|",
     "cart_estimated_total": "Estimated total",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Taxes calculated at checkout.",
+      "duties_included": "Duties included.",
+      "discounts_at_checkout": "Discounts calculated at checkout.",
+      "shipping_details_html": "Details on <a href=\"{{ link }}\">shipping and delivery</a>."
+    },
     "cart_title": "Cart",
     "cart_subtotal": "Subtotal",
     "cart_total": "Cart total",

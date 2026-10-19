@@ -138,6 +138,12 @@
     "quantity": "Kvantitet",
     "product_total": "Produkter totalt",
     "cart_estimated_total": "Beräknad totalsumma",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Skatter beräknas i kassan.",
+      "duties_included": "Tullavgifter ingår.",
+      "discounts_at_checkout": "Rabatter beräknas i kassan.",
+      "shipping_details_html": "Information om <a href=\"{{ link }}\">frakt och leverans</a>."
+    },
     "seller_note": "Särskilda instruktioner",
     "cart_subtotal": "Delsumma",
     "discounts": "Rabatter",

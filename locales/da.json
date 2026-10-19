@@ -134,6 +134,12 @@
     "cart_total": "Indkøbskurv i alt",
     "your_cart_is_empty": "Din indkøbskurv er tom",
     "cart_estimated_total": "Forventet totalbeløb",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Skatter beregnes ved betaling.",
+      "duties_included": "Told er inkluderet.",
+      "discounts_at_checkout": "Rabatter beregnes ved betaling.",
+      "shipping_details_html": "Oplysninger om <a href=\"{{ link }}\">fragt og levering</a>."
+    },
     "seller_note": "Særlige instruktioner",
     "cart_subtotal": "Subtotal",
     "discounts": "Rabatter",

@@ -138,6 +138,12 @@
     "quantity": "수량",
     "product_total": "제품 총계",
     "cart_estimated_total": "예상 총액",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "세금은 결제 시 계산됩니다.",
+      "duties_included": "관세가 포함되어 있습니다.",
+      "discounts_at_checkout": "할인은 결제 시 계산됩니다.",
+      "shipping_details_html": "<a href=\"{{ link }}\">배송 및 배달</a>에 대한 자세한 내용."
+    },
     "seller_note": "특별 지침",
     "cart_subtotal": "소계",
     "discounts": "할인",

@@ -140,6 +140,12 @@
     "quantity": "Cantitate",
     "product_total": "Total produs",
     "cart_estimated_total": "Total estimat",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Taxele sunt calculate la finalizarea comenzii.",
+      "duties_included": "Taxele vamale sunt incluse.",
+      "discounts_at_checkout": "Reducerile sunt calculate la finalizarea comenzii.",
+      "shipping_details_html": "Detalii despre <a href=\"{{ link }}\">expediere și livrare</a>."
+    },
     "seller_note": "Instrucțiuni speciale",
     "cart_subtotal": "Subtotal",
     "discounts": "Reduceri",

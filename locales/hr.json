@@ -140,6 +140,12 @@
     "quantity": "Količina",
     "product_total": "Proizvod ukupno",
     "cart_estimated_total": "Procijenjen ukupni iznos",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Porezi se obračunavaju pri naplati.",
+      "duties_included": "Carine su uključene.",
+      "discounts_at_checkout": "Popusti se obračunavaju pri naplati.",
+      "shipping_details_html": "Pojedinosti o <a href=\"{{ link }}\">slanju i dostavi</a>."
+    },
     "seller_note": "Posebne upute",
     "cart_subtotal": "Podzbroj",
     "discounts": "Popusti",
