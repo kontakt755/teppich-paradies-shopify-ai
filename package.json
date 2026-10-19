@@ -94,6 +94,7 @@
     "daten:bulk": "node operations/scripts/bulk-zu-eingabe.mjs",
     "kurz": "node scripts/kurz.mjs",
     "handoff": "node scripts/handoff.mjs",
+    "ki:frag": "node scripts/ki-austausch.mjs",
     "gedaechtnis:sync": "bash .claude/hooks/gedaechtnis-sync.sh",
     "social": "node social/scripts/social.mjs",
     "social:test": "node --test social/tests/*.test.mjs",

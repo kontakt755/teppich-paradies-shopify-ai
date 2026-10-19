@@ -35,6 +35,7 @@ oben eingebunden. Hier steht nur, was Claude Code zusaetzlich betrifft.
 | `preislogik` | Preise, Streich-/Vergleichspreise, Aktionen, Fussleiste, Paketprodukte (€/m²), Vinyl-Preisfilter |
 | `werkzeuge` | alle `npm run`-Guards, Doctors und Pruefungen mit Zweck und Zeitpunkt |
 | `theme-audit` | nur lesendes Audit (Performance, SEO, JSON-LD, KI-Abrufbarkeit, App-Last) ergaenzend zu den Guards; Bericht nach `docs/audits/` |
+| `codex` | „frag Codex“, zweite Meinung, Diff/Plan gegenlesen, Review-Blick vor kritischen Merges (`npm run -s ki:frag`) |
 
 ## Review
 

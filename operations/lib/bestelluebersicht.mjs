@@ -449,6 +449,9 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         // Fuer die Bestellmail: Kommission mit Kundennamen, Zuschnitt und Einfassung.
         kunde,
         ausfuehrung: istM ? [] : ausfuehrungFuer(props, kettelDazu),
+        // Rollenbreite, aus der der Konfigurator den Massteppich schneidet: daraus wird fuer
+        // unseren Kettler die Meterware ohne Masszuschnitt berechnet (lieferanten.mjs).
+        ausRolleCm: massanfertigung ? (item.eingaben?.ausRolleCm ?? null) : null,
         sku: item.sku,
         preis: geld(li.originalUnitPriceSet),
         menge,
