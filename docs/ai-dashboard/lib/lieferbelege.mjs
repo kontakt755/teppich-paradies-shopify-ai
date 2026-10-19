@@ -55,8 +55,19 @@ export function normalisiere(text) {
 
 /** "Name <a@b.de>" -> "b.de"; null ohne gueltige Adresse. */
 export function domainVon(adresse) {
-  const m = String(adresse ?? '').match(/@([a-z0-9.-]+\.[a-z]{2,})/i);
-  return m ? m[1].toLowerCase().replace(/\.$/, '') : null;
+  return adresseVon(adresse)?.split('@').at(-1) || null;
+}
+
+/** Vollstaendige Mailadresse ohne Anzeigename, fuer Vergleich und Gruppierung. */
+export function adresseVon(von) {
+  const text = String(von || '').trim();
+  // Eine Adresse im Anzeigenamen ist keine Absenderadresse. Mehrdeutige Listen oder
+  // kaputte Klammern verknuepfen nichts; unterstuetzt sind ein Postfach oder Name <Postfach>.
+  const klammer = text.match(/^[^<>]*<\s*([^<>]+?)\s*>\s*$/);
+  const adresse = klammer ? klammer[1].trim() : text;
+  const gueltig = /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i.test(adresse);
+  const lokal = adresse.split('@')[0];
+  return gueltig && adresse.length <= 254 && lokal.length <= 64 && !/(^\.|\.$|\.\.)/.test(lokal) ? adresse.toLowerCase() : null;
 }
 
 /**
@@ -308,6 +319,18 @@ export function zuordnungMitEntscheidung(beleg, kandidaten, { absender = {} } = 
 }
 
 const STUFEN = ['offen', 'bestellt', 'geliefert', 'raus', 'erledigt'];
+
+/** Bei allgemeinen Mailanbietern ist nur dieselbe Mailadresse derselbe Absender. */
+function gleicherAbsender(a, b) {
+  const von = adresseVon(a.von);
+  const gegen = adresseVon(b.von);
+  const domain = von ? domainVon(von) : a.domain;
+  const gegenDomain = gegen ? domainVon(gegen) : b.domain;
+  if (!domain || domain !== gegenDomain) return false;
+  if (!FREEMAIL.includes(domain)) return true;
+  return Boolean(von) && von === gegen;
+}
+
 /**
  * Alle Belege zuordnen - und Belege desselben Vorgangs verknuepfen: Ein Lieferschein ohne
  * unsere Nummer gehoert zur Bestellung seiner AB, wenn Absender und Vorgangsnummer gleich sind
@@ -334,7 +357,7 @@ export function ordneAlleZu(belege = [], kandidaten = [], { absender = {} } = {}
     const passt = s => s.id !== b.id && nah(s, b) && !s.zuordnung.orderIds.some(id => abgelehnt.includes(id))
       && (!eigene.length || gleich(s));
     const schluessel = nummernSchluessel(b.refs?.belegnummer);
-    const vorgaenge = schluessel ? fest.filter(s => passt(s) && s.domain === b.domain && nummernSchluessel(s.refs?.belegnummer) === schluessel) : [];
+    const vorgaenge = schluessel ? fest.filter(s => passt(s) && gleicherAbsender(s, b) && nummernSchluessel(s.refs?.belegnummer) === schluessel) : [];
     const vorgang = vorgaenge.length ? einig(vorgaenge) : null;
     if (vorgang) return { ...b, zuordnung: { stufe: 'sicher', orderIds: vorgang.zuordnung.orderIds, grund: `gleicher Vorgang wie ${belegMarke(vorgang)}` } };
     if (b.zuordnung.stufe !== 'keine' || vorgaenge.length) return b;
