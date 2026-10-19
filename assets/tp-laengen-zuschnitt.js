@@ -140,11 +140,12 @@
   // a.packung: Schrauben je Packung (0 = je Schraube), a.sperrgut: Variante.
   function profilZeilen(a) {
     var p = eigenschaften(a.erg, a.bohrung, a.gruppe);
-    if (a.zuschnitt) {
-      delete p._Gruppe;
-      p.Zuschnitt = a.zuschnitt;
-      p._Gruppe = a.gruppe;
-    }
+    delete p._Gruppe;
+    if (a.zuschnitt) p.Zuschnitt = a.zuschnitt;
+    // Ueberlaenge: die Zeile nennt den Zuschlag (auch wenn er schon im
+    // Warenkorb steht) - fehlt er dort, sperrt der Warenkorb den Checkout.
+    if (a.sperrgut && a.erg.sperrgut) p._Sperrgut = String(a.sperrgut.id);
+    p._Gruppe = a.gruppe;
     var zeilen = [{ id: a.varianteId, quantity: a.erg.menge, properties: p }];
     var bezug = a.produkt + (a.variantenTitel ? ' – ' + a.variantenTitel : '');
     if (a.schraube && a.erg.schraubenStueck > 0) {
@@ -476,7 +477,25 @@
       }
     }
 
+    // Zwei offene Tabs: vor dem Absenden noch einmal nachsehen, ob der
+    // Sperrgut-Zuschlag inzwischen im Warenkorb steht.
     function hinzufuegen() {
+      if (inFlight || !stand) return;
+      if (sperrgut && stand.erg.sperrgutCent && typeof fetch === 'function') {
+        inFlight = true;
+        fetch('/cart.js', { headers: { Accept: 'application/json' } })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (c) {
+            if (c) sperrgutDa = (c.items || []).some(function (it) { return String(it.variant_id) === String(sperrgut.id); });
+          })
+          .catch(function () {})
+          .then(function () { inFlight = false; zeigen(); senden(); });
+        return;
+      }
+      senden();
+    }
+
+    function senden() {
       if (inFlight || !stand) return;
       var gruppe = 'L' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
       var zeile;

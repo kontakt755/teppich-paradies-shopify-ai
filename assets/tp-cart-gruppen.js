@@ -46,7 +46,8 @@
     GRUPPE_OHNE_HAUPT: 'gruppe-ohne-haupt',
     OHNE_MASS: 'ohne-mass',
     SERVICE_OHNE_GRUPPE: 'service-ohne-gruppe',
-    ZUSCHNITT_FEHLT: 'zuschnitt-fehlt'
+    ZUSCHNITT_FEHLT: 'zuschnitt-fehlt',
+    SPERRGUT_FEHLT: 'sperrgut-fehlt'
   };
 
   var TEXT = {};
@@ -57,6 +58,21 @@
   TEXT[GRUND.SERVICE_OHNE_GRUPPE] = TEXT[GRUND.OHNE_MASS];
   TEXT[GRUND.ZUSCHNITT_FEHLT] =
     'Der Zuschnitt von der Rolle fehlt – bitte Teppich entfernen und neu konfigurieren';
+  TEXT[GRUND.SPERRGUT_FEHLT] =
+    'Für diese Treppenkante fehlt der Sperrgut-Versand – bitte entfernen und über die Produktseite neu in den Warenkorb legen';
+
+  // Treppenkanten ueber der Paketlaenge (blocks/tp-laengen-zuschnitt): die
+  // Zeile nennt in _Sperrgut die Variante des Zuschlags. Er steht nur einmal im
+  // Warenkorb; fehlt er (z. B. mit der anderen Gruppe entfernt), ist die Zeile
+  // eine Waise. Liquid-Seite: snippets/tp-cart-laengenware.liquid.
+  function sperrgutFehlt(zeile, zeilen) {
+    var id = prop(zeile, '_Sperrgut');
+    if (!id) return false;
+    return !(zeilen || []).some(function (z) {
+      var v = z && (z.variant_id != null ? z.variant_id : z.variantId);
+      return v != null && String(v) === id;
+    });
+  }
 
   // Gemeinsamer Rollenbestand (Einfass-Konfigurator mit Zuschnitt-Bundle):
   // Die Hauptzeile nennt in _Rollenzuschnitt, wie viel Rolle (cm) ihr Zuschnitt
@@ -237,6 +253,8 @@
         grund = GRUND.OHNE_MASS;
       } else if (zuschnittFehlt(z, zeilen)) {
         grund = GRUND.ZUSCHNITT_FEHLT;
+      } else if (sperrgutFehlt(z, zeilen)) {
+        grund = GRUND.SPERRGUT_FEHLT;
       }
       if (grund) out.push({ index: i, key: z.key, grund: grund, text: TEXT[grund] });
     });

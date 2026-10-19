@@ -601,3 +601,27 @@ test('Produktvorlage Treppenkante: Stangen, Schraubenpackung und Sperrgut einges
   assert.equal(s.sperrgut_produkt, 'sperrgut-versand-treppenkante');
   assert.equal(s.sperrgut_ab_cm, 175);
 });
+
+test('Sperrgut fehlt im Warenkorb: Zeile mit _Sperrgut ist Waise (JS und Liquid)', async () => {
+  const erg = L.rechnen({ laenge: '503', anzahl: '1', preisCent: 69, minCm: 10, maxCm: 503, maxStueck: 50, sperrgut: { preisCent: 3990, abCm: 175, schonDa: true } });
+  const z = L.profilZeilen({ erg, varianteId: 11, produkt: 'TK', bohrung: 'gebohrt', gruppe: 'g9', sperrgut: { id: 77, price: 3990, ab_cm: 175 }, zuschnitt: 'ganze Stange' });
+  assert.equal(z[0].properties._Sperrgut, '77');
+  assert.equal(z.length, 1);
+  // kurze Stuecke tragen kein _Sperrgut
+  const kurz = L.rechnen({ laenge: '95', anzahl: '1', preisCent: 69, minCm: 10, maxCm: 503, maxStueck: 50, sperrgut: { preisCent: 3990, abCm: 175 } });
+  assert.equal(L.profilZeilen({ erg: kurz, varianteId: 11, produkt: 'TK', bohrung: 'gebohrt', gruppe: 'g8', sperrgut: { id: 77, price: 3990, ab_cm: 175 } })[0].properties._Sperrgut, undefined);
+  const profil = { key: 'p', variant_id: 11, quantity: 503, preisPro001Lfm: true, properties: z[0].properties };
+  const zuschlag = { key: 's', variant_id: 77, quantity: 1, typ: 'Service', properties: { 'Zu Treppenkante': 'TK', _Gruppe: 'g1' } };
+  const andere = { key: 'q', variant_id: 12, quantity: 300, preisPro001Lfm: true, properties: { 'Länge je Stück': '300 cm', _Gruppe: 'g1' } };
+  assert.deepEqual(G.waisen([profil, andere, zuschlag]), []);
+  assert.equal(G.waisen([profil])[0].grund, G.GRUND.SPERRGUT_FEHLT);
+
+  const snippet = lies('snippets/tp-cart-gruppe.liquid');
+  const produktLfm = { type: 'Abschlussprofile', title: 'TK', metafields: { custom: { preis_pro_001_lfm: val(true) } } };
+  const lz = { quantity: 503, variant_id: 11, product: produktLfm, variant: { options: ['Messing poliert'] }, url: '/products/x', properties: z[0].properties };
+  const lzs = { quantity: 1, variant_id: 77, product: { type: 'Service', title: 'Sperrgut', metafields: {} }, variant: { options: [] }, url: '/products/s', properties: { 'Zu Treppenkante': 'TK', _Gruppe: 'g9' } };
+  const r = (line_item, teil, items) => engine.parseAndRender(snippet, { line_item, teil, cart: { items, attributes: {} } });
+  assert.equal((await r(null, 'sperre', [lz, lzs])).trim(), '');
+  assert.match(await r(null, 'sperre', [lz]), /Bestellung nicht möglich/);
+  assert.match(await r(lz, 'hinweis', [lz]), /fehlt der Sperrgut-Versand/);
+});

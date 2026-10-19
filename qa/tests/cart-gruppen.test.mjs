@@ -158,8 +158,9 @@ test('Vinyl-Leiste bleibt an die Rollenware gebunden und wird ohne Boden gesperr
 
 test('H: Liquid-Seite kennt dieselben Property-Namen und Texte wie das JS', () => {
   // Die Rollenzuschnitt-Pruefung liegt seit 13.10. in einem eigenen Snippet
-  // (LiquidComplexity), das tp-cart-gruppe an beiden Stellen rendert.
-  const liquid = lies('snippets/tp-cart-gruppe.liquid') + lies('snippets/tp-cart-zuschnitt-fehlt.liquid');
+  // (LiquidComplexity), das tp-cart-gruppe an beiden Stellen rendert; ebenso
+  // die Laengenware samt Sperrgut-Pruefung (tp-cart-laengenware).
+  const liquid = lies('snippets/tp-cart-gruppe.liquid') + lies('snippets/tp-cart-zuschnitt-fehlt.liquid') + lies('snippets/tp-cart-laengenware.liquid');
   for (const key of ['_Gruppe', 'Zu Teppich', 'Zu Teppichboden', 'Zu Bodenbelag', 'Kante umlaufend', 'Maße', 'Fläche (abgerechnet)', 'Fläche (aufgerundet)', 'Ihre Breite', 'Rollenbreite', 'Länge', 'Höhe', 'Bahnen', 'Mindestpreis']) {
     assert.ok(liquid.includes(key), `Liquid kennt ${key}`);
   }

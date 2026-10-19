@@ -9,8 +9,10 @@
   berechnet (Menge gesperrt).
 
   @param {object} zeile - Warenkorbposition
+  @param {object} [posten] - cart.items (fuer die Sperrgut-Pruefung)
   @param {string} teil - 'waise': Text, wenn eine Zeile dieses Produkts keine
-    "Laenge je Stueck" traegt (sperrt den Checkout), sonst nichts;
+    "Laenge je Stueck" traegt oder ihr Sperrgut-Zuschlag (_Sperrgut = Varianten-
+    ID des Zuschlags) nicht im Warenkorb steht (sperrt den Checkout), sonst nichts;
     'menge': "10 × 95 cm", ohne Laengenangabe die Stueckzahl ("2 Stück")
 {%- enddoc -%}
 {%- liquid
@@ -23,5 +25,19 @@
     endif
   elsif tp_lw_laenge == blank and zeile.product.metafields.custom.preis_pro_001_lfm.value == true
     echo 'Dieser Artikel braucht eine Maßangabe – bitte über die Produktseite konfigurieren'
+  elsif teil == 'waise' and zeile.properties._Sperrgut != blank
+    # Zuschlag steht einmal im Warenkorb; fehlt er, ist die Zeile eine Waise.
+    assign tp_lw_sg = zeile.properties._Sperrgut | strip
+    assign tp_lw_sg_da = false
+    for tp_lw_it in posten
+      assign tp_lw_vid = tp_lw_it.variant_id | append: ''
+      if tp_lw_vid == tp_lw_sg
+        assign tp_lw_sg_da = true
+        break
+      endif
+    endfor
+    unless tp_lw_sg_da
+      echo 'Für diese Treppenkante fehlt der Sperrgut-Versand – bitte entfernen und über die Produktseite neu in den Warenkorb legen'
+    endunless
   endif
 -%}
