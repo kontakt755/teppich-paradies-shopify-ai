@@ -83,11 +83,17 @@ export function kontaktweg(z) {
  * @param {object[]} bestellzeilen  /api/kunden/bestellungen -> zeilen (mit auftragsart, verlauf, zeitleisteAbgeschlossen)
  * @param {object} [opt]
  * @param {Date} [opt.jetzt]
- * @returns {{ offen: object[], erledigt: object[] }}
+ * @param {Map<string, {am?: string}>|Set<string>|string[]} [opt.abgemeldet]  Adressen der Stoppliste (Antwort "Abmelden")
+ * @returns {{ offen: object[], erledigt: object[], abgemeldet: object[] }}
  */
-export function musterNachfassen(bestellzeilen = [], { jetzt = new Date() } = {}) {
+export function musterNachfassen(bestellzeilen = [], { jetzt = new Date(), abgemeldet = null } = {}) {
   const offen = [];
   const fertig = [];
+  const stopp = [];
+  // Stoppliste: wer "Abmelden" geantwortet hat, wird nicht mehr angeschrieben - weder vom Lauf
+  // noch per Klick. Er steht getrennt, damit der Laden sieht, warum er fehlt.
+  const stoppliste = abgemeldet instanceof Map ? abgemeldet : new Map([...(abgemeldet || [])].map(e => [e, {}]));
+  const abgemeldetEintrag = (email) => (email ? stoppliste.get(String(email).trim().toLowerCase()) || null : null);
   for (const z of bestellzeilen || []) {
     if (!z || z.auftragsart !== 'muster' || z.testbestellung || z.storniert) continue;
     const raus = schrittVon(z, 'raus');
@@ -112,21 +118,34 @@ export function musterNachfassen(bestellzeilen = [], { jetzt = new Date() } = {}
     // Abgeschlossen (Ergebnis eingetragen, spaetere Bestellung erkannt, im alten Modell erledigt): nichts mehr zu tun.
     if (z.zeitleisteAbgeschlossen || erledigt(ergebnis)) continue;
 
+    let faellig = null;
     if (!erledigt(nach)) {
       // Versand bzw. Uebergabe - ohne diesen Schritt hat der Kunde die Muster noch nicht.
       const seit = erledigt(raus) && raus.am ? raus.am : (erledigt(hat) && hat.am ? hat.am : null);
       const tage = tageSeit(seit, jetzt);
       if (tage === null || tage < ERSTE_NACH_TAGEN || tage > HOECHSTENS_TAGE) continue;
-      offen.push({ ...basis, stufe: 'erste', seit, tage });
+      faellig = { ...basis, stufe: 'erste', seit, tage };
     } else if ((nach.anzahl || 1) === 1) {
       const tage = tageSeit(nach.am, jetzt);
       if (tage === null || tage < ERINNERUNG_NACH_TAGEN || tage > HOECHSTENS_TAGE) continue;
-      offen.push({ ...basis, stufe: 'erinnerung', seit: nach.am, tage, zuletzt: { am: nach.am, von: nach.von || null } });
+      faellig = { ...basis, stufe: 'erinnerung', seit: nach.am, tage, zuletzt: { am: nach.am, von: nach.von || null } };
     }
+    if (!faellig) continue;
+    const ab = abgemeldetEintrag(basis.kontakt.email || z.email);
+    if (ab) stopp.push({ ...faellig, abgemeldetAm: ab.am || null });
+    else offen.push(faellig);
   }
   offen.sort((a, b) => b.tage - a.tage || String(a.datum).localeCompare(String(b.datum)));
+  stopp.sort((a, b) => b.tage - a.tage || String(a.datum).localeCompare(String(b.datum)));
   fertig.sort((a, b) => String(b.am).localeCompare(String(a.am)));
-  return { offen, erledigt: fertig };
+  return { offen, erledigt: fertig, abgemeldet: stopp };
+}
+
+/** Kein Platzhalter mehr in Betreff oder Text - erst dann darf eine Mail raus. */
+export function platzhalterFrei(mail) {
+  if (!mail || typeof mail !== 'object') return false;
+  const rest = /\{[^{}\n]+\}/;
+  return Boolean(mail.text) && !rest.test(String(mail.betreff || '')) && !rest.test(String(mail.text));
 }
 
 // ---------------------------------------------------------------- Textvorlage
@@ -217,7 +236,9 @@ export function fuelleText(vorlage, { kundenname = null, absender = null, produk
   const block = `Ihre gewählten Böden:\n${auswahl}\n\nFragen zum Maß? Wir beraten Sie gern.`;
   const mitAuswahl = auswahl && !vorlage.text.includes('{Link Produkt}')
     ? (/\n(?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b/.test(text) ? text.replace(/\n((?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b)/, `\n\n${block}\n\n$1`) : `${text}\n\n${block}`) : text;
-  return { betreff: ersetze(vorlage.betreff || '').replace(/\{[^{}\n]+\}/g, '').trim(), text: mitAuswahl };
+  // Der Betreff hat keine Zeile, die wegfallen koennte: ein unbekannter Platzhalter bleibt stehen,
+  // damit platzhalterFrei() ihn sieht und der Versandlauf die Mail zurueckhaelt (statt „Ihre Muster,“ zu schicken).
+  return { betreff: ersetze(vorlage.betreff || '').trim(), text: mitAuswahl };
 }
 
 /** mailto:-Link mit Betreff und Text - oeffnet das Mailprogramm, sendet nichts. */

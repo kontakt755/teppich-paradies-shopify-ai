@@ -718,7 +718,8 @@ Inhabers, Abschnitte „Text 1" und „Erinnerung" mit `**Betreff:**`). Eingeset
 Name der angemeldeten Person und die festen Shop-Links (Muster, Liefer- & Verlegeservice); eine Zeile mit
 einem Platzhalter, der sich nicht sicher füllen lässt (z. B. `{Link Produkt}`), fällt weg. „E-Mail
 öffnen" ist ein `mailto:`-Link – gesendet wird nichts. Fehlt die Vorlage, bleiben Liste und Knopf, nur
-ohne Textvorschlag.
+ohne Textvorschlag. Seit 2026-10-16 verschickt ein täglicher Lauf die Mails selbst (Abschnitt 23);
+der Klick bleibt für Ausnahmen und solange das Postfach nicht eingerichtet ist.
 
 **Muster nachfassen und „Wer wartet auf was“** (seit 2026-10-12): Ein Musterauftrag mit fälliger Nachfrage
 steht unter „Wir sind dran“ („Muster nachfassen“), nicht mehr zugleich unter „Kunde ist dran“
@@ -1336,3 +1337,77 @@ Bedarf neue Muster. Bis dahin stand so ein Auftrag nur als Notiz da und blieb in
   2 Farben im Shop gesperrt“.
 - **Tests und Prüfwerkzeug** sprechen nie echtes Shopify (`operations/tests/mustersperre-attrappe.mjs`);
   `dashboard:pruefen` hat keinen Zugang, dort landet jede Sperre unter „Im Shop sperren“.
+
+## 23. „Muster nachfassen“ verschickt automatisch (seit 2026-10-16, Werkbank w-119, Option A)
+
+Inhaber 16.10. (Werkbank w-119): Die Nachfrage nach Mustern geht automatisch vom Firmenpostfach
+raus – 4 Tage nach Versand Text 1, 10 Tage später höchstens eine Erinnerung, nie nach Kauf oder
+Abmeldung, mit Abmelde-Satz in jeder Mail. WhatsApp und Shopify Messaging waren geprüft und verworfen
+(keine Nummern, keine Einwilligungen). Bis dahin war der Versand ein Klick („E-Mail öffnen“, Abschnitt 9a).
+
+- **Wer dran ist**, rechnet unverändert `lib/muster-nachfassen.mjs` (`musterNachfassen()`) aus
+  `/api/kunden/bestellungen` samt Zeitleiste – Kaufprüfung, 30-Tage-Grenze und „genau eine Erinnerung“
+  stecken dort. Neu: `abgemeldet` (Stoppliste) als dritte Liste und `platzhalterFrei()` als letzte Sperre
+  vor dem Versand. `fuelleText()` lässt einen unbekannten Platzhalter im **Betreff** stehen (statt ihn
+  stillschweigend zu streichen), damit der Lauf die Mail zurückhält.
+- **Der Lauf** `kundenNachfassenSenden({ probe })` in `scripts/dashboard-api.mjs`, aufgerufen von
+  `scripts/muster-nachfassen-senden.mjs` (`npm run -s muster:nachfassen`, `-- --probe` = Trockenlauf:
+  listen, nichts senden, nichts schreiben). Je Kunde in dieser Reihenfolge: Vermerk `sendet` im
+  Versandprotokoll → Mail → `gesendet` → Zeitleisten-Schritt `nachgefasst` (von `automatisch`, Notiz
+  „Erste Nachfrage/Erinnerung automatisch per E-Mail: „Betreff““) → `vermerkt`. Bricht der Lauf nach der
+  Mail ab, schickt der nächste keine zweite, sondern trägt nur die Zeitleiste nach (`nachgetragen`).
+  Übersprungen: Stoppliste, Rückrufwunsch (der Laden ruft an), keine Adresse. Nichts geht raus, wenn die
+  Vorlage fehlt (`keine-vorlage`), das Postfach nicht eingerichtet ist (`kein-zugang`), Stoppliste oder
+  Protokoll unlesbar sind (`stoerung`) oder ein Platzhalter stehen bliebe (Fehler je Kunde).
+  {Name} füllt die `unterschrift` aus dem Postfach, sonst „Ihr Team von Teppich Paradies“.
+- **Postfach** `$TP_PRIVAT_DIR/nachfassen/postfach.json` (legt der Inhaber an, `chmod 600`; für andere
+  lesbar = es wird nichts verschickt): `host`, `port` (465 → `tls`, 587 → `starttls`), `benutzer`,
+  `passwort`, `absender`, optional `absenderName`, `unterschrift`, `kopie`, `kopieImmer`. Versand ohne
+  Fremdpaket über `operations/lib/smtp.mjs` (EHLO, STARTTLS, AUTH PLAIN/LOGIN, reiner Text UTF-8 base64,
+  Blindkopie nur im Umschlag; `sicherheit: "keine"` nur zu 127.0.0.1 für die Test-Attrappe
+  `operations/tests/smtp-attrappe.mjs`). Das Passwort steht in keiner Meldung und keinem Protokoll.
+- **Mitlesen**: In den ersten 7 Tagen nach dem ersten echten Versand (`ersterVersandAm`) geht jede Mail als
+  Blindkopie an `kopie` (Standard: der Absender, also das Büro); danach nur noch mit `kopieImmer: true`.
+  Die Karte zeigt „bis <Datum> mit Kopie an …“.
+- **Stoppliste** `$TP_PRIVAT_DIR/nachfassen/stoppliste.json` (`{ eintraege: { "<adresse klein>": { am, von,
+  grund, orderId } } }`): Knopf „Abgemeldet“ in der Karte (Rückfrage, dann `POST
+  /api/kunden/nachfassen-abmelden` – write-Liste, Rolle „lesen“ 403; wer einträgt, kommt aus der Sitzung).
+  Die Antwort trägt den frischen Kartenstand (`stand`), die Karte zeichnet ohne zweiten Abruf neu. Ein
+  Kunde auf der Liste erscheint unter „Abgemeldet“ statt „offen“ und wird weder vom Lauf noch per Klick
+  angeschrieben. Eine beschädigte Liste stoppt den ganzen Lauf.
+- **Versandprotokoll** `$TP_PRIVAT_DIR/nachfassen/versand.json`: `ersterVersandAm`, `letzterLauf {am,
+  verschickt, nachgetragen, uebersprungen, fehler, kopie}`, `sendungen[]` (Bestellung, Stufe, Adresse,
+  Betreff, Kopie, Status `sendet|gesendet|vermerkt|fehler`, Message-ID; die letzten 500). Ein Fehlversuch
+  sperrt nicht – der nächste Lauf versucht es wieder.
+- **Karte „Muster nachfassen“** (`ansichten/heute/muster-nachfassen.mjs`): `GET /api/kunden/muster-texte`
+  liefert zusätzlich `versand {eingerichtet, hinweis, letzterLauf, mitlesenBis, kopie}` und
+  `abgemeldet[]`. Eingerichtet: eine Zeile „E-Mails gehen automatisch vom Firmenpostfach raus (Mo–Sa
+  vormittags) · letzter Lauf … · bis … mit Kopie an …“, offene Zeilen sagen „Geht beim nächsten Lauf
+  automatisch per E-Mail raus“, „Erledigt – nachgefasst“ ist nicht mehr die Hauptaktion. Nicht
+  eingerichtet: Hinweis mit Dateiname, der Laden fasst weiter per Klick nach. Erledigt-Zeilen nennen
+  „automatisch per E-Mail“ statt eines Kollegen.
+- **„Jetzt senden“** (seit 2026-10-19): Ist das Postfach eingerichtet, hat jede offene Zeile mit
+  E-Mail-Adresse den Knopf „Jetzt senden“ (in der ersten Zeile die Hauptaktion). Betreff und Text im
+  Textvorschlag sind dann bearbeitbar; Änderungen bleiben je Bestellung und Stufe im Speicher des Tabs,
+  bis gesendet wird („Vorschlag wiederherstellen“ verwirft sie). Nach einer Rückfrage mit Empfänger und
+  Betreff `POST /api/kunden/nachfassen-senden {orderId, stufe, betreff, text}` → `kundenNachfassenEinzeln()`
+  (write-Liste, nur POST, Rolle „lesen“ 403, wer sendet kommt aus der Sitzung). Der Server prüft wie der
+  Lauf: Empfänger nur aus den Bestelldaten (eine Adresse aus dem Browser zählt nicht), Stoppliste und
+  Protokoll frisch gelesen, Zeile muss noch offen sein und dieselbe Stufe haben (sonst 409 „neu laden“),
+  dieselbe Stufe nie zweimal (`schonVerschickt`), Betreff einzeilig ≤ 200 Zeichen, kein `{Platzhalter}`.
+  Gleiche Reihenfolge `sendet → gesendet → vermerkt` und dieselbe Kopie-Regel; Zeitleiste „nachgefasst“
+  von dem Mitarbeiter, Notiz „… per E-Mail aus dem Control Center: „Betreff““; Protokolleintrag mit `von`.
+  Fehler beim Postfach → 502, Protokoll `fehler`, Zeile bleibt offen. Danach lädt die Karte die
+  Bestellzeilen neu, die Zeile wandert nach „Erledigt“.
+- **Zeitplan**: `operations/launchagents/net.teppich-paradies.nachfassen.plist.vorlage`, Mo–Sa 9:30 aus
+  `~/tp-dashboard`, Protokoll `~/teppich-paradies-analyse/nachfassen/versand.log`. Einrichten wie die
+  Auslauf-Prüfung (`__HOME__` ersetzen, nach `~/Library/LaunchAgents` kopieren, `launchctl load`) – erst
+  nach dem Merge in den Dienst-Checkout und nach einem Trockenlauf von Hand.
+- **Tests**: `docs/ai-dashboard/tests/nachfassen-versand-api.test.mjs` (Trockenlauf, echter Lauf gegen die
+  SMTP-Attrappe mit Kopie, Zeitleiste, Doppelschutz, Erinnerung ohne Kopie, Platzhalter, abgelehnte
+  Anmeldung, kaputte Stoppliste, Rollen am Server), `operations/tests/smtp.test.mjs`,
+  `operations/tests/nachfass-versand.test.mjs`, erweitert `tests/muster-nachfassen.test.mjs`.
+  Nur erfundene Kunden unter `example.invalid`.
+- **Offen**: Die Abmeldung erfasst heute ein Mensch per Knopf, wenn die Antwort „Abmelden“ im Postfach
+  liegt; ein Posteingangs-Abgleich ist nicht gebaut. Die rechtliche Einordnung (§ 7 UWG, Mail ohne
+  Newsletter-Einwilligung) klärt der Inhaber mit dem Rechtstexter (w-083).
