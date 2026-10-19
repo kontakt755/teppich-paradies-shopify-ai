@@ -140,6 +140,12 @@
     "quantity": "Quantidade",
     "product_total": "Total de produto",
     "cart_estimated_total": "Total estimado",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Os impostos são calculados na finalização da compra.",
+      "duties_included": "Direitos aduaneiros incluídos.",
+      "discounts_at_checkout": "Os descontos são calculados na finalização da compra.",
+      "shipping_details_html": "Detalhes sobre <a href=\"{{ link }}\">envio e entrega</a>."
+    },
     "seller_note": "Instruções especiais",
     "cart_subtotal": "Subtotal",
     "discounts": "Descontos",

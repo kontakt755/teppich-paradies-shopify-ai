@@ -138,6 +138,12 @@
     "quantity": "Määrä",
     "product_total": "Tuote yhteensä",
     "cart_estimated_total": "Arvioitu kokonaishinta",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Verot lasketaan kassalla.",
+      "duties_included": "Tullimaksut sisältyvät hintaan.",
+      "discounts_at_checkout": "Alennukset lasketaan kassalla.",
+      "shipping_details_html": "Tietoja <a href=\"{{ link }}\">lähetyksestä ja toimituksesta</a>."
+    },
     "seller_note": "Erityisohjeet",
     "cart_subtotal": "Välisumma",
     "discounts": "Alennukset",

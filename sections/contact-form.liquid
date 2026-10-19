@@ -187,6 +187,14 @@
     color: #333;
     font-size: var(--tp-fs-md);
   }
+
+  .tp-anfrage-hinweis {
+    scroll-margin-top: calc(var(--header-height, 100px) + 16px);
+  }
+  .tp-anfrage-hinweis:focus-visible {
+    outline: 2px solid var(--tp-ink, #222);
+    outline-offset: 4px;
+  }
   .tp-contact-service-links p { margin: 0 0 4px; }
 
   /* Produktwahl bei der Musteranfrage (assets/tp-sample-request.js) */
@@ -399,7 +407,7 @@
       <p class="tp-sample-intro__text" data-tp-intro>Wir senden Ihnen gerne ein kostenloses Muster zu.</p>
     </div>
 
-    <p class="tp-anfrage-hinweis" data-tp-anfrage-hinweis hidden></p>
+    <p class="tp-anfrage-hinweis" data-tp-anfrage-hinweis tabindex="-1" hidden></p>
 
     {%- form 'contact', id: 'ContactForm-sample', class: 'contact-form' -%}
       <input type="hidden" name="contact[id]" value="ContactForm-sample">

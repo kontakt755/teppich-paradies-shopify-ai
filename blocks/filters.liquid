@@ -240,9 +240,9 @@
               {%- if tp_gesperrte_werte -%}
                 <p class="facets__disabled-hint" role="note">
                   {%- if tp_aktive_filter -%}
-                    Grau = nicht kombinierbar mit Ihrer Auswahl.
+                    Ausgegraute Werte sind mit Ihrer Auswahl nicht kombinierbar.
                   {%- else -%}
-                    Grau = {% if request.page_type == 'search' %}in diesen Treffern{% else %}in dieser Kategorie{% endif %} nicht vorhanden.
+                    Ausgegraute Werte sind {% if request.page_type == 'search' %}in diesen Treffern{% else %}in dieser Kategorie{% endif %} nicht vorhanden.
                   {%- endif -%}
                 </p>
               {%- endif -%}
@@ -554,9 +554,9 @@
                 {%- if tp_gesperrte_werte -%}
                   <p class="facets__disabled-hint" role="note">
                     {%- if tp_aktive_filter -%}
-                      Grau = nicht kombinierbar mit Ihrer Auswahl.
+                      Ausgegraute Werte sind mit Ihrer Auswahl nicht kombinierbar.
                     {%- else -%}
-                      Grau = {% if request.page_type == 'search' %}in diesen Treffern{% else %}in dieser Kategorie{% endif %} nicht vorhanden.
+                      Ausgegraute Werte sind {% if request.page_type == 'search' %}in diesen Treffern{% else %}in dieser Kategorie{% endif %} nicht vorhanden.
                     {%- endif -%}
                   </p>
                 {%- endif -%}

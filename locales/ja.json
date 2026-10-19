@@ -138,6 +138,12 @@
     "quantity": "数量",
     "product_total": "商品合計",
     "cart_estimated_total": "見積もり合計",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "税金はチェックアウト時に計算されます。",
+      "duties_included": "関税は含まれています。",
+      "discounts_at_checkout": "割引はチェックアウト時に計算されます。",
+      "shipping_details_html": "<a href=\"{{ link }}\">配送とお届け</a>の詳細。"
+    },
     "seller_note": "特別な指示",
     "cart_subtotal": "小計",
     "discounts": "ディスカウント",

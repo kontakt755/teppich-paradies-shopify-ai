@@ -138,6 +138,12 @@
     "quantity": "จำนวน",
     "product_total": "สินค้าทั้งหมด",
     "cart_estimated_total": "ยอดรวมโดยประมาณ",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "คำนวณภาษีเมื่อชำระเงิน",
+      "duties_included": "รวมอากรแล้ว",
+      "discounts_at_checkout": "คำนวณส่วนลดเมื่อชำระเงิน",
+      "shipping_details_html": "รายละเอียดเกี่ยวกับ<a href=\"{{ link }}\">การจัดส่งและการส่งมอบ</a>"
+    },
     "seller_note": "คำแนะนำพิเศษ",
     "cart_subtotal": "ยอดรวมย่อย",
     "discounts": "ส่วนลด",

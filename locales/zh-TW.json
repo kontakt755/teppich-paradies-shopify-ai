@@ -134,6 +134,12 @@
     "cart_total": "購物車總金額",
     "your_cart_is_empty": "您的購物車是空的",
     "cart_estimated_total": "估計總金額",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "稅費於結帳時計算。",
+      "duties_included": "已含關稅。",
+      "discounts_at_checkout": "折扣於結帳時計算。",
+      "shipping_details_html": "<a href=\"{{ link }}\">運送與配送</a>詳情。"
+    },
     "seller_note": "特別指示",
     "cart_subtotal": "小計",
     "discounts": "折扣",

@@ -142,6 +142,12 @@
     "quantity": "Kiekis",
     "product_total": "Iš viso gaminių",
     "cart_estimated_total": "Apskaičiuota bendra suma",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Mokesčiai apskaičiuojami atsiskaitant.",
+      "duties_included": "Muito mokesčiai įskaičiuoti.",
+      "discounts_at_checkout": "Nuolaidos apskaičiuojamos atsiskaitant.",
+      "shipping_details_html": "Informacija apie <a href=\"{{ link }}\">siuntimą ir pristatymą</a>."
+    },
     "seller_note": "Specialūs nurodymai",
     "cart_subtotal": "Tarpinė suma",
     "discounts": "Nuolaidos",

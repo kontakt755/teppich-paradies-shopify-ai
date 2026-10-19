@@ -138,6 +138,12 @@
     "quantity": "Aantal",
     "product_total": "Totaal product",
     "cart_estimated_total": "Geschat totaal",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Belastingen worden berekend bij het afrekenen.",
+      "duties_included": "Invoerrechten inbegrepen.",
+      "discounts_at_checkout": "Kortingen worden berekend bij het afrekenen.",
+      "shipping_details_html": "Meer over <a href=\"{{ link }}\">verzending en bezorging</a>."
+    },
     "seller_note": "Speciale instructies",
     "cart_subtotal": "Subtotaal",
     "discounts": "Kortingen",
