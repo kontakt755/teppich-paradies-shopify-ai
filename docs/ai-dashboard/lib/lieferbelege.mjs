@@ -209,8 +209,8 @@ function nameTrifft(k, woerter) {
  */
 export function nummernSchluessel(nr) {
   const gruppen = (String(nr ?? '').match(/\d+/g) || []).map(x => x.replace(/^0+/, '') || '0');
-  const schluessel = gruppen.join('|');
-  return gruppen.join('').length >= 4 ? schluessel : null;
+  // Mindestens eine Gruppe mit drei Ziffern: "14.10" ist ein Datum, keine Vorgangsnummer.
+  return gruppen.join('').length >= 4 && gruppen.some(g => g.length >= 3) ? gruppen.join('|') : null;
 }
 
 /** Steht die Belegnummer in der Bestellnummer, die beim Bestellen notiert wurde ("0198 / KW 42")? */

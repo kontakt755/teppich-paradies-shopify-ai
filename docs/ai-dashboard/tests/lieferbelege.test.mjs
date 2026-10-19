@@ -374,6 +374,7 @@ test('ordneAlleZu: Lieferschein erbt die Bestellung seiner AB (gleiche Vorgangsn
   const { ordneAlleZu, nummernSchluessel } = await import('../lib/lieferbelege.mjs');
   assert.equal(nummernSchluessel('KD050/0212'), nummernSchluessel('KD050_212'));
   assert.equal(nummernSchluessel('12'), null, 'zu kurz zum Verknuepfen');
+  assert.equal(nummernSchluessel('14.10'), null, 'ein Datum verknuepft nichts');
   const mit = (id, betreff, extra = {}) => ({ id, art: 'ab', datum: '2026-10-14T08:00:00Z', lieferant: 'A', domain: 'lieferant-a.example', threadId: `t-${id}`, refs: referenzen({ betreff }), ...extra });
   const r = ordneAlleZu([
     mit('ab', 'Auftr.-Best. KD050/0212 #9001'),
