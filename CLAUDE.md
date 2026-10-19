@@ -7,13 +7,13 @@ oben eingebunden. Hier steht nur, was Claude Code zusaetzlich betrifft.
 
 ## Sitzung
 
-- **Ein Modell fuer alles.** Standard kommt aus `~/.claude/settings.json`
-  (Opus, Effort xhigh). Es gibt keinen Router, keine Voranalyse und keinen
-  Modellwechsel mitten in der Sitzung (entfernt 2026-09-30, siehe `.claude/README.md`).
+- **Ein Modell fuer alles.** Standard kommt aus `~/.claude/settings.json`.
+  Es gibt keinen Router, keine Voranalyse und keinen Modellwechsel mitten in
+  der Sitzung (entfernt 2026-09-30, siehe `.claude/README.md`).
 - **Sitzungen im Repository starten**, nicht auf dem Schreibtisch oder im
   Home-Ordner — sonst fehlen Hooks, Skills und das Projekt-Gedaechtnis.
-- **Eine Aufgabe pro Sitzung, eigener Worktree** (App-Worktree unter
-  `.claude/worktrees/`). Den Hauptcheckout nie bearbeiten.
+  App-Worktrees liegen unter `.claude/worktrees/`; die Regeln zu Arbeitskopien
+  (eine Aufgabe = ein Worktree, Hauptcheckout nie bearbeiten) stehen in `AGENTS.md`.
 - **Grosse Ausgaben aus dem Kontext halten:** breite Suchen ueber viele Dateien
   an einen Subagenten geben; gefiltert statt roh
   (`npm run -s kurz -- themes-query | themes | push | worktrees`);
@@ -31,6 +31,11 @@ oben eingebunden. Hier steht nur, was Claude Code zusaetzlich betrifft.
 | `lieferant-a-recherche` | Artikel- und Farbnummern bei Lieferant A belegt klaeren |
 | `shopify-massendaten` | viele Metafelder/Tags auf einmal, mit Plan und Rollback |
 | `raumbilder-recherche` | Produkte ohne Raumbild: Hersteller hinter dem Lieferantenprodukt finden, farbgenaue Raumbilder aus erlaubten Quellen suchen |
+| `theme-regeln` | vor jeder Theme-Aenderung: Bloecke/Schemata, fertige Funktionen, Menue, Produktkarten, UX/Design, Bilder, Schrift/Rot, Testumfang |
+| `preislogik` | Preise, Streich-/Vergleichspreise, Aktionen, Fussleiste, Paketprodukte (€/m²), Vinyl-Preisfilter |
+| `werkzeuge` | alle `npm run`-Guards, Doctors und Pruefungen mit Zweck und Zeitpunkt |
+| `theme-audit` | nur lesendes Audit (Performance, SEO, JSON-LD, KI-Abrufbarkeit, App-Last) ergaenzend zu den Guards; Bericht nach `docs/audits/` |
+| `codex` | „frag Codex“, zweite Meinung, Diff/Plan gegenlesen, Review-Blick vor kritischen Merges (`npm run -s ki:frag`) |
 
 ## Review
 
@@ -43,8 +48,8 @@ Claude arbeitet ohne Rueckfragen (Entscheidung Ahmet, 2026-09-11); die Grenzen
 aus `AGENTS.md` gelten trotzdem. **Keine `permissions.ask`-Regeln anlegen** —
 sie fragen in jedem Modus nach. Harte Grenzen gehoeren als `deny` in
 `.claude/hooks/git-gh-guard.mjs`. Aktive Hooks: Guards fuer git/gh, Theme-Loeschen
-und Deploy-Befehle, Gedaechtnis-Sync (Start/Ende), Projektzustand in
-Remote-Sessions. Details: `.claude/README.md`.
+und Deploy-Befehle, Gedaechtnis-Sync (Start/Ende), Kurzstand des Control Centers
+(jede Sitzung) und Projektzustand in Remote-Sessions. Details: `.claude/README.md`.
 
 In Remote-Sessions (claude.ai/code) ist die Storefront per Egress-Policy
 gesperrt: dort nur `node workflow/cli.mjs validate --static`, Deploys laufen lokal.

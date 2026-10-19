@@ -149,6 +149,51 @@ Der Shop-Scout liefert beides fertig: `preisJeEinheit` und `vergleichJeEinheit`
 
 Angebote gibt das System nie automatisch frei – sie warten auf den Inhaber.
 
+### 3c. Produkt-Reels (Inhaberentscheidung 16.10.2026)
+
+Bis zu zwei je Woche, nicht am selben Tag wie ein anderes Produkt-Reel. Bewegung
+nur durch einen langsamen Zoom auf einem scharfen Shop-Bild – KI-Videos verformen
+den Boden und sind verworfen. Kein KI-Hinweis im Bild.
+
+1. Kandidaten: `npm run -s social -- reel-kandidaten --json > "$T"` – je Serie ein
+   Produkt ohne Aktion und Auslauf, mit einem Raumbild, das laut Bildrechte-Liste
+   auch für Werbung freigegeben ist (lange Kante ab 2000 px), echte Fotos zuerst.
+   `vorlage` ist ein fertiger Auftragsvorschlag; als temporäre JSON-Datei ablegen.
+2. Auftrag ergänzen – **nur, was so auf der Produktseite steht**:
+   - `zeilen.kicker` (Warengruppe · Bauart), `zeilen.name` (Name mit Farbe, ohne
+     Maße), `zeilen.merkmale` (zwei, drei Angaben mit „·“), bei Rollenware
+     `zeilen.preis_zusatz` etwa „400 cm breit, Länge nach Wunsch“.
+   - Jede Angabe wörtlich unter `belege`. Das System bricht ab, wenn ein Beleg
+     auf der Live-Seite fehlt oder ein Eurobetrag nicht belegt ist.
+   - Preise setzt der Vorschlag: Paketware mit Quadratmeterpreis groß und
+     Paketpreis darunter, sonst Euro je m². `varianten`: die Variante, deren Farbe
+     das Bild zeigt, mit ihrem Preis („44,90“).
+   - Keine Prozente, kein „statt“, kein UVP – Angebote laufen über 3b.
+3. `npm run -s social -- reel-vorschau <auftrag.json>` und die Bilder **ansehen**.
+   `…-vorschau-ausschnitt.jpg` zeigt Start (grün), Zoom-Ende (gelb),
+   Produktfläche (rot) und Anker (weiß): Der Boden soll den Kasten tragen, die
+   Produktfläche liegt nur auf Boden (keine Möbel, kein Teppich darauf), der Anker
+   mitten im Boden. Bei Bedarf `ausschnitt` (4:5), `anker`, `produktflaeche`
+   anpassen und noch einmal ansehen.
+4. **KI-bearbeitete oder umgefärbte Raumbilder** (`echtesFoto: false`, Feld
+   `ki_abgleich` im Vorschlag): erst das echte Musterfoto derselben Farbe
+   danebenlegen – Struktur (Schlinge, Velours, Maserung) und Farbton müssen
+   stimmen. Ergebnis in einem Satz in `ki_abgleich`. Passt es nicht: kein Reel,
+   im Bericht nennen (Juniva 16.10.: das KI-Kettelbild zeigte Noppen statt feiner
+   Schlingen). Solche Reels gibt immer der Inhaber frei.
+5. Bildunterschrift als Datei: was zu sehen ist, ein Fachdetail, das kostenlose
+   Muster – **ohne Preis** (der steht im Video und wird geprüft). Dann
+   `npm run -s social -- produkt-reel <auftrag.json> --text-datei <pfad>`.
+   Der Befehl prüft live, rendert (rund eine Minute), misst die Schärfe und legt
+   das Reel in die Freigabe; bricht er ab, nennt er den Grund.
+6. Prüfblatt (`pruefblatt.jpg`) und Video ansehen: Reel und Standbild gleich
+   scharf, alle Texte vollständig lesbar. Sonst `verwerfen <beitragId>`.
+
+Reels mit echtem Foto gibt das System selbst frei. Direkt vor dem Posten prüft
+der Publisher Preis und Angaben noch einmal live; weicht etwas ab oder ist der
+Preisstand älter als 21 Tage, geht das Reel zurück in die Freigabe – dann neu
+bauen, nicht freigeben.
+
 ### 4. Texte
 
 Die Stilregeln stehen in der Ausgabe von `offen --json` und sind verbindlich.
@@ -167,6 +212,9 @@ Ablehnungen den Inhalt liegen lassen und im Bericht nennen.
 
 ### 5. Bericht
 
+Dazu: Produkt-Reels (Nummern, Schärfewerte, automatisch freigegeben oder nicht),
+der Stand der Highlights und was der Inhaber dort einsortieren soll
+(`highlights-stand`).
 Am Ende kurz: wie viele Bilder gesichtet, wie viele mit Bedenken (und warum),
 welche Entwürfe entstanden sind, was liegen blieb. `npm run -s social -- status`
 zeigt den Stand.
@@ -179,8 +227,39 @@ zeigt den Stand.
 und in zwei, drei Sätzen festhalten, welche Beiträge Besucher in den Shop
 gebracht haben. Keine Empfehlung ohne Zahl dahinter.
 
+## Montags zusätzlich: Highlights zählen
+
+Unter dem Profil stehen fünf Highlights (Verlegung, Referenzen, Im Laden, Muster,
+Bewertungen). Die Graph-API kann sie weder lesen noch füllen – eine Story kommt
+nur in der Instagram-App in ein Highlight. Deshalb:
+
+1. `instagram.com/teppich.paradies` im angemeldeten Chrome öffnen (nur ansehen)
+   und je Highlight die Storys zählen, **einschließlich Titelbild** – die Striche
+   des Fortschrittsbalkens oben. Eine 1 heißt: nur das Titelbild, also leer.
+2. Eintragen:
+   `npm run -s social -- highlights-stand Verlegung=3 Referenzen=1 "Im Laden=1" Muster=1 Bewertungen=1`
+3. Der Befehl nennt je Bereich, was fehlt:
+   - **Storys zum Einsortieren** – erschienene Storys, die passen. Das ist eine
+     Aufgabe für den Inhaber (steht auch in `status`); im Bericht wörtlich
+     weitergeben. Stecken sie schon im Highlight: `highlights-stand --einsortiert 57,58`.
+   - **Story fehlt** – für einen leeren Bereich ohne passende Story eine bauen:
+     - Referenzen, Verlegung: `entwurf <id> --format story` aus einer Referenz
+       bzw. einer gesichteten Baustelle.
+     - Muster: `wissen-anlegen --titel "So kommen Sie an Muster" --bereich Muster`,
+       dann `entwurf <id> --format story --bauplan <plan.json>` mit Vorlage `tipp`
+       (bis zu drei Schritte, nur so, wie der Shop den Musterweg beschreibt).
+     - Bewertungen: nur echte Google-Bewertungen, Wortlaut unverändert (kürzen nur
+       mit „…“), ohne Namen – `wissen-anlegen --bereich Bewertungen`, Vorlage `tipp`
+       (Kicker „Kundenstimme“, Titel = Zitat, Text „Google-Bewertung, 5 Sterne“).
+     - Im Laden: dafür fehlen Fotos aus dem Laden – im Bericht als Aufgabe für
+       den Inhaber nennen (Upload-Link oder WhatsApp-Gruppe, Quelle Laden).
+   - Gehört ein Inhalt in einen anderen Bereich: `inhalt <id> --bereich Referenzen`.
+
+Storys aus `wissen-anlegen` gibt der Inhaber frei.
+
 ## Grenzen
 
 - Nicht freigeben, nicht veröffentlichen, keine Zugänge anlegen.
 - Keine Dateien im Repository ablegen; Texte und Baupläne als temporäre Dateien.
-- Nichts an Meta-Konten, Shop oder Theme ändern.
+- Nichts an Meta-Konten, Shop oder Theme ändern. Instagram im Chrome nur ansehen –
+  keine Highlights bearbeiten, nichts liken, nichts posten.

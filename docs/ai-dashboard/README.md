@@ -64,6 +64,10 @@ docs/ai-dashboard/
   lib/muster-nachfassen.mjs     „Muster nachfassen“ für „Heute“: wer ist dran, Textvorlage füllen – Browser UND Server
   lib/bestellinhalt.mjs         Inhalt einer Bestellung in einer Zeile (Muster mit Farben und Herkunft, Ware) – Bestellliste und To-dos
   lib/kennzahlen.mjs            „Ø je bezahlter Bestellung“ (ohne kostenlose Muster) für die Kennzahlen auf „Heute“
+  lib/verbrauch.mjs             Modellnamen und Tokenzahlen für die Kachel „Claude-Verbrauch“ (Insights)
+  lib/serviceanfragen.mjs       Service-Anfragen: Werte, Prüfung, Formular-Mail lesen, Auswertung je Woche/Quelle – Browser UND Server
+  lib/prozesse.mjs              Arbeitsanweisungen fuer E-Mail, Angebotsvorbereitung und Recherche; Quelltext bleibt zitiert
+  lib/prozesslinks.mjs          gemeinsame Validierung privater App-/Projektadressen – Browser UND Server
   stile/                        Styles je Ansicht (heute.css); app.css bleibt das gemeinsame Gerüst
   issues.json, bodenwissen.json generierte Daten, nicht im Git (.gitignore)
   tests/                        node --test (npm run dashboard:test)
@@ -115,9 +119,11 @@ ansichten/
   heute.mjs          + heute/{daten,laden,muster-nachfassen}.mjs
   arbeit.mjs  freigaben.mjs  bereiche.mjs  insights.mjs  aktivitaet.mjs
   lexikon.mjs  ratgeber.mjs  hilfe.mjs  shopwache.mjs  team.mjs  fotos.mjs  sonderposten.mjs  bildrechte.mjs
+  prozesse.mjs       Arbeitsplatz: Aufgabe vorbereiten, kopieren, App oder Projekt separat oeffnen
   einkauf.mjs        + einkauf/{auftragsfluss,bestellungen,lieferanten,musterlager,produktdaten}.mjs
-  kunden.mjs         + kunden/{gemeinsam,akte,rueckrufe,bestellungen,angebote,faelle,zeitleiste}.mjs
+  kunden.mjs         + kunden/{gemeinsam,akte,rueckrufe,serviceanfragen,bestellungen,angebote,faelle,zeitleiste}.mjs
   organisation.mjs   + organisation/{gemeinsam,dialoge}.mjs
+  insights.mjs       + insights/verbrauch.mjs (Kachel „Claude-Verbrauch“, #671)
 ```
 
 **Regeln** (geprüft von `tests/aufbau.test.mjs`):
@@ -161,6 +167,14 @@ neu; alte und neue Fassungen können sich nicht mischen. Versionsanhängsel (`?v
 sind deshalb unnötig – und schädlich, weil dieselbe Datei unter zwei Adressen zweimal ausgeführt würde.
 
 Der Browser braucht keinen Token.
+
+**Arbeitsplatz** (`#/prozesse`): Die drei Schnellzugriffe stehen auch auf „Heute“ und in der
+Befehlspalette. Eingefuegte Angaben bleiben nur im Arbeitsspeicher dieser Ansicht; beim Verlassen,
+Neuladen oder Ende der Anmeldung werden sie verworfen. Nur die festen Verknuepfungen liegen in
+`$TP_PRIVAT_DIR/prozesslinks.json` (`GET/POST /api/prozesse/links`), nie im Repository. Das Kopieren
+uebergibt den Auftrag noch nicht an eine KI: danach App/Projekt oeffnen, einfuegen und selbst starten.
+Eine allgemeine App-Adresse waehlt kein bestehendes Cloud-Projekt; lokale Ordnerziele beziehen sich
+auf das Geraet, auf dem der Link geoeffnet wird. Einzelheiten: Architektur, Abschnitt „Arbeitsplatz: Aufgaben vorbereiten“.
 Lokal läuft alles über das im Keychain angemeldete `gh`-Konto; jede Aktion ist damit auf GitHub
 auditierbar (Kommentar `## Control Center: …`) und zusätzlich in `.router/control-center-audit.jsonl`.
 

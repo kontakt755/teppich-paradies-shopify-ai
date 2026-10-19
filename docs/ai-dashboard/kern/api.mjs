@@ -15,6 +15,7 @@ function fehlerText(status, roh) {
 }
 
 import { merkeStoerung } from './helfer.mjs';
+import { markiereSitzungAbgelaufen } from './sitzung.mjs';
 
 /**
  * Gescheiterte Aufrufe als Ereignis melden. "Fehler melden"
@@ -23,6 +24,7 @@ import { merkeStoerung } from './helfer.mjs';
  * 404 bleibt aussen vor: das heisst hier "Export noch nicht da", kein Fehler.
  */
 function meldeApiFehler(methode, pfad, status, text) {
+  if (status === 401) markiereSitzungAbgelaufen();
   if (status === 404 || typeof window === 'undefined') return;
   // Nur echte Stoerungen (Server kaputt, keine Verbindung) bekommen den
   // Melden-Knopf - eine fehlende Berechtigung ist kein Fehler im Dashboard.

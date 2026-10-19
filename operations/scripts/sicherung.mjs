@@ -42,6 +42,10 @@ export const SICHERUNGSPFADE = Object.freeze([
   'musterherkunft.json',
   // Musterlager: welche Muster wir selbst da haben (operations/lib/musterlager.mjs).
   'musterlager.json',
+  // Mustersperre: im Shop gesperrte Muster samt Stand vor der Sperre (operations/lib/mustersperre.mjs).
+  'mustersperre.json',
+  // Private App-/Projektadressen des Arbeitsplatzes.
+  'prozesslinks.json',
   'lexikon',
   'bestelluebersicht',
   'kennzahlen',
@@ -50,6 +54,10 @@ export const SICHERUNGSPFADE = Object.freeze([
   'einkauf-hersteller',
   'einkauf-kollektion',
   'aktualisierung.json',
+  // Service-Anfragen (Kunden > Service-Anfragen): gibt es nur hier.
+  'serviceanfragen.json',
+  // ... und welche Formular-Mails der Postfach-Abgleich schon geprueft hat.
+  'serviceanfragen-postfach.json',
   // "Fehler melden": Meldungen der Mitarbeiter und ihr Stand in der Werkbank.
   'fehlermeldungen.json',
   'fehlermeldungen-abgleich.json',

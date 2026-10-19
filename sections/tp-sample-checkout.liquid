@@ -92,14 +92,10 @@
               kommen erst weiter hinten. Jedes Dekor ist ein eigenes Produkt;
               der Konfigurator kann es (Einzeldekor, tp-sample-checkout-core).
 
-              Darum zuerst der direkte Weg ueber die Produktseite. Der Link ins
-              Kontaktformular verlangt dort ein Pflichtfeld "Produkt und Dekor"
-              mit Vorschlagsliste (assets/tp-sample-request.js) - eine Anfrage
-              ohne Belag ist nicht mehr moeglich.
             {%- endcomment -%}
             <p class="tp-sample__gruppe-hinweis">
-              Hier ist jedes Dekor ein eigener Belag: Öffnen Sie das Dekor und tippen Sie dort auf „Kostenloses Muster anfragen“.
-              Oder <a href="/pages/kontakt?thema=muster">nennen Sie uns das Dekor</a> – wir schicken das Muster zu.
+              Öffnen Sie das Dekor. Wenn dafür ein Muster verfügbar ist, finden Sie dort „Kostenloses Muster anfragen“.
+              Bei Fragen zu einem Dekor <a href="/pages/kontakt?thema=beratung">beraten wir Sie gern</a>.
             </p>
           {%- endif -%}
           <a class="tp-sample__gruppe-alle" href="{{ tp_sample_url }}">Alle {{ tp_sample_titel | escape }} ansehen</a>
@@ -128,6 +124,8 @@
   </div>
   <div class="tp-sample__loading" data-sample-loading aria-live="polite"><span data-sample-term="plural">Farben</span> werden geladen …</div>
   <div class="tp-sample__error" data-sample-error role="alert" hidden></div>
+  {%- comment -%} Alle Mustervarianten des Produkts gesperrt (nicht verfuegbar), assets/tp-sample-checkout.js {%- endcomment -%}
+  <p class="tp-sample__keine" data-sample-none aria-live="polite" hidden>Für dieses Produkt sind derzeit keine Muster verfügbar.</p>
   <fieldset class="tp-sample__fieldset" data-sample-fieldset hidden>
     <legend><span data-sample-term="plural">Farben</span> auswählen</legend>
     <p class="tp-sample__count" data-sample-count aria-live="polite">0 von <span data-sample-max>3</span> Mustern ausgewählt</p>
@@ -146,7 +144,7 @@
       "id": "kategorien",
       "label": "Einstiege ohne Produkt",
       "info": "Eine Zeile je Link: Titel|URL. Erscheint nur, wenn die Seite ohne ?produkt= aufgerufen wird.",
-      "default": "Teppichboden|/collections/teppichboden\nKlickvinyl|/collections/vinylboden-klickvinyl\nKlebevinyl|/collections/vinylboden-klebevinyl\nVinyl von der Rolle|/collections/vinylboden-vinyl-von-der-rolle\nLinoleum|/collections/linoleumboden-1"
+      "default": "Teppichboden|/collections/teppichboden\nTeppichfliesen|/collections/teppichfliesen\nKlickvinyl|/collections/vinylboden-klickvinyl\nKlebevinyl|/collections/vinylboden-klebevinyl\nVinyl von der Rolle|/collections/vinylboden-vinyl-von-der-rolle\nLinoleum|/collections/linoleumboden-1"
     }
   ],
   "presets": [

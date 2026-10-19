@@ -73,7 +73,9 @@
       } catch (e) {}
     }
     // Je Rechner: i = Eingabefeld, r = Kaufknopf-Wurzel. tp-ek vor rollware, weil beide .tp-kaufweg tragen.
+    // Laengen-Zuschnitt zuerst: sein Feld traegt ebenfalls data-laenge.
     var RECH = [
+      { n: 'laengen', i: '[data-tp-lz] input', r: '[data-tp-lz]' },
       { n: 'einfassung', i: '[data-breite], [data-laenge]', r: '[data-tp-ek]' },
       { n: 'rollware', i: '[data-length-input], [data-wunsch-input]', r: '.tp-kaufweg' },
       { n: 'paket', i: '[data-sqm-input]', r: '.tp-paket-auswahl' },

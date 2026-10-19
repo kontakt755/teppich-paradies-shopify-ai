@@ -20,12 +20,17 @@
         Shop; eine Service-Zeile ohne Properties kam ohne Rechner herein)
     (e) Optionswert "Wunschmass" (Raummass-Variante)
 
+  Laengenware (Produkt-Metafeld custom.preis_pro_001_lfm, Profile nach Mass,
+  Menge = Laenge je Stueck x Stueckzahl in cm) ist ueber ihre _Gruppe
+  berechnet; Liquid-Seite dazu: snippets/tp-cart-laengenware.liquid.
+
   Fail safe: Eine Zeile, die ohne Rechner in den Warenkorb kam (Service ohne
-  Gruppe, Flaechenware ohne Mass, Gruppe ohne Hauptzeile), sperrt den
-  Checkout, statt still zum Variantenpreis durchzulaufen.
+  Gruppe, Flaechenware ohne Mass, Laengenware ohne "Länge je Stück", Gruppe
+  ohne Hauptzeile), sperrt den Checkout, statt still zum Variantenpreis
+  durchzulaufen.
 
   Eingabeformat einer Zeile (aus /cart.js oder aus Liquid-Attributen):
-    { key, quantity, properties: {..}, preisPro001Qm: bool, optionen: [..], typ, titel }
+    { key, quantity, properties: {..}, preisPro001Qm: bool, preisPro001Lfm: bool, optionen: [..], typ, titel }
 */
 (function (root) {
   'use strict';
@@ -99,6 +104,10 @@
     return !!(zeile && (zeile.preisPro001Qm === true || zeile.preisPro001Qm === 'true'));
   }
 
+  function istLaengenware(zeile) {
+    return !!(zeile && (zeile.preisPro001Lfm === true || zeile.preisPro001Lfm === 'true'));
+  }
+
   function istWunschmass(zeile) {
     var opts = (zeile && zeile.optionen) || [];
     for (var i = 0; i < opts.length; i++) {
@@ -156,6 +165,12 @@
     var fl = flaechenText(zeile);
     if (fl) {
       return hatProp(zeile, 'Mindestpreis') ? fl + ' (Mindestpreis)' : fl;
+    }
+    // Laengenware: "10 × 95 cm" statt der Menge 950 (cm)
+    var stueckLaenge = prop(zeile, 'Länge je Stück');
+    if (stueckLaenge) {
+      var anzahl = prop(zeile, 'Anzahl').replace('Stück', '').trim() || '1';
+      return anzahl + ' × ' + stueckLaenge;
     }
     if (istService(zeile)) {
       if (hatProp(zeile, 'Zu Bodenbelag')) return String(zeile.quantity) + (zeile.quantity === 1 ? ' Leiste' : ' Leisten');
@@ -218,6 +233,8 @@
         grund = GRUND.SERVICE_OHNE_GRUPPE;
       } else if ((istFlaechenware(z) || istWunschmass(z)) && !hatMass(z)) {
         grund = GRUND.OHNE_MASS;
+      } else if (istLaengenware(z) && !hatProp(z, 'Länge je Stück')) {
+        grund = GRUND.OHNE_MASS;
       } else if (zuschnittFehlt(z, zeilen)) {
         grund = GRUND.ZUSCHNITT_FEHLT;
       }
@@ -255,6 +272,7 @@
     TEXT: TEXT,
     gruppe: gruppe,
     istFlaechenware: istFlaechenware,
+    istLaengenware: istLaengenware,
     istWunschmass: istWunschmass,
     istServiceTyp: istServiceTyp,
     istService: istService,

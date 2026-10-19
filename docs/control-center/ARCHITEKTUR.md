@@ -1,5 +1,84 @@
 # Control Center – Zielarchitektur und Migrationsstrategie
 
+## Arbeitsplatz: Aufgaben vorbereiten (seit 2026-10-16, #1390)
+
+`#/prozesse` buendelt „E-Mail vorbereiten“, „Angebot vorbereiten“ und „Recherche starten“.
+Direkte Einstiege stehen auf „Heute“ und in der Befehlspalette, die vollstaendige Ansicht in der
+Seitenleiste unter „Arbeitsplatz“ (am Handy hinter „Mehr“). Heute bleibt die betriebliche Startseite.
+
+Je Aufgabe werden vorhandene Angaben in eine pruefbare Arbeitsanweisung eingebettet. Originaltexte
+sind als Quellen markiert; sie ersetzen keine Projektregeln. Der erste Knopf kopiert den Auftrag,
+ein separater nativer Link oeffnet die gewaehlte App oder das hinterlegte Projekt. Einfuegen und
+Starten erfolgen dort durch die Person. Es gibt keinen KI-Hintergrunddienst, keine neuen
+API-Schluessel und keinen automatischen Versand oder Schreibzugriff auf Fachsysteme.
+
+Die Angebotsvorbereitung verlangt den tatsaechlich verfuegbaren, gelesenen Lexware-Skill des
+Zielprojekts und stoppt bei dessen Fehlen. Das Dashboard selbst prueft oder installiert diesen Skill
+nicht und fuehrt keine Kalkulation aus. Der Kunden-Reiter „Angebote“ bleibt die bestehende
+Shopify-Entwurfsbestellungsansicht.
+
+**Private Verknuepfungen:** `GET /api/prozesse/links` liefert
+`{standardAnbieter, ziele:{email,angebot,recherche}, bearbeitbar}` mit je `chatgpt`, `codex`, `claude`.
+`POST` speichert nur diese Konfiguration atomar und mit Rechten `0600` in
+`$TP_PRIVAT_DIR/prozesslinks.json`. Jeder angemeldete Dashboard-Zugang darf sie lesen; aendern darf
+nur der Inhaber bzw. der bestehende gemeinsame Passwortzugang. JSON, Herkunft und Ziele werden
+serverseitig geprueft. Die Sicherung und die Datenkopie der Browserpruefung enthalten die Datei.
+Nur eine fehlende Datei bedeutet Erstbetrieb; beschaedigte Konfigurationen werden nicht als leer
+behandelt oder ueberschrieben.
+
+Erlaubt sind HTTPS-Adressen von `chatgpt.com` bzw. `claude.ai` sowie die dokumentierten nativen
+App-Links fuer neue/gespeicherte Codex-Chats und Claude-Projekte bzw. lokale Ordner. Abfragen mit
+Prompttext, fremde Hosts, Zugangsdaten oder Textfragmente werden abgewiesen. Kontext wird nie in
+einen Link geschrieben. Leere Ziele bleiben sichtbar unkonfiguriert. Allgemeine App-Adressen
+sagen ausdruecklich, dass das passende Projekt dort noch auszuwaehlen ist. Native Ordnerziele sind
+geraetebezogen; sie uebernehmen weder Cloud-Chats noch deren Quellen oder Skills automatisch.
+Referenzen: [Codex-App-Links](https://learn.chatgpt.com/docs/reference/commands),
+[Claude-App-Links](https://support.claude.com/en/articles/14729294-open-claude-desktop-with-a-link).
+
+**Fluechtiger Kontext im manuellen Weg:** Kunde/Vorgang und Quelltext liegen ausschliesslich im Browser-Arbeitsspeicher,
+nicht in URL, Browserablagen, API-Aufrufen, Protokollen oder einer Vorgangsdatenbank. Verlassen,
+Abmelden, `pagehide` (einschliesslich DOM-Standardwerten fuer den Rueckwaerts-Cache) und eine erhaltene
+401 verwerfen die Eingaben. Die Zwischenablage entsteht nur nach dem bewussten Kopierknopf und
+wird dabei nicht automatisch wieder geloescht. Scheitert der Browser-Kopierweg, bleibt der Text in
+der aufklappbaren Vorschau manuell markierbar. Verzoegerte Kopierantworten duerfen nach einem
+Kontextwechsel keinen neuen Text kopieren. Stille Datenabgleiche erhalten Wert, Fokus und Cursor
+der mit `data-focus-erhalten` markierten Felder.
+
+### Direkte Texteingabe in ein ChatGPT-Projekt (#1397)
+
+Der optionale Browserbegleiter unter `operations/browser-uebergabe/` ersetzt auf einem eingerichteten
+Chrome-Arbeitsplatz Kopieren und Einfuegen. Er verwendet dieselben privaten Projektverknuepfungen
+und denselben vorbereiteten Auftrag. Ein bewusster Klick auf „Im Projekt einfuegen“ oeffnet eine
+neue Projektseite und fuellt dort das noch leere Eingabefeld. Er sendet keine Nachricht und startet
+keine KI. Die manuellen Knoepfe bleiben als Alternative erreichbar. Fuer lokale Codex- und
+Claude-Ziele bleibt der bisherige Weg erhalten.
+
+Die Erweiterung laeuft nur auf explizit eingerichteten Dashboard-Urspruengen und auf ChatGPT-
+Projektseiten. Der Generator `operations/scripts/browser-uebergabe-paket.mjs` erzeugt ihre private
+Konfiguration ausserhalb des Repositorys. Sie erhaelt keine Cookie-, Zwischenablage- oder allgemeinen
+Tab-Leserechte. Die Einrichtung und Standortfreigabe im Browser erfolgen einmalig durch den Inhaber.
+Es gibt keinen neuen Server-Endpunkt, keinen API-Schluessel und keine Uebertragung ueber einen
+Hintergrundagenten auf einem anderen Rechner.
+
+**Datenweg:** Auf den bewussten Klick folgen eine Nachricht an das isolierte Inhaltsskript, eine
+kurzlebige Ablage im Arbeitsspeicher der Erweiterung (`chrome.storage.session`) und die Einfuegung im
+neuen Tab. Weder Zieladresse noch Protokolle enthalten den Auftrag. Die Erweiterung verwendet weder
+`storage.local` noch Synchronisierung. Wartende Auftraege verfallen nach zwei Minuten; Abschluss,
+Fehler, Abbruch und geschlossene Tabs entfernen die Ablage. Nach Einfuegung gehoert der Text zum
+ChatGPT-Entwurf und unterliegt dessen Speicherverhalten.
+
+**Erfolgspruefung:** Projektadresse, sichtbare Projektueberschrift, zugehoeriges leeres Eingabefeld,
+vollstaendiger Text und aktiver Sendeknopf muessen passen. „Bereit“ bestaetigt nur die Verbindung
+zum Begleiter; „eingefuegt“ erst die kontrollierte Texteingabe. Anmeldung, geaenderte Oberflaeche oder
+ein bestehender Entwurf werden nicht als Erfolg behandelt. Kontextwechsel, Abmeldung und erhaltene
+401 brechen noch wartende Uebergaben ab. Ein bereits eingefuegter ChatGPT-Entwurf wird dabei nicht
+geloescht oder ueberschrieben.
+
+Dieser Weg bedient die ChatGPT-Oberflaeche; eine offizielle Projekt-Prompt-API ist nicht belegt.
+Die [dokumentierten App-Links](https://learn.chatgpt.com/docs/reference/commands) mit `prompt`
+betreffen lokale Chats und ersetzen keine ChatGPT-Projektzuordnung. Einrichtung, Pruefung und
+Grenzen stehen in [BROWSER-UEBERGABE.md](BROWSER-UEBERGABE.md).
+
 ## Starten (Mitarbeiter/Admins)
 
 ```
@@ -639,7 +718,8 @@ Inhabers, Abschnitte „Text 1" und „Erinnerung" mit `**Betreff:**`). Eingeset
 Name der angemeldeten Person und die festen Shop-Links (Muster, Liefer- & Verlegeservice); eine Zeile mit
 einem Platzhalter, der sich nicht sicher füllen lässt (z. B. `{Link Produkt}`), fällt weg. „E-Mail
 öffnen" ist ein `mailto:`-Link – gesendet wird nichts. Fehlt die Vorlage, bleiben Liste und Knopf, nur
-ohne Textvorschlag.
+ohne Textvorschlag. Seit 2026-10-16 verschickt ein täglicher Lauf die Mails selbst (Abschnitt 23);
+der Klick bleibt für Ausnahmen und solange das Postfach nicht eingerichtet ist.
 
 **Muster nachfassen und „Wer wartet auf was“** (seit 2026-10-12): Ein Musterauftrag mit fälliger Nachfrage
 steht unter „Wir sind dran“ („Muster nachfassen“), nicht mehr zugleich unter „Kunde ist dran“
@@ -1122,3 +1202,212 @@ Rein lesend, für alle Rollen (auch „lesen“): `ansichten/bildrechte.mjs`, En
   oder `bg` setzt die Seite zurück (`setParam`).
 - Fehlt die CSV: `verfuegbar: false` mit Befehl. Andere Lesefehler: 500 und Störungshinweis.
 
+
+## 20. Kunden › „Service-Anfragen“ (seit 2026-10-16, #1361, Werkbank w-030)
+
+Anfragen für Verlegeservice, Treppe und Aufmaß an einer Stelle, mit Quelle und Status – damit
+messbar wird, was die Serviceseiten und die Werbung bringen (Inhaber 15.10.: im Control Center
+unter „Kunden“). Reiter `#/kunden?tab=service`, Modul `ansichten/kunden/serviceanfragen.mjs`,
+Styles `stile/serviceanfragen.css`.
+
+- **Ablage:** `$TP_PRIVAT_DIR/serviceanfragen.json` (`operations/lib/serviceanfragen.mjs`, Bauart wie
+  `rueckrufe.json`: atomar, beschädigt → Fehler statt leer). In `SICHERUNGSPFADE` von
+  `npm run daten:sichern`. Nummern `S-001` fortlaufend; Statuswechsel landen im `verlauf` (max. 30).
+- **API:** `GET /api/kunden/serviceanfragen` (alle Rollen), `POST` derselbe Pfad: ohne `id` anlegen,
+  mit `id` ändern (in der `write`-Liste, Rolle „lesen“ → 403). Wer angelegt/geändert hat, kommt aus der
+  Sitzung. Optionales Feld `mailId`: dieselbe Mail wird nur einmal angelegt (für einen späteren
+  automatischen Abgleich).
+- **Werte** (`lib/serviceanfragen.mjs`, Browser und Server): Leistung `verlegeservice | treppe |
+  aufmass | sonstiges`, Quelle `formular | mail | telefon | whatsapp | laden | werbung`, Status `neu |
+  kontaktiert | termin | angebot | gewonnen | verloren`. Pflicht: Datum, Leistung, Quelle und eins von
+  Name/Telefon/E-Mail. „Herkunft“ ist Freitext (Betreff der Serviceseite, Anzeige, Empfehlung).
+- **Formular-Mail einfügen:** Shopify schickt jede Formularanfrage als „Neue Kundennachricht vom …“
+  von `mailer@shopify.com`; der Mailtext enthält `Betreff:` (je Serviceseite fest gesetzt im Abschnitt
+  `tp-start-kontakt`, z. B. „Anfrage Treppenverlegung“), `Name:`, `Plz:`, `E-Mail:`, `Telefon:`,
+  `Anliegen:`, `Text:`. `ausFormularMail()` füllt daraus den Dialog; Leistung zuerst aus dem Betreff,
+  sonst aus dem Anliegen. Musteranfragen (`Id: ContactForm-sample`) werden abgelehnt.
+- **Auswertung oben:** letzte 8 Kalenderwochen inklusive der laufenden, je Woche und je Quelle
+  (mit gewonnen/verloren); beide zählen dieselbe Menge.
+- **Automatische Übernahme (seit 2026-10-16, Inhaber: ja):** Der Dienst liest kein Postfach. Das tut
+  der geplante Claude-Lauf `serviceanfragen-postfach` (Mo–Sa stündlich 8–18 Uhr, nur lesend über
+  Gmail): `npm run -s service -- bekannt` liefert die schon geprüften Mail-IDs, der Lauf holt nur neue
+  Mails von `mailer@shopify.com`, legt sie als JSON in sein Scratchpad und ruft
+  `npm run -s service -- uebernehmen --datei <json>` (`operations/scripts/serviceanfragen.mjs`).
+  Übernommen wird nur, was `automatischUebernehmbar()` erlaubt: die festen Betreffe der Serviceseiten
+  (`BETREFF_SERVICE`) und die Startseite mit Anliegen Verlegen/Aufmaß/Treppe. Eine Mail nie zweimal
+  (`mailId`), eine schon von Hand erfasste Anfrage nicht noch einmal (gleiche E-Mail oder Telefonnummer
+  innerhalb von 7 Tagen). Übersprungene Mails merkt sich `serviceanfragen-postfach.json` (schreibt nur
+  das Skript; gesichert). Angelegt wird mit Status „neu“ und „Postfach (automatisch)“ als Urheber; die
+  Zeile zeigt „aus dem Postfach übernommen“. Ein Test prüft, dass jeder Betreff aus `templates/` in
+  der Liste steht oder bewusst ausgenommen ist – eine neue Serviceseite fällt so auf.
+- **Kampagnenfeld:** Das Anfrageformular (`sections/tp-start-kontakt.liquid`) füllt das versteckte
+  Feld `contact[Herkunft]` aus der Adresse der Seite: „Google-Anzeige“ (gclid/gbraid/wbraid),
+  „Microsoft-Anzeige“ (msclkid), „Anzeige (<utm_source>)“ bei bezahltem `utm_medium`, sonst „Link
+  (<utm_source>)“ bzw. „Link von Facebook/Instagram“, jeweils mit „· Kampagne <utm_campaign>“. Nichts
+  wird auf dem Gerät gespeichert, Klick-IDs gehen nicht mit. Steht „Anzeige“ darin, wird die Quelle
+  „Werbung“. Grenze: erfasst ist nur, wer auf der Seite mit der Anzeigenadresse anfragt; wer erst
+  weiterklickt, zählt als Formular.
+
+## 21. Insights › „Claude-Verbrauch“ (seit 2026-10-16, #671)
+
+- **Frage:** Wohin geht das Wochenbudget des Max-Plans? Gezeigt wird nur, was die lokalen
+  Sitzungsprotokolle von Claude Code belegen.
+- **Quelle:** `~/.claude/projects/<Hauptcheckout>*/` (Hauptcheckout, `.claude/worktrees/*`) und
+  `~/.claude/projects/<home>-Developer-tp-*` – je Sitzung `<id>.jsonl`, Subagenten unter
+  `<id>/subagents/**.jsonl` (Typ aus `.meta.json`), Titel aus `custom-title.json`.
+- **Sammeln:** `npm run verbrauch:sammeln` (`operations/scripts/claude-verbrauch.mjs`, Logik in
+  `operations/lib/claude-verbrauch.mjs`) liest nur lesend und schreibt
+  `$TP_PRIVAT_DIR/verbrauch/claude.json` (Schema 1, nicht im Git). Rund 8 s für eine Woche.
+  `/api/verbrauch/claude` (nur Inhaber) liefert die Datei; ist sie älter als 30 Minuten, rechnet der
+  Server sie im Hintergrund neu (`TP_VERBRAUCH_AUTO=0` schaltet das ab, die Tests tun das).
+- **Regeln:** Zeitraum 7 Kalendertage (Berlin). Eine Antwort zählt einmal (`message.id`, auch wenn
+  eine fortgesetzte Sitzung sie mitkopiert). Tokens = Eingabe + Cache schreiben + Cache lesen +
+  Ausgabe. Klasse: „Gespräch“, „Geplante Aufgabe“ (erster Auftrag kam vom Zeitplan, Name aus
+  `<scheduled-task name=…>`), „Subagent“. Aktive Zeit = Summe der Abstände zwischen Anfragen und
+  Antworten bis 15 Minuten. Langsitzung = über 2 h aktiv oder über 500 Werkzeugaufrufe der
+  Hauptsitzung. Aufgabe = Nummer aus `npm run task -- <aktion> <n>` in der Sitzung oder Branch
+  `task/<n>-…`; Branchnamen sonst nicht (dort stehen PR-Nummern).
+- **Datenschutz:** Übernommen werden Zahlen, Modellnamen, Denkstufe, Sitzungstitel, Namen geplanter
+  Aufgaben und Aufgabennummern – kein Text aus Anfragen, Antworten oder Werkzeugergebnissen.
+- **Nicht belegt, deshalb nicht gezeigt:** Stand des Wochenlimits in Prozent (steht in keiner lokalen
+  Datei) und die Gewichtung der Tokenarten auf das Limit (nicht veröffentlicht). Die
+  Dollar-Angabe `cost-state` in den Protokollen ist ein API-Listenpreis und kein Abo-Verbrauch –
+  bewusst weggelassen.
+
+## 22. „Muster nicht verfügbar“: Abschluss in der Zeitleiste und Sperre im Shop (seit 2026-10-16, #1385)
+
+Inhaber 2026-10-16: Hat der Lieferant eine Musterfarbe nicht, wird der Kunde informiert und bestellt bei
+Bedarf neue Muster. Bis dahin stand so ein Auftrag nur als Notiz da und blieb in „Muster nachhaken“ und
+„beim Lieferanten bestellen“ hängen; die Farbe war im Shop weiter als Muster bestellbar.
+
+- **Schritt** `muster_nicht_verfuegbar` („Muster nicht verfügbar – Kunde informiert“,
+  `operations/lib/auftragsverlauf.mjs`): gehört zu `AUFTRAGS_SCHRITTE` und `ERGEBNIS_SCHRITTE`, schließt
+  die Musterstrecke ab wie „kein Interesse“ (Positionen auf `erledigt`, Zeitleiste abgeschlossen) – damit
+  fällt der Auftrag aus „Muster noch zu bestellen“, den To-dos „Muster bei … bestellen“/„nachhaken“,
+  „Muster nachfassen“ und Kunden › „Zu tun“. Die Notiz ist Pflicht (`NOTIZ_PFLICHT`) und nennt die
+  Farben: der Server baut sie aus den angekreuzten Mustern („Nicht verfügbar: Produkt: Farbe, …“) plus
+  Freitext. Zurücknehmen geht wie bei den anderen Ergebnissen; die Shop-Sperre bleibt davon unberührt.
+- **Dialog** „Etwas anderes ist passiert …“ (`ansichten/kunden/zeitleiste.mjs`): Wahl direkt nach
+  „Ergebnis: kein Interesse“ mit Hinweiszeile; gewählt erscheinen alle Musterpositionen als Kästchen
+  (vorausgewählt) und ein Textvorschlag für die Mail mit „Text kopieren“ und „E-Mail öffnen“ (mailto,
+  nichts wird gesendet). Der Text kommt aus der Vorlage des Inhabers (Abschnitt mit „nicht verfügbar“ in
+  `muster-nachfassen-texte.md`), sonst aus `NICHT_VERFUEGBAR_VORLAGE` (`lib/muster-nachfassen.mjs`) –
+  Farben eingesetzt, ohne Terminversprechen. `GET /api/kunden/muster-texte` liefert ihn als
+  `nichtVerfuegbar`, auch wenn die übrige Vorlage fehlt.
+- **Sperre im Shop** (`operations/lib/mustersperre.mjs`): Jedes Muster ist eine Variante des Musterprodukts
+  `muster-<handle>` mit SKU `M-<Quell-SKU>`; der Musterkonfigurator wertet `variant.available` aus.
+  Lesprobe 16.10.: alle 249 Mustervarianten ohne Bestandsverfolgung, `DENY`, Bestand 0 – also immer
+  bestellbar. Gesperrt = Bestand 0 (`inventorySetQuantities`, Compare-and-swap, `@idempotent`),
+  Richtlinie `DENY`, Verfolgung an (`inventoryItemUpdate`) – in dieser Reihenfolge, erst die Verfolgung
+  macht die Sperre wirksam. Vorher: Rechte prüfen (`currentAppInstallation.accessScopes`,
+  `write_inventory` + `write_products`; einmal je Prozess bestätigt) und die Variante per SKU frisch lesen
+  (nur exakter Treffer, bei Gleichstand die aus `muster-*`). Danach Gegenprobe: `availableForSale` muss
+  `false` sein. Nie werden Varianten gelöscht, Preise/SKUs geändert oder das Quellprodukt angefasst.
+  Testbestellungen sperren nichts. Muster über das Sammelprodukt „Kostenloses Muster“ haben keine eigene
+  Variante je Farbe (`keine-mustervariante`) – sie stehen nur in der Liste.
+- **Ablage** `$TP_PRIVAT_DIR/mustersperre.json` (nur anhängen, Teil von `daten:sichern`): je Ereignis SKU,
+  Farbe, Produkt, Auftrag, wer, wann, Grund („nicht verfuegbar“ | „wieder verfuegbar“) und
+  `shopify {geschrieben, aenderungMoeglich?, fehler, fehlerGrund, variantId, productId, vorher, nachher, verfuegbar}`.
+  `geschrieben` bestaetigt die Sperre; `aenderungMoeglich` erfasst auch Teilmutationen und unlesbare
+  Gegenproben. Alte unklare Ereignisse, insbesondere mit gespeichertem Vorstand, bleiben pruefpflichtig. Der Stand
+  je SKU ergibt sich aus der Folge (`stand()`); `vorher` stammt aus dem ersten Sperr-Ereignis mit bestaetigter oder moeglicher Aenderung.
+  Ein ausdruecklich sicher ungeschriebener Versuch friert keinen Vorstand ein; vor einer spaeteren
+  echten Sperre zaehlt dann die frisch gelesene Ausgangslage. Dieselbe SKU
+  für denselben Auftrag noch einmal = nichts zu tun. Nur eine fehlende Datei gilt als leer; eine
+  beschädigte lehnt den Schritt ab (es wird gar nichts geschrieben) und meldet sich im Musterlager.
+- **Ohne Recht, ohne Zugang, bei Fehlern** gilt der Schritt trotzdem; die Sperre steht als „im Shop noch
+  zu sperren“ samt Grund. Einkauf › Musterlager zeigt dann oben „Im Shop sperren“ mit „In Shopify öffnen“
+  (Admin-Link zur Variante, sonst Produktsuche nach der SKU), „Erneut sperren“ und „Wieder verfügbar“.
+- **Wieder verfügbar** (Einkauf › Musterlager › „Im Shop gesperrte Muster“) stellt den Stand vor der
+  Sperre her: war die Variante ohne Bestandsverfolgung, wird sie es wieder (sonst wäre sie nach der
+  nächsten Musterbestellung mit Bestand 1 von selbst wieder gesperrt); war sie verfolgt, kommt die alte
+  Menge zurück, mindestens 1. Erfolg verlangt den exakten Zielstand (Verfolgung, Richtlinie und
+  Menge am vorhandenen Standort) plus bestaetigte Bestellbarkeit, auch beim Bereits-Pfad. Das gilt
+  auch fuer lokal offene Sperren mit moeglicher Shop-Aenderung; fehlender Zugang darf sie nicht
+  entfernen. Nur sicher ungeschriebene Versuche lassen sich lokal herausnehmen. Fehlgeschlagene
+  Freigaben bleiben mit Fehler in der offenen Liste, der erste Vorstand bleibt fuer Wiederholungen
+  erhalten. Eine lokal leere, verfolgte DENY-Variante gilt bei globaler Bestellbarkeit nie als gesperrt;
+  weitere Standorte werden dabei nicht automatisch veraendert. Protokoll („Muster wieder verfügbar“), Audit.
+- **Endpunkte:** `GET /api/einkauf/mustersperre` (`gesperrt`, `offen`, `fehler`; dieselbe Liste hängt als
+  `sperren` an `GET /api/einkauf/musterlager`), `POST /api/einkauf/mustersperre` mit
+  `aktion: freigeben | nachholen` und `sku` (Schreibpfad: Rolle „lesen“ 403). Der Schritt selbst läuft wie
+  bisher über `POST /api/einkauf/auftragsstatus` (`aktion: "schritt"`, `schritt: "muster_nicht_verfuegbar"`,
+  `muster: [lineItemId]`, `notiz`); die Antwort trägt `mustersperre {status, meldung, gesperrt, bereits,
+  offen, ohneSku, fehlendeRechte?}`, die Rückmeldung lautet z. B. „Ergebnis: Muster nicht verfügbar ·
+  2 Farben im Shop gesperrt“.
+- **Tests und Prüfwerkzeug** sprechen nie echtes Shopify (`operations/tests/mustersperre-attrappe.mjs`);
+  `dashboard:pruefen` hat keinen Zugang, dort landet jede Sperre unter „Im Shop sperren“.
+
+## 23. „Muster nachfassen“ verschickt automatisch (seit 2026-10-16, Werkbank w-119, Option A)
+
+Inhaber 16.10. (Werkbank w-119): Die Nachfrage nach Mustern geht automatisch vom Firmenpostfach
+raus – 4 Tage nach Versand Text 1, 10 Tage später höchstens eine Erinnerung, nie nach Kauf oder
+Abmeldung, mit Abmelde-Satz in jeder Mail. WhatsApp und Shopify Messaging waren geprüft und verworfen
+(keine Nummern, keine Einwilligungen). Bis dahin war der Versand ein Klick („E-Mail öffnen“, Abschnitt 9a).
+
+- **Wer dran ist**, rechnet unverändert `lib/muster-nachfassen.mjs` (`musterNachfassen()`) aus
+  `/api/kunden/bestellungen` samt Zeitleiste – Kaufprüfung, 30-Tage-Grenze und „genau eine Erinnerung“
+  stecken dort. Neu: `abgemeldet` (Stoppliste) als dritte Liste und `platzhalterFrei()` als letzte Sperre
+  vor dem Versand. `fuelleText()` lässt einen unbekannten Platzhalter im **Betreff** stehen (statt ihn
+  stillschweigend zu streichen), damit der Lauf die Mail zurückhält.
+- **Der Lauf** `kundenNachfassenSenden({ probe })` in `scripts/dashboard-api.mjs`, aufgerufen von
+  `scripts/muster-nachfassen-senden.mjs` (`npm run -s muster:nachfassen`, `-- --probe` = Trockenlauf:
+  listen, nichts senden, nichts schreiben). Je Kunde in dieser Reihenfolge: Vermerk `sendet` im
+  Versandprotokoll → Mail → `gesendet` → Zeitleisten-Schritt `nachgefasst` (von `automatisch`, Notiz
+  „Erste Nachfrage/Erinnerung automatisch per E-Mail: „Betreff““) → `vermerkt`. Bricht der Lauf nach der
+  Mail ab, schickt der nächste keine zweite, sondern trägt nur die Zeitleiste nach (`nachgetragen`).
+  Übersprungen: Stoppliste, Rückrufwunsch (der Laden ruft an), keine Adresse. Nichts geht raus, wenn die
+  Vorlage fehlt (`keine-vorlage`), das Postfach nicht eingerichtet ist (`kein-zugang`), Stoppliste oder
+  Protokoll unlesbar sind (`stoerung`) oder ein Platzhalter stehen bliebe (Fehler je Kunde).
+  {Name} füllt die `unterschrift` aus dem Postfach, sonst „Ihr Team von Teppich Paradies“.
+- **Postfach** `$TP_PRIVAT_DIR/nachfassen/postfach.json` (legt der Inhaber an, `chmod 600`; für andere
+  lesbar = es wird nichts verschickt): `host`, `port` (465 → `tls`, 587 → `starttls`), `benutzer`,
+  `passwort`, `absender`, optional `absenderName`, `unterschrift`, `kopie`, `kopieImmer`. Versand ohne
+  Fremdpaket über `operations/lib/smtp.mjs` (EHLO, STARTTLS, AUTH PLAIN/LOGIN, reiner Text UTF-8 base64,
+  Blindkopie nur im Umschlag; `sicherheit: "keine"` nur zu 127.0.0.1 für die Test-Attrappe
+  `operations/tests/smtp-attrappe.mjs`). Das Passwort steht in keiner Meldung und keinem Protokoll.
+- **Mitlesen**: In den ersten 7 Tagen nach dem ersten echten Versand (`ersterVersandAm`) geht jede Mail als
+  Blindkopie an `kopie` (Standard: der Absender, also das Büro); danach nur noch mit `kopieImmer: true`.
+  Die Karte zeigt „bis <Datum> mit Kopie an …“.
+- **Stoppliste** `$TP_PRIVAT_DIR/nachfassen/stoppliste.json` (`{ eintraege: { "<adresse klein>": { am, von,
+  grund, orderId } } }`): Knopf „Abgemeldet“ in der Karte (Rückfrage, dann `POST
+  /api/kunden/nachfassen-abmelden` – write-Liste, Rolle „lesen“ 403; wer einträgt, kommt aus der Sitzung).
+  Die Antwort trägt den frischen Kartenstand (`stand`), die Karte zeichnet ohne zweiten Abruf neu. Ein
+  Kunde auf der Liste erscheint unter „Abgemeldet“ statt „offen“ und wird weder vom Lauf noch per Klick
+  angeschrieben. Eine beschädigte Liste stoppt den ganzen Lauf.
+- **Versandprotokoll** `$TP_PRIVAT_DIR/nachfassen/versand.json`: `ersterVersandAm`, `letzterLauf {am,
+  verschickt, nachgetragen, uebersprungen, fehler, kopie}`, `sendungen[]` (Bestellung, Stufe, Adresse,
+  Betreff, Kopie, Status `sendet|gesendet|vermerkt|fehler`, Message-ID; die letzten 500). Ein Fehlversuch
+  sperrt nicht – der nächste Lauf versucht es wieder.
+- **Karte „Muster nachfassen“** (`ansichten/heute/muster-nachfassen.mjs`): `GET /api/kunden/muster-texte`
+  liefert zusätzlich `versand {eingerichtet, hinweis, letzterLauf, mitlesenBis, kopie}` und
+  `abgemeldet[]`. Eingerichtet: eine Zeile „E-Mails gehen automatisch vom Firmenpostfach raus (Mo–Sa
+  vormittags) · letzter Lauf … · bis … mit Kopie an …“, offene Zeilen sagen „Geht beim nächsten Lauf
+  automatisch per E-Mail raus“, „Erledigt – nachgefasst“ ist nicht mehr die Hauptaktion. Nicht
+  eingerichtet: Hinweis mit Dateiname, der Laden fasst weiter per Klick nach. Erledigt-Zeilen nennen
+  „automatisch per E-Mail“ statt eines Kollegen.
+- **„Jetzt senden“** (seit 2026-10-19): Ist das Postfach eingerichtet, hat jede offene Zeile mit
+  E-Mail-Adresse den Knopf „Jetzt senden“ (in der ersten Zeile die Hauptaktion). Betreff und Text im
+  Textvorschlag sind dann bearbeitbar; Änderungen bleiben je Bestellung und Stufe im Speicher des Tabs,
+  bis gesendet wird („Vorschlag wiederherstellen“ verwirft sie). Nach einer Rückfrage mit Empfänger und
+  Betreff `POST /api/kunden/nachfassen-senden {orderId, stufe, betreff, text}` → `kundenNachfassenEinzeln()`
+  (write-Liste, nur POST, Rolle „lesen“ 403, wer sendet kommt aus der Sitzung). Der Server prüft wie der
+  Lauf: Empfänger nur aus den Bestelldaten (eine Adresse aus dem Browser zählt nicht), Stoppliste und
+  Protokoll frisch gelesen, Zeile muss noch offen sein und dieselbe Stufe haben (sonst 409 „neu laden“),
+  dieselbe Stufe nie zweimal (`schonVerschickt`), Betreff einzeilig ≤ 200 Zeichen, kein `{Platzhalter}`.
+  Gleiche Reihenfolge `sendet → gesendet → vermerkt` und dieselbe Kopie-Regel; Zeitleiste „nachgefasst“
+  von dem Mitarbeiter, Notiz „… per E-Mail aus dem Control Center: „Betreff““; Protokolleintrag mit `von`.
+  Fehler beim Postfach → 502, Protokoll `fehler`, Zeile bleibt offen. Danach lädt die Karte die
+  Bestellzeilen neu, die Zeile wandert nach „Erledigt“.
+- **Zeitplan**: `operations/launchagents/net.teppich-paradies.nachfassen.plist.vorlage`, Mo–Sa 9:30 aus
+  `~/tp-dashboard`, Protokoll `~/teppich-paradies-analyse/nachfassen/versand.log`. Einrichten wie die
+  Auslauf-Prüfung (`__HOME__` ersetzen, nach `~/Library/LaunchAgents` kopieren, `launchctl load`) – erst
+  nach dem Merge in den Dienst-Checkout und nach einem Trockenlauf von Hand.
+- **Tests**: `docs/ai-dashboard/tests/nachfassen-versand-api.test.mjs` (Trockenlauf, echter Lauf gegen die
+  SMTP-Attrappe mit Kopie, Zeitleiste, Doppelschutz, Erinnerung ohne Kopie, Platzhalter, abgelehnte
+  Anmeldung, kaputte Stoppliste, Rollen am Server), `operations/tests/smtp.test.mjs`,
+  `operations/tests/nachfass-versand.test.mjs`, erweitert `tests/muster-nachfassen.test.mjs`.
+  Nur erfundene Kunden unter `example.invalid`.
+- **Offen**: Die Abmeldung erfasst heute ein Mensch per Knopf, wenn die Antwort „Abmelden“ im Postfach
+  liegt; ein Posteingangs-Abgleich ist nicht gebaut. Die rechtliche Einordnung (§ 7 UWG, Mail ohne
+  Newsletter-Einwilligung) klärt der Inhaber mit dem Rechtstexter (w-083).

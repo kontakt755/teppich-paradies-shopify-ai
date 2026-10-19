@@ -128,9 +128,10 @@ export function grosshaendlerId({ variantMetafelder, produktMetafelder, sku }) {
  * @param {object} p.props        Properties als Objekt
  * @param {number} p.quantity     bestellte Menge
  * @param {boolean} p.hundertstel custom.preis_pro_001_qm
+ * @param {boolean} [p.laengenware] custom.preis_pro_001_lfm (Profile nach Mass, Menge in cm)
  * @param {Array}  [p.alleZeilen] alle Positionen der Bestellung (fuer Kettel-Gruppen)
  */
-export function masspruefung({ props, quantity, hundertstel, alleZeilen = [] }) {
+export function masspruefung({ props, quantity, hundertstel, laengenware = false, alleZeilen = [] }) {
   const p = props || {};
   const qty = Number(quantity) || 0;
   const masse = p['Maße'];
@@ -204,6 +205,12 @@ export function masspruefung({ props, quantity, hundertstel, alleZeilen = [] }) 
       }
       bewerten(soll, '× 0,01 m', soll - 1); // 1 cm Spiel fuer die Rundung des Rechners
     }
+  } else if (!leer(p['Länge je Stück'])) {
+    // Profile nach Mass (blocks/tp-laengen-zuschnitt): Menge = Laenge je Stueck x Stueckzahl in cm.
+    const l = ganzzahlCm(p['Länge je Stück']);
+    const n = ganzzahlCm(String(p['Anzahl'] ?? '').replace(/st(ü|ue)ck/i, ''));
+    if (!(l > 0) || !(n > 0)) ergebnis.status = 'unlesbar';
+    else bewerten(l * n, '× 0,01 m');
   } else if (!leer(zu) && !leer(leiste)) {
     // Fussleiste: volle Meter aus der Property "Laenge".
     const soll = Math.ceil(parseFloat(String(leiste).replace('m', '').replace(',', '.').trim()) || 0);
@@ -211,8 +218,8 @@ export function masspruefung({ props, quantity, hundertstel, alleZeilen = [] }) 
     else bewerten(soll, 'm');
   }
 
-  // Auffangregel: 0,01-m2-Produkte muessen ein Mass tragen.
-  if (ergebnis.status === '' && hundertstel) ergebnis.status = 'unlesbar';
+  // Auffangregel: 0,01-m2- und 0,01-lfm-Produkte muessen ein Mass tragen.
+  if (ergebnis.status === '' && (hundertstel || laengenware)) ergebnis.status = 'unlesbar';
   return ergebnis;
 }
 
@@ -301,6 +308,7 @@ export function resolveLineItem({ lineItem, variant, alleZeilen = [] } = {}) {
     rollenbreite: zahlOderUngeklaert(vm?.custom?.rollenbreite ?? pm?.custom?.rollenbreite),
     stangenlaenge: zahlOderUngeklaert(pm?.custom?.stangenlaenge),
     preis_pro_001_qm: wahr(pm?.custom?.preis_pro_001_qm),
+    preis_pro_001_lfm: wahr(pm?.custom?.preis_pro_001_lfm),
   };
 
   const gh = grosshaendlerId({ variantMetafelder: vm, produktMetafelder: pm, sku });
@@ -325,6 +333,9 @@ export function resolveLineItem({ lineItem, variant, alleZeilen = [] } = {}) {
     musterId: leer(props['_Muster_ID']) ? null : String(props['_Muster_ID']),
     gruppe: leer(props['_Gruppe']) ? null : String(props['_Gruppe']),
     farbnummer: leer(props['Farbnummer']) ? null : String(props['Farbnummer']),
+    // Profile nach Mass (Laengenware): Zuschnitt je Stueck und Bohrung fuer den Lieferanten.
+    laengeJeStueckCm: leer(props['Länge je Stück']) ? null : ganzzahlCm(props['Länge je Stück']),
+    bohrung: leer(props['Bohrung']) ? null : String(props['Bohrung']).trim(),
     // Variante, die je laufendem Meter verkauft wird ("80 cm breit (je lfm)"): die
     // Shopify-Menge IST dann die Laenge in lfm, die Breite steht im Variantentitel.
     ...ausVariantentitel(lineItem.variantTitle ?? variant?.title),
@@ -341,7 +352,7 @@ export function resolveLineItem({ lineItem, variant, alleZeilen = [] } = {}) {
     einkauf.quellvariante_quelle = 'property:_Quellvariante_ID';
   }
 
-  let pruefung = masspruefung({ props, quantity: lineItem.quantity, hundertstel: produkt.preis_pro_001_qm, alleZeilen });
+  let pruefung = masspruefung({ props, quantity: lineItem.quantity, hundertstel: produkt.preis_pro_001_qm, laengenware: produkt.preis_pro_001_lfm, alleZeilen });
 
   // Bundle-Komponente (lineItemGroup): nur die Rollenware unter "Zuschnitt
   // von der Rolle" (Produkt mit custom.max_roll_laenge_cm) ist ein reiner

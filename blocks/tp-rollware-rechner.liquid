@@ -76,7 +76,8 @@
   # und nur, wenn die gewaehlte Variante service.einfassen exakt "Verfuegbar"
   # traegt (JS updateExtras). Sonst erscheint gar nichts.
   # Zusaetze zum Teppichboden: gekettelte Fussleiste aus demselben Material
-  # (Varianten = Hoehen, Preis je laufendem Meter) und Haftunterlage von der
+  # (Optionen Hoehe und Preisstufe, Preis je laufendem Meter inklusive
+  # Material, gefertigt in ganzen Streifen quer zur Rolle) und Haftunterlage von der
   # Rolle (Varianten = Breiten, Preis je laufendem Meter).
   #
   # Die Kante des Teppichbodens selbst wird hier NICHT eingefasst - ein
@@ -381,7 +382,7 @@
           </label>
           <span class="tp-rwc-tip">
             <button type="button" class="tp-rwc-tip__knopf" aria-describedby="tp-rwc-tip-l-{{ tp_rc_id }}">Mehr dazu</button>
-            <span class="tp-rwc-tip__text" role="tooltip" id="tp-rwc-tip-l-{{ tp_rc_id }}">Aus dem passenden Teppichmaterial fertigen wir eine gekettelte Fußleiste in Ihrer Höhe. Berechnet wird je laufendem Meter, Vorschlag ist der Umfang Ihres Stücks.</span>
+            <span class="tp-rwc-tip__text" role="tooltip" id="tp-rwc-tip-l-{{ tp_rc_id }}">Aus Ihrem Teppichboden fertigen wir eine gekettelte Fußleiste in Ihrer Höhe. Dafür schneiden wir Streifen quer über die ganze Rolle, deshalb fertigen und berechnen wir in ganzen Streifen. Der Meterpreis enthält das Material; Vorschlag ist der Umfang Ihres Stücks.</span>
           </span>
           <div class="tp-rwc-extra-felder" data-leiste-felder hidden>
             <div>
@@ -727,7 +728,7 @@
     {%- if tp_rc_leiste != blank -%}
       {%- for tp_rc_lv in tp_rc_leiste.variants -%}
         {%- if tp_rc_lv.available and tp_rc_lv.price > 0 -%}
-          { "id": {{ tp_rc_lv.id | json }}, "title": {{ tp_rc_lv.title | json }}, "price": {{ tp_rc_lv.price | json }} },
+          { "id": {{ tp_rc_lv.id | json }}, "title": {{ tp_rc_lv.title | json }}, "price": {{ tp_rc_lv.price | json }}, "options": {{ tp_rc_lv.options | json }} },
         {%- endif -%}
       {%- endfor -%}
     {%- endif -%}
@@ -2035,17 +2036,28 @@ function tpRwcInit{{ tp_rc_id }}() {
     // nicht gewählt" und darf die Bestellung nicht als reinen Teppichkauf
     // durchlassen. calculate() und der Klick-Handler sperren damit den
     // Warenkorb-Request, statt das Zubehör kommentarlos wegzulassen.
-    var res = { items: [], sum: 0, lines: [], rows: [], leisteInvalid: false, holzInvalid: false, holzInvalidField: null };
+    var res = { items: [], sum: 0, lines: [], rows: [], leisteInvalid: false, leisteInvalidField: null, holzInvalid: false, holzInvalidField: null };
     var allowed = extrasAllowed();
     if (leisteBox) {
-      var showL = allowed && leisteVarianten.length > 0;
+      // Preisstufe aus dem Materialwert des gewaehlten Teppichbodens (siehe
+      // leisteMaterial). Teurer als die hoechste Stufe: keine Leiste.
+      var mat = leisteMaterial(w);
+      var mitStufen = leisteStufen.liste.length > 0;
+      var stufe = mitStufen ? leisteStufeFuer(mat.rate) : 0;
+      var showL = allowed && leisteVarianten.length > 0 && !leisteStufen.unlesbar && (!mitStufen || stufe > 0);
       leisteBox.hidden = !showL;
       var sel = leisteBox.querySelector('[data-leiste-hoehe]');
+      // Auswahl = Hoehen (Option 1). Jede Hoehe gibt es in jeder Stufe, die
+      // Liste haengt also nicht an der gewaehlten Farbe.
       if (showL && sel && !sel.options.length) {
+        var lGesehen = {};
         leisteVarianten.forEach(function (v) {
+          var h = leisteHoehe(v);
+          if (!h || lGesehen[h]) return;
+          lGesehen[h] = true;
           var o = document.createElement('option');
-          o.value = v.id;
-          o.textContent = v.title;
+          o.value = h;
+          o.textContent = h;
           sel.appendChild(o);
         });
       }
@@ -2056,51 +2068,67 @@ function tpRwcInit{{ tp_rc_id }}() {
       if (meterIn && !meterIn.getAttribute('data-touched') && w > 0 && len > 0) {
         meterIn.value = Math.ceil((2 * (w + len)) / 100);
       }
-      // Eingabe mit Komma oder Punkt. Abgerechnet werden volle Meter - der
-      // Preis gilt je laufendem Meter, eine halbe Leiste gibt es nicht.
+      // Eingabe mit Komma oder Punkt. Gefertigt wird in ganzen Streifen quer
+      // ueber die Rolle (leisteStreifen), berechnet in vollen Metern.
       // Aufgerundet wird sichtbar, nicht still.
       var eingabe = parseFloat(String((meterIn && meterIn.value) || '').replace(',', '.')) || 0;
-      var m = eingabe > 0 ? Math.ceil(eingabe - 1e-9) : 0;
-      res.leisteInvalid = an && m <= 0;
-      var lv = leisteVarianten.filter(function (v) { return sel && String(v.id) === String(sel.value); })[0];
+      var lz = leisteStreifen(eingabe, mat.rolleCm);
+      var m = lz.meter;
+      var lv = showL && sel ? leisteVariante(sel.value, stufe) : null;
+      // TP-003 auch fuer die Hoehe: fehlt ihre Variante in dieser Stufe
+      // (nicht lieferbar, Preis 0), haelt das den Kauf an, statt die
+      // angehakte Leiste wegzulassen.
+      res.leisteInvalid = an && (m <= 0 || !lv);
+      if (res.leisteInvalid) res.leisteInvalidField = m <= 0 ? 'meter' : 'hoehe';
       var lHint = leisteBox.querySelector('[data-leiste-hint]');
       var lPreisEl = leisteBox.querySelector('[data-leiste-preis]');
-      // K4: Preis fuer dieses Stueck - Umfang in vollen Metern mal Preis der
+      // K4: Preis fuer dieses Stueck - Umfang in ganzen Streifen mal Preis der
       // gewaehlten (sonst der ersten) Hoehe. Ohne Masse der Meterpreis.
       var lUmfangEl = leisteBox.querySelector('[data-leiste-umfang]');
-      var lPreisV = leisteVarianten.filter(function (v) { return sel && String(v.id) === String(sel.value); })[0] || leisteVarianten[0];
-      var lMeterVorschlag = an ? m : (w > 0 && len > 0 ? Math.ceil((2 * (w + len)) / 100 - 1e-9) : 0);
+      // Ohne gewaehlte Hoehe die erste - nie die einer anderen als der gewaehlten.
+      var lPreisV = lv || (showL && !(sel && sel.value) ? leisteVariante(leisteHoehe(leisteVarianten[0]), stufe) : null);
+      var lUmfang = w > 0 && len > 0 ? Math.ceil((2 * (w + len)) / 100 - 1e-9) : 0;
+      var lMeterVorschlag = an ? m : leisteStreifen(lUmfang, mat.rolleCm).meter;
       if (lPreisEl && lPreisV) {
         lPreisEl.textContent = lMeterVorschlag > 0
           ? fmt(lMeterVorschlag * parseFloat(lPreisV.price) / 100) + ' €'
           : fmt(parseFloat(lPreisV.price) / 100) + ' € / m';
+      } else if (lPreisEl) {
+        lPreisEl.textContent = '';
       }
-      if (lUmfangEl) {
+      if (lUmfangEl && !lPreisV) {
+        lUmfangEl.textContent = showL ? 'Diese Höhe ist gerade nicht lieferbar' : '';
+      } else if (lUmfangEl) {
         lUmfangEl.textContent = lMeterVorschlag > 0
-          ? (an ? lMeterVorschlag + ' m' : 'Umfang ' + lMeterVorschlag + ' m') + ' × ' + fmt(parseFloat(lPreisV.price) / 100) + ' €'
+          ? (an || lMeterVorschlag === lUmfang ? '' : 'Umfang ' + lUmfang + ' m · ') + lMeterVorschlag + ' m × ' + fmt(parseFloat(lPreisV.price) / 100) + ' €'
           : 'Preis je laufendem Meter';
       }
       if (an && lv && m > 0) {
         var lPreis = parseFloat(lv.price) / 100;
-        res.items.push({
-          id: lv.id,
-          quantity: m,
-          properties: {
-            'Zu Teppichboden': data.product_title,
-            'Farbe wie Teppichboden': farbeText(),
-            'Höhe': lv.title,
-            'Länge': m + ' m'
-          }
-        });
+        var lHoehe = leisteHoehe(lv);
+        var lProps = {
+          'Zu Teppichboden': data.product_title,
+          'Farbe wie Teppichboden': farbeText(),
+          'Höhe': lHoehe,
+          'Länge': m + ' m'
+        };
+        // Zuschnitt fuer die Fertigung: so viele Streifen quer ueber die Rolle.
+        if (lz.streifen > 0) lProps['Zuschnitt'] = lz.streifen + ' Streifen à ' + fmtMeter(lz.rolleM * 100);
+        res.items.push({ id: lv.id, quantity: m, properties: lProps });
         res.sum += m * lPreis;
-        res.rows.push(['Fußleiste ' + lv.title + ' · ' + m + ' m', m * lPreis]);
-        res.lines.push('+ Fußleiste ' + lv.title + ': ' + m + ' m × ' + fmt(lPreis) + ' € = ' + fmt(m * lPreis) + ' €');
+        res.rows.push(['Fußleiste ' + lHoehe + ' · ' + m + ' m', m * lPreis]);
+        res.lines.push('+ Fußleiste ' + lHoehe + ': ' + m + ' m × ' + fmt(lPreis) + ' € = ' + fmt(m * lPreis) + ' €');
         if (lHint) {
-          lHint.textContent = (m !== eingabe ? fmt(eingabe) + ' m werden als ' + m + ' volle Meter berechnet. ' : '') +
-            fmt(lPreis) + ' € je Meter, Farbe wie Ihr Teppichboden.';
+          var lText = lz.streifen > 0
+            ? (m !== eingabe ? fmtMeter(eingabe * 100) + ' werden als ' : '') + lz.streifen + ' Streifen à ' +
+              fmtMeter(lz.rolleM * 100) + ' = ' + m + ' m gefertigt und berechnet – wir schneiden quer über die ganze Rolle. '
+            : (m !== eingabe ? fmtMeter(eingabe * 100) + ' werden als ' + m + ' volle Meter berechnet. ' : '');
+          lHint.textContent = lText + fmt(lPreis) + ' € je Meter inklusive Material, Farbe wie Ihr Teppichboden.';
         }
       } else if (lHint) {
-        lHint.textContent = an ? 'Bitte Höhe und Länge angeben. Vorschlag ist der Umfang Ihres Stücks.' : '';
+        lHint.textContent = !an ? ''
+          : res.leisteInvalidField === 'hoehe' ? 'Diese Höhe ist gerade nicht lieferbar. Bitte eine andere Höhe wählen.'
+          : 'Bitte Höhe und Länge angeben. Vorschlag ist der Umfang Ihres Stücks.';
       }
     }
     if (haftBox) {
@@ -2192,6 +2220,74 @@ function tpRwcInit{{ tp_rc_id }}() {
       zubehoerBox.hidden = !((leisteBox && !leisteBox.hidden) || (haftBox && !haftBox.hidden) || (holzBox && !holzBox.hidden));
     }
     return res;
+  }
+
+  // Gekettelte Fussleiste (Inhaber 2026-10-16): Meterpreis = 5,50 EUR
+  // Fertigung + Hoehe x m²-Preis des Teppichbodens. Das Leistenprodukt fuehrt
+  // dafuer je Hoehe (Option 1) Preisstufen (Option 2 "fuer Teppich bis
+  // X €/m²"); die Preise sind mit der Obergrenze der Stufe gerechnet. Hier
+  // wird nur die passende Stufe gewaehlt - Preise stehen allein in Shopify.
+  // Fehlt Option 2 (altes Produkt mit nur der Hoehe), gilt der
+  // Variantenpreis wie bisher.
+  function leisteHoehe(v) {
+    return v ? String((v.options && v.options[0]) || v.title || '') : '';
+  }
+  function leisteStufe(v) {
+    var t = v && v.options && v.options[1];
+    var mt = t ? String(t).match(/bis\s*(\d+)/i) : null;
+    return mt ? parseInt(mt[1], 10) : 0;
+  }
+  // Stufen einmal beim Laden, aufsteigend. Traegt eine Variante eine zweite
+  // Option ohne lesbares "bis <Zahl>" (umbenannt, vertippt), ist das Produkt
+  // unlesbar: dann keine Leiste statt still der billigsten Stufe.
+  var leisteStufen = (function () {
+    var liste = [];
+    var unlesbar = false;
+    leisteVarianten.forEach(function (v) {
+      var st = leisteStufe(v);
+      if (st > 0) {
+        if (liste.indexOf(st) === -1) liste.push(st);
+      } else if (v.options && v.options.length > 1) {
+        unlesbar = true;
+      }
+    });
+    liste.sort(function (a, b) { return a - b; });
+    return { liste: liste, unlesbar: unlesbar };
+  })();
+  // Kleinste Stufe, die den m²-Preis traegt; 0 = teurer als jede Stufe.
+  function leisteStufeFuer(rate) {
+    if (!(rate > 0)) return 0;
+    for (var i = 0; i < leisteStufen.liste.length; i++) {
+      if (rate <= leisteStufen.liste[i] + 1e-9) return leisteStufen.liste[i];
+    }
+    return 0;
+  }
+  function leisteVariante(hoehe, stufe) {
+    return leisteVarianten.filter(function (v) {
+      return leisteHoehe(v) === String(hoehe) && (!stufe || leisteStufe(v) === stufe);
+    })[0] || null;
+  }
+  // Material kommt aus der Rolle, von der zugeschnitten wird: bei Meterware
+  // die gewaehlte Breite, bei Raummass dieselbe Rolle wie "Aus Rolle" am
+  // Teppichboden (ART.rolleFuer, mit Zugabe). Bewertet wird mit dem
+  // Meterwarepreis dieser Rolle - der
+  // Raummass-Aufschlag ist Zuschnitt, kein Material. Ohne passende Variante
+  // zaehlt der Preis der gewaehlten (lieber eine Stufe zu hoch als zu tief).
+  function leisteMaterial(w) {
+    if (wIdx === -1) return { rolleCm: widths[0] || 0, rate: rateOf(target) };
+    if (artMode() !== 'raum') return { rolleCm: w || 0, rate: rateOf(target) };
+    var rolle = (w > 0 && ART.rolleFuer(w, farbBreiten)) || maxFarbBreite();
+    var mv = rolle > 0 ? variantFor(baseOptions(), byWidth(rolle)) : null;
+    return { rolleCm: rolle, rate: rateOf(mv) || rateOf(target) };
+  }
+  // Ganze Streifen quer ueber die Rolle: die Laenge steigt auf volle
+  // Rollenbreiten (17 m aus der 4-m-Rolle = 5 Streifen = 20 m), berechnet
+  // werden volle Meter. Ohne bekannte Rollenbreite volle Meter wie bisher.
+  function leisteStreifen(eingabeM, rolleCm) {
+    if (!(eingabeM > 0)) return { streifen: 0, meter: 0, rolleM: 0 };
+    if (!(rolleCm > 0)) return { streifen: 0, meter: Math.ceil(eingabeM - 1e-9), rolleM: 0 };
+    var n = Math.ceil((eingabeM * 100) / rolleCm - 1e-9);
+    return { streifen: n, meter: Math.ceil((n * rolleCm) / 100 - 1e-9), rolleM: rolleCm / 100 };
   }
 
   var einfassBox = root.querySelector('[data-einfass-box]');
@@ -2459,7 +2555,7 @@ function tpRwcInit{{ tp_rc_id }}() {
     // K6: Statuszeile unter dem gedaempften Knopf - was fehlt als Naechstes.
     if (!ctaReady && !inFlight && ctaHint) {
       var fehltJetzt = fehlendesFeld();
-      if (extras && extras.leisteInvalid) ctaHint.textContent = 'Bitte Fußleisten-Länge angeben';
+      if (extras && extras.leisteInvalid) ctaHint.textContent = extras.leisteInvalidField === 'hoehe' ? 'Bitte eine lieferbare Fußleisten-Höhe wählen' : 'Bitte Fußleisten-Länge angeben';
       else if (extras && extras.holzInvalid) ctaHint.textContent = 'Bitte Länge und Farbe der Sockelleiste angeben';
       else if (wErr && wErr !== 'leer') ctaHint.textContent = wErr;
       else if (lenFehler === 'ungueltig' || lenFehler === 'negativ') ctaHint.textContent = errComma ? errComma.textContent : 'Bitte Länge prüfen';
@@ -2652,8 +2748,8 @@ function tpRwcInit{{ tp_rc_id }}() {
     // unvollstaendige Fussleiste darf nie kommentarlos entfallen - lHint
     // traegt bereits den passenden Hinweistext aus updateExtras().
     if (extras.leisteInvalid) {
-      var meterIn = leisteBox.querySelector('[data-leiste-meter]');
-      zeigeFehlerfeld(meterIn);
+      var leisteFeld = leisteBox.querySelector(extras.leisteInvalidField === 'hoehe' ? '[data-leiste-hoehe]' : '[data-leiste-meter]');
+      zeigeFehlerfeld(leisteFeld);
       return;
     }
     if (extras.holzInvalid) {
@@ -2792,7 +2888,7 @@ else { document.addEventListener('DOMContentLoaded', tpRwcInit{{ tp_rc_id }}); }
     {
       "type": "product",
       "id": "kettelleisten_produkt",
-      "label": "Teppich-Fußleiste (Varianten = Höhen, Preis je laufendem Meter)"
+      "label": "Teppich-Fußleiste (Höhe × Preisstufe, Preis je laufendem Meter)"
     },
     {
       "type": "product",

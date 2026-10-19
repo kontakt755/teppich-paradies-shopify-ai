@@ -1,5 +1,6 @@
 /**
- * Ansicht "Insights" (#/insights, nur Inhaber): Verteilung der Aufgaben und Systemgesundheit.
+ * Ansicht "Insights" (#/insights, nur Inhaber): Verteilung der Aufgaben, Systemgesundheit
+ * und Claude-Verbrauch (insights/verbrauch.mjs).
  */
 import { STATUSES, PRIORITIES } from '../lib/model.mjs';
 import { state } from '../kern/zustand.mjs';
@@ -9,9 +10,10 @@ import { prioBadge } from '../bausteine/aufgaben.mjs';
 import { ensureAktualisierung } from '../bausteine/aktualisierung.mjs';
 import { systemHealth, healthRow } from '../bausteine/systemzustand.mjs';
 import { shopwache, ensureShopwache } from './shopwache.mjs';
+import { verbrauchKarte, ensureVerbrauch } from './insights/verbrauch.mjs';
 
 export function viewInsights() {
-  if (state.capabilities.mode === 'local') { ensureAktualisierung(); ensureShopwache(); }
+  if (state.capabilities.mode === 'local') { ensureAktualisierung(); ensureShopwache(); ensureVerbrauch(); }
   const open = state.tasks.filter(t => t.open);
   const byStatus = STATUSES.filter(s => s.open).map(s => [s.label, open.filter(t => t.status === s.key).length]).filter(x => x[1]);
   const byPrio = Object.values(PRIORITIES).map(p => [p.label, open.filter(t => t.priority === p.key).length]);
@@ -33,6 +35,7 @@ export function viewInsights() {
       </section>
       <section class="card"><div class="card-head"><h2>Offene Arbeit nach Status</h2><span class="more muted">Quelle: GitHub Issues · ${fmtDateTime(state.raw?.generated_at)}</span></div>${bars(byStatus)}
         <div class="card-head" style="margin-top:16px"><h2>Nach Priorität</h2></div>${bars(byPrio)}</section>
+      ${state.capabilities.mode === 'local' ? verbrauchKarte() : ''}
       <section class="card span-2"><div class="card-head"><h2>Kennzahlen</h2></div>
         <p class="small muted">Shop-Kennzahlen (Bestellungen, Umsatz) stehen auf <a href="#/heute">Heute</a> und kommen aus einem lokalen Export, der nie ins öffentliche Repository gelangt. Google Ads und GA4/Search Console sind noch nicht angebunden – erst nach der Sichtbarkeitsentscheidung. Bis dahin gibt es hier keine Demo-Zahlen.</p>
       </section>

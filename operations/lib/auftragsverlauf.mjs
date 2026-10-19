@@ -7,7 +7,8 @@
  *
  *   Muster: angefragt -> beim Lieferanten bestellt -> bei uns angekommen ->
  *           gelabelt und an Kunden verschickt -> Kunde hat Muster ->
- *           nachgefasst -> Ergebnis (Kunde hat bestellt | kein Interesse)
+ *           nachgefasst -> Ergebnis (Kunde hat bestellt | kein Interesse |
+ *           Muster nicht verfuegbar - Kunde informiert)
  *   Ware:   Kunde hat bestellt -> beim Lieferanten bestellt -> geliefert an uns
  *           (entfaellt bei Direktversand) -> an Kunden raus -> erledigt
  *
@@ -54,8 +55,15 @@ export const WARE_ABSCHLIESSEN_NACH_TAGEN = 7;
 export const AUFTRAGSART = Object.freeze({ MUSTER: 'muster', WARE: 'ware' });
 
 /** Schritte, die je Auftrag (nicht je Position) gespeichert werden. */
-export const AUFTRAGS_SCHRITTE = Object.freeze(['kunde_hat_muster', 'nachgefasst', 'kunde_hat_bestellt', 'kein_interesse']);
-const ERGEBNIS_SCHRITTE = Object.freeze(['kunde_hat_bestellt', 'kein_interesse']);
+export const AUFTRAGS_SCHRITTE = Object.freeze(['kunde_hat_muster', 'nachgefasst', 'kunde_hat_bestellt', 'kein_interesse', 'muster_nicht_verfuegbar']);
+/**
+ * Ergebnisse schliessen die Musterstrecke ab. "Muster nicht verfuegbar" (Inhaber 2026-10-16):
+ * der Lieferant hat die Farbe nicht, der Kunde ist informiert und bestellt bei Bedarf neue
+ * Muster - der Auftrag ist damit fertig wie bei "kein Interesse".
+ */
+export const ERGEBNIS_SCHRITTE = Object.freeze(['kunde_hat_bestellt', 'kein_interesse', 'muster_nicht_verfuegbar']);
+/** Ergebnisse, bei denen die Notiz Pflicht ist (sie nennt die betroffenen Farben). */
+export const NOTIZ_PFLICHT = Object.freeze(['muster_nicht_verfuegbar']);
 /** Alles, was POST /api/einkauf/auftragsstatus mit aktion "schritt" annimmt. */
 export const SCHRITT_WERTE = Object.freeze([...STATUS_ORDER, ...AUFTRAGS_SCHRITTE, 'notiz', 'zurueck']);
 
@@ -72,6 +80,7 @@ export const SCHRITT_LABEL = Object.freeze({
     ergebnis: 'Ergebnis',
     kunde_hat_bestellt: 'Kunde hat bestellt',
     kein_interesse: 'Kein Interesse',
+    muster_nicht_verfuegbar: 'Muster nicht verfügbar – Kunde informiert',
     erledigt: 'Abgeschlossen',
   }),
   ware: Object.freeze({
@@ -130,6 +139,7 @@ export function bereiteEreignisVor(file, { orderId, schritt, actor, notiz = null
   if (!actor) throw new AuftragsverlaufFehler('actor ist Pflicht');
   if (![...AUFTRAGS_SCHRITTE, 'notiz', 'zurueck'].includes(schritt)) throw new AuftragsverlaufFehler(`Unbekannter Schritt "${schritt}"`);
   if (schritt === 'notiz' && !clip(notiz, 2000)) throw new AuftragsverlaufFehler('Die Notiz ist leer');
+  if (NOTIZ_PFLICHT.includes(schritt) && !clip(notiz, 2000)) throw new AuftragsverlaufFehler('Bitte in der Notiz die betroffenen Farben nennen');
   if (schritt === 'zurueck' && !AUFTRAGS_SCHRITTE.includes(bezug)) throw new AuftragsverlaufFehler('Welcher Schritt zurückgenommen wird, fehlt');
 
   const alle = leseVerlauf(file, { streng: true });
@@ -491,6 +501,6 @@ export function zeitleistenFuerModell(modell, { statusAlle = {}, verlaufAlle = {
 /** Welche Schritte sich fuer einen Auftrag setzen lassen (fuer "Etwas anderes ist passiert ..."). */
 export function setzbareSchritte(art) {
   return art === AUFTRAGSART.MUSTER
-    ? ['bestellt', 'geliefert', 'raus', 'kunde_hat_muster', 'nachgefasst', 'kunde_hat_bestellt', 'kein_interesse']
+    ? ['bestellt', 'geliefert', 'raus', 'kunde_hat_muster', 'nachgefasst', 'kunde_hat_bestellt', 'kein_interesse', 'muster_nicht_verfuegbar']
     : ['bestellt', 'geliefert', 'raus', 'erledigt'];
 }

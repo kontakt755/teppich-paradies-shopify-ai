@@ -1,0 +1,53 @@
+/* Arbeitsplatz: eine ruhige Aufgabenauswahl und ein durchgehender Arbeitsbereich. */
+.prozess-seite { display: grid; gap: 18px; max-width: 1100px; min-width: 0; }
+.prozess-auswahl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.prozess-wahl { display: flex; flex-direction: column; gap: 6px; padding: 15px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); color: var(--text); overflow-wrap: anywhere; }
+.prozess-wahl:hover { text-decoration: none; background: var(--surface-2); }
+.prozess-wahl[aria-current="page"] { border-color: var(--accent); background: var(--accent-soft); }
+.prozess-wahl[aria-current="page"] strong { color: var(--accent); }
+.prozess-wahl span { font-size: .875rem; color: var(--text-2); }
+.prozess-karte { display: grid; gap: 18px; min-width: 0; box-shadow: none; }
+.prozess-kopf { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.prozess-kopf h2 { font-size: 1.2rem; }
+.prozess-eingaben { display: grid; gap: 14px; }
+.prozess-seite .field, .prozess-seite input, .prozess-seite textarea, .prozess-seite select { min-width: 0; max-width: 100%; width: 100%; }
+.prozess-seite textarea { overflow-wrap: anywhere; white-space: pre-wrap; }
+.prozess-eingaben textarea { min-height: 125px; height: 125px; }
+.prozess-seite .notice { display: grid; gap: 9px; justify-items: start; overflow-wrap: anywhere; }
+.prozess-anweisung, .prozess-vorschau { border-top: 1px solid var(--line); padding-top: 14px; min-width: 0; }
+.prozess-anweisung summary, .prozess-vorschau summary { color: var(--text-2); font-size: .9rem; cursor: pointer; }
+.prozess-anweisung ul { padding-left: 22px; font-size: .875rem; color: var(--text-2); margin: 12px 0; }
+.prozess-anweisung li + li { margin-top: 6px; }
+.prozess-anweisung p { color: var(--text-2); font-size: .875rem; }
+.prozess-vorschau .field { margin-top: 12px; }
+.prozess-vorschau textarea { font-family: var(--font); font-size: .85rem; background: var(--surface-2); }
+.prozess-uebergabe { display: grid; gap: 13px; border-top: 1px solid var(--line); padding-top: 18px; min-width: 0; }
+.prozess-uebergabe > .field { max-width: 290px; }
+.prozess-aktionen { display: flex; flex-wrap: wrap; gap: 10px; }
+.prozess-aktionen > .btn { min-height: 42px; overflow-wrap: anywhere; }
+.prozess-aktionen > a { color: var(--text); }
+.prozess-direkt, .prozess-manuell { display: grid; gap: 10px; min-width: 0; }
+.prozess-alternative { min-width: 0; border-top: 1px solid var(--line); padding-top: 12px; }
+.prozess-alternative summary { cursor: pointer; color: var(--text-2); font-size: .9rem; }
+.prozess-manuell { margin-top: 12px; }
+.prozess-einstellungen { min-width: 0; box-shadow: none; }
+.prozess-einstellungen summary { color: var(--text-2); font-size: .9rem; }
+.prozess-einstellungsform { display: grid; gap: 16px; min-width: 0; }
+.prozess-einstellungsform > .field { max-width: 300px; }
+.prozess-einstellungsform fieldset { min-width: 0; margin: 0; padding: 13px; border: 1px solid var(--line); border-radius: 8px; }
+.prozess-einstellungsform legend { font-weight: 600; font-size: .9rem; padding: 0 5px; }
+.prozess-linkfelder { display: grid; gap: 12px; }
+.prozess-linkfelder input { overflow: hidden; text-overflow: ellipsis; }
+.arbeitsplatz-schnellstart { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.arbeitsplatz-schnellstart > span { color: var(--text-2); font-size: .875rem; margin-right: 2px; }
+.arbeitsplatz-schnellstart > .btn { color: var(--text-2); }
+@media (max-width: 650px) {
+  .prozess-auswahl { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .prozess-wahl { padding: 12px 8px; gap: 3px; }
+  .prozess-wahl strong { font-size: .875rem; }
+  .prozess-wahl span { display: none; }
+  .prozess-karte { padding: 16px 14px; }
+  .prozess-aktionen > .btn { width: 100%; }
+  .prozess-seite .field input, .prozess-seite .field select, .prozess-seite .field textarea { font-size: 1rem; }
+  .prozess-einstellungsform fieldset { padding: 10px; }
+}

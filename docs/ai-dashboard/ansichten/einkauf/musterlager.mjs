@@ -13,7 +13,12 @@
  * zusammen raus - das Lagermuster steht dann als "zurueckgelegt" da.
  *
  * Darunter Vorschlaege aus den Bestellungen: eingetroffene Probestuecke ("Rest einlagern?")
- * und Farben, die mehrfach als Muster bestellt wurden. Nur lokal, Shopify bleibt unberuehrt.
+ * und Farben, die mehrfach als Muster bestellt wurden. Das Lager selbst ist nur lokal.
+ *
+ * "Muster nicht verfuegbar" (Inhaber 2026-10-16, Zeitleiste): die betroffenen Farben sind im Shop
+ * gesperrt. Oben "Im Shop sperren", wenn das nicht geklappt hat (Recht fehlt, kein Zugang,
+ * kein eigener Muster-Artikel) - mit Link zur Variante in Shopify; darunter "Im Shop gesperrte
+ * Muster" mit "Wieder verfuegbar". Server: operations/lib/mustersperre.mjs.
  */
 import { state } from '../../kern/zustand.mjs';
 import { $, esc, fmtDate, plural, toast } from '../../kern/helfer.mjs';
@@ -166,11 +171,72 @@ export function viewEinkaufMusterlager() {
       <ul class="ml-liste">${d.vorschlaege.map(vorschlagHtml).join('')}</ul>
     </section>` : '';
 
+  const sp = d.sperren || { gesperrt: [], offen: [] };
+  const sperrFehler = sp.fehler ? `<div class="notice crit" role="alert">Gesperrte Muster nicht lesbar: ${esc(sp.fehler)}</div>` : '';
+
   return `${kopf}
+    ${sperrFehler}
+    ${sperrenOffenHtml(sp.offen || [])}
     <div class="toolbar search-hero"><input type="search" autocomplete="off" placeholder="Produkt, Farbe oder Lagerplatz suchen" value="${esc(state.route.params.get('mlq') || '')}" data-param="mlq" aria-label="Musterlager durchsuchen"></div>
     ${d.eintraege.length ? `<p class="small muted ml-zahlen">${zahlen.join(' · ')}</p>` : ''}
     ${liste}
+    ${sperrenImShopHtml(sp.gesperrt || [])}
     ${vorschlaege}`;
+}
+
+// -- Mustersperre ---------------------------------------------------------------
+
+const auftraegeText = s => (s.auftraege || []).map(a => a.orderName).filter(Boolean).join(', ');
+const sperrName = s => [s.produkt, s.farbe].filter(Boolean).join(' · ') || s.sku;
+
+/** "Im Shop sperren": Sperren, die (noch) nicht in Shopify stehen - mit Grund und Link. */
+function sperrenOffenHtml(liste) {
+  if (!liste.length) return '';
+  const lesend = istNurLesend();
+  return `<section class="ml-sperren ml-sperren-offen" aria-labelledby="mlSperrenOffen">
+    <h2 class="section-title" id="mlSperrenOffen">Im Shop sperren <span class="ml-warn">${liste.length}</span></h2>
+    <p class="small muted">Für diese Farben ist die Sperre im Shop noch nicht bestätigt. In Shopify die Variante öffnen und dort „Bestand verfolgen“ an, Bestand 0, „Verkauf bei Nichtverfügbarkeit“ aus – oder „Erneut sperren“.</p>
+    <ul class="ml-liste">${liste.map(s => `<li class="ml-zeile ml-knapp">
+      <div class="ml-was">
+        <div class="ml-farbe">${esc(sperrName(s))}</div>
+        <div class="ml-angaben"><span>${esc(s.sku)}</span><span>seit ${esc(fmtDate(s.seit))}${s.von ? ` · ${esc(s.von)}` : ''}</span>${auftraegeText(s) ? `<span>${esc(auftraegeText(s))}</span>` : ''}</div>
+        ${s.fehler ? `<div class="small ml-warn">${esc(s.fehler)}</div>` : ''}
+        ${s.freigabeFehler ? `<div class="small ml-warn">Freigabe hat nicht geklappt: ${esc(s.freigabeFehler)}</div>` : ''}
+      </div>
+      <div class="ml-aktionen">
+        <a class="btn btn-sm" href="${esc(s.adminLink)}" target="_blank" rel="noopener">In Shopify öffnen</a>
+        ${lesend ? '' : `${s.fehlerGrund === 'keine-mustervariante' ? '' : `<button type="button" class="btn btn-sm" data-ms-nachholen="${esc(s.sku)}">Erneut sperren</button>`}
+        <button type="button" class="btn btn-sm btn-ghost" data-ms-frei="${esc(s.sku)}" title="${s.shopPruefen ? 'Die Farbe ist wieder da – im Shop freigeben und prüfen' : 'Die Farbe ist wieder da – aus der Liste nehmen'}">Wieder verfügbar</button>`}
+      </div>
+    </li>`).join('')}</ul>
+  </section>`;
+}
+
+/** "Im Shop gesperrte Muster": was der Musterkonfigurator gerade als nicht verfuegbar zeigt. */
+function sperrenImShopHtml(liste) {
+  if (!liste.length) return '';
+  const lesend = istNurLesend();
+  return `<section class="ml-sperren" aria-labelledby="mlSperrenShop">
+    <h2 class="section-title" id="mlSperrenShop">Im Shop gesperrte Muster</h2>
+    <p class="small muted">Diese Muster sind beim Lieferanten nicht verfügbar und im Shop nicht bestellbar. Kommt eine Farbe wieder, „Wieder verfügbar“ – dann ist sie sofort wieder bestellbar.</p>
+    <ul class="ml-liste">${liste.map(s => `<li class="ml-zeile">
+      <div class="ml-was">
+        <div class="ml-farbe">${esc(sperrName(s))}</div>
+        <div class="ml-angaben"><span>gesperrt seit ${esc(fmtDate(s.seit))}${s.von ? ` · ${esc(s.von)}` : ''}</span>${auftraegeText(s) ? `<span>${esc(auftraegeText(s))}</span>` : ''}<span class="muted">${esc(s.sku)}</span></div>
+        ${s.freigabeFehler ? `<div class="small ml-warn">Freigabe hat nicht geklappt: ${esc(s.freigabeFehler)}</div>` : ''}
+      </div>
+      ${lesend ? '' : `<div class="ml-aktionen"><button type="button" class="btn btn-sm" data-ms-frei="${esc(s.sku)}">Wieder verfügbar</button></div>`}
+    </li>`).join('')}</ul>
+  </section>`;
+}
+
+async function schreibeSperre(body) {
+  try {
+    const r = await fetch('/api/einkauf/mustersperre', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return { ok: false, text: j.error || `Fehler ${r.status}` };
+    return { ok: true, ...j };
+  } catch (e) { return { ok: false, text: `Keine Verbindung zum Dashboard (${e.message})` }; }
 }
 
 // -- Schreiben ---------------------------------------------------------------
@@ -351,6 +417,21 @@ function oeffneBearbeiten(e, { wieder = false } = {}) {
 /** Klicks der Ansicht. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function einkaufKlickMusterlager(ev) {
   if (ev.target.closest('[data-ml-neu]')) { oeffneEinlagern(); return true; }
+  const ms = ev.target.closest('[data-ms-frei], [data-ms-nachholen]');
+  if (ms) {
+    const frei = 'msFrei' in ms.dataset;
+    const sku = frei ? ms.dataset.msFrei : ms.dataset.msNachholen;
+    const alle = [...(musterlager.daten?.sperren?.gesperrt || []), ...(musterlager.daten?.sperren?.offen || [])];
+    const s = alle.find(x => x.sku === sku);
+    if (frei && (s?.shopPruefen || s?.imShop) && !window.confirm(`${sperrName(s)} wieder verfügbar? Das Muster ist dann im Shop sofort wieder bestellbar.`)) return true;
+    ms.disabled = true;
+    schreibeSperre({ aktion: frei ? 'freigeben' : 'nachholen', sku }).then(r => {
+      if (!r.ok) { toast(r.text, 'crit', { dauer: 9000 }); ms.disabled = false; return; }
+      toast(r.meldung || (frei ? 'Wieder verfügbar' : 'Im Shop gesperrt'));
+      ensureMusterlager({ neu: true });
+    });
+    return true;
+  }
   const v = ev.target.closest('[data-ml-vorschlag]');
   if (v) {
     const x = musterlager.daten?.vorschlaege?.[Number(v.dataset.mlVorschlag)];

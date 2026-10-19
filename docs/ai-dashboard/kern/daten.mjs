@@ -6,11 +6,13 @@ import { CONFIG } from './konfig.mjs';
 import { state } from './zustand.mjs';
 import { $, fmtDateTime, chipZeit, toast } from './helfer.mjs';
 import { render } from './render.mjs';
+import { markiereSitzungAbgelaufen } from './sitzung.mjs';
 
 export async function loadData() {
   if (state.capabilities.mode !== 'local') { state.raw = null; state.tasks = []; state.scores = new Map(); state.loadError = null; return; }
   try {
     const r = await fetch(`${CONFIG.dataUrl}?t=${Date.now()}`, { cache: 'no-store' });
+    if (r.status === 401) markiereSitzungAbgelaufen();
     if (!r.ok) throw new Error(`issues.json konnte nicht geladen werden (HTTP ${r.status})`);
     const data = await r.json();
     if (!Array.isArray(data.issues)) throw new Error('issues.json hat kein issues-Array');
@@ -31,6 +33,7 @@ export async function loadAgentRuns() {
   if (!state.capabilities.agentRuns || (rolle && rolle !== 'inhaber')) { state.agentRuns = null; return; }
   try {
     const r = await fetch('/api/agent-runs', { cache: 'no-store' });
+    if (r.status === 401) markiereSitzungAbgelaufen();
     state.agentRuns = r.ok ? await r.json() : { error: `HTTP ${r.status}` };
   } catch (e) { state.agentRuns = { error: e.message }; }
 }

@@ -34,6 +34,8 @@
   endif
 -%}
 
+{%- comment -%} Kein Verlegeservice auf der Gutscheinseite (w-034) {%- endcomment -%}
+{%- unless product.gift_card? -%}
 <div class="tp-vl" {{ block.shopify_attributes }} data-tp-vl>
   <p class="tp-vl__titel">{{ block.settings.titel }}</p>
   <p class="tp-vl__text">{{ block.settings.text }}</p>
@@ -105,6 +107,7 @@
     });
   })();
 </script>
+{%- endunless -%}
 
 {% stylesheet %}
   .tp-vl {

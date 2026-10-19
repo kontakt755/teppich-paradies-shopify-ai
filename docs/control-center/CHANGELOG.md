@@ -2,6 +2,267 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-19 · „Muster nachfassen“: E-Mail direkt aus der Karte senden
+
+- **Geändert:** Wunsch Inhaber: die Nachfrage gleich aus der Karte an den Kunden schicken statt über
+  „E-Mail öffnen“. Mit eingerichtetem Firmenpostfach hat jede offene Zeile „Jetzt senden“; Betreff und
+  Text sind vorher bearbeitbar. `POST /api/kunden/nachfassen-senden` → `kundenNachfassenEinzeln()` mit
+  denselben Sperren wie der tägliche Lauf (Empfänger nur aus den Bestelldaten, Stoppliste, kein zweiter
+  Versand derselben Stufe, kein Platzhalter, Kopie-Woche) und Zeitleiste „nachgefasst“ vom Absender.
+  Details: Architektur Abschnitt 23.
+- **Getestet:** `npm test` grün (3046). Neu: Einzelversand gegen die SMTP-Attrappe (angepasster Text,
+  fremde Adresse aus dem Browser ignoriert, Kopie, Zeitleiste von „Anna“, zweiter Klick 409, der Lauf
+  danach lässt die Bestellung aus, Abgemeldete 409, Erinnerung aus der Vorlage), Postfach lehnt ab → 502
+  ohne Passwort in der Meldung, Server-Rollen (lesen 403, ohne Postfach 409). Klickstrecke gegen die
+  Datenkopie mit Attrappen-Postfach: Text geändert, „Jetzt senden“ → Mail mit Änderung und Blindkopie
+  nur in der Attrappe, offen 6 → 5, Zeile unter „Erledigt … von Prüfung mitarbeiter“. 375 px ohne
+  Überlauf, Knöpfe 44 px.
+- **Risiken/Annahmen:** Ohne `nachfassen/postfach.json` erscheint der Knopf nicht – bis dahin bleibt
+  „E-Mail öffnen“. Entwürfe leben nur im Tab (Neuladen der Seite verwirft sie).
+- **Nächste Stufe:** Postfach einrichten (Inhaber), dann ersten echten Versand mit Kopie mitlesen.
+
+## 2026-10-16 · „Muster nachfassen“ verschickt automatisch vom Firmenpostfach (Werkbank w-119)
+
+- **Geändert:** Inhaber 16.10. (w-119, Option A): Text 1 und die Erinnerung gehen täglich automatisch
+  vom Firmenpostfach raus, mit Abmelde-Satz. Neuer Lauf `npm run -s muster:nachfassen` (`--probe` =
+  Trockenlauf) über `kundenNachfassenSenden()` im Server: fällige Kunden aus `musterNachfassen()`
+  (Kaufprüfung, 30 Tage, eine Erinnerung), Text aus der Vorlage des Inhabers, Versand per SMTP ohne
+  Fremdpaket (`operations/lib/smtp.mjs`), danach Zeitleiste „nachgefasst“ von „automatisch“. Zugang
+  nur aus `$TP_PRIVAT_DIR/nachfassen/postfach.json` (Rechte 600) – fehlt sie, verschickt der Lauf nichts
+  und die Karte sagt es. Erste Woche nach dem ersten Versand: jede Mail als Blindkopie ans Büro.
+  Stoppliste (`nachfassen/stoppliste.json`) per Knopf „Abgemeldet“ in der Karte
+  (`POST /api/kunden/nachfassen-abmelden`, write-Liste); Abgemeldete stehen getrennt und werden nie
+  angeschrieben. Versandprotokoll mit Doppelschutz (kein zweiter Versand nach Abbruch, nur Zeitleiste
+  nachtragen). Ein Platzhalter erreicht nie den Kunden (`platzhalterFrei()`; unbekannter Platzhalter im
+  Betreff bleibt sichtbar statt still zu verschwinden). LaunchAgent-Vorlage
+  `net.teppich-paradies.nachfassen.plist.vorlage` (Mo–Sa 9:30). Details: Architektur Abschnitt 23.
+- **Getestet:** `npm test` grün (siehe PR). Neu: Trockenlauf ohne Postfach, echter Lauf gegen eine
+  SMTP-Attrappe (Umschlag mit Blindkopie, Betreff/Text, Zeitleiste „automatisch“, kein zweites Mal,
+  Erinnerung nach 10 Tagen ohne Kopie, danach Schluss), Doppelschutz nach Abbruch, Platzhalter,
+  abgelehnte Anmeldung (535), kaputte Stoppliste stoppt alles, Rollen am Server (lesen 403). Trockenlauf
+  gegen die echten Daten: 6 erste Nachfragen stehen an, 0 Fehler. Browserprüfung „Heute“ gegen die
+  Datenkopie (Desktop und Handy) siehe PR.
+- **Risiken/Annahmen:** Das Postfach legt der Inhaber selbst an; bis dahin läuft alles wie bisher per
+  Klick. Die Abmeldung erfasst ein Mensch per Knopf (kein Posteingangs-Abgleich). Der LaunchAgent wird
+  erst nach dem Merge im Dienst-Checkout eingerichtet, nach einem Trockenlauf von Hand. Rechtliche
+  Einordnung der Mail ohne Newsletter-Einwilligung klärt der Inhaber (w-083).
+- **Nächste Stufe:** Erste Woche mitlesen, dann `kopieImmer` entscheiden; Antworten „Abmelden“ zählen;
+  Anteil Muster → Kauf aus der Zeitleiste auswerten.
+
+## 2026-10-19 · Maßteppiche unter 2 m automatisch zum Kettler
+
+- **Geändert:** Regel des Inhabers: Maßteppiche mit Einfassung und kürzerer Seite unter 2 m
+  gehen ohne Auswahl in eine eigene Bestellmail an unseren Kettler, der Rest bleibt in seiner
+  Mail. Der Kettler schneidet ohne Gebühr zu – der Lieferant bekommt deshalb Meterware von der
+  Rolle (z. B. „1,50 lfm von der 4,00 m breiten Rolle, ohne Maßzuschnitt“) mit dem Fertigmaß für
+  den Kettler, statt „1 Stück nach Maß“ (dort 10/15 € Zuschnitt). Im Dialog gibt es dafür den
+  Knopf „Automatisch“; Kunden/Laden/Kettler schicken weiter alles an ein Ziel.
+- **Getestet:** Neue Fälle für Meterware, Rolle quer, rund, Aufteilung, 2 m genau, ohne Kettler;
+  `npm test` und `dashboard:test` grün, `dashboard:pruefen` ohne Befund.
+- **Risiken/Annahmen:** Länge ohne Schnittzugabe (genau das Fertigmaß); braucht der Kettler
+  Zugabe, kommt sie als Zuschlag hinzu. Rollenbreite kommt aus dem Konfigurator
+  („_Zuschnitt aus Rolle“); fehlt sie, bleibt es beim Stück nach Maß.
+- **Nächste Stufe:** Zugabe mit dem Kettler klären.
+
+## 2026-10-19 · Ware über unseren Kettler (Berlin)
+
+- **Geändert:** Im Bestellmail-Dialog (Einkauf, Ware) gibt es neben „Kunden“ und „Laden“ das
+  Ziel **„Kettler“**. Die Mail bittet den Lieferanten dann, nur zuzuschneiden (nicht zu ketteln)
+  und an unseren Kettelservice zu liefern; Anschrift und Telefon stehen nur privat in den
+  Stammdaten (`absender.kettelservice`), ohne Eintrag wird der Kettler nicht angeboten.
+  Ein Hinweis „Über unseren Kettler?“ nennt Kettel-Positionen, bei denen es naheliegt (Kunde in
+  Berlin/PLZ 16 oder kürzere Seite bis 2 m). „Als bestellt markieren“ (Mail und Einzeldialog)
+  vermerkt den Weg an der Position: Stand „Bestellt · unterwegs zum Kettler“, Knopf „Als beim
+  Kettler abgeholt markieren“, danach „Beim Kettler abgeholt“; oben die Zahl „Ware unterwegs zum
+  Kettler“. Die Schritte im Auftragsfluss bleiben dieselben.
+- **Getestet:** 6 neue Tests (Mailtext, fehlende Anschrift, nur Ware, Vorschlag, Statusvermerk);
+  `npm test` und `dashboard:test` grün. `dashboard:pruefen`: 28 Ansichten, 0 px Überlauf.
+  Klickstrecke gegen Datenkopie: Dialog zeigt Kunden/Laden/Kettler, Kettler gewählt; Muster mit
+  `ziel=kettler` → 400; Position auf „Bestellt · unterwegs zum Kettler“ (Band 0 → 1), dann
+  „Beim Kettler abgeholt“. Keine JS-Fehler.
+- **Risiken/Annahmen:** Der Umschalter gilt für die ganze Mail einer Gruppe – gemischte Ware
+  (einiges zum Kettler, anderes zum Kunden) braucht zwei Durchgänge. „Bis 2 m“ ist als kürzere
+  Seite gelesen (gerollt als Paket); Nähe = PLZ 10–14 und 16.
+- **Nächste Stufe:** Echte Kettelpreise des Kettlers eintragen und je Auftrag „Kettler lohnt
+  sich“ mit Fahrtkosten rechnen.
+
+## 2026-10-16 · Unklare Mustersperren und Teilfreigaben absichern (#1400)
+
+- **Geändert:** Eine unlesbare Sperr-Gegenprobe gilt nicht mehr als nie geschriebene Sperre.
+  Moegliche Shopify-Aenderungen werden getrennt von bestaetigten Sperren gespeichert; auch alte
+  unklare Eintraege behalten den ersten Vorstand. Sicher erfolglose Versuche frieren keinen Vorstand
+  ein: nach zwischenzeitlichem Bestandszugang zaehlt vor dem ersten echten Sperren der frische Stand.
+  „Wieder verfügbar“ stellt diesen Stand frisch
+  geprueft wieder her und entfernt den Eintrag erst bei exaktem Zielstand plus Bestellbarkeit.
+  Teilfreigaben bleiben mit Fehler offen sichtbar und lassen sich erneut ausfuehren. Sicher nie
+  geschriebene Versuche bleiben lokal entfernbar. Global bestellbare Varianten werden auch bei
+  lokalem Bestand 0 und erneutem Versuch nicht als gesperrt bestaetigt.
+- **Getestet:** Gezielte Mustersperren-/API-/Konfigurator-Suiten: 44/44, darunter Gegenprobe-Timeout,
+  alte Ablage, fehlender Zugang, sichere Nicht-Mutation, Teilfreigabe, Wiederholung, verlorene
+  Antwort und globale Bestellbarkeit. `npm test`: 2921/2921, Pflichtguards und statische
+  Workflowpruefung gruen. Browser-Datenkopie: 24 Rollen-/Ansichts-/Breitenkombinationen (390/1440 px),
+  0 px Ueberlauf. Synthetischer Klicktest: unklare Sperre, misslungene Teilfreigabe nach Neuladen
+  sichtbar (390/1440 px), erneute Freigabe stellt untracked/Bestand 3 her, offene Liste 1 → 0;
+  keine JavaScript-Fehler. Screenshots ausserhalb des Repositorys.
+- **Risiken/Annahmen:** Nur Attrappen und isolierte Datenkopie, keine echte Shopify-Mutation.
+  Eine reale Schreib-/Rueckwegprobe und die laufende Dienstversion sind damit nicht bestaetigt.
+- **Nächste Stufe:** Unabhaengigen PR-Diff pruefen; kein Merge, Preview oder Live in diesem Auftrag.
+
+## 2026-10-16 · Angaben direkt ins ChatGPT-Projekt uebergeben (#1397)
+
+- **Geaendert:** „Im Projekt einfuegen“ uebergibt den vorbereiteten Auftrag ohne Zwischenablage an
+  einen optionalen Chrome-Begleiter. Dieser oeffnet die hinterlegte ChatGPT-Projektseite, prueft
+  deren leeres Eingabefeld und fuegt den vollstaendigen Text als Entwurf ein. Er sendet nichts ab.
+  Die private Erweiterung wird ausserhalb des Repositorys mit ausdruecklichen Dashboard-Urspruengen
+  erzeugt. Kein neuer Server-Endpunkt, API-Schluessel oder Text in der URL. Inhalte liegen nur
+  kurz in `storage.session`; Abbruch, Verfall und Tab-Schliessen raeumen wartende Auftraege auf.
+  Die manuellen Knoepfe bleiben aufklappbar; lokale Codex-/Claude-Ziele behalten ihren bisherigen Weg.
+- **Getestet:** `npm test`: 2.930/2.930. Darunter 18 gezielte Dashboard-Tests sowie 15 Tests des
+  Begleiters inklusive echter isolierter DOM-Pruefungen. Zusaetzlicher MV3-Start im temporaeren
+  Testbrowser bestaetigt Statusnachricht, Portgrenze und Ablehnung kuenstlicher Klicks. Browserpruefung
+  gegen Datenkopie: 36 Ansichts-/Rollen-/Breitenkombinationen (360, 390, 1440 px), kein Ueberlauf
+  oder JS-Fehler; Desktop-/Handy-Screenshots gelesen. Klickstrecke: Ohne Begleiter bleibt der
+  Direktknopf gesperrt, manuelle Alternative ist erreichbar und Anbieterwechsel erhaelt die Eingabe.
+  Pflicht-Guards und Secret-Scan bestanden. Der erste Durchlauf im eingerichteten Profil fand
+  einen Ladeabbruch: Ein spaetes `loading` wurde als Dokumentwechsel gewertet. Korrigiert und mit
+  drei Regressionstests fuer Erstladen, URL-Wechsel und neue Dokumente abgesichert. Danach drei
+  echte Uebergaben aus der Datenkopie im eingerichteten Chrome-Profil bestaetigt: alle Texte stimmen
+  mit der Dashboard-Vorschau ueberein (1.689, 1.329 und 1.442 Zeichen), richtige Projektueberschrift,
+  aktiver Sendeknopf und jeweils null abgesendete Nachrichten. Testentwuerfe anschliessend geleert.
+- **Risiken/Annahmen:** Einmaliges Laden des privaten Pakets im Chrome-Profil des Arbeitsplatzes
+  ist erforderlich. Die automatische Browsersteuerung darf Chromes Erweiterungsverwaltung nicht
+  bedienen; Installation und spaeteres Neuladen bleiben beim Inhaber. Geaenderte ChatGPT-Oberflaechen
+  koennen eine Adapterkorrektur erfordern. Andere Rechner brauchen ihre eigene Browser-Einrichtung.
+- **Naechste Stufe:** Im Arbeitsalltag nutzen; fuer weitere Anbieter bleibt die direkte Texteingabe
+  eine eigene Erweiterung.
+
+## 2026-10-16 · Arbeitsplatz als Prozesszentrale (#1390)
+
+- **Geändert:** Neuer Arbeitsplatz fuer E-Mail, Angebotsvorbereitung und Recherche, erreichbar
+  aus „Heute“, Seitenleiste und Befehlspalette. Angaben ergeben eine pruefbare Arbeitsanweisung;
+  getrennte Knoepfe kopieren den Text und oeffnen die passende App bzw. ein hinterlegtes Projekt.
+  App-/Projektziele werden ausschliesslich privat in `prozesslinks.json` gespeichert, geprueft und
+  mitgesichert. Kein Hintergrundlauf, keine neuen API-Schluessel, kein automatischer Versand.
+  Lokale Eingaben werden bei Ansichtswechsel, Abmelden, `pagehide` und einer erhaltenen 401
+  verworfen. Ein Datenabgleich erhaelt Fokus und Textauswahl. Details: Architektur „Arbeitsplatz“.
+- **Getestet:** `npm test` 2.850/2.850, gemeinsame Linkvalidierung (auch native App-Ziele),
+  Schreibrechte/Herkunft, atomare Ablage und beschaedigte Datei. Browserpruefung gegen Datenkopie:
+  60 helle und 45 dunkle Ansichts-/Rollen-/Breitenkombinationen (360–1440 px), keine JS-Fehler,
+  kein seitlicher Ueberlauf. Klickstrecke: Text kopiert, Ziel ohne Kontext, Konfiguration gespeichert,
+  ungueltiges Ziel abgewiesen, Heute-Einstieg, Fokus/Auswahl nach Datenabgleich, Kontext nach
+  Ansichtswechsel/`pagehide`/echter 401 leer. Screenshots Desktop und Handy gelesen.
+- **Risiken/Annahmen:** Allgemeine App-Ziele waehlen noch kein Cloud-Projekt. Die konkreten
+  Projektadressen muessen im privaten Einrichtungsbereich hinterlegt werden; sie werden nicht aus
+  internen Kennungen geraten. Native Ordnerlinks beziehen sich auf das oeffnende Geraet; der
+  App-Start selbst wurde nicht automatisiert ausgeloest. Der Lexware-Skill muss im Zielprojekt
+  tatsaechlich vorhanden sein; das Dashboard prueft oder installiert ihn nicht. Bei einer parallel
+  belasteten Wiederholung scheiterte einmal der bestehende 500-ms-Aktualisierungstest; die
+  vollstaendige Testsuite war gruen, die Dashboard-Suite wurde anschliessend separat geprueft.
+- **Nächste Stufe:** Gewuenschte Cloud-Projekte gemeinsam zuordnen und den E-Mail-Ablauf mit dem
+  Team erproben; erst danach echte KI-Hintergrundausfuehrung separat planen.
+
+## 2026-10-16 · „Muster nicht verfügbar – Kunde informiert“ schließt ab und sperrt die Farbe im Shop (#1385)
+
+- **Geändert:** Inhaber 16.10.: Im Dialog „Etwas anderes ist passiert …“ gibt es direkt nach „Ergebnis:
+  kein Interesse“ die Wahl „Muster nicht verfügbar – Kunde informiert“ („Der Kunde meldet sich und bestellt
+  neue Muster; der Auftrag ist damit abgeschlossen.“). Darunter alle Muster des Auftrags als Kästchen
+  (vorausgewählt) und ein Mailvorschlag mit den Farben zum Kopieren bzw. „E-Mail öffnen“ – nichts wird
+  gesendet. Der Auftrag ist danach abgeschlossen wie bei „kein Interesse“ und fällt aus „Muster
+  bestellen“, „nachhaken“, „Muster nachfassen“ und Kunden › „Zu tun“; die Zeitleiste zeigt das Ergebnis
+  mit Datum, Person und der Notiz („Nicht verfügbar: Produkt: Farben – Freitext“, Pflicht). Die
+  angekreuzten Farben werden im Shop sofort gesperrt (Mustervariante `M-…`: Bestand verfolgen, Bestand 0,
+  nicht verkaufen wenn ausverkauft; Gegenprobe `availableForSale` false). Einkauf › Musterlager: oben „Im
+  Shop sperren“, falls das nicht ging (mit Link zur Variante, „Erneut sperren“), unten „Im Shop gesperrte
+  Muster“ mit „Wieder verfügbar“ (stellt den Stand vor der Sperre her). Ablage `mustersperre.json`, nur
+  anhängen, in `daten:sichern`. Details: `ARCHITEKTUR.md` Abschnitt 22.
+- **Getestet:** `operations/tests/mustersperre.test.mjs` (11: Ablage fehlend/leer/beschädigt/ohne
+  Leserecht, nur anhängen, Stand je SKU mit Vorstand der ersten Sperre, Idempotenz, Rechteprüfung,
+  Sperren/Freigeben gegen Attrappe inkl. verlorener Antwort, mehrdeutiger SKU, fehlendem Recht),
+  `auftragsverlauf.test.mjs` (+2: Pflichtnotiz, Stufe erledigt, kein Nachhaken mehr),
+  `docs/ai-dashboard/tests/mustersperre-api.test.mjs` (9: To-do und Kundenfall verschwinden, 2 Farben
+  gesperrt, zweiter Klick schreibt nichts, Pflichtangaben 400, Rechte fehlen → nichts geschrieben,
+  kein Zugang, Wieder verfügbar, Testbestellung, beschädigte Ablage, Mailtext, Server: Rolle „lesen“ 403,
+  Mitarbeiter ohne Notiz 400). `npm test`: 2861 Tests grün (nach Rebase auf main). `dashboard:pruefen` (Heute, Einkauf,
+  Musterlager, Kunden, Bestellungen, mit `--rollen`): nur OK, 0 px Überlauf bei 360–1440 px.
+  Klickstrecke gegen die Kopie (390 px, ohne Shopify-Zugang): offene Musteraufträge 21 → 20, „Muster
+  bestellen“ 2 → 1, „Im Shop sperren“ 0 → 3, Kästchen 3 von 3 vorausgewählt, Mailtext ohne Platzhalter
+  und folgt der Auswahl; Beispiel des Inhabers #1021: „nachhaken“ 4 → 3; „Wieder verfügbar“ 5 → 4;
+  keine JS-Fehler, keine Fehlerantworten. Shopify-Rechte des Dienstes nur lesend geprüft:
+  `write_inventory` und `write_products` sind erteilt.
+- **Risiken/Annahmen:** Die Shop-Anzeige „kein Muster verfügbar“ baut eine andere Sitzung im Theme; bis
+  dahin ist eine gesperrte Farbe im Konfigurator einfach nicht bestellbar. Muster über „Kostenloses
+  Muster“ (Vinyl von der Rolle) haben keine Variante je Farbe – dort steht nur der Hinweis. Die Sperre
+  wurde nie gegen den echten Shop geschrieben (nur Attrappe und Kopie ohne Zugang); der erste echte Klick
+  nach dem Merge ist die Probe – danach die Variante im Admin ansehen. Der Dienst muss neu starten.
+- **Nächste Stufe:** „Im Shop sperren“ als To-do auf „Heute“, falls dort etwas liegen bleibt.
+
+## 2026-10-16 · Claude-Verbrauch auf „Insights“ (#671)
+
+- **Geändert:** Neue Kachel „Claude-Verbrauch“ auf Insights (nur Inhaber): Sitzungen und
+  Langsitzungen der letzten 7 Tage (je Tag), Tokens gesamt und vom Modell geschrieben, Modell und
+  Denkstufe je Klasse (Gespräche, geplante Aufgaben, Subagenten), die fünf größten Sitzungen mit
+  Aufgabe, aktiver Zeit und Werkzeugaufrufen, Tokens je Aufgabe und je Modell, aufklappbar die
+  übrigen Langsitzungen. Daten aus den lokalen Sitzungsprotokollen von Claude Code
+  (`npm run verbrauch:sammeln` → `$TP_PRIVAT_DIR/verbrauch/claude.json`); der Server rechnet einen
+  Stand älter als 30 Minuten im Hintergrund neu. Details: `ARCHITEKTUR.md` Abschnitt 21.
+- **Getestet:** `operations/tests/claude-verbrauch.test.mjs` (Berliner Tage, doppelte Zeilen und
+  mitkopierte Antworten einmal, Zeitraum, Klassen, Langsitzung über Zeit und über Aufrufe, Aufgaben nur
+  aus `npm run task`, Worktree- und Subagenten-Dateien, kein Prompttext in der Ausgabe),
+  `tests/verbrauch-api.test.mjs` (ohne Datei Hinweis statt Zahlen, frisch/veraltet, ein Lauf
+  gleichzeitig, beschädigte Datei), `auth.test.mjs` (Mitarbeiter 403, Inhaber 200). Gegen die echten
+  Protokolle: 645 Dateien in 8 s, 225 Sitzungen, 32 lang. `dashboard:pruefen` Insights: nur OK, 0 px
+  Überlauf bei 360–1440 px.
+- **Risiken/Annahmen:** Das Protokollformat von Claude Code ist nicht dokumentiert; ändert es sich,
+  fehlen Zahlen (es wird nichts geschätzt). Nur 28 von 225 Sitzungen nennen ihre Aufgabe – Tokens je
+  Aufgabe ist deshalb unvollständig. Cache-Lesen macht 98 % der Tokens aus; wie stark das aufs
+  Wochenlimit drückt, ist nicht veröffentlicht.
+- **Nächste Stufe:** Mehr Sitzungen einer Aufgabe zuordnen (z. B. `npm run task -- start` beim
+  Sitzungsbeginn per Hook nahelegen) und eine Vorwoche zum Vergleich, sobald zwei Wochen Daten vorliegen.
+
+## 2026-10-16 · Service-Anfragen kommen von selbst, Anzeigen werden erkannt (Werkbank w-030)
+
+- **Geändert:** Inhaber 16.10.: ja zur automatischen Übernahme und zum Kampagnenfeld. Neuer geplanter
+  Lauf `serviceanfragen-postfach` (Mo–Sa stündlich) liest Formular-Mails nur lesend und übergibt sie an
+  `npm run -s service -- uebernehmen`; übernommen werden nur die festen Betreffe der Serviceseiten und
+  die Startseite mit Service-Anliegen, ohne Dubletten (Mail-ID, gleicher Kontakt innerhalb 7 Tagen).
+  Das Anfrageformular schickt jetzt ein verstecktes Feld „Herkunft“ (Anzeige/Kampagne aus der Adresse,
+  ohne Speicherung, ohne Klick-ID); „Anzeige“ zählt als Quelle Werbung. Zeilen aus dem Postfach sind
+  gekennzeichnet. Fremde Felder anderer Formulare („Phone:“) hängen nicht mehr am vorigen Wert.
+  Details: `ARCHITEKTUR.md` Abschnitt 20.
+- **Getestet:** Lib-Tests (Herkunft → Werbung, Betreff-Freigabe, alle Template-Betreffe eingeordnet,
+  Formularskript mit gclid/utm/fbclid ohne Speicher und ohne Klick-ID), Postfach-Test (nur Service,
+  Absender, von Hand Erfasstes, zweiter Lauf leer, Berliner Datum). Gegenprobe mit den echten Mails
+  29.09.–09.10. in einem Wegwerf-Ordner: 4 Service-Anfragen angelegt, Musteranfrage übersprungen,
+  zweiter Lauf ohne Änderung.
+- **Risiken/Annahmen:** Der Lauf braucht beim ersten Mal Freigaben (Gmail lesen, Bash, Schreiben ins
+  Scratchpad) – einmal „Jetzt ausführen“. Bis der PR in `~/tp-dashboard` nachgezogen ist, endet er mit
+  „Skript noch nicht im Dienst“. Das Kampagnenfeld wirkt erst nach dem Theme-Deploy.
+- **Nächste Stufe:** Nach zwei Wochen prüfen, wie viele Anfragen „Werbung“ tragen; erfasst nur der
+  Landeseite-Fall zu wenig, die Anzeigenherkunft über Seitenwechsel tragen (bräuchte Speicherung im
+  Browser, also Einwilligung).
+
+## 2026-10-16 · Service-Anfragen unter „Kunden“ (#1361, Werkbank w-030)
+
+- **Geändert:** Inhaber 15.10.: Service-Anfragen (Verlegeservice, Treppe, Aufmaß) im Control Center
+  führen. Neuer Reiter „Service-Anfragen“ unter Kunden: Liste mit Datum, Kontakt, Leistung, Quelle,
+  Status (neu → kontaktiert → Termin → Angebot → gewonnen/verloren), Notiz und nächstem Schritt;
+  Standardfilter „Offen“, Zähler am Reiter = neue Anfragen. Oben die Auswertung der letzten 8 Wochen
+  je Woche und je Quelle. Erfassen von Hand; eine Shopify-Formular-Mail lässt sich einfügen und füllt
+  die Felder. Ablage `serviceanfragen.json` im Privatordner, gesichert von `daten:sichern`.
+  Details: `ARCHITEKTUR.md` Abschnitt 20.
+- **Getestet:** `tests/serviceanfragen.test.mjs` (Mail lesen inkl. Musteranfrage, Leistung aus
+  Betreff/Anliegen, Feldprüfung, KW/Wochenbeginn, Auswertung, Server mit Rollen „lesen“ 403 /
+  „mitarbeiter“ 200), `operations/tests/serviceanfragen.test.mjs` (Nummern, Mail nur einmal, Verlauf,
+  beschädigte Datei). `dashboard:pruefen` für Kunden/Service/Rückrufe: nur OK, 0 px Überlauf bei
+  360–1440 px. Klickstrecke gegen die Kopie mit erfundenen Daten: Mail einfügen → Felder gefüllt →
+  angelegt (Liste 3 → 4) → Status geändert, keine JS-Fehler, 390 px ohne Überlauf.
+- **Risiken/Annahmen:** Der Leser kennt den Mailaufbau von Shopify vom 29.09.–09.10.2026; ändert
+  Shopify ihn, bleibt die Handeingabe. Hinweise unten (Toasts) liegen kurz über dem Dialog-Knopf –
+  wie überall im Dashboard.
+- **Nächste Stufe:** Formular-Mails automatisch übernehmen (geplanter Lauf liest das Postfach und
+  legt per `mailId` an) und Kampagnenangabe (UTM/gclid) als verstecktes Feld ins Anfrageformular –
+  beides wartet auf die Entscheidung in Werkbank w-030.
+
 ## 2026-10-15 · Herstellerware mit der Bezeichnung des Herstellers
 
 - **Geändert:** Nächste Stufe aus dem Eintrag darunter. Warenbestellungen an die Markenhersteller

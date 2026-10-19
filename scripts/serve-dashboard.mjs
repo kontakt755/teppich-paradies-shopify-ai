@@ -313,6 +313,8 @@ const NUR_INHABER = new Set([
   // Inhabers, gibt deren Titel zurueck und schreibt ihren Status. Der Knopf
   // dafuer traegt im Frontend data-nur-inhaber, der Pfad war es nicht.
   'org/pruefen',
+  // Claude-Verbrauch (#671): Sitzungstitel aller KI-Sitzungen - Inhabersache wie "Insights".
+  'verbrauch/claude',
 ]);
 
 function darfPfad(benutzer, simple, taskOp) {
@@ -329,7 +331,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
   // Bestelltabelle, Lexikon samt Mengenhilfe und die neuen Datenarten
   // (Kunden, Angebote, Warenkoerbe, Bestand, Erfuellung) - fehlt einer,
   // antwortet der Server 404.
-  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|einkauf\/musterlager|einkauf\/musterlager-farben|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/muster-texte|kunden\/bestellung-fertig|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|sonderposten\/liste|sonderposten\/verkauft|bildrechte\/liste|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|prozesse\/links|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|einkauf\/musterlager|einkauf\/musterlager-farben|einkauf\/mustersperre|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/serviceanfragen|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|verbrauch\/claude|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/muster-texte|kunden\/nachfassen-abmelden|kunden\/nachfassen-senden|kunden\/bestellung-fertig|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|sonderposten\/liste|sonderposten\/verkauft|bildrechte\/liste|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { apiFehler(req, res, pathname, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
   // Host-Pruefung fuer JEDEN Aufruf, nicht nur fuer schreibende: sonst kann
@@ -339,8 +341,20 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     apiFehler(req, res, pathname, 403, { error: 'Dafür fehlt dir die Berechtigung – das macht der Inhaber.' });
     return;
   }
-  const write = simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'einkauf/musterlager' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || simple === 'kunden/fall-marke' || ['org/neu', 'org/aendern', 'org/kommentar', 'org/pruefen', 'org/analyse', 'org/liste-einfuegen', 'org/anhang', 'fotos/neu', 'social/link-neu', 'social/sperren', 'sonderposten/verkauft', 'fehler/melden'].includes(simple) || ['transition', 'assign', 'comment'].includes(taskOp);
+  const write = (simple === 'prozesse/links' && req.method === 'POST') || simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'einkauf/musterlager' && req.method === 'POST') || (simple === 'einkauf/mustersperre' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || (simple === 'kunden/serviceanfragen' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || simple === 'kunden/nachfassen-abmelden' || simple === 'kunden/nachfassen-senden' || simple === 'kunden/fall-marke' || ['org/neu', 'org/aendern', 'org/kommentar', 'org/pruefen', 'org/analyse', 'org/liste-einfuegen', 'org/anhang', 'fotos/neu', 'social/link-neu', 'social/sperren', 'sonderposten/verkauft', 'fehler/melden'].includes(simple) || ['transition', 'assign', 'comment'].includes(taskOp);
   try {
+    // Lesen darf jeder. Einrichtungsziele aendern ausschliesslich der Inhaber
+    // oder der bestehende Einzelpasswort-Zugang; kein neues Benutzerkonto noetig.
+    if (simple === 'prozesse/links' && req.method === 'POST') {
+      if (benutzer && benutzer.rolle !== 'inhaber') {
+        throw new ApiError(403, 'Prozessverknüpfungen kann nur der Inhaber ändern.');
+      }
+      // Auch ein anderer freigegebener LAN-Ursprung ist nicht diese Seite.
+      const origin = req.headers.origin;
+      if (origin && new URL(origin).host.toLowerCase() !== String(req.headers.host).toLowerCase()) {
+        throw new ApiError(403, 'Nur von derselben Dashboard-Adresse erlaubt.');
+      }
+    }
     if (write) {
       if (req.method !== 'POST') { apiFehler(req, res, pathname, 405, { error: 'POST erwartet' }); return; }
       // Rolle "lesen" darf serverseitig nichts veraendern - unabhaengig davon, ob das
@@ -360,7 +374,9 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     } else if (req.method !== 'GET') { apiFehler(req, res, pathname, 405, { error: 'GET erwartet' }); return; }
     let result;
     const url = new URL(req.url, `http://${req.headers.host || HOST}`);
-    if (simple === 'capabilities') result = await api.capabilities();
+    if (simple === 'prozesse/links' && req.method === 'GET') result = api.prozessLinks({ benutzer });
+    else if (simple === 'prozesse/links' && req.method === 'POST') result = api.prozessLinksSetzen(await readJson(req), { benutzer });
+    else if (simple === 'capabilities') result = await api.capabilities();
     else if (simple === 'sync') result = await api.sync();
     else if (simple === 'activity') result = await api.activity();
     else if (simple === 'agent-runs') result = api.agentRuns();
@@ -377,6 +393,9 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     // Musterlager: lokal, Shopify bleibt unberuehrt. POST steht in der write-Liste (Rolle "lesen": 403).
     else if (simple === 'einkauf/musterlager' && req.method === 'GET') result = api.einkaufMusterlager();
     else if (simple === 'einkauf/musterlager' && req.method === 'POST') result = await api.einkaufMusterlagerSetzen(await readJson(req), benutzer);
+    // Mustersperre ("Muster nicht verfuegbar"): GET liest die Liste, POST schreibt nach Shopify (write-Liste, Rolle "lesen": 403).
+    else if (simple === 'einkauf/mustersperre' && req.method === 'GET') result = api.einkaufMustersperre();
+    else if (simple === 'einkauf/mustersperre' && req.method === 'POST') result = await api.einkaufMustersperreSetzen(await readJson(req), benutzer);
     else if (simple === 'einkauf/musterlager-farben') result = api.einkaufMusterlagerFarben({ handle: url.searchParams.get('handle') || '' });
     else if (simple === 'einkauf/auftragsstatus' && req.method === 'POST') result = await api.einkaufAuftragsstatusSetzen(await readJson(req), benutzer);
     else if (simple === 'lexikon/liste') result = api.lexikonListe({ q: url.searchParams.get('q') || '', page: url.searchParams.get('page'), pageSize: url.searchParams.get('pageSize') });
@@ -386,6 +405,10 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'kunden/detail') result = api.kundenDetail({ key: url.searchParams.get('key') || '' });
     else if (simple === 'kunden/bestellungen') result = api.kundenBestellungen();
     else if (simple === 'kunden/muster-texte') result = api.kundenMusterTexte();
+    // Stoppliste "Muster nachfassen" (Antwort "Abmelden"): schreibt in den Privatordner - write-Liste, Rolle "lesen": 403.
+    else if (simple === 'kunden/nachfassen-abmelden') result = api.kundenNachfassenAbmelden(await readJson(req), benutzer);
+    // "Jetzt senden": eine Nachfrage sofort vom Firmenpostfach - write-Liste, nur POST, Rolle "lesen": 403.
+    else if (simple === 'kunden/nachfassen-senden' && req.method === 'POST') result = await api.kundenNachfassenEinzeln(await readJson(req), benutzer);
     else if (simple === 'kunden/faelle') result = api.kundenFaelle();
     // Aufgaben & Organisation. `benutzer` kommt aus der Sitzung, nie aus der
     // Anfrage - sonst koennte jemand fremde Notizen anfordern.
@@ -428,11 +451,14 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'kunden/bestellung-fertig') result = await api.kundenBestellungFertig(await readJson(req), benutzer);
     else if (simple === 'kunden/rueckrufe' && req.method === 'GET') result = api.kundenRueckrufe();
     else if (simple === 'kunden/rueckrufe' && req.method === 'POST') result = await api.kundenRueckrufSetzen(await readJson(req), benutzer);
+    else if (simple === 'kunden/serviceanfragen' && req.method === 'GET') result = api.kundenServiceanfragen();
+    else if (simple === 'kunden/serviceanfragen' && req.method === 'POST') result = api.kundenServiceanfrageSetzen(await readJson(req), benutzer);
     else if (simple === 'kunden/liste') result = api.kundenListe({ q: url.searchParams.get('q') || '' });
     else if (simple === 'angebote/liste') result = api.angeboteListe();
     else if (simple === 'warenkoerbe/liste') result = api.warenkoerbeListe();
     else if (simple === 'bestand/liste') result = api.bestandListe();
     else if (simple === 'shopwache/status') result = await api.shopwacheStatus();
+    else if (simple === 'verbrauch/claude') result = api.verbrauchClaude();
     else if (simple === 'laden/zahlen') result = await ladenZahlen.abrufen();
     else if (simple === 'erfuellung/liste') result = api.erfuellungListe();
     else if (simple === 'sonderposten/liste') result = await api.sonderpostenListe();

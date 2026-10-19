@@ -51,8 +51,9 @@ const erledigt = s => s?.zustand === 'erledigt';
 /**
  * Je Produkt eine Angabe mit seinen Farben: "Testvelours Teppich nach Maß: Sand, Greige".
  * "Muster: X" bzw. "Muster X" ohne das Wort Muster; steckt die Farbe schon im Titel, nur der Titel.
+ * Auch fuer "Muster nicht verfuegbar" (Notiz, Mailtext, Server).
  */
-function musterKurz(positionen) {
+export function musterKurz(positionen) {
   const jeProdukt = new Map();
   for (const p of positionen || []) {
     if (!p?.istMuster) continue;
@@ -82,11 +83,17 @@ export function kontaktweg(z) {
  * @param {object[]} bestellzeilen  /api/kunden/bestellungen -> zeilen (mit auftragsart, verlauf, zeitleisteAbgeschlossen)
  * @param {object} [opt]
  * @param {Date} [opt.jetzt]
- * @returns {{ offen: object[], erledigt: object[] }}
+ * @param {Map<string, {am?: string}>|Set<string>|string[]} [opt.abgemeldet]  Adressen der Stoppliste (Antwort "Abmelden")
+ * @returns {{ offen: object[], erledigt: object[], abgemeldet: object[] }}
  */
-export function musterNachfassen(bestellzeilen = [], { jetzt = new Date() } = {}) {
+export function musterNachfassen(bestellzeilen = [], { jetzt = new Date(), abgemeldet = null } = {}) {
   const offen = [];
   const fertig = [];
+  const stopp = [];
+  // Stoppliste: wer "Abmelden" geantwortet hat, wird nicht mehr angeschrieben - weder vom Lauf
+  // noch per Klick. Er steht getrennt, damit der Laden sieht, warum er fehlt.
+  const stoppliste = abgemeldet instanceof Map ? abgemeldet : new Map([...(abgemeldet || [])].map(e => [e, {}]));
+  const abgemeldetEintrag = (email) => (email ? stoppliste.get(String(email).trim().toLowerCase()) || null : null);
   for (const z of bestellzeilen || []) {
     if (!z || z.auftragsart !== 'muster' || z.testbestellung || z.storniert) continue;
     const raus = schrittVon(z, 'raus');
@@ -111,21 +118,34 @@ export function musterNachfassen(bestellzeilen = [], { jetzt = new Date() } = {}
     // Abgeschlossen (Ergebnis eingetragen, spaetere Bestellung erkannt, im alten Modell erledigt): nichts mehr zu tun.
     if (z.zeitleisteAbgeschlossen || erledigt(ergebnis)) continue;
 
+    let faellig = null;
     if (!erledigt(nach)) {
       // Versand bzw. Uebergabe - ohne diesen Schritt hat der Kunde die Muster noch nicht.
       const seit = erledigt(raus) && raus.am ? raus.am : (erledigt(hat) && hat.am ? hat.am : null);
       const tage = tageSeit(seit, jetzt);
       if (tage === null || tage < ERSTE_NACH_TAGEN || tage > HOECHSTENS_TAGE) continue;
-      offen.push({ ...basis, stufe: 'erste', seit, tage });
+      faellig = { ...basis, stufe: 'erste', seit, tage };
     } else if ((nach.anzahl || 1) === 1) {
       const tage = tageSeit(nach.am, jetzt);
       if (tage === null || tage < ERINNERUNG_NACH_TAGEN || tage > HOECHSTENS_TAGE) continue;
-      offen.push({ ...basis, stufe: 'erinnerung', seit: nach.am, tage, zuletzt: { am: nach.am, von: nach.von || null } });
+      faellig = { ...basis, stufe: 'erinnerung', seit: nach.am, tage, zuletzt: { am: nach.am, von: nach.von || null } };
     }
+    if (!faellig) continue;
+    const ab = abgemeldetEintrag(basis.kontakt.email || z.email);
+    if (ab) stopp.push({ ...faellig, abgemeldetAm: ab.am || null });
+    else offen.push(faellig);
   }
   offen.sort((a, b) => b.tage - a.tage || String(a.datum).localeCompare(String(b.datum)));
+  stopp.sort((a, b) => b.tage - a.tage || String(a.datum).localeCompare(String(b.datum)));
   fertig.sort((a, b) => String(b.am).localeCompare(String(a.am)));
-  return { offen, erledigt: fertig };
+  return { offen, erledigt: fertig, abgemeldet: stopp };
+}
+
+/** Kein Platzhalter mehr in Betreff oder Text - erst dann darf eine Mail raus. */
+export function platzhalterFrei(mail) {
+  if (!mail || typeof mail !== 'object') return false;
+  const rest = /\{[^{}\n]+\}/;
+  return Boolean(mail.text) && !rest.test(String(mail.betreff || '')) && !rest.test(String(mail.text));
 }
 
 // ---------------------------------------------------------------- Textvorlage
@@ -138,6 +158,29 @@ export function musterNachfassen(bestellzeilen = [], { jetzt = new Date() } = {}
  * @param {string} md
  * @returns {{ erste: {betreff, text}|null, erinnerung: {betreff, text}|null }}
  */
+/**
+ * Vorschlag "Muster nicht verfuegbar" (Inhaber 2026-10-16): der Lieferant hat eine Farbe nicht,
+ * der Kunde erfaehrt es per Mail und bestellt bei Bedarf andere Muster. Bewusst ohne Termin -
+ * wann die Farbe wiederkommt, weiss niemand. Gilt, solange die Vorlage des Inhabers keinen
+ * eigenen Abschnitt "nicht verfuegbar" hat. Keine Kundendaten: alles in {} fuellt fuelleText().
+ */
+export const NICHT_VERFUEGBAR_VORLAGE = Object.freeze({
+  betreff: 'Ihre Musterbestellung bei Teppich Paradies',
+  text: `Guten Tag {Anrede} {Nachname},
+
+vielen Dank für Ihre Musterbestellung. Leider sind diese Muster derzeit nicht verfügbar:
+
+{Farben}
+
+Wann sie wieder lieferbar sind, können wir im Moment nicht sagen. Gern schicken wir Ihnen Muster in anderen Farben – Sie können sie direkt im Shop bestellen: {Link Muster}
+
+Bei Fragen helfen wir Ihnen gern weiter, auch telefonisch.
+
+Freundliche Grüße
+{Name}
+Teppich Paradies`,
+});
+
 export function texteAusMarkdown(md) {
   const abschnitte = String(md || '').split(/^##\s+/m).slice(1).map((a) => {
     const [kopf, ...rest] = a.split('\n');
@@ -151,10 +194,11 @@ export function texteAusMarkdown(md) {
     const text = vorLinie.slice(m.index + m[0].length).replace(/^\s*\n/, '').trim();
     return text ? { betreff: m[1].trim(), text } : null;
   };
-  const erinnerung = abschnitte.find(a => /erinnerung/i.test(a.kopf));
-  const erste = abschnitte.find(a => a !== erinnerung && /^text\s*1\b/i.test(a.kopf))
-    || abschnitte.find(a => a !== erinnerung && /e-?mail/i.test(a.kopf));
-  return { erste: lies(erste), erinnerung: lies(erinnerung) };
+  const nichtVerfuegbar = abschnitte.find(a => /nicht\s+verf[uü]e?gbar/i.test(a.kopf));
+  const erinnerung = abschnitte.find(a => a !== nichtVerfuegbar && /erinnerung/i.test(a.kopf));
+  const erste = abschnitte.find(a => a !== erinnerung && a !== nichtVerfuegbar && /^text\s*1\b/i.test(a.kopf))
+    || abschnitte.find(a => a !== erinnerung && a !== nichtVerfuegbar && /e-?mail/i.test(a.kopf));
+  return { erste: lies(erste), erinnerung: lies(erinnerung), nichtVerfuegbar: lies(nichtVerfuegbar) };
 }
 
 /**
@@ -165,11 +209,15 @@ export function texteAusMarkdown(md) {
  * @param {object} p
  * @param {string|null} p.kundenname
  * @param {string|null} [p.absender]  Name der Person, die schreibt
+ * @param {string[]} [p.farben]  nur "Muster nicht verfuegbar": betroffene Muster, je Eintrag "Produkt: Farbe"
  * @returns {{ betreff: string, text: string }|null}
  */
-export function fuelleText(vorlage, { kundenname = null, absender = null, produkte = [] } = {}) {
+export function fuelleText(vorlage, { kundenname = null, absender = null, produkte = [], farben = [] } = {}) {
   if (!vorlage?.text) return null;
   const werte = { ...FESTE_LINKS };
+  // "Muster nicht verfuegbar": je Produkt eine Zeile mit seinen Farben (mehrzeilig, ohne Platzhalter).
+  const farbZeilen = (farben || []).map(f => String(f ?? '').replace(/[{}]/g, '').trim()).filter(Boolean);
+  if (farbZeilen.length) werte.Farben = farbZeilen.map(f => `– ${f}`).join('\n');
   const links = sichereMusterLinks(produkte);
   const auswahl = links.map(p => `${[p.titel, p.farbe].filter(Boolean).join(' · ')}\n${p.url}`).join('\n\n');
   if (links.length) werte['Link Produkt'] = auswahl;
@@ -188,7 +236,9 @@ export function fuelleText(vorlage, { kundenname = null, absender = null, produk
   const block = `Ihre gewählten Böden:\n${auswahl}\n\nFragen zum Maß? Wir beraten Sie gern.`;
   const mitAuswahl = auswahl && !vorlage.text.includes('{Link Produkt}')
     ? (/\n(?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b/.test(text) ? text.replace(/\n((?:Freundliche Grüße|Mit freundlichen Grüßen|Viele Grüße)\b)/, `\n\n${block}\n\n$1`) : `${text}\n\n${block}`) : text;
-  return { betreff: ersetze(vorlage.betreff || '').replace(/\{[^{}\n]+\}/g, '').trim(), text: mitAuswahl };
+  // Der Betreff hat keine Zeile, die wegfallen koennte: ein unbekannter Platzhalter bleibt stehen,
+  // damit platzhalterFrei() ihn sieht und der Versandlauf die Mail zurueckhaelt (statt „Ihre Muster,“ zu schicken).
+  return { betreff: ersetze(vorlage.betreff || '').trim(), text: mitAuswahl };
 }
 
 /** mailto:-Link mit Betreff und Text - oeffnet das Mailprogramm, sendet nichts. */

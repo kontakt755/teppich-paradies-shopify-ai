@@ -230,7 +230,7 @@
   {%- comment -%}
     og:price in derselben Einheit wie offers.price im JSON-LD
     (snippets/tp-product-structured-data.liquid): Teppich nach Mass je
-    0,01 m2 -> x100, Paketware -> Paketpreis / m2 je Paket. Basis ist die
+    0,01 m2 und Profile nach Mass je 0,01 lfm -> x100, Paketware -> Paketpreis / m2 je Paket. Basis ist die
     gezeigte Variante statt product.price (das waere der kleinste Preis aller
     Varianten inkl. Muster). Dezimalpunkt statt Komma, ohne Tausenderpunkt.
     Teppich nach Mass mit Einfassung: Endpreis der Beispielgroesse dieser Farbe
@@ -239,7 +239,7 @@
   {%- endcomment -%}
   {%- liquid
     assign tp_og_cents = product.selected_or_first_available_variant.price
-    if product.metafields.custom.preis_pro_001_qm.value == true
+    if product.metafields.custom.preis_pro_001_qm.value == true or product.metafields.custom.preis_pro_001_lfm.value == true
       assign tp_og_cents = tp_og_cents | times: 100
       if product.metafields.service.einfassung.value != blank
         capture tp_og_bsp

@@ -40,6 +40,13 @@
   {%- else -%}
     {% render 'tp-teppich-ab-preis', product: product_resource %}
   {%- endif -%}
+{%- elsif product_resource.metafields.custom.preis_pro_001_lfm.value == true -%}
+  {%- comment -%} Laengenware (Profile nach Mass): Meterpreis statt Preis je 0,01 lfm {%- endcomment -%}
+  {%- if product.handle == product_resource.handle -%}
+    {% render 'tp-laengen-preis', product: product_resource, variant: product_resource.selected_or_first_available_variant %}
+  {%- else -%}
+    {% render 'tp-laengen-preis', product: product_resource %}
+  {%- endif -%}
 {%- else -%}
 {%- liquid
   assign show_unit_price = show_unit_price | default: false

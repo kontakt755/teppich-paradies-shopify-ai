@@ -1,0 +1,439 @@
+{%- comment -%}
+  TP Laden & Reste (Inhaber 15.10.2026): Kunden aus der Umgebung sollen sehen,
+  dass im Laden in Oranienburg sehr viel mehr auf Lager ist als im Online-Shop.
+  Der Shop bleibt das Hauptziel - jede Sortimentszeile fuehrt zuerst dorthin.
+
+  Zwei Darstellungen (Einstellung "darstellung"):
+    voll - Kollektion "Reste & Sonderposten" (templates/collection.sonderposten.json),
+           UNTER dem Produktraster: Kennzahlen, Sortiments-Register, Reste-Regal,
+           Besuch. Unter dem Raster, weil der Laden den Online-Katalog ergaenzt
+           und ihn nicht vorab kleinreden soll (Ahmet, #167).
+    band - Startseite: Ueberschrift, Kennzahlen, ein Link zur vollen Fassung.
+
+  Keine Ladenfotos (Inhaber: der Laden wird nicht mit Fotos beworben). Die Fuelle
+  zeigen Zahlen, Warengruppen mit Symbolen (snippets/tp-ldn-icon) und Typografie.
+  Nur fuer das Reste-Regal gibt es einen Bildplatz; leer steht dort eine
+  Zeichnung, kein Ersatzfoto.
+
+  Nur Belegtes: Kennzahlen, Marken und "Im Laden zusaetzlich" sind Bloecke bzw.
+  Felder, die leer nichts ausgeben. Die Online-Zahlen zaehlt Shopify
+  (collection.products_count), sie stimmen also immer.
+
+  Telefon, WhatsApp und Adresse kommen aus den Theme-Einstellungen
+  (tp_vs_telefon, tp_vs_whatsapp, tp_vs_adresse) wie beim Verlegeservice.
+  Praefix tp-ldn: Section-CSS wird shopweit gebuendelt - ein geteiltes Praefix
+  hat 2026-09-12 fremde Abstaende veraendert (tp-laden-hinweis/tp-lh).
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+{%- liquid
+  assign ldn_band = false
+  if section.settings.darstellung == 'band'
+    assign ldn_band = true
+  endif
+  assign ldn_anker = section.settings.anker | strip | handleize | default: 'laden'
+  assign ldn_h2_id = 'tp-ldn-h2-' | append: section.id
+
+  assign ldn_tel_anzeige = settings.tp_vs_telefon | strip
+  assign ldn_tel = ldn_tel_anzeige | remove: ' ' | remove: '/' | remove: '-' | remove: '(' | remove: ')'
+  assign ldn_tel_erst = ldn_tel | slice: 0
+  if ldn_tel_erst == '0'
+    assign ldn_tel = ldn_tel | slice: 1, 30 | prepend: '+49'
+  endif
+  assign ldn_wa = settings.tp_vs_whatsapp | remove: ' ' | remove: '+'
+  assign ldn_adresse = settings.tp_vs_adresse | strip
+  if ldn_adresse != blank
+    assign ldn_ziel = ldn_adresse | replace: '–', '-' | url_encode
+    assign ldn_route = 'https://www.google.com/maps/dir/?api=1&destination=' | append: ldn_ziel
+  endif
+
+  assign ldn_zahlen = 0
+  assign ldn_gruppen = 0
+  assign ldn_marken = 0
+  for block in section.blocks
+    case block.type
+      when 'kennzahl'
+        if block.settings.wert != blank
+          assign ldn_zahlen = ldn_zahlen | plus: 1
+        endif
+      when 'warengruppe'
+        if block.settings.titel != blank
+          assign ldn_gruppen = ldn_gruppen | plus: 1
+        endif
+      when 'marke'
+        if block.settings.name != blank
+          assign ldn_marken = ldn_marken | plus: 1
+        endif
+    endcase
+  endfor
+-%}
+
+{%- capture ldn_zahlen_html -%}
+  {%- if ldn_zahlen > 0 -%}
+    <ul class="tp-ldn__zahlen" role="list">
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'kennzahl' and block.settings.wert != blank -%}
+          <li class="tp-ldn__zahl" {{ block.shopify_attributes }}>
+            <b>{{ block.settings.wert | escape }}</b>
+            {%- if block.settings.label != blank -%}<span>{{ block.settings.label | escape }}</span>{%- endif -%}
+          </li>
+        {%- endif -%}
+      {%- endfor -%}
+    </ul>
+  {%- endif -%}
+{%- endcapture -%}
+
+{%- if ldn_band -%}
+  {%- assign ldn_link = section.settings.band_link | default: '/collections/reste-sonderposten#laden' -%}
+  <section class="tp-s-sec tp-s-sec--tight tp-ldn tp-ldn--band" id="{{ ldn_anker }}" aria-labelledby="{{ ldn_h2_id }}">
+    <div class="tp-s-wrap">
+      <div class="tp-ldn__band">
+        <div class="tp-ldn__band-text">
+          {%- if section.settings.eyebrow != blank -%}<span class="tp-s-eyebrow">{{ section.settings.eyebrow | escape }}</span>{%- endif -%}
+          <h2 id="{{ ldn_h2_id }}" class="tp-s-h2 tp-ldn__band-h2">{{ section.settings.heading | escape }}</h2>
+          {%- if section.settings.band_text != blank -%}<p>{{ section.settings.band_text | escape }}</p>{%- endif -%}
+          <a class="tp-s-btn tp-s-btn--ghost tp-s-btn--sm tp-ldn__band-link" href="{{ ldn_link }}">
+            {{- section.settings.band_link_label | default: 'Laden & Reste ansehen' | escape -}}
+          </a>
+        </div>
+        {{ ldn_zahlen_html }}
+      </div>
+    </div>
+  </section>
+{%- else -%}
+  <section class="tp-s-sec tp-ldn" id="{{ ldn_anker }}" aria-labelledby="{{ ldn_h2_id }}">
+    <div class="tp-s-wrap">
+      <header class="tp-ldn__kopf">
+        {%- if section.settings.eyebrow != blank -%}<span class="tp-s-eyebrow">{{ section.settings.eyebrow | escape }}</span>{%- endif -%}
+        <h2 id="{{ ldn_h2_id }}" class="tp-s-h2">{{ section.settings.heading | escape }}</h2>
+        {%- if section.settings.text != blank -%}<div class="tp-ldn__intro">{{ section.settings.text }}</div>{%- endif -%}
+      </header>
+
+      {{ ldn_zahlen_html }}
+
+      <div class="tp-ldn__raster">
+        {%- if ldn_gruppen > 0 -%}
+          <div class="tp-ldn__register">
+            <h3 class="tp-s-h3">{{ section.settings.register_titel | escape }}</h3>
+            {%- if section.settings.register_text != blank -%}<p class="tp-ldn__register-text">{{ section.settings.register_text | escape }}</p>{%- endif -%}
+            <ul class="tp-ldn__gruppen" role="list">
+              {%- for block in section.blocks -%}
+                {%- if block.type == 'warengruppe' and block.settings.titel != blank -%}
+                  {%- liquid
+                    assign ldn_col = block.settings.collection
+                    assign ldn_n = 0
+                    if ldn_col != blank
+                      assign ldn_n = ldn_col.products_count
+                    endif
+                    if ldn_n >= 1000
+                      assign ldn_tausend = ldn_n | divided_by: 1000
+                      assign ldn_rest = ldn_n | modulo: 1000 | prepend: '00' | slice: -3, 3
+                      assign ldn_n_text = ldn_tausend | append: '.' | append: ldn_rest
+                    else
+                      assign ldn_n_text = ldn_n | append: ''
+                    endif
+                    assign ldn_wort = block.settings.zahl_wort | default: 'Produkte'
+                  -%}
+                  <li {{ block.shopify_attributes }}>
+                    {%- if ldn_col != blank -%}
+                      <a class="tp-ldn__gruppe" href="{{ ldn_col.url }}">
+                    {%- else -%}
+                      <div class="tp-ldn__gruppe">
+                    {%- endif -%}
+                      <span class="tp-ldn__symbol">{% render 'tp-ldn-icon', name: block.settings.symbol %}</span>
+                      <span class="tp-ldn__gruppe-text">
+                        <strong class="tp-ldn__gruppe-titel">{{ block.settings.titel | escape }}</strong>
+                        {%- if block.settings.arten != blank -%}<span class="tp-ldn__arten">{{ block.settings.arten | escape }}</span>{%- endif -%}
+                        {%- if block.settings.laden != blank -%}
+                          <span class="tp-ldn__laden"><span class="tp-ldn__laden-marke">Im Laden zusätzlich</span> {{ block.settings.laden | escape }}</span>
+                        {%- endif -%}
+                      </span>
+                      {%- if ldn_col != blank and ldn_n > 0 -%}
+                        <span class="tp-ldn__online">
+                          <b>{{ ldn_n_text }}</b>
+                          <span>{{ ldn_wort | escape }} online</span>
+                        </span>
+                        <svg class="tp-ldn__pfeil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6"/></svg>
+                      {%- endif -%}
+                    {%- if ldn_col != blank -%}
+                      </a>
+                    {%- else -%}
+                      </div>
+                    {%- endif -%}
+                  </li>
+                {%- endif -%}
+              {%- endfor -%}
+            </ul>
+
+            {%- if ldn_marken > 0 -%}
+              <div class="tp-ldn__marken">
+                <h3 class="tp-s-h3">{{ section.settings.marken_titel | escape }}</h3>
+                <ul role="list">
+                  {%- for block in section.blocks -%}
+                    {%- if block.type == 'marke' and block.settings.name != blank -%}
+                      <li {{ block.shopify_attributes }}>{{ block.settings.name | escape }}</li>
+                    {%- endif -%}
+                  {%- endfor -%}
+                </ul>
+              </div>
+            {%- endif -%}
+          </div>
+        {%- endif -%}
+
+        <aside class="tp-ldn__reste" id="reste-regal" aria-labelledby="tp-ldn-reste-{{ section.id }}">
+          <div class="tp-ldn__reste-bild">
+            {%- if section.settings.reste_bild != blank -%}
+              {%- assign ldn_alt = section.settings.reste_bild.alt | default: section.settings.reste_titel -%}
+              {{ section.settings.reste_bild | image_url: width: 1200 | image_tag: loading: 'lazy', widths: '480, 720, 960, 1200', sizes: '(max-width: 1023px) 100vw, 40vw', alt: ldn_alt, class: 'tp-ldn__reste-img' }}
+            {%- else -%}
+              {%- comment -%} Zeichnung statt Foto, bis der Inhaber das Reste-Regal fotografiert {%- endcomment -%}
+              <svg class="tp-ldn__illu" viewBox="0 0 320 200" aria-hidden="true" focusable="false">
+                <rect class="tp-ldn__illu-grund" width="320" height="200"/>
+                <path class="tp-ldn__illu-brett" d="M24 118h272M24 182h272"/>
+                <circle class="tp-ldn__illu-a" cx="70" cy="84" r="32"/><circle class="tp-ldn__illu-ring" cx="70" cy="84" r="20"/><circle class="tp-ldn__illu-kern" cx="70" cy="84" r="7"/>
+                <circle class="tp-ldn__illu-b" cx="138" cy="94" r="22"/><circle class="tp-ldn__illu-ring" cx="138" cy="94" r="13"/><circle class="tp-ldn__illu-kern" cx="138" cy="94" r="5"/>
+                <circle class="tp-ldn__illu-c" cx="210" cy="80" r="36"/><circle class="tp-ldn__illu-ring" cx="210" cy="80" r="23"/><circle class="tp-ldn__illu-kern" cx="210" cy="80" r="8"/>
+                <circle class="tp-ldn__illu-b" cx="270" cy="98" r="18"/><circle class="tp-ldn__illu-kern" cx="270" cy="98" r="5"/>
+                <rect class="tp-ldn__illu-c" x="36" y="150" width="96" height="30" rx="15"/>
+                <rect class="tp-ldn__illu-a" x="140" y="156" width="70" height="24" rx="12"/>
+                <rect class="tp-ldn__illu-b" x="218" y="146" width="66" height="34" rx="17"/>
+              </svg>
+            {%- endif -%}
+          </div>
+          <div class="tp-ldn__reste-text">
+            {%- if section.settings.reste_eyebrow != blank -%}<span class="tp-s-eyebrow">{{ section.settings.reste_eyebrow | escape }}</span>{%- endif -%}
+            <h3 id="tp-ldn-reste-{{ section.id }}" class="tp-s-h3">{{ section.settings.reste_titel | escape }}</h3>
+            {%- if section.settings.reste_text != blank -%}<div class="tp-ldn__reste-absatz">{{ section.settings.reste_text }}</div>{%- endif -%}
+            <div class="tp-ldn__wege">
+              {%- if ldn_wa != blank -%}
+                {%- assign ldn_wa_text = section.settings.reste_wa_text | strip | url_encode -%}
+                <a class="tp-s-btn tp-s-btn--wa tp-s-btn--sm" href="https://wa.me/{{ ldn_wa }}{% if ldn_wa_text != blank %}?text={{ ldn_wa_text }}{% endif %}" target="_blank" rel="noopener">
+                  {%- render 'tp-vs-icon', name: 'whatsapp' -%}
+                  <span>Rest anfragen</span>
+                </a>
+              {%- endif -%}
+              {%- if ldn_tel != blank -%}
+                <a class="tp-s-btn tp-s-btn--ghost tp-s-btn--sm" href="tel:{{ ldn_tel }}">
+                  {%- render 'tp-ldn-icon', name: 'telefon' -%}
+                  <span>Anrufen</span>
+                </a>
+              {%- endif -%}
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="tp-ldn__besuch">
+        {%- if ldn_adresse != blank -%}
+          <div class="tp-ldn__besuch-punkt">
+            <span class="tp-ldn__symbol">{% render 'tp-ldn-icon', name: 'pin' %}</span>
+            <span><b>Laden</b> {{ ldn_adresse | escape }}</span>
+          </div>
+        {%- endif -%}
+        {%- if section.settings.zeiten != blank -%}
+          <div class="tp-ldn__besuch-punkt">
+            <span class="tp-ldn__symbol">{% render 'tp-ldn-icon', name: 'uhr' %}</span>
+            <span><b>Geöffnet</b> {{ section.settings.zeiten | escape }}</span>
+          </div>
+        {%- endif -%}
+        <div class="tp-ldn__besuch-wege">
+          {%- if ldn_route != blank -%}
+            <a class="tp-s-btn tp-s-btn--dark tp-s-btn--sm" href="{{ ldn_route }}" target="_blank" rel="noopener">
+              {%- render 'tp-ldn-icon', name: 'route' -%}
+              <span>Route planen</span>
+            </a>
+          {%- endif -%}
+          {%- if section.settings.shop_link_label != blank -%}
+            <a class="tp-s-link" href="{{ section.settings.shop_link | default: routes.all_products_collection_url }}">{{ section.settings.shop_link_label | escape }}</a>
+          {%- endif -%}
+        </div>
+      </div>
+    </div>
+  </section>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-ldn .tp-ldn-icon { width: 22px; height: 22px; flex: none; }
+  .tp-ldn .tp-s-btn .tp-ldn-icon { width: 18px; height: 18px; }
+
+  /* Kopf und Kennzahlen */
+  .tp-ldn__kopf { max-width: 68ch; }
+  .tp-ldn__intro { color: var(--tp-ink-2, #4a443f); margin-top: 12px; font-size: var(--tp-fs-md); line-height: 1.55; }
+  .tp-ldn__intro p { margin: 0 0 8px; }
+  .tp-ldn__zahlen { list-style: none; margin: 32px 0 0; padding: 22px 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 18px 28px; border-top: 1px solid var(--tp-line, #e6e0d8); border-bottom: 1px solid var(--tp-line, #e6e0d8); }
+  .tp-ldn__zahl b { display: block; font-size: var(--tp-fs-xl); font-weight: 700; line-height: 1.05; letter-spacing: -0.015em; color: var(--tp-ink, #1d1a17); }
+  .tp-ldn__zahl span { display: block; margin-top: 6px; font-size: var(--tp-fs-sm); line-height: 1.35; color: var(--tp-muted, #595959); }
+
+  /* Register und Reste-Regal */
+  .tp-ldn__raster { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 40px; align-items: start; margin-top: 40px; }
+  .tp-ldn__register-text { color: var(--tp-muted, #595959); margin: 6px 0 14px; font-size: var(--tp-fs-sm); }
+  .tp-ldn__gruppen { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--tp-line, #e6e0d8); }
+  .tp-ldn__gruppen > li { border-bottom: 1px solid var(--tp-line, #e6e0d8); }
+  .tp-ldn__gruppe { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto 18px; align-items: center; gap: 14px; padding: 14px 6px; color: var(--tp-ink, #1d1a17); text-decoration: none; border-radius: 8px; }
+  a.tp-ldn__gruppe:hover { background: var(--tp-bg-2, #f6f2ec); }
+  a.tp-ldn__gruppe:focus-visible { outline: 2px solid var(--tp-ink, #1d1a17); outline-offset: 2px; }
+  .tp-ldn__symbol { width: 44px; height: 44px; border-radius: 50%; background: var(--tp-bg-2, #f6f2ec); display: inline-flex; align-items: center; justify-content: center; color: var(--tp-ink, #1d1a17); flex: none; }
+  .tp-ldn__gruppe-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .tp-ldn__gruppe-titel { font-size: var(--tp-fs-md); font-weight: 600; line-height: 1.25; }
+  .tp-ldn__arten { font-size: var(--tp-fs-sm); color: var(--tp-muted, #595959); line-height: 1.35; }
+  .tp-ldn__laden { margin-top: 4px; font-size: var(--tp-fs-sm); line-height: 1.4; color: var(--tp-ink-2, #4a443f); }
+  .tp-ldn__laden-marke { display: inline-block; margin-right: 4px; padding: 1px 7px; border-radius: 999px; background: var(--tp-sand, #e9c8a1); color: var(--tp-ink, #1d1a17); font-size: var(--tp-fs-xs); font-weight: 600; }
+  .tp-ldn__online { text-align: right; line-height: 1.15; white-space: nowrap; }
+  .tp-ldn__online b { display: block; font-size: var(--tp-fs-lg); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tp-ldn__online span { font-size: var(--tp-fs-xs); color: var(--tp-muted, #595959); }
+  .tp-ldn__pfeil { width: 18px; height: 18px; color: var(--tp-muted, #595959); }
+  .tp-ldn__marken { margin-top: 28px; }
+  .tp-ldn__marken ul { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .tp-ldn__marken li { padding: 8px 14px; border: 1px solid var(--tp-line-2, #d5cec4); border-radius: 999px; font-weight: 600; letter-spacing: 0.02em; }
+
+  .tp-ldn__reste { border: 1px solid var(--tp-line, #e6e0d8); border-radius: var(--tp-r-lg, 16px); overflow: hidden; background: #fff; }
+  .tp-ldn__reste-bild { aspect-ratio: 16 / 10; background: var(--tp-bg-3, #ede7de); }
+  .tp-ldn__reste-img, .tp-ldn__illu { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .tp-ldn__illu-grund { fill: var(--tp-bg-3, #ede7de); }
+  .tp-ldn__illu-brett { stroke: var(--tp-line-2, #d5cec4); stroke-width: 4; stroke-linecap: round; fill: none; }
+  .tp-ldn__illu-a { fill: var(--tp-sand, #e9c8a1); }
+  .tp-ldn__illu-b { fill: #c9b9a6; }
+  .tp-ldn__illu-c { fill: #8f8173; }
+  .tp-ldn__illu-ring { fill: none; stroke: rgba(29, 26, 23, 0.22); stroke-width: 2; }
+  .tp-ldn__illu-kern { fill: var(--tp-bg-2, #f6f2ec); }
+  .tp-ldn__reste-text { padding: 22px 24px 24px; }
+  .tp-ldn__reste-absatz { color: var(--tp-ink-2, #4a443f); margin-top: 8px; font-size: var(--tp-fs-md); line-height: 1.55; }
+  .tp-ldn__reste-absatz p { margin: 0 0 8px; }
+  .tp-ldn__wege { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+
+  /* Besuch */
+  .tp-ldn__besuch { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 32px; margin-top: 40px; padding: 18px 22px; border-radius: var(--tp-r-lg, 16px); background: var(--tp-bg-2, #f6f2ec); }
+  .tp-ldn__besuch-punkt { display: flex; align-items: center; gap: 12px; font-size: var(--tp-fs-md); color: var(--tp-ink-2, #4a443f); }
+  .tp-ldn__besuch-punkt .tp-ldn__symbol { background: #fff; }
+  .tp-ldn__besuch-punkt b { display: block; color: var(--tp-ink, #1d1a17); font-size: var(--tp-fs-xs); letter-spacing: 0.04em; text-transform: uppercase; }
+  .tp-ldn__besuch-wege { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 24px; margin-left: auto; }
+
+  /* Band (Startseite) */
+  .tp-ldn__band { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); align-items: center; gap: 24px 48px; padding: 28px 32px; border: 1px solid var(--tp-line, #e6e0d8); border-radius: var(--tp-r-lg, 16px); background: var(--tp-bg-2, #f6f2ec); }
+  .tp-ldn__band-h2 { font-size: var(--tp-fs-xl); }
+  .tp-ldn__band-text p { margin: 8px 0 0; color: var(--tp-ink-2, #4a443f); font-size: var(--tp-fs-md); line-height: 1.5; }
+  .tp-ldn__band-link { margin-top: 16px; }
+  .tp-ldn--band .tp-ldn__zahlen { margin: 0; padding: 0; border: 0; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .tp-ldn--band .tp-ldn__zahl b { font-size: var(--tp-fs-xl); white-space: nowrap; }
+
+  @media (max-width: 1023px) {
+    .tp-ldn__raster { grid-template-columns: 1fr; gap: 32px; }
+    .tp-ldn__band { grid-template-columns: 1fr; }
+    .tp-ldn__besuch-wege { margin-left: 0; }
+  }
+  @media (max-width: 767px) {
+    .tp-ldn__intro { font-size: var(--tp-fs-md); }
+    .tp-ldn__zahlen { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 18px; margin-top: 24px; padding: 18px 0; }
+    .tp-ldn__zahl:first-child:nth-last-child(odd) { grid-column: 1 / -1; }
+    .tp-ldn__raster { margin-top: 28px; }
+    .tp-ldn__gruppe { grid-template-columns: 40px minmax(0, 1fr) auto; gap: 12px; padding: 12px 2px; }
+    .tp-ldn__symbol { width: 40px; height: 40px; }
+    .tp-ldn__pfeil { display: none; }
+    .tp-ldn__gruppe-titel { font-size: var(--tp-fs-md); }
+    .tp-ldn__online b { font-size: var(--tp-fs-lg); }
+    .tp-ldn__reste-text { padding: 18px 18px 20px; }
+    .tp-ldn__besuch { flex-direction: column; align-items: flex-start; padding: 18px; margin-top: 28px; }
+    .tp-ldn__band { padding: 22px 18px; gap: 20px; }
+    .tp-ldn--band .tp-ldn__zahlen { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Laden & Reste",
+  "tag": "div",
+  "class": "tp-ldn-section",
+  "settings": [
+    {
+      "type": "select",
+      "id": "darstellung",
+      "label": "Darstellung",
+      "options": [
+        { "value": "voll", "label": "Ganze Fassung (Reste-Seite)" },
+        { "value": "band", "label": "Schmales Band (Startseite)" }
+      ],
+      "default": "voll"
+    },
+    { "type": "text", "id": "anker", "label": "Sprungmarke", "info": "Ohne #. Die Startseite verlinkt auf /collections/reste-sonderposten#laden.", "default": "laden" },
+    { "type": "text", "id": "eyebrow", "label": "Kleine Zeile", "default": "Vor Ort in Oranienburg" },
+    { "type": "text", "id": "heading", "label": "Ueberschrift", "default": "Im Laden steht noch viel mehr" },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "Text (ganze Fassung)",
+      "default": "<p>Im Online-Shop steht nur ein Teil dessen, was wir haben. In unserem Laden in Oranienburg ist sehr viel mehr auf Lager – Lagerware, Sonderposten und Reste, die nicht online stehen.</p>"
+    },
+    { "type": "header", "content": "Band (Startseite)" },
+    { "type": "text", "id": "band_text", "label": "Kurzer Text", "default": "Lagerware, Sonderposten und Reste, die nicht online stehen – im Laden in Oranienburg." },
+    { "type": "url", "id": "band_link", "label": "Link-Ziel", "info": "Leer = /collections/reste-sonderposten#laden" },
+    { "type": "text", "id": "band_link_label", "label": "Link-Text", "default": "Laden & Reste ansehen" },
+    { "type": "header", "content": "Sortiment" },
+    { "type": "text", "id": "register_titel", "label": "Ueberschrift Warengruppen", "default": "Was wir führen" },
+    { "type": "text", "id": "register_text", "label": "Text unter der Ueberschrift", "default": "Jede Warengruppe können Sie online ansehen und bestellen. Im Laden steht zusätzlich Lagerware." },
+    { "type": "text", "id": "marken_titel", "label": "Ueberschrift Marken", "info": "Erscheint nur mit mindestens einem Block Marke.", "default": "Marken im Laden" },
+    { "type": "header", "content": "Reste-Regal" },
+    { "type": "image_picker", "id": "reste_bild", "label": "Foto Reste-Regal", "info": "Leer = Zeichnung. Querformat, mindestens 1200 px breit." },
+    { "type": "text", "id": "reste_eyebrow", "label": "Kleine Zeile", "default": "Reste & Sonderposten" },
+    { "type": "text", "id": "reste_titel", "label": "Ueberschrift", "default": "Das Reste-Regal" },
+    {
+      "type": "richtext",
+      "id": "reste_text",
+      "label": "Text",
+      "default": "<p>Reststücke und Rollenreste, die nicht online stehen – jedes Stück gibt es nur einmal. Schicken Sie uns Ihr Raummaß: Wir schauen nach, was passt, und senden Ihnen Fotos und Preise.</p>"
+    },
+    { "type": "text", "id": "reste_wa_text", "label": "Vorbelegter WhatsApp-Text", "default": "Hallo, ich suche einen Rest aus dem Reste-Regal. Raum ca. … × … m, gewünschter Boden: …" },
+    { "type": "header", "content": "Besuch" },
+    { "type": "paragraph", "content": "Adresse, Telefon und WhatsApp kommen aus den Theme-Einstellungen (Verlegeservice)." },
+    { "type": "text", "id": "zeiten", "label": "Oeffnungszeiten", "default": "Mo–Fr 8:30–18:00 · Sa 8:30–14:30" },
+    { "type": "text", "id": "shop_link_label", "label": "Link zum Shop", "default": "Lieber gleich online stöbern" },
+    { "type": "url", "id": "shop_link", "label": "Ziel Link zum Shop", "info": "Leer = alle Produkte" }
+  ],
+  "blocks": [
+    {
+      "type": "kennzahl",
+      "name": "Kennzahl",
+      "limit": 4,
+      "settings": [
+        { "type": "paragraph", "content": "Nur belegte Zahlen. Leerer Wert = Block wird nicht angezeigt." },
+        { "type": "text", "id": "wert", "label": "Wert", "default": "Mo–Sa" },
+        { "type": "text", "id": "label", "label": "Beschreibung", "default": "geöffnet, Beratung vor Ort" }
+      ]
+    },
+    {
+      "type": "warengruppe",
+      "name": "Warengruppe",
+      "limit": 10,
+      "settings": [
+        {
+          "type": "select",
+          "id": "symbol",
+          "label": "Symbol",
+          "options": [
+            { "value": "rolle", "label": "Rolle (Teppichboden)" },
+            { "value": "teppich", "label": "Teppich" },
+            { "value": "fliesen", "label": "Fliesen" },
+            { "value": "planken", "label": "Planken (Vinyl)" },
+            { "value": "parkett", "label": "Fischgrat (Laminat, Parkett)" },
+            { "value": "blatt", "label": "Blatt (Linoleum, Kork)" },
+            { "value": "leiste", "label": "Leiste (Zubehör)" }
+          ],
+          "default": "rolle"
+        },
+        { "type": "text", "id": "titel", "label": "Warengruppe", "default": "Teppichboden" },
+        { "type": "text", "id": "arten", "label": "Arten oder Materialien", "info": "Kurz, mit Komma getrennt." },
+        { "type": "collection", "id": "collection", "label": "Kollektion im Shop", "info": "Die Zeile verlinkt dorthin und zeigt die Zahl der Produkte online." },
+        { "type": "text", "id": "zahl_wort", "label": "Wort hinter der Zahl", "default": "Produkte" },
+        { "type": "text", "id": "laden", "label": "Im Laden zusätzlich", "info": "Nur Belegtes, z. B. was nur im Laden steht. Leer = die Zeile zeigt nur das Online-Sortiment." }
+      ]
+    },
+    {
+      "type": "marke",
+      "name": "Marke",
+      "limit": 16,
+      "settings": [
+        { "type": "text", "id": "name", "label": "Marke", "info": "Nur Marken, die im Laden wirklich stehen. Keine Grosshaendler-Namen." }
+      ]
+    }
+  ],
+  "presets": [ { "name": "TP Laden & Reste" } ]
+}
+{% endschema %}

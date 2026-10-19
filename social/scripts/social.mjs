@@ -20,6 +20,12 @@
  *   npm run social -- meta-pruefen
  *   npm run social -- bild-ersetzen <mediumId> <datei>   (bearbeitete Fassung eines Fotos einsetzen)
  *   npm run social -- highlights            (Titelbilder der fuenf Instagram-Highlights nach $TP_PRIVAT_DIR/social/highlights)
+ *   npm run social -- highlights-stand [Verlegung=3 Referenzen=1 …] [--einsortiert 57,58] [--json]
+ *                                           (was in den Highlights fehlt; mit Zahlen: Zaehlung vom Profil eintragen)
+ *   npm run social -- reel-kandidaten [--anzahl 10] [--json]   (Produkte fuer Standbild-Reels, mit Auftragsvorschlag)
+ *   npm run social -- reel-vorschau <auftrag.json>             (Ausschnitt ansehen, bevor gerendert wird)
+ *   npm run social -- produkt-reel <auftrag.json> --text-datei pfad [--plattformen instagram,facebook]
+ *   npm run social -- wissen-anlegen --titel "…" [--bereich Muster|Bewertungen] [--notiz "…"]
  *   npm run social -- meta-einrichten       (aus META_SYSTEM_TOKEN Seiten-ID, Seiten-Token und Instagram-Konto ableiten und eintragen)
  *   npm run social -- whatsapp [--pruefen]   (Fotos aus der WhatsApp-Gruppe uebernehmen bzw. nur zeigen, was da ist)
  *   npm run social -- whatsapp-export [datei.zip|ordner]   (Chat-Export vom Handy uebernehmen; ohne Angabe: neuester in Downloads)
@@ -47,6 +53,9 @@ import { STILREGELN } from '../lib/texte.mjs';
 import { erstelleEntwurf } from '../lib/werkstatt.mjs';
 import { findeExport, leseGruppe, liesStand, standardQuelle, uebernimmExport, uebernimmWhatsApp } from '../lib/whatsapp.mjs';
 import { ladeUmgebung, setzeEnvWerte, zugangDatei } from '../lib/zugang.mjs';
+import { highlightBericht, highlightZeilen, leseZaehlung, liesHighlightStand, schreibeHighlightStand } from '../lib/highlights.mjs';
+import { auftragVorlage, erstelleProduktReel, ladeBildrechte, reelKandidaten, reelVorschau } from '../lib/produkt-reel.mjs';
+import { ladeLexikonPreise, ladeMusterNachfrage, ladeProdukte } from '../lib/shop-quelle.mjs';
 
 export function argumente(argv) {
   const pos = []; const flags = {};
@@ -66,8 +75,9 @@ const datum = d => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-dig
 const anzahl = (n, eins, mehr) => `${n} ${n === 1 ? eins : mehr}`;
 
 /** Die Uebersicht. Geplantes vollstaendig: Zahl je Woche, die naechsten 14 Tage einzeln, der Rest als Anzahl. */
-export function zeigeStatus(db, { jetzt = new Date(), tage = 14, schreibe = console.log } = {}) {
+export function zeigeStatus(db, { jetzt = new Date(), tage = 14, schreibe = console.log, highlights = null } = {}) {
   const u = db.uebersicht();
+  if (highlights) for (const z of highlightZeilen(highlights)) schreibe(z);
   schreibe('Neue Inhalte');
   schreibe(`  ${u.neu.baustellenbilder} neue Baustellenbilder (${u.neu.baustellen} Baustellen)`);
   schreibe(`  ${u.neu.produkte} neue Produktanlässe`);
@@ -115,7 +125,7 @@ async function main(argv) {
   try {
     switch (befehl) {
       case undefined:
-      case 'status': zeigeStatus(db); break;
+      case 'status': zeigeStatus(db, { highlights: highlightBericht(db, { stand: liesHighlightStand(dir) }) }); break;
 
       case 'shop-abgleich': {
         const r = await shopAbgleich(db);
@@ -167,6 +177,11 @@ async function main(argv) {
         const felder = {};
         for (const k of ['typ', 'bodenart', 'raum', 'ort', 'notiz', 'taetigkeit', 'besonderheit']) if (typeof flags[k] === 'string') felder[k] = flags[k];
         if (felder.typ && !TYPEN[felder.typ]) throw new Error(`Unbekannter Typ (${Object.keys(TYPEN).join(', ')})`);
+        // In welches Instagram-Highlight gehoeren Storys aus diesem Inhalt (lib/highlights.mjs)?
+        if (typeof flags.bereich === 'string') {
+          if (!HIGHLIGHTS.includes(flags.bereich)) throw new Error(`Unbekannter Bereich (${HIGHLIGHTS.join(', ')})`);
+          felder.daten = { ...(db.inhalt(id).daten ?? {}), bereich: flags.bereich };
+        }
         if (flags.verwerfen) felder.status = INHALT_STATUS.VERWORFEN;
         // Einwilligung liegt schriftlich vor (Auftragszettel) - nur fuer Material ohne Haekchen, etwa aus WhatsApp.
         if (flags.einwilligung === true) felder.einwilligung = true;
@@ -273,6 +288,76 @@ async function main(argv) {
         break;
       }
 
+      case 'highlights-stand': {
+        const werte = leseZaehlung(rest);
+        const einsortiert = typeof flags.einsortiert === 'string' ? flags.einsortiert.split(',') : [];
+        const stand = werte && (Object.keys(werte).length || einsortiert.length)
+          ? schreibeHighlightStand(werte, { dir, einsortiert, von: typeof flags.von === 'string' ? flags.von : 'redaktion' })
+          : liesHighlightStand(dir);
+        const bericht = highlightBericht(db, { stand });
+        if (flags.json) { console.log(JSON.stringify(bericht, null, 2)); break; }
+        for (const z of highlightZeilen(bericht)) console.log(z);
+        if (bericht.inhaber.length) console.log('Für den Inhaber (Instagram-App, Profil):');
+        for (const a of bericht.inhaber) console.log(`  ${a}`);
+        const redaktion = bericht.bereiche.filter(b => b.redaktion);
+        if (redaktion.length) console.log('Für die Redaktion:');
+        for (const b of redaktion) console.log(`  ${b.name}: ${b.redaktion}`);
+        break;
+      }
+
+      case 'reel-kandidaten': {
+        const [feed, bildrechte] = [await ladeProdukte(), ladeBildrechte()];
+        const lexikon = ladeLexikonPreise();
+        const liste = reelKandidaten({ feed, bildrechte, stand: db.produktStand(), nachfrage: ladeMusterNachfrage() })
+          .slice(0, Number(flags.anzahl) || 10)
+          .map(k => ({ ...k, vorlage: auftragVorlage(k, k.bilder[0], { lexikon }) }));
+        if (flags.json) { console.log(JSON.stringify(liste, null, 2)); break; }
+        if (!liste.length) console.log('Keine passenden Produkte (ohne Aktion/Auslauf, Raumbild mit Werbefreigabe, lange Kante ab 2000 px).');
+        for (const k of liste) console.log(`${k.handle} – ${k.titel} (${k.typ}) · ${k.bilder.length} Bild/er${k.echtesFoto ? '' : ' · nur KI-bearbeitet: Musterfoto-Abgleich nötig'}${k.nachfrage ? ` · ${k.nachfrage} Muster` : ''}`);
+        break;
+      }
+
+      case 'reel-vorschau': {
+        if (!rest[0]) throw new Error('reel-vorschau <auftrag.json>');
+        const r = await reelVorschau(JSON.parse(fs.readFileSync(rest[0], 'utf8')), { dir, env });
+        console.log(`Standbild ${r.standbild.join(' x ')} px, Bildkasten ${r.kasten.join(' x ')} px`);
+        for (const d of r.dateien) console.log(`  ${d}`);
+        break;
+      }
+
+      case 'produkt-reel': {
+        if (!rest[0]) throw new Error('produkt-reel <auftrag.json> --text-datei <pfad>');
+        const auftrag = JSON.parse(fs.readFileSync(rest[0], 'utf8'));
+        const text = typeof flags['text-datei'] === 'string' ? fs.readFileSync(flags['text-datei'], 'utf8') : (typeof flags.text === 'string' ? flags.text : null);
+        if (!text) throw new Error('Text fehlt: --text-datei <pfad> (Bildunterschrift, ohne Preis – der steht im Video)');
+        const { beitrag, pruefung } = await erstelleProduktReel(db, {
+          auftrag, text, von: typeof flags.von === 'string' ? flags.von : 'redaktion',
+          plattformen: typeof flags.plattformen === 'string' ? flags.plattformen.split(',') : undefined,
+        }, { dir, env });
+        planeOffene(db, { dir });
+        const fertig = db.beitrag(beitrag.id);
+        const g = pruefung.ganzes_video;
+        console.log(`Produkt-Reel #${fertig.id} liegt in der Freigabe – Vorschlag: ${zeit(fertig.geplant_am)}${fertig.auto_freigabe ? ' (wird automatisch freigegeben)' : ' (wartet auf den Inhaber)'}`);
+        console.log(`  Schärfe Video/Standbild mind. ${g.schaerfe_min} · PSNR mind. ${g.psnr_min_db} dB · Ruckeln max. ${g.ruckeln_max_px} px (${g.bilder} Bilder geprüft)`);
+        for (const m of fertig.medien) console.log(`  ${medienPfad(m.pfad, dir)}`);
+        for (const s of fertig.hinweise?.sperren ?? []) console.log(`  SPERRE: ${s}`);
+        for (const h of fertig.hinweise?.hinweise ?? []) console.log(`  Hinweis: ${h}`);
+        break;
+      }
+
+      case 'wissen-anlegen': {
+        if (typeof flags.titel !== 'string') throw new Error('wissen-anlegen --titel "…" [--bereich Muster|Bewertungen]');
+        if (flags.bereich !== undefined && !HIGHLIGHTS.includes(flags.bereich)) throw new Error(`Unbekannter Bereich (${HIGHLIGHTS.join(', ')})`);
+        const { id } = db.inhaltAnlegen({
+          quelle: 'wissen', typ: 'tipp', titel: flags.titel, einwilligung: true, eingereicht_von: 'redaktion', punkte: 10,
+          notiz: typeof flags.notiz === 'string' ? flags.notiz : null, daten: flags.bereich ? { bereich: flags.bereich } : {},
+        });
+        db.inhaltAendern(id, { status: INHALT_STATUS.IN_PRUEFUNG });
+        db.ereignis('redaktion', 'inhalt-angelegt', `inhalt:${id}`, { quelle: 'wissen', bereich: flags.bereich ?? null });
+        console.log(`Inhalt #${id} angelegt – weiter mit: entwurf ${id} --format story --bauplan <plan.json> (Vorlage tipp)`);
+        break;
+      }
+
       case 'meta-einrichten': {
         const z = await seitenZugang({ systemToken: env.META_SYSTEM_TOKEN, seite: env.SOCIAL_META_SEITE || null, version: env.META_GRAPH_VERSION || undefined });
         setzeEnvWerte(zugangDatei(dir), { META_PAGE_TOKEN: z.pageToken, META_PAGE_ID: z.pageId, ...(z.igUserId ? { META_IG_USER_ID: z.igUserId } : {}) });
@@ -336,7 +421,7 @@ async function main(argv) {
           console.log(`Auswertung: ${k.gemessen} Messwerte, ${k.archiviert} archiviert${k.hinweis ? ` (${k.hinweis})` : ''}`);
         } catch (e) { console.log(`Auswertung ausgefallen: ${e.message}`); }
         sichereDatenbank(db, { dir });
-        zeigeStatus(db);
+        zeigeStatus(db, { highlights: highlightBericht(db, { stand: liesHighlightStand(dir) }) });
         break;
       }
 

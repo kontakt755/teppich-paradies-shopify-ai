@@ -8,6 +8,10 @@
   zurueckverweist und kaufbar ist - eine Namensaehnlichkeit allein reicht nicht.
   Die Farbe kommt mit: Variante, deren service.basisvariante dieselbe Farbe
   (option1) der Meterware traegt. Preis aus snippets/tp-teppich-ab-preis (eine Quelle).
+
+  Passt der Handle nicht zur Regel (Sonderposten, Kettelteppich mit eigenem
+  Handle wie Passion Yasmin, 2026-10-16), gilt das erste kaufbare Produkt aus
+  service.einfass_gruppe der Meterware - mit derselben Rueckverweis-Pflicht.
 {% enddoc %}
 
 {%- liquid
@@ -21,6 +25,14 @@
         assign tnh_ziel = tnh_kandidat
       endif
     endif
+  endif
+  if tnh_ziel == nil
+    for tnh_kandidat in product.metafields.service.einfass_gruppe.value
+      if tnh_kandidat.available and tnh_kandidat.metafields.service.einfass_basis.value.id == product.id
+        assign tnh_ziel = tnh_kandidat
+        break
+      endif
+    endfor
   endif
 -%}
 

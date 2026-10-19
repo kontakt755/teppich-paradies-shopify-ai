@@ -19,15 +19,18 @@ import os from 'node:os';
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { normalizeTask, requirementsFor, labelChangesFor, mitBlockerAbschnitt, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
-import { texteAusMarkdown } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
+import { texteAusMarkdown, musterKurz, musterNachfassen, fuelleText, platzhalterFrei, STUFE_LABEL, NICHT_VERFUEGBAR_VORLAGE } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
+import { postfachPfad, stopplistePfad, versandPfad, lesePostfach, leseStoppliste, abgemeldeteAdressen, trageAbmeldungEin, leseVersand, schreibeVersand, schonVerschickt, kopieNoetig, versandStand as nachfassVersandStand, AUTOMATISCH, UNTERSCHRIFT_STANDARD, NachfassFehler } from '../operations/lib/nachfass-versand.mjs';
+import { sendeMail as smtpSenden } from '../operations/lib/smtp.mjs';
 import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
 import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, setzeStatusPositionen, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, STATUS_ORDER, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
 import { bucheVersand, versandNachzuholen, VersandFehler, VERSANDDIENSTE } from '../operations/lib/versand.mjs';
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
-import { musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MUSTER_GROESSE, KNAPP_AB as LAGER_KNAPP_AB, PROBESTUECK_PREIS, wartetAufLieferant as lagerWartetAufLieferant, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
-import { auftragsverlaufPfad, leseVerlauf, bereiteEreignisVor, schreibeVerlauf, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
+import { musterSchluessel, musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MUSTER_GROESSE, KNAPP_AB as LAGER_KNAPP_AB, PROBESTUECK_PREIS, wartetAufLieferant as lagerWartetAufLieferant, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
+import { auftragsverlaufPfad, leseVerlauf, bereiteEreignisVor, schreibeVerlauf, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, ERGEBNIS_SCHRITTE, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
+import { mustersperrePfad, leseSperren, haengeAn as sperreAnhaengen, ereignis as sperrEreignis, stand as sperrStand, schonErledigt as sperreSchonErledigt, adminLink as sperrAdminLink, pruefeRechte as pruefeSperrRechte, rechtFehltText as sperrRechtFehlt, sperreImShop, freigebenImShop, GRUND as SPERR_GRUND, MustersperreFehler } from '../operations/lib/mustersperre.mjs';
 import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden, kundenIndex } from '../operations/lib/kundensuche.mjs';
 import { faelle as kundenFaelle, istTestkontakt } from '../operations/lib/kundenfaelle.mjs';
 import { fallmarkenPfad, leseAlle as leseFallmarken, setzeMarke as setzeFallmarke, teileAuf as teileFaelleAuf, juengsterPunkt, FALL_GRUND } from '../operations/lib/fallmarken.mjs';
@@ -55,6 +58,7 @@ import { protokollPfad, protokolliere } from '../operations/lib/protokoll.mjs';
 import { findeZugang, liesZugaenge, zugangAnlegen, zugangSperren } from '../social/lib/eingang.mjs';
 import { ladeUmgebung } from '../social/lib/zugang.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
+import { serviceanfragenPfad, leseAlle as leseServiceanfragen, anlegen as serviceanfrageAnlegen, aendern as serviceanfrageAendern, ServiceanfrageFehler } from '../operations/lib/serviceanfragen.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
 import { ausVariantentitel } from '../operations/lib/resolve.mjs';
@@ -71,6 +75,7 @@ import { filtereAuftrag } from '../docs/ai-dashboard/lib/vorgangslink.mjs';
 import { musterKaufLinks } from '../docs/ai-dashboard/lib/muster-kauf-links.mjs';
 import { betriebszustand } from '../operations/lib/betriebszustand.mjs';
 import { ausCsv as bildrechteAusCsv, prueflisten as bildrechtePrueflisten } from '../operations/lib/bildrechte.mjs';
+import { prozesslinksPfad, leseProzesslinks, schreibeProzesslinks, ProzesslinksFehler, ProzesslinksSpeicherFehler } from '../operations/lib/prozesslinks.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -569,7 +574,7 @@ function stammKontakte(dir) {
   return index;
 }
 
-export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus } = {}) {
+export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null, env = process.env, shopifyZugang = null, tailscale = leseTailscaleStatus, verbrauchSammeln = null } = {}) {
   let userCache = null;
   let labelCache = { at: 0, names: [] };
   // Prozesszustand des Knopfs "Jetzt aktualisieren" - genau ein Lauf gleichzeitig,
@@ -581,6 +586,25 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
   // Moment mit dem Lauf verworfen - die Oberflaeche meldete "abgeschlossen", auch
   // wenn der Lauf abgebrochen war.
   let letzterKnopfLauf = null;  // { seit, bis, fehler }
+
+  // Claude-Verbrauch (#671): veraltet die Datei, rechnet sie ein Kindprozess im
+  // Hintergrund neu (rund 10 s fuer eine Woche). Die Anfrage wartet nicht darauf,
+  // und es laeuft hoechstens ein Lauf gleichzeitig.
+  let verbrauchLauf = null;
+  function verbrauchErneuern(dir) {
+    if (verbrauchLauf) return true;
+    const sammeln = verbrauchSammeln || (process.env.TP_VERBRAUCH_AUTO === '0' ? null
+      : () => execFileP(process.execPath, [path.join(root, 'operations', 'scripts', 'claude-verbrauch.mjs')], {
+        cwd: root, timeout: 3 * 60_000, maxBuffer: 1024 * 1024, env: { ...process.env, TP_PRIVAT_DIR: dir },
+      }));
+    if (!sammeln) return false;
+    let lauf;
+    try { lauf = Promise.resolve(sammeln(dir)); } catch (e) { lauf = Promise.reject(e); }
+    verbrauchLauf = lauf
+      .catch(e => logFehler('verbrauch', `Sammeln abgebrochen: ${String(e?.stderr || e?.message || e).split('\n')[0].slice(0, 300)}`))
+      .finally(() => { verbrauchLauf = null; });
+    return true;
+  }
 
   // Tailscale: hoechstens einmal je Minute fragen, gleichzeitige Anfragen teilen sich die Antwort.
   let tailscaleStand = null;    // { at, wert }
@@ -876,6 +900,23 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     const positionen = auswahl ? allePositionen.filter(p => auswahl.has(p.lineItemId)) : allePositionen;
     if (auswahl && !positionen.length) throw new ApiError(400, 'Bitte mindestens einen Artikel dieser Bestellung auswählen');
     const angaben = versandAngaben(payload?.versand);
+    // "Muster nicht verfuegbar": die angekreuzten Muster werden im Shop gesperrt; die Notiz nennt
+    // ihre Farben (Pflicht - aus den Kaestchen, dazu der Freitext).
+    let notizText = notiz;
+    let sperrPositionen = [];
+    if (schritt === 'muster_nicht_verfuegbar') {
+      const gewaehlt = new Set((Array.isArray(payload?.muster) ? payload.muster : []).map(String));
+      sperrPositionen = allePositionen.filter(p => p.istMuster && gewaehlt.has(p.lineItemId));
+      if (sperrPositionen.length !== gewaehlt.size) throw new ApiError(400, 'Bitte nur Muster dieser Bestellung ankreuzen');
+      const frei = String(notiz ?? '').trim();
+      const farben = musterKurz(sperrPositionen).join('; ');
+      notizText = [farben ? `Nicht verfügbar: ${farben}` : null, frei || null].filter(Boolean).join(' – ') || null;
+      if (!notizText) throw new ApiError(400, 'Bitte die betroffenen Farben ankreuzen oder in der Notiz nennen');
+      // Ablage vorher lesen: ist sie beschaedigt, wird gar nichts geschrieben - auch kein Schritt.
+      if (sperrPositionen.length) {
+        try { leseSperren(mustersperrePfad(dir)); } catch (e) { throw new ApiError(e.status || 500, e.message); }
+      }
+    }
     const setzePositionen = (status, text, versandMail = null) => {
       if (!positionen.length) throw new ApiError(400, 'Diese Bestellung hat keine nachverfolgbaren Positionen');
       const alle = leseAktuellenStatus(statusDatei, modell);
@@ -908,7 +949,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         if (neu) rausIds = ids.filter(id => neu.has(id));
       } else {
         // Verlauf und alle Positionsregeln pruefen, bevor irgendeine der beiden Dateien geschrieben wird.
-        const ereignis = bereiteEreignisVor(auftragsverlaufPfad(dir), { orderId, schritt, actor, notiz, bezug, jetzt: now() });
+        const ereignis = bereiteEreignisVor(auftragsverlaufPfad(dir), { orderId, schritt, actor, notiz: notizText, bezug, jetzt: now() });
         // Muster aus eigenem Bestand: "Erledigt – Kunde hat Muster" ist zugleich die Uebergabe
         // (vorbeigebracht bzw. verschickt) - sonst bliebe "raus" als Luecke im Verlauf stehen.
         if (schritt === 'kunde_hat_muster' && vorher.eigenerBestand && positionen.length) {
@@ -922,8 +963,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
             rausIds = ids.filter(id => neu.has(id));
           }
         }
-        if (['kunde_hat_bestellt', 'kein_interesse'].includes(schritt) && positionen.length) {
-          anzahl = setzePositionen('erledigt', `Ergebnis: ${SCHRITT_LABEL.muster[schritt]}${notiz ? ` – ${notiz}` : ''}`).length;
+        if (ERGEBNIS_SCHRITTE.includes(schritt) && positionen.length) {
+          anzahl = setzePositionen('erledigt', `Ergebnis: ${SCHRITT_LABEL.muster[schritt]}${notizText ? ` – ${notizText}` : ''}`).length;
         }
         schreibeVerlauf(auftragsverlaufPfad(dir), ereignis.auftraege);
       }
@@ -937,9 +978,118 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     merke(benutzer, actor, 'Auftragsschritt', `${auftrag.name}: ${schritt}`);
     // Erst jetzt nach Shopify: der lokale Schritt steht, egal wie die Buchung ausgeht.
     const shopifyErgebnis = rausIds.length ? await versandBuchen({ dir, auftrag, lineItemIds: rausIds, angaben, benutzer, actor }) : null;
+    // Muster nicht verfuegbar: die Farben im Shop sperren - nach dem lokalen Schritt, der gilt immer.
+    const sperre = sperrPositionen.length ? await musterSperren({ dir, auftrag, positionen: sperrPositionen, benutzer, actor }) : null;
     const statusNachher = leseAktuellenStatus(statusDatei, modell);
     const nachher = zeitleisten(dir, modell, statusNachher).get(orderId);
-    return { ok: true, orderId, schritt, positionen: anzahl, ...(shopifyErgebnis ? { shopify: shopifyErgebnis } : {}), ...zeitleistenFelder(nachher), ...versandFelder(auftrag, statusNachher) };
+    return { ok: true, orderId, schritt, positionen: anzahl, ...(shopifyErgebnis ? { shopify: shopifyErgebnis } : {}), ...(sperre ? { mustersperre: sperre } : {}), ...zeitleistenFelder(nachher), ...versandFelder(auftrag, statusNachher) };
+  }
+
+  // Rechte fuer die Mustersperre: einmal je Prozess bestaetigt (der Dienst haelt seinen Token im
+  // Speicher - nach einer Freischaltung startet er ohnehin neu). Fehlende Rechte werden jedes Mal neu gefragt.
+  let sperrRechteOk = false;
+
+  /** Zugang fuer die Mustersperre: { proxy } oder { hindernis: { grund, fehler } } - nie eine Ausnahme. */
+  async function sperrZugang() {
+    let zugang;
+    try { zugang = await shopify(); } catch (e) {
+      return { hindernis: { grund: 'nicht-erreichbar', fehler: `Im Shop nicht gesperrt: ${mitHinweis(String(e?.message || e).split('\n')[0])}`.slice(0, 400) } };
+    }
+    if (zugang?.art === 'sammeln') return { hindernis: { grund: 'kein-zugang', fehler: 'Im Shop nicht gesperrt: kein Zugang zu Shopify eingerichtet. Bitte die Variante über den Link in Shopify sperren.' } };
+    if (!sperrRechteOk) {
+      try {
+        const { fehlend } = await pruefeSperrRechte(zugang.proxy);
+        if (fehlend.length) return { hindernis: { grund: 'recht-fehlt', fehler: sperrRechtFehlt(fehlend), fehlend } };
+        sperrRechteOk = true;
+      } catch (e) {
+        return { hindernis: { grund: 'nicht-erreichbar', fehler: `Im Shop nicht gesperrt: Rechte nicht lesbar (${String(e?.message || e).split('\n')[0].slice(0, 160)})` } };
+      }
+    }
+    return { proxy: zugang.proxy };
+  }
+
+  /**
+   * Eine SKU sperren (oder es versuchen) und das Ereignis anhaengen. Laeuft je SKU nacheinander,
+   * damit zwei Klicks nie gleichzeitig denselben Bestand setzen. Gibt das Ereignis zurueck,
+   * oder null, wenn genau diese Sperre schon steht (zweiter Klick: nichts zu tun).
+   */
+  function sperreEine({ dir, sku, info, orderId, orderName, zugang, actor }) {
+    const file = mustersperrePfad(dir);
+    return nacheinander(`mustersperre:${sku}`, async () => {
+      const aktiv = sperrStand(leseSperren(file));
+      if (sperreSchonErledigt(aktiv, sku, orderId)) return null;
+      let sh;
+      if (zugang.hindernis) sh = { geschrieben: false, aenderungMoeglich: false, fehler: zugang.hindernis.fehler, fehlerGrund: zugang.hindernis.grund, variantId: aktiv.get(sku)?.variantId, productId: aktiv.get(sku)?.productId };
+      else {
+        try {
+          const r = await sperreImShop(zugang.proxy, { sku, referenz: orderId || null });
+          sh = { geschrieben: true, bereits: r.status === 'bereits', variantId: r.variantId, productId: r.productId, vorher: r.vorher, nachher: r.nachher, verfuegbar: r.verfuegbar };
+        } catch (e) {
+          const bekannt = e instanceof MustersperreFehler;
+          sh = { geschrieben: false, aenderungMoeglich: e?.extra?.aenderungMoeglich !== false, fehler: bekannt ? e.message : `Ob das Muster im Shop gesperrt ist, ist unklar (${String(e?.message || e).split('\n')[0].slice(0, 160)}). Bitte in Shopify nachsehen.`,
+            fehlerGrund: bekannt ? e.grund : 'unklar', variantId: e?.extra?.variantId, productId: e?.extra?.productId, vorher: e?.extra?.vorher, nachher: e?.extra?.nachher };
+          logFehler('mustersperre', `${sku}: ${sh.fehlerGrund} - ${sh.fehler}`);
+        }
+      }
+      const [ev] = sperreAnhaengen(file, [sperrEreignis({ sku, ...info, orderId, orderName, von: actor, grund: SPERR_GRUND.GESPERRT, shopify: sh, jetzt: now() })]);
+      audit({ actor, action: 'mustersperre', sku, orderId, geschrieben: sh.geschrieben, bereits: Boolean(sh.bereits), grund: sh.fehlerGrund || null });
+      return ev;
+    });
+  }
+
+  /** Kurztext fuer die Rueckmeldung: "2 Farben im Shop gesperrt · 1 Farbe im Shop noch zu sperren: …" */
+  function sperrMeldung({ gesperrt, bereits, offen, ohneSku, fehler }) {
+    const farben = n => (n === 1 ? '1 Farbe' : `${n} Farben`);
+    const teile = [];
+    if (gesperrt) teile.push(`${farben(gesperrt)} im Shop gesperrt`);
+    if (bereits) teile.push(`${farben(bereits)} ${bereits === 1 ? 'war' : 'waren'} schon gesperrt`);
+    if (offen) teile.push(`${farben(offen)} im Shop noch zu sperren${fehler ? ` – ${fehler}` : ''}`);
+    if (ohneSku) teile.push(`${farben(ohneSku)} ohne Artikelnummer – im Shop von Hand sperren`);
+    return teile.join(' · ');
+  }
+
+  /**
+   * "Muster nicht verfuegbar": die angekreuzten Muster je SKU im Shop sperren (operations/lib/mustersperre.mjs).
+   * Ohne Recht oder Zugang wird nichts geschrieben; die Sperre steht dann als "im Shop noch zu sperren"
+   * in Einkauf > Musterlager. Testbestellungen sperren nie echte Varianten.
+   */
+  async function musterSperren({ dir, auftrag, positionen, benutzer, actor }) {
+    if (auftrag.testbestellung) return { status: 'uebersprungen', meldung: 'Testbestellung – im Shop nichts gesperrt.', gesperrt: 0, bereits: 0, offen: 0, ohneSku: 0 };
+    const jeSku = new Map();
+    let ohneSku = 0;
+    for (const p of positionen) {
+      const k = musterSchluessel(p);
+      if (!k) { ohneSku += 1; continue; }
+      const sku = `M-${k}`;
+      if (!jeSku.has(sku)) jeSku.set(sku, { farbe: p.farbe && p.farbe !== '–' ? p.farbe : null, produkt: String(p.titel || '').replace(/^\s*Muster\s*:?\s*/i, '') || null, handle: p.handle || null });
+    }
+    const zugang = jeSku.size ? await sperrZugang() : {};
+    const z = { gesperrt: 0, bereits: 0, offen: 0, ohneSku, fehler: null };
+    const gesperrtText = [];
+    for (const [sku, info] of jeSku) {
+      // eslint-disable-next-line no-await-in-loop -- je SKU nacheinander, wenige Muster je Auftrag.
+      const ev = await sperreEine({ dir, sku, info, orderId: auftrag.id, orderName: auftrag.name, zugang, actor });
+      if (!ev) { z.bereits += 1; continue; }
+      if (ev.shopify.geschrieben && ev.shopify.bereits) z.bereits += 1;
+      else if (ev.shopify.geschrieben) { z.gesperrt += 1; gesperrtText.push([info.produkt, info.farbe].filter(Boolean).join(' ')); }
+      else { z.offen += 1; z.fehler ||= ev.shopify.fehler; }
+    }
+    if (gesperrtText.length) merke(benutzer, actor, 'Muster im Shop gesperrt', `${auftrag.name}: ${gesperrtText.join(', ')}`);
+    if (z.offen) merke(benutzer, actor, 'Muster im Shop nicht gesperrt', `${auftrag.name}: ${z.offen} Farbe(n) · ${z.fehler}`);
+    const status = z.offen || ohneSku ? (z.gesperrt || z.bereits ? 'teilweise' : 'offen') : 'gesperrt';
+    return { status, meldung: sperrMeldung(z), gesperrt: z.gesperrt, bereits: z.bereits, offen: z.offen, ohneSku, ...(zugang.hindernis?.fehlend ? { fehlendeRechte: zugang.hindernis.fehlend } : {}) };
+  }
+
+  /** Aktive Sperren fuer Einkauf > Musterlager: im Shop gesperrt bzw. noch zu sperren. */
+  function sperrenListe(dir) {
+    let aktiv;
+    try { aktiv = sperrStand(leseSperren(mustersperrePfad(dir))); } catch (e) { return { fehler: e.message, gesperrt: [], offen: [] }; }
+    const zeilen = [...aktiv.values()].sort((a, b) => String(b.seit).localeCompare(String(a.seit))).map(s => ({
+      sku: s.sku, farbe: s.farbe, produkt: s.produkt, seit: s.seit, von: s.von, auftraege: s.auftraege,
+      imShop: s.imShop, shopPruefen: s.shopPruefen, fehler: s.fehler, fehlerGrund: s.fehlerGrund, freigabeFehler: s.freigabeFehler,
+      adminLink: sperrAdminLink({ sku: s.sku, variantId: s.variantId, productId: s.productId }),
+    }));
+    return { fehler: null, gesperrt: zeilen.filter(x => x.imShop), offen: zeilen.filter(x => !x.imShop) };
   }
 
   /**
@@ -1058,6 +1208,27 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
   }
 
   return {
+    /** Private Navigation fuer alle Rollen; das gemeinsame Passwort bleibt Inhaberzugang. */
+    prozessLinks({ benutzer = null } = {}) {
+      try {
+        return { ...leseProzesslinks(prozesslinksPfad(privatDirPath || privatDir())), bearbeitbar: !benutzer || benutzer.rolle === 'inhaber' };
+      } catch (e) {
+        if (e instanceof ProzesslinksSpeicherFehler) throw new ApiError(500, e.message);
+        throw e;
+      }
+    },
+
+    prozessLinksSetzen(payload, { benutzer = null } = {}) {
+      if (benutzer && benutzer.rolle !== 'inhaber') throw new ApiError(403, 'Prozessverknüpfungen kann nur der Inhaber ändern.');
+      try {
+        return { ...schreibeProzesslinks(prozesslinksPfad(privatDirPath || privatDir()), payload), bearbeitbar: true };
+      } catch (e) {
+        if (e instanceof ProzesslinksFehler) throw new ApiError(400, e.message);
+        if (e instanceof ProzesslinksSpeicherFehler) throw new ApiError(500, e.message);
+        throw e;
+      }
+    },
+
     async capabilities() {
       const user = await currentUser();
       let labelsAvailable = [];
@@ -1345,18 +1516,256 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     kundenMusterTexte() {
       const dir = privatDirPath || privatDir();
       const file = path.join(dir, 'muster-nachfassen-texte.md');
+      // Seit w-119 (automatischer Versand) haengen zwei Dinge mit dran, die die Karte ebenfalls
+      // zeigt: der Stand des Versands (eingerichtet? letzter Lauf?) und die Stoppliste.
+      const zusatz = () => {
+        let abgemeldet = [];
+        let stopplisteFehler = null;
+        try { abgemeldet = Object.entries(leseStoppliste(stopplistePfad(dir))).map(([email, e]) => ({ email, am: e.am || null, von: e.von || null })); }
+        catch (e) { stopplisteFehler = e.message; }
+        const versand = nachfassVersandStand(dir, { jetzt: now() });
+        return { versand: stopplisteFehler ? { ...versand, hinweis: versand.hinweis || stopplisteFehler } : versand, abgemeldet };
+      };
+      // "Muster nicht verfuegbar" gibt es immer: aus der Vorlage, wenn sie den Abschnitt hat, sonst der eingebaute Vorschlag.
       let md;
       try { md = fs.readFileSync(file, 'utf8'); }
       catch (e) {
-        if (e?.code === 'ENOENT') return { verfuegbar: false, hinweis: 'Die Textvorlage fehlt: muster-nachfassen-texte.md im Privatordner ablegen.' };
+        if (e?.code === 'ENOENT') return { verfuegbar: false, hinweis: 'Die Textvorlage fehlt: muster-nachfassen-texte.md im Privatordner ablegen.', nichtVerfuegbar: NICHT_VERFUEGBAR_VORLAGE, ...zusatz() };
         console.error(`[daten] ${file}: ${e?.message || e}`);
-        return { verfuegbar: false, hinweis: 'Die Textvorlage ist nicht lesbar.' };
+        return { verfuegbar: false, hinweis: 'Die Textvorlage ist nicht lesbar.', nichtVerfuegbar: NICHT_VERFUEGBAR_VORLAGE, ...zusatz() };
       }
       const texte = texteAusMarkdown(md);
+      const nichtVerfuegbar = texte.nichtVerfuegbar || NICHT_VERFUEGBAR_VORLAGE;
       if (!texte.erste && !texte.erinnerung) {
-        return { verfuegbar: false, hinweis: 'In der Textvorlage fehlen die Abschnitte „Text 1“ und „Erinnerung“ mit einer Zeile „**Betreff:**“.' };
+        return { verfuegbar: false, hinweis: 'In der Textvorlage fehlen die Abschnitte „Text 1“ und „Erinnerung“ mit einer Zeile „**Betreff:**“.', nichtVerfuegbar, ...zusatz() };
       }
-      return { verfuegbar: true, texte };
+      return { verfuegbar: true, texte, nichtVerfuegbar, ...zusatz() };
+    },
+
+    /**
+     * Stoppliste "Muster nachfassen": der Kunde hat mit "Abmelden" geantwortet (Knopf
+     * "Abgemeldet" in der Karte). Ab jetzt schreibt ihn weder der Lauf noch jemand per Klick
+     * an; die Karte zeigt ihn unter "abgemeldet". Antwort traegt den frischen Stand der Karte.
+     */
+    kundenNachfassenAbmelden(payload = {}, benutzer = null) {
+      if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Rolle „lesen“ darf keine Änderungen vornehmen.');
+      const actor = benutzer?.name || null;
+      if (!actor) throw new ApiError(403, 'Bitte anmelden – wer die Abmeldung einträgt, wird festgehalten.');
+      const dir = privatDirPath || privatDir();
+      let r;
+      try {
+        r = trageAbmeldungEin(stopplistePfad(dir), { email: payload?.email, von: actor, grund: payload?.grund || undefined, orderId: payload?.orderId || null, jetzt: now() });
+      } catch (e) {
+        if (e instanceof NachfassFehler) throw new ApiError(e.status, e.message);
+        throw e;
+      }
+      audit({ actor, action: 'nachfassen-abgemeldet', orderId: payload?.orderId || null, neu: r.neu });
+      merke(benutzer, actor, 'Nachfassen abgemeldet', payload?.orderId ? String(payload.orderName || payload.orderId) : 'Kunde');
+      return { ok: true, neu: r.neu, eintrag: r.eintrag, stand: this.kundenMusterTexte() };
+    },
+
+    /**
+     * Der Versandlauf (taeglich, scripts/muster-nachfassen-senden.mjs; Inhaber w-119, Option A):
+     * faellige Nachfragen aus musterNachfassen() (Kaufpruefung steckt in der Zeitleiste), Text 1
+     * bzw. Erinnerung aus der Vorlage, Versand ueber das Firmenpostfach, danach der
+     * Zeitleisten-Schritt "nachgefasst" mit von = "automatisch".
+     *
+     * Reihenfolge je Kunde: erst der Vermerk "sendet" im Versandprotokoll, dann die Mail, dann
+     * "gesendet", dann die Zeitleiste, dann "vermerkt". Bricht der Lauf dazwischen ab, schickt
+     * der naechste keine zweite Mail, sondern holt nur den Zeitleisten-Schritt nach.
+     *
+     * Nichts geht raus, wenn: die Vorlage fehlt, das Postfach nicht eingerichtet ist, die
+     * Stoppliste nicht lesbar ist, ein Platzhalter stehen bliebe. --probe listet nur.
+     *
+     * @param {object} [p]
+     * @param {boolean} [p.probe]   nur auflisten, nichts senden, nichts schreiben
+     * @param {Function} [p.senden] Versandfunktion (Tests: Fake-Server oder Attrappe)
+     */
+    async kundenNachfassenSenden({ probe = false, senden = smtpSenden } = {}) {
+      const dir = privatDirPath || privatDir();
+      const jetzt = now();
+      const ergebnis = { status: 'ok', probe, hinweis: null, kopie: null, geplant: [], verschickt: [], nachgetragen: [], uebersprungen: [], fehler: [] };
+      const abbruch = (status, hinweis) => ({ ...ergebnis, status, hinweis });
+
+      const vorlage = this.kundenMusterTexte();
+      if (!vorlage.verfuegbar) return abbruch('keine-vorlage', vorlage.hinweis);
+      const pf = lesePostfach(postfachPfad(dir));
+      // Ohne Postfach wird nichts verschickt - die Probe zeigt trotzdem, was anstuende.
+      if (!pf.zugang && !probe) return abbruch('kein-zugang', pf.hinweis);
+      let stoppliste;
+      let versand;
+      try {
+        stoppliste = abgemeldeteAdressen(leseStoppliste(stopplistePfad(dir)));
+        versand = leseVersand(versandPfad(dir));
+      } catch (e) {
+        // Stoppliste oder Protokoll unlesbar: lieber niemanden anschreiben als einen Abgemeldeten.
+        return abbruch('stoerung', e.message);
+      }
+      const bestellungen = this.kundenBestellungen();
+      if (!bestellungen.verfuegbar) return abbruch('keine-daten', bestellungen.hinweis || 'Bestelldaten fehlen.');
+
+      const { offen, abgemeldet } = musterNachfassen(bestellungen.zeilen, { jetzt, abgemeldet: stoppliste });
+      for (const e of abgemeldet) ergebnis.uebersprungen.push({ orderId: e.orderId, orderName: e.orderName, stufe: e.stufe, grund: 'abgemeldet' });
+      const kopieAn = pf.zugang && kopieNoetig({ ersterVersandAm: versand.ersterVersandAm, jetzt, immer: pf.zugang.kopieImmer }) ? pf.zugang.kopie : null;
+      ergebnis.kopie = kopieAn;
+      // Probe ohne Postfach: dieselbe Unterschrift wie der echte Lauf ohne eigene Angabe.
+      const unterschrift = pf.zugang?.unterschrift || UNTERSCHRIFT_STANDARD;
+      const schrittSetzen = (e, betreff) => auftragsSchrittSetzen(
+        { orderId: e.orderId, schritt: 'nachgefasst', notiz: `${STUFE_LABEL[e.stufe]} automatisch per E-Mail: „${betreff}“` },
+        { name: AUTOMATISCH, rolle: 'system' }, AUTOMATISCH,
+      );
+      const sichern = () => { if (!probe) schreibeVersand(versandPfad(dir), versand); };
+
+      for (const e of offen) {
+        const kurz = { orderId: e.orderId, orderName: e.orderName, stufe: e.stufe, kundenname: e.kundenname };
+        if (e.kontakt.weg !== 'email') {
+          ergebnis.uebersprungen.push({ ...kurz, grund: e.kontakt.weg === 'rueckruf' ? 'Rückruf gewünscht – anrufen' : 'keine E-Mail-Adresse' });
+          continue;
+        }
+        const mail = fuelleText(vorlage.texte[e.stufe], { kundenname: e.kundenname, absender: unterschrift, produkte: e.produkte });
+        if (!platzhalterFrei(mail)) {
+          ergebnis.fehler.push({ ...kurz, fehler: mail ? 'In der Vorlage bliebe ein Platzhalter stehen – nicht verschickt.' : `Die Vorlage für „${STUFE_LABEL[e.stufe]}“ fehlt.` });
+          continue;
+        }
+        const an = e.kontakt.email;
+        const vorher = schonVerschickt(versand, e.orderId, e.stufe);
+        if (vorher) {
+          // Mail ging schon raus, nur der Zeitleisten-Schritt fehlt (Abbruch im letzten Lauf): nachtragen, nicht neu senden.
+          if (probe) { ergebnis.nachgetragen.push({ ...kurz, am: vorher.am }); continue; }
+          try {
+            await schrittSetzen(e, vorher.betreff || mail.betreff);
+            vorher.status = 'vermerkt';
+            ergebnis.nachgetragen.push({ ...kurz, am: vorher.am });
+          } catch (err) {
+            ergebnis.fehler.push({ ...kurz, fehler: `Zeitleiste nicht nachgetragen: ${err?.message || err}` });
+          }
+          sichern();
+          continue;
+        }
+        if (probe) { ergebnis.geplant.push({ ...kurz, an, betreff: mail.betreff, text: mail.text }); continue; }
+
+        const eintrag = { am: jetzt.toISOString(), orderId: e.orderId, orderName: e.orderName, stufe: e.stufe, an, betreff: mail.betreff, kopie: kopieAn, status: 'sendet', messageId: null, fehler: null };
+        versand.sendungen.push(eintrag);
+        sichern();
+        try {
+          const r = await senden(pf.zugang, { von: { name: pf.zugang.absenderName, adresse: pf.zugang.absender }, an: [an], bcc: kopieAn ? [kopieAn] : [], betreff: mail.betreff, text: mail.text, datum: jetzt });
+          eintrag.status = 'gesendet';
+          eintrag.messageId = r?.messageId || null;
+          if (!versand.ersterVersandAm) versand.ersterVersandAm = jetzt.toISOString();
+        } catch (err) {
+          eintrag.status = 'fehler';
+          eintrag.fehler = String(err?.message || err).slice(0, 300);
+          sichern();
+          ergebnis.fehler.push({ ...kurz, fehler: eintrag.fehler });
+          continue;
+        }
+        sichern();
+        try {
+          await schrittSetzen(e, mail.betreff);
+          eintrag.status = 'vermerkt';
+        } catch (err) {
+          // Die Mail ist raus - das bleibt im Protokoll stehen, der naechste Lauf traegt die Zeitleiste nach.
+          ergebnis.fehler.push({ ...kurz, fehler: `E-Mail verschickt, Zeitleiste nicht geschrieben: ${err?.message || err}` });
+        }
+        sichern();
+        ergebnis.verschickt.push({ ...kurz, an, betreff: mail.betreff, kopie: kopieAn });
+      }
+      if (!probe) {
+        versand.letzterLauf = { am: jetzt.toISOString(), verschickt: ergebnis.verschickt.length, nachgetragen: ergebnis.nachgetragen.length, uebersprungen: ergebnis.uebersprungen.length, fehler: ergebnis.fehler.length, kopie: kopieAn };
+        // Protokoll schlank halten: die letzten 500 Sendungen reichen fuer Doppelschutz und Rueckblick.
+        if (versand.sendungen.length > 500) versand.sendungen = versand.sendungen.slice(-500);
+        sichern();
+        audit({ actor: AUTOMATISCH, action: 'nachfassen-lauf', ...versand.letzterLauf });
+      }
+      return ergebnis;
+    },
+
+    /**
+     * Knopf "Jetzt senden" in der Karte: EINE Nachfrage sofort vom Firmenpostfach, mit dem Text,
+     * den der Mitarbeiter im Feld sieht (und ggf. angepasst hat). Dieselben Schutzregeln wie der
+     * Lauf: Empfaenger kommt nur aus den Bestelldaten (nie aus dem Browser), Stoppliste und
+     * Versandprotokoll werden frisch gelesen, kein Platzhalter erreicht den Kunden, dieselbe
+     * Stufe geht nie zweimal raus. Danach Zeitleiste "nachgefasst" mit dem Namen des Absenders.
+     *
+     * @param {{orderId: string, stufe?: string, betreff?: string, text?: string}} payload
+     * @param {object} [o]
+     * @param {Function} [o.senden] Versandfunktion (Tests: SMTP-Attrappe)
+     */
+    async kundenNachfassenEinzeln(payload = {}, benutzer = null, { senden = smtpSenden } = {}) {
+      if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Rolle „lesen“ darf keine E-Mails verschicken.');
+      const actor = benutzer?.name || null;
+      if (!actor) throw new ApiError(403, 'Bitte anmelden – wer die E-Mail verschickt, wird festgehalten.');
+      const orderId = String(payload?.orderId || '');
+      if (!orderId) throw new ApiError(400, 'orderId ist Pflicht', { missing: ['orderId'] });
+      const dir = privatDirPath || privatDir();
+      const jetzt = now();
+
+      const pf = lesePostfach(postfachPfad(dir));
+      if (!pf.zugang) throw new ApiError(409, pf.hinweis || 'Das Firmenpostfach ist nicht eingerichtet.');
+      let stoppliste;
+      let versand;
+      try {
+        stoppliste = abgemeldeteAdressen(leseStoppliste(stopplistePfad(dir)));
+        versand = leseVersand(versandPfad(dir));
+      } catch (e) {
+        throw new ApiError(409, `Nicht verschickt: ${e.message}`);
+      }
+      const bestellungen = this.kundenBestellungen();
+      if (!bestellungen.verfuegbar) throw new ApiError(409, bestellungen.hinweis || 'Bestelldaten fehlen.');
+      const { offen, abgemeldet } = musterNachfassen(bestellungen.zeilen, { jetzt, abgemeldet: stoppliste });
+      if (abgemeldet.some(a => a.orderId === orderId)) throw new ApiError(409, 'Der Kunde hat sich abgemeldet – keine Nachfragen mehr.');
+      const e = offen.find(o => o.orderId === orderId);
+      if (!e) throw new ApiError(409, 'Für diese Bestellung steht keine Nachfrage mehr an – schon nachgefasst? Seite neu laden.');
+      if (payload?.stufe && payload.stufe !== e.stufe) throw new ApiError(409, 'Der Stand hat sich inzwischen geändert – Seite neu laden.');
+      if (e.kontakt.weg !== 'email') throw new ApiError(409, 'Für diesen Kunden ist keine E-Mail-Adresse hinterlegt.');
+      const vorher = schonVerschickt(versand, orderId, e.stufe);
+      if (vorher) throw new ApiError(409, `Diese E-Mail ist schon am ${new Date(vorher.am).toLocaleDateString('de-DE')} rausgegangen – nichts doppelt verschickt.`);
+
+      // Text aus dem Feld der Karte; ohne Angabe die Vorlage, unterschrieben vom Absender.
+      let mail;
+      if (payload?.text != null) {
+        mail = { betreff: String(payload.betreff ?? '').trim(), text: String(payload.text).replace(/\r\n/g, '\n').trim() };
+      } else {
+        const vorlage = this.kundenMusterTexte();
+        mail = vorlage.verfuegbar ? fuelleText(vorlage.texte[e.stufe], { kundenname: e.kundenname, absender: actor, produkte: e.produkte }) : null;
+        if (!mail) throw new ApiError(409, vorlage.hinweis || `Die Vorlage für „${STUFE_LABEL[e.stufe]}“ fehlt.`);
+      }
+      if (!mail.betreff || /[\r\n]/.test(mail.betreff) || mail.betreff.length > 200) throw new ApiError(400, 'Bitte einen Betreff in einer Zeile angeben (höchstens 200 Zeichen).');
+      if (!mail.text || mail.text.length > 20000) throw new ApiError(400, 'Der Text der E-Mail fehlt oder ist zu lang.');
+      if (!platzhalterFrei(mail)) throw new ApiError(400, 'Im Text steht noch ein Platzhalter in {geschweiften Klammern} – bitte ersetzen.');
+
+      const an = e.kontakt.email;
+      const kopieAn = kopieNoetig({ ersterVersandAm: versand.ersterVersandAm, jetzt, immer: pf.zugang.kopieImmer }) ? pf.zugang.kopie : null;
+      const sichern = () => schreibeVersand(versandPfad(dir), versand);
+      // Reihenfolge wie im Lauf: erst "sendet" vermerken, dann senden - ein Abbruch fuehrt nie zu einer zweiten Mail.
+      const eintrag = { am: jetzt.toISOString(), orderId, orderName: e.orderName, stufe: e.stufe, an, betreff: mail.betreff, kopie: kopieAn, von: actor, status: 'sendet', messageId: null, fehler: null };
+      versand.sendungen.push(eintrag);
+      sichern();
+      try {
+        const r = await senden(pf.zugang, { von: { name: pf.zugang.absenderName, adresse: pf.zugang.absender }, an: [an], bcc: kopieAn ? [kopieAn] : [], betreff: mail.betreff, text: mail.text, datum: jetzt });
+        eintrag.status = 'gesendet';
+        eintrag.messageId = r?.messageId || null;
+        if (!versand.ersterVersandAm) versand.ersterVersandAm = jetzt.toISOString();
+      } catch (err) {
+        eintrag.status = 'fehler';
+        eintrag.fehler = String(err?.message || err).slice(0, 300);
+        sichern();
+        audit({ actor, action: 'nachfassen-einzeln', orderId, stufe: e.stufe, status: 'fehler' });
+        throw new ApiError(502, `E-Mail nicht verschickt: ${eintrag.fehler}`);
+      }
+      sichern();
+      let zeitleisteFehler = null;
+      try {
+        await auftragsSchrittSetzen({ orderId, schritt: 'nachgefasst', notiz: `${STUFE_LABEL[e.stufe]} per E-Mail aus dem Control Center: „${mail.betreff}“` }, benutzer, actor);
+        eintrag.status = 'vermerkt';
+      } catch (err) {
+        // Die Mail ist raus; der naechste Lauf traegt die Zeitleiste nach (schonVerschickt), statt neu zu senden.
+        zeitleisteFehler = String(err?.message || err);
+      }
+      sichern();
+      audit({ actor, action: 'nachfassen-einzeln', orderId, stufe: e.stufe, status: eintrag.status, kopie: kopieAn });
+      merke(benutzer, actor, 'Muster nachgefasst per E-Mail', String(e.orderName || orderId));
+      return { ok: true, an, kopie: kopieAn, stufe: e.stufe, zeitleisteFehler, stand: this.kundenMusterTexte() };
     },
 
     /**
@@ -1430,6 +1839,37 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       audit({ actor, action: 'rueckruf', orderId, status });
       merke(benutzer, actor, 'Rückruf', `${orderId}: ${status}`);
       return { ok: true, eintrag };
+    },
+
+    /** Service-Anfragen (Verlegeservice, Treppe, Aufmass): alle, neueste zuerst. */
+    kundenServiceanfragen() {
+      const dir = privatDirPath || privatDir();
+      const eintraege = leseServiceanfragen(serviceanfragenPfad(dir))
+        .slice().sort((a, b) => (b.datum || '').localeCompare(a.datum || '') || (b.id || '').localeCompare(a.id || ''));
+      return { verfuegbar: true, eintraege };
+    },
+
+    /**
+     * Anfrage anlegen (ohne `id`) oder aendern (mit `id`). Rein lokal - die
+     * Datei enthaelt Namen und Telefonnummern und gehoert nicht ins Repository.
+     */
+    kundenServiceanfrageSetzen(payload = {}, benutzer = null) {
+      const actor = benutzer?.name || benutzer?.kuerzel || 'Inhaber';
+      const { id = null, ...felder } = payload || {};
+      const file = serviceanfragenPfad(privatDirPath || privatDir());
+      try {
+        if (id) {
+          const eintrag = serviceanfrageAendern(file, String(id), felder, { actor, jetzt: now() });
+          merke(benutzer, actor, 'Service-Anfrage', `${eintrag.id}: ${eintrag.status}`);
+          return { ok: true, eintrag };
+        }
+        const { eintrag, doppelt } = serviceanfrageAnlegen(file, felder, { actor, jetzt: now() });
+        if (!doppelt) merke(benutzer, actor, 'Service-Anfrage', `${eintrag.id}: angelegt`);
+        return { ok: true, eintrag, doppelt };
+      } catch (e) {
+        if (e instanceof ServiceanfrageFehler) throw new ApiError(400, e.message);
+        throw e;
+      }
     },
 
     /**
@@ -1585,6 +2025,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Bis zu den lokalen Writes kein await: Vorpruefung und Uebernahmesperre werden
       // im selben JS-Schritt frisch gelesen; asynchron bleibt nur die bestehende Versandbuchung.
       const { orderId, lineItemId, status, lieferantBestellnummer, notiz, aktion } = payload || {};
+      // Ware ueber unseren Kettelservice: nur dieser eine Wert, alles andere nimmt den Vermerk zurueck.
+      const ueber = payload?.ueber === undefined ? undefined : payload.ueber === 'kettler' ? 'kettler' : null;
       if (aktion === 'beschaffung' || aktion === 'uebernahme') {
         const dir = privatDirPath || privatDir();
         const modell = ladeBestellModell(dir);
@@ -1646,7 +2088,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const vorher = leseAktuellenStatus(file, modell)[positionKey(orderId, lineItemId)];
       let eintrag;
       try {
-        eintrag = setzeStatus(file, { orderId, lineItemId, status, actor, bestellmenge: p?.bestellSoll || p?.bestellmenge || null, lieferantBestellnummer, notiz, jetzt: now(),
+        eintrag = setzeStatus(file, { orderId, lineItemId, status, actor, bestellmenge: p?.bestellSoll || p?.bestellmenge || null, lieferantBestellnummer, notiz, ueber, jetzt: now(),
           ...(status === 'raus' ? { sendungsnummer: angaben.sendungsnummer, versanddienst: angaben.versanddienst, versandMail: angaben.benachrichtigen } : {}) });
       } catch (e) {
         if (e instanceof AuftragsstatusFehler) throw new ApiError(e.status, e.message);
@@ -1709,8 +2151,74 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           verlauf: (e.verlauf || []).slice(-5),
         })),
         vorschlaege: modell ? lagerVorschlaege(modell, { lager, statusAlle, produktgruppe: h => gruppen.get(h) ?? null, jetzt: now() }) : [],
+        // Im Shop gesperrte Muster ("Muster nicht verfuegbar") - eine beschaedigte Ablage meldet nur diesen Block.
+        sperren: sperrenListe(dir),
       };
     },
+
+    /** Sperren allein (GET /api/einkauf/mustersperre). */
+    einkaufMustersperre() {
+      return { verfuegbar: true, ...sperrenListe(privatDirPath || privatDir()) };
+    },
+
+    /**
+     * Mustersperre schreiben: "freigeben" (Wieder verfuegbar - Stand vor der Sperre im Shop
+     * zurueck) oder "nachholen" (eine noch nicht im Shop stehende Sperre erneut versuchen).
+     * Beides nur anhaengen, protokolliert.
+     */
+    async einkaufMustersperreSetzen(payload = {}, benutzer = null) {
+      const actor = benutzer?.name || await currentUser();
+      if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
+      const dir = privatDirPath || privatDir();
+      const file = mustersperrePfad(dir);
+      const { aktion } = payload || {};
+      const sku = String(payload?.sku ?? '').trim().toUpperCase();
+      if (!sku) throw new ApiError(400, 'sku ist Pflicht', { missing: ['sku'] });
+      if (!['freigeben', 'nachholen'].includes(aktion)) throw new ApiError(400, `Unbekannte Aktion „${aktion}"`);
+      let aktiv;
+      try { aktiv = sperrStand(leseSperren(file)); } catch (e) { throw new ApiError(e.status || 500, e.message); }
+      const s = aktiv.get(sku);
+      if (!s) throw new ApiError(409, 'Dieses Muster ist nicht (mehr) gesperrt – bitte neu laden.');
+      const info = { farbe: s.farbe, produkt: s.produkt, handle: s.handle };
+      const name = [s.produkt, s.farbe].filter(Boolean).join(' · ') || sku;
+      if (aktion === 'nachholen') {
+        if (s.imShop) throw new ApiError(409, 'Dieses Muster ist im Shop schon gesperrt.');
+        const zugang = await sperrZugang();
+        const letzter = s.auftraege.at(-1) || {};
+        const ev = await sperreEine({ dir, sku, info, orderId: letzter.orderId || null, orderName: letzter.orderName || null, zugang, actor });
+        if (!ev?.shopify?.geschrieben) throw new ApiError(502, ev?.shopify?.fehler || 'Im Shop nicht gesperrt.');
+        merke(benutzer, actor, 'Muster im Shop gesperrt', `${name} (nachgeholt)`);
+        return { ok: true, meldung: ev.shopify.bereits ? `${name}: war im Shop schon gesperrt` : `${name}: im Shop gesperrt` };
+      }
+      // freigeben
+      return nacheinander(`mustersperre:${sku}`, async () => {
+        // Ein vorher wartender Sperr-/Freigabeversuch kann den persistierten Stand geaendert haben.
+        const s = sperrStand(leseSperren(file)).get(sku);
+        if (!s) throw new ApiError(409, 'Dieses Muster ist nicht (mehr) gesperrt – bitte neu laden.');
+        const info = { farbe: s.farbe, produkt: s.produkt, handle: s.handle };
+        const name = [s.produkt, s.farbe].filter(Boolean).join(' · ') || sku;
+        let sh = { geschrieben: false };
+        if (s.shopPruefen) {
+          const zugang = await sperrZugang();
+          if (zugang.hindernis) throw new ApiError(503, zugang.hindernis.fehler.replace('Im Shop nicht gesperrt', 'Im Shop nicht freigegeben').replace('die Variante über den Link in Shopify sperren', 'die Variante über den Link in Shopify freigeben'));
+          try {
+            const r = await freigebenImShop(zugang.proxy, { sku, vorher: s.vorher });
+            sh = { geschrieben: true, bereits: r.status === 'bereits', variantId: r.variantId, productId: r.productId, nachher: r.nachher, verfuegbar: r.verfuegbar };
+          } catch (e) {
+            const meldung = e instanceof MustersperreFehler ? e.message : `Ob das Muster wieder freigegeben ist, ist unklar (${String(e?.message || e).split('\n')[0].slice(0, 160)}).`;
+            sperreAnhaengen(file, [sperrEreignis({ sku, ...info, von: actor, grund: SPERR_GRUND.FREI, shopify: { geschrieben: false, fehler: meldung, fehlerGrund: e?.grund || 'unklar' }, jetzt: now() })]);
+            audit({ actor, action: 'mustersperre-frei', sku, geschrieben: false });
+            logFehler('mustersperre', `${sku} freigeben: ${meldung}`);
+            throw new ApiError(502, meldung);
+          }
+        }
+        sperreAnhaengen(file, [sperrEreignis({ sku, ...info, von: actor, grund: SPERR_GRUND.FREI, shopify: sh, jetzt: now() })]);
+        audit({ actor, action: 'mustersperre-frei', sku, geschrieben: sh.geschrieben });
+        merke(benutzer, actor, 'Muster wieder verfügbar', `${name}${s.shopPruefen ? ' · im Shop freigegeben' : ' · war im Shop nicht gesperrt'}`);
+        return { ok: true, meldung: s.shopPruefen ? `${name}: im Shop wieder bestellbar` : `${name}: aus der Liste genommen` };
+      });
+    },
+
 
     /** Farben eines Lexikon-Produkts zum Einlagern, mit Kennzeichen "schon im Lager". */
     einkaufMusterlagerFarben({ handle = '' } = {}) {
@@ -2554,6 +3062,26 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const eintrag = findeEintrag(daten, id);
       if (!eintrag || !darfSehen(eintrag, benutzer)) return { verfuegbar: false, hinweis: 'Eintrag nicht gefunden oder nicht freigegeben.' };
       return { verfuegbar: true, eintrag, darfAendern: darfAendern(eintrag, benutzer) };
+    },
+
+    /**
+     * Claude-Verbrauch der letzten 7 Tage (operations/scripts/claude-verbrauch.mjs,
+     * #671): Sitzungen, Langsitzungen, Tokens je Modell, Klasse und Aufgabe - nur
+     * Zahlen und Titel aus den lokalen Sitzungsprotokollen. Ist die Datei aelter
+     * als 30 Minuten, wird sie im Hintergrund neu gerechnet; die Antwort kommt
+     * sofort mit dem vorhandenen Stand und `wirdErneuert`.
+     */
+    verbrauchClaude() {
+      const dir = privatDirPath || privatDir();
+      const file = path.join(dir, 'verbrauch', 'claude.json');
+      const daten = readJsonIfExists(file);
+      const stand = daten?.erzeugtAm ? Date.parse(daten.erzeugtAm) : NaN;
+      const veraltet = !Number.isFinite(stand) || now().getTime() - stand > 30 * 60_000;
+      const wirdErneuert = veraltet ? verbrauchErneuern(dir) : false;
+      if (!daten || daten.schema !== 1 || !daten.erzeugtAm) {
+        return { verfuegbar: false, wirdErneuert, befehl: 'npm run verbrauch:sammeln', fehler: leseFehler(file) };
+      }
+      return { verfuegbar: true, wirdErneuert, ...daten };
     },
 
     /**

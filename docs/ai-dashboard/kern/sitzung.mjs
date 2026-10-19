@@ -7,10 +7,17 @@
 import { state } from './zustand.mjs';
 import { $ } from './helfer.mjs';
 
+/** Eine erhaltene 401 beendet die Sitzung auch im bereits geoeffneten Fenster. */
+export function markiereSitzungAbgelaufen() {
+  state.capabilities = { mode: 'ausgeloggt' };
+  state.session = { ...state.session, authenticated: false };
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('tp-sitzung-beendet'));
+}
+
 export async function loadCapabilities() {
   try {
     const r = await fetch('/api/capabilities', { cache: 'no-store' });
-    if (r.status === 401) { state.capabilities = { mode: 'ausgeloggt' }; return; }
+    if (r.status === 401) { markiereSitzungAbgelaufen(); return; }
     if (!r.ok) throw new Error();
     state.capabilities = await r.json();
     state.me = state.capabilities.user || null;

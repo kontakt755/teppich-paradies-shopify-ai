@@ -5,6 +5,20 @@
 Farbcodes werden abgeschrieben, nie fortgesetzt. Lieferantennamen gehoeren
 nicht ins Repository. Arbeitsweise: `domains/shopify/produktimport-arbeitsweise.md`.
 
+## Regeltext (bis 2026-10-16 in AGENTS.md, Punkte 7 und 8)
+
+**7. Ein Produktimport ohne geklaerte Namensregeln wird zweimal gebaut.**
+Das naechstliegende fertige Produkt abfragen und daran entlangbauen.
+Lieferantenseiten mit `curl` lesen; `productSet` nur fuer **neue** Produkte;
+nach jedem Schreibvorgang gegenpruefen — `userErrors: []` ist kein Beleg.
+
+**8. Lieferantennamen gehoeren nicht ins Repository.**
+Repository, Issues und Dashboard sind oeffentlich. In Dateien, Commit-/PR-Texten
+und `npm run task`-Notizen nur Pseudonyme: **Lieferant A** bis **D**, **Hausmarke
+von A**, Linien **A-1** bis **A-3**, URLs als `lieferant-a.example`. SKUs bleiben
+unveraendert. Rohdaten nur lokal unter `~/teppich-paradies-analyse/lieferantendaten/`
+(`domains/lieferanten/AUSGELAGERT.md`). Die Git-Historie wird nicht umgeschrieben.
+
 ## Import ohne geklaerte Namensregeln (2026-09-07)
 
 Sieben Linoleum-Produkte entstanden mit Lieferantennamen im Titel (Linienname

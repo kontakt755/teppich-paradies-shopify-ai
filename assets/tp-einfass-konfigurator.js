@@ -7,6 +7,17 @@
 (function () {
   'use strict';
 
+  // Variante aus Horizons variant:update fuer dieses Produkt: ihre ID, oder
+  // 'keine', wenn es die gewaehlte Kombination nicht gibt. Meldungen ohne
+  // oder mit fremder Produkt-ID aendern nichts (bisher bleibt). Gleiche Regel
+  // wie TPLaengenZuschnitt.variantVonHorizon (dort getestet).
+  function variantVonHorizon(e, produktId, bisher) {
+    var det = e && e.detail;
+    var pid = det && det.data ? det.data.productId : null;
+    if (!pid || !produktId || String(pid) !== String(produktId)) return bisher;
+    return det.resource && det.resource.id ? String(det.resource.id) : 'keine';
+  }
+
   var ART = { cover: 'Cover', ketteln: 'Gekettelt', einfassband: 'Einfassband', paspelband: 'Paspelband', fertig: 'Fertig eingefasst' };
   // Vergroesserung in der Kantenlupe und Rand, damit die Kachel auch die
   // aussen liegende Cover-Kontur (stroke-width 9) noch mit abdeckt.
@@ -298,6 +309,17 @@
       var roh = parseFloat(input.value);
       var leer = String(input.value || '').trim() === '';
       return { wert: roh > 0 ? Math.ceil(roh) : 0, komma: komma, ungueltig: !komma && !leer && !(roh > 0) };
+    }
+
+    // Berechnet und bestellt werden schon immer ganze Zentimeter. Beim
+    // Verlassen auch im Feld das tatsaechlich verwendete Mass anzeigen.
+    function massFeldAbschliessen(input) {
+      var mass = lesen(input);
+      if (mass.komma || mass.ungueltig || !mass.wert || !Number.isFinite(mass.wert)) return;
+      if (input.value !== String(mass.wert)) {
+        input.value = String(mass.wert);
+        rechnen();
+      }
     }
 
     /*
@@ -1076,7 +1098,11 @@
     root.addEventListener('change', function (e) {
       if (e.target && e.target.name && e.target.name.indexOf('tp-ek-form-') === 0) rechnen();
     });
-    [inBreite, inLaenge].forEach(function (i) { if (i) i.addEventListener('input', rechnen); });
+    [inBreite, inLaenge].forEach(function (i) {
+      if (!i) return;
+      i.addEventListener('input', rechnen);
+      i.addEventListener('blur', function () { massFeldAbschliessen(i); });
+    });
     cta.addEventListener('click', hinzufuegen);
     document.addEventListener('tp:farbe-wechsel', function (e) {
       gewaehlt = e.detail && e.detail.variantId ? String(e.detail.variantId) : null;
@@ -1086,7 +1112,15 @@
     document.addEventListener('change', function (e) {
       if (!root.contains(e.target)) setTimeout(rechnen, 120);
     });
-    document.addEventListener('variant:update', function () { setTimeout(rechnen, 60); });
+    // Horizon-Variantenwahl (Breite, Staerke ...) meldet ihre Variante per
+    // variant:update - die gilt, auch wenn vorher die Farbwahl eine gemeldet
+    // hat (sonst blieb nach Farbe -> Breite die alte Breite im Warenkorb).
+    // Keine Variante (Kombination gibt es nicht) = keine Auswahl. Meldungen
+    // anderer Produkte (Schnellkauf, Empfehlungen) zaehlen nicht.
+    document.addEventListener('variant:update', function (e) {
+      gewaehlt = variantVonHorizon(e, d.produkt_id, gewaehlt);
+      setTimeout(rechnen, 60);
+    });
     window.addEventListener('popstate', function () { gewaehlt = null; rechnen(); });
 
     // Mass von der Kategorieseite (Mass-Rechner, ?breite=&laenge=, assets/tp-teppich-rechner.js):

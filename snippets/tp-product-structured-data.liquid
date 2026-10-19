@@ -22,6 +22,8 @@
      - einer echten Variante mit custom.rollenbreite > 0 (Meterware,
        Variantenpreis = Preis je m2, seit dem Rollenware-Kaufbereich
        direkt bestellbar).
+     Laengenware (custom.preis_pro_001_lfm, Profile nach Mass) fuehrt den
+     Preis je laufendem Meter: x100, referenceQuantity 1 MTR.
      Ausgeschlossen aus den Offers: Varianten mit Breitenwert "Wunschmass"
      (Zuschnittpreis, kein eigenstaendiges Angebot), opc-*-Rechnervarianten
      und Varianten ohne Preis. Bleibt kein Offer uebrig, wird nichts
@@ -77,6 +79,30 @@
   LimitedAvailability statt InStock - die Restbestaende sind begrenzt, und
   der Hersteller stellt die Kollektion ein. Nicht lieferbare bleiben OutOfStock.
 
+  Rueckgabe und Versand im Offer (Werkbank w-117, Freigabetabelle in
+  docs/weiterentwicklung/produkt-json-ld-rueckgabe-versand.md):
+  - hasMerchantReturnPolicy aus der Widerrufsbelehrung (Rechtstext
+    REFUND_POLICY): 14 Tage, Ruecksendung per Post, Kunde traegt die
+    Ruecksendekosten. Ausgeschlossen (MerchantReturnNotPermitted) ist Ware,
+    die nach Kundenwunsch zugeschnitten oder angefertigt wird. Erkannt wird
+    sie an denselben Merkmalen wie die m2-Logik oben: Mass-Ware
+    (preis_pro_001_qm), Laengenware nach Mass (preis_pro_001_lfm) und
+    Rollenware (Zuschnitt von der Rolle). Paketware und Festpreisware
+    behalten die Frist. Aendert sich der Rechtstext, gehoert dieser Zweig
+    mit der Doku zusammen geaendert.
+  - shippingDetails nur fuer Deutschland, nur in EUR und nur mit einer
+    Lieferzeit in Werktagen: Versandkosten aus settings.tp_versand_preis
+    und settings.tp_versand_frei_ab (muessen zum Allgemeinen Versandprofil
+    passen, qa/tests/versandschwelle). Die Schwelle gilt fuer den
+    Bestellwert; je Offer zaehlt die kleinste bestellbare Menge (ein Paket,
+    ein Stueck, Rollenware 1 m bzw. Mindestlaenge ueber die Rollenbreite,
+    Mass-Ware Mindestseite bzw. Mindestpreis) - so steht nie Gratisversand
+    im Markup, den der Checkout nicht gibt. Lieferzeit aus derselben Quelle
+    wie snippets/tp-lieferzeit; die Gesamtangabe steht als transitTime,
+    eine Aufteilung in Bearbeitung und Transport ist nicht belegt.
+  - Geschenkgutscheine, Varianten ohne Versand und gesperrte Sonderposten
+    bekommen keine Versandangabe; Gutscheine auch keine Rueckgabeangabe.
+
   Alle Kaufprodukte verwenden dieselbe Quelle, damit Variantenbeschreibung,
   SKU und GTIN nicht zwischen Theme- und Shopify-Ausgabe auseinanderlaufen.
   Preise bleiben Variantenpreise; nur bei Flaechenware wird die vorhandene
@@ -103,6 +129,12 @@
   assign tp_sd_per_001 = false
   if product_resource.metafields.custom.preis_pro_001_qm.value == true
     assign tp_sd_per_001 = true
+  endif
+  # Laengenware (Profile nach Mass): Variantenpreis je 0,01 lfm, die Seite
+  # fuehrt EUR/m (snippets/tp-laengen-preis) - Preis x100, Einheit Meter.
+  assign tp_sd_lfm = false
+  if product_resource.metafields.custom.preis_pro_001_lfm.value == true
+    assign tp_sd_lfm = true
   endif
 
   # Teppich nach Mass mit Einfassung: Angebot je Farbe als Beispielgroesse (#1283).
@@ -152,6 +184,102 @@
   assign tp_sd_wm_width = product_resource.metafields.custom.wunschmass_mindestbreite_cm.value | times: 1
   if tp_sd_wm_width > 0
     assign tp_sd_is_wunschmass_legacy = true
+  endif
+
+  # Rueckgabe (Kopfkommentar): Zuschnitt und Anfertigung nach Kundenwunsch
+  # sind vom Widerruf ausgenommen, alles andere hat 14 Tage. Ein Text fuer
+  # alle Offers des Produkts, deshalb einmal vor der Variantenschleife.
+  assign tp_sd_rueckgabe_aus = false
+  if tp_sd_per_001 or tp_sd_lfm or tp_sd_is_roll
+    assign tp_sd_rueckgabe_aus = true
+  endif
+  if tp_sd_rueckgabe_aus
+    assign tp_sd_rueckgabe_json = '{"@type":"MerchantReturnPolicy","applicableCountry":"DE","returnPolicyCategory":"https://schema.org/MerchantReturnNotPermitted"}'
+  else
+    assign tp_sd_rueckgabe_json = '{"@type":"MerchantReturnPolicy","applicableCountry":"DE","returnPolicyCategory":"https://schema.org/MerchantReturnFiniteReturnWindow","merchantReturnDays":14,"returnMethod":"https://schema.org/ReturnByMail","returnFees":"https://schema.org/ReturnFeesCustomerResponsibility"}'
+  endif
+
+  # Lieferzeit: Reihenfolge wie snippets/tp-lieferzeit (Metafeld, dann
+  # Sonderposten-Einstellung, dann der Wert der Produktvorlage). Die
+  # Vorlagenwerte stehen dort als Block-Einstellung, die dieses Snippet nicht
+  # lesen kann - deshalb hier je template_suffix; qa/tests/produkt-jsonld-
+  # rueckgabe-versand vergleicht sie mit templates/product*.json.
+  assign tp_sd_lz = product_resource.metafields.service.lieferzeit.value | strip
+  if tp_sd_lz == blank and product_resource.tags contains 'sonderposten'
+    assign tp_sd_lz = settings.tp_lieferzeit_sonderposten | strip
+  elsif tp_sd_lz == blank
+    assign tp_sd_vorlage = product_resource.template_suffix | default: ''
+    case tp_sd_vorlage
+      when '', 'dekofell'
+        assign tp_sd_lz = '5–7 Werktage'
+      when 'fixpreis', 'fliese', 'planken', 'rolle', 'treppenkante-nach-mass', 'zubehoer'
+        assign tp_sd_lz = '2–5 Werktage'
+      when 'teppich'
+        assign tp_sd_lz = '3–5 Werktage'
+      when 'matte-nach-mass', 'wunschmass-fertig'
+        assign tp_sd_lz = 'ca. 14 Tage'
+    endcase
+  endif
+
+  # Nur eine Werktage-Spanne ("2–5 Werktage", "ca. 5–8 Werktage inkl.
+  # Ketteln") wird zur Zahl. "ca. 14 Tage" sind Kalendertage und bleiben
+  # draussen (keine Umrechnung erfinden), dann gibt es kein shippingDetails.
+  assign tp_sd_lz_min = 0
+  assign tp_sd_lz_max = 0
+  assign tp_sd_lz_klein = tp_sd_lz | downcase
+  if tp_sd_lz_klein contains 'werktag'
+    assign tp_sd_lz_spanne = tp_sd_lz_klein | split: 'werktag' | first | remove: 'ca.' | replace: ' bis ', '–' | replace: '-', '–' | strip
+    assign tp_sd_lz_teile = tp_sd_lz_spanne | split: '–'
+    if tp_sd_lz_teile.size == 1 or tp_sd_lz_teile.size == 2
+      assign tp_sd_lz_von = tp_sd_lz_teile.first | strip
+      assign tp_sd_lz_bis = tp_sd_lz_teile.last | strip
+      assign tp_sd_lz_rest = tp_sd_lz_von | append: tp_sd_lz_bis
+      for tp_sd_ziffer in (0..9)
+        assign tp_sd_ziffer_text = tp_sd_ziffer | append: ''
+        assign tp_sd_lz_rest = tp_sd_lz_rest | remove: tp_sd_ziffer_text
+      endfor
+      if tp_sd_lz_rest == blank and tp_sd_lz_von != blank and tp_sd_lz_bis != blank
+        assign tp_sd_lz_min = tp_sd_lz_von | plus: 0
+        assign tp_sd_lz_max = tp_sd_lz_bis | plus: 0
+      endif
+    endif
+  endif
+
+  # Versandkosten Deutschland aus den Theme-Einstellungen ("4,99 €" -> 499
+  # Cent). Unlesbarer Wert, fremde Waehrung oder keine Lieferzeit: kein
+  # shippingDetails (fail closed).
+  assign tp_sd_versand_cent = settings.tp_versand_preis | remove: '€' | replace: ',', '.' | strip | times: 100 | round
+  assign tp_sd_frei_cent = settings.tp_versand_frei_ab | times: 100
+  assign tp_sd_versand_ok = false
+  if tp_sd_lz_max > 0 and tp_sd_lz_min <= tp_sd_lz_max and tp_sd_versand_cent > 0 and tp_sd_frei_cent > 0 and cart.currency.iso_code == 'EUR'
+    assign tp_sd_versand_ok = true
+  endif
+  assign tp_sd_versand_eur = tp_sd_versand_cent | divided_by: 100.0
+
+  # Kleinste bestellbare Menge, dieselben Regeln wie die Kaufbereiche:
+  # Rollenware mindestens custom.mindestlaenge_lfm, sonst 1 m Laenge
+  # (blocks/tp-rollware-rechner, "Mindestlaenge 100 cm") ueber die ganze
+  # Rollenbreite; Mass-Ware mindestens service.min_seite_cm (Standard 50 cm)
+  # je Seite und mindestens service.mindestpreis
+  # (blocks/tp-einfass-konfigurator). Kantenkosten bleiben draussen - die
+  # Menge wird eher zu klein als zu gross geschaetzt.
+  assign tp_sd_min_laenge_m = product_resource.metafields.custom.mindestlaenge_lfm.value | times: 1.0
+  if tp_sd_min_laenge_m < 1
+    assign tp_sd_min_laenge_m = 1
+  endif
+  assign tp_sd_min_seite_cm = product_resource.metafields.service.min_seite_cm.value | default: 50 | times: 1 | at_least: 10
+  assign tp_sd_min_einheiten = tp_sd_min_seite_cm | times: tp_sd_min_seite_cm | divided_by: 100
+  assign tp_sd_mindestpreis = product_resource.metafields.service.mindestpreis.value
+  if tp_sd_mindestpreis.amount
+    assign tp_sd_mindest_cent = tp_sd_mindestpreis.amount | times: 100 | round
+  else
+    assign tp_sd_mindest_cent = tp_sd_mindestpreis | times: 100 | round
+  endif
+
+  # Geschenkgutschein: weder Versand noch Widerruf sind im Rechtstext geregelt.
+  if product_resource.gift_card?
+    assign tp_sd_rueckgabe_json = ''
+    assign tp_sd_versand_ok = false
   endif
 
   assign tp_sd_color_index = -1
@@ -214,7 +342,7 @@
           assign tp_sd_include = false
         endif
         assign tp_sd_cents = tp_sd_variant.price
-        if tp_sd_per_001
+        if tp_sd_per_001 or tp_sd_lfm
           assign tp_sd_cents = tp_sd_cents | times: 100
         endif
         # Paketpreis -> Quadratmeterpreis, gerundet auf ganze Cent. Dieselbe
@@ -276,6 +404,30 @@
             endif
           endif
         endif
+        # Versand je Offer: kleinste bestellbare Menge (Paket, Stueck,
+        # Mindestzuschnitt; vor der m2-Umrechnung) ab der Schwelle -> 0,
+        # sonst die Versandkosten.
+        assign tp_sd_versand_hier = tp_sd_versand_ok
+        if tp_sd_variant.requires_shipping == false or tp_sd_sp_gesperrt
+          assign tp_sd_versand_hier = false
+        endif
+        assign tp_sd_min_cent = tp_sd_variant.price
+        if tp_sd_is_roll
+          assign tp_sd_v_breite = tp_sd_variant.metafields.custom.rollenbreite.value | times: 1.0
+          if tp_sd_v_breite > 0
+            assign tp_sd_min_cent = tp_sd_variant.price | times: tp_sd_v_breite | times: tp_sd_min_laenge_m
+          endif
+        elsif tp_sd_per_001
+          assign tp_sd_min_cent = tp_sd_variant.price | times: tp_sd_min_einheiten
+          if tp_sd_mindest_cent > tp_sd_min_cent
+            assign tp_sd_min_cent = tp_sd_mindest_cent
+          endif
+        endif
+        assign tp_sd_versand_wert = tp_sd_versand_eur
+        if tp_sd_min_cent >= tp_sd_frei_cent
+          assign tp_sd_versand_wert = 0
+        endif
+
         assign tp_sd_gtin_property = 'gtin'
         if tp_sd_gtin_length == 8
           assign tp_sd_gtin_property = 'gtin8'
@@ -352,7 +504,7 @@
               }
               {%- endif -%}
             ],
-            {%- elsif tp_sd_per_001 or tp_sd_is_roll or tp_sd_is_paket -%}
+            {%- elsif tp_sd_per_001 or tp_sd_is_roll or tp_sd_is_paket or tp_sd_lfm -%}
             "priceSpecification": {
               "@type": "UnitPriceSpecification",
               "price": {{ tp_sd_price }},
@@ -360,12 +512,38 @@
               "referenceQuantity": {
                 "@type": "QuantitativeValue",
                 "value": 1,
-                "unitCode": "MTK"
+                "unitCode": {% if tp_sd_lfm %}"MTR"{% else %}"MTK"{% endif %}
               }
             },
             {%- endif -%}
             "itemCondition": {{ tp_sd_zustand | json }},
             "availability": {% if tp_sd_variant.available and tp_sd_sp_gesperrt == false %}{% if tp_sd_auslauf %}"https://schema.org/LimitedAvailability"{% else %}"https://schema.org/InStock"{% endif %}{% else %}"https://schema.org/OutOfStock"{% endif %},
+            {%- if tp_sd_rueckgabe_json != blank -%}
+            "hasMerchantReturnPolicy": {{ tp_sd_rueckgabe_json }},
+            {%- endif -%}
+            {%- if tp_sd_versand_hier -%}
+            "shippingDetails": {
+              "@type": "OfferShippingDetails",
+              "shippingRate": {
+                "@type": "MonetaryAmount",
+                "value": {{ tp_sd_versand_wert }},
+                "currency": {{ cart.currency.iso_code | json }}
+              },
+              "shippingDestination": {
+                "@type": "DefinedRegion",
+                "addressCountry": "DE"
+              },
+              "deliveryTime": {
+                "@type": "ShippingDeliveryTime",
+                "transitTime": {
+                  "@type": "QuantitativeValue",
+                  "minValue": {{ tp_sd_lz_min }},
+                  "maxValue": {{ tp_sd_lz_max }},
+                  "unitCode": "DAY"
+                }
+              }
+            },
+            {%- endif -%}
             "seller": {
               "@type": "Organization",
               "name": {{ shop.name | json }}
@@ -393,9 +571,11 @@
         "description": {{ tp_sd_description | json }},
         {%- endif -%}
         "url": {{ tp_sd_product_url | json }},
+        {%- comment -%} Marke wie in Titeln, og:site_name und Organization (sections/header.liquid): Hausware steht im Admin als "TeppichParadies" {%- endcomment -%}
+        {%- assign tp_sd_marke = product_resource.vendor | replace: 'TeppichParadies', 'Teppich Paradies' -%}
         "brand": {
           "@type": "Brand",
-          "name": {{ product_resource.vendor | json }}
+          "name": {{ tp_sd_marke | json }}
         },
         {%- if product_resource.images.size > 0 -%}
         "image": [

@@ -14,6 +14,7 @@ import vm from 'node:vm';
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const rollFile = 'blocks/tp-rollware-rechner.liquid';
 const rollSource = readFileSync(path.join(root, rollFile), 'utf8');
+const artSource = readFileSync(path.join(root, 'assets/tp-rollware-art.js'), 'utf8');
 
 const markStart = rollSource.indexOf('  function markInvalid(el, on) {');
 const markEnd = rollSource.indexOf('\n  function clearInvalid()', markStart);
@@ -49,10 +50,20 @@ class Element {
   scrollIntoView(options) { this.scrolledIntoView = options; }
 }
 
-async function rollCase(raw, checked = true, holz = null, dimensions = { w: 400, len: 200 }) {
-  const fields = Object.fromEntries(['hoehe', 'an', 'felder', 'meter', 'hint', 'preis']
+// Leistenprodukt mit Preisstufen (Inhaber 2026-10-16): Option 1 Hoehe,
+// Option 2 "fuer Teppich bis X €/m²", Preis = 5,50 + Hoehe x Obergrenze,
+// aufgerundet auf ,45/,95. Hier nur zwei Hoehen als Ausschnitt.
+const STUFEN_PREISE = { '6 cm': [695, 745, 845, 945, 1195], '10 cm': [795, 895, 1045, 1245, 1595] };
+const STUFEN_LEISTE = Object.entries(STUFEN_PREISE).flatMap(([hoehe, preise]) =>
+  [20, 30, 45, 65, 100].map((bis, i) => ({
+    id: `leiste-${hoehe.replace(' ', '')}-${bis}`, title: `${hoehe} / für Teppich bis ${bis} €/m²`,
+    price: preise[i], options: [hoehe, `für Teppich bis ${bis} €/m²`],
+  })));
+
+async function rollCase(raw, checked = true, holz = null, dimensions = { w: 400, len: 200 }, opts = {}) {
+  const fields = Object.fromEntries(['hoehe', 'an', 'felder', 'meter', 'hint', 'preis', 'umfang']
     .map((s) => [`[data-leiste-${s}]`, new Element()]));
-  fields['[data-leiste-hoehe]'].value = 'audit-leiste';
+  fields['[data-leiste-hoehe]'].value = opts.hoehe ?? '5 cm';
   fields['[data-leiste-hoehe]'].options = [{}];
   fields['[data-leiste-an]'].checked = checked;
   fields['[data-leiste-meter]'].value = raw;
@@ -70,18 +81,27 @@ async function rollCase(raw, checked = true, holz = null, dimensions = { w: 400,
   const requests = [];
   const context = vm.createContext({
     leisteBox, haftBox: null, holzBox, formulaExtras: null,
-    leisteVarianten: [{ id: 'audit-leiste', title: '5 cm', price: 1095 }],
+    leisteVarianten: opts.leiste ?? [{ id: 'audit-leiste', title: '5 cm', price: 1095 }],
     holzVarianten: holz ? [{ id: 'audit-holz', title: 'Eiche', price: 1688 }] : [],
     holzLaenge: holz ? 2.5 : 0,
     haftVarianten: [], extrasAllowed: () => true, farbeText: () => 'Sand Hell – 004',
     fmt: (n) => n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
     fmtArea: (n) => String(n),
+    fmtMeter: (cm) => (cm / 100).toLocaleString('de-DE', { maximumFractionDigits: 2 }) + ' m',
     data: { product_title: holz ? 'Vinyl von der Rolle' : 'Piumera Teppichboden 400cm 500cm' },
     inFlight: false, cta, ctaHint: new Element(), cartLink: new Element(),
-    target: { id: 60330695491918, price: 6590, available: true,
+    target: { id: 60330695491918, price: opts.preis ?? 6590, available: true,
       farbnummer: '004', farbe_intern: 'Sand Hell – 004' },
-    cmExact: false, selectedWidth: () => dimensions.w, laengeAngehoben: () => null, getEffectiveLengthCm: () => dimensions.len,
-    artMode: () => 'meter', lengthInput: new Element('200'), MAX_LENGTH_CM: 1000,
+    cmExact: opts.cmExact ?? false, selectedWidth: () => dimensions.w, laengeAngehoben: () => null, getEffectiveLengthCm: () => dimensions.len,
+    artMode: () => opts.art ?? 'meter', lengthInput: new Element('200'), MAX_LENGTH_CM: 1000,
+    // Rollenbreiten der Farbe und ihre Meterware (fuer die Raummass-Leiste).
+    wIdx: opts.wIdx ?? 1, widths: opts.breiten ?? [400, 500], farbBreiten: opts.breiten ?? [400, 500],
+    maxFarbBreite: () => (opts.breiten ?? [400, 500]).at(-1),
+    baseOptions: () => ['Sand Hell', '400 cm'],
+    byWidth: (b) => b,
+    variantFor: (_t, b) => (opts.meterware ?? {})[b] ?? null,
+    roundedHundredthsQty: (w, l) => Math.round((w * l) / 100),
+    rateOf: (v) => (v ? ((opts.cmExact ?? false) ? parseFloat(v.price) : parseFloat(v.price) / 100) : 0),
     clearInvalid() {}, calculate() {}, setTimeout() {},
     // Bahnen aus dem Raummass-Helfer: hier keine (Vermerk "Zuschnitt" entfaellt).
     bahnenAktiv: () => null,
@@ -92,12 +112,16 @@ async function rollCase(raw, checked = true, holz = null, dimensions = { w: 400,
       return { ok: true, json: async () => ({}) };
     },
   });
+  // Echte Rollenwahl (ART.rolleFuer mit Zugabe) aus dem Asset.
+  vm.runInContext(artSource, context, { filename: 'assets/tp-rollware-art.js', timeout: 1000 });
+  context.ART = context.TPRollwareArt;
   vm.runInContext(rollSource.slice(markStart, markEnd), context, { filename: rollFile, timeout: 1000 });
   vm.runInContext(rollSource.slice(extrasStart, extrasEnd), context, { filename: rollFile, timeout: 1000 });
   vm.runInContext(rollSource.slice(missingStart, missingEnd), context, { filename: rollFile, timeout: 1000 });
   const extras = vm.runInContext(`updateExtras(${dimensions.w}, ${dimensions.len}, 8)`, context, { timeout: 1000 });
   vm.runInContext(rollSource.slice(clickStart, clickEnd), context, { filename: rollFile, timeout: 1000 });
-  cta.emit('click');
+  // Raummass-Klick braucht die ganze Wunschmass-Eingabe; dort zaehlt nur das Zubehoer.
+  if (!opts.ohneKlick) cta.emit('click');
   await new Promise((resolve) => setImmediate(resolve));
   return {
     requestCount: requests.length,
@@ -112,6 +136,12 @@ async function rollCase(raw, checked = true, holz = null, dimensions = { w: 400,
     holzColorInvalid: holzFields['[data-holz-variante]'].getAttribute('aria-invalid'),
     holzColorFocusWay: JSON.parse(JSON.stringify([holzFields['[data-holz-variante]'].scrolledIntoView, holzFields['[data-holz-variante]'].focusOptions])),
     hint: fields['[data-leiste-hint]'].textContent,
+    preisText: fields['[data-leiste-preis]'].textContent,
+    umfangText: fields['[data-leiste-umfang]'].textContent,
+    hidden: leisteBox.hidden,
+    leisteInvalidField: extras.leisteInvalidField,
+    ctaHinweis: context.ctaHint.textContent,
+    hoeheFokus: !!fields['[data-leiste-hoehe]'].focused,
   };
 }
 
@@ -167,11 +197,110 @@ test('Regression: Checkbox aus -> nur Hauptware, kein Block', async () => {
   assert.equal(result.leisteInvalid, false);
 });
 
-test('Regression: "2,5" wird weiterhin auf 3 volle Meter aufgerundet', async () => {
+test('Ganze Streifen: "2,5" m aus der 4-m-Rolle ergeben einen Streifen = 4 m', async () => {
   const result = await rollCase('2,5');
   assert.equal(result.requestCount, 1);
-  assert.equal(result.payload.body.items[0].quantity, 3);
+  assert.equal(result.payload.body.items[0].quantity, 4);
+  assert.equal(result.payload.body.items[0].properties['Länge'], '4 m');
+  assert.equal(result.payload.body.items[0].properties['Zuschnitt'], '1 Streifen à 4 m');
   assert.equal(result.leisteInvalid, false);
+});
+
+test('Preisstufe: 29,90 €/m², 6 cm, 17 m aus der 4-m-Rolle = 5 Streifen, 20 m × 7,45 €', async () => {
+  const result = await rollCase('17', true, null, { w: 400, len: 450 }, { leiste: STUFEN_LEISTE, preis: 2990, hoehe: '6 cm' });
+  assert.equal(result.requestCount, 1);
+  const leiste = result.payload.body.items[0];
+  assert.equal(leiste.id, 'leiste-6cm-30');
+  assert.equal(leiste.quantity, 20);
+  assert.deepEqual(
+    { hoehe: leiste.properties['Höhe'], laenge: leiste.properties['Länge'], zuschnitt: leiste.properties['Zuschnitt'] },
+    { hoehe: '6 cm', laenge: '20 m', zuschnitt: '5 Streifen à 4 m' });
+  assert.match(result.hint, /^17 m werden als 5 Streifen à 4 m = 20 m gefertigt und berechnet/);
+  assert.match(result.hint, /7,45 € je Meter inklusive Material/);
+  assert.equal(result.preisText, '149,00 €');
+});
+
+test('Beispiel Inhaber: 8 m, 10 cm bei 30 €/m² = 2 Streifen à 4 m, 8,95 € je Meter', async () => {
+  const result = await rollCase('8', true, null, { w: 400, len: 300 }, { leiste: STUFEN_LEISTE, preis: 3000, hoehe: '10 cm' });
+  const leiste = result.payload.body.items[0];
+  assert.equal(leiste.id, 'leiste-10cm-30', 'genau 30,00 €/m² bleibt in der Stufe bis 30');
+  assert.equal(leiste.quantity, 8);
+  assert.match(result.hint, /^2 Streifen à 4 m = 8 m gefertigt/);
+});
+
+test('Stufengrenze: 30,01 €/m² springt in die Stufe bis 45', async () => {
+  const result = await rollCase('8', true, null, { w: 400, len: 300 }, { leiste: STUFEN_LEISTE, preis: 3001, hoehe: '6 cm' });
+  assert.equal(result.payload.body.items[0].id, 'leiste-6cm-45');
+});
+
+test('5-m-Rolle: 17 m = 4 Streifen à 5 m = 20 m', async () => {
+  const result = await rollCase('17', true, null, { w: 500, len: 400 }, { leiste: STUFEN_LEISTE, preis: 1990, hoehe: '6 cm' });
+  const leiste = result.payload.body.items[0];
+  assert.equal(leiste.id, 'leiste-6cm-20');
+  assert.equal(leiste.quantity, 20);
+  assert.equal(leiste.properties['Zuschnitt'], '4 Streifen à 5 m');
+});
+
+test('Über der höchsten Stufe (hier 100 €/m²): keine Fußleiste, auch wenn sie angehakt war (fail closed)', async () => {
+  const result = await rollCase('17', true, null, { w: 400, len: 450 }, { leiste: STUFEN_LEISTE, preis: 18600, hoehe: '6 cm' });
+  assert.equal(result.leisteInvalid, false);
+  assert.equal(result.extraItems.length, 0);
+  assert.equal(result.requestCount, 1);
+  assert.equal(result.payload.body.items, undefined, 'nur der Teppichboden geht in den Warenkorb');
+});
+
+test('Raummaß: Stufe nach dem Meterwarepreis der tragenden Rolle, nicht nach dem Raummaß-Aufschlag', async () => {
+  // Wunschmass-Variante 61,90 €/m² (Stufe bis 65), Meterware 400 cm 45,90 €/m²
+  // (Stufe bis 65), Meterware 500 cm 44,90 (Stufe bis 45). Stueck 450 cm
+  // breit -> getragen von der 500er-Rolle.
+  const meterware = { 400: { id: 'm400', price: 4590 }, 500: { id: 'm500', price: 4490 } };
+  const result = await rollCase('17', true, null, { w: 450, len: 380 }, { leiste: STUFEN_LEISTE, preis: 6190, hoehe: '6 cm', art: 'raum', meterware, ohneKlick: true });
+  const leiste = result.extraItems[0];
+  assert.equal(leiste.id, 'leiste-6cm-45');
+  assert.equal(leiste.properties['Zuschnitt'], '4 Streifen à 5 m');
+  const schmal = await rollCase('17', true, null, { w: 350, len: 380 }, { leiste: STUFEN_LEISTE, preis: 6190, hoehe: '6 cm', art: 'raum', meterware, ohneKlick: true });
+  assert.equal(schmal.extraItems[0].id, 'leiste-6cm-65', '350 cm breit -> 400er-Rolle, 45,90 €/m²');
+  assert.equal(schmal.extraItems[0].quantity, 20);
+});
+
+test('Raummaß knapp unter der Rolle: 398 cm braucht mit Zugabe die 500er-Rolle (wie "Aus Rolle")', async () => {
+  const meterware = { 400: { id: 'm400', price: 2990 }, 500: { id: 'm500', price: 3190 } };
+  const result = await rollCase('8', true, null, { w: 398, len: 300 }, { leiste: STUFEN_LEISTE, preis: 4290, hoehe: '6 cm', art: 'raum', meterware, ohneKlick: true });
+  assert.equal(result.extraItems[0].id, 'leiste-6cm-45', 'Stufe nach der 500er-Meterware (31,90 €/m²)');
+  assert.equal(result.extraItems[0].properties['Zuschnitt'], '2 Streifen à 5 m');
+  assert.equal(result.extraItems[0].quantity, 10);
+});
+
+test('Fail closed: zweite Option ohne lesbares "bis <Zahl>" zeigt keine Leiste statt der billigsten Stufe', async () => {
+  const umbenannt = STUFEN_LEISTE.map((v) => ({ ...v, options: [v.options[0], v.options[1].replace('bis ', '≤ ')] }));
+  const result = await rollCase('8', true, null, { w: 400, len: 300 }, { leiste: umbenannt, preis: 2990, hoehe: '6 cm' });
+  assert.equal(result.hidden, true);
+  assert.equal(result.extraItems.length, 0);
+  assert.equal(result.leisteInvalid, false);
+});
+
+test('TP-003: fehlt die Variante der gewählten Höhe in der Stufe, stoppt der Kauf statt die Leiste wegzulassen', async () => {
+  const ohne10er65 = STUFEN_LEISTE.filter((v) => v.id !== 'leiste-10cm-65');
+  const result = await rollCase('8', true, null, { w: 400, len: 300 }, { leiste: ohne10er65, preis: 6490, hoehe: '10 cm' });
+  assert.equal(result.leisteInvalid, true);
+  assert.equal(result.leisteInvalidField, 'hoehe');
+  assert.equal(result.requestCount, 0);
+  assert.equal(result.hoeheFokus, true);
+  assert.match(result.hint, /Höhe ist gerade nicht lieferbar/);
+  assert.equal(result.preisText, '', 'kein Preis einer anderen Höhe');
+  assert.equal(result.umfangText, 'Diese Höhe ist gerade nicht lieferbar');
+});
+
+test('cm-genaue Preise (je 0,01 m²): Stufe nach dem m²-Preis', async () => {
+  // 0,3290 € je 0,01 m² in Cent = 32,90 €/m² -> Stufe bis 45
+  const result = await rollCase('8', true, null, { w: 400, len: 300 }, { leiste: STUFEN_LEISTE, preis: 32.9, cmExact: true, hoehe: '6 cm' });
+  assert.equal(result.payload.body.items[0].id, 'leiste-6cm-45');
+});
+
+test('Vorschlag ohne Haken: Umfang in ganzen Streifen mit Preis', async () => {
+  const result = await rollCase('', false, null, { w: 400, len: 450 }, { leiste: STUFEN_LEISTE, preis: 2990, hoehe: '6 cm' });
+  assert.equal(result.umfangText, 'Umfang 17 m · 20 m × 7,45 €');
+  assert.equal(result.preisText, '149,00 €');
 });
 
 test('TP-003: angehakte Fußleiste ohne Länge blockiert den gesamten Request', async () => {

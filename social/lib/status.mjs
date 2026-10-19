@@ -92,6 +92,7 @@ export const TYPEN = Object.freeze({
   produkt_farben: { label: 'Farbvorstellung', gruppe: 'produkt' },
   produkt_woche: { label: 'Produkt der Woche', gruppe: 'produkt' },
   raumidee: { label: 'Raumidee', gruppe: 'produkt' },
+  produkt_reel: { label: 'Produkt-Reel', gruppe: 'produkt' },
   angebot: { label: 'Angebot', gruppe: 'angebot' },
   tipp: { label: 'Tipp / Bodenwissen', gruppe: 'wissen' },
   laden: { label: 'Laden & Team', gruppe: 'betrieb' },

@@ -1,0 +1,33 @@
+/* Kunden > Service-Anfragen (ansichten/kunden/serviceanfragen.mjs). Nur Tokens aus app.css. */
+.sa-auswertung { margin-bottom: 14px; }
+.sa-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px 28px; }
+.sa-h { font-size: .8rem; font-weight: 600; color: var(--text-2); margin: 0 0 8px; }
+.sa-wochen { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; align-items: end; }
+.sa-woche { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.sa-zahl { font-size: .85rem; font-weight: 600; }
+.sa-saeule { display: flex; align-items: flex-end; width: 100%; max-width: 28px; height: 56px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+.sa-saeule > span { display: block; width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; }
+.sa-kw { font-size: .7rem; color: var(--text-2); white-space: nowrap; }
+.sa-quellen { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.sa-quellen th { text-align: left; font-weight: 500; color: var(--text-2); font-size: .75rem; padding: 0 6px 4px 0; }
+.sa-quellen td { padding: 4px 6px 4px 0; border-top: 1px solid var(--line); }
+.sa-quellen .num { text-align: right; font-variant-numeric: tabular-nums; }
+.sa-leiste { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.sa-row { align-items: flex-start; }
+.sa-inhalt { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.sa-kontakt { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; }
+.sa-kontakt .tel-gross { margin-top: 0; }
+.sa-mail, .sa-notiz { overflow-wrap: anywhere; }
+.sa-notiz { white-space: pre-line; }
+.sa-felder { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+.sa-mailimport summary { cursor: pointer; font-size: .88rem; font-weight: 600; }
+.sa-mailimport .field { margin-top: 8px; }
+.sa-verlauf { margin: 4px 0 0; padding-left: 18px; }
+
+@media (max-width: 640px) {
+  .sa-grid { grid-template-columns: 1fr; }
+  .sa-felder { grid-template-columns: 1fr; }
+  .sa-row { grid-template-columns: 1fr; }
+  .sa-row .r { justify-content: flex-start; }
+  .sa-leiste .btn-primary { width: 100%; }
+}

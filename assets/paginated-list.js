@@ -33,8 +33,11 @@ export default class PaginatedList extends Component {
   /** @type {PaginatedListAspectRatioHelper} */
   #aspectRatioHelper;
 
+  #activePageRequest = 0;
+
   connectedCallback() {
     super.connectedCallback();
+    this.#activePageRequest++;
 
     /** @type {HTMLElement | null} */
     const templateCard = this.querySelector('[ref="cardGallery"]');
@@ -54,6 +57,7 @@ export default class PaginatedList extends Component {
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    this.#activePageRequest++;
     if (this.infinityScrollObserver) {
       this.infinityScrollObserver.disconnect();
     }
@@ -123,14 +127,15 @@ export default class PaginatedList extends Component {
    */
   async #fetchPage(type) {
     const page = this.#getPage(type);
+    const requestId = this.#activePageRequest;
+    const pendingRender = type === 'next' ? this.#resolveNextPagePromise : this.#resolvePreviousPagePromise;
 
     // Always resolve the promise, even if we can't fetch the page
     const resolvePromise = () => {
-      if (type === 'next') {
-        this.#resolveNextPagePromise?.();
+      pendingRender?.();
+      if (type === 'next' && this.#resolveNextPagePromise === pendingRender) {
         this.#resolveNextPagePromise = null;
-      } else {
-        this.#resolvePreviousPagePromise?.();
+      } else if (type === 'previous' && this.#resolvePreviousPagePromise === pendingRender) {
         this.#resolvePreviousPagePromise = null;
       }
     };
@@ -141,8 +146,14 @@ export default class PaginatedList extends Component {
       return;
     }
 
-    await this.#fetchSpecificPage(page.page, page.url);
-    resolvePromise();
+    try {
+      await this.#fetchSpecificPage(page.page, page.url);
+    } catch (error) {
+      if (error?.name === 'AbortError' && requestId === this.#activePageRequest) this.#activePageRequest++;
+      // Prefetch darf nicht navigieren. Der aktive Abruf behandelt einen fehlenden Inhalt.
+    } finally {
+      resolvePromise();
+    }
   }
 
   /**
@@ -160,8 +171,10 @@ export default class PaginatedList extends Component {
     }
 
     if (!this.#shouldUsePage(pageInfo)) return;
+    const requestId = this.#activePageRequest;
+    const sourceUrl = window.location.href;
     const pageContent = await sectionRenderer.getSectionHTML(this.sectionId, true, pageInfo.url);
-    this.pages.set(pageNumber, pageContent);
+    if (this.#isCurrentPageRequest(requestId, sourceUrl)) this.pages.set(pageNumber, pageContent);
   }
 
   async #renderNextPage() {
@@ -172,6 +185,8 @@ export default class PaginatedList extends Component {
     const nextPage = this.#getPage('next');
 
     if (!nextPage || !this.#shouldUsePage(nextPage)) return;
+    const requestId = ++this.#activePageRequest;
+    const sourceUrl = window.location.href;
     let nextPageItemElements = this.#getGridForPage(nextPage.page);
 
     if (!nextPageItemElements) {
@@ -184,8 +199,10 @@ export default class PaginatedList extends Component {
 
       await promise;
       nextPageItemElements = this.#getGridForPage(nextPage.page);
-      if (!nextPageItemElements) return;
     }
+
+    if (!this.#isCurrentPageRequest(requestId, sourceUrl)) return;
+    if (!nextPageItemElements) return this.#openPage(nextPage.url, sourceUrl);
 
     grid.append(...nextPageItemElements);
 
@@ -205,6 +222,8 @@ export default class PaginatedList extends Component {
 
     const previousPage = this.#getPage('previous');
     if (!previousPage || !this.#shouldUsePage(previousPage)) return;
+    const requestId = ++this.#activePageRequest;
+    const sourceUrl = window.location.href;
 
     let previousPageItemElements = this.#getGridForPage(previousPage.page);
     if (!previousPageItemElements) {
@@ -217,8 +236,10 @@ export default class PaginatedList extends Component {
 
       await promise;
       previousPageItemElements = this.#getGridForPage(previousPage.page);
-      if (!previousPageItemElements) return;
     }
+
+    if (!this.#isCurrentPageRequest(requestId, sourceUrl)) return;
+    if (!previousPageItemElements) return this.#openPage(previousPage.url, sourceUrl);
 
     // Store the current scroll position and height of the first element
     const scrollTop = window.scrollY;
@@ -297,10 +318,22 @@ export default class PaginatedList extends Component {
     return id;
   }
 
+  #isCurrentPageRequest(requestId, sourceUrl) {
+    return this.isConnected && requestId === this.#activePageRequest && window.location.href === sourceUrl;
+  }
+
+  #openPage(url, sourceUrl) {
+    const target = new URL(url);
+    target.searchParams.delete('section_id');
+    target.hash = new URL(sourceUrl).hash;
+    window.location.assign(target.toString());
+  }
+
   /**
    * Handle filter updates by clearing cached pages
    */
   #handleFilterUpdate = () => {
+    this.#activePageRequest++;
     this.pages.clear();
 
     // Resolve any pending promises to unblock waiting renders

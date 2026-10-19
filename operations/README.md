@@ -343,8 +343,25 @@ Für die Oberfläche:
   `laden`; `ohneBestellung` listet Muster mit Route `SAMPLE_STOCK`/`SAMPLE_CUT`
   (eigenes Musterlager/Zuschnitt – keine Lieferantenbestellung) und Muster mit
   der Wahl „haben wir da“ (siehe unten).
+- **Kettler** (seit 2026-10-19): Ware kann mit `ziel=kettler` an unseren
+  Kettelservice gehen (Anschrift nur privat unter `absender.kettelservice` der
+  Stammdaten; fehlt sie, ist `kettlerMoeglich` `false` und der Dialog bietet
+  den Kettler nicht an). Der Kettler schneidet zu und kettelt ohne
+  Zuschnittgebühr: Maßteppiche gehen deshalb als **Meterware von der Rolle**
+  an den Lieferanten („2,50 lfm von der 4,00 m breiten Rolle (Meterware, ohne
+  Maßzuschnitt)“, darunter das Fertigmaß für den Kettler), ohne
+  Einfassungszeile und mit der Kommission ohne Kundennamen. Ist die
+  Rollenbreite unbekannt, bleibt es beim Stück nach Maß ohne Einfassung.
+  **Regel ohne `ziel`:** Maßteppiche mit Einfassung und kürzerer Seite unter
+  200 cm kommen in eine eigene Mail an den Kettler (`kettlerAutomatisch:
+  true`), der Rest der Gruppe bleibt in seiner Mail. Ein `ziel` gilt für die
+  ganze Gruppe. `kettlerVorschlag` nennt in den übrigen Mails Kettel-Positionen
+  für den Kettler (unter 2 m bzw. Kunde in Berlin/PLZ 16).
 - Nach dem Absenden setzt die Oberfläche den Status wie bisher über
-  `POST /api/einkauf/auftragsstatus` (`status: "bestellt"`).
+  `POST /api/einkauf/auftragsstatus` (`status: "bestellt"`). Optional
+  `ueber: "kettler"` vermerkt den Kettler-Weg an der Position (`ueber: null`
+  nimmt ihn zurück); der Auftragsfluss zeigt dann „Bestellt · unterwegs zum
+  Kettler“ und „Beim Kettler abgeholt“ statt „Geliefert an uns“.
 - `400` bei unbekannter `art`/`ziel`/`gruppe`; ohne `orders.json`
   `{verfuegbar:false, hinweis, mails:[]}`.
 
@@ -501,9 +518,13 @@ wie bisher: `lesen` bekommt 403). Ohne `aktion` verhält sich der Endpunkt unver
 
 `schritt`: `bestellt` \| `geliefert` \| `raus` \| `erledigt` (setzt alle Positionen des
 Auftrags, die noch nicht so weit sind – wie Einzelklicks im Einkauf), `kunde_hat_muster`
-\| `nachgefasst` \| `kunde_hat_bestellt` \| `kein_interesse` (Ereignis je Auftrag; ein
-Ergebnis setzt zusätzlich die Positionen auf `erledigt`), `notiz` (braucht `notiz`),
+\| `nachgefasst` \| `kunde_hat_bestellt` \| `kein_interesse` \| `muster_nicht_verfuegbar` (Ereignis je
+Auftrag; ein Ergebnis setzt zusätzlich die Positionen auf `erledigt`), `notiz` (braucht `notiz`),
 `zurueck` (braucht `bezug`). Antwort: `{ok, orderId, schritt, positionen, auftragsart, verlauf, verlaufNotizen, naechsterSchritt, zeitleisteAbgeschlossen}`.
+`muster_nicht_verfuegbar` nimmt zusätzlich `muster: [lineItemId, …]` (Musterpositionen dieses
+Auftrags); deren Farben stehen in der Notiz („Nicht verfügbar: Produkt: Farbe, …“), und die
+Mustervarianten werden im Shop gesperrt (`lib/mustersperre.mjs`, Ergebnis in `mustersperre`).
+Ohne angekreuzte Farbe ist der Freitext in `notiz` Pflicht (sonst `400`).
 `400` bei unbekanntem oder nicht zur Strecke passendem Schritt, `404` bei unbekannter Bestellung.
 
 ## Zugang einrichten (einmalig)

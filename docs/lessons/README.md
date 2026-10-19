@@ -14,9 +14,9 @@ sie zu umgehen.
 | [produktimport.md](produktimport.md) | Fallstrick 7, Farbcodes | Sieben Produkte zweimal gebaut; 21 von 24 Farbvarianten erfunden |
 | [pr-basis-und-historie.md](pr-basis-und-historie.md) | Fallstrick 9 | PRs ohne Checks, geschlossene PRs, ueberkreuzte Historie — alle mechanisch |
 | [shopify-schreibzugriff.md](shopify-schreibzugriff.md) | Shopify-Schreibzugriff | Eine Sitzung Token-Suche, acht Runden Browser fuer eine Mutation, die im Schema stand |
-| [dashboard-issues-json.md](dashboard-issues-json.md) | Dashboard | Stash pro Sitzung im geteilten Stash-Stack, weil Doku und Hook sich widersprachen |
-| [rebase-ours-ist-der-upstream.md](rebase-ours-ist-der-upstream.md) | Dashboard | `dashboard-data.yml` loeste Konflikte mit `--ours` auf und verwarf damit die Datei, die es gerade erzeugt hatte |
-| [renderzeit-kollektionsseite.md](renderzeit-kollektionsseite.md) | Werkzeuge (`teppich:basis-daten`) | Teppich nach Mass lief ab ~200 Produkten in den Render-Timeout; Ursache war nicht die vermutete Gruppierung, sondern Produktreferenzen je Karte |
+| [dashboard-issues-json.md](dashboard-issues-json.md) | – (Vorgeschichte, erledigt 2026-09-30; heute „Arbeitskopien“) | Stash pro Sitzung im geteilten Stash-Stack, weil Doku und Hook sich widersprachen |
+| [rebase-ours-ist-der-upstream.md](rebase-ours-ist-der-upstream.md) | – (Vorgeschichte; gilt weiter fuer `.claude/hooks/gedaechtnis-sync.sh`) | `dashboard-data.yml` loeste Konflikte mit `--ours` auf und verwarf damit die Datei, die es gerade erzeugt hatte |
+| [renderzeit-kollektionsseite.md](renderzeit-kollektionsseite.md) | Skill `werkzeuge` (`teppich:basis-daten`) | Teppich nach Mass lief ab ~200 Produkten in den Render-Timeout; Ursache war nicht die vermutete Gruppierung, sondern Produktreferenzen je Karte |
 
 Konvention: keine Theme-IDs, keine Lieferantennamen (nur Pseudonyme, siehe
 AGENTS.md Punkt 8). Eine neue Lesson bekommt eine Zeile in dieser Tabelle und

@@ -76,6 +76,17 @@
 .zl-wahl label:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
 .zl-wahl input { accent-color: var(--accent); flex: none; }
 .zl-wahl .zl-wahl-trenner { margin-top: 6px; }
+.zl-wahl-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+/* "Muster nicht verfuegbar": betroffene Muster und Mailtext */
+.zl-nv { display: grid; gap: 12px; margin-top: 14px; }
+.zl-nv-farben { display: grid; gap: 4px; border: 1px solid var(--line); border-radius: 8px; margin: 0; padding: 10px 12px; min-width: 0; }
+.zl-nv-farben legend { font-weight: 600; font-size: .88rem; padding: 0 4px; }
+.zl-nv-farben label { display: flex; gap: 10px; align-items: center; min-height: 40px; cursor: pointer; overflow-wrap: anywhere; }
+.zl-nv-farben input { accent-color: var(--accent); flex: none; width: 18px; height: 18px; margin: 0; }
+.zl-nv-farben p { margin: 4px 0 0; }
+.zl-nv-mail > summary { cursor: pointer; padding: 8px 0; color: var(--text-2); }
+.zl-nv-mail textarea { width: 100%; font: inherit; font-size: .875rem; }
+.zl-nv-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 
 @media (max-width: 900px) {
   .zl-raster { grid-template-columns: minmax(0, 1fr); }

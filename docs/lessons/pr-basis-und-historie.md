@@ -4,6 +4,22 @@
 was ohne Urteil geht. Gestapelte PRs vor dem Merge ihrer Basis umzielen.
 Inhaltskonflikte in einem Wegwerf-Worktree loesen, nie im geteilten Checkout.
 
+## Regeltext (bis 2026-10-16 in AGENTS.md, Punkt 9)
+
+**9. Ein PR, der gegen `main` sauber ist, kann trotzdem nie geprueft werden.**
+Falsche Basis, geloeschte Basis, ueberkreuzte Historie — alle mechanisch, und
+jeder Merge nach `main` erzeugt neue Konflikte in anderen PRs.
+
+```
+npm run pr:doctor              # alle offenen PRs: Basis, Merge-Basen, Konflikte, Checks
+npm run pr:doctor -- --fix     # umzielen auf main, ueberkreuzte Historie begradigen
+```
+
+Nach jedem Merge neu rechnen. `--fix` erledigt nur, was ohne Urteil geht;
+Inhaltskonflikte in einem Wegwerf-Worktree loesen, nie im geteilten Checkout.
+Gestapelte PRs **vor** dem Merge ihrer Basis umzielen. Die CI meldet nur
+(`pr-doctor.yml`, `npm run pr:doctor:melden`), repariert bewusst nicht.
+
 ## Drei Faelle aus einer Woche (2026-09-09 bis -15)
 
 Alle von Hand geloest, alle mechanisch:
