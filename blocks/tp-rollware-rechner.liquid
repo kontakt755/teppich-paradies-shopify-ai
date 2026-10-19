@@ -295,19 +295,10 @@
           inputmode="decimal"
           autocomplete="off"
           placeholder="z. B. 400"
-          aria-describedby="tp-rwc-len-grenze-{{ tp_rc_id }} tp-rwc-len-echo-{{ tp_rc_id }}"
+          aria-describedby="tp-rwc-len-echo-{{ tp_rc_id }}"
           data-length-input>
         <span class="tp-rwc-unit" data-mass-unit>cm</span>
       </div>
-      <p class="tp-rwc-note" id="tp-rwc-len-grenze-{{ tp_rc_id }}"{% if tp_rc_max_laenge_cm < 100 %} hidden{% endif %}>
-        {%- if tp_rc_max_laenge_cm >= 100 -%}
-          {%- if tp_rc_min_laenge_cm > 0 -%}
-            Länge bis {{ tp_rc_max_laenge_cm }} cm.
-          {%- else -%}
-            Länge von 100 bis {{ tp_rc_max_laenge_cm }} cm.
-          {%- endif -%}
-        {%- endif -%}
-      </p>
       <p class="tp-rwc-note tp-rwc-gegen" id="tp-rwc-len-echo-{{ tp_rc_id }}" data-length-echo hidden></p>
       {%- if tp_rc_bestand_gefuehrt -%}
         <p class="tp-rwc-note" data-rollbestand>

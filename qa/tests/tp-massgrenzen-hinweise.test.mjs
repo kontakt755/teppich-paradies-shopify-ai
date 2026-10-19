@@ -3,7 +3,6 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import vm from 'node:vm';
-import { Liquid } from 'liquidjs';
 
 createRequire(import.meta.url)('../../assets/tp-rollware-art.js');
 const ART = globalThis.TPRollwareArt;
@@ -74,28 +73,14 @@ test('Ohne passende Rolle erscheint keine unmoegliche Massspanne', () => {
 
 test('Grenzhinweise sind den jeweiligen Eingabefeldern als Beschreibung zugeordnet', () => {
   assert.match(source, /aria-describedby="tp-rwc-wb-grenze-\{\{ tp_rc_id \}\} tp-rwc-wb-echo-/);
-  assert.match(source, /aria-describedby="tp-rwc-len-grenze-\{\{ tp_rc_id \}\} tp-rwc-len-echo-/);
+  assert.match(source, /aria-describedby="tp-rwc-len-echo-\{\{ tp_rc_id \}\}"/);
   assert.equal((source.match(/data-wunsch-hint/g) || []).length, 2);
   const hint = source.match(/<p[^>]+data-wunsch-hint[^>]*>/)?.[0];
   assert.ok(hint && !hint.includes('hidden'));
 });
 
-const lengthStart = source.indexOf('      <p class="tp-rwc-note" id="tp-rwc-len-grenze-');
-const lengthEnd = source.indexOf('</p>', lengthStart) + 4;
-const engine = new Liquid();
-const laenge = (max, min = 0) => engine.parseAndRender(source.slice(lengthStart, lengthEnd), {
-  tp_rc_id: 'test', tp_rc_max_laenge_cm: max, tp_rc_min_laenge_cm: min,
-});
-
-test('Laengenhinweis verwendet das bestehende Produkt- oder Bestandslimit', async () => {
-  assert.match(await laenge(5000), /Länge von 100 bis 5000 cm\./);
-  assert.match(await laenge(1800), /Länge von 100 bis 1800 cm\./);
-  assert.match(await laenge(175), /Länge von 100 bis 175 cm\./);
-});
-
-test('Mindestbestellmenge bleibt eigener Hinweis; nicht bestellbarer Rest hat keine falsche Spanne', async () => {
-  assert.match(await laenge(2000, 800), /Länge bis 2000 cm\./);
-  assert.doesNotMatch(await laenge(2000, 800), /von 100/);
-  assert.match(await laenge(25), / hidden>/);
-  assert.doesNotMatch(await laenge(25), /Länge/);
+test('Laengenhinweis stammt ausschliesslich aus der vorhandenen Formularhilfe', () => {
+  assert.doesNotMatch(source, /tp-rwc-len-grenze-/);
+  const layout = readFileSync(new URL('../../layout/theme.liquid', import.meta.url), 'utf8');
+  assert.equal((layout.match(/render 'tp-formular'/g) || []).length, 1);
 });
