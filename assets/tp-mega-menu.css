@@ -75,8 +75,8 @@
     }
   }
 
-  /* Ab 1700 px ist der Kopf breiter als der Seiteninhalt (assets/tp-nav.css):
-     mehr Karten je Reihe statt groesserer, damit das Panel nicht scrollt */
+  /* Ab 1700 px mehr Karten je Reihe statt groesserer, damit das Panel
+     nicht scrollt */
   @media screen and (min-width: 1700px) {
     .mega-menu__grid[data-menu-grid-id]:has(> .mega-menu__list .tp-mm-card--media) {
       grid-template-columns: repeat(var(--tp-mm-cols-wide, var(--tp-mm-cols, 4)), var(--tp-mm-col, minmax(0, 1fr)));

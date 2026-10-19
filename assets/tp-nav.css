@@ -842,8 +842,11 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
    weiter (Menue hoechstens 1237 px): Auf grossen Bildschirmen standen 13 px
    Schrift in einer schmalen Mittelspalte, zwei Punkte unter "Mehr".
 
-   Seitdem darf der Kopf (Menuezeile und Mega-Menue) breiter werden als der
-   Seiteninhalt, hoechstens 2000 px Inhalt. Die Schrift waechst stufenweise
+   Vom 14. bis 19.10. durfte der Kopf deshalb breiter werden als der
+   Seiteninhalt (bis 2000 px). Seit dem zweizeiligen Kopf mit neun Punkten
+   (w-094) passt die Zeile in die Inhaltsbreite; Logo und Menue stehen seit
+   19.10. wieder buendig mit dem Seiteninhalt. Die Tabelle unten stammt aus
+   der Zeit mit 15 Punkten. Die Schrift waechst stufenweise
    mit und ist ab 1280 px halbfett (Inter 500 laedt ohnehin). Gemessen mit
    Playwright auf Live, Zahl der Punkte vor "Mehr" (von 15):
 
@@ -866,14 +869,6 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
    machen, nachdem die Ueberlauf-Liste bereits gerechnet hat.
    ------------------------------------------------------------------ */
 @media screen and (min-width: 1100px) {
-  /* Kopf breiter als der Seiteninhalt: --page-width steuert das Raster aller
-     .section darunter (Kopfzeile und Mega-Menue), Topleiste und Suchzeile
-     sind eigene Sections und bleiben schmal. Wirkt erst ab 1520 px, darunter
-     ist der Kopf ohnehin bildschirmbreit. */
-  #header-component {
-    --page-width: calc(125rem + var(--page-margin) * 2);
-  }
-
   .header-menu .menu-list:not(.menu-list--mobile) .menu-list__link {
     font-size: 0.8125rem;
   }
