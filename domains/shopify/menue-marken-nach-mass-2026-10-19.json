@@ -1,0 +1,32 @@
+{
+  "_zweck": "Teppiche: Kachel \"Vorwerk & JAB nach Maß\" in zwei Punkte teilen (Benutzer 2026-10-19). Der bisherige Punkt behaelt seine ID und zeigt auf Vorwerk, JAB kommt neu dazu. Anwenden nur mit scripts/menue-umbau.mjs --plan.",
+  "_treffer": "gezaehlt 2026-10-19 (aktiv, Tag marken-teppich-nach-mass): Vorwerk 35, JAB Anstoetz 58",
+  "menu": "gid://shopify/Menu/268032508238",
+  "oben": [
+    { "id": "gid://shopify/MenuItem/730052297038", "_titel": "Teppichboden" },
+    {
+      "id": "gid://shopify/MenuItem/871684145486",
+      "_titel": "Teppiche",
+      "kinder": [
+        { "id": "gid://shopify/MenuItem/871684178254" },
+        { "id": "gid://shopify/MenuItem/880157360462" },
+        { "id": "gid://shopify/MenuItem/871684211022" },
+        { "id": "gid://shopify/MenuItem/887143301454" },
+        {
+          "id": "gid://shopify/MenuItem/887163814222",
+          "title": "Vorwerk nach Maß",
+          "ziel": { "type": "COLLECTION", "resourceId": "gid://shopify/Collection/707349152078" }
+        },
+        { "neu": { "title": "JAB Anstoetz nach Maß", "type": "COLLECTION", "resourceId": "gid://shopify/Collection/707349184846" } },
+        { "id": "gid://shopify/MenuItem/884486635854" }
+      ]
+    },
+    { "id": "gid://shopify/MenuItem/871137182030", "_titel": "Teppichfliesen" },
+    { "id": "gid://shopify/MenuItem/859123319118", "_titel": "Vinylboden" },
+    { "id": "gid://shopify/MenuItem/890032816462", "_titel": "Laminat & Parkett" },
+    { "id": "gid://shopify/MenuItem/890032849230", "_titel": "Linoleum & Kautschuk" },
+    { "id": "gid://shopify/MenuItem/868583539022", "_titel": "Zubehör & Leisten" },
+    { "id": "gid://shopify/MenuItem/887189668174", "_titel": "Angebote & Reste" },
+    { "id": "gid://shopify/MenuItem/734281072974", "_titel": "Service & Verlegung" }
+  ]
+}

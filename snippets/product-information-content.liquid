@@ -148,6 +148,14 @@
         assign tp_crumb_1 = collections['teppiche']
         if product.tags contains 'marken-teppich-nach-mass' or product.tags contains 'marken-einfassung'
           assign tp_crumb_2 = collections['marken-teppiche-nach-mass']
+          # Seit 2026-10-19 je Marke eine eigene Kategorie (Menue: Vorwerk / JAB Anstoetz nach Mass)
+          if product.tags contains 'marken-teppich-nach-mass'
+            if product.vendor == 'Vorwerk' and collections['vorwerk-teppiche-nach-mass'].id != blank
+              assign tp_crumb_2 = collections['vorwerk-teppiche-nach-mass']
+            elsif product.vendor == 'JAB Anstoetz' and collections['jab-anstoetz-teppiche-nach-mass'].id != blank
+              assign tp_crumb_2 = collections['jab-anstoetz-teppiche-nach-mass']
+            endif
+          endif
         else
           assign tp_crumb_2 = collections['teppich-nach-mass']
         endif

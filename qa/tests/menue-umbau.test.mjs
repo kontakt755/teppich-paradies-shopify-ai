@@ -84,3 +84,19 @@ test('Gegenprobe erkennt verlorene Punkte', () => {
   assert.equal(r.ok, false);
   assert.equal(r.verloren.length, 1);
 });
+
+test('Plan 2026-10-19: "Vorwerk & JAB nach Maß" wird zu zwei Punkten, alle IDs bleiben', () => {
+  const alt19 = lesen('docs/weiterentwicklung/sicherung/2026-10-19-hauptmenue.json').menu;
+  const plan19 = lesen('domains/shopify/menue-marken-nach-mass-2026-10-19.json');
+  const neu = umbauen(alt19, plan19);
+  assert.deepEqual(new Set(flach(neu.items).map((i) => i.id).filter(Boolean)), idMenge(alt19));
+  const teppiche = neu.items[1].items;
+  const vorwerk = teppiche.find((i) => i.id === 'gid://shopify/MenuItem/887163814222');
+  assert.equal(vorwerk.title, 'Vorwerk nach Maß');
+  assert.equal(vorwerk.resourceId, 'gid://shopify/Collection/707349152078');
+  const jab = teppiche.find((i) => i.title === 'JAB Anstoetz nach Maß');
+  assert.ok(jab && !jab.id);
+  assert.equal(teppiche.indexOf(jab), teppiche.indexOf(vorwerk) + 1);
+  const eingabe = alsEingabe(neu.items, { mitIds: true })[1].items.find((i) => i.id === vorwerk.id);
+  assert.equal(eingabe.url, undefined, 'altes Ziel darf nicht mitgeschickt werden');
+});

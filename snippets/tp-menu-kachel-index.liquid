@@ -9,7 +9,8 @@
   Ausgabe: der 1-basierte Index des passenden Datensatzes, sonst 0. Der Aufrufer liest
   die Ausgabe per capture ein und greift mit (kacheln | split: '~~')[index - 1] zu.
 
-  Verglichen wird der Menuepunkt der Kachel exakt mit dem Titel des Punkts, mit seiner
+  Eine Kachel kann mehrere Menuepunkte bedienen: "Teppiche || Alle Teppiche".
+  Verglichen wird jeder Menuepunkt der Kachel exakt mit dem Titel des Punkts, mit seiner
   vollstaendigen URL und mit dem Pfad ohne Host. Der Pfad ist noetig, weil
   Navigationspunkte vom Typ HTTP absolute Adressen tragen (https://www.../pages/...).
 
@@ -33,13 +34,25 @@
     endif
 
     assign tp_mki_records = kacheln | split: '~~'
+    assign tp_mki_pos = 0
     for tp_mki_rec in tp_mki_records
+      assign tp_mki_pos = tp_mki_pos | plus: 1
       assign tp_mki_m = tp_mki_rec | split: '|~|' | first | strip
       if tp_mki_m == blank
         continue
       endif
-      if tp_mki_m == tp_mki_title or tp_mki_m == tp_mki_url or tp_mki_m == tp_mki_path
-        assign tp_mki_found = forloop.index
+      # Mehrere Menuepunkte je Kachel, getrennt durch "||" (gleiches Bild, ein Block)
+      assign tp_mki_alts = tp_mki_m | split: '||'
+      for tp_mki_alt in tp_mki_alts
+        assign tp_mki_a = tp_mki_alt | strip
+        if tp_mki_a != blank
+          if tp_mki_a == tp_mki_title or tp_mki_a == tp_mki_url or tp_mki_a == tp_mki_path
+            assign tp_mki_found = tp_mki_pos
+            break
+          endif
+        endif
+      endfor
+      if tp_mki_found > 0
         break
       endif
     endfor

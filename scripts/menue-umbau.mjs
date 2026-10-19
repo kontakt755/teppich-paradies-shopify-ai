@@ -17,6 +17,9 @@
  *   node scripts/menue-umbau.mjs --alt vorher.json --pruefen nachher.json   # Gegenprobe nach dem Schreiben
  *   node scripts/menue-umbau.mjs --alt vorher.json --zurueck zurueck.json   # menuUpdate-Variablen fuer den alten Stand
  *
+ * Ein bestehender Punkt kann mit {"id", "ziel": {type, resourceId|url}} auf ein
+ * neues Ziel zeigen; seine ID bleibt erhalten.
+ *
  * Gegenprobe (--pruefen): die ID-Menge von vorher steckt vollstaendig in
  * nachher, und nachher hat genau so viele Punkte mehr, wie der Plan neue
  * vorsieht - nicht "userErrors: []".
@@ -96,6 +99,16 @@ export function umbauen(alt, plan) {
       const item = { ...bereinigt(quelle), items: [] };
       verwendet.push(quelle.id);
       if (eintrag.title) item.title = eintrag.title;
+      // Neues Ziel fuer einen bestehenden Punkt (ID bleibt): {"ziel": {type, resourceId | url}}
+      if (eintrag.ziel) {
+        const { type, url, resourceId } = eintrag.ziel;
+        if (!type || (resourceId == null && url == null)) fehler.push(`Ziel ohne type und resourceId/url: ${JSON.stringify(eintrag.ziel)}`);
+        item.type = type;
+        delete item.url;
+        delete item.resourceId;
+        if (resourceId != null) item.resourceId = resourceId;
+        else item.url = url;
+      }
       if (eintrag.kinder) {
         item.items = eintrag.kinder.flatMap((k) => bauen(k, quelle));
       } else {
