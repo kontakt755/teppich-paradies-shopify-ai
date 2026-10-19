@@ -211,7 +211,8 @@ test('Publisher: Produkt-Reel nur mit unveraendertem Shop-Preis und frischem Pre
   const frisch = { ...inhalt, daten: { ...inhalt.daten, liveFehler: undefined } };
   const weg = await produktReelSperren(frisch, { holen: async () => { throw new Error('ECONNRESET'); }, jetzt: new Date('2026-10-17T16:00:00Z'), pauseMs: 0 });
   assert.match(weg.join(), /^Live-Prüfung nicht möglich/);
-  const alt = await produktReelSperren(frisch, { holen: scheinShop().holen, jetzt: new Date('2026-10-28T16:00:00Z'), pauseMs: 0 });
-  assert.match(alt.join(), /älter als 10 Tage/);
+  const alt = await produktReelSperren(frisch, { holen: scheinShop().holen, jetzt: new Date('2026-11-08T16:00:00Z'), pauseMs: 0 });
+  assert.match(alt.join(), /älter als 21 Tage/);
+  assert.deepEqual(await produktReelSperren(frisch, { holen: scheinShop().holen, jetzt: new Date('2026-11-03T16:00:00Z'), pauseMs: 0 }), [], 'zwei Wochen Vorrat plus eine volle Woche');
   assert.deepEqual(await produktReelSperren(frisch, { holen: scheinShop().holen, jetzt: new Date('2026-10-20T16:00:00Z'), pauseMs: 0 }), []);
 });

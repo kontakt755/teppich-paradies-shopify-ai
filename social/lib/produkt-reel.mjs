@@ -33,7 +33,11 @@ const TAG = 24 * 60 * 60 * 1000;
 export const REEL_REGELN = Object.freeze({
   ruheTage: 45,          // dasselbe Produkt hoechstens alle 45 Tage
   mindestKante: 2000,    // lange Bildkante: der Zoom braucht Reserve, sonst wird hochgerechnet
-  maxAlterTage: 10,      // so alt darf der Preisstand im Video beim Veroeffentlichen hoechstens sein
+  // So alt darf der Preisstand im Video beim Veroeffentlichen hoechstens sein. Der Preis selbst wird
+  // unmittelbar davor live geprueft; die Grenze haelt nur das "Stand"-Datum glaubwuerdig. 21 Tage,
+  // weil die Redaktion zwei Wochen Vorrat baut und der Planer volle Wochen ueberspringt (19.10.:
+  // zwei Reels vom 19.10. landeten auf dem 02./03.11. - mit 10 Tagen waeren beide zurueckgefallen).
+  maxAlterTage: 21,
 });
 
 export class ReelFehler extends Error {}
