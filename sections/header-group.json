@@ -111,14 +111,6 @@
             "subtitle": ""
           }
         },
-        "tp_kachel_teppich_fliesen_hinweis": {
-          "type": "_tp-menu-kachel",
-          "settings": {
-            "menu_match": "Auch als Teppichfliesen →",
-            "image": "shopify://shop_images/teppichfliesen-austauschen-menue.jpg",
-            "subtitle": ""
-          }
-        },
         "tp_kachel_teppich_kunstrasen": {
           "type": "_tp-menu-kachel",
           "settings": {
@@ -154,15 +146,7 @@
         "tp_kachel_fliesen": {
           "type": "_tp-menu-kachel",
           "settings": {
-            "menu_match": "Teppichfliesen",
-            "image": "shopify://shop_images/teppichfliesen-austauschen-menue.jpg",
-            "subtitle": ""
-          }
-        },
-        "tp_kachel_fliesen_alle": {
-          "type": "_tp-menu-kachel",
-          "settings": {
-            "menu_match": "Alle Teppichfliesen",
+            "menu_match": "Teppichfliesen || Alle Teppichfliesen || Auch als Teppichfliesen →",
             "image": "shopify://shop_images/teppichfliesen-austauschen-menue.jpg",
             "subtitle": ""
           }
@@ -171,7 +155,7 @@
           "type": "_tp-menu-kachel",
           "settings": {
             "menu_match": "Fliesen 50 × 50 cm",
-            "image": "shopify://shop_images/teppichfliesen-austauschen-menue.jpg",
+            "image": "shopify://shop_images/teppichfliesen-arbeitszimmer.jpg",
             "subtitle": ""
           }
         },
@@ -179,7 +163,7 @@
           "type": "_tp-menu-kachel",
           "settings": {
             "menu_match": "Teppichplanken",
-            "image": "shopify://shop_images/teppichplanken-format-menue-v1.png",
+            "image": "shopify://shop_images/teppichplanken-menue-16x9.jpg",
             "subtitle": ""
           }
         },
@@ -218,7 +202,7 @@
         "tp_kachel_vinyl_rolle": {
           "type": "_tp-menu-kachel",
           "settings": {
-            "menu_match": "Vinyl von der Rolle",
+            "menu_match": "Vinyl von der Rolle || PVC/Vinyl von der Rolle",
             "image": "shopify://shop_images/tp-vinyl-rollenvinyl-kategorie-2026.jpg",
             "subtitle": ""
           }
@@ -446,6 +430,22 @@
             "image": "shopify://shop_images/1312423-8FXC-prod.jpg",
             "subtitle": ""
           }
+        },
+        "tp_kachel_marke_vorwerk": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Marke Vorwerk || Vorwerk nach Maß",
+            "image": "shopify://shop_images/teppichwerk-vorwerk-logo-menue.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_marke_jab": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Marke JAB Anstoetz || JAB Anstoetz nach Maß",
+            "image": "shopify://shop_images/jab-anstoetz-flooring-logo-menue.jpg",
+            "subtitle": ""
+          }
         }
       },
       "settings": {
@@ -496,14 +496,14 @@
         "tp_kachel_teppich_sisal",
         "tp_kachel_teppich_nadelvlies",
         "tp_kachel_teppich_buero_gewerbe",
-        "tp_kachel_teppich_fliesen_hinweis",
+        "tp_kachel_marke_vorwerk",
+        "tp_kachel_marke_jab",
         "tp_kachel_teppich_kunstrasen",
         "tp_kachel_teppiche",
         "tp_kachel_teppiche_alle",
         "tp_kachel_teppiche_standard",
         "tp_kachel_teppiche_mass",
         "tp_kachel_fliesen",
-        "tp_kachel_fliesen_alle",
         "tp_kachel_fliesen_50x50",
         "tp_kachel_fliesen_planken",
         "tp_kachel_fliesen_auslauf",

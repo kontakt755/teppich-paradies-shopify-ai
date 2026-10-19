@@ -34,7 +34,7 @@
   # Betroffen sind Kollektionen mit ueberwiegend oder teilweise Paketware
   # (Pruefung custom.qm_pro_paket, Audit 13.10.2026). Alle anderen Filter
   # bleiben unveraendert.
-  assign tp_preisfilter_aus = 'vinylboden-1,vinylboden-klickvinyl,vinylboden-klebevinyl,vinylboden-fischgraet,angebote-vinylboden,auslauf-vinylboden,jab-anstoetz-designboden,laminat,parkett,korkboden,korkboden-klick,korkboden-kleben,kautschukboden,teppichfliesen,teppichfliesen-50x50,teppichfliesen-nadelfilz,teppichplanken,auslauf-teppichfliesen,teppichboden-buero-gewerbe,angebote-teppichboden,angebote,teppich-nach-mass,marken-teppiche-nach-mass' | split: ','
+  assign tp_preisfilter_aus = 'vinylboden-1,vinylboden-klickvinyl,vinylboden-klebevinyl,vinylboden-fischgraet,angebote-vinylboden,auslauf-vinylboden,jab-anstoetz-designboden,laminat,parkett,korkboden,korkboden-klick,korkboden-kleben,kautschukboden,teppichfliesen,teppichfliesen-50x50,teppichfliesen-nadelfilz,teppichplanken,auslauf-teppichfliesen,teppichboden-buero-gewerbe,angebote-teppichboden,angebote,teppich-nach-mass,marken-teppiche-nach-mass,vorwerk-teppiche-nach-mass,jab-anstoetz-teppiche-nach-mass' | split: ','
   assign tp_teppich_unterkategorie = false
   assign tp_kollektions_praefix = collection.handle | split: '-' | first
   if request.page_type == 'collection' and tp_kollektions_praefix == 'teppichboden' and collection.handle != 'teppichboden'
