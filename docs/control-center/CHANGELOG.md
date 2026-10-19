@@ -26,6 +26,16 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Nächste Stufe:** Bei „in Shopify storniert, beim Lieferanten bestellt“ einen Hinweis „beim Lieferanten
   abbestellen?“ zeigen.
 
+## 2026-10-19 · „Muster nachfassen“: Blindkopie abschaltbar
+
+- **Geändert:** Inhaber 19.10. nach dem ersten echten Versand: keine Kopien ans Büro. `"kopie": false` in
+  `nachfassen/postfach.json` schaltet die Blindkopie ganz ab (auch in der ersten Woche, auch mit
+  `kopieImmer`); die Karte nennt dann keine Kopie.
+- **Getestet:** `lesePostfach()` mit `kopie: false`; „Jetzt senden“ und Lauf gegen die SMTP-Attrappe nur
+  an den Kunden; Kartenstand ohne `kopie`/`mitlesenBis`. `npm test` grün.
+- **Risiken/Annahmen:** Wer mitlesen will, sieht die Mails im Ordner „Gesendet“ des Postfachs.
+- **Nächste Stufe:** —
+
 ## 2026-10-19 · „Muster nachfassen“: E-Mail direkt aus der Karte senden
 
 - **Geändert:** Wunsch Inhaber: die Nachfrage gleich aus der Karte an den Kunden schicken statt über

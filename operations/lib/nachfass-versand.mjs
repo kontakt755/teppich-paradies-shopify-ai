@@ -85,7 +85,7 @@ function leseJson(file) {
  *     "absender": "kontakt@…",                 // Adresse, von der die Mail kommt (und Antworten ankommen)
  *     "absenderName": "Teppich Paradies",      // Anzeigename
  *     "unterschrift": "Ihr Team von Teppich Paradies",   // ersetzt {Name} in der Vorlage
- *     "kopie": "kontakt@…",                    // Blindkopie in der ersten Woche (Standard: absender)
+ *     "kopie": "kontakt@…",                    // Blindkopie in der ersten Woche (Standard: absender; false = nie)
  *     "kopieImmer": false                      // true: dauerhaft mitlesen
  *   }
  * Die Datei legt der Inhaber an (chmod 600). Nur er kennt das Passwort; es steht nie im Repository.
@@ -115,7 +115,8 @@ export function lesePostfach(file) {
   if (fehlend.length) return { hinweis: `${POSTFACH_DATEI}: es fehlt ${fehlend.join(', ')}.` };
   const sicherheit = roh.sicherheit || (port === 465 ? 'tls' : 'starttls');
   if (!['tls', 'starttls', 'keine'].includes(sicherheit)) return { hinweis: `${POSTFACH_DATEI}: sicherheit muss tls oder starttls sein.` };
-  const kopie = adresse(roh.kopie) || absender;
+  // "kopie": false schaltet die Blindkopie ganz ab (Inhaber 2026-10-19) - auch in der ersten Woche.
+  const kopie = roh.kopie === false ? null : (adresse(roh.kopie) || absender);
   return {
     zugang: {
       host: String(roh.host).trim(), port, sicherheit,
@@ -221,7 +222,7 @@ export function versandStand(privatDir, { jetzt = new Date() } = {}) {
   let versand = null;
   let hinweis = pf.zugang ? null : pf.hinweis;
   try { versand = leseVersand(versandPfad(privatDir)); } catch (e) { hinweis = hinweis || e.message; }
-  const bis = pf.zugang ? mitlesenBis({ ersterVersandAm: versand?.ersterVersandAm, immer: pf.zugang.kopieImmer }) : null;
+  const bis = pf.zugang?.kopie ? mitlesenBis({ ersterVersandAm: versand?.ersterVersandAm, immer: pf.zugang.kopieImmer }) : null;
   return {
     eingerichtet: Boolean(pf.zugang),
     hinweis,
