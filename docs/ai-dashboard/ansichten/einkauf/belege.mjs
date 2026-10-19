@@ -20,7 +20,7 @@ import { fetchEinkauf } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
-import { ART_LABEL, ART_KURZ, STAND_LABEL, SHOPIFY_LABEL, FREEMAIL, belegArbeit as arbeitAus } from '../../lib/lieferbelege.mjs';
+import { ART_LABEL, ART_KURZ, STAND_LABEL, SHOPIFY_LABEL, FREEMAIL, adresseVon, belegArbeit as arbeitAus } from '../../lib/lieferbelege.mjs';
 
 export const belege = { daten: null, laedt: false, geladenAm: 0 };
 
@@ -44,7 +44,7 @@ export function ensureBelege({ neu = false } = {}) {
 // -- Bausteine --------------------------------------------------------------------
 
 const lieferantName = id => (id ? belege.daten?.lieferanten?.[id] || `Lieferant ${id}` : null);
-const absenderText = b => lieferantName(b.lieferant) || b.domain || b.von || 'unbekannter Absender';
+const absenderText = b => lieferantName(b.lieferant) || (FREEMAIL.includes(b.domain) ? b.von || b.domain : b.domain || b.von) || 'unbekannter Absender';
 const auftrag = id => belege.daten?.auftraege?.[id] || null;
 const auftragText = (id) => {
   const a = auftrag(id);
@@ -138,13 +138,15 @@ function ohneHtml(ohne) {
   if (!ohne.length) return '';
   const auf = Boolean(state.route.params.get('blo'));
   const lesend = istNurLesend();
-  const gruppen = [...ohne.reduce((m, b) => m.set(b.domain || b.von, [...(m.get(b.domain || b.von) || []), b]), new Map())]
+  const absenderGruppe = b => FREEMAIL.includes(b.domain) ? adresseVon(b.von) || b.von || b.id : b.domain || b.von;
+  const gruppen = [...ohne.reduce((m, b) => m.set(absenderGruppe(b), [...(m.get(absenderGruppe(b)) || []), b]), new Map())]
     .sort((a, b) => b[1].length - a[1].length);
   const kopf = `<h2 class="section-title">Ohne Shop-Bestellung <span class="muted">${ohne.length}</span></h2>
     <p class="small muted bl-ohne-text">Meist Laden- oder Telefonbestellungen (letzte 30 Tage). Gehört doch einer zu einer Shop-Bestellung: „Zuordnen…“. Liefert ein Absender nie für den Shop: „Kein Shop-Lieferant“ – dann erscheint er hier nicht mehr.
     <button type="button" class="heute-hg-knopf" data-param="blo" data-value="${auf ? '' : '1'}" aria-expanded="${auf}">${auf ? 'Zuklappen' : `${gruppen.length} ${gruppen.length === 1 ? 'Absender' : 'Absender'} ansehen`}</button></p>`;
   if (!auf) return `<section class="bl-abschnitt">${kopf}</section>`;
-  const gruppeHtml = ([domain, liste]) => {
+  const gruppeHtml = ([, liste]) => {
+    const domain = liste[0].domain;
     const kannAbsender = !lesend && domain && !FREEMAIL.includes(domain);
     const zeilen = liste.map(b => zeile({
       titel: `${esc(ART_LABEL[b.art] || 'Beleg')} · ${esc(fmtDate(b.datum))}`,

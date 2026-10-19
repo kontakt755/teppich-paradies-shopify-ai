@@ -2025,6 +2025,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       try { ablage = leseBelege(lieferbelegePfad(dir)); }
       catch (e) { if (e instanceof LieferbelegFehler) return { verfuegbar: false, fehler: true, hinweis: e.message }; throw e; }
       const k = this._lieferantenKontext();
+      // Ohne Bestellungen ist weder "kein Shop-Auftrag" noch "nichts zu pruefen" belegt.
+      if (!k.modell) return { verfuegbar: false, fehler: true, hinweis: k.hinweis || 'Bestelldaten fehlen – bitte die Daten aktualisieren.' };
       const zeilen = k.modell ? bestellliste(k.modell, { statusAlle: k.statusAlle }) : [];
       const kandidaten = kandidatenAus(zeilen, k.statusAlle);
       // Lieferant: aus der Absenderdomain; ohne Treffer der, den ein Mensch beim Zuordnen gewaehlt hat.

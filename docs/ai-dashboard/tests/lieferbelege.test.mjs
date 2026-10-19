@@ -298,6 +298,24 @@ test('einkaufBelegSetzen: Vorschlag annehmen, unbekannte Bestellung 400, beschae
   assert.match(kaputt.hinweis, /beschädigt/);
 });
 
+test('einkaufBelege: fehlender oder beschaedigter Bestellexport ist keine leere Arbeitsliste', () => {
+  const dir = privat();
+  const datei = path.join(dir, 'bestelluebersicht', 'orders.json');
+  const ablage = lieferbelegePfad(dir);
+  const vorher = fs.readFileSync(ablage, 'utf8');
+  fs.rmSync(datei);
+  const fehlt = apiFuer(dir).einkaufBelege();
+  assert.equal(fehlt.verfuegbar, false);
+  assert.equal(fehlt.fehler, true);
+  assert.match(fehlt.hinweis, /Bestelldaten|orders\.json/);
+  fs.writeFileSync(datei, '{');
+  const kaputt = apiFuer(dir).einkaufBelege();
+  assert.equal(kaputt.verfuegbar, false);
+  assert.equal(kaputt.fehler, true);
+  assert.ok(kaputt.hinweis);
+  assert.equal(fs.readFileSync(ablage, 'utf8'), vorher, 'Belegablage bleibt unveraendert');
+});
+
 async function mitServer(handler, fn) {
   const server = http.createServer(handler);
   await new Promise(r => server.listen(0, '127.0.0.1', r));
@@ -413,6 +431,23 @@ test('ordneAlleZu: widerspruechliche Anker oder eigene andere Bestellnummer - ni
     mit('ls', 'Lieferschein Vorgang KD050_212', { art: 'lieferschein', datum: '2027-06-01T08:00:00Z' }),
   ], KANDIDATEN);
   assert.equal(spaet.find(b => b.id === 'ls').zuordnung.stufe, 'keine', 'Monate spaeter: anderer Vorgang mit gleicher Nummer');
+});
+
+test('ordneAlleZu: Freemail-Vorgang nur bei derselben vollstaendigen Adresse, nie nur gleicher Domain', async () => {
+  const { ordneAlleZu, adresseVon } = await import('../lib/lieferbelege.mjs');
+  assert.equal(adresseVon(' Lieferant A <  BESTELLUNG.A@gmail.com  > '), 'bestellung.a@gmail.com');
+  assert.equal(adresseVon('Lieferant A'), null);
+  const ab = { id: 'ab', art: 'ab', datum: '2026-10-14T08:00:00Z', lieferant: null, domain: 'gmail.com',
+    von: 'Lieferant A <  BESTELLUNG.A@gmail.com  >', refs: referenzen({ betreff: 'AB 123456' }),
+    entscheidung: { art: 'zugeordnet', orderIds: ['gid://shopify/Order/9001'], lieferant: 'A' } };
+  const ls = von => ({ id: 'ls', art: 'lieferschein', datum: '2026-10-15T08:00:00Z', lieferant: null, domain: 'gmail.com',
+    von, refs: referenzen({ betreff: 'Lieferschein 123456' }) });
+  const zuordnung = (anker, folge) => ordneAlleZu([anker, folge], KANDIDATEN)[1].zuordnung;
+  assert.equal(zuordnung(ab, ls('bestellung.b@gmail.com')).stufe, 'keine', 'anderes Postfach ist kein sicherer Vorgang');
+  assert.equal(zuordnung(ab, ls(' bestellung.a@GMAIL.COM ')).stufe, 'sicher', 'dieselbe Adresse ohne Anzeigename, andere Schreibweise');
+  assert.equal(zuordnung(ab, ls('Lieferant A')).stufe, 'keine', 'fehlende Adresse bestaetigt nichts');
+  assert.equal(zuordnung({ ...ab, von: null }, ls('bestellung.a@gmail.com')).stufe, 'keine', 'Anker ohne Adresse reicht nicht');
+  assert.equal(zuordnung({ ...ab, domain: null }, { ...ls(null), domain: null }).stufe, 'keine', 'fehlende Domains sind kein gemeinsamer Absender');
 });
 
 test('abgleich: zwei Stornos - einer erledigt, der andere bleibt; Quittung je Auftrag; Shopify je Lieferant; unbekannter Absender', () => {

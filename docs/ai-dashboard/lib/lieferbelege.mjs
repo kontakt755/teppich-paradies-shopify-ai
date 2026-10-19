@@ -59,6 +59,11 @@ export function domainVon(adresse) {
   return m ? m[1].toLowerCase().replace(/\.$/, '') : null;
 }
 
+/** Vollstaendige Mailadresse ohne Anzeigename, fuer Vergleich und Gruppierung. */
+export function adresseVon(von) {
+  return String(von || '').trim().match(/[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9.-]+\.[a-z]{2,}/i)?.[0].toLowerCase() || null;
+}
+
 /**
  * Nur der neue Teil einer Mail: zitierte Verlaeufe ("Am ... schrieb", "Von:", "-----Original",
  * Zeilen mit ">") nennen alte Auftraege und duerfen nichts zuordnen.
@@ -308,6 +313,15 @@ export function zuordnungMitEntscheidung(beleg, kandidaten, { absender = {} } = 
 }
 
 const STUFEN = ['offen', 'bestellt', 'geliefert', 'raus', 'erledigt'];
+
+/** Bei allgemeinen Mailanbietern ist nur dieselbe Mailadresse derselbe Absender. */
+function gleicherAbsender(a, b) {
+  if (!a.domain || a.domain !== b.domain) return false;
+  if (!FREEMAIL.includes(a.domain)) return true;
+  const von = adresseVon(a.von);
+  return Boolean(von) && von === adresseVon(b.von);
+}
+
 /**
  * Alle Belege zuordnen - und Belege desselben Vorgangs verknuepfen: Ein Lieferschein ohne
  * unsere Nummer gehoert zur Bestellung seiner AB, wenn Absender und Vorgangsnummer gleich sind
@@ -334,7 +348,7 @@ export function ordneAlleZu(belege = [], kandidaten = [], { absender = {} } = {}
     const passt = s => s.id !== b.id && nah(s, b) && !s.zuordnung.orderIds.some(id => abgelehnt.includes(id))
       && (!eigene.length || gleich(s));
     const schluessel = nummernSchluessel(b.refs?.belegnummer);
-    const vorgaenge = schluessel ? fest.filter(s => passt(s) && s.domain === b.domain && nummernSchluessel(s.refs?.belegnummer) === schluessel) : [];
+    const vorgaenge = schluessel ? fest.filter(s => passt(s) && gleicherAbsender(s, b) && nummernSchluessel(s.refs?.belegnummer) === schluessel) : [];
     const vorgang = vorgaenge.length ? einig(vorgaenge) : null;
     if (vorgang) return { ...b, zuordnung: { stufe: 'sicher', orderIds: vorgang.zuordnung.orderIds, grund: `gleicher Vorgang wie ${belegMarke(vorgang)}` } };
     if (b.zuordnung.stufe !== 'keine' || vorgaenge.length) return b;

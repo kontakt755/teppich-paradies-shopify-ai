@@ -2,6 +2,23 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-19 · Belege: Absender und fehlende Bestelldaten absichern (#1463)
+
+- **Geändert:** Bei allgemeinen Mailanbietern verknüpft dieselbe Vorgangsnummer nur noch Belege
+  derselben vollständigen E-Mail-Adresse. Anzeigename, Leerraum und Großschreibung ändern den
+  Vergleich nicht; eine gemeinsame Domain oder eine fehlende Adresse reichen nicht.
+  Die Ansicht nennt solche Absender mit ihrer Adresse und gruppiert verschiedene Postfächer getrennt.
+  Fehlt der Bestellexport oder ist er beschädigt, meldet die Belegansicht eine Datenstörung statt
+  alle Belege als unzugeordnet und die Arbeitsliste als leer darzustellen.
+- **Getestet:** Beide Fehler vor der Korrektur synthetisch reproduziert; Regressionen für fremde,
+  gleiche und fehlende Adressen sowie fehlenden und beschädigten Bestellexport. Die Belegablage
+  bleibt beim Lesen unverändert. 3.146 Tests grün, davon 462 Dashboardtests; Rollenprüfung gegen
+  die Datenkopie. Synthetische Klickstrecke bei 390/1440 px: AB bestätigen, richtiger LS erbt die
+  Bestellung, fremdes Postfach bleibt ohne Zuordnung; Absender getrennt, Exportfehler sichtbar,
+  „Nochmal versuchen“ nach Wiederherstellung erfolgreich, Dialog per Esc geschlossen.
+- **Risiken:** Keine Änderung an gespeicherten Belegen, Bestellungen, Mailversand oder Shopify.
+- **Nächste Stufe:** Nach dem Merge den Dashboard-Dienst nachziehen und den Versionsstand prüfen.
+
 ## 2026-10-19 · Übersicht: „Heute“ als eine Liste, Lieferantenbelege aus dem Postfach (#1427)
 
 - **Geändert:** Inhaber 19.10. „immer noch zu unübersichtlich … Schnittstelle zu Gmail“; Audit und
