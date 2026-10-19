@@ -31,6 +31,13 @@ import { musterOhneLieferant, HERKUNFT } from './musterherkunft.mjs';
 
 export const BESTELLWEGE = Object.freeze(['portal', 'mail', 'telefon']);
 export const MUSTER_LIEFERUNG = Object.freeze(['kunde', 'laden']);
+// Ware kann zusaetzlich an unseren Kettelservice gehen (Inhaber 2026-10-19): Zuschnitt
+// ungekettelt dorthin, wir ketteln dort guenstiger und liefern selbst bzw. verschicken von dort.
+export const WARE_LIEFERUNG = Object.freeze(['kunde', 'laden', 'kettler']);
+/** Bis zu dieser kuerzeren Seite geht ein gekettelter Zuschnitt gerollt als Paket (GLS: 2 m). */
+export const KETTLER_PAKET_BIS_CM = 200;
+/** PLZ-Bereiche, in die wir selbst liefern koennen: Berlin (10-14) und unser Umland (16). */
+const KETTLER_NAH_PLZ = /^1[0-46]/;
 
 /**
  * Wartezeit-Schwellen: ab 7 Tagen beim Lieferanten nachhaken, ab 14 Tagen ist
@@ -247,7 +254,15 @@ function pruefeAbsender(roh, fehler) {
     telefon: p.telefon(roh.telefon, 'telefon'),
     mail: p.mail(roh.mail, 'mail'),
     lieferanschrift: anschrift(roh.lieferanschrift, p, 'lieferanschrift'),
+    kettelservice: kettelservice(roh.kettelservice, p),
   };
+}
+
+/** Unser Kettelservice: Anschrift plus Telefon fuer die Spedition. Name/Adresse nur privat. */
+function kettelservice(roh, p) {
+  const a = anschrift(roh, p, 'kettelservice');
+  if (!a) return null;
+  return { ...a, telefon: p.telefon(istObjekt(roh) ? roh.telefon : null, 'kettelservice.telefon') };
 }
 
 /**
@@ -422,8 +437,11 @@ export function lieferantenUebersicht(modell, { statusAlle = {}, stammdaten = nu
   const daten = sammle(modell, statusAlle, jetzt);
   const ids = new Set([...Object.keys(stammdaten?.lieferanten ?? {}), ...daten.keys()]);
   const lieferanten = sortiert(ids).map(id => eintragFuer(id, daten.get(id), stammdaten));
+  const k = stammdaten?.absender?.kettelservice;
   return {
     schwellen: { nachhakenTage: WARTE_NACHHAKEN_TAGE, problemTage: WARTE_PROBLEM_TAGE },
+    // Nur Name und Ort: reicht fuer "geht an unseren Kettler" im Einkauf.
+    kettelservice: adresseOk(k) ? { name: k.name ?? null, ort: k.ort } : null,
     lieferanten,
   };
 }
@@ -552,16 +570,51 @@ function fertigeMail({ st, art, an, betreff, zeilen, aufgenommen, fehlt, extra =
 
 const ZIEL_JE_AUFTRAG = new Set([ROUTE.SUPPLIER_DIRECT, ROUTE.SUPPLIER_TO_SITE]);
 
+/** Kettel-/Einfassungszeile aus der Kundenbestellung ("Einfassung: Gekettelt, umlaufend ..."). */
+const istEinfassung = z => /^Einfassung:/.test(z);
+
+/** Kuerzere Seite des Fertigmasses in cm ("200 × 300 cm", "Ø 160 cm"); null, wenn keins da ist. */
+export function kuerzereSeiteCm(ausfuehrung = []) {
+  const z = ausfuehrung.find(t => t.startsWith('Fertigmaß:'));
+  if (!z) return null;
+  const zahlen = (z.match(/\d+(?:[.,]\d+)?/g) || []).map(n => Number(n.replace(',', '.'))).filter(n => n > 0);
+  return zahlen.length ? Math.min(...zahlen.slice(0, 2)) : null;
+}
+
+/**
+ * Lohnt der Weg ueber unseren Kettler? Nur Positionen, die gekettelt bzw. eingefasst werden
+ * sollen - dann, wenn der Kunde in der Naehe wohnt (wir liefern selbst bis in die Wohnung)
+ * oder der Zuschnitt gerollt als Paket vom Kettler aus verschickt werden kann.
+ * Ein Vorschlag, keine Entscheidung: gewaehlt wird im Dialog.
+ */
+export function kettlerGrund(p, adresse) {
+  if (!(p.ausfuehrung ?? []).some(istEinfassung)) return null;
+  if (adresse?.plz && KETTLER_NAH_PLZ.test(String(adresse.plz).trim())) return `Kunde in der Nähe (${String(adresse.plz).trim()} ${adresse.ort ?? ''}`.trim() + ') – wir liefern selbst';
+  const seite = kuerzereSeiteCm(p.ausfuehrung);
+  if (seite !== null && seite <= KETTLER_PAKET_BIS_CM) return `bis ${KETTLER_PAKET_BIS_CM / 100} m – gerollt als Paket vom Kettler`;
+  return null;
+}
+
+/** Ueber den Kettler kettelt nicht der Lieferant: Zuschnitt ohne Einfassung bestellen. */
+function ohneEinfassung(p) {
+  const ausfuehrung = p.ausfuehrung ?? [];
+  if (!ausfuehrung.some(istEinfassung)) return p;
+  return { ...p, ausfuehrung: [...ausfuehrung.filter(z => !istEinfassung(z)), 'Ohne Einfassung – bitte nur zuschneiden, nicht ketteln'] };
+}
+
 function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel }) {
   const alle = (gruppe.positionen ?? []).map(p => schlankePosition(p, statusAlle, jetzt));
   const offen = alle.filter(p => p.gruppe === 'zuBestellen');
   const direkt = ZIEL_JE_AUFTRAG.has(gruppe.route);
+  const kettler = absender?.kettelservice ?? null;
   // Regel des Inhabers (2026-10-14): Ware geht direkt an die Kunden, je Kommission mit
   // Anschrift. "laden" ist die seltene Ausnahme - per Umschalter im Dialog oder als
-  // ware.lieferung in den Stammdaten. Baustellenlieferungen bleiben, wie sie sind.
-  const lieferung = MUSTER_LIEFERUNG.includes(ziel) ? ziel : (st.ware.lieferung ?? 'kunde');
+  // ware.lieferung in den Stammdaten. "kettler" nur per Umschalter (2026-10-19).
+  // Baustellenlieferungen bleiben, wie sie sind.
+  const lieferung = WARE_LIEFERUNG.includes(ziel) ? ziel : (st.ware.lieferung ?? 'kunde');
   const anKunden = !direkt && lieferung === 'kunde';
-  const zielAdresse = direkt ? adressen.get(gruppe.positionen?.[0]?.orderId) : absender?.lieferanschrift;
+  const anKettler = !direkt && lieferung === 'kettler';
+  const zielAdresse = direkt ? adressen.get(gruppe.positionen?.[0]?.orderId) : anKettler ? kettler : absender?.lieferanschrift;
   const aufgenommen = [];
   const fehlt = [];
   for (const p of offen) {
@@ -571,12 +624,16 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel }) {
     if (p.menge === null || !p.einheit) gruende.push(`Bestellmenge ungeklärt${p.mengeHinweis ? ` (${p.mengeHinweis})` : ''}`);
     if (direkt && !adresseOk(zielAdresse)) gruende.push('Lieferanschrift des Kunden fehlt');
     if (anKunden && !adresseOk(adressen.get(p.orderId))) gruende.push('Lieferanschrift des Kunden fehlt');
+    if (anKettler && !adresseOk(kettler)) gruende.push('Anschrift unseres Kettelservice fehlt (Stammdaten absender.kettelservice)');
     if (gruende.length) fehlt.push(fehltEintrag(p, gruende)); else aufgenommen.push(p);
   }
   const { anrede, gruss } = rahmen({ st, absender, anredeStandard: 'Sehr geehrte Damen und Herren,' });
   const du = st.mail.duzen;
   const bestaetigen = du ? 'Bitte bestätige uns den Auftrag mit dem voraussichtlichen Liefertermin.' : 'Bitte bestätigen Sie uns den Auftrag mit dem voraussichtlichen Liefertermin.';
-  const zeilen = [anrede, '', anKunden ? 'wir bestellen folgende Ware – bitte direkt an unsere Kunden liefern:' : 'wir bestellen folgende Ware:', ''];
+  const einleitung = anKunden ? 'wir bestellen folgende Ware – bitte direkt an unsere Kunden liefern:'
+    : anKettler ? 'wir bestellen folgende Ware – bitte an unseren Kettelservice liefern (Anschrift unten):'
+      : 'wir bestellen folgende Ware:';
+  const zeilen = [anrede, '', einleitung, ''];
   if (st.kundennummer) zeilen.push(`Unsere Kundennummer: ${st.kundennummer}`, '');
   const nachBezeichnung = st.ware.nachBezeichnung;
   if (anKunden) {
@@ -588,6 +645,10 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel }) {
       zeilen.push(`Kommission ${liste[0].orderName} – Lieferanschrift:`, ...adressZeilen(adressen.get(orderId), { telefon: true }).map(z => `   ${z}`), '');
       for (const p of liste) { nr += 1; zeilen.push(...positionsZeilen(p, nr, { mitKunde: false, nachBezeichnung }), ''); }
     }
+  } else if (anKettler) {
+    // Ketteln macht der Kettelservice - der Lieferant schneidet nur zu. Kundennamen gehen
+    // nicht mit: der Kettler ordnet ueber die Kommission zu.
+    aufgenommen.forEach((p, i) => zeilen.push(...positionsZeilen(ohneEinfassung(p), i + 1, { mitKunde: false, nachBezeichnung }), ''));
   } else {
     aufgenommen.forEach((p, i) => zeilen.push(...positionsZeilen(p, i + 1, { nachBezeichnung }), ''));
   }
@@ -596,21 +657,33 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel }) {
     if (adresseOk(zielAdresse)) zeilen.push(...adressZeilen(zielAdresse, { telefon: true }));
   } else if (anKunden) {
     zeilen.push('Bitte vor der Anlieferung beim Kunden telefonisch avisieren.');
+  } else if (anKettler) {
+    zeilen.push(du ? 'Bitte liefere an unseren Kettelservice:' : 'Bitte liefern Sie an unseren Kettelservice:');
+    if (adresseOk(kettler)) zeilen.push(...adressZeilen(kettler, { telefon: true }));
+    zeilen.push('', 'Bitte die Kommission gut lesbar auf jedem Stück vermerken.');
   } else if (adresseOk(zielAdresse)) {
     zeilen.push('Lieferanschrift:', ...adressZeilen(zielAdresse));
   } else {
     zeilen.push('Lieferung bitte an unsere bekannte Geschäftsadresse.');
   }
   zeilen.push('', bestaetigen, '', gruss);
-  const betreff = ['Bestellung', st.kundennummer ? `Kd.-Nr. ${st.kundennummer}` : null, kurzListe(aufgenommen.map(p => p.orderName))].filter(Boolean).join(' – ');
+  const betreff = ['Bestellung', st.kundennummer ? `Kd.-Nr. ${st.kundennummer}` : null, anKettler ? 'Lieferung an Kettelservice' : null, kurzListe(aufgenommen.map(p => p.orderName))].filter(Boolean).join(' – ');
+  // Vorschlag fuer den Dialog: welche offenen Positionen sich fuer den Kettler anbieten.
+  const kettlerVorschlag = !direkt && adresseOk(kettler)
+    ? offen.map(p => ({ p, grund: kettlerGrund(p, adressen.get(p.orderId)) })).filter(x => x.grund)
+      .map(({ p, grund }) => ({ orderId: p.orderId, orderName: p.orderName, lineItemId: p.lineItemId, titel: p.titel, grund }))
+    : [];
   return fertigeMail({
     st, art: 'ware', an: st.ware.mail, betreff, zeilen, aufgenommen, fehlt,
     extra: {
       gruppe: gruppe.schluessel,
       route: geklaert(gruppe.route),
-      lieferziel: direkt ? (gruppe.route === ROUTE.SUPPLIER_TO_SITE ? 'baustelle' : 'kunde') : anKunden ? 'kunde' : 'laden',
+      lieferziel: direkt ? (gruppe.route === ROUTE.SUPPLIER_TO_SITE ? 'baustelle' : 'kunde') : anKunden ? 'kunde' : anKettler ? 'kettler' : 'laden',
       // Nur Ware, die sonst in den Laden geht, kann im Dialog umgeschaltet werden.
       zielWaehlbar: !direkt,
+      // Kettler nur anbieten, wenn seine Anschrift in den privaten Stammdaten steht.
+      kettlerMoeglich: !direkt && adresseOk(kettler),
+      kettlerVorschlag,
       bereitsBestellt: alle.length - offen.length,
     },
   });
@@ -691,15 +764,18 @@ export class LieferantenFehler extends Error {}
  * @param {string} p.lieferant     Kennung (z. B. "A")
  * @param {'ware'|'muster'} [p.art]
  * @param {string} [p.gruppe]      nur Ware: Gruppenschluessel "<lieferant>|<route>|<lieferziel>"; ohne Angabe alle Gruppen
- * @param {'kunde'|'laden'} [p.ziel] Muster: ueberstimmt muster.lieferung aus den Stammdaten;
- *                                 Ware: ueberstimmt ware.lieferung (Standard 'kunde' - direkt an die Kunden)
+ * @param {'kunde'|'laden'|'kettler'} [p.ziel] Muster: ueberstimmt muster.lieferung aus den Stammdaten;
+ *                                 Ware: ueberstimmt ware.lieferung (Standard 'kunde' - direkt an die Kunden);
+ *                                 'kettler' nur fuer Ware (Anschrift aus absender.kettelservice)
  * @returns {{lieferant:string, name:string, art:string, mails:object[]}}
  */
 export function bestellmail({ modell, lieferant, art = 'ware', gruppe = null, ziel = null, statusAlle = {}, stammdaten = null, jetzt = new Date() } = {}) {
   const id = kennung(lieferant);
   if (!id) throw new LieferantenFehler('lieferant ist Pflicht');
   if (!['ware', 'muster'].includes(art)) throw new LieferantenFehler('art muss "ware" oder "muster" sein');
-  if (ziel && !MUSTER_LIEFERUNG.includes(ziel)) throw new LieferantenFehler('ziel muss "kunde" oder "laden" sein');
+  if (ziel && !(art === 'ware' ? WARE_LIEFERUNG : MUSTER_LIEFERUNG).includes(ziel)) {
+    throw new LieferantenFehler(art === 'ware' ? 'ziel muss "kunde", "laden" oder "kettler" sein' : 'ziel muss "kunde" oder "laden" sein');
+  }
   const st = stammdatenFuer(stammdaten, id);
   const kontext = { st, absender: stammdaten?.absender ?? null, statusAlle, adressen: kundenAdressen(modell), jetzt, ziel };
   let mails;

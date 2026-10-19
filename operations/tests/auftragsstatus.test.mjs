@@ -120,3 +120,14 @@ test('Versand: Sendungsnummer bei "raus", Shopify-Vermerk bleibt bei Wiederholun
   assert.equal(offen.verlauf.at(-1).vorher.shopifyVersand.status, 'gebucht');
   assert.equal(vermerkeShopifyVersand(file, { orderId: 'gid://shopify/Order/2', lineItemId: 'gid://shopify/LineItem/2', vermerk: { status: 'gebucht' } }), null, 'unbekannte Position: nichts angelegt');
 });
+
+test('Kettler-Vermerk: "bestellt" mit ueber=kettler bleibt bei den naechsten Schritten, null nimmt ihn zurueck', () => {
+  const file = auftragsstatusPfad(tmpDir());
+  const basis = { orderId: 'o1', lineItemId: 'l1', actor: 'test' };
+  assert.equal(setzeStatus(file, { ...basis, status: 'bestellt', ueber: 'kettler' }).ueber, 'kettler');
+  assert.equal(setzeStatus(file, { ...basis, status: 'geliefert' }).ueber, 'kettler', 'naechster Schritt behaelt den Weg');
+  assert.equal(setzeStatus(file, { ...basis, status: 'bestellt' }).ueber, 'kettler', 'ohne Angabe bleibt der Vermerk');
+  assert.equal(setzeStatus(file, { ...basis, status: 'bestellt', ueber: null }).ueber, null);
+  assert.equal(setzeStatus(file, { ...basis, status: 'bestellt', ueber: 'irgendwas' }).ueber, null, 'nur "kettler" ist ein Weg');
+  assert.equal(leseAlle(file)[positionKey('o1', 'l1')].ueber, null);
+});

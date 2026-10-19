@@ -65,6 +65,16 @@ export const einkauf = {
 // Muss zu operations/lib/auftragsstatus.mjs passen (dort die fuehrende Quelle).
 const AF_STATUS_ORDER = ['bestellt', 'geliefert', 'raus', 'erledigt'];
 export const AF_STATUS_LABEL = { bestellt: 'Bestellt', geliefert: 'Geliefert an uns', raus: 'An Kunden raus', erledigt: 'Erledigt' };
+// Ware ueber unseren Kettelservice (eintrag.ueber = 'kettler'): dieselben Schritte, nur sagt der
+// Text, wo die Ware gerade ist - "Geliefert an uns" heisst hier "beim Kettler abgeholt".
+const AF_KETTLER_LABEL = { bestellt: 'Bestellt · unterwegs zum Kettler', geliefert: 'Beim Kettler abgeholt' };
+/** Standtext einer Position, mit Kettler-Weg, wenn er vermerkt ist. */
+export function afStatusText(eintrag) {
+  const s = eintrag?.status;
+  if (!s) return 'Noch nicht bestellt';
+  return (eintrag.ueber === 'kettler' && AF_KETTLER_LABEL[s]) || AF_STATUS_LABEL[s] || s;
+}
+export const istUeberKettler = eintrag => eintrag?.ueber === 'kettler';
 // Naechster Schritt nach dem AKTUELLEN Status (nicht nach der Filtergruppe!). "raus" und
 // "erledigt" fallen beide in die Filtergruppe "erledigt" (afFilterGruppe) - ein Mapping ueber
 // die Filtergruppe liefert dafuer keinen eindeutigen Eintrag; frueher verschwand so der
@@ -148,27 +158,33 @@ export function ensureEinkaufLieferanten() {
 
 /** Setzt den Auftragsfluss-Stand einer Position. `still` unterdrueckt Toast und Neuzeichnen
  * (fuer Sammelaktionen, die am Ende selbst einmal melden und zeichnen). */
-export async function setzeAuftragsstatus(pos, status, { lieferantBestellnummer = null, notiz = null, still = false } = {}) {
+export async function setzeAuftragsstatus(pos, status, { lieferantBestellnummer = null, notiz = null, ueber, still = false } = {}) {
   if (istNurLesend()) { toast('Rolle "lesen" darf keine Aenderungen vornehmen.', 'crit'); return false; }
   try {
     const r = await fetch('/api/einkauf/auftragsstatus', {
       method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ orderId: pos.orderId, lineItemId: pos.lineItemId, status, lieferantBestellnummer, notiz }),
+      // ueber nur mitschicken, wenn gewaehlt wurde - sonst bleibt ein Kettler-Vermerk, wie er ist.
+      body: JSON.stringify({ orderId: pos.orderId, lineItemId: pos.lineItemId, status, lieferantBestellnummer, notiz, ...(ueber === undefined ? {} : { ueber }) }),
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) { toast(`Fehler: ${j.error || r.status}`, 'crit'); return false; }
     if (!einkauf.auftragsstatus || !einkauf.auftragsstatus.positionen) einkauf.auftragsstatus = { verfuegbar: true, positionen: {} };
     einkauf.auftragsstatus.positionen[afKey(pos.orderId, pos.lineItemId)] = j.eintrag;
-    if (!still) { toast(`Status: ${AF_STATUS_LABEL[status]}`); render(); }
+    if (!still) { toast(`Status: ${afStatusText(j.eintrag) || AF_STATUS_LABEL[status]}`); render(); }
     return true;
   } catch (e) { toast(`Fehler: ${e.message}`, 'crit'); return false; }
 }
 
 function openAuftragsstatusDialog(pos, status) {
+  // Kettler nur anbieten, wenn seine Anschrift in den Stammdaten steht (kommt mit /api/einkauf/lieferanten).
+  const kettler = einkauf.lieferanten?.kettelservice;
+  const bisher = afEintragFuer(pos);
+  const kettlerFeld = kettler ? `<label class="field" style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="kettler"${istUeberKettler(bisher) ? ' checked' : ''}> Ware geht an unseren Kettler${kettler.ort ? ` (${esc(kettler.ort)})` : ''}</label>` : '';
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="afTitle" data-dialog>
     <h2 id="afTitle">Bestellt · ${esc(pos.orderName)}</h2>
     <p class="small muted">${esc(pos.titel)} · ${esc(pos.farbe)}<br>Beim Lieferanten bestellt – Bestellnummer des Lieferanten notieren (optional, hilft bei Rückfragen).</p>
     <div class="field"><label for="afNr">Lieferanten-Bestellnummer</label><input id="afNr" name="nr" placeholder="z. B. 2026-4711" maxlength="200"></div>
+    ${kettlerFeld}
     <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Übernehmen</button></div>
   </form></div>`;
   const form = $('#dialogRoot form');
@@ -176,7 +192,9 @@ function openAuftragsstatusDialog(pos, status) {
   form.addEventListener('submit', async ev => {
     ev.preventDefault();
     form.querySelector('[type=submit]').disabled = true;
-    const ok = await setzeAuftragsstatus(pos, status, { lieferantBestellnummer: (new FormData(form).get('nr') || '').trim() || null });
+    const fd = new FormData(form);
+    const ueber = kettler ? (fd.get('kettler') ? 'kettler' : null) : undefined;
+    const ok = await setzeAuftragsstatus(pos, status, { lieferantBestellnummer: (fd.get('nr') || '').trim() || null, ueber });
     if (ok) $('#dialogRoot').innerHTML = '';
     else form.querySelector('[type=submit]').disabled = false;
   });
@@ -396,9 +414,9 @@ function openSammelBestelltDialog(id) {
  * "Alle als bestellt markieren…" und die Rueckfrage nach der Bestellmail. Gibt die Zahl der
  * gesetzten Positionen zurueck; gezeichnet wird vom Aufrufer.
  */
-export async function markiereAlsBestellt(positionen, lieferantBestellnummer = null) {
+export async function markiereAlsBestellt(positionen, lieferantBestellnummer = null, { ueber } = {}) {
   let ok = 0;
-  for (const p of positionen) if (await setzeAuftragsstatus(p, 'bestellt', { lieferantBestellnummer, still: true })) ok += 1;
+  for (const p of positionen) if (await setzeAuftragsstatus(p, 'bestellt', { lieferantBestellnummer, ueber, still: true })) ok += 1;
   toast(ok === positionen.length ? `${plural(ok, 'Artikel', 'Artikel')} als bestellt markiert` : `Nur ${ok} von ${positionen.length} Artikeln als bestellt markiert`, ok === positionen.length ? '' : 'crit');
   return ok;
 }

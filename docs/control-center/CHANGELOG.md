@@ -2,6 +2,28 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-19 · Ware über unseren Kettler (Berlin)
+
+- **Geändert:** Im Bestellmail-Dialog (Einkauf, Ware) gibt es neben „Kunden“ und „Laden“ das
+  Ziel **„Kettler“**. Die Mail bittet den Lieferanten dann, nur zuzuschneiden (nicht zu ketteln)
+  und an unseren Kettelservice zu liefern; Anschrift und Telefon stehen nur privat in den
+  Stammdaten (`absender.kettelservice`), ohne Eintrag wird der Kettler nicht angeboten.
+  Ein Hinweis „Über unseren Kettler?“ nennt Kettel-Positionen, bei denen es naheliegt (Kunde in
+  Berlin/PLZ 16 oder kürzere Seite bis 2 m). „Als bestellt markieren“ (Mail und Einzeldialog)
+  vermerkt den Weg an der Position: Stand „Bestellt · unterwegs zum Kettler“, Knopf „Als beim
+  Kettler abgeholt markieren“, danach „Beim Kettler abgeholt“; oben die Zahl „Ware unterwegs zum
+  Kettler“. Die Schritte im Auftragsfluss bleiben dieselben.
+- **Getestet:** 6 neue Tests (Mailtext, fehlende Anschrift, nur Ware, Vorschlag, Statusvermerk);
+  `npm test` und `dashboard:test` grün. `dashboard:pruefen`: 28 Ansichten, 0 px Überlauf.
+  Klickstrecke gegen Datenkopie: Dialog zeigt Kunden/Laden/Kettler, Kettler gewählt; Muster mit
+  `ziel=kettler` → 400; Position auf „Bestellt · unterwegs zum Kettler“ (Band 0 → 1), dann
+  „Beim Kettler abgeholt“. Keine JS-Fehler.
+- **Risiken/Annahmen:** Der Umschalter gilt für die ganze Mail einer Gruppe – gemischte Ware
+  (einiges zum Kettler, anderes zum Kunden) braucht zwei Durchgänge. „Bis 2 m“ ist als kürzere
+  Seite gelesen (gerollt als Paket); Nähe = PLZ 10–14 und 16.
+- **Nächste Stufe:** Echte Kettelpreise des Kettlers eintragen und je Auftrag „Kettler lohnt
+  sich“ mit Fahrtkosten rechnen.
+
 ## 2026-10-16 · Unklare Mustersperren und Teilfreigaben absichern (#1400)
 
 - **Geändert:** Eine unlesbare Sperr-Gegenprobe gilt nicht mehr als nie geschriebene Sperre.
