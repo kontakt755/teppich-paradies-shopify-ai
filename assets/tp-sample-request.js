@@ -15,6 +15,7 @@
   var result = root.querySelector('.tp-form-error');
   if (!result) result = root.querySelector(isSample ? '.tp-success--sample' : '.tp-success--generic');
   if (result) result.focus();
+  else if (params.get('thema') === 'musteranfrage') musteranfrageFokussieren();
 
   if (!isSample) return;
 
@@ -34,6 +35,34 @@
   function setHiddenField(name, value) {
     var input = root.querySelector('[data-tp-hidden-field="' + name + '"]');
     if (input) input.value = value;
+  }
+
+  function musteranfrageFokussieren() {
+    if (window.location.hash) return;
+    var navigation = window.performance && typeof window.performance.getEntriesByType === 'function' && window.performance.getEntriesByType('navigation')[0];
+    if (navigation && navigation.type !== 'navigate') return;
+    var hinweis = root.querySelector('[data-tp-anfrage-hinweis]');
+    if (!hinweis || hinweis.hidden || !hinweis.textContent.trim() || hinweis.hasAttribute('data-tp-fokus-erledigt')) return;
+    hinweis.setAttribute('data-tp-fokus-erledigt', '');
+
+    var unterbrochen = false;
+    var ereignisse = ['pointerdown', 'keydown', 'wheel', 'touchstart'];
+    function unterbrechen() { unterbrochen = true; }
+    ereignisse.forEach(function (name) {
+      document.addEventListener(name, unterbrechen, { capture: true, passive: true });
+    });
+
+    window.requestAnimationFrame(function () {
+      ereignisse.forEach(function (name) {
+        document.removeEventListener(name, unterbrechen, true);
+      });
+      if (unterbrochen || window.location.hash || window.scrollX || window.scrollY) return;
+      var aktiv = document.activeElement;
+      if (aktiv && aktiv !== document.body && aktiv !== document.documentElement) return;
+      if (!hinweis.isConnected || hinweis.hidden) return;
+      hinweis.focus({ preventScroll: true });
+      if (document.activeElement === hinweis) hinweis.scrollIntoView({ block: 'start', behavior: 'instant' });
+    });
   }
 
   setHiddenField('Betreff', 'Kostenlose Musteranfrage');
