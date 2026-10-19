@@ -156,7 +156,7 @@ function texteFuer(beitrag) {
  *     nicht veraendern.
  *   - Noch einmal pruefen: eine Freigabe von gestern gilt nicht, wenn heute ein
  *     Bild Bedenken bekommen hat oder das Material verworfen wurde. Produkt-Reels
- *     zusaetzlich live gegen den Shop (Preis, Variante, keine Aktion, Preisstand <= 10 Tage).
+ *     zusaetzlich live gegen den Shop (Preis, Variante, keine Aktion, Preisstand <= 21 Tage).
  *   - Das Ergebnis jeder Plattform wird sofort gespeichert.
  *   - Unklare Fehler (Antwort nie gesehen) werden nie automatisch wiederholt.
  *   - Hoechstens ein Feed-Beitrag je Lauf; was laenger als 36 Stunden

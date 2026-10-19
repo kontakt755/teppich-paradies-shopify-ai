@@ -191,7 +191,7 @@ den Boden und sind verworfen. Kein KI-Hinweis im Bild.
 
 Reels mit echtem Foto gibt das System selbst frei. Direkt vor dem Posten prüft
 der Publisher Preis und Angaben noch einmal live; weicht etwas ab oder ist der
-Preisstand älter als zehn Tage, geht das Reel zurück in die Freigabe – dann neu
+Preisstand älter als 21 Tage, geht das Reel zurück in die Freigabe – dann neu
 bauen, nicht freigeben.
 
 ### 4. Texte
