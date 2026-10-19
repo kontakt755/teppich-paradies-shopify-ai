@@ -346,12 +346,17 @@ Für die Oberfläche:
 - **Kettler** (seit 2026-10-19): Ware kann mit `ziel=kettler` an unseren
   Kettelservice gehen (Anschrift nur privat unter `absender.kettelservice` der
   Stammdaten; fehlt sie, ist `kettlerMoeglich` `false` und der Dialog bietet
-  den Kettler nicht an). Der Lieferant bekommt dann „Ohne Einfassung – bitte
-  nur zuschneiden, nicht ketteln“ statt der Einfassungszeile, die Kommission
-  ohne Kundennamen und die Kettler-Anschrift. `kettlerVorschlag` listet offene
-  Positionen mit Ketteln, bei denen der Kettler naheliegt: Kunde in Berlin
-  bzw. PLZ 16 (wir liefern selbst) oder kürzere Seite bis 2 m (gerollt als
-  Paket vom Kettler). Nur ein Hinweis – gewählt wird im Dialog.
+  den Kettler nicht an). Der Kettler schneidet zu und kettelt ohne
+  Zuschnittgebühr: Maßteppiche gehen deshalb als **Meterware von der Rolle**
+  an den Lieferanten („2,50 lfm von der 4,00 m breiten Rolle (Meterware, ohne
+  Maßzuschnitt)“, darunter das Fertigmaß für den Kettler), ohne
+  Einfassungszeile und mit der Kommission ohne Kundennamen. Ist die
+  Rollenbreite unbekannt, bleibt es beim Stück nach Maß ohne Einfassung.
+  **Regel ohne `ziel`:** Maßteppiche mit Einfassung und kürzerer Seite unter
+  200 cm kommen in eine eigene Mail an den Kettler (`kettlerAutomatisch:
+  true`), der Rest der Gruppe bleibt in seiner Mail. Ein `ziel` gilt für die
+  ganze Gruppe. `kettlerVorschlag` nennt in den übrigen Mails Kettel-Positionen
+  für den Kettler (unter 2 m bzw. Kunde in Berlin/PLZ 16).
 - Nach dem Absenden setzt die Oberfläche den Status wie bisher über
   `POST /api/einkauf/auftragsstatus` (`status: "bestellt"`). Optional
   `ueber: "kettler"` vermerkt den Kettler-Weg an der Position (`ueber: null`
