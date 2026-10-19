@@ -615,6 +615,8 @@ test('Sperrgut fehlt im Warenkorb: Zeile mit _Sperrgut ist Waise (JS und Liquid)
   const andere = { key: 'q', variant_id: 12, quantity: 300, preisPro001Lfm: true, properties: { 'Länge je Stück': '300 cm', _Gruppe: 'g1' } };
   assert.deepEqual(G.waisen([profil, andere, zuschlag]), []);
   assert.equal(G.waisen([profil])[0].grund, G.GRUND.SPERRGUT_FEHLT);
+  const zweiter = { ...zuschlag, key: 's2', properties: { ...zuschlag.properties, _Gruppe: 'g2' } };
+  assert.equal(G.waisen([profil, zuschlag, zweiter])[0].grund, G.GRUND.SPERRGUT_DOPPELT);
 
   const snippet = lies('snippets/tp-cart-gruppe.liquid');
   const produktLfm = { type: 'Abschlussprofile', title: 'TK', metafields: { custom: { preis_pro_001_lfm: val(true) } } };
@@ -624,4 +626,5 @@ test('Sperrgut fehlt im Warenkorb: Zeile mit _Sperrgut ist Waise (JS und Liquid)
   assert.equal((await r(null, 'sperre', [lz, lzs])).trim(), '');
   assert.match(await r(null, 'sperre', [lz]), /Bestellung nicht möglich/);
   assert.match(await r(lz, 'hinweis', [lz]), /fehlt der Sperrgut-Versand/);
+  assert.match(await r(null, 'sperre', [lz, lzs, { ...lzs, properties: { ...lzs.properties, _Gruppe: 'g7' } }]), /steht mehrfach im Warenkorb/);
 });

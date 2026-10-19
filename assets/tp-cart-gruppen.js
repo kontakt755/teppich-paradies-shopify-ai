@@ -47,7 +47,8 @@
     OHNE_MASS: 'ohne-mass',
     SERVICE_OHNE_GRUPPE: 'service-ohne-gruppe',
     ZUSCHNITT_FEHLT: 'zuschnitt-fehlt',
-    SPERRGUT_FEHLT: 'sperrgut-fehlt'
+    SPERRGUT_FEHLT: 'sperrgut-fehlt',
+    SPERRGUT_DOPPELT: 'sperrgut-doppelt'
   };
 
   var TEXT = {};
@@ -60,18 +61,24 @@
     'Der Zuschnitt von der Rolle fehlt – bitte Teppich entfernen und neu konfigurieren';
   TEXT[GRUND.SPERRGUT_FEHLT] =
     'Für diese Treppenkante fehlt der Sperrgut-Versand – bitte entfernen und über die Produktseite neu in den Warenkorb legen';
+  TEXT[GRUND.SPERRGUT_DOPPELT] =
+    'Der Sperrgut-Versand steht mehrfach im Warenkorb – bitte eine Treppenkante entfernen und neu in den Warenkorb legen';
 
   // Treppenkanten ueber der Paketlaenge (blocks/tp-laengen-zuschnitt): die
   // Zeile nennt in _Sperrgut die Variante des Zuschlags. Er steht nur einmal im
   // Warenkorb; fehlt er (z. B. mit der anderen Gruppe entfernt), ist die Zeile
-  // eine Waise. Liquid-Seite: snippets/tp-cart-laengenware.liquid.
-  function sperrgutFehlt(zeile, zeilen) {
+  // eine Waise; steht er mehrfach (zwei Tabs gleichzeitig), ebenso.
+  // Liquid-Seite: snippets/tp-cart-laengenware.liquid. Gibt die Anzahl zurueck
+  // (null ohne _Sperrgut).
+  function sperrgutAnzahl(zeile, zeilen) {
     var id = prop(zeile, '_Sperrgut');
-    if (!id) return false;
-    return !(zeilen || []).some(function (z) {
+    if (!id) return null;
+    var n = 0;
+    (zeilen || []).forEach(function (z) {
       var v = z && (z.variant_id != null ? z.variant_id : z.variantId);
-      return v != null && String(v) === id;
+      if (v != null && String(v) === id) n += Number(z.quantity) || 0;
     });
+    return n;
   }
 
   // Gemeinsamer Rollenbestand (Einfass-Konfigurator mit Zuschnitt-Bundle):
@@ -253,8 +260,10 @@
         grund = GRUND.OHNE_MASS;
       } else if (zuschnittFehlt(z, zeilen)) {
         grund = GRUND.ZUSCHNITT_FEHLT;
-      } else if (sperrgutFehlt(z, zeilen)) {
+      } else if (sperrgutAnzahl(z, zeilen) === 0) {
         grund = GRUND.SPERRGUT_FEHLT;
+      } else if (sperrgutAnzahl(z, zeilen) > 1) {
+        grund = GRUND.SPERRGUT_DOPPELT;
       }
       if (grund) out.push({ index: i, key: z.key, grund: grund, text: TEXT[grund] });
     });

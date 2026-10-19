@@ -28,16 +28,18 @@
   elsif teil == 'waise' and zeile.properties._Sperrgut != blank
     # Zuschlag steht einmal im Warenkorb; fehlt er, ist die Zeile eine Waise.
     assign tp_lw_sg = zeile.properties._Sperrgut | strip
-    assign tp_lw_sg_da = false
+    # Mehrfach (zwei Tabs gleichzeitig) sperrt ebenfalls.
+    assign tp_lw_sg_n = 0
     for tp_lw_it in posten
       assign tp_lw_vid = tp_lw_it.variant_id | append: ''
       if tp_lw_vid == tp_lw_sg
-        assign tp_lw_sg_da = true
-        break
+        assign tp_lw_sg_n = tp_lw_sg_n | plus: tp_lw_it.quantity
       endif
     endfor
-    unless tp_lw_sg_da
+    if tp_lw_sg_n == 0
       echo 'Für diese Treppenkante fehlt der Sperrgut-Versand – bitte entfernen und über die Produktseite neu in den Warenkorb legen'
-    endunless
+    elsif tp_lw_sg_n > 1
+      echo 'Der Sperrgut-Versand steht mehrfach im Warenkorb – bitte eine Treppenkante entfernen und neu in den Warenkorb legen'
+    endif
   endif
 -%}

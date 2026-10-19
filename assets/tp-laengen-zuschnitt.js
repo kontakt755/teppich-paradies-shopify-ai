@@ -486,10 +486,19 @@
         fetch('/cart.js', { headers: { Accept: 'application/json' } })
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (c) {
-            if (c) sperrgutDa = (c.items || []).some(function (it) { return String(it.variant_id) === String(sperrgut.id); });
+            if (!c) throw new Error('cart');
+            sperrgutDa = (c.items || []).some(function (it) { return String(it.variant_id) === String(sperrgut.id); });
+            inFlight = false;
+            zeigen();
+            senden();
           })
-          .catch(function () {})
-          .then(function () { inFlight = false; zeigen(); senden(); });
+          // Warenkorb nicht lesbar: nicht mit altem Stand senden.
+          .catch(function () {
+            inFlight = false;
+            cta.textContent = 'Nicht hinzugefügt – erneut versuchen';
+            cta.classList.add('is-error');
+            setTimeout(function () { cta.classList.remove('is-error'); zeigen(); }, 3000);
+          });
         return;
       }
       senden();
