@@ -149,6 +149,25 @@ export function istMusterPosition(item, lineItem) {
   });
 }
 
+// Saegeschnitt je Stueck beim Zuschnitt aus der Stange (Annahme, der
+// Lieferant nennt keinen Wert).
+const SAEGESCHNITT_CM = 0.5;
+
+/**
+ * Profile nach Mass: Jedes Stueck wird in einem Stueck aus einer Stange
+ * geschnitten (wegen des Bohrbilds nie gestueckelt), den Rest der Stange
+ * bezahlen wir mit. Gibt " · aus 2 Stangen à 5,03 m (10,06 lfm)" zurueck,
+ * leer ohne Stangenlaenge. Ein Stueck laenger als die Stange wird gemeldet.
+ */
+export function stangenText(stueck, laengeCm, stangenlaengeCm) {
+  const stange = Number(stangenlaengeCm);
+  if (!(stange > 0) || !(stueck > 0) || !(laengeCm > 0)) return '';
+  const jeStange = Math.floor((stange + SAEGESCHNITT_CM) / (laengeCm + SAEGESCHNITT_CM));
+  if (jeStange < 1) return ` · länger als die Stange (${formatDe(stange / 100)} m) – von Hand prüfen`;
+  const stangen = Math.ceil(stueck / jeStange);
+  return ` · aus ${stangen} ${stangen === 1 ? 'Stange' : 'Stangen'} à ${formatDe(stange / 100)} m (${formatDe((stangen * stange) / 100)} lfm)`;
+}
+
 /**
  * Einkaufsmenge aus der Kundenmenge. Nur mit belegten Stammdaten, sonst
  * UNGEKLAERT mit Grund. Nutzt ausschliesslich umrechnung.mjs.
@@ -168,7 +187,7 @@ export function einkaufsmenge(item, menge, { massanfertigung = false } = {}) {
     if (!(l > 0)) return ungeklaert('Länge je Stück fehlt (Property der Bestellung)');
     if (menge % l !== 0) return ungeklaert(`Menge ${menge} cm passt nicht zu ${l} cm je Stück – von Hand prüfen`);
     const n = menge / l;
-    return { menge: n, einheit: EINHEIT.STUECK, text: `${n} Stück à ${l} cm${ein.bohrung ? `, ${ein.bohrung}` : ''}`, grund: null };
+    return { menge: n, einheit: EINHEIT.STUECK, text: `${n} Stück à ${l} cm${ein.bohrung ? `, ${ein.bohrung}` : ''}${stangenText(n, l, e.stangenlaenge_cm)}`, grund: null };
   }
   // Kettel-/Massteppich: bestellt wird ein Stueck im Fertigmass. Ob der Lieferant aus
   // Rollenbreite oder Raummass schneidet, entscheidet er selbst (Inhaber 2026-10-14) -
@@ -449,6 +468,9 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         // Fuer die Bestellmail: Kommission mit Kundennamen, Zuschnitt und Einfassung.
         kunde,
         ausfuehrung: istM ? [] : ausfuehrungFuer(props, kettelDazu),
+        // Rollenbreite, aus der der Konfigurator den Massteppich schneidet: daraus wird fuer
+        // unseren Kettler die Meterware ohne Masszuschnitt berechnet (lieferanten.mjs).
+        ausRolleCm: massanfertigung ? (item.eingaben?.ausRolleCm ?? null) : null,
         sku: item.sku,
         preis: geld(li.originalUnitPriceSet),
         menge,

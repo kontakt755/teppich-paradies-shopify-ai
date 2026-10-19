@@ -320,11 +320,24 @@ const LIEFERZIEL_TEXT = { laden: 'Lieferung in den Laden', kunde: 'Lieferung dir
  * Nur ein Hinweis - umgeschaltet wird mit "Kettler" oben; der Server begruendet je Position.
  */
 function kettlerHinweis(m) {
+  if (m.kettlerAutomatisch) return '<p class="small muted lf-kettler">Nach unserer Regel: Maßteppiche unter 2 m schneidet und kettelt unser Kettler – der Lieferant liefert nur Meterware dorthin, wir holen ab.</p>';
   const liste = m.kettlerVorschlag || [];
   if (m.art !== 'ware' || !m.kettlerMoeglich || m.lieferziel === 'kettler' || !liste.length) return '';
   return `<div class="notice lf-kettler"><strong>Über unseren Kettler? (${liste.length})</strong>
     <span class="small">Dort ketteln wir günstiger und liefern selbst bis in die Wohnung bzw. verschicken von dort. „Kettler" oben wählen – der Lieferant schneidet dann nur zu.</span>
     <ul class="small">${liste.map(v => `<li>${esc([v.orderName, anzeigeWert(v.titel || '')].filter(Boolean).join(' · '))} – ${esc(v.grund)}</li>`).join('')}</ul></div>`;
+}
+
+/**
+ * Lieferziel-Knoepfe. Mit Kettler gibt es "Automatisch" (Regel: unter 2 m zum Kettler, Rest
+ * normal) - die anderen Knoepfe schicken die ganze Bestellung an ein Ziel.
+ */
+function zielChips(m) {
+  const wahl = m.art === 'ware' && m.kettlerMoeglich
+    ? [['', 'Automatisch'], ['kunde', 'Kunden'], ['laden', 'Laden'], ['kettler', 'Kettler']]
+    : [['kunde', 'Kunden'], ['laden', 'Laden']];
+  const gedrueckt = w => (m.art === 'ware' && m.kettlerMoeglich ? dialog.ziel === w : m.lieferziel === w);
+  return wahl.map(([w, l]) => `<button type="button" class="chip" data-lf-ziel="${w}" aria-pressed="${gedrueckt(w)}">${l}</button>`).join('');
 }
 
 function mailAbschnitt(m, i, mehrere) {
@@ -335,7 +348,7 @@ function mailAbschnitt(m, i, mehrere) {
   const ohne = (m.ohneBestellung || []).length ? `<div class="small muted lf-ohne"><p style="margin:0 0 4px">Nicht beim Lieferanten zu bestellen (${m.ohneBestellung.length}):</p><ul class="lf-liste">${m.ohneBestellung.map(f => `<li class="lf-posten"><div class="lf-posten-text"><div class="t">${esc(anzeigeWert(f.titel || ''))}</div><div class="s">${esc([kundeOrtText(f.orderId), f.orderName, ...(f.gruende || [])].filter(Boolean).join(' · '))}</div></div>${istNurLesend() ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-lf-herkunft="${esc(f.orderId)}" data-af-item="${esc(f.lineItemId)}">Ändern…</button>`}</li>`).join('')}</ul></div>` : '';
   const wahl = m.art === 'muster' || m.zielWaehlbar;
   const zielWahl = wahl ? `<div class="lf-zielwahl" role="group" aria-label="Wohin geht die Lieferung?"><span class="small muted">${m.art === 'muster' ? 'Muster gehen an' : 'Ware geht an'}:</span>
-      ${[['kunde', 'Kunden'], ['laden', 'Laden'], ...(m.kettlerMoeglich ? [['kettler', 'Kettler']] : [])].map(([w, l]) => `<button type="button" class="chip" data-lf-ziel="${w}" aria-pressed="${m.lieferziel === w}">${l}</button>`).join('')}</div>` : '';
+      ${zielChips(m)}</div>` : '';
   if (!m.text) {
     const schon = m.bereitsBestellt ? `${plural(m.bereitsBestellt, 'Artikel ist', 'Artikel sind')} schon bestellt.` : '';
     return `<section class="lf-mail">${kopf}${zielWahl}${kettlerHinweis(m)}${(m.fehlt || []).length ? '' : `<p class="lf-leer">Nichts mehr zu bestellen. ${esc(schon)}</p>`}${fehlt}${ohne}</section>`;

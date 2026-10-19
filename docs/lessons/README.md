@@ -17,6 +17,7 @@ sie zu umgehen.
 | [dashboard-issues-json.md](dashboard-issues-json.md) | – (Vorgeschichte, erledigt 2026-09-30; heute „Arbeitskopien“) | Stash pro Sitzung im geteilten Stash-Stack, weil Doku und Hook sich widersprachen |
 | [rebase-ours-ist-der-upstream.md](rebase-ours-ist-der-upstream.md) | – (Vorgeschichte; gilt weiter fuer `.claude/hooks/gedaechtnis-sync.sh`) | `dashboard-data.yml` loeste Konflikte mit `--ours` auf und verwarf damit die Datei, die es gerade erzeugt hatte |
 | [renderzeit-kollektionsseite.md](renderzeit-kollektionsseite.md) | Skill `werkzeuge` (`teppich:basis-daten`) | Teppich nach Mass lief ab ~200 Produkten in den Render-Timeout; Ursache war nicht die vermutete Gruppierung, sondern Produktreferenzen je Karte |
+| [ki-bilder.md](ki-bilder.md) | Theme, Produktkarten, Design, Bilder (Skill `theme-regeln`, Abschnitt Bilder) | Gemusterter Wohnteppich in drei Modellen gleich falsch; 38 von 38 KI-Bildern ohne KI-Kennzeichnung |
 
 Konvention: keine Theme-IDs, keine Lieferantennamen (nur Pseudonyme, siehe
 AGENTS.md Punkt 8). Eine neue Lesson bekommt eine Zeile in dieser Tabelle und

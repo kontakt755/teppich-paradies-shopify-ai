@@ -115,7 +115,7 @@ Die Shopify Admin API ist über MCP bzw. CLI bereits authentifiziert: nicht nach
 
 ## Theme, Produktkarten, Design, Bilder
 
-Vor jeder Theme-Änderung den Skill `theme-regeln` laden: Blöcke und Schemata, fertige Funktionen, die nicht neu gebaut werden (u. a. Paket-/Verschnittrechner samt Warenkorblogik; der Produktvergleich bleibt entfernt), Hauptmenü nur mit `scripts/menue-umbau.mjs`, Horizon 4.1.3 nicht migrieren, Produktkarten, UX/Design, Bilder und Testumfang.
+Vor jeder Theme-Änderung den Skill `theme-regeln` laden: Blöcke und Schemata, fertige Funktionen, die nicht neu gebaut werden (u. a. Paket-/Verschnittrechner samt Warenkorblogik; der Produktvergleich bleibt entfernt), Hauptmenü nur mit `scripts/menue-umbau.mjs`, Horizon 4.1.3 nicht migrieren, Produktkarten, UX/Design, Bilder und Testumfang. Gemusterte Ware wird nie per KI neu erzeugt, KI-Bilder tragen die IPTC-Kennzeichnung (→ `docs/lessons/ki-bilder.md`).
 
 ## Preislogik
 

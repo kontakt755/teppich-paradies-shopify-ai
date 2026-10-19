@@ -88,6 +88,7 @@
     "shop:wache": "node operations/scripts/shopwache.mjs",
     "verbrauch:sammeln": "node operations/scripts/claude-verbrauch.mjs",
     "auslauf:pruefen": "node operations/scripts/auslauf-pruefen.mjs",
+    "muster:nachfassen": "node scripts/muster-nachfassen-senden.mjs",
     "auslauf:sortieren": "node scripts/auslauf-sortieren.mjs",
     "aufgaben:pruefen": "node operations/scripts/aufgaben-pruefen.mjs",
     "daten:bulk": "node operations/scripts/bulk-zu-eingabe.mjs",

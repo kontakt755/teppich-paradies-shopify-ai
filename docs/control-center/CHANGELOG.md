@@ -2,6 +2,114 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-19 · „Muster nachfassen“: Karte nach einem Versandlauf aktuell
+
+- **Geändert:** Nach dem ersten Lauf (4 Mails) standen die Kunden in einem offenen Tab weiter als „offen“ –
+  die Bestellzeilen werden je Tab nur einmal geladen, nur die Vorlage (mit „letzter Lauf“) alle 30 s.
+  Meldet `/api/kunden/muster-texte` einen neuen Lauf (`neuerVersandlauf()`), lädt „Heute“ die
+  Bestellzeilen nach (`ladeBestellzeilenNeu()`); ebenso nach einem abgelehnten „Jetzt senden“.
+  `dashboard:pruefen` kopiert `nachfassen/` weiterhin nicht (Kommentar: sonst echte Mails aus der Prüfung).
+- **Getestet:** Unit-Test `neuerVersandlauf` (erster Abruf, erster Lauf, neuer Lauf, gleicher Lauf),
+  `npm test` grün, `dashboard:pruefen` Heute/Kunden alle Breiten OK.
+- **Risiken/Annahmen:** Aktualisiert wird, solange „Heute“ offen ist und offene Zeilen zeigt.
+- **Nächste Stufe:** —
+
+## 2026-10-19 · Bestellungen: Zwei-Wege-Abgleich mit Shopify (#1419)
+
+- **Geändert:** Was in Shopify versendet ist, steht im Control Center nach dem nächsten Bestellexport
+  mindestens auf „An Kunden raus“ („aus Shopify übernommen“); stornierte Bestellungen sind keine offene Arbeit
+  mehr. Umgekehrt bucht jedes „Erledigt“ (Einkauf, Zeitleiste, Muster-Ergebnis, „Kunde fertig“, „Ohne Einkauf
+  abschließen…“) den Versand in Shopify, falls dort noch offen – ohne Mail an den Kunden. „Wieder öffnen“ und
+  „Zurück auf offen“ storniert in Shopify nichts und sagt das. Auf „Heute“ steht, nur wenn es sie gibt, die
+  Liste „In Shopify noch offen“ (im Dashboard abgehakt, in Shopify offen) mit „In Shopify nachbuchen“.
+  Konfliktregel: „Versendet“ gewinnt, nichts wird automatisch zurückgenommen (ARCHITEKTUR §24).
+- **Getestet:** 7 neue Regeltests, 11 neue API-Tests (Attrappe, nie echtes Shopify), 2 Tests an die neue Regel
+  angepasst; `npm test` 3067/3067, `dashboard:test` 413/413, `dashboard:pruefen` nur OK (28 Ansichten,
+  0 px Überlauf bis 360 px). Trockenlauf gegen eine Datenkopie: 1 Position „bestellt“ → „raus“ (der Fall
+  von heute), 36 Vermerke richtiggestellt, 0 Stornos, zweiter Lauf 0 Änderungen; Abweichungsliste 1 Bestellung
+  (Muster, abgeschlossen ohne Versand, in Shopify zurückgehalten). Klickstrecke gegen die Kopie mit
+  Shopify-Attrappe: „In Shopify nachbuchen“ 1 → 0 (eine Buchung, ohne Mail); „Kunde fertig“ an einer
+  Kundenbestellung: eine Buchung für 3 Artikel, ohne Mail, Rückfrage nennt Shopify; „Ohne Einkauf
+  abschließen“ an einer Testbestellung: nichts gebucht; 390 px ohne Überlauf, 0 JS-Fehler.
+- **Risiken/Annahmen:** Eine Position zählt erst als in Shopify erfüllt, wenn die ganze Menge erfüllt ist.
+  „Ohne Einkauf abschließen“ für eine Bestellung, die in Wahrheit storniert ist, bucht sie als versendet – der
+  Dialog sagt deshalb „zuerst in Shopify stornieren“. Bestellungen, die lokal storniert erledigt werden, könnten
+  beim Lieferanten noch bestellt sein (Abbestellen bleibt Handarbeit).
+- **Nächste Stufe:** Bei „in Shopify storniert, beim Lieferanten bestellt“ einen Hinweis „beim Lieferanten
+  abbestellen?“ zeigen.
+
+## 2026-10-19 · „Muster nachfassen“: Blindkopie abschaltbar
+
+- **Geändert:** Inhaber 19.10. nach dem ersten echten Versand: keine Kopien ans Büro. `"kopie": false` in
+  `nachfassen/postfach.json` schaltet die Blindkopie ganz ab (auch in der ersten Woche, auch mit
+  `kopieImmer`); die Karte nennt dann keine Kopie.
+- **Getestet:** `lesePostfach()` mit `kopie: false`; „Jetzt senden“ und Lauf gegen die SMTP-Attrappe nur
+  an den Kunden; Kartenstand ohne `kopie`/`mitlesenBis`. `npm test` grün.
+- **Risiken/Annahmen:** Wer mitlesen will, sieht die Mails im Ordner „Gesendet“ des Postfachs.
+- **Nächste Stufe:** —
+
+## 2026-10-19 · „Muster nachfassen“: E-Mail direkt aus der Karte senden
+
+- **Geändert:** Wunsch Inhaber: die Nachfrage gleich aus der Karte an den Kunden schicken statt über
+  „E-Mail öffnen“. Mit eingerichtetem Firmenpostfach hat jede offene Zeile „Jetzt senden“; Betreff und
+  Text sind vorher bearbeitbar. `POST /api/kunden/nachfassen-senden` → `kundenNachfassenEinzeln()` mit
+  denselben Sperren wie der tägliche Lauf (Empfänger nur aus den Bestelldaten, Stoppliste, kein zweiter
+  Versand derselben Stufe, kein Platzhalter, Kopie-Woche) und Zeitleiste „nachgefasst“ vom Absender.
+  Details: Architektur Abschnitt 23.
+- **Getestet:** `npm test` grün (3046). Neu: Einzelversand gegen die SMTP-Attrappe (angepasster Text,
+  fremde Adresse aus dem Browser ignoriert, Kopie, Zeitleiste von „Anna“, zweiter Klick 409, der Lauf
+  danach lässt die Bestellung aus, Abgemeldete 409, Erinnerung aus der Vorlage), Postfach lehnt ab → 502
+  ohne Passwort in der Meldung, Server-Rollen (lesen 403, ohne Postfach 409). Klickstrecke gegen die
+  Datenkopie mit Attrappen-Postfach: Text geändert, „Jetzt senden“ → Mail mit Änderung und Blindkopie
+  nur in der Attrappe, offen 6 → 5, Zeile unter „Erledigt … von Prüfung mitarbeiter“. 375 px ohne
+  Überlauf, Knöpfe 44 px.
+- **Risiken/Annahmen:** Ohne `nachfassen/postfach.json` erscheint der Knopf nicht – bis dahin bleibt
+  „E-Mail öffnen“. Entwürfe leben nur im Tab (Neuladen der Seite verwirft sie).
+- **Nächste Stufe:** Postfach einrichten (Inhaber), dann ersten echten Versand mit Kopie mitlesen.
+
+## 2026-10-16 · „Muster nachfassen“ verschickt automatisch vom Firmenpostfach (Werkbank w-119)
+
+- **Geändert:** Inhaber 16.10. (w-119, Option A): Text 1 und die Erinnerung gehen täglich automatisch
+  vom Firmenpostfach raus, mit Abmelde-Satz. Neuer Lauf `npm run -s muster:nachfassen` (`--probe` =
+  Trockenlauf) über `kundenNachfassenSenden()` im Server: fällige Kunden aus `musterNachfassen()`
+  (Kaufprüfung, 30 Tage, eine Erinnerung), Text aus der Vorlage des Inhabers, Versand per SMTP ohne
+  Fremdpaket (`operations/lib/smtp.mjs`), danach Zeitleiste „nachgefasst“ von „automatisch“. Zugang
+  nur aus `$TP_PRIVAT_DIR/nachfassen/postfach.json` (Rechte 600) – fehlt sie, verschickt der Lauf nichts
+  und die Karte sagt es. Erste Woche nach dem ersten Versand: jede Mail als Blindkopie ans Büro.
+  Stoppliste (`nachfassen/stoppliste.json`) per Knopf „Abgemeldet“ in der Karte
+  (`POST /api/kunden/nachfassen-abmelden`, write-Liste); Abgemeldete stehen getrennt und werden nie
+  angeschrieben. Versandprotokoll mit Doppelschutz (kein zweiter Versand nach Abbruch, nur Zeitleiste
+  nachtragen). Ein Platzhalter erreicht nie den Kunden (`platzhalterFrei()`; unbekannter Platzhalter im
+  Betreff bleibt sichtbar statt still zu verschwinden). LaunchAgent-Vorlage
+  `net.teppich-paradies.nachfassen.plist.vorlage` (Mo–Sa 9:30). Details: Architektur Abschnitt 23.
+- **Getestet:** `npm test` grün (siehe PR). Neu: Trockenlauf ohne Postfach, echter Lauf gegen eine
+  SMTP-Attrappe (Umschlag mit Blindkopie, Betreff/Text, Zeitleiste „automatisch“, kein zweites Mal,
+  Erinnerung nach 10 Tagen ohne Kopie, danach Schluss), Doppelschutz nach Abbruch, Platzhalter,
+  abgelehnte Anmeldung (535), kaputte Stoppliste stoppt alles, Rollen am Server (lesen 403). Trockenlauf
+  gegen die echten Daten: 6 erste Nachfragen stehen an, 0 Fehler. Browserprüfung „Heute“ gegen die
+  Datenkopie (Desktop und Handy) siehe PR.
+- **Risiken/Annahmen:** Das Postfach legt der Inhaber selbst an; bis dahin läuft alles wie bisher per
+  Klick. Die Abmeldung erfasst ein Mensch per Knopf (kein Posteingangs-Abgleich). Der LaunchAgent wird
+  erst nach dem Merge im Dienst-Checkout eingerichtet, nach einem Trockenlauf von Hand. Rechtliche
+  Einordnung der Mail ohne Newsletter-Einwilligung klärt der Inhaber (w-083).
+- **Nächste Stufe:** Erste Woche mitlesen, dann `kopieImmer` entscheiden; Antworten „Abmelden“ zählen;
+  Anteil Muster → Kauf aus der Zeitleiste auswerten.
+
+## 2026-10-19 · Maßteppiche unter 2 m automatisch zum Kettler
+
+- **Geändert:** Regel des Inhabers: Maßteppiche mit Einfassung und kürzerer Seite unter 2 m
+  gehen ohne Auswahl in eine eigene Bestellmail an unseren Kettler, der Rest bleibt in seiner
+  Mail. Der Kettler schneidet ohne Gebühr zu – der Lieferant bekommt deshalb Meterware von der
+  Rolle (z. B. „1,50 lfm von der 4,00 m breiten Rolle, ohne Maßzuschnitt“) mit dem Fertigmaß für
+  den Kettler, statt „1 Stück nach Maß“ (dort 10/15 € Zuschnitt). Im Dialog gibt es dafür den
+  Knopf „Automatisch“; Kunden/Laden/Kettler schicken weiter alles an ein Ziel.
+- **Getestet:** Neue Fälle für Meterware, Rolle quer, rund, Aufteilung, 2 m genau, ohne Kettler;
+  `npm test` und `dashboard:test` grün, `dashboard:pruefen` ohne Befund.
+- **Risiken/Annahmen:** Länge ohne Schnittzugabe (genau das Fertigmaß); braucht der Kettler
+  Zugabe, kommt sie als Zuschlag hinzu. Rollenbreite kommt aus dem Konfigurator
+  („_Zuschnitt aus Rolle“); fehlt sie, bleibt es beim Stück nach Maß.
+- **Nächste Stufe:** Zugabe mit dem Kettler klären.
+
 ## 2026-10-19 · Ware über unseren Kettler (Berlin)
 
 - **Geändert:** Im Bestellmail-Dialog (Einkauf, Ware) gibt es neben „Kunden“ und „Laden“ das

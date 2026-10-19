@@ -19,12 +19,15 @@ import os from 'node:os';
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { normalizeTask, requirementsFor, labelChangesFor, mitBlockerAbschnitt, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
-import { texteAusMarkdown, musterKurz, NICHT_VERFUEGBAR_VORLAGE } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
+import { texteAusMarkdown, musterKurz, musterNachfassen, fuelleText, platzhalterFrei, STUFE_LABEL, NICHT_VERFUEGBAR_VORLAGE } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
+import { postfachPfad, stopplistePfad, versandPfad, lesePostfach, leseStoppliste, abgemeldeteAdressen, trageAbmeldungEin, leseVersand, schreibeVersand, schonVerschickt, kopieNoetig, versandStand as nachfassVersandStand, AUTOMATISCH, UNTERSCHRIFT_STANDARD, NachfassFehler } from '../operations/lib/nachfass-versand.mjs';
+import { sendeMail as smtpSenden } from '../operations/lib/smtp.mjs';
 import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
-import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, setzeStatusPositionen, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, STATUS_ORDER, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
+import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, schreibeAlle as schreibeAuftragsstatus, setzeStatus, setzeStatusPositionen, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, STATUS_ORDER, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
 import { bucheVersand, versandNachzuholen, VersandFehler, VERSANDDIENSTE } from '../operations/lib/versand.mjs';
+import { uebernimmAusShopify, abweichungen as shopifyAbweichungen, ABGLEICH_VON } from '../operations/lib/shopify-abgleich.mjs';
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
 import { musterSchluessel, musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MUSTER_GROESSE, KNAPP_AB as LAGER_KNAPP_AB, PROBESTUECK_PREIS, wartetAufLieferant as lagerWartetAufLieferant, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
 import { auftragsverlaufPfad, leseVerlauf, bereiteEreignisVor, schreibeVerlauf, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, ERGEBNIS_SCHRITTE, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
@@ -280,6 +283,15 @@ function ladeBestellModell(dir) {
   if (!daten) return null;
   try { return bereiteBestellModell(daten, dir, new Date()); }
   catch { return null; }
+}
+
+/** Bestellungen aus orders.json in jeder Form, die ladeExport kennt - ohne Umweg ueber Text. null = unbrauchbar. */
+function exportOrders(daten) {
+  if (Array.isArray(daten)) return daten;
+  if (Array.isArray(daten?.data?.orders?.nodes)) return daten.data.orders.nodes;
+  if (Array.isArray(daten?.orders)) return daten.orders;
+  if (Array.isArray(daten?.orders?.nodes)) return daten.orders.nodes;
+  return null;
 }
 
 function bereiteBestellModell(daten, dir, jetzt) {
@@ -722,12 +734,15 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
    * Sendungsnummer und Mail-Wahl kommen aus dem Dialog, sonst von der Position (Nachholen).
    * Gibt die Kurzfassung fuer die Oberflaeche zurueck.
    */
-  async function versandBuchen({ dir, auftrag, lineItemIds, angaben = {}, benutzer, actor }) {
+  async function versandBuchen({ dir, auftrag, lineItemIds, angaben = {}, benutzer, actor, trotzVermerk = false }) {
     const file = auftragsstatusPfad(dir);
     return nacheinander(auftrag.id, async () => {
       const alle = leseAuftragsstatus(file);
       const eintrag = id => alle[positionKey(auftrag.id, id)];
-      const ids = [...new Set(lineItemIds)].filter(id => !['gebucht', 'bereits'].includes(eintrag(id)?.shopifyVersand?.status));
+      // trotzVermerk: "In Shopify nachbuchen" aus der Abweichungsliste - dort steht fest, dass
+      // Shopify die Position offen fuehrt, auch wenn der Vermerk anderes sagt (Sendung in Shopify
+      // storniert). bucheVersand liest frisch; doppelt gebucht wird auch dann nie.
+      const ids = [...new Set(lineItemIds)].filter(id => trotzVermerk || !['gebucht', 'bereits'].includes(eintrag(id)?.shopifyVersand?.status));
       if (!ids.length) return { status: 'bereits', meldung: 'In Shopify war das schon als versendet gebucht.', gebucht: 0, bereits: lineItemIds.length, nichtGebucht: 0 };
       const am = now().toISOString();
       const nummer = angaben.sendungsnummer || ids.map(id => eintrag(id)?.sendungsnummer).find(Boolean) || null;
@@ -852,6 +867,108 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     return { versandNachholen: n ? { anzahl: n.anzahl, unklar: n.unklar, ausstehend: n.ausstehend, meldung: n.meldung } : null };
   }
 
+  /**
+   * "Erledigt" -> Versand in Shopify buchen (Inhaber 2026-10-19, operations/lib/shopify-abgleich.mjs):
+   * Positionen, die gerade auf "Erledigt" gegangen sind und in Shopify noch nicht als versendet
+   * gelten, bucht derselbe Weg wie "raus" - mit Gegenprobe und Vermerk, aber ohne Mail an den
+   * Kunden (bereiteStatusVor merkt sich das als versandMail: false, auch fuers Nachholen).
+   * Gilt fuer Ware und Muster. Testbestellungen und stornierte Bestellungen bucht versandBuchen
+   * ohnehin nicht. Ist danach keine Ware mehr offen, gehen Eigenleistungen (Kettelservice) mit -
+   * sonst bliebe die Bestellung in Shopify "teilweise versendet". null = nichts zu buchen.
+   */
+  async function erledigtBuchen({ dir, auftrag, lineItemIds, benutzer, actor }) {
+    if (!auftrag || !lineItemIds?.length) return null;
+    const alle = leseAuftragsstatus(auftragsstatusPfad(dir));
+    const eintrag = id => alle[positionKey(auftrag.id, id)];
+    const fertig = id => ['gebucht', 'bereits', 'uebersprungen'].includes(eintrag(id)?.shopifyVersand?.status);
+    const ids = new Set(lineItemIds.filter(id => !fertig(id)));
+    const stufe = id => STATUS_ORDER.indexOf(eintrag(id)?.status);
+    const positionen = (auftrag.positionen || []).filter(p => p.lineItemId);
+    const wareOffen = positionen.some(p => !p.eigenleistung && (p.menge ?? 1) > 0 && stufe(p.lineItemId) < STATUS_ORDER.indexOf('raus'));
+    if (ids.size && !wareOffen) {
+      for (const p of positionen) if (p.eigenleistung && stufe(p.lineItemId) < STATUS_ORDER.indexOf('raus') && !fertig(p.lineItemId)) ids.add(p.lineItemId);
+    }
+    if (!ids.size) return null;
+    return versandBuchen({ dir, auftrag, lineItemIds: [...ids], angaben: { benachrichtigen: false }, benutzer, actor });
+  }
+
+  /**
+   * Shopify -> Control Center: einmal je neuem Bestellexport (Groesse und Aenderungszeit von
+   * orders.json). Der Dienst ist der einzige Schreiber von auftragsstatus.json - deshalb laeuft
+   * der Abgleich hier und nicht im Sync-Dienst. Zwischen Lesen und Schreiben steht kein await,
+   * ein Klick im selben Prozess kann sich nicht dazwischenschieben. Eine unlesbare Ablage wird
+   * nie ueberschrieben (leseAlle wirft); der Fehler steht im Dienstprotokoll.
+   */
+  let abgleichKennung = null;
+  let letzterAbgleich = null;
+  function shopifyAbgleichen(dir = privatDirPath || privatDir()) {
+    const ordersDatei = path.join(dir, 'bestelluebersicht', 'orders.json');
+    let st;
+    try { st = fs.statSync(ordersDatei); } catch { return letzterAbgleich; }
+    const kennung = `${dir}:${st.size}:${st.mtimeMs}:${st.ctimeMs}:${st.ino}`;
+    if (kennung === abgleichKennung) return letzterAbgleich;
+    abgleichKennung = kennung;
+    const orders = exportOrders(readJsonIfExists(ordersDatei));
+    if (!orders) return letzterAbgleich;
+    const statusDatei = auftragsstatusPfad(dir);
+    const am = now().toISOString();
+    let r;
+    try {
+      r = uebernimmAusShopify(leseAuftragsstatus(statusDatei), orders, { jetzt: now() });
+      if (r.gehoben.length || r.storniert.length || r.vermerkt.length) schreibeAuftragsstatus(statusDatei, r.positionen);
+    } catch (e) {
+      logFehler('abgleich', `Shopify-Abgleich nicht geschrieben: ${String(e?.message || e).split('\n')[0]}`);
+      letzterAbgleich = { am, fehler: String(e?.message || e).split('\n')[0], gehoben: 0, storniert: 0, vermerkt: 0 };
+      return letzterAbgleich;
+    }
+    // Protokoll je Bestellung - wer im Dashboard nachsieht, warum etwas "raus" steht, findet es dort.
+    const jeAuftrag = (liste) => {
+      const m = new Map();
+      for (const x of liste) m.set(x.orderName || x.orderId, (m.get(x.orderName || x.orderId) || 0) + 1);
+      return m;
+    };
+    for (const [name, n] of jeAuftrag(r.gehoben)) merke(null, ABGLEICH_VON, 'Aus Shopify übernommen', `${name}: ${n} Artikel → An Kunden raus (in Shopify versendet)`);
+    for (const [name, n] of jeAuftrag(r.storniert)) merke(null, ABGLEICH_VON, 'Aus Shopify übernommen', `${name}: ${n} Artikel → Erledigt (in Shopify storniert)`);
+    if (r.gehoben.length || r.storniert.length || r.vermerkt.length) {
+      audit({ actor: ABGLEICH_VON, action: 'shopify-abgleich', gehoben: r.gehoben.length, storniert: r.storniert.length, vermerkt: r.vermerkt.length });
+    }
+    letzterAbgleich = { am, fehler: null, gehoben: r.gehoben.length, storniert: r.storniert.length, vermerkt: r.vermerkt.length };
+    return letzterAbgleich;
+  }
+
+  /** Abweichungsliste "im Dashboard abgehakt, in Shopify offen" (je Bestellung), mit Artikeltexten aus dem Modell. */
+  function abweichungsListe(dir) {
+    const daten = readJsonIfExists(path.join(dir, 'bestelluebersicht', 'orders.json'));
+    const orders = exportOrders(daten);
+    if (!orders) return null;
+    const modell = ladeBestellModell(dir);
+    const auftraege = new Map([...(modell?.auftraege || []), ...(modell?.testauftraege || [])].map(a => [a.id, a]));
+    return shopifyAbweichungen(leseAuftragsstatus(auftragsstatusPfad(dir)), orders, { exportiertAm: daten.exportiertAm || null }).map(z => {
+      const a = auftraege.get(z.orderId);
+      const artikel = z.positionen.map(p => {
+        const m = (a?.positionen || []).find(x => x.lineItemId === p.lineItemId);
+        return { ...p, titel: m?.titel || null, farbe: m?.farbe && m.farbe !== '–' ? m.farbe : null };
+      });
+      return { ...z, positionen: artikel, exportiertAm: daten.exportiertAm || null };
+    });
+  }
+
+  /**
+   * "In Shopify nachbuchen" aus der Abweichungsliste: genau die Positionen dieser Bestellung,
+   * die im Dashboard raus/erledigt sind und in Shopify offen - ohne Mail an den Kunden.
+   */
+  async function shopifyNachbuchen(payload, benutzer, actor) {
+    const { orderId } = payload || {};
+    if (!orderId) throw new ApiError(400, 'orderId ist Pflicht', { missing: ['orderId'] });
+    const dir = privatDirPath || privatDir();
+    const zeile = (abweichungsListe(dir) || []).find(z => z.orderId === String(orderId));
+    if (!zeile) throw new ApiError(409, 'Diese Bestellung weicht nicht mehr ab – im Dashboard und in Shopify steht dasselbe.');
+    const auftrag = auftragFuerVersand(dir, String(orderId));
+    const shopifyErgebnis = await versandBuchen({ dir, auftrag, lineItemIds: zeile.lineItemIds, angaben: { benachrichtigen: false }, benutzer, actor, trotzVermerk: true });
+    const offen = (abweichungsListe(dir) || []).length;
+    return { ok: true, orderId: String(orderId), shopify: shopifyErgebnis, abweichungen: offen };
+  }
+
   /** Zeitleisten aller Auftraege (orderId -> { auftragsart, verlauf, naechsterSchritt, ... }). */
   function zeitleisten(dir, modell, statusAlle) {
     return zeitleistenFuerModell(modell, { statusAlle, verlaufAlle: leseVerlauf(auftragsverlaufPfad(dir)), jetzt: now() });
@@ -939,12 +1056,21 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     let anzahl = 0;
     // Positionen, die in diesem Schritt raus gehen - die bucht Shopify danach als versendet.
     let rausIds = [];
+    // Positionen, die in diesem Schritt erledigt werden - die bucht Shopify ohne Kundenmail, wenn
+    // dort noch offen (erledigtBuchen). Ein zweiter Klick auf "Erledigt" bucht nichts erneut.
+    let erledigtIds = [];
+    const vorErledigt = () => {
+      const alle = leseAktuellenStatus(statusDatei, modell);
+      return new Set(positionen.filter(p => alle[positionKey(orderId, p.lineItemId)]?.status !== 'erledigt').map(p => p.lineItemId));
+    };
     try {
       if (STATUS_ORDER.includes(schritt)) {
         const neu = schritt === 'raus' ? vorRaus() : null;
+        const offenVorher = schritt === 'erledigt' ? vorErledigt() : null;
         const ids = setzePositionen(schritt, notiz, schritt === 'raus' ? versandMailFuer(angaben, positionen) : null);
         anzahl = ids.length;
         if (neu) rausIds = ids.filter(id => neu.has(id));
+        if (offenVorher) erledigtIds = ids.filter(id => offenVorher.has(id));
       } else {
         // Verlauf und alle Positionsregeln pruefen, bevor irgendeine der beiden Dateien geschrieben wird.
         const ereignis = bereiteEreignisVor(auftragsverlaufPfad(dir), { orderId, schritt, actor, notiz: notizText, bezug, jetzt: now() });
@@ -962,7 +1088,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           }
         }
         if (ERGEBNIS_SCHRITTE.includes(schritt) && positionen.length) {
-          anzahl = setzePositionen('erledigt', `Ergebnis: ${SCHRITT_LABEL.muster[schritt]}${notizText ? ` – ${notizText}` : ''}`).length;
+          const offenVorher = vorErledigt();
+          const ids = setzePositionen('erledigt', `Ergebnis: ${SCHRITT_LABEL.muster[schritt]}${notizText ? ` – ${notizText}` : ''}`);
+          anzahl = ids.length;
+          erledigtIds = ids.filter(id => offenVorher.has(id));
         }
         schreibeVerlauf(auftragsverlaufPfad(dir), ereignis.auftraege);
       }
@@ -975,7 +1104,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     audit({ actor, action: 'auftragsschritt', orderId, schritt, positionen: anzahl });
     merke(benutzer, actor, 'Auftragsschritt', `${auftrag.name}: ${schritt}`);
     // Erst jetzt nach Shopify: der lokale Schritt steht, egal wie die Buchung ausgeht.
-    const shopifyErgebnis = rausIds.length ? await versandBuchen({ dir, auftrag, lineItemIds: rausIds, angaben, benutzer, actor }) : null;
+    const shopifyErgebnis = rausIds.length ? await versandBuchen({ dir, auftrag, lineItemIds: rausIds, angaben, benutzer, actor })
+      : await erledigtBuchen({ dir, auftrag, lineItemIds: erledigtIds, benutzer, actor });
     // Muster nicht verfuegbar: die Farben im Shop sperren - nach dem lokalen Schritt, der gilt immer.
     const sperre = sperrPositionen.length ? await musterSperren({ dir, auftrag, positionen: sperrPositionen, benutzer, actor }) : null;
     const statusNachher = leseAktuellenStatus(statusDatei, modell);
@@ -1409,6 +1539,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     /** Bestelluebersicht: offene Kundenbestellungen, gruppiert je Lieferant, plus Muster. */
     einkaufBestellungen() {
       const dir = privatDirPath || privatDir();
+      shopifyAbgleichen(dir);
       const file = path.join(dir, 'bestelluebersicht', 'orders.json');
       const daten = readJsonIfExists(file);
       if (!daten) return { verfuegbar: false, quelle: file, hinweis: 'orders.json fehlt - siehe operations/lib/bestelluebersicht.mjs bzw. den Export-Lauf dafuer.' };
@@ -1456,6 +1587,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     /** Kunden-Detailansicht: Kontakt, Anschriften, alle Bestellungen mit Positionen. */
     kundenDetail({ key = '' } = {}) {
       const dir = privatDirPath || privatDir();
+      shopifyAbgleichen(dir);
       const modell = ladeBestellModell(dir);
       if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
       const statusAlle = leseAktuellenStatus(auftragsstatusPfad(dir), modell);
@@ -1496,6 +1628,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     /** Vollstaendige Bestelluebersicht (eine Zeile je Bestellung) fuer die Tabellenansicht - Sortierung/Filter/Suche laufen im Browser, das lokale Datenvolumen ist klein. */
     kundenBestellungen() {
       const dir = privatDirPath || privatDir();
+      shopifyAbgleichen(dir);
       const modell = ladeBestellModell(dir);
       if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
       const statusAlle = leseAktuellenStatus(auftragsstatusPfad(dir), modell);
@@ -1514,20 +1647,256 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     kundenMusterTexte() {
       const dir = privatDirPath || privatDir();
       const file = path.join(dir, 'muster-nachfassen-texte.md');
+      // Seit w-119 (automatischer Versand) haengen zwei Dinge mit dran, die die Karte ebenfalls
+      // zeigt: der Stand des Versands (eingerichtet? letzter Lauf?) und die Stoppliste.
+      const zusatz = () => {
+        let abgemeldet = [];
+        let stopplisteFehler = null;
+        try { abgemeldet = Object.entries(leseStoppliste(stopplistePfad(dir))).map(([email, e]) => ({ email, am: e.am || null, von: e.von || null })); }
+        catch (e) { stopplisteFehler = e.message; }
+        const versand = nachfassVersandStand(dir, { jetzt: now() });
+        return { versand: stopplisteFehler ? { ...versand, hinweis: versand.hinweis || stopplisteFehler } : versand, abgemeldet };
+      };
       // "Muster nicht verfuegbar" gibt es immer: aus der Vorlage, wenn sie den Abschnitt hat, sonst der eingebaute Vorschlag.
       let md;
       try { md = fs.readFileSync(file, 'utf8'); }
       catch (e) {
-        if (e?.code === 'ENOENT') return { verfuegbar: false, hinweis: 'Die Textvorlage fehlt: muster-nachfassen-texte.md im Privatordner ablegen.', nichtVerfuegbar: NICHT_VERFUEGBAR_VORLAGE };
+        if (e?.code === 'ENOENT') return { verfuegbar: false, hinweis: 'Die Textvorlage fehlt: muster-nachfassen-texte.md im Privatordner ablegen.', nichtVerfuegbar: NICHT_VERFUEGBAR_VORLAGE, ...zusatz() };
         console.error(`[daten] ${file}: ${e?.message || e}`);
-        return { verfuegbar: false, hinweis: 'Die Textvorlage ist nicht lesbar.', nichtVerfuegbar: NICHT_VERFUEGBAR_VORLAGE };
+        return { verfuegbar: false, hinweis: 'Die Textvorlage ist nicht lesbar.', nichtVerfuegbar: NICHT_VERFUEGBAR_VORLAGE, ...zusatz() };
       }
       const texte = texteAusMarkdown(md);
       const nichtVerfuegbar = texte.nichtVerfuegbar || NICHT_VERFUEGBAR_VORLAGE;
       if (!texte.erste && !texte.erinnerung) {
-        return { verfuegbar: false, hinweis: 'In der Textvorlage fehlen die Abschnitte „Text 1“ und „Erinnerung“ mit einer Zeile „**Betreff:**“.', nichtVerfuegbar };
+        return { verfuegbar: false, hinweis: 'In der Textvorlage fehlen die Abschnitte „Text 1“ und „Erinnerung“ mit einer Zeile „**Betreff:**“.', nichtVerfuegbar, ...zusatz() };
       }
-      return { verfuegbar: true, texte, nichtVerfuegbar };
+      return { verfuegbar: true, texte, nichtVerfuegbar, ...zusatz() };
+    },
+
+    /**
+     * Stoppliste "Muster nachfassen": der Kunde hat mit "Abmelden" geantwortet (Knopf
+     * "Abgemeldet" in der Karte). Ab jetzt schreibt ihn weder der Lauf noch jemand per Klick
+     * an; die Karte zeigt ihn unter "abgemeldet". Antwort traegt den frischen Stand der Karte.
+     */
+    kundenNachfassenAbmelden(payload = {}, benutzer = null) {
+      if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Rolle „lesen“ darf keine Änderungen vornehmen.');
+      const actor = benutzer?.name || null;
+      if (!actor) throw new ApiError(403, 'Bitte anmelden – wer die Abmeldung einträgt, wird festgehalten.');
+      const dir = privatDirPath || privatDir();
+      let r;
+      try {
+        r = trageAbmeldungEin(stopplistePfad(dir), { email: payload?.email, von: actor, grund: payload?.grund || undefined, orderId: payload?.orderId || null, jetzt: now() });
+      } catch (e) {
+        if (e instanceof NachfassFehler) throw new ApiError(e.status, e.message);
+        throw e;
+      }
+      audit({ actor, action: 'nachfassen-abgemeldet', orderId: payload?.orderId || null, neu: r.neu });
+      merke(benutzer, actor, 'Nachfassen abgemeldet', payload?.orderId ? String(payload.orderName || payload.orderId) : 'Kunde');
+      return { ok: true, neu: r.neu, eintrag: r.eintrag, stand: this.kundenMusterTexte() };
+    },
+
+    /**
+     * Der Versandlauf (taeglich, scripts/muster-nachfassen-senden.mjs; Inhaber w-119, Option A):
+     * faellige Nachfragen aus musterNachfassen() (Kaufpruefung steckt in der Zeitleiste), Text 1
+     * bzw. Erinnerung aus der Vorlage, Versand ueber das Firmenpostfach, danach der
+     * Zeitleisten-Schritt "nachgefasst" mit von = "automatisch".
+     *
+     * Reihenfolge je Kunde: erst der Vermerk "sendet" im Versandprotokoll, dann die Mail, dann
+     * "gesendet", dann die Zeitleiste, dann "vermerkt". Bricht der Lauf dazwischen ab, schickt
+     * der naechste keine zweite Mail, sondern holt nur den Zeitleisten-Schritt nach.
+     *
+     * Nichts geht raus, wenn: die Vorlage fehlt, das Postfach nicht eingerichtet ist, die
+     * Stoppliste nicht lesbar ist, ein Platzhalter stehen bliebe. --probe listet nur.
+     *
+     * @param {object} [p]
+     * @param {boolean} [p.probe]   nur auflisten, nichts senden, nichts schreiben
+     * @param {Function} [p.senden] Versandfunktion (Tests: Fake-Server oder Attrappe)
+     */
+    async kundenNachfassenSenden({ probe = false, senden = smtpSenden } = {}) {
+      const dir = privatDirPath || privatDir();
+      const jetzt = now();
+      const ergebnis = { status: 'ok', probe, hinweis: null, kopie: null, geplant: [], verschickt: [], nachgetragen: [], uebersprungen: [], fehler: [] };
+      const abbruch = (status, hinweis) => ({ ...ergebnis, status, hinweis });
+
+      const vorlage = this.kundenMusterTexte();
+      if (!vorlage.verfuegbar) return abbruch('keine-vorlage', vorlage.hinweis);
+      const pf = lesePostfach(postfachPfad(dir));
+      // Ohne Postfach wird nichts verschickt - die Probe zeigt trotzdem, was anstuende.
+      if (!pf.zugang && !probe) return abbruch('kein-zugang', pf.hinweis);
+      let stoppliste;
+      let versand;
+      try {
+        stoppliste = abgemeldeteAdressen(leseStoppliste(stopplistePfad(dir)));
+        versand = leseVersand(versandPfad(dir));
+      } catch (e) {
+        // Stoppliste oder Protokoll unlesbar: lieber niemanden anschreiben als einen Abgemeldeten.
+        return abbruch('stoerung', e.message);
+      }
+      const bestellungen = this.kundenBestellungen();
+      if (!bestellungen.verfuegbar) return abbruch('keine-daten', bestellungen.hinweis || 'Bestelldaten fehlen.');
+
+      const { offen, abgemeldet } = musterNachfassen(bestellungen.zeilen, { jetzt, abgemeldet: stoppliste });
+      for (const e of abgemeldet) ergebnis.uebersprungen.push({ orderId: e.orderId, orderName: e.orderName, stufe: e.stufe, grund: 'abgemeldet' });
+      const kopieAn = pf.zugang && kopieNoetig({ ersterVersandAm: versand.ersterVersandAm, jetzt, immer: pf.zugang.kopieImmer }) ? pf.zugang.kopie : null;
+      ergebnis.kopie = kopieAn;
+      // Probe ohne Postfach: dieselbe Unterschrift wie der echte Lauf ohne eigene Angabe.
+      const unterschrift = pf.zugang?.unterschrift || UNTERSCHRIFT_STANDARD;
+      const schrittSetzen = (e, betreff) => auftragsSchrittSetzen(
+        { orderId: e.orderId, schritt: 'nachgefasst', notiz: `${STUFE_LABEL[e.stufe]} automatisch per E-Mail: „${betreff}“` },
+        { name: AUTOMATISCH, rolle: 'system' }, AUTOMATISCH,
+      );
+      const sichern = () => { if (!probe) schreibeVersand(versandPfad(dir), versand); };
+
+      for (const e of offen) {
+        const kurz = { orderId: e.orderId, orderName: e.orderName, stufe: e.stufe, kundenname: e.kundenname };
+        if (e.kontakt.weg !== 'email') {
+          ergebnis.uebersprungen.push({ ...kurz, grund: e.kontakt.weg === 'rueckruf' ? 'Rückruf gewünscht – anrufen' : 'keine E-Mail-Adresse' });
+          continue;
+        }
+        const mail = fuelleText(vorlage.texte[e.stufe], { kundenname: e.kundenname, absender: unterschrift, produkte: e.produkte });
+        if (!platzhalterFrei(mail)) {
+          ergebnis.fehler.push({ ...kurz, fehler: mail ? 'In der Vorlage bliebe ein Platzhalter stehen – nicht verschickt.' : `Die Vorlage für „${STUFE_LABEL[e.stufe]}“ fehlt.` });
+          continue;
+        }
+        const an = e.kontakt.email;
+        const vorher = schonVerschickt(versand, e.orderId, e.stufe);
+        if (vorher) {
+          // Mail ging schon raus, nur der Zeitleisten-Schritt fehlt (Abbruch im letzten Lauf): nachtragen, nicht neu senden.
+          if (probe) { ergebnis.nachgetragen.push({ ...kurz, am: vorher.am }); continue; }
+          try {
+            await schrittSetzen(e, vorher.betreff || mail.betreff);
+            vorher.status = 'vermerkt';
+            ergebnis.nachgetragen.push({ ...kurz, am: vorher.am });
+          } catch (err) {
+            ergebnis.fehler.push({ ...kurz, fehler: `Zeitleiste nicht nachgetragen: ${err?.message || err}` });
+          }
+          sichern();
+          continue;
+        }
+        if (probe) { ergebnis.geplant.push({ ...kurz, an, betreff: mail.betreff, text: mail.text }); continue; }
+
+        const eintrag = { am: jetzt.toISOString(), orderId: e.orderId, orderName: e.orderName, stufe: e.stufe, an, betreff: mail.betreff, kopie: kopieAn, status: 'sendet', messageId: null, fehler: null };
+        versand.sendungen.push(eintrag);
+        sichern();
+        try {
+          const r = await senden(pf.zugang, { von: { name: pf.zugang.absenderName, adresse: pf.zugang.absender }, an: [an], bcc: kopieAn ? [kopieAn] : [], betreff: mail.betreff, text: mail.text, datum: jetzt });
+          eintrag.status = 'gesendet';
+          eintrag.messageId = r?.messageId || null;
+          if (!versand.ersterVersandAm) versand.ersterVersandAm = jetzt.toISOString();
+        } catch (err) {
+          eintrag.status = 'fehler';
+          eintrag.fehler = String(err?.message || err).slice(0, 300);
+          sichern();
+          ergebnis.fehler.push({ ...kurz, fehler: eintrag.fehler });
+          continue;
+        }
+        sichern();
+        try {
+          await schrittSetzen(e, mail.betreff);
+          eintrag.status = 'vermerkt';
+        } catch (err) {
+          // Die Mail ist raus - das bleibt im Protokoll stehen, der naechste Lauf traegt die Zeitleiste nach.
+          ergebnis.fehler.push({ ...kurz, fehler: `E-Mail verschickt, Zeitleiste nicht geschrieben: ${err?.message || err}` });
+        }
+        sichern();
+        ergebnis.verschickt.push({ ...kurz, an, betreff: mail.betreff, kopie: kopieAn });
+      }
+      if (!probe) {
+        versand.letzterLauf = { am: jetzt.toISOString(), verschickt: ergebnis.verschickt.length, nachgetragen: ergebnis.nachgetragen.length, uebersprungen: ergebnis.uebersprungen.length, fehler: ergebnis.fehler.length, kopie: kopieAn };
+        // Protokoll schlank halten: die letzten 500 Sendungen reichen fuer Doppelschutz und Rueckblick.
+        if (versand.sendungen.length > 500) versand.sendungen = versand.sendungen.slice(-500);
+        sichern();
+        audit({ actor: AUTOMATISCH, action: 'nachfassen-lauf', ...versand.letzterLauf });
+      }
+      return ergebnis;
+    },
+
+    /**
+     * Knopf "Jetzt senden" in der Karte: EINE Nachfrage sofort vom Firmenpostfach, mit dem Text,
+     * den der Mitarbeiter im Feld sieht (und ggf. angepasst hat). Dieselben Schutzregeln wie der
+     * Lauf: Empfaenger kommt nur aus den Bestelldaten (nie aus dem Browser), Stoppliste und
+     * Versandprotokoll werden frisch gelesen, kein Platzhalter erreicht den Kunden, dieselbe
+     * Stufe geht nie zweimal raus. Danach Zeitleiste "nachgefasst" mit dem Namen des Absenders.
+     *
+     * @param {{orderId: string, stufe?: string, betreff?: string, text?: string}} payload
+     * @param {object} [o]
+     * @param {Function} [o.senden] Versandfunktion (Tests: SMTP-Attrappe)
+     */
+    async kundenNachfassenEinzeln(payload = {}, benutzer = null, { senden = smtpSenden } = {}) {
+      if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Rolle „lesen“ darf keine E-Mails verschicken.');
+      const actor = benutzer?.name || null;
+      if (!actor) throw new ApiError(403, 'Bitte anmelden – wer die E-Mail verschickt, wird festgehalten.');
+      const orderId = String(payload?.orderId || '');
+      if (!orderId) throw new ApiError(400, 'orderId ist Pflicht', { missing: ['orderId'] });
+      const dir = privatDirPath || privatDir();
+      const jetzt = now();
+
+      const pf = lesePostfach(postfachPfad(dir));
+      if (!pf.zugang) throw new ApiError(409, pf.hinweis || 'Das Firmenpostfach ist nicht eingerichtet.');
+      let stoppliste;
+      let versand;
+      try {
+        stoppliste = abgemeldeteAdressen(leseStoppliste(stopplistePfad(dir)));
+        versand = leseVersand(versandPfad(dir));
+      } catch (e) {
+        throw new ApiError(409, `Nicht verschickt: ${e.message}`);
+      }
+      const bestellungen = this.kundenBestellungen();
+      if (!bestellungen.verfuegbar) throw new ApiError(409, bestellungen.hinweis || 'Bestelldaten fehlen.');
+      const { offen, abgemeldet } = musterNachfassen(bestellungen.zeilen, { jetzt, abgemeldet: stoppliste });
+      if (abgemeldet.some(a => a.orderId === orderId)) throw new ApiError(409, 'Der Kunde hat sich abgemeldet – keine Nachfragen mehr.');
+      const e = offen.find(o => o.orderId === orderId);
+      if (!e) throw new ApiError(409, 'Für diese Bestellung steht keine Nachfrage mehr an – schon nachgefasst? Seite neu laden.');
+      if (payload?.stufe && payload.stufe !== e.stufe) throw new ApiError(409, 'Der Stand hat sich inzwischen geändert – Seite neu laden.');
+      if (e.kontakt.weg !== 'email') throw new ApiError(409, 'Für diesen Kunden ist keine E-Mail-Adresse hinterlegt.');
+      const vorher = schonVerschickt(versand, orderId, e.stufe);
+      if (vorher) throw new ApiError(409, `Diese E-Mail ist schon am ${new Date(vorher.am).toLocaleDateString('de-DE')} rausgegangen – nichts doppelt verschickt.`);
+
+      // Text aus dem Feld der Karte; ohne Angabe die Vorlage, unterschrieben vom Absender.
+      let mail;
+      if (payload?.text != null) {
+        mail = { betreff: String(payload.betreff ?? '').trim(), text: String(payload.text).replace(/\r\n/g, '\n').trim() };
+      } else {
+        const vorlage = this.kundenMusterTexte();
+        mail = vorlage.verfuegbar ? fuelleText(vorlage.texte[e.stufe], { kundenname: e.kundenname, absender: actor, produkte: e.produkte }) : null;
+        if (!mail) throw new ApiError(409, vorlage.hinweis || `Die Vorlage für „${STUFE_LABEL[e.stufe]}“ fehlt.`);
+      }
+      if (!mail.betreff || /[\r\n]/.test(mail.betreff) || mail.betreff.length > 200) throw new ApiError(400, 'Bitte einen Betreff in einer Zeile angeben (höchstens 200 Zeichen).');
+      if (!mail.text || mail.text.length > 20000) throw new ApiError(400, 'Der Text der E-Mail fehlt oder ist zu lang.');
+      if (!platzhalterFrei(mail)) throw new ApiError(400, 'Im Text steht noch ein Platzhalter in {geschweiften Klammern} – bitte ersetzen.');
+
+      const an = e.kontakt.email;
+      const kopieAn = kopieNoetig({ ersterVersandAm: versand.ersterVersandAm, jetzt, immer: pf.zugang.kopieImmer }) ? pf.zugang.kopie : null;
+      const sichern = () => schreibeVersand(versandPfad(dir), versand);
+      // Reihenfolge wie im Lauf: erst "sendet" vermerken, dann senden - ein Abbruch fuehrt nie zu einer zweiten Mail.
+      const eintrag = { am: jetzt.toISOString(), orderId, orderName: e.orderName, stufe: e.stufe, an, betreff: mail.betreff, kopie: kopieAn, von: actor, status: 'sendet', messageId: null, fehler: null };
+      versand.sendungen.push(eintrag);
+      sichern();
+      try {
+        const r = await senden(pf.zugang, { von: { name: pf.zugang.absenderName, adresse: pf.zugang.absender }, an: [an], bcc: kopieAn ? [kopieAn] : [], betreff: mail.betreff, text: mail.text, datum: jetzt });
+        eintrag.status = 'gesendet';
+        eintrag.messageId = r?.messageId || null;
+        if (!versand.ersterVersandAm) versand.ersterVersandAm = jetzt.toISOString();
+      } catch (err) {
+        eintrag.status = 'fehler';
+        eintrag.fehler = String(err?.message || err).slice(0, 300);
+        sichern();
+        audit({ actor, action: 'nachfassen-einzeln', orderId, stufe: e.stufe, status: 'fehler' });
+        throw new ApiError(502, `E-Mail nicht verschickt: ${eintrag.fehler}`);
+      }
+      sichern();
+      let zeitleisteFehler = null;
+      try {
+        await auftragsSchrittSetzen({ orderId, schritt: 'nachgefasst', notiz: `${STUFE_LABEL[e.stufe]} per E-Mail aus dem Control Center: „${mail.betreff}“` }, benutzer, actor);
+        eintrag.status = 'vermerkt';
+      } catch (err) {
+        // Die Mail ist raus; der naechste Lauf traegt die Zeitleiste nach (schonVerschickt), statt neu zu senden.
+        zeitleisteFehler = String(err?.message || err);
+      }
+      sichern();
+      audit({ actor, action: 'nachfassen-einzeln', orderId, stufe: e.stufe, status: eintrag.status, kopie: kopieAn });
+      merke(benutzer, actor, 'Muster nachgefasst per E-Mail', String(e.orderName || orderId));
+      return { ok: true, an, kopie: kopieAn, stufe: e.stufe, zeitleisteFehler, stand: this.kundenMusterTexte() };
     },
 
     /**
@@ -1546,17 +1915,25 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const dir = privatDirPath || privatDir();
       const file = auftragsstatusPfad(dir);
       const modell = ladeBestellModell(dir);
-      const positionen = [...(modell?.auftraege || []), ...(modell?.testauftraege || [])].find(a => a.id === orderId)?.positionen || [];
+      const auftrag = [...(modell?.auftraege || []), ...(modell?.testauftraege || [])].find(a => a.id === orderId) || null;
+      const positionen = auftrag?.positionen || [];
+      const ids = [...new Set(lineItemIds.map(String))];
+      // Was vorher noch nicht erledigt war, wird gleich in Shopify gebucht (ohne Kundenmail).
+      const vorher = leseAuftragsstatus(file);
+      const neuErledigt = ids.filter(id => vorher[positionKey(orderId, id)]?.status !== 'erledigt');
       let eintraege;
       try {
-        eintraege = setzeStatusPositionen(file, [...new Set(lineItemIds)].map(lineItemId => { const p = positionen.find(p => p.lineItemId === lineItemId); return { orderId, lineItemId, status: 'erledigt', actor, bestellmenge: p?.bestellSoll || p?.bestellmenge || null, notiz: notiz || 'Kunde fertig (Sammelschritt)', jetzt: now() }; }));
+        eintraege = setzeStatusPositionen(file, ids.map(lineItemId => { const p = positionen.find(p => p.lineItemId === lineItemId); return { orderId, lineItemId, status: 'erledigt', actor, bestellmenge: p?.bestellSoll || p?.bestellmenge || null, notiz: notiz || 'Kunde fertig (Sammelschritt)', jetzt: now() }; }));
       } catch (e) {
         if (e instanceof AuftragsstatusFehler) throw new ApiError(e.status, e.message);
         throw e;
       }
       audit({ actor, action: 'auftragsstatus-kunde-fertig', orderId, anzahl: eintraege.length });
-      merke(benutzer, actor, 'Kunde fertig', `${orderId}: ${eintraege.length} Artikel`);
-      return { ok: true, anzahl: eintraege.length, eintraege };
+      merke(benutzer, actor, 'Kunde fertig', `${auftrag?.name || orderId}: ${eintraege.length} Artikel`);
+      const shopifyErgebnis = await erledigtBuchen({ dir, auftrag: auftrag || auftragFuerVersand(dir, String(orderId)), lineItemIds: neuErledigt, benutzer, actor });
+      const stand = leseAuftragsstatus(file);
+      // Eintraege nach der Buchung (mit Versandvermerk), in derselben Reihenfolge wie bisher.
+      return { ok: true, anzahl: eintraege.length, eintraege: eintraege.map(e => stand[positionKey(e.orderId, e.lineItemId)] || e), ...(shopifyErgebnis ? { shopify: shopifyErgebnis } : {}) };
     },
 
     /** Rueckruf-/Beratungs-Arbeitsliste, aelteste Bestellung zuerst, mit lokalem Bearbeitungsstatus. */
@@ -1771,9 +2148,34 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     /** Auftragsfluss-Status je Position, rein lokal (nie im Repository). */
     einkaufAuftragsstatus() {
       const dir = privatDirPath || privatDir();
+      shopifyAbgleichen(dir);
       const file = auftragsstatusPfad(dir);
       const positionen = leseAktuellenStatus(file);
       return { verfuegbar: true, quelle: file, positionen };
+    },
+
+    /**
+     * Abgleich mit Shopify (operations/lib/shopify-abgleich.mjs): Bestellungen, die im Dashboard
+     * abgehakt sind (raus/erledigt), in Shopify aber offen - je Bestellung eine Zeile, dazu der
+     * letzte Lauf Shopify -> Dashboard. Lesend fuer alle Rollen; nachgebucht wird ueber
+     * POST /api/einkauf/auftragsstatus (aktion "shopifyNachbuchen", Schreibpfad).
+     */
+    einkaufShopifyAbgleich() {
+      const dir = privatDirPath || privatDir();
+      const quelle = path.join(dir, 'bestelluebersicht', 'orders.json');
+      const lauf = shopifyAbgleichen(dir);
+      let liste;
+      try { liste = abweichungsListe(dir); } catch (e) {
+        // Beschaedigte Ablage: sichtbar als Stoerung, nie als "alles gleich".
+        return { verfuegbar: true, fehler: String(e?.message || e).split('\n')[0], abweichungen: [], letzterAbgleich: lauf || null };
+      }
+      if (!liste) return { verfuegbar: false, quelle, hinweis: leseFehler(quelle) || 'orders.json fehlt.' };
+      return { verfuegbar: true, fehler: null, abweichungen: liste, letzterAbgleich: lauf || null };
+    },
+
+    /** Fuer den Zeitgeber im Dienst: Shopify -> Dashboard nach jedem neuen Export, auch ohne offene Seite. */
+    shopifyAbgleich() {
+      return shopifyAbgleichen();
     },
 
     /** Setzt den Status einer Bestellposition (Bestellt/Geliefert/Raus/Erledigt). */
@@ -1784,6 +2186,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Anmeldung (Notzugang) bleibt der bisherige gh-Login die handelnde Person.
       const actor = benutzer?.name || await currentUser();
       if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
+      // Erst den neuesten Shopify-Stand uebernehmen, dann die Aenderung darauf anwenden.
+      shopifyAbgleichen();
       // Bis zu den lokalen Writes kein await: Vorpruefung und Uebernahmesperre werden
       // im selben JS-Schritt frisch gelesen; asynchron bleibt nur die bestehende Versandbuchung.
       const { orderId, lineItemId, status, lieferantBestellnummer, notiz, aktion } = payload || {};
@@ -1819,6 +2223,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Additiv - ohne `aktion` verhaelt sich der Endpunkt exakt wie bisher.
       if (aktion === 'schritt') return auftragsSchrittSetzen(payload, benutzer, actor);
       if (aktion === 'versandNachholen') return versandNachholen(payload, benutzer, actor);
+      if (aktion === 'shopifyNachbuchen') return shopifyNachbuchen(payload, benutzer, actor);
       if (aktion === 'zurueckAufOffen') return zurueckAufOffen(payload, benutzer, actor);
       if (aktion === 'musterHerkunft') return musterHerkunftSetzen(payload, benutzer, actor);
       if (!orderId || !lineItemId) throw new ApiError(400, 'orderId und lineItemId sind Pflicht', { missing: ['orderId', 'lineItemId'] });
@@ -1867,6 +2272,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         eintrag = vermerkeShopifyVersand(file, { orderId, lineItemId, vermerk: { status: 'ausstehend', grund: 'ohne-dialog', am: now().toISOString(),
           meldung: 'Noch nicht in Shopify gebucht – „In Shopify buchen“ bucht alle wartenden Artikel dieser Bestellung als ein Paket.' } }) || eintrag;
         return { ok: true, eintrag, shopify: { status: 'ausstehend', meldung: eintrag.shopifyVersand?.meldung || null, gebucht: 0, bereits: 0, nichtGebucht: 1 } };
+      }
+      // "Erledigt" bucht in Shopify, wenn dort noch offen - ohne Mail, deshalb auch je Artikel unbedenklich.
+      if (status === 'erledigt' && vorher?.status !== 'erledigt') {
+        const shopifyErgebnis = await erledigtBuchen({ dir, auftrag: auftragFuerVersand(dir, String(orderId)), lineItemIds: [lineItemId], benutzer, actor });
+        if (shopifyErgebnis) return { ok: true, eintrag: leseAuftragsstatus(file)[positionKey(orderId, lineItemId)] || eintrag, shopify: shopifyErgebnis };
       }
       return { ok: true, eintrag };
     },

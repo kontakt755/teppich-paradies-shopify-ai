@@ -72,7 +72,9 @@ test('Versand reduziert nur offene Menge: Gesamt-Soll und vollständig bestätig
   await u.api.einkaufAuftragsstatusSetzen({ ...position, aktion: 'beschaffung', felder: { angekommen: 10, verwendbar: 10 } }, person);
   u.schreib(10, 0);
   const e = u.api.einkaufAuftragsstatus().positionen[`${O}::${L}`];
-  assert.equal(e.status, 'geliefert'); assert.equal(restmenge(e), 0); assert.equal(e.beschaffung.klaerung, null);
+  // In Shopify versendet: der Abgleich hebt auf "raus" (shopify-abgleich.mjs), die Mengen bleiben.
+  assert.equal(e.status, 'raus'); assert.equal(e.rausNotiz, 'aus Shopify übernommen');
+  assert.equal(restmenge(e), 0); assert.equal(e.beschaffung.klaerung, null); assert.equal(e.beschaffung.wareneingang.soll, 10);
   assert.equal(u.aufrufe(), 0);
 });
 
