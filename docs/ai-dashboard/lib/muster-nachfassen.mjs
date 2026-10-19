@@ -141,6 +141,59 @@ export function musterNachfassen(bestellzeilen = [], { jetzt = new Date(), abgem
   return { offen, erledigt: fertig, abgemeldet: stopp };
 }
 
+/**
+ * Laeuft der automatische Versand? Nur dann ist eine faellige E-Mail-Nachfrage keine Aufgabe
+ * fuer einen Menschen. Nicht laufend heisst: Postfach nicht eingerichtet, Ablage mit Stoerung
+ * (hinweis) oder keine Textvorlage - dann schickt auch der Lauf nichts.
+ *
+ * @param {object|null} t  Antwort von /api/kunden/muster-texte ({verfuegbar, versand: {eingerichtet, hinweis, letzterLauf}})
+ * @returns {boolean|null} null = noch nicht geladen
+ */
+export function versandLaeuft(t) {
+  if (!t) return null;
+  return Boolean(t.verfuegbar !== false && t.versand?.eingerichtet && !t.versand?.hinweis);
+}
+
+/**
+ * Wer muss selbst ran? (Startseite "Heute", Codex-Audit 2026-10-19: automatisch geplante Mails
+ * zaehlten als "To-dos fuer dich".)
+ *   mensch       anrufen (Rueckrufwunsch) oder - solange der Versand nicht laeuft - per E-Mail
+ *   automatisch  geht beim naechsten Lauf von selbst per E-Mail raus
+ *   ohneWeg      weder E-Mail noch Rueckrufwunsch: nichts zu tun ausser abschliessen - kein To-do
+ * Abgemeldete stehen gar nicht in `offen` (musterNachfassen()), werden also nie zur Kontaktaufgabe.
+ */
+export function teileNachfassen(offen = [], { automatisch = false } = {}) {
+  const teile = { mensch: [], automatisch: [], ohneWeg: [] };
+  for (const e of offen || []) {
+    const weg = e?.kontakt?.weg;
+    if (weg === 'rueckruf') teile.mensch.push(e);
+    else if (weg === 'email') (automatisch ? teile.automatisch : teile.mensch).push(e);
+    else teile.ohneWeg.push(e);
+  }
+  return teile;
+}
+
+/**
+ * Eine Nachfrage, die ein Mensch erledigen muss, als Zeile der To-do-Liste auf "Heute"
+ * (gleiche Form wie lib/todos.mjs). `ansehenHref` fuehrt zur aufgeklappten Nachfass-Karte,
+ * in der Text, "Jetzt senden" und "Erledigt" stehen.
+ */
+export function nachfassTodo(e, { ansehenHref }) {
+  const k = e.kontakt || {};
+  const erinnerung = e.stufe === 'erinnerung';
+  const wann = erinnerung ? `erste Nachfrage vor ${e.tage} Tagen` : `Muster verschickt vor ${e.tage} Tagen`;
+  const tel = k.weg === 'rueckruf' && k.telefon ? String(k.telefon).replace(/[^0-9+]/g, '') : '';
+  return {
+    id: `nachfassen:${e.orderId}`, art: 'nachfassen', bereich: 'laden',
+    // Eine Nachfrage altert nicht wie eine Lieferung: faellig ist sie ab Tag 4, rot wird sie nie.
+    ton: '', alterTage: e.tage ?? null,
+    titel: `${erinnerung ? 'Erinnerung schicken' : 'Muster nachfassen'}: ${e.kundenname || e.orderName}`,
+    kontext: [e.orderName, wann, (e.muster || []).slice(0, 2).join(' · ') || null,
+      k.weg === 'rueckruf' ? 'Rückruf gewünscht' : 'per E-Mail'].filter(Boolean).join(' · '),
+    knopf: tel ? { text: 'Anrufen', href: `tel:${tel}` } : { text: 'Nachfassen', href: ansehenHref },
+  };
+}
+
 /** Kein Platzhalter mehr in Betreff oder Text - erst dann darf eine Mail raus. */
 export function platzhalterFrei(mail) {
   if (!mail || typeof mail !== 'object') return false;
