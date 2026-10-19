@@ -33,6 +33,7 @@ jedem Import) nennt `AGENTS.md` weiter selbst.
 | `npm run lighthouse:messen` | **bevor jemand "schneller/langsamer" sagt**: Lighthouse gegen Live, 3 Seiten mit und ohne Cookie-Banner, 5 Runden reihum (rund 25 min); `-- --pruefen` nur Vorpruefung |
 | `npm run -s kurz -- <art>` | Theme-Rollen, Push-Ergebnis, Worktrees gefiltert statt als Rohdump |
 | `npm run -s handoff` | Uebergabetext fuer die naechste Sitzung aus dem Git-Stand |
+| `npm run -s ki:frag -- codex\|claude "Frage"` | direkte, nur lesende Rueckfrage an die andere KI; `weiter <ki>` setzt fort, Diff per stdin → Skill `codex` |
 | `npm run theme:diff -- --manifest <datei>` | Theme gegen Repository abgleichen |
 | `npm run workflow:scratch -- --theme-id <id>` | Wegwerf-Theme zum Ausprobieren, ohne Evidence |
 
