@@ -21,6 +21,7 @@ import {
   leiteTodosAb, zaehleTodos, werWartet, sichtFuer, sortiereTodos, alterText, SICHT_LABEL,
 } from '../lib/todos.mjs';
 import { versandLaeuft, teileNachfassen, nachfassTodo } from '../lib/muster-nachfassen.mjs';
+import { belegTodos } from '../lib/lieferbelege.mjs';
 import { state } from '../kern/zustand.mjs';
 import { esc, fmtDateTime, plural } from '../kern/helfer.mjs';
 import { darfAnsicht } from '../kern/router.mjs';
@@ -29,6 +30,7 @@ import { schnittJeBezahlter } from '../lib/kennzahlen.mjs';
 import { stoerungState } from '../bausteine/karten.mjs';
 import { ensureAktualisierung, aktualisierenButton, aktualisierungHealth } from '../bausteine/aktualisierung.mjs';
 import { einkauf, ensureEinkaufAuftragsstatus, ensureEinkaufKennzahlen, anzeigeWert } from './einkauf/auftragsfluss.mjs';
+import { belege, ensureBelege, laufStand } from './einkauf/belege.mjs';
 import { hinweisText } from './einkauf/bestellungen.mjs';
 import { kunden } from './kunden/gemeinsam.mjs';
 import { ensureKundenBestellungen } from './kunden/bestellungen.mjs';
@@ -133,6 +135,7 @@ export function viewHeute() {
   ensureLadenZahlen();
   if (istInhaber()) ensureEinkaufKennzahlen();
   if (darfAnsicht('shopwache')) ensureShopwache();
+  if (darfAnsicht('einkauf')) ensureBelege();
 
   const q = quellen();
   const b = benutzer();
@@ -142,13 +145,18 @@ export function viewHeute() {
   const nf = nachfassStand(sicht);
   if (nf.alleOffen.length || nf.alle.erledigt.length) ensureHeuteMusterTexte();
 
-  const eigene = [
-    ...nf.mensch.map(e => nachfassTodo(e, { ansehenHref: heuteHref('mn', '1') })),
-    ...(nf.versandFehler ? [versandFehlerTodo(nf.versandFehler)] : []),
+  // Nachfragen und Lieferantenbelege gehoeren zum Laden; die Laden-Zahl am Chip zaehlt sie
+  // auch, wenn gerade die Website-Sicht offen ist.
+  const nfLaden = sicht === 'website' ? nachfassStand('laden') : nf;
+  const eigeneLaden = [
+    ...nfLaden.mensch.map(e => nachfassTodo(e, { ansehenHref: heuteHref('mn', '1') })),
+    ...(nfLaden.versandFehler ? [versandFehlerTodo(nfLaden.versandFehler)] : []),
+    ...(darfAnsicht('einkauf') ? belegTodos(belege.daten) : []),
   ];
+  const eigene = sicht === 'website' ? [] : eigeneLaden;
   const liste = sortiereTodos([...leiteTodosAb(q, opt), ...eigene]);
-  // Chip-Zahlen zaehlen dasselbe wie die Liste: To-dos der Sicht plus die Nachfragen (die sind Laden).
-  const chips = istInhaber() ? chipZahlen(q, opt, eigene.length) : null;
+  // Chip-Zahlen zaehlen dasselbe wie die Liste: To-dos der Sicht plus Nachfragen und Belege (Laden).
+  const chips = istInhaber() ? chipZahlen(q, opt, eigeneLaden.length) : null;
   const wartet = werWartet(q, { ...opt, nachfassen: new Set(nf.alleOffen.map(e => e.orderId)) });
 
   return `<div class="heute">
@@ -162,9 +170,9 @@ export function viewHeute() {
   </div>`;
 }
 
-function chipZahlen(q, opt, nachfassen) {
+function chipZahlen(q, opt, laden) {
   const z = zaehleTodos(q, opt);
-  return { laden: z.laden + nachfassen, website: z.website, alles: z.alles + nachfassen };
+  return { laden: z.laden + laden, website: z.website, alles: z.alles + laden };
 }
 
 function kopf(anzahl, sicht, chips) {
@@ -266,6 +274,11 @@ function hintergrund(nf, wartet, sicht) {
   const kunde = wartet.kunde.length;
   if (lieferant || kunde) {
     zeilen.push(`<div class="heute-hg-zeile"><span class="heute-hg-name">Wartet auf andere</span><span class="heute-hg-text">${esc([lieferant ? `${lieferant} beim Lieferanten` : null, kunde ? `${kunde} beim Kunden` : null].filter(Boolean).join(' · '))}</span>${umschalten('ww', 'Ansehen')}</div>`);
+  }
+
+  if (sicht !== 'website' && darfAnsicht('einkauf') && belege.daten?.verfuegbar) {
+    const l = laufStand(belege.daten);
+    zeilen.push(`<div class="heute-hg-zeile${l.ton ? ` ${l.ton}` : ''}"><span class="heute-hg-name">Lieferantenpostfach</span><span class="heute-hg-text">${esc(l.text)}</span><a class="heute-hg-knopf" href="#/einkauf?tab=belege">Belege</a></div>`);
   }
 
   zeilen.push(datenstandZeile(sicht));

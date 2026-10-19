@@ -55,6 +55,8 @@ html[data-theme="dark"] .heute-sicht a[aria-current] { color: var(--bg); }
 .heute-hg-text { flex: 1 1 260px; min-width: 0; overflow-wrap: anywhere; }
 .heute-hg-knopf { margin-left: auto; min-height: 32px; padding: 3px 12px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--text-2); font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer; }
 .heute-hg-knopf:hover, .heute-hg-knopf[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
+a.heute-hg-knopf { display: inline-flex; align-items: center; text-decoration: none; }
+.heute-hg-zeile.warn .heute-hg-text { color: var(--warn); font-weight: 600; }
 .heute-datenstand .punkt { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
 .heute-datenstand.warn .punkt { background: var(--warn); }
 .heute-datenstand.warn .heute-hg-text { color: var(--text); }

@@ -1,0 +1,392 @@
+// Lieferantenbelege aus dem Postfach (Inhaber 2026-10-19): erkennen, zuordnen, abgleichen,
+// Ablage mit Sperre, API und Rollen. Nur synthetische Daten: Pseudonym-Lieferanten A/B,
+// erfundene Kunden, Domains unter .example.
+import { PRIVAT_DIR } from './_testumgebung.mjs'; // muss zuerst stehen
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import http from 'node:http';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {
+  klassifiziere, referenzen, aktuellerTeil, domainVon, lieferantZurDomain, kandidatenAus, ordneZu,
+  zuordnungMitEntscheidung, abgleich, belegMarke,
+} from '../lib/lieferbelege.mjs';
+import { lieferbelegePfad, leseBelege, uebernehmen, entscheide, bekannt, LieferbelegFehler } from '../../../operations/lib/lieferbelege.mjs';
+import { createApi } from '../../../scripts/dashboard-api.mjs';
+
+const JETZT = new Date('2026-10-16T10:00:00Z');
+
+// --- Erkennen -------------------------------------------------------------------------------
+
+test('klassifiziere: AB, Lieferschein, Avis, Storno, Rechnung, Beleg und was kein Beleg ist', () => {
+  const k = (betreff, extra = {}) => klassifiziere({ von: 'Innendienst <innendienst@lieferant-a.example>', betreff, text: '', ...extra }).art;
+  assert.equal(k('Auftragsbestätigung 4711 Kommission Beispiel'), 'ab');
+  assert.equal(k('Auftr.-Best. KD050/0217 BEISPIEL'), 'ab');
+  assert.equal(k('Orderbevestiging 123456'), 'ab');
+  assert.equal(k('Lieferschein 80001234'), 'lieferschein');
+  assert.equal(k('Ihre Sendung ist unterwegs'), 'lieferschein');
+  assert.equal(k('Liefertermin für Ihren Auftrag 4711'), 'avis');
+  assert.equal(k('Rechnung 2026-0815'), 'rechnung');
+  assert.equal(k('Auftragsbestätigung 4711', { text: 'Leider ist die Farbe 12 nicht mehr lieferbar.' }), 'storno', 'Storno im Text geht vor AB');
+  assert.equal(k('Ihre Bestellung', { anhaenge: ['Stornierung_4711.pdf'] }), 'storno');
+  assert.equal(k('Dokument', { anhaenge: ['scan_001.pdf'] }), 'beleg');
+  assert.equal(k('Automatische Antwort: Auftragsbestätigung'), 'ignorieren');
+  assert.equal(k('Angebot 2026-77'), 'ignorieren');
+  assert.equal(k('Newsletter Herbst'), 'ignorieren');
+  assert.equal(klassifiziere({ von: 'kontakt@teppich-paradies.net', betreff: 'Auftragsbestätigung' }).art, 'ignorieren', 'eigene Mail');
+});
+
+test('aktuellerTeil: zitierter Verlauf zaehlt nicht (alter Auftrag, alte Nummer)', () => {
+  const text = 'Anbei die AB.\n\nAm 01.10.2026 um 10:00 schrieb Einkauf:\n> Bestellung #1001 Kommission Altkunde';
+  assert.equal(aktuellerTeil(text).trim(), 'Anbei die AB.');
+  const r = referenzen({ betreff: 'Auftragsbestätigung 4711', text });
+  assert.deepEqual(r.textNummern, []);
+});
+
+test('referenzen: Bestellnummern nach Fundort, Belegnummer, Kommission ohne unseren Firmennamen', () => {
+  const r = referenzen({ betreff: 'Auftragsbestätigung 4711 Kommission Erika Beispiel #9001 Teppich Paradies Oran', text: 'Siehe auch #9002.' });
+  assert.deepEqual(r.betreffNummern, ['#9001']);
+  assert.deepEqual(r.textNummern, ['#9002']);
+  assert.equal(r.belegnummer, '4711');
+  assert.equal(r.kommission, 'Erika Beispiel');
+  assert.deepEqual(r.woerter, ['erika', 'beispiel']);
+  const a = referenzen({ betreff: 'Auftr.-Best. KD050/0217 MUSTERMANN' });
+  assert.equal(a.belegnummer, 'KD050/0217');
+  assert.equal(a.kommission, 'MUSTERMANN');
+});
+
+test('lieferantZurDomain: Stammdaten-Adressen, postfachDomains, Unterdomain, nie Freemail', () => {
+  const stammdaten = { lieferanten: {
+    A: { ware: { mail: 'bestellung@lieferant-a.example' }, muster: {} },
+    B: { postfachDomains: ['lieferant-b.example'], ware: { mail: 'b@gmail.com' }, muster: {} },
+  } };
+  assert.equal(lieferantZurDomain('lieferant-a.example', { stammdaten }), 'A');
+  assert.equal(lieferantZurDomain('mail.lieferant-b.example', { stammdaten }), 'B');
+  assert.equal(lieferantZurDomain('gmail.com', { stammdaten }), null);
+  assert.equal(lieferantZurDomain('andere.example', { stammdaten }), null);
+  assert.equal(lieferantZurDomain('andere.example', { stammdaten, absender: { 'andere.example': { art: 'lieferant', lieferant: 'B' } } }), 'B');
+  assert.equal(domainVon('Innendienst <AB@Lieferant-A.example>'), 'lieferant-a.example');
+});
+
+// --- Zuordnen -------------------------------------------------------------------------------
+
+const zeile = (nr, kunde, lieferanten, { datum = '2026-10-10T10:00:00Z', fulfillment = 'UNFULFILLED', test: istTest = false } = {}) => ({
+  orderId: `gid://shopify/Order/${nr}`, orderName: `#${nr}`, kundenname: kunde, datum, fulfillmentstatus: fulfillment, testbestellung: istTest, storniert: false,
+  auftrag: { positionen: lieferanten.map((l, i) => ({ lineItemId: `gid://shopify/LineItem/${nr}${i}`, lieferant: l, istMuster: false, titel: `Ware ${l}` })) },
+});
+const KANDIDATEN = kandidatenAus([
+  zeile(9001, 'Erika Beispiel', ['A']),
+  zeile(9002, 'Max Mustermann', ['A', 'B']),
+  zeile(9003, 'Lena Schwarz', ['B']),
+  zeile(9004, 'Tom Schwarz', ['B']),
+  zeile(9005, 'Testkunde', ['A'], { test: true }),
+  zeile(8001, 'Erika Beispiel', ['A'], { datum: '2026-04-01T10:00:00Z' }),
+]);
+const beleg = (betreff, { lieferant = 'A', text = '', datum = '2026-10-14T08:00:00Z' } = {}) => ({
+  id: `m-${betreff.length}`, datum, lieferant, domain: lieferant ? `lieferant-${lieferant.toLowerCase()}.example` : 'fremd.example', art: 'ab',
+  refs: referenzen({ betreff, text }),
+});
+
+test('kandidatenAus: ohne Testbestellungen, Lieferanten je Bestellung', () => {
+  assert.equal(KANDIDATEN.some(k => k.orderName === '#9005'), false);
+  assert.deepEqual(KANDIDATEN.find(k => k.orderName === '#9002').lieferanten, ['A', 'B']);
+});
+
+test('ordneZu: sicher nur mit Nummer im Betreff UND passendem Lieferanten', () => {
+  assert.equal(ordneZu(beleg('Auftragsbestätigung 4711 #9001'), KANDIDATEN).stufe, 'sicher');
+  const zwei = ordneZu(beleg('AB 4711 #9001 #9002'), KANDIDATEN);
+  assert.equal(zwei.stufe, 'sicher');
+  assert.equal(zwei.orderIds.length, 2);
+  const falscherLieferant = ordneZu(beleg('AB 4711 #9003'), KANDIDATEN);
+  assert.equal(falscherLieferant.stufe, 'vorschlag', 'Lieferant A, Bestellung hat nur B');
+  assert.match(falscherLieferant.grund, /passt nicht/);
+  assert.equal(ordneZu(beleg('AB 4711 #9001', { lieferant: null }), KANDIDATEN).stufe, 'vorschlag', 'unbekannter Absender');
+  assert.equal(ordneZu(beleg('AB 4711', { text: 'zu Ihrer Bestellung #9001' }), KANDIDATEN).stufe, 'vorschlag', 'Nummer nur im Text');
+});
+
+test('ordneZu: Name nur als Vorschlag, mehrdeutige Nachnamen nur mit Vorname, Zeitfenster', () => {
+  const name = ordneZu(beleg('Auftragsbestätigung 4711 Kommission Beispiel'), KANDIDATEN);
+  assert.equal(name.stufe, 'vorschlag');
+  assert.deepEqual(name.orderIds, ['gid://shopify/Order/9001'], 'die Bestellung aus April liegt ausserhalb der 120 Tage');
+  assert.equal(ordneZu(beleg('AB 4711 Kommission Schwarz', { lieferant: 'B' }), KANDIDATEN).stufe, 'keine', '"Schwarz" ist auch eine Farbe');
+  assert.deepEqual(ordneZu(beleg('AB 4711 Kommission Lena Schwarz', { lieferant: 'B' }), KANDIDATEN).orderIds, ['gid://shopify/Order/9003']);
+  assert.equal(ordneZu(beleg('AB 4711 #9001', { datum: '2026-10-01T08:00:00Z' }), KANDIDATEN).stufe, 'keine', 'Beleg vor der Bestellung');
+  assert.equal(ordneZu(beleg('AB 4711 #9001'), KANDIDATEN, { abgelehnt: ['gid://shopify/Order/9001'] }).stufe, 'keine', '"Passt nicht" bleibt');
+});
+
+test('zuordnungMitEntscheidung: Mensch geht vor, Absender "kein Shop" nur ohne Nummer im Betreff', () => {
+  const b = beleg('Auftragsbestätigung 4711 Kommission Beispiel');
+  assert.equal(zuordnungMitEntscheidung({ ...b, entscheidung: { art: 'zugeordnet', orderIds: ['x'], von: 'Mona' } }, KANDIDATEN).stufe, 'bestaetigt');
+  assert.equal(zuordnungMitEntscheidung({ ...b, entscheidung: { art: 'kein_shop', von: 'Mona' } }, KANDIDATEN).stufe, 'kein_shop');
+  const absender = { 'lieferant-a.example': { art: 'kein_shop' } };
+  assert.equal(zuordnungMitEntscheidung(b, KANDIDATEN, { absender }).stufe, 'kein_shop');
+  assert.equal(zuordnungMitEntscheidung(beleg('AB 4711 #9001'), KANDIDATEN, { absender }).stufe, 'sicher');
+});
+
+// --- Abgleich -------------------------------------------------------------------------------
+
+test('abgleich: AB und Lieferschein je Auftrag und Lieferant, Storno rot, Lieferschein ohne Haken gelb', () => {
+  const status = (nr, i, eintrag) => [`gid://shopify/Order/${nr}::gid://shopify/LineItem/${nr}${i}`, eintrag];
+  const statusAlle = Object.fromEntries([
+    status(9001, 0, { status: 'bestellt', bestelltAm: '2026-10-11T09:00:00Z' }),
+    status(9002, 0, { status: 'bestellt', bestelltAm: '2026-10-11T09:00:00Z' }),
+    status(9002, 1, { status: 'bestellt', bestelltAm: '2026-10-12T09:00:00Z' }),
+    status(9003, 0, { status: 'raus' }),
+  ]);
+  const kandidaten = kandidatenAus([
+    zeile(9001, 'Erika Beispiel', ['A']), zeile(9002, 'Max Mustermann', ['A', 'B'], { fulfillment: 'FULFILLED' }),
+    zeile(9003, 'Lena Schwarz', ['B']), zeile(9004, 'Tom Schwarz', ['B']),
+  ], statusAlle);
+  const mit = (id, art, betreff, lieferant, datum) => {
+    const b = { id, art, datum, lieferant, domain: `lieferant-${lieferant.toLowerCase()}.example`, refs: referenzen({ betreff }), erledigt: null };
+    return { ...b, zuordnung: zuordnungMitEntscheidung(b, kandidaten) };
+  };
+  const belege = [
+    mit('ab1', 'ab', 'AB 1 #9001', 'A', '2026-10-12T08:00:00Z'),
+    mit('ls1', 'lieferschein', 'Lieferschein 2 #9001', 'A', '2026-10-15T08:00:00Z'),
+    mit('st1', 'storno', 'Storno #9002', 'B', '2026-10-13T08:00:00Z'),
+  ];
+  const { zeilen, abweichungen } = abgleich({ belege, kandidaten, jetzt: JETZT });
+  const z = id => zeilen.find(x => x.id === id);
+  assert.equal(z('gid://shopify/Order/9001|A').ab.id, 'ab1');
+  assert.equal(z('gid://shopify/Order/9001|A').lieferschein.id, 'ls1');
+  assert.equal(z('gid://shopify/Order/9001|A').ab.auszug, undefined, 'nur Kennung, nicht der ganze Beleg');
+  assert.deepEqual(z('gid://shopify/Order/9002|B').hinweise, ['storno', 'shopify_weiter']);
+  assert.equal(z('gid://shopify/Order/9002|A').ab, null, 'AB fehlt ist nur Information');
+  assert.deepEqual(z('gid://shopify/Order/9003|B').hinweise, ['shopify_offen'], 'bei uns raus, in Shopify nicht versendet');
+  assert.equal(zeilen.some(x => x.orderId === 'gid://shopify/Order/9004'), false, 'nie bestellt, kein Beleg: keine Zeile');
+  assert.deepEqual(abweichungen.map(a => [a.art, a.ton]).sort(), [['lieferschein_offen', 'warn'], ['storno', 'crit']]);
+  // Erledigt nimmt die Abweichung weg, der Beleg bleibt.
+  belege[2].erledigt = { am: '2026-10-16', von: 'Mona' };
+  assert.equal(abgleich({ belege, kandidaten, jetzt: JETZT }).abweichungen.some(a => a.art === 'storno'), false);
+  assert.equal(belegMarke(belege[0]), 'AB 12.10.');
+});
+
+// --- Ablage ---------------------------------------------------------------------------------
+
+const mail = (id, betreff, extra = {}) => ({ id, threadId: `t-${id}`, von: 'Innendienst <ab@lieferant-a.example>', datum: '2026-10-14T08:00:00Z', betreff, text: 'Anbei.', anhaenge: [], quelle: 'label', viewUrl: `https://mail.google.com/mail/u/0/#all/${id}`, ...extra });
+const ordner = () => fs.mkdtempSync(path.join(os.tmpdir(), 'cc-belege-'));
+
+test('uebernehmen: jede Mail einmal, Nicht-Belege gemerkt, Stichwortsuche nur von bekannten Lieferanten', () => {
+  const dir = ordner();
+  const e1 = uebernehmen([
+    mail('m1', 'Auftragsbestätigung 4711 #9001'),
+    mail('m2', 'Newsletter'),
+    mail('m3', 'Stornierung meiner Bestellung', { von: 'kunde@gmail.com', quelle: 'stichwort' }),
+    mail('m4', 'Leider nicht lieferbar', { von: 'innendienst@lieferant-a.example', quelle: 'stichwort' }),
+    mail('m5', 'Lieferschein 1', { viewUrl: 'https://boese.example/x' }),
+  ], { privatDir: dir, jetzt: JETZT, lieferantenDomains: ['lieferant-a.example'], lauf: { bereiche: ['label', 'stichwort'] } });
+  assert.deepEqual(e1.neu.map(n => [n.mailId, n.art]), [['m1', 'ab'], ['m4', 'storno'], ['m5', 'lieferschein']]);
+  assert.deepEqual(e1.uebersprungen.map(u => u.mailId), ['m2', 'm3']);
+  const d = leseBelege(lieferbelegePfad(dir));
+  assert.equal(d.belege.m5.viewUrl, null, 'nur Links ins Postfach');
+  assert.equal(d.belege.m1.refs.betreffNummern[0], '#9001');
+  assert.equal(d.laeufe.length, 1);
+  const e2 = uebernehmen([mail('m1', 'Auftragsbestätigung 4711 #9001'), mail('m2', 'Newsletter')], { privatDir: dir, jetzt: JETZT });
+  assert.equal(e2.neu.length + e2.uebersprungen.length, 0, 'schon bekannt');
+  const b = bekannt({ privatDir: dir, domains: ['lieferant-b.example'] });
+  assert.deepEqual(b.mailIds, ['m1', 'm2', 'm3', 'm4', 'm5']);
+  assert.deepEqual(b.domains, ['lieferant-a.example', 'lieferant-b.example']);
+  assert.equal(b.letzterLauf, JETZT.toISOString());
+  assert.equal((fs.statSync(lieferbelegePfad(dir)).mode & 0o777).toString(8), '600');
+});
+
+test('Ablage: beschaedigte Datei ist ein Fehler (nie still leer), alte Sperre wird geraeumt', () => {
+  const dir = ordner();
+  const datei = lieferbelegePfad(dir);
+  fs.mkdirSync(path.dirname(datei), { recursive: true });
+  fs.writeFileSync(datei, '{ kaputt');
+  assert.throws(() => leseBelege(datei), LieferbelegFehler);
+  assert.throws(() => uebernehmen([mail('m1', 'AB 1')], { privatDir: dir }), LieferbelegFehler);
+  assert.equal(fs.readFileSync(datei, 'utf8'), '{ kaputt', 'nicht ueberschrieben');
+  fs.rmSync(datei);
+  fs.writeFileSync(`${datei}.lock`, '');
+  const alt = new Date(Date.now() - 60_000);
+  fs.utimesSync(`${datei}.lock`, alt, alt);
+  assert.equal(uebernehmen([mail('m1', 'Auftragsbestätigung 1')], { privatDir: dir }).neu.length, 1);
+  assert.equal(fs.existsSync(`${datei}.lock`), false);
+});
+
+test('entscheide: zuordnen nur auf bekannte Bestellungen, Passt nicht sammelt, Absender kein Shop', () => {
+  const dir = ordner();
+  const datei = lieferbelegePfad(dir);
+  uebernehmen([mail('m1', 'Auftragsbestätigung 4711 Kommission Beispiel')], { privatDir: dir, jetzt: JETZT });
+  const opt = { person: 'Mona', jetzt: JETZT, gueltigeOrderIds: new Set(['gid://shopify/Order/9001']) };
+  assert.throws(() => entscheide(datei, { aktion: 'zuordnen', mailId: 'm1', orderIds: ['gid://shopify/Order/1'] }, opt), /nicht gefunden/);
+  assert.throws(() => entscheide(datei, { aktion: 'loeschen', mailId: 'm1' }, opt), /Unbekannte Aktion/);
+  assert.throws(() => entscheide(datei, { aktion: 'erledigt', mailId: 'm1' }, { jetzt: JETZT }), /Person/);
+  entscheide(datei, { aktion: 'ablehnen', mailId: 'm1', orderIds: ['a'] }, opt);
+  entscheide(datei, { aktion: 'ablehnen', mailId: 'm1', orderIds: ['b'] }, opt);
+  assert.deepEqual(leseBelege(datei).belege.m1.entscheidung.orderIds, ['a', 'b']);
+  const z = entscheide(datei, { aktion: 'zuordnen', mailId: 'm1', orderIds: ['gid://shopify/Order/9001'] }, opt);
+  assert.equal(z.beleg.entscheidung.von, 'Mona');
+  entscheide(datei, { aktion: 'erledigt', mailId: 'm1', notiz: 'geprüft' }, opt);
+  assert.equal(leseBelege(datei).belege.m1.erledigt.notiz, 'geprüft');
+  entscheide(datei, { aktion: 'absender_kein_shop', domain: 'Lager.Example' }, opt);
+  assert.equal(leseBelege(datei).absender['lager.example'].art, 'kein_shop');
+  assert.throws(() => entscheide(datei, { aktion: 'absender_kein_shop', domain: 'kein domain' }, opt), /Domain/);
+  entscheide(datei, { aktion: 'absender_zuruecksetzen', domain: 'lager.example' }, opt);
+  assert.deepEqual(leseBelege(datei).absender, {});
+});
+
+// --- API und Server -------------------------------------------------------------------------
+
+const mf = (namespace, key, value) => ({ namespace, key, value });
+const position = (id, lieferant) => ({
+  id: `gid://shopify/LineItem/${id}`, sku: `TEST-${lieferant}-${id}`, title: `Testware ${lieferant}`, variantTitle: 'Natur', quantity: 1, currentQuantity: 1, unfulfilledQuantity: 1,
+  customAttributes: [], originalUnitPriceSet: { shopMoney: { amount: '10.00', currencyCode: 'EUR' } },
+  variant: { id: `gid://shopify/ProductVariant/${id}`, sku: `TEST-${lieferant}-${id}`, title: 'Natur', metafields: { nodes: [mf('einkauf', 'lieferant', lieferant)] }, lieferant: { nodes: [] },
+    product: { id: `gid://shopify/Product/${id}`, handle: `testware-${id}`, title: `Testware ${lieferant}`, metafields: { nodes: [] }, grosshandel: { nodes: [] } } },
+});
+const bestellung = (nr, kunde, positionen) => ({
+  id: `gid://shopify/Order/${nr}`, name: `#${nr}`, createdAt: '2026-10-10T10:00:00Z', cancelledAt: null, test: false,
+  displayFinancialStatus: 'PAID', displayFulfillmentStatus: 'UNFULFILLED', customAttributes: [], tags: [],
+  customer: { id: `gid://shopify/Customer/${nr}`, displayName: kunde, email: `kunde${nr}@example.invalid` },
+  totalPriceSet: { shopMoney: { amount: '10.00', currencyCode: 'EUR' } }, fulfillments: [], lineItems: { nodes: positionen },
+});
+
+function privat() {
+  const dir = ordner();
+  fs.mkdirSync(path.join(dir, 'bestelluebersicht'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'bestelluebersicht', 'orders.json'), JSON.stringify({ orders: [
+    bestellung(9001, 'Erika Beispiel', [position(1, 'A')]),
+    bestellung(9002, 'Max Mustermann', [position(2, 'B')]),
+  ] }));
+  fs.mkdirSync(path.join(dir, 'lieferanten'), { recursive: true });
+  fs.copyFileSync(new URL('../../../operations/lib/lieferanten.beispiel.json', import.meta.url), path.join(dir, 'lieferanten', 'stammdaten.json'));
+  uebernehmen([
+    mail('m1', 'Auftragsbestätigung 4711 #9001'),
+    mail('m2', 'Auftragsbestätigung 4712 Kommission Mustermann', { von: 'ab@unbekannt.example' }),
+    mail('m3', 'Lieferschein 99 #9001', { datum: '2026-10-15T08:00:00Z' }),
+  ], { privatDir: dir, jetzt: JETZT, lieferantenDomains: ['lieferant-a.example'] });
+  return dir;
+}
+const apiFuer = dir => createApi({ gh: async () => '', root: dir, privatDirPath: dir, env: {}, now: () => JETZT });
+
+test('einkaufBelege: Lieferant aus der Absenderdomain, sicher/Vorschlag, Abgleich, Auswahl', () => {
+  const dir = privat();
+  const r = apiFuer(dir).einkaufBelege();
+  assert.equal(r.verfuegbar, true);
+  const b = id => r.belege.find(x => x.id === id);
+  assert.equal(b('m1').lieferant, 'A');
+  assert.equal(b('m1').zuordnung.stufe, 'sicher');
+  assert.equal(b('m2').lieferant, null);
+  assert.equal(b('m2').zuordnung.stufe, 'vorschlag', 'nur der Name - Mensch bestaetigt');
+  assert.equal(r.belege[0].id, 'm3', 'neueste zuerst');
+  const zeile = r.zeilen.find(z => z.orderId === 'gid://shopify/Order/9001');
+  assert.equal(zeile.ab.id, 'm1');
+  assert.equal(zeile.lieferschein.id, 'm3');
+  assert.equal(r.auftraege['gid://shopify/Order/9001'].orderName, '#9001');
+  assert.ok(r.auftraege['gid://shopify/Order/9002'], 'auch der Vorschlag nennt seine Bestellung');
+  assert.deepEqual(r.auswahl.map(a => a.orderName).sort(), ['#9001', '#9002']);
+  assert.equal(r.lieferanten.A, 'Lieferant A');
+  assert.equal(r.letzterLauf.neu, 3);
+});
+
+test('einkaufBelegSetzen: Vorschlag annehmen, unbekannte Bestellung 400, beschaedigte Ablage meldet sich', () => {
+  const dir = privat();
+  const api = apiFuer(dir);
+  const ich = { name: 'Mona Mitarbeiter', rolle: 'mitarbeiter' };
+  const r = api.einkaufBelegSetzen({ aktion: 'zuordnen', mailId: 'm2', orderIds: ['gid://shopify/Order/9002'] }, ich);
+  assert.equal(r.belege.find(x => x.id === 'm2').zuordnung.stufe, 'bestaetigt');
+  assert.ok(r.zeilen.some(z => z.orderId === 'gid://shopify/Order/9002'), 'jetzt im Abgleich');
+  assert.throws(() => api.einkaufBelegSetzen({ aktion: 'zuordnen', mailId: 'm2', orderIds: ['gid://shopify/Order/1'] }, ich), e => e.status === 400);
+  fs.writeFileSync(lieferbelegePfad(dir), '{ kaputt');
+  const kaputt = api.einkaufBelege();
+  assert.equal(kaputt.verfuegbar, false);
+  assert.match(kaputt.hinweis, /beschädigt/);
+});
+
+async function mitServer(handler, fn) {
+  const server = http.createServer(handler);
+  await new Promise(r => server.listen(0, '127.0.0.1', r));
+  try { return await fn(`http://127.0.0.1:${server.address().port}`); }
+  finally { await new Promise(r => server.close(r)); }
+}
+
+test('Server: Rolle "lesen" darf lesen, aber nicht entscheiden (403); Mitarbeiter 200', async () => {
+  const { schreibeBenutzer, benutzerAnlegen } = await import('../../../operations/lib/benutzer.mjs');
+  const dir = privat();
+  let liste = benutzerAnlegen([], { name: 'Lena Lesend', kuerzel: 'lena', passwort: 'platzhalter-lesen-1', rolle: 'lesen' });
+  liste = benutzerAnlegen(liste, { name: 'Mona Mitarbeiter', kuerzel: 'mona', passwort: 'platzhalter-mitarbeiter-1', rolle: 'mitarbeiter' });
+  schreibeBenutzer(liste, path.join(dir, 'benutzer.json'));
+  process.env.TP_PRIVAT_DIR = dir;
+  process.env.TP_DASHBOARD_PASSWORT = 'notzugang-testpasswort';
+  const mod = await import('../../../scripts/serve-dashboard.mjs?case=lieferbelege');
+  delete process.env.TP_DASHBOARD_PASSWORT;
+  try {
+    await mitServer(mod.requestHandler, async (base) => {
+      const anmelden = async (name, passwort) => {
+        const r = await fetch(`${base}/api/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, passwort }) });
+        assert.equal(r.status, 200);
+        return r.headers.get('set-cookie').split(';')[0];
+      };
+      const post = (keks, rumpf) => fetch(`${base}/api/einkauf/belege`, { method: 'POST', headers: { 'content-type': 'application/json', cookie: keks }, body: JSON.stringify(rumpf) });
+      const lena = await anmelden('lena', 'platzhalter-lesen-1');
+      const mona = await anmelden('mona', 'platzhalter-mitarbeiter-1');
+      const gelesen = await fetch(`${base}/api/einkauf/belege`, { headers: { cookie: lena } });
+      assert.equal(gelesen.status, 200);
+      assert.equal((await gelesen.json()).belege.length, 3);
+      assert.equal((await post(lena, { aktion: 'erledigt', mailId: 'm3' })).status, 403);
+      const r = await post(mona, { aktion: 'erledigt', mailId: 'm3' });
+      assert.equal(r.status, 200);
+      assert.equal((await r.json()).belege.find(b => b.id === 'm3').erledigt.von, 'Mona Mitarbeiter', 'Person aus der Sitzung');
+      assert.equal((await post(mona, { aktion: 'erledigt', mailId: 'gibtsnicht' })).status, 400);
+    });
+  } finally {
+    process.env.TP_PRIVAT_DIR = PRIVAT_DIR;
+  }
+});
+
+test('belegArbeit/belegTodos: Storno rot, Lieferschein gelb, eine Sammelzeile fuer Vorschlaege; ohne Bestellung, Rechnungen und Altes zaehlen nicht', async () => {
+  const { belegArbeit, belegTodos } = await import('../lib/lieferbelege.mjs');
+  const b = (id, stufe, extra = {}) => ({ id, art: 'ab', datum: '2026-10-14T08:00:00Z', erledigt: null, zuordnung: { stufe, orderIds: [] }, ...extra });
+  const d = {
+    verfuegbar: true, lieferanten: { A: 'Lieferant A' },
+    belege: [b('v1', 'vorschlag'), b('o1', 'keine'), b('o2', 'keine', { art: 'rechnung' }), b('o3', 'keine', { datum: '2026-08-01T08:00:00Z' }), b('o4', 'keine', { erledigt: { von: 'Mona' } }), b('s1', 'sicher')],
+    abweichungen: [
+      { id: 'storno:s1:x', art: 'storno', ton: 'crit', orderName: '#9002', kundenname: 'Max Mustermann', lieferant: 'A', datum: '2026-10-13T08:00:00Z' },
+      { id: 'lieferschein:l1:y', art: 'lieferschein_offen', ton: 'warn', orderName: '#9001', kundenname: null, lieferant: 'A', datum: '2026-10-15T08:00:00Z' },
+    ],
+  };
+  const a = belegArbeit(d, { jetzt: JETZT });
+  assert.deepEqual([a.vorschlaege.length, a.ohne.length, a.summe], [1, 1, 3], 'ohne Bestellung zaehlt nicht als Pruefarbeit');
+  const t = belegTodos(d, { jetzt: JETZT });
+  assert.deepEqual(t.map(x => [x.art, x.ton]), [['beleg_storno', 'crit'], ['beleg_lieferschein', 'warn'], ['belege_zuordnen', '']]);
+  assert.equal(t[0].titel, 'Storno vom Lieferanten: #9002 Max Mustermann');
+  assert.match(t[1].kontext, /Lieferant A · LS 15\.10\./);
+  assert.equal(t[2].titel, 'Lieferantenbeleg zuordnen');
+  assert.ok(t.every(x => x.knopf.href === '#/einkauf?tab=belege' && x.bereich === 'laden'));
+  assert.deepEqual(belegTodos({ verfuegbar: false }), []);
+});
+
+test('ordneZu: beim Bestellen notierte Lieferanten-Bestellnummer ist ein sicherer Treffer', () => {
+  const statusAlle = { 'gid://shopify/Order/9001::gid://shopify/LineItem/90010': { status: 'bestellt', lieferantBestellnummer: '0198 / Liefertermin KW 42' } };
+  const k = kandidatenAus([zeile(9001, 'Erika Beispiel', ['A']), zeile(9002, 'Max Mustermann', ['A'])], statusAlle);
+  const r = ordneZu(beleg('Auftr.-Best. KD050/0198 NACHLIEFERUNG'), k);
+  assert.equal(r.stufe, 'sicher');
+  assert.deepEqual(r.orderIds, ['gid://shopify/Order/9001']);
+  assert.equal(ordneZu(beleg('Auftr.-Best. KD050/0198', { lieferant: 'B' }), k).stufe, 'keine', 'nur beim selben Lieferanten');
+});
+
+test('ordneAlleZu: Lieferschein erbt die Bestellung seiner AB (gleiche Vorgangsnummer), Mailverlauf nur als Vorschlag', async () => {
+  const { ordneAlleZu, nummernSchluessel } = await import('../lib/lieferbelege.mjs');
+  assert.equal(nummernSchluessel('KD050/0212'), nummernSchluessel('KD050_212'));
+  assert.equal(nummernSchluessel('12'), null, 'zu kurz zum Verknuepfen');
+  const mit = (id, betreff, extra = {}) => ({ id, art: 'ab', datum: '2026-10-14T08:00:00Z', lieferant: 'A', domain: 'lieferant-a.example', threadId: `t-${id}`, refs: referenzen({ betreff }), ...extra });
+  const r = ordneAlleZu([
+    mit('ab', 'Auftr.-Best. KD050/0212 #9001'),
+    mit('ls', 'Lieferschein Kunde/Vorgang KD050_212, Betreff: BEISPIEL', { art: 'lieferschein', datum: '2026-10-15T08:00:00Z' }),
+    mit('aw', 'AW: Rückfrage', { threadId: 't-ab' }),
+    mit('fremd', 'Lieferschein Kunde/Vorgang KD050_212', { art: 'lieferschein', domain: 'andere.example', lieferant: null }),
+    mit('nein', 'Lieferschein Vorgang KD050_212', { art: 'lieferschein', entscheidung: { art: 'abgelehnt', orderIds: ['gid://shopify/Order/9001'] } }),
+  ], KANDIDATEN);
+  const z = id => r.find(b => b.id === id).zuordnung;
+  assert.equal(z('ab').stufe, 'sicher');
+  assert.deepEqual([z('ls').stufe, z('ls').orderIds[0]], ['sicher', 'gid://shopify/Order/9001']);
+  assert.match(z('ls').grund, /gleicher Vorgang wie AB 14\.10\./);
+  assert.equal(z('aw').stufe, 'vorschlag');
+  assert.equal(z('fremd').stufe, 'keine', 'anderer Absender');
+  assert.equal(z('nein').stufe, 'keine', '"Passt nicht" gilt auch fuer die Verknuepfung');
+});

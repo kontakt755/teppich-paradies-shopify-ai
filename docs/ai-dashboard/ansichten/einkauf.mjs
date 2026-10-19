@@ -1,5 +1,5 @@
 /**
- * Ansicht "Einkauf" (#/einkauf): Reiter Bestellungen, Musterlager, Produktdaten, Hilfe.
+ * Ansicht "Einkauf" (#/einkauf): Reiter Bestellungen, Belege, Musterlager, Produktdaten, Hilfe.
  * Teilmodule in ansichten/einkauf/.
  */
 import { state } from '../kern/zustand.mjs';
@@ -10,6 +10,7 @@ import { viewEinkaufBestellungen } from './einkauf/bestellungen.mjs';
 import { viewEinkaufProduktdaten } from './einkauf/produktdaten.mjs';
 import { viewEinkaufLieferant } from './einkauf/lieferanten.mjs';
 import { viewEinkaufMusterlager } from './einkauf/musterlager.mjs';
+import { viewEinkaufBelege, belegArbeit, ensureBelege } from './einkauf/belege.mjs';
 
 function viewEinkaufHilfe() {
   return `<section class="card">
@@ -69,12 +70,15 @@ export function viewEinkauf() {
   // Detailseite eines Lieferanten als Parameter (#/einkauf?lieferant=A) - bleibt damit im
   // Einkauf (Navigation, Rollen, Datenstand) und braucht keine eigene Route.
   if (state.route.params.get('lieferant')) { ensureAktualisierung(); return viewEinkaufLieferant(state.route.params.get('lieferant')); }
-  const tab = ['bestellungen', 'musterlager', 'produktdaten', 'hilfe'].includes(state.route.params.get('tab')) ? state.route.params.get('tab') : 'bestellungen';
-  const tabs = [['bestellungen', 'Bestellungen'], ['musterlager', 'Musterlager'], ['produktdaten', 'Produktdaten'], ['hilfe', 'Anleitung']];
+  const tab = ['bestellungen', 'belege', 'musterlager', 'produktdaten', 'hilfe'].includes(state.route.params.get('tab')) ? state.route.params.get('tab') : 'bestellungen';
+  const tabs = [['bestellungen', 'Bestellungen'], ['belege', 'Belege'], ['musterlager', 'Musterlager'], ['produktdaten', 'Produktdaten'], ['hilfe', 'Anleitung']];
   ensureAktualisierung();
+  // Die Zahl am Reiter "Belege" zeigt, ob dort etwas zu pruefen ist - auch von den anderen Reitern aus.
+  ensureBelege();
+  const zuPruefen = belegArbeit()?.summe || 0;
   const head = `<div class="page-head"><div><h1>Einkauf</h1><p class="sub">Was bei welchem Lieferanten zu bestellen ist – und wo Produktdaten dafür fehlen.</p></div>
       <div class="head-actions">${aktualisierenButton()}</div></div>
-    <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button type="button" class="tab" role="tab" aria-selected="${tab === k}" data-param="tab" data-value="${k === 'bestellungen' ? '' : k}">${esc(l)}</button>`).join('')}</div>`;
-  const body = tab === 'bestellungen' ? viewEinkaufBestellungen() : tab === 'musterlager' ? viewEinkaufMusterlager() : tab === 'produktdaten' ? viewEinkaufProduktdaten() : viewEinkaufHilfe();
+    <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button type="button" class="tab" role="tab" aria-selected="${tab === k}" data-param="tab" data-value="${k === 'bestellungen' ? '' : k}">${esc(l)}${k === 'belege' && zuPruefen ? ` <span class="tab-zahl">${zuPruefen}</span>` : ''}</button>`).join('')}</div>`;
+  const body = tab === 'bestellungen' ? viewEinkaufBestellungen() : tab === 'belege' ? viewEinkaufBelege() : tab === 'musterlager' ? viewEinkaufMusterlager() : tab === 'produktdaten' ? viewEinkaufProduktdaten() : viewEinkaufHilfe();
   return head + body;
 }

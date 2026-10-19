@@ -1,0 +1,57 @@
+/* Einkauf > Belege (ansichten/einkauf/belege.mjs): Lieferantenbelege aus dem Postfach. */
+.tab-zahl { display: inline-block; min-width: 20px; margin-left: 4px; padding: 0 6px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); font-size: .78rem; font-weight: 700; line-height: 20px; text-align: center; }
+
+.bl-kopf { margin-bottom: 14px; }
+.bl-kopf p { margin: 0 0 4px; }
+.bl-lauf { font-size: .9rem; color: var(--text-2); }
+.bl-lauf.warn { color: var(--warn); font-weight: 600; }
+
+.bl-abschnitt { margin: 0 0 26px; }
+.bl-abschnitt > .section-title { display: flex; align-items: baseline; gap: 8px; }
+.bl-zahl { color: var(--warn); }
+.bl-warn { color: var(--warn); font-weight: 700; }
+
+.bl-liste, .bl-gruppen, .bl-belege { list-style: none; margin: 0; padding: 0; }
+.bl-liste, .bl-belege { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.bl-gruppen { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+.bl-ohne-text { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.bl-ohne-text .heute-hg-knopf { margin-left: 0; }
+.bl-gruppe-kopf { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin: 0 0 6px; }
+
+.bl-zeile { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 16px; padding: 12px 16px 12px 13px; border-top: 1px solid var(--line); border-left: 3px solid transparent; }
+.bl-liste > .bl-zeile:first-child { border-top: 0; }
+.bl-zeile.warn { border-left-color: var(--warn); }
+.bl-zeile.crit { border-left-color: var(--crit); }
+.bl-titel { font-weight: 650; overflow-wrap: anywhere; }
+.bl-kontext { color: var(--text-2); font-size: .9rem; overflow-wrap: anywhere; }
+.bl-knoepfe { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.bl-knoepfe a.btn { color: var(--text); }
+.bl-knoepfe a.btn:hover { text-decoration: none; }
+.bl-knoepfe .btn-primary { color: #fff; }
+
+.bl-tabelle { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.bl-tabelle th { text-align: left; font-weight: 600; color: var(--text-2); padding: 8px 10px; border-bottom: 1px solid var(--line-strong); white-space: nowrap; }
+.bl-tabelle td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.bl-tabelle tr.warn td:first-child { box-shadow: inset 3px 0 0 var(--warn); }
+.bl-tabelle tr.crit td:first-child { box-shadow: inset 3px 0 0 var(--crit); }
+.bl-hinweis { display: inline-block; margin: 0 4px 2px 0; padding: 1px 8px; border-radius: 999px; font-size: .8rem; font-weight: 600; }
+.bl-hinweis.warn { background: var(--warn-soft); color: var(--warn); }
+.bl-hinweis.crit { background: var(--crit-soft); color: var(--crit); }
+.bl-blaettern { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 10px; }
+
+.bl-beleg { padding: 10px 16px; border-top: 1px solid var(--line); }
+.bl-belege > .bl-beleg:first-child { border-top: 0; }
+.bl-beleg-kopf { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: .88rem; color: var(--text-2); }
+.bl-art { display: inline-block; min-width: 46px; padding: 1px 7px; border-radius: 6px; border: 1px solid var(--line-strong); color: var(--text); font-size: .78rem; font-weight: 700; text-align: center; }
+.bl-art-storno { border-color: var(--crit); color: var(--crit); }
+.bl-betreff { font-weight: 600; margin: 2px 0; overflow-wrap: anywhere; }
+.bl-beleg-fuss { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }
+
+.bl-dialog select { width: 100%; font: inherit; }
+.bl-auszug { margin: 0 0 12px; padding: 8px 10px; border-left: 3px solid var(--line-strong); background: var(--surface-2); color: var(--text-2); font-size: .88rem; overflow-wrap: anywhere; white-space: pre-line; max-height: 9em; overflow: auto; }
+
+@media (max-width: 720px) {
+  .bl-zeile { grid-template-columns: minmax(0, 1fr); padding: 12px 12px 12px 10px; }
+  .bl-knoepfe { justify-content: flex-start; }
+  .bl-beleg { padding: 10px 12px; }
+}

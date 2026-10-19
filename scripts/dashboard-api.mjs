@@ -58,6 +58,8 @@ import { protokollPfad, protokolliere } from '../operations/lib/protokoll.mjs';
 import { findeZugang, liesZugaenge, zugangAnlegen, zugangSperren } from '../social/lib/eingang.mjs';
 import { ladeUmgebung } from '../social/lib/zugang.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
+import { lieferbelegePfad, leseBelege, entscheide as belegEntscheiden, LieferbelegFehler } from '../operations/lib/lieferbelege.mjs';
+import { kandidatenAus, lieferantZurDomain, ordneAlleZu, abgleich as belegAbgleich } from '../docs/ai-dashboard/lib/lieferbelege.mjs';
 import { serviceanfragenPfad, leseAlle as leseServiceanfragen, anlegen as serviceanfrageAnlegen, aendern as serviceanfrageAendern, ServiceanfrageFehler } from '../operations/lib/serviceanfragen.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
@@ -1870,6 +1872,61 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         if (e instanceof ServiceanfrageFehler) throw new ApiError(400, e.message);
         throw e;
       }
+    },
+
+    /**
+     * Lieferantenbelege aus dem Postfach (AB, Lieferschein, Avis, Storno): je Beleg Art,
+     * Zuordnung zur Bestellung (sicher / Vorschlag / keine) und der Abgleich je Auftrag gegen
+     * Auftragsfluss und Shopify. Gelesen wird nur die private Ablage - das Postfach liest der
+     * geplante Claude-Lauf (operations/scripts/lieferbelege.mjs). Siehe ARCHITEKTUR §25.
+     */
+    einkaufBelege() {
+      const dir = privatDirPath || privatDir();
+      let ablage;
+      try { ablage = leseBelege(lieferbelegePfad(dir)); }
+      catch (e) { if (e instanceof LieferbelegFehler) return { verfuegbar: false, fehler: true, hinweis: e.message }; throw e; }
+      const k = this._lieferantenKontext();
+      const zeilen = k.modell ? bestellliste(k.modell, { statusAlle: k.statusAlle }) : [];
+      const kandidaten = kandidatenAus(zeilen, k.statusAlle);
+      const mitLieferant = Object.values(ablage.belege).map(b => ({ ...b, lieferant: lieferantZurDomain(b.domain, { stammdaten: k.stammdaten, absender: ablage.absender }) }));
+      const belege = ordneAlleZu(mitLieferant, kandidaten, { absender: ablage.absender })
+        .sort((a, b) => String(b.datum).localeCompare(String(a.datum)));
+      const { zeilen: abgleichZeilen, abweichungen } = belegAbgleich({ belege, kandidaten, jetzt: now() });
+      // Name und Nummer nur der Bestellungen, die eine Zeile, ein Beleg oder ein Vorschlag nennt.
+      const genannt = new Set([...abgleichZeilen.map(z => z.orderId), ...belege.flatMap(b => b.zuordnung.orderIds)]);
+      const auftraege = Object.fromEntries(kandidaten.filter(c => genannt.has(c.orderId)).map(c => [c.orderId, { orderName: c.orderName, kundenname: c.kundenname, datum: c.datum }]));
+      // Fuer "Zu Bestellung zuordnen": Shop-Bestellungen der letzten 120 Tage mit Lieferanten-Positionen.
+      const grenze = now().getTime() - 120 * 86400000;
+      const auswahl = kandidaten.filter(c => c.lieferanten.length && Date.parse(c.datum) >= grenze)
+        .sort((a, b) => String(b.datum).localeCompare(String(a.datum)))
+        .map(c => ({ orderId: c.orderId, orderName: c.orderName, kundenname: c.kundenname, lieferanten: c.lieferanten }));
+      const lieferanten = Object.fromEntries(Object.entries(k.stammdaten.lieferanten || {}).map(([id, l]) => [id, l.name || id]));
+      return {
+        verfuegbar: true, hinweis: k.hinweis,
+        letzterLauf: ablage.laeufe.at(-1) || null,
+        belege, zeilen: abgleichZeilen, abweichungen, auftraege, auswahl, lieferanten,
+        absender: ablage.absender,
+      };
+    },
+
+    /** Entscheidung zu einem Beleg oder Absender. Person aus der Sitzung; Bestellungen gegen das Modell geprueft. */
+    einkaufBelegSetzen(payload = {}, benutzer = null) {
+      const actor = benutzer?.name || benutzer?.kuerzel || 'Inhaber';
+      const dir = privatDirPath || privatDir();
+      const p = payload && typeof payload === 'object' ? payload : {};
+      let gueltig = null;
+      if (p.aktion === 'zuordnen') {
+        const k = this._lieferantenKontext();
+        gueltig = new Set(k.modell ? bestellliste(k.modell, { statusAlle: k.statusAlle }).map(z => z.orderId) : []);
+      }
+      try {
+        const e = belegEntscheiden(lieferbelegePfad(dir), p, { person: actor, jetzt: now(), gueltigeOrderIds: gueltig });
+        merke(benutzer, actor, 'Lieferbeleg', `${p.aktion}${e.domain ? ` ${e.domain}` : ''}`);
+      } catch (e) {
+        if (e instanceof LieferbelegFehler) throw new ApiError(400, e.message);
+        throw e;
+      }
+      return { ok: true, ...this.einkaufBelege() };
     },
 
     /**
