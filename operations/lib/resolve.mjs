@@ -21,6 +21,8 @@ export const EINKAUF_KEYS = Object.freeze([
   'muster_quelle', 'quellvariante', 'lieferant_url',
   // Bezeichnung des Herstellers (Qualitaet + Farbnummer) fuer ware.nachBezeichnung (lieferanten.mjs).
   'farbname',
+  // Profile nach Mass: Laenge der Stange, aus der der Lieferant zuschneidet (cm, je Variante).
+  'stangenlaenge_cm',
 ]);
 
 export const CUSTOM_KEYS = Object.freeze(['qm_pro_paket', 'rollenbreite', 'stangenlaenge', 'preis_pro_001_qm']);
