@@ -11,6 +11,11 @@
   Laeufers, Bandfarbe als Property) und die Pauschale als eigene Zeilen
   derselben _Gruppe dazu.
 
+  Profile mit Schrauben (Block-Einstellung schrauben_produkt): auf Wunsch kommt
+  je Bestellung eine Schraubenzeile derselben _Gruppe dazu, Stueckzahl =
+  Bohrungen je Profil (lochzahl) x Stueckzahl, Ausfuehrung aus dem
+  Varianten-Metafeld service.schraube.
+
   Der Rechenkern (TPLaengenZuschnitt.rechnen) ist rein und laeuft auch in den
   Tests (qa/tests/tp-laengen-zuschnitt.test.mjs); die Bedienung startet nur im
   Browser.
@@ -40,13 +45,39 @@
     return m + ',' + r;
   }
 
+  // Bohrungen je Profil nach dem Bohrbild des Lieferanten: randMm vom Ende
+  // entfernt die erste und letzte Bohrung, dazwischen gleichmaessig mit einem
+  // Abstand unter abstandMm (Lieferant G: 30 mm Rand, unter 160 mm). 100 cm ->
+  // 940 mm / 160 = 5,9 -> 6 Abstaende -> 7 Bohrungen. 0 bei unbrauchbaren Werten.
+  function lochzahl(laengeCm, randMm, abstandMm) {
+    var l = Number(laengeCm) * 10;
+    var rand = Number(randMm);
+    var abstand = Number(abstandMm);
+    if (!(l > 0) || !(rand >= 0) || !(abstand > 0)) return 0;
+    var innen = l - 2 * rand;
+    if (innen <= 0) return 1;
+    return Math.floor(innen / abstand) + 2;
+  }
+
+  // Schrauben-Variante zur Profil-Variante (v.schraube == Ausfuehrung, ohne
+  // Gross-/Kleinschreibung); null, wenn es keine passende gibt.
+  function schraubeFuer(schrauben, v) {
+    var art = v && v.schraube ? String(v.schraube).trim().toLowerCase() : '';
+    if (!art || !schrauben) return null;
+    return (schrauben.varianten || []).filter(function (s) {
+      return s && s.price > 0 && String(s.art || '').trim().toLowerCase() === art;
+    })[0] || null;
+  }
+
   // Eingaben pruefen und rechnen. Gibt {ok, fehler, menge, summeCent,
-  // meterpreisCent, altSummeCent, materialCent, zusatzCent} zurueck; fehler ist
-  // leer, solange nur etwas fehlt. e.zusatzCent: Betrag je Stueck obendrauf
-  // (Laeufer: Einfassung + Pauschale), ohne Streichpreis. e.je: Wort fuer ein
+  // meterpreisCent, altSummeCent, materialCent, zusatzCent, loecher,
+  // schraubenStueck, schraubenCent} zurueck; fehler ist leer, solange nur
+  // etwas fehlt. e.zusatzCent: Betrag je Stueck obendrauf (Laeufer: Einfassung
+  // + Pauschale), ohne Streichpreis. e.schraube: {preisCent, randMm, abstandMm}
+  // - Schrauben je Bohrung, ebenfalls ohne Streichpreis. e.je: Wort fuer ein
   // Stueck in den Fehlertexten (Standard "Stück", Laeufer "Läufer").
   function rechnen(e) {
-    var erg = { ok: false, fehler: '', menge: 0, summeCent: 0, meterpreisCent: 0, altSummeCent: 0, materialCent: 0, zusatzCent: 0 };
+    var erg = { ok: false, fehler: '', menge: 0, summeCent: 0, meterpreisCent: 0, altSummeCent: 0, materialCent: 0, zusatzCent: 0, loecher: 0, schraubenStueck: 0, schraubenCent: 0 };
     var laenge = ganzzahl(e.laenge);
     var anzahl = ganzzahl(e.anzahl);
     var preis = Number(e.preisCent) || 0;
@@ -64,11 +95,35 @@
     erg.menge = laenge * anzahl;
     erg.materialCent = preis * erg.menge;
     erg.zusatzCent = (Number(e.zusatzCent) || 0) * anzahl;
-    erg.summeCent = erg.materialCent + erg.zusatzCent;
+    if (e.schraube && e.schraube.preisCent > 0) {
+      erg.loecher = lochzahl(laenge, e.schraube.randMm, e.schraube.abstandMm);
+      erg.schraubenStueck = erg.loecher * anzahl;
+      erg.schraubenCent = e.schraube.preisCent * erg.schraubenStueck;
+    }
+    erg.summeCent = erg.materialCent + erg.zusatzCent + erg.schraubenCent;
     erg.meterpreisCent = preis * 100;
     var alt = Number(e.vergleichCent) || 0;
-    if (alt > preis) erg.altSummeCent = alt * erg.menge + erg.zusatzCent;
+    if (alt > preis) erg.altSummeCent = alt * erg.menge + erg.zusatzCent + erg.schraubenCent;
     return erg;
+  }
+
+  // Warenkorbzeilen eines Profils: das Profil und - bei gewaehlten Schrauben -
+  // die Schraubenzeile derselben _Gruppe. Die Schraube ist Produkttyp
+  // "Service" und gehoert damit zur Gruppe (ohne Profil sperrt sie den Checkout).
+  function profilZeilen(a) {
+    var zeilen = [{ id: a.varianteId, quantity: a.erg.menge, properties: eigenschaften(a.erg, a.bohrung, a.gruppe) }];
+    if (a.schraube && a.erg.schraubenStueck > 0) {
+      zeilen.push({
+        id: a.schraube.id,
+        quantity: a.erg.schraubenStueck,
+        properties: {
+          'Zu Treppenkante': a.produkt + (a.variantenTitel ? ' – ' + a.variantenTitel : ''),
+          'Bohrungen': a.erg.anzahl + ' Stück × ' + a.erg.loecher + ' je ' + a.erg.laenge + ' cm',
+          '_Gruppe': a.gruppe
+        }
+      });
+    }
+    return zeilen;
   }
 
   // Properties der Warenkorbzeile - dieselben Namen liest
@@ -131,7 +186,7 @@
 
   var OHNE = 'ohne Einfassung';
 
-  root.TPLaengenZuschnitt = { rechnen: rechnen, eigenschaften: eigenschaften, einfassungenFuer: einfassungenFuer, bandfarbenFuer: bandfarbenFuer, laeuferZeilen: laeuferZeilen, variantVonHorizon: variantVonHorizon, euro: euro, meter: meter, OHNE: OHNE };
+  root.TPLaengenZuschnitt = { rechnen: rechnen, eigenschaften: eigenschaften, einfassungenFuer: einfassungenFuer, bandfarbenFuer: bandfarbenFuer, laeuferZeilen: laeuferZeilen, profilZeilen: profilZeilen, lochzahl: lochzahl, schraubeFuer: schraubeFuer, variantVonHorizon: variantVonHorizon, euro: euro, meter: meter, OHNE: OHNE };
 
   if (typeof document === 'undefined') return;
 
@@ -168,6 +223,11 @@
     var einfassungen = (d.einfassungen || []).filter(Boolean);
     var pauschale = d.pauschale && d.pauschale.id && d.pauschale.price > 0 ? d.pauschale : null;
     var breiteAngeboten = null;
+
+    // Profile: Schrauben auf Wunsch (Kaestchen nie vorbelegt).
+    var schraubenFeld = el.querySelector('[data-schrauben-feld]');
+    var schraubenWahl = el.querySelector('[data-schrauben]');
+    var schraubenText = el.querySelector('[data-schrauben-text]');
 
     // Wie im Einfass-Konfigurator: Farbwahl meldet ihre Variante per
     // tp:farbe-wechsel, sonst gilt ?variant=. Eine fremde ID fuehrt zu keiner
@@ -263,12 +323,24 @@
         if (ohneHinweis) ohneHinweis.hidden = ef !== false;
         zusatz = (ef ? ef.price : 0) + (pauschale ? pauschale.price : 0);
       }
+      // Schrauben nur bei gebohrten Profilen mit passender Ausfuehrung.
+      var sv = null;
+      if (!laeufer && schraubenFeld && d.schrauben) {
+        var gebohrt = !/ungebohrt/i.test(bohrung());
+        sv = gebohrt ? schraubeFuer(d.schrauben, v) : null;
+        schraubenFeld.hidden = !sv;
+        if (!sv && schraubenWahl) schraubenWahl.checked = false;
+      }
+      var schraube = sv && schraubenWahl && schraubenWahl.checked
+        ? { preisCent: sv.price, randMm: d.schrauben.rand_mm, abstandMm: d.schrauben.lochabstand_mm }
+        : null;
       var erg = rechnen({
         laenge: inLaenge.value,
         anzahl: inAnzahl.value,
         preisCent: v && v.available && (!laeufer || pauschale) ? v.price : 0,
         vergleichCent: v ? v.compare_at_price : 0,
         zusatzCent: zusatz,
+        schraube: schraube,
         minCm: d.min_cm,
         maxCm: d.max_cm,
         maxStueck: d.max_stueck,
@@ -276,12 +348,18 @@
       });
       fehler.textContent = erg.fehler;
       fehler.hidden = !erg.fehler;
+      if (schraubenText) {
+        var je = sv && erg.ok ? lochzahl(erg.laenge, d.schrauben.rand_mm, d.schrauben.lochabstand_mm) : 0;
+        schraubenText.textContent = sv
+          ? '(' + sv.art + (je ? ', ' + je + ' je Stück, zusammen ' + je * erg.anzahl + ' Stück à ' + euro(sv.price) : ', ' + euro(sv.price) + ' je Schraube') + ')'
+          : '';
+      }
       if (!erg.ok) {
         rechnung.hidden = true;
         cta.disabled = true;
         return;
       }
-      stand = { erg: erg, variante: v, einfassung: ef, bandfarbe: band };
+      stand = { erg: erg, variante: v, einfassung: ef, bandfarbe: band, schraube: schraube ? sv : null };
       summe.textContent = euro(erg.summeCent);
       summeAlt.textContent = erg.altSummeCent ? euro(erg.altSummeCent) : '';
       summeAlt.hidden = !erg.altSummeCent;
@@ -291,6 +369,10 @@
         if (ef) zeilen.push('Einfassung ' + ef.art + (band ? ' ' + band : '') + ': ' + erg.anzahl + ' × ' + euro(ef.price) + ' = ' + euro(ef.price * erg.anzahl));
         else if (ef === null) zeilen.push('Einfassung: bitte wählen');
         zeilen.push('Pauschale je Läufer: ' + erg.anzahl + ' × ' + euro(pauschale.price) + ' = ' + euro(pauschale.price * erg.anzahl));
+      }
+      if (erg.schraubenStueck) {
+        zeilen[0] += ' = ' + euro(erg.materialCent);
+        zeilen.push('Schrauben ' + stand.schraube.art + ': ' + erg.anzahl + ' × ' + erg.loecher + ' = ' + erg.schraubenStueck + ' Stück × ' + euro(stand.schraube.price) + ' = ' + euro(erg.schraubenCent));
       }
       rechenzeile.textContent = zeilen.join('\n');
       rechnung.hidden = false;
@@ -317,7 +399,12 @@
       } else {
         var b = bohrung();
         if (!b) return;
-        zeile = { id: stand.variante.id, quantity: stand.erg.menge, properties: eigenschaften(stand.erg, b, gruppe) };
+        var pz = profilZeilen({
+          erg: stand.erg, varianteId: stand.variante.id, variantenTitel: stand.variante.titel,
+          produkt: d.produkt, bohrung: b, schraube: stand.schraube, gruppe: gruppe
+        });
+        // Wie beim Laeufer umgekehrt senden: das Profil steht dann oben.
+        zeile = pz.length > 1 ? { items: pz.slice().reverse() } : pz[0];
       }
       inFlight = true;
       cta.disabled = true;
