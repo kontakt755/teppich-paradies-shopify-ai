@@ -360,6 +360,9 @@
           "one": "Zwischensumme",
           "other": "Zwischensumme"
         }
+      },
+      "shop_policies": {
+        "cookie_preferences": "Cookie-Einstellungen"
       }
     }
   },
