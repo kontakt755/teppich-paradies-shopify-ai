@@ -76,3 +76,9 @@ test('Stangenbedarf: Stangenlaenge kommt aus dem Varianten-Metafeld einkauf.stan
   // 360 cm: 3 Stueck je Stange -> 10 Stueck = 4 Stangen.
   assert.equal(p.bestellmenge.text, '10 Stück à 95 cm, gebohrt · aus 4 Stangen à 3,60 m (14,40 lfm)');
 });
+
+test('Sperrgut-Zuschlag der Treppenkanten ist nichts zu bestellen', async () => {
+  const { istEigenleistung } = await import('../lib/bestelluebersicht.mjs');
+  assert.equal(istEigenleistung({ variant: { product: { handle: 'sperrgut-versand-treppenkante' } } }), true);
+  assert.equal(istEigenleistung({ variant: { product: { handle: 'schrauben-treppenkante-3x30' } } }), false);
+});

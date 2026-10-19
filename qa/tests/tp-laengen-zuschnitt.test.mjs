@@ -512,3 +512,92 @@ test('Schrauben: Block gibt Schrauben und Ausfuehrung je Variante nur mit Produk
   assert.match(html, /data-schrauben-feld hidden/);
   assert.doesNotMatch(html, /data-schrauben[^-][^>]*checked/);
 });
+
+test('Schrauben je Packung: ganze Packungen, Preis je Packung', () => {
+  const e = { laenge: '95', anzahl: '10', preisCent: 69, minCm: 10, maxCm: 503, maxStueck: 50 };
+  const eine = L.rechnen({ ...e, schraube: { preisCent: 1490, randMm: 30, abstandMm: 160, packung: 200 } });
+  assert.equal(eine.schraubenStueck, 70);
+  assert.equal(eine.schraubenPackungen, 1);
+  assert.equal(eine.schraubenCent, 1490);
+  assert.equal(eine.summeCent, 69 * 950 + 1490);
+  // 30 Stueck x 7 = 210 Schrauben -> 2 Packungen
+  const zwei = L.rechnen({ ...e, anzahl: '30', schraube: { preisCent: 1490, randMm: 30, abstandMm: 160, packung: 200 } });
+  assert.equal(zwei.schraubenPackungen, 2);
+  assert.equal(zwei.schraubenCent, 2980);
+  const zeilen = L.profilZeilen({ erg: eine, varianteId: 11, variantenTitel: 'Messing poliert', produkt: 'TK', bohrung: 'gebohrt', gruppe: 'g1', schraube: { id: 99, price: 1490, art: 'vermessingt' }, packung: 200 });
+  assert.equal(zeilen[1].quantity, 1);
+  assert.equal(zeilen[1].properties.Packung, '200 Stück, 70 benötigt');
+  assert.equal(zeilen[1].properties._Gruppe, 'g1');
+});
+
+test('Ganze Stange: Laenge = Stangenlaenge, Zuschnitt hoechstens Stangenlaenge', () => {
+  assert.deepEqual(L.laengeFuer('stange', '95', 503, 503), { laenge: '503', maxCm: 503 });
+  assert.deepEqual(L.laengeFuer('zuschnitt', '95', 250, 503), { laenge: '95', maxCm: 250 });
+  assert.deepEqual(L.laengeFuer('zuschnitt', '95', null, 175), { laenge: '95', maxCm: 175 });
+  // ohne Stangenlaenge gibt es keine ganze Stange
+  assert.deepEqual(L.laengeFuer('stange', '95', 0, 175), { laenge: '95', maxCm: 175 });
+  const lg = L.laengeFuer('zuschnitt', '260', 250, 503);
+  assert.equal(L.rechnen({ laenge: lg.laenge, anzahl: '1', preisCent: 19, minCm: 10, maxCm: lg.maxCm, maxStueck: 50 }).fehler, 'Höchstens 250 cm je Stück.');
+  const st = L.laengeFuer('stange', '', 503, 503);
+  const r = L.rechnen({ laenge: st.laenge, anzahl: '2', preisCent: 69, minCm: 10, maxCm: st.maxCm, maxStueck: 50 });
+  assert.equal(r.menge, 1006);
+  assert.equal(r.summeCent, 69 * 1006);
+});
+
+test('Sperrgut: einmal ueber der Grenze, nicht doppelt, Zeile in der Gruppe', () => {
+  const e = { anzahl: '2', preisCent: 69, minCm: 10, maxCm: 503, maxStueck: 50, sperrgut: { preisCent: 3990, abCm: 175 } };
+  assert.equal(L.rechnen({ ...e, laenge: '175' }).sperrgut, false);
+  const lang = L.rechnen({ ...e, laenge: '176' });
+  assert.equal(lang.sperrgut, true);
+  assert.equal(lang.sperrgutCent, 3990);
+  assert.equal(lang.summeCent, 69 * 352 + 3990);
+  const da = L.rechnen({ ...e, laenge: '503', sperrgut: { ...e.sperrgut, schonDa: true } });
+  assert.equal(da.sperrgut, true);
+  assert.equal(da.sperrgutCent, 0);
+  const sg = { id: 77, price: 3990, ab_cm: 175 };
+  const z = L.profilZeilen({ erg: lang, varianteId: 11, variantenTitel: 'Alu natur', produkt: 'TK', bohrung: 'gebohrt', gruppe: 'g2', sperrgut: sg, zuschnitt: 'ganze Stange' });
+  assert.equal(z.length, 2);
+  assert.equal(z[0].properties.Zuschnitt, 'ganze Stange');
+  assert.equal(Object.keys(z[0].properties).pop(), '_Gruppe');
+  assert.deepEqual(z[1], { id: 77, quantity: 1, properties: { 'Zu Treppenkante': 'TK – Alu natur', 'Grund': 'Stück länger als 175 cm', '_Gruppe': 'g2' } });
+  assert.equal(L.profilZeilen({ erg: da, varianteId: 11, produkt: 'TK', bohrung: 'gebohrt', gruppe: 'g3', sperrgut: sg }).length, 1);
+  // Zuschlag ist Service und haengt an der Profilzeile.
+  const cart = [
+    { key: 'a', quantity: 352, properties: z[0].properties, preisPro001Lfm: true, optionen: [], typ: 'Abschlussprofile' },
+    { key: 'b', quantity: 1, properties: z[1].properties, optionen: [], typ: 'Service' },
+  ];
+  assert.equal(G.hauptzeile(cart[1], cart).key, 'a');
+});
+
+test('Block: Stangenwahl, Stangenlaenge je Variante und Sperrgut nur mit Einstellung', async () => {
+  const p = produkt();
+  p.variants[0].metafields = { service: { stange_cm: val(503) } };
+  const ohne = await blockRendern(p);
+  assert.doesNotMatch(ohne, /data-art-feld/);
+  assert.equal(daten(ohne).stangen, false);
+  assert.equal(daten(ohne).varianten[0].stange_cm, null);
+  assert.equal(daten(ohne).sperrgut, undefined);
+  const sg = { title: 'Sperrgut', selected_or_first_available_variant: { id: 77, price: 3990, available: true } };
+  const html = await engine.parseAndRender(blockOhneSchema, {
+    product: p, block: { id: 'abc_1', settings: { max_stueck: 50, messhilfe: 'Stufenkante.', preishinweis: 'x', stangen: true, sperrgut_produkt: sg, sperrgut_ab_cm: 175 }, shopify_attributes: '' },
+    settings: { tp_versand_frei_ab: 150 }, pages: {}, routes: { cart_url: '/cart' },
+  });
+  const d = daten(html);
+  assert.equal(d.stangen, true);
+  assert.equal(d.varianten[0].stange_cm, 503);
+  assert.equal(d.varianten[1].stange_cm, null);
+  assert.deepEqual(d.sperrgut, { id: 77, price: 3990, ab_cm: 175 });
+  assert.match(html, /data-art-feld/);
+  assert.match(html, /value="stange" checked/);
+  assert.match(html, /data-sperrgut-hinweis>Stangen und Stücke über 175 cm/);
+  assert.match(html, /data-messhilfe="Stufenkante\."/);
+});
+
+test('Produktvorlage Treppenkante: Stangen, Schraubenpackung und Sperrgut eingestellt', () => {
+  const t = JSON.parse(lies('templates/product.treppenkante-nach-mass.json').replace(/^\/\*[\s\S]*?\*\/\s*/, ''));
+  const s = Object.values(t.sections.main.blocks).flatMap((b) => Object.values(b.blocks || {})).concat(Object.values(t.sections.main.blocks)).find((b) => b.type === 'tp-laengen-zuschnitt').settings;
+  assert.equal(s.stangen, true);
+  assert.equal(s.schrauben_packung, 200);
+  assert.equal(s.sperrgut_produkt, 'sperrgut-versand-treppenkante');
+  assert.equal(s.sperrgut_ab_cm, 175);
+});
