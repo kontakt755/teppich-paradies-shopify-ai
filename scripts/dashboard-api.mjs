@@ -1681,6 +1681,94 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     },
 
     /**
+     * Knopf "Jetzt senden" in der Karte: EINE Nachfrage sofort vom Firmenpostfach, mit dem Text,
+     * den der Mitarbeiter im Feld sieht (und ggf. angepasst hat). Dieselben Schutzregeln wie der
+     * Lauf: Empfaenger kommt nur aus den Bestelldaten (nie aus dem Browser), Stoppliste und
+     * Versandprotokoll werden frisch gelesen, kein Platzhalter erreicht den Kunden, dieselbe
+     * Stufe geht nie zweimal raus. Danach Zeitleiste "nachgefasst" mit dem Namen des Absenders.
+     *
+     * @param {{orderId: string, stufe?: string, betreff?: string, text?: string}} payload
+     * @param {object} [o]
+     * @param {Function} [o.senden] Versandfunktion (Tests: SMTP-Attrappe)
+     */
+    async kundenNachfassenEinzeln(payload = {}, benutzer = null, { senden = smtpSenden } = {}) {
+      if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Rolle „lesen“ darf keine E-Mails verschicken.');
+      const actor = benutzer?.name || null;
+      if (!actor) throw new ApiError(403, 'Bitte anmelden – wer die E-Mail verschickt, wird festgehalten.');
+      const orderId = String(payload?.orderId || '');
+      if (!orderId) throw new ApiError(400, 'orderId ist Pflicht', { missing: ['orderId'] });
+      const dir = privatDirPath || privatDir();
+      const jetzt = now();
+
+      const pf = lesePostfach(postfachPfad(dir));
+      if (!pf.zugang) throw new ApiError(409, pf.hinweis || 'Das Firmenpostfach ist nicht eingerichtet.');
+      let stoppliste;
+      let versand;
+      try {
+        stoppliste = abgemeldeteAdressen(leseStoppliste(stopplistePfad(dir)));
+        versand = leseVersand(versandPfad(dir));
+      } catch (e) {
+        throw new ApiError(409, `Nicht verschickt: ${e.message}`);
+      }
+      const bestellungen = this.kundenBestellungen();
+      if (!bestellungen.verfuegbar) throw new ApiError(409, bestellungen.hinweis || 'Bestelldaten fehlen.');
+      const { offen, abgemeldet } = musterNachfassen(bestellungen.zeilen, { jetzt, abgemeldet: stoppliste });
+      if (abgemeldet.some(a => a.orderId === orderId)) throw new ApiError(409, 'Der Kunde hat sich abgemeldet – keine Nachfragen mehr.');
+      const e = offen.find(o => o.orderId === orderId);
+      if (!e) throw new ApiError(409, 'Für diese Bestellung steht keine Nachfrage mehr an – schon nachgefasst? Seite neu laden.');
+      if (payload?.stufe && payload.stufe !== e.stufe) throw new ApiError(409, 'Der Stand hat sich inzwischen geändert – Seite neu laden.');
+      if (e.kontakt.weg !== 'email') throw new ApiError(409, 'Für diesen Kunden ist keine E-Mail-Adresse hinterlegt.');
+      const vorher = schonVerschickt(versand, orderId, e.stufe);
+      if (vorher) throw new ApiError(409, `Diese E-Mail ist schon am ${new Date(vorher.am).toLocaleDateString('de-DE')} rausgegangen – nichts doppelt verschickt.`);
+
+      // Text aus dem Feld der Karte; ohne Angabe die Vorlage, unterschrieben vom Absender.
+      let mail;
+      if (payload?.text != null) {
+        mail = { betreff: String(payload.betreff ?? '').trim(), text: String(payload.text).replace(/\r\n/g, '\n').trim() };
+      } else {
+        const vorlage = this.kundenMusterTexte();
+        mail = vorlage.verfuegbar ? fuelleText(vorlage.texte[e.stufe], { kundenname: e.kundenname, absender: actor, produkte: e.produkte }) : null;
+        if (!mail) throw new ApiError(409, vorlage.hinweis || `Die Vorlage für „${STUFE_LABEL[e.stufe]}“ fehlt.`);
+      }
+      if (!mail.betreff || /[\r\n]/.test(mail.betreff) || mail.betreff.length > 200) throw new ApiError(400, 'Bitte einen Betreff in einer Zeile angeben (höchstens 200 Zeichen).');
+      if (!mail.text || mail.text.length > 20000) throw new ApiError(400, 'Der Text der E-Mail fehlt oder ist zu lang.');
+      if (!platzhalterFrei(mail)) throw new ApiError(400, 'Im Text steht noch ein Platzhalter in {geschweiften Klammern} – bitte ersetzen.');
+
+      const an = e.kontakt.email;
+      const kopieAn = kopieNoetig({ ersterVersandAm: versand.ersterVersandAm, jetzt, immer: pf.zugang.kopieImmer }) ? pf.zugang.kopie : null;
+      const sichern = () => schreibeVersand(versandPfad(dir), versand);
+      // Reihenfolge wie im Lauf: erst "sendet" vermerken, dann senden - ein Abbruch fuehrt nie zu einer zweiten Mail.
+      const eintrag = { am: jetzt.toISOString(), orderId, orderName: e.orderName, stufe: e.stufe, an, betreff: mail.betreff, kopie: kopieAn, von: actor, status: 'sendet', messageId: null, fehler: null };
+      versand.sendungen.push(eintrag);
+      sichern();
+      try {
+        const r = await senden(pf.zugang, { von: { name: pf.zugang.absenderName, adresse: pf.zugang.absender }, an: [an], bcc: kopieAn ? [kopieAn] : [], betreff: mail.betreff, text: mail.text, datum: jetzt });
+        eintrag.status = 'gesendet';
+        eintrag.messageId = r?.messageId || null;
+        if (!versand.ersterVersandAm) versand.ersterVersandAm = jetzt.toISOString();
+      } catch (err) {
+        eintrag.status = 'fehler';
+        eintrag.fehler = String(err?.message || err).slice(0, 300);
+        sichern();
+        audit({ actor, action: 'nachfassen-einzeln', orderId, stufe: e.stufe, status: 'fehler' });
+        throw new ApiError(502, `E-Mail nicht verschickt: ${eintrag.fehler}`);
+      }
+      sichern();
+      let zeitleisteFehler = null;
+      try {
+        await auftragsSchrittSetzen({ orderId, schritt: 'nachgefasst', notiz: `${STUFE_LABEL[e.stufe]} per E-Mail aus dem Control Center: „${mail.betreff}“` }, benutzer, actor);
+        eintrag.status = 'vermerkt';
+      } catch (err) {
+        // Die Mail ist raus; der naechste Lauf traegt die Zeitleiste nach (schonVerschickt), statt neu zu senden.
+        zeitleisteFehler = String(err?.message || err);
+      }
+      sichern();
+      audit({ actor, action: 'nachfassen-einzeln', orderId, stufe: e.stufe, status: eintrag.status, kopie: kopieAn });
+      merke(benutzer, actor, 'Muster nachgefasst per E-Mail', String(e.orderName || orderId));
+      return { ok: true, an, kopie: kopieAn, stufe: e.stufe, zeitleisteFehler, stand: this.kundenMusterTexte() };
+    },
+
+    /**
      * "Kunde fertig": setzt ALLE offenen Positionen einer Bestellung auf
      * Erledigt - bewusster Sammelschritt mit Rueckfrage im Browser und
      * Protokolleintrag (wer/wann je Position ueber merke()), nie ein

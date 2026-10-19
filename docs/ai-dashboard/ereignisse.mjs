@@ -28,7 +28,7 @@ import { einkaufKlickLieferanten } from './ansichten/einkauf/lieferanten.mjs';
 import { einkaufKlickMusterlager } from './ansichten/einkauf/musterlager.mjs';
 import { lexikonKlick } from './ansichten/lexikon.mjs';
 import { kundenKlickBestellungen } from './ansichten/kunden/bestellungen.mjs';
-import { musterNachfassenKlick } from './ansichten/heute/muster-nachfassen.mjs';
+import { musterNachfassenKlick, musterNachfassenEingabe } from './ansichten/heute/muster-nachfassen.mjs';
 import { kundenKlickAkte } from './ansichten/kunden.mjs';
 import { openOrgSchnell } from './ansichten/organisation/dialoge.mjs';
 import {
@@ -132,6 +132,7 @@ export function bindEvents() {
   let qTimer;
   document.addEventListener('input', e => {
     if (prozesseEingabe(e)) return;
+    if (musterNachfassenEingabe(e)) return;
     if (socialEingabe(e)) return;
     const el = e.target.closest('input[type=search][data-param]');
     if (!el) return;

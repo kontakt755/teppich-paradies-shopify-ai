@@ -295,5 +295,86 @@ test('Server: POST /api/kunden/nachfassen-abmelden steht in der write-Liste (les
     const texte = await (await fetch(`${base}/api/kunden/muster-texte`, { headers: { cookie: lena } })).json();
     assert.deepEqual(texte.abgemeldet.map(e => e.email), ['kunde@example.invalid']);
     assert.equal(texte.versand.eingerichtet, false);
+
+    // "Jetzt senden": ebenfalls in der write-Liste; ohne Postfach antwortet der Server 409 statt zu senden.
+    const senden = keks => fetch(`${base}/api/kunden/nachfassen-senden`, { method: 'POST', headers: { 'content-type': 'application/json', cookie: keks }, body: JSON.stringify({ orderId: 'gid://shopify/Order/7' }) });
+    assert.equal((await senden(lena)).status, 403);
+    const nein = await senden(mona);
+    assert.equal(nein.status, 409);
+    assert.match((await nein.json()).error || '', /postfach\.json/);
   });
+});
+
+test('Jetzt senden: eine Mail mit dem angepassten Text, Empfaenger aus den Bestelldaten, Zeitleiste vom Absender, kein zweites Mal', async () => {
+  const u = umgebung();
+  await musterUnterwegs(u);
+  const anna = { name: 'Anna', rolle: 'mitarbeiter' };
+  // Ohne Postfach: nichts geht raus, die Meldung nennt den Grund.
+  await assert.rejects(u.api.kundenNachfassenEinzeln({ orderId: ORDER(1) }, anna), e => e.status === 409 && /postfach\.json/.test(e.message));
+  await assert.rejects(u.api.kundenNachfassenEinzeln({ orderId: ORDER(1) }, { name: 'Lena', rolle: 'lesen' }), e => e.status === 403);
+  await assert.rejects(u.api.kundenNachfassenEinzeln({ orderId: ORDER(1) }, null), e => e.status === 403);
+
+  const s = await starteSmtpAttrappe();
+  try {
+    u.postfach(s.port);
+    // Platzhalter im angepassten Text: abgelehnt, nichts verschickt, nichts protokolliert.
+    await assert.rejects(u.api.kundenNachfassenEinzeln({ orderId: ORDER(1), betreff: 'Hallo', text: 'Guten Tag {Nachname}' }, anna), e => e.status === 400 && /Platzhalter/.test(e.message));
+    await assert.rejects(u.api.kundenNachfassenEinzeln({ orderId: ORDER(1), betreff: 'Zwei\nZeilen', text: 'Hallo' }, anna), e => e.status === 400);
+    await assert.rejects(u.api.kundenNachfassenEinzeln({ orderId: ORDER(1), stufe: 'erinnerung', betreff: 'x', text: 'y' }, anna), e => e.status === 409 && /neu laden/.test(e.message));
+    assert.equal(s.nachrichten.length, 0);
+
+    // Eine Adresse aus dem Browser zaehlt nicht: der Empfaenger kommt aus der Bestellung.
+    const r = await u.api.kundenNachfassenEinzeln({ orderId: ORDER(1), stufe: 'erste', an: 'fremd@example.invalid', betreff: ' Ihre Muster – kurze Frage ', text: 'Guten Tag Testkunde 1,\r\n\r\nangepasster Text.\r\n\r\nAnna' }, anna);
+    assert.deepEqual([r.ok, r.an, r.stufe, r.kopie, r.zeitleisteFehler], [true, 'testkunde1@example.invalid', 'erste', 'kontakt@example.invalid', null]);
+    assert.equal(s.nachrichten.length, 1);
+    const n = s.nachrichten[0];
+    assert.deepEqual(n.an, ['testkunde1@example.invalid', 'kontakt@example.invalid']);
+    assert.equal(betreffText(n.daten), 'Ihre Muster – kurze Frage');
+    assert.equal(rumpfText(n.daten).replace(/\r\n/g, '\n'), 'Guten Tag Testkunde 1,\n\nangepasster Text.\n\nAnna');
+
+    const z = u.nachgefasst(ORDER(1));
+    assert.deepEqual([z.zustand, z.von], ['erledigt', 'Anna']);
+    assert.match(z.notiz, /^Erste Nachfrage per E-Mail aus dem Control Center: „Ihre Muster – kurze Frage“$/);
+    const v = leseVersand(versandPfad(u.dir));
+    assert.deepEqual(v.sendungen.map(x => [x.orderName, x.stufe, x.status, x.von]), [['#T1', 'erste', 'vermerkt', 'Anna']]);
+    assert.equal(v.ersterVersandAm, '2026-01-11T09:30:00.000Z');
+    assert.equal(r.stand.versand.eingerichtet, true);
+
+    // Zweiter Klick: steht nicht mehr an, keine zweite Mail.
+    await assert.rejects(u.api.kundenNachfassenEinzeln({ orderId: ORDER(1), betreff: 'x', text: 'y' }, anna), e => e.status === 409);
+    // Der Lauf danach schreibt #T1 nicht noch einmal an, nur die anderen.
+    const lauf = await u.api.kundenNachfassenSenden();
+    assert.deepEqual(lauf.verschickt.map(e => e.orderName), ['#T2', '#T4']);
+    assert.equal(s.nachrichten.length, 3);
+
+    // Abgemeldet: abgelehnt, auch wenn die Zeile im Browser noch steht.
+    u.uhr.jetzt = new Date('2026-01-21T09:30:00Z');
+    u.api.kundenNachfassenAbmelden({ email: 'testkunde4@example.invalid' }, anna);
+    await assert.rejects(u.api.kundenNachfassenEinzeln({ orderId: ORDER(4) }, anna), e => e.status === 409 && /abgemeldet/.test(e.message));
+    // Ohne Text: Erinnerung aus der Vorlage, unterschrieben vom Absender.
+    const r2 = await u.api.kundenNachfassenEinzeln({ orderId: ORDER(1) }, anna);
+    assert.equal(r2.stufe, 'erinnerung');
+    assert.equal(r2.kopie, null, 'die Woche mit Kopie ist vorbei');
+    assert.match(rumpfText(s.nachrichten.at(-1).daten).replace(/\r\n/g, '\n'), /Freundliche Grüße\nAnna/);
+  } finally { await s.schliessen(); }
+});
+
+test('Jetzt senden: Postfach lehnt ab -> 502, Protokoll "fehler", Zeitleiste offen, erneuter Versuch geht', async () => {
+  const u = umgebung();
+  await musterUnterwegs(u);
+  const anna = { name: 'Anna', rolle: 'mitarbeiter' };
+  const kaputt = await starteSmtpAttrappe({ authFehlschlag: true });
+  try {
+    u.postfach(kaputt.port);
+    await assert.rejects(u.api.kundenNachfassenEinzeln({ orderId: ORDER(1) }, anna), e => e.status === 502 && /Anmeldung ab \(535\)/.test(e.message) && !/platzhalter-1/.test(e.message));
+    assert.equal(u.nachgefasst(ORDER(1)).zustand, 'offen');
+    assert.deepEqual(leseVersand(versandPfad(u.dir)).sendungen.map(x => x.status), ['fehler']);
+  } finally { await kaputt.schliessen(); }
+  const heil = await starteSmtpAttrappe();
+  try {
+    u.postfach(heil.port);
+    const r = await u.api.kundenNachfassenEinzeln({ orderId: ORDER(1) }, anna);
+    assert.equal(r.ok, true);
+    assert.equal(heil.nachrichten.length, 1);
+  } finally { await heil.schliessen(); }
 });

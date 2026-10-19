@@ -7,13 +7,15 @@
  * und die Knoepfe "Erledigt - nachgefasst" (Zeitleisten-Schritt, data-zl-schritt,
  * ansichten/kunden/zeitleiste.mjs - speichert wer und wann) und "Abgemeldet" (der Kunde hat
  * mit "Abmelden" geantwortet: Stoppliste im Privatordner, POST /api/kunden/nachfassen-abmelden).
+ * Ist das Firmenpostfach eingerichtet, geht die Nachfrage per "Jetzt senden" sofort raus - mit dem
+ * Text aus dem Feld, das man vorher anpassen kann (POST /api/kunden/nachfassen-senden).
  * Welche Kunden dran sind, rechnet lib/muster-nachfassen.mjs; hier wird nur gezeichnet.
  * Gestaltung: stile/heute.css.
  */
 import { state } from '../../kern/zustand.mjs';
 import { esc, fmtDate, fmtDateTime, plural, toast } from '../../kern/helfer.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
-import { orgSchreiben } from '../../kern/api.mjs';
+import { fetchEinkauf, orgSchreiben } from '../../kern/api.mjs';
 import { render } from '../../kern/render.mjs';
 import { kunden } from '../kunden/gemeinsam.mjs';
 import { musterNachfassen, fuelleText, mailtoLink, STUFE_LABEL, ERSTE_NACH_TAGEN, ERINNERUNG_NACH_TAGEN } from '../../lib/muster-nachfassen.mjs';
@@ -25,7 +27,15 @@ const AUTOMATISCH = 'automatisch';
 const tageText = n => (n === 0 ? 'heute' : n === 1 ? 'vor 1 Tag' : `vor ${n} Tagen`);
 // Bestell-IDs sind gid://-Adressen - als HTML-id nur Buchstaben und Ziffern.
 const textId = orderId => `mnText-${String(orderId).replace(/[^A-Za-z0-9_-]/g, '')}`;
+const betreffId = orderId => `mnBetreff-${String(orderId).replace(/[^A-Za-z0-9_-]/g, '')}`;
 const kundenLink = e => (e.kundenSchluessel ? `#/kunden?kunde=${encodeURIComponent(e.kundenSchluessel)}` : '#/kunden?tab=bestellungen');
+
+/**
+ * Angepasste Texte je Bestellung und Stufe, damit ein Neuzeichnen (Sync, anderer Klick) die
+ * Aenderung nicht verwirft. Nur im Speicher dieses Tabs - nichts davon geht ohne "Jetzt senden" raus.
+ */
+const entwuerfe = new Map();
+const entwurfSchluessel = (orderId, stufe) => `${orderId}|${stufe}`;
 
 /** Stoppliste aus der zuletzt geladenen Antwort von /api/kunden/muster-texte (Adresse -> { am }). */
 function stoppliste() {
@@ -48,9 +58,14 @@ function kontaktText(k) {
 function zeile(e, texte, lesend, erste, automatisch) {
   const vorlage = texte?.[e.stufe] || null;
   const absender = state.session?.benutzer?.name || null;
-  const mail = fuelleText(vorlage, { kundenname: e.kundenname, absender, produkte: e.produkte });
+  const vorschlag = fuelleText(vorlage, { kundenname: e.kundenname, absender, produkte: e.produkte });
+  const schluessel = entwurfSchluessel(e.orderId, e.stufe);
+  const mail = vorschlag ? { ...vorschlag, ...entwuerfe.get(schluessel) } : null;
   const id = textId(e.orderId);
+  const bid = betreffId(e.orderId);
   const k = e.kontakt;
+  // Direkt senden nur mit eingerichtetem Postfach, E-Mail-Adresse und Text - und nicht in der Rolle "lesen".
+  const senden = automatisch && !lesend && k.weg === 'email' && mail;
   const kontaktKnopf = k.weg === 'rueckruf'
     ? `<a class="btn btn-sm" href="tel:${esc(String(k.telefon).replace(/[^0-9+]/g, ''))}">Anrufen</a>`
     : k.weg === 'email' ? `<a class="btn btn-sm" href="${esc(mailtoLink(k.email, mail || {}))}">E-Mail öffnen</a>` : '';
@@ -59,7 +74,11 @@ function zeile(e, texte, lesend, erste, automatisch) {
     : '';
   // Verschickt der Lauf selbst, ist "Erledigt" nur noch die Ausnahme (z. B. am Telefon nachgefasst) - nicht mehr die Hauptaktion.
   const haupt = erste && !automatisch ? ' btn-primary' : '';
+  const sendenKnopf = senden
+    ? `<button type="button" class="btn btn-sm${erste ? ' btn-primary' : ''}" data-mn-senden="${esc(e.orderId)}" data-mn-stufe="${esc(e.stufe)}" data-mn-an="${esc(k.email)}" data-mn-text="${esc(id)}" data-mn-betreff="${esc(bid)}" title="Geht sofort vom Firmenpostfach an ${esc(k.email)} – mit dem Text unten">Jetzt senden</button>`
+    : '';
   const knoepfe = lesend ? '' : `<div class="heute-mn-knoepfe">
+      ${sendenKnopf}
       ${kontaktKnopf}
       ${abmelden}
       <button type="button" class="btn btn-sm${haupt}" data-zl-schritt="nachgefasst" data-zl-order="${esc(e.orderId)}">Erledigt – nachgefasst</button>
@@ -81,10 +100,13 @@ function zeile(e, texte, lesend, erste, automatisch) {
     </div>
     ${mail ? `<details class="heute-mn-vorschlag">
       <summary>Textvorschlag (${esc(e.stufe === 'erinnerung' ? 'kurze Erinnerung' : 'erste E-Mail')})</summary>
-      <p class="heute-mn-betreff"><span>Betreff:</span> ${esc(mail.betreff)}</p>
+      ${senden
+        ? `<p class="heute-mn-betreff"><label for="${esc(bid)}">Betreff:</label> <input id="${esc(bid)}" type="text" maxlength="200" value="${esc(mail.betreff)}" data-mn-feld="${esc(schluessel)}" data-mn-art="betreff"></p>`
+        : `<p class="heute-mn-betreff"><span>Betreff:</span> ${esc(mail.betreff)}</p>`}
       <label class="visually-hidden" for="${esc(id)}">Text der E-Mail an ${esc(e.kundenname || e.orderName)}</label>
-      <textarea id="${esc(id)}" readonly rows="10">${esc(mail.text)}</textarea>
+      <textarea id="${esc(id)}" ${senden ? `data-mn-feld="${esc(schluessel)}" data-mn-art="text"` : 'readonly'} rows="10">${esc(mail.text)}</textarea>
       <button type="button" class="btn btn-sm" data-kopieren="${esc(id)}">Text kopieren</button>
+      ${senden && entwuerfe.has(schluessel) ? `<button type="button" class="btn btn-sm" data-mn-zuruecksetzen="${esc(schluessel)}">Vorschlag wiederherstellen</button>` : ''}
     </details>` : ''}
   </div>`;
 }
@@ -153,6 +175,10 @@ export function musterNachfassenBlock(stand) {
  * Gibt true zurueck, wenn der Klick damit erledigt ist.
  */
 export function musterNachfassenKlick(e) {
+  const senden = e.target.closest('[data-mn-senden]');
+  if (senden) { e.preventDefault(); jetztSenden(senden); return true; }
+  const zurueck = e.target.closest('[data-mn-zuruecksetzen]');
+  if (zurueck) { e.preventDefault(); entwuerfe.delete(zurueck.dataset.mnZuruecksetzen); render(); return true; }
   const knopf = e.target.closest('[data-mn-abmelden]');
   if (!knopf) return false;
   e.preventDefault();
@@ -167,4 +193,40 @@ export function musterNachfassenKlick(e) {
     })
     .catch((err) => { toast(`Nicht gespeichert: ${err.message}`, 'crit'); knopf.disabled = false; });
   return true;
+}
+
+/** Eingabe im Betreff- oder Textfeld: als Entwurf merken, damit ein Neuzeichnen sie nicht verwirft. */
+export function musterNachfassenEingabe(e) {
+  const feld = e.target.closest?.('[data-mn-feld]');
+  if (!feld) return false;
+  const schluessel = feld.dataset.mnFeld;
+  entwuerfe.set(schluessel, { ...entwuerfe.get(schluessel), [feld.dataset.mnArt]: feld.value });
+  return true;
+}
+
+/**
+ * Klick "Jetzt senden": Rueckfrage mit Empfaenger und Betreff, dann geht genau diese Mail vom
+ * Firmenpostfach raus. Der Server prueft alles noch einmal (Stoppliste, schon verschickt,
+ * Platzhalter) und setzt die Zeitleiste; danach laden Karte und Bestellzeilen neu.
+ */
+function jetztSenden(knopf) {
+  const { mnSenden: orderId, mnStufe: stufe, mnAn: an } = knopf.dataset;
+  const betreff = document.getElementById(knopf.dataset.mnBetreff)?.value ?? '';
+  const text = document.getElementById(knopf.dataset.mnText)?.value ?? '';
+  if (!text.trim()) { toast('Der Text der E-Mail ist leer.', 'crit'); return; }
+  if (!window.confirm(`E-Mail jetzt vom Firmenpostfach senden?\n\nAn: ${an}\nBetreff: ${betreff}`)) return;
+  knopf.disabled = true;
+  orgSchreiben('/api/kunden/nachfassen-senden', { orderId, stufe, betreff, text })
+    .then(async (antwort) => {
+      entwuerfe.delete(entwurfSchluessel(orderId, stufe));
+      if (antwort?.stand) { heuteDaten.musterTexte = antwort.stand; heuteDaten.musterTexteAm = Date.now(); }
+      const kopie = antwort?.kopie ? ` (Kopie an ${antwort.kopie})` : '';
+      if (antwort?.zeitleisteFehler) toast(`E-Mail an ${antwort.an} verschickt${kopie} – Zeitleiste nicht gespeichert: ${antwort.zeitleisteFehler}`, 'warn', { dauer: 9000 });
+      else toast(`E-Mail an ${antwort?.an || an} verschickt${kopie}`);
+      // Die Zeile faellt erst weg, wenn die Bestellzeilen den Schritt "nachgefasst" tragen.
+      const neu = await fetchEinkauf('/api/kunden/bestellungen').catch(() => null);
+      if (neu?.verfuegbar) kunden.bestellungen = neu;
+      render();
+    })
+    .catch((err) => { toast(`Nicht verschickt: ${err.message}`, 'crit', { dauer: 9000 }); knopf.disabled = false; });
 }

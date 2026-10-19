@@ -2,6 +2,25 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-19 · „Muster nachfassen“: E-Mail direkt aus der Karte senden
+
+- **Geändert:** Wunsch Inhaber: die Nachfrage gleich aus der Karte an den Kunden schicken statt über
+  „E-Mail öffnen“. Mit eingerichtetem Firmenpostfach hat jede offene Zeile „Jetzt senden“; Betreff und
+  Text sind vorher bearbeitbar. `POST /api/kunden/nachfassen-senden` → `kundenNachfassenEinzeln()` mit
+  denselben Sperren wie der tägliche Lauf (Empfänger nur aus den Bestelldaten, Stoppliste, kein zweiter
+  Versand derselben Stufe, kein Platzhalter, Kopie-Woche) und Zeitleiste „nachgefasst“ vom Absender.
+  Details: Architektur Abschnitt 23.
+- **Getestet:** `npm test` grün (3046). Neu: Einzelversand gegen die SMTP-Attrappe (angepasster Text,
+  fremde Adresse aus dem Browser ignoriert, Kopie, Zeitleiste von „Anna“, zweiter Klick 409, der Lauf
+  danach lässt die Bestellung aus, Abgemeldete 409, Erinnerung aus der Vorlage), Postfach lehnt ab → 502
+  ohne Passwort in der Meldung, Server-Rollen (lesen 403, ohne Postfach 409). Klickstrecke gegen die
+  Datenkopie mit Attrappen-Postfach: Text geändert, „Jetzt senden“ → Mail mit Änderung und Blindkopie
+  nur in der Attrappe, offen 6 → 5, Zeile unter „Erledigt … von Prüfung mitarbeiter“. 375 px ohne
+  Überlauf, Knöpfe 44 px.
+- **Risiken/Annahmen:** Ohne `nachfassen/postfach.json` erscheint der Knopf nicht – bis dahin bleibt
+  „E-Mail öffnen“. Entwürfe leben nur im Tab (Neuladen der Seite verwirft sie).
+- **Nächste Stufe:** Postfach einrichten (Inhaber), dann ersten echten Versand mit Kopie mitlesen.
+
 ## 2026-10-16 · „Muster nachfassen“ verschickt automatisch vom Firmenpostfach (Werkbank w-119)
 
 - **Geändert:** Inhaber 16.10. (w-119, Option A): Text 1 und die Erinnerung gehen täglich automatisch

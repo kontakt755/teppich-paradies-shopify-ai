@@ -85,6 +85,8 @@ html[data-theme="dark"] .heute-sicht a[aria-current] { color: var(--bg); }
 .heute-mn-vorschlag > summary { cursor: pointer; font-size: .88rem; font-weight: 600; color: var(--accent); min-height: 32px; display: flex; align-items: center; }
 .heute-mn-betreff { margin: 6px 0; font-size: .9rem; overflow-wrap: anywhere; }
 .heute-mn-betreff span { color: var(--text-3); }
+.heute-mn-betreff label { color: var(--text-3); }
+.heute-mn-betreff input { width: 100%; min-width: 0; margin-top: 4px; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface-2); color: var(--text); font: inherit; font-size: .9rem; }
 .heute-mn-vorschlag textarea { display: block; width: 100%; min-width: 0; margin-bottom: 8px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface-2); color: var(--text); font: inherit; font-size: .9rem; line-height: 1.45; resize: vertical; }
 .heute-mn-erledigt { margin-top: 10px; }
 .heute-mn-warn { color: var(--warn); }

@@ -1386,6 +1386,19 @@ Abmeldung, mit Abmelde-Satz in jeder Mail. WhatsApp und Shopify Messaging waren 
   automatisch per E-Mail raus“, „Erledigt – nachgefasst“ ist nicht mehr die Hauptaktion. Nicht
   eingerichtet: Hinweis mit Dateiname, der Laden fasst weiter per Klick nach. Erledigt-Zeilen nennen
   „automatisch per E-Mail“ statt eines Kollegen.
+- **„Jetzt senden“** (seit 2026-10-19): Ist das Postfach eingerichtet, hat jede offene Zeile mit
+  E-Mail-Adresse den Knopf „Jetzt senden“ (in der ersten Zeile die Hauptaktion). Betreff und Text im
+  Textvorschlag sind dann bearbeitbar; Änderungen bleiben je Bestellung und Stufe im Speicher des Tabs,
+  bis gesendet wird („Vorschlag wiederherstellen“ verwirft sie). Nach einer Rückfrage mit Empfänger und
+  Betreff `POST /api/kunden/nachfassen-senden {orderId, stufe, betreff, text}` → `kundenNachfassenEinzeln()`
+  (write-Liste, nur POST, Rolle „lesen“ 403, wer sendet kommt aus der Sitzung). Der Server prüft wie der
+  Lauf: Empfänger nur aus den Bestelldaten (eine Adresse aus dem Browser zählt nicht), Stoppliste und
+  Protokoll frisch gelesen, Zeile muss noch offen sein und dieselbe Stufe haben (sonst 409 „neu laden“),
+  dieselbe Stufe nie zweimal (`schonVerschickt`), Betreff einzeilig ≤ 200 Zeichen, kein `{Platzhalter}`.
+  Gleiche Reihenfolge `sendet → gesendet → vermerkt` und dieselbe Kopie-Regel; Zeitleiste „nachgefasst“
+  von dem Mitarbeiter, Notiz „… per E-Mail aus dem Control Center: „Betreff““; Protokolleintrag mit `von`.
+  Fehler beim Postfach → 502, Protokoll `fehler`, Zeile bleibt offen. Danach lädt die Karte die
+  Bestellzeilen neu, die Zeile wandert nach „Erledigt“.
 - **Zeitplan**: `operations/launchagents/net.teppich-paradies.nachfassen.plist.vorlage`, Mo–Sa 9:30 aus
   `~/tp-dashboard`, Protokoll `~/teppich-paradies-analyse/nachfassen/versand.log`. Einrichten wie die
   Auslauf-Prüfung (`__HOME__` ersetzen, nach `~/Library/LaunchAgents` kopieren, `launchctl load`) – erst
