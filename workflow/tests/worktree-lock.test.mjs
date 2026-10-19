@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
+import { wegwerfOrdner } from '../../scripts/test-temp.mjs';
 import test from 'node:test';
 import {
   LOCK_ENV, LOCK_RELATIVE_PATH, acquireWorktreeLock, describeLock, isProcessAlive, lockIsStale, readLock, releaseOnProcessExit,
 } from '../worktree-lock.mjs';
 
-const neuerWorktree = () => fs.mkdtempSync(path.join(os.tmpdir(), 'tp-worktree-lock-'));
+const neuerWorktree = () => wegwerfOrdner('tp-worktree-lock-');
 // Eigene Umgebung je Fall: acquire schreibt den Token hinein, ein geteiltes
 // Objekt wuerde die Faelle voneinander abhaengig machen.
 const basis = (root, extra = {}) => ({ root, env: {}, hostname: 'test-rechner', isAlive: () => true, ...extra });

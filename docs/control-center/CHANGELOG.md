@@ -2,6 +2,27 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-19 · Temp-Ordner: Screenshots und Testordner bleiben nicht mehr liegen (#1457)
+
+- **Geändert:** Im Temp-Ordner des Macs lagen rund 194.000 Einträge aus diesem Repository. `dashboard:pruefen`
+  ohne `--aus` ließ jeden Screenshot-Ordner `tp-dashboard-pruefung-XXXXXX` (echte Kunden- und Einkaufsdaten)
+  für immer liegen (59 Ordner); jetzt löscht jeder Lauf beim Start solche Ordner, die älter als drei Tage sind
+  (`scripts/dashboard-pruefung-ordner.mjs`, nur echte Verzeichnisse mit genau diesem Namen direkt im
+  Temp-Ordner, nie Links). Die Testsuiten legten per `mkdtemp` Ordner mit rund hundert Präfixen an
+  (`cc-api-*` allein 42.000) und räumten sie nicht weg: die npm-Testskripte laufen jetzt über
+  `scripts/test-temp.mjs`, der jeder Suite einen eigenen Temp-Ordner gibt (`TMPDIR`/`TMP`/`TEMP`) und ihn
+  danach löscht, auch bei roten Tests und `kill`. Die sieben größten Verursacher (`_testumgebung.mjs`,
+  `api`, `sonderposten-api`, Ops-Server, Log-Filter, Deploy-Fenster, Worktree-Sperre) räumen zusätzlich selbst
+  auf (`wegwerfOrdner`), damit auch ein Einzelaufruf `node --test datei` nichts hinterlässt.
+- **Getestet:** `docs/ai-dashboard/tests/pruefung-ordner.test.mjs` (4 Tests: Name, Ort, Link, Alter, Inhalt).
+  Zwei volle `npm test`-Läufe grün (3.148 Tests), Temp-Ordner vorher und nachher gleich viele Einträge, kein
+  neuer mit einem Test-Präfix. Die sieben Dateien einzeln ohne Starter: kein neuer Ordner. Starter mit rotem
+  Test (Exit 1) und mit `kill` (Exit 1): Ordner jeweils weg.
+- **Risiken:** Tests, die einen Kindprozess mit selbst gebauter Umgebung ohne `TMPDIR` starten, schreiben
+  weiter nach `/tmp` (in beiden Läufen kein Fall). Einzelaufrufe der übrigen Testdateien ohne Starter
+  hinterlassen weiter Ordner.
+- **Nächste Stufe:** Screenshot-Aufräumen und `verwaisteDatenkopien` (#1444) in ein Modul zusammenführen.
+
 ## 2026-10-19 · Übersicht: „Heute“ als eine Liste, Lieferantenbelege aus dem Postfach (#1427)
 
 - **Geändert:** Inhaber 19.10. „immer noch zu unübersichtlich … Schnittstelle zu Gmail“; Audit und
