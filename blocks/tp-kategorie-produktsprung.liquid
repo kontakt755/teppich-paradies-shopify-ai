@@ -1,0 +1,34 @@
+<a class="tp-kategorie-produktsprung" href="#ResultsList" {{ block.shopify_attributes }}>Direkt zu den Produkten <span aria-hidden="true">↓</span></a>
+
+{% stylesheet %}
+  .tp-kategorie-produktsprung {
+    display: none;
+  }
+
+  @media (max-width: 749px) {
+    .tp-kategorie-produktsprung {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 44px;
+      color: var(--tp-ink, #1d1a17);
+      font-size: var(--tp-fs-sm);
+      font-weight: 600;
+      text-underline-offset: 3px;
+    }
+
+    .tp-kategorie-produktsprung:focus-visible {
+      outline: 2px solid currentColor;
+      outline-offset: 3px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Produktsprung",
+  "tag": null,
+  "settings": [],
+  "presets": [{ "name": "TP Produktsprung" }]
+}
+{% endschema %}
