@@ -9,11 +9,12 @@ import { state } from '../../kern/zustand.mjs';
 import { esc, fmtDate, fmtDateTime, plural, geldText } from '../../kern/helfer.mjs';
 import { emptyState, stoerungState, bandItem } from '../../bausteine/karten.mjs';
 import {
-  einkaufPositionenMitStand, auftragOffenePositionen, aktiveAuftraege, einkauf, AF_STATUS_LABEL,
+  einkaufPositionenMitStand, auftragOffenePositionen, aktiveAuftraege, einkauf,
   afNaechsterStatus, LIEFERWEG_LABEL, afWartetage, afWarteText, afWarteKlasse,
   ensureEinkaufBestellungen, ensureEinkaufAuftragsstatus, alleAuftraege, erledigtePositionen,
   sammelGruppen, anzeigeWert, afEintragFuer, hatLieferantLink, positionUnvollstaendig,
   positionsGruppe, musterEigen, MUSTER_HERKUNFT_KURZ, zurueckGruppen, musterSchrittKnopf,
+  afStatusText, istUeberKettler,
 } from './auftragsfluss.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { filtereAuftrag } from '../../lib/vorgangslink.mjs';
@@ -52,7 +53,7 @@ function afStatusZelle(p) {
   const eintrag = afEintragFuer(p);
   const status = eintrag?.status || null;
   const tage = afWartetage(eintrag);
-  const warte = tage === null ? '' : `<div class="small ${afWarteKlasse(tage)}" title="${esc(AF_STATUS_LABEL[status])} am ${esc(fmtDate(eintrag[`${status}Am`]))}">${esc(afWarteText(tage))}</div>`;
+  const warte = tage === null ? '' : `<div class="small ${afWarteKlasse(tage)}" title="${esc(afStatusText(eintrag))} am ${esc(fmtDate(eintrag[`${status}Am`]))}">${esc(afWarteText(tage))}</div>`;
   const grund = status === 'erledigt' && eintrag.erledigtNotiz ? `<div class="small muted">Grund: ${esc(eintrag.erledigtNotiz)}</div>` : '';
   const nr = eintrag?.lieferantBestellnummer ? `<div class="small muted">Bestellnr. ${esc(eintrag.lieferantBestellnummer)}</div>` : '';
   const lesend = istNurLesend();
@@ -71,12 +72,13 @@ function afStatusZelle(p) {
     return `<div class="small muted">Stand: ${esc(woher)}</div><div class="small muted">Nicht beim Lieferanten bestellen</div>${wahl}`;
   }
   const naechster = afNaechsterStatus(status);
-  const btn = naechster ? `<button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="${naechster}" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}">${esc(AF_AKTIONS_LABEL[naechster])}</button>`
+  const aktion = naechster === 'geliefert' && istUeberKettler(eintrag) ? 'Als beim Kettler abgeholt markieren' : AF_AKTIONS_LABEL[naechster];
+  const btn = naechster ? `<button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="${naechster}" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}">${esc(aktion)}</button>`
     : status === 'erledigt' ? `<button type="button" class="btn btn-sm btn-ghost" data-af-reopen="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" title="Abschluss rückgängig machen">Wieder öffnen…</button>` : '';
   // Der Stand ist ein ruhiger Text, kein zweiter Knopf - deshalb kein "badge status" mehr.
   const zusatz = status ? ` · ${fmtDateTime(eintrag.aktualisiertAm)} · @${esc(eintrag.aktualisiertVon)}`
     : eintrag?.wiederGeoeffnetAm ? ` · wieder geöffnet ${fmtDateTime(eintrag.wiederGeoeffnetAm)} · @${esc(eintrag.wiederGeoeffnetVon)}` : '';
-  const stand = `<div class="small muted">Stand: ${esc(status ? AF_STATUS_LABEL[status] : 'Noch nicht bestellt')}${zusatz}</div><div class="small">${esc(beschaffungText(eintrag))}</div>${uebernahmeBlock([p])}`
+  const stand = `<div class="small muted">Stand: ${esc(afStatusText(eintrag))}${zusatz}</div><div class="small">${esc(beschaffungText(eintrag))}</div>${uebernahmeBlock([p])}`
     // Steht im Musterlager, ist aber leer bzw. aufgebraucht: deshalb wieder beim Lieferanten.
     + (!status && p.musterLagerLeer ? `<div class="small muted">Musterlager: ${esc(p.musterLagerLeer.artLabel)} leer${p.musterLagerLeer.ort ? ` (${esc(p.musterLagerLeer.ort)})` : ''}</div>` : '');
   // Zusatzknoepfe: "Zurueck auf offen" ab jedem Schritt (Versehen), "Haben wir da" bei offenen Mustern.
@@ -270,6 +272,8 @@ export function viewEinkaufBestellungen() {
   // Reihenfolge wie in den Karten: Ware, Muster, Nachfassen (Inhaber 2026-10-14). Die Zahl
   // offener Kundenauftraege steht unten bei "Alle offenen Auftraege".
   const nachfassen = nachfassenSumme();
+  // Bestellt und an unseren Kettler unterwegs: dort abholen (bzw. von dort verschicken lassen).
+  const zumKettler = ware.filter(p => afEintragFuer(p)?.status === 'bestellt' && istUeberKettler(afEintragFuer(p))).length;
   const abgeschlossen = af === 'erledigt' ? abgeschlosseneAuftraegeKarte(auftragId) : '';
   return `
     ${auftragId ? `<p class="no-print"><a href="#/heute">← Zurück zu Heute</a> · <a href="#/einkauf">Alle Aufträge</a></p><p class="notice">Nur die ausgewählte Bestellung${aktiv[0]?.name ? ` ${esc(aktiv[0].name)}` : ''}. ${!aktiv.length ? 'Sie ist nicht mehr offen oder nicht in den aktuellen Daten.' : ''}</p>` : ''}
@@ -277,6 +281,7 @@ export function viewEinkaufBestellungen() {
       ${bandItem(ware.filter(p => gruppe(p) === 'offen').length, 'Ware zu bestellen', 'warn')}
       ${bandItem(muster.filter(p => gruppe(p) === 'offen').length, 'Muster zu bestellen', 'warn')}
       ${bandItem(nachfassen.auftraege, nachfassen.auftraege === 1 ? 'Auftrag nachfassen' : 'Aufträge nachfassen', nachfassen.stufe || 'warn')}
+      ${zumKettler ? bandItem(zumKettler, 'Ware unterwegs zum Kettler', 'plain') : ''}
       ${muster.some(p => gruppe(p) === 'eigen') ? bandItem(muster.filter(p => gruppe(p) === 'eigen').length, 'Muster haben wir da', 'plain') : ''}
       ${bandItem(rot, rot === 1 ? 'Auftrag mit Problem' : 'Aufträge mit Problem', 'crit')}
     </div>

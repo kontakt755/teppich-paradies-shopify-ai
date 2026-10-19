@@ -343,8 +343,20 @@ Für die Oberfläche:
   `laden`; `ohneBestellung` listet Muster mit Route `SAMPLE_STOCK`/`SAMPLE_CUT`
   (eigenes Musterlager/Zuschnitt – keine Lieferantenbestellung) und Muster mit
   der Wahl „haben wir da“ (siehe unten).
+- **Kettler** (seit 2026-10-19): Ware kann mit `ziel=kettler` an unseren
+  Kettelservice gehen (Anschrift nur privat unter `absender.kettelservice` der
+  Stammdaten; fehlt sie, ist `kettlerMoeglich` `false` und der Dialog bietet
+  den Kettler nicht an). Der Lieferant bekommt dann „Ohne Einfassung – bitte
+  nur zuschneiden, nicht ketteln“ statt der Einfassungszeile, die Kommission
+  ohne Kundennamen und die Kettler-Anschrift. `kettlerVorschlag` listet offene
+  Positionen mit Ketteln, bei denen der Kettler naheliegt: Kunde in Berlin
+  bzw. PLZ 16 (wir liefern selbst) oder kürzere Seite bis 2 m (gerollt als
+  Paket vom Kettler). Nur ein Hinweis – gewählt wird im Dialog.
 - Nach dem Absenden setzt die Oberfläche den Status wie bisher über
-  `POST /api/einkauf/auftragsstatus` (`status: "bestellt"`).
+  `POST /api/einkauf/auftragsstatus` (`status: "bestellt"`). Optional
+  `ueber: "kettler"` vermerkt den Kettler-Weg an der Position (`ueber: null`
+  nimmt ihn zurück); der Auftragsfluss zeigt dann „Bestellt · unterwegs zum
+  Kettler“ und „Beim Kettler abgeholt“ statt „Geliefert an uns“.
 - `400` bei unbekannter `art`/`ziel`/`gruppe`; ohne `orders.json`
   `{verfuegbar:false, hinweis, mails:[]}`.
 

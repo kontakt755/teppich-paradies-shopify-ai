@@ -12,6 +12,14 @@
       "plz": "00000",
       "ort": "Musterstadt",
       "land": "Deutschland"
+    },
+    "kettelservice": {
+      "_hinweis": "Unser Kettelbetrieb: Ware kann im Bestellmail-Dialog statt an Kunde/Laden hierhin gehen (Ziel \"Kettler\"). Ohne Anschrift wird der Kettler nicht angeboten.",
+      "name": "Beispiel-Kettelei",
+      "strasse": "Kettelweg 5",
+      "plz": "00001",
+      "ort": "Musterstadt",
+      "telefon": "+49 30 2222222"
     }
   },
   "lieferanten": {
