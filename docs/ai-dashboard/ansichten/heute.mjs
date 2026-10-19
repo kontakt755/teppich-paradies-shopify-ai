@@ -2,6 +2,8 @@
  * Ansicht "Heute" (#/heute): die Startseite. Das Wichtigste zuerst:
  *
  *   1. "N offene To-dos fuer dich" - je Zeile Titel, eine Zeile Kontext, genau ein Knopf
+ *   1a. "In Shopify noch offen" (ansichten/einkauf/shopify-abgleich.mjs) - nur wenn es Bestellungen
+ *       gibt, die im Dashboard abgehakt, in Shopify aber offen sind; nicht in der Website-Sicht
  *   2. Datenstand (klein) und, beim Inhaber, was im Laden und bei der Website offen ist
  *   2a. "Muster nachfassen" (ansichten/heute/muster-nachfassen.mjs) - nicht in der Website-Sicht,
  *       die offenen Kunden zaehlen bei N mit
@@ -37,6 +39,7 @@ import { heuteLaden, heuteMontage } from './heute/laden.mjs';
 import { shopwache, ensureShopwache } from './shopwache.mjs';
 import { heuteDaten, ensureHeuteLieferanten, ensureHeuteAufgaben, ensureHeuteMusterTexte } from './heute/daten.mjs';
 import { musterNachfassenStand, musterNachfassenBlock } from './heute/muster-nachfassen.mjs';
+import { ensureShopifyAbgleich, shopifyAbgleichBlock } from './einkauf/shopify-abgleich.mjs';
 
 const TODOS_SICHTBAR = 7;      // "eine kurze Liste" - der Rest steht einen Klick weiter
 const SPALTE_SICHTBAR = 6;
@@ -74,7 +77,7 @@ function lieferantName(id) {
 
 export function viewHeute() {
   ensureKundenBestellungen(); ensureEinkaufAuftragsstatus(); ensureKundenRueckrufe(); ensureKundenFaelle();
-  ensureHeuteLieferanten(); ensureHeuteAufgaben(); ensureAktualisierung();
+  ensureHeuteLieferanten(); ensureHeuteAufgaben(); ensureAktualisierung(); ensureShopifyAbgleich();
   if (istInhaber()) ensureEinkaufKennzahlen();
   // Die Shop-Wache liefert To-dos fuer den Inhaber - geladen wurde sie bisher nur nebenbei
   // von der eingeklappten Zeile weiter unten.
@@ -101,6 +104,8 @@ export function viewHeute() {
   return `<div class="heute">
     ${kopf(todos.length + muster.offen.length, sicht)}
     ${todoListe(todos, muster.offen.length)}
+    ${/* Im Dashboard abgehakt, in Shopify offen - nur wenn es das gibt (einkauf/shopify-abgleich.mjs). */ ''}
+    ${sicht === 'website' ? '' : shopifyAbgleichBlock()}
     <nav class="arbeitsplatz-schnellstart" aria-label="Arbeitsplatz: Aufgabe vorbereiten">
       <a class="btn btn-sm" href="#/prozesse?prozess=email">E-Mail vorbereiten</a>
       <a class="btn btn-sm" href="#/prozesse?prozess=angebot">Angebot vorbereiten</a>

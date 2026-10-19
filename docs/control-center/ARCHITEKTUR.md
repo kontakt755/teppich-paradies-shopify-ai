@@ -413,9 +413,10 @@ ist überholt: Shopify-Daten kommen als lokaler Export bzw. live (Abschnitte 8�
 gibt es seit 2026-09-24 (1e). Weiterhin **kein** Ziel:
 
 - Google Ads und GA4 im Control Center (erst nach einer Sichtbarkeitsentscheidung; Systemzustand nennt das).
-- Schreiben nach Shopify außer dem Ladenverkauf von Sonderposten (Abschnitt 13) und der Versandbuchung bei
-  „An Kunden raus“ (Abschnitt 17) – Preise, Produkte und Bestellungen bleiben im Shopify-Admin bzw. im Workflow
-  mit Gates.
+- Schreiben nach Shopify außer dem Ladenverkauf von Sonderposten (Abschnitt 13), der Versandbuchung bei
+  „An Kunden raus“ (Abschnitt 17) und bei „Erledigt“ samt Abgleich (Abschnitt 24) – Preise, Produkte und
+  Bestellungen bleiben im Shopify-Admin bzw. im Workflow mit Gates. Storniert oder zurückgenommen wird in
+  Shopify nie automatisch.
 - KI-Automatik mit Schreibzugriff.
 - Ein zweiter Aufgabenspeicher neben GitHub Issues (Abschnitt 1); Betriebsdaten liegen nur lokal unter
   `$TP_PRIVAT_DIR`.
@@ -1103,8 +1104,9 @@ alle wartenden Artikel der Bestellung als ein Paket.
 
 **Nicht gebucht** werden Testbestellungen (Vermerk „uebersprungen“) und stornierte Bestellungen. „Kunde hat
 Muster“ bei Mustern aus eigenem Bestand setzt „raus“ mit: gebucht wird ohne Versandmail (der Kunde hat sie
-schon); die Rückmeldung nennt das Ergebnis der Buchung. **Nichts rückwirkend:** Positionen, die vor dem 13.10. auf „raus“ standen, tragen keinen
-Vermerk und werden nie gebucht – dort bleibt der Hinweis „In Shopify noch nicht als versendet gebucht“.
+schon); die Rückmeldung nennt das Ergebnis der Buchung. **Rückwirkend nur auf Klick (seit 2026-10-19):** Positionen, die vor dem 13.10. auf
+„raus“ standen, tragen keinen Vermerk. Sie werden gebucht, wenn jemand sie auf „Erledigt“ setzt, oder über „In Shopify nachbuchen“ in der
+Abweichungsliste (Abschnitt 24) – nie still im Hintergrund.
 
 **Nachholen.** Scheitert die Buchung (Recht fehlt, kein Zugang, Netz, zurückgehalten), steht der Schritt
 trotzdem. Die Zeitleiste zeigt rot „Versand nicht in Shopify gebucht – …“ mit „In Shopify buchen“, die
@@ -1411,3 +1413,66 @@ Abmeldung, mit Abmelde-Satz in jeder Mail. WhatsApp und Shopify Messaging waren 
 - **Offen**: Die Abmeldung erfasst heute ein Mensch per Knopf, wenn die Antwort „Abmelden“ im Postfach
   liegt; ein Posteingangs-Abgleich ist nicht gebaut. Die rechtliche Einordnung (§ 7 UWG, Mail ohne
   Newsletter-Einwilligung) klärt der Inhaber mit dem Rechtstexter (w-083).
+
+## 24. Zwei-Wege-Abgleich der Bestellungen mit Shopify (seit 2026-10-19, #1419)
+
+Inhaber 2026-10-19: „Gleich alles in unserem Dashboard immer mit Shopify ab, was Bestellungen angeht – dort
+synchron arbeiten und abhaken.“ Regeln ohne Datei und ohne Shopify in `operations/lib/shopify-abgleich.mjs`
+(`uebernimmAusShopify()`, `abweichungen()`), Anbindung in `scripts/dashboard-api.mjs`, Liste
+`ansichten/einkauf/shopify-abgleich.mjs` (auf „Heute“).
+
+**Konfliktregel: „Versendet“ gewinnt in beide Richtungen.** Wer zuerst erfüllt, gilt. Nichts wird automatisch
+zurückgenommen – weder hier noch in Shopify (kein `fulfillmentCancel`).
+
+**Shopify → Control Center (automatisch).** Nach jedem neuen Bestellexport (`orders.json`, Größe/Zeit/Inode als
+Kennung) wendet der Dashboard-Dienst den Shopify-Stand an: beim ersten Lesen (Einkauf, Bestellungen, Akte,
+Statuswechsel) und zusätzlich jede Minute per Zeitgeber, auch ohne offene Seite. Bewusst im Dienst und nicht im
+Sync-Dienst: so hat `auftragsstatus.json` genau einen Schreiber; zwischen Lesen und Schreiben steht kein
+`await`.
+- Position in Shopify vollständig erfüllt (aktuelle Menge > 0, `unfulfilledQuantity` 0) und lokal vor „raus“
+  (auch ohne Stand) → `status: raus`, `rausVon: Shopify`, `rausNotiz: „aus Shopify übernommen“`, `rausAm` =
+  Zeitpunkt der Sendung laut Shopify, `ausShopify {am, grund, vonStatus, shopifyAm}`, Vermerk
+  `shopifyVersand.status: bereits` (`grund: aus-shopify`).
+- Schon „raus“/„erledigt“: der Schritt bleibt; ein Vermerk „fehler“/„unklar“/„ausstehend“ oder gar keiner wird
+  auf „bereits“ richtiggestellt (der rote Hinweis „Versand nicht gebucht“ fällt dann weg).
+- Teilmengen, aus der Bestellung entfernte Zeilen und Exporte ohne Mengen entscheiden nichts. Nie herabstufen,
+  „erledigt“ nie überschreiben.
+- Stornierte Bestellung: Positionen mit begonnenem Stand werden „erledigt“ (`erledigtNotiz: „In Shopify
+  storniert – aus Shopify übernommen“`), Positionen ohne Stand bleiben ohne Eintrag (die Bestellung ist ohnehin
+  keine offene Arbeit).
+- Hat jemand die Position **nach** der Sendung/Stornierung von Hand zurückgesetzt („Zurück auf offen“) oder
+  wieder geöffnet, gilt seine Entscheidung – sonst höbe jeder Lauf sie wieder an.
+- Idempotent; Protokoll je Bestellung „Aus Shopify übernommen · #… : N Artikel → An Kunden raus“ (Person
+  „Shopify“), Audit `shopify-abgleich`. Eine beschädigte Ablage wird nie überschrieben (Dienstprotokoll
+  `[abgleich]`, die Liste meldet den Fehler).
+
+**Control Center → Shopify bei „Erledigt“.** Jeder Weg auf „Erledigt“ – Einzelschritt im Einkauf, Zeitleiste
+(Ware „erledigt“, Muster-Ergebnisse „Kunde hat bestellt“/„kein Interesse“/„nicht verfügbar“), „Kunde fertig“
+(Bestellliste, Haken auf „Heute“) und „Ohne Einkauf abschließen…“ – bucht die Positionen, die in diesem Klick
+erledigt wurden, über denselben `versandBuchen()`-/`bucheVersand()`-Weg wie „raus“ (frisch lesen, Gegenprobe,
+Vermerk `shopifyVersand`), **ohne Mail an den Kunden** (`versandMail: false` an der Position, gilt auch beim
+Nachholen). Ware und Muster gleich. Ist danach keine Ware der Bestellung mehr offen, geht die Eigenleistung
+(Kettelservice) mit. Positionen mit Vermerk gebucht/bereits/übersprungen werden nicht erneut versucht;
+Testbestellungen und stornierte Bestellungen bucht Shopify nie. „Ohne Einkauf abschließen…“ schickt seit
+2026-10-19 einen Aufruf für alle Artikel (`POST /api/kunden/bestellung-fertig`) statt einen je Artikel – eine
+Buchung statt N. Die Antwort trägt `shopify {status, meldung, …}`; die Rückmeldung lautet z. B.
+„Status: Erledigt · In Shopify als versendet gebucht (ohne Mail an den Kunden).“
+
+**Rücknahme.** „Wieder öffnen…“ und „Zurück auf offen…“ ändern nur das Control Center. Ist der Versand gebucht,
+sagt der Dialog: „In Shopify bleibt die Bestellung als versendet gebucht – das Control Center storniert dort
+nichts.“
+
+**Abweichungsliste „In Shopify noch offen“.** Auf „Heute“ (nicht in der Website-Sicht), nur wenn es Zeilen gibt;
+je Bestellung eine Zeile mit Artikeln, Stand und Datum, Knopf „In Shopify nachbuchen“ (ohne Mail). Die Zahl im
+Kopf ist die Zahl der Zeilen. Gezählt wird: lokal „raus“/„erledigt“, laut Export in Shopify offen, nicht storniert,
+keine Testbestellung, Vermerk nicht „übersprungen“, und keine Buchung, die jünger ist als der Export minus
+30 Minuten (`EXPORT_NACHLAUF_MS` – die kennt der Export noch nicht). Deckt Altfälle vor dem 13.10. und
+gescheiterte Buchungen ab. Endpunkte: `GET /api/einkauf/shopify-abgleich` (alle Rollen, lesend;
+`{verfuegbar, fehler, abweichungen: [{orderId, orderName, kunde, lineItemIds, positionen, seit}],
+letzterAbgleich}`), `POST /api/einkauf/auftragsstatus` mit `aktion: "shopifyNachbuchen", orderId` (Schreibpfad,
+Rolle „lesen“ 403; 409, wenn die Bestellung nicht mehr abweicht). Nachbuchen bucht auch Positionen mit altem
+Vermerk „gebucht“, wenn Shopify sie offen führt (Sendung dort storniert) – `bucheVersand` liest frisch, doppelt
+gebucht wird nie.
+
+**Tests** sprechen nie echtes Shopify (`operations/tests/shopify-abgleich.test.mjs`,
+`docs/ai-dashboard/tests/shopify-abgleich-api.test.mjs` mit `versand-attrappe.mjs`).

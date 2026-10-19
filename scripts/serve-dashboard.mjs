@@ -331,7 +331,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
   // Bestelltabelle, Lexikon samt Mengenhilfe und die neuen Datenarten
   // (Kunden, Angebote, Warenkoerbe, Bestand, Erfuellung) - fehlt einer,
   // antwortet der Server 404.
-  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|prozesse\/links|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|einkauf\/musterlager|einkauf\/musterlager-farben|einkauf\/mustersperre|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/serviceanfragen|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|verbrauch\/claude|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/muster-texte|kunden\/nachfassen-abmelden|kunden\/nachfassen-senden|kunden\/bestellung-fertig|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|sonderposten\/liste|sonderposten\/verkauft|bildrechte\/liste|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|prozesse\/links|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/shopify-abgleich|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|einkauf\/musterlager|einkauf\/musterlager-farben|einkauf\/mustersperre|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/serviceanfragen|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|verbrauch\/claude|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/muster-texte|kunden\/nachfassen-abmelden|kunden\/nachfassen-senden|kunden\/bestellung-fertig|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|sonderposten\/liste|sonderposten\/verkauft|bildrechte\/liste|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { apiFehler(req, res, pathname, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
   // Host-Pruefung fuer JEDEN Aufruf, nicht nur fuer schreibende: sonst kann
@@ -390,6 +390,9 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'einkauf/lieferant') result = api.einkaufLieferant({ id: url.searchParams.get('id') || '' });
     else if (simple === 'einkauf/bestellmail') result = api.einkaufBestellmail({ lieferant: url.searchParams.get('lieferant') || '', art: url.searchParams.get('art') || 'ware', gruppe: url.searchParams.get('gruppe') || '', ziel: url.searchParams.get('ziel') || '', auftrag: url.searchParams.get('auftrag') || '' });
     else if (simple === 'einkauf/auftragsstatus' && req.method === 'GET') result = api.einkaufAuftragsstatus();
+    // Abgleich mit Shopify: nur lesend (nicht in der write-Liste). Nachgebucht wird ueber
+    // POST einkauf/auftragsstatus (aktion "shopifyNachbuchen") - der steht in der write-Liste.
+    else if (simple === 'einkauf/shopify-abgleich' && req.method === 'GET') result = api.einkaufShopifyAbgleich();
     // Musterlager: lokal, Shopify bleibt unberuehrt. POST steht in der write-Liste (Rolle "lesen": 403).
     else if (simple === 'einkauf/musterlager' && req.method === 'GET') result = api.einkaufMusterlager();
     else if (simple === 'einkauf/musterlager' && req.method === 'POST') result = await api.einkaufMusterlagerSetzen(await readJson(req), benutzer);
@@ -671,6 +674,10 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       console.log('Zugriff nur mit Passwort. Jede Route verlangt eine Anmeldung; Sitzung 12 Stunden gültig.');
     }
     console.log('Lokaler Aktionsmodus: Statuswechsel und Kommentare laufen über gh (angemeldetes Konto).');
+    // Shopify -> Dashboard nach jedem neuen Bestellexport des Sync-Dienstes, auch wenn gerade
+    // niemand das Control Center offen hat (operations/lib/shopify-abgleich.mjs). Prueft nur
+    // Groesse und Zeit von orders.json; gerechnet wird erst bei einem neuen Export.
+    setInterval(() => { try { api.shopifyAbgleich(); } catch (e) { logFehler('abgleich', String(e?.message || e).split('\n')[0]); } }, 60_000).unref();
     if (NEUBAU_MINUTEN > 0) {
       setInterval(regelmaessigNeubauen, NEUBAU_MINUTEN * 60_000).unref();
       console.log(`Aufgabendaten (issues.json) werden alle ${NEUBAU_MINUTEN} Minuten neu geholt.`);

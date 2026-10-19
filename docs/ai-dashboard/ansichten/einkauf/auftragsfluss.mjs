@@ -14,6 +14,7 @@ import { render } from '../../kern/render.mjs';
 import { kunden } from '../kunden/gemeinsam.mjs';
 import { musterEigen, stufeVon, wartetage } from '../../lib/einkauf-lieferanten.mjs';
 import { musterSchritt } from '../../lib/einkauf-uebersicht.mjs';
+import { versandRueckmeldung } from '../../lib/versand.mjs';
 
 export { musterEigen };
 
@@ -170,7 +171,12 @@ export async function setzeAuftragsstatus(pos, status, { lieferantBestellnummer 
     if (!r.ok) { toast(`Fehler: ${j.error || r.status}`, 'crit'); return false; }
     if (!einkauf.auftragsstatus || !einkauf.auftragsstatus.positionen) einkauf.auftragsstatus = { verfuegbar: true, positionen: {} };
     einkauf.auftragsstatus.positionen[afKey(pos.orderId, pos.lineItemId)] = j.eintrag;
-    if (!still) { toast(`Status: ${afStatusText(j.eintrag) || AF_STATUS_LABEL[status]}`); render(); }
+    if (!still) {
+      // "Erledigt" bucht in Shopify, wenn dort noch offen (ohne Kundenmail) - das Ergebnis gehoert in die Rueckmeldung.
+      const r = versandRueckmeldung(`Status: ${afStatusText(j.eintrag) || AF_STATUS_LABEL[status]}`, status === 'erledigt' ? j.shopify : null);
+      toast(r.text, r.ton, r.ton ? { dauer: 9000 } : {});
+      render();
+    }
     return true;
   } catch (e) { toast(`Fehler: ${e.message}`, 'crit'); return false; }
 }
@@ -198,6 +204,17 @@ function openAuftragsstatusDialog(pos, status) {
     if (ok) $('#dialogRoot').innerHTML = '';
     else form.querySelector('[type=submit]').disabled = false;
   });
+}
+
+/**
+ * Satz fuer Ruecknahme-Dialoge: Shopify wird nie automatisch zurueckgenommen ("versendet" gewinnt,
+ * operations/lib/shopify-abgleich.mjs). Ist der Versand dort gebucht, sagt der Dialog das ausdruecklich.
+ */
+export function shopifyBleibtText(positionen) {
+  const gebucht = positionen.some(p => ['gebucht', 'bereits'].includes(afEintragFuer(p)?.shopifyVersand?.status));
+  return gebucht
+    ? ' In Shopify bleibt die Bestellung als versendet gebucht – das Control Center storniert dort nichts. Falls nötig, die Sendung in Shopify von Hand stornieren.'
+    : ' In Shopify ändert sich nichts.';
 }
 
 /** Macht einen Abschluss rueckgaengig (Server prueft: nur erledigte Positionen). */
@@ -261,7 +278,7 @@ export function openZurueckAufOffenDialog(positionen, titel) {
   if (!betroffen.length) { toast('Diese Artikel sind schon offen.'); return; }
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="zoTitel" data-dialog>
     <h2 id="zoTitel">Zurück auf offen · ${esc(titel)}</h2>
-    <p class="small muted">${plural(betroffen.length, 'Artikel kommt', 'Artikel kommen')} zurück auf „Noch zu bestellen" – z. B. wenn versehentlich „bestellt" geklickt wurde. Der bisherige Stand bleibt mit Zeit und Person im Verlauf gespeichert; in Shopify ändert sich nichts.${betroffen.some(p => afEintragFuer(p)?.shopifyVersand?.status === 'gebucht') ? ' Achtung: der Versand ist in Shopify schon gebucht (der Kunde hat die Versandmail) – das bleibt so; in Shopify bei Bedarf die Sendung stornieren.' : ''}</p>
+    <p class="small muted">${plural(betroffen.length, 'Artikel kommt', 'Artikel kommen')} zurück auf „Noch zu bestellen" – z. B. wenn versehentlich „bestellt" geklickt wurde. Der bisherige Stand bleibt mit Zeit und Person im Verlauf gespeichert.${shopifyBleibtText(betroffen)}</p>
     <ul class="small" style="margin:0;padding-left:18px;max-height:200px;overflow:auto">${betroffen.map(p => `<li>${esc(anzeigeWert(p.titel || ''))}${p.farbe ? ` · ${esc(p.farbe)}` : ''}${p.orderName ? ` · ${esc(p.orderName)}` : ''} <span class="muted">(war: ${esc(AF_STATUS_LABEL[afEintragFuer(p).status] || afEintragFuer(p).status)})</span></li>`).join('')}</ul>
     <div class="field"><label for="zoNotiz">Notiz (optional)</label><input id="zoNotiz" name="notiz" maxlength="500" placeholder="z. B. nur zum Testen geklickt"></div>
     <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">${plural(betroffen.length, 'Artikel', 'Artikel')} zurück auf offen</button></div>
@@ -359,7 +376,7 @@ function openWiederOeffnenDialog(orderId, lineItemId = null) {
   const abschluss = e0?.erledigtAm ? `Abgeschlossen ${fmtDateTime(e0.erledigtAm)}${e0.erledigtVon ? ` von @${esc(e0.erledigtVon)}` : ''}${e0.erledigtNotiz ? ` · Grund: ${esc(e0.erledigtNotiz)}` : ''}` : '';
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="woTitle" data-dialog>
     <h2 id="woTitle">Wieder öffnen · ${esc(a.name)}</h2>
-    <p class="small muted">${plural(positionen.length, 'Artikel kommt', 'Artikel kommen')} zurück in die Arbeitsliste. Der Abschluss bleibt im Verlauf der Position gespeichert; in Shopify ändert sich nichts.${abschluss ? `<br>${abschluss}` : ''}</p>
+    <p class="small muted">${plural(positionen.length, 'Artikel kommt', 'Artikel kommen')} zurück in die Arbeitsliste. Der Abschluss bleibt im Verlauf der Position gespeichert.${shopifyBleibtText(positionen.map(p => ({ orderId: a.id, lineItemId: p.lineItemId })))}${abschluss ? `<br>${abschluss}` : ''}</p>
     <ul class="small" style="margin:0;padding-left:18px">${positionen.map(p => `<li>${esc(anzeigeWert(p.titel))} · ${esc(p.farbe)} → ${esc(ziel(p))}</li>`).join('')}</ul>
     <div class="field"><label for="woNotiz">Notiz (optional)</label><input id="woNotiz" name="notiz" maxlength="500" placeholder="z. B. doch keine Testbestellung"></div>
     <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Wieder öffnen</button></div>
@@ -489,7 +506,7 @@ function openAuftragAbschliessenDialog(orderId) {
   if (!offen.length) { toast('Keine offenen Artikel in diesem Auftrag.'); return; }
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="abTitle" data-dialog>
     <h2 id="abTitle">Ohne Einkauf abschließen · ${esc(a.name)}</h2>
-    <p class="small muted">Setzt ${plural(offen.length, 'Artikel', 'Artikel')} dieses Auftrags im Auftragsfluss auf „Erledigt". Gedacht für Testbestellungen oder Aufträge, die anders erledigt wurden. In Shopify ändert sich nichts; über den Filter „Erledigt" lässt sich der Schritt nachvollziehen und wieder öffnen.</p>
+    <p class="small muted">Setzt ${plural(offen.length, 'Artikel', 'Artikel')} dieses Auftrags im Auftragsfluss auf „Erledigt". Gedacht für Testbestellungen oder Aufträge, die anders erledigt wurden. ${a.testbestellung ? 'Testbestellung: in Shopify wird nichts gebucht.' : 'In Shopify wird die Bestellung als versendet gebucht, ohne Mail an den Kunden. Wurde sie storniert, zuerst in Shopify stornieren.'} Über den Filter „Erledigt" lässt sich der Schritt nachvollziehen und wieder öffnen.</p>
     <ul class="small" style="margin:0;padding-left:18px">${offen.map(p => `<li>${esc(anzeigeWert(p.titel))} · ${esc(p.farbe)}</li>`).join('')}</ul>
     <div class="field"><label for="abGrund">Grund (Pflicht)</label><textarea id="abGrund" name="grund" required maxlength="500" placeholder="z. B. Testbestellung, kein Einkauf nötig"></textarea></div>
     <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Abschließen</button></div>
@@ -500,14 +517,26 @@ function openAuftragAbschliessenDialog(orderId) {
     ev.preventDefault();
     const grund = (new FormData(form).get('grund') || '').trim();
     if (!grund) return;
-    form.querySelector('[type=submit]').disabled = true;
-    let ok = 0;
-    for (const p of offen) {
-      if (await setzeAuftragsstatus({ orderId: a.id, lineItemId: p.lineItemId }, 'erledigt', { notiz: grund, still: true })) ok += 1;
-    }
+    const knopf = form.querySelector('[type=submit]');
+    knopf.disabled = true;
+    // Ein Aufruf fuer alle Artikel: eine Buchung in Shopify statt einer je Artikel.
+    let j;
+    try {
+      const r = await fetch('/api/kunden/bestellung-fertig', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ orderId: a.id, lineItemIds: offen.map(p => p.lineItemId), notiz: grund }),
+      });
+      j = await r.json().catch(() => ({}));
+      if (!r.ok) { toast(`Fehler: ${j.error || r.status}`, 'crit'); knopf.disabled = false; return; }
+    } catch (e) { toast(`Fehler: ${e.message}`, 'crit'); knopf.disabled = false; return; }
+    if (!einkauf.auftragsstatus || !einkauf.auftragsstatus.positionen) einkauf.auftragsstatus = { verfuegbar: true, positionen: {} };
+    for (const e of j.eintraege || []) if (e?.orderId && e?.lineItemId) einkauf.auftragsstatus.positionen[afKey(e.orderId, e.lineItemId)] = e;
     $('#dialogRoot').innerHTML = '';
-    toast(ok === offen.length ? `${a.name}: ${plural(ok, 'Artikel', 'Artikel')} abgeschlossen` : `${a.name}: nur ${ok} von ${offen.length} abgeschlossen`, ok === offen.length ? '' : 'crit');
+    const ok = j.anzahl || 0;
+    const r = versandRueckmeldung(ok === offen.length ? `${a.name}: ${plural(ok, 'Artikel', 'Artikel')} abgeschlossen` : `${a.name}: nur ${ok} von ${offen.length} abgeschlossen`, j.shopify);
+    toast(r.text, ok === offen.length ? r.ton : 'crit', r.ton ? { dauer: 9000 } : {});
     render();
+    ladeStandNeu();
   });
 }
 

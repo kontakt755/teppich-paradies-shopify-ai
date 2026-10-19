@@ -13,6 +13,7 @@ import { fetchEinkauf, orgSchreiben } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { einkauf, kundeUndOrt, ladeStandNeu } from './auftragsfluss.mjs';
 import { VERSANDDIENSTE, versandKandidaten, vorauswahl, versandRueckmeldung, istUebergabe } from '../../lib/versand.mjs';
+import { shopifyAbgleichKlick } from './shopify-abgleich.mjs';
 
 // Zuletzt gewaehlter Versanddienst je Geraet - im Laden ist es fast immer derselbe.
 const DIENST_SCHLUESSEL = 'tp-versanddienst';
@@ -149,6 +150,7 @@ async function nachholen(knopf) {
 export function versandKlick(e) {
   const knopf = e.target.closest('[data-versand-nachholen]');
   if (knopf) { e.preventDefault(); nachholen(knopf); return true; }
+  if (shopifyAbgleichKlick(e)) return true;
   const raus = e.target.closest('[data-af-set][data-af-status="raus"]');
   if (raus) { e.preventDefault(); oeffneVersandDialog(raus.dataset.afOrder, { lineItemId: raus.dataset.afItem || null }); return true; }
   return false;
