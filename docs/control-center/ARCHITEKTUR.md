@@ -1552,15 +1552,17 @@ abgehakt, ist es mit Shopify synchron“. Neuer Reiter **Einkauf › Belege** (`
 - **API**: `GET /api/einkauf/belege` (alle Rollen) liefert Belege mit Lieferant und Zuordnung, den
   Abgleich je Auftrag × Lieferant (AB, Lieferschein, Stand bei uns, Shopify-Versandstatus, Hinweise
   `storno`, `lieferschein_offen`, `shopify_offen`, `shopify_weiter`) und die Abweichungen.
-  `POST` (write-Liste, Rolle „lesen“ 403, Person aus der Sitzung): `zuordnen` (optional `lieferant`, wenn
-  der Absender unbekannt ist und die Bestellung mehrere Lieferanten hat – sonst hängt der Beleg an keiner
-  Zeile), `ablehnen` („Passt nicht“, bleibt gemerkt), `kein_shop`, `loesen`, `erledigt` (mit `orderId`:
+  `POST` (write-Liste, Rolle „lesen“ 403, Person aus der Sitzung): `zuordnen` (`lieferant` ist **Pflicht**,
+  wenn der Absender unbekannt ist und die Bestellung mehrere Lieferanten hat, und muss jede gewählte
+  Bestellung beliefern – sonst hängt der Beleg an keiner Zeile), `ablehnen` („Passt nicht“, bleibt gemerkt), `kein_shop`, `loesen`, `erledigt` (mit `orderId`:
   nur für diese Bestellung, `quittiert`), `wieder_offen`, `absender_kein_shop`, `absender_zuruecksetzen`.
-  Jeder offene Storno ist eine eigene Abweichung; der Shopify-Stand einer Zeile rechnet nur mit den
-  Positionen dieses Lieferanten (offene Menge aus dem Export).
+  Jeder offene Storno ist eine eigene Abweichung, auch ohne Lieferantenzeile; der Shopify-Stand einer
+  Zeile rechnet nur mit den Positionen dieses Lieferanten (offene und bestellte Menge aus dem Export:
+  10 bestellt, 5 offen = teilweise versendet).
 - **Ablage robust** (Codex-Review #1432): nur eine fehlende Datei ist leer; leere oder unvollständige Datei
-  = Fehler. Die Sperrdatei trägt Prozess und Kennung; übernommen wird sie nur, wenn sie älter als 30 s ist
-  und ihr Prozess nicht mehr lebt, freigegeben nur die eigene. Stichwort-Mails unbekannter Absender werden
+  = Fehler. Die Sperrdatei trägt Prozess und Kennung; entfernt wird sie nur, wenn sie älter als 30 s ist
+  und ihr Prozess nicht mehr lebt – und nur von dem, der die Räum-Sperre `….lock.raeumen` hält –,
+  freigegeben nur die eigene. Stichwort-Mails unbekannter Absender werden
   zurückgestellt und erneut geprüft (Unterdomains zählen zum Lieferanten).
 - **Anzeige**: „Zu prüfen“ = Storno (rot), Lieferschein ohne Haken (gelb), Vorschläge mit „Ja, gehört
   dazu“ / „Passt nicht“. „Je Auftrag“ = Tabelle mit Chips Alle / Mit Beleg / Passt nicht zusammen.

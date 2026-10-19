@@ -233,15 +233,17 @@ function fehlendeQuellen() {
     [kunden.serviceanfragen, 'Service-Anfragen', () => false],
     [heuteDaten.aufgaben, 'Aufgaben', () => false],
     // Neue To-do-Quellen (#1427): Lieferantenbelege und Abgleich mit Shopify (Codex-Review #1432).
-    [darfAnsicht('einkauf') ? belege.daten : null, 'Lieferantenbelege', () => false],
-    [shopifyAbgleich.daten?.fehler === true ? shopifyAbgleich.daten : null, 'Abgleich mit Shopify', () => false],
+    [darfAnsicht('einkauf') ? belege.daten : null, 'Lieferantenbelege', d => d.verfuegbar === false],
+    // Ein Fehlertext des Servers steht als eigene Zeile in der Liste; hier nur Abruf-Fehler und fehlende Daten.
+    [typeof shopifyAbgleich.daten?.fehler === 'string' ? null : shopifyAbgleich.daten, 'Abgleich mit Shopify', d => d.verfuegbar === false],
   ];
   return teile.filter(([d, , fehlt]) => d && (d.fehler || fehlt(d))).map(([, name]) => name);
 }
 
 function todoListe(todos) {
   // Solange die Bestelldaten noch laden, waere "Alles erledigt" eine Behauptung ohne Grundlage.
-  const laedt = !kunden.bestellungen || !einkauf.auftragsstatus || !heuteDaten.aufgaben;
+  const laedt = !kunden.bestellungen || !einkauf.auftragsstatus || !heuteDaten.aufgaben
+    || !shopifyAbgleich.daten || (darfAnsicht('einkauf') && !belege.daten);
   const fehlen = fehlendeQuellen();
   const stoerung = [kunden.bestellungen, kunden.rueckrufe, heuteDaten.aufgaben, kunden.serviceanfragen].find(d => d?.fehler);
   let inhalt;

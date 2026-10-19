@@ -338,7 +338,7 @@ function oeffneZuordnen(b, { nur = null } = {}) {
     ${wahlFeld}
     ${b.lieferant ? '' : `<div class="field" data-bl-lieferant-feld hidden><label for="blLieferant">Von welchem Lieferanten?</label>
       <select id="blLieferant" name="lieferant"></select>
-      <span class="hint">Die Bestellung hat Ware von mehreren Lieferanten; der Absender ist keinem zugeordnet.</span></div>`}
+      <span class="hint">Die Bestellung hat Ware von mehreren Lieferanten, der Absender ist keinem zugeordnet – steht meist im Briefkopf der Mail.</span></div>`}
     <p data-bl-meldung hidden></p>
     <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Zuordnen</button></div>
   </form></div>`;
@@ -346,14 +346,20 @@ function oeffneZuordnen(b, { nur = null } = {}) {
   const gewaehlt = () => (kandidaten ? [...form.querySelectorAll('input[name=orderId]:checked')].map(x => x.value) : [form.querySelector('#blWahl')?.value].filter(Boolean));
   const feld = form.querySelector('[data-bl-lieferant-feld]');
   const lieferantWahl = form.querySelector('#blLieferant');
+  // Pflicht, sobald eine gewaehlte Bestellung mehrere Lieferanten hat; zur Wahl stehen die, die
+  // alle gewaehlten Bestellungen beliefern. Eine getroffene Wahl bleibt beim Neuaufbau stehen.
+  let gemeinsam = [];
   const lieferantAktualisieren = () => {
     if (!feld) return;
-    const moegliche = [...new Set(gewaehlt().flatMap(lieferantenVon))];
-    feld.hidden = moegliche.length < 2;
-    lieferantWahl.innerHTML = `<option value="">weiß nicht</option>${moegliche.map(id => `<option value="${esc(id)}">${esc(lieferantName(id))}</option>`).join('')}`;
+    const je = gewaehlt().map(lieferantenVon);
+    gemeinsam = je.length ? je.reduce((a, l) => a.filter(x => l.includes(x))) : [];
+    const vorher = lieferantWahl.value;
+    feld.hidden = !je.some(l => l.length > 1);
+    lieferantWahl.innerHTML = `<option value="">– bitte wählen –</option>${gemeinsam.map(id => `<option value="${esc(id)}">${esc(lieferantName(id))}</option>`).join('')}`;
+    if (gemeinsam.includes(vorher)) lieferantWahl.value = vorher;
   };
   if (kandidaten) {
-    form.addEventListener('change', lieferantAktualisieren);
+    form.addEventListener('change', (ev) => { if (ev.target.name === 'orderId') lieferantAktualisieren(); });
     form.querySelector('input[name=orderId]')?.focus();
   } else {
     const suche = form.querySelector('#blSuche');
@@ -376,10 +382,13 @@ function oeffneZuordnen(b, { nur = null } = {}) {
     ev.preventDefault();
     const ids = gewaehlt();
     const m = form.querySelector('[data-bl-meldung]');
-    if (!ids.length) { m.className = 'notice warn'; m.textContent = 'Bitte eine Bestellung wählen.'; m.hidden = false; return; }
+    const lieferant = feld && !feld.hidden ? lieferantWahl.value : '';
+    const fehlt = !ids.length ? 'Bitte eine Bestellung wählen.'
+      : feld && !feld.hidden && !lieferant ? (gemeinsam.length ? 'Bitte wählen, von welchem Lieferanten der Beleg ist.' : 'Diese Bestellungen haben keinen gemeinsamen Lieferanten – bitte nur die passende ankreuzen.')
+        : null;
+    if (fehlt) { m.className = 'notice warn'; m.textContent = fehlt; m.hidden = false; return; }
     const knopf = form.querySelector('button[type=submit]');
     knopf.disabled = true;
-    const lieferant = feld && !feld.hidden ? lieferantWahl.value : '';
     const r = await schreibe({ aktion: 'zuordnen', mailId: b.id, orderIds: ids, ...(lieferant ? { lieferant } : {}) });
     if (!r.ok) {
       m.className = 'notice crit'; m.textContent = r.text; m.hidden = false; knopf.disabled = false;

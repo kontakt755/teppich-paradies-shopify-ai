@@ -419,7 +419,8 @@ test('abgleich: zwei Stornos - einer erledigt, der andere bleibt; Quittung je Au
   const statusAlle = { 'gid://shopify/Order/9002::gid://shopify/LineItem/90020': { status: 'raus' }, 'gid://shopify/Order/9002::gid://shopify/LineItem/90021': { status: 'bestellt' } };
   const roh = zeile(9002, 'Max Mustermann', ['A', 'B'], { fulfillment: 'PARTIALLY_FULFILLED' });
   roh.auftrag.positionen[0].menge = 0; // A in Shopify versendet
-  roh.auftrag.positionen[1].menge = 2; // B offen
+  roh.auftrag.positionen[1].menge = 2; // B offen, nichts davon versendet
+  roh.auftrag.positionen[1].mengeBestellt = 2;
   const kandidaten = kandidatenAus([roh, zeile(9001, 'Erika Beispiel', ['A'])], statusAlle);
   const fest = (id, art, datum, extra = {}) => ({ id, art, datum, lieferant: 'B', domain: 'lieferant-b.example', refs: {}, erledigt: null, zuordnung: { stufe: 'bestaetigt', orderIds: ['gid://shopify/Order/9002'] }, ...extra });
   const belege = [
@@ -429,7 +430,10 @@ test('abgleich: zwei Stornos - einer erledigt, der andere bleibt; Quittung je Au
     fest('sammel', 'storno', '2026-10-13T08:00:00Z', { lieferant: null, domain: 'fremd.example', zuordnung: { stufe: 'bestaetigt', orderIds: ['gid://shopify/Order/9002', 'gid://shopify/Order/9001'] }, quittiert: { 'gid://shopify/Order/9001': { von: 'Mona' } } }),
   ];
   const { zeilen, abweichungen } = abgleich({ belege, kandidaten, jetzt: JETZT });
-  assert.deepEqual(abweichungen.filter(a => a.orderId === 'gid://shopify/Order/9002').map(a => a.belegId), ['s-alt'], 'der aeltere offene Storno bleibt sichtbar; Sammelbeleg ohne Lieferant haengt bei zwei Lieferanten an keiner Zeile');
+  assert.deepEqual(abweichungen.filter(a => a.orderId === 'gid://shopify/Order/9002').map(a => a.belegId), ['s-alt', 'sammel'],
+    'der aeltere offene Storno bleibt sichtbar; der Sammelbeleg ohne Lieferant haengt an keiner Zeile, bleibt aber eine Abweichung');
+  assert.equal(abweichungen.find(a => a.belegId === 'sammel').lieferant, null);
+  assert.equal(zeilen.some(z => z.belege.includes('sammel') && z.orderId === 'gid://shopify/Order/9002'), false, 'nicht bei beiden Lieferanten verdoppelt');
   assert.equal(abweichungen.some(a => a.orderId === 'gid://shopify/Order/9001'), false, 'fuer #9001 quittiert (einziger Lieferant, also zugeordnet)');
   const a = zeilen.find(z => z.id === 'gid://shopify/Order/9002|A');
   assert.equal(a.shopify, 'FULFILLED', 'A ist in Shopify raus, auch wenn die Bestellung nur teilweise versendet ist');
@@ -463,4 +467,73 @@ test('uebernehmen: Storno von einer Unterdomain des Lieferanten; Zurueckgestellt
   assert.equal(uebernehmen([fremd], { privatDir: dir, jetzt: JETZT, lieferantenDomains: ['lieferant-a.example'] }).neu.length, 0);
   assert.equal(uebernehmen([fremd], { privatDir: dir, jetzt: JETZT, lieferantenDomains: ['lieferant-a.example', 'lieferant-b.example'] }).neu.length, 1, 'jetzt bekannt');
   assert.equal(leseBelege(lieferbelegePfad(dir)).geprueft.s2, undefined);
+});
+
+test('Nachpruefung #1432: nackte Belegnummer, abweichende eigene Nummern, Teilversand je Position', async () => {
+  const { nummerNotiert, ordneAlleZu } = await import('../lib/lieferbelege.mjs');
+  assert.equal(nummerNotiert('KD050/0198 Lieferung 2026', '2026'), 'teil', 'Jahreszahl in der Notiz ist kein Treffer');
+  assert.equal(nummerNotiert('2026', '2026'), 'voll');
+  assert.equal(nummerNotiert('AB 123456', '123456'), 'voll', 'Buchstaben davor stoeren nicht');
+  assert.equal(nummerNotiert('KD050/0198', 'KD050/0198'), 'voll');
+
+  const mit = (id, betreff, extra = {}) => ({ id, art: 'ab', datum: '2026-10-14T08:00:00Z', lieferant: 'A', domain: 'lieferant-a.example', threadId: `t-${id}`, refs: referenzen({ betreff }), ...extra });
+  const r = ordneAlleZu([
+    mit('ab', 'Auftr.-Best. KD050/0212 #9001 #9002'),
+    mit('ls', 'Lieferschein Vorgang KD050_212 #9001 #9999', { art: 'lieferschein' }),
+  ], KANDIDATEN);
+  assert.equal(r.find(b => b.id === 'ab').zuordnung.stufe, 'sicher');
+  const ls = r.find(b => b.id === 'ls').zuordnung;
+  assert.equal(ls.stufe, 'vorschlag', 'eigene Nummern #9001/#9999 sind nicht die des Ankers #9001/#9002');
+  assert.deepEqual(ls.orderIds, ['gid://shopify/Order/9001']);
+
+  const roh = zeile(9002, 'Max Mustermann', ['A', 'B'], { fulfillment: 'PARTIALLY_FULFILLED' });
+  Object.assign(roh.auftrag.positionen[0], { menge: 5, mengeBestellt: 10 }); // A: halb raus
+  Object.assign(roh.auftrag.positionen[1], { menge: 2 }); // B: bestellte Menge unbekannt (alter Export)
+  const kandidaten = kandidatenAus([roh], {
+    'gid://shopify/Order/9002::gid://shopify/LineItem/90020': { status: 'bestellt' },
+    'gid://shopify/Order/9002::gid://shopify/LineItem/90021': { status: 'bestellt' },
+  });
+  const { zeilen } = abgleich({ belege: [], kandidaten, jetzt: JETZT });
+  assert.equal(zeilen.find(z => z.lieferant === 'A').shopify, 'PARTIALLY_FULFILLED', '10 bestellt, 5 offen');
+  assert.equal(zeilen.find(z => z.lieferant === 'B').shopify, 'PARTIALLY_FULFILLED', 'ohne bestellte Menge gilt der Stand der Bestellung');
+});
+
+test('Nachpruefung #1432: Lieferant beim Zuordnen - Pflicht bei unbekanntem Absender und mehreren, nur passende', () => {
+  const dir = privat();
+  const quelle = path.join(dir, 'bestelluebersicht', 'orders.json');
+  const daten = JSON.parse(fs.readFileSync(quelle, 'utf8'));
+  daten.orders.push(bestellung(9003, 'Lena Schwarz', [position(3, 'A'), position(4, 'B')]));
+  fs.writeFileSync(quelle, JSON.stringify(daten));
+  const api = apiFuer(dir);
+  const ich = { name: 'Mona Mitarbeiter', rolle: 'mitarbeiter' };
+  const o = nr => `gid://shopify/Order/${nr}`;
+  // m2 kommt von einem unbekannten Absender
+  assert.throws(() => api.einkaufBelegSetzen({ aktion: 'zuordnen', mailId: 'm2', orderIds: [o(9003)] }, ich), e => e.status === 400 && /von welchem Lieferanten/.test(e.message));
+  assert.throws(() => api.einkaufBelegSetzen({ aktion: 'zuordnen', mailId: 'm2', orderIds: [o(9001)], lieferant: 'B' }, ich), e => e.status === 400 && /liefert für die gewählte Bestellung nichts/.test(e.message));
+  const r = api.einkaufBelegSetzen({ aktion: 'zuordnen', mailId: 'm2', orderIds: [o(9003)], lieferant: 'B' }, ich);
+  assert.deepEqual(r.zeilen.find(z => z.id === `${o(9003)}|B`).belege, ['m2']);
+  assert.equal(r.zeilen.find(z => z.id === `${o(9003)}|A`)?.belege.includes('m2') ?? false, false);
+  // Bekannter Absender (m1, Lieferant A): keine Rueckfrage noetig
+  assert.ok(api.einkaufBelegSetzen({ aktion: 'zuordnen', mailId: 'm1', orderIds: [o(9003)] }, ich).ok);
+});
+
+test('Nachpruefung #1432: verwaiste Sperre raeumt nur, wer die Raeum-Sperre hat; liegengebliebene Raeum-Sperre verfaellt', () => {
+  const dir = ordner();
+  const datei = lieferbelegePfad(dir);
+  fs.mkdirSync(path.dirname(datei), { recursive: true });
+  const alt = new Date(Date.now() - 60_000);
+  const verwaist = () => {
+    fs.writeFileSync(`${datei}.lock`, JSON.stringify({ pid: 2 ** 22 + 4711, kennung: 'tot' }));
+    fs.utimesSync(`${datei}.lock`, alt, alt);
+  };
+  // Ein anderer raeumt gerade (frische Raeum-Sperre): nicht dazwischen loeschen, sondern warten.
+  verwaist();
+  fs.writeFileSync(`${datei}.lock.raeumen`, '');
+  assert.throws(() => uebernehmen([mail('m1', 'Auftragsbestätigung 1')], { privatDir: dir }), /gesperrt/);
+  assert.equal(JSON.parse(fs.readFileSync(`${datei}.lock`, 'utf8')).kennung, 'tot');
+  // Raeum-Sperre aus einem Absturz (alt): verfaellt, dann wird geraeumt und geschrieben.
+  fs.utimesSync(`${datei}.lock.raeumen`, alt, alt);
+  assert.equal(uebernehmen([mail('m1', 'Auftragsbestätigung 1')], { privatDir: dir }).neu.length, 1);
+  assert.equal(fs.existsSync(`${datei}.lock`), false);
+  assert.equal(fs.existsSync(`${datei}.lock.raeumen`), false);
 });

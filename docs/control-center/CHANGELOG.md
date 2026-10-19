@@ -18,7 +18,7 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
     Lieferanten), sondern unter „Liegt bei uns – Rausgeben“; die Nachfass-Kachel zählt Aufträge mit Ware
     von zwei Lieferanten einmal.
   - **Kunden**: Bestellliste seitenweise (25); der Menüzähler zählt neue Service-Anfragen mit.
-- **Getestet:** `npm run dashboard:test` (457), `npm test` (3.118 grün), `dashboard:pruefen --rollen` über 70 Ansichten
+- **Getestet:** `npm run dashboard:test` (460), `npm test` (3.121 grün), `dashboard:pruefen --rollen` über 70 Ansichten
   × 5 Breiten ohne Fehler und ohne seitliches Scrollen. Höhe Heute am Handy 3.870 → 2.355 px, Belege
   4.609 → 1.899 px (Desktop). Erkennung gegen 56 echte Mails aus dem Label „LS AB“ (nur lesend, in einer
   Datenkopie): 52 Belege (44 AB, 6 LS, 1 Avis, 1 Storno), 2 sicher, 4 Vorschläge, der Rest Laden-/
@@ -30,6 +30,12 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   mehreren Bestellungen verlangt Auswahl; unbekannter Absender nicht bei allen Lieferanten; „Erledigt“ je
   Beleg und Auftrag, jeder offene Storno zählt; Shopify-Stand je Lieferant; Stornos von Unterdomains;
   Heute meldet ausgefallene Belege/Shopify-Abgleich als „Liste unvollständig“.
+- **Codex-Nachprüfung (8 Punkte, alle behoben):** verwaiste Sperre räumt nur, wer die Räum-Sperre hält;
+  eine nackte Belegnummer („2026“) ist nur bei genau dieser Notiz sicher; Vorgangsverknüpfung nur, wenn
+  die eigenen Bestellnummern genau die des Ankers sind; unbekannter Absender bei Bestellung mit mehreren
+  Lieferanten: Lieferant ist Pflicht (Dialog und Server), nur ein Lieferant dieser Bestellung; ein Storno
+  ohne Lieferantenzeile bleibt rot; Teilversand innerhalb einer Position (neu `mengeBestellt` im Export);
+  „Heute“ zeigt „Lade …“, bis Belege und Shopify-Abgleich da sind; die Lieferantenwahl im Dialog bleibt stehen.
 - **Risiken/Annahmen:** Die meisten Lieferanten nennen unsere Bestellnummer nicht – sicher wird die
   Zuordnung erst, wenn beim „Als bestellt markieren“ die AB-/Vorgangsnummer notiert wird oder die
   Bestellnummer im Betreff steht. Anhänge (PDF) werden nicht gelesen.

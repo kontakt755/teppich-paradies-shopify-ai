@@ -76,6 +76,31 @@ function leseSperre(sperre) {
 }
 
 /**
+ * Verwaiste Sperre entfernen - nur unter einer eigenen Raeum-Sperre, damit nicht zwei Prozesse
+ * gleichzeitig pruefen und der langsamere die frische Sperre des schnelleren loescht
+ * (Codex-Nachpruefung #1432). Gibt true zurueck, wenn ein neuer Versuch lohnt.
+ */
+function raeumeVerwaisteSperre(sperre) {
+  const wache = `${sperre}.raeumen`;
+  let fd;
+  try { fd = fs.openSync(wache, 'wx'); } catch (e) {
+    if (e?.code !== 'EEXIST') throw e;
+    // Die Raeum-Sperre selbst bleibt nur nach einem Absturz mitten im Raeumen liegen.
+    try { if (Date.now() - fs.statSync(wache).mtimeMs > SPERRE_ALT_MS) fs.unlinkSync(wache); } catch { /* schon weg */ }
+    return false;
+  }
+  try {
+    const st = fs.statSync(sperre);
+    if (Date.now() - st.mtimeMs <= SPERRE_ALT_MS || lebt(leseSperre(sperre)?.pid)) return false;
+    fs.unlinkSync(sperre);
+    return true;
+  } catch { return true; /* Sperre ist schon weg */ } finally {
+    fs.closeSync(fd);
+    try { fs.unlinkSync(wache); } catch { /* schon weg */ }
+  }
+}
+
+/**
  * Lesen-Aendern-Schreiben unter einer Sperrdatei. Synchron und kurz: haelt die Sperre nur fuer
  * eine Aenderung. Die Sperre traegt Prozess und Kennung; uebernommen wird sie nur, wenn sie aelter
  * als 30 s ist UND ihr Prozess nicht mehr lebt, freigegeben nur die eigene (Codex-Review #1432).
@@ -94,14 +119,7 @@ export function mitSperre(datei, aendern) {
       fs.writeSync(fd, JSON.stringify({ pid: process.pid, kennung, am: new Date().toISOString() }));
     } catch (e) {
       if (e?.code !== 'EEXIST') throw e;
-      let alt = false;
-      try {
-        const st = fs.statSync(sperre);
-        const inhalt = leseSperre(sperre);
-        alt = Date.now() - st.mtimeMs > SPERRE_ALT_MS && !lebt(inhalt?.pid);
-        // Erst unmittelbar vor dem Entfernen noch einmal: ist es noch dieselbe verwaiste Sperre?
-        if (alt && JSON.stringify(leseSperre(sperre)) === JSON.stringify(inhalt)) { fs.unlinkSync(sperre); continue; }
-      } catch { continue; }
+      if (raeumeVerwaisteSperre(sperre)) continue;
       if (Date.now() > bis) throw new LieferbelegFehler('Die Belegablage ist gerade gesperrt (ein anderer Vorgang schreibt) – bitte gleich noch einmal versuchen.');
       warte(50);
     }
@@ -203,9 +221,12 @@ export const AKTIONEN = Object.freeze(['zuordnen', 'ablehnen', 'kein_shop', 'loe
 /**
  * Entscheidung aus dem Dashboard. Person kommt aus der Sitzung, nie aus dem Koerper.
  * @param {{aktion: string, mailId?: string, orderIds?: string[], domain?: string, notiz?: string}} p
- * @param {{person: string, jetzt?: Date, gueltigeOrderIds?: Set<string>}} opt
+ * @param {{person: string, jetzt?: Date, gueltigeOrderIds?: Set<string>, gueltigeLieferanten?: Set<string>,
+ *   lieferantenJeAuftrag?: Map<string, string[]>, absenderLieferant?: (beleg: object) => string|null}} opt
+ *   lieferantenJeAuftrag/absenderLieferant: ein gewaehlter Lieferant muss in jeder Bestellung
+ *   Ware haben; ist der Absender unbekannt und hat eine Bestellung mehrere, muss einer gewaehlt sein.
  */
-export function entscheide(datei, p = {}, { person, jetzt = new Date(), gueltigeOrderIds = null, gueltigeLieferanten = null } = {}) {
+export function entscheide(datei, p = {}, { person, jetzt = new Date(), gueltigeOrderIds = null, gueltigeLieferanten = null, lieferantenJeAuftrag = null, absenderLieferant = null } = {}) {
   if (!person) throw new LieferbelegFehler('Person fehlt');
   const aktion = String(p.aktion || '');
   if (!AKTIONEN.includes(aktion)) throw new LieferbelegFehler(`Unbekannte Aktion „${kurz(aktion, 40)}“`);
@@ -228,6 +249,11 @@ export function entscheide(datei, p = {}, { person, jetzt = new Date(), gueltige
       // Von welchem Lieferanten? Nur noetig, wenn der Absender unbekannt ist und die Bestellung mehrere hat.
       const lieferant = p.lieferant ? String(p.lieferant).slice(0, 40) : null;
       if (lieferant && gueltigeLieferanten && !gueltigeLieferanten.has(lieferant)) throw new LieferbelegFehler('Lieferant nicht gefunden');
+      if (lieferantenJeAuftrag) {
+        // Sonst haengt der Beleg an keiner Zeile im Abgleich - ein Storno waere unsichtbar (Codex-Nachpruefung #1432).
+        if (lieferant && ids.some(id => !(lieferantenJeAuftrag.get(id) || []).includes(lieferant))) throw new LieferbelegFehler('Dieser Lieferant liefert für die gewählte Bestellung nichts – bitte den richtigen wählen.');
+        if (!lieferant && absenderLieferant && !absenderLieferant(b) && ids.some(id => (lieferantenJeAuftrag.get(id) || []).length > 1)) throw new LieferbelegFehler('Bitte wählen, von welchem Lieferanten der Beleg ist – die Bestellung hat Ware von mehreren.');
+      }
       b.entscheidung = { art: 'zugeordnet', orderIds: ids, ...(lieferant ? { lieferant } : {}), von: person, am, vorher: b.entscheidung || null };
     } else if (aktion === 'ablehnen') {
       // "Passt nicht": diese Vorschlaege nicht wieder anbieten, die Mail bleibt offen.

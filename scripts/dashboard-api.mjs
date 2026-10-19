@@ -2054,16 +2054,22 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const actor = benutzer?.name || benutzer?.kuerzel || 'Inhaber';
       const dir = privatDirPath || privatDir();
       const p = payload && typeof payload === 'object' ? payload : {};
-      let gueltig = null;
-      let lieferanten = null;
+      let pruefung = {};
       if (p.aktion === 'zuordnen') {
         const k = this._lieferantenKontext();
         const zeilen = k.modell ? bestellliste(k.modell, { statusAlle: k.statusAlle }) : [];
-        gueltig = new Set(zeilen.map(z => z.orderId));
-        lieferanten = new Set([...Object.keys(k.stammdaten.lieferanten || {}), ...zeilen.flatMap(z => (z.auftrag?.positionen || []).map(x => x.lieferant)).filter(Boolean)]);
+        const jeAuftrag = new Map(kandidatenAus(zeilen, k.statusAlle).map(c => [c.orderId, c.lieferanten]));
+        let absender = {};
+        try { absender = leseBelege(lieferbelegePfad(dir)).absender; } catch { /* entscheide() meldet die kaputte Ablage */ }
+        pruefung = {
+          gueltigeOrderIds: new Set(zeilen.map(z => z.orderId)),
+          gueltigeLieferanten: new Set([...Object.keys(k.stammdaten.lieferanten || {}), ...[...jeAuftrag.values()].flat()]),
+          lieferantenJeAuftrag: jeAuftrag,
+          absenderLieferant: b => lieferantZurDomain(b.domain, { stammdaten: k.stammdaten, absender }),
+        };
       }
       try {
-        const e = belegEntscheiden(lieferbelegePfad(dir), p, { person: actor, jetzt: now(), gueltigeOrderIds: gueltig, gueltigeLieferanten: lieferanten });
+        const e = belegEntscheiden(lieferbelegePfad(dir), p, { person: actor, jetzt: now(), ...pruefung });
         merke(benutzer, actor, 'Lieferbeleg', `${p.aktion}${e.domain ? ` ${e.domain}` : ''}`);
       } catch (e) {
         if (e instanceof LieferbelegFehler) throw new ApiError(400, e.message);

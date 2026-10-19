@@ -181,8 +181,10 @@ export function kandidatenAus(bestellzeilen = [], statusAlle = {}) {
   return (bestellzeilen || []).filter(z => z?.auftrag && !z.testbestellung && !z.storniert).map(z => {
     const positionen = (z.auftrag.positionen || []).filter(p => p.lineItemId).map(p => ({
       lineItemId: p.lineItemId, lieferant: p.lieferant || null, istMuster: !!p.istMuster, titel: p.titel || null,
-      // menge = in Shopify noch offene Menge (bestelluebersicht.mjs); fehlt sie, gilt der Status der Bestellung.
+      // menge = in Shopify noch offene Menge, mengeBestellt = bestellte (bestelluebersicht.mjs);
+      // fehlt sie, gilt der Status der Bestellung. Teil: von dieser Position ist schon etwas raus.
       shopifyOffen: typeof p.menge === 'number' && !p.eigenleistung ? p.menge > 0 : null,
+      shopifyTeil: typeof p.menge === 'number' && typeof p.mengeBestellt === 'number' && !p.eigenleistung ? p.menge > 0 && p.menge < p.mengeBestellt : null,
       eintrag: statusAlle?.[`${z.orderId}::${p.lineItemId}`] || null,
     }));
     return {
@@ -225,7 +227,8 @@ export function nummernSchluessel(nr) {
  * Steht die Belegnummer in der Bestellnummer, die beim Bestellen notiert wurde?
  * 'voll': alle Gruppen der Belegnummer stehen dort in derselben Reihenfolge ("KD050/0198" in
  * "KD050/0198 KW 42"); 'teil': nur die letzte Zifferngruppe ("0198 / KW 42") - das reicht nur
- * fuer einen Vorschlag, "KD999/0198" waere sonst derselbe Vorgang (Codex-Review #1432).
+ * fuer einen Vorschlag, "KD999/0198" waere sonst derselbe Vorgang (Codex-Review #1432). Eine
+ * Belegnummer aus nur einer Zifferngruppe ist 'voll' nur, wenn die Notiz genau diese Zahl traegt.
  */
 export function nummerNotiert(notiert, belegnummer) {
   const beleg = nummernGruppen(belegnummer);
@@ -235,7 +238,8 @@ export function nummerNotiert(notiert, belegnummer) {
   const dort = nummernGruppen(notiert);
   if (beleg.length > 1) {
     for (let i = 0; i + beleg.length <= dort.length; i += 1) if (beleg.every((g, j) => dort[i + j] === g)) return 'voll';
-  } else if (dort.includes(letzte)) return 'voll';
+  } else if (dort.filter(g => /^\d/.test(g)).join('|') === letzte) return 'voll';
+  // Eine nackte Nummer ("2026") steht sonst in jeder Notiz mit Jahreszahl oder Menge.
   return dort.includes(letzte) ? 'teil' : null;
 }
 
@@ -323,10 +327,12 @@ export function ordneAlleZu(belege = [], kandidaten = [], { absender = {} } = {}
     // Die Vorgangsnummer schlaegt einen Namensvorschlag; Entscheidungen und sichere Treffer bleiben.
     if (!['keine', 'vorschlag'].includes(b.zuordnung.stufe)) return b;
     const abgelehnt = b.entscheidung?.art === 'abgelehnt' ? b.entscheidung.orderIds || [] : [];
-    // Eigene Bestellnummern des Belegs, die nicht zum Anker passen, sprechen gegen die Verknuepfung.
-    const eigene = [...(b.refs?.betreffNummern || []), ...(b.refs?.textNummern || [])];
+    // Nennt der Beleg selbst Bestellnummern, muessen es genau die des Ankers sein - eine
+    // abweichende spricht gegen die Verknuepfung (Codex-Nachpruefung #1432).
+    const eigene = [...new Set([...(b.refs?.betreffNummern || []), ...(b.refs?.textNummern || [])])].sort();
+    const gleich = s => eigene.join(',') === [...new Set(s.zuordnung.orderIds.map(id => nameVon.get(id)))].sort().join(',');
     const passt = s => s.id !== b.id && nah(s, b) && !s.zuordnung.orderIds.some(id => abgelehnt.includes(id))
-      && (!eigene.length || s.zuordnung.orderIds.some(id => eigene.includes(nameVon.get(id))));
+      && (!eigene.length || gleich(s));
     const schluessel = nummernSchluessel(b.refs?.belegnummer);
     const vorgaenge = schluessel ? fest.filter(s => passt(s) && s.domain === b.domain && nummernSchluessel(s.refs?.belegnummer) === schluessel) : [];
     const vorgang = vorgaenge.length ? einig(vorgaenge) : null;
@@ -416,6 +422,14 @@ export function abgleich({ belege = [], kandidaten = [], jetzt = new Date(), tag
       if (stand === 'bestellt' && zeile.shopify === 'FULFILLED') zeile.hinweise.push('shopify_weiter');
       zeilen.push(zeile);
     }
+    // Ein Storno, der keiner Lieferantenzeile zugeschlagen werden kann (Absender unbekannt, mehrere
+    // Lieferanten), darf trotzdem nicht verschwinden (Codex-Nachpruefung #1432).
+    for (const b of belegeHier) {
+      const von = b.entscheidung?.lieferant || b.lieferant || null;
+      const ohneZeile = von ? !k.lieferanten.includes(von) : k.lieferanten.length !== 1;
+      if (!ohneZeile || b.art !== 'storno' || !offenFuer(b, k.orderId)) continue;
+      abweichungen.push({ id: `storno:${b.id}:${k.orderId}`, art: 'storno', ton: 'crit', orderId: k.orderId, orderName: k.orderName, kundenname: k.kundenname, lieferant: von, belegId: b.id, datum: b.datum });
+    }
   }
   zeilen.sort((a, b) => (b.hinweise.length - a.hinweise.length) || String(b.bestelltAm || '').localeCompare(String(a.bestelltAm || '')));
   return { zeilen, abweichungen };
@@ -434,8 +448,12 @@ function shopifyStand(positionen, gesamt) {
   const bekannt = positionen.map(p => p.shopifyOffen).filter(v => v === true || v === false);
   if (bekannt.length !== positionen.length || !bekannt.length) return gesamt || null;
   if (bekannt.every(v => !v)) return 'FULFILLED';
-  if (bekannt.every(v => v)) return 'UNFULFILLED';
-  return 'PARTIALLY_FULFILLED';
+  if (!bekannt.every(v => v)) return 'PARTIALLY_FULFILLED';
+  // Alles offen - aber vielleicht ist von einer Position schon ein Teil raus (10 bestellt, 5 offen).
+  if (positionen.some(p => p.shopifyTeil === true)) return 'PARTIALLY_FULFILLED';
+  if (positionen.every(p => p.shopifyTeil === false)) return 'UNFULFILLED';
+  // Bestellte Menge unbekannt (aelterer Export): nur sicher, wenn auch die Bestellung nichts versendet hat.
+  return gesamt === 'UNFULFILLED' || !gesamt ? 'UNFULFILLED' : gesamt;
 }
 
 export function belegMarke(beleg) {
