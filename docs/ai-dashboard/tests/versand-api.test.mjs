@@ -140,17 +140,26 @@ test('Bereits in Shopify erfuellt: nichts geschrieben, Vermerk "bereits"', async
   assert.equal(u.eintrag(1).shopifyVersand.status, 'bereits');
 });
 
-test('Keine rueckwirkende Buchung: alte "raus"-Positionen ohne Vermerk bleiben unberuehrt, auch bei Korrekturen', async () => {
+test('Alte "raus"-Positionen ohne Vermerk: "Erledigt" bucht ohne Mail (seit 19.10.), Korrekturen buchen nie, der Rest steht in der Abweichungsliste', async () => {
   const u = umgebung();
   fs.writeFileSync(path.join(u.dir, 'auftragsstatus.json'), JSON.stringify({ version: 1, positionen: {
     [`${BESTELLUNG}::${li(1)}`]: { orderId: BESTELLUNG, lineItemId: li(1), status: 'raus', rausAm: '2026-10-01T10:00:00Z' },
     [`${BESTELLUNG}::${li(2)}`]: { orderId: BESTELLUNG, lineItemId: li(2), status: 'erledigt', erledigtAm: '2026-10-02T10:00:00Z' },
   } }));
-  await u.setze({ orderId: BESTELLUNG, lineItemId: li(1), status: 'erledigt' });
+  const r = await u.setze({ orderId: BESTELLUNG, lineItemId: li(1), status: 'erledigt' });
+  assert.equal(r.shopify.status, 'gebucht');
+  assert.equal(u.z.attrappe.buchungen().length, 1);
+  assert.equal(u.z.attrappe.buchungen()[0].variables.fulfillment.notifyCustomer, false, 'Erledigt bucht ohne Mail an den Kunden');
+  assert.deepEqual(u.z.attrappe.buchungen()[0].variables.fulfillment.lineItemsByFulfillmentOrder[0].fulfillmentOrderLineItems.map(x => x.id), ['gid://shopify/FulfillmentOrderLineItem/11']);
+  assert.equal(u.eintrag(1).versandMail, false);
   await u.setze({ orderId: BESTELLUNG, lineItemId: li(2), status: 'raus' }); // Korrektur zurueck
   await u.setze({ aktion: 'schritt', orderId: BESTELLUNG, schritt: 'raus' });
-  assert.equal(u.z.attrappe.aufrufe.length, 0, 'Shopify nie angefragt');
+  assert.equal(u.z.attrappe.buchungen().length, 1, 'Korrekturen buchen nichts nach');
   await assert.rejects(() => u.setze({ aktion: 'versandNachholen', orderId: BESTELLUNG }), e => e.status === 409);
+  // Position 2 steht auf "raus" ohne Vermerk, Shopify fuehrt sie offen: genau eine Zeile in der Abweichungsliste.
+  const a = u.api.einkaufShopifyAbgleich();
+  assert.equal(a.abweichungen.length, 1);
+  assert.deepEqual(a.abweichungen[0].lineItemIds, [li(2)]);
 });
 
 test('Testbestellung: nicht in Shopify gebucht; persoenlich uebergebene Muster: gebucht ohne Versandmail', async () => {
