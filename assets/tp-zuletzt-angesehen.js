@@ -2,7 +2,7 @@
  * Zuletzt angesehen (Werkbank w-025).
  *
  * Liest die vom Theme bereits gefuehrte Liste angesehener Produkte
- * (assets/recently-viewed-products.js, localStorage "viewedProducts") und holt
+ * (assets/recently-viewed-products.js, sessionStorage "viewedProducts", nur aktueller Besuch) und holt
  * die zugehoerigen Produktkarten ueber die Section Rendering API: dieselbe
  * Section wird auf einer Suche id:123 OR id:456 gerendert und liefert die
  * Karten mit dem statischen Kartenblock aus sections/tp-zuletzt-group.json.

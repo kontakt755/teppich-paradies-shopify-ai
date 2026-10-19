@@ -40,7 +40,7 @@
   if bf_tel_href.first == '0'
     assign bf_tel_href = bf_tel_href | slice: 1, 30 | prepend: '+49'
   endif
-  assign bf_datenschutz = pages['datenschutzerklarung'].url | default: '/pages/datenschutzerklarung'
+  assign bf_datenschutz = shop.privacy_policy.url | default: '/policies/privacy-policy'
 
   # Kategorieseite einer aktiven Bodenart: erste Frage entfaellt.
   assign bf_vorwahl = ''

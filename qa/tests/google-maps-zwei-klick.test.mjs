@@ -67,7 +67,7 @@ test('Kontaktseite: Platzhalter mit Knopf, Hinweis, Datenschutz-Link und Maps-Li
     [/data-tp-karte-src="\{\{ tp_karte_embed \| escape \}\}"/, 'Embed-Adresse nur im data-Attribut'],
     [/<button type="button" class="tp-karte__laden"[^>]*aria-describedby=/, 'Knopf mit Hinweis-Verweis'],
     [/Karte von Google Maps laden/, 'Knopftext'],
-    [/Dabei werden Daten an Google übertragen\. Mehr in der\s+<a href="\/pages\/datenschutzerklarung">Datenschutzerklärung<\/a>\./, 'Hinweis mit Datenschutz-Link'],
+    [/Dabei werden Daten an Google übertragen\. Mehr in der\s+<a href="\/policies\/privacy-policy">Datenschutzerklärung<\/a>\./, 'Hinweis mit Datenschutz-Link'],
     [/assign tp_karte_link = settings\.tp_google_profil \| default: 'https:\/\/maps\.google\.com\/\?cid=\d+'/, 'Maps-Link auf das Unternehmensprofil'],
     [/<a class="tp-karte__extern" href="\{\{ tp_karte_link \| escape \}\}" target="_blank" rel="noopener">\s*In Google Maps öffnen/, 'normaler Link "In Google Maps öffnen"'],
     // Direkt laden nur bei ausdruecklichem Ja, nicht bei marketingAllowed() (true ohne Banner)
