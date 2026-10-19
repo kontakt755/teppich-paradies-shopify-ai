@@ -132,6 +132,31 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Nächste Stufe:** Echte Kettelpreise des Kettlers eintragen und je Auftrag „Kettler lohnt
   sich“ mit Fahrtkosten rechnen.
 
+## 2026-10-16 · Angaben als Codex- und Claude-App-Entwurf oeffnen (#1404)
+
+- **Geaendert:** Neue App-Ziele erhalten „Mit Angaben in … oeffnen“. Ein echter Klick uebergibt
+  den vollstaendigen Auftrag mit Projektordner bzw. Repository-Zuordnung an die dokumentierten
+  App-Protokolle. Keine Zwischenablage, kein neuer Server-Endpunkt und kein automatischer KI-Start.
+  Gespeicherte Ziele bleiben promptfrei. Ein allgemeiner neuer Claude-Chat benennt das fehlende
+  Projekt; vorhandene Chats und nicht unterstuetzte Cloud-Projekte behalten den manuellen Weg.
+  Der native Link wird bei 12.000 kodierten Zeichen ohne Kuerzung abgewiesen; alle Angaben bleiben
+  erhalten. Details: [APP-UEBERGABE.md](APP-UEBERGABE.md).
+- **Getestet:** `npm test` 2.960/2.960, darunter 15 neue gezielte Pruefungen fuer Texttreue,
+  Prozentkodierung, Projektparameter, echte Klicks, Laengengrenzen und Kontext-/Sitzungswechsel.
+  Ein vorheriger einzelner Dashboard-Lauf traf den bestehenden 500-ms-Aktualisierungstest;
+  zwei anschliessende vollstaendige Laeufe waren gruen. Browserpruefung gegen Datenkopie:
+  36 Ansichts-/Rollen-/Breitenkombinationen (360, 390, 1440 px), kein Ueberlauf oder JS-Fehler.
+  Der echte Codex-Knopf loest den nativen Aufruf aus und meldet ausschliesslich „Uebergabe
+  angefordert“. Der Sichtvergleich in der Ziel-App ist noch offen: Codex darf die eigene
+  Oberflaeche nicht auslesen; Claude zeigte beim bisherigen Aufruf keinen verifizierbaren Entwurf.
+- **Risiken/Annahmen:** Die App muss am betreffenden Geraet installiert und das Projekt verfuegbar
+  sein. Die Dashboard-Rueckmeldung bestaetigt keine Einfuegung. Claude Code fragt bei Ordnerlinks
+  separat nach; ein ausgewaehlter Ordner-Chip beweist kein spaeter ausgefuehrtes Arbeitsverzeichnis.
+  Der Text steht im fluechtigen nativen Protokoll-Link; Betriebssystem und Ziel-App verarbeiten ihn
+  ausserhalb des Dashboard-Speicherverhaltens. Lokale Ordner uebernehmen keine alten Cloud-Chats.
+- **Naechste Stufe:** Vollstaendigen Text und Ziel in den echten Apps bestaetigen, Claude-Ziele
+  abschliessend zuordnen und erst danach den Dienst nachziehen.
+
 ## 2026-10-16 · Unklare Mustersperren und Teilfreigaben absichern (#1400)
 
 - **Geändert:** Eine unlesbare Sperr-Gegenprobe gilt nicht mehr als nie geschriebene Sperre.
