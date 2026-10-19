@@ -125,6 +125,16 @@ function pruefer(fehler, ort) {
       const n = Number(roh);
       return Number.isInteger(n) && n >= 1 && n <= 365 ? n : melde(feld, 'muss eine ganze Zahl von 1 bis 365 sein');
     },
+    domains(roh, feld) {
+      if (roh === undefined || roh === null) return [];
+      if (!Array.isArray(roh)) { melde(feld, 'muss eine Liste sein'); return []; }
+      const ok = [];
+      for (const d of roh.slice(0, 10)) {
+        const s = String(d ?? '').trim().toLowerCase().replace(/^@/, '');
+        if (/^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/.test(s)) ok.push(s); else melde(feld, `"${String(d).slice(0, 60)}" ist keine Domain`);
+      }
+      return [...new Set(ok)];
+    },
     objekt(roh, feld) {
       if (roh === undefined || roh === null) return {};
       if (!istObjekt(roh)) { melde(feld, 'muss ein Objekt sein'); return {}; }
@@ -175,6 +185,9 @@ function pruefeLieferant(id, roh, fehler) {
       // die Mustermail nennt ihre Bezeichnung aus einkauf.farbname (Qualitaet + Farbnummer).
       nachBezeichnung: m.nachBezeichnung === true,
     },
+    // Absenderdomains im Postfach, falls ABs und Lieferscheine von anderen Adressen kommen als
+    // die Bestellungen hingehen (Lieferantenbelege, docs/ai-dashboard/lib/lieferbelege.mjs).
+    postfachDomains: p.domains(roh.postfachDomains, 'postfachDomains'),
     lieferzeitWerktage: p.werktage(roh.lieferzeitWerktage, 'lieferzeitWerktage'),
     mindestmenge: p.text(roh.mindestmenge, 'mindestmenge', 500),
     hinweise: p.text(roh.hinweise, 'hinweise', 2000),

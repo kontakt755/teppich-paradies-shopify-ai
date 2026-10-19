@@ -2,6 +2,46 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-19 · Übersicht: „Heute“ als eine Liste, Lieferantenbelege aus dem Postfach (#1427)
+
+- **Geändert:** Inhaber 19.10. „immer noch zu unübersichtlich … Schnittstelle zu Gmail“; Audit und
+  Postfach-Konzept mit Codex abgestimmt.
+  - **Heute** ist eine Arbeitsliste: Zahl oben = Zeilen der Liste, Chips Laden/Website/Alles mit Zahl,
+    „Im Hintergrund“ statt Musterkarten und Warteübersicht, „Liste unvollständig“ statt falschem „Alles
+    erledigt“. Fehler behoben: „Alles“ verschwieg Laden-Arbeit; neue Service-Anfragen fehlten auf Heute
+    (vier hingen seit drei Tagen auf „neu“); Liefertermin in der Zukunft hieß „Nachhaken“.
+  - **Einkauf › Belege** (neu, Architektur § 25): ABs, Lieferscheine, Stornos aus dem Postfach, zugeordnet
+    zu Shop-Bestellungen und abgeglichen mit unserem Stand und Shopify. Storno und Lieferschein ohne Haken
+    werden To-dos auf Heute, Vorschläge eine Sammelzeile. Marke „AB 14.10. · LS 16.10.“ an bestellten
+    Posten im Einkauf.
+  - **Einkauf**: Ware, die schon bei uns liegt, steht nicht mehr unter „Nachfassen“ (mit Telefon des
+    Lieferanten), sondern unter „Liegt bei uns – Rausgeben“; die Nachfass-Kachel zählt Aufträge mit Ware
+    von zwei Lieferanten einmal.
+  - **Kunden**: Bestellliste seitenweise (25); der Menüzähler zählt neue Service-Anfragen mit.
+- **Getestet:** `npm run dashboard:test` (460), `npm test` (3.121 grün), `dashboard:pruefen --rollen` über 70 Ansichten
+  × 5 Breiten ohne Fehler und ohne seitliches Scrollen. Höhe Heute am Handy 3.870 → 2.355 px, Belege
+  4.609 → 1.899 px (Desktop). Erkennung gegen 56 echte Mails aus dem Label „LS AB“ (nur lesend, in einer
+  Datenkopie): 52 Belege (44 AB, 6 LS, 1 Avis, 1 Storno), 2 sicher, 4 Vorschläge, der Rest Laden-/
+  Telefonbestellungen. Klickstrecke gegen die Kopie: Vorschlag annehmen (Zu prüfen 2 → 1, Lieferschein
+  erbt die Bestellung der AB), „Passt nicht“ (1 → 0), Zuordnen-Dialog (39 Bestellungen, Esc),
+  „Kein Shop-Lieferant“ (15 → 14 Absender), keine JS-Fehler.
+- **Codex-Review des PR (10 Befunde, alle behoben):** beschädigte Ablage nicht mehr als leer; Sperre mit
+  Besitzkennung; Teilnummer nie „sicher“; Vorgangsverknüpfung nur bei einigen Ankern; Vorschlag mit
+  mehreren Bestellungen verlangt Auswahl; unbekannter Absender nicht bei allen Lieferanten; „Erledigt“ je
+  Beleg und Auftrag, jeder offene Storno zählt; Shopify-Stand je Lieferant; Stornos von Unterdomains;
+  Heute meldet ausgefallene Belege/Shopify-Abgleich als „Liste unvollständig“.
+- **Codex-Nachprüfung (8 Punkte, alle behoben):** verwaiste Sperre räumt nur, wer die Räum-Sperre hält;
+  eine nackte Belegnummer („2026“) ist nur bei genau dieser Notiz sicher; Vorgangsverknüpfung nur, wenn
+  die eigenen Bestellnummern genau die des Ankers sind; unbekannter Absender bei Bestellung mit mehreren
+  Lieferanten: Lieferant ist Pflicht (Dialog und Server), nur ein Lieferant dieser Bestellung; ein Storno
+  ohne Lieferantenzeile bleibt rot; Teilversand innerhalb einer Position (neu `mengeBestellt` im Export);
+  „Heute“ zeigt „Lade …“, bis Belege und Shopify-Abgleich da sind; die Lieferantenwahl im Dialog bleibt stehen.
+- **Risiken/Annahmen:** Die meisten Lieferanten nennen unsere Bestellnummer nicht – sicher wird die
+  Zuordnung erst, wenn beim „Als bestellt markieren“ die AB-/Vorgangsnummer notiert wird oder die
+  Bestellnummer im Betreff steht. Anhänge (PDF) werden nicht gelesen.
+- **Nächste Stufe:** Postfach-Lauf einrichten (nach dem Merge), eine Woche beobachten, dann entscheiden,
+  ob „AB fehlt seit N Tagen“ eine Regel wird.
+
 ## 2026-10-19 · „Muster nachfassen“: Karte nach einem Versandlauf aktuell
 
 - **Geändert:** Nach dem ersten Lauf (4 Mails) standen die Kunden in einem offenen Tab weiter als „offen“ –

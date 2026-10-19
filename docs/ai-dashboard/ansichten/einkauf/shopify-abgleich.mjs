@@ -1,8 +1,8 @@
 /**
  * Abgleich mit Shopify (Inhaber 2026-10-19): Bestellungen, die im Control Center abgehakt sind
- * ("An Kunden raus" oder "Erledigt"), in Shopify aber noch offen stehen. Die Liste erscheint auf
- * "Heute" nur, wenn es solche Bestellungen gibt; je Zeile ein Knopf "In Shopify nachbuchen"
- * (ohne Mail an den Kunden). Die Zahl im Kopf ist die Zahl der Zeilen.
+ * ("An Kunden raus" oder "Erledigt"), in Shopify aber noch offen stehen. Auf "Heute" stehen sie
+ * seit #1427 als Zeilen der einen Arbeitsliste (shopifyAbgleichTodos), je Zeile ein Knopf "In
+ * Shopify nachbuchen" (ohne Mail an den Kunden). shopifyAbgleichBlock bleibt fuer andere Ansichten.
  *
  * Die Gegenrichtung (in Shopify versendet -> hier mindestens "raus") macht der Dienst selbst nach
  * jedem neuen Bestellexport; dafuer gibt es nichts zu klicken. Regeln:
@@ -50,6 +50,32 @@ function zeile(z, lesend) {
     <div class="heute-todo-text"><div class="t">${esc(titel)}</div><div class="s">${esc(kontext)}</div></div>
     ${knopf}
   </div>`;
+}
+
+/**
+ * Zeilen fuer die eine Arbeitsliste auf "Heute" (seit 2026-10-19, #1427): je Bestellung ein To-do
+ * mit "In Shopify nachbuchen" in der Zeile. Leer, solange nichts abweicht. Bereich Laden.
+ */
+export function shopifyAbgleichTodos(jetzt = Date.now()) {
+  const d = shopifyAbgleich.daten;
+  // Der Server konnte nicht abgleichen (fehler als Text): eine Zeile. Ein gescheiterter Abruf
+  // (fehler: true aus fetchEinkauf) steht auf "Heute" als "Liste unvollstaendig" - nicht doppelt.
+  if (typeof d?.fehler === 'string' && d.fehler) {
+    return [{ id: 'shopify-abgleich-fehler', art: 'shopify_abgleich', bereich: 'laden', ton: 'warn', alterTage: null,
+      titel: 'Abgleich mit Shopify nicht möglich', kontext: d.fehler, knopf: { text: 'Einkauf', href: '#/einkauf' } }];
+  }
+  if (!d?.verfuegbar || d.fehler) return [];
+  return (d.abweichungen || []).map((z) => {
+    const stufe = z.positionen.every(p => p.status === 'erledigt') ? 'erledigt' : 'raus';
+    const artikel = z.positionen.slice(0, 2).map(artikelText).join(', ') + (z.positionen.length > 2 ? ` +${z.positionen.length - 2}` : '');
+    const tage = z.seit ? Math.max(0, Math.floor((jetzt - Date.parse(z.seit)) / 86400000)) : null;
+    return {
+      id: `shopify-abgleich:${z.orderId}`, art: 'shopify_abgleich', bereich: 'laden', ton: 'warn', alterTage: Number.isFinite(tage) ? tage : null,
+      titel: `In Shopify noch offen: ${z.orderName || 'Bestellung'}${z.kunde ? ` · ${z.kunde}` : ''}`,
+      kontext: `${plural(z.positionen.length, 'Artikel', 'Artikel')} im Dashboard ${STATUS_TEXT[stufe]}${z.seit ? ` seit ${fmtDate(z.seit)}` : ''} · ${artikel}`,
+      knopf: { text: 'In Shopify nachbuchen', nachbuchen: z.orderId, href: `#/einkauf?${new URLSearchParams({ auftrag: z.orderId })}` },
+    };
+  });
 }
 
 /** Block fuer "Heute". Leer, solange nichts abweicht - eine 0 ist kein Arbeitsauftrag. */

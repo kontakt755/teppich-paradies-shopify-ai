@@ -474,6 +474,8 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         sku: item.sku,
         preis: geld(li.originalUnitPriceSet),
         menge,
+        // Bestellt (nach Aenderungen): mit `menge` erkennt der Belegabgleich Teilversand je Position.
+        mengeBestellt: bestellteMenge(li),
         // Bestellte Menge, wenn nichts mehr offen ist: bei gelieferter Ware stand sonst "0 Stk.".
         kundenmenge: kundenmengeText(item, (eigen || !(menge > 0)) ? bestellteMenge(li) : menge, li.variantTitle ?? li.variant?.title),
         grosshaendlerId: ghId,

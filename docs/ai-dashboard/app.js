@@ -54,7 +54,8 @@ const VIEWS = { heute: viewHeute, prozesse: viewProzesse, fotos: viewFotos, sond
 async function init() {
   registriereAnsichten(VIEWS);
   // Zaehler in der Navigation: nur, was ohnehin geladen ist - kein eigener Abruf dafuer.
-  registriereNavZaehler({ kunden: () => kunden.faelle?.sofort });
+  // Kunden: sofort faellige Faelle plus neue Service-Anfragen, bei denen sich noch niemand gemeldet hat.
+  registriereNavZaehler({ kunden: () => (kunden.faelle?.sofort || 0) + (kunden.serviceanfragen?.eintraege || []).filter(e => e.status === 'neu').length });
   parseRoute();
   bindEvents();
   renderThemeButton();

@@ -58,6 +58,8 @@ export const SICHERUNGSPFADE = Object.freeze([
   'serviceanfragen.json',
   // ... und welche Formular-Mails der Postfach-Abgleich schon geprueft hat.
   'serviceanfragen-postfach.json',
+  // Lieferantenbelege aus dem Postfach (AB, Lieferschein, Storno) samt Zuordnung und Haken.
+  'lieferbelege',
   // "Fehler melden": Meldungen der Mitarbeiter und ihr Stand in der Werkbank.
   'fehlermeldungen.json',
   'fehlermeldungen-abgleich.json',

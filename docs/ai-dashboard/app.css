@@ -585,6 +585,7 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
 /* Neun statt fuenfzehn Spalten passen auf einen normalen Bildschirm. */
 .bq-table table.tasks { min-width: 760px; }
 .bq-karten { display: none; }
+.bq-blaettern { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 12px; }
 .bq-gruppenkopf th {
   padding: 11px 12px;
   text-align: left;

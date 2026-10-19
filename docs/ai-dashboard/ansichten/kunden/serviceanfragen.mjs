@@ -22,12 +22,18 @@ import {
 
 const WOCHEN = 8;
 
+// Neue Anfragen kommen stuendlich aus dem Postfach - "Heute" zeigt sie als To-do und laedt
+// deshalb nach ein paar Minuten still nach; der alte Stand bleibt so lange stehen.
+const SERVICE_HALTBAR_MS = 5 * 60_000;
+
 export function ensureServiceanfragen() {
-  if (kunden.serviceanfragen || kunden.loadingServiceanfragen) return;
+  if (kunden.loadingServiceanfragen) return;
+  if (kunden.serviceanfragen && Date.now() - (kunden.serviceanfragenAm || 0) < SERVICE_HALTBAR_MS) return;
   kunden.loadingServiceanfragen = true;
   fetchEinkauf('/api/kunden/serviceanfragen').then(d => {
-    kunden.serviceanfragen = d; kunden.loadingServiceanfragen = false;
-    if (state.route.view === 'kunden') render();
+    const vorher = JSON.stringify(kunden.serviceanfragen);
+    kunden.serviceanfragen = d; kunden.serviceanfragenAm = Date.now(); kunden.loadingServiceanfragen = false;
+    if (['kunden', 'heute'].includes(state.route.view) && JSON.stringify(d) !== vorher) render();
   });
 }
 

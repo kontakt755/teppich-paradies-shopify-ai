@@ -1,27 +1,28 @@
 /**
- * Ansicht "Heute" (#/heute): die Startseite. Das Wichtigste zuerst:
+ * Ansicht "Heute" (#/heute): die Startseite. Seit 2026-10-19 genau EINE Arbeitsliste
+ * (Inhaber: "zu unuebersichtlich"; Codex-Audit: dieselbe Sache stand bis zu dreimal da):
  *
- *   1. "N offene To-dos fuer dich" - je Zeile Titel, eine Zeile Kontext, genau ein Knopf
- *   1a. "In Shopify noch offen" (ansichten/einkauf/shopify-abgleich.mjs) - nur wenn es Bestellungen
- *       gibt, die im Dashboard abgehakt, in Shopify aber offen sind; nicht in der Website-Sicht
- *   2. Datenstand (klein) und, beim Inhaber, was im Laden und bei der Website offen ist
- *   2a. "Muster nachfassen" (ansichten/heute/muster-nachfassen.mjs) - nicht in der Website-Sicht,
- *       die offenen Kunden zaehlen bei N mit
- *   3. "Wer wartet auf was" - wir / Lieferant / Kunde
- *   3a. "Laden" - Zahlen aus der Auftrags-App (ansichten/heute/laden.mjs), nicht in der Website-Sicht
- *   3b. "Montage" - Zahlen der Montage-App (ansichten/heute/laden.mjs), nicht in der Website-Sicht
- *   4. Kennzahlen (nur Inhaber, nur was der Export hergibt)
+ *   1. "Heute zu erledigen" - N ist genau die Zahl der Zeilen darunter. Jede Zeile: was, fuer
+ *      wen, eine Zeile Kontext, genau ein Knopf. To-dos (lib/todos.mjs), Nachfragen, bei denen
+ *      ein Mensch ran muss (lib/muster-nachfassen.mjs), neue Service-Anfragen, Lieferantenbelege
+ *      (Storno, Lieferschein ohne Haken) und "In Shopify noch offen" (einkauf/shopify-abgleich.mjs).
+ *   2. "Im Hintergrund" - was ohne uns laeuft, je eine ruhige Zeile zum Aufklappen:
+ *      automatische Muster-Nachfragen (die volle Karte aus heute/muster-nachfassen.mjs),
+ *      "wartet auf Lieferant/Kunde" (die Spalte "Wir sind dran" ist die Liste oben selbst)
+ *      und der Datenstand.
+ *   3. Laden und Montage (heute/laden.mjs) - nur, wenn verbunden. Kennzahlen nur beim Inhaber.
  *
- * Die frueheren eingeklappten "Weiteren Uebersichten" (Einkaufszahlen, Rueckrufe, Kundenfaelle,
- * Shop-Wache, Shop-Zahlen als Tabelle, GitHub-Arbeit) sind am 2026-10-12 entfallen: jede Zahl
- * darin stand schon oben, in "Kunden", "Einkauf" oder "Entwicklung" - teils mit anderem Stand.
+ * Entfallen am 2026-10-19: das zweite Suchfeld (die Suche oben findet auch Produkte), die
+ * Sprungfelder (die Zahlen stehen jetzt an den Sicht-Chips), die Spalte "Wir sind dran" und
+ * die leeren Bloecke "Laden nicht eingerichtet"/"Montage noch nicht verbunden".
  *
- * To-dos und Spalten werden nicht erfasst, sondern abgeleitet: lib/todos.mjs rechnet sie
- * aus den Antworten der vorhandenen Endpunkte. Diese Datei laedt und zeichnet nur.
+ * To-dos werden nicht erfasst, sondern abgeleitet - diese Datei laedt und zeichnet nur.
  */
 import {
-  leiteTodosAb, zaehleTodos, werWartet, sichtFuer, alterText, SICHTEN, SICHT_LABEL,
+  leiteTodosAb, zaehleTodos, werWartet, sichtFuer, sortiereTodos, alterText, SICHT_LABEL,
 } from '../lib/todos.mjs';
+import { versandLaeuft, teileNachfassen, nachfassTodo } from '../lib/muster-nachfassen.mjs';
+import { belegTodos } from '../lib/lieferbelege.mjs';
 import { state } from '../kern/zustand.mjs';
 import { esc, fmtDateTime, plural } from '../kern/helfer.mjs';
 import { darfAnsicht } from '../kern/router.mjs';
@@ -30,24 +31,28 @@ import { schnittJeBezahlter } from '../lib/kennzahlen.mjs';
 import { stoerungState } from '../bausteine/karten.mjs';
 import { ensureAktualisierung, aktualisierenButton, aktualisierungHealth } from '../bausteine/aktualisierung.mjs';
 import { einkauf, ensureEinkaufAuftragsstatus, ensureEinkaufKennzahlen, anzeigeWert } from './einkauf/auftragsfluss.mjs';
+import { belege, ensureBelege, laufStand } from './einkauf/belege.mjs';
 import { hinweisText } from './einkauf/bestellungen.mjs';
 import { kunden } from './kunden/gemeinsam.mjs';
 import { ensureKundenBestellungen } from './kunden/bestellungen.mjs';
 import { ensureKundenRueckrufe } from './kunden/rueckrufe.mjs';
 import { ensureKundenFaelle } from './kunden/faelle.mjs';
-import { heuteLaden, heuteMontage } from './heute/laden.mjs';
+import { ensureServiceanfragen } from './kunden/serviceanfragen.mjs';
+import { heuteLaden, heuteMontage, ladenKachel, ensureLadenZahlen } from './heute/laden.mjs';
 import { shopwache, ensureShopwache } from './shopwache.mjs';
 import { heuteDaten, ensureHeuteLieferanten, ensureHeuteAufgaben, ensureHeuteMusterTexte } from './heute/daten.mjs';
 import { musterNachfassenStand, musterNachfassenBlock } from './heute/muster-nachfassen.mjs';
-import { ensureShopifyAbgleich, shopifyAbgleichBlock } from './einkauf/shopify-abgleich.mjs';
+import { shopifyAbgleich, ensureShopifyAbgleich, shopifyAbgleichTodos } from './einkauf/shopify-abgleich.mjs';
 
 const TODOS_SICHTBAR = 7;      // "eine kurze Liste" - der Rest steht einen Klick weiter
-const SPALTE_SICHTBAR = 6;
+const SPALTE_SICHTBAR = 8;
 
-const SPALTEN = [
-  ['wir', 'Wir sind dran', 'bestellen, nachhaken, nachfassen', 'Wir'],
-  ['lieferant', 'Lieferant ist dran', 'Muster oder Ware bestellt', 'Lieferant'],
-  ['kunde', 'Kunde ist dran', 'prüft Muster, zahlt oder entscheidet', 'Kunde'],
+/** Sichten mit Chip beim Inhaber; "inhaber" (fruehere Fokus-Sicht) aus alten Links wird "alles". */
+const INHABER_SICHTEN = ['laden', 'website', 'alles'];
+
+const WARTE_SPALTEN = [
+  ['lieferant', 'Beim Lieferanten', 'Muster oder Ware bestellt'],
+  ['kunde', 'Beim Kunden', 'prüft Muster, zahlt oder entscheidet'],
 ];
 
 function benutzer() { return state.session?.benutzer || null; }
@@ -61,6 +66,7 @@ function quellen() {
     schwellen: heuteDaten.lieferanten?.schwellen,
     rueckrufe: kunden.rueckrufe?.verfuegbar ? kunden.rueckrufe.zeilen : [],
     faelle: kunden.faelle?.verfuegbar ? kunden.faelle.faelle : [],
+    serviceanfragen: kunden.serviceanfragen?.eintraege || [],
     aufgaben: heuteDaten.aufgaben?.verfuegbar ? heuteDaten.aufgaben.eintraege : [],
     // Entwicklungsaufgaben und Shop-Wache sind Ansichten des Inhabers - nur er bekommt daraus To-dos.
     freigaben: istInhaber() ? state.tasks : [],
@@ -75,69 +81,122 @@ function lieferantName(id) {
   return !id || id === 'UNGEKLAERT' ? 'Lieferant nicht zugeordnet' : anzeigeWert(id);
 }
 
+/** Link auf Heute mit geaendertem Parameter - die gewaehlte Sicht bleibt erhalten. */
+function heuteHref(key, value) {
+  const p = new URLSearchParams(state.route.params);
+  if (value) p.set(key, value); else p.delete(key);
+  const q = p.toString();
+  return `#/heute${q ? `?${q}` : ''}`;
+}
+
+/** Welche Sicht? Inhaber waehlt per Chip (Standard Laden, Inhaberentscheidung 2026-10-01), alle anderen bekommen ihre. */
+function gewaehlteSicht(aufgaben) {
+  if (!istInhaber()) return sichtFuer(benutzer(), aufgaben);
+  const roh = state.route.params.get('sicht');
+  const sicht = roh === 'inhaber' ? 'alles' : roh;
+  return INHABER_SICHTEN.includes(sicht) ? sicht : 'laden';
+}
+
+/**
+ * Nachfragen bei Musterkunden: wer muss selbst ran, was laeuft automatisch? Muster nachfassen
+ * macht der Laden (Inhaberentscheidung 2026-10-10) - in der Website-Sicht nicht.
+ */
+function nachfassStand(sicht) {
+  const alle = musterNachfassenStand();
+  const t = heuteDaten.musterTexte;
+  const laeuft = versandLaeuft(t);
+  // Solange die Antwort fehlt, ist offen, ob der Lauf verschickt - dann lieber nichts als To-do zeigen,
+  // was gleich von selbst rausgeht (die Zeile "Im Hintergrund" sagt "Lade …").
+  const teile = laeuft === null ? { mensch: [], automatisch: alle.offen, ohneWeg: [] } : teileNachfassen(alle.offen, { automatisch: laeuft });
+  const sichtbar = sicht !== 'website';
+  const lauf = t?.versand?.letzterLauf;
+  return {
+    alle: sichtbar ? alle : { offen: [], erledigt: [], abgemeldet: [] },
+    laeuft,
+    mensch: sichtbar ? teile.mensch.filter(e => !(laeuft === null && e.kontakt?.weg === 'email')) : [],
+    automatisch: sichtbar ? teile.automatisch : [],
+    ohneWeg: sichtbar ? teile.ohneWeg : [],
+    versandFehler: sichtbar && laeuft && lauf?.fehler > 0 ? lauf : null,
+    alleOffen: alle.offen,
+  };
+}
+
+/** Der Versandlauf hatte Fehler: das muss jemand ansehen - eine Zeile, nicht je Kunde. */
+function versandFehlerTodo(lauf) {
+  return {
+    id: 'nachfassen-versand', art: 'nachfassen_versand', bereich: 'laden', ton: 'warn', alterTage: null,
+    titel: `Muster-Nachfragen: ${plural(lauf.fehler, 'E-Mail', 'E-Mails')} nicht verschickt`,
+    kontext: `letzter Lauf ${fmtDateTime(lauf.am)} · ${lauf.verschickt || 0} verschickt`,
+    knopf: { text: 'Ansehen', href: heuteHref('mn', '1') },
+  };
+}
+
 export function viewHeute() {
   ensureKundenBestellungen(); ensureEinkaufAuftragsstatus(); ensureKundenRueckrufe(); ensureKundenFaelle();
-  ensureHeuteLieferanten(); ensureHeuteAufgaben(); ensureAktualisierung(); ensureShopifyAbgleich();
+  ensureServiceanfragen(); ensureHeuteLieferanten(); ensureHeuteAufgaben(); ensureAktualisierung();
+  ensureLadenZahlen(); ensureShopifyAbgleich();
   if (istInhaber()) ensureEinkaufKennzahlen();
-  // Die Shop-Wache liefert To-dos fuer den Inhaber - geladen wurde sie bisher nur nebenbei
-  // von der eingeklappten Zeile weiter unten.
   if (darfAnsicht('shopwache')) ensureShopwache();
+  if (darfAnsicht('einkauf')) ensureBelege();
 
   const q = quellen();
   const b = benutzer();
-  const eigeneSicht = sichtFuer(b, q.aufgaben);
-  // Umschalten darf nur der Inhaber - und er sieht dann alles in diesem Bereich, nicht nur Eigenes.
-  // Seine Startseite ist der Laden (Inhaberentscheidung 2026-10-01): Technisches (Freigaben,
-  // Website-Aufgaben, Shop-Wache) erscheint erst nach einem Klick auf "Website" oder "Alles".
-  const gewuenscht = state.route.params.get('sicht');
-  const sicht = istInhaber() ? (SICHTEN.includes(gewuenscht) ? gewuenscht : 'laden') : eigeneSicht;
-  const opt = { sicht, ich: heuteDaten.aufgaben?.ich || b?.kuerzel || b?.name || null, alle: istInhaber() && sicht !== 'inhaber', lieferantName, klartext: hinweisText };
-  const todos = leiteTodosAb(q, opt);
-  // Faellige Nachfragen bei Musterkunden: dort sind wir dran, nicht der Kunde. Ohne diesen
-  // Abgleich stand derselbe Kunde unter "Muster nachfassen" und zugleich unter "Kunde ist dran".
-  const musterAlle = musterNachfassenStand();
-  const wartet = werWartet(q, { ...opt, nachfassen: new Set(musterAlle.offen.map(e => e.orderId)) });
-  // Muster nachfassen macht der Laden (Inhaberentscheidung 2026-10-10) - in der Website-Sicht nicht.
-  const muster = sicht === 'website' ? { offen: [], erledigt: [] } : musterAlle;
-  if (muster.offen.length) ensureHeuteMusterTexte();
+  const sicht = gewaehlteSicht(q.aufgaben);
+  // Der Inhaber sieht in jeder Sicht alles darin - nicht nur, was ihm zugewiesen ist.
+  const opt = { sicht, ich: heuteDaten.aufgaben?.ich || b?.kuerzel || b?.name || null, alle: istInhaber(), lieferantName, klartext: hinweisText };
+  const nf = nachfassStand(sicht);
+  if (nf.alleOffen.length || nf.alle.erledigt.length) ensureHeuteMusterTexte();
+
+  // Nachfragen und Lieferantenbelege gehoeren zum Laden; die Laden-Zahl am Chip zaehlt sie
+  // auch, wenn gerade die Website-Sicht offen ist.
+  const nfLaden = sicht === 'website' ? nachfassStand('laden') : nf;
+  const eigeneLaden = [
+    ...nfLaden.mensch.map(e => nachfassTodo(e, { ansehenHref: heuteHref('mn', '1') })),
+    ...(nfLaden.versandFehler ? [versandFehlerTodo(nfLaden.versandFehler)] : []),
+    ...(darfAnsicht('einkauf') ? belegTodos(belege.daten) : []),
+    // Im Dashboard abgehakt, in Shopify offen (#1424) - je Bestellung eine Zeile mit "In Shopify nachbuchen".
+    ...shopifyAbgleichTodos(),
+  ];
+  const eigene = sicht === 'website' ? [] : eigeneLaden;
+  const liste = sortiereTodos([...leiteTodosAb(q, opt), ...eigene]);
+  // Chip-Zahlen zaehlen dasselbe wie die Liste: To-dos der Sicht plus Nachfragen und Belege (Laden).
+  const chips = istInhaber() ? chipZahlen(q, opt, eigeneLaden.length) : null;
+  const wartet = werWartet(q, { ...opt, nachfassen: new Set(nf.alleOffen.map(e => e.orderId)) });
 
   return `<div class="heute">
-    ${kopf(todos.length + muster.offen.length, sicht)}
-    ${todoListe(todos, muster.offen.length)}
-    ${/* Im Dashboard abgehakt, in Shopify offen - nur wenn es das gibt (einkauf/shopify-abgleich.mjs). */ ''}
-    ${sicht === 'website' ? '' : shopifyAbgleichBlock()}
-    <nav class="arbeitsplatz-schnellstart" aria-label="Arbeitsplatz: Aufgabe vorbereiten">
-      <a class="btn btn-sm" href="#/prozesse?prozess=email">E-Mail vorbereiten</a>
-      <a class="btn btn-sm" href="#/prozesse?prozess=angebot">Angebot vorbereiten</a>
-      <a class="btn btn-sm" href="#/prozesse?prozess=recherche">Recherche starten</a>
-    </nav>
-    ${istInhaber() && sicht !== 'laden' ? sprungfelder(mitMusterImLaden(zaehleTodos(q, opt), musterAlle.offen.length), sicht) : ''}
-    ${datenstandZeile(sicht)}
-    ${musterNachfassenBlock(muster)}
-    ${werWartetBlock(wartet)}
-    ${sicht === 'website' ? '' : heuteLaden()}
-    ${sicht === 'website' ? '' : heuteMontage()}
+    ${kopf(liste.length, sicht, chips)}
+    ${todoListe(liste)}
+    ${hintergrund(nf, wartet, sicht)}
+    ${state.route.params.get('mn') ? musterNachfassenBlock(nf.alle) : ''}
+    ${state.route.params.get('ww') ? werWartetBlock(wartet) : ''}
+    ${sicht === 'website' ? '' : ladenUndMontage()}
     ${istInhaber() ? kennzahlenBlock() : ''}
   </div>`;
 }
 
-function kopf(anzahl, sicht) {
+function chipZahlen(q, opt, laden) {
+  const z = zaehleTodos(q, opt);
+  return { laden: z.laden + laden, website: z.website, alles: z.alles + laden };
+}
+
+function kopf(anzahl, sicht, chips) {
   const datum = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
-  const umschalter = istInhaber()
-    ? `<span class="heute-sicht" role="group" aria-label="Ansicht wechseln">${['laden', 'website', 'inhaber'].map(k => `<a href="#/heute${k === 'laden' ? '' : `?sicht=${k}`}" ${k === sicht ? 'aria-current="true"' : ''}>${esc(k === 'inhaber' ? 'Alles' : SICHT_LABEL[k])}</a>`).join('')}</span>`
-    : `<span>Ansicht ${esc(SICHT_LABEL[sicht])}</span>`;
+  const umschalter = chips
+    ? `<span class="heute-sicht" role="group" aria-label="Bereich wählen">${INHABER_SICHTEN.map(k => `<a href="#/heute${k === 'laden' ? '' : `?sicht=${k}`}" ${k === sicht ? 'aria-current="true"' : ''}>${esc(SICHT_LABEL[k])} <b>${chips[k]}</b></a>`).join('')}</span>`
+    : `<span>Bereich ${esc(SICHT_LABEL[sicht] || sicht)}</span>`;
   return `<header class="heute-kopf">
     <div class="heute-zahl${anzahl ? '' : ' null'}" aria-hidden="true">${anzahl}</div>
     <div class="heute-titel">
-      <h1><span class="visually-hidden">${anzahl} </span>${anzahl === 1 ? 'offenes To-do' : 'offene To-dos'} für dich</h1>
+      <h1><span class="visually-hidden">${anzahl} </span>${anzahl === 1 ? 'Sache' : 'Sachen'} heute zu erledigen</h1>
       <p><span>${esc(datum)}</span>${umschalter}</p>
     </div>
-    ${/* data-param am Feld: render() rettet damit Text und Cursor ueber ein Neuzeichnen (lib/eingabe.mjs). */ ''}
-    <form class="heute-suche" role="search" onsubmit="event.preventDefault();var q=this.elements.q.value.trim();location.hash='#/lexikon'+(q?'?lq='+encodeURIComponent(q):'')">
-      <label class="visually-hidden" for="heuteSuche">Produkt nachschlagen</label>
-      <span class="lupe" aria-hidden="true">⌕</span>
-      <input id="heuteSuche" name="q" data-param="hq" type="text" inputmode="search" enterkeyhint="search" autocomplete="off" placeholder="Produkt nachschlagen …">
-    </form>
+    ${/* Direkte Einstiege in den Arbeitsplatz (#1390) - klein im Kopf statt zwischen To-dos und Rest. */ ''}
+    <nav class="heute-vorbereiten" aria-label="Vorbereiten">
+      <span>Vorbereiten:</span>
+      <a href="#/prozesse?prozess=email">E-Mail</a>
+      <a href="#/prozesse?prozess=angebot">Angebot</a>
+      <a href="#/prozesse?prozess=recherche">Recherche</a>
+    </nav>
   </header>`;
 }
 
@@ -146,52 +205,103 @@ function todoZeile(t, erste) {
   const klasse = `btn btn-sm${erste ? ' btn-primary' : ''}`;
   // k.schritt: Zeitleisten-Schritt direkt ausloesen (z. B. "Erledigt – Kunde hat Muster");
   // der Klick laeuft ueber zeitleisteKlick (ansichten/kunden/zeitleiste.mjs). Rolle "lesen" bekommt den Link.
-  const knopf = k.aufgabe
+  // k.nachbuchen: "In Shopify nachbuchen" direkt in der Zeile (shopifyAbgleichKlick, einkauf/shopify-abgleich.mjs).
+  const knopf = k.nachbuchen && !istNurLesend()
+    ? `<button type="button" class="${klasse}" data-shopify-nachbuchen="${esc(k.nachbuchen)}" title="Bucht diese Artikel in Shopify als versendet – ohne Mail an den Kunden">${esc(k.text)}</button>`
+    : k.aufgabe
     ? `<button type="button" class="${klasse}" data-open="${esc(k.aufgabe)}" data-primary="1">${esc(k.text)}</button>`
     : k.schritt && !istNurLesend()
       ? `<button type="button" class="${klasse}" data-zl-schritt="${esc(k.schritt.aktion)}" data-zl-order="${esc(k.schritt.orderId)}">${esc(k.text)}</button>`
-      : `<a class="${klasse}" href="${esc(k.href)}">${esc(k.schritt ? 'Ansehen' : k.text)}</a>`;
+      : `<a class="${klasse}" href="${esc(k.href)}">${esc(k.schritt || k.nachbuchen ? 'Ansehen' : k.text)}</a>`;
+  const alter = t.alterTage === null || t.alterTage === undefined ? '' : `<span class="heute-alter ${esc(t.ton)}">${esc(alterText(t.alterTage))}</span>`;
   return `<div class="heute-todo ${esc(t.ton)}" data-todo="${esc(t.art)}">
     <div class="heute-todo-text"><div class="t">${esc(t.titel)}</div><div class="s">${esc(t.kontext)}</div></div>
-    ${knopf}
+    ${alter}${knopf}
   </div>`;
 }
 
-function todoListe(todos, musterOffen = 0) {
+/**
+ * Welche Quellen fehlen? Dann ist die Liste unvollstaendig - "Alles erledigt" waere eine
+ * Behauptung ohne Grundlage (Codex-Audit Punkt 4).
+ */
+function fehlendeQuellen() {
+  const teile = [
+    [kunden.bestellungen, 'Bestellungen', d => d.verfuegbar === false],
+    [einkauf.auftragsstatus, 'Einkaufsstand', () => false],
+    [kunden.rueckrufe, 'Rückrufe', () => false],
+    [kunden.faelle, 'Kundenfälle', () => false],
+    [kunden.serviceanfragen, 'Service-Anfragen', () => false],
+    [heuteDaten.aufgaben, 'Aufgaben', () => false],
+    // Neue To-do-Quellen (#1427): Lieferantenbelege und Abgleich mit Shopify (Codex-Review #1432).
+    [darfAnsicht('einkauf') ? belege.daten : null, 'Lieferantenbelege', d => d.verfuegbar === false],
+    // Ein Fehlertext des Servers steht als eigene Zeile in der Liste; hier nur Abruf-Fehler und fehlende Daten.
+    [typeof shopifyAbgleich.daten?.fehler === 'string' ? null : shopifyAbgleich.daten, 'Abgleich mit Shopify', d => d.verfuegbar === false],
+  ];
+  return teile.filter(([d, , fehlt]) => d && (d.fehler || fehlt(d))).map(([, name]) => name);
+}
+
+function todoListe(todos) {
   // Solange die Bestelldaten noch laden, waere "Alles erledigt" eine Behauptung ohne Grundlage.
-  const laedt = !kunden.bestellungen || !einkauf.auftragsstatus || !heuteDaten.aufgaben;
-  const stoerung = [kunden.bestellungen, kunden.rueckrufe, heuteDaten.aufgaben].find(d => d?.fehler);
-  const ohneBestelldaten = kunden.bestellungen && !kunden.bestellungen.verfuegbar && !kunden.bestellungen.fehler;
+  const laedt = !kunden.bestellungen || !einkauf.auftragsstatus || !heuteDaten.aufgaben
+    || !shopifyAbgleich.daten || (darfAnsicht('einkauf') && !belege.daten);
+  const fehlen = fehlendeQuellen();
+  const stoerung = [kunden.bestellungen, kunden.rueckrufe, heuteDaten.aufgaben, kunden.serviceanfragen].find(d => d?.fehler);
   let inhalt;
   if (todos.length) {
     const oben = todos.slice(0, TODOS_SICHTBAR);
     const rest = todos.slice(TODOS_SICHTBAR);
     inhalt = oben.map((t, i) => todoZeile(t, i === 0)).join('')
-      + (rest.length ? `<details class="heute-rest"><summary>Alle anzeigen (+${rest.length})</summary>${rest.map(t => todoZeile(t, false)).join('')}</details>` : '');
-  } else if (laedt) inhalt = `<div class="heute-leer">Lade To-dos …</div>`;
-  // "Alles erledigt" stimmt nicht, solange weiter unten Musterkunden aufs Nachfassen warten.
-  else if (musterOffen) inhalt = `<div class="heute-leer">Sonst nichts – nur die Musterkunden weiter unten nachfassen.</div>`;
-  else inhalt =`<div class="heute-leer"><strong>Alles erledigt.</strong> Nichts wartet auf dich.</div>`;
-  return `<section class="heute-todos" aria-label="Offene To-dos">${inhalt}</section>
-    ${stoerung ? stoerungState(stoerung, 'Ein Teil der Daten') : ''}
-    ${ohneBestelldaten ? `<p class="heute-hinweis">Bestelldaten fehlen noch – To-dos aus Bestellungen können deshalb nicht erscheinen. ${esc(kunden.bestellungen.hinweis || '')}</p>` : ''}`;
+      + (rest.length ? `<details class="heute-rest"><summary>${TODOS_SICHTBAR} von ${todos.length} – alle anzeigen</summary>${rest.map(t => todoZeile(t, false)).join('')}</details>` : '');
+  } else if (laedt) inhalt = `<div class="heute-leer">Lade …</div>`;
+  else if (fehlen.length) inhalt = `<div class="heute-leer">Gerade nichts zu sehen – aber die Liste ist unvollständig.</div>`;
+  else inhalt = `<div class="heute-leer"><strong>Alles erledigt.</strong> Nichts wartet auf dich.</div>`;
+  return `<section class="heute-todos" aria-label="Heute zu erledigen">${inhalt}</section>
+    ${fehlen.length ? `<p class="heute-unvollstaendig" role="status"><b>Liste unvollständig:</b> ${esc(fehlen.join(', '))} ${fehlen.length === 1 ? 'konnte' : 'konnten'} nicht geladen werden. ${kunden.bestellungen?.verfuegbar === false && kunden.bestellungen.hinweis ? esc(kunden.bestellungen.hinweis) : ''}</p>` : ''}
+    ${stoerung ? stoerungState(stoerung, 'Ein Teil der Daten') : ''}`;
 }
 
 /**
- * Muster nachfassen macht der Laden und zaehlt dort in der Ueberschrift mit.
- * Ohne sie stand im Sprungfeld "2 offen im Laden", die Laden-Ansicht zeigte 5.
+ * "Im Hintergrund": was ohne uns laeuft - je eine ruhige Zeile, aufklappbar ueber einen
+ * Routenparameter (mn = Nachfragen, ww = wartet auf andere), damit ein Neuzeichnen nichts zuklappt.
  */
-function mitMusterImLaden(zahlen, musterOffen) {
-  return { ...zahlen, laden: (zahlen.laden || 0) + musterOffen };
+function hintergrund(nf, wartet, sicht) {
+  const zeilen = [];
+  const auf = key => Boolean(state.route.params.get(key));
+  const umschalten = (key, text) => `<button type="button" class="heute-hg-knopf" data-param="${key}" data-value="${auf(key) ? '' : '1'}" aria-expanded="${auf(key)}">${auf(key) ? 'Zuklappen' : text}</button>`;
+
+  if (sicht !== 'website' && (nf.alleOffen.length || nf.alle.erledigt.length || nf.alle.abgemeldet?.length)) {
+    const lauf = heuteDaten.musterTexte?.versand?.letzterLauf;
+    const teile = [];
+    if (nf.laeuft === null) teile.push('Lade …');
+    else if (nf.laeuft) {
+      teile.push(nf.automatisch.length ? `${plural(nf.automatisch.length, 'Nachfrage geht', 'Nachfragen gehen')} beim nächsten Lauf von selbst per E-Mail raus` : 'Nichts fällig');
+      if (lauf?.am) teile.push(`letzter Lauf ${fmtDateTime(lauf.am)} (${lauf.verschickt || 0} verschickt)`);
+    } else teile.push(nf.mensch.length ? 'Automatischer Versand läuft nicht – fällige Nachfragen stehen oben in der Liste' : 'Nichts fällig · automatischer Versand läuft nicht');
+    if (nf.ohneWeg.length) teile.push(`${nf.ohneWeg.length} ohne E-Mail`);
+    if (nf.alle.erledigt.length) teile.push(`${nf.alle.erledigt.length} in den letzten Tagen erledigt`);
+    zeilen.push(`<div class="heute-hg-zeile"><span class="heute-hg-name">Muster-Nachfragen</span><span class="heute-hg-text">${esc(teile.join(' · '))}</span>${umschalten('mn', 'Ansehen')}</div>`);
+  }
+
+  const lieferant = wartet.lieferant.length;
+  const kunde = wartet.kunde.length;
+  if (lieferant || kunde) {
+    zeilen.push(`<div class="heute-hg-zeile"><span class="heute-hg-name">Wartet auf andere</span><span class="heute-hg-text">${esc([lieferant ? `${lieferant} beim Lieferanten` : null, kunde ? `${kunde} beim Kunden` : null].filter(Boolean).join(' · '))}</span>${umschalten('ww', 'Ansehen')}</div>`);
+  }
+
+  if (sicht !== 'website' && darfAnsicht('einkauf') && belege.daten) {
+    // Ablage nicht lesbar: die Zeile bleibt da und sagt es - sonst verschwaende die Pruefung still.
+    const l = belege.daten.verfuegbar ? laufStand(belege.daten) : { text: `Belege nicht lesbar: ${belege.daten.hinweis || 'unbekannter Fehler'}`, ton: 'warn' };
+    zeilen.push(`<div class="heute-hg-zeile${l.ton ? ` ${l.ton}` : ''}"><span class="heute-hg-name">Lieferantenpostfach</span><span class="heute-hg-text">${esc(l.text)}</span><a class="heute-hg-knopf" href="#/einkauf?tab=belege">Belege</a></div>`);
+  }
+
+  zeilen.push(datenstandZeile(sicht));
+  return `<section class="heute-hintergrund" aria-labelledby="heuteHg">
+    <h2 id="heuteHg">Im Hintergrund</h2>
+    ${zeilen.join('')}
+  </section>`;
 }
 
-/** Inhaber: wie viel liegt im Laden, wie viel bei der Website - ein Klick wechselt die Ansicht. */
-function sprungfelder(zahlen, sicht) {
-  const feld = (k, n, text) => `<a href="#/heute${k === 'laden' ? '' : `?sicht=${k}`}" class="${n ? '' : 'null'}" ${sicht === k ? 'aria-current="true"' : ''}><b>${n}</b> ${esc(text)} <span aria-hidden="true">›</span></a>`;
-  return `<nav class="heute-sprung" aria-label="Offen im Team">${feld('laden', zahlen.laden, 'offen im Laden')}${feld('website', zahlen.website, 'offen bei Website')}</nav>`;
-}
-
-/** Datenstand: eine kleine Zeile unter den To-dos statt einer Warnleiste ueber allem. */
+/** Datenstand: ruhig, solange alles stimmt; auffaellig nur bei veralteten Daten oder Fehlern. */
 function datenstandZeile(sicht) {
   const a = einkauf.aktualisierung;
   if (!a) return '';
@@ -205,8 +315,9 @@ function datenstandZeile(sicht) {
     ? `${plural(probleme.length, 'Datenquelle', 'Datenquellen')} veraltet oder mit Fehler${stand ? ` · ${stand}` : ''}`
     : unbelegt.length ? `${plural(unbelegt.length, 'Stand', 'Stände')} noch nicht belegt${stand ? ` · ${stand}` : ''}`
     : `Daten aktuell${stand ? ` · ${stand}` : ''}`;
-  return `<div class="heute-datenstand${probleme.length ? ' warn' : ''}" role="status">
-    <span class="punkt" aria-hidden="true"></span><span>${esc(text)}${auffaellig.length && darfAnsicht('insights') ? ' · <a href="#/insights">ansehen</a>' : ''}</span>
+  return `<div class="heute-hg-zeile heute-datenstand${probleme.length ? ' warn' : ''}" role="status">
+    <span class="heute-hg-name"><span class="punkt" aria-hidden="true"></span>Daten</span>
+    <span class="heute-hg-text">${esc(text)}${auffaellig.length && darfAnsicht('insights') ? ' · <a href="#/insights">ansehen</a>' : ''}</span>
     ${/* Der erklaerende Satz nur, wenn es etwas zu tun gibt - bei aktuellen Daten waere er Rauschen. */ ''}
     ${aktualisierenButton({ mitHinweis: probleme.length > 0 && sicht !== 'laden' })}
   </div>`;
@@ -224,23 +335,34 @@ function wartZeile(z) {
   </a>${fertig}</div>`;
 }
 
+/** Aufgeklappt: wer wartet beim Lieferanten, wer beim Kunden. "Wir sind dran" ist die Liste oben. */
 function werWartetBlock(w) {
-  const gewaehlt = SPALTEN.some(([k]) => k === state.route.params.get('spalte')) ? state.route.params.get('spalte') : 'wir';
-  const laedt = !kunden.bestellungen || !einkauf.auftragsstatus;
   const spalte = ([k, titel, unter]) => {
     const liste = w[k];
-    return `<div class="heute-spalte${k === gewaehlt ? ' gewaehlt' : ''}">
+    return `<div class="heute-spalte">
       <div class="heute-spalte-kopf"><b>${liste.length}</b><div><span>${esc(titel)}</span><small>${esc(unter)}</small></div></div>
-      ${liste.length ? liste.slice(0, SPALTE_SICHTBAR).map(wartZeile).join('') : `<div class="heute-leer klein">${laedt ? 'Lade …' : 'Niemand.'}</div>`}
+      ${liste.length ? liste.slice(0, SPALTE_SICHTBAR).map(wartZeile).join('') : '<div class="heute-leer klein">Niemand.</div>'}
       ${liste.length > SPALTE_SICHTBAR ? `<a class="heute-spalte-mehr" href="#/kunden?tab=bestellungen">+${liste.length - SPALTE_SICHTBAR} weitere</a>` : ''}
     </div>`;
   };
   return `<section class="heute-block" aria-labelledby="heuteWartet">
-    <div class="heute-block-kopf"><h2 id="heuteWartet">Wer wartet auf was</h2><span>${plural(w.gesamt, 'laufender Vorgang', 'laufende Vorgänge')}</span><a href="#/kunden?tab=bestellungen">Alle</a></div>
-    ${w.gesamt ? `<div class="heute-balken" aria-hidden="true">${SPALTEN.map(([k]) => `<i style="flex:${w[k].length || 0.2}"></i>`).join('')}</div>` : ''}
-    <div class="heute-spalten-wahl" role="tablist">${SPALTEN.map(([k, , , kurz]) => `<button type="button" role="tab" data-param="spalte" data-value="${k === 'wir' ? '' : k}" aria-selected="${k === gewaehlt}">${esc(kurz)} <b>${w[k].length}</b></button>`).join('')}</div>
-    <div class="heute-spalten">${SPALTEN.map(spalte).join('')}</div>
+    <div class="heute-block-kopf"><h2 id="heuteWartet">Wartet auf andere</h2><span>nichts für uns zu tun, bis sich etwas tut</span><a href="#/kunden?tab=bestellungen">Alle Bestellungen</a></div>
+    <div class="heute-spalten zwei">${WARTE_SPALTEN.map(spalte).join('')}</div>
   </section>`;
+}
+
+/**
+ * Laden und Montage zeigen Zahlen aus den Apps - aber nur, wenn sie verbunden sind. Ein Block
+ * "Nicht eingerichtet" auf der Startseite war Rauschen; eine Stoerung bleibt sichtbar.
+ */
+function ladenUndMontage() {
+  const d = ladenKachel.daten;
+  if (!d) return '';
+  const verbunden = d.eingerichtet || d.fehler;
+  return [
+    verbunden ? heuteLaden() : '',
+    verbunden && (d.montage || d.fehler) ? heuteMontage() : '',
+  ].join('');
 }
 
 /** Schnitt je bezahlter Bestellung fuer die Kachel; ohne Bestellung mit Betrag ein Strich. */
