@@ -2,6 +2,25 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-19 · Prüfwerkzeug: Datenkopie verschwindet bei jedem Ende (#1441)
+
+- **Geändert:** Mit `dashboard:pruefen -- --offen` endet das Prüf-Skript nach dem Bericht; das ausgegebene
+  `kill <pid>` traf nur den Server, der von der Datenkopie nichts wusste – sie blieb jedes Mal im Temp-Ordner
+  (16 Kopien mit Kunden- und Einkaufsdaten, 13.–19.10.). Jetzt löscht der Server seine Kopie selbst, sobald er
+  endet (`TP_DASHBOARD_DATENKOPIE`, neues Modul `scripts/dashboard-datenkopie.mjs`). Ein Fehler im Lauf mit
+  `--offen` ließ bisher Instanz und Kopie ohne ausgegebene PID stehen, jetzt wird beides beendet. Beim Start
+  löscht `dashboard:pruefen` Kopien ohne laufenden Prozess, die älter als einen Tag sind (Prozess-Prüfung über
+  `ps axeww`, unter Windows wird nichts gelöscht). Gelöscht wird nur ein echter Ordner
+  `tp-dashboard-daten-XXXXXX` direkt im Temp-Ordner; die verlinkten Exporte (Lexikon usw.) bleiben.
+- **Getestet:** `docs/ai-dashboard/tests/datenkopie.test.mjs` (5 Tests, darunter echter Server + `SIGTERM`; ohne
+  den Fix rot). Reproduktion `--offen --ansichten heute --breiten 1440`, dann `kill <pid>`: vorher Kopie mit
+  31 Einträgen übrig, jetzt weg. Fehler im Lauf mit `--offen`, Strg-C mit und ohne `--offen` (ganze
+  Prozessgruppe), normaler Lauf: keine Kopie, kein Prüf-Server übrig. Die 16 alten Kopien gelöscht, nachdem
+  `lsof` und `ps` keinen Prozess darauf zeigten.
+- **Risiken:** `kill -9` auf den Server lässt die Kopie weiter liegen, bis ein Lauf sie nach einem Tag findet.
+  Ohne `--aus` bleiben die Screenshots (zeigen ebenfalls echte Daten) in `tp-dashboard-pruefung-*` liegen.
+- **Nächste Stufe:** Screenshot-Ordner ohne `--aus` ebenfalls nach einigen Tagen wegräumen.
+
 ## 2026-10-19 · Übersicht: „Heute“ als eine Liste, Lieferantenbelege aus dem Postfach (#1427)
 
 - **Geändert:** Inhaber 19.10. „immer noch zu unübersichtlich … Schnittstelle zu Gmail“; Audit und

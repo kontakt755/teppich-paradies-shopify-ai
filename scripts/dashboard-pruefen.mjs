@@ -8,6 +8,7 @@
  *   npm run dashboard:pruefen -- --breiten 390,1440    # nur diese Fensterbreiten
  *   npm run dashboard:pruefen -- --dunkel               # dunkle Ansicht (Standard: hell)
  *   npm run dashboard:pruefen -- --offen                # Instanz nach dem Lauf offen lassen
+ *                                                       # (beenden mit dem ausgegebenen kill <pid>)
  *   npm run dashboard:pruefen -- --rollen               # zusaetzlich als Inhaber, Mitarbeiter und "lesen"
  *
  * Ablauf:
@@ -33,6 +34,11 @@
  *
  * Klicktests (Status setzen, Dialoge) gehoeren ebenfalls gegen diese Kopie - mit --offen
  * bleibt die Instanz dafuer stehen; Adresse und Passwort stehen dann in der Ausgabe.
+ * Beendet wird sie mit dem ausgegebenen `kill <pid>`: der Server loescht die Datenkopie
+ * dann selbst (scripts/dashboard-datenkopie.mjs). Ohne --offen, bei einem Fehler im Lauf
+ * und bei Strg-C verschwinden Instanz und Kopie sofort. Kopien, die ein harter Abbruch
+ * (kill -9, Absturz) liegen liess, raeumt der naechste Lauf weg, sobald sie einen Tag alt
+ * sind und kein Prozess mehr darauf laeuft.
  * Die Instanz hat nie einen Shopify-Zugang (auch nicht aus .env.local): Versand buchen und
  * Sonderposten abbuchen melden dort "kein Zugang", statt den echten Shop zu veraendern.
  */
@@ -45,6 +51,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { benutzerAnlegen, schreibeBenutzer } from '../operations/lib/benutzer.mjs';
+import { datenkopieAnlegen, datenkopieLoeschen, verwaisteDatenkopien } from './dashboard-datenkopie.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..');
@@ -119,15 +126,13 @@ function erzeugteDateien() {
   }
 }
 
-function datenKopie(quelle) {
-  const ziel = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-dashboard-daten-'));
+function kopieFuellen(quelle, ziel) {
   for (const n of NUR_LESEN) if (fs.existsSync(path.join(quelle, n))) fs.symlinkSync(path.join(quelle, n), path.join(ziel, n));
   for (const n of KOPIEREN) {
     if (!fs.existsSync(path.join(quelle, n))) continue;
     fs.mkdirSync(path.dirname(path.join(ziel, n)), { recursive: true });
     fs.cpSync(path.join(quelle, n), path.join(ziel, n), { recursive: true });
   }
-  return ziel;
 }
 
 async function warteAufServer(url, ms = 20_000) {
@@ -146,8 +151,26 @@ async function main() {
   catch { throw new Error('puppeteer fehlt - im Repository-Root `npm install` ausfuehren (Worktree: node_modules verlinken).'); }
 
   erzeugteDateien();
+  const verwaist = verwaisteDatenkopien();
+  for (const d of verwaist) datenkopieLoeschen(d);
+  if (verwaist.length) console.log(`${verwaist.length} verwaiste Datenkopie(n) frueherer Laeufe geloescht.`);
   const quelle = process.env.TP_PRIVAT_DIR || path.join(os.homedir(), 'teppich-paradies-analyse');
-  const daten = datenKopie(quelle);
+  const daten = datenkopieAnlegen();
+  // Die Instanz bleibt nur nach einem fertigen Lauf mit --offen stehen. Jeder andere Ausgang
+  // (Fehler im Lauf, Strg-C, kill, geschlossenes Terminal) beendet sie und loescht die Kopie.
+  // Frueher blieb bei --offen und einem Fehler beides stehen - ohne dass die PID ausgegeben wurde.
+  let instanzBleibt = false;
+  let server = null;
+  const aufraeumen = () => {
+    if (instanzBleibt) return;
+    server?.kill();
+    datenkopieLoeschen(daten);
+  };
+  process.on('exit', aufraeumen);
+  for (const [signal, code] of [['SIGINT', 130], ['SIGTERM', 143], ['SIGHUP', 129]]) {
+    process.on(signal, () => { instanzBleibt = false; process.exit(code); });
+  }
+  kopieFuellen(quelle, daten);
   const aus = args.aus || fs.mkdtempSync(path.join(os.tmpdir(), 'tp-dashboard-pruefung-'));
   fs.mkdirSync(aus, { recursive: true });
   const port = await freierPort();
@@ -162,26 +185,16 @@ async function main() {
   // sonst echte Sendungen samt Versandmail, "Im Laden verkauft" echten Bestand. Ohne Zugang
   // melden beide Aktionen "kein Zugang" - der Schritt im Control Center laesst sich trotzdem pruefen.
   const ohneShopify = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^(SHOPIFY_|LADEN_ZAHLEN_|AUFTRAGS_APP_URL$|WERKBANK_URL$)/.test(k)));
-  const server = spawn(process.execPath, [path.join(REPO, 'scripts/serve-dashboard.mjs')], {
+  // TP_DASHBOARD_DATENKOPIE: der Server loescht die Kopie selbst, wenn er endet. Mit --offen
+  // ist dieser Prozess dann laengst beendet; das ausgegebene `kill <pid>` trifft nur den Server.
+  server = spawn(process.execPath, [path.join(REPO, 'scripts/serve-dashboard.mjs')], {
     cwd: REPO,
-    env: { ...ohneShopify, TP_TAILSCALE_PRUEFEN: '0', TP_ENV_LOCAL: path.join(daten, 'kein-shopify-zugang.env.local'), PORT: String(port), TP_DASHBOARD_HOST: '127.0.0.1', TP_PRIVAT_DIR: daten, TP_DASHBOARD_PASSWORT: passwort },
+    env: { ...ohneShopify, TP_TAILSCALE_PRUEFEN: '0', TP_ENV_LOCAL: path.join(daten, 'kein-shopify-zugang.env.local'), PORT: String(port), TP_DASHBOARD_HOST: '127.0.0.1', TP_PRIVAT_DIR: daten, TP_DASHBOARD_DATENKOPIE: daten, TP_DASHBOARD_PASSWORT: passwort },
     stdio: ['ignore', logFd, logFd],
     detached: args.offen,
   });
   if (args.offen) server.unref();
   const serverLog = () => { try { return fs.readFileSync(logDatei, 'utf8'); } catch { return ''; } };
-
-  const aufraeumen = () => {
-    if (!args.offen) { server.kill(); fs.rmSync(daten, { recursive: true, force: true }); }
-  };
-  // Auch bei Fehlern im Lauf: Instanz beenden und Datenkopie loeschen (ausser mit --offen).
-  // Abbruch von aussen raeumt immer auf, auch mit --offen. Bisher nur bei Strg-C (SIGINT):
-  // ein `kill` oder ein geschlossenes Terminal liess Pruef-Instanz und Datenkopie (mit
-  // Kundendaten) im Temp-Ordner zurueck - am 2026-10-12 lief eine solche Instanz seit Stunden.
-  process.on('exit', aufraeumen);
-  for (const [signal, code] of [['SIGINT', 130], ['SIGTERM', 143], ['SIGHUP', 129]]) {
-    process.on(signal, () => { args.offen = false; process.exit(code); });
-  }
 
   // Wegwerf-Zugaenge je Rolle - nur in der Datenkopie, nie in der echten benutzer.json.
   const zugaenge = [];
@@ -301,7 +314,8 @@ async function main() {
     console.log(`Ueberlauf ${String(b).padStart(4)} px: ${schlecht.length ? `${schlecht.length} von ${teil.length} Ansichten, groesster ${Math.max(...teil.map(e => e.ueberlauf))} px` : `0 px auf allen ${teil.length} Ansichten`}`);
   }
   console.log(`\nScreenshots und bericht.json: ${aus}`);
-  if (args.offen) console.log(`Pruef-Instanz laeuft weiter: ${basis}  (Passwort: ${passwort}, Daten-Kopie: ${daten}) - beenden mit kill ${server.pid}`);
+  instanzBleibt = args.offen;
+  if (args.offen) console.log(`Pruef-Instanz laeuft weiter: ${basis}  (Passwort: ${passwort}, Daten-Kopie: ${daten}) - beenden mit kill ${server.pid} (loescht auch die Daten-Kopie)`);
   if (args.offen && args.rollen) console.log(`Wegwerf-Zugaenge je Rolle: ${path.join(daten, 'pruef-zugaenge.json')}`);
   const log = serverLog();
   if (/Error|Fehler/.test(log)) console.log(`\nServer-Ausgabe:\n${log.trim()}`);
@@ -309,6 +323,7 @@ async function main() {
   process.exitCode = schlecht ? 1 : 0;
   // Der Server-Kindprozess haelt die Ereignisschleife offen; ohne ausdrueckliches Beenden
   // feuert 'exit' nie und der Lauf blieb nach dem Bericht haengen (Instanz und Kopie blieben).
+  // Mit --offen tut der Aufruf nichts.
   aufraeumen();
 }
 

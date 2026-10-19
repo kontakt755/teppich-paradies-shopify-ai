@@ -1,0 +1,104 @@
+/**
+ * Wegwerf-Kopie des Privatordners fuer `npm run dashboard:pruefen`.
+ *
+ * Die Pruef-Instanz laeuft auf einer Kopie von $TP_PRIVAT_DIR (Kunden- und
+ * Einkaufsdaten) im Temp-Ordner. Mit --offen endet das Pruef-Skript nach dem
+ * Bericht, der Server laeuft weiter - die ausgegebene Zeile `kill <pid>` trifft
+ * dann nur den Server. Der wusste bis 2026-10-19 nichts von der Kopie, sie blieb
+ * jedes Mal liegen (16 Kopien im Temp-Ordner). Jetzt loescht der Server seine
+ * Kopie selbst, sobald er endet, und dashboard:pruefen raeumt beim Start weg, was
+ * ein harter Abbruch (kill -9, Absturz, Neustart des Rechners) uebrig liess.
+ *
+ * Geloescht wird nur, was eindeutig eine solche Kopie ist: ein echtes Verzeichnis
+ * (kein Link) direkt im Temp-Ordner mit dem Namen tp-dashboard-daten-XXXXXX. Die
+ * verlinkten Exporte darin (Lexikon, Lieferanten ...) zeigen auf den echten
+ * Privatordner; fs.rmSync entfernt nur die Links, nie ihr Ziel.
+ */
+
+import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
+const PRAEFIX = 'tp-dashboard-daten-';
+// mkdtemp haengt genau sechs Zeichen an.
+const NAME = /^tp-dashboard-daten-[A-Za-z0-9]{6}$/;
+const EIN_TAG_MS = 24 * 60 * 60 * 1000;
+
+export function datenkopieAnlegen(tmp = os.tmpdir()) {
+  return fs.mkdtempSync(path.join(tmp, PRAEFIX));
+}
+
+/** Nur ein echtes Verzeichnis tp-dashboard-daten-XXXXXX direkt im Temp-Ordner. */
+export function istDatenkopie(pfad, tmp = os.tmpdir()) {
+  if (!pfad || !NAME.test(path.basename(pfad))) return false;
+  try {
+    if (!fs.lstatSync(pfad).isDirectory()) return false;
+    return fs.realpathSync(path.dirname(path.resolve(pfad))) === fs.realpathSync(tmp);
+  } catch {
+    return false;
+  }
+}
+
+export function datenkopieLoeschen(pfad, tmp = os.tmpdir()) {
+  if (!istDatenkopie(pfad, tmp)) return false;
+  fs.rmSync(pfad, { recursive: true, force: true });
+  return true;
+}
+
+/**
+ * Fuer den Server der Pruef-Instanz: loescht die Kopie, sobald der Prozess endet -
+ * bei `kill` (SIGTERM), Strg-C (SIGINT), geschlossenem Terminal (SIGHUP) und bei
+ * process.exit (z. B. Port belegt). Ohne eigenen Handler beendet Node einen Prozess
+ * bei SIGTERM sofort, ohne 'exit' auszuloesen.
+ *
+ * Greift nur, wenn TP_DASHBOARD_DATENKOPIE gesetzt ist, auf denselben Ordner zeigt
+ * wie TP_PRIVAT_DIR und dieser eine Kopie im Temp-Ordner ist. Der echte Dienst
+ * setzt die Variable nie; zeigt sie woanders hin, wird nichts geloescht.
+ */
+export function beimEndeLoeschen({ env = process.env, proc = process, tmp = os.tmpdir() } = {}) {
+  const pfad = env.TP_DASHBOARD_DATENKOPIE;
+  if (!pfad) return null;
+  if (path.resolve(pfad) !== path.resolve(env.TP_PRIVAT_DIR || '') || !istDatenkopie(pfad, tmp)) {
+    console.error('[dashboard] TP_DASHBOARD_DATENKOPIE ist kein TP_PRIVAT_DIR im Temp-Ordner - wird beim Beenden nicht geloescht.');
+    return null;
+  }
+  proc.on('exit', () => { try { datenkopieLoeschen(pfad, tmp); } catch { /* beim Beenden nicht mehr zu melden */ } });
+  for (const [signal, code] of [['SIGINT', 130], ['SIGTERM', 143], ['SIGHUP', 129]]) {
+    proc.on(signal, () => proc.exit(code));
+  }
+  return pfad;
+}
+
+/**
+ * Befehlszeilen samt Umgebung aller eigenen Prozesse (macOS und Linux). Ein Server
+ * der Pruef-Instanz traegt dort TP_PRIVAT_DIR=<kopie>. null, wenn sich das nicht
+ * feststellen laesst (Windows, ps fehlt) - dann wird nichts geloescht.
+ */
+export function laufendeProzesse() {
+  if (process.platform === 'win32') return null;
+  const r = spawnSync('ps', ['axeww', '-o', 'command='], { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
+  return r.status === 0 && r.stdout ? r.stdout : null;
+}
+
+/**
+ * Kopien frueherer Laeufe ohne laufenden Prozess, die aelter als `maxAlterMs` sind.
+ * Das Alter schuetzt einen parallelen Lauf, der gerade kopiert und seinen Server
+ * noch nicht gestartet hat. Gemessen ab dem Anlegen: die Aenderungszeit der alten
+ * Kopien sprang jede Nacht um 03:35, obwohl kein Prozess mehr darauf lief.
+ */
+export function verwaisteDatenkopien({ tmp = os.tmpdir(), jetzt = Date.now(), maxAlterMs = EIN_TAG_MS, prozesse = laufendeProzesse } = {}) {
+  const laufend = prozesse();
+  if (laufend == null) return [];
+  let namen;
+  try { namen = fs.readdirSync(tmp).filter(n => NAME.test(n)); } catch { return []; }
+  return namen.map(n => path.join(tmp, n)).filter(p => {
+    if (laufend.includes(path.basename(p)) || !istDatenkopie(p, tmp)) return false;
+    try {
+      const st = fs.statSync(p);
+      return jetzt - (st.birthtimeMs || st.mtimeMs) > maxAlterMs;
+    } catch {
+      return false;
+    }
+  });
+}
