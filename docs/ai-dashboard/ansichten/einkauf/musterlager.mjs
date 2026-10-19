@@ -195,17 +195,18 @@ function sperrenOffenHtml(liste) {
   const lesend = istNurLesend();
   return `<section class="ml-sperren ml-sperren-offen" aria-labelledby="mlSperrenOffen">
     <h2 class="section-title" id="mlSperrenOffen">Im Shop sperren <span class="ml-warn">${liste.length}</span></h2>
-    <p class="small muted">Diese Farben sind nicht verfügbar, im Shop aber noch als Muster bestellbar. In Shopify die Variante öffnen und dort „Bestand verfolgen“ an, Bestand 0, „Verkauf bei Nichtverfügbarkeit“ aus – oder „Erneut sperren“.</p>
+    <p class="small muted">Für diese Farben ist die Sperre im Shop noch nicht bestätigt. In Shopify die Variante öffnen und dort „Bestand verfolgen“ an, Bestand 0, „Verkauf bei Nichtverfügbarkeit“ aus – oder „Erneut sperren“.</p>
     <ul class="ml-liste">${liste.map(s => `<li class="ml-zeile ml-knapp">
       <div class="ml-was">
         <div class="ml-farbe">${esc(sperrName(s))}</div>
         <div class="ml-angaben"><span>${esc(s.sku)}</span><span>seit ${esc(fmtDate(s.seit))}${s.von ? ` · ${esc(s.von)}` : ''}</span>${auftraegeText(s) ? `<span>${esc(auftraegeText(s))}</span>` : ''}</div>
         ${s.fehler ? `<div class="small ml-warn">${esc(s.fehler)}</div>` : ''}
+        ${s.freigabeFehler ? `<div class="small ml-warn">Freigabe hat nicht geklappt: ${esc(s.freigabeFehler)}</div>` : ''}
       </div>
       <div class="ml-aktionen">
         <a class="btn btn-sm" href="${esc(s.adminLink)}" target="_blank" rel="noopener">In Shopify öffnen</a>
         ${lesend ? '' : `${s.fehlerGrund === 'keine-mustervariante' ? '' : `<button type="button" class="btn btn-sm" data-ms-nachholen="${esc(s.sku)}">Erneut sperren</button>`}
-        <button type="button" class="btn btn-sm btn-ghost" data-ms-frei="${esc(s.sku)}" title="Die Farbe ist wieder da – aus der Liste nehmen">Wieder verfügbar</button>`}
+        <button type="button" class="btn btn-sm btn-ghost" data-ms-frei="${esc(s.sku)}" title="${s.shopPruefen ? 'Die Farbe ist wieder da – im Shop freigeben und prüfen' : 'Die Farbe ist wieder da – aus der Liste nehmen'}">Wieder verfügbar</button>`}
       </div>
     </li>`).join('')}</ul>
   </section>`;
@@ -422,7 +423,7 @@ export function einkaufKlickMusterlager(ev) {
     const sku = frei ? ms.dataset.msFrei : ms.dataset.msNachholen;
     const alle = [...(musterlager.daten?.sperren?.gesperrt || []), ...(musterlager.daten?.sperren?.offen || [])];
     const s = alle.find(x => x.sku === sku);
-    if (frei && s?.imShop && !window.confirm(`${sperrName(s)} wieder verfügbar? Das Muster ist dann im Shop sofort wieder bestellbar.`)) return true;
+    if (frei && (s?.shopPruefen || s?.imShop) && !window.confirm(`${sperrName(s)} wieder verfügbar? Das Muster ist dann im Shop sofort wieder bestellbar.`)) return true;
     ms.disabled = true;
     schreibeSperre({ aktion: frei ? 'freigeben' : 'nachholen', sku }).then(r => {
       if (!r.ok) { toast(r.text, 'crit', { dauer: 9000 }); ms.disabled = false; return; }

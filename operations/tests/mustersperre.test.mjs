@@ -160,3 +160,117 @@ test('Freigeben: zurueck auf den Stand vor der Sperre - ohne Verfolgung wieder o
   assert.deepEqual(freigabeZiel({ tracked: true, policy: 'DENY', menge: 4 }), { tracked: true, policy: 'DENY', menge: 4 });
   assert.deepEqual(freigabeZiel({ tracked: true, policy: 'CONTINUE', menge: -2 }), { tracked: true, policy: 'CONTINUE', menge: -2 });
 });
+
+test('Sperren: lokaler Bestand 0, aber global bestellbar -> auch wiederholt kein bestaetigter Erfolg', async () => {
+  const a = attrappe({ varianten: [variante('M-MEHRORT', { tracked: true })] });
+  const proxy = { async execute(q, v) {
+    const d = await a.proxy.execute(q, v);
+    for (const n of d.productVariants?.nodes || []) n.availableForSale = true;
+    return d;
+  } };
+  for (let i = 0; i < 2; i++) {
+    await assert.rejects(sperreImShop(proxy, { sku: 'M-MEHRORT' }), e => e.grund === 'gegenprobe' && /Standorte/.test(e.message));
+  }
+  assert.equal(a.mutationen().length, 0, 'keine anderen Standorte still veraendern');
+  assert.equal((await sperreImShop(a.proxy, { sku: 'M-MEHRORT' })).status, 'bereits', 'nur tatsaechlich nicht bestellbar bestaetigt');
+});
+
+test('Sperren: Teilmutation vor Rechtefehler bleibt moegliche Aenderung, erste Ablehnung und Lesefehler nicht', async () => {
+  const a = attrappe({ varianten: [variante('M-TEIL', { menge: 3 })] });
+  const proxy = { async execute(q, v) {
+    if (q.includes('mutation MustersperreVerfolgung')) throw new Error('ACCESS_DENIED write_inventory');
+    return a.proxy.execute(q, v);
+  } };
+  await assert.rejects(sperreImShop(proxy, { sku: 'M-TEIL' }), e => e.extra.aenderungMoeglich === true && e.extra.vorher.menge === 3);
+  assert.equal(a.varianten[0].menge, 0);
+  const b = attrappe({ varianten: [variante('M-NEIN')], verweigert: true });
+  await assert.rejects(sperreImShop(b.proxy, { sku: 'M-NEIN' }), e => e.extra.aenderungMoeglich === false);
+  await assert.rejects(sperreImShop({ async execute() { throw new Error('Lesetimeout'); } }, { sku: 'M-NEIN' }), e => e.extra.aenderungMoeglich === false);
+});
+
+test('Freigeben: Bestand erfolgreich, Verfolgung vor Ausfuehrung abgebrochen -> Fehler, erneuter Versuch stellt Vorstand her', async () => {
+  const a = attrappe({ varianten: [variante('M-TEIL', { tracked: true })] });
+  const vorher = { tracked: false, policy: 'DENY', menge: 3 };
+  const proxy = { async execute(q, v) {
+    if (q.includes('mutation MustersperreVerfolgung')) throw new Error('timeout before write');
+    return a.proxy.execute(q, v);
+  } };
+  await assert.rejects(freigebenImShop(proxy, { sku: 'M-TEIL', vorher }), e => e.grund === 'gegenprobe');
+  assert.deepEqual([a.varianten[0].tracked, a.varianten[0].menge], [true, 3]);
+  const frei = await freigebenImShop(a.proxy, { sku: 'M-TEIL', vorher });
+  assert.deepEqual([frei.status, frei.verfuegbar, a.varianten[0].tracked, a.varianten[0].menge], ['frei', true, false, 3]);
+  assert.equal(a.mutationen().filter(m => m.name === 'MustersperreBestand').length, 1, 'Wiederholung setzt den Bestand nicht erneut');
+});
+
+test('Freigeben: verlorene Antwort nach erfolgter Verfolgung ist bei exakter Gegenprobe erfolgreich', async () => {
+  const a = attrappe({ varianten: [variante('M-WEG', { tracked: true })], antwortWeg: 'MustersperreVerfolgung' });
+  const f = await freigebenImShop(a.proxy, { sku: 'M-WEG', vorher: { tracked: false, policy: 'DENY', menge: 3 } });
+  assert.deepEqual([f.status, f.verfuegbar, f.antwortVerloren, f.nachher], ['frei', true, true, { tracked: false, policy: 'DENY', menge: 3 }]);
+});
+
+test('Freigeben: auch ohne Verfolgung muss der bekannte Bestand stimmen und Bestellbarkeit bestaetigt sein', async () => {
+  const a = attrappe({ varianten: [variante('M-MENGE', { menge: 0 })] });
+  const vorher = { tracked: false, policy: 'DENY', menge: 3 };
+  const proxy = { async execute(q, v) {
+    if (q.includes('mutation MustersperreBestand')) throw new Error('timeout before write');
+    return a.proxy.execute(q, v);
+  } };
+  await assert.rejects(freigebenImShop(proxy, { sku: 'M-MENGE', vorher }), e => e.grund === 'gegenprobe');
+  const nichtBestellbar = { async execute(q, v) {
+    const d = await a.proxy.execute(q, v);
+    for (const n of d.productVariants?.nodes || []) n.availableForSale = false;
+    return d;
+  } };
+  await assert.rejects(freigebenImShop(nichtBestellbar, { sku: 'M-MENGE', vorher }), e => e.grund === 'gegenprobe');
+  // Exakte Zielwerte alleine duerfen auch im Bereits-Pfad nicht genuegen.
+  await assert.rejects(freigebenImShop(nichtBestellbar, { sku: 'M-MENGE', vorher }), e => e.grund === 'gegenprobe');
+  assert.equal((await freigebenImShop(a.proxy, { sku: 'M-MENGE', vorher })).status, 'bereits');
+});
+
+test('Stand: alte unklare Ereignisse und spaeter fehlender Zugang verlieren Vorstand und Pruefpflicht nicht', () => {
+  const vorher = { tracked: false, policy: 'DENY', menge: 3 };
+  const ev = [
+    ereignis({ sku: 'M-ALT', von: 'Test', grund: GRUND.GESPERRT, shopify: { geschrieben: false, fehlerGrund: 'unklar', vorher }, jetzt: zeit('10:00') }),
+    ereignis({ sku: 'M-ALT', von: 'Test', grund: GRUND.GESPERRT, shopify: { geschrieben: false, aenderungMoeglich: false, fehlerGrund: 'kein-zugang' }, jetzt: zeit('11:00') }),
+    ereignis({ sku: 'M-ALT', von: 'Test', grund: GRUND.FREI, shopify: { geschrieben: false, fehler: 'nicht geprueft' }, jetzt: zeit('12:00') }),
+  ];
+  const s = stand(ev).get('M-ALT');
+  assert.equal(s.shopPruefen, true);
+  assert.deepEqual(s.vorher, vorher);
+  assert.equal(s.freigabeFehler, 'nicht geprueft');
+});
+
+test('Stand: sicher ungeschriebener Versuch friert keinen Vorstand fuer spaetere echte Sperre ein', () => {
+  const alt = { tracked: true, policy: 'DENY', menge: 3 };
+  const frisch = { tracked: true, policy: 'DENY', menge: 7 };
+  const ev = [ereignis({ sku: 'M-FRISCH', von: 'Test', grund: GRUND.GESPERRT,
+    shopify: { geschrieben: false, aenderungMoeglich: false, vorher: alt, fehlerGrund: 'recht-fehlt' }, jetzt: zeit('10:00') })];
+  assert.equal(stand(ev).get('M-FRISCH').vorher, null, 'sicher erfolgloser Versuch hat noch keinen Rueckweg');
+  ev.push(ereignis({ sku: 'M-FRISCH', von: 'Test', grund: GRUND.GESPERRT,
+    shopify: { geschrieben: true, vorher: frisch }, jetzt: zeit('11:00') }));
+  assert.deepEqual(stand(ev).get('M-FRISCH').vorher, frisch);
+});
+
+test('Stand: alte unklare, teilweise und bestaetigte Aenderungen behalten ersten Vorstand trotz sicher erfolgloser Wiederholung', () => {
+  const vorher = { tracked: true, policy: 'CONTINUE', menge: 3 };
+  const spaeter = { tracked: true, policy: 'CONTINUE', menge: 7 };
+  for (const erste of [
+    { geschrieben: false, fehlerGrund: 'unklar' },
+    { geschrieben: false, aenderungMoeglich: true, fehlerGrund: 'recht-fehlt' },
+    { geschrieben: true },
+  ]) {
+    const ev = [
+      ereignis({ sku: 'M-BEHALTEN', von: 'Test', grund: GRUND.GESPERRT,
+        shopify: { ...erste, vorher }, jetzt: zeit('10:00') }),
+      ereignis({ sku: 'M-BEHALTEN', von: 'Test', grund: GRUND.GESPERRT,
+        shopify: { geschrieben: false, aenderungMoeglich: false, vorher: spaeter, fehlerGrund: 'recht-fehlt' }, jetzt: zeit('11:00') }),
+      ereignis({ sku: 'M-BEHALTEN', von: 'Test', grund: GRUND.GESPERRT,
+        shopify: { geschrieben: false, aenderungMoeglich: false, fehlerGrund: 'kein-zugang' }, jetzt: zeit('12:00') }),
+      ereignis({ sku: 'M-BEHALTEN', von: 'Test', grund: GRUND.GESPERRT,
+        shopify: { geschrieben: true, vorher: spaeter }, jetzt: zeit('13:00') }),
+    ];
+    const s = stand(ev).get('M-BEHALTEN');
+    assert.deepEqual(s.vorher, vorher);
+    assert.equal(s.shopPruefen, true);
+  }
+});
