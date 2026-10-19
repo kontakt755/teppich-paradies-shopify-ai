@@ -137,6 +137,51 @@ Break-even = Fixkosten Weg K ÷ (Kettelpreis A − Kettelpreis Kettler)
 4. Passt das nicht (keine Sammellieferung, keine Fahrt in Sicht, 8–10 cm unter ~25 m): Leiste mit dem
    Teppich bei A ketteln lassen.
 
+## 6. Nachtrag: Zuschnitt und Teppiche unter 200 cm (Inhaber, 19.10.)
+
+Neue Angabe des Inhabers: **Der Kettler berechnet keinen Zuschnitt.** Lieferant A berechnet laut Angebot
+vom 28.08. für einen Zuschnitt 10 € (rechteckig) bzw. 15 € (rund) je Stück. Der Inhaber hat entschieden,
+dass künftig **alles unter 200 cm zum Kettler** geht und dort zugeschnitten, gekettelt und abgeholt wird.
+Die Umsetzung im Control Center (Bestellmail, Vorschlagsregel) gehört zu PR #1415 bzw. dessen Folge-PR
+und ist hier nicht Thema.
+
+**Folgen für die Fußleiste:** Die Streifen schneidet der Kettler kostenlos. Für Weg K reicht also ein
+ungekettelter Abschnitt ab Rolle: Rollenbreite × Summe der Leistenhöhen, z. B. 4 m × 30 cm für
+5 Streifen à 6 cm. Ein Abschnitt in voller Rollenbreite ist normale Meterware, laut Angebot fällt dafür
+kein Zuschnitt an. Belegt ist das nicht. Berechnet A für den Abschnitt doch 10 €, steigt der Break-even
+bei der Paketvariante (gebündelt) auf ~16 m (5–7 cm), ~32 m (9–10 cm) bzw. ~44 m (8 cm). Die Empfehlung
+oben bleibt sonst unverändert.
+
+**Teppiche unter 200 cm:** Kettelkosten je Stück, netto, ohne Material und Logistik. A rechnet mit
+Zuschnitt + Ketteln 3,90 €/m (Angebot) bzw. 5,50 €/m (AB 16.10.). Der Kettler rechnet 3,45 €/m bis 6 m²
+und 4,95 €/m darüber, ohne Zuschnitt. Ob er runde Teppiche zum selben Meterpreis kettelt, ist offen.
+
+| Stück | Fläche | Kante | A: Zuschnitt + Ketteln 3,90 | A: mit 5,50 | Kettler | Ersparnis | Ersparnis bei 5,50 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| rechteckig 80 × 150 cm | 1,20 m² | 4,60 m | 27,94 | 35,30 | 15,87 | 12,07 | 19,43 |
+| rechteckig 120 × 180 cm | 2,16 m² | 6,00 m | 33,40 | 43,00 | 20,70 | 12,70 | 22,30 |
+| rechteckig 190 × 290 cm | 5,51 m² | 9,60 m | 47,44 | 62,80 | 33,12 | 14,32 | 29,68 |
+| rund Ø 150 cm | 1,77 m² | 4,71 m | 33,38 | 40,92 | 16,26 | 17,12 | 24,66 |
+| rund Ø 190 cm | 2,84 m² | 5,97 m | 38,28 | 47,83 | 20,59 | 17,69 | 27,24 |
+
+Je Stück spart der Kettler **12–30 €**. Damit sich das lohnt, gelten dieselben Bedingungen wie bei der
+Leiste:
+
+- **Eine eigens gefahrene Tour (~64 €) braucht 3–5 Stücke je Fahrt.** Mit einer Abholung, die ohnehin
+  ansteht (Bodenleger, feste Berlin-Tour), lohnt sich jedes Stück.
+- **Paket statt Abholung:** Schickt A den Teppich sonst direkt per Paket (9,50 €), kostet unser Paket
+  netto nur ~4,70 € mehr (Verpackung 6,50 + Paket 7,69 − 9,50). Es bleiben ~7–25 € je Stück. Ein
+  Teppich unter 200 cm lässt sich ohne Knick entlang der kurzen Seite aufrollen, die Paketlänge ist
+  dann höchstens 2 m.
+- **Mehrmaterial, der größte Posten:** Schneidet der Kettler aus einem **Abschnitt in voller
+  Rollenbreite**, kauft man den Rest mit. Beispiel 120 × 180 cm aus einer 4-m-Rolle: Bestellt werden
+  1,20 m ab Rolle = 4,80 m², davon 2,64 m² Rest. Bei angenommenen 10 €/m² EK sind das ~26 €, mehr als
+  die Ersparnis. Die Regel rechnet sich deshalb nur in zwei Fällen: Lieferant A liefert das Stück im
+  Fertigmaß **ohne** Zuschnittgebühr, oder der Rest wird nachweislich weiterverkauft (Reste-Bereich).
+  In der AB vom 16.10. hat A ein Stück 1,20 × 2,80 m mit genau 3,36 m² berechnet und **keinen
+  Zuschnitt** ausgewiesen, aber dafür 5,50 €/m fürs Ketteln. Wie A ein ungekettelt bestelltes Stück
+  im Fertigmaß abrechnet, ist offen und steht als Frage unten.
+
 ## Offen (Fragen an Lieferant A → Werkbank, der Inhaber fragt selbst)
 
 - Aktueller Preis „Ketteln Sockelleiste + Klebeband“ bis 8 cm / ab 8,5 cm, in **beiden** Niederlassungen
@@ -148,5 +193,8 @@ Break-even = Fixkosten Weg K ÷ (Kettelpreis A − Kettelpreis Kettler)
 - Paketversand an Endkunden pauschal 9,50 € oder nach Gewicht/Größe?
 - Beim Kettler: Ist Klebeband im Leistenpreis enthalten? Gilt 7 cm als „bis 7 cm“? Verschickt er selbst,
   und gibt es einen Mindestpreis je Auftrag?
+- Liefert A ein **ungekettelt** bestelltes Stück im Fertigmaß ohne Zuschnittgebühr und berechnet nur die
+  Fläche (wie am 16.10.), oder nur Abschnitte in voller Rollenbreite? Davon hängt ab, ob sich die Regel
+  „unter 200 cm zum Kettler“ rechnet (Abschnitt 6).
 - Eigener Paketvertrag: Mit Geschäftskundenkonditionen wäre das Paket billiger als die angesetzten 7,69/10,49 €.
   Der Break-even sinkt dann entsprechend.
