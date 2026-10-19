@@ -2,6 +2,21 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-19 · Maßteppiche unter 2 m automatisch zum Kettler
+
+- **Geändert:** Regel des Inhabers: Maßteppiche mit Einfassung und kürzerer Seite unter 2 m
+  gehen ohne Auswahl in eine eigene Bestellmail an unseren Kettler, der Rest bleibt in seiner
+  Mail. Der Kettler schneidet ohne Gebühr zu – der Lieferant bekommt deshalb Meterware von der
+  Rolle (z. B. „1,50 lfm von der 4,00 m breiten Rolle, ohne Maßzuschnitt“) mit dem Fertigmaß für
+  den Kettler, statt „1 Stück nach Maß“ (dort 10/15 € Zuschnitt). Im Dialog gibt es dafür den
+  Knopf „Automatisch“; Kunden/Laden/Kettler schicken weiter alles an ein Ziel.
+- **Getestet:** Neue Fälle für Meterware, Rolle quer, rund, Aufteilung, 2 m genau, ohne Kettler;
+  `npm test` und `dashboard:test` grün, `dashboard:pruefen` ohne Befund.
+- **Risiken/Annahmen:** Länge ohne Schnittzugabe (genau das Fertigmaß); braucht der Kettler
+  Zugabe, kommt sie als Zuschlag hinzu. Rollenbreite kommt aus dem Konfigurator
+  („_Zuschnitt aus Rolle“); fehlt sie, bleibt es beim Stück nach Maß.
+- **Nächste Stufe:** Zugabe mit dem Kettler klären.
+
 ## 2026-10-19 · Ware über unseren Kettler (Berlin)
 
 - **Geändert:** Im Bestellmail-Dialog (Einkauf, Ware) gibt es neben „Kunden“ und „Laden“ das

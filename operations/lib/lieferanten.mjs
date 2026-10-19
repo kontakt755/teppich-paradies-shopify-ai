@@ -24,7 +24,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { UNGEKLAERT } from './umrechnung.mjs';
+import { UNGEKLAERT, formatDe } from './umrechnung.mjs';
 import { ROUTE } from './route.mjs';
 import { positionKey, filterGruppe } from './auftragsstatus.mjs';
 import { musterOhneLieferant, HERKUNFT } from './musterherkunft.mjs';
@@ -34,8 +34,11 @@ export const MUSTER_LIEFERUNG = Object.freeze(['kunde', 'laden']);
 // Ware kann zusaetzlich an unseren Kettelservice gehen (Inhaber 2026-10-19): Zuschnitt
 // ungekettelt dorthin, wir ketteln dort guenstiger und liefern selbst bzw. verschicken von dort.
 export const WARE_LIEFERUNG = Object.freeze(['kunde', 'laden', 'kettler']);
-/** Bis zu dieser kuerzeren Seite geht ein gekettelter Zuschnitt gerollt als Paket (GLS: 2 m). */
-export const KETTLER_PAKET_BIS_CM = 200;
+/**
+ * Massteppiche mit einer kuerzeren Seite UNTER diesem Mass gehen automatisch zu unserem Kettler:
+ * er schneidet zu und kettelt (ohne Zuschnittgebuehr), wir holen dort ab (Inhaber 2026-10-19).
+ */
+export const KETTLER_UNTER_CM = 200;
 /** PLZ-Bereiche, in die wir selbst liefern koennen: Berlin (10-14) und unser Umland (16). */
 const KETTLER_NAH_PLZ = /^1[0-46]/;
 
@@ -329,6 +332,7 @@ function schlankePosition(pos, statusAlle, jetzt) {
     farbe: geklaert(pos.farbe),
     kunde: geklaert(pos.kunde),
     ausfuehrung: Array.isArray(pos.ausfuehrung) ? pos.ausfuehrung : [],
+    ausRolleCm: pos.ausRolleCm ?? null,
     sku: geklaert(pos.sku),
     artikelnummer: geklaert(pos.grosshaendlerId),
     farbnummer,
@@ -581,29 +585,54 @@ export function kuerzereSeiteCm(ausfuehrung = []) {
   return zahlen.length ? Math.min(...zahlen.slice(0, 2)) : null;
 }
 
+/** Massteppich mit Einfassung, kuerzere Seite unter 2 m: geht nach der Regel zum Kettler. */
+export function kettlerAutomatisch(p) {
+  if (!(p.ausfuehrung ?? []).some(istEinfassung)) return false;
+  const seite = kuerzereSeiteCm(p.ausfuehrung);
+  return seite !== null && seite < KETTLER_UNTER_CM;
+}
+
 /**
- * Lohnt der Weg ueber unseren Kettler? Nur Positionen, die gekettelt bzw. eingefasst werden
- * sollen - dann, wenn der Kunde in der Naehe wohnt (wir liefern selbst bis in die Wohnung)
- * oder der Zuschnitt gerollt als Paket vom Kettler aus verschickt werden kann.
- * Ein Vorschlag, keine Entscheidung: gewaehlt wird im Dialog.
+ * Lohnt der Weg ueber unseren Kettler auch fuer groessere Stuecke? Nur bei Kettel-Positionen,
+ * deren Kunde in der Naehe wohnt (wir liefern selbst bis in die Wohnung). Ein Vorschlag,
+ * keine Entscheidung: gewaehlt wird im Dialog. Unter 2 m entscheidet die Regel oben.
  */
 export function kettlerGrund(p, adresse) {
   if (!(p.ausfuehrung ?? []).some(istEinfassung)) return null;
+  if (kettlerAutomatisch(p)) return `unter ${KETTLER_UNTER_CM / 100} m – Zuschnitt und Ketteln beim Kettler`;
   if (adresse?.plz && KETTLER_NAH_PLZ.test(String(adresse.plz).trim())) return `Kunde in der Nähe (${String(adresse.plz).trim()} ${adresse.ort ?? ''}`.trim() + ') – wir liefern selbst';
-  const seite = kuerzereSeiteCm(p.ausfuehrung);
-  if (seite !== null && seite <= KETTLER_PAKET_BIS_CM) return `bis ${KETTLER_PAKET_BIS_CM / 100} m – gerollt als Paket vom Kettler`;
   return null;
 }
 
-/** Ueber den Kettler kettelt nicht der Lieferant: Zuschnitt ohne Einfassung bestellen. */
-function ohneEinfassung(p) {
+/**
+ * Ueber den Kettler kettelt nicht der Lieferant. Massteppiche bestellen wir dann als Meterware
+ * von der Rolle - ohne Masszuschnitt, den der Lieferant extra berechnet; zuschneiden und ketteln
+ * macht der Kettler. Laenge: so viel Rolle, dass das Fertigmass hineinpasst. Ohne bekannte
+ * Rollenbreite bleibt es beim Stueck nach Mass, nur ohne Einfassung.
+ */
+function fuerKettler(p) {
   const ausfuehrung = p.ausfuehrung ?? [];
+  const ohne = ausfuehrung.filter(z => !istEinfassung(z));
+  const mass = ausfuehrung.find(z => z.startsWith('Fertigmaß:'));
+  const zahlen = mass ? (mass.match(/\d+(?:[.,]\d+)?/g) || []).map(n => Number(n.replace(',', '.'))).filter(n => n > 0).slice(0, 2) : [];
+  const rolle = p.ausRolleCm;
+  if (mass && rolle > 0 && zahlen.length) {
+    const [kurz, lang] = [Math.min(...zahlen), Math.max(...zahlen)];
+    const laenge = lang <= rolle ? kurz : kurz <= rolle ? lang : null;
+    if (laenge) {
+      return {
+        ...p,
+        mengeText: `${formatDe(laenge / 100)} lfm von der ${formatDe(rolle / 100)} m breiten Rolle (Meterware, ohne Maßzuschnitt)`,
+        ausfuehrung: [`Für ${mass.replace(/^Fertigmaß:\s*/, 'Fertigmaß ')} – Zuschnitt und Ketteln macht unser Kettelservice`],
+      };
+    }
+  }
   if (!ausfuehrung.some(istEinfassung)) return p;
-  return { ...p, ausfuehrung: [...ausfuehrung.filter(z => !istEinfassung(z)), 'Ohne Einfassung – bitte nur zuschneiden, nicht ketteln'] };
+  return { ...p, ausfuehrung: [...ohne, 'Ohne Einfassung – bitte nur zuschneiden, nicht ketteln'] };
 }
 
-function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel }) {
-  const alle = (gruppe.positionen ?? []).map(p => schlankePosition(p, statusAlle, jetzt));
+function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, auswahl = null, automatisch = false }) {
+  const alle = (gruppe.positionen ?? []).filter(p => !auswahl || auswahl(p)).map(p => schlankePosition(p, statusAlle, jetzt));
   const offen = alle.filter(p => p.gruppe === 'zuBestellen');
   const direkt = ZIEL_JE_AUFTRAG.has(gruppe.route);
   const kettler = absender?.kettelservice ?? null;
@@ -648,7 +677,7 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel }) {
   } else if (anKettler) {
     // Ketteln macht der Kettelservice - der Lieferant schneidet nur zu. Kundennamen gehen
     // nicht mit: der Kettler ordnet ueber die Kommission zu.
-    aufgenommen.forEach((p, i) => zeilen.push(...positionsZeilen(ohneEinfassung(p), i + 1, { mitKunde: false, nachBezeichnung }), ''));
+    aufgenommen.forEach((p, i) => zeilen.push(...positionsZeilen(fuerKettler(p), i + 1, { mitKunde: false, nachBezeichnung }), ''));
   } else {
     aufgenommen.forEach((p, i) => zeilen.push(...positionsZeilen(p, i + 1, { nachBezeichnung }), ''));
   }
@@ -684,6 +713,8 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel }) {
       // Kettler nur anbieten, wenn seine Anschrift in den privaten Stammdaten steht.
       kettlerMoeglich: !direkt && adresseOk(kettler),
       kettlerVorschlag,
+      // Nach der Regel "unter 2 m zum Kettler" abgetrennt, nicht von Hand gewaehlt.
+      kettlerAutomatisch: automatisch,
       bereitsBestellt: alle.length - offen.length,
     },
   });
@@ -754,6 +785,22 @@ function musterMail(gruppen, { st, absender, statusAlle, adressen, jetzt, ziel }
   });
 }
 
+/**
+ * Ware einer Gruppe als Mail(s). Ohne gewaehltes Ziel gilt die Regel des Inhabers (2026-10-19):
+ * Massteppiche unter 2 m gehen in eine eigene Mail an unseren Kettler, der Rest wie bisher.
+ * Ein Ziel aus dem Dialog (Kunden/Laden/Kettler) gilt dagegen fuer die ganze Gruppe.
+ */
+function wareMailsFuer(gruppe, kontext) {
+  const automatisch = !kontext.ziel && adresseOk(kontext.absender?.kettelservice) && !ZIEL_JE_AUFTRAG.has(gruppe.route);
+  // Nur offene Positionen: schon Bestelltes (auch von vor der Regel) bleibt in der normalen Mail.
+  const offen = p => schlankePosition(p, kontext.statusAlle, kontext.jetzt).gruppe === 'zuBestellen';
+  const zumKettler = p => kettlerAutomatisch(p) && offen(p);
+  if (!automatisch || !(gruppe.positionen ?? []).some(zumKettler)) return [wareMail(gruppe, kontext)];
+  const kettler = wareMail(gruppe, { ...kontext, ziel: 'kettler', auswahl: zumKettler, automatisch: true });
+  const rest = (gruppe.positionen ?? []).some(p => !zumKettler(p)) ? [wareMail(gruppe, { ...kontext, auswahl: p => !zumKettler(p) })] : [];
+  return [kettler, ...rest];
+}
+
 export class LieferantenFehler extends Error {}
 
 /**
@@ -785,7 +832,7 @@ export function bestellmail({ modell, lieferant, art = 'ware', gruppe = null, zi
   } else {
     const gruppen = (modell?.gruppen ?? []).filter(g => g.lieferant === id && (!gruppe || g.schluessel === gruppe));
     if (gruppe && !gruppen.length) throw new LieferantenFehler('Gruppe nicht gefunden - Bestelldaten evtl. inzwischen aktualisiert');
-    mails = gruppen.map(g => wareMail(g, kontext));
+    mails = gruppen.flatMap(g => wareMailsFuer(g, kontext));
   }
   // Mails ohne offene Position (alles schon bestellt) bleiben sichtbar, aber leer - so
   // sieht die Oberflaeche "nichts mehr zu bestellen" statt eines Fehlers.
