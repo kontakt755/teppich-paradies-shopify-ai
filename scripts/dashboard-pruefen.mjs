@@ -4,7 +4,7 @@
  *
  *   npm run dashboard:pruefen                          # alle Ansichten bei 1440, 1024, 800, 390, 360 px
  *   npm run dashboard:pruefen -- --ansichten heute,einkauf
- *   npm run dashboard:pruefen -- --aus /tmp/pruefung   # Screenshots dorthin
+ *   npm run dashboard:pruefen -- --aus /tmp/pruefung   # Screenshots dorthin (sonst Temp-Ordner, 3 Tage)
  *   npm run dashboard:pruefen -- --breiten 390,1440    # nur diese Fensterbreiten
  *   npm run dashboard:pruefen -- --dunkel               # dunkle Ansicht (Standard: hell)
  *   npm run dashboard:pruefen -- --offen                # Instanz nach dem Lauf offen lassen
@@ -23,6 +23,9 @@
  *     (800), Tablet quer (1024) und den Rechner (1440) ab - die Brueche lagen frueher genau
  *     bei 360 und 800 px, wo nicht gemessen wurde.
  *  4. Bericht nach <aus>/bericht.json und als Tabelle auf die Konsole.
+ *     Ohne --aus liegen Screenshots und Bericht in $TMPDIR/tp-dashboard-pruefung-XXXXXX. Sie
+ *     zeigen echte Daten: jeder Lauf loescht beim Start solche Ordner, die aelter als drei Tage
+ *     sind (scripts/dashboard-pruefung-ordner.mjs).
  *     Exit-Code 1 bei JS-Fehlern, Fehlerantworten oder seitlichem Scrollen (egal bei welcher Breite).
  *
  * Mit --rollen legt das Skript in der DATENKOPIE eine benutzer.json mit drei Wegwerf-Zugaengen
@@ -44,6 +47,7 @@ import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { altePruefOrdnerLoeschen } from './dashboard-pruefung-ordner.mjs';
 import { benutzerAnlegen, schreibeBenutzer } from '../operations/lib/benutzer.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -141,6 +145,9 @@ async function warteAufServer(url, ms = 20_000) {
 
 async function main() {
   const args = argumente(process.argv.slice(2));
+  // Screenshot-Ordner frueherer Laeufe zeigen echte Daten - bis 2026-10-19 blieben sie fuer immer liegen.
+  const altePruefungen = altePruefOrdnerLoeschen();
+  if (altePruefungen.length) console.log(`${altePruefungen.length} Screenshot-Ordner frueherer Laeufe (aelter als 3 Tage) geloescht.`);
   let puppeteer;
   try { puppeteer = (await import('puppeteer')).default; }
   catch { throw new Error('puppeteer fehlt - im Repository-Root `npm install` ausfuehren (Worktree: node_modules verlinken).'); }
