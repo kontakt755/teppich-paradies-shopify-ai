@@ -99,6 +99,7 @@ export function ereignis({ sku, farbe = null, produkt = null, handle = null, ord
     von: String(von), am: jetzt.toISOString(), grund,
     shopify: {
       geschrieben: sh.geschrieben === true,
+      ...(typeof sh.aenderungMoeglich === 'boolean' ? { aenderungMoeglich: sh.aenderungMoeglich } : {}),
       ...(sh.bereits ? { bereits: true } : {}),
       fehler: sh.fehler ? clip(sh.fehler, 400) : null,
       ...(sh.fehlerGrund ? { fehlerGrund: sh.fehlerGrund } : {}),
@@ -125,8 +126,8 @@ export function haengeAn(file, neue = []) {
 /**
  * Stand je SKU aus der Ereignisfolge.
  * @returns {Map<string, {sku, farbe, produkt, handle, seit, von, auftraege: {orderId, orderName}[],
- *   imShop: boolean, fehler: string|null, fehlerGrund: string|null, variantId, productId, vorher, freigabeFehler}>}
- *   Nur aktive Sperren; "wieder verfuegbar" (erfolgreich oder nie im Shop gewesen) nimmt sie heraus.
+ *   imShop: boolean, shopPruefen: boolean, fehler: string|null, fehlerGrund: string|null, variantId, productId, vorher, freigabeFehler}>}
+ *   Nur aktive Sperren; "wieder verfuegbar" (erfolgreich oder sicher ohne moegliche Shop-Aenderung) nimmt sie heraus.
  */
 export function stand(ereignisse = []) {
   const aktiv = new Map();
@@ -136,22 +137,32 @@ export function stand(ereignisse = []) {
     let s = aktiv.get(e.sku);
     if (e.grund === GRUND.FREI) {
       if (!s) continue;
-      if (sh.geschrieben || !s.imShop) aktiv.delete(e.sku);
-      else s.freigabeFehler = sh.fehler || 'Im Shop nicht wieder freigegeben';
+      if (sh.geschrieben || !s.shopPruefen) aktiv.delete(e.sku);
+      else {
+        s.imShop = false; // Nach einer fehlgeschlagenen Freigabe ist auch die Sperre nicht mehr bestaetigt.
+        s.freigabeFehler = sh.fehler || 'Im Shop nicht wieder freigegeben';
+      }
       continue;
     }
     if (!s) {
-      s = { sku: e.sku, farbe: null, produkt: null, handle: null, seit: e.am, von: e.von, auftraege: [], imShop: false, fehler: null, fehlerGrund: null, variantId: null, productId: null, vorher: null, freigabeFehler: null };
+      s = { sku: e.sku, farbe: null, produkt: null, handle: null, seit: e.am, von: e.von, auftraege: [], imShop: false, shopPruefen: false, fehler: null, fehlerGrund: null, variantId: null, productId: null, vorher: null, freigabeFehler: null };
       aktiv.set(e.sku, s);
     }
+    // Alte Ereignisse koennen bereits teilweise geschrieben sein, ohne eine bestaetigte Sperre.
+    // Ein bekannter Vorstand bleibt deshalb auch nach spaeter fehlendem Zugang pruefpflichtig.
+    const altUnklar = typeof sh.aenderungMoeglich !== 'boolean' && (Boolean(sh.vorher)
+      || !['kein-zugang', 'nicht-erreichbar', 'recht-fehlt', 'keine-mustervariante', 'mehrdeutig', 'kein-standort'].includes(sh.fehlerGrund));
+    const aenderungMoeglich = sh.geschrieben === true || sh.aenderungMoeglich === true || altUnklar;
+    s.shopPruefen ||= aenderungMoeglich;
     s.farbe = e.farbe || s.farbe;
     s.produkt = e.produkt || s.produkt;
     s.handle = e.handle || s.handle;
     if (e.orderId && !s.auftraege.some(a => a.orderId === e.orderId)) s.auftraege.push({ orderId: e.orderId, orderName: e.orderName || null });
     s.variantId = sh.variantId || s.variantId;
     s.productId = sh.productId || s.productId;
-    // Der Stand VOR der ersten Sperre zaehlt fuer "wieder verfuegbar" - spaetere Ereignisse lesen schon den gesperrten Stand.
-    if (!s.vorher && sh.vorher && !sh.bereits) s.vorher = sh.vorher;
+    // Erst die erste moegliche Aenderung legt den Rueckweg fest. Ein sicher abgelehnter
+    // Versuch darf spaeter frisch gelesenen Bestand nicht durch einen alten Vorstand ersetzen.
+    if (!s.vorher && sh.vorher && !sh.bereits && aenderungMoeglich) s.vorher = sh.vorher;
     if (sh.geschrieben) { s.imShop = true; s.fehler = null; s.fehlerGrund = null; s.freigabeFehler = null; }
     else if (!s.imShop) { s.fehler = sh.fehler || s.fehler; s.fehlerGrund = sh.fehlerGrund || s.fehlerGrund; }
   }
@@ -291,17 +302,28 @@ async function fuehreAus(proxy, mutation, variablen, feld) {
  */
 async function stelleEin(proxy, v, ziel, { referenz, schluessel, standortId }) {
   let verloren = false;
+  let aenderungMoeglich = false;
+  const schreibe = async (...args) => {
+    try {
+      const weg = await fuehreAus(proxy, ...args);
+      aenderungMoeglich = true;
+      return weg;
+    } catch (e) {
+      e.extra = { ...e.extra, aenderungMoeglich };
+      throw e;
+    }
+  };
   if (ziel.menge !== null && ziel.menge !== undefined && v.menge !== ziel.menge) {
-    verloren = await fuehreAus(proxy, BESTAND_MUTATION, {
+    verloren = await schreibe(BESTAND_MUTATION, {
       schluessel,
       input: { name: 'available', reason: 'correction', referenceDocumentUri: referenz, quantities: [{ inventoryItemId: v.inventoryItemId, locationId: standortId, quantity: ziel.menge, changeFromQuantity: v.menge ?? 0 }] },
     }, 'inventorySetQuantities') || verloren;
   }
   if (ziel.policy && v.policy !== ziel.policy) {
-    verloren = await fuehreAus(proxy, RICHTLINIE_MUTATION, { productId: v.productId, variants: [{ id: v.variantId, inventoryPolicy: ziel.policy }] }, 'productVariantsBulkUpdate') || verloren;
+    verloren = await schreibe(RICHTLINIE_MUTATION, { productId: v.productId, variants: [{ id: v.variantId, inventoryPolicy: ziel.policy }] }, 'productVariantsBulkUpdate') || verloren;
   }
   if (typeof ziel.tracked === 'boolean' && v.tracked !== ziel.tracked) {
-    verloren = await fuehreAus(proxy, VERFOLGUNG_MUTATION, { id: v.inventoryItemId, input: { tracked: ziel.tracked } }, 'inventoryItemUpdate') || verloren;
+    verloren = await schreibe(VERFOLGUNG_MUTATION, { id: v.inventoryItemId, input: { tracked: ziel.tracked } }, 'inventoryItemUpdate') || verloren;
   }
   return verloren;
 }
@@ -312,14 +334,21 @@ async function stelleEin(proxy, v, ziel, { referenz, schluessel, standortId }) {
  * @returns {Promise<{status: 'gesperrt'|'bereits', variantId, productId, vorher, nachher, verfuegbar, antwortVerloren}>}
  */
 export async function sperreImShop(proxy, { sku, referenz = null, standortId = STANDORT_ID, schluessel = randomUUID() } = {}) {
-  const v = await leseVariante(proxy, sku, { standortId });
+  let v;
+  try { v = await leseVariante(proxy, sku, { standortId }); } catch (e) {
+    e.extra = { ...e.extra, aenderungMoeglich: false };
+    throw e;
+  }
   if (!v) {
-    throw new MustersperreFehler(404, `Im Shop gibt es keine Mustervariante M-… zu dieser Farbe (${norm(sku)}) – das Muster läuft vermutlich über „Kostenloses Muster“ und lässt sich nicht je Farbe sperren.`, { grund: 'keine-mustervariante' });
+    throw new MustersperreFehler(404, `Im Shop gibt es keine Mustervariante M-… zu dieser Farbe (${norm(sku)}) – das Muster läuft vermutlich über „Kostenloses Muster“ und lässt sich nicht je Farbe sperren.`, { grund: 'keine-mustervariante', aenderungMoeglich: false });
   }
   const basis = { variantId: v.variantId, productId: v.productId };
-  if (istGesperrt(v)) return { status: 'bereits', ...basis, vorher: kurz(v), nachher: kurz(v), verfuegbar: v.verfuegbar, antwortVerloren: false };
+  if (istGesperrt(v)) {
+    if (!v.verfuegbar) return { status: 'bereits', ...basis, vorher: kurz(v), nachher: kurz(v), verfuegbar: false, antwortVerloren: false };
+    throw new MustersperreFehler(502, 'Gegenprobe: Trotz Bestand 0 am Standort ist das Muster weiter bestellbar – bitte weitere Standorte und die Verfügbarkeit in Shopify prüfen.', { grund: 'gegenprobe', ...basis, vorher: kurz(v), nachher: kurz(v), aenderungMoeglich: false });
+  }
   if (!v.levelDa) {
-    throw new MustersperreFehler(409, 'Für diese Mustervariante ist am Standort kein Bestand angelegt – bitte in Shopify von Hand sperren.', { grund: 'kein-standort', ...basis });
+    throw new MustersperreFehler(409, 'Für diese Mustervariante ist am Standort kein Bestand angelegt – bitte in Shopify von Hand sperren.', { grund: 'kein-standort', ...basis, aenderungMoeglich: false });
   }
   let verloren;
   try {
@@ -331,11 +360,11 @@ export async function sperreImShop(proxy, { sku, referenz = null, standortId = S
   const n = await leseOderNull(proxy, sku, standortId);
   if (istGesperrt(n) && !n.verfuegbar) return { status: 'gesperrt', ...basis, vorher: kurz(v), nachher: kurz(n), verfuegbar: false, antwortVerloren: verloren };
   if (!n) {
-    throw new MustersperreFehler(504, 'Ob das Muster im Shop gesperrt ist, ist unklar: die Gegenprobe war nicht lesbar. Bitte in Shopify nachsehen.', { grund: 'unklar', ...basis, vorher: kurz(v) });
+    throw new MustersperreFehler(504, 'Ob das Muster im Shop gesperrt ist, ist unklar: die Gegenprobe war nicht lesbar. Bitte in Shopify nachsehen.', { grund: 'unklar', ...basis, vorher: kurz(v), aenderungMoeglich: true });
   }
   throw new MustersperreFehler(502, verloren
     ? 'Ob das Muster im Shop gesperrt ist, ist unklar: Shopify hat nicht geantwortet und zeigt es weiter als bestellbar. Bitte noch einmal versuchen.'
-    : 'Gegenprobe: Shopify zeigt das Muster weiter als bestellbar – bitte in Shopify ansehen.', { grund: verloren ? 'unklar' : 'gegenprobe', ...basis, vorher: kurz(v), nachher: kurz(n) });
+    : 'Gegenprobe: Shopify zeigt das Muster weiter als bestellbar – bitte in Shopify ansehen.', { grund: verloren ? 'unklar' : 'gegenprobe', ...basis, vorher: kurz(v), nachher: kurz(n), aenderungMoeglich: true });
 }
 
 /**
@@ -358,11 +387,11 @@ export async function freigebenImShop(proxy, { sku, vorher = null, referenz = nu
   if (!v) throw new MustersperreFehler(404, `Im Shop gibt es keine Mustervariante zu ${norm(sku)} mehr – nichts freizugeben.`, { grund: 'keine-mustervariante' });
   const basis = { variantId: v.variantId, productId: v.productId };
   const ziel = freigabeZiel(vorher);
-  const passt = z => Boolean(z) && z.tracked === ziel.tracked && z.policy === ziel.policy && (!ziel.tracked || z.menge === ziel.menge);
-  if (!istGesperrt(v) && passt(v)) return { status: 'bereits', ...basis, nachher: kurz(v), verfuegbar: v.verfuegbar, antwortVerloren: false };
+  const passt = z => Boolean(z) && z.tracked === ziel.tracked && z.policy === ziel.policy && (z.levelDa ? z.menge === ziel.menge : !ziel.tracked);
+  if (passt(v) && v.verfuegbar) return { status: 'bereits', ...basis, nachher: kurz(v), verfuegbar: v.verfuegbar, antwortVerloren: false };
   // Ohne Bestandsverfolgung zaehlt die Menge nicht - dann nur zuruecksetzen, wenn sie am Standort gefuehrt wird.
   const verloren = await stelleEin(proxy, v, { ...ziel, menge: v.levelDa ? ziel.menge : null }, { referenz: referenz || `gid://shopify/ProductVariant/${String(v.variantId).split('/').pop()}`, schluessel, standortId });
   const n = await leseOderNull(proxy, sku, standortId);
-  if (n && !istGesperrt(n)) return { status: 'frei', ...basis, nachher: kurz(n), verfuegbar: n.verfuegbar, antwortVerloren: verloren };
-  throw new MustersperreFehler(n ? 502 : 504, n ? 'Gegenprobe: Shopify zeigt das Muster weiter als gesperrt – bitte in Shopify ansehen.' : 'Ob das Muster wieder freigegeben ist, ist unklar: die Gegenprobe war nicht lesbar.', { grund: n ? 'gegenprobe' : 'unklar', ...basis });
+  if (passt(n) && n.verfuegbar) return { status: 'frei', ...basis, nachher: kurz(n), verfuegbar: n.verfuegbar, antwortVerloren: verloren };
+  throw new MustersperreFehler(n ? 502 : 504, n ? 'Gegenprobe: Der Stand vor der Sperre ist noch nicht vollständig wiederhergestellt oder das Muster ist weiter nicht bestellbar – bitte erneut versuchen oder in Shopify ansehen.' : 'Ob das Muster wieder freigegeben ist, ist unklar: die Gegenprobe war nicht lesbar.', { grund: n ? 'gegenprobe' : 'unklar', ...basis });
 }

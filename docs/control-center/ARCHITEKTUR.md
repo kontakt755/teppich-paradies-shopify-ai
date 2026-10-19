@@ -1329,8 +1329,12 @@ Bedarf neue Muster. Bis dahin stand so ein Auftrag nur als Notiz da und blieb in
   Variante je Farbe (`keine-mustervariante`) – sie stehen nur in der Liste.
 - **Ablage** `$TP_PRIVAT_DIR/mustersperre.json` (nur anhängen, Teil von `daten:sichern`): je Ereignis SKU,
   Farbe, Produkt, Auftrag, wer, wann, Grund („nicht verfuegbar“ | „wieder verfuegbar“) und
-  `shopify {geschrieben, fehler, fehlerGrund, variantId, productId, vorher, nachher, verfuegbar}`. Der Stand
-  je SKU ergibt sich aus der Folge (`stand()`); `vorher` stammt aus dem ersten Sperr-Ereignis. Dieselbe SKU
+  `shopify {geschrieben, aenderungMoeglich?, fehler, fehlerGrund, variantId, productId, vorher, nachher, verfuegbar}`.
+  `geschrieben` bestaetigt die Sperre; `aenderungMoeglich` erfasst auch Teilmutationen und unlesbare
+  Gegenproben. Alte unklare Ereignisse, insbesondere mit gespeichertem Vorstand, bleiben pruefpflichtig. Der Stand
+  je SKU ergibt sich aus der Folge (`stand()`); `vorher` stammt aus dem ersten Sperr-Ereignis mit bestaetigter oder moeglicher Aenderung.
+  Ein ausdruecklich sicher ungeschriebener Versuch friert keinen Vorstand ein; vor einer spaeteren
+  echten Sperre zaehlt dann die frisch gelesene Ausgangslage. Dieselbe SKU
   für denselben Auftrag noch einmal = nichts zu tun. Nur eine fehlende Datei gilt als leer; eine
   beschädigte lehnt den Schritt ab (es wird gar nichts geschrieben) und meldet sich im Musterlager.
 - **Ohne Recht, ohne Zugang, bei Fehlern** gilt der Schritt trotzdem; die Sperre steht als „im Shop noch
@@ -1339,7 +1343,13 @@ Bedarf neue Muster. Bis dahin stand so ein Auftrag nur als Notiz da und blieb in
 - **Wieder verfügbar** (Einkauf › Musterlager › „Im Shop gesperrte Muster“) stellt den Stand vor der
   Sperre her: war die Variante ohne Bestandsverfolgung, wird sie es wieder (sonst wäre sie nach der
   nächsten Musterbestellung mit Bestand 1 von selbst wieder gesperrt); war sie verfolgt, kommt die alte
-  Menge zurück, mindestens 1. Gegenprobe, Protokoll („Muster wieder verfügbar“), Audit.
+  Menge zurück, mindestens 1. Erfolg verlangt den exakten Zielstand (Verfolgung, Richtlinie und
+  Menge am vorhandenen Standort) plus bestaetigte Bestellbarkeit, auch beim Bereits-Pfad. Das gilt
+  auch fuer lokal offene Sperren mit moeglicher Shop-Aenderung; fehlender Zugang darf sie nicht
+  entfernen. Nur sicher ungeschriebene Versuche lassen sich lokal herausnehmen. Fehlgeschlagene
+  Freigaben bleiben mit Fehler in der offenen Liste, der erste Vorstand bleibt fuer Wiederholungen
+  erhalten. Eine lokal leere, verfolgte DENY-Variante gilt bei globaler Bestellbarkeit nie als gesperrt;
+  weitere Standorte werden dabei nicht automatisch veraendert. Protokoll („Muster wieder verfügbar“), Audit.
 - **Endpunkte:** `GET /api/einkauf/mustersperre` (`gesperrt`, `offen`, `fehler`; dieselbe Liste hängt als
   `sperren` an `GET /api/einkauf/musterlager`), `POST /api/einkauf/mustersperre` mit
   `aktion: freigeben | nachholen` und `sku` (Schreibpfad: Rolle „lesen“ 403). Der Schritt selbst läuft wie
