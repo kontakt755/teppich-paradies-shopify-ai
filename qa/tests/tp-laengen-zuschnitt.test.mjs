@@ -431,3 +431,84 @@ test('Laeufer: fail closed ohne Option "Breite"', async () => {
   p.options_with_values = [{ name: 'Farbe' }, { name: 'Größe' }];
   assert.equal((await laeuferRendern(p)).trim(), '');
 });
+
+// Schrauben zu Profilen: Stueckzahl aus dem Bohrbild des Lieferanten
+// (30 mm Randabstand, Lochabstand unter 160 mm), auf Wunsch als eigene
+// Zeile derselben _Gruppe.
+test('Schrauben: Bohrungen je Profil nach Randabstand und Lochabstand', () => {
+  assert.equal(L.lochzahl(100, 30, 160), 7); // 940 mm -> 6 Abstaende
+  assert.equal(L.lochzahl(95, 30, 160), 7); // 890 mm -> 6 Abstaende
+  assert.equal(L.lochzahl(38, 30, 160), 4); // 320 mm genau 2 x 160 -> 3 Abstaende, unter 160
+  assert.equal(L.lochzahl(10, 30, 160), 2);
+  assert.equal(L.lochzahl(175, 30, 160), 12);
+  assert.equal(L.lochzahl(5, 30, 160), 1);
+  assert.equal(L.lochzahl(100, 30, 0), 0);
+  assert.equal(L.lochzahl('', 30, 160), 0);
+});
+
+test('Schrauben: Ausfuehrung kommt aus der Profil-Variante, sonst keine', () => {
+  const s = { varianten: [{ id: 1, price: 10, art: 'vernickelt' }, { id: 2, price: 10, art: 'vermessingt' }, null] };
+  assert.equal(L.schraubeFuer(s, { schraube: 'vermessingt' }).id, 2);
+  assert.equal(L.schraubeFuer(s, { schraube: ' Vernickelt ' }).id, 1);
+  assert.equal(L.schraubeFuer(s, { schraube: 'brüniert' }), null);
+  assert.equal(L.schraubeFuer(s, { schraube: null }), null);
+  assert.equal(L.schraubeFuer(null, { schraube: 'vernickelt' }), null);
+  assert.equal(L.schraubeFuer({ varianten: [{ id: 3, price: 0, art: 'vernickelt' }] }, { schraube: 'vernickelt' }), null);
+});
+
+test('Schrauben: Summe enthaelt Schrauben, Streichpreis nur auf das Profil', () => {
+  const e = { laenge: '95', anzahl: '10', preisCent: 69, vergleichCent: 79, minCm: 10, maxCm: 175, maxStueck: 50 };
+  const ohne = L.rechnen(e);
+  assert.equal(ohne.schraubenStueck, 0);
+  const mit = L.rechnen({ ...e, schraube: { preisCent: 10, randMm: 30, abstandMm: 160 } });
+  assert.equal(mit.loecher, 7);
+  assert.equal(mit.schraubenStueck, 70);
+  assert.equal(mit.schraubenCent, 700);
+  assert.equal(mit.summeCent, 69 * 950 + 700);
+  assert.equal(mit.altSummeCent, 79 * 950 + 700);
+});
+
+test('Schrauben: eigene Zeile derselben Gruppe, ohne Schrauben nur das Profil', () => {
+  const erg = L.rechnen({ laenge: '95', anzahl: '10', preisCent: 69, minCm: 10, maxCm: 175, maxStueck: 50, schraube: { preisCent: 10, randMm: 30, abstandMm: 160 } });
+  const basis = { erg, varianteId: 11, variantenTitel: 'Messing poliert', produkt: 'Treppenkante Messing', bohrung: 'gebohrt', gruppe: 'g1' };
+  const zeilen = L.profilZeilen({ ...basis, schraube: { id: 99, price: 10, art: 'vermessingt' } });
+  assert.equal(zeilen.length, 2);
+  assert.deepEqual(zeilen[0], { id: 11, quantity: 950, properties: L.eigenschaften(erg, 'gebohrt', 'g1') });
+  assert.equal(zeilen[1].id, 99);
+  assert.equal(zeilen[1].quantity, 70);
+  assert.equal(zeilen[1].properties._Gruppe, 'g1');
+  assert.equal(zeilen[1].properties['Zu Treppenkante'], 'Treppenkante Messing – Messing poliert');
+  assert.equal(zeilen[1].properties.Bohrungen, '10 Stück × 7 je 95 cm');
+  assert.equal(L.profilZeilen({ ...basis, schraube: null }).length, 1);
+  // Schraubenzeile ist Service (Produkttyp) und haengt an der Profilzeile.
+  const cart = [
+    { key: 'a', quantity: 950, properties: zeilen[0].properties, preisPro001Lfm: true, optionen: [], typ: 'Abschlussprofile' },
+    { key: 'b', quantity: 70, properties: zeilen[1].properties, optionen: ['vermessingt'], typ: 'Service' },
+  ];
+  assert.equal(G.hauptzeile(cart[1], cart).key, 'a');
+});
+
+test('Schrauben: Block gibt Schrauben und Ausfuehrung je Variante nur mit Produkt aus', async () => {
+  const p = produkt();
+  p.variants[0].metafields = { service: { schraube: val('vermessingt') } };
+  const ohne = await blockRendern(p);
+  assert.equal(daten(ohne).schrauben, undefined);
+  assert.doesNotMatch(ohne, /data-schrauben-feld/);
+  const sp = { title: 'Schrauben 3,0 × 30 mm', variants: [
+    { id: 91, price: 10, available: true, option1: 'vernickelt' },
+    { id: 92, price: 10, available: true, option1: 'vermessingt' },
+    { id: 93, price: 0, available: true, option1: 'brüniert' },
+  ] };
+  const html = await engine.parseAndRender(blockOhneSchema, {
+    product: p, block: { id: 'abc_1', settings: { max_stueck: 50, messhilfe: '', preishinweis: 'x', schrauben_produkt: sp, schrauben_rand_mm: 30, schrauben_lochabstand_mm: 160 }, shopify_attributes: '' },
+    settings: { tp_versand_frei_ab: 150 }, pages: {}, routes: { cart_url: '/cart' },
+  });
+  const d = daten(html);
+  assert.deepEqual(d.schrauben.varianten.filter(Boolean).map((s) => s.art), ['vernickelt', 'vermessingt']);
+  assert.equal(d.schrauben.rand_mm, 30);
+  assert.equal(d.schrauben.lochabstand_mm, 160);
+  assert.equal(d.varianten[0].schraube, 'vermessingt');
+  assert.equal(d.varianten[1].schraube, null);
+  assert.match(html, /data-schrauben-feld hidden/);
+  assert.doesNotMatch(html, /data-schrauben[^-][^>]*checked/);
+});

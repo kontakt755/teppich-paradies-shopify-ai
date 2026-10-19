@@ -22,6 +22,14 @@
   Optional service.min_seite_cm (Zahl): kleinste Laenge je Stueck, sonst 10 cm.
   Angeboten werden nur Varianten mit Preis > 0.
 
+  Profile: Schrauben (Einstellung schrauben_produkt, Preis je Schraube, Option 1
+  = Ausfuehrung wie "vernickelt"). Jede Profil-Variante nennt im Metafeld
+  service.schraube die passende Ausfuehrung; fehlt sie oder gibt es die
+  Variante nicht, wird keine Schraube angeboten. Nur bei "gebohrt" und nur auf
+  ausdruecklichen Wunsch (Kaestchen nicht vorbelegt). Stueckzahl je Profil aus
+  dem Bohrbild des Lieferanten: Randabstand und Lochabstand (Einstellungen),
+  siehe TPLaengenZuschnitt.lochzahl.
+
   Die Warenkorbzeile traegt "Laenge je Stueck", "Anzahl", "Gesamtlaenge",
   "Bohrung" und eine eigene _Gruppe (Menge gesperrt, siehe
   snippets/tp-cart-gruppe.liquid). Eine Zeile dieses Produkts ohne
@@ -46,6 +54,16 @@
     endif
   elsif tp_lz_bohrungen.size > 0
     assign tp_lz_ausf_ok = true
+  endif
+  # Profile: Schrauben-Produkt (nur ausserhalb des Laeufer-Modus).
+  assign tp_lz_schrauben = false
+  if tp_lz_laeufer == false and block.settings.schrauben_produkt != blank
+    for tp_lz_s in block.settings.schrauben_produkt.variants
+      if tp_lz_s.available and tp_lz_s.price > 0
+        assign tp_lz_schrauben = true
+        break
+      endif
+    endfor
   endif
   # Breite des Laeufers = Wert der Option "Breite" (zum Abgleich mit der Einfassung).
   assign tp_lz_bi = -1
@@ -139,6 +157,16 @@
       <p class="tp-ek__bandfest">Bohrung: <span>{{ tp_lz_bohrungen.first | escape }}</span></p>
     {%- endif -%}
 
+    {%- if tp_lz_schrauben -%}
+      <div class="tp-lz__schrauben" data-schrauben-feld hidden>
+        <label class="tp-lz__schrauben-wahl">
+          <input type="checkbox" data-schrauben>
+          <span>Passende Schrauben mitbestellen <span data-schrauben-text></span></span>
+        </label>
+        {%- if block.settings.schrauben_hinweis != blank -%}<p class="tp-ek__grenzen">{{ block.settings.schrauben_hinweis | escape }}</p>{%- endif -%}
+      </div>
+    {%- endif -%}
+
     <div class="tp-ek__preis" aria-live="polite" data-rechnung hidden>
       <div class="tp-ek__summe"><span>Gesamtpreis</span><span class="tp-ek__summe-werte"><s class="tp-ek__summe-alt" data-summe-alt hidden></s><strong data-summe>–</strong></span></div>
       <p class="tp-ek__rechenzeile" data-rechenzeile></p>
@@ -172,6 +200,21 @@
           null
         ],
         {%- endif %}
+        {%- if tp_lz_schrauben %}
+        "schrauben": {
+          "produkt": {{ block.settings.schrauben_produkt.title | json }},
+          "rand_mm": {{ block.settings.schrauben_rand_mm | default: 30 | json }},
+          "lochabstand_mm": {{ block.settings.schrauben_lochabstand_mm | default: 160 | json }},
+          "varianten": [
+            {%- for tp_lz_s in block.settings.schrauben_produkt.variants -%}
+              {%- if tp_lz_s.available and tp_lz_s.price > 0 -%}
+                { "id": {{ tp_lz_s.id | json }}, "price": {{ tp_lz_s.price | json }}, "art": {{ tp_lz_s.option1 | json }} },
+              {%- endif -%}
+            {%- endfor -%}
+            null
+          ]
+        },
+        {%- endif %}
         "selected_id": {{ product.selected_or_first_available_variant.id | json }},
         "varianten": [
           {%- for tp_lz_v in product.variants -%}
@@ -182,6 +225,7 @@
                 "compare_at_price": {% if tp_lz_aktion == 'ja' and tp_lz_v.compare_at_price > tp_lz_v.price %}{{ tp_lz_v.compare_at_price | json }}{% else %}null{% endif %},
                 "available": {{ tp_lz_v.available | json }},
                 "breite": {% if tp_lz_bi >= 0 %}{{ tp_lz_v.options[tp_lz_bi] | json }}{% else %}null{% endif %},
+                "schraube": {{ tp_lz_v.metafields.service.schraube.value | json }},
                 "titel": {{ tp_lz_v.title | json }}
               },
             {%- endif -%}
@@ -200,6 +244,9 @@
   .tp-lz .tp-ek__form-karte svg circle { fill: currentColor; stroke: none; }
   .tp-lz .tp-ek__rechenzeile { margin: 6px 0 0; font-size: var(--tp-fs-sm); color: var(--tp-ek-muted); white-space: pre-line; }
   .tp-lz__einfassung { display: flex; flex-direction: column; gap: 6px; max-width: 420px; }
+  .tp-lz__schrauben { margin: 4px 0 0; }
+  .tp-lz__schrauben-wahl { display: flex; align-items: flex-start; gap: 10px; min-height: 44px; font-size: var(--tp-fs-md); cursor: pointer; }
+  .tp-lz__schrauben-wahl input { width: 20px; height: 20px; margin: 2px 0 0; flex: none; accent-color: var(--tp-ink, #15171a); }
   .tp-lz__einfassung select { min-height: 44px; padding: 0 12px; border: 1px solid var(--tp-ek-border, #d8d6d2); border-radius: 8px; background: #fff; font: inherit; font-size: var(--tp-fs-base); }
 {% endstylesheet %}
 
@@ -237,6 +284,39 @@
       "type": "text",
       "id": "einfass_hinweis",
       "label": "Läufer: Hinweis unter der Einfassung"
+    },
+    {
+      "type": "product",
+      "id": "schrauben_produkt",
+      "label": "Profil: Schrauben-Produkt",
+      "info": "Preis je Schraube, Option 1 = Ausführung (z. B. vernickelt, vermessingt). Die Profil-Variante nennt die passende Ausführung im Metafeld service.schraube."
+    },
+    {
+      "type": "range",
+      "id": "schrauben_rand_mm",
+      "label": "Profil: Randabstand der Bohrung",
+      "min": 10,
+      "max": 60,
+      "step": 1,
+      "unit": "mm",
+      "default": 30
+    },
+    {
+      "type": "range",
+      "id": "schrauben_lochabstand_mm",
+      "label": "Profil: Lochabstand höchstens",
+      "info": "Der Abstand zwischen zwei Bohrungen bleibt unter diesem Wert.",
+      "min": 100,
+      "max": 300,
+      "step": 10,
+      "unit": "mm",
+      "default": 160
+    },
+    {
+      "type": "text",
+      "id": "schrauben_hinweis",
+      "label": "Profil: Hinweis unter den Schrauben",
+      "default": "Für Holzstufen. Auf Beton oder Stein zusätzlich Dübel verwenden."
     },
     {
       "type": "text",
