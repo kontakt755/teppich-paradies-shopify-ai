@@ -1368,6 +1368,7 @@ Abmeldung, mit Abmelde-Satz in jeder Mail. WhatsApp und Shopify Messaging waren 
   `operations/tests/smtp-attrappe.mjs`). Das Passwort steht in keiner Meldung und keinem Protokoll.
 - **Mitlesen**: In den ersten 7 Tagen nach dem ersten echten Versand (`ersterVersandAm`) geht jede Mail als
   Blindkopie an `kopie` (Standard: der Absender, also das Büro); danach nur noch mit `kopieImmer: true`.
+  `"kopie": false` schaltet die Blindkopie ganz ab, auch in der ersten Woche (Inhaber 2026-10-19).
   Die Karte zeigt „bis <Datum> mit Kopie an …“.
 - **Stoppliste** `$TP_PRIVAT_DIR/nachfassen/stoppliste.json` (`{ eintraege: { "<adresse klein>": { am, von,
   grund, orderId } } }`): Knopf „Abgemeldet“ in der Karte (Rückfrage, dann `POST
