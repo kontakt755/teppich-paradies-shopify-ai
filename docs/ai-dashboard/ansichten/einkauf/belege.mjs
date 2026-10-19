@@ -63,6 +63,17 @@ export function belegArbeit(d = belege.daten) {
   return arbeitAus(d);
 }
 
+/**
+ * Kurzer Belegstand einer bestellten Position fuer die Karten im Einkauf: "AB 14.10. · LS 16.10."
+ * - leer, solange nichts zugeordnet ist (dann sagt die Zeile nichts, statt "AB fehlt" zu raten).
+ */
+export function belegStandText(orderId, lieferant) {
+  const z = belege.daten?.zeilen?.find(x => x.orderId === orderId && x.lieferant === lieferant);
+  if (!z) return '';
+  const teil = (kurz) => (kurz ? `${ART_KURZ[kurz.art] || ''} ${fmtDate(kurz.datum).slice(0, 6)}`.trim() : null);
+  return [z.storno ? `Storno ${fmtDate(z.storno.datum).slice(0, 6)}` : null, teil(z.ab), teil(z.lieferschein)].filter(Boolean).join(' · ');
+}
+
 /** Zeile "Postfach zuletzt gelesen" - und ob sie auffallen muss. */
 export function laufStand(d = belege.daten) {
   const l = d?.letzterLauf;
@@ -116,18 +127,18 @@ function vorschlagHtml(b) {
 
 /**
  * Belege ohne Shop-Bestellung - meist Laden- und Telefonbestellungen. Kein To-do: eine Zeile mit
- * der Zahl, aufklappbar (Parameter bo), darin je Absender "Kein Shop-Lieferant" und je Beleg
+ * der Zahl, aufklappbar (Parameter blo), darin je Absender "Kein Shop-Lieferant" und je Beleg
  * "Zuordnen…" fuer den Fall, dass doch eine Shop-Bestellung dahintersteht.
  */
 function ohneHtml(ohne) {
   if (!ohne.length) return '';
-  const auf = Boolean(state.route.params.get('bo'));
+  const auf = Boolean(state.route.params.get('blo'));
   const lesend = istNurLesend();
   const gruppen = [...ohne.reduce((m, b) => m.set(b.domain || b.von, [...(m.get(b.domain || b.von) || []), b]), new Map())]
     .sort((a, b) => b[1].length - a[1].length);
   const kopf = `<h2 class="section-title">Ohne Shop-Bestellung <span class="muted">${ohne.length}</span></h2>
     <p class="small muted bl-ohne-text">Meist Laden- oder Telefonbestellungen (letzte 30 Tage). Gehört doch einer zu einer Shop-Bestellung: „Zuordnen…“. Liefert ein Absender nie für den Shop: „Kein Shop-Lieferant“ – dann erscheint er hier nicht mehr.
-    <button type="button" class="heute-hg-knopf" data-param="bo" data-value="${auf ? '' : '1'}" aria-expanded="${auf}">${auf ? 'Zuklappen' : `${gruppen.length} ${gruppen.length === 1 ? 'Absender' : 'Absender'} ansehen`}</button></p>`;
+    <button type="button" class="heute-hg-knopf" data-param="blo" data-value="${auf ? '' : '1'}" aria-expanded="${auf}">${auf ? 'Zuklappen' : `${gruppen.length} ${gruppen.length === 1 ? 'Absender' : 'Absender'} ansehen`}</button></p>`;
   if (!auf) return `<section class="bl-abschnitt">${kopf}</section>`;
   const gruppeHtml = ([domain, liste]) => {
     const kannAbsender = !lesend && domain && !FREEMAIL.includes(domain);
@@ -159,14 +170,14 @@ function belegZelle(kurz) {
 }
 
 function abgleichHtml(d) {
-  const filter = ['abweichung', 'beleg'].includes(state.route.params.get('ba')) ? state.route.params.get('ba') : '';
+  const filter = ['abweichung', 'beleg'].includes(state.route.params.get('blf')) ? state.route.params.get('blf') : '';
   const mitAbw = d.zeilen.filter(z => z.hinweise.length);
   const mitBeleg = d.zeilen.filter(z => z.belege.length);
   const liste = filter === 'abweichung' ? mitAbw : filter === 'beleg' ? mitBeleg : d.zeilen;
-  const seite = Math.max(1, Number(state.route.params.get('bs')) || 1);
+  const seite = Math.max(1, Number(state.route.params.get('bls')) || 1);
   const seiten = Math.max(1, Math.ceil(liste.length / SEITE_AUFTRAG));
   const sichtbar = liste.slice((Math.min(seite, seiten) - 1) * SEITE_AUFTRAG, Math.min(seite, seiten) * SEITE_AUFTRAG);
-  const chip = (wert, text, n, ton = '') => `<button type="button" class="chip" aria-pressed="${filter === wert}" data-param="ba" data-value="${wert}">${text} <span class="${n && ton ? ton : 'muted'}">${n}</span></button>`;
+  const chip = (wert, text, n, ton = '') => `<button type="button" class="chip" aria-pressed="${filter === wert}" data-param="blf" data-value="${wert}">${text} <span class="${n && ton ? ton : 'muted'}">${n}</span></button>`;
   const chips = `<div class="chips bl-chips" role="group" aria-label="Auswahl">
     ${chip('', 'Alle', d.zeilen.length)}${chip('beleg', 'Mit Beleg', mitBeleg.length)}${chip('abweichung', 'Passt nicht zusammen', mitAbw.length, 'bl-warn')}
   </div>`;
@@ -182,9 +193,9 @@ function abgleichHtml(d) {
       <td>${z.hinweise.map(h => `<span class="bl-hinweis ${HINWEIS[h]?.[0] || ''}">${esc(HINWEIS[h]?.[1] || h)}</span>`).join(' ')}</td>
     </tr>`).join('');
   const blaettern = seiten > 1 ? `<div class="bl-blaettern">
-      <button type="button" class="btn btn-sm" ${seite <= 1 ? 'disabled' : ''} data-param="bs" data-value="${seite - 1}">← Zurück</button>
+      <button type="button" class="btn btn-sm" ${seite <= 1 ? 'disabled' : ''} data-param="bls" data-value="${seite - 1}">← Zurück</button>
       <span class="small muted">Seite ${Math.min(seite, seiten)} von ${seiten}</span>
-      <button type="button" class="btn btn-sm" ${seite >= seiten ? 'disabled' : ''} data-param="bs" data-value="${seite + 1}">Weiter →</button></div>` : '';
+      <button type="button" class="btn btn-sm" ${seite >= seiten ? 'disabled' : ''} data-param="bls" data-value="${seite + 1}">Weiter →</button></div>` : '';
   return `<section class="bl-abschnitt">
     <h2 class="section-title">Je Auftrag</h2>
     <p class="small muted">Bestellungen der letzten 45 Tage, die beim Lieferanten bestellt sind oder einen Beleg haben – AB und Lieferschein neben unserem Stand und Shopify.</p>
@@ -204,11 +215,11 @@ function zuordnungText(b) {
 }
 
 function alleHtml(d) {
-  const q = (state.route.params.get('bq') || '').trim().toLowerCase();
+  const q = (state.route.params.get('blq') || '').trim().toLowerCase();
   const passt = b => !q || [b.betreff, absenderText(b), b.refs?.kommission, ART_LABEL[b.art], ...b.zuordnung.orderIds.map(auftragText)]
     .some(v => String(v || '').toLowerCase().includes(q));
   const liste = d.belege.filter(passt);
-  const seite = Math.max(1, Number(state.route.params.get('bp')) || 1);
+  const seite = Math.max(1, Number(state.route.params.get('blp')) || 1);
   const seiten = Math.max(1, Math.ceil(liste.length / SEITE));
   const s = Math.min(seite, seiten);
   const lesend = istNurLesend();
@@ -226,20 +237,20 @@ function alleHtml(d) {
       <div class="bl-beleg-fuss"><span class="small">${zuordnungText(b)}</span><span class="bl-knoepfe">${aktion(b)}${gmailKnopf(b)}</span></div>
     </li>`).join('');
   const blaettern = seiten > 1 ? `<div class="bl-blaettern">
-      <button type="button" class="btn btn-sm" ${s <= 1 ? 'disabled' : ''} data-param="bp" data-value="${s - 1}">← Zurück</button>
+      <button type="button" class="btn btn-sm" ${s <= 1 ? 'disabled' : ''} data-param="blp" data-value="${s - 1}">← Zurück</button>
       <span class="small muted">Seite ${s} von ${seiten}</span>
-      <button type="button" class="btn btn-sm" ${s >= seiten ? 'disabled' : ''} data-param="bp" data-value="${s + 1}">Weiter →</button></div>` : '';
-  // Zugeklappt (Parameter bl), solange niemand sucht - die Arbeit steht weiter oben.
-  const auf = Boolean(state.route.params.get('bl')) || Boolean(q);
+      <button type="button" class="btn btn-sm" ${s >= seiten ? 'disabled' : ''} data-param="blp" data-value="${s + 1}">Weiter →</button></div>` : '';
+  // Zugeklappt (Parameter bla), solange niemand sucht - die Arbeit steht weiter oben.
+  const auf = Boolean(state.route.params.get('bla')) || Boolean(q);
   if (!auf) {
     return `<section class="bl-abschnitt"><h2 class="section-title">Alle Belege <span class="muted">${d.belege.length}</span></h2>
       <p class="small muted bl-ohne-text">Jeder erkannte Beleg mit Absender, Zuordnung und Link ins Postfach.
-      <button type="button" class="heute-hg-knopf" data-param="bl" data-value="1" aria-expanded="false">Ansehen und suchen</button></p></section>`;
+      <button type="button" class="heute-hg-knopf" data-param="bla" data-value="1" aria-expanded="false">Ansehen und suchen</button></p></section>`;
   }
   return `<section class="bl-abschnitt">
     <h2 class="section-title">Alle Belege <span class="muted">${d.belege.length}</span>
-      <button type="button" class="heute-hg-knopf" data-param="bl" data-value="" aria-expanded="true">Zuklappen</button></h2>
-    <div class="toolbar"><input type="search" autocomplete="off" placeholder="Betreff, Lieferant, Kunde oder #Nummer" value="${esc(state.route.params.get('bq') || '')}" data-param="bq" aria-label="Belege durchsuchen"></div>
+      <button type="button" class="heute-hg-knopf" data-param="bla" data-value="" aria-expanded="true">Zuklappen</button></h2>
+    <div class="toolbar"><input type="search" autocomplete="off" placeholder="Betreff, Lieferant, Kunde oder #Nummer" value="${esc(state.route.params.get('blq') || '')}" data-param="blq" aria-label="Belege durchsuchen"></div>
     ${liste.length ? `<ul class="bl-belege">${zeilen}</ul>${blaettern}` : `<p class="small muted">${d.belege.length ? `Nichts passt zu „${esc(q)}“.` : 'Noch keine Belege.'}</p>`}
   </section>`;
 }

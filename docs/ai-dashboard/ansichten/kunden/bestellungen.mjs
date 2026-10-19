@@ -238,7 +238,19 @@ export function viewKundenBestellungen() {
   const sort = params.get('bsort') || 'kundenname';
   const dir = params.get('bdir') || (sort === 'kundenname' ? 'asc' : 'desc');
   const zeilen = bestellzeileGefiltert(d.zeilen, params);
-  const gruppen = sort === 'kundenname' ? gruppiereBestellzeilenNachKunde(zeilen) : null;
+  const alleGruppen = sort === 'kundenname' ? gruppiereBestellzeilenNachKunde(zeilen) : null;
+  // Seitenweise (25 Kunden bzw. 25 Bestellungen): die volle Liste samt Produktinhalt wurde
+  // am Handy mehrere Meter lang (Codex-Audit 2026-10-19).
+  const einheiten = alleGruppen || zeilen;
+  const seiten = Math.max(1, Math.ceil(einheiten.length / BQ_SEITE));
+  const seite = Math.min(seiten, Math.max(1, Number(params.get('bseite')) || 1));
+  const ausschnitt = einheiten.slice((seite - 1) * BQ_SEITE, seite * BQ_SEITE);
+  const gruppen = alleGruppen ? ausschnitt : null;
+  const sichtbar = alleGruppen ? ausschnitt.flatMap(g => g.zeilen) : ausschnitt;
+  const blaettern = seiten > 1 ? `<div class="bq-blaettern">
+      <button type="button" class="btn btn-sm" ${seite <= 1 ? 'disabled' : ''} data-param="bseite" data-value="${seite > 2 ? seite - 1 : ''}">← Zurück</button>
+      <span class="small muted">Seite ${seite} von ${seiten}</span>
+      <button type="button" class="btn btn-sm" ${seite >= seiten ? 'disabled' : ''} data-param="bseite" data-value="${seite + 1}">Weiter →</button></div>` : '';
   const chips = `<div class="chips" style="margin:8px 0">
     ${FILTERCHIPS_KUNDEN.map(f => `<button type="button" class="chip" data-param="bfilter" data-value="${f === 'nicht_fertig' ? '' : f}" aria-pressed="${filter === f}">${esc(BQ_FILTER_LABEL[f])}</button>`).join('')}
   </div>`;
@@ -249,22 +261,25 @@ export function viewKundenBestellungen() {
   const gruppenkopf = g => `<tr class="bq-gruppenkopf"><th colspan="9" scope="rowgroup"><span>${esc(g.name)}</span><span class="small muted">${plural(g.zeilen.length, 'Bestellung', 'Bestellungen')}</span></th></tr>`;
   const tabelle = zeilen.length ? gruppen
     ? gruppen.map(g => `<tbody class="bq-tbody-desktop bq-kundengruppe">${gruppenkopf(g)}${g.zeilen.map(bestellzeileHtml).join('')}</tbody>`).join('')
-    : `<tbody class="bq-tbody-desktop">${zeilen.map(bestellzeileHtml).join('')}</tbody>`
+    : `<tbody class="bq-tbody-desktop">${sichtbar.map(bestellzeileHtml).join('')}</tbody>`
     : `<tbody><tr><td colspan="9">${emptyState('Keine Treffer.', '')}</td></tr></tbody>`;
   const karten = zeilen.length ? gruppen
     ? gruppen.map(g => `<section class="bq-kundengruppe-mobil"><h3>${esc(g.name)} <span class="small muted">· ${plural(g.zeilen.length, 'Bestellung', 'Bestellungen')}</span></h3>${g.zeilen.map(z => bestellzeileKarte(z, true)).join('')}</section>`).join('')
-    : zeilen.map(bestellzeileKarte).join('')
+    : sichtbar.map(bestellzeileKarte).join('')
     : emptyState('Keine Treffer.', '');
   return `
     <div class="toolbar search-hero"><input type="search" placeholder="Suchen – Kunde, E-Mail, Telefon, Bestellnummer, Produkt, Farbe, Tags …" value="${esc(params.get('bq') || '')}" data-param="bq" aria-label="Bestellungen durchsuchen"></div>
     ${chips}
-    <p class="small muted" style="margin:0 0 8px">${zeilen.length} ${zeilen.length === 1 ? 'Bestellung' : 'Bestellungen'} · Sortiert nach ${esc(BQ_SORT_LABEL[sort] || 'Kunde')} ${dir === 'asc' ? 'aufsteigend' : 'absteigend'} · Zeile anklicken zeigt Zeitleiste, Kanal, Tags und die Aktionen</p>
+    <p class="small muted" style="margin:0 0 8px">${zeilen.length} ${zeilen.length === 1 ? 'Bestellung' : 'Bestellungen'}${seiten > 1 ? ` · Seite ${seite} von ${seiten}` : ''} · Sortiert nach ${esc(BQ_SORT_LABEL[sort] || 'Kunde')} ${dir === 'asc' ? 'aufsteigend' : 'absteigend'} · Zeile anklicken zeigt Zeitleiste, Kanal, Tags und die Aktionen</p>
     <div class="table-wrap kunden-table bq-table"><table><thead>${kopf}</thead>
     ${tabelle}
     </table></div>
     <div class="rows bq-karten">${karten}</div>
+    ${blaettern}
   `;
 }
+
+const BQ_SEITE = 25;
 
 const FILTERCHIPS_KUNDEN = ['nicht_fertig', 'fertig', 'offen', 'bezahlt', 'unerfuellt', 'storniert', 'beratung', 'muster', 'test'];
 
@@ -284,6 +299,7 @@ export function kundenKlickBestellungen(e) {
     const richtung = warSortiert ? ((p.get('bdir') || (feld === 'kundenname' ? 'asc' : 'desc')) === 'desc' ? 'asc' : 'desc') : (feld === 'kundenname' ? 'asc' : 'desc');
     p.set('bsort', feld);
     if (richtung === (feld === 'kundenname' ? 'asc' : 'desc')) p.delete('bdir'); else p.set('bdir', richtung);
+    p.delete('bseite');
     location.hash = `#/${state.route.view}?${p}`;
     return true;
   }

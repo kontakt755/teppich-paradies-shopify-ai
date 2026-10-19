@@ -151,3 +151,4 @@ body.rolle-lesen [data-auftrag-erledigt] { display: none !important; }
   .lf-frage-knoepfe .btn { flex: 1 1 100%; }
   .lf-dialog .actions { flex-direction: column-reverse; align-items: stretch; }
 }
+.lf-beleg a { color: var(--text-2); text-decoration: underline dotted; text-underline-offset: 2px; }

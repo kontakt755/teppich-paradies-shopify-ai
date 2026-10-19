@@ -54,13 +54,15 @@ test('lieferantenKarten: zaehlt je Stufe, Muster getrennt, erledigt zaehlt nicht
   assert.equal(a.musterGruppen.length, 1);
 });
 
-test('lieferantenKarten: ueberfaellig ab 7 Tagen gelb, ab 14 rot - auch fuer "geliefert an uns"', () => {
+test('lieferantenKarten: Nachfassen ab 7 Tagen nur fuer Bestelltes; was bei uns liegt, steht unter "liegt bei uns"', () => {
   const a = karten().find(x => x.id === 'A');
   // a2 wartet 9 Tage (bestellt), a3 15 Tage (geliefert, noch nicht raus).
-  assert.deepEqual({ stufe: a.ueberfaellig.stufe, anzahl: a.ueberfaellig.anzahl, problem: a.ueberfaellig.problem, maxTage: a.ueberfaellig.maxTage }, { stufe: 'crit', anzahl: 2, problem: 1, maxTage: 15 });
-  // a2 und a3 gehoeren zur selben Kundenbestellung (o1): ein Auftrag, zwei Positionen.
+  assert.deepEqual({ stufe: a.ueberfaellig.stufe, anzahl: a.ueberfaellig.anzahl, problem: a.ueberfaellig.problem, maxTage: a.ueberfaellig.maxTage }, { stufe: 'warn', anzahl: 1, problem: 0, maxTage: 9 });
   assert.equal(a.ueberfaellig.auftraege, 1);
-  assert.match(ueberfaelligText(a.ueberfaellig).text, /^Überfällig: 1 Auftrag wartet \(2 Positionen\), der älteste seit 15 Tagen\.$/);
+  assert.equal(ueberfaelligText(a.ueberfaellig).text, 'Nachhaken: 1 Auftrag wartet, der älteste seit 9 Tagen.');
+  // Eingetroffene Ware wartet auf uns, nicht auf den Lieferanten (Codex-Audit 2026-10-19).
+  assert.deepEqual({ stufe: a.liegtBeiUns.stufe, anzahl: a.liegtBeiUns.anzahl, maxTage: a.liegtBeiUns.maxTage, auftraege: a.liegtBeiUns.auftraege }, { stufe: 'crit', anzahl: 1, maxTage: 15, auftraege: 1 });
+  assert.match(ueberfaelligText({ stufe: 'crit', anzahl: 2, auftraege: 1, maxTage: 15 }).text, /^Überfällig: 1 Auftrag wartet \(2 Positionen\), der älteste seit 15 Tagen\.$/);
   assert.deepEqual(ueberfaelligText({ stufe: 'warn', anzahl: 1, maxTage: 9 }), { stufe: 'warn', text: 'Nachhaken: 1 Auftrag wartet, der älteste seit 9 Tagen.' });
   // Mehrere Positionen einer Kundenbestellung sind ein Auftrag.
   assert.equal(ueberfaelligText({ stufe: 'warn', anzahl: 15, auftraege: 5, maxTage: 10 }).text, 'Nachhaken: 5 Aufträge warten (15 Positionen), der älteste seit 10 Tagen.');

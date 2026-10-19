@@ -118,8 +118,13 @@ export function lieferantenKarten({ gruppen = [], musterGruppen = [], lieferante
 
   const stamm = new Map((lieferanten || []).map(l => [l.id, l.stammdaten]));
   const karten = [...je.values()].map(k => {
-    const wartend = [...k.ware.bestellt, ...k.ware.eingetroffen, ...k.muster.bestellt, ...k.muster.eingetroffen].filter(x => x.warnstufe);
+    // Nachfassen beim Lieferanten nur fuer Bestelltes. Was schon bei uns liegt, wartet auf uns,
+    // nicht auf den Lieferanten - bis 2026-10-19 stand es mit dessen Telefonnummer unter
+    // "Nachfassen" (Codex-Audit). Es steht jetzt unter `liegtBeiUns` ("rausgeben").
+    const wartend = [...k.ware.bestellt, ...k.muster.bestellt].filter(x => x.warnstufe);
     wartend.sort((a, b) => b.wartetage - a.wartetage);
+    const liegt = [...k.ware.eingetroffen, ...k.muster.eingetroffen].filter(x => x.warnstufe);
+    liegt.sort((a, b) => b.wartetage - a.wartetage);
     const st = stamm.get(k.id) || leereStammdaten(k.id);
     const zahlen = {
       zuBestellen: k.ware.zuBestellen.length,
@@ -148,10 +153,17 @@ export function lieferantenKarten({ gruppen = [], musterGruppen = [], lieferante
         maxTage: wartend.length ? wartend[0].wartetage : null,
         positionen: wartend,
       },
+      liegtBeiUns: {
+        stufe: liegt.some(x => x.warnstufe === 'crit') ? 'crit' : liegt.length ? 'warn' : null,
+        anzahl: liegt.length,
+        auftraege: new Set(liegt.map(x => x.pos?.orderId || x.pos?.orderName).filter(Boolean)).size || liegt.length,
+        maxTage: liegt.length ? liegt[0].wartetage : null,
+        positionen: liegt,
+      },
     };
   });
   // Oben steht, wo heute etwas zu tun ist: erst zu bestellen, dann ueberfaellig, dann der Rest.
-  const rang = k => (k.zahlen.zuBestellen + k.zahlen.musterOffen ? 0 : k.ueberfaellig.stufe ? 1 : k.offenGesamt ? 2 : 3);
+  const rang = k => (k.zahlen.zuBestellen + k.zahlen.musterOffen ? 0 : k.ueberfaellig.stufe || k.liegtBeiUns.stufe ? 1 : k.offenGesamt ? 2 : 3);
   return karten.sort((a, b) => (a.id === UNGEKLAERT) - (b.id === UNGEKLAERT) || rang(a) - rang(b) || a.id.localeCompare(b.id));
 }
 

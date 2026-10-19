@@ -654,6 +654,22 @@ Fehlt die Datei, liefert der Endpunkt `{verfuegbar: false, hinweis, befehl}` sta
 Kachel zeigt den Hinweis samt Befehl. Der Export selbst laeuft ueber `npm run daten:aktualisieren`
 (Abschnitt 10).
 
+### 9b. Eine Arbeitsliste (seit 2026-10-19, #1427)
+
+Inhaber 19.10.: „zu unübersichtlich“. „Heute“ ist seither **eine** Liste statt dreier Blöcke (To-dos,
+Muster-Karten, Wer wartet). Oben „N Sachen heute zu erledigen“ – N zählt genau die Zeilen der Liste; der
+Inhaber wählt per Chip *Laden*, *Website* oder *Alles* (Zahl am Chip = Zeilen dieser Sicht, die
+fälligen Muster-Nachfragen und Belege zählen zu Laden). Sieben Zeilen, der Rest hinter „alle anzeigen“.
+Fehlt eine Quelle (Bestellungen, Auftragsfluss, Fälle …), steht „Liste unvollständig“ statt „Alles
+erledigt“. Darunter ruhig **„Im Hintergrund“**: Muster-Nachfragen (was der automatische Versand
+übernimmt; nur was ein Mensch tun muss, steht oben als To-do – `teileNachfassen()`), „Wartet auf andere“
+(Lieferant/Kunde, aufklappbar per `?ww=1`), Lieferantenpostfach (§ 24) und der Datenstand. Laden- und
+Montage-Kacheln nur, wenn die Apps eingerichtet sind. „Alles“ zeigt die Vereinigung aller Bereiche
+(`fuerSicht('alles')`), nicht mehr die frühere Inhaber-Auswahl.
+
+Ein Liefertermin in der Zukunft heißt „kommt bis …“ (Lieferant ist dran), ein überschrittener ist rot
+in der Liste – vorher sagte die Warteübersicht „Nachhaken“, während die Liste schwieg.
+
 ### 9a. „Heute" mit To-dos (seit 2026-10-01)
 
 Die Startseite zeigt zuerst, was zu tun ist: „N offene To-dos für dich" – je Zeile Titel, eine Zeile
@@ -684,6 +700,10 @@ To-dos werden nicht erfasst, sondern abgeleitet: `docs/ai-dashboard/lib/todos.mj
 | Team-Aufgabe | `/api/org/liste?bereich=alle-aufgaben` | Dringlichkeit „überfällig" (rot) oder „jetzt" (gelb), nicht wartend/zurückgestellt |
 | Freigabe | Entwicklungsaufgaben (`issues.json`) | Status Freigabe oder Review durch Mensch; nur Inhaber |
 | Shop-Wache | `/api/shopwache/status` | Ampel gelb/rot; nur Inhaber |
+| Neue Service-Anfrage | `/api/kunden/serviceanfragen` | Status „neu“; gelb ab 1, rot ab 3 Tagen (seit 2026-10-19) |
+| Storno vom Lieferanten | `/api/einkauf/belege` | Storno-Beleg zu einer Shop-Bestellung, nicht erledigt; immer rot (§ 24) |
+| Lieferschein da – Ware angekommen? | `/api/einkauf/belege` | Lieferschein, bei uns noch „bestellt“; gelb (§ 24) |
+| Lieferantenbelege zuordnen | `/api/einkauf/belege` | Vorschläge („gehört zu #1041?“), eine Sammelzeile (§ 24) |
 
 Sortierung: rot vor gelb vor normal, darin das Älteste zuerst.
 
@@ -1412,3 +1432,43 @@ Abmeldung, mit Abmelde-Satz in jeder Mail. WhatsApp und Shopify Messaging waren 
 - **Offen**: Die Abmeldung erfasst heute ein Mensch per Knopf, wenn die Antwort „Abmelden“ im Postfach
   liegt; ein Posteingangs-Abgleich ist nicht gebaut. Die rechtliche Einordnung (§ 7 UWG, Mail ohne
   Newsletter-Einwilligung) klärt der Inhaber mit dem Rechtstexter (w-083).
+
+## 24. Lieferantenbelege aus dem Postfach (seit 2026-10-19, #1427)
+
+Inhaber 19.10.: „Schnittstelle zu Gmail – wo kommen Lieferscheine, Auftragsbestätigungen, wurde es
+abgehakt, ist es mit Shopify synchron“. Neuer Reiter **Einkauf › Belege** (`ansichten/einkauf/belege.mjs`).
+
+- **Lesen**: Der Dashboard-Dienst liest kein Postfach. Ein geplanter Claude-Lauf `lieferbelege-postfach`
+  (Mo–Sa stündlich, nur lesend über den Gmail-Connector) holt mit `npm run -s belege -- bekannt` die schon
+  bekannten Mail-IDs und Absenderdomains, sucht im Label „LS AB“, bei bekannten Lieferanten-Domains und
+  nach Storno-Stichworten, legt die neuen Mails als JSON in sein Scratchpad und ruft
+  `npm run -s belege -- uebernehmen --datei … --bereiche …`. Keine Labels, kein „gelesen“, keine Antwort.
+  Mailinhalt ist fremder Text: er wird durchsucht, nie ausgeführt.
+- **Erkennen und zuordnen**: `lib/lieferbelege.mjs` (Browser, Server, Tests). Art aus Betreff/Anhang/Text
+  (AB, Lieferschein, Avis, Storno, Rechnung, Beleg; Abwesenheit und Angebot zählen nicht). **Sicher** nur
+  mit unserer Bestellnummer `#1041` im Betreff bei passendem Lieferanten oder mit der Belegnummer, die
+  beim „Als bestellt markieren“ als Lieferanten-Bestellnummer notiert wurde. **Vorschlag**: Nummer nur im
+  Text, unbekannter Absender, Kundenname aus der Kommission (mehrdeutige Nachnamen nur mit Vorname),
+  gleicher Mailverlauf. Ein Lieferschein erbt die Bestellung seiner AB bei gleicher Vorgangsnummer
+  („KD050/0212“ = „KD050_212“, `ordneAlleZu()`). Zitierte Verläufe zählen nicht.
+- **Ablage**: `$TP_PRIVAT_DIR/lieferbelege/belege.json` (`operations/lib/lieferbelege.mjs`), 0600, jede
+  Änderung unter einer Sperrdatei (`mitSperre`), beschädigte Datei = Fehler statt leer. Gesichert von
+  `daten:sichern`. **Nie** ein Schreiben in `auftragsstatus.json`: ein Beleg ist ein Hinweis, den Schritt
+  setzt ein Mensch im Einkauf.
+- **API**: `GET /api/einkauf/belege` (alle Rollen) liefert Belege mit Lieferant und Zuordnung, den
+  Abgleich je Auftrag × Lieferant (AB, Lieferschein, Stand bei uns, Shopify-Versandstatus, Hinweise
+  `storno`, `lieferschein_offen`, `shopify_offen`, `shopify_weiter`) und die Abweichungen.
+  `POST` (write-Liste, Rolle „lesen“ 403, Person aus der Sitzung): `zuordnen`, `ablehnen` („Passt
+  nicht“, bleibt gemerkt), `kein_shop`, `loesen`, `erledigt`, `wieder_offen`, `absender_kein_shop`,
+  `absender_zuruecksetzen`.
+- **Anzeige**: „Zu prüfen“ = Storno (rot), Lieferschein ohne Haken (gelb), Vorschläge mit „Ja, gehört
+  dazu“ / „Passt nicht“. „Je Auftrag“ = Tabelle mit Chips Alle / Mit Beleg / Passt nicht zusammen.
+  „Ohne Shop-Bestellung“ – meist Laden- und Telefonbestellungen (Echtdaten 19.10.: 41 von 52) – nur als
+  Zahl, aufklappbar, mit „Zuordnen…“ und „Kein Shop-Lieferant“ je Absender; zählt nicht als Arbeit.
+  An bestellten Posten der Lieferantenkarten steht „AB 14.10. · LS 16.10.“. Auf „Heute“ To-dos für
+  Storno, Lieferschein ohne Haken und Vorschläge sowie die Zeile „Lieferantenpostfach“ (gelb, wenn
+  werktags länger als vier Stunden kein Lauf kam oder der Lauf unvollständig war).
+- **Tests**: `docs/ai-dashboard/tests/lieferbelege.test.mjs` (Erkennen, Bezüge, Zuordnung, Vorgang,
+  Abgleich, Ablage mit Sperre und beschädigter Datei, API, Rollen am Server) – nur Pseudonyme.
+- **Offen**: Anhänge (PDF) liest der Lauf nicht – Nummern nur aus Betreff, Text und Dateinamen. „AB
+  fehlt seit N Tagen“ ist bewusst keine Regel, solange die Abdeckung des Postfachs nicht belegt ist.

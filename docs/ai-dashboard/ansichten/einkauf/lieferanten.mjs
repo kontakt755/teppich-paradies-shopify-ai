@@ -7,6 +7,7 @@
  * nichts gesendet. Gezaehlt wird aus dem Stand im Browser (lib/einkauf-lieferanten.mjs),
  * damit Zahl und Liste nach einem Klick sofort zusammenpassen.
  */
+import { belegStandText } from './belege.mjs';
 import {
   lieferantenKarten, karteImFilter, ueberfaelligText, hauptAktion, bestellwegText, feldKlartext,
   telLink, verlauf, lieferzeiten, SCHWELLEN_STANDARD, gmailLink, afNorm } from '../../lib/einkauf-lieferanten.mjs';
@@ -144,6 +145,7 @@ function wareZeile(x, namen) {
       ${menge ? `<div class="lf-menge">${esc(menge)}</div>` : ''}
       ${aus.map(z => `<div class="s">${esc(z)}</div>`).join('')}
       ${wer ? `<div class="s lf-wer">${esc(wer)}</div>` : ''}
+      ${belegZeile(x.eintrag?.status, p.orderId, p.lieferant)}
       ${block.length ? `<div class="lf-grund">Blockiert: ${esc(block.join(' · '))}</div>` : ''}
     </div><div class="lf-posten-rechts">${warteChip(x)}${knopf}</div></li>`;
 }
@@ -156,7 +158,15 @@ function musterZeile(g, namen, { herkunft = false } = {}) {
       <div class="t">${esc(wer || 'Kunde unbekannt')}</div>
       <div class="s">${esc(musterText(g.positionen))}</div>
       ${woher ? `<div class="s lf-wer">${esc(woher)}</div>` : ''}
+      ${belegZeile(g.eintraege?.[0]?.eintrag?.status, g.orderId, g.positionen[0]?.lieferant)}
     </div><div class="lf-posten-rechts"><span class="lf-anzahl">${esc(plural(g.positionen.length, 'Muster', 'Muster'))}</span>${warteChip(g)}${musterSchrittKnopf(g.positionen, { klasse: 'btn btn-sm lf-zeilenknopf' })}</div></li>`;
+}
+
+/** Beleg vom Lieferanten (Postfach) an bestellten und eingetroffenen Posten: "AB 14.10. · LS 16.10.". */
+function belegZeile(status, orderId, lieferant) {
+  if (!['bestellt', 'geliefert'].includes(status) || !orderId || !lieferant) return '';
+  const text = belegStandText(orderId, lieferant);
+  return text ? `<div class="s lf-beleg"><a href="#/einkauf?tab=belege&amp;blf=beleg" title="Beleg vom Lieferanten aus dem Postfach">${esc(text)}</a></div>` : '';
 }
 
 /** Ueberschrift einer Stufe: "Ware bestellen 3", darunter ein Satz, rechts der Knopf. */
@@ -216,6 +226,14 @@ function arbeitsSchritte(k, namen) {
     teile.push(`<section class="lf-schritt lf-nachfassen ${ue.stufe}">${stufeKopf('Nachfassen', ue.auftraege === 1 ? '1 Auftrag' : `${ue.auftraege} Aufträge`, nachfassKnopf(k), { zusatz: esc(satz) })}
       ${stufeListe(laufendZeilen(ue.positionen, namen).map(z => z.html), 0, '')}</section>`);
   }
+  // Liegt zu lange bei uns: rausgeben - das ist unsere Arbeit, kein Anruf beim Lieferanten.
+  const lbu = k.liegtBeiUns;
+  if (lbu?.stufe) {
+    const satz = `${plural(lbu.anzahl, 'Position liegt', 'Positionen liegen')} bei uns, die älteste seit ${plural(lbu.maxTage, 'Tag', 'Tagen')} – an den Kunden rausgeben oder Abholung klären.`;
+    const knopf = `<a class="btn" href="#/einkauf?${new URLSearchParams({ af: 'eingetroffen', lf: k.id })}">Rausgeben</a>`;
+    teile.push(`<section class="lf-schritt lf-nachfassen ${lbu.stufe}">${stufeKopf('Liegt bei uns', lbu.auftraege === 1 ? '1 Auftrag' : `${lbu.auftraege} Aufträge`, knopf, { zusatz: esc(satz) })}
+      ${stufeListe(laufendZeilen(lbu.positionen, namen).map(z => z.html), 0, '')}</section>`);
+  }
   // Ruhig darunter: was wir selbst da haben und was im Plan laeuft (nicht ueberfaellig).
   const ruhig = [];
   const eigen = k.muster.eigen || [];
@@ -265,12 +283,18 @@ function karteHtml(k, { gruppeKarte, namen, af, alleGruppen, alleMusterGruppen }
 }
 
 /**
- * Nachfassen ueber alle Lieferanten fuer die Kachel oben: Summe der Auftraege aus den Karten,
- * damit Kachel und Abschnitte "Nachfassen" dieselbe Menge zaehlen.
+ * Nachfassen ueber alle Lieferanten fuer die Kachel oben: verschiedene Auftraege aus den
+ * Abschnitten "Nachfassen". Ein Auftrag mit Ware von zwei Lieferanten zaehlt einmal - die
+ * Summe je Karte zaehlte ihn doppelt (Codex-Audit 2026-10-19).
  */
 export function nachfassenSumme() {
-  let auftraege = 0; let crit = false;
-  for (const k of karten()) if (k.ueberfaellig.stufe) { auftraege += k.ueberfaellig.auftraege; crit ||= k.ueberfaellig.stufe === 'crit'; }
+  const ids = new Set(); let ohneId = 0; let crit = false;
+  for (const k of karten()) {
+    if (!k.ueberfaellig.stufe) continue;
+    crit ||= k.ueberfaellig.stufe === 'crit';
+    for (const x of k.ueberfaellig.positionen) { const id = x.pos?.orderId || x.pos?.orderName; if (id) ids.add(id); else ohneId += 1; }
+  }
+  const auftraege = ids.size + ohneId;
   return { auftraege, stufe: auftraege ? (crit ? 'crit' : 'warn') : null };
 }
 
