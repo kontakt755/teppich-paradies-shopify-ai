@@ -142,6 +142,17 @@ export function musterNachfassen(bestellzeilen = [], { jetzt = new Date(), abgem
 }
 
 /** Kein Platzhalter mehr in Betreff oder Text - erst dann darf eine Mail raus. */
+/**
+ * Hat seit dem letzten Abruf von /api/kunden/muster-texte ein Versandlauf stattgefunden?
+ * Dann sind die Bestellzeilen im Browser veraltet (der Lauf hat "nachgefasst" gesetzt) und
+ * die Karte muss sie neu laden. Der erste Abruf (alt fehlt) zaehlt nicht - da sind die Zeilen frisch.
+ */
+export function neuerVersandlauf(alt, neu) {
+  const vorher = alt?.versand?.letzterLauf?.am || null;
+  const jetzt = neu?.versand?.letzterLauf?.am || null;
+  return Boolean(alt && jetzt && jetzt !== vorher);
+}
+
 export function platzhalterFrei(mail) {
   if (!mail || typeof mail !== 'object') return false;
   const rest = /\{[^{}\n]+\}/;

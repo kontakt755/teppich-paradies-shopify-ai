@@ -2,6 +2,18 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-19 · „Muster nachfassen“: Karte nach einem Versandlauf aktuell
+
+- **Geändert:** Nach dem ersten Lauf (4 Mails) standen die Kunden in einem offenen Tab weiter als „offen“ –
+  die Bestellzeilen werden je Tab nur einmal geladen, nur die Vorlage (mit „letzter Lauf“) alle 30 s.
+  Meldet `/api/kunden/muster-texte` einen neuen Lauf (`neuerVersandlauf()`), lädt „Heute“ die
+  Bestellzeilen nach (`ladeBestellzeilenNeu()`); ebenso nach einem abgelehnten „Jetzt senden“.
+  `dashboard:pruefen` kopiert `nachfassen/` weiterhin nicht (Kommentar: sonst echte Mails aus der Prüfung).
+- **Getestet:** Unit-Test `neuerVersandlauf` (erster Abruf, erster Lauf, neuer Lauf, gleicher Lauf),
+  `npm test` grün, `dashboard:pruefen` Heute/Kunden alle Breiten OK.
+- **Risiken/Annahmen:** Aktualisiert wird, solange „Heute“ offen ist und offene Zeilen zeigt.
+- **Nächste Stufe:** —
+
 ## 2026-10-19 · Bestellungen: Zwei-Wege-Abgleich mit Shopify (#1419)
 
 - **Geändert:** Was in Shopify versendet ist, steht im Control Center nach dem nächsten Bestellexport

@@ -15,11 +15,11 @@
 import { state } from '../../kern/zustand.mjs';
 import { esc, fmtDate, fmtDateTime, plural, toast } from '../../kern/helfer.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
-import { fetchEinkauf, orgSchreiben } from '../../kern/api.mjs';
+import { orgSchreiben } from '../../kern/api.mjs';
 import { render } from '../../kern/render.mjs';
 import { kunden } from '../kunden/gemeinsam.mjs';
 import { musterNachfassen, fuelleText, mailtoLink, STUFE_LABEL, ERSTE_NACH_TAGEN, ERINNERUNG_NACH_TAGEN } from '../../lib/muster-nachfassen.mjs';
-import { heuteDaten } from './daten.mjs';
+import { heuteDaten, ladeBestellzeilenNeu } from './daten.mjs';
 
 /** Steht in der Zeitleiste als "von", wenn der Versandlauf nachgefasst hat (operations/lib/nachfass-versand.mjs). */
 const AUTOMATISCH = 'automatisch';
@@ -224,9 +224,13 @@ function jetztSenden(knopf) {
       if (antwort?.zeitleisteFehler) toast(`E-Mail an ${antwort.an} verschickt${kopie} – Zeitleiste nicht gespeichert: ${antwort.zeitleisteFehler}`, 'warn', { dauer: 9000 });
       else toast(`E-Mail an ${antwort?.an || an} verschickt${kopie}`);
       // Die Zeile faellt erst weg, wenn die Bestellzeilen den Schritt "nachgefasst" tragen.
-      const neu = await fetchEinkauf('/api/kunden/bestellungen').catch(() => null);
-      if (neu?.verfuegbar) kunden.bestellungen = neu;
+      await ladeBestellzeilenNeu();
       render();
     })
-    .catch((err) => { toast(`Nicht verschickt: ${err.message}`, 'crit', { dauer: 9000 }); knopf.disabled = false; });
+    .catch((err) => {
+      toast(`Nicht verschickt: ${err.message}`, 'crit', { dauer: 9000 });
+      knopf.disabled = false;
+      // Meist "steht nicht mehr an": der Lauf war schneller - mit frischen Zeilen verschwindet die Zeile.
+      ladeBestellzeilenNeu();
+    });
 }
