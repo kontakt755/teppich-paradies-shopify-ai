@@ -149,3 +149,37 @@ test('N: Sektions-CSS haengt am eigenen Element, nicht an allgemeinen Selektoren
     }
   }
 });
+
+test('O: Verlauf nur fuer den aktuellen Besuch (Inhaber 19.10., w-083 Frage 8B)', async () => {
+  // Attrappen fuer beide Speicher; der alte dauerhafte Eintrag muss verschwinden.
+  const attrappe = () => {
+    const daten = new Map();
+    return {
+      daten,
+      getItem: (k) => (daten.has(k) ? daten.get(k) : null),
+      setItem: (k, v) => daten.set(k, String(v)),
+      removeItem: (k) => daten.delete(k),
+    };
+  };
+  const vorher = { local: globalThis.localStorage, session: globalThis.sessionStorage };
+  const setze = (name, wert) => Object.defineProperty(globalThis, name, { value: wert, configurable: true, writable: true });
+  const local = attrappe();
+  const session = attrappe();
+  local.setItem('viewedProducts', '["alt"]');
+  setze('localStorage', local);
+  setze('sessionStorage', session);
+  try {
+    const quelle = lies('assets/recently-viewed-products.js');
+    const { RecentlyViewed } = await import(`data:text/javascript;base64,${Buffer.from(quelle).toString('base64')}`);
+    for (const id of ['1', '2', '3', '4', '5', '2']) RecentlyViewed.addProduct(id);
+    assert.deepEqual(RecentlyViewed.getProducts(), ['2', '5', '4', '3']);
+    assert.equal(local.getItem('viewedProducts'), null, 'alter localStorage-Eintrag geloescht');
+    assert.equal(local.daten.size, 0, 'nichts Dauerhaftes geschrieben');
+    assert.equal(session.getItem('viewedProducts'), '["2","5","4","3"]');
+    RecentlyViewed.clearProducts();
+    assert.deepEqual(RecentlyViewed.getProducts(), []);
+  } finally {
+    setze('localStorage', vorher.local);
+    setze('sessionStorage', vorher.session);
+  }
+});
