@@ -10,6 +10,17 @@ import { convertMoneyToMinorUnits, formatMoney } from '@theme/money-formatting';
 const SEARCH_QUERY = 'q';
 let lastFacetsUrl = `${window.location.pathname}${window.location.search}`;
 
+function renderFacetsSection(sectionId) {
+  const requestedUrl = window.location.href;
+  // Nach einem Themewechsel passen die Section-IDs einer offenen Seite nicht
+  // mehr. Die gewaehlten Filter dann ueber die normale Seite laden; eine
+  // inzwischen neuere Auswahl darf eine spaete Antwort nicht zuruecksetzen.
+  return sectionRenderer.renderSection(sectionId).catch((error) => {
+    if (error?.name === 'AbortError') return;
+    if (window.location.href === requestedUrl) window.location.replace(requestedUrl);
+  });
+}
+
 function restoreFilterDialogFocus() {
   const dialog = document.querySelector('#filters-drawer dialog[open]');
   if (dialog && !dialog.contains(document.activeElement)) {
@@ -117,9 +128,9 @@ class FacetsFormComponent extends Component {
     const viewTransition = !this.closest('dialog');
 
     if (viewTransition) {
-      return startViewTransition(() => sectionRenderer.renderSection(this.sectionId), ['product-grid']);
+      return startViewTransition(() => renderFacetsSection(this.sectionId), ['product-grid']);
     } else {
-      return sectionRenderer.renderSection(this.sectionId);
+      return renderFacetsSection(this.sectionId);
     }
   }
 
@@ -135,7 +146,7 @@ class FacetsFormComponent extends Component {
     this.dispatchEvent(new FilterUpdateEvent(this.createURLParameters()));
     // Beim Entfernen eines Chips muss das Promise erst nach dem Section-Morph
     // aufloesen. Der View-Transition-Fallback wartet nicht auf den Render-Callback.
-    const sectionUpdate = sectionRenderer.renderSection(this.sectionId);
+    const sectionUpdate = renderFacetsSection(this.sectionId);
     if (!dialogWasOpen) return sectionUpdate;
     return sectionUpdate.then((result) => {
       restoreFilterDialogFocus();
@@ -159,7 +170,7 @@ window.addEventListener('popstate', () => {
 
   const filterDialog = facetsForm.closest('.shopify-section')?.querySelector('#filters-drawer dialog[open]');
   facetsForm.dispatchEvent(new FilterUpdateEvent(new URLSearchParams(window.location.search)));
-  sectionRenderer.renderSection(facetsForm.sectionId).then(() => {
+  renderFacetsSection(facetsForm.sectionId).then(() => {
     if (!filterDialog) return;
     restoreFilterDialogFocus();
   });

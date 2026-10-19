@@ -40,6 +40,19 @@
   var MIN_CM = 50;
   var MAX_CM = 5000;
 
+  // Finder-Uebergabe ist immer ein vollstaendiges Paar ganzer Zentimeter.
+  // Keine Einheit erraten und unvollstaendige/doppelte Werte nicht nutzen.
+  function finderRaum(suche) {
+    var p = new URLSearchParams(suche);
+    var werte = ['tp_raum_b', 'tp_raum_l'].map(function (name) {
+      var alle = p.getAll(name);
+      if (alle.length !== 1 || !/^\d+$/.test(alle[0])) return 0;
+      var cm = Number(alle[0]);
+      return Number.isInteger(cm) && cm >= MIN_CM && cm <= MAX_CM ? cm : 0;
+    });
+    return werte[0] && werte[1] ? { breite: werte[0], laenge: werte[1] } : null;
+  }
+
   // "350", "350 cm", "3,5 m", "3.5m" -> cm (ganze Zahl). Ohne Einheit gilt:
   // bis 20 sind Meter (niemand misst einen Raum mit 12 cm), sonst cm.
   function leseCm(text) {
@@ -324,6 +337,7 @@
   root.TPRaummass = {
     ZUGABE_CM: ZUGABE_CM,
     leseCm: leseCm,
+    finderRaum: finderRaum,
     rolleVorschlag: rolleVorschlag,
     autoRichtung: autoRichtung,
     zweiStuecke: zweiStuecke,
@@ -342,6 +356,19 @@ if (typeof document !== 'undefined') (function () {
 
   function feuer(el, typ) {
     el.dispatchEvent(new Event(typ, { bubbles: true }));
+  }
+
+  // Nur die Raumhilfe vorbereiten. Die vorhandenen Uebernehmen-Knoepfe
+  // bestimmen weiterhin Bestellmass/Flaeche; restaurierte Eingaben behalten.
+  function finderVorfuellen(box, breite, laenge) {
+    var raum = RM.finderRaum(window.location.search);
+    if (!raum || breite.value.trim() || laenge.value.trim()) return false;
+    breite.value = String(raum.breite);
+    laenge.value = String(raum.laenge);
+    box.open = true;
+    var hinweis = box.querySelector('[data-rm-finder]');
+    if (hinweis) hinweis.hidden = false;
+    return true;
   }
 
   // ---- Rollenware -------------------------------------------------------
@@ -879,6 +906,12 @@ if (typeof document !== 'undefined') (function () {
       if (e.target && e.target.name && e.target.name.indexOf('tp-rwc-') === 0) return;
       setTimeout(rechnen, 200);
     });
+    if (finderVorfuellen(box, bIn, lIn)) {
+      // Das defer-Asset kann vor der auf DOMContentLoaded wartenden
+      // Rechner-Initialisierung laufen. Erst mit echten Rollen/Preisen zeigen.
+      if (typeof rechner.tpRwcPreis === 'function') rechnen();
+      else document.addEventListener('DOMContentLoaded', rechnen, { once: true });
+    }
   }
 
   // ---- Paketware --------------------------------------------------------
@@ -978,7 +1011,8 @@ if (typeof document !== 'undefined') (function () {
       if (sqm.scrollIntoView) sqm.scrollIntoView({ block: 'center', behavior: 'smooth' });
     });
 
-    neueZeile();
+    var erste = neueZeile();
+    finderVorfuellen(box, erste.querySelector('[data-rm-b]'), erste.querySelector('[data-rm-l]'));
     rechnen();
   }
 
