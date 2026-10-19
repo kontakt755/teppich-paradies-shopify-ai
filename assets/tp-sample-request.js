@@ -40,7 +40,7 @@
   function musteranfrageFokussieren() {
     if (window.location.hash) return;
     var navigation = window.performance && typeof window.performance.getEntriesByType === 'function' && window.performance.getEntriesByType('navigation')[0];
-    if (navigation && navigation.type !== 'navigate') return;
+    if (!navigation || navigation.type !== 'navigate') return;
     var hinweis = root.querySelector('[data-tp-anfrage-hinweis]');
     if (!hinweis || hinweis.hidden || !hinweis.textContent.trim() || hinweis.hasAttribute('data-tp-fokus-erledigt')) return;
     hinweis.setAttribute('data-tp-fokus-erledigt', '');

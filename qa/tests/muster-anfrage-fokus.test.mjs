@@ -53,7 +53,7 @@ function seite(options = {}) {
       search: options.search ?? '?thema=musteranfrage&produkt=Grandessa%20Eiche&handle=grandessa-eiche',
       origin: 'https://shop.example', hash: options.hash || '',
     },
-    performance: options.noNavigationApi ? {} : { getEntriesByType: () => [{ type: options.navigation || 'navigate' }] },
+    performance: options.noNavigationApi ? {} : { getEntriesByType: () => options.noNavigationEntry ? [] : [{ type: options.navigation || 'navigate' }] },
     scrollX: 0, scrollY: 0,
     requestAnimationFrame: callback => frames.push(callback),
   };
@@ -174,10 +174,15 @@ test('Erneute Skriptausfuehrung fokussiert dieselbe Formularinstanz hoechstens e
   assert.equal(p.message.value, 'Mein vorhandener Text');
 });
 
-test('Ohne Navigation-Timing-API bleibt die frische Anfrage erreichbar', () => {
-  const p = seite({ noNavigationApi: true });
-  p.flush();
-  assert.equal(p.document.activeElement, p.hint);
+test('Ohne Navigation-Timing-API oder Navigationseintrag bleibt der Browserzustand erhalten', () => {
+  for (const state of [{ noNavigationApi: true }, { noNavigationEntry: true }]) {
+    const p = seite(state);
+    p.flush();
+    assert.equal(p.document.activeElement, p.document.body);
+    assert.equal(p.focus.length, 0);
+    assert.equal(p.scroll.length, 0);
+    assert.equal(p.frames.length, 0);
+  }
 });
 
 test('Vorhandener Hinweis ist fokussierbar, ohne Eingabe-Autofokus oder neuen Tabstopp', () => {
