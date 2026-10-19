@@ -7,15 +7,22 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Geändert:** Bei allgemeinen Mailanbietern verknüpft dieselbe Vorgangsnummer nur noch Belege
   derselben vollständigen E-Mail-Adresse. Anzeigename, Leerraum und Großschreibung ändern den
   Vergleich nicht; eine gemeinsame Domain oder eine fehlende Adresse reichen nicht.
+  Adressen im Anzeigenamen werden dabei nicht als Postfach gelesen; mehrdeutige oder beschädigte
+  Angaben können keinen sicheren Vorgang bestätigen. Auch die Lieferantenzuordnung nutzt die echte Adresse.
   Die Ansicht nennt solche Absender mit ihrer Adresse und gruppiert verschiedene Postfächer getrennt.
+  Lange Adressen brechen in den Gruppen- und Belegköpfen um, auch auf kleinen Handys.
   Fehlt der Bestellexport oder ist er beschädigt, meldet die Belegansicht eine Datenstörung statt
   alle Belege als unzugeordnet und die Arbeitsliste als leer darzustellen.
+  GraphQL-Exporte brauchen ausdrücklich ein `nodes`-Array; fehlende oder falsche Container sind
+  ein Quellenfehler. Echte leere Bestelllisten bleiben gültig.
 - **Getestet:** Beide Fehler vor der Korrektur synthetisch reproduziert; Regressionen für fremde,
   gleiche und fehlende Adressen sowie fehlenden und beschädigten Bestellexport. Die Belegablage
-  bleibt beim Lesen unverändert. 3.146 Tests grün, davon 462 Dashboardtests; Rollenprüfung gegen
-  die Datenkopie. Synthetische Klickstrecke bei 390/1440 px: AB bestätigen, richtiger LS erbt die
+  bleibt beim Lesen unverändert. 3.166 Tests grün, davon 465 Dashboardtests und 30 Belegtests;
+  vollständige Rollen-Baseline mit 350 Ansichten, nach den letzten Korrekturen 24 gezielte Ansichten
+  mit drei Rollen gegen die Datenkopie. Synthetische Klickstrecke bei 390/1440 px: AB bestätigen, richtiger LS erbt die
   Bestellung, fremdes Postfach bleibt ohne Zuordnung; Absender getrennt, Exportfehler sichtbar,
   „Nochmal versuchen“ nach Wiederherstellung erfolgreich, Dialog per Esc geschlossen.
+  Zusätzlich Adressen mit 64 Zeichen vor dem @ bei 360/390/768/1440 px auf seitlichen Überlauf geprüft.
 - **Risiken:** Keine Änderung an gespeicherten Belegen, Bestellungen, Mailversand oder Shopify.
 - **Nächste Stufe:** Nach dem Merge den Dashboard-Dienst nachziehen und den Versionsstand prüfen.
 

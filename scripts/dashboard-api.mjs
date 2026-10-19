@@ -60,7 +60,7 @@ import { findeZugang, liesZugaenge, zugangAnlegen, zugangSperren } from '../soci
 import { ladeUmgebung } from '../social/lib/zugang.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
 import { lieferbelegePfad, leseBelege, entscheide as belegEntscheiden, LieferbelegFehler } from '../operations/lib/lieferbelege.mjs';
-import { kandidatenAus, lieferantZurDomain, ordneAlleZu, abgleich as belegAbgleich } from '../docs/ai-dashboard/lib/lieferbelege.mjs';
+import { kandidatenAus, domainVon, lieferantZurDomain, ordneAlleZu, abgleich as belegAbgleich } from '../docs/ai-dashboard/lib/lieferbelege.mjs';
 import { serviceanfragenPfad, leseAlle as leseServiceanfragen, anlegen as serviceanfrageAnlegen, aendern as serviceanfrageAendern, ServiceanfrageFehler } from '../operations/lib/serviceanfragen.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
@@ -2026,11 +2026,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       catch (e) { if (e instanceof LieferbelegFehler) return { verfuegbar: false, fehler: true, hinweis: e.message }; throw e; }
       const k = this._lieferantenKontext();
       // Ohne Bestellungen ist weder "kein Shop-Auftrag" noch "nichts zu pruefen" belegt.
-      if (!k.modell) return { verfuegbar: false, fehler: true, hinweis: k.hinweis || 'Bestelldaten fehlen – bitte die Daten aktualisieren.' };
+      if (!k.modell || !k.exportGueltig) return { verfuegbar: false, fehler: true, hinweis: k.hinweis || 'orders.json hat kein gültiges Bestellformat – bitte die Daten aktualisieren.' };
       const zeilen = k.modell ? bestellliste(k.modell, { statusAlle: k.statusAlle }) : [];
       const kandidaten = kandidatenAus(zeilen, k.statusAlle);
       // Lieferant: aus der Absenderdomain; ohne Treffer der, den ein Mensch beim Zuordnen gewaehlt hat.
-      const mitLieferant = Object.values(ablage.belege).map(b => ({ ...b, lieferant: lieferantZurDomain(b.domain, { stammdaten: k.stammdaten, absender: ablage.absender }) || b.entscheidung?.lieferant || null }));
+      const mitLieferant = Object.values(ablage.belege).map(b => {
+        const domain = domainVon(b.von);
+        return { ...b, domain, lieferant: lieferantZurDomain(domain, { stammdaten: k.stammdaten, absender: ablage.absender }) || b.entscheidung?.lieferant || null };
+      });
       const belege = ordneAlleZu(mitLieferant, kandidaten, { absender: ablage.absender })
         .sort((a, b) => String(b.datum).localeCompare(String(a.datum)));
       const { zeilen: abgleichZeilen, abweichungen } = belegAbgleich({ belege, kandidaten, jetzt: now() });
@@ -2167,6 +2170,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       }
       return {
         modell, hinweis, stammdaten,
+        // Der bisherige Loader normalisiert fehlende GraphQL-nodes zu []. Fuer Belege
+        // darf eine beschaedigte Exportstruktur keine leere Arbeitsliste bestaetigen.
+        exportGueltig: exportOrders(daten) !== null && !(daten?.data?.orders && !Array.isArray(daten.data.orders.nodes)),
         statusAlle: leseAktuellenStatus(auftragsstatusPfad(dir), modell),
         stammdatenDatei: {
           vorhanden: stammdaten.vorhanden,

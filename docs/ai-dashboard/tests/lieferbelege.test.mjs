@@ -284,6 +284,21 @@ test('einkaufBelege: Lieferant aus der Absenderdomain, sicher/Vorschlag, Abgleic
   assert.equal(r.letzterLauf.neu, 3);
 });
 
+test('einkaufBelege: alte Domain aus einem Anzeigenamen wird beim Lesen aus der echten Adresse abgeleitet', () => {
+  const dir = privat();
+  const file = lieferbelegePfad(dir);
+  const d = JSON.parse(fs.readFileSync(file, 'utf8'));
+  d.belege.m1.von = '"shared@lieferant-a.example" <bestellung.a@gmail.com>';
+  d.belege.m1.domain = 'lieferant-a.example';
+  fs.writeFileSync(file, JSON.stringify(d));
+  const vorher = fs.readFileSync(file, 'utf8');
+  const b = apiFuer(dir).einkaufBelege().belege.find(x => x.id === 'm1');
+  assert.equal(b.domain, 'gmail.com');
+  assert.equal(b.lieferant, null);
+  assert.equal(b.zuordnung.stufe, 'vorschlag');
+  assert.equal(fs.readFileSync(file, 'utf8'), vorher, 'keine Migration oder Schreibaktion');
+});
+
 test('einkaufBelegSetzen: Vorschlag annehmen, unbekannte Bestellung 400, beschaedigte Ablage meldet sich', () => {
   const dir = privat();
   const api = apiFuer(dir);
@@ -314,6 +329,23 @@ test('einkaufBelege: fehlender oder beschaedigter Bestellexport ist keine leere 
   assert.equal(kaputt.fehler, true);
   assert.ok(kaputt.hinweis);
   assert.equal(fs.readFileSync(ablage, 'utf8'), vorher, 'Belegablage bleibt unveraendert');
+});
+
+test('einkaufBelege: GraphQL-Export verlangt ein nodes-Array, echte leere Exporte bleiben verfuegbar', () => {
+  const dir = privat();
+  const datei = path.join(dir, 'bestelluebersicht', 'orders.json');
+  for (const daten of [{ data: { orders: {} } }, { data: { orders: { nodes: null } } },
+    { data: { orders: { nodes: {} } } }, { data: { orders: {} }, orders: [] }]) {
+    fs.writeFileSync(datei, JSON.stringify(daten));
+    const r = apiFuer(dir).einkaufBelege();
+    assert.equal(r.verfuegbar, false, JSON.stringify(daten));
+    assert.equal(r.fehler, true);
+    assert.ok(r.hinweis);
+  }
+  for (const daten of [[], { orders: [] }, { orders: { nodes: [] } }, { data: { orders: { nodes: [] } } }]) {
+    fs.writeFileSync(datei, JSON.stringify(daten));
+    assert.equal(apiFuer(dir).einkaufBelege().verfuegbar, true, JSON.stringify(daten));
+  }
 });
 
 async function mitServer(handler, fn) {
@@ -448,6 +480,28 @@ test('ordneAlleZu: Freemail-Vorgang nur bei derselben vollstaendigen Adresse, ni
   assert.equal(zuordnung(ab, ls('Lieferant A')).stufe, 'keine', 'fehlende Adresse bestaetigt nichts');
   assert.equal(zuordnung({ ...ab, von: null }, ls('bestellung.a@gmail.com')).stufe, 'keine', 'Anker ohne Adresse reicht nicht');
   assert.equal(zuordnung({ ...ab, domain: null }, { ...ls(null), domain: null }).stufe, 'keine', 'fehlende Domains sind kein gemeinsamer Absender');
+});
+
+test('From: Adresse im Anzeigenamen verknuepft keine fremden Postfaecher; ungueltige und mehrdeutige Angaben sind unbrauchbar', async () => {
+  const { ordneAlleZu, adresseVon } = await import('../lib/lieferbelege.mjs');
+  const a = '"shared@gmail.com" <bestellung.a@gmail.com>';
+  const b = '"shared@gmail.com" <bestellung.b@gmail.com>';
+  assert.equal(adresseVon(a), 'bestellung.a@gmail.com');
+  assert.equal(adresseVon(b), 'bestellung.b@gmail.com');
+  assert.equal(domainVon('"shared@lieferant-a.example" <bestellung.a@gmail.com>'), 'gmail.com', 'auch Lieferantenzuordnung nutzt das tatsaechliche Postfach');
+  for (const ungueltig of ['a@gmail.com, b@gmail.com', 'Name <a@gmail.com> <b@gmail.com>', 'Name <a@gmail.com', 'a..b@gmail.com', 'a@-gmail.com']) {
+    assert.equal(adresseVon(ungueltig), null, ungueltig);
+    assert.equal(domainVon(ungueltig), null, ungueltig);
+  }
+  const r = ordneAlleZu([
+    { id: 'ab', art: 'ab', datum: '2026-10-14T08:00:00Z', lieferant: null, domain: domainVon(a), von: a,
+      refs: referenzen({ betreff: 'AB 123456' }), entscheidung: { art: 'zugeordnet', orderIds: ['gid://shopify/Order/9001'] } },
+    { id: 'ls', art: 'lieferschein', datum: '2026-10-15T08:00:00Z', lieferant: null, domain: domainVon(b), von: b,
+      refs: referenzen({ betreff: 'Lieferschein 123456' }) },
+  ], KANDIDATEN);
+  assert.equal(r[1].zuordnung.stufe, 'keine');
+  const alt = r.map((b, i) => ({ ...b, von: i ? '"shared@lieferant-a.example" <bestellung.b@gmail.com>' : '"shared@lieferant-a.example" <bestellung.a@gmail.com>', domain: 'lieferant-a.example' }));
+  assert.equal(ordneAlleZu(alt, KANDIDATEN)[1].zuordnung.stufe, 'keine', 'frueher falsch gespeicherte Domain hebt den Adressvergleich nicht auf');
 });
 
 test('abgleich: zwei Stornos - einer erledigt, der andere bleibt; Quittung je Auftrag; Shopify je Lieferant; unbekannter Absender', () => {

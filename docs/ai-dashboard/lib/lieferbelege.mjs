@@ -55,13 +55,19 @@ export function normalisiere(text) {
 
 /** "Name <a@b.de>" -> "b.de"; null ohne gueltige Adresse. */
 export function domainVon(adresse) {
-  const m = String(adresse ?? '').match(/@([a-z0-9.-]+\.[a-z]{2,})/i);
-  return m ? m[1].toLowerCase().replace(/\.$/, '') : null;
+  return adresseVon(adresse)?.split('@').at(-1) || null;
 }
 
 /** Vollstaendige Mailadresse ohne Anzeigename, fuer Vergleich und Gruppierung. */
 export function adresseVon(von) {
-  return String(von || '').trim().match(/[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9.-]+\.[a-z]{2,}/i)?.[0].toLowerCase() || null;
+  const text = String(von || '').trim();
+  // Eine Adresse im Anzeigenamen ist keine Absenderadresse. Mehrdeutige Listen oder
+  // kaputte Klammern verknuepfen nichts; unterstuetzt sind ein Postfach oder Name <Postfach>.
+  const klammer = text.match(/^[^<>]*<\s*([^<>]+?)\s*>\s*$/);
+  const adresse = klammer ? klammer[1].trim() : text;
+  const gueltig = /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i.test(adresse);
+  const lokal = adresse.split('@')[0];
+  return gueltig && adresse.length <= 254 && lokal.length <= 64 && !/(^\.|\.$|\.\.)/.test(lokal) ? adresse.toLowerCase() : null;
 }
 
 /**
@@ -316,10 +322,13 @@ const STUFEN = ['offen', 'bestellt', 'geliefert', 'raus', 'erledigt'];
 
 /** Bei allgemeinen Mailanbietern ist nur dieselbe Mailadresse derselbe Absender. */
 function gleicherAbsender(a, b) {
-  if (!a.domain || a.domain !== b.domain) return false;
-  if (!FREEMAIL.includes(a.domain)) return true;
   const von = adresseVon(a.von);
-  return Boolean(von) && von === adresseVon(b.von);
+  const gegen = adresseVon(b.von);
+  const domain = von ? domainVon(von) : a.domain;
+  const gegenDomain = gegen ? domainVon(gegen) : b.domain;
+  if (!domain || domain !== gegenDomain) return false;
+  if (!FREEMAIL.includes(domain)) return true;
+  return Boolean(von) && von === gegen;
 }
 
 /**
