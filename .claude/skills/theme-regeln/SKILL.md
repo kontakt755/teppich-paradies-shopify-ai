@@ -86,6 +86,9 @@ Gute Konkurrenzseiten dürfen als UX-Benchmark untersucht werden. Keine Texte, B
 - Vorhandene echte Produkt- und Herstellerbilder bevorzugen.
 - Wenn die Bildlizenz eine Herstellerangabe am Bild verlangt, diese unmittelbar am Bild sichtbar machen. Die genaue Quellenangabe von Lieferant A ist dafür im Theme-Guard eng begrenzt freigegeben (`scripts/masstepich/guard.mjs`); andere Lieferantennamen bleiben gesperrt.
 - Keine Produkteigenschaften durch erfundene Bilder falsch darstellen.
+- **KI-Bilder** (Raum- und Kettelbilder): erzeugt in der Gemini-Web-App mit Modell 3.1 Pro (nie 4 Argon, das gibt nur Text aus), danach lokale Farbkorrektur nur auf der Boden-/Teppichflaeche. Ablauf und Fallen: `~/teppich-paradies-analyse/produktbilder/ANLEITUNG-GEMINI.md`.
+- **Gemusterte und gerichtete Ware nie generativ neu erzeugen** (Motive, Streifen, Karo, Ornamente, feine Rauten- oder Wollschlinge, weiche gebrochene Streifen): Jedes Bildmodell ordnet das Muster neu an. Nur echtes Foto oder ein Komposit aus dem echten Draufsichtfoto. → `docs/lessons/ki-bilder.md`
+- **KI-Bilder tragen die IPTC-Kennzeichnung** `DigitalSourceType` (Pflicht im Merchant Center). Die lokale Nachbearbeitung entfernt sie, deshalb schreibt `bilder_hochladen.py` sie vor dem Upload neu (Spalte `ki`).
 - Erklärende Kategorievisuals dürfen verwendet werden, wenn sie technisch korrekt sind.
 - Above-the-fold-Bilder beim ersten Laden sinnvoll priorisieren.
 - Lazy Loading nicht pauschal abschalten.
