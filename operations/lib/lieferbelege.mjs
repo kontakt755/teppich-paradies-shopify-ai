@@ -13,7 +13,8 @@
  *
  * Aufbau:
  *   belege   { <mailId>: { id, threadId, datum, von, domain, betreff, auszug, anhaenge, quelle,
- *              art, artGrund, refs, viewUrl, aufgenommenAm, entscheidung, erledigt } }
+ *              art, artGrund, refs, viewUrl, aufgenommenAm, entscheidung, erledigt, quittiert } }
+ *            quittiert { <orderId>: { am, von } } - erledigt nur fuer diese Bestellung (Sammelbeleg)
  *   absender { <domain>: { art: 'kein_shop'|'lieferant', lieferant?, von, am } }
  *   geprueft { <mailId>: { am, grund } }   Mails ohne Beleg - nicht jeden Lauf neu ansehen
  *   laeufe   [ { am, gelesen, neu, uebersprungen, bereiche, vollstaendig } ]  (die letzten 60)
@@ -45,13 +46,15 @@ export function leseBelege(datei) {
     if (e?.code === 'ENOENT') return leer();
     throw new LieferbelegFehler(`${path.basename(datei)} ist nicht lesbar (${e?.code || e?.message}) – bitte aus der Sicherung holen`);
   }
-  if (!roh.trim()) return leer();
+  // Nur eine FEHLENDE Datei ist leer. Eine leere oder unvollstaendige Datei ist ein Schaden -
+  // sonst schriebe der naechste Import eine leere Ablage regulaer darueber (Codex-Review #1432).
   let d;
   try { d = JSON.parse(roh); } catch { throw new LieferbelegFehler(`${path.basename(datei)} ist beschädigt – bitte aus der Sicherung holen`); }
-  if (!istObjekt(d) || !istObjekt(d.belege ?? {}) || !istObjekt(d.absender ?? {}) || !istObjekt(d.geprueft ?? {}) || !Array.isArray(d.laeufe ?? [])) {
+  const belegeOk = istObjekt(d?.belege) && Object.values(d.belege).every(b => istObjekt(b) && typeof b.id === 'string');
+  if (!istObjekt(d) || d.version !== 1 || !belegeOk || !istObjekt(d.absender) || !istObjekt(d.geprueft) || !Array.isArray(d.laeufe)) {
     throw new LieferbelegFehler(`${path.basename(datei)} ist beschädigt (ungültiger Aufbau) – bitte aus der Sicherung holen`);
   }
-  return { version: 1, belege: d.belege || {}, absender: d.absender || {}, geprueft: d.geprueft || {}, laeufe: d.laeufe || [] };
+  return { version: 1, belege: d.belege, absender: d.absender, geprueft: d.geprueft, laeufe: d.laeufe };
 }
 
 function schreibe(datei, daten) {
@@ -63,21 +66,42 @@ function schreibe(datei, daten) {
 
 function warte(ms) { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); }
 
+function lebt(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try { process.kill(pid, 0); return true; } catch (e) { return e?.code === 'EPERM'; }
+}
+
+function leseSperre(sperre) {
+  try { return JSON.parse(fs.readFileSync(sperre, 'utf8')); } catch { return null; }
+}
+
 /**
  * Lesen-Aendern-Schreiben unter einer Sperrdatei. Synchron und kurz: haelt die Sperre nur fuer
- * eine Aenderung. Eine Sperre, die aelter als 30 s ist, stammt von einem abgebrochenen Prozess.
+ * eine Aenderung. Die Sperre traegt Prozess und Kennung; uebernommen wird sie nur, wenn sie aelter
+ * als 30 s ist UND ihr Prozess nicht mehr lebt, freigegeben nur die eigene (Codex-Review #1432).
  * @param {string} datei
  * @param {(daten: object) => any} aendern  aendert `daten` und gibt das Ergebnis zurueck
  */
 export function mitSperre(datei, aendern) {
   fs.mkdirSync(path.dirname(datei), { recursive: true, mode: 0o700 });
   const sperre = `${datei}.lock`;
+  const kennung = `${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const bis = Date.now() + SPERRE_WARTEN_MS;
   let fd = null;
   while (fd === null) {
-    try { fd = fs.openSync(sperre, 'wx'); } catch (e) {
+    try {
+      fd = fs.openSync(sperre, 'wx');
+      fs.writeSync(fd, JSON.stringify({ pid: process.pid, kennung, am: new Date().toISOString() }));
+    } catch (e) {
       if (e?.code !== 'EEXIST') throw e;
-      try { if (Date.now() - fs.statSync(sperre).mtimeMs > SPERRE_ALT_MS) { fs.unlinkSync(sperre); continue; } } catch { continue; }
+      let alt = false;
+      try {
+        const st = fs.statSync(sperre);
+        const inhalt = leseSperre(sperre);
+        alt = Date.now() - st.mtimeMs > SPERRE_ALT_MS && !lebt(inhalt?.pid);
+        // Erst unmittelbar vor dem Entfernen noch einmal: ist es noch dieselbe verwaiste Sperre?
+        if (alt && JSON.stringify(leseSperre(sperre)) === JSON.stringify(inhalt)) { fs.unlinkSync(sperre); continue; }
+      } catch { continue; }
       if (Date.now() > bis) throw new LieferbelegFehler('Die Belegablage ist gerade gesperrt (ein anderer Vorgang schreibt) – bitte gleich noch einmal versuchen.');
       warte(50);
     }
@@ -89,7 +113,7 @@ export function mitSperre(datei, aendern) {
     return ergebnis;
   } finally {
     fs.closeSync(fd);
-    try { fs.unlinkSync(sperre); } catch { /* schon weg */ }
+    if (leseSperre(sperre)?.kennung === kennung) { try { fs.unlinkSync(sperre); } catch { /* schon weg */ } }
   }
 }
 
@@ -100,13 +124,23 @@ export function bekannt({ privatDir, domains = [] } = {}) {
   const bekannteDomains = new Set([...domains, ...Object.values(d.belege).map(b => b.domain).filter(Boolean)]);
   for (const [domain, e] of Object.entries(d.absender)) if (e?.art === 'kein_shop') bekannteDomains.delete(domain);
   return {
-    mailIds: [...new Set([...Object.keys(d.belege), ...Object.keys(d.geprueft)])].sort(),
+    // Zurueckgestellte (unbekannter Absender) bietet der Lauf erneut an, solange sie im Suchzeitraum liegen.
+    mailIds: [...new Set([...Object.keys(d.belege), ...Object.entries(d.geprueft).filter(([, g]) => g?.grund !== GRUND_UNBEKANNT).map(([id]) => id)])].sort(),
     domains: [...bekannteDomains].sort(),
     letzterLauf: letzter?.am || null,
   };
 }
 
 const QUELLEN = ['label', 'lieferant', 'stichwort'];
+/** Grund fuer Mails aus der Stichwortsuche von (noch) unbekannten Absendern - sie werden erneut geprueft. */
+export const GRUND_UNBEKANNT = 'Absender ist kein bekannter Lieferant';
+
+/** Gehoert die Domain (oder eine Oberdomain) zu den bekannten? "versand.lieferant-a.example" -> ja. */
+function domainBekannt(domain, bekannte) {
+  if (!domain) return false;
+  for (const d of bekannte) if (domain === d || domain.endsWith(`.${d}`)) return true;
+  return false;
+}
 const kurz = (s, n) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
 
 /**
@@ -130,14 +164,16 @@ export function uebernehmen(mails, { privatDir, jetzt = new Date(), lieferantenD
     for (const m of liste) {
       const id = kurz(m?.id, 100);
       if (!id) { ergebnis.uebersprungen.push({ mailId: null, grund: 'Mail ohne ID' }); continue; }
-      if (d.belege[id] || d.geprueft[id]) continue;
+      // Zurueckgestellt (unbekannter Absender): erneut pruefen - vielleicht kennen wir ihn inzwischen.
+      if (d.belege[id] || (d.geprueft[id] && d.geprueft[id].grund !== GRUND_UNBEKANNT)) continue;
       const domain = domainVon(m.von);
       const quelle = QUELLEN.includes(m.quelle) ? m.quelle : 'stichwort';
       const anhaenge = (Array.isArray(m.anhaenge) ? m.anhaenge : []).map(a => kurz(a, 160)).filter(Boolean).slice(0, 10);
       const mail = { von: m.von, betreff: m.betreff, text: m.text, anhaenge };
       const { art, grund } = klassifiziere(mail);
       if (!ARTEN.includes(art)) { merke(id, grund); continue; }
-      if (quelle === 'stichwort' && !(domain && bekannteDomains.has(domain))) { merke(id, 'Absender ist kein bekannter Lieferant'); continue; }
+      if (quelle === 'stichwort' && !domainBekannt(domain, bekannteDomains)) { merke(id, GRUND_UNBEKANNT); continue; }
+      delete d.geprueft[id];
       const datum = Number.isFinite(Date.parse(m.datum)) ? new Date(m.datum).toISOString() : jetzt.toISOString();
       d.belege[id] = {
         id, threadId: kurz(m.threadId, 100) || null, datum, von: kurz(m.von, 200), domain,
@@ -169,7 +205,7 @@ export const AKTIONEN = Object.freeze(['zuordnen', 'ablehnen', 'kein_shop', 'loe
  * @param {{aktion: string, mailId?: string, orderIds?: string[], domain?: string, notiz?: string}} p
  * @param {{person: string, jetzt?: Date, gueltigeOrderIds?: Set<string>}} opt
  */
-export function entscheide(datei, p = {}, { person, jetzt = new Date(), gueltigeOrderIds = null } = {}) {
+export function entscheide(datei, p = {}, { person, jetzt = new Date(), gueltigeOrderIds = null, gueltigeLieferanten = null } = {}) {
   if (!person) throw new LieferbelegFehler('Person fehlt');
   const aktion = String(p.aktion || '');
   if (!AKTIONEN.includes(aktion)) throw new LieferbelegFehler(`Unbekannte Aktion „${kurz(aktion, 40)}“`);
@@ -189,7 +225,10 @@ export function entscheide(datei, p = {}, { person, jetzt = new Date(), gueltige
       const ids = [...new Set((Array.isArray(p.orderIds) ? p.orderIds : []).map(String).filter(Boolean))].slice(0, 10);
       if (!ids.length) throw new LieferbelegFehler('Keine Bestellung gewählt');
       if (gueltigeOrderIds && ids.some(id => !gueltigeOrderIds.has(id))) throw new LieferbelegFehler('Bestellung nicht gefunden');
-      b.entscheidung = { art: 'zugeordnet', orderIds: ids, von: person, am, vorher: b.entscheidung || null };
+      // Von welchem Lieferanten? Nur noetig, wenn der Absender unbekannt ist und die Bestellung mehrere hat.
+      const lieferant = p.lieferant ? String(p.lieferant).slice(0, 40) : null;
+      if (lieferant && gueltigeLieferanten && !gueltigeLieferanten.has(lieferant)) throw new LieferbelegFehler('Lieferant nicht gefunden');
+      b.entscheidung = { art: 'zugeordnet', orderIds: ids, ...(lieferant ? { lieferant } : {}), von: person, am, vorher: b.entscheidung || null };
     } else if (aktion === 'ablehnen') {
       // "Passt nicht": diese Vorschlaege nicht wieder anbieten, die Mail bleibt offen.
       const ids = [...new Set((Array.isArray(p.orderIds) ? p.orderIds : []).map(String).filter(Boolean))].slice(0, 10);
@@ -197,8 +236,10 @@ export function entscheide(datei, p = {}, { person, jetzt = new Date(), gueltige
       b.entscheidung = { art: 'abgelehnt', orderIds: [...new Set([...schon, ...ids])], von: person, am };
     } else if (aktion === 'kein_shop') b.entscheidung = { art: 'kein_shop', von: person, am, notiz };
     else if (aktion === 'loesen') b.entscheidung = null;
+    // Mit orderId: nur fuer diese Bestellung quittiert (Sammelbeleg ueber mehrere Auftraege).
+    else if (aktion === 'erledigt' && p.orderId) b.quittiert = { ...(b.quittiert || {}), [String(p.orderId).slice(0, 100)]: { am, von: person, notiz } };
     else if (aktion === 'erledigt') b.erledigt = { am, von: person, notiz };
-    else if (aktion === 'wieder_offen') b.erledigt = null;
+    else if (aktion === 'wieder_offen') { b.erledigt = null; b.quittiert = null; }
     return { beleg: b };
   });
 }

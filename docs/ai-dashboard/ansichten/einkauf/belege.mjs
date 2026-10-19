@@ -97,7 +97,7 @@ function abweichungHtml(a) {
   const b = belegVon(a.belegId);
   const lesend = istNurLesend();
   const wer = esc(lieferantName(a.lieferant) || 'Lieferant');
-  const erledigt = lesend ? '' : `<button type="button" class="btn btn-sm" data-bl-erledigt="${esc(a.belegId)}">Erledigt</button>`;
+  const erledigt = lesend ? '' : `<button type="button" class="btn btn-sm" data-bl-erledigt="${esc(a.belegId)}" data-bl-order="${esc(a.orderId)}">Erledigt</button>`;
   const zum = `<a class="btn btn-sm btn-ghost" href="${esc(auftragLink(a.orderId))}">Zum Auftrag</a>`;
   if (a.art === 'storno') {
     return zeile({
@@ -115,11 +115,15 @@ function abweichungHtml(a) {
 
 function vorschlagHtml(b) {
   const lesend = istNurLesend();
-  const ziel = b.zuordnung.orderIds.map(auftragText).join(', ');
-  const knoepfe = lesend ? gmailKnopf(b) : `<button type="button" class="btn btn-sm btn-primary" data-bl-annehmen="${esc(b.id)}">Ja, gehört dazu</button>
-    <button type="button" class="btn btn-sm" data-bl-ablehnen="${esc(b.id)}">Passt nicht</button>${gmailKnopf(b)}`;
+  const ziel = b.zuordnung.orderIds.map(auftragText).join(b.zuordnung.orderIds.length > 1 ? ' oder ' : ', ');
+  const mehrere = b.zuordnung.orderIds.length > 1;
+  const ja = mehrere
+    ? `<button type="button" class="btn btn-sm btn-primary" data-bl-waehlen="${esc(b.id)}">Auswählen…</button>`
+    : `<button type="button" class="btn btn-sm btn-primary" data-bl-annehmen="${esc(b.id)}">Ja, gehört dazu</button>`;
+  const knoepfe = lesend ? gmailKnopf(b) : `${ja}
+    <button type="button" class="btn btn-sm" data-bl-ablehnen="${esc(b.id)}">${mehrere ? 'Keine davon' : 'Passt nicht'}</button>${gmailKnopf(b)}`;
   return zeile({
-    titel: `${esc(ART_LABEL[b.art] || 'Beleg')} von ${esc(absenderText(b))}: gehört zu ${esc(ziel)}?`,
+    titel: `${esc(ART_LABEL[b.art] || 'Beleg')} von ${esc(absenderText(b))}: gehört zu ${esc(ziel)}${b.zuordnung.orderIds.length > 1 ? ' (eine davon)' : ''}?`,
     kontext: `${fmtDate(b.datum)} · „${esc(b.betreff)}“ · ${esc(b.zuordnung.grund)}`,
     knoepfe,
   });
@@ -225,14 +229,14 @@ function alleHtml(d) {
   const lesend = istNurLesend();
   const aktion = (b) => {
     if (lesend) return '';
-    if (b.erledigt) return `<button type="button" class="btn btn-sm btn-ghost" data-bl-wieder="${esc(b.id)}">Wieder offen</button>`;
+    if (b.erledigt || Object.keys(b.quittiert || {}).length) return `<button type="button" class="btn btn-sm btn-ghost" data-bl-wieder="${esc(b.id)}">Wieder offen</button>`;
     if (['bestaetigt', 'kein_shop'].includes(b.zuordnung.stufe) && b.entscheidung) return `<button type="button" class="btn btn-sm btn-ghost" data-bl-loesen="${esc(b.id)}" title="Entscheidung zurücknehmen">Zuordnung lösen</button>`;
     if (b.zuordnung.stufe === 'keine') return `<button type="button" class="btn btn-sm btn-ghost" data-bl-zuordnen="${esc(b.id)}">Zuordnen…</button>`;
     return '';
   };
   const zeilen = liste.slice((s - 1) * SEITE, s * SEITE).map(b => `<li class="bl-beleg">
       <div class="bl-beleg-kopf"><span class="bl-art bl-art-${esc(b.art)}">${esc(ART_KURZ[b.art] || b.art)}</span>
-        <span>${esc(fmtDate(b.datum))} · ${esc(absenderText(b))}</span>${b.erledigt ? `<span class="small muted">erledigt von ${esc(b.erledigt.von)}</span>` : ''}</div>
+        <span>${esc(fmtDate(b.datum))} · ${esc(absenderText(b))}</span>${b.erledigt ? `<span class="small muted">erledigt von ${esc(b.erledigt.von)}</span>` : Object.keys(b.quittiert || {}).length ? `<span class="small muted">erledigt für ${esc(Object.keys(b.quittiert).map(auftragText).join(', '))}</span>` : ''}</div>
       <div class="bl-betreff">${esc(b.betreff || '(ohne Betreff)')}</div>
       <div class="bl-beleg-fuss"><span class="small">${zuordnungText(b)}</span><span class="bl-knoepfe">${aktion(b)}${gmailKnopf(b)}</span></div>
     </li>`).join('');
@@ -303,59 +307,94 @@ function uebernimm(r) {
   belege.geladenAm = Date.now();
 }
 
-/** "Zuordnen…": Bestellung suchen und waehlen - zuerst die mit Positionen dieses Lieferanten. */
-function oeffneZuordnen(b) {
+/**
+ * "Zuordnen…": Bestellung suchen und waehlen - zuerst die mit Positionen dieses Lieferanten.
+ * Mit `nur` (Vorschlag mit mehreren Bestellungen): diese Kandidaten zum Ankreuzen - es sind
+ * Alternativen, kein Sammelbeleg, solange niemand mehrere ankreuzt (Codex-Review #1432).
+ * Ist der Absender unbekannt und hat die Bestellung mehrere Lieferanten, fragt der Dialog, von
+ * welchem der Beleg ist - sonst haengt er an keiner Zeile im Abgleich.
+ */
+function oeffneZuordnen(b, { nur = null } = {}) {
   const auswahl = belege.daten?.auswahl || [];
   const vorne = b.lieferant ? auswahl.filter(a => a.lieferanten.includes(b.lieferant)) : [];
   const liste = [...vorne, ...auswahl.filter(a => !vorne.includes(a))];
-  const option = a => `<option value="${esc(a.orderId)}">${esc(`${a.orderName} ${a.kundenname || ''} · ${a.lieferanten.map(lieferantName).join(', ')}`.trim())}</option>`;
+  const lieferantenVon = id => auswahl.find(a => a.orderId === id)?.lieferanten || [];
+  const text = a => `${a.orderName} ${a.kundenname || ''} · ${a.lieferanten.map(lieferantName).join(', ')}`.trim();
+  const option = a => `<option value="${esc(a.orderId)}">${esc(text(a))}</option>`;
+  const kandidaten = nur ? nur.map(id => auswahl.find(a => a.orderId === id) || { orderId: id, orderName: auftrag(id)?.orderName || 'Bestellung', kundenname: auftrag(id)?.kundenname || '', lieferanten: [] }) : null;
+  const wahlFeld = kandidaten
+    ? `<fieldset class="bl-kandidaten"><legend>Zu welcher Bestellung gehört er?</legend>
+        ${kandidaten.map(a => `<label><input type="checkbox" name="orderId" value="${esc(a.orderId)}"> <span>${esc(text(a))}</span></label>`).join('')}
+        <span class="hint">Nur ankreuzen, was wirklich dazugehört – meist genau eine.</span></fieldset>`
+    : `<div class="field"><label for="blSuche">Bestellung suchen</label>
+        <input id="blSuche" type="search" autocomplete="off" placeholder="#Nummer oder Kundenname" value="${esc(b.refs?.kommission || '')}"></div>
+      <div class="field"><label for="blWahl">Bestellung</label>
+        <select id="blWahl" name="orderId" size="8" required>${liste.map(option).join('')}</select>
+        <span class="hint">${vorne.length ? 'Oben die Bestellungen mit Ware dieses Lieferanten.' : 'Bestellungen der letzten 120 Tage.'}</span></div>`;
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog bl-dialog" role="dialog" aria-modal="true" aria-labelledby="blTitel" data-dialog novalidate>
     <h2 id="blTitel">Zu welcher Bestellung?</h2>
     <p class="small muted">${esc(ART_LABEL[b.art] || 'Beleg')} von ${esc(absenderText(b))} vom ${esc(fmtDate(b.datum))}:<br>„${esc(b.betreff)}“</p>
     ${b.auszug ? `<p class="bl-auszug">${esc(b.auszug)}</p>` : ''}
-    <div class="field"><label for="blSuche">Bestellung suchen</label>
-      <input id="blSuche" type="search" autocomplete="off" placeholder="#Nummer oder Kundenname" value="${esc(b.refs?.kommission || '')}"></div>
-    <div class="field"><label for="blWahl">Bestellung</label>
-      <select id="blWahl" name="orderId" size="8" required>${liste.map(option).join('')}</select>
-      <span class="hint">${vorne.length ? 'Oben die Bestellungen mit Ware dieses Lieferanten.' : 'Bestellungen der letzten 120 Tage.'}</span></div>
+    ${wahlFeld}
+    ${b.lieferant ? '' : `<div class="field" data-bl-lieferant-feld hidden><label for="blLieferant">Von welchem Lieferanten?</label>
+      <select id="blLieferant" name="lieferant"></select>
+      <span class="hint">Die Bestellung hat Ware von mehreren Lieferanten; der Absender ist keinem zugeordnet.</span></div>`}
     <p data-bl-meldung hidden></p>
     <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Zuordnen</button></div>
   </form></div>`;
   const form = $('#dialogRoot form');
-  const suche = form.querySelector('#blSuche');
-  const wahl = form.querySelector('#blWahl');
-  const filtern = () => {
-    const q = suche.value.trim().toLowerCase();
-    const worte = q.split(/\s+/).filter(Boolean);
-    const treffer = liste.filter(a => worte.every(w => `${a.orderName} ${a.kundenname || ''}`.toLowerCase().includes(w)));
-    // Kein Treffer fuer den vorbelegten Kommissionstext: lieber alles zeigen als eine leere Liste.
-    wahl.innerHTML = (treffer.length ? treffer : liste).map(option).join('');
-    if (wahl.options.length) wahl.selectedIndex = 0;
+  const gewaehlt = () => (kandidaten ? [...form.querySelectorAll('input[name=orderId]:checked')].map(x => x.value) : [form.querySelector('#blWahl')?.value].filter(Boolean));
+  const feld = form.querySelector('[data-bl-lieferant-feld]');
+  const lieferantWahl = form.querySelector('#blLieferant');
+  const lieferantAktualisieren = () => {
+    if (!feld) return;
+    const moegliche = [...new Set(gewaehlt().flatMap(lieferantenVon))];
+    feld.hidden = moegliche.length < 2;
+    lieferantWahl.innerHTML = `<option value="">weiß nicht</option>${moegliche.map(id => `<option value="${esc(id)}">${esc(lieferantName(id))}</option>`).join('')}`;
   };
-  suche.addEventListener('input', filtern);
-  filtern();
-  suche.focus();
+  if (kandidaten) {
+    form.addEventListener('change', lieferantAktualisieren);
+    form.querySelector('input[name=orderId]')?.focus();
+  } else {
+    const suche = form.querySelector('#blSuche');
+    const wahl = form.querySelector('#blWahl');
+    const filtern = () => {
+      const worte = suche.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      const treffer = liste.filter(a => worte.every(w => `${a.orderName} ${a.kundenname || ''}`.toLowerCase().includes(w)));
+      // Kein Treffer fuer den vorbelegten Kommissionstext: lieber alles zeigen als eine leere Liste.
+      wahl.innerHTML = (treffer.length ? treffer : liste).map(option).join('');
+      if (wahl.options.length) wahl.selectedIndex = 0;
+      lieferantAktualisieren();
+    };
+    suche.addEventListener('input', filtern);
+    wahl.addEventListener('change', lieferantAktualisieren);
+    filtern();
+    suche.focus();
+  }
+  lieferantAktualisieren();
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
-    if (!wahl.value) return;
+    const ids = gewaehlt();
+    const m = form.querySelector('[data-bl-meldung]');
+    if (!ids.length) { m.className = 'notice warn'; m.textContent = 'Bitte eine Bestellung wählen.'; m.hidden = false; return; }
     const knopf = form.querySelector('button[type=submit]');
     knopf.disabled = true;
-    const r = await schreibe({ aktion: 'zuordnen', mailId: b.id, orderIds: [wahl.value] });
+    const lieferant = feld && !feld.hidden ? lieferantWahl.value : '';
+    const r = await schreibe({ aktion: 'zuordnen', mailId: b.id, orderIds: ids, ...(lieferant ? { lieferant } : {}) });
     if (!r.ok) {
-      const m = form.querySelector('[data-bl-meldung]');
       m.className = 'notice crit'; m.textContent = r.text; m.hidden = false; knopf.disabled = false;
       return;
     }
     uebernimm(r);
     $('#dialogRoot').innerHTML = '';
-    toast(`Zugeordnet: ${auftragText(wahl.value)}`);
+    toast(`Zugeordnet: ${ids.map(auftragText).join(', ')}`);
     render();
   });
 }
 
 /** Klicks der Ansicht. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function einkaufKlickBelege(ev) {
-  const k = ev.target.closest('[data-bl-erledigt], [data-bl-annehmen], [data-bl-ablehnen], [data-bl-keinshop], [data-bl-zuordnen], [data-bl-loesen], [data-bl-wieder], [data-bl-absender]');
+  const k = ev.target.closest('[data-bl-erledigt], [data-bl-annehmen], [data-bl-waehlen], [data-bl-ablehnen], [data-bl-keinshop], [data-bl-zuordnen], [data-bl-loesen], [data-bl-wieder], [data-bl-absender]');
   if (!k) return false;
   const ds = k.dataset;
   if (ds.blAbsender) {
@@ -363,12 +402,20 @@ export function einkaufKlickBelege(ev) {
     aktion(k, { aktion: 'absender_kein_shop', domain: ds.blAbsender }, `${ds.blAbsender}: kein Shop-Lieferant`);
     return true;
   }
-  const id = ds.blErledigt || ds.blAnnehmen || ds.blAblehnen || ds.blKeinshop || ds.blZuordnen || ds.blLoesen || ds.blWieder;
+  const id = ds.blErledigt || ds.blAnnehmen || ds.blWaehlen || ds.blAblehnen || ds.blKeinshop || ds.blZuordnen || ds.blLoesen || ds.blWieder;
   const b = belegVon(id);
   if (!b) return true;
   if (ds.blZuordnen) { oeffneZuordnen(b); return true; }
-  if (ds.blErledigt) aktion(k, { aktion: 'erledigt', mailId: id }, 'Erledigt');
-  else if (ds.blAnnehmen) aktion(k, { aktion: 'zuordnen', mailId: id, orderIds: b.zuordnung.orderIds }, `Zugeordnet: ${b.zuordnung.orderIds.map(auftragText).join(', ')}`);
+  if (ds.blWaehlen) { oeffneZuordnen(b, { nur: b.zuordnung.orderIds }); return true; }
+  // Erledigt an einer Abweichung gilt fuer diese Bestellung (ein Sammelbeleg kann mehrere betreffen).
+  if (ds.blErledigt) aktion(k, { aktion: 'erledigt', mailId: id, ...(ds.blOrder ? { orderId: ds.blOrder } : {}) }, 'Erledigt');
+  else if (ds.blAnnehmen) {
+    // Ein Vorschlag mit einer Bestellung: ein Klick. Unbekannter Absender und mehrere Lieferanten: Dialog.
+    const id0 = b.zuordnung.orderIds[0];
+    const mehrere = (belege.daten?.auswahl?.find(a => a.orderId === id0)?.lieferanten || []).length > 1;
+    if (!b.lieferant && mehrere) { oeffneZuordnen(b, { nur: b.zuordnung.orderIds }); return true; }
+    aktion(k, { aktion: 'zuordnen', mailId: id, orderIds: [id0] }, `Zugeordnet: ${auftragText(id0)}`);
+  }
   else if (ds.blAblehnen) aktion(k, { aktion: 'ablehnen', mailId: id, orderIds: b.zuordnung.orderIds }, 'Vorschlag verworfen – der Beleg steht jetzt ohne Bestellung da');
   else if (ds.blKeinshop) aktion(k, { aktion: 'kein_shop', mailId: id }, 'Als kein Shop-Auftrag markiert');
   else if (ds.blLoesen) aktion(k, { aktion: 'loesen', mailId: id }, 'Zuordnung gelöst');

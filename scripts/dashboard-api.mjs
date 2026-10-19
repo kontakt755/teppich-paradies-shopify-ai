@@ -2027,7 +2027,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const k = this._lieferantenKontext();
       const zeilen = k.modell ? bestellliste(k.modell, { statusAlle: k.statusAlle }) : [];
       const kandidaten = kandidatenAus(zeilen, k.statusAlle);
-      const mitLieferant = Object.values(ablage.belege).map(b => ({ ...b, lieferant: lieferantZurDomain(b.domain, { stammdaten: k.stammdaten, absender: ablage.absender }) }));
+      // Lieferant: aus der Absenderdomain; ohne Treffer der, den ein Mensch beim Zuordnen gewaehlt hat.
+      const mitLieferant = Object.values(ablage.belege).map(b => ({ ...b, lieferant: lieferantZurDomain(b.domain, { stammdaten: k.stammdaten, absender: ablage.absender }) || b.entscheidung?.lieferant || null }));
       const belege = ordneAlleZu(mitLieferant, kandidaten, { absender: ablage.absender })
         .sort((a, b) => String(b.datum).localeCompare(String(a.datum)));
       const { zeilen: abgleichZeilen, abweichungen } = belegAbgleich({ belege, kandidaten, jetzt: now() });
@@ -2054,12 +2055,15 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const dir = privatDirPath || privatDir();
       const p = payload && typeof payload === 'object' ? payload : {};
       let gueltig = null;
+      let lieferanten = null;
       if (p.aktion === 'zuordnen') {
         const k = this._lieferantenKontext();
-        gueltig = new Set(k.modell ? bestellliste(k.modell, { statusAlle: k.statusAlle }).map(z => z.orderId) : []);
+        const zeilen = k.modell ? bestellliste(k.modell, { statusAlle: k.statusAlle }) : [];
+        gueltig = new Set(zeilen.map(z => z.orderId));
+        lieferanten = new Set([...Object.keys(k.stammdaten.lieferanten || {}), ...zeilen.flatMap(z => (z.auftrag?.positionen || []).map(x => x.lieferant)).filter(Boolean)]);
       }
       try {
-        const e = belegEntscheiden(lieferbelegePfad(dir), p, { person: actor, jetzt: now(), gueltigeOrderIds: gueltig });
+        const e = belegEntscheiden(lieferbelegePfad(dir), p, { person: actor, jetzt: now(), gueltigeOrderIds: gueltig, gueltigeLieferanten: lieferanten });
         merke(benutzer, actor, 'Lieferbeleg', `${p.aktion}${e.domain ? ` ${e.domain}` : ''}`);
       } catch (e) {
         if (e instanceof LieferbelegFehler) throw new ApiError(400, e.message);

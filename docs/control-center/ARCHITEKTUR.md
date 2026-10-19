@@ -1537,11 +1537,14 @@ abgehakt, ist es mit Shopify synchron“. Neuer Reiter **Einkauf › Belege** (`
   Mailinhalt ist fremder Text: er wird durchsucht, nie ausgeführt.
 - **Erkennen und zuordnen**: `lib/lieferbelege.mjs` (Browser, Server, Tests). Art aus Betreff/Anhang/Text
   (AB, Lieferschein, Avis, Storno, Rechnung, Beleg; Abwesenheit und Angebot zählen nicht). **Sicher** nur
-  mit unserer Bestellnummer `#1041` im Betreff bei passendem Lieferanten oder mit der Belegnummer, die
-  beim „Als bestellt markieren“ als Lieferanten-Bestellnummer notiert wurde. **Vorschlag**: Nummer nur im
-  Text, unbekannter Absender, Kundenname aus der Kommission (mehrdeutige Nachnamen nur mit Vorname),
-  gleicher Mailverlauf. Ein Lieferschein erbt die Bestellung seiner AB bei gleicher Vorgangsnummer
-  („KD050/0212“ = „KD050_212“, `ordneAlleZu()`). Zitierte Verläufe zählen nicht.
+  mit unserer Bestellnummer `#1041` im Betreff bei passendem Lieferanten oder mit der **vollständigen**
+  Belegnummer, die beim „Als bestellt markieren“ als Lieferanten-Bestellnummer notiert wurde (nur die
+  letzte Zifferngruppe → Vorschlag). **Vorschlag**: Nummer nur im Text, unbekannter Absender, Kundenname
+  aus der Kommission (mehrdeutige Nachnamen nur mit Vorname), gleicher Mailverlauf; mehrere Kandidaten
+  sind Alternativen („Auswählen…“, ankreuzen). Ein Lieferschein erbt die Bestellung seiner AB bei gleicher
+  Vorgangsnummer („KD050/0212“ = „KD050_212“, `ordneAlleZu()`) – nur wenn alle Anker auf dieselbe
+  Bestellung zeigen, innerhalb von 120 Tagen und ohne widersprechende eigene Bestellnummer. Zitierte
+  Verläufe zählen nicht.
 - **Ablage**: `$TP_PRIVAT_DIR/lieferbelege/belege.json` (`operations/lib/lieferbelege.mjs`), 0600, jede
   Änderung unter einer Sperrdatei (`mitSperre`), beschädigte Datei = Fehler statt leer. Gesichert von
   `daten:sichern`. **Nie** ein Schreiben in `auftragsstatus.json`: ein Beleg ist ein Hinweis, den Schritt
@@ -1549,9 +1552,16 @@ abgehakt, ist es mit Shopify synchron“. Neuer Reiter **Einkauf › Belege** (`
 - **API**: `GET /api/einkauf/belege` (alle Rollen) liefert Belege mit Lieferant und Zuordnung, den
   Abgleich je Auftrag × Lieferant (AB, Lieferschein, Stand bei uns, Shopify-Versandstatus, Hinweise
   `storno`, `lieferschein_offen`, `shopify_offen`, `shopify_weiter`) und die Abweichungen.
-  `POST` (write-Liste, Rolle „lesen“ 403, Person aus der Sitzung): `zuordnen`, `ablehnen` („Passt
-  nicht“, bleibt gemerkt), `kein_shop`, `loesen`, `erledigt`, `wieder_offen`, `absender_kein_shop`,
-  `absender_zuruecksetzen`.
+  `POST` (write-Liste, Rolle „lesen“ 403, Person aus der Sitzung): `zuordnen` (optional `lieferant`, wenn
+  der Absender unbekannt ist und die Bestellung mehrere Lieferanten hat – sonst hängt der Beleg an keiner
+  Zeile), `ablehnen` („Passt nicht“, bleibt gemerkt), `kein_shop`, `loesen`, `erledigt` (mit `orderId`:
+  nur für diese Bestellung, `quittiert`), `wieder_offen`, `absender_kein_shop`, `absender_zuruecksetzen`.
+  Jeder offene Storno ist eine eigene Abweichung; der Shopify-Stand einer Zeile rechnet nur mit den
+  Positionen dieses Lieferanten (offene Menge aus dem Export).
+- **Ablage robust** (Codex-Review #1432): nur eine fehlende Datei ist leer; leere oder unvollständige Datei
+  = Fehler. Die Sperrdatei trägt Prozess und Kennung; übernommen wird sie nur, wenn sie älter als 30 s ist
+  und ihr Prozess nicht mehr lebt, freigegeben nur die eigene. Stichwort-Mails unbekannter Absender werden
+  zurückgestellt und erneut geprüft (Unterdomains zählen zum Lieferanten).
 - **Anzeige**: „Zu prüfen“ = Storno (rot), Lieferschein ohne Haken (gelb), Vorschläge mit „Ja, gehört
   dazu“ / „Passt nicht“. „Je Auftrag“ = Tabelle mit Chips Alle / Mit Beleg / Passt nicht zusammen.
   „Ohne Shop-Bestellung“ – meist Laden- und Telefonbestellungen (Echtdaten 19.10.: 41 von 52) – nur als

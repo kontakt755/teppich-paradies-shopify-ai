@@ -58,11 +58,13 @@ function zeile(z, lesend) {
  */
 export function shopifyAbgleichTodos(jetzt = Date.now()) {
   const d = shopifyAbgleich.daten;
-  if (!d?.verfuegbar) return [];
-  if (d.fehler) {
+  // Der Server konnte nicht abgleichen (fehler als Text): eine Zeile. Ein gescheiterter Abruf
+  // (fehler: true aus fetchEinkauf) steht auf "Heute" als "Liste unvollstaendig" - nicht doppelt.
+  if (typeof d?.fehler === 'string' && d.fehler) {
     return [{ id: 'shopify-abgleich-fehler', art: 'shopify_abgleich', bereich: 'laden', ton: 'warn', alterTage: null,
-      titel: 'Abgleich mit Shopify nicht möglich', kontext: String(d.fehler), knopf: { text: 'Einkauf', href: '#/einkauf' } }];
+      titel: 'Abgleich mit Shopify nicht möglich', kontext: d.fehler, knopf: { text: 'Einkauf', href: '#/einkauf' } }];
   }
+  if (!d?.verfuegbar || d.fehler) return [];
   return (d.abweichungen || []).map((z) => {
     const stufe = z.positionen.every(p => p.status === 'erledigt') ? 'erledigt' : 'raus';
     const artikel = z.positionen.slice(0, 2).map(artikelText).join(', ') + (z.positionen.length > 2 ? ` +${z.positionen.length - 2}` : '');

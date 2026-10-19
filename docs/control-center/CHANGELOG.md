@@ -18,13 +18,18 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
     Lieferanten), sondern unter „Liegt bei uns – Rausgeben“; die Nachfass-Kachel zählt Aufträge mit Ware
     von zwei Lieferanten einmal.
   - **Kunden**: Bestellliste seitenweise (25); der Menüzähler zählt neue Service-Anfragen mit.
-- **Getestet:** `npm run dashboard:test` (427), `npm test` (3.081 grün), `dashboard:pruefen --rollen` über 68 Ansichten
+- **Getestet:** `npm run dashboard:test` (457), `npm test` (3.118 grün), `dashboard:pruefen --rollen` über 70 Ansichten
   × 5 Breiten ohne Fehler und ohne seitliches Scrollen. Höhe Heute am Handy 3.870 → 2.355 px, Belege
   4.609 → 1.899 px (Desktop). Erkennung gegen 56 echte Mails aus dem Label „LS AB“ (nur lesend, in einer
   Datenkopie): 52 Belege (44 AB, 6 LS, 1 Avis, 1 Storno), 2 sicher, 4 Vorschläge, der Rest Laden-/
   Telefonbestellungen. Klickstrecke gegen die Kopie: Vorschlag annehmen (Zu prüfen 2 → 1, Lieferschein
   erbt die Bestellung der AB), „Passt nicht“ (1 → 0), Zuordnen-Dialog (39 Bestellungen, Esc),
   „Kein Shop-Lieferant“ (15 → 14 Absender), keine JS-Fehler.
+- **Codex-Review des PR (10 Befunde, alle behoben):** beschädigte Ablage nicht mehr als leer; Sperre mit
+  Besitzkennung; Teilnummer nie „sicher“; Vorgangsverknüpfung nur bei einigen Ankern; Vorschlag mit
+  mehreren Bestellungen verlangt Auswahl; unbekannter Absender nicht bei allen Lieferanten; „Erledigt“ je
+  Beleg und Auftrag, jeder offene Storno zählt; Shopify-Stand je Lieferant; Stornos von Unterdomains;
+  Heute meldet ausgefallene Belege/Shopify-Abgleich als „Liste unvollständig“.
 - **Risiken/Annahmen:** Die meisten Lieferanten nennen unsere Bestellnummer nicht – sicher wird die
   Zuordnung erst, wenn beim „Als bestellt markieren“ die AB-/Vorgangsnummer notiert wird oder die
   Bestellnummer im Betreff steht. Anhänge (PDF) werden nicht gelesen.

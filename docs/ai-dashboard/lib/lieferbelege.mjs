@@ -181,6 +181,8 @@ export function kandidatenAus(bestellzeilen = [], statusAlle = {}) {
   return (bestellzeilen || []).filter(z => z?.auftrag && !z.testbestellung && !z.storniert).map(z => {
     const positionen = (z.auftrag.positionen || []).filter(p => p.lineItemId).map(p => ({
       lineItemId: p.lineItemId, lieferant: p.lieferant || null, istMuster: !!p.istMuster, titel: p.titel || null,
+      // menge = in Shopify noch offene Menge (bestelluebersicht.mjs); fehlt sie, gilt der Status der Bestellung.
+      shopifyOffen: typeof p.menge === 'number' && !p.eigenleistung ? p.menge > 0 : null,
       eintrag: statusAlle?.[`${z.orderId}::${p.lineItemId}`] || null,
     }));
     return {
@@ -203,21 +205,38 @@ function nameTrifft(k, woerter) {
   return woerter.includes(nachname);
 }
 
-/**
- * Vorgangsnummer zum Vergleichen: Zifferngruppen ohne fuehrende Nullen. "KD050/0212" und
- * "KD050_212" (AB und Lieferschein desselben Vorgangs) ergeben beide "50|212".
- */
-export function nummernSchluessel(nr) {
-  const gruppen = (String(nr ?? '').match(/\d+/g) || []).map(x => x.replace(/^0+/, '') || '0');
-  // Mindestens eine Gruppe mit drei Ziffern: "14.10" ist ein Datum, keine Vorgangsnummer.
-  return gruppen.join('').length >= 4 && gruppen.some(g => g.length >= 3) ? gruppen.join('|') : null;
+/** Gruppen einer Nummer: Buchstaben gross, Ziffern ohne fuehrende Nullen. "KD050/0212" -> KD, 50, 212. */
+function nummernGruppen(nr) {
+  return (ohneUmlaute(nr).toUpperCase().match(/[A-Z]+|\d+/g) || []).map(g => (/^\d/.test(g) ? g.replace(/^0+/, '') || '0' : g));
 }
 
-/** Steht die Belegnummer in der Bestellnummer, die beim Bestellen notiert wurde ("0198 / KW 42")? */
-function nummerNotiert(notiert, belegnummer) {
-  const letzte = (String(belegnummer ?? '').match(/\d+/g) || []).map(x => x.replace(/^0+/, '')).at(-1);
-  if (!notiert || !letzte || letzte.length < 3) return false;
-  return (String(notiert).match(/\d+/g) || []).some(x => x.replace(/^0+/, '') === letzte);
+/**
+ * Vorgangsnummer zum Vergleichen. "KD050/0212" und "KD050_212" (AB und Lieferschein desselben
+ * Vorgangs) ergeben beide "KD|50|212". Mindestens eine Zifferngruppe mit drei Stellen: "14.10"
+ * ist ein Datum, keine Vorgangsnummer.
+ */
+export function nummernSchluessel(nr) {
+  const gruppen = nummernGruppen(nr);
+  const ziffern = gruppen.filter(g => /^\d/.test(g));
+  return ziffern.join('').length >= 4 && ziffern.some(g => g.length >= 3) ? gruppen.join('|') : null;
+}
+
+/**
+ * Steht die Belegnummer in der Bestellnummer, die beim Bestellen notiert wurde?
+ * 'voll': alle Gruppen der Belegnummer stehen dort in derselben Reihenfolge ("KD050/0198" in
+ * "KD050/0198 KW 42"); 'teil': nur die letzte Zifferngruppe ("0198 / KW 42") - das reicht nur
+ * fuer einen Vorschlag, "KD999/0198" waere sonst derselbe Vorgang (Codex-Review #1432).
+ */
+export function nummerNotiert(notiert, belegnummer) {
+  const beleg = nummernGruppen(belegnummer);
+  const ziffern = beleg.filter(g => /^\d/.test(g));
+  const letzte = ziffern.at(-1);
+  if (!notiert || !letzte || letzte.length < 3) return null;
+  const dort = nummernGruppen(notiert);
+  if (beleg.length > 1) {
+    for (let i = 0; i + beleg.length <= dort.length; i += 1) if (beleg.every((g, j) => dort[i + j] === g)) return 'voll';
+  } else if (dort.includes(letzte)) return 'voll';
+  return dort.includes(letzte) ? 'teil' : null;
 }
 
 /**
@@ -250,9 +269,11 @@ export function ordneZu(beleg, kandidaten = [], { abgelehnt = [] } = {}) {
   }
   // Beim Bestellen notierte Bestellnummer des Lieferanten (Einkauf, "Als bestellt markieren").
   if (refs.belegnummer && lieferant) {
-    const treffer = pool.filter(k => k.positionen.some(p => p.lieferant === lieferant && nummerNotiert(p.eintrag?.lieferantBestellnummer, refs.belegnummer)));
-    if (treffer.length === 1) return { stufe: 'sicher', orderIds: [treffer[0].orderId], grund: `Bestellnummer ${refs.belegnummer} wie beim Bestellen notiert` };
-    if (treffer.length > 1) return { stufe: 'vorschlag', orderIds: treffer.map(k => k.orderId), grund: `Bestellnummer ${refs.belegnummer} bei mehreren Bestellungen notiert` };
+    const art = k => k.positionen.filter(p => p.lieferant === lieferant).map(p => nummerNotiert(p.eintrag?.lieferantBestellnummer, refs.belegnummer));
+    const voll = pool.filter(k => art(k).includes('voll'));
+    if (voll.length === 1) return { stufe: 'sicher', orderIds: [voll[0].orderId], grund: `Bestellnummer ${refs.belegnummer} wie beim Bestellen notiert` };
+    const teil = voll.length ? voll : pool.filter(k => art(k).includes('teil'));
+    if (teil.length) return { stufe: 'vorschlag', orderIds: teil.map(k => k.orderId), grund: voll.length ? `Bestellnummer ${refs.belegnummer} bei mehreren Bestellungen notiert` : `Teil der Nummer ${refs.belegnummer} beim Bestellen notiert` };
   }
   if (refs.textNummern?.length) {
     const treffer = nachNummer(refs.textNummern);
@@ -291,16 +312,27 @@ const STUFEN = ['offen', 'bestellt', 'geliefert', 'raus', 'erledigt'];
 export function ordneAlleZu(belege = [], kandidaten = [], { absender = {} } = {}) {
   const mit = belege.map(b => ({ ...b, zuordnung: zuordnungMitEntscheidung(b, kandidaten, { absender }) }));
   const fest = mit.filter(b => ['sicher', 'bestaetigt'].includes(b.zuordnung.stufe));
+  const nameVon = new Map(kandidaten.map(k => [k.orderId, k.orderName]));
+  const nah = (a, b) => !Number.isFinite(Date.parse(a.datum)) || !Number.isFinite(Date.parse(b.datum)) || Math.abs(Date.parse(a.datum) - Date.parse(b.datum)) <= 120 * TAG_MS;
+  // Alle Anker muessen auf dieselben Bestellungen zeigen - sonst ist es kein eindeutiger Vorgang.
+  const einig = (anker) => {
+    const ziele = [...new Set(anker.map(a => [...a.zuordnung.orderIds].sort().join(',')))];
+    return ziele.length === 1 ? anker[0] : null;
+  };
   return mit.map((b) => {
     // Die Vorgangsnummer schlaegt einen Namensvorschlag; Entscheidungen und sichere Treffer bleiben.
     if (!['keine', 'vorschlag'].includes(b.zuordnung.stufe)) return b;
     const abgelehnt = b.entscheidung?.art === 'abgelehnt' ? b.entscheidung.orderIds || [] : [];
-    const frei = s => s.id !== b.id && !s.zuordnung.orderIds.some(id => abgelehnt.includes(id));
+    // Eigene Bestellnummern des Belegs, die nicht zum Anker passen, sprechen gegen die Verknuepfung.
+    const eigene = [...(b.refs?.betreffNummern || []), ...(b.refs?.textNummern || [])];
+    const passt = s => s.id !== b.id && nah(s, b) && !s.zuordnung.orderIds.some(id => abgelehnt.includes(id))
+      && (!eigene.length || s.zuordnung.orderIds.some(id => eigene.includes(nameVon.get(id))));
     const schluessel = nummernSchluessel(b.refs?.belegnummer);
-    const vorgang = schluessel && fest.find(s => frei(s) && s.domain === b.domain && nummernSchluessel(s.refs?.belegnummer) === schluessel);
+    const vorgaenge = schluessel ? fest.filter(s => passt(s) && s.domain === b.domain && nummernSchluessel(s.refs?.belegnummer) === schluessel) : [];
+    const vorgang = vorgaenge.length ? einig(vorgaenge) : null;
     if (vorgang) return { ...b, zuordnung: { stufe: 'sicher', orderIds: vorgang.zuordnung.orderIds, grund: `gleicher Vorgang wie ${belegMarke(vorgang)}` } };
-    if (b.zuordnung.stufe !== 'keine') return b;
-    const verlauf = b.threadId && fest.find(s => frei(s) && s.threadId === b.threadId);
+    if (b.zuordnung.stufe !== 'keine' || vorgaenge.length) return b;
+    const verlauf = b.threadId ? einig(fest.filter(s => passt(s) && s.threadId === b.threadId).concat([]).filter(Boolean)) : null;
     if (verlauf) return { ...b, zuordnung: { stufe: 'vorschlag', orderIds: verlauf.zuordnung.orderIds, grund: `im selben Mailverlauf wie ${belegMarke(verlauf)}` } };
     return b;
   });
@@ -340,6 +372,9 @@ export function abgleich({ belege = [], kandidaten = [], jetzt = new Date(), tag
   const grenze = jetzt.getTime() - tage * TAG_MS;
   const zeilen = [];
   const abweichungen = [];
+  const neueste = liste => [...liste].sort((a, b) => String(b.datum).localeCompare(String(a.datum)));
+  // Nur Kennung, Art, Datum und Erledigt-Vermerk - den ganzen Beleg liefert die Belegliste.
+  const kurz = (b, orderId) => (b ? { id: b.id, art: b.art, datum: b.datum, erledigt: offenFuer(b, orderId) ? null : (b.erledigt || b.quittiert?.[orderId] || null) } : null);
   for (const k of kandidaten) {
     const belegeHier = jeAuftrag.get(k.orderId) || [];
     const t = Date.parse(k.datum);
@@ -347,31 +382,35 @@ export function abgleich({ belege = [], kandidaten = [], jetzt = new Date(), tag
     for (const lieferant of k.lieferanten) {
       const positionen = k.positionen.filter(p => p.lieferant === lieferant);
       const stand = standVon(positionen);
+      // Lieferant des Belegs: Entscheidung, Absender - oder, ohne beides, der einzige Lieferant der
+      // Bestellung. Bei mehreren bleibt ein Beleg unbekannter Herkunft keiner Zeile zugeschlagen.
+      const eigene = belegeHier.filter((b) => {
+        const von = b.entscheidung?.lieferant || b.lieferant;
+        return von ? von === lieferant : k.lieferanten.length === 1;
+      });
       // Nur, was beim Lieferanten bestellt wurde oder wozu ein Beleg kam - nicht jede offene Bestellung.
-      const eigene = belegeHier.filter(b => !b.lieferant || b.lieferant === lieferant);
       if (stand === 'offen' && !eigene.length) continue;
       const bestelltAm = positionen.map(p => p.eintrag?.bestelltAm).filter(Boolean).sort()[0] || null;
-      // Nur Kennung, Art, Datum und Erledigt-Vermerk - den ganzen Beleg liefert die Belegliste.
-      const letzte = (art) => {
-        const b = eigene.filter(x => x.art === art).sort((x, y) => String(y.datum).localeCompare(String(x.datum)))[0];
-        return b ? { id: b.id, art: b.art, datum: b.datum, erledigt: b.erledigt || null } : null;
-      };
+      const der = art => neueste(eigene.filter(b => b.art === art))[0] || null;
+      const ls = der('lieferschein') || der('avis');
       const zeile = {
         id: `${k.orderId}|${lieferant}`, orderId: k.orderId, orderName: k.orderName, kundenname: k.kundenname, lieferant,
         nurMuster: positionen.every(p => p.istMuster), bestelltAm, stand,
-        ab: letzte('ab'), lieferschein: letzte('lieferschein') || letzte('avis'), storno: letzte('storno'),
+        ab: kurz(der('ab'), k.orderId), lieferschein: kurz(ls, k.orderId), storno: kurz(der('storno'), k.orderId),
         belege: eigene.map(b => b.id),
-        shopify: k.fulfillmentstatus || null, versandHinweis: k.versandHinweis || null,
+        shopify: shopifyStand(positionen, k.fulfillmentstatus), versandHinweis: k.versandHinweis || null,
         hinweise: [],
       };
-      if (zeile.storno && !zeile.storno.erledigt) {
-        zeile.hinweise.push('storno');
-        abweichungen.push({ id: `storno:${zeile.storno.id}:${k.orderId}`, art: 'storno', ton: 'crit', orderId: k.orderId, orderName: k.orderName, kundenname: k.kundenname, lieferant, belegId: zeile.storno.id, datum: zeile.storno.datum });
+      // Jeder offene Storno zaehlt - ein erledigter neuerer verdeckt keinen aelteren (Codex-Review #1432).
+      const stornos = neueste(eigene.filter(b => b.art === 'storno' && offenFuer(b, k.orderId)));
+      if (stornos.length) zeile.hinweise.push('storno');
+      for (const b of stornos) {
+        abweichungen.push({ id: `storno:${b.id}:${k.orderId}`, art: 'storno', ton: 'crit', orderId: k.orderId, orderName: k.orderName, kundenname: k.kundenname, lieferant, belegId: b.id, datum: b.datum });
       }
-      const ls = zeile.lieferschein;
-      if (ls && ls.art === 'lieferschein' && stand === 'bestellt' && !ls.erledigt) {
+      const lsOffen = stand === 'bestellt' ? neueste(eigene.filter(b => b.art === 'lieferschein' && offenFuer(b, k.orderId)))[0] : null;
+      if (lsOffen) {
         zeile.hinweise.push('lieferschein_offen');
-        abweichungen.push({ id: `lieferschein:${ls.id}:${k.orderId}`, art: 'lieferschein_offen', ton: 'warn', orderId: k.orderId, orderName: k.orderName, kundenname: k.kundenname, lieferant, belegId: ls.id, datum: ls.datum, nurMuster: zeile.nurMuster });
+        abweichungen.push({ id: `lieferschein:${lsOffen.id}:${k.orderId}`, art: 'lieferschein_offen', ton: 'warn', orderId: k.orderId, orderName: k.orderName, kundenname: k.kundenname, lieferant, belegId: lsOffen.id, datum: lsOffen.datum, nurMuster: zeile.nurMuster });
       }
       if (['raus', 'erledigt'].includes(stand) && zeile.shopify && zeile.shopify !== 'FULFILLED') zeile.hinweise.push('shopify_offen');
       if (stand === 'bestellt' && zeile.shopify === 'FULFILLED') zeile.hinweise.push('shopify_weiter');
@@ -382,7 +421,23 @@ export function abgleich({ belege = [], kandidaten = [], jetzt = new Date(), tag
   return { zeilen, abweichungen };
 }
 
-/** Kurzer Text fuer einen Beleg in einer Zeile: "AB 14.10." */
+/** Offen fuer diese Bestellung: weder ganz erledigt noch fuer diese Bestellung quittiert. */
+function offenFuer(b, orderId) {
+  return !b.erledigt && !b.quittiert?.[orderId];
+}
+
+/**
+ * Versandstand in Shopify fuer die Positionen EINES Lieferanten. Die Bestellung als Ganzes ist
+ * "teilweise versendet", wenn Ware von A raus ist und von B nicht - fuer A stimmt dann "versendet".
+ */
+function shopifyStand(positionen, gesamt) {
+  const bekannt = positionen.map(p => p.shopifyOffen).filter(v => v === true || v === false);
+  if (bekannt.length !== positionen.length || !bekannt.length) return gesamt || null;
+  if (bekannt.every(v => !v)) return 'FULFILLED';
+  if (bekannt.every(v => v)) return 'UNFULFILLED';
+  return 'PARTIALLY_FULFILLED';
+}
+
 export function belegMarke(beleg) {
   if (!beleg) return null;
   const d = beleg.datum ? new Date(beleg.datum) : null;

@@ -42,7 +42,7 @@ import { heuteLaden, heuteMontage, ladenKachel, ensureLadenZahlen } from './heut
 import { shopwache, ensureShopwache } from './shopwache.mjs';
 import { heuteDaten, ensureHeuteLieferanten, ensureHeuteAufgaben, ensureHeuteMusterTexte } from './heute/daten.mjs';
 import { musterNachfassenStand, musterNachfassenBlock } from './heute/muster-nachfassen.mjs';
-import { ensureShopifyAbgleich, shopifyAbgleichTodos } from './einkauf/shopify-abgleich.mjs';
+import { shopifyAbgleich, ensureShopifyAbgleich, shopifyAbgleichTodos } from './einkauf/shopify-abgleich.mjs';
 
 const TODOS_SICHTBAR = 7;      // "eine kurze Liste" - der Rest steht einen Klick weiter
 const SPALTE_SICHTBAR = 8;
@@ -232,6 +232,9 @@ function fehlendeQuellen() {
     [kunden.faelle, 'Kundenfälle', () => false],
     [kunden.serviceanfragen, 'Service-Anfragen', () => false],
     [heuteDaten.aufgaben, 'Aufgaben', () => false],
+    // Neue To-do-Quellen (#1427): Lieferantenbelege und Abgleich mit Shopify (Codex-Review #1432).
+    [darfAnsicht('einkauf') ? belege.daten : null, 'Lieferantenbelege', () => false],
+    [shopifyAbgleich.daten?.fehler === true ? shopifyAbgleich.daten : null, 'Abgleich mit Shopify', () => false],
   ];
   return teile.filter(([d, , fehlt]) => d && (d.fehler || fehlt(d))).map(([, name]) => name);
 }
@@ -283,8 +286,9 @@ function hintergrund(nf, wartet, sicht) {
     zeilen.push(`<div class="heute-hg-zeile"><span class="heute-hg-name">Wartet auf andere</span><span class="heute-hg-text">${esc([lieferant ? `${lieferant} beim Lieferanten` : null, kunde ? `${kunde} beim Kunden` : null].filter(Boolean).join(' · '))}</span>${umschalten('ww', 'Ansehen')}</div>`);
   }
 
-  if (sicht !== 'website' && darfAnsicht('einkauf') && belege.daten?.verfuegbar) {
-    const l = laufStand(belege.daten);
+  if (sicht !== 'website' && darfAnsicht('einkauf') && belege.daten) {
+    // Ablage nicht lesbar: die Zeile bleibt da und sagt es - sonst verschwaende die Pruefung still.
+    const l = belege.daten.verfuegbar ? laufStand(belege.daten) : { text: `Belege nicht lesbar: ${belege.daten.hinweis || 'unbekannter Fehler'}`, ton: 'warn' };
     zeilen.push(`<div class="heute-hg-zeile${l.ton ? ` ${l.ton}` : ''}"><span class="heute-hg-name">Lieferantenpostfach</span><span class="heute-hg-text">${esc(l.text)}</span><a class="heute-hg-knopf" href="#/einkauf?tab=belege">Belege</a></div>`);
   }
 
