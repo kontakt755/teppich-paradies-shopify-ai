@@ -568,6 +568,23 @@ function ausNeuheiten(quellen, jetzt) {
   }];
 }
 
+/**
+ * Ausschreibungen Bodenbelag im Umkreis (woechentlicher Lauf): neue Treffer seit dem
+ * letzten Lauf als To-do fuer den Laden (Verlegeauftraege). Bewerben macht der Inhaber.
+ */
+function ausAusschreibungen(quellen, jetzt) {
+  const d = quellen.shopwache?.ausschreibungen;
+  const neu = d?.neu || [];
+  if (!neu.length) return [];
+  const naechste = [...neu].sort((x, y) => String(x.frist || '9').localeCompare(String(y.frist || '9')))[0];
+  return [{
+    id: 'ausschreibungen', art: 'ausschreibungen', bereich: 'laden', ton: '', alterTage: tageSeit(d.geprueftAm, jetzt),
+    titel: `Ausschreibung Bodenbelag: ${neu.length} neu im Umkreis`,
+    kontext: [naechste.auftraggeber, naechste.frist ? `Frist ${naechste.frist}` : null, 'prüfen, ob wir anbieten'].filter(Boolean).join(' · '),
+    knopf: naechste.link ? { text: 'Bekanntmachung', href: naechste.link } : undefined,
+  }];
+}
+
 /** Alle ableitbaren To-dos, unsortiert und ohne Blick auf die Rolle. */
 function alleTodos(quellen, opt) {
   const k = kontext(quellen, opt);
@@ -580,6 +597,7 @@ function alleTodos(quellen, opt) {
     ...ausShopwache(quellen, k.jetzt),
     ...ausAuslauf(quellen, k.jetzt),
     ...ausNeuheiten(quellen, k.jetzt),
+    ...ausAusschreibungen(quellen, k.jetzt),
     ...ausTailscale(quellen),
   ];
 }

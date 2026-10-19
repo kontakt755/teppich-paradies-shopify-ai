@@ -3343,10 +3343,15 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           neuheiten: aus.neuheiten ? { neu: aus.neuheiten.neu || [], ausfall: aus.neuheiten.ausfall || null } : null,
         }
         : null;
+      // Ausschreibungen Bodenbelag (operations/scripts/ausschreibungen-pruefen.mjs), dieselbe To-do-Quelle.
+      const aus2 = readJsonIfExists(path.join(dir, 'ausschreibungen', 'status.json'));
+      const ausschreibungen = aus2?.geprueftAm
+        ? { geprueftAm: aus2.geprueftAm, treffer: aus2.treffer || [], neu: aus2.neu || [], ausfaelle: aus2.ausfaelle || [] }
+        : null;
       if (!daten || !daten.geprueftAm) {
-        return { verfuegbar: false, quelle: file, hinweis: 'Shop-Wache noch nie gelaufen.', befehl: 'npm run shop:wache', tailscale: ts, auslauf };
+        return { verfuegbar: false, quelle: file, hinweis: 'Shop-Wache noch nie gelaufen.', befehl: 'npm run shop:wache', tailscale: ts, auslauf, ausschreibungen };
       }
-      return { verfuegbar: true, quelle: file, ...daten, tailscale: ts, auslauf };
+      return { verfuegbar: true, quelle: file, ...daten, tailscale: ts, auslauf, ausschreibungen };
     },
 
     /**
