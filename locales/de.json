@@ -138,6 +138,12 @@
     "quantity": "Anzahl",
     "product_total": "Produkt insgesamt",
     "cart_estimated_total": "Gesamtbetrag",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Steuern werden beim Checkout berechnet.",
+      "duties_included": "Zölle enthalten.",
+      "discounts_at_checkout": "Rabatte werden beim Checkout berechnet.",
+      "shipping_details_html": "Details zu <a href=\"{{ link }}\">Versand und Lieferung</a>."
+    },
     "seller_note": "Besondere Anweisungen",
     "cart_subtotal": "Zwischensumme",
     "discounts": "Rabatte",

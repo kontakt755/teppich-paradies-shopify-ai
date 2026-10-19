@@ -142,6 +142,12 @@
     "quantity": "Количество",
     "product_total": "Итого",
     "cart_estimated_total": "Ориентировочная общая сумма",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Налоги рассчитываются при оформлении заказа.",
+      "duties_included": "Таможенные пошлины включены.",
+      "discounts_at_checkout": "Скидки рассчитываются при оформлении заказа.",
+      "shipping_details_html": "Подробнее об <a href=\"{{ link }}\">отправке и доставке</a>."
+    },
     "seller_note": "Особые примечания",
     "cart_subtotal": "Промежуточный итог",
     "discounts": "Скидки",

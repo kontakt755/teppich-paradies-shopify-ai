@@ -138,6 +138,12 @@
     "quantity": "数量",
     "product_total": "产品总计",
     "cart_estimated_total": "预计总额",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "税费在结账时计算。",
+      "duties_included": "已含关税。",
+      "discounts_at_checkout": "折扣在结账时计算。",
+      "shipping_details_html": "<a href=\"{{ link }}\">运输和配送</a>详情。"
+    },
     "seller_note": "特殊说明",
     "cart_subtotal": "小计",
     "discounts": "折扣",

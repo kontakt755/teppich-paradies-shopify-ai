@@ -142,6 +142,12 @@
     "quantity": "Množstvo",
     "product_total": "Celková suma za tento produkt",
     "cart_estimated_total": "Odhadovaná celková suma",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Dane sa vypočítajú pri pokladni.",
+      "duties_included": "Clo je zahrnuté.",
+      "discounts_at_checkout": "Zľavy sa vypočítajú pri pokladni.",
+      "shipping_details_html": "Podrobnosti o <a href=\"{{ link }}\">preprave a doručení</a>."
+    },
     "seller_note": "Špeciálne pokyny",
     "cart_subtotal": "Medzisúčet",
     "discounts": "Zľavy",

@@ -17,6 +17,7 @@
 .bl-ohne-text { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
 .bl-ohne-text .heute-hg-knopf { margin-left: 0; }
 .bl-gruppe-kopf { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin: 0 0 6px; }
+.bl-gruppe-kopf > span, .bl-beleg-kopf > span { min-width: 0; overflow-wrap: anywhere; }
 
 .bl-zeile { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 16px; padding: 12px 16px 12px 13px; border-top: 1px solid var(--line); border-left: 3px solid transparent; }
 .bl-liste > .bl-zeile:first-child { border-top: 0; }

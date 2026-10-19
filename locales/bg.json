@@ -138,6 +138,12 @@
     "quantity": "Количество",
     "product_total": "Обща стойност на продукта",
     "cart_estimated_total": "Очаквана обща сума",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Данъците се изчисляват при плащане.",
+      "duties_included": "Митата са включени.",
+      "discounts_at_checkout": "Отстъпките се изчисляват при плащане.",
+      "shipping_details_html": "Подробности за <a href=\"{{ link }}\">доставката</a>."
+    },
     "seller_note": "Специални инструкции",
     "cart_subtotal": "Междинна сума",
     "discounts": "Отстъпки",

@@ -138,6 +138,12 @@
     "quantity": "Số lượng",
     "product_total": "Tổng sản phẩm",
     "cart_estimated_total": "Tổng số tiền ước tính",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Thuế được tính khi thanh toán.",
+      "duties_included": "Đã bao gồm thuế nhập khẩu.",
+      "discounts_at_checkout": "Giảm giá được tính khi thanh toán.",
+      "shipping_details_html": "Thông tin về <a href=\"{{ link }}\">vận chuyển và giao hàng</a>."
+    },
     "seller_note": "Hướng dẫn đặc biệt",
     "cart_subtotal": "Tổng phụ",
     "discounts": "Giảm giá",

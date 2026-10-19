@@ -1544,7 +1544,13 @@ abgehakt, ist es mit Shopify synchron“. Neuer Reiter **Einkauf › Belege** (`
   sind Alternativen („Auswählen…“, ankreuzen). Ein Lieferschein erbt die Bestellung seiner AB bei gleicher
   Vorgangsnummer („KD050/0212“ = „KD050_212“, `ordneAlleZu()`) – nur wenn alle Anker auf dieselbe
   Bestellung zeigen, innerhalb von 120 Tagen und ohne widersprechende eigene Bestellnummer. Zitierte
-  Verläufe zählen nicht.
+  Verläufe zählen nicht. Bei allgemeinen Mailanbietern muss die vollständige Absenderadresse
+  übereinstimmen (ohne Anzeigename, unabhängig von Großschreibung); die gemeinsame Domain allein
+  oder eine fehlende Adresse erlauben keine sichere Vorgangsverknüpfung. Die Oberfläche zeigt und
+  gruppiert diese Postfächer nach der vollständigen Adresse statt gemeinsam nach der Domain.
+  Eine Adresse im Anzeigenamen wird ignoriert; mehrdeutige oder beschädigte From-Angaben verknüpfen
+  nichts sicher. Auch bei Altbelegen wird die Domain für die Anzeige aus dem tatsächlichen Postfach
+  abgeleitet, ohne die Ablage umzuschreiben.
 - **Ablage**: `$TP_PRIVAT_DIR/lieferbelege/belege.json` (`operations/lib/lieferbelege.mjs`), 0600, jede
   Änderung unter einer Sperrdatei (`mitSperre`), beschädigte Datei = Fehler statt leer. Gesichert von
   `daten:sichern`. **Nie** ein Schreiben in `auftragsstatus.json`: ein Beleg ist ein Hinweis, den Schritt
@@ -1558,7 +1564,10 @@ abgehakt, ist es mit Shopify synchron“. Neuer Reiter **Einkauf › Belege** (`
   nur für diese Bestellung, `quittiert`), `wieder_offen`, `absender_kein_shop`, `absender_zuruecksetzen`.
   Jeder offene Storno ist eine eigene Abweichung, auch ohne Lieferantenzeile; der Shopify-Stand einer
   Zeile rechnet nur mit den Positionen dieses Lieferanten (offene und bestellte Menge aus dem Export:
-  10 bestellt, 5 offen = teilweise versendet).
+  10 bestellt, 5 offen = teilweise versendet). Fehlende oder beschädigte Bestelldaten liefern
+  `verfuegbar: false` und einen Fehlerhinweis: ohne diese Quelle gibt es keine gültige leere Arbeitsliste.
+  Ein GraphQL-Export muss ein `nodes`-Array enthalten; ein fehlender oder falscher Container gilt
+  als beschädigte Quelle. Ein ausdrücklich leeres Bestellarray bleibt ein gültiger Export.
 - **Ablage robust** (Codex-Review #1432): nur eine fehlende Datei ist leer; leere oder unvollständige Datei
   = Fehler. Die Sperrdatei trägt Prozess und Kennung; entfernt wird sie nur, wenn sie älter als 30 s ist
   und ihr Prozess nicht mehr lebt – und nur von dem, der die Räum-Sperre `….lock.raeumen` hält –,

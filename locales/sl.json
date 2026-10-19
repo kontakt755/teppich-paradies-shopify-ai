@@ -142,6 +142,12 @@
     "quantity": "Količina",
     "product_total": "Skupno za izdelek",
     "cart_estimated_total": "Predvideni skupni znesek",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Davki se izračunajo na blagajni.",
+      "duties_included": "Carine so vključene.",
+      "discounts_at_checkout": "Popusti se izračunajo na blagajni.",
+      "shipping_details_html": "Podrobnosti o <a href=\"{{ link }}\">pošiljanju in dostavi</a>."
+    },
     "seller_note": "Posebna navodila",
     "cart_subtotal": "Vmesna vsota",
     "discounts": "Popusti",

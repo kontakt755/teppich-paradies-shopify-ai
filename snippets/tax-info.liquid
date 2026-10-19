@@ -3,10 +3,25 @@
   Intended for use in a block similar to the text block.
 
   @param {boolean} [has_discounts_enabled] - Whether discounts are enabled, used to display alternate tax/duty text.
+  @param {boolean} [cart_shipping_details] - Use the cart's separate shipping notice instead of a generic shipping estimate.
 {%- enddoc -%}
 
 <small>
-  {%- if cart.duties_included and cart.taxes_included -%}
+  {%- if cart_shipping_details -%}
+    {%- if cart.taxes_included -%}
+      {{ 'content.taxes_included' | t }}
+    {%- else -%}
+      {{ 'content.cart_tax_notice.taxes_at_checkout' | t }}
+    {%- endif %}
+    {% if cart.duties_included -%}
+      {{ 'content.cart_tax_notice.duties_included' | t }}
+    {%- endif %}
+    {% unless has_discounts_enabled -%}
+      {{ 'content.cart_tax_notice.discounts_at_checkout' | t }}
+    {%- endunless %}
+    {% assign shipping_details_url = pages['versand-lieferung'].url | default: '/pages/versand-lieferung' -%}
+    {{ 'content.cart_tax_notice.shipping_details_html' | t: link: shipping_details_url }}
+  {%- elsif cart.duties_included and cart.taxes_included -%}
     {%- if shop.shipping_policy.body == blank -%}
       {%- if has_discounts_enabled -%}
         {{ 'content.duties_and_taxes_included_shipping_at_checkout_without_policy_without_discounts' | t }}

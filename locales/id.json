@@ -138,6 +138,12 @@
     "quantity": "Jumlah",
     "product_total": "Total produk",
     "cart_estimated_total": "Estimasi total",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Pajak dihitung saat checkout.",
+      "duties_included": "Bea masuk sudah termasuk.",
+      "discounts_at_checkout": "Diskon dihitung saat checkout.",
+      "shipping_details_html": "Detail tentang <a href=\"{{ link }}\">pengiriman dan pengantaran</a>."
+    },
     "seller_note": "Instruksi khusus",
     "cart_subtotal": "Subtotal",
     "discounts": "Diskon",
