@@ -127,12 +127,12 @@ export function lieferantFuer(item, variantMetafelder, zuordnung = LIEFERANT_MET
 
 /**
  * Eigenleistungen ohne Material vom Grosshaendler (Ketteln, Pauschale fuer
- * Wunschmass): nichts zu bestellen, keine Grosshaendler-ID noetig. Bewusst
- * eine feste Liste statt productType "Service" - die gekettelte Fussleiste
- * ist auch ein Service, braucht aber Material und bleibt deshalb sichtbar
- * offen.
+ * Wunschmass, Sperrgut-Zuschlag der Treppenkanten): nichts zu bestellen, keine
+ * Grosshaendler-ID noetig. Bewusst eine feste Liste statt productType
+ * "Service" - die gekettelte Fussleiste ist auch ein Service, braucht aber
+ * Material und bleibt deshalb sichtbar offen.
  */
-const EIGENLEISTUNG_HANDLES = new Set(['kettelservice', 'wunschmass-pauschale']);
+const EIGENLEISTUNG_HANDLES = new Set(['kettelservice', 'wunschmass-pauschale', 'sperrgut-versand-treppenkante']);
 
 export function istEigenleistung(lineItem) {
   return EIGENLEISTUNG_HANDLES.has(lineItem?.variant?.product?.handle ?? '');

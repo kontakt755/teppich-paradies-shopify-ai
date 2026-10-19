@@ -22,13 +22,24 @@
   Optional service.min_seite_cm (Zahl): kleinste Laenge je Stueck, sonst 10 cm.
   Angeboten werden nur Varianten mit Preis > 0.
 
-  Profile: Schrauben (Einstellung schrauben_produkt, Preis je Schraube, Option 1
-  = Ausfuehrung wie "vernickelt"). Jede Profil-Variante nennt im Metafeld
+  Profile: Schrauben (Einstellung schrauben_produkt, Option 1 = Ausfuehrung wie
+  "vernickelt"; mit schrauben_packung > 0 gilt der Preis je Packung mit so
+  vielen Schrauben, sonst je Schraube). Jede Profil-Variante nennt im Metafeld
   service.schraube die passende Ausfuehrung; fehlt sie oder gibt es die
   Variante nicht, wird keine Schraube angeboten. Nur bei "gebohrt" und nur auf
-  ausdruecklichen Wunsch (Kaestchen nicht vorbelegt). Stueckzahl je Profil aus
+  ausdruecklichen Wunsch (Kaestchen nicht vorbelegt). Bedarf je Profil aus
   dem Bohrbild des Lieferanten: Randabstand und Lochabstand (Einstellungen),
-  siehe TPLaengenZuschnitt.lochzahl.
+  siehe TPLaengenZuschnitt.lochzahl; bestellt werden ganze Packungen.
+
+  Profile als ganze Stange (Einstellung stangen): Varianten mit
+  service.stange_cm (Kundenseite der Stangenlaenge, gleicher Wert wie
+  einkauf.stangenlaenge_cm - das Theme liest keine einkauf.*) gibt es wie beim
+  Lieferanten stueckweise in dieser Laenge oder auf Wunsch zugeschnitten (dann
+  hoechstens Stangenlaenge, auch wenn service.max_laenge_cm groesser ist).
+
+  Sperrgut (Einstellung sperrgut_produkt, Service-Produkt mit dem Zuschlag):
+  ist ein Stueck laenger als sperrgut_ab_cm, kommt der Zuschlag einmal je
+  Warenkorb dazu.
 
   Die Warenkorbzeile traegt "Laenge je Stueck", "Anzahl", "Gesamtlaenge",
   "Bohrung" und eine eigene _Gruppe (Menge gesperrt, siehe
@@ -42,6 +53,7 @@
   assign tp_lz_min = product.metafields.service.min_seite_cm.value | default: 10 | times: 1 | at_least: 1
   assign tp_lz_bohrungen = product.metafields.service.bohrung.value
   assign tp_lz_max_stueck = block.settings.max_stueck | default: 50 | times: 1
+  assign tp_lz_packung = block.settings.schrauben_packung | default: 0 | times: 1
 
   # Laeufer: Einfassung und Pauschale aus zwei Service-Produkten statt Bohrung.
   assign tp_lz_laeufer = false
@@ -64,6 +76,19 @@
         break
       endif
     endfor
+  endif
+  # Profile: ganze Stangen und Sperrgut-Zuschlag (nur ausserhalb des Laeufer-Modus).
+  assign tp_lz_stangen = false
+  assign tp_lz_sperrgut = false
+  if tp_lz_laeufer == false
+    if block.settings.stangen
+      assign tp_lz_stangen = true
+    endif
+    assign tp_lz_sg = block.settings.sperrgut_produkt.selected_or_first_available_variant
+    if block.settings.sperrgut_produkt != blank and tp_lz_sg.available and tp_lz_sg.price > 0
+      assign tp_lz_sperrgut = true
+      assign tp_lz_sg_ab = block.settings.sperrgut_ab_cm | default: 175 | times: 1
+    endif
   endif
   # Breite des Laeufers = Wert der Option "Breite" (zum Abgleich mit der Einfassung).
   assign tp_lz_bi = -1
@@ -99,15 +124,27 @@
   <div class="tp-ek tp-lz" id="tp-lz-{{ tp_lz_id }}" data-tp-lz {{ block.shopify_attributes }}>
     <div class="tp-ek__schritt" data-schritt="mass">
       {% render 'tp-step-heading', number: 2, label: block.settings.titel_masse %}
+      {%- if tp_lz_stangen -%}
+        <div class="tp-ek__formen tp-lz__art" role="radiogroup" aria-label="Ganze Stange oder Zuschnitt" data-art-feld>
+          <label class="tp-ek__form">
+            <input type="radio" name="tp-lz-art-{{ tp_lz_id }}" value="stange" checked>
+            <span class="tp-ek__form-karte"><span>Ganze Stange</span><span class="tp-lz__art-zusatz" data-stange-text></span></span>
+          </label>
+          <label class="tp-ek__form">
+            <input type="radio" name="tp-lz-art-{{ tp_lz_id }}" value="zuschnitt">
+            <span class="tp-ek__form-karte"><span>Zuschnitt nach Maß</span><span class="tp-lz__art-zusatz">auf den Zentimeter</span></span>
+          </label>
+        </div>
+      {%- endif -%}
       <div class="tp-ek__masse">
-        <label class="tp-ek__mass">
+        <label class="tp-ek__mass" data-laenge-feld>
           <span class="tp-ek__mass-label">{{ block.settings.label_laenge | escape }}</span>
           <span class="tp-ek__eingabe">
             <input type="number" inputmode="numeric" min="{{ tp_lz_min }}" max="{{ tp_lz_max }}" step="1" placeholder="100" data-laenge>
             <span>cm</span>
           </span>
         </label>
-        <span class="tp-ek__mal" aria-hidden="true">×</span>
+        <span class="tp-ek__mal" aria-hidden="true" data-laenge-feld>×</span>
         <label class="tp-ek__mass">
           <span class="tp-ek__mass-label">Anzahl</span>
           <span class="tp-ek__eingabe">
@@ -116,7 +153,7 @@
           </span>
         </label>
       </div>
-      <p class="tp-ek__grenzen">Zentimetergenau von {{ tp_lz_min }} bis {{ tp_lz_max }} cm je {% if tp_lz_laeufer %}Läufer{% else %}Stück{% endif %}.{% if block.settings.messhilfe != blank %} {{ block.settings.messhilfe | escape }}{% endif %}</p>
+      <p class="tp-ek__grenzen" data-grenzen data-messhilfe="{{ block.settings.messhilfe | escape }}">Zentimetergenau von {{ tp_lz_min }} bis {{ tp_lz_max }} cm je {% if tp_lz_laeufer %}Läufer{% else %}Stück{% endif %}.{% if block.settings.messhilfe != blank %} {{ block.settings.messhilfe | escape }}{% endif %}</p>
       <p class="tp-ek__fehler" role="alert" data-fehler hidden></p>
     </div>
 
@@ -170,6 +207,7 @@
     <div class="tp-ek__preis" aria-live="polite" data-rechnung hidden>
       <div class="tp-ek__summe"><span>Gesamtpreis</span><span class="tp-ek__summe-werte"><s class="tp-ek__summe-alt" data-summe-alt hidden></s><strong data-summe>–</strong></span></div>
       <p class="tp-ek__rechenzeile" data-rechenzeile></p>
+      {%- if tp_lz_sperrgut -%}<p class="tp-ek__preishinweis" data-sperrgut-hinweis>Stangen und Stücke über {{ tp_lz_sg_ab }} cm verschicken wir als Sperrgut: einmalig {{ tp_lz_sg.price | money }} je Bestellung.</p>{%- endif -%}
       <p class="tp-ek__preishinweis">{{ block.settings.preishinweis | escape }} Inkl. MwSt.; <a href="{{ pages['versand-lieferung'].url | default: '/pages/versand-lieferung' }}">Versand</a> in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos.</p>
     </div>
 
@@ -200,9 +238,14 @@
           null
         ],
         {%- endif %}
+        "stangen": {{ tp_lz_stangen | json }},
+        {%- if tp_lz_sperrgut %}
+        "sperrgut": { "id": {{ tp_lz_sg.id | json }}, "price": {{ tp_lz_sg.price | json }}, "ab_cm": {{ tp_lz_sg_ab | json }} },
+        {%- endif %}
         {%- if tp_lz_schrauben %}
         "schrauben": {
           "produkt": {{ block.settings.schrauben_produkt.title | json }},
+          "packung": {{ tp_lz_packung | json }},
           "rand_mm": {{ block.settings.schrauben_rand_mm | default: 30 | json }},
           "lochabstand_mm": {{ block.settings.schrauben_lochabstand_mm | default: 160 | json }},
           "varianten": [
@@ -226,6 +269,7 @@
                 "available": {{ tp_lz_v.available | json }},
                 "breite": {% if tp_lz_bi >= 0 %}{{ tp_lz_v.options[tp_lz_bi] | json }}{% else %}null{% endif %},
                 "schraube": {{ tp_lz_v.metafields.service.schraube.value | json }},
+                "stange_cm": {% if tp_lz_stangen %}{{ tp_lz_v.metafields.service.stange_cm.value | json }}{% else %}null{% endif %},
                 "titel": {{ tp_lz_v.title | json }}
               },
             {%- endif -%}
@@ -245,6 +289,9 @@
   .tp-lz .tp-ek__rechenzeile { margin: 6px 0 0; font-size: var(--tp-fs-sm); color: var(--tp-ek-muted); white-space: pre-line; }
   .tp-lz__einfassung { display: flex; flex-direction: column; gap: 6px; max-width: 420px; }
   .tp-lz__schrauben { margin: 4px 0 0; }
+  .tp-lz__art { margin: 0 0 12px; }
+  .tp-lz__art .tp-ek__form-karte { flex-direction: column; gap: 2px; }
+  .tp-lz__art-zusatz { font-size: var(--tp-fs-xs); font-weight: 400; color: var(--tp-ek-muted); }
   .tp-lz__schrauben-wahl { display: flex; align-items: flex-start; gap: 10px; min-height: 44px; font-size: var(--tp-fs-md); cursor: pointer; }
   .tp-lz__schrauben-wahl input { width: 20px; height: 20px; margin: 2px 0 0; flex: none; accent-color: var(--tp-ink, #15171a); }
   .tp-lz__einfassung select { min-height: 44px; padding: 0 12px; border: 1px solid var(--tp-ek-border, #d8d6d2); border-radius: 8px; background: #fff; font: inherit; font-size: var(--tp-fs-base); }
@@ -289,7 +336,13 @@
       "type": "product",
       "id": "schrauben_produkt",
       "label": "Profil: Schrauben-Produkt",
-      "info": "Preis je Schraube, Option 1 = Ausführung (z. B. vernickelt, vermessingt). Die Profil-Variante nennt die passende Ausführung im Metafeld service.schraube."
+      "info": "Option 1 = Ausführung (z. B. vernickelt, vermessingt). Preis je Packung (siehe unten) oder, ohne Packungsgröße, je Schraube. Die Profil-Variante nennt die passende Ausführung im Metafeld service.schraube."
+    },
+    {
+      "type": "number",
+      "id": "schrauben_packung",
+      "label": "Profil: Schrauben je Packung",
+      "info": "0 oder leer = Verkauf je Schraube."
     },
     {
       "type": "range",
@@ -317,6 +370,29 @@
       "id": "schrauben_hinweis",
       "label": "Profil: Hinweis unter den Schrauben",
       "default": "Für Holzstufen. Auf Beton oder Stein zusätzlich Dübel verwenden."
+    },
+    {
+      "type": "checkbox",
+      "id": "stangen",
+      "label": "Profil: ganze Stangen anbieten",
+      "info": "Wie beim Lieferanten: je Stück in der Stangenlänge der Variante (Metafeld service.stange_cm), auf Wunsch zugeschnitten.",
+      "default": false
+    },
+    {
+      "type": "product",
+      "id": "sperrgut_produkt",
+      "label": "Profil: Sperrgut-Zuschlag",
+      "info": "Service-Produkt mit dem Zuschlag; einmal je Warenkorb, sobald ein Stück länger ist als unten angegeben."
+    },
+    {
+      "type": "range",
+      "id": "sperrgut_ab_cm",
+      "label": "Profil: Sperrgut ab Stücklänge über",
+      "min": 100,
+      "max": 300,
+      "step": 5,
+      "unit": "cm",
+      "default": 175
     },
     {
       "type": "text",

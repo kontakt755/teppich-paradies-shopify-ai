@@ -97,7 +97,7 @@
       # LiquidComplexity; default greift nur, solange keine Waise erkannt ist).
       capture tp_gz_it_zs
         render 'tp-cart-zuschnitt-fehlt', zeile: tp_gz_it
-        render 'tp-cart-laengenware', zeile: tp_gz_it, teil: 'waise'
+        render 'tp-cart-laengenware', zeile: tp_gz_it, teil: 'waise', posten: cart.items
       endcapture
       assign tp_gz_it_waise = tp_gz_it_waise | default: tp_gz_it_zs | strip
       if tp_gz_it_waise != blank
@@ -221,7 +221,7 @@
     endif
     capture tp_gz_zs
       render 'tp-cart-zuschnitt-fehlt', zeile: line_item
-      render 'tp-cart-laengenware', zeile: line_item, teil: 'waise'
+      render 'tp-cart-laengenware', zeile: line_item, teil: 'waise', posten: cart.items
     endcapture
     assign tp_gz_waise = tp_gz_waise | default: tp_gz_zs | strip
   endif
