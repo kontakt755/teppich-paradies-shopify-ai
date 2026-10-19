@@ -378,3 +378,20 @@ test('Jetzt senden: Postfach lehnt ab -> 502, Protokoll "fehler", Zeitleiste off
     assert.equal(heil.nachrichten.length, 1);
   } finally { await heil.schliessen(); }
 });
+
+test('"kopie": false im Postfach: keine Blindkopie, weder per Knopf noch im Lauf, Karte nennt keine Kopie', async () => {
+  const u = umgebung();
+  await musterUnterwegs(u);
+  const s = await starteSmtpAttrappe();
+  try {
+    u.postfach(s.port, { kopie: false });
+    const r = await u.api.kundenNachfassenEinzeln({ orderId: ORDER(1) }, { name: 'Anna', rolle: 'mitarbeiter' });
+    assert.equal(r.kopie, null);
+    assert.deepEqual(s.nachrichten[0].an, ['testkunde1@example.invalid']);
+    const lauf = await u.api.kundenNachfassenSenden();
+    assert.equal(lauf.kopie, null);
+    assert.deepEqual(s.nachrichten.slice(1).map(n => n.an.length), [1, 1]);
+    const t = u.api.kundenMusterTexte();
+    assert.deepEqual([t.versand.eingerichtet, t.versand.kopie, t.versand.mitlesenBis], [true, null, null]);
+  } finally { await s.schliessen(); }
+});
