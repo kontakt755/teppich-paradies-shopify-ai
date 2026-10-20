@@ -387,5 +387,14 @@
         "other": "Zwischensumme"
       }
     }
+  },
+  "tp_product_advice": {
+    "intro": "Ich habe eine Frage zu diesem Produkt:",
+    "selection": "Auswahl",
+    "size": "Maße im Rechner",
+    "width": "Breite",
+    "length": "Länge",
+    "roll": "Meterware",
+    "room": "Raummaß"
   }
 }

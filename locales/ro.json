@@ -361,5 +361,14 @@
       "default_title": "Titlu implicit",
       "sticky_add_to_cart": "Bara de adăugare rapidă în coș"
     }
+  },
+  "tp_product_advice": {
+    "intro": "I have a question about this product:",
+    "selection": "Selection",
+    "size": "Measurements in the calculator",
+    "width": "Width",
+    "length": "Length",
+    "roll": "Roll width",
+    "room": "Custom room size"
   }
 }

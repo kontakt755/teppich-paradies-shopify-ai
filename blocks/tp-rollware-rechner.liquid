@@ -687,7 +687,7 @@
           </a>
         {%- endif -%}
         {%- if tp_rc_wa != blank -%}
-          <a class="tp-rwc-beratung__weg tp-rwc-beratung__weg--wa" href="https://wa.me/{{ tp_rc_wa }}" target="_blank" rel="noopener">
+          <a class="tp-rwc-beratung__weg tp-rwc-beratung__weg--wa" href="https://wa.me/{{ tp_rc_wa }}" target="_blank" rel="noopener" data-tp-produktberatung="whatsapp" data-tp-produkt-id="{{ product.id }}">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.1-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-1.7-.1a12 12 0 0 1-5.7-5c-.4-.6-.9-1.5-.9-2.4 0-.9.5-1.4.7-1.6.2-.2.4-.3.6-.3h.4c.2 0 .4 0 .5.4l.7 1.7c.1.2 0 .4-.1.5l-.3.4c-.1.2-.3.3-.1.6.2.3.7 1.1 1.5 1.8a6 6 0 0 0 1.9 1.2c.2.1.4.1.5-.1l.6-.7c.2-.2.3-.2.5-.1l1.6.8c.3.1.4.2.4.4v.9Z"/></svg>
             WhatsApp
           </a>
@@ -698,6 +698,8 @@
   {%- endif -%}
 
 </div>
+
+{% render 'tp-produktberatung', product: product %}
 
 <script type="application/json" data-rwc-data-{{ tp_rc_id }}>
 {

@@ -368,5 +368,14 @@
       "default_title": "Numatytasis pavadinimas",
       "sticky_add_to_cart": "Greito pridėjimo į krepšelį juosta"
     }
+  },
+  "tp_product_advice": {
+    "intro": "I have a question about this product:",
+    "selection": "Selection",
+    "size": "Measurements in the calculator",
+    "width": "Width",
+    "length": "Length",
+    "roll": "Roll width",
+    "room": "Custom room size"
   }
 }

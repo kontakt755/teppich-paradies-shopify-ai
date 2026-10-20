@@ -354,5 +354,14 @@
       "success_moderated": "댓글이 게시되었습니다. 조정 대기 중입니다",
       "success": "댓글 게시됨"
     }
+  },
+  "tp_product_advice": {
+    "intro": "I have a question about this product:",
+    "selection": "Selection",
+    "size": "Measurements in the calculator",
+    "width": "Width",
+    "length": "Length",
+    "roll": "Roll width",
+    "room": "Custom room size"
   }
 }

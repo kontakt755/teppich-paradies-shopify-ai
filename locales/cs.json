@@ -368,5 +368,14 @@
       "success_moderated": "Komentář odeslán, čeká na schválení",
       "success": "Komentář zveřejněn"
     }
+  },
+  "tp_product_advice": {
+    "intro": "I have a question about this product:",
+    "selection": "Selection",
+    "size": "Measurements in the calculator",
+    "width": "Width",
+    "length": "Length",
+    "roll": "Roll width",
+    "room": "Custom room size"
   }
 }
