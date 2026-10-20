@@ -247,7 +247,7 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Etiketten 
   $('#etkDrucken').addEventListener('click', () => { if (!umgebungsHinweis()) drucken(); });
   $('#etkTrennen').addEventListener('click', async () => { try { await druck.client?.disconnect(); } catch { /* egal */ } druck.client = null; status('Getrennt.'); });
   zeichneVorschau();
-  ($('#etkDrucken').disabled ? ($('#etkForm input') || $('.etk-dialog [data-close-dialog]')) : $('#etkDrucken'))?.focus();
+  ($('#etkDrucken').disabled ? ($('#etkForm input') || $('.etk-dialog [data-close-dialog]')) : $('#etkDrucken'))?.focus({ preventScroll: true });
   // QR-Code nachzeichnen, sobald die Bibliothek da ist; ohne Internet bleibt die Vorschau ohne QR.
   try { await ladeSkript('qrcode'); zeichneVorschau(); } catch (err) { status(`${err.message} – zum Drucken mit QR-Code den Dialog erneut öffnen.`); }
 }
