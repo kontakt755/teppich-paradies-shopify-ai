@@ -12,19 +12,39 @@
     render 'tp-aktion-laufend', product: closest.product
   endcapture
   assign tp_ca_raw = tp_ca_raw | strip
+  capture tp_ca_leiste
+    render 'tp-leisten-paket', product: closest.product
+  endcapture
 -%}
+{%- if tp_ca_raw != blank or tp_ca_leiste contains 'ja' -%}
+  <div class="tp-card-aktion__gruppe" {{ block.shopify_attributes }}>
+{%- endif -%}
 {%- if tp_ca_raw != blank -%}
   {%- liquid
     assign tp_ca_teile = tp_ca_raw | split: '|'
     assign tp_ca_ende = tp_ca_teile[1] | date: '%d.%m.'
   -%}
-  <p class="tp-card-aktion" {{ block.shopify_attributes }}>
+  <p class="tp-card-aktion">
     <span class="tp-card-aktion__badge">−{{ tp_ca_teile[0] }} %</span>
     <span class="tp-card-aktion__text">Aktion bis {{ tp_ca_ende }}</span>
   </p>
 {%- endif -%}
+{%- if tp_ca_leiste contains 'ja' -%}
+  <p class="tp-card-aktion">
+    <span class="tp-card-aktion__badge">Leiste −50&nbsp;%</span>
+    <span class="tp-card-aktion__text">im Paket</span>
+  </p>
+{%- endif -%}
+{%- if tp_ca_raw != blank or tp_ca_leiste contains 'ja' -%}
+  </div>
+{%- endif -%}
 
 {% stylesheet %}
+  .tp-card-aktion__gruppe {
+    display: grid;
+    gap: 4px;
+  }
+
   .tp-card-aktion {
     display: flex;
     flex-wrap: wrap;
