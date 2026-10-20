@@ -129,7 +129,7 @@ export function zeichneDashboards() {
     : '';
 }
 
-/** Einmal beim Start: "Mehr"-Blatt, Sammelpunkt "Buero", Schliessen per Schleier. */
+/** Einmal beim Start: "Mehr"-Blatt, Sammelpunkt "Mehr", Schliessen per Schleier. */
 export function bindeNavigation() {
   $('#navToggle')?.addEventListener('click', () => { if (mehrOffen()) schliesseMehr(); else oeffneMehr(); });
   $('#sideSchleier')?.addEventListener('click', schliesseMehr);
