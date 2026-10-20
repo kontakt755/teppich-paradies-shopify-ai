@@ -15,6 +15,17 @@ const boden = {
 const map = p => new Map([[p.handle, p]]);
 const muster = variante => ({ handle: 'muster-anderer-name', titel: 'Muster Testvelours Teppichboden', varianten: [variante] });
 
+test('Einzelvariante Default nutzt belegte Marke und Dekor aus dem Produkttitel', () => {
+  for (const titel of ['Default', 'Default Title', 'default']) {
+    const p = { handle: 'testlinea-espe-flammig', titel: 'Testlinea Espe Flammig',
+      eigenschaften: { marke: 'Testlinea' }, varianten: [{ titel, farbe: null, sku: 'TL-2821' }] };
+    const [auswahl] = etikettenAusLexikon(p);
+    assert.deepEqual([auswahl.etikett.serie, auswahl.etikett.farbe, auswahl.etikett.sku], ['Testlinea', 'Espe Flammig', 'TL-2821']);
+    assert.equal(auswahl.bezeichnung, 'Espe Flammig · TL-2821');
+    assert.deepEqual(auswahl.etikett.fehlt, []);
+  }
+});
+
 test('gleiche SKU und Farbe auf mehreren Breiten ergeben nur ein Etikett; Wunschmass faellt weg', () => {
   const vorher = structuredClone(boden);
   const e = etikettenAusLexikon(boden);
