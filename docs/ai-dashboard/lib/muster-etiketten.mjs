@@ -185,10 +185,10 @@ export function layout(e, mass) {
   const skuY = hoehe - rand - 24;
   const unten = (skuText ? skuY : hoehe - rand) - 8;
   let serieGroesse = 44, farbGroesse = 30;
-  if (e.technik?.length) {
-    // Vier Technikzeilen muessen auch unter mehrzeiligen Namen ganz bleiben.
-    // Zuerst Platz fuer lesbare Technik (16/20 px) und mindestens 100 px QR reservieren.
-    const reserve = Math.max(e.technik.length * 40 - 3, e.url ? 100 : 0);
+  {
+    // Ganze Namen erhalten, auch bei Einzeldekoren ohne Technik. Zuerst Platz
+    // fuer lesbare Technik (16/20 px) und mindestens 100 px QR reservieren.
+    const reserve = Math.max((e.technik?.length || 0) * 40 - 3, e.url ? 100 : 0);
     for (let s = 44; s >= 18; s--) {
       serieGroesse = s; farbGroesse = Math.round(30 * s / 44);
       const serienZeilen = umbrechen(e.serie, innen, t => mass(t, serieGroesse, true), Infinity).length;
@@ -203,8 +203,8 @@ export function layout(e, mass) {
   };
   block(ABSENDER, 20, true, 1);
   y += 8;
-  block(e.serie, serieGroesse, true, e.technik?.length ? Infinity : 2);
-  if (e.farbe) block(e.farbe, farbGroesse, true, e.technik?.length ? Infinity : 2);
+  block(e.serie, serieGroesse, true, Infinity);
+  if (e.farbe) block(e.farbe, farbGroesse, true, Infinity);
 
   // Unten die Artikelnummer; was dazwischen frei ist, bekommen Technik und QR-Code.
   if (skuText) {

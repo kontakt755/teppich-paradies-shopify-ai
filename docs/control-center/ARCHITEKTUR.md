@@ -1628,6 +1628,21 @@ NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
   Lieferanten-Artikelnummer ersetzt niemals die Shop-SKU. Der Sammelartikel „Kostenloses Muster“
   fordert die Auswahl des konkreten Produkts. Fehlt eine Farbe, kann eine belegte
   Variantenbezeichnung als Ausfuehrung dienen; reine Masse und „Default Title“ bleiben ausgeschlossen.
+- **Automatische Aufkleberpruefung (#1525):** „Aufkleber pruefen“ im Lexikon liest den ganzen
+  aktuellen Katalog ueber `GET /api/lexikon/etiketten-status` (angemeldet, alle Mitarbeiterrollen,
+  ausschliesslich lesend). Neue Produkte/Farben erscheinen nach jedem Lexikon-Export automatisch;
+  keine PNG-Erzeugung, Vormerkung oder dauerhafte Freigabe ist notwendig. Der Export uebernimmt
+  Tags, Gutscheinstatus, Farb-/Dekoroptionen und den belegten Basisprodukt-Verweis. Fehlende
+  aktuelle Musterregeln werden als ungepruefter Datenstand sichtbar. Zubehoer, ohne-muster,
+  Gutscheine und reine Dienstleistungen ohne belegtes Muster werden ausgeschlossen; Laminat,
+  Parkett und Kork brauchen auch bei Musteranfrage Aufkleber. Produkte ohne Produktgruppe bleiben
+  fachlich offen. Die Ansicht trennt Aufkleber-Ausfuehrungen, eigene Musterartikel und deren
+  Quellenzuordnungen; sie behauptet keinen physischen Musterbestand. Fehlende optionale SKU
+  wird weggelassen. Nicht hinterlegte technische Eigenschaften werden nicht erfunden.
+  Explizite fehlende/mehrdeutige Quellen-IDs oder Quell-SKUs sperren die Zuordnung. Echte
+  Einzeldekore ohne Farboption behalten ihren vollstaendigen Produkttitel; Massartikel verwenden
+  nur das belegte eigene Muster oder Basisprodukt. Die Uebersicht aktualisiert beim Betreten,
+  bei Fokus/Tab-Rueckkehr und alle 30 Sekunden, solange dort niemand tippt.
 - **Vorschau und Korrektur:** „Als PNG speichern“ gibt das 400×400-Bild aus. „Angaben bearbeiten“
   ersetzt das ausgewaehlte Etikett (samt identischen Kopien); waehrend des Abrufs bleiben weitere
   Bearbeitung und Druck gesperrt. Fehlende Pflichtangaben oder eine noch nicht geladene QR-Bibliothek
@@ -1644,7 +1659,14 @@ NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
   eigener Eintrag. Wiederholte Anfragen mit derselben Vorgangskennung verdoppeln nichts.
   Auswahl zum Druck reserviert genau diese IDs und Revisionen atomar. Ein zweiter Arbeitsplatz
   erhaelt fuer eine veraltete Auswahl einen Konflikt. Spaeter vorgemerkte Mengen werden durch
-  den Abschluss des alten Auftrags nicht entfernt. Hoechstens 100 Etiketten je Druckauftrag.
+  den Abschluss des alten Auftrags nicht entfernt. Bis zu 1000 Positionen/5000 Aufkleber je
+  Druckauftrag (#1526). Alle offenen Positionen sind seitenuebergreifend auswaehlbar; einzelne oder
+  ausgewaehlte Positionen lassen sich entfernen (je Teil hoechstens 1000 Positionen, unabhaengig
+  von der Kopienzahl). Niimbot erhaelt automatisch Teile mit hoechstens 100 Seiten ueber dieselbe
+  Verbindung; kein Folgeteil nach abgelehntem `printEnd()`. Die Vorschau zeigt hoechstens 12
+  verschiedene Motive mit Kopienzahl, der Druck verwendet einen wiederverwendeten Canvas.
+  Fokus/Tab-Rueckkehr und ein 30-Sekunden-Abgleich aktualisieren den gemeinsamen Stand.
+  Sichere Vorgangskennungen funktionieren auch auf privaten HTTP-Arbeitsplaetzen.
   Nach Druck/Download bleiben die Eintraege „in Druck“, bis jemand den Ausdruck geprueft und
   ausdruecklich als gedruckt markiert hat. Abbruch oder Neustart loeschen keinen Auftrag;
   Wiederfreigeben ist eine bewusste Aktion mit Hinweis auf moegliche bereits gedruckte Etiketten.

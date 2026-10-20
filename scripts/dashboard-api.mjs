@@ -85,6 +85,7 @@ import { prozesslinksPfad, leseProzesslinks, schreibeProzesslinks, ProzesslinksF
 import { leseMusterDruckliste, aendereMusterDruckliste, gleicheBestellungsVormerkung, MusterDrucklisteFehler } from '../operations/lib/muster-druckliste.mjs';
 import { etikettenAusLexikon } from '../docs/ai-dashboard/lib/lexikon-etiketten.mjs';
 import { musteretikettenFuerAuftrag } from '../docs/ai-dashboard/lib/bestellungs-musteretiketten.mjs';
+import { musterEtikettenStatus } from '../docs/ai-dashboard/lib/muster-etiketten-status.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -2700,6 +2701,24 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         if (e instanceof MusterDrucklisteFehler) throw new ApiError(e.status, e.message);
         throw e;
       }
+    },
+
+    /** Aktueller Katalogcheck, ohne Ablage, Druckliste oder Shopify zu veraendern. */
+    lexikonEtikettenStatus({ q = '', status = 'pruefen', page = 1 } = {}) {
+      const file = path.join(privatDirPath || privatDir(), 'lexikon', 'produkte.json');
+      const daten = readJsonGecacht(file);
+      if (!daten || !Array.isArray(daten.produkte)) return { verfuegbar: false, fehler: true,
+        hinweis: leseFehler(file) || 'Der Lexikonbestand fehlt. Bitte die Produktdaten aktualisieren.' };
+      const stand = musterEtikettenStatus(daten);
+      const suchtext = String(q || '').trim().toLocaleLowerCase('de');
+      const filter = ['alle', 'bereit', 'pruefen', 'datenstand'].includes(status) ? status : 'pruefen';
+      const zeilen = stand.zeilen.filter(z => (filter === 'alle' || z.status === filter || (filter === 'pruefen' && z.status === 'datenstand'))
+        && (!suchtext || [z.titel, z.handle, ...z.etiketten.map(e => e.bezeichnung)].join(' ').toLocaleLowerCase('de').includes(suchtext)));
+      const pageSize = 20, pages = Math.max(1, Math.ceil(zeilen.length / pageSize));
+      const seite = Math.min(pages, Math.max(1, Math.floor(Number(page) || 1)));
+      return { verfuegbar: true, intern: true, erstellt: stand.erstellt, zaehler: stand.zaehler,
+        vollstaendig: stand.vollstaendig, treffer: { count: zeilen.length, page: seite, pages,
+          items: zeilen.slice((seite - 1) * pageSize, seite * pageSize) } };
     },
 
     lexikonListe({ q = '', page = 1, pageSize = 20 } = {}) {

@@ -28,7 +28,7 @@ import { einkaufKlickLieferanten } from './ansichten/einkauf/lieferanten.mjs';
 import { einkaufKlickAblauf } from './ansichten/einkauf/ablauf.mjs';
 import { einkaufKlickMusterlager } from './ansichten/einkauf/musterlager.mjs';
 import { einkaufKlickBelege } from './ansichten/einkauf/belege.mjs';
-import { lexikonKlick } from './ansichten/lexikon.mjs';
+import { lexikonKlick, lexikonEingabe } from './ansichten/lexikon.mjs';
 import { kundenKlickBestellungen } from './ansichten/kunden/bestellungen.mjs';
 import { musterNachfassenKlick, musterNachfassenEingabe } from './ansichten/heute/muster-nachfassen.mjs';
 import { kundenKlickAkte } from './ansichten/kunden.mjs';
@@ -138,6 +138,7 @@ export function bindEvents() {
   });
   let qTimer;
   document.addEventListener('input', e => {
+    if (lexikonEingabe(e)) return;
     if (prozesseEingabe(e)) return;
     if (musterNachfassenEingabe(e)) return;
     if (socialEingabe(e)) return;

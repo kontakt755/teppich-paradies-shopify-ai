@@ -112,7 +112,10 @@
 .etk-karte figcaption { display: grid; gap: 6px; }
 .etk-karte figcaption .btn { justify-self: start; }
 .etk-auftrag-hinweis { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); }
-.lex-druckliste-link { margin: 0 0 12px; }
+.lex-druckliste-link { margin: 0 0 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+.lex-etiketten-status .card { padding: 0 16px 16px; margin-bottom: 12px; min-width: 0; overflow-wrap: anywhere; }
+.lex-etiketten-status .card-head { padding-left: 0; padding-right: 0; flex-wrap: wrap; }
+.lex-etiketten-status li { margin-block: 6px; overflow-wrap: anywhere; }
 .lex-etiketten { margin-bottom: 16px; padding: 0 18px 18px; }
 .lex-etiketten .card-head { padding-left: 0; padding-right: 0; }
 .lex-etiketten-auswahl { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; }

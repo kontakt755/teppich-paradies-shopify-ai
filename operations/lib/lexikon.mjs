@@ -143,7 +143,7 @@ function eigenschaften(customMap) {
 
 function farbeAusOptionen(selectedOptions) {
   if (!Array.isArray(selectedOptions)) return null;
-  const treffer = selectedOptions.find(o => /^farbe$|^color$/i.test(String(o?.name ?? '')));
+  const treffer = selectedOptions.find(o => /^(farbe|dekor|color)$/i.test(String(o?.name ?? '').trim()));
   return treffer ? text(treffer.value) : null;
 }
 
@@ -324,9 +324,9 @@ export function aufbereiten(exportDaten, opt = {}) {
       const musterVarianteRoh = vMap.einkauf?.muster_variante;
       const musterHandle = musterHandleAusEinkaufswert(musterVarianteRoh);
       if (musterHandle && !archiviert.has(musterHandle)) musterKandidatenAusVarianten.push(musterHandle);
-      const musterRef = (musterVarianteRoh && typeof musterVarianteRoh === 'object')
-        ? { id: text(musterVarianteRoh.id), handle: musterHandle }
-        : null;
+      const musterId = typeof musterVarianteRoh === 'string' && /^gid:\/\/shopify\/ProductVariant\/[1-9]\d*$/.test(musterVarianteRoh)
+        ? musterVarianteRoh : text(musterVarianteRoh?.id);
+      const musterRef = musterId || musterHandle ? { id: musterId, handle: musterHandle } : null;
       const preis = zahl(preisWert);
       const einkauf = einkaufBlock({ einkaufMap: vMap.einkauf, customMap: vMap.custom ?? customMap });
       return {
@@ -334,6 +334,7 @@ export function aufbereiten(exportDaten, opt = {}) {
         titel: text(v.title),
         sku: text(v.sku),
         farbe: farbeAusOptionen(v.selectedOptions),
+        ...(Array.isArray(v.selectedOptions) ? { optionen: v.selectedOptions.map(o => ({ name: text(o.name), wert: text(o.value) })) } : {}),
         preis,
         waehrung: preis === null ? null : waehrung,
         preisJeEinheit: preisJeEinheit(preis, customMap?.qm_pro_paket, einkauf.bestelleinheit, customMap?.preis_pro_001_qm),
@@ -360,6 +361,10 @@ export function aufbereiten(exportDaten, opt = {}) {
       status: text(p.status),
       // Nur das Admin-Lesefeld belegt die Veroeffentlichung; kein Ersatz aus dem Handle.
       onlineStoreUrl: text(p.onlineStoreUrl),
+      ...(Array.isArray(p.tags) && typeof p.isGiftCard === 'boolean' ? {
+        musterRegeln: { tags: [...p.tags], geschenkgutschein: p.isGiftCard,
+          basisHandle: text(p.musterBasis?.reference?.handle), vollstaendig: Object.hasOwn(p, 'musterBasis') },
+      } : {}),
       produktgruppe: produktgruppe(p),
       bild: bildUrl(p),
       eigenschaften: eigenschaften(customMap),
@@ -381,12 +386,19 @@ export function aufbereiten(exportDaten, opt = {}) {
   // Ohne diesen Index fanden 89 Mustervarianten ihr Original nicht und
   // zeigten keinen Weg zum Lieferanten.
   const variantenBySku = new Map();
+  const indiziere = (map, key, eintrag) => { const liste = map.get(key) || []; liste.push(eintrag); map.set(key, liste); };
+  const eindeutigerTreffer = liste => {
+    const je = new Map((liste || []).map(t => [JSON.stringify([t.produkt.handle, t.variante.sku, t.variante.farbe || t.variante.titel]), t]));
+    return je.size === 1 ? je.values().next().value : null;
+  };
   for (const p of ergebnis) {
     for (const v of p.varianten) {
-      if (v.id) variantenById.set(v.id, { variante: v, produkt: p });
-      if (!skuIstMuster(v.sku) && !leer(v.einkauf?.artikelnummer)) {
-        variantenByArtikelnummer.set(v.einkauf.artikelnummer, { variante: v, produkt: p });
-        if (!leer(v.sku) && !variantenBySku.has(v.sku)) variantenBySku.set(v.sku, { variante: v, produkt: p });
+      if (v.wunschmass || skuIstMuster(v.sku) || p.handle?.startsWith('muster-')) continue;
+      const eintrag = { variante: v, produkt: p };
+      if (v.id) indiziere(variantenById, v.id, eintrag);
+      if (!leer(v.sku)) indiziere(variantenBySku, v.sku, eintrag);
+      if (!leer(v.einkauf?.artikelnummer)) {
+        indiziere(variantenByArtikelnummer, v.einkauf.artikelnummer, eintrag);
       }
     }
   }
@@ -394,6 +406,8 @@ export function aufbereiten(exportDaten, opt = {}) {
   const bauOriginal = (variante, produkt, quelle) => ({
     gefunden: true,
     quelle,
+    variantenId: variante.id,
+    sku: variante.sku,
     artikelnummer: variante.einkauf?.artikelnummer ?? null,
     farbnummer: variante.einkauf?.farbnummer ?? null,
     lieferant: variante.einkauf?.lieferant ?? null,
@@ -410,16 +424,25 @@ export function aufbereiten(exportDaten, opt = {}) {
   const originalFuer = (musterVariante, musterProdukt) => {
     // Tier 1: einkauf.muster_variante (Variantenreferenz) - am verlaesslichsten.
     const ref = musterVariante.__musterRef;
-    if (ref?.id && variantenById.has(ref.id)) {
-      const { variante, produkt } = variantenById.get(ref.id);
-      return bauOriginal(variante, produkt, 'muster_variante');
+    if (ref?.id) {
+      if (variantenById.has(ref.id)) {
+        const treffer = eindeutigerTreffer(variantenById.get(ref.id));
+        if (treffer) return bauOriginal(treffer.variante, treffer.produkt, 'muster_variante');
+      }
+      return { gefunden: false, quelle: 'muster_variante', produktHandle: null,
+        grund: 'Die hinterlegte Originalvariante fehlt oder ist kein gueltiger Warenartikel. Originalreferenz pruefen.' };
     }
     // Tier 2: SKU ohne "M-"-Praefix - zuerst gegen die SKUs der echten
     // Varianten (so entsteht die Muster-SKU), dann gegen deren Artikelnummern.
     if (skuIstMuster(musterVariante.sku)) {
       const quellSku = musterVariante.sku.slice(2);
-      const treffer = variantenBySku.get(quellSku) ?? variantenByArtikelnummer.get(quellSku);
+      const kandidaten = variantenBySku.get(quellSku) ?? variantenByArtikelnummer.get(quellSku);
+      const treffer = eindeutigerTreffer(kandidaten);
       if (treffer) return bauOriginal(treffer.variante, treffer.produkt, 'sku');
+      if (kandidaten?.length) return { gefunden: false, quelle: 'sku', produktHandle: null,
+        grund: 'Die Quell-Artikelnummer passt zu mehreren Produkten oder Ausfuehrungen. Originalreferenz pruefen.' };
+      return { gefunden: false, quelle: 'sku', produktHandle: null,
+        grund: 'Die Muster-SKU hat keine belegte Originalvariante. Originalreferenz pruefen.' };
     }
     // Tier 3: Produkt-Handle ohne "muster-"-Praefix - nur eindeutig, wenn das
     // Zielprodukt genau eine echte Variante mit Artikelnummer hat.

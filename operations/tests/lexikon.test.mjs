@@ -383,10 +383,10 @@ test('Muster-Original: kein Treffer ergibt ehrlichen Grund statt Erfindung', () 
   const modell = aufbereiten({ produkte: [muster] }, { jetzt: JETZT });
   const v = modell.produkte[0].varianten[0];
   assert.equal(v.original.gefunden, false);
-  assert.equal(v.original.grund, 'kein Original beim Lieferanten hinterlegt');
+  assert.match(v.original.grund, /Muster-SKU hat keine belegte Originalvariante/);
 });
 
-test('Muster-Original: Handle-Tier bei mehreren Farben mehrdeutig statt geraten', () => {
+test('Muster-Original: unbekannte SKU bleibt auch bei passendem Handle ungeklärt', () => {
   const echtesA = produkt({
     id: 'gid://shopify/Product/9005', handle: 'zweifarbig',
     variants: [{
@@ -406,7 +406,7 @@ test('Muster-Original: Handle-Tier bei mehreren Farben mehrdeutig statt geraten'
   const modell = aufbereiten({ produkte: [echtesA, muster] }, { jetzt: JETZT });
   const v = modell.produkte.find((p) => p.handle === 'muster-zweifarbig').varianten[0];
   assert.equal(v.original.gefunden, false);
-  assert.match(v.original.grund, /mehrdeutig|Farben zur Auswahl/);
+  assert.match(v.original.grund, /Muster-SKU hat keine belegte Originalvariante/);
 });
 
 // -- Fehlende Links bei echten Varianten --------------------------------

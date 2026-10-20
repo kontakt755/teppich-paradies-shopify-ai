@@ -105,7 +105,10 @@ export const BULK_QUERY = `
   products(query: "status:active OR status:unlisted OR handle:muster-*") {
     edges {
       node {
-        id handle title status productType onlineStoreUrl
+        id handle title status productType onlineStoreUrl tags isGiftCard
+        musterBasis: metafield(namespace: "service", key: "einfass_basis") {
+          value reference { ... on Product { id handle } }
+        }
         featuredImage { url }
         metafields(namespace: "custom", first: 30) { edges { node { namespace key value type } } }
         variants {
