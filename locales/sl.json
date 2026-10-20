@@ -8,6 +8,15 @@
  * ------------------------------------------------------------
  */
 {
+  "tp_product_advice": {
+    "intro": "I have a question about this product:",
+    "selection": "Selection",
+    "size": "Measurements in the calculator",
+    "width": "Width",
+    "length": "Length",
+    "roll": "Roll width",
+    "room": "Custom room size"
+  },
   "blocks": {
     "load_video": "Naloži videoposnetek: {{ description }}",
     "sold_out": "Razprodano",
@@ -369,13 +378,16 @@
       "success": "Komentar je bil objavljen"
     }
   },
-  "tp_product_advice": {
-    "intro": "I have a question about this product:",
-    "selection": "Selection",
-    "size": "Measurements in the calculator",
-    "width": "Width",
-    "length": "Length",
-    "roll": "Roll width",
-    "room": "Custom room size"
+  "tp_groessenhilfe": {
+    "open": "Which rug size fits my furniture?",
+    "intro": "First plan the area around your furniture. These examples help you choose a layout.",
+    "sofa_title": "By the sofa",
+    "sofa_text": "Should the rug sit in front of the sofa or support its front legs? Try both positions with your own furniture.",
+    "dining_title": "Under the dining table",
+    "dining_text": "Pull the chairs back as you would when standing up. Check that all chair legs remain on the rug area you have planned.",
+    "sketch_note": "Schematic top views, without suggested dimensions. Green: rug area. Grey: furniture.",
+    "measure_title": "Measure at home:",
+    "measure_text": "Lay out the area you want with paper. Check walkways and doors. Then measure the area and enter the dimensions for your selected shape above.",
+    "limits": "The shapes and size limits available for this product still apply. These examples do not change your selection."
   }
 }
