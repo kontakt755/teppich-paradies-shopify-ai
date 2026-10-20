@@ -2,7 +2,8 @@
   "name": "teppich-paradies-shopify-ai",
   "private": true,
   "scripts": {
-    "test": "npm run qa:unit:test && npm run dashboard:test && npm run operations:test && npm run automation:test && npm run workflow:test && npm run hooks:test && npm run social:test && npm run lexware:test",
+    "test": "node scripts/test-mit-temp.mjs npm run test:suiten",
+    "test:suiten": "npm run qa:unit:test && npm run dashboard:test && npm run operations:test && npm run automation:test && npm run workflow:test && npm run hooks:test && npm run social:test && npm run lexware:test",
     "qa": "node qa/run-qa.mjs",
     "themecheck:guard": "node qa/run-themecheck-guard.mjs",
     "qa:visual": "node qa/run-qa.mjs --visual-evidence",
