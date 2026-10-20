@@ -1,0 +1,29 @@
+{% doc %}
+  Produktkontext fuer vorhandene Kontaktlinks, Auswahl erst beim Klick lesen.
+  @param {product} product - Produkt der Kontaktlinks.
+{% enddoc %}
+
+{%- assign tp_pb_script_escape = '%5Cu003c' | url_decode -%}
+
+<script type="application/json" data-tp-beratung-daten="{{ product.id }}">
+{
+  "title": {{ product.title | json | replace: '<', tp_pb_script_escape }},
+  "handle": {{ product.handle | json }},
+  "url": {{ product.url | json }},
+  "options": [
+    {%- for option in product.options_with_values -%}
+      {"name": {{ option.name | json | replace: '<', tp_pb_script_escape }}, "value": {{ option.selected_value | json | replace: '<', tp_pb_script_escape }}}{% unless forloop.last %},{% endunless %}
+    {%- endfor -%}
+  ],
+  "labels": {
+    "intro": {{ 'tp_product_advice.intro' | t | json | replace: '<', tp_pb_script_escape }},
+    "selection": {{ 'tp_product_advice.selection' | t | json }},
+    "size": {{ 'tp_product_advice.size' | t | json }},
+    "width": {{ 'tp_product_advice.width' | t | json }},
+    "length": {{ 'tp_product_advice.length' | t | json }},
+    "roll": {{ 'tp_product_advice.roll' | t | json }},
+    "room": {{ 'tp_product_advice.room' | t | json }}
+  }
+}
+</script>
+<script src="{{ 'tp-produktberatung.js' | asset_url }}" defer></script>

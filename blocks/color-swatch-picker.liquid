@@ -296,6 +296,8 @@
 {% if color_option != blank %}
   <color-swatch-picker-{{ color_picker_id }}
     class="color-swatch-picker-{{ color_picker_id }}"
+    data-tp-farbwahl
+    data-product-id="{{ product.id }}"
     data-option-name="{{ color_option.name | escape }}"
     data-darstellung="{{ block.settings.darstellung }}"
     {{ block.shopify_attributes }}
