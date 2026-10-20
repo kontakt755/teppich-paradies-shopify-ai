@@ -2,6 +2,29 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-20 · Aufgeraeumt: Navigation mit „Mehr“, Einkauf „Je Auftrag“ (#1513)
+
+- **Geaendert:** Seitenleiste nur noch Heute, Kunden, Einkauf, Akquise (Inhaber), Lexikon; alles
+  Seltene (Arbeitsplatz, Aufgaben, Sonderposten, Bildrechte, Social Media, Shop-Wache und die
+  frueheren Buero-Punkte) liegt unter einem eingeklappten „Mehr“ – fuer alle Rollen, Inhaber-Punkte
+  bleiben je Link `data-nur-inhaber`. Einkauf startet jetzt im neuen Reiter „Je Auftrag“
+  (`ansichten/einkauf/ablauf.mjs`, Rechnung in `lib/auftrags-ablauf.mjs`): je offene
+  Kundenbestellung fuenf Schritte (eingegangen → Lieferantenbestellung vorbereiten → bestellt →
+  Ware da/Lieferung/Montage → erledigt). Schritt 2 zeigt je Lieferant „Bestellnachricht zeigen“ –
+  der vorhandene Bestellmail-Dialog, auf diesen einen Auftrag gefiltert (`openBestellmailDialog(…,
+  { auftrag })`); „Als bestellt markieren“ dort hakt Schritt 3 ab. Fehlender Lieferant,
+  Artikelnummer oder Bestellmenge steht als „Ungeklaert – erst klaeren, nicht raten“. Die bisherige
+  Ansicht heisst „Je Lieferant“ (`?tab=lieferant`; alte Adressen mit `?af=`, `?auftrag=`, `?lf=`
+  und `?tab=bestellungen` landen weiter dort). Nichts wird automatisch gesendet.
+- **Getestet:** `tests/auftrags-ablauf.test.mjs` (5), dashboard:test 517, npm test gruen,
+  dashboard:pruefen nur OK auf 33 Ansichten (360–1440 px, kein Querscrollen), Klickstrecke gegen
+  die Kopie: ein Auftrag auf „vorbereiten“ zurueckgesetzt → Karte zeigt Schritt 2, „Bestellnachricht
+  zeigen“ oeffnet die Mail nur fuer diesen Auftrag, „Als bestellt markieren“ → „vorbereiten“ 1 → 0,
+  0 JS-Fehler.
+- **Risiken:** Lieferung-/Montagetermin gibt es in den Daten nicht; Schritt 4 sagt nur „Termin mit
+  dem Kunden ausmachen“. Muster-Schritte nutzen den gemeinsamen Knopf („Alle 3 angekommen“).
+- **Naechste Stufe:** Termin aus der Auftrags-App uebernehmen, wenn der Inhaber das moechte.
+
 ## 2026-10-20 · Akquise Verlegeauftraege bei Wohnungsunternehmen (#1447)
 
 - **Geaendert:** Neuer Bereich „Akquise“ (nur Inhaber): je Firma Status (neu / angeschrieben /

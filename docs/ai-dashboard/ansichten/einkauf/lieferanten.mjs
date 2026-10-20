@@ -321,7 +321,7 @@ export function lieferantenKartenHtml({ gruppeKarte, daten = einkauf.bestellunge
 
 // ------------------------------------------------------------ Bestellmail-Dialog
 
-const dialog = { lieferant: null, art: 'ware', ziel: '', daten: null, markiert: new Set(), gesetzt: new Map() };
+const dialog = { lieferant: null, art: 'ware', auftrag: null, ziel: '', daten: null, markiert: new Set(), gesetzt: new Map() };
 
 /** Kunde · Ort einer Bestellung als kurzer Text (Ort = Stadt der Lieferadresse). */
 function kundeOrtText(orderId) {
@@ -432,7 +432,8 @@ function zeichneDialog() {
 
 async function ladeDialog() {
   const q = new URLSearchParams({ lieferant: dialog.lieferant, art: dialog.art });
-  const auftrag = state.route.params.get('auftrag');
+  // Aus "Je Auftrag" kommt der Auftrag mit dem Knopf, sonst aus der Adresse (#/einkauf?auftrag=).
+  const auftrag = dialog.auftrag || state.route.params.get('auftrag');
   if (auftrag) q.set('auftrag', auftrag);
   if (dialog.ziel) q.set('ziel', dialog.ziel);
   const fuer = `${dialog.lieferant}|${dialog.art}|${dialog.ziel}`;
@@ -444,8 +445,8 @@ async function ladeDialog() {
   $('#dialogRoot .lf-mail-knoepfe .btn-primary, #dialogRoot [data-close-dialog].btn')?.focus();
 }
 
-export function openBestellmailDialog(lieferant, art = 'ware') {
-  Object.assign(dialog, { lieferant, art: art === 'muster' ? 'muster' : 'ware', ziel: '', daten: null, markiert: new Set(), gesetzt: new Map() });
+export function openBestellmailDialog(lieferant, art = 'ware', { auftrag = null } = {}) {
+  Object.assign(dialog, { lieferant, art: art === 'muster' ? 'muster' : 'ware', auftrag: auftrag || null, ziel: '', daten: null, markiert: new Set(), gesetzt: new Map() });
   zeichneDialog();
   ladeDialog();
 }
@@ -483,7 +484,7 @@ export function einkaufKlickLieferanten(e) {
   const mail = e.target.closest('[data-lf-mail]');
   if (mail) {
     // Bei <a> (Portal, Telefon) laeuft der Link normal weiter - kein preventDefault.
-    openBestellmailDialog(mail.dataset.lfMail, mail.dataset.lfArt);
+    openBestellmailDialog(mail.dataset.lfMail, mail.dataset.lfArt, { auftrag: mail.dataset.lfAuftrag || null });
     return true;
   }
   const auf = e.target.closest('[data-lf-auf]');
