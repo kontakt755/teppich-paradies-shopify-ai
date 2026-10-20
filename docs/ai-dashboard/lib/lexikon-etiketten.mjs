@@ -10,7 +10,7 @@ const echteVarianten = produkt => (produkt?.varianten || []).filter(v => !v.wuns
 export function farbeOderAusfuehrung(variante) {
   if (text(variante?.farbe)) return text(variante.farbe);
   const titel = text(variante?.titel);
-  if (!titel || /^default title$/i.test(titel) || !/\p{L}/u.test(titel)
+  if (!titel || /^default(?: title)?$/i.test(titel) || !/\p{L}/u.test(titel)
     || /[/\\]|breite|länge|laenge|wunschmaß|wunschmass|\d\s*(?:mm|cm|m)\b|\d\s*[x×]\s*\d/i.test(titel)) return '';
   return titel;
 }

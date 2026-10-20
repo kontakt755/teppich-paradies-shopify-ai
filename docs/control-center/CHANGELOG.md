@@ -10,6 +10,8 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Muster verwenden die explizite Originalreferenz und echte Shop-SKU. Fehlende Angaben lassen
   sich in der Vorschau ergaenzen; paralleles Speichern kann kein anderes Etikett ueberschreiben.
   Lange Paketetiketten behalten alle Technikzeilen und die vollstaendige Artikelnummer.
+  Einzelvarianten mit dem internen Titel „Default“ verwenden Marke und Dekor aus dem belegten
+  Produkttitel; der Platzhalter erscheint nicht als Farbe auf dem Etikett.
 - **Getestet:** Alle 3.223 Tests gruen, davon 488 Dashboard-Tests; 17 synthetische Browserfaelle bei 1440/390 px einschliesslich
   verzogertem Nachladen, zwei Kopien, PNG, Ergaenzen, bestehendem Bestellungsdruck und QR-Netzfehler.
   Read-only-Abgleich aller 5.971 aktuellen Mustervarianten: vollstaendige Etikettdaten fuer
