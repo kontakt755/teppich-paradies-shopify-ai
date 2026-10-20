@@ -307,6 +307,9 @@
             </span>
           </label>
         </div>
+        {%- unless tp_ek_wort == 'matte' -%}
+          {% render 'tp-teppich-groessenhilfe' %}
+        {%- endunless -%}
         <div class="tp-ek__groessen-wrap" data-groessen-wrap hidden>
           <p class="tp-ek__groessen-label">Beliebte Maßvorschläge</p>
           <div class="tp-ek__groessen" data-groessen></div>

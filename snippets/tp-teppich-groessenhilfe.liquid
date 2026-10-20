@@ -1,0 +1,146 @@
+{% doc %}
+  Zeigt eine einklappbare Moebel- und Messhilfe bei den Massfeldern eines
+  Wohnteppichs. Die Skizzen geben keine Masse vor und setzen keine Eingaben.
+  @example
+  {% render 'tp-teppich-groessenhilfe' %}
+{% enddoc %}
+
+<details class="tp-groessenhilfe">
+  <summary>{{ 'tp_groessenhilfe.open' | t }}</summary>
+  <div class="tp-groessenhilfe__inhalt">
+    <p class="tp-groessenhilfe__einleitung">{{ 'tp_groessenhilfe.intro' | t }}</p>
+    <div class="tp-groessenhilfe__beispiele">
+      <figure class="tp-groessenhilfe__beispiel">
+        <svg viewBox="0 0 240 160" aria-hidden="true" focusable="false">
+          <rect class="tp-groessenhilfe__teppich" x="24" y="57" width="192" height="87" rx="3"/>
+          <rect class="tp-groessenhilfe__moebel" x="45" y="22" width="150" height="51" rx="6"/>
+          <path class="tp-groessenhilfe__linie" d="M57 34h126M95 35v26m50-26v26M54 34v27m132-27v27"/>
+          <rect class="tp-groessenhilfe__fuss" x="54" y="65" width="8" height="12" rx="1"/>
+          <rect class="tp-groessenhilfe__fuss" x="178" y="65" width="8" height="12" rx="1"/>
+          <rect class="tp-groessenhilfe__moebel" x="91" y="96" width="58" height="29" rx="9"/>
+        </svg>
+        <figcaption>
+          <h3>{{ 'tp_groessenhilfe.sofa_title' | t }}</h3>
+          <p>{{ 'tp_groessenhilfe.sofa_text' | t }}</p>
+        </figcaption>
+      </figure>
+      <figure class="tp-groessenhilfe__beispiel">
+        <svg viewBox="0 0 240 160" aria-hidden="true" focusable="false">
+          <rect class="tp-groessenhilfe__teppich" x="24" y="14" width="192" height="132" rx="3"/>
+          <rect class="tp-groessenhilfe__moebel" x="77" y="50" width="86" height="60" rx="5"/>
+          <g class="tp-groessenhilfe__stuhl">
+            <rect x="94" y="22" width="22" height="20" rx="3"/>
+            <rect x="128" y="22" width="22" height="20" rx="3"/>
+            <rect x="94" y="118" width="22" height="20" rx="3"/>
+            <rect x="128" y="118" width="22" height="20" rx="3"/>
+            <rect x="44" y="69" width="22" height="22" rx="3"/>
+            <rect x="174" y="69" width="22" height="22" rx="3"/>
+          </g>
+        </svg>
+        <figcaption>
+          <h3>{{ 'tp_groessenhilfe.dining_title' | t }}</h3>
+          <p>{{ 'tp_groessenhilfe.dining_text' | t }}</p>
+        </figcaption>
+      </figure>
+    </div>
+    <p class="tp-groessenhilfe__skizzenhinweis">{{ 'tp_groessenhilfe.sketch_note' | t }}</p>
+    <p class="tp-groessenhilfe__messung"><strong>{{ 'tp_groessenhilfe.measure_title' | t }}</strong> {{ 'tp_groessenhilfe.measure_text' | t }}</p>
+    <p class="tp-groessenhilfe__grenzen">{{ 'tp_groessenhilfe.limits' | t }}</p>
+  </div>
+</details>
+
+{% stylesheet %}
+  .tp-groessenhilfe {
+    margin-block-start: 12px;
+    border: 1px solid var(--tp-ek-line, #deded8);
+    border-radius: 8px;
+    background: var(--tp-ek-surface, #fff);
+    color: var(--tp-ek-ink, #222);
+    font-size: var(--tp-fs-sm);
+    line-height: 1.5;
+  }
+
+  .tp-groessenhilfe > summary {
+    padding: 12px;
+    min-height: 44px;
+    cursor: pointer;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+
+  .tp-groessenhilfe > summary:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+    border-radius: 8px;
+  }
+
+  .tp-groessenhilfe__inhalt {
+    padding: 0 12px 12px;
+  }
+
+  .tp-groessenhilfe__inhalt p {
+    margin: 0;
+  }
+
+  .tp-groessenhilfe__beispiele {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+    gap: 16px;
+    margin-block: 12px;
+  }
+
+  .tp-groessenhilfe__beispiel {
+    margin: 0;
+    min-width: 0;
+  }
+
+  .tp-groessenhilfe__beispiel svg {
+    display: block;
+    width: 100%;
+    max-height: 160px;
+    background: #f7f7f3;
+    border-radius: 6px;
+  }
+
+  .tp-groessenhilfe__teppich {
+    fill: #e0e8dc;
+    stroke: #65735d;
+    stroke-width: 1.5;
+    stroke-dasharray: 4 3;
+  }
+
+  .tp-groessenhilfe__moebel,
+  .tp-groessenhilfe__stuhl {
+    fill: #e5e3dd;
+    stroke: #69675f;
+    stroke-width: 1.5;
+  }
+
+  .tp-groessenhilfe__linie {
+    fill: none;
+    stroke: #69675f;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .tp-groessenhilfe__fuss {
+    fill: #69675f;
+  }
+
+  .tp-groessenhilfe__beispiel h3 {
+    margin: 8px 0 4px;
+    font-size: var(--tp-fs-sm);
+    font-weight: 600;
+  }
+
+  .tp-groessenhilfe__skizzenhinweis,
+  .tp-groessenhilfe__grenzen {
+    color: var(--tp-ek-muted, #595959);
+    font-size: var(--tp-fs-xs);
+  }
+
+  .tp-groessenhilfe__inhalt .tp-groessenhilfe__messung {
+    margin-block: 12px 8px;
+  }
+{% endstylesheet %}

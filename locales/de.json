@@ -387,5 +387,17 @@
         "other": "Zwischensumme"
       }
     }
+  },
+  "tp_groessenhilfe": {
+    "open": "Welche Teppichgröße passt zu meinen Möbeln?",
+    "intro": "Planen Sie zuerst die Fläche rund um Ihre Möbel. Diese Beispiele helfen bei der Anordnung.",
+    "sofa_title": "Am Sofa",
+    "sofa_text": "Soll der Teppich vor dem Sofa liegen oder die vorderen Sofafüße tragen? Probieren Sie beide Positionen mit Ihren Möbeln aus.",
+    "dining_title": "Unter dem Esstisch",
+    "dining_text": "Ziehen Sie die Stühle wie beim Aufstehen zurück. Prüfen Sie, ob alle Stuhlbeine auf der gewünschten Teppichfläche bleiben.",
+    "sketch_note": "Schematische Draufsichten, keine Maßvorgabe. Grün: Teppichfläche. Grau: Möbel.",
+    "measure_title": "Zu Hause abmessen:",
+    "measure_text": "Legen Sie die gewünschte Fläche mit Papier aus. Prüfen Sie Laufwege und Türen. Messen Sie dann Breite und Länge der Fläche und tragen Sie Ihre Maße oben ein.",
+    "limits": "Die für dieses Produkt möglichen Formen und Maßgrenzen gelten weiterhin. Die Beispiele ändern Ihre Auswahl nicht."
   }
 }
