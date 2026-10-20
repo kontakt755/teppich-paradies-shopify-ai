@@ -1691,3 +1691,24 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   zählt in der Nachfass-Kachel je Lieferant. PR #1225 (offen) ändert dieselben Dateien.
 - **Nächste Stufe:** die aufgeklappte Tabelle („Positionen bearbeiten“) am Handy kürzen (bei Lieferant A
   rund 18 000 px hoch); Heute-To-dos in derselben Reihenfolge (Bestellen, Muster, Nachhaken) sortieren.
+
+## 2026-10-20 · Muster-Etiketten drucken (Niimbot B1)
+
+- **Geändert:** Musterbestellung aufklappen → „Etiketten drucken“: alle Muster der Bestellung als
+  50 × 50-mm-Etiketten mit Vorschau, nacheinander gedruckt in einem Auftrag. Einkauf › Musterlager →
+  „Etikett drucken…“ für ein Etikett von Hand (Produktlink genügt). Inhalt: Shopname, Serie, Farbe,
+  bei Paketware Art, Stärke/Nutzschicht, Nutzungsklassen, Format; QR-Code zur Produktseite;
+  Artikelnummer der echten Variante. Fehlende Angaben stehen rot unter der Vorschau. Verbindung per
+  Bluetooth (USB als Ausweg), nur Chrome/Edge auf https bzw. localhost. Neu `lib/muster-etiketten.mjs`,
+  `bausteine/etiketten-druck.mjs`; Lexikon-Export führt zusätzlich `nutzschicht`, `format`, `arten`.
+- **Getestet:** `tests/muster-etiketten.test.mjs` (11); `dashboard:test` 476 grün, `npm test` alle
+  Suiten grün; `dashboard:pruefen` 145 × OK, 0 px Überlauf. Datenkopie: 39 Musterbestellungen →
+  105 Etiketten, 58 vollständig, 47 ohne Artikelnummer (Produkte ohne SKU im Shop, z. B. Teppich nach
+  Maß), 4 ohne Farbe, 0 mit Muster-SKU, 6 mit Technikzeilen. Klickstrecke (Kopie, 800 px):
+  Bestellung aufklappen → „Etiketten drucken“ → 2 Etiketten; Musterlager → Produktlink eintragen →
+  1 Etikett mit 4 Technikzeilen; Esc schließt; 0 JS-Fehler. niimbluelib lädt mit SRI, `encodeCanvas`
+  liefert 400 × 400.
+- **Risiken/Annahmen:** Echter Druck nicht geprüft (kein Drucker am Prüfrechner). Bild 400 px breit
+  bei 384 px Druckkopf wie in NiimBlue – Rand 18 px hält Inhalte im Druckbereich. Serie aus dem Titel
+  (Marke nur, wenn der Titel damit beginnt).
+- **Nächste Stufe:** „auch als Klickvinyl“ bei gleichem Dekor in anderer Art; Druck am B1 bestätigen.

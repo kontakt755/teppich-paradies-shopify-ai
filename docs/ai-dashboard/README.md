@@ -63,6 +63,7 @@ docs/ai-dashboard/
   lib/sonderposten.mjs          Rückmeldung nach „Im Laden verkauft“ – sagt nur, was belegt ist (testbar ohne DOM)
   lib/muster-nachfassen.mjs     „Muster nachfassen“ für „Heute“: wer ist dran, Textvorlage füllen – Browser UND Server
   lib/bestellinhalt.mjs         Inhalt einer Bestellung in einer Zeile (Muster mit Farben und Herkunft, Ware) – Bestellliste und To-dos
+  lib/muster-etiketten.mjs      Muster-Etiketten 50 × 50 mm: Daten (Serie, Farbe, SKU, Technik) und Layout – testbar ohne Drucker
   lib/kennzahlen.mjs            „Ø je bezahlter Bestellung“ (ohne kostenlose Muster) für die Kennzahlen auf „Heute“
   lib/verbrauch.mjs             Modellnamen und Tokenzahlen für die Kachel „Claude-Verbrauch“ (Insights)
   lib/serviceanfragen.mjs       Service-Anfragen: Werte, Prüfung, Formular-Mail lesen, Auswertung je Woche/Quelle – Browser UND Server
