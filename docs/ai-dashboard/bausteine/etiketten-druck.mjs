@@ -30,7 +30,7 @@ function ladeSkript(name) {
 }
 
 const SCHRIFT = 'Arial, Helvetica, sans-serif';
-const druck = { client: null, etiketten: [], laeuft: false, bearbeiten: -1 };
+const druck = { client: null, etiketten: [], laeuft: false, speichert: false, bearbeiten: -1 };
 const qrBereit = () => typeof window.qrcode === 'function';
 const unvollstaendig = () => druck.etiketten.some(e => e.fehlt.length);
 
@@ -63,8 +63,8 @@ function vorschauHtml() {
   return druck.etiketten.map((e, i) => `<figure class="etk-karte">
     <canvas class="etk-bild" data-etk-bild="${i}" width="${ETIKETT.breite}" height="${ETIKETT.hoehe}" aria-label="${esc(`Etikett ${[e.serie, e.farbe].filter(Boolean).join(' ') || 'ohne Namen'}`)}"></canvas>
     <figcaption class="small">${e.fehlt.length ? `<span class="etk-fehlt">fehlt: ${esc(e.fehlt.join(', '))}</span>` : '<span class="muted">vollständig</span>'}
-      <button type="button" class="btn btn-sm" data-etk-bearbeiten="${i}"${druck.laeuft ? ' disabled' : ''}>Angaben bearbeiten</button>
-      <button type="button" class="btn btn-sm" data-etk-png="${i}"${e.fehlt.length || !qrBereit() || druck.laeuft ? ' disabled' : ''}>Als PNG speichern</button>
+      <button type="button" class="btn btn-sm" data-etk-bearbeiten="${i}"${druck.laeuft || druck.speichert ? ' disabled' : ''}>Angaben bearbeiten</button>
+      <button type="button" class="btn btn-sm" data-etk-png="${i}"${e.fehlt.length || !qrBereit() || druck.laeuft || druck.speichert ? ' disabled' : ''}>Als PNG speichern</button>
     </figcaption>
   </figure>`).join('');
 }
@@ -75,7 +75,7 @@ function zeichneVorschau() {
   liste.innerHTML = druck.etiketten.length ? vorschauHtml() : '<p class="small muted">Noch kein Etikett – unten Angaben eintragen und „Hinzufügen“.</p>';
   liste.querySelectorAll('[data-etk-bild]').forEach(c => zeichne(c, druck.etiketten[Number(c.dataset.etkBild)]));
   const knopf = $('#etkDrucken');
-  if (knopf) { knopf.disabled = !druck.etiketten.length || druck.laeuft || unvollstaendig() || !qrBereit() || !!umgebungsHinweis(); knopf.textContent = druck.etiketten.length === 1 ? '1 Etikett drucken' : `${druck.etiketten.length} Etiketten drucken`; }
+  if (knopf) { knopf.disabled = !druck.etiketten.length || druck.laeuft || druck.speichert || unvollstaendig() || !qrBereit() || !!umgebungsHinweis(); knopf.textContent = druck.etiketten.length === 1 ? '1 Etikett drucken' : `${druck.etiketten.length} Etiketten drucken`; }
 }
 
 function status(t) { const s = $('#etkStatus'); if (s) s.textContent = t; }
@@ -94,7 +94,7 @@ async function verbinden(weg) {
 
 /** Alle Etiketten nacheinander als ein Druckauftrag (totalPages = Anzahl), wie im niimbluelib-Beispiel. */
 async function drucken() {
-  if (druck.laeuft || !druck.etiketten.length || unvollstaendig() || !qrBereit()) return;
+  if (druck.laeuft || druck.speichert || !druck.etiketten.length || unvollstaendig() || !qrBereit()) return;
   const weg = $('#etkWeg')?.value || 'bluetooth';
   const dichte = Math.min(ETIKETT.dichteMax, Math.max(ETIKETT.dichteMin, Number($('#etkDichte')?.value) || ETIKETT.dichteStandard));
   druck.laeuft = true; zeichneVorschau();
@@ -150,7 +150,7 @@ export async function etikettenFuerBestellung(positionen = []) {
  * oder sind leer - dann nur die Eingabe von Hand.
  */
 export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Etiketten drucken' } = {}) {
-  if (druck.laeuft) { toast('Bitte warten, bis der Druckauftrag fertig ist.'); return; }
+  if (druck.laeuft || druck.speichert) { toast('Bitte warten, bis der aktuelle Vorgang fertig ist.'); return; }
   druck.etiketten = [...etiketten];
   druck.bearbeiten = -1;
   const hinweis = umgebungsHinweis();
@@ -183,7 +183,7 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Etiketten 
   </div></div>`;
   $('#etkListe').addEventListener('click', ev => {
     const bearbeiten = ev.target.closest('[data-etk-bearbeiten]');
-    if (bearbeiten && !druck.laeuft) {
+    if (bearbeiten && !druck.laeuft && !druck.speichert) {
       druck.bearbeiten = Number(bearbeiten.dataset.etkBearbeiten);
       const e = druck.etiketten[druck.bearbeiten];
       const form = $('#etkForm');
@@ -207,29 +207,40 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Etiketten 
   });
   $('#etkForm').addEventListener('submit', async ev => {
     ev.preventDefault();
-    if (druck.laeuft) return;
+    if (druck.laeuft || druck.speichert) return;
     const form = ev.target;
     const d = new FormData(form);
     const wert = k => String(d.get(k) || '').trim();
     const roh = wert('handle');
     const handle = originalHandle((roh.match(/\/products\/([^/?#]+)/) || [])[1] || roh);
     if (!handle && !wert('serie')) { status('Bitte Produktlink oder Serie eintragen.'); return; }
-    const produkt = handle ? await lexikonProdukt(handle) : null;
-    if ($('#etkForm') !== form) return; // Dialog inzwischen geschlossen oder ersetzt.
-    if (handle && !produkt) status('Produkt nicht im Lexikon gefunden – nur die eingetragenen Angaben.');
-    const ausLexikon = etikettFuerPosition({ istMuster: true, handle, farbe: wert('farbe'), musterQuelle: { sku: wert('sku') } }, produkt);
+    // Ziel vor dem Abruf festhalten: ein spaeterer Klick darf kein anderes Etikett ersetzen.
     const vorher = druck.etiketten[druck.bearbeiten];
-    const neu = etikett({
-      serie: wert('serie') || ausLexikon.serie, farbe: wert('farbe') || ausLexikon.farbe,
-      sku: wert('sku') || ausLexikon.sku, handle,
-      technik: produkt ? ausLexikon.technik : (vorher?.url === ausLexikon.url ? vorher.technik : []),
-    });
-    if (vorher) druck.etiketten = druck.etiketten.map(e => e === vorher ? neu : e);
-    else druck.etiketten.push(neu);
-    druck.bearbeiten = -1;
-    form.reset();
-    $('#etkUebernehmen').textContent = 'Hinzufügen';
+    druck.speichert = true;
+    for (const feld of form.elements) feld.disabled = true;
     zeichneVorschau();
+    try {
+      const produkt = handle ? await lexikonProdukt(handle) : null;
+      if ($('#etkForm') !== form) return; // Dialog inzwischen geschlossen.
+      if (handle && !produkt) status('Produkt nicht im Lexikon gefunden – nur die eingetragenen Angaben.');
+      const ausLexikon = etikettFuerPosition({ istMuster: true, handle, farbe: wert('farbe'), musterQuelle: { sku: wert('sku') } }, produkt);
+      const neu = etikett({
+        serie: wert('serie') || ausLexikon.serie, farbe: wert('farbe') || ausLexikon.farbe,
+        sku: wert('sku') || ausLexikon.sku, handle,
+        technik: produkt ? ausLexikon.technik : (vorher?.url === ausLexikon.url ? vorher.technik : []),
+      });
+      if (vorher) druck.etiketten = druck.etiketten.map(e => e === vorher ? neu : e);
+      else druck.etiketten.push(neu);
+      druck.bearbeiten = -1;
+      form.reset();
+      $('#etkUebernehmen').textContent = 'Hinzufügen';
+    } finally {
+      druck.speichert = false;
+      if ($('#etkForm') === form) {
+        for (const feld of form.elements) feld.disabled = false;
+        zeichneVorschau();
+      }
+    }
   });
   $('#etkDrucken').addEventListener('click', () => { if (!umgebungsHinweis()) drucken(); });
   $('#etkTrennen').addEventListener('click', async () => { try { await druck.client?.disconnect(); } catch { /* egal */ } druck.client = null; status('Getrennt.'); });
