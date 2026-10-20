@@ -90,6 +90,8 @@
 .etk-optionen { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0 4px; }
 .etk-karte figcaption { display: grid; gap: 6px; }
 .etk-karte figcaption .btn { justify-self: start; }
+.etk-auftrag-hinweis { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); }
+.lex-druckliste-link { margin: 0 0 12px; }
 .lex-etiketten { margin-bottom: 16px; padding: 0 18px 18px; }
 .lex-etiketten .card-head { padding-left: 0; padding-right: 0; }
 .lex-etiketten-auswahl { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; }
@@ -101,4 +103,36 @@
   .lex-etiketten { padding-left: 14px; padding-right: 14px; }
   .lex-etiketten-auswahl label:first-child { flex-basis: 100%; }
   .lex-etiketten-auswahl .btn { flex: 1; }
+}
+
+/* Gemeinsame Druckliste: offene Auswahl, reservierte Auftraege, bewusste Papierpruefung. */
+.md-navigation, .md-auswahl-aktionen, .md-aktionen, .md-seiten { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.md-navigation { margin-bottom: 16px; }
+.md-offen, .md-auftrag { margin-bottom: 16px; padding: 0 18px 18px; }
+.md-offen .card-head, .md-auftrag .card-head { padding-left: 0; padding-right: 0; }
+.md-auswahl-aktionen { margin-bottom: 8px; }
+.md-liste { list-style: none; margin: 0; padding: 0; }
+.md-zeile { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: center; padding: 12px 0; }
+.md-zeile + .md-zeile { border-top: 1px solid var(--line); }
+.md-mit-auswahl { grid-template-columns: auto minmax(0, 1fr) auto; }
+.md-auswahl { display: flex; align-items: center; justify-content: center; min-width: 36px; min-height: 44px; cursor: pointer; }
+.md-auswahl input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+.md-was { display: grid; gap: 3px; min-width: 0; overflow-wrap: anywhere; }
+.md-was a { color: var(--text-2); }
+.md-aktionen { margin-top: 12px; }
+.md-aktionen > p { flex-basis: 100%; margin: 0; }
+.md-aktionen .btn, .md-zeile > .btn { white-space: normal; }
+.md-druckstart { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.md-druckstart p { margin: 0; }
+.md-seiten { justify-content: space-between; margin: 8px 0; }
+.md-historie { margin: 18px 0; }
+.md-historie summary { cursor: pointer; color: var(--text-2); }
+.md-historie .md-liste { margin-top: 8px; }
+@media (max-width: 600px) {
+  .md-offen, .md-auftrag { padding-left: 14px; padding-right: 14px; }
+  .md-zeile { grid-template-columns: minmax(0, 1fr); }
+  .md-mit-auswahl { grid-template-columns: auto minmax(0, 1fr); }
+  .md-mit-auswahl > .btn { grid-column: 2; justify-self: start; }
+  .md-aktionen { align-items: stretch; flex-direction: column; }
+  .md-aktionen .btn, .md-druckstart > .btn { width: 100%; min-height: 44px; }
 }

@@ -356,6 +356,12 @@
                 "sichtbarkeit": "desktop"
               },
               "blocks": {}
+            },
+            "tp_leisten_paket_hinweis": {
+              "type": "tp-leisten-paket-hinweis",
+              "settings": {
+                "aktiv": true
+              }
             }
           },
           "block_order": [
@@ -363,6 +369,7 @@
             "group_icgrde",
             "tp_vorteile_night1",
             "tp_aktion_hinweis",
+            "tp_leisten_paket_hinweis",
             "divider_VJhene",
             "tp_farb_dropdown",
             "variant_picker_R3rGDr",

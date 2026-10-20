@@ -79,6 +79,8 @@ import { musterKaufLinks } from '../docs/ai-dashboard/lib/muster-kauf-links.mjs'
 import { betriebszustand } from '../operations/lib/betriebszustand.mjs';
 import { ausCsv as bildrechteAusCsv, prueflisten as bildrechtePrueflisten } from '../operations/lib/bildrechte.mjs';
 import { prozesslinksPfad, leseProzesslinks, schreibeProzesslinks, ProzesslinksFehler, ProzesslinksSpeicherFehler } from '../operations/lib/prozesslinks.mjs';
+import { leseMusterDruckliste, aendereMusterDruckliste, MusterDrucklisteFehler } from '../operations/lib/muster-druckliste.mjs';
+import { etikettenAusLexikon } from '../docs/ai-dashboard/lib/lexikon-etiketten.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -2591,6 +2593,42 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * Paginierung laufen serverseitig, damit die potenziell grosse Datei nie
      * komplett an den Browser geht.
      */
+    lexikonDruckliste() {
+      try { return leseMusterDruckliste({ privatDir: privatDirPath || privatDir() }); }
+      catch (e) {
+        if (e instanceof MusterDrucklisteFehler) throw new ApiError(e.status, e.message);
+        throw e;
+      }
+    },
+
+    /** Gemeinsame Vormerkung: Etikettdaten kommen immer aus dem privaten Lexikon. */
+    async lexikonDrucklisteSetzen(payload = {}, benutzer = null) {
+      if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Rolle „lesen“ darf die Druckliste nicht ändern.');
+      if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new ApiError(400, 'Drucklisten-Aktion fehlt.');
+      const actor = benutzer?.name || await currentUser();
+      if (!actor) throw new ApiError(403, 'Bitte anmelden – wer die Druckliste ändert, wird festgehalten.');
+      const { aktion, vorgangId, eintraege, druckauftragId } = payload;
+      let eintrag;
+      if (aktion === 'vormerken') {
+        const produkte = this._lexikonProdukte();
+        const je = new Map(produkte.map(p => [p.handle, p]));
+        const produkt = je.get(payload.handle);
+        if (!produkt) throw new ApiError(404, 'Produkt nicht im Lexikon gefunden. Bitte neu suchen.');
+        const auswahl = etikettenAusLexikon(produkt, je).find(e => e.key === payload.key);
+        if (!auswahl) throw new ApiError(409, 'Die Ausführung hat sich geändert. Produkt bitte neu öffnen.');
+        if (auswahl.etikett.fehlt.length) throw new ApiError(400, `Etikett unvollständig: ${auswahl.etikett.fehlt.join(', ')}. Bitte Produktdaten prüfen.`);
+        eintrag = { id: vorgangId, produktHandle: produkt.handle, produktTitel: produkt.titel, bezeichnung: auswahl.bezeichnung, etikett: auswahl.etikett, anzahl: payload.anzahl };
+      } else if (!['reservieren', 'freigeben', 'erledigen', 'entfernen'].includes(aktion)) {
+        throw new ApiError(400, 'Unbekannte Drucklisten-Aktion.');
+      }
+      try {
+        return aendereMusterDruckliste({ privatDir: privatDirPath || privatDir(), aktion: aktion === 'vormerken' ? 'hinzufuegen' : aktion, vorgangId, eintraege, druckauftragId, eintrag, actor, now: now() });
+      } catch (e) {
+        if (e instanceof MusterDrucklisteFehler) throw new ApiError(e.status, e.message);
+        throw e;
+      }
+    },
+
     lexikonListe({ q = '', page = 1, pageSize = 20 } = {}) {
       const dir = privatDirPath || privatDir();
       const file = path.join(dir, 'lexikon', 'produkte.json');

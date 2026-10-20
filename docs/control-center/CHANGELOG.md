@@ -21,6 +21,28 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   sind durch die macOS-Prüfung nicht abgedeckt. Keine pauschale Tempbereinigung oder Dienst-Neustarts.
 - **Nächste Stufe:** Konsolidierten Entwurfs-PR prüfen; Merge/Preview/Live bleiben gesperrt.
 
+## 2026-10-20 · Gemeinsame Druckliste fuer Musteraufkleber (#1493)
+
+- **Geaendert:** Im Lexikon Farbe/Ausfuehrung und Anzahl waehlen und „Zum Drucken vormerken“.
+  Der Kollege oeffnet „Gemeinsame Druckliste“, waehlt Eintraege und druckt den reservierten
+  Auftrag. Erst „Ausdruck geprueft – als gedruckt markieren“ erledigt ihn. Neue Vormerkungen
+  bleiben separat; Abbruch, fehlende Verbindung und Neustart loeschen nichts. Andere Sitzungen
+  koennen einen reservierten Auftrag nicht erneut zum Druck oeffnen. Bewusste Wiederfreigabe
+  verlangt die Pruefung bereits gedruckter Aufkleber. Server erzeugt die unveraenderlichen
+  Etikettdaten selbst aus dem Lexikon. Private atomare Ablage mit Revisionen, Wiederholungsschutz,
+  Prozesssperre und Sicherung; Mitarbeiter duerfen bearbeiten, „lesen“ bleibt lesend.
+- **Getestet:** Alle 3.240 Tests gruen (505 Dashboard-Tests), Projekt-Guards erfolgreich. 16 gezielte Speicher-/API-Tests
+  einschliesslich zwei paralleler Prozesse, doppelter Reservierung, spaeterer Vormerkung,
+  Rollenrechten, Original-SKU, kaputter Ablage und Erholung nach Prozessabbruch. Datenkopie:
+  45 Rollen-/Ansicht-/Breitenpruefungen zwischen 360 und 1440 px ohne Browserfehler oder Ueberlauf.
+  Vier weitere Ansichten im Dunkelmodus sowie 14 Browser-Klickfaelle mit zwei getrennten
+  Browsersitzungen und Druckerattrappe erfolgreich.
+- **Risiken:** Beide Arbeitsplaetze muessen denselben privaten Dashboard-Dienst verwenden.
+  Die Papierausgabe am echten Niimbot bleibt zu pruefen; ein geschlossener Dialog oder
+  erfolgreicher Download gilt nie als bestaetigter Ausdruck.
+- **Naechste Stufe:** Nach dem Merge den Dashboard-Dienst nachziehen und einen echten
+  50×50-mm-Testaufkleber im Laden pruefen.
+
 ## 2026-10-20 · Musteraufkleber direkt im Lexikon (#1489, #1490)
 
 - **Geaendert:** Produkt oder Muster im Lexikon oeffnen, Farbe/Ausfuehrung und Anzahl waehlen,
@@ -29,6 +51,8 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Muster verwenden die explizite Originalreferenz und echte Shop-SKU. Fehlende Angaben lassen
   sich in der Vorschau ergaenzen; paralleles Speichern kann kein anderes Etikett ueberschreiben.
   Lange Paketetiketten behalten alle Technikzeilen und die vollstaendige Artikelnummer.
+  Einzelvarianten mit dem internen Titel „Default“ verwenden Marke und Dekor aus dem belegten
+  Produkttitel; der Platzhalter erscheint nicht als Farbe auf dem Etikett.
 - **Getestet:** Alle 3.223 Tests gruen, davon 488 Dashboard-Tests; 17 synthetische Browserfaelle bei 1440/390 px einschliesslich
   verzogertem Nachladen, zwei Kopien, PNG, Ergaenzen, bestehendem Bestellungsdruck und QR-Netzfehler.
   Read-only-Abgleich aller 5.971 aktuellen Mustervarianten: vollstaendige Etikettdaten fuer
