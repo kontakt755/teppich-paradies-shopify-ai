@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
-import { leseAkquiseCsv, wendeAenderungAn, faelligeWiedervorlagen, vorlageAusMarkdown, nachrichtFuer, akquiseId } from '../lib/akquise.mjs';
+import { leseAkquiseCsv, wendeAenderungAn, faelligeWiedervorlagen, vorlageAusMarkdown, nachrichtFuer, akquiseId, naechsteFirmen, akquiseFortschritt, kontaktTeile, mailtoLink, warumInteressant, kmAbOranienburg, tageBis } from '../lib/akquise.mjs';
 import { leiteTodosAb } from '../lib/todos.mjs';
 
 // Ausgedachte Firmen - echte Kontakte gehoeren nie ins Repository.
@@ -52,6 +52,40 @@ test('Faellig: Wiedervorlage erreicht, offene Firmen; To-do "Akquise: N Nachfass
   assert.equal(leiteTodosAb({ akquise: [] }, { sicht: 'inhaber' }).some(t => t.id === 'akquise'), false);
 });
 
+test('Als Naechstes: faellig zuerst, dann neu nach Wohnungen und Naehe; spaeter zurueckgelegte warten', () => {
+  const firmen = [
+    { id: 'klein-nah', name: 'K', ort: 'Oranienburg', status: 'neu', wohnungen: '' },
+    { id: 'gross', name: 'G', ort: 'Eberswalde', status: 'neu', wohnungen: '2.500' },
+    { id: 'mittel-fern', name: 'M', ort: 'Nauen', status: 'neu', wohnungen: '' },
+    { id: 'faellig', name: 'F', ort: 'Velten', status: 'angeschrieben', wiedervorlage: '2026-10-19' },
+    { id: 'spaeter', name: 'S', ort: 'Velten', status: 'neu', wiedervorlage: '2026-10-27' },
+    { id: 'wartet', name: 'W', status: 'angeschrieben', wiedervorlage: '2026-11-01' },
+  ];
+  assert.deepEqual(naechsteFirmen(firmen, '2026-10-20').map(f => f.id), ['faellig', 'gross', 'klein-nah', 'mittel-fern']);
+  assert.deepEqual(akquiseFortschritt([...firmen, { status: 'auftrag' }, { status: 'kein-interesse' }]), { gesamt: 8, angeschrieben: 4, antworten: 1, auftraege: 1 });
+  assert.equal(kmAbOranienburg('Berlin-Pankow'), 28);
+  assert.equal(kmAbOranienburg('Irgendwo'), null);
+  assert.match(warumInteressant({ ort: 'Oranienburg', wohnungen: '1200' }), /^Rund 1\.200 Wohnungen.*direkt bei uns in Oranienburg\.$/);
+});
+
+test('Nachgefasst: Status bleibt, Wiedervorlage +14, Zaehler steigt', () => {
+  const n = wendeAenderungAn({ status: 'angeschrieben', wiedervorlage: '2026-10-20' }, { aktion: 'nachgefasst' }, '2026-10-20');
+  assert.equal(n.status, 'angeschrieben');
+  assert.equal(n.wiedervorlage, '2026-11-03');
+  assert.equal(n.nachgefasst, 1);
+  assert.throws(() => wendeAenderungAn({}, { aktion: 'loeschen' }, '2026-10-20'));
+});
+
+test('Kontakt, mailto und Frist', () => {
+  assert.deepEqual(kontaktTeile('info@muster.example / 03301 1234-0'), { email: 'info@muster.example', telefon: '03301 1234-0', telLink: '0330112340' });
+  assert.deepEqual(kontaktTeile('03301 802834').email, '');
+  assert.equal(kontaktTeile('').telefon, '');
+  const m = mailtoLink('a@b.example', 'An: X\n\nBetreff: Boden & mehr\n\nHallo X');
+  assert.equal(m, 'mailto:a@b.example?subject=Boden%20%26%20mehr&body=Hallo%20X');
+  assert.equal(tageBis('2026-10-27', '2026-10-20'), 7);
+  assert.equal(tageBis('', '2026-10-20'), null);
+});
+
 test('Vorlage: E-Mail-Abschnitt ohne Markdown, Firmenname eingesetzt', () => {
   const v = vorlageAusMarkdown(VORLAGE);
   assert.equal(v, 'Betreff: Boden\n\nSehr geehrte Damen und Herren,\nText.');
@@ -65,6 +99,7 @@ test('API: Liste mit Standardstand, Aenderung landet privat, kaputter Stand wird
   const d = await api.akquiseListe();
   assert.equal(d.verfuegbar, true);
   assert.equal(d.firmen[0].status, 'neu');
+  assert.equal(d.firmen[0].kontakt, 'x');
   assert.match(d.vorlage, /^Betreff: Boden/);
   const r = await api.akquiseAendern({ id: 'muster-wohnbau-eg', status: 'angeschrieben' }, { kuerzel: 'ahmet' });
   assert.equal(r.firma.wiedervorlage, '2026-11-03');

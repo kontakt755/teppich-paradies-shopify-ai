@@ -2,6 +2,30 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-20 · Akquise gefuehrt: eine Firma „Als Nächstes“ (#)
+
+- **Geändert:** Statt einer langen Liste mit Dropdown, Datum und Notiz je Firma: oben ein Erklärkasten
+  (worum es geht, drei Schritte, Fortschritt „x von 33 angeschrieben · Antworten · Aufträge“), darunter
+  genau eine Karte „Als Nächstes“ – fällige Wiedervorlagen zuerst, dann noch nicht angeschriebene nach
+  Wohnungsbestand, dann Nähe zu Oranienburg (ungefähre km je Ort in `lib/akquise.mjs`). Karte: Name, Ort,
+  Art, Wohnungen, Kontakt (CSV-Spalte `kontakt`, jetzt von `/api/akquise/liste` geliefert), ein Satz warum,
+  was zu tun ist, Knöpfe „E-Mail öffnen“ (mailto mit Betreff/Text), „Text kopieren“, „Anrufen“, dann
+  „Erledigt: angeschrieben“ (+14 Tage) bzw. „Nachgefasst“ (neue Aktion, Status bleibt, +14 Tage,
+  Zähler), „Antwort bekommen“ (Feld „Was wurde gesagt?“ → Termin vereinbaren / Angebot schicken, +7),
+  „Kein Interesse“, „Später“ (+7). Ohne Kontakt: „Kontakt fehlt – Website ansehen“. „Alle Firmen“
+  zugeklappt als kompakte Tabelle (Stand-Chip, Wiedervorlage, Notiz, „Oben zeigen“). Ausschreibungen
+  als eigener Kasten mit Erklärung, Ampel und „noch N Tage“.
+- **Getestet:** `tests/akquise.test.mjs` 10 (3 neu); `dashboard:test` 608 grün, `npm test` 3406 grün;
+  `dashboard:pruefen` alle Ansichten 360–1440 px OK, 0 px Überlauf. Klickstrecke Datenkopie (390 px):
+  angeschrieben → Fortschritt 0 → 1, Karte springt zur nächsten Firma; Später → nächste Firma,
+  Wiedervorlage +7; „Oben zeigen“ → angeschrieben → Karte „Nachfassen“; Antwort + Notiz → Termin:
+  Antworten 0 → 1, Notiz gespeichert; 0 JS-Fehler.
+- **Risiken/Annahmen:** Wohnungszahl fehlt in der CSV fast überall, die Reihenfolge läuft dort über die
+  Entfernung. Status von Hand zurücksetzen geht nur noch über die Karten-Knöpfe. mailto-Länge hängt
+  vom Mailprogramm ab (Text ~1,5 kB). Bereich bleibt nur für die Rolle Inhaber sichtbar.
+- **Nächste Stufe:** Wohnungszahlen in der privaten CSV ergänzen; falls Mitarbeiter den Bereich nutzen
+  sollen, Rolle in `kern/router.mjs` und Server freigeben.
+
 ## 2026-10-20 · Cleanup-PRs gemeinsam abgesichert (#1441, #1457)
 
 - **Geändert:** Änderungen aus #1444 und #1460 zusammengeführt. Tempordner brauchen eine Besitzkennung,
