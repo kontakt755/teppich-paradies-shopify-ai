@@ -1,10 +1,8 @@
 // Paketware (Teppichfliesen, Klick-/Klebevinyl) im Product-JSON-LD.
 //
 // Befund 2026-09-23: Der Variantenpreis dieser Produkte ist der PAKETPREIS,
-// die Produktseite fuehrt aber EUR/m2. Ohne Umrechnung meldete das JSON-LD
-// 218,46 gegen einen sichtbaren Preis von 44,95 - eine Preisabweichung, die
-// das Merchant Center beanstandet ("automatische Artikelaktualisierung"
-// liest die Seite und vergleicht).
+// die Produktseite zeigt Paket- und Quadratmeterpreis. Google las am
+// 20.10. den m2-Preis aus den Metadaten und lehnte die Paketpreise ab.
 //
 // Grenze: LiquidJS ist nicht Shopifys Liquid; image_url/structured_data sind
 // Attrappen. Geprueft wird die Angebotsstruktur, nicht das Rendering.
@@ -17,6 +15,7 @@ import { Liquid } from 'liquidjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const tpl = readFileSync(join(root, 'snippets', 'tp-product-structured-data.liquid'), 'utf8');
+const metaTpl = readFileSync(join(root, 'snippets', 'meta-tags.liquid'), 'utf8');
 
 // Das Snippet rendert seit 2026-09-23 ein Teil-Snippet (Merkmale als
 // additionalProperty), deshalb muss LiquidJS Partials aus snippets/ finden.
@@ -38,6 +37,19 @@ eng.registerTag('doc', {
 });
 eng.registerFilter('image_url', v => (typeof v === 'string' ? v : '//cdn/bild.jpg'));
 eng.registerFilter('json', v => JSON.stringify(v ?? null));
+const metaEng = new Liquid({ strictFilters: false, strictVariables: false });
+// Shopify teilt bei ganzzahligem Divisor ganzzahlig; LiquidJS verwendet JS-Zahlen.
+metaEng.registerFilter('divided_by', (value, divisor) => Number.isInteger(divisor)
+  ? Math.floor(Number(value) / divisor) : Number(value) / divisor);
+const ogPreis = async p => {
+  const meta = await metaEng.parseAndRender(metaTpl.slice(metaTpl.indexOf("{%- if request.page_type == 'product' -%}")), {
+    product: p, request: { page_type: 'product' },
+    shop: { name: 'TeppichParadies' }, cart: { currency: { iso_code: 'EUR' } },
+  });
+  const amount = meta.match(/property="og:price:amount"\s+content="([^"]+)"/);
+  assert.ok(amount, 'og:price fehlt');
+  return Number(amount[1]);
+};
 
 const variante = (o = {}) => ({
   id: o.id ?? 1,
@@ -82,32 +94,67 @@ const rendern = (p) => eng.parseAndRender(tpl, {
 
 const preise = (html) => [...html.matchAll(/"price":\s*([0-9.]+)/g)].map(m => Number(m[1]));
 
-test('Paketware meldet den Quadratmeterpreis, nicht den Paketpreis', async () => {
-  // 218,46 EUR je Paket / 4,86 m2 = 44,95 EUR/m2 - genau der Seitenpreis.
+test('Paketware meldet den kaufbaren Paketpreis in beiden Preisfeldern', async () => {
   const html = await rendern(produkt());
   assert.ok(!html.includes('"nativ"'), 'Paketware faellt noch in Shopifys nativen Zweig');
   const p = preise(html);
   assert.ok(p.length >= 1, 'kein Preis im Markup');
-  assert.ok(p.every(x => x === 44.95), `erwartet 44.95, gefunden ${JSON.stringify(p)}`);
-  assert.ok(!p.includes(218.46), 'der Paketpreis steht weiterhin im Markup');
+  assert.deepEqual(p, [218.46, 218.46]);
 });
 
-test('Der Quadratmeterpreis steht auch als UnitPriceSpecification je 1 MTK', async () => {
+test('Grundpreis bleibt ueber Paketflaeche und Basis 1 MTK bestimmbar', async () => {
   const html = await rendern(produkt());
-  assert.match(html, /"UnitPriceSpecification"/);
-  assert.match(html, /"unitCode":\s*"MTK"/);
+  const data = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
+  const unit = data.hasVariant[0].offers.priceSpecification;
+  assert.equal(unit['@type'], 'UnitPriceSpecification');
+  assert.equal(unit.price, 218.46);
+  assert.deepEqual(unit.referenceQuantity, {
+    '@type': 'QuantitativeValue', value: 4.86, unitCode: 'MTK',
+    valueReference: { '@type': 'QuantitativeValue', value: 1, unitCode: 'MTK' },
+  });
+  assert.equal(Math.round(unit.price / unit.referenceQuantity.value * 100) / 100, 44.95);
 });
 
-test('Gerundet wird auf ganze Cent - wie snippets/price.liquid', async () => {
-  // 5000 Cent / 3 m2 = 1666,67 Cent -> 16,67 EUR/m2
+test('Paketpreis bleibt auch bei periodischem Grundpreis centgenau', async () => {
   const html = await rendern(produkt({ qm: 3, variants: [variante({ price: 5000 })] }));
-  assert.deepEqual(preise(html), [16.67, 16.67]);
+  assert.deepEqual(preise(html), [50, 50]);
 });
 
 test('Paketware gewinnt gegen eine Rollenbreite an der Variante', async () => {
-  // Sonst wuerde der Paketpreis unveraendert als m2-Preis durchgereicht.
   const html = await rendern(produkt({ variants: [variante({ rollenbreite: 4 })] }));
-  assert.ok(preise(html).every(x => x === 44.95), 'Rollenzweig hat den Paketpreis durchgereicht');
+  assert.deepEqual(preise(html), [218.46, 218.46]);
+});
+
+for (const [name, qm, cents, grundpreis] of [
+  ['Designboden', 5.25, 33332, 63.49],
+  ['Teppichfliese', 5, 20752, 41.5],
+]) {
+  test(`Merchant-Regression ${name}: Feedpreis und Seitenmetadaten stimmen ueberein`, async () => {
+    const p = produkt({ qm, variants: [variante({ price: cents })] });
+    const html = await rendern(p);
+    const data = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
+    const offer = data.hasVariant[0].offers;
+    assert.equal(offer.price, cents / 100);
+    assert.equal(offer.priceSpecification.price, cents / 100);
+    assert.equal(Math.round(offer.price / qm * 100) / 100, grundpreis);
+    assert.equal(await ogPreis(p), offer.price);
+  });
+}
+
+test('og:price folgt der ausgewaehlten Variante statt dem kleinsten Paketpreis', async () => {
+  const p = produkt({ variants: [variante({ id: 1, price: 10000 }), variante({ id: 2, price: 20752 })] });
+  p.selected_or_first_available_variant = p.variants[1];
+  assert.equal(await ogPreis(p), 207.52);
+});
+
+test('og:price von Stueckware, Massware und Laengenware bleibt unveraendert', async () => {
+  const stueck = produkt({ qm: null, variants: [variante({ price: 949 })] });
+  const mass = produkt({ qm: null, per001: true, variants: [variante({ price: 57 })] });
+  const laenge = produkt({ qm: null, variants: [variante({ price: 18 })] });
+  laenge.metafields.custom.preis_pro_001_lfm = { value: true };
+  assert.equal(await ogPreis(stueck), 9.49);
+  assert.equal(await ogPreis(mass), 57);
+  assert.equal(await ogPreis(laenge), 18);
 });
 
 test('Ohne qm_pro_paket bleibt alles wie bisher', async () => {

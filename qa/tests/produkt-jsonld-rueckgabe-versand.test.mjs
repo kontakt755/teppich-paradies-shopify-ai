@@ -148,7 +148,7 @@ test('Versand: unter der Schwelle die Versandkosten, ab der Schwelle 0', async (
 test('Paketware: es zaehlt der Paketpreis, nicht der m2-Preis', async () => {
   // 71,80 EUR je Paket / 1,73 m2 = 41,50 EUR/m2 - das Paket liegt ueber der Schwelle.
   const [offer] = await offers(produkt({ qm: 1.73, suffix: 'planken', variants: [variante({ price: 7180 })] }));
-  assert.equal(offer.price, 41.5);
+  assert.equal(offer.price, 71.8);
   assert.equal(offer.shippingDetails.shippingRate.value, 0);
 });
 
