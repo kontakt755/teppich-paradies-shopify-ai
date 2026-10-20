@@ -2,6 +2,28 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-20 · Muster sammeln und im selben Fenster abschliessen (#1536)
+
+- **Geaendert:** Im Lexikon ist Vormerken die Hauptaktion; eine bestaetigte Rueckmeldung nennt
+  Ausfuehrung/Kopien und fuehrt zur naechsten Suche oder Druckliste. Die gemeinsame Liste nimmt
+  standardmaessig alle offenen Positionen. Haekchen und Sammelentfernen erscheinen erst unter
+  „Auswahl aendern“; eine leere Auswahl bleibt leer. „Druckvorschau oeffnen“ reserviert den Auftrag,
+  erst „Jetzt … Aufkleber drucken“ startet die Ausgabe. Druckereinstellungen sind eingeklappt.
+  Die Papierkontrolle schliesst den Auftrag direkt im Druckfenster ab. Schliessen vor einem
+  Druckversuch gibt den Auftrag wieder frei; ab dem Druckklick bleibt er bei Abbruch/Fehler erhalten.
+  Nach der Druckerwahl prueft ein frischer Abruf IDs/Revisionen vor jedem ersten Hardwarebefehl.
+- **Getestet:** 29 synthetische Browserstrecken mit Druckerattrappe, darunter Reihenfolge/Kopien,
+  individuelle/leere Auswahl, Mehrplatzkonflikt waehrend Druckerwahl, Abbruch/Teiltransport,
+  Sitzungsende, Papierbestaetigung und wiederholbare Callbackfehler. Lexikon-Doppelklick,
+  Farbwechselmenge, bestaetigte/unbestaetigte Vormerkung und Suchfokus. Bestehende Gesamtsuite
+  3407/3407 (605 Dashboard), 30 Rollen-/Breitenansichten sowie gefuellte Liste/Vorschau auf einer
+  privaten Datenkopie bei 360/390/800/1024/1440 px, hell/dunkel, ohne Ueberlauf oder JS-Fehler.
+  Unabhaengige Pruefung des gefrorenen Produkt-Diffs ohne offene Befunde.
+- **Risiken:** Kein physischer Druck erfolgt. Die Papierkontrolle bleibt erforderlich; ein
+  bestaetigter Datentransport beweist keinen lesbaren Ausdruck. Tab-Schliessen/Neustart und
+  Sitzungsende geben Reservierungen bewusst nicht automatisch frei.
+- **Naechste Stufe:** Projekt-Guards abschliessen, PR zusammenfuehren und privaten Dienst lesend pruefen.
+
 ## 2026-10-20 · Akquise gefuehrt: eine Firma „Als Nächstes“ (#1533)
 
 - **Geändert:** Statt einer langen Liste mit Dropdown, Datum und Notiz je Firma: oben ein Erklärkasten

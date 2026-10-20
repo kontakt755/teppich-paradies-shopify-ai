@@ -1,0 +1,494 @@
+#!/usr/bin/env node
+/**
+ * Browser-Regressionen fuer die gemeinsame Druckliste.
+ *
+ * node scripts/pruefe-druckablauf.mjs
+ *
+ * Laedt echte Dashboardmodule auf einem eigenen Loopback-Server. Alle Daten
+ * sind synthetisch, alle API-Antworten kommen aus dem Speicher. Der Drucker,
+ * die Geraeteauswahl und die QR-Bibliothek sind Attrappen. Externe Anfragen
+ * werden abgewiesen; echte Privatdateien und Drucker werden nie angesprochen.
+ * Die bestehenden API-/Canvas-Tests pruefen Datenregeln und echte QR-Inhalte.
+ */
+import assert from 'node:assert/strict';
+import http from 'node:http';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import puppeteer from 'puppeteer';
+import { etikettenAusLexikon } from '../docs/ai-dashboard/lib/lexikon-etiketten.mjs';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../docs/ai-dashboard');
+const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json' };
+const kopie = wert => structuredClone(wert);
+const jetzt = '2026-10-20T10:00:00.000Z';
+const produkt = {
+  handle: 'testvelours-teppichboden', titel: 'Testvelours Teppichboden', produktgruppe: 'Teppichboden', status: 'ACTIVE', eigenschaften: {},
+  varianten: [{ id: 'test-sand', sku: 'TEST-SA', farbe: 'Sand', titel: 'Sand / 400cm' }, { id: 'test-grau', sku: 'TEST-GR', farbe: 'Grau', titel: 'Grau / 400cm' }],
+};
+function eintrag(i, anzahl = 1) {
+  return {
+    id: `test-position-${i}`, revision: 1, status: 'offen', anzahl,
+    produktHandle: `testmuster-${i}`, produktTitel: `Testmuster ${i}`, bezeichnung: `Testfarbe ${i}`,
+    erstelltVon: { name: 'Testperson' }, erstelltAm: jetzt, geaendertAm: jetzt,
+    etikett: { serie: `Testserie ${i}`, farbe: `Testfarbe ${i}`, sku: `TEST-${i}`, url: `https://www.teppich-paradies.net/products/testmuster-${i}`, technik: [], fehlt: [] },
+  };
+}
+function fixture(eintraege = [eintrag(1, 2), eintrag(2), eintrag(3, 2)], rolle = 'mitarbeiter') {
+  return {
+    eintraege: kopie(eintraege), rolle, anfragen: [], versuche: [], gets: 0,
+    antwort() { return { schema: 1, verfuegbar: true, eintraege: kopie(this.eintraege) }; },
+    schreiben(auftrag) {
+      this.anfragen.push(kopie(auftrag));
+      if (auftrag.aktion === 'vormerken') {
+        assert.equal(auftrag.handle, produkt.handle);
+        const auswahl = etikettenAusLexikon(produkt).find(e => e.key === auftrag.key);
+        assert(auswahl, 'Nur vorhandene Testausfuehrung vormerken.');
+        const neu = eintrag(this.eintraege.length + 1, auftrag.anzahl);
+        Object.assign(neu, { produktHandle: produkt.handle, produktTitel: produkt.titel, bezeichnung: auswahl.bezeichnung, etikett: auswahl.etikett });
+        this.eintraege.push(neu);
+        return this.antwort();
+      }
+      const referenzen = auftrag.eintraege || [];
+      const es = referenzen.map(r => this.eintraege.find(e => e.id === r.id));
+      assert(referenzen.length, 'Eine Schreibaktion braucht konkrete Positionen.');
+      assert(es.every((e, i) => e && e.revision === referenzen[i].revision), 'Veraltete Revision in der Browseranfrage.');
+      for (const e of es) {
+        if (auftrag.aktion === 'reservieren') {
+          assert.equal(e.status, 'offen');
+          e.status = 'in_druck'; e.druckauftrag = { id: auftrag.druckauftragId, von: { name: 'Testperson' }, am: jetzt };
+        } else {
+          if (auftrag.aktion !== 'entfernen') {
+            assert.equal(e.status, 'in_druck'); assert.equal(e.druckauftrag.id, auftrag.druckauftragId);
+          }
+          if (auftrag.aktion === 'freigeben') { e.status = 'offen'; delete e.druckauftrag; }
+          else if (auftrag.aktion === 'erledigen') { e.status = 'gedruckt'; e.gedrucktAm = jetzt; e.gedrucktVon = 'Testperson'; }
+          else if (auftrag.aktion === 'entfernen') { e.status = 'entfernt'; e.entferntAm = jetzt; }
+          else throw new Error(`Unerwartete Testaktion: ${auftrag.aktion}`);
+        }
+        ++e.revision;
+      }
+      return this.antwort();
+    },
+  };
+}
+
+let aktuell;
+const server = http.createServer(async (req, res) => {
+  const json = (daten, status = 200) => { res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' }); res.end(JSON.stringify(daten)); };
+  try {
+    const url = new URL(req.url, 'http://localhost');
+    if (url.pathname === '/api/session') return json({ required: true, authenticated: true, benutzer: { rolle: aktuell.rolle, name: 'Testperson', kuerzel: 'testperson' } });
+    if (url.pathname === '/api/capabilities') return json({ mode: 'local', agentRuns: false, user: { name: 'Testperson' } });
+    if (url.pathname === '/issues.json') return json({ schema: 2, issues: [], generated_at: jetzt, count: 0 });
+    if (url.pathname === '/api/lexikon/produkt') return json({ verfuegbar: true, produkt: kopie(produkt) });
+    if (url.pathname === '/api/lexikon/liste') return json({ verfuegbar: true, erstellt: jetzt, anzahl: 1, treffer: { count: 1, page: 1, pages: 1, items: [{ ...kopie(produkt), farbenAnzahl: 2 }] } });
+    if (url.pathname === '/api/lexikon/druckliste') {
+      if (req.method === 'GET') { ++aktuell.gets; return json(aktuell.antwort()); }
+      assert.equal(req.method, 'POST');
+      let roh = ''; for await (const teil of req) roh += teil;
+      if (aktuell.rolle === 'lesen') return json({ error: 'Nur lesend' }, 403);
+      const daten = aktuell, auftrag = JSON.parse(roh);
+      daten.versuche.push(auftrag);
+      if (auftrag.aktion === 'vormerken' && daten.vormerkHalten) await new Promise(ok => { daten.vormerkFortsetzen = ok; });
+      if (auftrag.aktion === 'vormerken' && daten.vormerkFehler) return json({ error: 'Synthetischer Konflikt bei der Vormerkung' }, 409);
+      return json(daten.schreiben(auftrag));
+    }
+    if (url.pathname.startsWith('/api/')) return json({ verfuegbar: true, eintraege: [], antworten: [] });
+    const datei = path.resolve(ROOT, `.${decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname)}`);
+    assert(datei.startsWith(`${ROOT}${path.sep}`), 'Nur Dashboarddateien ausliefern.');
+    const inhalt = await fs.readFile(datei);
+    res.writeHead(200, { 'content-type': MIME[path.extname(datei)] || 'application/octet-stream' }); res.end(inhalt);
+  } catch (err) {
+    json({ error: err.message }, 500);
+  }
+});
+await new Promise(ok => server.listen(0, '127.0.0.1', ok));
+const basis = `http://127.0.0.1:${server.address().port}`;
+let browser;
+let bestanden = 0, gescheitert = 0;
+
+async function geraeteAttrappen(page) {
+  await page.evaluateOnNewDocument(() => {
+    const f = window.__druckAttrappe = { aktiv: true, modus: 'ok', verbindungen: 0, trennungen: 0, teile: [], seiten: [], ende: 0 };
+    Object.defineProperty(navigator, 'bluetooth', { configurable: true, value: {} });
+    Object.defineProperty(navigator, 'serial', { configurable: true, value: {} });
+    // Die echte Bibliothek wird nicht geladen. Canvas/DOM und Dashboard bleiben echt.
+    window.qrcode = () => ({ addData() {}, make() {}, getModuleCount: () => 21, isDark: (r, c) => (r + c) % 2 === 0 });
+    const fuellen = CanvasRenderingContext2D.prototype.fillRect;
+    CanvasRenderingContext2D.prototype.fillRect = function (x, y, w, h) {
+      if (x === 0 && y === 0 && w === this.canvas.width && h === this.canvas.height) this.canvas.__testtexte = [];
+      return fuellen.call(this, x, y, w, h);
+    };
+    const text = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (t, ...rest) { (this.canvas.__testtexte ||= []).push(String(t)); return text.call(this, t, ...rest); };
+    class Client {
+      verbunden = false;
+      protocol = { newPrintTask: (_art, optionen) => {
+        f.teile.push(optionen);
+        return {
+          async printInit() { if (f.modus === 'initfehler' || (f.modus === 'zweiter-teil-fehler' && f.teile.length === 2)) throw new Error('Synthetischer Verbindungsfehler'); },
+          async printPage(bild, kopien) {
+            f.seiten.push({ texte: bild.texte, kopien });
+            if (f.modus === 'seite-halten' && f.seiten.length === 1) await new Promise(ok => { f.seiteFortsetzen = ok; });
+          },
+          async waitForFinished() {},
+          async printEnd() { ++f.ende; return f.modus !== 'abschlussfehler'; },
+        };
+      } };
+      async connect() {
+        ++f.verbindungen;
+        if (f.modus === 'auswahl-halten') await new Promise(ok => { f.auswahlFortsetzen = ok; });
+        if (f.modus === 'auswahl-abbruch') throw new Error('User cancelled the requestDevice chooser');
+        this.verbunden = true;
+      }
+      isConnected() { return this.verbunden; }
+      async disconnect() { ++f.trennungen; this.verbunden = false; }
+      on() {}
+      getModelMetadata() { return { printDirection: 'top' }; }
+      getPrintTaskType() { return 'B1'; }
+    }
+    window.niimbluelib = { NiimbotBluetoothClient: Client, NiimbotSerialClient: Client, ImageEncoder: { encodeCanvas: c => ({ texte: [...c.__testtexte] }) } };
+    const append = Element.prototype.append;
+    Element.prototype.append = function (...knoten) {
+      for (const k of knoten) {
+        if (this === document.head && k.tagName === 'SCRIPT' && k.src.startsWith('https://cdn.jsdelivr.net/npm/')) queueMicrotask(() => k.onload?.());
+        else append.call(this, k);
+      }
+    };
+  });
+}
+async function warteAuf(fn, fehler = 'Bedingung nicht erreicht') {
+  const ende = Date.now() + 5000;
+  while (!fn()) { if (Date.now() > ende) throw new Error(fehler); await new Promise(ok => setTimeout(ok, 20)); }
+}
+async function pruefe(name, test, daten = fixture()) {
+  const kontext = await browser.createBrowserContext();
+  const page = await kontext.newPage();
+  const jsFehler = [], fremdeAnfragen = [];
+  aktuell = daten;
+  try {
+    page.setDefaultTimeout(5000);
+    await page.setViewport({ width: 1440, height: 1000 });
+    await page.setRequestInterception(true);
+    page.on('request', req => {
+      if (req.url().startsWith(basis) || req.url().startsWith('data:')) void req.continue();
+      else { fremdeAnfragen.push(req.url()); void req.abort(); }
+    });
+    page.on('pageerror', err => jsFehler.push(err.message));
+    page.on('dialog', dialog => { void dialog.accept(); });
+    await geraeteAttrappen(page);
+    await page.goto(`${basis}/#/lexikon?tab=druckliste`, { waitUntil: 'networkidle0' });
+    await page.waitForSelector('[data-md-aktualisieren]');
+    await test(page, daten);
+    assert.deepEqual(jsFehler, [], 'Keine JavaScript-Fehler.');
+    assert.deepEqual(fremdeAnfragen, [], 'Keine externen Anfragen, auch keine echten Druckerbibliotheken.');
+    ++bestanden; console.log(`OK ${name}`);
+  } catch (err) {
+    ++gescheitert; console.error(`FEHLER ${name}\n${err.stack}`);
+    console.error((await page.$eval('#main', e => e.innerText).catch(() => '')).slice(0, 1700));
+  } finally { daten.vormerkFortsetzen?.(); await kontext.close(); }
+}
+async function vorschau(page) {
+  await page.waitForFunction(() => document.querySelector('[data-md-reservieren]') && !document.querySelector('[data-md-reservieren]').disabled);
+  await page.click('[data-md-reservieren]');
+  await page.waitForFunction(() => document.querySelector('#etkDrucken') && !document.querySelector('#etkDrucken').disabled);
+}
+async function attrappenDruck(page, modus = 'ok') {
+  assert.equal(await page.evaluate(() => window.__druckAttrappe?.aktiv), true, 'Druckklick ausschliesslich auf Attrappe.');
+  await page.evaluate(m => { window.__druckAttrappe.modus = m; }, modus);
+  await page.click('#etkDrucken');
+}
+async function fertig(page) { await page.waitForFunction(() => !document.querySelector('#etkBestaetigung')?.hidden && !!document.querySelector('#etkBestaetigen')); }
+async function geschlossen(page) { await page.waitForFunction(() => !document.querySelector('.etk-dialog')); }
+const aktionen = daten => daten.anfragen.map(a => a.aktion);
+
+try {
+  browser = await puppeteer.launch({ headless: true });
+  await pruefe('Alle offenen ohne Auswahlpflicht; Vorschau druckt nichts', async (page, daten) => {
+    assert.equal(await page.$$eval('[data-md-auswahl]', es => es.length), 0);
+    assert.match(await page.$eval('[data-md-reservieren]', e => e.textContent), /Druckvorschau öffnen/);
+    await vorschau(page);
+    assert.equal(daten.eintraege.filter(e => e.status === 'in_druck').length, 3);
+    assert.match(await page.$eval('#etkDrucken', e => e.textContent), /Jetzt 5 Aufkleber drucken/);
+    assert.equal(await page.evaluate(() => window.__druckAttrappe.verbindungen), 0);
+    assert.equal(await page.$eval('#etkTrennen', e => e.hidden), true);
+    assert.equal(await page.$eval('#etkDichte', e => e.closest('details').open), false);
+    await page.click('.etk-dialog [data-close-dialog]'); await geschlossen(page);
+    await warteAuf(() => daten.eintraege.every(e => e.status === 'offen'));
+    assert.deepEqual(aktionen(daten), ['reservieren', 'freigeben']);
+  });
+  for (const weg of ['Escape', 'Hintergrund']) {
+    await pruefe(`${weg} gibt reine Vorschau wieder frei`, async (page, daten) => {
+      await vorschau(page);
+      if (weg === 'Escape') await page.keyboard.press('Escape');
+      else await page.mouse.click(2, 2);
+      await geschlossen(page);
+      await warteAuf(() => daten.eintraege.every(e => e.status === 'offen'));
+      assert.deepEqual(aktionen(daten), ['reservieren', 'freigeben']);
+      assert.equal(await page.evaluate(() => window.__druckAttrappe.seiten.length), 0);
+    });
+  }
+  await pruefe('Eigene Auswahl bleibt Teilmenge; leere Auswahl druckt niemals alle', async (page, daten) => {
+    await page.click('[data-md-auswahlmodus]');
+    await page.waitForSelector('[data-md-auswahl]');
+    await page.click('[data-md-auswahl-leeren]');
+    assert.equal(await page.$eval('[data-md-reservieren]', e => e.disabled), true);
+    await page.click('[data-md-auswahl="test-position-2"]');
+    await vorschau(page);
+    assert.deepEqual(daten.eintraege.filter(e => e.status === 'in_druck').map(e => e.id), ['test-position-2']);
+    assert.match(await page.$eval('#etkDrucken', e => e.textContent), /Jetzt 1 Aufkleber drucken/);
+  });
+  await pruefe('Transport allein bestaetigt nichts; Papierkontrolle schliesst Auftrag ab', async (page, daten) => {
+    await vorschau(page); await attrappenDruck(page); await fertig(page);
+    assert.equal(daten.eintraege.every(e => e.status === 'in_druck'), true);
+    assert.deepEqual(aktionen(daten), ['reservieren']);
+    const seiten = await page.evaluate(() => window.__druckAttrappe.seiten);
+    assert.deepEqual(seiten.map(s => s.texte.find(t => /Art.-Nr./.test(t))), ['Art.-Nr. TEST-1', 'Art.-Nr. TEST-1', 'Art.-Nr. TEST-2', 'Art.-Nr. TEST-3', 'Art.-Nr. TEST-3']);
+    assert(seiten.every(s => s.kopien === 1));
+    await page.click('#etkBestaetigen'); await geschlossen(page);
+    await warteAuf(() => daten.eintraege.every(e => e.status === 'gedruckt'));
+    assert.deepEqual(aktionen(daten), ['reservieren', 'erledigen']);
+  });
+  await pruefe('Schliessen nach erfolgreichem Transport bleibt unbestaetigt reserviert', async (page, daten) => {
+    await vorschau(page); await attrappenDruck(page); await fertig(page);
+    await page.keyboard.press('Escape'); await geschlossen(page);
+    assert(daten.eintraege.every(e => e.status === 'in_druck'));
+    assert.deepEqual(aktionen(daten), ['reservieren']);
+  });
+  for (const modus of ['auswahl-abbruch', 'initfehler', 'abschlussfehler']) {
+    await pruefe(`${modus}: kein automatischer Abschluss oder Freigabe`, async (page, daten) => {
+      await vorschau(page); await attrappenDruck(page, modus);
+      await page.waitForFunction(() => !document.querySelector('#etkDrucken').disabled);
+      assert.match(await page.$eval('#etkStatus', e => e.textContent), /Kein Drucker|unterbrochen|abgebrochen/);
+      await page.click('.etk-dialog [data-close-dialog]'); await geschlossen(page);
+      assert(daten.eintraege.every(e => e.status === 'in_druck'));
+      assert.deepEqual(aktionen(daten), ['reservieren']);
+      if (modus === 'auswahl-abbruch') assert.equal(await page.evaluate(() => window.__druckAttrappe.seiten.length), 0);
+    });
+  }
+  await pruefe('Ein abgebrochener Druckversuch bleibt auch nach erneutem Vorschauoeffnen reserviert', async (page, daten) => {
+    await vorschau(page); await attrappenDruck(page, 'auswahl-abbruch');
+    await page.waitForFunction(() => /Kein Drucker gewählt/.test(document.querySelector('#etkStatus')?.textContent || ''));
+    await page.click('.etk-dialog [data-close-dialog]'); await geschlossen(page);
+    await page.click('[data-md-vorschau]');
+    await page.waitForSelector('.etk-dialog');
+    await page.click('.etk-dialog [data-close-dialog]'); await geschlossen(page);
+    assert(daten.eintraege.every(e => e.status === 'in_druck'));
+    assert.deepEqual(aktionen(daten), ['reservieren']);
+    assert.equal(await page.evaluate(() => window.__druckAttrappe.verbindungen), 1);
+    assert.equal(await page.evaluate(() => window.__druckAttrappe.seiten.length), 0);
+  });
+  for (const [grenze, es] of [
+    ['1000 Positionen', Array.from({ length: 1001 }, (_, i) => eintrag(i + 1))],
+    ['5000 Aufkleber', Array.from({ length: 251 }, (_, i) => eintrag(i + 1, 20))],
+  ]) {
+    await pruefe(`Mehr als ${grenze} sperrt alle; bewusste kleine Auswahl bleibt vollstaendig`, async (page, daten) => {
+      assert.equal(await page.$eval('[data-md-reservieren]', e => e.disabled), true);
+      assert.match(await page.$eval('.md-offen', e => e.innerText), /höchstens 1000 Positionen und 5000 Aufkleber/);
+      assert.deepEqual(daten.anfragen, []);
+      await page.click('[data-md-auswahlmodus]');
+      await page.click('[data-md-auswahl-leeren]');
+      await page.click('[data-md-auswahl="test-position-1"]');
+      await vorschau(page);
+      assert.deepEqual(daten.eintraege.filter(e => e.status === 'in_druck').map(e => e.id), ['test-position-1']);
+      assert.equal(daten.eintraege.filter(e => e.status === 'offen').length, es.length - 1);
+      assert.match(await page.$eval('#etkDrucken', e => e.textContent), new RegExp(`Jetzt ${es[0].anzahl} Aufkleber drucken`));
+      assert.equal(daten.anfragen[0].eintraege.length, 1, 'Keine stille Kuerzung eines grossen Druckauftrags.');
+    }, fixture(es));
+  }
+  await pruefe('Fremdfreigabe waehrend Geraeteauswahl verhindert Hardwareseiten', async (page, daten) => {
+    await vorschau(page); await attrappenDruck(page, 'auswahl-halten');
+    await page.waitForFunction(() => typeof window.__druckAttrappe.auswahlFortsetzen === 'function');
+    for (const e of daten.eintraege) { e.status = 'offen'; ++e.revision; delete e.druckauftrag; }
+    await page.evaluate(() => window.__druckAttrappe.auswahlFortsetzen());
+    await page.waitForFunction(() => !document.querySelector('#etkDrucken').disabled);
+    assert.equal(await page.evaluate(() => window.__druckAttrappe.seiten.length), 0);
+    assert.equal(await page.evaluate(() => window.__druckAttrappe.teile.length), 0);
+    assert.match(await page.$eval('#etkStatus', e => e.textContent), /geändert|freigegeben|prüfen|unterbrochen/);
+  });
+  await pruefe('Sitzungsende waehrend Geraeteauswahl verhindert spaeten Druck', async page => {
+    await vorschau(page); await attrappenDruck(page, 'auswahl-halten');
+    await page.waitForFunction(() => typeof window.__druckAttrappe.auswahlFortsetzen === 'function');
+    await page.evaluate(async () => { const s = await import('/kern/sitzung.mjs'); s.markiereSitzungAbgelaufen(); window.__druckAttrappe.auswahlFortsetzen(); });
+    await geschlossen(page);
+    await page.waitForFunction(() => window.__druckAttrappe.trennungen > 0);
+    assert.equal(await page.evaluate(() => window.__druckAttrappe.seiten.length), 0);
+    assert.equal(await page.evaluate(() => window.__druckAttrappe.teile.length), 0);
+  });
+  await pruefe('Sitzungsende bei laufender Seite verhindert Folgeseiten', async page => {
+    await vorschau(page); await attrappenDruck(page, 'seite-halten');
+    await page.waitForFunction(() => typeof window.__druckAttrappe.seiteFortsetzen === 'function');
+    await page.evaluate(async () => { const s = await import('/kern/sitzung.mjs'); s.markiereSitzungAbgelaufen(); window.__druckAttrappe.seiteFortsetzen(); });
+    await geschlossen(page);
+    await page.waitForFunction(() => window.__druckAttrappe.trennungen > 0);
+    assert.equal(await page.evaluate(() => window.__druckAttrappe.seiten.length), 1);
+  });
+  await pruefe('Neue Vormerkung waehrend Vorschau bleibt nach altem Abschluss offen', async (page, daten) => {
+    await vorschau(page); daten.eintraege.push(eintrag(4));
+    await attrappenDruck(page); await fertig(page); await page.click('#etkBestaetigen'); await geschlossen(page);
+    await warteAuf(() => daten.eintraege.slice(0, 3).every(e => e.status === 'gedruckt'));
+    assert.equal(daten.eintraege.at(-1).status, 'offen');
+    assert.equal(await page.evaluate(() => window.__druckAttrappe.seiten.length), 5);
+  });
+  await pruefe('101 Aufkleber laufen in zwei Teilen ueber eine Verbindung', async page => {
+    await vorschau(page); await attrappenDruck(page); await fertig(page);
+    assert.deepEqual(await page.evaluate(() => window.__druckAttrappe.teile.map(t => t.totalPages)), [100, 1]);
+    assert.equal(await page.evaluate(() => window.__druckAttrappe.verbindungen), 1);
+    assert.equal(await page.evaluate(() => window.__druckAttrappe.seiten.length), 101);
+  }, fixture([eintrag(1, 101)]));
+  await pruefe('Fehler im zweiten Transportteil verhindert dritten Teil und Abschluss', async (page, daten) => {
+    await vorschau(page); await attrappenDruck(page, 'zweiter-teil-fehler');
+    await page.waitForFunction(() => /Druck unterbrochen/.test(document.querySelector('#etkStatus')?.textContent || ''));
+    assert.deepEqual(await page.evaluate(() => window.__druckAttrappe.teile.map(t => t.totalPages)), [100, 100]);
+    assert.equal(await page.evaluate(() => window.__druckAttrappe.seiten.length), 100);
+    assert.equal(await page.$eval('#etkBestaetigung', e => e.hidden), true);
+    await page.click('.etk-dialog [data-close-dialog]'); await geschlossen(page);
+    assert(daten.eintraege.every(e => e.status === 'in_druck'));
+    assert.deepEqual(aktionen(daten), ['reservieren']);
+  }, fixture([eintrag(1, 201)]));
+  await pruefe('Seitenuebergreifend alle Positionen; Handy ohne seitlichen Ueberlauf', async (page, daten) => {
+    await page.setViewport({ width: 390, height: 844 });
+    assert.equal(await page.$$eval('.md-offen .md-zeile', es => es.length), 25);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth), false);
+    await vorschau(page);
+    assert.equal(daten.eintraege.filter(e => e.status === 'in_druck').length, 27);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth), false);
+  }, fixture(Array.from({ length: 27 }, (_, i) => eintrag(i + 1))));
+  await pruefe('Lesender Zugang hat keine Druck- oder Auswahlaktion', async (page, daten) => {
+    assert.equal(await page.$$eval('[data-md-reservieren],[data-md-auswahlmodus],[data-md-entfernen]', es => es.length), 0);
+    assert.deepEqual(daten.anfragen, []);
+  }, fixture(undefined, 'lesen'));
+  await pruefe('Lexikon erhaelt Anzahl beim Farbwechsel und bestaetigt einmalige Vormerkung', async (page, daten) => {
+    daten.vormerkHalten = true;
+    await page.goto(`${basis}/#/lexikon?handle=${produkt.handle}&lq=alte-suche`, { waitUntil: 'networkidle0' });
+    await page.waitForSelector('[data-lex-etikett-vormerken]');
+    await page.$eval('[data-lex-etikett-anzahl]', el => { el.value = '3'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+    await page.select('[data-param="letikett"]', '1');
+    assert.equal(await page.$eval('[data-lex-etikett-anzahl]', el => el.value), '3');
+    await page.$eval('[data-lex-etikett-vormerken]', el => { el.click(); el.click(); });
+    await warteAuf(() => !!daten.vormerkFortsetzen);
+    assert.equal(daten.versuche.filter(a => a.aktion === 'vormerken').length, 1, 'Doppelklick loest genau einen Schreibversuch aus.');
+    daten.vormerkFortsetzen();
+    await page.waitForSelector('.lex-vorgemerkt');
+    assert.match(await page.$eval('.lex-vorgemerkt', el => el.innerText), /3 × Grau · TEST-GR/);
+    assert.equal(daten.eintraege.at(-1).anzahl, 3);
+    assert.equal(daten.eintraege.at(-1).etikett.sku, 'TEST-GR');
+    await page.click('[data-lex-weiteres-muster]');
+    await page.waitForFunction(() => document.activeElement?.matches('input[data-param="lq"]'));
+    assert.equal(await page.$eval('input[data-param="lq"]', el => el.value), '');
+  }, fixture([]));
+  await pruefe('Unbestaetigte Lexikon-Vormerkung zeigt Fehler ohne Erfolgsanzeige', async (page, daten) => {
+    daten.vormerkFehler = true;
+    await page.goto(`${basis}/#/lexikon?handle=${produkt.handle}`, { waitUntil: 'networkidle0' });
+    await page.waitForSelector('[data-lex-etikett-vormerken]');
+    await page.click('[data-lex-etikett-vormerken]');
+    await page.waitForFunction(() => /Vormerkung nicht bestätigt/.test(document.querySelector('.lex-etiketten')?.innerText || ''));
+    assert.equal(await page.$$('.lex-vorgemerkt').then(es => es.length), 0);
+    assert.equal(daten.eintraege.length, 0);
+  }, fixture([]));
+  for (const fehler of ['false', 'throw']) {
+    await pruefe(`Schliessen-Callback ${fehler} laesst Vorschau offen und erlaubt Retry`, async (page, daten) => {
+      await page.evaluate(async art => {
+        window.__callbackAufrufe = 0;
+        const { oeffneEtikettenDruck } = await import('/bausteine/etiketten-druck.mjs');
+        await oeffneEtikettenDruck({ etiketten: [{ serie: 'Testserie', farbe: 'Testfarbe', sku: 'TEST-1', url: 'https://www.teppich-paradies.net/products/testmuster', technik: [], fehlt: [] }], allowEditing: false,
+          beiSchliessen: async ({ versucht }) => { if (versucht) throw new Error('Unerwarteter Druckversuch'); if (++window.__callbackAufrufe > 1) return true; if (art === 'throw') throw new Error('Testfreigabe fehlgeschlagen'); return false; },
+        });
+      }, fehler);
+      await page.click('.etk-dialog [data-close-dialog]');
+      await page.waitForFunction(() => /erneut|fehlgeschlagen/.test(document.querySelector('#etkStatus')?.textContent || ''));
+      assert.equal(await page.$$('.etk-dialog').then(es => es.length), 1);
+      await page.click('.etk-dialog [data-close-dialog]'); await geschlossen(page);
+      assert.equal(await page.evaluate(() => window.__callbackAufrufe), 2);
+      assert.deepEqual(daten.anfragen, []);
+    });
+    await pruefe(`Papierbestaetigung ${fehler} behaelt Vorschau und erlaubt Retry ohne Nachdruck`, async (page, daten) => {
+      await page.evaluate(async art => {
+        window.__callbackAufrufe = 0; window.__unerwartetGeschlossen = 0;
+        const { oeffneEtikettenDruck } = await import('/bausteine/etiketten-druck.mjs');
+        await oeffneEtikettenDruck({ etiketten: [{ serie: 'Testserie', farbe: 'Testfarbe', sku: 'TEST-1', url: 'https://www.teppich-paradies.net/products/testmuster', technik: [], fehlt: [] }], allowEditing: false,
+          beiSchliessen: async () => { ++window.__unerwartetGeschlossen; },
+          beiBestaetigen: async () => { if (++window.__callbackAufrufe > 1) return true; if (art === 'throw') throw new Error('Testbestaetigung fehlgeschlagen'); return false; },
+        });
+      }, fehler);
+      await attrappenDruck(page); await fertig(page); await page.click('#etkBestaetigen');
+      await page.waitForFunction(() => /erneut|fehlgeschlagen/.test(document.querySelector('#etkStatus')?.textContent || ''));
+      assert.equal(await page.$$('.etk-dialog').then(es => es.length), 1);
+      await page.click('#etkBestaetigen'); await geschlossen(page);
+      assert.equal(await page.evaluate(() => window.__callbackAufrufe), 2);
+      assert.equal(await page.evaluate(() => window.__unerwartetGeschlossen), 0);
+      assert.equal(await page.evaluate(() => window.__druckAttrappe.seiten.length), 1);
+      assert.deepEqual(daten.anfragen, []);
+    });
+  }
+  await pruefe('Direkter Aufkleberdialog ohne Drucklisten-Callbacks bleibt nutzbar', async (page, daten) => {
+    await page.evaluate(async () => {
+      const { oeffneEtikettenDruck } = await import('/bausteine/etiketten-druck.mjs');
+      await oeffneEtikettenDruck({ etiketten: [{ serie: 'Testserie', farbe: 'Testfarbe', sku: 'TEST-1', url: 'https://www.teppich-paradies.net/products/testmuster', technik: [], fehlt: [] }], allowEditing: false });
+    });
+    await attrappenDruck(page);
+    await page.waitForFunction(() => /Drucklauf ist fertig/.test(document.querySelector('#etkStatus')?.textContent || ''));
+    assert.equal(await page.$$('#etkBestaetigen').then(es => es.length), 0);
+    assert.equal(await page.evaluate(() => window.__druckAttrappe.seiten.length), 1);
+    await page.click('.etk-dialog [data-close-dialog]'); await geschlossen(page);
+    assert.deepEqual(daten.anfragen, []);
+  });
+  await pruefe('Dialogersatz waehrend Geraeteauswahl entwertet alten Druck und schliesst einmal', async page => {
+    await page.evaluate(async () => {
+      window.__altGeschlossen = 0; window.__neuGeschlossen = 0;
+      const { oeffneEtikettenDruck } = await import('/bausteine/etiketten-druck.mjs');
+      await oeffneEtikettenDruck({ titel: 'Alter Dialog', etiketten: [{ serie: 'Alte Testserie', farbe: 'Testfarbe', sku: 'TEST-ALT', url: 'https://www.teppich-paradies.net/products/test-alt', technik: [], fehlt: [] }], allowEditing: false,
+        beiSchliessen: async ({ versucht }) => { if (!versucht) throw new Error('Druckversuch wurde vergessen'); ++window.__altGeschlossen; },
+      });
+    });
+    await attrappenDruck(page, 'auswahl-halten');
+    await page.waitForFunction(() => typeof window.__druckAttrappe.auswahlFortsetzen === 'function');
+    await page.evaluate(async () => {
+      document.querySelector('#dialogRoot').innerHTML = '<p>Zwischenzeitlich ein anderer Dialog</p>';
+      await Promise.resolve();
+      const { oeffneEtikettenDruck } = await import('/bausteine/etiketten-druck.mjs');
+      await oeffneEtikettenDruck({ titel: 'Neuer Dialog', etiketten: [{ serie: 'Neue Testserie', farbe: 'Testfarbe', sku: 'TEST-NEU', url: 'https://www.teppich-paradies.net/products/test-neu', technik: [], fehlt: [] }], allowEditing: false,
+        beiSchliessen: async () => { ++window.__neuGeschlossen; },
+      });
+      window.__nachfolgerHtml = document.querySelector('#dialogRoot').innerHTML;
+      window.__druckAttrappe.auswahlFortsetzen();
+    });
+    await page.waitForFunction(() => window.__druckAttrappe.trennungen > 0 && window.__altGeschlossen === 1);
+    assert.equal(await page.evaluate(() => document.querySelector('#dialogRoot').innerHTML === window.__nachfolgerHtml), true);
+    assert.equal(await page.evaluate(() => window.__druckAttrappe.seiten.length), 0);
+    assert.equal(await page.evaluate(() => window.__neuGeschlossen), 0);
+    await page.click('.etk-dialog [data-close-dialog]'); await geschlossen(page);
+    assert.equal(await page.evaluate(() => window.__altGeschlossen), 1);
+    assert.equal(await page.evaluate(() => window.__neuGeschlossen), 1);
+  });
+  await pruefe('Dialogersatz bei verzoegertem Schliessen veraendert Nachfolger nicht', async page => {
+    await page.evaluate(async () => {
+      window.__altGeschlossen = 0;
+      const { oeffneEtikettenDruck } = await import('/bausteine/etiketten-druck.mjs');
+      await oeffneEtikettenDruck({ titel: 'Alter Dialog', etiketten: [{ serie: 'Alte Testserie', farbe: 'Testfarbe', sku: 'TEST-ALT', url: 'https://www.teppich-paradies.net/products/test-alt', technik: [], fehlt: [] }], allowEditing: false,
+        beiSchliessen: async () => { ++window.__altGeschlossen; return new Promise(ok => { window.__schliessenFortsetzen = ok; }); },
+      });
+    });
+    await page.click('.etk-dialog [data-close-dialog]');
+    await page.waitForFunction(() => typeof window.__schliessenFortsetzen === 'function');
+    await page.evaluate(async () => {
+      document.querySelector('#dialogRoot').innerHTML = '<p>Zwischenzeitlich ein anderer Dialog</p>';
+      await Promise.resolve();
+      const { oeffneEtikettenDruck } = await import('/bausteine/etiketten-druck.mjs');
+      await oeffneEtikettenDruck({ titel: 'Neuer Dialog', etiketten: [{ serie: 'Neue Testserie', farbe: 'Testfarbe', sku: 'TEST-NEU', url: 'https://www.teppich-paradies.net/products/test-neu', technik: [], fehlt: [] }], allowEditing: false });
+      window.__nachfolgerHtml = document.querySelector('#dialogRoot').innerHTML;
+      window.__schliessenFortsetzen(true);
+    });
+    await page.waitForFunction(() => document.querySelector('#etkTitel')?.textContent === 'Neuer Dialog' && !document.querySelector('#etkDrucken').disabled);
+    assert.equal(await page.evaluate(() => document.querySelector('#dialogRoot').innerHTML === window.__nachfolgerHtml), true);
+    assert.equal(await page.evaluate(() => window.__altGeschlossen), 1);
+    await page.click('.etk-dialog [data-close-dialog]'); await geschlossen(page);
+    assert.equal(await page.evaluate(() => window.__altGeschlossen), 1);
+  });
+} finally {
+  await browser?.close();
+  await new Promise(ok => server.close(ok));
+}
+console.log(`${bestanden} Browserstrecken erfolgreich, ${gescheitert} fehlgeschlagen. Kein echter Druck.`);
+process.exitCode = gescheitert ? 1 : 0;

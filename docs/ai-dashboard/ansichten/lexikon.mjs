@@ -20,8 +20,13 @@ export const lexikon = {
   liste: null, loadingListe: false, listeKey: null,
   produkt: null, loadingProdukt: false, produktKey: null,
   etiketten: [], etikettenKey: null, loadingEtiketten: false,
-  vormerkenLaeuft: false, etikettAnzahl: 1,
+  vormerkenLaeuft: false, etikettAnzahl: 1, vorgemerkt: null, vormerkFehler: '',
 };
+let vormerkSitzung = 0;
+if (typeof window !== 'undefined') window.addEventListener('tp-sitzung-beendet', () => {
+  vormerkSitzung++;
+  lexikon.vorgemerkt = null; lexikon.vormerkFehler = ''; lexikon.vormerkenLaeuft = false;
+});
 
 /** Eingabe vor jedem Neuzeichnen erhalten, auch wenn danach eine andere Farbe gewaehlt wird. */
 export function lexikonEingabe(e) {
@@ -50,6 +55,7 @@ function ensureLexikonProdukt(handle) {
   lexikon.produkt = null;
   lexikon.loadingProdukt = true;
   lexikon.etikettAnzahl = 1;
+  lexikon.vorgemerkt = null; lexikon.vormerkFehler = '';
   lexikon.etiketten = []; lexikon.etikettenKey = null; lexikon.loadingEtiketten = false;
   fetchEinkauf(`/api/lexikon/produkt?${new URLSearchParams({ handle })}`).then(d => {
     if (lexikon.produktKey !== handle) return; // inzwischen ein anderes Produkt geoeffnet
@@ -115,9 +121,11 @@ function musterEtikettenBlock(produkt) {
     <div class="lex-etiketten-auswahl">
       <label>Farbe / Ausführung<select data-param="letikett" aria-label="Farbe oder Ausführung für den Aufkleber">${liste.map((x, i) => `<option value="${i}"${i === index ? ' selected' : ''}>${esc(x.bezeichnung)}</option>`).join('')}</select></label>
       <label>Anzahl<input id="lexEtikettAnzahl" type="number" min="1" max="20" step="1" value="${esc(lexikon.etikettAnzahl)}" data-lex-etikett-anzahl data-focus-erhalten inputmode="numeric"></label>
-      <button type="button" class="btn btn-primary" data-lex-etikett-drucken>Aufkleber ansehen</button>
-      ${istNurLesend() ? '' : `<button type="button" class="btn" data-lex-etikett-vormerken${auswahl.etikett.fehlt.length || lexikon.vormerkenLaeuft ? ' disabled' : ''}>Zum Drucken vormerken</button>`}
+      ${istNurLesend() ? '' : `<button type="button" class="btn btn-primary" data-lex-etikett-vormerken${auswahl.etikett.fehlt.length || lexikon.vormerkenLaeuft ? ' disabled' : ''}>${lexikon.vormerkenLaeuft ? 'Wird vorgemerkt …' : 'Zum Drucken vormerken'}</button>`}
+      <button type="button" class="btn btn-ghost" data-lex-etikett-drucken>Aufkleber ansehen</button>
     </div>
+    ${lexikon.vorgemerkt?.handle === produkt.handle ? `<div class="lex-vorgemerkt" role="status"><p><strong>Vorgemerkt:</strong> ${esc(lexikon.vorgemerkt.anzahl)} × ${esc(lexikon.vorgemerkt.bezeichnung)}</p><div class="md-aktionen"><a class="btn" href="#/lexikon" data-lex-weiteres-muster>Weiteres Muster suchen</a><a class="btn" href="#/lexikon?tab=druckliste">Druckliste öffnen</a></div></div>` : ''}
+    ${lexikon.vormerkFehler ? `<p class="notice warn" role="alert">${esc(lexikon.vormerkFehler)}</p>` : ''}
     ${auswahl.etikett.fehlt.length ? `<p class="small etk-fehlt">Noch ergänzen: ${esc(auswahl.etikett.fehlt.join(', '))}. Du kannst die Angaben in der Vorschau bearbeiten.</p>` : ''}
   </section>`;
 }
@@ -652,14 +660,26 @@ export function lexikonKlick(e) {
       if (istNurLesend() || lexikon.vormerkenLaeuft || auswahl.etikett.fehlt.length) return true;
       const handle = lexikon.produkt?.produkt?.handle;
       if (!handle) { toast('Bitte das Produkt erneut öffnen.'); return true; }
-      lexikon.vormerkenLaeuft = true; etikettKnopf.disabled = true;
-      void drucklisteVormerken({ handle, key: auswahl.key, anzahl }).finally(() => {
+      const aktuelleSitzung = vormerkSitzung;
+      lexikon.vormerkenLaeuft = true; lexikon.vormerkFehler = ''; etikettKnopf.disabled = true;
+      void drucklisteVormerken({ handle, key: auswahl.key, anzahl }).then(ok => {
+        if (aktuelleSitzung !== vormerkSitzung || lexikon.produktKey !== handle) return;
+        if (ok) lexikon.vorgemerkt = { handle, anzahl, bezeichnung: auswahl.bezeichnung };
+        else lexikon.vormerkFehler = 'Vormerkung nicht bestätigt. Bitte die Druckliste prüfen und bei Bedarf erneut vormerken.';
+      }).finally(() => {
+        if (aktuelleSitzung !== vormerkSitzung) return;
         lexikon.vormerkenLaeuft = false;
         if (state.route.view === 'lexikon' && state.route.params.get('tab') !== 'druckliste') render();
       });
       return true;
     }
     oeffneEtikettenDruck({ etiketten: Array.from({ length: anzahl }, () => auswahl.etikett), titel: 'Musteretikett drucken' });
+    return true;
+  }
+  if (e.target.closest('[data-lex-weiteres-muster]')) {
+    e.preventDefault();
+    window.addEventListener('hashchange', () => requestAnimationFrame(() => document.querySelector('#main input[data-param="lq"]')?.focus()), { once: true });
+    location.hash = '#/lexikon';
     return true;
   }
   const lexOpen = e.target.closest('[data-lex-open]');

@@ -1660,15 +1660,24 @@ NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
   Auswahl zum Druck reserviert genau diese IDs und Revisionen atomar. Ein zweiter Arbeitsplatz
   erhaelt fuer eine veraltete Auswahl einen Konflikt. Spaeter vorgemerkte Mengen werden durch
   den Abschluss des alten Auftrags nicht entfernt. Bis zu 1000 Positionen/5000 Aufkleber je
-  Druckauftrag (#1526). Alle offenen Positionen sind seitenuebergreifend auswaehlbar; einzelne oder
+  Druckauftrag (#1526). Standardmaessig umfasst „Druckvorschau oeffnen“ alle offenen Positionen
+  ueber alle Seiten. Erst „Auswahl aendern“ zeigt Haekchen und Sammelentfernen; eine geleerte
+  individuelle Auswahl bleibt leer. Einzelne oder
   ausgewaehlte Positionen lassen sich entfernen (je Teil hoechstens 1000 Positionen, unabhaengig
   von der Kopienzahl). Niimbot erhaelt automatisch Teile mit hoechstens 100 Seiten ueber dieselbe
   Verbindung; kein Folgeteil nach abgelehntem `printEnd()`. Die Vorschau zeigt hoechstens 12
   verschiedene Motive mit Kopienzahl, der Druck verwendet einen wiederverwendeten Canvas.
   Fokus/Tab-Rueckkehr und ein 30-Sekunden-Abgleich aktualisieren den gemeinsamen Stand.
   Sichere Vorgangskennungen funktionieren auch auf privaten HTTP-Arbeitsplaetzen.
-  Nach Druck/Download bleiben die Eintraege „in Druck“, bis jemand den Ausdruck geprueft und
-  ausdruecklich als gedruckt markiert hat. Abbruch oder Neustart loeschen keinen Auftrag;
+  Im Produkt bestaetigt die Vormerkung Farbe und Kopien und bietet „Weiteres Muster suchen“
+  sowie „Druckliste oeffnen“. Die Vorschau enthaelt den ausdruecklichen Druckstart und nach
+  vollstaendigem Transport die Papierbestaetigung im selben Fenster; Druckereinstellungen sind
+  eingeklappt. Nach Druck/Download bleiben die Eintraege „in Druck“, bis jemand den Ausdruck
+  geprueft und ausdruecklich als gedruckt markiert hat. Direkt vor dem ersten Hardwarebefehl,
+  nach der asynchronen Druckerwahl, werden Auftrag und Revisionen frisch gelesen und geprueft.
+  Schliessen vor jedem Druckversuch gibt die Reservierung bestaetigt frei. Ab dem Druckklick
+  bleibt der Versuch auch beim erneuten Oeffnen vermerkt; Abbruch, Fehler oder Neustart loeschen keinen Auftrag.
+  Sitzungsende und Tab-Schliessen versuchen keine unzuverlaessige automatische Freigabe;
   Wiederfreigeben ist eine bewusste Aktion mit Hinweis auf moegliche bereits gedruckte Etiketten.
   Die gemeinsame Vorschau bietet keine Textkorrektur, damit der bestaetigte Stand eindeutig ist.
   Private Ablage mit exklusiver Schreibsperre, atomarem Austausch und Rechten `0600`; nur eine
