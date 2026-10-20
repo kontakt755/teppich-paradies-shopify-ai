@@ -2676,7 +2676,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         throw new ApiError(400, 'Unbekannte Drucklisten-Aktion.');
       }
       if (aktion === 'reservieren' && Array.isArray(eintraege)) {
-        const gewaehlt = new Set(eintraege.map(e => e?.id));
+        // Dieselbe UUID-Normalisierung wie die Ablage, damit kein gueltiger Verweis die Quellenpruefung umgeht.
+        const gewaehlt = new Set(eintraege.map(e => typeof e?.id === 'string' ? e.id.toLowerCase() : null));
         const plaene = new Map();
         for (const e of this.lexikonDruckliste().eintraege.filter(e => gewaehlt.has(e.id) && e.quelle)) {
           const id = e.quelle.orderId;

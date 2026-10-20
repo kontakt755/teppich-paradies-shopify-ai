@@ -10,7 +10,7 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Mehrere Arbeitsplaetze und Neuladen verdoppeln keine Bestellposition. Aenderungen, unklare
   Zuordnungen und Mengen verlangen Pruefung; bereits vorbereitete Auftraege bleiben unveraendert.
   Der vorhandene Direktdruck verwendet dieselben kanonischen Daten und die bestellten Gesamtmengen.
-- **Getestet:** 3.272 Tests gruen (537 Dashboard-Tests), davon 32 neue Zuordnungs-, Speicher-
+- **Getestet:** 3.310 Tests gruen (538 Dashboard-Tests), davon 33 neue Zuordnungs-, Speicher-
   und API-Faelle. Browserfaelle mit getrennten
   Mitarbeitersitzungen: Quell-ID vor alter Muster-SKU, Mengen/Teilversand, Tombstone,
   Reservierungskonflikte, Storno, Direkt-/Nachdruck und verspaetete Antworten. Ohne Anmeldung

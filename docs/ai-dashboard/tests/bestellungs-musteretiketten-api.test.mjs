@@ -97,6 +97,27 @@ test('Mengen-/Artikeldrift laesst reservierte Auftraege unveraendert und blockie
   assert.equal(fs.readFileSync(path.join(u.dir, 'muster-druckliste.json'), 'utf8'), vorher);
 });
 
+test('Reservierung prueft Bestellstatus und Produktdaten auch bei grossgeschriebenen UUIDs', async t => {
+  for (const fall of ['unveraendert', 'storniert', 'erfuellt', 'farbe']) {
+    const u = umgebung(t);
+    await u.vormerken();
+    const e = u.queue().eintraege[0];
+    const vorher = fs.readFileSync(path.join(u.dir, 'muster-druckliste.json'), 'utf8');
+    if (fall === 'storniert') u.order.cancelledAt = '2026-10-20T06:10:00Z';
+    if (fall === 'erfuellt') u.order.displayFulfillmentStatus = 'FULFILLED';
+    if (fall === 'farbe') u.produkte[0].varianten[0].farbe = 'Grau';
+    u.exportieren();
+    const reservieren = () => u.api.lexikonDrucklisteSetzen({ aktion: 'reservieren', vorgangId: randomUUID(), druckauftragId: randomUUID(), eintraege: [{ id: e.id.toUpperCase(), revision: e.revision }] }, person);
+    if (fall === 'unveraendert') {
+      await reservieren();
+      assert.equal(u.queue().eintraege.find(x => x.id === e.id).status, 'in_druck');
+    } else {
+      await assert.rejects(reservieren(), err => err.status === 409, fall);
+      assert.equal(fs.readFileSync(path.join(u.dir, 'muster-druckliste.json'), 'utf8'), vorher, fall);
+    }
+  }
+});
+
 test('Storniert/erfuellt/lokal raus sperrt neue Vormerkung, Lieferantengeliefert bleibt vorbereitbar', async t => {
   const u = umgebung(t);
   for (const status of ['storniert', 'erfuellt']) {
