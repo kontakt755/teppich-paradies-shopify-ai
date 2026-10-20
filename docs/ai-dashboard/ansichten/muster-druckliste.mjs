@@ -12,10 +12,10 @@ const SEITENGROESSE = 25;
 const liste = {
   daten: null, loading: false, versucht: false, busy: false, ladenummer: 0,
   ladeFehler: '', aktionsFehler: '', auswahl: new Map(), seite: 1, nachladen: false,
-  entferntLaeuft: false, historieOffen: false,
+  entferntLaeuft: false, historieOffen: false, auswahlmodus: 'alle',
 };
 let sitzung = 0, letzterVormerkVersuch = null, letzterReservierVersuch = null;
-const schreibVersuche = new Map(), eigeneAuftraege = new Set();
+const schreibVersuche = new Map(), eigeneAuftraege = new Set(), versuchteAuftraege = new Set();
 const sichtbar = () => state.capabilities.mode === 'local' && state.route.view === 'lexikon' && state.route.params.get('tab') === 'druckliste';
 const neuZeichnen = () => { if (sichtbar()) render(); };
 const person = wert => typeof wert === 'string' ? wert : wert?.name || wert?.kuerzel || 'nicht hinterlegt';
@@ -98,6 +98,8 @@ export async function drucklisteVormerken({ handle, key, anzahl }) {
 }
 function offeneEintraege() { return (liste.daten?.eintraege || []).filter(e => e.status === 'offen'); }
 function ausgewaehlt() { return offeneEintraege().filter(e => liste.auswahl.get(e.id) === e.revision); }
+// Eine geleerte individuelle Auswahl darf niemals unbemerkt wieder alles enthalten.
+function druckauswahl() { return liste.auswahlmodus === 'alle' ? offeneEintraege() : ausgewaehlt(); }
 const laedt = () => liste.busy || liste.loading || liste.entferntLaeuft || Boolean(liste.ladeFehler);
 const gesperrt = () => laedt() || istNurLesend();
 function angaben(e) {
@@ -108,8 +110,9 @@ function angaben(e) {
     <span class="small muted">Vorgemerkt von ${esc(person(e.erstelltVon))} · ${esc(zeit(e.erstelltAm))}</span></div>`;
 }
 function offeneZeile(e) {
-  return `<li class="md-zeile md-mit-auswahl${liste.auswahl.get(e.id) === e.revision ? ' md-gewaehlt' : ''}">
-    <label class="md-auswahl"><input type="checkbox" data-md-auswahl="${esc(e.id)}"${liste.auswahl.get(e.id) === e.revision ? ' checked' : ''}${gesperrt() ? ' disabled' : ''} aria-label="${esc(`${e.bezeichnung} zum Drucken auswählen`)}"><span class="visually-hidden">Auswählen</span></label>
+  const auswahl = liste.auswahlmodus === 'auswahl' && !istNurLesend();
+  return `<li class="md-zeile md-offene-zeile${auswahl ? ' md-mit-auswahl' : ''}${auswahl && liste.auswahl.get(e.id) === e.revision ? ' md-gewaehlt' : ''}">
+    ${auswahl ? `<label class="md-auswahl"><input type="checkbox" data-md-auswahl="${esc(e.id)}"${liste.auswahl.get(e.id) === e.revision ? ' checked' : ''}${gesperrt() ? ' disabled' : ''} aria-label="${esc(`${e.bezeichnung} zum Drucken auswählen`)}"><span class="visually-hidden">Auswählen</span></label>` : ''}
     ${angaben(e)}<span class="md-kopien">${esc(anzahlText(e.anzahl))}</span>
     ${istNurLesend() ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-md-entfernen="${esc(e.id)}"${gesperrt() ? ' disabled' : ''}>Entfernen</button>`}
   </li>`;
@@ -126,7 +129,7 @@ function auftraege() {
 }
 function auftragBlock(id, eintraege) {
   const a = eintraege[0].druckauftrag;
-  return `<section class="card md-auftrag"><div class="card-head"><h2>${esc(anzahlText(menge(eintraege)))} – Ausdruck noch bestätigen</h2></div>
+  return `<section class="card md-auftrag"><div class="card-head"><h2>${esc(anzahlText(menge(eintraege)))} – Druckauftrag noch offen</h2></div>
     <p class="small muted">Reserviert von ${esc(person(a.von))} · ${esc(zeit(a.am))}. Der Auftrag bleibt erhalten, bis der Ausdruck geprüft ist.</p>
     <details><summary>Enthaltene ${esc(positionenText(eintraege.length))}</summary><ul class="md-liste">${eintraege.slice(0, 25).map(e => `<li class="md-zeile">${angaben(e)}<span class="md-kopien">${esc(anzahlText(e.anzahl))}</span></li>`).join('')}</ul>${eintraege.length > 25 ? '<p class="small muted">Die Übersicht zeigt die ersten 25 Positionen. Gedruckt wird der vollständige Auftrag.</p>' : ''}</details>
     ${istNurLesend() ? '' : `<div class="md-aktionen">
@@ -137,10 +140,10 @@ function auftragBlock(id, eintraege) {
 }
 export function viewMusterDruckliste() {
   if (!liste.versucht && !liste.loading) void laden();
-  const kopf = `<div class="page-head"><div><h1>Gemeinsame Druckliste</h1><p class="sub">Aufkleber auswählen und zusammen nacheinander drucken.</p></div></div>
+  const kopf = `<div class="page-head"><div><h1>Gemeinsame Druckliste</h1><p class="sub">Muster sammeln → Vorschau prüfen → gemeinsam drucken.</p></div></div>
     <div class="md-navigation"><a class="btn" href="#/lexikon">Weitere Muster vormerken</a><button type="button" class="btn" data-md-aktualisieren${liste.busy || liste.loading || liste.entferntLaeuft ? ' disabled' : ''}>Liste aktualisieren</button></div>`;
   if (!liste.daten) return kopf + (liste.ladeFehler ? `<p class="notice crit" role="alert">${esc(liste.ladeFehler)} Bitte erneut aktualisieren.</p>` : '<p class="empty" role="status">Lade gemeinsame Druckliste …</p>');
-  const offen = offeneEintraege(), auswahl = ausgewaehlt(), anzahl = menge(auswahl);
+  const offen = offeneEintraege(), auswahl = druckauswahl(), anzahl = menge(auswahl);
   const zuGross = auswahl.length > DRUCK_LIMIT.positionen || anzahl > DRUCK_LIMIT.etiketten;
   const seiten = Math.max(1, Math.ceil(offen.length / SEITENGROESSE));
   liste.seite = Math.max(1, Math.min(seiten, liste.seite));
@@ -152,8 +155,8 @@ export function viewMusterDruckliste() {
     ${liste.loading ? '<p class="small muted" role="status">Aktualisiere Druckliste …</p>' : ''}
     ${istNurLesend() ? '<p class="small muted">Dieser Zugang kann die Druckliste ansehen. Änderungen übernimmt ein Mitarbeiter.</p>' : ''}
     <section class="card md-offen"><div class="card-head"><h2>Noch zu drucken</h2><span class="small muted">${esc(positionenText(offen.length))} · ${esc(anzahlText(menge(offen)))}</span></div>
-      ${offen.length ? `${istNurLesend() ? '' : `<div class="md-auswahl-aktionen"><button type="button" class="btn btn-sm" data-md-alle-auswaehlen${gesperrt() ? ' disabled' : ''}>Alle offenen auswählen</button>${seiten > 1 ? `<button type="button" class="btn btn-sm btn-ghost" data-md-seite-auswaehlen${gesperrt() ? ' disabled' : ''}>Diese Seite auswählen</button>` : ''}<button type="button" class="btn btn-sm btn-ghost" data-md-auswahl-leeren${gesperrt() || !auswahl.length ? ' disabled' : ''}>Auswahl aufheben</button></div>`}
-        ${istNurLesend() ? '' : `<div class="md-druckstart"><p class="small${zuGross ? ' etk-fehlt' : ''}" role="status">${auswahl.length ? `${esc(positionenText(auswahl.length))} · ${esc(anzahlText(anzahl))} ausgewählt.` : 'Einzelne Positionen oder alle offenen auswählen.'}${zuGross ? ` Pro Drucklauf höchstens ${DRUCK_LIMIT.positionen} Positionen und ${DRUCK_LIMIT.etiketten} Aufkleber. Bitte die Auswahl verkleinern.` : ''}</p><div class="md-druckaktionen"><button type="button" class="btn btn-ghost" data-md-auswahl-entfernen${gesperrt() || !auswahl.length ? ' disabled' : ''}>Auswahl entfernen…</button><button type="button" class="btn btn-primary" data-md-reservieren${gesperrt() || !anzahl || zuGross ? ' disabled' : ''}>${anzahl ? `${esc(anzahlText(anzahl))} nacheinander drucken` : 'Auswahl nacheinander drucken'}</button></div></div>`}
+      ${offen.length ? `${istNurLesend() ? '' : `<div class="md-druckstart"><p class="small${zuGross ? ' etk-fehlt' : ''}" role="status">${liste.auswahlmodus === 'alle' ? 'Alle offenen Muster sind für den nächsten Drucklauf vorgesehen.' : `${esc(positionenText(auswahl.length))} · ${esc(anzahlText(anzahl))} ausgewählt.`}${zuGross ? ` Pro Drucklauf höchstens ${DRUCK_LIMIT.positionen} Positionen und ${DRUCK_LIMIT.etiketten} Aufkleber. Über „Auswahl ändern“ eine kleinere Auswahl zusammenstellen.` : ''}</p><div class="md-druckaktionen"><button type="button" class="btn btn-ghost" data-md-auswahlmodus${gesperrt() ? ' disabled' : ''}>${liste.auswahlmodus === 'alle' ? 'Auswahl ändern' : 'Alle offenen verwenden'}</button><button type="button" class="btn btn-primary" data-md-reservieren${gesperrt() || !anzahl || zuGross ? ' disabled' : ''}>Druckvorschau öffnen</button></div></div>`}
+        ${liste.auswahlmodus === 'auswahl' && !istNurLesend() ? `<div class="md-auswahl-aktionen"><button type="button" class="btn btn-sm" data-md-alle-auswaehlen${gesperrt() ? ' disabled' : ''}>Alle auswählen</button>${seiten > 1 ? `<button type="button" class="btn btn-sm btn-ghost" data-md-seite-auswaehlen${gesperrt() ? ' disabled' : ''}>Diese Seite auswählen</button>` : ''}<button type="button" class="btn btn-sm btn-ghost" data-md-auswahl-leeren${gesperrt() || !auswahl.length ? ' disabled' : ''}>Auswahl aufheben</button><button type="button" class="btn btn-sm btn-ghost" data-md-auswahl-entfernen${gesperrt() || !auswahl.length ? ' disabled' : ''}>Auswahl entfernen…</button></div>` : ''}
         <ul class="md-liste">${seite.map(offeneZeile).join('')}</ul>` : '<p class="small muted">Die offene Liste ist leer. Im Lexikon ein Muster suchen und „Zum Drucken vormerken“ wählen.</p>'}
       ${seiten > 1 ? `<div class="md-seiten"><button type="button" class="btn btn-sm" data-md-seite="${liste.seite - 1}"${liste.seite === 1 || laedt() ? ' disabled' : ''}>← Zurück</button><span class="small muted">Seite ${liste.seite} von ${seiten}</span><button type="button" class="btn btn-sm" data-md-seite="${liste.seite + 1}"${liste.seite === seiten || laedt() ? ' disabled' : ''}>Weiter →</button></div>` : ''}
 
@@ -164,8 +167,40 @@ export function viewMusterDruckliste() {
 function vorschau(es) {
   if (!es.length || es.length > DRUCK_LIMIT.positionen || menge(es) > DRUCK_LIMIT.etiketten) { toast(`Bitte höchstens ${DRUCK_LIMIT.positionen} Positionen und ${DRUCK_LIMIT.etiketten} Aufkleber auswählen.`); return; }
   const etiketten = es.flatMap(e => Array.from({ length: e.anzahl }, () => e.etikett));
-  void oeffneEtikettenDruck({ etiketten, titel: 'Auswahl nacheinander drucken', allowEditing: false,
-    hinweis: 'Ein Drucklauf für alle ausgewählten Aufkleber samt Kopien. Danach das Papier prüfen, die Vorschau schließen und den Auftrag als gedruckt markieren. Abbruch oder Schließen bestätigt keinen Ausdruck.' });
+  const id = es[0].druckauftrag.id, erwartet = referenzen(es), aktuelleSitzung = sitzung;
+  const pruefeSitzung = () => { if (aktuelleSitzung !== sitzung) throw new Error('Sitzung abgelaufen. Bitte neu anmelden.'); };
+  void oeffneEtikettenDruck({ etiketten, titel: 'Druckvorschau', allowEditing: false,
+    hinweis: 'Alle gezeigten Aufkleber werden nacheinander gedruckt. Anschließend den Papierausdruck hier bestätigen.',
+    schonVersucht: versuchteAuftraege.has(id),
+    druckVersucht: () => { pruefeSitzung(); versuchteAuftraege.add(id); },
+    vorDruck: async () => {
+      pruefeSitzung();
+      const daten = pruefeAntwort(await fetchEinkauf(ENDPOINT));
+      pruefeSitzung(); uebernehme(daten); neuZeichnen();
+      const aktuell = auftraege().get(id);
+      if (!aktuell || aktuell.length !== erwartet.length || erwartet.some(ref => !aktuell.some(e => e.id === ref.id && e.revision === ref.revision))) {
+        throw new Error('Der Druckauftrag wurde inzwischen geändert oder freigegeben. Bitte schließen und die aktuelle Druckliste prüfen.');
+      }
+    },
+    beiSchliessen: async ({ versucht }) => {
+      pruefeSitzung();
+      if (versucht || versuchteAuftraege.has(id)) return true;
+      const daten = await schreiben({ aktion: 'freigeben', eintraege: erwartet, druckauftragId: id });
+      pruefeSitzung();
+      if (!daten) throw new Error('Die Freigabe wurde nicht bestätigt. Bitte die Verbindung prüfen und erneut schließen.');
+      eigeneAuftraege.delete(id); neuZeichnen();
+      return true;
+    },
+    beiBestaetigen: async () => {
+      pruefeSitzung();
+      const daten = await schreiben({ aktion: 'erledigen', eintraege: erwartet, druckauftragId: id });
+      pruefeSitzung();
+      if (!daten) throw new Error('Die Bestätigung wurde nicht gespeichert. Bitte erneut bestätigen.');
+      eigeneAuftraege.delete(id); versuchteAuftraege.delete(id); neuZeichnen();
+      toast('Geprüften Ausdruck als gedruckt markiert.');
+      return true;
+    },
+  });
 }
 async function eigeneVorschau(id) {
   const bisher = auftraege().get(id);
@@ -180,7 +215,7 @@ async function eigeneVorschau(id) {
   if (sichtbar()) vorschau(aktuell);
 }
 async function reservieren() {
-  const gewaehlt = ausgewaehlt(), anzahl = menge(gewaehlt);
+  const gewaehlt = druckauswahl(), anzahl = menge(gewaehlt);
   if (!anzahl || anzahl > DRUCK_LIMIT.etiketten || gewaehlt.length > DRUCK_LIMIT.positionen) { toast(`Bitte höchstens ${DRUCK_LIMIT.positionen} Positionen und ${DRUCK_LIMIT.etiketten} Aufkleber auswählen.`); return; }
   const ids = new Set(gewaehlt.map(e => e.id)), signatur = JSON.stringify(referenzen(gewaehlt));
   if (!letzterReservierVersuch || letzterReservierVersuch.signatur !== signatur) letzterReservierVersuch = { signatur, druckauftragId: neueKennung() };
@@ -210,17 +245,22 @@ async function auftragAendern(aktion, id) {
   if (!es?.length) { toast('Dieser Auftrag hat sich geändert. Bitte aktualisieren.'); return; }
   if (aktion === 'freigeben' && !window.confirm('Ist schon ein Teil gedruckt? Bitte den bisherigen Ausdruck prüfen. Nach dem Freigeben kann ein erneuter Druck doppelte Aufkleber erzeugen. Auftrag wieder in die offene Liste legen?')) return;
   const daten = await schreiben({ aktion, eintraege: referenzen(es), druckauftragId: id });
-  if (daten) { eigeneAuftraege.delete(id); toast(aktion === 'erledigen' ? 'Geprüften Ausdruck als gedruckt markiert.' : 'Druckauftrag wieder freigegeben.'); }
+  if (daten) { eigeneAuftraege.delete(id); versuchteAuftraege.delete(id); toast(aktion === 'erledigen' ? 'Geprüften Ausdruck als gedruckt markiert.' : 'Druckauftrag wieder freigegeben.'); }
 }
 export function musterDrucklisteKlick(e) {
-  const ziel = e.target.closest('[data-md-aktualisieren],[data-md-auswahl],[data-md-alle-auswaehlen],[data-md-seite-auswaehlen],[data-md-auswahl-leeren],[data-md-auswahl-entfernen],[data-md-seite],[data-md-reservieren],[data-md-vorschau],[data-md-erledigen],[data-md-freigeben],[data-md-entfernen],[data-md-historie]');
+  const ziel = e.target.closest('[data-md-aktualisieren],[data-md-auswahlmodus],[data-md-auswahl],[data-md-alle-auswaehlen],[data-md-seite-auswaehlen],[data-md-auswahl-leeren],[data-md-auswahl-entfernen],[data-md-seite],[data-md-reservieren],[data-md-vorschau],[data-md-erledigen],[data-md-freigeben],[data-md-entfernen],[data-md-historie]');
   if (!ziel) return false;
   if (ziel.disabled) return true;
   if (ziel.hasAttribute('data-md-historie')) { e.preventDefault(); liste.historieOffen = !liste.historieOffen; neuZeichnen(); return true; }
   if (ziel.hasAttribute('data-md-aktualisieren')) { void laden({ fehlerLoeschen: true }); neuZeichnen(); return true; }
   if (ziel.hasAttribute('data-md-seite')) { if (!laedt()) { liste.seite = Number(ziel.dataset.mdSeite); neuZeichnen(); } return true; }
   if (gesperrt()) return true;
-  if (ziel.hasAttribute('data-md-auswahl')) {
+  if (ziel.hasAttribute('data-md-auswahlmodus')) {
+    if (liste.auswahlmodus === 'alle') {
+      liste.auswahlmodus = 'auswahl'; liste.auswahl = new Map(offeneEintraege().map(x => [x.id, x.revision]));
+    } else { liste.auswahlmodus = 'alle'; liste.auswahl.clear(); }
+    neuZeichnen();
+  } else if (ziel.hasAttribute('data-md-auswahl')) {
     const x = offeneEintraege().find(x => x.id === ziel.dataset.mdAuswahl);
     if (x) { if (ziel.checked) liste.auswahl.set(x.id, x.revision); else liste.auswahl.delete(x.id); }
     neuZeichnen();
@@ -249,7 +289,7 @@ if (typeof window !== 'undefined') {
   window.addEventListener('tp-sitzung-beendet', () => {
     sitzung++; ++liste.ladenummer; liste.daten = null; liste.loading = false; liste.versucht = false;
     liste.busy = false; liste.entferntLaeuft = false; liste.ladeFehler = ''; liste.aktionsFehler = '';
-    liste.auswahl.clear(); eigeneAuftraege.clear(); schreibVersuche.clear(); letzterVormerkVersuch = null; letzterReservierVersuch = null;
+    liste.auswahl.clear(); liste.auswahlmodus = 'alle'; eigeneAuftraege.clear(); versuchteAuftraege.clear(); schreibVersuche.clear(); letzterVormerkVersuch = null; letzterReservierVersuch = null;
     const main = document.querySelector('#main');
     if (main?.querySelector('[data-md-aktualisieren]')) main.innerHTML = '<p class="notice warn">Sitzung abgelaufen. Bitte <a href="/login">neu anmelden</a>.</p>';
   });
