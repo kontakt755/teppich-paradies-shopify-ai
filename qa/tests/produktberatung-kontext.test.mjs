@@ -12,6 +12,7 @@ function seite(options = {}) {
   const listeners = new Map();
   const attributes = new Map();
   const selections = [{ value: 'Beige' }, { value: '400 cm' }];
+  const colorSelection = { value: 'Petrol (082)' };
   const data = {
     title: 'Wohnteppich & mehr', handle: 'wohnteppich', url: '/products/wohnteppich', labels,
     options: options.options || [{ name: 'Farbe', value: 'Rot' }, { name: 'Breite', value: '400 cm' }],
@@ -20,18 +21,27 @@ function seite(options = {}) {
   const roll = options.noRoll ? null : { tpRwcBestellmass: options.noMethod ? undefined : () => size };
   const fields = selections.map(input => ({ querySelector: selector => selector === 'input:checked, select' ? input : null }));
   const picker = { querySelectorAll: () => fields };
+  const colorPicker = { querySelector: selector => selector === 'input[name^="color-swatch-"]:checked' ? colorSelection : null };
+  const main = {
+    querySelectorAll(selector) {
+      if (selector === 'variant-picker[data-template-product-match="true"][data-product-id="42"]') {
+        return options.noPicker ? [] : (options.ambiguousPicker ? [picker, picker] : [picker]);
+      }
+      if (selector === '[id^="tp-rwc-"][data-product-id="42"]') return roll ? (options.ambiguousRoll ? [roll, roll] : [roll]) : [];
+      if (selector === '[data-tp-farbwahl][data-product-id="42"]') return options.customColor ? (options.ambiguousColor ? [colorPicker, colorPicker] : [colorPicker]) : [];
+      throw new Error('Ungebundener Produktsuchlauf: ' + selector);
+    },
+  };
   const scope = {
     querySelector(selector) {
       if (selector === '[data-tp-beratung-daten="42"]') return { textContent: options.badJson ? '{' : JSON.stringify(data) };
-      if (selector === 'variant-picker[data-product-id="42"]') return options.noPicker ? null : picker;
-      if (selector === '[id^="tp-rwc-"][data-product-id="42"]') return roll;
       return null;
     },
   };
   const link = {
     href: options.href || 'https://wa.me/4912345',
     getAttribute(name) { return name === 'data-tp-produkt-id' ? '42' : (options.mode || 'whatsapp'); },
-    closest() { return scope; },
+    closest(selector) { return selector === 'main' ? main : scope; },
   };
   const document = {
     documentElement: { hasAttribute: name => attributes.has(name), setAttribute: (name, value) => attributes.set(name, value) },
@@ -44,7 +54,7 @@ function seite(options = {}) {
   const run = () => vm.runInNewContext(source, context);
   run();
   return {
-    link, data, selections, listeners, run,
+    link, data, selections, colorSelection, listeners, run,
     size(value) { size = value; },
     activate(name = 'click') { for (const listener of listeners.get(name) || []) listener({ target: { closest: () => link } }); },
     message() { return new URL(link.href).searchParams.get('text'); },
@@ -82,6 +92,33 @@ test('Bestehende Verlegeanfrage behält Thema und übernimmt aktuelle Auswahl so
   p.activate();
   assert.equal(new URL(p.link.href).searchParams.has('breite'), false);
   assert.equal(new URL(p.link.href).searchParams.has('laenge_cm'), false);
+});
+
+test('Getrennte Verlege-Section liest eigenen Farbenpicker und normalisierte Meterwerte aus dem Kaufbereich', () => {
+  const p = seite({ noPicker: true, customColor: true, mode: 'kontakt', href: 'https://shop.example/pages/kontakt?thema=verlegung&variante=Senf', size: { art: 'raum', breite: 250, laenge: 350 } });
+  p.activate();
+  let params = new URL(p.link.href).searchParams;
+  assert.equal(params.get('variante'), 'Petrol (082)');
+  assert.equal(params.get('breite'), '250 cm');
+  assert.equal(params.get('laenge_cm'), '350');
+  p.colorSelection.value = 'Sand (043)';
+  p.activate();
+  params = new URL(p.link.href).searchParams;
+  assert.equal(params.get('variante'), 'Sand (043)');
+  assert.doesNotMatch(p.link.href, /Senf|Petrol/);
+});
+
+test('WhatsApp nutzt den eigenen Farbweg auch ohne Horizon-Picker', () => {
+  const p = seite({ noPicker: true, customColor: true });
+  p.activate();
+  assert.match(p.message(), /Auswahl: Petrol \(082\)/);
+  assert.doesNotMatch(p.message(), /Rot|400 cm/);
+});
+
+test('Mehrdeutige Produktknoten werden nicht als aktuelle Auswahl oder Maße ausgegeben', () => {
+  const p = seite({ customColor: true, ambiguousColor: true, ambiguousPicker: true, ambiguousRoll: true });
+  p.activate();
+  assert.doesNotMatch(p.message(), /Auswahl|Maße im Rechner|Petrol|Beige|Rot/);
 });
 
 test('Standardprodukte behalten alle aktuellen Optionen und benötigen keinen Rechner', () => {

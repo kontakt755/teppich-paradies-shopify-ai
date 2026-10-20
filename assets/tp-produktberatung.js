@@ -8,15 +8,26 @@
     try {
       var id = link.getAttribute('data-tp-produkt-id');
       if (!/^\d+$/.test(id)) return;
-      var scope = link.closest('.shopify-section') || document.querySelector('main');
+      var main = link.closest('main');
+      if (!main) return;
+      var scope = link.closest('.shopify-section') || main;
       var config = scope && scope.querySelector('[data-tp-beratung-daten="' + id + '"]');
       if (!config) return;
       var data = JSON.parse(config.textContent);
-      var picker = scope.querySelector('variant-picker[data-product-id="' + id + '"]');
+      var pickers = main.querySelectorAll('variant-picker[data-template-product-match="true"][data-product-id="' + id + '"]');
+      var picker = pickers.length === 1 ? pickers[0] : null;
       var fields = picker ? picker.querySelectorAll('.variant-option') : [];
-      var roll = scope.querySelector('[id^="tp-rwc-"][data-product-id="' + id + '"]');
+      var rolls = main.querySelectorAll('[id^="tp-rwc-"][data-product-id="' + id + '"]');
+      var roll = rolls.length === 1 ? rolls[0] : null;
+      var colors = main.querySelectorAll('[data-tp-farbwahl][data-product-id="' + id + '"]');
+      var color = colors.length === 1 ? colors[0].querySelector('input[name^="color-swatch-"]:checked') : null;
       var selection = data.options.map(function (option, index) {
-        if (roll && /breite/i.test(option.name)) return '';
+        if (rolls.length && /breite/i.test(option.name)) return '';
+        if (/^(farbe|color|dekor)$/i.test(option.name)) {
+          if (colors.length > 1) return '';
+          if (color) return color.value;
+        }
+        if (pickers.length > 1) return '';
         var field = fields[index];
         var input = field && field.querySelector('input:checked, select');
         var single = field && field.querySelector('[data-testid="variant-option-single-value"]');
