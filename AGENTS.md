@@ -155,6 +155,8 @@ Abschlussberichte kompakt halten:
 - ob live
 - offene echte Probleme
 
+**Schlusszeile „Chat abgeschlossen – kann archiviert werden.“** (Inhaber) nur, wenn im Chat wirklich alles erledigt ist. Sie entfällt, sobald eins zutrifft: die Antwort endet mit einer Frage oder Bitte an den Benutzer; es war nur Erklärung/Beratung ohne erledigten Auftrag; etwas wartet noch auf den Benutzer oder Inhaber (Zugang, Entscheidung, Werkbank) und gehört zu diesem Chat; ein nächster Schritt ist angekündigt. Dann stattdessen „Offen: …“. Im Zweifel weglassen.
+
 ## Konventionen
 
 - Eigene Bloecke/Snippets tragen das Praefix `tp-`; `_`-Praefix ist privat (keine `presets` noetig).
