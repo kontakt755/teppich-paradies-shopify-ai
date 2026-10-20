@@ -3698,7 +3698,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       let vorlage = '';
       try { vorlage = vorlageAusMarkdown(fs.readFileSync(q.vorlage, 'utf8')); } catch (e) { if (e?.code !== 'ENOENT') throw e; }
       const firmen = leseAkquiseCsv(csv).map(f => ({
-        id: f.id, name: f.name, ort: f.ort, typ: f.typ, wohnungen: f.wohnungen, website: f.website,
+        id: f.id, name: f.name, ort: f.ort, typ: f.typ, wohnungen: f.wohnungen, website: f.website, kontakt: f.kontakt || '',
         status: 'neu', letzteAktion: '', wiedervorlage: '', notiz: '', ...stand[f.id],
       }));
       const aus = readJsonIfExists(path.join(privatDirPath || privatDir(), 'ausschreibungen', 'status.json'));

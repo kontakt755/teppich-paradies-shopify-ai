@@ -1,20 +1,28 @@
 /**
  * Ansicht "Akquise" (#/akquise, nur Inhaber, Issue #1447): Verlegeauftraege bei
- * Wohnungsgenossenschaften und Hausverwaltungen nachhalten. Die Firmenliste und die
- * Vorlage liegen privat, der Stand im Privatordner (/api/akquise/*). Versendet wird
- * nichts - "Nachricht kopieren" legt den Text in die Zwischenablage.
+ * Wohnungsgenossenschaften und Hausverwaltungen gewinnen. Gefuehrt statt Liste: oben
+ * erklaert ein Kasten den Ablauf, darunter steht genau EINE Firma "Als Naechstes" mit
+ * grossen Knoepfen; die ganze Liste liegt zugeklappt darunter. Firmenliste und Vorlage
+ * liegen privat, der Stand im Privatordner (/api/akquise/*). Versendet wird nichts -
+ * "E-Mail oeffnen" oeffnet nur das Mailprogramm, "Text kopieren" die Zwischenablage.
  */
 import { state } from '../kern/zustand.mjs';
 import { esc, fmtDate, fmtDateTime, toast } from '../kern/helfer.mjs';
 import { fetchEinkauf, orgSchreiben } from '../kern/api.mjs';
 import { render } from '../kern/render.mjs';
 import { emptyState } from '../bausteine/karten.mjs';
-import { AKQUISE_STATUS, AKQUISE_LABEL, faelligeWiedervorlagen, nachrichtFuer } from '../lib/akquise.mjs';
+import {
+  AKQUISE_LABEL, WIEDERVORLAGE_TAGE, SPAETER_TAGE, faelligeWiedervorlagen, nachrichtFuer,
+  naechsteFirmen, akquiseFortschritt, warumInteressant, kontaktTeile, mailtoLink, tageBis, plusTage,
+} from '../lib/akquise.mjs';
 
-export const akquise = { daten: null, laedt: false };
+// gewaehlt: Firma, die der Nutzer aus der Liste nach oben geholt hat; antwort: offenes Antwort-Feld.
+export const akquise = { daten: null, laedt: false, gewaehlt: '', antwort: '' };
 
 const heute = () => new Date().toLocaleDateString('sv-SE');
-const OFFEN = f => !['auftrag', 'kein-interesse'].includes(f.status);
+const TYP_LABEL = { genossenschaft: 'Genossenschaft', kommunal: 'kommunal', landeseigen: 'landeseigen', verwaltung: 'Hausverwaltung' };
+const typText = t => TYP_LABEL[String(t || '').toLowerCase()] || t || '';
+const webKurz = u => String(u).replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
 
 /** Laedt Firmen, Stand und Ausschreibungen - auch fuer das To-do auf "Heute". */
 export function ensureAkquise(neu = false) {
@@ -32,89 +40,183 @@ export function akquiseFaellig() {
   return d?.verfuegbar ? faelligeWiedervorlagen(d.firmen, heute()) : [];
 }
 
-function zeile(f, faellig) {
-  const web = f.website ? `<a href="${esc(f.website)}" target="_blank" rel="noopener">${esc(f.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''))}</a>` : '';
-  const optionen = AKQUISE_STATUS.map(s => `<option value="${s}"${s === f.status ? ' selected' : ''}>${esc(AKQUISE_LABEL[s])}</option>`).join('');
-  return `<li class="akq-firma${faellig ? ' akq-faellig' : ''}">
-    <div class="akq-kopf"><b>${esc(f.name)}</b>
-      <span class="small muted">${[f.ort, f.wohnungen ? `${f.wohnungen} Wohnungen` : ''].filter(Boolean).map(esc).join(' · ')}</span>
-      ${web ? `<span class="small akq-web">${web}</span>` : ''}</div>
-    <div class="akq-felder">
-      <label class="small">Status <select data-akq-feld="status" data-akq-id="${esc(f.id)}">${optionen}</select></label>
-      <label class="small">Wiedervorlage <input type="date" value="${esc(f.wiedervorlage)}" data-akq-feld="wiedervorlage" data-akq-id="${esc(f.id)}"></label>
-      <span class="small ${faellig ? 'akq-hinweis' : 'muted'}">${faellig ? 'Nachfassen fällig' : f.letzteAktion ? `zuletzt ${esc(fmtDate(f.letzteAktion))}` : ''}</span>
-      <button type="button" class="btn btn-sm" data-akq-kopieren="${esc(f.id)}">Nachricht kopieren</button>
-    </div>
-    <textarea class="akq-notiz" rows="1" placeholder="Notiz (Ansprechpartner, Rückmeldung …)" data-akq-feld="notiz" data-akq-id="${esc(f.id)}">${esc(f.notiz)}</textarea>
-  </li>`;
+function erklaerung(firmen) {
+  const p = akquiseFortschritt(firmen);
+  return `<section class="card akq-erklaer">
+    <p>Hier gewinnen wir <b>Verlegeaufträge bei Wohnungsgenossenschaften und Hausverwaltungen</b>. Die haben laufend Wohnungswechsel, bei denen neuer Boden rein muss.</p>
+    <ol class="akq-schritte"><li>Firma anschreiben</li><li>nach 2 Wochen nachfassen</li><li>bei Interesse Termin oder Angebot</li></ol>
+    <p class="akq-stand"><b>${p.angeschrieben}</b> von ${p.gesamt} angeschrieben · <b>${p.antworten}</b> ${p.antworten === 1 ? 'Antwort' : 'Antworten'} · <b>${p.auftraege}</b> ${p.auftraege === 1 ? 'Auftrag' : 'Aufträge'}</p>
+  </section>`;
 }
 
-function ausschreibungen(a) {
-  if (!a) return `<section class="card"><div class="card-head"><h2>Ausschreibungen</h2></div><p class="small muted">Die wöchentliche Suche nach Ausschreibungen ist noch nicht gelaufen.</p></section>`;
-  const t = [...(a.treffer || [])].sort((x, y) => String(x.frist || '9').localeCompare(String(y.frist || '9')));
-  return `<section class="card"><div class="card-head"><h2>Ausschreibungen Bodenbelag</h2><span class="small muted">geprüft ${esc(fmtDateTime(a.geprueftAm))}</span></div>
-    ${t.length ? `<div class="table-scroll"><table class="tasks"><thead><tr><th>Titel</th><th>Auftraggeber</th><th>Frist</th><th></th></tr></thead><tbody>
-      ${t.map(x => `<tr><td>${esc(x.titel)}</td><td>${esc(x.auftraggeber || '')}</td><td>${esc(x.frist || '–')}</td><td>${x.link ? `<a href="${esc(x.link)}" target="_blank" rel="noopener">Bekanntmachung</a>` : ''}</td></tr>`).join('')}
-    </tbody></table></div>` : `<p class="small muted">Zurzeit keine passenden Ausschreibungen im Umkreis.</p>`}
+/** Was auf der Karte zu tun ist - je nach Stand der Firma. */
+function aufgabe(f, faellig) {
+  const st = f.status || 'neu';
+  if (st === 'neu') return { titel: 'Anschreiben', text: 'Schicken Sie unser Anschreiben per E-Mail – oder rufen Sie an und fragen nach dem Ansprechpartner für Wohnungswechsel.' };
+  if (st === 'angeschrieben') return { titel: f.nachgefasst ? 'Noch einmal nachfassen' : 'Nachfassen', text: `Angeschrieben${f.letzteAktion ? ` am ${fmtDate(f.letzteAktion)}` : ''}, bisher keine Antwort. Kurz anrufen oder eine freundliche Erinnerung schicken.` };
+  if (st === 'termin') return { titel: 'Termin nachhalten', text: 'Ein Termin ist vereinbart. Wie ist es gelaufen?' };
+  return { titel: faellig ? 'Antwort nachhalten' : 'Antwort', text: 'Die Firma hat geantwortet. Bitte den nächsten Schritt erledigen: Termin vereinbaren oder Angebot schicken.' };
+}
+
+function karte(f, d, faellig, restZahl) {
+  const k = kontaktTeile(f.kontakt);
+  const nachricht = d.vorlage ? nachrichtFuer(d.vorlage, f.name) : '';
+  const st = f.status || 'neu';
+  const a = aufgabe(f, faellig);
+  const meta = [f.ort, typText(f.typ), f.wohnungen ? `${f.wohnungen} Wohnungen` : ''].filter(Boolean).map(esc).join(' · ');
+  const kontakt = k.email || k.telefon
+    ? `<div class="akq-kontakt">${k.email ? `<span>${esc(k.email)}</span>` : ''}${k.telefon ? `<span>${esc(k.telefon)}</span>` : ''}${f.website ? `<a href="${esc(f.website)}" target="_blank" rel="noopener">${esc(webKurz(f.website))}</a>` : ''}</div>`
+    : `<p class="akq-fehlt">Kontakt fehlt – ${f.website ? `<a href="${esc(f.website)}" target="_blank" rel="noopener">Website ansehen</a> und dort E-Mail oder Telefon suchen.` : 'bitte im Internet nach der Firma suchen.'}</p>`;
+  const kontaktKnoepfe = [
+    k.email && nachricht && ['neu', 'angeschrieben'].includes(st) ? `<a class="btn btn-lg" href="${esc(mailtoLink(k.email, nachricht))}">E-Mail öffnen</a>` : '',
+    nachricht && ['neu', 'angeschrieben'].includes(st) ? `<button type="button" class="btn btn-lg" data-akq-kopieren="${esc(f.id)}">Text kopieren</button>` : '',
+    k.telLink ? `<a class="btn btn-lg" href="tel:${esc(k.telLink)}">Anrufen</a>` : '',
+  ].filter(Boolean).join('');
+  const id = esc(f.id);
+  const knopf = (aktion, text, cls = '') => `<button type="button" class="btn btn-lg ${cls}" data-akq-aktion="${aktion}" data-akq-id="${id}">${text}</button>`;
+  const erledigt = st === 'neu'
+    ? knopf('angeschrieben', 'Erledigt: angeschrieben', 'btn-primary')
+    : st === 'angeschrieben' ? knopf('nachgefasst', 'Nachgefasst', 'btn-primary') + knopf('antwort-offen', 'Antwort bekommen')
+      : knopf('antwort-offen', 'Neue Rückmeldung eintragen', 'btn-primary') + knopf('auftrag', 'Auftrag bekommen');
+  const antwortFeld = akquise.antwort === f.id ? `<div class="akq-antwort">
+      <label for="akq-was">Was wurde gesagt?</label>
+      <textarea id="akq-was" rows="3" placeholder="z. B. Frau Muster, Technik – meldet sich bei der nächsten Wohnung">${esc(f.notiz || '')}</textarea>
+      <p class="small muted">Wie geht es weiter?</p>
+      <div class="akq-knoepfe">${knopf('termin', 'Termin vereinbaren', 'btn-primary')}${knopf('angebot', 'Angebot schicken')}${knopf('antwort-zu', 'Abbrechen', 'btn-ghost')}</div>
+    </div>` : '';
+  return `<section class="card akq-naechste" aria-labelledby="akq-naechste-titel">
+    <div class="akq-naechste-kopf"><h2 id="akq-naechste-titel">Als Nächstes: ${esc(a.titel)}</h2>${restZahl ? `<span class="small muted">danach noch ${restZahl}</span>` : ''}</div>
+    <div class="akq-firma-name">${esc(f.name)}</div>
+    ${meta ? `<div class="small muted">${meta}</div>` : ''}
+    <p class="akq-warum">${esc(warumInteressant(f))}</p>
+    ${kontakt}
+    ${f.notiz ? `<p class="akq-notiz-text"><span class="muted">Notiz:</span> ${esc(f.notiz)}</p>` : ''}
+    <p class="akq-tun">${esc(a.text)}</p>
+    ${kontaktKnoepfe ? `<div class="akq-knoepfe">${kontaktKnoepfe}</div>` : ''}
+    <div class="akq-knoepfe akq-erledigt">${erledigt}${knopf('kein-interesse', 'Kein Interesse', 'btn-ghost')}${knopf('spaeter', 'Später', 'btn-ghost')}</div>
+    ${antwortFeld}
+    ${st === 'neu' ? `<p class="small muted akq-fuss">Nach „Erledigt: angeschrieben“ erscheint die Firma in ${WIEDERVORLAGE_TAGE} Tagen wieder zum Nachfassen. „Später“ legt sie ${SPAETER_TAGE} Tage zurück.</p>` : ''}
   </section>`;
+}
+
+function statusChip(f, faellig) {
+  const st = f.status || 'neu';
+  const cls = faellig ? 'freigabe' : st === 'auftrag' ? 'fertig' : ['antwort', 'termin'].includes(st) ? 'review' : '';
+  return `<span class="badge status ${cls}">${esc(faellig ? 'nachfassen' : AKQUISE_LABEL[st] || st)}</span>`;
+}
+
+/** Alle Firmen: zugeklappt, kompakt; bearbeitet wird ueber "Oben zeigen" auf der Karte. */
+function alleFirmen(d, faelligIds) {
+  const zeilen = [...d.firmen].sort((a, b) => a.name.localeCompare(b.name, 'de')).map(f => {
+    const k = kontaktTeile(f.kontakt);
+    return `<tr>
+      <td><b>${esc(f.name)}</b><div class="small muted">${esc(f.ort || '')}${!k.email && !k.telefon ? ' · <span class="akq-fehlt-kurz">Kontakt fehlt</span>' : ''}</div>${f.notiz ? `<div class="small akq-notiz-zeile">${esc(f.notiz)}</div>` : ''}</td>
+      <td>${statusChip(f, faelligIds.has(f.id))}</td>
+      <td class="small">${f.wiedervorlage ? esc(fmtDate(f.wiedervorlage)) : ''}</td>
+      <td><button type="button" class="btn btn-sm" data-akq-zeigen="${esc(f.id)}">Oben zeigen</button></td>
+    </tr>`;
+  }).join('');
+  return `<details class="card akq-alle"><summary><b>Alle Firmen (${d.firmen.length})</b> <span class="small muted">Stand, Wiedervorlage, Notizen</span></summary>
+    <div class="table-scroll"><table class="tasks akq-tabelle"><thead><tr><th>Firma</th><th>Stand</th><th>Wieder&shy;vorlage</th><th></th></tr></thead><tbody>${zeilen}</tbody></table></div>
+  </details>`;
+}
+
+function ausschreibungen(a, tag) {
+  const kopf = `<div class="card-head"><h2>Öffentliche Ausschreibungen</h2>${a ? `<span class="small muted">geprüft ${esc(fmtDateTime(a.geprueftAm))}</span>` : ''}</div>
+    <p class="small">Öffentliche Aufträge für Bodenbeläge – meist zu groß für uns. <b>Nur ansehen</b>, die Abgabe macht der Inhaber.</p>`;
+  if (!a) return `<section class="card akq-aus">${kopf}<p class="small muted">Die wöchentliche Suche ist noch nicht gelaufen.</p></section>`;
+  const t = [...(a.treffer || [])].sort((x, y) => String(x.frist || '9').localeCompare(String(y.frist || '9')));
+  if (!t.length) return `<section class="card akq-aus">${kopf}<p class="small muted">Zurzeit keine passenden Ausschreibungen im Umkreis.</p></section>`;
+  const neu = new Set((a.neu || []).map(x => x.id || x));
+  return `<section class="card akq-aus">${kopf}<ul class="akq-aus-liste">${t.map(x => {
+    const n = tageBis(x.frist, tag);
+    const [ampel, hinweis] = n === null ? ['', 'Frist unbekannt – in der Bekanntmachung nachsehen'] : n <= 7 ? ['crit', `noch ${n} ${n === 1 ? 'Tag' : 'Tage'} – zu knapp, nur zur Kenntnis`] : n <= 21 ? ['warn', `noch ${n} Tage – dem Inhaber zeigen`] : ['', `noch ${n} Tage – Zeit genug`];
+    return `<li><span class="akq-ampel ${ampel}" aria-hidden="true"></span><div>
+      <div><b>${esc(x.titel)}</b>${neu.has(x.id) ? ' <span class="badge status freigabe">neu</span>' : ''}</div>
+      <div class="small muted">${[x.auftraggeber, x.ort].filter(Boolean).map(esc).join(' · ')}</div>
+      <div class="small">${esc(hinweis)}${x.link ? ` · <a href="${esc(x.link)}" target="_blank" rel="noopener">Bekanntmachung</a>` : ''}</div></div></li>`;
+  }).join('')}</ul></section>`;
 }
 
 export function viewAkquise() {
   ensureAkquise();
-  const kopf = `<div class="page-head"><div><h1>Akquise</h1><p class="sub">Verlegeaufträge bei Wohnungsunternehmen – wer ist angeschrieben, wann wird nachgefasst.</p></div></div>`;
+  const kopf = `<div class="page-head"><div><h1>Akquise</h1></div></div>`;
   const d = akquise.daten;
   if (!d && akquise.laedt) return kopf + `<div class="empty">Lade Firmenliste …</div>`;
   if (!d || !d.verfuegbar) return kopf + emptyState(d?.hinweis || 'Die Firmenliste ist nicht erreichbar.', d?.befehl || '');
-  const filter = state.route.params.get('as') || 'offen';
   const tag = heute();
   const faelligIds = new Set(faelligeWiedervorlagen(d.firmen, tag).map(f => f.id));
-  const zahl = s => d.firmen.filter(f => s === 'offen' ? OFFEN(f) : s === 'faellig' ? faelligIds.has(f.id) : f.status === s).length;
-  const chips = ['offen', ...(faelligIds.size ? ['faellig'] : []), ...AKQUISE_STATUS, 'alle'].map(s => {
-    const n = s === 'alle' ? d.firmen.length : zahl(s);
-    if (!n && !['offen', 'alle'].includes(s) && s !== filter) return '';
-    const label = { offen: 'Offen', faellig: 'Nachfassen fällig', alle: 'Alle' }[s] || AKQUISE_LABEL[s];
-    return `<a class="chip" aria-pressed="${s === filter}" href="#/akquise?as=${s}">${esc(label)}<span class="c">${n}</span></a>`;
-  }).join('');
-  const liste = d.firmen
-    .filter(f => filter === 'alle' ? true : filter === 'offen' ? OFFEN(f) : filter === 'faellig' ? faelligIds.has(f.id) : f.status === filter)
-    .sort((a, b) => Number(faelligIds.has(b.id)) - Number(faelligIds.has(a.id)) || String(a.wiedervorlage || '9').localeCompare(String(b.wiedervorlage || '9')));
-  return kopf + `
-    <div class="chips akq-chips">${chips}</div>
-    <section class="card" style="margin-bottom:14px">
-      ${liste.length ? `<ul class="akq-liste">${liste.map(f => zeile(f, faelligIds.has(f.id))).join('')}</ul>` : `<p class="small muted">In diesem Filter ist keine Firma.</p>`}
-      <p class="small muted" style="margin:10px 0 0">„Nachricht kopieren“ legt das Anschreiben mit Firmennamen in die Zwischenablage – versendet wird nichts. Nach „angeschrieben“ steht die Wiedervorlage automatisch 14 Tage später.</p>
-    </section>
-    ${ausschreibungen(d.ausschreibungen)}`;
+  const reihe = naechsteFirmen(d.firmen, tag);
+  const gewaehlt = akquise.gewaehlt && d.firmen.find(f => f.id === akquise.gewaehlt);
+  const f = gewaehlt || reihe[0];
+  const rest = reihe.filter(x => x.id !== f?.id).length;
+  const haupt = f ? karte(f, d, faelligIds.has(f.id), rest)
+    : `<section class="card akq-naechste"><h2>Für heute ist alles erledigt</h2><p>Alle Firmen sind angeschrieben, und keine Wiedervorlage ist fällig. Die nächste Firma erscheint hier, sobald ihr Termin zum Nachfassen erreicht ist.</p></section>`;
+  return kopf + erklaerung(d.firmen) + haupt + alleFirmen(d, faelligIds) + ausschreibungen(d.ausschreibungen, tag);
 }
 
-async function speichere(id, feld, wert) {
+async function speichere(id, eingabe, meldung) {
   try {
-    const r = await orgSchreiben('/api/akquise/aendern', { id, [feld]: wert });
+    const r = await orgSchreiben('/api/akquise/aendern', { id, ...eingabe });
     const f = akquise.daten?.firmen?.find(x => x.id === id);
     if (f) Object.assign(f, r.firma);
-    toast(feld === 'status' ? `Status: ${AKQUISE_LABEL[wert]}` : feld === 'notiz' ? 'Notiz gespeichert' : 'Wiedervorlage gespeichert', 'ok');
+    akquise.gewaehlt = ''; akquise.antwort = '';
+    toast(meldung(r.firma || {}), 'ok');
   } catch (e) {
     toast(`Nicht gespeichert: ${e.message}`, 'crit');
   }
   render();
+  window.scrollTo?.({ top: 0 });
 }
 
-/** change-Ereignis: Status, Wiedervorlage, Notiz (Notiz beim Verlassen des Feldes). */
-export function akquiseAenderung(ev) {
-  const el = ev.target.closest('[data-akq-feld]');
-  if (!el) return false;
-  speichere(el.dataset.akqId, el.dataset.akqFeld, el.value);
-  return true;
+const am = w => (w ? ` – wieder dran am ${fmtDate(w)}` : '');
+
+/** Notiz aus dem Antwort-Feld vor den naechsten Schritt setzen. */
+function mitNotiz(f, schritt) {
+  const was = document.getElementById('akq-was')?.value.trim() || '';
+  const alt = f.notiz || '';
+  const basis = was && was !== alt ? was : alt;
+  return `${basis}${basis ? '\n' : ''}Nächster Schritt: ${schritt}`.slice(0, 2000);
 }
 
+/** Klicks: Kopieren, Karten-Knoepfe, "Oben zeigen". */
 export function akquiseKlick(ev) {
+  const z = ev.target.closest('[data-akq-zeigen]');
+  if (z) {
+    akquise.gewaehlt = z.dataset.akqZeigen; akquise.antwort = '';
+    render(); window.scrollTo?.({ top: 0 });
+    return true;
+  }
   const k = ev.target.closest('[data-akq-kopieren]');
-  if (!k) return false;
-  const f = akquise.daten?.firmen?.find(x => x.id === k.dataset.akqKopieren);
-  if (!f || !akquise.daten.vorlage) { toast('Keine Vorlage gefunden.', 'crit'); return true; }
-  navigator.clipboard.writeText(nachrichtFuer(akquise.daten.vorlage, f.name)).then(
-    () => { k.textContent = 'Kopiert'; setTimeout(() => { k.textContent = 'Nachricht kopieren'; }, 1800); },
-    () => toast('Kopieren fehlgeschlagen – Browser erlaubt die Zwischenablage nicht.', 'crit'),
-  );
+  if (k) {
+    const f = akquise.daten?.firmen?.find(x => x.id === k.dataset.akqKopieren);
+    if (!f || !akquise.daten.vorlage) { toast('Keine Vorlage gefunden.', 'crit'); return true; }
+    navigator.clipboard.writeText(nachrichtFuer(akquise.daten.vorlage, f.name)).then(
+      () => { k.textContent = 'Kopiert'; setTimeout(() => { k.textContent = 'Text kopieren'; }, 1800); },
+      () => toast('Kopieren fehlgeschlagen – Browser erlaubt die Zwischenablage nicht.', 'crit'),
+    );
+    return true;
+  }
+  const b = ev.target.closest('[data-akq-aktion]');
+  if (!b) return false;
+  const id = b.dataset.akqId;
+  const f = akquise.daten?.firmen?.find(x => x.id === id);
+  if (!f) return true;
+  const tag = heute();
+  switch (b.dataset.akqAktion) {
+    case 'antwort-offen': akquise.antwort = id; render(); document.getElementById('akq-was')?.focus(); break;
+    case 'antwort-zu': akquise.antwort = ''; render(); break;
+    case 'angeschrieben': speichere(id, { status: 'angeschrieben' }, r => `Gespeichert: angeschrieben${am(r.wiedervorlage)}`); break;
+    case 'nachgefasst': speichere(id, { aktion: 'nachgefasst' }, r => `Gespeichert: nachgefasst${am(r.wiedervorlage)}`); break;
+    case 'termin': speichere(id, { status: 'termin', notiz: mitNotiz(f, 'Termin vereinbaren'), wiedervorlage: plusTage(tag, SPAETER_TAGE) }, r => `Gespeichert: Termin vereinbaren${am(r.wiedervorlage)}`); break;
+    case 'angebot': speichere(id, { status: 'antwort', notiz: mitNotiz(f, 'Angebot schicken'), wiedervorlage: plusTage(tag, SPAETER_TAGE) }, r => `Gespeichert: Angebot schicken${am(r.wiedervorlage)}`); break;
+    case 'auftrag': speichere(id, { status: 'auftrag' }, () => 'Gespeichert: Auftrag bekommen'); break;
+    case 'kein-interesse': speichere(id, { status: 'kein-interesse' }, () => 'Gespeichert: kein Interesse'); break;
+    case 'spaeter': speichere(id, { wiedervorlage: plusTage(tag, SPAETER_TAGE) }, r => `Später${am(r.wiedervorlage)}`); break;
+    default: return true;
+  }
   return true;
 }
+
+/** Keine Formularfelder mehr ausserhalb der Karte - change bleibt fuer Kompatibilitaet. */
+export function akquiseAenderung() { return false; }

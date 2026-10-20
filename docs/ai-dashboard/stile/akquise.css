@@ -1,11 +1,37 @@
 /* Akquise (ansichten/akquise.mjs). Nur Tokens aus app.css - keine festen Farben. */
-.akq-liste { list-style: none; margin: 0; padding: 0; }
-.akq-firma { padding: 10px 0; border-bottom: 1px solid var(--line); display: grid; gap: 6px; }
-.akq-firma:last-child { border-bottom: 0; }
-.akq-faellig { border-left: 3px solid var(--warn); padding-left: 10px; }
-.akq-kopf { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
-.akq-web a { overflow-wrap: anywhere; }
-.akq-felder { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
-.akq-felder label { display: inline-flex; gap: 6px; align-items: center; }
-.akq-notiz { width: 100%; box-sizing: border-box; min-height: 34px; resize: vertical; font: inherit; }
-.akq-hinweis { color: var(--warn); font-weight: 600; }
+.akq-erklaer, .akq-naechste, .akq-alle, .akq-aus { margin-bottom: 14px; }
+.akq-erklaer p { margin: 0 0 8px; }
+.akq-schritte { margin: 0 0 8px; padding-left: 1.4em; }
+.akq-schritte li { margin: 2px 0; }
+.akq-stand { margin: 0; color: var(--text-2); }
+.akq-naechste { border-left: 3px solid var(--accent); display: grid; gap: 8px; }
+.akq-naechste h2 { margin: 0; font-size: 1rem; }
+.akq-naechste-kopf { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; align-items: baseline; }
+.akq-firma-name { font-size: 1.25rem; font-weight: 650; overflow-wrap: anywhere; }
+.akq-warum, .akq-tun, .akq-notiz-text { margin: 0; }
+.akq-tun { font-weight: 550; }
+.akq-notiz-text { white-space: pre-line; overflow-wrap: anywhere; }
+.akq-kontakt { display: flex; flex-wrap: wrap; gap: 4px 16px; overflow-wrap: anywhere; }
+.akq-fehlt { margin: 0; color: var(--warn); font-weight: 600; }
+.akq-fehlt-kurz { color: var(--warn); }
+.akq-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn-lg { min-height: 46px; padding: 10px 18px; font-size: 1rem; }
+.akq-erledigt { padding-top: 8px; border-top: 1px solid var(--line); }
+.akq-antwort { display: grid; gap: 6px; padding: 12px; background: var(--surface-2); border-radius: 8px; }
+.akq-antwort textarea { width: 100%; box-sizing: border-box; font: inherit; resize: vertical; }
+.akq-antwort p { margin: 4px 0 0; }
+.akq-fuss { margin: 0; }
+.akq-alle summary { cursor: pointer; padding: 2px 0; }
+.akq-alle[open] summary { margin-bottom: 10px; }
+.akq-tabelle td { vertical-align: top; }
+.akq-notiz-zeile { white-space: pre-line; overflow-wrap: anywhere; color: var(--text-2); }
+.akq-aus-liste { list-style: none; margin: 8px 0 0; padding: 0; }
+.akq-aus-liste li { display: flex; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+.akq-ampel { flex: 0 0 10px; height: 10px; margin-top: 6px; border-radius: 50%; background: var(--line-strong); }
+.akq-ampel.warn { background: var(--warn); }
+.akq-ampel.crit { background: var(--crit); }
+@media (max-width: 560px) {
+  .akq-knoepfe .btn { flex: 1 1 100%; }
+  .akq-knoepfe .btn-ghost { flex: 1 1 40%; }
+  .akq-tabelle th:nth-child(3), .akq-tabelle td:nth-child(3) { display: none; }
+}
