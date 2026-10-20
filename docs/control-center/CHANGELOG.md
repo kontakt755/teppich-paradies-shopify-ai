@@ -2,6 +2,28 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-20 · Gemeinsame Druckliste fuer Musteraufkleber (#1493)
+
+- **Geaendert:** Im Lexikon Farbe/Ausfuehrung und Anzahl waehlen und „Zum Drucken vormerken“.
+  Der Kollege oeffnet „Gemeinsame Druckliste“, waehlt Eintraege und druckt den reservierten
+  Auftrag. Erst „Ausdruck geprueft – als gedruckt markieren“ erledigt ihn. Neue Vormerkungen
+  bleiben separat; Abbruch, fehlende Verbindung und Neustart loeschen nichts. Andere Sitzungen
+  koennen einen reservierten Auftrag nicht erneut zum Druck oeffnen. Bewusste Wiederfreigabe
+  verlangt die Pruefung bereits gedruckter Aufkleber. Server erzeugt die unveraenderlichen
+  Etikettdaten selbst aus dem Lexikon. Private atomare Ablage mit Revisionen, Wiederholungsschutz,
+  Prozesssperre und Sicherung; Mitarbeiter duerfen bearbeiten, „lesen“ bleibt lesend.
+- **Getestet:** Alle 3.240 Tests gruen (505 Dashboard-Tests), Projekt-Guards erfolgreich. 16 gezielte Speicher-/API-Tests
+  einschliesslich zwei paralleler Prozesse, doppelter Reservierung, spaeterer Vormerkung,
+  Rollenrechten, Original-SKU, kaputter Ablage und Erholung nach Prozessabbruch. Datenkopie:
+  45 Rollen-/Ansicht-/Breitenpruefungen zwischen 360 und 1440 px ohne Browserfehler oder Ueberlauf.
+  Vier weitere Ansichten im Dunkelmodus sowie 14 Browser-Klickfaelle mit zwei getrennten
+  Browsersitzungen und Druckerattrappe erfolgreich.
+- **Risiken:** Beide Arbeitsplaetze muessen denselben privaten Dashboard-Dienst verwenden.
+  Die Papierausgabe am echten Niimbot bleibt zu pruefen; ein geschlossener Dialog oder
+  erfolgreicher Download gilt nie als bestaetigter Ausdruck.
+- **Naechste Stufe:** Nach dem Merge den Dashboard-Dienst nachziehen und einen echten
+  50×50-mm-Testaufkleber im Laden pruefen.
+
 ## 2026-10-20 · Musteraufkleber direkt im Lexikon (#1489, #1490)
 
 - **Geaendert:** Produkt oder Muster im Lexikon oeffnen, Farbe/Ausfuehrung und Anzahl waehlen,

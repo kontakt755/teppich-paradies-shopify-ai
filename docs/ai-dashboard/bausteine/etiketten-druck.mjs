@@ -30,7 +30,7 @@ function ladeSkript(name) {
 }
 
 const SCHRIFT = 'Arial, Helvetica, sans-serif';
-const druck = { client: null, etiketten: [], laeuft: false, speichert: false, bearbeiten: -1 };
+const druck = { client: null, etiketten: [], laeuft: false, speichert: false, bearbeiten: -1, allowEditing: true };
 const qrBereit = () => typeof window.qrcode === 'function';
 const unvollstaendig = () => druck.etiketten.some(e => e.fehlt.length);
 
@@ -63,7 +63,7 @@ function vorschauHtml() {
   return druck.etiketten.map((e, i) => `<figure class="etk-karte">
     <canvas class="etk-bild" data-etk-bild="${i}" width="${ETIKETT.breite}" height="${ETIKETT.hoehe}" aria-label="${esc(`Etikett ${[e.serie, e.farbe].filter(Boolean).join(' ') || 'ohne Namen'}`)}"></canvas>
     <figcaption class="small">${e.fehlt.length ? `<span class="etk-fehlt">fehlt: ${esc(e.fehlt.join(', '))}</span>` : '<span class="muted">vollständig</span>'}
-      <button type="button" class="btn btn-sm" data-etk-bearbeiten="${i}"${druck.laeuft || druck.speichert ? ' disabled' : ''}>Angaben bearbeiten</button>
+      ${druck.allowEditing ? `<button type="button" class="btn btn-sm" data-etk-bearbeiten="${i}"${druck.laeuft || druck.speichert ? ' disabled' : ''}>Angaben bearbeiten</button>` : ''}
       <button type="button" class="btn btn-sm" data-etk-png="${i}"${e.fehlt.length || !qrBereit() || druck.laeuft || druck.speichert ? ' disabled' : ''}>Als PNG speichern</button>
     </figcaption>
   </figure>`).join('');
@@ -149,18 +149,20 @@ export async function etikettenFuerBestellung(positionen = []) {
  * Oeffnet den Dialog. `etiketten` kommen aus einer Musterbestellung (etikettenAusPositionen)
  * oder sind leer - dann nur die Eingabe von Hand.
  */
-export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Etiketten drucken' } = {}) {
+export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Etiketten drucken', allowEditing = true, hinweis = '' } = {}) {
   if (druck.laeuft || druck.speichert) { toast('Bitte warten, bis der aktuelle Vorgang fertig ist.'); return; }
   druck.etiketten = [...etiketten];
   druck.bearbeiten = -1;
-  const hinweis = umgebungsHinweis();
+  druck.allowEditing = allowEditing;
+  const umgebung = umgebungsHinweis();
   const hatUsb = !!navigator.serial;
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><div class="dialog etk-dialog" role="dialog" aria-modal="true" aria-labelledby="etkTitel" data-dialog>
     <h2 id="etkTitel">${esc(titel)}</h2>
     <p class="small muted">Niimbot B1, Etikett 50 × 50 mm. Drucker einschalten, dann „Drucken“ – beim ersten Mal fragt der Browser, welcher Drucker.</p>
-    ${hinweis ? `<p class="etk-warn">${esc(hinweis)}</p>` : ''}
+    ${umgebung ? `<p class="etk-warn">${esc(umgebung)}</p>` : ''}
+    ${hinweis ? `<p class="etk-auftrag-hinweis">${esc(hinweis)}</p>` : ''}
     <div id="etkListe" class="etk-liste"></div>
-    <details class="etk-hand"${etiketten.length ? '' : ' open'}><summary>Etikett von Hand hinzufügen</summary>
+    ${allowEditing ? `<details class="etk-hand"${etiketten.length ? '' : ' open'}><summary>Etikett von Hand hinzufügen</summary>
       <form id="etkForm" class="etk-form">
         <label>Produktlink oder Handle <input name="handle" autocomplete="off" placeholder="https://www.teppich-paradies.net/products/…"></label>
         <label>Farbe <input name="farbe" autocomplete="off"></label>
@@ -169,7 +171,7 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Etiketten 
         <label>Artikelnummer <input name="sku" autocomplete="off"></label>
         <button type="submit" class="btn btn-sm" id="etkUebernehmen">Hinzufügen</button>
       </form>
-    </details>
+    </details>` : ''}
     <div class="etk-optionen">
       <label>Druckdichte <select id="etkDichte">${[1, 2, 3, 4, 5].map(d => `<option value="${d}"${d === ETIKETT.dichteStandard ? ' selected' : ''}>${d}${d === ETIKETT.dichteStandard ? ' (Standard)' : ''}</option>`).join('')}</select></label>
       <label>Verbindung <select id="etkWeg"><option value="bluetooth">Bluetooth</option>${hatUsb ? '<option value="usb">USB-Kabel</option>' : ''}</select></label>
@@ -183,7 +185,7 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Etiketten 
   </div></div>`;
   $('#etkListe').addEventListener('click', ev => {
     const bearbeiten = ev.target.closest('[data-etk-bearbeiten]');
-    if (bearbeiten && !druck.laeuft && !druck.speichert) {
+    if (bearbeiten && druck.allowEditing && !druck.laeuft && !druck.speichert) {
       druck.bearbeiten = Number(bearbeiten.dataset.etkBearbeiten);
       const e = druck.etiketten[druck.bearbeiten];
       const form = $('#etkForm');
@@ -205,9 +207,9 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Etiketten 
       link.click();
     }
   });
-  $('#etkForm').addEventListener('submit', async ev => {
+  $('#etkForm')?.addEventListener('submit', async ev => {
     ev.preventDefault();
-    if (druck.laeuft || druck.speichert) return;
+    if (druck.laeuft || druck.speichert || !druck.allowEditing) return;
     const form = ev.target;
     const d = new FormData(form);
     const wert = k => String(d.get(k) || '').trim();
@@ -245,7 +247,7 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Etiketten 
   $('#etkDrucken').addEventListener('click', () => { if (!umgebungsHinweis()) drucken(); });
   $('#etkTrennen').addEventListener('click', async () => { try { await druck.client?.disconnect(); } catch { /* egal */ } druck.client = null; status('Getrennt.'); });
   zeichneVorschau();
-  ($('#etkDrucken').disabled ? $('#etkForm input') : $('#etkDrucken'))?.focus();
+  ($('#etkDrucken').disabled ? ($('#etkForm input') || $('.etk-dialog [data-close-dialog]')) : $('#etkDrucken'))?.focus();
   // QR-Code nachzeichnen, sobald die Bibliothek da ist; ohne Internet bleibt die Vorschau ohne QR.
   try { await ladeSkript('qrcode'); zeichneVorschau(); } catch (err) { status(`${err.message} – zum Drucken mit QR-Code den Dialog erneut öffnen.`); }
 }
