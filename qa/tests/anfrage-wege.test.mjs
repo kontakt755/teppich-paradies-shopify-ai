@@ -73,12 +73,13 @@ test('Vorhandene Kundennachricht wird durch Kontext nicht ueberschrieben',()=>{
   const p=samplePage('?thema=verlegung&zuschnitt=2%20Bahnen',{message:'Mein bereits geschriebener Text'});assert.equal(p.message.value,'Mein bereits geschriebener Text');
 });
 function startPage(hash='') {
-  const events=new Map(),classes=new Set(),toggle=node(),card=node(),first=node();let cardFocus=0,inputFocus=0;
+  const events=new Map(),classes=new Set(),toggle=node(),card=node(),first=node(),frames=[],scrolls=[];let cardFocus=0,inputFocus=0;
   card.classList={add:s=>classes.add(s)};card.querySelector=selector=>selector==='input[type=text]'?first:null;first.focus=()=>{inputFocus++;};card.focus=options=>{cardFocus++;assert.equal(options.preventScroll,true);};
+  card.scrollIntoView=options=>{assert.ok(classes.has('tp-kon__card--offen'));scrolls.push({...options});};
   toggle.closest=()=>card;const document={querySelectorAll:()=>[],querySelector:s=>s==='[data-tp-kon-toggle]'?toggle:null};
-  const window={location:{hash},addEventListener:(n,f)=>events.set(n,f)};
+  const window={location:{hash},addEventListener:(n,f)=>events.set(n,f),requestAnimationFrame:fn=>frames.push(fn)};
   vm.runInNewContext(contactSource.match(/{% javascript %}([\s\S]*?){% endjavascript %}/)[1],{document,window,URLSearchParams});
-  return {toggle,card,classes,window,get cardFocus(){return cardFocus;},get inputFocus(){return inputFocus;},hashChange(h){window.location.hash=h;events.get('hashchange')();}};
+  return {toggle,card,classes,window,scrolls,frames,get cardFocus(){return cardFocus;},get inputFocus(){return inputFocus;},hashChange(h){window.location.hash=h;events.get('hashchange')();},layoutFrame(){const pending=frames.splice(0);pending.forEach(fn=>fn());}};
 }
 test('Hero-CTA verwendet vorhandenen Formularanker, der Formular sofort oeffnet und sinnvoll fokussiert',()=>{
   const config=JSON.parse(readFileSync(new URL('../../templates/index.json',import.meta.url),'utf8').replace(/^\/\*[\s\S]*?\*\/\s*/, ''));
@@ -87,4 +88,25 @@ test('Hero-CTA verwendet vorhandenen Formularanker, der Formular sofort oeffnet 
 });
 test('Allgemeiner Kontaktanker bleibt geschlossen; Hashwechsel zum Anfrageanker oeffnet ihn',()=>{
   const p=startPage('#tp-kontakt');assert.equal(p.classes.size,0);assert.equal(p.cardFocus,0);p.hashChange('#tp-anfrage');assert.ok(p.classes.has('tp-kon__card--offen'));assert.equal(p.cardFocus,1);
+});
+test('Anfrageanker richtet die offene Karte erst nach dem Layout aus und beendet nativen Smoothscroll',()=>{
+  for(const initialHash of ['', '#tp-anfrage']) {
+    const p=startPage(initialHash);
+    if(!initialHash) p.hashChange('#tp-anfrage');
+    assert.equal(p.scrolls.length,0);assert.equal(p.frames.length,1);
+    p.layoutFrame();
+    assert.deepEqual(p.scrolls,[{block:'start',behavior:'instant'}]);
+    assert.equal(p.inputFocus,0);assert.equal(p.cardFocus,1);
+  }
+  assert.match(contactSource,/\.tp-kon__card--form\s*\{[^}]*scroll-margin-top:\s*calc\(var\(--header-height,/);
+});
+test('Ein anderer Anker oder eine entfernte Karte unterbindet die ausstehende Scrollkorrektur',()=>{
+  const p=startPage('#tp-anfrage');p.hashChange('#tp-kontakt');p.layoutFrame();assert.equal(p.scrolls.length,0);
+  const removed=startPage('#tp-anfrage');removed.card.isConnected=false;removed.layoutFrame();assert.equal(removed.scrolls.length,0);
+  const other=startPage('#tp-kontakt');other.layoutFrame();assert.equal(other.scrolls.length,0);assert.equal(other.frames.length,0);
+});
+test('Manuelles Aufklappen behaelt den bewusst gewaehlten Eingabefokus ohne neuen Ankerscroll',()=>{
+  const p=startPage();p.toggle.handlers.get('click')();p.layoutFrame();
+  assert.ok(p.classes.has('tp-kon__card--offen'));assert.equal(p.toggle.getAttribute('aria-expanded'),'true');
+  assert.equal(p.inputFocus,1);assert.equal(p.cardFocus,0);assert.equal(p.scrolls.length,0);
 });

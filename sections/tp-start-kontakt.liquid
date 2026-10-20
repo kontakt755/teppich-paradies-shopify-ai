@@ -199,9 +199,15 @@
     function perAnker() {
       if (window.location.hash !== '#tp-anfrage') return;
       oeffnen();
-      // Den konkreten Anfrage-Einstieg fokussieren, ohne die Bildschirmtastatur
-      // sofort zu oeffnen oder den nativen Ankersprung zu ersetzen.
+      // Die Karte fokussieren, ohne die Bildschirmtastatur zu oeffnen.
       card.focus({ preventScroll: true });
+      // Der native Ankersprung kann noch mit der eingeklappten Hoehe rechnen.
+      // Nach dem Layout neu ausrichten; instant beendet dabei einen laufenden
+      // nativen Smoothscroll. Der CSS-Scrollabstand haelt den Header frei.
+      window.requestAnimationFrame(function () {
+        if (window.location.hash !== '#tp-anfrage' || !card.isConnected) return;
+        card.scrollIntoView({ block: 'start', behavior: 'instant' });
+      });
     }
     perAnker();
     window.addEventListener('hashchange', perAnker);
