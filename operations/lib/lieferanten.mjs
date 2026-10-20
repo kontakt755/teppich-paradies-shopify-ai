@@ -809,7 +809,9 @@ function musterMail(gruppen, { st, absender, statusAlle, adressen, jetzt, ziel }
  */
 function wareMailsFuer(gruppe, kontext) {
   // Auch Direktversand des Lieferanten (#1453); nur Baustellenlieferungen bleiben, wie sie sind.
-  const automatisch = !kontext.ziel && adresseOk(kontext.absender?.kettelservice) && gruppe.route !== ROUTE.SUPPLIER_TO_SITE;
+  // Ein Ziel aus dem Dialog gilt nur fuer waehlbare Gruppen - Direktversand behaelt die Regel.
+  const zielGilt = Boolean(kontext.ziel) && !ZIEL_JE_AUFTRAG.has(gruppe.route);
+  const automatisch = !zielGilt && adresseOk(kontext.absender?.kettelservice) && gruppe.route !== ROUTE.SUPPLIER_TO_SITE;
   // Nur offene Positionen: schon Bestelltes (auch von vor der Regel) bleibt in der normalen Mail.
   const offen = p => schlankePosition(p, kontext.statusAlle, kontext.jetzt).gruppe === 'zuBestellen';
   const zumKettler = p => kettlerAutomatisch(p) && offen(p);
