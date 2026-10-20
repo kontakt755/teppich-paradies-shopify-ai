@@ -112,7 +112,10 @@
 .etk-karte figcaption { display: grid; gap: 6px; }
 .etk-karte figcaption .btn { justify-self: start; }
 .etk-auftrag-hinweis { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); }
-.lex-druckliste-link { margin: 0 0 12px; }
+.lex-druckliste-link { margin: 0 0 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+.lex-etiketten-status .card { padding: 0 16px 16px; margin-bottom: 12px; min-width: 0; overflow-wrap: anywhere; }
+.lex-etiketten-status .card-head { padding-left: 0; padding-right: 0; flex-wrap: wrap; }
+.lex-etiketten-status li { margin-block: 6px; overflow-wrap: anywhere; }
 .lex-etiketten { margin-bottom: 16px; padding: 0 18px 18px; }
 .lex-etiketten .card-head { padding-left: 0; padding-right: 0; }
 .lex-etiketten-auswahl { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; }
@@ -156,4 +159,21 @@
   .md-mit-auswahl > .btn { grid-column: 2; justify-self: start; }
   .md-aktionen { align-items: stretch; flex-direction: column; }
   .md-aktionen .btn, .md-druckstart > .btn { width: 100%; min-height: 44px; }
+}
+
+/* Die Auswahlaktion steht vor der langen Liste; Kopien bleiben je Position sichtbar. */
+.md-offen .card-head { flex-wrap: wrap; gap: 6px 16px; }
+.md-mit-auswahl { grid-template-columns: 44px minmax(0, 1fr) auto auto; }
+.md-kopien { font-weight: 600; white-space: nowrap; }
+.md-gewaehlt { background: var(--surface-2); }
+.md-druckstart { display: grid; gap: 10px; margin: 12px 0; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.md-druckaktionen { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.md-auftrag > details { margin: 10px 0; }
+.md-auftrag > details > summary { cursor: pointer; }
+.etk-dialog #etkZusammenfassung { font-weight: 600; }
+@media (max-width: 600px) {
+  .md-mit-auswahl { grid-template-columns: 36px minmax(0, 1fr); }
+  .md-mit-auswahl > .md-kopien, .md-mit-auswahl > .btn { grid-column: 2; justify-self: start; }
+  .md-druckaktionen { flex-direction: column-reverse; }
+  .md-druckaktionen .btn { width: 100%; min-height: 44px; }
 }

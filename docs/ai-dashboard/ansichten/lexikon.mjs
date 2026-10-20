@@ -14,6 +14,7 @@ import { etikettenAusLexikon } from '../lib/lexikon-etiketten.mjs';
 import { originalHandle } from '../lib/muster-etiketten.mjs';
 import { oeffneEtikettenDruck } from '../bausteine/etiketten-druck.mjs';
 import { drucklisteVormerken, musterDrucklisteKlick, viewMusterDruckliste } from './muster-druckliste.mjs';
+import { viewMusterEtikettenStatus, musterEtikettenStatusKlick } from './muster-etiketten-status.mjs';
 
 export const lexikon = {
   liste: null, loadingListe: false, listeKey: null,
@@ -21,6 +22,13 @@ export const lexikon = {
   etiketten: [], etikettenKey: null, loadingEtiketten: false,
   vormerkenLaeuft: false, etikettAnzahl: 1,
 };
+
+/** Eingabe vor jedem Neuzeichnen erhalten, auch wenn danach eine andere Farbe gewaehlt wird. */
+export function lexikonEingabe(e) {
+  if (!e.target?.matches?.('[data-lex-etikett-anzahl]')) return false;
+  lexikon.etikettAnzahl = e.target.value;
+  return true;
+}
 
 function ensureLexikonListe() {
   const q = state.route.params.get('lq') || '';
@@ -57,19 +65,39 @@ function ensureLexikonEtiketten(produkt) {
   if (lexikon.etikettenKey === key) return;
   lexikon.etikettenKey = key;
   lexikon.loadingEtiketten = false;
-  const handles = [...new Set((produkt.varianten || []).map(v => v.original?.produktHandle).filter(Boolean))];
-  if (!handles.length && produkt.handle.startsWith('muster-')) handles.push(originalHandle(produkt.handle));
+  const abhaengigkeiten = p => {
+    const handles = (p.varianten || []).map(v => v.original?.produktHandle).filter(Boolean);
+    if (!(p.varianten || []).some(v => v.sku && !v.wunschmass && !/^(M-|TP-MUSTER)/i.test(v.sku))) {
+      if (p.muster?.handle) handles.push(p.muster.handle);
+      if (p.musterRegeln?.basisHandle) handles.push(p.musterRegeln.basisHandle);
+    }
+    if (!handles.length && p.handle.startsWith('muster-')) handles.push(originalHandle(p.handle));
+    return [...new Set(handles)];
+  };
+  const handles = abhaengigkeiten(produkt);
   if (!handles.length) { lexikon.etiketten = etikettenAusLexikon(produkt); return; }
   lexikon.loadingEtiketten = true;
-  Promise.all(handles.map(async handle => {
-    const d = await fetchEinkauf(`/api/lexikon/produkt?${new URLSearchParams({ handle })}`);
-    return [handle, d?.produkt || null];
-  })).then(eintraege => {
+  (async () => {
+    const je = new Map([[produkt.handle, produkt]]), gesehen = new Set(je.keys());
+    let offen = handles;
+    // Nur die belegten Verweise verfolgen. Jede Adresse wird einmal geladen;
+    // auch verkettete Basisartikel und zyklische Daten enden dadurch sicher.
+    while (offen.length) {
+      const batch = [...new Set(offen)].filter(h => !gesehen.has(h));
+      batch.forEach(h => gesehen.add(h));
+      const geladen = await Promise.all(batch.map(async handle => {
+        const d = await fetchEinkauf(`/api/lexikon/produkt?${new URLSearchParams({ handle })}`);
+        if (d?.produkt) je.set(handle, d.produkt);
+        return d?.produkt;
+      }));
+      if (lexikon.produktKey !== key || lexikon.etikettenKey !== key) return;
+      offen = geladen.filter(Boolean).flatMap(abhaengigkeiten).filter(h => !gesehen.has(h));
+    }
     if (lexikon.produktKey !== key || lexikon.etikettenKey !== key) return;
-    lexikon.etiketten = etikettenAusLexikon(produkt, new Map(eintraege.filter(([, p]) => p)));
+    lexikon.etiketten = etikettenAusLexikon(produkt, je);
     lexikon.loadingEtiketten = false;
     if (state.route.view === 'lexikon') render();
-  });
+  })();
 }
 
 function musterEtikettenBlock(produkt) {
@@ -86,8 +114,8 @@ function musterEtikettenBlock(produkt) {
     <p class="small muted">Fertiger Aufkleber mit Produktname, Farbe und QR-Code für eure 50 × 50-mm-Etiketten.</p>
     <div class="lex-etiketten-auswahl">
       <label>Farbe / Ausführung<select data-param="letikett" aria-label="Farbe oder Ausführung für den Aufkleber">${liste.map((x, i) => `<option value="${i}"${i === index ? ' selected' : ''}>${esc(x.bezeichnung)}</option>`).join('')}</select></label>
-      <label>Anzahl<input type="number" min="1" max="20" step="1" value="${lexikon.etikettAnzahl}" data-lex-etikett-anzahl inputmode="numeric"></label>
-      <button type="button" class="btn btn-primary" data-lex-etikett-drucken>Etikett drucken</button>
+      <label>Anzahl<input id="lexEtikettAnzahl" type="number" min="1" max="20" step="1" value="${esc(lexikon.etikettAnzahl)}" data-lex-etikett-anzahl data-focus-erhalten inputmode="numeric"></label>
+      <button type="button" class="btn btn-primary" data-lex-etikett-drucken>Aufkleber ansehen</button>
       ${istNurLesend() ? '' : `<button type="button" class="btn" data-lex-etikett-vormerken${auswahl.etikett.fehlt.length || lexikon.vormerkenLaeuft ? ' disabled' : ''}>Zum Drucken vormerken</button>`}
     </div>
     ${auswahl.etikett.fehlt.length ? `<p class="small etk-fehlt">Noch ergänzen: ${esc(auswahl.etikett.fehlt.join(', '))}. Du kannst die Angaben in der Vorschau bearbeiten.</p>` : ''}
@@ -598,7 +626,8 @@ export function viewLexikon() {
   }
   const handle = state.route.params.get('handle');
   if (state.route.params.get('tab') === 'druckliste') return viewMusterDruckliste();
-  const drucklisteLink = '<p class="lex-druckliste-link"><a class="btn" href="#/lexikon?tab=druckliste">Gemeinsame Druckliste</a></p>';
+  if (state.route.params.get('tab') === 'etiketten') return viewMusterEtikettenStatus();
+  const drucklisteLink = '<p class="lex-druckliste-link"><a class="btn" href="#/lexikon?tab=druckliste">Gemeinsame Druckliste</a><a class="btn" href="#/lexikon?tab=etiketten">Aufkleber prüfen</a></p>';
   const head = `<div class="page-head"><div><h1>Lexikon</h1><p class="sub">Kunde nennt einen Produktnamen – hier steht das Original beim Lieferanten samt Bestelldaten.</p></div></div>`;
   // Im Produkt entfaellt der erklaerende Seitenkopf: am Handy schob er Name und Preis aus dem
   // ersten Bildschirm. "Lexikon" steht weiter in der Kopfzeile.
@@ -607,6 +636,7 @@ export function viewLexikon() {
 
 /** Lexikon: Produkt oeffnen, Mengenhilfe rechnen, zurueck zur Liste. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function lexikonKlick(e) {
+  if (musterEtikettenStatusKlick(e)) return true;
   if (musterDrucklisteKlick(e)) return true;
   const etikettKnopf = e.target.closest('[data-lex-etikett-drucken],[data-lex-etikett-vormerken]');
   if (etikettKnopf) {

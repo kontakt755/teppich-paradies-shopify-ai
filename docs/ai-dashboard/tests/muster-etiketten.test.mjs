@@ -127,6 +127,11 @@ test('layout Teppichboden: ohne Technik groesserer QR in der Mitte, lange Namen 
   const l = layout(e, mass);
   imRahmen(l);
   assert.equal(l.linien.length, 0);
+  assert.ok(!l.texte.some(t => t.text.includes('…')), 'Produktname und Farbe bleiben vollstaendig');
+  const namen = l.texte.filter(t => t.y > l.texte[0].y && !t.text.startsWith('Art.-Nr.'));
+  assert.equal(namen.map(t => t.text).join(' '), `${e.serie} ${e.farbe}`);
+  assert.ok(namen.every(t => t.y + t.groesse <= l.qr.y), 'Volltext und QR bleiben getrennt');
+  assert.ok(l.qr.groesse >= 100);
   assert.ok(Math.abs(l.qr.x + l.qr.groesse / 2 - ETIKETT.breite / 2) <= 1);
   const kurz = layout(etikett({ serie: 'Testvelours', farbe: 'Sand', sku: 'X', handle: 'x' }), mass);
   assert.equal(kurz.qr.groesse, 180);

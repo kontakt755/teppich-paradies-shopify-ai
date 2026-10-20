@@ -21,6 +21,29 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   sind durch die macOS-Prüfung nicht abgedeckt. Keine pauschale Tempbereinigung oder Dienst-Neustarts.
 - **Nächste Stufe:** Konsolidierten Entwurfs-PR prüfen; Merge/Preview/Live bleiben gesperrt.
 
+## 2026-10-20 · Aufkleberbestand automatisch pruefen und gemeinsame Druckliste vereinfachen (#1525, #1526)
+
+- **Geaendert:** Interne Katalogpruefung im Lexikon mit Suche, Status und offenen Zuordnungen.
+  Neue Produkte und Farben erscheinen nach dem Lexikonabgleich automatisch. Belegte Einzeldekore
+  und Basisartikel erhalten vollstaendige Aufkleber, mehrdeutige Quellen bleiben gesperrt.
+  Die Druckliste bietet seitenuebergreifende Auswahl, einzelnes/gesammeltes Entfernen und einen
+  Drucklauf fuer bis zu 1000 Positionen/5000 Aufkleber. Automatische 100er-Transportteile ueber
+  dieselbe Verbindung, hoechstens 12 Vorschaumotive. Sichere Vorgangskennungen auch auf privatem
+  HTTP; Anzahl bleibt beim Farbwechsel erhalten. „Aufkleber ansehen“ oeffnet die Vorschau.
+- **Getestet:** Reine Export-, Zuordnungs-, API- und Speicherfaelle sowie synthetische
+  Browserstrecken fuer Mehrplatzbetrieb, Rollen, Reihenfolge/Kopien, 100er-Teile, Entfernen,
+  Abbruch, Verbindungsfehler, B1-Abschluss und Sitzungsablauf. Frischer Rohdatenabgleich gegen
+  kanonische Aufkleber prueft Produktquellen, Farbe, Shop-SKU, QR und hinterlegte Technik.
+  Gesamtsuite 3403/3403 (605 Dashboard), 170 Standardansichten plus 99 Rollen-/Breitenfaelle
+  ohne Ueberlauf. 18 Katalog- und 17 Drucklisten-Browserstrecken ohne offene Befunde; alle
+  Aufkleber im Browser mit echtem Canvas/QR auf Volltext, Grenzen und Ueberlappung geprueft.
+  Projekt-Guards, Theme-Check, Secret-Scan und statischer Workflow erfolgreich.
+- **Risiken:** Produktdatenkonsistenz beweist keine Hersteller-Vollstaendigkeit und keinen
+  physischen Lagerbestand. Ungeklaerte Musterfaehigkeit bleibt sichtbar; fehlende optionale SKU
+  wird weggelassen. Echter B1/50x50-Hardwaredruck bleibt zu pruefen. Abbruch bestaetigt keinen
+  Ausdruck; Reservierung bleibt bis zur bewussten Freigabe/Kontrolle bestehen.
+- **Naechste Stufe:** Gefrorenen PR-Diff pruefen, Dienst aktualisieren und intern lesend verifizieren.
+
 ## 2026-10-20 · Einkauf „Je Auftrag“: nur Handlungsbedarf offen, Kunde informieren, Verzug (#1522)
 
 - **Geaendert:** „Je Auftrag“ zeigt oben nur „Jetzt zu tun“ (bestellen, Ungeklaertes, Ware da und
