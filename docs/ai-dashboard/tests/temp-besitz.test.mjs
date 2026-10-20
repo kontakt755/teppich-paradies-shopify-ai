@@ -78,6 +78,23 @@ test('--aus behaelt auch einen frueher automatisch erzeugten Ordner dauerhaft', 
   assert.ok(fs.existsSync(aus));
 });
 
+for (const variante of ['unterordner', 'symlink']) {
+  test(`--aus schuetzt auch ${variante} eines alten Pruefungsordners dauerhaft`, t => {
+    const tmp = sandbox(t);
+    const alt = pruefOrdnerAnlegen(tmp);
+    let aus = path.join(alt, 'noch-nicht-angelegt', 'bericht');
+    if (variante === 'symlink') {
+      aus = path.join(tmp, 'eigene-ablage');
+      fs.symlinkSync(alt, aus);
+    }
+    const optionen = { tmp, jetzt: spaeter(), ...ruhig };
+    assert.deepEqual(altePruefOrdnerLoeschen({ ...optionen, aus }), [], 'aktuell gewaehlte Ablage');
+    pruefOrdnerBehalten(aus, tmp);
+    assert.deepEqual(altePruefOrdnerLoeschen(optionen), [], 'auch spaetere Laeufe erhalten die Ablage');
+    assert.ok(fs.existsSync(alt));
+  });
+}
+
 test('echter Kindprozess mit Tempordner als cwd bleibt geschuetzt', {
   skip: process.platform === 'win32', timeout: 10000,
 }, async t => {

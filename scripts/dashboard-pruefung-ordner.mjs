@@ -27,10 +27,39 @@ export function pruefOrdnerAnlegen(tmp = os.tmpdir()) {
   return ordner;
 }
 
+// --aus darf noch nicht existieren. Erst den naechsten vorhandenen Vorfahren
+// aufloesen, dann fehlende Teile anhaengen; Symlink/.. nie vorher normalisieren.
+function ausAufloesen(aus) {
+  let p = path.isAbsolute(aus) ? aus : `${process.cwd()}${path.sep}${aus}`;
+  const rest = [];
+  for (;;) {
+    try { return path.join(fs.realpathSync(p), ...rest); }
+    catch (e) {
+      if (e.code !== 'ENOENT' || path.dirname(p) === p) return null;
+      rest.unshift(path.basename(p));
+      p = path.dirname(p);
+    }
+  }
+}
+
+function enthaelt(ordner, aus) {
+  const relativ = path.relative(fs.realpathSync(ordner), aus);
+  return relativ === '' || (!path.isAbsolute(relativ) && relativ !== '..' && !relativ.startsWith(`..${path.sep}`));
+}
+
 // Eine ausdruecklich mit --aus gewaehlte Ablage wird dauerhaft behalten, auch wenn
 // der Benutzer dafuer den automatisch erzeugten Ordner eines frueheren Laufs nutzt.
 export function pruefOrdnerBehalten(ordner, tmp = os.tmpdir()) {
-  if (istPruefOrdner(ordner, tmp)) fs.unlinkSync(path.join(ordner, '.tp-dashboard-temp.json'));
+  let p = ausAufloesen(ordner);
+  while (p) {
+    if (istPruefOrdner(p, tmp)) {
+      fs.unlinkSync(path.join(p, '.tp-dashboard-temp.json'));
+      return;
+    }
+    const eltern = path.dirname(p);
+    if (eltern === p) return;
+    p = eltern;
+  }
 }
 
 /** Nur ein echtes Verzeichnis tp-dashboard-pruefung-XXXXXX direkt im Temp-Ordner. */
@@ -47,12 +76,14 @@ export function istPruefOrdner(pfad, tmp = os.tmpdir()) {
 
 /** Screenshot-Ordner frueherer Laeufe, die aelter als `maxAlterMs` sind (ab dem Anlegen). */
 export function altePruefOrdner({ tmp = os.tmpdir(), jetzt = Date.now(), maxAlterMs = PRUEF_ORDNER_MAX_ALTER_MS, lebt = prozessLebt, benutzt = ordnerBenutzt, aus = null } = {}) {
+  const ausZiel = aus ? ausAufloesen(aus) : null;
+  if (aus && !ausZiel) return []; // Unklarer Ausgabeort: nichts darunter loeschen.
   let namen;
   try { namen = fs.readdirSync(tmp).filter(n => NAME.test(n)); } catch { return []; }
   return namen.map(n => path.join(tmp, n)).filter(p => {
     if (!istPruefOrdner(p, tmp)) return false;
     try {
-      if (aus && fs.realpathSync(aus) === fs.realpathSync(p)) return false;
+      if (ausZiel && enthaelt(p, ausZiel)) return false;
     } catch { /* --aus existiert vielleicht noch nicht */ }
     try {
       const b = besitzLesen(p, 'pruefung');
