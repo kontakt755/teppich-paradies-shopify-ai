@@ -612,42 +612,29 @@ export function kettlerAutomatisch(p) {
  */
 export function kettlerGrund(p, adresse) {
   if (!(p.ausfuehrung ?? []).some(istEinfassung)) return null;
-  if (kettlerAutomatisch(p)) return `unter ${KETTLER_UNTER_CM / 100} m – Zuschnitt und Ketteln beim Kettler`;
+  if (kettlerAutomatisch(p)) return `unter ${KETTLER_UNTER_CM / 100} m – Ketteln beim Kettler`;
   if (adresse?.plz && KETTLER_NAH_PLZ.test(String(adresse.plz).trim())) return `Kunde in der Nähe (${String(adresse.plz).trim()} ${adresse.ort ?? ''}`.trim() + ') – wir liefern selbst';
   return null;
 }
 
 /**
- * Ueber den Kettler kettelt nicht der Lieferant. Massteppiche bestellen wir dann als Meterware
- * von der Rolle - ohne Masszuschnitt, den der Lieferant extra berechnet; zuschneiden und ketteln
- * macht der Kettler. Laenge: so viel Rolle, dass das Fertigmass hineinpasst. Ohne bekannte
- * Rollenbreite bleibt es beim Stueck nach Mass, nur ohne Einfassung.
+ * Ueber den Kettler kettelt nicht der Lieferant. Massteppiche bestellen wir dann im Fertigmass,
+ * nur ohne Einfassung: der Lieferant berechnet beim Raummass nur die echte Flaeche (Beleg AB
+ * 19.10.), Meterware aus voller Rollenbreite waere mehr Flaeche als noetig (Inhaber 2026-10-20).
+ * Ketteln macht der Kettler.
  */
 function fuerKettler(p) {
   const ausfuehrung = p.ausfuehrung ?? [];
-  const ohne = ausfuehrung.filter(z => !istEinfassung(z));
-  const mass = ausfuehrung.find(z => z.startsWith('Fertigmaß:'));
-  const zahlen = mass ? (mass.match(/\d+(?:[.,]\d+)?/g) || []).map(n => Number(n.replace(',', '.'))).filter(n => n > 0).slice(0, 2) : [];
-  const rolle = p.ausRolleCm;
-  if (mass && rolle > 0 && zahlen.length) {
-    const [kurz, lang] = [Math.min(...zahlen), Math.max(...zahlen)];
-    const laenge = lang <= rolle ? kurz : kurz <= rolle ? lang : null;
-    if (laenge) {
-      return {
-        ...p,
-        mengeText: `${formatDe(laenge / 100)} lfm von der ${formatDe(rolle / 100)} m breiten Rolle (Meterware, ohne Maßzuschnitt)`,
-        ausfuehrung: [`Für ${mass.replace(/^Fertigmaß:\s*/, 'Fertigmaß ')} – Zuschnitt und Ketteln macht unser Kettelservice`],
-      };
-    }
-  }
   if (!ausfuehrung.some(istEinfassung)) return p;
-  return { ...p, ausfuehrung: [...ohne, 'Ohne Einfassung – bitte nur zuschneiden, nicht ketteln'] };
+  return { ...p, ausfuehrung: [...ausfuehrung.filter(z => !istEinfassung(z)), 'Ohne Einfassung – bitte im Fertigmaß zuschneiden, nicht ketteln (Ketteln macht unser Kettelservice)'] };
 }
 
 function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, auswahl = null, automatisch = false }) {
   const alle = (gruppe.positionen ?? []).filter(p => !auswahl || auswahl(p)).map(p => schlankePosition(p, statusAlle, jetzt));
   const offen = alle.filter(p => p.gruppe === 'zuBestellen');
-  const direkt = ZIEL_JE_AUFTRAG.has(gruppe.route);
+  // Die Regel unter 2 m gilt auch fuer Ware, die der Lieferant sonst direkt zum Kunden schickt:
+  // abgetrennte Positionen gehen an unseren Kettler (Issue #1453).
+  const direkt = ZIEL_JE_AUFTRAG.has(gruppe.route) && !(automatisch && ziel === 'kettler');
   const kettler = absender?.kettelservice ?? null;
   // Regel des Inhabers (2026-10-14): Ware geht direkt an die Kunden, je Kommission mit
   // Anschrift. "laden" ist die seltene Ausnahme - per Umschalter im Dialog oder als
@@ -711,7 +698,7 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, aus
   zeilen.push('', bestaetigen, '', gruss);
   const betreff = ['Bestellung', st.kundennummer ? `Kd.-Nr. ${st.kundennummer}` : null, anKettler ? 'Lieferung an Kettelservice' : null, kurzListe(aufgenommen.map(p => p.orderName))].filter(Boolean).join(' – ');
   // Vorschlag fuer den Dialog: welche offenen Positionen sich fuer den Kettler anbieten.
-  const kettlerVorschlag = !direkt && adresseOk(kettler)
+  const kettlerVorschlag = !ZIEL_JE_AUFTRAG.has(gruppe.route) && adresseOk(kettler)
     ? offen.map(p => ({ p, grund: kettlerGrund(p, adressen.get(p.orderId)) })).filter(x => x.grund)
       .map(({ p, grund }) => ({ orderId: p.orderId, orderName: p.orderName, lineItemId: p.lineItemId, titel: p.titel, grund }))
     : [];
@@ -722,9 +709,11 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, aus
       route: geklaert(gruppe.route),
       lieferziel: direkt ? (gruppe.route === ROUTE.SUPPLIER_TO_SITE ? 'baustelle' : 'kunde') : anKunden ? 'kunde' : anKettler ? 'kettler' : 'laden',
       // Nur Ware, die sonst in den Laden geht, kann im Dialog umgeschaltet werden.
-      zielWaehlbar: !direkt,
+      // Bei Direktversand ist das Ziel fest - auch die nach der Regel abgetrennte Kettler-Mail
+      // (#1453) wird nicht umgeschaltet, sonst faellt sie zurueck in den Direktversand.
+      zielWaehlbar: !ZIEL_JE_AUFTRAG.has(gruppe.route),
       // Kettler nur anbieten, wenn seine Anschrift in den privaten Stammdaten steht.
-      kettlerMoeglich: !direkt && adresseOk(kettler),
+      kettlerMoeglich: !ZIEL_JE_AUFTRAG.has(gruppe.route) && adresseOk(kettler),
       kettlerVorschlag,
       // Nach der Regel "unter 2 m zum Kettler" abgetrennt, nicht von Hand gewaehlt.
       kettlerAutomatisch: automatisch,
@@ -804,7 +793,10 @@ function musterMail(gruppen, { st, absender, statusAlle, adressen, jetzt, ziel }
  * Ein Ziel aus dem Dialog (Kunden/Laden/Kettler) gilt dagegen fuer die ganze Gruppe.
  */
 function wareMailsFuer(gruppe, kontext) {
-  const automatisch = !kontext.ziel && adresseOk(kontext.absender?.kettelservice) && !ZIEL_JE_AUFTRAG.has(gruppe.route);
+  // Auch Direktversand des Lieferanten (#1453); nur Baustellenlieferungen bleiben, wie sie sind.
+  // Ein Ziel aus dem Dialog gilt nur fuer waehlbare Gruppen - Direktversand behaelt die Regel.
+  const zielGilt = Boolean(kontext.ziel) && !ZIEL_JE_AUFTRAG.has(gruppe.route);
+  const automatisch = !zielGilt && adresseOk(kontext.absender?.kettelservice) && gruppe.route !== ROUTE.SUPPLIER_TO_SITE;
   // Nur offene Positionen: schon Bestelltes (auch von vor der Regel) bleibt in der normalen Mail.
   const offen = p => schlankePosition(p, kontext.statusAlle, kontext.jetzt).gruppe === 'zuBestellen';
   const zumKettler = p => kettlerAutomatisch(p) && offen(p);

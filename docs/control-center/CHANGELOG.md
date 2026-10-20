@@ -2,6 +2,134 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-20 · Einkauf „Je Auftrag“: nur Handlungsbedarf offen, Kunde informieren, Verzug (#1522)
+
+- **Geaendert:** „Je Auftrag“ zeigt oben nur „Jetzt zu tun“ (bestellen, Ungeklaertes, Ware da und
+  Kunde nicht informiert, Muster da, Verzug), aelteste zuerst. Bestellte Auftraege, die auf Ware
+  warten, liegen eingeklappt unter „Unterwegs (N)“, informierte/rausgegebene unter „Beim Kunden (N)“
+  (`?abg=` haelt die Gruppe offen). Schritt 4: „Nachricht an Kunde“ (fertiger Text in Sie-Form,
+  kopieren oder Mailprogramm, Telefon) und „Kunde informiert“ – neuer Zeitleisten-Schritt
+  `kunde_informiert` (Ware) im Auftragsverlauf, Datum und Person an der Karte. Verzug: bestellt seit
+  mehr als 10 Werktagen ohne Wareneingang (mit bestaetigtem Liefertermin erst danach) → Hinweis
+  „Beim Lieferanten nachfragen“ mit fertiger Nachfrage; das bisherige To-do „Nachhaken“ (7
+  Kalendertage) folgt derselben Regel und fuehrt nach `#/einkauf?ab=verzug`. „Heute“ hat oben die
+  Zeile „Zu bestellen · Kunde informieren · Verzug · Nachfassen Akquise“, je Zahl ein Sprung in die
+  gefilterte Liste (`?ab=bestellen|informieren|verzug`). Rechnung in `lib/auftrags-ablauf.mjs`.
+  Nichts wird automatisch gesendet.
+- **Getestet:** dashboard:test 522, npm test gruen, dashboard:pruefen 165 OK (33 Ansichten,
+  360–1440 px, 0 px Ueberlauf). Klickstrecke gegen die Kopie: Ware-Position auf „geliefert“ →
+  Heute „Kunde informieren“ 1, Liste 1 Karte → Dialog (Sie-Form, Mailto) → „Kunde informiert“ →
+  Liste 1 → 0, Heute 1 → 0, Server liefert `kundeInformiert`; Verzug 3 Karten, Nachfrage-Text mit
+  Kommission; „Unterwegs (15)“ eingeklappt, aufgeklappt 20 Karten; 0 JS-Fehler.
+- **Risiken:** Liefer-/Montagetermin aus der Auftrags-App nicht angebunden: die App liefert per
+  Schluessel nur Zahlen, Termine stehen in Google Sheets/Kalender ohne Shopify-Bestellnummer.
+- **Naechste Stufe:** Lesende Termin-Ansicht in der Auftrags-App mit Bestellnummer, dann Termin an
+  Schritt 4.
+## 2026-10-20 · Benoetigte Musteraufkleber direkt bei der Bestellung (#1506)
+
+- **Geaendert:** Musterbestellungen zeigen intern Produkt, Farbe, Shop-SKU, offene Aufklebermenge
+  und Drucklistenstand. Ein Klick merkt die zugeordneten Positionen gemeinsam vor. Die interne
+  Quellbestellung ist in der Druckliste verlinkt, erscheint aber nicht auf Aufkleber, PNG oder QR.
+  Mehrere Arbeitsplaetze und Neuladen verdoppeln keine Bestellposition. Aenderungen, unklare
+  Zuordnungen und Mengen verlangen Pruefung; bereits vorbereitete Auftraege bleiben unveraendert.
+  Der vorhandene Direktdruck verwendet dieselben kanonischen Daten und die bestellten Gesamtmengen.
+- **Getestet:** 3.310 Tests gruen (538 Dashboard-Tests), davon 33 neue Zuordnungs-, Speicher-
+  und API-Faelle. Browserfaelle mit getrennten
+  Mitarbeitersitzungen: Quell-ID vor alter Muster-SKU, Mengen/Teilversand, Tombstone,
+  Reservierungskonflikte, Storno, Direkt-/Nachdruck und verspaetete Antworten. Ohne Anmeldung
+  liefern beide APIs 401, private Dateipfade bleiben unzugaenglich, „lesen“ erhaelt bei POST 403.
+  Druckbild und QR enthalten ausschliesslich Produktdaten; synthetische Kunden-/Bestellmarker
+  fehlen. 30 Rollen-/Ansichts-/Breitenpruefungen bei 360–1440 px sowie Desktop-/Handy-Klickfaelle
+  ohne Browserfehler oder Ueberlauf. Projekt-Guards, Theme-Check, Secret-Scan und statischer
+  Workflow erfolgreich.
+- **Risiken:** Physische Ausgabe am echten Niimbot bleibt separat zu pruefen. Nachtraeglich
+  geaenderte oder entfernte Vormerkungen werden bewusst nicht automatisch neu erzeugt.
+- **Naechste Stufe:** Dashboard-Dienst nach Merge aktualisieren und die interne Zuordnung lesend
+  im laufenden Dienst kontrollieren.
+
+## 2026-10-20 · Aufgeraeumt: Navigation mit „Mehr“, Einkauf „Je Auftrag“ (#1513)
+
+- **Geaendert:** Seitenleiste nur noch Heute, Kunden, Einkauf, Akquise (Inhaber), Lexikon; alles
+  Seltene (Arbeitsplatz, Aufgaben, Sonderposten, Bildrechte, Social Media, Shop-Wache und die
+  frueheren Buero-Punkte) liegt unter einem eingeklappten „Mehr“ – fuer alle Rollen, Inhaber-Punkte
+  bleiben je Link `data-nur-inhaber`. Einkauf startet jetzt im neuen Reiter „Je Auftrag“
+  (`ansichten/einkauf/ablauf.mjs`, Rechnung in `lib/auftrags-ablauf.mjs`): je offene
+  Kundenbestellung fuenf Schritte (eingegangen → Lieferantenbestellung vorbereiten → bestellt →
+  Ware da/Lieferung/Montage → erledigt). Schritt 2 zeigt je Lieferant „Bestellnachricht zeigen“ –
+  der vorhandene Bestellmail-Dialog, auf diesen einen Auftrag gefiltert (`openBestellmailDialog(…,
+  { auftrag })`); „Als bestellt markieren“ dort hakt Schritt 3 ab. Fehlender Lieferant,
+  Artikelnummer oder Bestellmenge steht als „Ungeklaert – erst klaeren, nicht raten“. Die bisherige
+  Ansicht heisst „Je Lieferant“ (`?tab=lieferant`; alte Adressen mit `?af=`, `?auftrag=`, `?lf=`
+  und `?tab=bestellungen` landen weiter dort). Nichts wird automatisch gesendet.
+- **Getestet:** `tests/auftrags-ablauf.test.mjs` (5), dashboard:test 517, npm test gruen,
+  dashboard:pruefen nur OK auf 33 Ansichten (360–1440 px, kein Querscrollen), Klickstrecke gegen
+  die Kopie: ein Auftrag auf „vorbereiten“ zurueckgesetzt → Karte zeigt Schritt 2, „Bestellnachricht
+  zeigen“ oeffnet die Mail nur fuer diesen Auftrag, „Als bestellt markieren“ → „vorbereiten“ 1 → 0,
+  0 JS-Fehler.
+- **Risiken:** Lieferung-/Montagetermin gibt es in den Daten nicht; Schritt 4 sagt nur „Termin mit
+  dem Kunden ausmachen“. Muster-Schritte nutzen den gemeinsamen Knopf („Alle 3 angekommen“).
+- **Naechste Stufe:** Termin aus der Auftrags-App uebernehmen, wenn der Inhaber das moechte.
+
+## 2026-10-20 · Akquise Verlegeauftraege bei Wohnungsunternehmen (#1447)
+
+- **Geaendert:** Neuer Bereich „Akquise“ (nur Inhaber): je Firma Status (neu / angeschrieben /
+  Antwort / Termin / Auftrag / kein Interesse), letzte Aktion, Wiedervorlage (automatisch +14 Tage
+  nach „angeschrieben“), Notiz, Filter nach Status; „Nachricht kopieren“ legt das Anschreiben mit
+  Firmennamen in die Zwischenablage, versendet nichts. Darunter die Ausschreibungen Bodenbelag.
+  Auf „Heute“ das To-do „Akquise: N Nachfassen fällig“. Firmenliste und Vorlage liegen privat
+  (Gedaechtnis-Ordner, `TP_AKQUISE_DIR`/`TP_AKQUISE_CSV`/`TP_AKQUISE_VORLAGE`), der Stand unter
+  `$TP_PRIVAT_DIR/akquise/status.json`. API `/api/akquise/liste|aendern`, nur Inhaber.
+- **Getestet:** `tests/akquise.test.mjs` (7, u. a. Rollen lesen/mitarbeiter 403, kaputter Stand
+  wird nicht ueberschrieben), dashboard:test 513, npm test gruen, dashboard:pruefen nur OK
+  (360–1440 px), Klickstrecke gegen die Kopie: Status → angeschrieben, Wiedervorlage 03.11.,
+  Notiz gespeichert, „kein Interesse“ → Liste „Offen“ 33 → 32.
+- **Risiken:** Standardpfad der Liste ist der Gedaechtnis-Ordner dieses Macs; auf dem Dienst-Mac
+  ggf. per Umgebungsvariable setzen. Kopieren braucht die Zwischenablage-Freigabe (HTTPS/localhost).
+- **Naechste Stufe:** Ansprechpartner/Telefon je Firma anzeigen, wenn der Inhaber das wuenscht.
+
+## 2026-10-20 · Gemeinsame Druckliste fuer Musteraufkleber (#1493)
+
+- **Geaendert:** Im Lexikon Farbe/Ausfuehrung und Anzahl waehlen und „Zum Drucken vormerken“.
+  Der Kollege oeffnet „Gemeinsame Druckliste“, waehlt Eintraege und druckt den reservierten
+  Auftrag. Erst „Ausdruck geprueft – als gedruckt markieren“ erledigt ihn. Neue Vormerkungen
+  bleiben separat; Abbruch, fehlende Verbindung und Neustart loeschen nichts. Andere Sitzungen
+  koennen einen reservierten Auftrag nicht erneut zum Druck oeffnen. Bewusste Wiederfreigabe
+  verlangt die Pruefung bereits gedruckter Aufkleber. Server erzeugt die unveraenderlichen
+  Etikettdaten selbst aus dem Lexikon. Private atomare Ablage mit Revisionen, Wiederholungsschutz,
+  Prozesssperre und Sicherung; Mitarbeiter duerfen bearbeiten, „lesen“ bleibt lesend.
+- **Getestet:** Alle 3.240 Tests gruen (505 Dashboard-Tests), Projekt-Guards erfolgreich. 16 gezielte Speicher-/API-Tests
+  einschliesslich zwei paralleler Prozesse, doppelter Reservierung, spaeterer Vormerkung,
+  Rollenrechten, Original-SKU, kaputter Ablage und Erholung nach Prozessabbruch. Datenkopie:
+  45 Rollen-/Ansicht-/Breitenpruefungen zwischen 360 und 1440 px ohne Browserfehler oder Ueberlauf.
+  Vier weitere Ansichten im Dunkelmodus sowie 14 Browser-Klickfaelle mit zwei getrennten
+  Browsersitzungen und Druckerattrappe erfolgreich.
+- **Risiken:** Beide Arbeitsplaetze muessen denselben privaten Dashboard-Dienst verwenden.
+  Die Papierausgabe am echten Niimbot bleibt zu pruefen; ein geschlossener Dialog oder
+  erfolgreicher Download gilt nie als bestaetigter Ausdruck.
+- **Naechste Stufe:** Nach dem Merge den Dashboard-Dienst nachziehen und einen echten
+  50×50-mm-Testaufkleber im Laden pruefen.
+
+## 2026-10-20 · Musteraufkleber direkt im Lexikon (#1489, #1490)
+
+- **Geaendert:** Produkt oder Muster im Lexikon oeffnen, Farbe/Ausfuehrung und Anzahl waehlen,
+  fertiges 50×50-mm-Etikett im vorhandenen Niimbot-Dialog drucken oder als PNG speichern.
+  Gleiche SKU/Farbe auf mehreren Breiten wird gebuendelt, andere SKUs bleiben waehlbar.
+  Muster verwenden die explizite Originalreferenz und echte Shop-SKU. Fehlende Angaben lassen
+  sich in der Vorschau ergaenzen; paralleles Speichern kann kein anderes Etikett ueberschreiben.
+  Lange Paketetiketten behalten alle Technikzeilen und die vollstaendige Artikelnummer.
+  Einzelvarianten mit dem internen Titel „Default“ verwenden Marke und Dekor aus dem belegten
+  Produkttitel; der Platzhalter erscheint nicht als Farbe auf dem Etikett.
+- **Getestet:** Alle 3.223 Tests gruen, davon 488 Dashboard-Tests; 17 synthetische Browserfaelle bei 1440/390 px einschliesslich
+  verzogertem Nachladen, zwei Kopien, PNG, Ergaenzen, bestehendem Bestellungsdruck und QR-Netzfehler.
+  Read-only-Abgleich aller 5.971 aktuellen Mustervarianten: vollstaendige Etikettdaten fuer
+  3.927 unterschiedliche Muster-SKUs, kein Text ausserhalb, kein QR unter 100 px und keine fehlende
+  Technikzeile. Zusaetzlich Lexikonliste, Original- und Musterprodukt in der Datenkopie bei
+  360/390/800/1024/1440 px: 15 Ansichten ohne Browserfehler oder Ueberlauf. Projekt-Guards,
+  Theme-Check, Secret-Scan und statischer Workflow erfolgreich.
+- **Risiken:** Der Browser-Druckauftrag ist mit einer Druckerattrappe geprueft; physischer
+  Testdruck am Niimbot bleibt offen. Keine Produktdaten oder Lagerbestaende geaendert.
+- **Naechste Stufe:** Nach dem Merge Dashboard-Dienst nachziehen und den echten Testdruck bestaetigen.
+
 ## 2026-10-19 · Belege: Absender und fehlende Bestelldaten absichern (#1463)
 
 - **Geändert:** Bei allgemeinen Mailanbietern verknüpft dieselbe Vorgangsnummer nur noch Belege
@@ -1710,3 +1838,24 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   zählt in der Nachfass-Kachel je Lieferant. PR #1225 (offen) ändert dieselben Dateien.
 - **Nächste Stufe:** die aufgeklappte Tabelle („Positionen bearbeiten“) am Handy kürzen (bei Lieferant A
   rund 18 000 px hoch); Heute-To-dos in derselben Reihenfolge (Bestellen, Muster, Nachhaken) sortieren.
+
+## 2026-10-20 · Muster-Etiketten drucken (Niimbot B1)
+
+- **Geändert:** Musterbestellung aufklappen → „Etiketten drucken“: alle Muster der Bestellung als
+  50 × 50-mm-Etiketten mit Vorschau, nacheinander gedruckt in einem Auftrag. Einkauf › Musterlager →
+  „Etikett drucken…“ für ein Etikett von Hand (Produktlink genügt). Inhalt: Shopname, Serie, Farbe,
+  bei Paketware Art, Stärke/Nutzschicht, Nutzungsklassen, Format; QR-Code zur Produktseite;
+  Artikelnummer der echten Variante. Fehlende Angaben stehen rot unter der Vorschau. Verbindung per
+  Bluetooth (USB als Ausweg), nur Chrome/Edge auf https bzw. localhost. Neu `lib/muster-etiketten.mjs`,
+  `bausteine/etiketten-druck.mjs`; Lexikon-Export führt zusätzlich `nutzschicht`, `format`, `arten`.
+- **Getestet:** `tests/muster-etiketten.test.mjs` (11); `dashboard:test` 476 grün, `npm test` alle
+  Suiten grün; `dashboard:pruefen` 145 × OK, 0 px Überlauf. Datenkopie: 39 Musterbestellungen →
+  105 Etiketten, 58 vollständig, 47 ohne Artikelnummer (Produkte ohne SKU im Shop, z. B. Teppich nach
+  Maß), 4 ohne Farbe, 0 mit Muster-SKU, 6 mit Technikzeilen. Klickstrecke (Kopie, 800 px):
+  Bestellung aufklappen → „Etiketten drucken“ → 2 Etiketten; Musterlager → Produktlink eintragen →
+  1 Etikett mit 4 Technikzeilen; Esc schließt; 0 JS-Fehler. niimbluelib lädt mit SRI, `encodeCanvas`
+  liefert 400 × 400.
+- **Risiken/Annahmen:** Echter Druck nicht geprüft (kein Drucker am Prüfrechner). Bild 400 px breit
+  bei 384 px Druckkopf wie in NiimBlue – Rand 18 px hält Inhalte im Druckbereich. Serie aus dem Titel
+  (Marke nur, wenn der Titel damit beginnt).
+- **Nächste Stufe:** „auch als Klickvinyl“ bei gleichem Dekor in anderer Art; Druck am B1 bestätigen.

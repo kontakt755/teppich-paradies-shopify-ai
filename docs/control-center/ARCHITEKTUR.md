@@ -488,6 +488,18 @@ vor „Erledigt" zurück (ohne solchen: kein Status = noch nicht bestellt). Die 
 `wiederGeoeffnetAm/Von` stehen am Datensatz, der Audit-Log erhält `auftragsstatus-wieder-geoeffnet`.
 Wartezeiten im Einkauf rechnet das Frontend aus `bestelltAm`/`geliefertAm` (7 Tage bernstein, 14 rot).
 
+### Einkauf „Je Auftrag“: Arbeitsliste (seit 2026-10-20, #1522)
+
+`lib/auftrags-ablauf.mjs` ordnet jeden offenen Auftrag ein (`einordnung`): **jetzt** (bestellen,
+ungeklaert, Ware da ohne „Kunde informiert“, Muster da, Verzug), **unterwegs** und **beiKunde**
+(beide eingeklappt). Verzug = Status „bestellt“, mehr als `VERZUG_WERKTAGE` (10) Werktage, bei
+bestaetigtem Liefertermin erst nach dem Termin; dieselbe Regel nutzt das To-do „Nachfragen“ in
+`lib/todos.mjs`. „Kunde informiert“ ist ein Ereignis `kunde_informiert` im Auftragsverlauf
+(`POST /api/einkauf/auftragsstatus`, aktion `schritt`, nur Warenauftraege, Rolle „lesen“ 403);
+`/api/einkauf/bestellungen` liefert es als `kundeInformiert[orderId]`. „Heute“ zaehlt mit
+`einkaufZahlen` dieselbe Menge und verlinkt `#/einkauf?ab=bestellen|informieren|verzug`.
+Liefer-/Montagetermine der Auftrags-App sind nicht angebunden (kein lesbarer Export mit Bestellnummer).
+
 ### Einkauf je Lieferant (seit 2026-10-01)
 
 Der Reiter „Bestellungen" zeigt eine Karte je Lieferant (`ansichten/einkauf/lieferanten.mjs`, Regeln ohne
@@ -1588,3 +1600,86 @@ abgehakt, ist es mit Shopify synchron“. Neuer Reiter **Einkauf › Belege** (`
   Abgleich, Ablage mit Sperre und beschädigter Datei, API, Rollen am Server) – nur Pseudonyme.
 - **Offen**: Anhänge (PDF) liest der Lauf nicht – Nummern nur aus Betreff, Text und Dateinamen. „AB
   fehlt seit N Tagen“ ist bewusst keine Regel, solange die Abdeckung des Postfachs nicht belegt ist.
+
+## 26. Muster-Etiketten drucken (seit 2026-10-20, #1473)
+
+Etikettendrucker Niimbot B1, Etikett 50 × 50 mm (400 × 400 px, 203 dpi, Druckrichtung „top“ –
+NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
+
+- **Wo:** Kunden › Bestellungen, Musterbestellung aufklappen → „Etiketten drucken“ (alle Muster der
+  Bestellung, eins je Stück). Einkauf › Musterlager → „Etikett drucken…“ für ein Etikett von Hand
+  (Produktlink, optional Farbe/Serie/Artikelnummer). Beide öffnen denselben Dialog mit Vorschau,
+  Druckdichte (1–5, Standard 3) und Verbindung.
+- **Direkt im Lexikon (20.10., #1489):** Produkt oder Muster oeffnen → „Musteraufkleber“ →
+  Farbe/Ausfuehrung und Anzahl (1–20) waehlen → Vorschau. Der Aufkleber entsteht aus dem aktuellen
+  Eintrag, ohne zuvor gespeicherte PNG-Datei. `lib/lexikon-etiketten.mjs` buendelt gleiche SKU/Farbe
+  ueber mehrere Breiten; unterschiedliche Shop-SKUs bleiben getrennte Ausfuehrungen. Ein Muster
+  laedt das explizit verknuepfte Originalprodukt und ordnet die Quell-SKU exakt zu. Die
+  Lieferanten-Artikelnummer ersetzt niemals die Shop-SKU. Der Sammelartikel „Kostenloses Muster“
+  fordert die Auswahl des konkreten Produkts. Fehlt eine Farbe, kann eine belegte
+  Variantenbezeichnung als Ausfuehrung dienen; reine Masse und „Default Title“ bleiben ausgeschlossen.
+- **Vorschau und Korrektur:** „Als PNG speichern“ gibt das 400×400-Bild aus. „Angaben bearbeiten“
+  ersetzt das ausgewaehlte Etikett (samt identischen Kopien); waehrend des Abrufs bleiben weitere
+  Bearbeitung und Druck gesperrt. Fehlende Pflichtangaben oder eine noch nicht geladene QR-Bibliothek
+  sperren Druck und Download. SKU bleibt optional und wird bei leerem Wert ausgeblendet. Lange
+  Paketetiketten passen die Schrift an, damit keine technische Zeile oder Artikelnummer entfaellt.
+- **Gemeinsame Druckliste (#1493):** Im Lexikon Farbe/Ausfuehrung und Anzahl waehlen → „Zum
+  Drucken vormerken“. Der Reiter „Gemeinsame Druckliste“ ist die Arbeitsliste fuer den Kollegen
+  im Laden. Beide Arbeitsplaetze muessen denselben Dashboard-Dienst verwenden. Die Liste liegt
+  zentral in `$TP_PRIVAT_DIR/muster-druckliste.json`, nicht in einer Browserablage. `GET/POST
+  /api/lexikon/druckliste` erlauben angemeldetes Lesen bzw. Mitarbeiter-/Inhaber-Aenderungen;
+  die Rolle „lesen“ kann nichts vormerken, reservieren oder bestaetigen.
+  Der Server erzeugt den unveraenderlichen Etikettstand selbst aus Handle und Auswahlschluessel;
+  uebermittelte Texte, SKUs und Personenangaben sind keine Datenquelle. Jede Vormerkung ist ein
+  eigener Eintrag. Wiederholte Anfragen mit derselben Vorgangskennung verdoppeln nichts.
+  Auswahl zum Druck reserviert genau diese IDs und Revisionen atomar. Ein zweiter Arbeitsplatz
+  erhaelt fuer eine veraltete Auswahl einen Konflikt. Spaeter vorgemerkte Mengen werden durch
+  den Abschluss des alten Auftrags nicht entfernt. Hoechstens 100 Etiketten je Druckauftrag.
+  Nach Druck/Download bleiben die Eintraege „in Druck“, bis jemand den Ausdruck geprueft und
+  ausdruecklich als gedruckt markiert hat. Abbruch oder Neustart loeschen keinen Auftrag;
+  Wiederfreigeben ist eine bewusste Aktion mit Hinweis auf moegliche bereits gedruckte Etiketten.
+  Die gemeinsame Vorschau bietet keine Textkorrektur, damit der bestaetigte Stand eindeutig ist.
+  Private Ablage mit exklusiver Schreibsperre, atomarem Austausch und Rechten `0600`; nur eine
+  fehlende Datei ist leer, beschaedigte Daten werden nicht ueberschrieben. Sicherung und
+  Browser-Datenkopie enthalten die Datei. Erledigte/entfernte Eintraege bleiben fuer Verlauf und
+  Wiederholungsschutz erhalten. Es gibt keinen automatischen Hardwaredruck oder Shopify-Schreibzugriff.
+- **Musterbestellungen intern zuordnen (#1506):** Kunden › Bestellungen zeigt bei Musterauftraegen
+  den Einstieg „Musteraufkleber ansehen“. Die aufgeklappte Bestellung zeigt Produkt, Farbe,
+  echte Shop-SKU, offene Aufklebermenge und Drucklistenstand je Bestellposition. „Aufkleber zur
+  Druckliste vormerken“ uebernimmt sie gemeinsam. `GET/POST /api/kunden/musteretiketten` sind nur
+  im privaten, angemeldeten Dashboard erreichbar; die Rolle „lesen“ darf ansehen, nicht vormerken.
+  Der Browser sendet nur Bestellkennung und Vorgangskennung. Der Server liest Bestellmodell und
+  Lexikon ohne Shopify-Schreibzugriff oder Statusabgleich. Eine belegte Quellvarianten-ID hat
+  Vorrang vor alten Muster-SKUs; fehlende, veraltete oder mehrdeutige Zuordnungen sperren die
+  Vormerkung. Unbekannte Mengen werden nicht als ein Stueck angenommen oder still gekuerzt.
+  Pro Quelle `[orderId,lineItemId]` gibt es genau einen unveraenderlichen Drucklisteneintrag,
+  auch bei Neuladen oder zwei Arbeitsplaetzen. Gleiche SKU auf zwei Positionen bleibt getrennt.
+  Die erste Vormerkung verwendet die offene Menge; die bestellte Gesamtmenge bleibt als stabiler
+  Vergleich erhalten. Bereits vorgemerkte, reservierte, gedruckte oder entfernte Positionen werden
+  nicht erneut angelegt. Geaenderte Produktdaten oder Bestellmengen verlangen eine bewusste Pruefung;
+  ein Konflikt schreibt keinen Teilauftrag. Stornierte, vollstaendig versendete oder lokal als
+  „An Kunden raus“ markierte Muster erhalten keine neuen Vormerkungen. Vor einer Druckreservierung
+  prueft der Server die verknuepfte Bestellung erneut. „Geliefert“ vom Lieferanten sperrt nicht.
+  Die optionale `quelle` steht ausschliesslich neben dem Etikett in der privaten Drucklistenablage.
+  Sie enthaelt Bestell-/Positionskennung, Bestellnummer und Bestellmenge, keinen Kundennamen.
+  Die Druckliste verlinkt intern zur Bestellung; Canvas, PNG und QR bekommen nur Produktdaten.
+  Der bewusste Direkt-/Nachdruck verwendet dieselbe kanonische Zuordnung und die bestellte
+  Gesamtmenge, veraendert aber keinen Drucklistenstatus. Es gibt keine Aenderung an Shopseiten,
+  Kundenkonto, Bestellmails, Bestellmetafeldern oder Kundenbelegen.
+- **Inhalt:** Absender `www.teppich-paradies.net`, Serie, Farbe, bei Paketware (Lexikon-Eigenschaft
+  `qmProPaket`) Art, Stärke/Nutzschicht, Nutzungsklassen, Format und daneben der QR-Code, sonst der
+  QR-Code größer in der Mitte; unten „Art.-Nr.“ mit der SKU der echten Variante (nie die
+  Muster-SKU `TP-MUSTER-…`/`M-…`). Daten aus der Bestellposition und dem Produktlexikon
+  (`/api/lexikon/produkt`, nur lesend); fehlt etwas, bleibt es leer und die Vorschau sagt „fehlt: …“.
+  `lib/muster-etiketten.mjs` (rein, getestet), `bausteine/etiketten-druck.mjs` (Canvas, Drucker).
+- **Lexikon:** `nutzschicht`, `format` (`custom.format_cm`) und `arten` sind seit diesem Stand Teil
+  der Lexikon-Eigenschaften; sie erscheinen nach dem nächsten Lexikon-Export.
+- **Verbindung:** Web Bluetooth (Hauptweg, `NiimbotBluetoothClient`), USB-Kabel per WebSerial als
+  Ausweg. Beides nur in **Chrome/Edge** und nur in einem sicheren Kontext: `https://…` oder
+  `http://localhost`/`127.0.0.1`. Über `http://<IP>:8001` im Firmennetz geht es nicht – dann die
+  Tailscale-Adresse `https://<name>.ts.net` nehmen (Abschnitt 1d). Der Dialog sagt das selbst.
+- **Fremdcode:** `@mmote/niimbluelib@0.47.1` (UMD) und `qrcode-generator@1.4.4` werden erst im Dialog
+  von cdn.jsdelivr.net geladen, fest gepinnt mit SRI-Prüfsumme. Ohne Internet: Vorschau ohne QR,
+  Drucken nicht möglich.
+- **Offen:** Hinweis „auch als Klickvinyl“ (gleicher Dekor in anderer Art) – nur mit belegbarer
+  Zuordnung, noch nicht gebaut.

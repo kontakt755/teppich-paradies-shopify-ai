@@ -15,6 +15,7 @@ import { musterText, musterHerkunftText } from './bestellinhalt.mjs';
 import { vorgangsLink } from './vorgangslink.mjs';
 import { lieferterminFaellig, beschaffungText, uebernahmeText } from './beschaffung.mjs';
 import { LEISTUNG_LABEL, QUELLE_LABEL } from './serviceanfragen.mjs';
+import { verzugWerktage, VERZUG_WERKTAGE } from './auftrags-ablauf.mjs';
 
 const TAG_MS = 86400000;
 const UNGEKLAERT = 'UNGEKLAERT';
@@ -176,7 +177,8 @@ function lageVon({ z, a, offen }, { statusAlle, rueckrufJeOrder, heute, jetzt, s
       return { spalte: 'lieferant', art: 'bestellt', schritt: `${artWort(bestellt)} kommt bis ${termin.split('-').reverse().join('.')}`, alterTage: null, positionen: bestellt };
     }
     const tage = maxTage(ohneTermin, 'bestelltAm');
-    return tage >= schwellen.nachhakenTage
+    // Verzug: mehr als 10 Werktage ohne Wareneingang (Inhaber 2026-10-20, wie im Einkauf "Je Auftrag").
+    return ohneTermin.some(x => verzugWerktage(x.eintrag, jetzt) !== null)
       ? { spalte: 'wir', art: 'nachhaken', schritt: 'Nachhaken', alterTage: tage, positionen: bestellt }
       : { spalte: 'lieferant', art: 'bestellt', schritt: `${artWort(bestellt)} bestellt`, alterTage: tage, positionen: bestellt };
   }
@@ -293,7 +295,8 @@ function ausBestellungen(quellen, k) {
       else if (!status) sammle(bestellen, `${x.p.lieferant ?? UNGEKLAERT}|${x.p.istMuster ? 'muster' : 'ware'}`, pos);
       else if (status === 'bestellt') {
         const tage = tageSeit(x.eintrag.bestelltAm, k.jetzt);
-        if (!x.eintrag?.beschaffung?.liefertermin && tage !== null && tage >= k.schwellen.nachhakenTage) sammle(nachhaken, x.p.lieferant ?? UNGEKLAERT, { ...pos, tage });
+        const werktage = x.eintrag?.beschaffung?.liefertermin ? null : verzugWerktage(x.eintrag, k.jetzt);
+        if (werktage !== null) sammle(nachhaken, x.p.lieferant ?? UNGEKLAERT, { ...pos, tage, werktage });
       } else if (status === 'geliefert') {
         const tage = tageSeit(x.eintrag.geliefertAm, k.jetzt);
         const id = `rausgeben:${z.orderId}`;
@@ -360,10 +363,10 @@ function ausBestellungen(quellen, k) {
     const tage = Math.max(...positionen.map(x => x.tage));
     todos.push({
       id: `nachhaken:${lieferant}`, art: 'nachhaken', bereich: 'laden',
-      ton: tage >= k.schwellen.problemTage ? 'crit' : 'warn', alterTage: tage,
-      titel: `${artWort(positionen)} ${seitText(tage)} bestellt – noch nicht da`,
+      ton: Math.max(...positionen.map(x => x.werktage)) > VERZUG_WERKTAGE + 5 ? 'crit' : 'warn', alterTage: tage,
+      titel: `Beim Lieferanten nachfragen: ${artWort(positionen)} ${seitText(tage)} bestellt, noch nicht da`,
       kontext: [k.lieferantName(lieferant), kundenKurz(positionen), wasKurz(positionen)].join(' · '),
-      knopf: { text: 'Nachhaken', href: einkaufLink(lieferant) },
+      knopf: { text: 'Nachfragen', href: '#/einkauf?ab=verzug' },
     });
   }
   return todos;
@@ -568,6 +571,38 @@ function ausNeuheiten(quellen, jetzt) {
   }];
 }
 
+/**
+ * Ausschreibungen Bodenbelag im Umkreis (woechentlicher Lauf): neue Treffer seit dem
+ * letzten Lauf als To-do fuer den Laden (Verlegeauftraege). Bewerben macht der Inhaber.
+ */
+function ausAusschreibungen(quellen, jetzt) {
+  const d = quellen.shopwache?.ausschreibungen;
+  const neu = d?.neu || [];
+  if (!neu.length) return [];
+  const naechste = [...neu].sort((x, y) => String(x.frist || '9').localeCompare(String(y.frist || '9')))[0];
+  return [{
+    id: 'ausschreibungen', art: 'ausschreibungen', bereich: 'laden', ton: '', alterTage: tageSeit(d.geprueftAm, jetzt),
+    titel: `Ausschreibung Bodenbelag: ${neu.length} neu im Umkreis`,
+    kontext: [naechste.auftraggeber, naechste.frist ? `Frist ${naechste.frist}` : null, 'prüfen, ob wir anbieten'].filter(Boolean).join(' · '),
+    knopf: naechste.link ? { text: 'Bekanntmachung', href: naechste.link } : undefined,
+  }];
+}
+
+/**
+ * Akquise Verlegeauftraege (#1447): faellige Wiedervorlagen als ein To-do im Buero.
+ * `quellen.akquise` = Liste der faelligen Firmen (lib/akquise.mjs faelligeWiedervorlagen).
+ */
+function ausAkquise(quellen) {
+  const f = quellen.akquise || [];
+  if (!f.length) return [];
+  return [{
+    id: 'akquise', art: 'akquise', bereich: 'buero', ton: 'warn', alterTage: null,
+    titel: `Akquise: ${f.length} Nachfassen fällig`,
+    kontext: [f.slice(0, 3).map(x => x.name).join(', '), f.length > 3 ? `+${f.length - 3} weitere` : null].filter(Boolean).join(' · '),
+    knopf: { text: 'Ansehen', href: '#/akquise?as=faellig' },
+  }];
+}
+
 /** Alle ableitbaren To-dos, unsortiert und ohne Blick auf die Rolle. */
 function alleTodos(quellen, opt) {
   const k = kontext(quellen, opt);
@@ -580,6 +615,8 @@ function alleTodos(quellen, opt) {
     ...ausShopwache(quellen, k.jetzt),
     ...ausAuslauf(quellen, k.jetzt),
     ...ausNeuheiten(quellen, k.jetzt),
+    ...ausAusschreibungen(quellen, k.jetzt),
+    ...ausAkquise(quellen),
     ...ausTailscale(quellen),
   ];
 }
@@ -605,6 +642,7 @@ function fuerSicht(todos, sicht, alle) {
  *   serviceanfragen /api/kunden/serviceanfragen -> eintraege
  *   aufgaben       /api/org/liste?bereich=alle-aufgaben -> eintraege
  *   freigaben      Entwicklungsaufgaben (issues.json), nur beim Inhaber gefuellt
+ *   akquise        faellige Wiedervorlagen (ansichten/akquise.mjs akquiseFaellig), nur beim Inhaber
  *   shopwache      /api/shopwache/status, nur beim Inhaber gefuellt (mit `auslauf`)
  * @param {object} opt
  *   sicht          'inhaber' | 'laden' | 'website'

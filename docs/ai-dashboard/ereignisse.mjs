@@ -25,6 +25,7 @@ import { einkaufKlickStatus, einkaufKlickDialoge } from './ansichten/einkauf/auf
 import { versandKlick } from './ansichten/einkauf/versand.mjs';
 import { beschaffungKlick } from './ansichten/einkauf/beschaffung.mjs';
 import { einkaufKlickLieferanten } from './ansichten/einkauf/lieferanten.mjs';
+import { einkaufKlickAblauf } from './ansichten/einkauf/ablauf.mjs';
 import { einkaufKlickMusterlager } from './ansichten/einkauf/musterlager.mjs';
 import { einkaufKlickBelege } from './ansichten/einkauf/belege.mjs';
 import { lexikonKlick } from './ansichten/lexikon.mjs';
@@ -39,6 +40,7 @@ import { openMeinPasswort, teamKlick, teamAenderung } from './ansichten/team.mjs
 import { fotosEreignisseBinden, fotosAenderung } from './ansichten/fotos.mjs';
 import { socialEingabe, socialAbsenden, socialKlick } from './ansichten/social.mjs';
 import { arbeitKlick } from './ansichten/arbeit.mjs';
+import { akquiseKlick, akquiseAenderung } from './ansichten/akquise.mjs';
 import { sonderpostenKlick } from './ansichten/sonderposten.mjs';
 import { ladeAktivitaetsdaten } from './ansichten/aktivitaet.mjs';
 import { prozesseKlick, prozesseEingabe, prozesseAbsenden, verwerfeProzessKontext } from './ansichten/prozesse.mjs';
@@ -84,6 +86,7 @@ export function bindEvents() {
     if (versandKlick(e)) return;
     if (beschaffungKlick(e)) return;
     if (einkaufKlickStatus(e)) return;
+    if (einkaufKlickAblauf(e)) return;
     if (einkaufKlickLieferanten(e)) return;
     if (einkaufKlickMusterlager(e)) return;
     if (einkaufKlickBelege(e)) return;
@@ -112,6 +115,7 @@ export function bindEvents() {
     if (kundenKlickBestellungen(e)) return;
     if (musterNachfassenKlick(e)) return;
     if (sonderpostenKlick(e)) return;
+    if (akquiseKlick(e)) return;
     const kt = e.target.closest('[data-kopiertext]');
     if (kt) {
       const text = kt.dataset.kopiertext;
@@ -128,6 +132,7 @@ export function bindEvents() {
     if (socialEingabe(e)) return;
     if (orgAenderungAnhang(e)) return;
     if (teamAenderung(e)) return;
+    if (akquiseAenderung(e)) return;
     const el = e.target.closest('select[data-param]'); if (el) { setParam(el.dataset.param, el.value); return; }
     orgAenderungFeld(e);
   });

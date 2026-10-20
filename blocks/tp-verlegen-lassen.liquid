@@ -43,7 +43,7 @@
   <div class="tp-vl__actions">
     <a
       class="tp-vl__cta"
-      data-tp-vl-link
+      data-tp-vl-link data-tp-produktberatung="kontakt" data-tp-produkt-id="{{ product.id }}"
       href="{{ tp_vl_ziel }}?thema=verlegung&{{ tp_vl_query }}"
     >
       {{ block.settings.cta }}
@@ -65,48 +65,16 @@
   {%- if block.settings.angebot_label != blank or block.settings.beratung_label != blank -%}
     <p class="tp-vl__weitere">
       {%- if block.settings.angebot_label != blank -%}
-        <a data-tp-vl-link href="{{ tp_vl_ziel }}?thema=angebot&{{ tp_vl_query }}">{{ block.settings.angebot_label | escape }}</a>
+        <a data-tp-vl-link data-tp-produktberatung="kontakt" data-tp-produkt-id="{{ product.id }}" href="{{ tp_vl_ziel }}?thema=angebot&{{ tp_vl_query }}">{{ block.settings.angebot_label | escape }}</a>
       {%- endif -%}
       {%- if block.settings.beratung_label != blank -%}
-        <a data-tp-vl-link href="{{ tp_vl_ziel }}?thema=beratung&{{ tp_vl_query }}">{{ block.settings.beratung_label | escape }}</a>
+        <a data-tp-vl-link data-tp-produktberatung="kontakt" data-tp-produkt-id="{{ product.id }}" href="{{ tp_vl_ziel }}?thema=beratung&{{ tp_vl_query }}">{{ block.settings.beratung_label | escape }}</a>
       {%- endif -%}
     </p>
   {%- endif -%}
 </div>
 
-<script>
-  (function () {
-    var band = document.currentScript && document.currentScript.previousElementSibling;
-    if (!band || !band.hasAttribute('data-tp-vl')) {
-      band = document.querySelector('[data-tp-vl]');
-    }
-    if (!band) return;
-
-    band.querySelectorAll('[data-tp-vl-link]').forEach(function (link) {
-
-    // Erst beim Klick lesen: vorher sind die Felder oft noch leer, und ein
-    // Listener auf jedem Tastendruck waere Aufwand ohne Nutzen.
-    link.addEventListener('click', function () {
-      try {
-        var url = new URL(link.href, window.location.origin);
-
-        var laenge = document.querySelector('[data-length-input]');
-        if (laenge && laenge.value) url.searchParams.set('laenge_cm', laenge.value);
-
-        var breite = document.querySelector('[data-width-seg] [aria-checked="true"], [data-width-seg] .is-active');
-        if (breite && breite.textContent.trim()) {
-          url.searchParams.set('breite', breite.textContent.trim());
-        }
-
-        link.href = url.pathname + url.search;
-      } catch (e) {
-        /* Vorbefuellung ist Komfort, kein Muss: im Zweifel geht der Link
-           ohne Masse auf die Anfrageseite. */
-      }
-    });
-    });
-  })();
-</script>
+{% render 'tp-produktberatung', product: product %}
 {%- endunless -%}
 
 {% stylesheet %}

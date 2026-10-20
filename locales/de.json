@@ -8,6 +8,23 @@
  * ------------------------------------------------------------
  */
 {
+  "tp_roll_context": {
+    "skirting_basis": "Bei einem Stück ist der Vorschlag dessen Umfang. Bei mehreren Stücken geben Sie den benötigten Raumumfang an.",
+    "length_label": "Länge in Metern",
+    "room_perimeter_label": "Benötigter Raumumfang in Metern",
+    "room_perimeter_hint": "Bei mehreren Stücken ist das Bestellmaß kein Raumumfang. Bitte tragen Sie Ihren benötigten Raumumfang ein.",
+    "underlay_basis": "Für die gesamte bestellte Teppichfläche einschließlich Zuschnittresten berechnet. Das ist kein Raummaß."
+  },
+  "tp_product_advice": {
+    "cutting": "Zuschnitt",
+    "intro": "Ich habe eine Frage zu diesem Produkt:",
+    "selection": "Auswahl",
+    "size": "Maße im Rechner",
+    "width": "Breite",
+    "length": "Länge",
+    "roll": "Meterware",
+    "room": "Raummaß"
+  },
   "blocks": {
     "load_video": "Video laden: {{ description }}",
     "sold_out": "Ausverkauft",
@@ -387,5 +404,17 @@
         "other": "Zwischensumme"
       }
     }
+  },
+  "tp_groessenhilfe": {
+    "open": "Welche Teppichgröße passt zu meinen Möbeln?",
+    "intro": "Planen Sie zuerst die Fläche rund um Ihre Möbel. Diese Beispiele helfen bei der Anordnung.",
+    "sofa_title": "Am Sofa",
+    "sofa_text": "Soll der Teppich vor dem Sofa liegen oder die vorderen Sofafüße tragen? Probieren Sie beide Positionen mit Ihren Möbeln aus.",
+    "dining_title": "Unter dem Esstisch",
+    "dining_text": "Ziehen Sie die Stühle wie beim Aufstehen zurück. Prüfen Sie, ob alle Stuhlbeine auf der gewünschten Teppichfläche bleiben.",
+    "sketch_note": "Schematische Draufsichten, keine Maßvorgabe. Grün: Teppichfläche. Grau: Möbel.",
+    "measure_title": "Zu Hause abmessen:",
+    "measure_text": "Legen Sie die gewünschte Fläche mit Papier aus. Prüfen Sie Laufwege und Türen. Messen Sie die Fläche aus und tragen Sie die Maße für Ihre gewählte Form oben ein.",
+    "limits": "Die für dieses Produkt möglichen Formen und Maßgrenzen gelten weiterhin. Die Beispiele ändern Ihre Auswahl nicht."
   }
 }

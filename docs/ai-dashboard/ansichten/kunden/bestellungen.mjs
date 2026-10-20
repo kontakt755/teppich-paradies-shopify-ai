@@ -18,6 +18,7 @@ import { zeitleisteBlock, auftragAusZeile, zeitleisteKlick } from './zeitleiste.
 import { oeffneVersandDialog } from '../einkauf/versand.mjs';
 import { bestellinhalt } from '../../lib/bestellinhalt.mjs';
 import { versandRueckmeldung } from '../../lib/versand.mjs';
+import { aktualisiereMusteretiketten, bestellungsEtikettenDrucken, musteretikettenBlock, musteretikettenKlick } from './musteretiketten.mjs';
 
 /** Setzt den Auftragsfluss-Status fuer ALLE Positionen einer Bestellung auf einmal (Bereich Kunden/Bestellungen). */
 async function setzeAuftragsstatusFuerBestellung(orderId, status) {
@@ -120,6 +121,7 @@ function bestellzeileAktionen(z) {
   return `<div class="btn-row">
     ${lesend ? '' : af.map(s => `<button type="button" class="btn btn-sm btn-ghost" data-bq-af="${esc(z.orderId)}" data-bq-af-status="${s}" title="${esc(`Alle Artikel dieser Bestellung auf „${AF_STATUS_LABEL[s]}“`)}">${esc(AF_STATUS_LABEL[s])}${s === 'raus' ? '…' : ''}</button>`).join('')}
     ${!lesend && !z.fertig && z.anzahlArtikel ? `<button type="button" class="btn btn-sm btn-primary" data-bq-fertig="${esc(z.orderId)}">Kunde fertig …</button>` : ''}
+    ${(z.auftrag?.positionen || []).some(p => p?.istMuster) ? `<button type="button" class="btn btn-sm" data-bq-etiketten="${esc(z.orderId)}">Etiketten drucken</button>` : ''}
     ${z.beratungOffen ? `<a class="btn btn-sm" href="#/kunden?tab=rueckrufe">Zur Rückrufliste →</a>` : ''}
   </div>`;
 }
@@ -181,7 +183,7 @@ function inhaltHtml(z) {
   const i = bestellinhalt(z.auftrag?.positionen);
   const zeilen = [];
   if (i.muster.anzahl) {
-    zeilen.push(`<div class="bq-inhalt-zeile"><span class="bq-art">${esc(i.muster.anzahl === 1 ? '1 Muster' : `${i.muster.anzahl} Muster`)}</span> <span class="bq-was">${esc(i.muster.text)}</span>${i.muster.herkunft ? ` <span class="bq-herkunft">${esc(i.muster.herkunft)}</span>` : ''}</div>`);
+    zeilen.push(`<div class="bq-inhalt-zeile"><span class="bq-art">${esc(i.muster.anzahl === 1 ? '1 Muster' : `${i.muster.anzahl} Muster`)}</span> <span class="bq-was">${esc(i.muster.text)}</span>${i.muster.herkunft ? ` <span class="bq-herkunft">${esc(i.muster.herkunft)}</span>` : ''}<button type="button" class="btn btn-sm btn-ghost" data-bq-musteretiketten-open="${esc(z.orderId)}">Musteraufkleber ansehen</button></div>`);
   }
   if (i.ware.anzahl) {
     zeilen.push(`<div class="bq-inhalt-zeile"><span class="bq-art bq-art-ware">${esc(i.ware.anzahl === 1 ? '1 Artikel' : `${i.ware.anzahl} Artikel`)}</span> <span class="bq-was">${esc(i.ware.text)}</span></div>`);
@@ -212,7 +214,7 @@ function bestellzeileHtml(z) {
       <td data-l="Was fehlt">${z.wasFehlt?.length ? `<span class="bq-fehlt">${z.wasFehlt.map(esc).join(' · ')}</span>` : '<span class="small muted">nichts</span>'}</td>
     </tr>
     ${inhalt ? `<tr class="bq-inhalt${offenKlasse}" data-bq-toggle="${esc(z.orderId)}"><td colspan="9">${inhalt}</td></tr>` : ''}
-    ${kunden.erweitert.has(z.orderId) ? `<tr class="bq-detail"><td colspan="9">${zeitleisteBlock(auftragAusZeile(z), { kontakt: true })}${weitereAngaben(z, tagListe)}${kundenAuftragKarte(z.auftrag)}${bestellzeileAktionen(z)}</td></tr>` : ''}`;
+    ${kunden.erweitert.has(z.orderId) ? `<tr class="bq-detail"><td colspan="9">${musteretikettenBlock(z)}${zeitleisteBlock(auftragAusZeile(z), { kontakt: true })}${weitereAngaben(z, tagListe)}${kundenAuftragKarte(z.auftrag)}${bestellzeileAktionen(z)}</td></tr>` : ''}`;
 }
 
 function bestellzeileKarte(z, gruppiert = false) {
@@ -227,7 +229,7 @@ function bestellzeileKarte(z, gruppiert = false) {
     </div>
     <div class="r"><span class="small muted">${kunden.erweitert.has(z.orderId) ? 'zuklappen ▲' : 'Details ▼'}</span></div>
   </div>
-  ${kunden.erweitert.has(z.orderId) ? `<div class="bq-detail-mobil">${zeitleisteBlock(auftragAusZeile(z), { kontakt: true })}${kundenAuftragKarte(z.auftrag)}${bestellzeileAktionen(z)}</div>` : ''}`;
+  ${kunden.erweitert.has(z.orderId) ? `<div class="bq-detail-mobil">${musteretikettenBlock(z)}${zeitleisteBlock(auftragAusZeile(z), { kontakt: true })}${kundenAuftragKarte(z.auftrag)}${bestellzeileAktionen(z)}</div>` : ''}`;
 }
 
 export function viewKundenBestellungen() {
@@ -288,6 +290,7 @@ const FILTERCHIPS_KUNDEN = ['nicht_fertig', 'fertig', 'offen', 'bezahlt', 'unerf
 
 /** Kunden, Reiter Bestellungen: sortieren, aufklappen, Auftragsfluss, fertig. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function kundenKlickBestellungen(e) {
+  if (musteretikettenKlick(e)) return true;
   // Zeitleiste (Kundenakte und Bestelldetail): Hauptknopf und "Etwas anderes ist passiert ...".
   if (zeitleisteKlick(e)) return true;
   const sortKopf = e.target.closest('[data-bq-sort-toggle]');
@@ -312,7 +315,12 @@ export function kundenKlickBestellungen(e) {
   // genau die Handler abgeschnitten haben, die am document warten.
   if (bqToggle && !e.target.closest('a, button, [data-kopiertext], [data-kunden-open]')) {
     const id = bqToggle.dataset.bqToggle;
-    if (kunden.erweitert.has(id)) kunden.erweitert.delete(id); else kunden.erweitert.add(id);
+    if (kunden.erweitert.has(id)) kunden.erweitert.delete(id);
+    else {
+      kunden.erweitert.add(id);
+      const bestellung = (kunden.bestellungen?.zeilen || []).find(z => z.orderId === id);
+      if (bestellung?.auftrag?.positionen?.some(p => p?.istMuster)) void aktualisiereMusteretiketten(id);
+    }
     render();
     return true;
   }
@@ -322,6 +330,12 @@ export function kundenKlickBestellungen(e) {
     // "raus" bucht in Shopify und schickt die Versandmail: ein Paket, ein Fenster - nicht je Artikel.
     if (bqAf.dataset.bqAfStatus === 'raus') oeffneVersandDialog(bqAf.dataset.bqAf);
     else setzeAuftragsstatusFuerBestellung(bqAf.dataset.bqAf, bqAf.dataset.bqAfStatus);
+    return true;
+  }
+  const bqEtk = e.target.closest('[data-bq-etiketten]');
+  if (bqEtk) {
+    e.preventDefault(); e.stopPropagation();
+    void bestellungsEtikettenDrucken(bqEtk.dataset.bqEtiketten);
     return true;
   }
   const bqFertig = e.target.closest('[data-bq-fertig]');

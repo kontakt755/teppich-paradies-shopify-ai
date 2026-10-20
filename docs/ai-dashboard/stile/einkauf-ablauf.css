@@ -1,0 +1,43 @@
+/* Einkauf, Reiter "Je Auftrag" (ansichten/einkauf/ablauf.mjs): eine Karte je Kundenbestellung
+   mit fuenf Schritten. Nur Tokens - Dunkelmodus kommt von selbst. Akzent nur fuer den
+   aktuellen Schritt, Bernstein nur fuer Ungeklaertes. */
+.ab-einleitung { margin: 4px 0 14px; }
+.ab-raster { display: grid; gap: 12px; }
+.ab-karte { padding: 14px 16px; }
+.ab-karte.ab-mit-problem { border-left: 3px solid var(--warn); }
+.ab-kopf { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.ab-kopf h3 { margin: 0; font-size: 1rem; flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.ab-kunde { font-weight: 500; color: var(--text-2); }
+.ab-schritte { list-style: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 12px 0 10px; padding: 0; }
+.ab-schritt { display: flex; align-items: flex-start; gap: 6px; font-size: .82rem; line-height: 1.25; color: var(--text-3); min-width: 0; }
+.ab-text { overflow-wrap: anywhere; }
+.ab-nr { flex: none; display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line-strong); font-size: .72rem; }
+.ab-fertig { color: var(--text-2); }
+.ab-fertig .ab-nr { background: var(--surface-2); border-color: var(--line); }
+.ab-jetzt { color: var(--text); font-weight: 650; }
+.ab-jetzt .ab-nr { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.ab-inhalt { border-top: 1px solid var(--line); padding-top: 10px; }
+.ab-lieferanten { display: grid; gap: 8px; }
+.ab-lief, .ab-pos { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.ab-lief-text { flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
+.ab-hinweis { margin: 8px 0 0; }
+.ab-ungeklaert { margin-top: 10px; }
+.ab-ungeklaert ul { margin: 4px 0; padding-left: 18px; }
+.ab-liste { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 6px; }
+.ab-pos > span { flex: 1 1 200px; min-width: 0; overflow-wrap: anywhere; }
+/* Am Handy: Schritte untereinander statt fuenf schmaler Spalten. */
+@media (max-width: 640px) {
+  .ab-schritte { grid-template-columns: 1fr; gap: 4px; }
+  .ab-schritt.ab-offen, .ab-schritt.ab-fertig { display: none; }
+  .ab-schritte::before { content: none; }
+}
+
+/* Arbeitsliste (2026-10-20): "Jetzt zu tun" offen, der Rest in eingeklappten Gruppen. */
+.ab-titel { font-size: 1rem; margin: 4px 0 8px; }
+.ab-gruppe { margin-top: 16px; }
+.ab-gruppe-kopf { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
+.ab-gruppe-kopf .small { font-weight: 400; }
+.ab-gruppe .ab-raster { margin-top: 10px; }
+.ab-aktion { margin: 0 0 8px; }
+.ab-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.ab-text-feld { width: 100%; box-sizing: border-box; font: inherit; font-size: .9rem; overflow-wrap: anywhere; }

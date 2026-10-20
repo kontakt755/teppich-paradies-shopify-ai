@@ -85,6 +85,12 @@ class StickyAddToCartComponent extends Component {
    */
   #targetUsable = true;
 
+  /** @type {{ target: HTMLButtonElement, sourceIds: string[], productForm: HTMLElement | null, productId: string | null, packageVariantId: string | null } | null} */
+  #pendingCartAdd = null;
+
+  /** @type {number | undefined} */
+  #pendingCartAddTimeout;
+
   connectedCallback() {
     super.connectedCallback();
 
@@ -121,6 +127,7 @@ class StickyAddToCartComponent extends Component {
     this.#mainBottomObserver?.disconnect();
     this.#targetStateObserver?.disconnect();
     this.#abortController.abort();
+    this.#clearPendingCartAdd();
     if (this.#animationTimeout) {
       clearTimeout(this.#animationTimeout);
     }
@@ -231,7 +238,7 @@ class StickyAddToCartComponent extends Component {
     this.#targetStateObserver = new MutationObserver(() => this.#syncTargetState());
     this.#targetStateObserver.observe(button, {
       attributes: true,
-      attributeFilter: ['hidden', 'disabled'],
+      attributeFilter: ['hidden', 'disabled', 'aria-disabled'],
       childList: true,
       characterData: true,
       subtree: true,
@@ -265,7 +272,7 @@ class StickyAddToCartComponent extends Component {
     }
 
     const usable = !target.hidden;
-    addToCartButton.disabled = target.hidden || target.disabled;
+    addToCartButton.disabled = this.#targetBlocked(target);
 
     const label = addToCartButton.querySelector('.add-to-cart-text__content > span');
     if (label) {
@@ -391,15 +398,43 @@ class StickyAddToCartComponent extends Component {
   /**
    * Handles the add to cart button click in the sticky bar
    */
-  handleAddToCartClick = async () => {
+  handleAddToCartClick = () => {
     const target = this.#targetAddToCartButton;
-    if (!target) return;
-    // Rechner-Buttons: verborgen oder gesperrt (keine gueltige Laenge, Aufruf
-    // laeuft) heisst kein Klick - der Rechner wuerde ihn ohnehin verwerfen, die
-    // Leiste zeigte aber die "Hinzugefuegt"-Animation.
-    if (target.hidden || target.disabled) return;
+    if (!target || this.#targetBlocked(target)) return;
+
+    this.#clearPendingCartAdd();
+    const productForm = target.closest('product-form-component');
+    const form = target.closest('form');
+    const kaufweg = target.closest('.tp-kaufweg, .tp-paket-auswahl');
+    const variantId = form?.querySelector('[name="id"]')?.value;
+    this.#pendingCartAdd = {
+      target,
+      sourceIds: [kaufweg?.id, kaufweg?.classList.contains('tp-paket-auswahl') ? 'paket-auswahl' : null,
+        productForm?.id, form?.id, variantId].filter(Boolean).map(String),
+      productForm,
+      productId: productForm ? this.dataset.productId || null : null,
+      packageVariantId: kaufweg?.classList.contains('tp-paket-auswahl') ? kaufweg.dataset.variantId || null : null,
+    };
+    // Ein abgewiesener oder abgebrochener Klick kann ohne Cart-Event enden.
+    // Dann bleibt kein alter Ausloeser fuer spaetere fremde Aktualisierungen.
+    this.#pendingCartAddTimeout = setTimeout(() => this.#clearPendingCartAdd(), 30000);
     target.dataset.puppet = 'true';
     target.click();
+  };
+
+  /** @param {HTMLButtonElement} target */
+  #targetBlocked(target) {
+    return target.hidden || target.disabled || target.getAttribute('aria-disabled') === 'true';
+  }
+
+  #clearPendingCartAdd() {
+    if (this.#pendingCartAdd) this.#pendingCartAdd.target.dataset.puppet = 'false';
+    this.#pendingCartAdd = null;
+    if (this.#pendingCartAddTimeout) clearTimeout(this.#pendingCartAddTimeout);
+    this.#pendingCartAddTimeout = undefined;
+  }
+
+  async #animateCartAdd() {
     const cartIcon = document.querySelector('.header-actions__cart-icon');
 
     if (this.refs.addToCartButton.dataset.added !== 'true') {
@@ -419,8 +454,6 @@ class StickyAddToCartComponent extends Component {
     }
 
     const flyToCartElement = /** @type {FlyToCart} */ (document.createElement('fly-to-cart'));
-    const sourceStyles = getComputedStyle(this.refs.productImage);
-
     flyToCartElement.classList.add('fly-to-cart--sticky');
     flyToCartElement.style.setProperty('background-image', `url(${this.refs.productImage.src})`);
     flyToCartElement.useSourceSize = 'true';
@@ -433,7 +466,7 @@ class StickyAddToCartComponent extends Component {
     this.#resetTimeout = setTimeout(() => {
       this.refs.addToCartButton.removeAttribute('data-added');
     }, 800);
-  };
+  }
 
   /**
    * Handles variant update events
@@ -514,14 +547,29 @@ class StickyAddToCartComponent extends Component {
   };
 
   /**
-   * Handles cart add complete (success or error) - resets puppet flag
-   * @param {CustomEvent} _event - The cart event (unused)
+   * Bestaetigt nur die Antwort auf den eigenen delegierten Kaufklick.
+   * @param {CustomEvent} event
    */
-  #handleCartAddComplete = (_event) => {
-    // Reset the puppet flag after cart operation
-    if (this.#targetAddToCartButton) {
-      this.#targetAddToCartButton.dataset.puppet = 'false';
+  #handleCartAddComplete = (event) => {
+    const pending = this.#pendingCartAdd;
+    if (!pending) return;
+    if (pending.productForm && event.target !== pending.productForm) return;
+    const detail = event.detail;
+    if (event.type === ThemeEvents.cartUpdate && detail?.data?.source !== 'product-form-component') return;
+    const matchesSource = pending.sourceIds.includes(String(detail?.sourceId));
+    const matchesProduct = pending.productId && detail?.data?.source === 'product-form-component'
+      && String(detail.data.productId) === pending.productId;
+    if (!matchesSource && !matchesProduct) return;
+
+    const success = event.type === ThemeEvents.cartUpdate && !detail?.data?.didError
+      && detail?.data?.source === 'product-form-component';
+    if (success && pending.packageVariantId) {
+      const items = detail?.resource?.items ?? [detail?.resource];
+      if (!items.some((item) => String(item?.variant_id ?? item?.id) === pending.packageVariantId)) return;
     }
+    this.#clearPendingCartAdd();
+    if (!success) return;
+    this.#animateCartAdd();
   };
 
   /**

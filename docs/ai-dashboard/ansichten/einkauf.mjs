@@ -1,5 +1,5 @@
 /**
- * Ansicht "Einkauf" (#/einkauf): Reiter Bestellungen, Belege, Musterlager, Produktdaten, Hilfe.
+ * Ansicht "Einkauf" (#/einkauf): Reiter Je Auftrag (Standard), Je Lieferant, Belege, Musterlager, Produktdaten, Hilfe.
  * Teilmodule in ansichten/einkauf/.
  */
 import { state } from '../kern/zustand.mjs';
@@ -7,6 +7,7 @@ import { esc } from '../kern/helfer.mjs';
 import { emptyState } from '../bausteine/karten.mjs';
 import { ensureAktualisierung, aktualisierenButton } from '../bausteine/aktualisierung.mjs';
 import { viewEinkaufBestellungen } from './einkauf/bestellungen.mjs';
+import { viewEinkaufAblauf } from './einkauf/ablauf.mjs';
 import { viewEinkaufProduktdaten } from './einkauf/produktdaten.mjs';
 import { viewEinkaufLieferant } from './einkauf/lieferanten.mjs';
 import { viewEinkaufMusterlager } from './einkauf/musterlager.mjs';
@@ -70,15 +71,20 @@ export function viewEinkauf() {
   // Detailseite eines Lieferanten als Parameter (#/einkauf?lieferant=A) - bleibt damit im
   // Einkauf (Navigation, Rollen, Datenstand) und braucht keine eigene Route.
   if (state.route.params.get('lieferant')) { ensureAktualisierung(); return viewEinkaufLieferant(state.route.params.get('lieferant')); }
-  const tab = ['bestellungen', 'belege', 'musterlager', 'produktdaten', 'hilfe'].includes(state.route.params.get('tab')) ? state.route.params.get('tab') : 'bestellungen';
-  const tabs = [['bestellungen', 'Bestellungen'], ['belege', 'Belege'], ['musterlager', 'Musterlager'], ['produktdaten', 'Produktdaten'], ['hilfe', 'Anleitung']];
+  // Standard ist "Je Auftrag" (Kunde bestellt -> wir bestellen beim Lieferanten). Alte Adressen
+  // mit ?af= oder ?auftrag= zeigen weiter die Lieferanten-Ansicht, die dort gemeint war.
+  const p = state.route.params;
+  const roh = p.get('tab') === 'bestellungen' ? 'lieferant' : p.get('tab');
+  const tab = ['ablauf', 'lieferant', 'belege', 'musterlager', 'produktdaten', 'hilfe'].includes(roh) ? roh
+    : (p.get('af') || p.get('auftrag') || p.get('lf')) ? 'lieferant' : 'ablauf';
+  const tabs = [['ablauf', 'Je Auftrag'], ['lieferant', 'Je Lieferant'], ['belege', 'Belege'], ['musterlager', 'Musterlager'], ['produktdaten', 'Produktdaten'], ['hilfe', 'Anleitung']];
   ensureAktualisierung();
   // Die Zahl am Reiter "Belege" zeigt, ob dort etwas zu pruefen ist - auch von den anderen Reitern aus.
   ensureBelege();
   const zuPruefen = belegArbeit()?.summe || 0;
   const head = `<div class="page-head"><div><h1>Einkauf</h1><p class="sub">Was bei welchem Lieferanten zu bestellen ist – und wo Produktdaten dafür fehlen.</p></div>
       <div class="head-actions">${aktualisierenButton()}</div></div>
-    <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button type="button" class="tab" role="tab" aria-selected="${tab === k}" data-param="tab" data-value="${k === 'bestellungen' ? '' : k}">${esc(l)}${k === 'belege' && zuPruefen ? ` <span class="tab-zahl">${zuPruefen}</span>` : ''}</button>`).join('')}</div>`;
-  const body = tab === 'bestellungen' ? viewEinkaufBestellungen() : tab === 'belege' ? viewEinkaufBelege() : tab === 'musterlager' ? viewEinkaufMusterlager() : tab === 'produktdaten' ? viewEinkaufProduktdaten() : viewEinkaufHilfe();
+    <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button type="button" class="tab" role="tab" aria-selected="${tab === k}" data-param="tab" data-value="${k}">${esc(l)}${k === 'belege' && zuPruefen ? ` <span class="tab-zahl">${zuPruefen}</span>` : ''}</button>`).join('')}</div>`;
+  const body = tab === 'ablauf' ? viewEinkaufAblauf() : tab === 'lieferant' ? viewEinkaufBestellungen() : tab === 'belege' ? viewEinkaufBelege() : tab === 'musterlager' ? viewEinkaufMusterlager() : tab === 'produktdaten' ? viewEinkaufProduktdaten() : viewEinkaufHilfe();
   return head + body;
 }

@@ -55,7 +55,8 @@ export const WARE_ABSCHLIESSEN_NACH_TAGEN = 7;
 export const AUFTRAGSART = Object.freeze({ MUSTER: 'muster', WARE: 'ware' });
 
 /** Schritte, die je Auftrag (nicht je Position) gespeichert werden. */
-export const AUFTRAGS_SCHRITTE = Object.freeze(['kunde_hat_muster', 'nachgefasst', 'kunde_hat_bestellt', 'kein_interesse', 'muster_nicht_verfuegbar']);
+// "kunde_informiert" (Ware, seit 2026-10-20): Kunde weiss, dass die Ware da ist - Einkauf "Je Auftrag".
+export const AUFTRAGS_SCHRITTE = Object.freeze(['kunde_hat_muster', 'nachgefasst', 'kunde_hat_bestellt', 'kein_interesse', 'muster_nicht_verfuegbar', 'kunde_informiert']);
 /**
  * Ergebnisse schliessen die Musterstrecke ab. "Muster nicht verfuegbar" (Inhaber 2026-10-16):
  * der Lieferant hat die Farbe nicht, der Kunde ist informiert und bestellt bei Bedarf neue
@@ -87,6 +88,7 @@ export const SCHRITT_LABEL = Object.freeze({
     kunde_hat_bestellt: 'Kunde hat bestellt',
     bestellt: 'Ware beim Lieferanten bestellt',
     geliefert: 'Geliefert an uns',
+    kunde_informiert: 'Kunde informiert – Ware ist da',
     raus: 'An Kunden raus',
     erledigt: 'Erledigt',
   }),
@@ -321,7 +323,10 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
     else schritte.push({ schritt: 'ergebnis', ergebnis: null, label: label.ergebnis, getan: false, am: null, von: null, notiz: null, automatisch: false, quelle: null, teil: null });
   } else {
     const ware = positionen.filter(p => !p.istMuster);
-    direkt = ware.length > 0 && ware.every(p => DIREKT_ROUTEN.has(p.route));
+    // Ueber unseren Kettler bestellte Ware (ueber: 'kettler', #1453) kommt erst zu uns zurueck,
+    // auch wenn der Lieferant sonst direkt verschickt.
+    const ueberKettler = p => statusAlle[positionKey(auftrag.id, p.lineItemId)]?.ueber === 'kettler';
+    direkt = ware.length > 0 && ware.every(p => DIREKT_ROUTEN.has(p.route) && !ueberKettler(p));
     schritte.push(start('kunde_hat_bestellt'), ausPosition('bestellt'));
     if (!direkt) schritte.push(ausPosition('geliefert'));
     schritte.push(ausVersand(), ausPosition('erledigt'));
@@ -502,5 +507,5 @@ export function zeitleistenFuerModell(modell, { statusAlle = {}, verlaufAlle = {
 export function setzbareSchritte(art) {
   return art === AUFTRAGSART.MUSTER
     ? ['bestellt', 'geliefert', 'raus', 'kunde_hat_muster', 'nachgefasst', 'kunde_hat_bestellt', 'kein_interesse', 'muster_nicht_verfuegbar']
-    : ['bestellt', 'geliefert', 'raus', 'erledigt'];
+    : ['bestellt', 'geliefert', 'kunde_informiert', 'raus', 'erledigt'];
 }
