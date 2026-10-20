@@ -1968,3 +1968,26 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   bei 384 px Druckkopf wie in NiimBlue – Rand 18 px hält Inhalte im Druckbereich. Serie aus dem Titel
   (Marke nur, wenn der Titel damit beginnt).
 - **Nächste Stufe:** „auch als Klickvinyl“ bei gleichem Dekor in anderer Art; Druck am B1 bestätigen.
+
+## 2026-10-20 · Akquise ausgebaut, Einkauf mit Termin und Referenz (#1544)
+
+- **Geändert:** Akquise ist jetzt auch für Mitarbeiter offen (Router, Navigation, Server; Rolle
+  „lesen“ schreibt weiter nichts), die Fortschrittszeile nennt, wer angeschrieben hat. TED-Titel ohne
+  „Deutschland – <Kategorie> –“ (`titelKurz`, auch in `ausTed`). Nach „Antwort bekommen“ steht auf der
+  Karte eine kleine Zeile „Unser Richtpreis: …“ (nur, wenn `$TP_PRIVAT_DIR/akquise/richtpreise.json`
+  existiert; ohne Freigabe „Richtpreis noch nicht freigegeben (Inhaber)“) und der Knopf
+  „Angebotsentwurf“ (Text zum Kopieren, kein Lexware-Zugriff). Einkauf „Je Auftrag“: Einleitung
+  gekürzt; nach „Kunde informiert“ ein Datumsfeld „Termin“ und der Link „Als Referenz merken“ (Notiz,
+  privat in `akquise/referenzen.json`, in der Akquise zugeklappt „Referenzen (N)“). Am Vortag eines
+  Termins To-do „Kunde an Termin morgen erinnern“ mit „Text kopieren“. Bestellnachricht: Feld
+  „Bestellnummer des Lieferanten (aus der AB)“ mit Hinweis, die Bitte um Bestätigung nennt die
+  Kommission. Neu `/api/akquise/referenz`, `/api/einkauf/kundentermin` (beide in der write-Liste).
+- **Getestet:** `tests/akquise.test.mjs` 14 (Rollen lesen 403 / mitarbeiter 200, Titel, Richtpreis,
+  Referenz, Termin-To-do); `dashboard:test` 612 grün, `npm test` alle Suiten grün; `dashboard:pruefen`
+  170 × OK, 0 px Überlauf 360–1440 px. Klickstrecke gegen die Datenkopie (390 px): angeschrieben 1 → 2
+  mit Namen, Antwort → Richtpreis-Hinweis, Angebotsentwurf öffnet, Esc schließt; Termin auf morgen →
+  To-do „Kunde an Termin morgen erinnern: #1013“ im Laden; Kunde informiert → „Als Referenz merken“
+  → „Referenzen (1)“; 0 JS-Fehler.
+- **Risiken/Annahmen:** Richtpreis-Vorschläge stammen aus Lexware-Artikelpreisen (Abruf 13.10., netto,
+  nur Arbeit), `freigegeben: false` bis der Inhaber zustimmt. Fotos zur Referenz weiter über „Fotos“.
+- **Nächste Stufe:** Richtpreise live in Lexware gegenprüfen und freigeben.

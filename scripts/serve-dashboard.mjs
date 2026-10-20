@@ -295,8 +295,6 @@ function herkunftFehler(req) {
  */
 const RANG = { lesen: 0, mitarbeiter: 1, inhaber: 2 };
 const NUR_INHABER = new Set([
-  'akquise/liste',     // Firmenkontakte Akquise (#1447)
-  'akquise/aendern',
   'sync',              // GitHub-Issues holen
   'activity',          // Entwicklungsverlauf
   'agent-runs',        // KI-Laeufe
@@ -334,7 +332,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
   // Bestelltabelle, Lexikon samt Mengenhilfe und die neuen Datenarten
   // (Kunden, Angebote, Warenkoerbe, Bestand, Erfuellung) - fehlt einer,
   // antwortet der Server 404.
-  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|prozesse\/links|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/shopify-abgleich|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|einkauf\/musterlager|einkauf\/musterlager-farben|einkauf\/mustersperre|einkauf\/belege|lexikon\/liste|lexikon\/druckliste|lexikon\/etiketten-status|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/serviceanfragen|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|verbrauch\/claude|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/musteretiketten|kunden\/muster-texte|kunden\/nachfassen-abmelden|kunden\/nachfassen-senden|kunden\/bestellung-fertig|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|akquise\/liste|akquise\/aendern|sonderposten\/liste|sonderposten\/verkauft|bildrechte\/liste|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|prozesse\/links|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/shopify-abgleich|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|einkauf\/musterlager|einkauf\/musterlager-farben|einkauf\/mustersperre|einkauf\/belege|lexikon\/liste|lexikon\/druckliste|lexikon\/etiketten-status|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/serviceanfragen|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|verbrauch\/claude|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/musteretiketten|kunden\/muster-texte|kunden\/nachfassen-abmelden|kunden\/nachfassen-senden|kunden\/bestellung-fertig|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|akquise\/liste|akquise\/aendern|akquise\/referenz|einkauf\/kundentermin|sonderposten\/liste|sonderposten\/verkauft|bildrechte\/liste|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { apiFehler(req, res, pathname, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
   // Host-Pruefung fuer JEDEN Aufruf, nicht nur fuer schreibende: sonst kann
@@ -344,7 +342,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     apiFehler(req, res, pathname, 403, { error: 'Dafür fehlt dir die Berechtigung – das macht der Inhaber.' });
     return;
   }
-  const write = (simple === 'kunden/musteretiketten' && req.method === 'POST') || (simple === 'lexikon/druckliste' && req.method === 'POST') || (simple === 'prozesse/links' && req.method === 'POST') || simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'einkauf/musterlager' && req.method === 'POST') || (simple === 'einkauf/mustersperre' && req.method === 'POST') || (simple === 'einkauf/belege' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || (simple === 'kunden/serviceanfragen' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || simple === 'kunden/nachfassen-abmelden' || simple === 'kunden/nachfassen-senden' || simple === 'kunden/fall-marke' || ['org/neu', 'org/aendern', 'org/kommentar', 'org/pruefen', 'org/analyse', 'org/liste-einfuegen', 'org/anhang', 'fotos/neu', 'social/link-neu', 'social/sperren', 'sonderposten/verkauft', 'akquise/aendern', 'fehler/melden'].includes(simple) || ['transition', 'assign', 'comment'].includes(taskOp);
+  const write = (simple === 'kunden/musteretiketten' && req.method === 'POST') || (simple === 'lexikon/druckliste' && req.method === 'POST') || (simple === 'prozesse/links' && req.method === 'POST') || simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'einkauf/musterlager' && req.method === 'POST') || (simple === 'einkauf/mustersperre' && req.method === 'POST') || (simple === 'einkauf/belege' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || (simple === 'kunden/serviceanfragen' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || simple === 'kunden/nachfassen-abmelden' || simple === 'kunden/nachfassen-senden' || simple === 'kunden/fall-marke' || ['org/neu', 'org/aendern', 'org/kommentar', 'org/pruefen', 'org/analyse', 'org/liste-einfuegen', 'org/anhang', 'fotos/neu', 'social/link-neu', 'social/sperren', 'sonderposten/verkauft', 'akquise/aendern', 'akquise/referenz', 'einkauf/kundentermin', 'fehler/melden'].includes(simple) || ['transition', 'assign', 'comment'].includes(taskOp);
   try {
     // Lesen darf jeder. Einrichtungsziele aendern ausschliesslich der Inhaber
     // oder der bestehende Einzelpasswort-Zugang; kein neues Benutzerkonto noetig.
@@ -474,9 +472,11 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'verbrauch/claude') result = api.verbrauchClaude();
     else if (simple === 'laden/zahlen') result = await ladenZahlen.abrufen();
     else if (simple === 'erfuellung/liste') result = api.erfuellungListe();
-    // Akquise (#1447): nur Inhaber (NUR_INHABER), aendern steht in der write-Liste.
+    // Akquise (#1447): Inhaber und Mitarbeiter (seit 2026-10-20); aendern/referenz stehen in der write-Liste.
     else if (simple === 'akquise/liste') result = await api.akquiseListe();
     else if (simple === 'akquise/aendern') result = await api.akquiseAendern(await readJson(req), benutzer);
+    else if (simple === 'akquise/referenz') result = await api.akquiseReferenz(await readJson(req), benutzer);
+    else if (simple === 'einkauf/kundentermin') result = await api.einkaufKundentermin(await readJson(req), benutzer);
     else if (simple === 'sonderposten/liste') result = await api.sonderpostenListe();
     // Bildrechte: nur lesend (nicht in der write-Liste) - jede Rolle, auch "lesen", darf sie sehen.
     else if (simple === 'bildrechte/liste') result = api.bildrechteListe({ liste: url.searchParams.get('liste') || '', gruppe: url.searchParams.get('gruppe') || '', page: url.searchParams.get('page') });

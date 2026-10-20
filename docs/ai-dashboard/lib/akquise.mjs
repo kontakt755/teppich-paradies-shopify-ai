@@ -185,3 +185,76 @@ export function tageBis(datum, heute) {
   if (!DATUM.test(String(datum || ''))) return null;
   return Math.round((Date.parse(`${datum}T12:00:00Z`) - Date.parse(`${heute}T12:00:00Z`)) / TAG_MS);
 }
+
+/* ---- Ausschreibungen, Richtpreis, Angebotsentwurf, Referenzen (#Ausbau 2026-10-20) ---- */
+
+const LAENDER = /^(Deutschland|Germany|Allemagne|Österreich|Austria|Schweiz|Polen|Poland)$/i;
+
+/**
+ * TED-Titel lauten "Deutschland – <Kategorie> – <eigentlicher Titel>". Land und Kategorie
+ * stehen ohnehin bei jedem Treffer gleich da und schieben den Titel aus dem Bild - weg damit.
+ */
+export function titelKurz(titel) {
+  const t = String(titel || '').trim();
+  const teile = t.split(/\s+[–—]\s+/);
+  if (teile.length >= 3 && LAENDER.test(teile[0].trim())) return teile.slice(2).join(' – ').trim() || t;
+  if (teile.length === 2 && LAENDER.test(teile[0].trim())) return teile[1].trim() || t;
+  return t;
+}
+
+const euro = n => `${Number(n).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+
+/**
+ * Richtpreise aus $TP_PRIVAT_DIR/akquise/richtpreise.json fuer die Karte. Ohne Datei: null
+ * (Zeile faellt weg). Ohne Freigabe des Inhabers oder ohne einen einzigen Preis: Hinweis statt Zahl.
+ */
+export function richtpreisZeile(rp) {
+  if (!rp || !Array.isArray(rp.positionen) || !rp.positionen.length) return null;
+  const mitPreis = rp.positionen.filter(p => Number.isFinite(p?.preis_m2) && p.preis_m2 > 0);
+  if (rp.freigegeben !== true || !mitPreis.length) return { freigegeben: false, text: 'Richtpreis noch nicht freigegeben (Inhaber)' };
+  return { freigegeben: true, text: mitPreis.map(p => `${p.text} ab ${euro(p.preis_m2)}/m²`).join(' · ') };
+}
+
+/** Text-Entwurf fuer ein Angebot - nur zum Kopieren, Lexware bleibt unberuehrt. */
+export function angebotsEntwurf(firma, rp) {
+  const frei = rp?.freigegeben === true;
+  const zeilen = (rp?.positionen || []).map(p => `- ${p.text}: ${frei && Number.isFinite(p.preis_m2) && p.preis_m2 > 0 ? `${euro(p.preis_m2)} je m²` : 'Preis nach Aufmaß'}`);
+  return [
+    `Betreff: Angebot Bodenarbeiten bei Wohnungswechseln – ${firma}`,
+    '',
+    'Sehr geehrte Damen und Herren,',
+    '',
+    'vielen Dank für Ihre Rückmeldung. Gern übernehmen wir bei Ihren Wohnungswechseln die Bodenarbeiten zu folgenden Richtpreisen:',
+    '',
+    ...(zeilen.length ? zeilen : ['- Preise nach Aufmaß']),
+    '',
+    'Die Preise verstehen sich je Quadratmeter verlegter Fläche. Das genaue Angebot erstellen wir nach einem kurzen Aufmaß vor Ort.',
+    '',
+    'Mit freundlichen Grüßen',
+    'Ihr Team von Teppich Paradies',
+  ].join('\n');
+}
+
+/** Eine Referenz (erledigter Auftrag) pruefen; wirft bei falschen Angaben. */
+export function pruefeReferenz(eingabe = {}) {
+  const orderId = String(eingabe.orderId || '').trim();
+  const notiz = String(eingabe.notiz || '').trim();
+  if (!orderId || orderId.length > 100) throw new Error('Auftrag fehlt.');
+  if (!notiz) throw new Error('Bitte kurz notieren, was gemacht wurde.');
+  if (notiz.length > 1000) throw new Error('Notiz ist zu lang (höchstens 1000 Zeichen).');
+  return { orderId, auftrag: String(eingabe.auftrag || '').slice(0, 40), notiz };
+}
+
+/**
+ * Wer hat wie viele angeschrieben? Fuer die Fortschrittszeile ("Tobias 3 · Ahmet 2").
+ * Ohne Namen (alter Stand) zaehlt die Firma nur in der Summe.
+ */
+export function angeschriebenVon(firmen = []) {
+  const je = new Map();
+  for (const f of firmen) {
+    if ((f.status || 'neu') === 'neu') continue;
+    const wer = f.angeschriebenVon || '';
+    if (wer) je.set(wer, (je.get(wer) || 0) + 1);
+  }
+  return [...je.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'de'));
+}

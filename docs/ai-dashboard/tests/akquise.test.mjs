@@ -6,7 +6,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
-import { leseAkquiseCsv, wendeAenderungAn, faelligeWiedervorlagen, vorlageAusMarkdown, nachrichtFuer, akquiseId, naechsteFirmen, akquiseFortschritt, kontaktTeile, mailtoLink, warumInteressant, kmAbOranienburg, tageBis } from '../lib/akquise.mjs';
+import { leseAkquiseCsv, wendeAenderungAn, faelligeWiedervorlagen, vorlageAusMarkdown, nachrichtFuer, akquiseId, naechsteFirmen, akquiseFortschritt, kontaktTeile, mailtoLink, warumInteressant, kmAbOranienburg, tageBis, titelKurz, richtpreisZeile, angebotsEntwurf, pruefeReferenz, angeschriebenVon } from '../lib/akquise.mjs';
+import { ausTed } from '../../../operations/lib/ausschreibungen.mjs';
 import { leiteTodosAb } from '../lib/todos.mjs';
 
 // Ausgedachte Firmen - echte Kontakte gehoeren nie ins Repository.
@@ -125,7 +126,7 @@ async function mitServer(handler, run) {
   finally { await new Promise(r => server.close(r)); }
 }
 
-test('Server: /api/akquise/* nur fuer den Inhaber - lesen und mitarbeiter bekommen 403', async () => {
+test('Server: Akquise fuer Mitarbeiter offen, Rolle lesen schreibt nichts (403)', async () => {
   const { schreibeBenutzer, benutzerAnlegen } = await import('../../../operations/lib/benutzer.mjs');
   const u = umgebung();
   fs.mkdirSync(u.privat, { recursive: true });
@@ -133,21 +134,62 @@ test('Server: /api/akquise/* nur fuer den Inhaber - lesen und mitarbeiter bekomm
   liste = benutzerAnlegen(liste, { name: 'Mona Mitarbeiter', kuerzel: 'mona', passwort: 'platzhalter-mitarbeiter-1', rolle: 'mitarbeiter' });
   schreibeBenutzer(liste, path.join(u.privat, 'benutzer.json'));
   process.env.TP_PRIVAT_DIR = u.privat;
+  Object.assign(process.env, u.env);
   process.env.TP_DASHBOARD_PASSWORT = 'notzugang-testpasswort';
   const mod = await import('../../../scripts/serve-dashboard.mjs?case=akquise-rollen');
   delete process.env.TP_DASHBOARD_PASSWORT;
+  const post = (base, keks, pfad, body) => fetch(`${base}/api/${pfad}`, { method: 'POST', headers: { 'content-type': 'application/json', cookie: keks }, body: JSON.stringify(body) });
   try {
     await mitServer(mod.requestHandler, async base => {
+      const keks = {};
       for (const [name, pw] of [['lena', 'platzhalter-lesen-1'], ['mona', 'platzhalter-mitarbeiter-1']]) {
         const r = await fetch(`${base}/api/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, passwort: pw }) });
-        const keks = r.headers.get('set-cookie').split(';')[0];
-        assert.equal((await fetch(`${base}/api/akquise/liste`, { headers: { cookie: keks } })).status, 403);
-        const w = await fetch(`${base}/api/akquise/aendern`, { method: 'POST', headers: { 'content-type': 'application/json', cookie: keks }, body: JSON.stringify({ id: 'muster-wohnbau-eg', status: 'neu' }) });
-        assert.equal(w.status, 403);
+        keks[name] = r.headers.get('set-cookie').split(';')[0];
+      }
+      for (const [pfad, body] of [['akquise/aendern', { id: 'muster-wohnbau-eg', status: 'angeschrieben' }], ['akquise/referenz', { orderId: '1', notiz: 'x' }], ['einkauf/kundentermin', { orderId: '1', termin: '2026-10-22' }]]) {
+        assert.equal((await post(base, keks.lena, pfad, body)).status, 403, `lesen ${pfad}`);
       }
       assert.equal(fs.existsSync(path.join(u.privat, 'akquise', 'status.json')), false);
+      assert.equal((await fetch(`${base}/api/akquise/liste`, { headers: { cookie: keks.mona } })).status, 200);
+      assert.equal((await post(base, keks.mona, 'akquise/aendern', { id: 'muster-wohnbau-eg', status: 'angeschrieben' })).status, 200);
+      assert.equal((await post(base, keks.mona, 'akquise/referenz', { orderId: '1', auftrag: '#1001', notiz: 'Vinyl 3 Räume' })).status, 200);
+      assert.equal((await post(base, keks.mona, 'einkauf/kundentermin', { orderId: '1', termin: '2026-10-22' })).status, 200);
+      const stand = JSON.parse(fs.readFileSync(path.join(u.privat, 'akquise', 'status.json'), 'utf8'));
+      assert.equal(stand.firmen['muster-wohnbau-eg'].angeschriebenVon, 'Mona Mitarbeiter');
     });
   } finally {
     process.env.TP_PRIVAT_DIR = PRIVAT_DIR;
+    for (const k of Object.keys(u.env)) delete process.env[k];
   }
+});
+
+test('Ausschreibung: Land und Kategorie fallen aus dem TED-Titel weg', () => {
+  assert.equal(titelKurz('Deutschland – Bodenbelagsarbeiten – Rahmenvertrag über Bodenbelagsarbeiten auf Abruf'), 'Rahmenvertrag über Bodenbelagsarbeiten auf Abruf');
+  assert.equal(titelKurz('Deutschland – Bauarbeiten – Bundesrat - Anbau - Bodenbelagarbeiten'), 'Bundesrat - Anbau - Bodenbelagarbeiten');
+  assert.equal(titelKurz('Sanierung Kita – Bodenbelag'), 'Sanierung Kita – Bodenbelag');
+  assert.equal(ausTed({ notices: [{ 'publication-number': '1-2026', 'notice-title': { deu: 'Deutschland – Bodenbelagsarbeiten – Schule Nord' } }] })[0].titel, 'Schule Nord');
+});
+
+test('Richtpreis: nur sichtbar mit Datei, ohne Freigabe der Hinweis, Entwurf ohne erfundene Preise', () => {
+  assert.equal(richtpreisZeile(null), null);
+  const rp = { freigegeben: false, positionen: [{ text: 'Vinyl inkl. Verlegung', preis_m2: 17.95 }] };
+  assert.equal(richtpreisZeile(rp).text, 'Richtpreis noch nicht freigegeben (Inhaber)');
+  assert.equal(richtpreisZeile({ freigegeben: true, positionen: [{ text: 'X', preis_m2: null }] }).freigegeben, false);
+  assert.equal(richtpreisZeile({ ...rp, freigegeben: true }).text, 'Vinyl inkl. Verlegung ab 17,95 €/m²');
+  assert.match(angebotsEntwurf('Muster eG', rp), /- Vinyl inkl\. Verlegung: Preis nach Aufmaß/);
+  assert.match(angebotsEntwurf('Muster eG', { ...rp, freigegeben: true }), /Muster eG[\s\S]*17,95 € je m²/);
+});
+
+test('Referenz pruefen und Fortschritt nach Namen', () => {
+  assert.throws(() => pruefeReferenz({ orderId: '1' }), /notieren/);
+  assert.deepEqual(pruefeReferenz({ orderId: '1', auftrag: '#1001', notiz: ' Vinyl ' }), { orderId: '1', auftrag: '#1001', notiz: 'Vinyl' });
+  assert.deepEqual(angeschriebenVon([{ status: 'angeschrieben', angeschriebenVon: 'Tobias' }, { status: 'antwort', angeschriebenVon: 'Tobias' }, { status: 'angeschrieben', angeschriebenVon: 'Ahmet' }, { status: 'neu' }]), [['Tobias', 2], ['Ahmet', 1]]);
+});
+
+test('Kundentermin: am Vortag ein To-do im Laden mit fertigem Erinnerungstext', () => {
+  const quellen = { kundentermine: [{ orderId: '1', auftragName: '#1001', kundeName: 'Frau Muster', termin: '2026-10-21' }, { orderId: '2', auftragName: '#1002', termin: '2026-10-25' }] };
+  const t = leiteTodosAb(quellen, { sicht: 'laden', jetzt: new Date('2026-10-20T09:00:00') }).filter(x => x.art === 'kundentermin');
+  assert.equal(t.length, 1);
+  assert.equal(t[0].titel, 'Kunde an Termin morgen erinnern: #1001');
+  assert.match(t[0].knopf.kopiertext, /^Guten Tag Frau Muster,[\s\S]*morgen, 21\.10\.2026, zu Ihrer Bestellung #1001/);
 });

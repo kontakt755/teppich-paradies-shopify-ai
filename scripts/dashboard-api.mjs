@@ -68,7 +68,7 @@ import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufS
 import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
 import { ausVariantentitel } from '../operations/lib/resolve.mjs';
 import { ladeEnvLocal, erzeugeProxy, KEIN_ZUGANG, mitHinweis } from '../operations/sync/zugang.mjs';
-import { leseAkquiseCsv, vorlageAusMarkdown, wendeAenderungAn, akquiseId } from '../docs/ai-dashboard/lib/akquise.mjs';
+import { leseAkquiseCsv, vorlageAusMarkdown, wendeAenderungAn, akquiseId, pruefeReferenz } from '../docs/ai-dashboard/lib/akquise.mjs';
 import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, SonderpostenFehler } from '../operations/lib/sonderposten.mjs';
 import { ohneUeberholtenFehler } from '../operations/scripts/aktualisieren.mjs';
 import { meldungenPfad, abgleichPfad, meldungAnlegen, alleMeldungen, sichtbareMeldungen, darfMeldungSehen, bildAusUpload, bildDatei, BILDER_MAX, FehlermeldungFehler } from '../operations/lib/fehlermeldungen.mjs';
@@ -1561,7 +1561,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const verlauf = leseVerlauf(auftragsverlaufPfad(dir));
       const kundeInformiert = {};
       for (const [id, v] of Object.entries(verlauf)) { const k = kundeInformiertAus(v.ereignisse); if (k) kundeInformiert[id] = k; }
-      return { verfuegbar: true, quelle: file, exportiertAm: daten.exportiertAm || null, ...modell, kundeInformiert };
+      const kundentermine = readJsonIfExists(path.join(dir, 'bestelluebersicht', 'kundentermine.json')) || {};
+      return { verfuegbar: true, quelle: file, exportiertAm: daten.exportiertAm || null, ...modell, kundeInformiert, kundentermine };
     },
 
     /** Kundensuche: Name, E-Mail, Telefon, Bestellnummer, Strasse/Ort/PLZ - waehrend des Tippens. */
@@ -3702,10 +3703,54 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         status: 'neu', letzteAktion: '', wiedervorlage: '', notiz: '', ...stand[f.id],
       }));
       const aus = readJsonIfExists(path.join(privatDirPath || privatDir(), 'ausschreibungen', 'status.json'));
+      const akqDir = path.dirname(q.status);
       return {
         verfuegbar: true, firmen, vorlage,
+        // Richtpreise und Referenzen liegen privat neben dem Stand; fehlen sie, bleibt die Zeile weg.
+        richtpreise: this._privatJson(path.join(akqDir, 'richtpreise.json'), null),
+        referenzen: this._privatJson(path.join(akqDir, 'referenzen.json'), { referenzen: [] }).referenzen || [],
         ausschreibungen: aus?.geprueftAm ? { geprueftAm: aus.geprueftAm, treffer: aus.treffer || [], neu: aus.neu || [] } : null,
       };
+    },
+    /** Private JSON-Ablage lesen: nur eine FEHLENDE Datei gilt als leer, kaputtes JSON ist ein Fehler. */
+    _privatJson(file, leer) {
+      let roh;
+      try { roh = fs.readFileSync(file, 'utf8'); } catch (e) {
+        if (e?.code === 'ENOENT') return leer;
+        throw new ApiError(500, `${path.basename(file)} nicht lesbar: ${e?.code || e?.message}`);
+      }
+      try { return JSON.parse(roh); } catch { throw new ApiError(500, `${path.basename(file)} ist beschädigt (kein gültiges JSON) – bitte prüfen, nichts überschrieben.`); }
+    },
+    _privatSchreiben(file, daten) {
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      const tmp = `${file}.${process.pid}.tmp`;
+      fs.writeFileSync(tmp, JSON.stringify(daten, null, 2), { mode: 0o600 });
+      fs.renameSync(tmp, file);
+    },
+    /** Einkauf "Erledigt" -> "Als Referenz merken": Notiz je Auftrag, privat unter akquise/referenzen.json. */
+    async akquiseReferenz(payload = {}, benutzer = null) {
+      let r;
+      try { r = pruefeReferenz(payload); } catch (e) { throw new ApiError(400, e.message); }
+      const file = path.join(path.dirname(this._akquiseQuelle().status), 'referenzen.json');
+      const d = this._privatJson(file, { referenzen: [] });
+      const liste = (d.referenzen || []).filter(x => x.orderId !== r.orderId);
+      const eintrag = { ...r, am: now().toISOString().slice(0, 10), von: benutzer?.name || benutzer?.kuerzel || '' };
+      liste.unshift(eintrag);
+      this._privatSchreiben(file, { referenzen: liste });
+      return { ok: true, referenz: eintrag };
+    },
+    /** Termin beim Kunden (Lieferung/Verlegung) je Auftrag - leer loescht ihn. */
+    async einkaufKundentermin(payload = {}, benutzer = null) {
+      const orderId = String(payload.orderId || '').trim();
+      const termin = String(payload.termin || '').trim();
+      if (!orderId || orderId.length > 100) throw new ApiError(400, 'Auftrag fehlt.');
+      if (termin && (!/^\d{4}-\d{2}-\d{2}$/.test(termin) || !Number.isFinite(Date.parse(termin)))) throw new ApiError(400, 'Termin bitte als Datum.');
+      const file = path.join(privatDirPath || privatDir(), 'bestelluebersicht', 'kundentermine.json');
+      const d = this._privatJson(file, {});
+      if (termin) d[orderId] = { termin, von: benutzer?.name || benutzer?.kuerzel || '', am: now().toISOString() };
+      else delete d[orderId];
+      this._privatSchreiben(file, d);
+      return { ok: true, orderId, termin: termin || null };
     },
     async akquiseAendern(payload = {}, benutzer = null) {
       const q = this._akquiseQuelle();
@@ -3719,6 +3764,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       let neu;
       try { neu = wendeAenderungAn(stand[id] || { status: 'neu' }, payload, heute); } catch (e) { throw new ApiError(400, e.message); }
       neu.von = benutzer?.kuerzel || benutzer?.name || neu.von || '';
+      // Wer angeschrieben hat, bleibt stehen - die Fortschrittszeile nennt die Namen.
+      if (neu.status === 'angeschrieben' && (stand[id]?.status || 'neu') === 'neu') neu.angeschriebenVon = benutzer?.name || benutzer?.kuerzel || '';
       stand[id] = neu;
       fs.mkdirSync(path.dirname(q.status), { recursive: true });
       const tmp = `${q.status}.${process.pid}.tmp`;
