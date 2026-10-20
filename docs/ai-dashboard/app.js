@@ -33,6 +33,7 @@ import { viewKunden } from './ansichten/kunden.mjs';
 import { viewOrganisation } from './ansichten/organisation.mjs';
 import { viewTeam } from './ansichten/team.mjs';
 import { viewFotos } from './ansichten/fotos.mjs';
+import { viewAkquise } from './ansichten/akquise.mjs';
 import { viewSonderposten } from './ansichten/sonderposten.mjs';
 import { viewBildrechte } from './ansichten/bildrechte.mjs';
 import { viewSocial } from './ansichten/social.mjs';
@@ -49,7 +50,7 @@ import { viewProzesse } from './ansichten/prozesse.mjs';
 import { bindEvents } from './ereignisse.mjs';
 import { pruefeAntworten } from './bausteine/fehler-melden.mjs';
 
-const VIEWS = { heute: viewHeute, prozesse: viewProzesse, fotos: viewFotos, sonderposten: viewSonderposten, bildrechte: viewBildrechte, social: viewSocial, team: viewTeam, hilfe: viewHilfe, organisation: viewOrganisation, shopwache: viewShopwache, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
+const VIEWS = { heute: viewHeute, prozesse: viewProzesse, fotos: viewFotos, sonderposten: viewSonderposten, akquise: viewAkquise, bildrechte: viewBildrechte, social: viewSocial, team: viewTeam, hilfe: viewHilfe, organisation: viewOrganisation, shopwache: viewShopwache, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
 
 async function init() {
   registriereAnsichten(VIEWS);

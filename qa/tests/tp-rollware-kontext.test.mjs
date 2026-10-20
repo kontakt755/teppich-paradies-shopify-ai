@@ -184,6 +184,38 @@ test('Antirutsch behält Berechnung für gelieferte Teppichfläche und benennt d
   p.c.bahnenLoeschen(); p.extras(); assert.equal(p.haft['[data-haft-basis]'].hidden, true);
 });
 
+test('Mehrbahnen-Fußleiste zeigt den Raumhinweis einmal und erhält Umfangs- und Höhenfehler', () => {
+  for (const language of [de, locale('locales/en.default.json')]) {
+    const p = calculator(); p.split();
+    const roomHint = p.leiste['[data-leiste-raumhinweis]'];
+    const errorHint = p.leiste['[data-leiste-hint]'];
+    const meter = p.leiste['[data-leiste-meter]'];
+    roomHint.textContent = language.tp_roll_context.room_perimeter_hint;
+    p.leiste['[data-leiste-an]'].checked = true;
+    meter.setAttribute('data-touched', '1');
+    const visibleRoomHints = () => [roomHint, errorHint].filter(el => !el.hidden && el.textContent === roomHint.textContent).length;
+    for (const value of ['', '0', '-2']) {
+      meter.value = value;
+      const result = p.extras();
+      assert.equal(result.leisteInvalidField, 'meter', value);
+      assert.equal(visibleRoomHints(), 1, value);
+      assert.equal(errorHint.textContent, roomHint.textContent, value);
+    }
+    meter.value = '24.2';
+    assert.equal(p.extras().leisteInvalid, false);
+    assert.equal(roomHint.hidden, false);
+    assert.equal(visibleRoomHints(), 1);
+    p.leiste['[data-leiste-hoehe]'].value = 'nicht lieferbar';
+    assert.equal(p.extras().leisteInvalidField, 'hoehe');
+    assert.match(errorHint.textContent, /Diese Höhe ist gerade nicht lieferbar/);
+    assert.equal(roomHint.hidden, false);
+    assert.equal(visibleRoomHints(), 1);
+    p.c.bahnenLoeschen(); p.extras();
+    assert.equal(roomHint.hidden, true);
+    assert.match(errorHint.textContent, /Diese Höhe ist gerade nicht lieferbar/);
+  }
+});
+
 test('Breitenfehler verbergen die grüne Gegenprobe und korrigierte Maße lösen den lokalen ARIA-Fehler', () => {
   const p = calculator({ art: 'raum', width: '500', length: '300' });
   for (const value of ['49', '500', 'abc', '-20']) {

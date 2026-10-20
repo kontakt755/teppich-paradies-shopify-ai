@@ -24,6 +24,46 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Naechste Stufe:** Dashboard-Dienst nach Merge aktualisieren und die interne Zuordnung lesend
   im laufenden Dienst kontrollieren.
 
+## 2026-10-20 · Aufgeraeumt: Navigation mit „Mehr“, Einkauf „Je Auftrag“ (#1513)
+
+- **Geaendert:** Seitenleiste nur noch Heute, Kunden, Einkauf, Akquise (Inhaber), Lexikon; alles
+  Seltene (Arbeitsplatz, Aufgaben, Sonderposten, Bildrechte, Social Media, Shop-Wache und die
+  frueheren Buero-Punkte) liegt unter einem eingeklappten „Mehr“ – fuer alle Rollen, Inhaber-Punkte
+  bleiben je Link `data-nur-inhaber`. Einkauf startet jetzt im neuen Reiter „Je Auftrag“
+  (`ansichten/einkauf/ablauf.mjs`, Rechnung in `lib/auftrags-ablauf.mjs`): je offene
+  Kundenbestellung fuenf Schritte (eingegangen → Lieferantenbestellung vorbereiten → bestellt →
+  Ware da/Lieferung/Montage → erledigt). Schritt 2 zeigt je Lieferant „Bestellnachricht zeigen“ –
+  der vorhandene Bestellmail-Dialog, auf diesen einen Auftrag gefiltert (`openBestellmailDialog(…,
+  { auftrag })`); „Als bestellt markieren“ dort hakt Schritt 3 ab. Fehlender Lieferant,
+  Artikelnummer oder Bestellmenge steht als „Ungeklaert – erst klaeren, nicht raten“. Die bisherige
+  Ansicht heisst „Je Lieferant“ (`?tab=lieferant`; alte Adressen mit `?af=`, `?auftrag=`, `?lf=`
+  und `?tab=bestellungen` landen weiter dort). Nichts wird automatisch gesendet.
+- **Getestet:** `tests/auftrags-ablauf.test.mjs` (5), dashboard:test 517, npm test gruen,
+  dashboard:pruefen nur OK auf 33 Ansichten (360–1440 px, kein Querscrollen), Klickstrecke gegen
+  die Kopie: ein Auftrag auf „vorbereiten“ zurueckgesetzt → Karte zeigt Schritt 2, „Bestellnachricht
+  zeigen“ oeffnet die Mail nur fuer diesen Auftrag, „Als bestellt markieren“ → „vorbereiten“ 1 → 0,
+  0 JS-Fehler.
+- **Risiken:** Lieferung-/Montagetermin gibt es in den Daten nicht; Schritt 4 sagt nur „Termin mit
+  dem Kunden ausmachen“. Muster-Schritte nutzen den gemeinsamen Knopf („Alle 3 angekommen“).
+- **Naechste Stufe:** Termin aus der Auftrags-App uebernehmen, wenn der Inhaber das moechte.
+
+## 2026-10-20 · Akquise Verlegeauftraege bei Wohnungsunternehmen (#1447)
+
+- **Geaendert:** Neuer Bereich „Akquise“ (nur Inhaber): je Firma Status (neu / angeschrieben /
+  Antwort / Termin / Auftrag / kein Interesse), letzte Aktion, Wiedervorlage (automatisch +14 Tage
+  nach „angeschrieben“), Notiz, Filter nach Status; „Nachricht kopieren“ legt das Anschreiben mit
+  Firmennamen in die Zwischenablage, versendet nichts. Darunter die Ausschreibungen Bodenbelag.
+  Auf „Heute“ das To-do „Akquise: N Nachfassen fällig“. Firmenliste und Vorlage liegen privat
+  (Gedaechtnis-Ordner, `TP_AKQUISE_DIR`/`TP_AKQUISE_CSV`/`TP_AKQUISE_VORLAGE`), der Stand unter
+  `$TP_PRIVAT_DIR/akquise/status.json`. API `/api/akquise/liste|aendern`, nur Inhaber.
+- **Getestet:** `tests/akquise.test.mjs` (7, u. a. Rollen lesen/mitarbeiter 403, kaputter Stand
+  wird nicht ueberschrieben), dashboard:test 513, npm test gruen, dashboard:pruefen nur OK
+  (360–1440 px), Klickstrecke gegen die Kopie: Status → angeschrieben, Wiedervorlage 03.11.,
+  Notiz gespeichert, „kein Interesse“ → Liste „Offen“ 33 → 32.
+- **Risiken:** Standardpfad der Liste ist der Gedaechtnis-Ordner dieses Macs; auf dem Dienst-Mac
+  ggf. per Umgebungsvariable setzen. Kopieren braucht die Zwischenablage-Freigabe (HTTPS/localhost).
+- **Naechste Stufe:** Ansprechpartner/Telefon je Firma anzeigen, wenn der Inhaber das wuenscht.
+
 ## 2026-10-20 · Gemeinsame Druckliste fuer Musteraufkleber (#1493)
 
 - **Geaendert:** Im Lexikon Farbe/Ausfuehrung und Anzahl waehlen und „Zum Drucken vormerken“.

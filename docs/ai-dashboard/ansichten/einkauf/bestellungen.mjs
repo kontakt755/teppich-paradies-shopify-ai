@@ -276,7 +276,7 @@ export function viewEinkaufBestellungen() {
   const zumKettler = ware.filter(p => afEintragFuer(p)?.status === 'bestellt' && istUeberKettler(afEintragFuer(p))).length;
   const abgeschlossen = af === 'erledigt' ? abgeschlosseneAuftraegeKarte(auftragId) : '';
   return `
-    ${auftragId ? `<p class="no-print"><a href="#/heute">← Zurück zu Heute</a> · <a href="#/einkauf">Alle Aufträge</a></p><p class="notice">Nur die ausgewählte Bestellung${aktiv[0]?.name ? ` ${esc(aktiv[0].name)}` : ''}. ${!aktiv.length ? 'Sie ist nicht mehr offen oder nicht in den aktuellen Daten.' : ''}</p>` : ''}
+    ${auftragId ? `<p class="no-print"><a href="#/heute">← Zurück zu Heute</a> · <a href="#/einkauf?tab=lieferant">Alle Aufträge</a></p><p class="notice">Nur die ausgewählte Bestellung${aktiv[0]?.name ? ` ${esc(aktiv[0].name)}` : ''}. ${!aktiv.length ? 'Sie ist nicht mehr offen oder nicht in den aktuellen Daten.' : ''}</p>` : ''}
     <div class="band">
       ${bandItem(ware.filter(p => gruppe(p) === 'offen').length, 'Ware zu bestellen', 'warn')}
       ${bandItem(muster.filter(p => gruppe(p) === 'offen').length, 'Muster zu bestellen', 'warn')}
