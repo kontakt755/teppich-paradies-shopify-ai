@@ -2,6 +2,23 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-20 · Akquise Verlegeauftraege bei Wohnungsunternehmen (#1447)
+
+- **Geaendert:** Neuer Bereich „Akquise“ (nur Inhaber): je Firma Status (neu / angeschrieben /
+  Antwort / Termin / Auftrag / kein Interesse), letzte Aktion, Wiedervorlage (automatisch +14 Tage
+  nach „angeschrieben“), Notiz, Filter nach Status; „Nachricht kopieren“ legt das Anschreiben mit
+  Firmennamen in die Zwischenablage, versendet nichts. Darunter die Ausschreibungen Bodenbelag.
+  Auf „Heute“ das To-do „Akquise: N Nachfassen fällig“. Firmenliste und Vorlage liegen privat
+  (Gedaechtnis-Ordner, `TP_AKQUISE_DIR`/`TP_AKQUISE_CSV`/`TP_AKQUISE_VORLAGE`), der Stand unter
+  `$TP_PRIVAT_DIR/akquise/status.json`. API `/api/akquise/liste|aendern`, nur Inhaber.
+- **Getestet:** `tests/akquise.test.mjs` (7, u. a. Rollen lesen/mitarbeiter 403, kaputter Stand
+  wird nicht ueberschrieben), dashboard:test 513, npm test gruen, dashboard:pruefen nur OK
+  (360–1440 px), Klickstrecke gegen die Kopie: Status → angeschrieben, Wiedervorlage 03.11.,
+  Notiz gespeichert, „kein Interesse“ → Liste „Offen“ 33 → 32.
+- **Risiken:** Standardpfad der Liste ist der Gedaechtnis-Ordner dieses Macs; auf dem Dienst-Mac
+  ggf. per Umgebungsvariable setzen. Kopieren braucht die Zwischenablage-Freigabe (HTTPS/localhost).
+- **Naechste Stufe:** Ansprechpartner/Telefon je Firma anzeigen, wenn der Inhaber das wuenscht.
+
 ## 2026-10-20 · Gemeinsame Druckliste fuer Musteraufkleber (#1493)
 
 - **Geaendert:** Im Lexikon Farbe/Ausfuehrung und Anzahl waehlen und „Zum Drucken vormerken“.

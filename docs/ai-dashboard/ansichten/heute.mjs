@@ -40,6 +40,7 @@ import { ensureKundenFaelle } from './kunden/faelle.mjs';
 import { ensureServiceanfragen } from './kunden/serviceanfragen.mjs';
 import { heuteLaden, heuteMontage, ladenKachel, ensureLadenZahlen } from './heute/laden.mjs';
 import { shopwache, ensureShopwache } from './shopwache.mjs';
+import { ensureAkquise, akquiseFaellig } from './akquise.mjs';
 import { heuteDaten, ensureHeuteLieferanten, ensureHeuteAufgaben, ensureHeuteMusterTexte } from './heute/daten.mjs';
 import { musterNachfassenStand, musterNachfassenBlock } from './heute/muster-nachfassen.mjs';
 import { shopifyAbgleich, ensureShopifyAbgleich, shopifyAbgleichTodos } from './einkauf/shopify-abgleich.mjs';
@@ -71,6 +72,7 @@ function quellen() {
     // Entwicklungsaufgaben und Shop-Wache sind Ansichten des Inhabers - nur er bekommt daraus To-dos.
     freigaben: istInhaber() ? state.tasks : [],
     shopwache: darfAnsicht('shopwache') ? shopwache.daten : null,
+    akquise: darfAnsicht('akquise') ? akquiseFaellig() : [],
   };
 }
 
@@ -137,6 +139,7 @@ export function viewHeute() {
   ensureLadenZahlen(); ensureShopifyAbgleich();
   if (istInhaber()) ensureEinkaufKennzahlen();
   if (darfAnsicht('shopwache')) ensureShopwache();
+  if (darfAnsicht('akquise')) ensureAkquise();
   if (darfAnsicht('einkauf')) ensureBelege();
 
   const q = quellen();

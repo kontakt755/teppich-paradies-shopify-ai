@@ -18,6 +18,8 @@ const ANSICHT_ROLLEN = {
   // Shop-Wache und Ratgeber sind Website-Arbeit: Erreichbarkeit von Seiten,
   // Ladezeiten, Texte fuer den Shop. Das Team hat damit nichts zu tun.
   shopwache: 'inhaber', ratgeber: 'inhaber',
+  // Akquise: Firmenkontakte und Anschreiben - Sache des Inhabers (#1447).
+  akquise: 'inhaber',
 };
 
 export function darfAnsicht(view) {
@@ -30,7 +32,7 @@ export function darfAnsicht(view) {
 export function parseRoute() {
   const hash = location.hash.replace(/^#\/?/, '');
   const [path, query = ''] = hash.split('?');
-  const bekannt = ['heute', 'prozesse', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber', 'hilfe', 'shopwache', 'organisation', 'fotos', 'sonderposten', 'bildrechte', 'social', 'team'].includes(path) ? path : 'heute';
+  const bekannt = ['heute', 'prozesse', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber', 'hilfe', 'shopwache', 'organisation', 'fotos', 'sonderposten', 'akquise', 'bildrechte', 'social', 'team'].includes(path) ? path : 'heute';
   const view = darfAnsicht(bekannt) ? bekannt : 'heute';
   state.route = { view, params: new URLSearchParams(query) };
 }

@@ -66,6 +66,7 @@ import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufS
 import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
 import { ausVariantentitel } from '../operations/lib/resolve.mjs';
 import { ladeEnvLocal, erzeugeProxy, KEIN_ZUGANG, mitHinweis } from '../operations/sync/zugang.mjs';
+import { leseAkquiseCsv, vorlageAusMarkdown, wendeAenderungAn, akquiseId } from '../docs/ai-dashboard/lib/akquise.mjs';
 import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, SonderpostenFehler } from '../operations/lib/sonderposten.mjs';
 import { ohneUeberholtenFehler } from '../operations/scripts/aktualisieren.mjs';
 import { meldungenPfad, abgleichPfad, meldungAnlegen, alleMeldungen, sichtbareMeldungen, darfMeldungSehen, bildAusUpload, bildDatei, BILDER_MAX, FehlermeldungFehler } from '../operations/lib/fehlermeldungen.mjs';
@@ -3573,6 +3574,66 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         return { verfuegbar: false, quelle: file, hinweis: 'Noch keine Bestandsdaten exportiert.', befehl: 'npm run daten:aktualisieren -- --nur bestand' };
       }
       return { verfuegbar: true, quelle: file, ...daten };
+    },
+
+    /**
+     * Akquise Verlegeauftraege (#1447). Firmenliste (CSV) und Anschreiben liegen privat im
+     * Gedaechtnis-Ordner (TP_AKQUISE_DIR), der Bearbeitungsstand unter
+     * $TP_PRIVAT_DIR/akquise/status.json. Nichts davon gehoert ins Repository.
+     */
+    _akquiseQuelle() {
+      const dir = env.TP_AKQUISE_DIR || path.join(os.homedir(), '.claude', 'projects', '-Users-tristan-teppich-paradies-shopify-ai', 'memory', 'Akquise');
+      const csv = env.TP_AKQUISE_CSV || path.join(dir, 'wohnungsgenossenschaften_umkreis_2026_10_19.csv');
+      const vorlage = env.TP_AKQUISE_VORLAGE || path.join(dir, 'anschreiben_wohnungsunternehmen_2026_10_20.md');
+      return { csv, vorlage, status: path.join(privatDirPath || privatDir(), 'akquise', 'status.json') };
+    },
+    /** Stand lesen: fehlt die Datei, ist er leer; kaputt ist ein Fehler (sonst ueberschreibt der naechste Klick alles). */
+    _akquiseStand(file) {
+      let roh;
+      try { roh = fs.readFileSync(file, 'utf8'); } catch (e) {
+        if (e?.code === 'ENOENT') return {};
+        throw new ApiError(500, `Akquise-Stand nicht lesbar: ${e?.code || e?.message}`);
+      }
+      try { return JSON.parse(roh).firmen || {}; } catch { throw new ApiError(500, 'Akquise-Stand ist beschädigt (kein gültiges JSON) – bitte prüfen, nichts überschrieben.'); }
+    },
+    async akquiseListe() {
+      const q = this._akquiseQuelle();
+      let csv;
+      try { csv = fs.readFileSync(q.csv, 'utf8'); } catch (e) {
+        if (e?.code === 'ENOENT') return { verfuegbar: false, hinweis: 'Die Firmenliste fehlt auf diesem Rechner.', befehl: 'Pfad per TP_AKQUISE_CSV setzen' };
+        throw e;
+      }
+      const stand = this._akquiseStand(q.status);
+      let vorlage = '';
+      try { vorlage = vorlageAusMarkdown(fs.readFileSync(q.vorlage, 'utf8')); } catch (e) { if (e?.code !== 'ENOENT') throw e; }
+      const firmen = leseAkquiseCsv(csv).map(f => ({
+        id: f.id, name: f.name, ort: f.ort, typ: f.typ, wohnungen: f.wohnungen, website: f.website,
+        status: 'neu', letzteAktion: '', wiedervorlage: '', notiz: '', ...stand[f.id],
+      }));
+      const aus = readJsonIfExists(path.join(privatDirPath || privatDir(), 'ausschreibungen', 'status.json'));
+      return {
+        verfuegbar: true, firmen, vorlage,
+        ausschreibungen: aus?.geprueftAm ? { geprueftAm: aus.geprueftAm, treffer: aus.treffer || [], neu: aus.neu || [] } : null,
+      };
+    },
+    async akquiseAendern(payload = {}, benutzer = null) {
+      const q = this._akquiseQuelle();
+      const id = akquiseId(payload.id);
+      if (!id || id !== payload.id) throw new ApiError(400, 'Unbekannte Firma.');
+      let csv;
+      try { csv = fs.readFileSync(q.csv, 'utf8'); } catch { throw new ApiError(409, 'Die Firmenliste fehlt auf diesem Rechner.'); }
+      if (!leseAkquiseCsv(csv).some(f => f.id === id)) throw new ApiError(400, 'Unbekannte Firma.');
+      const stand = this._akquiseStand(q.status);
+      const heute = now().toISOString().slice(0, 10);
+      let neu;
+      try { neu = wendeAenderungAn(stand[id] || { status: 'neu' }, payload, heute); } catch (e) { throw new ApiError(400, e.message); }
+      neu.von = benutzer?.kuerzel || benutzer?.name || neu.von || '';
+      stand[id] = neu;
+      fs.mkdirSync(path.dirname(q.status), { recursive: true });
+      const tmp = `${q.status}.${process.pid}.tmp`;
+      fs.writeFileSync(tmp, JSON.stringify({ firmen: stand }, null, 2), { mode: 0o600 });
+      fs.renameSync(tmp, q.status);
+      return { ok: true, firma: { id, ...neu } };
     },
 
     /**

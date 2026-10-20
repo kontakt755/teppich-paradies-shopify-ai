@@ -39,6 +39,7 @@ import { openMeinPasswort, teamKlick, teamAenderung } from './ansichten/team.mjs
 import { fotosEreignisseBinden, fotosAenderung } from './ansichten/fotos.mjs';
 import { socialEingabe, socialAbsenden, socialKlick } from './ansichten/social.mjs';
 import { arbeitKlick } from './ansichten/arbeit.mjs';
+import { akquiseKlick, akquiseAenderung } from './ansichten/akquise.mjs';
 import { sonderpostenKlick } from './ansichten/sonderposten.mjs';
 import { ladeAktivitaetsdaten } from './ansichten/aktivitaet.mjs';
 import { prozesseKlick, prozesseEingabe, prozesseAbsenden, verwerfeProzessKontext } from './ansichten/prozesse.mjs';
@@ -112,6 +113,7 @@ export function bindEvents() {
     if (kundenKlickBestellungen(e)) return;
     if (musterNachfassenKlick(e)) return;
     if (sonderpostenKlick(e)) return;
+    if (akquiseKlick(e)) return;
     const kt = e.target.closest('[data-kopiertext]');
     if (kt) {
       const text = kt.dataset.kopiertext;
@@ -128,6 +130,7 @@ export function bindEvents() {
     if (socialEingabe(e)) return;
     if (orgAenderungAnhang(e)) return;
     if (teamAenderung(e)) return;
+    if (akquiseAenderung(e)) return;
     const el = e.target.closest('select[data-param]'); if (el) { setParam(el.dataset.param, el.value); return; }
     orgAenderungFeld(e);
   });
