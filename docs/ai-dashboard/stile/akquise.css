@@ -1,0 +1,11 @@
+/* Akquise (ansichten/akquise.mjs). Nur Tokens aus app.css - keine festen Farben. */
+.akq-liste { list-style: none; margin: 0; padding: 0; }
+.akq-firma { padding: 10px 0; border-bottom: 1px solid var(--line); display: grid; gap: 6px; }
+.akq-firma:last-child { border-bottom: 0; }
+.akq-faellig { border-left: 3px solid var(--warn); padding-left: 10px; }
+.akq-kopf { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.akq-web a { overflow-wrap: anywhere; }
+.akq-felder { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.akq-felder label { display: inline-flex; gap: 6px; align-items: center; }
+.akq-notiz { width: 100%; box-sizing: border-box; min-height: 34px; resize: vertical; font: inherit; }
+.akq-hinweis { color: var(--warn); font-weight: 600; }

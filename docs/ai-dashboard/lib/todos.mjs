@@ -585,6 +585,21 @@ function ausAusschreibungen(quellen, jetzt) {
   }];
 }
 
+/**
+ * Akquise Verlegeauftraege (#1447): faellige Wiedervorlagen als ein To-do im Buero.
+ * `quellen.akquise` = Liste der faelligen Firmen (lib/akquise.mjs faelligeWiedervorlagen).
+ */
+function ausAkquise(quellen) {
+  const f = quellen.akquise || [];
+  if (!f.length) return [];
+  return [{
+    id: 'akquise', art: 'akquise', bereich: 'buero', ton: 'warn', alterTage: null,
+    titel: `Akquise: ${f.length} Nachfassen fällig`,
+    kontext: [f.slice(0, 3).map(x => x.name).join(', '), f.length > 3 ? `+${f.length - 3} weitere` : null].filter(Boolean).join(' · '),
+    knopf: { text: 'Ansehen', href: '#/akquise?as=faellig' },
+  }];
+}
+
 /** Alle ableitbaren To-dos, unsortiert und ohne Blick auf die Rolle. */
 function alleTodos(quellen, opt) {
   const k = kontext(quellen, opt);
@@ -598,6 +613,7 @@ function alleTodos(quellen, opt) {
     ...ausAuslauf(quellen, k.jetzt),
     ...ausNeuheiten(quellen, k.jetzt),
     ...ausAusschreibungen(quellen, k.jetzt),
+    ...ausAkquise(quellen),
     ...ausTailscale(quellen),
   ];
 }
@@ -623,6 +639,7 @@ function fuerSicht(todos, sicht, alle) {
  *   serviceanfragen /api/kunden/serviceanfragen -> eintraege
  *   aufgaben       /api/org/liste?bereich=alle-aufgaben -> eintraege
  *   freigaben      Entwicklungsaufgaben (issues.json), nur beim Inhaber gefuellt
+ *   akquise        faellige Wiedervorlagen (ansichten/akquise.mjs akquiseFaellig), nur beim Inhaber
  *   shopwache      /api/shopwache/status, nur beim Inhaber gefuellt (mit `auslauf`)
  * @param {object} opt
  *   sicht          'inhaber' | 'laden' | 'website'
