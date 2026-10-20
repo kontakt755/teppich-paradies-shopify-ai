@@ -5,6 +5,7 @@ import { fetchEinkauf, orgSchreiben } from '../../kern/api.mjs';
 import { render } from '../../kern/render.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { kunden } from './gemeinsam.mjs';
+import { neueKennung } from '../../lib/druckliste.mjs';
 import { oeffneEtikettenDruck } from '../../bausteine/etiketten-druck.mjs';
 
 const ENDPOINT = '/api/kunden/musteretiketten';
@@ -125,7 +126,7 @@ async function vormerken(orderId) {
   const e = eintrag(orderId);
   if (!darfVormerken(e)) return;
   const inhalt = signatur(e.daten);
-  if (!e.versuch || e.versuch.signatur !== inhalt) e.versuch = { signatur: inhalt, vorgangId: crypto.randomUUID() };
+  if (!e.versuch || e.versuch.signatur !== inhalt) e.versuch = { signatur: inhalt, vorgangId: neueKennung() };
   const vorgangId = e.versuch.vorgangId, aktuelleSitzung = sitzung;
   e.speichert = true; e.loading = false; e.fehler = ''; ++e.nummer; neuZeichnen(orderId);
   try {

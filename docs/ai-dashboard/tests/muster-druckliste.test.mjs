@@ -120,14 +120,30 @@ test('Eingabelimits, UUIDs und doppelte Auswahl werden vor dem Schreiben abgewie
   assert.throws(() => u.aendern({ aktion: 'entfernen', eintraege: [{ id: a.id, revision: 0 }] }), ist(400));
 });
 
-test('Mengenlimit zaehlt Etiketten statt Zeilen und gilt atomar', t => {
+test('Sammeldruck erlaubt 5000 Aufkleber, verweigert mehr atomar und Entfernen zaehlt Positionen', t => {
   const u = umgebung(t);
-  for (let i = 0; i < 6; i++) u.add(eintrag(randomUUID(), 20));
+  u.add(eintrag(randomUUID(), 20));
+  const daten = JSON.parse(fs.readFileSync(u.file, 'utf8'));
+  daten.eintraege = Array.from({ length: 251 }, () => ({ ...daten.eintraege[0], id: randomUUID() }));
+  fs.writeFileSync(u.file, JSON.stringify(daten));
   const alle = u.lesen().eintraege, vorher = fs.readFileSync(u.file, 'utf8');
   assert.throws(() => u.aendern({ aktion: 'reservieren', eintraege: alle.map(ref), druckauftragId: randomUUID() }), ist(400));
   assert.equal(fs.readFileSync(u.file, 'utf8'), vorher);
-  const r = u.aendern({ aktion: 'reservieren', eintraege: alle.slice(0, 5).map(ref), druckauftragId: randomUUID() });
-  assert.equal(r.eintraege.filter(e => e.status === 'in_druck').reduce((n, e) => n + e.anzahl, 0), 100);
+  const r = u.aendern({ aktion: 'reservieren', eintraege: alle.slice(0, 250).map(ref), druckauftragId: randomUUID() });
+  assert.equal(r.eintraege.filter(e => e.status === 'in_druck').reduce((n, e) => n + e.anzahl, 0), 5000);
+  const letzter = r.eintraege.at(-1);
+  assert.equal(u.aendern({ aktion: 'entfernen', eintraege: [ref(letzter)] }).eintraege.at(-1).status, 'entfernt');
+});
+
+test('Sammelentfernen scheitert auch bei mehr als 5000 Kopien nicht am Drucklimit', t => {
+  const u = umgebung(t);
+  const basis = u.add(eintrag(randomUUID(), 20)).eintraege[0];
+  const daten = JSON.parse(fs.readFileSync(u.file, 'utf8'));
+  daten.eintraege = Array.from({ length: 300 }, () => ({ ...basis, id: randomUUID() }));
+  fs.writeFileSync(u.file, JSON.stringify(daten));
+  const r = u.aendern({ aktion: 'entfernen', eintraege: daten.eintraege.map(ref) });
+  assert.equal(r.eintraege.filter(e => e.status === 'entfernt').length, 300);
+  assert.throws(() => u.aendern({ aktion: 'entfernen', eintraege: Array.from({ length: 1001 }, () => ({ id: randomUUID(), revision: 1 })) }), ist(400));
 });
 
 test('kaputtes JSON, falsches Schema oder falsche Eintraege werden nie als leer gelesen/ueberschrieben', t => {

@@ -10,6 +10,7 @@
  */
 import { $, esc, toast } from '../kern/helfer.mjs';
 import { fetchEinkauf } from '../kern/api.mjs';
+import { DRUCK_LIMIT, druckBloecke, druckVorschau } from '../lib/druckliste.mjs';
 import { ETIKETT, etikett, etikettFuerPosition, etikettenAusPositionen, handleFuerPosition, layout, originalHandle } from '../lib/muster-etiketten.mjs';
 
 const SKRIPTE = {
@@ -30,7 +31,7 @@ function ladeSkript(name) {
 }
 
 const SCHRIFT = 'Arial, Helvetica, sans-serif';
-const druck = { client: null, etiketten: [], laeuft: false, speichert: false, bearbeiten: -1, allowEditing: true };
+const druck = { client: null, etiketten: [], laeuft: false, speichert: false, bearbeiten: -1, allowEditing: true, abbruch: false };
 const qrBereit = () => typeof window.qrcode === 'function';
 const unvollstaendig = () => druck.etiketten.some(e => e.fehlt.length);
 
@@ -60,13 +61,13 @@ const umgebungsHinweis = () => {
 };
 
 function vorschauHtml() {
-  return druck.etiketten.map((e, i) => `<figure class="etk-karte">
+  return druckVorschau(druck.etiketten).eintraege.map(({ index: i, anzahl }) => { const e = druck.etiketten[i]; return `<figure class="etk-karte">
     <canvas class="etk-bild" data-etk-bild="${i}" width="${ETIKETT.breite}" height="${ETIKETT.hoehe}" aria-label="${esc(`Etikett ${[e.serie, e.farbe].filter(Boolean).join(' ') || 'ohne Namen'}`)}"></canvas>
-    <figcaption class="small">${e.fehlt.length ? `<span class="etk-fehlt">fehlt: ${esc(e.fehlt.join(', '))}</span>` : '<span class="muted">vollständig</span>'}
+    <figcaption class="small"><strong data-etk-kopien="${anzahl}">${anzahl} ${anzahl === 1 ? 'Aufkleber' : 'Kopien'}</strong>${e.fehlt.length ? `<span class="etk-fehlt">fehlt: ${esc(e.fehlt.join(', '))}</span>` : '<span class="muted">vollständig</span>'}
       ${druck.allowEditing ? `<button type="button" class="btn btn-sm" data-etk-bearbeiten="${i}"${druck.laeuft || druck.speichert ? ' disabled' : ''}>Angaben bearbeiten</button>` : ''}
       <button type="button" class="btn btn-sm" data-etk-png="${i}"${e.fehlt.length || !qrBereit() || druck.laeuft || druck.speichert ? ' disabled' : ''}>Als PNG speichern</button>
     </figcaption>
-  </figure>`).join('');
+  </figure>`; }).join('');
 }
 
 function zeichneVorschau() {
@@ -74,6 +75,10 @@ function zeichneVorschau() {
   if (!liste) return;
   liste.innerHTML = druck.etiketten.length ? vorschauHtml() : '<p class="small muted">Noch kein Etikett – unten Angaben eintragen und „Hinzufügen“.</p>';
   liste.querySelectorAll('[data-etk-bild]').forEach(c => zeichne(c, druck.etiketten[Number(c.dataset.etkBild)]));
+  const zusammenfassung = $('#etkZusammenfassung'), vorschau = druckVorschau(druck.etiketten);
+  if (zusammenfassung) zusammenfassung.textContent = `${druck.etiketten.length} Aufkleber insgesamt · ${vorschau.motive} verschiedene Motive.${vorschau.motive > DRUCK_LIMIT.vorschau ? ` Die Vorschau zeigt die ersten ${DRUCK_LIMIT.vorschau} Motive. Gedruckt werden alle Aufkleber.` : ''}`;
+  for (const e of document.querySelectorAll('.etk-dialog [data-close-dialog], #etkWeg, #etkDichte')) e.disabled = druck.laeuft;
+  const trennen = $('#etkTrennen'); if (trennen) trennen.textContent = druck.laeuft ? 'Druck abbrechen' : 'Verbindung trennen';
   const knopf = $('#etkDrucken');
   if (knopf) { knopf.disabled = !druck.etiketten.length || druck.laeuft || druck.speichert || unvollstaendig() || !qrBereit() || !!umgebungsHinweis(); knopf.textContent = druck.etiketten.length === 1 ? '1 Etikett drucken' : `${druck.etiketten.length} Etiketten drucken`; }
 }
@@ -87,42 +92,65 @@ async function verbinden(weg) {
   const client = weg === 'usb' ? new lib.NiimbotSerialClient() : new lib.NiimbotBluetoothClient();
   status('Verbinde mit dem Drucker …');
   await client.connect();
+  // Der Systemdialog kann noch offen sein, wenn Druck oder Sitzung bereits beendet wurden.
+  if (druck.abbruch) {
+    try { await client.disconnect(); } catch { /* Verbindung bereits getrennt */ }
+    throw new Error('Druck abgebrochen');
+  }
   druck.client = client;
   client.on?.('disconnect', () => { druck.client = null; status('Drucker getrennt.'); });
   return client;
 }
 
-/** Alle Etiketten nacheinander als ein Druckauftrag (totalPages = Anzahl), wie im niimbluelib-Beispiel. */
+/** Die Verbindung bleibt fuer den ganzen Sammeldruck bestehen; Bilder entstehen erst bei Bedarf. */
 async function drucken() {
-  if (druck.laeuft || druck.speichert || !druck.etiketten.length || unvollstaendig() || !qrBereit()) return;
+  if (druck.laeuft || druck.speichert || !druck.etiketten.length || druck.etiketten.length > DRUCK_LIMIT.etiketten || unvollstaendig() || !qrBereit()) return;
+  const etiketten = [...druck.etiketten];
   const weg = $('#etkWeg')?.value || 'bluetooth';
   const dichte = Math.min(ETIKETT.dichteMax, Math.max(ETIKETT.dichteMin, Number($('#etkDichte')?.value) || ETIKETT.dichteStandard));
-  druck.laeuft = true; zeichneVorschau();
+  druck.laeuft = true; druck.abbruch = false; zeichneVorschau();
   let task = null;
+  const pruefeAbbruch = () => { if (druck.abbruch) throw new Error('Druck abgebrochen'); };
   try {
     const client = await verbinden(weg);
-    const lib = window.niimbluelib;
-    const meta = client.getModelMetadata?.();
-    const art = client.getPrintTaskType?.() ?? 'B1';
-    const richtung = meta?.printDirection ?? 'top';
-    task = client.protocol.newPrintTask(art, { totalPages: druck.etiketten.length, density: dichte, labelType: 1 });
-    await task.printInit();
+    pruefeAbbruch();
+    const lib = window.niimbluelib, meta = client.getModelMetadata?.();
+    const art = client.getPrintTaskType?.() ?? 'B1', richtung = meta?.printDirection ?? 'top';
     const canvas = document.createElement('canvas');
-    for (const [i, e] of druck.etiketten.entries()) {
-      status(`Drucke Etikett ${i + 1} von ${druck.etiketten.length} …`);
-      zeichne(canvas, e);
-      await task.printPage(lib.ImageEncoder.encodeCanvas(canvas, 0, richtung), 1);
+    for (const block of druckBloecke(etiketten)) {
+      pruefeAbbruch();
+      task = client.protocol.newPrintTask(art, { totalPages: block.etiketten.length, density: dichte, labelType: 1 });
+      await task.printInit();
+      for (const [i, e] of block.etiketten.entries()) {
+        pruefeAbbruch();
+        status(`Drucke Aufkleber ${block.start + i + 1} von ${etiketten.length} …`);
+        zeichne(canvas, e);
+        await task.printPage(lib.ImageEncoder.encodeCanvas(canvas, 0, richtung), 1);
+      }
+      pruefeAbbruch();
+      await task.waitForFinished();
+      pruefeAbbruch();
+      const beendet = await task.printEnd();
+      if (art === 'B1' && beendet === false) throw new Error('Der Drucker hat den Abschluss des Druckteils noch nicht bestätigt');
+      task = null;
     }
-    await task.waitForFinished();
-    status(`Fertig: ${druck.etiketten.length} gedruckt.`);
-    toast(druck.etiketten.length === 1 ? '1 Etikett gedruckt' : `${druck.etiketten.length} Etiketten gedruckt`);
+    status(`Fertig: ${etiketten.length} gedruckt. Bitte den Ausdruck prüfen.`);
+    toast(etiketten.length === 1 ? '1 Aufkleber gedruckt' : `${etiketten.length} Aufkleber gedruckt`);
   } catch (err) {
-    const abbruch = /cancel|chosen|abgebrochen/i.test(String(err?.message));
-    status(abbruch ? 'Kein Drucker gewählt.' : `Drucken fehlgeschlagen: ${err?.message || err}. Drucker an und in der Nähe? Sonst „Verbindung trennen“ und erneut drucken.`);
+    const auswahlAbbruch = /cancel|chosen|abgebrochen/i.test(String(err?.message));
+    status(druck.abbruch ? 'Druck abgebrochen. Bereits ausgegebene Aufkleber prüfen. Der Ausdruck wurde nicht bestätigt.'
+      : auswahlAbbruch ? 'Kein Drucker gewählt.'
+        : `Druck unterbrochen: ${err?.message || err}. Bereits ausgegebene Aufkleber prüfen. Der Ausdruck wurde nicht bestätigt. Verbindung und Etikettenrolle prüfen und bei Bedarf den Auftrag wieder freigeben.`);
   } finally {
-    try { await task?.printEnd(); } catch { /* Drucker schon getrennt */ }
+    try { await task?.printEnd(); } catch { /* Verbindung bereits getrennt */ }
     druck.laeuft = false; zeichneVorschau();
   }
+}
+async function trennen() {
+  if (druck.laeuft) { druck.abbruch = true; status('Druck wird abgebrochen … Bereits ausgegebene Aufkleber prüfen.'); }
+  try { await druck.client?.disconnect(); } catch { /* getrennt */ }
+  druck.client = null;
+  if (!druck.laeuft) status('Verbindung getrennt.');
 }
 
 const lexikonCache = new Map();
@@ -151,6 +179,7 @@ export async function etikettenFuerBestellung(positionen = []) {
  */
 export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Etiketten drucken', allowEditing = true, hinweis = '' } = {}) {
   if (druck.laeuft || druck.speichert) { toast('Bitte warten, bis der aktuelle Vorgang fertig ist.'); return; }
+  if (!Array.isArray(etiketten) || etiketten.length > DRUCK_LIMIT.etiketten) { toast(`Bitte höchstens ${DRUCK_LIMIT.etiketten} Aufkleber pro Drucklauf wählen.`); return; }
   druck.etiketten = [...etiketten];
   druck.bearbeiten = -1;
   druck.allowEditing = allowEditing;
@@ -161,6 +190,7 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Etiketten 
     <p class="small muted">Niimbot B1, Etikett 50 × 50 mm. Drucker einschalten, dann „Drucken“ – beim ersten Mal fragt der Browser, welcher Drucker.</p>
     ${umgebung ? `<p class="etk-warn">${esc(umgebung)}</p>` : ''}
     ${hinweis ? `<p class="etk-auftrag-hinweis">${esc(hinweis)}</p>` : ''}
+    <p id="etkZusammenfassung" class="small"></p>
     <div id="etkListe" class="etk-liste"></div>
     ${allowEditing ? `<details class="etk-hand"${etiketten.length ? '' : ' open'}><summary>Etikett von Hand hinzufügen</summary>
       <form id="etkForm" class="etk-form">
@@ -215,6 +245,7 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Etiketten 
     const wert = k => String(d.get(k) || '').trim();
     const roh = wert('handle');
     const handle = originalHandle((roh.match(/\/products\/([^/?#]+)/) || [])[1] || roh);
+    if (druck.bearbeiten < 0 && druck.etiketten.length >= DRUCK_LIMIT.etiketten) { status(`Höchstens ${DRUCK_LIMIT.etiketten} Aufkleber pro Drucklauf.`); return; }
     if (!handle && !wert('serie')) { status('Bitte Produktlink oder Serie eintragen.'); return; }
     // Ziel vor dem Abruf festhalten: ein spaeterer Klick darf kein anderes Etikett ersetzen.
     const vorher = druck.etiketten[druck.bearbeiten];
@@ -245,9 +276,31 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Etiketten 
     }
   });
   $('#etkDrucken').addEventListener('click', () => { if (!umgebungsHinweis()) drucken(); });
-  $('#etkTrennen').addEventListener('click', async () => { try { await druck.client?.disconnect(); } catch { /* egal */ } druck.client = null; status('Getrennt.'); });
+  $('#etkTrennen').addEventListener('click', () => { void trennen(); });
   zeichneVorschau();
   ($('#etkDrucken').disabled ? ($('#etkForm input') || $('.etk-dialog [data-close-dialog]')) : $('#etkDrucken'))?.focus({ preventScroll: true });
   // QR-Code nachzeichnen, sobald die Bibliothek da ist; ohne Internet bleibt die Vorschau ohne QR.
   try { await ladeSkript('qrcode'); zeichneVorschau(); } catch (err) { status(`${err.message} – zum Drucken mit QR-Code den Dialog erneut öffnen.`); }
+}
+
+// Ein laufender Druck darf nicht unsichtbar im Hintergrund weitergehen.
+if (typeof document !== 'undefined') {
+  document.addEventListener('click', ev => {
+    if (!druck.laeuft || !document.querySelector('.etk-dialog')) return;
+    const ziel = ev.target.closest('[data-close-dialog]');
+    if (ziel && (ziel === ev.target || !ev.target.closest('.dialog'))) {
+      ev.preventDefault(); ev.stopImmediatePropagation();
+      toast('Der Druck läuft. Zum Anhalten „Druck abbrechen“ wählen.');
+    }
+  }, true);
+  document.addEventListener('keydown', ev => {
+    if (ev.key === 'Escape' && druck.laeuft && document.querySelector('.etk-dialog')) {
+      ev.preventDefault(); ev.stopImmediatePropagation(); void trennen();
+    }
+  }, true);
+  window.addEventListener('tp-sitzung-beendet', () => {
+    if (druck.laeuft) void trennen();
+    druck.etiketten = [];
+    if (document.querySelector('.etk-dialog')) $('#dialogRoot').innerHTML = '';
+  });
 }

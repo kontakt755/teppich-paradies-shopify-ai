@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
+import { DRUCK_LIMIT } from '../../docs/ai-dashboard/lib/druckliste.mjs';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const STATUS = ['offen', 'in_druck', 'gedruckt', 'entfernt'];
@@ -109,7 +110,7 @@ function normalisiereEingabe({ aktion, vorgangId, eintrag, eintraege, druckauftr
     const { id, produktHandle, produktTitel, bezeichnung, etikett, anzahl } = eintrag;
     return { aktion, vorgangId, eintrag: { id: id.toLowerCase(), produktHandle, produktTitel, bezeichnung, etikett: kopie(etikett), anzahl } };
   }
-  if (eintrag !== undefined || !Array.isArray(eintraege) || !eintraege.length || eintraege.length > 100
+  if (eintrag !== undefined || !Array.isArray(eintraege) || !eintraege.length || eintraege.length > DRUCK_LIMIT.positionen
     || !eintraege.every(e => objekt(e) && uuid(e.id) && revision(e.revision))
     || new Set(eintraege.map(e => e.id.toLowerCase())).size !== eintraege.length) fehler(400, 'Bitte eine gültige Auswahl mit aktuellem Stand übergeben.');
   if (aktion === 'entfernen' ? druckauftragId !== undefined : !uuid(druckauftragId)) fehler(400, 'Die Druckauftragskennung ist ungültig.');
@@ -258,7 +259,9 @@ export function aendereMusterDruckliste({ privatDir, actor, now = new Date(), ..
         }
         return e;
       });
-      if (auswahl.reduce((n, e) => n + e.anzahl, 0) > 100) fehler(400, 'Bitte höchstens 100 Etiketten auf einmal auswählen.');
+      if (auftrag.aktion !== 'entfernen' && auswahl.reduce((n, e) => n + e.anzahl, 0) > DRUCK_LIMIT.etiketten) {
+        fehler(400, `Bitte höchstens ${DRUCK_LIMIT.etiketten} Aufkleber pro Druckauftrag auswählen.`);
+      }
       if (auftrag.aktion === 'reservieren' && daten.eintraege.some(e => e.druckauftrag?.id === auftrag.druckauftragId)) {
         fehler(409, 'Diese Druckauftragskennung wird bereits verwendet. Bitte die Liste erneut laden.');
       }
