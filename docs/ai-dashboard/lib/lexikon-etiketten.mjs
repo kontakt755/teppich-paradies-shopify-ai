@@ -53,6 +53,7 @@ function ausVariante(produkt, variante, fehlt = []) {
     sf = { serie: text(produkt.eigenschaften?.marke) || text(produkt.produktgruppe), farbe: text(produkt.titel) };
   }
   const e = etikett({ ...sf, sku: variante?.sku, handle: produkt?.handle, technik: technikZeilen(produkt?.eigenschaften) });
+  if (Object.hasOwn(produkt || {}, 'onlineStoreUrl') && (!text(produkt.onlineStoreUrl) || produkt.onlineStoreUrl !== e.url)) fehlt.push('Veröffentlichte Produktseite');
   e.fehlt = [...new Set([...e.fehlt, ...fehlt])];
   return e;
 }

@@ -5,6 +5,14 @@ const text = v => typeof v === 'string' ? v.trim() : '';
 const muster = p => text(p?.handle).startsWith('muster-') || p?.handle === 'kostenloses-muster';
 const norm = v => text(v).toLowerCase();
 
+function fehlendeAngaben(e, je) {
+  const fehlt = [...e.fehlt];
+  // Eine konstruierte QR-Adresse belegt noch keine Veroeffentlichung.
+  const ziel = je.get(new URL(e.url || 'https://ungueltig.invalid').pathname.split('/products/')[1]);
+  if (!ziel?.onlineStoreUrl || ziel.onlineStoreUrl !== e.url) fehlt.push('Veröffentlichte Produktseite');
+  return [...new Set(fehlt)];
+}
+
 /** Die Ausschluesse des Musterwegs; Anfrage-Muster brauchen ebenfalls einen Aufkleber. */
 export function musterAngebot(p) {
   if (!p || muster(p) || p.status === 'ARCHIVED') return 'kein';
@@ -44,10 +52,7 @@ export function musterEtikettenStatus(modell) {
       continue;
     }
     const etiketten = etikettenAusLexikon(p, je).map((z, index) => {
-      const fehlt = [...z.etikett.fehlt];
-      // Eine QR-Adresse aus dem Handle allein belegt keine Veroeffentlichung.
-      const ziel = je.get(new URL(z.etikett.url || 'https://ungueltig.invalid').pathname.split('/products/')[1]);
-      if (!ziel?.onlineStoreUrl || ziel.onlineStoreUrl !== z.etikett.url) fehlt.push('Veröffentlichte Produktseite');
+      const fehlt = fehlendeAngaben(z.etikett, je);
       if (!z.etikett.sku) zaehler.ohneArtikelnummer++;
       return { index, key: z.key, bezeichnung: z.bezeichnung, sku: z.etikett.sku,
         fehlt: [...new Set(fehlt)], hinweise: z.etikett.sku ? [] : ['Keine Artikelnummer im Shop hinterlegt; die Zeile entfällt auf dem Aufkleber.'], etikett: z.etikett };
@@ -64,7 +69,7 @@ export function musterEtikettenStatus(modell) {
   // Auch ein fehlerhafter Musterartikel darf nicht hinter einem gesunden Original verschwinden.
   for (const p of produkte.filter(p => muster(p) && p.handle !== 'kostenloses-muster')) {
     zaehler.musterartikel++;
-    const etiketten = etikettenAusLexikon(p, je);
+    const etiketten = etikettenAusLexikon(p, je).map(z => ({ ...z, etikett: { ...z.etikett, fehlt: fehlendeAngaben(z.etikett, je) } }));
     zaehler.musterzuordnungen += etiketten.length;
     const fehler = etiketten.filter(z => z.etikett.fehlt.length);
     zaehler.zuordnungPruefen += fehler.length || (!etiketten.length ? 1 : 0);

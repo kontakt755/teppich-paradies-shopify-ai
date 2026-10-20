@@ -115,6 +115,18 @@ test('QR-Ziel braucht eine wirklich veroeffentlichte Originalseite', () => {
   assert.ok(zeile(status([falscheAdresse]), falscheAdresse.handle).fehlt.includes('Veröffentlichte Produktseite'));
 });
 
+test('auch eigenes Muster mit abweichendem Handle braucht die veroeffentlichte Quellseite', () => {
+  const original = produkt('test-nicht-online', { onlineStoreUrl: null });
+  const m = produkt('muster-test-anders', { varianten: [{ id: 'v-muster', sku: 'M-TEST-SAND', farbe: 'Sand',
+    original: { gefunden: true, produktHandle: original.handle, variantenId: 'v-sand', sku: 'TEST-SAND' } }] });
+  const s = status([original, m]);
+  assert.equal(s.zaehler.musterzuordnungen, 1);
+  assert.equal(s.zaehler.zuordnungPruefen, 1);
+  assert.ok(zeile(s, m.handle).fehlt.includes('Veröffentlichte Produktseite'));
+  assert.ok(etikettenAusLexikon(m, je([original, m]))[0].etikett.fehlt.includes('Veröffentlichte Produktseite'), 'auch Vorschau und Vormerkung sperren');
+  assert.equal(s.vollstaendig, false);
+});
+
 test('Maßartikel bezieht sein explizites eigenes Muster auch bei abweichendem Originalhandle', () => {
   const original = produkt('test-rollenware', { eigenschaften: { qmProPaket: '2', gesamtstaerke: '4 mm' } });
   const muster = produkt('muster-test-mass', { varianten: [{ id: 'v-muster', sku: 'M-ALTE-CARRIER-SKU', farbe: 'Alt',
