@@ -2,6 +2,29 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-20 · Drucker getrennt verbinden und Dashboard-App druckfaehig starten (#1540)
+
+- **Geaendert:** Die Druckvorschau bietet „Drucker verbinden“ als eigenen Schritt mit sichtbarem
+  Verbindungsstatus. Die reine Verbindung sendet keine Etiketten, setzt keinen Druckversuch und
+  aendert keinen Drucklistenstatus. Der spaetere bewusste Druckklick nutzt dieselbe Verbindung.
+  Doppelklick, Abbruch und verspaetete Geraeteauswahl bleiben getrennt vom Druck; Schliessen einer
+  ungedruckten Vorschau gibt den Auftrag weiterhin frei. Zum Wechseln zwischen Bluetooth und USB
+  zuerst trennen. Der Tastaturfokus beginnt beim Verbinden und springt danach nicht zum Druckstart.
+  Ein gemeinsamer macOS-App-Starter oeffnet ein eigenes Chrome-/Edge-Fenster ueber localhost;
+  optional eine sichere HTTPS-Zentrale. Der installierte App-Einstieg kann darauf delegieren,
+  ohne die privaten Betriebsstarter zu ersetzen. Dienstpruefung, Wiederanlauf und privates Log
+  bleiben erhalten; LAN-HTTP und unsichere Browserausnahmen werden nicht verwendet.
+- **Getestet:** 48 Browserstrecken mit ausschliesslich synthetischem Drucker: Verbinden ohne
+  Druckbefehle/Callbacks, Verbindung wiederverwenden, Doppelklick, Fehler und Wiederholung,
+  Schliessen/Escape/Backdrop/Sitzungsende/Dialogersatz waehrend der Geraeteauswahl sowie gesperrte
+  bzw. wechselnde Verbindungsart. Bestehende Sammeldruck-/Papierbestaetigung und private
+  Datenkopie auf Handy/Tablet/Rechner in heller und dunkler Ansicht geprueft. 14 isolierte
+  Startertests ersetzen alle App-/Netz-/Dienstaufrufe; sichere URL, App-Modus, Browserauswahl,
+  Wiederanlauf und Fehlerpfade geprueft. Unabhaengige Pruefung der gefrorenen Produktdateien.
+- **Risiken:** Kein echter Niimbot verbunden oder physischer Ausdruck ausgefuehrt. Der Status
+  bestaetigt die Geraeteverbindung, nicht die Qualitaet eines spaeteren Ausdrucks.
+- **Naechste Stufe:** Projektpruefungen, PR und Aktualisierung des privaten Dashboard-Dienstes.
+
 ## 2026-10-20 · Muster sammeln und im selben Fenster abschliessen (#1536)
 
 - **Geaendert:** Im Lexikon ist Vormerken die Hauptaktion; eine bestaetigte Rueckmeldung nennt

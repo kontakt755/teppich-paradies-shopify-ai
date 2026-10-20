@@ -108,13 +108,14 @@ const basis = `http://127.0.0.1:${server.address().port}`;
 let browser;
 let bestanden = 0, gescheitert = 0;
 
-async function geraeteAttrappen(page) {
-  await page.evaluateOnNewDocument(() => {
-    const f = window.__druckAttrappe = { aktiv: true, modus: 'ok', verbindungen: 0, trennungen: 0, teile: [], seiten: [], ende: 0 };
-    Object.defineProperty(navigator, 'bluetooth', { configurable: true, value: {} });
-    Object.defineProperty(navigator, 'serial', { configurable: true, value: {} });
+async function geraeteAttrappen(page, umgebung = {}) {
+  await page.evaluateOnNewDocument(optionen => {
+    const f = window.__druckAttrappe = { aktiv: true, modus: 'ok', verbindungen: 0, verbindungswege: [], trennungen: 0, teile: [], seiten: [], ende: 0 };
+    Object.defineProperty(navigator, 'bluetooth', { configurable: true, value: optionen.ohneGeraete || optionen.nurSeriell ? undefined : {} });
+    Object.defineProperty(navigator, 'serial', { configurable: true, value: optionen.ohneGeraete ? undefined : {} });
+    if (optionen.unsicher) Object.defineProperty(window, 'isSecureContext', { configurable: true, value: false });
     // Die echte Bibliothek wird nicht geladen. Canvas/DOM und Dashboard bleiben echt.
-    window.qrcode = () => ({ addData() {}, make() {}, getModuleCount: () => 21, isDark: (r, c) => (r + c) % 2 === 0 });
+    if (!optionen.qrFehler) window.qrcode = () => ({ addData() {}, make() {}, getModuleCount: () => 21, isDark: (r, c) => (r + c) % 2 === 0 });
     const fuellen = CanvasRenderingContext2D.prototype.fillRect;
     CanvasRenderingContext2D.prototype.fillRect = function (x, y, w, h) {
       if (x === 0 && y === 0 && w === this.canvas.width && h === this.canvas.height) this.canvas.__testtexte = [];
@@ -123,6 +124,7 @@ async function geraeteAttrappen(page) {
     const text = CanvasRenderingContext2D.prototype.fillText;
     CanvasRenderingContext2D.prototype.fillText = function (t, ...rest) { (this.canvas.__testtexte ||= []).push(String(t)); return text.call(this, t, ...rest); };
     class Client {
+      constructor(weg) { this.weg = weg; this.ereignisse = {}; }
       verbunden = false;
       protocol = { newPrintTask: (_art, optionen) => {
         f.teile.push(optionen);
@@ -138,25 +140,31 @@ async function geraeteAttrappen(page) {
       } };
       async connect() {
         ++f.verbindungen;
+        f.verbindungswege.push(this.weg);
         if (f.modus === 'auswahl-halten') await new Promise(ok => { f.auswahlFortsetzen = ok; });
         if (f.modus === 'auswahl-abbruch') throw new Error('User cancelled the requestDevice chooser');
-        this.verbunden = true;
+        if (f.modus === 'verbindungsfehler') throw new Error('Synthetischer Verbindungsfehler');
+        this.verbunden = f.modus !== 'falscher-erfolg';
       }
       isConnected() { return this.verbunden; }
-      async disconnect() { ++f.trennungen; this.verbunden = false; }
-      on() {}
+      async disconnect() {
+        ++f.trennungen;
+        if (f.modus === 'trennen-halten') await new Promise(ok => { f.trennenFortsetzen = ok; });
+        this.verbunden = false; this.ereignisse.disconnect?.();
+      }
+      on(name, fn) { this.ereignisse[name] = fn; }
       getModelMetadata() { return { printDirection: 'top' }; }
       getPrintTaskType() { return 'B1'; }
     }
-    window.niimbluelib = { NiimbotBluetoothClient: Client, NiimbotSerialClient: Client, ImageEncoder: { encodeCanvas: c => ({ texte: [...c.__testtexte] }) } };
+    window.niimbluelib = { NiimbotBluetoothClient: class extends Client { constructor() { super('bluetooth'); } }, NiimbotSerialClient: class extends Client { constructor() { super('usb'); } }, ImageEncoder: { encodeCanvas: c => ({ texte: [...c.__testtexte] }) } };
     const append = Element.prototype.append;
     Element.prototype.append = function (...knoten) {
       for (const k of knoten) {
-        if (this === document.head && k.tagName === 'SCRIPT' && k.src.startsWith('https://cdn.jsdelivr.net/npm/')) queueMicrotask(() => k.onload?.());
+        if (this === document.head && k.tagName === 'SCRIPT' && k.src.startsWith('https://cdn.jsdelivr.net/npm/')) queueMicrotask(() => optionen.qrFehler && k.src.includes('qrcode-generator') ? k.onerror?.() : k.onload?.());
         else append.call(this, k);
       }
     };
-  });
+  }, umgebung);
 }
 async function warteAuf(fn, fehler = 'Bedingung nicht erreicht') {
   const ende = Date.now() + 5000;
@@ -177,7 +185,7 @@ async function pruefe(name, test, daten = fixture()) {
     });
     page.on('pageerror', err => jsFehler.push(err.message));
     page.on('dialog', dialog => { void dialog.accept(); });
-    await geraeteAttrappen(page);
+    await geraeteAttrappen(page, daten.umgebung);
     await page.goto(`${basis}/#/lexikon?tab=druckliste`, { waitUntil: 'networkidle0' });
     await page.waitForSelector('[data-md-aktualisieren]');
     await test(page, daten);
@@ -203,8 +211,201 @@ async function fertig(page) { await page.waitForFunction(() => !document.querySe
 async function geschlossen(page) { await page.waitForFunction(() => !document.querySelector('.etk-dialog')); }
 const aktionen = daten => daten.anfragen.map(a => a.aktion);
 
+async function direkterDialog(page, { leer = false, titel = 'Verbindung pruefen' } = {}) {
+  await page.evaluate(async optionen => {
+    window.__verbindungsCallbacks = { versuche: 0, pruefungen: 0, papier: 0, geschlossen: [] };
+    const { oeffneEtikettenDruck } = await import('/bausteine/etiketten-druck.mjs');
+    await oeffneEtikettenDruck({ titel: optionen.titel,
+      etiketten: optionen.leer ? [] : [{ serie: 'Testserie', farbe: 'Testfarbe', sku: 'TEST-1', url: 'https://www.teppich-paradies.net/products/testmuster', technik: [], fehlt: [] }],
+      druckVersucht: () => { ++window.__verbindungsCallbacks.versuche; },
+      vorDruck: async () => { ++window.__verbindungsCallbacks.pruefungen; return true; },
+      beiBestaetigen: async () => { ++window.__verbindungsCallbacks.papier; return true; },
+      beiSchliessen: async ({ versucht }) => { window.__verbindungsCallbacks.geschlossen.push(versucht); },
+    });
+  }, { leer, titel });
+}
+async function attrappenVerbindung(page, modus = 'ok') {
+  assert.equal(await page.evaluate(() => window.__druckAttrappe?.aktiv), true, 'Verbindung ausschliesslich zur Attrappe.');
+  await page.evaluate(m => { window.__druckAttrappe.modus = m; }, modus);
+  await page.click('#etkVerbinden');
+}
+async function verbunden(page) { await page.waitForFunction(() => /verbunden/i.test(document.querySelector('#etkVerbinden')?.textContent || '') && document.querySelector('#etkVerbinden').disabled); }
+async function keinDruck(page) {
+  assert.deepEqual(await page.evaluate(() => ({ teile: window.__druckAttrappe.teile.length, seiten: window.__druckAttrappe.seiten.length, ende: window.__druckAttrappe.ende })), { teile: 0, seiten: 0, ende: 0 });
+}
+
 try {
   browser = await puppeteer.launch({ headless: true });
+  await pruefe('Nur verbinden prueft den Drucker ohne Druck und gibt Vorschau beim Schliessen frei', async (page, daten) => {
+    await vorschau(page);
+    assert.equal(await page.evaluate(() => document.activeElement?.id), 'etkVerbinden', 'Die sichere Verbindungsaktion erhaelt zuerst den Fokus.');
+    await attrappenVerbindung(page); await verbunden(page); await keinDruck(page);
+    assert.notEqual(await page.evaluate(() => document.activeElement?.id), 'etkDrucken', 'Verbindungserfolg fokussiert keinen Druckstart.');
+    assert.equal(await page.evaluate(() => window.__druckAttrappe.verbindungen), 1);
+    assert(daten.eintraege.every(e => e.status === 'in_druck'));
+    assert.deepEqual(aktionen(daten), ['reservieren']);
+    assert.equal(await page.$eval('#etkBestaetigung', el => el.hidden), true);
+    await page.click('.etk-dialog [data-close-dialog]'); await geschlossen(page);
+    await warteAuf(() => daten.eintraege.every(e => e.status === 'offen'));
+    assert.deepEqual(aktionen(daten), ['reservieren', 'freigeben']);
+  });
+  await pruefe('Verbindung ruft keine Druckcallbacks auf; Doppelklick und spaeterer Druck nutzen denselben Client', async page => {
+    await direkterDialog(page);
+    await page.$eval('#etkVerbinden', el => { el.click(); el.click(); });
+    await verbunden(page); await keinDruck(page);
+    assert.deepEqual(await page.evaluate(() => window.__verbindungsCallbacks), { versuche: 0, pruefungen: 0, papier: 0, geschlossen: [] });
+    await page.$eval('#etkVerbinden', el => el.click());
+    assert.equal(await page.evaluate(() => window.__druckAttrappe.verbindungen), 1);
+    assert.equal(await page.$eval('#etkWeg', el => el.disabled), true, 'Ein verbundener Client wird nicht als anderer Verbindungsweg ausgegeben.');
+    await attrappenDruck(page); await fertig(page);
+    assert.equal(await page.evaluate(() => window.__druckAttrappe.verbindungen), 1);
+    assert.deepEqual(await page.evaluate(() => window.__verbindungsCallbacks), { versuche: 1, pruefungen: 1, papier: 0, geschlossen: [] });
+    await page.click('#etkBestaetigen'); await geschlossen(page);
+    assert.equal(await page.evaluate(() => window.__verbindungsCallbacks.papier), 1);
+  });
+  await pruefe('Verzoegertes Trennen sperrt Verbindung und Druck bis zum bestaetigten Ende', async page => {
+    await direkterDialog(page); await attrappenVerbindung(page); await verbunden(page);
+    await page.evaluate(() => { window.__druckAttrappe.modus = 'trennen-halten'; });
+    await page.$eval('#etkTrennen', el => { el.click(); el.click(); });
+    await page.waitForFunction(() => typeof window.__druckAttrappe.trennenFortsetzen === 'function');
+    assert.equal(await page.$eval('#etkVerbinden', el => el.disabled), true);
+    assert.equal(await page.$eval('#etkDrucken', el => el.disabled), true);
+    await page.$eval('#etkVerbinden', el => el.click());
+    await page.$eval('#etkDrucken', el => el.click());
+    assert.equal(await page.evaluate(() => window.__druckAttrappe.trennungen), 1);
+    assert.equal(await page.evaluate(() => window.__druckAttrappe.verbindungen), 1);
+    await keinDruck(page);
+    await page.evaluate(() => window.__druckAttrappe.trennenFortsetzen());
+    await page.waitForFunction(() => !document.querySelector('#etkVerbinden').disabled);
+    assert.match(await page.$eval('#etkStatus', el => el.textContent), /getrennt/i);
+    await attrappenVerbindung(page); await verbunden(page); await keinDruck(page);
+    assert.equal(await page.evaluate(() => window.__druckAttrappe.verbindungen), 2);
+    assert.deepEqual(await page.evaluate(() => window.__verbindungsCallbacks), { versuche: 0, pruefungen: 0, papier: 0, geschlossen: [] });
+  });
+  for (const weg of ['Schliessen', 'Ersetzen']) {
+    await pruefe(`${weg} mit alter Druckerwahl sperrt neue Verbindung bis auch alte Bereinigung fertig ist`, async page => {
+      await direkterDialog(page, { titel: 'Alter Verbindungstest' });
+      await page.evaluate(() => { window.__alteCallbacks = window.__verbindungsCallbacks; });
+      await attrappenVerbindung(page, 'auswahl-halten');
+      await page.waitForFunction(() => typeof window.__druckAttrappe.auswahlFortsetzen === 'function');
+      if (weg === 'Schliessen') { await page.click('.etk-dialog [data-close-dialog]'); await geschlossen(page); }
+      else await page.evaluate(() => { document.querySelector('#dialogRoot').innerHTML = '<p>Anderer Dialog</p>'; });
+      await page.waitForFunction(() => window.__alteCallbacks.geschlossen.length === 1);
+      await direkterDialog(page, { titel: 'Neuer Verbindungstest' });
+      const nachfolger = await page.evaluate(() => ({ titel: document.querySelector('#etkTitel').textContent, liste: document.querySelector('#etkListe').innerHTML, status: document.querySelector('#etkStatus').textContent }));
+      for (const selector of ['#etkVerbinden', '#etkDrucken']) {
+        assert.equal(await page.$eval(selector, el => el.disabled), true, 'Die alte Druckerwahl haelt den Hardwarezugriff global gesperrt.');
+        await page.$eval(selector, el => el.click());
+      }
+      assert.equal(await page.evaluate(() => window.__druckAttrappe.verbindungen), 1);
+      await page.evaluate(() => { window.__druckAttrappe.modus = 'trennen-halten'; window.__druckAttrappe.auswahlFortsetzen(); });
+      await page.waitForFunction(() => typeof window.__druckAttrappe.trennenFortsetzen === 'function');
+      for (const selector of ['#etkVerbinden', '#etkDrucken']) {
+        assert.equal(await page.$eval(selector, el => el.disabled), true, 'Auch das noch laufende Trennen des alten Clients blockiert neue Hardwarezugriffe.');
+        await page.$eval(selector, el => el.click());
+      }
+      assert.equal(await page.evaluate(() => window.__druckAttrappe.verbindungen), 1);
+      await keinDruck(page);
+      await page.evaluate(() => window.__druckAttrappe.trennenFortsetzen());
+      await page.waitForFunction(() => !document.querySelector('#etkVerbinden').disabled);
+      assert.deepEqual(await page.evaluate(() => ({ titel: document.querySelector('#etkTitel').textContent, liste: document.querySelector('#etkListe').innerHTML, status: document.querySelector('#etkStatus').textContent })), nachfolger);
+      assert.deepEqual(await page.evaluate(() => window.__alteCallbacks.geschlossen), [false]);
+      assert.deepEqual(await page.evaluate(() => window.__verbindungsCallbacks), { versuche: 0, pruefungen: 0, papier: 0, geschlossen: [] });
+      await attrappenVerbindung(page); await verbunden(page); await keinDruck(page);
+      assert.equal(await page.evaluate(() => window.__druckAttrappe.verbindungen), 2);
+    });
+  }
+  for (const modus of ['auswahl-abbruch', 'verbindungsfehler', 'falscher-erfolg']) {
+    await pruefe(`${modus} beim Verbindungstest erlaubt Wiederholung ohne Druckversuch`, async page => {
+      await direkterDialog(page); await attrappenVerbindung(page, modus);
+      await page.waitForFunction(() => !document.querySelector('#etkVerbinden').disabled);
+      await keinDruck(page);
+      assert.equal(await page.evaluate(() => window.__verbindungsCallbacks.versuche), 0);
+      assert.equal(await page.evaluate(() => window.__verbindungsCallbacks.pruefungen), 0);
+      await attrappenVerbindung(page); await verbunden(page); await keinDruck(page);
+      assert.equal(await page.evaluate(() => window.__druckAttrappe.verbindungen), 2);
+      await page.click('.etk-dialog [data-close-dialog]'); await geschlossen(page);
+      assert.deepEqual(await page.evaluate(() => window.__verbindungsCallbacks.geschlossen), [false]);
+    });
+  }
+  for (const weg of ['Schliessen', 'Escape', 'Hintergrund']) {
+    await pruefe(`${weg} beendet offene Druckerwahl ohne Druck und trennt spaete Verbindung`, async (page, daten) => {
+      await vorschau(page); await attrappenVerbindung(page, 'auswahl-halten');
+      await page.waitForFunction(() => typeof window.__druckAttrappe.auswahlFortsetzen === 'function');
+      assert.equal(await page.$eval('#etkDrucken', el => el.disabled), true);
+      if (weg === 'Schliessen') await page.click('.etk-dialog [data-close-dialog]');
+      else if (weg === 'Escape') await page.keyboard.press('Escape');
+      else await page.mouse.click(2, 2);
+      await geschlossen(page);
+      await warteAuf(() => daten.eintraege.every(e => e.status === 'offen'));
+      await page.evaluate(() => window.__druckAttrappe.auswahlFortsetzen());
+      await page.waitForFunction(() => window.__druckAttrappe.trennungen > 0);
+      await keinDruck(page);
+      assert.deepEqual(aktionen(daten), ['reservieren', 'freigeben']);
+      assert.equal(await page.$$('.etk-dialog').then(es => es.length), 0);
+    });
+  }
+  await pruefe('Sitzungsende bei reinem Verbinden verhindert spaete UI- und Druckaktionen', async (page, daten) => {
+    await vorschau(page); await attrappenVerbindung(page, 'auswahl-halten');
+    await page.waitForFunction(() => typeof window.__druckAttrappe.auswahlFortsetzen === 'function');
+    await page.evaluate(async () => { const s = await import('/kern/sitzung.mjs'); s.markiereSitzungAbgelaufen(); window.__druckAttrappe.auswahlFortsetzen(); });
+    await geschlossen(page);
+    await page.waitForFunction(() => window.__druckAttrappe.trennungen > 0);
+    await keinDruck(page);
+    assert.deepEqual(aktionen(daten), ['reservieren'], 'Eine beendete Sitzung schreibt keine automatische Freigabe.');
+  });
+  await pruefe('Dialogersatz beim Verbindungstest laesst den Nachfolger unveraendert', async page => {
+    await direkterDialog(page); await attrappenVerbindung(page, 'auswahl-halten');
+    await page.waitForFunction(() => typeof window.__druckAttrappe.auswahlFortsetzen === 'function');
+    await page.evaluate(() => { document.querySelector('#dialogRoot').innerHTML = '<div class="dialog" id="nachfolger"><h2>Anderes Fenster</h2><p id="etkStatus">Unveraenderter Hinweis</p></div>'; window.__nachfolgerHtml = document.querySelector('#dialogRoot').innerHTML; });
+    await page.waitForFunction(() => window.__verbindungsCallbacks.geschlossen.length === 1);
+    await page.evaluate(() => window.__druckAttrappe.auswahlFortsetzen());
+    await page.waitForFunction(() => window.__druckAttrappe.trennungen > 0);
+    assert.equal(await page.evaluate(() => document.querySelector('#dialogRoot').innerHTML === window.__nachfolgerHtml), true);
+    assert.deepEqual(await page.evaluate(() => window.__verbindungsCallbacks.geschlossen), [false]);
+    await keinDruck(page);
+  });
+  await pruefe('Leerer manueller Aufkleberdialog kann den Drucker schon verbinden', async page => {
+    await direkterDialog(page, { leer: true });
+    assert.equal(await page.$eval('#etkDrucken', el => el.disabled), true);
+    await attrappenVerbindung(page); await verbunden(page); await keinDruck(page);
+    assert.deepEqual(await page.evaluate(() => window.__verbindungsCallbacks), { versuche: 0, pruefungen: 0, papier: 0, geschlossen: [] });
+  });
+  await pruefe('Fehlende QR-Bibliothek sperrt Druck, erlaubt aber Verbindungstest', async page => {
+    await direkterDialog(page);
+    assert.equal(await page.evaluate(() => typeof window.qrcode), 'undefined');
+    assert.equal(await page.$eval('#etkDrucken', el => el.disabled), true);
+    await attrappenVerbindung(page); await verbunden(page); await keinDruck(page);
+  }, Object.assign(fixture(), { umgebung: { qrFehler: true } }));
+  for (const [name, umgebung] of [['unsicherer Kontext', { unsicher: true }], ['Browser ohne Geraeteschnittstelle', { ohneGeraete: true }]]) {
+    await pruefe(`${name} sperrt auch reines Verbinden`, async page => {
+      await direkterDialog(page);
+      assert.equal(await page.$eval('#etkVerbinden', el => el.disabled), true);
+      await page.$eval('#etkVerbinden', el => el.click());
+      assert.equal(await page.evaluate(() => window.__druckAttrappe.verbindungen), 0);
+      await keinDruck(page);
+    }, Object.assign(fixture(), { umgebung }));
+  }
+  await pruefe('Bereits per USB verbundener Drucker behaelt den richtigen Weg im naechsten Dialog', async page => {
+    await direkterDialog(page);
+    await page.$eval('.etk-einstellungen', el => { el.open = true; });
+    await page.select('#etkWeg', 'usb');
+    await attrappenVerbindung(page); await verbunden(page);
+    await page.click('.etk-dialog [data-close-dialog]'); await geschlossen(page);
+    await direkterDialog(page, { titel: 'Weiterer Aufkleber' });
+    await verbunden(page);
+    assert.equal(await page.$eval('#etkWeg', el => el.value), 'usb');
+    assert.equal(await page.$eval('#etkWeg', el => el.disabled), true);
+    await keinDruck(page);
+    assert.deepEqual(await page.evaluate(() => window.__druckAttrappe.verbindungswege), ['usb']);
+  });
+  await pruefe('Browser nur mit serieller Schnittstelle bietet direkt den verfuegbaren USB-Weg', async page => {
+    await direkterDialog(page);
+    assert.equal(await page.$eval('#etkWeg', el => el.value), 'usb');
+    assert.equal(await page.$eval('#etkWeg option[value="bluetooth"]', el => el.disabled), true);
+    await attrappenVerbindung(page); await verbunden(page); await keinDruck(page);
+    assert.deepEqual(await page.evaluate(() => window.__druckAttrappe.verbindungswege), ['usb']);
+  }, Object.assign(fixture(), { umgebung: { nurSeriell: true } }));
   await pruefe('Alle offenen ohne Auswahlpflicht; Vorschau druckt nichts', async (page, daten) => {
     assert.equal(await page.$$eval('[data-md-auswahl]', es => es.length), 0);
     assert.match(await page.$eval('[data-md-reservieren]', e => e.textContent), /Druckvorschau öffnen/);
@@ -451,11 +652,12 @@ try {
       await oeffneEtikettenDruck({ titel: 'Neuer Dialog', etiketten: [{ serie: 'Neue Testserie', farbe: 'Testfarbe', sku: 'TEST-NEU', url: 'https://www.teppich-paradies.net/products/test-neu', technik: [], fehlt: [] }], allowEditing: false,
         beiSchliessen: async () => { ++window.__neuGeschlossen; },
       });
-      window.__nachfolgerHtml = document.querySelector('#dialogRoot').innerHTML;
+      window.__nachfolgerInhalt = { titel: document.querySelector('#etkTitel').textContent, liste: document.querySelector('#etkListe').innerHTML, status: document.querySelector('#etkStatus').textContent };
       window.__druckAttrappe.auswahlFortsetzen();
     });
     await page.waitForFunction(() => window.__druckAttrappe.trennungen > 0 && window.__altGeschlossen === 1);
-    assert.equal(await page.evaluate(() => document.querySelector('#dialogRoot').innerHTML === window.__nachfolgerHtml), true);
+    await page.waitForFunction(() => !document.querySelector('#etkDrucken').disabled);
+    assert.equal(await page.evaluate(() => JSON.stringify({ titel: document.querySelector('#etkTitel').textContent, liste: document.querySelector('#etkListe').innerHTML, status: document.querySelector('#etkStatus').textContent }) === JSON.stringify(window.__nachfolgerInhalt)), true);
     assert.equal(await page.evaluate(() => window.__druckAttrappe.seiten.length), 0);
     assert.equal(await page.evaluate(() => window.__neuGeschlossen), 0);
     await page.click('.etk-dialog [data-close-dialog]'); await geschlossen(page);

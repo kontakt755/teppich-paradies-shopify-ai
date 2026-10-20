@@ -31,7 +31,7 @@ function ladeSkript(name) {
 }
 
 const SCHRIFT = 'Arial, Helvetica, sans-serif';
-const druck = { client: null, etiketten: [], laeuft: false, speichert: false, bearbeiten: -1, allowEditing: true, abbruch: false, kontext: null };
+const druck = { client: null, clientWeg: '', verbindung: null, trennt: false, etiketten: [], laeuft: false, speichert: false, bearbeiten: -1, allowEditing: true, abbruch: false, kontext: null };
 let sitzung = 0;
 const aktuell = k => !!k && druck.kontext === k && !k.beendet && k.sitzung === sitzung && k.element?.isConnected;
 const qrBereit = () => typeof window.qrcode === 'function';
@@ -57,7 +57,7 @@ function zeichne(canvas, e) {
 }
 
 const umgebungsHinweis = () => {
-  if (!window.isSecureContext) return 'Drucken geht nur, wenn das Control Center über https:// oder localhost geöffnet ist.';
+  if (!window.isSecureContext) return 'Drucker verbinden geht nur über eine sichere Adresse. Bitte die Teppich-Dashboard-App neu öffnen oder das Dashboard über HTTPS bzw. localhost aufrufen.';
   if (!navigator.bluetooth && !navigator.serial) return 'Dieser Browser kann den Drucker nicht ansprechen – bitte Chrome oder Edge nehmen (Safari und Firefox können das nicht).';
   return '';
 };
@@ -82,11 +82,17 @@ function zeichneVorschau() {
   const zusammenfassung = $('#etkZusammenfassung'), vorschau = druckVorschau(druck.etiketten);
   if (zusammenfassung) zusammenfassung.textContent = `${druck.etiketten.length} Aufkleber insgesamt · ${vorschau.motive} verschiedene Motive.${vorschau.motive > DRUCK_LIMIT.vorschau ? ` Die Vorschau zeigt die ersten ${DRUCK_LIMIT.vorschau} Motive. Gedruckt werden alle Aufkleber.` : ''}`;
   const beschaeftigt = druck.laeuft || k.schliesst || k.bestaetigt;
-  for (const e of document.querySelectorAll('.etk-dialog [data-close-dialog], #etkWeg, #etkDichte')) e.disabled = beschaeftigt;
+  const verbunden = !!druck.client?.isConnected?.();
+  const verbindungOffen = !!druck.verbindung;
+  const wartet = $('#etkVerbindungWartet'); if (wartet) wartet.hidden = !verbindungOffen || k.verbindet || druck.laeuft;
+  for (const e of document.querySelectorAll('.etk-dialog [data-close-dialog], #etkDichte')) e.disabled = beschaeftigt;
+  const weg = $('#etkWeg'); if (weg) weg.disabled = beschaeftigt || k.verbindet || verbindungOffen || druck.trennt || verbunden;
+  const verbindenKnopf = $('#etkVerbinden');
+  if (verbindenKnopf) { verbindenKnopf.textContent = verbunden ? 'Drucker verbunden' : k.verbindet ? 'Verbinde …' : 'Drucker verbinden'; verbindenKnopf.disabled = verbunden || k.verbindet || verbindungOffen || druck.trennt || beschaeftigt || !!umgebungsHinweis(); }
   const trennen = $('#etkTrennen');
-  if (trennen) { trennen.textContent = druck.laeuft ? 'Druck abbrechen' : 'Verbindung trennen'; trennen.hidden = !druck.laeuft && !druck.client?.isConnected?.(); trennen.disabled = k.schliesst || k.bestaetigt; }
+  if (trennen) { trennen.textContent = druck.laeuft ? 'Druck abbrechen' : 'Verbindung trennen'; trennen.hidden = !druck.laeuft && !druck.client?.isConnected?.(); trennen.disabled = druck.trennt || k.schliesst || k.bestaetigt; }
   const knopf = $('#etkDrucken');
-  if (knopf) { knopf.hidden = !!k.beiBestaetigen && k.transportFertig; knopf.disabled = !druck.etiketten.length || beschaeftigt || druck.speichert || unvollstaendig() || !qrBereit() || !!umgebungsHinweis(); knopf.textContent = `Jetzt ${druck.etiketten.length} Aufkleber drucken`; }
+  if (knopf) { knopf.hidden = !!k.beiBestaetigen && k.transportFertig; knopf.disabled = !druck.etiketten.length || beschaeftigt || k.verbindet || verbindungOffen || druck.trennt || druck.speichert || unvollstaendig() || !qrBereit() || !!umgebungsHinweis(); knopf.textContent = `Jetzt ${druck.etiketten.length} Aufkleber drucken`; }
   const bestaetigung = $('#etkBestaetigung');
   if (bestaetigung) bestaetigung.hidden = !k.transportFertig;
   const bestaetigen = $('#etkBestaetigen'); if (bestaetigen) bestaetigen.disabled = beschaeftigt;
@@ -95,32 +101,75 @@ function zeichneVorschau() {
 function status(t, k = druck.kontext) { if (!aktuell(k)) return; const s = k.element.querySelector('#etkStatus'); if (s) s.textContent = t; }
 
 async function verbinden(weg, k, pruefeAbbruch) {
-  await ladeSkript('niimbluelib');
-  pruefeAbbruch();
-  const lib = window.niimbluelib;
-  if (druck.client?.isConnected?.()) return druck.client;
-  const client = weg === 'usb' ? new lib.NiimbotSerialClient() : new lib.NiimbotBluetoothClient();
-  status('Verbinde mit dem Drucker …', k);
-  await client.connect();
-  // Der Systemdialog kann noch offen sein, wenn Druck oder Sitzung bereits beendet wurden.
-  if (!aktuell(k) || druck.abbruch) {
-    try { await client.disconnect(); } catch { /* Verbindung bereits getrennt */ }
-    throw new Error('Druck abgebrochen');
+  if (druck.verbindung || druck.trennt) throw new Error('Bitte die vorherige Geräteauswahl schließen und das Trennen abwarten.');
+  // Die Sperre umfasst auch einen verlassenen Systemdialog und dessen gesamten
+  // Disconnect. Ein spaeter Cleanup darf keine neue Verbindung desselben Geraets stoeren.
+  const vorgang = {};
+  druck.verbindung = vorgang;
+  try {
+    await ladeSkript('niimbluelib');
+    pruefeAbbruch();
+    const lib = window.niimbluelib;
+    if (druck.client?.isConnected?.()) {
+      if (druck.clientWeg !== weg) throw new Error('Zum Wechseln zwischen Bluetooth und USB bitte zuerst die Verbindung trennen.');
+      return druck.client;
+    }
+    const client = weg === 'usb' ? new lib.NiimbotSerialClient() : new lib.NiimbotBluetoothClient();
+    status('Verbinde mit dem Drucker …', k);
+    try {
+      await client.connect();
+      // Der Systemdialog kann noch offen sein, wenn Vorgang oder Sitzung bereits
+      // beendet wurden. Nur die Generation dieses Aufrufs darf den Client behalten.
+      pruefeAbbruch();
+      if (!client.isConnected?.()) throw new Error('Der Drucker hat die Verbindung noch nicht bestätigt.');
+    } catch (err) {
+      try { await client.disconnect(); } catch { /* Verbindung bereits getrennt */ }
+      throw err;
+    }
+    druck.client = client; druck.clientWeg = weg;
+    client.on?.('disconnect', () => {
+      if (druck.client !== client) return;
+      druck.client = null; druck.clientWeg = '';
+      const offen = druck.kontext;
+      if (aktuell(offen)) { status('Drucker getrennt.', offen); zeichneVorschau(); }
+    });
+    return client;
+  } finally {
+    if (druck.verbindung === vorgang) druck.verbindung = null;
+    zeichneVorschau();
   }
-  druck.client = client;
-  client.on?.('disconnect', () => {
-    if (druck.client !== client) return;
-    druck.client = null;
-    const offen = druck.kontext;
-    if (aktuell(offen)) { status('Drucker getrennt.', offen); zeichneVorschau(); }
-  });
-  return client;
+}
+
+/** Verbindung pruefen, ohne einen Druckauftrag anzulegen oder dessen Status zu aendern. */
+async function druckerVerbinden(k) {
+  if (!aktuell(k) || k.verbindet || druck.verbindung || druck.trennt || k.schliesst || k.bestaetigt || druck.laeuft || umgebungsHinweis()) return;
+  if (druck.client?.isConnected?.()) return;
+  const generation = ++k.verbindungsNr;
+  const pruefeAbbruch = () => { if (!aktuell(k) || k.verbindungsNr !== generation) throw new Error('Verbindung abgebrochen'); };
+  k.verbindet = true; zeichneVorschau();
+  try {
+    await verbinden($('#etkWeg')?.value || 'bluetooth', k, pruefeAbbruch);
+    pruefeAbbruch();
+    status('Drucker verbunden. Es wurde nichts gedruckt.', k);
+  } catch (err) {
+    if (!aktuell(k) || k.verbindungsNr !== generation) return;
+    status(/cancel|chosen|abgebrochen/i.test(String(err?.message))
+      ? 'Kein Drucker gewählt. Es wurde nichts gedruckt. Du kannst erneut verbinden.'
+      : `Drucker nicht verbunden: ${err?.message || err}. Es wurde nichts gedruckt. Bitte erneut verbinden.`, k);
+  } finally {
+    if (aktuell(k) && k.verbindungsNr === generation) { k.verbindet = false; zeichneVorschau(); }
+  }
+}
+
+function verbindungswahlBeenden(k) {
+  if (!k?.verbindet) return;
+  k.verbindungsNr++; k.verbindet = false;
 }
 
 /** Die Verbindung bleibt fuer den ganzen Sammeldruck bestehen; Bilder entstehen erst bei Bedarf. */
 async function drucken() {
   const k = druck.kontext;
-  if (!aktuell(k) || druck.laeuft || druck.speichert || k.schliesst || k.bestaetigt || (k.beiBestaetigen && k.transportFertig) || !druck.etiketten.length || druck.etiketten.length > DRUCK_LIMIT.etiketten || unvollstaendig() || !qrBereit()) return;
+  if (!aktuell(k) || druck.laeuft || k.verbindet || druck.verbindung || druck.trennt || druck.speichert || k.schliesst || k.bestaetigt || (k.beiBestaetigen && k.transportFertig) || !druck.etiketten.length || druck.etiketten.length > DRUCK_LIMIT.etiketten || unvollstaendig() || !qrBereit()) return;
   const etiketten = [...druck.etiketten];
   const weg = $('#etkWeg')?.value || 'bluetooth';
   const dichte = Math.min(ETIKETT.dichteMax, Math.max(ETIKETT.dichteMin, Number($('#etkDichte')?.value) || ETIKETT.dichteStandard));
@@ -177,15 +226,26 @@ async function drucken() {
   }
 }
 async function trennen() {
+  if (druck.trennt) return;
   const k = druck.kontext, client = druck.client;
+  verbindungswahlBeenden(k);
+  const generation = k ? ++k.verbindungsNr : 0;
+  // Auch ein neu geoeffneter Dialog wartet auf den alten Disconnect. Sonst
+  // koennte dessen spaete Antwort die gerade neu hergestellte Verbindung stoeren.
+  druck.trennt = true;
   if (druck.laeuft) { druck.abbruch = true; status('Druck wird abgebrochen … Bereits ausgegebene Aufkleber prüfen.', k); }
-  druck.client = null;
+  else status('Verbindung wird getrennt …', k);
+  druck.client = null; druck.clientWeg = '';
+  zeichneVorschau();
   try { await client?.disconnect(); } catch { /* getrennt */ }
-  if (aktuell(k)) { if (!druck.laeuft) status('Verbindung getrennt.', k); zeichneVorschau(); }
+  druck.trennt = false;
+  if (aktuell(k) && k.verbindungsNr === generation && !druck.laeuft) status('Verbindung getrennt.', k);
+  zeichneVorschau();
 }
 
 function beendeDialog(k) {
   if (druck.kontext !== k) return;
+  verbindungswahlBeenden(k);
   k.beendet = true; k.beobachter?.disconnect();
   if (k.element?.isConnected) k.element.remove();
   druck.kontext = null; druck.etiketten = []; druck.speichert = false;
@@ -194,6 +254,7 @@ function beendeDialog(k) {
 async function schliessen(k) {
   if (!aktuell(k) || k.schliesst || k.bestaetigt) return false;
   if (druck.laeuft) { toast('Der Druck läuft. Zum Anhalten „Druck abbrechen“ wählen.'); return false; }
+  verbindungswahlBeenden(k);
   k.schliesst = true; zeichneVorschau();
   try {
     if (await k.beiSchliessen?.({ versucht: k.versucht }) === false) throw new Error('Die Druckvorschau konnte noch nicht geschlossen werden. Bitte erneut versuchen.');
@@ -249,7 +310,7 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
   if (!Array.isArray(etiketten) || etiketten.length > DRUCK_LIMIT.etiketten) { toast(`Bitte höchstens ${DRUCK_LIMIT.etiketten} Aufkleber pro Drucklauf wählen.`); return; }
   // Ein anderer Aufruf darf den alten Auftrag nicht ohne dessen Freigabe ersetzen.
   if (aktuell(druck.kontext) && !await schliessen(druck.kontext)) return;
-  const k = { sitzung, element: null, vorDruck, druckVersucht, beiSchliessen, beiBestaetigen, versucht: !!schonVersucht, transportFertig: false, schliesst: false, bestaetigt: false, beendet: false };
+  const k = { sitzung, element: null, vorDruck, druckVersucht, beiSchliessen, beiBestaetigen, versucht: !!schonVersucht, transportFertig: false, schliesst: false, bestaetigt: false, beendet: false, verbindet: false, verbindungsNr: 0 };
   druck.kontext = k;
   druck.etiketten = [...etiketten];
   druck.bearbeiten = -1;
@@ -258,7 +319,7 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
   const hatUsb = !!navigator.serial;
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><div class="dialog etk-dialog" role="dialog" aria-modal="true" aria-labelledby="etkTitel" data-dialog>
     <h2 id="etkTitel">${esc(titel)}</h2>
-    <p class="small muted">Niimbot B1 · 50 × 50 mm. Drucker einschalten und die Aufkleber prüfen. Erst „Jetzt drucken“ startet den Druck.</p>
+    <p class="small muted">Niimbot B1 · 50 × 50 mm. Zuerst Drucker einschalten und „Drucker verbinden“ wählen. Erst „Jetzt drucken“ startet den Druck.</p>
     ${umgebung ? `<p class="etk-warn">${esc(umgebung)}</p>` : ''}
     ${hinweis ? `<p class="etk-auftrag-hinweis">${esc(hinweis)}</p>` : ''}
     <p id="etkZusammenfassung" class="small"></p>
@@ -275,8 +336,9 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
     </details>` : ''}
     <details class="etk-einstellungen"><summary>Drucker-Einstellungen</summary><div class="etk-optionen">
       <label>Druckdichte <select id="etkDichte">${[1, 2, 3, 4, 5].map(d => `<option value="${d}"${d === ETIKETT.dichteStandard ? ' selected' : ''}>${d}${d === ETIKETT.dichteStandard ? ' (Standard)' : ''}</option>`).join('')}</select></label>
-      <label>Verbindung <select id="etkWeg"><option value="bluetooth">Bluetooth</option>${hatUsb ? '<option value="usb">USB-Kabel</option>' : ''}</select></label>
+      <label>Verbindung <select id="etkWeg"><option value="bluetooth"${!navigator.bluetooth && hatUsb ? ' disabled' : ''}>Bluetooth</option>${hatUsb ? `<option value="usb"${!navigator.bluetooth ? ' selected' : ''}>USB-Kabel</option>` : ''}</select></label>
     </div></details>
+    <p id="etkVerbindungWartet" class="small muted" role="status" hidden>Vorherige Geräteauswahl schließen und das Trennen abwarten. Danach kannst du erneut verbinden.</p>
     <p id="etkStatus" class="small" role="status" aria-live="polite"></p>
     ${beiBestaetigen ? `<div id="etkBestaetigung" class="etk-bestaetigung" hidden>
       <p><strong>Sind alle ${etiketten.length} Aufkleber vollständig und lesbar?</strong></p>
@@ -284,6 +346,7 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
     </div>` : ''}
     <div class="actions">
       <button type="button" class="btn" data-close-dialog>Schließen</button>
+      <button type="button" class="btn" id="etkVerbinden">Drucker verbinden</button>
       <button type="button" class="btn btn-ghost" id="etkTrennen">Verbindung trennen</button>
       <button type="button" class="btn btn-primary" id="etkDrucken">Drucken</button>
     </div>
@@ -293,6 +356,7 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
   // sofort sperren; seine asynchronen Antworten duerfen den Nachfolger nie aendern.
   k.beobachter = new MutationObserver(() => {
     if (k.element?.isConnected || k.beendet) return;
+    verbindungswahlBeenden(k);
     k.beendet = true; k.beobachter.disconnect();
     if (druck.kontext === k) {
       if (druck.laeuft) void trennen();
@@ -369,10 +433,13 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
     }
   });
   $('#etkDrucken').addEventListener('click', () => { if (aktuell(k) && !umgebungsHinweis()) void drucken(); });
+  $('#etkVerbinden').addEventListener('click', () => { void druckerVerbinden(k); });
   $('#etkTrennen').addEventListener('click', () => { void trennen(); });
   $('#etkBestaetigen')?.addEventListener('click', () => { void bestaetigen(k); });
+  if (druck.client?.isConnected?.()) { $('#etkWeg').value = druck.clientWeg; status('Drucker verbunden.', k); }
   zeichneVorschau();
-  ($('#etkDrucken').disabled ? ($('#etkForm input') || $('.etk-dialog [data-close-dialog]')) : $('#etkDrucken'))?.focus({ preventScroll: true });
+  const fokus = !$('#etkVerbinden').disabled ? $('#etkVerbinden') : $('#etkDrucken').disabled ? ($('#etkForm input') || $('.etk-dialog [data-close-dialog]')) : $('#etkDrucken');
+  fokus?.focus({ preventScroll: true });
   // QR-Code nachzeichnen, sobald die Bibliothek da ist; ohne Internet bleibt die Vorschau ohne QR.
   try { await ladeSkript('qrcode'); if (aktuell(k)) zeichneVorschau(); } catch (err) { status(`${err.message} – zum Drucken mit QR-Code den Dialog erneut öffnen.`, k); }
 }
