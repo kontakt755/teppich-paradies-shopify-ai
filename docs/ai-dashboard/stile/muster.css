@@ -81,10 +81,24 @@
 .etk-dialog { max-width: 640px; }
 .etk-liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin: 12px 0; }
 .etk-karte { margin: 0; }
-.etk-bild { width: 100%; height: auto; aspect-ratio: 384 / 400; border: 1px solid var(--line-strong); border-radius: 6px; background: #fff; }
+.etk-bild { width: 100%; height: auto; aspect-ratio: 1; border: 1px solid var(--line-strong); border-radius: 6px; background: #fff; }
 .etk-fehlt { color: var(--crit); font-weight: 600; }
 .etk-warn { color: var(--crit); background: var(--crit-soft); padding: 8px 10px; border-radius: 6px; }
 .etk-form { display: grid; gap: 8px; margin-top: 8px; }
 .etk-form label, .etk-optionen label { display: grid; gap: 2px; font-size: .9rem; }
 .etk-form button { justify-self: start; }
 .etk-optionen { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0 4px; }
+.etk-karte figcaption { display: grid; gap: 6px; }
+.etk-karte figcaption .btn { justify-self: start; }
+.lex-etiketten { margin-bottom: 16px; padding: 0 18px 18px; }
+.lex-etiketten .card-head { padding-left: 0; padding-right: 0; }
+.lex-etiketten-auswahl { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; }
+.lex-etiketten-auswahl label { display: grid; gap: 4px; min-width: 0; }
+.lex-etiketten-auswahl label:first-child { flex: 1 1 240px; }
+.lex-etiketten-auswahl select { max-width: 100%; width: 100%; }
+.lex-etiketten-auswahl input { width: 80px; }
+@media (max-width: 600px) {
+  .lex-etiketten { padding-left: 14px; padding-right: 14px; }
+  .lex-etiketten-auswahl label:first-child { flex-basis: 100%; }
+  .lex-etiketten-auswahl .btn { flex: 1; }
+}

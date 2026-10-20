@@ -30,9 +30,11 @@ function ladeSkript(name) {
 }
 
 const SCHRIFT = 'Arial, Helvetica, sans-serif';
-const druck = { client: null, etiketten: [], laeuft: false };
+const druck = { client: null, etiketten: [], laeuft: false, bearbeiten: -1 };
+const qrBereit = () => typeof window.qrcode === 'function';
+const unvollstaendig = () => druck.etiketten.some(e => e.fehlt.length);
 
-/** Zeichnet ein Etikett schwarz auf weiss in eine Canvas (384 x 400). */
+/** Zeichnet ein Etikett schwarz auf weiss in eine Canvas (400 x 400). */
 function zeichne(canvas, e) {
   canvas.width = ETIKETT.breite; canvas.height = ETIKETT.hoehe;
   const ctx = canvas.getContext('2d');
@@ -60,7 +62,10 @@ const umgebungsHinweis = () => {
 function vorschauHtml() {
   return druck.etiketten.map((e, i) => `<figure class="etk-karte">
     <canvas class="etk-bild" data-etk-bild="${i}" width="${ETIKETT.breite}" height="${ETIKETT.hoehe}" aria-label="${esc(`Etikett ${[e.serie, e.farbe].filter(Boolean).join(' ') || 'ohne Namen'}`)}"></canvas>
-    <figcaption class="small">${e.fehlt.length ? `<span class="etk-fehlt">fehlt: ${esc(e.fehlt.join(', '))}</span>` : '<span class="muted">vollständig</span>'}</figcaption>
+    <figcaption class="small">${e.fehlt.length ? `<span class="etk-fehlt">fehlt: ${esc(e.fehlt.join(', '))}</span>` : '<span class="muted">vollständig</span>'}
+      <button type="button" class="btn btn-sm" data-etk-bearbeiten="${i}"${druck.laeuft ? ' disabled' : ''}>Angaben bearbeiten</button>
+      <button type="button" class="btn btn-sm" data-etk-png="${i}"${e.fehlt.length || !qrBereit() || druck.laeuft ? ' disabled' : ''}>Als PNG speichern</button>
+    </figcaption>
   </figure>`).join('');
 }
 
@@ -70,7 +75,7 @@ function zeichneVorschau() {
   liste.innerHTML = druck.etiketten.length ? vorschauHtml() : '<p class="small muted">Noch kein Etikett – unten Angaben eintragen und „Hinzufügen“.</p>';
   liste.querySelectorAll('[data-etk-bild]').forEach(c => zeichne(c, druck.etiketten[Number(c.dataset.etkBild)]));
   const knopf = $('#etkDrucken');
-  if (knopf) { knopf.disabled = !druck.etiketten.length || druck.laeuft || !!umgebungsHinweis(); knopf.textContent = druck.etiketten.length === 1 ? '1 Etikett drucken' : `${druck.etiketten.length} Etiketten drucken`; }
+  if (knopf) { knopf.disabled = !druck.etiketten.length || druck.laeuft || unvollstaendig() || !qrBereit() || !!umgebungsHinweis(); knopf.textContent = druck.etiketten.length === 1 ? '1 Etikett drucken' : `${druck.etiketten.length} Etiketten drucken`; }
 }
 
 function status(t) { const s = $('#etkStatus'); if (s) s.textContent = t; }
@@ -89,7 +94,7 @@ async function verbinden(weg) {
 
 /** Alle Etiketten nacheinander als ein Druckauftrag (totalPages = Anzahl), wie im niimbluelib-Beispiel. */
 async function drucken() {
-  if (druck.laeuft || !druck.etiketten.length) return;
+  if (druck.laeuft || !druck.etiketten.length || unvollstaendig() || !qrBereit()) return;
   const weg = $('#etkWeg')?.value || 'bluetooth';
   const dichte = Math.min(ETIKETT.dichteMax, Math.max(ETIKETT.dichteMin, Number($('#etkDichte')?.value) || ETIKETT.dichteStandard));
   druck.laeuft = true; zeichneVorschau();
@@ -145,7 +150,9 @@ export async function etikettenFuerBestellung(positionen = []) {
  * oder sind leer - dann nur die Eingabe von Hand.
  */
 export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Etiketten drucken' } = {}) {
+  if (druck.laeuft) { toast('Bitte warten, bis der Druckauftrag fertig ist.'); return; }
   druck.etiketten = [...etiketten];
+  druck.bearbeiten = -1;
   const hinweis = umgebungsHinweis();
   const hatUsb = !!navigator.serial;
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><div class="dialog etk-dialog" role="dialog" aria-modal="true" aria-labelledby="etkTitel" data-dialog>
@@ -160,7 +167,7 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Etiketten 
         <p class="small muted">Mit Link holt das Control Center Serie, Artikelnummer und technische Daten aus dem Produktlexikon. Was du unten einträgst, gilt vor dem Lexikon.</p>
         <label>Serie <input name="serie" autocomplete="off"></label>
         <label>Artikelnummer <input name="sku" autocomplete="off"></label>
-        <button type="submit" class="btn btn-sm">Hinzufügen</button>
+        <button type="submit" class="btn btn-sm" id="etkUebernehmen">Hinzufügen</button>
       </form>
     </details>
     <div class="etk-optionen">
@@ -174,8 +181,33 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Etiketten 
       <button type="button" class="btn btn-primary" id="etkDrucken">Drucken</button>
     </div>
   </div></div>`;
+  $('#etkListe').addEventListener('click', ev => {
+    const bearbeiten = ev.target.closest('[data-etk-bearbeiten]');
+    if (bearbeiten && !druck.laeuft) {
+      druck.bearbeiten = Number(bearbeiten.dataset.etkBearbeiten);
+      const e = druck.etiketten[druck.bearbeiten];
+      const form = $('#etkForm');
+      form.elements.handle.value = e.url;
+      form.elements.farbe.value = e.farbe;
+      form.elements.serie.value = e.serie;
+      form.elements.sku.value = e.sku;
+      form.closest('details').open = true;
+      $('#etkUebernehmen').textContent = 'Angaben übernehmen';
+      form.elements[e.url ? 'farbe' : 'handle'].focus();
+    }
+    const png = ev.target.closest('[data-etk-png]');
+    if (png && !png.disabled) {
+      const i = Number(png.dataset.etkPng), e = druck.etiketten[i];
+      const link = document.createElement('a');
+      const name = [e.serie, e.farbe, e.sku].filter(Boolean).join('-').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9-]+/gi, '-').toLowerCase();
+      link.download = `etikett-${name || 'muster'}.png`;
+      link.href = $(`[data-etk-bild="${i}"]`).toDataURL('image/png');
+      link.click();
+    }
+  });
   $('#etkForm').addEventListener('submit', async ev => {
     ev.preventDefault();
+    if (druck.laeuft) return;
     const form = ev.target;
     const d = new FormData(form);
     const wert = k => String(d.get(k) || '').trim();
@@ -183,13 +215,20 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Etiketten 
     const handle = originalHandle((roh.match(/\/products\/([^/?#]+)/) || [])[1] || roh);
     if (!handle && !wert('serie')) { status('Bitte Produktlink oder Serie eintragen.'); return; }
     const produkt = handle ? await lexikonProdukt(handle) : null;
+    if ($('#etkForm') !== form) return; // Dialog inzwischen geschlossen oder ersetzt.
     if (handle && !produkt) status('Produkt nicht im Lexikon gefunden – nur die eingetragenen Angaben.');
     const ausLexikon = etikettFuerPosition({ istMuster: true, handle, farbe: wert('farbe'), musterQuelle: { sku: wert('sku') } }, produkt);
-    druck.etiketten.push(etikett({
+    const vorher = druck.etiketten[druck.bearbeiten];
+    const neu = etikett({
       serie: wert('serie') || ausLexikon.serie, farbe: wert('farbe') || ausLexikon.farbe,
-      sku: wert('sku') || ausLexikon.sku, handle, technik: ausLexikon.technik,
-    }));
+      sku: wert('sku') || ausLexikon.sku, handle,
+      technik: produkt ? ausLexikon.technik : (vorher?.url === ausLexikon.url ? vorher.technik : []),
+    });
+    if (vorher) druck.etiketten = druck.etiketten.map(e => e === vorher ? neu : e);
+    else druck.etiketten.push(neu);
+    druck.bearbeiten = -1;
     form.reset();
+    $('#etkUebernehmen').textContent = 'Hinzufügen';
     zeichneVorschau();
   });
   $('#etkDrucken').addEventListener('click', () => { if (!umgebungsHinweis()) drucken(); });
@@ -197,5 +236,5 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Etiketten 
   zeichneVorschau();
   ($('#etkDrucken').disabled ? $('#etkForm input') : $('#etkDrucken'))?.focus();
   // QR-Code nachzeichnen, sobald die Bibliothek da ist; ohne Internet bleibt die Vorschau ohne QR.
-  try { await ladeSkript('qrcode'); zeichneVorschau(); } catch (err) { status(`${err.message} – Vorschau ohne QR-Code.`); }
+  try { await ladeSkript('qrcode'); zeichneVorschau(); } catch (err) { status(`${err.message} – zum Drucken mit QR-Code den Dialog erneut öffnen.`); }
 }

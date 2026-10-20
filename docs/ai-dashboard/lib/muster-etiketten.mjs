@@ -42,7 +42,7 @@ export function originalHandle(handle) {
   return /^[a-z0-9][a-z0-9-]*$/i.test(h) ? h : '';
 }
 
-const WARENGRUPPE = /\s+(Teppichboden|Teppich|Vinylboden|Vinyl|Designboden|Designbelag|Klickvinyl|Klick-Vinyl|Laminat|Linoleum|PVC-Boden|PVC|Parkett|Kork(boden)?|Nadelvlies|Sauberlaufmatte|Läufer)\b.*$/i;
+const WARENGRUPPE = /\s+(Teppichboden|Teppichfliesen?|Teppich|Vinylboden|Vinyl|Designboden|Designbelag|Klickvinyl|Klick-Vinyl|Laminat|Linoleum|PVC-Boden|PVC|Parkett|Kork(boden)?|Nadelvlies|Sauberlaufmatte|Läufer)\b.*$/i;
 
 /**
  * Serie und Farbe aus Produkttitel, Farbe und Marke (custom.marke): "Solenta Eiche Dunkelbraun –
@@ -181,24 +181,37 @@ export function layout(e, mass) {
   const texte = [];
   const linien = [];
   let y = rand;
+  const skuText = e.sku ? `Art.-Nr. ${e.sku}` : '';
+  const skuY = hoehe - rand - 24;
+  const unten = (skuText ? skuY : hoehe - rand) - 8;
+  let serieGroesse = 44, farbGroesse = 30;
+  if (e.technik?.length) {
+    // Vier Technikzeilen muessen auch unter mehrzeiligen Namen ganz bleiben.
+    // Zuerst Platz fuer lesbare Technik (16/20 px) und mindestens 100 px QR reservieren.
+    const reserve = Math.max(e.technik.length * 40 - 3, e.url ? 100 : 0);
+    for (let s = 44; s >= 18; s--) {
+      serieGroesse = s; farbGroesse = Math.round(30 * s / 44);
+      const serienZeilen = umbrechen(e.serie, innen, t => mass(t, serieGroesse, true), Infinity).length;
+      const farbZeilen = e.farbe ? umbrechen(e.farbe, innen, t => mass(t, farbGroesse, true), Infinity).length : 0;
+      const technikY = rand + 23 + 8 + serienZeilen * Math.round(serieGroesse * 1.15) + farbZeilen * Math.round(farbGroesse * 1.15) + 14;
+      if (unten - technikY >= reserve) break;
+    }
+  }
   const mitte = (t, g, f) => Math.round((breite - mass(t, g, f)) / 2);
   const block = (t, g, f, maxZeilen) => {
     for (const z of umbrechen(t, innen, s => mass(s, g, f), maxZeilen)) { texte.push({ text: z, x: mitte(z, g, f), y, groesse: g, fett: f }); y += Math.round(g * 1.15); }
   };
   block(ABSENDER, 20, true, 1);
   y += 8;
-  block(e.serie, 44, true, 2);
-  if (e.farbe) block(e.farbe, 30, true, 2);
+  block(e.serie, serieGroesse, true, e.technik?.length ? Infinity : 2);
+  if (e.farbe) block(e.farbe, farbGroesse, true, e.technik?.length ? Infinity : 2);
 
   // Unten die Artikelnummer; was dazwischen frei ist, bekommen Technik und QR-Code.
-  const skuText = e.sku ? `Art.-Nr. ${e.sku}` : '';
-  const skuGroesse = 24;
-  const skuY = hoehe - rand - skuGroesse;
   if (skuText) {
-    const z = umbrechen(skuText, innen, s => mass(s, skuGroesse, true), 1)[0];
-    texte.push({ text: z, x: mitte(z, skuGroesse, true), y: skuY, groesse: skuGroesse, fett: true });
+    let g = 24;
+    while (g > 1 && mass(skuText, g, true) > innen) g--;
+    texte.push({ text: skuText, x: mitte(skuText, g, true), y: skuY, groesse: g, fett: true });
   }
-  const unten = (skuText ? skuY : hoehe - rand) - 8;
   let qr = null;
   if (e.technik?.length) {
     y += 4;
@@ -206,11 +219,18 @@ export function layout(e, mass) {
     y += 10;
     const qrGroesse = e.url ? Math.max(0, Math.min(140, unten - y)) : 0;
     const spalte = innen - (qrGroesse ? qrGroesse + 12 : 0);
+    let labelGroesse = 20, wertGroesse = 24;
+    while (labelGroesse > 16 && e.technik.length * (labelGroesse + wertGroesse + 4) - 3 > unten - y) {
+      labelGroesse--; wertGroesse--;
+    }
+    const technikText = (t, g, fett) => {
+      while (g > 1 && mass(t, g, fett) > spalte) g--;
+      texte.push({ text: t, x: rand, y: ty, groesse: g, fett });
+    };
     let ty = y;
     for (const { label, wert } of e.technik) {
-      if (ty + 21 + 24 > unten) break;
-      texte.push({ text: umbrechen(label, spalte, s => mass(s, 20, false), 1)[0], x: rand, y: ty, groesse: 20, fett: false }); ty += 21;
-      texte.push({ text: umbrechen(wert, spalte, s => mass(s, 24, true), 1)[0], x: rand, y: ty, groesse: 24, fett: true }); ty += 27;
+      technikText(label, labelGroesse, false); ty += labelGroesse + 1;
+      technikText(wert, wertGroesse, true); ty += wertGroesse + 3;
     }
     if (qrGroesse >= 60) qr = { x: breite - rand - qrGroesse, y, groesse: qrGroesse };
   } else if (e.url) {
