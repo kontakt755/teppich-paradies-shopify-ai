@@ -3,16 +3,20 @@
  * Kundengespraech, Bestellzeilen, Mengenhilfe, Original-Link.
  */
 import { state } from '../kern/zustand.mjs';
-import { esc, fmtDateTime, NICHT_HINTERLEGT, fmtPreis } from '../kern/helfer.mjs';
+import { esc, fmtDateTime, NICHT_HINTERLEGT, fmtPreis, toast } from '../kern/helfer.mjs';
 import { fetchEinkauf } from '../kern/api.mjs';
 import { render } from '../kern/render.mjs';
 import { emptyState, stoerungState } from '../bausteine/karten.mjs';
 import { LIEFERWEG_LABEL } from './einkauf/auftragsfluss.mjs';
 import { telLink, gmailLink } from '../lib/einkauf-lieferanten.mjs';
+import { etikettenAusLexikon } from '../lib/lexikon-etiketten.mjs';
+import { originalHandle } from '../lib/muster-etiketten.mjs';
+import { oeffneEtikettenDruck } from '../bausteine/etiketten-druck.mjs';
 
 export const lexikon = {
   liste: null, loadingListe: false, listeKey: null,
   produkt: null, loadingProdukt: false, produktKey: null,
+  etiketten: [], etikettenKey: null, loadingEtiketten: false,
 };
 
 function ensureLexikonListe() {
@@ -32,12 +36,57 @@ function ensureLexikonListe() {
 function ensureLexikonProdukt(handle) {
   if (lexikon.produktKey === handle && (lexikon.produkt || lexikon.loadingProdukt)) return;
   lexikon.produktKey = handle;
+  lexikon.produkt = null;
   lexikon.loadingProdukt = true;
+  lexikon.etiketten = []; lexikon.etikettenKey = null; lexikon.loadingEtiketten = false;
   fetchEinkauf(`/api/lexikon/produkt?${new URLSearchParams({ handle })}`).then(d => {
     if (lexikon.produktKey !== handle) return; // inzwischen ein anderes Produkt geoeffnet
     lexikon.produkt = d; lexikon.loadingProdukt = false;
     if (state.route.view === 'lexikon') render();
   });
+}
+
+/** Eigene Muster koennen auf ein anderes Original zeigen (z. B. Teppich nach Mass).
+ * Nur diese gezielten Eintraege nachladen, nie das ganze Lexikon an den Browser schicken. */
+function ensureLexikonEtiketten(produkt) {
+  const key = produkt.handle;
+  if (lexikon.etikettenKey === key) return;
+  lexikon.etikettenKey = key;
+  lexikon.loadingEtiketten = false;
+  const handles = [...new Set((produkt.varianten || []).map(v => v.original?.produktHandle).filter(Boolean))];
+  if (!handles.length && produkt.handle.startsWith('muster-')) handles.push(originalHandle(produkt.handle));
+  if (!handles.length) { lexikon.etiketten = etikettenAusLexikon(produkt); return; }
+  lexikon.loadingEtiketten = true;
+  Promise.all(handles.map(async handle => {
+    const d = await fetchEinkauf(`/api/lexikon/produkt?${new URLSearchParams({ handle })}`);
+    return [handle, d?.produkt || null];
+  })).then(eintraege => {
+    if (lexikon.produktKey !== key || lexikon.etikettenKey !== key) return;
+    lexikon.etiketten = etikettenAusLexikon(produkt, new Map(eintraege.filter(([, p]) => p)));
+    lexikon.loadingEtiketten = false;
+    if (state.route.view === 'lexikon') render();
+  });
+}
+
+function musterEtikettenBlock(produkt) {
+  if (produkt.handle === 'kostenloses-muster') return `<section class="card lex-etiketten"><div class="card-head"><h2>Musteraufkleber</h2></div><p>Für den Aufkleber bitte das konkrete Produkt im Lexikon öffnen. Dort sind Farbe, Artikelnummer und Produktlink hinterlegt.</p><a class="btn" href="#/lexikon">Produkt suchen</a></section>`;
+  ensureLexikonEtiketten(produkt);
+  if (lexikon.loadingEtiketten) return `<section class="card lex-etiketten"><div class="card-head"><h2>Musteraufkleber</h2></div><p role="status">Lade die Angaben für den Aufkleber …</p></section>`;
+  const liste = lexikon.etiketten;
+  if (!liste.length) return '';
+  const angefragt = Number(state.route.params.get('letikett'));
+  const index = Number.isInteger(angefragt) && angefragt >= 0 && angefragt < liste.length ? angefragt : 0;
+  const auswahl = liste[index];
+  return `<section class="card lex-etiketten" data-lex-etiketten>
+    <div class="card-head"><h2>Musteraufkleber</h2></div>
+    <p class="small muted">Fertiger Aufkleber mit Produktname, Farbe und QR-Code für eure 50 × 50-mm-Etiketten.</p>
+    <div class="lex-etiketten-auswahl">
+      <label>Farbe / Ausführung<select data-param="letikett" aria-label="Farbe oder Ausführung für den Aufkleber">${liste.map((x, i) => `<option value="${i}"${i === index ? ' selected' : ''}>${esc(x.bezeichnung)}</option>`).join('')}</select></label>
+      <label>Anzahl<input type="number" min="1" max="20" step="1" value="1" data-lex-etikett-anzahl inputmode="numeric"></label>
+      <button type="button" class="btn btn-primary" data-lex-etikett-drucken>Etikett drucken</button>
+    </div>
+    ${auswahl.etikett.fehlt.length ? `<p class="small etk-fehlt">Noch ergänzen: ${esc(auswahl.etikett.fehlt.join(', '))}. Du kannst die Angaben in der Vorschau bearbeiten.</p>` : ''}
+  </section>`;
 }
 
 function lexWert(w) { return (w === null || w === undefined || w === '') ? NICHT_HINTERLEGT : esc(String(w)); }
@@ -531,6 +580,7 @@ function viewLexikonDetail(handle) {
   return `${zurueck}
     ${wartendeKundenBlock(d.wartendeKunden)}
     ${produktKarte(p, normaleVarianten)}
+    ${musterEtikettenBlock(p)}
     ${fuersKundengespraech(p, normaleVarianten)}
     <section class="card" style="margin-bottom:16px"><div class="card-head"><h2>Zum Bestellen</h2></div>${bestellTabelle}</section>
     ${internesDetails(p)}`;
@@ -550,8 +600,20 @@ export function viewLexikon() {
 
 /** Lexikon: Produkt oeffnen, Mengenhilfe rechnen, zurueck zur Liste. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function lexikonKlick(e) {
+  const etikettKnopf = e.target.closest('[data-lex-etikett-drucken]');
+  if (etikettKnopf) {
+    e.preventDefault();
+    const wrap = etikettKnopf.closest('[data-lex-etiketten]');
+    const index = Number(wrap?.querySelector('select[data-param="letikett"]')?.value);
+    const anzahl = Number(wrap?.querySelector('[data-lex-etikett-anzahl]')?.value);
+    const auswahl = lexikon.etiketten[index];
+    if (!auswahl) { toast('Bitte zuerst eine Farbe oder Ausführung wählen.'); return true; }
+    if (!Number.isInteger(anzahl) || anzahl < 1 || anzahl > 20) { toast('Bitte eine Anzahl von 1 bis 20 eingeben.'); return true; }
+    oeffneEtikettenDruck({ etiketten: Array.from({ length: anzahl }, () => auswahl.etikett), titel: 'Musteretikett drucken' });
+    return true;
+  }
   const lexOpen = e.target.closest('[data-lex-open]');
-  if (lexOpen) { e.preventDefault(); const p = new URLSearchParams(); p.set('handle', lexOpen.dataset.lexOpen); location.hash = `#/lexikon?${p}`; return true; }
+  if (lexOpen) { e.preventDefault(); const p = new URLSearchParams(); p.set('handle', lexOpen.dataset.lexOpen); if (state.route.params.get('lq')) p.set('lq', state.route.params.get('lq')); location.hash = `#/lexikon?${p}`; return true; }
   const mhGo = e.target.closest('[data-mh-go]');
   if (mhGo) {
     e.preventDefault();

@@ -35,6 +35,8 @@ test('serieAus: Farbe und Warengruppe fallen weg', () => {
   // Ohne Marke nichts raten: Farbe bleibt leer statt doppelt.
   assert.deepEqual(serieUndFarbe('Testlinea Eiche Natur – Klebevinyl', 'Testlinea Eiche Natur'), { serie: 'Testlinea Eiche Natur', farbe: '' });
   assert.deepEqual(serieUndFarbe('Testgrund Nadelvlies', 'Türkis'), { serie: 'Testgrund', farbe: 'Türkis' });
+  assert.equal(serieAus('Testlinea Teppichfliese 50x50cm', 'Graphit (1008)'), 'Testlinea');
+  assert.equal(serieAus('Testlinea Teppichfliesen 50x50cm', 'Graphit (1008)'), 'Testlinea');
 });
 
 test('klassenNummern und technikZeilen: nur Paketware, fehlende Zeilen fallen weg', () => {
@@ -128,6 +130,29 @@ test('layout Teppichboden: ohne Technik groesserer QR in der Mitte, lange Namen 
   assert.ok(Math.abs(l.qr.x + l.qr.groesse / 2 - ETIKETT.breite / 2) <= 1);
   const kurz = layout(etikett({ serie: 'Testvelours', farbe: 'Sand', sku: 'X', handle: 'x' }), mass);
   assert.equal(kurz.qr.groesse, 180);
+});
+
+test('layout lange Serie und Farbe: alle vier Technikzeilen bleiben vollstaendig und ohne Ueberlappung', () => {
+  const e = etikett({
+    serie: 'Testlinea Extra Langer Serienname Mit Zusatz', farbe: 'Graphit Dunkel Anthrazit (1008)', sku: 'TL-LANG-1008', handle: 'testlinea-graphit',
+    technik: [
+      { label: 'Art', wert: 'Klickvinyl' },
+      { label: 'Stärke / Nutzschicht', wert: '5 mm / 0,55 mm' },
+      { label: 'Nutzungsklasse', wert: '23 / 33' },
+      { label: 'Format', wert: '122 × 18 cm' },
+    ],
+  });
+  const l = layout(e, mass);
+  imRahmen(l);
+  assert.ok(l.qr.groesse >= 100, String(l.qr.groesse));
+  const technik = l.texte.filter(t => t.y > l.linien[0].y && !t.text.startsWith('Art.-Nr.'));
+  assert.deepEqual(technik.map(t => t.text), e.technik.flatMap(z => [z.label, z.wert]));
+  assert.ok(technik.every(t => t.x + mass(t.text, t.groesse) <= l.qr.x - 12));
+  for (let i = 1; i < technik.length; i++) assert.ok(technik[i - 1].y + technik[i - 1].groesse <= technik[i].y);
+  const artikel = l.texte.find(t => t.text === 'Art.-Nr. TL-LANG-1008');
+  assert.ok(technik.at(-1).y + technik.at(-1).groesse < artikel.y);
+  assert.ok(l.texte.filter(t => t.y < l.linien[0].y).every(t => t.y + t.groesse < l.linien[0].y));
+  assert.ok(!l.texte.some(t => t.text.includes('…')), 'auch der lange Titel bleibt vollstaendig');
 });
 
 test('layout: ohne URL kein QR, ohne SKU keine Art.-Nr.-Zeile', () => {

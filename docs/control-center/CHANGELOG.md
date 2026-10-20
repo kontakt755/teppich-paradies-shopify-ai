@@ -2,6 +2,25 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-20 · Musteraufkleber direkt im Lexikon (#1489, #1490)
+
+- **Geaendert:** Produkt oder Muster im Lexikon oeffnen, Farbe/Ausfuehrung und Anzahl waehlen,
+  fertiges 50×50-mm-Etikett im vorhandenen Niimbot-Dialog drucken oder als PNG speichern.
+  Gleiche SKU/Farbe auf mehreren Breiten wird gebuendelt, andere SKUs bleiben waehlbar.
+  Muster verwenden die explizite Originalreferenz und echte Shop-SKU. Fehlende Angaben lassen
+  sich in der Vorschau ergaenzen; paralleles Speichern kann kein anderes Etikett ueberschreiben.
+  Lange Paketetiketten behalten alle Technikzeilen und die vollstaendige Artikelnummer.
+- **Getestet:** Alle 3.223 Tests gruen, davon 488 Dashboard-Tests; 17 synthetische Browserfaelle bei 1440/390 px einschliesslich
+  verzogertem Nachladen, zwei Kopien, PNG, Ergaenzen, bestehendem Bestellungsdruck und QR-Netzfehler.
+  Read-only-Abgleich aller 5.971 aktuellen Mustervarianten: vollstaendige Etikettdaten fuer
+  3.927 unterschiedliche Muster-SKUs, kein Text ausserhalb, kein QR unter 100 px und keine fehlende
+  Technikzeile. Zusaetzlich Lexikonliste, Original- und Musterprodukt in der Datenkopie bei
+  360/390/800/1024/1440 px: 15 Ansichten ohne Browserfehler oder Ueberlauf. Projekt-Guards,
+  Theme-Check, Secret-Scan und statischer Workflow erfolgreich.
+- **Risiken:** Der Browser-Druckauftrag ist mit einer Druckerattrappe geprueft; physischer
+  Testdruck am Niimbot bleibt offen. Keine Produktdaten oder Lagerbestaende geaendert.
+- **Naechste Stufe:** Nach dem Merge Dashboard-Dienst nachziehen und den echten Testdruck bestaetigen.
+
 ## 2026-10-19 · Belege: Absender und fehlende Bestelldaten absichern (#1463)
 
 - **Geändert:** Bei allgemeinen Mailanbietern verknüpft dieselbe Vorgangsnummer nur noch Belege
