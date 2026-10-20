@@ -1,5 +1,5 @@
 /**
- * Ansicht "Akquise" (#/akquise, nur Inhaber, Issue #1447): Verlegeauftraege bei
+ * Ansicht "Akquise" (#/akquise, Inhaber und Mitarbeiter, Issue #1447): Verlegeauftraege bei
  * Wohnungsgenossenschaften und Hausverwaltungen gewinnen. Gefuehrt statt Liste: oben
  * erklaert ein Kasten den Ablauf, darunter steht genau EINE Firma "Als Naechstes" mit
  * grossen Knoepfen; die ganze Liste liegt zugeklappt darunter. Firmenliste und Vorlage
@@ -7,13 +7,15 @@
  * "E-Mail oeffnen" oeffnet nur das Mailprogramm, "Text kopieren" die Zwischenablage.
  */
 import { state } from '../kern/zustand.mjs';
-import { esc, fmtDate, fmtDateTime, toast } from '../kern/helfer.mjs';
+import { $, esc, fmtDate, fmtDateTime, toast } from '../kern/helfer.mjs';
+import { istNurLesend } from '../kern/sitzung.mjs';
 import { fetchEinkauf, orgSchreiben } from '../kern/api.mjs';
 import { render } from '../kern/render.mjs';
 import { emptyState } from '../bausteine/karten.mjs';
 import {
   AKQUISE_LABEL, WIEDERVORLAGE_TAGE, SPAETER_TAGE, faelligeWiedervorlagen, nachrichtFuer,
   naechsteFirmen, akquiseFortschritt, warumInteressant, kontaktTeile, mailtoLink, tageBis, plusTage,
+  titelKurz, richtpreisZeile, angebotsEntwurf, angeschriebenVon,
 } from '../lib/akquise.mjs';
 
 // gewaehlt: Firma, die der Nutzer aus der Liste nach oben geholt hat; antwort: offenes Antwort-Feld.
@@ -42,10 +44,11 @@ export function akquiseFaellig() {
 
 function erklaerung(firmen) {
   const p = akquiseFortschritt(firmen);
+  const wer = angeschriebenVon(firmen);
   return `<section class="card akq-erklaer">
     <p>Hier gewinnen wir <b>Verlegeaufträge bei Wohnungsgenossenschaften und Hausverwaltungen</b>. Die haben laufend Wohnungswechsel, bei denen neuer Boden rein muss.</p>
     <ol class="akq-schritte"><li>Firma anschreiben</li><li>nach 2 Wochen nachfassen</li><li>bei Interesse Termin oder Angebot</li></ol>
-    <p class="akq-stand"><b>${p.angeschrieben}</b> von ${p.gesamt} angeschrieben · <b>${p.antworten}</b> ${p.antworten === 1 ? 'Antwort' : 'Antworten'} · <b>${p.auftraege}</b> ${p.auftraege === 1 ? 'Auftrag' : 'Aufträge'}</p>
+    <p class="akq-stand"><b>${p.angeschrieben}</b> von ${p.gesamt} angeschrieben · <b>${p.antworten}</b> ${p.antworten === 1 ? 'Antwort' : 'Antworten'} · <b>${p.auftraege}</b> ${p.auftraege === 1 ? 'Auftrag' : 'Aufträge'}${wer.length ? `<br><span class="small muted">angeschrieben von ${wer.map(([n, z]) => `${esc(n)} ${z}`).join(' · ')}</span>` : ''}</p>
   </section>`;
 }
 
@@ -73,6 +76,7 @@ function karte(f, d, faellig, restZahl) {
     k.telLink ? `<a class="btn btn-lg" href="tel:${esc(k.telLink)}">Anrufen</a>` : '',
   ].filter(Boolean).join('');
   const id = esc(f.id);
+  const lesend = istNurLesend();
   const knopf = (aktion, text, cls = '') => `<button type="button" class="btn btn-lg ${cls}" data-akq-aktion="${aktion}" data-akq-id="${id}">${text}</button>`;
   const erledigt = st === 'neu'
     ? knopf('angeschrieben', 'Erledigt: angeschrieben', 'btn-primary')
@@ -93,10 +97,45 @@ function karte(f, d, faellig, restZahl) {
     ${f.notiz ? `<p class="akq-notiz-text"><span class="muted">Notiz:</span> ${esc(f.notiz)}</p>` : ''}
     <p class="akq-tun">${esc(a.text)}</p>
     ${kontaktKnoepfe ? `<div class="akq-knoepfe">${kontaktKnoepfe}</div>` : ''}
-    <div class="akq-knoepfe akq-erledigt">${erledigt}${knopf('kein-interesse', 'Kein Interesse', 'btn-ghost')}${knopf('spaeter', 'Später', 'btn-ghost')}</div>
+    ${richtpreisHtml(f, d)}
+    ${lesend ? '' : `<div class="akq-knoepfe akq-erledigt">${erledigt}${knopf('kein-interesse', 'Kein Interesse', 'btn-ghost')}${knopf('spaeter', 'Später', 'btn-ghost')}</div>`}
     ${antwortFeld}
     ${st === 'neu' ? `<p class="small muted akq-fuss">Nach „Erledigt: angeschrieben“ erscheint die Firma in ${WIEDERVORLAGE_TAGE} Tagen wieder zum Nachfassen. „Später“ legt sie ${SPAETER_TAGE} Tage zurück.</p>` : ''}
   </section>`;
+}
+
+/**
+ * Nach "Antwort bekommen" (Antwort/Termin): unser Richtpreis - nur, wenn die private Datei
+ * existiert - und der Knopf "Angebotsentwurf" (Text zum Kopieren, nichts geht an Lexware).
+ */
+function richtpreisHtml(f, d) {
+  if (!['antwort', 'termin'].includes(f.status || 'neu')) return '';
+  const z = richtpreisZeile(d.richtpreise);
+  const zeile = !z ? '' : z.freigegeben ? `<p class="small akq-richtpreis"><span class="muted">Unser Richtpreis:</span> ${esc(z.text)}</p>`
+    : `<p class="small muted akq-richtpreis">${esc(z.text)}</p>`;
+  const knopf = istNurLesend() ? '' : `<button type="button" class="btn btn-sm" data-akq-angebot="${esc(f.id)}">Angebotsentwurf</button>`;
+  return zeile || knopf ? `<div class="akq-preis">${zeile}${knopf}</div>` : '';
+}
+
+function angebotDialog(f) {
+  const text = angebotsEntwurf(f.name, akquise.daten?.richtpreise);
+  $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="akqAngTitel" data-dialog>
+    <h2 id="akqAngTitel">Angebotsentwurf · ${esc(f.name)}</h2>
+    ${akquise.daten?.richtpreise?.freigegeben === true ? '' : '<p class="small muted">Richtpreis noch nicht freigegeben (Inhaber) – Preise stehen als „nach Aufmaß“ drin.</p>'}
+    <textarea id="akqAngText" class="ab-text-feld" rows="14" readonly>${esc(text)}</textarea>
+    <p class="small muted">Nur ein Entwurf zum Kopieren – es wird nichts gesendet und nichts in Lexware angelegt.</p>
+    <div class="actions"><button type="button" class="btn" data-close-dialog>Schließen</button><button type="button" class="btn btn-primary" data-kopieren="akqAngText">Text kopieren</button></div>
+  </div></div>`;
+  $('#dialogRoot [data-kopieren]')?.focus();
+}
+
+/** Gemerkte Referenzen (aus dem Einkauf, Schritt "Erledigt") - zugeklappt. */
+function referenzen(d) {
+  const r = d.referenzen || [];
+  if (!r.length) return '';
+  return `<details class="card akq-alle"><summary><b>Referenzen (${r.length})</b> <span class="small muted">erledigte Aufträge zum Vorzeigen</span></summary>
+    <ul class="akq-ref-liste">${r.map(x => `<li><b>${esc(x.auftrag || x.orderId)}</b> <span class="small muted">${esc(fmtDate(x.am))}${x.von ? ` · ${esc(x.von)}` : ''}</span><div class="small">${esc(x.notiz)}</div></li>`).join('')}</ul>
+  </details>`;
 }
 
 function statusChip(f, faellig) {
@@ -113,7 +152,7 @@ function alleFirmen(d, faelligIds) {
       <td><b>${esc(f.name)}</b><div class="small muted">${esc(f.ort || '')}${!k.email && !k.telefon ? ' · <span class="akq-fehlt-kurz">Kontakt fehlt</span>' : ''}</div>${f.notiz ? `<div class="small akq-notiz-zeile">${esc(f.notiz)}</div>` : ''}</td>
       <td>${statusChip(f, faelligIds.has(f.id))}</td>
       <td class="small">${f.wiedervorlage ? esc(fmtDate(f.wiedervorlage)) : ''}</td>
-      <td><button type="button" class="btn btn-sm" data-akq-zeigen="${esc(f.id)}">Oben zeigen</button></td>
+      <td>${istNurLesend() ? '' : `<button type="button" class="btn btn-sm" data-akq-zeigen="${esc(f.id)}">Oben zeigen</button>`}</td>
     </tr>`;
   }).join('');
   return `<details class="card akq-alle"><summary><b>Alle Firmen (${d.firmen.length})</b> <span class="small muted">Stand, Wiedervorlage, Notizen</span></summary>
@@ -132,7 +171,7 @@ function ausschreibungen(a, tag) {
     const n = tageBis(x.frist, tag);
     const [ampel, hinweis] = n === null ? ['', 'Frist unbekannt – in der Bekanntmachung nachsehen'] : n <= 7 ? ['crit', `noch ${n} ${n === 1 ? 'Tag' : 'Tage'} – zu knapp, nur zur Kenntnis`] : n <= 21 ? ['warn', `noch ${n} Tage – dem Inhaber zeigen`] : ['', `noch ${n} Tage – Zeit genug`];
     return `<li><span class="akq-ampel ${ampel}" aria-hidden="true"></span><div>
-      <div><b>${esc(x.titel)}</b>${neu.has(x.id) ? ' <span class="badge status freigabe">neu</span>' : ''}</div>
+      <div><b>${esc(titelKurz(x.titel))}</b>${neu.has(x.id) ? ' <span class="badge status freigabe">neu</span>' : ''}</div>
       <div class="small muted">${[x.auftraggeber, x.ort].filter(Boolean).map(esc).join(' · ')}</div>
       <div class="small">${esc(hinweis)}${x.link ? ` · <a href="${esc(x.link)}" target="_blank" rel="noopener">Bekanntmachung</a>` : ''}</div></div></li>`;
   }).join('')}</ul></section>`;
@@ -152,7 +191,7 @@ export function viewAkquise() {
   const rest = reihe.filter(x => x.id !== f?.id).length;
   const haupt = f ? karte(f, d, faelligIds.has(f.id), rest)
     : `<section class="card akq-naechste"><h2>Für heute ist alles erledigt</h2><p>Alle Firmen sind angeschrieben, und keine Wiedervorlage ist fällig. Die nächste Firma erscheint hier, sobald ihr Termin zum Nachfassen erreicht ist.</p></section>`;
-  return kopf + erklaerung(d.firmen) + haupt + alleFirmen(d, faelligIds) + ausschreibungen(d.ausschreibungen, tag);
+  return kopf + erklaerung(d.firmen) + haupt + alleFirmen(d, faelligIds) + referenzen(d) + ausschreibungen(d.ausschreibungen, tag);
 }
 
 async function speichere(id, eingabe, meldung) {
@@ -185,6 +224,12 @@ export function akquiseKlick(ev) {
   if (z) {
     akquise.gewaehlt = z.dataset.akqZeigen; akquise.antwort = '';
     render(); window.scrollTo?.({ top: 0 });
+    return true;
+  }
+  const ang = ev.target.closest('[data-akq-angebot]');
+  if (ang) {
+    const f = akquise.daten?.firmen?.find(x => x.id === ang.dataset.akqAngebot);
+    if (f) angebotDialog(f);
     return true;
   }
   const k = ev.target.closest('[data-akq-kopieren]');

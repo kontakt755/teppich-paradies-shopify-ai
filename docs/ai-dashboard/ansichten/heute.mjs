@@ -30,7 +30,7 @@ import { istNurLesend } from '../kern/sitzung.mjs';
 import { schnittJeBezahlter } from '../lib/kennzahlen.mjs';
 import { stoerungState } from '../bausteine/karten.mjs';
 import { ensureAktualisierung, aktualisierenButton, aktualisierungHealth } from '../bausteine/aktualisierung.mjs';
-import { einkauf, ensureEinkaufAuftragsstatus, ensureEinkaufKennzahlen, ensureEinkaufBestellungen, anzeigeWert, aktiveAuftraege, afEintragFuer } from './einkauf/auftragsfluss.mjs';
+import { einkauf, ensureEinkaufAuftragsstatus, ensureEinkaufKennzahlen, ensureEinkaufBestellungen, anzeigeWert, aktiveAuftraege, afEintragFuer, kundeUndOrt } from './einkauf/auftragsfluss.mjs';
 import { einkaufZahlen } from '../lib/auftrags-ablauf.mjs';
 import { belege, ensureBelege, laufStand } from './einkauf/belege.mjs';
 import { hinweisText } from './einkauf/bestellungen.mjs';
@@ -74,7 +74,18 @@ function quellen() {
     freigaben: istInhaber() ? state.tasks : [],
     shopwache: darfAnsicht('shopwache') ? shopwache.daten : null,
     akquise: darfAnsicht('akquise') ? akquiseFaellig() : [],
+    kundentermine: darfAnsicht('einkauf') ? kundentermine() : [],
   };
+}
+
+/** Termine beim Kunden (Einkauf "Je Auftrag") mit Auftragsnummer und Kundenname. */
+function kundentermine() {
+  const d = einkauf.bestellungen;
+  if (!d?.verfuegbar) return [];
+  return Object.entries(d.kundentermine || {}).map(([orderId, t]) => {
+    const a = (d.auftraege || []).find(x => String(x.id) === orderId);
+    return a ? { orderId, termin: t.termin, auftragName: a.name, kundeName: kundeUndOrt(orderId).name || '' } : null;
+  }).filter(Boolean);
 }
 
 /** Anzeigename je Lieferant aus den Stammdaten; ohne Stammdaten der neutrale Ersatz. */
@@ -227,7 +238,9 @@ function todoZeile(t, erste) {
   // k.schritt: Zeitleisten-Schritt direkt ausloesen (z. B. "Erledigt – Kunde hat Muster");
   // der Klick laeuft ueber zeitleisteKlick (ansichten/kunden/zeitleiste.mjs). Rolle "lesen" bekommt den Link.
   // k.nachbuchen: "In Shopify nachbuchen" direkt in der Zeile (shopifyAbgleichKlick, einkauf/shopify-abgleich.mjs).
-  const knopf = k.nachbuchen && !istNurLesend()
+  const knopf = k.kopiertext
+    ? `<button type="button" class="${klasse}" data-kopiertext="${esc(k.kopiertext)}">${esc(k.text)}</button>`
+    : k.nachbuchen && !istNurLesend()
     ? `<button type="button" class="${klasse}" data-shopify-nachbuchen="${esc(k.nachbuchen)}" title="Bucht diese Artikel in Shopify als versendet – ohne Mail an den Kunden">${esc(k.text)}</button>`
     : k.aufgabe
     ? `<button type="button" class="${klasse}" data-open="${esc(k.aufgabe)}" data-primary="1">${esc(k.text)}</button>`

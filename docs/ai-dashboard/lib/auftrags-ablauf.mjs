@@ -149,6 +149,12 @@ export function kundenNachricht({ auftragName, kundeName, artikel = [] }) {
   };
 }
 
+/** Erinnerung am Vortag eines Termins beim Kunden (Lieferung/Verlegung). Versendet wird nichts. */
+export function kundenErinnerung({ auftragName, kundeName, termin }) {
+  const anrede = kundeName ? `Guten Tag ${kundeName},` : 'Guten Tag,';
+  return `${anrede}\n\nwir möchten Sie kurz an unseren Termin morgen, ${datumDe(termin)}, zu Ihrer Bestellung ${auftragName} erinnern. Falls etwas dazwischengekommen ist, melden Sie sich bitte kurz bei uns.\n\nMit freundlichen Grüßen\nIhr Team von Teppich Paradies`;
+}
+
 /** Fertige Nachfrage an den Lieferanten bei Verzug. */
 export function nachfrageNachricht({ auftragName, positionen = [] }) {
   const zeilen = positionen.map(x => {

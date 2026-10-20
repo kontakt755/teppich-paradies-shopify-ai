@@ -15,7 +15,7 @@ import { musterText, musterHerkunftText } from './bestellinhalt.mjs';
 import { vorgangsLink } from './vorgangslink.mjs';
 import { lieferterminFaellig, beschaffungText, uebernahmeText } from './beschaffung.mjs';
 import { LEISTUNG_LABEL, QUELLE_LABEL } from './serviceanfragen.mjs';
-import { verzugWerktage, VERZUG_WERKTAGE } from './auftrags-ablauf.mjs';
+import { verzugWerktage, VERZUG_WERKTAGE, kundenErinnerung } from './auftrags-ablauf.mjs';
 
 const TAG_MS = 86400000;
 const UNGEKLAERT = 'UNGEKLAERT';
@@ -603,6 +603,21 @@ function ausAkquise(quellen) {
   }];
 }
 
+/**
+ * Termin beim Kunden morgen (Einkauf "Je Auftrag", Feld "Termin"): am Vortag ein To-do im Laden
+ * mit fertigem Erinnerungstext zum Kopieren. `quellen.kundentermine` = [{ orderId, auftragName, kundeName, termin }].
+ */
+function ausKundenterminen(quellen, k) {
+  const d = new Date(`${k.heute}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1);
+  const morgen = d.toISOString().slice(0, 10);
+  return (quellen.kundentermine || []).filter(t => t.termin === morgen).map(t => ({
+    id: `kundentermin:${t.orderId}`, art: 'kundentermin', bereich: 'laden', ton: 'warn', alterTage: null,
+    titel: `Kunde an Termin morgen erinnern: ${t.auftragName || t.orderId}`,
+    kontext: [t.kundeName, 'Text kopieren, per Mail oder WhatsApp schicken'].filter(Boolean).join(' · '),
+    knopf: { text: 'Text kopieren', kopiertext: kundenErinnerung({ auftragName: t.auftragName || '', kundeName: t.kundeName, termin: t.termin }) },
+  }));
+}
+
 /** Alle ableitbaren To-dos, unsortiert und ohne Blick auf die Rolle. */
 function alleTodos(quellen, opt) {
   const k = kontext(quellen, opt);
@@ -617,6 +632,7 @@ function alleTodos(quellen, opt) {
     ...ausNeuheiten(quellen, k.jetzt),
     ...ausAusschreibungen(quellen, k.jetzt),
     ...ausAkquise(quellen),
+    ...ausKundenterminen(quellen, k),
     ...ausTailscale(quellen),
   ];
 }

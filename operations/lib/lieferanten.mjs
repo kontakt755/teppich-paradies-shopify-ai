@@ -658,7 +658,8 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, aus
   }
   const { anrede, gruss } = rahmen({ st, absender, anredeStandard: 'Sehr geehrte Damen und Herren,' });
   const du = st.mail.duzen;
-  const bestaetigen = du ? 'Bitte bestätige uns den Auftrag mit dem voraussichtlichen Liefertermin.' : 'Bitte bestätigen Sie uns den Auftrag mit dem voraussichtlichen Liefertermin.';
+  // Die Kommission (#Shop-Bestellnummer) in der AB macht die automatische Zuordnung moeglich (lib/lieferbelege.mjs).
+  const bestaetigen = du ? 'Bitte bestätige uns den Auftrag mit dem voraussichtlichen Liefertermin und gib dabei unsere Kommission an.' : 'Bitte bestätigen Sie uns den Auftrag mit dem voraussichtlichen Liefertermin und geben Sie dabei unsere Kommission an.';
   const einleitung = anKunden ? 'wir bestellen folgende Ware – bitte direkt an unsere Kunden liefern:'
     : anKettler ? 'wir bestellen folgende Ware – bitte an unseren Kettelservice liefern (Anschrift unten):'
       : 'wir bestellen folgende Ware:';

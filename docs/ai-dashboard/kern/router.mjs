@@ -18,8 +18,7 @@ const ANSICHT_ROLLEN = {
   // Shop-Wache und Ratgeber sind Website-Arbeit: Erreichbarkeit von Seiten,
   // Ladezeiten, Texte fuer den Shop. Das Team hat damit nichts zu tun.
   shopwache: 'inhaber', ratgeber: 'inhaber',
-  // Akquise: Firmenkontakte und Anschreiben - Sache des Inhabers (#1447).
-  akquise: 'inhaber',
+  // Akquise (#1447) ist seit 2026-10-20 fuer Mitarbeiter offen; "lesen" schreibt nichts (Server).
 };
 
 export function darfAnsicht(view) {

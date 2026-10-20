@@ -82,7 +82,7 @@ export function viewEinkauf() {
   // Die Zahl am Reiter "Belege" zeigt, ob dort etwas zu pruefen ist - auch von den anderen Reitern aus.
   ensureBelege();
   const zuPruefen = belegArbeit()?.summe || 0;
-  const head = `<div class="page-head"><div><h1>Einkauf</h1><p class="sub">Was bei welchem Lieferanten zu bestellen ist – und wo Produktdaten dafür fehlen.</p></div>
+  const head = `<div class="page-head"><div><h1>Einkauf</h1><p class="sub">Je Auftrag der nächste Schritt: bestellen, Ware annehmen, Kunde informieren.</p></div>
       <div class="head-actions">${aktualisierenButton()}</div></div>
     <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button type="button" class="tab" role="tab" aria-selected="${tab === k}" data-param="tab" data-value="${k}">${esc(l)}${k === 'belege' && zuPruefen ? ` <span class="tab-zahl">${zuPruefen}</span>` : ''}</button>`).join('')}</div>`;
   const body = tab === 'ablauf' ? viewEinkaufAblauf() : tab === 'lieferant' ? viewEinkaufBestellungen() : tab === 'belege' ? viewEinkaufBelege() : tab === 'musterlager' ? viewEinkaufMusterlager() : tab === 'produktdaten' ? viewEinkaufProduktdaten() : viewEinkaufHilfe();

@@ -14,6 +14,7 @@ import { orgSchreiben } from '../../kern/api.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { auftragsAblauf, einordnung, kundenNachricht, nachfrageNachricht, VERZUG_WERKTAGE } from '../../lib/auftrags-ablauf.mjs';
+import { referenzKnopf } from './referenz.mjs';
 import {
   einkauf, afEintragFuer, aktiveAuftraege, anzeigeWert, kundeUndOrt,
   ensureEinkaufBestellungen, ensureEinkaufAuftragsstatus, ensureEinkaufLieferanten, musterSchrittKnopf,
@@ -62,7 +63,7 @@ function lieferungHtml(a, ab, e) {
     ${lesend ? '' : `<button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(x.pos.orderId)}" data-af-item="${esc(x.pos.lineItemId)}" data-af-name="${esc(x.pos.orderName || '')}" data-af-titel="${esc(x.pos.titel || '')}" data-af-farbe="${esc(x.pos.farbe || '')}" data-af-status="geliefert">Ist eingetroffen</button>`}</li>`;
   const musterHtml = muster.length ? `<div class="ab-pos"><span><span class="small muted">${plural(muster.length, 'Muster', 'Muster')}:</span> ${esc(muster.map(titelVon).join(' · '))}</span>${musterSchrittKnopf(muster)}</div>` : '';
   const wareHtml = ware.length ? `<p class="small muted" style="margin:6px 0 0">Ware unterwegs:</p><ul class="ab-liste">${ware.map(zeile).join('')}</ul>` : '';
-  return `${verzugHtml(a, ab, e)}${musterHtml}${wareHtml}${informierenHtml(a, e)}<p class="small" style="margin:8px 0 0"><a href="#/einkauf?tab=lieferant&auftrag=${encodeURIComponent(a.id)}">Alle Artikel dieses Auftrags bearbeiten →</a></p>`;
+  return `${verzugHtml(a, ab, e)}${musterHtml}${wareHtml}${informierenHtml(a, e)}${terminHtml(a)}<p class="small" style="margin:8px 0 0"><a href="#/einkauf?tab=lieferant&auftrag=${encodeURIComponent(a.id)}">Alle Artikel dieses Auftrags bearbeiten →</a></p>`;
 }
 
 function auftragKarte({ a, ab, e }) {
@@ -70,7 +71,7 @@ function auftragKarte({ a, ab, e }) {
   const wer = [k.name, k.ort].filter(Boolean).join(' · ');
   const inhalt = ab.jetzt === 'vorbereiten' ? vorbereitenHtml(a, ab)
     : ab.jetzt === 'lieferung' ? lieferungHtml(a, ab, e)
-    : `<p class="small"><a href="#/einkauf?tab=lieferant&auftrag=${encodeURIComponent(a.id)}">Artikel abschließen →</a></p>`;
+    : `<p class="small"><a href="#/einkauf?tab=lieferant&auftrag=${encodeURIComponent(a.id)}">Artikel abschließen →</a>${ab.jetzt === 'erledigt' ? referenzKnopf(a) : ''}</p>`;
   const bestellt = ab.bestelltAm && ab.jetzt !== 'vorbereiten' ? `<span class="small muted">bestellt ${esc(fmtDate(ab.bestelltAm))}</span>` : '';
   return `<section class="card ab-karte${ab.ungeklaert.length || e.verzug.length ? ' ab-mit-problem' : ''}">
     <div class="ab-kopf"><h3><a href="${esc(a.adminUrl || '')}" target="_blank" rel="noopener" title="In Shopify öffnen">${esc(a.name)} ↗</a>${wer ? ` <span class="ab-kunde">${esc(wer)}</span>` : ''}</h3>
@@ -80,13 +81,25 @@ function auftragKarte({ a, ab, e }) {
   </section>`;
 }
 
+/**
+ * Termin beim Kunden (Lieferung/Verlegung): ein Datumsfeld, sonst nichts. Am Vortag steht auf
+ * "Heute" das To-do "Kunde an Termin morgen erinnern" mit fertigem Text (lib/todos.mjs).
+ */
+function terminHtml(a) {
+  const t = einkauf.bestellungen?.kundentermine?.[a.id]?.termin || '';
+  // Erst nach "Kunde informiert" - vorher gibt es keinen Termin, und Muster-Karten bleiben ruhig.
+  if (!t && !informiertFuer(a.id)) return '';
+  if (istNurLesend()) return t ? `<p class="small" style="margin:8px 0 0">Termin: ${esc(fmtDate(t))}</p>` : '';
+  return `<p class="small ab-termin" style="margin:8px 0 0"><label>Termin <input type="date" value="${esc(t)}" data-ab-termin="${esc(a.id)}"></label></p>`;
+}
+
 const informiertFuer = id => einkauf.bestellungen?.kundeInformiert?.[id] || null;
 
 /** Schritt 4, Ware bei uns: Kunde informieren - fertiger Text, danach abhaken. */
 function informierenHtml(a, e) {
   if (!e.wareDa.length) return '';
   const inf = informiertFuer(a.id);
-  if (inf) return `<p class="small ab-informiert" style="margin:8px 0 0">✓ Kunde informiert am ${esc(fmtDate(inf.am))}${inf.von ? ` (${esc(inf.von)})` : ''} – Termin für Lieferung, Verlegung oder Abholung abstimmen.</p>`;
+  if (inf) return `<p class="small ab-informiert" style="margin:8px 0 0">✓ Kunde informiert am ${esc(fmtDate(inf.am))}${inf.von ? ` (${esc(inf.von)})` : ''} – Termin für Lieferung, Verlegung oder Abholung abstimmen.${referenzKnopf(a)}</p>`;
   const lesend = istNurLesend();
   return `<div class="notice warn ab-aktion"><strong>Ware ist da – Kunde noch nicht informiert.</strong>
     ${lesend ? '' : `<div class="ab-knoepfe"><button type="button" class="btn btn-primary btn-sm" data-ab-kunde="${esc(a.id)}">Nachricht an Kunde</button>
@@ -162,6 +175,22 @@ async function markiereInformiert(id, knopf) {
     toast(`Nicht gespeichert: ${err.message}`, 'crit');
     knopf.disabled = false;
   }
+}
+
+/** Datumsfeld "Termin" (change). true = Ereignis erledigt. */
+export function einkaufAenderungAblauf(ev) {
+  const f = ev.target.closest?.('[data-ab-termin]');
+  if (!f) return false;
+  const orderId = f.dataset.abTermin;
+  const termin = f.value || '';
+  f.disabled = true;
+  orgSchreiben('/api/einkauf/kundentermin', { orderId, termin }).then(() => {
+    const alle = { ...(einkauf.bestellungen.kundentermine || {}) };
+    if (termin) alle[orderId] = { termin }; else delete alle[orderId];
+    einkauf.bestellungen.kundentermine = alle;
+    toast(termin ? `Termin ${fmtDate(termin)} gespeichert` : 'Termin entfernt');
+  }, err => toast(`Nicht gespeichert: ${err.message}`, 'crit')).finally(() => { f.disabled = false; });
+  return true;
 }
 
 /** Klicks im Reiter "Je Auftrag". true = Ereignis erledigt. */

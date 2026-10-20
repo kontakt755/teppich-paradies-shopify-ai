@@ -25,7 +25,8 @@ import { einkaufKlickStatus, einkaufKlickDialoge } from './ansichten/einkauf/auf
 import { versandKlick } from './ansichten/einkauf/versand.mjs';
 import { beschaffungKlick } from './ansichten/einkauf/beschaffung.mjs';
 import { einkaufKlickLieferanten } from './ansichten/einkauf/lieferanten.mjs';
-import { einkaufKlickAblauf } from './ansichten/einkauf/ablauf.mjs';
+import { einkaufKlickAblauf, einkaufAenderungAblauf } from './ansichten/einkauf/ablauf.mjs';
+import { referenzKlick } from './ansichten/einkauf/referenz.mjs';
 import { einkaufKlickMusterlager } from './ansichten/einkauf/musterlager.mjs';
 import { einkaufKlickBelege } from './ansichten/einkauf/belege.mjs';
 import { lexikonKlick, lexikonEingabe } from './ansichten/lexikon.mjs';
@@ -87,6 +88,7 @@ export function bindEvents() {
     if (beschaffungKlick(e)) return;
     if (einkaufKlickStatus(e)) return;
     if (einkaufKlickAblauf(e)) return;
+    if (referenzKlick(e)) return;
     if (einkaufKlickLieferanten(e)) return;
     if (einkaufKlickMusterlager(e)) return;
     if (einkaufKlickBelege(e)) return;
@@ -133,6 +135,7 @@ export function bindEvents() {
     if (orgAenderungAnhang(e)) return;
     if (teamAenderung(e)) return;
     if (akquiseAenderung(e)) return;
+    if (einkaufAenderungAblauf(e)) return;
     const el = e.target.closest('select[data-param]'); if (el) { setParam(el.dataset.param, el.value); return; }
     orgAenderungFeld(e);
   });
