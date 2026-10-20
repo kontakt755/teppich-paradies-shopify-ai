@@ -640,7 +640,9 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
 }
 
 /* Handy: Arten als Kacheln in zwei Spalten (w-039: das Teppichboden-Menue
-   war 15 volle Zeilen lang), Farbe/Raum/Rollenbreite als Chips darunter */
+   war 15 volle Zeilen lang), Farbe/Raum/Rollenbreite als Chips darunter.
+   2026-10-20 flacher (60 -> 52 px, Bild 36 px): bei 375 px begann "Farbe"
+   erst bei 736 px, also unter dem ersten Bildschirm. */
 .menu-drawer .tp-dn-kacheln {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -655,8 +657,8 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
   align-items: center;
   gap: 10px;
   height: 100%;
-  min-height: 60px;
-  padding: 8px;
+  min-height: 52px;
+  padding: 6px 8px;
   border: 1px solid rgb(var(--color-foreground-rgb) / 0.12);
   border-radius: 10px;
   color: var(--color-foreground);
@@ -671,8 +673,8 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
   display: grid;
   flex: none;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   overflow: hidden;
   border-radius: 8px;
   background: rgb(var(--color-foreground-rgb) / 0.06);
