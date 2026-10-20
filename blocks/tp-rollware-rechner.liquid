@@ -2126,6 +2126,7 @@ function tpRwcInit{{ tp_rc_id }}() {
           : res.leisteInvalidField === 'hoehe' ? 'Diese Höhe ist gerade nicht lieferbar. Bitte eine andere Höhe wählen.'
           : geteilt && raumHinweis ? raumHinweis.textContent
           : 'Bitte Höhe und Länge angeben. Vorschlag ist der Umfang Ihres Stücks.';
+        if (geteilt && an && raumHinweis && res.leisteInvalidField === 'meter') raumHinweis.hidden = true;
       }
     }
     if (haftBox) {
