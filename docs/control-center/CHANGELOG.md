@@ -2,7 +2,7 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
-## 2026-10-20 · Akquise gefuehrt: eine Firma „Als Nächstes“ (#)
+## 2026-10-20 · Akquise gefuehrt: eine Firma „Als Nächstes“ (#1533)
 
 - **Geändert:** Statt einer langen Liste mit Dropdown, Datum und Notiz je Firma: oben ein Erklärkasten
   (worum es geht, drei Schritte, Fortschritt „x von 33 angeschrieben · Antworten · Aufträge“), darunter
