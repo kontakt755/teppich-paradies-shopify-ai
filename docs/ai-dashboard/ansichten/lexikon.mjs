@@ -65,29 +65,39 @@ function ensureLexikonEtiketten(produkt) {
   if (lexikon.etikettenKey === key) return;
   lexikon.etikettenKey = key;
   lexikon.loadingEtiketten = false;
-  const handles = [...new Set((produkt.varianten || []).map(v => v.original?.produktHandle).filter(Boolean))];
-  if (!(produkt.varianten || []).some(v => v.sku && !v.wunschmass)) {
-    if (produkt.muster?.handle) handles.push(produkt.muster.handle);
-    if (produkt.musterRegeln?.basisHandle) handles.push(produkt.musterRegeln.basisHandle);
-  }
-  if (!handles.length && produkt.handle.startsWith('muster-')) handles.push(originalHandle(produkt.handle));
+  const abhaengigkeiten = p => {
+    const handles = (p.varianten || []).map(v => v.original?.produktHandle).filter(Boolean);
+    if (!(p.varianten || []).some(v => v.sku && !v.wunschmass && !/^(M-|TP-MUSTER)/i.test(v.sku))) {
+      if (p.muster?.handle) handles.push(p.muster.handle);
+      if (p.musterRegeln?.basisHandle) handles.push(p.musterRegeln.basisHandle);
+    }
+    if (!handles.length && p.handle.startsWith('muster-')) handles.push(originalHandle(p.handle));
+    return [...new Set(handles)];
+  };
+  const handles = abhaengigkeiten(produkt);
   if (!handles.length) { lexikon.etiketten = etikettenAusLexikon(produkt); return; }
   lexikon.loadingEtiketten = true;
-  Promise.all(handles.map(async handle => {
-    const d = await fetchEinkauf(`/api/lexikon/produkt?${new URLSearchParams({ handle })}`);
-    return [handle, d?.produkt || null];
-  })).then(async eintraege => {
-    const je = new Map(eintraege.filter(([, p]) => p));
-    const originalHandles = [...new Set([...je.values()].flatMap(p => (p.varianten || []).map(v => v.original?.produktHandle)).filter(h => h && !je.has(h)))];
-    await Promise.all(originalHandles.map(async handle => {
-      const d = await fetchEinkauf(`/api/lexikon/produkt?${new URLSearchParams({ handle })}`);
-      if (d?.produkt) je.set(handle, d.produkt);
-    }));
+  (async () => {
+    const je = new Map([[produkt.handle, produkt]]), gesehen = new Set(je.keys());
+    let offen = handles;
+    // Nur die belegten Verweise verfolgen. Jede Adresse wird einmal geladen;
+    // auch verkettete Basisartikel und zyklische Daten enden dadurch sicher.
+    while (offen.length) {
+      const batch = [...new Set(offen)].filter(h => !gesehen.has(h));
+      batch.forEach(h => gesehen.add(h));
+      const geladen = await Promise.all(batch.map(async handle => {
+        const d = await fetchEinkauf(`/api/lexikon/produkt?${new URLSearchParams({ handle })}`);
+        if (d?.produkt) je.set(handle, d.produkt);
+        return d?.produkt;
+      }));
+      if (lexikon.produktKey !== key || lexikon.etikettenKey !== key) return;
+      offen = geladen.filter(Boolean).flatMap(abhaengigkeiten).filter(h => !gesehen.has(h));
+    }
     if (lexikon.produktKey !== key || lexikon.etikettenKey !== key) return;
     lexikon.etiketten = etikettenAusLexikon(produkt, je);
     lexikon.loadingEtiketten = false;
     if (state.route.view === 'lexikon') render();
-  });
+  })();
 }
 
 function musterEtikettenBlock(produkt) {
