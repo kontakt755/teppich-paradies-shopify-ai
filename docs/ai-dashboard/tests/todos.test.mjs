@@ -89,23 +89,21 @@ test('unbezahlt, storniert, Test oder schon bestellt: kein Bestell-To-do', () =>
   assert.deepEqual(todos, []);
 });
 
-test('Lieferantenbestellung: ab 7 Tagen gelb nachhaken, ab 14 Tagen rot - Schwellen vom Server uebernehmbar', () => {
+test('Verzug: nach mehr als 10 Werktagen ohne Wareneingang nachfragen, ab 16 Werktagen rot', () => {
+  // JETZT ist Donnerstag, 01.10.: vor 8 Tagen = 6 Werktage, vor 15 Tagen = 11, vor 23 Tagen = 16.
   const a = zeile({ name: 'Kunde Acht', tage: 10 });
   const b = zeile({ name: 'Kunde Fuenfzehn', tage: 20, positionen: [{ lieferant: 'C' }] });
-  const c = zeile({ name: 'Kunde Frisch', tage: 5 });
+  const c = zeile({ name: 'Kunde Lang', tage: 30, positionen: [{ lieferant: 'D' }] });
   const statusAlle = {
     ...stand(a, 0, { status: 'bestellt', bestelltAm: vorTagen(8) }),
     ...stand(b, 0, { status: 'bestellt', bestelltAm: vorTagen(15) }),
-    ...stand(c, 0, { status: 'bestellt', bestelltAm: vorTagen(3) }),
+    ...stand(c, 0, { status: 'bestellt', bestelltAm: vorTagen(23) }),
   };
   const todos = leiteTodosAb({ bestellzeilen: [a, b, c], statusAlle }, { sicht: 'laden', jetzt: JETZT });
-  assert.deepEqual(todos.map(t => [t.art, t.ton, t.alterTage]), [['nachhaken', 'crit', 15], ['nachhaken', 'warn', 8]]);
-  assert.equal(todos[0].titel, 'Ware seit 15 Tagen bestellt – noch nicht da');
-  assert.match(todos[0].kontext, /^Lieferant C · Kunde Fuenfzehn/);
-  assert.equal(todos[0].knopf.href, '#/einkauf?lf=C', 'direkt zur Karte des Lieferanten');
-  const streng = leiteTodosAb({ bestellzeilen: [a, b, c], statusAlle, schwellen: { nachhakenTage: 3, problemTage: 8 } }, { sicht: 'laden', jetzt: JETZT });
-  assert.equal(streng.filter(t => t.art === 'nachhaken').length, 2, 'Lieferant A (zwei Kunden) und Lieferant C');
-  assert.ok(streng.every(t => t.ton === 'crit'));
+  assert.deepEqual(todos.map(t => [t.art, t.ton, t.alterTage]), [['nachhaken', 'crit', 23], ['nachhaken', 'warn', 15]]);
+  assert.equal(todos[1].titel, 'Beim Lieferanten nachfragen: Ware seit 15 Tagen bestellt, noch nicht da');
+  assert.match(todos[1].kontext, /^Lieferant C · Kunde Fuenfzehn/);
+  assert.equal(todos[1].knopf.href, '#/einkauf?ab=verzug', 'direkt in die Verzugsliste mit fertiger Nachfrage');
 });
 
 test('blockierte Bestellung ("Zuerst klären") ist rot und erscheint nicht zusaetzlich als Bestell-To-do', () => {

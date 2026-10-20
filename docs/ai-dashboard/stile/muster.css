@@ -17,6 +17,27 @@
 .bq-inhalt-mobil { margin: 4px 0 2px; }
 .bq-inhalt-mobil .bq-inhalt-zeile { font-size: .88rem; }
 
+/* Bestellungsbezogene Aufkleberzuordnung bleibt ausschliesslich im internen Detail. */
+.bq-musteretiketten { min-width: 0; margin: 0 0 16px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); white-space: normal; overflow-wrap: anywhere; scroll-margin-top: 90px; }
+.bme-kopf { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.bme-kopf h3 { margin: 0; }
+.bme-kopf .btn { flex: none; }
+.bme-liste { list-style: none; margin: 8px 0; padding: 0; }
+.bme-zeile { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; padding: 10px 0; }
+.bme-zeile + .bme-zeile { border-top: 1px solid var(--line); }
+.bme-was, .bme-stand { display: grid; align-content: start; gap: 3px; min-width: 0; overflow-wrap: anywhere; }
+.bme-was a { color: var(--text); }
+.bme-stand { text-align: right; }
+.bme-pruefen { color: var(--warn); }
+.bme-aktionen { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.bme-aktionen .btn { white-space: normal; }
+@media (max-width: 600px) {
+  .bq-musteretiketten { padding: 12px; }
+  .bme-zeile { grid-template-columns: minmax(0, 1fr); }
+  .bme-stand { text-align: left; }
+  .bme-aktionen .btn { width: 100%; min-height: 44px; }
+}
+
 /* -- Musterlager --------------------------------------------------------------------- */
 .ml-kopf { display: flex; gap: 12px 20px; align-items: flex-start; justify-content: space-between; margin: 4px 0 12px; }
 .ml-erklaerung { margin: 0; max-width: 70ch; }

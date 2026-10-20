@@ -60,6 +60,7 @@ docs/ai-dashboard/
   ansichten/                    eine Datei je Route; große Ansichten mit Teilmodulen im gleichnamigen Ordner
   lib/model.mjs                 Regeln: Status, Body-Parser, Dringlichkeit, Übergänge – Browser UND Server
   lib/todos.mjs                 To-dos und „Wer wartet auf was“ für „Heute“ – abgeleitet, nicht erfasst
+  lib/akquise.mjs              Akquise Wohnungsunternehmen: Status, Wiedervorlage, Vorlage fuellen - Browser UND Server
   lib/sonderposten.mjs          Rückmeldung nach „Im Laden verkauft“ – sagt nur, was belegt ist (testbar ohne DOM)
   lib/muster-nachfassen.mjs     „Muster nachfassen“ für „Heute“: wer ist dran, Textvorlage füllen – Browser UND Server
   lib/bestellinhalt.mjs         Inhalt einer Bestellung in einer Zeile (Muster mit Farben und Herkunft, Ware) – Bestellliste und To-dos

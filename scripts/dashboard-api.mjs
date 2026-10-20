@@ -16,10 +16,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { createHash } from 'node:crypto';
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { normalizeTask, requirementsFor, labelChangesFor, mitBlockerAbschnitt, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
 import { texteAusMarkdown, musterKurz, musterNachfassen, fuelleText, platzhalterFrei, STUFE_LABEL, NICHT_VERFUEGBAR_VORLAGE } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
+import { kundeInformiertAus } from '../docs/ai-dashboard/lib/auftrags-ablauf.mjs';
 import { postfachPfad, stopplistePfad, versandPfad, lesePostfach, leseStoppliste, abgemeldeteAdressen, trageAbmeldungEin, leseVersand, schreibeVersand, schonVerschickt, kopieNoetig, versandStand as nachfassVersandStand, AUTOMATISCH, UNTERSCHRIFT_STANDARD, NachfassFehler } from '../operations/lib/nachfass-versand.mjs';
 import { sendeMail as smtpSenden } from '../operations/lib/smtp.mjs';
 import { toIssueRecord } from './build-dashboard-data.mjs';
@@ -66,6 +68,7 @@ import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufS
 import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
 import { ausVariantentitel } from '../operations/lib/resolve.mjs';
 import { ladeEnvLocal, erzeugeProxy, KEIN_ZUGANG, mitHinweis } from '../operations/sync/zugang.mjs';
+import { leseAkquiseCsv, vorlageAusMarkdown, wendeAenderungAn, akquiseId } from '../docs/ai-dashboard/lib/akquise.mjs';
 import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, SonderpostenFehler } from '../operations/lib/sonderposten.mjs';
 import { ohneUeberholtenFehler } from '../operations/scripts/aktualisieren.mjs';
 import { meldungenPfad, abgleichPfad, meldungAnlegen, alleMeldungen, sichtbareMeldungen, darfMeldungSehen, bildAusUpload, bildDatei, BILDER_MAX, FehlermeldungFehler } from '../operations/lib/fehlermeldungen.mjs';
@@ -79,8 +82,9 @@ import { musterKaufLinks } from '../docs/ai-dashboard/lib/muster-kauf-links.mjs'
 import { betriebszustand } from '../operations/lib/betriebszustand.mjs';
 import { ausCsv as bildrechteAusCsv, prueflisten as bildrechtePrueflisten } from '../operations/lib/bildrechte.mjs';
 import { prozesslinksPfad, leseProzesslinks, schreibeProzesslinks, ProzesslinksFehler, ProzesslinksSpeicherFehler } from '../operations/lib/prozesslinks.mjs';
-import { leseMusterDruckliste, aendereMusterDruckliste, MusterDrucklisteFehler } from '../operations/lib/muster-druckliste.mjs';
+import { leseMusterDruckliste, aendereMusterDruckliste, gleicheBestellungsVormerkung, MusterDrucklisteFehler } from '../operations/lib/muster-druckliste.mjs';
 import { etikettenAusLexikon } from '../docs/ai-dashboard/lib/lexikon-etiketten.mjs';
+import { musteretikettenFuerAuftrag } from '../docs/ai-dashboard/lib/bestellungs-musteretiketten.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -1552,7 +1556,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // ladeExport bringt beide Formen auf {orders, quellvarianten}.
       try { modell = bereiteBestellModell(daten, dir, now()); }
       catch (e) { return { verfuegbar: false, quelle: file, hinweis: `orders.json konnte nicht ausgewertet werden: ${e.message}` }; }
-      return { verfuegbar: true, quelle: file, exportiertAm: daten.exportiertAm || null, ...modell };
+      // "Kunde informiert" je Auftrag (Einkauf "Je Auftrag") - aus dem Auftragsverlauf, nur lesend.
+      const verlauf = leseVerlauf(auftragsverlaufPfad(dir));
+      const kundeInformiert = {};
+      for (const [id, v] of Object.entries(verlauf)) { const k = kundeInformiertAus(v.ereignisse); if (k) kundeInformiert[id] = k; }
+      return { verfuegbar: true, quelle: file, exportiertAm: daten.exportiertAm || null, ...modell, kundeInformiert };
     },
 
     /** Kundensuche: Name, E-Mail, Telefon, Bestellnummer, Strasse/Ort/PLZ - waehrend des Tippens. */
@@ -1641,6 +1649,58 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       let katalog = [];
       try { katalog = this._lexikonProdukte(); } catch { /* Optionale Kaufquelle unlesbar: keine Links, Bestellliste bleibt nutzbar. */ }
       return { verfuegbar: true, zeilen: bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) })) };
+    },
+
+    /** Rein intern und lesend: weder Shopify-Abgleich noch Kundendaten im Etikett. */
+    kundenMusteretiketten(orderId) {
+      if (typeof orderId !== 'string' || !orderId.trim() || orderId.length > 200) throw new ApiError(400, 'Bestellkennung fehlt.');
+      const dir = privatDirPath || privatDir();
+      const modell = ladeBestellModell(dir);
+      if (!modell) throw new ApiError(503, 'Die Bestelldaten fehlen oder sind nicht lesbar. Bitte die Daten aktualisieren.');
+      const auftrag = [...(modell.auftraege || []), ...(modell.testauftraege || [])].find(a => a.id === orderId);
+      if (!auftrag) throw new ApiError(404, 'Bestellung nicht in den aktuellen Bestelldaten gefunden.');
+      const status = leseAktuellenStatus(auftragsstatusPfad(dir), modell);
+      const orderName = String(auftrag.name || orderId);
+      let druckliste;
+      try { druckliste = leseMusterDruckliste({ privatDir: dir }); }
+      catch (e) { if (e instanceof MusterDrucklisteFehler) throw new ApiError(e.status, e.message); throw e; }
+      const produkte = new Map(this._lexikonProdukte().map(p => [p.handle, p]));
+      const zeilen = musteretikettenFuerAuftrag(auftrag, produkte).map(z => {
+        const quelle = { art: 'musterbestellung', orderId, orderName, lineItemId: z.lineItemId, bestellmenge: z.bestellmenge };
+        const alt = druckliste.eintraege.find(e => e.quelle?.orderId === orderId && e.quelle.lineItemId === z.lineItemId);
+        const schonRaus = ['raus', 'erledigt'].includes(status[positionKey(orderId, z.lineItemId)]?.status);
+        const vormerkstatus = !alt ? 'nicht_vorgemerkt' : gleicheBestellungsVormerkung(alt, { quelle, etikett: z.etikett }) ? alt.status : 'geaendert';
+        return { ...z, anzahl: schonRaus ? 0 : z.anzahl, vormerkstatus,
+          ...(vormerkstatus === 'geaendert' ? { hinweis: 'Bestellung oder Produktdaten wurden seit dem Vormerken geändert. Bitte die Druckliste prüfen.' }
+            : schonRaus ? { hinweis: 'Dieses Muster ist bereits an den Kunden raus.' } : {}) };
+      });
+      const gesperrt = auftrag.storniert ? 'Diese Bestellung ist storniert. Keine neuen Aufkleber vormerken.'
+        : String(auftrag.erfuellt).toUpperCase() === 'FULFILLED' || !zeilen.some(z => z.anzahl !== 0)
+          ? 'Für diese Bestellung sind keine offenen Muster mehr vorzubereiten.' : null;
+      return { verfuegbar: true, intern: true, orderId, orderName, gesperrt, zeilen };
+    },
+
+    async kundenMusteretikettenVormerken(payload = {}, benutzer = null) {
+      if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Musteraufkleber nur ansehen.');
+      if (!payload || typeof payload !== 'object' || Array.isArray(payload)
+        || typeof payload.vorgangId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload.vorgangId)) throw new ApiError(400, 'Gültige Vorgangskennung fehlt.');
+      const actor = benutzer?.name || await currentUser();
+      if (!actor) throw new ApiError(403, 'Bitte anmelden – wer vormerkt, wird festgehalten.');
+      const plan = this.kundenMusteretiketten(payload.orderId);
+      if (plan.gesperrt) throw new ApiError(409, plan.gesperrt);
+      const aktiv = plan.zeilen.filter(z => z.anzahl !== 0);
+      if (aktiv.some(z => z.fehlt.length || z.vormerkstatus === 'geaendert')) throw new ApiError(409, 'Musterzuordnung oder Drucklistenstand muss zuerst geprüft werden. Es wurde nichts vorgemerkt.');
+      const eintraege = aktiv.map(z => {
+        // Stabile ID pro Quellposition; gleiche SKU in einer zweiten Position bleibt getrennt.
+        const h = createHash('sha256').update(JSON.stringify(['musteretikett-v1', plan.orderId, z.lineItemId])).digest('hex');
+        const id = `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-a${h.slice(17, 20)}-${h.slice(20, 32)}`;
+        return { id, produktHandle: z.produktHandle, produktTitel: z.produktTitel, bezeichnung: z.bezeichnung, etikett: z.etikett, anzahl: z.anzahl,
+          quelle: { art: 'musterbestellung', orderId: plan.orderId, orderName: plan.orderName, lineItemId: z.lineItemId, bestellmenge: z.bestellmenge } };
+      });
+      let ergebnis;
+      try { ergebnis = aendereMusterDruckliste({ privatDir: privatDirPath || privatDir(), aktion: 'bestellung_hinzufuegen', vorgangId: payload.vorgangId, eintraege, actor, now: now() }); }
+      catch (e) { if (e instanceof MusterDrucklisteFehler) throw new ApiError(e.status, e.message); throw e; }
+      return { ...this.kundenMusteretiketten(plan.orderId), vormerkung: { neu: ergebnis.neu, bereits: ergebnis.bereits } };
     },
 
     /**
@@ -2621,6 +2681,19 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       } else if (!['reservieren', 'freigeben', 'erledigen', 'entfernen'].includes(aktion)) {
         throw new ApiError(400, 'Unbekannte Drucklisten-Aktion.');
       }
+      if (aktion === 'reservieren' && Array.isArray(eintraege)) {
+        // Dieselbe UUID-Normalisierung wie die Ablage, damit kein gueltiger Verweis die Quellenpruefung umgeht.
+        const gewaehlt = new Set(eintraege.map(e => typeof e?.id === 'string' ? e.id.toLowerCase() : null));
+        const plaene = new Map();
+        for (const e of this.lexikonDruckliste().eintraege.filter(e => gewaehlt.has(e.id) && e.quelle)) {
+          const id = e.quelle.orderId;
+          if (!plaene.has(id)) plaene.set(id, this.kundenMusteretiketten(id));
+          const plan = plaene.get(id), zeile = plan.zeilen.find(z => z.lineItemId === e.quelle.lineItemId);
+          if (plan.gesperrt || !zeile || zeile.anzahl === 0 || zeile.fehlt.length || zeile.vormerkstatus === 'geaendert') {
+            throw new ApiError(409, 'Eine zugehörige Musterbestellung ist geändert, versendet oder storniert. Bitte die Bestellung und Druckliste vor dem Druck prüfen.');
+          }
+        }
+      }
       try {
         return aendereMusterDruckliste({ privatDir: privatDirPath || privatDir(), aktion: aktion === 'vormerken' ? 'hinzufuegen' : aktion, vorgangId, eintraege, druckauftragId, eintrag, actor, now: now() });
       } catch (e) {
@@ -3573,6 +3646,66 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         return { verfuegbar: false, quelle: file, hinweis: 'Noch keine Bestandsdaten exportiert.', befehl: 'npm run daten:aktualisieren -- --nur bestand' };
       }
       return { verfuegbar: true, quelle: file, ...daten };
+    },
+
+    /**
+     * Akquise Verlegeauftraege (#1447). Firmenliste (CSV) und Anschreiben liegen privat im
+     * Gedaechtnis-Ordner (TP_AKQUISE_DIR), der Bearbeitungsstand unter
+     * $TP_PRIVAT_DIR/akquise/status.json. Nichts davon gehoert ins Repository.
+     */
+    _akquiseQuelle() {
+      const dir = env.TP_AKQUISE_DIR || path.join(os.homedir(), '.claude', 'projects', '-Users-tristan-teppich-paradies-shopify-ai', 'memory', 'Akquise');
+      const csv = env.TP_AKQUISE_CSV || path.join(dir, 'wohnungsgenossenschaften_umkreis_2026_10_19.csv');
+      const vorlage = env.TP_AKQUISE_VORLAGE || path.join(dir, 'anschreiben_wohnungsunternehmen_2026_10_20.md');
+      return { csv, vorlage, status: path.join(privatDirPath || privatDir(), 'akquise', 'status.json') };
+    },
+    /** Stand lesen: fehlt die Datei, ist er leer; kaputt ist ein Fehler (sonst ueberschreibt der naechste Klick alles). */
+    _akquiseStand(file) {
+      let roh;
+      try { roh = fs.readFileSync(file, 'utf8'); } catch (e) {
+        if (e?.code === 'ENOENT') return {};
+        throw new ApiError(500, `Akquise-Stand nicht lesbar: ${e?.code || e?.message}`);
+      }
+      try { return JSON.parse(roh).firmen || {}; } catch { throw new ApiError(500, 'Akquise-Stand ist beschädigt (kein gültiges JSON) – bitte prüfen, nichts überschrieben.'); }
+    },
+    async akquiseListe() {
+      const q = this._akquiseQuelle();
+      let csv;
+      try { csv = fs.readFileSync(q.csv, 'utf8'); } catch (e) {
+        if (e?.code === 'ENOENT') return { verfuegbar: false, hinweis: 'Die Firmenliste fehlt auf diesem Rechner.', befehl: 'Pfad per TP_AKQUISE_CSV setzen' };
+        throw e;
+      }
+      const stand = this._akquiseStand(q.status);
+      let vorlage = '';
+      try { vorlage = vorlageAusMarkdown(fs.readFileSync(q.vorlage, 'utf8')); } catch (e) { if (e?.code !== 'ENOENT') throw e; }
+      const firmen = leseAkquiseCsv(csv).map(f => ({
+        id: f.id, name: f.name, ort: f.ort, typ: f.typ, wohnungen: f.wohnungen, website: f.website,
+        status: 'neu', letzteAktion: '', wiedervorlage: '', notiz: '', ...stand[f.id],
+      }));
+      const aus = readJsonIfExists(path.join(privatDirPath || privatDir(), 'ausschreibungen', 'status.json'));
+      return {
+        verfuegbar: true, firmen, vorlage,
+        ausschreibungen: aus?.geprueftAm ? { geprueftAm: aus.geprueftAm, treffer: aus.treffer || [], neu: aus.neu || [] } : null,
+      };
+    },
+    async akquiseAendern(payload = {}, benutzer = null) {
+      const q = this._akquiseQuelle();
+      const id = akquiseId(payload.id);
+      if (!id || id !== payload.id) throw new ApiError(400, 'Unbekannte Firma.');
+      let csv;
+      try { csv = fs.readFileSync(q.csv, 'utf8'); } catch { throw new ApiError(409, 'Die Firmenliste fehlt auf diesem Rechner.'); }
+      if (!leseAkquiseCsv(csv).some(f => f.id === id)) throw new ApiError(400, 'Unbekannte Firma.');
+      const stand = this._akquiseStand(q.status);
+      const heute = now().toISOString().slice(0, 10);
+      let neu;
+      try { neu = wendeAenderungAn(stand[id] || { status: 'neu' }, payload, heute); } catch (e) { throw new ApiError(400, e.message); }
+      neu.von = benutzer?.kuerzel || benutzer?.name || neu.von || '';
+      stand[id] = neu;
+      fs.mkdirSync(path.dirname(q.status), { recursive: true });
+      const tmp = `${q.status}.${process.pid}.tmp`;
+      fs.writeFileSync(tmp, JSON.stringify({ firmen: stand }, null, 2), { mode: 0o600 });
+      fs.renameSync(tmp, q.status);
+      return { ok: true, firma: { id, ...neu } };
     },
 
     /**

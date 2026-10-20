@@ -275,12 +275,12 @@
   <div class="tp-rwc-field tp-rwc-wunsch" data-wunsch-box hidden>
     <label class="tp-rwc-label" for="tp-rwc-wb-{{ tp_rc_id }}">Raumbreite</label>
     <div class="tp-rwc-input-wrap">
-      <input type="text" id="tp-rwc-wb-{{ tp_rc_id }}" class="tp-rwc-input" inputmode="decimal" autocomplete="off" placeholder="z. B. 250" aria-describedby="tp-rwc-wb-grenze-{{ tp_rc_id }} tp-rwc-wb-echo-{{ tp_rc_id }}" data-wunsch-input>
+      <input type="text" id="tp-rwc-wb-{{ tp_rc_id }}" class="tp-rwc-input" inputmode="decimal" autocomplete="off" placeholder="z. B. 250" aria-describedby="tp-rwc-wb-grenze-{{ tp_rc_id }} tp-rwc-wb-echo-{{ tp_rc_id }} tp-rwc-wb-error-{{ tp_rc_id }}" data-wunsch-input>
       <span class="tp-rwc-unit" data-mass-unit>cm</span>
     </div>
     <p class="tp-rwc-note" id="tp-rwc-wb-grenze-{{ tp_rc_id }}" data-wunsch-hint></p>
     <p class="tp-rwc-note tp-rwc-gegen" id="tp-rwc-wb-echo-{{ tp_rc_id }}" data-wunsch-echo hidden></p>
-    <p class="tp-rwc-note tp-rwc-note-error" data-wunsch-error hidden></p>
+    <p class="tp-rwc-note tp-rwc-note-error" id="tp-rwc-wb-error-{{ tp_rc_id }}" data-wunsch-error hidden></p>
   </div>
 
   <div class="tp-rwc-mode-panel" data-mode-panel="length">
@@ -369,7 +369,7 @@
           </label>
           <span class="tp-rwc-tip">
             <button type="button" class="tp-rwc-tip__knopf" aria-describedby="tp-rwc-tip-l-{{ tp_rc_id }}">Mehr dazu</button>
-            <span class="tp-rwc-tip__text" role="tooltip" id="tp-rwc-tip-l-{{ tp_rc_id }}">Aus Ihrem Teppichboden fertigen wir eine gekettelte Fußleiste in Ihrer Höhe. Dafür schneiden wir Streifen quer über die ganze Rolle, deshalb fertigen und berechnen wir in ganzen Streifen. Der Meterpreis enthält das Material; Vorschlag ist der Umfang Ihres Stücks.</span>
+            <span class="tp-rwc-tip__text" role="tooltip" id="tp-rwc-tip-l-{{ tp_rc_id }}">Aus Ihrem Teppichboden fertigen wir eine gekettelte Fußleiste in Ihrer Höhe. Dafür schneiden wir Streifen quer über die ganze Rolle, deshalb fertigen und berechnen wir in ganzen Streifen. Der Meterpreis enthält das Material. {{ 'tp_roll_context.skirting_basis' | t }}</span>
           </span>
           <div class="tp-rwc-extra-felder" data-leiste-felder hidden>
             <div>
@@ -377,12 +377,13 @@
               <select id="tp-rwc-lh-{{ tp_rc_id }}" class="tp-rwc-select" data-leiste-hoehe></select>
             </div>
             <div>
-              <label class="tp-rwc-label" for="tp-rwc-lm-{{ tp_rc_id }}">Länge in Metern</label>
+              <label class="tp-rwc-label" for="tp-rwc-lm-{{ tp_rc_id }}" data-leiste-meter-label data-label-stueck="{{ 'tp_roll_context.length_label' | t | escape }}" data-label-raum="{{ 'tp_roll_context.room_perimeter_label' | t | escape }}">{{ 'tp_roll_context.length_label' | t }}</label>
               <div class="tp-rwc-input-wrap">
                 <input type="number" id="tp-rwc-lm-{{ tp_rc_id }}" class="tp-rwc-input" inputmode="decimal" min="0.5" step="0.1" placeholder="z. B. 18,5" data-leiste-meter>
                 <span class="tp-rwc-unit">m</span>
               </div>
             </div>
+            <p class="tp-rwc-note" data-leiste-raumhinweis hidden>{{ 'tp_roll_context.room_perimeter_hint' | t }}</p>
             <p class="tp-rwc-note" data-leiste-hint></p>
           </div>
         </div>
@@ -397,6 +398,7 @@
             </span>
             <span class="tp-rwc-karte-preis" data-haft-preis></span>
           </label>
+          <p class="tp-rwc-note" data-haft-basis hidden>{{ 'tp_roll_context.underlay_basis' | t }}</p>
           <span class="tp-rwc-tip">
             <button type="button" class="tp-rwc-tip__knopf" aria-describedby="tp-rwc-tip-h-{{ tp_rc_id }}">Mehr dazu</button>
             <span class="tp-rwc-tip__text" role="tooltip" id="tp-rwc-tip-h-{{ tp_rc_id }}" data-haft-text>Wird unter dem Teppichboden ausgelegt und hält ihn auf glatten Böden an Ort und Stelle – ohne den Untergrund zu verkleben. Mit der Schere zuschneidbar.</span>
@@ -1592,7 +1594,10 @@ function tpRwcInit{{ tp_rc_id }}() {
     return cmExact ? roundedHundredthsQty(wCm, lenCm) / 100 : Math.ceil((wCm * lenCm) / 10000);
   };
   root.tpRwcBestellmass = function () {
-    return { art: artMode(), breite: selectedWidth() || 0, laenge: getEffectiveLengthCm() || 0 };
+    var mass = { art: artMode(), breite: selectedWidth() || 0, laenge: getEffectiveLengthCm() || 0 };
+    var bahnen = bahnenAktiv();
+    if (bahnen) mass.zuschnitt = { anzahl: bahnen.n, breite: mass.breite, laenge: bahnen.laenge, text: bahnen.text };
+    return mass;
   };
 
   // Im Raummass-Modus ist die Breite die eigene Eingabe, sonst die Rolle.
@@ -2024,6 +2029,7 @@ function tpRwcInit{{ tp_rc_id }}() {
     // Warenkorb-Request, statt das Zubehör kommentarlos wegzulassen.
     var res = { items: [], sum: 0, lines: [], rows: [], leisteInvalid: false, leisteInvalidField: null, holzInvalid: false, holzInvalidField: null };
     var allowed = extrasAllowed();
+    var geteilt = !!bahnenAktiv();
     if (leisteBox) {
       // Preisstufe aus dem Materialwert des gewaehlten Teppichbodens (siehe
       // leisteMaterial). Teurer als die hoechste Stufe: keine Leiste.
@@ -2050,9 +2056,13 @@ function tpRwcInit{{ tp_rc_id }}() {
       var an = showL && leisteBox.querySelector('[data-leiste-an]').checked;
       leisteBox.querySelector('[data-leiste-felder]').hidden = !an;
       var meterIn = leisteBox.querySelector('[data-leiste-meter]');
+      var meterLabel = leisteBox.querySelector('[data-leiste-meter-label]');
+      var raumHinweis = leisteBox.querySelector('[data-leiste-raumhinweis]');
+      if (meterLabel) meterLabel.textContent = meterLabel.getAttribute(geteilt ? 'data-label-raum' : 'data-label-stueck');
+      if (raumHinweis) raumHinweis.hidden = !geteilt;
       // Vorschlag: Umfang des Stuecks, aufgerundet. Eigene Eingabe gewinnt.
       if (meterIn && !meterIn.getAttribute('data-touched') && w > 0 && len > 0) {
-        meterIn.value = Math.ceil((2 * (w + len)) / 100);
+        meterIn.value = geteilt ? '' : Math.ceil((2 * (w + len)) / 100);
       }
       // Eingabe mit Komma oder Punkt. Gefertigt wird in ganzen Streifen quer
       // ueber die Rolle (leisteStreifen), berechnet in vollen Metern.
@@ -2074,7 +2084,7 @@ function tpRwcInit{{ tp_rc_id }}() {
       // Ohne gewaehlte Hoehe die erste - nie die einer anderen als der gewaehlten.
       var lPreisV = lv || (showL && !(sel && sel.value) ? leisteVariante(leisteHoehe(leisteVarianten[0]), stufe) : null);
       var lUmfang = w > 0 && len > 0 ? Math.ceil((2 * (w + len)) / 100 - 1e-9) : 0;
-      var lMeterVorschlag = an ? m : leisteStreifen(lUmfang, mat.rolleCm).meter;
+      var lMeterVorschlag = an ? m : geteilt ? 0 : leisteStreifen(lUmfang, mat.rolleCm).meter;
       if (lPreisEl && lPreisV) {
         lPreisEl.textContent = lMeterVorschlag > 0
           ? fmt(lMeterVorschlag * parseFloat(lPreisV.price) / 100) + ' €'
@@ -2114,7 +2124,9 @@ function tpRwcInit{{ tp_rc_id }}() {
       } else if (lHint) {
         lHint.textContent = !an ? ''
           : res.leisteInvalidField === 'hoehe' ? 'Diese Höhe ist gerade nicht lieferbar. Bitte eine andere Höhe wählen.'
+          : geteilt && raumHinweis ? raumHinweis.textContent
           : 'Bitte Höhe und Länge angeben. Vorschlag ist der Umfang Ihres Stücks.';
+        if (geteilt && an && raumHinweis && res.leisteInvalidField === 'meter') raumHinweis.hidden = true;
       }
     }
     if (haftBox) {
@@ -2122,6 +2134,8 @@ function tpRwcInit{{ tp_rc_id }}() {
       haftBox.hidden = !showH;
       var hAn = showH && haftBox.querySelector('[data-haft-an]').checked;
       var hHint = haftBox.querySelector('[data-haft-hint]');
+      var hBasis = haftBox.querySelector('[data-haft-basis]');
+      if (hBasis) hBasis.hidden = !geteilt;
       var hPreisEl = haftBox.querySelector('[data-haft-preis]');
       if (hPreisEl && haftVarianten.length) {
         hPreisEl.textContent = 'ab ' + fmt(Math.min.apply(null, haftVarianten.map(function (v) { return v.price; })) / 100) + ' € / m';
@@ -2390,6 +2404,8 @@ function tpRwcInit{{ tp_rc_id }}() {
       wunschError.textContent = (raum && wErr && wErr !== 'leer') ? wErr : '';
       wunschError.hidden = !wunschError.textContent;
     }
+    if (wunschInput && !wErr) markInvalid(wunschInput, false);
+    else if (wunschInput && wunschError && !wunschError.hidden) wunschInput.setAttribute('aria-invalid', 'true');
     var len = getEffectiveLengthCm();
     var blocked = (len === -1);
     var tooLong = len > MAX_LENGTH_CM;
@@ -2415,6 +2431,7 @@ function tpRwcInit{{ tp_rc_id }}() {
       mindestHint.classList.toggle('tp-rwc-note--angehoben', !!eingabeKurz);
     }
     zeigeGegenprobe(wunschEcho, 'Breite', raum ? wunschInput : null);
+    if (wErr && wunschEcho) wunschEcho.hidden = true;
 
     // "0" oder "-5" sind keine leere Eingabe: dann Mindestlaenge zeigen.
     var lenEingegeben = String(lengthInput.value || '').trim() !== '';

@@ -6,7 +6,7 @@ import { createHash, randomUUID } from 'node:crypto';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const STATUS = ['offen', 'in_druck', 'gedruckt', 'entfernt'];
-const AKTIONEN = ['hinzufuegen', 'reservieren', 'freigeben', 'erledigen', 'entfernen'];
+const AKTIONEN = ['hinzufuegen', 'bestellung_hinzufuegen', 'reservieren', 'freigeben', 'erledigen', 'entfernen'];
 const SPERRE_ALT_MS = 30_000;
 const objekt = v => v !== null && typeof v === 'object' && !Array.isArray(v);
 const uuid = v => typeof v === 'string' && UUID.test(v);
@@ -38,10 +38,24 @@ function snapshotGueltig(e) {
     && Number.isInteger(e.anzahl) && e.anzahl >= 1 && e.anzahl <= 20;
 }
 
+const quellKey = q => JSON.stringify([q.orderId, q.lineItemId]);
+function quelleGueltig(q) {
+  return objekt(q) && q.art === 'musterbestellung' && text(q.orderId, 200) && text(q.lineItemId, 200)
+    && text(q.orderName, 100) && Number.isInteger(q.bestellmenge) && q.bestellmenge >= 1 && q.bestellmenge <= 20
+    && Object.keys(q).every(k => ['art', 'orderId', 'lineItemId', 'orderName', 'bestellmenge'].includes(k));
+}
+
+/** Bestellreferenz bleibt ausserhalb des Druckbilds; ein alter Stand wird nie still ersetzt. */
+export function gleicheBestellungsVormerkung(alt, neu) {
+  return !!alt?.quelle && !!neu?.quelle && quellKey(alt.quelle) === quellKey(neu.quelle)
+    && alt.quelle.bestellmenge === neu.quelle.bestellmenge && hash(alt.etikett) === hash(neu.etikett);
+}
+
 function druckauftragGueltig(d) { return objekt(d) && uuid(d.id) && text(d.von, 200) && datum(d.am); }
 function eintragGueltig(e) {
   if (!snapshotGueltig(e) || !STATUS.includes(e.status) || !revision(e.revision)
-    || !datum(e.erstelltAm) || !text(e.erstelltVon, 200) || !datum(e.geaendertAm) || !text(e.geaendertVon, 200)) return false;
+    || !datum(e.erstelltAm) || !text(e.erstelltVon, 200) || !datum(e.geaendertAm) || !text(e.geaendertVon, 200)
+    || (e.quelle !== undefined && (!quelleGueltig(e.quelle) || e.anzahl > e.quelle.bestellmenge))) return false;
   if (e.druckauftrag !== null && !druckauftragGueltig(e.druckauftrag)) return false;
   if (e.status === 'in_druck' && !e.druckauftrag) return false;
   if (['offen', 'entfernt'].includes(e.status) && e.druckauftrag) return false;
@@ -63,6 +77,8 @@ function leseAblage(file) {
     || new Set(daten.eintraege.map(e => e.id)).size !== daten.eintraege.length
     || !daten.vorgaenge.every(v => objekt(v) && uuid(v.id) && /^[a-f0-9]{64}$/.test(v.hash) && datum(v.am))
     || new Set(daten.vorgaenge.map(v => v.id)).size !== daten.vorgaenge.length) return ablageFehler();
+  const quellen = daten.eintraege.filter(e => e.quelle).map(e => quellKey(e.quelle));
+  if (new Set(quellen).size !== quellen.length) return ablageFehler();
   return daten;
 }
 
@@ -81,6 +97,13 @@ function actorText(actor) {
 function normalisiereEingabe({ aktion, vorgangId, eintrag, eintraege, druckauftragId }) {
   if (!AKTIONEN.includes(aktion) || !uuid(vorgangId)) fehler(400, 'Aktion oder Vorgangskennung ist ungültig.');
   vorgangId = vorgangId.toLowerCase();
+  if (aktion === 'bestellung_hinzufuegen') {
+    if (eintrag !== undefined || druckauftragId !== undefined || !Array.isArray(eintraege) || !eintraege.length || eintraege.length > 100
+      || !eintraege.every(e => snapshotGueltig(e) && quelleGueltig(e.quelle) && e.anzahl <= e.quelle.bestellmenge)
+      || new Set(eintraege.map(e => e.id.toLowerCase())).size !== eintraege.length
+      || new Set(eintraege.map(e => quellKey(e.quelle))).size !== eintraege.length) fehler(400, 'Die Musteretiketten dieser Bestellung sind unvollständig oder ungültig.');
+    return { aktion, vorgangId, eintraege: eintraege.map(({ id, produktHandle, produktTitel, bezeichnung, etikett, anzahl, quelle }) => ({ id: id.toLowerCase(), produktHandle, produktTitel, bezeichnung, etikett: kopie(etikett), anzahl, quelle: kopie(quelle) })).sort((a, b) => a.id.localeCompare(b.id)) };
+  }
   if (aktion === 'hinzufuegen') {
     if (!snapshotGueltig(eintrag) || eintraege !== undefined || druckauftragId !== undefined) fehler(400, 'Das Etikett ist unvollständig oder die Anzahl liegt nicht zwischen 1 und 20.');
     const { id, produktHandle, produktTitel, bezeichnung, etikett, anzahl } = eintrag;
@@ -205,11 +228,27 @@ export function aendereMusterDruckliste({ privatDir, actor, now = new Date(), ..
     const vorher = daten.vorgaenge.find(v => v.id === auftrag.vorgangId);
     if (vorher) {
       if (vorher.hash !== vorgangsHash) fehler(409, 'Diese Vorgangskennung wurde bereits für eine andere Änderung verwendet. Bitte die Liste erneut laden.');
-      return { schema: 1, eintraege: daten.eintraege, wiederholt: true };
+      return { schema: 1, eintraege: daten.eintraege, wiederholt: true, ...(auftrag.aktion === 'bestellung_hinzufuegen' ? { neu: 0, bereits: auftrag.eintraege.length } : {}) };
     }
+    let neu = 0, bereits = 0;
     if (auftrag.aktion === 'hinzufuegen') {
       if (daten.eintraege.some(e => e.id === auftrag.eintrag.id)) fehler(409, 'Dieser Eintrag ist bereits vorhanden. Bitte die Liste erneut laden.');
       daten.eintraege.push({ ...auftrag.eintrag, status: 'offen', revision: 1, erstelltAm: am, erstelltVon: von, geaendertAm: am, geaendertVon: von, druckauftrag: null });
+    } else if (auftrag.aktion === 'bestellung_hinzufuegen') {
+      // Erst alle Quellen pruefen, dann gemeinsam schreiben: ein Konflikt laesst alles unveraendert.
+      const neue = [];
+      for (const e of auftrag.eintraege) {
+        const alt = daten.eintraege.find(a => a.quelle && quellKey(a.quelle) === quellKey(e.quelle));
+        if (alt) {
+          if (!gleicheBestellungsVormerkung(alt, e)) fehler(409, 'Bestellung oder Produktdaten wurden seit dem Vormerken geändert. Bitte die bestehende Druckliste prüfen.');
+          bereits++;
+        } else {
+          if (daten.eintraege.some(a => a.id === e.id)) fehler(409, 'Diese Etikettenkennung ist bereits vergeben. Bitte die Druckliste prüfen.');
+          neue.push(e);
+        }
+      }
+      neu = neue.length;
+      daten.eintraege.push(...neue.map(e => ({ ...e, status: 'offen', revision: 1, erstelltAm: am, erstelltVon: von, geaendertAm: am, geaendertVon: von, druckauftrag: null })));
     } else {
       const auswahl = auftrag.eintraege.map(ref => {
         const e = daten.eintraege.find(e => e.id === ref.id);
@@ -233,6 +272,6 @@ export function aendereMusterDruckliste({ privatDir, actor, now = new Date(), ..
     }
     daten.vorgaenge = [...daten.vorgaenge, { id: auftrag.vorgangId, hash: vorgangsHash, am }].slice(-1000);
     schreibeAtomar(file, daten);
-    return { schema: 1, eintraege: daten.eintraege, wiederholt: false };
+    return { schema: 1, eintraege: daten.eintraege, wiederholt: false, ...(auftrag.aktion === 'bestellung_hinzufuegen' ? { neu, bereits } : {}) };
   });
 }

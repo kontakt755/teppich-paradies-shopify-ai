@@ -21,6 +21,91 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   sind durch die macOS-Prüfung nicht abgedeckt. Keine pauschale Tempbereinigung oder Dienst-Neustarts.
 - **Nächste Stufe:** Konsolidierten Entwurfs-PR prüfen; Merge/Preview/Live bleiben gesperrt.
 
+## 2026-10-20 · Einkauf „Je Auftrag“: nur Handlungsbedarf offen, Kunde informieren, Verzug (#1522)
+
+- **Geaendert:** „Je Auftrag“ zeigt oben nur „Jetzt zu tun“ (bestellen, Ungeklaertes, Ware da und
+  Kunde nicht informiert, Muster da, Verzug), aelteste zuerst. Bestellte Auftraege, die auf Ware
+  warten, liegen eingeklappt unter „Unterwegs (N)“, informierte/rausgegebene unter „Beim Kunden (N)“
+  (`?abg=` haelt die Gruppe offen). Schritt 4: „Nachricht an Kunde“ (fertiger Text in Sie-Form,
+  kopieren oder Mailprogramm, Telefon) und „Kunde informiert“ – neuer Zeitleisten-Schritt
+  `kunde_informiert` (Ware) im Auftragsverlauf, Datum und Person an der Karte. Verzug: bestellt seit
+  mehr als 10 Werktagen ohne Wareneingang (mit bestaetigtem Liefertermin erst danach) → Hinweis
+  „Beim Lieferanten nachfragen“ mit fertiger Nachfrage; das bisherige To-do „Nachhaken“ (7
+  Kalendertage) folgt derselben Regel und fuehrt nach `#/einkauf?ab=verzug`. „Heute“ hat oben die
+  Zeile „Zu bestellen · Kunde informieren · Verzug · Nachfassen Akquise“, je Zahl ein Sprung in die
+  gefilterte Liste (`?ab=bestellen|informieren|verzug`). Rechnung in `lib/auftrags-ablauf.mjs`.
+  Nichts wird automatisch gesendet.
+- **Getestet:** dashboard:test 522, npm test gruen, dashboard:pruefen 165 OK (33 Ansichten,
+  360–1440 px, 0 px Ueberlauf). Klickstrecke gegen die Kopie: Ware-Position auf „geliefert“ →
+  Heute „Kunde informieren“ 1, Liste 1 Karte → Dialog (Sie-Form, Mailto) → „Kunde informiert“ →
+  Liste 1 → 0, Heute 1 → 0, Server liefert `kundeInformiert`; Verzug 3 Karten, Nachfrage-Text mit
+  Kommission; „Unterwegs (15)“ eingeklappt, aufgeklappt 20 Karten; 0 JS-Fehler.
+- **Risiken:** Liefer-/Montagetermin aus der Auftrags-App nicht angebunden: die App liefert per
+  Schluessel nur Zahlen, Termine stehen in Google Sheets/Kalender ohne Shopify-Bestellnummer.
+- **Naechste Stufe:** Lesende Termin-Ansicht in der Auftrags-App mit Bestellnummer, dann Termin an
+  Schritt 4.
+## 2026-10-20 · Benoetigte Musteraufkleber direkt bei der Bestellung (#1506)
+
+- **Geaendert:** Musterbestellungen zeigen intern Produkt, Farbe, Shop-SKU, offene Aufklebermenge
+  und Drucklistenstand. Ein Klick merkt die zugeordneten Positionen gemeinsam vor. Die interne
+  Quellbestellung ist in der Druckliste verlinkt, erscheint aber nicht auf Aufkleber, PNG oder QR.
+  Mehrere Arbeitsplaetze und Neuladen verdoppeln keine Bestellposition. Aenderungen, unklare
+  Zuordnungen und Mengen verlangen Pruefung; bereits vorbereitete Auftraege bleiben unveraendert.
+  Der vorhandene Direktdruck verwendet dieselben kanonischen Daten und die bestellten Gesamtmengen.
+- **Getestet:** 3.310 Tests gruen (538 Dashboard-Tests), davon 33 neue Zuordnungs-, Speicher-
+  und API-Faelle. Browserfaelle mit getrennten
+  Mitarbeitersitzungen: Quell-ID vor alter Muster-SKU, Mengen/Teilversand, Tombstone,
+  Reservierungskonflikte, Storno, Direkt-/Nachdruck und verspaetete Antworten. Ohne Anmeldung
+  liefern beide APIs 401, private Dateipfade bleiben unzugaenglich, „lesen“ erhaelt bei POST 403.
+  Druckbild und QR enthalten ausschliesslich Produktdaten; synthetische Kunden-/Bestellmarker
+  fehlen. 30 Rollen-/Ansichts-/Breitenpruefungen bei 360–1440 px sowie Desktop-/Handy-Klickfaelle
+  ohne Browserfehler oder Ueberlauf. Projekt-Guards, Theme-Check, Secret-Scan und statischer
+  Workflow erfolgreich.
+- **Risiken:** Physische Ausgabe am echten Niimbot bleibt separat zu pruefen. Nachtraeglich
+  geaenderte oder entfernte Vormerkungen werden bewusst nicht automatisch neu erzeugt.
+- **Naechste Stufe:** Dashboard-Dienst nach Merge aktualisieren und die interne Zuordnung lesend
+  im laufenden Dienst kontrollieren.
+
+## 2026-10-20 · Aufgeraeumt: Navigation mit „Mehr“, Einkauf „Je Auftrag“ (#1513)
+
+- **Geaendert:** Seitenleiste nur noch Heute, Kunden, Einkauf, Akquise (Inhaber), Lexikon; alles
+  Seltene (Arbeitsplatz, Aufgaben, Sonderposten, Bildrechte, Social Media, Shop-Wache und die
+  frueheren Buero-Punkte) liegt unter einem eingeklappten „Mehr“ – fuer alle Rollen, Inhaber-Punkte
+  bleiben je Link `data-nur-inhaber`. Einkauf startet jetzt im neuen Reiter „Je Auftrag“
+  (`ansichten/einkauf/ablauf.mjs`, Rechnung in `lib/auftrags-ablauf.mjs`): je offene
+  Kundenbestellung fuenf Schritte (eingegangen → Lieferantenbestellung vorbereiten → bestellt →
+  Ware da/Lieferung/Montage → erledigt). Schritt 2 zeigt je Lieferant „Bestellnachricht zeigen“ –
+  der vorhandene Bestellmail-Dialog, auf diesen einen Auftrag gefiltert (`openBestellmailDialog(…,
+  { auftrag })`); „Als bestellt markieren“ dort hakt Schritt 3 ab. Fehlender Lieferant,
+  Artikelnummer oder Bestellmenge steht als „Ungeklaert – erst klaeren, nicht raten“. Die bisherige
+  Ansicht heisst „Je Lieferant“ (`?tab=lieferant`; alte Adressen mit `?af=`, `?auftrag=`, `?lf=`
+  und `?tab=bestellungen` landen weiter dort). Nichts wird automatisch gesendet.
+- **Getestet:** `tests/auftrags-ablauf.test.mjs` (5), dashboard:test 517, npm test gruen,
+  dashboard:pruefen nur OK auf 33 Ansichten (360–1440 px, kein Querscrollen), Klickstrecke gegen
+  die Kopie: ein Auftrag auf „vorbereiten“ zurueckgesetzt → Karte zeigt Schritt 2, „Bestellnachricht
+  zeigen“ oeffnet die Mail nur fuer diesen Auftrag, „Als bestellt markieren“ → „vorbereiten“ 1 → 0,
+  0 JS-Fehler.
+- **Risiken:** Lieferung-/Montagetermin gibt es in den Daten nicht; Schritt 4 sagt nur „Termin mit
+  dem Kunden ausmachen“. Muster-Schritte nutzen den gemeinsamen Knopf („Alle 3 angekommen“).
+- **Naechste Stufe:** Termin aus der Auftrags-App uebernehmen, wenn der Inhaber das moechte.
+
+## 2026-10-20 · Akquise Verlegeauftraege bei Wohnungsunternehmen (#1447)
+
+- **Geaendert:** Neuer Bereich „Akquise“ (nur Inhaber): je Firma Status (neu / angeschrieben /
+  Antwort / Termin / Auftrag / kein Interesse), letzte Aktion, Wiedervorlage (automatisch +14 Tage
+  nach „angeschrieben“), Notiz, Filter nach Status; „Nachricht kopieren“ legt das Anschreiben mit
+  Firmennamen in die Zwischenablage, versendet nichts. Darunter die Ausschreibungen Bodenbelag.
+  Auf „Heute“ das To-do „Akquise: N Nachfassen fällig“. Firmenliste und Vorlage liegen privat
+  (Gedaechtnis-Ordner, `TP_AKQUISE_DIR`/`TP_AKQUISE_CSV`/`TP_AKQUISE_VORLAGE`), der Stand unter
+  `$TP_PRIVAT_DIR/akquise/status.json`. API `/api/akquise/liste|aendern`, nur Inhaber.
+- **Getestet:** `tests/akquise.test.mjs` (7, u. a. Rollen lesen/mitarbeiter 403, kaputter Stand
+  wird nicht ueberschrieben), dashboard:test 513, npm test gruen, dashboard:pruefen nur OK
+  (360–1440 px), Klickstrecke gegen die Kopie: Status → angeschrieben, Wiedervorlage 03.11.,
+  Notiz gespeichert, „kein Interesse“ → Liste „Offen“ 33 → 32.
+- **Risiken:** Standardpfad der Liste ist der Gedaechtnis-Ordner dieses Macs; auf dem Dienst-Mac
+  ggf. per Umgebungsvariable setzen. Kopieren braucht die Zwischenablage-Freigabe (HTTPS/localhost).
+- **Naechste Stufe:** Ansprechpartner/Telefon je Firma anzeigen, wenn der Inhaber das wuenscht.
+
 ## 2026-10-20 · Gemeinsame Druckliste fuer Musteraufkleber (#1493)
 
 - **Geaendert:** Im Lexikon Farbe/Ausfuehrung und Anzahl waehlen und „Zum Drucken vormerken“.
