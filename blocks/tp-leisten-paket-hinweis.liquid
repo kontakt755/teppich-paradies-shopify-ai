@@ -1,0 +1,86 @@
+{% doc %}
+  Hinweis "Sockelleiste zum halben Preis" auf Klick- und Klebevinyl.
+
+  Gehoert zum automatischen Shopify-Rabatt "Vinyl-Paket: Sockelleiste zum
+  halben Preis" (#1452, Freigabe Inhaber 20.10.2026): je 3 Pakete Klick- oder
+  Klebevinyl 2 Stangen Faventa oder Nerissa mit -50 %. Der Rabatt selbst
+  laeuft in Shopify, dieser Block erklaert ihn nur. Endet die Aktion, den
+  Haken "Hinweis zeigen" im Block entfernen.
+{% enddoc %}
+
+{%- liquid
+  assign lph_typen = 'Klickvinyl,Klebevinyl' | split: ','
+  assign lph_leiste = all_products['faventa-sockelleiste']
+-%}
+
+{%- if block.settings.aktiv and lph_typen contains product.type -%}
+  <div class="tp-lph" {{ block.shopify_attributes }}>
+    <p class="tp-lph__titel">Paketvorteil: Sockelleiste zum halben Preis</p>
+    <p class="tp-lph__text">
+      Je 3 Pakete gibt es 2 Leisten (je 2,4&nbsp;m) Faventa oder Nerissa für die Hälfte – der Rabatt wird im Warenkorb automatisch abgezogen.
+    </p>
+    {%- if lph_leiste -%}
+      <a class="tp-lph__link" href="{{ lph_leiste.url }}">Passende Sockelleiste wählen</a>
+    {%- endif -%}
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-lph {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border: 1px solid rgb(141 113 76 / 0.35);
+    border-radius: 8px;
+    background: rgb(141 113 76 / 0.06);
+    font-size: var(--tp-fs-sm);
+    line-height: 1.5;
+  }
+
+  .tp-lph__titel {
+    margin: 0;
+    color: var(--color-foreground, #222);
+    font-size: var(--tp-fs-md);
+    font-weight: 700;
+  }
+
+  .tp-lph__text {
+    margin: 2px 0 0;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.85);
+  }
+
+  .tp-lph__link {
+    display: inline-block;
+    margin-top: 6px;
+    color: var(--tp-ink, inherit);
+    font-weight: 600;
+    text-underline-offset: 3px;
+  }
+
+  .tp-lph__link::after {
+    content: '\00a0\2192';
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Leisten-Paketvorteil",
+  "tag": null,
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "aktiv",
+      "label": "Hinweis zeigen",
+      "default": true
+    },
+    {
+      "type": "paragraph",
+      "content": "Erscheint nur bei Klickvinyl und Klebevinyl. Muss zum automatischen Rabatt in Shopify passen."
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Leisten-Paketvorteil"
+    }
+  ]
+}
+{% endschema %}
