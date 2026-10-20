@@ -137,14 +137,17 @@ function wareZeile(x, namen) {
   const wer = [namen.get(p.orderId) || p.kunde, p.orderName].filter(ok).join(' · ');
   // Bestellt und noch nicht da: "Ist eingetroffen" direkt an der Zeile (setzt "geliefert",
   // derselbe Schritt wie "Als geliefert markieren" in der Tabelle).
+  // Ueber den Kettler bestellt: die Ware kommt nicht zu uns, sondern muss dort abgeholt werden.
   const status = x.eintrag?.status;
+  const kettler = status === 'bestellt' && x.eintrag?.ueber === 'kettler';
   const knopf = status === 'bestellt' && p.lineItemId && !istNurLesend()
-    ? `<button type="button" class="btn btn-sm lf-zeilenknopf" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="geliefert" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}">Ist eingetroffen</button>` : '';
+    ? `<button type="button" class="btn btn-sm lf-zeilenknopf" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="geliefert" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}">${kettler ? 'Beim Kettler abgeholt' : 'Ist eingetroffen'}</button>` : '';
   return `<li class="lf-posten${block.length ? ' lf-blockiert' : ''}"><div class="lf-posten-text">
       <div class="t">${esc(titel)}</div>
       ${menge ? `<div class="lf-menge">${esc(menge)}</div>` : ''}
       ${aus.map(z => `<div class="s">${esc(z)}</div>`).join('')}
       ${wer ? `<div class="s lf-wer">${esc(wer)}</div>` : ''}
+      ${kettler ? '<div class="s lf-kettler">Geht zum Kettler – nach dem Ketteln dort abholen</div>' : ''}
       ${belegZeile(x.eintrag?.status, p.orderId, p.lieferant)}
       ${block.length ? `<div class="lf-grund">Blockiert: ${esc(block.join(' · '))}</div>` : ''}
     </div><div class="lf-posten-rechts">${warteChip(x)}${knopf}</div></li>`;
@@ -344,7 +347,7 @@ const LIEFERZIEL_TEXT = { laden: 'Lieferung in den Laden', kunde: 'Lieferung dir
  * Nur ein Hinweis - umgeschaltet wird mit "Kettler" oben; der Server begruendet je Position.
  */
 function kettlerHinweis(m) {
-  if (m.kettlerAutomatisch) return '<p class="small muted lf-kettler">Nach unserer Regel: Maßteppiche unter 2 m schneidet und kettelt unser Kettler – der Lieferant liefert nur Meterware dorthin, wir holen ab.</p>';
+  if (m.kettlerAutomatisch) return '<p class="small muted lf-kettler">Nach unserer Regel: Gekettelte Maßteppiche unter 2 m kettelt unser Kettler. Der Lieferant schickt sie ungekettelt im Fertigmaß dorthin, wir holen sie dort ab.</p>';
   const liste = m.kettlerVorschlag || [];
   if (m.art !== 'ware' || !m.kettlerMoeglich || m.lieferziel === 'kettler' || !liste.length) return '';
   return `<div class="notice lf-kettler"><strong>Über unseren Kettler? (${liste.length})</strong>

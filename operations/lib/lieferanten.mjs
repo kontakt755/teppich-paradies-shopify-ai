@@ -612,36 +612,21 @@ export function kettlerAutomatisch(p) {
  */
 export function kettlerGrund(p, adresse) {
   if (!(p.ausfuehrung ?? []).some(istEinfassung)) return null;
-  if (kettlerAutomatisch(p)) return `unter ${KETTLER_UNTER_CM / 100} m – Zuschnitt und Ketteln beim Kettler`;
+  if (kettlerAutomatisch(p)) return `unter ${KETTLER_UNTER_CM / 100} m – Ketteln beim Kettler`;
   if (adresse?.plz && KETTLER_NAH_PLZ.test(String(adresse.plz).trim())) return `Kunde in der Nähe (${String(adresse.plz).trim()} ${adresse.ort ?? ''}`.trim() + ') – wir liefern selbst';
   return null;
 }
 
 /**
- * Ueber den Kettler kettelt nicht der Lieferant. Massteppiche bestellen wir dann als Meterware
- * von der Rolle - ohne Masszuschnitt, den der Lieferant extra berechnet; zuschneiden und ketteln
- * macht der Kettler. Laenge: so viel Rolle, dass das Fertigmass hineinpasst. Ohne bekannte
- * Rollenbreite bleibt es beim Stueck nach Mass, nur ohne Einfassung.
+ * Ueber den Kettler kettelt nicht der Lieferant. Massteppiche bestellen wir dann im Fertigmass,
+ * nur ohne Einfassung: der Lieferant berechnet beim Raummass nur die echte Flaeche (Beleg AB
+ * 19.10.), Meterware aus voller Rollenbreite waere mehr Flaeche als noetig (Inhaber 2026-10-20).
+ * Ketteln macht der Kettler.
  */
 function fuerKettler(p) {
   const ausfuehrung = p.ausfuehrung ?? [];
-  const ohne = ausfuehrung.filter(z => !istEinfassung(z));
-  const mass = ausfuehrung.find(z => z.startsWith('Fertigmaß:'));
-  const zahlen = mass ? (mass.match(/\d+(?:[.,]\d+)?/g) || []).map(n => Number(n.replace(',', '.'))).filter(n => n > 0).slice(0, 2) : [];
-  const rolle = p.ausRolleCm;
-  if (mass && rolle > 0 && zahlen.length) {
-    const [kurz, lang] = [Math.min(...zahlen), Math.max(...zahlen)];
-    const laenge = lang <= rolle ? kurz : kurz <= rolle ? lang : null;
-    if (laenge) {
-      return {
-        ...p,
-        mengeText: `${formatDe(laenge / 100)} lfm von der ${formatDe(rolle / 100)} m breiten Rolle (Meterware, ohne Maßzuschnitt)`,
-        ausfuehrung: [`Für ${mass.replace(/^Fertigmaß:\s*/, 'Fertigmaß ')} – Zuschnitt und Ketteln macht unser Kettelservice`],
-      };
-    }
-  }
   if (!ausfuehrung.some(istEinfassung)) return p;
-  return { ...p, ausfuehrung: [...ohne, 'Ohne Einfassung – bitte nur zuschneiden, nicht ketteln'] };
+  return { ...p, ausfuehrung: [...ausfuehrung.filter(z => !istEinfassung(z)), 'Ohne Einfassung – bitte im Fertigmaß zuschneiden, nicht ketteln (Ketteln macht unser Kettelservice)'] };
 }
 
 function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, auswahl = null, automatisch = false }) {
