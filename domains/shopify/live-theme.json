@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204438208846",
-    "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-20T09:56:43Z",
-    "verifiedBy": "Shopify Admin API role MAIN nach workflow:live von main 0bd5f888 (#1496/#1499 Vinyl-Paket sichtbar). Preview FULL_QA/SALES PASS, P0/P1 0; Live-Kontrolle Desktop + Mobil 390 px."
-  },
-  "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-20T09:56:43Z",
-    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live von main 0bd5f888; naechstes Preview-Ziel."
+    "verifiedAt": "2026-10-20T10:31:42.397Z",
+    "verifiedBy": "Shopify Admin API role MAIN nach workflow:live von main d757733b (sechs UX-Korrekturpunkte, #1511/#1512/#1509/#1517/#1519). Veroeffentlichung 2026-10-20T10:31:13Z; oeffentlicher MAIN-Nachweis ohne Previewparameter bestaetigt. Umfassende oeffentliche Funktionsabnahme separat."
+  },
+  "preview": {
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-10-20T10:31:42.397Z",
+    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live von main d757733b (#1511/#1512/#1509/#1517/#1519); vorheriges Live-Theme, naechstes Preview-Ziel."
   },
   "fallback": {
     "themeId": "206590509390",
@@ -27,6 +27,12 @@
     "note": "Einziges Ziel fuer Zwischenstaende und Ausprobieren (nur --only-Pushes). Niemals als --theme-id fuer workflow:preview/live verwenden, niemals publishen. Das Preview-Ziel ist ausschliesslich preview.themeId - wer dorthin Zwischenstaende pusht, blockiert den Livegang (PREVIEW_DRIFT/PREVIEW_DIFF, dreimal am 2026-09-21/22)."
   },
   "retired": [
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-10-20",
+      "note": "Durch workflow:live von main d757733b (#1511/#1512/#1509/#1517/#1519) am 2026-10-20T10:31:13Z abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen frisch per Shopify Admin API bestaetigt."
+    },
     {
       "themeId": "204438208846",
       "name": "preview-main-2026-09-15",
