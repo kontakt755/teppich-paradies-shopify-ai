@@ -1607,6 +1607,26 @@ NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
   Bearbeitung und Druck gesperrt. Fehlende Pflichtangaben oder eine noch nicht geladene QR-Bibliothek
   sperren Druck und Download. SKU bleibt optional und wird bei leerem Wert ausgeblendet. Lange
   Paketetiketten passen die Schrift an, damit keine technische Zeile oder Artikelnummer entfaellt.
+- **Gemeinsame Druckliste (#1493):** Im Lexikon Farbe/Ausfuehrung und Anzahl waehlen → „Zum
+  Drucken vormerken“. Der Reiter „Gemeinsame Druckliste“ ist die Arbeitsliste fuer den Kollegen
+  im Laden. Beide Arbeitsplaetze muessen denselben Dashboard-Dienst verwenden. Die Liste liegt
+  zentral in `$TP_PRIVAT_DIR/muster-druckliste.json`, nicht in einer Browserablage. `GET/POST
+  /api/lexikon/druckliste` erlauben angemeldetes Lesen bzw. Mitarbeiter-/Inhaber-Aenderungen;
+  die Rolle „lesen“ kann nichts vormerken, reservieren oder bestaetigen.
+  Der Server erzeugt den unveraenderlichen Etikettstand selbst aus Handle und Auswahlschluessel;
+  uebermittelte Texte, SKUs und Personenangaben sind keine Datenquelle. Jede Vormerkung ist ein
+  eigener Eintrag. Wiederholte Anfragen mit derselben Vorgangskennung verdoppeln nichts.
+  Auswahl zum Druck reserviert genau diese IDs und Revisionen atomar. Ein zweiter Arbeitsplatz
+  erhaelt fuer eine veraltete Auswahl einen Konflikt. Spaeter vorgemerkte Mengen werden durch
+  den Abschluss des alten Auftrags nicht entfernt. Hoechstens 100 Etiketten je Druckauftrag.
+  Nach Druck/Download bleiben die Eintraege „in Druck“, bis jemand den Ausdruck geprueft und
+  ausdruecklich als gedruckt markiert hat. Abbruch oder Neustart loeschen keinen Auftrag;
+  Wiederfreigeben ist eine bewusste Aktion mit Hinweis auf moegliche bereits gedruckte Etiketten.
+  Die gemeinsame Vorschau bietet keine Textkorrektur, damit der bestaetigte Stand eindeutig ist.
+  Private Ablage mit exklusiver Schreibsperre, atomarem Austausch und Rechten `0600`; nur eine
+  fehlende Datei ist leer, beschaedigte Daten werden nicht ueberschrieben. Sicherung und
+  Browser-Datenkopie enthalten die Datei. Erledigte/entfernte Eintraege bleiben fuer Verlauf und
+  Wiederholungsschutz erhalten. Es gibt keinen automatischen Hardwaredruck oder Shopify-Schreibzugriff.
 - **Inhalt:** Absender `www.teppich-paradies.net`, Serie, Farbe, bei Paketware (Lexikon-Eigenschaft
   `qmProPaket`) Art, Stärke/Nutzschicht, Nutzungsklassen, Format und daneben der QR-Code, sonst der
   QR-Code größer in der Mitte; unten „Art.-Nr.“ mit der SKU der echten Variante (nie die
