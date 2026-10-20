@@ -91,10 +91,10 @@ export function technikZeilen(eig = {}) {
   return z;
 }
 
-/** Ein Etikett aus Werten (Bestellposition oder Eingabe von Hand). `fehlt` nennt leere Pflichtfelder. */
+/** Ein Etikett aus Werten (Bestellposition oder Eingabe von Hand). `fehlt` nennt leere Pflichtfelder; ohne SKU entfaellt die Art.-Nr.-Zeile ohne Hinweis. */
 export function etikett({ serie, farbe, sku, handle, technik = [] } = {}) {
   const e = { serie: text(serie), farbe: text(farbe), sku: istMusterSku(sku) ? '' : text(sku), url: produktUrl(handle), technik: technik || [] };
-  e.fehlt = [['serie', 'Serie'], ['farbe', 'Farbe'], ['sku', 'Artikelnummer'], ['url', 'Produktseite']].filter(([k]) => !e[k]).map(([, l]) => l);
+  e.fehlt = [['serie', 'Serie'], ['farbe', 'Farbe'], ['url', 'Produktseite']].filter(([k]) => !e[k]).map(([, l]) => l);
   return e;
 }
 

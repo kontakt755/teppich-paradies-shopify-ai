@@ -49,11 +49,11 @@ test('klassenNummern und technikZeilen: nur Paketware, fehlende Zeilen fallen we
   assert.deepEqual(technikZeilen(teppich.eigenschaften), []);
 });
 
-test('etikett: Muster-SKU und interne Werte bleiben leer und werden als fehlend genannt', () => {
+test('etikett: Muster-SKU bleibt leer ohne Hinweis, fehlende Farbe wird genannt', () => {
   const e = etikett({ serie: 'Testvelours', farbe: '–', sku: 'TP-MUSTER-000', handle: 'testvelours' });
   assert.equal(e.farbe, '');
   assert.equal(e.sku, '');
-  assert.deepEqual(e.fehlt, ['Farbe', 'Artikelnummer']);
+  assert.deepEqual(e.fehlt, ['Farbe']);
   assert.equal(etikett({ sku: 'M-123' }).sku, '');
 });
 
@@ -76,7 +76,7 @@ test('etikettFuerPosition: echte SKU statt Muster-SKU, Technik nur bei Paketware
   // Ohne Lexikon: Farbe aus der Bestellung, SKU bleibt leer statt Muster-SKU.
   const o = etikettFuerPosition({ istMuster: true, titel: 'Muster Testvelours Teppichboden', sku: 'M-77', farbe: 'Grau', handle: 'muster-testvelours-teppichboden' }, null);
   assert.deepEqual([o.serie, o.farbe, o.sku], ['Testvelours', 'Grau', '']);
-  assert.ok(o.fehlt.includes('Artikelnummer'));
+  assert.ok(!o.fehlt.includes('Artikelnummer'));
 });
 
 test('etikettenAusPositionen: nur Muster, eins je Stueck, Lexikon per Handle', () => {
