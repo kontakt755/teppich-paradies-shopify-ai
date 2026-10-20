@@ -64,7 +64,7 @@ test('Auftragsart: nur Muster = Musterstrecke, sonst Warenstrecke', () => {
   assert.equal(auftragsart(einAuftrag(bestellung(1, [muster(1), muster(2)]))), 'muster');
   assert.equal(auftragsart(einAuftrag(bestellung(2, [ware(1)]))), 'ware');
   assert.equal(auftragsart(einAuftrag(bestellung(3, [ware(1), muster(2)]))), 'ware');
-  assert.deepEqual(setzbareSchritte('ware'), ['bestellt', 'geliefert', 'raus', 'erledigt']);
+  assert.deepEqual(setzbareSchritte('ware'), ['bestellt', 'geliefert', 'kunde_informiert', 'raus', 'erledigt']);
 });
 
 test('Musterstrecke ohne Status: angefragt automatisch, naechster Schritt "bei Lieferant bestellen" (wir)', () => {

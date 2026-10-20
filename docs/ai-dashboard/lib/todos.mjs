@@ -15,6 +15,7 @@ import { musterText, musterHerkunftText } from './bestellinhalt.mjs';
 import { vorgangsLink } from './vorgangslink.mjs';
 import { lieferterminFaellig, beschaffungText, uebernahmeText } from './beschaffung.mjs';
 import { LEISTUNG_LABEL, QUELLE_LABEL } from './serviceanfragen.mjs';
+import { verzugWerktage, VERZUG_WERKTAGE } from './auftrags-ablauf.mjs';
 
 const TAG_MS = 86400000;
 const UNGEKLAERT = 'UNGEKLAERT';
@@ -176,7 +177,8 @@ function lageVon({ z, a, offen }, { statusAlle, rueckrufJeOrder, heute, jetzt, s
       return { spalte: 'lieferant', art: 'bestellt', schritt: `${artWort(bestellt)} kommt bis ${termin.split('-').reverse().join('.')}`, alterTage: null, positionen: bestellt };
     }
     const tage = maxTage(ohneTermin, 'bestelltAm');
-    return tage >= schwellen.nachhakenTage
+    // Verzug: mehr als 10 Werktage ohne Wareneingang (Inhaber 2026-10-20, wie im Einkauf "Je Auftrag").
+    return ohneTermin.some(x => verzugWerktage(x.eintrag, jetzt) !== null)
       ? { spalte: 'wir', art: 'nachhaken', schritt: 'Nachhaken', alterTage: tage, positionen: bestellt }
       : { spalte: 'lieferant', art: 'bestellt', schritt: `${artWort(bestellt)} bestellt`, alterTage: tage, positionen: bestellt };
   }
@@ -293,7 +295,8 @@ function ausBestellungen(quellen, k) {
       else if (!status) sammle(bestellen, `${x.p.lieferant ?? UNGEKLAERT}|${x.p.istMuster ? 'muster' : 'ware'}`, pos);
       else if (status === 'bestellt') {
         const tage = tageSeit(x.eintrag.bestelltAm, k.jetzt);
-        if (!x.eintrag?.beschaffung?.liefertermin && tage !== null && tage >= k.schwellen.nachhakenTage) sammle(nachhaken, x.p.lieferant ?? UNGEKLAERT, { ...pos, tage });
+        const werktage = x.eintrag?.beschaffung?.liefertermin ? null : verzugWerktage(x.eintrag, k.jetzt);
+        if (werktage !== null) sammle(nachhaken, x.p.lieferant ?? UNGEKLAERT, { ...pos, tage, werktage });
       } else if (status === 'geliefert') {
         const tage = tageSeit(x.eintrag.geliefertAm, k.jetzt);
         const id = `rausgeben:${z.orderId}`;
@@ -360,10 +363,10 @@ function ausBestellungen(quellen, k) {
     const tage = Math.max(...positionen.map(x => x.tage));
     todos.push({
       id: `nachhaken:${lieferant}`, art: 'nachhaken', bereich: 'laden',
-      ton: tage >= k.schwellen.problemTage ? 'crit' : 'warn', alterTage: tage,
-      titel: `${artWort(positionen)} ${seitText(tage)} bestellt – noch nicht da`,
+      ton: Math.max(...positionen.map(x => x.werktage)) > VERZUG_WERKTAGE + 5 ? 'crit' : 'warn', alterTage: tage,
+      titel: `Beim Lieferanten nachfragen: ${artWort(positionen)} ${seitText(tage)} bestellt, noch nicht da`,
       kontext: [k.lieferantName(lieferant), kundenKurz(positionen), wasKurz(positionen)].join(' · '),
-      knopf: { text: 'Nachhaken', href: einkaufLink(lieferant) },
+      knopf: { text: 'Nachfragen', href: '#/einkauf?ab=verzug' },
     });
   }
   return todos;

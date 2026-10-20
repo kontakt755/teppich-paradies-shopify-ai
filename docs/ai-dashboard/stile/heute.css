@@ -185,3 +185,10 @@ a.heute-hg-knopf { display: inline-flex; align-items: center; text-decoration: n
   .heute-kpi { padding: 12px; }
   .heute-kpi .n { font-size: 1.45rem; }
 }
+
+/* Zahlen des Tages (2026-10-20): je Zahl ein Sprung in die gefilterte Liste; 0 bleibt grau. */
+.heute-zahlen { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 0 0 14px; font-size: .92rem; color: var(--text-3); }
+.heute-zahlen a { color: var(--text-2); text-decoration: none; white-space: nowrap; }
+.heute-zahlen a b { color: var(--warn); font-variant-numeric: tabular-nums; }
+.heute-zahlen a.null b { color: var(--text-3); font-weight: 500; }
+.heute-zahlen a:hover, .heute-zahlen a:focus-visible { text-decoration: underline; }

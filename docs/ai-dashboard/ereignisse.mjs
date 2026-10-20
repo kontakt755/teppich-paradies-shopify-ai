@@ -25,6 +25,7 @@ import { einkaufKlickStatus, einkaufKlickDialoge } from './ansichten/einkauf/auf
 import { versandKlick } from './ansichten/einkauf/versand.mjs';
 import { beschaffungKlick } from './ansichten/einkauf/beschaffung.mjs';
 import { einkaufKlickLieferanten } from './ansichten/einkauf/lieferanten.mjs';
+import { einkaufKlickAblauf } from './ansichten/einkauf/ablauf.mjs';
 import { einkaufKlickMusterlager } from './ansichten/einkauf/musterlager.mjs';
 import { einkaufKlickBelege } from './ansichten/einkauf/belege.mjs';
 import { lexikonKlick } from './ansichten/lexikon.mjs';
@@ -85,6 +86,7 @@ export function bindEvents() {
     if (versandKlick(e)) return;
     if (beschaffungKlick(e)) return;
     if (einkaufKlickStatus(e)) return;
+    if (einkaufKlickAblauf(e)) return;
     if (einkaufKlickLieferanten(e)) return;
     if (einkaufKlickMusterlager(e)) return;
     if (einkaufKlickBelege(e)) return;
