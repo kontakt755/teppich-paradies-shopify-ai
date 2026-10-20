@@ -108,6 +108,130 @@ test('Entfernen erzeugt einen Tombstone und Replay kann keinen zweiten Eintrag h
   assert.throws(() => u.aendern({ aktion: 'hinzufuegen', eintrag: e }), ist(409));
 });
 
+test('einzelnes Entfernen beendet den vollstaendigen Auftrag atomar und gibt den Rest wieder frei', t => {
+  const u = umgebung(t), job = randomUUID();
+  for (let i = 0; i < 5; i++) u.add(eintrag(randomUUID(), i + 1));
+  const reserviert = u.aendern({ aktion: 'reservieren', eintraege: u.lesen().eintraege.map(ref), druckauftragId: job }).eintraege;
+  const ziel = reserviert[2];
+  const r = u.aendern({ aktion: 'auftrag_entfernen', eintraege: reserviert.map(ref), druckauftragId: job, entfernenIds: [ziel.id], actor: 'Anderer Mitarbeiter', now: spaeter });
+  assert.deepEqual(r.eintraege.map(e => e.status), ['offen', 'offen', 'entfernt', 'offen', 'offen']);
+  for (const e of r.eintraege) {
+    const alt = reserviert.find(a => a.id === e.id);
+    assert.deepEqual(e.etikett, alt.etikett);
+    assert.deepEqual([e.revision, e.druckauftrag, e.geaendertAm, e.geaendertVon], [alt.revision + 1, null, spaeter, 'Anderer Mitarbeiter']);
+    assert.equal(e.anzahl, alt.anzahl);
+    assert.equal(Object.hasOwn(e, 'gedrucktAm'), false);
+    assert.equal(Object.hasOwn(e, 'gedrucktVon'), false);
+    if (e.id === ziel.id) assert.deepEqual([e.entferntAm, e.entferntVon], [spaeter, 'Anderer Mitarbeiter']);
+    else assert.equal(Object.hasOwn(e, 'entferntAm'), false);
+  }
+  assert.deepEqual(u.lesen().eintraege, r.eintraege, 'Ergebnis bleibt gueltig lesbar');
+  const vorher = fs.readFileSync(u.file, 'utf8');
+  assert.throws(() => u.aendern({ aktion: 'erledigen', eintraege: reserviert.map(ref), druckauftragId: job }), ist(409), 'alter Papierabschluss darf keinen Rest bestaetigen');
+  assert.equal(fs.readFileSync(u.file, 'utf8'), vorher);
+  const offen = r.eintraege.filter(e => e.status === 'offen');
+  assert.equal(u.aendern({ aktion: 'reservieren', eintraege: offen.map(ref), druckauftragId: randomUUID() }).eintraege.filter(e => e.status === 'in_druck').length, 4);
+});
+
+test('gesamten Auftrag entfernen laesst andere Auftraege, spaetere Vormerkungen und Historie unveraendert', t => {
+  const u = umgebung(t), job = randomUUID(), andererJob = randomUUID();
+  const historie = u.aendern({ aktion: 'entfernen', eintraege: [ref(u.add().eintraege[0])] }).eintraege[0];
+  const papier = eintrag(); u.add(papier);
+  const papierJob = randomUUID(), p = u.lesen().eintraege.find(e => e.id === papier.id);
+  const pReserviert = u.aendern({ aktion: 'reservieren', eintraege: [ref(p)], druckauftragId: papierJob }).eintraege.find(e => e.id === papier.id);
+  u.aendern({ aktion: 'erledigen', eintraege: [ref(pReserviert)], druckauftragId: papierJob });
+  const eigene = [eintrag(), eintrag()];
+  for (const e of eigene) u.add(e);
+  u.aendern({ aktion: 'reservieren', eintraege: u.lesen().eintraege.filter(e => eigene.some(a => a.id === e.id)).map(ref), druckauftragId: job });
+  const fremd = eintrag(); u.add(fremd);
+  const f = u.lesen().eintraege.find(e => e.id === fremd.id);
+  u.aendern({ aktion: 'reservieren', eintraege: [ref(f)], druckauftragId: andererJob });
+  const spaeterVorgemerkt = eintrag(); u.add(spaeterVorgemerkt);
+  const stand = u.lesen().eintraege, es = stand.filter(e => e.druckauftrag?.id === job);
+  const r = u.aendern({ aktion: 'auftrag_entfernen', eintraege: es.map(ref), druckauftragId: job, entfernenIds: es.map(e => e.id), now: spaeter });
+  for (const e of es) {
+    const neu = r.eintraege.find(a => a.id === e.id);
+    assert.deepEqual([neu.status, neu.revision, neu.druckauftrag, neu.entferntAm, neu.entferntVon], ['entfernt', e.revision + 1, null, spaeter, actor.name]);
+  }
+  assert.deepEqual(r.eintraege.filter(e => !eigene.some(a => a.id === e.id)), stand.filter(e => !eigene.some(a => a.id === e.id)));
+  assert.deepEqual(r.eintraege.find(e => e.id === historie.id), historie);
+});
+
+test('Auftrag entfernen verlangt vollstaendige aktuelle Mitgliedschaft und laesst Konflikte atomar unveraendert', t => {
+  const u = umgebung(t), job = randomUUID();
+  u.add(); u.add();
+  const es = u.aendern({ aktion: 'reservieren', eintraege: u.lesen().eintraege.map(ref), druckauftragId: job }).eintraege;
+  const offen = eintrag(); u.add(offen);
+  const offenerEintrag = u.lesen().eintraege.find(e => e.id === offen.id);
+  const anderer = eintrag(); u.add(anderer);
+  const andererEintrag = u.lesen().eintraege.find(e => e.id === anderer.id);
+  const fremd = u.aendern({ aktion: 'reservieren', eintraege: [ref(andererEintrag)], druckauftragId: randomUUID() }).eintraege.find(e => e.id === anderer.id);
+  const basis = { aktion: 'auftrag_entfernen', eintraege: es.map(ref), druckauftragId: job, entfernenIds: [es[0].id] };
+  const vorher = fs.readFileSync(u.file, 'utf8');
+  const fehlerhafte = [
+    { ...basis, eintraege: [ref(es[0])] },
+    { ...basis, eintraege: [...es.map(ref), ref(offenerEintrag)] },
+    { ...basis, eintraege: [...es.map(ref), ref(fremd)] },
+    { ...basis, eintraege: [ref(es[0]), { id: es[1].id, revision: es[1].revision - 1 }] },
+    { ...basis, eintraege: [ref(es[0]), { id: randomUUID(), revision: 1 }] },
+    { ...basis, druckauftragId: randomUUID() },
+  ];
+  for (const eingabe of fehlerhafte) {
+    assert.throws(() => u.aendern(eingabe), ist(409));
+    assert.equal(fs.readFileSync(u.file, 'utf8'), vorher);
+  }
+});
+
+test('ungueltige Entfernziele oder Auftragsreferenzen schreiben nichts', t => {
+  const u = umgebung(t), job = randomUUID();
+  u.add(); u.add();
+  const es = u.aendern({ aktion: 'reservieren', eintraege: u.lesen().eintraege.map(ref), druckauftragId: job }).eintraege;
+  const basis = { aktion: 'auftrag_entfernen', eintraege: es.map(ref), druckauftragId: job, entfernenIds: [es[0].id] };
+  const vorher = fs.readFileSync(u.file, 'utf8');
+  for (const entfernenIds of [undefined, null, [], 'kein-array', [null], ['keine-uuid'], [randomUUID()], [es[0].id, es[0].id.toUpperCase()], [...es.map(e => e.id), randomUUID()]]) {
+    assert.throws(() => u.aendern({ ...basis, entfernenIds }), ist(400));
+    assert.equal(fs.readFileSync(u.file, 'utf8'), vorher);
+  }
+  for (const eingabe of [
+    { ...basis, druckauftragId: undefined }, { ...basis, druckauftragId: 'kein-auftrag' },
+    { ...basis, eintraege: [] }, { ...basis, eintraege: [ref(es[0]), ref(es[0])] },
+    { ...basis, eintraege: [{ id: es[0].id, revision: 0 }] },
+  ]) {
+    assert.throws(() => u.aendern(eingabe), ist(400));
+    assert.equal(fs.readFileSync(u.file, 'utf8'), vorher);
+  }
+});
+
+test('Auftrag entfernen normalisiert Kennungen und ist auch nach erneuter Reservierung idempotent', t => {
+  const u = umgebung(t), job = randomUUID(), vorgangId = randomUUID();
+  u.add(); u.add(); u.add();
+  const es = u.aendern({ aktion: 'reservieren', eintraege: u.lesen().eintraege.map(ref), druckauftragId: job }).eintraege;
+  const args = { aktion: 'auftrag_entfernen', vorgangId, eintraege: es.map(ref), druckauftragId: job, entfernenIds: [es[1].id, es[0].id] };
+  const r = u.aendern(args);
+  const wiederOffen = r.eintraege.filter(e => e.status === 'offen');
+  u.aendern({ aktion: 'reservieren', eintraege: wiederOffen.map(ref), druckauftragId: randomUUID() });
+  const vorher = fs.readFileSync(u.file, 'utf8');
+  const replay = u.aendern({ ...args, vorgangId: vorgangId.toUpperCase(), druckauftragId: job.toUpperCase(), eintraege: [...es].reverse().map(e => ({ id: e.id.toUpperCase(), revision: e.revision })), entfernenIds: [es[0].id.toUpperCase(), es[1].id.toUpperCase()], now: spaeter });
+  assert.equal(replay.wiederholt, true);
+  assert.deepEqual(replay.eintraege.map(e => e.status), ['entfernt', 'entfernt', 'in_druck']);
+  assert.equal(fs.readFileSync(u.file, 'utf8'), vorher);
+  assert.throws(() => u.aendern({ ...args, entfernenIds: [es[2].id] }), ist(409));
+  assert.equal(fs.readFileSync(u.file, 'utf8'), vorher);
+});
+
+test('Auftrag entfernen bewahrt Bestellquelle und unveraenderliches Etikett samt Wiederholungsschutz', t => {
+  const u = umgebung(t), job = randomUUID();
+  const quelle = { art: 'musterbestellung', orderId: 'gid://shopify/Order/901', lineItemId: 'gid://shopify/LineItem/301', orderName: '#TEST-901', bestellmenge: 3 };
+  const original = { ...eintrag(randomUUID(), 2), quelle };
+  const a = u.aendern({ aktion: 'bestellung_hinzufuegen', eintraege: [original] }).eintraege[0];
+  const b = u.aendern({ aktion: 'reservieren', eintraege: [ref(a)], druckauftragId: job }).eintraege[0];
+  const c = u.aendern({ aktion: 'auftrag_entfernen', eintraege: [ref(b)], druckauftragId: job, entfernenIds: [b.id] }).eintraege[0];
+  assert.deepEqual(c.quelle, quelle); assert.deepEqual(c.etikett, original.etikett);
+  const erneut = u.aendern({ aktion: 'bestellung_hinzufuegen', eintraege: [{ ...original, id: randomUUID() }] });
+  assert.deepEqual([erneut.neu, erneut.bereits, erneut.eintraege.length], [0, 1, 1]);
+  assert.deepEqual(erneut.eintraege[0], c);
+});
+
 test('Eingabelimits, UUIDs und doppelte Auswahl werden vor dem Schreiben abgewiesen', t => {
   const u = umgebung(t);
   for (const anzahl of [0, 21, 1.5, '2']) assert.throws(() => u.add(eintrag(randomUUID(), anzahl)), ist(400));

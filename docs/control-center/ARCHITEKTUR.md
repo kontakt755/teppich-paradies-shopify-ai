@@ -1679,6 +1679,17 @@ NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
   bleibt der Versuch auch beim erneuten Oeffnen vermerkt; Abbruch, Fehler oder Neustart loeschen keinen Auftrag.
   Sitzungsende und Tab-Schliessen versuchen keine unzuverlaessige automatische Freigabe;
   Wiederfreigeben ist eine bewusste Aktion mit Hinweis auf moegliche bereits gedruckte Etiketten.
+  Auch reservierte Auftraege aus frueheren Sitzungen bieten je Position „Entfernen…“ und
+  „Gesamten Auftrag entfernen…“ (#1547). Ein einzelnes Entfernen beendet den alten Auftrag
+  atomar: das Ziel bleibt als entfernt im Verlauf, die uebrigen Positionen stehen wieder unter
+  „Noch zu drucken“. Der Server verlangt alle aktuellen Auftragspositionen mit Revisionen und
+  die eindeutigen Ziel-IDs; unvollstaendige oder veraltete Auftraege schreiben nichts.
+  Alle betroffenen Revisionen steigen, damit alte Vorschauen weder starten noch einen
+  ueberholten Ausdruck bestaetigen koennen. Andere Auftraege und spaetere Vormerkungen bleiben
+  erhalten. Die Bestaetigung erklaert den Rest und verlangt, einen noch laufenden Druck am
+  betreffenden Arbeitsplatz zuerst zu beenden; die Listenaktion stoppt keine Hardware.
+  Bei mehr als 25 Positionen macht „Weitere Positionen anzeigen“ auch spaetere Einzelaktionen
+  erreichbar. Entfernen setzt keinen Gedruckt-Status und veraendert keine Kundenbestellung.
   Die gemeinsame Vorschau bietet keine Textkorrektur, damit der bestaetigte Stand eindeutig ist.
   Private Ablage mit exklusiver Schreibsperre, atomarem Austausch und Rechten `0600`; nur eine
   fehlende Datei ist leer, beschaedigte Daten werden nicht ueberschrieben. Sicherung und

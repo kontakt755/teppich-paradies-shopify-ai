@@ -2669,7 +2669,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new ApiError(400, 'Drucklisten-Aktion fehlt.');
       const actor = benutzer?.name || await currentUser();
       if (!actor) throw new ApiError(403, 'Bitte anmelden – wer die Druckliste ändert, wird festgehalten.');
-      const { aktion, vorgangId, eintraege, druckauftragId } = payload;
+      const { aktion, vorgangId, eintraege, druckauftragId, entfernenIds } = payload;
       let eintrag;
       if (aktion === 'vormerken') {
         const produkte = this._lexikonProdukte();
@@ -2680,7 +2680,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         if (!auswahl) throw new ApiError(409, 'Die Ausführung hat sich geändert. Produkt bitte neu öffnen.');
         if (auswahl.etikett.fehlt.length) throw new ApiError(400, `Etikett unvollständig: ${auswahl.etikett.fehlt.join(', ')}. Bitte Produktdaten prüfen.`);
         eintrag = { id: vorgangId, produktHandle: produkt.handle, produktTitel: produkt.titel, bezeichnung: auswahl.bezeichnung, etikett: auswahl.etikett, anzahl: payload.anzahl };
-      } else if (!['reservieren', 'freigeben', 'erledigen', 'entfernen'].includes(aktion)) {
+      } else if (!['reservieren', 'freigeben', 'erledigen', 'entfernen', 'auftrag_entfernen'].includes(aktion)) {
         throw new ApiError(400, 'Unbekannte Drucklisten-Aktion.');
       }
       if (aktion === 'reservieren' && Array.isArray(eintraege)) {
@@ -2697,7 +2697,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         }
       }
       try {
-        return aendereMusterDruckliste({ privatDir: privatDirPath || privatDir(), aktion: aktion === 'vormerken' ? 'hinzufuegen' : aktion, vorgangId, eintraege, druckauftragId, eintrag, actor, now: now() });
+        return aendereMusterDruckliste({ privatDir: privatDirPath || privatDir(), aktion: aktion === 'vormerken' ? 'hinzufuegen' : aktion, vorgangId, eintraege, druckauftragId, entfernenIds, eintrag, actor, now: now() });
       } catch (e) {
         if (e instanceof MusterDrucklisteFehler) throw new ApiError(e.status, e.message);
         throw e;

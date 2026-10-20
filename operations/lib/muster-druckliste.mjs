@@ -7,7 +7,7 @@ import { DRUCK_LIMIT } from '../../docs/ai-dashboard/lib/druckliste.mjs';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const STATUS = ['offen', 'in_druck', 'gedruckt', 'entfernt'];
-const AKTIONEN = ['hinzufuegen', 'bestellung_hinzufuegen', 'reservieren', 'freigeben', 'erledigen', 'entfernen'];
+const AKTIONEN = ['hinzufuegen', 'bestellung_hinzufuegen', 'reservieren', 'freigeben', 'erledigen', 'entfernen', 'auftrag_entfernen'];
 const SPERRE_ALT_MS = 30_000;
 const objekt = v => v !== null && typeof v === 'object' && !Array.isArray(v);
 const uuid = v => typeof v === 'string' && UUID.test(v);
@@ -95,7 +95,7 @@ function actorText(actor) {
   return von;
 }
 
-function normalisiereEingabe({ aktion, vorgangId, eintrag, eintraege, druckauftragId }) {
+function normalisiereEingabe({ aktion, vorgangId, eintrag, eintraege, druckauftragId, entfernenIds }) {
   if (!AKTIONEN.includes(aktion) || !uuid(vorgangId)) fehler(400, 'Aktion oder Vorgangskennung ist ungültig.');
   vorgangId = vorgangId.toLowerCase();
   if (aktion === 'bestellung_hinzufuegen') {
@@ -115,7 +115,18 @@ function normalisiereEingabe({ aktion, vorgangId, eintrag, eintraege, druckauftr
     || new Set(eintraege.map(e => e.id.toLowerCase())).size !== eintraege.length) fehler(400, 'Bitte eine gültige Auswahl mit aktuellem Stand übergeben.');
   if (aktion === 'entfernen' ? druckauftragId !== undefined : !uuid(druckauftragId)) fehler(400, 'Die Druckauftragskennung ist ungültig.');
   const auswahl = eintraege.map(({ id, revision }) => ({ id: id.toLowerCase(), revision })).sort((a, b) => a.id.localeCompare(b.id));
-  return { aktion, vorgangId, eintraege: auswahl, ...(druckauftragId ? { druckauftragId: druckauftragId.toLowerCase() } : {}) };
+  let ziele;
+  if (aktion === 'auftrag_entfernen') {
+    if (!Array.isArray(entfernenIds) || !entfernenIds.length || entfernenIds.length > auswahl.length || !entfernenIds.every(uuid)) {
+      fehler(400, 'Bitte die zu entfernenden Positionen dieses Druckauftrags auswählen.');
+    }
+    ziele = entfernenIds.map(id => id.toLowerCase()).sort();
+    const ids = new Set(auswahl.map(e => e.id));
+    if (new Set(ziele).size !== ziele.length || ziele.some(id => !ids.has(id))) {
+      fehler(400, 'Die zu entfernenden Positionen gehören nicht eindeutig zu diesem Druckauftrag.');
+    }
+  }
+  return { aktion, vorgangId, eintraege: auswahl, ...(druckauftragId ? { druckauftragId: druckauftragId.toLowerCase() } : {}), ...(ziele ? { entfernenIds: ziele } : {}) };
 }
 
 function sortiert(v) {
@@ -259,18 +270,30 @@ export function aendereMusterDruckliste({ privatDir, actor, now = new Date(), ..
         }
         return e;
       });
-      if (auftrag.aktion !== 'entfernen' && auswahl.reduce((n, e) => n + e.anzahl, 0) > DRUCK_LIMIT.etiketten) {
+      if (auftrag.aktion === 'auftrag_entfernen') {
+        // Beim Herausnehmen endet der ganze alte Auftrag. Ein veralteter Teilstand
+        // darf weder fremde Positionen freigeben noch einen halben Auftrag stehenlassen.
+        const aktuell = daten.eintraege.filter(e => e.status === 'in_druck' && e.druckauftrag?.id === auftrag.druckauftragId);
+        if (aktuell.length !== auswahl.length) fehler(409, 'Der Druckauftrag hat sich inzwischen geändert. Bitte die Liste erneut laden.');
+      }
+      if (!['entfernen', 'auftrag_entfernen'].includes(auftrag.aktion) && auswahl.reduce((n, e) => n + e.anzahl, 0) > DRUCK_LIMIT.etiketten) {
         fehler(400, `Bitte höchstens ${DRUCK_LIMIT.etiketten} Aufkleber pro Druckauftrag auswählen.`);
       }
       if (auftrag.aktion === 'reservieren' && daten.eintraege.some(e => e.druckauftrag?.id === auftrag.druckauftragId)) {
         fehler(409, 'Diese Druckauftragskennung wird bereits verwendet. Bitte die Liste erneut laden.');
       }
+      const entfernen = new Set(auftrag.entfernenIds);
       for (const e of auswahl) {
         e.revision++; e.geaendertAm = am; e.geaendertVon = von;
         if (auftrag.aktion === 'reservieren') { e.status = 'in_druck'; e.druckauftrag = { id: auftrag.druckauftragId, von, am }; }
         if (auftrag.aktion === 'freigeben') { e.status = 'offen'; e.druckauftrag = null; }
         if (auftrag.aktion === 'erledigen') { e.status = 'gedruckt'; e.gedrucktAm = am; e.gedrucktVon = von; }
         if (auftrag.aktion === 'entfernen') { e.status = 'entfernt'; e.entferntAm = am; e.entferntVon = von; }
+        if (auftrag.aktion === 'auftrag_entfernen') {
+          e.druckauftrag = null;
+          e.status = entfernen.has(e.id) ? 'entfernt' : 'offen';
+          if (e.status === 'entfernt') { e.entferntAm = am; e.entferntVon = von; }
+        }
       }
     }
     daten.vorgaenge = [...daten.vorgaenge, { id: auftrag.vorgangId, hash: vorgangsHash, am }].slice(-1000);

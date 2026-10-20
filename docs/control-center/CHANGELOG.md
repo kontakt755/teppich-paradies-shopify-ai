@@ -2,6 +2,28 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-20 · Muster aus offenen Druckauftraegen entfernen (#1547)
+
+- **Geaendert:** Reservierte Muster aus einer frueheren Sitzung oder von einem anderen
+  Arbeitsplatz haben jetzt „Entfernen…“ je Position und „Gesamten Auftrag entfernen…“.
+  Einzelentfernen beendet den alten Auftrag und gibt seine uebrigen Positionen gemeinsam
+  wieder unter „Noch zu drucken“ frei. Ein atomarer Schreibvorgang prueft den vollstaendigen
+  Auftrag samt Revisionen, erhaelt den Verlauf und setzt keine Position als gedruckt.
+  Mehr als 25 Positionen sind schrittweise erreichbar; geoeffnete Auftragsdetails bleiben
+  beim Aktualisieren erhalten. Ein bestaetigter Text erklaert Restpositionen und vorhandene
+  Ausdrucke vor dem Entfernen.
+- **Getestet:** 3435/3435 Gesamttests (633 Dashboard), 58/58 synthetische Browserstrecken:
+  Einzel-/Gesamtentfernen, Abbrechen, Mehrplatzkonflikt, Antwortfehler/Wiederholung,
+  Leserechte und Auftraege mit mehr als 25 Positionen samt bestehenden Verbindungs-/Sammeldruckstrecken.
+  30 Rollen-/Breitenansichten bei 360/390/800/1024/1440 px in heller/dunkler Ansicht ohne
+  Ueberlauf oder JS-Fehler. Klickstrecke mit echter Datenkopie: 5 reservierte Positionen
+  werden zu 1 entfernt und 4 offen, ohne Druck oder Gedruckt-Markierung. Unabhaengige
+  Pruefung des gefrorenen Produkt-Diffs ohne offene Befunde.
+- **Risiken:** Die Listenaktion stoppt keinen bereits laufenden Hardwaredruck. Dieser wird
+  vor der Aenderung am betreffenden Arbeitsplatz beendet. Entfernte Eintraege bleiben fuer
+  Verlauf und Wiederholungsschutz erhalten; Kundenbestellungen werden nicht veraendert.
+- **Naechste Stufe:** Projektpruefungen, PR und Aktualisierung des privaten Dashboard-Dienstes.
+
 ## 2026-10-20 · Drucker getrennt verbinden und Dashboard-App druckfaehig starten (#1540)
 
 - **Geaendert:** Die Druckvorschau bietet „Drucker verbinden“ als eigenen Schritt mit sichtbarem

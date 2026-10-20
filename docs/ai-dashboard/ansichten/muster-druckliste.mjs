@@ -16,6 +16,7 @@ const liste = {
 };
 let sitzung = 0, letzterVormerkVersuch = null, letzterReservierVersuch = null;
 const schreibVersuche = new Map(), eigeneAuftraege = new Set(), versuchteAuftraege = new Set();
+const auftragsAnsichten = new Map();
 const sichtbar = () => state.capabilities.mode === 'local' && state.route.view === 'lexikon' && state.route.params.get('tab') === 'druckliste';
 const neuZeichnen = () => { if (sichtbar()) render(); };
 const person = wert => typeof wert === 'string' ? wert : wert?.name || wert?.kuerzel || 'nicht hinterlegt';
@@ -129,13 +130,15 @@ function auftraege() {
 }
 function auftragBlock(id, eintraege) {
   const a = eintraege[0].druckauftrag;
+  const ansicht = auftragsAnsichten.get(id) || { offen: false, anzahl: SEITENGROESSE };
   return `<section class="card md-auftrag"><div class="card-head"><h2>${esc(anzahlText(menge(eintraege)))} – Druckauftrag noch offen</h2></div>
-    <p class="small muted">Reserviert von ${esc(person(a.von))} · ${esc(zeit(a.am))}. Der Auftrag bleibt erhalten, bis der Ausdruck geprüft ist.</p>
-    <details><summary>Enthaltene ${esc(positionenText(eintraege.length))}</summary><ul class="md-liste">${eintraege.slice(0, 25).map(e => `<li class="md-zeile">${angaben(e)}<span class="md-kopien">${esc(anzahlText(e.anzahl))}</span></li>`).join('')}</ul>${eintraege.length > 25 ? '<p class="small muted">Die Übersicht zeigt die ersten 25 Positionen. Gedruckt wird der vollständige Auftrag.</p>' : ''}</details>
+    <p class="small muted">Reserviert von ${esc(person(a.von))} · ${esc(zeit(a.am))}. Ausdruck prüfen und bestätigen oder nicht benötigte Muster entfernen.</p>
+    <details${ansicht.offen ? ' open' : ''}><summary id="md-auftrag-details-${esc(id)}" data-focus-erhalten data-md-auftrag-details="${esc(id)}">Enthaltene ${esc(positionenText(eintraege.length))}</summary><ul class="md-liste">${eintraege.slice(0, ansicht.anzahl).map(e => `<li class="md-zeile${istNurLesend() ? '' : ' md-auftragszeile'}">${angaben(e)}<span class="md-kopien">${esc(anzahlText(e.anzahl))}</span>${istNurLesend() ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-md-auftrag-entfernen="${esc(id)}" data-md-eintrag="${esc(e.id)}" aria-label="${esc(`${e.bezeichnung} aus der Druckliste entfernen`)}"${gesperrt() ? ' disabled' : ''}>Entfernen…</button>`}</li>`).join('')}</ul>${eintraege.length > ansicht.anzahl ? `<button type="button" class="btn btn-sm btn-ghost" id="md-auftrag-mehr-${esc(id)}" data-focus-erhalten data-md-auftrag-mehr="${esc(id)}">Weitere Positionen anzeigen</button><p class="small muted">${Math.min(ansicht.anzahl, eintraege.length)} von ${esc(positionenText(eintraege.length))} angezeigt.</p>` : ''}</details>
     ${istNurLesend() ? '' : `<div class="md-aktionen">
-      ${eigeneAuftraege.has(id) ? `<button type="button" class="btn" data-md-vorschau="${esc(id)}"${gesperrt() ? ' disabled' : ''}>Druckvorschau öffnen</button>` : '<p class="small muted">Dieser Auftrag stammt von einem anderen Arbeitsplatz oder aus einer früheren Sitzung. Falls noch kein vollständiger Ausdruck vorliegt, zuerst „Wieder freigeben“ wählen und danach neu auswählen.</p>'}
+      ${eigeneAuftraege.has(id) ? `<button type="button" class="btn" data-md-vorschau="${esc(id)}"${gesperrt() ? ' disabled' : ''}>Druckvorschau öffnen</button>` : '<p class="small muted">Auftrag aus einer früheren Sitzung oder von einem anderen Arbeitsplatz. Unter „Enthaltene Positionen“ einzelne Muster entfernen oder den gesamten Auftrag unten entfernen. Für einen neuen Drucklauf „Wieder freigeben“ wählen.</p>'}
       <button type="button" class="btn btn-primary" data-md-erledigen="${esc(id)}"${gesperrt() ? ' disabled' : ''}>Ausdruck geprüft – als gedruckt markieren</button>
       <button type="button" class="btn btn-ghost" data-md-freigeben="${esc(id)}"${gesperrt() ? ' disabled' : ''}>Wieder freigeben…</button>
+      <button type="button" class="btn btn-ghost" data-md-auftrag-entfernen="${esc(id)}"${gesperrt() ? ' disabled' : ''}>Gesamten Auftrag entfernen…</button>
     </div>`}</section>`;
 }
 export function viewMusterDruckliste() {
@@ -247,11 +250,32 @@ async function auftragAendern(aktion, id) {
   const daten = await schreiben({ aktion, eintraege: referenzen(es), druckauftragId: id });
   if (daten) { eigeneAuftraege.delete(id); versuchteAuftraege.delete(id); toast(aktion === 'erledigen' ? 'Geprüften Ausdruck als gedruckt markiert.' : 'Druckauftrag wieder freigegeben.'); }
 }
+async function auftragEntfernen(id, eintragId) {
+  const es = auftraege().get(id);
+  const entfernen = eintragId ? es?.filter(e => e.id === eintragId) : es;
+  if (!entfernen?.length) { toast('Dieser Auftrag hat sich geändert. Bitte aktualisieren.'); return; }
+  const rest = es.filter(e => !entfernen.some(ziel => ziel.id === e.id));
+  const was = eintragId ? `${entfernen[0].produktTitel} · ${entfernen[0].bezeichnung} (${anzahlText(menge(entfernen))})` : `Den gesamten Auftrag mit ${positionenText(es.length)} und ${anzahlText(menge(es))}`;
+  const danach = rest.length ? `Danach wieder unter „Noch zu drucken“: ${positionenText(rest.length)} mit ${anzahlText(menge(rest))}. Bereits gedruckte Aufkleber vorher prüfen, damit nichts doppelt gedruckt wird.` : 'Die Positionen bleiben im Verlauf als entfernt sichtbar.';
+  if (!window.confirm(`${was} aus der Druckliste entfernen?\n\nFalls dieser Auftrag noch an einem anderen Arbeitsplatz gedruckt wird, den Druck dort zuerst beenden.\n\n${danach}`)) return;
+  // Der alte Auftrag endet gemeinsam: kein veraltetes Vorschaufenster darf den Rest bestaetigen.
+  const daten = await schreiben({ aktion: 'auftrag_entfernen', druckauftragId: id, eintraege: referenzen(es), entfernenIds: entfernen.map(e => e.id) });
+  if (!daten) return;
+  eigeneAuftraege.delete(id); versuchteAuftraege.delete(id); auftragsAnsichten.delete(id);
+  toast(`${positionenText(entfernen.length)} aus der Druckliste entfernt.${rest.length ? ` ${positionenText(rest.length)} wieder unter „Noch zu drucken“.` : ''}`);
+}
 export function musterDrucklisteKlick(e) {
-  const ziel = e.target.closest('[data-md-aktualisieren],[data-md-auswahlmodus],[data-md-auswahl],[data-md-alle-auswaehlen],[data-md-seite-auswaehlen],[data-md-auswahl-leeren],[data-md-auswahl-entfernen],[data-md-seite],[data-md-reservieren],[data-md-vorschau],[data-md-erledigen],[data-md-freigeben],[data-md-entfernen],[data-md-historie]');
+  const ziel = e.target.closest('[data-md-aktualisieren],[data-md-auswahlmodus],[data-md-auswahl],[data-md-alle-auswaehlen],[data-md-seite-auswaehlen],[data-md-auswahl-leeren],[data-md-auswahl-entfernen],[data-md-seite],[data-md-reservieren],[data-md-vorschau],[data-md-erledigen],[data-md-freigeben],[data-md-entfernen],[data-md-historie],[data-md-auftrag-details],[data-md-auftrag-mehr],[data-md-auftrag-entfernen]');
   if (!ziel) return false;
   if (ziel.disabled) return true;
   if (ziel.hasAttribute('data-md-historie')) { e.preventDefault(); liste.historieOffen = !liste.historieOffen; neuZeichnen(); return true; }
+  if (ziel.hasAttribute('data-md-auftrag-details') || ziel.hasAttribute('data-md-auftrag-mehr')) {
+    e.preventDefault();
+    const id = ziel.dataset.mdAuftragDetails || ziel.dataset.mdAuftragMehr;
+    const ansicht = auftragsAnsichten.get(id) || { offen: false, anzahl: SEITENGROESSE };
+    auftragsAnsichten.set(id, ziel.hasAttribute('data-md-auftrag-mehr') ? { offen: true, anzahl: ansicht.anzahl + SEITENGROESSE } : { ...ansicht, offen: !ansicht.offen });
+    neuZeichnen(); return true;
+  }
   if (ziel.hasAttribute('data-md-aktualisieren')) { void laden({ fehlerLoeschen: true }); neuZeichnen(); return true; }
   if (ziel.hasAttribute('data-md-seite')) { if (!laedt()) { liste.seite = Number(ziel.dataset.mdSeite); neuZeichnen(); } return true; }
   if (gesperrt()) return true;
@@ -272,6 +296,7 @@ export function musterDrucklisteKlick(e) {
   else if (ziel.hasAttribute('data-md-vorschau')) void eigeneVorschau(ziel.dataset.mdVorschau);
   else if (ziel.hasAttribute('data-md-erledigen')) void auftragAendern('erledigen', ziel.dataset.mdErledigen);
   else if (ziel.hasAttribute('data-md-freigeben')) void auftragAendern('freigeben', ziel.dataset.mdFreigeben);
+  else if (ziel.hasAttribute('data-md-auftrag-entfernen')) void auftragEntfernen(ziel.dataset.mdAuftragEntfernen, ziel.dataset.mdEintrag);
   else if (ziel.hasAttribute('data-md-entfernen')) {
     const x = offeneEintraege().find(x => x.id === ziel.dataset.mdEntfernen);
     if (x) void schreiben({ aktion: 'entfernen', eintraege: referenzen([x]) });
@@ -289,7 +314,7 @@ if (typeof window !== 'undefined') {
   window.addEventListener('tp-sitzung-beendet', () => {
     sitzung++; ++liste.ladenummer; liste.daten = null; liste.loading = false; liste.versucht = false;
     liste.busy = false; liste.entferntLaeuft = false; liste.ladeFehler = ''; liste.aktionsFehler = '';
-    liste.auswahl.clear(); liste.auswahlmodus = 'alle'; eigeneAuftraege.clear(); versuchteAuftraege.clear(); schreibVersuche.clear(); letzterVormerkVersuch = null; letzterReservierVersuch = null;
+    liste.auswahl.clear(); liste.auswahlmodus = 'alle'; eigeneAuftraege.clear(); versuchteAuftraege.clear(); schreibVersuche.clear(); auftragsAnsichten.clear(); letzterVormerkVersuch = null; letzterReservierVersuch = null;
     const main = document.querySelector('#main');
     if (main?.querySelector('[data-md-aktualisieren]')) main.innerHTML = '<p class="notice warn">Sitzung abgelaufen. Bitte <a href="/login">neu anmelden</a>.</p>';
   });
