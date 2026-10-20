@@ -4,11 +4,17 @@
   if (!root) return;
 
   var isSample = params.get('thema') === 'muster';
+  var needsSampleProduct = params.get('thema') === 'musteranfrage' && !(params.get('produkt') || '').trim();
   if (isSample) {
     root.setAttribute('data-mode', 'sample');
   } else {
     anfrageVorbelegen(params);
   }
+  // Auch eine unverbindliche allgemeine Musteranfrage braucht einen Belag.
+  // Nur die Produktwahl zeigen; Versandadresse und Selbstbedienung bleiben
+  // ausschliesslich dem bestehenden Mustermodus vorbehalten.
+  if (needsSampleProduct) root.setAttribute('data-needs-product', 'true');
+  var produktwahl = isSample || needsSampleProduct ? produktwahlEinrichten() : null;
 
   // Nach dem Absenden laedt Shopify die Seite neu. Den sichtbaren Ergebnistext
   // fokussieren, damit Fehler und Erfolg auch per Tastatur erreichbar sind.
@@ -66,8 +72,6 @@
   }
 
   setHiddenField('Betreff', 'Kostenlose Musteranfrage');
-
-  var produktwahl = produktwahlEinrichten();
 
   var handle = params.get('produkt');
   if (!handle) return;
@@ -140,6 +144,7 @@
     function uebernehmen(product) {
       gewaehlt = product;
       feld.value = product.title;
+      feld.setCustomValidity('');
       setHiddenField('Produkt', product.title);
       setHiddenField('Produkt-Handle', product.handle);
       setHiddenField('Produkt-Link', window.location.origin + '/products/' + product.handle);
@@ -190,13 +195,14 @@
         .then(function (daten) {
           if (nr !== anfrage) return;
           var produkte = (daten && daten.resources && daten.resources.results && daten.resources.results.products) || [];
-          zeigen(produkte.filter(hatMusterweg).slice(0, 6));
+          zeigen(produkte.filter(function (product) { return needsSampleProduct || hatMusterweg(product); }).slice(0, 6));
         })
         .catch(function () { zuklappen(); });
     }
 
     feld.addEventListener('input', function () {
       var text = feld.value.trim();
+      feld.setCustomValidity(text.length >= 3 ? '' : 'Bitte nennen Sie Produkt und Dekor (mindestens 3 Zeichen).');
       // Freitext gilt immer; Handle/Link nur, solange der Text zur Auswahl passt.
       setHiddenField('Produkt', text);
       if (gewaehlt && text !== gewaehlt.title) {
@@ -307,6 +313,10 @@
       var breite = params.get('breite');
       var laenge = params.get('laenge_cm');
       if (breite || laenge) zeilen.push('Maße: ' + [breite ? 'Breite ' + breite : '', laenge ? 'Länge ' + laenge + ' cm' : ''].filter(Boolean).join(', '));
+      var zuschnitt = params.get('zuschnitt');
+      if (zuschnitt) zeilen.push('Zuschnitt: ' + zuschnitt);
+      var raum = params.get('raum');
+      if (raum) zeilen.push('Raum: ' + raum);
       zeilen.push('Fläche / Raum: ');
       nachricht.value = zeilen.join('\n');
     }
