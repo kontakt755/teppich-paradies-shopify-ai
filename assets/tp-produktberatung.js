@@ -37,6 +37,11 @@
       var size = roll && typeof roll.tpRwcBestellmass === 'function' ? roll.tpRwcBestellmass() : null;
       var width = size && Number.isFinite(size.breite) && size.breite > 0 ? String(size.breite) : '';
       var length = size && Number.isFinite(size.laenge) && size.laenge > 0 ? String(size.laenge) : '';
+      var cut = size && size.zuschnitt;
+      var cutting = cut && Number.isSafeInteger(cut.anzahl) && cut.anzahl > 0 &&
+        Number.isSafeInteger(cut.breite) && cut.breite > 0 && Number.isSafeInteger(cut.laenge) && cut.laenge > 0 &&
+        cut.breite === size.breite && cut.anzahl * cut.laenge === size.laenge
+        ? (cut.text || cut.anzahl + ' × (' + cut.breite + ' × ' + cut.laenge + ' cm)') : '';
       var productUrl = new URL(data.url, window.location.origin);
       var url = new URL(link.href, window.location.origin);
 
@@ -50,6 +55,7 @@
           if (length) dimensions.push(data.labels.length + ' ' + length + ' cm');
           lines.push(data.labels.size + ' (' + (size.art === 'raum' ? data.labels.room : data.labels.roll) + '): ' + dimensions.join(', '));
         }
+        if (cutting) lines.push((data.labels.cutting || data.labels.size) + ': ' + cutting);
         lines.push(productUrl.toString());
         url.searchParams.set('text', lines.join('\n'));
       } else {
@@ -62,6 +68,8 @@
         else url.searchParams.delete('breite');
         if (length) url.searchParams.set('laenge_cm', length);
         else url.searchParams.delete('laenge_cm');
+        if (cutting) url.searchParams.set('zuschnitt', cutting);
+        else url.searchParams.delete('zuschnitt');
       }
       link.href = url.toString();
     } catch (_) {}
