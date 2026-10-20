@@ -45,6 +45,7 @@ const warte = ms => new Promise(r => setTimeout(r, ms));
 export function erstelleClient({ token, pageId, igUserId = null, version = 'v24.0', holen = globalThis.fetch, trocken = false, protokoll = () => {}, pause = warte } = {}) {
   const basis = `https://graph.facebook.com/${version}`;
   let zaehler = 0;
+  let shoppingStand = null;
 
   /** `heikel` kennzeichnet die Aufrufe, die etwas sichtbar veroeffentlichen. */
   async function graph(methode, pfad, params = {}, { datei = null, heikel = false } = {}) {
@@ -143,12 +144,56 @@ export function erstelleClient({ token, pageId, igUserId = null, version = 'v24.
       return { id: r.id, permalink: info.permalink_url ?? null };
     },
 
-    async instagram({ format, text, fotos, videoDatei = null }) {
+    /**
+     * Instagram Shopping: ist das Konto fuer Produkt-Tags freigeschaltet und hat es
+     * einen Katalog? Einmal je Client gefragt; ohne Freischaltung kein Fehler, nur "nicht bereit".
+     */
+    async igShopping() {
+      if (shoppingStand) return shoppingStand;
+      if (!igUserId) return (shoppingStand = { bereit: false, grund: 'Instagram-Konto nicht verknüpft' });
+      const konto = await graph('GET', `/${igUserId}`, { fields: 'shopping_product_tag_eligibility' });
+      if (konto.shopping_product_tag_eligibility !== true) {
+        return (shoppingStand = { bereit: false, grund: 'Instagram Shopping ist für das Konto noch nicht freigeschaltet (Commerce Manager, social/META-EINRICHTUNG.md)' });
+      }
+      const kataloge = await graph('GET', `/${igUserId}/available_catalogs`, { fields: 'catalog_id,catalog_name' });
+      const katalog = (kataloge.data ?? [])[0];
+      if (!katalog?.catalog_id) return (shoppingStand = { bereit: false, grund: 'Instagram Shopping freigeschaltet, aber kein Katalog verbunden' });
+      return (shoppingStand = { bereit: true, katalogId: katalog.catalog_id, katalogName: katalog.catalog_name ?? null });
+    },
+
+    /** Produkte im Instagram-Katalog nach Name oder Katalog-ID suchen. */
+    async igProduktSuchen(katalogId, suche) {
+      const r = await graph('GET', `/${igUserId}/catalog_product_search`, { catalog_id: katalogId, q: String(suche ?? '').slice(0, 100) });
+      return r.data ?? [];
+    },
+
+    /**
+     * produktTags: Meta-Produkt-IDs (igProduktSuchen). Reels tragen sie ohne Position,
+     * Bilder und das erste Karussellbild mit Position am unteren Rand. Lehnt Meta die
+     * Tags ab, geht der Beitrag ohne sie raus - der Container ist noch nicht veroeffentlicht,
+     * der zweite Versuch kann also nichts doppelt zeigen.
+     */
+    async instagram({ format, text, fotos, videoDatei = null, produktTags = [] }) {
       if (!igUserId) throw new MetaFehler('Instagram-Konto nicht verknüpft (META_IG_USER_ID fehlt)', { zugang: true });
+      const tags = format === 'story' ? [] : [...new Set(produktTags.map(String))].slice(0, 5);
+      let getaggt = 0; let tagFehler = null;
+      const mitPosition = () => JSON.stringify(tags.map((product_id, i) => ({ product_id, x: Number(((i + 1) / (tags.length + 1)).toFixed(2)), y: 0.85 })));
+      async function anlegen(params, tagWert) {
+        if (!tags.length) return graph('POST', `/${igUserId}/media`, params);
+        try {
+          const c = await graph('POST', `/${igUserId}/media`, { ...params, product_tags: tagWert });
+          getaggt = tags.length;
+          return c;
+        } catch (e) {
+          if (e.zugang || e.voruebergehend) throw e;
+          tagFehler = e.message;
+          return graph('POST', `/${igUserId}/media`, params);
+        }
+      }
       let container;
       if (format === 'reel') {
         if (!videoDatei) throw new MetaFehler('Reel ohne Videodatei');
-        container = await graph('POST', `/${igUserId}/media`, { media_type: 'REELS', upload_type: 'resumable', caption: text });
+        container = await anlegen({ media_type: 'REELS', upload_type: 'resumable', caption: text }, JSON.stringify(tags.map(product_id => ({ product_id }))));
         await igVideoHochladen(container, videoDatei);
         // Videos brauchen bei Instagram Minuten; bis zu zehn Minuten warten, dann spaeterer Versuch.
         await igWarte(container.id, { versuche: 120 });
@@ -157,19 +202,20 @@ export function erstelleClient({ token, pageId, igUserId = null, version = 'v24.
         await igWarte(container.id, { versuche: 12 });
       } else if (fotos.length > 1) {
         const kinder = [];
-        for (const f of fotos.slice(0, 10)) {
-          const k = await graph('POST', `/${igUserId}/media`, { image_url: f.url, is_carousel_item: 'true' });
+        for (const [i, f] of fotos.slice(0, 10).entries()) {
+          const params = { image_url: f.url, is_carousel_item: 'true' };
+          const k = i === 0 ? await anlegen(params, mitPosition()) : await graph('POST', `/${igUserId}/media`, params);
           kinder.push(k.id);
         }
         container = await graph('POST', `/${igUserId}/media`, { media_type: 'CAROUSEL', children: kinder.join(','), caption: text });
         await igWarte(container.id, { versuche: 12 });
       } else {
-        container = await graph('POST', `/${igUserId}/media`, { image_url: fotos[0].url, caption: text });
+        container = await anlegen({ image_url: fotos[0].url, caption: text }, mitPosition());
         await igWarte(container.id, { versuche: 12 });
       }
       const r = await graph('POST', `/${igUserId}/media_publish`, { creation_id: container.id }, { heikel: true });
       const info = await graph('GET', `/${r.id}`, { fields: 'permalink' }).catch(() => ({}));
-      return { id: r.id, permalink: info.permalink ?? null };
+      return { id: r.id, permalink: info.permalink ?? null, ...(tags.length ? { produktTags: getaggt, ...(tagFehler ? { tagFehler } : {}) } : {}) };
     },
 
     // --- Kennzahlen ------------------------------------------------------
@@ -249,7 +295,7 @@ export async function seitenZugang({ systemToken, seite = null, version = 'v24.0
  * Plattform mit dem Stand aufgerufen. Zurueck kommt der ergaenzte Stand samt
  * Fehlern je Plattform.
  */
-export async function veroeffentliche(client, { beitrag, dateien, texte, bisher = {}, merke = () => {} }) {
+export async function veroeffentliche(client, { beitrag, dateien, texte, bisher = {}, merke = () => {}, produktTags = [] }) {
   const ergebnis = { ...bisher };
   const fehler = {};
   const offen = beitrag.plattformen.filter(p => !ergebnis[p]?.id);
@@ -271,7 +317,7 @@ export async function veroeffentliche(client, { beitrag, dateien, texte, bisher 
       if (plattform === 'facebook') {
         ergebnis.facebook = await client.facebook({ format: beitrag.format, text: texte.facebook, fotos, videoDatei: video?.datei ?? null });
       } else if (plattform === 'instagram') {
-        ergebnis.instagram = await client.instagram({ format: beitrag.format, text: texte.instagram, fotos, videoDatei: video?.datei ?? null });
+        ergebnis.instagram = await client.instagram({ format: beitrag.format, text: texte.instagram, fotos, videoDatei: video?.datei ?? null, produktTags });
       }
       // Sofort festhalten, nicht erst am Ende: stirbt der Lauf danach, weiss der naechste, was schon draussen ist.
       merke({ ...ergebnis });

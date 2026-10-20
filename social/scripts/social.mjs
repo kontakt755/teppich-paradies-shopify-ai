@@ -17,7 +17,7 @@
  *   npm run social -- kennzahlen
  *   npm run social -- referenzen --input export.json
  *   npm run social -- zugang anlegen "Name" | liste | sperren "Name"
- *   npm run social -- meta-pruefen
+ *   npm run social -- meta-pruefen          (Zugang, Instagram-Konto und ob Produkt-Tags moeglich sind)
  *   npm run social -- bild-ersetzen <mediumId> <datei>   (bearbeitete Fassung eines Fotos einsetzen)
  *   npm run social -- highlights            (Titelbilder der fuenf Instagram-Highlights nach $TP_PRIVAT_DIR/social/highlights)
  *   npm run social -- highlights-stand [Verlegung=3 Referenzen=1 …] [--einsortiert 57,58] [--json]
@@ -374,6 +374,8 @@ async function main(argv) {
         console.log(`Facebook-Seite: ${r.seite.name} (${r.seite.follower ?? '?'} Follower)`);
         console.log(r.instagram ? `Instagram: @${r.instagram.username} (${r.instagram.followers_count} Follower, ${r.instagram.media_count} Beiträge)` : 'Instagram: kein Konto mit der Seite verknüpft');
         if (r.instagram && konfig.igUserId !== r.instagram.id) console.log(`Hinweis: META_IG_USER_ID sollte ${r.instagram.id} sein.`);
+        const shopping = await client.igShopping().catch(e => ({ bereit: false, grund: e.message }));
+        console.log(shopping.bereit ? `Produkt-Tags: bereit (Katalog ${shopping.katalogName ?? shopping.katalogId})` : `Produkt-Tags: aus – ${shopping.grund}`);
         break;
       }
 
