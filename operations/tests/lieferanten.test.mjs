@@ -648,9 +648,9 @@ test('Lexikon-Produkt: Schnellzugriff nur an Varianten ohne Direkt- und Suchlink
 
 // ------------------------------------------- Teppich nach Mass: Zuschnitt, Ketteln, Kunde
 
-function massteppichModell({ mitEinfassungAmTeppich = true, masse = '250 × 310 cm', form = 'Rechteck', quantity = 775 } = {}) {
+function massteppichModell({ mitEinfassungAmTeppich = true, masse = '250 × 310 cm', form = 'Rechteck', quantity = 775, route = 'SUPPLIER_TO_TP' } = {}) {
   const teppich = zeile({ id: 20, sku: null, title: 'Testteppich nach Maß', variantTitle: 'Sandbeige (036)', quantity, preis: '0.39',
-    einkauf: [['lieferant', 'A'], ['artikelnummer', 'A-TNM'], ['farbnummer', '036'], ['bestelleinheit', 'lfm'], ['route', 'SUPPLIER_TO_TP']],
+    einkauf: [['lieferant', 'A'], ['artikelnummer', 'A-TNM'], ['farbnummer', '036'], ['bestelleinheit', 'lfm'], ['route', route]],
     custom: [['preis_pro_001_qm', 'true']],
     attrs: [
       ...(mitEinfassungAmTeppich ? [{ key: 'Einfassung', value: 'Gekettelt' }, { key: 'Kante umlaufend', value: '11,20 m' }, { key: 'Garn', value: 'Ton in Ton' }] : []),
@@ -793,6 +793,20 @@ test('Regel unter 2 m: Massteppich kommt ohne Auswahl in eine eigene Kettler-Mai
   assert.equal(nachher.mails[0].lieferziel, 'kunde');
   // 2 m und mehr: keine Regel.
   assert.equal(bestellmail({ modell: massteppichModell({ masse: '200 × 300 cm' }), lieferant: 'A', stammdaten: STAMM_KETTLER, jetzt: JETZT }).mails[0].lieferziel, 'kunde');
+});
+
+test('Regel unter 2 m gilt auch fuer Direktversand-Ware, nicht fuer Baustellenware', () => {
+  const direkt = bestellmail({ modell: massteppichModell({ masse: '150 × 230 cm', route: 'SUPPLIER_DIRECT' }), lieferant: 'A', stammdaten: STAMM_KETTLER, jetzt: JETZT }).mails;
+  assert.equal(direkt.length, 1);
+  assert.equal(direkt[0].lieferziel, 'kettler');
+  assert.equal(direkt[0].kettlerAutomatisch, true);
+  assert.match(direkt[0].text, /an unseren Kettelservice:\nBeispiel-Kettelei/);
+  assert.equal(direkt[0].text.includes('direkt an unseren Kunden'), false);
+  assert.match(direkt[0].text, /1,50 lfm von der 4,00 m breiten Rolle/);
+  const gross = bestellmail({ modell: massteppichModell({ masse: '200 × 300 cm', route: 'SUPPLIER_DIRECT' }), lieferant: 'A', stammdaten: STAMM_KETTLER, jetzt: JETZT }).mails;
+  assert.equal(gross[0].lieferziel, 'kunde', '2 m und mehr bleibt Direktversand');
+  const baustelle = bestellmail({ modell: massteppichModell({ masse: '150 × 230 cm', route: 'SUPPLIER_TO_SITE' }), lieferant: 'A', stammdaten: STAMM_KETTLER, jetzt: JETZT }).mails;
+  assert.equal(baustelle[0].lieferziel, 'baustelle');
 });
 
 test('Kettler gewaehlt, aber keine Anschrift hinterlegt: Position fehlt mit Grund', () => {

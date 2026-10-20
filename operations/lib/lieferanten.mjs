@@ -647,7 +647,9 @@ function fuerKettler(p) {
 function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, auswahl = null, automatisch = false }) {
   const alle = (gruppe.positionen ?? []).filter(p => !auswahl || auswahl(p)).map(p => schlankePosition(p, statusAlle, jetzt));
   const offen = alle.filter(p => p.gruppe === 'zuBestellen');
-  const direkt = ZIEL_JE_AUFTRAG.has(gruppe.route);
+  // Direktversand-Ware fuer den Kettler geht nicht an den Kunden, sondern zum Kettler
+  // (Regel unter 2 m gilt auch hier); Baustellenlieferungen bleiben unberuehrt.
+  const direkt = ZIEL_JE_AUFTRAG.has(gruppe.route) && !(ziel === 'kettler' && gruppe.route === ROUTE.SUPPLIER_DIRECT);
   const kettler = absender?.kettelservice ?? null;
   // Regel des Inhabers (2026-10-14): Ware geht direkt an die Kunden, je Kommission mit
   // Anschrift. "laden" ist die seltene Ausnahme - per Umschalter im Dialog oder als
@@ -804,7 +806,8 @@ function musterMail(gruppen, { st, absender, statusAlle, adressen, jetzt, ziel }
  * Ein Ziel aus dem Dialog (Kunden/Laden/Kettler) gilt dagegen fuer die ganze Gruppe.
  */
 function wareMailsFuer(gruppe, kontext) {
-  const automatisch = !kontext.ziel && adresseOk(kontext.absender?.kettelservice) && !ZIEL_JE_AUFTRAG.has(gruppe.route);
+  // Auch Direktversand an den Kunden (Inhaber 2026-10-20); nur Baustellenware bleibt aussen vor.
+  const automatisch = !kontext.ziel && adresseOk(kontext.absender?.kettelservice) && gruppe.route !== ROUTE.SUPPLIER_TO_SITE;
   // Nur offene Positionen: schon Bestelltes (auch von vor der Regel) bleibt in der normalen Mail.
   const offen = p => schlankePosition(p, kontext.statusAlle, kontext.jetzt).gruppe === 'zuBestellen';
   const zumKettler = p => kettlerAutomatisch(p) && offen(p);
