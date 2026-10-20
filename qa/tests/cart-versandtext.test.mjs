@@ -6,8 +6,8 @@ import { Liquid } from 'liquidjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const read = name => fs.readFileSync(path.join(root, name), 'utf8');
-const templates = Object.fromEntries(['cart-summary', 'tax-info', 'tp-cart-versandhinweis', 'tp-muster-position'].map(name => [name, read(`snippets/${name}.liquid`)]));
-for (const name of ['tp-cart-unterlage-hinweis', 'tp-cart-leisten-paket', 'tp-cart-beratung', 'tp-muster-beratungsanfrage', 'tp-zahlung-abholung', 'border-override', 'cart-bubble', 'cart-products']) templates[name] = '';
+const templates = Object.fromEntries(['cart-summary', 'tax-info', 'tp-cart-versandhinweis', 'tp-muster-position', 'tp-cart-leisten-paket', 'tp-leisten-paket'].map(name => [name, read(`snippets/${name}.liquid`)]));
+for (const name of ['tp-cart-unterlage-hinweis', 'tp-cart-beratung', 'tp-muster-beratungsanfrage', 'tp-zahlung-abholung', 'border-override', 'cart-bubble', 'cart-products']) templates[name] = '';
 templates['cart-items-component'] = '{{ children }}';
 templates['accordion-custom-component'] = '{{ children }}';
 
