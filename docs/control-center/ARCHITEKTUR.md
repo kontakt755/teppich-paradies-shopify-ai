@@ -1627,6 +1627,29 @@ NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
   fehlende Datei ist leer, beschaedigte Daten werden nicht ueberschrieben. Sicherung und
   Browser-Datenkopie enthalten die Datei. Erledigte/entfernte Eintraege bleiben fuer Verlauf und
   Wiederholungsschutz erhalten. Es gibt keinen automatischen Hardwaredruck oder Shopify-Schreibzugriff.
+- **Musterbestellungen intern zuordnen (#1506):** Kunden › Bestellungen zeigt bei Musterauftraegen
+  den Einstieg „Musteraufkleber ansehen“. Die aufgeklappte Bestellung zeigt Produkt, Farbe,
+  echte Shop-SKU, offene Aufklebermenge und Drucklistenstand je Bestellposition. „Aufkleber zur
+  Druckliste vormerken“ uebernimmt sie gemeinsam. `GET/POST /api/kunden/musteretiketten` sind nur
+  im privaten, angemeldeten Dashboard erreichbar; die Rolle „lesen“ darf ansehen, nicht vormerken.
+  Der Browser sendet nur Bestellkennung und Vorgangskennung. Der Server liest Bestellmodell und
+  Lexikon ohne Shopify-Schreibzugriff oder Statusabgleich. Eine belegte Quellvarianten-ID hat
+  Vorrang vor alten Muster-SKUs; fehlende, veraltete oder mehrdeutige Zuordnungen sperren die
+  Vormerkung. Unbekannte Mengen werden nicht als ein Stueck angenommen oder still gekuerzt.
+  Pro Quelle `[orderId,lineItemId]` gibt es genau einen unveraenderlichen Drucklisteneintrag,
+  auch bei Neuladen oder zwei Arbeitsplaetzen. Gleiche SKU auf zwei Positionen bleibt getrennt.
+  Die erste Vormerkung verwendet die offene Menge; die bestellte Gesamtmenge bleibt als stabiler
+  Vergleich erhalten. Bereits vorgemerkte, reservierte, gedruckte oder entfernte Positionen werden
+  nicht erneut angelegt. Geaenderte Produktdaten oder Bestellmengen verlangen eine bewusste Pruefung;
+  ein Konflikt schreibt keinen Teilauftrag. Stornierte, vollstaendig versendete oder lokal als
+  „An Kunden raus“ markierte Muster erhalten keine neuen Vormerkungen. Vor einer Druckreservierung
+  prueft der Server die verknuepfte Bestellung erneut. „Geliefert“ vom Lieferanten sperrt nicht.
+  Die optionale `quelle` steht ausschliesslich neben dem Etikett in der privaten Drucklistenablage.
+  Sie enthaelt Bestell-/Positionskennung, Bestellnummer und Bestellmenge, keinen Kundennamen.
+  Die Druckliste verlinkt intern zur Bestellung; Canvas, PNG und QR bekommen nur Produktdaten.
+  Der bewusste Direkt-/Nachdruck verwendet dieselbe kanonische Zuordnung und die bestellte
+  Gesamtmenge, veraendert aber keinen Drucklistenstatus. Es gibt keine Aenderung an Shopseiten,
+  Kundenkonto, Bestellmails, Bestellmetafeldern oder Kundenbelegen.
 - **Inhalt:** Absender `www.teppich-paradies.net`, Serie, Farbe, bei Paketware (Lexikon-Eigenschaft
   `qmProPaket`) Art, Stärke/Nutzschicht, Nutzungsklassen, Format und daneben der QR-Code, sonst der
   QR-Code größer in der Mitte; unten „Art.-Nr.“ mit der SKU der echten Variante (nie die

@@ -2,6 +2,28 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-20 · Benoetigte Musteraufkleber direkt bei der Bestellung (#1506)
+
+- **Geaendert:** Musterbestellungen zeigen intern Produkt, Farbe, Shop-SKU, offene Aufklebermenge
+  und Drucklistenstand. Ein Klick merkt die zugeordneten Positionen gemeinsam vor. Die interne
+  Quellbestellung ist in der Druckliste verlinkt, erscheint aber nicht auf Aufkleber, PNG oder QR.
+  Mehrere Arbeitsplaetze und Neuladen verdoppeln keine Bestellposition. Aenderungen, unklare
+  Zuordnungen und Mengen verlangen Pruefung; bereits vorbereitete Auftraege bleiben unveraendert.
+  Der vorhandene Direktdruck verwendet dieselben kanonischen Daten und die bestellten Gesamtmengen.
+- **Getestet:** 3.272 Tests gruen (537 Dashboard-Tests), davon 32 neue Zuordnungs-, Speicher-
+  und API-Faelle. Browserfaelle mit getrennten
+  Mitarbeitersitzungen: Quell-ID vor alter Muster-SKU, Mengen/Teilversand, Tombstone,
+  Reservierungskonflikte, Storno, Direkt-/Nachdruck und verspaetete Antworten. Ohne Anmeldung
+  liefern beide APIs 401, private Dateipfade bleiben unzugaenglich, „lesen“ erhaelt bei POST 403.
+  Druckbild und QR enthalten ausschliesslich Produktdaten; synthetische Kunden-/Bestellmarker
+  fehlen. 30 Rollen-/Ansichts-/Breitenpruefungen bei 360–1440 px sowie Desktop-/Handy-Klickfaelle
+  ohne Browserfehler oder Ueberlauf. Projekt-Guards, Theme-Check, Secret-Scan und statischer
+  Workflow erfolgreich.
+- **Risiken:** Physische Ausgabe am echten Niimbot bleibt separat zu pruefen. Nachtraeglich
+  geaenderte oder entfernte Vormerkungen werden bewusst nicht automatisch neu erzeugt.
+- **Naechste Stufe:** Dashboard-Dienst nach Merge aktualisieren und die interne Zuordnung lesend
+  im laufenden Dienst kontrollieren.
+
 ## 2026-10-20 · Gemeinsame Druckliste fuer Musteraufkleber (#1493)
 
 - **Geaendert:** Im Lexikon Farbe/Ausfuehrung und Anzahl waehlen und „Zum Drucken vormerken“.

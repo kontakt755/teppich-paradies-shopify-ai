@@ -102,8 +102,10 @@ const gesperrt = () => liste.busy || liste.loading || Boolean(liste.ladeFehler) 
 
 function angaben(e) {
   const link = `#/lexikon?${new URLSearchParams({ handle: e.produktHandle })}`;
+  const bestellung = e.quelle ? `#/kunden?${new URLSearchParams({ tab: 'bestellungen', bq: e.quelle.orderName, bfilter: 'alle' })}` : '';
   return `<div class="md-was"><a href="${esc(link)}">${esc(e.produktTitel)}</a>
     <strong>${esc(e.bezeichnung)}</strong>
+    ${bestellung ? `<a class="small" href="${esc(bestellung)}">${esc(`Für Bestellung ${e.quelle.orderName} · nur intern`)}</a>` : ''}
     <span class="small muted">${esc(anzahlText(e.anzahl))} · vorgemerkt von ${esc(person(e.erstelltVon))} · ${esc(zeit(e.erstelltAm))}</span></div>`;
 }
 

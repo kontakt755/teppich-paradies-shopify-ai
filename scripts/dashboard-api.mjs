@@ -16,6 +16,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { createHash } from 'node:crypto';
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { normalizeTask, requirementsFor, labelChangesFor, mitBlockerAbschnitt, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
@@ -79,8 +80,9 @@ import { musterKaufLinks } from '../docs/ai-dashboard/lib/muster-kauf-links.mjs'
 import { betriebszustand } from '../operations/lib/betriebszustand.mjs';
 import { ausCsv as bildrechteAusCsv, prueflisten as bildrechtePrueflisten } from '../operations/lib/bildrechte.mjs';
 import { prozesslinksPfad, leseProzesslinks, schreibeProzesslinks, ProzesslinksFehler, ProzesslinksSpeicherFehler } from '../operations/lib/prozesslinks.mjs';
-import { leseMusterDruckliste, aendereMusterDruckliste, MusterDrucklisteFehler } from '../operations/lib/muster-druckliste.mjs';
+import { leseMusterDruckliste, aendereMusterDruckliste, gleicheBestellungsVormerkung, MusterDrucklisteFehler } from '../operations/lib/muster-druckliste.mjs';
 import { etikettenAusLexikon } from '../docs/ai-dashboard/lib/lexikon-etiketten.mjs';
+import { musteretikettenFuerAuftrag } from '../docs/ai-dashboard/lib/bestellungs-musteretiketten.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -1643,6 +1645,58 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       return { verfuegbar: true, zeilen: bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) })) };
     },
 
+    /** Rein intern und lesend: weder Shopify-Abgleich noch Kundendaten im Etikett. */
+    kundenMusteretiketten(orderId) {
+      if (typeof orderId !== 'string' || !orderId.trim() || orderId.length > 200) throw new ApiError(400, 'Bestellkennung fehlt.');
+      const dir = privatDirPath || privatDir();
+      const modell = ladeBestellModell(dir);
+      if (!modell) throw new ApiError(503, 'Die Bestelldaten fehlen oder sind nicht lesbar. Bitte die Daten aktualisieren.');
+      const auftrag = [...(modell.auftraege || []), ...(modell.testauftraege || [])].find(a => a.id === orderId);
+      if (!auftrag) throw new ApiError(404, 'Bestellung nicht in den aktuellen Bestelldaten gefunden.');
+      const status = leseAktuellenStatus(auftragsstatusPfad(dir), modell);
+      const orderName = String(auftrag.name || orderId);
+      let druckliste;
+      try { druckliste = leseMusterDruckliste({ privatDir: dir }); }
+      catch (e) { if (e instanceof MusterDrucklisteFehler) throw new ApiError(e.status, e.message); throw e; }
+      const produkte = new Map(this._lexikonProdukte().map(p => [p.handle, p]));
+      const zeilen = musteretikettenFuerAuftrag(auftrag, produkte).map(z => {
+        const quelle = { art: 'musterbestellung', orderId, orderName, lineItemId: z.lineItemId, bestellmenge: z.bestellmenge };
+        const alt = druckliste.eintraege.find(e => e.quelle?.orderId === orderId && e.quelle.lineItemId === z.lineItemId);
+        const schonRaus = ['raus', 'erledigt'].includes(status[positionKey(orderId, z.lineItemId)]?.status);
+        const vormerkstatus = !alt ? 'nicht_vorgemerkt' : gleicheBestellungsVormerkung(alt, { quelle, etikett: z.etikett }) ? alt.status : 'geaendert';
+        return { ...z, anzahl: schonRaus ? 0 : z.anzahl, vormerkstatus,
+          ...(vormerkstatus === 'geaendert' ? { hinweis: 'Bestellung oder Produktdaten wurden seit dem Vormerken geändert. Bitte die Druckliste prüfen.' }
+            : schonRaus ? { hinweis: 'Dieses Muster ist bereits an den Kunden raus.' } : {}) };
+      });
+      const gesperrt = auftrag.storniert ? 'Diese Bestellung ist storniert. Keine neuen Aufkleber vormerken.'
+        : String(auftrag.erfuellt).toUpperCase() === 'FULFILLED' || !zeilen.some(z => z.anzahl !== 0)
+          ? 'Für diese Bestellung sind keine offenen Muster mehr vorzubereiten.' : null;
+      return { verfuegbar: true, intern: true, orderId, orderName, gesperrt, zeilen };
+    },
+
+    async kundenMusteretikettenVormerken(payload = {}, benutzer = null) {
+      if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Musteraufkleber nur ansehen.');
+      if (!payload || typeof payload !== 'object' || Array.isArray(payload)
+        || typeof payload.vorgangId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload.vorgangId)) throw new ApiError(400, 'Gültige Vorgangskennung fehlt.');
+      const actor = benutzer?.name || await currentUser();
+      if (!actor) throw new ApiError(403, 'Bitte anmelden – wer vormerkt, wird festgehalten.');
+      const plan = this.kundenMusteretiketten(payload.orderId);
+      if (plan.gesperrt) throw new ApiError(409, plan.gesperrt);
+      const aktiv = plan.zeilen.filter(z => z.anzahl !== 0);
+      if (aktiv.some(z => z.fehlt.length || z.vormerkstatus === 'geaendert')) throw new ApiError(409, 'Musterzuordnung oder Drucklistenstand muss zuerst geprüft werden. Es wurde nichts vorgemerkt.');
+      const eintraege = aktiv.map(z => {
+        // Stabile ID pro Quellposition; gleiche SKU in einer zweiten Position bleibt getrennt.
+        const h = createHash('sha256').update(JSON.stringify(['musteretikett-v1', plan.orderId, z.lineItemId])).digest('hex');
+        const id = `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-a${h.slice(17, 20)}-${h.slice(20, 32)}`;
+        return { id, produktHandle: z.produktHandle, produktTitel: z.produktTitel, bezeichnung: z.bezeichnung, etikett: z.etikett, anzahl: z.anzahl,
+          quelle: { art: 'musterbestellung', orderId: plan.orderId, orderName: plan.orderName, lineItemId: z.lineItemId, bestellmenge: z.bestellmenge } };
+      });
+      let ergebnis;
+      try { ergebnis = aendereMusterDruckliste({ privatDir: privatDirPath || privatDir(), aktion: 'bestellung_hinzufuegen', vorgangId: payload.vorgangId, eintraege, actor, now: now() }); }
+      catch (e) { if (e instanceof MusterDrucklisteFehler) throw new ApiError(e.status, e.message); throw e; }
+      return { ...this.kundenMusteretiketten(plan.orderId), vormerkung: { neu: ergebnis.neu, bereits: ergebnis.bereits } };
+    },
+
     /**
      * Textvorlage "Muster nachfassen" (Konzept des Inhabers, liegt nur im Privatordner):
      * Betreff und Text der ersten Nachfrage und der Erinnerung. Die Liste selbst rechnet der
@@ -2620,6 +2674,18 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         eintrag = { id: vorgangId, produktHandle: produkt.handle, produktTitel: produkt.titel, bezeichnung: auswahl.bezeichnung, etikett: auswahl.etikett, anzahl: payload.anzahl };
       } else if (!['reservieren', 'freigeben', 'erledigen', 'entfernen'].includes(aktion)) {
         throw new ApiError(400, 'Unbekannte Drucklisten-Aktion.');
+      }
+      if (aktion === 'reservieren' && Array.isArray(eintraege)) {
+        const gewaehlt = new Set(eintraege.map(e => e?.id));
+        const plaene = new Map();
+        for (const e of this.lexikonDruckliste().eintraege.filter(e => gewaehlt.has(e.id) && e.quelle)) {
+          const id = e.quelle.orderId;
+          if (!plaene.has(id)) plaene.set(id, this.kundenMusteretiketten(id));
+          const plan = plaene.get(id), zeile = plan.zeilen.find(z => z.lineItemId === e.quelle.lineItemId);
+          if (plan.gesperrt || !zeile || zeile.anzahl === 0 || zeile.fehlt.length || zeile.vormerkstatus === 'geaendert') {
+            throw new ApiError(409, 'Eine zugehörige Musterbestellung ist geändert, versendet oder storniert. Bitte die Bestellung und Druckliste vor dem Druck prüfen.');
+          }
+        }
       }
       try {
         return aendereMusterDruckliste({ privatDir: privatDirPath || privatDir(), aktion: aktion === 'vormerken' ? 'hinzufuegen' : aktion, vorgangId, eintraege, druckauftragId, eintrag, actor, now: now() });
