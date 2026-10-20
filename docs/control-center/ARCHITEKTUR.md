@@ -1719,6 +1719,24 @@ NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
   Ausweg. Beides nur in **Chrome/Edge** und nur in einem sicheren Kontext: `https://…` oder
   `http://localhost`/`127.0.0.1`. Über `http://<IP>:8001` im Firmennetz geht es nicht – dann die
   Tailscale-Adresse `https://<name>.ts.net` nehmen (Abschnitt 1d). Der Dialog sagt das selbst.
+  „Drucker verbinden“ (#1540) erlaubt die Geraeteauswahl und Verbindung vor dem Druckstart.
+  Der Verbindungstest erzeugt keinen Druckauftrag, sendet keine Etiketten und setzt weder
+  Druckversuch noch Papierbestaetigung. Der spaetere ausdrueckliche Druckklick verwendet die
+  bestehende Verbindung; die Auftragspruefung bleibt direkt vor der Hardwareausgabe erhalten.
+  Reines Verbinden behaelt die Freigabe beim Schliessen einer ungedruckten Vorschau bei.
+  Abgebrochene oder verspaetete Geraeteauswahl darf nach Schliessen/Sitzungsende keine
+  Verbindung im Nachfolgedialog hinterlassen. Zum Wechseln der Verbindungsart zuerst trennen.
+  Ein alter Verbindungsversuch bleibt bis zum Abschluss seiner Bereinigung global gesperrt;
+  ein neues Vorschaufenster darf waehrenddessen weder verbinden noch drucken.
+- **Desktop-App starten (#1540):** `scripts/dashboard-app-starten.sh` oeffnet ein eigenes
+  Chrome-/Edge-App-Fenster mit `http://localhost:8001` auf dem Dashboard-Mac. Der Starter
+  prueft bzw. weckt dort den bestehenden Hintergrunddienst und protokolliert wie der bisherige
+  Betriebsstarter. Das installierte App-Symbol delegiert an diesen gemeinsamen Starter.
+  `TP_DASHBOARD_APP_URL` darf fuer andere Rechner dieselbe Zentrale per HTTPS angeben;
+  eine entfernte Adresse weckt keinen lokalen Dienst. LAN-HTTP wird abgelehnt, Browser-
+  Sicherheitspruefungen bleiben aktiv. Der private `start-dashboard.sh`, `einrichten.sh` und
+  die betriebseigenen Commits werden nicht ersetzt. Browser/App nutzen dieselbe gemeinsame
+  Datenablage; ein Verbindungsstatus ist weiterhin kein physischer Drucknachweis.
 - **Fremdcode:** `@mmote/niimbluelib@0.47.1` (UMD) und `qrcode-generator@1.4.4` werden erst im Dialog
   von cdn.jsdelivr.net geladen, fest gepinnt mit SRI-Prüfsumme. Ohne Internet: Vorschau ohne QR,
   Drucken nicht möglich.
