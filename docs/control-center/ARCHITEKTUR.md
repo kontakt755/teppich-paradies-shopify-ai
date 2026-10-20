@@ -1608,6 +1608,19 @@ NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
   Bestellung, eins je Stück). Einkauf › Musterlager → „Etikett drucken…“ für ein Etikett von Hand
   (Produktlink, optional Farbe/Serie/Artikelnummer). Beide öffnen denselben Dialog mit Vorschau,
   Druckdichte (1–5, Standard 3) und Verbindung.
+- **Direkt im Lexikon (20.10., #1489):** Produkt oder Muster oeffnen → „Musteraufkleber“ →
+  Farbe/Ausfuehrung und Anzahl (1–20) waehlen → Vorschau. Der Aufkleber entsteht aus dem aktuellen
+  Eintrag, ohne zuvor gespeicherte PNG-Datei. `lib/lexikon-etiketten.mjs` buendelt gleiche SKU/Farbe
+  ueber mehrere Breiten; unterschiedliche Shop-SKUs bleiben getrennte Ausfuehrungen. Ein Muster
+  laedt das explizit verknuepfte Originalprodukt und ordnet die Quell-SKU exakt zu. Die
+  Lieferanten-Artikelnummer ersetzt niemals die Shop-SKU. Der Sammelartikel „Kostenloses Muster“
+  fordert die Auswahl des konkreten Produkts. Fehlt eine Farbe, kann eine belegte
+  Variantenbezeichnung als Ausfuehrung dienen; reine Masse und „Default Title“ bleiben ausgeschlossen.
+- **Vorschau und Korrektur:** „Als PNG speichern“ gibt das 400×400-Bild aus. „Angaben bearbeiten“
+  ersetzt das ausgewaehlte Etikett (samt identischen Kopien); waehrend des Abrufs bleiben weitere
+  Bearbeitung und Druck gesperrt. Fehlende Pflichtangaben oder eine noch nicht geladene QR-Bibliothek
+  sperren Druck und Download. SKU bleibt optional und wird bei leerem Wert ausgeblendet. Lange
+  Paketetiketten passen die Schrift an, damit keine technische Zeile oder Artikelnummer entfaellt.
 - **Inhalt:** Absender `www.teppich-paradies.net`, Serie, Farbe, bei Paketware (Lexikon-Eigenschaft
   `qmProPaket`) Art, Stärke/Nutzschicht, Nutzungsklassen, Format und daneben der QR-Code, sonst der
   QR-Code größer in der Mitte; unten „Art.-Nr.“ mit der SKU der echten Variante (nie die
