@@ -1584,3 +1584,30 @@ abgehakt, ist es mit Shopify synchron“. Neuer Reiter **Einkauf › Belege** (`
   Abgleich, Ablage mit Sperre und beschädigter Datei, API, Rollen am Server) – nur Pseudonyme.
 - **Offen**: Anhänge (PDF) liest der Lauf nicht – Nummern nur aus Betreff, Text und Dateinamen. „AB
   fehlt seit N Tagen“ ist bewusst keine Regel, solange die Abdeckung des Postfachs nicht belegt ist.
+
+## 26. Muster-Etiketten drucken (seit 2026-10-20, #1473)
+
+Etikettendrucker Niimbot B1, Etikett 50 × 50 mm (400 × 400 px, 203 dpi, Druckrichtung „top“ –
+NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
+
+- **Wo:** Kunden › Bestellungen, Musterbestellung aufklappen → „Etiketten drucken“ (alle Muster der
+  Bestellung, eins je Stück). Einkauf › Musterlager → „Etikett drucken…“ für ein Etikett von Hand
+  (Produktlink, optional Farbe/Serie/Artikelnummer). Beide öffnen denselben Dialog mit Vorschau,
+  Druckdichte (1–5, Standard 3) und Verbindung.
+- **Inhalt:** Absender `www.teppich-paradies.net`, Serie, Farbe, bei Paketware (Lexikon-Eigenschaft
+  `qmProPaket`) Art, Stärke/Nutzschicht, Nutzungsklassen, Format und daneben der QR-Code, sonst der
+  QR-Code größer in der Mitte; unten „Art.-Nr.“ mit der SKU der echten Variante (nie die
+  Muster-SKU `TP-MUSTER-…`/`M-…`). Daten aus der Bestellposition und dem Produktlexikon
+  (`/api/lexikon/produkt`, nur lesend); fehlt etwas, bleibt es leer und die Vorschau sagt „fehlt: …“.
+  `lib/muster-etiketten.mjs` (rein, getestet), `bausteine/etiketten-druck.mjs` (Canvas, Drucker).
+- **Lexikon:** `nutzschicht`, `format` (`custom.format_cm`) und `arten` sind seit diesem Stand Teil
+  der Lexikon-Eigenschaften; sie erscheinen nach dem nächsten Lexikon-Export.
+- **Verbindung:** Web Bluetooth (Hauptweg, `NiimbotBluetoothClient`), USB-Kabel per WebSerial als
+  Ausweg. Beides nur in **Chrome/Edge** und nur in einem sicheren Kontext: `https://…` oder
+  `http://localhost`/`127.0.0.1`. Über `http://<IP>:8001` im Firmennetz geht es nicht – dann die
+  Tailscale-Adresse `https://<name>.ts.net` nehmen (Abschnitt 1d). Der Dialog sagt das selbst.
+- **Fremdcode:** `@mmote/niimbluelib@0.47.1` (UMD) und `qrcode-generator@1.4.4` werden erst im Dialog
+  von cdn.jsdelivr.net geladen, fest gepinnt mit SRI-Prüfsumme. Ohne Internet: Vorschau ohne QR,
+  Drucken nicht möglich.
+- **Offen:** Hinweis „auch als Klickvinyl“ (gleicher Dekor in anderer Art) – nur mit belegbarer
+  Zuordnung, noch nicht gebaut.

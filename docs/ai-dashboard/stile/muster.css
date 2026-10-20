@@ -21,6 +21,7 @@
 .ml-kopf { display: flex; gap: 12px 20px; align-items: flex-start; justify-content: space-between; margin: 4px 0 12px; }
 .ml-erklaerung { margin: 0; max-width: 70ch; }
 .ml-kopf .btn { flex: none; }
+.ml-kopf .btn-row { flex: none; display: flex; flex-direction: column; gap: 8px; }
 .ml-zahlen { margin: 0 0 12px; }
 .ml-warn { color: var(--warn); font-weight: 600; }
 
@@ -68,8 +69,22 @@
 
 @media (max-width: 640px) {
   .ml-kopf { flex-direction: column; }
+  .ml-kopf .btn-row { width: 100%; }
   .ml-kopf .btn { width: 100%; min-height: 44px; }
   .ml-zeile { flex-direction: column; align-items: stretch; }
   .ml-aktionen { justify-content: flex-start; }
   .ml-aktionen .btn { min-height: 40px; }
 }
+
+/* -- Etiketten drucken (bausteine/etiketten-druck.mjs) -------------------------------
+   Das Etikett selbst bleibt schwarz auf weiss (so wird es gedruckt), auch im Dunkelmodus. */
+.etk-dialog { max-width: 640px; }
+.etk-liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin: 12px 0; }
+.etk-karte { margin: 0; }
+.etk-bild { width: 100%; height: auto; aspect-ratio: 384 / 400; border: 1px solid var(--line-strong); border-radius: 6px; background: #fff; }
+.etk-fehlt { color: var(--crit); font-weight: 600; }
+.etk-warn { color: var(--crit); background: var(--crit-soft); padding: 8px 10px; border-radius: 6px; }
+.etk-form { display: grid; gap: 8px; margin-top: 8px; }
+.etk-form label, .etk-optionen label { display: grid; gap: 2px; font-size: .9rem; }
+.etk-form button { justify-self: start; }
+.etk-optionen { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0 4px; }

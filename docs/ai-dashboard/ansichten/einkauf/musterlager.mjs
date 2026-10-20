@@ -27,6 +27,7 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { ladeStandNeu } from './auftragsfluss.mjs';
+import { oeffneEtikettenDruck } from '../../bausteine/etiketten-druck.mjs';
 
 export const musterlager = { daten: null, laedt: false, geladenAm: 0 };
 
@@ -140,7 +141,8 @@ export function viewEinkaufMusterlager() {
 
   const kopf = `<div class="ml-kopf">
     <p class="small muted ml-erklaerung">Muster, die wir selbst da haben. Kommt eine Musterbestellung für eines davon, steht sie automatisch auf „aus dem Musterlager“ – sie geht nicht in die Bestellung an den Lieferanten. Einzelmuster zählen beim Verschicken ab; von Probestück und Bahn schneiden wir A5-Muster zu. Gemischte Bestellungen gehen zusammen raus, sobald die Lieferanten-Muster da sind.</p>
-    ${istNurLesend() ? '' : '<button type="button" class="btn btn-primary" data-ml-neu>Muster einlagern…</button>'}
+    <div class="btn-row">${istNurLesend() ? '' : '<button type="button" class="btn btn-primary" data-ml-neu>Muster einlagern…</button>'}
+    <button type="button" class="btn" data-ml-etikett>Etikett drucken…</button></div>
   </div>`;
   // Eine Zeile mit den drei Zahlen, die vom Normalfall abweichen; 0 faellt weg.
   const zahlen = [
@@ -417,6 +419,8 @@ function oeffneBearbeiten(e, { wieder = false } = {}) {
 /** Klicks der Ansicht. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function einkaufKlickMusterlager(ev) {
   if (ev.target.closest('[data-ml-neu]')) { oeffneEinlagern(); return true; }
+  // Einzeletikett von Hand, z. B. fuer Muster im Lager ohne Bestellung.
+  if (ev.target.closest('[data-ml-etikett]')) { oeffneEtikettenDruck({ titel: 'Etikett drucken' }); return true; }
   const ms = ev.target.closest('[data-ms-frei], [data-ms-nachholen]');
   if (ms) {
     const frei = 'msFrei' in ms.dataset;

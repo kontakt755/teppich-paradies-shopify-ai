@@ -18,6 +18,7 @@ import { zeitleisteBlock, auftragAusZeile, zeitleisteKlick } from './zeitleiste.
 import { oeffneVersandDialog } from '../einkauf/versand.mjs';
 import { bestellinhalt } from '../../lib/bestellinhalt.mjs';
 import { versandRueckmeldung } from '../../lib/versand.mjs';
+import { oeffneEtikettenDruck, etikettenFuerBestellung } from '../../bausteine/etiketten-druck.mjs';
 
 /** Setzt den Auftragsfluss-Status fuer ALLE Positionen einer Bestellung auf einmal (Bereich Kunden/Bestellungen). */
 async function setzeAuftragsstatusFuerBestellung(orderId, status) {
@@ -120,6 +121,7 @@ function bestellzeileAktionen(z) {
   return `<div class="btn-row">
     ${lesend ? '' : af.map(s => `<button type="button" class="btn btn-sm btn-ghost" data-bq-af="${esc(z.orderId)}" data-bq-af-status="${s}" title="${esc(`Alle Artikel dieser Bestellung auf „${AF_STATUS_LABEL[s]}“`)}">${esc(AF_STATUS_LABEL[s])}${s === 'raus' ? '…' : ''}</button>`).join('')}
     ${!lesend && !z.fertig && z.anzahlArtikel ? `<button type="button" class="btn btn-sm btn-primary" data-bq-fertig="${esc(z.orderId)}">Kunde fertig …</button>` : ''}
+    ${(z.auftrag?.positionen || []).some(p => p?.istMuster) ? `<button type="button" class="btn btn-sm" data-bq-etiketten="${esc(z.orderId)}">Etiketten drucken</button>` : ''}
     ${z.beratungOffen ? `<a class="btn btn-sm" href="#/kunden?tab=rueckrufe">Zur Rückrufliste →</a>` : ''}
   </div>`;
 }
@@ -322,6 +324,14 @@ export function kundenKlickBestellungen(e) {
     // "raus" bucht in Shopify und schickt die Versandmail: ein Paket, ein Fenster - nicht je Artikel.
     if (bqAf.dataset.bqAfStatus === 'raus') oeffneVersandDialog(bqAf.dataset.bqAf);
     else setzeAuftragsstatusFuerBestellung(bqAf.dataset.bqAf, bqAf.dataset.bqAfStatus);
+    return true;
+  }
+  const bqEtk = e.target.closest('[data-bq-etiketten]');
+  if (bqEtk) {
+    e.preventDefault(); e.stopPropagation();
+    const zeile = (kunden.bestellungen?.zeilen || []).find(z => z.orderId === bqEtk.dataset.bqEtiketten);
+    etikettenFuerBestellung(zeile?.auftrag?.positionen)
+      .then(etiketten => oeffneEtikettenDruck({ etiketten, titel: `Etiketten drucken · ${zeile?.orderName || ''}` }));
     return true;
   }
   const bqFertig = e.target.closest('[data-bq-fertig]');

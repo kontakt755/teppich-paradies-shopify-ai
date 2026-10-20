@@ -26,6 +26,10 @@ export const EIGENSCHAFTEN_FELDER = Object.freeze([
   { key: 'zimmer', label: 'zimmer', displayField: 'zimmer' },
   { key: 'aufbau', label: 'aufbau', displayField: 'name' },
   { key: 'gesamtstarke', label: 'gesamtstaerke', displayField: 'name' },
+  // Nutzschicht und Format: fuer die Muster-Etiketten (Paketware), Klartext-Metafelder.
+  { key: 'nutzschicht', label: 'nutzschicht', displayField: 'value' },
+  { key: 'format_cm', label: 'format', displayField: 'value' },
+  { key: 'arten', label: 'arten', displayField: 'name' },
   { key: 'poleneinsatzgewicht', label: 'poleneinsatzgewicht', displayField: 'name' },
   { key: 'komfortklasse', label: 'komfortklasse', displayField: 'name' },
   { key: 'trittschallverbesserung', label: 'trittschallverbesserung', displayField: 'name' },
