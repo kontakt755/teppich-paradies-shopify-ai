@@ -321,7 +321,10 @@ export function zeitleiste(auftrag, { statusAlle = {}, ereignisse = [], folge = 
     else schritte.push({ schritt: 'ergebnis', ergebnis: null, label: label.ergebnis, getan: false, am: null, von: null, notiz: null, automatisch: false, quelle: null, teil: null });
   } else {
     const ware = positionen.filter(p => !p.istMuster);
-    direkt = ware.length > 0 && ware.every(p => DIREKT_ROUTEN.has(p.route));
+    // Ueber unseren Kettler bestellte Ware (ueber: 'kettler', #1453) kommt erst zu uns zurueck,
+    // auch wenn der Lieferant sonst direkt verschickt.
+    const ueberKettler = p => statusAlle[positionKey(auftrag.id, p.lineItemId)]?.ueber === 'kettler';
+    direkt = ware.length > 0 && ware.every(p => DIREKT_ROUTEN.has(p.route) && !ueberKettler(p));
     schritte.push(start('kunde_hat_bestellt'), ausPosition('bestellt'));
     if (!direkt) schritte.push(ausPosition('geliefert'));
     schritte.push(ausVersand(), ausPosition('erledigt'));

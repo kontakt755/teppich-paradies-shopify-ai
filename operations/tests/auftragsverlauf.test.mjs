@@ -213,6 +213,15 @@ test('Warenstrecke: bestellen -> Lieferant -> an Kunden raus -> abschliessen; Di
   const zd = zeitleiste(direkt, { statusAlle: statusBis(direkt, 'bestellt'), jetzt: am(4) });
   assert.deepEqual(zd.verlauf.map(s => s.schritt), ['kunde_hat_bestellt', 'bestellt', 'raus', 'erledigt']);
   assert.deepEqual([zd.naechsterSchritt.wer, zd.naechsterSchritt.aktion], ['lieferant', 'raus']);
+
+  // Direktversand, aber nach der Regel unter 2 m ueber unseren Kettler bestellt (#1453): Ware kommt zu uns.
+  const kettler = einAuftrag(bestellung(3, [ware(3, 'SUPPLIER_DIRECT')]));
+  const st = statusBis(kettler, 'bestellt');
+  for (const e of Object.values(st)) e.ueber = 'kettler';
+  const zk = zeitleiste(kettler, { statusAlle: st, jetzt: am(4) });
+  assert.equal(zk.direktversand, false);
+  assert.deepEqual(zk.verlauf.map(s => s.schritt), ['kunde_hat_bestellt', 'bestellt', 'geliefert', 'raus', 'erledigt']);
+  assert.deepEqual([zk.naechsterSchritt.wer, zk.naechsterSchritt.aktion], ['lieferant', 'geliefert']);
 });
 
 test('Storniert: nichts mehr zu tun', () => {

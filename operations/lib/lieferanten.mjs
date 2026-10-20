@@ -713,7 +713,7 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, aus
   zeilen.push('', bestaetigen, '', gruss);
   const betreff = ['Bestellung', st.kundennummer ? `Kd.-Nr. ${st.kundennummer}` : null, anKettler ? 'Lieferung an Kettelservice' : null, kurzListe(aufgenommen.map(p => p.orderName))].filter(Boolean).join(' – ');
   // Vorschlag fuer den Dialog: welche offenen Positionen sich fuer den Kettler anbieten.
-  const kettlerVorschlag = !direkt && adresseOk(kettler)
+  const kettlerVorschlag = !ZIEL_JE_AUFTRAG.has(gruppe.route) && adresseOk(kettler)
     ? offen.map(p => ({ p, grund: kettlerGrund(p, adressen.get(p.orderId)) })).filter(x => x.grund)
       .map(({ p, grund }) => ({ orderId: p.orderId, orderName: p.orderName, lineItemId: p.lineItemId, titel: p.titel, grund }))
     : [];
@@ -724,9 +724,11 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, aus
       route: geklaert(gruppe.route),
       lieferziel: direkt ? (gruppe.route === ROUTE.SUPPLIER_TO_SITE ? 'baustelle' : 'kunde') : anKunden ? 'kunde' : anKettler ? 'kettler' : 'laden',
       // Nur Ware, die sonst in den Laden geht, kann im Dialog umgeschaltet werden.
-      zielWaehlbar: !direkt,
+      // Bei Direktversand ist das Ziel fest - auch die nach der Regel abgetrennte Kettler-Mail
+      // (#1453) wird nicht umgeschaltet, sonst faellt sie zurueck in den Direktversand.
+      zielWaehlbar: !ZIEL_JE_AUFTRAG.has(gruppe.route),
       // Kettler nur anbieten, wenn seine Anschrift in den privaten Stammdaten steht.
-      kettlerMoeglich: !direkt && adresseOk(kettler),
+      kettlerMoeglich: !ZIEL_JE_AUFTRAG.has(gruppe.route) && adresseOk(kettler),
       kettlerVorschlag,
       // Nach der Regel "unter 2 m zum Kettler" abgetrennt, nicht von Hand gewaehlt.
       kettlerAutomatisch: automatisch,

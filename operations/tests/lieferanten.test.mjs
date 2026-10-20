@@ -804,6 +804,7 @@ test('Regel unter 2 m auch bei Direktversand des Lieferanten: Kettler-Mail statt
   assert.match(kettler.text, /1,50 lfm von der 4,00 m breiten Rolle \(Meterware, ohne Maßzuschnitt\)/);
   assert.match(kettler.text, /an unseren Kettelservice:\nBeispiel-Kettelei/);
   assert.equal(/direkt an unseren Kunden|Testkunde 4/.test(kettler.text), false, 'nicht an den Kunden');
+  assert.equal(kettler.zielWaehlbar, false, 'Umschalten wuerde in den Direktversand zurueckfallen');
   // 2 m und mehr bleibt Direktversand an den Kunden.
   const gross = bestellmail({ modell: massteppichModell({ masse: '200 × 300 cm', route: 'SUPPLIER_DIRECT' }), lieferant: 'A', stammdaten: STAMM_KETTLER, jetzt: JETZT }).mails[0];
   assert.equal(gross.lieferziel, 'kunde');
