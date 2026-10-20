@@ -172,7 +172,7 @@
 
 /* Die Auswahlaktion steht vor der langen Liste; Kopien bleiben je Position sichtbar. */
 .md-offen .card-head { flex-wrap: wrap; gap: 6px 16px; }
-.md-offene-zeile { grid-template-columns: minmax(0, 1fr) auto auto; }
+.md-offene-zeile, .md-auftragszeile { grid-template-columns: minmax(0, 1fr) auto auto; }
 .md-mit-auswahl { grid-template-columns: 44px minmax(0, 1fr) auto auto; }
 .md-kopien { font-weight: 600; white-space: nowrap; }
 .md-gewaehlt { background: var(--surface-2); }
@@ -182,8 +182,8 @@
 .md-auftrag > details > summary { cursor: pointer; }
 .etk-dialog #etkZusammenfassung { font-weight: 600; }
 @media (max-width: 600px) {
-  .md-offene-zeile { grid-template-columns: minmax(0, 1fr) auto; }
-  .md-offene-zeile > .btn { grid-column: 1 / -1; justify-self: start; }
+  .md-offene-zeile, .md-auftragszeile { grid-template-columns: minmax(0, 1fr) auto; }
+  .md-offene-zeile > .btn, .md-auftragszeile > .btn { grid-column: 1 / -1; justify-self: start; min-height: 44px; }
   .md-mit-auswahl { grid-template-columns: 36px minmax(0, 1fr); }
   .md-mit-auswahl > .md-kopien, .md-mit-auswahl > .btn { grid-column: 2; justify-self: start; }
   .md-druckaktionen { flex-direction: column-reverse; }

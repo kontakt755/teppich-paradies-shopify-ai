@@ -59,6 +59,33 @@ test('Druckabschluss nimmt nur reservierte IDs; spaetere Vormerkung bleibt offen
   assert.equal(stand.eintraege.find(e => e.status === 'gedruckt').gedrucktVon, 'Laden');
 });
 
+test('API entfernt reservierte Teilmenge atomar, gibt Rest frei und erlaubt keinen alten Papierabschluss', async t => {
+  const { api, dir, payload } = vorbereiten(t), job = randomUUID();
+  await api.lexikonDrucklisteSetzen(payload(), person);
+  await api.lexikonDrucklisteSetzen(payload(), person);
+  const alle = api.lexikonDruckliste().eintraege.map(({ id, revision }) => ({ id, revision }));
+  const reserviert = (await api.lexikonDrucklisteSetzen({ aktion: 'reservieren', vorgangId: randomUUID(), druckauftragId: job, eintraege: alle }, person)).eintraege;
+  const refs = reserviert.map(({ id, revision }) => ({ id, revision }));
+  const eingabe = { aktion: 'auftrag_entfernen', vorgangId: randomUUID(), druckauftragId: job, eintraege: refs, entfernenIds: [reserviert[0].id] };
+  const file = path.join(dir, 'muster-druckliste.json'), vorher = fs.readFileSync(file, 'utf8');
+  await assert.rejects(api.lexikonDrucklisteSetzen(eingabe, { name: 'Lesen', rolle: 'lesen' }), e => e.status === 403);
+  await assert.rejects(api.lexikonDrucklisteSetzen({ ...eingabe, entfernenIds: [] }, person), e => e.status === 400);
+  await assert.rejects(api.lexikonDrucklisteSetzen({ ...eingabe, eintraege: [refs[0]] }, person), e => e.status === 409);
+  assert.equal(fs.readFileSync(file, 'utf8'), vorher);
+  const r = await api.lexikonDrucklisteSetzen({ ...eingabe, actor: 'Fremder', gedrucktVon: 'Fremder' }, { name: 'Laden', rolle: 'mitarbeiter' });
+  assert.deepEqual(r.eintraege.map(e => e.status), ['entfernt', 'offen']);
+  assert.equal(r.eintraege[0].entferntVon, 'Laden');
+  for (const e of r.eintraege) {
+    assert.equal(e.revision, 3); assert.equal(e.druckauftrag, null);
+    assert.equal(Object.hasOwn(e, 'gedrucktAm'), false); assert.equal(Object.hasOwn(e, 'gedrucktVon'), false);
+    assert.deepEqual(e.etikett, reserviert.find(a => a.id === e.id).etikett);
+  }
+  const nachher = fs.readFileSync(file, 'utf8');
+  assert.equal((await api.lexikonDrucklisteSetzen(eingabe, person)).wiederholt, true);
+  await assert.rejects(api.lexikonDrucklisteSetzen({ aktion: 'erledigen', vorgangId: randomUUID(), druckauftragId: job, eintraege: refs }, person), e => e.status === 409);
+  assert.equal(fs.readFileSync(file, 'utf8'), nachher);
+});
+
 test('Unvollstaendige und manipulierte Auswahlen sowie Leserechte schreiben nichts', async t => {
   const { api, dir, payload, luecke } = vorbereiten(t);
   for (const p of [null, { ...payload(), handle: 'gibt-es-nicht' }, { ...payload(), key: 'fremder-key' }, { ...payload(), anzahl: 0 }, { ...payload(), anzahl: 1.5 }, { ...payload(), anzahl: 21 }, { ...payload(), handle: luecke.handle, key: etikettenAusLexikon(luecke)[0].key }]) {
@@ -97,6 +124,17 @@ test('HTTP: gemeinsame Liste erlaubt Mitarbeiter, sperrt Lesen/CSRF, haelt Fehle
   assert.equal((await fetch(ziel, { method: 'PUT', headers: { cookie: cookies.mitarbeiter } })).status, 405);
   assert.equal((await post('mitarbeiter')).status, 200);
   assert.equal((await fetch(ziel, { headers: { cookie: cookies.lesen } }).then(r => r.json())).eintraege.length, 1);
+  const erster = (await fetch(ziel, { headers: { cookie: cookies.mitarbeiter } }).then(r => r.json())).eintraege[0];
+  const job = randomUUID();
+  const reserviert = await post('mitarbeiter', { aktion: 'reservieren', vorgangId: randomUUID(), druckauftragId: job, eintraege: [{ id: erster.id, revision: erster.revision }] }).then(r => r.json());
+  const e = reserviert.eintraege[0];
+  const entfernen = { aktion: 'auftrag_entfernen', vorgangId: randomUUID(), druckauftragId: job, eintraege: [{ id: e.id, revision: e.revision }], entfernenIds: [e.id] };
+  const vorher = fs.readFileSync(path.join(dir, 'muster-druckliste.json'), 'utf8');
+  assert.equal((await post('lesen', entfernen)).status, 403);
+  assert.equal(fs.readFileSync(path.join(dir, 'muster-druckliste.json'), 'utf8'), vorher);
+  const entfernt = await post('mitarbeiter', entfernen);
+  assert.equal(entfernt.status, 200);
+  assert.equal((await entfernt.json()).eintraege[0].status, 'entfernt');
   fs.writeFileSync(path.join(dir, 'muster-druckliste.json'), '{kaputt');
   assert.equal((await fetch(ziel, { headers: { cookie: cookies.mitarbeiter } })).status, 500);
   assert.equal((await post('mitarbeiter')).status, 500);

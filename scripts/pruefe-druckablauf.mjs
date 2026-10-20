@@ -34,6 +34,9 @@ function eintrag(i, anzahl = 1) {
     etikett: { serie: `Testserie ${i}`, farbe: `Testfarbe ${i}`, sku: `TEST-${i}`, url: `https://www.teppich-paradies.net/products/testmuster-${i}`, technik: [], fehlt: [] },
   };
 }
+function reserviert(i, auftrag = 'test-frueherer-auftrag', anzahl = 1) {
+  return { ...eintrag(i, anzahl), revision: 2, status: 'in_druck', druckauftrag: { id: auftrag, von: { name: 'Anderer Testarbeitsplatz' }, am: jetzt } };
+}
 function fixture(eintraege = [eintrag(1, 2), eintrag(2), eintrag(3, 2)], rolle = 'mitarbeiter') {
   return {
     eintraege: kopie(eintraege), rolle, anfragen: [], versuche: [], gets: 0,
@@ -53,6 +56,20 @@ function fixture(eintraege = [eintrag(1, 2), eintrag(2), eintrag(3, 2)], rolle =
       const es = referenzen.map(r => this.eintraege.find(e => e.id === r.id));
       assert(referenzen.length, 'Eine Schreibaktion braucht konkrete Positionen.');
       assert(es.every((e, i) => e && e.revision === referenzen[i].revision), 'Veraltete Revision in der Browseranfrage.');
+      if (auftrag.aktion === 'auftrag_entfernen') {
+        const job = this.eintraege.filter(e => e.status === 'in_druck' && e.druckauftrag?.id === auftrag.druckauftragId);
+        const ziele = new Set(auftrag.entfernenIds);
+        assert.equal(job.length, es.length, 'Entfernen muss den vollstaendigen Auftrag mit allen Revisionen pruefen.');
+        assert.deepEqual(new Set(job.map(e => e.id)), new Set(es.map(e => e.id)));
+        assert(ziele.size && ziele.size === auftrag.entfernenIds.length, 'Entfernungsziele sind eindeutig und nicht leer.');
+        assert([...ziele].every(id => job.some(e => e.id === id)), 'Entfernungsziele gehoeren zum Auftrag.');
+        for (const e of job) {
+          e.status = ziele.has(e.id) ? 'entfernt' : 'offen';
+          if (e.status === 'entfernt') e.entferntAm = jetzt;
+          e.druckauftrag = null; ++e.revision;
+        }
+        return this.antwort();
+      }
       for (const e of es) {
         if (auftrag.aktion === 'reservieren') {
           assert.equal(e.status, 'offen');
@@ -92,6 +109,10 @@ const server = http.createServer(async (req, res) => {
       daten.versuche.push(auftrag);
       if (auftrag.aktion === 'vormerken' && daten.vormerkHalten) await new Promise(ok => { daten.vormerkFortsetzen = ok; });
       if (auftrag.aktion === 'vormerken' && daten.vormerkFehler) return json({ error: 'Synthetischer Konflikt bei der Vormerkung' }, 409);
+      if (auftrag.aktion === 'auftrag_entfernen') {
+        if (daten.entfernenHalten) await new Promise(ok => { daten.entfernenFortsetzen = ok; });
+        if (daten.entfernenFehler) { daten.vorEntfernenFehler?.(); return json({ error: 'Synthetischer Konflikt beim Entfernen' }, daten.entfernenFehler); }
+      }
       return json(daten.schreiben(auftrag));
     }
     if (url.pathname.startsWith('/api/')) return json({ verfuegbar: true, eintraege: [], antworten: [] });
@@ -184,7 +205,7 @@ async function pruefe(name, test, daten = fixture()) {
       else { fremdeAnfragen.push(req.url()); void req.abort(); }
     });
     page.on('pageerror', err => jsFehler.push(err.message));
-    page.on('dialog', dialog => { void dialog.accept(); });
+    page.on('dialog', dialog => { (daten.dialoge ||= []).push(dialog.message()); void (daten.dialogAntwort === false ? dialog.dismiss() : dialog.accept()); });
     await geraeteAttrappen(page, daten.umgebung);
     await page.goto(`${basis}/#/lexikon?tab=druckliste`, { waitUntil: 'networkidle0' });
     await page.waitForSelector('[data-md-aktualisieren]');
@@ -195,7 +216,7 @@ async function pruefe(name, test, daten = fixture()) {
   } catch (err) {
     ++gescheitert; console.error(`FEHLER ${name}\n${err.stack}`);
     console.error((await page.$eval('#main', e => e.innerText).catch(() => '')).slice(0, 1700));
-  } finally { daten.vormerkFortsetzen?.(); await kontext.close(); }
+  } finally { daten.vormerkFortsetzen?.(); daten.entfernenFortsetzen?.(); await kontext.close(); }
 }
 async function vorschau(page) {
   await page.waitForFunction(() => document.querySelector('[data-md-reservieren]') && !document.querySelector('[data-md-reservieren]').disabled);
@@ -236,6 +257,112 @@ async function keinDruck(page) {
 
 try {
   browser = await puppeteer.launch({ headless: true });
+  await pruefe('Einzelnes Muster aus frueherem Druckauftrag entfernen gibt den Rest frei und behaelt andere Auftraege', async (page, daten) => {
+    await page.reload({ waitUntil: 'networkidle0' });
+    await page.waitForSelector('[data-md-auftrag-entfernen="test-frueherer-auftrag"][data-md-eintrag="test-position-2"]');
+    assert.equal(await page.$$('[data-md-vorschau]').then(es => es.length), 0, 'Nach einem Neustart gehoert der alte Auftrag nicht dieser Sitzung.');
+    await page.$eval('.md-auftrag details', el => { el.open = true; });
+    const unbeeinflusst = kopie(daten.eintraege.slice(3));
+    await page.click('[data-md-auftrag-entfernen="test-frueherer-auftrag"][data-md-eintrag="test-position-2"]');
+    await warteAuf(() => daten.eintraege[1].status === 'entfernt');
+    await page.waitForFunction(() => document.querySelectorAll('.md-offen .md-zeile').length === 3);
+    assert.deepEqual(daten.eintraege.slice(0, 3).map(e => [e.status, e.revision, e.druckauftrag]), [['offen', 3, null], ['entfernt', 3, null], ['offen', 3, null]]);
+    assert.deepEqual(daten.eintraege.slice(3), unbeeinflusst, 'Spaetere Vormerkung und anderer Druckauftrag bleiben unveraendert.');
+    assert.deepEqual(aktionen(daten), ['auftrag_entfernen']);
+    assert.deepEqual(daten.anfragen[0].eintraege, [1, 2, 3].map(i => ({ id: `test-position-${i}`, revision: 2 })));
+    assert.deepEqual(daten.anfragen[0].entfernenIds, ['test-position-2']);
+    assert.equal(daten.dialoge.length, 1); assert.match(daten.dialoge[0], /entfernen/i); assert.match(daten.dialoge[0], /offen|freigegeben|freigeben|Noch zu drucken/i);
+    await keinDruck(page);
+  }, fixture([reserviert(1), reserviert(2, undefined, 2), reserviert(3), eintrag(4), reserviert(5, 'test-anderer-auftrag')]));
+  await pruefe('Gesamten frueheren Druckauftrag entfernen ohne als gedruckt zu markieren', async (page, daten) => {
+    const spaeter = kopie(daten.eintraege.at(-1));
+    await page.click('[data-md-auftrag-entfernen="test-frueherer-auftrag"]:not([data-md-eintrag])');
+    await warteAuf(() => daten.eintraege.slice(0, 3).every(e => e.status === 'entfernt'));
+    await page.waitForFunction(() => !document.querySelector('[data-md-auftrag-entfernen="test-frueherer-auftrag"]'));
+    assert.deepEqual(daten.eintraege.at(-1), spaeter);
+    assert.deepEqual(aktionen(daten), ['auftrag_entfernen']);
+    assert.deepEqual(daten.anfragen[0].entfernenIds, ['test-position-1', 'test-position-2', 'test-position-3']);
+    assert(daten.eintraege.every(e => !e.gedrucktAm && e.status !== 'gedruckt'));
+    await keinDruck(page);
+  }, fixture([reserviert(1), reserviert(2), reserviert(3), eintrag(4)]));
+  for (const ziel of ['einzeln', 'gesamt']) {
+    await pruefe(`Entfernen ${ziel} abbrechen laesst Auftrag und Liste unveraendert`, async (page, daten) => {
+      const vorher = kopie(daten.eintraege); daten.dialogAntwort = false;
+      if (ziel === 'einzeln') await page.$eval('.md-auftrag details', el => { el.open = true; });
+      const selector = ziel === 'einzeln' ? '[data-md-auftrag-entfernen][data-md-eintrag="test-position-2"]' : '[data-md-auftrag-entfernen]:not([data-md-eintrag])';
+      await page.click(selector);
+      await warteAuf(() => daten.dialoge?.length === 1);
+      assert.deepEqual(daten.versuche, []); assert.deepEqual(daten.anfragen, []); assert.deepEqual(daten.eintraege, vorher);
+      assert.equal(await page.$eval(selector, el => el.disabled), false);
+      await keinDruck(page);
+    }, fixture([reserviert(1), reserviert(2)]));
+  }
+  for (const status of [409, 500]) {
+    await pruefe(`Fehler ${status} beim Entfernen laedt frischen Stand ohne falschen Erfolg und erlaubt neuen Versuch`, async (page, daten) => {
+      daten.entfernenFehler = status;
+      daten.vorEntfernenFehler = () => { daten.eintraege[0].produktTitel = 'Frisch aktualisiertes Testmuster'; ++daten.eintraege[0].revision; };
+      await page.click('[data-md-auftrag-entfernen]:not([data-md-eintrag])');
+      await page.waitForFunction(() => /Änderung wurde nicht bestätigt/.test(document.querySelector('#main')?.innerText || ''));
+      assert.match(await page.$eval('.md-auftrag', el => el.textContent), /Frisch aktualisiertes Testmuster/);
+      assert.doesNotMatch(await page.$eval('#toastRoot', el => el.innerText), /aus der Druckliste entfernt|Auftrag entfernt/i);
+      assert.deepEqual(daten.anfragen, []);
+      assert(daten.eintraege.every(e => e.status === 'in_druck'));
+      daten.entfernenFehler = 0;
+      await page.click('[data-md-auftrag-entfernen]:not([data-md-eintrag])');
+      await warteAuf(() => daten.eintraege.every(e => e.status === 'entfernt'));
+      assert.equal(daten.versuche.length, 2);
+      assert.equal(daten.anfragen[0].eintraege[0].revision, 3, 'Wiederholung benutzt den frisch geladenen Stand.');
+      await keinDruck(page);
+    }, fixture([reserviert(1), reserviert(2)]));
+  }
+  await pruefe('Doppelklick auf Auftragsentfernen erzeugt nur eine bestaetigte Aenderung', async (page, daten) => {
+    daten.entfernenHalten = true;
+    await page.$eval('[data-md-auftrag-entfernen]:not([data-md-eintrag])', el => { el.click(); el.click(); });
+    await warteAuf(() => typeof daten.entfernenFortsetzen === 'function');
+    assert.equal(daten.versuche.length, 1); assert.equal(daten.dialoge.length, 1);
+    assert.equal(await page.$eval('[data-md-auftrag-entfernen]:not([data-md-eintrag])', el => el.disabled), true);
+    daten.entfernenFortsetzen();
+    await warteAuf(() => daten.eintraege.every(e => e.status === 'entfernt'));
+    assert.deepEqual(aktionen(daten), ['auftrag_entfernen']);
+    await keinDruck(page);
+  }, fixture([reserviert(1), reserviert(2)]));
+  await pruefe('Reservierter Auftrag ist am Handy vollstaendig aufklappbar und Position nach 25 entfernbar', async (page, daten) => {
+    await page.setViewport({ width: 390, height: 844 });
+    await page.click('.md-auftrag details summary');
+    assert.equal(await page.$$eval('.md-auftrag .md-liste > .md-zeile', es => es.length), 25);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth), false);
+    await page.click('[data-md-auftrag-mehr="test-frueherer-auftrag"]');
+    await page.waitForFunction(() => document.querySelectorAll('.md-auftrag .md-liste > .md-zeile').length === 50);
+    await page.click('[data-md-auftrag-mehr="test-frueherer-auftrag"]');
+    await page.waitForFunction(() => document.querySelectorAll('.md-auftrag .md-liste > .md-zeile').length === 56);
+    assert.equal(await page.$$('[data-md-auftrag-mehr]').then(es => es.length), 0);
+    assert.equal(await page.$eval('.md-auftrag details', el => el.open), true);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth), false);
+    await page.click('[data-md-auftrag-entfernen][data-md-eintrag="test-position-55"]');
+    await warteAuf(() => daten.eintraege[54].status === 'entfernt');
+    assert.equal(daten.eintraege.filter(e => e.status === 'offen').length, 55);
+    assert.equal(daten.anfragen[0].eintraege.length, 56, 'Entfernen am Listenende prueft auch ausgeblendete Positionen.');
+    assert.deepEqual(daten.anfragen[0].entfernenIds, ['test-position-55']);
+    await keinDruck(page);
+  }, fixture(Array.from({ length: 56 }, (_, i) => reserviert(i + 1))));
+  await pruefe('Lesender Zugang kann reservierte Positionen ansehen aber keinen Auftrag aendern', async (page, daten) => {
+    await page.click('.md-auftrag details summary');
+    assert.equal(await page.$$eval('[data-md-auftrag-entfernen],[data-md-erledigen],[data-md-freigeben],[data-md-vorschau]', es => es.length), 0);
+    assert.deepEqual(daten.versuche, []); assert.deepEqual(daten.anfragen, []);
+    await keinDruck(page);
+  }, fixture([reserviert(1), reserviert(2)], 'lesen'));
+  await pruefe('Entfernung an anderem Arbeitsplatz waehrend Druckerwahl verhindert alle Hardwareseiten', async (page, daten) => {
+    await vorschau(page); await attrappenDruck(page, 'auswahl-halten');
+    await page.waitForFunction(() => typeof window.__druckAttrappe.auswahlFortsetzen === 'function');
+    const druckauftragId = daten.eintraege[0].druckauftrag.id;
+    daten.schreiben({ aktion: 'auftrag_entfernen', druckauftragId, eintraege: daten.eintraege.map(e => ({ id: e.id, revision: e.revision })), entfernenIds: ['test-position-2'] });
+    await page.evaluate(() => window.__druckAttrappe.auswahlFortsetzen());
+    await page.waitForFunction(() => /geändert|freigegeben|prüfen|unterbrochen/.test(document.querySelector('#etkStatus')?.textContent || ''));
+    await keinDruck(page);
+    assert.deepEqual(daten.eintraege.map(e => e.status), ['offen', 'entfernt', 'offen']);
+    assert.deepEqual(aktionen(daten), ['reservieren', 'auftrag_entfernen']);
+    assert.equal(await page.$eval('#etkBestaetigung', el => el.hidden), true);
+  });
   await pruefe('Nur verbinden prueft den Drucker ohne Druck und gibt Vorschau beim Schliessen frei', async (page, daten) => {
     await vorschau(page);
     assert.equal(await page.evaluate(() => document.activeElement?.id), 'etkVerbinden', 'Die sichere Verbindungsaktion erhaelt zuerst den Fokus.');
