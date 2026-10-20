@@ -116,6 +116,17 @@
     {%- endif -%}
   </a>
 
+  {%- comment -%} Sprungmarken (2026-10-20): Farbe, Raum, Rollenbreite lagen
+    bei 375 px erst nach einer Bildschirmhoehe Kacheln {%- endcomment -%}
+  {%- if tp_ms_gruppen > 0 -%}
+    <nav class="tp-dn-sprung" aria-label="Springen zu">
+      {%- for g in parent_link.links -%}
+        {%- unless g.links != blank and g.url == '#' -%}{%- continue -%}{%- endunless -%}
+        <button type="button" class="tp-dn-sprung__link" data-tp-ziel="tp-ms-drawer-{{ forloop.index }}">{{ g.title | escape }}</button>
+      {%- endfor -%}
+    </nav>
+  {%- endif -%}
+
   <p class="tp-nav-group" id="tp-ms-drawer-arten">Nach Art</p>
   <ul class="tp-dn-kacheln list-unstyled" role="list" aria-labelledby="tp-ms-drawer-arten">
     {%- for c in parent_link.links -%}
@@ -190,3 +201,19 @@
     {%- endif -%}
   </div>
 {%- endif -%}
+
+{% javascript %}
+  /* Sprungmarken im Handy-Menue: Knoepfe statt Links, damit das
+     Schubladenmenue offen bleibt; gescrollt wird nur das Panel */
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.tp-dn-sprung__link');
+    if (!b) return;
+    e.preventDefault();
+    e.stopPropagation();
+    var ziel = document.getElementById(b.getAttribute('data-tp-ziel'));
+    var panel = ziel && ziel.closest('.tp-dn-panel__inner');
+    if (!panel) return;
+    var y = ziel.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop - 8;
+    panel.scrollTo({ top: y, behavior: 'smooth' });
+  }, true);
+{% endjavascript %}
