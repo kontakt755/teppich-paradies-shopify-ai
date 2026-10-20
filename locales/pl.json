@@ -8,7 +8,15 @@
  * ------------------------------------------------------------
  */
 {
+  "tp_roll_context": {
+    "skirting_basis": "For a single piece, the suggestion is its perimeter. For multiple pieces, enter the room perimeter you need.",
+    "length_label": "Length in metres",
+    "room_perimeter_label": "Required room perimeter in metres",
+    "room_perimeter_hint": "For multiple pieces, the order dimensions do not describe the room perimeter. Please enter the perimeter you need.",
+    "underlay_basis": "Calculated for the entire carpet area ordered, including offcuts. This is not the room size."
+  },
   "tp_product_advice": {
+    "cutting": "Cutting",
     "intro": "I have a question about this product:",
     "selection": "Selection",
     "size": "Measurements in the calculator",

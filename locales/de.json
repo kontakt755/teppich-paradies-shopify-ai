@@ -8,7 +8,15 @@
  * ------------------------------------------------------------
  */
 {
+  "tp_roll_context": {
+    "skirting_basis": "Bei einem Stück ist der Vorschlag dessen Umfang. Bei mehreren Stücken geben Sie den benötigten Raumumfang an.",
+    "length_label": "Länge in Metern",
+    "room_perimeter_label": "Benötigter Raumumfang in Metern",
+    "room_perimeter_hint": "Bei mehreren Stücken ist das Bestellmaß kein Raumumfang. Bitte tragen Sie Ihren benötigten Raumumfang ein.",
+    "underlay_basis": "Für die gesamte bestellte Teppichfläche einschließlich Zuschnittresten berechnet. Das ist kein Raummaß."
+  },
   "tp_product_advice": {
+    "cutting": "Zuschnitt",
     "intro": "Ich habe eine Frage zu diesem Produkt:",
     "selection": "Auswahl",
     "size": "Maße im Rechner",
