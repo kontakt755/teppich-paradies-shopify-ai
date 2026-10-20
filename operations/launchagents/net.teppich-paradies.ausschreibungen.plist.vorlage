@@ -12,10 +12,10 @@
   <array>
     <string>/bin/bash</string>
     <string>-lc</string>
-    <string>cd "$HOME/tp-dashboard" &amp;&amp; date &amp;&amp; exec npm run -s auslauf:pruefen</string>
+    <string>cd "$HOME/tp-dashboard" &amp;&amp; date &amp;&amp; exec npm run -s ausschreibungen:pruefen</string>
   </array>
 
-  <!-- Montags 4:00 Ortszeit; das Lexikon ist dann vom Sync-Dienst frisch. -->
+  <!-- Montags 4:30 Ortszeit. -->
   <key>StartCalendarInterval</key>
   <dict>
     <key>Weekday</key><integer>1</integer>
@@ -24,8 +24,8 @@
   </dict>
 
   <key>StandardOutPath</key>
-  <string>__HOME__/teppich-paradies-analyse/auslauf/pruefung.log</string>
+  <string>__HOME__/teppich-paradies-analyse/ausschreibungen/pruefung.log</string>
   <key>StandardErrorPath</key>
-  <string>__HOME__/teppich-paradies-analyse/auslauf/pruefung.log</string>
+  <string>__HOME__/teppich-paradies-analyse/ausschreibungen/pruefung.log</string>
 </dict>
 </plist>
