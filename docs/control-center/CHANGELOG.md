@@ -34,7 +34,10 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Browserstrecken fuer Mehrplatzbetrieb, Rollen, Reihenfolge/Kopien, 100er-Teile, Entfernen,
   Abbruch, Verbindungsfehler, B1-Abschluss und Sitzungsablauf. Frischer Rohdatenabgleich gegen
   kanonische Aufkleber prueft Produktquellen, Farbe, Shop-SKU, QR und hinterlegte Technik.
-  Abschliessende Gesamtsuite, Browserpruefung und Projekt-Guards vor Freigabe.
+  Gesamtsuite 3403/3403 (605 Dashboard), 170 Standardansichten plus 99 Rollen-/Breitenfaelle
+  ohne Ueberlauf. 18 Katalog- und 17 Drucklisten-Browserstrecken ohne offene Befunde; alle
+  Aufkleber im Browser mit echtem Canvas/QR auf Volltext, Grenzen und Ueberlappung geprueft.
+  Projekt-Guards, Theme-Check, Secret-Scan und statischer Workflow erfolgreich.
 - **Risiken:** Produktdatenkonsistenz beweist keine Hersteller-Vollstaendigkeit und keinen
   physischen Lagerbestand. Ungeklaerte Musterfaehigkeit bleibt sichtbar; fehlende optionale SKU
   wird weggelassen. Echter B1/50x50-Hardwaredruck bleibt zu pruefen. Abbruch bestaetigt keinen
