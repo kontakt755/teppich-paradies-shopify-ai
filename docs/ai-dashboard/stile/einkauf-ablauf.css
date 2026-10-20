@@ -31,3 +31,13 @@
   .ab-schritt.ab-offen, .ab-schritt.ab-fertig { display: none; }
   .ab-schritte::before { content: none; }
 }
+
+/* Arbeitsliste (2026-10-20): "Jetzt zu tun" offen, der Rest in eingeklappten Gruppen. */
+.ab-titel { font-size: 1rem; margin: 4px 0 8px; }
+.ab-gruppe { margin-top: 16px; }
+.ab-gruppe-kopf { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
+.ab-gruppe-kopf .small { font-weight: 400; }
+.ab-gruppe .ab-raster { margin-top: 10px; }
+.ab-aktion { margin: 0 0 8px; }
+.ab-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.ab-text-feld { width: 100%; box-sizing: border-box; font: inherit; font-size: .9rem; overflow-wrap: anywhere; }

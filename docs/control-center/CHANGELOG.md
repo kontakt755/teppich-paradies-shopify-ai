@@ -2,6 +2,29 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-20 · Einkauf „Je Auftrag“: nur Handlungsbedarf offen, Kunde informieren, Verzug (#1522)
+
+- **Geaendert:** „Je Auftrag“ zeigt oben nur „Jetzt zu tun“ (bestellen, Ungeklaertes, Ware da und
+  Kunde nicht informiert, Muster da, Verzug), aelteste zuerst. Bestellte Auftraege, die auf Ware
+  warten, liegen eingeklappt unter „Unterwegs (N)“, informierte/rausgegebene unter „Beim Kunden (N)“
+  (`?abg=` haelt die Gruppe offen). Schritt 4: „Nachricht an Kunde“ (fertiger Text in Sie-Form,
+  kopieren oder Mailprogramm, Telefon) und „Kunde informiert“ – neuer Zeitleisten-Schritt
+  `kunde_informiert` (Ware) im Auftragsverlauf, Datum und Person an der Karte. Verzug: bestellt seit
+  mehr als 10 Werktagen ohne Wareneingang (mit bestaetigtem Liefertermin erst danach) → Hinweis
+  „Beim Lieferanten nachfragen“ mit fertiger Nachfrage; das bisherige To-do „Nachhaken“ (7
+  Kalendertage) folgt derselben Regel und fuehrt nach `#/einkauf?ab=verzug`. „Heute“ hat oben die
+  Zeile „Zu bestellen · Kunde informieren · Verzug · Nachfassen Akquise“, je Zahl ein Sprung in die
+  gefilterte Liste (`?ab=bestellen|informieren|verzug`). Rechnung in `lib/auftrags-ablauf.mjs`.
+  Nichts wird automatisch gesendet.
+- **Getestet:** dashboard:test 522, npm test gruen, dashboard:pruefen 165 OK (33 Ansichten,
+  360–1440 px, 0 px Ueberlauf). Klickstrecke gegen die Kopie: Ware-Position auf „geliefert“ →
+  Heute „Kunde informieren“ 1, Liste 1 Karte → Dialog (Sie-Form, Mailto) → „Kunde informiert“ →
+  Liste 1 → 0, Heute 1 → 0, Server liefert `kundeInformiert`; Verzug 3 Karten, Nachfrage-Text mit
+  Kommission; „Unterwegs (15)“ eingeklappt, aufgeklappt 20 Karten; 0 JS-Fehler.
+- **Risiken:** Liefer-/Montagetermin aus der Auftrags-App nicht angebunden: die App liefert per
+  Schluessel nur Zahlen, Termine stehen in Google Sheets/Kalender ohne Shopify-Bestellnummer.
+- **Naechste Stufe:** Lesende Termin-Ansicht in der Auftrags-App mit Bestellnummer, dann Termin an
+  Schritt 4.
 ## 2026-10-20 · Benoetigte Musteraufkleber direkt bei der Bestellung (#1506)
 
 - **Geaendert:** Musterbestellungen zeigen intern Produkt, Farbe, Shop-SKU, offene Aufklebermenge

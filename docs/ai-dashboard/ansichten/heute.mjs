@@ -30,7 +30,8 @@ import { istNurLesend } from '../kern/sitzung.mjs';
 import { schnittJeBezahlter } from '../lib/kennzahlen.mjs';
 import { stoerungState } from '../bausteine/karten.mjs';
 import { ensureAktualisierung, aktualisierenButton, aktualisierungHealth } from '../bausteine/aktualisierung.mjs';
-import { einkauf, ensureEinkaufAuftragsstatus, ensureEinkaufKennzahlen, anzeigeWert } from './einkauf/auftragsfluss.mjs';
+import { einkauf, ensureEinkaufAuftragsstatus, ensureEinkaufKennzahlen, ensureEinkaufBestellungen, anzeigeWert, aktiveAuftraege, afEintragFuer } from './einkauf/auftragsfluss.mjs';
+import { einkaufZahlen } from '../lib/auftrags-ablauf.mjs';
 import { belege, ensureBelege, laufStand } from './einkauf/belege.mjs';
 import { hinweisText } from './einkauf/bestellungen.mjs';
 import { kunden } from './kunden/gemeinsam.mjs';
@@ -140,7 +141,7 @@ export function viewHeute() {
   if (istInhaber()) ensureEinkaufKennzahlen();
   if (darfAnsicht('shopwache')) ensureShopwache();
   if (darfAnsicht('akquise')) ensureAkquise();
-  if (darfAnsicht('einkauf')) ensureBelege();
+  if (darfAnsicht('einkauf')) { ensureBelege(); ensureEinkaufBestellungen(); }
 
   const q = quellen();
   const b = benutzer();
@@ -168,6 +169,7 @@ export function viewHeute() {
 
   return `<div class="heute">
     ${kopf(liste.length, sicht, chips)}
+    ${zahlenZeile(q)}
     ${todoListe(liste)}
     ${hintergrund(nf, wartet, sicht)}
     ${state.route.params.get('mn') ? musterNachfassenBlock(nf.alle) : ''}
@@ -175,6 +177,22 @@ export function viewHeute() {
     ${sicht === 'website' ? '' : ladenUndMontage()}
     ${istInhaber() ? kennzahlenBlock() : ''}
   </div>`;
+}
+
+/**
+ * Eine Zeile mit den Zahlen, die den Tag bestimmen - jede fuehrt in die gefilterte Liste.
+ * Dieselbe Rechnung wie Einkauf "Je Auftrag" (lib/auftrags-ablauf.mjs einkaufZahlen).
+ */
+function zahlenZeile(q) {
+  const teile = [];
+  const d = einkauf.bestellungen;
+  if (darfAnsicht('einkauf') && d?.verfuegbar) {
+    const z = einkaufZahlen(aktiveAuftraege(d), d, afEintragFuer, id => d.kundeInformiert?.[id] || null);
+    teile.push(['Zu bestellen', z.bestellen, '#/einkauf?ab=bestellen'], ['Kunde informieren', z.informieren, '#/einkauf?ab=informieren'], ['Verzug', z.verzug, '#/einkauf?ab=verzug']);
+  }
+  if (darfAnsicht('akquise')) teile.push(['Nachfassen Akquise', q.akquise.length, '#/akquise?as=faellig']);
+  if (!teile.length) return '';
+  return `<nav class="heute-zahlen" aria-label="Zahlen des Tages">${teile.map(([l, n, h]) => `<a href="${h}"${n ? '' : ' class="null"'}>${esc(l)} <b>${n}</b></a>`).join('<span aria-hidden="true">·</span>')}</nav>`;
 }
 
 function chipZahlen(q, opt, laden) {

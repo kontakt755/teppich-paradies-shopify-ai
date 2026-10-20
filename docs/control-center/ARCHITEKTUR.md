@@ -488,6 +488,18 @@ vor „Erledigt" zurück (ohne solchen: kein Status = noch nicht bestellt). Die 
 `wiederGeoeffnetAm/Von` stehen am Datensatz, der Audit-Log erhält `auftragsstatus-wieder-geoeffnet`.
 Wartezeiten im Einkauf rechnet das Frontend aus `bestelltAm`/`geliefertAm` (7 Tage bernstein, 14 rot).
 
+### Einkauf „Je Auftrag“: Arbeitsliste (seit 2026-10-20, #1522)
+
+`lib/auftrags-ablauf.mjs` ordnet jeden offenen Auftrag ein (`einordnung`): **jetzt** (bestellen,
+ungeklaert, Ware da ohne „Kunde informiert“, Muster da, Verzug), **unterwegs** und **beiKunde**
+(beide eingeklappt). Verzug = Status „bestellt“, mehr als `VERZUG_WERKTAGE` (10) Werktage, bei
+bestaetigtem Liefertermin erst nach dem Termin; dieselbe Regel nutzt das To-do „Nachfragen“ in
+`lib/todos.mjs`. „Kunde informiert“ ist ein Ereignis `kunde_informiert` im Auftragsverlauf
+(`POST /api/einkauf/auftragsstatus`, aktion `schritt`, nur Warenauftraege, Rolle „lesen“ 403);
+`/api/einkauf/bestellungen` liefert es als `kundeInformiert[orderId]`. „Heute“ zaehlt mit
+`einkaufZahlen` dieselbe Menge und verlinkt `#/einkauf?ab=bestellen|informieren|verzug`.
+Liefer-/Montagetermine der Auftrags-App sind nicht angebunden (kein lesbarer Export mit Bestellnummer).
+
 ### Einkauf je Lieferant (seit 2026-10-01)
 
 Der Reiter „Bestellungen" zeigt eine Karte je Lieferant (`ansichten/einkauf/lieferanten.mjs`, Regeln ohne
