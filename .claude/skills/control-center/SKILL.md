@@ -217,6 +217,15 @@ kann dafuer weg?
 - **Fehlerantworten im Server immer ueber `apiFehler()`** (`serve-dashboard.mjs`),
   nicht `send(res, 4xx, …)` - sonst fehlt die Zeile im Dienstprotokoll. Nie den
   Abfrageteil, Cookies oder Koerper protokollieren (`scripts/dashboard-log.mjs`).
+- **Pruef-Instanz (`dashboard:pruefen -- --offen`) nur mit dem ausgegebenen
+  `kill <pid>` beenden** - die PID ist der Server, der seine Datenkopie (Kunden-
+  und Einkaufsdaten) beim Beenden selbst loescht. Nicht `kill -9` und nicht
+  einfach laufen lassen: bis 2026-10-19 blieb die Kopie nach jedem `kill` im
+  Temp-Ordner liegen (16 Stueck); Reste ohne Prozess raeumt erst der naechste
+  Lauf weg, wenn sie einen Tag alt sind, eine eigene Besitzkennung tragen und
+  Besitzer-PID sowie offene Dateien/cwd nachweislich frei sind. Unmarkierte Altordner
+  nie allein nach Name/Alter loeschen. Screenshots ohne `--aus` werden genauso nach
+  drei Tagen bereinigt; `--aus` behaelt die Ablage dauerhaft.
 - **Auftragsfluss-Stand** (`auftragsstatus.json`) gibt es nur lokal; er wird
   von `npm run daten:sichern` gesichert. Aktionen, die ihn schreiben, immer
   mit Grund/Notiz und ueber den Filter „Erledigt" nachvollziehbar.

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
+import { wegwerfOrdner } from '../../scripts/test-temp.mjs';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
@@ -12,7 +12,7 @@ const FILTER = path.join(wurzel, 'qa', 'log-filter.mjs');
 /** Schreibt ein Ergebnis-JSON in eine Wegwerf-Datei und laesst den Filter darauf los. */
 function filtere(findings, { status = 'WARN', summary } = {}) {
   const datei = path.join(
-    fs.mkdtempSync(path.join(os.tmpdir(), 'tp-log-filter-')),
+    wegwerfOrdner('tp-log-filter-'),
     'ergebnis.json'
   );
   fs.writeFileSync(datei, JSON.stringify({

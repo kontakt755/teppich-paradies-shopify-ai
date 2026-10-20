@@ -1105,8 +1105,22 @@ Befunde einer Prüfung am 2026-10-12, alle mit Test (`tests/robustheit.test.mjs`
 - **Kopfzeilen.** Jede Antwort: `X-Frame-Options: DENY`, `Content-Security-Policy: frame-ancestors 'none'`,
   `nosniff`. Anhänge (`org/anhang-lesen`, `fehler/bild`) nur als Bild, PDF oder Text im Fenster, alles
   andere als Download. Ein zu großer Körper bekommt seine 413, statt dass die Verbindung abreißt.
-- **Prüfwerkzeug.** `dashboard:pruefen` räumt Instanz und Datenkopie auch bei `SIGTERM`/`SIGHUP` auf und
-  zählt eine Ansicht, die nach 6 s noch „Lade …“ zeigt, als `FEHL`.
+- **Prüfwerkzeug.** `dashboard:pruefen` räumt Instanz und Datenkopie bei jedem Ende auf (Lauf fertig, Fehler,
+  `SIGINT`/`SIGTERM`/`SIGHUP`) und zählt eine Ansicht, die nach 6 s noch „Lade …“ zeigt, als `FEHL`. Mit
+  `--offen` bleibt die Instanz nach einem fehlerfreien Lauf stehen; das ausgegebene `kill <pid>` trifft den Server,
+  der seine Kopie dann selbst löscht (`TP_DASHBOARD_DATENKOPIE`, `scripts/dashboard-datenkopie.mjs`, nur ein
+  eigener markierter Ordner `tp-dashboard-daten-XXXXXX` direkt im Temp-Ordner, der zugleich `TP_PRIVAT_DIR` ist).
+  `dashboard-pruefung-lauf.mjs` wartet Browserstart, Browserende und Serverende ab, bevor die Kopie verschwindet.
+  Bei SIGINT/SIGTERM/SIGHUP endet auch ein laufender Browserstart geordnet; Puppeteers eigene Signalhandler
+  bleiben aus. Verwaiste eigene Kopien werden nach einem Tag, eigene Screenshot-Ordner nach drei Tagen
+  bereinigt. `dashboard-temp-besitz.mjs` bindet die Kennung an Verzeichnisidentität und Besitzer-PID;
+  nur ein toter Besitzer und eine eindeutige freie `lsof`-Prüfung (inklusive cwd) geben sie frei. Unmarkierte
+  Altordner, Links und unbekannte Prozesszustände bleiben erhalten. `--aus` entzieht eine frühere automatische
+  Ablage dauerhaft der Bereinigung. Die npm-Tests verwenden `test-temp.mjs`: eigener Tempordner und unter
+  POSIX eine eigene Prozessgruppe, Signalweitergabe an Enkel, begrenzte Eskalation, Abbruchcodes 130/143/129.
+  Erst nach bestätigtem Gruppenende wird gelöscht; unklare Zustände behalten den Ordner und melden den Fehler.
+  Windows nutzt `taskkill /T /F`; auf macOS getestet, Windows-Pfad nicht praktisch abgenommen. Bewusst in
+  eine eigene Prozessgruppe abgekoppelte Testkinder gehören nicht zur verwalteten Gruppe.
 - **Handy.** Der Fuß des „Mehr“-Blatts (Datenstand, Fehler melden, Passwort, Abmelden) bleibt unten
   stehen, zweispaltig; Rückmeldungen erscheinen bei offenem Blatt oben statt darüber.
 

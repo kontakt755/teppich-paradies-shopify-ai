@@ -37,6 +37,7 @@ import {
 import { leseBenutzer, benutzerDateiExistiert, benutzerDateiPfad } from '../operations/lib/benutzer.mjs';
 import { protokollPfad, letzteEintraege } from '../operations/lib/protokoll.mjs';
 import { logFehler, pfadOhneAbfrage } from './dashboard-log.mjs';
+import { beimEndeLoeschen } from './dashboard-datenkopie.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..');
@@ -658,6 +659,10 @@ function verteile(req, res) {
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  // Pruef-Instanz von dashboard:pruefen: die Kopie der privaten Daten verschwindet mit
+  // dem Server, auch wenn er nach dem Lauf mit `kill <pid>` beendet wird (--offen).
+  // Ohne TP_DASHBOARD_DATENKOPIE (echter Dienst) tut der Aufruf nichts.
+  beimEndeLoeschen();
   try {
     assertStartupAllowed();
   } catch (e) {

@@ -1,8 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
+import { wegwerfOrdner } from '../../scripts/test-temp.mjs';
 import { createServer } from 'node:http';
 import { erzeugeHandler, argumente, ladeExport, ROLLEN, darf, bereicheFuer, gleicheHerkunft, uebergangsPfad } from '../server.mjs';
 import { erzeugeSpeicher } from '../state/speicher.mjs';
@@ -12,7 +11,7 @@ import { daten } from './auftragsband-fixtures.mjs';
 const quelle = { art: 'momentaufnahme', stand: '2026-01-06T00:00:00Z', datei: 'test-orders.json' };
 
 function frischerSpeicher() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ops-server-'));
+  const dir = wegwerfOrdner('ops-server-');
   return erzeugeSpeicher(path.join(dir, 'auftraege.jsonl'));
 }
 
