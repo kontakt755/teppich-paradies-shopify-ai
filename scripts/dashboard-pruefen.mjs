@@ -130,6 +130,30 @@ function datenKopie(quelle) {
   return ziel;
 }
 
+// Reste frueherer Laeufe wegraeumen (#1441, #1457): Datenkopien, deren Pruef-Instanz nicht mehr
+// laeuft (nach `kill` einer --offen-Instanz blieb die Kopie mit Kundendaten liegen), und
+// Screenshot-Ordner ohne --aus, die aelter als ein Tag sind.
+function lebt(pid) {
+  try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; }
+}
+function alteResteWegraeumen(tmp = os.tmpdir(), jetzt = Date.now()) {
+  const weg = [];
+  for (const n of fs.readdirSync(tmp)) {
+    const p = path.join(tmp, n);
+    let st; try { st = fs.statSync(p); } catch { continue; }
+    if (!st.isDirectory()) continue;
+    let alt = false;
+    if (n.startsWith('tp-dashboard-daten-')) {
+      const pid = Number(fs.existsSync(path.join(p, 'instanz.pid')) ? fs.readFileSync(path.join(p, 'instanz.pid'), 'utf8') : 0);
+      alt = pid > 0 ? !lebt(pid) : jetzt - st.mtimeMs > 60 * 60_000;
+    } else if (n.startsWith('tp-dashboard-pruefung-')) {
+      alt = jetzt - st.mtimeMs > 24 * 60 * 60_000;
+    }
+    if (alt) { fs.rmSync(p, { recursive: true, force: true }); weg.push(n); }
+  }
+  return weg;
+}
+
 async function warteAufServer(url, ms = 20_000) {
   const ende = Date.now() + ms;
   while (Date.now() < ende) {
@@ -146,6 +170,8 @@ async function main() {
   catch { throw new Error('puppeteer fehlt - im Repository-Root `npm install` ausfuehren (Worktree: node_modules verlinken).'); }
 
   erzeugteDateien();
+  const weg = alteResteWegraeumen();
+  if (weg.length) console.log(`${weg.length} Reste frueherer Pruefungen aus dem Temp-Ordner entfernt.`);
   const quelle = process.env.TP_PRIVAT_DIR || path.join(os.homedir(), 'teppich-paradies-analyse');
   const daten = datenKopie(quelle);
   const aus = args.aus || fs.mkdtempSync(path.join(os.tmpdir(), 'tp-dashboard-pruefung-'));
@@ -169,6 +195,8 @@ async function main() {
     detached: args.offen,
   });
   if (args.offen) server.unref();
+  // Der naechste Lauf erkennt an der PID, ob die Kopie noch zu einer laufenden Instanz gehoert.
+  fs.writeFileSync(path.join(daten, 'instanz.pid'), String(server.pid));
   const serverLog = () => { try { return fs.readFileSync(logDatei, 'utf8'); } catch { return ''; } };
 
   const aufraeumen = () => {
