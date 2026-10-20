@@ -2,6 +2,25 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-20 · Cleanup-PRs gemeinsam abgesichert (#1441, #1457)
+
+- **Geändert:** Änderungen aus #1444 und #1460 zusammengeführt. Tempordner brauchen eine Besitzkennung,
+  die an Verzeichnisidentität und Prozess gebunden ist; fremde und unmarkierte Ordner bleiben erhalten.
+  Echte Pfadauflösung verhindert Löschung außerhalb des Tempbereichs über Symlink/`..`. Ein lebender
+  Besitzer oder offene Dateien/cwd blockieren die Altbereinigung; unklare Prüfungen ebenfalls.
+  `--aus` behält auch eine frühere automatische Ablage dauerhaft. Browserstart/-ende und Serverende
+  werden vor der Bereinigung abgewartet; bei Fehlern bleibt keine unbeabsichtigt offene Prüf-Instanz.
+  Der Teststarter verwaltet eine eigene POSIX-Prozessgruppe einschließlich Enkelprozessen und eskaliert
+  ignorierte Abbrüche begrenzt; Ausgabe und Rückgabecode bleiben erhalten, Signale liefern 130/143/129.
+- **Getestet:** Synthetische Regressionen für fremde/aktive Ordner, verlinkte Exporte und Pfade, kopierte
+  Kennungen, reale cwd-Nutzung, Browserstart/-abbruch, verzögertes Kindende und parallele Testsuiten.
+  Echter Puppeteer-Prüflauf mit synthetischen Daten: regulär, `--offen` plus Server-TERM, Fehler mit
+  `--offen`, INT/TERM/HUP. Vollsuite und Commit-Guards im zugehörigen PR dokumentiert.
+- **Risiken:** SIGKILL/Stromverlust können keinen Exit-Handler ausführen. Unmarkierte Altbestände werden
+  absichtlich nicht automatisch übernommen. Windows-Fallback und bewusst abgekoppelte Test-Prozessgruppen
+  sind durch die macOS-Prüfung nicht abgedeckt. Keine pauschale Tempbereinigung oder Dienst-Neustarts.
+- **Nächste Stufe:** Konsolidierten Entwurfs-PR prüfen; Merge/Preview/Live bleiben gesperrt.
+
 ## 2026-10-19 · Belege: Absender und fehlende Bestelldaten absichern (#1463)
 
 - **Geändert:** Bei allgemeinen Mailanbietern verknüpft dieselbe Vorgangsnummer nur noch Belege
@@ -25,6 +44,46 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Zusätzlich Adressen mit 64 Zeichen vor dem @ bei 360/390/768/1440 px auf seitlichen Überlauf geprüft.
 - **Risiken:** Keine Änderung an gespeicherten Belegen, Bestellungen, Mailversand oder Shopify.
 - **Nächste Stufe:** Nach dem Merge den Dashboard-Dienst nachziehen und den Versionsstand prüfen.
+
+## 2026-10-19 · Prüfwerkzeug: Datenkopie verschwindet bei jedem Ende (#1441)
+
+- **Geändert:** Mit `dashboard:pruefen -- --offen` endet das Prüf-Skript nach dem Bericht; das ausgegebene
+  `kill <pid>` traf nur den Server, der von der Datenkopie nichts wusste – sie blieb jedes Mal im Temp-Ordner
+  (16 Kopien mit Kunden- und Einkaufsdaten, 13.–19.10.). Jetzt löscht der Server seine Kopie selbst, sobald er
+  endet (`TP_DASHBOARD_DATENKOPIE`, neues Modul `scripts/dashboard-datenkopie.mjs`). Ein Fehler im Lauf mit
+  `--offen` ließ bisher Instanz und Kopie ohne ausgegebene PID stehen, jetzt wird beides beendet. Beim Start
+  löscht `dashboard:pruefen` Kopien ohne laufenden Prozess, die älter als einen Tag sind (Prozess-Prüfung über
+  `ps axeww`, unter Windows wird nichts gelöscht). Gelöscht wird nur ein echter Ordner
+  `tp-dashboard-daten-XXXXXX` direkt im Temp-Ordner; die verlinkten Exporte (Lexikon usw.) bleiben.
+- **Getestet:** `docs/ai-dashboard/tests/datenkopie.test.mjs` (5 Tests, darunter echter Server + `SIGTERM`; ohne
+  den Fix rot). Reproduktion `--offen --ansichten heute --breiten 1440`, dann `kill <pid>`: vorher Kopie mit
+  31 Einträgen übrig, jetzt weg. Fehler im Lauf mit `--offen`, Strg-C mit und ohne `--offen` (ganze
+  Prozessgruppe), normaler Lauf: keine Kopie, kein Prüf-Server übrig. Die 16 alten Kopien gelöscht, nachdem
+  `lsof` und `ps` keinen Prozess darauf zeigten.
+- **Risiken:** `kill -9` auf den Server lässt die Kopie weiter liegen, bis ein Lauf sie nach einem Tag findet.
+  Ohne `--aus` bleiben die Screenshots (zeigen ebenfalls echte Daten) in `tp-dashboard-pruefung-*` liegen.
+- **Nächste Stufe:** Screenshot-Ordner ohne `--aus` ebenfalls nach einigen Tagen wegräumen.
+
+## 2026-10-19 · Temp-Ordner: Screenshots und Testordner bleiben nicht mehr liegen (#1457)
+
+- **Geändert:** Im Temp-Ordner des Macs lagen rund 194.000 Einträge aus diesem Repository. `dashboard:pruefen`
+  ohne `--aus` ließ jeden Screenshot-Ordner `tp-dashboard-pruefung-XXXXXX` (echte Kunden- und Einkaufsdaten)
+  für immer liegen (59 Ordner); jetzt löscht jeder Lauf beim Start solche Ordner, die älter als drei Tage sind
+  (`scripts/dashboard-pruefung-ordner.mjs`, nur echte Verzeichnisse mit genau diesem Namen direkt im
+  Temp-Ordner, nie Links). Die Testsuiten legten per `mkdtemp` Ordner mit rund hundert Präfixen an
+  (`cc-api-*` allein 42.000) und räumten sie nicht weg: die npm-Testskripte laufen jetzt über
+  `scripts/test-temp.mjs`, der jeder Suite einen eigenen Temp-Ordner gibt (`TMPDIR`/`TMP`/`TEMP`) und ihn
+  danach löscht, auch bei roten Tests und `kill`. Die sieben größten Verursacher (`_testumgebung.mjs`,
+  `api`, `sonderposten-api`, Ops-Server, Log-Filter, Deploy-Fenster, Worktree-Sperre) räumen zusätzlich selbst
+  auf (`wegwerfOrdner`), damit auch ein Einzelaufruf `node --test datei` nichts hinterlässt.
+- **Getestet:** `docs/ai-dashboard/tests/pruefung-ordner.test.mjs` (4 Tests: Name, Ort, Link, Alter, Inhalt).
+  Zwei volle `npm test`-Läufe grün (3.148 Tests), Temp-Ordner vorher und nachher gleich viele Einträge, kein
+  neuer mit einem Test-Präfix. Die sieben Dateien einzeln ohne Starter: kein neuer Ordner. Starter mit rotem
+  Test (Exit 1) und mit `kill` (Exit 1): Ordner jeweils weg.
+- **Risiken:** Tests, die einen Kindprozess mit selbst gebauter Umgebung ohne `TMPDIR` starten, schreiben
+  weiter nach `/tmp` (in beiden Läufen kein Fall). Einzelaufrufe der übrigen Testdateien ohne Starter
+  hinterlassen weiter Ordner.
+- **Nächste Stufe:** Screenshot-Aufräumen und `verwaisteDatenkopien` (#1444) in ein Modul zusammenführen.
 
 ## 2026-10-19 · Übersicht: „Heute“ als eine Liste, Lieferantenbelege aus dem Postfach (#1427)
 

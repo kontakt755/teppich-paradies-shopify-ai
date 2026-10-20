@@ -3,8 +3,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
+import { wegwerfOrdner } from '../../../scripts/test-temp.mjs';
 import { createApi, ApiError } from '../../../scripts/dashboard-api.mjs';
 import { RECHT_FEHLT, ERGEBNIS_UNKLAR, UEBERVERKAUF_OFFEN } from '../../../operations/lib/sonderposten.mjs';
 import { attrappe, PRODUKT_ID, ITEM_ID } from '../../../operations/tests/sonderposten-attrappe.mjs';
@@ -21,12 +21,12 @@ function protokoll() {
 }
 
 function apiMit(a) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-sonderposten-root-'));
+  const root = wegwerfOrdner('tp-sonderposten-root-');
   return createApi({ root, now: () => JETZT, shopifyZugang: async () => ({ proxy: a.proxy, art: 'client-credentials' }) });
 }
 
 test('Liste: ohne Zugang derselbe Hinweis wie bei den anderen Quellen, kein Abruf', async () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-sonderposten-root-'));
+  const root = wegwerfOrdner('tp-sonderposten-root-');
   const api = createApi({ root, env: {} });
   const d = await api.sonderpostenListe();
   assert.equal(d.verfuegbar, false);
@@ -118,7 +118,7 @@ test('Verkauft: Gegenprobe scheitert nach der Buchung -> 200 mit Hinweis, Protok
 });
 
 test('Verkauft: ohne Zugang 503, ohne Produkt-ID 400', async () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-sonderposten-root-'));
+  const root = wegwerfOrdner('tp-sonderposten-root-');
   const api = createApi({ root, env: {} });
   await assert.rejects(api.sonderpostenVerkauft({ produktId: PRODUKT_ID }, MONA), e => e.status === 503);
   await assert.rejects(apiMit(attrappe()).sonderpostenVerkauft({}, MONA), e => e.status === 400);
@@ -187,7 +187,7 @@ test('Gemeinsamer Zugang, Restrolle: Name ins Protokoll; persoenliches Konto sch
 
 test('Server: /api/sonderposten/verkauft - lesen 403, mitarbeiter 200, inhaber 200, GET 405', async () => {
   const { schreibeBenutzer, benutzerAnlegen } = await import('../../../operations/lib/benutzer.mjs');
-  const privat = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-sonderposten-rollen-'));
+  const privat = wegwerfOrdner('tp-sonderposten-rollen-');
   let liste = benutzerAnlegen([], { name: 'Lena Lesend', kuerzel: 'lena', passwort: 'platzhalter-lesen-1', rolle: 'lesen' });
   liste = benutzerAnlegen(liste, { name: 'Mona Mitarbeiter', kuerzel: 'mona', passwort: 'platzhalter-mitarbeiter-1', rolle: 'mitarbeiter' });
   liste = benutzerAnlegen(liste, { name: 'Ina Inhaber', kuerzel: 'ina', passwort: 'platzhalter-inhaber-1', rolle: 'inhaber' });

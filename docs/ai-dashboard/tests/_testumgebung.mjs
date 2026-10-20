@@ -6,11 +6,10 @@
 // wuerde dann gegen ~/teppich-paradies-analyse des jeweiligen Rechners laufen
 // und je nach Maschine anders ausfallen (mit Passwort verlangt jede Route eine
 // Anmeldung und liefert die Anmeldeseite statt der erwarteten Antwort).
-import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
+import { wegwerfOrdner } from '../../../scripts/test-temp.mjs';
 
-export const PRIVAT_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-dashboard-test-'));
+export const PRIVAT_DIR = wegwerfOrdner('tp-dashboard-test-');
 process.env.TP_PRIVAT_DIR = PRIVAT_DIR;
 delete process.env.TP_DASHBOARD_PASSWORT;
 
