@@ -1,0 +1,57 @@
+{
+  "sections": {
+    "wohnungsunternehmen_hero": {
+      "type": "b2b-hero-bereich",
+      "name": "Wohnungsunternehmen",
+      "settings": {
+        "image": "shopify://shop_images/20231005_135521.jpg",
+        "hero_title": "Bodenservice für Wohnungsunternehmen",
+        "hero_sub": "Teppich Paradies Oranienburg unterstützt Hausverwaltungen und Wohnungsgenossenschaften beim Wohnungswechsel – mit eigenem Verlegeteam im Raum Oranienburg, Oberhavel und Nord-Berlin.",
+        "primary_btn_text": "Anfrage senden",
+        "primary_btn_link": "/pages/kontakt",
+        "secondary_btn_text": "Unser Verlegeservice",
+        "secondary_btn_link": "/pages/liefer-verlegeservice",
+        "benefits_title": "Leistungen beim Wohnungswechsel",
+        "box1_title": "Vorbereitung",
+        "box1_li1": "Altbelag entfernen und entsorgen",
+        "box1_li2": "Untergrund prüfen und vorbereiten",
+        "box1_li3": "Spachtel- und Ausgleichsarbeiten",
+        "box2_title": "Neuer Boden",
+        "box2_li1": "Vinyl und Klickvinyl verlegen",
+        "box2_li2": "Teppichboden und PVC verlegen",
+        "box2_li3": "Sockelleisten anbringen",
+        "hinweis_title": "Rahmenvereinbarung:",
+        "hinweis_text": "Bei wiederkehrenden Wohnungswechseln ist eine Rahmenvereinbarung möglich – sprechen Sie uns an.",
+        "steps_title": "So läuft es ab",
+        "step1_title": "1. Anfrage",
+        "step1_text": "Sie schicken uns Adresse, Wohnung und gewünschten Zeitraum über das Kontaktformular.",
+        "step2_title": "2. Besichtigung und Festpreisangebot",
+        "step2_text": "Wir sehen uns die Wohnung an und erstellen ein Festpreisangebot.",
+        "step3_title": "3. Termin",
+        "step3_text": "Wir stimmen den Verlegetermin mit Ihnen ab und übergeben die Wohnung bezugsfertig.",
+        "cta_title": "Wohnungswechsel geplant?",
+        "cta_text": "Senden Sie uns kurz die Eckdaten zur Wohnung – wir melden uns zur Terminabsprache für die Besichtigung."
+      }
+    },
+    "wohnungsunternehmen_vorteile": {
+      "type": "b2b-struktur",
+      "name": "Vorteile",
+      "settings": {
+        "title": "Ihre Vorteile",
+        "subtitle": "Für Hausverwaltungen und Genossenschaften zählt beim Mieterwechsel vor allem ein verlässlicher Ablauf.",
+        "box1_title": "Ein Ansprechpartner",
+        "box1_text": "Von der Anfrage bis zur Übergabe sprechen Sie mit uns direkt.",
+        "box2_title": "Schnelle Termine",
+        "box2_text": "Unser eigenes Verlegeteam plant Termine kurzfristig ein.",
+        "box3_title": "Rahmenvereinbarung möglich",
+        "box3_text": "Für wiederkehrende Aufträge vereinbaren wir feste Abläufe.",
+        "box4_title": "Regional vor Ort",
+        "box4_text": "Oranienburg, Oberhavel und Nord-Berlin."
+      }
+    }
+  },
+  "order": [
+    "wohnungsunternehmen_hero",
+    "wohnungsunternehmen_vorteile"
+  ]
+}
