@@ -34,7 +34,7 @@ import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn,
 import { musterSchluessel, musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MUSTER_GROESSE, KNAPP_AB as LAGER_KNAPP_AB, PROBESTUECK_PREIS, wartetAufLieferant as lagerWartetAufLieferant, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
 import { auftragsverlaufPfad, leseVerlauf, bereiteEreignisVor, schreibeVerlauf, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, ERGEBNIS_SCHRITTE, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
 import { mustersperrePfad, leseSperren, haengeAn as sperreAnhaengen, ereignis as sperrEreignis, stand as sperrStand, schonErledigt as sperreSchonErledigt, adminLink as sperrAdminLink, pruefeRechte as pruefeSperrRechte, rechtFehltText as sperrRechtFehlt, sperreImShop, freigebenImShop, GRUND as SPERR_GRUND, MustersperreFehler } from '../operations/lib/mustersperre.mjs';
-import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden, kundenIndex } from '../operations/lib/kundensuche.mjs';
+import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden, kundenIndex, offeneBestellungenJeProdukt } from '../operations/lib/kundensuche.mjs';
 import { faelle as kundenFaelle, istTestkontakt } from '../operations/lib/kundenfaelle.mjs';
 import { fallmarkenPfad, leseAlle as leseFallmarken, setzeMarke as setzeFallmarke, teileAuf as teileFaelleAuf, juengsterPunkt, FALL_GRUND } from '../operations/lib/fallmarken.mjs';
 import {
@@ -292,6 +292,23 @@ function ladeBestellModell(dir) {
   if (!daten) return null;
   try { return bereiteBestellModell(daten, dir, new Date()); }
   catch { return null; }
+}
+
+/**
+ * Offene Bestellpositionen je Produkt-Handle fuers Lexikon; null, wenn keine Bestelldaten da
+ * sind (dann zeigt das Lexikon einfach nichts dazu - die Suche selbst haengt nicht daran).
+ */
+function offeneBestellungenMap(dir) {
+  const modell = ladeBestellModell(dir);
+  if (!modell) return null;
+  return offeneBestellungenJeProdukt(modell, { statusAlle: leseAktuellenStatus(auftragsstatusPfad(dir), modell) });
+}
+
+/** Offene Positionen eines Lexikon-Produkts - das Original und sein eigenes Musterprodukt. */
+function offeneZuProdukt(map, produkt) {
+  if (!map) return [];
+  const handles = [produkt.handle, produkt.muster?.handle].filter(Boolean);
+  return [...new Set(handles)].flatMap(h => map.get(h) ?? []);
 }
 
 /** Bestellungen aus orders.json in jeder Form, die ladeExport kennt - ohne Umweg ueber Text. null = unbrauchbar. */
@@ -2741,7 +2758,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const size = Math.min(Math.max(Number(pageSize) || 20, 1), 100);
       const p = Math.max(Number(page) || 1, 1);
       const start = (p - 1) * size;
-      const seite = treffer.slice(start, start + size).map(lexikonListenEintrag);
+      // Je Treffer: in wie vielen offenen Bestellungen steckt das Produkt? (Ware und Muster getrennt)
+      const offenMap = offeneBestellungenMap(dir);
+      const seite = treffer.slice(start, start + size).map(prod => {
+        const offen = offeneZuProdukt(offenMap, prod);
+        const anzahl = liste => new Set(liste.map(o => o.orderId)).size;
+        return { ...lexikonListenEintrag(prod), offeneBestellungen: anzahl(offen.filter(o => !o.istMuster)), offeneMuster: anzahl(offen.filter(o => o.istMuster)) };
+      });
       return {
         verfuegbar: true, quelle: file, erstellt: daten.erstellt || null, anzahl: daten.anzahl ?? daten.produkte.length,
         treffer: { count: treffer.length, page: p, pageSize: size, pages: Math.max(Math.ceil(treffer.length / size), 1), items: seite },
@@ -2843,7 +2866,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Schnellzugriff zum Lieferanten auch ohne Link: der Bestellweg aus den Stammdaten
       // (Mail, Portal, Telefon) an jeder Variante, die weder Direkt- noch Suchlink hat.
       const stammdaten = leseStammdaten(stammdatenPfad(dir));
-      return { verfuegbar: true, quelle: file, produkt: lexikonProduktMitSchnellzugriff(produkt, stammdaten), wartendeKunden: offen };
+      const offeneBestellungen = offeneZuProdukt(offeneBestellungenMap(dir), produkt);
+      return { verfuegbar: true, quelle: file, produkt: lexikonProduktMitSchnellzugriff(produkt, stammdaten), wartendeKunden: offen, offeneBestellungen };
     },
 
     /**
