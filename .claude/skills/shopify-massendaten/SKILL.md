@@ -43,19 +43,19 @@ naechsten Lauf wieder jemand dieselben Sackgassen abklappert.
    andere nach `offen.json`. Fuer Metaobjekt-Verweise gilt: nur bei exakter
    Entsprechung zuordnen; fehlt ein Eintrag, ist das eine Inhaberfrage, kein
    Grund zum Anlegen nebenbei.
-4. **Vorhandene Werte nie ueberschreiben**, solange der Auftrag nur „fuellen"
+4. **Rollback-Datei vor dem Schreiben**: `metafieldsDelete` fuer alles, was laut Export aus Schritt 1 leer ist, `metafieldsSet` mit dem Altwert fuer den Rest.
+5. **Vorhandene Werte nie ueberschreiben**, solange der Auftrag nur „fuellen"
    lautet. Der Abgleich laeuft gegen den Export aus Schritt 1.
-5. **Pakete erzeugen** (Format siehe oben). Eine Datei ist rund 30 KB gross –
+6. **Pakete erzeugen** (Format siehe oben). Eine Datei ist rund 30 KB gross –
    das ist die Obergrenze, die sich zuverlaessig durch ein Werkzeug schieben laesst.
-6. **Schreiben.** `bulkOperationRunMutation` ist ueber den MCP **gesperrt**;
+7. **Schreiben.** `bulkOperationRunMutation` ist ueber den MCP **gesperrt**;
    der Weg ist `graphql_mutation` mit dem Dateiinhalt. Mehrere Dateien parallel
    ueber Relay-Agenten, jede Datei genau einmal, Ergebnis als
    `result-xNNN.json`. `metafieldsSet` ist idempotent – doppeltes Senden schadet nicht.
-7. **Gegenprobe.** Frischer Export, jeder geplante `(ownerId, namespace, key)`
+8. **Gegenprobe.** Frischer Export, jeder geplante `(ownerId, namespace, key)`
    muss **exakt** den geplanten Wert tragen. Zaehlen: gleich / fehlend /
    abweichend, mit Beispielen. Erst danach gilt der Lauf als erledigt.
-8. **Rollback-Datei schreiben**: `metafieldsDelete` fuer alles, was vorher leer
-   war, `metafieldsSet` mit dem Altwert fuer den Rest.
+9. **Rollback bereithalten**: die Datei aus Schritt 4 neben die Ergebnisse legen; weicht die Gegenprobe ab, mit ihr zuruecksetzen.
 
 ## Was jedes Mal schiefgeht
 

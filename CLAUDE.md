@@ -48,7 +48,7 @@ Claude arbeitet ohne Rueckfragen (Entscheidung Ahmet, 2026-09-11); die Grenzen
 aus `AGENTS.md` gelten trotzdem. **Keine `permissions.ask`-Regeln anlegen** —
 sie fragen in jedem Modus nach. Harte Grenzen gehoeren als `deny` in
 `.claude/hooks/git-gh-guard.mjs`. Aktive Hooks: Guards fuer git/gh, Theme-Loeschen
-und Deploy-Befehle, Gedaechtnis-Sync (Start/Ende), Kurzstand des Control Centers
+und Deploy-Befehle, Shopify-MCP-Mutationen (Loeschen, Fallback-Theme), Gedaechtnis-Sync (Start/Ende), Kurzstand des Control Centers
 (jede Sitzung) und Projektzustand in Remote-Sessions. Details: `.claude/README.md`.
 
 In Remote-Sessions (claude.ai/code) ist die Storefront per Egress-Policy

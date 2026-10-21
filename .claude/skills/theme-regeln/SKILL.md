@@ -49,12 +49,14 @@ Ziele:
 - echten vollständigen Produkttitel für Link und Barrierefreiheit erhalten
 - klare €/m²-Darstellung
 - nicht überladen
-- Muster und Vergleichen nur dort, wo sinnvoll
+- Muster nur dort, wo sinnvoll
 - auf Mobile nichts abschneiden
 
 Teppichboden-Titel mit angehängten Breiten wie „Piumera Teppichboden 400cm 500cm“ dürfen in der sichtbaren Karte beispielsweise als „Piumera“ dargestellt werden, ohne den echten Shopify-Produkttitel zu verändern.
 
 ## UX / Design
+
+Globale Design- und Bild-Skills (taste-skill, redesign-skill, frontend-design, ui-ux-pro-max, image) gelten im Shop-Theme nur als Ideengeber; bei Abweichung gehen die Regeln hier und `docs/lessons/ki-bilder.md` vor (Farbwelt, Schriftskala, keine generativen Bilder gemusterter Ware).
 
 Stil:
 

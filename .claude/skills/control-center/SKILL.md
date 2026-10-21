@@ -253,7 +253,7 @@ erzeugt `docs/ai-dashboard/issues.json` (Schema 2) lokal per `gh`,
 `npm run dashboard` baut beide beim Start, „Jetzt synchronisieren" erneut.
 Das Frontend liest **nur** diese Dateien; lokal (`:8001`) kommt `/api/*` aus
 `scripts/dashboard-api.mjs` dazu. Keinen GitHub-API-Aufruf mit Token ins
-Frontend bauen. GitHub Issues sind die einzige Aufgabenquelle.
+Frontend bauen. Fuer KI-Sitzungen sind GitHub Issues die einzige Aufgabenquelle (`npm run task`); Inhaberaufgaben und Meldungen liegen in der Werkbank.
 
 Label-Gruppen: `status:*`, `type:*`, `priority:p0`–`p3`, `area:*`, `reviewer:*`
 (`./setup-dashboard.sh` legt sie an). Tests: `npm run dashboard:test`.

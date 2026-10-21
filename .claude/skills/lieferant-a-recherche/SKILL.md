@@ -18,7 +18,7 @@ Was nicht belegt ist, bleibt `UNKLAR` und kommt mit Grund in `offen.json`.
 - Inhaberregeln fuer Einkaufsfelder: Memory
   `einkauf_felder_inhaberentscheidungen` (SKU = Artikelnummer A, Endung =
   Farbnummer; Rollenvinyl/Linoleum/Leisten = A; Wunschmass von der 400-cm-Rolle;
-  Masteppiche in lfm; Zubehoer je Stueck; Route immer SUPPLIER_TO_TP).
+  Masteppiche in lfm; Zubehoer je Stueck). Die Route (`einkauf.route`) richtet sich nach der Vorlage, siehe Skill `produktimport` (Direktversand = `SUPPLIER_DIRECT`); die alte Regel „immer SUPPLIER_TO_TP“ gilt seit 14.10. nicht mehr.
 
 ## Nachschlagen per curl (ohne Login)
 
