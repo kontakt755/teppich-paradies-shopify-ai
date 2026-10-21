@@ -1,8 +1,13 @@
-# Bewertung nach Zustellung/Montage – einschaltfertiger Entwurf
+# Bewertung nach Zustellung/Montage
 
-> **Status: Entwurf, NICHT aktiv** (Stand 2026-10-21, Aufgabe #1446). Kein Flow, keine Mail,
-> nichts gedruckt. Einschalten nur nach Freigabe des Inhabers (Werkbank w-139).
-> Ansicht mit Logo und QR-Code: privates Artifact „Bewertungsbitte Teppich Paradies“.
+> **Status: LIVE seit 2026-10-21** (Freigabe Inhaber, Werkbank w-139, Aufgabe #1446).
+> Shopify Flow „Bewertungsbitte 7 Tage nach Versand (Google)“ ist aktiv:
+> Auslöser *Order fulfilled* → 7 Tage warten → Bedingungen: Bestellung voll bezahlt,
+> Zahlungsstatus PAID, Kunde hat **keinen** Tag `bewertung-angefragt`, **keine** Position
+> mit Produkttyp `Musterservice` → Messaging-Aktion *Send marketing email* (geht nur an
+> Kunden mit E-Mail-Einwilligung) → Kunden-Tag `bewertung-angefragt`.
+> Mail als eigener Code in Shopify Messaging (Vorlage „Wie gefällt Ihnen Ihr neuer Boden?“).
+> Abschalten: Flow → Workflow deaktivieren. Zettel und Karten sind noch nicht gedruckt.
 
 Ziel: mehr **Google-Unternehmensbewertungen**, gleichmäßig über das Jahr (6–10 pro Monat).
 Google gewichtet frische Bewertungen stärker als die Gesamtzahl – darum jede Bestellung
