@@ -1,0 +1,11 @@
+[
+  { "name": "TP Shop", "link": "https://www.teppich-paradies.net" },
+  { "name": "TP Shop durchsuchen", "link": "https://www.teppich-paradies.net/search?q={Query}" },
+  { "name": "TP Shopify Admin", "link": "https://admin.shopify.com/store/sjjyq1-6w" },
+  { "name": "TP Produkt suchen (Admin)", "link": "https://admin.shopify.com/store/sjjyq1-6w/products?query={Query}" },
+  { "name": "TP Bestellung suchen (Admin)", "link": "https://admin.shopify.com/store/sjjyq1-6w/orders?query={Query}" },
+  { "name": "TP Themes (Admin)", "link": "https://admin.shopify.com/store/sjjyq1-6w/themes" },
+  { "name": "TP Control Center", "link": "http://localhost:8001" },
+  { "name": "TP Pull Requests", "link": "https://github.com/kontakt755/teppich-paradies-shopify-ai/pulls" },
+  { "name": "TP Aufgabe suchen", "link": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues?q=is%3Aopen+{Query}" }
+]
