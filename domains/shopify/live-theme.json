@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-21T05:43:50.000Z",
-    "verifiedBy": "Oeffentlicher Shop meldet role main nach workflow:live von main 37f3ca13 (#1542/#1531/#1550), geprueft ohne Previewparameter."
-  },
-  "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-21T05:43:50.000Z",
-    "verifiedBy": "vorheriges Live-Theme nach workflow:live von main 37f3ca13 (#1542/#1531/#1550), naechstes Preview-Ziel."
+    "verifiedAt": "2026-10-21T05:57:44Z",
+    "verifiedBy": "Shopify Admin API role MAIN nach workflow:live von main 4a19ca15 (#1551 Vinyl-Paket ausgeblendet)."
+  },
+  "preview": {
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-10-21T05:57:44Z",
+    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live von main 4a19ca15; naechstes Preview-Ziel."
   },
   "fallback": {
     "themeId": "206590509390",
