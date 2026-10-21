@@ -25,7 +25,7 @@ Leute im Laden genauso wie fuer alte Hasen).
 |---|---|---|
 | Akquise | **Neue Aufträge** | Menue, Seite, To-do „Neue Aufträge: N Firmen nachfassen“ (Genossenschaften, Hausverwaltungen, Ausschreibungen) |
 | Einkauf | **Bestellen** | Menue und Seitentitel; gemeint ist immer: wir bestellen beim Lieferanten. Die Bestellungen der Kunden heissen weiter „Bestellungen“ |
-| Lexikon | **Produktsuche** | Menue, Seite, Knoepfe „In der Produktsuche ansehen“; untere Handy-Leiste kurz **Produkte** (Platz) |
+| Lexikon | **Lexikon** (bleibt, Inhaber/Mitarbeiter 21.10.) | Menue, Seite, Handy-Leiste |
 | Belege (Reiter) | **Lieferantenpost** | Reiter unter „Bestellen“; ein einzelnes Stueck ist ein „Schreiben“ |
 | AB | **Auftragsbestätigung** | ausgeschrieben in Ueberschriften und Feldern |
 | Wiedervorlage | **wieder melden (am)** | Spalten, Kacheln, Leerzustaende |

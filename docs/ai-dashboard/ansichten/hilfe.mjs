@@ -26,9 +26,9 @@ export function viewHilfe() {
       <p class="small muted" style="margin-top:8px">Steht bei der Telefonnummer „(aus der Lieferadresse)", stammt sie aus der Bestellung, nicht aus dem Kundenkonto – anrufen kannst du trotzdem.</p>`)}
 
     ${hilfeKarte('Der Kunde nennt einen Produktnamen', `
-      <p>Denselben Weg nehmen: <b>Suche</b> öffnen und den Produktnamen tippen – oder links auf <b>Produktsuche</b>.</p>
+      <p>Denselben Weg nehmen: <b>Suche</b> öffnen und den Produktnamen tippen – oder links auf <b>Lexikon</b>.</p>
       <p>Die Produktseite hat zwei Teile: <b>Für das Kundengespräch</b> (Preis ab, Farben, Material, Brandverhalten, Fußbodenheizung) und <b>Zum Bestellen</b> (unsere SKU, Lieferant, Artikelnummer, Bestelleinheit, Link zum Lieferanten).</p>
-      <p>Die <b>Mengenhilfe</b> rechnet die Kundenmenge in Pakete um. Bei einem Muster zeigt die Produktsuche das Originalprodukt beim Lieferanten.</p>`)}
+      <p>Die <b>Mengenhilfe</b> rechnet die Kundenmenge in Pakete um. Bei einem Muster zeigt das Lexikon das Originalprodukt beim Lieferanten.</p>`)}
 
     ${hilfeKarte('Beim Lieferanten bestellen', `
       <ol style="margin:0;padding-left:20px;line-height:1.9">
