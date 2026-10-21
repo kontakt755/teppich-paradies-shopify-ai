@@ -127,7 +127,7 @@ function musterEtikettenBlock(produkt) {
   const auswahl = liste[index];
   return `<section class="card lex-etiketten" data-lex-etiketten>
     <div class="card-head"><h2>Musteraufkleber</h2></div>
-    <p class="small muted">Fertiger Aufkleber mit Produktname, Farbe und QR-Code für eure 50 × 50-mm-Etiketten.</p>
+    <p class="small muted">Fertiger Aufkleber mit Produktname, Farbe und QR-Code für eure Etiketten (50 × 50 oder 50 × 100 mm, Größe im Druckfenster wählen).</p>
     <div class="lex-etiketten-auswahl">
       <label>Farbe / Ausführung<select data-param="letikett" aria-label="Farbe oder Ausführung für den Aufkleber">${liste.map((x, i) => `<option value="${i}"${i === index ? ' selected' : ''}>${esc(x.bezeichnung)}</option>`).join('')}</select></label>
       <label>Anzahl<input id="lexEtikettAnzahl" type="number" min="1" max="20" step="1" value="${esc(lexikon.etikettAnzahl)}" data-lex-etikett-anzahl data-focus-erhalten inputmode="numeric"></label>

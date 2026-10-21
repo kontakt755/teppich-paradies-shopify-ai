@@ -24,7 +24,18 @@ export const ABSENDER = 'www.teppich-paradies.net';
  * laut niimbluelib (printer_models): das Bild geht ungedreht raus. Der Druckkopf hat 384 px -
  * der Rand von 18 px haelt alles Wichtige im bedruckbaren Bereich.
  */
-export const ETIKETT = { breite: 400, hoehe: 400, rand: 18, dichteStandard: 3, dichteMin: 1, dichteMax: 5 };
+export const ETIKETT = { format: '50x50', name: '50 × 50 mm', breite: 400, hoehe: 400, rand: 18, faktor: 1, dichteStandard: 3, dichteMin: 1, dichteMax: 5 };
+
+/**
+ * Etikettengroessen fuer den B1. 50 x 100 mm (Inhaber 2026-10-21, zum Ausprobieren): dieselbe
+ * Aufteilung, alles 1,6-mal so gross. Der Druckkopf bleibt 50 mm breit, die 100 mm laufen in
+ * Vorschubrichtung - deshalb 400 x 800 px, ungedreht wie das quadratische Etikett.
+ */
+export const ETIKETT_FORMATE = Object.freeze({
+  '50x50': ETIKETT,
+  '50x100': { ...ETIKETT, format: '50x100', name: '50 × 100 mm', hoehe: 800, faktor: 1.6 },
+});
+export const etikettFormat = name => ETIKETT_FORMATE[name] || ETIKETT;
 
 const leer = v => v === null || v === undefined || String(v).trim() === '' || ['–', '-', 'UNGEKLAERT', 'Default Title'].includes(String(v).trim());
 const text = v => (leer(v) ? '' : String(v).trim());
@@ -175,25 +186,32 @@ export function umbrechen(textWert, breite, mass, maxZeilen = 3) {
  * Was wo steht, in Pixeln des Etiketts. `mass(text, groesse, fett)` misst Text (Canvas: measureText).
  * @returns {{texte: {text: string, x: number, y: number, groesse: number, fett: boolean}[], linien: {x1: number, x2: number, y: number}[], qr: {x: number, y: number, groesse: number}|null}}
  */
-export function layout(e, mass) {
-  const { breite, hoehe, rand } = ETIKETT;
+export function layout(e, mass, format = ETIKETT) {
+  const { breite, hoehe, rand } = format;
+  const px = n => Math.round(n * (format.faktor || 1));
   const innen = breite - 2 * rand;
+  // Hochformat (50 x 100): Technik ueber die volle Breite, QR-Code darunter.
+  const hoch = hoehe > breite;
   const texte = [];
   const linien = [];
   let y = rand;
   const skuText = e.sku ? `Art.-Nr. ${e.sku}` : '';
-  const skuY = hoehe - rand - 24;
-  const unten = (skuText ? skuY : hoehe - rand) - 8;
-  let serieGroesse = 44, farbGroesse = 30;
+  const skuY = hoehe - rand - px(24);
+  const unten = (skuText ? skuY : hoehe - rand) - px(8);
+  let serieGroesse = px(44), farbGroesse = px(30);
   {
     // Ganze Namen erhalten, auch bei Einzeldekoren ohne Technik. Zuerst Platz
     // fuer lesbare Technik (16/20 px) und mindestens 100 px QR reservieren.
-    const reserve = Math.max((e.technik?.length || 0) * 40 - 3, e.url ? 100 : 0);
-    for (let s = 44; s >= 18; s--) {
+    const technikHoehe = (e.technik?.length || 0) * px(40) - 3;
+    const reserve = hoch ? Math.max(technikHoehe, 0) + (e.url ? px(100) : 0) : Math.max(technikHoehe, e.url ? px(100) : 0);
+    // Das Etikett wird nur laenger, nicht breiter: kein Wort darf getrennt werden muessen.
+    const woerter = (t, g) => text(t).split(/\s+/).filter(Boolean).every(w => mass(w, g, true) <= innen);
+    for (let s = px(44); s >= 18; s--) {
       serieGroesse = s; farbGroesse = Math.round(30 * s / 44);
+      if (s > 18 && !(woerter(e.serie, serieGroesse) && woerter(e.farbe, farbGroesse))) continue;
       const serienZeilen = umbrechen(e.serie, innen, t => mass(t, serieGroesse, true), Infinity).length;
       const farbZeilen = e.farbe ? umbrechen(e.farbe, innen, t => mass(t, farbGroesse, true), Infinity).length : 0;
-      const technikY = rand + 23 + 8 + serienZeilen * Math.round(serieGroesse * 1.15) + farbZeilen * Math.round(farbGroesse * 1.15) + 14;
+      const technikY = rand + Math.round(px(20) * 1.15) + px(8) + serienZeilen * Math.round(serieGroesse * 1.15) + farbZeilen * Math.round(farbGroesse * 1.15) + 14;
       if (unten - technikY >= reserve) break;
     }
   }
@@ -201,26 +219,29 @@ export function layout(e, mass) {
   const block = (t, g, f, maxZeilen) => {
     for (const z of umbrechen(t, innen, s => mass(s, g, f), maxZeilen)) { texte.push({ text: z, x: mitte(z, g, f), y, groesse: g, fett: f }); y += Math.round(g * 1.15); }
   };
-  block(ABSENDER, 20, true, 1);
-  y += 8;
+  let absender = px(20);
+  while (absender > 1 && mass(ABSENDER, absender, true) > innen) absender--;
+  block(ABSENDER, absender, true, 1);
+  y += px(8);
   block(e.serie, serieGroesse, true, Infinity);
   if (e.farbe) block(e.farbe, farbGroesse, true, Infinity);
 
   // Unten die Artikelnummer; was dazwischen frei ist, bekommen Technik und QR-Code.
   if (skuText) {
-    let g = 24;
+    let g = px(24);
     while (g > 1 && mass(skuText, g, true) > innen) g--;
     texte.push({ text: skuText, x: mitte(skuText, g, true), y: skuY, groesse: g, fett: true });
   }
   let qr = null;
   if (e.technik?.length) {
-    y += 4;
+    y += px(4);
     linien.push({ x1: rand, x2: breite - rand, y });
-    y += 10;
-    const qrGroesse = e.url ? Math.max(0, Math.min(140, unten - y)) : 0;
-    const spalte = innen - (qrGroesse ? qrGroesse + 12 : 0);
-    let labelGroesse = 20, wertGroesse = 24;
-    while (labelGroesse > 16 && e.technik.length * (labelGroesse + wertGroesse + 4) - 3 > unten - y) {
+    y += px(10);
+    // Der QR-Code nimmt hoechstens die halbe Breite, sonst bleibt fuer die Technik nichts.
+    const qrGroesse = e.url && !hoch ? Math.max(0, Math.min(px(140), Math.floor(innen / 2), unten - y)) : 0;
+    const spalte = innen - (qrGroesse ? qrGroesse + px(12) : 0);
+    let labelGroesse = px(20), wertGroesse = px(24);
+    while (labelGroesse > px(16) && e.technik.length * (labelGroesse + wertGroesse + 4) - 3 > unten - y) {
       labelGroesse--; wertGroesse--;
     }
     const technikText = (t, g, fett) => {
@@ -232,11 +253,16 @@ export function layout(e, mass) {
       technikText(label, labelGroesse, false); ty += labelGroesse + 1;
       technikText(wert, wertGroesse, true); ty += wertGroesse + 3;
     }
-    if (qrGroesse >= 60) qr = { x: breite - rand - qrGroesse, y, groesse: qrGroesse };
+    if (qrGroesse >= px(60)) qr = { x: breite - rand - qrGroesse, y, groesse: qrGroesse };
+    if (hoch && e.url) {
+      const qy = ty + px(8);
+      const g = Math.min(px(180), innen, unten - qy);
+      if (g >= px(60)) qr = { x: Math.round((breite - g) / 2), y: qy + Math.floor((unten - qy - g) / 2), groesse: g };
+    }
   } else if (e.url) {
-    y += 8;
-    const g = Math.min(180, unten - y);
-    if (g >= 60) qr = { x: Math.round((breite - g) / 2), y: y + Math.floor((unten - y - g) / 2), groesse: g };
+    y += px(8);
+    const g = Math.min(px(180), innen, unten - y);
+    if (g >= px(60)) qr = { x: Math.round((breite - g) / 2), y: y + Math.floor((unten - y - g) / 2), groesse: g };
   }
   return { texte, linien, qr };
 }

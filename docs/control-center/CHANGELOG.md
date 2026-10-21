@@ -2,6 +2,20 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-21 · Musteraufkleber auch 50 × 100 mm (zum Ausprobieren)
+
+- **Geändert:** Im Druckfenster „Etikettengröße“ 50 × 50 mm oder 50 × 100 mm; die Wahl merkt sich der
+  Browser (localStorage, ohne Speicher 50 × 50). 50 × 100 = 400 × 800 px, ungedreht (Druckkopf
+  bleibt 50 mm breit): dieselben Angaben, alles 1,6-mal so groß, Schrift nur so groß, dass kein
+  Wort getrennt wird; Technik über die volle Breite, QR-Code darunter (bis 288 px). `ETIKETT_FORMATE`,
+  `etikettFormat` und `layout(e, mass, format)` in `lib/muster-etiketten.mjs`; 50 × 50 unverändert.
+- **Getestet:** `muster-etiketten.test.mjs` 13 grün (neu: 50 × 100 im Rahmen, nichts abgeschnitten,
+  QR unter dem Text, größer als 50 × 50); `dashboard:test` 634 grün. Browser (Datenkopie): Wechsel
+  auf 50 × 100 → Canvas 400 × 800, gemerkt, 0 JS-Fehler. QR-Bibliothek lädt in der Remote-Session
+  nicht (CDN gesperrt), deshalb QR dort leer.
+- **Risiken/Annahmen:** Echter Druck auf einer 50 × 100-Rolle am B1 nicht geprüft (labelType 1 wie bisher).
+- **Nächste Stufe:** Probedruck; bei Bedarf mehr Angaben auf die größere Fläche.
+
 ## 2026-10-21 · Produktsuche findet Lieferantenname mit Linie und Farbnummer
 
 - **Geändert:** Die Suche zerlegt den Text in Wörter; jedes muss am Produkt oder an derselben
