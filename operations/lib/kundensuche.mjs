@@ -15,6 +15,7 @@
  */
 
 import { kundenFortschritt, fortschritt } from './bestellliste.mjs';
+import { positionKey, STATUS_LABEL } from './auftragsstatus.mjs';
 
 function leer(v) {
   return v === undefined || v === null || String(v).trim() === '' || v === '–';
@@ -76,22 +77,78 @@ function feldTreffer(felder, q) {
   return felder.some(f => typeof f === 'string' && f.toLowerCase().includes(q));
 }
 
-/** Sucht waehrend des Tippens - mind. 2 Zeichen, sonst keine Treffer (kein "alle Kunden"-Dump). */
+/**
+ * Erste bestellte Position, deren Produktname oder SKU zum Suchtext passt - fuer
+ * "Kunde nennt nur das Produkt": wer hat Cameo bestellt? null = kein Treffer.
+ */
+function produktTreffer(k, q) {
+  for (const a of k.auftraege) {
+    for (const p of a.positionen || []) {
+      if (p.eigenleistung) continue;
+      if (feldTreffer([p.titel, p.sku], q)) return { titel: p.titel, farbe: p.farbe && p.farbe !== '–' ? p.farbe : null, bestellung: a.name };
+    }
+  }
+  return null;
+}
+
+/**
+ * Sucht waehrend des Tippens - mind. 2 Zeichen, sonst keine Treffer (kein "alle Kunden"-Dump).
+ * Kontakt, Anschrift und Bestellnummer zaehlen zuerst; danach Kunden, die ein passendes
+ * Produkt bestellt haben (Feld `trefferProdukt`, damit die Liste sagt, warum sie dasteht).
+ */
 export function sucheKunden(modell, suchtext, { statusAlle = {} } = {}) {
   const q = String(suchtext ?? '').trim().toLowerCase();
   if (q.length < 2) return [];
   const alle = kundenIndex(modell, { statusAlle });
-  return alle
-    .filter(k => {
-      const felder = [
-        k.kunde.name, k.kunde.email, k.kunde.telefon,
-        k.lieferadresse?.strasse, k.lieferadresse?.ort, k.lieferadresse?.plz,
-        k.rechnungsadresse?.strasse, k.rechnungsadresse?.ort, k.rechnungsadresse?.plz,
-        ...k.auftraege.map(a => a.name),
-      ];
-      return feldTreffer(felder, q);
-    })
-    .sort((a, b) => String(b.letzteBestellungDatum ?? '').localeCompare(String(a.letzteBestellungDatum ?? '')));
+  const neuesteZuerst = (a, b) => String(b.letzteBestellungDatum ?? '').localeCompare(String(a.letzteBestellungDatum ?? ''));
+  const direkt = [];
+  const ueberProdukt = [];
+  for (const k of alle) {
+    const felder = [
+      k.kunde.name, k.kunde.email, k.kunde.telefon,
+      k.lieferadresse?.strasse, k.lieferadresse?.ort, k.lieferadresse?.plz,
+      k.rechnungsadresse?.strasse, k.rechnungsadresse?.ort, k.rechnungsadresse?.plz,
+      ...k.auftraege.map(a => a.name),
+    ];
+    if (feldTreffer(felder, q)) { direkt.push(k); continue; }
+    const t = produktTreffer(k, q);
+    if (t) ueberProdukt.push({ ...k, trefferProdukt: t });
+  }
+  return [...direkt.sort(neuesteZuerst), ...ueberProdukt.sort(neuesteZuerst)];
+}
+
+/**
+ * Offene Bestellpositionen je Produkt-Handle - fuers Lexikon: "liegt dieses Produkt gerade
+ * in einer Bestellung, die noch nicht beim Kunden ist?". Offen heisst: echte Bestellung,
+ * nicht storniert, in Shopify nicht (ganz) versendet und im Auftragsfluss nicht erledigt.
+ * Eigenleistungen zaehlen nicht. Muster tragen den Handle ihres Originals (aufbereiten()).
+ */
+export function offeneBestellungenJeProdukt(modell, { statusAlle = {} } = {}) {
+  const map = new Map();
+  for (const a of modell?.auftraege ?? []) {
+    if (a.testbestellung || a.storniert || !a.offen) continue;
+    for (const p of a.positionen || []) {
+      if (!p.handle || p.eigenleistung) continue;
+      const status = statusAlle[positionKey(a.id, p.lineItemId)]?.status || null;
+      if (status === 'erledigt') continue;
+      if (!map.has(p.handle)) map.set(p.handle, []);
+      map.get(p.handle).push({
+        orderId: a.id,
+        bestellung: a.name,
+        datum: a.datum,
+        kunde: a.details?.kunde?.name || p.kunde || '–',
+        kundenKey: kundenSchluessel(a),
+        titel: p.titel,
+        farbe: p.farbe && p.farbe !== '–' ? p.farbe : null,
+        menge: p.kundenmenge || null,
+        istMuster: !!p.istMuster,
+        stand: status ? STATUS_LABEL[status] : 'Noch nicht bestellt',
+      });
+    }
+  }
+  // Aelteste zuerst: wer am laengsten wartet, steht oben.
+  for (const liste of map.values()) liste.sort((x, y) => String(x.datum ?? '').localeCompare(String(y.datum ?? '')));
+  return map;
 }
 
 function aeltesteOffeneDatum(k, statusAlle) {
@@ -122,6 +179,7 @@ export function kundenListenEintrag(k, { statusAlle = {} } = {}) {
     aeltesteOffeneBestellungDatum: aeltesteOffeneDatum(k, statusAlle),
     beratungOffen: k.auftraege.some(a => !a.testbestellung && a.checks?.beratung === 'Ja'),
     muster: k.auftraege.some(a => !a.testbestellung && (a.positionen || []).some(p => p.istMuster)),
+    trefferProdukt: k.trefferProdukt ?? null,
   };
 }
 

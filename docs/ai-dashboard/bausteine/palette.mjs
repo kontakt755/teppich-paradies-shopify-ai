@@ -50,10 +50,13 @@ function paletteFernSuche(q, fertig) {
 function paletteItems(q) {
   const items = [];
   for (const k of paletteFern.kunden) {
-    items.push({ kind: 'Kunde', label: k.name || 'ohne Namen', sub: [k.ort, k.telefon].filter(x => x && x !== '–').join(' · ') || undefined, treffer: true, run: () => navigate('kunden', { kunde: k.key }) });
+    // Ueber den Produktnamen gefunden: sagen, was der Kunde bestellt hat - sonst wirkt der Treffer zufaellig.
+    const bestellt = k.trefferProdukt ? `bestellt: ${[k.trefferProdukt.titel, k.trefferProdukt.farbe].filter(Boolean).join(' · ')}` : null;
+    items.push({ kind: 'Kunde', label: k.name || 'ohne Namen', sub: [bestellt, k.ort, k.telefon].filter(x => x && x !== '–').join(' · ') || undefined, treffer: true, run: () => navigate('kunden', { kunde: k.key }) });
   }
   for (const p of paletteFern.produkte) {
-    items.push({ kind: 'Produkt', label: p.titel, sub: p.produktgruppe || undefined, treffer: true, run: () => navigate('lexikon', { handle: p.handle }) });
+    const offen = p.offeneBestellungen ? `${p.offeneBestellungen} offene Bestellung${p.offeneBestellungen === 1 ? '' : 'en'}` : null;
+    items.push({ kind: 'Produkt', label: p.titel, sub: [offen, p.produktgruppe].filter(Boolean).join(' · ') || undefined, treffer: true, run: () => navigate('lexikon', { handle: p.handle }) });
   }
   const views = [['heute', 'Heute'], ['einkauf', 'Bestellen beim Lieferanten'], ['kunden', 'Kunden'], ['lexikon', 'Produktsuche'], ['arbeit', 'Technik (GitHub)'], ['freigaben', 'Entscheidungen'], ['bereiche', 'Bereiche'], ['insights', 'Kennzahlen'], ['aktivitaet', 'Verlauf'], ['ratgeber', 'Ratgeber'], ['organisation', 'Aufgaben'], ['akquise', 'Neue Aufträge'], ['shopwache', 'Shop-Kontrolle'], ['bildrechte', 'Bildrechte (Herkunft, Bildgröße, ALT-Text)'], ['hilfe', 'Hilfe: So arbeitest du damit']];
   for (const [k, l] of views) if (darfAnsicht(k)) items.push({ kind: 'Ansicht', label: l, run: () => navigate(k) });

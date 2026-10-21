@@ -3,7 +3,7 @@
  * Kundengespraech, Bestellzeilen, Mengenhilfe, Original-Link.
  */
 import { state } from '../kern/zustand.mjs';
-import { esc, fmtDateTime, NICHT_HINTERLEGT, fmtPreis, toast } from '../kern/helfer.mjs';
+import { esc, fmtDate, fmtDateTime, NICHT_HINTERLEGT, fmtPreis, toast } from '../kern/helfer.mjs';
 import { fetchEinkauf } from '../kern/api.mjs';
 import { render } from '../kern/render.mjs';
 import { istNurLesend } from '../kern/sitzung.mjs';
@@ -195,9 +195,18 @@ function lexikonTrefferKarte(p) {
     <div>
       <div class="t">${esc(p.titel)}</div>
       <div class="m">${link}${p.produktgruppe ? esc(p.produktgruppe) : NICHT_HINTERLEGT} · ${p.farbenAnzahl} Farbe${p.farbenAnzahl === 1 ? '' : 'n'}</div>
+      ${offeneBestellungenKurz(p)}
     </div>
     ${preis ? `<div class="preis"><small>ab</small>${esc(preis)}</div>` : ''}
   </div>`;
+}
+
+/** Trefferkarte: steckt das Produkt in offenen Bestellungen? Ware faellt auf, Muster nur leise. */
+function offeneBestellungenKurz(p) {
+  const ware = p.offeneBestellungen || 0;
+  const muster = p.offeneMuster || 0;
+  if (!ware && !muster) return '';
+  return `<div class="m">${ware ? `<span class="badge p1">${ware} offene Bestellung${ware === 1 ? '' : 'en'}</span>` : ''}${muster ? `<span class="small muted">${ware ? ' ' : ''}${muster} Muster offen</span>` : ''}</div>`;
 }
 
 function viewLexikonListe() {
@@ -583,17 +592,32 @@ function internesDetails(p) {
 }
 
 /**
- * Rueckweg vom Produkt zum Kunden: steht dieses Produkt gerade bei jemandem
- * offen? Wer im Kundengespraech nachschlaegt, sieht das sofort - ohne in die
- * Kundenliste zu wechseln.
+ * Rueckweg vom Produkt zum Kunden: in welchen offenen Bestellungen steckt dieses Produkt,
+ * und bei wem? Wer im Kundengespraech nachschlaegt, sieht das sofort - ohne in die
+ * Kundenliste zu wechseln. Der naechste Schritt aus "Zu tun" (wartendeKunden) steht an der
+ * passenden Bestellung; Faelle ohne offene Bestellung hier stehen darunter.
  */
-function wartendeKundenBlock(wartende) {
-  if (!wartende?.length) return '';
-  return `<section class="card" style="margin-bottom:16px;border-left:3px solid var(--warn)">
-    <div class="card-head"><h2>${wartende.length === 1 ? 'Ein Kunde wartet' : `${wartende.length} Kunden warten`} auf dieses Produkt</h2><a class="more" href="#/kunden">Zu tun öffnen →</a></div>
-    <ul style="margin:0;padding-left:20px;line-height:1.9">
-      ${wartende.map(w => `<li><b>${esc(w.kunde)}</b>${w.bezug ? ` · ${esc(w.bezug)}` : ''}${w.tage !== null && w.tage !== undefined ? ` · seit ${w.tage === 0 ? 'heute' : `${w.tage} Tagen`}` : ''} – ${esc(w.schritt)}</li>`).join('')}
-    </ul>
+function offeneBestellungenBlock(offene = [], wartende = []) {
+  const ware = offene.filter(o => !o.istMuster);
+  const muster = offene.filter(o => o.istMuster);
+  const schrittJeBestellung = new Map(wartende.filter(w => w.bezug).map(w => [w.bezug, w.schritt]));
+  const bekannt = new Set(offene.map(o => o.bestellung));
+  const uebrige = wartende.filter(w => !w.bezug || !bekannt.has(w.bezug));
+  if (!ware.length && !muster.length && !uebrige.length) return '';
+  const kundeLink = o => `<a href="#/kunden?kunde=${encodeURIComponent(o.kundenKey)}"><b>${esc(o.kunde)}</b></a>`;
+  const zeile = o => {
+    const schritt = schrittJeBestellung.get(o.bestellung);
+    return `<li>${kundeLink(o)} · ${esc(o.bestellung)} vom ${esc(fmtDate(o.datum))}${o.farbe ? ` · ${esc(o.farbe)}` : ''}${o.menge && !o.istMuster ? ` · ${esc(o.menge)}` : ''} – ${esc(o.stand)}${schritt ? ` <span class="small muted">(als Nächstes: ${esc(schritt)})</span>` : ''}</li>`;
+  };
+  const anzahl = new Set(ware.map(o => o.orderId)).size;
+  const titel = ware.length
+    ? `${anzahl === 1 ? 'Eine offene Bestellung' : `${anzahl} offene Bestellungen`} mit diesem Produkt`
+    : (muster.length ? 'Muster dieses Produkts noch offen' : 'Kunden warten auf dieses Produkt');
+  return `<section class="card lex-offen${ware.length || uebrige.length ? ' wichtig' : ''}">
+    <div class="card-head"><h2>${titel}</h2><a class="more" href="#/kunden">Kunden öffnen →</a></div>
+    ${ware.length ? `<ul>${ware.map(zeile).join('')}</ul>` : ''}
+    ${muster.length ? `${ware.length ? '<h3>Muster noch offen</h3>' : ''}<ul>${muster.map(zeile).join('')}</ul>` : ''}
+    ${uebrige.length ? `<h3>Außerdem warten</h3><ul>${uebrige.map(w => `<li><b>${esc(w.kunde)}</b>${w.bezug ? ` · ${esc(w.bezug)}` : ''}${w.tage !== null && w.tage !== undefined ? ` · seit ${w.tage === 0 ? 'heute' : `${w.tage} Tagen`}` : ''} – ${esc(w.schritt)}</li>`).join('')}</ul>` : ''}
   </section>`;
 }
 
@@ -619,7 +643,7 @@ function viewLexikonDetail(handle) {
       ${mengenhilfeWidget(p, zielVariante, normaleVarianten)}`;
 
   return `${zurueck}
-    ${wartendeKundenBlock(d.wartendeKunden)}
+    ${offeneBestellungenBlock(d.offeneBestellungen, d.wartendeKunden)}
     ${produktKarte(p, normaleVarianten)}
     ${musterEtikettenBlock(p)}
     ${fuersKundengespraech(p, normaleVarianten)}
