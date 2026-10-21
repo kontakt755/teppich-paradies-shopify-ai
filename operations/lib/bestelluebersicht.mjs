@@ -51,9 +51,15 @@ function knoten(conn) {
   return [];
 }
 
-/** Bestellung gilt als offen: nicht storniert und nicht (vollstaendig) erfuellt. */
+/**
+ * Bestellung gilt als offen: nicht storniert, nicht in Shopify archiviert und nicht
+ * (vollstaendig) erfuellt. Archivieren ohne Versand ist in Shopify der Weg, einen Auftrag
+ * abzuhaken (Abholung, Ladenverkauf, erledigt ohne Sendung) - er soll dann ueberall
+ * verschwinden, nicht als "nicht versendet" stehen bleiben (Inhaber 2026-10-21).
+ */
 export function istOffen(order) {
   if (order?.cancelledAt) return false;
+  if (order?.closedAt) return false;
   const f = String(order?.displayFulfillmentStatus ?? '').toUpperCase();
   return f === '' || OFFEN_FULFILLMENT.has(f);
 }
@@ -517,7 +523,7 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
     if (mengeOffen.length) gelb(`${mengeOffen.length} Einkaufsmenge(n) UNGEKLAERT`);
     if (jaNein(verlegung) === 'Ja') gelb('Verlegung gebucht');
     if (!['PAID', 'PARTIALLY_REFUNDED'].includes(String(order.displayFinancialStatus))) gelb(`Zahlung: ${order.displayFinancialStatus ?? '–'}`);
-    if (!offen) { ampel = 'grau'; hinweise.unshift(order.cancelledAt ? 'Storniert' : 'Erledigt'); }
+    if (!offen) { ampel = 'grau'; hinweise.unshift(order.cancelledAt ? 'Storniert' : order.closedAt ? 'In Shopify archiviert' : 'Erledigt'); }
 
     const auftrag = {
       id: order.id,

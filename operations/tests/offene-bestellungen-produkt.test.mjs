@@ -33,10 +33,14 @@ const modell = aufbereiten({
     bestellung(3, [zeile({ id: 31, title: 'Testteppich Wolke', handle: 'testteppich-wolke' })], { cancelledAt: '2026-02-04T00:00:00Z' }),
     bestellung(4, [zeile({ id: 41, title: 'Testteppich Wolke', handle: 'testteppich-wolke' })], { displayFulfillmentStatus: 'FULFILLED' }),
     bestellung(5, [zeile({ id: 51, title: 'Testteppich Wolke', handle: 'testteppich-wolke' })], { tags: ['TESTBESTELLUNG'] }),
+    // In Shopify archiviert, ohne Versand: abgehakt.
+    bestellung(6, [zeile({ id: 61, title: 'Testteppich Wolke', handle: 'testteppich-wolke' })], { closedAt: '2026-02-10T00:00:00Z' }),
+    // Teilversand: Wolke schon verschickt, Stein noch offen.
+    bestellung(7, [{ ...zeile({ id: 71, title: 'Testteppich Wolke', handle: 'testteppich-wolke' }), unfulfilledQuantity: 0 }, zeile({ id: 72, title: 'Testvinyl Stein', handle: 'testvinyl-stein' })], { displayFulfillmentStatus: 'PARTIALLY_FULFILLED' }),
   ],
 });
 
-test('offeneBestellungenJeProdukt: nur offene, echte, nicht stornierte Bestellungen', () => {
+test('offeneBestellungenJeProdukt: nur offene, echte, nicht stornierte, nicht archivierte Bestellungen', () => {
   const map = offeneBestellungenJeProdukt(modell, { statusAlle: {} });
   const wolke = map.get('testteppich-wolke');
   assert.deepEqual(wolke.map(o => o.bestellung), ['#P1', '#P2']);
@@ -44,7 +48,13 @@ test('offeneBestellungenJeProdukt: nur offene, echte, nicht stornierte Bestellun
   assert.equal(wolke[0].kunde, 'Probekunde 1');
   assert.equal(wolke[0].kundenKey, 'email:probekunde1@example.invalid');
   assert.equal(wolke[0].stand, 'Noch nicht bestellt');
-  assert.deepEqual(map.get('testvinyl-stein').map(o => o.bestellung), ['#P2']);
+  assert.deepEqual(map.get('testvinyl-stein').map(o => o.bestellung), ['#P2', '#P7']);
+});
+
+test('offeneBestellungenJeProdukt: bei Teilversand verschwindet die schon verschickte Position', () => {
+  const map = offeneBestellungenJeProdukt(modell, { statusAlle: {} });
+  assert.ok(!map.get('testteppich-wolke').some(o => o.bestellung === '#P7'));
+  assert.ok(map.get('testvinyl-stein').some(o => o.bestellung === '#P7'));
 });
 
 test('offeneBestellungenJeProdukt: Auftragsfluss "erledigt" schliesst die Position, "bestellt" zeigt den Stand', () => {
@@ -61,8 +71,8 @@ test('offeneBestellungenJeProdukt: Auftragsfluss "erledigt" schliesst die Positi
 
 test('sucheKunden: findet Kunden ueber den Produktnamen und sagt, was sie bestellt haben', () => {
   const treffer = sucheKunden(modell, 'stein', { statusAlle: {} });
-  assert.deepEqual(treffer.map(k => k.kunde.name), ['Probekunde 2']);
-  const eintrag = kundenListenEintrag(treffer[0]);
+  assert.deepEqual(treffer.map(k => k.kunde.name), ['Probekunde 7', 'Probekunde 2']);
+  const eintrag = kundenListenEintrag(treffer[1]);
   assert.equal(eintrag.trefferProdukt.titel, 'Testvinyl Stein');
   assert.equal(eintrag.trefferProdukt.bestellung, '#P2');
 });

@@ -118,6 +118,8 @@ test('Stornierte Bestellungen erscheinen nicht in der Einkaufsliste', () => {
   assert.equal(istOffen(daten.orders[2]), false);
   assert.equal(istOffen({ displayFulfillmentStatus: 'FULFILLED' }), false);
   assert.equal(istOffen({ displayFulfillmentStatus: 'PARTIALLY_FULFILLED' }), true);
+  // In Shopify archiviert ohne Versand = abgehakt (Inhaber 2026-10-21)
+  assert.equal(istOffen({ displayFulfillmentStatus: 'UNFULFILLED', closedAt: '2026-10-20T10:00:00Z' }), false);
   const b = m.gruppen.find(g => g.lieferant === 'B');
   assert.equal(b.positionen.length, 1);
   assert.equal(b.positionen[0].orderName, '#T1');

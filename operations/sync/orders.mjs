@@ -18,7 +18,7 @@ query OpsOrders($first: Int!, $after: String, $query: String) {
   orders(first: $first, after: $after, query: $query, sortKey: UPDATED_AT) {
     pageInfo { hasNextPage endCursor }
     nodes {
-      id name createdAt updatedAt cancelledAt note tags test
+      id name createdAt updatedAt cancelledAt closedAt note tags test
       displayFinancialStatus displayFulfillmentStatus
       email phone
       sourceName

@@ -120,7 +120,8 @@ export function sucheKunden(modell, suchtext, { statusAlle = {} } = {}) {
 /**
  * Offene Bestellpositionen je Produkt-Handle - fuers Lexikon: "liegt dieses Produkt gerade
  * in einer Bestellung, die noch nicht beim Kunden ist?". Offen heisst: echte Bestellung,
- * nicht storniert, in Shopify nicht (ganz) versendet und im Auftragsfluss nicht erledigt.
+ * nicht storniert oder archiviert, die Position in Shopify noch nicht versendet und im
+ * Auftragsfluss nicht erledigt.
  * Eigenleistungen zaehlen nicht. Muster tragen den Handle ihres Originals (aufbereiten()).
  */
 export function offeneBestellungenJeProdukt(modell, { statusAlle = {} } = {}) {
@@ -129,6 +130,8 @@ export function offeneBestellungenJeProdukt(modell, { statusAlle = {} } = {}) {
     if (a.testbestellung || a.storniert || !a.offen) continue;
     for (const p of a.positionen || []) {
       if (!p.handle || p.eigenleistung) continue;
+      // Teilversand: schon verschickte Positionen (offene Menge 0) sind nicht mehr offen.
+      if (!(Number(p.menge) > 0)) continue;
       const status = statusAlle[positionKey(a.id, p.lineItemId)]?.status || null;
       if (status === 'erledigt') continue;
       if (!map.has(p.handle)) map.set(p.handle, []);
