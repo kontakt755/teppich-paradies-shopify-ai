@@ -78,6 +78,9 @@ stimmt.
 - Kachelzahl und Liste darunter muessen dieselbe Menge zaehlen.
 
 **Sprache** (die Oberflaeche ist deutsch, fuer Mitarbeiter ohne IT-Hintergrund):
+- **Woerter aus `docs/control-center/BEGRIFFE.md`** (Glossar alt → neu: z. B.
+  „Neue Aufträge“ statt Akquise, „Bestellen“ statt Einkauf, „Produktsuche“ statt
+  Lexikon). Neue Beschriftungen dort nachtragen; unter jedem Seitentitel ein Satz „Hier …“.
 - Nie interne Marker oder API-Werte zeigen: `UNGEKLAERT` → „ungeklaert"/„fehlt",
   `PAID` → „bezahlt", `UNFULFILLED` → „nicht versendet", Label
   `status:review` → „Status Review". Uebersetzungstabellen stehen bei ihrer Ansicht

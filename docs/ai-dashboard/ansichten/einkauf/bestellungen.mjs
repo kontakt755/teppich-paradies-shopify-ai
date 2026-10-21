@@ -35,7 +35,7 @@ function lieferantLinkZelle(p) {
   // Artikelnummer, Farbnummer und Bestellweg beieinanderstehen. Ohne den
   // Lexikon-Weg bliebe die Zelle bei fehlender URL eine Sackgasse.
   const lex = p.handle
-    ? `<div style="margin-top:4px"><a class="btn btn-sm btn-ghost" href="#" data-lex-open="${esc(p.handle)}" title="Originalname, Artikelnummer und Bestellweg im Lexikon">Im Lexikon ansehen</a></div>`
+    ? `<div style="margin-top:4px"><a class="btn btn-sm btn-ghost" href="#" data-lex-open="${esc(p.handle)}" title="Originalname, Artikelnummer und Bestellweg in der Produktsuche">In der Produktsuche ansehen</a></div>`
     : '';
   if (hatLieferantLink(p)) {
     return `<a class="btn btn-sm" href="${esc(p.lieferantUrl)}" target="_blank" rel="noopener" title="Produktseite beim Lieferanten in neuem Tab">Beim Lieferanten öffnen ↗</a>${lex}`;

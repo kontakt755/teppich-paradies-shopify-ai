@@ -27,7 +27,7 @@ export function viewInsights() {
     if (['in-arbeit', 'korrektur'].includes(t.status) && (t.daysSinceUpdate ?? 0) >= 7) warnings.push({ t, text: `in Arbeit ohne Update seit ${t.daysSinceUpdate} Tagen` });
   }
   return `
-    <div class="page-head"><div><h1>Insights</h1><p class="sub">Systemzustand und Verteilung der Arbeit. Jede Zahl mit Quelle und Datenstand.</p></div></div>
+    <div class="page-head"><div><h1>Kennzahlen</h1><p class="sub">Hier stehen Systemzustand und Verteilung der Arbeit – jede Zahl mit Quelle und Datenstand.</p></div></div>
     <div class="grid grid-2">
       <section class="card span-2"><div class="card-head"><h2>Systemzustand</h2><span class="more muted">Stand ${fmtDateTime(new Date().toISOString())}</span></div><div class="health">${systemHealth({ tailscale: shopwache.daten?.tailscale }).map(healthRow).join('')}</div></section>
       <section class="card"><div class="card-head"><h2>Warnungen</h2><span class="more muted">aus Aufgabenzustand abgeleitet</span></div>

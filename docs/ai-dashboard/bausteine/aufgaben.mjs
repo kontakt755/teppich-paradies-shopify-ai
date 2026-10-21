@@ -8,7 +8,7 @@ import { personName } from '../kern/konfig.mjs';
 
 export const prioBadge = t => t.priority ? `<span class="badge ${t.priority}" title="${esc(PRIORITIES[t.priority].label)}">${PRIORITIES[t.priority].short}</span>` : `<span class="badge gap" title="Priorität fehlt">P?</span>`;
 export const statusBadge = t => `<span class="badge status ${esc(t.status)}">${esc(t.statusLabel)}</span>${t.legacyApproval ? '<span class="badge plain" title="Übergangsregel: abgeleitet aus status:blockiert + reviewer:mensch, weil status:freigabe im Repository fehlt">abgeleitet</span>' : ''}`;
-export const ownerText = t => t.owner ? esc(personName(t.owner)) : `<span class="badge gap">ohne Owner</span>`;
+export const ownerText = t => t.owner ? esc(personName(t.owner)) : `<span class="badge gap">ohne Zuständigen</span>`;
 export const execBadge = t => t.executor ? `<span class="badge ${t.executorKind === 'ki' ? 'ki' : 'plain'}" title="Ausführende:r">${esc(t.executor)}</span>` : '';
 export const dueText = t => t.due ? (t.overdue ? `<span class="warnc">überfällig seit ${fmtDate(t.due)}</span>` : t.daysToDue === 0 ? '<b>heute fällig</b>' : `fällig ${fmtDate(t.due)}`) : '';
 export const areaLabel = key => AREAS.find(a => a.key === key)?.label || key;
@@ -34,9 +34,9 @@ export const echterSchritt = t => (t.nextStep && !PLATZHALTER_SCHRITT.test(t.nex
 export function primaryAction(t) {
   if (t.status === 'freigabe') return { key: 'approve', label: 'Freigabe erteilen' };
   if (t.status === 'blockiert') return { key: 'unblock', label: 'Blocker lösen' };
-  if (t.status === 'review') return { key: 'fertig', label: 'Review abschließen' };
-  if (['in-arbeit', 'korrektur'].includes(t.status)) return { key: 'review', label: 'Review anfordern' };
-  if (['bereit', 'geplant', 'eingang', 'triage'].includes(t.status)) return t.owner ? { key: 'in-arbeit', label: 'Nächsten Schritt starten' } : { key: 'assign', label: 'Owner zuordnen' };
+  if (t.status === 'review') return { key: 'fertig', label: 'Prüfung abschließen' };
+  if (['in-arbeit', 'korrektur'].includes(t.status)) return { key: 'review', label: 'Zur Prüfung geben' };
+  if (['bereit', 'geplant', 'eingang', 'triage'].includes(t.status)) return t.owner ? { key: 'in-arbeit', label: 'Nächsten Schritt starten' } : { key: 'assign', label: 'Zuständigen festlegen' };
   if (!t.open) return { key: 'reopen', label: 'Wieder öffnen' };
   return { key: 'open', label: 'Aufgabe öffnen' };
 }

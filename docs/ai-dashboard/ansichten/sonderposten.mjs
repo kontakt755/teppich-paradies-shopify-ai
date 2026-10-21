@@ -127,7 +127,7 @@ export function viewSonderposten() {
   const q = state.route.params.get('spq') || '';
   const anzahlVerfuegbar = d?.verfuegbar ? d.eintraege.filter(e => e.verkaufbar).length : null;
   const kopf = `<div class="page-head"><div><h1>Sonderposten</h1>
-    <p class="sub">Reststücke, Einzelstücke und Restrollen. Im Laden verkauft? Hier abbuchen – der Shop zeigt sofort den neuen Bestand.</p></div>
+    <p class="sub">Hier buchst du Reststücke, Einzelstücke und Restrollen ab, die im Laden verkauft sind – der Shop zeigt sofort den neuen Bestand.</p></div>
     <div class="head-actions"><button type="button" class="btn btn-sm" data-sp-neu${sonderposten.laedt ? ' disabled' : ''}>${sonderposten.laedt ? 'Lädt …' : 'Neu laden'}</button></div></div>`;
   const suche = `<div class="toolbar search-hero"><input type="search" inputmode="search" autocomplete="off" placeholder="SP-Nummer oder Name, z. B. SP-0042 oder Yasmin" value="${esc(q)}" data-param="spq" aria-label="Sonderposten suchen"></div>`;
 

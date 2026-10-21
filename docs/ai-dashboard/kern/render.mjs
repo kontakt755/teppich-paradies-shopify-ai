@@ -55,7 +55,7 @@ function zeichne() {
     return;
   }
   main.innerHTML = (state.loadError ? `<div class="notice crit" style="margin-bottom:12px">Aktualisierung fehlgeschlagen: ${esc(state.loadError)} – es wird der letzte geladene Stand gezeigt.</div>` : '') + ansichten[state.route.view]();
-  document.title = `${{ heute: 'Heute', prozesse: 'Arbeitsplatz', arbeit: 'Entwicklung', freigaben: 'Freigaben', bereiche: 'Bereiche', insights: 'Insights', aktivitaet: 'Aktivität', einkauf: 'Einkauf', kunden: 'Kunden', lexikon: 'Lexikon', ratgeber: 'Ratgeber', hilfe: 'Hilfe', shopwache: 'Shop-Wache', organisation: 'Aufgaben & Organisation', sonderposten: 'Sonderposten', akquise: 'Akquise', bildrechte: 'Bildrechte' }[state.route.view] || 'Teppich Paradies'} · Teppich Dashboard`;
+  document.title = `${{ heute: 'Heute', prozesse: 'Vorbereiten', arbeit: 'Technik', freigaben: 'Entscheidungen', bereiche: 'Bereiche', insights: 'Kennzahlen', aktivitaet: 'Verlauf', einkauf: 'Bestellen', kunden: 'Kunden', lexikon: 'Produktsuche', ratgeber: 'Ratgeber', hilfe: 'Hilfe', shopwache: 'Shop-Kontrolle', organisation: 'Aufgaben', sonderposten: 'Sonderposten', akquise: 'Neue Aufträge', bildrechte: 'Bildrechte' }[state.route.view] || 'Teppich Paradies'} · Teppich Dashboard`;
   renderSheet();
   if (lokalerFokus?.id) {
     const feld = document.getElementById(lokalerFokus.id);

@@ -122,7 +122,7 @@ function weitereLinks() {
 
 export function viewSocial() {
   const kopf = `<div class="page-head"><div><h1>Social Media</h1>
-      <p class="sub">Upload-Link fürs Team und Links für Kampagnen.</p></div></div>`;
+      <p class="sub">Hier findest du den Upload-Link fürs Team und Links für Kampagnen.</p></div></div>`;
   if (istNurLesend()) {
     return kopf + emptyState('Nur für Mitarbeiter.', 'Mit einem Lesezugang sind die Social-Media-Links nicht sichtbar.');
   }

@@ -42,7 +42,7 @@ function labelKlartext(name) {
   if (gruppe === 'priority') return `Prio ${wert.toUpperCase()}`;
   if (gruppe === 'area') return `Bereich ${wert}`;
   if (gruppe === 'type') return `Typ ${wert}`;
-  if (gruppe === 'reviewer') return `Review durch ${wert}`;
+  if (gruppe === 'reviewer') return `Prüfung durch ${wert}`;
   return name;
 }
 
@@ -103,7 +103,7 @@ export function viewAktivitaet() {
   const buendel = buendeleAktivitaet(events).slice(0, 120);
   const titelVon = b => b.title || state.tasks.find(t => t.number === b.number)?.title || '';
   return `
-    <div class="page-head"><div><h1>Aktivität</h1><p class="sub">Was sich an den Aufgaben geändert hat – zusammengefasst je Person und Aufgabe</p></div></div>
+    <div class="page-head"><div><h1>Verlauf</h1><p class="sub">Hier siehst du, was sich an den Aufgaben geändert hat – je Person und Aufgabe.</p></div></div>
     <div class="toolbar"><input type="search" placeholder="Verlauf durchsuchen …" value="${esc(state.route.params.get('q') || '')}" data-param="q" aria-label="Verlauf durchsuchen"></div>
     ${activityCache?.error ? `<div class="notice warn" style="margin-bottom:12px">Verlauf konnte nicht geladen werden: ${esc(activityCache.error)}</div>` : ''}
     <section class="card"><ul class="activity">${buendel.map(b => `<li><span class="when">${fmtDateTime(b.at)}</span><div><div><a href="#" data-open="${b.number}"><span class="mono small muted">#${b.number}</span> ${esc(titelVon(b))}</a></div><div class="activity-meta"><span class="who">${esc(b.who)}</span>${b.teile.map(t => `<span class="badge ${t.art === 'status' ? 'status review' : 'plain'}">${esc(t.text)}</span>`).join('')}</div></div></li>`).join('') || '<li class="muted">Keine Einträge.</li>'}</ul></section>

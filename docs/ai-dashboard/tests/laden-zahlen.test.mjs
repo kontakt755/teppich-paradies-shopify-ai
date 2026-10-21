@@ -264,8 +264,8 @@ test('Kachel auf "Heute": fuenf Zahlen, faellige Wiedervorlagen in Bernstein, 0 
   const html = heuteLaden();
   assert.equal(holt.length, 0, 'frischer Stand: kein neuer Abruf');
   assert.equal((html.match(/class="heute-kpi"/g) || []).length, 5);
-  for (const t of ['Offene Beratungen', 'Wiedervorlage fällig', 'Angebote offen', 'Aus dem Shop', 'Gewonnen', 'davon 4 neu', 'davon 1 zum Nachfassen', 'verloren 2 · 30 Tage']) assert.ok(html.includes(t), t);
-  assert.match(html, /<div class="n warn">2<\/div>\s*<div class="l">Wiedervorlage fällig/);
+  for (const t of ['Offene Beratungen', 'Wieder melden', 'Angebote offen', 'Aus dem Shop', 'Gewonnen', 'davon 4 neu', 'davon 1 zum Nachfassen', 'verloren 2 · 30 Tage']) assert.ok(html.includes(t), t);
+  assert.match(html, /<div class="n warn">2<\/div>\s*<div class="l">Wieder melden/);
   assert.match(html, /<div class="n null">0<\/div>\s*<div class="l">Aus dem Shop/);
   assert.match(html, /href="https:\/\/script\.google\.com\/macros\/s\/TEST-DEPLOYMENT\/exec\?ansicht=laden" target="_blank" rel="noopener">Laden-Ansicht öffnen/);
   assert.ok(!/Spam/.test(html), 'ohne Feld (aeltere App) kein Spam-Hinweis');

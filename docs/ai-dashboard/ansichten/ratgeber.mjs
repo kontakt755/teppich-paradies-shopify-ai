@@ -27,7 +27,7 @@ function ensureBodenwissen() {
 
 export function viewRatgeber() {
   ensureBodenwissen();
-  const head = `<div class="page-head"><div><h1>Ratgeber</h1><p class="sub">Stand der Bodenwissen-Inhalte: Ratgeber-Artikel, Lexikon und Problem-Finder</p></div></div>`;
+  const head = `<div class="page-head"><div><h1>Ratgeber</h1><p class="sub">Hier siehst du, welche Ratgeber-Artikel, Fachbegriffe und Problem-Finder im Shop stehen.</p></div></div>`;
   const status = ratgeberStatus(state.bodenwissen, state.bodenwissenError);
   if (status.state !== 'ok') {
     return head + emptyState(status.state === 'fehler' ? 'Ratgeber-Daten konnten nicht geladen werden.' : 'Noch keine Ratgeber-Daten erzeugt.', status.hinweis);

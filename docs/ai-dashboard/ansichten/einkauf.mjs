@@ -15,7 +15,7 @@ import { viewEinkaufBelege, belegArbeit, ensureBelege } from './einkauf/belege.m
 
 function viewEinkaufHilfe() {
   return `<section class="card">
-    <h2>Dein Tag im Einkauf</h2>
+    <h2>Dein Tag beim Bestellen</h2>
     <p class="small muted">So gehst du die Bestellübersicht in der Praxis durch, Schritt für Schritt:</p>
     <ol style="margin:0 0 4px;padding-left:22px;line-height:1.7">
       <li>Öffne den Tab „Bestellungen" und schau oben auf die Zahlen: wie viele Artikel und Muster noch zu bestellen sind und wie viele Aufträge ein Problem haben.</li>
@@ -51,8 +51,8 @@ function viewEinkaufHilfe() {
       <li><b>Ampel:</b> eine farbige Markierung, die auf einen Blick zeigt, wie es um einen Auftrag steht: grün = bereit, gelb = erst prüfen, rot = blockiert (z. B. fehlende Angabe).</li>
       <li><b>Großhändler-ID:</b> die interne Bestellnummer/Artikelnummer, unter der der Lieferant (Großhändler) den Artikel führt – nicht dieselbe Nummer wie in unserem eigenen Shop.</li>
       <li><b>Ungeklärt:</b> die Angabe fehlt oder konnte nicht automatisch ermittelt werden (siehe oben, „Was tun, wenn etwas fehlt?").</li>
-      <li><b>Triage:</b> eine neue Aufgabe wird zuerst bewertet (Priorität, Zuständigkeit, nächster Schritt), bevor jemand sie bearbeitet – vergleichbar mit „Posteingang sortieren".</li>
-      <li><b>P0 / P1 / P2 / P3:</b> Prioritätsstufen für Aufgaben im Bereich „Arbeit", von P0 (kritisch, sofort) bis P3 (niedrig, hat Zeit).</li>
+      <li><b>Sichten:</b> eine neue Aufgabe wird zuerst bewertet (Priorität, Zuständigkeit, nächster Schritt), bevor jemand sie bearbeitet – vergleichbar mit „Posteingang sortieren".</li>
+      <li><b>P0 / P1 / P2 / P3:</b> Prioritätsstufen für Aufgaben im Bereich „Technik", von P0 (kritisch, sofort) bis P3 (niedrig, hat Zeit).</li>
     </ul>
 
     <h3 style="margin-top:20px">Die drei Unteransichten im Detail</h3>
@@ -65,7 +65,7 @@ function viewEinkaufHilfe() {
 
 export function viewEinkauf() {
   if (state.capabilities.mode !== 'local') {
-    return `<div class="page-head"><div><h1>Einkauf</h1><p class="sub">Bestellübersicht und Produktdaten-Status für den Einkauf.</p></div></div>
+    return `<div class="page-head"><div><h1>Bestellen</h1><p class="sub">Hier bestellst du beim Lieferanten und verfolgst, bis die Ware da ist.</p></div></div>
       ${emptyState('Nur lokal im Betrieb verfügbar.', 'Diese Ansicht liest private Bestell- und Einkaufsdaten, die nie im öffentlichen Repository landen. Auf dem Mac starten: npm run dashboard')}`;
   }
   // Detailseite eines Lieferanten als Parameter (#/einkauf?lieferant=A) - bleibt damit im
@@ -77,12 +77,12 @@ export function viewEinkauf() {
   const roh = p.get('tab') === 'bestellungen' ? 'lieferant' : p.get('tab');
   const tab = ['ablauf', 'lieferant', 'belege', 'musterlager', 'produktdaten', 'hilfe'].includes(roh) ? roh
     : (p.get('af') || p.get('auftrag') || p.get('lf')) ? 'lieferant' : 'ablauf';
-  const tabs = [['ablauf', 'Je Auftrag'], ['lieferant', 'Je Lieferant'], ['belege', 'Belege'], ['musterlager', 'Musterlager'], ['produktdaten', 'Produktdaten'], ['hilfe', 'Anleitung']];
+  const tabs = [['ablauf', 'Je Auftrag'], ['lieferant', 'Je Lieferant'], ['belege', 'Lieferantenpost'], ['musterlager', 'Musterlager'], ['produktdaten', 'Produktdaten'], ['hilfe', 'Anleitung']];
   ensureAktualisierung();
   // Die Zahl am Reiter "Belege" zeigt, ob dort etwas zu pruefen ist - auch von den anderen Reitern aus.
   ensureBelege();
   const zuPruefen = belegArbeit()?.summe || 0;
-  const head = `<div class="page-head"><div><h1>Einkauf</h1><p class="sub">Je Auftrag der nächste Schritt: bestellen, Ware annehmen, Kunde informieren.</p></div>
+  const head = `<div class="page-head"><div><h1>Bestellen</h1><p class="sub">Hier bestellst du beim Lieferanten – je Auftrag der nächste Schritt: bestellen, Ware annehmen, Kunde informieren.</p></div>
       <div class="head-actions">${aktualisierenButton()}</div></div>
     <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button type="button" class="tab" role="tab" aria-selected="${tab === k}" data-param="tab" data-value="${k}">${esc(l)}${k === 'belege' && zuPruefen ? ` <span class="tab-zahl">${zuPruefen}</span>` : ''}</button>`).join('')}</div>`;
   const body = tab === 'ablauf' ? viewEinkaufAblauf() : tab === 'lieferant' ? viewEinkaufBestellungen() : tab === 'belege' ? viewEinkaufBelege() : tab === 'musterlager' ? viewEinkaufMusterlager() : tab === 'produktdaten' ? viewEinkaufProduktdaten() : viewEinkaufHilfe();

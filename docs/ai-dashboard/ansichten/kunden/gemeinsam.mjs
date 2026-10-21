@@ -38,7 +38,7 @@ function kundenPositionZeile(p) {
 const AUFTRAG_STATUS_TEXT = {
   NEU: 'Neu', PRUEFUNG: 'In Prüfung', BERATUNG_OFFEN: 'Beratung offen',
   MASS_PRUEFUNG_OFFEN: 'Maßprüfung offen', FREIGEGEBEN: 'Freigegeben',
-  EINKAUF: 'Im Einkauf', WARENEINGANG: 'Ware eingetroffen', VERSAND: 'Im Versand',
+  EINKAUF: 'Wird bestellt', WARENEINGANG: 'Ware eingetroffen', VERSAND: 'Im Versand',
   ABGESCHLOSSEN: 'Abgeschlossen', SPAETER: 'Später', PROBLEM: 'Problem',
 };
 

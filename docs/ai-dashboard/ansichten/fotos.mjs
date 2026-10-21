@@ -96,7 +96,7 @@ export function viewFotos() {
 
   return `<div class="page-head">
       <div><h1>Baustellenfotos</h1>
-      <p class="sub">Fotos vom fertigen Raum – die Grundlage für unsere Beiträge.</p></div>
+      <p class="sub">Hier lädst du Fotos vom fertigen Raum hoch – die Grundlage für unsere Beiträge.</p></div>
     </div>
     <div class="foto-layout">
       ${formular}

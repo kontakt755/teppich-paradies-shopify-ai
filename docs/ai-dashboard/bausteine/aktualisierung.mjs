@@ -21,7 +21,7 @@ import { verwirfHeuteDaten } from '../ansichten/heute/daten.mjs';
 // Ohne Eintrag stuende hier der interne Schluessel ('warenkoerbe') - die vier
 // Teile kamen spaeter dazu und fehlten in dieser Liste.
 const AKTUALISIERUNG_TEIL_LABEL = {
-  lexikon: 'Lexikon', bestellungen: 'Bestellübersicht', kennzahlen: 'Kennzahlen',
+  lexikon: 'Produktsuche', bestellungen: 'Bestellübersicht', kennzahlen: 'Kennzahlen',
   kunden: 'Kunden', angebote: 'Angebote', warenkoerbe: 'Liegengebliebene Warenkörbe', bestand: 'Lagerbestand',
 };
 
@@ -71,11 +71,11 @@ export function aktualisierungHealth() {
   const betrieb = Object.entries(a.betrieb || {}).map(([quelle, s]) => {
     if (quelle === 'werkbank') return {
       level: s.status === 'fehler' ? 'warn' : 'info',
-      title: `Werkbank-Rückmeldungen: ${s.status === 'fehler' ? 'lokaler Stand nicht lesbar' : s.letzteLokaleRueckmeldung ? `letzte lokale Rückmeldung ${fmtDateTime(s.letzteLokaleRueckmeldung)}` : 'letzte lokale Rückmeldung unbekannt'}${s.lokalerStatus === 'alt' ? ' – seit über 48 Stunden keine neue lokale Rückmeldung' : ''}`,
-      detail: 'Der vollständige automatische Abgleich mit der Werkbank ist noch nicht belegt.'
+      title: `Rückmeldungen aus „Ideen & Fragen“: ${s.status === 'fehler' ? 'lokaler Stand nicht lesbar' : s.letzteLokaleRueckmeldung ? `letzte lokale Rückmeldung ${fmtDateTime(s.letzteLokaleRueckmeldung)}` : 'letzte lokale Rückmeldung unbekannt'}${s.lokalerStatus === 'alt' ? ' – seit über 48 Stunden keine neue lokale Rückmeldung' : ''}`,
+      detail: 'Der vollständige automatische Abgleich mit „Ideen & Fragen“ ist noch nicht belegt.'
         + (s.status === 'fehler' ? ' Bitte den Inhaber informieren; die bisherigen Betriebsdaten bleiben erhalten.' : ''),
     };
-    const titel = quelle === 'sicherung' ? 'Betriebsdaten-Sicherung' : 'Werkbank-Rückmeldungen';
+    const titel = quelle === 'sicherung' ? 'Betriebsdaten-Sicherung' : 'Rückmeldungen aus „Ideen & Fragen“';
     return { level: s.status === 'ok' ? 'ok' : s.status === 'unbekannt' ? 'info' : 'warn',
       title: `${titel}: ${s.letzterErfolg ? `letzter Erfolg ${fmtDateTime(s.letzterErfolg)}` : s.status === 'fehler' ? 'Stand nicht lesbar' : 'Erfolg noch nicht erfasst'}${s.status === 'alt' ? ' – seit über 48 Stunden keine neue Rückmeldung' : ''}`,
       detail: s.status === 'unbekannt' ? 'Noch keine verlässliche Zeitangabe. Beim nächsten erfolgreichen Lauf wird der Stand erfasst.' : s.status === 'ok' ? '' : 'Bitte den Inhaber informieren; die bisherigen Betriebsdaten bleiben erhalten.' };

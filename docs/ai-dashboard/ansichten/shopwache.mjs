@@ -24,14 +24,14 @@ export function ensureShopwache() {
 
 export function viewShopwache() {
   ensureShopwache();
-  const kopf = `<div class="page-head"><div><h1>Shop-Wache</h1><p class="sub">Der Shop von außen gesehen – so wie ein Kunde ihn erlebt.</p></div></div>`;
+  const kopf = `<div class="page-head"><div><h1>Shop-Kontrolle</h1><p class="sub">Hier siehst du den Shop von außen – so wie ein Kunde ihn erlebt.</p></div></div>`;
   const d = shopwache.daten;
   if (!d && shopwache.laedt) return kopf + `<div class="empty">Lade Prüfergebnis …</div>`;
   // Nur wenn Tailscale nicht laeuft - im Normalfall steht hier nichts.
   const ts = tailscaleHinweis(d?.tailscale);
   const tailscale = ts ? `<p class="notice warn" role="status"><b>${esc(ts.titel)}.</b> ${esc(ts.handlung)}</p>` : '';
   if (!d || !d.verfuegbar) {
-    return kopf + tailscale + emptyState('Die Shop-Wache ist noch nie gelaufen.', `Auf dem Mac starten: ${d?.befehl || 'npm run shop:wache'}`);
+    return kopf + tailscale + emptyState('Die Shop-Kontrolle ist noch nie gelaufen.', `Auf dem Mac starten: ${d?.befehl || 'npm run shop:wache'}`);
   }
   const zeile = (s) => {
     const ok = !s.fehler && s.status >= 200 && s.status < 400;
@@ -64,7 +64,7 @@ export function viewShopwache() {
       ${d.preise.length
         ? `<div class="table-scroll"><table class="tasks"><thead><tr><th>Produkt</th><th>Bei uns</th><th>Im Shop</th><th>Vergleich</th></tr></thead>
            <tbody>${d.preise.map(preisZeile).join('')}</tbody></table></div>`
-        : `<p class="small muted">Keine Stichprobe – dafür wird der Lexikon-Export gebraucht.</p>`}
+        : `<p class="small muted">Keine Stichprobe – dafür wird der Produkt-Export gebraucht.</p>`}
       <p class="small muted" style="margin:10px 0 0">Verglichen wird der Shopify-Listenpreis der ersten Variante mit dem, was die Produktseite ausliefert.</p>
     </section>`;
 }

@@ -23,7 +23,7 @@ function dialog(orderId, name) {
     <h2 id="refTitel">Als Referenz merken · ${esc(name)}</h2>
     <div class="field"><label for="refNotiz">Was wurde gemacht?</label>
       <textarea id="refNotiz" rows="3" maxlength="1000" placeholder="z. B. 3 Zimmer Vinyl, Altbelag raus, Wohnung frisch saniert"></textarea></div>
-    <p class="small muted">Steht danach in der Akquise unter „Referenzen“. Fotos bitte über „Fotos“ hochladen.</p>
+    <p class="small muted">Steht danach unter „Neue Aufträge“ bei „Referenzen“. Fotos bitte über „Fotos“ hochladen.</p>
     <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button>
       <button type="button" class="btn btn-primary" data-ref-speichern="${esc(orderId)}" data-ref-name="${esc(name)}">Merken</button></div>
   </div></div>`;

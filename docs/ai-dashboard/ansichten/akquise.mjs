@@ -155,8 +155,8 @@ function alleFirmen(d, faelligIds) {
       <td>${istNurLesend() ? '' : `<button type="button" class="btn btn-sm" data-akq-zeigen="${esc(f.id)}">Oben zeigen</button>`}</td>
     </tr>`;
   }).join('');
-  return `<details class="card akq-alle"><summary><b>Alle Firmen (${d.firmen.length})</b> <span class="small muted">Stand, Wiedervorlage, Notizen</span></summary>
-    <div class="table-scroll"><table class="tasks akq-tabelle"><thead><tr><th>Firma</th><th>Stand</th><th>Wieder&shy;vorlage</th><th></th></tr></thead><tbody>${zeilen}</tbody></table></div>
+  return `<details class="card akq-alle"><summary><b>Alle Firmen (${d.firmen.length})</b> <span class="small muted">Stand, wieder melden am, Notizen</span></summary>
+    <div class="table-scroll"><table class="tasks akq-tabelle"><thead><tr><th>Firma</th><th>Stand</th><th>Wieder melden am</th><th></th></tr></thead><tbody>${zeilen}</tbody></table></div>
   </details>`;
 }
 
@@ -179,7 +179,7 @@ function ausschreibungen(a, tag) {
 
 export function viewAkquise() {
   ensureAkquise();
-  const kopf = `<div class="page-head"><div><h1>Akquise</h1></div></div>`;
+  const kopf = `<div class="page-head"><div><h1>Neue Aufträge</h1></div></div>`;
   const d = akquise.daten;
   if (!d && akquise.laedt) return kopf + `<div class="empty">Lade Firmenliste …</div>`;
   if (!d || !d.verfuegbar) return kopf + emptyState(d?.hinweis || 'Die Firmenliste ist nicht erreichbar.', d?.befehl || '');
@@ -190,7 +190,7 @@ export function viewAkquise() {
   const f = gewaehlt || reihe[0];
   const rest = reihe.filter(x => x.id !== f?.id).length;
   const haupt = f ? karte(f, d, faelligIds.has(f.id), rest)
-    : `<section class="card akq-naechste"><h2>Für heute ist alles erledigt</h2><p>Alle Firmen sind angeschrieben, und keine Wiedervorlage ist fällig. Die nächste Firma erscheint hier, sobald ihr Termin zum Nachfassen erreicht ist.</p></section>`;
+    : `<section class="card akq-naechste"><h2>Für heute ist alles erledigt</h2><p>Alle Firmen sind angeschrieben, und keine Firma muss heute wieder angeschrieben werden. Die nächste Firma erscheint hier, sobald ihr Termin zum Nachfassen erreicht ist.</p></section>`;
   return kopf + erklaerung(d.firmen) + haupt + alleFirmen(d, faelligIds) + referenzen(d) + ausschreibungen(d.ausschreibungen, tag);
 }
 

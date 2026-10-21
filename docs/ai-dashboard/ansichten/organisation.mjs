@@ -117,7 +117,7 @@ function orgDetailAnsicht(id) {
 
 export function viewOrganisation() {
   if (state.capabilities.mode !== 'local') {
-    return `<div class="page-head"><div><h1>Aufgaben &amp; Organisation</h1></div></div>
+    return `<div class="page-head"><div><h1>Aufgaben</h1></div></div>
       ${emptyState('Nur lokal im Betrieb verfügbar.', 'Dieser Bereich enthält interne Aufgaben und Notizen, die nie öffentlich werden. Auf dem Mac starten: npm run dashboard')}`;
   }
   const { bereich, ansicht, gruppe, prioritaet, person, q, id } = orgParams();
@@ -172,7 +172,7 @@ export function viewOrganisation() {
       </div>` : '';
 
   const kopf = `<div class="page-head">
-      <div><h1>Aufgaben &amp; Organisation</h1><p class="sub">Alles, was im Betrieb ansteht – getrennt nach dir und dem Team.</p></div>
+      <div><h1>Aufgaben</h1><p class="sub">Hier steht alles, was im Betrieb ansteht – getrennt nach dir und dem Team.</p></div>
       <div class="head-actions">
         <button type="button" class="btn" data-nur-inhaber data-org-fuer-chatgpt title="Kopiert den aktuellen Stand, damit ChatGPT weiß, was schon offen ist">Stand für ChatGPT</button>
         <button type="button" class="btn" data-nur-inhaber data-org-liste title="Mehrere Aufgaben auf einmal einfügen – z. B. eine Liste aus ChatGPT">Liste einfügen</button>

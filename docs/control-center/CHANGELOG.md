@@ -2,6 +2,21 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-21 · Einfache, eindeutige Begriffe im ganzen Control Center
+
+- **Geaendert:** Sichtbare Beschriftungen nach dem neuen Glossar `docs/control-center/BEGRIFFE.md`:
+  Menue „Neue Aufträge“ (statt Akquise), „Bestellen“ (Einkauf), „Produktsuche“ (Lexikon),
+  „Vorbereiten“ (Arbeitsplatz), „Shop-Kontrolle“, „Technik“, „Entscheidungen“, „Kennzahlen“,
+  „Verlauf“, „Zugänge“, „Ideen & Fragen“; Reiter „Lieferantenpost“ (Belege), „Auftragsbestätigung“
+  statt AB, „wieder melden“ statt Wiedervorlage, Aufgabenstatus „Sichten“/„Zur Prüfung“, „Zuständig“
+  statt Owner. Seitentitel, Browser-Titel, Suche/Befehle, To-do-Titel, Hilfe und Leerzustaende
+  ziehen mit; Untertitel als ein Satz „Hier …“. Routen, Rollen und Funktionen unveraendert.
+- **Getestet:** `dashboard:test` 633/633, `npm test` 3435/0 Fehler, `dashboard:pruefen` 34 Ansichten
+  bei 360/390/800/1024/1440 px nur OK, kein Ueberlauf. Keine Aktion geaendert, deshalb keine Klickstrecke.
+- **Risiken:** Gewohnte Woerter aendern sich fuer das Team; alte Links (`#/akquise`, `#/lexikon`) gehen weiter.
+  Kurzmarken „AB/LS“ in Tabellenzellen der Lieferantenpost bleiben vorerst.
+- **Naechste Stufe:** Rueckmeldung des Teams, dann Glossar nachschaerfen.
+
 ## 2026-10-20 · Muster aus offenen Druckauftraegen entfernen (#1547)
 
 - **Geaendert:** Reservierte Muster aus einer frueheren Sitzung oder von einem anderen
