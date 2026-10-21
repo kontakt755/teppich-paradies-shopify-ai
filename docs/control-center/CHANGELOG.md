@@ -2,6 +2,28 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-21 · Offene Bestellungen in der Produktsuche, Kunden ueber Produktnamen (#1558)
+
+- **Geaendert:** Lexikon-Treffer zeigen „N offene Bestellung(en)“ (Bernstein) und leise
+  „N Muster offen“. Die Produktseite listet oben jede offene Bestellung mit diesem Produkt:
+  Kunde (Link zur Kundenakte), Bestellnummer, Datum, Farbe, Menge, Stand im Auftragsfluss
+  und den naechsten Schritt aus „Zu tun“; ersetzt den bisherigen Block „Kunden warten“.
+  Offen heisst: echte, nicht stornierte Bestellung, in Shopify nicht ganz versendet und im
+  Auftragsfluss nicht erledigt; Eigenleistungen zaehlen nicht, Muster stehen getrennt.
+  Die Kundensuche (Kunden → Suche und Schnellsuche) findet Kunden jetzt auch ueber den
+  Produktnamen oder die SKU einer Bestellung und sagt dazu „bestellt: Produkt · Farbe“.
+  Treffer ueber Kontaktdaten stehen weiter vorn. Die Schnellsuche nennt am Produkt die
+  Zahl der offenen Bestellungen.
+- **Getestet:** `npm test` alle Suiten gruen (633 Dashboard, 794 Operations inkl. 4 neuer
+  Tests in `offene-bestellungen-produkt.test.mjs`). `dashboard:pruefen` 34 Ansichten bei
+  360–1440 px ohne Ueberlauf. Klickstrecke gegen Datenkopie: Lexikon-Suche zeigt die Marke,
+  Produktseite eine Bestellung mit zwei Positionen samt Stand, Link fuehrt in die Kundenakte;
+  Kundensuche und Schnellsuche finden den Kunden ueber den Produktnamen. Echte Daten
+  (lesend): 3 Produkte mit offener Ware, 63 mit offenen Mustern; Lexikonliste ~170 ms.
+- **Risiken:** Die Lexikonliste laedt dafuer das Bestellmodell je Abfrage mit (wie die
+  Kundensuche). Kurze Suchwoerter treffen ueber Produktnamen mehr Kunden als bisher.
+- **Naechste Stufe:** Bei Bedarf Filter „hat offene Bestellungen“ im Lexikon.
+
 ## 2026-10-20 · Muster aus offenen Druckauftraegen entfernen (#1547)
 
 - **Geaendert:** Reservierte Muster aus einer frueheren Sitzung oder von einem anderen

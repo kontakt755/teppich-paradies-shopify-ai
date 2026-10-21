@@ -59,6 +59,7 @@ function kundenTrefferZeile(k) {
     <div>
       <div class="t">${esc(k.name)}${k.ort ? ` <span class="small muted">· ${esc(k.ort)}</span>` : ''}${k.nurTestbestellungen ? ' <span class="badge plain">nur Testbestellungen</span>' : ''}${k.nurStammdaten ? ' <span class="badge plain">aus Shopify, keine Bestellung hier</span>' : kundenFortschrittBadge(k.fortschritt)}</div>
       <div class="m">${k.email && k.email !== '–' ? `<a href="mailto:${esc(k.email)}">${esc(k.email)}</a>` : '<span class="small muted">keine E-Mail</span>'} · ${telLink(k.telefon)}${k.telefonQuelle === 'lieferadresse' ? ' <span class="small muted">(aus der Lieferadresse)</span>' : ''}</div>
+      ${k.trefferProdukt ? `<div class="small muted">bestellt: ${esc(k.trefferProdukt.titel)}${k.trefferProdukt.farbe ? ` · ${esc(k.trefferProdukt.farbe)}` : ''}${k.trefferProdukt.bestellung ? ` (${esc(k.trefferProdukt.bestellung)})` : ''}</div>` : ''}
     </div>
     <div class="r">
       <div class="small">${plural(k.anzahlBestellungen, 'Bestellung', 'Bestellungen')} · ${geldText({ betrag: k.gesamtumsatz, waehrung: k.waehrung })}</div>
@@ -72,7 +73,7 @@ export function viewKundenSuche() {
   const filterRaw = state.route.params.get('kf') || '';
   const filter = Object.hasOwn(KUNDEN_FILTER_LABEL, filterRaw) ? filterRaw : KUNDEN_FILTER_STANDARD;
   ensureKundenSuche(q, filter);
-  const toolbar = `<div class="toolbar search-hero"><input type="search" placeholder="Name, E-Mail, Telefon, Bestellnummer, Straße/Ort oder PLZ … (Liste filtert waehrend des Tippens)" value="${esc(q)}" data-param="kq" aria-label="Kunden durchsuchen" autofocus></div>`;
+  const toolbar = `<div class="toolbar search-hero"><input type="search" placeholder="Name, E-Mail, Telefon, Bestellnummer, Produkt, Straße/Ort oder PLZ … (Liste filtert waehrend des Tippens)" value="${esc(q)}" data-param="kq" aria-label="Kunden durchsuchen" autofocus></div>`;
   const chips = `<div class="chips" style="margin:8px 0">
     ${Object.entries(KUNDEN_FILTER_LABEL).map(([k, l]) => `<button type="button" class="chip" data-param="kf" data-value="${k === KUNDEN_FILTER_STANDARD ? '' : k}" aria-pressed="${filter === k}">${esc(l)}</button>`).join('')}
   </div>`;
