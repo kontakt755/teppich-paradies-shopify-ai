@@ -48,9 +48,14 @@
   # statt "50" in jedem Template von Hand.
   assign vg_km = vg_pruef_radius | append: ''
 
-  # Mittelpunkt der Karte, identisch mit LAT/LON in scripts/build-verlegegebiet-karte.mjs.
-  assign vg_lat = 52.7378
-  assign vg_lon = 13.2485
+  # Standort fuer die Auszeichnung unten: Pin des Google-Unternehmensprofils,
+  # gleich wie geo in sections/header.liquid (seit 2026-10-21, Audit W1).
+  # Kartenbild und PLZ-Tabelle (assets/tp-verlegegebiet-orte.json) sind noch mit
+  # LAT/LON 52.7378 / 13.2485 aus scripts/build-verlegegebiet-karte.mjs gerechnet.
+  # Der Abstand von rund 470 m sind auf der Karte 2-3 px; ein Neubau aendert die
+  # Entfernungen je PLZ und damit die Lieferzonen, deshalb nur mit Pruefung.
+  assign vg_lat = 52.73417
+  assign vg_lon = 13.24482
 
   # Der Alt-Text wird vorgelesen, deshalb mit Umlauten. Berlin und Potsdam
   # liegen erst bei 50 km vollstaendig in der Flaeche - bei 30 oder 40 km waere
@@ -354,11 +359,7 @@
         "@context": "https://schema.org",
         "@type": "Service",
         "serviceType": "Bodenverlegung",
-        "provider": {
-          "@type": "Organization",
-          "name": {{ shop.name | replace: 'TeppichParadies', 'Teppich Paradies' | json }},
-          "url": {{ request.origin | json }}
-        },
+        "provider": { "@id": {{ request.origin | append: '/#organization' | json }} },
         "areaServed": {
           "@type": "GeoCircle",
           "geoMidpoint": {
