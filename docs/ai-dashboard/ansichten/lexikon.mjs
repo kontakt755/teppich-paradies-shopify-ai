@@ -11,6 +11,7 @@ import { emptyState, stoerungState } from '../bausteine/karten.mjs';
 import { LIEFERWEG_LABEL } from './einkauf/auftragsfluss.mjs';
 import { telLink, gmailLink } from '../lib/einkauf-lieferanten.mjs';
 import { etikettenAusLexikon } from '../lib/lexikon-etiketten.mjs';
+import { suchbegriffe, lexikonTreffer } from '../lib/lexikon-suche.mjs';
 import { originalHandle } from '../lib/muster-etiketten.mjs';
 import { oeffneEtikettenDruck } from '../bausteine/etiketten-druck.mjs';
 import { drucklisteVormerken, musterDrucklisteKlick, viewMusterDruckliste } from './muster-druckliste.mjs';
@@ -106,6 +107,14 @@ function ensureLexikonEtiketten(produkt) {
   })();
 }
 
+/** Kam man ueber die Suche mit Farbnummer, ist diese Farbe fuer den Aufkleber vorgewaehlt. */
+function vorauswahlZurSuche(produkt, liste) {
+  const skus = new Set(lexikonTreffer(produkt, suchbegriffe(state.route.params.get('lq'))).varianten
+    .map((v) => String(v.sku || '').toLowerCase()).filter(Boolean));
+  const i = liste.findIndex((x) => skus.has(String(x.etikett?.sku || '').toLowerCase()));
+  return i >= 0 ? i : 0;
+}
+
 function musterEtikettenBlock(produkt) {
   if (produkt.handle === 'kostenloses-muster') return `<section class="card lex-etiketten"><div class="card-head"><h2>Musteraufkleber</h2></div><p>Für den Aufkleber bitte das konkrete Produkt im Lexikon öffnen. Dort sind Farbe, Artikelnummer und Produktlink hinterlegt.</p><a class="btn" href="#/lexikon">Produkt suchen</a></section>`;
   ensureLexikonEtiketten(produkt);
@@ -113,7 +122,8 @@ function musterEtikettenBlock(produkt) {
   const liste = lexikon.etiketten;
   if (!liste.length) return '';
   const angefragt = Number(state.route.params.get('letikett'));
-  const index = Number.isInteger(angefragt) && angefragt >= 0 && angefragt < liste.length ? angefragt : 0;
+  const gewaehlt = state.route.params.has('letikett') && Number.isInteger(angefragt) && angefragt >= 0 && angefragt < liste.length;
+  const index = gewaehlt ? angefragt : vorauswahlZurSuche(produkt, liste);
   const auswahl = liste[index];
   return `<section class="card lex-etiketten" data-lex-etiketten>
     <div class="card-head"><h2>Musteraufkleber</h2></div>
@@ -195,10 +205,22 @@ function lexikonTrefferKarte(p) {
     <div>
       <div class="t">${esc(p.titel)}</div>
       <div class="m">${link}${p.produktgruppe ? esc(p.produktgruppe) : NICHT_HINTERLEGT} · ${p.farbenAnzahl} Farbe${p.farbenAnzahl === 1 ? '' : 'n'}</div>
+      ${suchHinweisKurz(p)}
       ${offeneBestellungenKurz(p)}
     </div>
     ${preis ? `<div class="preis"><small>ab</small>${esc(preis)}</div>` : ''}
   </div>`;
+}
+
+/**
+ * Trefferkarte: warum passt das Produkt zur Suche? Vom Musteraufkleber kommt der
+ * Lieferantenname ("Linie027 Kora 98") - die Karte nennt dann den Namen beim
+ * Lieferanten und, wenn die Nummer eine Farbe trifft, Farbe und Farbnummer.
+ */
+function suchHinweisKurz(p) {
+  const farben = (p.passend || []).map(f => `<b>${esc(f.farbe || 'Variante')}</b>${f.farbnummer ? ` · Farbnr. ${esc(f.farbnummer)}` : ''}`);
+  if (p.passendMehr) farben.push(`+${esc(p.passendMehr)} weitere`);
+  return `${p.lieferantName ? `<div class="m small muted">Beim Lieferanten: ${esc(p.lieferantName)}</div>` : ''}${farben.length ? `<div class="m">Passende Farbe: ${farben.join('; ')}</div>` : ''}`;
 }
 
 /** Trefferkarte: steckt das Produkt in offenen Bestellungen? Ware faellt auf, Muster nur leise. */
@@ -442,7 +464,7 @@ function bestellwegKopf(varianten) {
   }).join('');
 }
 
-function bestellZeile(v) {
+function bestellZeile(v, passende = new Set()) {
   const e = v.einkauf || {};
   const artikelZelle = artikelAngabe(e, NICHT_HINTERLEGT);
   const sz = schnellzugriffVon(v);
@@ -455,8 +477,8 @@ function bestellZeile(v) {
   // (app.css, .table-scroll table.tasks.compact). Ohne sie stand die Tabelle
   // mit zehn Spalten auf 980 px fest - die Artikelnummer, wegen der man diese
   // Ansicht ueberhaupt oeffnet, lag ausserhalb des Bildes.
-  return `<tr>
-    <td data-l="Variante">${lexWert(variantenName(v))}</td>
+  return `<tr${passende.has(v) ? ' class="lex-passt"' : ''}>
+    <td data-l="Variante">${lexWert(variantenName(v))}${passende.has(v) ? ' <span class="badge plain">passt zur Suche</span>' : ''}</td>
     <td data-l="Unsere SKU">${v.sku ? `<code class="mono">${esc(v.sku)}</code>` : NICHT_HINTERLEGT}</td>
     <td data-l="Lieferant">${lexWert(e.lieferant)}</td>
     <td data-l="Artikelnummer">${artikelZelle}</td>
@@ -476,7 +498,7 @@ function bestellZeile(v) {
  * ist (Lieferant, Bestelleinheit, Lieferweg), steht einmal darueber.
  */
 const LISTE_OFFEN = 6;
-function bestellListe(varianten) {
+function bestellListe(varianten, passende = new Set()) {
   if (!varianten.length) return '';
   const gleich = (lesen) => {
     const werte = [...new Set(varianten.map(lesen).map((w) => (leerWert(w) ? '' : String(w))))];
@@ -507,8 +529,8 @@ function bestellListe(varianten) {
     const link = v.link?.status === 'vorhanden'
       ? `<a class="btn btn-sm" href="${esc(e.url)}" target="_blank" rel="noopener" aria-label="Beim Lieferanten öffnen">Lieferant ↗</a>`
       : (v.link?.suchlink ? `<a class="btn btn-sm" href="${esc(v.link.suchlink)}" target="_blank" rel="noopener" aria-label="Beim Lieferanten suchen">Suchen ↗</a>` : schnellKnopf(sz));
-    return `<li>
-      <div class="kopf"><b>${lexWert(variantenName(v))}</b><span class="preis">${preisZelle(v)}</span></div>
+    return `<li${passende.has(v) ? ' class="lex-passt"' : ''}>
+      <div class="kopf"><span><b>${lexWert(variantenName(v))}</b>${passende.has(v) ? ' <span class="badge plain">passt zur Suche</span>' : ''}</span><span class="preis">${preisZelle(v)}</span></div>
       <div class="nr">${artikel}${link}</div>
       ${nebenbei ? `<div class="small muted">${nebenbei}</div>` : ''}
       ${v.link?.status === 'vorhanden' || sz?.aktionen?.length ? '' : `<div class="small muted">${esc(v.link?.grund || 'kein Link hinterlegt')}</div>`}
@@ -630,15 +652,19 @@ function viewLexikonDetail(handle) {
   const p = d.produkt;
   const alleVarianten = p.varianten || [];
   const musterVarianten = alleVarianten.filter((v) => v.original);
-  const normaleVarianten = alleVarianten.filter((v) => !v.wunschmass && !v.original);
+  // Kam man ueber die Suche ("Linie027 Kora 98"), stehen die passenden Farben oben und markiert.
+  const gefunden = lexikonTreffer(p, suchbegriffe(state.route.params.get('lq'))).varianten.filter((v) => !v.wunschmass && !v.original);
+  const ungefiltert = alleVarianten.filter((v) => !v.wunschmass && !v.original);
+  const passende = new Set(gefunden.length < ungefiltert.length ? gefunden : []);
+  const normaleVarianten = [...ungefiltert.filter((v) => passende.has(v)), ...ungefiltert.filter((v) => !passende.has(v))];
   const wunschmassVarianten = alleVarianten.filter((v) => v.wunschmass);
   const zielVariante = normaleVarianten[0] || alleVarianten[0];
 
   const bestellTabelle = musterVarianten.length
     ? `${bestellwegKopf(musterVarianten)}<div class="table-scroll"><table class="tasks compact"><thead><tr><th>Unsere SKU</th><th>Lieferant</th><th>Original-Artikelnummer</th><th>Original beim Lieferanten</th></tr></thead>
       <tbody>${musterVarianten.map(musterBestellZeile).join('')}</tbody></table></div>`
-    : `${bestellwegKopf(normaleVarianten)}${bestellListe(normaleVarianten)}<div class="table-scroll lex-bestell-tabelle"><table class="tasks compact"><thead><tr><th>Variante</th><th>Unsere SKU</th><th>Lieferant</th><th>Artikelnummer</th><th>Farbnummer</th><th>Bestelleinheit</th><th>Preis</th><th>Verfügbar</th><th>Lieferweg</th><th>Lieferantenseite</th></tr></thead>
-      <tbody>${normaleVarianten.map(bestellZeile).join('') || `<tr><td colspan="10">${NICHT_HINTERLEGT}</td></tr>`}</tbody></table></div>
+    : `${bestellwegKopf(normaleVarianten)}${bestellListe(normaleVarianten, passende)}<div class="table-scroll lex-bestell-tabelle"><table class="tasks compact"><thead><tr><th>Variante</th><th>Unsere SKU</th><th>Lieferant</th><th>Artikelnummer</th><th>Farbnummer</th><th>Bestelleinheit</th><th>Preis</th><th>Verfügbar</th><th>Lieferweg</th><th>Lieferantenseite</th></tr></thead>
+      <tbody>${normaleVarianten.map((v) => bestellZeile(v, passende)).join('') || `<tr><td colspan="10">${NICHT_HINTERLEGT}</td></tr>`}</tbody></table></div>
       ${wunschmassVarianten.length ? `<p class="small muted" style="margin:10px 0 0">Wunschmaß (${wunschmassVarianten.length} Variante${wunschmassVarianten.length === 1 ? '' : 'n'}): wird erst beim Zuschnitt bestellt, deshalb hier ohne eigene Artikelnummer – keine fehlende Angabe.</p>` : ''}
       ${mengenhilfeWidget(p, zielVariante, normaleVarianten)}`;
 

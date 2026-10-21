@@ -2,6 +2,25 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-21 · Produktsuche findet Lieferantenname mit Linie und Farbnummer
+
+- **Geändert:** Die Suche zerlegt den Text in Wörter; jedes muss am Produkt oder an derselben
+  Variante stehen (vorher: der ganze Text als ein Begriff, „Linie027 Kora 98“ fand nie etwas).
+  An den Namen geklebte Nummern werden getrennt („linie027“ → „linie“ + „027“), kurze Zahlen
+  zählen nur ganz und ohne führende Nullen („72“ findet 072, nie 172). Durchsucht werden zusätzlich
+  Variantentitel und die Original-Angaben der Muster. Trefferkarte: „Beim Lieferanten: …“, wenn
+  der Treffer nicht am Shop-Titel liegt, und „Passende Farbe: … · Farbnr. …“. Produktdetail mit
+  `lq`: passende Farben oben, „passt zur Suche“, Musteraufkleber auf diese Farbe vorgewählt
+  (Handwahl gewinnt). Neu `lib/lexikon-suche.mjs` (Server und Browser).
+- **Getestet:** `tests/lexikon-suche.test.mjs` (7) und `api.test.mjs` (neuer Fall); `dashboard:test`
+  633 grün, 8 abgebrochen in `laden-zahlen.test.mjs` (auf main in der Remote-Session genauso).
+  Klickstrecke gegen erfundene Datenkopie bei 390 und 1440 px: Karte „Grau Hell · Farbnr. 95“,
+  Aufkleber vorgewählt, 0 JS-Fehler, 0 px Überlauf. Echte Daten (Shopify) bestätigen beide
+  Schreibweisen der Linie beim Lieferanten (mit und ohne Leerzeichen).
+- **Risiken/Annahmen:** Wörter, die über zwei Farben verteilt sind, finden das Produkt, aber keine
+  einzelne Farbe. `npm test` (übrige Suiten) und `dashboard:pruefen` mit echten Daten noch lokal laufen lassen.
+- **Nächste Stufe:** Auf dem Mac mit echtem Lexikon-Export gegenprüfen.
+
 ## 2026-10-21 · Einfache, eindeutige Begriffe im ganzen Control Center
 
 - **Geaendert:** Sichtbare Beschriftungen nach dem neuen Glossar `docs/control-center/BEGRIFFE.md`:
