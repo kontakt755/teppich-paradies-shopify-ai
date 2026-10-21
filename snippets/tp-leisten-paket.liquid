@@ -8,7 +8,7 @@
   @param {product} product
 {%- enddoc -%}
 {%- liquid
-  assign lph_aktiv = true
+  assign lph_aktiv = false
   assign lph_typen = 'Klickvinyl,Klebevinyl' | split: ','
   if lph_aktiv and lph_typen contains product.type
     echo 'ja'
