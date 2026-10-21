@@ -1,100 +1,108 @@
 # Bewertung nach Zustellung/Montage – einschaltfertiger Entwurf
 
-> **Status: Entwurf, NICHT aktiv** (Stand 2026-10-20, Aufgabe #1446). Nichts installiert,
-> kein Flow angelegt, keine Mail versendet, nichts gedruckt. Einschalten nur nach Freigabe
-> des Inhabers (Werkbank). Grundlage: Kommentar in #1446 vom 19.10., Entscheidung
-> „keine Bewertungs-App“ in `docs/weiterentwicklung/bewertungen.md`.
+> **Status: Entwurf, NICHT aktiv** (Stand 2026-10-21, Aufgabe #1446). Kein Flow, keine Mail,
+> nichts gedruckt. Einschalten nur nach Freigabe des Inhabers (Werkbank w-139).
+> Ansicht mit Logo und QR-Code: privates Artifact „Bewertungsbitte Teppich Paradies“.
 
-Ziel: mehr **Google-Unternehmensbewertungen** (keine Produktbewertungen). Drei Wege:
-Shop-Kunden per Mail, Montage- und Ladenkunden per QR-Karte.
+Ziel: mehr **Google-Unternehmensbewertungen**, gleichmäßig über das Jahr (6–10 pro Monat).
+Google gewichtet frische Bewertungen stärker als die Gesamtzahl – darum jede Bestellung
+fragen statt einzelner Aktionen.
 
-## 0. Regeln (gelten für alle Wege)
+## 0. Regeln
 
-- **Keine Gegenleistung** (kein Rabatt, kein Gutschein, keine Verlosung) – Google-Richtlinie.
-- **Kein Review-Gating:** alle Kunden fragen, nicht nur zufriedene; keine Vorab-Frage
-  „Waren Sie zufrieden?“ mit Weiterleitung nur bei Ja.
-- **Mail nur mit Werbe-Einwilligung** (Bewertungsbitte = Werbung, BGH VI ZR 225/17).
-  Einwilligungstext im Checkout bzw. Auftrag ist Rechtstext → Ahmet.
-- **Nur einmal je Kunde** (Tag `bewertung-angefragt`), keine Erinnerungsmail.
+- **Alle fragen, kein Review-Gating.** Keine getrennten Wege „zufrieden → Google /
+  unzufrieden → an uns“. Ein Bewertungsknopf für alle; der Hilfe-Weg heißt „Frage oder
+  Problem“ und steht zusätzlich da. Gating verstößt gegen Google-Richtlinien (und die von
+  Trusted Shops) und kann zur Löschung von Bewertungen führen.
+- **Keine Gegenleistung**, kein „bitte 5 Sterne“, keine Sterne-Grafik in der Bitte.
+- **Mail nur mit Werbe-Einwilligung** (BGH VI ZR 225/17), einmal je Kunde, keine Erinnerung.
+  Zettel und Karte gehen an alle.
+- Keine Bewertungen von Mitarbeitern/Familie, kein Bewertungs-Tablet im Laden.
 - Keine Musterbestellungen, keine stornierten/erstatteten Bestellungen.
 
 ## 1. Bewertungslink
 
-Platzhalter in allen Texten: `{{BEWERTUNGSLINK}}`.
-
-Beschaffen (Ahmet, 1 Minute): Google Unternehmensprofil → „Bewertungen erhalten“ /
-„Formular für Rezensionen teilen“ → Link kopieren (Form `https://g.page/r/…/review`).
-Daraus den QR-Code erzeugen (das Profil bietet ihn dort direkt zum Download an). Der Link
-gehört danach auch in die Theme-Einstellung „TP Google-Bewertung“ → nichts ändern, dort
-steht der Profil-Link zum *Lesen*; der Formular-Link ist nur für die Bitte.
+Alle Texte und QR-Codes zeigen auf **`https://www.teppich-paradies.net/bewerten`**.
+Das ist eine Shop-Weiterleitung (Online-Shop → Navigation → URL-Weiterleitungen, angelegt
+2026-10-20), derzeit auf das Google-Profil (`maps.google.com/?cid=…`). Sobald der direkte
+Link aus dem Google-Unternehmensprofil („Bewertungen erhalten“, Form `g.page/r/…/review`)
+vorliegt, nur das Ziel der Weiterleitung ändern – Gedrucktes bleibt gültig.
 
 ## 2. E-Mail an Shop-Kunden
 
-**Betreff:** Wie gefällt Ihnen Ihr neuer Boden?
-
-**Vorschautext:** Zwei Minuten für eine kurze Google-Bewertung – das hilft uns sehr.
+**Betreff:** Wie gefällt Ihnen Ihr neuer Boden, {{ customer.first_name }}?
+(ohne Vornamen: „Wie gefällt Ihnen Ihr neuer Boden?“)
+**Vorschautext:** Wir freuen uns auf Ihr Feedback – dauert nur zwei Minuten.
 
 ```
-Hallo {{ customer.first_name | default: "liebe Kundin, lieber Kunde" }},
+[Logo]
 
-vor ein paar Tagen ist Ihre Bestellung {{ order.name }} bei Ihnen angekommen.
-Wir hoffen, alles hat gepasst und der neue Boden gefällt Ihnen.
+Vielen Dank für Ihre Bestellung!
 
-Als Fachgeschäft aus Oranienburg leben wir von Empfehlungen. Wenn Sie zwei Minuten
-Zeit haben, schreiben Sie uns gern eine ehrliche Bewertung bei Google – ob Lob oder Kritik:
+Hallo {{ customer.first_name }},
 
-    [ Jetzt bei Google bewerten ]  →  {{BEWERTUNGSLINK}}
+vielen Dank, dass Sie bei Teppich Paradies bestellt haben. Ihre Bestellung {{ order.name }}
+ist vor ein paar Tagen bei Ihnen angekommen. Wie gefällt Ihnen Ihr neuer Boden, und lief
+alles gut?
 
-Falls etwas nicht in Ordnung ist, antworten Sie einfach auf diese Mail oder rufen Sie
-uns an – wir kümmern uns darum.
+Wir freuen uns auf Ihr Feedback als Bewertung bei Google. Erzählen Sie gern, welchen Boden
+Sie gewählt haben und wie Beratung und Lieferung waren – ein Foto vom verlegten Boden hilft
+anderen Kunden besonders.
 
-Vielen Dank und viel Freude mit Ihrem Boden
-Ihr Team von Teppich Paradies Oranienburg
+    [ Bewertung bei Google schreiben ]  →  https://www.teppich-paradies.net/bewerten
 
+┌ Etwas passt nicht oder Sie haben eine Frage?
+│ Schreiben Sie uns direkt an kontakt@teppich-paradies.net oder antworten Sie auf diese
+└ Mail. Wir melden uns innerhalb eines Werktags.
+
+Viel Freude mit Ihrem neuen Boden und herzliche Grüße aus Oranienburg
+Ihr Team von Teppich Paradies
+
+Tipp: Neue Teppiche und Teppichböden riechen in den ersten Tagen oft etwas und können
+anfangs leicht fusseln. Das ist normal und vergeht durch Lüften und regelmäßiges Saugen.
 ---
-Sie erhalten diese Nachricht, weil Sie dem Empfang von E-Mails zugestimmt haben.
-[Abmelden]
+Sie erhalten diese Nachricht, weil Sie dem Empfang unserer E-Mails zugestimmt haben. [Abmelden]
 ```
 
-Hinweis: Der Satz „Falls etwas nicht in Ordnung ist …“ steht *zusätzlich* zum
-Bewertungsknopf, nicht statt seiner – sonst wäre es Review-Gating.
+Kein QR-Code in der Mail (doppelt zum Knopf, wirkt werblicher).
 
-## 3. QR-Karte (Laden und Montage)
+## 3. Zettel, Karte und Team
 
-Format: Visitenkarte 85 × 55 mm, beidseitig; Druck lokal oder Online-Druckerei
-(Kosten → Freigabe Ahmet).
+**Paketzettel A6** (nur Pakete, die wir selbst versenden; Direktversand erreicht nur die Mail):
+Logo · „Vielen Dank für Ihre Bestellung!“ · „Wie gefällt Ihnen Ihr neuer Boden? Wir freuen uns
+auf Ihr Feedback bei Google – gern mit Foto.“ · QR-Code (≥ 3 cm) · „Code scannen und bewerten –
+dauert zwei Minuten.“ · teppich-paradies.net/bewerten · Fußband: „Frage oder Problem? Schreiben
+Sie uns: kontakt@teppich-paradies.net – wir kümmern uns.“
 
-**Vorderseite**
+**Visitenkarte 85 × 55 mm** (Laden und Montage): Logo · „Danke für Ihr Vertrauen!“ · „Wie war
+Ihre Erfahrung mit uns? Wir freuen uns über Ihre Bewertung bei Google.“ · Kurzadresse · QR-Code.
 
-```
-   Danke für Ihren Einkauf!
-   Wie zufrieden sind Sie mit uns?
+**Satz fürs Team** (persönlich fragen wirkt am stärksten, Karte an alle geben):
+- Laden: „Schön, dass Sie da waren. Wenn Sie mögen, schreiben Sie uns eine kurze Bewertung bei
+  Google – hier ist der Code dafür.“
+- Montage: „Wir sind fertig. Schauen Sie gern noch einmal über alles. Wenn Sie zufrieden sind
+  oder etwas auffällt, sagen Sie es uns – und über eine Bewertung bei Google freuen wir uns sehr.“
 
-   [ QR-CODE → {{BEWERTUNGSLINK}} ]
+## 3a. Antworten auf Bewertungen
 
-   Scannen und bei Google bewerten
-   – dauert nur 2 Minuten
-```
+Jede Bewertung beantworten: gute innerhalb von 1–2 Tagen, kritische am selben Tag. Vorlagen
+anpassen, nie wortgleich kopieren.
 
-**Rückseite**
+- **Gut, Teppichboden:** „Vielen Dank, Frau Müller! Schön, dass Ihnen der neue Teppichboden im
+  Wohnzimmer so gut gefällt. Es hat uns Freude gemacht, Sie in unserem Laden in Oranienburg zu
+  beraten. Viel Freude damit!“
+- **Gut, Montage:** „Vielen Dank, Herr Schulz! Wir geben das Lob gern an unser Montageteam weiter.
+  Schön, dass die Verlegung so reibungslos lief – genießen Sie den neuen Boden.“
+- **Gut, Online:** „Vielen Dank für Ihre Bewertung! Freut uns, dass Lieferung und Qualität gepasst
+  haben. Wenn Sie wieder etwas brauchen, beraten wir Sie gern auch persönlich in Oranienburg.“
+- **Kritisch:** danken, bedauern (ohne Schuldeingeständnis), nicht streiten, Kontakt anbieten:
+  „Hallo Herr Wagner, danke, dass Sie uns das schreiben. Es tut uns leid, dass die Lieferung
+  länger gedauert hat als angekündigt – so soll es nicht laufen. Bitte melden Sie sich direkt
+  bei uns unter kontakt@teppich-paradies.net, damit wir das mit Ihnen klären können.“
+  Nach einer Lösung einmal und ohne Druck fragen, ob der Kunde die Bewertung aktualisieren möchte.
 
-```
-   Teppich Paradies Oranienburg
-   Ihr Fachgeschäft für Teppich, Teppichboden, Vinyl & Verlegung
-   www.teppich-paradies.net
-
-   Etwas nicht in Ordnung? Sprechen Sie uns direkt an –
-   wir kümmern uns darum.
-```
-
-Ausgabe:
-- **Laden:** an der Kasse mit dem Beleg übergeben bzw. in die Tüte; Aufsteller mit
-  gleichem QR an der Kasse (A6).
-- **Montage:** Monteur übergibt die Karte bei Fertigstellung mit einem Satz
-  („Wenn Sie zufrieden sind – oder auch nicht – freuen wir uns über eine Bewertung“).
-  Später optional: Hinweis im Auftrags-App-Schritt „Fertigstellung“ („Bewertungskarte
-  übergeben ☐“) – eigene Aufgabe, nicht Teil dieses Entwurfs.
-- Mail/WhatsApp an Montagekunden nur mit dokumentierter Einwilligung im Auftrag.
+Grundlage für Aufbau und Regeln: Google-Richtlinien zu Rezensionen sowie öffentliche
+Bewertungs-Skills auf GitHub (review-management, review-request-kit, reputation-management).
 
 ## 4. Technischer Weg (Shop): Shopify Flow + Shopify Messaging
 
@@ -106,7 +114,7 @@ heißt DNS-Einträge (SPF/DKIM) → **DNS-Änderung, nur mit Freigabe**.
 
 1. Apps installieren: **Shopify Flow**, **Shopify Messaging** (Admin → Apps → Shopify App Store).
 2. Messaging → Vorlage „Leer“ → Betreff, Vorschautext und Text aus Abschnitt 2 einsetzen;
-   Knopf „Jetzt bei Google bewerten“ mit `{{BEWERTUNGSLINK}}`. Als **Entwurf speichern**.
+   Knopf „Bewertung bei Google schreiben“ mit `https://www.teppich-paradies.net/bewerten`. Als **Entwurf speichern**.
 3. Flow → Workflow erstellen → Name „Bewertungsbitte nach Zustellung“:
    - **Auslöser:** `Fulfillment event created` (Status *delivered*). Fallback, wenn die
      Spedition keine Zustellmeldung liefert: zweiter Workflow mit `Order fulfilled`.
@@ -133,4 +141,4 @@ Kundenmails ist Messaging (oder eine andere Mail-App) nötig.
 3. Wartezeit: 3 Tage nach Zustellung / 7 Tage nach Versand (Empfehlung)
 4. Einwilligungstext Checkout/Auftrag (Rechtstext)
 5. QR-Karten drucken lassen (Auflage z. B. 500, Kosten)
-6. Bewertungslink aus dem Google-Profil liefern
+6. Direkten Bewertungslink aus dem Google-Profil liefern (Ziel der Weiterleitung /bewerten)
