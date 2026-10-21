@@ -214,7 +214,7 @@ test('Warenstrecke: bestellen -> Lieferant -> an Kunden raus -> abschliessen; Di
   assert.deepEqual(zd.verlauf.map(s => s.schritt), ['kunde_hat_bestellt', 'bestellt', 'raus', 'erledigt']);
   assert.deepEqual([zd.naechsterSchritt.wer, zd.naechsterSchritt.aktion], ['lieferant', 'raus']);
 
-  // Direktversand, aber nach der Regel unter 2 m ueber unseren Kettler bestellt (#1453): Ware kommt zu uns.
+  // Direktversand, aber nach der Kettler-Regel ueber unseren Kettler bestellt (#1453): Ware kommt zu uns.
   const kettler = einAuftrag(bestellung(3, [ware(3, 'SUPPLIER_DIRECT')]));
   const st = statusBis(kettler, 'bestellt');
   for (const e of Object.values(st)) e.ueber = 'kettler';
