@@ -65,7 +65,7 @@ test('fetchOrdersSince blaettert ueber zwei Seiten mit endCursor und first 50', 
   assert.equal(aufrufe[1].after, 'c1');
   assert.match(aufrufe[0].query, /^updated_at:>'2026-09-21T00:00:00\.000Z'$/);
   // Query traegt die verlangten Felder
-  for (const f of ['customAttributes', 'note', 'tags', 'shippingAddress', 'displayFinancialStatus', 'displayFulfillmentStatus', 'namespace: "einkauf"', 'namespace: "ops"', 'pageInfo { hasNextPage endCursor }']) {
+  for (const f of ['closedAt', 'customAttributes', 'note', 'tags', 'shippingAddress', 'displayFinancialStatus', 'displayFulfillmentStatus', 'namespace: "einkauf"', 'namespace: "ops"', 'pageInfo { hasNextPage endCursor }']) {
     assert.ok(ORDERS_QUERY.includes(f), f);
   }
 });

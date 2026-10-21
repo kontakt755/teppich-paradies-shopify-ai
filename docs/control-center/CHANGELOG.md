@@ -16,6 +16,20 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiken:** Gewohnte Woerter aendern sich fuer das Team; alte Links (`#/akquise`, `#/lexikon`) gehen weiter.
   Kurzmarken „AB/LS“ in Tabellenzellen der Lieferantenpost bleiben vorerst.
 - **Naechste Stufe:** Rueckmeldung des Teams, dann Glossar nachschaerfen.
+## 2026-10-21 · In Shopify archivierte Auftraege und Teilversand nicht mehr offen
+
+- **Geaendert:** Der Bestellexport laedt `closedAt` mit. Eine in Shopify archivierte
+  Bestellung gilt ueberall im Dashboard (Einkauf, Kunden, Lexikon) als abgehakt, auch ohne
+  Versand – Hinweis „In Shopify archiviert“. Die Produktanzeige im Lexikon blendet bei
+  Teilversand schon verschickte Positionen aus.
+- **Getestet:** `npm test` alle Suiten gruen, 5 neue Pruefungen (Archiv, Teilversand,
+  Abfragefeld). Abgleich gegen Shopify (lesend): alle 22 offenen Bestellungen stehen im
+  Export; archiviert und unversendet sind derzeit nur 4 Testbestellungen.
+- **Risiken:** Wirkt erst nach dem naechsten Sync-Lauf (alle 10 Minuten). Wer in Shopify
+  versehentlich archiviert, sieht den Auftrag nicht mehr als offen – Wiederherstellen in
+  Shopify holt ihn zurueck.
+- **Naechste Stufe:** keine.
+
 ## 2026-10-21 · Offene Bestellungen in der Produktsuche, Kunden ueber Produktnamen (#1558)
 
 - **Geaendert:** Lexikon-Treffer zeigen „N offene Bestellung(en)“ (Bernstein) und leise
