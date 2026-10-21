@@ -26,7 +26,8 @@ function abgedeckteVerzeichnisse() {
     if (!befehl) continue;
 
     for (const [, weiter] of befehl.matchAll(/npm run ([\w:.-]+)/g)) offen.push(weiter);
-    for (const [, dir] of befehl.matchAll(/node --test ([^\s*]+)\/\*\.test\.mjs/g)) dirs.add(dir);
+    // Die Suiten laufen ueber scripts/test-temp.mjs (eigener Temp-Ordner je Lauf).
+    for (const [, dir] of befehl.matchAll(/node (?:scripts\/test-temp\.mjs )?--test ([^\s*]+)\/\*\.test\.mjs/g)) dirs.add(dir);
   }
   return dirs;
 }

@@ -107,6 +107,10 @@
   .tp-st__material { display: inline-flex; align-items: center; min-height: 44px; padding: 6px 12px; border: 1px solid var(--tp-line, #e6e0d8); border-radius: 999px; color: inherit; text-decoration: none; }
   .tp-st__material--active { border-color: currentColor; font-weight: 600; }
   body:has([data-tp-standardteppiche]) .product-grid-container .card-gallery .product-media__image { object-fit: contain; }
+  /* Ganze Teppiche stehen eingepasst im 3:4-Rahmen; die Freisteller haben weissen
+     Grund. Der beige Ladegrund bleibt nur bis zum Bild, sonst entstehen Balken. */
+  body:has([data-tp-standardteppiche]) .product-grid-container [data-tp-bild-da] .card-gallery .product-media-container,
+  html:not(.tp-bild-warten) body:has([data-tp-standardteppiche]) .product-grid-container .card-gallery .product-media-container { background: #fff; }
   body:has([data-tp-standardteppiche]) .product-grid-container .product-card__content { min-height: 0; }
   @media screen and (max-width: 749px) {
     body:has([data-tp-standardteppiche]) .product-grid-container .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

@@ -431,3 +431,200 @@ test('Laeufer: fail closed ohne Option "Breite"', async () => {
   p.options_with_values = [{ name: 'Farbe' }, { name: 'Größe' }];
   assert.equal((await laeuferRendern(p)).trim(), '');
 });
+
+// Schrauben zu Profilen: Stueckzahl aus dem Bohrbild des Lieferanten
+// (30 mm Randabstand, Lochabstand unter 160 mm), auf Wunsch als eigene
+// Zeile derselben _Gruppe.
+test('Schrauben: Bohrungen je Profil nach Randabstand und Lochabstand', () => {
+  assert.equal(L.lochzahl(100, 30, 160), 7); // 940 mm -> 6 Abstaende
+  assert.equal(L.lochzahl(95, 30, 160), 7); // 890 mm -> 6 Abstaende
+  assert.equal(L.lochzahl(38, 30, 160), 4); // 320 mm genau 2 x 160 -> 3 Abstaende, unter 160
+  assert.equal(L.lochzahl(10, 30, 160), 2);
+  assert.equal(L.lochzahl(175, 30, 160), 12);
+  assert.equal(L.lochzahl(5, 30, 160), 1);
+  assert.equal(L.lochzahl(100, 30, 0), 0);
+  assert.equal(L.lochzahl('', 30, 160), 0);
+});
+
+test('Schrauben: Ausfuehrung kommt aus der Profil-Variante, sonst keine', () => {
+  const s = { varianten: [{ id: 1, price: 10, art: 'vernickelt' }, { id: 2, price: 10, art: 'vermessingt' }, null] };
+  assert.equal(L.schraubeFuer(s, { schraube: 'vermessingt' }).id, 2);
+  assert.equal(L.schraubeFuer(s, { schraube: ' Vernickelt ' }).id, 1);
+  assert.equal(L.schraubeFuer(s, { schraube: 'brüniert' }), null);
+  assert.equal(L.schraubeFuer(s, { schraube: null }), null);
+  assert.equal(L.schraubeFuer(null, { schraube: 'vernickelt' }), null);
+  assert.equal(L.schraubeFuer({ varianten: [{ id: 3, price: 0, art: 'vernickelt' }] }, { schraube: 'vernickelt' }), null);
+});
+
+test('Schrauben: Summe enthaelt Schrauben, Streichpreis nur auf das Profil', () => {
+  const e = { laenge: '95', anzahl: '10', preisCent: 69, vergleichCent: 79, minCm: 10, maxCm: 175, maxStueck: 50 };
+  const ohne = L.rechnen(e);
+  assert.equal(ohne.schraubenStueck, 0);
+  const mit = L.rechnen({ ...e, schraube: { preisCent: 10, randMm: 30, abstandMm: 160 } });
+  assert.equal(mit.loecher, 7);
+  assert.equal(mit.schraubenStueck, 70);
+  assert.equal(mit.schraubenCent, 700);
+  assert.equal(mit.summeCent, 69 * 950 + 700);
+  assert.equal(mit.altSummeCent, 79 * 950 + 700);
+});
+
+test('Schrauben: eigene Zeile derselben Gruppe, ohne Schrauben nur das Profil', () => {
+  const erg = L.rechnen({ laenge: '95', anzahl: '10', preisCent: 69, minCm: 10, maxCm: 175, maxStueck: 50, schraube: { preisCent: 10, randMm: 30, abstandMm: 160 } });
+  const basis = { erg, varianteId: 11, variantenTitel: 'Messing poliert', produkt: 'Treppenkante Messing', bohrung: 'gebohrt', gruppe: 'g1' };
+  const zeilen = L.profilZeilen({ ...basis, schraube: { id: 99, price: 10, art: 'vermessingt' } });
+  assert.equal(zeilen.length, 2);
+  assert.deepEqual(zeilen[0], { id: 11, quantity: 950, properties: L.eigenschaften(erg, 'gebohrt', 'g1') });
+  assert.equal(zeilen[1].id, 99);
+  assert.equal(zeilen[1].quantity, 70);
+  assert.equal(zeilen[1].properties._Gruppe, 'g1');
+  assert.equal(zeilen[1].properties['Zu Treppenkante'], 'Treppenkante Messing – Messing poliert');
+  assert.equal(zeilen[1].properties.Bohrungen, '10 Stück × 7 je 95 cm');
+  assert.equal(L.profilZeilen({ ...basis, schraube: null }).length, 1);
+  // Schraubenzeile ist Service (Produkttyp) und haengt an der Profilzeile.
+  const cart = [
+    { key: 'a', quantity: 950, properties: zeilen[0].properties, preisPro001Lfm: true, optionen: [], typ: 'Abschlussprofile' },
+    { key: 'b', quantity: 70, properties: zeilen[1].properties, optionen: ['vermessingt'], typ: 'Service' },
+  ];
+  assert.equal(G.hauptzeile(cart[1], cart).key, 'a');
+});
+
+test('Schrauben: Block gibt Schrauben und Ausfuehrung je Variante nur mit Produkt aus', async () => {
+  const p = produkt();
+  p.variants[0].metafields = { service: { schraube: val('vermessingt') } };
+  const ohne = await blockRendern(p);
+  assert.equal(daten(ohne).schrauben, undefined);
+  assert.doesNotMatch(ohne, /data-schrauben-feld/);
+  const sp = { title: 'Schrauben 3,0 × 30 mm', variants: [
+    { id: 91, price: 10, available: true, option1: 'vernickelt' },
+    { id: 92, price: 10, available: true, option1: 'vermessingt' },
+    { id: 93, price: 0, available: true, option1: 'brüniert' },
+  ] };
+  const html = await engine.parseAndRender(blockOhneSchema, {
+    product: p, block: { id: 'abc_1', settings: { max_stueck: 50, messhilfe: '', preishinweis: 'x', schrauben_produkt: sp, schrauben_rand_mm: 30, schrauben_lochabstand_mm: 160 }, shopify_attributes: '' },
+    settings: { tp_versand_frei_ab: 150 }, pages: {}, routes: { cart_url: '/cart' },
+  });
+  const d = daten(html);
+  assert.deepEqual(d.schrauben.varianten.filter(Boolean).map((s) => s.art), ['vernickelt', 'vermessingt']);
+  assert.equal(d.schrauben.rand_mm, 30);
+  assert.equal(d.schrauben.lochabstand_mm, 160);
+  assert.equal(d.varianten[0].schraube, 'vermessingt');
+  assert.equal(d.varianten[1].schraube, null);
+  assert.match(html, /data-schrauben-feld hidden/);
+  assert.doesNotMatch(html, /data-schrauben[^-][^>]*checked/);
+});
+
+test('Schrauben je Packung: ganze Packungen, Preis je Packung', () => {
+  const e = { laenge: '95', anzahl: '10', preisCent: 69, minCm: 10, maxCm: 503, maxStueck: 50 };
+  const eine = L.rechnen({ ...e, schraube: { preisCent: 1490, randMm: 30, abstandMm: 160, packung: 200 } });
+  assert.equal(eine.schraubenStueck, 70);
+  assert.equal(eine.schraubenPackungen, 1);
+  assert.equal(eine.schraubenCent, 1490);
+  assert.equal(eine.summeCent, 69 * 950 + 1490);
+  // 30 Stueck x 7 = 210 Schrauben -> 2 Packungen
+  const zwei = L.rechnen({ ...e, anzahl: '30', schraube: { preisCent: 1490, randMm: 30, abstandMm: 160, packung: 200 } });
+  assert.equal(zwei.schraubenPackungen, 2);
+  assert.equal(zwei.schraubenCent, 2980);
+  const zeilen = L.profilZeilen({ erg: eine, varianteId: 11, variantenTitel: 'Messing poliert', produkt: 'TK', bohrung: 'gebohrt', gruppe: 'g1', schraube: { id: 99, price: 1490, art: 'vermessingt' }, packung: 200 });
+  assert.equal(zeilen[1].quantity, 1);
+  assert.equal(zeilen[1].properties.Packung, '200 Stück, 70 benötigt');
+  assert.equal(zeilen[1].properties._Gruppe, 'g1');
+});
+
+test('Ganze Stange: Laenge = Stangenlaenge, Zuschnitt hoechstens Stangenlaenge', () => {
+  assert.deepEqual(L.laengeFuer('stange', '95', 503, 503), { laenge: '503', maxCm: 503 });
+  assert.deepEqual(L.laengeFuer('zuschnitt', '95', 250, 503), { laenge: '95', maxCm: 250 });
+  assert.deepEqual(L.laengeFuer('zuschnitt', '95', null, 175), { laenge: '95', maxCm: 175 });
+  // ohne Stangenlaenge gibt es keine ganze Stange
+  assert.deepEqual(L.laengeFuer('stange', '95', 0, 175), { laenge: '95', maxCm: 175 });
+  const lg = L.laengeFuer('zuschnitt', '260', 250, 503);
+  assert.equal(L.rechnen({ laenge: lg.laenge, anzahl: '1', preisCent: 19, minCm: 10, maxCm: lg.maxCm, maxStueck: 50 }).fehler, 'Höchstens 250 cm je Stück.');
+  const st = L.laengeFuer('stange', '', 503, 503);
+  const r = L.rechnen({ laenge: st.laenge, anzahl: '2', preisCent: 69, minCm: 10, maxCm: st.maxCm, maxStueck: 50 });
+  assert.equal(r.menge, 1006);
+  assert.equal(r.summeCent, 69 * 1006);
+});
+
+test('Sperrgut: einmal ueber der Grenze, nicht doppelt, Zeile in der Gruppe', () => {
+  const e = { anzahl: '2', preisCent: 69, minCm: 10, maxCm: 503, maxStueck: 50, sperrgut: { preisCent: 3990, abCm: 175 } };
+  assert.equal(L.rechnen({ ...e, laenge: '175' }).sperrgut, false);
+  const lang = L.rechnen({ ...e, laenge: '176' });
+  assert.equal(lang.sperrgut, true);
+  assert.equal(lang.sperrgutCent, 3990);
+  assert.equal(lang.summeCent, 69 * 352 + 3990);
+  const da = L.rechnen({ ...e, laenge: '503', sperrgut: { ...e.sperrgut, schonDa: true } });
+  assert.equal(da.sperrgut, true);
+  assert.equal(da.sperrgutCent, 0);
+  const sg = { id: 77, price: 3990, ab_cm: 175 };
+  const z = L.profilZeilen({ erg: lang, varianteId: 11, variantenTitel: 'Alu natur', produkt: 'TK', bohrung: 'gebohrt', gruppe: 'g2', sperrgut: sg, zuschnitt: 'ganze Stange' });
+  assert.equal(z.length, 2);
+  assert.equal(z[0].properties.Zuschnitt, 'ganze Stange');
+  assert.equal(Object.keys(z[0].properties).pop(), '_Gruppe');
+  assert.deepEqual(z[1], { id: 77, quantity: 1, properties: { 'Zu Treppenkante': 'TK – Alu natur', 'Grund': 'Stück länger als 175 cm', '_Gruppe': 'g2' } });
+  assert.equal(L.profilZeilen({ erg: da, varianteId: 11, produkt: 'TK', bohrung: 'gebohrt', gruppe: 'g3', sperrgut: sg }).length, 1);
+  // Zuschlag ist Service und haengt an der Profilzeile.
+  const cart = [
+    { key: 'a', quantity: 352, properties: z[0].properties, preisPro001Lfm: true, optionen: [], typ: 'Abschlussprofile' },
+    { key: 'b', quantity: 1, properties: z[1].properties, optionen: [], typ: 'Service' },
+  ];
+  assert.equal(G.hauptzeile(cart[1], cart).key, 'a');
+});
+
+test('Block: Stangenwahl, Stangenlaenge je Variante und Sperrgut nur mit Einstellung', async () => {
+  const p = produkt();
+  p.variants[0].metafields = { service: { stange_cm: val(503) } };
+  const ohne = await blockRendern(p);
+  assert.doesNotMatch(ohne, /data-art-feld/);
+  assert.equal(daten(ohne).stangen, false);
+  assert.equal(daten(ohne).varianten[0].stange_cm, null);
+  assert.equal(daten(ohne).sperrgut, undefined);
+  const sg = { title: 'Sperrgut', selected_or_first_available_variant: { id: 77, price: 3990, available: true } };
+  const html = await engine.parseAndRender(blockOhneSchema, {
+    product: p, block: { id: 'abc_1', settings: { max_stueck: 50, messhilfe: 'Stufenkante.', preishinweis: 'x', stangen: true, sperrgut_produkt: sg, sperrgut_ab_cm: 175 }, shopify_attributes: '' },
+    settings: { tp_versand_frei_ab: 150 }, pages: {}, routes: { cart_url: '/cart' },
+  });
+  const d = daten(html);
+  assert.equal(d.stangen, true);
+  assert.equal(d.varianten[0].stange_cm, 503);
+  assert.equal(d.varianten[1].stange_cm, null);
+  assert.deepEqual(d.sperrgut, { id: 77, price: 3990, ab_cm: 175 });
+  assert.match(html, /data-art-feld/);
+  assert.match(html, /value="stange" checked/);
+  assert.match(html, /data-sperrgut-hinweis>Stangen und Stücke über 175 cm/);
+  assert.match(html, /data-messhilfe="Stufenkante\."/);
+});
+
+test('Produktvorlage Treppenkante: Stangen, Schraubenpackung und Sperrgut eingestellt', () => {
+  const t = JSON.parse(lies('templates/product.treppenkante-nach-mass.json').replace(/^\/\*[\s\S]*?\*\/\s*/, ''));
+  const s = Object.values(t.sections.main.blocks).flatMap((b) => Object.values(b.blocks || {})).concat(Object.values(t.sections.main.blocks)).find((b) => b.type === 'tp-laengen-zuschnitt').settings;
+  assert.equal(s.stangen, true);
+  assert.equal(s.schrauben_packung, 200);
+  assert.equal(s.sperrgut_produkt, 'sperrgut-versand-treppenkante');
+  assert.equal(s.sperrgut_ab_cm, 175);
+});
+
+test('Sperrgut fehlt im Warenkorb: Zeile mit _Sperrgut ist Waise (JS und Liquid)', async () => {
+  const erg = L.rechnen({ laenge: '503', anzahl: '1', preisCent: 69, minCm: 10, maxCm: 503, maxStueck: 50, sperrgut: { preisCent: 3990, abCm: 175, schonDa: true } });
+  const z = L.profilZeilen({ erg, varianteId: 11, produkt: 'TK', bohrung: 'gebohrt', gruppe: 'g9', sperrgut: { id: 77, price: 3990, ab_cm: 175 }, zuschnitt: 'ganze Stange' });
+  assert.equal(z[0].properties._Sperrgut, '77');
+  assert.equal(z.length, 1);
+  // kurze Stuecke tragen kein _Sperrgut
+  const kurz = L.rechnen({ laenge: '95', anzahl: '1', preisCent: 69, minCm: 10, maxCm: 503, maxStueck: 50, sperrgut: { preisCent: 3990, abCm: 175 } });
+  assert.equal(L.profilZeilen({ erg: kurz, varianteId: 11, produkt: 'TK', bohrung: 'gebohrt', gruppe: 'g8', sperrgut: { id: 77, price: 3990, ab_cm: 175 } })[0].properties._Sperrgut, undefined);
+  const profil = { key: 'p', variant_id: 11, quantity: 503, preisPro001Lfm: true, properties: z[0].properties };
+  const zuschlag = { key: 's', variant_id: 77, quantity: 1, typ: 'Service', properties: { 'Zu Treppenkante': 'TK', _Gruppe: 'g1' } };
+  const andere = { key: 'q', variant_id: 12, quantity: 300, preisPro001Lfm: true, properties: { 'Länge je Stück': '300 cm', _Gruppe: 'g1' } };
+  assert.deepEqual(G.waisen([profil, andere, zuschlag]), []);
+  assert.equal(G.waisen([profil])[0].grund, G.GRUND.SPERRGUT_FEHLT);
+  const zweiter = { ...zuschlag, key: 's2', properties: { ...zuschlag.properties, _Gruppe: 'g2' } };
+  assert.equal(G.waisen([profil, zuschlag, zweiter])[0].grund, G.GRUND.SPERRGUT_DOPPELT);
+
+  const snippet = lies('snippets/tp-cart-gruppe.liquid');
+  const produktLfm = { type: 'Abschlussprofile', title: 'TK', metafields: { custom: { preis_pro_001_lfm: val(true) } } };
+  const lz = { quantity: 503, variant_id: 11, product: produktLfm, variant: { options: ['Messing poliert'] }, url: '/products/x', properties: z[0].properties };
+  const lzs = { quantity: 1, variant_id: 77, product: { type: 'Service', title: 'Sperrgut', metafields: {} }, variant: { options: [] }, url: '/products/s', properties: { 'Zu Treppenkante': 'TK', _Gruppe: 'g9' } };
+  const r = (line_item, teil, items) => engine.parseAndRender(snippet, { line_item, teil, cart: { items, attributes: {} } });
+  assert.equal((await r(null, 'sperre', [lz, lzs])).trim(), '');
+  assert.match(await r(null, 'sperre', [lz]), /Bestellung nicht möglich/);
+  assert.match(await r(lz, 'hinweis', [lz]), /fehlt der Sperrgut-Versand/);
+  assert.match(await r(null, 'sperre', [lz, lzs, { ...lzs, properties: { ...lzs.properties, _Gruppe: 'g7' } }]), /steht mehrfach im Warenkorb/);
+});

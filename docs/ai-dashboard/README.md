@@ -60,12 +60,15 @@ docs/ai-dashboard/
   ansichten/                    eine Datei je Route; große Ansichten mit Teilmodulen im gleichnamigen Ordner
   lib/model.mjs                 Regeln: Status, Body-Parser, Dringlichkeit, Übergänge – Browser UND Server
   lib/todos.mjs                 To-dos und „Wer wartet auf was“ für „Heute“ – abgeleitet, nicht erfasst
+  lib/akquise.mjs              Akquise Wohnungsunternehmen: Status, Wiedervorlage, Vorlage fuellen - Browser UND Server
   lib/sonderposten.mjs          Rückmeldung nach „Im Laden verkauft“ – sagt nur, was belegt ist (testbar ohne DOM)
   lib/muster-nachfassen.mjs     „Muster nachfassen“ für „Heute“: wer ist dran, Textvorlage füllen – Browser UND Server
   lib/bestellinhalt.mjs         Inhalt einer Bestellung in einer Zeile (Muster mit Farben und Herkunft, Ware) – Bestellliste und To-dos
+  lib/muster-etiketten.mjs      Muster-Etiketten 50 × 50 mm: Daten (Serie, Farbe, SKU, Technik) und Layout – testbar ohne Drucker
   lib/kennzahlen.mjs            „Ø je bezahlter Bestellung“ (ohne kostenlose Muster) für die Kennzahlen auf „Heute“
   lib/verbrauch.mjs             Modellnamen und Tokenzahlen für die Kachel „Claude-Verbrauch“ (Insights)
   lib/serviceanfragen.mjs       Service-Anfragen: Werte, Prüfung, Formular-Mail lesen, Auswertung je Woche/Quelle – Browser UND Server
+  lib/lieferbelege.mjs          Lieferantenbelege aus dem Postfach: erkennen, zuordnen, Abgleich, To-dos – Browser UND Server
   lib/prozesse.mjs              Arbeitsanweisungen fuer E-Mail, Angebotsvorbereitung und Recherche; Quelltext bleibt zitiert
   lib/prozesslinks.mjs          gemeinsame Validierung privater App-/Projektadressen – Browser UND Server
   stile/                        Styles je Ansicht (heute.css); app.css bleibt das gemeinsame Gerüst
@@ -120,7 +123,7 @@ ansichten/
   arbeit.mjs  freigaben.mjs  bereiche.mjs  insights.mjs  aktivitaet.mjs
   lexikon.mjs  ratgeber.mjs  hilfe.mjs  shopwache.mjs  team.mjs  fotos.mjs  sonderposten.mjs  bildrechte.mjs
   prozesse.mjs       Arbeitsplatz: Aufgabe vorbereiten, kopieren, App oder Projekt separat oeffnen
-  einkauf.mjs        + einkauf/{auftragsfluss,bestellungen,lieferanten,musterlager,produktdaten}.mjs
+  einkauf.mjs        + einkauf/{auftragsfluss,belege,bestellungen,lieferanten,musterlager,produktdaten}.mjs
   kunden.mjs         + kunden/{gemeinsam,akte,rueckrufe,serviceanfragen,bestellungen,angebote,faelle,zeitleiste}.mjs
   organisation.mjs   + organisation/{gemeinsam,dialoge}.mjs
   insights.mjs       + insights/verbrauch.mjs (Kachel „Claude-Verbrauch“, #671)

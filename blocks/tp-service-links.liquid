@@ -34,7 +34,7 @@
     {%- unless block.settings.kontakt_ausblenden -%}
     <a href="tel:+4933015733720">Beratung: 03301 573 37 20</a>
     <span aria-hidden="true">·</span>
-    <a href="https://wa.me/491792612211" target="_blank" rel="noopener">WhatsApp</a>
+    <a href="https://wa.me/491792612211" target="_blank" rel="noopener" data-tp-produktberatung="whatsapp" data-tp-produkt-id="{{ product.id }}">WhatsApp</a>
     {%- unless block.settings.verlegeservice_ausblenden -%}
     <span aria-hidden="true">·</span>
     {%- endunless -%}
@@ -153,7 +153,9 @@
   </div>
   {%- endunless -%}
 
-</div>{% endunless %}
+</div>
+{% render 'tp-produktberatung', product: product %}
+{% endunless %}
 
 <style>
   .tp-service-links-{{ tp_sl_id }} {

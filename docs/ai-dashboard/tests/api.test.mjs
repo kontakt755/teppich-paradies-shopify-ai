@@ -4,8 +4,8 @@ import { PRIVAT_DIR } from './_testumgebung.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
+import { wegwerfOrdner } from '../../../scripts/test-temp.mjs';
 import { createApi, ApiError, buildComment, readJsonGecacht } from '../../../scripts/dashboard-api.mjs';
 
 /** Fake-gh: merkt sich Aufrufe, liefert Issue/Labels/User. */
@@ -32,7 +32,7 @@ const baseIssue = (over = {}) => ({
   created_at: '2026-09-03T00:00:00Z', updated_at: '2026-09-03T00:00:00Z', closed_at: null, ...over,
 });
 
-function tmpRoot() { return fs.mkdtempSync(path.join(os.tmpdir(), 'cc-api-')); }
+function tmpRoot() { return wegwerfOrdner('cc-api-'); }
 
 test('capabilities meldet lokalen Modus mit Nutzer und Labels', async () => {
   const { gh } = fakeGh({});
@@ -356,7 +356,7 @@ test('einkaufKennzahlen meldet fehlenden Export mit Befehl statt erfundener Zahl
 
 test('einkaufKennzahlen liest kennzahlen/shop-snapshot.json', () => {
   const root = tmpRoot();
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-kennzahlen-'));
+  const dir = wegwerfOrdner('tp-kennzahlen-');
   fs.mkdirSync(path.join(dir, 'kennzahlen'), { recursive: true });
   const snapshot = {
     erstellt: '2026-09-23T06:00:00.000Z',
@@ -408,7 +408,7 @@ test('einkaufAuftragsstatusSetzen lehnt fehlende Pflichtangaben und unbekannten 
 
 test('einkaufBestellungen liest auch den Admin-API-Export {data:{orders:{nodes}}}', async () => {
   const root = tmpRoot();
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-einkauf-'));
+  const dir = wegwerfOrdner('tp-einkauf-');
   fs.mkdirSync(path.join(dir, 'bestelluebersicht'), { recursive: true });
   const order = {
     id: 'gid://shopify/Order/1', name: '#1001', createdAt: '2026-09-01T10:00:00Z',
@@ -469,7 +469,7 @@ test('einkaufAuftragsstatusSetzen: wiederOeffnen macht "Ohne Einkauf abschließe
 });
 
 function lexikonFixture(root) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-lexikon-'));
+  const dir = wegwerfOrdner('tp-lexikon-');
   fs.mkdirSync(path.join(dir, 'lexikon'), { recursive: true });
   const produkte = [
     {
@@ -722,7 +722,7 @@ test('aktualisierung meldet fehlende Datei mit Befehl statt erfundenem Stand', (
 
 test('aktualisierung berechnet Alter und Veraltet-Flag je Teil (Schwelle 24h)', () => {
   const root = tmpRoot();
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  const dir = wegwerfOrdner('tp-aktualisierung-');
   const jetzt = new Date('2026-09-23T12:00:00.000Z');
   const frisch = new Date(jetzt.getTime() - 2 * 60 * 60 * 1000).toISOString(); // vor 2h
   const alt = new Date(jetzt.getTime() - 30 * 60 * 60 * 1000).toISOString(); // vor 30h
@@ -745,7 +745,7 @@ test('aktualisierung berechnet Alter und Veraltet-Flag je Teil (Schwelle 24h)', 
 
 test('aktualisierung: fehlender Zeitpunkt eines Teils liefert veraltet=null statt zu werfen', () => {
   const root = tmpRoot();
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  const dir = wegwerfOrdner('tp-aktualisierung-');
   fs.writeFileSync(path.join(dir, 'aktualisierung.json'), JSON.stringify({ aktualisiertAm: null, teile: { lexikon: { erfolg: false, meldung: 'x' } } }));
   const api = createApi({ gh: async () => '', root, privatDirPath: dir });
   const r = api.aktualisierung();
@@ -779,7 +779,7 @@ function fakeAktualisierenSkript(root, privatDir, { verzoegerungMs = 150, wirftF
 
 test('aktualisierungStarten: ohne Zugang kein leerer Lauf, alter Datenstand bleibt erhalten', () => {
   const root = tmpRoot();
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  const dir = wegwerfOrdner('tp-aktualisierung-');
   fs.writeFileSync(path.join(dir, 'aktualisierung.json'), JSON.stringify({ teile: { lexikon: { erfolg: true, anzahl: 3 } } }));
   const api = createApi({ gh: async () => '', root, privatDirPath: dir, env: {} });
   assert.equal(api.aktualisierungStatus().manuellVerfuegbar, false);
@@ -789,7 +789,7 @@ test('aktualisierungStarten: ohne Zugang kein leerer Lauf, alter Datenstand blei
 
 test('aktualisierungStarten: startet den Kindprozess und meldet gestartet:true', async () => {
   const root = tmpRoot();
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  const dir = wegwerfOrdner('tp-aktualisierung-');
   fakeAktualisierenSkript(root, dir, { verzoegerungMs: 100 });
   const api = createApi({ gh: async () => '', root, privatDirPath: dir, env: { SHOPIFY_ADMIN_TOKEN: 'test-only' } });
   const r = api.aktualisierungStarten();
@@ -800,7 +800,7 @@ test('aktualisierungStarten: startet den Kindprozess und meldet gestartet:true',
 
 test('aktualisierungStarten: zweiter Aufruf waehrend eines Laufs startet nichts neu ("laeuft bereits")', async () => {
   const root = tmpRoot();
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  const dir = wegwerfOrdner('tp-aktualisierung-');
   fakeAktualisierenSkript(root, dir, { verzoegerungMs: 300 });
   const api = createApi({ gh: async () => '', root, privatDirPath: dir, env: { SHOPIFY_ADMIN_TOKEN: 'test-only' } });
   const erster = api.aktualisierungStarten();
@@ -813,7 +813,7 @@ test('aktualisierungStarten: zweiter Aufruf waehrend eines Laufs startet nichts 
 
 test('aktualisierungStatus: laeuft waehrend des Laufs, danach fertig mit neuem Stand', async () => {
   const root = tmpRoot();
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  const dir = wegwerfOrdner('tp-aktualisierung-');
   fakeAktualisierenSkript(root, dir, { verzoegerungMs: 150 });
   const api = createApi({ gh: async () => '', root, privatDirPath: dir, env: { SHOPIFY_ADMIN_TOKEN: 'test-only' } });
   const vorher = api.aktualisierungStatus();
@@ -1304,7 +1304,7 @@ test('Blockieren schreibt den Grund in "## Blocker" im Issue - dort liest ihn di
 });
 
 test('readJsonGecacht: dieselbe Datei wird erst nach einer Aenderung neu gelesen', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-lexikon-cache-'));
+  const dir = wegwerfOrdner('cc-lexikon-cache-');
   const datei = path.join(dir, 'produkte.json');
   assert.equal(readJsonGecacht(datei), null, 'fehlt -> null');
   fs.writeFileSync(datei, JSON.stringify({ produkte: [{ handle: 'a' }] }));
@@ -1319,7 +1319,7 @@ test('readJsonGecacht: dieselbe Datei wird erst nach einer Aenderung neu gelesen
 
 test('Lexikon-Suche nutzt den Zwischenspeicher und sieht einen neuen Export sofort', () => {
   const root = tmpRoot();
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-lexikon-'));
+  const dir = wegwerfOrdner('cc-lexikon-');
   fs.mkdirSync(path.join(dir, 'lexikon'));
   const datei = path.join(dir, 'lexikon', 'produkte.json');
   fs.writeFileSync(datei, JSON.stringify({ erstellt: '2026-10-12T10:00:00Z', produkte: [{ handle: 'kontura', titel: 'Kontura', varianten: [] }] }));
@@ -1334,7 +1334,7 @@ test('Lexikon-Suche nutzt den Zwischenspeicher und sieht einen neuen Export sofo
 
 test('"Jetzt aktualisieren": ein abgebrochener Lauf bleibt als letzterKnopfLauf sichtbar, Teilfehler nicht', async () => {
   const root = tmpRoot();
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  const dir = wegwerfOrdner('tp-aktualisierung-');
   fakeAktualisierenSkript(root, dir, { verzoegerungMs: 20, wirftFehler: true });
   const api = createApi({ gh: async () => '', root, privatDirPath: dir, env: { SHOPIFY_ADMIN_TOKEN: 'test-only' } });
   const vorher = console.error; const zeilen = []; console.error = z => zeilen.push(z);

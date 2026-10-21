@@ -19,6 +19,9 @@ was der Läufer-Modus zusätzlich tut.
 | `cocora-kokoslaeufer-panama-nach-mass` | Kokos Panama natur |
 | `sisano-sisallaeufer-boucle-nach-mass` | Sisal Bouclé, 6 Farben, 65–200 cm, mit und ohne Latexrücken |
 | `sisano-sisallaeufer-fischgrat-nach-mass` | Sisal Fischgrat und Zickzack, 11 Farben, 65–200 cm |
+| `sisano-sisallaeufer-boucle-classic-nach-mass` | Sisal Bouclé, 5 Farben, 65–200 cm (Lieferant B, seit 2026-10-20) |
+| `sisano-sisallaeufer-fischgrat-classic-nach-mass` | Sisal Fischgrat, 3 Farben, 65–200 cm (Lieferant B) |
+| `cocora-kokoslaeufer-fischgrat-classic-nach-mass` | Kokos Fischgrat, 4 Farben, 65–200 cm (Lieferant B) |
 | `einfassung-laeufer-schnittkanten` | Einfassung beider Schnittkanten (Service, UNLISTED) |
 | `wunschmass-pauschale` | 14,99 € Fertigungs- und Versandpauschale je Läufer (Service, UNLISTED, bestand schon) |
 
@@ -36,7 +39,8 @@ Wie bei Profile nach Maß (`custom.preis_pro_001_lfm`, `service.max_laenge_cm`,
 | Vorlage | `laeufer-nach-mass` (Block im Läufer-Modus, Einfass- und Pauschalprodukt sind dort gesetzt) |
 | Produkttyp | `Läufer nach Maß` – nie „Service“ (verwaister Service) und nie „Teppich nach Maß“ (der Feed rechnet dort €/m²) |
 | Option `Breite` | z. B. „90 cm“; **muss wörtlich** einer Breite des Einfassprodukts entsprechen |
-| Option `Rücken` | „ohne Rücken“ / „Latexrücken“ |
+| Option `Rücken` | „Unbeschichteter Rücken“ / „Latexrücken“ (seit 2026-10-20; „ohne Rücken“ klang für den Inhaber falsch) – die Beschreibung erklärt beide Varianten |
+| Tag `naturfaser-teppich-nach-mass` | Kategorie „Sisal- & Kokosteppiche nach Maß“ (`sisal-kokos-teppiche-nach-mass`, Menü Teppiche) – auch die Sisalteppiche nach Maß von Lieferant B |
 | `service.lieferzeit` | „ca. 2–3 Wochen“ |
 | SKU | `LFR<Breite 3-stellig>[L]_<Artikelnummer>`, z. B. `LFR090_1101`, `LFR200L_2208` |
 | Tags | `laeufer-nach-mass`, `ohne-muster`, `material: kokos/sisal`, `raum: flur` |

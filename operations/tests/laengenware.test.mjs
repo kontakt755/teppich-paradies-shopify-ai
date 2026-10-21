@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { aufbereiten, einkaufsmenge } from '../lib/bestelluebersicht.mjs';
+import { aufbereiten, einkaufsmenge, stangenText } from '../lib/bestelluebersicht.mjs';
 import { masspruefung } from '../lib/resolve.mjs';
 import { UNGEKLAERT } from '../lib/umrechnung.mjs';
 
@@ -54,4 +54,31 @@ test('Einkaufsmenge bleibt ungeklaert, wenn Menge und Laenge nicht zusammenpasse
   assert.equal(einkaufsmenge(item, 950).menge, 10);
   assert.equal(einkaufsmenge(item, 951).menge, UNGEKLAERT);
   assert.equal(einkaufsmenge({ ...item, eingaben: {} }, 950).menge, UNGEKLAERT);
+});
+
+test('Stangenbedarf: Stuecke aus ganzen Stangen, Rest traegt der Einkauf', () => {
+  const item = { einkauf: { bestelleinheit: 'stueck', stangenlaenge_cm: 503 }, produkt: { preis_pro_001_lfm: true }, eingaben: { laengeJeStueckCm: 95, bohrung: 'gebohrt' } };
+  // 503 cm Stange: 5 Stueck à 95 cm je Stange (inkl. Saegeschnitt) -> 10 Stueck = 2 Stangen.
+  assert.equal(einkaufsmenge(item, 950).text, '10 Stück à 95 cm, gebohrt · aus 2 Stangen à 5,03 m (10,06 lfm)');
+  assert.equal(einkaufsmenge({ ...item, eingaben: { laengeJeStueckCm: 120 } }, 120).text, '1 Stück à 120 cm · aus 1 Stange à 5,03 m (5,03 lfm)');
+  // Genau passend: 2 x 125 cm aus 250 cm geht nur ohne Saegeschnitt - also 2 Stangen.
+  assert.equal(stangenText(2, 125, 250), ' · aus 2 Stangen à 2,50 m (5,00 lfm)');
+  assert.equal(stangenText(2, 124, 250), ' · aus 1 Stange à 2,50 m (2,50 lfm)');
+  assert.match(stangenText(1, 260, 250), /länger als die Stange/);
+  assert.equal(stangenText(3, 95, UNGEKLAERT), '');
+  assert.equal(stangenText(3, 95, undefined), '');
+});
+
+test('Stangenbedarf: Stangenlaenge kommt aus dem Varianten-Metafeld einkauf.stangenlaenge_cm', () => {
+  const z = zeile(950);
+  z.variant.metafields.nodes.push(mf('einkauf', 'stangenlaenge_cm', '360'));
+  const p = aufbereiten({ orders: [bestellung(z)] }, { jetzt: new Date('2026-01-07T00:00:00Z') }).auftraege[0].positionen[0];
+  // 360 cm: 3 Stueck je Stange -> 10 Stueck = 4 Stangen.
+  assert.equal(p.bestellmenge.text, '10 Stück à 95 cm, gebohrt · aus 4 Stangen à 3,60 m (14,40 lfm)');
+});
+
+test('Sperrgut-Zuschlag der Treppenkanten ist nichts zu bestellen', async () => {
+  const { istEigenleistung } = await import('../lib/bestelluebersicht.mjs');
+  assert.equal(istEigenleistung({ variant: { product: { handle: 'sperrgut-versand-treppenkante' } } }), true);
+  assert.equal(istEigenleistung({ variant: { product: { handle: 'schrauben-treppenkante-3x30' } } }), false);
 });

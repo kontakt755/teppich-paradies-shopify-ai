@@ -60,9 +60,7 @@ test('Formular: sichtbares Produktfeld ohne name, nur im Mustermodus sichtbar', 
   assert.ok(formular.indexOf('data-tp-produktwahl-feld') < formular.indexOf('id="ContactFormName"'));
 });
 
-test('Skript: Pflichtfeld nur im Mustermodus, Text und Auswahl belegen die versteckten Felder', () => {
-  const vorRueckkehr = skript.slice(0, skript.indexOf('if (!isSample) return;'));
-  assert.doesNotMatch(vorRueckkehr, /produktwahlEinrichten\(\)/);
+test('Skript: aktive Produktwahl belegt Text und Auswahl in den versteckten Feldern', () => {
   const einrichten = funktion(skript, 'produktwahlEinrichten');
   assert.match(einrichten, /feld\.required = true;/);
   assert.match(einrichten, /setHiddenField\('Produkt', text\)/);
@@ -72,7 +70,7 @@ test('Skript: Pflichtfeld nur im Mustermodus, Text und Auswahl belegen die verst
   assert.match(einrichten, /setHiddenField\('Produkt-Handle', ''\)/);
   assert.match(einrichten, /'\/pages\/muster\?produkt=' \+ encodeURIComponent\(product\.handle\)/);
   assert.match(einrichten, /\/search\/suggest\.json/);
-  assert.match(einrichten, /filter\(hatMusterweg\)/);
+  assert.match(einrichten, /needsSampleProduct \|\| hatMusterweg\(product\)/);
 });
 
 test('Musterseite: Gruppe ohne gelistete Dekore verweist bedingt auf Muster und sonst auf Beratung', () => {

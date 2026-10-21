@@ -16,17 +16,20 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { createHash } from 'node:crypto';
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { normalizeTask, requirementsFor, labelChangesFor, mitBlockerAbschnitt, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
 import { texteAusMarkdown, musterKurz, musterNachfassen, fuelleText, platzhalterFrei, STUFE_LABEL, NICHT_VERFUEGBAR_VORLAGE } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
+import { kundeInformiertAus } from '../docs/ai-dashboard/lib/auftrags-ablauf.mjs';
 import { postfachPfad, stopplistePfad, versandPfad, lesePostfach, leseStoppliste, abgemeldeteAdressen, trageAbmeldungEin, leseVersand, schreibeVersand, schonVerschickt, kopieNoetig, versandStand as nachfassVersandStand, AUTOMATISCH, UNTERSCHRIFT_STANDARD, NachfassFehler } from '../operations/lib/nachfass-versand.mjs';
 import { sendeMail as smtpSenden } from '../operations/lib/smtp.mjs';
 import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
-import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, setzeStatusPositionen, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, STATUS_ORDER, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
+import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, schreibeAlle as schreibeAuftragsstatus, setzeStatus, setzeStatusPositionen, oeffneWieder, setzeZurueckAufOffen, vermerkeShopifyVersand, STATUS_ORDER, AuftragsstatusFehler, positionKey } from '../operations/lib/auftragsstatus.mjs';
 import { bucheVersand, versandNachzuholen, VersandFehler, VERSANDDIENSTE } from '../operations/lib/versand.mjs';
+import { uebernimmAusShopify, abweichungen as shopifyAbweichungen, ABGLEICH_VON } from '../operations/lib/shopify-abgleich.mjs';
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
 import { musterSchluessel, musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MUSTER_GROESSE, KNAPP_AB as LAGER_KNAPP_AB, PROBESTUECK_PREIS, wartetAufLieferant as lagerWartetAufLieferant, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
 import { auftragsverlaufPfad, leseVerlauf, bereiteEreignisVor, schreibeVerlauf, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, ERGEBNIS_SCHRITTE, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
@@ -58,11 +61,14 @@ import { protokollPfad, protokolliere } from '../operations/lib/protokoll.mjs';
 import { findeZugang, liesZugaenge, zugangAnlegen, zugangSperren } from '../social/lib/eingang.mjs';
 import { ladeUmgebung } from '../social/lib/zugang.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
+import { lieferbelegePfad, leseBelege, entscheide as belegEntscheiden, LieferbelegFehler } from '../operations/lib/lieferbelege.mjs';
+import { kandidatenAus, domainVon, lieferantZurDomain, ordneAlleZu, abgleich as belegAbgleich } from '../docs/ai-dashboard/lib/lieferbelege.mjs';
 import { serviceanfragenPfad, leseAlle as leseServiceanfragen, anlegen as serviceanfrageAnlegen, aendern as serviceanfrageAendern, ServiceanfrageFehler } from '../operations/lib/serviceanfragen.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
 import { ausVariantentitel } from '../operations/lib/resolve.mjs';
 import { ladeEnvLocal, erzeugeProxy, KEIN_ZUGANG, mitHinweis } from '../operations/sync/zugang.mjs';
+import { leseAkquiseCsv, vorlageAusMarkdown, wendeAenderungAn, akquiseId, pruefeReferenz } from '../docs/ai-dashboard/lib/akquise.mjs';
 import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, SonderpostenFehler } from '../operations/lib/sonderposten.mjs';
 import { ohneUeberholtenFehler } from '../operations/scripts/aktualisieren.mjs';
 import { meldungenPfad, abgleichPfad, meldungAnlegen, alleMeldungen, sichtbareMeldungen, darfMeldungSehen, bildAusUpload, bildDatei, BILDER_MAX, FehlermeldungFehler } from '../operations/lib/fehlermeldungen.mjs';
@@ -76,6 +82,10 @@ import { musterKaufLinks } from '../docs/ai-dashboard/lib/muster-kauf-links.mjs'
 import { betriebszustand } from '../operations/lib/betriebszustand.mjs';
 import { ausCsv as bildrechteAusCsv, prueflisten as bildrechtePrueflisten } from '../operations/lib/bildrechte.mjs';
 import { prozesslinksPfad, leseProzesslinks, schreibeProzesslinks, ProzesslinksFehler, ProzesslinksSpeicherFehler } from '../operations/lib/prozesslinks.mjs';
+import { leseMusterDruckliste, aendereMusterDruckliste, gleicheBestellungsVormerkung, MusterDrucklisteFehler } from '../operations/lib/muster-druckliste.mjs';
+import { etikettenAusLexikon } from '../docs/ai-dashboard/lib/lexikon-etiketten.mjs';
+import { musteretikettenFuerAuftrag } from '../docs/ai-dashboard/lib/bestellungs-musteretiketten.mjs';
+import { musterEtikettenStatus } from '../docs/ai-dashboard/lib/muster-etiketten-status.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -282,6 +292,15 @@ function ladeBestellModell(dir) {
   if (!daten) return null;
   try { return bereiteBestellModell(daten, dir, new Date()); }
   catch { return null; }
+}
+
+/** Bestellungen aus orders.json in jeder Form, die ladeExport kennt - ohne Umweg ueber Text. null = unbrauchbar. */
+function exportOrders(daten) {
+  if (Array.isArray(daten)) return daten;
+  if (Array.isArray(daten?.data?.orders?.nodes)) return daten.data.orders.nodes;
+  if (Array.isArray(daten?.orders)) return daten.orders;
+  if (Array.isArray(daten?.orders?.nodes)) return daten.orders.nodes;
+  return null;
 }
 
 function bereiteBestellModell(daten, dir, jetzt) {
@@ -724,12 +743,15 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
    * Sendungsnummer und Mail-Wahl kommen aus dem Dialog, sonst von der Position (Nachholen).
    * Gibt die Kurzfassung fuer die Oberflaeche zurueck.
    */
-  async function versandBuchen({ dir, auftrag, lineItemIds, angaben = {}, benutzer, actor }) {
+  async function versandBuchen({ dir, auftrag, lineItemIds, angaben = {}, benutzer, actor, trotzVermerk = false }) {
     const file = auftragsstatusPfad(dir);
     return nacheinander(auftrag.id, async () => {
       const alle = leseAuftragsstatus(file);
       const eintrag = id => alle[positionKey(auftrag.id, id)];
-      const ids = [...new Set(lineItemIds)].filter(id => !['gebucht', 'bereits'].includes(eintrag(id)?.shopifyVersand?.status));
+      // trotzVermerk: "In Shopify nachbuchen" aus der Abweichungsliste - dort steht fest, dass
+      // Shopify die Position offen fuehrt, auch wenn der Vermerk anderes sagt (Sendung in Shopify
+      // storniert). bucheVersand liest frisch; doppelt gebucht wird auch dann nie.
+      const ids = [...new Set(lineItemIds)].filter(id => trotzVermerk || !['gebucht', 'bereits'].includes(eintrag(id)?.shopifyVersand?.status));
       if (!ids.length) return { status: 'bereits', meldung: 'In Shopify war das schon als versendet gebucht.', gebucht: 0, bereits: lineItemIds.length, nichtGebucht: 0 };
       const am = now().toISOString();
       const nummer = angaben.sendungsnummer || ids.map(id => eintrag(id)?.sendungsnummer).find(Boolean) || null;
@@ -854,6 +876,108 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     return { versandNachholen: n ? { anzahl: n.anzahl, unklar: n.unklar, ausstehend: n.ausstehend, meldung: n.meldung } : null };
   }
 
+  /**
+   * "Erledigt" -> Versand in Shopify buchen (Inhaber 2026-10-19, operations/lib/shopify-abgleich.mjs):
+   * Positionen, die gerade auf "Erledigt" gegangen sind und in Shopify noch nicht als versendet
+   * gelten, bucht derselbe Weg wie "raus" - mit Gegenprobe und Vermerk, aber ohne Mail an den
+   * Kunden (bereiteStatusVor merkt sich das als versandMail: false, auch fuers Nachholen).
+   * Gilt fuer Ware und Muster. Testbestellungen und stornierte Bestellungen bucht versandBuchen
+   * ohnehin nicht. Ist danach keine Ware mehr offen, gehen Eigenleistungen (Kettelservice) mit -
+   * sonst bliebe die Bestellung in Shopify "teilweise versendet". null = nichts zu buchen.
+   */
+  async function erledigtBuchen({ dir, auftrag, lineItemIds, benutzer, actor }) {
+    if (!auftrag || !lineItemIds?.length) return null;
+    const alle = leseAuftragsstatus(auftragsstatusPfad(dir));
+    const eintrag = id => alle[positionKey(auftrag.id, id)];
+    const fertig = id => ['gebucht', 'bereits', 'uebersprungen'].includes(eintrag(id)?.shopifyVersand?.status);
+    const ids = new Set(lineItemIds.filter(id => !fertig(id)));
+    const stufe = id => STATUS_ORDER.indexOf(eintrag(id)?.status);
+    const positionen = (auftrag.positionen || []).filter(p => p.lineItemId);
+    const wareOffen = positionen.some(p => !p.eigenleistung && (p.menge ?? 1) > 0 && stufe(p.lineItemId) < STATUS_ORDER.indexOf('raus'));
+    if (ids.size && !wareOffen) {
+      for (const p of positionen) if (p.eigenleistung && stufe(p.lineItemId) < STATUS_ORDER.indexOf('raus') && !fertig(p.lineItemId)) ids.add(p.lineItemId);
+    }
+    if (!ids.size) return null;
+    return versandBuchen({ dir, auftrag, lineItemIds: [...ids], angaben: { benachrichtigen: false }, benutzer, actor });
+  }
+
+  /**
+   * Shopify -> Control Center: einmal je neuem Bestellexport (Groesse und Aenderungszeit von
+   * orders.json). Der Dienst ist der einzige Schreiber von auftragsstatus.json - deshalb laeuft
+   * der Abgleich hier und nicht im Sync-Dienst. Zwischen Lesen und Schreiben steht kein await,
+   * ein Klick im selben Prozess kann sich nicht dazwischenschieben. Eine unlesbare Ablage wird
+   * nie ueberschrieben (leseAlle wirft); der Fehler steht im Dienstprotokoll.
+   */
+  let abgleichKennung = null;
+  let letzterAbgleich = null;
+  function shopifyAbgleichen(dir = privatDirPath || privatDir()) {
+    const ordersDatei = path.join(dir, 'bestelluebersicht', 'orders.json');
+    let st;
+    try { st = fs.statSync(ordersDatei); } catch { return letzterAbgleich; }
+    const kennung = `${dir}:${st.size}:${st.mtimeMs}:${st.ctimeMs}:${st.ino}`;
+    if (kennung === abgleichKennung) return letzterAbgleich;
+    abgleichKennung = kennung;
+    const orders = exportOrders(readJsonIfExists(ordersDatei));
+    if (!orders) return letzterAbgleich;
+    const statusDatei = auftragsstatusPfad(dir);
+    const am = now().toISOString();
+    let r;
+    try {
+      r = uebernimmAusShopify(leseAuftragsstatus(statusDatei), orders, { jetzt: now() });
+      if (r.gehoben.length || r.storniert.length || r.vermerkt.length) schreibeAuftragsstatus(statusDatei, r.positionen);
+    } catch (e) {
+      logFehler('abgleich', `Shopify-Abgleich nicht geschrieben: ${String(e?.message || e).split('\n')[0]}`);
+      letzterAbgleich = { am, fehler: String(e?.message || e).split('\n')[0], gehoben: 0, storniert: 0, vermerkt: 0 };
+      return letzterAbgleich;
+    }
+    // Protokoll je Bestellung - wer im Dashboard nachsieht, warum etwas "raus" steht, findet es dort.
+    const jeAuftrag = (liste) => {
+      const m = new Map();
+      for (const x of liste) m.set(x.orderName || x.orderId, (m.get(x.orderName || x.orderId) || 0) + 1);
+      return m;
+    };
+    for (const [name, n] of jeAuftrag(r.gehoben)) merke(null, ABGLEICH_VON, 'Aus Shopify übernommen', `${name}: ${n} Artikel → An Kunden raus (in Shopify versendet)`);
+    for (const [name, n] of jeAuftrag(r.storniert)) merke(null, ABGLEICH_VON, 'Aus Shopify übernommen', `${name}: ${n} Artikel → Erledigt (in Shopify storniert)`);
+    if (r.gehoben.length || r.storniert.length || r.vermerkt.length) {
+      audit({ actor: ABGLEICH_VON, action: 'shopify-abgleich', gehoben: r.gehoben.length, storniert: r.storniert.length, vermerkt: r.vermerkt.length });
+    }
+    letzterAbgleich = { am, fehler: null, gehoben: r.gehoben.length, storniert: r.storniert.length, vermerkt: r.vermerkt.length };
+    return letzterAbgleich;
+  }
+
+  /** Abweichungsliste "im Dashboard abgehakt, in Shopify offen" (je Bestellung), mit Artikeltexten aus dem Modell. */
+  function abweichungsListe(dir) {
+    const daten = readJsonIfExists(path.join(dir, 'bestelluebersicht', 'orders.json'));
+    const orders = exportOrders(daten);
+    if (!orders) return null;
+    const modell = ladeBestellModell(dir);
+    const auftraege = new Map([...(modell?.auftraege || []), ...(modell?.testauftraege || [])].map(a => [a.id, a]));
+    return shopifyAbweichungen(leseAuftragsstatus(auftragsstatusPfad(dir)), orders, { exportiertAm: daten.exportiertAm || null }).map(z => {
+      const a = auftraege.get(z.orderId);
+      const artikel = z.positionen.map(p => {
+        const m = (a?.positionen || []).find(x => x.lineItemId === p.lineItemId);
+        return { ...p, titel: m?.titel || null, farbe: m?.farbe && m.farbe !== '–' ? m.farbe : null };
+      });
+      return { ...z, positionen: artikel, exportiertAm: daten.exportiertAm || null };
+    });
+  }
+
+  /**
+   * "In Shopify nachbuchen" aus der Abweichungsliste: genau die Positionen dieser Bestellung,
+   * die im Dashboard raus/erledigt sind und in Shopify offen - ohne Mail an den Kunden.
+   */
+  async function shopifyNachbuchen(payload, benutzer, actor) {
+    const { orderId } = payload || {};
+    if (!orderId) throw new ApiError(400, 'orderId ist Pflicht', { missing: ['orderId'] });
+    const dir = privatDirPath || privatDir();
+    const zeile = (abweichungsListe(dir) || []).find(z => z.orderId === String(orderId));
+    if (!zeile) throw new ApiError(409, 'Diese Bestellung weicht nicht mehr ab – im Dashboard und in Shopify steht dasselbe.');
+    const auftrag = auftragFuerVersand(dir, String(orderId));
+    const shopifyErgebnis = await versandBuchen({ dir, auftrag, lineItemIds: zeile.lineItemIds, angaben: { benachrichtigen: false }, benutzer, actor, trotzVermerk: true });
+    const offen = (abweichungsListe(dir) || []).length;
+    return { ok: true, orderId: String(orderId), shopify: shopifyErgebnis, abweichungen: offen };
+  }
+
   /** Zeitleisten aller Auftraege (orderId -> { auftragsart, verlauf, naechsterSchritt, ... }). */
   function zeitleisten(dir, modell, statusAlle) {
     return zeitleistenFuerModell(modell, { statusAlle, verlaufAlle: leseVerlauf(auftragsverlaufPfad(dir)), jetzt: now() });
@@ -941,12 +1065,21 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     let anzahl = 0;
     // Positionen, die in diesem Schritt raus gehen - die bucht Shopify danach als versendet.
     let rausIds = [];
+    // Positionen, die in diesem Schritt erledigt werden - die bucht Shopify ohne Kundenmail, wenn
+    // dort noch offen (erledigtBuchen). Ein zweiter Klick auf "Erledigt" bucht nichts erneut.
+    let erledigtIds = [];
+    const vorErledigt = () => {
+      const alle = leseAktuellenStatus(statusDatei, modell);
+      return new Set(positionen.filter(p => alle[positionKey(orderId, p.lineItemId)]?.status !== 'erledigt').map(p => p.lineItemId));
+    };
     try {
       if (STATUS_ORDER.includes(schritt)) {
         const neu = schritt === 'raus' ? vorRaus() : null;
+        const offenVorher = schritt === 'erledigt' ? vorErledigt() : null;
         const ids = setzePositionen(schritt, notiz, schritt === 'raus' ? versandMailFuer(angaben, positionen) : null);
         anzahl = ids.length;
         if (neu) rausIds = ids.filter(id => neu.has(id));
+        if (offenVorher) erledigtIds = ids.filter(id => offenVorher.has(id));
       } else {
         // Verlauf und alle Positionsregeln pruefen, bevor irgendeine der beiden Dateien geschrieben wird.
         const ereignis = bereiteEreignisVor(auftragsverlaufPfad(dir), { orderId, schritt, actor, notiz: notizText, bezug, jetzt: now() });
@@ -964,7 +1097,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           }
         }
         if (ERGEBNIS_SCHRITTE.includes(schritt) && positionen.length) {
-          anzahl = setzePositionen('erledigt', `Ergebnis: ${SCHRITT_LABEL.muster[schritt]}${notizText ? ` – ${notizText}` : ''}`).length;
+          const offenVorher = vorErledigt();
+          const ids = setzePositionen('erledigt', `Ergebnis: ${SCHRITT_LABEL.muster[schritt]}${notizText ? ` – ${notizText}` : ''}`);
+          anzahl = ids.length;
+          erledigtIds = ids.filter(id => offenVorher.has(id));
         }
         schreibeVerlauf(auftragsverlaufPfad(dir), ereignis.auftraege);
       }
@@ -977,7 +1113,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     audit({ actor, action: 'auftragsschritt', orderId, schritt, positionen: anzahl });
     merke(benutzer, actor, 'Auftragsschritt', `${auftrag.name}: ${schritt}`);
     // Erst jetzt nach Shopify: der lokale Schritt steht, egal wie die Buchung ausgeht.
-    const shopifyErgebnis = rausIds.length ? await versandBuchen({ dir, auftrag, lineItemIds: rausIds, angaben, benutzer, actor }) : null;
+    const shopifyErgebnis = rausIds.length ? await versandBuchen({ dir, auftrag, lineItemIds: rausIds, angaben, benutzer, actor })
+      : await erledigtBuchen({ dir, auftrag, lineItemIds: erledigtIds, benutzer, actor });
     // Muster nicht verfuegbar: die Farben im Shop sperren - nach dem lokalen Schritt, der gilt immer.
     const sperre = sperrPositionen.length ? await musterSperren({ dir, auftrag, positionen: sperrPositionen, benutzer, actor }) : null;
     const statusNachher = leseAktuellenStatus(statusDatei, modell);
@@ -1411,6 +1548,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     /** Bestelluebersicht: offene Kundenbestellungen, gruppiert je Lieferant, plus Muster. */
     einkaufBestellungen() {
       const dir = privatDirPath || privatDir();
+      shopifyAbgleichen(dir);
       const file = path.join(dir, 'bestelluebersicht', 'orders.json');
       const daten = readJsonIfExists(file);
       if (!daten) return { verfuegbar: false, quelle: file, hinweis: 'orders.json fehlt - siehe operations/lib/bestelluebersicht.mjs bzw. den Export-Lauf dafuer.' };
@@ -1419,7 +1557,12 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // ladeExport bringt beide Formen auf {orders, quellvarianten}.
       try { modell = bereiteBestellModell(daten, dir, now()); }
       catch (e) { return { verfuegbar: false, quelle: file, hinweis: `orders.json konnte nicht ausgewertet werden: ${e.message}` }; }
-      return { verfuegbar: true, quelle: file, exportiertAm: daten.exportiertAm || null, ...modell };
+      // "Kunde informiert" je Auftrag (Einkauf "Je Auftrag") - aus dem Auftragsverlauf, nur lesend.
+      const verlauf = leseVerlauf(auftragsverlaufPfad(dir));
+      const kundeInformiert = {};
+      for (const [id, v] of Object.entries(verlauf)) { const k = kundeInformiertAus(v.ereignisse); if (k) kundeInformiert[id] = k; }
+      const kundentermine = readJsonIfExists(path.join(dir, 'bestelluebersicht', 'kundentermine.json')) || {};
+      return { verfuegbar: true, quelle: file, exportiertAm: daten.exportiertAm || null, ...modell, kundeInformiert, kundentermine };
     },
 
     /** Kundensuche: Name, E-Mail, Telefon, Bestellnummer, Strasse/Ort/PLZ - waehrend des Tippens. */
@@ -1458,6 +1601,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     /** Kunden-Detailansicht: Kontakt, Anschriften, alle Bestellungen mit Positionen. */
     kundenDetail({ key = '' } = {}) {
       const dir = privatDirPath || privatDir();
+      shopifyAbgleichen(dir);
       const modell = ladeBestellModell(dir);
       if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
       const statusAlle = leseAktuellenStatus(auftragsstatusPfad(dir), modell);
@@ -1498,6 +1642,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     /** Vollstaendige Bestelluebersicht (eine Zeile je Bestellung) fuer die Tabellenansicht - Sortierung/Filter/Suche laufen im Browser, das lokale Datenvolumen ist klein. */
     kundenBestellungen() {
       const dir = privatDirPath || privatDir();
+      shopifyAbgleichen(dir);
       const modell = ladeBestellModell(dir);
       if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
       const statusAlle = leseAktuellenStatus(auftragsstatusPfad(dir), modell);
@@ -1506,6 +1651,58 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       let katalog = [];
       try { katalog = this._lexikonProdukte(); } catch { /* Optionale Kaufquelle unlesbar: keine Links, Bestellliste bleibt nutzbar. */ }
       return { verfuegbar: true, zeilen: bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) })) };
+    },
+
+    /** Rein intern und lesend: weder Shopify-Abgleich noch Kundendaten im Etikett. */
+    kundenMusteretiketten(orderId) {
+      if (typeof orderId !== 'string' || !orderId.trim() || orderId.length > 200) throw new ApiError(400, 'Bestellkennung fehlt.');
+      const dir = privatDirPath || privatDir();
+      const modell = ladeBestellModell(dir);
+      if (!modell) throw new ApiError(503, 'Die Bestelldaten fehlen oder sind nicht lesbar. Bitte die Daten aktualisieren.');
+      const auftrag = [...(modell.auftraege || []), ...(modell.testauftraege || [])].find(a => a.id === orderId);
+      if (!auftrag) throw new ApiError(404, 'Bestellung nicht in den aktuellen Bestelldaten gefunden.');
+      const status = leseAktuellenStatus(auftragsstatusPfad(dir), modell);
+      const orderName = String(auftrag.name || orderId);
+      let druckliste;
+      try { druckliste = leseMusterDruckliste({ privatDir: dir }); }
+      catch (e) { if (e instanceof MusterDrucklisteFehler) throw new ApiError(e.status, e.message); throw e; }
+      const produkte = new Map(this._lexikonProdukte().map(p => [p.handle, p]));
+      const zeilen = musteretikettenFuerAuftrag(auftrag, produkte).map(z => {
+        const quelle = { art: 'musterbestellung', orderId, orderName, lineItemId: z.lineItemId, bestellmenge: z.bestellmenge };
+        const alt = druckliste.eintraege.find(e => e.quelle?.orderId === orderId && e.quelle.lineItemId === z.lineItemId);
+        const schonRaus = ['raus', 'erledigt'].includes(status[positionKey(orderId, z.lineItemId)]?.status);
+        const vormerkstatus = !alt ? 'nicht_vorgemerkt' : gleicheBestellungsVormerkung(alt, { quelle, etikett: z.etikett }) ? alt.status : 'geaendert';
+        return { ...z, anzahl: schonRaus ? 0 : z.anzahl, vormerkstatus,
+          ...(vormerkstatus === 'geaendert' ? { hinweis: 'Bestellung oder Produktdaten wurden seit dem Vormerken geändert. Bitte die Druckliste prüfen.' }
+            : schonRaus ? { hinweis: 'Dieses Muster ist bereits an den Kunden raus.' } : {}) };
+      });
+      const gesperrt = auftrag.storniert ? 'Diese Bestellung ist storniert. Keine neuen Aufkleber vormerken.'
+        : String(auftrag.erfuellt).toUpperCase() === 'FULFILLED' || !zeilen.some(z => z.anzahl !== 0)
+          ? 'Für diese Bestellung sind keine offenen Muster mehr vorzubereiten.' : null;
+      return { verfuegbar: true, intern: true, orderId, orderName, gesperrt, zeilen };
+    },
+
+    async kundenMusteretikettenVormerken(payload = {}, benutzer = null) {
+      if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Musteraufkleber nur ansehen.');
+      if (!payload || typeof payload !== 'object' || Array.isArray(payload)
+        || typeof payload.vorgangId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload.vorgangId)) throw new ApiError(400, 'Gültige Vorgangskennung fehlt.');
+      const actor = benutzer?.name || await currentUser();
+      if (!actor) throw new ApiError(403, 'Bitte anmelden – wer vormerkt, wird festgehalten.');
+      const plan = this.kundenMusteretiketten(payload.orderId);
+      if (plan.gesperrt) throw new ApiError(409, plan.gesperrt);
+      const aktiv = plan.zeilen.filter(z => z.anzahl !== 0);
+      if (aktiv.some(z => z.fehlt.length || z.vormerkstatus === 'geaendert')) throw new ApiError(409, 'Musterzuordnung oder Drucklistenstand muss zuerst geprüft werden. Es wurde nichts vorgemerkt.');
+      const eintraege = aktiv.map(z => {
+        // Stabile ID pro Quellposition; gleiche SKU in einer zweiten Position bleibt getrennt.
+        const h = createHash('sha256').update(JSON.stringify(['musteretikett-v1', plan.orderId, z.lineItemId])).digest('hex');
+        const id = `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-a${h.slice(17, 20)}-${h.slice(20, 32)}`;
+        return { id, produktHandle: z.produktHandle, produktTitel: z.produktTitel, bezeichnung: z.bezeichnung, etikett: z.etikett, anzahl: z.anzahl,
+          quelle: { art: 'musterbestellung', orderId: plan.orderId, orderName: plan.orderName, lineItemId: z.lineItemId, bestellmenge: z.bestellmenge } };
+      });
+      let ergebnis;
+      try { ergebnis = aendereMusterDruckliste({ privatDir: privatDirPath || privatDir(), aktion: 'bestellung_hinzufuegen', vorgangId: payload.vorgangId, eintraege, actor, now: now() }); }
+      catch (e) { if (e instanceof MusterDrucklisteFehler) throw new ApiError(e.status, e.message); throw e; }
+      return { ...this.kundenMusteretiketten(plan.orderId), vormerkung: { neu: ergebnis.neu, bereits: ergebnis.bereits } };
     },
 
     /**
@@ -1784,17 +1981,25 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const dir = privatDirPath || privatDir();
       const file = auftragsstatusPfad(dir);
       const modell = ladeBestellModell(dir);
-      const positionen = [...(modell?.auftraege || []), ...(modell?.testauftraege || [])].find(a => a.id === orderId)?.positionen || [];
+      const auftrag = [...(modell?.auftraege || []), ...(modell?.testauftraege || [])].find(a => a.id === orderId) || null;
+      const positionen = auftrag?.positionen || [];
+      const ids = [...new Set(lineItemIds.map(String))];
+      // Was vorher noch nicht erledigt war, wird gleich in Shopify gebucht (ohne Kundenmail).
+      const vorher = leseAuftragsstatus(file);
+      const neuErledigt = ids.filter(id => vorher[positionKey(orderId, id)]?.status !== 'erledigt');
       let eintraege;
       try {
-        eintraege = setzeStatusPositionen(file, [...new Set(lineItemIds)].map(lineItemId => { const p = positionen.find(p => p.lineItemId === lineItemId); return { orderId, lineItemId, status: 'erledigt', actor, bestellmenge: p?.bestellSoll || p?.bestellmenge || null, notiz: notiz || 'Kunde fertig (Sammelschritt)', jetzt: now() }; }));
+        eintraege = setzeStatusPositionen(file, ids.map(lineItemId => { const p = positionen.find(p => p.lineItemId === lineItemId); return { orderId, lineItemId, status: 'erledigt', actor, bestellmenge: p?.bestellSoll || p?.bestellmenge || null, notiz: notiz || 'Kunde fertig (Sammelschritt)', jetzt: now() }; }));
       } catch (e) {
         if (e instanceof AuftragsstatusFehler) throw new ApiError(e.status, e.message);
         throw e;
       }
       audit({ actor, action: 'auftragsstatus-kunde-fertig', orderId, anzahl: eintraege.length });
-      merke(benutzer, actor, 'Kunde fertig', `${orderId}: ${eintraege.length} Artikel`);
-      return { ok: true, anzahl: eintraege.length, eintraege };
+      merke(benutzer, actor, 'Kunde fertig', `${auftrag?.name || orderId}: ${eintraege.length} Artikel`);
+      const shopifyErgebnis = await erledigtBuchen({ dir, auftrag: auftrag || auftragFuerVersand(dir, String(orderId)), lineItemIds: neuErledigt, benutzer, actor });
+      const stand = leseAuftragsstatus(file);
+      // Eintraege nach der Buchung (mit Versandvermerk), in derselben Reihenfolge wie bisher.
+      return { ok: true, anzahl: eintraege.length, eintraege: eintraege.map(e => stand[positionKey(e.orderId, e.lineItemId)] || e), ...(shopifyErgebnis ? { shopify: shopifyErgebnis } : {}) };
     },
 
     /** Rueckruf-/Beratungs-Arbeitsliste, aelteste Bestellung zuerst, mit lokalem Bearbeitungsstatus. */
@@ -1870,6 +2075,76 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         if (e instanceof ServiceanfrageFehler) throw new ApiError(400, e.message);
         throw e;
       }
+    },
+
+    /**
+     * Lieferantenbelege aus dem Postfach (AB, Lieferschein, Avis, Storno): je Beleg Art,
+     * Zuordnung zur Bestellung (sicher / Vorschlag / keine) und der Abgleich je Auftrag gegen
+     * Auftragsfluss und Shopify. Gelesen wird nur die private Ablage - das Postfach liest der
+     * geplante Claude-Lauf (operations/scripts/lieferbelege.mjs). Siehe ARCHITEKTUR §25.
+     */
+    einkaufBelege() {
+      const dir = privatDirPath || privatDir();
+      let ablage;
+      try { ablage = leseBelege(lieferbelegePfad(dir)); }
+      catch (e) { if (e instanceof LieferbelegFehler) return { verfuegbar: false, fehler: true, hinweis: e.message }; throw e; }
+      const k = this._lieferantenKontext();
+      // Ohne Bestellungen ist weder "kein Shop-Auftrag" noch "nichts zu pruefen" belegt.
+      if (!k.modell || !k.exportGueltig) return { verfuegbar: false, fehler: true, hinweis: k.hinweis || 'orders.json hat kein gültiges Bestellformat – bitte die Daten aktualisieren.' };
+      const zeilen = k.modell ? bestellliste(k.modell, { statusAlle: k.statusAlle }) : [];
+      const kandidaten = kandidatenAus(zeilen, k.statusAlle);
+      // Lieferant: aus der Absenderdomain; ohne Treffer der, den ein Mensch beim Zuordnen gewaehlt hat.
+      const mitLieferant = Object.values(ablage.belege).map(b => {
+        const domain = domainVon(b.von);
+        return { ...b, domain, lieferant: lieferantZurDomain(domain, { stammdaten: k.stammdaten, absender: ablage.absender }) || b.entscheidung?.lieferant || null };
+      });
+      const belege = ordneAlleZu(mitLieferant, kandidaten, { absender: ablage.absender })
+        .sort((a, b) => String(b.datum).localeCompare(String(a.datum)));
+      const { zeilen: abgleichZeilen, abweichungen } = belegAbgleich({ belege, kandidaten, jetzt: now() });
+      // Name und Nummer nur der Bestellungen, die eine Zeile, ein Beleg oder ein Vorschlag nennt.
+      const genannt = new Set([...abgleichZeilen.map(z => z.orderId), ...belege.flatMap(b => b.zuordnung.orderIds)]);
+      const auftraege = Object.fromEntries(kandidaten.filter(c => genannt.has(c.orderId)).map(c => [c.orderId, { orderName: c.orderName, kundenname: c.kundenname, datum: c.datum }]));
+      // Fuer "Zu Bestellung zuordnen": Shop-Bestellungen der letzten 120 Tage mit Lieferanten-Positionen.
+      const grenze = now().getTime() - 120 * 86400000;
+      const auswahl = kandidaten.filter(c => c.lieferanten.length && Date.parse(c.datum) >= grenze)
+        .sort((a, b) => String(b.datum).localeCompare(String(a.datum)))
+        .map(c => ({ orderId: c.orderId, orderName: c.orderName, kundenname: c.kundenname, lieferanten: c.lieferanten }));
+      const lieferanten = Object.fromEntries(Object.entries(k.stammdaten.lieferanten || {}).map(([id, l]) => [id, l.name || id]));
+      return {
+        verfuegbar: true, hinweis: k.hinweis,
+        letzterLauf: ablage.laeufe.at(-1) || null,
+        belege, zeilen: abgleichZeilen, abweichungen, auftraege, auswahl, lieferanten,
+        absender: ablage.absender,
+      };
+    },
+
+    /** Entscheidung zu einem Beleg oder Absender. Person aus der Sitzung; Bestellungen gegen das Modell geprueft. */
+    einkaufBelegSetzen(payload = {}, benutzer = null) {
+      const actor = benutzer?.name || benutzer?.kuerzel || 'Inhaber';
+      const dir = privatDirPath || privatDir();
+      const p = payload && typeof payload === 'object' ? payload : {};
+      let pruefung = {};
+      if (p.aktion === 'zuordnen') {
+        const k = this._lieferantenKontext();
+        const zeilen = k.modell ? bestellliste(k.modell, { statusAlle: k.statusAlle }) : [];
+        const jeAuftrag = new Map(kandidatenAus(zeilen, k.statusAlle).map(c => [c.orderId, c.lieferanten]));
+        let absender = {};
+        try { absender = leseBelege(lieferbelegePfad(dir)).absender; } catch { /* entscheide() meldet die kaputte Ablage */ }
+        pruefung = {
+          gueltigeOrderIds: new Set(zeilen.map(z => z.orderId)),
+          gueltigeLieferanten: new Set([...Object.keys(k.stammdaten.lieferanten || {}), ...[...jeAuftrag.values()].flat()]),
+          lieferantenJeAuftrag: jeAuftrag,
+          absenderLieferant: b => lieferantZurDomain(b.domain, { stammdaten: k.stammdaten, absender }),
+        };
+      }
+      try {
+        const e = belegEntscheiden(lieferbelegePfad(dir), p, { person: actor, jetzt: now(), ...pruefung });
+        merke(benutzer, actor, 'Lieferbeleg', `${p.aktion}${e.domain ? ` ${e.domain}` : ''}`);
+      } catch (e) {
+        if (e instanceof LieferbelegFehler) throw new ApiError(400, e.message);
+        throw e;
+      }
+      return { ok: true, ...this.einkaufBelege() };
     },
 
     /**
@@ -1959,6 +2234,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       }
       return {
         modell, hinweis, stammdaten,
+        // Der bisherige Loader normalisiert fehlende GraphQL-nodes zu []. Fuer Belege
+        // darf eine beschaedigte Exportstruktur keine leere Arbeitsliste bestaetigen.
+        exportGueltig: exportOrders(daten) !== null && !(daten?.data?.orders && !Array.isArray(daten.data.orders.nodes)),
         statusAlle: leseAktuellenStatus(auftragsstatusPfad(dir), modell),
         stammdatenDatei: {
           vorhanden: stammdaten.vorhanden,
@@ -2009,9 +2287,34 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     /** Auftragsfluss-Status je Position, rein lokal (nie im Repository). */
     einkaufAuftragsstatus() {
       const dir = privatDirPath || privatDir();
+      shopifyAbgleichen(dir);
       const file = auftragsstatusPfad(dir);
       const positionen = leseAktuellenStatus(file);
       return { verfuegbar: true, quelle: file, positionen };
+    },
+
+    /**
+     * Abgleich mit Shopify (operations/lib/shopify-abgleich.mjs): Bestellungen, die im Dashboard
+     * abgehakt sind (raus/erledigt), in Shopify aber offen - je Bestellung eine Zeile, dazu der
+     * letzte Lauf Shopify -> Dashboard. Lesend fuer alle Rollen; nachgebucht wird ueber
+     * POST /api/einkauf/auftragsstatus (aktion "shopifyNachbuchen", Schreibpfad).
+     */
+    einkaufShopifyAbgleich() {
+      const dir = privatDirPath || privatDir();
+      const quelle = path.join(dir, 'bestelluebersicht', 'orders.json');
+      const lauf = shopifyAbgleichen(dir);
+      let liste;
+      try { liste = abweichungsListe(dir); } catch (e) {
+        // Beschaedigte Ablage: sichtbar als Stoerung, nie als "alles gleich".
+        return { verfuegbar: true, fehler: String(e?.message || e).split('\n')[0], abweichungen: [], letzterAbgleich: lauf || null };
+      }
+      if (!liste) return { verfuegbar: false, quelle, hinweis: leseFehler(quelle) || 'orders.json fehlt.' };
+      return { verfuegbar: true, fehler: null, abweichungen: liste, letzterAbgleich: lauf || null };
+    },
+
+    /** Fuer den Zeitgeber im Dienst: Shopify -> Dashboard nach jedem neuen Export, auch ohne offene Seite. */
+    shopifyAbgleich() {
+      return shopifyAbgleichen();
     },
 
     /** Setzt den Status einer Bestellposition (Bestellt/Geliefert/Raus/Erledigt). */
@@ -2022,6 +2325,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Anmeldung (Notzugang) bleibt der bisherige gh-Login die handelnde Person.
       const actor = benutzer?.name || await currentUser();
       if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
+      // Erst den neuesten Shopify-Stand uebernehmen, dann die Aenderung darauf anwenden.
+      shopifyAbgleichen();
       // Bis zu den lokalen Writes kein await: Vorpruefung und Uebernahmesperre werden
       // im selben JS-Schritt frisch gelesen; asynchron bleibt nur die bestehende Versandbuchung.
       const { orderId, lineItemId, status, lieferantBestellnummer, notiz, aktion } = payload || {};
@@ -2057,6 +2362,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Additiv - ohne `aktion` verhaelt sich der Endpunkt exakt wie bisher.
       if (aktion === 'schritt') return auftragsSchrittSetzen(payload, benutzer, actor);
       if (aktion === 'versandNachholen') return versandNachholen(payload, benutzer, actor);
+      if (aktion === 'shopifyNachbuchen') return shopifyNachbuchen(payload, benutzer, actor);
       if (aktion === 'zurueckAufOffen') return zurueckAufOffen(payload, benutzer, actor);
       if (aktion === 'musterHerkunft') return musterHerkunftSetzen(payload, benutzer, actor);
       if (!orderId || !lineItemId) throw new ApiError(400, 'orderId und lineItemId sind Pflicht', { missing: ['orderId', 'lineItemId'] });
@@ -2105,6 +2411,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         eintrag = vermerkeShopifyVersand(file, { orderId, lineItemId, vermerk: { status: 'ausstehend', grund: 'ohne-dialog', am: now().toISOString(),
           meldung: 'Noch nicht in Shopify gebucht – „In Shopify buchen“ bucht alle wartenden Artikel dieser Bestellung als ein Paket.' } }) || eintrag;
         return { ok: true, eintrag, shopify: { status: 'ausstehend', meldung: eintrag.shopifyVersand?.meldung || null, gebucht: 0, bereits: 0, nichtGebucht: 1 } };
+      }
+      // "Erledigt" bucht in Shopify, wenn dort noch offen - ohne Mail, deshalb auch je Artikel unbedenklich.
+      if (status === 'erledigt' && vorher?.status !== 'erledigt') {
+        const shopifyErgebnis = await erledigtBuchen({ dir, auftrag: auftragFuerVersand(dir, String(orderId)), lineItemIds: [lineItemId], benutzer, actor });
+        if (shopifyErgebnis) return { ok: true, eintrag: leseAuftragsstatus(file)[positionKey(orderId, lineItemId)] || eintrag, shopify: shopifyErgebnis };
       }
       return { ok: true, eintrag };
     },
@@ -2344,6 +2655,73 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * Paginierung laufen serverseitig, damit die potenziell grosse Datei nie
      * komplett an den Browser geht.
      */
+    lexikonDruckliste() {
+      try { return leseMusterDruckliste({ privatDir: privatDirPath || privatDir() }); }
+      catch (e) {
+        if (e instanceof MusterDrucklisteFehler) throw new ApiError(e.status, e.message);
+        throw e;
+      }
+    },
+
+    /** Gemeinsame Vormerkung: Etikettdaten kommen immer aus dem privaten Lexikon. */
+    async lexikonDrucklisteSetzen(payload = {}, benutzer = null) {
+      if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Rolle „lesen“ darf die Druckliste nicht ändern.');
+      if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new ApiError(400, 'Drucklisten-Aktion fehlt.');
+      const actor = benutzer?.name || await currentUser();
+      if (!actor) throw new ApiError(403, 'Bitte anmelden – wer die Druckliste ändert, wird festgehalten.');
+      const { aktion, vorgangId, eintraege, druckauftragId, entfernenIds } = payload;
+      let eintrag;
+      if (aktion === 'vormerken') {
+        const produkte = this._lexikonProdukte();
+        const je = new Map(produkte.map(p => [p.handle, p]));
+        const produkt = je.get(payload.handle);
+        if (!produkt) throw new ApiError(404, 'Produkt nicht im Lexikon gefunden. Bitte neu suchen.');
+        const auswahl = etikettenAusLexikon(produkt, je).find(e => e.key === payload.key);
+        if (!auswahl) throw new ApiError(409, 'Die Ausführung hat sich geändert. Produkt bitte neu öffnen.');
+        if (auswahl.etikett.fehlt.length) throw new ApiError(400, `Etikett unvollständig: ${auswahl.etikett.fehlt.join(', ')}. Bitte Produktdaten prüfen.`);
+        eintrag = { id: vorgangId, produktHandle: produkt.handle, produktTitel: produkt.titel, bezeichnung: auswahl.bezeichnung, etikett: auswahl.etikett, anzahl: payload.anzahl };
+      } else if (!['reservieren', 'freigeben', 'erledigen', 'entfernen', 'auftrag_entfernen'].includes(aktion)) {
+        throw new ApiError(400, 'Unbekannte Drucklisten-Aktion.');
+      }
+      if (aktion === 'reservieren' && Array.isArray(eintraege)) {
+        // Dieselbe UUID-Normalisierung wie die Ablage, damit kein gueltiger Verweis die Quellenpruefung umgeht.
+        const gewaehlt = new Set(eintraege.map(e => typeof e?.id === 'string' ? e.id.toLowerCase() : null));
+        const plaene = new Map();
+        for (const e of this.lexikonDruckliste().eintraege.filter(e => gewaehlt.has(e.id) && e.quelle)) {
+          const id = e.quelle.orderId;
+          if (!plaene.has(id)) plaene.set(id, this.kundenMusteretiketten(id));
+          const plan = plaene.get(id), zeile = plan.zeilen.find(z => z.lineItemId === e.quelle.lineItemId);
+          if (plan.gesperrt || !zeile || zeile.anzahl === 0 || zeile.fehlt.length || zeile.vormerkstatus === 'geaendert') {
+            throw new ApiError(409, 'Eine zugehörige Musterbestellung ist geändert, versendet oder storniert. Bitte die Bestellung und Druckliste vor dem Druck prüfen.');
+          }
+        }
+      }
+      try {
+        return aendereMusterDruckliste({ privatDir: privatDirPath || privatDir(), aktion: aktion === 'vormerken' ? 'hinzufuegen' : aktion, vorgangId, eintraege, druckauftragId, entfernenIds, eintrag, actor, now: now() });
+      } catch (e) {
+        if (e instanceof MusterDrucklisteFehler) throw new ApiError(e.status, e.message);
+        throw e;
+      }
+    },
+
+    /** Aktueller Katalogcheck, ohne Ablage, Druckliste oder Shopify zu veraendern. */
+    lexikonEtikettenStatus({ q = '', status = 'pruefen', page = 1 } = {}) {
+      const file = path.join(privatDirPath || privatDir(), 'lexikon', 'produkte.json');
+      const daten = readJsonGecacht(file);
+      if (!daten || !Array.isArray(daten.produkte)) return { verfuegbar: false, fehler: true,
+        hinweis: leseFehler(file) || 'Der Lexikonbestand fehlt. Bitte die Produktdaten aktualisieren.' };
+      const stand = musterEtikettenStatus(daten);
+      const suchtext = String(q || '').trim().toLocaleLowerCase('de');
+      const filter = ['alle', 'bereit', 'pruefen', 'datenstand'].includes(status) ? status : 'pruefen';
+      const zeilen = stand.zeilen.filter(z => (filter === 'alle' || z.status === filter || (filter === 'pruefen' && z.status === 'datenstand'))
+        && (!suchtext || [z.titel, z.handle, ...z.etiketten.map(e => e.bezeichnung)].join(' ').toLocaleLowerCase('de').includes(suchtext)));
+      const pageSize = 20, pages = Math.max(1, Math.ceil(zeilen.length / pageSize));
+      const seite = Math.min(pages, Math.max(1, Math.floor(Number(page) || 1)));
+      return { verfuegbar: true, intern: true, erstellt: stand.erstellt, zaehler: stand.zaehler,
+        vollstaendig: stand.vollstaendig, treffer: { count: zeilen.length, page: seite, pages,
+          items: zeilen.slice((seite - 1) * pageSize, seite * pageSize) } };
+    },
+
     lexikonListe({ q = '', page = 1, pageSize = 20 } = {}) {
       const dir = privatDirPath || privatDir();
       const file = path.join(dir, 'lexikon', 'produkte.json');
@@ -3104,10 +3482,15 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           neuheiten: aus.neuheiten ? { neu: aus.neuheiten.neu || [], ausfall: aus.neuheiten.ausfall || null } : null,
         }
         : null;
+      // Ausschreibungen Bodenbelag (operations/scripts/ausschreibungen-pruefen.mjs), dieselbe To-do-Quelle.
+      const aus2 = readJsonIfExists(path.join(dir, 'ausschreibungen', 'status.json'));
+      const ausschreibungen = aus2?.geprueftAm
+        ? { geprueftAm: aus2.geprueftAm, treffer: aus2.treffer || [], neu: aus2.neu || [], ausfaelle: aus2.ausfaelle || [] }
+        : null;
       if (!daten || !daten.geprueftAm) {
-        return { verfuegbar: false, quelle: file, hinweis: 'Shop-Wache noch nie gelaufen.', befehl: 'npm run shop:wache', tailscale: ts, auslauf };
+        return { verfuegbar: false, quelle: file, hinweis: 'Shop-Wache noch nie gelaufen.', befehl: 'npm run shop:wache', tailscale: ts, auslauf, ausschreibungen };
       }
-      return { verfuegbar: true, quelle: file, ...daten, tailscale: ts, auslauf };
+      return { verfuegbar: true, quelle: file, ...daten, tailscale: ts, auslauf, ausschreibungen };
     },
 
     /**
@@ -3283,6 +3666,112 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         return { verfuegbar: false, quelle: file, hinweis: 'Noch keine Bestandsdaten exportiert.', befehl: 'npm run daten:aktualisieren -- --nur bestand' };
       }
       return { verfuegbar: true, quelle: file, ...daten };
+    },
+
+    /**
+     * Akquise Verlegeauftraege (#1447). Firmenliste (CSV) und Anschreiben liegen privat im
+     * Gedaechtnis-Ordner (TP_AKQUISE_DIR), der Bearbeitungsstand unter
+     * $TP_PRIVAT_DIR/akquise/status.json. Nichts davon gehoert ins Repository.
+     */
+    _akquiseQuelle() {
+      const dir = env.TP_AKQUISE_DIR || path.join(os.homedir(), '.claude', 'projects', '-Users-tristan-teppich-paradies-shopify-ai', 'memory', 'Akquise');
+      const csv = env.TP_AKQUISE_CSV || path.join(dir, 'wohnungsgenossenschaften_umkreis_2026_10_19.csv');
+      const vorlage = env.TP_AKQUISE_VORLAGE || path.join(dir, 'anschreiben_wohnungsunternehmen_2026_10_20.md');
+      return { csv, vorlage, status: path.join(privatDirPath || privatDir(), 'akquise', 'status.json') };
+    },
+    /** Stand lesen: fehlt die Datei, ist er leer; kaputt ist ein Fehler (sonst ueberschreibt der naechste Klick alles). */
+    _akquiseStand(file) {
+      let roh;
+      try { roh = fs.readFileSync(file, 'utf8'); } catch (e) {
+        if (e?.code === 'ENOENT') return {};
+        throw new ApiError(500, `Akquise-Stand nicht lesbar: ${e?.code || e?.message}`);
+      }
+      try { return JSON.parse(roh).firmen || {}; } catch { throw new ApiError(500, 'Akquise-Stand ist beschädigt (kein gültiges JSON) – bitte prüfen, nichts überschrieben.'); }
+    },
+    async akquiseListe() {
+      const q = this._akquiseQuelle();
+      let csv;
+      try { csv = fs.readFileSync(q.csv, 'utf8'); } catch (e) {
+        if (e?.code === 'ENOENT') return { verfuegbar: false, hinweis: 'Die Firmenliste fehlt auf diesem Rechner.', befehl: 'Pfad per TP_AKQUISE_CSV setzen' };
+        throw e;
+      }
+      const stand = this._akquiseStand(q.status);
+      let vorlage = '';
+      try { vorlage = vorlageAusMarkdown(fs.readFileSync(q.vorlage, 'utf8')); } catch (e) { if (e?.code !== 'ENOENT') throw e; }
+      const firmen = leseAkquiseCsv(csv).map(f => ({
+        id: f.id, name: f.name, ort: f.ort, typ: f.typ, wohnungen: f.wohnungen, website: f.website, kontakt: f.kontakt || '',
+        status: 'neu', letzteAktion: '', wiedervorlage: '', notiz: '', ...stand[f.id],
+      }));
+      const aus = readJsonIfExists(path.join(privatDirPath || privatDir(), 'ausschreibungen', 'status.json'));
+      const akqDir = path.dirname(q.status);
+      return {
+        verfuegbar: true, firmen, vorlage,
+        // Richtpreise und Referenzen liegen privat neben dem Stand; fehlen sie, bleibt die Zeile weg.
+        richtpreise: this._privatJson(path.join(akqDir, 'richtpreise.json'), null),
+        referenzen: this._privatJson(path.join(akqDir, 'referenzen.json'), { referenzen: [] }).referenzen || [],
+        ausschreibungen: aus?.geprueftAm ? { geprueftAm: aus.geprueftAm, treffer: aus.treffer || [], neu: aus.neu || [] } : null,
+      };
+    },
+    /** Private JSON-Ablage lesen: nur eine FEHLENDE Datei gilt als leer, kaputtes JSON ist ein Fehler. */
+    _privatJson(file, leer) {
+      let roh;
+      try { roh = fs.readFileSync(file, 'utf8'); } catch (e) {
+        if (e?.code === 'ENOENT') return leer;
+        throw new ApiError(500, `${path.basename(file)} nicht lesbar: ${e?.code || e?.message}`);
+      }
+      try { return JSON.parse(roh); } catch { throw new ApiError(500, `${path.basename(file)} ist beschädigt (kein gültiges JSON) – bitte prüfen, nichts überschrieben.`); }
+    },
+    _privatSchreiben(file, daten) {
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      const tmp = `${file}.${process.pid}.tmp`;
+      fs.writeFileSync(tmp, JSON.stringify(daten, null, 2), { mode: 0o600 });
+      fs.renameSync(tmp, file);
+    },
+    /** Einkauf "Erledigt" -> "Als Referenz merken": Notiz je Auftrag, privat unter akquise/referenzen.json. */
+    async akquiseReferenz(payload = {}, benutzer = null) {
+      let r;
+      try { r = pruefeReferenz(payload); } catch (e) { throw new ApiError(400, e.message); }
+      const file = path.join(path.dirname(this._akquiseQuelle().status), 'referenzen.json');
+      const d = this._privatJson(file, { referenzen: [] });
+      const liste = (d.referenzen || []).filter(x => x.orderId !== r.orderId);
+      const eintrag = { ...r, am: now().toISOString().slice(0, 10), von: benutzer?.name || benutzer?.kuerzel || '' };
+      liste.unshift(eintrag);
+      this._privatSchreiben(file, { referenzen: liste });
+      return { ok: true, referenz: eintrag };
+    },
+    /** Termin beim Kunden (Lieferung/Verlegung) je Auftrag - leer loescht ihn. */
+    async einkaufKundentermin(payload = {}, benutzer = null) {
+      const orderId = String(payload.orderId || '').trim();
+      const termin = String(payload.termin || '').trim();
+      if (!orderId || orderId.length > 100) throw new ApiError(400, 'Auftrag fehlt.');
+      if (termin && (!/^\d{4}-\d{2}-\d{2}$/.test(termin) || !Number.isFinite(Date.parse(termin)))) throw new ApiError(400, 'Termin bitte als Datum.');
+      const file = path.join(privatDirPath || privatDir(), 'bestelluebersicht', 'kundentermine.json');
+      const d = this._privatJson(file, {});
+      if (termin) d[orderId] = { termin, von: benutzer?.name || benutzer?.kuerzel || '', am: now().toISOString() };
+      else delete d[orderId];
+      this._privatSchreiben(file, d);
+      return { ok: true, orderId, termin: termin || null };
+    },
+    async akquiseAendern(payload = {}, benutzer = null) {
+      const q = this._akquiseQuelle();
+      const id = akquiseId(payload.id);
+      if (!id || id !== payload.id) throw new ApiError(400, 'Unbekannte Firma.');
+      let csv;
+      try { csv = fs.readFileSync(q.csv, 'utf8'); } catch { throw new ApiError(409, 'Die Firmenliste fehlt auf diesem Rechner.'); }
+      if (!leseAkquiseCsv(csv).some(f => f.id === id)) throw new ApiError(400, 'Unbekannte Firma.');
+      const stand = this._akquiseStand(q.status);
+      const heute = now().toISOString().slice(0, 10);
+      let neu;
+      try { neu = wendeAenderungAn(stand[id] || { status: 'neu' }, payload, heute); } catch (e) { throw new ApiError(400, e.message); }
+      neu.von = benutzer?.kuerzel || benutzer?.name || neu.von || '';
+      // Wer angeschrieben hat, bleibt stehen - die Fortschrittszeile nennt die Namen.
+      if (neu.status === 'angeschrieben' && (stand[id]?.status || 'neu') === 'neu') neu.angeschriebenVon = benutzer?.name || benutzer?.kuerzel || '';
+      stand[id] = neu;
+      fs.mkdirSync(path.dirname(q.status), { recursive: true });
+      const tmp = `${q.status}.${process.pid}.tmp`;
+      fs.writeFileSync(tmp, JSON.stringify({ firmen: stand }, null, 2), { mode: 0o600 });
+      fs.renameSync(tmp, q.status);
+      return { ok: true, firma: { id, ...neu } };
     },
 
     /**

@@ -193,11 +193,6 @@
               },
               "blocks": {}
             },
-            "options_price_calculator_product_calculator_z3CEfy": {
-              "type": "shopify://apps/options-price-calculator/blocks/product_calculator/46eaac1e-1432-4cdd-814e-d2c707255110",
-              "disabled": true,
-              "settings": {}
-            },
             "tp_zubehoer_menge": {
               "type": "tp-zubehoer-menge",
               "name": "TP Zubehoer Mengenhilfe",
@@ -342,7 +337,6 @@
             "tp_leisten_farbwahl",
             "variant_picker_R3rGDr",
             "tp_leisten_vorschau",
-            "options_price_calculator_product_calculator_z3CEfy",
             "tp_zubehoer_menge",
             "buy_buttons_eYQEYi",
             "tp_service_links_sales1",

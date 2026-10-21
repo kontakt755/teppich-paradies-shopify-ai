@@ -8,6 +8,7 @@ import path from 'node:path';
 import {
   musterNachfassen, kontaktweg, texteAusMarkdown, fuelleText, mailtoLink, platzhalterFrei,
   ERSTE_NACH_TAGEN, ERINNERUNG_NACH_TAGEN, HOECHSTENS_TAGE, ERLEDIGT_ZEIGEN_TAGE, SHOP_URL,
+  versandLaeuft, teileNachfassen, nachfassTodo,
 } from '../lib/muster-nachfassen.mjs';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
 
@@ -231,4 +232,35 @@ test('API /api/kunden/muster-texte: liest die Vorlage aus dem Privatordner, fehl
   assert.match(r.versand.hinweis, /nachfassen\/postfach\.json/);
   assert.deepEqual(r.abgemeldet, []);
   assert.equal(fehlt.versand.eingerichtet, false, 'auch ohne Vorlage steht der Versandstand in der Antwort');
+});
+
+// --- Wer muss selbst ran? (Startseite "Heute" seit 2026-10-19) ------------------------------
+
+test('versandLaeuft: nur mit eingerichtetem Postfach, ohne Stoerung und mit Vorlage', () => {
+  assert.equal(versandLaeuft(null), null, 'noch nicht geladen');
+  assert.equal(versandLaeuft({ verfuegbar: true, versand: { eingerichtet: true, hinweis: null } }), true);
+  assert.equal(versandLaeuft({ verfuegbar: true, versand: { eingerichtet: false, hinweis: 'fehlt' } }), false);
+  assert.equal(versandLaeuft({ verfuegbar: true, versand: { eingerichtet: true, hinweis: 'versand.json beschädigt' } }), false);
+  assert.equal(versandLaeuft({ verfuegbar: false, versand: { eingerichtet: true } }), false, 'ohne Vorlage schickt auch der Lauf nichts');
+});
+
+test('teileNachfassen: E-Mail geht bei laufendem Versand von selbst, Rueckruf immer Mensch, ohne Weg kein To-do', () => {
+  const mail = { orderId: 'o1', kontakt: { weg: 'email', email: 'a@example.invalid' } };
+  const ruf = { orderId: 'o2', kontakt: { weg: 'rueckruf', telefon: '0000 123' } };
+  const ohne = { orderId: 'o3', kontakt: { weg: 'keiner' } };
+  const an = teileNachfassen([mail, ruf, ohne], { automatisch: true });
+  assert.deepEqual([an.mensch, an.automatisch, an.ohneWeg].map(l => l.map(e => e.orderId)), [['o2'], ['o1'], ['o3']]);
+  const aus = teileNachfassen([mail, ruf, ohne], { automatisch: false });
+  assert.deepEqual([aus.mensch, aus.automatisch, aus.ohneWeg].map(l => l.map(e => e.orderId)), [['o1', 'o2'], [], ['o3']]);
+});
+
+test('nachfassTodo: Anrufen bei Rueckrufwunsch, sonst Sprung zur Nachfass-Karte - eine Zeile, ein Knopf', () => {
+  const ruf = nachfassTodo({ orderId: 'o2', orderName: '#T2', kundenname: 'Testkundin', stufe: 'erste', tage: 5, muster: ['Testvelours: Sand'], kontakt: { weg: 'rueckruf', telefon: '0000 / 123' } }, { ansehenHref: '#/heute?mn=1' });
+  assert.equal(ruf.titel, 'Muster nachfassen: Testkundin');
+  assert.deepEqual(ruf.knopf, { text: 'Anrufen', href: 'tel:0000123' });
+  assert.match(ruf.kontext, /#T2 · Muster verschickt vor 5 Tagen · Testvelours: Sand · Rückruf gewünscht/);
+  const mail = nachfassTodo({ orderId: 'o1', orderName: '#T1', stufe: 'erinnerung', tage: 11, kontakt: { weg: 'email' } }, { ansehenHref: '#/heute?mn=1' });
+  assert.equal(mail.titel, 'Erinnerung schicken: #T1');
+  assert.deepEqual(mail.knopf, { text: 'Nachfassen', href: '#/heute?mn=1' });
+  assert.equal(mail.bereich, 'laden');
 });

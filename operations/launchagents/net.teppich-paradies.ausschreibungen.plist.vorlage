@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>net.teppich-paradies.ausschreibungen</string>
+
+  <!-- Ausschreibungen Bodenbelag (operations/scripts/ausschreibungen-pruefen.mjs):
+       TED und oeffentlichevergabe.de, nur lesend, ohne Konto. Neue Treffer
+       erscheinen als To-do im Control Center. Montags 4:30, nach der Auslauf-Pruefung. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-lc</string>
+    <string>cd "$HOME/tp-dashboard" &amp;&amp; date &amp;&amp; exec npm run -s ausschreibungen:pruefen</string>
+  </array>
+
+  <!-- Montags 4:30 Ortszeit. -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key><integer>1</integer>
+    <key>Hour</key><integer>4</integer>
+    <key>Minute</key><integer>30</integer>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>__HOME__/teppich-paradies-analyse/ausschreibungen/pruefung.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/teppich-paradies-analyse/ausschreibungen/pruefung.log</string>
+</dict>
+</plist>

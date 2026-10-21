@@ -17,10 +17,32 @@
 .bq-inhalt-mobil { margin: 4px 0 2px; }
 .bq-inhalt-mobil .bq-inhalt-zeile { font-size: .88rem; }
 
+/* Bestellungsbezogene Aufkleberzuordnung bleibt ausschliesslich im internen Detail. */
+.bq-musteretiketten { min-width: 0; margin: 0 0 16px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); white-space: normal; overflow-wrap: anywhere; scroll-margin-top: 90px; }
+.bme-kopf { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.bme-kopf h3 { margin: 0; }
+.bme-kopf .btn { flex: none; }
+.bme-liste { list-style: none; margin: 8px 0; padding: 0; }
+.bme-zeile { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; padding: 10px 0; }
+.bme-zeile + .bme-zeile { border-top: 1px solid var(--line); }
+.bme-was, .bme-stand { display: grid; align-content: start; gap: 3px; min-width: 0; overflow-wrap: anywhere; }
+.bme-was a { color: var(--text); }
+.bme-stand { text-align: right; }
+.bme-pruefen { color: var(--warn); }
+.bme-aktionen { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.bme-aktionen .btn { white-space: normal; }
+@media (max-width: 600px) {
+  .bq-musteretiketten { padding: 12px; }
+  .bme-zeile { grid-template-columns: minmax(0, 1fr); }
+  .bme-stand { text-align: left; }
+  .bme-aktionen .btn { width: 100%; min-height: 44px; }
+}
+
 /* -- Musterlager --------------------------------------------------------------------- */
 .ml-kopf { display: flex; gap: 12px 20px; align-items: flex-start; justify-content: space-between; margin: 4px 0 12px; }
 .ml-erklaerung { margin: 0; max-width: 70ch; }
 .ml-kopf .btn { flex: none; }
+.ml-kopf .btn-row { flex: none; display: flex; flex-direction: column; gap: 8px; }
 .ml-zahlen { margin: 0 0 12px; }
 .ml-warn { color: var(--warn); font-weight: 600; }
 
@@ -68,8 +90,103 @@
 
 @media (max-width: 640px) {
   .ml-kopf { flex-direction: column; }
+  .ml-kopf .btn-row { width: 100%; }
   .ml-kopf .btn { width: 100%; min-height: 44px; }
   .ml-zeile { flex-direction: column; align-items: stretch; }
   .ml-aktionen { justify-content: flex-start; }
   .ml-aktionen .btn { min-height: 40px; }
+}
+
+/* -- Etiketten drucken (bausteine/etiketten-druck.mjs) -------------------------------
+   Das Etikett selbst bleibt schwarz auf weiss (so wird es gedruckt), auch im Dunkelmodus. */
+.etk-dialog { max-width: 640px; }
+.etk-liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin: 12px 0; }
+.etk-karte { margin: 0; }
+.etk-bild { width: 100%; height: auto; aspect-ratio: 1; border: 1px solid var(--line-strong); border-radius: 6px; background: #fff; }
+.etk-fehlt { color: var(--crit); font-weight: 600; }
+.etk-warn { color: var(--crit); background: var(--crit-soft); padding: 8px 10px; border-radius: 6px; }
+.etk-form { display: grid; gap: 8px; margin-top: 8px; }
+.etk-form label, .etk-optionen label { display: grid; gap: 2px; font-size: .9rem; }
+.etk-form button { justify-self: start; }
+.etk-optionen { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0 4px; }
+.etk-karte figcaption { display: grid; gap: 6px; }
+.etk-karte figcaption .btn { justify-self: start; }
+.etk-auftrag-hinweis { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); }
+.etk-einstellungen { margin-block: 12px; }
+.etk-einstellungen > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: var(--text-2); }
+.etk-einstellungen > summary::before { content: '▸'; margin-right: 8px; }
+.etk-einstellungen[open] > summary::before { content: '▾'; }
+.etk-bestaetigung { margin-block: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); }
+.etk-bestaetigung p { margin-top: 0; }
+.lex-druckliste-link { margin: 0 0 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+.lex-etiketten-status .card { padding: 0 16px 16px; margin-bottom: 12px; min-width: 0; overflow-wrap: anywhere; }
+.lex-etiketten-status .card-head { padding-left: 0; padding-right: 0; flex-wrap: wrap; }
+.lex-etiketten-status li { margin-block: 6px; overflow-wrap: anywhere; }
+.lex-etiketten { margin-bottom: 16px; padding: 0 18px 18px; }
+.lex-etiketten .card-head { padding-left: 0; padding-right: 0; }
+.lex-etiketten-auswahl { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; }
+.lex-etiketten-auswahl label { display: grid; gap: 4px; min-width: 0; }
+.lex-etiketten-auswahl label:first-child { flex: 1 1 240px; }
+.lex-etiketten-auswahl select { max-width: 100%; width: 100%; }
+.lex-etiketten-auswahl input { width: 80px; }
+.lex-vorgemerkt { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+.lex-vorgemerkt p, .lex-vorgemerkt .md-aktionen { margin: 0; }
+.lex-vorgemerkt .md-aktionen { margin-top: 8px; }
+@media (max-width: 600px) {
+  .lex-etiketten { padding-left: 14px; padding-right: 14px; }
+  .lex-etiketten-auswahl label:first-child { flex-basis: 100%; }
+  .lex-etiketten-auswahl .btn { flex: 1; }
+}
+
+/* Gemeinsame Druckliste: offene Auswahl, reservierte Auftraege, bewusste Papierpruefung. */
+.md-navigation, .md-auswahl-aktionen, .md-aktionen, .md-seiten { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.md-navigation { margin-bottom: 16px; }
+.md-offen, .md-auftrag { margin-bottom: 16px; padding: 0 18px 18px; }
+.md-offen .card-head, .md-auftrag .card-head { padding-left: 0; padding-right: 0; }
+.md-auswahl-aktionen { margin-bottom: 8px; }
+.md-liste { list-style: none; margin: 0; padding: 0; }
+.md-zeile { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: center; padding: 12px 0; }
+.md-zeile + .md-zeile { border-top: 1px solid var(--line); }
+.md-mit-auswahl { grid-template-columns: auto minmax(0, 1fr) auto; }
+.md-auswahl { display: flex; align-items: center; justify-content: center; min-width: 36px; min-height: 44px; cursor: pointer; }
+.md-auswahl input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+.md-was { display: grid; gap: 3px; min-width: 0; overflow-wrap: anywhere; }
+.md-was a { color: var(--text-2); }
+.md-aktionen { margin-top: 12px; }
+.md-aktionen > p { flex-basis: 100%; margin: 0; }
+.md-aktionen .btn, .md-zeile > .btn { white-space: normal; }
+.md-druckstart { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.md-druckstart p { margin: 0; }
+.md-seiten { justify-content: space-between; margin: 8px 0; }
+.md-historie { margin: 18px 0; }
+.md-historie summary { cursor: pointer; color: var(--text-2); }
+.md-historie .md-liste { margin-top: 8px; }
+@media (max-width: 600px) {
+  .md-offen, .md-auftrag { padding-left: 14px; padding-right: 14px; }
+  .md-zeile { grid-template-columns: minmax(0, 1fr); }
+  .md-mit-auswahl { grid-template-columns: auto minmax(0, 1fr); }
+  .md-mit-auswahl > .btn { grid-column: 2; justify-self: start; }
+  .md-aktionen { align-items: stretch; flex-direction: column; }
+  .md-aktionen .btn, .md-druckstart > .btn { width: 100%; min-height: 44px; }
+}
+
+/* Die Auswahlaktion steht vor der langen Liste; Kopien bleiben je Position sichtbar. */
+.md-offen .card-head { flex-wrap: wrap; gap: 6px 16px; }
+.md-offene-zeile, .md-auftragszeile { grid-template-columns: minmax(0, 1fr) auto auto; }
+.md-mit-auswahl { grid-template-columns: 44px minmax(0, 1fr) auto auto; }
+.md-kopien { font-weight: 600; white-space: nowrap; }
+.md-gewaehlt { background: var(--surface-2); }
+.md-druckstart { display: grid; gap: 10px; margin: 12px 0; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.md-druckaktionen { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.md-auftrag > details { margin: 10px 0; }
+.md-auftrag > details > summary { cursor: pointer; }
+.etk-dialog #etkZusammenfassung { font-weight: 600; }
+@media (max-width: 600px) {
+  .md-offene-zeile, .md-auftragszeile { grid-template-columns: minmax(0, 1fr) auto; }
+  .md-offene-zeile > .btn, .md-auftragszeile > .btn { grid-column: 1 / -1; justify-self: start; min-height: 44px; }
+  .md-mit-auswahl { grid-template-columns: 36px minmax(0, 1fr); }
+  .md-mit-auswahl > .md-kopien, .md-mit-auswahl > .btn { grid-column: 2; justify-self: start; }
+  .md-druckaktionen { flex-direction: column-reverse; }
+  .md-druckaktionen .btn { width: 100%; min-height: 44px; }
+  .etk-bestaetigung .btn { width: 100%; min-height: 44px; white-space: normal; }
 }

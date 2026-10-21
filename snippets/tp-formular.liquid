@@ -4,11 +4,9 @@
   Befunde aus der Prüfung gegen ui-ux-pro-max, Kategorie 8 (Forms & Feedback):
   error-placement, aria-live-errors, inline-validation, input-helper-text.
 
-  Bewusst als nachträgliche Ergänzung per JavaScript, nicht als Änderung an
-  blocks/tp-rollware-rechner.liquid. Die Rechner-Datei bleibt damit
-  zeichengleich mit dem Live-Theme, und diese Ebene lässt sich durch Entfernen
-  einer Zeile in layout/theme.liquid vollständig zurücknehmen. Am Rechenweg
-  und am Warenkorb wird nichts angefasst.
+  Nachtraegliche Ergaenzung per JavaScript. Die Breitenhinweise kommen direkt
+  aus dem Rechner; diese Ebene betreut das Laengenfeld. Am Rechenweg und am
+  Warenkorb wird nichts angefasst.
 
   Was sich ändert:
 
@@ -46,6 +44,7 @@
         var fehlerMax = wurzel.querySelector('[data-error-max]');
         var fehlerLager = wurzel.querySelector('[data-error-stock]');
         var gegenprobe = wurzel.querySelector('[data-length-echo]');
+        var mindestHinweis = wurzel.querySelector('[data-mindest-hint]');
         if (!feld || !fehlerMin) return;
 
         wurzel.dataset.tpFormularBereit = '1';
@@ -56,6 +55,11 @@
           if (!el) return;
           if (!el.id) el.id = wurzel.id + '-fehler-' + i;
         });
+        var verwalteteIds = fehler.concat([gegenprobe]).filter(Boolean).map(function (el) { return el.id; });
+        var basisIds = (feld.getAttribute('aria-describedby') || '').split(/\s+/).filter(function (id) {
+          return id && !verwalteteIds.includes(id);
+        });
+        if (mindestHinweis && !mindestHinweis.id) mindestHinweis.id = wurzel.id + '-mindesthinweis';
 
         // Ein dauerhaft vorhandener Live-Bereich meldet auch Fehlertexte, die
         // im Rechner schon vor dem Einblenden feststehen (z. B. "abc").
@@ -73,8 +77,9 @@
         // Issue 162: auch die Obergrenze vorab nennen. Der Rechner gibt sie am
         // Wurzelelement mit; fehlt sie, bleibt der alte Hinweis.
         var maxCm = parseInt(wurzel.dataset.maxLaengeCm, 10);
-        hinweis.textContent = maxCm > 0
-          ? 'Länge von 1 m (100 cm) bis ' + (maxCm / 100) + ' m'
+        hinweis.hidden = Number.isFinite(maxCm) && maxCm < 100;
+        hinweis.textContent = maxCm >= 100
+          ? (mindestHinweis ? 'Länge bis ' : 'Länge von 1 m (100 cm) bis ') + (maxCm / 100).toLocaleString('de-DE') + ' m'
           : 'Mindestens 100 cm';
         fehlerMin.parentNode.insertBefore(hinweis, fehlerMin);
         // Nur der aktuelle Fehler darf in der Feldbeschreibung stehen. Sonst
@@ -101,10 +106,12 @@
           fehlerMin.hidden = !zeigen;
           var aktiverFehler = fehler.find(function (el) { return el && !el.hidden; });
           var eingabefehler = [fehlerMin, fehlerFormat, fehlerMax].some(function (el) { return el && !el.hidden; });
-          var ids = [hinweis.id];
+          var ids = basisIds.slice();
+          if (!hinweis.hidden) ids.push(hinweis.id);
+          if (mindestHinweis && !mindestHinweis.hidden) ids.push(mindestHinweis.id);
           if (gegenprobe && !gegenprobe.hidden) ids.push(gegenprobe.id);
           if (aktiverFehler) ids.push(aktiverFehler.id);
-          feld.setAttribute('aria-describedby', ids.join(' '));
+          feld.setAttribute('aria-describedby', ids.filter(function (id, i) { return ids.indexOf(id) === i; }).join(' '));
           if (eingabefehler) {
             feld.setAttribute('aria-invalid', 'true');
           } else {

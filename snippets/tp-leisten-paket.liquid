@@ -1,0 +1,16 @@
+{%- doc -%}
+  Gibt "ja" aus, wenn fuer das Produkt der Paketvorteil "Sockelleiste zum
+  halben Preis" gilt (automatischer Shopify-Rabatt aus #1452: je 3 Pakete
+  Klick- oder Klebevinyl 2 Stangen Faventa oder Nerissa -50 %).
+  Einziger Schalter fuer Produktseite, Produktkarte und Warenkorb: endet die
+  Aktion, lph_aktiv auf false setzen.
+
+  @param {product} product
+{%- enddoc -%}
+{%- liquid
+  assign lph_aktiv = true
+  assign lph_typen = 'Klickvinyl,Klebevinyl' | split: ','
+  if lph_aktiv and lph_typen contains product.type
+    echo 'ja'
+  endif
+-%}

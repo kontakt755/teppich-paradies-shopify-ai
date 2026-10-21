@@ -3,17 +3,37 @@
  * Kundengespraech, Bestellzeilen, Mengenhilfe, Original-Link.
  */
 import { state } from '../kern/zustand.mjs';
-import { esc, fmtDateTime, NICHT_HINTERLEGT, fmtPreis } from '../kern/helfer.mjs';
+import { esc, fmtDateTime, NICHT_HINTERLEGT, fmtPreis, toast } from '../kern/helfer.mjs';
 import { fetchEinkauf } from '../kern/api.mjs';
 import { render } from '../kern/render.mjs';
+import { istNurLesend } from '../kern/sitzung.mjs';
 import { emptyState, stoerungState } from '../bausteine/karten.mjs';
 import { LIEFERWEG_LABEL } from './einkauf/auftragsfluss.mjs';
 import { telLink, gmailLink } from '../lib/einkauf-lieferanten.mjs';
+import { etikettenAusLexikon } from '../lib/lexikon-etiketten.mjs';
+import { originalHandle } from '../lib/muster-etiketten.mjs';
+import { oeffneEtikettenDruck } from '../bausteine/etiketten-druck.mjs';
+import { drucklisteVormerken, musterDrucklisteKlick, viewMusterDruckliste } from './muster-druckliste.mjs';
+import { viewMusterEtikettenStatus, musterEtikettenStatusKlick } from './muster-etiketten-status.mjs';
 
 export const lexikon = {
   liste: null, loadingListe: false, listeKey: null,
   produkt: null, loadingProdukt: false, produktKey: null,
+  etiketten: [], etikettenKey: null, loadingEtiketten: false,
+  vormerkenLaeuft: false, etikettAnzahl: 1, vorgemerkt: null, vormerkFehler: '',
 };
+let vormerkSitzung = 0;
+if (typeof window !== 'undefined') window.addEventListener('tp-sitzung-beendet', () => {
+  vormerkSitzung++;
+  lexikon.vorgemerkt = null; lexikon.vormerkFehler = ''; lexikon.vormerkenLaeuft = false;
+});
+
+/** Eingabe vor jedem Neuzeichnen erhalten, auch wenn danach eine andere Farbe gewaehlt wird. */
+export function lexikonEingabe(e) {
+  if (!e.target?.matches?.('[data-lex-etikett-anzahl]')) return false;
+  lexikon.etikettAnzahl = e.target.value;
+  return true;
+}
 
 function ensureLexikonListe() {
   const q = state.route.params.get('lq') || '';
@@ -32,12 +52,82 @@ function ensureLexikonListe() {
 function ensureLexikonProdukt(handle) {
   if (lexikon.produktKey === handle && (lexikon.produkt || lexikon.loadingProdukt)) return;
   lexikon.produktKey = handle;
+  lexikon.produkt = null;
   lexikon.loadingProdukt = true;
+  lexikon.etikettAnzahl = 1;
+  lexikon.vorgemerkt = null; lexikon.vormerkFehler = '';
+  lexikon.etiketten = []; lexikon.etikettenKey = null; lexikon.loadingEtiketten = false;
   fetchEinkauf(`/api/lexikon/produkt?${new URLSearchParams({ handle })}`).then(d => {
     if (lexikon.produktKey !== handle) return; // inzwischen ein anderes Produkt geoeffnet
     lexikon.produkt = d; lexikon.loadingProdukt = false;
     if (state.route.view === 'lexikon') render();
   });
+}
+
+/** Eigene Muster koennen auf ein anderes Original zeigen (z. B. Teppich nach Mass).
+ * Nur diese gezielten Eintraege nachladen, nie das ganze Lexikon an den Browser schicken. */
+function ensureLexikonEtiketten(produkt) {
+  const key = produkt.handle;
+  if (lexikon.etikettenKey === key) return;
+  lexikon.etikettenKey = key;
+  lexikon.loadingEtiketten = false;
+  const abhaengigkeiten = p => {
+    const handles = (p.varianten || []).map(v => v.original?.produktHandle).filter(Boolean);
+    if (!(p.varianten || []).some(v => v.sku && !v.wunschmass && !/^(M-|TP-MUSTER)/i.test(v.sku))) {
+      if (p.muster?.handle) handles.push(p.muster.handle);
+      if (p.musterRegeln?.basisHandle) handles.push(p.musterRegeln.basisHandle);
+    }
+    if (!handles.length && p.handle.startsWith('muster-')) handles.push(originalHandle(p.handle));
+    return [...new Set(handles)];
+  };
+  const handles = abhaengigkeiten(produkt);
+  if (!handles.length) { lexikon.etiketten = etikettenAusLexikon(produkt); return; }
+  lexikon.loadingEtiketten = true;
+  (async () => {
+    const je = new Map([[produkt.handle, produkt]]), gesehen = new Set(je.keys());
+    let offen = handles;
+    // Nur die belegten Verweise verfolgen. Jede Adresse wird einmal geladen;
+    // auch verkettete Basisartikel und zyklische Daten enden dadurch sicher.
+    while (offen.length) {
+      const batch = [...new Set(offen)].filter(h => !gesehen.has(h));
+      batch.forEach(h => gesehen.add(h));
+      const geladen = await Promise.all(batch.map(async handle => {
+        const d = await fetchEinkauf(`/api/lexikon/produkt?${new URLSearchParams({ handle })}`);
+        if (d?.produkt) je.set(handle, d.produkt);
+        return d?.produkt;
+      }));
+      if (lexikon.produktKey !== key || lexikon.etikettenKey !== key) return;
+      offen = geladen.filter(Boolean).flatMap(abhaengigkeiten).filter(h => !gesehen.has(h));
+    }
+    if (lexikon.produktKey !== key || lexikon.etikettenKey !== key) return;
+    lexikon.etiketten = etikettenAusLexikon(produkt, je);
+    lexikon.loadingEtiketten = false;
+    if (state.route.view === 'lexikon') render();
+  })();
+}
+
+function musterEtikettenBlock(produkt) {
+  if (produkt.handle === 'kostenloses-muster') return `<section class="card lex-etiketten"><div class="card-head"><h2>Musteraufkleber</h2></div><p>Für den Aufkleber bitte das konkrete Produkt im Lexikon öffnen. Dort sind Farbe, Artikelnummer und Produktlink hinterlegt.</p><a class="btn" href="#/lexikon">Produkt suchen</a></section>`;
+  ensureLexikonEtiketten(produkt);
+  if (lexikon.loadingEtiketten) return `<section class="card lex-etiketten"><div class="card-head"><h2>Musteraufkleber</h2></div><p role="status">Lade die Angaben für den Aufkleber …</p></section>`;
+  const liste = lexikon.etiketten;
+  if (!liste.length) return '';
+  const angefragt = Number(state.route.params.get('letikett'));
+  const index = Number.isInteger(angefragt) && angefragt >= 0 && angefragt < liste.length ? angefragt : 0;
+  const auswahl = liste[index];
+  return `<section class="card lex-etiketten" data-lex-etiketten>
+    <div class="card-head"><h2>Musteraufkleber</h2></div>
+    <p class="small muted">Fertiger Aufkleber mit Produktname, Farbe und QR-Code für eure 50 × 50-mm-Etiketten.</p>
+    <div class="lex-etiketten-auswahl">
+      <label>Farbe / Ausführung<select data-param="letikett" aria-label="Farbe oder Ausführung für den Aufkleber">${liste.map((x, i) => `<option value="${i}"${i === index ? ' selected' : ''}>${esc(x.bezeichnung)}</option>`).join('')}</select></label>
+      <label>Anzahl<input id="lexEtikettAnzahl" type="number" min="1" max="20" step="1" value="${esc(lexikon.etikettAnzahl)}" data-lex-etikett-anzahl data-focus-erhalten inputmode="numeric"></label>
+      ${istNurLesend() ? '' : `<button type="button" class="btn btn-primary" data-lex-etikett-vormerken${auswahl.etikett.fehlt.length || lexikon.vormerkenLaeuft ? ' disabled' : ''}>${lexikon.vormerkenLaeuft ? 'Wird vorgemerkt …' : 'Zum Drucken vormerken'}</button>`}
+      <button type="button" class="btn btn-ghost" data-lex-etikett-drucken>Aufkleber ansehen</button>
+    </div>
+    ${lexikon.vorgemerkt?.handle === produkt.handle ? `<div class="lex-vorgemerkt" role="status"><p><strong>Vorgemerkt:</strong> ${esc(lexikon.vorgemerkt.anzahl)} × ${esc(lexikon.vorgemerkt.bezeichnung)}</p><div class="md-aktionen"><a class="btn" href="#/lexikon" data-lex-weiteres-muster>Weiteres Muster suchen</a><a class="btn" href="#/lexikon?tab=druckliste">Druckliste öffnen</a></div></div>` : ''}
+    ${lexikon.vormerkFehler ? `<p class="notice warn" role="alert">${esc(lexikon.vormerkFehler)}</p>` : ''}
+    ${auswahl.etikett.fehlt.length ? `<p class="small etk-fehlt">Noch ergänzen: ${esc(auswahl.etikett.fehlt.join(', '))}. Du kannst die Angaben in der Vorschau bearbeiten.</p>` : ''}
+  </section>`;
 }
 
 function lexWert(w) { return (w === null || w === undefined || w === '') ? NICHT_HINTERLEGT : esc(String(w)); }
@@ -158,6 +248,9 @@ const EIGENSCHAFTEN_LABEL = {
   zimmer: 'Zimmer',
   aufbau: 'Aufbau',
   gesamtstaerke: 'Gesamtstärke',
+  nutzschicht: 'Nutzschicht',
+  format: 'Format',
+  arten: 'Art',
   poleneinsatzgewicht: 'Poleneinsatzgewicht',
   komfortklasse: 'Komfortklasse',
   trittschallverbesserung: 'Trittschallverbesserung',
@@ -528,6 +621,7 @@ function viewLexikonDetail(handle) {
   return `${zurueck}
     ${wartendeKundenBlock(d.wartendeKunden)}
     ${produktKarte(p, normaleVarianten)}
+    ${musterEtikettenBlock(p)}
     ${fuersKundengespraech(p, normaleVarianten)}
     <section class="card" style="margin-bottom:16px"><div class="card-head"><h2>Zum Bestellen</h2></div>${bestellTabelle}</section>
     ${internesDetails(p)}`;
@@ -539,16 +633,57 @@ export function viewLexikon() {
       ${emptyState('Nur lokal im Betrieb verfügbar.', 'Diese Ansicht liest private Einkaufsdaten, die nie im öffentlichen Repository landen. Auf dem Mac starten: npm run dashboard')}`;
   }
   const handle = state.route.params.get('handle');
+  if (state.route.params.get('tab') === 'druckliste') return viewMusterDruckliste();
+  if (state.route.params.get('tab') === 'etiketten') return viewMusterEtikettenStatus();
+  const drucklisteLink = '<p class="lex-druckliste-link"><a class="btn" href="#/lexikon?tab=druckliste">Gemeinsame Druckliste</a><a class="btn" href="#/lexikon?tab=etiketten">Aufkleber prüfen</a></p>';
   const head = `<div class="page-head"><div><h1>Lexikon</h1><p class="sub">Kunde nennt einen Produktnamen – hier steht das Original beim Lieferanten samt Bestelldaten.</p></div></div>`;
   // Im Produkt entfaellt der erklaerende Seitenkopf: am Handy schob er Name und Preis aus dem
   // ersten Bildschirm. "Lexikon" steht weiter in der Kopfzeile.
-  return handle ? viewLexikonDetail(handle) : head + viewLexikonListe();
+  return drucklisteLink + (handle ? viewLexikonDetail(handle) : head + viewLexikonListe());
 }
 
 /** Lexikon: Produkt oeffnen, Mengenhilfe rechnen, zurueck zur Liste. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function lexikonKlick(e) {
+  if (musterEtikettenStatusKlick(e)) return true;
+  if (musterDrucklisteKlick(e)) return true;
+  const etikettKnopf = e.target.closest('[data-lex-etikett-drucken],[data-lex-etikett-vormerken]');
+  if (etikettKnopf) {
+    e.preventDefault();
+    const wrap = etikettKnopf.closest('[data-lex-etiketten]');
+    const index = Number(wrap?.querySelector('select[data-param="letikett"]')?.value);
+    const anzahl = Number(wrap?.querySelector('[data-lex-etikett-anzahl]')?.value);
+    const auswahl = lexikon.etiketten[index];
+    if (!auswahl) { toast('Bitte zuerst eine Farbe oder Ausführung wählen.'); return true; }
+    if (!Number.isInteger(anzahl) || anzahl < 1 || anzahl > 20) { toast('Bitte eine Anzahl von 1 bis 20 eingeben.'); return true; }
+    lexikon.etikettAnzahl = anzahl;
+    if (etikettKnopf.hasAttribute('data-lex-etikett-vormerken')) {
+      if (istNurLesend() || lexikon.vormerkenLaeuft || auswahl.etikett.fehlt.length) return true;
+      const handle = lexikon.produkt?.produkt?.handle;
+      if (!handle) { toast('Bitte das Produkt erneut öffnen.'); return true; }
+      const aktuelleSitzung = vormerkSitzung;
+      lexikon.vormerkenLaeuft = true; lexikon.vormerkFehler = ''; etikettKnopf.disabled = true;
+      void drucklisteVormerken({ handle, key: auswahl.key, anzahl }).then(ok => {
+        if (aktuelleSitzung !== vormerkSitzung || lexikon.produktKey !== handle) return;
+        if (ok) lexikon.vorgemerkt = { handle, anzahl, bezeichnung: auswahl.bezeichnung };
+        else lexikon.vormerkFehler = 'Vormerkung nicht bestätigt. Bitte die Druckliste prüfen und bei Bedarf erneut vormerken.';
+      }).finally(() => {
+        if (aktuelleSitzung !== vormerkSitzung) return;
+        lexikon.vormerkenLaeuft = false;
+        if (state.route.view === 'lexikon' && state.route.params.get('tab') !== 'druckliste') render();
+      });
+      return true;
+    }
+    oeffneEtikettenDruck({ etiketten: Array.from({ length: anzahl }, () => auswahl.etikett), titel: 'Musteretikett drucken' });
+    return true;
+  }
+  if (e.target.closest('[data-lex-weiteres-muster]')) {
+    e.preventDefault();
+    window.addEventListener('hashchange', () => requestAnimationFrame(() => document.querySelector('#main input[data-param="lq"]')?.focus()), { once: true });
+    location.hash = '#/lexikon';
+    return true;
+  }
   const lexOpen = e.target.closest('[data-lex-open]');
-  if (lexOpen) { e.preventDefault(); const p = new URLSearchParams(); p.set('handle', lexOpen.dataset.lexOpen); location.hash = `#/lexikon?${p}`; return true; }
+  if (lexOpen) { e.preventDefault(); const p = new URLSearchParams(); p.set('handle', lexOpen.dataset.lexOpen); if (state.route.params.get('lq')) p.set('lq', state.route.params.get('lq')); location.hash = `#/lexikon?${p}`; return true; }
   const mhGo = e.target.closest('[data-mh-go]');
   if (mhGo) {
     e.preventDefault();

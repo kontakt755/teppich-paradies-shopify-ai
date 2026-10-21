@@ -165,6 +165,11 @@ function bereiteStatusVor(alle, { orderId, lineItemId, status, actor, bestellmen
     if (typeof versandMail === 'boolean') eintrag.versandMail = versandMail;
     else if (neuerVersand) delete eintrag.versandMail;
   }
+  // "Erledigt" bucht den Versand in Shopify ohne Mail an den Kunden (Inhaber 2026-10-19,
+  // shopify-abgleich.mjs): wer abschliesst, hat die Ware beim Kunden - eine Mail "ist unterwegs"
+  // verwirrt. Gilt auch, wenn die Buchung erst spaeter nachgeholt wird. Eine schon gebuchte
+  // Sendung behaelt ihre damalige Wahl.
+  if (status === 'erledigt' && !['gebucht', 'bereits'].includes(bisher.shopifyVersand?.status)) eintrag.versandMail = false;
 
   alle[key] = eintrag;
   return eintrag;

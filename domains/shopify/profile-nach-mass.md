@@ -55,9 +55,49 @@ Menge: Sie muss **genau** Länge je Stück × Anzahl in cm sein. Zu wenig (per
 aus, eine Zeile ohne `Länge je Stück` zeigt „Maßangabe fehlt“. Den Zweig wählt
 das Metafeld `custom.preis_pro_001_lfm`, nicht die Properties.
 
-## Offen beim Anlegen
+## Angelegt (2026-10-19)
 
-- Preisregel (EK → VK) braucht die Freigabe des Inhabers.
-- Versand: Paketdienst nimmt nur begrenzte Längen; Stücke darüber gehen als
-  Sperrgut. `service.max_laenge_cm` erst festlegen, wenn die Versandgrenze des
-  Lieferanten belegt ist.
+Sieben Produkte (Handles `treppenkante-…-nach-mass`, Tag `treppenkante-nach-mass`,
+Produkttyp `Abschlussprofile`, nur Onlineshop), 15 Farben, SKU `TKMASS_<Art.-Nr.>`.
+
+- **Preisregel (Inhaber 2026-10-19, „marktnah“):** Meterpreis je Profil und
+  Oberfläche knapp unter dem Endkundenmarkt für Festlängen ohne Zuschnitt,
+  ganze Euro. Messing 47–69 €/m, Alu 18–22 €/m.
+- **Ganze Stange oder Zuschnitt (Inhaber 2026-10-19, wie beim Lieferanten):**
+  Block-Einstellung `stangen`. Vorgewählt ist die ganze Stange in der
+  Stangenlänge der Variante (`service.stange_cm`, derselbe Wert wie
+  `einkauf.stangenlaenge_cm`, 250/360/503 cm; das Theme liest keine `einkauf.*`); auf
+  Wunsch Zuschnitt auf den Zentimeter, höchstens bis zur Stangenlänge
+  (`service.max_laenge_cm` = 503). Abgerechnet wird gleich: Meterpreis ×
+  Länge; die Warenkorbzeile trägt zusätzlich `Zuschnitt` („ganze Stange“ /
+  „nach Maß“).
+- **Sperrgut (Inhaber 2026-10-19):** Stücke über 175 cm passen nicht in ein
+  DPD-Paket. Block-Einstellung `sperrgut_produkt` = `sperrgut-versand-treppenkante`
+  (Service, UNLISTED, 39,90 €), `sperrgut_ab_cm` = 175: der Zuschlag kommt
+  einmal je Warenkorb als Zeile derselben `_Gruppe` dazu (steht er schon im
+  Warenkorb, nicht noch einmal). Im Einkauf gilt er als Eigenleistung
+  (nichts zu bestellen).
+- **Zuschnitt aus einer Stange:** Jedes Stück kommt in einem Stück aus einer
+  Profilstange (wegen des Bohrbilds nie gestückelt); den Rest der Stange tragen
+  wir. Die Stangenlänge steht je Variante in `einkauf.stangenlaenge_cm`
+  (250/360/503); der Einkauf zeigt daraus „· aus 2 Stangen à 5,03 m (10,06 lfm)“
+  (`stangenText` in `operations/lib/bestelluebersicht.mjs`, 0,5 cm Sägeschnitt
+  angenommen).
+
+## Schrauben
+
+Auf Wunsch (Kästchen nicht vorbelegt) legt der Block eine Schraubenzeile
+derselben `_Gruppe` dazu:
+
+| Feld | Wert |
+|---|---|
+| Block-Einstellung `schrauben_produkt` | `schrauben-treppenkante-3x30`, Produkttyp `Service`, UNLISTED, Option 1 `Ausführung` (vernickelt/vermessingt) |
+| Block-Einstellung `schrauben_packung` | 200: Verkauf nur in ganzen Packungen (Verpackungseinheit des Lieferanten), Preis 14,90 € je Packung (Inhaber 2026-10-19) |
+| Varianten-Metafeld `service.schraube` | passende Ausführung je Profilfarbe; fehlt es, gibt es keine Schrauben |
+| `schrauben_rand_mm` / `schrauben_lochabstand_mm` | Bohrbild des Lieferanten: 30 mm Randabstand, Lochabstand unter 160 mm |
+
+Schrauben je Stück = `TPLaengenZuschnitt.lochzahl` (100 cm → 7); bestellt
+werden so viele Packungen, wie der Bedarf braucht (70 → 1, 210 → 2). Nur bei
+„gebohrt“. Die Zeile trägt `Zu Treppenkante`, `Bohrungen` („10 Stück × 7 je
+95 cm“) und `Packung` („200 Stück, 70 benötigt“); ohne Profilzeile ist sie eine Waise und sperrt den Checkout. Dübel für
+Beton- und Steinstufen führt der Lieferant nicht; der Block weist darauf hin.

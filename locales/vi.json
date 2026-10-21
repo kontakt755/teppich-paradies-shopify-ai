@@ -8,6 +8,23 @@
  * ------------------------------------------------------------
  */
 {
+  "tp_roll_context": {
+    "skirting_basis": "For a single piece, the suggestion is its perimeter. For multiple pieces, enter the room perimeter you need.",
+    "length_label": "Length in metres",
+    "room_perimeter_label": "Required room perimeter in metres",
+    "room_perimeter_hint": "For multiple pieces, the order dimensions do not describe the room perimeter. Please enter the perimeter you need.",
+    "underlay_basis": "Calculated for the entire carpet area ordered, including offcuts. This is not the room size."
+  },
+  "tp_product_advice": {
+    "cutting": "Cutting",
+    "intro": "I have a question about this product:",
+    "selection": "Selection",
+    "size": "Measurements in the calculator",
+    "width": "Width",
+    "length": "Length",
+    "roll": "Roll width",
+    "room": "Custom room size"
+  },
   "blocks": {
     "load_video": "Tải video: {{ description }}",
     "sold_out": "Hết hàng",
@@ -138,6 +155,12 @@
     "quantity": "Số lượng",
     "product_total": "Tổng sản phẩm",
     "cart_estimated_total": "Tổng số tiền ước tính",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Thuế được tính khi thanh toán.",
+      "duties_included": "Đã bao gồm thuế nhập khẩu.",
+      "discounts_at_checkout": "Giảm giá được tính khi thanh toán.",
+      "shipping_details_html": "Thông tin về <a href=\"{{ link }}\">vận chuyển và giao hàng</a>."
+    },
     "seller_note": "Hướng dẫn đặc biệt",
     "cart_subtotal": "Tổng phụ",
     "discounts": "Giảm giá",
@@ -348,5 +371,17 @@
       "default_title": "Tiêu đề mặc định",
       "sticky_add_to_cart": "Thanh thêm nhanh vào giỏ hàng"
     }
+  },
+  "tp_groessenhilfe": {
+    "open": "Which rug size fits my furniture?",
+    "intro": "First plan the area around your furniture. These examples help you choose a layout.",
+    "sofa_title": "By the sofa",
+    "sofa_text": "Should the rug sit in front of the sofa or support its front legs? Try both positions with your own furniture.",
+    "dining_title": "Under the dining table",
+    "dining_text": "Pull the chairs back as you would when standing up. Check that all chair legs remain on the rug area you have planned.",
+    "sketch_note": "Schematic top views, without suggested dimensions. Green: rug area. Grey: furniture.",
+    "measure_title": "Measure at home:",
+    "measure_text": "Lay out the area you want with paper. Check walkways and doors. Then measure the area and enter the dimensions for your selected shape above.",
+    "limits": "The shapes and size limits available for this product still apply. These examples do not change your selection."
   }
 }

@@ -6,7 +6,7 @@
 {{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 {%- assign tel_raw = section.settings.telefon | remove: ' ' | remove: '/' -%}
 {%- capture tp_kon_formular -%}
-      <div class="tp-kon__card tp-kon__card--form" id="tp-anfrage">
+      <div class="tp-kon__card tp-kon__card--form" id="tp-anfrage" role="group" aria-label="Anfrage senden" tabindex="-1">
         <h3 class="tp-s-h3">Anfrage senden</h3>
         <p>{{ section.settings.form_text | default: 'Für Aufmaß, Verlegung oder ein Angebot. Wir melden uns am nächsten Werktag.' | escape }}</p>
         <button class="tp-s-btn tp-s-btn--primary tp-kon__toggle" type="button" aria-expanded="false" data-tp-kon-toggle>Anfrage schreiben</button>
@@ -110,7 +110,8 @@
      Zeilen. Vorher drei Spalten, die zwei kurzen Karten wurden auf Formularhoehe
      gestreckt und zeigten 400 px Leerraum (Audit B-11). */
   .tp-kon__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); grid-template-rows: auto 1fr; gap: 20px; align-items: start; }
-  .tp-kon__card--form { grid-column: 2; grid-row: 1 / span 2; }
+  .tp-kon__card--form { grid-column: 2; grid-row: 1 / span 2; scroll-margin-top: calc(var(--header-height, 80px) + 24px); }
+  .tp-kon__card--form:focus-visible { outline: 2px solid var(--tp-ink, #1d1a17); outline-offset: 6px; }
   .tp-kon__card { border: 1px solid var(--tp-line, #e6e0d8); border-radius: 14px; padding: 24px; background: #fff; display: flex; flex-direction: column; gap: 10px; }
   .tp-kon__card p { color: var(--tp-ink-2, #4a443f); font-size: var(--tp-fs-md); margin: 0; }
   .tp-kon__card > .tp-s-btn { margin-top: auto; align-self: flex-start; }
@@ -196,7 +197,17 @@
     /* Buttons "Verlegung anfragen" auf Serviceseiten springen auf #tp-anfrage:
        am Telefon dann gleich das Formular zeigen statt nur den Aufklapp-Knopf. */
     function perAnker() {
-      if (window.location.hash === '#tp-anfrage') oeffnen();
+      if (window.location.hash !== '#tp-anfrage') return;
+      oeffnen();
+      // Die Karte fokussieren, ohne die Bildschirmtastatur zu oeffnen.
+      card.focus({ preventScroll: true });
+      // Der native Ankersprung kann noch mit der eingeklappten Hoehe rechnen.
+      // Nach dem Layout neu ausrichten; instant beendet dabei einen laufenden
+      // nativen Smoothscroll. Der CSS-Scrollabstand haelt den Header frei.
+      window.requestAnimationFrame(function () {
+        if (window.location.hash !== '#tp-anfrage' || !card.isConnected) return;
+        card.scrollIntoView({ block: 'start', behavior: 'instant' });
+      });
     }
     perAnker();
     window.addEventListener('hashchange', perAnker);

@@ -18,6 +18,7 @@ import { erstelleClient, veroeffentliche } from './meta.mjs';
 import { lernstandPfad, medienPfad, socialDir } from './pfade.mjs';
 import { plane } from './planer.mjs';
 import { produktReelSperren } from './produkt-reel.mjs';
+import { produktTagsSuchen } from './produkt-tags.mjs';
 import { findeKandidaten, REGELN, standAus } from './produkt-auswahl.mjs';
 import { ladeLexikonPreise, ladeMusterNachfrage, ladeProdukte, normalisiere } from './shop-quelle.mjs';
 import { BEITRAG_STATUS, INHALT_STATUS, TYPEN } from './status.mjs';
@@ -138,6 +139,23 @@ export function clientAus(env, optionen = {}) {
   return { konfig: k, bereit: metaBereit(k), client: erstelleClient({ ...k, ...optionen }) };
 }
 
+/**
+ * Meta-Produkt-IDs fuer die Instagram-Tags des Beitrags. Scheitert die Suche,
+ * geht der Beitrag ohne Tags raus - der Grund steht im Bericht.
+ */
+async function tagsFuer(client, beitrag, inhalt, { holen, melde }) {
+  if (!beitrag.plattformen.includes('instagram') || beitrag.format === 'story' || beitrag.ergebnis?.instagram?.id) return [];
+  const handles = inhalt.daten?.produkte ?? [inhalt.produkt_handle].filter(Boolean);
+  try {
+    const { tags, hinweis } = await produktTagsSuchen(client, handles, { holen });
+    if (hinweis) melde(`Produkt-Tags Beitrag ${beitrag.id}: ${hinweis}`);
+    return tags;
+  } catch (e) {
+    melde(`Produkt-Tags Beitrag ${beitrag.id}: Suche gescheitert (${e.message}) – ohne Tags`);
+    return [];
+  }
+}
+
 function texteFuer(beitrag) {
   const tags = String(beitrag.hashtags ?? '').split(/\s+/).filter(Boolean);
   if (beitrag.format === 'story') return { instagram: '', facebook: '' };
@@ -227,8 +245,9 @@ export async function veroeffentlicheFaellige(db, { env = process.env, jetzt = n
       bericht.fehler.push({ id: beitrag.id, meldung: 'Bilddatei fehlt' });
       continue;
     }
+    const produktTags = await tagsFuer(meta.client, beitrag, inhalt, { holen, melde });
     if (trocken) {
-      await veroeffentliche(meta.client, { beitrag, dateien, texte: texteFuer(beitrag), bisher: beitrag.ergebnis ?? {} });
+      await veroeffentliche(meta.client, { beitrag, dateien, texte: texteFuer(beitrag), bisher: beitrag.ergebnis ?? {}, produktTags });
       bericht.veroeffentlicht.push({ id: beitrag.id, trocken: true, plattformen: beitrag.plattformen });
       continue;
     }
@@ -236,7 +255,7 @@ export async function veroeffentlicheFaellige(db, { env = process.env, jetzt = n
     // Ab hier gehoert der Beitrag diesem Lauf - oder einem anderen, dann Finger weg.
     if (!db.beanspruche(beitrag.id)) { bericht.uebersprungen.push(beitrag.id); continue; }
     const { ergebnis, fehler, fertig } = await veroeffentliche(meta.client, {
-      beitrag, dateien, texte: texteFuer(beitrag), bisher: beitrag.ergebnis ?? {},
+      beitrag, dateien, texte: texteFuer(beitrag), bisher: beitrag.ergebnis ?? {}, produktTags,
       merke: stand => db.beitragAendern(beitrag.id, { ergebnis: stand }),
     });
 

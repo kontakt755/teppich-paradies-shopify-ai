@@ -37,12 +37,12 @@
 
   2b. Paketware (Teppichfliesen, Klick-/Klebevinyl, erkannt an
      custom.qm_pro_paket > 0 ueber snippets/tp-verkaufseinheit.liquid) wird
-     genauso ausgegeben. Ihr Variantenpreis ist der PAKETPREIS, die Seite
-     fuehrt aber EUR/m2. Vorher fiel sie in Fall 3 und meldete den
-     Paketpreis (218,46) gegen einen sichtbaren Quadratmeterpreis (44,95) -
-     eine Preisabweichung, die das Merchant Center beanstandet. Jetzt wird
-     auf den Quadratmeter heruntergerechnet, mit derselben Rundung wie
-     snippets/price.liquid.
+     mit dem Preis des kleinsten kaufbaren Originalpakets ausgegeben.
+     Der Grundpreis folgt aus referenceQuantity (Paketflaeche) und
+     valueReference (1 m2), wie in Googles Beispiel fuer unit pricing.
+     offers.price und priceSpecification.price bleiben der Paketpreis.
+     Befund 20.10.: Google verglich sonst den Feed-Paketpreis mit dem
+     hier ausgegebenen m2-Preis und lehnte Paketangebote ab.
 
   Ausgegeben werden nur Shop-Daten: Titel, Beschreibung, Bilder, Vendor als
   Marke, SKU (nur wenn vorhanden), Farbe und - im ProductGroup-Zweig - die
@@ -164,8 +164,7 @@
   endfor
 
   # Paketware (Fliesen, Klick-/Klebevinyl): der Variantenpreis ist der
-  # PAKETPREIS, die Seite fuehrt aber EUR/m2. Ohne Umrechnung meldete das
-  # JSON-LD den Paketpreis gegen einen sichtbaren Quadratmeterpreis.
+  # PAKETPREIS; die Seite zeigt diesen und den Grundpreis je m2.
   # Geprueft wird dasselbe Merkmal, das auch snippets/tp-verkaufseinheit.liquid
   # als Beleg nimmt: die Paketflaeche selbst, kein abgeleitetes Merkmal.
   # Bewusst ohne render: dieses Snippet laeuft im JSON-LD-Kopf und bleibt
@@ -345,13 +344,6 @@
         if tp_sd_per_001 or tp_sd_lfm
           assign tp_sd_cents = tp_sd_cents | times: 100
         endif
-        # Paketpreis -> Quadratmeterpreis, gerundet auf ganze Cent. Dieselbe
-        # Rechnung wie snippets/price.liquid (Zeile "divided_by:
-        # sqm_per_package | round"), damit Markup und Seitenpreis auf den
-        # Cent uebereinstimmen: 218,46 EUR / 4,86 m2 -> 44,95 EUR/m2.
-        if tp_sd_is_paket
-          assign tp_sd_cents = tp_sd_cents | times: 1.0 | divided_by: tp_sd_paket_qm | round
-        endif
         assign tp_sd_price = tp_sd_cents | times: 1.0 | divided_by: 100 | round: 2
         assign tp_sd_variant_url = tp_sd_product_url | append: '?variant=' | append: tp_sd_variant.id
         # Teppich nach Mass: Beispielgroesse statt Preis je m2 (#1283).
@@ -511,8 +503,15 @@
               "priceCurrency": {{ cart.currency.iso_code | json }},
               "referenceQuantity": {
                 "@type": "QuantitativeValue",
-                "value": 1,
+                "value": {% if tp_sd_is_paket %}{{ tp_sd_paket_qm | json }}{% else %}1{% endif %},
                 "unitCode": {% if tp_sd_lfm %}"MTR"{% else %}"MTK"{% endif %}
+                {%- if tp_sd_is_paket -%},
+                "valueReference": {
+                  "@type": "QuantitativeValue",
+                  "value": 1,
+                  "unitCode": "MTK"
+                }
+                {%- endif -%}
               }
             },
             {%- endif -%}

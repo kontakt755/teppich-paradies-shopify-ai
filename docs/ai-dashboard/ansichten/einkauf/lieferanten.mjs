@@ -7,6 +7,7 @@
  * nichts gesendet. Gezaehlt wird aus dem Stand im Browser (lib/einkauf-lieferanten.mjs),
  * damit Zahl und Liste nach einem Klick sofort zusammenpassen.
  */
+import { belegStandText } from './belege.mjs';
 import {
   lieferantenKarten, karteImFilter, ueberfaelligText, hauptAktion, bestellwegText, feldKlartext,
   telLink, verlauf, lieferzeiten, SCHWELLEN_STANDARD, gmailLink, afNorm } from '../../lib/einkauf-lieferanten.mjs';
@@ -136,14 +137,18 @@ function wareZeile(x, namen) {
   const wer = [namen.get(p.orderId) || p.kunde, p.orderName].filter(ok).join(' · ');
   // Bestellt und noch nicht da: "Ist eingetroffen" direkt an der Zeile (setzt "geliefert",
   // derselbe Schritt wie "Als geliefert markieren" in der Tabelle).
+  // Ueber den Kettler bestellt: die Ware kommt nicht zu uns, sondern muss dort abgeholt werden.
   const status = x.eintrag?.status;
+  const kettler = status === 'bestellt' && x.eintrag?.ueber === 'kettler';
   const knopf = status === 'bestellt' && p.lineItemId && !istNurLesend()
-    ? `<button type="button" class="btn btn-sm lf-zeilenknopf" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="geliefert" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}">Ist eingetroffen</button>` : '';
+    ? `<button type="button" class="btn btn-sm lf-zeilenknopf" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="geliefert" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}">${kettler ? 'Beim Kettler abgeholt' : 'Ist eingetroffen'}</button>` : '';
   return `<li class="lf-posten${block.length ? ' lf-blockiert' : ''}"><div class="lf-posten-text">
       <div class="t">${esc(titel)}</div>
       ${menge ? `<div class="lf-menge">${esc(menge)}</div>` : ''}
       ${aus.map(z => `<div class="s">${esc(z)}</div>`).join('')}
       ${wer ? `<div class="s lf-wer">${esc(wer)}</div>` : ''}
+      ${kettler ? '<div class="s lf-kettler">Geht zum Kettler – nach dem Ketteln dort abholen</div>' : ''}
+      ${belegZeile(x.eintrag?.status, p.orderId, p.lieferant)}
       ${block.length ? `<div class="lf-grund">Blockiert: ${esc(block.join(' · '))}</div>` : ''}
     </div><div class="lf-posten-rechts">${warteChip(x)}${knopf}</div></li>`;
 }
@@ -156,7 +161,15 @@ function musterZeile(g, namen, { herkunft = false } = {}) {
       <div class="t">${esc(wer || 'Kunde unbekannt')}</div>
       <div class="s">${esc(musterText(g.positionen))}</div>
       ${woher ? `<div class="s lf-wer">${esc(woher)}</div>` : ''}
+      ${belegZeile(g.eintraege?.[0]?.eintrag?.status, g.orderId, g.positionen[0]?.lieferant)}
     </div><div class="lf-posten-rechts"><span class="lf-anzahl">${esc(plural(g.positionen.length, 'Muster', 'Muster'))}</span>${warteChip(g)}${musterSchrittKnopf(g.positionen, { klasse: 'btn btn-sm lf-zeilenknopf' })}</div></li>`;
+}
+
+/** Beleg vom Lieferanten (Postfach) an bestellten und eingetroffenen Posten: "AB 14.10. · LS 16.10.". */
+function belegZeile(status, orderId, lieferant) {
+  if (!['bestellt', 'geliefert'].includes(status) || !orderId || !lieferant) return '';
+  const text = belegStandText(orderId, lieferant);
+  return text ? `<div class="s lf-beleg"><a href="#/einkauf?tab=belege&amp;blf=beleg" title="Beleg vom Lieferanten aus dem Postfach">${esc(text)}</a></div>` : '';
 }
 
 /** Ueberschrift einer Stufe: "Ware bestellen 3", darunter ein Satz, rechts der Knopf. */
@@ -216,6 +229,14 @@ function arbeitsSchritte(k, namen) {
     teile.push(`<section class="lf-schritt lf-nachfassen ${ue.stufe}">${stufeKopf('Nachfassen', ue.auftraege === 1 ? '1 Auftrag' : `${ue.auftraege} Aufträge`, nachfassKnopf(k), { zusatz: esc(satz) })}
       ${stufeListe(laufendZeilen(ue.positionen, namen).map(z => z.html), 0, '')}</section>`);
   }
+  // Liegt zu lange bei uns: rausgeben - das ist unsere Arbeit, kein Anruf beim Lieferanten.
+  const lbu = k.liegtBeiUns;
+  if (lbu?.stufe) {
+    const satz = `${plural(lbu.anzahl, 'Position liegt', 'Positionen liegen')} bei uns, die älteste seit ${plural(lbu.maxTage, 'Tag', 'Tagen')} – an den Kunden rausgeben oder Abholung klären.`;
+    const knopf = `<a class="btn" href="#/einkauf?${new URLSearchParams({ af: 'eingetroffen', lf: k.id })}">Rausgeben</a>`;
+    teile.push(`<section class="lf-schritt lf-nachfassen ${lbu.stufe}">${stufeKopf('Liegt bei uns', lbu.auftraege === 1 ? '1 Auftrag' : `${lbu.auftraege} Aufträge`, knopf, { zusatz: esc(satz) })}
+      ${stufeListe(laufendZeilen(lbu.positionen, namen).map(z => z.html), 0, '')}</section>`);
+  }
   // Ruhig darunter: was wir selbst da haben und was im Plan laeuft (nicht ueberfaellig).
   const ruhig = [];
   const eigen = k.muster.eigen || [];
@@ -265,12 +286,18 @@ function karteHtml(k, { gruppeKarte, namen, af, alleGruppen, alleMusterGruppen }
 }
 
 /**
- * Nachfassen ueber alle Lieferanten fuer die Kachel oben: Summe der Auftraege aus den Karten,
- * damit Kachel und Abschnitte "Nachfassen" dieselbe Menge zaehlen.
+ * Nachfassen ueber alle Lieferanten fuer die Kachel oben: verschiedene Auftraege aus den
+ * Abschnitten "Nachfassen". Ein Auftrag mit Ware von zwei Lieferanten zaehlt einmal - die
+ * Summe je Karte zaehlte ihn doppelt (Codex-Audit 2026-10-19).
  */
 export function nachfassenSumme() {
-  let auftraege = 0; let crit = false;
-  for (const k of karten()) if (k.ueberfaellig.stufe) { auftraege += k.ueberfaellig.auftraege; crit ||= k.ueberfaellig.stufe === 'crit'; }
+  const ids = new Set(); let ohneId = 0; let crit = false;
+  for (const k of karten()) {
+    if (!k.ueberfaellig.stufe) continue;
+    crit ||= k.ueberfaellig.stufe === 'crit';
+    for (const x of k.ueberfaellig.positionen) { const id = x.pos?.orderId || x.pos?.orderName; if (id) ids.add(id); else ohneId += 1; }
+  }
+  const auftraege = ids.size + ohneId;
   return { auftraege, stufe: auftraege ? (crit ? 'crit' : 'warn') : null };
 }
 
@@ -297,7 +324,7 @@ export function lieferantenKartenHtml({ gruppeKarte, daten = einkauf.bestellunge
 
 // ------------------------------------------------------------ Bestellmail-Dialog
 
-const dialog = { lieferant: null, art: 'ware', ziel: '', daten: null, markiert: new Set(), gesetzt: new Map() };
+const dialog = { lieferant: null, art: 'ware', auftrag: null, ziel: '', daten: null, markiert: new Set(), gesetzt: new Map() };
 
 /** Kunde · Ort einer Bestellung als kurzer Text (Ort = Stadt der Lieferadresse). */
 function kundeOrtText(orderId) {
@@ -320,7 +347,7 @@ const LIEFERZIEL_TEXT = { laden: 'Lieferung in den Laden', kunde: 'Lieferung dir
  * Nur ein Hinweis - umgeschaltet wird mit "Kettler" oben; der Server begruendet je Position.
  */
 function kettlerHinweis(m) {
-  if (m.kettlerAutomatisch) return '<p class="small muted lf-kettler">Nach unserer Regel: Maßteppiche unter 2 m schneidet und kettelt unser Kettler – der Lieferant liefert nur Meterware dorthin, wir holen ab.</p>';
+  if (m.kettlerAutomatisch) return '<p class="small muted lf-kettler">Nach unserer Regel: Gekettelte Maßteppiche unter 2 m kettelt unser Kettler. Der Lieferant schickt sie ungekettelt im Fertigmaß dorthin, wir holen sie dort ab.</p>';
   const liste = m.kettlerVorschlag || [];
   if (m.art !== 'ware' || !m.kettlerMoeglich || m.lieferziel === 'kettler' || !liste.length) return '';
   return `<div class="notice lf-kettler"><strong>Über unseren Kettler? (${liste.length})</strong>
@@ -377,7 +404,7 @@ function mailAbschnitt(m, i, mehrere) {
     : `<div class="lf-frage" data-lf-frage="${i}" hidden>
         <strong>Als bestellt markieren?</strong>
         <span class="small muted">Nur, wenn die Bestellung wirklich raus ist.</span>
-        <div class="field"><label for="lfNr${i}">Bestellnummer des Lieferanten (optional)</label><input id="lfNr${i}" maxlength="200" placeholder="z. B. 2026-4711"></div>
+        <div class="field"><label for="lfNr${i}">Bestellnummer des Lieferanten (aus der AB)</label><input id="lfNr${i}" maxlength="200" placeholder="z. B. 2026-4711"><span class="small muted">Damit die Auftragsbestätigung automatisch zugeordnet wird. Optional.</span></div>
         <div class="lf-frage-knoepfe"><button type="button" class="btn btn-primary" data-lf-markieren="${i}">${plural(n, wort, wort)} als bestellt markieren</button><button type="button" class="btn btn-ghost" data-lf-nicht="${i}">Noch nicht</button></div>
       </div>`;
   return `<section class="lf-mail">${kopf}${zielWahl}${kettlerHinweis(m)}
@@ -408,7 +435,8 @@ function zeichneDialog() {
 
 async function ladeDialog() {
   const q = new URLSearchParams({ lieferant: dialog.lieferant, art: dialog.art });
-  const auftrag = state.route.params.get('auftrag');
+  // Aus "Je Auftrag" kommt der Auftrag mit dem Knopf, sonst aus der Adresse (#/einkauf?auftrag=).
+  const auftrag = dialog.auftrag || state.route.params.get('auftrag');
   if (auftrag) q.set('auftrag', auftrag);
   if (dialog.ziel) q.set('ziel', dialog.ziel);
   const fuer = `${dialog.lieferant}|${dialog.art}|${dialog.ziel}`;
@@ -420,8 +448,8 @@ async function ladeDialog() {
   $('#dialogRoot .lf-mail-knoepfe .btn-primary, #dialogRoot [data-close-dialog].btn')?.focus();
 }
 
-export function openBestellmailDialog(lieferant, art = 'ware') {
-  Object.assign(dialog, { lieferant, art: art === 'muster' ? 'muster' : 'ware', ziel: '', daten: null, markiert: new Set(), gesetzt: new Map() });
+export function openBestellmailDialog(lieferant, art = 'ware', { auftrag = null } = {}) {
+  Object.assign(dialog, { lieferant, art: art === 'muster' ? 'muster' : 'ware', auftrag: auftrag || null, ziel: '', daten: null, markiert: new Set(), gesetzt: new Map() });
   zeichneDialog();
   ladeDialog();
 }
@@ -459,7 +487,7 @@ export function einkaufKlickLieferanten(e) {
   const mail = e.target.closest('[data-lf-mail]');
   if (mail) {
     // Bei <a> (Portal, Telefon) laeuft der Link normal weiter - kein preventDefault.
-    openBestellmailDialog(mail.dataset.lfMail, mail.dataset.lfArt);
+    openBestellmailDialog(mail.dataset.lfMail, mail.dataset.lfArt, { auftrag: mail.dataset.lfAuftrag || null });
     return true;
   }
   const auf = e.target.closest('[data-lf-auf]');

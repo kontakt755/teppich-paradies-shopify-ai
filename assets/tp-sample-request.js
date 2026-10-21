@@ -4,17 +4,24 @@
   if (!root) return;
 
   var isSample = params.get('thema') === 'muster';
+  var needsSampleProduct = params.get('thema') === 'musteranfrage' && !(params.get('produkt') || '').trim();
   if (isSample) {
     root.setAttribute('data-mode', 'sample');
   } else {
     anfrageVorbelegen(params);
   }
+  // Auch eine unverbindliche allgemeine Musteranfrage braucht einen Belag.
+  // Nur die Produktwahl zeigen; Versandadresse und Selbstbedienung bleiben
+  // ausschliesslich dem bestehenden Mustermodus vorbehalten.
+  if (needsSampleProduct) root.setAttribute('data-needs-product', 'true');
+  var produktwahl = isSample || needsSampleProduct ? produktwahlEinrichten() : null;
 
   // Nach dem Absenden laedt Shopify die Seite neu. Den sichtbaren Ergebnistext
   // fokussieren, damit Fehler und Erfolg auch per Tastatur erreichbar sind.
   var result = root.querySelector('.tp-form-error');
   if (!result) result = root.querySelector(isSample ? '.tp-success--sample' : '.tp-success--generic');
   if (result) result.focus();
+  else if (params.get('thema') === 'musteranfrage') musteranfrageFokussieren();
 
   if (!isSample) return;
 
@@ -36,9 +43,35 @@
     if (input) input.value = value;
   }
 
-  setHiddenField('Betreff', 'Kostenlose Musteranfrage');
+  function musteranfrageFokussieren() {
+    if (window.location.hash) return;
+    var navigation = window.performance && typeof window.performance.getEntriesByType === 'function' && window.performance.getEntriesByType('navigation')[0];
+    if (!navigation || navigation.type !== 'navigate') return;
+    var hinweis = root.querySelector('[data-tp-anfrage-hinweis]');
+    if (!hinweis || hinweis.hidden || !hinweis.textContent.trim() || hinweis.hasAttribute('data-tp-fokus-erledigt')) return;
+    hinweis.setAttribute('data-tp-fokus-erledigt', '');
 
-  var produktwahl = produktwahlEinrichten();
+    var unterbrochen = false;
+    var ereignisse = ['pointerdown', 'keydown', 'wheel', 'touchstart'];
+    function unterbrechen() { unterbrochen = true; }
+    ereignisse.forEach(function (name) {
+      document.addEventListener(name, unterbrechen, { capture: true, passive: true });
+    });
+
+    window.requestAnimationFrame(function () {
+      ereignisse.forEach(function (name) {
+        document.removeEventListener(name, unterbrechen, true);
+      });
+      if (unterbrochen || window.location.hash || window.scrollX || window.scrollY) return;
+      var aktiv = document.activeElement;
+      if (aktiv && aktiv !== document.body && aktiv !== document.documentElement) return;
+      if (!hinweis.isConnected || hinweis.hidden) return;
+      hinweis.focus({ preventScroll: true });
+      if (document.activeElement === hinweis) hinweis.scrollIntoView({ block: 'start', behavior: 'instant' });
+    });
+  }
+
+  setHiddenField('Betreff', 'Kostenlose Musteranfrage');
 
   var handle = params.get('produkt');
   if (!handle) return;
@@ -111,6 +144,7 @@
     function uebernehmen(product) {
       gewaehlt = product;
       feld.value = product.title;
+      feld.setCustomValidity('');
       setHiddenField('Produkt', product.title);
       setHiddenField('Produkt-Handle', product.handle);
       setHiddenField('Produkt-Link', window.location.origin + '/products/' + product.handle);
@@ -161,13 +195,14 @@
         .then(function (daten) {
           if (nr !== anfrage) return;
           var produkte = (daten && daten.resources && daten.resources.results && daten.resources.results.products) || [];
-          zeigen(produkte.filter(hatMusterweg).slice(0, 6));
+          zeigen(produkte.filter(function (product) { return needsSampleProduct || hatMusterweg(product); }).slice(0, 6));
         })
         .catch(function () { zuklappen(); });
     }
 
     feld.addEventListener('input', function () {
       var text = feld.value.trim();
+      feld.setCustomValidity(text.length >= 3 ? '' : 'Bitte nennen Sie Produkt und Dekor (mindestens 3 Zeichen).');
       // Freitext gilt immer; Handle/Link nur, solange der Text zur Auswahl passt.
       setHiddenField('Produkt', text);
       if (gewaehlt && text !== gewaehlt.title) {
@@ -278,6 +313,10 @@
       var breite = params.get('breite');
       var laenge = params.get('laenge_cm');
       if (breite || laenge) zeilen.push('Maße: ' + [breite ? 'Breite ' + breite : '', laenge ? 'Länge ' + laenge + ' cm' : ''].filter(Boolean).join(', '));
+      var zuschnitt = params.get('zuschnitt');
+      if (zuschnitt) zeilen.push('Zuschnitt: ' + zuschnitt);
+      var raum = params.get('raum');
+      if (raum) zeilen.push('Raum: ' + raum);
       zeilen.push('Fläche / Raum: ');
       nachricht.value = zeilen.join('\n');
     }

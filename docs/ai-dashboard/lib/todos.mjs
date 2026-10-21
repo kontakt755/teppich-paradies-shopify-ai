@@ -14,6 +14,8 @@
 import { musterText, musterHerkunftText } from './bestellinhalt.mjs';
 import { vorgangsLink } from './vorgangslink.mjs';
 import { lieferterminFaellig, beschaffungText, uebernahmeText } from './beschaffung.mjs';
+import { LEISTUNG_LABEL, QUELLE_LABEL } from './serviceanfragen.mjs';
+import { verzugWerktage, VERZUG_WERKTAGE, kundenErinnerung } from './auftrags-ablauf.mjs';
 
 const TAG_MS = 86400000;
 const UNGEKLAERT = 'UNGEKLAERT';
@@ -29,10 +31,14 @@ export const FRISTEN = Object.freeze({
   rueckruf: [2, 7],      // Kunde wartet auf einen Anruf
   rausgeben: [7, 14],    // Ware liegt bei uns
   angebot: [7, 14],      // Angebot ohne Antwort
+  service: [1, 3],       // neue Service-Anfrage, noch niemand hat sich gemeldet
 });
 
-export const SICHTEN = Object.freeze(['inhaber', 'laden', 'website']);
-export const SICHT_LABEL = Object.freeze({ inhaber: 'Inhaber', laden: 'Laden', website: 'Website' });
+// 'alles' ist die Vereinigung aller Bereiche (Inhaber-Chip "Alles"). 'inhaber' bleibt die
+// fruehere Fokus-Sicht (Freigaben, Rotes, Eigenes) fuer alte Links - der Chip "Alles" zeigte
+// sie bis 2026-10-19 und verschwieg damit normale Laden-Arbeit (Codex-Audit).
+export const SICHTEN = Object.freeze(['inhaber', 'laden', 'website', 'alles']);
+export const SICHT_LABEL = Object.freeze({ inhaber: 'Inhaber', laden: 'Laden', website: 'Website', alles: 'Alles' });
 
 const TON_RANG = { crit: 0, warn: 1, '': 2 };
 
@@ -160,8 +166,19 @@ function lageVon({ z, a, offen }, { statusAlle, rueckrufJeOrder, heute, jetzt, s
   const maxTage = (liste, feld) => liste.reduce((m, x) => Math.max(m, tageSeit(x.eintrag?.[feld], jetzt) ?? 0), 0);
   const bestellt = mit('bestellt');
   if (bestellt.length) {
-    const tage = maxTage(bestellt, 'bestelltAm');
-    return tage >= schwellen.nachhakenTage
+    // Bestaetigter Liefertermin: vorher ist der Lieferant dran, danach wir - dieselbe Regel wie
+    // das To-do "Liefertermin ueberschritten" und wartetage() im Einkauf. Bis 2026-10-19 stand
+    // hier trotz Termin in der Zukunft "Nachhaken".
+    const faellig = bestellt.filter(x => lieferterminFaellig(x.eintrag, heute));
+    if (faellig.length) return { spalte: 'wir', art: 'liefertermin', schritt: 'Liefertermin überschritten', alterTage: Math.max(...faellig.map(x => tageSeit(x.eintrag.beschaffung.liefertermin, jetzt) ?? 0)), positionen: faellig };
+    const ohneTermin = bestellt.filter(x => !x.eintrag?.beschaffung?.liefertermin);
+    if (!ohneTermin.length) {
+      const termin = bestellt.map(x => x.eintrag.beschaffung.liefertermin).sort().at(-1);
+      return { spalte: 'lieferant', art: 'bestellt', schritt: `${artWort(bestellt)} kommt bis ${termin.split('-').reverse().join('.')}`, alterTage: null, positionen: bestellt };
+    }
+    const tage = maxTage(ohneTermin, 'bestelltAm');
+    // Verzug: mehr als 10 Werktage ohne Wareneingang (Inhaber 2026-10-20, wie im Einkauf "Je Auftrag").
+    return ohneTermin.some(x => verzugWerktage(x.eintrag, jetzt) !== null)
       ? { spalte: 'wir', art: 'nachhaken', schritt: 'Nachhaken', alterTage: tage, positionen: bestellt }
       : { spalte: 'lieferant', art: 'bestellt', schritt: `${artWort(bestellt)} bestellt`, alterTage: tage, positionen: bestellt };
   }
@@ -278,7 +295,8 @@ function ausBestellungen(quellen, k) {
       else if (!status) sammle(bestellen, `${x.p.lieferant ?? UNGEKLAERT}|${x.p.istMuster ? 'muster' : 'ware'}`, pos);
       else if (status === 'bestellt') {
         const tage = tageSeit(x.eintrag.bestelltAm, k.jetzt);
-        if (!x.eintrag?.beschaffung?.liefertermin && tage !== null && tage >= k.schwellen.nachhakenTage) sammle(nachhaken, x.p.lieferant ?? UNGEKLAERT, { ...pos, tage });
+        const werktage = x.eintrag?.beschaffung?.liefertermin ? null : verzugWerktage(x.eintrag, k.jetzt);
+        if (werktage !== null) sammle(nachhaken, x.p.lieferant ?? UNGEKLAERT, { ...pos, tage, werktage });
       } else if (status === 'geliefert') {
         const tage = tageSeit(x.eintrag.geliefertAm, k.jetzt);
         const id = `rausgeben:${z.orderId}`;
@@ -345,10 +363,10 @@ function ausBestellungen(quellen, k) {
     const tage = Math.max(...positionen.map(x => x.tage));
     todos.push({
       id: `nachhaken:${lieferant}`, art: 'nachhaken', bereich: 'laden',
-      ton: tage >= k.schwellen.problemTage ? 'crit' : 'warn', alterTage: tage,
-      titel: `${artWort(positionen)} ${seitText(tage)} bestellt – noch nicht da`,
+      ton: Math.max(...positionen.map(x => x.werktage)) > VERZUG_WERKTAGE + 5 ? 'crit' : 'warn', alterTage: tage,
+      titel: `Beim Lieferanten nachfragen: ${artWort(positionen)} ${seitText(tage)} bestellt, noch nicht da`,
       kontext: [k.lieferantName(lieferant), kundenKurz(positionen), wasKurz(positionen)].join(' · '),
-      knopf: { text: 'Nachhaken', href: einkaufLink(lieferant) },
+      knopf: { text: 'Nachfragen', href: '#/einkauf?ab=verzug' },
     });
   }
   return todos;
@@ -370,6 +388,27 @@ function ausFaellen(quellen) {
     });
   }
   return todos;
+}
+
+/**
+ * Neue Service-Anfragen (Kunden > Service-Anfragen, Status "neu"): jemand will verlegen lassen,
+ * eine Treppe oder ein Aufmass - das ist Geld, das morgens auf der Startseite stehen muss.
+ * Bis 2026-10-19 erschienen sie nur im Reiter selbst (Codex-Audit Punkt 3).
+ */
+function ausServiceanfragen(quellen, jetzt) {
+  return (quellen.serviceanfragen || [])
+    .filter(e => e?.status === 'neu' && e.id)
+    .map(e => {
+      const tage = tageSeit(e.erstelltAm || (e.datum ? `${e.datum}T00:00:00` : null), jetzt);
+      const wer = [e.name, e.plz].filter(Boolean).join(', ') || e.telefon || e.email || 'ohne Namen';
+      return {
+        id: `service:${e.id}`, art: 'service', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.service), alterTage: tage,
+        titel: `Neue Anfrage ${LEISTUNG_LABEL[e.leistung] || 'Service'}: ${wer}`,
+        kontext: [QUELLE_LABEL[e.quelle] || null, e.herkunft || null, tage === null ? null : `eingegangen ${vorText(tage)}`,
+          e.telefon ? null : (e.email ? 'nur E-Mail' : null)].filter(Boolean).join(' · '),
+        knopf: { text: 'Melden', href: '#/kunden?tab=service' },
+      };
+    });
 }
 
 const AUFGABE_RUHT = ['DONE', 'WAITING', 'DEFERRED'];
@@ -532,17 +571,68 @@ function ausNeuheiten(quellen, jetzt) {
   }];
 }
 
+/**
+ * Ausschreibungen Bodenbelag im Umkreis (woechentlicher Lauf): neue Treffer seit dem
+ * letzten Lauf als To-do fuer den Laden (Verlegeauftraege). Bewerben macht der Inhaber.
+ */
+function ausAusschreibungen(quellen, jetzt) {
+  const d = quellen.shopwache?.ausschreibungen;
+  const neu = d?.neu || [];
+  if (!neu.length) return [];
+  const naechste = [...neu].sort((x, y) => String(x.frist || '9').localeCompare(String(y.frist || '9')))[0];
+  return [{
+    id: 'ausschreibungen', art: 'ausschreibungen', bereich: 'laden', ton: '', alterTage: tageSeit(d.geprueftAm, jetzt),
+    titel: `Ausschreibung Bodenbelag: ${neu.length} neu im Umkreis`,
+    kontext: [naechste.auftraggeber, naechste.frist ? `Frist ${naechste.frist}` : null, 'prüfen, ob wir anbieten'].filter(Boolean).join(' · '),
+    knopf: naechste.link ? { text: 'Bekanntmachung', href: naechste.link } : undefined,
+  }];
+}
+
+/**
+ * Akquise Verlegeauftraege (#1447): faellige Wiedervorlagen als ein To-do im Buero.
+ * `quellen.akquise` = Liste der faelligen Firmen (lib/akquise.mjs faelligeWiedervorlagen).
+ */
+function ausAkquise(quellen) {
+  const f = quellen.akquise || [];
+  if (!f.length) return [];
+  return [{
+    id: 'akquise', art: 'akquise', bereich: 'buero', ton: 'warn', alterTage: null,
+    titel: `Akquise: ${f.length} Nachfassen fällig`,
+    kontext: [f.slice(0, 3).map(x => x.name).join(', '), f.length > 3 ? `+${f.length - 3} weitere` : null].filter(Boolean).join(' · '),
+    knopf: { text: 'Ansehen', href: '#/akquise?as=faellig' },
+  }];
+}
+
+/**
+ * Termin beim Kunden morgen (Einkauf "Je Auftrag", Feld "Termin"): am Vortag ein To-do im Laden
+ * mit fertigem Erinnerungstext zum Kopieren. `quellen.kundentermine` = [{ orderId, auftragName, kundeName, termin }].
+ */
+function ausKundenterminen(quellen, k) {
+  const d = new Date(`${k.heute}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1);
+  const morgen = d.toISOString().slice(0, 10);
+  return (quellen.kundentermine || []).filter(t => t.termin === morgen).map(t => ({
+    id: `kundentermin:${t.orderId}`, art: 'kundentermin', bereich: 'laden', ton: 'warn', alterTage: null,
+    titel: `Kunde an Termin morgen erinnern: ${t.auftragName || t.orderId}`,
+    kontext: [t.kundeName, 'Text kopieren, per Mail oder WhatsApp schicken'].filter(Boolean).join(' · '),
+    knopf: { text: 'Text kopieren', kopiertext: kundenErinnerung({ auftragName: t.auftragName || '', kundeName: t.kundeName, termin: t.termin }) },
+  }));
+}
+
 /** Alle ableitbaren To-dos, unsortiert und ohne Blick auf die Rolle. */
 function alleTodos(quellen, opt) {
   const k = kontext(quellen, opt);
   return [
     ...ausBestellungen(quellen, k),
     ...ausFaellen(quellen),
+    ...ausServiceanfragen(quellen, k.jetzt),
     ...ausAufgaben(quellen, { ich: opt.ich, jetzt: k.jetzt }),
     ...ausFreigaben(quellen, k.jetzt),
     ...ausShopwache(quellen, k.jetzt),
     ...ausAuslauf(quellen, k.jetzt),
     ...ausNeuheiten(quellen, k.jetzt),
+    ...ausAusschreibungen(quellen, k.jetzt),
+    ...ausAkquise(quellen),
+    ...ausKundenterminen(quellen, k),
     ...ausTailscale(quellen),
   ];
 }
@@ -551,6 +641,7 @@ function fuerSicht(todos, sicht, alle) {
   const meins = t => alle || t.fuerMich !== false;
   if (sicht === 'laden') return todos.filter(t => t.bereich === 'laden' && meins(t));
   if (sicht === 'website') return todos.filter(t => t.bereich === 'website' && meins(t));
+  if (sicht === 'alles') return todos.filter(meins);
   // Inhaber: Freigaben, alles Rote - egal bei wem es liegt - und die eigenen faelligen Aufgaben.
   return todos.filter(t => t.bereich === 'buero' || t.ton === 'crit' || t.meine);
 }
@@ -564,8 +655,10 @@ function fuerSicht(todos, sicht, alle) {
  *   schwellen      /api/einkauf/lieferanten    -> schwellen {nachhakenTage, problemTage}
  *   rueckrufe      /api/kunden/rueckrufe       -> zeilen
  *   faelle         /api/kunden/faelle          -> faelle
+ *   serviceanfragen /api/kunden/serviceanfragen -> eintraege
  *   aufgaben       /api/org/liste?bereich=alle-aufgaben -> eintraege
  *   freigaben      Entwicklungsaufgaben (issues.json), nur beim Inhaber gefuellt
+ *   akquise        faellige Wiedervorlagen (ansichten/akquise.mjs akquiseFaellig), nur beim Inhaber
  *   shopwache      /api/shopwache/status, nur beim Inhaber gefuellt (mit `auslauf`)
  * @param {object} opt
  *   sicht          'inhaber' | 'laden' | 'website'
@@ -578,10 +671,10 @@ export function leiteTodosAb(quellen = {}, opt = {}) {
   return sortiereTodos(fuerSicht(alleTodos(quellen, opt), sicht, Boolean(opt.alle)));
 }
 
-/** Zahlen fuer die Sprungfelder des Inhabers: was liegt im Laden, was bei der Website - bei wem auch immer. */
+/** Zahlen fuer die Sicht-Chips des Inhabers: was liegt im Laden, was bei der Website, alles - bei wem auch immer. */
 export function zaehleTodos(quellen = {}, opt = {}) {
   const todos = alleTodos(quellen, opt);
-  return { laden: fuerSicht(todos, 'laden', true).length, website: fuerSicht(todos, 'website', true).length };
+  return { laden: fuerSicht(todos, 'laden', true).length, website: fuerSicht(todos, 'website', true).length, alles: fuerSicht(todos, 'alles', true).length };
 }
 
 /**

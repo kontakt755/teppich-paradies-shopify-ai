@@ -2,6 +2,417 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-20 · Muster aus offenen Druckauftraegen entfernen (#1547)
+
+- **Geaendert:** Reservierte Muster aus einer frueheren Sitzung oder von einem anderen
+  Arbeitsplatz haben jetzt „Entfernen…“ je Position und „Gesamten Auftrag entfernen…“.
+  Einzelentfernen beendet den alten Auftrag und gibt seine uebrigen Positionen gemeinsam
+  wieder unter „Noch zu drucken“ frei. Ein atomarer Schreibvorgang prueft den vollstaendigen
+  Auftrag samt Revisionen, erhaelt den Verlauf und setzt keine Position als gedruckt.
+  Mehr als 25 Positionen sind schrittweise erreichbar; geoeffnete Auftragsdetails bleiben
+  beim Aktualisieren erhalten. Ein bestaetigter Text erklaert Restpositionen und vorhandene
+  Ausdrucke vor dem Entfernen.
+- **Getestet:** 3435/3435 Gesamttests (633 Dashboard), 58/58 synthetische Browserstrecken:
+  Einzel-/Gesamtentfernen, Abbrechen, Mehrplatzkonflikt, Antwortfehler/Wiederholung,
+  Leserechte und Auftraege mit mehr als 25 Positionen samt bestehenden Verbindungs-/Sammeldruckstrecken.
+  30 Rollen-/Breitenansichten bei 360/390/800/1024/1440 px in heller/dunkler Ansicht ohne
+  Ueberlauf oder JS-Fehler. Klickstrecke mit echter Datenkopie: 5 reservierte Positionen
+  werden zu 1 entfernt und 4 offen, ohne Druck oder Gedruckt-Markierung. Unabhaengige
+  Pruefung des gefrorenen Produkt-Diffs ohne offene Befunde.
+- **Risiken:** Die Listenaktion stoppt keinen bereits laufenden Hardwaredruck. Dieser wird
+  vor der Aenderung am betreffenden Arbeitsplatz beendet. Entfernte Eintraege bleiben fuer
+  Verlauf und Wiederholungsschutz erhalten; Kundenbestellungen werden nicht veraendert.
+- **Naechste Stufe:** Projektpruefungen, PR und Aktualisierung des privaten Dashboard-Dienstes.
+
+## 2026-10-20 · Drucker getrennt verbinden und Dashboard-App druckfaehig starten (#1540)
+
+- **Geaendert:** Die Druckvorschau bietet „Drucker verbinden“ als eigenen Schritt mit sichtbarem
+  Verbindungsstatus. Die reine Verbindung sendet keine Etiketten, setzt keinen Druckversuch und
+  aendert keinen Drucklistenstatus. Der spaetere bewusste Druckklick nutzt dieselbe Verbindung.
+  Doppelklick, Abbruch und verspaetete Geraeteauswahl bleiben getrennt vom Druck; Schliessen einer
+  ungedruckten Vorschau gibt den Auftrag weiterhin frei. Zum Wechseln zwischen Bluetooth und USB
+  zuerst trennen. Der Tastaturfokus beginnt beim Verbinden und springt danach nicht zum Druckstart.
+  Ein gemeinsamer macOS-App-Starter oeffnet ein eigenes Chrome-/Edge-Fenster ueber localhost;
+  optional eine sichere HTTPS-Zentrale. Der installierte App-Einstieg kann darauf delegieren,
+  ohne die privaten Betriebsstarter zu ersetzen. Dienstpruefung, Wiederanlauf und privates Log
+  bleiben erhalten; LAN-HTTP und unsichere Browserausnahmen werden nicht verwendet.
+- **Getestet:** 48 Browserstrecken mit ausschliesslich synthetischem Drucker: Verbinden ohne
+  Druckbefehle/Callbacks, Verbindung wiederverwenden, Doppelklick, Fehler und Wiederholung,
+  Schliessen/Escape/Backdrop/Sitzungsende/Dialogersatz waehrend der Geraeteauswahl sowie gesperrte
+  bzw. wechselnde Verbindungsart. Bestehende Sammeldruck-/Papierbestaetigung und private
+  Datenkopie auf Handy/Tablet/Rechner in heller und dunkler Ansicht geprueft. 14 isolierte
+  Startertests ersetzen alle App-/Netz-/Dienstaufrufe; sichere URL, App-Modus, Browserauswahl,
+  Wiederanlauf und Fehlerpfade geprueft. Unabhaengige Pruefung der gefrorenen Produktdateien.
+- **Risiken:** Kein echter Niimbot verbunden oder physischer Ausdruck ausgefuehrt. Der Status
+  bestaetigt die Geraeteverbindung, nicht die Qualitaet eines spaeteren Ausdrucks.
+- **Naechste Stufe:** Projektpruefungen, PR und Aktualisierung des privaten Dashboard-Dienstes.
+
+## 2026-10-20 · Muster sammeln und im selben Fenster abschliessen (#1536)
+
+- **Geaendert:** Im Lexikon ist Vormerken die Hauptaktion; eine bestaetigte Rueckmeldung nennt
+  Ausfuehrung/Kopien und fuehrt zur naechsten Suche oder Druckliste. Die gemeinsame Liste nimmt
+  standardmaessig alle offenen Positionen. Haekchen und Sammelentfernen erscheinen erst unter
+  „Auswahl aendern“; eine leere Auswahl bleibt leer. „Druckvorschau oeffnen“ reserviert den Auftrag,
+  erst „Jetzt … Aufkleber drucken“ startet die Ausgabe. Druckereinstellungen sind eingeklappt.
+  Die Papierkontrolle schliesst den Auftrag direkt im Druckfenster ab. Schliessen vor einem
+  Druckversuch gibt den Auftrag wieder frei; ab dem Druckklick bleibt er bei Abbruch/Fehler erhalten.
+  Nach der Druckerwahl prueft ein frischer Abruf IDs/Revisionen vor jedem ersten Hardwarebefehl.
+- **Getestet:** 29 synthetische Browserstrecken mit Druckerattrappe, darunter Reihenfolge/Kopien,
+  individuelle/leere Auswahl, Mehrplatzkonflikt waehrend Druckerwahl, Abbruch/Teiltransport,
+  Sitzungsende, Papierbestaetigung und wiederholbare Callbackfehler. Lexikon-Doppelklick,
+  Farbwechselmenge, bestaetigte/unbestaetigte Vormerkung und Suchfokus. Bestehende Gesamtsuite
+  3407/3407 (605 Dashboard), 30 Rollen-/Breitenansichten sowie gefuellte Liste/Vorschau auf einer
+  privaten Datenkopie bei 360/390/800/1024/1440 px, hell/dunkel, ohne Ueberlauf oder JS-Fehler.
+  Unabhaengige Pruefung des gefrorenen Produkt-Diffs ohne offene Befunde.
+- **Risiken:** Kein physischer Druck erfolgt. Die Papierkontrolle bleibt erforderlich; ein
+  bestaetigter Datentransport beweist keinen lesbaren Ausdruck. Tab-Schliessen/Neustart und
+  Sitzungsende geben Reservierungen bewusst nicht automatisch frei.
+- **Naechste Stufe:** Projekt-Guards abschliessen, PR zusammenfuehren und privaten Dienst lesend pruefen.
+
+## 2026-10-20 · Akquise gefuehrt: eine Firma „Als Nächstes“ (#1533)
+
+- **Geändert:** Statt einer langen Liste mit Dropdown, Datum und Notiz je Firma: oben ein Erklärkasten
+  (worum es geht, drei Schritte, Fortschritt „x von 33 angeschrieben · Antworten · Aufträge“), darunter
+  genau eine Karte „Als Nächstes“ – fällige Wiedervorlagen zuerst, dann noch nicht angeschriebene nach
+  Wohnungsbestand, dann Nähe zu Oranienburg (ungefähre km je Ort in `lib/akquise.mjs`). Karte: Name, Ort,
+  Art, Wohnungen, Kontakt (CSV-Spalte `kontakt`, jetzt von `/api/akquise/liste` geliefert), ein Satz warum,
+  was zu tun ist, Knöpfe „E-Mail öffnen“ (mailto mit Betreff/Text), „Text kopieren“, „Anrufen“, dann
+  „Erledigt: angeschrieben“ (+14 Tage) bzw. „Nachgefasst“ (neue Aktion, Status bleibt, +14 Tage,
+  Zähler), „Antwort bekommen“ (Feld „Was wurde gesagt?“ → Termin vereinbaren / Angebot schicken, +7),
+  „Kein Interesse“, „Später“ (+7). Ohne Kontakt: „Kontakt fehlt – Website ansehen“. „Alle Firmen“
+  zugeklappt als kompakte Tabelle (Stand-Chip, Wiedervorlage, Notiz, „Oben zeigen“). Ausschreibungen
+  als eigener Kasten mit Erklärung, Ampel und „noch N Tage“.
+- **Getestet:** `tests/akquise.test.mjs` 10 (3 neu); `dashboard:test` 608 grün, `npm test` 3406 grün;
+  `dashboard:pruefen` alle Ansichten 360–1440 px OK, 0 px Überlauf. Klickstrecke Datenkopie (390 px):
+  angeschrieben → Fortschritt 0 → 1, Karte springt zur nächsten Firma; Später → nächste Firma,
+  Wiedervorlage +7; „Oben zeigen“ → angeschrieben → Karte „Nachfassen“; Antwort + Notiz → Termin:
+  Antworten 0 → 1, Notiz gespeichert; 0 JS-Fehler.
+- **Risiken/Annahmen:** Wohnungszahl fehlt in der CSV fast überall, die Reihenfolge läuft dort über die
+  Entfernung. Status von Hand zurücksetzen geht nur noch über die Karten-Knöpfe. mailto-Länge hängt
+  vom Mailprogramm ab (Text ~1,5 kB). Bereich bleibt nur für die Rolle Inhaber sichtbar.
+- **Nächste Stufe:** Wohnungszahlen in der privaten CSV ergänzen; falls Mitarbeiter den Bereich nutzen
+  sollen, Rolle in `kern/router.mjs` und Server freigeben.
+
+## 2026-10-20 · Cleanup-PRs gemeinsam abgesichert (#1441, #1457)
+
+- **Geändert:** Änderungen aus #1444 und #1460 zusammengeführt. Tempordner brauchen eine Besitzkennung,
+  die an Verzeichnisidentität und Prozess gebunden ist; fremde und unmarkierte Ordner bleiben erhalten.
+  Echte Pfadauflösung verhindert Löschung außerhalb des Tempbereichs über Symlink/`..`. Ein lebender
+  Besitzer oder offene Dateien/cwd blockieren die Altbereinigung; unklare Prüfungen ebenfalls.
+  `--aus` behält auch eine frühere automatische Ablage dauerhaft. Browserstart/-ende und Serverende
+  werden vor der Bereinigung abgewartet; bei Fehlern bleibt keine unbeabsichtigt offene Prüf-Instanz.
+  Der Teststarter verwaltet eine eigene POSIX-Prozessgruppe einschließlich Enkelprozessen und eskaliert
+  ignorierte Abbrüche begrenzt; Ausgabe und Rückgabecode bleiben erhalten, Signale liefern 130/143/129.
+- **Getestet:** Synthetische Regressionen für fremde/aktive Ordner, verlinkte Exporte und Pfade, kopierte
+  Kennungen, reale cwd-Nutzung, Browserstart/-abbruch, verzögertes Kindende und parallele Testsuiten.
+  Echter Puppeteer-Prüflauf mit synthetischen Daten: regulär, `--offen` plus Server-TERM, Fehler mit
+  `--offen`, INT/TERM/HUP. Vollsuite und Commit-Guards im zugehörigen PR dokumentiert.
+- **Risiken:** SIGKILL/Stromverlust können keinen Exit-Handler ausführen. Unmarkierte Altbestände werden
+  absichtlich nicht automatisch übernommen. Windows-Fallback und bewusst abgekoppelte Test-Prozessgruppen
+  sind durch die macOS-Prüfung nicht abgedeckt. Keine pauschale Tempbereinigung oder Dienst-Neustarts.
+- **Nächste Stufe:** Konsolidierten Entwurfs-PR prüfen; Merge/Preview/Live bleiben gesperrt.
+
+## 2026-10-20 · Aufkleberbestand automatisch pruefen und gemeinsame Druckliste vereinfachen (#1525, #1526)
+
+- **Geaendert:** Interne Katalogpruefung im Lexikon mit Suche, Status und offenen Zuordnungen.
+  Neue Produkte und Farben erscheinen nach dem Lexikonabgleich automatisch. Belegte Einzeldekore
+  und Basisartikel erhalten vollstaendige Aufkleber, mehrdeutige Quellen bleiben gesperrt.
+  Die Druckliste bietet seitenuebergreifende Auswahl, einzelnes/gesammeltes Entfernen und einen
+  Drucklauf fuer bis zu 1000 Positionen/5000 Aufkleber. Automatische 100er-Transportteile ueber
+  dieselbe Verbindung, hoechstens 12 Vorschaumotive. Sichere Vorgangskennungen auch auf privatem
+  HTTP; Anzahl bleibt beim Farbwechsel erhalten. „Aufkleber ansehen“ oeffnet die Vorschau.
+- **Getestet:** Reine Export-, Zuordnungs-, API- und Speicherfaelle sowie synthetische
+  Browserstrecken fuer Mehrplatzbetrieb, Rollen, Reihenfolge/Kopien, 100er-Teile, Entfernen,
+  Abbruch, Verbindungsfehler, B1-Abschluss und Sitzungsablauf. Frischer Rohdatenabgleich gegen
+  kanonische Aufkleber prueft Produktquellen, Farbe, Shop-SKU, QR und hinterlegte Technik.
+  Gesamtsuite 3403/3403 (605 Dashboard), 170 Standardansichten plus 99 Rollen-/Breitenfaelle
+  ohne Ueberlauf. 18 Katalog- und 17 Drucklisten-Browserstrecken ohne offene Befunde; alle
+  Aufkleber im Browser mit echtem Canvas/QR auf Volltext, Grenzen und Ueberlappung geprueft.
+  Projekt-Guards, Theme-Check, Secret-Scan und statischer Workflow erfolgreich.
+- **Risiken:** Produktdatenkonsistenz beweist keine Hersteller-Vollstaendigkeit und keinen
+  physischen Lagerbestand. Ungeklaerte Musterfaehigkeit bleibt sichtbar; fehlende optionale SKU
+  wird weggelassen. Echter B1/50x50-Hardwaredruck bleibt zu pruefen. Abbruch bestaetigt keinen
+  Ausdruck; Reservierung bleibt bis zur bewussten Freigabe/Kontrolle bestehen.
+- **Naechste Stufe:** Gefrorenen PR-Diff pruefen, Dienst aktualisieren und intern lesend verifizieren.
+
+## 2026-10-20 · Einkauf „Je Auftrag“: nur Handlungsbedarf offen, Kunde informieren, Verzug (#1522)
+
+- **Geaendert:** „Je Auftrag“ zeigt oben nur „Jetzt zu tun“ (bestellen, Ungeklaertes, Ware da und
+  Kunde nicht informiert, Muster da, Verzug), aelteste zuerst. Bestellte Auftraege, die auf Ware
+  warten, liegen eingeklappt unter „Unterwegs (N)“, informierte/rausgegebene unter „Beim Kunden (N)“
+  (`?abg=` haelt die Gruppe offen). Schritt 4: „Nachricht an Kunde“ (fertiger Text in Sie-Form,
+  kopieren oder Mailprogramm, Telefon) und „Kunde informiert“ – neuer Zeitleisten-Schritt
+  `kunde_informiert` (Ware) im Auftragsverlauf, Datum und Person an der Karte. Verzug: bestellt seit
+  mehr als 10 Werktagen ohne Wareneingang (mit bestaetigtem Liefertermin erst danach) → Hinweis
+  „Beim Lieferanten nachfragen“ mit fertiger Nachfrage; das bisherige To-do „Nachhaken“ (7
+  Kalendertage) folgt derselben Regel und fuehrt nach `#/einkauf?ab=verzug`. „Heute“ hat oben die
+  Zeile „Zu bestellen · Kunde informieren · Verzug · Nachfassen Akquise“, je Zahl ein Sprung in die
+  gefilterte Liste (`?ab=bestellen|informieren|verzug`). Rechnung in `lib/auftrags-ablauf.mjs`.
+  Nichts wird automatisch gesendet.
+- **Getestet:** dashboard:test 522, npm test gruen, dashboard:pruefen 165 OK (33 Ansichten,
+  360–1440 px, 0 px Ueberlauf). Klickstrecke gegen die Kopie: Ware-Position auf „geliefert“ →
+  Heute „Kunde informieren“ 1, Liste 1 Karte → Dialog (Sie-Form, Mailto) → „Kunde informiert“ →
+  Liste 1 → 0, Heute 1 → 0, Server liefert `kundeInformiert`; Verzug 3 Karten, Nachfrage-Text mit
+  Kommission; „Unterwegs (15)“ eingeklappt, aufgeklappt 20 Karten; 0 JS-Fehler.
+- **Risiken:** Liefer-/Montagetermin aus der Auftrags-App nicht angebunden: die App liefert per
+  Schluessel nur Zahlen, Termine stehen in Google Sheets/Kalender ohne Shopify-Bestellnummer.
+- **Naechste Stufe:** Lesende Termin-Ansicht in der Auftrags-App mit Bestellnummer, dann Termin an
+  Schritt 4.
+## 2026-10-20 · Benoetigte Musteraufkleber direkt bei der Bestellung (#1506)
+
+- **Geaendert:** Musterbestellungen zeigen intern Produkt, Farbe, Shop-SKU, offene Aufklebermenge
+  und Drucklistenstand. Ein Klick merkt die zugeordneten Positionen gemeinsam vor. Die interne
+  Quellbestellung ist in der Druckliste verlinkt, erscheint aber nicht auf Aufkleber, PNG oder QR.
+  Mehrere Arbeitsplaetze und Neuladen verdoppeln keine Bestellposition. Aenderungen, unklare
+  Zuordnungen und Mengen verlangen Pruefung; bereits vorbereitete Auftraege bleiben unveraendert.
+  Der vorhandene Direktdruck verwendet dieselben kanonischen Daten und die bestellten Gesamtmengen.
+- **Getestet:** 3.310 Tests gruen (538 Dashboard-Tests), davon 33 neue Zuordnungs-, Speicher-
+  und API-Faelle. Browserfaelle mit getrennten
+  Mitarbeitersitzungen: Quell-ID vor alter Muster-SKU, Mengen/Teilversand, Tombstone,
+  Reservierungskonflikte, Storno, Direkt-/Nachdruck und verspaetete Antworten. Ohne Anmeldung
+  liefern beide APIs 401, private Dateipfade bleiben unzugaenglich, „lesen“ erhaelt bei POST 403.
+  Druckbild und QR enthalten ausschliesslich Produktdaten; synthetische Kunden-/Bestellmarker
+  fehlen. 30 Rollen-/Ansichts-/Breitenpruefungen bei 360–1440 px sowie Desktop-/Handy-Klickfaelle
+  ohne Browserfehler oder Ueberlauf. Projekt-Guards, Theme-Check, Secret-Scan und statischer
+  Workflow erfolgreich.
+- **Risiken:** Physische Ausgabe am echten Niimbot bleibt separat zu pruefen. Nachtraeglich
+  geaenderte oder entfernte Vormerkungen werden bewusst nicht automatisch neu erzeugt.
+- **Naechste Stufe:** Dashboard-Dienst nach Merge aktualisieren und die interne Zuordnung lesend
+  im laufenden Dienst kontrollieren.
+
+## 2026-10-20 · Aufgeraeumt: Navigation mit „Mehr“, Einkauf „Je Auftrag“ (#1513)
+
+- **Geaendert:** Seitenleiste nur noch Heute, Kunden, Einkauf, Akquise (Inhaber), Lexikon; alles
+  Seltene (Arbeitsplatz, Aufgaben, Sonderposten, Bildrechte, Social Media, Shop-Wache und die
+  frueheren Buero-Punkte) liegt unter einem eingeklappten „Mehr“ – fuer alle Rollen, Inhaber-Punkte
+  bleiben je Link `data-nur-inhaber`. Einkauf startet jetzt im neuen Reiter „Je Auftrag“
+  (`ansichten/einkauf/ablauf.mjs`, Rechnung in `lib/auftrags-ablauf.mjs`): je offene
+  Kundenbestellung fuenf Schritte (eingegangen → Lieferantenbestellung vorbereiten → bestellt →
+  Ware da/Lieferung/Montage → erledigt). Schritt 2 zeigt je Lieferant „Bestellnachricht zeigen“ –
+  der vorhandene Bestellmail-Dialog, auf diesen einen Auftrag gefiltert (`openBestellmailDialog(…,
+  { auftrag })`); „Als bestellt markieren“ dort hakt Schritt 3 ab. Fehlender Lieferant,
+  Artikelnummer oder Bestellmenge steht als „Ungeklaert – erst klaeren, nicht raten“. Die bisherige
+  Ansicht heisst „Je Lieferant“ (`?tab=lieferant`; alte Adressen mit `?af=`, `?auftrag=`, `?lf=`
+  und `?tab=bestellungen` landen weiter dort). Nichts wird automatisch gesendet.
+- **Getestet:** `tests/auftrags-ablauf.test.mjs` (5), dashboard:test 517, npm test gruen,
+  dashboard:pruefen nur OK auf 33 Ansichten (360–1440 px, kein Querscrollen), Klickstrecke gegen
+  die Kopie: ein Auftrag auf „vorbereiten“ zurueckgesetzt → Karte zeigt Schritt 2, „Bestellnachricht
+  zeigen“ oeffnet die Mail nur fuer diesen Auftrag, „Als bestellt markieren“ → „vorbereiten“ 1 → 0,
+  0 JS-Fehler.
+- **Risiken:** Lieferung-/Montagetermin gibt es in den Daten nicht; Schritt 4 sagt nur „Termin mit
+  dem Kunden ausmachen“. Muster-Schritte nutzen den gemeinsamen Knopf („Alle 3 angekommen“).
+- **Naechste Stufe:** Termin aus der Auftrags-App uebernehmen, wenn der Inhaber das moechte.
+
+## 2026-10-20 · Akquise Verlegeauftraege bei Wohnungsunternehmen (#1447)
+
+- **Geaendert:** Neuer Bereich „Akquise“ (nur Inhaber): je Firma Status (neu / angeschrieben /
+  Antwort / Termin / Auftrag / kein Interesse), letzte Aktion, Wiedervorlage (automatisch +14 Tage
+  nach „angeschrieben“), Notiz, Filter nach Status; „Nachricht kopieren“ legt das Anschreiben mit
+  Firmennamen in die Zwischenablage, versendet nichts. Darunter die Ausschreibungen Bodenbelag.
+  Auf „Heute“ das To-do „Akquise: N Nachfassen fällig“. Firmenliste und Vorlage liegen privat
+  (Gedaechtnis-Ordner, `TP_AKQUISE_DIR`/`TP_AKQUISE_CSV`/`TP_AKQUISE_VORLAGE`), der Stand unter
+  `$TP_PRIVAT_DIR/akquise/status.json`. API `/api/akquise/liste|aendern`, nur Inhaber.
+- **Getestet:** `tests/akquise.test.mjs` (7, u. a. Rollen lesen/mitarbeiter 403, kaputter Stand
+  wird nicht ueberschrieben), dashboard:test 513, npm test gruen, dashboard:pruefen nur OK
+  (360–1440 px), Klickstrecke gegen die Kopie: Status → angeschrieben, Wiedervorlage 03.11.,
+  Notiz gespeichert, „kein Interesse“ → Liste „Offen“ 33 → 32.
+- **Risiken:** Standardpfad der Liste ist der Gedaechtnis-Ordner dieses Macs; auf dem Dienst-Mac
+  ggf. per Umgebungsvariable setzen. Kopieren braucht die Zwischenablage-Freigabe (HTTPS/localhost).
+- **Naechste Stufe:** Ansprechpartner/Telefon je Firma anzeigen, wenn der Inhaber das wuenscht.
+
+## 2026-10-20 · Gemeinsame Druckliste fuer Musteraufkleber (#1493)
+
+- **Geaendert:** Im Lexikon Farbe/Ausfuehrung und Anzahl waehlen und „Zum Drucken vormerken“.
+  Der Kollege oeffnet „Gemeinsame Druckliste“, waehlt Eintraege und druckt den reservierten
+  Auftrag. Erst „Ausdruck geprueft – als gedruckt markieren“ erledigt ihn. Neue Vormerkungen
+  bleiben separat; Abbruch, fehlende Verbindung und Neustart loeschen nichts. Andere Sitzungen
+  koennen einen reservierten Auftrag nicht erneut zum Druck oeffnen. Bewusste Wiederfreigabe
+  verlangt die Pruefung bereits gedruckter Aufkleber. Server erzeugt die unveraenderlichen
+  Etikettdaten selbst aus dem Lexikon. Private atomare Ablage mit Revisionen, Wiederholungsschutz,
+  Prozesssperre und Sicherung; Mitarbeiter duerfen bearbeiten, „lesen“ bleibt lesend.
+- **Getestet:** Alle 3.240 Tests gruen (505 Dashboard-Tests), Projekt-Guards erfolgreich. 16 gezielte Speicher-/API-Tests
+  einschliesslich zwei paralleler Prozesse, doppelter Reservierung, spaeterer Vormerkung,
+  Rollenrechten, Original-SKU, kaputter Ablage und Erholung nach Prozessabbruch. Datenkopie:
+  45 Rollen-/Ansicht-/Breitenpruefungen zwischen 360 und 1440 px ohne Browserfehler oder Ueberlauf.
+  Vier weitere Ansichten im Dunkelmodus sowie 14 Browser-Klickfaelle mit zwei getrennten
+  Browsersitzungen und Druckerattrappe erfolgreich.
+- **Risiken:** Beide Arbeitsplaetze muessen denselben privaten Dashboard-Dienst verwenden.
+  Die Papierausgabe am echten Niimbot bleibt zu pruefen; ein geschlossener Dialog oder
+  erfolgreicher Download gilt nie als bestaetigter Ausdruck.
+- **Naechste Stufe:** Nach dem Merge den Dashboard-Dienst nachziehen und einen echten
+  50×50-mm-Testaufkleber im Laden pruefen.
+
+## 2026-10-20 · Musteraufkleber direkt im Lexikon (#1489, #1490)
+
+- **Geaendert:** Produkt oder Muster im Lexikon oeffnen, Farbe/Ausfuehrung und Anzahl waehlen,
+  fertiges 50×50-mm-Etikett im vorhandenen Niimbot-Dialog drucken oder als PNG speichern.
+  Gleiche SKU/Farbe auf mehreren Breiten wird gebuendelt, andere SKUs bleiben waehlbar.
+  Muster verwenden die explizite Originalreferenz und echte Shop-SKU. Fehlende Angaben lassen
+  sich in der Vorschau ergaenzen; paralleles Speichern kann kein anderes Etikett ueberschreiben.
+  Lange Paketetiketten behalten alle Technikzeilen und die vollstaendige Artikelnummer.
+  Einzelvarianten mit dem internen Titel „Default“ verwenden Marke und Dekor aus dem belegten
+  Produkttitel; der Platzhalter erscheint nicht als Farbe auf dem Etikett.
+- **Getestet:** Alle 3.223 Tests gruen, davon 488 Dashboard-Tests; 17 synthetische Browserfaelle bei 1440/390 px einschliesslich
+  verzogertem Nachladen, zwei Kopien, PNG, Ergaenzen, bestehendem Bestellungsdruck und QR-Netzfehler.
+  Read-only-Abgleich aller 5.971 aktuellen Mustervarianten: vollstaendige Etikettdaten fuer
+  3.927 unterschiedliche Muster-SKUs, kein Text ausserhalb, kein QR unter 100 px und keine fehlende
+  Technikzeile. Zusaetzlich Lexikonliste, Original- und Musterprodukt in der Datenkopie bei
+  360/390/800/1024/1440 px: 15 Ansichten ohne Browserfehler oder Ueberlauf. Projekt-Guards,
+  Theme-Check, Secret-Scan und statischer Workflow erfolgreich.
+- **Risiken:** Der Browser-Druckauftrag ist mit einer Druckerattrappe geprueft; physischer
+  Testdruck am Niimbot bleibt offen. Keine Produktdaten oder Lagerbestaende geaendert.
+- **Naechste Stufe:** Nach dem Merge Dashboard-Dienst nachziehen und den echten Testdruck bestaetigen.
+
+## 2026-10-19 · Belege: Absender und fehlende Bestelldaten absichern (#1463)
+
+- **Geändert:** Bei allgemeinen Mailanbietern verknüpft dieselbe Vorgangsnummer nur noch Belege
+  derselben vollständigen E-Mail-Adresse. Anzeigename, Leerraum und Großschreibung ändern den
+  Vergleich nicht; eine gemeinsame Domain oder eine fehlende Adresse reichen nicht.
+  Adressen im Anzeigenamen werden dabei nicht als Postfach gelesen; mehrdeutige oder beschädigte
+  Angaben können keinen sicheren Vorgang bestätigen. Auch die Lieferantenzuordnung nutzt die echte Adresse.
+  Die Ansicht nennt solche Absender mit ihrer Adresse und gruppiert verschiedene Postfächer getrennt.
+  Lange Adressen brechen in den Gruppen- und Belegköpfen um, auch auf kleinen Handys.
+  Fehlt der Bestellexport oder ist er beschädigt, meldet die Belegansicht eine Datenstörung statt
+  alle Belege als unzugeordnet und die Arbeitsliste als leer darzustellen.
+  GraphQL-Exporte brauchen ausdrücklich ein `nodes`-Array; fehlende oder falsche Container sind
+  ein Quellenfehler. Echte leere Bestelllisten bleiben gültig.
+- **Getestet:** Beide Fehler vor der Korrektur synthetisch reproduziert; Regressionen für fremde,
+  gleiche und fehlende Adressen sowie fehlenden und beschädigten Bestellexport. Die Belegablage
+  bleibt beim Lesen unverändert. 3.166 Tests grün, davon 465 Dashboardtests und 30 Belegtests;
+  vollständige Rollen-Baseline mit 350 Ansichten, nach den letzten Korrekturen 24 gezielte Ansichten
+  mit drei Rollen gegen die Datenkopie. Synthetische Klickstrecke bei 390/1440 px: AB bestätigen, richtiger LS erbt die
+  Bestellung, fremdes Postfach bleibt ohne Zuordnung; Absender getrennt, Exportfehler sichtbar,
+  „Nochmal versuchen“ nach Wiederherstellung erfolgreich, Dialog per Esc geschlossen.
+  Zusätzlich Adressen mit 64 Zeichen vor dem @ bei 360/390/768/1440 px auf seitlichen Überlauf geprüft.
+- **Risiken:** Keine Änderung an gespeicherten Belegen, Bestellungen, Mailversand oder Shopify.
+- **Nächste Stufe:** Nach dem Merge den Dashboard-Dienst nachziehen und den Versionsstand prüfen.
+
+## 2026-10-19 · Prüfwerkzeug: Datenkopie verschwindet bei jedem Ende (#1441)
+
+- **Geändert:** Mit `dashboard:pruefen -- --offen` endet das Prüf-Skript nach dem Bericht; das ausgegebene
+  `kill <pid>` traf nur den Server, der von der Datenkopie nichts wusste – sie blieb jedes Mal im Temp-Ordner
+  (16 Kopien mit Kunden- und Einkaufsdaten, 13.–19.10.). Jetzt löscht der Server seine Kopie selbst, sobald er
+  endet (`TP_DASHBOARD_DATENKOPIE`, neues Modul `scripts/dashboard-datenkopie.mjs`). Ein Fehler im Lauf mit
+  `--offen` ließ bisher Instanz und Kopie ohne ausgegebene PID stehen, jetzt wird beides beendet. Beim Start
+  löscht `dashboard:pruefen` Kopien ohne laufenden Prozess, die älter als einen Tag sind (Prozess-Prüfung über
+  `ps axeww`, unter Windows wird nichts gelöscht). Gelöscht wird nur ein echter Ordner
+  `tp-dashboard-daten-XXXXXX` direkt im Temp-Ordner; die verlinkten Exporte (Lexikon usw.) bleiben.
+- **Getestet:** `docs/ai-dashboard/tests/datenkopie.test.mjs` (5 Tests, darunter echter Server + `SIGTERM`; ohne
+  den Fix rot). Reproduktion `--offen --ansichten heute --breiten 1440`, dann `kill <pid>`: vorher Kopie mit
+  31 Einträgen übrig, jetzt weg. Fehler im Lauf mit `--offen`, Strg-C mit und ohne `--offen` (ganze
+  Prozessgruppe), normaler Lauf: keine Kopie, kein Prüf-Server übrig. Die 16 alten Kopien gelöscht, nachdem
+  `lsof` und `ps` keinen Prozess darauf zeigten.
+- **Risiken:** `kill -9` auf den Server lässt die Kopie weiter liegen, bis ein Lauf sie nach einem Tag findet.
+  Ohne `--aus` bleiben die Screenshots (zeigen ebenfalls echte Daten) in `tp-dashboard-pruefung-*` liegen.
+- **Nächste Stufe:** Screenshot-Ordner ohne `--aus` ebenfalls nach einigen Tagen wegräumen.
+
+## 2026-10-19 · Temp-Ordner: Screenshots und Testordner bleiben nicht mehr liegen (#1457)
+
+- **Geändert:** Im Temp-Ordner des Macs lagen rund 194.000 Einträge aus diesem Repository. `dashboard:pruefen`
+  ohne `--aus` ließ jeden Screenshot-Ordner `tp-dashboard-pruefung-XXXXXX` (echte Kunden- und Einkaufsdaten)
+  für immer liegen (59 Ordner); jetzt löscht jeder Lauf beim Start solche Ordner, die älter als drei Tage sind
+  (`scripts/dashboard-pruefung-ordner.mjs`, nur echte Verzeichnisse mit genau diesem Namen direkt im
+  Temp-Ordner, nie Links). Die Testsuiten legten per `mkdtemp` Ordner mit rund hundert Präfixen an
+  (`cc-api-*` allein 42.000) und räumten sie nicht weg: die npm-Testskripte laufen jetzt über
+  `scripts/test-temp.mjs`, der jeder Suite einen eigenen Temp-Ordner gibt (`TMPDIR`/`TMP`/`TEMP`) und ihn
+  danach löscht, auch bei roten Tests und `kill`. Die sieben größten Verursacher (`_testumgebung.mjs`,
+  `api`, `sonderposten-api`, Ops-Server, Log-Filter, Deploy-Fenster, Worktree-Sperre) räumen zusätzlich selbst
+  auf (`wegwerfOrdner`), damit auch ein Einzelaufruf `node --test datei` nichts hinterlässt.
+- **Getestet:** `docs/ai-dashboard/tests/pruefung-ordner.test.mjs` (4 Tests: Name, Ort, Link, Alter, Inhalt).
+  Zwei volle `npm test`-Läufe grün (3.148 Tests), Temp-Ordner vorher und nachher gleich viele Einträge, kein
+  neuer mit einem Test-Präfix. Die sieben Dateien einzeln ohne Starter: kein neuer Ordner. Starter mit rotem
+  Test (Exit 1) und mit `kill` (Exit 1): Ordner jeweils weg.
+- **Risiken:** Tests, die einen Kindprozess mit selbst gebauter Umgebung ohne `TMPDIR` starten, schreiben
+  weiter nach `/tmp` (in beiden Läufen kein Fall). Einzelaufrufe der übrigen Testdateien ohne Starter
+  hinterlassen weiter Ordner.
+- **Nächste Stufe:** Screenshot-Aufräumen und `verwaisteDatenkopien` (#1444) in ein Modul zusammenführen.
+
+## 2026-10-19 · Übersicht: „Heute“ als eine Liste, Lieferantenbelege aus dem Postfach (#1427)
+
+- **Geändert:** Inhaber 19.10. „immer noch zu unübersichtlich … Schnittstelle zu Gmail“; Audit und
+  Postfach-Konzept mit Codex abgestimmt.
+  - **Heute** ist eine Arbeitsliste: Zahl oben = Zeilen der Liste, Chips Laden/Website/Alles mit Zahl,
+    „Im Hintergrund“ statt Musterkarten und Warteübersicht, „Liste unvollständig“ statt falschem „Alles
+    erledigt“. Fehler behoben: „Alles“ verschwieg Laden-Arbeit; neue Service-Anfragen fehlten auf Heute
+    (vier hingen seit drei Tagen auf „neu“); Liefertermin in der Zukunft hieß „Nachhaken“.
+  - **Einkauf › Belege** (neu, Architektur § 25): ABs, Lieferscheine, Stornos aus dem Postfach, zugeordnet
+    zu Shop-Bestellungen und abgeglichen mit unserem Stand und Shopify. Storno und Lieferschein ohne Haken
+    werden To-dos auf Heute, Vorschläge eine Sammelzeile. Marke „AB 14.10. · LS 16.10.“ an bestellten
+    Posten im Einkauf.
+  - **Einkauf**: Ware, die schon bei uns liegt, steht nicht mehr unter „Nachfassen“ (mit Telefon des
+    Lieferanten), sondern unter „Liegt bei uns – Rausgeben“; die Nachfass-Kachel zählt Aufträge mit Ware
+    von zwei Lieferanten einmal.
+  - **Kunden**: Bestellliste seitenweise (25); der Menüzähler zählt neue Service-Anfragen mit.
+- **Getestet:** `npm run dashboard:test` (460), `npm test` (3.121 grün), `dashboard:pruefen --rollen` über 70 Ansichten
+  × 5 Breiten ohne Fehler und ohne seitliches Scrollen. Höhe Heute am Handy 3.870 → 2.355 px, Belege
+  4.609 → 1.899 px (Desktop). Erkennung gegen 56 echte Mails aus dem Label „LS AB“ (nur lesend, in einer
+  Datenkopie): 52 Belege (44 AB, 6 LS, 1 Avis, 1 Storno), 2 sicher, 4 Vorschläge, der Rest Laden-/
+  Telefonbestellungen. Klickstrecke gegen die Kopie: Vorschlag annehmen (Zu prüfen 2 → 1, Lieferschein
+  erbt die Bestellung der AB), „Passt nicht“ (1 → 0), Zuordnen-Dialog (39 Bestellungen, Esc),
+  „Kein Shop-Lieferant“ (15 → 14 Absender), keine JS-Fehler.
+- **Codex-Review des PR (10 Befunde, alle behoben):** beschädigte Ablage nicht mehr als leer; Sperre mit
+  Besitzkennung; Teilnummer nie „sicher“; Vorgangsverknüpfung nur bei einigen Ankern; Vorschlag mit
+  mehreren Bestellungen verlangt Auswahl; unbekannter Absender nicht bei allen Lieferanten; „Erledigt“ je
+  Beleg und Auftrag, jeder offene Storno zählt; Shopify-Stand je Lieferant; Stornos von Unterdomains;
+  Heute meldet ausgefallene Belege/Shopify-Abgleich als „Liste unvollständig“.
+- **Codex-Nachprüfung (8 Punkte, alle behoben):** verwaiste Sperre räumt nur, wer die Räum-Sperre hält;
+  eine nackte Belegnummer („2026“) ist nur bei genau dieser Notiz sicher; Vorgangsverknüpfung nur, wenn
+  die eigenen Bestellnummern genau die des Ankers sind; unbekannter Absender bei Bestellung mit mehreren
+  Lieferanten: Lieferant ist Pflicht (Dialog und Server), nur ein Lieferant dieser Bestellung; ein Storno
+  ohne Lieferantenzeile bleibt rot; Teilversand innerhalb einer Position (neu `mengeBestellt` im Export);
+  „Heute“ zeigt „Lade …“, bis Belege und Shopify-Abgleich da sind; die Lieferantenwahl im Dialog bleibt stehen.
+- **Risiken/Annahmen:** Die meisten Lieferanten nennen unsere Bestellnummer nicht – sicher wird die
+  Zuordnung erst, wenn beim „Als bestellt markieren“ die AB-/Vorgangsnummer notiert wird oder die
+  Bestellnummer im Betreff steht. Anhänge (PDF) werden nicht gelesen.
+- **Nächste Stufe:** Postfach-Lauf einrichten (nach dem Merge), eine Woche beobachten, dann entscheiden,
+  ob „AB fehlt seit N Tagen“ eine Regel wird.
+
+## 2026-10-19 · „Muster nachfassen“: Karte nach einem Versandlauf aktuell
+
+- **Geändert:** Nach dem ersten Lauf (4 Mails) standen die Kunden in einem offenen Tab weiter als „offen“ –
+  die Bestellzeilen werden je Tab nur einmal geladen, nur die Vorlage (mit „letzter Lauf“) alle 30 s.
+  Meldet `/api/kunden/muster-texte` einen neuen Lauf (`neuerVersandlauf()`), lädt „Heute“ die
+  Bestellzeilen nach (`ladeBestellzeilenNeu()`); ebenso nach einem abgelehnten „Jetzt senden“.
+  `dashboard:pruefen` kopiert `nachfassen/` weiterhin nicht (Kommentar: sonst echte Mails aus der Prüfung).
+- **Getestet:** Unit-Test `neuerVersandlauf` (erster Abruf, erster Lauf, neuer Lauf, gleicher Lauf),
+  `npm test` grün, `dashboard:pruefen` Heute/Kunden alle Breiten OK.
+- **Risiken/Annahmen:** Aktualisiert wird, solange „Heute“ offen ist und offene Zeilen zeigt.
+- **Nächste Stufe:** —
+
+## 2026-10-19 · Bestellungen: Zwei-Wege-Abgleich mit Shopify (#1419)
+
+- **Geändert:** Was in Shopify versendet ist, steht im Control Center nach dem nächsten Bestellexport
+  mindestens auf „An Kunden raus“ („aus Shopify übernommen“); stornierte Bestellungen sind keine offene Arbeit
+  mehr. Umgekehrt bucht jedes „Erledigt“ (Einkauf, Zeitleiste, Muster-Ergebnis, „Kunde fertig“, „Ohne Einkauf
+  abschließen…“) den Versand in Shopify, falls dort noch offen – ohne Mail an den Kunden. „Wieder öffnen“ und
+  „Zurück auf offen“ storniert in Shopify nichts und sagt das. Auf „Heute“ steht, nur wenn es sie gibt, die
+  Liste „In Shopify noch offen“ (im Dashboard abgehakt, in Shopify offen) mit „In Shopify nachbuchen“.
+  Konfliktregel: „Versendet“ gewinnt, nichts wird automatisch zurückgenommen (ARCHITEKTUR §24).
+- **Getestet:** 7 neue Regeltests, 11 neue API-Tests (Attrappe, nie echtes Shopify), 2 Tests an die neue Regel
+  angepasst; `npm test` 3067/3067, `dashboard:test` 413/413, `dashboard:pruefen` nur OK (28 Ansichten,
+  0 px Überlauf bis 360 px). Trockenlauf gegen eine Datenkopie: 1 Position „bestellt“ → „raus“ (der Fall
+  von heute), 36 Vermerke richtiggestellt, 0 Stornos, zweiter Lauf 0 Änderungen; Abweichungsliste 1 Bestellung
+  (Muster, abgeschlossen ohne Versand, in Shopify zurückgehalten). Klickstrecke gegen die Kopie mit
+  Shopify-Attrappe: „In Shopify nachbuchen“ 1 → 0 (eine Buchung, ohne Mail); „Kunde fertig“ an einer
+  Kundenbestellung: eine Buchung für 3 Artikel, ohne Mail, Rückfrage nennt Shopify; „Ohne Einkauf
+  abschließen“ an einer Testbestellung: nichts gebucht; 390 px ohne Überlauf, 0 JS-Fehler.
+- **Risiken/Annahmen:** Eine Position zählt erst als in Shopify erfüllt, wenn die ganze Menge erfüllt ist.
+  „Ohne Einkauf abschließen“ für eine Bestellung, die in Wahrheit storniert ist, bucht sie als versendet – der
+  Dialog sagt deshalb „zuerst in Shopify stornieren“. Bestellungen, die lokal storniert erledigt werden, könnten
+  beim Lieferanten noch bestellt sein (Abbestellen bleibt Handarbeit).
+- **Nächste Stufe:** Bei „in Shopify storniert, beim Lieferanten bestellt“ einen Hinweis „beim Lieferanten
+  abbestellen?“ zeigen.
+
+## 2026-10-19 · „Muster nachfassen“: Blindkopie abschaltbar
+
+- **Geändert:** Inhaber 19.10. nach dem ersten echten Versand: keine Kopien ans Büro. `"kopie": false` in
+  `nachfassen/postfach.json` schaltet die Blindkopie ganz ab (auch in der ersten Woche, auch mit
+  `kopieImmer`); die Karte nennt dann keine Kopie.
+- **Getestet:** `lesePostfach()` mit `kopie: false`; „Jetzt senden“ und Lauf gegen die SMTP-Attrappe nur
+  an den Kunden; Kartenstand ohne `kopie`/`mitlesenBis`. `npm test` grün.
+- **Risiken/Annahmen:** Wer mitlesen will, sieht die Mails im Ordner „Gesendet“ des Postfachs.
+- **Nächste Stufe:** —
+
 ## 2026-10-19 · „Muster nachfassen“: E-Mail direkt aus der Karte senden
 
 - **Geändert:** Wunsch Inhaber: die Nachfrage gleich aus der Karte an den Kunden schicken statt über
@@ -85,6 +496,31 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Seite gelesen (gerollt als Paket); Nähe = PLZ 10–14 und 16.
 - **Nächste Stufe:** Echte Kettelpreise des Kettlers eintragen und je Auftrag „Kettler lohnt
   sich“ mit Fahrtkosten rechnen.
+
+## 2026-10-16 · Angaben als Codex- und Claude-App-Entwurf oeffnen (#1404)
+
+- **Geaendert:** Neue App-Ziele erhalten „Mit Angaben in … oeffnen“. Ein echter Klick uebergibt
+  den vollstaendigen Auftrag mit Projektordner bzw. Repository-Zuordnung an die dokumentierten
+  App-Protokolle. Keine Zwischenablage, kein neuer Server-Endpunkt und kein automatischer KI-Start.
+  Gespeicherte Ziele bleiben promptfrei. Ein allgemeiner neuer Claude-Chat benennt das fehlende
+  Projekt; vorhandene Chats und nicht unterstuetzte Cloud-Projekte behalten den manuellen Weg.
+  Der native Link wird bei 12.000 kodierten Zeichen ohne Kuerzung abgewiesen; alle Angaben bleiben
+  erhalten. Details: [APP-UEBERGABE.md](APP-UEBERGABE.md).
+- **Getestet:** `npm test` 2.960/2.960, darunter 15 neue gezielte Pruefungen fuer Texttreue,
+  Prozentkodierung, Projektparameter, echte Klicks, Laengengrenzen und Kontext-/Sitzungswechsel.
+  Ein vorheriger einzelner Dashboard-Lauf traf den bestehenden 500-ms-Aktualisierungstest;
+  zwei anschliessende vollstaendige Laeufe waren gruen. Browserpruefung gegen Datenkopie:
+  36 Ansichts-/Rollen-/Breitenkombinationen (360, 390, 1440 px), kein Ueberlauf oder JS-Fehler.
+  Der echte Codex-Knopf loest den nativen Aufruf aus und meldet ausschliesslich „Uebergabe
+  angefordert“. Der Sichtvergleich in der Ziel-App ist noch offen: Codex darf die eigene
+  Oberflaeche nicht auslesen; Claude zeigte beim bisherigen Aufruf keinen verifizierbaren Entwurf.
+- **Risiken/Annahmen:** Die App muss am betreffenden Geraet installiert und das Projekt verfuegbar
+  sein. Die Dashboard-Rueckmeldung bestaetigt keine Einfuegung. Claude Code fragt bei Ordnerlinks
+  separat nach; ein ausgewaehlter Ordner-Chip beweist kein spaeter ausgefuehrtes Arbeitsverzeichnis.
+  Der Text steht im fluechtigen nativen Protokoll-Link; Betriebssystem und Ziel-App verarbeiten ihn
+  ausserhalb des Dashboard-Speicherverhaltens. Lokale Ordner uebernehmen keine alten Cloud-Chats.
+- **Naechste Stufe:** Vollstaendigen Text und Ziel in den echten Apps bestaetigen, Claude-Ziele
+  abschliessend zuordnen und erst danach den Dienst nachziehen.
 
 ## 2026-10-16 · Unklare Mustersperren und Teilfreigaben absichern (#1400)
 
@@ -1556,3 +1992,47 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   zählt in der Nachfass-Kachel je Lieferant. PR #1225 (offen) ändert dieselben Dateien.
 - **Nächste Stufe:** die aufgeklappte Tabelle („Positionen bearbeiten“) am Handy kürzen (bei Lieferant A
   rund 18 000 px hoch); Heute-To-dos in derselben Reihenfolge (Bestellen, Muster, Nachhaken) sortieren.
+
+## 2026-10-20 · Muster-Etiketten drucken (Niimbot B1)
+
+- **Geändert:** Musterbestellung aufklappen → „Etiketten drucken“: alle Muster der Bestellung als
+  50 × 50-mm-Etiketten mit Vorschau, nacheinander gedruckt in einem Auftrag. Einkauf › Musterlager →
+  „Etikett drucken…“ für ein Etikett von Hand (Produktlink genügt). Inhalt: Shopname, Serie, Farbe,
+  bei Paketware Art, Stärke/Nutzschicht, Nutzungsklassen, Format; QR-Code zur Produktseite;
+  Artikelnummer der echten Variante. Fehlende Angaben stehen rot unter der Vorschau. Verbindung per
+  Bluetooth (USB als Ausweg), nur Chrome/Edge auf https bzw. localhost. Neu `lib/muster-etiketten.mjs`,
+  `bausteine/etiketten-druck.mjs`; Lexikon-Export führt zusätzlich `nutzschicht`, `format`, `arten`.
+- **Getestet:** `tests/muster-etiketten.test.mjs` (11); `dashboard:test` 476 grün, `npm test` alle
+  Suiten grün; `dashboard:pruefen` 145 × OK, 0 px Überlauf. Datenkopie: 39 Musterbestellungen →
+  105 Etiketten, 58 vollständig, 47 ohne Artikelnummer (Produkte ohne SKU im Shop, z. B. Teppich nach
+  Maß), 4 ohne Farbe, 0 mit Muster-SKU, 6 mit Technikzeilen. Klickstrecke (Kopie, 800 px):
+  Bestellung aufklappen → „Etiketten drucken“ → 2 Etiketten; Musterlager → Produktlink eintragen →
+  1 Etikett mit 4 Technikzeilen; Esc schließt; 0 JS-Fehler. niimbluelib lädt mit SRI, `encodeCanvas`
+  liefert 400 × 400.
+- **Risiken/Annahmen:** Echter Druck nicht geprüft (kein Drucker am Prüfrechner). Bild 400 px breit
+  bei 384 px Druckkopf wie in NiimBlue – Rand 18 px hält Inhalte im Druckbereich. Serie aus dem Titel
+  (Marke nur, wenn der Titel damit beginnt).
+- **Nächste Stufe:** „auch als Klickvinyl“ bei gleichem Dekor in anderer Art; Druck am B1 bestätigen.
+
+## 2026-10-20 · Akquise ausgebaut, Einkauf mit Termin und Referenz (#1544)
+
+- **Geändert:** Akquise ist jetzt auch für Mitarbeiter offen (Router, Navigation, Server; Rolle
+  „lesen“ schreibt weiter nichts), die Fortschrittszeile nennt, wer angeschrieben hat. TED-Titel ohne
+  „Deutschland – <Kategorie> –“ (`titelKurz`, auch in `ausTed`). Nach „Antwort bekommen“ steht auf der
+  Karte eine kleine Zeile „Unser Richtpreis: …“ (nur, wenn `$TP_PRIVAT_DIR/akquise/richtpreise.json`
+  existiert; ohne Freigabe „Richtpreis noch nicht freigegeben (Inhaber)“) und der Knopf
+  „Angebotsentwurf“ (Text zum Kopieren, kein Lexware-Zugriff). Einkauf „Je Auftrag“: Einleitung
+  gekürzt; nach „Kunde informiert“ ein Datumsfeld „Termin“ und der Link „Als Referenz merken“ (Notiz,
+  privat in `akquise/referenzen.json`, in der Akquise zugeklappt „Referenzen (N)“). Am Vortag eines
+  Termins To-do „Kunde an Termin morgen erinnern“ mit „Text kopieren“. Bestellnachricht: Feld
+  „Bestellnummer des Lieferanten (aus der AB)“ mit Hinweis, die Bitte um Bestätigung nennt die
+  Kommission. Neu `/api/akquise/referenz`, `/api/einkauf/kundentermin` (beide in der write-Liste).
+- **Getestet:** `tests/akquise.test.mjs` 14 (Rollen lesen 403 / mitarbeiter 200, Titel, Richtpreis,
+  Referenz, Termin-To-do); `dashboard:test` 612 grün, `npm test` alle Suiten grün; `dashboard:pruefen`
+  170 × OK, 0 px Überlauf 360–1440 px. Klickstrecke gegen die Datenkopie (390 px): angeschrieben 1 → 2
+  mit Namen, Antwort → Richtpreis-Hinweis, Angebotsentwurf öffnet, Esc schließt; Termin auf morgen →
+  To-do „Kunde an Termin morgen erinnern: #1013“ im Laden; Kunde informiert → „Als Referenz merken“
+  → „Referenzen (1)“; 0 JS-Fehler.
+- **Risiken/Annahmen:** Richtpreis-Vorschläge stammen aus Lexware-Artikelpreisen (Abruf 13.10., netto,
+  nur Arbeit), `freigegeben: false` bis der Inhaber zustimmt. Fotos zur Referenz weiter über „Fotos“.
+- **Nächste Stufe:** Richtpreise live in Lexware gegenprüfen und freigeben.

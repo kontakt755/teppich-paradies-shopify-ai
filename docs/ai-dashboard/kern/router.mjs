@@ -18,6 +18,7 @@ const ANSICHT_ROLLEN = {
   // Shop-Wache und Ratgeber sind Website-Arbeit: Erreichbarkeit von Seiten,
   // Ladezeiten, Texte fuer den Shop. Das Team hat damit nichts zu tun.
   shopwache: 'inhaber', ratgeber: 'inhaber',
+  // Akquise (#1447) ist seit 2026-10-20 fuer Mitarbeiter offen; "lesen" schreibt nichts (Server).
 };
 
 export function darfAnsicht(view) {
@@ -30,7 +31,7 @@ export function darfAnsicht(view) {
 export function parseRoute() {
   const hash = location.hash.replace(/^#\/?/, '');
   const [path, query = ''] = hash.split('?');
-  const bekannt = ['heute', 'prozesse', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber', 'hilfe', 'shopwache', 'organisation', 'fotos', 'sonderposten', 'bildrechte', 'social', 'team'].includes(path) ? path : 'heute';
+  const bekannt = ['heute', 'prozesse', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber', 'hilfe', 'shopwache', 'organisation', 'fotos', 'sonderposten', 'akquise', 'bildrechte', 'social', 'team'].includes(path) ? path : 'heute';
   const view = darfAnsicht(bekannt) ? bekannt : 'heute';
   state.route = { view, params: new URLSearchParams(query) };
 }
@@ -58,6 +59,9 @@ export function setParam(key, value) {
   if (['psfilter', 'gruppe', 'psq'].includes(key)) p.delete('seite');
   if (key === 'lq') p.delete('lseite');
   if (['bl', 'bg'].includes(key)) p.delete('bs');
+  if (['bq', 'bfilter', 'bsort', 'bdir'].includes(key)) p.delete('bseite');
+  if (key === 'blf') p.delete('bls');
+  if (key === 'blq') p.delete('blp');
   if (key !== 'view' && key !== 'task' && p.get('view') && ['status'].includes(key)) p.delete('view');
   location.hash = `#/${state.route.view}?${p}`;
 }

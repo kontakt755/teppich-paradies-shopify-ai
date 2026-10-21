@@ -13,6 +13,7 @@ function tmpDir() {
 function beispielPrivatDir() {
   const dir = tmpDir();
   fs.writeFileSync(path.join(dir, 'auftragsstatus.json'), JSON.stringify({ version: 1, positionen: { '1::1': { status: 'bestellt' } } }));
+  fs.writeFileSync(path.join(dir, 'muster-druckliste.json'), JSON.stringify({ schema: 1, eintraege: [{ id: 'test-druckauftrag', status: 'in_druck' }] }));
   fs.mkdirSync(path.join(dir, 'lexikon'));
   fs.writeFileSync(path.join(dir, 'lexikon', 'lexikon.json'), '[]');
   fs.mkdirSync(path.join(dir, 'kennzahlen'));
@@ -50,6 +51,8 @@ test('sichern: schreibt <datum>.tar.gz mit dem Auftragsstatus darin', () => {
   execFileSync('tar', ['-xzf', ergebnis.archiv, '-C', entpackt]);
   const inhalt = JSON.parse(fs.readFileSync(path.join(entpackt, 'auftragsstatus.json'), 'utf8'));
   assert.equal(inhalt.positionen['1::1'].status, 'bestellt');
+  const druckliste = JSON.parse(fs.readFileSync(path.join(entpackt, 'muster-druckliste.json'), 'utf8'));
+  assert.equal(druckliste.eintraege[0].status, 'in_druck', 'auch noch ungepruefte Druckauftraege sind wiederherstellbar');
 });
 
 test('sichern: wirft eine klare Meldung, wenn gar keine Quelle existiert', () => {

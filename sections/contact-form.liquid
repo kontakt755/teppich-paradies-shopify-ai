@@ -132,6 +132,9 @@
   [data-tp-sample-request][data-mode="sample"] [data-sample-field] {
     display: block;
   }
+  [data-tp-sample-request][data-needs-product="true"] [data-tp-produktwahl] {
+    display: block;
+  }
 
   .tp-form-success,
   .tp-form-error {
@@ -186,6 +189,14 @@
     margin: 0 0 18px;
     color: #333;
     font-size: var(--tp-fs-md);
+  }
+
+  .tp-anfrage-hinweis {
+    scroll-margin-top: calc(var(--header-height, 100px) + 16px);
+  }
+  .tp-anfrage-hinweis:focus-visible {
+    outline: 2px solid var(--tp-ink, #222);
+    outline-offset: 4px;
   }
   .tp-contact-service-links p { margin: 0 0 4px; }
 
@@ -399,7 +410,7 @@
       <p class="tp-sample-intro__text" data-tp-intro>Wir senden Ihnen gerne ein kostenloses Muster zu.</p>
     </div>
 
-    <p class="tp-anfrage-hinweis" data-tp-anfrage-hinweis hidden></p>
+    <p class="tp-anfrage-hinweis" data-tp-anfrage-hinweis tabindex="-1" hidden></p>
 
     {%- form 'contact', id: 'ContactForm-sample', class: 'contact-form' -%}
       <input type="hidden" name="contact[id]" value="ContactForm-sample">
@@ -435,7 +446,8 @@
         Pflichtfeld Produkt und Dekor (Audit 13.10.2026). Das Feld selbst hat keinen
         name - assets/tp-sample-request.js uebertraegt den Text in contact[Produkt]
         und bei Auswahl aus der Vorschlagsliste auch Produkt-Handle und Produkt-Link.
-        Pflicht wird es nur im Mustermodus (per JS, wie die Adresse).
+        Pflicht wird es im Mustermodus oder bei allgemeiner Musteranfrage
+        ohne Produkt. Adressfelder bleiben allein im Mustermodus Pflicht.
       {%- endcomment -%}
       <div data-sample-field class="tp-produktwahl" data-tp-produktwahl>
         <label for="ContactFormProdukt">Produkt und Dekor</label>

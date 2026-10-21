@@ -54,5 +54,9 @@ Variantenpreise per `productVariantsBulkUpdate` setzen und gegenprüfen
 Inhabers. Eine neue Stufe ist nur ein neuer Wert der Option `Teppichpreis` mit
 „bis <Zahl>“ im Text – der Rechner braucht dafür keine Änderung.
 
+Echte Kettelkosten (Kettler und Lieferant A) gegen die 5,50 € gerechnet:
+`docs/analyse/fussleiste-echte-kosten-2026-10-19.md` (Vorschlag 2026-10-19,
+Freigabe offen).
+
 Vergleich vom 2026-10-15: ein großer Wettbewerber rechnet etwa 2 € + 19 % des
 m²-Preises je lfm, nur in 4-m-Schritten.

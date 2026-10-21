@@ -8,6 +8,23 @@
  * ------------------------------------------------------------
  */
 {
+  "tp_roll_context": {
+    "skirting_basis": "For a single piece, the suggestion is its perimeter. For multiple pieces, enter the room perimeter you need.",
+    "length_label": "Length in metres",
+    "room_perimeter_label": "Required room perimeter in metres",
+    "room_perimeter_hint": "For multiple pieces, the order dimensions do not describe the room perimeter. Please enter the perimeter you need.",
+    "underlay_basis": "Calculated for the entire carpet area ordered, including offcuts. This is not the room size."
+  },
+  "tp_product_advice": {
+    "cutting": "Cutting",
+    "intro": "I have a question about this product:",
+    "selection": "Selection",
+    "size": "Measurements in the calculator",
+    "width": "Width",
+    "length": "Length",
+    "roll": "Roll width",
+    "room": "Custom room size"
+  },
   "blocks": {
     "load_video": "Загрузить видео: {{ description }}",
     "sold_out": "Продано",
@@ -142,6 +159,12 @@
     "quantity": "Количество",
     "product_total": "Итого",
     "cart_estimated_total": "Ориентировочная общая сумма",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Налоги рассчитываются при оформлении заказа.",
+      "duties_included": "Таможенные пошлины включены.",
+      "discounts_at_checkout": "Скидки рассчитываются при оформлении заказа.",
+      "shipping_details_html": "Подробнее об <a href=\"{{ link }}\">отправке и доставке</a>."
+    },
     "seller_note": "Особые примечания",
     "cart_subtotal": "Промежуточный итог",
     "discounts": "Скидки",
@@ -362,5 +385,17 @@
       "default_title": "Название по умолчанию",
       "sticky_add_to_cart": "Быстрое добавление в корзину"
     }
+  },
+  "tp_groessenhilfe": {
+    "open": "Which rug size fits my furniture?",
+    "intro": "First plan the area around your furniture. These examples help you choose a layout.",
+    "sofa_title": "By the sofa",
+    "sofa_text": "Should the rug sit in front of the sofa or support its front legs? Try both positions with your own furniture.",
+    "dining_title": "Under the dining table",
+    "dining_text": "Pull the chairs back as you would when standing up. Check that all chair legs remain on the rug area you have planned.",
+    "sketch_note": "Schematic top views, without suggested dimensions. Green: rug area. Grey: furniture.",
+    "measure_title": "Measure at home:",
+    "measure_text": "Lay out the area you want with paper. Check walkways and doors. Then measure the area and enter the dimensions for your selected shape above.",
+    "limits": "The shapes and size limits available for this product still apply. These examples do not change your selection."
   }
 }

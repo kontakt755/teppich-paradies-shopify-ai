@@ -222,11 +222,6 @@
               },
               "blocks": {}
             },
-            "options_price_calculator_product_calculator_z3CEfy": {
-              "type": "shopify://apps/options-price-calculator/blocks/product_calculator/46eaac1e-1432-4cdd-814e-d2c707255110",
-              "disabled": true,
-              "settings": {}
-            },
             "tp_farbanzeige_tp1": {
               "type": "tp-farbanzeige",
               "name": "TP Farbanzeige",
@@ -361,6 +356,12 @@
                 "sichtbarkeit": "desktop"
               },
               "blocks": {}
+            },
+            "tp_leisten_paket_hinweis": {
+              "type": "tp-leisten-paket-hinweis",
+              "settings": {
+                "aktiv": true
+              }
             }
           },
           "block_order": [
@@ -368,6 +369,7 @@
             "group_icgrde",
             "tp_vorteile_night1",
             "tp_aktion_hinweis",
+            "tp_leisten_paket_hinweis",
             "divider_VJhene",
             "tp_farb_dropdown",
             "variant_picker_R3rGDr",
@@ -377,7 +379,6 @@
             "tp_boden_raumansicht",
             "tp_muster_cta_1",
             "tp_bewertungsbeleg_planken",
-            "options_price_calculator_product_calculator_z3CEfy",
             "tp_verlegen_lassen",
             "tp_zubehoer_empfehlung",
             "buy_buttons_eYQEYi",

@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
+import { wegwerfOrdner } from '../../scripts/test-temp.mjs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { laufenderDeploy, oeffneFenster, schliesseFenster, parseWorktrees, FENSTER_MAX_MS } from '../deploy-fenster.mjs';
@@ -10,7 +10,7 @@ import { laufenderDeploy, oeffneFenster, schliesseFenster, parseWorktrees, FENST
 const JETZT = Date.parse('2026-10-08T12:00:00Z');
 
 function arbeitskopien() {
-  const basis = fs.mkdtempSync(path.join(os.tmpdir(), 'deploy-fenster-'));
+  const basis = wegwerfOrdner('deploy-fenster-');
   const deploy = path.join(basis, 'tp-deploy');
   const feature = path.join(basis, 'feature');
   fs.mkdirSync(deploy); fs.mkdirSync(feature);
@@ -73,7 +73,7 @@ test('git nicht erreichbar: frei (fail-open)', () => {
 
 test('Guard-Hook verweigert gh pr merge und Push nach main waehrend eines Deploys', () => {
   const hook = fileURLToPath(new URL('../../.claude/hooks/git-gh-guard.mjs', import.meta.url));
-  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'deploy-hook-'));
+  const repo = wegwerfOrdner('deploy-hook-');
   const git = (...a) => spawnSync('git', a, { cwd: repo, encoding: 'utf8' });
   git('init', '-q', '-b', 'main');
   git('-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'x');

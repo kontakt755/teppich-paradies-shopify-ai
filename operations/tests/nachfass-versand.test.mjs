@@ -36,6 +36,9 @@ test('Postfach: fehlt -> Hinweis mit Dateiname; zu offene Rechte -> nichts; Pfli
   schreibPostfach(dir, { ...POSTFACH, port: 587, kopie: 'buero@example.invalid', kopieImmer: true, unterschrift: 'Anna Beispiel' });
   const z = lesePostfach(postfachPfad(dir)).zugang;
   assert.deepEqual([z.sicherheit, z.kopie, z.kopieImmer, z.unterschrift], ['starttls', 'buero@example.invalid', true, 'Anna Beispiel']);
+  // "kopie": false: keine Blindkopie, auch nicht mit kopieImmer.
+  schreibPostfach(dir, { ...POSTFACH, kopie: false, kopieImmer: true });
+  assert.equal(lesePostfach(postfachPfad(dir)).zugang.kopie, null);
 
   schreibPostfach(dir, { host: 'x' });
   assert.match(lesePostfach(postfachPfad(dir)).hinweis, /es fehlt port, benutzer, passwort, absender/);

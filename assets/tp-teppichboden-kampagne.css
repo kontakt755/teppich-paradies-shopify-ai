@@ -31,7 +31,6 @@
   text-decoration: none;
 }
 .tp-tbk__button:hover, .tp-tbk__button:focus-visible { background: #000; color: #fff; }
-.tp-tbk__jump { display: none; }
 .tp-tbk__facts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px 22px; padding-top: 12px; border-top: 1px solid #e8ddd7; font-size: var(--tp-fs-sm); }
 .tp-tbk__facts > * { color: #554a46; }
 .tp-tbk__facts a { text-underline-offset: 3px; }
@@ -51,6 +50,5 @@
   .tp-tbk h2 { font-size: var(--tp-fs-lg); }
   .tp-tbk__copy > p:last-child { font-size: var(--tp-fs-sm); line-height: 1.4; }
   .tp-tbk__button { width: 100%; }
-  .tp-tbk__jump { display: inline-block; width: fit-content; font-size: var(--tp-fs-sm); font-weight: 700; text-underline-offset: 3px; }
   .tp-tbk__facts { gap: 8px 14px; }
 }

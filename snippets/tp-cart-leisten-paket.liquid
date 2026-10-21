@@ -1,0 +1,76 @@
+{%- doc -%}
+  Hinweis im Warenkorb zum Paketvorteil (#1452): Liegen mindestens 3 Pakete
+  Klick- oder Klebevinyl im Warenkorb, aber keine Faventa- oder
+  Nerissa-Leiste, steht oberhalb des Gesamtbetrags der Weg zur Leiste mit
+  -50 %. Nie zwischen Gesamtbetrag und "Zur Kasse". Rein serverseitig;
+  Schalter in snippets/tp-leisten-paket.
+{%- enddoc -%}
+
+{%- liquid
+  assign tcl_leisten = 'faventa-sockelleiste,nerissa-sockelleiste' | split: ','
+  assign tcl_pakete = 0
+  assign tcl_hat_leiste = false
+  for tcl_item in cart.items
+    if tcl_leisten contains tcl_item.product.handle
+      assign tcl_hat_leiste = true
+      break
+    endif
+    capture tcl_gilt
+      render 'tp-leisten-paket', product: tcl_item.product
+    endcapture
+    if tcl_gilt contains 'ja'
+      assign tcl_pakete = tcl_pakete | plus: tcl_item.quantity
+    endif
+  endfor
+  assign tcl_faventa = nil
+  if tcl_pakete >= 3 and tcl_hat_leiste == false
+    assign tcl_faventa = all_products['faventa-sockelleiste']
+    assign tcl_nerissa = all_products['nerissa-sockelleiste']
+    assign tcl_stangen = tcl_pakete | divided_by: 3 | times: 2 | at_most: 60
+  endif
+-%}
+
+{%- if tcl_faventa.available -%}
+  <div class="tp-cart-lph" role="note" aria-label="Paketvorteil Sockelleiste">
+    <p class="tp-cart-lph__text"><span class="tp-cart-lph__badge">−50&nbsp;%</span> <strong>Ihr Paketvorteil:</strong> Zu Ihrem Vinylboden erhalten Sie bis zu {{ tcl_stangen }} Sockelleisten (je 2,4&nbsp;m) zum halben Preis.</p>
+    <details>
+      <summary>Aktionsbedingungen</summary>
+      <p class="tp-cart-lph__text">Höchstens 60 rabattierte Stangen pro Bestellung. Nicht mit anderen Produkt- oder Bestellrabatten kombinierbar.</p>
+    </details>
+    <p class="tp-cart-lph__links">
+      <a href="{{ tcl_faventa.url }}">Faventa wählen</a>
+      {%- if tcl_nerissa.available %} · <a href="{{ tcl_nerissa.url }}">Nerissa wählen</a>{% endif -%}
+    </p>
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-cart-lph {
+    margin: 0 0 var(--margin-xs, 0.5rem);
+    padding: var(--padding-sm, 0.875rem);
+    border: 2px solid #8d714c;
+    border-radius: var(--style-border-radius-inputs, 4px);
+    background: rgb(141 113 76 / 0.12);
+    font-size: var(--tp-fs-sm);
+    line-height: 1.45;
+  }
+  .tp-cart-lph__text,
+  .tp-cart-lph__links {
+    margin: 0;
+  }
+  .tp-cart-lph__links {
+    margin-top: 0.4rem;
+  }
+  .tp-cart-lph__links a {
+    color: var(--tp-ink, inherit);
+    font-weight: 600;
+    text-underline-offset: 3px;
+  }
+  .tp-cart-lph__badge {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #b3261e;
+    color: #fff;
+    font-weight: 700;
+  }
+{% endstylesheet %}

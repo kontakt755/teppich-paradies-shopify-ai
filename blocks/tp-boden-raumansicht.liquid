@@ -4,8 +4,12 @@
   echten Massstab auf dem Boden eines gezeichneten Beispielraums.
 
   Erscheint nur, wenn die reale Breite des Dekorbildes bekannt ist
-  (Metafeld custom.dekor_breite_cm oder Pilotliste unten). Ohne Massstab
+  (Metafeld custom.dekor_breite_cm oder Pilotliste unten) und das Bild
+  mindestens 1000 px oder 5 px je cm hat. Ohne Massstab
   wirken Planken schnell doppelt oder vierfach so breit - dann lieber nichts.
+  Das Skript verlegt die Dielenstreifen des Dekorbildes zufaellig versetzt
+  neu (statt das Bild als Ganzes zu kacheln) und zeichnet den Boden auf ein
+  Canvas; die CSS-Ebene unten ist nur der Rueckfall.
   Teppichboden bleibt bewusst draussen: Musterfotos auf Raumflaeche hat der
   Inhaber am 2026-09-28 als "nicht wie echt" abgelehnt.
 {% enddoc %}
@@ -25,8 +29,12 @@
   endif
   assign tp_br_bild = product.featured_image
   assign tp_br_ok = false
-  if tp_br_breite != blank and tp_br_bild != blank and tp_br_bild.width >= 1000
-    assign tp_br_ok = true
+  if tp_br_breite != blank and tp_br_bild != blank
+    # Schaerfe haengt an Bildpunkten je cm, nicht an der Bildbreite: ab 1000 px oder ab 5 px/cm
+    assign tp_br_px_cm = tp_br_bild.width | times: 1.0 | divided_by: tp_br_breite
+    if tp_br_bild.width >= 1000 or tp_br_px_cm >= 5
+      assign tp_br_ok = true
+    endif
   endif
 -%}
 
@@ -48,13 +56,17 @@
         class="tp-raum__raum"
         role="img"
         aria-label="Gezeichneter Beispielraum mit diesem Boden, Rückwand etwa 4 Meter breit"
-        style="--tp-raum-tex: url('{{ tp_br_url }}'); --tp-raum-kachel: {{ tp_br_kachel }}cqw;"
+        style="--tp-raum-kachel: {{ tp_br_kachel }}cqw;"
+        data-tp-raum-bild="{{ tp_br_url }}"
+        data-tp-raum-breite="{{ tp_br_breite }}"
+        data-tp-raum-format="{{ product.metafields.custom.format_cm.value | escape }}"
+        data-tp-raum-seed="{{ product.id }}"
       >
         <div class="tp-raum__wand-l"></div>
         <div class="tp-raum__wand-r"></div>
         <div class="tp-raum__fenster"></div>
         <div class="tp-raum__bild"></div>
-        <div class="tp-raum__boden"><div class="tp-raum__ebene"><div class="tp-raum__dekor"></div></div></div>
+        <div class="tp-raum__boden"><canvas class="tp-raum__canvas" aria-hidden="true"></canvas><div class="tp-raum__ebene"><div class="tp-raum__dekor"></div></div></div>
         <div class="tp-raum__leiste"></div>
         <div class="tp-raum__leiste-l"></div>
         <div class="tp-raum__leiste-r"></div>
@@ -67,7 +79,7 @@
         <button type="button" data-tp-raum-richtung="laengs" aria-pressed="true">längs</button>
         <button type="button" data-tp-raum-richtung="quer" aria-pressed="false">quer</button>
       </div>
-      <p class="tp-raum__hinweis">Gezeichneter Beispielraum, Rückwand etwa 4&nbsp;m breit. Das Dekor liegt im Maßstab der Herstelleraufnahme; Farbe und Licht können am Bildschirm abweichen. Für die genaue Farbe bitte ein Muster bestellen.</p>
+      <p class="tp-raum__hinweis">Gezeichneter Beispielraum, Rückwand etwa 4&nbsp;m breit. Der Boden ist aus der Herstelleraufnahme im echten Maßstab neu zusammengesetzt; Farbe und Licht können am Bildschirm abweichen. Für die genaue Farbe bitte ein Muster bestellen.</p>
     </dialog>
   </tp-boden-raumansicht>
   <script src="{{ 'tp-boden-raumansicht.js' | asset_url }}" type="module"></script>
@@ -101,6 +113,9 @@
   .tp-raum__ebene { position: absolute; left: -10%; width: 120%; top: 0; height: 100cqw; transform-origin: 50% 0; transform: rotateX(90deg); }
   .tp-raum__dekor { position: absolute; left: 50%; top: 50%; width: 150cqw; height: 150cqw; transform: translate(-50%, -50%); background-image: var(--tp-raum-tex); background-size: var(--tp-raum-kachel) auto; background-position: center; }
   .tp-raum[data-richtung='quer'] .tp-raum__dekor { transform: translate(-50%, -50%) rotate(90deg); }
+  .tp-raum__canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; opacity: 0; transition: opacity 0.25s ease; }
+  .tp-raum[data-verlegt]:not([data-verlegt='css']) .tp-raum__canvas { opacity: 1; }
+  .tp-raum[data-verlegt]:not([data-verlegt='css']) .tp-raum__ebene { display: none; }
   .tp-raum__boden::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 55% 70% at 12% 30%, rgb(255 255 255 / 0.4) 0, transparent 70%), linear-gradient(rgb(27 20 12 / 0.25), transparent 22%), linear-gradient(90deg, rgb(27 20 12 / 0.15), transparent 18% 82%, rgb(27 20 12 / 0.15)); }
   .tp-raum__leiste { position: absolute; left: 18%; width: 64%; top: calc(57% - 0.9cqw); height: 0.9cqw; background: #fff; }
   .tp-raum__leiste-l { position: absolute; inset: 0; clip-path: polygon(0 74.6%, 18% 55.6%, 18% 57%, 0 76%); background: #fbfaf7; }

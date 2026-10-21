@@ -18,7 +18,7 @@
         "cta1_label": "",
         "cta1_link": "#tp-kategorien",
         "cta2_label": "Verlegung anfragen (bis 50 km)",
-        "cta2_link": "#tp-kontakt",
+        "cta2_link": "#tp-anfrage",
         "telefon": "",
         "whatsapp": "",
         "rating_wert": "",
@@ -495,7 +495,7 @@
           "type": "frage",
           "settings": {
             "frage": "Verlegen Sie auch – und was kostet das?",
-            "antwort": "<p>Ja, mit eigenem Team: Aufmaß, Lieferung, Untergrundvorbereitung, Verlegung und Sockelleisten für Teppichboden und Vinyl von der Rolle. Regulär bis 50 km um Oranienburg, weiter entfernt auf Anfrage. Alle Stufen und Preise stehen auf der Seite <a href=\"/pages/liefer-verlegeservice\">Liefer- &amp; Verlegeservice</a>. Geben Sie oben Ihre Postleitzahl ein oder rufen Sie kurz an.</p>"
+            "antwort": "<p>Ja, mit eigenem Team: Aufmaß, Lieferung, Untergrundvorbereitung, Verlegung und Sockelleisten für Teppichboden und Vinyl von der Rolle. Regulär bis 50 km um Oranienburg, weiter entfernt auf Anfrage. Alle Stufen und Preise stehen auf der Seite <a href=\"/pages/liefer-verlegeservice\">Liefer- &amp; Verlegeservice</a>. Auch Klick- und Klebevinyl verlegen wir; dafür erstellen wir <a href=\"/pages/vinylboden-verlegen\">ein individuelles Angebot</a>. Geben Sie oben Ihre Postleitzahl ein oder rufen Sie kurz an.</p>"
           }
         },
         "q4": {

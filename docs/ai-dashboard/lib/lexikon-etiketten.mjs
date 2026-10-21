@@ -1,0 +1,104 @@
+/** Etikettenauswahl aus dem Produktlexikon, ohne Bestellung oder Drucker. */
+import { etikett, originalHandle, serieUndFarbe, technikZeilen } from './muster-etiketten.mjs';
+
+const text = v => v === null || v === undefined || ['–', '-', 'UNGEKLAERT', 'Default Title'].includes(String(v).trim()) ? '' : String(v).trim();
+const norm = v => text(v).toLowerCase();
+const musterSku = sku => /^(M-|TP-MUSTER)/i.test(text(sku));
+const echteVarianten = produkt => (produkt?.varianten || []).filter(v => !v.wunschmass && !musterSku(v.sku));
+
+/** Eine belegte Variantenbezeichnung darf eine fehlende Farbe ersetzen, ein Mass nie. */
+export function farbeOderAusfuehrung(variante) {
+  if (text(variante?.farbe)) return text(variante.farbe);
+  const titel = text(variante?.titel);
+  if (!titel || /^default(?: title)?$/i.test(titel) || !/\p{L}/u.test(titel)
+    || /[/\\]|breite|länge|laenge|wunschmaß|wunschmass|\d\s*(?:mm|cm|m)\b|\d\s*[x×]\s*\d/i.test(titel)) return '';
+  return titel;
+}
+
+const paar = v => JSON.stringify([norm(v.sku), norm(farbeOderAusfuehrung(v))]);
+const eindeutig = varianten => {
+  const je = new Map(varianten.map(v => [paar(v), v]));
+  return je.size === 1 ? je.values().next().value : null;
+};
+
+/** Nur belegte Shop-SKU oder eine eindeutige Farbe; Lieferanten-Artikelnr. ist keine Shop-SKU. */
+function originalVariante(muster, produkt) {
+  const varianten = echteVarianten(produkt);
+  const ref = muster.original;
+  if (ref?.gefunden === false) return null;
+  if (ref?.variantenId) {
+    const treffer = varianten.filter(v => text(v.id) === text(ref.variantenId));
+    if (treffer.length !== 1 || (text(ref.sku) && norm(ref.sku) !== norm(treffer[0].sku))) return null;
+    return treffer[0];
+  }
+  const quellSku = text(muster.sku).match(/^M-(.+)$/i)?.[1]?.trim();
+  const farbe = norm(farbeOderAusfuehrung(muster));
+  if (quellSku) {
+    const treffendeSku = varianten.filter(v => norm(v.sku) === norm(quellSku));
+    const direkt = eindeutig(treffendeSku);
+    if (direkt) return direkt;
+    if (farbe && treffendeSku.length) return eindeutig(treffendeSku.filter(v => norm(farbeOderAusfuehrung(v)) === farbe));
+    return null;
+  }
+  return farbe ? eindeutig(varianten.filter(v => norm(farbeOderAusfuehrung(v)) === farbe)) : null;
+}
+
+function ausVariante(produkt, variante, fehlt = []) {
+  let sf = serieUndFarbe(produkt?.titel, farbeOderAusfuehrung(variante), produkt?.eigenschaften?.marke);
+  // Ohne Farboption verwendet der Shop den vollstaendigen Produkttitel als Einzeldekor.
+  // Gruppe/Marke sind belegte Ueberschriften; wir zerlegen den Titel nicht in erfundene Farben.
+  if (!sf.farbe && Array.isArray(variante?.optionen)
+    && !variante.optionen.some(o => /^(farbe|dekor|color)$/i.test(text(o.name)))
+    && text(produkt?.titel) && text(produkt?.produktgruppe)) {
+    sf = { serie: text(produkt.eigenschaften?.marke) || text(produkt.produktgruppe), farbe: text(produkt.titel) };
+  }
+  const e = etikett({ ...sf, sku: variante?.sku, handle: produkt?.handle, technik: technikZeilen(produkt?.eigenschaften) });
+  if (Object.hasOwn(produkt || {}, 'onlineStoreUrl') && (!text(produkt.onlineStoreUrl) || produkt.onlineStoreUrl !== e.url)) fehlt.push('Veröffentlichte Produktseite');
+  e.fehlt = [...new Set([...e.fehlt, ...fehlt])];
+  return e;
+}
+
+/**
+ * Eine Zeile je SKU/Farbe, nicht je Rollenbreite. Unvollstaendige Zeilen bleiben sichtbar;
+ * `etikett.fehlt` nennt die Luecken und erlaubt der UI, den Druck zu sperren.
+ * Fuer Muster werden die expliziten Originalprodukte per Handle nachgeladen und hier uebergeben.
+ * @returns {{key: string, bezeichnung: string, etikett: object}[]}
+ */
+export function etikettenAusLexikon(produkt, originalProdukte = new Map(), besucht = new Set()) {
+  if (!produkt || produkt.handle === 'kostenloses-muster') return [];
+  if (besucht.has(produkt.handle)) return [];
+  besucht = new Set([...besucht, produkt.handle]);
+  const je = new Map();
+  const produktIstMuster = text(produkt.handle).startsWith('muster-');
+  // Massartikel haben bewusst keine eigene Waren-SKU. Das belegte Muster bzw. seine
+  // Basis liefert den physischen Artikel. Niemals aus einem Masspreis eine SKU erfinden.
+  if (!produktIstMuster && !echteVarianten(produkt).some(v => text(v.sku))) {
+    const musterHandle = text(produkt.muster?.handle);
+    const ziel = originalProdukte.get(musterHandle) || originalProdukte.get(text(produkt.musterRegeln?.basisHandle));
+    if (ziel) return etikettenAusLexikon(ziel, originalProdukte, besucht);
+  }
+  for (const [index, v] of (produkt.varianten || []).entries()) {
+    if (v.wunschmass || /^TP-MUSTER/i.test(text(v.sku)) || /opc-/i.test(text(v.titel)) || /^opc-/i.test(text(v.farbe))) continue;
+    const istMuster = produktIstMuster || /^M-/i.test(text(v.sku)) || !!v.original;
+    let quelle = produkt, variante = v, fehlt = [];
+    if (istMuster) {
+      const handle = v.original?.gefunden === false ? '' : text(v.original?.produktHandle) || originalHandle(produkt.handle);
+      quelle = originalProdukte.get(handle);
+      if (!quelle || text(quelle.handle).startsWith('muster-') || quelle.handle === 'kostenloses-muster') {
+        // Ohne geladenes Original weder M-SKU umdeuten noch eine Produktadresse konstruieren.
+        quelle = { titel: produkt.titel };
+        variante = { farbe: farbeOderAusfuehrung(v) };
+        fehlt = ['Originalprodukt'];
+      } else {
+        variante = originalVariante(v, quelle);
+        if (!variante) { variante = { farbe: farbeOderAusfuehrung(v) }; fehlt = ['Originalvariante']; }
+      }
+    }
+    const e = ausVariante(quelle, variante, fehlt);
+    // Ohne SKU ist die Gleichheit zweier Varianten nicht belegt: nicht still zusammenfassen.
+    const key = JSON.stringify([quelle.handle || produkt.handle, norm(e.sku), norm(e.farbe), e.sku ? '' : text(v.id) || index]);
+    if (je.has(key)) continue;
+    je.set(key, { key, bezeichnung: [e.farbe || 'Farbe / Ausführung fehlt', e.sku].filter(Boolean).join(' · '), etikett: e });
+  }
+  return [...je.values()];
+}

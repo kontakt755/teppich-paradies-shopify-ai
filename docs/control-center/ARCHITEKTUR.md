@@ -7,9 +7,9 @@ Direkte Einstiege stehen auf „Heute“ und in der Befehlspalette, die vollstae
 Seitenleiste unter „Arbeitsplatz“ (am Handy hinter „Mehr“). Heute bleibt die betriebliche Startseite.
 
 Je Aufgabe werden vorhandene Angaben in eine pruefbare Arbeitsanweisung eingebettet. Originaltexte
-sind als Quellen markiert; sie ersetzen keine Projektregeln. Der erste Knopf kopiert den Auftrag,
-ein separater nativer Link oeffnet die gewaehlte App oder das hinterlegte Projekt. Einfuegen und
-Starten erfolgen dort durch die Person. Es gibt keinen KI-Hintergrunddienst, keine neuen
+sind als Quellen markiert; sie ersetzen keine Projektregeln. Je nach Ziel uebernimmt der
+Browserbegleiter den Text oder ein offizieller App-Link oeffnet einen Entwurf. Der manuelle Weg
+bleibt als Alternative erhalten. Starten erfolgt dort durch die Person. Es gibt keinen KI-Hintergrunddienst, keine neuen
 API-Schluessel und keinen automatischen Versand oder Schreibzugriff auf Fachsysteme.
 
 Die Angebotsvorbereitung verlangt den tatsaechlich verfuegbaren, gelesenen Lexware-Skill des
@@ -28,8 +28,8 @@ behandelt oder ueberschrieben.
 
 Erlaubt sind HTTPS-Adressen von `chatgpt.com` bzw. `claude.ai` sowie die dokumentierten nativen
 App-Links fuer neue/gespeicherte Codex-Chats und Claude-Projekte bzw. lokale Ordner. Abfragen mit
-Prompttext, fremde Hosts, Zugangsdaten oder Textfragmente werden abgewiesen. Kontext wird nie in
-einen Link geschrieben. Leere Ziele bleiben sichtbar unkonfiguriert. Allgemeine App-Adressen
+Prompttext, fremde Hosts, Zugangsdaten oder Textfragmente werden abgewiesen. Gespeicherte
+Navigationslinks enthalten keinen Kontext. Leere Ziele bleiben sichtbar unkonfiguriert. Allgemeine App-Adressen
 sagen ausdruecklich, dass das passende Projekt dort noch auszuwaehlen ist. Native Ordnerziele sind
 geraetebezogen; sie uebernehmen weder Cloud-Chats noch deren Quellen oder Skills automatisch.
 Referenzen: [Codex-App-Links](https://learn.chatgpt.com/docs/reference/commands),
@@ -50,8 +50,8 @@ Der optionale Browserbegleiter unter `operations/browser-uebergabe/` ersetzt auf
 Chrome-Arbeitsplatz Kopieren und Einfuegen. Er verwendet dieselben privaten Projektverknuepfungen
 und denselben vorbereiteten Auftrag. Ein bewusster Klick auf „Im Projekt einfuegen“ oeffnet eine
 neue Projektseite und fuellt dort das noch leere Eingabefeld. Er sendet keine Nachricht und startet
-keine KI. Die manuellen Knoepfe bleiben als Alternative erreichbar. Fuer lokale Codex- und
-Claude-Ziele bleibt der bisherige Weg erhalten.
+keine KI. Die manuellen Knoepfe bleiben als Alternative erreichbar. Native Codex- und Claude-Ziele
+verwenden die unten beschriebene App-Uebergabe.
 
 Die Erweiterung laeuft nur auf explizit eingerichteten Dashboard-Urspruengen und auf ChatGPT-
 Projektseiten. Der Generator `operations/scripts/browser-uebergabe-paket.mjs` erzeugt ihre private
@@ -78,6 +78,29 @@ Dieser Weg bedient die ChatGPT-Oberflaeche; eine offizielle Projekt-Prompt-API i
 Die [dokumentierten App-Links](https://learn.chatgpt.com/docs/reference/commands) mit `prompt`
 betreffen lokale Chats und ersetzen keine ChatGPT-Projektzuordnung. Einrichtung, Pruefung und
 Grenzen stehen in [BROWSER-UEBERGABE.md](BROWSER-UEBERGABE.md).
+
+### Direkte Entwuerfe in Codex und Claude (#1404)
+
+`prozess-app-entwurf.mjs` ergaenzt im echten Uebergabeklick einen fluechtigen offiziellen App-Link.
+Codex bekommt `prompt` und behaelt den eingerichteten `path` bzw. `originUrl`. Claude bekommt `q`;
+bei Claude Code bleibt `folder` erhalten. Unterstuetzt werden ausschliesslich neue Chats/Code-
+Entwuerfe. Bestehende Chats oder Cloud-Projektadressen bekommen keinen vorgetaeuschten Direktweg.
+Ein allgemeines neues Chat-Ziel zeigt ausdruecklich, dass noch kein Projekt hinterlegt ist.
+
+Das Dashboard erzeugt den Textparameter des nativen App-Links erst beim Klick. Es schreibt ihn weder in
+seine HTTP-Adresse noch in einen dauerhaften `href`, die Konfiguration, Browserablagen oder einen
+API-Aufruf. Anders als der ChatGPT-Begleiter verwendet dieser Weg die Textparameter des jeweiligen
+App-Protokolls. Betriebssystem und Ziel-App verarbeiten diesen Link; deren Speicherverhalten kann
+das Dashboard nicht steuern. Die gemeinsame Validierung gespeicherter Ziele bleibt unveraendert
+streng und verbietet darin weiterhin Prompt-Parameter.
+
+Die App-Uebergabe hat keinen Erfolgsrueckkanal. Das Dashboard meldet deshalb nur „Uebergabe
+angefordert“, niemals eine bestaetigte Einfuegung. Die Person prueft den Entwurf und startet selbst.
+Claude Code verlangt bei Ordnerlinks einen eigenen Bestaetigungsdialog; das Dashboard bestaetigt
+ihn nicht. Das vollstaendig kodierte Ziel ist auf 12.000 Zeichen begrenzt, damit insbesondere
+Claudes dokumentierte Textkuerzung vermieden wird. Zu lange oder nicht verlustfrei uebertragbare
+Angaben bleiben vollstaendig im Eingabefeld und ergeben eine klare Fehlermeldung mit Alternative.
+Details und Quellen: [APP-UEBERGABE.md](APP-UEBERGABE.md).
 
 ## Starten (Mitarbeiter/Admins)
 
@@ -413,9 +436,10 @@ ist überholt: Shopify-Daten kommen als lokaler Export bzw. live (Abschnitte 8�
 gibt es seit 2026-09-24 (1e). Weiterhin **kein** Ziel:
 
 - Google Ads und GA4 im Control Center (erst nach einer Sichtbarkeitsentscheidung; Systemzustand nennt das).
-- Schreiben nach Shopify außer dem Ladenverkauf von Sonderposten (Abschnitt 13) und der Versandbuchung bei
-  „An Kunden raus“ (Abschnitt 17) – Preise, Produkte und Bestellungen bleiben im Shopify-Admin bzw. im Workflow
-  mit Gates.
+- Schreiben nach Shopify außer dem Ladenverkauf von Sonderposten (Abschnitt 13), der Versandbuchung bei
+  „An Kunden raus“ (Abschnitt 17) und bei „Erledigt“ samt Abgleich (Abschnitt 24) – Preise, Produkte und
+  Bestellungen bleiben im Shopify-Admin bzw. im Workflow mit Gates. Storniert oder zurückgenommen wird in
+  Shopify nie automatisch.
 - KI-Automatik mit Schreibzugriff.
 - Ein zweiter Aufgabenspeicher neben GitHub Issues (Abschnitt 1); Betriebsdaten liegen nur lokal unter
   `$TP_PRIVAT_DIR`.
@@ -463,6 +487,18 @@ vor „Erledigt" zurück (ohne solchen: kein Status = noch nicht bestellt). Die 
 (`erledigtAm/Von/Notiz`) wandern mit Zeit, Person und Notiz in `verlauf` (höchstens 20 Einträge);
 `wiederGeoeffnetAm/Von` stehen am Datensatz, der Audit-Log erhält `auftragsstatus-wieder-geoeffnet`.
 Wartezeiten im Einkauf rechnet das Frontend aus `bestelltAm`/`geliefertAm` (7 Tage bernstein, 14 rot).
+
+### Einkauf „Je Auftrag“: Arbeitsliste (seit 2026-10-20, #1522)
+
+`lib/auftrags-ablauf.mjs` ordnet jeden offenen Auftrag ein (`einordnung`): **jetzt** (bestellen,
+ungeklaert, Ware da ohne „Kunde informiert“, Muster da, Verzug), **unterwegs** und **beiKunde**
+(beide eingeklappt). Verzug = Status „bestellt“, mehr als `VERZUG_WERKTAGE` (10) Werktage, bei
+bestaetigtem Liefertermin erst nach dem Termin; dieselbe Regel nutzt das To-do „Nachfragen“ in
+`lib/todos.mjs`. „Kunde informiert“ ist ein Ereignis `kunde_informiert` im Auftragsverlauf
+(`POST /api/einkauf/auftragsstatus`, aktion `schritt`, nur Warenauftraege, Rolle „lesen“ 403);
+`/api/einkauf/bestellungen` liefert es als `kundeInformiert[orderId]`. „Heute“ zaehlt mit
+`einkaufZahlen` dieselbe Menge und verlinkt `#/einkauf?ab=bestellen|informieren|verzug`.
+Liefer-/Montagetermine der Auftrags-App sind nicht angebunden (kein lesbarer Export mit Bestellnummer).
 
 ### Einkauf je Lieferant (seit 2026-10-01)
 
@@ -654,6 +690,24 @@ Fehlt die Datei, liefert der Endpunkt `{verfuegbar: false, hinweis, befehl}` sta
 Kachel zeigt den Hinweis samt Befehl. Der Export selbst laeuft ueber `npm run daten:aktualisieren`
 (Abschnitt 10).
 
+### 9b. Eine Arbeitsliste (seit 2026-10-19, #1427)
+
+Inhaber 19.10.: „zu unübersichtlich“. „Heute“ ist seither **eine** Liste statt dreier Blöcke (To-dos,
+Muster-Karten, Wer wartet). Oben „N Sachen heute zu erledigen“ – N zählt genau die Zeilen der Liste; der
+Inhaber wählt per Chip *Laden*, *Website* oder *Alles* (Zahl am Chip = Zeilen dieser Sicht, die
+fälligen Muster-Nachfragen und Belege zählen zu Laden). Sieben Zeilen, der Rest hinter „alle anzeigen“.
+Fehlt eine Quelle (Bestellungen, Auftragsfluss, Fälle …), steht „Liste unvollständig“ statt „Alles
+erledigt“. Darunter ruhig **„Im Hintergrund“**: Muster-Nachfragen (was der automatische Versand
+übernimmt; nur was ein Mensch tun muss, steht oben als To-do – `teileNachfassen()`), „Wartet auf andere“
+(Lieferant/Kunde, aufklappbar per `?ww=1`), Lieferantenpostfach (§ 25) und der Datenstand. Laden- und
+Montage-Kacheln nur, wenn die Apps eingerichtet sind. „Alles“ zeigt die Vereinigung aller Bereiche
+(`fuerSicht('alles')`), nicht mehr die frühere Inhaber-Auswahl.
+
+Ein Liefertermin in der Zukunft heißt „kommt bis …“ (Lieferant ist dran), ein überschrittener ist rot
+in der Liste – vorher sagte die Warteübersicht „Nachhaken“, während die Liste schwieg.
+„In Shopify noch offen“ (§ 24) steht seither als Zeilen dieser Liste (`shopifyAbgleichTodos()`), nicht
+als eigener Block.
+
 ### 9a. „Heute" mit To-dos (seit 2026-10-01)
 
 Die Startseite zeigt zuerst, was zu tun ist: „N offene To-dos für dich" – je Zeile Titel, eine Zeile
@@ -684,6 +738,11 @@ To-dos werden nicht erfasst, sondern abgeleitet: `docs/ai-dashboard/lib/todos.mj
 | Team-Aufgabe | `/api/org/liste?bereich=alle-aufgaben` | Dringlichkeit „überfällig" (rot) oder „jetzt" (gelb), nicht wartend/zurückgestellt |
 | Freigabe | Entwicklungsaufgaben (`issues.json`) | Status Freigabe oder Review durch Mensch; nur Inhaber |
 | Shop-Wache | `/api/shopwache/status` | Ampel gelb/rot; nur Inhaber |
+| Neue Service-Anfrage | `/api/kunden/serviceanfragen` | Status „neu“; gelb ab 1, rot ab 3 Tagen (seit 2026-10-19) |
+| Storno vom Lieferanten | `/api/einkauf/belege` | Storno-Beleg zu einer Shop-Bestellung, nicht erledigt; immer rot (§ 25) |
+| Lieferschein da – Ware angekommen? | `/api/einkauf/belege` | Lieferschein, bei uns noch „bestellt“; gelb (§ 25) |
+| Lieferantenbelege zuordnen | `/api/einkauf/belege` | Vorschläge („gehört zu #1041?“), eine Sammelzeile (§ 25) |
+| In Shopify noch offen | `/api/einkauf/shopify-abgleich` | im Dashboard „raus“/„erledigt“, in Shopify offen; gelb, Knopf „In Shopify nachbuchen“ in der Zeile (§ 24) |
 
 Sortierung: rot vor gelb vor normal, darin das Älteste zuerst.
 
@@ -1046,8 +1105,22 @@ Befunde einer Prüfung am 2026-10-12, alle mit Test (`tests/robustheit.test.mjs`
 - **Kopfzeilen.** Jede Antwort: `X-Frame-Options: DENY`, `Content-Security-Policy: frame-ancestors 'none'`,
   `nosniff`. Anhänge (`org/anhang-lesen`, `fehler/bild`) nur als Bild, PDF oder Text im Fenster, alles
   andere als Download. Ein zu großer Körper bekommt seine 413, statt dass die Verbindung abreißt.
-- **Prüfwerkzeug.** `dashboard:pruefen` räumt Instanz und Datenkopie auch bei `SIGTERM`/`SIGHUP` auf und
-  zählt eine Ansicht, die nach 6 s noch „Lade …“ zeigt, als `FEHL`.
+- **Prüfwerkzeug.** `dashboard:pruefen` räumt Instanz und Datenkopie bei jedem Ende auf (Lauf fertig, Fehler,
+  `SIGINT`/`SIGTERM`/`SIGHUP`) und zählt eine Ansicht, die nach 6 s noch „Lade …“ zeigt, als `FEHL`. Mit
+  `--offen` bleibt die Instanz nach einem fehlerfreien Lauf stehen; das ausgegebene `kill <pid>` trifft den Server,
+  der seine Kopie dann selbst löscht (`TP_DASHBOARD_DATENKOPIE`, `scripts/dashboard-datenkopie.mjs`, nur ein
+  eigener markierter Ordner `tp-dashboard-daten-XXXXXX` direkt im Temp-Ordner, der zugleich `TP_PRIVAT_DIR` ist).
+  `dashboard-pruefung-lauf.mjs` wartet Browserstart, Browserende und Serverende ab, bevor die Kopie verschwindet.
+  Bei SIGINT/SIGTERM/SIGHUP endet auch ein laufender Browserstart geordnet; Puppeteers eigene Signalhandler
+  bleiben aus. Verwaiste eigene Kopien werden nach einem Tag, eigene Screenshot-Ordner nach drei Tagen
+  bereinigt. `dashboard-temp-besitz.mjs` bindet die Kennung an Verzeichnisidentität und Besitzer-PID;
+  nur ein toter Besitzer und eine eindeutige freie `lsof`-Prüfung (inklusive cwd) geben sie frei. Unmarkierte
+  Altordner, Links und unbekannte Prozesszustände bleiben erhalten. `--aus` entzieht eine frühere automatische
+  Ablage dauerhaft der Bereinigung. Die npm-Tests verwenden `test-temp.mjs`: eigener Tempordner und unter
+  POSIX eine eigene Prozessgruppe, Signalweitergabe an Enkel, begrenzte Eskalation, Abbruchcodes 130/143/129.
+  Erst nach bestätigtem Gruppenende wird gelöscht; unklare Zustände behalten den Ordner und melden den Fehler.
+  Windows nutzt `taskkill /T /F`; auf macOS getestet, Windows-Pfad nicht praktisch abgenommen. Bewusst in
+  eine eigene Prozessgruppe abgekoppelte Testkinder gehören nicht zur verwalteten Gruppe.
 - **Handy.** Der Fuß des „Mehr“-Blatts (Datenstand, Fehler melden, Passwort, Abmelden) bleibt unten
   stehen, zweispaltig; Rückmeldungen erscheinen bei offenem Blatt oben statt darüber.
 
@@ -1103,8 +1176,9 @@ alle wartenden Artikel der Bestellung als ein Paket.
 
 **Nicht gebucht** werden Testbestellungen (Vermerk „uebersprungen“) und stornierte Bestellungen. „Kunde hat
 Muster“ bei Mustern aus eigenem Bestand setzt „raus“ mit: gebucht wird ohne Versandmail (der Kunde hat sie
-schon); die Rückmeldung nennt das Ergebnis der Buchung. **Nichts rückwirkend:** Positionen, die vor dem 13.10. auf „raus“ standen, tragen keinen
-Vermerk und werden nie gebucht – dort bleibt der Hinweis „In Shopify noch nicht als versendet gebucht“.
+schon); die Rückmeldung nennt das Ergebnis der Buchung. **Rückwirkend nur auf Klick (seit 2026-10-19):** Positionen, die vor dem 13.10. auf
+„raus“ standen, tragen keinen Vermerk. Sie werden gebucht, wenn jemand sie auf „Erledigt“ setzt, oder über „In Shopify nachbuchen“ in der
+Abweichungsliste (Abschnitt 24) – nie still im Hintergrund.
 
 **Nachholen.** Scheitert die Buchung (Recht fehlt, kein Zugang, Netz, zurückgehalten), steht der Schritt
 trotzdem. Die Zeitleiste zeigt rot „Versand nicht in Shopify gebucht – …“ mit „In Shopify buchen“, die
@@ -1368,6 +1442,7 @@ Abmeldung, mit Abmelde-Satz in jeder Mail. WhatsApp und Shopify Messaging waren 
   `operations/tests/smtp-attrappe.mjs`). Das Passwort steht in keiner Meldung und keinem Protokoll.
 - **Mitlesen**: In den ersten 7 Tagen nach dem ersten echten Versand (`ersterVersandAm`) geht jede Mail als
   Blindkopie an `kopie` (Standard: der Absender, also das Büro); danach nur noch mit `kopieImmer: true`.
+  `"kopie": false` schaltet die Blindkopie ganz ab, auch in der ersten Woche (Inhaber 2026-10-19).
   Die Karte zeigt „bis <Datum> mit Kopie an …“.
 - **Stoppliste** `$TP_PRIVAT_DIR/nachfassen/stoppliste.json` (`{ eintraege: { "<adresse klein>": { am, von,
   grund, orderId } } }`): Knopf „Abgemeldet“ in der Karte (Rückfrage, dann `POST
@@ -1411,3 +1486,270 @@ Abmeldung, mit Abmelde-Satz in jeder Mail. WhatsApp und Shopify Messaging waren 
 - **Offen**: Die Abmeldung erfasst heute ein Mensch per Knopf, wenn die Antwort „Abmelden“ im Postfach
   liegt; ein Posteingangs-Abgleich ist nicht gebaut. Die rechtliche Einordnung (§ 7 UWG, Mail ohne
   Newsletter-Einwilligung) klärt der Inhaber mit dem Rechtstexter (w-083).
+
+## 24. Zwei-Wege-Abgleich der Bestellungen mit Shopify (seit 2026-10-19, #1419)
+
+Inhaber 2026-10-19: „Gleich alles in unserem Dashboard immer mit Shopify ab, was Bestellungen angeht – dort
+synchron arbeiten und abhaken.“ Regeln ohne Datei und ohne Shopify in `operations/lib/shopify-abgleich.mjs`
+(`uebernimmAusShopify()`, `abweichungen()`), Anbindung in `scripts/dashboard-api.mjs`, Liste
+`ansichten/einkauf/shopify-abgleich.mjs` (auf „Heute“).
+
+**Konfliktregel: „Versendet“ gewinnt in beide Richtungen.** Wer zuerst erfüllt, gilt. Nichts wird automatisch
+zurückgenommen – weder hier noch in Shopify (kein `fulfillmentCancel`).
+
+**Shopify → Control Center (automatisch).** Nach jedem neuen Bestellexport (`orders.json`, Größe/Zeit/Inode als
+Kennung) wendet der Dashboard-Dienst den Shopify-Stand an: beim ersten Lesen (Einkauf, Bestellungen, Akte,
+Statuswechsel) und zusätzlich jede Minute per Zeitgeber, auch ohne offene Seite. Bewusst im Dienst und nicht im
+Sync-Dienst: so hat `auftragsstatus.json` genau einen Schreiber; zwischen Lesen und Schreiben steht kein
+`await`.
+- Position in Shopify vollständig erfüllt (aktuelle Menge > 0, `unfulfilledQuantity` 0) und lokal vor „raus“
+  (auch ohne Stand) → `status: raus`, `rausVon: Shopify`, `rausNotiz: „aus Shopify übernommen“`, `rausAm` =
+  Zeitpunkt der Sendung laut Shopify, `ausShopify {am, grund, vonStatus, shopifyAm}`, Vermerk
+  `shopifyVersand.status: bereits` (`grund: aus-shopify`).
+- Schon „raus“/„erledigt“: der Schritt bleibt; ein Vermerk „fehler“/„unklar“/„ausstehend“ oder gar keiner wird
+  auf „bereits“ richtiggestellt (der rote Hinweis „Versand nicht gebucht“ fällt dann weg).
+- Teilmengen, aus der Bestellung entfernte Zeilen und Exporte ohne Mengen entscheiden nichts. Nie herabstufen,
+  „erledigt“ nie überschreiben.
+- Stornierte Bestellung: Positionen mit begonnenem Stand werden „erledigt“ (`erledigtNotiz: „In Shopify
+  storniert – aus Shopify übernommen“`), Positionen ohne Stand bleiben ohne Eintrag (die Bestellung ist ohnehin
+  keine offene Arbeit).
+- Hat jemand die Position **nach** der Sendung/Stornierung von Hand zurückgesetzt („Zurück auf offen“) oder
+  wieder geöffnet, gilt seine Entscheidung – sonst höbe jeder Lauf sie wieder an.
+- Idempotent; Protokoll je Bestellung „Aus Shopify übernommen · #… : N Artikel → An Kunden raus“ (Person
+  „Shopify“), Audit `shopify-abgleich`. Eine beschädigte Ablage wird nie überschrieben (Dienstprotokoll
+  `[abgleich]`, die Liste meldet den Fehler).
+
+**Control Center → Shopify bei „Erledigt“.** Jeder Weg auf „Erledigt“ – Einzelschritt im Einkauf, Zeitleiste
+(Ware „erledigt“, Muster-Ergebnisse „Kunde hat bestellt“/„kein Interesse“/„nicht verfügbar“), „Kunde fertig“
+(Bestellliste, Haken auf „Heute“) und „Ohne Einkauf abschließen…“ – bucht die Positionen, die in diesem Klick
+erledigt wurden, über denselben `versandBuchen()`-/`bucheVersand()`-Weg wie „raus“ (frisch lesen, Gegenprobe,
+Vermerk `shopifyVersand`), **ohne Mail an den Kunden** (`versandMail: false` an der Position, gilt auch beim
+Nachholen). Ware und Muster gleich. Ist danach keine Ware der Bestellung mehr offen, geht die Eigenleistung
+(Kettelservice) mit. Positionen mit Vermerk gebucht/bereits/übersprungen werden nicht erneut versucht;
+Testbestellungen und stornierte Bestellungen bucht Shopify nie. „Ohne Einkauf abschließen…“ schickt seit
+2026-10-19 einen Aufruf für alle Artikel (`POST /api/kunden/bestellung-fertig`) statt einen je Artikel – eine
+Buchung statt N. Die Antwort trägt `shopify {status, meldung, …}`; die Rückmeldung lautet z. B.
+„Status: Erledigt · In Shopify als versendet gebucht (ohne Mail an den Kunden).“
+
+**Rücknahme.** „Wieder öffnen…“ und „Zurück auf offen…“ ändern nur das Control Center. Ist der Versand gebucht,
+sagt der Dialog: „In Shopify bleibt die Bestellung als versendet gebucht – das Control Center storniert dort
+nichts.“
+
+**Abweichungsliste „In Shopify noch offen“.** Auf „Heute“ (nicht in der Website-Sicht), nur wenn es Zeilen gibt;
+je Bestellung eine Zeile mit Artikeln, Stand und Datum, Knopf „In Shopify nachbuchen“ (ohne Mail). Die Zahl im
+Kopf ist die Zahl der Zeilen. Gezählt wird: lokal „raus“/„erledigt“, laut Export in Shopify offen, nicht storniert,
+keine Testbestellung, Vermerk nicht „übersprungen“, und keine Buchung, die jünger ist als der Export minus
+30 Minuten (`EXPORT_NACHLAUF_MS` – die kennt der Export noch nicht). Deckt Altfälle vor dem 13.10. und
+gescheiterte Buchungen ab. Endpunkte: `GET /api/einkauf/shopify-abgleich` (alle Rollen, lesend;
+`{verfuegbar, fehler, abweichungen: [{orderId, orderName, kunde, lineItemIds, positionen, seit}],
+letzterAbgleich}`), `POST /api/einkauf/auftragsstatus` mit `aktion: "shopifyNachbuchen", orderId` (Schreibpfad,
+Rolle „lesen“ 403; 409, wenn die Bestellung nicht mehr abweicht). Nachbuchen bucht auch Positionen mit altem
+Vermerk „gebucht“, wenn Shopify sie offen führt (Sendung dort storniert) – `bucheVersand` liest frisch, doppelt
+gebucht wird nie.
+
+**Tests** sprechen nie echtes Shopify (`operations/tests/shopify-abgleich.test.mjs`,
+`docs/ai-dashboard/tests/shopify-abgleich-api.test.mjs` mit `versand-attrappe.mjs`).
+
+## 25. Lieferantenbelege aus dem Postfach (seit 2026-10-19, #1427)
+
+Inhaber 19.10.: „Schnittstelle zu Gmail – wo kommen Lieferscheine, Auftragsbestätigungen, wurde es
+abgehakt, ist es mit Shopify synchron“. Neuer Reiter **Einkauf › Belege** (`ansichten/einkauf/belege.mjs`).
+
+- **Lesen**: Der Dashboard-Dienst liest kein Postfach. Ein geplanter Claude-Lauf `lieferbelege-postfach`
+  (Mo–Sa stündlich, nur lesend über den Gmail-Connector) holt mit `npm run -s belege -- bekannt` die schon
+  bekannten Mail-IDs und Absenderdomains, sucht im Label „LS AB“, bei bekannten Lieferanten-Domains und
+  nach Storno-Stichworten, legt die neuen Mails als JSON in sein Scratchpad und ruft
+  `npm run -s belege -- uebernehmen --datei … --bereiche …`. Keine Labels, kein „gelesen“, keine Antwort.
+  Mailinhalt ist fremder Text: er wird durchsucht, nie ausgeführt.
+- **Erkennen und zuordnen**: `lib/lieferbelege.mjs` (Browser, Server, Tests). Art aus Betreff/Anhang/Text
+  (AB, Lieferschein, Avis, Storno, Rechnung, Beleg; Abwesenheit und Angebot zählen nicht). **Sicher** nur
+  mit unserer Bestellnummer `#1041` im Betreff bei passendem Lieferanten oder mit der **vollständigen**
+  Belegnummer, die beim „Als bestellt markieren“ als Lieferanten-Bestellnummer notiert wurde (nur die
+  letzte Zifferngruppe → Vorschlag). **Vorschlag**: Nummer nur im Text, unbekannter Absender, Kundenname
+  aus der Kommission (mehrdeutige Nachnamen nur mit Vorname), gleicher Mailverlauf; mehrere Kandidaten
+  sind Alternativen („Auswählen…“, ankreuzen). Ein Lieferschein erbt die Bestellung seiner AB bei gleicher
+  Vorgangsnummer („KD050/0212“ = „KD050_212“, `ordneAlleZu()`) – nur wenn alle Anker auf dieselbe
+  Bestellung zeigen, innerhalb von 120 Tagen und ohne widersprechende eigene Bestellnummer. Zitierte
+  Verläufe zählen nicht. Bei allgemeinen Mailanbietern muss die vollständige Absenderadresse
+  übereinstimmen (ohne Anzeigename, unabhängig von Großschreibung); die gemeinsame Domain allein
+  oder eine fehlende Adresse erlauben keine sichere Vorgangsverknüpfung. Die Oberfläche zeigt und
+  gruppiert diese Postfächer nach der vollständigen Adresse statt gemeinsam nach der Domain.
+  Eine Adresse im Anzeigenamen wird ignoriert; mehrdeutige oder beschädigte From-Angaben verknüpfen
+  nichts sicher. Auch bei Altbelegen wird die Domain für die Anzeige aus dem tatsächlichen Postfach
+  abgeleitet, ohne die Ablage umzuschreiben.
+- **Ablage**: `$TP_PRIVAT_DIR/lieferbelege/belege.json` (`operations/lib/lieferbelege.mjs`), 0600, jede
+  Änderung unter einer Sperrdatei (`mitSperre`), beschädigte Datei = Fehler statt leer. Gesichert von
+  `daten:sichern`. **Nie** ein Schreiben in `auftragsstatus.json`: ein Beleg ist ein Hinweis, den Schritt
+  setzt ein Mensch im Einkauf.
+- **API**: `GET /api/einkauf/belege` (alle Rollen) liefert Belege mit Lieferant und Zuordnung, den
+  Abgleich je Auftrag × Lieferant (AB, Lieferschein, Stand bei uns, Shopify-Versandstatus, Hinweise
+  `storno`, `lieferschein_offen`, `shopify_offen`, `shopify_weiter`) und die Abweichungen.
+  `POST` (write-Liste, Rolle „lesen“ 403, Person aus der Sitzung): `zuordnen` (`lieferant` ist **Pflicht**,
+  wenn der Absender unbekannt ist und die Bestellung mehrere Lieferanten hat, und muss jede gewählte
+  Bestellung beliefern – sonst hängt der Beleg an keiner Zeile), `ablehnen` („Passt nicht“, bleibt gemerkt), `kein_shop`, `loesen`, `erledigt` (mit `orderId`:
+  nur für diese Bestellung, `quittiert`), `wieder_offen`, `absender_kein_shop`, `absender_zuruecksetzen`.
+  Jeder offene Storno ist eine eigene Abweichung, auch ohne Lieferantenzeile; der Shopify-Stand einer
+  Zeile rechnet nur mit den Positionen dieses Lieferanten (offene und bestellte Menge aus dem Export:
+  10 bestellt, 5 offen = teilweise versendet). Fehlende oder beschädigte Bestelldaten liefern
+  `verfuegbar: false` und einen Fehlerhinweis: ohne diese Quelle gibt es keine gültige leere Arbeitsliste.
+  Ein GraphQL-Export muss ein `nodes`-Array enthalten; ein fehlender oder falscher Container gilt
+  als beschädigte Quelle. Ein ausdrücklich leeres Bestellarray bleibt ein gültiger Export.
+- **Ablage robust** (Codex-Review #1432): nur eine fehlende Datei ist leer; leere oder unvollständige Datei
+  = Fehler. Die Sperrdatei trägt Prozess und Kennung; entfernt wird sie nur, wenn sie älter als 30 s ist
+  und ihr Prozess nicht mehr lebt – und nur von dem, der die Räum-Sperre `….lock.raeumen` hält –,
+  freigegeben nur die eigene. Stichwort-Mails unbekannter Absender werden
+  zurückgestellt und erneut geprüft (Unterdomains zählen zum Lieferanten).
+- **Anzeige**: „Zu prüfen“ = Storno (rot), Lieferschein ohne Haken (gelb), Vorschläge mit „Ja, gehört
+  dazu“ / „Passt nicht“. „Je Auftrag“ = Tabelle mit Chips Alle / Mit Beleg / Passt nicht zusammen.
+  „Ohne Shop-Bestellung“ – meist Laden- und Telefonbestellungen (Echtdaten 19.10.: 41 von 52) – nur als
+  Zahl, aufklappbar, mit „Zuordnen…“ und „Kein Shop-Lieferant“ je Absender; zählt nicht als Arbeit.
+  An bestellten Posten der Lieferantenkarten steht „AB 14.10. · LS 16.10.“. Auf „Heute“ To-dos für
+  Storno, Lieferschein ohne Haken und Vorschläge sowie die Zeile „Lieferantenpostfach“ (gelb, wenn
+  werktags länger als vier Stunden kein Lauf kam oder der Lauf unvollständig war).
+- **Tests**: `docs/ai-dashboard/tests/lieferbelege.test.mjs` (Erkennen, Bezüge, Zuordnung, Vorgang,
+  Abgleich, Ablage mit Sperre und beschädigter Datei, API, Rollen am Server) – nur Pseudonyme.
+- **Offen**: Anhänge (PDF) liest der Lauf nicht – Nummern nur aus Betreff, Text und Dateinamen. „AB
+  fehlt seit N Tagen“ ist bewusst keine Regel, solange die Abdeckung des Postfachs nicht belegt ist.
+
+## 26. Muster-Etiketten drucken (seit 2026-10-20, #1473)
+
+Etikettendrucker Niimbot B1, Etikett 50 × 50 mm (400 × 400 px, 203 dpi, Druckrichtung „top“ –
+NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
+
+- **Wo:** Kunden › Bestellungen, Musterbestellung aufklappen → „Etiketten drucken“ (alle Muster der
+  Bestellung, eins je Stück). Einkauf › Musterlager → „Etikett drucken…“ für ein Etikett von Hand
+  (Produktlink, optional Farbe/Serie/Artikelnummer). Beide öffnen denselben Dialog mit Vorschau,
+  Druckdichte (1–5, Standard 3) und Verbindung.
+- **Direkt im Lexikon (20.10., #1489):** Produkt oder Muster oeffnen → „Musteraufkleber“ →
+  Farbe/Ausfuehrung und Anzahl (1–20) waehlen → Vorschau. Der Aufkleber entsteht aus dem aktuellen
+  Eintrag, ohne zuvor gespeicherte PNG-Datei. `lib/lexikon-etiketten.mjs` buendelt gleiche SKU/Farbe
+  ueber mehrere Breiten; unterschiedliche Shop-SKUs bleiben getrennte Ausfuehrungen. Ein Muster
+  laedt das explizit verknuepfte Originalprodukt und ordnet die Quell-SKU exakt zu. Die
+  Lieferanten-Artikelnummer ersetzt niemals die Shop-SKU. Der Sammelartikel „Kostenloses Muster“
+  fordert die Auswahl des konkreten Produkts. Fehlt eine Farbe, kann eine belegte
+  Variantenbezeichnung als Ausfuehrung dienen; reine Masse und „Default Title“ bleiben ausgeschlossen.
+- **Automatische Aufkleberpruefung (#1525):** „Aufkleber pruefen“ im Lexikon liest den ganzen
+  aktuellen Katalog ueber `GET /api/lexikon/etiketten-status` (angemeldet, alle Mitarbeiterrollen,
+  ausschliesslich lesend). Neue Produkte/Farben erscheinen nach jedem Lexikon-Export automatisch;
+  keine PNG-Erzeugung, Vormerkung oder dauerhafte Freigabe ist notwendig. Der Export uebernimmt
+  Tags, Gutscheinstatus, Farb-/Dekoroptionen und den belegten Basisprodukt-Verweis. Fehlende
+  aktuelle Musterregeln werden als ungepruefter Datenstand sichtbar. Zubehoer, ohne-muster,
+  Gutscheine und reine Dienstleistungen ohne belegtes Muster werden ausgeschlossen; Laminat,
+  Parkett und Kork brauchen auch bei Musteranfrage Aufkleber. Produkte ohne Produktgruppe bleiben
+  fachlich offen. Die Ansicht trennt Aufkleber-Ausfuehrungen, eigene Musterartikel und deren
+  Quellenzuordnungen; sie behauptet keinen physischen Musterbestand. Fehlende optionale SKU
+  wird weggelassen. Nicht hinterlegte technische Eigenschaften werden nicht erfunden.
+  Explizite fehlende/mehrdeutige Quellen-IDs oder Quell-SKUs sperren die Zuordnung. Echte
+  Einzeldekore ohne Farboption behalten ihren vollstaendigen Produkttitel; Massartikel verwenden
+  nur das belegte eigene Muster oder Basisprodukt. Die Uebersicht aktualisiert beim Betreten,
+  bei Fokus/Tab-Rueckkehr und alle 30 Sekunden, solange dort niemand tippt.
+- **Vorschau und Korrektur:** „Als PNG speichern“ gibt das 400×400-Bild aus. „Angaben bearbeiten“
+  ersetzt das ausgewaehlte Etikett (samt identischen Kopien); waehrend des Abrufs bleiben weitere
+  Bearbeitung und Druck gesperrt. Fehlende Pflichtangaben oder eine noch nicht geladene QR-Bibliothek
+  sperren Druck und Download. SKU bleibt optional und wird bei leerem Wert ausgeblendet. Lange
+  Paketetiketten passen die Schrift an, damit keine technische Zeile oder Artikelnummer entfaellt.
+- **Gemeinsame Druckliste (#1493):** Im Lexikon Farbe/Ausfuehrung und Anzahl waehlen → „Zum
+  Drucken vormerken“. Der Reiter „Gemeinsame Druckliste“ ist die Arbeitsliste fuer den Kollegen
+  im Laden. Beide Arbeitsplaetze muessen denselben Dashboard-Dienst verwenden. Die Liste liegt
+  zentral in `$TP_PRIVAT_DIR/muster-druckliste.json`, nicht in einer Browserablage. `GET/POST
+  /api/lexikon/druckliste` erlauben angemeldetes Lesen bzw. Mitarbeiter-/Inhaber-Aenderungen;
+  die Rolle „lesen“ kann nichts vormerken, reservieren oder bestaetigen.
+  Der Server erzeugt den unveraenderlichen Etikettstand selbst aus Handle und Auswahlschluessel;
+  uebermittelte Texte, SKUs und Personenangaben sind keine Datenquelle. Jede Vormerkung ist ein
+  eigener Eintrag. Wiederholte Anfragen mit derselben Vorgangskennung verdoppeln nichts.
+  Auswahl zum Druck reserviert genau diese IDs und Revisionen atomar. Ein zweiter Arbeitsplatz
+  erhaelt fuer eine veraltete Auswahl einen Konflikt. Spaeter vorgemerkte Mengen werden durch
+  den Abschluss des alten Auftrags nicht entfernt. Bis zu 1000 Positionen/5000 Aufkleber je
+  Druckauftrag (#1526). Standardmaessig umfasst „Druckvorschau oeffnen“ alle offenen Positionen
+  ueber alle Seiten. Erst „Auswahl aendern“ zeigt Haekchen und Sammelentfernen; eine geleerte
+  individuelle Auswahl bleibt leer. Einzelne oder
+  ausgewaehlte Positionen lassen sich entfernen (je Teil hoechstens 1000 Positionen, unabhaengig
+  von der Kopienzahl). Niimbot erhaelt automatisch Teile mit hoechstens 100 Seiten ueber dieselbe
+  Verbindung; kein Folgeteil nach abgelehntem `printEnd()`. Die Vorschau zeigt hoechstens 12
+  verschiedene Motive mit Kopienzahl, der Druck verwendet einen wiederverwendeten Canvas.
+  Fokus/Tab-Rueckkehr und ein 30-Sekunden-Abgleich aktualisieren den gemeinsamen Stand.
+  Sichere Vorgangskennungen funktionieren auch auf privaten HTTP-Arbeitsplaetzen.
+  Im Produkt bestaetigt die Vormerkung Farbe und Kopien und bietet „Weiteres Muster suchen“
+  sowie „Druckliste oeffnen“. Die Vorschau enthaelt den ausdruecklichen Druckstart und nach
+  vollstaendigem Transport die Papierbestaetigung im selben Fenster; Druckereinstellungen sind
+  eingeklappt. Nach Druck/Download bleiben die Eintraege „in Druck“, bis jemand den Ausdruck
+  geprueft und ausdruecklich als gedruckt markiert hat. Direkt vor dem ersten Hardwarebefehl,
+  nach der asynchronen Druckerwahl, werden Auftrag und Revisionen frisch gelesen und geprueft.
+  Schliessen vor jedem Druckversuch gibt die Reservierung bestaetigt frei. Ab dem Druckklick
+  bleibt der Versuch auch beim erneuten Oeffnen vermerkt; Abbruch, Fehler oder Neustart loeschen keinen Auftrag.
+  Sitzungsende und Tab-Schliessen versuchen keine unzuverlaessige automatische Freigabe;
+  Wiederfreigeben ist eine bewusste Aktion mit Hinweis auf moegliche bereits gedruckte Etiketten.
+  Auch reservierte Auftraege aus frueheren Sitzungen bieten je Position „Entfernen…“ und
+  „Gesamten Auftrag entfernen…“ (#1547). Ein einzelnes Entfernen beendet den alten Auftrag
+  atomar: das Ziel bleibt als entfernt im Verlauf, die uebrigen Positionen stehen wieder unter
+  „Noch zu drucken“. Der Server verlangt alle aktuellen Auftragspositionen mit Revisionen und
+  die eindeutigen Ziel-IDs; unvollstaendige oder veraltete Auftraege schreiben nichts.
+  Alle betroffenen Revisionen steigen, damit alte Vorschauen weder starten noch einen
+  ueberholten Ausdruck bestaetigen koennen. Andere Auftraege und spaetere Vormerkungen bleiben
+  erhalten. Die Bestaetigung erklaert den Rest und verlangt, einen noch laufenden Druck am
+  betreffenden Arbeitsplatz zuerst zu beenden; die Listenaktion stoppt keine Hardware.
+  Bei mehr als 25 Positionen macht „Weitere Positionen anzeigen“ auch spaetere Einzelaktionen
+  erreichbar. Entfernen setzt keinen Gedruckt-Status und veraendert keine Kundenbestellung.
+  Die gemeinsame Vorschau bietet keine Textkorrektur, damit der bestaetigte Stand eindeutig ist.
+  Private Ablage mit exklusiver Schreibsperre, atomarem Austausch und Rechten `0600`; nur eine
+  fehlende Datei ist leer, beschaedigte Daten werden nicht ueberschrieben. Sicherung und
+  Browser-Datenkopie enthalten die Datei. Erledigte/entfernte Eintraege bleiben fuer Verlauf und
+  Wiederholungsschutz erhalten. Es gibt keinen automatischen Hardwaredruck oder Shopify-Schreibzugriff.
+- **Musterbestellungen intern zuordnen (#1506):** Kunden › Bestellungen zeigt bei Musterauftraegen
+  den Einstieg „Musteraufkleber ansehen“. Die aufgeklappte Bestellung zeigt Produkt, Farbe,
+  echte Shop-SKU, offene Aufklebermenge und Drucklistenstand je Bestellposition. „Aufkleber zur
+  Druckliste vormerken“ uebernimmt sie gemeinsam. `GET/POST /api/kunden/musteretiketten` sind nur
+  im privaten, angemeldeten Dashboard erreichbar; die Rolle „lesen“ darf ansehen, nicht vormerken.
+  Der Browser sendet nur Bestellkennung und Vorgangskennung. Der Server liest Bestellmodell und
+  Lexikon ohne Shopify-Schreibzugriff oder Statusabgleich. Eine belegte Quellvarianten-ID hat
+  Vorrang vor alten Muster-SKUs; fehlende, veraltete oder mehrdeutige Zuordnungen sperren die
+  Vormerkung. Unbekannte Mengen werden nicht als ein Stueck angenommen oder still gekuerzt.
+  Pro Quelle `[orderId,lineItemId]` gibt es genau einen unveraenderlichen Drucklisteneintrag,
+  auch bei Neuladen oder zwei Arbeitsplaetzen. Gleiche SKU auf zwei Positionen bleibt getrennt.
+  Die erste Vormerkung verwendet die offene Menge; die bestellte Gesamtmenge bleibt als stabiler
+  Vergleich erhalten. Bereits vorgemerkte, reservierte, gedruckte oder entfernte Positionen werden
+  nicht erneut angelegt. Geaenderte Produktdaten oder Bestellmengen verlangen eine bewusste Pruefung;
+  ein Konflikt schreibt keinen Teilauftrag. Stornierte, vollstaendig versendete oder lokal als
+  „An Kunden raus“ markierte Muster erhalten keine neuen Vormerkungen. Vor einer Druckreservierung
+  prueft der Server die verknuepfte Bestellung erneut. „Geliefert“ vom Lieferanten sperrt nicht.
+  Die optionale `quelle` steht ausschliesslich neben dem Etikett in der privaten Drucklistenablage.
+  Sie enthaelt Bestell-/Positionskennung, Bestellnummer und Bestellmenge, keinen Kundennamen.
+  Die Druckliste verlinkt intern zur Bestellung; Canvas, PNG und QR bekommen nur Produktdaten.
+  Der bewusste Direkt-/Nachdruck verwendet dieselbe kanonische Zuordnung und die bestellte
+  Gesamtmenge, veraendert aber keinen Drucklistenstatus. Es gibt keine Aenderung an Shopseiten,
+  Kundenkonto, Bestellmails, Bestellmetafeldern oder Kundenbelegen.
+- **Inhalt:** Absender `www.teppich-paradies.net`, Serie, Farbe, bei Paketware (Lexikon-Eigenschaft
+  `qmProPaket`) Art, Stärke/Nutzschicht, Nutzungsklassen, Format und daneben der QR-Code, sonst der
+  QR-Code größer in der Mitte; unten „Art.-Nr.“ mit der SKU der echten Variante (nie die
+  Muster-SKU `TP-MUSTER-…`/`M-…`). Daten aus der Bestellposition und dem Produktlexikon
+  (`/api/lexikon/produkt`, nur lesend); fehlt etwas, bleibt es leer und die Vorschau sagt „fehlt: …“.
+  `lib/muster-etiketten.mjs` (rein, getestet), `bausteine/etiketten-druck.mjs` (Canvas, Drucker).
+- **Lexikon:** `nutzschicht`, `format` (`custom.format_cm`) und `arten` sind seit diesem Stand Teil
+  der Lexikon-Eigenschaften; sie erscheinen nach dem nächsten Lexikon-Export.
+- **Verbindung:** Web Bluetooth (Hauptweg, `NiimbotBluetoothClient`), USB-Kabel per WebSerial als
+  Ausweg. Beides nur in **Chrome/Edge** und nur in einem sicheren Kontext: `https://…` oder
+  `http://localhost`/`127.0.0.1`. Über `http://<IP>:8001` im Firmennetz geht es nicht – dann die
+  Tailscale-Adresse `https://<name>.ts.net` nehmen (Abschnitt 1d). Der Dialog sagt das selbst.
+  „Drucker verbinden“ (#1540) erlaubt die Geraeteauswahl und Verbindung vor dem Druckstart.
+  Der Verbindungstest erzeugt keinen Druckauftrag, sendet keine Etiketten und setzt weder
+  Druckversuch noch Papierbestaetigung. Der spaetere ausdrueckliche Druckklick verwendet die
+  bestehende Verbindung; die Auftragspruefung bleibt direkt vor der Hardwareausgabe erhalten.
+  Reines Verbinden behaelt die Freigabe beim Schliessen einer ungedruckten Vorschau bei.
+  Abgebrochene oder verspaetete Geraeteauswahl darf nach Schliessen/Sitzungsende keine
+  Verbindung im Nachfolgedialog hinterlassen. Zum Wechseln der Verbindungsart zuerst trennen.
+  Ein alter Verbindungsversuch bleibt bis zum Abschluss seiner Bereinigung global gesperrt;
+  ein neues Vorschaufenster darf waehrenddessen weder verbinden noch drucken.
+- **Desktop-App starten (#1540):** `scripts/dashboard-app-starten.sh` oeffnet ein eigenes
+  Chrome-/Edge-App-Fenster mit `http://localhost:8001` auf dem Dashboard-Mac. Der Starter
+  prueft bzw. weckt dort den bestehenden Hintergrunddienst und protokolliert wie der bisherige
+  Betriebsstarter. Das installierte App-Symbol delegiert an diesen gemeinsamen Starter.
+  `TP_DASHBOARD_APP_URL` darf fuer andere Rechner dieselbe Zentrale per HTTPS angeben;
+  eine entfernte Adresse weckt keinen lokalen Dienst. LAN-HTTP wird abgelehnt, Browser-
+  Sicherheitspruefungen bleiben aktiv. Der private `start-dashboard.sh`, `einrichten.sh` und
+  die betriebseigenen Commits werden nicht ersetzt. Browser/App nutzen dieselbe gemeinsame
+  Datenablage; ein Verbindungsstatus ist weiterhin kein physischer Drucknachweis.
+- **Fremdcode:** `@mmote/niimbluelib@0.47.1` (UMD) und `qrcode-generator@1.4.4` werden erst im Dialog
+  von cdn.jsdelivr.net geladen, fest gepinnt mit SRI-Prüfsumme. Ohne Internet: Vorschau ohne QR,
+  Drucken nicht möglich.
+- **Offen:** Hinweis „auch als Klickvinyl“ (gleicher Dekor in anderer Art) – nur mit belegbarer
+  Zuordnung, noch nicht gebaut.

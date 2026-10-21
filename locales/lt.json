@@ -8,6 +8,23 @@
  * ------------------------------------------------------------
  */
 {
+  "tp_roll_context": {
+    "skirting_basis": "For a single piece, the suggestion is its perimeter. For multiple pieces, enter the room perimeter you need.",
+    "length_label": "Length in metres",
+    "room_perimeter_label": "Required room perimeter in metres",
+    "room_perimeter_hint": "For multiple pieces, the order dimensions do not describe the room perimeter. Please enter the perimeter you need.",
+    "underlay_basis": "Calculated for the entire carpet area ordered, including offcuts. This is not the room size."
+  },
+  "tp_product_advice": {
+    "cutting": "Cutting",
+    "intro": "I have a question about this product:",
+    "selection": "Selection",
+    "size": "Measurements in the calculator",
+    "width": "Width",
+    "length": "Length",
+    "roll": "Roll width",
+    "room": "Custom room size"
+  },
   "blocks": {
     "load_video": "Įkelti vaizdo įrašą „{{ description }}“",
     "sold_out": "Išparduota",
@@ -142,6 +159,12 @@
     "quantity": "Kiekis",
     "product_total": "Iš viso gaminių",
     "cart_estimated_total": "Apskaičiuota bendra suma",
+    "cart_tax_notice": {
+      "taxes_at_checkout": "Mokesčiai apskaičiuojami atsiskaitant.",
+      "duties_included": "Muito mokesčiai įskaičiuoti.",
+      "discounts_at_checkout": "Nuolaidos apskaičiuojamos atsiskaitant.",
+      "shipping_details_html": "Informacija apie <a href=\"{{ link }}\">siuntimą ir pristatymą</a>."
+    },
     "seller_note": "Specialūs nurodymai",
     "cart_subtotal": "Tarpinė suma",
     "discounts": "Nuolaidos",
@@ -362,5 +385,17 @@
       "default_title": "Numatytasis pavadinimas",
       "sticky_add_to_cart": "Greito pridėjimo į krepšelį juosta"
     }
+  },
+  "tp_groessenhilfe": {
+    "open": "Which rug size fits my furniture?",
+    "intro": "First plan the area around your furniture. These examples help you choose a layout.",
+    "sofa_title": "By the sofa",
+    "sofa_text": "Should the rug sit in front of the sofa or support its front legs? Try both positions with your own furniture.",
+    "dining_title": "Under the dining table",
+    "dining_text": "Pull the chairs back as you would when standing up. Check that all chair legs remain on the rug area you have planned.",
+    "sketch_note": "Schematic top views, without suggested dimensions. Green: rug area. Grey: furniture.",
+    "measure_title": "Measure at home:",
+    "measure_text": "Lay out the area you want with paper. Check walkways and doors. Then measure the area and enter the dimensions for your selected shape above.",
+    "limits": "The shapes and size limits available for this product still apply. These examples do not change your selection."
   }
 }

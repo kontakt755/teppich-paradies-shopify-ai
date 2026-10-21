@@ -125,6 +125,16 @@ function pruefer(fehler, ort) {
       const n = Number(roh);
       return Number.isInteger(n) && n >= 1 && n <= 365 ? n : melde(feld, 'muss eine ganze Zahl von 1 bis 365 sein');
     },
+    domains(roh, feld) {
+      if (roh === undefined || roh === null) return [];
+      if (!Array.isArray(roh)) { melde(feld, 'muss eine Liste sein'); return []; }
+      const ok = [];
+      for (const d of roh.slice(0, 10)) {
+        const s = String(d ?? '').trim().toLowerCase().replace(/^@/, '');
+        if (/^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/.test(s)) ok.push(s); else melde(feld, `"${String(d).slice(0, 60)}" ist keine Domain`);
+      }
+      return [...new Set(ok)];
+    },
     objekt(roh, feld) {
       if (roh === undefined || roh === null) return {};
       if (!istObjekt(roh)) { melde(feld, 'muss ein Objekt sein'); return {}; }
@@ -175,6 +185,9 @@ function pruefeLieferant(id, roh, fehler) {
       // die Mustermail nennt ihre Bezeichnung aus einkauf.farbname (Qualitaet + Farbnummer).
       nachBezeichnung: m.nachBezeichnung === true,
     },
+    // Absenderdomains im Postfach, falls ABs und Lieferscheine von anderen Adressen kommen als
+    // die Bestellungen hingehen (Lieferantenbelege, docs/ai-dashboard/lib/lieferbelege.mjs).
+    postfachDomains: p.domains(roh.postfachDomains, 'postfachDomains'),
     lieferzeitWerktage: p.werktage(roh.lieferzeitWerktage, 'lieferzeitWerktage'),
     mindestmenge: p.text(roh.mindestmenge, 'mindestmenge', 500),
     hinweise: p.text(roh.hinweise, 'hinweise', 2000),
@@ -599,42 +612,29 @@ export function kettlerAutomatisch(p) {
  */
 export function kettlerGrund(p, adresse) {
   if (!(p.ausfuehrung ?? []).some(istEinfassung)) return null;
-  if (kettlerAutomatisch(p)) return `unter ${KETTLER_UNTER_CM / 100} m – Zuschnitt und Ketteln beim Kettler`;
+  if (kettlerAutomatisch(p)) return `unter ${KETTLER_UNTER_CM / 100} m – Ketteln beim Kettler`;
   if (adresse?.plz && KETTLER_NAH_PLZ.test(String(adresse.plz).trim())) return `Kunde in der Nähe (${String(adresse.plz).trim()} ${adresse.ort ?? ''}`.trim() + ') – wir liefern selbst';
   return null;
 }
 
 /**
- * Ueber den Kettler kettelt nicht der Lieferant. Massteppiche bestellen wir dann als Meterware
- * von der Rolle - ohne Masszuschnitt, den der Lieferant extra berechnet; zuschneiden und ketteln
- * macht der Kettler. Laenge: so viel Rolle, dass das Fertigmass hineinpasst. Ohne bekannte
- * Rollenbreite bleibt es beim Stueck nach Mass, nur ohne Einfassung.
+ * Ueber den Kettler kettelt nicht der Lieferant. Massteppiche bestellen wir dann im Fertigmass,
+ * nur ohne Einfassung: der Lieferant berechnet beim Raummass nur die echte Flaeche (Beleg AB
+ * 19.10.), Meterware aus voller Rollenbreite waere mehr Flaeche als noetig (Inhaber 2026-10-20).
+ * Ketteln macht der Kettler.
  */
 function fuerKettler(p) {
   const ausfuehrung = p.ausfuehrung ?? [];
-  const ohne = ausfuehrung.filter(z => !istEinfassung(z));
-  const mass = ausfuehrung.find(z => z.startsWith('Fertigmaß:'));
-  const zahlen = mass ? (mass.match(/\d+(?:[.,]\d+)?/g) || []).map(n => Number(n.replace(',', '.'))).filter(n => n > 0).slice(0, 2) : [];
-  const rolle = p.ausRolleCm;
-  if (mass && rolle > 0 && zahlen.length) {
-    const [kurz, lang] = [Math.min(...zahlen), Math.max(...zahlen)];
-    const laenge = lang <= rolle ? kurz : kurz <= rolle ? lang : null;
-    if (laenge) {
-      return {
-        ...p,
-        mengeText: `${formatDe(laenge / 100)} lfm von der ${formatDe(rolle / 100)} m breiten Rolle (Meterware, ohne Maßzuschnitt)`,
-        ausfuehrung: [`Für ${mass.replace(/^Fertigmaß:\s*/, 'Fertigmaß ')} – Zuschnitt und Ketteln macht unser Kettelservice`],
-      };
-    }
-  }
   if (!ausfuehrung.some(istEinfassung)) return p;
-  return { ...p, ausfuehrung: [...ohne, 'Ohne Einfassung – bitte nur zuschneiden, nicht ketteln'] };
+  return { ...p, ausfuehrung: [...ausfuehrung.filter(z => !istEinfassung(z)), 'Ohne Einfassung – bitte im Fertigmaß zuschneiden, nicht ketteln (Ketteln macht unser Kettelservice)'] };
 }
 
 function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, auswahl = null, automatisch = false }) {
   const alle = (gruppe.positionen ?? []).filter(p => !auswahl || auswahl(p)).map(p => schlankePosition(p, statusAlle, jetzt));
   const offen = alle.filter(p => p.gruppe === 'zuBestellen');
-  const direkt = ZIEL_JE_AUFTRAG.has(gruppe.route);
+  // Die Regel unter 2 m gilt auch fuer Ware, die der Lieferant sonst direkt zum Kunden schickt:
+  // abgetrennte Positionen gehen an unseren Kettler (Issue #1453).
+  const direkt = ZIEL_JE_AUFTRAG.has(gruppe.route) && !(automatisch && ziel === 'kettler');
   const kettler = absender?.kettelservice ?? null;
   // Regel des Inhabers (2026-10-14): Ware geht direkt an die Kunden, je Kommission mit
   // Anschrift. "laden" ist die seltene Ausnahme - per Umschalter im Dialog oder als
@@ -658,7 +658,8 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, aus
   }
   const { anrede, gruss } = rahmen({ st, absender, anredeStandard: 'Sehr geehrte Damen und Herren,' });
   const du = st.mail.duzen;
-  const bestaetigen = du ? 'Bitte bestätige uns den Auftrag mit dem voraussichtlichen Liefertermin.' : 'Bitte bestätigen Sie uns den Auftrag mit dem voraussichtlichen Liefertermin.';
+  // Die Kommission (#Shop-Bestellnummer) in der AB macht die automatische Zuordnung moeglich (lib/lieferbelege.mjs).
+  const bestaetigen = du ? 'Bitte bestätige uns den Auftrag mit dem voraussichtlichen Liefertermin und gib dabei unsere Kommission an.' : 'Bitte bestätigen Sie uns den Auftrag mit dem voraussichtlichen Liefertermin und geben Sie dabei unsere Kommission an.';
   const einleitung = anKunden ? 'wir bestellen folgende Ware – bitte direkt an unsere Kunden liefern:'
     : anKettler ? 'wir bestellen folgende Ware – bitte an unseren Kettelservice liefern (Anschrift unten):'
       : 'wir bestellen folgende Ware:';
@@ -698,7 +699,7 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, aus
   zeilen.push('', bestaetigen, '', gruss);
   const betreff = ['Bestellung', st.kundennummer ? `Kd.-Nr. ${st.kundennummer}` : null, anKettler ? 'Lieferung an Kettelservice' : null, kurzListe(aufgenommen.map(p => p.orderName))].filter(Boolean).join(' – ');
   // Vorschlag fuer den Dialog: welche offenen Positionen sich fuer den Kettler anbieten.
-  const kettlerVorschlag = !direkt && adresseOk(kettler)
+  const kettlerVorschlag = !ZIEL_JE_AUFTRAG.has(gruppe.route) && adresseOk(kettler)
     ? offen.map(p => ({ p, grund: kettlerGrund(p, adressen.get(p.orderId)) })).filter(x => x.grund)
       .map(({ p, grund }) => ({ orderId: p.orderId, orderName: p.orderName, lineItemId: p.lineItemId, titel: p.titel, grund }))
     : [];
@@ -709,9 +710,11 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, aus
       route: geklaert(gruppe.route),
       lieferziel: direkt ? (gruppe.route === ROUTE.SUPPLIER_TO_SITE ? 'baustelle' : 'kunde') : anKunden ? 'kunde' : anKettler ? 'kettler' : 'laden',
       // Nur Ware, die sonst in den Laden geht, kann im Dialog umgeschaltet werden.
-      zielWaehlbar: !direkt,
+      // Bei Direktversand ist das Ziel fest - auch die nach der Regel abgetrennte Kettler-Mail
+      // (#1453) wird nicht umgeschaltet, sonst faellt sie zurueck in den Direktversand.
+      zielWaehlbar: !ZIEL_JE_AUFTRAG.has(gruppe.route),
       // Kettler nur anbieten, wenn seine Anschrift in den privaten Stammdaten steht.
-      kettlerMoeglich: !direkt && adresseOk(kettler),
+      kettlerMoeglich: !ZIEL_JE_AUFTRAG.has(gruppe.route) && adresseOk(kettler),
       kettlerVorschlag,
       // Nach der Regel "unter 2 m zum Kettler" abgetrennt, nicht von Hand gewaehlt.
       kettlerAutomatisch: automatisch,
@@ -791,7 +794,10 @@ function musterMail(gruppen, { st, absender, statusAlle, adressen, jetzt, ziel }
  * Ein Ziel aus dem Dialog (Kunden/Laden/Kettler) gilt dagegen fuer die ganze Gruppe.
  */
 function wareMailsFuer(gruppe, kontext) {
-  const automatisch = !kontext.ziel && adresseOk(kontext.absender?.kettelservice) && !ZIEL_JE_AUFTRAG.has(gruppe.route);
+  // Auch Direktversand des Lieferanten (#1453); nur Baustellenlieferungen bleiben, wie sie sind.
+  // Ein Ziel aus dem Dialog gilt nur fuer waehlbare Gruppen - Direktversand behaelt die Regel.
+  const zielGilt = Boolean(kontext.ziel) && !ZIEL_JE_AUFTRAG.has(gruppe.route);
+  const automatisch = !zielGilt && adresseOk(kontext.absender?.kettelservice) && gruppe.route !== ROUTE.SUPPLIER_TO_SITE;
   // Nur offene Positionen: schon Bestelltes (auch von vor der Regel) bleibt in der normalen Mail.
   const offen = p => schlankePosition(p, kontext.statusAlle, kontext.jetzt).gruppe === 'zuBestellen';
   const zumKettler = p => kettlerAutomatisch(p) && offen(p);

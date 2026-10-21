@@ -314,6 +314,9 @@
         </div>
         <p class="tp-ek__grenzen" data-grenzen></p>
         <p class="tp-ek__fehler" role="alert" data-fehler hidden></p>
+        {%- unless tp_ek_wort == 'matte' -%}
+          {% render 'tp-teppich-groessenhilfe' %}
+        {%- endunless -%}
       </div>
 
       {%- comment -%}
