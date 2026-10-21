@@ -34,8 +34,8 @@ sie zaehlen nicht zum Limit von 20 Themes und stoeren den Shop nicht.
 - `live-theme.json` traegt `verifiedAt`. Ein Stand ohne Datum ist kein Stand.
 - Nachpruefen ueber den Shopify-MCP, live ist der Knoten mit `role: MAIN`:
 
-```graphql
-query { themes(first: 20) { nodes { id name role updatedAt } } }
+```
+npm run -s kurz -- themes-query   # nur MAIN + preview/fallback/arbeit, nicht themes(first: 20)
 ```
 
 Danach `live-theme.json` aktualisieren (inklusive `verifiedAt`), das alte Theme

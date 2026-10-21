@@ -1,6 +1,6 @@
 # Lessons — was hier schiefging und warum die Regel so lautet
 
-Die Regeln stehen in `AGENTS.md` (von `CLAUDE.md` eingebunden). Hier steht nur die Geschichte
+Die Regeln stehen in `AGENTS.md` (von `CLAUDE.md` eingebunden) oder im zustaendigen Skill unter `.claude/skills/`. Hier steht nur die Geschichte
 dahinter: der Vorfall, was er gekostet hat, welche Diagnose verfuehrerisch und
 falsch war. Diese Dateien werden **nicht** bei jedem Sessionstart geladen — sie
 sind zum Nachlesen, wenn eine Regel unverstaendlich wirkt oder man versucht ist,
@@ -21,4 +21,4 @@ sie zu umgehen.
 
 Konvention: keine Theme-IDs, keine Lieferantennamen (nur Pseudonyme, siehe
 AGENTS.md Punkt 8). Eine neue Lesson bekommt eine Zeile in dieser Tabelle und
-einen Einzeiler-Verweis an der Regel in `AGENTS.md`.
+einen Einzeiler-Verweis an der Regel (in `AGENTS.md` oder im Skill).

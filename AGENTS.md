@@ -52,7 +52,6 @@ Harte technische Grenzen (force-push, `reset --hard`, Branch löschen, Theme lö
 - Nicht wegen GitHub, Authentifizierung oder Nebeninfrastruktur unnötig vom eigentlichen Shopify-Auftrag abweichen.
 - Keine unnötigen großen Refactorings durchführen, wenn eine kleine robuste Änderung reicht.
 - Mobile und Desktop berücksichtigen und bestehende Funktionen regressionsprüfen.
-- Nach Theme-Änderungen Shopify Theme Check verwenden, wenn sinnvoll.
 - Vor dem Livegang die konkret betroffenen Funktionen risikobasiert testen.
 - Nach dem Livegang den echten öffentlichen Shop ohne Preview-Parameter kontrollieren.
 - Bei kleinen, sicheren und getesteten Theme-Optimierungen darf direkt live veröffentlicht werden, sofern der Auftrag nichts anderes sagt. Den Deploy führt der Agent selbst aus (siehe „Deploy“), nicht der Benutzer per Copy & Paste.
@@ -71,7 +70,7 @@ Jeder Punkt hat eine komplette Sitzung gekostet. Vor dem Loslegen lesen. Die Vor
 - **6. Fertige Arbeit liegt auf Branches, die nie gemergt wurden** — der Shop zeigt nur `main`; beim Zurueckholen die ganze Gruppe nehmen, nie die eine Datei. → `docs/lessons/ungemergte-branches.md`
 - **6b. Ein toter Menuelink sieht im Editor genauso aus wie ein lebender** — erst zaehlen, welche Werte die Produkte der Kollektion tragen; `menuUpdate` ersetzt den gesamten Item-Baum. → `docs/lessons/tote-menuelinks.md`
 - **7. Ein Produktimport ohne geklaerte Namensregeln wird zweimal gebaut** — am naechstliegenden fertigen Produkt entlangbauen. → `docs/lessons/produktimport.md`, `domains/shopify/produktimport-arbeitsweise.md`
-- **8. Lieferantennamen gehoeren nicht ins Repository.** In Dateien, Commit-/PR-Texten und `npm run task`-Notizen nur Pseudonyme: **Lieferant A** bis **D**, **Hausmarke von A**, Linien **A-1** bis **A-3**, URLs als `lieferant-a.example`; SKUs bleiben unveraendert. → `docs/lessons/produktimport.md`, `domains/lieferanten/AUSGELAGERT.md`
+- **8. Lieferantennamen gehoeren nicht ins Repository.** In Dateien, Commit-/PR-Texten und `npm run task`-Notizen nur Pseudonyme: **Lieferant A, B, C …** (fortlaufend, Schluessel nur privat), **Hausmarke von A**, Linien **A-1** bis **A-3**, URLs als `lieferant-a.example`; SKUs bleiben unveraendert. → `docs/lessons/produktimport.md`, `domains/lieferanten/AUSGELAGERT.md`
 - **9. Ein PR, der gegen `main` sauber ist, kann trotzdem nie geprueft werden** — nach jedem Merge `npm run pr:doctor [-- --fix]`. → `docs/lessons/pr-basis-und-historie.md`
 
 ## Deploy
@@ -103,7 +102,7 @@ Metafelder oder Collection-Zuordnungen nur verändern, wenn der jeweilige Auftra
 
 Nie technische Eigenschaften erfinden oder anhand eines Produktbildes allein ableiten.
 
-**Ausgelaufenes wird nie angezeigt (Inhaber 2026-10-13).** Fuehrt der Lieferant einen Artikel nachweislich nicht mehr (exakte Suche ohne Treffer, Seite 404, Auslaufmeldung), wird das Produkt samt Musterprodukt sofort archiviert und die alte Adresse per 301 auf den Nachfolger oder die passende Kollektion umgeleitet; vorher offene Bestellungen pruefen, danach Lexikon exportieren. Faellt nur eine Variante weg, ist das eine Variantenaenderung und braucht Freigabe. Anschliessend die ganze Linie beim Lieferanten auf neue Artikel abgleichen. Die woechentliche Auslauf-Pruefung (`npm run auslauf:pruefen`, montags 4:00 per LaunchAgent) meldet Kandidaten als To-do im Control Center; sie archiviert nie selbst. Bei Lieferant A meldet sie ausserdem Artikel unserer Linien, die seit dem letzten Lauf neu beim Lieferanten stehen (To-do "neue Artikel", anlegen nach Skill `produktimport`). Auslaufkollektionen mit Restbestand (Tag `auslauf`, noch aktiv) stehen in den Kategorien hinten und tragen im Kartenbild die Plakette "Auslaufkollektion": nach jedem neuen Tag `npm run -s auslauf:sortieren -- --schreiben`.
+**Ausgelaufenes wird nie angezeigt (Inhaber 2026-10-13).** Fuehrt der Lieferant einen Artikel nachweislich nicht mehr (exakte Suche ohne Treffer, Seite 404, Auslaufmeldung), wird das Produkt samt Musterprodukt sofort archiviert und die alte Adresse per 301 auf den Nachfolger oder die passende Kollektion umgeleitet; vorher offene Bestellungen pruefen, danach Lexikon exportieren. Faellt nur eine Variante weg, ist das eine Variantenaenderung und braucht Freigabe. Anschliessend die ganze Linie beim Lieferanten auf neue Artikel abgleichen. Die woechentliche Auslauf-Pruefung (`npm run auslauf:pruefen`, montags 4:00 per LaunchAgent) meldet Kandidaten als To-do im Control Center; sie archiviert nie selbst. Bei Lieferant A meldet sie ausserdem Artikel unserer Linien, die seit dem letzten Lauf neu beim Lieferanten stehen (To-do "neue Artikel", anlegen nach Skill `produktimport`). Auslaufkollektionen mit Restbestand (Tag `auslauf`, noch aktiv) stehen in den Kategorien hinten und tragen im Kartenbild die Plakette "Auslaufkollektion": nach jedem neuen Tag `npm run -s auslauf:sortieren` (Exit 1 = zu tun, dann `-- --schreiben`).
 
 Bei unklaren Produktdaten:
 
@@ -161,7 +160,7 @@ Abschlussberichte kompakt halten:
 
 - Eigene Bloecke/Snippets tragen das Praefix `tp-`; `_`-Praefix ist privat (keine `presets` noetig).
 - CSS gehoert in `{% stylesheet %}`, nicht in ein inline `<style>` pro Karte.
-- Schriftgroessen nur aus der Skala `var(--tp-fs-*)` (`npm run schrift:guard`); Rot nur fuer Preis, Rabatt und wenige Hauptaktionen. Genaue Werte und Liste: Skill `theme-regeln`.
+- Schriftgroessen nur aus der Skala `var(--tp-fs-*)` (`npm run schrift:guard`); Rot sparsam (Preis, Rabatt, wenige Hauptaktionen; vollstaendige Liste und Werte: Skill `theme-regeln`).
 - Kommentare und Commit-Messages auf Deutsch, ohne Umlaute in Liquid-Kommentaren.
 - Immer im aktuellen Repository-Root arbeiten; keine absoluten Pfade — das Repo
   liegt auf Windows, macOS und Linux.
