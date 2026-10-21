@@ -1,0 +1,13 @@
+{
+  "_hinweis": "Jahresplan der Aktionswellen. Datum als MM-TT, gilt jedes Jahr. prozent null = Inhaber hat noch nicht entschieden; ohne Prozent legt scripts/aktion-plan.mjs nichts an. Anlegen nur mit --schreiben und nach Freigabe (AGENTS.md: Preise). Ablauf: domains/shopify/aktionssystem-konzept.md.",
+  "vorlauf_tage": 14,
+  "wellen": [
+    { "id": "winterschluss", "titel": "Winterschluss", "von": "01-07", "bis": "01-31", "kollektion": "teppichboden", "prozent": null, "idee": "Inventur: Rollenware und Restbestaende" },
+    { "id": "fruehjahr", "titel": "Frühjahrs-Renovierung", "von": "03-02", "bis": "03-22", "kollektion": "laminat-parkett", "prozent": null, "idee": "Hartboeden zur Renovierungssaison" },
+    { "id": "umzug", "titel": "Umzugswochen", "von": "04-20", "bis": "05-10", "kollektion": "teppiche", "prozent": null, "idee": "Neue Wohnung - Teppiche in Standardgroessen" },
+    { "id": "sommer", "titel": "Sommerdeals", "von": "06-15", "bis": "07-05", "kollektion": "sisal-kokos-teppiche-nach-mass", "prozent": null, "idee": "Sisal und Kokos, Sauberlauf" },
+    { "id": "herbst", "titel": "Herbstwärme", "von": "09-15", "bis": "10-05", "kollektion": "teppichboden-hochflor", "prozent": null, "idee": "Hochflor und Wolle vor der Heizsaison" },
+    { "id": "black-week", "titel": "Black Week", "von": "11-23", "bis": "11-30", "kollektion": "teppichboden", "prozent": null, "idee": "Staerkste Woche des Jahres; Black Friday ist der Freitag nach dem 4. Donnerstag im November" },
+    { "id": "winterdeals", "titel": "Winterdeals", "von": "12-01", "bis": "12-14", "kollektion": "teppich-nach-mass", "prozent": null, "idee": "Noch vor Weihnachten - Lieferzeit Teppich nach Mass beachten" }
+  ]
+}

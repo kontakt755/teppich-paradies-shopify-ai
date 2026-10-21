@@ -1,0 +1,39 @@
+{% doc %}
+  Laeuft im Shop gerade irgendeine zentral gesteuerte Aktion (Metaobjekt tp_aktion)?
+  Fuer die Top-Leiste - unabhaengig vom Produkt. Gleiche Regeln wie
+  snippets/tp-aktion-laufend: "aktiv" an, heute zwischen "start" und "ende"
+  (beide eingeschlossen), Kollektion gesetzt. Treffen mehrere zu, gilt die mit
+  dem hoechsten Prozentsatz.
+
+  Gibt "prozent|JJJJMMTT|titel|kollektions-url|kollektionstitel" aus oder nichts.
+  Senkrechte Striche im Titel werden entfernt, damit die Teilung stimmt.
+
+  Seiten werden zwischengespeichert; die Tagesgrenze kann um Stunden nachlaufen.
+{% enddoc %}
+{%- liquid
+  assign tas_heute = 'now' | date: '%Y%m%d' | plus: 0
+  assign tas_best = 0
+  assign tas_aus = ''
+  for tas_a in shop.metaobjects.tp_aktion.values
+    if tas_a.aktiv.value != true
+      continue
+    endif
+    assign tas_von = tas_a.start.value | date: '%Y%m%d' | plus: 0
+    assign tas_bis = tas_a.ende.value | date: '%Y%m%d' | plus: 0
+    if tas_von == 0 or tas_bis == 0 or tas_heute < tas_von or tas_heute > tas_bis
+      continue
+    endif
+    assign tas_k = tas_a.kollektion.value
+    if tas_k == blank
+      continue
+    endif
+    assign tas_p = tas_a.prozent.value | plus: 0
+    if tas_p > tas_best
+      assign tas_best = tas_p
+      assign tas_titel = tas_a.titel.value | default: 'Aktion' | remove: '|' | strip
+      assign tas_ktitel = tas_k.title | remove: '|'
+      assign tas_aus = tas_p | append: '|' | append: tas_bis | append: '|' | append: tas_titel | append: '|' | append: tas_k.url | append: '|' | append: tas_ktitel
+    endif
+  endfor
+  echo tas_aus
+-%}

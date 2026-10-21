@@ -7,7 +7,29 @@
 
 <div class="tp-tb" role="region" aria-label="Vorteile">
   <div class="tp-s-wrap tp-tb__wrap">
+    {%- liquid
+      capture tp_tb_aktion
+        render 'tp-aktion-shopweit'
+      endcapture
+      assign tp_tb_aktion = tp_tb_aktion | strip
+    -%}
     <ul class="tp-tb__list">
+      {%- comment -%}
+        Laufende Aktion (Metaobjekt tp_aktion) steht automatisch vorn - auf dem
+        Telefon ist sie damit die einzige Aussage. Ohne Aktion bleibt die Leiste
+        wie gepflegt. Kein Countdown, keine Verknappung (Inhaber 2026-09-22).
+      {%- endcomment -%}
+      {%- if tp_tb_aktion != blank and section.settings.aktion_zeigen -%}
+        {%- liquid
+          assign tp_tb_t = tp_tb_aktion | split: '|'
+          assign tp_tb_monat = tp_tb_t[1] | slice: 4, 2
+          assign tp_tb_ende = tp_tb_t[1] | slice: 6, 2 | append: '.' | append: tp_tb_monat | append: '.'
+        -%}
+        <li class="tp-tb__item tp-tb__item--aktion" data-tp-aktion="{{ tp_tb_t[0] }}">
+          <span class="tp-tb__badge">−{{ tp_tb_t[0] }} %</span>
+          <a href="{{ tp_tb_t[3] }}">{{ tp_tb_t[2] | escape }}: {{ tp_tb_t[4] | escape }} bis {{ tp_tb_ende }}</a>
+        </li>
+      {%- endif -%}
       {%- for block in section.blocks -%}
         <li class="tp-tb__item" {{ block.shopify_attributes }}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
@@ -39,7 +61,12 @@
   .tp-tb__tel { display: flex; align-items: center; gap: 7px; font-weight: 600; color: #fff; text-decoration: none; white-space: nowrap; flex: none; }
   .tp-tb__tel svg { width: 15px; height: 15px; color: var(--tp-sand, #e9c8a1); }
   .tp-tb__zeiten { color: #c9c2b8; font-weight: 400; }
-  @media (max-width: 1599px) { .tp-tb__zeiten { display: none; } }
+  .tp-tb__badge { background: var(--tp-sand, #e9c8a1); color: var(--tp-ink, #1d1a17); font-weight: 700; padding: 1px 6px; border-radius: 3px; }
+  .tp-tb__item--aktion a { font-weight: 600; }
+  @media (max-width: 1599px) {
+    .tp-tb__zeiten { display: none; }
+    .tp-tb__list:has(.tp-tb__item--aktion) .tp-tb__item:nth-child(4) { display: none; }
+  }
   @media (max-width: 1279px) { .tp-tb__item:nth-child(3) { display: none; } }
   @media (max-width: 767px) {
     .tp-tb { font-size: var(--tp-fs-xs); }
@@ -55,7 +82,8 @@
   "settings": [
     { "type": "text", "id": "telefon", "label": "Telefon (fuer tel:-Link)", "default": "03301 573 37 20" },
     { "type": "text", "id": "telefon_anzeige", "label": "Telefon, wie angezeigt", "default": "03301 573 37 20" },
-    { "type": "text", "id": "zeiten", "label": "Oeffnungszeiten (nur ab 1600 px)", "default": "Mo–Fr 8:30–18 · Sa 8:30–14:30" }
+    { "type": "text", "id": "zeiten", "label": "Oeffnungszeiten (nur ab 1600 px)", "default": "Mo–Fr 8:30–18 · Sa 8:30–14:30" },
+    { "type": "checkbox", "id": "aktion_zeigen", "label": "Laufende Aktion (Aktion (TP)) automatisch vorn zeigen", "default": true }
   ],
   "blocks": [
     {

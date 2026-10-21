@@ -542,7 +542,8 @@
       "settings": {
         "telefon": "03301 573 37 20",
         "telefon_anzeige": "03301 573 37 20",
-        "zeiten": "Mo–Fr 8:30–18 · Sa 8:30–14:30"
+        "zeiten": "Mo–Fr 8:30–18 · Sa 8:30–14:30",
+        "aktion_zeigen": true
       },
       "blocks": {
         "a1": {
