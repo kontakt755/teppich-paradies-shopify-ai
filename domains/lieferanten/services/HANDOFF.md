@@ -32,7 +32,10 @@ Einzelnachweis: `kettelservice-varianten-beleg-2026-09-11.json` (lokal).
    vollstaendig verborgen: keine Option, kein deaktivierter Knopf, kein „auf Anfrage“, keine Ableitung.
 2. **Keine Heuristik.** Nie aus Name, Titel, Hersteller, Kollektion, Material, Produktart, Technik, Bildern,
    aehnlichen Produkten oder baugleicher Ware eines anderen Lieferanten.
-3. **Lieferant B/C** immer `Nicht verfügbar`; ein `Verfügbar` dort ist ein Datenfehler, der gemeldet wird.
+3. **Lieferant B** immer `Nicht verfügbar`; ein `Verfügbar` dort ist ein Datenfehler, der gemeldet wird.
+   **Lieferant C (geaendert 2026-10-20, Freigabe Inhaber):** Ketteln erlaubt, weil unser eigener Kettler
+   zuschneidet und kettelt; der Lieferant liefert nur Meterware. Freigegeben sind die 33 Raummass-Teppichboeden
+   mit eigenem Produkt „Teppich nach Maß“ (Aufgabe #1453). Weitere Produkte von C nur per eigener Freigabe.
 4. **Lieferant A nur per Whitelist**; keine Uebertragung auf andere Produkte, Varianten, aehnliche Qualitaeten oder
    zukuenftige Produkte.
 5. **Kleinste Ebene**: Variante. Eine freigegebene Variante schaltet nie das ganze Produkt frei.
