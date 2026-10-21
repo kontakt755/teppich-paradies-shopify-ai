@@ -62,7 +62,7 @@ export function shopifyAbgleichTodos(jetzt = Date.now()) {
   // (fehler: true aus fetchEinkauf) steht auf "Heute" als "Liste unvollstaendig" - nicht doppelt.
   if (typeof d?.fehler === 'string' && d.fehler) {
     return [{ id: 'shopify-abgleich-fehler', art: 'shopify_abgleich', bereich: 'laden', ton: 'warn', alterTage: null,
-      titel: 'Abgleich mit Shopify nicht möglich', kontext: d.fehler, knopf: { text: 'Einkauf', href: '#/einkauf' } }];
+      titel: 'Abgleich mit Shopify nicht möglich', kontext: d.fehler, knopf: { text: 'Bestellen', href: '#/einkauf' } }];
   }
   if (!d?.verfuegbar || d.fehler) return [];
   return (d.abweichungen || []).map((z) => {

@@ -112,7 +112,7 @@ export function heuteLaden() {
     unterzeile = `Beratungen aus der Auftrags-App · Stand ${fmtDateTime(d.stand || d.abgerufen)}`;
     inhalt = `<div class="heute-kpis heute-laden-zahlen">
       ${kachel(z.offen, 'Offene Beratungen', `davon ${z.neu} neu`)}
-      ${kachel(z.faellig, 'Wiedervorlage fällig', 'heute oder früher', { warn: true })}
+      ${kachel(z.faellig, 'Wieder melden', 'heute oder früher fällig', { warn: true })}
       ${kachel(z.angeboteOffen, 'Angebote offen', `davon ${z.nachfassen} zum Nachfassen`)}
       ${kachel(z.ausShop7Tage, 'Aus dem Shop', 'Anfragen, 7 Tage')}
       ${kachel(z.gewonnen30Tage, 'Gewonnen', `verloren ${z.verloren30Tage} · 30 Tage`)}

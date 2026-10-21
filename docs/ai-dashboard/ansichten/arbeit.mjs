@@ -35,15 +35,15 @@ export function viewArbeit() {
   const sel = (name, opts, cur, first) => `<select data-param="${name}" aria-label="${esc(first)}"><option value="">${esc(first)}</option>${opts.map(([v, l]) => `<option value="${esc(v)}" ${cur === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
   const unassigned = state.tasks.filter(t => SAVED_VIEWS.find(v => v.key === 'unzugeordnet').filter(t, {})).length;
   return `
-    <div class="page-head"><div><h1>Entwicklung</h1><p class="sub">${plural(list.length, 'Aufgabe', 'Aufgaben')} in dieser Ansicht · Quelle GitHub Issues</p></div>
-      <div class="head-actions">${state.capabilities.sync ? '<button type="button" class="btn btn-sm" data-action="sync" title="Entwicklungsaufgaben frisch von GitHub holen">GitHub synchronisieren</button>' : ''}<div class="seg" role="group" aria-label="Darstellung"><button data-param="mode" data-value="liste" aria-pressed="${mode === 'liste'}">Liste</button><button data-param="mode" data-value="kanban" aria-pressed="${mode === 'kanban'}">Kanban</button></div></div></div>
-    ${unassigned && !p.get('view') ? `<div class="notice warn" style="margin-bottom:12px">${plural(unassigned, 'aktive Aufgabe', 'aktive Aufgaben')} ohne Owner. <a href="#/arbeit?view=unzugeordnet">Jetzt zuordnen</a></div>` : ''}
+    <div class="page-head"><div><h1>Technik</h1><p class="sub">Hier steht die Arbeit an Shop und Technik – ${plural(list.length, 'Aufgabe', 'Aufgaben')} in dieser Ansicht.</p></div>
+      <div class="head-actions">${state.capabilities.sync ? '<button type="button" class="btn btn-sm" data-action="sync" title="Technik-Aufgaben frisch von GitHub holen">Aufgaben neu laden</button>' : ''}<div class="seg" role="group" aria-label="Darstellung"><button data-param="mode" data-value="liste" aria-pressed="${mode === 'liste'}">Liste</button><button data-param="mode" data-value="kanban" aria-pressed="${mode === 'kanban'}">Kanban</button></div></div></div>
+    ${unassigned && !p.get('view') ? `<div class="notice warn" style="margin-bottom:12px">${plural(unassigned, 'aktive Aufgabe', 'aktive Aufgaben')} ohne Zuständigen. <a href="#/arbeit?view=unzugeordnet">Jetzt zuordnen</a></div>` : ''}
     <div class="chips" role="group" aria-label="Gespeicherte Ansichten">${SAVED_VIEWS.filter(v => v.key !== 'meine' || state.me).map(v => `<button class="chip" data-param="view" data-value="${v.key === 'alle' ? '' : v.key}" aria-pressed="${(p.get('view') || 'alle') === v.key && !p.get('status')}">${esc(v.label)}<span class="c">${counts[v.key]}</span></button>`).join('')}</div>
     <div class="toolbar">
-      <input type="search" placeholder="Suchen (Titel, #Nr, Label, Owner) …" value="${esc(p.get('q') || '')}" data-param="q" aria-label="Suche">
+      <input type="search" placeholder="Suchen (Titel, #Nr, Label, Zuständig) …" value="${esc(p.get('q') || '')}" data-param="q" aria-label="Suche">
       ${sel('status', STATUSES.filter(s => !s.legacy).map(s => [s.key, s.label]), p.get('status'), 'Status')}
       ${sel('prio', Object.values(PRIORITIES).map(x => [x.key, x.label]), p.get('prio'), 'Priorität')}
-      ${sel('owner', [['-', 'ohne Owner'], ...owners.map(o => [o, personName(o)])], p.get('owner'), 'Owner')}
+      ${sel('owner', [['-', 'ohne Zuständigen'], ...owners.map(o => [o, personName(o)])], p.get('owner'), 'Zuständig')}
       ${sel('exec', [['ki', 'KI-Agent'], ['mensch', 'Mensch'], ['-', 'nicht gesetzt']], p.get('exec'), 'Ausführung')}
       ${sel('area', AREAS.map(a => [a.key, a.label]), p.get('area'), 'Bereich')}
       ${sel('sort', Object.entries(SORTS).map(([k, v]) => [k, v.label]), p.get('sort') || 'dringlichkeit', 'Sortierung')}
@@ -129,7 +129,7 @@ function tableView(list) {
       <td class="nowrap muted">${ago(t.updatedAt)}</td></tr>`;
   }).join('');
   return `<div class="table-wrap"><table class="tasks"><thead><tr>
-    <th>Aufgabe</th><th>Status</th><th>Prio</th><th>Bereich</th>${spalten.owner ? '<th>Owner</th>' : ''}${spalten.exec ? '<th>Ausführung</th>' : ''}${spalten.next ? '<th>Nächster Schritt</th>' : ''}${spalten.due ? '<th>Fällig</th>' : ''}${spalten.hint ? '<th>Hinweis</th>' : ''}<th>Update</th></tr></thead>
+    <th>Aufgabe</th><th>Status</th><th>Prio</th><th>Bereich</th>${spalten.owner ? '<th>Zuständig</th>' : ''}${spalten.exec ? '<th>Ausführung</th>' : ''}${spalten.next ? '<th>Nächster Schritt</th>' : ''}${spalten.due ? '<th>Fällig</th>' : ''}${spalten.hint ? '<th>Hinweis</th>' : ''}<th>Update</th></tr></thead>
     <tbody>${rows}</tbody></table></div>
     <p class="small muted" style="margin-top:8px">Tastatur: <kbd>j</kbd>/<kbd>k</kbd> bewegen, <kbd>Enter</kbd> öffnen, <kbd>Esc</kbd> schließen.${!spalten.owner && list[0]?.owner ? ` · Alle Aufgaben liegen beim ${esc(personName(list[0].owner))}.` : ''}</p>`;
 }

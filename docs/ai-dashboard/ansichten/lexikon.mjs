@@ -107,7 +107,7 @@ function ensureLexikonEtiketten(produkt) {
 }
 
 function musterEtikettenBlock(produkt) {
-  if (produkt.handle === 'kostenloses-muster') return `<section class="card lex-etiketten"><div class="card-head"><h2>Musteraufkleber</h2></div><p>Für den Aufkleber bitte das konkrete Produkt im Lexikon öffnen. Dort sind Farbe, Artikelnummer und Produktlink hinterlegt.</p><a class="btn" href="#/lexikon">Produkt suchen</a></section>`;
+  if (produkt.handle === 'kostenloses-muster') return `<section class="card lex-etiketten"><div class="card-head"><h2>Musteraufkleber</h2></div><p>Für den Aufkleber bitte das konkrete Produkt in der Produktsuche öffnen. Dort sind Farbe, Artikelnummer und Produktlink hinterlegt.</p><a class="btn" href="#/lexikon">Produkt suchen</a></section>`;
   ensureLexikonEtiketten(produkt);
   if (lexikon.loadingEtiketten) return `<section class="card lex-etiketten"><div class="card-head"><h2>Musteraufkleber</h2></div><p role="status">Lade die Angaben für den Aufkleber …</p></section>`;
   const liste = lexikon.etiketten;
@@ -212,20 +212,20 @@ function offeneBestellungenKurz(p) {
 function viewLexikonListe() {
   ensureLexikonListe();
   const q = state.route.params.get('lq') || '';
-  const toolbar = `<div class="toolbar search-hero"><input type="search" placeholder="Was hat der Kunde gesagt? Produktname, Farbe, SKU oder Artikelnummer …" value="${esc(q)}" data-param="lq" aria-label="Lexikon durchsuchen"></div>`;
+  const toolbar = `<div class="toolbar search-hero"><input type="search" placeholder="Was hat der Kunde gesagt? Produktname, Farbe, SKU oder Artikelnummer …" value="${esc(q)}" data-param="lq" aria-label="Produkte durchsuchen"></div>`;
   const d = lexikon.liste;
-  if (!d && lexikon.loadingListe) return toolbar + `<div class="empty">Lade Lexikon …</div>`;
-  if (d?.fehler) return toolbar + stoerungState(d, 'Das Lexikon');
+  if (!d && lexikon.loadingListe) return toolbar + `<div class="empty">Lade Produkte …</div>`;
+  if (d?.fehler) return toolbar + stoerungState(d, 'Die Produktsuche');
   if (!d || !d.verfuegbar) {
     const hinweis = `${d?.hinweis || 'Noch keine Daten exportiert.'}${d?.befehl ? ` Befehl: ${d.befehl}` : ''}`;
-    return toolbar + emptyState('Keine Lexikon-Daten verfügbar.', hinweis);
+    return toolbar + emptyState('Keine Produktdaten verfügbar.', hinweis);
   }
   const t = d.treffer;
   // Ohne Suchbegriff zuerst die Suche anbieten statt 638 Produkte in Shop-Reihenfolge -
   // die Liste bleibt einen Klick entfernt ("Alle durchblättern").
   if (!q && !state.route.params.get('lalle')) {
     return `${toolbar}
-      <div class="empty search-hint"><strong>${d.anzahl} Produkte im Lexikon.</strong> Tippe ein, was der Kunde genannt hat – das Lexikon findet das Produkt samt Lieferanten-Artikelnummer und Link. <button type="button" class="btn btn-sm" data-param="lalle" data-value="1">Alle durchblättern</button>
+      <div class="empty search-hint"><strong>${d.anzahl} Produkte in der Suche.</strong> Tippe ein, was der Kunde genannt hat – das Lexikon findet das Produkt samt Lieferanten-Artikelnummer und Link. <button type="button" class="btn btn-sm" data-param="lalle" data-value="1">Alle durchblättern</button>
       <div class="small muted" style="margin-top:6px">Stand: ${esc(fmtDateTime(d.erstellt))}</div></div>`;
   }
   const pages = t.pages > 1 ? `<div class="lex-seiten">
@@ -234,7 +234,7 @@ function viewLexikonListe() {
       <button type="button" class="btn btn-sm" ${t.page >= t.pages ? 'disabled' : ''} data-param="lseite" data-value="${t.page + 1}">Weiter →</button>
     </div>` : '';
   return `${toolbar}
-    <p class="small muted" style="margin:-4px 0 10px">${q ? `${t.count} Treffer für „${esc(q)}"` : `${d.anzahl} Produkte im Lexikon`} · Stand: ${esc(fmtDateTime(d.erstellt))}</p>
+    <p class="small muted" style="margin:-4px 0 10px">${q ? `${t.count} Treffer für „${esc(q)}"` : `${d.anzahl} Produkte`} · Stand: ${esc(fmtDateTime(d.erstellt))}</p>
     <div class="lex-treffer">${t.items.length ? t.items.map(lexikonTrefferKarte).join('') : emptyState(q ? 'Keine Treffer.' : 'Noch keine Produkte.', q ? 'Begriff prüfen oder anders schreiben.' : '')}</div>
     ${pages}`;
 }
@@ -623,7 +623,7 @@ function offeneBestellungenBlock(offene = [], wartende = []) {
 
 function viewLexikonDetail(handle) {
   ensureLexikonProdukt(handle);
-  const zurueck = `<p style="margin:0"><a class="lex-zurueck" href="#" data-lex-zurueck>← Zurück zur Lexikon-Suche</a></p>`;
+  const zurueck = `<p style="margin:0"><a class="lex-zurueck" href="#" data-lex-zurueck>← Zurück zur Produktsuche</a></p>`;
   const d = lexikon.produktKey === handle ? lexikon.produkt : null;
   if (!d) return zurueck + `<div class="empty">Lade Produkt …</div>`;
   if (!d || !d.verfuegbar) return zurueck + emptyState('Produkt nicht gefunden.', d?.hinweis || 'Handle prüfen.');
@@ -653,14 +653,14 @@ function viewLexikonDetail(handle) {
 
 export function viewLexikon() {
   if (state.capabilities.mode !== 'local') {
-    return `<div class="page-head"><div><h1>Lexikon</h1><p class="sub">Kunde nennt den Produktnamen – hier findest du das Original beim Lieferanten.</p></div></div>
+    return `<div class="page-head"><div><h1>Produktsuche</h1><p class="sub">Hier findest du zum Produktnamen des Kunden das Original beim Lieferanten.</p></div></div>
       ${emptyState('Nur lokal im Betrieb verfügbar.', 'Diese Ansicht liest private Einkaufsdaten, die nie im öffentlichen Repository landen. Auf dem Mac starten: npm run dashboard')}`;
   }
   const handle = state.route.params.get('handle');
   if (state.route.params.get('tab') === 'druckliste') return viewMusterDruckliste();
   if (state.route.params.get('tab') === 'etiketten') return viewMusterEtikettenStatus();
   const drucklisteLink = '<p class="lex-druckliste-link"><a class="btn" href="#/lexikon?tab=druckliste">Gemeinsame Druckliste</a><a class="btn" href="#/lexikon?tab=etiketten">Aufkleber prüfen</a></p>';
-  const head = `<div class="page-head"><div><h1>Lexikon</h1><p class="sub">Kunde nennt einen Produktnamen – hier steht das Original beim Lieferanten samt Bestelldaten.</p></div></div>`;
+  const head = `<div class="page-head"><div><h1>Produktsuche</h1><p class="sub">Hier findest du zum Produktnamen des Kunden das Original beim Lieferanten samt Bestelldaten.</p></div></div>`;
   // Im Produkt entfaellt der erklaerende Seitenkopf: am Handy schob er Name und Preis aus dem
   // ersten Bildschirm. "Lexikon" steht weiter in der Kopfzeile.
   return drucklisteLink + (handle ? viewLexikonDetail(handle) : head + viewLexikonListe());

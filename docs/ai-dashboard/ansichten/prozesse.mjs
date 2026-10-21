@@ -208,7 +208,7 @@ export function viewProzesse() {
     arbeitsplatz.generation += 1;
   }
   const profil = prozessProfil(arbeitsplatz.prozess);
-  return `<div class="page-head"><div><h1>Arbeitsplatz</h1><p class="sub">Hier vorbereiten. In der passenden KI-App weiterarbeiten.</p></div></div>
+  return `<div class="page-head"><div><h1>Vorbereiten</h1><p class="sub">Hier bereitest du E-Mail, Angebot oder Recherche vor und machst in der KI-App weiter.</p></div></div>
     <div class="prozess-seite">
       <nav class="prozess-auswahl" aria-label="Aufgabe wählen">${PROZESSE.map(p => `<a href="#/prozesse?prozess=${esc(p.id)}" class="prozess-wahl"${p.id === profil.id ? ' aria-current="page"' : ''}><strong>${esc(p.titel)}</strong><span>${esc(p.kurz)}</span></a>`).join('')}</nav>
       <section class="card prozess-karte" aria-labelledby="prozessTitel">

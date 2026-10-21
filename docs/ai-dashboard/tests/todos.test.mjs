@@ -323,7 +323,7 @@ test('Shop-Wache: stumm seit mehr als drei Stunden wird ein To-do (gruen, aber v
   const stunden = h => new Date(JETZT.getTime() - h * 3_600_000).toISOString();
   const stumm = leiteTodosAb({ shopwache: { verfuegbar: true, ampel: 'gruen', geprueftAm: stunden(5), befunde: [] } }, { sicht: 'website', jetzt: JETZT });
   assert.equal(stumm.length, 1);
-  assert.equal(stumm[0].titel, 'Shop-Wache meldet sich nicht');
+  assert.equal(stumm[0].titel, 'Shop-Kontrolle meldet sich nicht');
   assert.equal(stumm[0].ton, 'warn');
   assert.match(stumm[0].kontext, /vor 5 Stunden/);
   assert.deepEqual(leiteTodosAb({ shopwache: { verfuegbar: true, ampel: 'gruen', geprueftAm: stunden(1), befunde: [] } }, { sicht: 'website', jetzt: JETZT }), []);

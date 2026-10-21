@@ -201,7 +201,7 @@ function zahlenZeile(q) {
     const z = einkaufZahlen(aktiveAuftraege(d), d, afEintragFuer, id => d.kundeInformiert?.[id] || null);
     teile.push(['Zu bestellen', z.bestellen, '#/einkauf?ab=bestellen'], ['Kunde informieren', z.informieren, '#/einkauf?ab=informieren'], ['Verzug', z.verzug, '#/einkauf?ab=verzug']);
   }
-  if (darfAnsicht('akquise')) teile.push(['Nachfassen Akquise', q.akquise.length, '#/akquise?as=faellig']);
+  if (darfAnsicht('akquise')) teile.push(['Neue Aufträge nachfassen', q.akquise.length, '#/akquise?as=faellig']);
   if (!teile.length) return '';
   return `<nav class="heute-zahlen" aria-label="Zahlen des Tages">${teile.map(([l, n, h]) => `<a href="${h}"${n ? '' : ' class="null"'}>${esc(l)} <b>${n}</b></a>`).join('<span aria-hidden="true">·</span>')}</nav>`;
 }
@@ -324,8 +324,8 @@ function hintergrund(nf, wartet, sicht) {
 
   if (sicht !== 'website' && darfAnsicht('einkauf') && belege.daten) {
     // Ablage nicht lesbar: die Zeile bleibt da und sagt es - sonst verschwaende die Pruefung still.
-    const l = belege.daten.verfuegbar ? laufStand(belege.daten) : { text: `Belege nicht lesbar: ${belege.daten.hinweis || 'unbekannter Fehler'}`, ton: 'warn' };
-    zeilen.push(`<div class="heute-hg-zeile${l.ton ? ` ${l.ton}` : ''}"><span class="heute-hg-name">Lieferantenpostfach</span><span class="heute-hg-text">${esc(l.text)}</span><a class="heute-hg-knopf" href="#/einkauf?tab=belege">Belege</a></div>`);
+    const l = belege.daten.verfuegbar ? laufStand(belege.daten) : { text: `Lieferantenpost nicht lesbar: ${belege.daten.hinweis || 'unbekannter Fehler'}`, ton: 'warn' };
+    zeilen.push(`<div class="heute-hg-zeile${l.ton ? ` ${l.ton}` : ''}"><span class="heute-hg-name">Lieferantenpostfach</span><span class="heute-hg-text">${esc(l.text)}</span><a class="heute-hg-knopf" href="#/einkauf?tab=belege">Lieferantenpost</a></div>`);
   }
 
   zeilen.push(datenstandZeile(sicht));

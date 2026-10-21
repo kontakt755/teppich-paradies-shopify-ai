@@ -70,7 +70,7 @@ export function viewBildrechte() {
   ensureBildrechte();
   const d = bildrechte.daten;
   const kopf = `<div class="page-head"><div><h1>Bildrechte</h1>
-    <p class="sub">Welche Produktbilder noch Arbeit brauchen. Nur zum Nachsehen – geändert wird in Shopify und im Bildrechte-Verzeichnis.</p></div></div>`;
+    <p class="sub">Hier siehst du, welche Produktbilder noch Arbeit brauchen. Nur zum Nachsehen – geändert wird in Shopify und im Bildrechte-Verzeichnis.</p></div></div>`;
   if (!d && bildrechte.laedt) return kopf + '<div class="empty">Lade Bildrechte …</div>';
   if (d?.fehler) return kopf + stoerungState(d, 'Die Bildrechte');
   if (!d || !d.verfuegbar) return kopf + emptyState(d?.hinweis || 'Das Bildrechte-Verzeichnis fehlt.', d?.befehl ? `Auf dem Mac anlegen: ${d.befehl}` : '');

@@ -61,15 +61,15 @@ export function viewTeam() {
     : emptyState('Noch niemand angelegt.', 'Mit „+ Zugang anlegen“ anfangen.');
 
   return `<div class="page-head">
-      <div><h1>Team</h1><p class="sub">Wer darf womit arbeiten. Passwörter sieht niemand – auch du nicht.</p></div>
+      <div><h1>Zugänge</h1><p class="sub">Hier legst du fest, wer womit arbeiten darf. Passwörter sieht niemand – auch du nicht.</p></div>
       <div class="head-actions"><button type="button" class="btn btn-primary" data-team-neu>+ Zugang anlegen</button></div>
     </div>
     ${hinweis}
     ${liste}
     <h2 style="margin:24px 0 8px">Was die Rollen dürfen</h2>
     <div class="rows">
-      <div class="row"><div><div class="t">Inhaber</div><div class="m">Alles – dazu Entwicklung, Freigaben, Auswertungen und diese Seite.</div></div></div>
-      <div class="row"><div><div class="t">Mitarbeiter</div><div class="m">Kunden, Bestellungen, Aufgaben, Notizen, Baustellenfotos, Lexikon und Einkauf. Nicht: Zugänge, Entwicklung, Freigaben.</div></div></div>
+      <div class="row"><div><div class="t">Inhaber</div><div class="m">Alles – dazu Technik, Entscheidungen, Kennzahlen und diese Seite.</div></div></div>
+      <div class="row"><div><div class="t">Mitarbeiter</div><div class="m">Kunden, Bestellungen, Aufgaben, Notizen, Baustellenfotos, Produktsuche, Bestellen und Neue Aufträge. Nicht: Zugänge, Technik, Entscheidungen.</div></div></div>
       <div class="row"><div><div class="t">Nur lesen</div><div class="m">Sieht dieselben Seiten wie ein Mitarbeiter, kann aber nichts ändern – für Aushilfen oder zum Zuschauen.</div></div></div>
     </div>`;
 }

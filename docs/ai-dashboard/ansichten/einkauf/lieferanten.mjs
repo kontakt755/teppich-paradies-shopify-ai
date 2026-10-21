@@ -404,7 +404,7 @@ function mailAbschnitt(m, i, mehrere) {
     : `<div class="lf-frage" data-lf-frage="${i}" hidden>
         <strong>Als bestellt markieren?</strong>
         <span class="small muted">Nur, wenn die Bestellung wirklich raus ist.</span>
-        <div class="field"><label for="lfNr${i}">Bestellnummer des Lieferanten (aus der AB)</label><input id="lfNr${i}" maxlength="200" placeholder="z. B. 2026-4711"><span class="small muted">Damit die Auftragsbestätigung automatisch zugeordnet wird. Optional.</span></div>
+        <div class="field"><label for="lfNr${i}">Bestellnummer des Lieferanten (aus der Auftragsbestätigung)</label><input id="lfNr${i}" maxlength="200" placeholder="z. B. 2026-4711"><span class="small muted">Damit die Auftragsbestätigung automatisch zugeordnet wird. Optional.</span></div>
         <div class="lf-frage-knoepfe"><button type="button" class="btn btn-primary" data-lf-markieren="${i}">${plural(n, wort, wort)} als bestellt markieren</button><button type="button" class="btn btn-ghost" data-lf-nicht="${i}">Noch nicht</button></div>
       </div>`;
   return `<section class="lf-mail">${kopf}${zielWahl}${kettlerHinweis(m)}
@@ -595,7 +595,7 @@ function postenKarte(k, namen) {
   const n = zu.length + bestellt.length + eingetroffen.length;
   return `<section class="card lf-block"><h2 class="lf-blocktitel">Offene Posten${n ? ` · ${n}` : ''}</h2>
     ${n ? postenListe('Zu bestellen', zu, namen) + postenListe('Bestellt', bestellt, namen) + postenListe('Bei uns eingetroffen', eingetroffen, namen)
-      + `<p class="lf-rest"><a href="#/einkauf?lf=${encodeURIComponent(k.id)}">Positionen im Einkauf bearbeiten</a></p>` : '<p class="lf-rest">Nichts offen.</p>'}
+      + `<p class="lf-rest"><a href="#/einkauf?lf=${encodeURIComponent(k.id)}">Positionen unter „Bestellen“ bearbeiten</a></p>` : '<p class="lf-rest">Nichts offen.</p>'}
   </section>`;
 }
 
@@ -615,7 +615,7 @@ export function viewEinkaufLieferant(id) {
   ensureEinkaufBestellungen();
   ensureEinkaufAuftragsstatus();
   ensureEinkaufLieferanten();
-  const zurueck = '<a class="lf-zurueck" href="#/einkauf">‹ Einkauf</a>';
+  const zurueck = '<a class="lf-zurueck" href="#/einkauf">‹ Bestellen</a>';
   const b = einkauf.bestellungen;
   if ((!b && einkauf.loadingBestellungen) || (!einkauf.lieferanten && einkauf.loadingLieferanten)) return `${zurueck}<div class="empty">Lade Lieferant …</div>`;
   if (b?.fehler) return zurueck + stoerungState(b, 'Die Bestelldaten');

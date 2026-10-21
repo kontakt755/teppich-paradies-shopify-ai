@@ -466,7 +466,7 @@ function ausShopwache(quellen, jetzt) {
   if (d.ampel === 'gruen' && stunden !== null && stunden > SHOPWACHE_STUMM_STUNDEN) {
     return [{
       id: 'shopwache', art: 'shopwache', bereich: 'website', ton: 'warn', alterTage: tageSeit(d.geprueftAm, jetzt),
-      titel: 'Shop-Wache meldet sich nicht',
+      titel: 'Shop-Kontrolle meldet sich nicht',
       kontext: `letzte Prüfung vor ${Math.floor(stunden)} Stunden – sie läuft sonst stündlich`,
       knopf: { text: 'Prüfen', href: '#/shopwache' },
     }];
@@ -475,7 +475,7 @@ function ausShopwache(quellen, jetzt) {
   const befunde = d.befunde || [];
   return [{
     id: 'shopwache', art: 'shopwache', bereich: 'website', ton: d.ampel === 'rot' ? 'crit' : 'warn', alterTage: tageSeit(d.geprueftAm, jetzt),
-    titel: d.ampel === 'rot' ? 'Shop-Wache: der Shop hat ein Problem' : 'Shop-Wache meldet Auffälligkeiten',
+    titel: d.ampel === 'rot' ? 'Shop-Kontrolle: der Shop hat ein Problem' : 'Shop-Kontrolle meldet Auffälligkeiten',
     kontext: [befunde[0]?.titel, befunde.length > 1 ? `+${befunde.length - 1} weitere` : null].filter(Boolean).join(' · ') || 'Befund ansehen',
     knopf: { text: 'Prüfen', href: '#/shopwache' },
   }];
@@ -525,14 +525,14 @@ function ausAuslauf(quellen, jetzt) {
   const d = quellen.shopwache?.auslauf;
   if (!d?.geprueftAm) return [];
   const tage = tageSeit(d.geprueftAm, jetzt);
-  const basis = { id: 'auslauf', art: 'auslauf', bereich: 'website', alterTage: tage, knopf: { text: 'Lexikon', href: '#/lexikon' } };
+  const basis = { id: 'auslauf', art: 'auslauf', bereich: 'website', alterTage: tage, knopf: { text: 'Produktsuche', href: '#/lexikon' } };
   const befunde = d.befunde || [];
   const weg = befunde.filter(b => b.ergebnis === 'fehlt');
   if (befunde.length) {
     const handles = [...new Set(befunde.flatMap(b => b.handles || []))];
     return [{
       ...basis, ton: weg.length ? 'crit' : 'warn',
-      knopf: { text: 'Im Lexikon', href: `#/lexikon?${new URLSearchParams({ lq: handles[0] || '' })}` },
+      knopf: { text: 'In der Produktsuche', href: `#/lexikon?${new URLSearchParams({ lq: handles[0] || '' })}` },
       titel: weg.length
         ? `Auslauf: ${weg.length} Artikel beim Lieferanten nicht mehr gefunden`
         : `Auslauf-Prüfung: ${befunde.length} ${befunde.length === 1 ? 'Seite' : 'Seiten'} auffällig`,
@@ -597,7 +597,7 @@ function ausAkquise(quellen) {
   if (!f.length) return [];
   return [{
     id: 'akquise', art: 'akquise', bereich: 'buero', ton: 'warn', alterTage: null,
-    titel: `Akquise: ${f.length} Nachfassen fällig`,
+    titel: `Neue Aufträge: ${f.length} ${f.length === 1 ? 'Firma' : 'Firmen'} nachfassen`,
     kontext: [f.slice(0, 3).map(x => x.name).join(', '), f.length > 3 ? `+${f.length - 3} weitere` : null].filter(Boolean).join(' · '),
     knopf: { text: 'Ansehen', href: '#/akquise?as=faellig' },
   }];

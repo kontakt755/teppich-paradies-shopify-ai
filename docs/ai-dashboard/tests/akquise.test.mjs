@@ -49,7 +49,7 @@ test('Faellig: Wiedervorlage erreicht, offene Firmen; To-do "Akquise: N Nachfass
   const f = faelligeWiedervorlagen(firmen, '2026-10-20');
   assert.deepEqual(f.map(x => x.id), ['a']);
   const todos = leiteTodosAb({ akquise: f }, { sicht: 'inhaber' });
-  assert.equal(todos.find(t => t.id === 'akquise').titel, 'Akquise: 1 Nachfassen fällig');
+  assert.equal(todos.find(t => t.id === 'akquise').titel, 'Neue Aufträge: 1 Firma nachfassen');
   assert.equal(leiteTodosAb({ akquise: [] }, { sicht: 'inhaber' }).some(t => t.id === 'akquise'), false);
 });
 

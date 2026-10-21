@@ -81,7 +81,7 @@ export function laufStand(d = belege.daten) {
   const std = (Date.now() - Date.parse(l.am)) / 3600000;
   const tag = new Date().getDay();
   const werktag = tag >= 1 && tag <= 6;
-  const neu = l.neu ? ` · ${plural(l.neu, 'neuer Beleg', 'neue Belege')}` : '';
+  const neu = l.neu ? ` · ${plural(l.neu, 'neues Schreiben', 'neue Schreiben')}` : '';
   const teil = l.vollstaendig === false ? ' · nicht vollständig gelesen' : '';
   return { text: `Postfach zuletzt gelesen ${ago(l.am)}${neu}${teil}`, ton: (werktag && std > LAUF_ALT_STD) || l.vollstaendig === false ? 'warn' : '' };
 }
@@ -123,7 +123,7 @@ function vorschlagHtml(b) {
   const knoepfe = lesend ? gmailKnopf(b) : `${ja}
     <button type="button" class="btn btn-sm" data-bl-ablehnen="${esc(b.id)}">${mehrere ? 'Keine davon' : 'Passt nicht'}</button>${gmailKnopf(b)}`;
   return zeile({
-    titel: `${esc(ART_LABEL[b.art] || 'Beleg')} von ${esc(absenderText(b))}: gehört zu ${esc(ziel)}${b.zuordnung.orderIds.length > 1 ? ' (eine davon)' : ''}?`,
+    titel: `${esc(ART_LABEL[b.art] || 'Schreiben')} von ${esc(absenderText(b))}: gehört zu ${esc(ziel)}${b.zuordnung.orderIds.length > 1 ? ' (eine davon)' : ''}?`,
     kontext: `${fmtDate(b.datum)} · „${esc(b.betreff)}“ · ${esc(b.zuordnung.grund)}`,
     knoepfe,
   });
@@ -149,13 +149,13 @@ function ohneHtml(ohne) {
     const domain = liste[0].domain;
     const kannAbsender = !lesend && domain && !FREEMAIL.includes(domain);
     const zeilen = liste.map(b => zeile({
-      titel: `${esc(ART_LABEL[b.art] || 'Beleg')} · ${esc(fmtDate(b.datum))}`,
+      titel: `${esc(ART_LABEL[b.art] || 'Schreiben')} · ${esc(fmtDate(b.datum))}`,
       kontext: `„${esc(b.betreff)}“${b.refs?.kommission ? ` · Kommission ${esc(b.refs.kommission)}` : ''}`,
       knoepfe: lesend ? gmailKnopf(b) : `<button type="button" class="btn btn-sm" data-bl-zuordnen="${esc(b.id)}">Zuordnen…</button>
         <button type="button" class="btn btn-sm btn-ghost" data-bl-keinshop="${esc(b.id)}">Kein Shop-Auftrag</button>${gmailKnopf(b)}`,
     })).join('');
-    return `<li class="bl-gruppe"><div class="bl-gruppe-kopf"><span><b>${esc(absenderText(liste[0]))}</b> <span class="muted">· ${esc(plural(liste.length, 'Beleg', 'Belege'))}</span></span>
-      ${kannAbsender ? `<button type="button" class="btn btn-sm btn-ghost" data-bl-absender="${esc(domain)}" title="Belege dieses Absenders gehören nicht zu Shop-Bestellungen (z. B. Ladenware, Material)">Kein Shop-Lieferant</button>` : ''}</div>
+    return `<li class="bl-gruppe"><div class="bl-gruppe-kopf"><span><b>${esc(absenderText(liste[0]))}</b> <span class="muted">· ${esc(plural(liste.length, 'Schreiben', 'Schreiben'))}</span></span>
+      ${kannAbsender ? `<button type="button" class="btn btn-sm btn-ghost" data-bl-absender="${esc(domain)}" title="Schreiben dieses Absenders gehören nicht zu Shop-Bestellungen (z. B. Ladenware, Material)">Kein Shop-Lieferant</button>` : ''}</div>
       <ul class="bl-liste">${zeilen}</ul></li>`;
   };
   return `<section class="bl-abschnitt">${kopf}<ul class="bl-gruppen">${gruppen.map(gruppeHtml).join('')}</ul></section>`;
@@ -185,9 +185,9 @@ function abgleichHtml(d) {
   const sichtbar = liste.slice((Math.min(seite, seiten) - 1) * SEITE_AUFTRAG, Math.min(seite, seiten) * SEITE_AUFTRAG);
   const chip = (wert, text, n, ton = '') => `<button type="button" class="chip" aria-pressed="${filter === wert}" data-param="blf" data-value="${wert}">${text} <span class="${n && ton ? ton : 'muted'}">${n}</span></button>`;
   const chips = `<div class="chips bl-chips" role="group" aria-label="Auswahl">
-    ${chip('', 'Alle', d.zeilen.length)}${chip('beleg', 'Mit Beleg', mitBeleg.length)}${chip('abweichung', 'Passt nicht zusammen', mitAbw.length, 'bl-warn')}
+    ${chip('', 'Alle', d.zeilen.length)}${chip('beleg', 'Mit Schreiben', mitBeleg.length)}${chip('abweichung', 'Passt nicht zusammen', mitAbw.length, 'bl-warn')}
   </div>`;
-  if (!d.zeilen.length) return `<section class="bl-abschnitt"><h2 class="section-title">Je Auftrag</h2>${emptyState('Noch keine Bestellung mit Beleg.', 'Sobald ein Lieferant eine Auftragsbestätigung oder einen Lieferschein mit unserer Bestellnummer schickt, steht er hier neben unserem Stand.')}</section>`;
+  if (!d.zeilen.length) return `<section class="bl-abschnitt"><h2 class="section-title">Je Auftrag</h2>${emptyState('Noch keine Bestellung mit Lieferantenpost.', 'Sobald ein Lieferant eine Auftragsbestätigung oder einen Lieferschein mit unserer Bestellnummer schickt, steht er hier neben unserem Stand.')}</section>`;
   const rows = sichtbar.map(z => `<tr class="${z.hinweise.includes('storno') ? 'crit' : z.hinweise.length ? 'warn' : ''}">
       <td><a href="${esc(auftragLink(z.orderId))}">${esc(z.orderName)}</a>${z.kundenname ? `<div class="small muted">${esc(z.kundenname)}</div>` : ''}</td>
       <td>${esc(lieferantName(z.lieferant))}${z.nurMuster ? '<div class="small muted">Muster</div>' : ''}</td>
@@ -204,10 +204,10 @@ function abgleichHtml(d) {
       <button type="button" class="btn btn-sm" ${seite >= seiten ? 'disabled' : ''} data-param="bls" data-value="${seite + 1}">Weiter →</button></div>` : '';
   return `<section class="bl-abschnitt">
     <h2 class="section-title">Je Auftrag</h2>
-    <p class="small muted">Bestellungen der letzten 45 Tage, die beim Lieferanten bestellt sind oder einen Beleg haben – AB und Lieferschein neben unserem Stand und Shopify.</p>
+    <p class="small muted">Bestellungen der letzten 45 Tage, die beim Lieferanten bestellt sind oder Post vom Lieferanten haben – Auftragsbestätigung und Lieferschein neben unserem Stand und Shopify.</p>
     ${chips}
     ${liste.length ? `<div class="table-scroll"><table class="bl-tabelle">
-      <thead><tr><th>Auftrag</th><th>Lieferant</th><th>Bestellt</th><th>AB</th><th>Lieferschein</th><th>Bei uns</th><th>Shopify</th><th></th></tr></thead>
+      <thead><tr><th>Auftrag</th><th>Lieferant</th><th>Bestellt</th><th>Auftrags&shy;bestätigung</th><th>Lieferschein</th><th>Bei uns</th><th>Shopify</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>${blaettern}` : '<p class="small muted">Alles passt zusammen.</p>'}
   </section>`;
 }
@@ -249,28 +249,28 @@ function alleHtml(d) {
   // Zugeklappt (Parameter bla), solange niemand sucht - die Arbeit steht weiter oben.
   const auf = Boolean(state.route.params.get('bla')) || Boolean(q);
   if (!auf) {
-    return `<section class="bl-abschnitt"><h2 class="section-title">Alle Belege <span class="muted">${d.belege.length}</span></h2>
-      <p class="small muted bl-ohne-text">Jeder erkannte Beleg mit Absender, Zuordnung und Link ins Postfach.
+    return `<section class="bl-abschnitt"><h2 class="section-title">Alle Schreiben <span class="muted">${d.belege.length}</span></h2>
+      <p class="small muted bl-ohne-text">Jedes erkannte Schreiben mit Absender, Zuordnung und Link ins Postfach.
       <button type="button" class="heute-hg-knopf" data-param="bla" data-value="1" aria-expanded="false">Ansehen und suchen</button></p></section>`;
   }
   return `<section class="bl-abschnitt">
-    <h2 class="section-title">Alle Belege <span class="muted">${d.belege.length}</span>
+    <h2 class="section-title">Alle Schreiben <span class="muted">${d.belege.length}</span>
       <button type="button" class="heute-hg-knopf" data-param="bla" data-value="" aria-expanded="true">Zuklappen</button></h2>
-    <div class="toolbar"><input type="search" autocomplete="off" placeholder="Betreff, Lieferant, Kunde oder #Nummer" value="${esc(state.route.params.get('blq') || '')}" data-param="blq" aria-label="Belege durchsuchen"></div>
-    ${liste.length ? `<ul class="bl-belege">${zeilen}</ul>${blaettern}` : `<p class="small muted">${d.belege.length ? `Nichts passt zu „${esc(q)}“.` : 'Noch keine Belege.'}</p>`}
+    <div class="toolbar"><input type="search" autocomplete="off" placeholder="Betreff, Lieferant, Kunde oder #Nummer" value="${esc(state.route.params.get('blq') || '')}" data-param="blq" aria-label="Lieferantenpost durchsuchen"></div>
+    ${liste.length ? `<ul class="bl-belege">${zeilen}</ul>${blaettern}` : `<p class="small muted">${d.belege.length ? `Nichts passt zu „${esc(q)}“.` : 'Noch keine Lieferantenpost.'}</p>`}
   </section>`;
 }
 
 export function viewEinkaufBelege() {
   ensureBelege();
   const d = belege.daten;
-  if (!d && belege.laedt) return '<div class="empty">Lade Belege …</div>';
-  if (d?.fehler) return stoerungState(d, 'Die Belege');
-  if (!d || !d.verfuegbar) return emptyState('Belege nicht verfügbar.', d?.hinweis || '');
+  if (!d && belege.laedt) return '<div class="empty">Lade Lieferantenpost …</div>';
+  if (d?.fehler) return stoerungState(d, 'Die Lieferantenpost');
+  if (!d || !d.verfuegbar) return emptyState('Lieferantenpost nicht verfügbar.', d?.hinweis || '');
   const arbeit = belegArbeit(d);
   const lauf = laufStand(d);
   const kopf = `<div class="bl-kopf">
-    <p class="small muted">Auftragsbestätigungen, Lieferscheine und Stornos aus dem Lieferantenpostfach, zugeordnet zu unseren Bestellungen. Ein Beleg ändert nichts von selbst – den Schritt setzt ihr im Einkauf.</p>
+    <p class="small muted">Auftragsbestätigungen, Lieferscheine und Stornos aus dem Lieferantenpostfach, zugeordnet zu unseren Bestellungen. Ein Schreiben ändert nichts von selbst – den Schritt setzt ihr unter „Je Auftrag“.</p>
     <p class="bl-lauf${lauf.ton ? ` ${lauf.ton}` : ''}">${esc(lauf.text)}</p>
   </div>`;
   const zuPruefen = arbeit.summe ? `<section class="bl-abschnitt">
@@ -335,7 +335,7 @@ function oeffneZuordnen(b, { nur = null } = {}) {
         <span class="hint">${vorne.length ? 'Oben die Bestellungen mit Ware dieses Lieferanten.' : 'Bestellungen der letzten 120 Tage.'}</span></div>`;
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog bl-dialog" role="dialog" aria-modal="true" aria-labelledby="blTitel" data-dialog novalidate>
     <h2 id="blTitel">Zu welcher Bestellung?</h2>
-    <p class="small muted">${esc(ART_LABEL[b.art] || 'Beleg')} von ${esc(absenderText(b))} vom ${esc(fmtDate(b.datum))}:<br>„${esc(b.betreff)}“</p>
+    <p class="small muted">${esc(ART_LABEL[b.art] || 'Schreiben')} von ${esc(absenderText(b))} vom ${esc(fmtDate(b.datum))}:<br>„${esc(b.betreff)}“</p>
     ${b.auszug ? `<p class="bl-auszug">${esc(b.auszug)}</p>` : ''}
     ${wahlFeld}
     ${b.lieferant ? '' : `<div class="field" data-bl-lieferant-feld hidden><label for="blLieferant">Von welchem Lieferanten?</label>
@@ -386,7 +386,7 @@ function oeffneZuordnen(b, { nur = null } = {}) {
     const m = form.querySelector('[data-bl-meldung]');
     const lieferant = feld && !feld.hidden ? lieferantWahl.value : '';
     const fehlt = !ids.length ? 'Bitte eine Bestellung wählen.'
-      : feld && !feld.hidden && !lieferant ? (gemeinsam.length ? 'Bitte wählen, von welchem Lieferanten der Beleg ist.' : 'Diese Bestellungen haben keinen gemeinsamen Lieferanten – bitte nur die passende ankreuzen.')
+      : feld && !feld.hidden && !lieferant ? (gemeinsam.length ? 'Bitte wählen, von welchem Lieferanten das Schreiben ist.' : 'Diese Bestellungen haben keinen gemeinsamen Lieferanten – bitte nur die passende ankreuzen.')
         : null;
     if (fehlt) { m.className = 'notice warn'; m.textContent = fehlt; m.hidden = false; return; }
     const knopf = form.querySelector('button[type=submit]');
@@ -409,7 +409,7 @@ export function einkaufKlickBelege(ev) {
   if (!k) return false;
   const ds = k.dataset;
   if (ds.blAbsender) {
-    if (!window.confirm(`Belege von ${ds.blAbsender} gehören nicht zu Shop-Bestellungen? Sie stehen dann nicht mehr unter „Zu prüfen“ (außer mit einer Bestellnummer im Betreff).`)) return true;
+    if (!window.confirm(`Schreiben von ${ds.blAbsender} gehören nicht zu Shop-Bestellungen? Sie stehen dann nicht mehr unter „Zu prüfen“ (außer mit einer Bestellnummer im Betreff).`)) return true;
     aktion(k, { aktion: 'absender_kein_shop', domain: ds.blAbsender }, `${ds.blAbsender}: kein Shop-Lieferant`);
     return true;
   }
@@ -427,7 +427,7 @@ export function einkaufKlickBelege(ev) {
     if (!b.lieferant && mehrere) { oeffneZuordnen(b, { nur: b.zuordnung.orderIds }); return true; }
     aktion(k, { aktion: 'zuordnen', mailId: id, orderIds: [id0] }, `Zugeordnet: ${auftragText(id0)}`);
   }
-  else if (ds.blAblehnen) aktion(k, { aktion: 'ablehnen', mailId: id, orderIds: b.zuordnung.orderIds }, 'Vorschlag verworfen – der Beleg steht jetzt ohne Bestellung da');
+  else if (ds.blAblehnen) aktion(k, { aktion: 'ablehnen', mailId: id, orderIds: b.zuordnung.orderIds }, 'Vorschlag verworfen – das Schreiben steht jetzt ohne Bestellung da');
   else if (ds.blKeinshop) aktion(k, { aktion: 'kein_shop', mailId: id }, 'Als kein Shop-Auftrag markiert');
   else if (ds.blLoesen) aktion(k, { aktion: 'loesen', mailId: id }, 'Zuordnung gelöst');
   else if (ds.blWieder) aktion(k, { aktion: 'wieder_offen', mailId: id }, 'Wieder offen');

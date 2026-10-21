@@ -17,12 +17,12 @@
 /** Reihenfolge = Reihenfolge im Workflow und im Kanban. */
 export const STATUSES = Object.freeze([
   { key: 'eingang',    label: 'Eingang',             githubLabel: 'status:eingang',    column: 'eingang',   open: true,  legacy: false },
-  { key: 'triage',     label: 'Triage',              githubLabel: 'status:triage',     column: 'eingang',   open: true,  legacy: false },
+  { key: 'triage',     label: 'Sichten',             githubLabel: 'status:triage',     column: 'eingang',   open: true,  legacy: false },
   { key: 'geplant',    label: 'Geplant',             githubLabel: 'status:geplant',    column: 'geplant',   open: true,  legacy: false },
   { key: 'bereit',     label: 'Bereit',              githubLabel: 'status:bereit',     column: 'bereit',    open: true,  legacy: false },
   { key: 'in-arbeit',  label: 'In Arbeit',           githubLabel: 'status:in-arbeit',  column: 'in-arbeit', open: true,  legacy: false },
   { key: 'korrektur',  label: 'In Arbeit · Korrektur', githubLabel: 'status:korrektur', column: 'in-arbeit', open: true, legacy: true },
-  { key: 'review',     label: 'Review',              githubLabel: 'status:review',     column: 'review',    open: true,  legacy: false },
+  { key: 'review',     label: 'Zur Prüfung',         githubLabel: 'status:review',     column: 'review',    open: true,  legacy: false },
   { key: 'freigabe',   label: 'Warten auf Freigabe', githubLabel: 'status:freigabe',   column: 'freigabe',  open: true,  legacy: false },
   { key: 'blockiert',  label: 'Blockiert',           githubLabel: 'status:blockiert',  column: 'blockiert', open: true,  legacy: false },
   { key: 'beobachten', label: 'Beobachten',          githubLabel: 'status:beobachten', column: 'beobachten', open: true, legacy: false },
@@ -39,7 +39,7 @@ export const COLUMNS = Object.freeze([
   { key: 'geplant',   label: 'Geplant' },
   { key: 'bereit',    label: 'Bereit' },
   { key: 'in-arbeit', label: 'In Arbeit' },
-  { key: 'review',    label: 'Review' },
+  { key: 'review',    label: 'Zur Prüfung' },
   { key: 'freigabe',  label: 'Freigabe' },
   { key: 'blockiert', label: 'Blockiert' },
   { key: 'fertig',    label: 'Erledigt' },
@@ -559,12 +559,12 @@ export function labelChangesFor(task, target, { hasLabel = () => true } = {}) {
 export const SAVED_VIEWS = Object.freeze([
   { key: 'alle',        label: 'Alle offenen',         filter: t => t.open },
   { key: 'meine',       label: 'Meine Aufgaben',       filter: (t, ctx) => t.open && ctx.me && t.owner && t.owner.toLowerCase() === ctx.me.toLowerCase() },
-  { key: 'unzugeordnet', label: 'Unzugeordnet',        filter: t => t.open && !t.owner && !['eingang', 'triage', 'beobachten'].includes(t.status) },
+  { key: 'unzugeordnet', label: 'Ohne Zuständigen',        filter: t => t.open && !t.owner && !['eingang', 'triage', 'beobachten'].includes(t.status) },
   { key: 'blockiert',   label: 'Blockiert',            filter: t => t.status === 'blockiert' },
   { key: 'heute',       label: 'Heute fällig',         filter: t => t.open && t.daysToDue !== null && t.daysToDue <= 0 },
-  { key: 'review',      label: 'Review-Queue',         filter: t => t.status === 'review' },
+  { key: 'review',      label: 'Zur Prüfung',         filter: t => t.status === 'review' },
   { key: 'stale',       label: 'Ohne Update seit 7 Tagen', filter: t => t.open && (t.daysSinceUpdate ?? 0) >= 7 && !['eingang', 'beobachten', 'geplant'].includes(t.status) },
-  { key: 'triage',      label: 'Triage nötig',         filter: t => t.open && t.triage.length > 0 },
+  { key: 'triage',      label: 'Zu sichten',         filter: t => t.open && t.triage.length > 0 },
   { key: 'freigabe',    label: 'Warten auf Freigabe',  filter: t => t.status === 'freigabe' },
 ]);
 

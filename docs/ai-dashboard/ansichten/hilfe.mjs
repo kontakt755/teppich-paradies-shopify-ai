@@ -10,12 +10,12 @@ function hilfeKarte(titel, inhalt) {
 
 export function viewHilfe() {
   return `
-    <div class="page-head"><div><h1>So arbeitest du damit</h1><p class="sub">Die wichtigsten Handgriffe – in der Reihenfolge, in der sie im Laden vorkommen.</p></div></div>
+    <div class="page-head"><div><h1>So arbeitest du damit</h1><p class="sub">Hier stehen die wichtigsten Handgriffe – in der Reihenfolge, in der sie im Laden vorkommen.</p></div></div>
 
     ${hilfeKarte('Morgens: Seite „Heute"', `
       <p>Ganz oben steht das Kundengeschäft: offene Aufträge, was noch beim Lieferanten bestellt werden muss, Muster.</p>
       <p><b>Nicht liegen lassen</b> darunter ist Geld, das schon im Haus war: bezahlte Bestellungen ohne Versand, Angebote, auf die jemand wartet, und abgebrochene Warenkörbe. Erscheint der Block nicht, gibt es dort nichts zu tun.</p>
-      <p class="small muted">Rechts oben steht, wann die <b>Aufgaben</b> zuletzt geholt wurden – nur die. Wie alt die Bestell-, Kunden- und Lexikondaten sind, steht je Quelle unter <i>Mehr → Insights → Systemzustand</i>. „Jetzt aktualisieren" holt die Betriebsdaten neu.</p>`)}
+      <p class="small muted">Rechts oben steht, wann die <b>Aufgaben</b> zuletzt geholt wurden – nur die. Wie alt die Bestell-, Kunden- und Produktdaten sind, steht je Quelle unter <i>Mehr → Kennzahlen → Systemzustand</i>. „Jetzt aktualisieren" holt die Betriebsdaten neu.</p>`)}
 
     ${hilfeKarte('Ein Kunde ruft an', `
       <ol style="margin:0;padding-left:20px;line-height:1.9">
@@ -26,13 +26,13 @@ export function viewHilfe() {
       <p class="small muted" style="margin-top:8px">Steht bei der Telefonnummer „(aus der Lieferadresse)", stammt sie aus der Bestellung, nicht aus dem Kundenkonto – anrufen kannst du trotzdem.</p>`)}
 
     ${hilfeKarte('Der Kunde nennt einen Produktnamen', `
-      <p>Denselben Weg nehmen: <b>Suche</b> öffnen und den Produktnamen tippen – oder oben auf <b>Lexikon</b>.</p>
+      <p>Denselben Weg nehmen: <b>Suche</b> öffnen und den Produktnamen tippen – oder links auf <b>Produktsuche</b>.</p>
       <p>Die Produktseite hat zwei Teile: <b>Für das Kundengespräch</b> (Preis ab, Farben, Material, Brandverhalten, Fußbodenheizung) und <b>Zum Bestellen</b> (unsere SKU, Lieferant, Artikelnummer, Bestelleinheit, Link zum Lieferanten).</p>
-      <p>Die <b>Mengenhilfe</b> rechnet die Kundenmenge in Pakete um. Bei einem Muster zeigt das Lexikon das Originalprodukt beim Lieferanten.</p>`)}
+      <p>Die <b>Mengenhilfe</b> rechnet die Kundenmenge in Pakete um. Bei einem Muster zeigt die Produktsuche das Originalprodukt beim Lieferanten.</p>`)}
 
     ${hilfeKarte('Beim Lieferanten bestellen', `
       <ol style="margin:0;padding-left:20px;line-height:1.9">
-        <li>Oben auf <b>Einkauf</b>: je Lieferant eine Karte in drei Schritten – <b>Ware bestellen</b>, <b>Muster bestellen</b>, <b>Nachfassen</b> –, darunter, was im Plan läuft. Was schon beim Kunden ist, zählt dort als erledigt.</li>
+        <li>Links auf <b>Bestellen</b>: je Lieferant eine Karte in drei Schritten – <b>Ware bestellen</b>, <b>Muster bestellen</b>, <b>Nachfassen</b> –, darunter, was im Plan läuft. Was schon beim Kunden ist, zählt dort als erledigt.</li>
         <li>Der farbige Knopf ist der Bestellweg dieses Lieferanten: <b>Bestellmail öffnen</b>, <b>Im Portal bestellen</b> oder <b>Anrufen</b>. Muster haben einen eigenen Knopf.</li>
         <li>Die Bestellung steht fertig da. <b>Im Mailprogramm öffnen</b> – abschicken tust du selbst, hier wird nie etwas gesendet. Was nicht in der Mail steht, ist mit Grund aufgelistet.</li>
         <li>Danach fragt das Dashboard <b>Als bestellt markieren?</b> – ein Klick setzt alle Artikel der Mail auf „Bestellt".</li>
@@ -66,7 +66,7 @@ export function viewHilfe() {
         <li><b>Anhänge</b>: Bilder, PDF oder Text bis 10 MB direkt an der Aufgabe.</li>
         <li><b>Jetzt prüfen</b> misst Aufgaben mit hinterlegtem Erfolgskriterium am echten Shop – automatisch auch jeden Morgen um 9:30.</li>
       </ul>
-      <p class="small muted" style="margin-top:8px">Der Bereich <b>Entwicklung</b> unter „Mehr" ist etwas anderes: dort steht die Arbeit an Shop und Technik (GitHub-Aufgaben). Für den Ladenalltag brauchst du ihn nicht.</p>`)}
+      <p class="small muted" style="margin-top:8px">Der Bereich <b>Technik</b> unter „Mehr" ist etwas anderes: dort steht die Arbeit an Shop und Technik (GitHub-Aufgaben). Für den Ladenalltag brauchst du ihn nicht.</p>`)}
 
     ${hilfeKarte('Aufgaben aus ChatGPT oder von einem Zettel übernehmen', `
       <p>Im Bereich <b>Aufgaben</b> oben auf <b>Liste einfügen</b>. Eine Zeile je Aufgabe – Aufzählungszeichen, Nummerierung und Kästchen werden automatisch entfernt, Überschriften übersprungen.</p>

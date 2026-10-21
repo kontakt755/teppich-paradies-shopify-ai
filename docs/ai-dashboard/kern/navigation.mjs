@@ -103,7 +103,7 @@ export function aktualisiereSeitentitel() {
 // (/api/capabilities -> dashboards), weil sie nicht ins oeffentliche Repository gehoeren.
 const DASHBOARDS = [
   // Werkbank: Ideen und Fragen zwischen Inhaber und Shop-Mitarbeiter - nicht fuer "lesen".
-  { key: 'werkbank', text: 'Werkbank', titel: 'Werkbank Shop & Technik – öffnet in Claude', nichtLesen: true,
+  { key: 'werkbank', text: 'Ideen & Fragen', titel: 'Ideen und Fragen an Shop & Technik – öffnet in Claude', nichtLesen: true,
     icon: '<path d="M3.500 10h17M6 10v9M18 10v9M6 15h12M9 10V6.500h6V10"/>' },
   { key: 'laden', text: 'Laden', titel: 'Laden-Ansicht der Auftrags-App',
     icon: '<path d="M4 9.500 5.500 5h13L20 9.500M4 9.500h16M4 9.500a2.700 2.700 0 0 0 5.300 0 2.700 2.700 0 0 0 5.400 0 2.700 2.700 0 0 0 5.300 0M5.500 12v7.500h13V12M10 19.500v-4.500h4v4.500"/>' },

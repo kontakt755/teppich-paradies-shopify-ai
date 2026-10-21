@@ -323,7 +323,7 @@ function oeffneEinlagern(vorgabe = null) {
         const items = (d?.treffer?.items || []).filter(x => x.produktgruppe !== 'Musterservice');
         treffer.innerHTML = items.length
           ? items.map(x => `<button type="button" class="ml-treffer-knopf" data-ml-handle="${esc(x.handle)}"><span>${esc(x.titel)}</span><span class="small muted">${esc([x.produktgruppe, x.farbenAnzahl ? plural(x.farbenAnzahl, 'Farbe', 'Farben') : null].filter(Boolean).join(' · '))}</span></button>`).join('')
-          : `<p class="small muted">${d?.verfuegbar === false ? esc(d.hinweis || 'Lexikon nicht verfügbar.') : 'Kein Produkt gefunden.'}</p>`;
+          : `<p class="small muted">${d?.verfuegbar === false ? esc(d.hinweis || 'Produktsuche nicht verfügbar.') : 'Kein Produkt gefunden.'}</p>`;
       }, 250);
     });
     treffer.addEventListener('click', async ev => {
@@ -338,7 +338,7 @@ function oeffneEinlagern(vorgabe = null) {
       form.querySelector('[data-ml-produkt]').textContent = `Farben von ${d.titel}`;
       form.querySelector('[data-ml-farbliste]').innerHTML = d.farben.length
         ? d.farben.map(f => `<label><input type="checkbox" value="${esc(f.farbe)}"${d.farben.length === 1 ? ' checked' : ''}> ${esc(f.farbe)}${f.imLager ? ' <span class="muted small">(schon im Lager)</span>' : ''}</label>`).join('')
-        : '<p class="small muted">Keine Farbe mit Artikelnummer – im Lexikon prüfen.</p>';
+        : '<p class="small muted">Keine Farbe mit Artikelnummer – in der Produktsuche prüfen.</p>';
       box.hidden = false;
       // Lieferant schickt bei PVC und Linoleum ein grosses Stueck: das ist dann die naheliegende Art.
       if (['Vinyl von der Rolle', 'Linoleumboden'].includes(d.produktgruppe)) form.querySelector('input[name=art][value=probestueck]').checked = true;

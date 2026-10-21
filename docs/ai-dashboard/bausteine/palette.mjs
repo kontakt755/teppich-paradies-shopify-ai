@@ -58,16 +58,16 @@ function paletteItems(q) {
     const offen = p.offeneBestellungen ? `${p.offeneBestellungen} offene Bestellung${p.offeneBestellungen === 1 ? '' : 'en'}` : null;
     items.push({ kind: 'Produkt', label: p.titel, sub: [offen, p.produktgruppe].filter(Boolean).join(' · ') || undefined, treffer: true, run: () => navigate('lexikon', { handle: p.handle }) });
   }
-  const views = [['heute', 'Heute'], ['einkauf', 'Einkauf'], ['kunden', 'Kunden'], ['lexikon', 'Lexikon'], ['arbeit', 'Entwicklung (GitHub)'], ['freigaben', 'Freigaben'], ['bereiche', 'Bereiche'], ['insights', 'Insights'], ['aktivitaet', 'Aktivität'], ['ratgeber', 'Ratgeber'], ['organisation', 'Aufgaben & Organisation'], ['shopwache', 'Shop-Wache'], ['bildrechte', 'Bildrechte (Herkunft, Bildgröße, ALT-Text)'], ['hilfe', 'Hilfe: So arbeitest du damit']];
+  const views = [['heute', 'Heute'], ['einkauf', 'Bestellen beim Lieferanten'], ['kunden', 'Kunden'], ['lexikon', 'Produktsuche'], ['arbeit', 'Technik (GitHub)'], ['freigaben', 'Entscheidungen'], ['bereiche', 'Bereiche'], ['insights', 'Kennzahlen'], ['aktivitaet', 'Verlauf'], ['ratgeber', 'Ratgeber'], ['organisation', 'Aufgaben'], ['akquise', 'Neue Aufträge'], ['shopwache', 'Shop-Kontrolle'], ['bildrechte', 'Bildrechte (Herkunft, Bildgröße, ALT-Text)'], ['hilfe', 'Hilfe: So arbeitest du damit']];
   for (const [k, l] of views) if (darfAnsicht(k)) items.push({ kind: 'Ansicht', label: l, run: () => navigate(k) });
-  items.push({ kind: 'Ansicht', label: 'Arbeitsplatz: E-Mail, Angebot oder Recherche vorbereiten', run: () => navigate('prozesse') });
+  items.push({ kind: 'Ansicht', label: 'Vorbereiten: E-Mail, Angebot oder Recherche', run: () => navigate('prozesse') });
   for (const [prozess, label] of [['email', 'E-Mail vorbereiten'], ['angebot', 'Angebot vorbereiten'], ['recherche', 'Recherche starten']]) {
-    items.push({ kind: 'Arbeitsplatz', label, run: () => navigate('prozesse', { prozess }) });
+    items.push({ kind: 'Vorbereiten', label, run: () => navigate('prozesse', { prozess }) });
   }
   items.push({ kind: 'Ansicht', label: 'Fotos vom fertigen Raum', run: () => navigate('fotos') });
-  if (darfAnsicht('team')) items.push({ kind: 'Ansicht', label: 'Team: Zugänge verwalten', run: () => navigate('team') });
+  if (darfAnsicht('team')) items.push({ kind: 'Ansicht', label: 'Zugänge verwalten', run: () => navigate('team') });
   if (darfAnsicht('arbeit')) {
-    for (const v of SAVED_VIEWS) items.push({ kind: 'Ansicht', label: `Arbeit: ${v.label}`, run: () => navigate('arbeit', { view: v.key }) });
+    for (const v of SAVED_VIEWS) items.push({ kind: 'Ansicht', label: `Technik: ${v.label}`, run: () => navigate('arbeit', { view: v.key }) });
     for (const a of AREAS) items.push({ kind: 'Bereich', label: a.label, run: () => navigate('arbeit', { area: a.key }) });
     items.push({ kind: 'Aktion', label: 'Neue Aufgabe auf GitHub anlegen', run: () => window.open(newIssueUrl({ template: 'feature.yml' }), '_blank', 'noopener') });
     items.push({ kind: 'Aktion', label: 'Entscheidung anlegen', run: () => window.open(newIssueUrl({ template: 'entscheidung.yml' }), '_blank', 'noopener') });
