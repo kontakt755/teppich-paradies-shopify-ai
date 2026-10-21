@@ -989,6 +989,9 @@ table.tasks td { padding-top: 12px; padding-bottom: 12px; }
 .lex-bestell-kopf { align-items: center; }
 /* "Zum Bestellen" je Farbe: am Rechner Tabelle, darunter Karten mit Artikelnummer zum Antippen. */
 .lex-artnr { display: inline-flex; align-items: center; min-height: 32px; padding: 3px 9px; border-radius: 7px; background: var(--surface-2); font-family: var(--mono); font-size: .9rem; cursor: copy; }
+/* Farbe, die zur Suche passt ("Linie027 Kora 98"): steht oben und ist leicht hinterlegt. */
+.lex-bestell-tabelle tr.lex-passt td, .lex-bestell-liste li.lex-passt { background: var(--surface-2); }
+.lex-bestell-liste li.lex-passt { padding-left: 8px; padding-right: 8px; border-radius: 8px; }
 /* Bestellweg des Lieferanten, wenn es keinen Link je Artikel gibt (einmal ueber der Liste). */
 .lex-bestellweg { margin: 0 0 10px; line-height: 1.7; overflow-wrap: anywhere; }
 .lex-bestell-liste { display: none; }

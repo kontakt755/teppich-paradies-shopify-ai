@@ -84,6 +84,7 @@ import { ausCsv as bildrechteAusCsv, prueflisten as bildrechtePrueflisten } from
 import { prozesslinksPfad, leseProzesslinks, schreibeProzesslinks, ProzesslinksFehler, ProzesslinksSpeicherFehler } from '../operations/lib/prozesslinks.mjs';
 import { leseMusterDruckliste, aendereMusterDruckliste, gleicheBestellungsVormerkung, MusterDrucklisteFehler } from '../operations/lib/muster-druckliste.mjs';
 import { etikettenAusLexikon } from '../docs/ai-dashboard/lib/lexikon-etiketten.mjs';
+import { suchbegriffe, lexikonTreffer, nurUeberTitel } from '../docs/ai-dashboard/lib/lexikon-suche.mjs';
 import { musteretikettenFuerAuftrag } from '../docs/ai-dashboard/lib/bestellungs-musteretiketten.mjs';
 import { musterEtikettenStatus } from '../docs/ai-dashboard/lib/muster-etiketten-status.mjs';
 
@@ -2751,9 +2752,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           befehl: 'npm run lexikon:export',
         };
       }
-      const suchtext = String(q || '').trim().toLowerCase();
-      const treffer = suchtext
-        ? daten.produkte.filter(p => lexikonSucheTreffer(p, suchtext))
+      const begriffe = suchbegriffe(q);
+      const passendJe = new Map();
+      const treffer = begriffe.length
+        ? daten.produkte.filter(p => {
+          const t = lexikonTreffer(p, begriffe);
+          if (t.passt) passendJe.set(p, t.varianten);
+          return t.passt;
+        })
         : daten.produkte;
       const size = Math.min(Math.max(Number(pageSize) || 20, 1), 100);
       const p = Math.max(Number(page) || 1, 1);
@@ -2763,7 +2769,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const seite = treffer.slice(start, start + size).map(prod => {
         const offen = offeneZuProdukt(offenMap, prod);
         const anzahl = liste => new Set(liste.map(o => o.orderId)).size;
-        return { ...lexikonListenEintrag(prod), offeneBestellungen: anzahl(offen.filter(o => !o.istMuster)), offeneMuster: anzahl(offen.filter(o => o.istMuster)) };
+        return {
+          ...lexikonListenEintrag(prod), ...lexikonSuchHinweis(prod, passendJe.get(prod) || [], begriffe),
+          offeneBestellungen: anzahl(offen.filter(o => !o.istMuster)), offeneMuster: anzahl(offen.filter(o => o.istMuster)),
+        };
       });
       return {
         verfuegbar: true, quelle: file, erstellt: daten.erstellt || null, anzahl: daten.anzahl ?? daten.produkte.length,
@@ -4007,16 +4016,33 @@ export function rollenbreiteInMetern(wert) {
   return n > 10 ? n / 100 : n;
 }
 
-/** Sucht ueber Produktname, Handle, SKU, Lieferanten-Artikelnummer, Farbe und Kollektion. */
-function lexikonSucheTreffer(p, suchtext) {
-  // Am Telefon nennt der Kunde die Farbnummer vom Muster oder den Hersteller -
-  // beides war bisher nicht durchsuchbar, die Suche blieb leer.
-  const felder = [p.titel, p.handle, p.produktgruppe];
-  for (const v of p.varianten || []) {
-    felder.push(v.sku, v.farbe, v.einkauf?.artikelnummer, v.einkauf?.kollektion, v.einkauf?.produktname,
-      v.einkauf?.farbnummer, v.einkauf?.hersteller, v.einkauf?.marke);
+/**
+ * Was die Trefferkarte zur Suche erklaert: die passende Farbe samt Farbnummer,
+ * sobald die Suche nur einen Teil der Farben trifft ("Linie027 Kora 98"), und
+ * den Namen beim Lieferanten, wenn der Treffer nicht schon am Shop-Titel liegt.
+ */
+function lexikonSuchHinweis(p, passendeVarianten, begriffe) {
+  if (!begriffe.length) return { passend: [], passendMehr: 0, lieferantName: null };
+  const echte = (p.varianten || []).filter(v => !v.wunschmass);
+  const gezielt = passendeVarianten.filter(v => !v.wunschmass);
+  const ueberTitel = nurUeberTitel(p, begriffe);
+  const farbenVon = vs => new Set(vs.map(v => v.farbe || v.titel)).size;
+  // Alle Farben passen: bei hoechstens drei Farben trotzdem nennen, wenn die Suche ueber
+  // den Lieferanten kam - sonst fehlte gerade bei einfarbigen Produkten die Farbnummer.
+  const nennen = gezielt.length && (gezielt.length < echte.length || (!ueberTitel && farbenVon(gezielt) <= 3));
+  const je = new Map();
+  if (nennen) {
+    for (const v of gezielt) {
+      const farbnummer = v.einkauf?.farbnummer ?? v.original?.farbnummer ?? null;
+      const farbe = v.farbe || v.titel || null;
+      const key = JSON.stringify([farbe, farbnummer]);
+      if (!je.has(key)) je.set(key, { farbe, farbnummer, artikelnummer: v.einkauf?.artikelnummer ?? v.original?.artikelnummer ?? null });
+    }
   }
-  return felder.some(f => typeof f === 'string' && f.toLowerCase().includes(suchtext));
+  const passend = [...je.values()];
+  const lieferantName = ueberTitel ? null
+    : (echte.map(v => v.einkauf?.produktname || v.einkauf?.kollektion).find(Boolean) || null);
+  return { passend: passend.slice(0, 3), passendMehr: Math.max(passend.length - 3, 0), lieferantName };
 }
 
 /** Zeilenform fuer die Trefferliste: Bild, Produktname, Produktgruppe, Anzahl Farben, Preis ab, Link-Zeichen. */
