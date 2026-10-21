@@ -352,11 +352,11 @@ Für die Oberfläche:
   Maßzuschnitt)“, darunter das Fertigmaß für den Kettler), ohne
   Einfassungszeile und mit der Kommission ohne Kundennamen. Ist die
   Rollenbreite unbekannt, bleibt es beim Stück nach Maß ohne Einfassung.
-  **Regel ohne `ziel`:** Maßteppiche mit Einfassung und kürzerer Seite unter
-  200 cm kommen in eine eigene Mail an den Kettler (`kettlerAutomatisch:
-  true`), der Rest der Gruppe bleibt in seiner Mail. Ein `ziel` gilt für die
-  ganze Gruppe. `kettlerVorschlag` nennt in den übrigen Mails Kettel-Positionen
-  für den Kettler (unter 2 m bzw. Kunde in Berlin/PLZ 16).
+  **Regel ohne `ziel`:** Maßteppiche mit Einfassung und Fertigmaß kommen in
+  eine eigene Mail an den Kettler, egal wie groß (`kettlerAutomatisch: true`;
+  bis 21.10. nur unter 200 cm), der Rest der Gruppe bleibt in seiner Mail. Ein
+  `ziel` gilt für die ganze Gruppe. `kettlerVorschlag` nennt in den übrigen
+  Mails Kettel-Positionen für den Kettler (gekettelt bzw. Kunde in Berlin/PLZ 16).
 - Nach dem Absenden setzt die Oberfläche den Status wie bisher über
   `POST /api/einkauf/auftragsstatus` (`status: "bestellt"`). Optional
   `ueber: "kettler"` vermerkt den Kettler-Weg an der Position (`ueber: null`

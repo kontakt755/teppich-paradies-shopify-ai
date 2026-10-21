@@ -2,6 +2,21 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-21 · Alle gekettelten Maßteppiche automatisch zum Kettler
+
+- **Geändert:** Regel des Inhabers vom 19.10. abends umgesetzt: Maßteppiche mit Einfassung gehen
+  ohne Auswahl zum Kettler, **egal wie groß** (bisher nur kürzere Seite unter 2 m). Auch bei
+  Direktversand des Lieferanten; Baustellenlieferungen bleiben, wie sie sind. Ohne Fertigmaß greift
+  die Regel nicht (der Lieferant kann dann nicht zuschneiden). Ein von Hand gewähltes Ziel im Dialog
+  gilt weiter für die ganze Gruppe; dann schlägt der Hinweis „Über unseren Kettler?“ die gekettelten
+  Positionen vor. Der Kettler verschickt bis 200 cm kurze Seite per Paket, darüber per Spedition.
+- **Getestet:** `lieferanten.test.mjs` (neu: 400 × 500, rund 300, ohne Fertigmaß, Direktversand
+  2 × 3 m, Vorschlag bei Ziel Laden), `auftragsverlauf.test.mjs`, `npm test`.
+- **Risiken/Annahmen:** Laut Inhaber lohnt sich der Weg nur, wenn die Ware mit einer ohnehin
+  laufenden Sammellieferung kommt; das prüft die Regel nicht. Wer einen Teppich ausnahmsweise beim
+  Lieferanten ketteln lassen will, wählt im Dialog „Kunden“ oder „Laden“.
+- **Nächste Stufe:** Versand vom Kettler (Paket/Spedition) im Auftragsfluss abbilden.
+
 ## 2026-10-21 · Musteraufkleber auch 50 × 100 mm (zum Ausprobieren)
 
 - **Geändert:** Im Druckfenster „Etikettengröße“ 50 × 50 mm oder 50 × 100 mm; die Wahl merkt sich der
