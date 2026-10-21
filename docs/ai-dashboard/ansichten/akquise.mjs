@@ -179,7 +179,7 @@ function ausschreibungen(a, tag) {
 
 export function viewAkquise() {
   ensureAkquise();
-  const kopf = `<div class="page-head"><div><h1>Genossenschaften &amp; Hausverwaltungen</h1><p class="sub">Hier fragen wir Verlegeaufträge an – und sehen öffentliche Ausschreibungen.</p></div></div>`;
+  const kopf = `<div class="page-head"><div><h1>Genossenschaften &amp; Hausverwaltungen</h1></div></div>`;
   const d = akquise.daten;
   if (!d && akquise.laedt) return kopf + `<div class="empty">Lade Firmenliste …</div>`;
   if (!d || !d.verfuegbar) return kopf + emptyState(d?.hinweis || 'Die Firmenliste ist nicht erreichbar.', d?.befehl || '');
