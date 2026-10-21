@@ -40,6 +40,13 @@ function produkt(o = {}) {
   if (o.mindest != null) service.mindestpreis = { value: o.mindest };
   if (o.inkl) service.kante_inklusive = { value: true };
   if (o.kg) { service.kg_pro_qm = { value: o.kg }; service.max_gewicht_kg = { value: o.maxKg ?? 30 }; }
+  if (o.minSeite != null) service.min_seite_cm = { value: o.minSeite };
+  if (o.formen) service.formen = { value: o.formen };
+  if (o.rollen) {
+    service.einfass_basis = { value: { variants: Object.entries(o.rollen).map(([farbe, cm]) => ({
+      available: true, option1: farbe, metafields: { custom: { rollenbreite: { value: cm / 100 } } },
+    })) } };
+  }
   const custom = { preis_pro_001_qm: { value: o.p001 ?? true } };
   if (o.basis) custom.teppich_basis_daten = { value: o.basis };
   if (o.zs) custom.zuschnitt_von_rolle = { value: { variants: [{}] } };
@@ -130,12 +137,27 @@ test('Marke mit Mindestflaeche 3 m2: naechste Groesse, deren Preis wirklich zum 
   assert.equal(out, '160|230|47472|0|368');
 });
 
-test('Breite je Farbe aus den gespeicherten Basisdaten zaehlt, nicht die groesste des Produkts', async () => {
-  const basis = { v: 1, breite_max: 400, breite: { Sand: 100, Grau: 400 } };
-  const p = produkt({ art: 'Paspelband', mindest: 387, basis });
-  // Sand: nur 100 cm breit -> 160 x 230 passt nicht, kein Beispiel; Grau: 160 x 230.
+test('Breite je Farbe live aus den Rollen wie im Konfigurator, gespeicherte Basisdaten zaehlen nicht', async () => {
+  // Gespeichert waere Sand 400 cm, die Rollen sagen 100 cm - der Konfigurator rechnet live
+  // (live: true) und lehnt 160 x 230 ab, also darf auch das Beispiel es nicht anbieten.
+  const basis = { v: 1, breite_max: 400, breite: { Sand: 400, Grau: 400 } };
+  const p = produkt({ art: 'Paspelband', mindest: 387, basis, rollen: { Sand: 100, Grau: 400 } });
   assert.equal(await beispiel(p, variante({ preis: 129, farbe: 'Sand' }), { aktion: 'nein' }), '');
   assert.equal(await beispiel(p, variante({ preis: 129, farbe: 'Grau' }), { aktion: 'nein' }), '160|230|47472|0|368');
+});
+
+test('Mindestseite (service.min_seite_cm) wie im Konfigurator: zu kleine Masse fallen weg', async () => {
+  const out = await beispiel(produkt({ mindest: 99, minSeite: 100 }), variante({ preis: 85 }), { aktion: 'nein' });
+  // 80 x 150 unterschreitet 100 cm -> naechste Groesse 120 x 170.
+  // 204 Einheiten x 0,85 + 580 x 0,19 Kettelung = 173,40 + 110,20.
+  assert.equal(out, '120|170|28360|0|204');
+});
+
+test('Erste Form im Konfigurator nicht Rechteck: kein Beispiel (Link oeffnete sonst z. B. Rund)', async () => {
+  const v = variante({ preis: 85 });
+  assert.equal(await beispiel(produkt({ mindest: 99, formen: ['Rund', 'Rechteck'] }), v, { aktion: 'nein' }), '');
+  assert.equal(await beispiel(produkt({ mindest: 99, formen: ['Rechteck', 'Rund'] }), v, { aktion: 'nein' }), '80|150|18940|0|120');
+  assert.equal(await beispiel(produkt({ mindest: 99, formen: ['unbekannt', 'Rechteck'] }), v, { aktion: 'nein' }), '80|150|18940|0|120');
 });
 
 test('Streichpreis nur bei sichtbarer Aktion', async () => {

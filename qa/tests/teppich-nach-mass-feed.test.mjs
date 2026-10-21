@@ -101,6 +101,11 @@ test('Konfigurator-Rechnung: Material + Kante, Mindestpreis, Streichpreis wie im
   assert.equal(konfiguratorPreis(ek({ alt11: 100 }), 11, 80, 150).alt, 20740);
   assert.match(konfiguratorPreis(ek(), 99, 80, 150).fehler[0], /nicht angeboten/);
   assert.ok(konfiguratorPreis(ek(), 11, 450, 500).fehler.some((f) => /höchstens 400/.test(f)));
+  // Wie der Konfigurator: Mindestseite und vorgewaehlte erste Form (Codex-Review #1290).
+  assert.ok(konfiguratorPreis({ ...ek(), min_seite_cm: 100 }, 11, 80, 150).fehler.some((f) => /mindestens 100/.test(f)));
+  assert.deepEqual(konfiguratorPreis({ ...ek(), min_seite_cm: 100 }, 11, 120, 170).fehler, []);
+  assert.ok(konfiguratorPreis({ ...ek(), formen: ['rund', 'rechteck'] }, 11, 80, 150).fehler.some((f) => /zuerst rund/.test(f)));
+  assert.deepEqual(konfiguratorPreis({ ...ek(), formen: ['rechteck', 'rund'] }, 11, 80, 150).fehler, []);
 });
 
 test('Zeilen: Titel mit Mass, Endpreis, Link mit Massen, IDs wie die Apps', () => {

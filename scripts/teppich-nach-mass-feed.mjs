@@ -200,13 +200,16 @@ export function konfiguratorPreis(ek, variantId, w, l) {
   const pauschale = (ek.pauschale && ek.pauschale.id && parseInt(ek.pauschale.price, 10) > 0) ? ek.pauschale : null;
   if (ek.pauschale_failed) fehler.push('Pauschale nicht kaufbar');
   if (ek.zuschnitt) fehler.push('Sonderposten mit Rollenzuschnitt');
+  const ersteForm = Array.isArray(ek.formen) ? ek.formen.find(Boolean) : null;
+  if (ersteForm && ersteForm !== 'rechteck') fehler.push(`Konfigurator waehlt zuerst ${ersteForm}, nicht Rechteck`);
+  const minCm = Number(ek.min_seite_cm) > 0 ? Math.round(Number(ek.min_seite_cm)) : 50;
   if (!t.available) fehler.push('Farbe nicht lieferbar - die Seite zeigt keinen Preis');
   const preis = parseInt(t.price, 10);
   if (!(preis > 0)) fehler.push('Variante ohne Preis');
   const maxW = Number(t.max_breite_cm) > 0 ? Number(t.max_breite_cm) : ek.max_breite_cm;
   const kgProQm = Number(ek.kg_pro_qm) > 0 ? Number(ek.kg_pro_qm) : 0;
   const maxKg = Number(ek.max_gewicht_kg) > 0 ? Number(ek.max_gewicht_kg) : 0;
-  fehler.push(...M.pruefeMasse({ form: 'rechteck', w, l, maxW, maxL: ek.max_laenge_cm, maxKg, kgProQm }));
+  fehler.push(...M.pruefeMasse({ form: 'rechteck', w, l, maxW, maxL: ek.max_laenge_cm, minW: minCm, minL: minCm, maxKg, kgProQm }));
 
   const mindestCent = parseInt(ek.mindestpreis_cent, 10) || 0;
   const flaeche = M.abrechnungsflaecheM2('rechteck', w, l);

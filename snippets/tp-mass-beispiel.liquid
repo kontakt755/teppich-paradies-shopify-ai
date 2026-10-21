@@ -11,8 +11,9 @@
   eine Preisabweichung zwischen Feed und Seite.
 
   Groesse: die erste aus 80 x 150, 120 x 170, 160 x 230, 200 x 300 cm, die fuer diese
-  Farbe bestellbar ist (kuerzere Seite bis zur Breite der Farbe, laengere bis
-  service.max_laenge_cm, Versandgewicht) und bei der der Mindestpreis die Menge NICHT
+  Farbe bestellbar ist (kuerzere Seite bis zur Breite der Farbe - live wie im
+  Konfigurator -, laengere bis service.max_laenge_cm, beide ab service.min_seite_cm,
+  Versandgewicht) und bei der der Mindestpreis die Menge NICHT
   anhebt - der Preis gehoert dann wirklich zu diesem Mass (80 x 150 = Einstiegsmass
   des ab-Preises, snippets/tp-teppich-ab-preis; Marken mit Mindestflaeche bekommen
   die naechste passende Groesse).
@@ -27,7 +28,8 @@
 
   Fail closed - keine Ausgabe, wenn der Konfigurator diese Farbe nicht verkaufen
   wuerde: Variante nicht freigegeben (service.einfassen) oder ohne Preis, Kettelservice
-  bzw. Pauschale nicht kaufbar, Sonderposten mit Rollenzuschnitt, kein Mass passt.
+  bzw. Pauschale nicht kaufbar, Sonderposten mit Rollenzuschnitt, erste Form im
+  Konfigurator nicht Rechteck, kein Mass passt.
 
   @param {object} product - der Teppich nach Mass
   @param {object} variant - die Farbe
@@ -52,16 +54,32 @@
     assign tmbsp_preis = variant.price
 
     capture tmbsp_max_b
-      render 'tp-teppich-max-breite', product: product, farbe: variant.option1
+      render 'tp-teppich-max-breite', product: product, farbe: variant.option1, live: true
     endcapture
     assign tmbsp_max_b = tmbsp_max_b | strip | times: 1
     if tmbsp_max_b <= 0
       capture tmbsp_max_b
-        render 'tp-teppich-max-breite', product: product
+        render 'tp-teppich-max-breite', product: product, live: true
       endcapture
       assign tmbsp_max_b = tmbsp_max_b | strip | times: 1
     endif
     assign tmbsp_max_l = product.metafields.service.max_laenge_cm.value | times: 1
+    # Kleinste Seite wie im Konfigurator (blocks/tp-einfass-konfigurator, min_seite_cm).
+    assign tmbsp_min = product.metafields.service.min_seite_cm.value | default: 50 | times: 1 | at_least: 10
+    # Der Konfigurator waehlt die erste Form aus service.formen vor. Nur wenn das das
+    # Rechteck ist, oeffnet der Link genau das Mass, dessen Preis hier steht.
+    assign tmbsp_form = ''
+    for tmbsp_f in product.metafields.service.formen.value
+      assign tmbsp_fk = tmbsp_f | strip | downcase
+      case tmbsp_fk
+        when 'rechteck', 'rund', 'oval', 'schablone', 'skizze'
+          assign tmbsp_form = tmbsp_fk
+          break
+      endcase
+    endfor
+    if tmbsp_form != blank and tmbsp_form != 'rechteck'
+      assign tmbsp_ok = false
+    endif
     assign tmbsp_kg_qm = product.metafields.service.kg_pro_qm.value | default: 0 | times: 1
     assign tmbsp_max_kg = product.metafields.service.max_gewicht_kg.value | default: 0 | times: 1
 
@@ -115,6 +133,9 @@
       assign tmbsp_l = tmbsp_teile[1] | times: 1
       # Breite ist hier immer die kuerzere Seite (wie pruefeMasse: kuerzere gegen Breite).
       if tmbsp_w > tmbsp_max_b or tmbsp_l > tmbsp_max_l
+        continue
+      endif
+      if tmbsp_w < tmbsp_min or tmbsp_l < tmbsp_min
         continue
       endif
       # Versandgewicht (cm2 x kg/m2 gegen kg x 10000) ohne Division - ganzzahlig wie float gleich.
