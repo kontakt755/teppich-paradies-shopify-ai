@@ -201,7 +201,7 @@ function zahlenZeile(q) {
     const z = einkaufZahlen(aktiveAuftraege(d), d, afEintragFuer, id => d.kundeInformiert?.[id] || null);
     teile.push(['Zu bestellen', z.bestellen, '#/einkauf?ab=bestellen'], ['Kunde informieren', z.informieren, '#/einkauf?ab=informieren'], ['Verzug', z.verzug, '#/einkauf?ab=verzug']);
   }
-  if (darfAnsicht('akquise')) teile.push(['Neue Aufträge nachfassen', q.akquise.length, '#/akquise?as=faellig']);
+  if (darfAnsicht('akquise')) teile.push(['Genossenschaften nachfassen', q.akquise.length, '#/akquise?as=faellig']);
   if (!teile.length) return '';
   return `<nav class="heute-zahlen" aria-label="Zahlen des Tages">${teile.map(([l, n, h]) => `<a href="${h}"${n ? '' : ' class="null"'}>${esc(l)} <b>${n}</b></a>`).join('<span aria-hidden="true">·</span>')}</nav>`;
 }

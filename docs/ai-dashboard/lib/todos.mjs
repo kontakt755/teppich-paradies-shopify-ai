@@ -597,7 +597,7 @@ function ausAkquise(quellen) {
   if (!f.length) return [];
   return [{
     id: 'akquise', art: 'akquise', bereich: 'buero', ton: 'warn', alterTage: null,
-    titel: `Neue Aufträge: ${f.length} ${f.length === 1 ? 'Firma' : 'Firmen'} nachfassen`,
+    titel: `Genossenschaften: ${f.length} ${f.length === 1 ? 'Firma' : 'Firmen'} nachfassen`,
     kontext: [f.slice(0, 3).map(x => x.name).join(', '), f.length > 3 ? `+${f.length - 3} weitere` : null].filter(Boolean).join(' · '),
     knopf: { text: 'Ansehen', href: '#/akquise?as=faellig' },
   }];
