@@ -1,5 +1,5 @@
 {% doc %}
-  Passendes Zubehoer auf Bodenseiten: Unterlage, Kleber/Fixierung, Leisten.
+  Passendes Zubehoer auf Bodenseiten: Unterlage, Kleber/Fixierung, Fugen, Leisten.
 
   Regelwerk, Belege und bewusste Luecken: docs/zubehoer-empfehlungen.md.
   Wer hier eine Zeile aendert, aendert dort die Tabelle mit (der Test
@@ -153,9 +153,29 @@
       assign tp_ze_regeln = 'unterlage|antirutsch-unterlage-fuer-teppiche-rollenware|Hält Teppiche und Läufer auf glatten Böden.;unterlage|teppichunterlage-elastisch-rollenware|Für lose aufgelegte Teppiche auf glatten Böden, mehr Gehkomfort.'
   endcase
 
+  # Fugen: bei allen Vinylboeden zusaetzlich Silikon (Anschlussfugen am Belag)
+  # und Acryl (Fuge Sockelleiste - Wand), Vorgabe Shop-Team 2026-10-21.
+  assign tp_ze_fugen_art = ''
+  if tp_ze_typ == 'Klickvinyl' or tp_ze_typ == 'Klebevinyl' or tp_ze_typ == 'Vinyl von der Rolle'
+    assign tp_ze_fugen_art = 'vinyl-fugen'
+  endif
+  assign tp_ze_regeln_fuge = ''
+  case tp_ze_fugen_art
+    when 'vinyl-fugen'
+      assign tp_ze_regeln_fuge = 'fuge|silikon-dichtstoff-dauerelastisch-310-ml|Dauerelastisch für Anschlussfugen am Boden, auch an Designböden und PVC.;fuge|acryl-dichtstoff-ueberstreichbar-310-ml|Überstreichbar für die Fuge zwischen Sockelleiste und Wand.'
+  endcase
+  if tp_ze_regeln_fuge != blank
+    if tp_ze_regeln != blank
+      assign tp_ze_regeln = tp_ze_regeln | append: ';' | append: tp_ze_regeln_fuge
+    else
+      assign tp_ze_regeln = tp_ze_regeln_fuge
+    endif
+  endif
+
   assign tp_ze_eintraege = tp_ze_regeln | split: ';'
   assign tp_ze_quellen_unterlage = 'zubehoer-verlegeunterlagen' | split: ','
   assign tp_ze_quellen_kleber = 'zubehoer-kleber-fixierung,zubehoer-verlegeband' | split: ','
+  assign tp_ze_quellen_fuge = 'zubehoer-bauchemie' | split: ','
 
   assign tp_ze_leisten_coll = collections['bodenleisten']
   assign tp_ze_profile_coll = collections['zubehoer-profile']
@@ -167,16 +187,20 @@
 -%}
 
 {%- capture tp_ze_gruppen -%}
-  {%- for tp_ze_gruppe in (1..2) -%}
+  {%- for tp_ze_gruppe in (1..3) -%}
     {%- liquid
       if tp_ze_gruppe == 1
         assign tp_ze_key = 'unterlage'
         assign tp_ze_label = 'Unterlage'
         assign tp_ze_quellen = tp_ze_quellen_unterlage
-      else
+      elsif tp_ze_gruppe == 2
         assign tp_ze_key = 'kleber'
         assign tp_ze_label = 'Kleber & Fixierung'
         assign tp_ze_quellen = tp_ze_quellen_kleber
+      else
+        assign tp_ze_key = 'fuge'
+        assign tp_ze_label = 'Fugen & Abdichtung'
+        assign tp_ze_quellen = tp_ze_quellen_fuge
       endif
     -%}
     {%- capture tp_ze_items -%}

@@ -11,7 +11,7 @@ const doc = readFileSync(new URL('../../docs/zubehoer-empfehlungen.md', import.m
 /** Regeln im Block: when '<regel>' + assign tp_ze_regeln = '<gruppe|handle|hinweis;...>' */
 function blockRegeln(src) {
   const out = new Map();
-  const rx = /when '([a-z0-9-]+)'\s*\n\s*assign tp_ze_regeln = '([^']*)'/g;
+  const rx = /when '([a-z0-9-]+)'\s*\n\s*assign tp_ze_regeln(?:_fuge)? = '([^']*)'/g;
   for (const m of src.matchAll(rx)) {
     const eintraege = m[2].split(';').map((e) => {
       const [gruppe, handle, hinweis] = e.split('|');
@@ -25,9 +25,9 @@ function blockRegeln(src) {
 /** Empfehlungstabelle im Dokument: | `regel` | Gruppe | `handle` | Beleg | */
 function docRegeln(src) {
   const out = new Map();
-  const rx = /^\| `([a-z0-9-]+)` \| (Unterlage|Kleber) \| `([a-z0-9-]+)` \| (.+) \|$/gm;
+  const rx = /^\| `([a-z0-9-]+)` \| (Unterlage|Kleber|Fuge) \| `([a-z0-9-]+)` \| (.+) \|$/gm;
   for (const m of src.matchAll(rx)) {
-    const gruppe = m[2] === 'Unterlage' ? 'unterlage' : 'kleber';
+    const gruppe = m[2].toLowerCase();
     if (!out.has(m[1])) out.set(m[1], []);
     out.get(m[1]).push({ gruppe, handle: m[3], beleg: m[4] });
   }
@@ -46,7 +46,7 @@ test('jede Empfehlung im Block ist im Regelwerk belegt (Regel, Gruppe, Handle)',
     const belegt = imDoc.get(regel);
     assert.ok(belegt, `Regel ${regel} fehlt in docs/zubehoer-empfehlungen.md`);
     for (const e of eintraege) {
-      assert.ok(['unterlage', 'kleber'].includes(e.gruppe), `${regel}: unbekannte Gruppe ${e.gruppe}`);
+      assert.ok(['unterlage', 'kleber', 'fuge'].includes(e.gruppe), `${regel}: unbekannte Gruppe ${e.gruppe}`);
       assert.ok(e.hinweis && e.hinweis.trim().length > 10, `${regel}/${e.handle}: Hinweis fehlt`);
       const d = belegt.find((x) => x.handle === e.handle);
       assert.ok(d, `${regel}: ${e.handle} steht nicht im Regelwerk`);

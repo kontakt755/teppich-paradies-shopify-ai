@@ -20,7 +20,7 @@ Eine Empfehlung erscheint nur, wenn **beides** belegt ist:
 Trifft keine Regel zu, rendert der Block nichts. Es gibt keinen Fallback und
 keine pauschale Liste. Gezeigt werden nur veröffentlichte und lieferbare
 Zubehörprodukte aus ihren Smart-Collections (`zubehoer-verlegeunterlagen`,
-`zubehoer-kleber-fixierung`, `zubehoer-verlegeband`). Entwürfe fallen still weg.
+`zubehoer-kleber-fixierung`, `zubehoer-verlegeband`, `zubehoer-bauchemie`). Entwürfe fallen still weg.
 
 Die Empfehlung ist ein Link auf die Zubehörseite, kein direkter
 Warenkorb-Knopf: Unterlagen und Kleber werden je m², je lfm oder je Gebinde
@@ -45,6 +45,7 @@ Daten-Stand 2026-10-08, Admin API, aktive Produkte.
 | `teppichboden-rolle-textil` | Typ `Teppichboden`, kein Tag `art: teppichfliese`, Rücken enthält „Textil“ oder „Vlies“, keine belegte Dämmung | 87 |
 | `teppichboden-rolle` | Typ `Teppichboden`, kein Tag `art: teppichfliese`, übrige Rücken | 28 |
 | `teppichfliese` | Typ `Teppichboden`, Tag `art: teppichfliese` | 62 |
+| `vinyl-fugen` | zusätzlich zu den übrigen Regeln: Typ `Klickvinyl`, `Klebevinyl` oder `Vinyl von der Rolle` (Vorgabe Shop-Team 2026-10-21, Issue #1452) | alle Vinylböden |
 | `teppich-lose` | Typ `Teppich nach Maß`, `Wohnteppich` oder `Teppich` | 201 |
 
 „Belegte Dämmung am Boden“ heißt: `custom.trittschallverbesserung` ist gesetzt
@@ -87,6 +88,8 @@ empfohlen.
 | `teppichboden-rolle` | Kleber | `dispersionsfixierung-wasserabloesbar` | „Wasserablösbare Fixierung für Teppichboden und CV-Beläge“ |
 | `teppichboden-rolle` | Kleber | `trockenklebstoff-fuer-bahnenware-rolle-75-cm` | „Für neuen Teppichboden auf bestehendem Parkett, Laminat oder Kunststeinboden“ – Hinweis nennt die Bedingung |
 | `teppichfliese` | Kleber | `dispersionsfixierung-wasserabloesbar` | „Fixierung für Teppichboden“ – Teppichfliesen sind Typ `Teppichboden` |
+| `vinyl-fugen` | Fuge | `silikon-dichtstoff-dauerelastisch-310-ml` | „Für Sockelanschlussfugen an Bodenbelägen aller Art (Designböden, Kautschuk, PVC, Linoleum, Fliesen)“ |
+| `vinyl-fugen` | Fuge | `acryl-dichtstoff-ueberstreichbar-310-ml` | „Fugen zwischen Sockelleiste und Wand“ |
 | `teppich-lose` | Unterlage | `antirutsch-unterlage-fuer-teppiche-rollenware` | Eignung „Unter Teppichen und Läufern auf glatten Böden“ |
 | `teppich-lose` | Unterlage | `teppichunterlage-elastisch-rollenware` | Eignung „Unter lose verlegten Teppichen auf glatten Böden“ |
 
