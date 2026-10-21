@@ -180,7 +180,7 @@ function verwirfDatenspeicher() {
   Object.assign(kunden, {
     suche: null, sucheKey: null, detail: null, detailKey: null,
     rueckrufe: null, bestellungen: null, angebote: null, faelle: null,
-    warenkoerbe: null, notizen: null, notizenKey: null,
+    warenkoerbe: null, notizen: null, notizenKey: null, musterPacken: null,
   });
   Object.assign(lexikon, { liste: null, listeKey: null, produkt: null, produktKey: null });
   shopwache.daten = null;

@@ -1753,3 +1753,29 @@ NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
   Drucken nicht möglich.
 - **Offen:** Hinweis „auch als Klickvinyl“ (gleicher Dekor in anderer Art) – nur mit belegbarer
   Zuordnung, noch nicht gebaut.
+
+## 27. Muster packen (seit 2026-10-21, #1572)
+
+Kunden › Muster packen bündelt alle offenen Musterbestellungen zum Packen. Ohne Porto und ohne
+Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
+
+- **Rechnung:** `lib/muster-packen.mjs` (`musterPackliste`) rechnet rein, ohne Ein-/Ausgabe, und
+  läuft im Server. Auswahl: offen, bezahlt, nicht storniert, keine Testbestellung, nicht erfüllt;
+  je Position nur Muster, deren Auftragsfluss-Status nicht „raus“/„erledigt“ ist. Gruppiert wird
+  mit `kundenSchluessel` (Kundensuche), die Anschrift kommt aus der neuesten Bestellung. Der
+  Aufkleber stammt aus `musteretikettenFuerAuftrag` – keine eigene Zuordnungslogik. „Vorher“ liest
+  `einkauf.produktname/farbnummer/url` der Lexikon-Variante mit derselben SKU bzw. Artikelnummer;
+  widersprüchliche Treffer ergeben nichts statt eines geratenen Namens.
+- **Ablage:** `operations/lib/muster-packen.mjs` schreibt `$TP_PRIVAT_DIR/muster-packen.json`
+  atomar (`{ [packSchluessel]: { zeit, von } }`). Der Schlüssel sind die sortierten Bestell-IDs des
+  Kunden; eine neue Bestellung ergibt einen neuen Schlüssel. Fehlende Datei = nichts gepackt,
+  beschädigte Datei = Fehler 500 statt Überschreiben.
+- **API:** `GET /api/kunden/muster-packen` (nur lesend, angemeldet) und `POST` mit
+  `{ packSchluessel, gepackt }` (Schreibliste in `serve-dashboard.mjs`; Rolle „lesen“ 403, fehlender
+  Schlüssel 400, Schlüssel nicht in der aktuellen Liste 409).
+- **Druck:** derselbe Dialog wie Abschnitt 26 (`oeffneEtikettenDruck`, `allowEditing: false`).
+  Etiketten mit `art: 'adresse'` zeichnet `adressLayout` (`lib/adress-etiketten.mjs`) statt des
+  Musterlayouts: Absender klein mit Linie, Empfänger so groß wie Breite und Höhe erlauben,
+  Inland ohne Land, „Bestellung #…“ unten rechts; passt in 50 × 50 und 50 × 100.
+- **Haken je Muster:** nur `localStorage` (`tp-muster-packen-haken`) – Packhilfe am Gerät, kein
+  gemeinsamer Stand.

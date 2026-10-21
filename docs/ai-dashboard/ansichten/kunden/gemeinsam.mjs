@@ -13,6 +13,7 @@ export const kunden = {
   angebote: null, loadingAngebote: false,
   faelle: null, loadingFaelle: false,
   warenkoerbe: null, loadingWarenkoerbe: false,
+  musterPacken: null, loadingMusterPacken: false,
   notizen: null, loadingNotizen: false, notizenKey: null,
   erweitert: new Set(),
 };

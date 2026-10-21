@@ -1,5 +1,6 @@
 /**
- * "Etiketten drucken": Vorschau und Druck von Muster-Etiketten auf dem Niimbot B1 (50 x 50 oder 50 x 100 mm)
+ * "Etiketten drucken": Vorschau und Druck von Muster-Etiketten (und Adressaufklebern aus "Muster packen")
+ * auf dem Niimbot B1 (50 x 50 oder 50 x 100 mm)
  * direkt aus dem Browser - ohne Installation, damit es am Mac und am Windows-Laptop gleich geht.
  *
  * Verbindung per Web Bluetooth (Hauptweg, der B1 haengt nicht am USB), USB-Kabel (WebSerial)
@@ -12,6 +13,7 @@ import { $, esc, toast } from '../kern/helfer.mjs';
 import { fetchEinkauf } from '../kern/api.mjs';
 import { DRUCK_LIMIT, druckBloecke, druckVorschau } from '../lib/druckliste.mjs';
 import { ETIKETT, ETIKETT_FORMATE, etikettFormat, etikett, etikettFuerPosition, etikettenAusPositionen, handleFuerPosition, layout, originalHandle } from '../lib/muster-etiketten.mjs';
+import { adressLayout } from '../lib/adress-etiketten.mjs';
 
 const SKRIPTE = {
   niimbluelib: { src: 'https://cdn.jsdelivr.net/npm/@mmote/niimbluelib@0.47.1/dist/umd/niimbluelib.min.js', sri: 'sha384-8mcKExXVFyg+JWnhi+HIvqG1HDZoqxglFtztk3Kv5PIGmvcvwBiuF6+Ru4/4Re5T' },
@@ -50,7 +52,8 @@ function zeichne(canvas, e) {
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = '#000'; ctx.textBaseline = 'top';
   const font = (g, f) => `${f ? 'bold ' : ''}${g}px ${SCHRIFT}`;
-  const { texte, linien, qr } = layout(e, (t, g, f) => { ctx.font = font(g, f); return ctx.measureText(t).width; }, format);
+  // Adressaufkleber (Muster packen) haben ein eigenes Layout, gezeichnet wird gleich.
+  const { texte, linien, qr } = (e.art === 'adresse' ? adressLayout : layout)(e, (t, g, f) => { ctx.font = font(g, f); return ctx.measureText(t).width; }, format);
   for (const t of texte) { ctx.font = font(t.groesse, t.fett); ctx.fillText(t.text, t.x, t.y); }
   for (const l of linien) ctx.fillRect(l.x1, l.y, l.x2 - l.x1, 2);
   if (qr && window.qrcode) {
