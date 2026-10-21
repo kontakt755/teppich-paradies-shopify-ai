@@ -525,14 +525,14 @@ function ausAuslauf(quellen, jetzt) {
   const d = quellen.shopwache?.auslauf;
   if (!d?.geprueftAm) return [];
   const tage = tageSeit(d.geprueftAm, jetzt);
-  const basis = { id: 'auslauf', art: 'auslauf', bereich: 'website', alterTage: tage, knopf: { text: 'Produktsuche', href: '#/lexikon' } };
+  const basis = { id: 'auslauf', art: 'auslauf', bereich: 'website', alterTage: tage, knopf: { text: 'Lexikon', href: '#/lexikon' } };
   const befunde = d.befunde || [];
   const weg = befunde.filter(b => b.ergebnis === 'fehlt');
   if (befunde.length) {
     const handles = [...new Set(befunde.flatMap(b => b.handles || []))];
     return [{
       ...basis, ton: weg.length ? 'crit' : 'warn',
-      knopf: { text: 'In der Produktsuche', href: `#/lexikon?${new URLSearchParams({ lq: handles[0] || '' })}` },
+      knopf: { text: 'Im Lexikon', href: `#/lexikon?${new URLSearchParams({ lq: handles[0] || '' })}` },
       titel: weg.length
         ? `Auslauf: ${weg.length} Artikel beim Lieferanten nicht mehr gefunden`
         : `Auslauf-Prüfung: ${befunde.length} ${befunde.length === 1 ? 'Seite' : 'Seiten'} auffällig`,

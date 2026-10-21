@@ -35,7 +35,7 @@ function fallKontakt(f) {
 function fallPunkt(p) {
   const produkte = (p.produkte || []).filter(x => x.handle);
   const nachschlagen = produkte.length
-    ? ` <a class="small" href="#/lexikon?handle=${encodeURIComponent(produkte[0].handle)}" onclick="event.stopPropagation()">in der Produktsuche nachschlagen →</a>`
+    ? ` <a class="small" href="#/lexikon?handle=${encodeURIComponent(produkte[0].handle)}" onclick="event.stopPropagation()">im Lexikon nachschlagen →</a>`
     : '';
   const klasse = p.schritt.dringend === 0 ? 'crit' : p.schritt.dringend === 1 ? 'gap' : 'plain';
   // Wartende Vorgaenge stehen nur in der Karte eines Kunden, der auch etwas zu tun hat:

@@ -107,7 +107,7 @@ function ensureLexikonEtiketten(produkt) {
 }
 
 function musterEtikettenBlock(produkt) {
-  if (produkt.handle === 'kostenloses-muster') return `<section class="card lex-etiketten"><div class="card-head"><h2>Musteraufkleber</h2></div><p>Für den Aufkleber bitte das konkrete Produkt in der Produktsuche öffnen. Dort sind Farbe, Artikelnummer und Produktlink hinterlegt.</p><a class="btn" href="#/lexikon">Produkt suchen</a></section>`;
+  if (produkt.handle === 'kostenloses-muster') return `<section class="card lex-etiketten"><div class="card-head"><h2>Musteraufkleber</h2></div><p>Für den Aufkleber bitte das konkrete Produkt im Lexikon öffnen. Dort sind Farbe, Artikelnummer und Produktlink hinterlegt.</p><a class="btn" href="#/lexikon">Produkt suchen</a></section>`;
   ensureLexikonEtiketten(produkt);
   if (lexikon.loadingEtiketten) return `<section class="card lex-etiketten"><div class="card-head"><h2>Musteraufkleber</h2></div><p role="status">Lade die Angaben für den Aufkleber …</p></section>`;
   const liste = lexikon.etiketten;
@@ -215,7 +215,7 @@ function viewLexikonListe() {
   const toolbar = `<div class="toolbar search-hero"><input type="search" placeholder="Was hat der Kunde gesagt? Produktname, Farbe, SKU oder Artikelnummer …" value="${esc(q)}" data-param="lq" aria-label="Produkte durchsuchen"></div>`;
   const d = lexikon.liste;
   if (!d && lexikon.loadingListe) return toolbar + `<div class="empty">Lade Produkte …</div>`;
-  if (d?.fehler) return toolbar + stoerungState(d, 'Die Produktsuche');
+  if (d?.fehler) return toolbar + stoerungState(d, 'Das Lexikon');
   if (!d || !d.verfuegbar) {
     const hinweis = `${d?.hinweis || 'Noch keine Daten exportiert.'}${d?.befehl ? ` Befehl: ${d.befehl}` : ''}`;
     return toolbar + emptyState('Keine Produktdaten verfügbar.', hinweis);
@@ -623,7 +623,7 @@ function offeneBestellungenBlock(offene = [], wartende = []) {
 
 function viewLexikonDetail(handle) {
   ensureLexikonProdukt(handle);
-  const zurueck = `<p style="margin:0"><a class="lex-zurueck" href="#" data-lex-zurueck>← Zurück zur Produktsuche</a></p>`;
+  const zurueck = `<p style="margin:0"><a class="lex-zurueck" href="#" data-lex-zurueck>← Zurück zum Lexikon</a></p>`;
   const d = lexikon.produktKey === handle ? lexikon.produkt : null;
   if (!d) return zurueck + `<div class="empty">Lade Produkt …</div>`;
   if (!d || !d.verfuegbar) return zurueck + emptyState('Produkt nicht gefunden.', d?.hinweis || 'Handle prüfen.');
@@ -653,14 +653,14 @@ function viewLexikonDetail(handle) {
 
 export function viewLexikon() {
   if (state.capabilities.mode !== 'local') {
-    return `<div class="page-head"><div><h1>Produktsuche</h1><p class="sub">Hier findest du zum Produktnamen des Kunden das Original beim Lieferanten.</p></div></div>
+    return `<div class="page-head"><div><h1>Lexikon</h1><p class="sub">Hier findest du zum Produktnamen des Kunden das Original beim Lieferanten.</p></div></div>
       ${emptyState('Nur lokal im Betrieb verfügbar.', 'Diese Ansicht liest private Einkaufsdaten, die nie im öffentlichen Repository landen. Auf dem Mac starten: npm run dashboard')}`;
   }
   const handle = state.route.params.get('handle');
   if (state.route.params.get('tab') === 'druckliste') return viewMusterDruckliste();
   if (state.route.params.get('tab') === 'etiketten') return viewMusterEtikettenStatus();
   const drucklisteLink = '<p class="lex-druckliste-link"><a class="btn" href="#/lexikon?tab=druckliste">Gemeinsame Druckliste</a><a class="btn" href="#/lexikon?tab=etiketten">Aufkleber prüfen</a></p>';
-  const head = `<div class="page-head"><div><h1>Produktsuche</h1><p class="sub">Hier findest du zum Produktnamen des Kunden das Original beim Lieferanten samt Bestelldaten.</p></div></div>`;
+  const head = `<div class="page-head"><div><h1>Lexikon</h1><p class="sub">Hier findest du zum Produktnamen des Kunden das Original beim Lieferanten samt Bestelldaten.</p></div></div>`;
   // Im Produkt entfaellt der erklaerende Seitenkopf: am Handy schob er Name und Preis aus dem
   // ersten Bildschirm. "Lexikon" steht weiter in der Kopfzeile.
   return drucklisteLink + (handle ? viewLexikonDetail(handle) : head + viewLexikonListe());

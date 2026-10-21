@@ -412,7 +412,7 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
     try {
       const produkt = handle ? await lexikonProdukt(handle) : null;
       if (!aktuell(k) || $('#etkForm') !== form) return; // Dialog inzwischen geschlossen.
-      if (handle && !produkt) status('Produkt nicht in der Produktsuche gefunden – nur die eingetragenen Angaben.');
+      if (handle && !produkt) status('Produkt nicht im Lexikon gefunden – nur die eingetragenen Angaben.');
       const ausLexikon = etikettFuerPosition({ istMuster: true, handle, farbe: wert('farbe'), musterQuelle: { sku: wert('sku') } }, produkt);
       const neu = etikett({
         serie: wert('serie') || ausLexikon.serie, farbe: wert('farbe') || ausLexikon.farbe,

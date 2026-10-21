@@ -21,7 +21,7 @@ import { verwirfHeuteDaten } from '../ansichten/heute/daten.mjs';
 // Ohne Eintrag stuende hier der interne Schluessel ('warenkoerbe') - die vier
 // Teile kamen spaeter dazu und fehlten in dieser Liste.
 const AKTUALISIERUNG_TEIL_LABEL = {
-  lexikon: 'Produktsuche', bestellungen: 'Bestellübersicht', kennzahlen: 'Kennzahlen',
+  lexikon: 'Lexikon', bestellungen: 'Bestellübersicht', kennzahlen: 'Kennzahlen',
   kunden: 'Kunden', angebote: 'Angebote', warenkoerbe: 'Liegengebliebene Warenkörbe', bestand: 'Lagerbestand',
 };
 

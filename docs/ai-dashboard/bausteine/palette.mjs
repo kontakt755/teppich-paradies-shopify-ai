@@ -58,7 +58,7 @@ function paletteItems(q) {
     const offen = p.offeneBestellungen ? `${p.offeneBestellungen} offene Bestellung${p.offeneBestellungen === 1 ? '' : 'en'}` : null;
     items.push({ kind: 'Produkt', label: p.titel, sub: [offen, p.produktgruppe].filter(Boolean).join(' · ') || undefined, treffer: true, run: () => navigate('lexikon', { handle: p.handle }) });
   }
-  const views = [['heute', 'Heute'], ['einkauf', 'Bestellen beim Lieferanten'], ['kunden', 'Kunden'], ['lexikon', 'Produktsuche'], ['arbeit', 'Technik (GitHub)'], ['freigaben', 'Entscheidungen'], ['bereiche', 'Bereiche'], ['insights', 'Kennzahlen'], ['aktivitaet', 'Verlauf'], ['ratgeber', 'Ratgeber'], ['organisation', 'Aufgaben'], ['akquise', 'Neue Aufträge'], ['shopwache', 'Shop-Kontrolle'], ['bildrechte', 'Bildrechte (Herkunft, Bildgröße, ALT-Text)'], ['hilfe', 'Hilfe: So arbeitest du damit']];
+  const views = [['heute', 'Heute'], ['einkauf', 'Bestellen beim Lieferanten'], ['kunden', 'Kunden'], ['lexikon', 'Lexikon'], ['arbeit', 'Technik (GitHub)'], ['freigaben', 'Entscheidungen'], ['bereiche', 'Bereiche'], ['insights', 'Kennzahlen'], ['aktivitaet', 'Verlauf'], ['ratgeber', 'Ratgeber'], ['organisation', 'Aufgaben'], ['akquise', 'Neue Aufträge'], ['shopwache', 'Shop-Kontrolle'], ['bildrechte', 'Bildrechte (Herkunft, Bildgröße, ALT-Text)'], ['hilfe', 'Hilfe: So arbeitest du damit']];
   for (const [k, l] of views) if (darfAnsicht(k)) items.push({ kind: 'Ansicht', label: l, run: () => navigate(k) });
   items.push({ kind: 'Ansicht', label: 'Vorbereiten: E-Mail, Angebot oder Recherche', run: () => navigate('prozesse') });
   for (const [prozess, label] of [['email', 'E-Mail vorbereiten'], ['angebot', 'Angebot vorbereiten'], ['recherche', 'Recherche starten']]) {
