@@ -57,7 +57,7 @@ gebraeuchlich), Erfassen.
   „AB 14.10.“ / „LS 16.10.“ (`ART_KURZ` in `lib/lieferbelege.mjs`), die
   Spaltenkoepfe sind ausgeschrieben.
 
-- **Großbrief vorbereiten:** Adresse und gemessenen Umschlag prüfen; kauft kein Porto und bucht keinen Versand.
+- **Großbrief vorbereiten:** Gewicht und Maße je Umschlag speichern und prüfen; kauft kein Porto und bucht keinen Versand.
 
 ## Bestellungen und Packstation (22.10.2026)
 

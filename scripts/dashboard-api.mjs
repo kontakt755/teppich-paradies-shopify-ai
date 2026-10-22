@@ -95,6 +95,7 @@ import { etikettenAusLexikon } from '../docs/ai-dashboard/lib/lexikon-etiketten.
 import { suchbegriffe, lexikonTreffer, nurUeberTitel } from '../docs/ai-dashboard/lib/lexikon-suche.mjs';
 import { musteretikettenFuerAuftrag } from '../docs/ai-dashboard/lib/bestellungs-musteretiketten.mjs';
 import { musterEtikettenStatus } from '../docs/ai-dashboard/lib/muster-etiketten-status.mjs';
+import { grossbriefPfad, leseGrossbriefe, grossbriefStand, speichereGrossbrief, GrossbriefSpeicherFehler } from '../operations/lib/muster-grossbrief.mjs';
 import { musterPackliste } from '../docs/ai-dashboard/lib/muster-packen.mjs';
 import { musterPackenPfad, setzeGepackt, setzeHaken, setzeKlaeren, leseStand as leseMusterPackStand } from '../operations/lib/muster-packen.mjs';
 
@@ -1733,7 +1734,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       try { stand = leseMusterPackStand(musterPackenPfad(dir)); } catch (e) { throw new ApiError(500, e.message); }
       // Lieferantennamen nur aus den privaten Stammdaten; ohne Eintrag bleibt das Kuerzel.
       const stammdaten = leseStammdaten(stammdatenPfad(dir));
-      return { verfuegbar: true, ...musterPackliste({
+      const liste = musterPackliste({
         auftraege: modell.auftraege || [],
         produkte: new Map(this._lexikonProdukte().map(p => [p.handle, p])),
         statusVon: (orderId, lineItemId) => status[positionKey(orderId, lineItemId)]?.status || null,
@@ -1741,7 +1742,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         gepackt: stand.gepackt, haken: stand.haken, klaeren: stand.klaeren,
         lieferantVon: id => stammdatenFuer(stammdaten, id).name,
         jetzt: now(),
-      }) };
+      });
+      try {
+        const gespeicherte = leseGrossbriefe(grossbriefPfad(dir));
+        return { verfuegbar: true, ...liste, kunden: liste.kunden.map(k => ({ ...k, grossbrief: grossbriefStand(k, gespeicherte) })) };
+      } catch (e) { throw new ApiError(500, e.message); }
     },
 
     /**
@@ -1756,6 +1761,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const pk = typeof payload?.packSchluessel === 'string' ? payload.packSchluessel.trim() : '';
       if (!pk) throw new ApiError(400, 'Kein Kunde angegeben.');
       const aktion = payload.aktion ?? 'gepackt';
+      if (aktion === 'grossbrief') {
+        const kunde = (this.kundenMusterPacken().kunden || []).find(k => k.packSchluessel === pk);
+        if (!kunde || kunde.grossbrief.kontext !== payload.kontext) throw new ApiError(409, 'Bestellungen, Muster oder Adresse haben sich geändert. Bitte neu öffnen.');
+        try {
+          return { ok: true, grossbrief: speichereGrossbrief(grossbriefPfad(privatDirPath || privatDir()), kunde.grossbrief.kontext, payload.version, payload.messung, { von: benutzer?.name || benutzer?.kuerzel || 'Inhaber', jetzt: now() }) };
+        } catch (e) { throw new ApiError(e instanceof GrossbriefSpeicherFehler ? e.status : 500, e.message); }
+      }
       if (!['gepackt', 'haken', 'klaeren'].includes(aktion)) throw new ApiError(400, 'Unbekannte Aktion.');
       const wert = aktion === 'gepackt' ? payload.gepackt : aktion === 'haken' ? payload.an : payload.klaeren;
       if (typeof wert !== 'boolean') throw new ApiError(400, `Angabe „${aktion === 'haken' ? 'an' : aktion}“ fehlt.`);

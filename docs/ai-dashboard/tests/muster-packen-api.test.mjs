@@ -165,3 +165,79 @@ test('Restumfangfreigabe kann Direktversand und fehlende Haken niemals umgehen',
   };
   assert.throws(() => api.kundenMusterPackenSetzen({ packSchluessel: k.packSchluessel, gepackt: true, restumfangGeprueft: true }), e => e.status === 409);
 });
+
+const messungGrossbrief = { gramm: '499,5', dickeMm: '20', laengeMm: '353', breiteMm: '250' };
+const gbPayload = (k, messung = messungGrossbrief) => ({ aktion: 'grossbrief', packSchluessel: k.packSchluessel, kontext: k.grossbrief.kontext, version: k.grossbrief.version, messung });
+
+test('Grossbrief bleibt nach neuer API-Instanz erhalten, ohne Pack-/Versand- oder externe Aktionen', t => {
+  const { api, dir } = umgebung(t);
+  const k = api.kundenMusterPacken().kunden[0];
+  const vorher = fs.readFileSync(path.join(dir, 'bestelluebersicht/orders.json'), 'utf8');
+  const r = api.kundenMusterPackenSetzen(gbPayload(k), { name: 'Laden', rolle: 'mitarbeiter' });
+  assert.equal(r.grossbrief.version, 1);
+  const neueApi = createApi({ root: dir, privatDirPath: dir, gh: () => assert.fail('kein GitHub-Aufruf'), shopifyZugang: () => assert.fail('kein Shopify-Zugriff') });
+  assert.deepEqual(neueApi.kundenMusterPacken().kunden[0].grossbrief.messung, messungGrossbrief);
+  assert.equal(neueApi.kundenMusterPacken().kunden[0].gepackt, null);
+  assert.equal(fs.existsSync(path.join(dir, 'muster-packen.json')), false);
+  assert.equal(fs.existsSync(path.join(dir, 'auftragsstatus.json')), false);
+  assert.equal(fs.readFileSync(path.join(dir, 'bestelluebersicht/orders.json'), 'utf8'), vorher);
+  assert.equal(fs.statSync(path.join(dir, 'muster-grossbrief.json')).mode & 0o777, 0o600);
+});
+
+test('Grossbrief: lesen darf nicht speichern, veraltete Version verliert keine fremde Aenderung', t => {
+  const { api, dir } = umgebung(t);
+  const k = api.kundenMusterPacken().kunden[0];
+  assert.throws(() => api.kundenMusterPackenSetzen(gbPayload(k), { rolle: 'lesen' }), e => e.status === 403);
+  assert.equal(fs.existsSync(path.join(dir, 'muster-grossbrief.json')), false);
+  api.kundenMusterPackenSetzen(gbPayload(k), { rolle: 'mitarbeiter' });
+  assert.throws(() => api.kundenMusterPackenSetzen(gbPayload(k, { ...messungGrossbrief, gramm: '100' })), e => e.status === 409);
+  assert.equal(api.kundenMusterPacken().kunden[0].grossbrief.messung.gramm, '499,5');
+});
+
+test('Grossbrief: andere Adresse, Inhalt oder Bestellgruppe erbt keine Messungen', t => {
+  const { api, dir } = umgebung(t);
+  const k = api.kundenMusterPacken().kunden[0];
+  api.kundenMusterPackenSetzen(gbPayload(k));
+  const file = path.join(dir, 'bestelluebersicht/orders.json');
+  const original = JSON.parse(fs.readFileSync(file, 'utf8'));
+  for (const aendern of [
+    d => { for (const o of d.orders) o.shippingAddress.address1 = 'Anderer Testweg 3'; },
+    d => { d.orders[0].lineItems.nodes[0].currentQuantity = 2; d.orders[0].lineItems.nodes[0].unfulfilledQuantity = 2; },
+    d => { d.orders.push(bestellung(803, '2026-10-21T06:00:00Z')); },
+  ]) {
+    const d = structuredClone(original); aendern(d); fs.writeFileSync(file, JSON.stringify(d));
+    const neu = createApi({ root: dir, privatDirPath: dir });
+    const n = neu.kundenMusterPacken().kunden[0];
+    assert.equal(n.grossbrief.version, 0);
+    assert.equal(n.grossbrief.messung.gramm, '');
+    assert.throws(() => neu.kundenMusterPackenSetzen(gbPayload(k)), e => e.status === 409);
+  }
+});
+
+test('Grossbrief: unvollstaendige Messwerte als Entwurf, ungueltige Payloads ohne Schreiben', t => {
+  const { api, dir } = umgebung(t);
+  let k = api.kundenMusterPacken().kunden[0];
+  const entwurf = { gramm: '12,', dickeMm: '', laengeMm: '', breiteMm: '' };
+  api.kundenMusterPackenSetzen(gbPayload(k, entwurf));
+  k = api.kundenMusterPacken().kunden[0];
+  assert.deepEqual(k.grossbrief.messung, entwurf);
+  const file = path.join(dir, 'muster-grossbrief.json');
+  const vorher = fs.readFileSync(file, 'utf8');
+  for (const m of [null, {}, { ...entwurf, gramm: '<script>' }, { ...entwurf, gramm: '1'.repeat(13) }, { ...entwurf, gramm: 12 }, { ...entwurf, gramm: '1e2' }]) {
+    assert.throws(() => api.kundenMusterPackenSetzen(gbPayload(k, m)), e => e.status === 400);
+    assert.equal(fs.readFileSync(file, 'utf8'), vorher);
+  }
+  assert.throws(() => api.kundenMusterPackenSetzen({ ...gbPayload(k), version: -1 }), e => e.status === 400);
+});
+
+test('Grossbrief: beschaedigte Ablage bleibt erhalten statt leer ueberschrieben zu werden', t => {
+  const { api, dir } = umgebung(t);
+  const k = api.kundenMusterPacken().kunden[0];
+  const file = path.join(dir, 'muster-grossbrief.json');
+  for (const text of ['', '{kaputt', '[]', '{"eintraege": []}', '{"eintraege":{"falsch":{}}}']) {
+    fs.writeFileSync(file, text);
+    assert.throws(() => api.kundenMusterPacken(), e => e.status === 500);
+    assert.throws(() => api.kundenMusterPackenSetzen(gbPayload(k)), e => e.status === 500);
+    assert.equal(fs.readFileSync(file, 'utf8'), text);
+  }
+});
