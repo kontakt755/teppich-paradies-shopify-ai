@@ -1,5 +1,5 @@
 {% doc %}
-  Hinweis "Sockelleiste zum halben Preis" auf Klick- und Klebevinyl.
+  Hinweis "Sockelleiste inklusive" auf Klick- und Klebevinyl.
 
   Gehoert zum automatischen Shopify-Rabatt "Vinyl-Paket: Sockelleiste zum
   halben Preis" (#1452, Freigabe Inhaber 20.10.2026): je 3 Pakete Klick- oder
@@ -12,14 +12,14 @@
   capture lph_gilt
     render 'tp-leisten-paket', product: product
   endcapture
-  assign lph_leiste = all_products['faventa-sockelleiste']
+  assign lph_leiste = collections['bodenleisten']
 -%}
 
 {%- if block.settings.aktiv and lph_gilt contains 'ja' -%}
   <div class="tp-lph" {{ block.shopify_attributes }}>
-    <p class="tp-lph__titel"><span class="tp-lph__badge">−50&nbsp;%</span> Sockelleiste zum halben Preis</p>
+    <p class="tp-lph__titel"><span class="tp-lph__badge">Gratis</span> Sockelleiste inklusive</p>
     <p class="tp-lph__text">
-      Je 3 Pakete erhalten Sie 2 Stangen Faventa oder Nerissa (je 2,4&nbsp;m) zum halben Preis. Legen Sie die Leisten zusätzlich in den Warenkorb; der Rabatt wird automatisch abgezogen.
+      Ab 10&nbsp;m² gibt es je Paket eine Sockelleiste (2,4&nbsp;m) dazu: weiß 58&nbsp;mm gratis, jede andere Leiste – auch im Dekor Ihres Bodens – mit 11,90&nbsp;€ Nachlass. Der Rabatt wird im Warenkorb automatisch abgezogen.
     </p>
     <details>
       <summary>Aktionsbedingungen</summary>
