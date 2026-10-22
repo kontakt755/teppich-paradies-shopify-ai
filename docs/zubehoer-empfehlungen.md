@@ -40,6 +40,7 @@ Daten-Stand 2026-10-08, Admin API, aktive Produkte.
 | `parkett-3schicht-nutfeder` | Typ `Parkett`, `belagsart` enthält „3-Schicht“, „Nut und Feder“ und „vollflächig verklebt“ | 38 |
 | `klickvinyl-ohne-daemmung` | Typ `Klickvinyl`, `belagsart` „Klick-Vinyl …“, **und** `custom.daemmung_integriert` = false, keine belegte Dämmung | 0 (alle Klick-Vinyl-Linien haben laut Datenblatt eine integrierte Dämmung, `custom.daemmung_integriert` = true) |
 | `klebevinyl` | Typ `Klebevinyl`, `belagsart` enthält „zum Vollverkleben“ | 179 |
+| `klebevinyl-daemmmatte` | wie `klebevinyl`, zusätzlich `custom.marke` ist Esterno, Grenvado, Norlando, Ulmavo oder Gilardo – die Eigenmarken des einzigen Herstellers, für dessen Böden die Dämmmatte laut Verlegeanleitung freigegeben ist (Issue #1452; neue Marken dieses Herstellers hier und im Block nachtragen) | 20 |
 | `vinyl-rolle` | Typ `Vinyl von der Rolle`, Tag `material: pvc` | 118 |
 | `kautschuk-bis-2-5mm` | Typ `Kautschukboden`, `custom.gesamtstarke` höchstens 2,5 mm | 1 (Gommara, 2 mm; seit 2026-10-10) |
 | `teppichboden-rolle-textil` | Typ `Teppichboden`, kein Tag `art: teppichfliese`, Rücken enthält „Textil“ oder „Vlies“, keine belegte Dämmung | 87 |
@@ -78,6 +79,9 @@ empfohlen.
 | `klickvinyl-ohne-daemmung` | Unterlage | `trittschalldaemmung-xps-fuer-laminat-und-parkett` | Eignung „Unter Laminat, Parkett und Klick-Vinyl“ |
 | `klebevinyl` | Kleber | `haftfixierung-fuer-designboeden` | „geeignet für maßstabile PVC-Designbeläge“ |
 | `klebevinyl` | Kleber | `universal-verlegeband-70-mm` | „Für die Verlegung von PVC-haltigen Bodenbelägen und Designböden in Form von Fliesen und Planken. Zur Randverlegung …“ |
+| `klebevinyl-daemmmatte` | Unterlage | `selbstklebende-daemmmatte-fuer-klebevinyl-1-8-mm` | Herstellerdatenblatt: „oben selbstklebend, bis 15 dB, für Fußbodenheizung geeignet“ |
+| `klebevinyl-daemmmatte` | Kleber | `haftfixierung-fuer-designboeden` | wie `klebevinyl` |
+| `klebevinyl-daemmmatte` | Kleber | `universal-verlegeband-70-mm` | wie `klebevinyl` |
 | `vinyl-rolle` | Kleber | `nass-und-haftklebstoff-fuer-elastische-belaege` | „Für homogene und heterogene PVC-, CV-Beläge …“ |
 | `vinyl-rolle` | Kleber | `trockenklebstoff-fuer-bahnenware-rolle-75-cm` | „Für neue PVC- und CV-Beläge auf bestehendem Kunststein oder Terrazzo“ – Hinweis nennt die Bedingung |
 | `kautschuk-bis-2-5mm` | Kleber | `nass-und-haftklebstoff-fuer-elastische-belaege` | „Kautschuk-Beläge bis 2,5 mm Dicke … bei Stuhlrollenbelastung“ |
