@@ -2,6 +2,17 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-22 · Lieferantenlisten nach überfälligen Posten
+
+- **Geändert:** Bestellen › Je Lieferant: rot überfällig → bernstein überfällig → zu bestellen → Rest,
+  darin die längste Wartezeit zuerst (vorher: zu bestellen zuerst, dann A–Z). Lieferantenübersicht
+  (`lieferantenUebersicht`): mehr rote, dann mehr bernsteinfarbene Posten, dann älteste offene
+  Bestellung zuerst; ohne offene Posten A–Z. „Nicht zugeordnet“ bleibt hinten.
+- **Getestet:** neuer Fall in `operations/tests/lieferanten.test.mjs`; `dashboard:test` und `npm test`
+  grün; `dashboard:pruefen` für Einkauf ohne Befund.
+- **Risiken/Annahmen:** keine; nur die Reihenfolge.
+- **Nächste Stufe:** –
+
 ## 2026-10-22 · Arbeitslisten nach Wichtigkeit
 
 - **Geändert:** Wo eine Arbeitsliste noch alphabetisch oder „neueste zuerst“ stand, steht jetzt das

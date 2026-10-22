@@ -162,9 +162,13 @@ export function lieferantenKarten({ gruppen = [], musterGruppen = [], lieferante
       },
     };
   });
-  // Oben steht, wo heute etwas zu tun ist: erst zu bestellen, dann ueberfaellig, dann der Rest.
-  const rang = k => (k.zahlen.zuBestellen + k.zahlen.musterOffen ? 0 : k.ueberfaellig.stufe || k.liegtBeiUns.stufe ? 1 : k.offenGesamt ? 2 : 3);
-  return karten.sort((a, b) => (a.id === UNGEKLAERT) - (b.id === UNGEKLAERT) || rang(a) - rang(b) || a.id.localeCompare(b.id));
+  // Oben steht, wo es am dringendsten ist (Inhaber 22.10.): rot ueberfaellig, dann bernstein
+  // ueberfaellig, dann zu bestellen, dann der Rest; darin die laengste Wartezeit zuerst, nicht A-Z.
+  const STUFE = { crit: 0, warn: 1 };
+  const ueber = k => Math.min(STUFE[k.ueberfaellig.stufe] ?? 9, STUFE[k.liegtBeiUns.stufe] ?? 9);
+  const rang = k => (ueber(k) < 9 ? ueber(k) : k.zahlen.zuBestellen + k.zahlen.musterOffen ? 2 : k.offenGesamt ? 3 : 4);
+  const maxTage = k => Math.max(k.ueberfaellig.maxTage ?? -1, k.liegtBeiUns.maxTage ?? -1);
+  return karten.sort((a, b) => (a.id === UNGEKLAERT) - (b.id === UNGEKLAERT) || rang(a) - rang(b) || maxTage(b) - maxTage(a) || a.id.localeCompare(b.id));
 }
 
 /** Passt eine Karte zum Auftragsfluss-Filter (af)? Ohne Filter: alles, was noch Arbeit macht. */
