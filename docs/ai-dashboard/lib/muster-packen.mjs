@@ -52,9 +52,14 @@ function vorherIndex(produkte) {
       const e = v.einkauf || {};
       for (const sku of new Set([text(v.sku), text(e.artikelnummer)].filter(Boolean))) {
         const wert = { produktname: belegt(e.produktname) ? text(e.produktname) : null, farbnummer: belegt(e.farbnummer) ? text(e.farbnummer) : null, url: belegt(e.url) ? text(e.url) : null,
-          kollektion: belegt(e.kollektion) ? text(e.kollektion) : null, lieferant: belegt(e.lieferant) ? text(e.lieferant) : null, bild: farbBild(p, v) };
+          kollektion: belegt(e.kollektion) ? text(e.kollektion) : null, lieferant: belegt(e.lieferant) ? text(e.lieferant) : null };
+        const bild = farbBild(p, v);
         const alt = je.get(sku);
-        je.set(sku, alt && JSON.stringify(alt) !== JSON.stringify(wert) ? 'mehrdeutig' : wert);
+        // Dieselbe SKU in mehreren Breiten traegt oft je ein eigenes Bild derselben Farbe: das Bild
+        // entscheidet nicht ueber "mehrdeutig"; bei verschiedenen Bildern gilt das erste.
+        if (alt === 'mehrdeutig') continue;
+        if (alt && JSON.stringify({ ...alt, bild: null }) !== JSON.stringify({ ...wert, bild: null })) { je.set(sku, 'mehrdeutig'); continue; }
+        je.set(sku, { ...wert, bild: alt?.bild || bild });
       }
     }
   }
