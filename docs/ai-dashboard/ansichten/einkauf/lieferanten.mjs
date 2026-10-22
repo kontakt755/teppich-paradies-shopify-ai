@@ -343,11 +343,11 @@ function musterWahlListe(m) {
 const LIEFERZIEL_TEXT = { laden: 'Lieferung in den Laden', kunde: 'Lieferung direkt an den Kunden', baustelle: 'Lieferung direkt an die Baustelle', kettler: 'Lieferung an unseren Kettler' };
 
 /**
- * Ware mit Ketteln, die sich fuer unseren Kettler anbietet (Kunde in der Naehe oder bis 2 m).
+ * Ware mit Ketteln, die sich fuer unseren Kettler anbietet (gekettelt mit Fertigmass oder Kunde in der Naehe).
  * Nur ein Hinweis - umgeschaltet wird mit "Kettler" oben; der Server begruendet je Position.
  */
 function kettlerHinweis(m) {
-  if (m.kettlerAutomatisch) return '<p class="small muted lf-kettler">Nach unserer Regel: Gekettelte Maßteppiche unter 2 m kettelt unser Kettler. Der Lieferant schickt sie ungekettelt im Fertigmaß dorthin, wir holen sie dort ab.</p>';
+  if (m.kettlerAutomatisch) return '<p class="small muted lf-kettler">Nach unserer Regel: Gekettelte Maßteppiche kettelt unser Kettler. Der Lieferant schickt sie ungekettelt im Fertigmaß dorthin, wir holen sie dort ab.</p>';
   const liste = m.kettlerVorschlag || [];
   if (m.art !== 'ware' || !m.kettlerMoeglich || m.lieferziel === 'kettler' || !liste.length) return '';
   return `<div class="notice lf-kettler"><strong>Über unseren Kettler? (${liste.length})</strong>
@@ -356,7 +356,7 @@ function kettlerHinweis(m) {
 }
 
 /**
- * Lieferziel-Knoepfe. Mit Kettler gibt es "Automatisch" (Regel: unter 2 m zum Kettler, Rest
+ * Lieferziel-Knoepfe. Mit Kettler gibt es "Automatisch" (Regel: gekettelt zum Kettler, Rest
  * normal) - die anderen Knoepfe schicken die ganze Bestellung an ein Ziel.
  */
 function zielChips(m) {

@@ -565,6 +565,27 @@ test('lexikonListe sucht ueber Produktname, Handle, SKU, Lieferanten-Artikelnumm
   assert.equal(api.lexikonListe({ q: 'nichts-passt-hier' }).treffer.count, 0);
 });
 
+test('lexikonListe: mehrere Woerter und angeklebte Nummer, Karte nennt passende Farbe und Lieferantennamen', () => {
+  const root = tmpRoot();
+  const dir = lexikonFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.lexikonListe({ q: 'Traumteppich Trend024' });
+  assert.equal(r.treffer.count, 1);
+  const karte = r.treffer.items[0];
+  assert.equal(karte.handle, 'traum-teppich-grau');
+  assert.deepEqual(karte.passend, [{ farbe: 'Beige', farbnummer: '024', artikelnummer: 'A-4712' }]);
+  assert.equal(karte.lieferantName, 'Traumteppich', 'Treffer kam ueber den Lieferantennamen');
+  // Farbnummer 023 trifft die Farbe Grau und das Muster dazu (ueber das Original)
+  assert.deepEqual(api.lexikonListe({ q: 'trend 23' }).treffer.items.map(i => i.handle).sort(), ['muster-traum-teppich-grau', 'traum-teppich-grau']);
+  // Ohne Farbnummer passen alle Farben - bei wenigen Farben stehen sie trotzdem samt Nummer da
+  const alle = api.lexikonListe({ q: 'Traumteppich Trend' }).treffer.items.find(i => i.handle === 'traum-teppich-grau');
+  assert.deepEqual(alle.passend.map(f => f.farbnummer), ['023', '024']);
+  // ueber den Shop-Titel gesucht: keine Farbliste
+  assert.deepEqual(api.lexikonListe({ q: 'Traum-Teppich' }).treffer.items.find(i => i.handle === 'traum-teppich-grau').passend, []);
+  // Ueber den Shop-Titel gefunden: kein Lieferantenname noetig
+  assert.equal(api.lexikonListe({ q: 'traum-teppich grau' }).treffer.items.find(i => i.handle === 'traum-teppich-grau').lieferantName, null);
+});
+
 test('lexikonListe paginiert serverseitig', () => {
   const root = tmpRoot();
   const dir = lexikonFixture(root);

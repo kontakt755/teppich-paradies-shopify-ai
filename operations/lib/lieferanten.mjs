@@ -34,11 +34,6 @@ export const MUSTER_LIEFERUNG = Object.freeze(['kunde', 'laden']);
 // Ware kann zusaetzlich an unseren Kettelservice gehen (Inhaber 2026-10-19): Zuschnitt
 // ungekettelt dorthin, wir ketteln dort guenstiger und liefern selbst bzw. verschicken von dort.
 export const WARE_LIEFERUNG = Object.freeze(['kunde', 'laden', 'kettler']);
-/**
- * Massteppiche mit einer kuerzeren Seite UNTER diesem Mass gehen automatisch zu unserem Kettler:
- * er schneidet zu und kettelt (ohne Zuschnittgebuehr), wir holen dort ab (Inhaber 2026-10-19).
- */
-export const KETTLER_UNTER_CM = 200;
 /** PLZ-Bereiche, in die wir selbst liefern koennen: Berlin (10-14) und unser Umland (16). */
 const KETTLER_NAH_PLZ = /^1[0-46]/;
 
@@ -598,21 +593,25 @@ export function kuerzereSeiteCm(ausfuehrung = []) {
   return zahlen.length ? Math.min(...zahlen.slice(0, 2)) : null;
 }
 
-/** Massteppich mit Einfassung, kuerzere Seite unter 2 m: geht nach der Regel zum Kettler. */
+/**
+ * Massteppich mit Einfassung geht nach der Regel zum Kettler, egal wie gross (Inhaber
+ * 2026-10-19 abends, bis dahin nur unter 2 m): er schneidet zu und kettelt, wir holen ab bzw.
+ * er verschickt (bis 200 cm kurze Seite per Paket, darueber per Spedition). Ohne Fertigmass
+ * kann der Lieferant nicht zuschneiden - dann bleibt es beim normalen Weg.
+ */
 export function kettlerAutomatisch(p) {
   if (!(p.ausfuehrung ?? []).some(istEinfassung)) return false;
-  const seite = kuerzereSeiteCm(p.ausfuehrung);
-  return seite !== null && seite < KETTLER_UNTER_CM;
+  return kuerzereSeiteCm(p.ausfuehrung) !== null;
 }
 
 /**
- * Lohnt der Weg ueber unseren Kettler auch fuer groessere Stuecke? Nur bei Kettel-Positionen,
- * deren Kunde in der Naehe wohnt (wir liefern selbst bis in die Wohnung). Ein Vorschlag,
- * keine Entscheidung: gewaehlt wird im Dialog. Unter 2 m entscheidet die Regel oben.
+ * Warum sich eine Kettel-Position fuer unseren Kettler anbietet - ein Vorschlag fuer Mails,
+ * in denen die Regel oben nicht greift (Ziel im Dialog gewaehlt). Ohne Fertigmass nur, wenn
+ * der Kunde in der Naehe wohnt (wir liefern selbst bis in die Wohnung).
  */
 export function kettlerGrund(p, adresse) {
   if (!(p.ausfuehrung ?? []).some(istEinfassung)) return null;
-  if (kettlerAutomatisch(p)) return `unter ${KETTLER_UNTER_CM / 100} m – Ketteln beim Kettler`;
+  if (kettlerAutomatisch(p)) return 'gekettelt – Ketteln beim Kettler';
   if (adresse?.plz && KETTLER_NAH_PLZ.test(String(adresse.plz).trim())) return `Kunde in der Nähe (${String(adresse.plz).trim()} ${adresse.ort ?? ''}`.trim() + ') – wir liefern selbst';
   return null;
 }
@@ -632,7 +631,7 @@ function fuerKettler(p) {
 function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, auswahl = null, automatisch = false }) {
   const alle = (gruppe.positionen ?? []).filter(p => !auswahl || auswahl(p)).map(p => schlankePosition(p, statusAlle, jetzt));
   const offen = alle.filter(p => p.gruppe === 'zuBestellen');
-  // Die Regel unter 2 m gilt auch fuer Ware, die der Lieferant sonst direkt zum Kunden schickt:
+  // Die Kettler-Regel gilt auch fuer Ware, die der Lieferant sonst direkt zum Kunden schickt:
   // abgetrennte Positionen gehen an unseren Kettler (Issue #1453).
   const direkt = ZIEL_JE_AUFTRAG.has(gruppe.route) && !(automatisch && ziel === 'kettler');
   const kettler = absender?.kettelservice ?? null;
@@ -716,7 +715,7 @@ function wareMail(gruppe, { st, absender, statusAlle, adressen, jetzt, ziel, aus
       // Kettler nur anbieten, wenn seine Anschrift in den privaten Stammdaten steht.
       kettlerMoeglich: !ZIEL_JE_AUFTRAG.has(gruppe.route) && adresseOk(kettler),
       kettlerVorschlag,
-      // Nach der Regel "unter 2 m zum Kettler" abgetrennt, nicht von Hand gewaehlt.
+      // Nach der Regel "gekettelt zum Kettler" abgetrennt, nicht von Hand gewaehlt.
       kettlerAutomatisch: automatisch,
       bereitsBestellt: alle.length - offen.length,
     },
@@ -790,7 +789,7 @@ function musterMail(gruppen, { st, absender, statusAlle, adressen, jetzt, ziel }
 
 /**
  * Ware einer Gruppe als Mail(s). Ohne gewaehltes Ziel gilt die Regel des Inhabers (2026-10-19):
- * Massteppiche unter 2 m gehen in eine eigene Mail an unseren Kettler, der Rest wie bisher.
+ * gekettelte Massteppiche gehen in eine eigene Mail an unseren Kettler, der Rest wie bisher.
  * Ein Ziel aus dem Dialog (Kunden/Laden/Kettler) gilt dagegen fuer die ganze Gruppe.
  */
 function wareMailsFuer(gruppe, kontext) {

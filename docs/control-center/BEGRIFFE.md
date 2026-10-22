@@ -43,6 +43,7 @@ Leute im Laden genauso wie fuer alte Hasen).
 | Team · Zugänge | **Zugänge** | nur Inhaber |
 | Werkbank | **Ideen & Fragen** | Link zur eigenen Anwendung |
 | GitHub synchronisieren | **Aufgaben neu laden** | |
+| Packstation, Packliste (lokale Datei) | **Muster packen** | Reiter unter Kunden (#1572); „Umschlag gepackt“ ist der gemeinsame Stand, das Abhaken je Muster nur eine Packhilfe am Gerät |
 
 ## Bleibt bewusst
 

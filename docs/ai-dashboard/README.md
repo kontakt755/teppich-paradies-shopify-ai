@@ -65,6 +65,8 @@ docs/ai-dashboard/
   lib/muster-nachfassen.mjs     „Muster nachfassen“ für „Heute“: wer ist dran, Textvorlage füllen – Browser UND Server
   lib/bestellinhalt.mjs         Inhalt einer Bestellung in einer Zeile (Muster mit Farben und Herkunft, Ware) – Bestellliste und To-dos
   lib/muster-etiketten.mjs      Muster-Etiketten 50 × 50 mm: Daten (Serie, Farbe, SKU, Technik) und Layout – testbar ohne Drucker
+  lib/adress-etiketten.mjs      Adressaufkleber (Absender, Empfänger, Bestellnummer) auf derselben Rolle – testbar ohne Drucker
+  lib/muster-packen.mjs         „Muster packen“: offene Musterbestellungen je Kunde, vorher/nachher, Aufkleberreihenfolge – Browser UND Server
   lib/kennzahlen.mjs            „Ø je bezahlter Bestellung“ (ohne kostenlose Muster) für die Kennzahlen auf „Heute“
   lib/verbrauch.mjs             Modellnamen und Tokenzahlen für die Kachel „Claude-Verbrauch“ (Insights)
   lib/serviceanfragen.mjs       Service-Anfragen: Werte, Prüfung, Formular-Mail lesen, Auswertung je Woche/Quelle – Browser UND Server
@@ -124,7 +126,7 @@ ansichten/
   lexikon.mjs  ratgeber.mjs  hilfe.mjs  shopwache.mjs  team.mjs  fotos.mjs  sonderposten.mjs  bildrechte.mjs
   prozesse.mjs       Arbeitsplatz: Aufgabe vorbereiten, kopieren, App oder Projekt separat oeffnen
   einkauf.mjs        + einkauf/{auftragsfluss,belege,bestellungen,lieferanten,musterlager,produktdaten}.mjs
-  kunden.mjs         + kunden/{gemeinsam,akte,rueckrufe,serviceanfragen,bestellungen,angebote,faelle,zeitleiste}.mjs
+  kunden.mjs         + kunden/{gemeinsam,akte,rueckrufe,serviceanfragen,bestellungen,angebote,faelle,zeitleiste,muster-packen}.mjs
   organisation.mjs   + organisation/{gemeinsam,dialoge}.mjs
   insights.mjs       + insights/verbrauch.mjs (Kachel „Claude-Verbrauch“, #671)
 ```

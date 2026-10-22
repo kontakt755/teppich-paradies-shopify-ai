@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  ETIKETT, etikett, etikettenAusPositionen, etikettFuerPosition, klassenNummern, layout, produktUrl,
+  ETIKETT, ETIKETT_FORMATE, etikett, etikettFormat, etikettenAusPositionen, etikettFuerPosition, klassenNummern, layout, produktUrl,
   serieAus, serieUndFarbe, technikZeilen, umbrechen, varianteFuer,
 } from '../lib/muster-etiketten.mjs';
 
@@ -164,4 +164,39 @@ test('layout: ohne URL kein QR, ohne SKU keine Art.-Nr.-Zeile', () => {
   const { texte, qr } = layout(etikett({ serie: 'Nur Serie' }), mass);
   assert.equal(qr, null);
   assert.deepEqual(texte.map(t => t.text), ['www.teppich-paradies.net', 'Nur Serie']);
+});
+
+test('layout 50 x 100 mm: dieselbe Aufteilung, alles groesser, alles im Rahmen', () => {
+  const gross = ETIKETT_FORMATE['50x100'];
+  assert.equal(gross.breite, 400);
+  assert.equal(gross.hoehe, 800);
+  assert.equal(etikettFormat('50x100'), gross);
+  assert.equal(etikettFormat('unbekannt'), ETIKETT, 'unbekanntes Format faellt auf 50 x 50 zurueck');
+  const imFormat = ({ texte, qr }) => {
+    for (const t of texte) {
+      assert.ok(t.x >= gross.rand - 0.01 && t.x + mass(t.text, t.groesse) <= gross.breite - gross.rand + 0.01, t.text);
+      assert.ok(t.y + t.groesse <= gross.hoehe - gross.rand + 0.01, t.text);
+    }
+    if (qr) assert.ok(qr.x >= gross.rand && qr.y + qr.groesse <= gross.hoehe - gross.rand && qr.x + qr.groesse <= gross.breite - gross.rand);
+  };
+  const beispiele = [
+    etikettFuerPosition({ istMuster: true, farbe: 'Eiche Natur', handle: vinyl.handle }, vinyl),
+    etikett({ serie: 'Testvelours', farbe: 'Sand', sku: 'TV-400-SA', handle: 'testvelours-teppichboden' }),
+    etikett({ serie: 'Testlinea Extra Langer Serienname Mit Zusatz', farbe: 'Graphit Dunkel Anthrazit (1008)', sku: 'TL-LANG-1008', handle: 'testlinea-graphit',
+      technik: [{ label: 'Art', wert: 'Klickvinyl' }, { label: 'Stärke / Nutzschicht', wert: '5 mm / 0,55 mm' }, { label: 'Nutzungsklasse', wert: '23 / 33' }, { label: 'Format', wert: '122 × 18 cm' }] }),
+  ];
+  for (const e of beispiele) {
+    const klein = layout(e, mass);
+    const l = layout(e, mass, gross);
+    imFormat(l);
+    assert.ok(l.texte[0].groesse > klein.texte[0].groesse, 'Absender groesser');
+    assert.ok(l.texte[1].groesse >= klein.texte[1].groesse, 'Serie mindestens so gross');
+    assert.ok(l.qr.groesse > klein.qr.groesse, `QR groesser (${klein.qr.groesse} -> ${l.qr.groesse})`);
+    assert.ok(!l.texte.some(t => t.text.includes('…')), 'nichts abgeschnitten');
+    assert.equal(l.texte[0].text, 'www.teppich-paradies.net', 'Shopname vollstaendig');
+    const namen = l.texte.slice(1).filter(t => !t.text.startsWith('Art.-Nr.')).map(t => t.text).join(' ');
+    assert.ok(namen.startsWith(`${e.serie} ${e.farbe}`), `kein Wort getrennt: ${namen}`);
+    // Hochformat: QR-Code unter allen Texten ausser der Art.-Nr.
+    assert.ok(l.texte.filter(t => !t.text.startsWith('Art.-Nr.')).every(t => t.y + t.groesse <= l.qr.y), 'QR unter dem Text');
+  }
 });

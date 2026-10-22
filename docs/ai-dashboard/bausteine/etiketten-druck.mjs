@@ -1,5 +1,6 @@
 /**
- * "Etiketten drucken": Vorschau und Druck von Muster-Etiketten auf dem Niimbot B1 (50 x 50 mm)
+ * "Etiketten drucken": Vorschau und Druck von Muster-Etiketten (und Adressaufklebern aus "Muster packen")
+ * auf dem Niimbot B1 (50 x 50 oder 50 x 100 mm)
  * direkt aus dem Browser - ohne Installation, damit es am Mac und am Windows-Laptop gleich geht.
  *
  * Verbindung per Web Bluetooth (Hauptweg, der B1 haengt nicht am USB), USB-Kabel (WebSerial)
@@ -11,7 +12,8 @@
 import { $, esc, toast } from '../kern/helfer.mjs';
 import { fetchEinkauf } from '../kern/api.mjs';
 import { DRUCK_LIMIT, druckBloecke, druckVorschau } from '../lib/druckliste.mjs';
-import { ETIKETT, etikett, etikettFuerPosition, etikettenAusPositionen, handleFuerPosition, layout, originalHandle } from '../lib/muster-etiketten.mjs';
+import { ETIKETT, ETIKETT_FORMATE, etikettFormat, etikett, etikettFuerPosition, etikettenAusPositionen, handleFuerPosition, layout, originalHandle } from '../lib/muster-etiketten.mjs';
+import { adressLayout } from '../lib/adress-etiketten.mjs';
 
 const SKRIPTE = {
   niimbluelib: { src: 'https://cdn.jsdelivr.net/npm/@mmote/niimbluelib@0.47.1/dist/umd/niimbluelib.min.js', sri: 'sha384-8mcKExXVFyg+JWnhi+HIvqG1HDZoqxglFtztk3Kv5PIGmvcvwBiuF6+Ru4/4Re5T' },
@@ -31,20 +33,27 @@ function ladeSkript(name) {
 }
 
 const SCHRIFT = 'Arial, Helvetica, sans-serif';
-const druck = { client: null, clientWeg: '', verbindung: null, trennt: false, etiketten: [], laeuft: false, speichert: false, bearbeiten: -1, allowEditing: true, abbruch: false, kontext: null };
+// Gewaehlte Etikettengroesse je Rechner merken (passt zur eingelegten Rolle); ohne Speicher 50 x 50.
+const FORMAT_SCHLUESSEL = 'tp-etikett-format';
+function gemerktesFormat() { try { return etikettFormat(localStorage.getItem(FORMAT_SCHLUESSEL)).format; } catch { return ETIKETT.format; } }
+function formatMerken(name) { try { localStorage.setItem(FORMAT_SCHLUESSEL, name); } catch { /* ohne Speicher gilt die Wahl nur bis zum Neuladen */ } }
+
+const druck = { format: gemerktesFormat(), client: null, clientWeg: '', verbindung: null, trennt: false, etiketten: [], laeuft: false, speichert: false, bearbeiten: -1, allowEditing: true, abbruch: false, kontext: null };
 let sitzung = 0;
 const aktuell = k => !!k && druck.kontext === k && !k.beendet && k.sitzung === sitzung && k.element?.isConnected;
 const qrBereit = () => typeof window.qrcode === 'function';
 const unvollstaendig = () => druck.etiketten.some(e => e.fehlt.length);
 
-/** Zeichnet ein Etikett schwarz auf weiss in eine Canvas (400 x 400). */
+/** Zeichnet ein Etikett schwarz auf weiss in eine Canvas (400 x 400 bzw. 400 x 800). */
 function zeichne(canvas, e) {
-  canvas.width = ETIKETT.breite; canvas.height = ETIKETT.hoehe;
+  const format = etikettFormat(druck.format);
+  canvas.width = format.breite; canvas.height = format.hoehe;
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = '#000'; ctx.textBaseline = 'top';
   const font = (g, f) => `${f ? 'bold ' : ''}${g}px ${SCHRIFT}`;
-  const { texte, linien, qr } = layout(e, (t, g, f) => { ctx.font = font(g, f); return ctx.measureText(t).width; });
+  // Adressaufkleber (Muster packen) haben ein eigenes Layout, gezeichnet wird gleich.
+  const { texte, linien, qr } = (e.art === 'adresse' ? adressLayout : layout)(e, (t, g, f) => { ctx.font = font(g, f); return ctx.measureText(t).width; }, format);
   for (const t of texte) { ctx.font = font(t.groesse, t.fett); ctx.fillText(t.text, t.x, t.y); }
   for (const l of linien) ctx.fillRect(l.x1, l.y, l.x2 - l.x1, 2);
   if (qr && window.qrcode) {
@@ -64,7 +73,7 @@ const umgebungsHinweis = () => {
 
 function vorschauHtml() {
   return druckVorschau(druck.etiketten).eintraege.map(({ index: i, anzahl }) => { const e = druck.etiketten[i]; return `<figure class="etk-karte">
-    <canvas class="etk-bild" data-etk-bild="${i}" width="${ETIKETT.breite}" height="${ETIKETT.hoehe}" aria-label="${esc(`Etikett ${[e.serie, e.farbe].filter(Boolean).join(' ') || 'ohne Namen'}`)}"></canvas>
+    <canvas class="etk-bild" data-etk-bild="${i}" width="${etikettFormat(druck.format).breite}" height="${etikettFormat(druck.format).hoehe}" aria-label="${esc(`Etikett ${[e.serie, e.farbe].filter(Boolean).join(' ') || 'ohne Namen'}`)}"></canvas>
     <figcaption class="small"><strong data-etk-kopien="${anzahl}">${anzahl} ${anzahl === 1 ? 'Aufkleber' : 'Kopien'}</strong>${e.fehlt.length ? `<span class="etk-fehlt">fehlt: ${esc(e.fehlt.join(', '))}</span>` : '<span class="muted">vollständig</span>'}
       ${druck.allowEditing ? `<button type="button" class="btn btn-sm" data-etk-bearbeiten="${i}"${druck.laeuft || druck.speichert ? ' disabled' : ''}>Angaben bearbeiten</button>` : ''}
       <button type="button" class="btn btn-sm" data-etk-png="${i}"${e.fehlt.length || !qrBereit() || druck.laeuft || druck.speichert ? ' disabled' : ''}>Als PNG speichern</button>
@@ -85,7 +94,7 @@ function zeichneVorschau() {
   const verbunden = !!druck.client?.isConnected?.();
   const verbindungOffen = !!druck.verbindung;
   const wartet = $('#etkVerbindungWartet'); if (wartet) wartet.hidden = !verbindungOffen || k.verbindet || druck.laeuft;
-  for (const e of document.querySelectorAll('.etk-dialog [data-close-dialog], #etkDichte')) e.disabled = beschaeftigt;
+  for (const e of document.querySelectorAll('.etk-dialog [data-close-dialog], #etkDichte, #etkFormat')) e.disabled = beschaeftigt;
   const weg = $('#etkWeg'); if (weg) weg.disabled = beschaeftigt || k.verbindet || verbindungOffen || druck.trennt || verbunden;
   const verbindenKnopf = $('#etkVerbinden');
   if (verbindenKnopf) { verbindenKnopf.textContent = verbunden ? 'Drucker verbunden' : k.verbindet ? 'Verbinde …' : 'Drucker verbinden'; verbindenKnopf.disabled = verbunden || k.verbindet || verbindungOffen || druck.trennt || beschaeftigt || !!umgebungsHinweis(); }
@@ -319,7 +328,8 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
   const hatUsb = !!navigator.serial;
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><div class="dialog etk-dialog" role="dialog" aria-modal="true" aria-labelledby="etkTitel" data-dialog>
     <h2 id="etkTitel">${esc(titel)}</h2>
-    <p class="small muted">Niimbot B1 · 50 × 50 mm. Zuerst Drucker einschalten und „Drucker verbinden“ wählen. Erst „Jetzt drucken“ startet den Druck.</p>
+    <p class="small muted">Niimbot B1. Zuerst die passende Rolle einlegen und unten die Größe wählen, dann Drucker einschalten und „Drucker verbinden“. Erst „Jetzt drucken“ startet den Druck.</p>
+    <label class="etk-format small">Etikettengröße <select id="etkFormat">${Object.values(ETIKETT_FORMATE).map(f => `<option value="${f.format}"${f.format === druck.format ? ' selected' : ''}>${esc(f.name)}</option>`).join('')}</select></label>
     ${umgebung ? `<p class="etk-warn">${esc(umgebung)}</p>` : ''}
     ${hinweis ? `<p class="etk-auftrag-hinweis">${esc(hinweis)}</p>` : ''}
     <p id="etkZusammenfassung" class="small"></p>
@@ -369,6 +379,12 @@ export async function oeffneEtikettenDruck({ etiketten = [], titel = 'Druckvorsc
     }
   });
   k.beobachter.observe($('#dialogRoot'), { childList: true });
+  $('#etkFormat')?.addEventListener('change', ev => {
+    if (!aktuell(k) || druck.laeuft) return;
+    druck.format = etikettFormat(ev.target.value).format;
+    formatMerken(druck.format);
+    zeichneVorschau();
+  });
   $('#etkListe').addEventListener('click', ev => {
     if (!aktuell(k)) return;
     const bearbeiten = ev.target.closest('[data-etk-bearbeiten]');

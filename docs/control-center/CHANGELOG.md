@@ -24,6 +24,80 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   ueberwiegend Website-Aufgaben sieht jetzt die Laden-Liste. Lieferantenpost, Shop-Kontrolle und
   Ausschreibungen haben weiter eigene Hinweise, nicht die neue Zeile.
 - **Naechste Stufe:** Rueckmeldung des Teams.
+## 2026-10-21 · Kunden → Muster packen (#1572)
+
+- **Geändert:** Neuer Reiter „Muster packen“ unter Kunden. Alle offenen, bezahlten, nicht versendeten
+  Musterbestellungen, nach Kunde gebündelt (mehrere Bestellungen = ein Umschlag), wer am längsten
+  wartet zuerst. Je Muster „Auf dem Muster“ (Produktname und Farbnummer des Lieferanten aus dem
+  Lexikon, nur wenn eindeutig) → „Unser Aufkleber“ (Serie · Farbe, SKU), Stand aus Auftragsfluss bzw.
+  Musterlager, Link zur Lieferantenseite. „Aufkleber drucken“ je Kunde und „Alle drucken“: erst die
+  Muster, zuletzt ein Adressaufkleber (Absender, Empfänger, Bestellnummer, `lib/adress-etiketten.mjs`).
+  „Umschlag gepackt“ liegt zentral in `$TP_PRIVAT_DIR/muster-packen.json` (`GET/POST
+  /api/kunden/muster-packen`, Rolle „lesen“ nur lesend) und gilt genau für diese Bestellungen – kommt
+  eine dazu, ist der Kunde wieder offen. Massartikel ohne eigene SKU finden jetzt über belegte
+  Artikelnummer (oder die Muster-SKU der Position) und Farbe genau eine Musterfarbe: bei den echten
+  offenen Musterbestellungen fehlte die Zuordnung vorher bei 25 von 62 Positionen, jetzt bei 1.
+- **Getestet:** `muster-packen.test.mjs` (7), `muster-packen-api.test.mjs` (4), neuer Fall in
+  `server.test.mjs` und `bestellungs-musteretiketten.test.mjs`; `dashboard:test` 655 grün.
+  `dashboard:pruefen --ansichten 'kunden?tab=muster'` in allen fünf Breiten ohne Befund. Klickstrecke
+  (Datenkopie): Zahl am Reiter = Karten, Druckdialog eines Kunden zeigt Muster und danach die Adresse,
+  Gepackt/Zurücknehmen ändert die Zahl, Haken bleiben nach Neuladen, 390 px ohne Querscrollen,
+  0 JS-Fehler. Adressaufkleber 50 × 50 vorab am echten B1 gedruckt (lokale Packliste, gleiche Layoutregeln).
+- **Risiken/Annahmen:** Eine Position bleibt „Zuordnung fehlt“, weil Lexikon und Bestellung die
+  Artikelnummer verschieden schreiben (mit/ohne führende Null) – wird nicht geraten. „Beim
+  Lieferanten bestellt“ wird im Auftragsfluss oft nicht auf „geliefert“ weitergesetzt, deshalb warnt
+  nur „noch nicht bestellt“. Der Druck aus dem Reiter selbst ist am B1 noch nicht ausprobiert.
+  Porto und Versandbuchung sind bewusst nicht enthalten.
+- **Nächste Stufe:** Versandschritt (Briefmarke über Internetmarke, `operations/lib/internetmarke.mjs`,
+  und Versand in Shopify buchen), sobald der Versandweg entschieden ist.
+
+## 2026-10-21 · Alle gekettelten Maßteppiche automatisch zum Kettler
+
+- **Geändert:** Regel des Inhabers vom 19.10. abends umgesetzt: Maßteppiche mit Einfassung gehen
+  ohne Auswahl zum Kettler, **egal wie groß** (bisher nur kürzere Seite unter 2 m). Auch bei
+  Direktversand des Lieferanten; Baustellenlieferungen bleiben, wie sie sind. Ohne Fertigmaß greift
+  die Regel nicht (der Lieferant kann dann nicht zuschneiden). Ein von Hand gewähltes Ziel im Dialog
+  gilt weiter für die ganze Gruppe; dann schlägt der Hinweis „Über unseren Kettler?“ die gekettelten
+  Positionen vor. Der Kettler verschickt bis 200 cm kurze Seite per Paket, darüber per Spedition.
+- **Getestet:** `lieferanten.test.mjs` (neu: 400 × 500, rund 300, ohne Fertigmaß, Direktversand
+  2 × 3 m, Vorschlag bei Ziel Laden), `auftragsverlauf.test.mjs`, `npm test`.
+- **Risiken/Annahmen:** Laut Inhaber lohnt sich der Weg nur, wenn die Ware mit einer ohnehin
+  laufenden Sammellieferung kommt; das prüft die Regel nicht. Wer einen Teppich ausnahmsweise beim
+  Lieferanten ketteln lassen will, wählt im Dialog „Kunden“ oder „Laden“.
+- **Nächste Stufe:** Versand vom Kettler (Paket/Spedition) im Auftragsfluss abbilden.
+
+## 2026-10-21 · Musteraufkleber auch 50 × 100 mm (zum Ausprobieren)
+
+- **Geändert:** Im Druckfenster „Etikettengröße“ 50 × 50 mm oder 50 × 100 mm; die Wahl merkt sich der
+  Browser (localStorage, ohne Speicher 50 × 50). 50 × 100 = 400 × 800 px, ungedreht (Druckkopf
+  bleibt 50 mm breit): dieselben Angaben, alles 1,6-mal so groß, Schrift nur so groß, dass kein
+  Wort getrennt wird; Technik über die volle Breite, QR-Code darunter (bis 288 px). `ETIKETT_FORMATE`,
+  `etikettFormat` und `layout(e, mass, format)` in `lib/muster-etiketten.mjs`; 50 × 50 unverändert.
+- **Getestet:** `muster-etiketten.test.mjs` 13 grün (neu: 50 × 100 im Rahmen, nichts abgeschnitten,
+  QR unter dem Text, größer als 50 × 50); `dashboard:test` 634 grün. Browser (Datenkopie): Wechsel
+  auf 50 × 100 → Canvas 400 × 800, gemerkt, 0 JS-Fehler. QR-Bibliothek lädt in der Remote-Session
+  nicht (CDN gesperrt), deshalb QR dort leer.
+- **Risiken/Annahmen:** Echter Druck auf einer 50 × 100-Rolle am B1 nicht geprüft (labelType 1 wie bisher).
+- **Nächste Stufe:** Probedruck; bei Bedarf mehr Angaben auf die größere Fläche.
+
+## 2026-10-21 · Produktsuche findet Lieferantenname mit Linie und Farbnummer
+
+- **Geändert:** Die Suche zerlegt den Text in Wörter; jedes muss am Produkt oder an derselben
+  Variante stehen (vorher: der ganze Text als ein Begriff, „Linie027 Kora 98“ fand nie etwas).
+  An den Namen geklebte Nummern werden getrennt („linie027“ → „linie“ + „027“), kurze Zahlen
+  zählen nur ganz und ohne führende Nullen („72“ findet 072, nie 172). Durchsucht werden zusätzlich
+  Variantentitel und die Original-Angaben der Muster. Trefferkarte: „Beim Lieferanten: …“, wenn
+  der Treffer nicht am Shop-Titel liegt, und „Passende Farbe: … · Farbnr. …“. Produktdetail mit
+  `lq`: passende Farben oben, „passt zur Suche“, Musteraufkleber auf diese Farbe vorgewählt
+  (Handwahl gewinnt). Neu `lib/lexikon-suche.mjs` (Server und Browser).
+- **Getestet:** `tests/lexikon-suche.test.mjs` (7) und `api.test.mjs` (neuer Fall); `dashboard:test`
+  633 grün, 8 abgebrochen in `laden-zahlen.test.mjs` (auf main in der Remote-Session genauso).
+  Klickstrecke gegen erfundene Datenkopie bei 390 und 1440 px: Karte „Grau Hell · Farbnr. 95“,
+  Aufkleber vorgewählt, 0 JS-Fehler, 0 px Überlauf. Echte Daten (Shopify) bestätigen beide
+  Schreibweisen der Linie beim Lieferanten (mit und ohne Leerzeichen).
+- **Risiken/Annahmen:** Wörter, die über zwei Farben verteilt sind, finden das Produkt, aber keine
+  einzelne Farbe. `npm test` (übrige Suiten) und `dashboard:pruefen` mit echten Daten noch lokal laufen lassen.
+- **Nächste Stufe:** Auf dem Mac mit echtem Lexikon-Export gegenprüfen.
 
 ## 2026-10-21 · Einfache, eindeutige Begriffe im ganzen Control Center
 

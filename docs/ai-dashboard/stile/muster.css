@@ -102,7 +102,9 @@
 .etk-dialog { max-width: 640px; }
 .etk-liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin: 12px 0; }
 .etk-karte { margin: 0; }
-.etk-bild { width: 100%; height: auto; aspect-ratio: 1; border: 1px solid var(--line-strong); border-radius: 6px; background: #fff; }
+/* Groesse passend zur eingelegten Rolle; das Seitenverhaeltnis kommt aus width/height der Canvas. */
+.etk-format { display: inline-flex; align-items: center; gap: 8px; margin: 4px 0 0; }
+.etk-bild { width: 100%; height: auto; border: 1px solid var(--line-strong); border-radius: 6px; background: #fff; }
 .etk-fehlt { color: var(--crit); font-weight: 600; }
 .etk-warn { color: var(--crit); background: var(--crit-soft); padding: 8px 10px; border-radius: 6px; }
 .etk-form { display: grid; gap: 8px; margin-top: 8px; }

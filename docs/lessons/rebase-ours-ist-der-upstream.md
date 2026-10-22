@@ -53,6 +53,7 @@ ihn am Leben.
 ## Was daraus folgt
 
 Ein Kommentar, der eine Git-Semantik behauptet, ist keine Pruefung. Wo eine
-Aufloesungsrichtung wichtig ist, gehoert sie in einen Test:
-`docs/ai-dashboard/tests/dashboard-workflow.test.mjs` liest die Workflow-Datei
-und besteht nur, solange die Bot-Dateien mit `--theirs` aufgeloest werden.
+Aufloesungsrichtung wichtig ist, gehoert sie in einen Test. Der damalige Test
+(`dashboard-workflow.test.mjs`) ist mit dem Dashboard-Bot entfallen (seit 30.09.
+sind die Bot-Dateien nicht mehr im Git); die Regel gilt weiter fuer jedes Skript,
+das Konflikte selbst aufloest.
