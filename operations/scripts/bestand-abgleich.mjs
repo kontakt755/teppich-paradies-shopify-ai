@@ -80,7 +80,7 @@ function schreibeStatus(status) {
 
 async function main() {
   const a = argumente(process.argv.slice(2));
-  const env = { ...ladeEnvLocal(path.join(REPO, '.env.local')), ...process.env };
+  const env = { ...ladeEnvLocal(process.env.TP_ENV_LOCAL || path.join(REPO, '.env.local')), ...process.env };
   const vendor = env.TP_LIEFERANT_I_VENDOR;
   const url = env.TP_LIEFERANT_I_BESTAND_URL;
   if (!vendor || (!url && !a.datei)) throw new Error('TP_LIEFERANT_I_VENDOR und TP_LIEFERANT_I_BESTAND_URL in .env.local setzen (oder --datei)');
