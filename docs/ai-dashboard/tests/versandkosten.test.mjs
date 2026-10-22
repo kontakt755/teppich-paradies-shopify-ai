@@ -67,7 +67,7 @@ const saetze={
 function basis(){
  const b=Object.fromEntries([5,6,7,8,9,10,11,12,13,14,15,16,17,...Array.from({length:33},(_,i)=>21+i)].map(i=>[i,0]));
  Object.assign(b,{5:200,6:20,7:20,8:15,9:1,10:'16515',11:'16515',12:'Ja',13:'Neuware',14:1500,15:'Rolle',16:'SEPA',17:'2026-10-22',21:'Standard',22:'Auto',23:'Kein',24:'Normal',25:'Ja',26:'Nein',27:'Nein',28:'Nein',29:'Normal',30:'Nein',31:'Nein',32:'Nein',33:'Nein',34:'Nein',41:'Nein',42:'Nein',45:'Nein',46:'Ungeklaert',47:'Ungeklaert',48:'Auto',49:'',50:'',51:'Nein',52:'Nein',53:'Nein'});
- const t={version:1,felder:Object.keys(b).map(i=>({zeile:Number(i),label:'Testfeld',typ:typeof b[i]==='number'?'number':'text'})),saetze:{...saetze},gls:[[10,3],[20,7],[40,12]],gel:[[10,10,8],[20,20,16],[40,40,32],[100,60,48],[150,80,64],[500,100,80]],inseln:{plz:{'18528':'Rügen','17440':'Usedom','25946':'Amrum'},namen:['Amrum'],matrix:[[20,30],[1000,50],[1500,null]]}};
+ const t={version:1,hinweise:[],felder:Object.keys(b).map(i=>({zeile:Number(i),label:'Testfeld',typ:typeof b[i]==='number'?'number':'text'})),saetze:{...saetze},gls:[[10,3],[20,7],[40,12]],gel:[[10,10,8],[20,20,16],[40,40,32],[100,60,48],[150,80,64],[500,100,80]],inseln:{plz:{'18528':'Rügen','17440':'Usedom','25946':'Amrum'},namen:['Amrum'],matrix:[[20,30],[1000,50],[1500,null]]}};
  return {b,t};
 }
 function rechne(change={},satz={}){const {b,t}=basis();return berechneVersand({...b,...change},t,satz);}
@@ -112,4 +112,16 @@ test('Private Datei: fehlend/beschaedigt/unvollstaendig bleibt sichtbar unverfue
  fs.writeFileSync(datei,JSON.stringify({version:1}));assert.equal(leseVersandtarife(datei).verfuegbar,false);
  const {t:tarif}=basis();fs.writeFileSync(datei,JSON.stringify(tarif));assert.equal(leseVersandtarife(datei).verfuegbar,true);
  delete tarif.saetze['GLS Überlänge'];assert(berechneVersand(basis().b,tarif).fehler);
+});
+
+test('Defekte benoetigte Strukturen werden vor der API-Freigabe abgelehnt',()=>{
+ for(const aendern of [t=>delete t.hinweise,t=>t.hinweise=[null],t=>t.inseln.namen=null,t=>t.inseln.matrix[0]=[20],t=>t.felder[0].optionen='Ja',t=>t.saetze['GEL Diesel']=-.1]){
+  const {b,t}=basis();aendern(t);assert(berechneVersand(b,t).fehler);
+ }
+});
+test('Tarifdaten und angepasste Zeitraeume brauchen echte Kalendertage und richtige Reihenfolge',()=>{
+ for(const [von,bis] of [['2026-00-00','2026-99-99'],['2026-02-30','2026-12-31'],['2026-11-01','2026-10-01']]){
+  const {b,t}=basis();t.saetze['GEL gültig von']=von;t.saetze['GEL gültig bis']=bis;assert(berechneVersand(b,t).fehler);
+  assert(rechne({}, {'GEL gültig von':von,'GEL gültig bis':bis}).fehler);
+ }
 });

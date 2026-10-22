@@ -10,20 +10,29 @@ export const BETRAGSZEILEN = {
 };
 const rund = x => Math.round((x + Number.EPSILON) * 100) / 100;
 const sum = a => a.reduce((v, n) => v + n, 0);
+const istDatum=v=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString().slice(0,10)===v;
 export function istMetropole(plz) {
   const n = Number(plz);
   return [[10115,14199],[20095,21149],[22041,22769],[50667,51149],[80331,81929]].some(([a,b])=>n>=a&&n<=b);
 }
 export function pruefeVersandtarif(t) {
-  if (!t || t.version !== 1 || !Array.isArray(t.felder) || !t.saetze || !Array.isArray(t.gls) || !Array.isArray(t.gel) || !t.inseln) throw new Error('Tarifdatei unvollständig.');
+  if (!t || t.version !== 1 || !Array.isArray(t.felder) || !t.saetze || !Array.isArray(t.gls) || !Array.isArray(t.gel) || !t.inseln || !Array.isArray(t.hinweise)) throw new Error('Tarifdatei unvollständig.');
+  if(t.hinweise.some(zeile=>!Array.isArray(zeile)||zeile.length!==2||zeile.some(v=>typeof v!=='string')))throw new Error('Tarifhinweise ungültig.');
+  if(t.felder.some(f=>!f||!Number.isInteger(f.zeile)||typeof f.label!=='string'||!['number','date','text'].includes(f.typ)||(f.optionen&&(!Array.isArray(f.optionen)||!f.optionen.length||f.optionen.some(v=>typeof v!=='string')))))throw new Error('Eingabefelder ungültig.');
   for (const r of [5,6,7,8,9,10,11,12,13,14,15,16,17,...Array.from({length:33},(_,i)=>i+21)]) {
     if (!t.felder.some(f=>f.zeile===r)) throw new Error('Eingabefelder unvollständig.');
   }
   for (const [key,v] of Object.entries(t.saetze)) {
-    if (key.includes('gültig')) { if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) throw new Error('Tarifdatum ungültig.'); }
-    else if (!Number.isFinite(v)) throw new Error('Tarifsatz ungültig.');
+    if (key.includes('gültig')) { if (!istDatum(v)) throw new Error('Tarifdatum ungültig.'); }
+    else if (!Number.isFinite(v)||(v<0&&key!=='GLS PaketShop')) throw new Error('Tarifsatz ungültig.');
   }
+  for(const name of ['GLS','GEL'])if(!istDatum(t.saetze[name+' gültig von'])||!istDatum(t.saetze[name+' gültig bis'])||t.saetze[name+' gültig von']>t.saetze[name+' gültig bis'])throw new Error('Tarifzeitraum ungültig.');
+  for(const key of ['GLS Energie','GLS Diesel Floater','GEL Diesel'])if(!Number.isFinite(t.saetze[key])||t.saetze[key]<0||t.saetze[key]>1)throw new Error('Dieselsatz ungültig.');
   for (const table of [t.gls,t.gel]) if (!table.length || table.some((row,i)=>!Number.isFinite(row[0])||!Number.isFinite(row[1])||(i&&row[0]<=table[i-1][0]))) throw new Error('Gewichtstabelle ungültig.');
+  const ins=t.inseln;
+  if(!ins.plz||typeof ins.plz!=='object'||!Array.isArray(ins.namen)||!ins.namen.length||ins.namen.some(v=>typeof v!=='string')||!Array.isArray(ins.matrix)||!ins.matrix.length)throw new Error('Inselverzeichnis unvollständig.');
+  if(Object.entries(ins.plz).some(([plz,gebiet])=>!/^\d{5}$/.test(plz)||typeof gebiet!=='string'||![...ins.namen,'Rügen','Fehmarn','Usedom'].includes(gebiet)))throw new Error('Insel-PLZ ungültig.');
+  if(ins.matrix.some((row,i)=>!Array.isArray(row)||row.length!==ins.namen.length+1||!Number.isFinite(row[0])||(i&&row[0]<=ins.matrix[i-1][0])||row.slice(1).some(v=>v!==null&&(!Number.isFinite(v)||v<0))))throw new Error('Inselmatrix ungültig.');
   return t;
 }
 
@@ -38,14 +47,14 @@ export function berechneVersand(eingabe, tarif, anpassung = {}) {
   const ja = r => b(r)==='Ja';
   const r = key => {
     const value = Object.hasOwn(anpassung,key) ? anpassung[key] : tarif.saetze[key];
-    if (key.includes('gültig')) { if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error('Zeitraum fehlt'); return value; }
+    if (key.includes('gültig')) { if (!istDatum(value)) throw new Error('Zeitraum fehlt'); return value; }
     if (!Number.isFinite(value)) throw new Error('Tarifsatz fehlt'); return value;
   };
   const [l,w,h,kg,anz,wert] = [5,6,7,8,9,14].map(n);
   if (![l,w,h,kg,anz,wert].every(Number.isFinite)||Math.min(l,w,h,kg,anz)<=0||wert<0||anz!==Math.floor(anz)||anz>100||l<w||w<h) return fehler('Bitte verpackte Maße, Gewicht, Anzahl und Warenwert prüfen. Länge ≥ Breite ≥ Höhe.');
   if (![10,11].every(i=>/^\d{5}$/.test(String(b(i)))&&Number(b(i))>=1000)) return fehler('Ziel- und Abhol-PLZ bitte fünfstellig eingeben.');
   const datum=String(b(17)||'');
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(datum)||!Number.isFinite(Date.parse(datum))||new Date(datum).toISOString().slice(0,10)!==datum) return fehler('Bitte ein gültiges Versanddatum eingeben.');
+  if (!istDatum(datum)) return fehler('Bitte ein gültiges Versanddatum eingeben.');
   for (const feld of tarif.felder) {
     if (feld.optionen && !feld.optionen.includes(b(feld.zeile))) return fehler('Bitte die Auswahl bei „'+feld.label+'“ prüfen.');
     if (feld.typ==='number' && feld.zeile>=35 && ![49,50].includes(feld.zeile) && (!Number.isFinite(n(feld.zeile))||n(feld.zeile)<0)) return fehler('Bitte „'+feld.label+'“ als nichtnegative Zahl eingeben.');
@@ -53,6 +62,7 @@ export function berechneVersand(eingabe, tarif, anpassung = {}) {
   for (const i of [35,36,38,39,40]) if (n(i)!==Math.floor(n(i))) return fehler('Anzahlen bitte als ganze Zahlen eingeben.');
   for(const i of [49,50]) if(b(i)!==''&&b(i)!==null&&b(i)!==undefined&&(!Number.isFinite(n(i))||n(i)<0))return fehler('Bestätigte Inselpreise bitte als nichtnegative Zahl eingeben.');
   try {
+    for(const name of ['GLS','GEL'])if(r(name+' gültig von')>r(name+' gültig bis'))return fehler('Der Tarifzeitraum endet vor seinem Beginn.');
     const liter=l*w*h/1000, m3=liter*anz/1000;
     const gebiet=b(48)!=='Auto'?b(48):(tarif.inseln.plz[String(b(10))]||'Festland');
     const glsGewicht=kg<=30?Math.max(kg,Math.min(30,l*w*h/r('GLS Volumen Divisor'))):kg;
