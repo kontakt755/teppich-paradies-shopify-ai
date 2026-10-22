@@ -101,7 +101,9 @@ function kundeHtml(k, nr) {
       ${lesend ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-mp-aktion="gepackt" data-mp-k="${pk}" data-mp-wert="0">Zurücknehmen</button>`}`;
   } else if (k.bereich === 'klaeren') {
     aktionen = `<button type="button" class="btn btn-sm" data-mp-drucken="${pk}"${druckbar ? '' : ' disabled'}>Aufkleber drucken (${k.aufkleber})</button>
-      ${lesend ? '' : !k.klaeren ? '<a class="btn btn-sm" href="#/lexikon">Zuordnung prüfen</a>' : `<button type="button" class="btn btn-sm" data-mp-aktion="klaeren" data-mp-k="${pk}" data-mp-wert="0">Klärung aufheben – erneut prüfen</button>`}`;
+      ${(k.adressFehlt || []).length ? `<a class="btn btn-sm" href="#/kunden?tab=bestellungen&amp;bfilter=alle&amp;bq=${encodeURIComponent(k.bestellungen[0]?.orderName || '')}">Lieferadresse in Bestellung prüfen</a>` : ''}
+      ${(k.zuordnungFehlt || []).length ? '<a class="btn btn-sm" href="#/lexikon">Musterzuordnung prüfen</a>' : ''}
+      ${lesend || !k.klaeren ? '' : `<button type="button" class="btn btn-sm" data-mp-aktion="klaeren" data-mp-k="${pk}" data-mp-wert="0">Klärung aufheben – erneut prüfen</button>`}`;
   } else {
     aktionen = `<button type="button" class="btn btn-sm" data-mp-drucken="${pk}"${druckbar ? '' : ' disabled'}>Aufkleber drucken (${k.aufkleber})</button>
       ${lesend ? '' : offen
@@ -122,7 +124,10 @@ function kundeHtml(k, nr) {
       </div>
     </summary>
     ${k.klaeren ? `<p class="notice warn">Fehlt: ${plural(fehlend.size, 'Muster', 'Muster')}${k.klaeren.notiz ? ` – „${esc(k.klaeren.notiz)}“` : ''}<span class="small muted"> · ${esc(fmtDateTime(k.klaeren.zeit))}${k.klaeren.von ? `, ${esc(k.klaeren.von)}` : ''}</span></p>` : ''}
-    ${k.fehlt.length ? `<p class="notice warn">Für ${esc(k.fehlt.join('; '))} gibt es keinen eindeutigen Aufkleber. Bitte im Lexikon prüfen – bis dahin druckt dieser Kunde nicht mit.</p>` : ''}
+    ${k.altvermerk ? `<p class="small muted">Frühere gemeinsame Klärnotiz: ${esc(k.altvermerk)}. Prüfe, ob sie für diesen Umschlag noch gilt.</p>` : ''}
+    ${(k.hinweise || []).map(h => `<p class="notice warn">${esc(h)}</p>`).join('')}
+    ${(k.adressFehlt || []).length ? `<p class="notice warn">Lieferadresse unvollständig: ${esc(k.adressFehlt.join(', '))}. Bitte die Lieferadresse in der Bestellung prüfen.</p>` : ''}
+    ${(k.zuordnungFehlt || []).length ? `<p class="notice warn">Musterzuordnung unvollständig: ${esc(k.zuordnungFehlt.join('; '))}. Bitte im Lexikon prüfen.</p>` : ''}
     <ul class="mp-liste">${muster.map(m => zeileHtml(m, mehrere, { lesend: lesend || k.bereich === 'gepackt', fehltHervor: fehlend.has(m.lineItemId) })).join('')}</ul>
     ${k.bereich === 'warten' ? '<p class="notice warn">Verfügbarkeit noch nicht vollständig bestätigt. Nur tatsächlich vorliegende Muster abhaken; fehlende Ware unter „Bestellen“ prüfen.</p>' : ''}
     <div class="mp-aktionen">${aktionen}${k.bereich === 'gepackt' ? `<a class="btn btn-sm" href="#/einkauf?auftrag=${encodeURIComponent(k.bestellungen[0]?.orderId || '')}">Versand prüfen…</a>` : ''}<a class="btn btn-sm btn-ghost" href="#/einkauf?auftrag=${encodeURIComponent(k.bestellungen[0]?.orderId || '')}">Bestellstand prüfen</a></div>
@@ -153,7 +158,9 @@ export function viewKundenMusterPacken() {
   const je = b => d.kunden.filter(k => k.bereich === b);
   const warten = je('warten'), packen = je('packen'), klaeren = je('klaeren'), gepackt = je('gepackt');
   const kopf = `<p class="sub mp-hier">Hier packst du Muster je Umschlag: Farbe prüfen, Aufkleber drucken und eingelegte Muster abhaken. Gepackt ist noch nicht versandt.</p>`;
-  if (!d.kunden.length) return kopf + emptyState('Keine offenen Musterbestellungen.', 'Neue bezahlte Musterbestellungen erscheinen hier automatisch, nach Kunde gebündelt.');
+  const ausserhalb = (d.ausschluesse?.zahlungOffen || 0) + (d.ausschluesse?.geschlossen || 0);
+  const ausschlussHinweis = ausserhalb ? `<p class="notice warn">${plural(ausserhalb, 'weitere Musterbestellung ist', 'weitere Musterbestellungen sind')} nicht in der Packliste: ${d.ausschluesse.zahlungOffen || 0} mit offener Zahlungsfrage, ${d.ausschluesse.geschlossen || 0} geschlossen trotz offener Muster. <a href="#/kunden?tab=bestellungen&amp;bfilter=muster">Diese Bestellungen prüfen →</a></p>` : '';
+  if (!d.kunden.length) return kopf + ausschlussHinweis + emptyState('Keine offenen Musterumschläge in der Packliste.', 'Neue bezahlte Musterbestellungen erscheinen hier automatisch, nach Lieferadresse gebündelt.');
   const suche = (state.route.params.get('mpq') || '').trim().toLowerCase();
   const passt = k => !suche || [k.name, umschlagKennung(k), ...k.muster.flatMap(m => [m.bestellt.titel, m.bestellt.farbe, m.vorher?.produktname, m.vorher?.farbnummer])].some(v => String(v || '').toLowerCase().includes(suche));
   const druckbar = packen.filter(k => !k.fehlt.length);
@@ -165,13 +172,15 @@ export function viewKundenMusterPacken() {
     ${druckbar.length < packen.length ? `<p class="small muted">„Packbereite drucken“ lässt ${packen.length - druckbar.length === 1 ? 'einen Kunden' : `${packen.length - druckbar.length} Kunden`} ohne eindeutige Aufkleber aus.</p>` : ''}`;
   const bereich = (titel, liste, start, offenAuf = true) => liste.filter(passt).length
     ? `<details class="mp-bereich"${suche || offenAuf || liste.some(k => k.packSchluessel === (packOffen ?? state.route.params.get('umschlag'))) ? ' open' : ''}><summary><h2 class="mp-titel">${titel} <span class="muted">(${liste.filter(passt).length})</span></h2></summary><div class="mp-kunden">${liste.filter(passt).map((k, i) => kundeHtml(k, start + i + 1)).join('')}</div></details>` : '';
-  return `${umschalter}${kopf}${summe}
+  return `${umschalter}${kopf}${summe}${ausschlussHinweis}
     <div class="toolbar"><input type="search" data-param="mpq" value="${esc(state.route.params.get('mpq') || '')}" placeholder="Kunde, Bestellung, Produkt oder Farbnummer" aria-label="Packstation durchsuchen"></div>
+    ${suche ? `<p class="small muted">${d.kunden.filter(passt).length} von ${d.kunden.length} Umschlägen passen zur Suche. <button type="button" class="btn btn-sm btn-ghost" data-param="mpq" data-value="">Suche aufheben</button></p>` : ''}
     ${!d.kunden.some(passt) ? '<p class="small muted">Keine passenden Umschläge gefunden.</p>' : ''}
     ${bereich('Packbereit', packen, 0)}
     ${bereich('Wartet auf Ware', warten, packen.length, !packen.length)}
     ${bereich('Zu klären', klaeren, packen.length + warten.length)}
-    ${bereich('Gepackt – Versand noch separat', gepackt, packen.length + warten.length + klaeren.length, state.route.params.get('mpbereich') === 'gepackt')}`;
+    ${bereich('Gepackt – Versand noch separat', gepackt, packen.length + warten.length + klaeren.length, state.route.params.get('mpbereich') === 'gepackt')}
+    <p class="small muted">Offene Zahlungsfragen und weitere Musterbestellungen findest du unter <a href="#/kunden?tab=bestellungen&amp;bfilter=muster">Bestellungen – Muster →</a>.</p>`;
 }
 
 /** Wareneingang: ein Paket eines Partnerladens auf die richtigen Umschlaege verteilen. */

@@ -50,6 +50,8 @@ test('POST gepackt: Rolle lesen 403, unbekannter Kunde 409, sonst gespeichert un
   assert.throws(() => api.kundenMusterPackenSetzen({ packSchluessel: pk, gepackt: true }, { name: 'Gast', rolle: 'lesen' }), e => e.status === 403);
   assert.throws(() => api.kundenMusterPackenSetzen({ packSchluessel: 'gid://shopify/Order/1', gepackt: true }, { name: 'Laden', rolle: 'mitarbeiter' }), e => e.status === 409);
   assert.throws(() => api.kundenMusterPackenSetzen({ packSchluessel: pk }, { name: 'Laden', rolle: 'mitarbeiter' }), e => e.status === 400);
+  assert.throws(() => api.kundenMusterPackenSetzen({ packSchluessel: pk, gepackt: true }), e => e.status === 409);
+  api.kundenMusterPackenSetzen({ packSchluessel: pk, aktion: 'haken', lineItemIds: api.kundenMusterPacken().kunden[0].muster.map(m => m.lineItemId), an: true });
   api.kundenMusterPackenSetzen({ packSchluessel: pk, gepackt: true }, { name: 'Laden', rolle: 'mitarbeiter' });
   const k = api.kundenMusterPacken().kunden[0];
   assert.equal(k.gepackt.von, 'Laden');
@@ -102,4 +104,32 @@ test('Lieferantenname kommt aus den privaten Stammdaten', t => {
   fs.writeFileSync(path.join(dir, 'lexikon/produkte.json'), JSON.stringify(produkte));
   const { api: api2 } = { api: createApi({ root: dir, privatDirPath: dir, now: () => new Date('2026-10-21T12:00:00Z') }) };
   assert.equal(api2.kundenMusterPacken().kunden[0].muster[0].lieferant, 'Lieferant A');
+});
+
+
+test('Gepackt sperrt fehlende Angaben und Teilrueckerstattung trotz aller Haken ohne neue Packmarke', t => {
+  const order = bestellung(803, '2026-10-18');
+  order.displayFinancialStatus = 'PARTIALLY_REFUNDED';
+  const { api, dir } = umgebung(t, [order]);
+  const k = api.kundenMusterPacken().kunden[0];
+  api.kundenMusterPackenSetzen({ packSchluessel: k.packSchluessel, aktion: 'haken', lineItemIds: k.muster.map(m => m.lineItemId), an: true });
+  assert.throws(() => api.kundenMusterPackenSetzen({ packSchluessel: k.packSchluessel, gepackt: true }), e => e.status === 409);
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, 'muster-packen.json'))).eintraege, {});
+});
+
+test('Ruecknahme einer adressbezogenen Klaerung veraendert weder zweiten Umschlag noch alte gemeinsame Notiz', t => {
+  const a = bestellung(804, '2026-10-18'), b = bestellung(805, '2026-10-19');
+  b.shippingAddress.address1 = 'Zweiter Testweg 8';
+  const { api, dir } = umgebung(t, [a, b]);
+  const [k1, k2] = api.kundenMusterPacken().kunden;
+  const alt = { notiz: 'Alte gemeinsame Notiz', fehlt: [] };
+  fs.writeFileSync(path.join(dir, 'muster-packen.json'), JSON.stringify({ klaeren: { 'email:packen@example.invalid': alt }, haken: {}, eintraege: {} }));
+  assert.ok(api.kundenMusterPacken().kunden.every(k => k.bereich === 'klaeren' && k.klaeren.notiz === alt.notiz));
+  for (const k of [k1, k2]) api.kundenMusterPackenSetzen({ packSchluessel: k.packSchluessel, aktion: 'klaeren', klaeren: true, notiz: 'Eigene Klaerung' });
+  api.kundenMusterPackenSetzen({ packSchluessel: k1.packSchluessel, aktion: 'klaeren', klaeren: false });
+  const nachher = api.kundenMusterPacken().kunden;
+  assert.equal(nachher[0].klaeren, null);
+  assert.equal(nachher[1].klaeren.notiz, 'Eigene Klaerung');
+  assert.match(nachher[0].altvermerk, /Alte gemeinsame Notiz/);
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, 'muster-packen.json'))).klaeren['email:packen@example.invalid'], alt);
 });

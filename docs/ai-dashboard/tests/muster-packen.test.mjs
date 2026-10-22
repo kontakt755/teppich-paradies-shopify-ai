@@ -133,7 +133,8 @@ test('Abhaken und zu klaeren: Bereich je Kunde, Haken bleiben, gepackt gewinnt',
   const a1 = auftrag(1, '2026-10-17T09:00:00Z', 'Anna Test', [pos(11, '101'), pos(12, '102')]);
   const a2 = auftrag(2, '2026-10-18T09:00:00Z', 'Berta Beispiel', [pos(21, '101')]);
   const haken = { 'gid://shopify/LineItem/11': { zeit: '2026-10-22T08:00:00Z', von: 'Laden' } };
-  const klaeren = { 'k:Anna Test': { zeit: '2026-10-22T08:05:00Z', von: 'Laden', fehlt: ['gid://shopify/LineItem/12'], notiz: 'Grau fehlt im Paket' } };
+  const schluessel = musterPackliste({ produkte, schluesselVon, auftraege: [a1] }).kunden[0].schluessel;
+  const klaeren = { [schluessel]: { zeit: '2026-10-22T08:05:00Z', von: 'Laden', fehlt: ['gid://shopify/LineItem/12'], notiz: 'Grau fehlt im Paket' } };
   const r = musterPackliste({ produkte, schluesselVon, jetzt, haken, klaeren, auftraege: [a1, a2] });
   const [anna, berta] = r.kunden;
   assert.equal(anna.bereich, 'klaeren');
@@ -192,4 +193,81 @@ test('Umschlagkennung bleibt nach Sortieren und Packen anderer Kunden gleich', a
   assert.equal(kennung(liste), '#T2');
   assert.equal(kennung([...liste].reverse()), '#T2');
   assert.equal(kennung([{ ...liste[0], bereich: 'gepackt' }, liste[1]]), '#T2');
+});
+
+
+test('unterschiedliche Empfaengeradressen bleiben getrennt; alte Sammelpackmarke gilt nicht fuer Teilumschlaege', () => {
+  const a = auftrag(81, '2026-10-17', 'Anna Test', [pos(811, '101')]);
+  const b = auftrag(82, '2026-10-18', 'Anna Test', [pos(821, '102')]);
+  b.details.lieferadresse = adresse('Berta Beispiel', { strasse: 'Andersweg 2' });
+  const haken = { [a.positionen[0].lineItemId]: { zeit: '2026-10-21', von: 'Team' } };
+  const r = musterPackliste({ produkte, schluesselVon, auftraege: [a, b], haken,
+    gepackt: { [packSchluessel([a.id, b.id])]: { zeit: '2026-10-21' } } });
+  assert.equal(r.kunden.length, 2);
+  assert.equal(new Set(r.kunden.map(k => k.schluessel)).size, 2);
+  assert.ok(r.kunden.every(k => !k.gepackt));
+  assert.ok(r.kunden[0].muster[0].abgehakt);
+  assert.deepEqual(r.kunden.map(k => k.adresse.strasse), ['Testweg 1', 'Andersweg 2']);
+});
+
+test('fehlende Kundenidentitaet faellt pro Auftrag zurueck statt unbekannte Kunden zu buendeln', () => {
+  const auftraege = [91, 92].map(id => auftrag(id, '2026-10-17', '', [pos(id, '101')],
+    { details: { kunde: {}, lieferadresse: {} } }));
+  const r = musterPackliste({ produkte, auftraege, schluesselVon: () => 'name:unbekannt' });
+  assert.equal(r.kunden.length, 2);
+  assert.ok(r.kunden.every(k => k.schluessel.startsWith('auftrag:') && k.bereich === 'klaeren'));
+  assert.ok(r.kunden.every(k => k.adressFehlt.includes('Straße')));
+});
+
+test('offene Teilrueckerstattung und Direktversand bleiben sichtbar zur Klaerung trotz lokalem Lieferstatus', () => {
+  const r = musterPackliste({ produkte, schluesselVon, statusVon: () => 'geliefert', auftraege: [
+    auftrag(93, '2026-10-17', 'Anna Test', [pos(931, '101')], { bezahlt: 'PARTIALLY_REFUNDED' }),
+    auftrag(94, '2026-10-17', 'Berta Beispiel', [pos(941, '101', { route: 'SUPPLIER_DIRECT' })]),
+    auftrag(95, '2026-10-17', 'Clara Beispiel', [pos(951, '101', { musterRoute: 'SUPPLIER_DIRECT' })]),
+  ] });
+  assert.equal(r.kunden.length, 3);
+  assert.ok(r.kunden.every(k => k.bereich === 'klaeren' && k.hinweise.length === 1));
+  assert.match(r.kunden[0].hinweise[0], /Teilweise erstattet/);
+  assert.ok(r.kunden.slice(1).every(k => /Direktversand/.test(k.hinweise[0])));
+});
+
+test('Nullmengen aus Teilversand oder Erstattung erzeugen keinen Packfall und blockieren offene Muster nicht', () => {
+  const r = musterPackliste({ produkte, schluesselVon, statusVon: () => 'geliefert', auftraege: [
+    auftrag(96, '2026-10-17', 'Anna Test', [pos(961, '101', { menge: 0 }), pos(962, '102')]),
+    auftrag(97, '2026-10-17', 'Berta Beispiel', [pos(971, '101', { menge: 0 })]),
+  ] });
+  assert.equal(r.kunden.length, 1);
+  assert.equal(r.kunden[0].muster.length, 1);
+  assert.equal(r.kunden[0].bereich, 'packen');
+  assert.equal(r.kunden[0].aufkleber, 2);
+});
+
+
+test('adressbezogene Klaermarken bleiben stabil; alte gemeinsame Klaerung bleibt bis zur ausdruecklichen Freigabe aktiv', () => {
+  const a = auftrag(98, '2026-10-17', 'Anna Test', [pos(981, '101')]);
+  const b = auftrag(99, '2026-10-18', 'Anna Test', [pos(991, '102')]);
+  b.details.lieferadresse = adresse('Berta Beispiel');
+  const vorher = musterPackliste({ produkte, schluesselVon, auftraege: [a, b] });
+  const key = vorher.kunden[0].schluessel;
+  const klaeren = { [key]: { notiz: 'Nur erster Umschlag', fehlt: [a.positionen[0].lineItemId] }, 'k:Anna Test': { notiz: 'Alte gemeinsame Notiz' } };
+  const beide = musterPackliste({ produkte, schluesselVon, auftraege: [a, b], klaeren });
+  assert.equal(beide.kunden[0].klaeren.notiz, 'Nur erster Umschlag');
+  assert.equal(beide.kunden[1].klaeren.notiz, 'Alte gemeinsame Notiz');
+  assert.equal(beide.kunden[1].bereich, 'klaeren');
+  const freigegeben = musterPackliste({ produkte, schluesselVon, auftraege: [a, b], klaeren: { ...klaeren, [beide.kunden[1].schluessel]: { geklaert: true } } });
+  assert.equal(freigegeben.kunden[1].klaeren, null);
+  assert.equal(freigegeben.kunden[0].klaeren.notiz, 'Nur erster Umschlag');
+  assert.match(beide.kunden[1].altvermerk, /Alte gemeinsame Notiz/);
+  const allein = musterPackliste({ produkte, schluesselVon, auftraege: [a], klaeren });
+  assert.equal(allein.kunden[0].schluessel, key);
+  assert.equal(allein.kunden[0].klaeren.notiz, 'Nur erster Umschlag');
+});
+
+test('Ausschlusszahlen zaehlen Zahlungsverzug und geschlossene Musterauftraege getrennt ohne Doppelzaehlung', () => {
+  const r = musterPackliste({ produkte, schluesselVon, auftraege: [
+    auftrag(101, '2026-10-17', 'Anna', [pos(1011, '101')], { bezahlt: 'PENDING' }),
+    auftrag(102, '2026-10-17', 'Berta', [pos(1021, '101')], { offen: false, bezahlt: 'PENDING' }),
+    auftrag(103, '2026-10-17', 'Clara', [pos(1031, '101')], { storniert: true }),
+  ] });
+  assert.deepEqual(r.ausschluesse, { zahlungOffen: 1, geschlossen: 1 });
 });

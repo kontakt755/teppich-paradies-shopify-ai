@@ -13,3 +13,14 @@ test('fehlende Quellen erzeugen keinen bestaetigten Versand oder Wareneingang', 
   assert.equal(bestellArbeitsstand({ fortschritt: { stufe: 'bestellt' } }).stand, 'Beim Lieferanten bestellt');
   assert.equal(bestellArbeitsstand({ abgehakt: { zeit: 'x' } }).stand, 'Manuell abgehakt');
 });
+
+test('Kontrolle behaelt abgehakte Faelle ohne Versand und unklare Artikel sichtbar', async () => {
+  const { bestellPruefgruende } = await import('../lib/bestellarbeit.mjs');
+  const abgehakt = { abgehakt: { zeit: '2026-10-22' }, fulfillmentstatus: 'UNFULFILLED' };
+  assert.deepEqual(bestellPruefgruende(abgehakt), ['Manuell abgehakt, Versand noch offen']);
+  assert.deepEqual(bestellPruefgruende({ ...abgehakt, fortschritt: { minStufe: 3 } }), []);
+  assert.deepEqual(bestellPruefgruende({ ...abgehakt, storniert: true }), []);
+  assert.deepEqual(bestellPruefgruende({ testbestellung: true, fortschritt: { unklar: true } }), []);
+  assert.deepEqual(bestellPruefgruende({ fortschritt: { unklar: true }, versandHinweis: 'offen' }), ['Artikel nicht vollständig nachverfolgbar', 'Versandbuchung prüfen']);
+  assert.equal(bestellArbeitsstand({ fertig: true, fortschritt: { unklar: true } }).stand, 'Zu prüfen');
+});

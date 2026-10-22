@@ -1822,3 +1822,22 @@ Bestelllisten-Arbeitsstand aus bestehenden Zeitleisten, Positionsstatus und Shop
 keine Umschreibung privater Altstaende. Alte technische Pruefstatus sind im Belegdetail,
 nicht als zweiter Hauptstatus. Versand und manueller Listenhaken bleiben unterschiedliche Dinge.
 Die Bestellmarken aus Claude #1599 bleiben lokal und sind in der Browser-Datenkopie enthalten.
+
+
+## Vollstaendigkeit der Bestell- und Packarbeit (#1608)
+
+Der Betriebs-Export umfasst die letzten 90 Tage sowie noch offene Versand- und Zahlungsfaelle
+altersunabhaengig. Bestellungen und ihre Positionen werden bis zur letzten Seite gelesen. Fehlende
+Seitendaten, Cursorwiederholungen oder eine waehrend der Positionsabfrage geaenderte Bestellung
+werden als Fehler behandelt; der vorige Export bleibt erhalten. Das ersetzt kein historisches Vollarchiv.
+
+Die Bestellansicht bietet alle echten Exportfaelle einschliesslich Storno und Archiv sowie eine
+separate Kontrolle fuer manuell abgehakte Faelle ohne Versandnachweis, fehlende Positionskennungen
+und offene Versandbuchungen. Explizite Archivfilter verstecken keine alten Treffer.
+
+Die Packstation buendelt nur dieselbe Kundenidentitaet UND Empfaengeradresse. Unbekannte Identitaeten
+bleiben pro Bestellung getrennt. Haken und Packmarken behalten ihre vorhandenen Bestell-/Positions-IDs;
+neu getrennte Umschlaege erben keine Sammelpackmarke. Teilrueckerstattung und Direktversand sind
+Klaerfaelle. Offene Zahlungen und geschlossene Auftraege mit offenen Mustern werden mit Anzahl
+und Link zur Bestellliste sichtbar. Der Server prueft vor einer neuen Packmarke Angaben, Klaerungen
+und alle Positionshaken erneut; Navigation/Druck sind weiterhin von Versandbuchung getrennt.

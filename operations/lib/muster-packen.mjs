@@ -78,7 +78,10 @@ export function setzeKlaeren(datei, kundenSchluessel, { klaeren = true, fehlt = 
   if (!key) throw new Error('Kein Kunde angegeben');
   const stand = leseStand(datei);
   if (klaeren) stand.klaeren[key] = { zeit: jetzt.toISOString(), von: von || null, fehlt: [...new Set(fehlt.map(String))], notiz: String(notiz || '').trim().slice(0, 300) || null };
-  else delete stand.klaeren[key];
+  else if (key.includes('|adresse:')) {
+    // Nur diesen Empfaenger freigeben; eine alte gemeinsame Klaerung gilt fuer andere weiter.
+    stand.klaeren[key] = { geklaert: true, zeit: jetzt.toISOString(), von: von || null };
+  } else delete stand.klaeren[key];
   schreibStand(datei, stand);
-  return { klaeren: stand.klaeren[key] || null };
+  return { klaeren: stand.klaeren[key]?.geklaert ? null : stand.klaeren[key] || null };
 }

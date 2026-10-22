@@ -2,6 +2,25 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-22 · Vollstaendigkeit und sichere Packfaelle (#1608)
+
+- **Geaendert:** Auch Positionen nach der ersten API-Seite werden vollstaendig geladen; defekte,
+  wiederholte oder waehrend des Ladens geaenderte Seiten brechen ab und erhalten den bisherigen
+  Export. Aeltere Bestellungen mit offener Zahlung bleiben im Betriebsfenster. Fehlende
+  Positionskennungen verhindern den Abschluss, auch bei gemischten Auftraegen.
+- **Geaendert:** Bestellfilter „Alle Bestellungen“ und „Kontrolle noetig“; expliziter Abschlussfilter
+  zeigt auch aeltere Treffer seitenweise. Suche erklaert ihren Filter und kann mit einem Klick
+  auf alle echten Bestellungen erweitert werden. Manuelle Haken mit offenem Versand bleiben kontrollierbar.
+- **Geaendert:** Muster je Empfaengeradresse getrennt; unbekannte Kunden nie zusammenlegen.
+  Teilrueckerstattung und Direktversand sichtbar klaeren; Nullmengen nicht erneut packen.
+  Fehlende Adressen fuehren zur Bestellung, fehlende Zuordnung ins Lexikon. Serverseitige
+  Packpruefung verlangt eindeutige Angaben, erledigte Klaerung und eingelegte Muster.
+- **Getestet:** gezielte Regressionen, Dashboard-/Gesamtsuite, Projekt-Guards sowie
+  Browserpruefung mit privater Datenkopie auf Desktop und Handy; Klickproben fuer Suche und Filter.
+- **Risiken/Annahmen:** „Alle“ umfasst den aktuellen Betriebs-Export, kein historisches Vollarchiv.
+  Keine Versandbuchung, Nachricht, Erstattung oder Aenderung echter Packstaende durch Tests.
+- **Naechste Stufe:** regulaere Bedien-/Druckprobe im Betrieb.
+
 ## 2026-10-22 · Direkte Umschlagwahl und Datumssortierung (#1606)
 
 - **Geaendert:** Ein neuer Umschlag-Direktlink ersetzt die zuvor manuell geoeffnete Karte;

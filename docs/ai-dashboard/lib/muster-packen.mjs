@@ -82,14 +82,28 @@ function vorherIndex(produkte) {
 export function musterPackliste({ auftraege = [], produkte = new Map(), statusVon = () => null, schluesselVon = a => `auftrag:${a.id}`, gepackt = {}, haken = {}, klaeren = {}, lieferantVon = id => `Lieferant ${id}`, jetzt = new Date() } = {}) {
   const vorher = vorherIndex(produkte);
   const gruppen = new Map();
+  const ausschluesse = { zahlungOffen: 0, geschlossen: 0 };
   for (const a of auftraege) {
-    if (!a?.offen || a.storniert || a.testbestellung || a.bezahlt !== 'PAID' || a.erfuellt === 'FULFILLED') continue;
-    const positionen = (a.positionen || []).filter(p => p?.istMuster === true && !FERTIG.has(statusVon(a.id, p.lineItemId)));
+    if (!a || a.storniert || a.testbestellung || a.erfuellt === 'FULFILLED') continue;
+    if (!a.offen || !['PAID', 'PARTIALLY_REFUNDED'].includes(a.bezahlt)) {
+      if ((a.positionen || []).some(p => p?.istMuster && p.menge !== 0 && !FERTIG.has(statusVon(a.id, p.lineItemId)))) {
+        ausschluesse[!a.offen ? 'geschlossen' : 'zahlungOffen']++;
+      }
+      continue;
+    }
+    const positionen = (a.positionen || []).filter(p => p?.istMuster === true && p.menge !== 0 && !FERTIG.has(statusVon(a.id, p.lineItemId)));
     if (!positionen.length) continue;
     const zeilen = musteretikettenFuerAuftrag({ positionen }, produkte);
-    const key = schluesselVon(a);
-    if (!gruppen.has(key)) gruppen.set(key, { schluessel: key, name: '', adresse: null, bestellungen: [], muster: [] });
+    const identitaet = a.details?.kunde || {};
+    const unbekannt = ![identitaet.email, identitaet.telefon, identitaet.name].some(belegt);
+    const basis = unbekannt ? `auftrag:${a.id}` : schluesselVon(a);
+    // Ein Kundenkonto kann an mehrere Empfaenger liefern; niemals deren Umschlaege mischen.
+    const adresseKey = JSON.stringify(['name', 'strasse', 'plz', 'ort', 'land'].map(f => text(a.details?.lieferadresse?.[f]).toLowerCase().replace(/\s+/g, ' ')));
+    const key = JSON.stringify([basis, adresseKey]);
+    if (!gruppen.has(key)) gruppen.set(key, { schluessel: basis, name: '', adresse: null, bestellungen: [], muster: [], hinweise: new Set() });
     const g = gruppen.get(key);
+    if (a.bezahlt === 'PARTIALLY_REFUNDED') g.hinweise.add('Teilweise erstattet – offene Muster und Versandumfang prüfen.');
+    if (positionen.some(p => [p.route, p.musterRoute].includes('SUPPLIER_DIRECT'))) g.hinweise.add('Direktversand – Versandweg prüfen, nicht lokal packen.');
     g.bestellungen.push({ orderId: a.id, orderName: text(a.name), datum: a.datum || null });
     // Die neueste Bestellung traegt die aktuellste Anschrift.
     if (!g.adresse || (a.datum || '') >= (g.adresse.datum || '')) {
@@ -113,6 +127,10 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
   }
 
   const liste = [...gruppen.values()].map(g => {
+    const basis = g.schluessel;
+    // Dauerhaft adressbezogen: eine andere erledigte Bestellung darf die Klaerkennung nicht aendern.
+    g.schluessel = `${basis}|adresse:${JSON.stringify(['name', 'strasse', 'plz', 'ort', 'land'].map(f => text(g.adresse?.[f]).toLowerCase().replace(/\s+/g, ' ')))}`;
+    const altKlaerung = klaeren[basis];
     const bestellungen = g.bestellungen.sort((x, y) => text(x.datum).localeCompare(text(y.datum)));
     const seit = bestellungen[0]?.datum || null;
     const tage = seit ? Math.max(0, Math.floor((jetzt - new Date(seit)) / TAG)) : null;
@@ -123,11 +141,18 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
     const muster = g.muster.sort((x, y) => nr.indexOf(x.orderName) - nr.indexOf(y.orderName));
     const unvollstaendig = muster.filter(m => m.fehlt.length || !m.anzahl);
     markiereVerwechslung(muster);
+    const hinweise = [...g.hinweise];
+    const altvermerk = altKlaerung ? `Frühere gemeinsame Klärung${text(altKlaerung.notiz) ? `: ${text(altKlaerung.notiz)}` : ' vorhanden'} – je Umschlag neu prüfen.` : null;
+    // Bestehende Marken bleiben erhalten; neue Teilgruppen erben keine alte Sammelmarke.
     const istGepackt = !!gepackt[pk];
-    const kl = !istGepackt && klaeren[g.schluessel] ? klaeren[g.schluessel] : null;
+    const eigeneKlaerung = klaeren[g.schluessel];
+    // Ohne ausdrueckliche Freigabe bleibt die bisherige gemeinsame Klaerung aktiv.
+    const kl = !istGepackt && !eigeneKlaerung?.geklaert ? (eigeneKlaerung || altKlaerung || null) : null;
     return {
       schluessel: g.schluessel, packSchluessel: pk, name: g.name, adresse, bestellungen, seit, wartetTage: tage,
-      muster, adressAufkleber,
+      muster, adressAufkleber, hinweise, altvermerk,
+      adressFehlt: [...adressAufkleber.fehlt],
+      zuordnungFehlt: unvollstaendig.map(m => `${m.bestellt.titel}${m.bestellt.farbe ? ` – ${m.bestellt.farbe}` : ''}`),
       aufkleber: muster.reduce((s, m) => s + (m.anzahl || 0), 0) + 1,
       fehlt: [...unvollstaendig.map(m => `${m.bestellt.titel}${m.bestellt.farbe ? ` – ${m.bestellt.farbe}` : ''}`), ...adressAufkleber.fehlt.map(f => `Adresse: ${f}`)],
       nichtBestellt: muster.filter(m => m.stand === 'offen').length,
@@ -135,13 +160,13 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
       klaeren: kl ? { zeit: kl.zeit || null, von: kl.von || null, notiz: text(kl.notiz) || null,
         fehlt: muster.filter(m => (kl.fehlt || []).includes(m.lineItemId)).map(m => m.lineItemId) } : null,
       // Ein Haken bestaetigt das physisch eingelegte Muster, sonst braucht es bestaetigten Bestand.
-      bereich: istGepackt ? 'gepackt' : kl || unvollstaendig.length || adressAufkleber.fehlt.length ? 'klaeren' : muster.every(m => m.abgehakt || ['da', 'lager'].includes(m.stand)) ? 'packen' : 'warten',
+      bereich: istGepackt ? 'gepackt' : kl || hinweise.length || unvollstaendig.length || adressAufkleber.fehlt.length ? 'klaeren' : muster.every(m => m.abgehakt || ['da', 'lager'].includes(m.stand)) ? 'packen' : 'warten',
     };
   });
   // Packreihenfolge: wer am laengsten wartet, zuerst; Gepacktes ans Ende.
   liste.sort((x, y) => (!!x.gepackt - !!y.gepackt) || text(x.seit).localeCompare(text(y.seit)) || x.name.localeCompare(y.name, 'de'));
   const zahl = b => liste.filter(k => k.bereich === b).length;
-  return { kunden: liste, offen: liste.filter(k => !k.gepackt).length, zahlen: { warten: zahl('warten'), packen: zahl('packen'), klaeren: zahl('klaeren'), gepackt: zahl('gepackt') } };
+  return { kunden: liste, ausschluesse, offen: liste.filter(k => !k.gepackt).length, zahlen: { warten: zahl('warten'), packen: zahl('packen'), klaeren: zahl('klaeren'), gepackt: zahl('gepackt') } };
 }
 
 /**
