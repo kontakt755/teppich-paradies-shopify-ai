@@ -4,6 +4,8 @@
  * Je Muster: Bild genau dieser Farbe, Partnerladen, was auf dem Lieferantenmuster steht (vorher,
  * Farbnummer gross) und welcher Aufkleber darauf kommt (nachher). Abhaken speichert zentral;
  * bleibt ein Muster offen, geht der Kunde mit "Fehlt etwas" nach "Zu klären", bis "Fehlendes ist da".
+ * "Nach Partnerladen" (mp=laden): Wareneingang sortieren - je Laden alle noch nicht eingelegten
+ * Muster mit Ziel-Umschlag.
  * Porto und Versandbuchung folgen, wenn der Versandweg entschieden ist.
  */
 import { state } from '../../kern/zustand.mjs';
@@ -13,7 +15,7 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { oeffneEtikettenDruck } from '../../bausteine/etiketten-druck.mjs';
-import { STAND_TEXT, WARTET_AB_TAGEN, aufkleberFuer } from '../../lib/muster-packen.mjs';
+import { STAND_TEXT, WARTET_AB_TAGEN, aufkleberFuer, musterNachLaden } from '../../lib/muster-packen.mjs';
 import { kunden } from './gemeinsam.mjs';
 
 const ENDPOINT = '/api/kunden/muster-packen';
@@ -116,6 +118,12 @@ export function viewKundenMusterPacken() {
   if (!d) return '<p class="muted" role="status">Lade offene Musterbestellungen …</p>';
   if (d.fehler) return stoerungState(d, 'Die Musterbestellungen');
   if (!d.verfuegbar) return emptyState('Keine Bestelldaten.', d.hinweis || 'Bitte „Jetzt aktualisieren“.');
+  const modus = state.route.params.get('mp') === 'laden' ? 'laden' : 'kunde';
+  const umschalter = `<div class="mp-modus" role="group" aria-label="Ansicht">
+      <button type="button" class="btn btn-sm${modus === 'kunde' ? ' btn-primary' : ''}" data-param="mp" data-value="" aria-pressed="${modus === 'kunde'}">Nach Kunde packen</button>
+      <button type="button" class="btn btn-sm${modus === 'laden' ? ' btn-primary' : ''}" data-param="mp" data-value="laden" aria-pressed="${modus === 'laden'}">Wareneingang nach Partnerladen</button>
+    </div>`;
+  if (modus === 'laden') return umschalter + viewNachLaden(d);
   const je = b => d.kunden.filter(k => k.bereich === b);
   const packen = je('packen'), klaeren = je('klaeren'), gepackt = je('gepackt');
   const kopf = `<p class="sub mp-hier">Kunde für Kunde: Aufkleber drucken, jedes Muster mit Bild und Farbnummer vergleichen, überkleben, abhaken. Alles abgehakt → „Umschlag gepackt“. Fehlt etwas → „Zu klären“. Porto und Versandbuchung machst du bis auf Weiteres wie gewohnt.</p>`;
@@ -129,11 +137,33 @@ export function viewKundenMusterPacken() {
     ${druckbar.length < packen.length ? `<p class="small muted">„Alle drucken“ lässt ${packen.length - druckbar.length === 1 ? 'einen Kunden' : `${packen.length - druckbar.length} Kunden`} ohne eindeutige Aufkleber aus.</p>` : ''}`;
   const bereich = (titel, liste, start, offenAuf = true) => liste.length
     ? `<details class="mp-bereich"${offenAuf ? ' open' : ''}><summary><h2 class="mp-titel">${titel} <span class="muted">(${liste.length})</span></h2></summary><div class="mp-kunden">${liste.map((k, i) => kundeHtml(k, start + i + 1)).join('')}</div></details>` : '';
-  return `${kopf}${summe}
+  return `${umschalter}${kopf}${summe}
     ${packen.length ? '' : '<p class="small muted">Gerade ist nichts zu packen.</p>'}
     ${bereich('Zu packen', packen, 0)}
     ${bereich('Zu klären', klaeren, packen.length)}
     ${bereich('Gepackt', gepackt, packen.length + klaeren.length, false)}`;
+}
+
+/** Wareneingang: ein Paket eines Partnerladens auf die richtigen Umschlaege verteilen. */
+function viewNachLaden(d) {
+  const laeden = musterNachLaden(d.kunden);
+  if (!laeden.length) return emptyState('Nichts zu sortieren.', 'Alle offenen Muster sind schon eingelegt.');
+  const gewaehlt = laeden.find(l => l.laden === state.route.params.get('laden')) || laeden[0];
+  const chips = laeden.map(l => `<button type="button" class="btn btn-sm${l === gewaehlt ? ' btn-primary' : ''}" data-param="laden" data-value="${esc(l.laden)}" aria-pressed="${l === gewaehlt}">${esc(l.laden)} <span class="${l === gewaehlt ? '' : 'muted'}">(${l.eintraege.length})</span></button>`).join('');
+  const zeilen = gewaehlt.eintraege.map(e => {
+    const m = e.muster, v = m.vorher || {};
+    return `<li class="mp-sortzeile">
+      ${bildHtml(m)}
+      <div class="mp-vorher"><span>${esc(v.produktname || m.bestellt.titel)}</span>${v.farbnummer ? `<span class="mp-farbnr">Farbnr. ${esc(v.farbnummer)}</span>` : '<span class="small muted">keine Farbnummer hinterlegt</span>'}</div>
+      <div class="mp-pfeil" aria-hidden="true">→</div>
+      <div class="mp-ziel">${e.umschlag === 'zu klären' ? '<span class="mp-umschlag mp-umschlag-klaeren">zu klären</span>' : `<span class="mp-umschlag">${esc(e.umschlag)}</span>`}
+        <span><strong>${esc(e.kunde)}</strong></span><span class="small muted">${esc(e.bestellung)}</span></div>
+    </li>`;
+  }).join('');
+  return `<p class="sub mp-hier">Paket auspacken, Laden wählen, jedes Muster an Bild und Farbnummer erkennen und auf den Stapel mit der Umschlag-Nummer legen. Die Nummern sind dieselben wie unter „Nach Kunde packen“.</p>
+    <div class="mp-laeden">${chips}</div>
+    <h2 class="mp-titel">${esc(gewaehlt.laden)} <span class="muted">· ${plural(gewaehlt.eintraege.length, 'Muster', 'Muster')}</span></h2>
+    <ul class="mp-sortliste">${zeilen}</ul>`;
 }
 
 function drucken(liste, titel) {

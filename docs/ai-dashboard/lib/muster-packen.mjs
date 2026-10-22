@@ -52,9 +52,14 @@ function vorherIndex(produkte) {
       const e = v.einkauf || {};
       for (const sku of new Set([text(v.sku), text(e.artikelnummer)].filter(Boolean))) {
         const wert = { produktname: belegt(e.produktname) ? text(e.produktname) : null, farbnummer: belegt(e.farbnummer) ? text(e.farbnummer) : null, url: belegt(e.url) ? text(e.url) : null,
-          kollektion: belegt(e.kollektion) ? text(e.kollektion) : null, lieferant: belegt(e.lieferant) ? text(e.lieferant) : null, bild: farbBild(p, v) };
+          kollektion: belegt(e.kollektion) ? text(e.kollektion) : null, lieferant: belegt(e.lieferant) ? text(e.lieferant) : null };
+        const bild = farbBild(p, v);
         const alt = je.get(sku);
-        je.set(sku, alt && JSON.stringify(alt) !== JSON.stringify(wert) ? 'mehrdeutig' : wert);
+        // Dieselbe SKU in mehreren Breiten traegt oft je ein eigenes Bild derselben Farbe: das Bild
+        // entscheidet nicht ueber "mehrdeutig"; bei verschiedenen Bildern gilt das erste.
+        if (alt === 'mehrdeutig') continue;
+        if (alt && JSON.stringify({ ...alt, bild: null }) !== JSON.stringify({ ...wert, bild: null })) { je.set(sku, 'mehrdeutig'); continue; }
+        je.set(sku, { ...wert, bild: alt?.bild || bild });
       }
     }
   }
@@ -159,4 +164,28 @@ function markiereVerwechslung(muster) {
 /** Aufkleber eines Kunden in Druckreihenfolge: seine Muster (je bestellte Anzahl), danach die Adresse. */
 export function aufkleberFuer(kunde) {
   return [...kunde.muster.flatMap(m => Array.from({ length: m.anzahl || 0 }, () => m.etikett)), kunde.adressAufkleber];
+}
+
+/**
+ * Wareneingang sortieren: alle noch nicht eingelegten Muster der offenen Kunden je Partnerladen,
+ * mit Ziel-Umschlag (Nummer in "Zu packen" bzw. "zu klären"). Je Laden nach Name und Farbnummer,
+ * damit ein Paket von oben nach unten abgelegt werden kann.
+ */
+export function musterNachLaden(kundenListe = []) {
+  const laeden = new Map();
+  let nr = 0;
+  for (const k of kundenListe) {
+    if (k.bereich === 'gepackt') continue;
+    const umschlag = k.bereich === 'packen' ? String(++nr) : 'zu klären';
+    for (const m of k.muster) {
+      if (m.abgehakt) continue;
+      const laden = m.lieferant || 'Partnerladen nicht hinterlegt';
+      if (!laeden.has(laden)) laeden.set(laden, []);
+      laeden.get(laden).push({ muster: m, kunde: k.name, bestellung: m.orderName, umschlag, packSchluessel: k.packSchluessel });
+    }
+  }
+  const sortName = e => `${text(e.muster.vorher?.produktname || e.muster.etikett?.serie).toLowerCase()}|${text(e.muster.vorher?.farbnummer).padStart(8, '0')}`;
+  return [...laeden.entries()]
+    .map(([laden, eintraege]) => ({ laden, eintraege: eintraege.sort((a, b) => sortName(a).localeCompare(sortName(b), 'de')) }))
+    .sort((a, b) => b.eintraege.length - a.eintraege.length || a.laden.localeCompare(b.laden, 'de'));
 }

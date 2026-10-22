@@ -101,12 +101,15 @@ export function viewKundenRueckrufe() {
   // ausgenommen, in dieser Liste und im Zaehler standen sie weiter drin.
   const auftrag = state.route.params.get('auftrag');
   const zeilen = auftrag ? r.zeilen.filter(z => String(z.orderId) === auftrag) : r.zeilen;
-  const offen = zeilen.filter(z => z.status !== 'erledigt' && !z.testbestellung);
+  // Wichtigkeit (22.10.): nicht erreicht vor offen vor angerufen, darin die aelteste Bestellung zuerst.
+  const RANG = { nicht_erreicht: 0, offen: 1, angerufen: 2 };
+  const offen = zeilen.filter(z => z.status !== 'erledigt' && !z.testbestellung)
+    .map((z, i) => [z, i]).sort(([a, ai], [b, bi]) => (RANG[a.status] ?? 1) - (RANG[b.status] ?? 1) || ai - bi).map(([z]) => z);
   const erledigt = zeilen.filter(z => z.status === 'erledigt');
   const tests = zeilen.filter(z => z.status !== 'erledigt' && z.testbestellung);
   return `
     ${auftrag ? '<p><a href="#/heute">← Zurück zu Heute</a> · <a href="#/kunden?tab=rueckrufe">Alle Rückrufe</a></p>' : ''}
-    <p class="small muted" style="margin:0 0 10px">Alle Bestellungen mit Beratungswunsch, Maßprüfung „Ja" oder angefragter Verlegung – älteste zuerst. Nachgefasst wird nur hier, nicht in der Laden-Ansicht. Status und Notiz werden lokal auf diesem Mac gespeichert.</p>
+    <p class="small muted" style="margin:0 0 10px">Alle Bestellungen mit Beratungswunsch, Maßprüfung „Ja" oder angefragter Verlegung – „Nicht erreicht“ zuerst, sonst älteste zuerst. Nachgefasst wird nur hier, nicht in der Laden-Ansicht. Status und Notiz werden lokal auf diesem Mac gespeichert.</p>
     <div class="rows">${offen.length ? offen.map(rueckrufZeileHtml).join('') : emptyState('Keine offenen Rückrufe.', '')}</div>
     ${tests.length ? `<details style="margin-top:14px"><summary>${tests.length} aus Testbestellungen</summary><div class="rows">${tests.map(rueckrufZeileHtml).join('')}</div></details>` : ''}
     ${erledigt.length ? `<details ${auftrag ? 'open' : ''} style="margin-top:14px"><summary>${erledigt.length} erledigt</summary><div class="rows">${erledigt.map(rueckrufZeileHtml).join('')}</div></details>` : ''}

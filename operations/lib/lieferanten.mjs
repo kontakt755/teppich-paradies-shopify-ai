@@ -448,7 +448,13 @@ function sortiert(ids) {
 export function lieferantenUebersicht(modell, { statusAlle = {}, stammdaten = null, jetzt = new Date() } = {}) {
   const daten = sammle(modell, statusAlle, jetzt);
   const ids = new Set([...Object.keys(stammdaten?.lieferanten ?? {}), ...daten.keys()]);
-  const lieferanten = sortiert(ids).map(id => eintragFuer(id, daten.get(id), stammdaten));
+  // Ueberfaellige zuerst (Inhaber 22.10.): mehr rote, dann mehr bernsteinfarbene Posten, dann die
+  // aelteste offene Bestellung; ohne offene Posten A-Z. "Nicht zugeordnet" bleibt hinten.
+  const lieferanten = sortiert(ids).map(id => eintragFuer(id, daten.get(id), stammdaten))
+    .sort((a, b) => (a.id === UNGEKLAERT) - (b.id === UNGEKLAERT)
+      || b.ueberfaellig.problem - a.ueberfaellig.problem || b.ueberfaellig.nachhaken - a.ueberfaellig.nachhaken
+      || (b.aeltesteOffeneBestellungTage ?? -1) - (a.aeltesteOffeneBestellungTage ?? -1)
+      || a.id.localeCompare(b.id));
   const k = stammdaten?.absender?.kettelservice;
   return {
     schwellen: { nachhakenTage: WARTE_NACHHAKEN_TAGE, problemTage: WARTE_PROBLEM_TAGE },

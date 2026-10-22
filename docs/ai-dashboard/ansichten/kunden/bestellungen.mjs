@@ -4,7 +4,7 @@
  * durchsuchbar; Klick auf die Zeile klappt die Detailansicht auf.
  */
 import {
-  bestellKundenKey, gruppiereBestellzeilenNachKunde, sortKundenname,
+  bestellKundenKey, gruppiereBestellzeilenNachKunde, sortKundenname, sortiereNachWichtigkeit,
 } from '../../lib/kunden-bestellgruppen.mjs';
 import { state } from '../../kern/zustand.mjs';
 import { esc, fmtDate, fmtDateTime, plural, toast, geldText } from '../../kern/helfer.mjs';
@@ -51,7 +51,7 @@ export function ensureKundenBestellungen() {
 // Kunde ist fertig, welcher nicht" soll sofort sichtbar sein). Muss zu
 // operations/lib/bestellliste.mjs (FILTERCHIPS/wendeFilterAn) passen.
 const BQ_FILTER_LABEL = { nicht_fertig: 'Nicht fertig', fertig: 'Fertig', offen: 'Zahlung offen', bezahlt: 'Bezahlt', unerfuellt: 'Unerfüllt', storniert: 'Storniert', beratung: 'Beratung offen', muster: 'Muster', test: 'Testbestellung' };
-const BQ_SORT_LABEL = { datum: 'Datum', orderName: 'Bestellnr.', kundenname: 'Kunde', gesamtbetrag: 'Betrag', zahlungsstatus: 'Zahlung', fulfillmentstatus: 'Versand', anzahlArtikel: 'Artikel', fortschritt: 'Fortschritt' };
+const BQ_SORT_LABEL = { wichtigkeit: 'Wichtigkeit', datum: 'Datum', orderName: 'Bestellnr.', kundenname: 'Kunde', gesamtbetrag: 'Betrag', zahlungsstatus: 'Zahlung', fulfillmentstatus: 'Versand', anzahlArtikel: 'Artikel', fortschritt: 'Fortschritt' };
 
 const KANAL_TEXT = { web: 'Onlineshop', pos: 'Ladengeschäft', shopify_draft_order: 'Angebot' };
 
@@ -82,6 +82,8 @@ function bestellzeileGefiltert(zeilen, params) {
     gesamtbetrag: z => z.gesamtbetrag ?? -Infinity, zahlungsstatus: z => z.zahlungsstatus || '', fulfillmentstatus: z => z.fulfillmentstatus || '', anzahlArtikel: z => z.anzahlArtikel ?? 0,
     fortschritt: z => z.fortschritt?.minStufe ?? 0,
   }[sort] || (z => z.datum || '');
+  // Voreinstellung (Inhaber 22.10.): wer am dringendsten etwas braucht, steht oben.
+  if (sort === 'wichtigkeit') return sortiereNachWichtigkeit(liste);
   const vz = dir === 'asc' ? 1 : -1;
   const namen = new Intl.Collator('de', { sensitivity: 'base', numeric: true });
   liste = [...liste].sort((a, b) => {
@@ -289,7 +291,7 @@ export function viewKundenBestellungen() {
   const erledigtAlle = gefiltert.filter(istErledigt).sort((a, b) => String(b.datum || '').localeCompare(String(a.datum || '')));
   const erledigt = params.get('bq') ? erledigtAlle : erledigtAlle.filter(z => Date.parse(z.datum) >= grenze);
   const erledigtAelter = erledigtAlle.length - erledigt.length;
-  const alleGruppen = sort === 'kundenname' ? gruppiereBestellzeilenNachKunde(zeilen) : null;
+  const alleGruppen = ['kundenname', 'wichtigkeit'].includes(sort) ? gruppiereBestellzeilenNachKunde(zeilen) : null;
   // Seitenweise (25 Kunden bzw. 25 Bestellungen): die volle Liste samt Produktinhalt wurde
   // am Handy mehrere Meter lang (Codex-Audit 2026-10-19).
   const einheiten = alleGruppen || zeilen;
@@ -309,19 +311,24 @@ export function viewKundenBestellungen() {
   // die Spalte setzen - die Richtung liesse sich dann nie umschalten.
   const sortHead = (feld, label) => `<th><button type="button" class="th-sort" data-bq-sort-toggle="${feld}" aria-label="Nach ${esc(label)} sortieren${sort === feld ? (dir === 'asc' ? ', aktuell aufsteigend' : ', aktuell absteigend') : ''}">${esc(label)}${sort === feld ? (dir === 'asc' ? ' ↑' : ' ↓') : ''}</button></th>`;
   const kopf = `<tr>${sortHead('orderName', 'Bestellnr.')}${sortHead('datum', 'Datum')}${sortHead('kundenname', 'Kunde')}<th>Kontakt</th>${sortHead('gesamtbetrag', 'Betrag')}${sortHead('zahlungsstatus', 'Zahlung')}${sortHead('fulfillmentstatus', 'Versand')}${sortHead('fortschritt', 'Fortschritt')}<th>Was fehlt</th></tr>`;
-  const gruppenkopf = g => `<tr class="bq-gruppenkopf"><th colspan="9" scope="rowgroup"><span>${esc(g.name)}</span><span class="small muted">${plural(g.zeilen.length, 'Bestellung', 'Bestellungen')}</span></th></tr>`;
+  // Bei "Wichtigkeit" steht am Kunden, warum er oben ist (seine dringendste Bestellung).
+  const grund = g => {
+    const w = sort === 'wichtigkeit' ? g.zeilen.map(z => z.wichtigkeit).filter(Boolean).sort((a, b) => a.rang - b.rang)[0] : null;
+    return w ? `<span class="bq-grund bq-rang-${w.rang}">${esc(w.grund)}</span>` : '';
+  };
+  const gruppenkopf = g => `<tr class="bq-gruppenkopf"><th colspan="9" scope="rowgroup"><span>${esc(g.name)}</span>${grund(g)}<span class="small muted">${plural(g.zeilen.length, 'Bestellung', 'Bestellungen')}</span></th></tr>`;
   const tabelle = zeilen.length ? gruppen
     ? gruppen.map(g => `<tbody class="bq-tbody-desktop bq-kundengruppe">${gruppenkopf(g)}${g.zeilen.map(bestellzeileHtml).join('')}</tbody>`).join('')
     : `<tbody class="bq-tbody-desktop">${sichtbar.map(bestellzeileHtml).join('')}</tbody>`
     : `<tbody><tr><td colspan="9">${emptyState('Keine Treffer.', '')}</td></tr></tbody>`;
   const karten = zeilen.length ? gruppen
-    ? gruppen.map(g => `<section class="bq-kundengruppe-mobil"><h3>${esc(g.name)} <span class="small muted">· ${plural(g.zeilen.length, 'Bestellung', 'Bestellungen')}</span></h3>${g.zeilen.map(z => bestellzeileKarte(z, true)).join('')}</section>`).join('')
+    ? gruppen.map(g => `<section class="bq-kundengruppe-mobil"><h3>${esc(g.name)} <span class="small muted">· ${plural(g.zeilen.length, 'Bestellung', 'Bestellungen')}</span></h3>${grund(g)}${g.zeilen.map(z => bestellzeileKarte(z, true)).join('')}</section>`).join('')
     : sichtbar.map(bestellzeileKarte).join('')
     : emptyState('Keine Treffer.', '');
   return `
     <div class="toolbar search-hero"><input type="search" placeholder="Suchen – Kunde, E-Mail, Telefon, Bestellnummer, Produkt, Farbe, Tags …" value="${esc(params.get('bq') || '')}" data-param="bq" aria-label="Bestellungen durchsuchen"></div>
     ${chips}
-    <p class="small muted" style="margin:0 0 8px">${zeilen.length} ${zeilen.length === 1 ? 'Bestellung' : 'Bestellungen'}${seiten > 1 ? ` · Seite ${seite} von ${seiten}` : ''} · Sortiert nach ${esc(BQ_SORT_LABEL[sort] || 'Kunde')} ${dir === 'asc' ? 'aufsteigend' : 'absteigend'} · Zeile anklicken zeigt Zeitleiste, Kanal, Tags und die Aktionen</p>
+    <p class="small muted" style="margin:0 0 8px">${zeilen.length} ${zeilen.length === 1 ? 'Bestellung' : 'Bestellungen'}${seiten > 1 ? ` · Seite ${seite} von ${seiten}` : ''} · ${sort === 'wichtigkeit' ? 'Sortiert nach Wichtigkeit: es fehlt etwas → unterwegs → nicht bezahlt → raus oder erledigt, je die älteste zuerst' : `Sortiert nach ${esc(BQ_SORT_LABEL[sort] || 'Kunde')} ${dir === 'asc' ? 'aufsteigend' : 'absteigend'} · <button type="button" class="btn btn-sm btn-ghost" data-param="bsort" data-value="wichtigkeit">Nach Wichtigkeit sortieren</button>`} · Zeile anklicken zeigt Zeitleiste, Kanal, Tags und die Aktionen</p>
     <div class="table-wrap kunden-table bq-table"><table><thead>${kopf}</thead>
     ${tabelle}
     </table></div>

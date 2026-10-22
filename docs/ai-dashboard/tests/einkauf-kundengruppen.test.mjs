@@ -15,7 +15,7 @@ test('Muster bleiben je Kunde zusammen, auch bei mehreren Aufträgen und unsorti
   ];
   const gruppen = gruppierePositionenNachKunde(positionen, auftraege);
   assert.deepEqual(gruppen.map(g => [g.name, g.auftragsAnzahl, g.positionen.map(p => p.lineItemId)]), [
-    ['Änne Beispiel', 2, ['a2', 'a1']],
+    ['Änne Beispiel', 2, ['a1', 'a2']], // wartet am laengsten zuerst (26.09.), darin aelteste Position zuerst
     ['Zora Beispiel', 1, ['b']],
   ]);
   assert.equal(gruppen[0].ort, '');
@@ -31,4 +31,16 @@ test('Gleichnamige und unbekannte Kunden werden nicht versehentlich vermischt', 
   );
   assert.deepEqual(gruppen.map(g => g.positionen.map(p => p.orderId)), [['1'], ['2'], ['3'], ['4']]);
   assert.equal(gruppen[2].name, 'Kunde nicht zugeordnet');
+});
+
+test('Kunde, der am laengsten wartet, steht oben - nicht alphabetisch', () => {
+  const auftraege = [
+    { id: 'x', details: { kunde: { id: '1', name: 'Anton Beispiel' } } },
+    { id: 'y', details: { kunde: { id: '2', name: 'Zora Beispiel' } } },
+  ];
+  const gruppen = gruppierePositionenNachKunde([
+    { orderId: 'x', orderDatum: '2026-10-20', lineItemId: 'x1' },
+    { orderId: 'y', orderDatum: '2026-10-01', lineItemId: 'y1' },
+  ], auftraege);
+  assert.deepEqual(gruppen.map(g => g.name), ['Zora Beispiel', 'Anton Beispiel']);
 });

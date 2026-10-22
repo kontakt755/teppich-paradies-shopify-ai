@@ -2,6 +2,71 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-22 · Lieferantenlisten nach überfälligen Posten
+
+- **Geändert:** Bestellen › Je Lieferant: rot überfällig → bernstein überfällig → zu bestellen → Rest,
+  darin die längste Wartezeit zuerst (vorher: zu bestellen zuerst, dann A–Z). Lieferantenübersicht
+  (`lieferantenUebersicht`): mehr rote, dann mehr bernsteinfarbene Posten, dann älteste offene
+  Bestellung zuerst; ohne offene Posten A–Z. „Nicht zugeordnet“ bleibt hinten.
+- **Getestet:** neuer Fall in `operations/tests/lieferanten.test.mjs`; `dashboard:test` und `npm test`
+  grün; `dashboard:pruefen` für Einkauf ohne Befund.
+- **Risiken/Annahmen:** keine; nur die Reihenfolge.
+- **Nächste Stufe:** –
+
+## 2026-10-22 · Arbeitslisten nach Wichtigkeit
+
+- **Geändert:** Wo eine Arbeitsliste noch alphabetisch oder „neueste zuerst“ stand, steht jetzt das
+  Dringendste oben:
+  - **Kunden › Rückrufe:** „Nicht erreicht“ vor offen vor angerufen, darin die älteste zuerst.
+  - **Kunden › Service-Anfragen (offen):** nach Bearbeitungsstand (neu zuerst), darin wer am längsten wartet.
+  - **Kunden › Angebote:** offene Angebote, das älteste zuerst (Abgeschlossene weiter neueste zuerst).
+  - **Bestellen › nach Kunde:** wer am längsten wartet, zuerst (vorher A–Z), Positionen älteste zuerst.
+  - **Genossenschaften › Alle Firmen:** fällige zuerst, dann nach Wiedervorlage, dann A–Z.
+  - **Heute, Spalten „Wer wartet auf was“:** Rot vor Gelb vor normal, darin die älteste zuerst.
+  Bewusst unverändert: das Auftragsband (Probleme sind dort mit Grund geparkt und stehen absichtlich
+  hinten) sowie Nachschlagelisten (Musterlager-Bestand, Lexikon).
+- **Getestet:** `einkauf-kundengruppen.test.mjs` angepasst und neuer Fall; `dashboard:test` 690 grün,
+  `npm test` grün; `dashboard:pruefen` für Heute, Rückrufe, Service, Angebote, Einkauf, Genossenschaften
+  ohne Befund.
+- **Risiken/Annahmen:** keine; Sortierung allein, keine Daten geändert.
+- **Nächste Stufe:** Lieferantenlisten nach überfälligen Posten statt A–Z.
+
+## 2026-10-22 · Kunden › Bestellungen nach Wichtigkeit
+
+- **Geändert:** Neue Standardsortierung „Wichtigkeit“ (vorher: Kundenname A–Z). Reihenfolge: bezahlt
+  und es fehlt etwas (nicht bestellt, Rückruf, Maßprüfung, ID) → bezahlt und alles unterwegs → noch
+  nicht bezahlt → schon an den Kunden raus, erledigt oder storniert; jeweils die älteste zuerst.
+  Bestellungen eines Kunden bleiben zusammen, der Kunde steht so weit oben wie seine dringendste
+  Bestellung. Am Kunden steht der Grund („wartet seit 12 Tagen · noch nicht bestellt“). Die
+  Spaltenköpfe sortieren wie bisher; „Nach Wichtigkeit sortieren“ führt zurück.
+  `wichtigkeit`/`sortiereNachWichtigkeit` in `lib/kunden-bestellgruppen.mjs`.
+- **Getestet:** neuer Fall in `kunden-bestellgruppen.test.mjs`; `dashboard:test` 689 grün;
+  `dashboard:pruefen` für den Reiter in allen Breiten ohne Befund.
+- **Risiken/Annahmen:** Die Reihenfolge hängt am Auftragsfluss: wo „bestellt“/„raus“ nicht
+  nachgetragen ist, steht eine Bestellung höher als nötig.
+- **Nächste Stufe:** dieselbe Logik für weitere Listen des Dashboards prüfen.
+
+## 2026-10-22 · Muster packen: Wareneingang nach Partnerladen
+
+- **Geändert:** Umschalter „Nach Kunde packen“ / „Wareneingang nach Partnerladen“ (`mp=laden`). Je
+  Partnerladen alle noch nicht eingelegten Muster der offenen Kunden, nach Name und Farbnummer, mit
+  Bild und dem Ziel: Umschlag-Nummer (dieselbe wie in „Zu packen“, „zu klären“ gesondert), Kunde,
+  Bestellung. `musterNachLaden` in `lib/muster-packen.mjs`, rein aus den schon geladenen Daten.
+- **Getestet:** neuer Fall in `muster-packen.test.mjs`; `dashboard:test` 688 grün; `dashboard:pruefen`
+  für beide Ansichten in allen Breiten ohne Befund.
+- **Risiken/Annahmen:** Die Umschlag-Nummer verschiebt sich, sobald ein Kunde gepackt ist – beim
+  Sortieren die Liste nicht zwischendurch neu laden oder nach Namen sortieren.
+- **Nächste Stufe:** weitere Wünsche aus dem Laden sammeln; alte Bestellungen aussortieren.
+
+## 2026-10-22 · Muster packen: Farbbild macht Breiten nicht mehr mehrdeutig
+
+- **Geändert:** Dieselbe SKU in mehreren Breiten trägt je ein eigenes Variantenbild; das galt als
+  Widerspruch, und 40 von 68 offenen Mustern zeigten keine Lieferantenangaben. Das Bild entscheidet
+  jetzt nicht mehr über „mehrdeutig“. Echte Daten danach: 66 von 68 mit Angaben, 65 mit Farbbild.
+- **Getestet:** neuer Fall in `muster-packen.test.mjs`; `dashboard:test` grün.
+- **Risiken/Annahmen:** keine.
+- **Nächste Stufe:** Teil 3 – Wareneingang nach Partnerladen sortieren.
+
 ## 2026-10-22 · Muster packen: Muster sicher erkennen, abhaken, „Zu klären“
 
 - **Geändert:** Je Muster ein Bild genau dieser Farbe (Variantenbild, neu im Lexikon-Export;
