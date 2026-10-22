@@ -10,12 +10,17 @@ const leer = () => ({ verfuegbar: true, eintraege: [], gruppen: [], team: [], an
 const mitAufgabe = () => ({ ...leer(), anzahl: 1, eintraege: [{ id: 'test-1', titel: 'Synthetische Aufgabe', typ: 'TASK', status: 'INBOX', prioritaet: 'NORMAL' }] });
 
 function aufgaben() {
-  const config = { jetzt: 1000, antwort: leer(), render: null };
+  const config = { jetzt: 1000, antwort: leer(), render: null, aktiv: null, felder: [], dialogOffen: false };
   const reads = [], writes = [];
   const state = { capabilities: { mode: 'local' }, route: { view: 'organisation', params: new URLSearchParams() } };
   const text = [quelltext('bausteine/karten.mjs'), quelltext('ansichten/organisation/gemeinsam.mjs'), quelltext('ansichten/organisation.mjs')].join('\n');
   const api = vm.runInNewContext(text + '\n({ org, ensureOrgListe, ensureOrgDaten, ensureOrgDetail, orgFrisch, viewOrganisation, orgKlickZuruecksetzen })', {
     state, URLSearchParams,
+    document: {
+      body: {}, get activeElement() { return config.aktiv; },
+      querySelector: () => config.dialogOffen ? {} : null,
+      querySelectorAll: () => config.felder,
+    },
     Date: class extends Date { static now() { return config.jetzt; } },
     esc: v => String(v ?? ''), fmtDate: v => String(v), fmtDateTime: v => String(v), istNurLesend: () => false,
     fetchEinkauf: async pfad => { reads.push(pfad); return typeof config.antwort === 'function' ? config.antwort(pfad) : config.antwort; },
@@ -132,4 +137,52 @@ test('wartende Kunden bleiben auch ohne aktive Faelle sichtbar, inklusive direkt
   kunden.faelle = { verfuegbar: false, fehler: true, hinweis: 'Testfehler' };
   assert.match(view(), /konnten nicht geladen werden/);
   assert.ok(!view().includes('Nichts offen'));
+});
+
+
+test('laufender Listenabruf aktualisiert Cache, rendert aber keinen inzwischen geoeffneten Detailkontext', async () => {
+  const u = aufgaben(); let fertig; let renders = 0;
+  u.config.render = () => { renders++; };
+  u.config.antwort = () => new Promise(resolve => { fertig = resolve; });
+  const lauf = u.ensureOrgListe();
+  u.state.route.params.set('oid', 'test-1');
+  u.config.aktiv = { matches: () => true, value: 'Ungespeicherter Titel' };
+  const antwort = mitAufgabe(); fertig(antwort); await lauf;
+  assert.equal(u.org.liste, antwort);
+  assert.equal(u.org.loading, false);
+  assert.equal(renders, 0, 'Listenantwort darf das Detail mit neu getipptem Titel nicht ersetzen');
+  assert.equal(u.config.aktiv.value, 'Ungespeicherter Titel');
+});
+
+test('Listenabruf prueft nach dem await erneut aktive Eingaben, offene Dialoge und ungespeicherte Felder', async () => {
+  const faelle = [
+    { aktiv: { matches: () => true } },
+    { dialogOffen: true },
+    { felder: [{ tagName: 'TEXTAREA', value: 'Neu', defaultValue: 'Alt' }] },
+    { felder: [{ tagName: 'INPUT', type: 'checkbox', checked: true, defaultChecked: false }] },
+    { felder: [{ tagName: 'SELECT', options: [{ selected: true, defaultSelected: false }] }] },
+  ];
+  for (const eingabe of faelle) {
+    const u = aufgaben(); let fertig; let renders = 0;
+    u.config.render = () => { renders++; };
+    u.config.antwort = () => new Promise(resolve => { fertig = resolve; });
+    const lauf = u.ensureOrgListe();
+    Object.assign(u.config, eingabe);
+    const antwort = mitAufgabe(); fertig(antwort); await lauf;
+    assert.equal(u.org.liste, antwort);
+    assert.equal(renders, 0);
+  }
+});
+
+test('Listenantwort rendert nur den weiterhin passenden sauberen Listenkontext', async () => {
+  for (const geaendert of [false, true]) {
+    const u = aufgaben(); let fertig; let renders = 0;
+    u.config.render = () => { renders++; };
+    u.config.antwort = () => new Promise(resolve => { fertig = resolve; });
+    const lauf = u.ensureOrgListe();
+    if (geaendert) u.state.route.params.set('oq', 'Andere Suche');
+    u.config.felder = [{ tagName: 'TEXTAREA', value: 'Unveraendert', defaultValue: 'Unveraendert' }];
+    fertig(mitAufgabe()); await lauf;
+    assert.equal(renders, geaendert ? 0 : 1);
+  }
 });

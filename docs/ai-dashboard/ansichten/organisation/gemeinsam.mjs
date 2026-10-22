@@ -100,10 +100,30 @@ export function orgEintragOeffnen(id) {
 const ORG_REFRESH_MS = 30_000;
 const lesefehler = d => ({ ...d, fehler: true, hinweis: d?.hinweis || 'Die Aufgaben konnten gerade nicht gelesen werden. Bitte erneut laden.' });
 
+function orgListenKey({ bereich, ansicht, gruppe, prioritaet, person, q }) {
+  return `${bereich}|${ansicht}|${gruppe}|${prioritaet}|${person}|${q}`;
+}
+
+/** Nach einem Listenabruf niemals inzwischen geoeffnete Formulare oder Eingaben neu zeichnen. */
+function darfOrgListeZeichnen(key) {
+  const aktuell = orgParams();
+  if (state.route.view !== 'organisation' || aktuell.id || orgListenKey(aktuell) !== key) return false;
+  if (typeof document === 'undefined') return true;
+  const aktiv = document.activeElement;
+  if (aktiv && aktiv !== document.body && aktiv.matches?.('input, textarea, select, [contenteditable="true"]')) return false;
+  if (document.querySelector('#dialogRoot > *, #paletteRoot > *, dialog[open]')) return false;
+  return ![...document.querySelectorAll('#main input, #main textarea, #main select')].some(el => {
+    if (el.type === 'checkbox' || el.type === 'radio') return el.checked !== el.defaultChecked;
+    if (el.tagName === 'SELECT') return [...el.options].some(o => o.selected !== o.defaultSelected);
+    if (el.type === 'hidden' || el.type === 'search') return false;
+    return el.value !== el.defaultValue;
+  });
+}
+
 /** Erneuert hoechstens alle 30 Sekunden; Fehler behalten dieselbe gueltige Liste und bremsen Retries. */
 export function ensureOrgListe({ erzwingen = false } = {}) {
   const { bereich, ansicht, gruppe, prioritaet, person, q } = orgParams();
-  const key = `${bereich}|${ansicht}|${gruppe}|${prioritaet}|${person}|${q}`;
+  const key = orgListenKey({ bereich, ansicht, gruppe, prioritaet, person, q });
   if (org.key === key && (org.loading || (!erzwingen && Date.now() - org.listeAm < ORG_REFRESH_MS))) return;
   if (org.key !== key) { org.liste = null; org.listeFehler = null; }
   org.key = key; org.loading = true; org.listeAm = Date.now();
@@ -115,7 +135,7 @@ export function ensureOrgListe({ erzwingen = false } = {}) {
       org.loading = false; org.listeAm = Date.now();
       if (d?.verfuegbar && Array.isArray(d.eintraege)) { org.liste = d; org.listeFehler = null; }
       else org.listeFehler = lesefehler(d);
-      if (state.route.view === 'organisation') render();
+      if (darfOrgListeZeichnen(key)) render();
     });
 }
 
