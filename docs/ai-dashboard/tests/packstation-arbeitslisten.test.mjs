@@ -41,3 +41,15 @@ test('Suche findet Umschlaege ueber alle Arbeitslisten und erklaert den Umfang',
   assert.doesNotMatch(html, /data-mp-kunde="order1"/);
   assert.match(html, /Suche berücksichtigt alle vier Arbeitslisten/);
 });
+
+
+test('gebuendelter Umschlag verlinkt jede Bestellung und behaelt gewaehlten Partnerladen als Rueckweg', () => {
+  const k = kunde(4, 'gepackt');
+  k.bestellungen.push({ orderId: 'order5', orderName: '#TEST5' });
+  const html = ansicht('tab=muster&umschlag=order4&laden=Partner%20A', [k]);
+  assert.match(html, /auftrag=order4/);
+  assert.match(html, /auftrag=order5/);
+  assert.match(html, /mp=laden&amp;laden=Partner%20A/);
+  const waren = ansicht('tab=muster&mp=laden&laden=Partner%20A', [{ ...kunde(6, 'warten'), muster: [{ ...kunde(6, 'warten').muster[0], lieferant: 'Partner A' }] }]);
+  assert.match(waren, /umschlag=order6&amp;laden=Partner%20A/);
+});

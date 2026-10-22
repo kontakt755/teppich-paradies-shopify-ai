@@ -6,14 +6,14 @@
 import {
   bestellKundenKey, gruppiereBestellzeilenNachKunde, sortKundenname, sortiereNachWichtigkeit,
 } from '../../lib/kunden-bestellgruppen.mjs';
-import { bestellArbeitsstand, bestellungAusgeblendet, bestellPruefgruende } from '../../lib/bestellarbeit.mjs';
+import { bestellArbeitsstand, bestellungAusgeblendet, bestellPruefgruende, bestellZahlungOffen } from '../../lib/bestellarbeit.mjs';
 import { state } from '../../kern/zustand.mjs';
 import { esc, fmtDate, fmtDateTime, plural, toast, geldText } from '../../kern/helfer.mjs';
 import { fetchEinkauf } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
-import { einkauf, AF_STATUS_LABEL, setzeAuftragsstatus } from '../einkauf/auftragsfluss.mjs';
+import { einkauf, AF_STATUS_LABEL, setzeAuftragsstatus, ladeStandNeu } from '../einkauf/auftragsfluss.mjs';
 import { kunden, telLink, kundenAuftragKarte, ZAHLUNG_TEXT, VERSAND_TEXT, statusText } from './gemeinsam.mjs';
 import { zeitleisteBlock, auftragAusZeile, zeitleisteKlick } from './zeitleiste.mjs';
 import { oeffneVersandDialog } from '../einkauf/versand.mjs';
@@ -28,15 +28,17 @@ async function setzeAuftragsstatusFuerBestellung(orderId, status) {
   if (!positionen.length) { toast('Keine Positionen mit Auftragsfluss gefunden', 'warn'); return; }
   let ok = 0;
   for (const p of positionen) {
-    const gesetzt = await setzeAuftragsstatus({ orderId, lineItemId: p.lineItemId, orderName: zeile.orderName, titel: p.titel, farbe: p.farbe }, status, { still: true });
+    const gesetzt = await setzeAuftragsstatus({ orderId, lineItemId: p.lineItemId, orderName: zeile.orderName, titel: p.titel, farbe: p.farbe }, status, { still: true, nachladen: false });
     if (gesetzt) ok += 1;
   }
   toast(`${ok}/${positionen.length} Artikel: ${AF_STATUS_LABEL[status]}`);
-  // Fortschritt und "Was fehlt" rechnet der Server aus dem Auftragsstatus -
-  // ohne Neuladen blieb die Zeile stehen und lud zum zweiten Klick ein.
-  kunden.bestellungen = null;
-  ensureKundenBestellungen();
-  render();
+  // Nach dem Sammelschritt nur einmal frisch lesen. Der vorhandene Helfer bewahrt lesbare
+  // Bestell-/Packlisten bei Abruffehlern; ein Lesefehler darf keine Schreibwiederholung ausloesen.
+  try { await ladeStandNeu(); }
+  catch {
+    toast(`${ok}/${positionen.length} Artikel gespeichert. Listen nicht vollständig neu geladen – letzter lesbarer Stand bleibt sichtbar.`, 'warn');
+    render();
+  }
 }
 
 export function ensureKundenBestellungen() {
@@ -68,7 +70,7 @@ function bestellzeileGefiltert(zeilen, params) {
   let liste = zeilen.filter(z => filter === 'nicht_fertig' ? !z.testbestellung && !z.storniert
     : filter === 'pruefen' ? bestellPruefgruende(z).length > 0
     : filter === 'fertig' ? (istErledigt(z) && !z.testbestellung)
-    : filter === 'offen' ? (z.offen && !z.testbestellung)
+    : filter === 'offen' ? bestellZahlungOffen(z)
     : filter === 'bezahlt' ? z.zahlungsstatus === 'PAID'
     : filter === 'unerfuellt' ? ['UNFULFILLED', 'PARTIALLY_FULFILLED', null].includes(z.fulfillmentstatus)
     : filter === 'storniert' ? z.storniert
@@ -283,8 +285,8 @@ export function viewKundenBestellungen() {
   const sort = params.get('bsort') || 'datum';
   const dir = params.get('bdir') || (sort === 'kundenname' ? 'asc' : 'desc');
   const gefiltert = bestellzeileGefiltert(d.zeilen, params);
-  // Bewusst gewaehlte Gesamtliste/Kontrolle darf keine Treffer in einem Archiv verstecken.
-  const direkt = ['alle', 'pruefen', 'fertig', 'storniert', 'test'].includes(filter);
+  // Auch eine offene Zahlung bleibt nach Versand oder manuellem Haken direkt sichtbar.
+  const direkt = ['alle', 'pruefen', 'fertig', 'storniert', 'test', 'offen'].includes(filter);
   const zeilen = direkt ? gefiltert : gefiltert.filter(z => !istErledigt(z));
   // Ohne Suche nur die letzten 30 Tage - sonst wuechse "Erledigt" endlos. Aeltere findet die Suche.
   const grenze = Date.now() - ERLEDIGT_TAGE * 864e5;
@@ -328,7 +330,7 @@ export function viewKundenBestellungen() {
     : `<tbody><tr><td colspan="4">${emptyState('Keine Treffer.', '')}</td></tr></tbody>`;
   const karten = zeilen.length ? gruppen
     ? gruppen.map(g => `<section class="bq-kundengruppe-mobil"><h3>${esc(g.name)} <span class="small muted">· ${plural(g.zeilen.length, 'Bestellung', 'Bestellungen')}</span></h3>${grund(g)}${g.zeilen.map(z => bestellzeileKarte(z, true)).join('')}</section>`).join('')
-    : sichtbar.map(bestellzeileKarte).join('')
+    : sichtbar.map(z => bestellzeileKarte(z)).join('')
     : emptyState('Keine Treffer.', '');
   const pruefen = d.zeilen.filter(z => bestellPruefgruende(z).length).length;
   const alleLink = new URLSearchParams(params);

@@ -1,3 +1,11 @@
+// Derselbe ausstehende Zahlungsumfang wie im Betriebs-Export; "offen" am Auftrag meint Versand.
+const ZAHLUNG_OFFEN = new Set(['PENDING', 'AUTHORIZED', 'PARTIALLY_PAID']);
+
+/** Gemeinsame Zahlungsfilter-Regel fuer Bestellliste im Browser und Backend. */
+export function bestellZahlungOffen(z = {}) {
+  return !z.testbestellung && !z.storniert && ZAHLUNG_OFFEN.has(z.zahlungsstatus);
+}
+
 /** Lesbarer Arbeitsstand aus vorhandenen Quellen; aendert keine Buchung. */
 export function bestellArbeitsstand(z = {}) {
   if (z.storniert) return { stand: 'Storniert', naechstes: 'Bei Bedarf Rückabwicklung prüfen' };

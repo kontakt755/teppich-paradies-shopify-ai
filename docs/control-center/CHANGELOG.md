@@ -2,6 +2,32 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-22 · Sichere Mitarbeiterwege und sichtbare offene Arbeit (#1618)
+
+- **Geaendert:** Heute zeigt wartende Umschlaege und notwendige Bestellkontrollen direkt;
+  „Dringendes bearbeiten“ fuehrt in die vorhandene Wichtigkeitssortierung. Unvollstaendige
+  Quellen bleiben sichtbar; geladene Zusatzaufgaben behaupten keinen Gesamtabschluss.
+- **Geaendert:** Zahlung offen verwendet in Browser und Server dieselbe Zahlungsregel, auch
+  nach Versand und bei alten Treffern. Mobile Bestellkarten behalten jeden Kundennamen.
+  Sammelstatus laedt geladene Arbeitslisten einmal nach allen Positionen.
+- **Geaendert:** Gemischter Wareneingang liest den Positionsstand frisch und verlangt eine
+  ausdrueckliche Bestaetigung je Muster. Oeffnen/Abbrechen schreibt nichts; Doppelklicks sind
+  gesperrt. Packfehler erhalten den letzten Stand mit gezieltem lesendem Neuabruf. Alle
+  Bestellungen eines Umschlags und der Partnerladen-Rueckweg bleiben erreichbar.
+- **Geaendert:** Betriebsaufgaben, Rueckrufe, Kundenfaelle und Service-Anfragen sind Teil der
+  lokalen Arbeitsrevision. Aufgabenlisten laden im bestehenden geschuetzten Takt nach;
+  Detailformulare bleiben geschuetzt. Suchpalette bietet direkte Bestell-/Packwege und die
+  Team-Aufgabensuche, ohne Treffer der vorigen Eingabe weiterzuzeigen.
+- **Getestet:** Gesamtsuite, Projekt-Guards, alle Ansichten auf Desktop/Handy mit drei Rollen,
+  betroffene Ansichten im Dunkelmodus. Klickprobe auf isolierter Datenkopie: gemischter
+  Testauftrag beim Abbrechen 4 bestellt / 0 geliefert, nach Einzelbestaetigung 3 / 1;
+  Dringlichkeitseinstieg und Suche direkt zur Packstation. Fehler-, Kontext- und Retryfaelle
+  durch Regressionen abgesichert.
+- **Risiken/Annahmen:** Gemeinsamer Zugang und bestehende Fachablaeufe bleiben erhalten;
+  keine automatische Bestellung, Nachricht, Pack- oder Versandbestaetigung. Details in
+  [Mitarbeiterpruefung](MITARBEITERPRUEFUNG.md).
+- **Naechste Stufe:** regulaere Bedienung im Betrieb mit Ware und Drucker.
+
 ## 2026-10-22 · Aktuelle Arbeitslisten und gemeinsame Bestellvorbereitung (#1616)
 
 - **Geaendert:** Der bestehende Statusabruf liefert eine lokale Arbeitsrevision. Geaenderte

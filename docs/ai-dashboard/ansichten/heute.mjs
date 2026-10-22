@@ -49,6 +49,8 @@ import { shopifyAbgleich, ensureShopifyAbgleich, shopifyAbgleichTodos } from './
 import { veralteteQuellen, datenstandTodo } from '../lib/datenstand.mjs';
 import { startBestellarbeit } from '../lib/start-bestellarbeit.mjs';
 import { bestellarbeitBlock } from './heute/bestellarbeit.mjs';
+import { arbeitsquellenStand } from '../lib/arbeitsquellen.mjs';
+import { bestellPruefgruende } from '../lib/bestellarbeit.mjs';
 
 const TODOS_SICHTBAR = 3;      // Bestellarbeit zuerst, weitere Aufgaben bleiben kurz und vollstaendig erreichbar.
 const SPALTE_SICHTBAR = 8;
@@ -256,27 +258,20 @@ function todoZeile(t, erste) {
  * Welche Quellen fehlen? Dann ist die Liste unvollstaendig - "Alles erledigt" waere eine
  * Behauptung ohne Grundlage (Codex-Audit Punkt 4).
  */
-function fehlendeQuellen() {
+function arbeitsstandHeute() {
   const teile = [
-    [kunden.bestellungen, 'Bestellungen', d => d.verfuegbar === false],
-    [einkauf.auftragsstatus, 'Einkaufsstand', () => false],
-    [kunden.rueckrufe, 'Rückrufe', () => false],
-    [kunden.faelle, 'Kundenfälle', () => false],
-    [kunden.serviceanfragen, 'Service-Anfragen', () => false],
-    [heuteDaten.aufgaben, 'Aufgaben', () => false],
-    // Neue To-do-Quellen (#1427): Lieferantenbelege und Abgleich mit Shopify (Codex-Review #1432).
-    [darfAnsicht('einkauf') ? belege.daten : null, 'Lieferantenbelege', d => d.verfuegbar === false],
-    // Ein Fehlertext des Servers steht als eigene Zeile in der Liste; hier nur Abruf-Fehler und fehlende Daten.
-    [typeof shopifyAbgleich.daten?.fehler === 'string' ? null : shopifyAbgleich.daten, 'Abgleich mit Shopify', d => d.verfuegbar === false],
+    ['Bestellungen', kunden.bestellungen], ['Einkaufsstand', einkauf.auftragsstatus],
+    ['Rückrufe', kunden.rueckrufe], ['Kundenfälle', kunden.faelle],
+    ['Service-Anfragen', kunden.serviceanfragen], ['Aufgaben', heuteDaten.aufgaben],
+    ['Abgleich mit Shopify', shopifyAbgleich.daten],
   ];
-  return teile.filter(([d, , fehlt]) => d && (d.fehler || fehlt(d))).map(([, name]) => name);
+  if (darfAnsicht('einkauf')) teile.push(['Lieferantenbelege', belege.daten], ['Einkaufsdaten', einkauf.bestellungen]);
+  return arbeitsquellenStand(teile);
 }
 
 function todoListe(todos) {
-  // Solange die Bestelldaten noch laden, waere "Alles erledigt" eine Behauptung ohne Grundlage.
-  const laedt = !kunden.bestellungen || !einkauf.auftragsstatus || !heuteDaten.aufgaben
-    || !shopifyAbgleich.daten || (darfAnsicht('einkauf') && !belege.daten);
-  const fehlen = fehlendeQuellen();
+  const stand = arbeitsstandHeute();
+  const fehlen = stand.fehlt;
   const stoerung = [kunden.bestellungen, kunden.rueckrufe, heuteDaten.aufgaben, kunden.serviceanfragen].find(d => d?.fehler);
   let inhalt;
   if (todos.length) {
@@ -284,10 +279,11 @@ function todoListe(todos) {
     const rest = todos.slice(TODOS_SICHTBAR);
     inhalt = oben.map((t, i) => todoZeile(t, i === 0)).join('')
       + (rest.length ? `<details class="heute-rest"><summary>${TODOS_SICHTBAR} von ${todos.length} – alle anzeigen</summary>${rest.map(t => todoZeile(t, false)).join('')}</details>` : '');
-  } else if (laedt) inhalt = `<div class="heute-leer">Lade …</div>`;
+  } else if (stand.laedt.length) inhalt = `<div class="heute-leer">Aufgaben werden noch geladen …</div>`;
   else if (fehlen.length) inhalt = `<div class="heute-leer">Gerade nichts zu sehen – aber die Liste ist unvollständig.</div>`;
-  else inhalt = `<div class="heute-leer"><strong>Alles erledigt.</strong> Gerade wartet nichts auf dich – schönen Tag!</div>`;
-  return `<h2 class="heute-weitere-titel">Weitere Aufgaben heute <span class="muted">(${todos.length})</span></h2><section class="heute-todos" aria-label="Heute zu erledigen">${inhalt}</section>
+  else inhalt = `<div class="heute-leer"><strong>Keine weiteren Aufgaben offen.</strong></div>`;
+  return `<h2 class="heute-weitere-titel">Weitere Aufgaben heute <span class="muted">(${stand.vollstaendig ? '' : 'bisher '}${todos.length})</span></h2><section class="heute-todos" aria-label="Heute zu erledigen">${inhalt}</section>
+    ${stand.laedt.length ? `<p class="heute-unvollstaendig" role="status">Die Liste wird noch ergänzt: ${esc(stand.laedt.join(', '))}.</p>` : ''}
     ${fehlen.length ? `<p class="heute-unvollstaendig" role="status"><b>Liste unvollständig:</b> ${esc(fehlen.join(', '))} ${fehlen.length === 1 ? 'konnte' : 'konnten'} nicht geladen werden. ${kunden.bestellungen?.verfuegbar === false && kunden.bestellungen.hinweis ? esc(kunden.bestellungen.hinweis) : ''}</p>` : ''}
     ${stoerung ? stoerungState(stoerung, 'Ein Teil der Daten') : ''}`;
 }
@@ -438,6 +434,8 @@ function kennzahlenBlock() {
 function bestellEinstieg() {
   return bestellarbeitBlock({
     arbeit: startBestellarbeit({ daten: einkauf.bestellungen, statusAlle: einkauf.auftragsstatus, lieferanten: heuteDaten.lieferanten }),
-    offeneBestellungen: bestellungenOffen(), pack: kunden.musterPacken, lesend: istNurLesend(),
+    offeneBestellungen: bestellungenOffen(), bestellQuelle: kunden.bestellungen,
+    kontrolle: kunden.bestellungen?.verfuegbar ? kunden.bestellungen.zeilen.filter(z => bestellPruefgruende(z).length).length : null,
+    pack: kunden.musterPacken, lesend: istNurLesend(),
   });
 }

@@ -1950,3 +1950,28 @@ Mailprogramm oder Gmail und kann wiederholtes externes Absenden nicht sicher ver
 Die Automatik veraendert weder finanzielle noch physische Zustaende: keine Kaeufe, kein
 Mailversand, keine Pack- oder Versandbestaetigung. Bestehender Belegabgleich und bestehende
 Shopify-Wege bleiben die einzigen jeweiligen Fachablaeufe.
+
+### 9e. Sichere Mitarbeiterwege (#1618, 22.10.2026)
+
+Die lokale Arbeitsrevision beobachtet zusaetzlich Betriebsaufgaben, Rueckrufe, Fallmarken und
+Service-Anfragen. Bereits geladene Heute-Aufgaben und Service-Anfragen werden im vorhandenen
+geschuetzten Leselauf erneuert; die Aufgabenansicht nutzt denselben Takt mit ihrer eigenen
+kurzen Haltbarkeit. Fremde Filterantworten und geoeffnete Detailformulare werden nicht ersetzt.
+Fehler erhalten den gueltigen Altstand desselben Filters und bieten einen gezielten Neuabruf.
+
+Heute leitet Vollstaendigkeit aus allen benoetigten Quellen ab. Eine ladende oder nicht
+verfuegbare Quelle gilt nicht als leer. Wartende Umschlaege und Bestellkontrollen fuehren
+direkt zu den vorhandenen Listen; „Dringendes bearbeiten“ waehlt `bsort=wichtigkeit`.
+
+Gemischter Wareneingang liest vor der Auswahl den frischen Positionsstand. Ein geoeffneter
+oder abgebrochener Dialog bestaetigt keinen Eingang. Muster werden einzeln ueber die
+vorhandene Statusfunktion bestaetigt, Ware weiterhin ueber vorhandene Mengenangaben.
+Packaktionen unterscheiden Schreibfehler von gespeichertem Stand mit fehlgeschlagenem
+Neuabruf; vorhandene Listen werden dabei nicht vorzeitig geleert. Lesende Wiederholungen
+fuehren keine gespeicherte Schreibaktion erneut aus. Gebuendelte Umschlaege behalten alle
+Bestellreferenzen sowie den Rueckweg zum ausgewaehlten Partnerladen.
+
+Der Zahlungsfilter verwendet `bestellZahlungOffen` gemeinsam in Browser und Server.
+Explizite Zahlungstreffer werden durch Versand oder das 30-Tage-Anzeigearchiv nicht verdeckt.
+Die Suchpalette verlinkt die drei Hauptarbeitswege direkt und uebergibt Team-Aufgabensuchen
+an die vorhandene Aufgabenroute; sie baut keinen zweiten Aufgabenindex auf.
