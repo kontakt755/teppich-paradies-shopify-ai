@@ -103,6 +103,7 @@ function kundeHtml(k, nr) {
     aktionen = `<button type="button" class="btn btn-sm" data-mp-drucken="${pk}"${druckbar ? '' : ' disabled'}>Aufkleber drucken (${k.aufkleber})</button>
       ${(k.adressFehlt || []).length ? `<a class="btn btn-sm" href="#/kunden?tab=bestellungen&amp;bfilter=alle&amp;bq=${encodeURIComponent(k.bestellungen[0]?.orderName || '')}">Lieferadresse in Bestellung prüfen</a>` : ''}
       ${(k.zuordnungFehlt || []).length ? '<a class="btn btn-sm" href="#/lexikon">Musterzuordnung prüfen</a>' : ''}
+      ${!lesend && k.restumfangPruefen && !offen && !k.fehlt.length && !k.klaeren ? `<button type="button" class="btn btn-sm" data-mp-aktion="gepackt" data-mp-k="${pk}" data-mp-wert="1" data-mp-restumfang="1">Restumfang geprüft – Umschlag gepackt…</button>` : ''}
       ${lesend || !k.klaeren ? '' : `<button type="button" class="btn btn-sm" data-mp-aktion="klaeren" data-mp-k="${pk}" data-mp-wert="0">Klärung aufheben – erneut prüfen</button>`}`;
   } else {
     aktionen = `<button type="button" class="btn btn-sm" data-mp-drucken="${pk}"${druckbar ? '' : ' disabled'}>Aufkleber drucken (${k.aufkleber})</button>
@@ -124,7 +125,7 @@ function kundeHtml(k, nr) {
       </div>
     </summary>
     ${k.klaeren ? `<p class="notice warn">Fehlt: ${plural(fehlend.size, 'Muster', 'Muster')}${k.klaeren.notiz ? ` – „${esc(k.klaeren.notiz)}“` : ''}<span class="small muted"> · ${esc(fmtDateTime(k.klaeren.zeit))}${k.klaeren.von ? `, ${esc(k.klaeren.von)}` : ''}</span></p>` : ''}
-    ${k.altvermerk ? `<p class="small muted">Frühere gemeinsame Klärnotiz: ${esc(k.altvermerk)}. Prüfe, ob sie für diesen Umschlag noch gilt.</p>` : ''}
+    ${k.altvermerk && !k.klaeren ? `<p class="small muted">${esc(k.altvermerk)}</p>` : ''}
     ${(k.hinweise || []).map(h => `<p class="notice warn">${esc(h)}</p>`).join('')}
     ${(k.adressFehlt || []).length ? `<p class="notice warn">Lieferadresse unvollständig: ${esc(k.adressFehlt.join(', '))}. Bitte die Lieferadresse in der Bestellung prüfen.</p>` : ''}
     ${(k.zuordnungFehlt || []).length ? `<p class="notice warn">Musterzuordnung unvollständig: ${esc(k.zuordnungFehlt.join('; '))}. Bitte im Lexikon prüfen.</p>` : ''}
@@ -264,10 +265,12 @@ export function musterPackenKlick(e) {
   const a = e.target.closest('[data-mp-aktion]');
   if (a) {
     e.preventDefault();
-    a.disabled = true;
     const an = a.dataset.mpWert === '1';
     const pk = a.dataset.mpK;
-    if (a.dataset.mpAktion === 'gepackt') schreiben({ packSchluessel: pk, aktion: 'gepackt', gepackt: an }, an ? 'Umschlag gepackt' : 'Gepackt zurückgenommen');
+    const restumfangGeprueft = a.dataset.mpRestumfang === '1';
+    if (restumfangGeprueft && !window.confirm('Diese Bestellung wurde teilweise erstattet. Hast du den verbleibenden Musterumfang mit der Bestellung abgeglichen und nur die noch benötigten Muster eingelegt?\n\nEs wird nur der lokale Packstand gespeichert.')) return true;
+    a.disabled = true;
+    if (a.dataset.mpAktion === 'gepackt') schreiben({ packSchluessel: pk, aktion: 'gepackt', gepackt: an, ...(restumfangGeprueft ? { restumfangGeprueft: true } : {}) }, an ? 'Umschlag gepackt' : 'Gepackt zurückgenommen');
     else {
       const notiz = [...document.querySelectorAll('[data-mp-notiz]')].find(i => i.dataset.mpNotiz === pk)?.value || '';
       schreiben({ packSchluessel: pk, aktion: 'klaeren', klaeren: an, notiz }, an ? 'Zu klären – das Abgehakte bleibt gespeichert' : 'Wieder bei „Zu packen“');

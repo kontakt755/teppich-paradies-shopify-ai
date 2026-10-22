@@ -1764,10 +1764,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       let ergebnis;
       try {
         if (aktion === 'gepackt') {
-          if (wert && (kunde.fehlt.length || kunde.hinweise?.length || kunde.klaeren || kunde.muster.some(m => !m.abgehakt))) {
+          const restumfangBestaetigt = kunde.restumfangPruefen === true && kunde.hinweise?.length === 1 && kunde.hinweise[0] === 'Teilweise erstattet – offene Muster und Versandumfang prüfen.' && payload.restumfangGeprueft === true;
+          // Die bewusste Restumfangpruefung gilt nur fuer Teilrueckerstattung, nie fuer Direktversand.
+          const hinweisBlockiert = (kunde.hinweise?.length || 0) > 0 && !restumfangBestaetigt;
+          if (wert && (kunde.fehlt.length || kunde.direktversand || hinweisBlockiert || kunde.klaeren || kunde.muster.some(m => !m.abgehakt))) {
             throw new ApiError(409, 'Bitte zuerst alle Muster tatsächlich einlegen und abhaken sowie offene Angaben und Klärungen prüfen.');
           }
-          ergebnis = setzeGepackt(datei, pk, { gepackt: wert, von, jetzt: now() });
+          ergebnis = setzeGepackt(datei, pk, { gepackt: wert, von, jetzt: now(), restumfangGeprueft: restumfangBestaetigt });
           // Gepackt erledigt auch ein "zu klaeren".
           if (wert && kunde.klaeren) setzeKlaeren(datei, kunde.schluessel, { klaeren: false });
           merke(benutzer, null, wert ? 'Muster gepackt' : 'Gepackt zurückgenommen', nummern);

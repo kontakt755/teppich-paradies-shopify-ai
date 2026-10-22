@@ -331,6 +331,7 @@ export function viewKundenBestellungen() {
   return `
     ${pruefen && filter !== 'pruefen' ? `<p class="notice warn"><a href="#/kunden?tab=bestellungen&amp;bfilter=pruefen">${plural(pruefen, 'Bestellung braucht', 'Bestellungen brauchen')} Kontrolle</a> – etwa ein manueller Haken ohne Versandnachweis oder unklare Artikel.</p>` : ''}
     ${filter === 'pruefen' ? '<p class="notice warn">Hier bleiben auch manuell abgehakte Fälle sichtbar. Prüfe den Versand- und Artikelstand, bevor du einen Fall abschließt.</p>' : ''}
+    ${filter === 'alle' ? '<p class="small muted">Alle echten Bestellungen im Betriebsbestand: letzte 90 Tage sowie ältere mit offenem Versand oder offener Zahlung. Ältere vollständig abgeschlossene Bestellungen findest du in Shopify.</p>' : ''}
     <div class="toolbar search-hero"><input type="search" placeholder="Suchen – Kunde, E-Mail, Telefon, Bestellnummer, Produkt, Farbe, Tags …" value="${esc(params.get('bq') || '')}" data-param="bq" aria-label="Bestellungen durchsuchen"></div>
     ${params.get('bq') && filter !== 'alle' ? `<p class="small muted">Die Suche gilt für „${esc(BQ_FILTER_LABEL[filter] || filter)}“. <a href="#/kunden?${esc(alleLink)}">In allen Bestellungen suchen →</a></p>` : ''}
     ${chips}

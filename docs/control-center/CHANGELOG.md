@@ -15,6 +15,8 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Teilrueckerstattung und Direktversand sichtbar klaeren; Nullmengen nicht erneut packen.
   Fehlende Adressen fuehren zur Bestellung, fehlende Zuordnung ins Lexikon. Serverseitige
   Packpruefung verlangt eindeutige Angaben, erledigte Klaerung und eingelegte Muster.
+  Bei Teilrueckerstattung kann nur der ausdruecklich gepruefte Restumfang lokal bestaetigt werden;
+  die Bestaetigung bleibt an der Packmarke erhalten. Direktversand bleibt gesperrt.
 - **Getestet:** gezielte Regressionen, Dashboard-/Gesamtsuite, Projekt-Guards sowie
   Browserpruefung mit privater Datenkopie auf Desktop und Handy; Klickproben fuer Suche und Filter.
 - **Risiken/Annahmen:** „Alle“ umfasst den aktuellen Betriebs-Export, kein historisches Vollarchiv.

@@ -1841,3 +1841,8 @@ neu getrennte Umschlaege erben keine Sammelpackmarke. Teilrueckerstattung und Di
 Klaerfaelle. Offene Zahlungen und geschlossene Auftraege mit offenen Mustern werden mit Anzahl
 und Link zur Bestellliste sichtbar. Der Server prueft vor einer neuen Packmarke Angaben, Klaerungen
 und alle Positionshaken erneut; Navigation/Druck sind weiterhin von Versandbuchung getrennt.
+
+Bei Teilrueckerstattung erlaubt eine eigene bewusste Bestaetigung ausschliesslich den geprueften
+Restumfang. Der Server akzeptiert dafuer nur ein echtes Boolean, alle Musterhaken und vollstaendige
+Angaben. Er speichert `restumfangGeprueft: true` lokal mit der Packmarke. Direktversand oder andere
+Klaergruende werden damit nicht freigegeben; Erstattung und Versand werden dadurch nicht veraendert.

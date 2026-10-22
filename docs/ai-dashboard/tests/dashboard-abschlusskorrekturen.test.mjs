@@ -79,3 +79,16 @@ test('Gesamtliste zeigt Storno und Archiv; Kontrolle holt manuelle Haken in die 
   assert.match(kontrolle, /MANUELL/);
   assert.doesNotMatch(kontrolle, /VERSANDT|STORNO/);
 });
+
+test('abgebrochene Restumfang-Pruefung setzt keine Packmarke und laesst den Knopf bedienbar', () => {
+  const knopf = { dataset: { mpAktion: 'gepackt', mpK: 'A', mpWert: '1', mpRestumfang: '1' }, disabled: false };
+  let bestaetigungen = 0;
+  const klick = ladeAnsicht('muster-packen.mjs', {
+    kunden: { musterPacken: { kunden: [] } },
+    window: { confirm: () => { bestaetigungen++; return false; } },
+    orgSchreiben: () => { throw new Error('Darf bei Abbruch nicht schreiben'); },
+  }, 'musterPackenKlick');
+  assert.equal(klick({ target: { closest: s => s === '[data-mp-aktion]' ? knopf : null }, preventDefault() {} }), true);
+  assert.equal(bestaetigungen, 1);
+  assert.equal(knopf.disabled, false);
+});

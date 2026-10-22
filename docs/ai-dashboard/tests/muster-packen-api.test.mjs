@@ -133,3 +133,35 @@ test('Ruecknahme einer adressbezogenen Klaerung veraendert weder zweiten Umschla
   assert.match(nachher[0].altvermerk, /Alte gemeinsame Notiz/);
   assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, 'muster-packen.json'))).klaeren['email:packen@example.invalid'], alt);
 });
+
+
+test('Teilrueckerstattung braucht bewusste Restumfangfreigabe; Nachweis wird lokal gespeichert', t => {
+  const order = bestellung(806, '2026-10-18');
+  order.displayFinancialStatus = 'PARTIALLY_REFUNDED';
+  const { api, dir } = umgebung(t, [order]);
+  const k = api.kundenMusterPacken().kunden[0];
+  assert.equal(k.restumfangPruefen, true);
+  api.kundenMusterPackenSetzen({ packSchluessel: k.packSchluessel, aktion: 'haken', lineItemIds: k.muster.map(m => m.lineItemId), an: true });
+  for (const flag of [undefined, false, 'true']) assert.throws(() => api.kundenMusterPackenSetzen({ packSchluessel: k.packSchluessel, gepackt: true, restumfangGeprueft: flag }), e => e.status === 409);
+  api.kundenMusterPackenSetzen({ packSchluessel: k.packSchluessel, gepackt: true, restumfangGeprueft: true });
+  assert.equal(api.kundenMusterPacken().kunden[0].bereich, 'gepackt');
+  assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'muster-packen.json'))).eintraege[k.packSchluessel].restumfangGeprueft, true);
+});
+
+test('Restumfangfreigabe kann Direktversand und fehlende Haken niemals umgehen', t => {
+  const order = bestellung(807, '2026-10-18');
+  order.displayFinancialStatus = 'PARTIALLY_REFUNDED';
+  const { api } = umgebung(t, [order]);
+  const k = api.kundenMusterPacken().kunden[0];
+  assert.throws(() => api.kundenMusterPackenSetzen({ packSchluessel: k.packSchluessel, gepackt: true, restumfangGeprueft: true }), e => e.status === 409);
+  const lesen = api.kundenMusterPacken.bind(api);
+  api.kundenMusterPacken = () => {
+    const r = lesen();
+    r.kunden[0].direktversand = true;
+    r.kunden[0].restumfangPruefen = false;
+    r.kunden[0].hinweise.push('Direktversand – Versandweg prüfen, nicht lokal packen.');
+    for (const m of r.kunden[0].muster) m.abgehakt = { zeit: '2026-10-21' };
+    return r;
+  };
+  assert.throws(() => api.kundenMusterPackenSetzen({ packSchluessel: k.packSchluessel, gepackt: true, restumfangGeprueft: true }), e => e.status === 409);
+});

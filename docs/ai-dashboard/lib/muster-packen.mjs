@@ -100,8 +100,10 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
     // Ein Kundenkonto kann an mehrere Empfaenger liefern; niemals deren Umschlaege mischen.
     const adresseKey = JSON.stringify(['name', 'strasse', 'plz', 'ort', 'land'].map(f => text(a.details?.lieferadresse?.[f]).toLowerCase().replace(/\s+/g, ' ')));
     const key = JSON.stringify([basis, adresseKey]);
-    if (!gruppen.has(key)) gruppen.set(key, { schluessel: basis, name: '', adresse: null, bestellungen: [], muster: [], hinweise: new Set() });
+    if (!gruppen.has(key)) gruppen.set(key, { schluessel: basis, name: '', adresse: null, bestellungen: [], muster: [], hinweise: new Set(), teilweiseErstattet: false, direktversand: false });
     const g = gruppen.get(key);
+    if (a.bezahlt === 'PARTIALLY_REFUNDED') g.teilweiseErstattet = true;
+    if (positionen.some(p => [p.route, p.musterRoute].includes('SUPPLIER_DIRECT'))) g.direktversand = true;
     if (a.bezahlt === 'PARTIALLY_REFUNDED') g.hinweise.add('Teilweise erstattet – offene Muster und Versandumfang prüfen.');
     if (positionen.some(p => [p.route, p.musterRoute].includes('SUPPLIER_DIRECT'))) g.hinweise.add('Direktversand – Versandweg prüfen, nicht lokal packen.');
     g.bestellungen.push({ orderId: a.id, orderName: text(a.name), datum: a.datum || null });
@@ -151,6 +153,8 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
     return {
       schluessel: g.schluessel, packSchluessel: pk, name: g.name, adresse, bestellungen, seit, wartetTage: tage,
       muster, adressAufkleber, hinweise, altvermerk,
+      restumfangPruefen: g.teilweiseErstattet && !g.direktversand && muster.some(m => m.anzahl > 0),
+      direktversand: g.direktversand,
       adressFehlt: [...adressAufkleber.fehlt],
       zuordnungFehlt: unvollstaendig.map(m => `${m.bestellt.titel}${m.bestellt.farbe ? ` – ${m.bestellt.farbe}` : ''}`),
       aufkleber: muster.reduce((s, m) => s + (m.anzahl || 0), 0) + 1,
