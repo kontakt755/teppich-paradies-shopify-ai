@@ -112,7 +112,10 @@ export function viewKundenServiceanfragen() {
   const eintraege = d?.eintraege || [];
   const filterRaw = state.route.params.get('sf');
   const filter = FILTER[filterRaw] ? filterRaw : 'offen';
+  // Offene: neue Anfragen zuerst, dann nach Bearbeitungsstand; darin wer am laengsten wartet (22.10.).
+  // Andere Auswahlen bleiben neueste zuerst.
   const liste = eintraege.filter(FILTER[filter].passt);
+  if (filter === 'offen') liste.sort((a, b) => STATUS.indexOf(a.status) - STATUS.indexOf(b.status) || String(a.datum).localeCompare(String(b.datum)) || String(a.id).localeCompare(String(b.id)));
   const chips = Object.entries(FILTER).map(([k, f]) => {
     const n = eintraege.filter(f.passt).length;
     return `<button type="button" class="chip" aria-pressed="${k === filter}" data-param="sf" data-value="${k === 'offen' ? '' : k}">${esc(f.label)}<span class="c">${n}</span></button>`;

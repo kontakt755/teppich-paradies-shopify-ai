@@ -238,7 +238,8 @@ export function werWartet(quellen = {}, opt = {}) {
       });
     }
   }
-  for (const liste of Object.values(spalten)) liste.sort((a, b) => (b.alterTage ?? -1) - (a.alterTage ?? -1));
+  // Rot vor Gelb vor normal, darin das Aelteste zuerst - wie sortiereTodos.
+  for (const liste of Object.values(spalten)) liste.sort((a, b) => (TON_RANG[a.ton] ?? 2) - (TON_RANG[b.ton] ?? 2) || (b.alterTage ?? -1) - (a.alterTage ?? -1));
   return { ...spalten, gesamt: spalten.wir.length + spalten.lieferant.length + spalten.kunde.length };
 }
 
