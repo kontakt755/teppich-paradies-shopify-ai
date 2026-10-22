@@ -741,7 +741,7 @@ test('aktualisierung meldet fehlende Datei mit Befehl statt erfundenem Stand', (
   assert.equal(r.manuellVerfuegbar, false);
 });
 
-test('aktualisierung berechnet Alter und Veraltet-Flag je Teil (Schwelle 24h)', () => {
+test('aktualisierung berechnet Alter und Veraltet-Flag je Teil', () => {
   const root = tmpRoot();
   const dir = wegwerfOrdner('tp-aktualisierung-');
   const jetzt = new Date('2026-09-23T12:00:00.000Z');
@@ -762,6 +762,19 @@ test('aktualisierung berechnet Alter und Veraltet-Flag je Teil (Schwelle 24h)', 
   assert.equal(r.teile.bestellungen.veraltet, true);
   assert.equal(r.teile.kennzahlen.erfolg, false);
   assert.equal(r.teile.kennzahlen.meldung, 'Kein Zugang in .env.local');
+});
+
+test('aktualisierung: Grenze je Quelle - Bestellungen nach 30 Minuten veraltet, Lexikon erst nach einem Tag', () => {
+  const root = tmpRoot();
+  const dir = wegwerfOrdner('tp-aktualisierung-');
+  const jetzt = new Date('2026-10-21T12:00:00.000Z');
+  const vor40 = new Date(jetzt.getTime() - 40 * 60_000).toISOString();
+  fs.writeFileSync(path.join(dir, 'aktualisierung.json'), JSON.stringify({ aktualisiertAm: vor40, teile: {
+    bestellungen: { zeitpunkt: vor40, erfolg: true }, lexikon: { zeitpunkt: vor40, erfolg: true } } }));
+  const r = createApi({ gh: async () => '', root, privatDirPath: dir, now: () => jetzt }).aktualisierung();
+  assert.equal(r.teile.bestellungen.veraltet, true);
+  assert.equal(r.teile.bestellungen.grenzeMs, 30 * 60_000);
+  assert.equal(r.teile.lexikon.veraltet, false);
 });
 
 test('aktualisierung: fehlender Zeitpunkt eines Teils liefert veraltet=null statt zu werfen', () => {

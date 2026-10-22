@@ -67,16 +67,16 @@
         <!-- "Mehr": alles, was nicht jeden Tag gebraucht wird. Klappt am Rechner auf (Zustand
              gemerkt), am Handy steht es im "Mehr"-Blatt offen. Inhaber-Punkte tragen weiter
              data-nur-inhaber je Link, der Sammelpunkt selbst ist fuer alle. -->
-        <div class="nav-more" id="navMore">
+        <div class="nav-more" id="navMore" data-nicht-mitarbeiter>
           <button type="button" class="nav-more-kopf" id="navMoreKopf" aria-expanded="false" aria-controls="navMoreMenu"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="1.400"/><circle cx="12" cy="12" r="1.400"/><circle cx="18" cy="12" r="1.400"/></svg><span>Mehr</span><span class="nav-count" id="navMoreCount" hidden></span></button>
           <div class="nav-more-menu" id="navMoreMenu">
-            <a href="#/prozesse" data-nav="prozesse"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16M10 10v9"/></svg><span>Vorbereiten</span></a>
-            <a href="#/organisation" data-nav="organisation"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.500h11M9 12h11M9 17.500h11M4 6.500l1 1 2-2M4 12l1 1 2-2M4 17.500l1 1 2-2"/></svg><span>Aufgaben</span></a>
-            <a href="#/sonderposten" data-nav="sonderposten"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.500h7.200l8.300 8.300a1.400 1.400 0 0 1 0 2l-4.700 4.700a1.400 1.400 0 0 1-2 0L4.500 11.200V4.500z"/><circle cx="8.300" cy="8.300" r="1.300"/></svg><span>Sonderposten</span></a>
+            <a href="#/prozesse" data-nav="prozesse" data-nicht-mitarbeiter><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16M10 10v9"/></svg><span>Vorbereiten</span></a>
+            <a href="#/organisation" data-nav="organisation" data-nicht-mitarbeiter><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.500h11M9 12h11M9 17.500h11M4 6.500l1 1 2-2M4 12l1 1 2-2M4 17.500l1 1 2-2"/></svg><span>Aufgaben</span></a>
+            <a href="#/sonderposten" data-nav="sonderposten" data-nicht-mitarbeiter><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.500h7.200l8.300 8.300a1.400 1.400 0 0 1 0 2l-4.700 4.700a1.400 1.400 0 0 1-2 0L4.500 11.200V4.500z"/><circle cx="8.300" cy="8.300" r="1.300"/></svg><span>Sonderposten</span></a>
             <!-- Bildrechte: nur lesend, deshalb auch fuer die Rolle "lesen". -->
-            <a href="#/bildrechte" data-nav="bildrechte"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.500" y="5" width="17" height="14" rx="1.500"/><circle cx="9" cy="10" r="1.600"/><path d="m4 17.500 5-4.500 3.500 3 3-2.500 4.500 4"/></svg><span>Bildrechte</span></a>
+            <a href="#/bildrechte" data-nav="bildrechte" data-nicht-mitarbeiter><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.500" y="5" width="17" height="14" rx="1.500"/><circle cx="9" cy="10" r="1.600"/><path d="m4 17.500 5-4.500 3.500 3 3-2.500 4.500 4"/></svg><span>Bildrechte</span></a>
             <!-- Social Media: Upload-Link fuers Team (Geheimnis, nie fuer "lesen") und Kampagnen-Links. -->
-            <a href="#/social" data-nav="social" data-nicht-lesen><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="17.500" cy="6" r="2.500"/><circle cx="6.500" cy="12" r="2.500"/><circle cx="17.500" cy="18" r="2.500"/><path d="m8.700 10.800 6.600-3.600M8.700 13.200l6.600 3.600"/></svg><span>Social Media</span></a>
+            <a href="#/social" data-nav="social" data-nicht-mitarbeiter data-nicht-lesen><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="17.500" cy="6" r="2.500"/><circle cx="6.500" cy="12" r="2.500"/><circle cx="17.500" cy="18" r="2.500"/><path d="m8.700 10.800 6.600-3.600M8.700 13.200l6.600 3.600"/></svg><span>Social Media</span></a>
             <a href="#/shopwache" data-nav="shopwache" data-nur-inhaber><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.500 5 6v5.500c0 4.200 2.900 7.300 7 9 4.100-1.700 7-4.800 7-9V6z"/><path d="m9 12 2.200 2.200L15.200 10"/></svg><span>Shop-Kontrolle</span></a>
             <a href="#/arbeit" data-nav="arbeit" data-nur-inhaber>Technik</a>
             <a href="#/freigaben" data-nav="freigaben" data-nur-inhaber>Entscheidungen<span class="nav-count" id="navFreigaben" hidden></span></a>
@@ -95,7 +95,7 @@
         <div class="nav-dashboards" id="navDashboards" hidden></div>
       </nav>
       <div class="side-foot">
-        <button type="button" class="sync-chip" id="syncChip" title="Datenstand – hier neu laden">
+        <button type="button" class="sync-chip" id="syncChip" data-nicht-mitarbeiter title="Datenstand – hier neu laden">
           <span class="dot" aria-hidden="true"></span><span id="syncChipText">Lade …</span>
         </button>
         <!-- Fuer alle Rollen: Meldung geht ueber den Abgleich in die Werkbank der Technik. -->
@@ -137,6 +137,9 @@
       <div class="notice lesen-hinweis" id="lesenHinweis" hidden>
         <strong>Nur Ansicht.</strong> Dein Zugang darf nichts ändern – Knöpfe zum Bearbeiten sind deshalb ausgeblendet.
       </div>
+      <!-- "Stand: vor 3 Min." bzw. Hinweis bei veralteten Daten (bausteine/datenstand.mjs); ausserhalb
+           von #main, damit das Nachschreiben keine Eingabe stoert. -->
+      <div class="datenstand-leiste" id="datenstandLeiste" hidden></div>
       <main id="main" class="page" tabindex="-1" aria-live="polite">
         <section class="skeleton" aria-busy="true">
           <div class="sk-line w40"></div>
