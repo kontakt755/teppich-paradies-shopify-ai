@@ -22,6 +22,9 @@ test('Stufe 1 nur Shop ohne Preisrisiko, Stufe 2 auch eigene Fotos - nie Angebot
   assert.equal(autoFreigabeMoeglich(shop('produkt_neu'), { SOCIAL_AUTO_FREIGABE: '1' }), true);
   assert.equal(autoFreigabeMoeglich(shop('angebot'), { SOCIAL_AUTO_FREIGABE: '2' }), false, 'Angebote immer mit Mensch');
   assert.equal(autoFreigabeMoeglich(shop('produkt_neu'), {}), false, 'ohne Einstellung aus');
+  const tipp = { inhalt: { quelle: 'wissen', typ: 'tipp' }, beitrag: { format: 'story', text: TEXT, hashtags: '' }, medien: [] };
+  assert.equal(autoFreigabeMoeglich(tipp, { SOCIAL_AUTO_FREIGABE: '1' }), true, 'Tipps ohne Anmerkung laufen mit');
+  assert.equal(autoFreigabeMoeglich(tipp, {}), false, 'Tipps ohne Einstellung nicht');
   const gut = baustelle(db);
   assert.equal(autoFreigabeMoeglich(gut, { SOCIAL_AUTO_FREIGABE: '1' }), false, 'Stufe 1: keine Baustellen');
   assert.equal(autoFreigabeMoeglich(gut, { SOCIAL_AUTO_FREIGABE: '2' }), true);
