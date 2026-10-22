@@ -28,7 +28,9 @@ export function pruefeVersandtarif(t) {
   }
   for(const name of ['GLS','GEL'])if(!istDatum(t.saetze[name+' gültig von'])||!istDatum(t.saetze[name+' gültig bis'])||t.saetze[name+' gültig von']>t.saetze[name+' gültig bis'])throw new Error('Tarifzeitraum ungültig.');
   for(const key of ['GLS Energie','GLS Diesel Floater','GEL Diesel'])if(!Number.isFinite(t.saetze[key])||t.saetze[key]<0||t.saetze[key]>1)throw new Error('Dieselsatz ungültig.');
-  for (const table of [t.gls,t.gel]) if (!table.length || table.some((row,i)=>!Number.isFinite(row[0])||!Number.isFinite(row[1])||(i&&row[0]<=table[i-1][0]))) throw new Error('Gewichtstabelle ungültig.');
+  for (const [table,spalten] of [[t.gls,2],[t.gel,3]]) {
+    if(!table.length||table.some((row,i)=>!Array.isArray(row)||row.length!==spalten||!Number.isFinite(row[0])||row[0]<=0||(i&&row[0]<=table[i-1][0])||row.slice(1).some((v,j)=>!(spalten===3&&j===1&&v===null)&&(!Number.isFinite(v)||v<0))))throw new Error('Gewichtstabelle ungültig.');
+  }
   const ins=t.inseln;
   if(!ins.plz||typeof ins.plz!=='object'||!Array.isArray(ins.namen)||!ins.namen.length||ins.namen.some(v=>typeof v!=='string')||!Array.isArray(ins.matrix)||!ins.matrix.length)throw new Error('Inselverzeichnis unvollständig.');
   if(Object.entries(ins.plz).some(([plz,gebiet])=>!/^\d{5}$/.test(plz)||typeof gebiet!=='string'||![...ins.namen,'Rügen','Fehmarn','Usedom'].includes(gebiet)))throw new Error('Insel-PLZ ungültig.');

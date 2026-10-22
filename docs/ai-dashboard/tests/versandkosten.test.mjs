@@ -125,3 +125,10 @@ test('Tarifdaten und angepasste Zeitraeume brauchen echte Kalendertage und richt
   assert(rechne({}, {'GEL gültig von':von,'GEL gültig bis':bis}).fehler);
  }
 });
+
+test('Jede Grundpreisspalte muss endlich und nichtnegativ sein',()=>{
+ for(const [table,spalte] of [['gls',1],['gel',1],['gel',2]])for(const wert of [-100,Infinity,'fehlt']){
+  const {b,t}=basis();t[table][1][spalte]=wert;assert(berechneVersand(b,t).fehler);
+ }
+ const {b,t}=basis();t.gls[1][1]=0;assert.equal(berechneVersand(b,t).fehler,undefined);
+});
