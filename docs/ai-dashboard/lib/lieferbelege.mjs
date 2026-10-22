@@ -521,7 +521,7 @@ export function belegTodos(d, { jetzt = new Date(), href = '#/einkauf?tab=belege
   const todos = a.abweichungen.map(x => (x.art === 'storno'
     ? {
       id: `beleg-${x.id}`, art: 'beleg_storno', bereich: 'laden', ton: 'crit', alterTage: tage(x.datum),
-      titel: `Storno vom Lieferanten: ${fuer(x)}`,
+      titel: `Storno vom Lieferanten prüfen: ${fuer(x)}`,
       kontext: `${name(x.lieferant)} · ${belegMarke({ art: 'storno', datum: x.datum })} · Mail lesen – betrifft es den Kunden, ihn informieren und Ersatz klären`,
       knopf: { text: 'Ansehen', href },
     }

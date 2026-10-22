@@ -22,6 +22,7 @@ import { promisify } from 'node:util';
 import { normalizeTask, requirementsFor, labelChangesFor, mitBlockerAbschnitt, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
 import { texteAusMarkdown, musterKurz, musterNachfassen, fuelleText, platzhalterFrei, STUFE_LABEL, NICHT_VERFUEGBAR_VORLAGE } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
 import { kundeInformiertAus } from '../docs/ai-dashboard/lib/auftrags-ablauf.mjs';
+import { grenzeFuer } from '../docs/ai-dashboard/lib/datenstand.mjs';
 import { postfachPfad, stopplistePfad, versandPfad, lesePostfach, leseStoppliste, abgemeldeteAdressen, trageAbmeldungEin, leseVersand, schreibeVersand, schonVerschickt, kopieNoetig, versandStand as nachfassVersandStand, AUTOMATISCH, UNTERSCHRIFT_STANDARD, NachfassFehler } from '../operations/lib/nachfass-versand.mjs';
 import { sendeMail as smtpSenden } from '../operations/lib/smtp.mjs';
 import { toIssueRecord } from './build-dashboard-data.mjs';
@@ -3900,7 +3901,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * ($TP_PRIVAT_DIR/aktualisierung.json). Liefert rohe Zeitstempel plus
      * eine je Teil vorgerechnete Alters-Einschaetzung - die Oberflaeche
      * (docs/ai-dashboard/app.js, systemHealth()) zeigt daraus "Stand: …" und
-     * warnt ab 24 Stunden. Fehlt die Datei (noch nie gelaufen), ist das kein
+     * warnt nach der Grenze je Quelle (lib/datenstand.mjs). Fehlt die Datei (noch nie gelaufen), ist das kein
      * Fehler, nur ein leerer Zustand mit dem Befehl, der sie anlegen wuerde.
      */
     aktualisierung() {
@@ -3982,7 +3983,6 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       return { verfuegbar: false, quelle: file, hinweis: 'Noch kein Lauf von daten:aktualisieren vorhanden.', befehl: 'npm run daten:aktualisieren', manuellVerfuegbar };
     }
     const jetzt = now().getTime();
-    const SCHWELLE_MS = 24 * 60 * 60 * 1000;
     const teile = {};
     for (const [teil, roh] of Object.entries(daten.teile)) {
       // Ein Fehlversuch, der AELTER ist als der letzte erfolgreiche Stand derselben Quelle,
@@ -3990,7 +3990,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Lauf aufgeraeumt - bis dahin warnte die Startseite vor einem behobenen Fehler.
       const stand = ohneUeberholtenFehler(roh);
       const alterMs = stand?.zeitpunkt ? jetzt - new Date(stand.zeitpunkt).getTime() : null;
-      teile[teil] = { ...stand, alterMs, veraltet: alterMs === null ? null : alterMs > SCHWELLE_MS };
+      // Grenze je Quelle (lib/datenstand.mjs): Bestellungen nach 30 Minuten, Lexikon nach einem Tag.
+      teile[teil] = { ...stand, alterMs, grenzeMs: grenzeFuer(teil), veraltet: alterMs === null ? null : alterMs > grenzeFuer(teil) };
     }
     return { verfuegbar: true, quelle: file, aktualisiertAm: daten.aktualisiertAm || null, teile, manuellVerfuegbar };
   }

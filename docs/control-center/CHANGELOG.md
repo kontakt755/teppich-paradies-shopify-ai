@@ -2,6 +2,29 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-21 · Mitarbeiter-Ansicht einfacher, Daten immer aktuell
+
+- **Geaendert:** Rolle Mitarbeiter: Menue nur Heute, Kunden, Bestellen, Genossenschaften, Lexikon,
+  Hilfe (`data-nicht-mitarbeiter`, Seiten bleiben ueber Links erreichbar). „Heute“ ist fuer
+  Mitarbeiter eine einzige Liste (immer Sicht Laden, ohne Zahlenzeile, Vorbereiten, Hintergrund).
+  To-do-Titel als Satz („Bei … melden: neue Anfrage …“, „Storno vom Lieferanten prüfen“), Leerzustand
+  „Alles erledigt“. Hilfe beginnt mit „In 1 Minute erklärt“ (je Menuepunkt ein Satz, drei Ablaeufe).
+  Neu `lib/datenstand.mjs` (Grenzen je Quelle: Bestellungen/Kunden/Angebote/Warenkoerbe 30 Min.,
+  Kennzahlen 2 Std., Lexikon/Bestand 1 Tag; der Server nutzt dieselben fuer `veraltet`) und
+  `bausteine/datenstand.mjs`: Zeile „Stand: vor 3 Min.“ ueber Heute/Kunden/Bestellen/Lexikon,
+  deutlicher Hinweis fuer alle bei veralteten Quellen, To-do „Daten-Abgleich prüfen“ fuer den Inhaber.
+  Die offene Seite fragt alle 2 Minuten und beim Zurueckkehren den Stand ab und laedt neue Daten
+  (inkl. Lieferantenpost, Shopify-Abgleich) – nicht, solange jemand tippt, ein Dialog offen ist oder
+  ungespeicherte Eingaben stehen.
+- **Getestet:** `dashboard:test` 641/0, `npm test` gruen, `dashboard:pruefen --rollen` 360–1440 px nur OK.
+  Klickstrecke gegen Datenkopie: Mitarbeiter-Menue 6 Punkte, Heute 8 To-dos ohne Hintergrund;
+  Stand auf 130 Min. gesetzt → Hinweis erscheint, getippte Eingabe bleibt erhalten, nach Freigabe
+  neu gezeichnet; Inhaber-To-do erscheint und verschwindet wieder bei frischen Daten.
+- **Risiken:** Ohne laufenden Sync-Dienst steht der Hinweis dauerhaft (gewollt). Ein Mitarbeiter mit
+  ueberwiegend Website-Aufgaben sieht jetzt die Laden-Liste. Lieferantenpost, Shop-Kontrolle und
+  Ausschreibungen haben weiter eigene Hinweise, nicht die neue Zeile.
+- **Naechste Stufe:** Rueckmeldung des Teams.
+
 ## 2026-10-21 · Einfache, eindeutige Begriffe im ganzen Control Center
 
 - **Geaendert:** Sichtbare Beschriftungen nach dem neuen Glossar `docs/control-center/BEGRIFFE.md`:
