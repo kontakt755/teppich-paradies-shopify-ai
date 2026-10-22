@@ -75,7 +75,7 @@ const KOPIEREN = ['verbrauch', 'bestelluebersicht', 'kennzahlen', 'organisation'
   'kunden', 'angebote', 'warenkoerbe', 'shopwache', 'bestand', 'erfuellung',
   // Beschreibbare Einzeldateien (Rueckrufe, Fallmarken, Fehlermeldungen): kopieren, damit ein
   // Klick in der Pruefung die echten nie trifft und die Ansicht trotzdem den echten Stand zeigt.
-  'rueckrufe.json', 'serviceanfragen.json', 'lieferbelege', 'fallmarken.json', 'bestellmarken.json', 'muster-packen.json', 'fehlermeldungen.json', 'fehlermeldungen-abgleich.json', 'fehlermeldungen',
+  'rueckrufe.json', 'serviceanfragen.json', 'lieferbelege', 'fallmarken.json', 'bestellmarken.json', 'muster-packen.json', 'muster-grossbrief.json', 'fehlermeldungen.json', 'fehlermeldungen-abgleich.json', 'fehlermeldungen',
   // Upload-Links der Ansicht "Social Media": ein Klick auf "Neuen Link anlegen" schreibt hierhin.
   'social/upload-zugaenge.json', 'social/upload-links.json',
   // Textvorlage fuer "Muster nachfassen" auf Heute. Der Ordner nachfassen/ bleibt bewusst draussen:
