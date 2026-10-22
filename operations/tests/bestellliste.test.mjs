@@ -183,3 +183,24 @@ test('bestellzeile: an Kunden raus, aber in Shopify unversandt - Hinweis statt "
   assert.equal(ohne.versandHinweis, null);
   assert.ok(ohne.wasFehlt.includes('Noch nicht versendet'));
 });
+
+test('fehlende Kennungen bleiben in Bestellliste und Kundenfortschritt offen, auch neben erledigter Ware', () => {
+  const bekannte = { lineItemId: 'gid://shopify/LineItem/901', titel: 'Bekannte Testware' };
+  const unbekannte = { lineItemId: null, titel: 'Testware ohne Kennung' };
+  for (const positionen of [[unbekannte], [bekannte, unbekannte]]) {
+    const auftrag = { id: 'gid://shopify/Order/901', offen: true, bezahlt: 'PAID', erfuellt: 'UNFULFILLED', positionen };
+    const statusAlle = { [positionKey(auftrag.id, bekannte.lineItemId)]: { status: 'erledigt' } };
+    const f = fortschritt(auftrag, statusAlle);
+    assert.equal(f.unklar, true);
+    assert.equal(f.gesamt, positionen.length, 'unbekannte Positionen gehoeren zur Gesamtmenge');
+    assert.equal(f.erledigt, positionen.includes(bekannte) ? 1 : 0);
+    assert.equal(f.minStufe, 0);
+    assert.equal(istFertig(auftrag, statusAlle), false);
+    const [z] = bestellliste({ auftraege: [auftrag] }, { statusAlle });
+    assert.equal(z.fertig, false, 'Bestellzeile darf das unklare Ergebnis nicht ueberstimmen');
+    assert.ok(z.wasFehlt.some(t => /ohne Bestellpositionskennung.*prüfen/.test(t)));
+    const kunde = kundenFortschritt([auftrag], statusAlle);
+    assert.equal(kunde.fertig, false);
+    assert.equal(kunde.offene, 1);
+  }
+});

@@ -52,11 +52,11 @@ function schreibStand(datei, stand) {
 }
 
 /** Setzt oder nimmt "gepackt" zurueck. */
-export function setzeGepackt(datei, packSchluessel, { gepackt = true, von = null, jetzt = new Date() } = {}) {
+export function setzeGepackt(datei, packSchluessel, { gepackt = true, von = null, jetzt = new Date(), restumfangGeprueft = false } = {}) {
   const key = String(packSchluessel || '').trim();
   if (!key) throw new Error('Kein Kunde angegeben');
   const stand = leseStand(datei);
-  if (gepackt) stand.gepackt[key] = { zeit: jetzt.toISOString(), von: von || null };
+  if (gepackt) stand.gepackt[key] = { zeit: jetzt.toISOString(), von: von || null, ...(restumfangGeprueft === true ? { restumfangGeprueft: true } : {}) };
   else delete stand.gepackt[key];
   schreibStand(datei, stand);
   return { packSchluessel: key, gepackt: stand.gepackt[key] || null };
@@ -78,7 +78,10 @@ export function setzeKlaeren(datei, kundenSchluessel, { klaeren = true, fehlt = 
   if (!key) throw new Error('Kein Kunde angegeben');
   const stand = leseStand(datei);
   if (klaeren) stand.klaeren[key] = { zeit: jetzt.toISOString(), von: von || null, fehlt: [...new Set(fehlt.map(String))], notiz: String(notiz || '').trim().slice(0, 300) || null };
-  else delete stand.klaeren[key];
+  else if (key.includes('|adresse:')) {
+    // Nur diesen Empfaenger freigeben; eine alte gemeinsame Klaerung gilt fuer andere weiter.
+    stand.klaeren[key] = { geklaert: true, zeit: jetzt.toISOString(), von: von || null };
+  } else delete stand.klaeren[key];
   schreibStand(datei, stand);
-  return { klaeren: stand.klaeren[key] || null };
+  return { klaeren: stand.klaeren[key]?.geklaert ? null : stand.klaeren[key] || null };
 }

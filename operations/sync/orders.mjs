@@ -13,6 +13,29 @@ export { GraphQLProxy };
 
 export const SEITENGROESSE = 50;
 
+// Erste Seite und Nachladeabfrage muessen dieselben Positionsdaten liefern.
+const LINE_ITEM_FELDER = `
+          id sku title variantTitle quantity currentQuantity unfulfilledQuantity
+          originalUnitPriceSet { shopMoney { amount currencyCode } }
+          customAttributes { key value }
+          # Bundle-Komponente (z. B. Rollenware unter "Zuschnitt von der Rolle"):
+          # die Zeile ist ein Bestandsabgang, kein eigener Zuschnitt.
+          lineItemGroup { id title quantity customAttributes { key value } }
+          image { url altText }
+          variant {
+            id sku title
+            image { url altText }
+            metafields(namespace: "einkauf", first: 20) { nodes { namespace key type value } }
+            lieferant: metafields(namespace: "lieferant", first: 10) { nodes { namespace key type value } }
+            custom: metafields(namespace: "custom", first: 20) { nodes { namespace key type value } }
+            product {
+              id handle title productType
+              featuredMedia { preview { image { url altText } } }
+              metafields(namespace: "custom", first: 20) { nodes { namespace key type value } }
+              grosshandel: metafields(namespace: "grosshandel", first: 5) { nodes { namespace key type value } }
+            }
+          }`;
+
 export const ORDERS_QUERY = `
 query OpsOrders($first: Int!, $after: String, $query: String) {
   orders(first: $first, after: $after, query: $query, sortKey: UPDATED_AT) {
@@ -42,29 +65,22 @@ query OpsOrders($first: Int!, $after: String, $query: String) {
       }
       metafields(namespace: "ops", first: 20) { nodes { namespace key type value } }
       lineItems(first: 50) {
+        pageInfo { hasNextPage endCursor }
         nodes {
-          id sku title variantTitle quantity currentQuantity unfulfilledQuantity
-          originalUnitPriceSet { shopMoney { amount currencyCode } }
-          customAttributes { key value }
-          # Bundle-Komponente (z. B. Rollenware unter "Zuschnitt von der Rolle"):
-          # die Zeile ist ein Bestandsabgang, kein eigener Zuschnitt.
-          lineItemGroup { id title quantity customAttributes { key value } }
-          image { url altText }
-          variant {
-            id sku title
-            image { url altText }
-            metafields(namespace: "einkauf", first: 20) { nodes { namespace key type value } }
-            lieferant: metafields(namespace: "lieferant", first: 10) { nodes { namespace key type value } }
-            custom: metafields(namespace: "custom", first: 20) { nodes { namespace key type value } }
-            product {
-              id handle title productType
-              featuredMedia { preview { image { url altText } } }
-              metafields(namespace: "custom", first: 20) { nodes { namespace key type value } }
-              grosshandel: metafields(namespace: "grosshandel", first: 5) { nodes { namespace key type value } }
-            }
-          }
+          ${LINE_ITEM_FELDER}
         }
       }
+    }
+  }
+}`;
+
+export const ORDER_LINE_ITEMS_QUERY = `
+query OpsOrderLineItems($id: ID!, $first: Int!, $after: String) {
+  order(id: $id) {
+    id updatedAt
+    lineItems(first: $first, after: $after) {
+      pageInfo { hasNextPage endCursor }
+      nodes { ${LINE_ITEM_FELDER} }
     }
   }
 }`;
@@ -141,34 +157,95 @@ export async function wartenBeiThrottle(proxy, { warten = (ms) => new Promise((r
   return ms;
 }
 
-/** Gemeinsame Blaetterlogik ueber die Orders-Verbindung mit Throttle-Wartung. */
-async function paginiereOrders(proxy, query, { first = SEITENGROESSE, warten, fehlerPraefix }) {
-  const orders = [];
-  let after = null;
-  let seiten = 0;
+/** Keine unvollstaendige API-Antwort als leere, erfolgreich geladene Seite behandeln. */
+function pruefeSeite(conn, fehlerPraefix) {
+  if (!conn || !Array.isArray(conn.nodes) || typeof conn.pageInfo?.hasNextPage !== 'boolean') {
+    throw new Error(`${fehlerPraefix}: unvollstaendige Antwort (nodes oder pageInfo fehlen)`);
+  }
+  if (conn.pageInfo.hasNextPage && (typeof conn.pageInfo.endCursor !== 'string' || !conn.pageInfo.endCursor.trim())) {
+    throw new Error(`${fehlerPraefix}: hasNextPage ohne endCursor`);
+  }
+  if (conn.nodes.some(n => !n || typeof n.id !== 'string' || !n.id.trim()) || (conn.pageInfo.hasNextPage && !conn.nodes.length)) {
+    throw new Error(`${fehlerPraefix}: unvollstaendige Antwort (ungueltige oder fehlende Eintraege)`);
+  }
+}
+
+function naechsterCursor(conn, gesehen, fehlerPraefix) {
+  if (!conn.pageInfo.hasNextPage) return null;
+  const cursor = conn.pageInfo.endCursor;
+  if (gesehen.has(cursor)) throw new Error(`${fehlerPraefix}: wiederholter endCursor`);
+  gesehen.add(cursor);
+  return cursor;
+}
+
+/** Shopify kann dieselbe Feldliste erst mit kleinerer Seitengroesse annehmen. */
+async function seitenAbfrage(proxy, abfrage, variablen) {
+  let first = variablen.first;
   for (;;) {
-    let data;
     try {
-      data = await proxy.execute(ORDERS_QUERY, { first, after, query });
+      return { data: await proxy.execute(abfrage, { ...variablen, first }), first };
     } catch (e) {
-      // Shopify rechnet die Kosten aus den angefragten Groessen (Bestellungen x Positionen x
-      // Metafelder) und lehnt ueber 1000 ab. Dann mit halber Seitengroesse weiterblaettern.
       if (first > 1 && /exceeds the single query max cost limit/i.test(String(e?.message))) {
         first = Math.max(1, Math.floor(first / 2));
         continue;
       }
       throw e;
     }
-    if (data === null) return { orders: [], seiten, gesammelt: true };
-    seiten += 1;
-    const conn = data?.orders;
-    if (!conn) throw new Error(`${fehlerPraefix}: Antwort ohne orders`);
-    for (const o of conn.nodes ?? []) {
-      orders.push({ ...o, lineItems: { nodes: (o.lineItems?.nodes ?? []).map(normalisiereLineItem) } });
+  }
+}
+
+/** Eine grosse Bestellung ist erst vollstaendig, wenn auch ihre letzte Position da ist. */
+async function vollstaendigePositionen(proxy, order, { warten, fehlerPraefix }) {
+  const praefix = `${fehlerPraefix} Bestellpositionen`;
+  let conn = order.lineItems;
+  const positionen = [];
+  const ids = new Set();
+  const cursor = new Set();
+  let first = 50;
+  for (;;) {
+    pruefeSeite(conn, praefix);
+    const after = naechsterCursor(conn, cursor, praefix);
+    for (const li of conn.nodes) {
+      if (ids.has(li.id)) throw new Error(`${praefix}: doppelte Positionskennung`);
+      ids.add(li.id);
+      positionen.push(normalisiereLineItem(li));
     }
-    if (!conn.pageInfo?.hasNextPage) break;
-    if (!conn.pageInfo.endCursor) throw new Error(`${fehlerPraefix}: hasNextPage ohne endCursor`);
-    after = conn.pageInfo.endCursor;
+    if (!after) return { nodes: positionen };
+    await wartenBeiThrottle(proxy, warten ? { warten } : undefined);
+    const r = await seitenAbfrage(proxy, ORDER_LINE_ITEMS_QUERY, { id: order.id, first, after });
+    first = r.first;
+    const nachgeladen = r.data?.order;
+    // Aenderungen waehrend des Blaetterns koennen Mengen oder Cursor verschieben.
+    // Dann bleibt der vorherige Export stehen, statt zwei Bestellstaende zu mischen.
+    if (!nachgeladen || nachgeladen.id !== order.id || !order.updatedAt || nachgeladen.updatedAt !== order.updatedAt) {
+      throw new Error(`${praefix}: Bestellung fehlt oder wurde waehrend des Abrufs geaendert`);
+    }
+    conn = nachgeladen.lineItems;
+  }
+}
+
+/** Gemeinsame Blaetterlogik ueber Bestellungen und alle ihre Positionen. */
+async function paginiereOrders(proxy, query, { first = SEITENGROESSE, warten, fehlerPraefix }) {
+  const orders = [];
+  const ids = new Set();
+  const cursor = new Set();
+  let after = null;
+  let seiten = 0;
+  for (;;) {
+    const r = await seitenAbfrage(proxy, ORDERS_QUERY, { first, after, query });
+    first = r.first;
+    if (r.data === null && seiten === 0) return { orders: [], seiten, gesammelt: true };
+    seiten += 1;
+    const conn = r.data?.orders;
+    pruefeSeite(conn, fehlerPraefix);
+    const weiter = naechsterCursor(conn, cursor, fehlerPraefix);
+    for (const o of conn.nodes) {
+      if (ids.has(o.id)) throw new Error(`${fehlerPraefix}: doppelte Bestellkennung`);
+      ids.add(o.id);
+      orders.push({ ...o, lineItems: await vollstaendigePositionen(proxy, o, { warten, fehlerPraefix }) });
+    }
+    if (!weiter) break;
+    after = weiter;
     await wartenBeiThrottle(proxy, warten ? { warten } : undefined);
   }
   return { orders, seiten, gesammelt: false };
@@ -195,19 +272,20 @@ export const STANDARD_TAGE_FENSTER = 90;
  * updated_at - eine 40 Tage alte, seither unveraenderte Bestellung soll nicht
  * aus dem Fenster fallen, nur weil sie lange nicht angefasst wurde), ODER
  * unabhaengig vom Alter noch nicht vollstaendig erfuellt sind
- * (fulfillment_status unfulfilled/partial). Eine vor Monaten aufgegebene,
+ * (fulfillment_status unfulfilled/partial) oder noch auf Zahlung warten. Eine vor Monaten aufgegebene,
  * nie ausgelieferte Bestellung darf im Control Center nicht verschwinden,
- * nur weil sie aelter als das Zeitfenster ist - genau das war der Auftrag
+ * nur weil sie aelter als das Zeitfenster ist. Dasselbe gilt fuer bereits
+ * versandte, aber noch nicht bezahlte Bestellungen - genau das war der Auftrag
  * des Inhabers: Vollstaendigkeit statt fester Obergrenze von 50 Bestellungen.
  */
 export function baueRelevantQuery(tageFenster = STANDARD_TAGE_FENSTER, jetzt = () => Date.now()) {
   const cutoff = new Date(jetzt() - tageFenster * 24 * 60 * 60 * 1000).toISOString();
-  return `(created_at:>='${cutoff}') OR (fulfillment_status:unfulfilled) OR (fulfillment_status:partial)`;
+  return `(created_at:>='${cutoff}') OR (fulfillment_status:unfulfilled) OR (fulfillment_status:partial) OR (financial_status:pending) OR (financial_status:authorized) OR (financial_status:partially_paid)`;
 }
 
 /**
  * Alle fuer den Betrieb relevanten Bestellungen: die letzten `tageFenster`
- * Tage plus alle offenen/teil-erfuellten unabhaengig vom Alter, vollstaendig
+ * Tage plus alle offenen/teil-erfuellten und noch nicht bezahlten unabhaengig vom Alter, vollstaendig
  * paginiert (kein festes Limit 50). Ersetzt die bisherige "letzte 50
  * Bestellungen, dann nach updatedAt kuerzen"-Regel aus aktualisieren.mjs, die
  * eine um 15 Uhr eingegangene Bestellung bei genug Nebenaktivitaet erst am

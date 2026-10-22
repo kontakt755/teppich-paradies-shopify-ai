@@ -22,7 +22,7 @@ function bestellungMitMuster(n, cursor, quellvarianteId) {
     id: `gid://shopify/Order/${n}`,
     name: `#T${n}`,
     updatedAt: '2026-09-22T08:00:00Z',
-    lineItems: { nodes: [{
+    lineItems: { pageInfo: { hasNextPage: false, endCursor: null }, nodes: [{
       id: `gid://shopify/LineItem/${n}`, sku: `M-${n}`, quantity: 1,
       customAttributes: quellvarianteId != null ? [{ key: '_Quellvariante_ID', value: String(quellvarianteId) }] : [],
       variant: { id: `gid://shopify/ProductVariant/${n}`, sku: `M-${n}`, title: 'Muster', metafields: { nodes: [] }, lieferant: { nodes: [] }, custom: { nodes: [] }, product: { id: `gid://shopify/Product/${n}`, handle: 'x', title: 'X', metafields: { nodes: [] }, grosshandel: { nodes: [] } } },
@@ -331,4 +331,72 @@ test('ein Fehler, der aelter ist als der Stand daneben, wird beim naechsten Lauf
   assert.equal(status.teile.lexikon.letzterFehler, undefined, 'Erfolg nach dem Fehler: Fehler ist ueberholt');
   assert.deepEqual(status.teile.kunden.letzterFehler, fehler, 'Fehler nach dem letzten Erfolg bleibt stehen');
   assert.deepEqual(ohneUeberholtenFehler({ erfolg: false, zeitpunkt: 'x', meldung: 'm' }), { erfolg: false, zeitpunkt: 'x', meldung: 'm' });
+});
+
+test('teilBestellungen exportiert auch Position 51 und laedt deren Muster-Quellvariante', async () => {
+  const dir = tmpDir();
+  const alterToken = process.env.SHOPIFY_ADMIN_TOKEN;
+  const altesFetch = globalThis.fetch;
+  process.env.SHOPIFY_ADMIN_TOKEN = 'shpat_test';
+  const order = bestellungMitMuster(1, null, null);
+  const zeilen = Array.from({ length: 51 }, (_, i) => bestellungMitMuster(i + 1, null, i + 100).lineItems.nodes[0]);
+  order.lineItems = { nodes: zeilen.slice(0, 50), pageInfo: { hasNextPage: true, endCursor: 'position-50' } };
+  const quellIds = [];
+  globalThis.fetch = async (url, init) => {
+    const { query, variables } = JSON.parse(init.body);
+    if (query.includes('OpsOrderLineItems')) return ok({ order: { id: order.id, updatedAt: order.updatedAt,
+      lineItems: { nodes: zeilen.slice(50), pageInfo: { hasNextPage: false, endCursor: null } } } });
+    if (query.includes('OpsOrders')) return ok({ orders: { nodes: [order], pageInfo: { hasNextPage: false, endCursor: null } } });
+    if (query.includes('OpsQuellvarianten')) {
+      quellIds.push(...variables.ids);
+      return ok({ nodes: variables.ids.map(id => ({ id, sku: 'QUELL-TEST', metafields: { nodes: [] } })) });
+    }
+    if (query.includes('OpsLieferanten')) return ok({ metaobjects: { nodes: [] } });
+    throw new Error('Unerwartete Testabfrage');
+  };
+  try {
+    const r = await TEIL_FN.bestellungen(dir);
+    assert.equal(r.anzahl, 1);
+    const daten = JSON.parse(fs.readFileSync(path.join(dir, 'bestelluebersicht/orders.json'), 'utf8'));
+    assert.equal(daten.orders[0].lineItems.nodes.length, 51);
+    assert.equal(daten.quellvarianten.length, 51);
+    assert.ok(quellIds.includes('gid://shopify/ProductVariant/150'));
+  } finally {
+    globalThis.fetch = altesFetch;
+    if (alterToken === undefined) delete process.env.SHOPIFY_ADMIN_TOKEN; else process.env.SHOPIFY_ADMIN_TOKEN = alterToken;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('abgebrochene Positionsseite erhaelt Bestellungen und Erfuellungen des letzten Erfolgs', async () => {
+  const dir = tmpDir();
+  const alterToken = process.env.SHOPIFY_ADMIN_TOKEN;
+  const altesFetch = globalThis.fetch;
+  process.env.SHOPIFY_ADMIN_TOKEN = 'shpat_test';
+  const order = bestellungMitMuster(1, null, null);
+  order.lineItems.pageInfo = { hasNextPage: true, endCursor: 'position-1' };
+  const ordersDatei = path.join(dir, 'bestelluebersicht/orders.json');
+  const erfuellungDatei = path.join(dir, 'erfuellung/erfuellung.json');
+  for (const datei of [ordersDatei, erfuellungDatei]) {
+    fs.mkdirSync(path.dirname(datei), { recursive: true });
+    fs.writeFileSync(datei, '{"stand":"letzter-vollstaendiger-export"}');
+  }
+  globalThis.fetch = async (url, init) => {
+    const { query } = JSON.parse(init.body);
+    if (query.includes('OpsOrderLineItems')) return ok({ order: null });
+    if (query.includes('OpsOrders')) return ok({ orders: { nodes: [order], pageInfo: { hasNextPage: false, endCursor: null } } });
+    throw new Error('Nach einem Positionsfehler darf kein Folgeexport starten');
+  };
+  try {
+    const { ergebnisse, status } = await aktualisiere({ dir, nur: ['bestellungen'] });
+    assert.equal(ergebnisse[0].erfolg, false);
+    assert.match(status.teile.bestellungen.meldung, /Bestellpositionen.*Bestellung fehlt/);
+    for (const datei of [ordersDatei, erfuellungDatei]) {
+      assert.equal(fs.readFileSync(datei, 'utf8'), '{"stand":"letzter-vollstaendiger-export"}');
+    }
+  } finally {
+    globalThis.fetch = altesFetch;
+    if (alterToken === undefined) delete process.env.SHOPIFY_ADMIN_TOKEN; else process.env.SHOPIFY_ADMIN_TOKEN = alterToken;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });

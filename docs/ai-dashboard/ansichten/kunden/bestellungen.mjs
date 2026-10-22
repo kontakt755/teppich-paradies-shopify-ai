@@ -6,7 +6,7 @@
 import {
   bestellKundenKey, gruppiereBestellzeilenNachKunde, sortKundenname, sortiereNachWichtigkeit,
 } from '../../lib/kunden-bestellgruppen.mjs';
-import { bestellArbeitsstand, bestellungAusgeblendet } from '../../lib/bestellarbeit.mjs';
+import { bestellArbeitsstand, bestellungAusgeblendet, bestellPruefgruende } from '../../lib/bestellarbeit.mjs';
 import { state } from '../../kern/zustand.mjs';
 import { esc, fmtDate, fmtDateTime, plural, toast, geldText } from '../../kern/helfer.mjs';
 import { fetchEinkauf } from '../../kern/api.mjs';
@@ -51,7 +51,7 @@ export function ensureKundenBestellungen() {
 // "nicht_fertig" zuerst - das ist die Voreinstellung (Inhabervorgabe: "welcher
 // Kunde ist fertig, welcher nicht" soll sofort sichtbar sein). Muss zu
 // operations/lib/bestellliste.mjs (FILTERCHIPS/wendeFilterAn) passen.
-const BQ_FILTER_LABEL = { nicht_fertig: 'Nicht fertig', fertig: 'Abgehakt / versandt', offen: 'Zahlung offen', bezahlt: 'Bezahlt', unerfuellt: 'Unerfüllt', storniert: 'Storniert', beratung: 'Beratung offen', muster: 'Muster', test: 'Testbestellung' };
+const BQ_FILTER_LABEL = { nicht_fertig: 'Nicht fertig', alle: 'Alle Bestellungen', pruefen: 'Kontrolle nötig', fertig: 'Abgehakt / versandt', offen: 'Zahlung offen', bezahlt: 'Bezahlt', unerfuellt: 'Unerfüllt', storniert: 'Storniert', beratung: 'Beratung offen', muster: 'Muster', test: 'Testbestellung' };
 const BQ_SORT_LABEL = { wichtigkeit: 'Wichtigkeit', datum: 'Datum', orderName: 'Bestellnr.', kundenname: 'Kunde', gesamtbetrag: 'Betrag', zahlungsstatus: 'Zahlung', fulfillmentstatus: 'Versand', anzahlArtikel: 'Artikel', fortschritt: 'Fortschritt' };
 
 const KANAL_TEXT = { web: 'Onlineshop', pos: 'Ladengeschäft', shopify_draft_order: 'Angebot' };
@@ -66,6 +66,7 @@ function bestellzeileGefiltert(zeilen, params) {
   const dir = params.get('bdir') || (sort === 'kundenname' ? 'asc' : 'desc');
   // "Nicht fertig" laesst fertige Bestellungen drin - sie landen im Bereich "Erledigt" (istErledigt).
   let liste = zeilen.filter(z => filter === 'nicht_fertig' ? !z.testbestellung && !z.storniert
+    : filter === 'pruefen' ? bestellPruefgruende(z).length > 0
     : filter === 'fertig' ? (istErledigt(z) && !z.testbestellung)
     : filter === 'offen' ? (z.offen && !z.testbestellung)
     : filter === 'bezahlt' ? z.zahlungsstatus === 'PAID'
@@ -282,10 +283,12 @@ export function viewKundenBestellungen() {
   const sort = params.get('bsort') || 'datum';
   const dir = params.get('bdir') || (sort === 'kundenname' ? 'asc' : 'desc');
   const gefiltert = bestellzeileGefiltert(d.zeilen, params);
-  const zeilen = gefiltert.filter(z => !istErledigt(z));
+  // Bewusst gewaehlte Gesamtliste/Kontrolle darf keine Treffer in einem Archiv verstecken.
+  const direkt = ['alle', 'pruefen', 'fertig', 'storniert', 'test'].includes(filter);
+  const zeilen = direkt ? gefiltert : gefiltert.filter(z => !istErledigt(z));
   // Ohne Suche nur die letzten 30 Tage - sonst wuechse "Erledigt" endlos. Aeltere findet die Suche.
   const grenze = Date.now() - ERLEDIGT_TAGE * 864e5;
-  const erledigtAlle = gefiltert.filter(istErledigt).sort((a, b) => String(b.datum || '').localeCompare(String(a.datum || '')));
+  const erledigtAlle = direkt ? [] : gefiltert.filter(istErledigt).sort((a, b) => String(b.datum || '').localeCompare(String(a.datum || '')));
   const erledigt = params.get('bq') ? erledigtAlle : erledigtAlle.filter(z => Date.parse(z.datum) >= grenze);
   const erledigtAelter = erledigtAlle.length - erledigt.length;
   const alleGruppen = ['kundenname', 'wichtigkeit'].includes(sort) ? gruppiereBestellzeilenNachKunde(zeilen) : null;
@@ -322,8 +325,15 @@ export function viewKundenBestellungen() {
     ? gruppen.map(g => `<section class="bq-kundengruppe-mobil"><h3>${esc(g.name)} <span class="small muted">· ${plural(g.zeilen.length, 'Bestellung', 'Bestellungen')}</span></h3>${grund(g)}${g.zeilen.map(z => bestellzeileKarte(z, true)).join('')}</section>`).join('')
     : sichtbar.map(bestellzeileKarte).join('')
     : emptyState('Keine Treffer.', '');
+  const pruefen = d.zeilen.filter(z => bestellPruefgruende(z).length).length;
+  const alleLink = new URLSearchParams(params);
+  alleLink.set('bfilter', 'alle'); alleLink.delete('bseite');
   return `
+    ${pruefen && filter !== 'pruefen' ? `<p class="notice warn"><a href="#/kunden?tab=bestellungen&amp;bfilter=pruefen">${plural(pruefen, 'Bestellung braucht', 'Bestellungen brauchen')} Kontrolle</a> – etwa ein manueller Haken ohne Versandnachweis oder unklare Artikel.</p>` : ''}
+    ${filter === 'pruefen' ? '<p class="notice warn">Hier bleiben auch manuell abgehakte Fälle sichtbar. Prüfe den Versand- und Artikelstand, bevor du einen Fall abschließt.</p>' : ''}
+    ${filter === 'alle' ? '<p class="small muted">Alle echten Bestellungen im Betriebsbestand: letzte 90 Tage sowie ältere mit offenem Versand oder offener Zahlung. Ältere vollständig abgeschlossene Bestellungen findest du in Shopify.</p>' : ''}
     <div class="toolbar search-hero"><input type="search" placeholder="Suchen – Kunde, E-Mail, Telefon, Bestellnummer, Produkt, Farbe, Tags …" value="${esc(params.get('bq') || '')}" data-param="bq" aria-label="Bestellungen durchsuchen"></div>
+    ${params.get('bq') && filter !== 'alle' ? `<p class="small muted">Die Suche gilt für „${esc(BQ_FILTER_LABEL[filter] || filter)}“. <a href="#/kunden?${esc(alleLink)}">In allen Bestellungen suchen →</a></p>` : ''}
     ${chips}
     <div class="chips" role="group" aria-label="Sortierung">
       <button class="chip" data-bq-neueste aria-pressed="${sort === 'datum' && dir === 'desc'}">Neueste zuerst</button>
@@ -351,7 +361,7 @@ function neuBadge(z) {
   return !istErledigt(z) && Date.now() - Date.parse(z.datum) < NEU_STUNDEN * 36e5 ? ' <span class="badge bq-neu">Neu</span>' : '';
 }
 
-const FILTERCHIPS_KUNDEN = ['nicht_fertig', 'fertig', 'offen', 'bezahlt', 'unerfuellt', 'storniert', 'beratung', 'muster', 'test'];
+const FILTERCHIPS_KUNDEN = ['nicht_fertig', 'alle', 'pruefen', 'fertig', 'offen', 'bezahlt', 'unerfuellt', 'storniert', 'beratung', 'muster', 'test'];
 
 /** Kunden, Reiter Bestellungen: sortieren, aufklappen, Auftragsfluss, fertig. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function kundenKlickBestellungen(e) {
