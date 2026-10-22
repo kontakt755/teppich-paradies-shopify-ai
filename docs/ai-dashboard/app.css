@@ -606,6 +606,9 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
   font-size: .9rem;
 }
 .bq-gruppenkopf th > span { margin-right: 10px; }
+.bq-grund { font-size: .85rem; font-weight: 600; color: var(--text-2); }
+.bq-grund.bq-rang-1 { color: var(--warn); }
+.bq-kundengruppe-mobil > .bq-grund { display: block; margin: -4px 0 8px; }
 .bq-kundengruppe + .bq-kundengruppe .bq-gruppenkopf th { border-top: 14px solid var(--surface); }
 .th-sort { background: none; border: 0; font: inherit; font-weight: 600; color: var(--text-2); cursor: pointer; padding: 0; white-space: nowrap; }
 .th-sort:hover { color: var(--text); }
