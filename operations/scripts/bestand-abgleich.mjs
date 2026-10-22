@@ -22,6 +22,7 @@
  */
 
 import fs from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -41,8 +42,9 @@ const VARIANTEN_QUERY = `query($q: String!, $after: String) {
 
 const STANDORT_QUERY = `{ locations(first: 5) { nodes { id isActive } } }`;
 
-const SETZEN = `mutation($input: InventorySetQuantitiesInput!) {
-  inventorySetQuantities(input: $input) { userErrors { code field message } }
+// Ab API 2026-04 verlangt Shopify den @idempotent-Schluessel (sonst Laufzeitfehler).
+const SETZEN = `mutation($input: InventorySetQuantitiesInput!, $schluessel: String!) {
+  inventorySetQuantities(input: $input) @idempotent(key: $schluessel) { userErrors { code field message } }
 }`;
 
 export function argumente(argv) {
@@ -114,7 +116,7 @@ async function main() {
   }
   if (a.schreiben) {
     for (const input of bauePakete(plan.aenderungen, standort.id)) {
-      const data = await proxy.execute(SETZEN, { input });
+      const data = await proxy.execute(SETZEN, { input, schluessel: randomUUID() });
       for (const f of data.inventorySetQuantities.userErrors) status.fehler.push(`${f.code || ''} ${f.message}`.trim());
       await wartenBeiThrottle(proxy);
     }
