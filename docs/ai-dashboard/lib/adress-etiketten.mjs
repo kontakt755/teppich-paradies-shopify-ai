@@ -1,6 +1,7 @@
 /**
  * Adressaufkleber fuer Musterbriefe (Kunden → Muster packen, #1572) auf dem Niimbot B1.
- * Absender klein und unterstrichen, Empfaenger gross, Bestellnummer unten rechts. Gleiche Bauart
+ * Absender klein und unterstrichen, Empfaenger gross. Keine Bestellnummer: sie geht den Postweg
+ * nichts an (Inhaber 22.10.); welcher Umschlag zu welcher Bestellung gehoert, zeigt die Packliste. Gleiche Bauart
  * wie layout() in muster-etiketten.mjs, damit der vorhandene Druckdialog beide zeichnen kann.
  * Das Porto (Internetmarke) kommt separat auf den Umschlag. Testbar ohne Drucker und ohne DOM.
  */
@@ -53,9 +54,7 @@ export function adressLayout(e, mass, format = ETIKETT) {
   linien.push({ x1: rand, x2: rand + Math.min(innen, Math.max(...ABSENDER.map(t => mass(t, gAbs, false)))), y: y + 1 });
   y += 28;
 
-  const nr = e.bestellungen?.length ? `Bestellung ${e.bestellungen.join(', ')}` : '';
-  const gNr = nr ? passend(nr, 18, false) : 0;
-  const unten = hoehe - rand - (nr ? gNr + 10 : 0);
+  const unten = hoehe - rand;
   const zeilen = e.empfaenger || [];
   // Eine Groesse fuer alle Empfaengerzeilen: die breiteste Zeile bestimmt sie, die Hoehe deckelt sie.
   let g = zeilen.length ? Math.min(...zeilen.map(z => passend(z.text, 36, z.fett))) : 0;
@@ -63,6 +62,5 @@ export function adressLayout(e, mass, format = ETIKETT) {
   const abstand = Math.round(g * 1.22);
   y += Math.max(0, Math.floor((unten - y - zeilen.length * abstand) / 2));
   for (const z of zeilen) { texte.push({ text: z.text, x: rand, y, groesse: g, fett: z.fett }); y += abstand; }
-  if (nr) texte.push({ text: nr, x: breite - rand - Math.min(innen, mass(nr, gNr, false)), y: hoehe - rand - gNr, groesse: gNr, fett: false });
   return { texte, linien, qr: null };
 }
