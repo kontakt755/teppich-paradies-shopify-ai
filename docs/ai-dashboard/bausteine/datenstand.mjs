@@ -7,31 +7,30 @@
  * halbe Minute neu geschrieben werden, ohne dass ein Formular, eine Auswahl oder ein
  * aufgeklapptes Detail darunter verloren geht.
  *
- * Nachladen: alle CONFIG.refreshMs (2 Minuten) und beim Zurueckkehren in den Tab fragt die Seite
- * /api/aktualisierung/status. Hat der Sync-Dienst seither neue Daten geschrieben, werden die
- * Zwischenspeicher verworfen und neu gezeichnet - aber nur, wenn gerade niemand tippt, einen
+ * Nachladen: alle 30 Sekunden und beim Zurueckkehren in den Tab fragt die Seite
+ * /api/aktualisierung/status. Neue Export- oder lokale Arbeitsstaende werden je Arbeitsgruppe
+ * vollstaendig gelesen und gemeinsam uebernommen - aber nur, wenn gerade niemand tippt, einen
  * Dialog offen hat oder ungespeicherte Eingaben in der Seite stehen. Sonst wartet es bis zum
  * naechsten Takt. Grenzen je Quelle: lib/datenstand.mjs.
  */
-import { CONFIG } from '../kern/konfig.mjs';
 import { state } from '../kern/zustand.mjs';
 import { $, esc, fmtDateTime } from '../kern/helfer.mjs';
 import { fetchEinkauf } from '../kern/api.mjs';
 import { render } from '../kern/render.mjs';
 import { einkauf } from '../ansichten/einkauf/auftragsfluss.mjs';
 import { verwirfDatenspeicher } from './aktualisierung.mjs';
+import { kunden } from '../ansichten/kunden/gemeinsam.mjs';
+import { belege } from '../ansichten/einkauf/belege.mjs';
+import { shopifyAbgleich } from '../ansichten/einkauf/shopify-abgleich.mjs';
+import { heuteDaten } from '../ansichten/heute/daten.mjs';
+import { erzeugeArbeitsabgleich } from '../lib/arbeitsdaten.mjs';
 import { veralteteQuellen, hinweisSatz, quelleFuerSeite, vorText, DATENSTAND_LABEL } from '../lib/datenstand.mjs';
 
 const ZEILE_MS = 30_000;
-let kennung = null;       // Fingerabdruck der Zeitpunkte beim letzten Laden der Daten
-let wartet = false;       // neue Daten da, aber jemand arbeitet gerade - beim naechsten Takt
+let arbeitsFehler = null;
 
 function istInhaber() { const r = state.session?.benutzer?.rolle; return !r || r === 'inhaber'; }
 
-function fingerabdruck(a) {
-  if (!a?.verfuegbar) return '';
-  return Object.entries(a.teile || {}).map(([t, s]) => `${t}:${s?.zeitpunkt || ''}`).sort().join('|');
-}
 
 /** Arbeitet gerade jemand in der Seite? Dann nicht neu zeichnen. */
 export function beschaeftigt(doc = document) {
@@ -53,10 +52,10 @@ export function zeichneDatenstand() {
   const veraltet = veralteteQuellen(a, jetzt).filter(q => istInhaber() || q.teil !== 'kennzahlen');
   const teil = quelleFuerSeite(state.route.view);
   const stand = teil && a?.teile?.[teil]?.erfolg ? a.teile[teil].zeitpunkt : null;
-  if (veraltet.length) {
+  if (arbeitsFehler || veraltet.length) {
     ziel.className = 'datenstand-leiste warn';
     ziel.setAttribute('role', 'alert');
-    ziel.innerHTML = `<strong>Nicht aktuell:</strong> ${esc(hinweisSatz(veraltet, { inhaber: istInhaber() }))}`;
+    ziel.innerHTML = `<strong>Nicht aktuell:</strong> ${esc(arbeitsFehler || hinweisSatz(veraltet, { inhaber: istInhaber() }))}`;
     ziel.hidden = false;
     return;
   }
@@ -68,30 +67,45 @@ export function zeichneDatenstand() {
     : '';
 }
 
-async function pruefe() {
-  if (state.capabilities.mode !== 'local' || document.hidden) return;
-  const d = await fetchEinkauf('/api/aktualisierung/status');
-  if (!d || d.fehler) return;
-  const vorher = kennung;
-  einkauf.aktualisierung = d;
-  einkauf.aktualisierungLaeuft = !!d.laeuft;
-  const neu = fingerabdruck(d);
-  if (vorher === null) kennung = neu;
-  else if (neu !== vorher || wartet) {
-    if (beschaeftigt()) wartet = true;
-    else {
-      kennung = neu; wartet = false;
-      verwirfDatenspeicher();
-      render();
-    }
-  }
-  zeichneDatenstand();
+/** Bereits geladene Arbeitsquellen auffrischen; keine zweite Ablage und keine Schreibaktion. */
+function arbeitsQuellen() {
+  const quelle = (speicher, feld, pfad, laedt, versucht = null, bezug = null) => ({
+    pfad, gruppe: ['auftragsstatus', 'bestellungen', 'musterPacken'].includes(feld) ? 'bestellarbeit' : pfad,
+    lesen: () => speicher[feld], laedt: () => Boolean(speicher[laedt]), bezug, versucht,
+    setzen: d => { speicher[feld] = d; },
+  });
+  const liste = [
+    quelle(einkauf, 'auftragsstatus', '/api/einkauf/auftragsstatus', 'loadingAuftragsstatus'),
+    quelle(einkauf, 'bestellungen', '/api/einkauf/bestellungen', 'loadingBestellungen'),
+    quelle(einkauf, 'lieferanten', '/api/einkauf/lieferanten', 'loadingLieferanten'),
+    quelle(kunden, 'bestellungen', '/api/kunden/bestellungen', 'loadingBestellungen'),
+    quelle(kunden, 'musterPacken', '/api/kunden/muster-packen', 'loadingMusterPacken'),
+    quelle(kunden, 'faelle', '/api/kunden/faelle', 'loadingFaelle'),
+    quelle(kunden, 'rueckrufe', '/api/kunden/rueckrufe', 'loadingRueckrufe'),
+    quelle(belege, 'daten', '/api/einkauf/belege', 'laedt', () => { belege.geladenAm = Date.now(); }),
+    quelle(shopifyAbgleich, 'daten', '/api/einkauf/shopify-abgleich', 'laedt', () => { shopifyAbgleich.am = Date.now(); }),
+    quelle(heuteDaten, 'lieferanten', '/api/einkauf/lieferanten', 'laedtLieferanten', () => { heuteDaten.lieferantenAm = Date.now(); }),
+  ];
+  const key = kunden.detailKey;
+  if (key) liste.push(quelle(kunden, 'detail', `/api/kunden/detail?${new URLSearchParams({ key })}`,
+    'loadingDetail', null, () => kunden.detailKey));
+  return liste;
 }
 
-/** Einmal beim Start (app.js). */
+const pruefe = erzeugeArbeitsabgleich({
+  holen: fetchEinkauf, quellen: arbeitsQuellen,
+  darfAktualisieren: () => state.capabilities.mode === 'local' && !document.hidden && !beschaeftigt(),
+  kontext: () => `${state.route.view}?${state.route.params}|${state.session?.benutzer?.id || state.session?.benutzer?.rolle || ''}`,
+  statusUebernehmen: d => { einkauf.aktualisierung = d; einkauf.aktualisierungLaeuft = !!d.laeuft; },
+  vorUebernahme: ({ exportGeaendert }) => { if (exportGeaendert) verwirfDatenspeicher(); },
+  nachUebernahme: ({ erneuert, exportGeaendert }) => { if (erneuert || exportGeaendert) render(); },
+  fehlerMelden: text => { arbeitsFehler = text; zeichneDatenstand(); },
+});
+
+/** Einmal beim Start (app.js): derselbe Takt prueft Arbeitsstand und schreibt die Datumszeile. */
 export function starteDatenstand() {
-  void pruefe();
-  setInterval(() => void pruefe(), CONFIG.refreshMs);
-  setInterval(zeichneDatenstand, ZEILE_MS);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) void pruefe(); });
+  const tick = async () => { await pruefe(); zeichneDatenstand(); };
+  void tick();
+  setInterval(() => void tick(), ZEILE_MS);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) void tick(); });
 }
