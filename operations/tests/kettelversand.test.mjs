@@ -21,7 +21,7 @@ test('Eingang und Ketteln brauchen eigene Belege und bleiben getrennt vom Versan
 test('Gemeinsame Rolle braucht fertige Teppiche und ausdrückliche Packbestätigung',t=>{
  const dir=umgebung(t);assert.throws(()=>aendereKettelversand(dir,{revision:0,aktion:'paket',paket},config),/fertig/);
  const revision=bereit(dir);
- for(const p of [{...paket,gemessen:false},{...paket,zusammenGerollt:false},{...paket,gewicht:0},{...paket,positionen:['a','fremd']}])assert.throws(()=>aendereKettelversand(dir,{revision,aktion:'paket',paket:p},config));
+ for(const p of [{...paket,positionen:'a'},{...paket,gemessen:false},{...paket,zusammenGerollt:false},{...paket,gewicht:0},{...paket,positionen:['a','fremd']}])assert.throws(()=>aendereKettelversand(dir,{revision,aktion:'paket',paket:p},config));
  const a=aendereKettelversand(dir,{revision,aktion:'paket',paket},config);assert.equal(a.pakete.length,1);assert.equal(a.pakete[0].gewicht,12);assert(a.pakete[0].zusammenGerollt);
  assert.throws(()=>aendereKettelversand(dir,{revision:a.revision,aktion:'paket',paket:{...paket,positionen:['a']}},config),/anderen Packstück/);
  assert.equal(leseKettelversand(dir).auftraege[auftrag.id].pakete.length,1);

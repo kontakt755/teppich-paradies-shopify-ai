@@ -45,7 +45,9 @@ export function aendereKettelversand(dir, payload, { auftrag, statusAlle, actor,
       if (p[payload.aktion]) throw new Error('Dieser Schritt ist bereits bestätigt.');
       a.positionen[id]={...p,[payload.aktion]:{am,von:actor,beleg}};
     } else if (payload.aktion==='paket') {
-      const p=payload.paket || {}; const ids=[...new Set(p.positionen || [])];
+      const p=payload.paket || {};
+      if(!Array.isArray(p.positionen) || p.positionen.length>200) throw new Error('Bitte gültige Teppichpositionen auswählen.');
+      const ids=[...new Set(p.positionen)];
       if (!ids.length || ids.length!==(p.positionen||[]).length) throw new Error('Positionen einmalig einem Packstück zuordnen.');
       for(const id of ids) { pruefeId(id); if(!a.positionen[id]?.fertig) throw new Error('Alle Teppiche im Packstück müssen fertig gekettelt sein.'); }
       if(ids.length>1 && p.zusammenGerollt!==true) throw new Error('Gemeinsames Rollen und sichere Verpackung vor Ort bestätigen.');
