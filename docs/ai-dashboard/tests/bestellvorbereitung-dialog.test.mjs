@@ -21,8 +21,8 @@ function knopf({ index = 0, href = null, target = '', text } = {}) {
 }
 
 function umgebung(optionen = {}) {
-  const config = { lesend: false, konflikt: false, popupBlockiert: false, clipboardFehler: false, ...optionen };
-  const posts = [], gets = [], kopien = [], fenster = [], statuswrites = [], toasts = [], fallback = [];
+  const config = { lesend: false, konflikt: false, popupBlockiert: false, clipboardFehler: false, modern: true, geste: true, execFehler: false, ...optionen };
+  const posts = [], gets = [], kopien = [], clipboardStarts = [], fenster = [], statuswrites = [], toasts = [], fallback = [];
   const browser = { location: { href: '' } };
   const root = { innerHTML: '' }, warnung = { hidden: true }, neu = { hidden: true };
   const fragen = new Map(), elemente = [];
@@ -39,7 +39,9 @@ function umgebung(optionen = {}) {
     return { focus() {} };
   };
   const modul = vm.runInNewContext(quelle + '\n({ openBestellmailDialog, ladeDialog, uebergebeVorlage, markiereMail, einkaufKlickLieferanten, dialog })', {
-    state, einkauf, $, URLSearchParams,
+    state, einkauf, $, URLSearchParams, Blob,
+    Date: class extends Date { static now() { return config.jetzt ?? Date.now(); } },
+    ClipboardItem: config.modern ? class { constructor(inhalt) { this.inhalt = inhalt; } } : undefined,
     esc: v => String(v ?? ''), plural: (n, a, b) => `${n} ${n === 1 ? a : b}`,
     istNurLesend: () => config.lesend,
     uebernahmeBlock: () => config.lesend ? '' : '<button data-einkauf-uebernahme="freigeben">Freigeben</button><button data-einkauf-uebernahme="uebernehmen">Als Inhaber übernehmen</button>',
@@ -55,12 +57,19 @@ function umgebung(optionen = {}) {
       if (payload.aktion === 'bestellPruefen' && config.pruefen) return config.pruefen();
       return payload.aktion === 'bestellVorbereitung' ? daten() : {};
     },
-    navigator: { clipboard: { writeText: async text => { if (config.clipboardFehler) throw new Error('Nicht verfuegbar'); kopien.push(text); } } },
+    navigator: { clipboard: {
+      write: async items => {
+        clipboardStarts.push({ geste: config.geste });
+        if (!config.geste || config.clipboardFehler) throw new Error('NotAllowedError');
+        const blob = await items[0].inhalt['text/plain'];
+        kopien.push(await blob.text());
+      },
+    } },
     document: {
       querySelectorAll: () => elemente,
       body: { append: el => fallback.push({ aktion: 'append', el }) },
       createElement: () => ({ value: '', setAttribute() {}, select() { fallback.push({ aktion: 'select' }); }, remove() { fallback.push({ aktion: 'remove' }); } }),
-      execCommand: befehl => { fallback.push({ aktion: befehl }); return true; },
+      execCommand: befehl => { fallback.push({ aktion: befehl, geste: config.geste }); return config.geste && !config.execFehler; },
     },
     window: {
       location: browser.location,
@@ -71,7 +80,7 @@ function umgebung(optionen = {}) {
       },
     },
   });
-  return { ...modul, config, posts, gets, kopien, fenster, statuswrites, toasts, fallback, browser, root, warnung, neu, fragen, elemente, einkauf,
+  return { ...modul, config, posts, gets, kopien, clipboardStarts, fenster, statuswrites, toasts, fallback, browser, root, warnung, neu, fragen, elemente, einkauf,
     async oeffnen() { modul.openBestellmailDialog('TEST', 'muster'); await tick(); },
     geschlossen() { root.innerHTML = ''; },
   };
@@ -178,10 +187,12 @@ test('Popupblocker bietet Hinweis ohne Bestellmarkierung; Clipboardfallback entf
   assert.equal(popup.statuswrites.length, 0);
   assert.equal(popup.fragen.size, 0);
   const u = umgebung({ clipboardFehler: true }); await u.oeffnen();
-  const b = knopf({ text: 'Testfallback' }); await u.uebergebeVorlage(b);
+  const b = knopf({ text: 'Testmuster 0' }); await u.uebergebeVorlage(b);
+  assert.equal(b.textContent, 'Jetzt kopieren');
+  await u.uebergebeVorlage(b);
   assert.deepEqual(u.fallback.map(f => f.aktion), ['append', 'select', 'copy', 'remove']);
   assert.equal(b.textContent, 'Kopiert');
-  assert.equal(u.fallback[0].el.value, 'Testfallback');
+  assert.equal(u.fallback[0].el.value, 'Testmuster 0');
 });
 
 
@@ -255,4 +266,84 @@ test('Inhaberuebernahme passiert nur durch bewussten Dialogknopf und bereitet an
   assert.equal(u.statuswrites.length, 0);
   assert.equal(u.kopien.length, 0);
   assert.equal(u.fenster.length, 0);
+});
+
+test('Safari-Schreibaufruf nutzt erste Geste, Promise gibt Text erst nach verzoegerter Serverfreigabe heraus', async () => {
+  const u = umgebung(); await u.oeffnen();
+  let freigeben;
+  u.config.pruefen = () => new Promise(resolve => { freigeben = resolve; });
+  const lauf = u.uebergebeVorlage(knopf({ text: 'Testmuster 0' }));
+  assert.deepEqual(u.clipboardStarts, [{ geste: true }], 'write startet vor dem ersten await noch im Klick');
+  assert.equal(u.kopien.length, 0, 'ungepruefter Text wird nicht an die Zwischenablage geliefert');
+  u.config.geste = false;
+  freigeben({}); await lauf;
+  assert.deepEqual(u.kopien, ['Testmuster 0'], 'bereits gestartetes write darf spaeter geprueften Blob erhalten');
+  assert.equal(u.fallback.length, 0);
+});
+
+test('verzoegerter Konflikt oder geschlossener Dialog liefert auch einem wartenden ClipboardItem keinen Text', async () => {
+  for (const abbruch of [false, true]) {
+    const u = umgebung(); await u.oeffnen();
+    let fertig;
+    u.config.pruefen = () => new Promise((resolve, reject) => { fertig = abbruch ? resolve : () => reject(new Error('409: geaendert')); });
+    const lauf = u.uebergebeVorlage(knopf({ text: 'Testmuster 0' }));
+    if (abbruch) u.geschlossen();
+    fertig({}); await lauf; await tick();
+    assert.equal(u.kopien.length, 0);
+    assert.equal(u.fallback.length, 0);
+    assert.equal(u.statuswrites.length, 0);
+  }
+});
+
+test('Legacy und Clipboard-Verweigerung kopieren erst mit zweiter Geste nach bestandener Pruefung', async () => {
+  for (const optionen of [{ modern: false }, { clipboardFehler: true }]) {
+    const u = umgebung(optionen); await u.oeffnen();
+    let freigeben;
+    u.config.pruefen = () => new Promise(resolve => { freigeben = resolve; });
+    const b = knopf({ text: 'Testmuster 0' });
+    const erster = u.uebergebeVorlage(b);
+    u.config.geste = false;
+    freigeben({}); await erster;
+    assert.equal(u.kopien.length, 0);
+    assert.equal(u.fallback.length, 0, 'kein execCommand nach dem Server-await');
+    assert.equal(b.textContent, 'Jetzt kopieren');
+    u.config.geste = true;
+    const zweiter = u.uebergebeVorlage(b);
+    assert.equal(u.fallback.find(f => f.aktion === 'copy')?.geste, true, 'execCommand erfolgt synchron im neuen Klick');
+    u.config.geste = false;
+    await zweiter;
+    assert.equal(b.textContent, 'Kopiert');
+    assert.equal(u.posts.filter(p => p.payload.aktion === 'bestellPruefen').length, 1);
+  }
+});
+
+test('kurze Legacy-Freigabe gilt nur fuer unveraenderten Dialog, Scope, Hash und Text', async () => {
+  for (const aenderung of ['zeit', 'abruf', 'scope', 'hash', 'text']) {
+    const u = umgebung({ modern: false, jetzt: 1000 }); await u.oeffnen();
+    const b = knopf({ text: 'Testmuster 0' });
+    await u.uebergebeVorlage(b);
+    if (aenderung === 'zeit') u.config.jetzt = 11_001;
+    if (aenderung === 'abruf') u.dialog.abruf++;
+    if (aenderung === 'scope') u.dialog.ziel = 'kunde';
+    if (aenderung === 'hash') u.dialog.daten.mails[0].vorbereitungStand = 'hash-neu';
+    if (aenderung === 'text') u.dialog.daten.mails[0].text = 'Geaenderter Testtext';
+    await u.uebergebeVorlage(b);
+    assert.equal(u.fallback.length, 0, `${aenderung}: alte Freigabe darf nichts kopieren`);
+    assert.equal(u.posts.filter(p => p.payload.aktion === 'bestellPruefen').length, 2);
+    assert.equal(b.textContent, 'Jetzt kopieren');
+  }
+});
+
+test('dauerhafte Clipboard-Verweigerung laesst sichtbare manuelle Auswahl mit Erklaerung erreichbar', async () => {
+  const u = umgebung({ clipboardFehler: true, execFehler: true }); await u.oeffnen();
+  const b = knopf({ text: 'Testmuster 0' });
+  await u.uebergebeVorlage(b);
+  await u.uebergebeVorlage(b);
+  assert.equal(b.textContent, 'Text markiert – bitte manuell kopieren');
+  assert.deepEqual(u.fallback.map(f => f.aktion), ['append', 'select', 'copy']);
+  assert.equal(u.fallback[0].el.value, 'Testmuster 0');
+  assert.equal(u.fallback[0].el.readOnly, true);
+  assert.ok(u.toasts.some(t => /⌘C oder Strg\+C/.test(t[0])));
+  assert.equal(u.statuswrites.length, 0);
+  assert.equal(u.fragen.size, 0, 'unbestaetigtes manuelles Kopieren ist keine erfolgte Uebergabe');
 });

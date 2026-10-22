@@ -20,6 +20,9 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   blockiert, nach Freigabe weiterarbeiten, alte Vorlage abgewiesen; 3 Muster bestaetigt → 0
   offen, lokale Wiedereroeffnung ohne Exportwechsel automatisch 0 → 3. Kein echter Versand.
   Regressionen fuer Teilfehler, geschuetzte Eingaben und getrennte Mailabschnitte.
+  Kopieren beginnt auch bei verzoegerter Serverantwort im Benutzerklick; Inhalte bleiben bis
+  zur Freigabe gesperrt. Aeltere Browser bieten nach Pruefung einen kurzen zweiten Klick.
+  Kopierprobe im Browser sowie Regressionen fuer Gestenverlust, Ablehnung und manuelle Auswahl.
 - **Risiken/Annahmen:** Gleiche Anmeldung bedeutet weiterhin gemeinsame Identitaet. Externe
   Mailprogramme und Gmail bestaetigen dem Dashboard keinen Versand; mehrfaches externes
   Absenden kann es nicht ausschliessen. Keine automatischen Kaeufe, Nachrichten oder physischen

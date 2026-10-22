@@ -1927,6 +1927,11 @@ eines ersten Abschnitts bleibt ein zweiter unveraenderter Abschnitt pruefbar; In
 sind keine Kennung. Der Browser prueft vor Kopieren, externem Oeffnen und Bestellt-Markierung.
 Lesende Rollen erhalten fuer beide Aktionen 403 und behalten den bisherigen Lesepfad.
 
+Beim Kopieren beginnt der Clipboard-Aufruf im urspruenglichen Klick; der Text wird erst
+nach erfolgreicher Serverpruefung als Inhalt freigegeben. Damit bleibt die Benutzeraktivierung
+auch in Browsern mit strenger Gestenbindung erhalten. Ohne diese Schnittstelle bietet der
+Dialog nach der Pruefung einen kurzen zweiten Kopierklick und bei Bedarf manuelle Textauswahl.
+
 Die vorhandene ausdrueckliche Inhaber-Uebernahme und Freigabe bleiben erhalten. Verschiedene
 Mitarbeiter muessen unterschiedliche Anmeldungen verwenden, damit ihre Identitaeten getrennt
 sind. Das Dashboard erhaelt keinen verlaesslichen Versandnachweis aus einem externen

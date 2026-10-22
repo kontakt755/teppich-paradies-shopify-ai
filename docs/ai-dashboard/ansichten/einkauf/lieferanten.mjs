@@ -339,6 +339,10 @@ export function lieferantenKartenHtml({ gruppeKarte, daten = einkauf.bestellunge
 
 // ------------------------------------------------------------ Bestellmail-Dialog
 
+// Nur im offenen Dialog, nie dauerhaft: kurze Freigabe fuer den zweiten Legacy-Kopierklick.
+let kopierFreigaben = new WeakMap();
+const KOPIERFREIGABE_MS = 10_000;
+
 const dialog = { lieferant: null, art: 'ware', auftrag: null, ziel: '', daten: null, fehler: null, abruf: 0, prueft: false, markiert: new Set(), gesetzt: new Map() };
 
 /** Kunde · Ort einer Bestellung als kurzer Text (Ort = Stadt der Lieferadresse). */
@@ -452,6 +456,7 @@ function zeichneDialog() {
 }
 
 async function ladeDialog() {
+  kopierFreigaben = new WeakMap();
   const abruf = ++dialog.abruf;
   const payload = vorbereitungsPayload();
   let daten, fehler = null;
@@ -486,6 +491,7 @@ function vorbereitungsPayload() {
 }
 
 function vorbereitungFehler(text) {
+  kopierFreigaben = new WeakMap();
   dialog.fehler = text;
   const hinweis = $('#dialogRoot [data-lf-fehler]');
   if (hinweis) { hinweis.textContent = text; hinweis.hidden = false; }
@@ -519,7 +525,8 @@ async function pruefeVorbereitung(i) {
 async function aendereDialogUebernahme(knopf) {
   if (istNurLesend() || dialog.prueft) return;
   knopf.disabled = true;
-  const abruf = dialog.abruf;
+  kopierFreigaben = new WeakMap();
+  const abruf = ++dialog.abruf;
   try {
     const positionen = JSON.parse(knopf.dataset.einkaufPositionen);
     const aktion = knopf.dataset.lfUebernahme;
@@ -536,17 +543,77 @@ async function aendereDialogUebernahme(knopf) {
   }
 }
 
-async function kopiereVorlage(text) {
-  try { await navigator.clipboard.writeText(text); return true; } catch { /* Im Ladennetz auch ohne Clipboard-API nutzbar. */ }
+/** Legacy: erst im zweiten bewussten Klick kopieren, solange dessen Serverfreigabe noch gilt. */
+function kopiereMitAuswahl(knopf, text) {
   const feld = document.createElement('textarea');
-  feld.value = text; feld.setAttribute('aria-label', 'Bestelltext kopieren');
-  document.body.append(feld); feld.select();
-  try { return document.execCommand('copy'); } catch { return false; } finally { feld.remove(); }
+  feld.value = text; feld.readOnly = true; feld.rows = 6; feld.className = 'lf-mailtext';
+  feld.setAttribute('aria-label', 'Geprüften Bestelltext manuell kopieren');
+  if (knopf.insertAdjacentElement) knopf.insertAdjacentElement('afterend', feld);
+  else document.body.append(feld);
+  feld.focus?.(); feld.select();
+  let kopiert = false;
+  try { kopiert = document.execCommand('copy'); } catch { /* Sichtbare Auswahl bleibt als manueller Weg. */ }
+  if (kopiert) feld.remove();
+  else toast('Der Browser erlaubt das Kopieren nicht. Der geprüfte Text ist markiert: bitte mit ⌘C oder Strg+C kopieren.', 'warn');
+  return kopiert;
+}
+
+async function kopiereGepruefteVorlage(knopf, i) {
+  const mail = dialog.daten?.mails?.[i];
+  if (!mail?.vorbereitungStand) return false;
+  const abruf = dialog.abruf;
+  const stand = mail.vorbereitungStand;
+  const text = mail.text;
+  const scope = JSON.stringify(vorbereitungsPayload());
+  const gleich = () => abruf === dialog.abruf && !dialog.fehler && !!$('#dialogRoot .lf-dialog')
+    && dialog.daten?.mails?.[i] === mail && mail.vorbereitungStand === stand && mail.text === text
+    && JSON.stringify(vorbereitungsPayload()) === scope;
+  const freigabe = kopierFreigaben.get(knopf);
+  kopierFreigaben.delete(knopf);
+  if (freigabe && freigabe.abruf === abruf && freigabe.stand === stand && freigabe.text === text
+      && freigabe.scope === scope && Date.now() - freigabe.am < KOPIERFREIGABE_MS && gleich()) {
+    const kopiert = kopiereMitAuswahl(knopf, text);
+    knopf.textContent = kopiert ? 'Kopiert' : 'Text markiert – bitte manuell kopieren';
+    return kopiert;
+  }
+  const pruefung = pruefeVorbereitung(i);
+  let schreiben = null;
+  // Safari verlangt clipboard.write im urspruenglichen Klick. Der Promise liefert vorher keinen Text.
+  if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
+    const inhalt = pruefung.then(ok => {
+      if (!ok || !gleich()) throw new Error('Vorbereitung nicht mehr freigegeben');
+      return new Blob([text], { type: 'text/plain' });
+    });
+    // Auch wenn ein Browser den Schreibaufruf sofort ablehnt, bleibt eine verweigerte Pruefung behandelt.
+    void inhalt.catch(() => {});
+    try {
+      schreiben = Promise.resolve(navigator.clipboard.write([new ClipboardItem({ 'text/plain': inhalt })]))
+        .then(() => true, () => false);
+    } catch { /* Ohne passenden API-Zugang folgt ein zweiter bewusster Klick. */ }
+  }
+  if (!await pruefung || !gleich()) return false;
+  if (schreiben && await schreiben) {
+    if (!gleich()) return false;
+    knopf.textContent = 'Kopiert';
+    return true;
+  }
+  if (!gleich()) return false;
+  kopierFreigaben.set(knopf, { abruf, stand, text, scope, am: Date.now() });
+  knopf.textContent = 'Jetzt kopieren';
+  toast('Vorlage geprüft. Bitte innerhalb von 10 Sekunden noch einmal „Jetzt kopieren“ anklicken.', '');
+  return false;
 }
 
 async function uebergebeVorlage(knopf) {
   const i = Number(knopf.dataset.lfGeoeffnet);
   if (dialog.prueft || dialog.fehler || istNurLesend()) return;
+  if (knopf.dataset.kopiertext !== undefined) {
+    if (await kopiereGepruefteVorlage(knopf, i)) {
+      const frage = $(`#dialogRoot [data-lf-frage="${i}"]`);
+      if (frage) frage.hidden = false;
+    }
+    return;
+  }
   const href = knopf.getAttribute('href');
   // Den neuen Tab im urspruenglichen Klick anlegen, damit die frische Serverpruefung
   // den Browser-Popupschutz nicht ausloest. Bei Ablehnung bleibt kein leerer Tab zurueck.
@@ -554,11 +621,7 @@ async function uebergebeVorlage(knopf) {
   if (fenster) fenster.opener = null;
   const ok = await pruefeVorbereitung(i);
   if (!ok) { fenster?.close(); return; }
-  if (knopf.dataset.kopiertext !== undefined) {
-    const kopiert = await kopiereVorlage(knopf.dataset.kopiertext);
-    knopf.textContent = kopiert ? 'Kopiert' : 'Kopieren fehlgeschlagen';
-    if (!kopiert) return;
-  } else if (href) {
+  if (href) {
     if (knopf.target === '_blank') {
       if (!fenster || fenster.closed) { toast('Der Browser hat den neuen Tab nicht geöffnet. Bitte Popups für dieses Dashboard erlauben und erneut klicken.', 'warn'); return; }
       fenster.location.href = href;
