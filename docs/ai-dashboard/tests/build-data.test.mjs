@@ -7,6 +7,7 @@ const raw = (over = {}) => ({
   html_url: 'https://github.com/x/y/issues/34',
   labels: [{ name: 'status:blockiert' }, { name: 'priority:p0' }, { name: 'area:backend' }],
   assignee: null, assignees: [], comments: 2,
+  user: { login: 'kontakt755', type: 'User' }, author_association: 'OWNER',
   body: '## Problem\nBrauchen Admin API Access.\n\n## Status\n**BLOCKIERT** - Warte auf Shopify API Credentials von Ahmet\n\n## Nächster Schritt\nAhmet bitte Admin API Key + Scopes geben',
   created_at: '2026-09-03T00:00:00Z', updated_at: '2026-09-03T00:00:00Z', closed_at: null, ...over,
 });
@@ -25,6 +26,20 @@ test('toIssueRecord behaelt Schema-1-Felder und ergaenzt extrahierte Felder ohne
   assert.equal(r.comments, 2);
   assert.deepEqual(r.labels, ['status:blockiert', 'priority:p0', 'area:backend']);
   assert.equal('body' in r, false, 'Body wird nicht abgelegt');
+});
+
+test('toIssueRecord legt die Herkunft des Issues ab (fuer den Sitzungs-Brief)', () => {
+  const r = toIssueRecord(raw());
+  assert.equal(r.author, 'kontakt755');
+  assert.equal(r.author_type, 'User');
+  assert.equal(r.author_association, 'OWNER');
+  const bot = toIssueRecord(raw({ user: { login: 'github-actions[bot]', type: 'Bot' }, author_association: 'NONE' }));
+  assert.equal(bot.author, 'github-actions[bot]');
+  assert.equal(bot.author_type, 'Bot');
+  assert.equal(bot.author_association, 'NONE');
+  const ohne = toIssueRecord(raw({ user: undefined, author_association: undefined }));
+  assert.equal(ohne.author, null);
+  assert.equal(ohne.author_association, null);
 });
 
 test('buildPayload filtert PRs und Issues ohne relevante Labels, meldet verfuegbare Labels', () => {

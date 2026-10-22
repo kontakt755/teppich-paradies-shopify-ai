@@ -16,6 +16,7 @@ import { vorgangsLink } from './vorgangslink.mjs';
 import { lieferterminFaellig, beschaffungText, uebernahmeText } from './beschaffung.mjs';
 import { LEISTUNG_LABEL, QUELLE_LABEL } from './serviceanfragen.mjs';
 import { verzugWerktage, VERZUG_WERKTAGE, kundenErinnerung } from './auftrags-ablauf.mjs';
+import { sichereUrl } from './akquise.mjs';
 
 const TAG_MS = 86400000;
 const UNGEKLAERT = 'UNGEKLAERT';
@@ -581,11 +582,13 @@ function ausAusschreibungen(quellen, jetzt) {
   const neu = d?.neu || [];
   if (!neu.length) return [];
   const naechste = [...neu].sort((x, y) => String(x.frist || '9').localeCompare(String(y.frist || '9')))[0];
+  // Link aus dem Ausschreibungsfeed: nur http(s) wird zum Knopf (heute.mjs setzt ihn als href).
+  const link = sichereUrl(naechste.link);
   return [{
     id: 'ausschreibungen', art: 'ausschreibungen', bereich: 'laden', ton: '', alterTage: tageSeit(d.geprueftAm, jetzt),
     titel: `Ausschreibung Bodenbelag: ${neu.length} neu im Umkreis`,
     kontext: [naechste.auftraggeber, naechste.frist ? `Frist ${naechste.frist}` : null, 'prüfen, ob wir anbieten'].filter(Boolean).join(' · '),
-    knopf: naechste.link ? { text: 'Bekanntmachung', href: naechste.link } : undefined,
+    knopf: link ? { text: 'Bekanntmachung', href: link } : undefined,
   }];
 }
 

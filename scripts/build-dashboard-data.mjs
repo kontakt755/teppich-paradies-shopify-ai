@@ -12,6 +12,7 @@
  *   - neu: assignees, comments, fields (aus dem Body extrahierte Felder, siehe
  *     docs/ai-dashboard/lib/model.mjs parseBody), sync (Quelle, Zeitpunkt,
  *     verfuegbare Labels), schema
+ *   - neu: author, author_type, author_association (Herkunft des Issues)
  *
  * Der volle Issue-Body wird weiterhin NICHT abgelegt - nur die extrahierten
  * Felder (Ziel, Akzeptanzkriterien, Blocker, Frist, ...), gekuerzt.
@@ -78,6 +79,11 @@ export function toIssueRecord(i) {
     labels,
     assignee: i.assignee ? i.assignee.login : null,
     assignees: (i.assignees || []).map(a => a.login),
+    // Herkunft des Issues: das Repo ist oeffentlich, Titel von Fremden sind
+    // nicht vertrauenswuerdig (scripts/dashboard-brief.mjs blendet sie aus).
+    author: i.user ? i.user.login : null,
+    author_type: i.user ? i.user.type : null,
+    author_association: i.author_association || null,
     comments: Number(i.comments) || 0,
     nextStep: fields.nextStep || null,
     fields,

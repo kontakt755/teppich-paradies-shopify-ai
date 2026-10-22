@@ -234,7 +234,9 @@ function todoZeile(t, erste) {
   // k.schritt: Zeitleisten-Schritt direkt ausloesen (z. B. "Erledigt – Kunde hat Muster");
   // der Klick laeuft ueber zeitleisteKlick (ansichten/kunden/zeitleiste.mjs). Rolle "lesen" bekommt den Link.
   // k.nachbuchen: "In Shopify nachbuchen" direkt in der Zeile (shopifyAbgleichKlick, einkauf/shopify-abgleich.mjs).
-  const knopf = k.kopiertext
+  // Ohne Knopf (z. B. Ausschreibung ohne gueltigen Link) keine Schaltflaeche.
+  const knopf = !k ? ''
+    : k.kopiertext
     ? `<button type="button" class="${klasse}" data-kopiertext="${esc(k.kopiertext)}">${esc(k.text)}</button>`
     : k.nachbuchen && !istNurLesend()
     ? `<button type="button" class="${klasse}" data-shopify-nachbuchen="${esc(k.nachbuchen)}" title="Bucht diese Artikel in Shopify als versendet – ohne Mail an den Kunden">${esc(k.text)}</button>`

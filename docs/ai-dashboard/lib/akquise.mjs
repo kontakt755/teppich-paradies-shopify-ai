@@ -188,6 +188,21 @@ export function tageBis(datum, heute) {
 
 /* ---- Ausschreibungen, Richtpreis, Angebotsentwurf, Referenzen (#Ausbau 2026-10-20) ---- */
 
+/**
+ * Link aus fremden Daten (Ausschreibungsfeeds) fuer ein href: nur http(s) bleibt, alles
+ * andere (javascript:, data:, relativ, kaputt) wird null. esc() schuetzt nur das HTML, nicht
+ * das Schema - ein javascript:-Link liefe sonst mit der Sitzung im Dashboard.
+ */
+export function sichereUrl(url) {
+  if (typeof url !== 'string' || !url.trim()) return null;
+  try {
+    const u = new URL(url.trim());
+    return u.protocol === 'https:' || u.protocol === 'http:' ? u.href : null;
+  } catch {
+    return null;
+  }
+}
+
 const LAENDER = /^(Deutschland|Germany|Allemagne|Österreich|Austria|Schweiz|Polen|Poland)$/i;
 
 /**
