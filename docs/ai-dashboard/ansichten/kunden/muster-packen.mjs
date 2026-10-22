@@ -156,32 +156,36 @@ export function viewKundenMusterPacken() {
       <button type="button" class="btn btn-sm${modus === 'laden' ? ' btn-primary' : ''}" data-param="mp" data-value="laden" aria-pressed="${modus === 'laden'}">Wareneingang nach Partnerladen</button>
     </div>`;
   if (modus === 'laden') return umschalter + viewNachLaden(d);
-  const je = b => d.kunden.filter(k => k.bereich === b);
-  const warten = je('warten'), packen = je('packen'), klaeren = je('klaeren'), gepackt = je('gepackt');
   const kopf = `<p class="sub mp-hier">Hier packst du Muster je Umschlag: Farbe prüfen, Aufkleber drucken und eingelegte Muster abhaken. Gepackt ist noch nicht versandt.</p>`;
   const ausserhalb = (d.ausschluesse?.zahlungOffen || 0) + (d.ausschluesse?.geschlossen || 0);
   const ausschlussHinweis = ausserhalb ? `<p class="notice warn">${plural(ausserhalb, 'weitere Musterbestellung ist', 'weitere Musterbestellungen sind')} nicht in der Packliste: ${d.ausschluesse.zahlungOffen || 0} mit offener Zahlungsfrage, ${d.ausschluesse.geschlossen || 0} geschlossen trotz offener Muster. <a href="#/kunden?tab=bestellungen&amp;bfilter=muster">Diese Bestellungen prüfen →</a></p>` : '';
-  if (!d.kunden.length) return kopf + ausschlussHinweis + emptyState('Keine offenen Musterumschläge in der Packliste.', 'Neue bezahlte Musterbestellungen erscheinen hier automatisch, nach Lieferadresse gebündelt.');
   const suche = (state.route.params.get('mpq') || '').trim().toLowerCase();
+  const zielKunde = d.kunden.find(k => k.packSchluessel === ziel);
+  const bereiche = [['packen', 'Packbereit'], ['klaeren', 'Zu klären'], ['warten', 'Wartet auf Ware'], ['gepackt', 'Gepackt']];
+  const angefordert = state.route.params.get('mpbereich');
+  const aktiv = suche ? 'alle' : zielKunde?.bereich || (bereiche.some(([b]) => b === angefordert) || angefordert === 'alle' ? angefordert : 'packen');
+  const linkFuer = bereich => {
+    const p = new URLSearchParams(state.route.params);
+    p.set('tab', 'muster'); p.set('mpbereich', bereich);
+    p.delete('umschlag'); p.delete('mpq'); p.delete('mp');
+    return `#/kunden?${p}`;
+  };
+  const filter = `<nav class="mp-arbeitsfilter" aria-label="Packstation Arbeitsliste">${bereiche.map(([b, label]) => `<a class="btn${aktiv === b ? ' btn-primary' : ''}" href="${esc(linkFuer(b))}"${aktiv === b ? ' aria-current="page"' : ''}>${label} <span class="mp-filterzahl">${d.kunden.filter(k => k.bereich === b).length}</span></a>`).join('')}</nav>`;
   const passt = k => !suche || [k.name, umschlagKennung(k), ...k.muster.flatMap(m => [m.bestellt.titel, m.bestellt.farbe, m.vorher?.produktname, m.vorher?.farbnummer])].some(v => String(v || '').toLowerCase().includes(suche));
+  const sichtbar = d.kunden.filter(k => (aktiv === 'alle' || k.bereich === aktiv) && passt(k));
+  const packen = d.kunden.filter(k => k.bereich === 'packen');
   const druckbar = packen.filter(k => !k.fehlt.length);
-  const aufkleber = druckbar.reduce((s, k) => s + k.aufkleber, 0);
-  const summe = `<div class="mp-summe">
-      <span class="mp-zahlen"><strong>${packen.length} packbereit</strong> · <span class="${klaeren.length ? 'wait-warn' : ''}">${klaeren.length} zu klären</span> · ${warten.length} warten auf Ware · ${gepackt.length} gepackt</span>
-      ${packen.length ? `<button type="button" class="btn btn-primary" data-mp-alle${aufkleber ? '' : ' disabled'}>Packbereite drucken (${plural(aufkleber, 'Aufkleber', 'Aufkleber')})</button>` : ''}
-    </div>
-    ${druckbar.length < packen.length ? `<p class="small muted">„Packbereite drucken“ lässt ${packen.length - druckbar.length === 1 ? 'einen Kunden' : `${packen.length - druckbar.length} Kunden`} ohne eindeutige Aufkleber aus.</p>` : ''}`;
-  const bereich = (titel, liste, start, offenAuf = true) => liste.filter(passt).length
-    ? `<details class="mp-bereich"${suche || offenAuf || liste.some(k => k.packSchluessel === (packOffen ?? state.route.params.get('umschlag'))) ? ' open' : ''}><summary><h2 class="mp-titel">${titel} <span class="muted">(${liste.filter(passt).length})</span></h2></summary><div class="mp-kunden">${liste.filter(passt).map((k, i) => kundeHtml(k, start + i + 1)).join('')}</div></details>` : '';
-  return `${umschalter}${kopf}${summe}${ausschlussHinweis}
-    <div class="toolbar"><input type="search" data-param="mpq" value="${esc(state.route.params.get('mpq') || '')}" placeholder="Kunde, Bestellung, Produkt oder Farbnummer" aria-label="Packstation durchsuchen"></div>
-    ${suche ? `<p class="small muted">${d.kunden.filter(passt).length} von ${d.kunden.length} Umschlägen passen zur Suche. <button type="button" class="btn btn-sm btn-ghost" data-param="mpq" data-value="">Suche aufheben</button></p>` : ''}
-    ${!d.kunden.some(passt) ? '<p class="small muted">Keine passenden Umschläge gefunden.</p>' : ''}
-    ${bereich('Packbereit', packen, 0)}
-    ${bereich('Wartet auf Ware', warten, packen.length, !packen.length)}
-    ${bereich('Zu klären', klaeren, packen.length + warten.length)}
-    ${bereich('Gepackt – Versand noch separat', gepackt, packen.length + warten.length + klaeren.length, state.route.params.get('mpbereich') === 'gepackt')}
-    <p class="small muted">Offene Zahlungsfragen und weitere Musterbestellungen findest du unter <a href="#/kunden?tab=bestellungen&amp;bfilter=muster">Bestellungen – Muster →</a>.</p>`;
+  const aufkleber = druckbar.reduce((summe, k) => summe + k.aufkleber, 0);
+  const druck = aktiv === 'packen' && aufkleber ? `<div class="mp-summe"><button type="button" class="btn btn-primary" data-mp-alle>Packbereite drucken (${plural(aufkleber, 'Aufkleber', 'Aufkleber')})</button></div>` : '';
+  const leerText = suche ? 'Keine passenden Umschläge gefunden.' : aktiv === 'packen' ? 'Gerade kein Umschlag packbereit.' : aktiv === 'klaeren' ? 'Keine offenen Klärungen.' : aktiv === 'warten' ? 'Kein Umschlag wartet auf Ware.' : 'Keine gepackten Umschläge.';
+  const leer = `<div class="mp-arbeitsleer"><p>${leerText}</p>${aktiv === 'packen' && !suche ? `<p>Prüfe eingetroffene Muster unter <a href="#/kunden?tab=muster&amp;mp=laden">Wareneingang nach Partnerladen</a> oder öffne <a href="${esc(linkFuer('klaeren'))}">Zu klären</a>.</p>` : ''}</div>`;
+  const titel = aktiv === 'alle' ? (suche ? 'Suchergebnisse aus allen Arbeitslisten' : 'Alle Umschläge') : bereiche.find(([b]) => b === aktiv)?.[1];
+  return `${umschalter}${kopf}${filter}${ausschlussHinweis}
+    <div class="toolbar"><input type="search" data-param="mpq" value="${esc(state.route.params.get('mpq') || '')}" placeholder="Alle Arbeitslisten durchsuchen" aria-label="Alle Arbeitslisten der Packstation durchsuchen"></div>
+    ${suche ? `<p class="small muted">Die Suche berücksichtigt alle vier Arbeitslisten. <button type="button" class="btn btn-sm btn-ghost" data-param="mpq" data-value="">Suche aufheben</button></p>` : ''}
+    ${druck}<section class="mp-arbeitsliste" aria-label="${esc(titel)}"><h2 class="mp-titel">${esc(titel)}${aktiv === 'gepackt' ? ' – Versand noch separat' : ''}</h2>
+    ${sichtbar.length ? `<div class="mp-kunden">${sichtbar.map((k, i) => kundeHtml(k, i + 1)).join('')}</div>` : leer}</section>
+    <p class="small muted">Fehlt eine Bestellung? <a href="#/kunden?tab=bestellungen&amp;bfilter=muster">Bestellungen – Muster →</a>.</p>`;
 }
 
 /** Wareneingang: ein Paket eines Partnerladens auf die richtigen Umschlaege verteilen. */

@@ -70,3 +70,13 @@ gebraeuchlich), Erfassen.
 - Umschlaege tragen die Bestellnummer(n), keine wechselnden Listennummern.
 - **Alle Bestellungen** = alle echten Bestellungen im aktuellen Export, einschliesslich Storno und Archiv; Testbestellungen bleiben gesondert.
 - **Kontrolle nötig** = unklare Artikel, offene Versandbuchung oder manueller Haken ohne nachgewiesenen Versand.
+
+
+## Vier Arbeitswege (#1614)
+
+- **Muster bestellen** = offene Muster je Lieferant vorbereiten; vorhandener Dialog,
+  Bestellstand erst nach bewusster Bestaetigung. Allgemeiner Einkauf bleibt unter „Kunden & Einkauf“.
+- **Weitere Aufgaben heute** = uebrige Tagesaufgaben unter der priorisierten Bestellarbeit.
+- **Arbeitsliste** in der Packstation = jeweils Packbereit / Wartet auf Ware / Zu klaeren / Gepackt;
+  die Suche beruecksichtigt alle vier Listen.
+- **Weitere Filter** = zusaetzliche Bestellfilter; vier Hauptfilter bleiben direkt sichtbar.

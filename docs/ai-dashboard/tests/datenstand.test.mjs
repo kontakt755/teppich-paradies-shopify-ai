@@ -70,7 +70,8 @@ test('Menue fuer Mitarbeiter: nur Heute, Kunden, Bestellen, Genossenschaften, Le
   const links = [...side.matchAll(/<a href="#\/([a-z]+)" data-nav="\1"([^>]*)>/g)];
   const sichtbar = links.filter(([, , attr]) => !/data-nur-inhaber|data-nicht-mitarbeiter/.test(attr)).map(([, n]) => n);
   assert.deepEqual(sichtbar.sort(), ['akquise', 'einkauf', 'heute', 'hilfe', 'kunden', 'lexikon']);
-  assert.match(html, /id="navMore" data-nicht-mitarbeiter/);
+  assert.match(html, /data-nav-gruppe="verwaltung"/);
+  assert.ok(!html.includes('id="navMore"'), 'keine pauschale Mehr-Gruppe mehr');
   assert.match(html, /id="datenstandLeiste"/);
   const css = fs.readFileSync(path.join(hier, '..', 'app.css'), 'utf8');
   assert.match(css, /body\.rolle-mitarbeiter \[data-nicht-mitarbeiter\] \{ display: none !important; \}/);
