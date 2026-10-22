@@ -348,6 +348,9 @@ export function aufbereiten(exportDaten, opt = {}) {
         // am Produkt - ohne sie fand die Mengenhilfe bei 570 Rollenprodukten
         // keine Breite.
         rollenbreiteM: zahl(vMap.custom?.rollenbreite),
+        // Bild genau dieser Farbe (Variantenbild); fehlt es, bleibt das Feld weg statt das
+        // Produktbild einer anderen Farbe zu zeigen (Muster packen, Verwechslungsgefahr).
+        ...(text(v.image?.url) ? { bild: text(v.image.url) } : {}),
         einkauf,
         __musterRef: musterRef,
       };

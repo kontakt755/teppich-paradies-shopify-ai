@@ -1,11 +1,12 @@
 /* Kunden → Muster packen (ansichten/kunden/muster-packen.mjs, #1572). Nur Tokens aus app.css.
-   Auffallen darf je Karte genau eins: welche Bestellung das ist - damit nichts in die falsche Tuete geht. */
+   Auffallen darf je Karte: welche Bestellung das ist und je Muster Bild + Farbnummer - damit nichts verwechselt wird. */
 
 .mp-hier { margin: 4px 0 12px; }
 .mp-summe { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin: 0 0 12px; }
 .mp-kunden { display: grid; gap: 12px; }
 .mp-kunde { min-width: 0; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); overflow-wrap: anywhere; }
 .mp-gepackt { background: var(--surface-2); }
+.mp-klaeren { border-color: var(--warn); }
 .mp-kopf { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 6px 16px; }
 .mp-wer { min-width: 0; }
 .mp-wer h3 { margin: 0 0 2px; font-family: var(--serif); font-size: 1.15rem; }
@@ -15,26 +16,42 @@
 .mp-kunde .notice { margin: 10px 0 0; }
 
 .mp-liste { list-style: none; margin: 10px 0 0; padding: 0; }
-.mp-zeile { display: grid; grid-template-columns: 28px minmax(0, 1fr) 20px minmax(0, 1fr) minmax(0, .8fr); align-items: start; gap: 4px 12px; padding: 10px 0; border-top: 1px solid var(--line); }
-.mp-haken { padding-top: 14px; }
-.mp-haken input { width: 20px; height: 20px; margin: 0; }
+.mp-zeile { display: grid; grid-template-columns: 28px 72px minmax(0, 1fr) 20px minmax(0, 1fr) minmax(0, .8fr); align-items: start; gap: 4px 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.mp-haken { padding-top: 24px; }
+.mp-haken input { width: 22px; height: 22px; margin: 0; }
 .mp-vorher, .mp-nachher { display: grid; gap: 1px; min-width: 0; }
 .mp-vorher { color: var(--text-2); }
 .mp-etikett { color: var(--text-3); font-size: .75rem; }
-.mp-farbnr { font-weight: 600; color: var(--text); }
-.mp-pfeil { padding-top: 14px; color: var(--accent); font-weight: 700; }
+.mp-farbnr { font-weight: 700; font-size: 1.15rem; color: var(--text); }
+.mp-laden { font-weight: 600; color: var(--text); }
+.mp-achtung { color: var(--warn); font-size: .8rem; font-weight: 600; }
+.mp-bild { width: 72px; height: 72px; border-radius: 6px; object-fit: cover; border: 1px solid var(--line); background: var(--surface-2); }
+.mp-bild-leer { display: flex; align-items: center; justify-content: center; text-align: center; color: var(--text-3); font-size: .7rem; padding: 4px; }
+.mp-fehlend { background: var(--surface-2); }
+.mp-ok { color: var(--text-2); font-weight: 600; }
+.mp-zahlen { font-size: 1.05rem; }
+.mp-bereich { margin-top: 14px; }
+.mp-bereich > summary { cursor: pointer; list-style: none; padding: 4px 0 8px; }
+.mp-bereich > summary::-webkit-details-marker { display: none; }
+.mp-titel { display: inline; margin: 0; font-size: 1.1rem; }
+.mp-titel::before { content: '▸ '; color: var(--text-3); }
+.mp-bereich[open] .mp-titel::before { content: '▾ '; }
+.mp-notiz { flex: 1 1 220px; min-width: 0; padding: 6px 8px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); font: inherit; }
+.mp-pfeil { padding-top: 24px; color: var(--accent); font-weight: 700; }
 .mp-sku { font-family: var(--mono); font-size: .85rem; color: var(--text-2); }
 .mp-fehlt { color: var(--warn); font-weight: 600; }
-.mp-stand { padding-top: 14px; color: var(--text-2); }
-.mp-zeile:has(input:checked) .mp-vorher, .mp-zeile:has(input:checked) .mp-nachher { opacity: .55; }
+.mp-stand { padding-top: 6px; color: var(--text-2); }
+.mp-ab .mp-vorher, .mp-ab .mp-nachher, .mp-ab .mp-bild { opacity: .5; }
 
 .mp-aktionen { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
 .mp-fertig { margin-top: 16px; }
 .mp-fertig > summary { cursor: pointer; color: var(--text-2); padding: 6px 0; }
 
 @media (max-width: 760px) {
-  .mp-zeile { grid-template-columns: 28px minmax(0, 1fr); }
+  .mp-zeile { grid-template-columns: 28px 64px minmax(0, 1fr); }
   .mp-haken { grid-row: span 3; padding-top: 2px; }
+  .mp-bild { width: 64px; height: 64px; grid-row: span 3; }
+  .mp-notiz { flex: 1 1 100%; min-height: 44px; }
   .mp-pfeil { display: none; }
   .mp-stand { padding-top: 0; }
   .mp-meta { justify-items: start; text-align: left; }

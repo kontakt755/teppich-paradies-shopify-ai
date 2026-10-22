@@ -57,7 +57,7 @@ test('vorher = Lieferantenangaben aus dem Lexikon, Stand nur aus belegtem Auftra
     statusVon: (_, li) => ({ 'gid://shopify/LineItem/11': 'geliefert', 'gid://shopify/LineItem/12': 'bestellt' })[li] || null,
     auftraege: [auftrag(1, '2026-10-20T09:00:00Z', 'Anna Test', [pos(11, '101'), pos(12, '102'), pos(13, '101', { musterHerkunft: 'eigen_versand' }), pos(14, '102')])] });
   const [m1, m2, m3, m4] = r.kunden[0].muster;
-  assert.deepEqual(m1.vorher, { produktname: 'Lieferantenware SAND 400', farbnummer: '11', url: 'https://lieferant-a.example/sand' });
+  assert.deepEqual(m1.vorher, { produktname: 'Lieferantenware SAND 400', farbnummer: '11', url: 'https://lieferant-a.example/sand', kollektion: null, lieferant: null, bild: null });
   assert.equal(m2.vorher.url, null, 'UNGEKLAERT ist kein Link');
   assert.deepEqual([m1.stand, m2.stand, m3.stand, m4.stand], ['da', 'bestellt', 'lager', 'offen']);
   assert.equal(r.kunden[0].nichtBestellt, 1);
@@ -107,4 +107,44 @@ test('Adresslayout: jede Zeile passt in die Druckbreite, auch lange Orte; ohne B
     }
     assert.ok(!texte.some(t => /Bestellung|#T104/.test(t.text)), 'keine Bestellnummer auf dem Adressaufkleber');
   }
+});
+
+test('Erkennen: Farbbild nur fuer genau diese Farbe, Lieferant mit Namen, verwechselbare Muster markiert', () => {
+  const zweiFarben = { ...boden, bild: 'https://cdn.example/produkt.jpg', varianten: [
+    { ...boden.varianten[0], bild: 'https://cdn.example/sand.jpg', einkauf: { ...boden.varianten[0].einkauf, lieferant: 'A', kollektion: 'Lieferantenware' } },
+    { ...boden.varianten[1], einkauf: { ...boden.varianten[1].einkauf, lieferant: 'A', kollektion: 'Lieferantenware' } },
+  ] };
+  const einfarbig = { handle: 'testvinyl-eiche', titel: 'Testvinyl Eiche', bild: 'https://cdn.example/eiche.jpg', eigenschaften: {},
+    varianten: [{ id: 'gid://shopify/ProductVariant/201', sku: 'TVY-EI', farbe: 'Eiche', einkauf: { lieferant: 'B', produktname: 'Eiche hell', farbnummer: '5' } }] };
+  const prod = new Map([[zweiFarben.handle, zweiFarben], [einfarbig.handle, einfarbig]]);
+  const vinyl = (li) => ({ ...pos(li, '201'), musterQuelle: { quellvariante: '201', produktHandle: einfarbig.handle } });
+  const r = musterPackliste({ produkte: prod, schluesselVon, jetzt, lieferantVon: id => ({ A: 'Partnerladen Nord' })[id] || `Lieferant ${id}`,
+    auftraege: [auftrag(1, '2026-10-20T09:00:00Z', 'Anna Test', [pos(11, '101'), pos(12, '102'), vinyl(13)])] });
+  const [sand, grau, eiche] = r.kunden[0].muster;
+  assert.equal(sand.bild, 'https://cdn.example/sand.jpg');
+  assert.equal(grau.bild, null, 'Produktbild zeigt eine andere Farbe - lieber kein Bild');
+  assert.equal(eiche.bild, 'https://cdn.example/eiche.jpg', 'einfarbiges Produkt: Produktbild ist die Farbe');
+  assert.equal(sand.lieferant, 'Partnerladen Nord');
+  assert.equal(eiche.lieferant, 'Lieferant B');
+  assert.deepEqual([sand.verwechselbar, grau.verwechselbar, eiche.verwechselbar], [true, true, false]);
+});
+
+test('Abhaken und zu klaeren: Bereich je Kunde, Haken bleiben, gepackt gewinnt', () => {
+  const a1 = auftrag(1, '2026-10-17T09:00:00Z', 'Anna Test', [pos(11, '101'), pos(12, '102')]);
+  const a2 = auftrag(2, '2026-10-18T09:00:00Z', 'Berta Beispiel', [pos(21, '101')]);
+  const haken = { 'gid://shopify/LineItem/11': { zeit: '2026-10-22T08:00:00Z', von: 'Laden' } };
+  const klaeren = { 'k:Anna Test': { zeit: '2026-10-22T08:05:00Z', von: 'Laden', fehlt: ['gid://shopify/LineItem/12'], notiz: 'Grau fehlt im Paket' } };
+  const r = musterPackliste({ produkte, schluesselVon, jetzt, haken, klaeren, auftraege: [a1, a2] });
+  const [anna, berta] = r.kunden;
+  assert.equal(anna.bereich, 'klaeren');
+  assert.deepEqual(anna.klaeren.fehlt, ['gid://shopify/LineItem/12']);
+  assert.equal(anna.klaeren.notiz, 'Grau fehlt im Paket');
+  assert.equal(anna.muster[0].abgehakt.von, 'Laden');
+  assert.equal(anna.muster[1].abgehakt, null);
+  assert.equal(berta.bereich, 'packen');
+  assert.deepEqual(r.zahlen, { packen: 1, klaeren: 1, gepackt: 0 });
+  const gepackt = { [packSchluessel([a1.id])]: { zeit: '2026-10-22T09:00:00Z', von: 'Laden' } };
+  const spaeter = musterPackliste({ produkte, schluesselVon, jetzt, haken, klaeren, gepackt, auftraege: [a1, a2] });
+  assert.equal(spaeter.kunden.find(k => k.name === 'Anna Test').bereich, 'gepackt');
+  assert.deepEqual(spaeter.zahlen, { packen: 1, klaeren: 0, gepackt: 1 });
 });

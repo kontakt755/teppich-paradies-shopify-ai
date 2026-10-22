@@ -5,6 +5,9 @@
  * operations/lib/fallmarken.mjs: atomares Schreiben, "last write wins" je Schluessel.
  * Schluessel sind die sortierten Bestell-IDs eines Kunden (packSchluessel) - kommt eine
  * Bestellung dazu, gilt der Umschlag nicht mehr als gepackt. In Shopify aendert sich nichts.
+ *
+ * Daneben (gleiche Datei): `haken` je Bestellposition (Muster ueberklebt, liegt im Umschlag) und
+ * `klaeren` je Kunde (Umschlag unvollstaendig: welche Positionen fehlen, kurze Notiz).
  */
 
 import fs from 'node:fs';
@@ -19,26 +22,32 @@ export function musterPackenPfad(privatDir) {
  * Fehlende Datei heisst "noch nichts gepackt". Eine unlesbare oder beschaedigte Datei wirft,
  * statt als leer zu gelten - sonst schriebe der naechste Klick eine Datei mit einem Eintrag.
  */
-export function leseAlle(datei) {
+export function leseStand(datei) {
   let inhalt;
   try {
     inhalt = fs.readFileSync(datei, 'utf8');
   } catch (e) {
-    if (e?.code === 'ENOENT') return {};
+    if (e?.code === 'ENOENT') return { gepackt: {}, haken: {}, klaeren: {} };
     throw new Error(`${path.basename(datei)} ist nicht lesbar (${e?.code || e?.message}) – bitte aus der Sicherung holen`);
   }
-  if (!inhalt.trim()) return {};
+  if (!inhalt.trim()) return { gepackt: {}, haken: {}, klaeren: {} };
   let roh;
   try { roh = JSON.parse(inhalt); } catch {
     throw new Error(`${path.basename(datei)} ist beschädigt – bitte aus der Sicherung holen`);
   }
-  return roh && typeof roh === 'object' && roh.eintraege && typeof roh.eintraege === 'object' ? roh.eintraege : {};
+  const objekt = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+  return { gepackt: objekt(roh?.eintraege), haken: objekt(roh?.haken), klaeren: objekt(roh?.klaeren) };
 }
 
-function schreibAlle(datei, eintraege) {
+/** Nur die gepackten Umschlaege (fruehere Form der Datei). */
+export function leseAlle(datei) {
+  return leseStand(datei).gepackt;
+}
+
+function schreibStand(datei, stand) {
   fs.mkdirSync(path.dirname(datei), { recursive: true });
   const tmp = `${datei}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify({ aktualisiertAm: new Date().toISOString(), eintraege }, null, 2));
+  fs.writeFileSync(tmp, JSON.stringify({ aktualisiertAm: new Date().toISOString(), eintraege: stand.gepackt, haken: stand.haken, klaeren: stand.klaeren }, null, 2));
   fs.renameSync(tmp, datei);
 }
 
@@ -46,9 +55,30 @@ function schreibAlle(datei, eintraege) {
 export function setzeGepackt(datei, packSchluessel, { gepackt = true, von = null, jetzt = new Date() } = {}) {
   const key = String(packSchluessel || '').trim();
   if (!key) throw new Error('Kein Kunde angegeben');
-  const eintraege = leseAlle(datei);
-  if (gepackt) eintraege[key] = { zeit: jetzt.toISOString(), von: von || null };
-  else delete eintraege[key];
-  schreibAlle(datei, eintraege);
-  return { packSchluessel: key, gepackt: eintraege[key] || null };
+  const stand = leseStand(datei);
+  if (gepackt) stand.gepackt[key] = { zeit: jetzt.toISOString(), von: von || null };
+  else delete stand.gepackt[key];
+  schreibStand(datei, stand);
+  return { packSchluessel: key, gepackt: stand.gepackt[key] || null };
+}
+
+/** Haken je Bestellposition setzen oder entfernen. */
+export function setzeHaken(datei, lineItemIds, { an = true, von = null, jetzt = new Date() } = {}) {
+  const ids = [...new Set((lineItemIds || []).map(v => String(v || '').trim()).filter(Boolean))];
+  if (!ids.length) throw new Error('Kein Muster angegeben');
+  const stand = leseStand(datei);
+  for (const id of ids) { if (an) stand.haken[id] = { zeit: jetzt.toISOString(), von: von || null }; else delete stand.haken[id]; }
+  schreibStand(datei, stand);
+  return { haken: Object.fromEntries(ids.map(id => [id, stand.haken[id] || null])) };
+}
+
+/** Kunde nach "zu klaeren" (mit fehlenden Positionen und Notiz) oder zurueck ("Fehlendes ist da"). */
+export function setzeKlaeren(datei, kundenSchluessel, { klaeren = true, fehlt = [], notiz = '', von = null, jetzt = new Date() } = {}) {
+  const key = String(kundenSchluessel || '').trim();
+  if (!key) throw new Error('Kein Kunde angegeben');
+  const stand = leseStand(datei);
+  if (klaeren) stand.klaeren[key] = { zeit: jetzt.toISOString(), von: von || null, fehlt: [...new Set(fehlt.map(String))], notiz: String(notiz || '').trim().slice(0, 300) || null };
+  else delete stand.klaeren[key];
+  schreibStand(datei, stand);
+  return { klaeren: stand.klaeren[key] || null };
 }
