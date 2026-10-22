@@ -29,6 +29,7 @@ import { fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createApi, ApiError } from './dashboard-api.mjs';
+import { leseVersandtarife } from '../operations/lib/versandtarife.mjs';
 import { createLadenZahlen } from './laden-zahlen.mjs';
 import {
   createAuth, loadConfiguredPassword, parseCookies, sessionCookieHeader,
@@ -332,7 +333,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
   // Bestelltabelle, Lexikon samt Mengenhilfe und die neuen Datenarten
   // (Kunden, Angebote, Warenkoerbe, Bestand, Erfuellung) - fehlt einer,
   // antwortet der Server 404.
-  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|prozesse\/links|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/shopify-abgleich|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|einkauf\/musterlager|einkauf\/musterlager-farben|einkauf\/reste-abgleich|einkauf\/mustersperre|einkauf\/belege|lexikon\/liste|lexikon\/druckliste|lexikon\/etiketten-status|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/serviceanfragen|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|verbrauch\/claude|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/musteretiketten|kunden\/muster-packen|kunden\/muster-texte|kunden\/nachfassen-abmelden|kunden\/nachfassen-senden|kunden\/bestellung-fertig|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|akquise\/liste|akquise\/aendern|akquise\/referenz|einkauf\/kundentermin|sonderposten\/liste|sonderposten\/verkauft|bildrechte\/liste|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|prozesse\/links|einkauf\/versandtarife|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/shopify-abgleich|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|einkauf\/musterlager|einkauf\/musterlager-farben|einkauf\/reste-abgleich|einkauf\/mustersperre|einkauf\/belege|lexikon\/liste|lexikon\/druckliste|lexikon\/etiketten-status|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/serviceanfragen|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|verbrauch\/claude|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/musteretiketten|kunden\/muster-packen|kunden\/muster-texte|kunden\/nachfassen-abmelden|kunden\/nachfassen-senden|kunden\/bestellung-fertig|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|akquise\/liste|akquise\/aendern|akquise\/referenz|einkauf\/kundentermin|sonderposten\/liste|sonderposten\/verkauft|bildrechte\/liste|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { apiFehler(req, res, pathname, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
   // Host-Pruefung fuer JEDEN Aufruf, nicht nur fuer schreibende: sonst kann
@@ -383,6 +384,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'agent-runs') result = api.agentRuns();
     else if (simple === 'benutzer') result = benutzerListeOeffentlich();
     else if (simple === 'protokoll') result = { eintraege: letzteEintraege(protokollPfad(), 50) };
+    else if (simple === 'einkauf/versandtarife') result = leseVersandtarife();
     else if (simple === 'einkauf/bestellungen') result = api.einkaufBestellungen();
     else if (simple === 'einkauf/produktstatus') result = api.einkaufProduktstatus({ page: url.searchParams.get('page'), pageSize: url.searchParams.get('pageSize'), q: url.searchParams.get('q') || '', gruppe: url.searchParams.get('gruppe') || '', filter: url.searchParams.get('filter') || '' });
     else if (simple === 'einkauf/klaerung') result = api.einkaufKlaerung();

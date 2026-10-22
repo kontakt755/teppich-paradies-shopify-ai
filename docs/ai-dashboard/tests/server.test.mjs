@@ -83,6 +83,15 @@ test('lexikon-API ist GET-only und liefert JSON (verfuegbar:false ohne Export)',
   assert.equal(p.status, 200);
 }));
 
+test('Versandtarife sind nur lesend erreichbar und nie als statische Datei', async () => withServer(async base => {
+  const g=await fetch(`${base}/api/einkauf/versandtarife`);
+  assert.equal(g.status,200);assert.equal((await g.json()).verfuegbar,false);
+  assert.match(g.headers.get('cache-control'),/no-store/);
+  const p=await fetch(`${base}/api/einkauf/versandtarife`,{method:'POST',headers:{'content-type':'application/json'},body:'{}'});
+  assert.equal(p.status,405);
+  assert.notEqual((await fetch(`${base}/versandkosten/tarife.json`)).status,200);
+}));
+
 test('einkauf/kennzahlen ist GET-only und liefert JSON (verfuegbar:false ohne Export)', async () => withServer(async base => {
   const g = await fetch(`${base}/api/einkauf/kennzahlen`);
   assert.equal(g.status, 200);
