@@ -99,6 +99,27 @@ export function wendeAn(reihenfolge, zuege) {
   return r;
 }
 
+/**
+ * Sortiert, liest gegen und plant bei Abweichung neu - hoechstens `versuche`-mal.
+ * Vorfall 2026-10-22: Waehrend ein Import noch Produkte an "Teppiche" anhaengte
+ * (490 statt 234), kamen die Zuege in Shopify nicht an; die Reihenfolge blieb
+ * die alte, die Gegenprobe meldete FEHL. Ein neuer Plan auf der frisch gelesenen
+ * Reihenfolge (mit den inzwischen angehaengten Produkten) ging durch.
+ * @returns {{ ok: boolean, versuche: number, reihenfolge: string[] }}
+ */
+export function sortiereBisFertig({ lies, schiebe, warte = () => {}, auslauf, versuche = 3 }) {
+  let reihenfolge = lies();
+  for (let n = 1; n <= versuche; n++) {
+    const zuege = planeZuege(reihenfolge, auslauf);
+    if (zuege.length === 0) return { ok: true, versuche: n - 1, reihenfolge };
+    schiebe(zuege);
+    reihenfolge = lies();
+    if (planeZuege(reihenfolge, auslauf).length === 0) return { ok: true, versuche: n, reihenfolge };
+    if (n < versuche) warte(n);
+  }
+  return { ok: false, versuche, reihenfolge };
+}
+
 export function inStuecken(liste, groesse = MAX_ZUEGE) {
   const stuecke = [];
   for (let i = 0; i < liste.length; i += groesse) stuecke.push(liste.slice(i, i + groesse));
@@ -231,13 +252,16 @@ function main() {
   console.log(`\nRollback: ${datei}`);
 
   for (const k of offen) {
-    schiebe(k.id, k.zuege);
-    // Gegenprobe gegen die gelesene Reihenfolge, nicht gegen userErrors.
-    const jetzt = reihenfolgeVon(k.id);
-    const ziel = zielReihenfolge(k.reihenfolge, auslauf);
-    const ok = istGleich(jetzt.filter(id => ziel.includes(id)), ziel);
-    console.log(`${ok ? 'OK  ' : 'FEHL'} ${k.handle}: ${ok ? 'Auslaufartikel stehen hinten' : 'Reihenfolge weicht ab - Rollback-Datei pruefen'}`);
-    if (!ok) process.exitCode = 1;
+    // Gegenprobe gegen die gelesene Reihenfolge, nicht gegen userErrors; bei Abweichung neu planen.
+    const r = sortiereBisFertig({
+      lies: () => reihenfolgeVon(k.id),
+      schiebe: zuege => schiebe(k.id, zuege),
+      warte: n => execFileSync('sleep', [String(5 * n)]),
+      auslauf,
+    });
+    const nachtrag = r.versuche > 1 ? ` (${r.versuche} Versuche)` : '';
+    console.log(`${r.ok ? 'OK  ' : 'FEHL'} ${k.handle}: ${r.ok ? `Auslaufartikel stehen hinten${nachtrag}` : `Auslaufartikel stehen nach ${r.versuche} Versuchen nicht hinten - Rollback-Datei pruefen`}`);
+    if (!r.ok) process.exitCode = 1;
   }
 }
 

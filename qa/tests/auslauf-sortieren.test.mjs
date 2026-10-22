@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  argumente, zielReihenfolge, planeZuege, planeRueckweg, wendeAn, inStuecken, istGleich, MAX_ZUEGE,
+  argumente, zielReihenfolge, sortiereBisFertig, planeZuege, planeRueckweg, wendeAn, inStuecken, istGleich, MAX_ZUEGE,
 } from '../../scripts/auslauf-sortieren.mjs';
 
 const A = new Set(['a1', 'a2', 'a3']);
@@ -55,4 +55,27 @@ test('Argumente: Trockenlauf ist Standard, unbekannte Flags brechen ab', () => {
   assert.deepEqual(argumente(['--schreiben', '--kollektionen', 'teppichboden,teppiche']).kollektionen, ['teppichboden', 'teppiche']);
   assert.throws(() => argumente(['--schreib']), /Unbekanntes Argument/);
   assert.throws(() => argumente(['--zurueck']), /braucht eine Datei/);
+});
+
+test('Zuege kommen nicht an (Import haengt parallel an): neu planen und erneut schieben', () => {
+  let shop = ['n1', 'a1', 'n2', 'a2'];
+  let aufrufe = 0;
+  const r = sortiereBisFertig({
+    lies: () => [...shop],
+    schiebe: zuege => {
+      aufrufe++;
+      if (aufrufe === 1) { shop = [...shop, 'n3']; return; } // erster Aufruf verpufft, Import haengt an
+      shop = wendeAn(shop, zuege);
+    },
+    auslauf: A,
+  });
+  assert.equal(r.ok, true);
+  assert.equal(r.versuche, 2);
+  assert.deepEqual(shop, ['n1', 'n2', 'n3', 'a1', 'a2']);
+});
+
+test('Zuege kommen nie an: nach den Versuchen FEHL, kein Endlosschleifen', () => {
+  const r = sortiereBisFertig({ lies: () => ['a1', 'n1'], schiebe: () => {}, auslauf: A, versuche: 3 });
+  assert.equal(r.ok, false);
+  assert.equal(r.versuche, 3);
 });
