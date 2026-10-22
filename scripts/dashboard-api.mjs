@@ -17,6 +17,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { createHash } from 'node:crypto';
+import { vorbereitungStand } from '../operations/lib/bestellvorbereitung.mjs';
+import { arbeitsstand } from '../operations/lib/arbeitsstand.mjs';
+import { personId as bestellPersonId } from '../docs/ai-dashboard/lib/beschaffung.mjs';
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { normalizeTask, requirementsFor, labelChangesFor, mitBlockerAbschnitt, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
@@ -2433,6 +2436,35 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Anmeldung (Notzugang) bleibt der bisherige gh-Login die handelnde Person.
       const actor = benutzer?.name || await currentUser();
       if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
+      if (['bestellVorbereitung', 'bestellPruefen'].includes(payload?.aktion)) {
+        // Kein Shopify-Abgleich: diese Aktionen bereiten nur vor bzw. lesen frisch gegen.
+        const scope = Object.fromEntries(['lieferant', 'art', 'gruppe', 'ziel', 'auftrag'].map(k => [k, payload[k] ?? (k === 'art' ? 'ware' : '')]));
+        if (Object.values(scope).some(v => typeof v !== 'string')) throw new ApiError(400, 'Bestellparameter müssen Text sein.');
+        const vorlage = this.einkaufBestellmail(scope);
+        if (!vorlage.verfuegbar) throw new ApiError(409, vorlage.hinweis || 'Bestelldaten fehlen.');
+        const stand = vorbereitungStand(vorlage, scope);
+        const mails = (vorlage.mails || []).map(m => ({ ...m, vorbereitungStand: vorbereitungStand({ mails: [m] }, scope) }));
+        const mailAuswahl = payload.aktion === 'bestellPruefen' && payload.mailStand !== undefined
+          ? mails.filter(m => typeof payload.mailStand === 'string' && m.vorbereitungStand === payload.mailStand) : mails;
+        if (payload.aktion === 'bestellPruefen' && payload.mailStand !== undefined && mailAuswahl.length !== 1) throw new ApiError(409, 'Dieser Teil der Bestellvorlage hat sich geändert. Bitte neu vorbereiten und prüfen.');
+        const positionen = [...new Map(mailAuswahl.flatMap(m => m.positionen || []).map(p => [positionKey(p.orderId, p.lineItemId), { orderId: p.orderId, lineItemId: p.lineItemId }])).values()];
+        const file = auftragsstatusPfad(privatDirPath || privatDir());
+        try {
+          if (payload.aktion === 'bestellPruefen') {
+            if (payload.mailStand === undefined && (typeof payload.vorbereitungStand !== 'string' || payload.vorbereitungStand !== stand)) throw new ApiError(409, 'Die Bestellvorlage hat sich geändert. Bitte neu vorbereiten und prüfen.');
+            const status = leseAuftragsstatus(file);
+            const id = bestellPersonId(benutzer, actor);
+            if (positionen.some(p => !id || status[positionKey(p.orderId, p.lineItemId)]?.uebernahme?.id !== id)) throw new ApiError(409, 'Die Bestellarbeit ist nicht mehr von dir übernommen. Bitte neu vorbereiten.');
+          } else if (positionen.length) {
+            arbeitsuebernahme(file, { positionen, aktion: 'nehmen', person: benutzer, actor, jetzt: now() });
+            audit({ actor, action: 'bestell-vorbereitung', anzahl: positionen.length });
+          }
+        } catch (e) {
+          if (e instanceof BeschaffungFehler) throw new ApiError(e.status, e.message);
+          throw e;
+        }
+        return { ...vorlage, mails, vorbereitungStand: stand };
+      }
       // Erst den neuesten Shopify-Stand uebernehmen, dann die Aenderung darauf anwenden.
       shopifyAbgleichen();
       // Bis zu den lokalen Writes kein await: Vorpruefung und Uebernahmesperre werden
@@ -4038,7 +4070,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * Fehler, nur ein leerer Zustand mit dem Befehl, der sie anlegen wuerde.
      */
     aktualisierung() {
-      return { ...leseAktualisierungsstand(), letzterKnopfLauf, betrieb: betriebszustand(privatDirPath || privatDir(), { jetzt: now() }) };
+      return { ...leseAktualisierungsstand(), letzterKnopfLauf, arbeitsstand: arbeitsstand(privatDirPath || privatDir()), betrieb: betriebszustand(privatDirPath || privatDir(), { jetzt: now() }) };
     },
 
     /**
@@ -4101,7 +4133,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * `aktualisierung()`). Wird per Abfrage gepollt (kein Warten im Request).
      */
     aktualisierungStatus() {
-      const stand = { ...leseAktualisierungsstand(), letzterKnopfLauf, betrieb: betriebszustand(privatDirPath || privatDir(), { jetzt: now() }) };
+      const stand = { ...leseAktualisierungsstand(), letzterKnopfLauf, arbeitsstand: arbeitsstand(privatDirPath || privatDir()), betrieb: betriebszustand(privatDirPath || privatDir(), { jetzt: now() }) };
       if (aktualisierungLauf) return { ...stand, laeuft: true, seit: aktualisierungLauf.seit };
       return { ...stand, laeuft: false, seit: null };
     },

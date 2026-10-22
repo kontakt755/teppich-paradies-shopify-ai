@@ -1251,7 +1251,9 @@ Hinweise, Einheiten und nichtpositive Sollmengen werden nicht überschrieben.
 
 Aktion `uebernahme` nimmt Positionen und `uebernahmeAktion: nehmen|freigeben|uebernehmen`.
 Person/Rolle kommen ausschließlich aus der Sitzung. Mitarbeiter dürfen keine fremde Übernahme
-freigeben/übernehmen; Inhaber übernimmt bewusst mit eigenem Knopf. Kein automatischer Ablauf.
+freigeben/übernehmen; Inhaber übernimmt bewusst mit eigenem Knopf. Keine automatische Freigabe
+einer bestehenden Übernahme; die bewusste Bestellvorbereitung erwirbt seit #1616 freie Positionen
+gemeinsam über denselben Mechanismus.
 Alle Positionen einer Sammelübernahme werden vor dem einen atomaren Schreibvorgang geprüft.
 Der Endpunkt liegt weiter in der bestehenden Schreib-/Rollenprüfung; Leser erhalten 403.
 
@@ -1889,3 +1891,51 @@ Bestellungen verwenden ihre bestehenden Daten.
 
 Der Umbau startet keine automatischen Nachrichten, Lieferantenbestellungen oder Versandbuchungen.
 Bestehende getrennte Versandaktionen und bewusst bestaetigte Bestellaktionen bleiben erhalten.
+
+
+### 9d. Arbeitsstand und abgesicherte Bestellvorbereitung (#1616, 22.10.2026)
+
+`operations/lib/arbeitsstand.mjs` bildet aus den lokalen Arbeitsdateien eine Revision.
+Die bestehenden Antworten fuer Aktualisierung und Aktualisierungsstatus enthalten
+`arbeitsstand: {verfuegbar, kennung}`; Fehler enthalten einen neutralen Hinweis und
+Quellennamen, keine Dateiinhalte. Eine Aenderung ist ein Nachladehinweis, kein Beleg fuer
+Versand, Wareneingang oder eine physische Handlung. Der Browser fragt im vorhandenen
+Statusablauf alle 30 Sekunden sowie bei Tab-Rueckkehr ab und erneuert bereits geladene
+Arbeitslisten. Laufende Eingaben und offene Dialoge werden dabei nicht ueberschrieben.
+Fehler lassen den letzten sichtbaren Datenstand bestehen und werden als Stoerung behandelt.
+Nach Einzel- und abgeschlossenen Sammelaktionen fuer Status oder Wareneingang werden
+bereits geladene Bestell- und Packlisten ebenfalls frisch gelesen.
+
+Der vorhandene Schreibendpunkt `POST /api/einkauf/auftragsstatus` bietet zwei Aktionen:
+
+- `bestellVorbereitung`: `lieferant`, `art`, optional `gruppe`, `ziel`, `auftrag` grenzen die
+  vorhandene Bestellmail-Aufbereitung ein. Nur tatsaechlich in den Mailabschnitten enthaltene
+  Positionen werden gemeinsam ueber `arbeitsuebernahme(..., nehmen)` uebernommen. Eine fremde
+  Position verhindert die ganze Uebernahme mit 409; auch Inhaber erzwingen hier nichts.
+  Fehlende Angaben und leere Abschnitte bleiben in der bestehenden Vorschau sichtbar.
+- `bestellPruefen`: Erzeugt dieselbe Vorlage frisch und vergleicht den uebergebenen
+  `mailStand` mit einem semantischen Mailabschnitt. Zusaetzlich muessen alle enthaltenen
+  Positionen weiter der handelnden Person gehoeren. Ein geaenderter oder fremder Stand
+  liefert 409, ohne automatisch erneut zu uebernehmen. Die Pruefung schreibt keinen
+  Bestell- oder Shopify-Stand. Alternativ kann der gesamte `vorbereitungStand` geprueft werden.
+
+Die Antwort behaelt die bisherige Bestellmail-Form und ergaenzt `vorbereitungStand` sowohl
+fuer die Gesamtvorlage als auch je `mails[]`-Abschnitt. Der Fingerabdruck bindet Parameter,
+Positionskennungen, Mengen, Lieferziel, Empfaenger, Betreff, Text und externen Bestellweg;
+fluechtige Wartezeiten und Uebernahmezeitpunkte sind kein Bestandteil. Nach Bestaetigung
+eines ersten Abschnitts bleibt ein zweiter unveraenderter Abschnitt pruefbar; Indexpositionen
+sind keine Kennung. Der Browser prueft vor Kopieren, externem Oeffnen und Bestellt-Markierung.
+Lesende Rollen erhalten fuer beide Aktionen 403 und behalten den bisherigen Lesepfad.
+
+Beim Kopieren beginnt der Clipboard-Aufruf im urspruenglichen Klick; der Text wird erst
+nach erfolgreicher Serverpruefung als Inhalt freigegeben. Damit bleibt die Benutzeraktivierung
+auch in Browsern mit strenger Gestenbindung erhalten. Ohne diese Schnittstelle bietet der
+Dialog nach der Pruefung einen kurzen zweiten Kopierklick und bei Bedarf manuelle Textauswahl.
+
+Die vorhandene ausdrueckliche Inhaber-Uebernahme und Freigabe bleiben erhalten. Verschiedene
+Mitarbeiter muessen unterschiedliche Anmeldungen verwenden, damit ihre Identitaeten getrennt
+sind. Das Dashboard erhaelt keinen verlaesslichen Versandnachweis aus einem externen
+Mailprogramm oder Gmail und kann wiederholtes externes Absenden nicht sicher verhindern.
+Die Automatik veraendert weder finanzielle noch physische Zustaende: keine Kaeufe, kein
+Mailversand, keine Pack- oder Versandbestaetigung. Bestehender Belegabgleich und bestehende
+Shopify-Wege bleiben die einzigen jeweiligen Fachablaeufe.

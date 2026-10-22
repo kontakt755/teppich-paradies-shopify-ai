@@ -35,7 +35,12 @@ const LAUF_ALT_STD = 4;
 export function ensureBelege({ neu = false } = {}) {
   if (belege.laedt || (belege.daten && !neu && Date.now() - belege.geladenAm < FRISCH_MS)) return;
   belege.laedt = true;
-  fetchEinkauf('/api/einkauf/belege').then(d => { belege.daten = d; belege.geladenAm = Date.now(); }).finally(() => {
+  fetchEinkauf('/api/einkauf/belege').then(d => {
+    // Ein spaeterer Abruffehler darf die bereits verfuegbare Arbeitsliste nicht loeschen.
+    // Ohne Altstand bleibt die Fehlermeldung sichtbar; die Zeit begrenzt auch Fehler-Retries.
+    if ((d?.verfuegbar && !d.fehler) || !belege.daten?.verfuegbar) belege.daten = d;
+    belege.geladenAm = Date.now();
+  }).finally(() => {
     belege.laedt = false;
     if (['einkauf', 'heute'].includes(state.route.view)) render();
   });
