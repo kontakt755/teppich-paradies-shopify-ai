@@ -60,9 +60,11 @@ function bqFeldTreffer(felder, q) { return felder.some(f => typeof f === 'string
 function bestellzeileGefiltert(zeilen, params) {
   const filter = params.get('bfilter') || 'nicht_fertig';
   const q = (params.get('bq') || '').trim().toLowerCase();
-  const sort = params.get('bsort') || 'wichtigkeit';
+  // Neueste Bestellung oben (Inhabervorgabe 2026-10-22) - vorher Kundenname A-Z.
+  const sort = params.get('bsort') || 'datum';
   const dir = params.get('bdir') || (sort === 'kundenname' ? 'asc' : 'desc');
-  let liste = zeilen.filter(z => filter === 'nicht_fertig' ? (!z.fertig && !z.testbestellung)
+  // "Nicht fertig" laesst fertige Bestellungen drin - sie landen im Bereich "Erledigt" (istErledigt).
+  let liste = zeilen.filter(z => filter === 'nicht_fertig' ? !z.testbestellung
     : filter === 'fertig' ? (z.fertig && !z.testbestellung)
     : filter === 'offen' ? (z.offen && !z.testbestellung)
     : filter === 'bezahlt' ? z.zahlungsstatus === 'PAID'
@@ -199,13 +201,51 @@ function betragText(z) {
   return geldText({ betrag: z.gesamtbetrag, waehrung: z.waehrung });
 }
 
+/**
+ * Abhaken (Inhaber 2026-10-22): erledigte Bestellungen rutschen in den eingeklappten
+ * Bereich "Erledigt" - gemeinsam fuer alle, ohne Shopify-Buchung (das macht "Kunde fertig").
+ */
+/** Erledigt: von Hand abgehakt oder in Shopify/Auftragsfluss abgeschlossen (Abgleich laeuft serverseitig). */
+function automatischErledigt(z) { return z.fertig || z.fulfillmentstatus === 'FULFILLED'; }
+function istErledigt(z) { return Boolean(z.abgehakt) || automatischErledigt(z); }
+
+function hakenKnopf(z) {
+  if (!z.abgehakt && automatischErledigt(z)) return '<span class="bq-haken-auto" title="In Shopify bzw. im Auftragsfluss abgeschlossen">✓</span> ';
+  if (istNurLesend()) return '';
+  return z.abgehakt
+    ? `<button type="button" class="btn btn-sm btn-ghost bq-haken" data-bq-haken="${esc(z.orderId)}" data-bq-haken-wert="0" title="Zurück in die offene Liste" aria-label="${esc(`${z.orderName} zurückholen`)}">↩</button> `
+    : `<button type="button" class="btn btn-sm btn-ghost bq-haken" data-bq-haken="${esc(z.orderId)}" data-bq-haken-wert="1" title="Abhaken – rutscht nach „Erledigt“" aria-label="${esc(`${z.orderName} abhaken`)}">☐</button> `;
+}
+
+async function hakenSetzen(orderId, erledigt) {
+  const zeile = (kunden.bestellungen?.zeilen || []).find(z => z.orderId === orderId);
+  if (!zeile) return;
+  const vorher = zeile.abgehakt;
+  zeile.abgehakt = erledigt ? { zeit: new Date().toISOString() } : null;
+  render();
+  try {
+    const r = await fetch('/api/kunden/bestellung-abhaken', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ orderId, erledigt }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || r.status);
+    zeile.abgehakt = j.abgehakt;
+    toast(erledigt ? `${zeile.orderName} abgehakt` : `${zeile.orderName} wieder offen`);
+  } catch (e) {
+    zeile.abgehakt = vorher;
+    toast(`Fehler: ${e.message}`, 'crit');
+  }
+  render();
+}
+
 function bestellzeileHtml(z) {
   const offenKlasse = kunden.erweitert.has(z.orderId) ? ' offen' : '';
   const tagListe = [...z.tags.beratung, ...z.tags.typ, ...z.tags.sonstige];
   const pk = fortschrittKlasse(z.fortschritt?.stufe);
   const inhalt = inhaltHtml(z);
   return `<tr class="bq-row${offenKlasse}${inhalt ? ' mit-inhalt' : ''}" data-bq-toggle="${esc(z.orderId)}" tabindex="0" role="button" aria-expanded="${kunden.erweitert.has(z.orderId)}" aria-label="Bestellung ${esc(z.orderName)} von ${esc(z.kundenname)} auf- oder zuklappen">
-      <td data-l="Bestellnr."><a href="${esc(z.adminUrl)}" target="_blank" rel="noopener">${esc(z.orderName)}</a>${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</td>
+      <td data-l="Bestellnr.">${hakenKnopf(z)}<a href="${esc(z.adminUrl)}" target="_blank" rel="noopener">${esc(z.orderName)}</a>${neuBadge(z)}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</td>
       <td data-l="Datum">${fmtDateTime(z.datum)}</td>
       <td data-l="Kunde">${z.kundenSchluessel ? `<a href="#" data-kunden-open="${esc(z.kundenSchluessel)}">${wertText(z.kundenname)}</a>` : wertText(z.kundenname)}</td>
       <td data-l="Kontakt">${kontaktZelle(z)}</td>
@@ -223,7 +263,7 @@ function bestellzeileKarte(z, gruppiert = false) {
   const pk = fortschrittKlasse(z.fortschritt?.stufe);
   return `<div class="row bq-karte" data-bq-toggle="${esc(z.orderId)}" tabindex="0" role="button" aria-expanded="${kunden.erweitert.has(z.orderId)}" aria-label="Bestellung ${esc(z.orderName)} von ${esc(z.kundenname || 'unbekannt')} auf- oder zuklappen">
     <div>
-      <div class="t">${esc(z.orderName)}${gruppiert ? '' : ` · ${wertText(z.kundenname)}`}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</div>
+      <div class="t">${hakenKnopf(z)}${esc(z.orderName)}${neuBadge(z)}${gruppiert ? '' : ` · ${wertText(z.kundenname)}`}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</div>
       <div class="m">${betragText(z)} · ${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)} · ${fmtDate(z.datum)}</div>
       ${inhaltHtml(z) ? `<div class="bq-inhalt-mobil">${inhaltHtml(z)}</div>` : ''}
       <div class="m"><span class="bq-fortschritt ${pk}">${esc(z.fortschritt?.text || '–')}</span></div>
@@ -242,9 +282,15 @@ export function viewKundenBestellungen() {
   if (!d || !d.verfuegbar) return emptyState('Keine Bestelldaten verfügbar.', d?.hinweis || 'Bestellübersicht noch nicht exportiert.');
   const params = state.route.params;
   const filter = params.get('bfilter') || 'nicht_fertig';
-  const sort = params.get('bsort') || 'wichtigkeit';
+  const sort = params.get('bsort') || 'datum';
   const dir = params.get('bdir') || (sort === 'kundenname' ? 'asc' : 'desc');
-  const zeilen = bestellzeileGefiltert(d.zeilen, params);
+  const gefiltert = bestellzeileGefiltert(d.zeilen, params);
+  const zeilen = gefiltert.filter(z => !istErledigt(z));
+  // Ohne Suche nur die letzten 30 Tage - sonst wuechse "Erledigt" endlos. Aeltere findet die Suche.
+  const grenze = Date.now() - ERLEDIGT_TAGE * 864e5;
+  const erledigtAlle = gefiltert.filter(istErledigt).sort((a, b) => String(b.datum || '').localeCompare(String(a.datum || '')));
+  const erledigt = params.get('bq') ? erledigtAlle : erledigtAlle.filter(z => Date.parse(z.datum) >= grenze);
+  const erledigtAelter = erledigtAlle.length - erledigt.length;
   const alleGruppen = ['kundenname', 'wichtigkeit'].includes(sort) ? gruppiereBestellzeilenNachKunde(zeilen) : null;
   // Seitenweise (25 Kunden bzw. 25 Bestellungen): die volle Liste samt Produktinhalt wurde
   // am Handy mehrere Meter lang (Codex-Audit 2026-10-19).
@@ -282,16 +328,27 @@ export function viewKundenBestellungen() {
   return `
     <div class="toolbar search-hero"><input type="search" placeholder="Suchen – Kunde, E-Mail, Telefon, Bestellnummer, Produkt, Farbe, Tags …" value="${esc(params.get('bq') || '')}" data-param="bq" aria-label="Bestellungen durchsuchen"></div>
     ${chips}
-    <p class="small muted" style="margin:0 0 8px">${zeilen.length} ${zeilen.length === 1 ? 'Bestellung' : 'Bestellungen'}${seiten > 1 ? ` · Seite ${seite} von ${seiten}` : ''} · ${sort === 'wichtigkeit' ? 'Sortiert nach Wichtigkeit: es fehlt etwas → unterwegs → nicht bezahlt → raus oder erledigt, je die älteste zuerst' : `Sortiert nach ${esc(BQ_SORT_LABEL[sort] || 'Kunde')} ${dir === 'asc' ? 'aufsteigend' : 'absteigend'} · <button type="button" class="btn btn-sm btn-ghost" data-param="bsort" data-value="">Nach Wichtigkeit sortieren</button>`} · Zeile anklicken zeigt Zeitleiste, Kanal, Tags und die Aktionen</p>
+    <p class="small muted" style="margin:0 0 8px">${zeilen.length} ${zeilen.length === 1 ? 'Bestellung' : 'Bestellungen'}${seiten > 1 ? ` · Seite ${seite} von ${seiten}` : ''} · ${sort === 'wichtigkeit' ? 'Sortiert nach Wichtigkeit: es fehlt etwas → unterwegs → nicht bezahlt → raus oder erledigt, je die älteste zuerst' : `Sortiert nach ${esc(BQ_SORT_LABEL[sort] || 'Kunde')} ${dir === 'asc' ? 'aufsteigend' : 'absteigend'} · <button type="button" class="btn btn-sm btn-ghost" data-param="bsort" data-value="wichtigkeit">Nach Wichtigkeit sortieren</button>`} · Zeile anklicken zeigt Zeitleiste, Kanal, Tags und die Aktionen</p>
     <div class="table-wrap kunden-table bq-table"><table><thead>${kopf}</thead>
     ${tabelle}
     </table></div>
     <div class="rows bq-karten">${karten}</div>
     ${blaettern}
+    ${erledigt.length || erledigtAelter ? `<details class="bq-erledigt"><summary>Erledigt · ${plural(erledigt.length, 'Bestellung', 'Bestellungen')}${erledigtAelter ? ` <span class="small muted">· letzte ${ERLEDIGT_TAGE} Tage, ${erledigtAelter} ältere über die Suche</span>` : ''}</summary>
+      <div class="table-wrap kunden-table bq-table"><table><thead>${kopf}</thead><tbody class="bq-tbody-desktop">${erledigt.map(bestellzeileHtml).join('')}</tbody></table></div>
+      <div class="rows bq-karten">${erledigt.map(z => bestellzeileKarte(z)).join('')}</div>
+    </details>` : ''}
   `;
 }
 
 const BQ_SEITE = 25;
+const ERLEDIGT_TAGE = 30;
+const NEU_STUNDEN = 24;
+
+/** "Neu": offene Bestellung der letzten 24 Stunden - beim Oeffnen sofort sichtbar, was dazukam. */
+function neuBadge(z) {
+  return !istErledigt(z) && Date.now() - Date.parse(z.datum) < NEU_STUNDEN * 36e5 ? ' <span class="badge bq-neu">Neu</span>' : '';
+}
 
 const FILTERCHIPS_KUNDEN = ['nicht_fertig', 'fertig', 'offen', 'bezahlt', 'unerfuellt', 'storniert', 'beratung', 'muster', 'test'];
 
@@ -307,7 +364,7 @@ export function kundenKlickBestellungen(e) {
     e.preventDefault();
     const feld = sortKopf.dataset.bqSortToggle;
     const p = new URLSearchParams(state.route.params);
-    const vorherigesFeld = p.get('bsort') || 'wichtigkeit';
+    const vorherigesFeld = p.get('bsort') || 'datum';
     const warSortiert = vorherigesFeld === feld;
     const richtung = warSortiert ? ((p.get('bdir') || (feld === 'kundenname' ? 'asc' : 'desc')) === 'desc' ? 'asc' : 'desc') : (feld === 'kundenname' ? 'asc' : 'desc');
     p.set('bsort', feld);
@@ -345,6 +402,8 @@ export function kundenKlickBestellungen(e) {
     void bestellungsEtikettenDrucken(bqEtk.dataset.bqEtiketten);
     return true;
   }
+  const bqHaken = e.target.closest('[data-bq-haken]');
+  if (bqHaken) { e.preventDefault(); e.stopPropagation(); void hakenSetzen(bqHaken.dataset.bqHaken, bqHaken.dataset.bqHakenWert === '1'); return true; }
   const bqFertig = e.target.closest('[data-bq-fertig]');
   if (bqFertig) { e.preventDefault(); e.stopPropagation(); kundeFertigSetzen(bqFertig.dataset.bqFertig); return true; }
   return false;
