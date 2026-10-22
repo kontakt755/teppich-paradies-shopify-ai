@@ -1785,3 +1785,18 @@ Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
   Inland ohne Land, „Bestellung #…“ unten rechts; passt in 50 × 50 und 50 × 100.
 - **Haken je Muster:** nur `localStorage` (`tp-muster-packen-haken`) – Packhilfe am Gerät, kein
   gemeinsamer Stand.
+
+### Großbrief vorbereiten (#1591)
+
+Je Kunde öffnet „Großbrief vorbereiten“ eine flüchtige Vorschau mit derselben Lieferanschrift
+und allen gebündelten Bestellnummern. Keine Speicherung, keine neuen API-Endpunkte, keine
+Anbindung an den Portokauf oder Shopify-Versand. Eingaben verfallen beim Schließen; eine
+Änderung verwirft das vorherige Prüfergebnis sofort.
+
+`lib/muster-grossbrief.mjs` prüft den tatsächlich gepackten Umschlag: Gewicht, Dicke, beide
+Seitenmaße, vollständige Inlandsadresse, vorhandene Zuordnungen und bewusste Bestätigung des
+lokalen Bestands inklusive Direktversand-Prüfung. Ohne gemeinsamen Gepackt-Status bleibt die
+Prüfung offen. Kein Schätzen aus der Musteranzahl, kein automatischer Wechsel auf Maxibrief.
+Der geprüfte Preis-/Formatstand gilt bis 31.12.2026; danach fordert die Vorschau eine neue
+Prüfung statt eine veraltete Eignung zu bestätigen. Eine passende Vorschau bedeutet weder
+Portokauf noch Versandfreigabe oder tatsächliche Einlieferung.

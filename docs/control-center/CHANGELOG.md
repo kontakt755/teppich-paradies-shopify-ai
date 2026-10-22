@@ -2,6 +2,22 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-22 · Großbrief ohne Portokauf vorbereiten (#1591)
+
+- **Geändert:** „Großbrief vorbereiten“ je Kunde in Muster packen: gebündelte Bestellnummern,
+  Adresse, Preis und Messfelder für den fertig gepackten Umschlag. Prüft Grenzen, Inland,
+  Gepackt-Status und Bestätigung zum lokalen Bestand/Direktversand. Eingaben bleiben nur im
+  offenen Dialog. Kein Kaufknopf, keine Versandbuchung, keine Nachricht, keine neue API.
+- **Getestet:** Grenzwerte, gedrehte Maße, deutsche Dezimalwerte, ungültige/fehlende Angaben,
+  Ausland, ungepackter Umschlag, fehlende Zuordnung und Tarifende in muster-grossbrief.test.mjs.
+  Dashboard 682/682, Gesamtsuite 3502/3502. Browserklicks gegen Datenkopie: leere Angaben
+  bleiben offen, 501 g abgelehnt, gepackt + 499,5 g/20 mm/250 × 353 mm passend; Änderung
+  verwirft Ergebnis, Esc schließt, erneutes Öffnen leer. Desktop/390 px visuell geprüft;
+  alle 36 Ansichten in fünf Breiten (180 Fälle) ohne JS-Fehler oder Querscrollen.
+- **Risiken:** Gewicht und Maße müssen am realen Umschlag ermittelt werden. Die Bestätigung
+  zum Bestand ersetzt keinen physischen Nachweis. Porto-/Formatstand nach 2026 erneut prüfen.
+- **Nächste Stufe:** Portodruck und Versandbuchung erst mit gesondertem Auftrag verbinden.
+
 ## 2026-10-22 · Verlegereste als Mustermaterial
 
 - **Geändert:** Regel vom 21.10.: Teppichboden und Vinyl von Lieferant A und C, den wir verlegen,
