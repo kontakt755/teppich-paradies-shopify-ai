@@ -2,6 +2,17 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-22 · Adressaufkleber ohne Bestellnummer
+
+- **Geändert:** Auf dem gedruckten Adressaufkleber (Kunden → Muster packen) steht keine
+  Bestellnummer mehr, nur Absender und Empfänger; die Empfängerzeilen bekommen den Platz.
+  Die Zuordnung Umschlag ↔ Bestellung zeigt weiter die Karte in der Packliste und die
+  Druckvorschau. `adressLayout` in `lib/adress-etiketten.mjs`.
+- **Getestet:** `muster-packen.test.mjs` prüft, dass keine Bestellnummer gezeichnet wird;
+  `dashboard:test` grün.
+- **Risiken/Annahmen:** keine.
+- **Nächste Stufe:** Versandschritt, sobald der Versandweg entschieden ist.
+
 ## 2026-10-22 · Großbrief ohne Portokauf vorbereiten (#1591)
 
 - **Geändert:** „Großbrief vorbereiten“ je Kunde in Muster packen: gebündelte Bestellnummern,

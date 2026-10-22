@@ -93,7 +93,7 @@ test('Adressaufkleber: Zusatzzeile getrennt, Inland ohne Land, Ausland mit Land,
   assert.deepEqual(adressEtikett({ name: 'X', strasse: '–' }).fehlt, ['Straße', 'PLZ/Ort']);
 });
 
-test('Adresslayout: jede Zeile passt in die Druckbreite, auch lange Orte und mehrere Bestellungen', () => {
+test('Adresslayout: jede Zeile passt in die Druckbreite, auch lange Orte; ohne Bestellnummer', () => {
   const mass = (t, g, fett) => t.length * g * (fett ? 0.6 : 0.55);
   const e = adressEtikett(adresse('Anna-Katharina Testfrau-Beispiel', { strasse: 'Lange-Beispielstraße 115, Gartenhaus', plz: '00000', ort: 'Bad Musterstadt-Langenachbarort' }), ['#T1040', '#T1041', '#T1042']);
   for (const format of Object.values(ETIKETT_FORMATE)) {
@@ -105,6 +105,6 @@ test('Adresslayout: jede Zeile passt in die Druckbreite, auch lange Orte und meh
       assert.ok(t.x >= format.rand && t.x + mass(t.text, t.groesse, t.fett) <= format.breite - format.rand + 1, `${format.format}: ${t.text} zu breit`);
       assert.ok(t.y >= 0 && t.y + t.groesse <= format.hoehe, `${format.format}: ${t.text} ausserhalb`);
     }
-    assert.ok(texte.some(t => t.text === 'Bestellung #T1040, #T1041, #T1042'));
+    assert.ok(!texte.some(t => /Bestellung|#T104/.test(t.text)), 'keine Bestellnummer auf dem Adressaufkleber');
   }
 });
