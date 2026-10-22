@@ -69,7 +69,7 @@ export function wasFehlt(auftrag, rueckrufStatus, fortschritt = null) {
   const c = auftrag?.checks || {};
   const ohneKennung = (auftrag?.positionen ?? []).filter(p => !p.lineItemId).length;
   if (ohneKennung) gruende.push(`${ohneKennung} Position${ohneKennung === 1 ? '' : 'en'} ohne Bestellpositionskennung – Bestelldaten prüfen`);
-  const ohneId = (auftrag?.positionen ?? []).filter(p => p.grosshaendlerId === 'UNGEKLAERT' || p.idGrund).length;
+  const ohneId = (auftrag?.positionen ?? []).filter(p => !p.eigenleistung && (p.grosshaendlerId === 'UNGEKLAERT' || p.idGrund)).length;
   const massProbleme = (auftrag?.positionen ?? []).filter(p => ['abweichung', 'unlesbar', 'waise'].includes(p.masspruefung?.status)).length;
   if (c.beratung === 'Ja' && c.telefon === 'fehlt') gruende.push('Telefon fehlt trotz Beratung');
   else if (c.beratung === 'Ja' && rueckrufStatus && rueckrufStatus !== 'erledigt') gruende.push('Rückruf offen');
@@ -120,6 +120,9 @@ export function bestellzeile(auftrag, { statusAlle = {}, rueckrufeAlle = {} } = 
   const tags = tagGruppen(d.tags);
   const beratungOffen = auftrag.checks?.beratung === 'Ja';
   const f = fortschritt(auftrag, statusAlle);
+  const waren = (auftrag.positionen || []).filter(p => p.istMuster !== true);
+  const warenAuftrag = { ...auftrag, positionen: waren };
+  const warenFortschritt = fortschritt(warenAuftrag, statusAlle);
   const rueckruf = rueckrufeAlle[auftrag.id];
   return {
     orderId: auftrag.id,
@@ -149,6 +152,10 @@ export function bestellzeile(auftrag, { statusAlle = {}, rueckrufeAlle = {} } = 
     ampel: auftrag.ampel,
     adminUrl: auftrag.adminUrl,
     fortschritt: f,
+    warenFortschritt,
+    warenWasFehlt: wasFehlt(warenAuftrag, rueckruf?.status, warenFortschritt),
+    positionsstatus: Object.fromEntries((auftrag.positionen || []).filter(p => p.lineItemId)
+      .map(p => [p.lineItemId, statusAlle[positionKey(auftrag.id, p.lineItemId)] || null])),
     fertig: istFertig(auftrag, statusAlle),
     wasFehlt: wasFehlt(auftrag, rueckruf?.status, f),
     // Im Auftragsfluss schon beim Kunden, in Shopify aber ohne Sendung: nur ein Hinweis.

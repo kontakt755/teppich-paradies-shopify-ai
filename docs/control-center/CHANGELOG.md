@@ -2,6 +2,46 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-22 · Shop-Übersicht mit Warenkunden zuerst (#1624)
+
+- **Geaendert:** Heute startet mit offenen Warenbestellungen: zahlende Kunden zuerst,
+  mit Kunde, ganzem Bestellwert, Wartezeit und nächstem Schritt. Gemischte Aufträge nutzen
+  ausschließlich den Warenfortschritt; Muster, Details und bewusste Gesamtbestellaktionen
+  bleiben erhalten. Fehlmengen, offene Versandbuchungen und manuelle Haken ohne Nachweis
+  verschwinden nicht aus der Warenarbeit; auch alte lokale Abschlüsse ohne Versandvermerk
+  bleiben prüfpflichtig. Musterbestellung und Packstation folgen darunter;
+  allgemeine Laden-, Aufgaben- und Technikansichten bleiben gezielt erreichbar.
+- **Geaendert:** Bestellart `bart=ware|muster|alle` ergänzt die vorhandenen Statusfilter.
+  Alte direkte Links ohne Artwahl behalten alle Arten. Warenzahl auf Heute, Navigationszahl
+  und offene Warenliste verwenden denselben Umfang. Vier mobile Hauptwege sind Bestellungen,
+  Muster bestellen, Packstation und Lexikon; Mehr und der Hausknopf erhalten alle weiteren Wege.
+- **Geaendert:** Musterwirkung zeigt rein lesende Beobachtungen zu späteren Warenkäufen,
+  Wiederholungsmustern und jungen oder unklaren Fällen. Die Exportabfrage ergänzt den gegen
+  Admin-API 2026-07 validierten Positionswert nach allen Rabatten. Die Ansicht benennt das
+  Betriebsfenster von 90 Tagen plus älteren offenen Versand-/Zahlungsfällen; keine behauptete
+  vollständige Historie, Kaufursache oder Rentabilität. Versand-/Empfangskontrolle und bestehendes
+  Nachfassen bleiben in den vorhandenen Arbeitswegen. Ein vorhandener Bewertungsablauf wird
+  nicht um eine zweite Sendelogik ergänzt.
+- **Getestet:** gezielte Regressionen für Waren-/Mustertrennung einschließlich gemischter
+  Aufträge, Fortschritt, Zahlengleichheit, Fehler statt Null, Bestellfilter und Renderer;
+  Eigenleistungen ohne Lieferanten-ID-Pflicht; Syntax- und Importprüfungen. Gesamtsuite
+  3.767 Tests grün, Projekt-Guards und Geheimnisprüfung grün. 194 Browserkombinationen
+  aller Ansichten auf Desktop/Handy mit drei Rollen sowie 63 im Dunkelmodus und 24
+  Nachprüfungen der Eigenleistungs-/Versandbeleg-Korrekturen ohne Fehler oder seitlichen Überlauf.
+  Klickprobe auf isolierter Datenkopie: Warenzahl auf Startseite, Navigation und Liste
+  identisch; getrennte Artfilter ergeben zusammen den Gesamtumfang, konkreter Warenauftrag
+  direkt erreichbar.
+  Eine synthetische neue Musterposition erschien direkt auf Heute und in der bestehenden
+  Lieferanten-Vorbereitung; Dialog ohne Senden geschlossen, Datenkopie danach entfernt.
+  Alte Exportwerte erscheinen als unklar statt als erfundene Käufe.
+- **Risiken:** alte Exporte können die neuen Rabattwerte noch nicht enthalten; daraus wird
+  kein Kaufbeleg geraten. Frühere abgeschlossene Käufe außerhalb des Betriebsfensters können
+  fehlen. Der aktuelle Live-/Versandstatus des bestehenden Bewertungs-/Flow-Ablaufs ist über
+  die verfügbare Anbindung technisch nicht lesbar und bleibt ungeprüft. Keine automatische
+  Bestellung, Nachricht, physische Bestätigung oder Versandbuchung durch diesen Umbau.
+- **Naechste Stufe:** Nach PR-Review den Dienst abgleichen und den Bestellexport auffrischen;
+  reguläre Bedienung im Betrieb mit Ware und Drucker sowie Kostenbelege zur Musterbewertung.
+
 ## 2026-10-22 · Sichere Mitarbeiterwege und sichtbare offene Arbeit (#1618)
 
 - **Geaendert:** Heute zeigt wartende Umschlaege und notwendige Bestellkontrollen direkt;

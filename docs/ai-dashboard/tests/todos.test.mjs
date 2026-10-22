@@ -297,6 +297,7 @@ test('Muster "haben wir da": kein "bei Lieferant bestellen", sondern "vorbeibrin
   assert.deepEqual(v.knopf.schritt, { orderId: vorbei.orderId, aktion: 'kunde_hat_muster' });
   assert.equal(v.knopf.text, 'Erledigt – Kunde hat Muster');
   assert.equal(todos.find(t => t.id === `muster-eigen:${versand.orderId}`).titel, 'Muster verschicken an Kunde Fern');
+  assert.equal(todos.find(t => t.id === `muster-eigen:${versand.orderId}`).knopf.schritt.aktion, 'raus');
   assert.match(todos.find(t => t.art === 'bestellen').kontext, /Kunde Drei/, 'nur das Muster ohne Wahl "haben wir da" ist zu bestellen');
   // Wer wartet auf was: wir - vorbeibringen, nicht bestellen
   const ww = werWartet({ bestellzeilen: [vorbei] }, { jetzt: JETZT });

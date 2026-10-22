@@ -286,3 +286,11 @@ test('POST /api/kunden/fall-marke kommt an und verlangt einen Fall', async () =>
   assert.equal(r.status, 400);
   assert.match((await r.json()).error, /Kein Fall angegeben/);
 }));
+
+test('Musterwirkungs-Route ist erreichbar und rein lesend', async () => withServer(async base => {
+  const r = await fetch(`${base}/api/kunden/musterwirkung`);
+  assert.equal(r.status, 200, 'neuer API-Pfad muss in der Server-Pfadliste stehen');
+  assert.equal(typeof (await r.json()).verfuegbar, 'boolean');
+  const post = await fetch(`${base}/api/kunden/musterwirkung`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+  assert.equal(post.status, 405);
+}));

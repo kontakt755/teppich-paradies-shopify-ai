@@ -163,3 +163,15 @@ test('fehlgeschlagene Bestell- und Packabrufe sind kein endloser Lade- oder Null
   assert.match(html, /Packstand kann gerade nicht geladen werden/);
   assert.doesNotMatch(html, /Bestellungen werden geladen|Packstand wird geladen|0 packbereit/);
 });
+
+test('Shop-Einstieg zeigt Musterstand einmal kompakt statt einer zweiten allgemeinen Bestellkarte', () => {
+  const arbeit = arbeitFuer([]);
+  const html = bestellarbeitBlock({ arbeit, nurMuster: true,
+    pack: { verfuegbar: true, zahlen: { packen: 1, klaeren: 2, warten: 3, gepackt: 4 } } });
+  assert.match(html, /Muster &amp; Packstation/);
+  assert.match(html, /3 warten auf Ware/);
+  assert.match(html, /4 gepackt · Versand vorbereiten/);
+  assert.equal((html.match(/Etiketten-Druckliste/g) || []).length, 1);
+  assert.doesNotMatch(html, /Kundenbestellungen|Dringendes bearbeiten|Bestellungen werden geladen/);
+  assert.match(html, /art=muster&amp;af=bestellt/);
+});

@@ -353,11 +353,11 @@ function ausBestellungen(quellen, k) {
       id: `muster-eigen:${orderId}`, art: 'muster_eigen', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.bestellen), alterTage: tage,
       titel: vorbei ? `Muster vorbeibringen bei ${kundeVon(z)}` : `Muster verschicken an ${kundeVon(z)}`,
       kontext: [ortVon(z), z.orderName, musterKurz(positionen), musterHerkunftText(positionen.map(x => x.p)) || 'aus eigenem Bestand'].filter(Boolean).join(' · '),
-      // Ein Klick traegt "Kunde hat Muster" ein (Zeitleiste); der Server setzt die Uebergabe mit.
+      // Nur persoenliche Uebergabe belegt Empfang; Versand oeffnet den bestehenden Versanddialog.
       // Nur wenn ALLE Muster der Bestellung aus dem eigenen Bestand kommen - sonst stuende
       // "Kunde hat Muster" da, obwohl andere Muster noch beim Lieferanten liegen: dann in die Akte.
       knopf: (z.auftrag?.positionen || []).filter(p => p.istMuster).every(musterEigen)
-        ? { text: 'Erledigt – Kunde hat Muster', schritt: { orderId, aktion: 'kunde_hat_muster' }, href: kundenLink(z) }
+        ? { text: vorbei ? 'Erledigt – Kunde hat Muster' : 'Muster sind verschickt…', schritt: { orderId, aktion: vorbei ? 'kunde_hat_muster' : 'raus' }, href: kundenLink(z) }
         : { text: 'Ansehen', href: kundenLink(z) },
     });
   }

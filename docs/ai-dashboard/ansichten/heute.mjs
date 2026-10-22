@@ -1,5 +1,6 @@
 /**
- * Ansicht "Heute" (#/heute): die Startseite. Seit 2026-10-19 genau EINE Arbeitsliste
+ * Ansicht "Heute" (#/heute): standardmaessig Shop-Arbeit mit Warenkunden zuerst.
+ * Die ausdruecklichen Alltagssichten behalten die seit 2026-10-19 gebuendelte Arbeitsliste
  * (Inhaber: "zu unuebersichtlich"; Codex-Audit: dieselbe Sache stand bis zu dreimal da):
  *
  *   1. "Heute zu erledigen" - N ist genau die Zahl der Zeilen darunter. Jede Zeile: was, fuer
@@ -51,6 +52,8 @@ import { startBestellarbeit } from '../lib/start-bestellarbeit.mjs';
 import { bestellarbeitBlock } from './heute/bestellarbeit.mjs';
 import { arbeitsquellenStand } from '../lib/arbeitsquellen.mjs';
 import { bestellPruefgruende } from '../lib/bestellarbeit.mjs';
+import { warenbestellungenBlock } from './heute/warenbestellungen.mjs';
+import { shopNacharbeitBlock } from './heute/shop-nacharbeit.mjs';
 
 const TODOS_SICHTBAR = 3;      // Bestellarbeit zuerst, weitere Aufgaben bleiben kurz und vollstaendig erreichbar.
 const SPALTE_SICHTBAR = 8;
@@ -155,7 +158,45 @@ function versandFehlerTodo(lauf) {
   };
 }
 
+/** Der taegliche Einstieg ist die Shop-Arbeit; alte Alltagssichten bleiben explizit erreichbar. */
 export function viewHeute() {
+  const sicht = state.route.params.get('sicht');
+  return ['laden', 'website', 'alles', 'inhaber'].includes(sicht) ? viewAlltag() : viewShop();
+}
+
+function viewShop() {
+  ensureKundenBestellungen(); ensureEinkaufAuftragsstatus(); ensureEinkaufBestellungen();
+  ensureHeuteLieferanten(); ensureMusterPacken(); ensureAktualisierung();
+  const nf = nachfassStand('laden');
+  // Versandfehler und vorhandene Nachfragen sind Kerngeschaeft, auch ohne allgemeine Aufgaben.
+  ensureHeuteMusterTexte();
+  const arbeit = startBestellarbeit({ daten: einkauf.bestellungen,
+    statusAlle: einkauf.auftragsstatus, lieferanten: heuteDaten.lieferanten });
+  return `<div class="heute shop-start">
+    <header class="heute-geschaeft-kopf shop-start-kopf"><h1>Shop-Übersicht</h1>
+      <p>Hier erledigst du Warenbestellungen, Muster und Versand. Zahlende Warenkunden kommen zuerst.</p>
+    </header>
+    ${warenbestellungenBlock({ daten: kunden.bestellungen, lesend: istNurLesend() })}
+    ${bestellarbeitBlock({ arbeit, pack: kunden.musterPacken, lesend: istNurLesend(), nurMuster: true })}
+    ${shopNacharbeitBlock({ bestellungen: kunden.bestellungen, pack: kunden.musterPacken,
+      nachfassen: nf.alle, texte: heuteDaten.musterTexte })}
+    ${state.route.params.get('mn') ? musterNachfassenBlock(nf.alle) : ''}
+    <section class="shop-werkzeuge" aria-label="Shop-Werkzeuge">
+      <a class="btn" href="#/kunden?tab=musterwirkung">Lohnen sich die Muster?</a>
+    </section>
+    <div class="heute-hintergrund">${datenstandZeile('shop')}</div>
+    <details class="shop-nebenbereiche"><summary>Weitere Bereiche: Laden, Aufgaben und Technik</summary>
+      <nav class="chips" aria-label="Weitere Bereiche">
+        <a class="chip" href="#/heute?sicht=laden">Laden &amp; Anfragen</a>
+        <a class="chip" href="#/organisation">Aufgaben</a>
+        ${darfAnsicht('arbeit') ? '<a class="chip" href="#/arbeit">Shop &amp; Technik</a>' : ''}
+        <a class="chip" href="#/heute?sicht=alles">Bisherige Gesamtübersicht</a>
+      </nav>
+    </details>
+  </div>`;
+}
+
+function viewAlltag() {
   ensureMusterPacken();
   ensureKundenBestellungen(); ensureEinkaufAuftragsstatus(); ensureKundenRueckrufe(); ensureKundenFaelle();
   ensureServiceanfragen(); ensureHeuteLieferanten(); ensureHeuteAufgaben(); ensureAktualisierung();
@@ -220,7 +261,7 @@ function chipZahlen(q, opt, laden) {
 function kopf(anzahl, sicht, chips) {
   const datum = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
   const umschalter = chips
-    ? `<span class="heute-sicht" role="group" aria-label="Bereich wählen">${INHABER_SICHTEN.map(k => `<a href="#/heute${k === 'laden' ? '' : `?sicht=${k}`}" ${k === sicht ? 'aria-current="true"' : ''}>${esc(SICHT_LABEL[k])} <b>${chips[k]}</b></a>`).join('')}</span>`
+    ? `<span class="heute-sicht" role="group" aria-label="Bereich wählen">${INHABER_SICHTEN.map(k => `<a href="#/heute?sicht=${k}" ${k === sicht ? 'aria-current="true"' : ''}>${esc(SICHT_LABEL[k])} <b>${chips[k]}</b></a>`).join('')}</span>`
     : istMitarbeiter() ? '' : `<span>Bereich ${esc(SICHT_LABEL[sicht] || sicht)}</span>`;
   return `<header class="heute-kopf">
     <div class="heute-titel">

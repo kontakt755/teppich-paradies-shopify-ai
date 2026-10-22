@@ -22,7 +22,8 @@ function palette() {
 test('Packstation, Bestellungen und Muster bestellen sind auch fuer Mitarbeiter direkt auffindbar', () => {
   for (const [q, view, params] of [
     ['Packstation', 'kunden', { tab: 'muster' }],
-    ['Bestellungen', 'kunden', { tab: 'bestellungen' }],
+    ['Lexikon', 'lexikon', {}],
+    ['Bestellungen', 'kunden', { tab: 'bestellungen', bart: 'ware', bsort: 'wichtigkeit' }],
     ['Muster bestellen', 'einkauf', { tab: 'lieferant', art: 'muster', af: 'offen' }],
   ]) {
     const u = palette(), item = u.paletteItems(q)[0];

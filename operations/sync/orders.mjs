@@ -17,6 +17,9 @@ export const SEITENGROESSE = 50;
 const LINE_ITEM_FELDER = `
           id sku title variantTitle quantity currentQuantity unfulfilledQuantity
           originalUnitPriceSet { shopMoney { amount currencyCode } }
+          # Gesamtwert nach allen Rabatten, ohne entfernte/erstattete Mengen und ohne Steuern.
+          # discountedTotalSet laesst Bestellrabatte aus und waere kein Kaufnachweis.
+          priceAfterAllDiscountsBeforeTaxesSet { shopMoney { amount currencyCode } }
           customAttributes { key value }
           # Bundle-Komponente (z. B. Rollenware unter "Zuschnitt von der Rolle"):
           # die Zeile ist ein Bestandsabgang, kein eigener Zuschnitt.
@@ -131,7 +134,7 @@ export function normalisiereLineItem(li) {
       id: v.id, sku: v.sku, title: v.title,
       image: v.image ?? null,
       metafields: vNodes,
-      product: p ? { id: p.id, handle: p.handle, title: p.title, featuredImage: pBild, metafields: pNodes } : null,
+      product: p ? { id: p.id, handle: p.handle, title: p.title, productType: p.productType, featuredImage: pBild, metafields: pNodes } : null,
     },
   };
 }
