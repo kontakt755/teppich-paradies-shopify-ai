@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-22T08:56:13Z",
-    "verifiedBy": "Shopify CLI theme list role live nach workflow:live (#1597 Karriere Mitarbeiter gesucht)."
-  },
-  "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-22T08:56:13Z",
-    "verifiedBy": "Shopify CLI theme list role unpublished nach workflow:live (#1597); naechstes Preview-Ziel."
+    "verifiedAt": "2026-10-22T11:28:35.263444Z",
+    "verifiedBy": "Shopify CLI theme list nach workflow:live PR #1612; Rolle live bestaetigt."
+  },
+  "preview": {
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-10-22T11:28:35.263444Z",
+    "verifiedBy": "Shopify CLI theme list nach workflow:live PR #1612; Rolle unpublished bestaetigt."
   },
   "fallback": {
     "themeId": "206590509390",
@@ -916,6 +916,12 @@
       "name": "Kopie von preview-main-2026-09-04",
       "retiredNoticedAt": "2026-10-20",
       "note": "Per workflow:live von main 6ee5d5a2 (#1477/#1478/#1479) abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen frisch per Shopify Admin API bestaetigt."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-10-22",
+      "note": "Durch workflow:live PR #1612 abgeloest; bleibt unpublished als naechstes Preview-Ziel."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
