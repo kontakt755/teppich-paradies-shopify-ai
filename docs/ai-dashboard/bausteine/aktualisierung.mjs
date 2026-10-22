@@ -17,6 +17,7 @@ import { lexikon } from '../ansichten/lexikon.mjs';
 import { kunden } from '../ansichten/kunden/gemeinsam.mjs';
 import { shopwache } from '../ansichten/shopwache.mjs';
 import { verwirfHeuteDaten } from '../ansichten/heute/daten.mjs';
+import { verwirfVersandtarif } from '../ansichten/einkauf/versandkosten.mjs';
 import { belege } from '../ansichten/einkauf/belege.mjs';
 import { shopifyAbgleich } from '../ansichten/einkauf/shopify-abgleich.mjs';
 
@@ -175,6 +176,7 @@ export async function aktualisierenNow() {
  * Aktualisieren seine Arbeit.
  */
 export function verwirfDatenspeicher() {
+  verwirfVersandtarif();
   Object.assign(einkauf, {
     bestellungen: null, produktstatus: null, produktstatusKey: null,
     auftragsstatus: null, kennzahlen: null, lieferanten: null,

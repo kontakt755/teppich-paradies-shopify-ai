@@ -1,0 +1,13 @@
+/* Gleiche Felder und Karten wie im Einkauf, auch auf dem Handy. */
+.vk-felder { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:16px; }
+.vk-felder .field { min-width:0; }
+.vk-felder input,.vk-felder select { width:100%;min-width:0; }
+.vk-felder .muted { display:block; }
+.vk-vergleich { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px; }
+.vk-preis { font-family:var(--serif);font-size:1.7em;font-weight:600;margin:12px 0; }
+.vk-gruende { padding-left:20px;color:var(--warn); }
+.vk-hinweise dt { font-weight:600;margin-top:16px; }
+.vk-hinweise dd { margin:4px 0;overflow-wrap:anywhere;color:var(--text-2); }
+#vk-ergebnisse table td:not(:first-child) { text-align:right;white-space:nowrap; }
+@media(max-width:800px){.vk-felder{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:480px){.vk-felder,.vk-vergleich{grid-template-columns:minmax(0,1fr);}}

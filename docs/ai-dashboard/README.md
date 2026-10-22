@@ -39,6 +39,35 @@ sind (`setup-dashboard.sh`), gilt: `status:blockiert` + `reviewer:mensch` = Wart
 
 ## Betriebsarten
 
+### Versandkosten vergleichen
+
+Unter **Bestellen → Versandkosten** (`#/einkauf?tab=versandkosten`, auch per
+Befehlspalette) vergleicht der interne Rechner Paket- und Speditionskosten.
+Grundtarif, Volumengewicht, PLZ-Zuschlaege und gewaehlte Zusatzleistungen werden
+einzeln ausgewiesen. Ohne vollstaendige Angaben oder passenden Dieselzeitraum
+gibt es keine Gesamtsumme. Die Bruttoanzeige ist eine pauschale Planung.
+
+Vertragsdaten und Inselmatrix liegen ausschliesslich in
+`$TP_PRIVAT_DIR/versandkosten/tarife.json`. `GET /api/einkauf/versandtarife` liest
+sie innerhalb der bestehenden Dashboard-Anmeldung. Im Repository stehen nur
+Rechenlogik und erfundene Testpreise. Keine Versandbuchung und keine Aenderung
+von Shopify-Einstellungen. Fehlt die Datei auf einem zweiten Rechner, meldet
+die Ansicht den fehlenden Tarifstand; sie verwendet keine Ersatzpreise.
+
+Die private Konfiguration (`version: 1`) enthaelt `felder` (Zeile, Label, Typ,
+Startwert, Optionen), `saetze`, aufsteigende Gewichtstabellen `gls`/`gel`,
+`inseln` (PLZ-Zuordnung, Gebietsnamen, Gewichtsmatrix) und `hinweise`.
+Gepflegt wird die Datei ausserhalb des Repos aus den Originalkonditionen.
+Dieselsatz und Von-/Bis-Datum gemeinsam aktualisieren. Die Felder im Browser
+aendern nur den aktuellen Vergleich; „Gespeicherte Tarife neu laden“ verwirft
+diese Anpassung. Beim Abmelden werden Tarif und Eingaben verworfen.
+
+Die private Excel-Datei und Originalbelege sind im gemeinsamen Gedächtnis unter
+`versandkalkulation_gls_gel.md` auffindbar. Bei Aenderungen an der Rechenlogik
+Gewichtsgrenzen, unzulaessige Kombinationen und Zuschlaege gegen diese Quelle
+pruefen. Unterschiedliche Packstuecke nicht als identische Multicolli behandeln.
+
+
 | | ohne lokalen Server (alter Pages-Link, Datei direkt geöffnet) | lokal (`npm run dashboard`) |
 |---|---|---|
 | Datenquelle | keine – Hinweis „Nur lokal im Betrieb“ | `issues.json` + `bodenwissen.json`, beim Start und auf Wunsch frisch über `gh`; Betriebsdaten aus `$TP_PRIVAT_DIR` über `/api/*` |
