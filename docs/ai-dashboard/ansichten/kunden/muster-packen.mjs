@@ -20,6 +20,8 @@ import { oeffneGrossbriefVorbereitung } from './muster-grossbrief.mjs';
 import { kunden } from './gemeinsam.mjs';
 
 let packOffen = null;
+let letztesPackZiel = null;
+let letzterPackModus = null;
 let packGebunden = false;
 function bindePackOffen() {
   if (packGebunden) return;
@@ -129,6 +131,14 @@ function kundeHtml(k, nr) {
 
 export function viewKundenMusterPacken() {
   bindePackOffen();
+  // Ein neuer Direktlink waehlt seinen Umschlag; stille Neuzeichnungen erhalten die Handwahl.
+  const ziel = state.route.params.get('umschlag');
+  const packModus = state.route.params.get('mp') === 'laden' ? 'laden' : 'kunde';
+  if (ziel !== letztesPackZiel || (ziel && packModus === 'kunde' && letzterPackModus === 'laden')) {
+    packOffen = ziel;
+    letztesPackZiel = ziel;
+  }
+  letzterPackModus = packModus;
   ensureMusterPacken();
   const d = kunden.musterPacken;
   if (!d) return '<p class="muted" role="status">Lade offene Musterbestellungen …</p>';

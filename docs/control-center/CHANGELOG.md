@@ -2,6 +2,17 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-22 · Direkte Umschlagwahl und Datumssortierung (#1606)
+
+- **Geaendert:** Ein neuer Umschlag-Direktlink ersetzt die zuvor manuell geoeffnete Karte;
+  auch die Rueckkehr aus dem Wareneingang zum gleichen URL-Ziel waehlt wieder diesen Umschlag.
+  Stille Neuzeichnungen erhalten weiterhin die manuelle Auswahl. „Neueste zuerst“ setzt alte
+  Sortierrichtung und Blaetterseite zurueck, Suche und Filter bleiben erhalten.
+- **Getestet:** zwei gezielte Handler-Regressionstests, Dashboard-/Gesamtsuite, Projekt-Guards
+  und Browserpruefung der betroffenen Ansichten auf Datenkopie.
+- **Risiken/Annahmen:** Nur Navigation und Darstellung; keine Aenderung an Betriebsdaten.
+- **Naechste Stufe:** menschliche Bedien-/Druckprobe wie bei #1604.
+
 ## 2026-10-22 · Bestellungen und Packstation zuerst (#1604)
 
 - **Geaendert:** Direkte Einstiege auf Heute, in der Seitenleiste und am Handy. Bestehende
