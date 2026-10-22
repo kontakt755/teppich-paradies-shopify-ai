@@ -1,5 +1,5 @@
 /**
- * Ansicht "Kunden" (#/kunden): Reiter Zu tun, Suche, Bestellungen, Rueckrufe, Angebote,
+ * Ansicht "Kunden" (#/kunden): Reiter Zu tun, Suche, Bestellungen, Muster packen, Rueckrufe, Angebote,
  * Warenkoerbe sowie die Kundenakte (#/kunden?kunde=…). Teilmodule in ansichten/kunden/.
  */
 import { state } from '../kern/zustand.mjs';
@@ -11,6 +11,7 @@ import { viewKundenBestellungen } from './kunden/bestellungen.mjs';
 import { viewKundenAngebote, viewKundenWarenkoerbe } from './kunden/angebote.mjs';
 import { fallMarkeSetzen, viewKundenFaelle } from './kunden/faelle.mjs';
 import { ensureServiceanfragen, serviceKlick, serviceNeuAnzahl, viewKundenServiceanfragen } from './kunden/serviceanfragen.mjs';
+import { ensureMusterPacken, musterPackenKlick, musterPackenOffen, viewKundenMusterPacken } from './kunden/muster-packen.mjs';
 
 export function viewKunden() {
   if (state.capabilities.mode !== 'local') {
@@ -26,20 +27,23 @@ export function viewKunden() {
   const tabRaw = state.route.params.get('tab');
   // Standard ist die Arbeitsansicht: wer wartet auf was. Einen Kunden am
   // Telefon findet man ueber die Schnellsuche oder den Reiter "Suche".
-  const tab = ['bestellungen', 'rueckrufe', 'service', 'angebote', 'warenkoerbe', 'suche'].includes(tabRaw) ? tabRaw : 'zutun';
+  const tab = ['bestellungen', 'muster', 'rueckrufe', 'service', 'angebote', 'warenkoerbe', 'suche'].includes(tabRaw) ? tabRaw : 'zutun';
   ensureKundenRueckrufe();
   ensureServiceanfragen();
+  ensureMusterPacken();
   const head = `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Hier findest du Kunden am Telefon schnell, ihre Bestellungen und wer zurückgerufen werden möchte.</p></div></div>
     <div class="tabs no-print" role="tablist">
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'zutun'}" data-param="tab" data-value="">Zu tun${f_badge()}</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'suche'}" data-param="tab" data-value="suche">Suche</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'bestellungen'}" data-param="tab" data-value="bestellungen">Bestellungen</button>
+      <button type="button" class="tab" role="tab" aria-selected="${tab === 'muster'}" data-param="tab" data-value="muster">Muster packen${m_badge()}</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'rueckrufe'}" data-param="tab" data-value="rueckrufe">Rückrufe &amp; Beratungen${r_badge()}</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'service'}" data-param="tab" data-value="service">Service-Anfragen${s_badge()}</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'angebote'}" data-param="tab" data-value="angebote">Angebote</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'warenkoerbe'}" data-param="tab" data-value="warenkoerbe">Liegengeblieben</button>
     </div>`;
   const body = tab === 'bestellungen' ? viewKundenBestellungen()
+    : tab === 'muster' ? viewKundenMusterPacken()
     : tab === 'rueckrufe' ? viewKundenRueckrufe()
     : tab === 'service' ? viewKundenServiceanfragen()
     : tab === 'angebote' ? viewKundenAngebote()
@@ -62,6 +66,11 @@ function r_badge() {
   return n ? ` <span class="badge gap">${n}</span>` : '';
 }
 
+function m_badge() {
+  const n = musterPackenOffen();
+  return n ? ` <span class="badge gap">${n}</span>` : '';
+}
+
 function s_badge() {
   const n = serviceNeuAnzahl();
   return n ? ` <span class="badge gap">${n}</span>` : '';
@@ -76,6 +85,7 @@ export function kundenKlickAkte(e) {
   const fallMarke = e.target.closest('[data-fall-marke]');
   if (fallMarke) { e.preventDefault(); fallMarkeSetzen(fallMarke.dataset.fallMarke, fallMarke.dataset.grund); return true; }
   if (serviceKlick(e)) return true;
+  if (musterPackenKlick(e)) return true;
   const rueckrufBtn = e.target.closest('[data-rueckruf-open]');
   if (rueckrufBtn) { e.preventDefault(); openRueckrufDialog(rueckrufBtn.dataset.rueckrufOpen, rueckrufBtn.dataset.rueckrufStatus); return true; }
   return false;

@@ -145,3 +145,27 @@ test('offene Menge groesser als die gesamte Bestellmenge bleibt sichtbar und wir
   assert.equal(r.etikett.sku, 'TV-SA');
   assert.deepEqual(zeilen([position({ menge: 0, mengeBestellt: 2 })])[0].fehlt, []);
 });
+
+test('Massartikel ohne eigene SKU: belegte Artikelnummer und Farbe waehlen genau eine Musterfarbe', () => {
+  const muster = { handle: 'muster-testvelours-nach-mass', titel: 'Muster Testvelours Teppich nach Maß', varianten: [
+    { id: '601', sku: 'M-TV-SA', farbe: 'Sand', original: { produktHandle: boden.handle, variantenId: 'gid://shopify/ProductVariant/101', sku: 'TV-SA' } },
+    { id: '602', sku: 'M-TV-GR', farbe: 'Grau', original: { produktHandle: boden.handle, variantenId: 'gid://shopify/ProductVariant/103', sku: 'TV-GR' } },
+  ] };
+  const mass = { handle: 'testvelours-nach-mass', titel: 'Testvelours Teppich nach Maß', muster: { handle: muster.handle }, varianten: [
+    { id: 'gid://shopify/ProductVariant/701', sku: null, farbe: 'Sand', einkauf: { artikelnummer: 'TV-SA' } },
+    { id: 'gid://shopify/ProductVariant/702', sku: null, farbe: 'Grau', einkauf: { artikelnummer: 'TV-GR' } },
+    { id: 'gid://shopify/ProductVariant/703', sku: null, farbe: 'Grau', einkauf: { artikelnummer: 'TV-SA' } },
+    { id: 'gid://shopify/ProductVariant/704', sku: null, farbe: 'Sand', einkauf: {} },
+  ] };
+  const produkte = karte(boden, muster, mass);
+  const pos = (quellvariante, extra = {}) => position({ handle: muster.handle, sku: 'M-TV-XX', musterQuelle: { quellvariante, produktHandle: mass.handle }, ...extra });
+  const [sand, grau] = zeilen([pos('701'), pos('702')], produkte);
+  assert.deepEqual([sand.etikett.sku, sand.etikett.farbe, sand.fehlt], ['TV-SA', 'Sand', []]);
+  assert.deepEqual([grau.etikett.sku, grau.etikett.farbe, grau.fehlt], ['TV-GR', 'Grau', []]);
+  assert.equal(sand.produktHandle, boden.handle);
+  // Artikelnummer und Farbe widersprechen sich oder die Artikelnummer fehlt: nie raten.
+  for (const id of ['703', '704']) assert.ok(zeilen([pos(id)], produkte)[0].fehlt.includes('Originalzuordnung'));
+  // Ohne Artikelnummer belegt die Muster-SKU der Position die Farbe - aber nur, wenn auch die Farbe passt.
+  assert.deepEqual(zeilen([pos('704', { sku: 'M-TV-SA' })], produkte)[0].etikett.sku, 'TV-SA');
+  assert.ok(zeilen([pos('704', { sku: 'M-TV-GR' })], produkte)[0].fehlt.includes('Originalzuordnung'));
+});

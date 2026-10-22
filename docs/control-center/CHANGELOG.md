@@ -2,6 +2,33 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-21 · Kunden → Muster packen (#1572)
+
+- **Geändert:** Neuer Reiter „Muster packen“ unter Kunden. Alle offenen, bezahlten, nicht versendeten
+  Musterbestellungen, nach Kunde gebündelt (mehrere Bestellungen = ein Umschlag), wer am längsten
+  wartet zuerst. Je Muster „Auf dem Muster“ (Produktname und Farbnummer des Lieferanten aus dem
+  Lexikon, nur wenn eindeutig) → „Unser Aufkleber“ (Serie · Farbe, SKU), Stand aus Auftragsfluss bzw.
+  Musterlager, Link zur Lieferantenseite. „Aufkleber drucken“ je Kunde und „Alle drucken“: erst die
+  Muster, zuletzt ein Adressaufkleber (Absender, Empfänger, Bestellnummer, `lib/adress-etiketten.mjs`).
+  „Umschlag gepackt“ liegt zentral in `$TP_PRIVAT_DIR/muster-packen.json` (`GET/POST
+  /api/kunden/muster-packen`, Rolle „lesen“ nur lesend) und gilt genau für diese Bestellungen – kommt
+  eine dazu, ist der Kunde wieder offen. Massartikel ohne eigene SKU finden jetzt über belegte
+  Artikelnummer (oder die Muster-SKU der Position) und Farbe genau eine Musterfarbe: bei den echten
+  offenen Musterbestellungen fehlte die Zuordnung vorher bei 25 von 62 Positionen, jetzt bei 1.
+- **Getestet:** `muster-packen.test.mjs` (7), `muster-packen-api.test.mjs` (4), neuer Fall in
+  `server.test.mjs` und `bestellungs-musteretiketten.test.mjs`; `dashboard:test` 655 grün.
+  `dashboard:pruefen --ansichten 'kunden?tab=muster'` in allen fünf Breiten ohne Befund. Klickstrecke
+  (Datenkopie): Zahl am Reiter = Karten, Druckdialog eines Kunden zeigt Muster und danach die Adresse,
+  Gepackt/Zurücknehmen ändert die Zahl, Haken bleiben nach Neuladen, 390 px ohne Querscrollen,
+  0 JS-Fehler. Adressaufkleber 50 × 50 vorab am echten B1 gedruckt (lokale Packliste, gleiche Layoutregeln).
+- **Risiken/Annahmen:** Eine Position bleibt „Zuordnung fehlt“, weil Lexikon und Bestellung die
+  Artikelnummer verschieden schreiben (mit/ohne führende Null) – wird nicht geraten. „Beim
+  Lieferanten bestellt“ wird im Auftragsfluss oft nicht auf „geliefert“ weitergesetzt, deshalb warnt
+  nur „noch nicht bestellt“. Der Druck aus dem Reiter selbst ist am B1 noch nicht ausprobiert.
+  Porto und Versandbuchung sind bewusst nicht enthalten.
+- **Nächste Stufe:** Versandschritt (Briefmarke über Internetmarke, `operations/lib/internetmarke.mjs`,
+  und Versand in Shopify buchen), sobald der Versandweg entschieden ist.
+
 ## 2026-10-21 · Alle gekettelten Maßteppiche automatisch zum Kettler
 
 - **Geändert:** Regel des Inhabers vom 19.10. abends umgesetzt: Maßteppiche mit Einfassung gehen
