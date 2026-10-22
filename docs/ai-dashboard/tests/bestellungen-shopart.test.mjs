@@ -15,7 +15,7 @@ function zeile(id, arten = [false], staende = [], extra = {}) {
     ampel: 'gruen', checks: {}, details: { kunde: { name: 'Testkunde' }, tags: [] },
     positionen: arten.map((istMuster, i) => ({ lineItemId: `p${i}`, istMuster, menge: 1,
       bestellmenge: { menge: 1, einheit: istMuster ? 'muster' : 'paket' } })) };
-  const statusAlle = Object.fromEntries(staende.map((status, i) => [`${id}::p${i}`, status ? { status } : null]));
+  const statusAlle = Object.fromEntries(staende.map((status, i) => [`${id}::p${i}`, status ? (typeof status === 'object' ? status : { status }) : null]));
   return { ...bestellzeile(a, { statusAlle }), ...extra };
 }
 function ansicht(query, zeilen, extras = {}) {
@@ -71,7 +71,8 @@ test('Warenliste zeigt bei gemischt den Warenstand, laesst Ursprung und Gesamtbe
 });
 
 test('offene Warenliste, Navigationszahl und Startseitenprojektion zaehlen exakt dieselben Auftraege', () => {
-  const z = [zeile('W'), zeile('M', [true]), zeile('G-W-FERTIG', [false, true], ['erledigt']),
+  const z = [zeile('W'), zeile('M', [true]), zeile('G-W-FERTIG', [false, true], [{ status: 'erledigt', shopifyVersand: { status: 'gebucht' } }]),
+    zeile('LEGACY-OHNE-VERSAND', [false], ['erledigt']),
     zeile('G-M-FERTIG', [false, true], [null, 'erledigt']),
     zeile('HAKEN', [false], [], { abgehakt: {} }),
     zeile('VERSANDT', [false], [], { fulfillmentstatus: 'FULFILLED' }),
@@ -79,20 +80,22 @@ test('offene Warenliste, Navigationszahl und Startseitenprojektion zaehlen exakt
     zeile('TEST', [false], [], { testbestellung: true }), zeile('STORNO', [false], [], { storniert: true })];
   const r = ansicht('tab=bestellungen&bart=ware&bsort=wichtigkeit', z);
   const arbeit = shopBestellarbeit({ verfuegbar: true, zeilen: z });
-  assert.equal(r.offen, 4);
+  assert.equal(r.offen, 5);
   assert.equal(r.offen, r.sichtbar.length);
   assert.equal(r.offen, arbeit.offen);
   assert.deepEqual(r.sichtbar.sort(), arbeit.zeilen.map(a => a.zeile.orderId).sort());
-  assert.match(r.html, /4 Bestellungen ·/);
+  assert.ok(r.sichtbar.includes('LEGACY-OHNE-VERSAND'), 'lokaler Abschluss ohne Versandbeleg bleibt in allen drei Warenwegen sichtbar');
+  assert.match(r.html, /5 Bestellungen ·/);
 });
 
 test('Kontroll- und Abschlussfilter beziehen sich bewusst auf den gewaehlten Warenanteil', () => {
-  const z = [zeile('WARE-FERTIG', [false, true], ['erledigt']), zeile('MUSTER-FERTIG', [false, true], [null, 'erledigt']),
+  const z = [zeile('WARE-FERTIG', [false, true], [{ status: 'erledigt', shopifyVersand: { status: 'gebucht' } }]), zeile('MUSTER-FERTIG', [false, true], [null, 'erledigt']),
+    zeile('LEGACY-OHNE-VERSAND', [false], ['erledigt']),
     zeile('HAKEN', [false, true], [], { abgehakt: {} }), zeile('MUSTER', [true], [], { abgehakt: {} })];
   assert.deepEqual(ansicht('tab=bestellungen&bart=ware&bfilter=fertig', z).ids, ['WARE-FERTIG']);
-  assert.deepEqual(ansicht('tab=bestellungen&bart=ware&bfilter=pruefen', z).ids, ['HAKEN']);
+  assert.deepEqual(ansicht('tab=bestellungen&bart=ware&bfilter=pruefen', z).ids.sort(), ['HAKEN', 'LEGACY-OHNE-VERSAND']);
   const r = ansicht('tab=bestellungen&bart=ware', z);
-  const pruef = r.html.match(/href="([^"]*)">1 Bestellung braucht Kontrolle/)[1].replaceAll('&amp;', '&');
+  const pruef = r.html.match(/href="([^"]*)">2 Bestellungen brauchen Kontrolle/)[1].replaceAll('&amp;', '&');
   const p = new URLSearchParams(pruef.split('?')[1]);
   assert.equal(p.get('bart'), 'ware');
   assert.equal(p.get('bfilter'), 'pruefen');

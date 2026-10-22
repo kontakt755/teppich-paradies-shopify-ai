@@ -28,8 +28,11 @@ export function warenArbeitsstand(z = {}, { jetzt = Date.now() } = {}) {
   const eintraege = waren.map(p => ({ p, eintrag: mitStatus
     ? beschaffungsStand(z.positionsstatus[p.lineItemId], p.bestellSoll || p.bestellmenge) : null }));
   const fehlteile = eintraege.filter(x => x.eintrag?.beschaffung?.klaerung || restmenge(x.eintrag) > 0);
-  const versandOffen = eintraege.some(({ eintrag: e }) => ['raus', 'erledigt'].includes(e?.status)
-    && ['fehler', 'unklar', 'ausstehend'].includes(e?.shopifyVersand?.status));
+  // Auch alte lokale Abschluesse und persoenliche Uebergaben belegen keine Shopify-Buchung.
+  // Nur Warenpositionen pruefen: ein Muster-Versandhinweis darf fertige Ware nicht wieder oeffnen.
+  const versandOffen = z.fulfillmentstatus !== 'FULFILLED'
+    && eintraege.some(({ p, eintrag: e }) => !p.eigenleistung && ['raus', 'erledigt'].includes(e?.status)
+      && !['gebucht', 'bereits'].includes(e?.shopifyVersand?.status));
   const raus = (fortschritt?.minStufe || 0) >= 3;
   const warenHinweise = z.warenWasFehlt || (!gemischt ? z.wasFehlt : []) || [];
   const vorVersand = !raus && z.fulfillmentstatus !== 'FULFILLED';

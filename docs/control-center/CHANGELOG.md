@@ -8,7 +8,8 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   mit Kunde, ganzem Bestellwert, Wartezeit und nächstem Schritt. Gemischte Aufträge nutzen
   ausschließlich den Warenfortschritt; Muster, Details und bewusste Gesamtbestellaktionen
   bleiben erhalten. Fehlmengen, offene Versandbuchungen und manuelle Haken ohne Nachweis
-  verschwinden nicht aus der Warenarbeit. Musterbestellung und Packstation folgen darunter;
+  verschwinden nicht aus der Warenarbeit; auch alte lokale Abschlüsse ohne Versandvermerk
+  bleiben prüfpflichtig. Musterbestellung und Packstation folgen darunter;
   allgemeine Laden-, Aufgaben- und Technikansichten bleiben gezielt erreichbar.
 - **Geaendert:** Bestellart `bart=ware|muster|alle` ergänzt die vorhandenen Statusfilter.
   Alte direkte Links ohne Artwahl behalten alle Arten. Warenzahl auf Heute, Navigationszahl
@@ -24,11 +25,12 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Getestet:** gezielte Regressionen für Waren-/Mustertrennung einschließlich gemischter
   Aufträge, Fortschritt, Zahlengleichheit, Fehler statt Null, Bestellfilter und Renderer;
   Eigenleistungen ohne Lieferanten-ID-Pflicht; Syntax- und Importprüfungen. Gesamtsuite
-  3.763 Tests grün, Projekt-Guards und Geheimnisprüfung grün. 194 Browserkombinationen
-  aller Ansichten auf Desktop/Handy mit drei Rollen sowie 63 im Dunkelmodus und zwölf
-  Nachprüfungen der Eigenleistungs-Korrektur ohne Fehler oder seitlichen Überlauf.
+  3.767 Tests grün, Projekt-Guards und Geheimnisprüfung grün. 194 Browserkombinationen
+  aller Ansichten auf Desktop/Handy mit drei Rollen sowie 63 im Dunkelmodus und 24
+  Nachprüfungen der Eigenleistungs-/Versandbeleg-Korrekturen ohne Fehler oder seitlichen Überlauf.
   Klickprobe auf isolierter Datenkopie: Warenzahl auf Startseite, Navigation und Liste
-  jeweils vier; Musterfilter 25, Gesamtfilter 29, konkreter Warenauftrag direkt erreichbar.
+  identisch; getrennte Artfilter ergeben zusammen den Gesamtumfang, konkreter Warenauftrag
+  direkt erreichbar.
   Eine synthetische neue Musterposition erschien direkt auf Heute und in der bestehenden
   Lieferanten-Vorbereitung; Dialog ohne Senden geschlossen, Datenkopie danach entfernt.
   Alte Exportwerte erscheinen als unklar statt als erfundene Käufe.

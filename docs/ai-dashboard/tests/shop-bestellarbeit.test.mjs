@@ -54,7 +54,7 @@ test('gemischter Auftrag verwendet Warenfortschritt und frische Warenposition st
 });
 
 test('Musterfehler schliesst erledigte Waren weder ein noch offene Waren aus', () => {
-  const wareFertig = zeile('fertig', [p('w'), p('m', true)], { w: { status: 'erledigt' } });
+  const wareFertig = zeile('fertig', [p('w'), p('m', true)], { w: { status: 'erledigt', shopifyVersand: { status: 'gebucht' } } });
   const musterFertig = zeile('offen', [p('w'), p('m', true)], { m: { status: 'erledigt' } });
   assert.deepEqual(ids(shopBestellarbeit(daten([wareFertig, musterFertig]), { jetzt })), ['offen']);
 });
@@ -165,4 +165,50 @@ test('fehlender Bestellwert und Datum werden nicht als Null oder sofortiger Eing
   assert.match(html, /Bestellwert nicht hinterlegt/);
   assert.match(html, /Bestelldatum fehlt/);
   assert.doesNotMatch(html, /Bestellwert 0,00|heute eingegangen/);
+});
+
+
+test('Legacyabschluss und persoenliche Uebergabe ohne Versandbuchung bleiben kontrollierbare Warenarbeit', () => {
+  for (const status of ['raus', 'erledigt']) for (const vermerk of [undefined, { status: 'uebersprungen' }]) {
+    const z = zeile('legacy', [p('w')], { w: { status, shopifyVersand: vermerk, versanddienst: 'Persönliche Übergabe' } },
+      { versandHinweis: 'In Shopify noch nicht als versendet gebucht' });
+    const a = shopBestellarbeit(daten([z]), { jetzt });
+    assert.equal(a.offen, 1);
+    assert.equal(a.kontrolle, 1);
+    assert.match(a.zeilen[0].naechstes, /Versandbuchung prüfen/);
+    assert.equal(a.zeilen[0].abgeschlossen, false);
+  }
+});
+
+test('bestaetigte Warenbuchung und vollstaendiger Shopifyversand loesen Versandkontrolle auf', () => {
+  for (const status of ['gebucht', 'bereits']) {
+    const z = zeile('belegt', [p('w')], { w: { status: 'erledigt', shopifyVersand: { status } } });
+    assert.equal(shopBestellarbeit(daten([z]), { jetzt }).offen, 0);
+  }
+  for (const vermerk of [undefined, { status: 'fehler' }]) {
+    const z = zeile('shopify-belegt', [p('w')], { w: { status: 'erledigt', shopifyVersand: vermerk } }, { fulfillmentstatus: 'FULFILLED' });
+    assert.equal(shopBestellarbeit(daten([z]), { jetzt }).offen, 0, 'aktueller Gesamtversand ueberholt alten fehlenden/fehlerhaften Vermerk');
+  }
+});
+
+test('fehlender Musterversandbeleg oeffnet bestaetigte Warenbuchung nicht wieder', () => {
+  const z = zeile('gemischt-versand', [p('w'), p('m', true)], {
+    w: { status: 'erledigt', shopifyVersand: { status: 'gebucht' } }, m: { status: 'erledigt' },
+  }, { versandHinweis: 'In Shopify noch nicht als versendet gebucht', shopifyVersandVermerk: 'nachholen' });
+  const a = warenArbeitsstand(z, { jetzt });
+  assert.equal(a.kontrollieren, false);
+  assert.equal(a.abgeschlossen, true);
+  assert.equal(shopBestellarbeit(daten([z]), { jetzt }).offen, 0);
+});
+
+
+test('Eigenleistung braucht keinen gesonderten Versandbeleg; echte Ware daneben schon', () => {
+  const leistung = p('service', false, { eigenleistung: true, grosshaendlerId: 'UNGEKLAERT' });
+  const nur = zeile('service', [leistung], { service: { status: 'erledigt' } });
+  assert.equal(warenArbeitsstand(nur, { jetzt }).kontrollieren, false);
+  assert.equal(shopBestellarbeit(daten([nur]), { jetzt }).offen, 0);
+  const mitWare = zeile('service-ware', [leistung, p('w')], { service: { status: 'erledigt' }, w: { status: 'erledigt' } });
+  assert.equal(shopBestellarbeit(daten([mitWare]), { jetzt }).offen, 1);
+  mitWare.positionsstatus.w.shopifyVersand = { status: 'bereits' };
+  assert.equal(shopBestellarbeit(daten([mitWare]), { jetzt }).offen, 0);
 });
