@@ -12,6 +12,7 @@
 import { kundenSchluessel } from './kundensuche.mjs';
 import { positionKey, STATUS_ORDER, STATUS_LABEL } from './auftragsstatus.mjs';
 import { versandNachzuholen, versandGebucht } from './versand.mjs';
+import { bestellZahlungOffen } from '../../docs/ai-dashboard/lib/bestellarbeit.mjs';
 
 const NICHT_HINTERLEGT = null;
 
@@ -215,7 +216,7 @@ export function wendeFilterAn(zeilen, filter) {
   switch (filter) {
     case 'nicht_fertig': return zeilen.filter(z => !z.fertig && !z.testbestellung);
     case 'fertig': return zeilen.filter(z => z.fertig && !z.testbestellung);
-    case 'offen': return zeilen.filter(z => z.offen && !z.testbestellung);
+    case 'offen': return zeilen.filter(bestellZahlungOffen);
     case 'bezahlt': return zeilen.filter(z => z.zahlungsstatus === 'PAID');
     case 'unerfuellt': return zeilen.filter(z => ['UNFULFILLED', 'PARTIALLY_FULFILLED', null].includes(z.fulfillmentstatus));
     case 'storniert': return zeilen.filter(z => z.storniert);

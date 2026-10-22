@@ -37,7 +37,8 @@ test('alle vorhandenen Arbeitsablagen einschliesslich Beleglauf und echter Beste
   let vorher = arbeitsstand(dir).kennung;
   for (const datei of ['auftragsstatus.json', 'muster-packen.json', 'bestellmarken.json',
     'musterherkunft.json', 'musterlager.json', 'lieferbelege/belege.json', 'auftragsverlauf.json',
-    'bestelluebersicht/kundentermine.json', 'lieferanten/stammdaten.json']) {
+    'bestelluebersicht/kundentermine.json', 'lieferanten/stammdaten.json', 'organisation/eintraege.json',
+    'rueckrufe.json', 'fallmarken.json', 'serviceanfragen.json']) {
     const ziel = schreibe(dir, datei, '{"laeufe":[]}');
     const angelegt = arbeitsstand(dir).kennung;
     assert.notEqual(angelegt, vorher, datei);

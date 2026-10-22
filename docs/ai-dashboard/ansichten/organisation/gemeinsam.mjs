@@ -13,8 +13,8 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 
 export const org = {
-  liste: null, loading: false, key: null,
-  detail: null, detailId: null, loadingDetail: false,
+  liste: null, loading: false, key: null, listeFehler: null, listeAm: 0, listeAbruf: 0,
+  detail: null, detailId: null, loadingDetail: false, detailFehler: null, detailAbruf: 0,
   kennzahlen: null, loadingKennzahlen: false,
   entwurf: null,          // Schnellerfassung: Vorschlag + moegliche Doppelgaenger
 };
@@ -97,29 +97,75 @@ export function orgEintragOeffnen(id) {
   location.hash = `#/organisation?${p}`;
 }
 
-export function ensureOrgListe() {
+const ORG_REFRESH_MS = 30_000;
+const lesefehler = d => ({ ...d, fehler: true, hinweis: d?.hinweis || 'Die Aufgaben konnten gerade nicht gelesen werden. Bitte erneut laden.' });
+
+function orgListenKey({ bereich, ansicht, gruppe, prioritaet, person, q }) {
+  return `${bereich}|${ansicht}|${gruppe}|${prioritaet}|${person}|${q}`;
+}
+
+/** Nach einem Listenabruf niemals inzwischen geoeffnete Formulare oder Eingaben neu zeichnen. */
+function darfOrgListeZeichnen(key) {
+  const aktuell = orgParams();
+  if (state.route.view !== 'organisation' || aktuell.id || orgListenKey(aktuell) !== key) return false;
+  if (typeof document === 'undefined') return true;
+  const aktiv = document.activeElement;
+  if (aktiv && aktiv !== document.body && aktiv.matches?.('input, textarea, select, [contenteditable="true"]')) return false;
+  if (document.querySelector('#dialogRoot > *, #paletteRoot > *, dialog[open]')) return false;
+  return ![...document.querySelectorAll('#main input, #main textarea, #main select')].some(el => {
+    if (el.type === 'checkbox' || el.type === 'radio') return el.checked !== el.defaultChecked;
+    if (el.tagName === 'SELECT') return [...el.options].some(o => o.selected !== o.defaultSelected);
+    if (el.type === 'hidden' || el.type === 'search') return false;
+    return el.value !== el.defaultValue;
+  });
+}
+
+/** Erneuert hoechstens alle 30 Sekunden; Fehler behalten dieselbe gueltige Liste und bremsen Retries. */
+export function ensureOrgListe({ erzwingen = false } = {}) {
   const { bereich, ansicht, gruppe, prioritaet, person, q } = orgParams();
-  const key = `${bereich}|${ansicht}|${gruppe}|${prioritaet}|${person}|${q}`;
-  if (org.key === key && (org.liste || org.loading)) return;
-  org.key = key; org.loading = true;
-  fetchEinkauf(`/api/org/liste?${new URLSearchParams({ bereich, ansicht, gruppe, prioritaet, person, q })}`).then(d => {
-    if (org.key !== key) return;            // Antwort einer aelteren Eingabe
-    org.liste = d; org.loading = false;
-    if (state.route.view === 'organisation') render();
-  });
+  const key = orgListenKey({ bereich, ansicht, gruppe, prioritaet, person, q });
+  if (org.key === key && (org.loading || (!erzwingen && Date.now() - org.listeAm < ORG_REFRESH_MS))) return;
+  if (org.key !== key) { org.liste = null; org.listeFehler = null; }
+  org.key = key; org.loading = true; org.listeAm = Date.now();
+  const abruf = ++org.listeAbruf;
+  return fetchEinkauf(`/api/org/liste?${new URLSearchParams({ bereich, ansicht, gruppe, prioritaet, person, q })}`)
+    .catch(e => lesefehler({ hinweis: e.message }))
+    .then(d => {
+      if (org.key !== key || org.listeAbruf !== abruf) return;
+      org.loading = false; org.listeAm = Date.now();
+      if (d?.verfuegbar && Array.isArray(d.eintraege)) { org.liste = d; org.listeFehler = null; }
+      else org.listeFehler = lesefehler(d);
+      if (darfOrgListeZeichnen(key)) render();
+    });
 }
 
-export function ensureOrgDetail(id) {
-  if (org.detailId === id && (org.detail || org.loadingDetail)) return;
+/** Hook fuer den bestehenden stillen Abgleich; Detailformulare werden nicht ueberschrieben. */
+export function ensureOrgDaten() {
+  if (state.route.view === 'organisation' && !orgParams().id) return ensureOrgListe();
+}
+
+export function ensureOrgDetail(id, { erzwingen = false } = {}) {
+  if (org.detailId === id && (org.loadingDetail || (!erzwingen && (org.detail || org.detailFehler)))) return;
+  if (org.detailId !== id) { org.detail = null; org.detailFehler = null; }
   org.detailId = id; org.loadingDetail = true;
-  fetchEinkauf(`/api/org/eintrag?${new URLSearchParams({ id })}`).then(d => {
-    if (org.detailId !== id) return;
-    org.detail = d; org.loadingDetail = false;
-    if (state.route.view === 'organisation') render();
-  });
+  const abruf = ++org.detailAbruf;
+  return fetchEinkauf(`/api/org/eintrag?${new URLSearchParams({ id })}`)
+    .catch(e => lesefehler({ hinweis: e.message }))
+    .then(d => {
+      if (org.detailId !== id || org.detailAbruf !== abruf) return;
+      org.loadingDetail = false;
+      if (d?.fehler || !d) org.detailFehler = lesefehler(d);
+      else { org.detail = d; org.detailFehler = null; }
+      if (state.route.view === 'organisation') render();
+    });
 }
 
-export function orgFrisch() { org.liste = null; org.key = null; org.kennzahlen = null; org.detail = null; org.detailId = null; }
+export function orgFrisch() {
+  org.liste = null; org.key = null; org.listeFehler = null; org.listeAm = 0;
+  org.loading = false; org.listeAbruf++;
+  org.kennzahlen = null; org.detail = null; org.detailId = null; org.detailFehler = null;
+  org.loadingDetail = false; org.detailAbruf++;
+}
 
 // -- Zeilen und Karten ------------------------------------------------------
 

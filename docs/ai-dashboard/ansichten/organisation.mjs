@@ -7,7 +7,7 @@ import { esc, fmtDate, fmtDateTime, toast } from '../kern/helfer.mjs';
 import { orgSchreiben } from '../kern/api.mjs';
 import { navigate } from '../kern/router.mjs';
 import { render } from '../kern/render.mjs';
-import { emptyState } from '../bausteine/karten.mjs';
+import { emptyState, stoerungState } from '../bausteine/karten.mjs';
 import {
   org, ORG_BEREICHE, ORG_ANSICHTEN, ORG_ANSICHTEN_HAUPT, ORG_DRINGLICHKEIT, ORG_STATUS_LABEL,
   ORG_PRIO_LABEL, ORG_PRIO_WAHL, ORG_WIEDERHOLUNG_LABEL, ORG_PRUEF_LABEL, orgParams,
@@ -15,12 +15,17 @@ import {
 } from './organisation/gemeinsam.mjs';
 import { openOrgFuerChatGPT, openOrgSchnell, openOrgListe } from './organisation/dialoge.mjs';
 
+function aufgabenStoerung(d, titel = 'Die Aufgaben') {
+  return stoerungState(d, titel).replace('data-action="reload"', 'data-org-neuladen').replace('Nochmal versuchen', 'Erneut laden');
+}
+
 // -- Detailansicht ----------------------------------------------------------
 
 function orgDetailAnsicht(id) {
   ensureOrgDetail(id);
   const zurueck = `<p style="margin:0 0 12px"><a href="#" data-org-zurueck>← Zurück zur Liste</a></p>`;
   const d = org.detailId === id ? org.detail : null;
+  if (org.detailFehler && !d) return zurueck + aufgabenStoerung(org.detailFehler, 'Der Eintrag');
   if (!d) return zurueck + `<div class="empty">Lade Eintrag …</div>`;
   if (!d.verfuegbar) return zurueck + emptyState('Nicht gefunden.', d.hinweis || '');
   const e = d.eintrag;
@@ -30,7 +35,7 @@ function orgDetailAnsicht(id) {
   const auswahl = (name, werte, aktiv) => `<select data-org-feld="${name}" data-org-id="${esc(e.id)}">
     ${werte.map(([w, l]) => `<option value="${esc(w)}"${w === aktiv ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
 
-  return zurueck + `
+  return zurueck + (org.detailFehler ? aufgabenStoerung(org.detailFehler, 'Der Eintrag') : '') + `
     <div class="page-head"><div>${d.darfAendern
       ? `<input type="text" class="titel-feld" value="${esc(e.titel)}" data-org-feld="titel" data-org-id="${esc(e.id)}" aria-label="Titel ändern">`
       : `<h1>${esc(e.titel)}</h1>`}
@@ -184,7 +189,7 @@ export function viewOrganisation() {
   const suche = `<div class="toolbar search-hero"><input type="search" placeholder="Suchen – Titel, Text, Bereich, Kommentare …" value="${esc(q)}" data-param="oq" aria-label="Aufgaben und Notizen durchsuchen"></div>`;
 
   if (!d && org.loading) return kopf + reiter + `<div class="empty">Lade …</div>`;
-  if (!d || !d.verfuegbar) return kopf + reiter + emptyState('Noch nichts erfasst.', 'Mit „+ Schnell erfassen" anfangen.');
+  if (!d || !d.verfuegbar) return kopf + reiter + aufgabenStoerung(org.listeFehler || d);
 
   const sindAufgaben = ['meine-aufgaben', 'team-aufgaben'].includes(bereich);
   const filterAktiv = gruppe !== 'alles' || Boolean(q) || (sindAufgaben && (ansicht !== 'offen' || Boolean(person || prioritaet)));
@@ -206,17 +211,27 @@ export function viewOrganisation() {
         </section>`;
       }).join('')
       : `<div class="rows">${d.eintraege.map(e => orgZeile(e, { bereich })).join('')}</div>`
-    : filterAktiv
+    : org.listeFehler || org.loading
+      ? (org.loading ? '<p role="status">Aufgaben werden aktualisiert …</p>' : '')
+      : filterAktiv
       ? emptyState('Keine passenden Einträge.', 'Suche oder Filter anpassen.')
         + '<button type="button" class="btn btn-sm" data-org-reset>Filter zurücksetzen</button>'
       : emptyState(bereich === 'meine-aufgaben' ? 'Nichts offen in dieser Ansicht.' : 'Nichts vorhanden.', 'Mit „+ Schnell erfassen" etwas anlegen.');
 
-  return kopf + reiter + suche + ansichten + gruppen + personen +
+  return kopf + reiter + suche + (org.listeFehler ? aufgabenStoerung(org.listeFehler) + '<p class="small muted">Der letzte geladene Stand bleibt sichtbar.</p>' : org.loading && d.eintraege.length ? '<p class="small muted" role="status">Aufgaben werden aktualisiert …</p>' : '') + ansichten + gruppen + personen +
     `<p class="small muted" style="margin:0 0 8px">${d.anzahl} ${d.anzahl === 1 ? 'Eintrag' : 'Einträge'}${sindAufgaben ? ' · nach Dringlichkeit geordnet' : ''}</p>` + liste;
 }
 
 /** Aufgaben: Filter zuruecksetzen. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function orgKlickZuruecksetzen(e) {
+  if (e.target.closest('[data-org-neuladen]')) {
+    e.preventDefault();
+    const id = orgParams().id;
+    if (id) ensureOrgDetail(id, { erzwingen: true });
+    else ensureOrgListe({ erzwingen: true });
+    render();
+    return true;
+  }
   if (e.target.closest('[data-org-reset]')) {
     const bereich = orgParams().bereich;
     location.hash = bereich === 'meine-aufgaben' ? '#/organisation' : `#/organisation?ob=${encodeURIComponent(bereich)}`;

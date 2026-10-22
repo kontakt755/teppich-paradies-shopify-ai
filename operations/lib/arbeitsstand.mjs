@@ -10,6 +10,8 @@ const QUELLEN = [
   ['Musterlager', 'musterlager.json'], ['Lieferantenbelege', 'lieferbelege/belege.json'],
   ['Auftragsverlauf', 'auftragsverlauf.json'], ['Kundentermine', 'bestelluebersicht/kundentermine.json'],
   ['Lieferantenangaben', 'lieferanten/stammdaten.json'],
+  ['Betriebsaufgaben', 'organisation/eintraege.json'], ['Rueckrufe', 'rueckrufe.json'],
+  ['Kundenfaelle', 'fallmarken.json'], ['Serviceanfragen', 'serviceanfragen.json'],
 ];
 
 /** Stat-Metadaten erfassen auch atomare Renames und den Laufvermerk der Belegablage. */

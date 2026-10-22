@@ -109,7 +109,7 @@ test('offene, fertige, Ware- und Packwege tragen die passenden vorhandenen Route
     pack: { verfuegbar: true, zahlen: { packen: 2, klaeren: 1, gepackt: 4 } } });
   assert.match(html, /3 Bestellungen sind noch offen/);
   assert.match(html, /2 packbereit · 1 zu klären/);
-  assert.equal(link(html, 'Offene bearbeiten').href, '#/kunden?tab=bestellungen');
+  assert.equal(parameter(link(html, 'Dringendes bearbeiten').href).get('bsort'), 'wichtigkeit');
   assert.equal(parameter(link(html, 'Fertige ansehen').href).get('bfilter'), 'fertig');
   assert.equal(parameter(link(html, 'Ware beim Lieferanten bestellen').href).get('art'), 'ware');
   assert.equal(link(html, 'Muster packen').href, '#/kunden?tab=muster');
@@ -145,4 +145,21 @@ test('private Anzeigenamen und Lieferantenkennungen werden als Text und Attribut
   const lesend = bestellarbeitBlock({ arbeit, lesend: true });
   assert.equal(parameter(link(lesend, 'Ansehen').href).get('lf'), id);
   assert.doesNotMatch(lesend, /<img\b|\sonclick="/);
+});
+
+test('wartende Umschlaege und Kontrollen bleiben auf Heute direkt erreichbar', () => {
+  const html = bestellarbeitBlock({ arbeit: arbeitFuer([]), offeneBestellungen: 4, kontrolle: 2,
+    pack: { verfuegbar: true, zahlen: { packen: 0, klaeren: 0, warten: 13, gepackt: 1 } } });
+  assert.match(html, /13 Umschläge warten/);
+  assert.equal(parameter(link(html, 'Umschläge warten').href).get('mpbereich'), 'warten');
+  assert.equal(parameter(link(html, 'Wartende Umschläge ansehen').href).get('mpbereich'), 'warten');
+  assert.equal(parameter(link(html, 'Kontrolle').href).get('bfilter'), 'pruefen');
+  assert.match(html, /2 Bestellungen brauchen Kontrolle/);
+});
+
+test('fehlgeschlagene Bestell- und Packabrufe sind kein endloser Lade- oder Nullzustand', () => {
+  const html = bestellarbeitBlock({ arbeit: arbeitFuer([]), bestellQuelle: { verfuegbar: false }, pack: { verfuegbar: false } });
+  assert.match(html, /Bestellungen können gerade nicht geladen werden/);
+  assert.match(html, /Packstand kann gerade nicht geladen werden/);
+  assert.doesNotMatch(html, /Bestellungen werden geladen|Packstand wird geladen|0 packbereit/);
 });

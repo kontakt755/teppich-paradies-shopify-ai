@@ -20,6 +20,9 @@ import { oeffneGrossbriefVorbereitung } from './muster-grossbrief.mjs';
 import { kunden } from './gemeinsam.mjs';
 
 let packOffen = null;
+let packFehler = null;
+let packFehlerStand = null;
+let packSpeichert = false;
 let letztesPackZiel = null;
 let letzterPackModus = null;
 let packGebunden = false;
@@ -95,13 +98,16 @@ function kundeHtml(k, nr) {
   // In "Zu klären" stehen die fehlenden Muster oben.
   const muster = k.bereich === 'klaeren' ? [...k.muster].sort((a, b) => fehlend.has(b.lineItemId) - fehlend.has(a.lineItemId)) : k.muster;
   const pk = esc(k.packSchluessel);
+  const bestellLinks = k.bestellungen.map(b => `<a class="btn btn-sm btn-ghost" href="#/einkauf?auftrag=${encodeURIComponent(b.orderId)}">${esc(b.orderName)} – Bestellstand prüfen</a>`).join('');
+  const rueckLaden = state.route.params.get('laden');
+  const rueckweg = rueckLaden ? `<a class="btn btn-sm btn-ghost" href="#/kunden?tab=muster&amp;mp=laden&amp;laden=${encodeURIComponent(rueckLaden)}">Zurück zum Wareneingang</a>` : '';
   let aktionen = '';
   if (k.bereich === 'gepackt') {
     aktionen = `<button type="button" class="btn btn-sm" data-mp-grossbrief="${pk}">Großbrief vorbereiten</button><span class="small muted">Gepackt ${esc(fmtDateTime(k.gepackt.zeit))}${k.gepackt.von ? ` · ${esc(k.gepackt.von)}` : ''}</span>
       ${lesend ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-mp-aktion="gepackt" data-mp-k="${pk}" data-mp-wert="0">Zurücknehmen</button>`}`;
   } else if (k.bereich === 'klaeren') {
     aktionen = `<button type="button" class="btn btn-sm" data-mp-drucken="${pk}"${druckbar ? '' : ' disabled'}>Aufkleber drucken (${k.aufkleber})</button>
-      ${(k.adressFehlt || []).length ? `<a class="btn btn-sm" href="#/kunden?tab=bestellungen&amp;bfilter=alle&amp;bq=${encodeURIComponent(k.bestellungen[0]?.orderName || '')}">Lieferadresse in Bestellung prüfen</a>` : ''}
+      ${(k.adressFehlt || []).length ? `${k.bestellungen.map(b => `<a class="btn btn-sm" href="#/kunden?tab=bestellungen&amp;bfilter=alle&amp;bq=${encodeURIComponent(b.orderName || '')}">${esc(b.orderName)} – Lieferadresse prüfen</a>`).join('')}` : ''}
       ${(k.zuordnungFehlt || []).length ? '<a class="btn btn-sm" href="#/lexikon">Musterzuordnung prüfen</a>' : ''}
       ${!lesend && k.restumfangPruefen && !offen && !k.fehlt.length && !k.klaeren ? `<button type="button" class="btn btn-sm" data-mp-aktion="gepackt" data-mp-k="${pk}" data-mp-wert="1" data-mp-restumfang="1">Restumfang geprüft – Umschlag gepackt…</button>` : ''}
       ${lesend || !k.klaeren ? '' : `<button type="button" class="btn btn-sm" data-mp-aktion="klaeren" data-mp-k="${pk}" data-mp-wert="0">Klärung aufheben – erneut prüfen</button>`}`;
@@ -131,7 +137,7 @@ function kundeHtml(k, nr) {
     ${(k.zuordnungFehlt || []).length ? `<p class="notice warn">Musterzuordnung unvollständig: ${esc(k.zuordnungFehlt.join('; '))}. Bitte im Lexikon prüfen.</p>` : ''}
     <ul class="mp-liste">${muster.map(m => zeileHtml(m, mehrere, { lesend: lesend || k.bereich === 'gepackt', fehltHervor: fehlend.has(m.lineItemId) })).join('')}</ul>
     ${k.bereich === 'warten' ? '<p class="notice warn">Verfügbarkeit noch nicht vollständig bestätigt. Nur tatsächlich vorliegende Muster abhaken; fehlende Ware unter „Bestellen“ prüfen.</p>' : ''}
-    <div class="mp-aktionen">${aktionen}${k.bereich === 'gepackt' ? `<a class="btn btn-sm" href="#/einkauf?auftrag=${encodeURIComponent(k.bestellungen[0]?.orderId || '')}">Versand prüfen…</a>` : ''}<a class="btn btn-sm btn-ghost" href="#/einkauf?auftrag=${encodeURIComponent(k.bestellungen[0]?.orderId || '')}">Bestellstand prüfen</a></div>
+    <div class="mp-aktionen">${aktionen}${k.bereich === 'gepackt' ? k.bestellungen.map(b => `<a class="btn btn-sm" href="#/einkauf?auftrag=${encodeURIComponent(b.orderId)}">${esc(b.orderName)} – Versand prüfen…</a>`).join('') : ''}${bestellLinks}${rueckweg}</div>
   </details>`;
 }
 
@@ -155,8 +161,9 @@ export function viewKundenMusterPacken() {
       <button type="button" class="btn btn-sm${modus === 'kunde' ? ' btn-primary' : ''}" data-param="mp" data-value="" aria-pressed="${modus === 'kunde'}">Nach Kunde packen</button>
       <button type="button" class="btn btn-sm${modus === 'laden' ? ' btn-primary' : ''}" data-param="mp" data-value="laden" aria-pressed="${modus === 'laden'}">Wareneingang nach Partnerladen</button>
     </div>`;
-  if (modus === 'laden') return umschalter + viewNachLaden(d);
-  const kopf = `<p class="sub mp-hier">Hier packst du Muster je Umschlag: Farbe prüfen, Aufkleber drucken und eingelegte Muster abhaken. Gepackt ist noch nicht versandt.</p>`;
+  const fehlerHinweis = packFehlerHtml(d);
+  if (modus === 'laden') return umschalter + fehlerHinweis + viewNachLaden(d);
+  const kopf = `${fehlerHinweis}<p class="sub mp-hier">Hier packst du Muster je Umschlag: Farbe prüfen, Aufkleber drucken und eingelegte Muster abhaken. Gepackt ist noch nicht versandt.</p>`;
   const ausserhalb = (d.ausschluesse?.zahlungOffen || 0) + (d.ausschluesse?.geschlossen || 0);
   const ausschlussHinweis = ausserhalb ? `<p class="notice warn">${plural(ausserhalb, 'weitere Musterbestellung ist', 'weitere Musterbestellungen sind')} nicht in der Packliste: ${d.ausschluesse.zahlungOffen || 0} mit offener Zahlungsfrage, ${d.ausschluesse.geschlossen || 0} geschlossen trotz offener Muster. <a href="#/kunden?tab=bestellungen&amp;bfilter=muster">Diese Bestellungen prüfen →</a></p>` : '';
   const suche = (state.route.params.get('mpq') || '').trim().toLowerCase();
@@ -200,7 +207,7 @@ function viewNachLaden(d) {
       ${bildHtml(m)}
       <div class="mp-vorher"><span>${esc(v.produktname || m.bestellt.titel)}</span>${v.farbnummer ? `<span class="mp-farbnr">Farbnr. ${esc(v.farbnummer)}</span>` : '<span class="small muted">keine Farbnummer hinterlegt</span>'}</div>
       <div class="mp-pfeil" aria-hidden="true">→</div>
-      <div class="mp-ziel"><a class="mp-umschlag" href="#/kunden?tab=muster&amp;umschlag=${encodeURIComponent(e.packSchluessel)}">${esc(e.umschlag)}</a>
+      <div class="mp-ziel"><a class="mp-umschlag" href="#/kunden?tab=muster&amp;umschlag=${encodeURIComponent(e.packSchluessel)}&amp;laden=${encodeURIComponent(gewaehlt.laden)}">${esc(e.umschlag)}</a>
         <span><strong>${esc(e.kunde)}</strong></span><span class="small muted">${esc(e.bestellung)}</span></div>
     </li>`;
   }).join('');
@@ -217,16 +224,53 @@ function drucken(liste, titel) {
     hinweis: 'Je Kunde erst die Muster, zuletzt die Adresse – so kommt die Rolle in Packreihenfolge heraus. Der Druck bucht nichts.' });
 }
 
+function packFehlerHtml(d) {
+  if (packFehler && d?.verfuegbar && !d.fehler && d !== packFehlerStand) {
+    packFehler = null; packFehlerStand = null;
+  }
+  return packFehler ? `<p class="notice warn" role="alert">${esc(packFehler)} <button type="button" class="btn btn-sm" data-mp-neuladen>Packliste erneut laden</button></p>` : '';
+}
+
+async function packlisteErneutLaden() {
+  if (packSpeichert) return;
+  packSpeichert = true; kunden.loadingMusterPacken = true;
+  try {
+    const neu = await fetchEinkauf(ENDPOINT);
+    if (!neu?.verfuegbar || neu.fehler) throw new Error(neu?.hinweis || 'Die Packliste ist gerade nicht lesbar.');
+    kunden.musterPacken = neu; packFehler = null; packFehlerStand = null;
+  } catch (err) {
+    packFehler = `Die Packliste konnte nicht geladen werden: ${err.message} Der bisherige Stand bleibt sichtbar.`;
+    packFehlerStand = kunden.musterPacken;
+  } finally {
+    packSpeichert = false; kunden.loadingMusterPacken = false; render();
+  }
+}
+
 async function schreiben(daten, meldung) {
+  if (packSpeichert) { toast('Bitte warten, der vorige Packstand wird noch gespeichert.', 'warn'); return; }
+  packSpeichert = true;
+  kunden.loadingMusterPacken = true;
+  packFehler = null;
   try {
     await orgSchreiben(ENDPOINT, daten);
     if (meldung) toast(meldung);
+    try {
+      const neu = await fetchEinkauf(ENDPOINT);
+      if (!neu?.verfuegbar || neu.fehler) throw new Error(neu?.hinweis || 'Die Packliste ist gerade nicht lesbar.');
+      kunden.musterPacken = neu;
+    } catch (err) {
+      packFehlerStand = kunden.musterPacken;
+      packFehler = `Gespeichert, aber die aktuelle Packliste konnte nicht geladen werden: ${err.message} Der bisherige Stand bleibt sichtbar. Bitte erneut aktualisieren.`;
+    }
   } catch (err) {
-    toast(`Nicht gespeichert: ${err.message}`, 'warn');
+    packFehlerStand = kunden.musterPacken;
+    packFehler = `Nicht gespeichert: ${err.message} Der bisherige Stand bleibt erhalten.`;
+    toast(packFehler, 'warn');
+  } finally {
+    packSpeichert = false;
+    kunden.loadingMusterPacken = false;
+    render();
   }
-  kunden.musterPacken = null;
-  ensureMusterPacken();
-  render();
 }
 
 function kundeMitMuster(lineItemId) {
@@ -235,14 +279,15 @@ function kundeMitMuster(lineItemId) {
 
 /** Klicks im Reiter "Muster packen". Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function musterPackenKlick(e) {
+  if (e.target.closest('[data-mp-neuladen]')) { e.preventDefault(); void packlisteErneutLaden(); return true; }
   const h = e.target.closest('[data-mp-haken]');
   if (h) {
     const k = kundeMitMuster(h.dataset.mpHaken);
     if (!k) return true;
-    // Sofort sichtbar, dann zentral speichern (bei Fehler stellt das Neuladen den Stand wieder her).
+    // Erst bestaetigte Serverdaten ersetzen den Cache; ein Fehlversuch darf keinen Haken erfinden.
     const m = k.muster.find(x => x.lineItemId === h.dataset.mpHaken);
-    m.abgehakt = h.checked ? { zeit: new Date().toISOString(), von: null } : null;
-    h.closest('.mp-zeile')?.classList.toggle('mp-ab', h.checked);
+    if (packSpeichert) { h.checked = !!m.abgehakt; return true; }
+    h.disabled = true;
     schreiben({ packSchluessel: k.packSchluessel, aktion: 'haken', lineItemIds: [m.lineItemId], an: h.checked });
     return true;
   }
@@ -269,6 +314,7 @@ export function musterPackenKlick(e) {
   const a = e.target.closest('[data-mp-aktion]');
   if (a) {
     e.preventDefault();
+    if (packSpeichert) return true;
     const an = a.dataset.mpWert === '1';
     const pk = a.dataset.mpK;
     const restumfangGeprueft = a.dataset.mpRestumfang === '1';

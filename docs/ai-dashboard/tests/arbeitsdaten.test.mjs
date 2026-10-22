@@ -228,10 +228,10 @@ function datenstandUmgebung() {
   const alt = () => ({ verfuegbar: true, stand: 'alt' });
   u.einkauf = { auftragsstatus: alt(), bestellungen: alt(), lieferanten: alt() };
   u.kunden = { bestellungen: alt(), musterPacken: alt(), faelle: alt(), rueckrufe: alt(),
-    detail: alt(), detailKey: 'test<&', loadingDetail: false };
+    detail: alt(), detailKey: 'test<&', loadingDetail: false, serviceanfragen: alt() };
   u.belege = { daten: alt(), geladenAm: 0 };
   u.shopifyAbgleich = { daten: alt(), am: 0 };
-  u.heuteDaten = { lieferanten: alt(), lieferantenAm: 0 };
+  u.heuteDaten = { lieferanten: alt(), lieferantenAm: 0, aufgaben: alt(), aufgabenAm: 0 };
   u.doc = { hidden: false, activeElement: null, body: {}, querySelector: () => null,
     querySelectorAll: () => [], addEventListener: (art, fn) => { u.ereignisse.set(art, fn); } };
   u.antwort = async () => ({ verfuegbar: true, stand: 'neu' });
@@ -244,6 +244,7 @@ function datenstandUmgebung() {
     fetchEinkauf: async pfad => { u.anfragen.push(pfad); return pfad === '/api/aktualisierung/status' ? u.stand : u.antwort(pfad); },
     verwirfDatenspeicher: () => assert.fail('ohne Exportwechsel keine Invalidierung'),
     render: () => { u.render++; },
+    ensureOrgDaten: () => { u.orgAbrufe = (u.orgAbrufe || 0) + 1; },
     setInterval: (fn, ms) => { u.intervalle.push({ fn, ms }); },
   });
   return u;
@@ -258,13 +259,15 @@ test('echter Datenstand verdrahtet Kernquellen gemeinsam und schuetzt Beleg-/Abg
   assert.equal(await u.modul.pruefe(), false);
   for (const d of [u.einkauf.bestellungen, u.einkauf.auftragsstatus, u.kunden.bestellungen,
     u.kunden.musterPacken, u.kunden.faelle, u.kunden.rueckrufe, u.kunden.detail, u.einkauf.lieferanten,
-    u.heuteDaten.lieferanten]) assert.equal(d.stand, 'neu');
+    u.heuteDaten.lieferanten, u.heuteDaten.aufgaben, u.kunden.serviceanfragen]) assert.equal(d.stand, 'neu');
   assert.equal(u.belege.daten, alterBeleg);
   assert.equal(u.shopifyAbgleich.daten, alterAbgleich);
   assert.ok(Date.now() - u.belege.geladenAm < 1000, 'ensureBelege laedt beim Rendern nicht sofort denselben Fehler nach');
   assert.ok(Date.now() - u.shopifyAbgleich.am < 1000, 'ensureShopifyAbgleich laedt beim Rendern nicht sofort denselben Fehler nach');
   assert.equal(u.anfragen.filter(p => p === '/api/einkauf/lieferanten').length, 1);
   assert.ok(u.anfragen.includes(`/api/kunden/detail?${new URLSearchParams({ key: 'test<&' })}`));
+  assert.ok(u.anfragen.includes(`/api/org/liste?${new URLSearchParams({ bereich: 'alle-aufgaben', ansicht: 'offen', gruppe: 'alles' })}`));
+  assert.ok(u.anfragen.includes('/api/kunden/serviceanfragen'));
   assert.match(u.hinweis.innerHTML, /Nicht aktuell/);
   assert.equal(u.render, 1);
 
@@ -284,6 +287,7 @@ test('echter Datenstand verwendet einen 30-Sekunden-Takt und Tab-Rueckkehr mit E
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(u.intervalle.map(t => t.ms), [30_000]);
   const anfragen = u.anfragen.length;
+  const orgAbrufe = u.orgAbrufe;
   u.doc.hidden = true;
   await u.intervalle[0].fn();
   u.ereignisse.get('visibilitychange')();
@@ -294,10 +298,12 @@ test('echter Datenstand verwendet einen 30-Sekunden-Takt und Tab-Rueckkehr mit E
   u.ereignisse.get('visibilitychange')();
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(u.anfragen.length, anfragen, 'Fokus im Eingabefeld verhindert den Rueckkehrabruf');
+  assert.equal(u.orgAbrufe, orgAbrufe, 'Aufgaben bleiben bei verborgenem Tab und waehrend Eingaben ebenfalls geschuetzt');
   u.doc.activeElement = null;
   u.ereignisse.get('visibilitychange')();
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(u.anfragen.length, anfragen + 1, 'Tab-Rueckkehr fragt denselben Leselauf ab');
+  assert.equal(u.orgAbrufe, orgAbrufe + 1, 'Aufgaben werden auch bei gleicher Arbeitsrevision geprueft');
 });
 
 test('bestehende Beleg-/Abgleich-Nachlader bewahren verfuegbare Daten bei Fehlern und begrenzen Wiederholungen', async () => {

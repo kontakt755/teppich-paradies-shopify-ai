@@ -23,6 +23,7 @@ import { kunden } from '../ansichten/kunden/gemeinsam.mjs';
 import { belege } from '../ansichten/einkauf/belege.mjs';
 import { shopifyAbgleich } from '../ansichten/einkauf/shopify-abgleich.mjs';
 import { heuteDaten } from '../ansichten/heute/daten.mjs';
+import { ensureOrgDaten } from '../ansichten/organisation/gemeinsam.mjs';
 import { erzeugeArbeitsabgleich } from '../lib/arbeitsdaten.mjs';
 import { veralteteQuellen, hinweisSatz, quelleFuerSeite, vorText, DATENSTAND_LABEL } from '../lib/datenstand.mjs';
 
@@ -82,9 +83,11 @@ function arbeitsQuellen() {
     quelle(kunden, 'musterPacken', '/api/kunden/muster-packen', 'loadingMusterPacken'),
     quelle(kunden, 'faelle', '/api/kunden/faelle', 'loadingFaelle'),
     quelle(kunden, 'rueckrufe', '/api/kunden/rueckrufe', 'loadingRueckrufe'),
+    quelle(kunden, 'serviceanfragen', '/api/kunden/serviceanfragen', 'loadingServiceanfragen', () => { kunden.serviceanfragenAm = Date.now(); }),
     quelle(belege, 'daten', '/api/einkauf/belege', 'laedt', () => { belege.geladenAm = Date.now(); }),
     quelle(shopifyAbgleich, 'daten', '/api/einkauf/shopify-abgleich', 'laedt', () => { shopifyAbgleich.am = Date.now(); }),
     quelle(heuteDaten, 'lieferanten', '/api/einkauf/lieferanten', 'laedtLieferanten', () => { heuteDaten.lieferantenAm = Date.now(); }),
+    quelle(heuteDaten, 'aufgaben', `/api/org/liste?${new URLSearchParams({ bereich: 'alle-aufgaben', ansicht: 'offen', gruppe: 'alles' })}`, 'laedtAufgaben', () => { heuteDaten.aufgabenAm = Date.now(); }),
   ];
   const key = kunden.detailKey;
   if (key) liste.push(quelle(kunden, 'detail', `/api/kunden/detail?${new URLSearchParams({ key })}`,
@@ -104,7 +107,11 @@ const pruefe = erzeugeArbeitsabgleich({
 
 /** Einmal beim Start (app.js): derselbe Takt prueft Arbeitsstand und schreibt die Datumszeile. */
 export function starteDatenstand() {
-  const tick = async () => { await pruefe(); zeichneDatenstand(); };
+  const tick = async () => {
+    await pruefe();
+    if (state.capabilities.mode === 'local' && !document.hidden && !beschaeftigt()) ensureOrgDaten();
+    zeichneDatenstand();
+  };
   void tick();
   setInterval(() => void tick(), ZEILE_MS);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) void tick(); });

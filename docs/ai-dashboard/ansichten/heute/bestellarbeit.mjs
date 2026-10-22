@@ -4,7 +4,7 @@ import { esc, plural } from '../../kern/helfer.mjs';
 const MUSTER = '#/einkauf?tab=lieferant&art=muster&af=offen';
 const WARE = '#/einkauf?tab=lieferant&art=ware&af=offen';
 
-export function bestellarbeitBlock({ arbeit, offeneBestellungen = null, pack = null, lesend = false } = {}) {
+export function bestellarbeitBlock({ arbeit, offeneBestellungen = null, bestellQuelle = null, kontrolle = null, pack = null, lesend = false } = {}) {
   const bereit = arbeit?.verfuegbar;
   const laeden = bereit ? arbeit.lieferanten.filter(l => l.muster.positionen) : [];
   const offen = bereit ? arbeit.gesamt.muster.positionen : null;
@@ -17,7 +17,11 @@ export function bestellarbeitBlock({ arbeit, offeneBestellungen = null, pack = n
     : laeden.length ? `${laeden.slice(0, 3).map(zeile).join('')}${laeden.length > 3 ? `<details><summary>${laeden.length - 3} weitere Lieferanten</summary>${laeden.slice(3).map(zeile).join('')}</details>` : ''}`
       : `<p class="muted">${klaerung ? 'Vor dem Bestellen müssen noch Angaben geklärt werden.' : 'Gerade keine Muster beim Lieferanten zu bestellen.'}</p>`;
   const p = pack?.verfuegbar ? pack.zahlen : null;
-  const packHref = p && !p.packen && p.klaeren ? '#/kunden?tab=muster&mpbereich=klaeren' : '#/kunden?tab=muster';
+  const packBereich = !p || p.packen ? 'packen' : p.klaeren ? 'klaeren' : p.warten ? 'warten' : p.gepackt ? 'gepackt' : 'packen';
+  const packText = { packen: 'Muster packen', klaeren: 'Klärfälle ansehen', warten: 'Wartende Umschläge ansehen', gepackt: 'Versand vorbereiten' }[packBereich];
+  const packHref = packBereich === 'packen' ? '#/kunden?tab=muster' : `#/kunden?tab=muster&mpbereich=${packBereich}`;
+  const bestellFehler = bestellQuelle?.verfuegbar === false || bestellQuelle?.fehler;
+  const packFehler = pack?.verfuegbar === false || pack?.fehler;
   return `<section class="heute-geschaeft${offen === 0 ? ' heute-geschaeft-ohne-offen' : ''}" aria-labelledby="heuteGeschaeft">
     <div class="heute-geschaeft-kopf"><h2 id="heuteGeschaeft">Muster &amp; Bestellungen</h2><p>Neue Musterbestellungen stehen hier automatisch, nach Lieferant gebündelt.</p></div>
     <div class="heute-geschaeft-raster">
@@ -28,12 +32,14 @@ export function bestellarbeitBlock({ arbeit, offeneBestellungen = null, pack = n
         ${laeden.length ? '<p class="small muted">Im nächsten Schritt prüfst du Lieferziel und fehlende Angaben. Erst die bewusste Bestätigung setzt den Bestellstand.</p>' : ''}
       </article>
       <div class="heute-geschaeft-weiter">
-        <article><h3>Kundenbestellungen</h3><p>${offeneBestellungen === null ? 'Bestellungen werden geladen …' : `${plural(offeneBestellungen, 'Bestellung ist', 'Bestellungen sind')} noch offen.`}</p>
-          <div class="btn-row"><a class="btn btn-sm" href="#/kunden?tab=bestellungen">Offene bearbeiten</a><a class="btn btn-sm btn-ghost" href="#/kunden?tab=bestellungen&bfilter=fertig">Fertige ansehen</a></div>
+        <article><h3>Kundenbestellungen</h3><p${bestellFehler ? ' class="notice warn" role="status"' : ''}>${bestellFehler ? 'Bestellungen können gerade nicht geladen werden. Bitte die Bestellliste erneut öffnen.' : offeneBestellungen === null ? 'Bestellungen werden geladen …' : `${plural(offeneBestellungen, 'Bestellung ist', 'Bestellungen sind')} noch offen.`}</p>
+          ${kontrolle ? `<p class="notice warn"><a href="#/kunden?tab=bestellungen&bfilter=pruefen">${plural(kontrolle, 'Bestellung braucht', 'Bestellungen brauchen')} Kontrolle →</a></p>` : ''}
+          <div class="btn-row"><a class="btn btn-sm" href="#/kunden?tab=bestellungen&bsort=wichtigkeit">Dringendes bearbeiten</a><a class="btn btn-sm btn-ghost" href="#/kunden?tab=bestellungen&bfilter=fertig">Fertige ansehen</a></div>
           <a class="heute-weiter-link" href="${WARE}">Ware beim Lieferanten bestellen${bereit && arbeit.gesamt.ware.positionen ? ` · ${arbeit.gesamt.ware.positionen} Artikel` : ''} →</a>
         </article>
-        <article><h3>Packstation &amp; Wareneingang</h3><p>${p ? `${p.packen} packbereit${p.klaeren ? ` · ${p.klaeren} zu klären` : ''}` : 'Packstand wird geladen …'}</p>
-          <div class="btn-row"><a class="btn btn-sm" href="${packHref}">${p && !p.packen && p.klaeren ? 'Klärfälle ansehen' : 'Muster packen'}</a><a class="btn btn-sm btn-ghost" href="#/einkauf?tab=lieferant&af=bestellt">Ware annehmen</a></div>
+        <article><h3>Packstation &amp; Wareneingang</h3><p${packFehler ? ' class="notice warn" role="status"' : ''}>${p ? `${p.packen} packbereit${p.klaeren ? ` · ${p.klaeren} zu klären` : ''}` : packFehler ? 'Der Packstand kann gerade nicht geladen werden. Bitte die Packstation erneut öffnen.' : 'Packstand wird geladen …'}</p>
+          ${p?.warten ? `<p><a href="#/kunden?tab=muster&mpbereich=warten">${plural(p.warten, 'Umschlag wartet', 'Umschläge warten')} auf Ware →</a></p>` : ''}
+          <div class="btn-row"><a class="btn btn-sm" href="${packHref}">${packText}</a><a class="btn btn-sm btn-ghost" href="#/einkauf?tab=lieferant&af=bestellt">Ware annehmen</a></div>
           <a class="heute-weiter-link" href="#/kunden?tab=muster&mpbereich=gepackt">${p ? `${p.gepackt} gepackte Umschläge` : 'Gepackte Umschläge'} · Versand vorbereiten →</a>
         </article>
       </div>

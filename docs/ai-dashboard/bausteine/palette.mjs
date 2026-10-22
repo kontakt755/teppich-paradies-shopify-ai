@@ -27,6 +27,8 @@ let paletteTimer = null;
  */
 function paletteFernSuche(q, fertig) {
   const query = String(q || '').trim();
+  // Ein Treffer zum vorigen Namen darf waehrend des Tippens nicht als neue Auswahl gelten.
+  if (paletteFern.q !== query) { paletteFern.kunden = []; paletteFern.produkte = []; }
   paletteFern.q = query;
   clearTimeout(paletteTimer);
   if (query.length < 2 || state.capabilities.mode !== 'local') {
@@ -49,6 +51,16 @@ function paletteFernSuche(q, fertig) {
 
 function paletteItems(q) {
   const items = [];
+  for (const [label, view, params] of [
+    ['Bestellungen', 'kunden', { tab: 'bestellungen' }],
+    ['Packstation', 'kunden', { tab: 'muster' }],
+    ['Muster bestellen', 'einkauf', { tab: 'lieferant', art: 'muster', af: 'offen' }],
+  ]) if (darfAnsicht(view)) items.push({ kind: 'Ansicht', label, run: () => navigate(view, params) });
+  const suchtext = String(q || '').trim();
+  if (suchtext.length >= 2 && darfAnsicht('organisation')) items.push({
+    kind: 'Aufgaben', label: `Team-Aufgaben nach „${suchtext}“ durchsuchen`,
+    run: () => navigate('organisation', { ob: 'team-aufgaben', oa: 'alle', og: 'alles', oq: suchtext }),
+  });
   for (const k of paletteFern.kunden) {
     // Ueber den Produktnamen gefunden: sagen, was der Kunde bestellt hat - sonst wirkt der Treffer zufaellig.
     const bestellt = k.trefferProdukt ? `bestellt: ${[k.trefferProdukt.titel, k.trefferProdukt.farbe].filter(Boolean).join(' · ')}` : null;

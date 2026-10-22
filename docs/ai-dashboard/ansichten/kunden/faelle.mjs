@@ -106,15 +106,15 @@ export function viewKundenFaelle() {
     ? `<details style="margin-top:14px"><summary class="small muted" style="cursor:pointer">Ausgeblendet (${aus.length}) – Testkäufe und Abgehaktes</summary>
         <div style="margin-top:10px">${aus.map(f => fallKarte(f, { ausgeblendet: true })).join('')}</div></details>`
     : '';
+  // Auch ohne Aktion fuer uns bleiben wartende Kunden mit ihrem naechsten Weg sichtbar.
+  const wartend = d.wartend ? `${d.wartend} ${d.wartend === 1 ? 'Kunde wartet' : 'Kunden warten'} auf Lieferant oder Kunde – <a href="#/kunden?tab=bestellungen">Bestellungen prüfen →</a>` : '';
   if (!d.faelle.length) {
-    return zurueck + emptyState('Nichts offen.', 'Keine Bestellung, kein Angebot und kein Warenkorb wartet gerade auf eine Antwort.') + ausBlock;
+    return zurueck + emptyState(d.wartend ? 'Gerade keine Aktion für uns offen.' : 'Nichts offen.', d.wartend ? '' : 'Keine Bestellung, kein Angebot und kein Warenkorb wartet gerade auf eine Antwort.')
+      + (wartend ? `<p class="notice">${wartend}</p>` : '') + ausBlock;
   }
-  // Wer nur auf Lieferant oder Kunde wartet, steht nicht in der Arbeitsliste - die Zahl sagt,
-  // dass es sie gibt und wo sie stehen, damit niemand einen Kunden vermisst.
-  const wartend = d.wartend ? ` · ${d.wartend} ${d.wartend === 1 ? 'weiterer Kunde wartet' : 'weitere Kunden warten'} nur auf Lieferant oder Kunde – <a href="#/kunden?tab=bestellungen">Bestellungen</a>` : '';
   return `
     ${zurueck}
-    <p class="small muted" style="margin:0 0 10px">${ziel ? 'Nur der ausgewählte Fall.' : `${d.anzahl} ${d.anzahl === 1 ? 'Kunde wartet' : 'Kunden warten'} auf uns${d.sofort ? `, davon ${d.sofort} sofort` : ''} · dringendstes zuerst${wartend}`}</p>
+    <p class="small muted" style="margin:0 0 10px">${ziel ? 'Nur der ausgewählte Fall.' : `${d.anzahl} ${d.anzahl === 1 ? 'Kunde wartet' : 'Kunden warten'} auf uns${d.sofort ? `, davon ${d.sofort} sofort` : ''} · dringendstes zuerst${wartend ? ` · ${wartend}` : ''}`}</p>
     ${d.faelle.map(f => fallKarte(f)).join('')}
     ${ausBlock}`;
 }
