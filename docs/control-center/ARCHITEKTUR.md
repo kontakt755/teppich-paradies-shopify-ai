@@ -1783,8 +1783,11 @@ Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
   Etiketten mit `art: 'adresse'` zeichnet `adressLayout` (`lib/adress-etiketten.mjs`) statt des
   Musterlayouts: Absender klein mit Linie, Empfänger so groß wie Breite und Höhe erlauben,
   Inland ohne Land, „Bestellung #…“ unten rechts; passt in 50 × 50 und 50 × 100.
-- **Haken je Muster:** nur `localStorage` (`tp-muster-packen-haken`) – Packhilfe am Gerät, kein
-  gemeinsamer Stand.
+- **Haken und „Zu klären“ (22.10.):** zentral in `muster-packen.json` (`haken` je Bestellposition,
+  `klaeren` je Kunde mit den nicht abgehakten Positionen und Notiz); Bereiche Zu packen · Zu klären ·
+  Gepackt. Farbbild je Variante aus dem Lexikon-Export, Partnerladen aus den privaten Stammdaten.
+- **Wareneingang (`mp=laden`):** `musterNachLaden` verteilt die noch nicht eingelegten Muster je
+  Partnerladen auf die Umschlag-Nummern aus „Zu packen“.
 
 ### Großbrief vorbereiten (#1591)
 

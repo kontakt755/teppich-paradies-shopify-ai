@@ -158,3 +158,20 @@ test('gleiche SKU in mehreren Breiten mit je eigenem Bild bleibt eindeutig', () 
   assert.equal(m.vorher?.produktname, 'Lieferantenware SAND 400');
   assert.equal(m.bild, 'https://cdn.example/sand-400.jpg');
 });
+
+test('nach Partnerladen: nur offene, nicht eingelegte Muster, mit Ziel-Umschlag', async () => {
+  const { musterNachLaden } = await import('../lib/muster-packen.mjs');
+  const m = (li, lieferant, name, farbnr, abgehakt = null) => ({ lineItemId: li, orderName: '#T1', lieferant, abgehakt, vorher: { produktname: name, farbnummer: farbnr }, etikett: {} });
+  const kunden = [
+    { name: 'Anna', bereich: 'packen', packSchluessel: 'a', muster: [m('1', 'Laden Nord', 'Velours', '22'), m('2', 'Laden Nord', 'Velours', '11', { zeit: 'x' })] },
+    { name: 'Berta', bereich: 'klaeren', packSchluessel: 'b', muster: [m('3', 'Laden Nord', 'Velours', '5'), m('4', null, 'Vinyl', '1')] },
+    { name: 'Carl', bereich: 'packen', packSchluessel: 'c', muster: [m('5', 'Laden Süd', 'Berber', '7')] },
+    { name: 'Dora', bereich: 'gepackt', packSchluessel: 'd', muster: [m('6', 'Laden Nord', 'Velours', '9')] },
+  ];
+  const r = musterNachLaden(kunden);
+  assert.deepEqual(r.map(l => [l.laden, l.eintraege.map(e => `${e.muster.vorher.farbnummer}>${e.kunde}@${e.umschlag}`)]), [
+    ['Laden Nord', ['5>Berta@zu klären', '22>Anna@1']],
+    ['Laden Süd', ['7>Carl@2']],
+    ['Partnerladen nicht hinterlegt', ['1>Berta@zu klären']],
+  ]);
+});

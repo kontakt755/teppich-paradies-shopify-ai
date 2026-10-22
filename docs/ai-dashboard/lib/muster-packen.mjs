@@ -165,3 +165,27 @@ function markiereVerwechslung(muster) {
 export function aufkleberFuer(kunde) {
   return [...kunde.muster.flatMap(m => Array.from({ length: m.anzahl || 0 }, () => m.etikett)), kunde.adressAufkleber];
 }
+
+/**
+ * Wareneingang sortieren: alle noch nicht eingelegten Muster der offenen Kunden je Partnerladen,
+ * mit Ziel-Umschlag (Nummer in "Zu packen" bzw. "zu klären"). Je Laden nach Name und Farbnummer,
+ * damit ein Paket von oben nach unten abgelegt werden kann.
+ */
+export function musterNachLaden(kundenListe = []) {
+  const laeden = new Map();
+  let nr = 0;
+  for (const k of kundenListe) {
+    if (k.bereich === 'gepackt') continue;
+    const umschlag = k.bereich === 'packen' ? String(++nr) : 'zu klären';
+    for (const m of k.muster) {
+      if (m.abgehakt) continue;
+      const laden = m.lieferant || 'Partnerladen nicht hinterlegt';
+      if (!laeden.has(laden)) laeden.set(laden, []);
+      laeden.get(laden).push({ muster: m, kunde: k.name, bestellung: m.orderName, umschlag, packSchluessel: k.packSchluessel });
+    }
+  }
+  const sortName = e => `${text(e.muster.vorher?.produktname || e.muster.etikett?.serie).toLowerCase()}|${text(e.muster.vorher?.farbnummer).padStart(8, '0')}`;
+  return [...laeden.entries()]
+    .map(([laden, eintraege]) => ({ laden, eintraege: eintraege.sort((a, b) => sortName(a).localeCompare(sortName(b), 'de')) }))
+    .sort((a, b) => b.eintraege.length - a.eintraege.length || a.laden.localeCompare(b.laden, 'de'));
+}
