@@ -22,10 +22,27 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const DATA_FILE = path.resolve(HERE, '..', 'docs/ai-dashboard/issues.json');
 export const DASHBOARD_URL = 'https://kontakt755.github.io/teppich-paradies-shopify-ai/ai-dashboard/';
 
+// Das Repo ist oeffentlich: jedes GitHub-Konto kann Issues anlegen, und Issue-
+// Formulare setzen priority-/status-Labels selbst. Die Kurzfassung landet im
+// Kontext jeder KI-Sitzung - ein fremder Titel waere dort Text, der wie eine
+// Anweisung aussehen kann. Gezeigt werden deshalb nur Titel von Repo-Mitgliedern
+// und von eigenen Workflows (GITHUB_TOKEN, z. B. datenschutz-pruefung.yml).
+const TRUSTED_ASSOCIATIONS = new Set(['OWNER', 'MEMBER', 'COLLABORATOR']);
+const TRUSTED_BOT = 'github-actions[bot]';
+
+function shownTitle(raw) {
+  if (TRUSTED_ASSOCIATIONS.has(raw.author_association)) return raw.title || '';
+  if (raw.author === TRUSTED_BOT && raw.author_type === 'Bot') return raw.title || '';
+  // issues.json von vor der Herkunftsangabe: nicht als fremd melden, nur ausblenden.
+  if (!raw.author_association) return '[Titel ausgeblendet: Herkunft unbekannt - npm run dashboard:data]';
+  return '[Titel ausgeblendet: Autor gehoert nicht zum Repo]';
+}
+
 /** Reine Funktion: issues.json-Inhalt -> Zeilen. Testbar ohne Dateisystem. */
 export function buildBrief(data, { now = new Date(), limit = 3 } = {}) {
   if (!data || !Array.isArray(data.issues)) return ['Control Center: issues.json fehlt oder ist ungueltig - npm run dashboard:data'];
   const tasks = data.issues.map(i => normalizeTask(i, { now }));
+  const titles = new Map(data.issues.map(i => [i.number, shownTitle(i)]));
   const s = summarize(tasks, { now });
   const fr = freshness(data.generated_at, { now });
   const lines = [];
@@ -33,7 +50,7 @@ export function buildBrief(data, { now = new Date(), limit = 3 } = {}) {
   const top = attentionList(tasks, { now, limit });
   for (const { task, reasons } of top) {
     const owner = task.owner ? `@${task.owner}` : 'ohne Owner';
-    lines.push(`  #${task.number} ${task.title} - ${reasons.slice(0, 2).join(', ')} (${owner})`);
+    lines.push(`  #${task.number} ${titles.get(task.number)} - ${reasons.slice(0, 2).join(', ')} (${owner})`);
   }
   if (!top.length && s.open) lines.push('  Nichts draengt: keine P0, keine Blocker, keine offenen Freigaben.');
   lines.push(`  Aufgaben: npm run task -- list | eigene Arbeit: npm run task -- create/start/done | ${DASHBOARD_URL}`);

@@ -15,7 +15,7 @@ import { emptyState } from '../bausteine/karten.mjs';
 import {
   AKQUISE_LABEL, WIEDERVORLAGE_TAGE, SPAETER_TAGE, faelligeWiedervorlagen, nachrichtFuer,
   naechsteFirmen, akquiseFortschritt, warumInteressant, kontaktTeile, mailtoLink, tageBis, plusTage,
-  titelKurz, richtpreisZeile, angebotsEntwurf, angeschriebenVon,
+  titelKurz, richtpreisZeile, angebotsEntwurf, angeschriebenVon, sichereUrl,
 } from '../lib/akquise.mjs';
 
 // gewaehlt: Firma, die der Nutzer aus der Liste nach oben geholt hat; antwort: offenes Antwort-Feld.
@@ -172,10 +172,12 @@ function ausschreibungen(a, tag) {
   return `<section class="card akq-aus">${kopf}<ul class="akq-aus-liste">${t.map(x => {
     const n = tageBis(x.frist, tag);
     const [ampel, hinweis] = n === null ? ['', 'Frist unbekannt – in der Bekanntmachung nachsehen'] : n <= 7 ? ['crit', `noch ${n} ${n === 1 ? 'Tag' : 'Tage'} – zu knapp, nur zur Kenntnis`] : n <= 21 ? ['warn', `noch ${n} Tage – dem Inhaber zeigen`] : ['', `noch ${n} Tage – Zeit genug`];
+    // Link kommt aus einem fremden Feed: nur http(s) wird zum Link (kein javascript: im href).
+    const link = sichereUrl(x.link);
     return `<li><span class="akq-ampel ${ampel}" aria-hidden="true"></span><div>
       <div><b>${esc(titelKurz(x.titel))}</b>${neu.has(x.id) ? ' <span class="badge status freigabe">neu</span>' : ''}</div>
       <div class="small muted">${[x.auftraggeber, x.ort].filter(Boolean).map(esc).join(' · ')}</div>
-      <div class="small">${esc(hinweis)}${x.link ? ` · <a href="${esc(x.link)}" target="_blank" rel="noopener">Bekanntmachung</a>` : ''}</div></div></li>`;
+      <div class="small">${esc(hinweis)}${link ? ` · <a href="${esc(link)}" target="_blank" rel="noopener">Bekanntmachung</a>` : ''}</div></div></li>`;
   }).join('')}</ul></section>`;
 }
 

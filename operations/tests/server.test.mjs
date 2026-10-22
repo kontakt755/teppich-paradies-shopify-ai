@@ -103,6 +103,18 @@ test('403 fuer fremden Origin bei POST', async t => {
   assert.equal(s.speicher.eintraege().length, 0);
 });
 
+test('403 fuer fremden Host auch bei lesenden API-Aufrufen (DNS-Rebinding)', async t => {
+  const s = await starte(t);
+  const kopf = `Host: rebind.boese.example:${s.port}`;
+  for (const pfad of ['/api/kontext', '/api/warteschlange', '/api/suche?q=%40', '/api/auftrag/%23T1']) {
+    const antwort = await rohAnfrage(s.port, `GET ${pfad} HTTP/1.1`, kopf);
+    assert.match(antwort.split('\r\n')[0], / 403 /, pfad);
+    assert.match(antwort, /Nur lokal/, pfad);
+    assert.ok(!antwort.includes('#T1'), `${pfad} darf keine Auftragsdaten liefern`);
+  }
+  assert.equal((await rohAnfrage(s.port, 'GET /api/warteschlange HTTP/1.1', `Host: 127.0.0.1:${s.port}`)).split('\r\n')[0].includes(' 200 '), true);
+});
+
 test('POST ohne application/json wird abgewiesen', async t => {
   const s = await starte(t);
   const r = await s.ruf('/api/auftrag/%23T1/freigeben', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: 'von=x' });
