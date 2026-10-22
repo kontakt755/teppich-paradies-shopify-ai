@@ -146,7 +146,9 @@ function statusChip(f, faellig) {
 
 /** Alle Firmen: zugeklappt, kompakt; bearbeitet wird ueber "Oben zeigen" auf der Karte. */
 function alleFirmen(d, faelligIds) {
-  const zeilen = [...d.firmen].sort((a, b) => a.name.localeCompare(b.name, 'de')).map(f => {
+  // Faellige zuerst, dann mit Wiedervorlage (frueheste zuerst), dann A-Z (22.10.).
+  const wv = f => f.wiedervorlage || '9999';
+  const zeilen = [...d.firmen].sort((a, b) => Number(faelligIds.has(b.id)) - Number(faelligIds.has(a.id)) || wv(a).localeCompare(wv(b)) || a.name.localeCompare(b.name, 'de')).map(f => {
     const k = kontaktTeile(f.kontakt);
     return `<tr>
       <td><b>${esc(f.name)}</b><div class="small muted">${esc(f.ort || '')}${!k.email && !k.telefon ? ' · <span class="akq-fehlt-kurz">Kontakt fehlt</span>' : ''}</div>${f.notiz ? `<div class="small akq-notiz-zeile">${esc(f.notiz)}</div>` : ''}</td>

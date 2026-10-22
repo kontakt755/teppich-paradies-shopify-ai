@@ -22,13 +22,15 @@ export function gruppierePositionenNachKunde(positionen, auftraege) {
   }
 
   const collator = new Intl.Collator('de', { sensitivity: 'base', numeric: true });
+  // Wer am laengsten wartet, zuerst (22.10.; vorher A-Z); "nicht zugeordnet" bleibt hinten.
+  const aelteste = g => Math.min(...g.positionen.map(p => Date.parse(p.orderDatum) || Infinity));
   return [...gruppen.values()]
-    .sort((a, b) => (a.name === 'Kunde nicht zugeordnet') - (b.name === 'Kunde nicht zugeordnet') || collator.compare(a.name, b.name))
+    .sort((a, b) => (a.name === 'Kunde nicht zugeordnet') - (b.name === 'Kunde nicht zugeordnet') || aelteste(a) - aelteste(b) || collator.compare(a.name, b.name))
     .map(gruppe => ({
       name: gruppe.name,
       ort: gruppe.auftragsIds.size === 1 && gruppe.ort !== '–' ? gruppe.ort : '',
       auftragsAnzahl: gruppe.auftragsIds.size,
-      positionen: gruppe.positionen.sort((a, b) => (Date.parse(b.orderDatum) || 0) - (Date.parse(a.orderDatum) || 0)
+      positionen: gruppe.positionen.sort((a, b) => (Date.parse(a.orderDatum) || 0) - (Date.parse(b.orderDatum) || 0)
         || collator.compare(String(a.orderName || ''), String(b.orderName || ''))),
     }));
 }

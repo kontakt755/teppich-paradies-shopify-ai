@@ -51,7 +51,9 @@ export function angebotEintrag(d) {
 export function aufbereiten(daten, opt = {}) {
   const angebote = ladeAngebote(daten).map(angebotEintrag);
   const rang = { OPEN: 0, INVOICE_SENT: 1, COMPLETED: 2 };
-  angebote.sort((a, b) => (rang[a.status] ?? 9) - (rang[b.status] ?? 9) || (b.erstelltAm || '').localeCompare(a.erstelltAm || ''));
+  // Offene: das aelteste (wartet am laengsten auf Antwort) zuerst; Abgeschlossene: neueste zuerst.
+  angebote.sort((a, b) => (rang[a.status] ?? 9) - (rang[b.status] ?? 9)
+    || (a.status === 'OPEN' ? (a.erstelltAm || '').localeCompare(b.erstelltAm || '') : (b.erstelltAm || '').localeCompare(a.erstelltAm || '')));
   return {
     erstellt: (opt.jetzt ?? new Date()).toISOString(),
     anzahl: angebote.length,

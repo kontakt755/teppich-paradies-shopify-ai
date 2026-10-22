@@ -2,6 +2,24 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-22 · Arbeitslisten nach Wichtigkeit
+
+- **Geändert:** Wo eine Arbeitsliste noch alphabetisch oder „neueste zuerst“ stand, steht jetzt das
+  Dringendste oben:
+  - **Kunden › Rückrufe:** „Nicht erreicht“ vor offen vor angerufen, darin die älteste zuerst.
+  - **Kunden › Service-Anfragen (offen):** nach Bearbeitungsstand (neu zuerst), darin wer am längsten wartet.
+  - **Kunden › Angebote:** offene Angebote, das älteste zuerst (Abgeschlossene weiter neueste zuerst).
+  - **Bestellen › nach Kunde:** wer am längsten wartet, zuerst (vorher A–Z), Positionen älteste zuerst.
+  - **Genossenschaften › Alle Firmen:** fällige zuerst, dann nach Wiedervorlage, dann A–Z.
+  - **Heute, Spalten „Wer wartet auf was“:** Rot vor Gelb vor normal, darin die älteste zuerst.
+  Bewusst unverändert: das Auftragsband (Probleme sind dort mit Grund geparkt und stehen absichtlich
+  hinten) sowie Nachschlagelisten (Musterlager-Bestand, Lexikon).
+- **Getestet:** `einkauf-kundengruppen.test.mjs` angepasst und neuer Fall; `dashboard:test` 690 grün,
+  `npm test` grün; `dashboard:pruefen` für Heute, Rückrufe, Service, Angebote, Einkauf, Genossenschaften
+  ohne Befund.
+- **Risiken/Annahmen:** keine; Sortierung allein, keine Daten geändert.
+- **Nächste Stufe:** Lieferantenlisten nach überfälligen Posten statt A–Z.
+
 ## 2026-10-22 · Kunden › Bestellungen nach Wichtigkeit
 
 - **Geändert:** Neue Standardsortierung „Wichtigkeit“ (vorher: Kundenname A–Z). Reihenfolge: bezahlt
