@@ -243,7 +243,7 @@ function bestellzeileHtml(z) {
   const pk = fortschrittKlasse(z.fortschritt?.stufe);
   const inhalt = inhaltHtml(z);
   return `<tr class="bq-row${offenKlasse}${inhalt ? ' mit-inhalt' : ''}" data-bq-toggle="${esc(z.orderId)}" tabindex="0" role="button" aria-expanded="${kunden.erweitert.has(z.orderId)}" aria-label="Bestellung ${esc(z.orderName)} von ${esc(z.kundenname)} auf- oder zuklappen">
-      <td data-l="Bestellnr.">${hakenKnopf(z)}<a href="${esc(z.adminUrl)}" target="_blank" rel="noopener">${esc(z.orderName)}</a>${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</td>
+      <td data-l="Bestellnr.">${hakenKnopf(z)}<a href="${esc(z.adminUrl)}" target="_blank" rel="noopener">${esc(z.orderName)}</a>${neuBadge(z)}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</td>
       <td data-l="Datum">${fmtDateTime(z.datum)}</td>
       <td data-l="Kunde">${z.kundenSchluessel ? `<a href="#" data-kunden-open="${esc(z.kundenSchluessel)}">${wertText(z.kundenname)}</a>` : wertText(z.kundenname)}</td>
       <td data-l="Kontakt">${kontaktZelle(z)}</td>
@@ -261,7 +261,7 @@ function bestellzeileKarte(z, gruppiert = false) {
   const pk = fortschrittKlasse(z.fortschritt?.stufe);
   return `<div class="row bq-karte" data-bq-toggle="${esc(z.orderId)}" tabindex="0" role="button" aria-expanded="${kunden.erweitert.has(z.orderId)}" aria-label="Bestellung ${esc(z.orderName)} von ${esc(z.kundenname || 'unbekannt')} auf- oder zuklappen">
     <div>
-      <div class="t">${hakenKnopf(z)}${esc(z.orderName)}${gruppiert ? '' : ` · ${wertText(z.kundenname)}`}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</div>
+      <div class="t">${hakenKnopf(z)}${esc(z.orderName)}${neuBadge(z)}${gruppiert ? '' : ` · ${wertText(z.kundenname)}`}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</div>
       <div class="m">${betragText(z)} · ${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)} · ${fmtDate(z.datum)}</div>
       ${inhaltHtml(z) ? `<div class="bq-inhalt-mobil">${inhaltHtml(z)}</div>` : ''}
       <div class="m"><span class="bq-fortschritt ${pk}">${esc(z.fortschritt?.text || '–')}</span></div>
@@ -284,7 +284,11 @@ export function viewKundenBestellungen() {
   const dir = params.get('bdir') || (sort === 'kundenname' ? 'asc' : 'desc');
   const gefiltert = bestellzeileGefiltert(d.zeilen, params);
   const zeilen = gefiltert.filter(z => !istErledigt(z));
-  const erledigt = gefiltert.filter(istErledigt).sort((a, b) => String(b.datum || '').localeCompare(String(a.datum || '')));
+  // Ohne Suche nur die letzten 30 Tage - sonst wuechse "Erledigt" endlos. Aeltere findet die Suche.
+  const grenze = Date.now() - ERLEDIGT_TAGE * 864e5;
+  const erledigtAlle = gefiltert.filter(istErledigt).sort((a, b) => String(b.datum || '').localeCompare(String(a.datum || '')));
+  const erledigt = params.get('bq') ? erledigtAlle : erledigtAlle.filter(z => Date.parse(z.datum) >= grenze);
+  const erledigtAelter = erledigtAlle.length - erledigt.length;
   const alleGruppen = sort === 'kundenname' ? gruppiereBestellzeilenNachKunde(zeilen) : null;
   // Seitenweise (25 Kunden bzw. 25 Bestellungen): die volle Liste samt Produktinhalt wurde
   // am Handy mehrere Meter lang (Codex-Audit 2026-10-19).
@@ -323,7 +327,7 @@ export function viewKundenBestellungen() {
     </table></div>
     <div class="rows bq-karten">${karten}</div>
     ${blaettern}
-    ${erledigt.length ? `<details class="bq-erledigt"><summary>Erledigt · ${plural(erledigt.length, 'Bestellung', 'Bestellungen')}</summary>
+    ${erledigt.length || erledigtAelter ? `<details class="bq-erledigt"><summary>Erledigt · ${plural(erledigt.length, 'Bestellung', 'Bestellungen')}${erledigtAelter ? ` <span class="small muted">· letzte ${ERLEDIGT_TAGE} Tage, ${erledigtAelter} ältere über die Suche</span>` : ''}</summary>
       <div class="table-wrap kunden-table bq-table"><table><thead>${kopf}</thead><tbody class="bq-tbody-desktop">${erledigt.map(bestellzeileHtml).join('')}</tbody></table></div>
       <div class="rows bq-karten">${erledigt.map(z => bestellzeileKarte(z)).join('')}</div>
     </details>` : ''}
@@ -331,6 +335,13 @@ export function viewKundenBestellungen() {
 }
 
 const BQ_SEITE = 25;
+const ERLEDIGT_TAGE = 30;
+const NEU_STUNDEN = 24;
+
+/** "Neu": offene Bestellung der letzten 24 Stunden - beim Oeffnen sofort sichtbar, was dazukam. */
+function neuBadge(z) {
+  return !istErledigt(z) && Date.now() - Date.parse(z.datum) < NEU_STUNDEN * 36e5 ? ' <span class="badge bq-neu">Neu</span>' : '';
+}
 
 const FILTERCHIPS_KUNDEN = ['nicht_fertig', 'fertig', 'offen', 'bezahlt', 'unerfuellt', 'storniert', 'beratung', 'muster', 'test'];
 
