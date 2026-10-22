@@ -2,6 +2,21 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-22 · Kunden › Bestellungen nach Wichtigkeit
+
+- **Geändert:** Neue Standardsortierung „Wichtigkeit“ (vorher: Kundenname A–Z). Reihenfolge: bezahlt
+  und es fehlt etwas (nicht bestellt, Rückruf, Maßprüfung, ID) → bezahlt und alles unterwegs → noch
+  nicht bezahlt → schon an den Kunden raus, erledigt oder storniert; jeweils die älteste zuerst.
+  Bestellungen eines Kunden bleiben zusammen, der Kunde steht so weit oben wie seine dringendste
+  Bestellung. Am Kunden steht der Grund („wartet seit 12 Tagen · noch nicht bestellt“). Die
+  Spaltenköpfe sortieren wie bisher; „Nach Wichtigkeit sortieren“ führt zurück.
+  `wichtigkeit`/`sortiereNachWichtigkeit` in `lib/kunden-bestellgruppen.mjs`.
+- **Getestet:** neuer Fall in `kunden-bestellgruppen.test.mjs`; `dashboard:test` 689 grün;
+  `dashboard:pruefen` für den Reiter in allen Breiten ohne Befund.
+- **Risiken/Annahmen:** Die Reihenfolge hängt am Auftragsfluss: wo „bestellt“/„raus“ nicht
+  nachgetragen ist, steht eine Bestellung höher als nötig.
+- **Nächste Stufe:** dieselbe Logik für weitere Listen des Dashboards prüfen.
+
 ## 2026-10-22 · Muster packen: Wareneingang nach Partnerladen
 
 - **Geändert:** Umschalter „Nach Kunde packen“ / „Wareneingang nach Partnerladen“ (`mp=laden`). Je
