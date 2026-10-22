@@ -119,3 +119,17 @@ test('Navigation gibt bei Fehler keine scheinbar fertige Null zurueck', () => {
   assert.equal(ansicht('tab=bestellungen&bart=ware', [], { verfuegbar: false }).offen, null);
   assert.equal(ansicht('tab=bestellungen&bart=ware', [], { fehler: ['Fehler'] }).offen, null);
 });
+
+test('Shopify-Archivierung bleibt bewusst fertig; offene Zahlung und fehlender Versand bleiben sichtbar', () => {
+  const zeilen = [
+    zeile('ARCHIV-BEZAHLT', [false], [], { archiviert: true, offen: false }),
+    zeile('ARCHIV-ZAHLUNG', [false], [], { archiviert: true, offen: false, zahlungsstatus: 'PENDING' }),
+    zeile('AKTIV-OHNE-VERSAND', [false], ['erledigt']),
+  ];
+  const r = ansicht('tab=bestellungen&bart=ware', zeilen);
+  assert.deepEqual(r.sichtbar.sort(), ['AKTIV-OHNE-VERSAND', 'ARCHIV-ZAHLUNG']);
+  assert.equal(r.offen, 2);
+  assert.equal(shopBestellarbeit({ verfuegbar: true, zeilen }).offen, 2);
+  assert.deepEqual(ansicht('tab=bestellungen&bart=ware&bfilter=fertig', zeilen).ids, ['ARCHIV-BEZAHLT']);
+  assert.equal(ansicht('tab=bestellungen&bart=ware&bfilter=alle', zeilen).ids.length, 3);
+});

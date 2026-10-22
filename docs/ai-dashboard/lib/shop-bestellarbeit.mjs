@@ -39,9 +39,13 @@ export function warenArbeitsstand(z = {}, { jetzt = Date.now() } = {}) {
   const warenKlaerung = vorVersand ? warenHinweise.filter(t => !['Noch nicht versendet', 'Noch nicht bezahlt'].includes(t)) : [];
   if (vorVersand && waren.some(p => !p.eigenleistung && p.bestellmenge?.menge === 'UNGEKLAERT')) warenKlaerung.push('Einkaufsmenge klären');
   const manuellOffen = Boolean(z.abgehakt && !raus && z.fulfillmentstatus !== 'FULFILLED' && fortschritt?.stufe !== 'erledigt');
-  const kontrollieren = Boolean(unklar || fehlteile.length || versandOffen || manuellOffen || warenKlaerung.length);
+  const archiviert = z.archiviert === true;
+  const bezahlt = ['PAID', 'PARTIALLY_REFUNDED'].includes(z.zahlungsstatus);
+  const finanziellAbgeschlossen = ['PAID', 'PARTIALLY_REFUNDED', 'REFUNDED', 'VOIDED'].includes(z.zahlungsstatus);
+  const kontrollieren = !archiviert && Boolean(unklar || fehlteile.length || versandOffen || manuellOffen || warenKlaerung.length);
   const zahlungOffen = bestellZahlungOffen(z);
-  const abgeschlossen = !kontrollieren && !zahlungOffen
+  // Archivieren ist ein bewusster Abschluss, kein nachtraeglicher Versandbeleg.
+  const abgeschlossen = archiviert ? finanziellAbgeschlossen : !kontrollieren && !zahlungOffen
     && (fortschritt?.stufe === 'erledigt' || z.fulfillmentstatus === 'FULFILLED');
   const quelle = { ...z, fortschritt, fertig: abgeschlossen,
     // Eine Muster-Zeitleiste ist keine Aussage ueber den Warenanteil.
@@ -58,14 +62,14 @@ export function warenArbeitsstand(z = {}, { jetzt = Date.now() } = {}) {
     const n = [...warten.wir, ...warten.lieferant, ...warten.kunde][0];
     if (n) arbeit = { ...arbeit, naechstes: n.schritt };
   }
-  if (unklar) arbeit = { stand: 'Warenstand prüfen', naechstes: 'Warenpositionen und aktuellen Bestellstand prüfen' };
+  if (archiviert) arbeit = { stand: 'In Shopify archiviert', naechstes: finanziellAbgeschlossen ? 'Bewusst abgeschlossen; kein Versand daraus abgeleitet' : 'Zahlungseingang prüfen' };
+  else if (unklar) arbeit = { stand: 'Warenstand prüfen', naechstes: 'Warenpositionen und aktuellen Bestellstand prüfen' };
   else if (fehlteile.length) arbeit = { ...arbeit, naechstes: 'Fehlmenge / Wareneingang klären' };
   else if (versandOffen) arbeit = { ...arbeit, naechstes: 'Versandbuchung prüfen und gegebenenfalls nachholen' };
   else if (manuellOffen) arbeit = { ...arbeit, naechstes: 'Manueller Haken: Waren- und Versandstand prüfen' };
   else if (warenKlaerung.length) arbeit = { ...arbeit, naechstes: warenKlaerung.join(' · ') };
   else if (zahlungOffen && (raus || z.fulfillmentstatus === 'FULFILLED')) arbeit = { ...arbeit, naechstes: 'Zahlungseingang prüfen' };
   const zahlung = z.zahlungsstatus;
-  const bezahlt = ['PAID', 'PARTIALLY_REFUNDED'].includes(zahlung);
   const zahlungsRang = bezahlt ? 0 : zahlung === 'PARTIALLY_PAID' ? 1 : zahlung === 'AUTHORIZED' ? 2 : 3;
   const datum = Date.parse(z.datum);
   const tage = Number.isFinite(datum) ? Math.max(0, Math.floor((Number(jetzt) - datum) / 864e5)) : null;

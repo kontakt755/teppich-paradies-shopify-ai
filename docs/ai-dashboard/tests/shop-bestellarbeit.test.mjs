@@ -212,3 +212,32 @@ test('Eigenleistung braucht keinen gesonderten Versandbeleg; echte Ware daneben 
   mitWare.positionsstatus.w.shopifyVersand = { status: 'bereits' };
   assert.equal(shopBestellarbeit(daten([mitWare]), { jetzt }).offen, 0);
 });
+
+test('bezahlte bewusste Archivierung bleibt abgeschlossen trotz altem Lokalfehler ohne Versandbehauptung', () => {
+  for (const zahlungsstatus of ['PAID', 'PARTIALLY_REFUNDED', 'REFUNDED', 'VOIDED'])
+  for (const status of [null, { status: 'erledigt', shopifyVersand: { status: 'fehler' } }]) {
+    const z = zeile('archiviert', [p('w')], status ? { w: status } : {}, { archiviert: true, offen: false, zahlungsstatus });
+    const a = warenArbeitsstand(z, { jetzt });
+    assert.equal(a.abgeschlossen, true);
+    assert.equal(a.kontrollieren, false);
+    assert.equal(a.bezahlt, ['PAID', 'PARTIALLY_REFUNDED'].includes(zahlungsstatus));
+    assert.equal(a.stand, 'In Shopify archiviert');
+    assert.match(a.naechstes, /Bewusst abgeschlossen/);
+    assert.equal(z.fulfillmentstatus, 'UNFULFILLED');
+    assert.equal(shopBestellarbeit(daten([z]), { jetzt }).offen, 0);
+    assert.equal(warenArbeitsstand({ ...z, archiviert: false }, { jetzt }).abgeschlossen, false, 'nicht archivierte fehlende Versandbuchung bleibt offen');
+  }
+});
+
+test('offene Zahlung bleibt bei archivierten Waren sichtbar und nennt Zahlung statt Versandnachholen', () => {
+  for (const zahlungsstatus of ['PENDING', 'AUTHORIZED', 'PARTIALLY_PAID', 'UNBEKANNT', null]) {
+  const z = zeile('archiviert-zahlung', [p('w')], { w: { status: 'erledigt', shopifyVersand: { status: 'fehler' } } },
+    { archiviert: true, offen: false, zahlungsstatus });
+  const a = shopBestellarbeit(daten([z]), { jetzt });
+  assert.equal(a.offen, 1);
+  assert.equal(a.zeilen[0].abgeschlossen, false);
+  assert.equal(a.zeilen[0].stand, 'In Shopify archiviert');
+  assert.equal(a.zeilen[0].naechstes, 'Zahlungseingang prüfen');
+  assert.equal(a.zeilen[0].kontrollieren, false);
+  }
+});

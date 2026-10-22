@@ -85,3 +85,8 @@ test('Eigenleistung bleibt ohne Bestellpositionskennung weiterhin nachvollziehba
   assert.ok(z.warenWasFehlt.some(t => /ohne Bestellpositionskennung/.test(t)));
   assert.equal(z.warenFortschritt.unklar, true);
 });
+
+test('Bestellzeile reicht explizite Archivierung unveraendert an die Warenprojektion weiter', () => {
+  assert.equal(bestellzeile({ ...auftrag, archiviert: true }).archiviert, true);
+  assert.equal(bestellzeile(auftrag).archiviert, false);
+});

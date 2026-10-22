@@ -2,6 +2,21 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-22 · Bewusste Shopify-Archivierung erhalten (#1626)
+
+- **Geaendert:** Der Shop-Fokus uebernimmt den ausdruecklichen Archivstatus aus `closedAt`.
+  Bewusst archivierte Warenauftraege mit geklaertem finanziellem Endzustand stehen unter
+  Fertig/Alle. Offene und unbekannte Zahlungen bleiben sichtbar. Die Anzeige sagt archiviert
+  und leitet daraus keinen Versand ab. Nicht archivierte lokale Abschluesse ohne Versandbeleg
+  bleiben weiterhin zur Kontrolle offen.
+- **Getestet:** Gesamtsuite 3.772 Tests gruen, gezielte Modell-/Projektions-/Filterregressionen
+  fuer Archivierung, Zahlungszustaende und alte Fehlmarker; Syntax und Projekt-Guards gruen.
+  Zwoelf Browserkombinationen der betroffenen Start-/Bestellansichten auf Desktop und Handy
+  mit drei Rollen ohne Fehler oder seitlichen Ueberlauf.
+- **Risiken:** Keine Shopify-Schreibaktion, kein neuer Versandbeleg oder automatischer Abschluss.
+  Vorhandene Bestelldaten und bewusste Archivierung bleiben die Quelle.
+- **Naechste Stufe:** Nach Review den laufenden Dienst mit diesem Anschlussfix abgleichen.
+
 ## 2026-10-22 · Shop-Übersicht mit Warenkunden zuerst (#1624)
 
 - **Geaendert:** Heute startet mit offenen Warenbestellungen: zahlende Kunden zuerst,

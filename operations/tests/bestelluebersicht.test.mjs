@@ -395,3 +395,11 @@ test('Kundenmenge: bei gelieferter Ware die bestellte Menge, Kettelservice in la
   assert.match(pos.find(p => p.titel === 'Testunterlage').kundenmenge, /^3 lfm/, 'je lfm: Stueckzahl ist die Laenge');
   assert.match(pos.find(p => p.titel === 'Kettelservice').kundenmenge, /800 × 0,01 lfm = 8,00 lfm/);
 });
+
+test('Shopifyarchivierung bleibt explizit am Auftragsmodell erhalten ohne Versandbehauptung', () => {
+  const r = aufbereiten({ orders: [bestellung(991, [paket], { closedAt: '2026-01-06T12:00:00Z' }), bestellung(992, [paket])] });
+  assert.equal(r.auftraege[0].archiviert, true);
+  assert.equal(r.auftraege[0].offen, false);
+  assert.equal(r.auftraege[0].erfuellt, 'UNFULFILLED');
+  assert.equal(r.auftraege[1].archiviert, false);
+});
