@@ -38,6 +38,7 @@ export const STANDARD_AUFBEWAHRUNG_TAGE = 30;
 /** Relative Pfade unter $TP_PRIVAT_DIR, die die Sicherung umfasst. */
 export const SICHERUNGSPFADE = Object.freeze([
   'auftragsstatus.json',
+  'kettelversand.json',
   'auftragsverlauf.json',
   'musterherkunft.json',
   // Gemeinsame Packhaken und manuell abgehakte Bestellungen gibt es nur lokal.
