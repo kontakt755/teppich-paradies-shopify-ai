@@ -403,7 +403,7 @@ function ausServiceanfragen(quellen, jetzt) {
       const wer = [e.name, e.plz].filter(Boolean).join(', ') || e.telefon || e.email || 'ohne Namen';
       return {
         id: `service:${e.id}`, art: 'service', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.service), alterTage: tage,
-        titel: `Neue Anfrage ${LEISTUNG_LABEL[e.leistung] || 'Service'}: ${wer}`,
+        titel: `Bei ${wer} melden: neue Anfrage ${LEISTUNG_LABEL[e.leistung] || 'Service'}`,
         kontext: [QUELLE_LABEL[e.quelle] || null, e.herkunft || null, tage === null ? null : `eingegangen ${vorText(tage)}`,
           e.telefon ? null : (e.email ? 'nur E-Mail' : null)].filter(Boolean).join(' · '),
         knopf: { text: 'Melden', href: '#/kunden?tab=service' },

@@ -404,7 +404,7 @@ test('belegArbeit/belegTodos: Storno rot, Lieferschein gelb, eine Sammelzeile fu
   assert.deepEqual([a.vorschlaege.length, a.ohne.length, a.summe], [1, 1, 3], 'ohne Bestellung zaehlt nicht als Pruefarbeit');
   const t = belegTodos(d, { jetzt: JETZT });
   assert.deepEqual(t.map(x => [x.art, x.ton]), [['beleg_storno', 'crit'], ['beleg_lieferschein', 'warn'], ['belege_zuordnen', '']]);
-  assert.equal(t[0].titel, 'Storno vom Lieferanten: #9002 Max Mustermann');
+  assert.equal(t[0].titel, 'Storno vom Lieferanten prüfen: #9002 Max Mustermann');
   assert.match(t[1].kontext, /Lieferant A · LS 15\.10\./);
   assert.equal(t[2].titel, 'Lieferantenbeleg zuordnen');
   assert.ok(t.every(x => x.knopf.href === '#/einkauf?tab=belege' && x.bereich === 'laden'));

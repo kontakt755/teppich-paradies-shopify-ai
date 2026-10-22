@@ -45,6 +45,7 @@ import { ensureAkquise, akquiseFaellig } from './akquise.mjs';
 import { heuteDaten, ensureHeuteLieferanten, ensureHeuteAufgaben, ensureHeuteMusterTexte } from './heute/daten.mjs';
 import { musterNachfassenStand, musterNachfassenBlock } from './heute/muster-nachfassen.mjs';
 import { shopifyAbgleich, ensureShopifyAbgleich, shopifyAbgleichTodos } from './einkauf/shopify-abgleich.mjs';
+import { veralteteQuellen, datenstandTodo } from '../lib/datenstand.mjs';
 
 const TODOS_SICHTBAR = 7;      // "eine kurze Liste" - der Rest steht einen Klick weiter
 const SPALTE_SICHTBAR = 8;
@@ -59,6 +60,8 @@ const WARTE_SPALTEN = [
 
 function benutzer() { return state.session?.benutzer || null; }
 function istInhaber() { const r = benutzer()?.rolle; return !r || r === 'inhaber'; }
+/** Mitarbeiter (2026-10-21): eine einzige Liste, nur Ladenarbeit, kein Hintergrund und keine Technik. */
+function istMitarbeiter() { return benutzer()?.rolle === 'mitarbeiter'; }
 
 /** Alles, was die To-do-Ableitung braucht - in der Form, wie es die Endpunkte liefern. */
 function quellen() {
@@ -105,6 +108,8 @@ function heuteHref(key, value) {
 
 /** Welche Sicht? Inhaber waehlt per Chip (Standard Laden, Inhaberentscheidung 2026-10-01), alle anderen bekommen ihre. */
 function gewaehlteSicht(aufgaben) {
+  // Website-/Technik-Eintraege gehoeren nicht auf die Liste eines Mitarbeiters (Wunsch 2026-10-21).
+  if (istMitarbeiter()) return 'laden';
   if (!istInhaber()) return sichtFuer(benutzer(), aufgaben);
   const roh = state.route.params.get('sicht');
   const sicht = roh === 'inhaber' ? 'alles' : roh;
@@ -171,12 +176,22 @@ export function viewHeute() {
     ...(darfAnsicht('einkauf') ? belegTodos(belege.daten) : []),
     // Im Dashboard abgehakt, in Shopify offen (#1424) - je Bestellung eine Zeile mit "In Shopify nachbuchen".
     ...shopifyAbgleichTodos(),
+    // Veraltete Daten: ein To-do fuer den Inhaber, bis der Sync-Dienst wieder liefert (lib/datenstand.mjs).
+    ...(istInhaber() ? datenstandTodo(veralteteQuellen(einkauf.aktualisierung)) : []),
   ];
   const eigene = sicht === 'website' ? [] : eigeneLaden;
   const liste = sortiereTodos([...leiteTodosAb(q, opt), ...eigene]);
   // Chip-Zahlen zaehlen dasselbe wie die Liste: To-dos der Sicht plus Nachfragen und Belege (Laden).
   const chips = istInhaber() ? chipZahlen(q, opt, eigeneLaden.length) : null;
   const wartet = werWartet(q, { ...opt, nachfassen: new Set(nf.alleOffen.map(e => e.orderId)) });
+
+  if (istMitarbeiter()) {
+    return `<div class="heute heute-einfach">
+    ${kopf(liste.length, sicht, null)}
+    ${todoListe(liste)}
+    ${state.route.params.get('mn') ? musterNachfassenBlock(nf.alle) : ''}
+  </div>`;
+  }
 
   return `<div class="heute">
     ${kopf(liste.length, sicht, chips)}
@@ -215,7 +230,7 @@ function kopf(anzahl, sicht, chips) {
   const datum = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
   const umschalter = chips
     ? `<span class="heute-sicht" role="group" aria-label="Bereich wählen">${INHABER_SICHTEN.map(k => `<a href="#/heute${k === 'laden' ? '' : `?sicht=${k}`}" ${k === sicht ? 'aria-current="true"' : ''}>${esc(SICHT_LABEL[k])} <b>${chips[k]}</b></a>`).join('')}</span>`
-    : `<span>Bereich ${esc(SICHT_LABEL[sicht] || sicht)}</span>`;
+    : istMitarbeiter() ? '' : `<span>Bereich ${esc(SICHT_LABEL[sicht] || sicht)}</span>`;
   return `<header class="heute-kopf">
     <div class="heute-zahl${anzahl ? '' : ' null'}" aria-hidden="true">${anzahl}</div>
     <div class="heute-titel">
@@ -223,12 +238,12 @@ function kopf(anzahl, sicht, chips) {
       <p><span>${esc(datum)}</span>${umschalter}</p>
     </div>
     ${/* Direkte Einstiege in den Arbeitsplatz (#1390) - klein im Kopf statt zwischen To-dos und Rest. */ ''}
-    <nav class="heute-vorbereiten" aria-label="Vorbereiten">
+    ${istMitarbeiter() ? '' : `<nav class="heute-vorbereiten" aria-label="Vorbereiten">
       <span>Vorbereiten:</span>
       <a href="#/prozesse?prozess=email">E-Mail</a>
       <a href="#/prozesse?prozess=angebot">Angebot</a>
       <a href="#/prozesse?prozess=recherche">Recherche</a>
-    </nav>
+    </nav>`}
   </header>`;
 }
 
@@ -288,7 +303,7 @@ function todoListe(todos) {
       + (rest.length ? `<details class="heute-rest"><summary>${TODOS_SICHTBAR} von ${todos.length} – alle anzeigen</summary>${rest.map(t => todoZeile(t, false)).join('')}</details>` : '');
   } else if (laedt) inhalt = `<div class="heute-leer">Lade …</div>`;
   else if (fehlen.length) inhalt = `<div class="heute-leer">Gerade nichts zu sehen – aber die Liste ist unvollständig.</div>`;
-  else inhalt = `<div class="heute-leer"><strong>Alles erledigt.</strong> Nichts wartet auf dich.</div>`;
+  else inhalt = `<div class="heute-leer"><strong>Alles erledigt.</strong> Gerade wartet nichts auf dich – schönen Tag!</div>`;
   return `<section class="heute-todos" aria-label="Heute zu erledigen">${inhalt}</section>
     ${fehlen.length ? `<p class="heute-unvollstaendig" role="status"><b>Liste unvollständig:</b> ${esc(fehlen.join(', '))} ${fehlen.length === 1 ? 'konnte' : 'konnten'} nicht geladen werden. ${kunden.bestellungen?.verfuegbar === false && kunden.bestellungen.hinweis ? esc(kunden.bestellungen.hinweis) : ''}</p>` : ''}
     ${stoerung ? stoerungState(stoerung, 'Ein Teil der Daten') : ''}`;

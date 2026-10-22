@@ -426,10 +426,10 @@ test('Service-Anfrage "neu" wird To-do, bearbeitete nicht; gelb ab 1 Tag, rot ab
   const todos = leiteTodosAb({ serviceanfragen }, { sicht: 'laden', jetzt: JETZT });
   assert.deepEqual(todos.map(t => t.id), ['service:S-002', 'service:S-001']);
   assert.equal(todos[0].ton, 'crit');
-  assert.equal(todos[0].titel, 'Neue Anfrage Verlegeservice: x@example.invalid');
+  assert.equal(todos[0].titel, 'Bei x@example.invalid melden: neue Anfrage Verlegeservice');
   assert.match(todos[0].kontext, /Werbung · eingegangen vor 4 Tagen · nur E-Mail/);
   assert.equal(todos[1].ton, '');
-  assert.equal(todos[1].titel, 'Neue Anfrage Treppe: Testkundin, 16515');
+  assert.equal(todos[1].titel, 'Bei Testkundin, 16515 melden: neue Anfrage Treppe');
   assert.deepEqual(todos[1].knopf, { text: 'Melden', href: '#/kunden?tab=service' });
 });
 

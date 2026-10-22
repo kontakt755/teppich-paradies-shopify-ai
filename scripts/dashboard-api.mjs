@@ -22,6 +22,7 @@ import { promisify } from 'node:util';
 import { normalizeTask, requirementsFor, labelChangesFor, mitBlockerAbschnitt, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
 import { texteAusMarkdown, musterKurz, musterNachfassen, fuelleText, platzhalterFrei, STUFE_LABEL, NICHT_VERFUEGBAR_VORLAGE } from '../docs/ai-dashboard/lib/muster-nachfassen.mjs';
 import { kundeInformiertAus } from '../docs/ai-dashboard/lib/auftrags-ablauf.mjs';
+import { grenzeFuer } from '../docs/ai-dashboard/lib/datenstand.mjs';
 import { postfachPfad, stopplistePfad, versandPfad, lesePostfach, leseStoppliste, abgemeldeteAdressen, trageAbmeldungEin, leseVersand, schreibeVersand, schonVerschickt, kopieNoetig, versandStand as nachfassVersandStand, AUTOMATISCH, UNTERSCHRIFT_STANDARD, NachfassFehler } from '../operations/lib/nachfass-versand.mjs';
 import { sendeMail as smtpSenden } from '../operations/lib/smtp.mjs';
 import { toIssueRecord } from './build-dashboard-data.mjs';
@@ -35,7 +36,7 @@ import { musterSchluessel, musterlagerPfad, leseLager, einlagern as lagerEinlage
 import { abgleichIndex as resteIndex, sucheBeiAC as resteSucheBeiAC, acTrefferFuer as resteAcTreffer, RESTE_GRUPPEN, RESTE_LIEFERANTEN } from '../operations/lib/reste.mjs';
 import { auftragsverlaufPfad, leseVerlauf, bereiteEreignisVor, schreibeVerlauf, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, ERGEBNIS_SCHRITTE, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
 import { mustersperrePfad, leseSperren, haengeAn as sperreAnhaengen, ereignis as sperrEreignis, stand as sperrStand, schonErledigt as sperreSchonErledigt, adminLink as sperrAdminLink, pruefeRechte as pruefeSperrRechte, rechtFehltText as sperrRechtFehlt, sperreImShop, freigebenImShop, GRUND as SPERR_GRUND, MustersperreFehler } from '../operations/lib/mustersperre.mjs';
-import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden, kundenIndex, offeneBestellungenJeProdukt } from '../operations/lib/kundensuche.mjs';
+import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden, kundenIndex, offeneBestellungenJeProdukt, kundenSchluessel } from '../operations/lib/kundensuche.mjs';
 import { faelle as kundenFaelle, istTestkontakt } from '../operations/lib/kundenfaelle.mjs';
 import { fallmarkenPfad, leseAlle as leseFallmarken, setzeMarke as setzeFallmarke, teileAuf as teileFaelleAuf, juengsterPunkt, FALL_GRUND } from '../operations/lib/fallmarken.mjs';
 import {
@@ -88,6 +89,8 @@ import { etikettenAusLexikon } from '../docs/ai-dashboard/lib/lexikon-etiketten.
 import { suchbegriffe, lexikonTreffer, nurUeberTitel } from '../docs/ai-dashboard/lib/lexikon-suche.mjs';
 import { musteretikettenFuerAuftrag } from '../docs/ai-dashboard/lib/bestellungs-musteretiketten.mjs';
 import { musterEtikettenStatus } from '../docs/ai-dashboard/lib/muster-etiketten-status.mjs';
+import { musterPackliste } from '../docs/ai-dashboard/lib/muster-packen.mjs';
+import { musterPackenPfad, leseAlle as leseMusterPacken, setzeGepackt } from '../operations/lib/muster-packen.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -1699,6 +1702,45 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         : String(auftrag.erfuellt).toUpperCase() === 'FULFILLED' || !zeilen.some(z => z.anzahl !== 0)
           ? 'Für diese Bestellung sind keine offenen Muster mehr vorzubereiten.' : null;
       return { verfuegbar: true, intern: true, orderId, orderName, gesperrt, zeilen };
+    },
+
+    /**
+     * Kunden → Muster packen (#1572): offene, bezahlte Musterbestellungen je Kunde, rein lesend.
+     * Anschriften kommen nur aus dem privaten Bestellexport; Shopify wird nicht gefragt.
+     */
+    kundenMusterPacken() {
+      const dir = privatDirPath || privatDir();
+      const modell = ladeBestellModell(dir);
+      if (!modell) return { verfuegbar: false, hinweis: 'Die Bestelldaten fehlen. Bitte „Jetzt aktualisieren“ und danach erneut öffnen.' };
+      const status = leseAktuellenStatus(auftragsstatusPfad(dir), modell);
+      let gepackt;
+      try { gepackt = leseMusterPacken(musterPackenPfad(dir)); } catch (e) { throw new ApiError(500, e.message); }
+      return { verfuegbar: true, ...musterPackliste({
+        auftraege: modell.auftraege || [],
+        produkte: new Map(this._lexikonProdukte().map(p => [p.handle, p])),
+        statusVon: (orderId, lineItemId) => status[positionKey(orderId, lineItemId)]?.status || null,
+        schluesselVon: kundenSchluessel,
+        gepackt, jetzt: now(),
+      }) };
+    },
+
+    /** "Gepackt" je Kunde setzen oder zuruecknehmen - nur lokal, ohne Versandbuchung. */
+    kundenMusterPackenSetzen(payload = {}, benutzer = null) {
+      if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Muster packen nur ansehen.');
+      const pk = typeof payload?.packSchluessel === 'string' ? payload.packSchluessel.trim() : '';
+      if (!pk) throw new ApiError(400, 'Kein Kunde angegeben.');
+      if (typeof payload.gepackt !== 'boolean') throw new ApiError(400, 'Angabe „gepackt“ fehlt.');
+      const liste = this.kundenMusterPacken();
+      const kunde = (liste.kunden || []).find(k => k.packSchluessel === pk);
+      // Nur, was gerade in der Liste steht: eine veraltete Seite darf keinen fremden Stand schreiben.
+      if (!kunde) throw new ApiError(409, 'Diese Bestellungen stehen nicht mehr so in der Liste. Bitte neu laden.');
+      const dir = privatDirPath || privatDir();
+      const von = benutzer?.name || benutzer?.kuerzel || 'Inhaber';
+      let ergebnis;
+      try { ergebnis = setzeGepackt(musterPackenPfad(dir), pk, { gepackt: payload.gepackt, von, jetzt: now() }); }
+      catch (e) { throw new ApiError(500, e.message); }
+      merke(benutzer, null, payload.gepackt ? 'Muster gepackt' : 'Gepackt zurückgenommen', kunde.bestellungen.map(b => b.orderName).join(', '));
+      return { ok: true, ...ergebnis };
     },
 
     async kundenMusteretikettenVormerken(payload = {}, benutzer = null) {
@@ -3945,7 +3987,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * ($TP_PRIVAT_DIR/aktualisierung.json). Liefert rohe Zeitstempel plus
      * eine je Teil vorgerechnete Alters-Einschaetzung - die Oberflaeche
      * (docs/ai-dashboard/app.js, systemHealth()) zeigt daraus "Stand: …" und
-     * warnt ab 24 Stunden. Fehlt die Datei (noch nie gelaufen), ist das kein
+     * warnt nach der Grenze je Quelle (lib/datenstand.mjs). Fehlt die Datei (noch nie gelaufen), ist das kein
      * Fehler, nur ein leerer Zustand mit dem Befehl, der sie anlegen wuerde.
      */
     aktualisierung() {
@@ -4027,7 +4069,6 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       return { verfuegbar: false, quelle: file, hinweis: 'Noch kein Lauf von daten:aktualisieren vorhanden.', befehl: 'npm run daten:aktualisieren', manuellVerfuegbar };
     }
     const jetzt = now().getTime();
-    const SCHWELLE_MS = 24 * 60 * 60 * 1000;
     const teile = {};
     for (const [teil, roh] of Object.entries(daten.teile)) {
       // Ein Fehlversuch, der AELTER ist als der letzte erfolgreiche Stand derselben Quelle,
@@ -4035,7 +4076,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Lauf aufgeraeumt - bis dahin warnte die Startseite vor einem behobenen Fehler.
       const stand = ohneUeberholtenFehler(roh);
       const alterMs = stand?.zeitpunkt ? jetzt - new Date(stand.zeitpunkt).getTime() : null;
-      teile[teil] = { ...stand, alterMs, veraltet: alterMs === null ? null : alterMs > SCHWELLE_MS };
+      // Grenze je Quelle (lib/datenstand.mjs): Bestellungen nach 30 Minuten, Lexikon nach einem Tag.
+      teile[teil] = { ...stand, alterMs, grenzeMs: grenzeFuer(teil), veraltet: alterMs === null ? null : alterMs > grenzeFuer(teil) };
     }
     return { verfuegbar: true, quelle: file, aktualisiertAm: daten.aktualisiertAm || null, teile, manuellVerfuegbar };
   }

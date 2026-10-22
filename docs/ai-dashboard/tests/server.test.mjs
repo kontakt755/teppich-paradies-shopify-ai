@@ -251,6 +251,15 @@ test('jede Route im Dispatcher steht auch in der Pfadliste', () => {
   }
 });
 
+test('POST /api/kunden/muster-packen kommt an und verlangt einen Kunden', async () => withServer(async base => {
+  const r = await fetch(`${base}/api/kunden/muster-packen`, {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({}),
+  });
+  assert.notEqual(r.status, 404, 'Route fehlt in der Pfadliste');
+  assert.equal(r.status, 400);
+  assert.match((await r.json()).error, /Kein Kunde angegeben/);
+}));
+
 test('POST /api/kunden/fall-marke kommt an und verlangt einen Fall', async () => withServer(async base => {
   const r = await fetch(`${base}/api/kunden/fall-marke`, {
     method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({}),

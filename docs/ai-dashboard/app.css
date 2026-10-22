@@ -244,6 +244,18 @@ body.rolle-mitarbeiter [data-nur-inhaber],
 body.rolle-lesen [data-nur-inhaber] { display: none !important; }
 /* Lesezugaenge sehen keine Arbeitswerkzeuge ausserhalb des Control Centers (Werkbank). */
 body.rolle-lesen [data-nicht-lesen] { display: none !important; }
+/* Mitarbeiter: Menue nur Heute, Kunden, Bestellen, Genossenschaften, Lexikon, Hilfe (Wunsch
+   2026-10-21 "dass wirklich jeder damit klarkommt"). Die Seiten bleiben ueber Links erreichbar. */
+body.rolle-mitarbeiter [data-nicht-mitarbeiter] { display: none !important; }
+
+/* "Stand: vor 3 Min." ueber der Seite; deutlich nur, wenn eine Quelle zu alt ist (bausteine/datenstand.mjs). */
+.datenstand-leiste { width: 100%; max-width: 1280px; padding: 8px 28px 0; font-size: .8rem; color: var(--text-3); text-align: right; }
+.datenstand-leiste.warn { margin: 10px 28px 0; width: auto; max-width: calc(1280px - 56px); padding: 10px 12px; text-align: left; font-size: .9rem;
+  color: var(--warn); background: var(--warn-soft); border: 1px solid color-mix(in srgb, currentColor 18%, transparent); border-left-width: 3px; border-radius: 11px; }
+@media (max-width: 760px) {
+  .datenstand-leiste { padding: 6px 16px 0; }
+  .datenstand-leiste.warn { margin: 8px 16px 0; }
+}
 
 /* Badges */
 .badge { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px; font-size: .75rem; font-weight: 600; border: 1px solid transparent; white-space: nowrap; }

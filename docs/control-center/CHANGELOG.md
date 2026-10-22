@@ -19,6 +19,54 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Bestellungen) – der automatische Vorschlag greift selten, der Hauptweg ist „Rest prüfen…“.
   Online-Muster für C-Ware bleiben aus (Inhaberregel); deren Reste sind Material für Laden/Beratung.
 - **Nächste Stufe:** Hinweis „Rest mitnehmen und beschriften“ im Auftrag für die Monteure.
+## 2026-10-21 · Mitarbeiter-Ansicht einfacher, Daten immer aktuell
+
+- **Geaendert:** Rolle Mitarbeiter: Menue nur Heute, Kunden, Bestellen, Genossenschaften, Lexikon,
+  Hilfe (`data-nicht-mitarbeiter`, Seiten bleiben ueber Links erreichbar). „Heute“ ist fuer
+  Mitarbeiter eine einzige Liste (immer Sicht Laden, ohne Zahlenzeile, Vorbereiten, Hintergrund).
+  To-do-Titel als Satz („Bei … melden: neue Anfrage …“, „Storno vom Lieferanten prüfen“), Leerzustand
+  „Alles erledigt“. Hilfe beginnt mit „In 1 Minute erklärt“ (je Menuepunkt ein Satz, drei Ablaeufe).
+  Neu `lib/datenstand.mjs` (Grenzen je Quelle: Bestellungen/Kunden/Angebote/Warenkoerbe 30 Min.,
+  Kennzahlen 2 Std., Lexikon/Bestand 1 Tag; der Server nutzt dieselben fuer `veraltet`) und
+  `bausteine/datenstand.mjs`: Zeile „Stand: vor 3 Min.“ ueber Heute/Kunden/Bestellen/Lexikon,
+  deutlicher Hinweis fuer alle bei veralteten Quellen, To-do „Daten-Abgleich prüfen“ fuer den Inhaber.
+  Die offene Seite fragt alle 2 Minuten und beim Zurueckkehren den Stand ab und laedt neue Daten
+  (inkl. Lieferantenpost, Shopify-Abgleich) – nicht, solange jemand tippt, ein Dialog offen ist oder
+  ungespeicherte Eingaben stehen.
+- **Getestet:** `dashboard:test` 641/0, `npm test` gruen, `dashboard:pruefen --rollen` 360–1440 px nur OK.
+  Klickstrecke gegen Datenkopie: Mitarbeiter-Menue 6 Punkte, Heute 8 To-dos ohne Hintergrund;
+  Stand auf 130 Min. gesetzt → Hinweis erscheint, getippte Eingabe bleibt erhalten, nach Freigabe
+  neu gezeichnet; Inhaber-To-do erscheint und verschwindet wieder bei frischen Daten.
+- **Risiken:** Ohne laufenden Sync-Dienst steht der Hinweis dauerhaft (gewollt). Ein Mitarbeiter mit
+  ueberwiegend Website-Aufgaben sieht jetzt die Laden-Liste. Lieferantenpost, Shop-Kontrolle und
+  Ausschreibungen haben weiter eigene Hinweise, nicht die neue Zeile.
+- **Naechste Stufe:** Rueckmeldung des Teams.
+## 2026-10-21 · Kunden → Muster packen (#1572)
+
+- **Geändert:** Neuer Reiter „Muster packen“ unter Kunden. Alle offenen, bezahlten, nicht versendeten
+  Musterbestellungen, nach Kunde gebündelt (mehrere Bestellungen = ein Umschlag), wer am längsten
+  wartet zuerst. Je Muster „Auf dem Muster“ (Produktname und Farbnummer des Lieferanten aus dem
+  Lexikon, nur wenn eindeutig) → „Unser Aufkleber“ (Serie · Farbe, SKU), Stand aus Auftragsfluss bzw.
+  Musterlager, Link zur Lieferantenseite. „Aufkleber drucken“ je Kunde und „Alle drucken“: erst die
+  Muster, zuletzt ein Adressaufkleber (Absender, Empfänger, Bestellnummer, `lib/adress-etiketten.mjs`).
+  „Umschlag gepackt“ liegt zentral in `$TP_PRIVAT_DIR/muster-packen.json` (`GET/POST
+  /api/kunden/muster-packen`, Rolle „lesen“ nur lesend) und gilt genau für diese Bestellungen – kommt
+  eine dazu, ist der Kunde wieder offen. Massartikel ohne eigene SKU finden jetzt über belegte
+  Artikelnummer (oder die Muster-SKU der Position) und Farbe genau eine Musterfarbe: bei den echten
+  offenen Musterbestellungen fehlte die Zuordnung vorher bei 25 von 62 Positionen, jetzt bei 1.
+- **Getestet:** `muster-packen.test.mjs` (7), `muster-packen-api.test.mjs` (4), neuer Fall in
+  `server.test.mjs` und `bestellungs-musteretiketten.test.mjs`; `dashboard:test` 655 grün.
+  `dashboard:pruefen --ansichten 'kunden?tab=muster'` in allen fünf Breiten ohne Befund. Klickstrecke
+  (Datenkopie): Zahl am Reiter = Karten, Druckdialog eines Kunden zeigt Muster und danach die Adresse,
+  Gepackt/Zurücknehmen ändert die Zahl, Haken bleiben nach Neuladen, 390 px ohne Querscrollen,
+  0 JS-Fehler. Adressaufkleber 50 × 50 vorab am echten B1 gedruckt (lokale Packliste, gleiche Layoutregeln).
+- **Risiken/Annahmen:** Eine Position bleibt „Zuordnung fehlt“, weil Lexikon und Bestellung die
+  Artikelnummer verschieden schreiben (mit/ohne führende Null) – wird nicht geraten. „Beim
+  Lieferanten bestellt“ wird im Auftragsfluss oft nicht auf „geliefert“ weitergesetzt, deshalb warnt
+  nur „noch nicht bestellt“. Der Druck aus dem Reiter selbst ist am B1 noch nicht ausprobiert.
+  Porto und Versandbuchung sind bewusst nicht enthalten.
+- **Nächste Stufe:** Versandschritt (Briefmarke über Internetmarke, `operations/lib/internetmarke.mjs`,
+  und Versand in Shopify buchen), sobald der Versandweg entschieden ist.
 
 ## 2026-10-21 · Alle gekettelten Maßteppiche automatisch zum Kettler
 

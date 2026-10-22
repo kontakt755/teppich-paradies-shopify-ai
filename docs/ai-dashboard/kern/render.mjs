@@ -20,9 +20,15 @@ let letzteAnsicht = null;
 let ansichten = {};
 export function registriereAnsichten(tabelle) { ansichten = tabelle; }
 
+// Nach jedem Zeichnen, ausserhalb von #main (z. B. Zeile "Stand: vor 3 Min.", bausteine/datenstand.mjs).
+// Ueber den Einstieg angemeldet, damit dieses Modul keinen Baustein mit Ansichtsdaten laden muss.
+let nachZeichnen = () => {};
+export function registriereNachZeichnen(fn) { nachZeichnen = fn; }
+
 export function render() {
   zeichne();
   aktualisiereSeitentitel();
+  nachZeichnen();
 }
 
 function zeichne() {
