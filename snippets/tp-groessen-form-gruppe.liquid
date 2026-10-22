@@ -1,0 +1,38 @@
+{% doc %}
+  Gibt die Formgruppe eines Groessenwerts aus (fuer tp-groessen-form):
+  rund | fellform | laeufer | quadrat | rechteck.
+  "rund"/"Ø" -> rund, "Fell" -> fellform, "Läufer" im Wert oder Laenge
+  mindestens das 2,5-Fache der Breite -> laeufer, Breite = Laenge -> quadrat.
+
+  @param {string} wert - Optionswert, z. B. "80 × 250 cm" oder "Ø 160 cm rund"
+{% enddoc %}
+{%- liquid
+  assign tp_gg_text = wert | append: ''
+  assign tp_gg_klein = tp_gg_text | downcase
+  assign tp_gg_roh = tp_gg_text | replace: '×', ' x ' | replace: 'x', ' x ' | replace: ',', '.'
+  assign tp_gg_teile = tp_gg_roh | split: ' '
+  assign tp_gg_b = 0
+  assign tp_gg_l = 0
+  for tp_gg_teil in tp_gg_teile
+    assign tp_gg_zahl = tp_gg_teil | plus: 0
+    if tp_gg_zahl > 0
+      if tp_gg_b == 0
+        assign tp_gg_b = tp_gg_zahl
+      elsif tp_gg_l == 0
+        assign tp_gg_l = tp_gg_zahl
+      endif
+    endif
+  endfor
+  assign tp_gg_lang = tp_gg_b | times: 2.5
+  if tp_gg_klein contains 'rund' or tp_gg_text contains 'Ø'
+    echo 'rund'
+  elsif tp_gg_klein contains 'fell'
+    echo 'fellform'
+  elsif tp_gg_klein contains 'läufer' or tp_gg_b > 0 and tp_gg_l >= tp_gg_lang
+    echo 'laeufer'
+  elsif tp_gg_b > 0 and tp_gg_b == tp_gg_l
+    echo 'quadrat'
+  else
+    echo 'rechteck'
+  endif
+-%}
