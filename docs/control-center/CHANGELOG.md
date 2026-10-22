@@ -2,6 +2,15 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-22 · Muster packen: Farbbild macht Breiten nicht mehr mehrdeutig
+
+- **Geändert:** Dieselbe SKU in mehreren Breiten trägt je ein eigenes Variantenbild; das galt als
+  Widerspruch, und 40 von 68 offenen Mustern zeigten keine Lieferantenangaben. Das Bild entscheidet
+  jetzt nicht mehr über „mehrdeutig“. Echte Daten danach: 66 von 68 mit Angaben, 65 mit Farbbild.
+- **Getestet:** neuer Fall in `muster-packen.test.mjs`; `dashboard:test` grün.
+- **Risiken/Annahmen:** keine.
+- **Nächste Stufe:** Teil 3 – Wareneingang nach Partnerladen sortieren.
+
 ## 2026-10-22 · Muster packen: Muster sicher erkennen, abhaken, „Zu klären“
 
 - **Geändert:** Je Muster ein Bild genau dieser Farbe (Variantenbild, neu im Lexikon-Export;

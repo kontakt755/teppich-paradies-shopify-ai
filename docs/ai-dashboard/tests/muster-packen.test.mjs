@@ -148,3 +148,13 @@ test('Abhaken und zu klaeren: Bereich je Kunde, Haken bleiben, gepackt gewinnt',
   assert.equal(spaeter.kunden.find(k => k.name === 'Anna Test').bereich, 'gepackt');
   assert.deepEqual(spaeter.zahlen, { packen: 1, klaeren: 0, gepackt: 1 });
 });
+
+test('gleiche SKU in mehreren Breiten mit je eigenem Bild bleibt eindeutig', () => {
+  const breit = { ...boden, handle: 'testvelours-500', varianten: [{ ...boden.varianten[0], id: 'gid://shopify/ProductVariant/111', bild: 'https://cdn.example/sand-500.jpg' }] };
+  const schmal = { ...boden, varianten: [{ ...boden.varianten[0], bild: 'https://cdn.example/sand-400.jpg' }, boden.varianten[1]] };
+  const r = musterPackliste({ produkte: new Map([[schmal.handle, schmal], [breit.handle, breit]]), schluesselVon, jetzt,
+    auftraege: [auftrag(1, '2026-10-20T09:00:00Z', 'Anna Test', [pos(11, '101')])] });
+  const m = r.kunden[0].muster[0];
+  assert.equal(m.vorher?.produktname, 'Lieferantenware SAND 400');
+  assert.equal(m.bild, 'https://cdn.example/sand-400.jpg');
+});
