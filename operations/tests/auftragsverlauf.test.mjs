@@ -115,37 +115,37 @@ test('Teilweise bestellt: Schritt bleibt offen und nennt den Teilstand', () => {
   assert.match(z.naechsterSchritt.text, /1 von 2/);
 });
 
-test('"Kunde hat Muster" wird nach N Tagen nur vorgeschlagen, nie still gesetzt', () => {
+test('Versandzeit wird nie zum Empfangsnachweis; faellige Nachfrage verlinkt den bestehenden Ablauf', () => {
   const a = einAuftrag(bestellung(1, [muster(1)]));
   const statusAlle = statusBis(a, 'raus'); // verschickt am 5.
   const frueh = zeitleiste(a, { statusAlle, jetzt: am(5 + MUSTER_ANGEKOMMEN_ANNAHME_TAGE - 1) });
   assert.deepEqual([frueh.naechsterSchritt.wer, frueh.naechsterSchritt.stufe, frueh.naechsterSchritt.annahme], ['kunde', 'warten', false]);
   const spaet = zeitleiste(a, { statusAlle, jetzt: am(5 + 20) });
   assert.equal(zustaende(spaet).kunde_hat_muster, 'aktuell', 'auch nach 20 Tagen nicht automatisch gesetzt');
-  assert.deepEqual([spaet.naechsterSchritt.wer, spaet.naechsterSchritt.aktion, spaet.naechsterSchritt.stufe, spaet.naechsterSchritt.annahme], ['wir', 'kunde_hat_muster', 'faellig', true]);
+  assert.deepEqual([spaet.naechsterSchritt.wer, spaet.naechsterSchritt.aktion, spaet.naechsterSchritt.stufe, spaet.naechsterSchritt.annahme], ['wir', null, 'faellig', false]);
   assert.equal(zustaende(spaet).nachgefasst, 'offen');
 });
 
-test('Nachfassen wird 5 Tage nach "Kunde hat Muster" faellig', () => {
-  assert.equal(NACHFASSEN_NACH_TAGEN, 5);
+test('Nachfassen verwendet denselben Versandbeginn und dieselbe Frist wie der moderne Ablauf', () => {
+  assert.equal(NACHFASSEN_NACH_TAGEN, 4);
   const a = einAuftrag(bestellung(1, [muster(1)]));
   const statusAlle = statusBis(a, 'raus');
   const ereignisse = [{ schritt: 'kunde_hat_muster', am: tag(7), von: 'Mitarbeiter 2' }];
-  const bei = t => zeitleiste(a, { statusAlle, ereignisse, jetzt: am(7 + t) });
-  assert.deepEqual([bei(4).naechsterSchritt.wer, bei(4).naechsterSchritt.stufe, bei(4).naechsterSchritt.faelligSeitTagen], ['kunde', 'warten', null]);
-  const faellig = bei(6);
-  assert.deepEqual([faellig.naechsterSchritt.wer, faellig.naechsterSchritt.aktion, faellig.naechsterSchritt.stufe, faellig.naechsterSchritt.faelligSeitTagen], ['wir', 'nachgefasst', 'faellig', 1]);
-  assert.match(faellig.naechsterSchritt.text, /Nachfassen: Muster liegen seit 6 Tagen beim Kunden/);
+  const frueh = zeitleiste(a, { statusAlle, ereignisse, jetzt: am(8) });
+  assert.equal(frueh.naechsterSchritt.stufe, 'warten');
+  const faellig = zeitleiste(a, { statusAlle, ereignisse, jetzt: am(9) });
+  assert.equal(faellig.naechsterSchritt.href, '#/heute?mn=1');
+  assert.equal(faellig.naechsterSchritt.aktion, null, 'keine manuelle Schein-Nachfrage');
+  assert.equal(faellig.naechsterSchritt.faelligSeitTagen, 0);
   assert.equal(faellig.verlauf[4].von, 'Mitarbeiter 2');
-  assert.equal(bei(5).naechsterSchritt.faelligSeitTagen, 0);
 });
 
-test('Nach dem Nachfassen: Kunde ist dran, nach 14 Tagen Ergebnis klaeren; Ergebnis schliesst ab', () => {
+test('Nach erster Nachfrage bleibt die moderne Erinnerung fuehrend; echtes Ergebnis schliesst ab', () => {
   const a = einAuftrag(bestellung(1, [muster(1)]));
   const statusAlle = statusBis(a, 'raus');
   const basis = [{ schritt: 'kunde_hat_muster', am: tag(7), von: 'Mitarbeiter 2' }, { schritt: 'nachgefasst', am: tag(13), von: 'Mitarbeiter 2', notiz: 'überlegt noch' }];
   const wartet = zeitleiste(a, { statusAlle, ereignisse: basis, jetzt: am(15) });
-  assert.deepEqual([wartet.naechsterSchritt.wer, wartet.naechsterSchritt.aktion, wartet.naechsterSchritt.stufe], ['kunde', 'ergebnis', 'warten']);
+  assert.deepEqual([wartet.naechsterSchritt.wer, wartet.naechsterSchritt.aktion, wartet.naechsterSchritt.stufe], ['kunde', null, 'warten']);
   assert.equal(wartet.verlauf[5].notiz, 'überlegt noch');
   const lang = zeitleiste(a, { statusAlle, ereignisse: basis, jetzt: am(13 + ERGEBNIS_KLAEREN_NACH_TAGEN) });
   assert.deepEqual([lang.naechsterSchritt.wer, lang.naechsterSchritt.stufe], ['wir', 'faellig']);
@@ -166,7 +166,8 @@ test('Automatisch erkannt: Shopify-Versand = an Kunden verschickt, Zustellung = 
   const zugestellt = einAuftrag(bestellung(1, [muster(1)], { erfuellt: 'FULFILLED', fulfillments: sendung('DELIVERED') }));
   const z2 = zeitleiste(zugestellt, { jetzt: am(8) });
   assert.deepEqual([z2.verlauf[4].zustand, z2.verlauf[4].automatisch, z2.verlauf[4].quelle, z2.verlauf[4].am], ['erledigt', true, 'Sendungsverfolgung', tag(6)]);
-  assert.equal(z2.naechsterSchritt.aktion, 'nachgefasst');
+  assert.equal(z2.naechsterSchritt.aktion, null);
+  assert.equal(z2.naechsterSchritt.href, '#/heute?mn=1');
 
   // Teilversand ist kein sicherer Beleg, stornierte Sendungen zaehlen nicht.
   const teil = einAuftrag(bestellung(1, [muster(1)], { erfuellt: 'PARTIALLY_FULFILLED', fulfillments: sendung('IN_TRANSIT') }));
@@ -335,4 +336,15 @@ test('Muster nicht verfuegbar: beim Lieferanten bestellt und seit 14 Tagen nicht
   assert.equal(nachher.abgeschlossen, true);
   assert.equal(nachher.naechsterSchritt, null);
   assert.equal(dringendsterSchritt([vorher.naechsterSchritt, nachher.naechsterSchritt]), vorher.naechsterSchritt);
+});
+
+
+test('Eigenbestand: Postversand fuehrt nur zum Versanddialog, persoenliche Uebergabe darf Empfang bestaetigen', () => {
+  for (const [herkunft, aktion] of [['eigen_versand', 'raus'], ['eigen_vorbei', 'kunde_hat_muster']]) {
+    const a = einAuftrag(bestellung(1, [muster(1)]));
+    a.positionen[0].musterHerkunft = herkunft;
+    const z = zeitleiste(a, { jetzt: am(2) });
+    assert.equal(z.naechsterSchritt.aktion, aktion);
+    assert.equal(z.verlauf.find(s => s.schritt === 'kunde_hat_muster').zustand, 'offen');
+  }
 });

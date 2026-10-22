@@ -88,7 +88,7 @@ function naechsterKarte(a, kunde, lesend) {
   // Muster noch beim Lieferanten zu bestellen? Oft liegen sie hier - dann gar nicht bestellen.
   const haben = a.auftragsart === 'muster' && n.aktion === 'bestellt' ? `<button type="button" class="btn" data-muster-herkunft="${esc(a.id)}" title="Muster/Katalog selbst vorrätig: verschicken oder vorbeibringen">Haben wir da…</button>` : '';
   const knoepfe = lesend ? '' : `
-    ${n.aktion ? `<div class="zl-knoepfe no-print">
+    ${n.href === '#/heute?mn=1' ? `<div class="zl-knoepfe no-print"><a class="btn" href="${esc(n.href)}">${esc(n.knopf || 'Nachfragen prüfen')}</a></div>` : n.aktion ? `<div class="zl-knoepfe no-print">
       <button type="button" class="btn ${n.stufe === 'warten' ? '' : 'btn-primary'}" data-zl-schritt="${esc(n.aktion)}" data-zl-order="${esc(a.id)}">${esc(n.knopf)}</button>${anruf}${haben}
     </div>` : ''}
     <button type="button" class="zl-anders no-print" data-zl-anders="${esc(a.id)}">Etwas anderes ist passiert …</button>`;

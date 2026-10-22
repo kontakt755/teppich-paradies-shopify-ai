@@ -7,6 +7,7 @@ import {
   bestellKundenKey, gruppiereBestellzeilenNachKunde, sortKundenname, sortiereNachWichtigkeit,
 } from '../../lib/kunden-bestellgruppen.mjs';
 import { bestellArbeitsstand, bestellungAusgeblendet, bestellPruefgruende, bestellZahlungOffen } from '../../lib/bestellarbeit.mjs';
+import { bestellArtPasst, warenArbeitsstand, shopBestellarbeit } from '../../lib/shop-bestellarbeit.mjs';
 import { state } from '../../kern/zustand.mjs';
 import { esc, fmtDate, fmtDateTime, plural, toast, geldText } from '../../kern/helfer.mjs';
 import { fetchEinkauf } from '../../kern/api.mjs';
@@ -60,15 +61,29 @@ const KANAL_TEXT = { web: 'Onlineshop', pos: 'Ladengeschäft', shopify_draft_ord
 
 function bqFeldTreffer(felder, q) { return felder.some(f => typeof f === 'string' && f.toLowerCase().includes(q)); }
 
+function zeilenNachArt(zeilen, art) {
+  if (!['ware', 'muster'].includes(art)) return zeilen;
+  return zeilen.filter(z => bestellArtPasst(z, art))
+    .map(z => art === 'ware' ? { ...z, warenarbeit: warenArbeitsstand(z) } : z);
+}
+
+function pruefgruende(z) {
+  return z.warenarbeit ? (!z.testbestellung && !z.storniert && z.warenarbeit.kontrollieren ? [z.warenarbeit.naechstes] : []) : bestellPruefgruende(z);
+}
+
+function arbeitsstand(z) { return z.warenarbeit || bestellArbeitsstand(z); }
+function sichtbarerFortschritt(z) { return z.warenarbeit ? z.warenarbeit.fortschritt : z.fortschritt; }
+
 function bestellzeileGefiltert(zeilen, params) {
+  const art = params.get('bart') || 'alle';
   const filter = params.get('bfilter') || 'nicht_fertig';
   const q = (params.get('bq') || '').trim().toLowerCase();
   // Neueste Bestellung oben (Inhabervorgabe 2026-10-22) - vorher Kundenname A-Z.
   const sort = params.get('bsort') || 'datum';
   const dir = params.get('bdir') || (sort === 'kundenname' ? 'asc' : 'desc');
   // "Nicht fertig" laesst fertige Bestellungen drin - sie landen im Bereich "Erledigt" (istErledigt).
-  let liste = zeilen.filter(z => filter === 'nicht_fertig' ? !z.testbestellung && !z.storniert
-    : filter === 'pruefen' ? bestellPruefgruende(z).length > 0
+  let liste = zeilenNachArt(zeilen, art).filter(z => filter === 'nicht_fertig' ? !z.testbestellung && !z.storniert
+    : filter === 'pruefen' ? pruefgruende(z).length > 0
     : filter === 'fertig' ? (istErledigt(z) && !z.testbestellung)
     : filter === 'offen' ? bestellZahlungOffen(z)
     : filter === 'bezahlt' ? z.zahlungsstatus === 'PAID'
@@ -84,10 +99,17 @@ function bestellzeileGefiltert(zeilen, params) {
   const cmp = {
     datum: z => z.datum || '', orderName: z => z.orderName || '', kundenname: z => (z.kundenname || '').toLowerCase(),
     gesamtbetrag: z => z.gesamtbetrag ?? -Infinity, zahlungsstatus: z => z.zahlungsstatus || '', fulfillmentstatus: z => z.fulfillmentstatus || '', anzahlArtikel: z => z.anzahlArtikel ?? 0,
-    fortschritt: z => z.fortschritt?.minStufe ?? 0,
+    fortschritt: z => sichtbarerFortschritt(z)?.minStufe ?? 0,
   }[sort] || (z => z.datum || '');
   // Voreinstellung (Inhaber 22.10.): wer am dringendsten etwas braucht, steht oben.
-  if (sort === 'wichtigkeit') return sortiereNachWichtigkeit(liste);
+  if (sort === 'wichtigkeit') {
+    // Nur die Sortierquelle wird auf Ware projiziert. Details und bewusste
+    // Sammelaktionen behalten die vollstaendige Bestellung samt Mustern.
+    const quellen = liste.map(z => z.warenarbeit ? { ...z, original: z,
+      fortschritt: z.warenarbeit.fortschritt, fertig: z.warenarbeit.abgeschlossen,
+      wasFehlt: pruefgruende(z) } : z);
+    return sortiereNachWichtigkeit(quellen).map(z => z.original ? { ...z.original, wichtigkeit: z.wichtigkeit } : z);
+  }
   const vz = dir === 'asc' ? 1 : -1;
   const namen = new Intl.Collator('de', { sensitivity: 'base', numeric: true });
   liste = [...liste].sort((a, b) => {
@@ -211,8 +233,11 @@ function betragText(z) {
  */
 /** Erledigt: von Hand abgehakt oder in Shopify/Auftragsfluss abgeschlossen (Abgleich laeuft serverseitig). */
 function automatischErledigt(z) { return z.fertig || z.fulfillmentstatus === 'FULFILLED'; }
-function istErledigt(z) { return bestellungAusgeblendet(z); }
-export function bestellungenOffen() { return kunden.bestellungen?.verfuegbar ? kunden.bestellungen.zeilen.filter(z => !z.testbestellung && !z.storniert && !istErledigt(z)).length : null; }
+function istErledigt(z) { return z.warenarbeit ? z.warenarbeit.abgeschlossen : bestellungAusgeblendet(z); }
+export function bestellungenOffen({ art = 'alle' } = {}) {
+  if (art === 'ware') return shopBestellarbeit(kunden.bestellungen).offen;
+  return kunden.bestellungen?.verfuegbar ? zeilenNachArt(kunden.bestellungen.zeilen, art).filter(z => !z.testbestellung && !z.storniert && !istErledigt(z)).length : null;
+}
 
 function hakenKnopf(z) {
   if (!z.abgehakt && automatischErledigt(z)) return '<span class="bq-haken-auto" title="In Shopify bzw. im Auftragsfluss abgeschlossen">✓</span> ';
@@ -247,27 +272,27 @@ async function hakenSetzen(orderId, erledigt) {
 function bestellzeileHtml(z) {
   const offenKlasse = kunden.erweitert.has(z.orderId) ? ' offen' : '';
   const tagListe = [...z.tags.beratung, ...z.tags.typ, ...z.tags.sonstige];
-  const pk = fortschrittKlasse(z.fortschritt?.stufe);
+  const pk = fortschrittKlasse(sichtbarerFortschritt(z)?.stufe);
   const inhalt = inhaltHtml(z);
   return `<tr class="bq-row${offenKlasse}${inhalt ? ' mit-inhalt' : ''}" data-bq-toggle="${esc(z.orderId)}" tabindex="0" role="button" aria-expanded="${kunden.erweitert.has(z.orderId)}" aria-label="Bestellung ${esc(z.orderName)} von ${esc(z.kundenname)} auf- oder zuklappen">
       <td data-l="Bestellnr.">${hakenKnopf(z)}<a href="${esc(z.adminUrl)}" target="_blank" rel="noopener">${esc(z.orderName)}</a>${neuBadge(z)}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</td>
       <td data-l="Kunde">${z.kundenSchluessel ? `<a href="#" data-kunden-open="${esc(z.kundenSchluessel)}">${wertText(z.kundenname)}</a>` : wertText(z.kundenname)}<div class="small muted">${fmtDateTime(z.datum)} · ${betragText(z)}</div></td>
-      <td data-l="Stand"><span class="bq-fortschritt ${pk}">${esc(bestellArbeitsstand(z).stand)}</span>${z.zahlungsstatus !== 'PAID' ? `<div class="small">${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)}</div>` : ''}</td>
-      <td data-l="Nächster Schritt">${esc(bestellArbeitsstand(z).naechstes)}</td>
+      <td data-l="Stand"><span class="bq-fortschritt ${pk}">${esc(arbeitsstand(z).stand)}</span>${z.zahlungsstatus !== 'PAID' ? `<div class="small">${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)}</div>` : ''}</td>
+      <td data-l="Nächster Schritt">${esc(arbeitsstand(z).naechstes)}</td>
     </tr>
     ${inhalt ? `<tr class="bq-inhalt${offenKlasse}" data-bq-toggle="${esc(z.orderId)}"><td colspan="4">${inhalt}</td></tr>` : ''}
     ${kunden.erweitert.has(z.orderId) ? `<tr class="bq-detail"><td colspan="4">${musteretikettenBlock(z)}${zeitleisteBlock(auftragAusZeile(z), { kontakt: true })}<details><summary>Kontakt, Zahlung und weitere Angaben</summary>${kontaktZelle(z)}${weitereAngaben(z, tagListe)}</details><details><summary>Artikel und Beleg ansehen</summary>${kundenAuftragKarte(z.auftrag, { ohneStatus: true })}</details>${bestellzeileAktionen(z)}</td></tr>` : ''}`;
 }
 
 function bestellzeileKarte(z, gruppiert = false) {
-  const pk = fortschrittKlasse(z.fortschritt?.stufe);
+  const pk = fortschrittKlasse(sichtbarerFortschritt(z)?.stufe);
   return `<div class="row bq-karte" data-bq-toggle="${esc(z.orderId)}" tabindex="0" role="button" aria-expanded="${kunden.erweitert.has(z.orderId)}" aria-label="Bestellung ${esc(z.orderName)} von ${esc(z.kundenname || 'unbekannt')} auf- oder zuklappen">
     <div>
       <div class="t">${hakenKnopf(z)}${esc(z.orderName)}${neuBadge(z)}${gruppiert ? '' : ` · ${wertText(z.kundenname)}`}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</div>
       <div class="m">${betragText(z)} · ${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)} · ${fmtDate(z.datum)}</div>
       ${inhaltHtml(z) ? `<div class="bq-inhalt-mobil">${inhaltHtml(z)}</div>` : ''}
-      <div class="m"><span class="bq-fortschritt ${pk}">${esc(bestellArbeitsstand(z).stand)}</span></div>
-      <div class="m">${esc(bestellArbeitsstand(z).naechstes)}</div>
+      <div class="m"><span class="bq-fortschritt ${pk}">${esc(arbeitsstand(z).stand)}</span></div>
+      <div class="m">${esc(arbeitsstand(z).naechstes)}</div>
     </div>
     <div class="r"><span class="small muted">${kunden.erweitert.has(z.orderId) ? 'zuklappen ▲' : 'Details ▼'}</span></div>
   </div>
@@ -281,6 +306,7 @@ export function viewKundenBestellungen() {
   if (d?.fehler) return stoerungState(d, 'Die Bestellliste');
   if (!d || !d.verfuegbar) return emptyState('Keine Bestelldaten verfügbar.', d?.hinweis || 'Bestellübersicht noch nicht exportiert.');
   const params = state.route.params;
+  const art = ['ware', 'muster'].includes(params.get('bart')) ? params.get('bart') : 'alle';
   const filter = params.get('bfilter') || 'nicht_fertig';
   const sort = params.get('bsort') || 'datum';
   const dir = params.get('bdir') || (sort === 'kundenname' ? 'asc' : 'desc');
@@ -314,6 +340,9 @@ export function viewKundenBestellungen() {
     <summary>Weitere Filter${weitererFilterAktiv ? ` · ${esc(BQ_FILTER_LABEL[filter])}` : ''}</summary>
     <div class="chips" role="group" aria-label="Weitere Bestellfilter">${FILTERCHIPS_WEITERE.map(filterKnopf).join('')}</div>
   </details>`;
+  const artWahl = `<div class="chips" role="group" aria-label="Bestellart">
+    ${[['ware', 'Waren'], ['muster', 'Muster'], ['alle', 'Waren und Muster']].map(([wert, label]) => `<button type="button" class="chip" data-param="bart" data-value="${wert === 'alle' ? '' : wert}" aria-pressed="${art === wert}">${label}</button>`).join('')}
+  </div>`;
   // Kein data-param hier: der generische Handler wuerde vorher greifen und nur
   // die Spalte setzen - die Richtung liesse sich dann nie umschalten.
   const sortHead = (feld, label) => `<th><button type="button" class="th-sort" data-bq-sort-toggle="${feld}" aria-label="Nach ${esc(label)} sortieren${sort === feld ? (dir === 'asc' ? ', aktuell aufsteigend' : ', aktuell absteigend') : ''}">${esc(label)}${sort === feld ? (dir === 'asc' ? ' ↑' : ' ↓') : ''}</button></th>`;
@@ -332,14 +361,18 @@ export function viewKundenBestellungen() {
     ? gruppen.map(g => `<section class="bq-kundengruppe-mobil"><h3>${esc(g.name)} <span class="small muted">· ${plural(g.zeilen.length, 'Bestellung', 'Bestellungen')}</span></h3>${grund(g)}${g.zeilen.map(z => bestellzeileKarte(z, true)).join('')}</section>`).join('')
     : sichtbar.map(z => bestellzeileKarte(z)).join('')
     : emptyState('Keine Treffer.', '');
-  const pruefen = d.zeilen.filter(z => bestellPruefgruende(z).length).length;
+  const pruefen = zeilenNachArt(d.zeilen, art).filter(z => pruefgruende(z).length).length;
   const alleLink = new URLSearchParams(params);
   alleLink.set('bfilter', 'alle'); alleLink.delete('bseite');
+  const pruefLink = new URLSearchParams(params);
+  pruefLink.set('bfilter', 'pruefen'); pruefLink.delete('bseite');
   return `
-    ${pruefen && filter !== 'pruefen' ? `<p class="notice warn"><a href="#/kunden?tab=bestellungen&amp;bfilter=pruefen">${plural(pruefen, 'Bestellung braucht', 'Bestellungen brauchen')} Kontrolle</a> – etwa ein manueller Haken ohne Versandnachweis oder unklare Artikel.</p>` : ''}
+    ${pruefen && filter !== 'pruefen' ? `<p class="notice warn"><a href="#/kunden?${esc(pruefLink)}">${plural(pruefen, 'Bestellung braucht', 'Bestellungen brauchen')} Kontrolle</a> – etwa ein manueller Haken ohne Versandnachweis oder unklare Artikel.</p>` : ''}
     ${filter === 'pruefen' ? '<p class="notice warn">Hier bleiben auch manuell abgehakte Fälle sichtbar. Prüfe den Versand- und Artikelstand, bevor du einen Fall abschließt.</p>' : ''}
     ${filter === 'alle' ? '<p class="small muted">Alle echten Bestellungen im Betriebsbestand: letzte 90 Tage sowie ältere mit offenem Versand oder offener Zahlung. Ältere vollständig abgeschlossene Bestellungen findest du in Shopify.</p>' : ''}
     <div class="toolbar search-hero"><input type="search" placeholder="Suchen – Kunde, E-Mail, Telefon, Bestellnummer, Produkt, Farbe, Tags …" value="${esc(params.get('bq') || '')}" data-param="bq" aria-label="Bestellungen durchsuchen"></div>
+    ${artWahl}
+    ${art === 'ware' ? '<p class="small muted">Warenfortschritt und nächster Schritt beziehen sich auf die Warenpositionen. Gemischte Bestellungen behalten ihre Muster in den Details; der Betrag ist der ganze Bestellwert.</p>' : ''}
     ${params.get('bq') && filter !== 'alle' ? `<p class="small muted">Die Suche gilt für „${esc(BQ_FILTER_LABEL[filter] || filter)}“. <a href="#/kunden?${esc(alleLink)}">In allen Bestellungen suchen →</a></p>` : ''}
     ${chips}
     <div class="chips" role="group" aria-label="Sortierung">

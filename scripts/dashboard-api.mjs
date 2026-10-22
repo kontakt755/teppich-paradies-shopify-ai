@@ -96,6 +96,7 @@ import { suchbegriffe, lexikonTreffer, nurUeberTitel } from '../docs/ai-dashboar
 import { musteretikettenFuerAuftrag } from '../docs/ai-dashboard/lib/bestellungs-musteretiketten.mjs';
 import { musterEtikettenStatus } from '../docs/ai-dashboard/lib/muster-etiketten-status.mjs';
 import { grossbriefPfad, leseGrossbriefe, grossbriefStand, speichereGrossbrief, GrossbriefSpeicherFehler } from '../operations/lib/muster-grossbrief.mjs';
+import { musterwirkung } from '../operations/lib/musterwirkung.mjs';
 import { musterPackliste } from '../docs/ai-dashboard/lib/muster-packen.mjs';
 import { musterPackenPfad, setzeGepackt, setzeHaken, setzeKlaeren, leseStand as leseMusterPackStand } from '../operations/lib/muster-packen.mjs';
 
@@ -1681,6 +1682,18 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       try { katalog = this._lexikonProdukte(); } catch { /* Optionale Kaufquelle unlesbar: keine Links, Bestellliste bleibt nutzbar. */ }
       const haken = leseBestellmarken(bestellmarkenPfad(dir));
       return { verfuegbar: true, zeilen: bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, abgehakt: haken[z.orderId] || null, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) })) };
+    },
+
+    /** Rein lesende Aggregate, ohne Kundennamen oder zweite Bestellablage. */
+    kundenMusterwirkung() {
+      const dir = privatDirPath || privatDir();
+      const datei = path.join(dir, 'bestelluebersicht', 'orders.json');
+      const daten = readJsonGecacht(datei);
+      if (!daten) {
+        if (leseFehler(datei)) throw new ApiError(500, 'Die Bestelldaten für die Musteranalyse sind nicht lesbar. Bitte die Datenquelle prüfen.');
+        return { verfuegbar: false, hinweis: 'Die Bestelldaten für die Musteranalyse fehlen. Bitte die Bestelldaten aktualisieren.' };
+      }
+      return musterwirkung(daten, { jetzt: now() });
     },
 
     /** Bestellung abhaken bzw. Haken zuruecknehmen - gemeinsam fuer alle, ohne Shopify-Buchung. */

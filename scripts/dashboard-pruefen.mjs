@@ -60,7 +60,7 @@ import { pruefLauf } from './dashboard-pruefung-lauf.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..');
-const ALLE_ANSICHTEN = ['heute', 'prozesse', 'prozesse?prozess=angebot', 'prozesse?prozess=recherche', 'einkauf', 'einkauf?tab=lieferant', 'einkauf?tab=belege', 'einkauf?tab=musterlager', 'einkauf?tab=produktdaten', 'einkauf?tab=versandkosten', 'kunden', 'kunden?tab=bestellungen', 'kunden?tab=muster', 'kunden?tab=service', 'kunden?tab=warenkoerbe', 'organisation', 'fotos', 'social', 'sonderposten', 'bildrechte', 'bildrechte?bl=zu-klein', 'lexikon', 'lexikon?tab=etiketten', 'lexikon?tab=druckliste', 'lexikon?handle=kontura-teppichboden', 'arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet', 'shopwache', 'akquise', 'akquise?as=alle', 'team', 'hilfe'];
+const ALLE_ANSICHTEN = ['heute', 'prozesse', 'prozesse?prozess=angebot', 'prozesse?prozess=recherche', 'einkauf', 'einkauf?tab=lieferant', 'einkauf?tab=belege', 'einkauf?tab=musterlager', 'einkauf?tab=produktdaten', 'einkauf?tab=versandkosten', 'kunden', 'kunden?tab=bestellungen', 'kunden?tab=bestellungen&bart=ware&bsort=wichtigkeit', 'kunden?tab=musterwirkung', 'kunden?tab=muster', 'kunden?tab=service', 'kunden?tab=warenkoerbe', 'organisation', 'fotos', 'social', 'sonderposten', 'bildrechte', 'bildrechte?bl=zu-klein', 'lexikon', 'lexikon?tab=etiketten', 'lexikon?tab=druckliste', 'lexikon?handle=kontura-teppichboden', 'arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet', 'shopwache', 'akquise', 'akquise?as=alle', 'team', 'hilfe'];
 // Fensterbreiten [Breite, Hoehe, Name]. Die Namen "desktop" und "handy" bleiben fuer die
 // beiden Breiten, die es schon immer gab - Screenshots heissen dort wie bisher.
 // Seit das Control Center ueber Tailscale vom Handy aus benutzt wird (auch vom Monteur auf
@@ -267,17 +267,17 @@ async function main() {
           fehler.length = 0;
           // Nicht auf "networkidle0" warten: fehlt in einem frischen Worktree issues.json, laedt
           // die Seite weiter nach und der Lauf brach mit "Navigation timeout" ab. Stattdessen
-          // warten, bis nichts mehr "Lade ..." zeigt, hoechstens aber ein paar Sekunden.
+          // warten, bis keine Ladeanzeige mehr steht (auch "werden geladen"), hoechstens aber ein paar Sekunden.
           await seite.goto(`${basis}/#/${ansicht}`, { waitUntil: 'domcontentloaded' });
           // Steht nach 6 s noch "Lade …" da, ist das ein Befund: genau so sah der Fehler aus,
           // wenn eine Ladefunktion nach dem Laden nicht neu zeichnete (Skill, "Fallstricke").
           // Bisher zaehlte das als OK - der Screenshot zeigte es, aber niemand sah hin.
           const fertig = await seite.waitForFunction(() => {
             const main = document.querySelector('#main');
-            return main && !main.querySelector('.skeleton') && !/Lade\b[^.]{0,40}…/.test(main.textContent);
+            return main && !main.querySelector('.skeleton') && !/Lade\b[^.]{0,40}…|\b(?:wird|werden)\s+(?:noch\s+)?geladen\b/g.test(main.textContent);
           }, { timeout: 6000 }).then(() => true, () => false);
           if (!fertig) {
-            const rest = await seite.evaluate(() => (document.querySelector('#main')?.textContent.match(/Lade\b[^.]{0,40}…/) || ['Seite lädt'])[0]).catch(() => 'Seite lädt');
+            const rest = await seite.evaluate(() => (document.querySelector('#main')?.textContent.match(/Lade\b[^.]{0,40}…|\b(?:wird|werden)\s+(?:noch\s+)?geladen\b/g) || ['Seite lädt'])[0]).catch(() => 'Seite lädt');
             fehler.push(`laedt nach 6 s noch: ${rest.replace(/\s+/g, ' ').trim()}`);
           }
           await new Promise(r => setTimeout(r, 700));

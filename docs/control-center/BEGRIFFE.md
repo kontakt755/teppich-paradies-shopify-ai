@@ -80,3 +80,27 @@ gebraeuchlich), Erfassen.
 - **Arbeitsliste** in der Packstation = jeweils Packbereit / Wartet auf Ware / Zu klaeren / Gepackt;
   die Suche beruecksichtigt alle vier Listen.
 - **Weitere Filter** = zusaetzliche Bestellfilter; vier Hauptfilter bleiben direkt sichtbar.
+
+## Shopfokus (#1624)
+
+- **Shop-Übersicht** = Startseite für Warenbestellungen, Muster und Versand; zahlende
+  Warenkunden stehen zuerst. Allgemeine Laden- und Tagesaufgaben bleiben unter „Weitere Bereiche“.
+- **Waren / Muster / Waren und Muster** = unabhängige Artwahl der Bestellliste. Ein gemischter
+  Auftrag bleibt bei Waren und bei Mustern auffindbar; Statusfilter gelten zusätzlich.
+- **Warenfortschritt** = Fortschritt ausschließlich der Warenpositionen eines Auftrags;
+  Muster und bewusste Gesamtbestellaktionen bleiben in den Details erhalten.
+- **Bestellwert** = Wert der ganzen Bestellung einschließlich eines eventuellen Musteranteils;
+  kein Warenumsatz, Gewinn oder Nachweis eines Zahlungseingangs.
+- **Musterwirkung** = beobachtete Musterbestellungen und spätere belegte Warenkäufe im
+  verfügbaren Bestand; keine behauptete Kaufursache oder Rentabilität.
+- **Ohne beobachtetes Muster** = im verfügbaren Betriebsbestand kein früheres Muster belegt;
+  frühere Muster außerhalb des Fensters bleiben möglich.
+- **Noch junge Musterkunden** = die erste beobachtete Musterbestellung ist für eine längere
+  Beobachtung noch zu neu; das ist kein Misserfolg.
+- **Betriebsbestand / Betriebsfenster** = letzte 90 Tage plus ältere offene Versand- und
+  Zahlungsfälle; kein vollständiges Bestellarchiv.
+- **Nicht bestimmbar / unklar** = Quelle oder Beleg reicht nicht; darf nicht als Null,
+  ausgebliebener Kauf oder erledigte Arbeit gelesen werden.
+- **Versandt, Empfang noch nicht belegt** = vorhandener Versandstand ohne bestätigte
+  Zustellung oder dokumentierten Empfang; kein Beweis eines Verlusts.
+- **Hausknopf** = zurück zur Shop-Übersicht; **Mehr** öffnet weitere vorhandene Arbeitswege.

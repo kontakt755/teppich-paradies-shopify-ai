@@ -614,10 +614,10 @@ To-dos auf „Heute“ („Muster bei Lieferant A bestellen · Kunde · Regalia 
 ## 9. Startseite „Heute" (seit 2026-09-23)
 
 `viewHeute()` in `docs/ai-dashboard/ansichten/heute.mjs` ist die betriebliche Startseite.
-Seit #1614 (22.10.2026) steht die Bestellarbeit zuerst: offene Muster nach Lieferant,
-Kundenbestellungen und Packstation. Die bisherige Aufgabenliste bleibt darunter als
-„Weitere Aufgaben heute“ erhalten; Hintergrund und Systemzustand sind nachrangig.
-Der aktuelle Arbeitsablauf steht unter 9c. Die folgenden Quellen beschreiben auch
+Seit #1624 (22.10.2026) ist die Shop-Übersicht der direkte Einstieg: zahlende Warenkunden
+zuerst, danach Musterbestellungen und Packstation. Allgemeine Laden- und Tagesaufgaben
+bleiben über die bewusst gewählten Alltagssichten erreichbar; Systemzustand ist nachrangig.
+Der aktuelle Arbeitsablauf steht unter 9f. Die folgenden Quellen beschreiben auch
 weiterhin vorhandene Hintergrundzahlen; sie bilden nicht die Reihenfolge der Startseite ab.
 
 | Kachel | Quelle | Inhalt |
@@ -1955,9 +1955,9 @@ nach erfolgreicher Serverpruefung als Inhalt freigegeben. Damit bleibt die Benut
 auch in Browsern mit strenger Gestenbindung erhalten. Ohne diese Schnittstelle bietet der
 Dialog nach der Pruefung einen kurzen zweiten Kopierklick und bei Bedarf manuelle Textauswahl.
 
-Die vorhandene ausdrueckliche Inhaber-Uebernahme und Freigabe bleiben erhalten. Verschiedene
-Mitarbeiter muessen unterschiedliche Anmeldungen verwenden, damit ihre Identitaeten getrennt
-sind. Das Dashboard erhaelt keinen verlaesslichen Versandnachweis aus einem externen
+Die vorhandene ausdrueckliche Inhaber-Uebernahme und Freigabe bleiben erhalten. Die im Betrieb
+gewünschte gemeinsame Anmeldung bleibt möglich; sie bedeutet eine gemeinsame Identität und
+trennt keine handelnden Personen. Das Dashboard erhaelt keinen verlaesslichen Versandnachweis aus einem externen
 Mailprogramm oder Gmail und kann wiederholtes externes Absenden nicht sicher verhindern.
 Die Automatik veraendert weder finanzielle noch physische Zustaende: keine Kaeufe, kein
 Mailversand, keine Pack- oder Versandbestaetigung. Bestehender Belegabgleich und bestehende
@@ -1987,3 +1987,73 @@ Der Zahlungsfilter verwendet `bestellZahlungOffen` gemeinsam in Browser und Serv
 Explizite Zahlungstreffer werden durch Versand oder das 30-Tage-Anzeigearchiv nicht verdeckt.
 Die Suchpalette verlinkt die drei Hauptarbeitswege direkt und uebergibt Team-Aufgabensuchen
 an die vorhandene Aufgabenroute; sie baut keinen zweiten Aufgabenindex auf.
+
+### 9f. Shop-Übersicht und Warenfokus (#1624, 22.10.2026)
+
+Ohne `sicht` zeigt `#/heute` die Shop-Übersicht. Oben steht eine kurze konkrete Liste der
+offenen Warenbestellungen, zahlende Kunden zuerst, mit Kunde, Bestellnummer, Bestellwert,
+Alter und nächstem Schritt. Der direkte Link öffnet die vorhandene Kundenakte zur Bestellung;
+die volle Warenliste bleibt erreichbar. Darunter folgen offene Muster nach Lieferant und
+Packstation aus den bisherigen Quellen. Versand-/Empfangskontrolle, gepackte Umschläge und
+fälliges Nachfassen verweisen in vorhandene Arbeitswege. Lexikon und gemeinsame
+Etiketten-Druckliste bleiben direkt erreichbar. Laden, Aufgaben und Technik sind über
+„Weitere Bereiche“ zugänglich; `sicht=laden|website|alles|inhaber` erhält die Alltagssichten.
+
+**Eine Projektion, keine zweite Verwaltung.** `lib/shop-bestellarbeit.mjs` verwendet die Antwort
+von `/api/kunden/bestellungen`. `operations/lib/bestellliste.mjs` liefert `warenFortschritt` und
+`warenWasFehlt` durch die vorhandenen Helfer `fortschritt()` und `wasFehlt()` auf dem Warenanteil
+sowie `positionsstatus` je Bestellpositionskennung. Ein explizites `null` ist ein noch nicht
+begonnener lokaler Schritt; fehlende oder fehlerhafte Quellen sind unbekannt, keine Null und
+kein Abschluss. Warenpositionen sind die im Bestellmodell nicht als Muster gekennzeichneten
+Positionen. Ein gemischter Auftrag bleibt in beiden Artwahlen auffindbar; sein Warenfortschritt
+wird nicht vom Musterstand bestimmt. Details und bewusste Gesamtbestellaktionen behalten den
+vollständigen Auftrag. Es gibt weder neue Statusablage noch automatische Abschlussmarkierung.
+Fehlmengen, ausstehende Versandbuchung, unklare Angaben und manuelles Abhaken ohne Versandnachweis
+bleiben als Warenarbeit sichtbar. Versandte Aufträge mit ausstehender Zahlung bleiben ebenfalls
+sichtbar. Der angezeigte **Bestellwert** umfasst die ganze Bestellung einschließlich eines
+eventuellen Musteranteils; er ist kein errechneter Warenumsatz oder Zahlungseingang.
+
+**Art und Status sind unabhängig.** Die Bestellansicht verwendet `bart=ware|muster|alle` neben
+`bfilter`, Suche und Sortierung. Ohne `bart` gilt weiterhin alle Arten, damit alte Such- und
+Direktlinks keine Muster verlieren. Ein Artwechsel setzt die Blätterseite zurück. Der
+Haupteinstieg ist `#/kunden?tab=bestellungen&bart=ware&bsort=wichtigkeit`. Die offene Warenliste,
+die Zahl am Hauptmenü (`bestellungenOffen({art: 'ware'})`) und der Startseitenblock verwenden
+dieselbe Projektion und denselben Abschlussumfang. Statusfilter und gezielte Kontrollen bleiben
+erhalten. Mobil stehen Bestellungen, Muster bestellen, Packstation und Lexikon direkt unten;
+Mehr öffnet die bestehende Seitenleiste. Der Hausknopf im Kopf führt zur Shop-Übersicht.
+Rollenrechte und die vorhandene geschützte Datenaktualisierung bleiben erhalten.
+
+**Musterwirkung als Beobachtung.** `operations/lib/musterwirkung.mjs` liest denselben privaten
+Bestellexport; `/api/kunden/musterwirkung` gibt nur Aggregate, Qualität und Abdeckung aus.
+`#/kunden?tab=musterwirkung` zeigt Musterkunden mit später belegtem Warenkauf, Warenkäufer ohne
+vorher beobachtetes Muster, wiederholte Muster, junge Fälle sowie unklare oder lückenhafte
+Verläufe. Kundenkennung hat Vorrang; E-Mail-Zuordnung erfolgt nur ohne Mehrdeutigkeit.
+Test, Storno und vollständig erstattete Bestellungen ergeben keinen Kaufbeleg. Ein späterer
+Kauf braucht einen strikt späteren Zeitpunkt; ein gemischter Auftrag ist kein Folgekauf.
+Positive Warenwerte müssen aus `LineItem.priceAfterAllDiscountsBeforeTaxesSet` belegt sein.
+Das Feld ist gegen Admin-API **2026-07** validiert und steht in der gemeinsamen Feldliste für
+erste und weitere Positionsseiten. Originalpreise oder `discountedTotalSet` ersetzen diesen
+Beleg nicht. Fehlende Werte, unklare Artikel-/Erstattungszuordnung und fehlende sichere
+Identität bleiben sichtbar unklar; alte Exporte werden nicht mit geschätzten Werten ergänzt.
+
+Das **Betriebsfenster** umfasst die letzten 90 Tage plus ältere offene Versand- und
+Zahlungsfälle, kein historisches Vollarchiv. Deshalb bedeutet „ohne beobachtetes Muster“
+nicht „hat nie Muster bestellt“. Ältere offene Muster vor dem Fenster belegen keine
+lückenlos beobachtete Zwischenzeit; mögliche abgeschlossene Zwischenkäufe können fehlen.
+Eine junge Musterbestellung ist kein Misserfolg. Die angezeigte Beobachtungsdauer bezieht sich
+auf den Exportzeitpunkt; fehlt er, bleibt die Dauer unbekannt. Die Ansicht berechnet weder eine
+scheinbar vollständige Konversionsrate noch Kaufursache oder Rentabilität: Material-/Portokosten,
+Arbeitszeit und Marge fehlen. Bestellte Musteranzahl belegt kein physisches Packen oder Senden.
+Die Analyse trennt deshalb Musterkunden mit mindestens einer vollstaendigen Versandbuchung,
+ohne solche Buchung und mit vollstaendigem Zustellnachweis. Fuer Letzteren muessen alle
+aktiven, vollstaendig bekannten Sendungen eines erfuellten Musterauftrags zugestellt sein;
+Teillieferungen und eine abgeschnittene Sendungsliste genuegen nicht. Fehlende Buchungen
+beweisen keinen unterbliebenen physischen Versand.
+
+**Nacharbeit und technische Prüfgrenze.** Gepackt, Porto vorbereitet, versandt und Empfang
+bestätigt bleiben unterschiedliche Nachweise. Texte sind erst Entwürfe; der bestehende
+Nachfasslauf und seine Fehler werden über die vorhandenen Wege geprüft. Ein bereits
+vorhandener Bewertungs-/Flow-Ablauf für Warenbestellungen wird nicht erneut gebaut. Sein
+aktueller Live-Zustand und konkrete Versandläufe sind über die verfügbare Anbindung aktuell
+technisch nicht lesbar; die Shop-Übersicht behauptet dafür keinen geprüften Versandstatus.
+Der Umbau startet keine zweite Bewertungs-, Nachrichten-, Bestell- oder Versandautomatik.

@@ -16,6 +16,7 @@ import { einkauf } from '../ansichten/einkauf/auftragsfluss.mjs';
 import { lexikon } from '../ansichten/lexikon.mjs';
 import { kunden } from '../ansichten/kunden/gemeinsam.mjs';
 import { shopwache } from '../ansichten/shopwache.mjs';
+import { verwirfMusterwirkung } from '../ansichten/kunden/musterwirkung.mjs';
 import { verwirfHeuteDaten } from '../ansichten/heute/daten.mjs';
 import { verwirfVersandtarif } from '../ansichten/einkauf/versandkosten.mjs';
 import { belege } from '../ansichten/einkauf/belege.mjs';
@@ -192,6 +193,7 @@ export function verwirfDatenspeicher() {
   belege.daten = null;
   shopifyAbgleich.daten = null;
   verwirfHeuteDaten();
+  verwirfMusterwirkung();
 }
 
 function pollAktualisierung() {

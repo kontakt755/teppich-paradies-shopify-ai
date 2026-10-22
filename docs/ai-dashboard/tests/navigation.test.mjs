@@ -52,7 +52,7 @@ test('Inhaber-Ansichten sind in der Navigation als solche markiert', () => {
 test('Kunden bleibt in der Seitenleiste; Bestellungen und Packstation haben eigene direkte Einstiege', () => {
   assert.match(seitenleiste, /href="#\/kunden" data-nav="kunden"/);
   for (const text of [seitenleiste, untereLeiste]) {
-    assert.match(text, /href="#\/kunden\?tab=bestellungen"[^>]*data-nav-tab="bestellungen"/);
+    assert.match(text, /href="#\/kunden\?tab=bestellungen&amp;bart=ware&amp;bsort=wichtigkeit"[^>]*data-nav-tab="bestellungen"/);
     assert.match(text, /href="#\/kunden\?tab=muster"[^>]*data-nav-tab="muster"/);
   }
 });
@@ -64,8 +64,9 @@ test('Weitere Dashboards: keine Adresse im Markup - die Links kommen vom Server'
 
 test('untere Leiste am Handy: dieselben vier Arbeitswege und Mehr', () => {
   const direkt = [...untereLeiste.matchAll(/<a href="([^"]+)" data-nav="([^"]+)"([^>]*)>/g)];
-  assert.deepEqual(direkt.map(m => m[2]), ['heute', 'einkauf', 'kunden', 'kunden']);
+  assert.deepEqual(direkt.map(m => m[2]), ['kunden', 'einkauf', 'kunden', 'lexikon']);
   assert.ok(direkt.every(m => !m[3].includes('data-nur-inhaber')));
+  assert.match(direkt[0][1], /tab=bestellungen&amp;bart=ware&amp;bsort=wichtigkeit/);
   assert.match(direkt[1][1], /tab=lieferant&amp;art=muster&amp;af=offen/);
   assert.match(untereLeiste, /Muster bestellen/);
   // Diese vier duerfen keinem vorenthalten sein - sonst stuende am Handy ein toter Punkt.
@@ -81,10 +82,10 @@ test('Seite nutzt die Safe-Area und folgt ohne eigene Wahl dem Geraet', () => {
 });
 
 
-test('vier Hauptwege und vier standardgeschlossene Bereichsgruppen ohne Linkverlust', () => {
+test('Shop-Hauptwege und vier standardgeschlossene Bereichsgruppen ohne Linkverlust', () => {
   const nav = teil('<nav class="mainnav"', '</nav>');
   const haupt = [...nav.matchAll(/<a [^>]*class="nav-haupt"[^>]*>[\s\S]*?<span>([^<]+)<\/span>/g)].map(m => m[1]);
-  assert.deepEqual(haupt, ['Heute', 'Muster bestellen', 'Bestellungen', 'Packstation']);
+  assert.deepEqual(haupt, ['Heute', 'Bestellungen', 'Muster bestellen', 'Packstation', 'Lexikon']);
   const gruppen = [...nav.matchAll(/<details class="nav-gruppe"([^>]*)>/g)];
   assert.equal(gruppen.length, 4);
   assert.ok(gruppen.every(m => !/\bopen\b/.test(m[1])));
@@ -140,4 +141,12 @@ test('Muster bestellen und allgemeiner Einkauf haben getrennte Aktivmarkierung; 
   assert.equal(mehr.attrs['aria-current'], 'page');
   zeichne();
   assert.equal(mehr.attrs['aria-current'], 'page', 'wiederholtes Zeichnen darf Mehr nicht umschalten');
+});
+
+
+test('Hausknopf fuehrt aus jeder Ansicht direkt zur Shop-Uebersicht und steht staendig im Kopf', () => {
+  const kopf = teil('<div class="topbar-ort">', '</div>');
+  assert.match(kopf, /class="kopf-start" href="#\/heute" aria-label="Zur Shop-Übersicht"/);
+  assert.ok(!/data-nur-inhaber|data-nicht-mitarbeiter|data-nicht-lesen|\shidden(?:=|\s|>)/.test(kopf.match(/<a [^>]*class="kopf-start"[^>]*>/)[0]));
+  assert.ok(!untereLeiste.includes('data-nav="heute"'), 'Hausknopf belegt keinen mobilen Arbeitslistenplatz');
 });

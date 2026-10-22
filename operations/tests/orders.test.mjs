@@ -363,3 +363,13 @@ test('Positionsseiten beachten die Throttle-Wartung vor dem naechsten Abruf', as
   await fetchOrdersRelevant(proxy, { warten: async ms => ereignisse.push(ms) });
   assert.deepEqual(ereignisse, ['bestellung', 1000, 'positionen']);
 });
+
+test('Normalisierung behaelt Musterservice-Typ und rabattbereinigten Warenwert als unterschiedliche Belege', () => {
+  const preis = { shopMoney: { amount: '2.00', currencyCode: 'EUR' } };
+  const roh = bestellung(707).lineItems.nodes[0];
+  roh.priceAfterAllDiscountsBeforeTaxesSet = preis;
+  roh.variant.product.productType = 'Musterservice';
+  const p = normalisiereLineItem(roh);
+  assert.equal(p.variant.product.productType, 'Musterservice', 'Muster duerfen ihre Typkennung beim Export nicht verlieren');
+  assert.deepEqual(p.priceAfterAllDiscountsBeforeTaxesSet, preis);
+});
