@@ -2,6 +2,18 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-22 · Muster packen: Wareneingang nach Partnerladen
+
+- **Geändert:** Umschalter „Nach Kunde packen“ / „Wareneingang nach Partnerladen“ (`mp=laden`). Je
+  Partnerladen alle noch nicht eingelegten Muster der offenen Kunden, nach Name und Farbnummer, mit
+  Bild und dem Ziel: Umschlag-Nummer (dieselbe wie in „Zu packen“, „zu klären“ gesondert), Kunde,
+  Bestellung. `musterNachLaden` in `lib/muster-packen.mjs`, rein aus den schon geladenen Daten.
+- **Getestet:** neuer Fall in `muster-packen.test.mjs`; `dashboard:test` 688 grün; `dashboard:pruefen`
+  für beide Ansichten in allen Breiten ohne Befund.
+- **Risiken/Annahmen:** Die Umschlag-Nummer verschiebt sich, sobald ein Kunde gepackt ist – beim
+  Sortieren die Liste nicht zwischendurch neu laden oder nach Namen sortieren.
+- **Nächste Stufe:** weitere Wünsche aus dem Laden sammeln; alte Bestellungen aussortieren.
+
 ## 2026-10-22 · Muster packen: Farbbild macht Breiten nicht mehr mehrdeutig
 
 - **Geändert:** Dieselbe SKU in mehreren Breiten trägt je ein eigenes Variantenbild; das galt als
