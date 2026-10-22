@@ -143,6 +143,7 @@ export function bestellzeile(auftrag, { statusAlle = {}, rueckrufeAlle = {} } = 
     tags: tags,
     testbestellung: !!auftrag.testbestellung,
     storniert: !!auftrag.storniert,
+    archiviert: !!auftrag.archiviert,
     offen: !!auftrag.offen,
     beratungOffen,
     // Der lokal gepflegte Rueckrufstand gehoert an die Zeile: ohne ihn stuende

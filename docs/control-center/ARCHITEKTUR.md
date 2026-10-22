@@ -2023,6 +2023,12 @@ erhalten. Mobil stehen Bestellungen, Muster bestellen, Packstation und Lexikon d
 Mehr öffnet die bestehende Seitenleiste. Der Hausknopf im Kopf führt zur Shop-Übersicht.
 Rollenrechte und die vorhandene geschützte Datenaktualisierung bleiben erhalten.
 
+Shopify-Archivierung bleibt ein ausdruecklicher bewusster Abschluss: `closedAt` wird als
+`archiviert` durch Auftragsmodell und Bestellzeile weitergereicht. Bei geklaertem finanziellem
+Endzustand erscheint der Auftrag unter Fertig/Alle, ohne daraus Versand abzuleiten. Offene
+oder unbekannte Zahlungen bleiben weiterhin Warenarbeit. Ein bloss lokaler Haken ohne
+Shopify-Archivierung ersetzt dagegen keinen Versandbeleg.
+
 **Musterwirkung als Beobachtung.** `operations/lib/musterwirkung.mjs` liest denselben privaten
 Bestellexport; `/api/kunden/musterwirkung` gibt nur Aggregate, Qualität und Abdeckung aus.
 `#/kunden?tab=musterwirkung` zeigt Musterkunden mit später belegtem Warenkauf, Warenkäufer ohne
