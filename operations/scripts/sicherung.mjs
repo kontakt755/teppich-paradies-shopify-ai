@@ -42,7 +42,7 @@ export const SICHERUNGSPFADE = Object.freeze([
   'auftragsverlauf.json',
   'musterherkunft.json',
   // Gemeinsame Packhaken und manuell abgehakte Bestellungen gibt es nur lokal.
-  'muster-packen.json',
+  'muster-packen.json', 'muster-grossbrief.json',
   'bestellmarken.json',
   // Musterlager: welche Muster wir selbst da haben (operations/lib/musterlager.mjs).
   'musterlager.json',

@@ -28,6 +28,23 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   [Mitarbeiterpruefung](MITARBEITERPRUEFUNG.md).
 - **Naechste Stufe:** regulaere Bedienung im Betrieb mit Ware und Drucker.
 
+## 2026-10-22 · Großbrief-Messwerte bleiben je Umschlag erhalten (#1621)
+
+- **Geändert:** Gewicht und Maße speichern automatisch zentral im privaten Datenordner und
+  erscheinen beim erneuten Öffnen, nach Neuladen und an anderen Arbeitsplätzen wieder.
+  Der Dialog wartet beim Schließen auf ausstehende Speicherung; Fehler lassen die Eingaben
+  stehen. Unvollständige Zahlen sind als Entwurf erlaubt. Geänderte Bestellungen, Muster oder
+  Adressen erhalten einen neuen Messkontext. Versionsprüfung verhindert stilles Überschreiben
+  durch parallele Arbeitsplätze. Bestandsbestätigung und Eignungsprüfung werden neu angefordert.
+- **Getestet:** API-Roundtrip mit neuer Instanz, Rollen, Versionenkonflikte, geänderte Adresse,
+  Menge/Bestellgruppe, unvollständige und ungültige Eingaben, defekte Ablage sowie Dateirechte.
+  Dashboard 811/811, Gesamtlauf 3661/3661; 180 Ansichtsprüfungen ohne Befund. Klickprobe
+  gegen Datenkopie: Schließen/ESC/Neuladen erhält alle Werte, Bestätigung bleibt offen,
+  paralleler Arbeitsplatz erhält Konflikt und kann den gespeicherten Stand neu laden; 390 px.
+- **Risiken:** Gemessene Werte sind keine Versandfreigabe. Bei Speicherfehlern die Meldung
+  beachten; die Vorbereitung bleibt bis zur Klärung offen. Kein Portokauf und keine Versandbuchung.
+- **Nächste Stufe:** physischer Probedruck und Altfallklärung bleiben unabhängig davon offen.
+
 ## 2026-10-22 · Aktuelle Arbeitslisten und gemeinsame Bestellvorbereitung (#1616)
 
 - **Geaendert:** Der bestehende Statusabruf liefert eine lokale Arbeitsrevision. Geaenderte

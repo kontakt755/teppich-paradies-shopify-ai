@@ -1801,10 +1801,22 @@ Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
 
 ### Großbrief vorbereiten (#1591)
 
-Je Kunde öffnet „Großbrief vorbereiten“ eine flüchtige Vorschau mit derselben Lieferanschrift
-und allen gebündelten Bestellnummern. Keine Speicherung, keine neuen API-Endpunkte, keine
-Anbindung an den Portokauf oder Shopify-Versand. Eingaben verfallen beim Schließen; eine
-Änderung verwirft das vorherige Prüfergebnis sofort.
+Je Kunde öffnet „Großbrief vorbereiten“ die Messwerte zum konkreten Umschlag mit derselben
+Lieferanschrift und allen gebündelten Bestellnummern. Gewicht, Dicke und beide Seitenmaße
+speichern automatisch zentral unter `$TP_PRIVAT_DIR/muster-grossbrief.json`. Auch unvollständige
+Zahleingaben bleiben als Entwurf erhalten. Schließen, Esc und Hintergrundklick warten auf
+laufende Speicherung; bei Fehler bleibt der Dialog mit den Eingaben offen. Rolle „lesen“
+sieht die gespeicherten Werte, kann sie nicht ändern. Die Bestätigung zum lokalen Bestand
+und das Prüfergebnis werden nicht gespeichert; beides ist bei jedem Öffnen neu zu prüfen.
+
+`POST /api/kunden/muster-packen`, `aktion: grossbrief`, nutzt die bestehende Schreib-/Rollen-
+und Herkunftsprüfung. Der Server bestimmt aus aktueller Bestellgruppe, Adresse und offenen
+Positionen einen Kontext-Hash; geänderte Inhalte bekommen eigene Messwerte. Der Client sendet
+Kontext und erwartete Version; veraltete Dialoge/Arbeitsplätze erhalten 409 statt fremde Daten
+zu überschreiben. Die Ablage schreibt atomar mit 0600; beschädigte Dateien geben Fehler statt
+leere Daten zurück. Sicherung und Browser-Datenkopie enthalten die neue Datei. Es gibt keine
+Anbindung an Portokauf, Versandbuchung oder Benachrichtigung. Änderung eines Eingabewerts
+verwirft das vorige Prüfergebnis sofort.
 
 `lib/muster-grossbrief.mjs` prüft den tatsächlich gepackten Umschlag: Gewicht, Dicke, beide
 Seitenmaße, vollständige Inlandsadresse, vorhandene Zuordnungen und bewusste Bestätigung des
