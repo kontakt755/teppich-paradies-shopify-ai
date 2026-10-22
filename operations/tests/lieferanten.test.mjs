@@ -843,3 +843,13 @@ test('Kettler-Regel und Vorschlag: gekettelt mit Fertigmass automatisch, ohne Fe
   assert.equal(kuerzereSeiteCm(['Fertigmaß: 300 × 180 cm']), 180);
   assert.equal(kuerzereSeiteCm([]), null);
 });
+
+test('Uebersicht: Lieferant mit ueberfaelligen Posten steht vor A-Z', () => {
+  const m = modell();
+  const statusAlle = statusFuer(m, [
+    [1, 1, { status: 'bestellt', bestelltAm: '2026-01-18T10:00:00Z' }],
+    [2, 4, { status: 'bestellt', bestelltAm: '2026-01-01T10:00:00Z' }], // Lieferant B, 19 Tage -> Problem
+  ]);
+  const u = lieferantenUebersicht(m, { statusAlle, stammdaten: STAMM, jetzt: JETZT });
+  assert.deepEqual(u.lieferanten.map(l => [l.id, l.ueberfaellig.problem]), [['B', 1], ['A', 0]]);
+});
