@@ -20,7 +20,8 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Pack- und Bestellmarken in Sicherung, Bestellmarken auch in der Browser-Datenkopie.
 - **Getestet:** Dashboard- und Gesamtsuite, Projekt-Guards; Browser auf Datenkopie, fuenf
   Breiten und Dunkelmodus. Klickprobe: drei Muster abhaken, packen, neu laden; Stand erhalten,
-  kein Shopify-Aufruf. Rollenpruefung siehe PR-Nachweis.
+  kein Shopify-Aufruf. Rollen-Gesamtlauf 455 Kombinationen; zwei 360-px-Ueberstaende in
+  der Lieferantenliste behoben, danach alle 45 betroffenen Rollen-/Breitenkombinationen gruen.
 - **Risiken/Annahmen:** Alte Datenstaende werden nicht automatisch umgebucht. Ein Muster kann
   physisch vorliegen, obwohl der Eingang fehlt; dann Muster nach Sichtpruefung abhaken oder
   vorhandenen Wareneingang eintragen. Gepackt ist weiterhin kein Versandnachweis.
