@@ -63,7 +63,8 @@ function bestellzeileGefiltert(zeilen, params) {
   // Neueste Bestellung oben (Inhabervorgabe 2026-10-22) - vorher Kundenname A-Z.
   const sort = params.get('bsort') || 'datum';
   const dir = params.get('bdir') || (sort === 'kundenname' ? 'asc' : 'desc');
-  let liste = zeilen.filter(z => filter === 'nicht_fertig' ? (!z.fertig && !z.testbestellung)
+  // "Nicht fertig" laesst fertige Bestellungen drin - sie landen im Bereich "Erledigt" (istErledigt).
+  let liste = zeilen.filter(z => filter === 'nicht_fertig' ? !z.testbestellung
     : filter === 'fertig' ? (z.fertig && !z.testbestellung)
     : filter === 'offen' ? (z.offen && !z.testbestellung)
     : filter === 'bezahlt' ? z.zahlungsstatus === 'PAID'
@@ -202,7 +203,12 @@ function betragText(z) {
  * Abhaken (Inhaber 2026-10-22): erledigte Bestellungen rutschen in den eingeklappten
  * Bereich "Erledigt" - gemeinsam fuer alle, ohne Shopify-Buchung (das macht "Kunde fertig").
  */
+/** Erledigt: von Hand abgehakt oder in Shopify/Auftragsfluss abgeschlossen (Abgleich laeuft serverseitig). */
+function automatischErledigt(z) { return z.fertig || z.fulfillmentstatus === 'FULFILLED'; }
+function istErledigt(z) { return Boolean(z.abgehakt) || automatischErledigt(z); }
+
 function hakenKnopf(z) {
+  if (!z.abgehakt && automatischErledigt(z)) return '<span class="bq-haken-auto" title="In Shopify bzw. im Auftragsfluss abgeschlossen">✓</span> ';
   if (istNurLesend()) return '';
   return z.abgehakt
     ? `<button type="button" class="btn btn-sm btn-ghost bq-haken" data-bq-haken="${esc(z.orderId)}" data-bq-haken-wert="0" title="Zurück in die offene Liste" aria-label="${esc(`${z.orderName} zurückholen`)}">↩</button> `
@@ -277,8 +283,8 @@ export function viewKundenBestellungen() {
   const sort = params.get('bsort') || 'datum';
   const dir = params.get('bdir') || (sort === 'kundenname' ? 'asc' : 'desc');
   const gefiltert = bestellzeileGefiltert(d.zeilen, params);
-  const zeilen = gefiltert.filter(z => !z.abgehakt);
-  const erledigt = gefiltert.filter(z => z.abgehakt).sort((a, b) => String(b.datum || '').localeCompare(String(a.datum || '')));
+  const zeilen = gefiltert.filter(z => !istErledigt(z));
+  const erledigt = gefiltert.filter(istErledigt).sort((a, b) => String(b.datum || '').localeCompare(String(a.datum || '')));
   const alleGruppen = sort === 'kundenname' ? gruppiereBestellzeilenNachKunde(zeilen) : null;
   // Seitenweise (25 Kunden bzw. 25 Bestellungen): die volle Liste samt Produktinhalt wurde
   // am Handy mehrere Meter lang (Codex-Audit 2026-10-19).

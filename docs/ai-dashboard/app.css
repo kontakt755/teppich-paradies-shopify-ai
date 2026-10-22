@@ -602,6 +602,7 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
 .bq-erledigt > summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
 .bq-erledigt .bq-row { opacity: .7; }
 .bq-haken { padding: 0 6px; margin-right: 4px; }
+.bq-haken-auto { color: var(--ok); margin-right: 6px; }
 .bq-gruppenkopf th {
   padding: 11px 12px;
   text-align: left;
