@@ -60,7 +60,8 @@ function bqFeldTreffer(felder, q) { return felder.some(f => typeof f === 'string
 function bestellzeileGefiltert(zeilen, params) {
   const filter = params.get('bfilter') || 'nicht_fertig';
   const q = (params.get('bq') || '').trim().toLowerCase();
-  const sort = params.get('bsort') || 'kundenname';
+  // Neueste Bestellung oben (Inhabervorgabe 2026-10-22) - vorher Kundenname A-Z.
+  const sort = params.get('bsort') || 'datum';
   const dir = params.get('bdir') || (sort === 'kundenname' ? 'asc' : 'desc');
   let liste = zeilen.filter(z => filter === 'nicht_fertig' ? (!z.fertig && !z.testbestellung)
     : filter === 'fertig' ? (z.fertig && !z.testbestellung)
@@ -197,13 +198,46 @@ function betragText(z) {
   return geldText({ betrag: z.gesamtbetrag, waehrung: z.waehrung });
 }
 
+/**
+ * Abhaken (Inhaber 2026-10-22): erledigte Bestellungen rutschen in den eingeklappten
+ * Bereich "Erledigt" - gemeinsam fuer alle, ohne Shopify-Buchung (das macht "Kunde fertig").
+ */
+function hakenKnopf(z) {
+  if (istNurLesend()) return '';
+  return z.abgehakt
+    ? `<button type="button" class="btn btn-sm btn-ghost bq-haken" data-bq-haken="${esc(z.orderId)}" data-bq-haken-wert="0" title="Zurück in die offene Liste" aria-label="${esc(`${z.orderName} zurückholen`)}">↩</button> `
+    : `<button type="button" class="btn btn-sm btn-ghost bq-haken" data-bq-haken="${esc(z.orderId)}" data-bq-haken-wert="1" title="Abhaken – rutscht nach „Erledigt“" aria-label="${esc(`${z.orderName} abhaken`)}">☐</button> `;
+}
+
+async function hakenSetzen(orderId, erledigt) {
+  const zeile = (kunden.bestellungen?.zeilen || []).find(z => z.orderId === orderId);
+  if (!zeile) return;
+  const vorher = zeile.abgehakt;
+  zeile.abgehakt = erledigt ? { zeit: new Date().toISOString() } : null;
+  render();
+  try {
+    const r = await fetch('/api/kunden/bestellung-abhaken', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ orderId, erledigt }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || r.status);
+    zeile.abgehakt = j.abgehakt;
+    toast(erledigt ? `${zeile.orderName} abgehakt` : `${zeile.orderName} wieder offen`);
+  } catch (e) {
+    zeile.abgehakt = vorher;
+    toast(`Fehler: ${e.message}`, 'crit');
+  }
+  render();
+}
+
 function bestellzeileHtml(z) {
   const offenKlasse = kunden.erweitert.has(z.orderId) ? ' offen' : '';
   const tagListe = [...z.tags.beratung, ...z.tags.typ, ...z.tags.sonstige];
   const pk = fortschrittKlasse(z.fortschritt?.stufe);
   const inhalt = inhaltHtml(z);
   return `<tr class="bq-row${offenKlasse}${inhalt ? ' mit-inhalt' : ''}" data-bq-toggle="${esc(z.orderId)}" tabindex="0" role="button" aria-expanded="${kunden.erweitert.has(z.orderId)}" aria-label="Bestellung ${esc(z.orderName)} von ${esc(z.kundenname)} auf- oder zuklappen">
-      <td data-l="Bestellnr."><a href="${esc(z.adminUrl)}" target="_blank" rel="noopener">${esc(z.orderName)}</a>${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</td>
+      <td data-l="Bestellnr.">${hakenKnopf(z)}<a href="${esc(z.adminUrl)}" target="_blank" rel="noopener">${esc(z.orderName)}</a>${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</td>
       <td data-l="Datum">${fmtDateTime(z.datum)}</td>
       <td data-l="Kunde">${z.kundenSchluessel ? `<a href="#" data-kunden-open="${esc(z.kundenSchluessel)}">${wertText(z.kundenname)}</a>` : wertText(z.kundenname)}</td>
       <td data-l="Kontakt">${kontaktZelle(z)}</td>
@@ -221,7 +255,7 @@ function bestellzeileKarte(z, gruppiert = false) {
   const pk = fortschrittKlasse(z.fortschritt?.stufe);
   return `<div class="row bq-karte" data-bq-toggle="${esc(z.orderId)}" tabindex="0" role="button" aria-expanded="${kunden.erweitert.has(z.orderId)}" aria-label="Bestellung ${esc(z.orderName)} von ${esc(z.kundenname || 'unbekannt')} auf- oder zuklappen">
     <div>
-      <div class="t">${esc(z.orderName)}${gruppiert ? '' : ` · ${wertText(z.kundenname)}`}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</div>
+      <div class="t">${hakenKnopf(z)}${esc(z.orderName)}${gruppiert ? '' : ` · ${wertText(z.kundenname)}`}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</div>
       <div class="m">${betragText(z)} · ${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)} · ${fmtDate(z.datum)}</div>
       ${inhaltHtml(z) ? `<div class="bq-inhalt-mobil">${inhaltHtml(z)}</div>` : ''}
       <div class="m"><span class="bq-fortschritt ${pk}">${esc(z.fortschritt?.text || '–')}</span></div>
@@ -240,9 +274,11 @@ export function viewKundenBestellungen() {
   if (!d || !d.verfuegbar) return emptyState('Keine Bestelldaten verfügbar.', d?.hinweis || 'Bestellübersicht noch nicht exportiert.');
   const params = state.route.params;
   const filter = params.get('bfilter') || 'nicht_fertig';
-  const sort = params.get('bsort') || 'kundenname';
+  const sort = params.get('bsort') || 'datum';
   const dir = params.get('bdir') || (sort === 'kundenname' ? 'asc' : 'desc');
-  const zeilen = bestellzeileGefiltert(d.zeilen, params);
+  const gefiltert = bestellzeileGefiltert(d.zeilen, params);
+  const zeilen = gefiltert.filter(z => !z.abgehakt);
+  const erledigt = gefiltert.filter(z => z.abgehakt).sort((a, b) => String(b.datum || '').localeCompare(String(a.datum || '')));
   const alleGruppen = sort === 'kundenname' ? gruppiereBestellzeilenNachKunde(zeilen) : null;
   // Seitenweise (25 Kunden bzw. 25 Bestellungen): die volle Liste samt Produktinhalt wurde
   // am Handy mehrere Meter lang (Codex-Audit 2026-10-19).
@@ -281,6 +317,10 @@ export function viewKundenBestellungen() {
     </table></div>
     <div class="rows bq-karten">${karten}</div>
     ${blaettern}
+    ${erledigt.length ? `<details class="bq-erledigt"><summary>Erledigt · ${plural(erledigt.length, 'Bestellung', 'Bestellungen')}</summary>
+      <div class="table-wrap kunden-table bq-table"><table><thead>${kopf}</thead><tbody class="bq-tbody-desktop">${erledigt.map(bestellzeileHtml).join('')}</tbody></table></div>
+      <div class="rows bq-karten">${erledigt.map(z => bestellzeileKarte(z)).join('')}</div>
+    </details>` : ''}
   `;
 }
 
@@ -300,7 +340,7 @@ export function kundenKlickBestellungen(e) {
     e.preventDefault();
     const feld = sortKopf.dataset.bqSortToggle;
     const p = new URLSearchParams(state.route.params);
-    const vorherigesFeld = p.get('bsort') || 'kundenname';
+    const vorherigesFeld = p.get('bsort') || 'datum';
     const warSortiert = vorherigesFeld === feld;
     const richtung = warSortiert ? ((p.get('bdir') || (feld === 'kundenname' ? 'asc' : 'desc')) === 'desc' ? 'asc' : 'desc') : (feld === 'kundenname' ? 'asc' : 'desc');
     p.set('bsort', feld);
@@ -338,6 +378,8 @@ export function kundenKlickBestellungen(e) {
     void bestellungsEtikettenDrucken(bqEtk.dataset.bqEtiketten);
     return true;
   }
+  const bqHaken = e.target.closest('[data-bq-haken]');
+  if (bqHaken) { e.preventDefault(); e.stopPropagation(); void hakenSetzen(bqHaken.dataset.bqHaken, bqHaken.dataset.bqHakenWert === '1'); return true; }
   const bqFertig = e.target.closest('[data-bq-fertig]');
   if (bqFertig) { e.preventDefault(); e.stopPropagation(); kundeFertigSetzen(bqFertig.dataset.bqFertig); return true; }
   return false;
