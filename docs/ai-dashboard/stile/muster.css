@@ -41,6 +41,7 @@
 /* -- Musterlager --------------------------------------------------------------------- */
 .ml-kopf { display: flex; gap: 12px 20px; align-items: flex-start; justify-content: space-between; margin: 4px 0 12px; }
 .ml-erklaerung { margin: 0; max-width: 70ch; }
+.ml-erklaerung p { margin: 0 0 6px; }
 .ml-kopf .btn { flex: none; }
 .ml-kopf .btn-row { flex: none; display: flex; flex-direction: column; gap: 8px; }
 .ml-zahlen { margin: 0 0 12px; }

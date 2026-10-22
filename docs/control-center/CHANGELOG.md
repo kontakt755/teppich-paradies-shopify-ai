@@ -2,6 +2,24 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-22 · Verlegereste als Mustermaterial
+
+- **Geändert:** Regel vom 21.10.: Teppichboden und Vinyl von Lieferant A und C, den wir verlegen,
+  hinterlassen Reste – aufheben, beschriften, daraus Muster schneiden. Neue Lagerart „Verlegerest“.
+  Vorschläge „Einlagern?“ zeigen gelieferte Verlegeware (Baustelle oder Verlegung gebucht, höchstens
+  45 Tage). Ware anderer Quelle nur, wenn A oder C dieselbe Ware führt (Abgleich Hersteller,
+  Qualität, Farbnummer gegen das Lexikon, `operations/lib/reste.mjs`); der Rest liegt dann unter der
+  A/C-SKU. Neuer Knopf „Rest prüfen…“ für direkt beim Hersteller bestellte Ware, Hersteller allein
+  zeigt alles von ihm bei A/C (C führt Herstellerware oft unter eigenem Namen). „Etikett“ an jedem
+  Lagereintrag, an Verlegerest-Vorschlägen und an Treffern.
+- **Getestet:** `reste.test.mjs` (8 neu), `musterlager-api.test.mjs` (Abgleich + Einlagern als Rest),
+  `operations:test`, `dashboard:test`. Browser mit Datenkopie: „Rest prüfen“ mit Kürzel + Farbnummer
+  findet die Ware bei C, Einlagern, Etikettvorschau, 375 px.
+- **Risiken/Annahmen:** Verlegeaufträge laufen heute fast nie über den Shop (0 von 58 offenen
+  Bestellungen) – der automatische Vorschlag greift selten, der Hauptweg ist „Rest prüfen…“.
+  Online-Muster für C-Ware bleiben aus (Inhaberregel); deren Reste sind Material für Laden/Beratung.
+- **Nächste Stufe:** Hinweis „Rest mitnehmen und beschriften“ im Auftrag für die Monteure.
+
 ## 2026-10-21 · Alle gekettelten Maßteppiche automatisch zum Kettler
 
 - **Geändert:** Regel des Inhabers vom 19.10. abends umgesetzt: Maßteppiche mit Einfassung gehen
