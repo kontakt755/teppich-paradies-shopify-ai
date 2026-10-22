@@ -48,11 +48,12 @@ test('Inhaber-Ansichten sind in der Navigation als solche markiert', () => {
   }
 });
 
-test('Kunden heisst ueberall gleich: Seitenleiste, untere Leiste und Seitenkopf', () => {
-  const name = text => [...text.matchAll(/data-nav="kunden"[^>]*>[\s\S]*?<span>([^<]+)<\/span>/g)].map(m => m[1]);
-  assert.deepEqual([...name(seitenleiste), ...name(untereLeiste)], ['Kunden', 'Kunden']);
-  const ansicht = fs.readFileSync(path.join(WURZEL, 'ansichten/kunden.mjs'), 'utf8');
-  assert.ok(![...ansicht.matchAll(/<h1>([^<]+)<\/h1>/g)].some(m => m[1] !== 'Kunden'), 'Seitenkopf der Kundenansicht heisst "Kunden"');
+test('Kunden bleibt in der Seitenleiste; Bestellungen und Packstation haben eigene direkte Einstiege', () => {
+  assert.match(seitenleiste, /href="#\/kunden" data-nav="kunden"/);
+  for (const text of [seitenleiste, untereLeiste]) {
+    assert.match(text, /href="#\/kunden\?tab=bestellungen"[^>]*data-nav-tab="bestellungen"/);
+    assert.match(text, /href="#\/kunden\?tab=muster"[^>]*data-nav-tab="muster"/);
+  }
 });
 
 test('Weitere Dashboards: keine Adresse im Markup - die Links kommen vom Server', () => {
@@ -60,8 +61,8 @@ test('Weitere Dashboards: keine Adresse im Markup - die Links kommen vom Server'
   assert.ok(!/claude\.ai\/artifact|script\.google\.com/.test(html), 'keine Adresse von Werkbank oder Auftrags-App im oeffentlichen Repository');
 });
 
-test('untere Leiste am Handy: Heute, Kunden, Lexikon, Einkauf und "Mehr"', () => {
-  assert.deepEqual(links(untereLeiste).map(l => l.nav), ['heute', 'kunden', 'lexikon', 'einkauf']);
+test('untere Leiste am Handy: Heute, Bestellungen, Packstation, Einkauf und "Mehr"', () => {
+  assert.deepEqual(links(untereLeiste).map(l => l.nav), ['heute', 'einkauf']);
   // Diese vier duerfen keinem vorenthalten sein - sonst stuende am Handy ein toter Punkt.
   for (const l of links(untereLeiste)) assert.ok(!l.rest.includes('data-nur-inhaber'), `"${l.nav}" in der unteren Leiste ist dem Inhaber vorbehalten`);
   assert.match(untereLeiste, /<button type="button" id="navToggle"[^>]*aria-controls="side"/, '"Mehr" muss die Seitenleiste als Blatt oeffnen');

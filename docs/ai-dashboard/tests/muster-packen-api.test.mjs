@@ -86,7 +86,7 @@ test('Haken und zu klaeren: fehlend = nicht abgehakte Muster, "Fehlendes ist da"
   assert.equal(api.kundenMusterPacken().zahlen.klaeren, 1);
   api.kundenMusterPackenSetzen({ packSchluessel: k0.packSchluessel, aktion: 'klaeren', klaeren: false }, laden);
   k = api.kundenMusterPacken().kunden[0];
-  assert.equal(k.bereich, 'packen');
+  assert.equal(k.bereich, 'warten', 'Ruecknahme der Klaerung bestaetigt keinen Wareneingang');
   assert.ok(k.muster[0].abgehakt, 'Haken bleiben nach "Fehlendes ist da"');
   api.kundenMusterPackenSetzen({ packSchluessel: k0.packSchluessel, aktion: 'haken', lineItemIds: [m2], an: true }, laden);
   assert.throws(() => api.kundenMusterPackenSetzen({ packSchluessel: k0.packSchluessel, aktion: 'klaeren', klaeren: true }, laden), e => e.status === 400);

@@ -141,12 +141,12 @@ test('Abhaken und zu klaeren: Bereich je Kunde, Haken bleiben, gepackt gewinnt',
   assert.equal(anna.klaeren.notiz, 'Grau fehlt im Paket');
   assert.equal(anna.muster[0].abgehakt.von, 'Laden');
   assert.equal(anna.muster[1].abgehakt, null);
-  assert.equal(berta.bereich, 'packen');
-  assert.deepEqual(r.zahlen, { packen: 1, klaeren: 1, gepackt: 0 });
+  assert.equal(berta.bereich, 'warten');
+  assert.deepEqual(r.zahlen, { warten: 1, packen: 0, klaeren: 1, gepackt: 0 });
   const gepackt = { [packSchluessel([a1.id])]: { zeit: '2026-10-22T09:00:00Z', von: 'Laden' } };
   const spaeter = musterPackliste({ produkte, schluesselVon, jetzt, haken, klaeren, gepackt, auftraege: [a1, a2] });
   assert.equal(spaeter.kunden.find(k => k.name === 'Anna Test').bereich, 'gepackt');
-  assert.deepEqual(spaeter.zahlen, { packen: 1, klaeren: 0, gepackt: 1 });
+  assert.deepEqual(spaeter.zahlen, { warten: 1, packen: 0, klaeren: 0, gepackt: 1 });
 });
 
 test('gleiche SKU in mehreren Breiten mit je eigenem Bild bleibt eindeutig', () => {
@@ -170,8 +170,26 @@ test('nach Partnerladen: nur offene, nicht eingelegte Muster, mit Ziel-Umschlag'
   ];
   const r = musterNachLaden(kunden);
   assert.deepEqual(r.map(l => [l.laden, l.eintraege.map(e => `${e.muster.vorher.farbnummer}>${e.kunde}@${e.umschlag}`)]), [
-    ['Laden Nord', ['5>Berta@zu klären', '22>Anna@1']],
-    ['Laden Süd', ['7>Carl@2']],
-    ['Partnerladen nicht hinterlegt', ['1>Berta@zu klären']],
+    ['Laden Nord', ['5>Berta@b', '22>Anna@a']],
+    ['Laden Süd', ['7>Carl@c']],
+    ['Partnerladen nicht hinterlegt', ['1>Berta@b']],
   ]);
+});
+
+test('packbereit nur mit bestaetigtem Bestand oder eingelegtem Muster; Teilwareneingang bleibt wartend', () => {
+  const auftraege = [auftrag(1, '2026-10-17', 'Anna', [pos(11, '101'), pos(12, '102')])];
+  const basis = { produkte, schluesselVon, auftraege, jetzt };
+  assert.equal(musterPackliste({ ...basis, statusVon: () => 'bestellt' }).kunden[0].bereich, 'warten');
+  assert.equal(musterPackliste({ ...basis, statusVon: (_, li) => li.endsWith('/11') ? 'geliefert' : 'bestellt' }).kunden[0].bereich, 'warten');
+  assert.equal(musterPackliste({ ...basis, statusVon: () => 'geliefert' }).kunden[0].bereich, 'packen');
+  assert.equal(musterPackliste({ ...basis, haken: Object.fromEntries(auftraege[0].positionen.map(p => [p.lineItemId, { zeit: 'x' }])) }).kunden[0].bereich, 'packen');
+  assert.equal(musterPackliste({ ...basis, auftraege: [auftrag(1, '2026-10-17', 'Anna', [pos(11, '999')])], statusVon: () => 'geliefert' }).kunden[0].bereich, 'klaeren');
+});
+test('Umschlagkennung bleibt nach Sortieren und Packen anderer Kunden gleich', async () => {
+  const { musterNachLaden } = await import('../lib/muster-packen.mjs');
+  const liste = musterPackliste({ produkte, schluesselVon, jetzt, auftraege: [auftrag(1, '2026-10-17', 'Anna', [pos(11, '101')]), auftrag(2, '2026-10-18', 'Berta', [pos(21, '102')])] }).kunden;
+  const kennung = ks => musterNachLaden(ks).flatMap(l => l.eintraege).find(e => e.kunde === 'Berta').umschlag;
+  assert.equal(kennung(liste), '#T2');
+  assert.equal(kennung([...liste].reverse()), '#T2');
+  assert.equal(kennung([{ ...liste[0], bereich: 'gepackt' }, liste[1]]), '#T2');
 });

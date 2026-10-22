@@ -69,3 +69,14 @@
   .mp-meta { justify-items: start; text-align: left; }
   .mp-aktionen .btn { flex: 1 1 100%; min-height: 44px; }
 }
+
+/* Kompakte Umschlagliste: Details erst beim gewaehlten Kunden. */
+.mp-kunde > summary { cursor: pointer; list-style: none; min-height: 48px; }
+.mp-kunde > summary::-webkit-details-marker { display: none; }
+.mp-kunde > summary::after { content: 'Öffnen ▾'; color: var(--text-3); font-size: .8rem; }
+.mp-kunde[open] > summary::after { content: 'Schließen ▴'; }
+.mp-pos, .mp-umschlag { height: auto; min-height: 2em; border-radius: 6px; padding: 4px 8px; overflow-wrap: anywhere; }
+.mp-kunde h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.mp-ziel { grid-template-columns: minmax(0, 1fr); }
+.mp-ziel > :not(.mp-umschlag) { grid-column: 1; }
+.mp-umschlag { justify-self: start; grid-row: auto; }

@@ -1803,3 +1803,22 @@ Prüfung offen. Kein Schätzen aus der Musteranzahl, kein automatischer Wechsel 
 Der geprüfte Preis-/Formatstand gilt bis 31.12.2026; danach fordert die Vorschau eine neue
 Prüfung statt eine veraltete Eignung zu bestätigen. Eine passende Vorschau bedeutet weder
 Portokauf noch Versandfreigabe oder tatsächliche Einlieferung.
+
+## Bestellungen und Packstation priorisieren (#1604, 22.10.2026)
+
+Direkte Navigation verwendet bestehende Kundenrouten (`tab=bestellungen`, `tab=muster`),
+keine zweite Bestell- oder Packdatenbank. Die mobile Leiste fuehrt Heute, Bestellungen,
+Packstation, Bestellen, Mehr; Kunden und Lexikon bleiben im Mehr-Blatt. Heute verlinkt
+Bestellungen, Wareneingang, Packbereites und gepackte Umschlaege.
+
+Die Packliste leitet `warten`, `packen`, `klaeren`, `gepackt` aus vorhandenem Status ab:
+alle Muster muessen als geliefert/eigener Bestand belegt oder physisch eingelegt bestaetigt sein,
+sonst wartet der Umschlag auf Ware. Fehlende Aufkleber-/Adresszuordnung ergibt Klaerbedarf.
+Der Packhaken ersetzt keinen Liefer- oder Versandstatus. Nummer des Umschlags = Bestellnummer(n),
+auch in der Wareneingangsansicht; Sortierung und das Abschliessen anderer Kunden aendern sie nicht.
+Kundendetails sind kompakt aufklappbar, eine Suche findet auch Produkte und Farbnummern.
+
+Bestelllisten-Arbeitsstand aus bestehenden Zeitleisten, Positionsstatus und Shopify-Status;
+keine Umschreibung privater Altstaende. Alte technische Pruefstatus sind im Belegdetail,
+nicht als zweiter Hauptstatus. Versand und manueller Listenhaken bleiben unterschiedliche Dinge.
+Die Bestellmarken aus Claude #1599 bleiben lokal und sind in der Browser-Datenkopie enthalten.

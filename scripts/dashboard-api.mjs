@@ -38,6 +38,7 @@ import { auftragsverlaufPfad, leseVerlauf, bereiteEreignisVor, schreibeVerlauf, 
 import { mustersperrePfad, leseSperren, haengeAn as sperreAnhaengen, ereignis as sperrEreignis, stand as sperrStand, schonErledigt as sperreSchonErledigt, adminLink as sperrAdminLink, pruefeRechte as pruefeSperrRechte, rechtFehltText as sperrRechtFehlt, sperreImShop, freigebenImShop, GRUND as SPERR_GRUND, MustersperreFehler } from '../operations/lib/mustersperre.mjs';
 import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden, kundenIndex, offeneBestellungenJeProdukt, kundenSchluessel } from '../operations/lib/kundensuche.mjs';
 import { faelle as kundenFaelle, istTestkontakt } from '../operations/lib/kundenfaelle.mjs';
+import { bestellmarkenPfad, leseAlle as leseBestellmarken, setzeHaken as setzeBestellhaken } from '../operations/lib/bestellmarken.mjs';
 import { fallmarkenPfad, leseAlle as leseFallmarken, setzeMarke as setzeFallmarke, teileAuf as teileFaelleAuf, juengsterPunkt, FALL_GRUND } from '../operations/lib/fallmarken.mjs';
 import {
   sortiere as orgSortiere, passtZuAnsicht, darfSehen, darfAendern, findeDoppelgaenger,
@@ -1672,7 +1673,17 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const zl = zeitleisten(dir, modell, statusAlle);
       let katalog = [];
       try { katalog = this._lexikonProdukte(); } catch { /* Optionale Kaufquelle unlesbar: keine Links, Bestellliste bleibt nutzbar. */ }
-      return { verfuegbar: true, zeilen: bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) })) };
+      const haken = leseBestellmarken(bestellmarkenPfad(dir));
+      return { verfuegbar: true, zeilen: bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, abgehakt: haken[z.orderId] || null, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) })) };
+    },
+
+    /** Bestellung abhaken bzw. Haken zuruecknehmen - gemeinsam fuer alle, ohne Shopify-Buchung. */
+    bestellungAbhaken({ orderId, erledigt } = {}, { benutzer = null } = {}) {
+      const dir = privatDirPath || privatDir();
+      if (typeof orderId !== 'string' || !orderId.trim() || orderId.length > 200) throw new ApiError(400, 'Bestellkennung fehlt.');
+      const ergebnis = setzeBestellhaken(bestellmarkenPfad(dir), orderId, { erledigt: Boolean(erledigt), von: benutzer?.name || benutzer?.kuerzel || 'Inhaber' });
+      merke(benutzer, null, 'Bestellung abgehakt', `${orderId}: ${erledigt ? 'erledigt' : 'zurückgenommen'}`);
+      return { ok: true, ...ergebnis };
     },
 
     /** Rein intern und lesend: weder Shopify-Abgleich noch Kundendaten im Etikett. */

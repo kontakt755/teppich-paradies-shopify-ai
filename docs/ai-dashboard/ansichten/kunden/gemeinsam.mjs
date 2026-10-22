@@ -27,8 +27,8 @@ export function telLink(telefon) {
 function kundenPositionZeile(p) {
   return `<tr>
     <td data-l="Artikel">${esc(p.titel)}${p.farbe ? `<br><span class="small muted">${esc(p.farbe)}</span>` : ''}</td>
-    <td data-l="Unsere SKU">${esc(p.sku || '–')}</td>
-    <td data-l="Lieferanten-Art.-Nr.">${esc(p.lieferantenArtikelnummer || '–')}</td>
+    <td data-l="Unsere SKU">${esc(p.sku === 'UNGEKLAERT' ? 'nicht zugeordnet' : p.sku || '–')}</td>
+    <td data-l="Lieferanten-Art.-Nr.">${esc(p.lieferantenArtikelnummer === 'UNGEKLAERT' ? 'nicht zugeordnet' : p.lieferantenArtikelnummer || '–')}</td>
     <td data-l="Menge">${esc(p.kundenmasse || p.menge)}</td>
     <td data-l="Preis">${p.preis?.betrag != null ? geldText(p.preis) : '–'}</td>
   </tr>`;
@@ -43,7 +43,7 @@ const AUFTRAG_STATUS_TEXT = {
   ABGESCHLOSSEN: 'Abgeschlossen', SPAETER: 'Später', PROBLEM: 'Problem',
 };
 
-export function kundenAuftragKarte(a) {
+export function kundenAuftragKarte(a, { ohneStatus = false } = {}) {
   const dt = a.details;
   const beratungsZeilen = Object.entries(dt?.beratungsangaben || {}).filter(([, v]) => v);
   return `<article class="card kunden-auftrag${a.testbestellung ? ' testbestellung' : ''}" id="druck-${esc(a.id.replace(/\W/g, ''))}">
@@ -52,7 +52,7 @@ export function kundenAuftragKarte(a) {
       <span class="no-print"><a class="btn btn-sm btn-ghost" href="${esc(a.adminUrl)}" target="_blank" rel="noopener">Im Shopify-Admin öffnen ↗</a> <button type="button" class="btn btn-sm" data-drucken="${esc(a.id)}">Drucken</button></span>
     </div>
     <div class="chips">
-      <span class="chip">Status: <b>${esc(AUFTRAG_STATUS_TEXT[a.status] || a.status)}</b></span>
+      ${ohneStatus ? '' : `<span class="chip">Bearbeitungsprüfung: <b>${esc(AUFTRAG_STATUS_TEXT[a.status] || a.status)}</b></span>`}
       <span class="chip">Zahlung: <b>${statusText(a.bezahlt, ZAHLUNG_TEXT)}</b></span>
       <span class="chip">Versand in Shopify: <b>${statusText(a.erfuellt, VERSAND_TEXT)}</b></span>
       <span class="chip">Beratung: <b>${esc(a.checks?.beratung || '–')}</b></span>

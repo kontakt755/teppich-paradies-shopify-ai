@@ -598,6 +598,12 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
 .bq-table table.tasks { min-width: 760px; }
 .bq-karten { display: none; }
 .bq-blaettern { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 12px; }
+.bq-erledigt { margin-top: 16px; }
+.bq-erledigt > summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
+.bq-erledigt .bq-row { opacity: .7; }
+.bq-haken { padding: 0 6px; margin-right: 4px; }
+.bq-haken-auto { color: var(--ok); margin-right: 6px; }
+.bq-neu { background: var(--ok-soft); color: var(--ok); }
 .bq-gruppenkopf th {
   padding: 11px 12px;
   text-align: left;
@@ -1184,3 +1190,6 @@ table.tasks td { padding-top: 12px; padding-bottom: 12px; }
 }
 .dialog textarea { width: 100%; }
 .dialog textarea:focus, .dialog input:focus, .dialog select:focus { border-color: var(--accent); outline: 3px solid var(--accent-soft); }
+
+.chips a.chip { color: var(--text-2); }
+.chips a.chip[aria-current="page"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }

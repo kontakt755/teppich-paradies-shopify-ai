@@ -19,6 +19,8 @@ const belegt = v => !!text(v) && !['UNGEKLAERT', '–', '-'].includes(text(v));
 const TAG = 24 * 60 * 60 * 1000;
 
 /** Gepackt gilt fuer genau diese Bestellungen; kommt eine dazu, ist der Kunde wieder offen. */
+export const umschlagKennung = k => (k.bestellungen || []).map(b => b.orderName).filter(Boolean).join(' / ') || k.packSchluessel;
+
 export const packSchluessel = orderIds => [...new Set(orderIds.map(text).filter(Boolean))].sort().join(',');
 
 /** Wo das Muster gerade ist - nur aus belegtem Auftragsfluss bzw. Musterlager. */
@@ -132,14 +134,14 @@ export function musterPackliste({ auftraege = [], produkte = new Map(), statusVo
       gepackt: istGepackt ? { zeit: gepackt[pk].zeit || null, von: gepackt[pk].von || null } : null,
       klaeren: kl ? { zeit: kl.zeit || null, von: kl.von || null, notiz: text(kl.notiz) || null,
         fehlt: muster.filter(m => (kl.fehlt || []).includes(m.lineItemId)).map(m => m.lineItemId) } : null,
-      // Ein Kunde ist in genau einem Bereich: gepackt > zu klaeren > zu packen.
-      bereich: istGepackt ? 'gepackt' : kl ? 'klaeren' : 'packen',
+      // Ein Haken bestaetigt das physisch eingelegte Muster, sonst braucht es bestaetigten Bestand.
+      bereich: istGepackt ? 'gepackt' : kl || unvollstaendig.length || adressAufkleber.fehlt.length ? 'klaeren' : muster.every(m => m.abgehakt || ['da', 'lager'].includes(m.stand)) ? 'packen' : 'warten',
     };
   });
   // Packreihenfolge: wer am laengsten wartet, zuerst; Gepacktes ans Ende.
   liste.sort((x, y) => (!!x.gepackt - !!y.gepackt) || text(x.seit).localeCompare(text(y.seit)) || x.name.localeCompare(y.name, 'de'));
   const zahl = b => liste.filter(k => k.bereich === b).length;
-  return { kunden: liste, offen: liste.filter(k => !k.gepackt).length, zahlen: { packen: zahl('packen'), klaeren: zahl('klaeren'), gepackt: zahl('gepackt') } };
+  return { kunden: liste, offen: liste.filter(k => !k.gepackt).length, zahlen: { warten: zahl('warten'), packen: zahl('packen'), klaeren: zahl('klaeren'), gepackt: zahl('gepackt') } };
 }
 
 /**
@@ -173,10 +175,9 @@ export function aufkleberFuer(kunde) {
  */
 export function musterNachLaden(kundenListe = []) {
   const laeden = new Map();
-  let nr = 0;
   for (const k of kundenListe) {
     if (k.bereich === 'gepackt') continue;
-    const umschlag = k.bereich === 'packen' ? String(++nr) : 'zu klären';
+    const umschlag = umschlagKennung(k);
     for (const m of k.muster) {
       if (m.abgehakt) continue;
       const laden = m.lieferant || 'Partnerladen nicht hinterlegt';

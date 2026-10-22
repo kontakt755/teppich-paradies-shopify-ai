@@ -43,7 +43,7 @@ Leute im Laden genauso wie fuer alte Hasen).
 | Team · Zugänge | **Zugänge** | nur Inhaber |
 | Werkbank | **Ideen & Fragen** | Link zur eigenen Anwendung |
 | GitHub synchronisieren | **Aufgaben neu laden** | |
-| Packstation, Packliste (lokale Datei) | **Muster packen** | Reiter unter Kunden (#1572); „Umschlag gepackt“ ist der gemeinsame Stand, das Abhaken je Muster nur eine Packhilfe am Gerät |
+| Packliste (lokale Datei) | **Packstation** (Arbeitsgang: „Muster packen“) | Reiter unter Kunden (#1572); „Umschlag gepackt“ ist der gemeinsame Stand, das Abhaken je Muster nur eine Packhilfe am Gerät |
 
 ## Bleibt bewusst
 
@@ -58,3 +58,13 @@ gebraeuchlich), Erfassen.
   Spaltenkoepfe sind ausgeschrieben.
 
 - **Großbrief vorbereiten:** Adresse und gemessenen Umschlag prüfen; kauft kein Porto und bucht keinen Versand.
+
+## Bestellungen und Packstation (22.10.2026)
+
+- **Bestellungen** = Kundenbestellungen; **Bestellen** = Einkauf beim Lieferanten.
+- **Packbereit** = alle Muster haben bestaetigten Bestand oder sind bereits eingelegt, Aufkleber und Adresse sind eindeutig.
+- **Wartet auf Ware** = mindestens ein Muster ist noch nicht als vorhanden bestaetigt.
+- **Zu klaeren** = fehlende Muster gemeldet oder Aufkleber/Adresse nicht eindeutig.
+- **Gepackt** = gemeinsamer Packstand; keine Versandbuchung.
+- **Abgehakt / versandt** = aus der Bestell-Arbeitsliste genommen; die Zeile unterscheidet manuelles Abhaken, Versand und Abschluss.
+- Umschlaege tragen die Bestellnummer(n), keine wechselnden Listennummern.

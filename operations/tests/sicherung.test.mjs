@@ -62,6 +62,8 @@ test('sichern: wirft eine klare Meldung, wenn gar keine Quelle existiert', () =>
 
 test('sichern: SICHERUNGSPFADE enthaelt auftragsstatus.json (der einzige unwiederbringliche Teil)', () => {
   assert.ok(SICHERUNGSPFADE.includes('auftragsstatus.json'));
+  assert.ok(SICHERUNGSPFADE.includes('muster-packen.json'));
+  assert.ok(SICHERUNGSPFADE.includes('bestellmarken.json'));
 });
 
 test('alteSicherungenAufraeumen: loescht nur Archive aelter als die Frist, laesst fremde Dateien in Ruhe', () => {

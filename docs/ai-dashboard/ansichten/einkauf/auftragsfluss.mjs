@@ -470,7 +470,8 @@ export function musterSchrittKnopf(hier, { klasse = 'btn btn-sm' } = {}) {
   const auftrag = alleAuftraege().find(a => a.id === orderIds[0]);
   const ganz = musterSchritt((auftrag?.positionen || hier).map(p => ({ ...p, orderId: orderIds[0] })), statusVon);
   if (ganz?.schritt !== 'verschicken') return '';
-  return `<button type="button" class="${klasse}" data-af-set data-af-status="raus" data-af-order="${esc(orderIds[0])}" data-af-item="${esc(ganz.positionen[0].lineItemId)}">${ganz.uebergabe ? 'Übergeben…' : 'Verschicken…'}</button>`;
+  const packen = `<a class="${klasse}" href="#/kunden?tab=muster&amp;umschlag=${encodeURIComponent(orderIds[0])}">Packstation</a>`;
+  return `${packen}<button type="button" class="${klasse}" data-af-set data-af-status="raus" data-af-order="${esc(orderIds[0])}" data-af-item="${esc(ganz.positionen[0].lineItemId)}">${ganz.uebergabe ? 'Übergeben…' : 'Verschicken…'}</button>`;
 }
 
 export function ensureEinkaufKennzahlen() {
