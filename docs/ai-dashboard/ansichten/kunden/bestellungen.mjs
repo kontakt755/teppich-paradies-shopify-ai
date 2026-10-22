@@ -326,7 +326,7 @@ export function viewKundenBestellungen() {
     <div class="toolbar search-hero"><input type="search" placeholder="Suchen – Kunde, E-Mail, Telefon, Bestellnummer, Produkt, Farbe, Tags …" value="${esc(params.get('bq') || '')}" data-param="bq" aria-label="Bestellungen durchsuchen"></div>
     ${chips}
     <div class="chips" role="group" aria-label="Sortierung">
-      <button class="chip" data-param="bsort" data-value="" aria-pressed="${sort === 'datum'}">Neueste zuerst</button>
+      <button class="chip" data-bq-neueste aria-pressed="${sort === 'datum' && dir === 'desc'}">Neueste zuerst</button>
       <button class="chip" data-param="bsort" data-value="wichtigkeit" aria-pressed="${sort === 'wichtigkeit'}">Dringendes zuerst</button>
     </div>
     <p class="small muted" style="margin:0 0 8px">${zeilen.length} ${zeilen.length === 1 ? 'Bestellung' : 'Bestellungen'}${seiten > 1 ? ` · Seite ${seite} von ${seiten}` : ''} · ${sort === 'wichtigkeit' ? 'Sortiert nach Wichtigkeit: es fehlt etwas → unterwegs → nicht bezahlt → raus oder erledigt, je die älteste zuerst' : `Sortiert nach ${esc(BQ_SORT_LABEL[sort] || 'Kunde')} ${dir === 'asc' ? 'aufsteigend' : 'absteigend'}`} · Zeile anklicken zeigt Zeitleiste, Kanal, Tags und die Aktionen</p>
@@ -358,6 +358,15 @@ export function kundenKlickBestellungen(e) {
   if (musteretikettenKlick(e)) return true;
   // Zeitleiste (Kundenakte und Bestelldetail): Hauptknopf und "Etwas anderes ist passiert ...".
   if (zeitleisteKlick(e)) return true;
+  if (e.target.closest('[data-bq-neueste]')) {
+    e.preventDefault();
+    const p = new URLSearchParams(state.route.params);
+    p.delete('bsort');
+    p.delete('bdir');
+    p.delete('bseite');
+    location.hash = `#/${state.route.view}?${p}`;
+    return true;
+  }
   const sortKopf = e.target.closest('[data-bq-sort-toggle]');
   if (sortKopf) {
     // Zweiter Klick auf dieselbe Spalte dreht die Richtung - vorher war
