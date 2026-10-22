@@ -57,7 +57,7 @@ mutation VersandFreigeben($id: ID!, $holdIds: [ID!]) {
 }`;
 
 /** Versanddienste fuer die Sendungsnummer - Namen so, wie Shopify sie kennt (dann baut Shopify den Verfolgungslink). */
-export const VERSANDDIENSTE = Object.freeze(['GLS', 'DHL', 'DPD', 'Hermes', 'UPS', 'Deutsche Post (DE)', 'Spedition']);
+export const VERSANDDIENSTE = Object.freeze(['GLS', 'GEL', 'DHL', 'DPD', 'Hermes', 'UPS', 'Deutsche Post (DE)', 'Spedition']);
 
 /** Zurueckhaltungen, die das Control Center bei "raus" selbst aufhebt (siehe Kopf, Schritt 3). */
 const SELBST_AUFHEBBAR = new Set(['INVENTORY_OUT_OF_STOCK']);

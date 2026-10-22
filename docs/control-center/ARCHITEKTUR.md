@@ -1893,6 +1893,17 @@ Der Umbau startet keine automatischen Nachrichten, Lieferantenbestellungen oder 
 Bestehende getrennte Versandaktionen und bewusst bestaetigte Bestellaktionen bleiben erhalten.
 
 
+## Kettler und Packstuecke
+
+Der Knopf **Kettler & Versand** in der Waren-Zeitleiste ergaenzt den bestehenden Bestell- und Versandablauf. `kettelversand.json` im Privatverzeichnis fuehrt je Auftrag und Warenposition getrennte Bestaetigungen fuer Eingang beim Kettler und fertiges Ketteln. Weder der alte Status `geliefert` noch ein digitaler Lieferschein beweisen fertiges Ketteln. Beide neuen Schritte erfordern einen Belegvermerk.
+
+Fertige Teppiche derselben Bestellung koennen ein gemeinsames Packstueck bilden. Gemeinsames schadloses Rollen sowie tatsaechlich gemessene Aussenmasse und Bruttogewicht inklusive Verpackung sind ausdruecklich zu bestaetigen. Durchmesser und Gewicht werden nicht aus Teppichmassen geraten. Jede Position darf nur einem Packstueck angehoeren. Der bestehende private GLS/GEL-Tarifrechner prueft die Packstuecke mit Ziel- und Kettler-Abhol-PLZ, Datum, Privatempfang und Warenwert; die guenstigste berechenbare Variante wird vorgeschlagen. Fehlende Tarife und ungeklaerte Zuschlaege bleiben offen.
+
+`GET /api/einkauf/kettelversand?orderId=...` liest den Stand. `POST /api/einkauf/auftragsstatus` mit `aktion: kettelversand` und `kettelAktion: angekommen|fertig|paket|paketEntfernen|schein` schreibt ausschliesslich diese private Ablage. Leserollen sind gesperrt; Revision und Dateisperre schuetzen gegen konkurrierende Schreiber. Die Datei wird mit den Betriebsdaten gesichert und fuer Browserproben kopiert.
+
+Optionale HTTPS-Portaladressen stehen privat unter `versandkosten/portale.json` als Objekt mit den Schluesseln `GLS` und `GEL`. Ein Portalaufruf ist keine API-Buchung und erzeugt allein keinen Schein. Erst die Sendungsnummer des tatsaechlich erstellten Scheins wird mit Dienst und Zeitpunkt erfasst. Packstuecke mit Schein sind gegen Aenderung und doppeltes Hinterlegen gesperrt; ohne Schein ist Neuplanung moeglich. Der neue Dialog bucht weder Shopify-Fulfillment noch Kundenmail, Abholung oder Zustellung. Bei tatsaechlicher Uebergabe bleibt der vorhandene Dialog **An Kunden raus** zustaendig; GEL ist dort jetzt ebenfalls waehlbar. Eine direkte GLS/GEL-Label-API ist nicht angebunden.
+
+
 ### 9d. Arbeitsstand und abgesicherte Bestellvorbereitung (#1616, 22.10.2026)
 
 `operations/lib/arbeitsstand.mjs` bildet aus den lokalen Arbeitsdateien eine Revision.

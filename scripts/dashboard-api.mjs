@@ -13,6 +13,8 @@
  * `gh` ist injizierbar (Tests). Alle Funktionen sind frei von HTTP-Details.
  */
 
+import { leseKettelversand, aendereKettelversand, kettelPosition, packVergleich } from '../operations/lib/kettelversand.mjs';
+import { leseVersandtarife as kettelTarife } from '../operations/lib/versandtarife.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
@@ -2395,6 +2397,20 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       }
     },
 
+    einkaufKettelversand({orderId} = {}) {
+      const dir=privatDirPath || privatDir(); const k=this._lieferantenKontext();
+      const auftrag=k.modell?.auftraege.find(a=>a.id===orderId);
+      if(!auftrag) throw new ApiError(404, 'Bestellung nicht gefunden.');
+      const stand=leseKettelversand(dir).auftraege[orderId] || {revision:0,positionen:{},pakete:[]};
+      const abholPlz=k.stammdaten.absender?.kettelservice?.plz;
+      const tarif=kettelTarife(path.join(dir,'versandkosten','tarife.json')).tarif;
+      let portale={};
+      try { const p=readJsonIfExists(path.join(dir,'versandkosten','portale.json')); for(const name of ['GLS','GEL']) if(typeof p?.[name]==='string' && /^https:\/\//.test(p[name])) portale[name]=p[name]; } catch { /* Optionaler Portalzugang */ }
+      return {verfuegbar:true,orderId,name:auftrag.name,revision:stand.revision,
+        positionen:auftrag.positionen.filter(kettelPosition).map(p=>({id:p.lineItemId,titel:p.titel,farbe:p.farbe,ausfuehrung:p.ausfuehrung,stand:stand.positionen[p.lineItemId] || {}})),
+        pakete:stand.pakete.map(p=>({...p,vergleich:packVergleich(p,tarif,{zielPlz:auftrag.details?.lieferadresse?.plz,abholPlz})})),portale};
+    },
+
     /** Auftragsfluss-Status je Position, rein lokal (nie im Repository). */
     einkaufAuftragsstatus() {
       const dir = privatDirPath || privatDir();
@@ -2470,6 +2486,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Bis zu den lokalen Writes kein await: Vorpruefung und Uebernahmesperre werden
       // im selben JS-Schritt frisch gelesen; asynchron bleibt nur die bestehende Versandbuchung.
       const { orderId, lineItemId, status, lieferantBestellnummer, notiz, aktion } = payload || {};
+      if (aktion === 'kettelversand') {
+        const dir=privatDirPath || privatDir(), k=this._lieferantenKontext();
+        try {
+          aendereKettelversand(dir,{...payload,aktion:payload.kettelAktion},{auftrag:k.modell?.auftraege.find(a=>a.id===orderId),statusAlle:k.statusAlle,actor,tarif:kettelTarife(path.join(dir,'versandkosten','tarife.json')).tarif,abholPlz:k.stammdaten.absender?.kettelservice?.plz,jetzt:now()});
+          merke(benutzer,actor,'Kettler / Packstück',payload.kettelAktion);
+          return {ok:true,...this.einkaufKettelversand({orderId})};
+        } catch(e) {throw new ApiError(409,e.message);}
+      }
       // Ware ueber unseren Kettelservice: nur dieser eine Wert, alles andere nimmt den Vermerk zurueck.
       const ueber = payload?.ueber === undefined ? undefined : payload.ueber === 'kettler' ? 'kettler' : null;
       if (aktion === 'beschaffung' || aktion === 'uebernahme') {
