@@ -2,6 +2,30 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-22 · Aktuelle Arbeitslisten und gemeinsame Bestellvorbereitung (#1616)
+
+- **Geaendert:** Der bestehende Statusabruf liefert eine lokale Arbeitsrevision. Geaenderte
+  Bestell-, Pack- und Einkaufsdaten werden alle 30 Sekunden und bei Tab-Rueckkehr nachgeladen;
+  laufende Eingaben und offene Dialoge bleiben geschuetzt. Bei einem Fehler bleibt der bisherige
+  Stand sichtbar, statt eine leere oder vermeintlich erledigte Liste anzuzeigen.
+- **Geaendert:** Nach Status- und Wareneingangsaktionen werden bereits geladene Bestell- und
+  Packlisten erneut gelesen. Das gilt fuer Einzelaktionen und nach Abschluss einer Sammelaktion.
+- **Geaendert:** Bewusstes Vorbereiten einer Lieferantenbestellung uebernimmt die enthaltenen
+  Positionen gemeinsam. Vor Kopieren, externem Oeffnen und „Als bestellt markieren“ prueft der
+  Server den aktuellen fachlichen Mailabschnitt und die eigene Arbeitsuebernahme erneut.
+  Fremde Uebernahmen blockieren auch den Inhaber, bis er die vorhandene ausdrueckliche
+  Uebernahmeaktion verwendet. Andere unveraenderte Mailabschnitte bleiben getrennt pruefbar.
+- **Getestet:** Gesamtsuite und Projekt-Guards; 60 Browserkombinationen auf Desktop/Handy,
+  drei Rollen und Dunkelmodus. Private Klickprobe mit zwei Zugaengen: fremde Uebernahme
+  blockiert, nach Freigabe weiterarbeiten, alte Vorlage abgewiesen; 3 Muster bestaetigt → 0
+  offen, lokale Wiedereroeffnung ohne Exportwechsel automatisch 0 → 3. Kein echter Versand.
+  Regressionen fuer Teilfehler, geschuetzte Eingaben und getrennte Mailabschnitte.
+- **Risiken/Annahmen:** Gleiche Anmeldung bedeutet weiterhin gemeinsame Identitaet. Externe
+  Mailprogramme und Gmail bestaetigen dem Dashboard keinen Versand; mehrfaches externes
+  Absenden kann es nicht ausschliessen. Keine automatischen Kaeufe, Nachrichten oder physischen
+  Pack-/Versandbestaetigungen; keine zweite Beleg- oder Shopify-Automatik.
+- **Naechste Stufe:** regulaere Bedienprobe im Betrieb.
+
 ## 2026-10-22 · Ruhige Startseite und vier Arbeitswege (#1614)
 
 - **Geaendert:** Vier Hauptwege Heute / Muster bestellen / Bestellungen / Packstation;

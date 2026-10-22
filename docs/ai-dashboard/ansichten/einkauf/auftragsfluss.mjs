@@ -159,7 +159,7 @@ export function ensureEinkaufLieferanten() {
 
 /** Setzt den Auftragsfluss-Stand einer Position. `still` unterdrueckt Toast und Neuzeichnen
  * (fuer Sammelaktionen, die am Ende selbst einmal melden und zeichnen). */
-export async function setzeAuftragsstatus(pos, status, { lieferantBestellnummer = null, notiz = null, ueber, still = false } = {}) {
+export async function setzeAuftragsstatus(pos, status, { lieferantBestellnummer = null, notiz = null, ueber, still = false, nachladen = true } = {}) {
   if (istNurLesend()) { toast('Rolle "lesen" darf keine Aenderungen vornehmen.', 'crit'); return false; }
   try {
     const r = await fetch('/api/einkauf/auftragsstatus', {
@@ -171,6 +171,7 @@ export async function setzeAuftragsstatus(pos, status, { lieferantBestellnummer 
     if (!r.ok) { toast(`Fehler: ${j.error || r.status}`, 'crit'); return false; }
     if (!einkauf.auftragsstatus || !einkauf.auftragsstatus.positionen) einkauf.auftragsstatus = { verfuegbar: true, positionen: {} };
     einkauf.auftragsstatus.positionen[afKey(pos.orderId, pos.lineItemId)] = j.eintrag;
+    if (nachladen) await ladeKundenArbeitsstandNeu();
     if (!still) {
       // "Erledigt" bucht in Shopify, wenn dort noch offen (ohne Kundenmail) - das Ergebnis gehoert in die Rueckmeldung.
       const r = versandRueckmeldung(`Status: ${afStatusText(j.eintrag) || AF_STATUS_LABEL[status]}`, status === 'erledigt' ? j.shopify : null);
@@ -232,6 +233,21 @@ async function oeffneAuftragsstatusWieder(pos, notiz) {
   } catch (e) { toast(`Fehler: ${e.message}`, 'crit'); return false; }
 }
 
+/** Geladene Arbeitslisten nach lokalem Schreiben nachziehen; Lesefehler aendern keinen Altstand. */
+async function ladeKundenArbeitsstandNeu() {
+  const lesen = async (feld, pfad) => {
+    if (!kunden[feld]) return;
+    try {
+      const d = await fetchEinkauf(pfad);
+      if (d?.verfuegbar) kunden[feld] = d;
+    } catch { /* Der bestaetigte Status bleibt gespeichert; die letzte lesbare Liste bleibt sichtbar. */ }
+  };
+  await Promise.all([
+    lesen('bestellungen', '/api/kunden/bestellungen'),
+    lesen('musterPacken', '/api/kunden/muster-packen'),
+  ]);
+}
+
 /**
  * Nach einer Aenderung (zurueck auf offen, Muster-Herkunft) alles nachladen, was den Stand
  * zeigt - ohne dass die Seite auf "Lade ..." springt. `bestellungen`: auch die Bestelluebersicht
@@ -240,7 +256,7 @@ async function oeffneAuftragsstatusWieder(pos, notiz) {
 export async function ladeStandNeu({ bestellungen = false } = {}) {
   const auftraege = [fetchEinkauf('/api/einkauf/auftragsstatus').then(d => { if (d?.verfuegbar) einkauf.auftragsstatus = d; })];
   if (bestellungen) auftraege.push(fetchEinkauf('/api/einkauf/bestellungen').then(d => { if (d?.verfuegbar) einkauf.bestellungen = d; }));
-  if (kunden.bestellungen) auftraege.push(fetchEinkauf('/api/kunden/bestellungen').then(d => { if (d?.verfuegbar) kunden.bestellungen = d; }));
+  auftraege.push(ladeKundenArbeitsstandNeu());
   if (kunden.detailKey && kunden.detail) {
     const key = kunden.detailKey;
     auftraege.push(fetchEinkauf(`/api/kunden/detail?${new URLSearchParams({ key })}`).then(d => { if (kunden.detailKey === key && d?.verfuegbar) kunden.detail = d; }));
@@ -433,7 +449,8 @@ function openSammelBestelltDialog(id) {
  */
 export async function markiereAlsBestellt(positionen, lieferantBestellnummer = null, { ueber } = {}) {
   let ok = 0;
-  for (const p of positionen) if (await setzeAuftragsstatus(p, 'bestellt', { lieferantBestellnummer, ueber, still: true })) ok += 1;
+  for (const p of positionen) if (await setzeAuftragsstatus(p, 'bestellt', { lieferantBestellnummer, ueber, still: true, nachladen: false })) ok += 1;
+  if (ok) await ladeKundenArbeitsstandNeu();
   toast(ok === positionen.length ? `${plural(ok, 'Artikel', 'Artikel')} als bestellt markiert` : `Nur ${ok} von ${positionen.length} Artikeln als bestellt markiert`, ok === positionen.length ? '' : 'crit');
   return ok;
 }
@@ -444,7 +461,8 @@ export async function markiereAlsBestellt(positionen, lieferantBestellnummer = n
  */
 export async function markiereMusterAngekommen(positionen) {
   let ok = 0;
-  for (const p of positionen) if (await setzeAuftragsstatus(p, 'geliefert', { still: true })) ok += 1;
+  for (const p of positionen) if (await setzeAuftragsstatus(p, 'geliefert', { still: true, nachladen: false })) ok += 1;
+  if (ok) await ladeKundenArbeitsstandNeu();
   if (ok) toast(ok === positionen.length ? `${plural(ok, 'Muster', 'Muster')} als angekommen eingetragen` : `Nur ${ok} von ${positionen.length} Mustern eingetragen`, ok === positionen.length ? '' : 'crit');
   render();
   return ok;
