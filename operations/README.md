@@ -39,7 +39,8 @@ Grundlage: `audit/tp-operations-v3/` (02 Datenmodell, 05 Entscheidungen,
 | `lib/status.mjs` | Enum `AUFTRAG_STATUS`, Uebergaenge, `ableiten(order)` |
 | `lib/auftragsverlauf.mjs` | Zeitleiste je Auftrag (Muster-/Warenstrecke), `naechsterSchritt`, Ereignisse je Auftrag (privat, nur anhängen) |
 | `lib/musterherkunft.mjs` | Woher kommt ein Muster: Lieferant oder eigener Bestand (verschicken/vorbeibringen); privat, nur anhängen |
-| `lib/musterlager.mjs` | Musterlager (Einzelmuster, Probestück 2 × 1 m, Bahn 4 m × 20 cm, Lagerplatz); ordnet offene Musterpositionen dem Lager zu, Vorschläge zum Einlagern; privat |
+| `lib/musterlager.mjs` | Musterlager (Einzelmuster, Probestück 2 × 1 m, Bahn 4 m × 20 cm, Verlegerest, Lagerplatz); ordnet offene Musterpositionen dem Lager zu, Vorschläge zum Einlagern; privat |
+| `lib/reste.mjs` | Verlegereste als Mustermaterial: Regel (A/C-Ware Teppichboden/Vinyl aufheben, andere Quelle nur mit A/C-Gegenstück), Abgleich Hersteller/Qualität/Farbnummer gegen den Lexikon-Export; rein |
 | `sync/orders.mjs` | `fetchOrdersSince`, `writeOrderState` (mit Gegenlesen) |
 
 ## Start
@@ -432,6 +433,14 @@ aufgebraucht, trägt die Position dieselben Felder wie „haben wir da“ (`must
 eigen_versand`) plus `musterHerkunftQuelle: lager` und `musterLager`. Beim Verschicken
 schreibt der Server die Zuordnung als `musterherkunft`-Ereignis mit `lagerId` fest.
 Details und Endpunkte: `docs/control-center/ARCHITEKTUR.md`, Abschnitt 8b.
+
+**Verlegereste (Regel 2026-10-21, `lib/reste.mjs`).** Teppichboden und Vinyl (Rolle, Klebe, Klick)
+von Lieferant A oder C, den wir verlegen (Route `SUPPLIER_TO_SITE` oder Verlegung gebucht, nie
+Direktversand), hinterlässt Reste: aufheben, beschriften, als Art `rest` einlagern – daraus werden
+A5-Muster. Ware anderer Quelle zählt nur, wenn A oder C dieselbe Ware führt: `sucheBeiAC` gleicht
+Hersteller (Name oder Kürzel = Anfangsbuchstaben), Kennwörter der Qualität und Farbnummer gegen die
+aktiven A/C-Varianten im Lexikon ab. Der Rest wird unter der A/C-SKU eingelagert, damit er
+Musterbestellungen dieses Produkts bedient.
 
 ## Zeitleiste je Auftrag und nächster Schritt
 

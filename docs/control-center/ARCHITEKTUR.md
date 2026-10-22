@@ -598,10 +598,16 @@ To-dos auf „Heute“ („Muster bei Lieferant A bestellen · Kunde · Regalia 
   „Bestellt“ ist kein Abgang.
 - **Vorschläge „Einlagern?“:** eingetroffene Probestücke von PVC/Linoleum (Stand „geliefert“, höchstens
   45 Tage) – „den Rest einlagern?“ – und Farben, die in 120 Tagen mindestens zweimal als Muster bestellt
-  wurden. Ein Klick öffnet den Dialog vorbelegt.
+  wurden. Ein Klick öffnet den Dialog vorbelegt. Dazu **Verlegereste** (Regel 2026-10-21,
+  `operations/lib/reste.mjs`): gelieferte Verlegeware Teppichboden/Vinyl von A/C, bei anderer Quelle
+  nur mit A/C-Gegenstück in derselben Farbe – „Rest aufheben, beschriften, einlagern“ (Art `rest`).
+- **Rest prüfen:** Dialog für Ware, die nicht über den Shop läuft (direkt beim Hersteller bestellt):
+  Hersteller, Qualität, Farbnummer → Treffer bei A/C mit Farben, „Als Verlegerest einlagern“ und
+  „Etikett“ (ein Aufkleber je Farbe, Lexikon-Etikett ohne Lieferantennamen).
 - **Endpunkte:** `GET /api/einkauf/musterlager` (Einträge mit Stand verbraucht/reserviert/Rest/reichtNoch,
   offene Bestellungen je Eintrag samt `wartetAufLieferant`, Mustergröße, Vorschläge), `GET /api/einkauf/musterlager-farben?handle=` (Farben eines
-  Lexikon-Produkts samt Schlüssel), `POST /api/einkauf/musterlager` mit `aktion: einlagern | aendern |
+  Lexikon-Produkts samt Schlüssel), `GET /api/einkauf/reste-abgleich?hersteller=&qualitaet=&farbnummer=`
+  (Treffer bei A/C, nur lesend, 400 ohne Hersteller und Qualität), `POST /api/einkauf/musterlager` mit `aktion: einlagern | aendern |
   entfernen` (Schreibpfad: Rolle „lesen“ 403). Ein beschädigtes `musterlager.json` hält keine
   Bestellansicht auf; nur der Reiter meldet den Fehler, und Schreiben verweigert.
 

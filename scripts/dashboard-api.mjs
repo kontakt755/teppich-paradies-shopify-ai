@@ -33,6 +33,7 @@ import { bucheVersand, versandNachzuholen, VersandFehler, VERSANDDIENSTE } from 
 import { uebernimmAusShopify, abweichungen as shopifyAbweichungen, ABGLEICH_VON } from '../operations/lib/shopify-abgleich.mjs';
 import { musterherkunftPfad, leseEreignisse as leseMusterherkunft, haengeWahlAn, wendeAufModellAn, HERKUNFT_WERTE, HERKUNFT_LABEL, MusterherkunftFehler } from '../operations/lib/musterherkunft.mjs';
 import { musterSchluessel, musterlagerPfad, leseLager, einlagern as lagerEinlagern, aendern as lagerAendern, entfernen as lagerEntfernen, wendeLagerAn, festzuschreiben as lagerFestzuschreiben, farbenFuer as lagerFarbenFuer, vorschlaege as lagerVorschlaege, kurzTitel as lagerKurzTitel, LAGER_ARTEN, ZAEHLBAR as LAGER_ZAEHLBAR, MUSTER_GROESSE, KNAPP_AB as LAGER_KNAPP_AB, PROBESTUECK_PREIS, wartetAufLieferant as lagerWartetAufLieferant, MusterlagerFehler } from '../operations/lib/musterlager.mjs';
+import { abgleichIndex as resteIndex, sucheBeiAC as resteSucheBeiAC, acTrefferFuer as resteAcTreffer, RESTE_GRUPPEN, RESTE_LIEFERANTEN } from '../operations/lib/reste.mjs';
 import { auftragsverlaufPfad, leseVerlauf, bereiteEreignisVor, schreibeVerlauf, zeitleistenFuerModell, dringendsterSchritt, setzbareSchritte, SCHRITT_WERTE, SCHRITT_LABEL, ERGEBNIS_SCHRITTE, AuftragsverlaufFehler } from '../operations/lib/auftragsverlauf.mjs';
 import { mustersperrePfad, leseSperren, haengeAn as sperreAnhaengen, ereignis as sperrEreignis, stand as sperrStand, schonErledigt as sperreSchonErledigt, adminLink as sperrAdminLink, pruefeRechte as pruefeSperrRechte, rechtFehltText as sperrRechtFehlt, sperreImShop, freigebenImShop, GRUND as SPERR_GRUND, MustersperreFehler } from '../operations/lib/mustersperre.mjs';
 import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden, kundenIndex, offeneBestellungenJeProdukt, kundenSchluessel } from '../operations/lib/kundensuche.mjs';
@@ -2506,6 +2507,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         }
       }
       const gruppen = new Map(this._lexikonProdukte().map(x => [x.handle, x.produktgruppe || null]));
+      const { index: acIndex, jeSku } = this._resteIndex();
       return {
         verfuegbar: true,
         arten: LAGER_ARTEN,
@@ -2521,7 +2523,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           offeneBestellungen: offen.get(e.id) || [],
           verlauf: (e.verlauf || []).slice(-5),
         })),
-        vorschlaege: modell ? lagerVorschlaege(modell, { lager, statusAlle, produktgruppe: h => gruppen.get(h) ?? null, jetzt: now() }) : [],
+        vorschlaege: modell ? lagerVorschlaege(modell, {
+          lager, statusAlle, produktgruppe: h => gruppen.get(h) ?? null, jetzt: now(),
+          acTreffer: p => { const v = jeSku.get(String(p.sku ?? '').trim().toUpperCase()); return v ? resteAcTreffer(acIndex, v) : []; },
+        }) : [],
+        reste: { gruppen: RESTE_GRUPPEN, lieferanten: RESTE_LIEFERANTEN },
         // Im Shop gesperrte Muster ("Muster nicht verfuegbar") - eine beschaedigte Ablage meldet nur diesen Block.
         sperren: sperrenListe(dir),
       };
@@ -2590,6 +2596,36 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       });
     },
 
+
+    /**
+     * Verlegereste (Regel 2026-10-21): fuehrt Lieferant A oder C diese Ware? Fuer Bestellungen
+     * direkt beim Hersteller oder anderswo, die nicht ueber den Shop laufen. Nur lesend.
+     */
+    einkaufResteAbgleich({ hersteller = '', qualitaet = '', farbnummer = '' } = {}) {
+      const kurz = v => String(v ?? '').trim().slice(0, 120);
+      const q = { hersteller: kurz(hersteller), qualitaet: kurz(qualitaet), farbnummer: kurz(farbnummer) };
+      if (!q.hersteller && !q.qualitaet) throw new ApiError(400, 'Hersteller oder Qualität angeben', { missing: ['hersteller', 'qualitaet'] });
+      const { index } = this._resteIndex();
+      if (!index.length) return { verfuegbar: false, hinweis: 'Lexikon nicht geladen – „Aktualisieren“ ausführen.' };
+      let imLager = new Set();
+      try { imLager = new Set(leseLager(musterlagerPfad(privatDirPath || privatDir())).eintraege.filter(e => !e.leer).flatMap(e => e.schluessel)); } catch { /* ohne Kennzeichen */ }
+      const treffer = resteSucheBeiAC(index, q).map(t => ({
+        ...t, titel: lagerKurzTitel(t.titel),
+        farben: t.farben.map(f => ({ ...f, imLager: imLager.has(f.sku) })),
+      }));
+      return { verfuegbar: true, frage: q, treffer };
+    },
+
+    /** Suchindex fuer den Reste-Abgleich, neu nur wenn sich der Lexikon-Export aendert. */
+    _resteIndex() {
+      const produkte = this._lexikonProdukte();
+      if (this._resteCache?.produkte !== produkte) {
+        const jeSku = new Map();
+        for (const p of produkte) for (const v of p.varianten || []) if (v?.sku) jeSku.set(String(v.sku).trim().toUpperCase(), v);
+        this._resteCache = { produkte, index: resteIndex(produkte), jeSku };
+      }
+      return this._resteCache;
+    },
 
     /** Farben eines Lexikon-Produkts zum Einlagern, mit Kennzeichen "schon im Lager". */
     einkaufMusterlagerFarben({ handle = '' } = {}) {

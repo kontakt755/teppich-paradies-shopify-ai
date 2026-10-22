@@ -29,11 +29,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { restRegel, wirdVerlegt } from './reste.mjs';
 
 export const LAGER_ARTEN = Object.freeze({
   einzel: 'Einzelmuster',
   probestueck: 'Probestück 2 × 1 m',
   bahn: 'Bahn 4 m × 20 cm',
+  // Regel 2026-10-21: Reste vom Verlegen (A/C-Ware) heben wir auf und schneiden daraus Muster.
+  rest: 'Verlegerest',
 });
 export const LAGER_ART_WERTE = Object.freeze(Object.keys(LAGER_ARTEN));
 
@@ -434,6 +437,9 @@ export function farbenFuer(produkt, muster = null) {
 /**
  * Vorschlaege fuer das Lager, aus den Bestellungen abgeleitet:
  * - "eingetroffen": ein grosses Stueck (PVC/Linoleum) kam vom Lieferanten - der Rest gehoert ins Lager.
+ * - "verlegerest": Teppichboden oder Vinyl zum Verlegen ist da (reste.mjs) - von A/C immer, von
+ *   anderen nur, wenn A oder C dieselbe Ware fuehrt (`acTreffer`). Der Rest kommt beschriftet ins
+ *   Lager, unter der Artikelnummer der A/C-Variante.
  * - "gefragt": dieselbe Farbe wurde mehrfach als Muster bestellt - einlagern spart Bestellungen.
  * Muster, die schon im Lager stehen, fallen weg.
  *
@@ -442,14 +448,17 @@ export function farbenFuer(produkt, muster = null) {
  * @param {{eintraege: object[]}} opt.lager
  * @param {object} [opt.statusAlle]
  * @param {(handle: string) => (string|null)} [opt.produktgruppe]  Produktgruppe aus dem Lexikon
+ * @param {(position: object) => object[]} [opt.acTreffer]  A/C-Treffer fuer Ware anderer Quelle (reste.mjs acTrefferFuer)
  * @param {Date} [opt.jetzt]
  */
-export function vorschlaege(modell, { lager, statusAlle = {}, produktgruppe = () => null, jetzt = new Date() } = {}) {
+export function vorschlaege(modell, { lager, statusAlle = {}, produktgruppe = () => null, acTreffer = () => [], jetzt = new Date() } = {}) {
   const imLager = new Set((lager?.eintraege ?? []).flatMap(e => e.schluessel));
   const je = new Map();
+  const reste = new Map();
   for (const a of modell?.auftraege ?? []) {
     if (a.storniert) continue;
     for (const p of a.positionen ?? []) {
+      if (p && !p.istMuster) { verlegerest(a, p); continue; }
       if (!p?.istMuster) continue;
       const key = musterSchluessel(p);
       if (!key || imLager.has(key)) continue;
@@ -470,9 +479,46 @@ export function vorschlaege(modell, { lager, statusAlle = {}, produktgruppe = ()
       }
     }
   }
-  return [...je.values()]
-    .filter(v => v.eingetroffen || v.anzahl >= GEFRAGT_AB)
-    .map(v => ({ ...v, grund: v.eingetroffen ? 'eingetroffen' : 'gefragt', artVorschlag: v.eingetroffen ? 'probestueck' : 'einzel', auftraege: [...new Set(v.auftraege)].slice(0, 5) }))
-    .sort((x, y) => (x.grund === 'eingetroffen' ? 0 : 1) - (y.grund === 'eingetroffen' ? 0 : 1) || y.anzahl - x.anzahl || String(y.zuletzt).localeCompare(String(x.zuletzt)))
-    .slice(0, 15);
+  // Ein Verlegerest ersetzt den Vorschlag "gefragt" derselben Farbe: das Material ist ja schon da.
+  for (const k of reste.keys()) je.delete(k);
+  const RANG = { eingetroffen: 0, verlegerest: 1, gefragt: 2 };
+  return [
+    ...[...je.values()]
+      .filter(v => v.eingetroffen || v.anzahl >= GEFRAGT_AB)
+      .map(v => ({ ...v, grund: v.eingetroffen ? 'eingetroffen' : 'gefragt', artVorschlag: v.eingetroffen ? 'probestueck' : 'einzel', auftraege: [...new Set(v.auftraege)].slice(0, 5) })),
+    ...reste.values(),
+  ]
+    .sort((x, y) => RANG[x.grund] - RANG[y.grund] || y.anzahl - x.anzahl || String(y.zuletzt).localeCompare(String(x.zuletzt)))
+    .slice(0, 25);
+
+  /** Warenposition: eingetroffene Verlegeware, deren Rest ins Lager gehoert. */
+  function verlegerest(a, p) {
+    const handle = p.handle || null;
+    const regel = handle ? restRegel({ lieferant: p.lieferant, produktgruppe: produktgruppe(handle) }) : null;
+    if (!regel || !p.lineItemId || !wirdVerlegt(p, a)) return;
+    const kam = statusAlle[posKey(a.id, p.lineItemId)]?.geliefertAm || null;
+    const vor = kam ? Math.floor((jetzt.getTime() - new Date(kam).getTime()) / TAG_MS) : -1;
+    if (!(vor >= 0) || vor > EINGETROFFEN_TAGE) return;
+    let ziel;
+    if (regel === 'aufheben') {
+      const k = norm(p.sku);
+      if (!k || k === UNGEKLAERT) return;
+      ziel = { schluessel: k, schluesselAlle: [k], titel: kurzTitel(p.titel), farbe: p.farbe && p.farbe !== '–' ? p.farbe : null, handle, ueber: null };
+    } else {
+      // Andere Quelle: nur mit belegtem A/C-Gegenstueck in derselben Farbe.
+      const t = (acTreffer(p) || []).find(x => x.farbeGefunden && x.farben?.length);
+      if (!t) return;
+      const skus = t.farben.map(f => norm(f.sku)).filter(Boolean);
+      ziel = { schluessel: skus[0], schluesselAlle: skus, titel: kurzTitel(t.titel), farbe: t.farben[0].farbe || null, handle: t.handle, ueber: t.lieferant };
+    }
+    if (ziel.schluesselAlle.some(k => imLager.has(k))) return;
+    const alt = reste.get(ziel.schluessel);
+    if (alt && alt.verlegerest.am >= kam) { alt.auftraege = [...new Set([...alt.auftraege, a.name])].slice(0, 5); return; }
+    const { ueber, ...angaben } = ziel;
+    reste.set(ziel.schluessel, {
+      ...angaben, anzahl: 1, auftraege: [...new Set([...(alt?.auftraege ?? []), a.name])].slice(0, 5), zuletzt: a.datum, eingetroffen: null,
+      grund: 'verlegerest', artVorschlag: 'rest',
+      verlegerest: { am: kam, orderName: a.name, lieferant: String(p.lieferant || '').toUpperCase() || null, ueber },
+    });
+  }
 }
