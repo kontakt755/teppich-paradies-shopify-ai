@@ -2,7 +2,7 @@
  * Kunden, Reiter "Muster packen" (#1572): offene, bezahlte Musterbestellungen je Kunde in
  * Packreihenfolge. Je Muster: was auf dem Lieferantenmuster steht (vorher) und welcher Aufkleber
  * darauf kommt (nachher). Aufkleber drucken (Muster, danach die Adresse), abhaken, "Gepackt".
- * Porto und Versandbuchung folgen, wenn der Versandweg entschieden ist.
+ * Grossbrief kann vorbereitet werden; Portokauf und Versandbuchung bleiben getrennt.
  */
 import { state } from '../../kern/zustand.mjs';
 import { esc, fmtDateTime, plural, toast } from '../../kern/helfer.mjs';
@@ -13,6 +13,7 @@ import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { oeffneEtikettenDruck } from '../../bausteine/etiketten-druck.mjs';
 import { STAND_TEXT, WARTET_AB_TAGEN, aufkleberFuer } from '../../lib/muster-packen.mjs';
 import { kunden } from './gemeinsam.mjs';
+import { oeffneGrossbriefVorbereitung } from './muster-grossbrief.mjs';
 
 const ENDPOINT = '/api/kunden/muster-packen';
 // Abhaken ist eine Packhilfe an diesem Geraet; "Gepackt" ist der gemeinsame Stand.
@@ -82,6 +83,7 @@ function kundeHtml(k, nr, h) {
            ${lesend ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-mp-gepackt="${esc(k.packSchluessel)}" data-mp-wert="0">Zurücknehmen</button>`}`
         : `<button type="button" class="btn btn-sm" data-mp-drucken="${esc(k.packSchluessel)}"${druckbar ? '' : ' disabled'}>Aufkleber drucken (${k.aufkleber})</button>
            ${lesend ? '' : `<button type="button" class="btn btn-sm" data-mp-gepackt="${esc(k.packSchluessel)}" data-mp-wert="1">Umschlag gepackt</button>`}`}
+      <button type="button" class="btn btn-sm btn-ghost" data-mp-grossbrief="${esc(k.packSchluessel)}">Großbrief vorbereiten</button>
     </div>
   </article>`;
 }
@@ -95,7 +97,7 @@ export function viewKundenMusterPacken() {
   const offen = d.kunden.filter(k => !k.gepackt);
   const gepackt = d.kunden.filter(k => k.gepackt);
   const h = haken();
-  const kopf = `<p class="sub mp-hier">Hier packst du die offenen Musterbestellungen Kunde für Kunde: Aufkleber drucken, jedes Muster überkleben und abhaken, Umschlag gepackt. Porto und Versandbuchung machst du bis auf Weiteres wie gewohnt.</p>`;
+  const kopf = `<p class="sub mp-hier">Hier packst du die offenen Musterbestellungen Kunde für Kunde: Aufkleber drucken, jedes Muster überkleben und abhaken, Umschlag gepackt. Anschließend kannst du den Großbrief vorbereiten. Porto wird dabei nicht gekauft und Versand nicht gebucht.</p>`;
   if (!offen.length && !gepackt.length) return kopf + emptyState('Keine offenen Musterbestellungen.', 'Neue bezahlte Musterbestellungen erscheinen hier automatisch, nach Kunde gebündelt.');
   const druckbar = offen.filter(k => !k.fehlt.length);
   const aufkleber = druckbar.reduce((s, k) => s + k.aufkleber, 0);
@@ -135,6 +137,13 @@ export function musterPackenKlick(e) {
   const h = e.target.closest('[data-mp-haken]');
   if (h) { hakenSetzen(h.dataset.mpHaken, h.checked); return true; }
   const liste = kunden.musterPacken?.kunden || [];
+  const grossbrief = e.target.closest('[data-mp-grossbrief]');
+  if (grossbrief) {
+    e.preventDefault();
+    const k = liste.find(x => x.packSchluessel === grossbrief.dataset.mpGrossbrief);
+    if (k) oeffneGrossbriefVorbereitung(k);
+    return true;
+  }
   const einzeln = e.target.closest('[data-mp-drucken]');
   if (einzeln) {
     e.preventDefault();

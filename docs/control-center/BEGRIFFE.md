@@ -56,3 +56,5 @@ gebraeuchlich), Erfassen.
 - In der Tabelle der Lieferantenpost steht in den Zellen weiter die Kurzmarke
   „AB 14.10.“ / „LS 16.10.“ (`ART_KURZ` in `lib/lieferbelege.mjs`), die
   Spaltenkoepfe sind ausgeschrieben.
+
+- **Großbrief vorbereiten:** Adresse und gemessenen Umschlag prüfen; kauft kein Porto und bucht keinen Versand.
