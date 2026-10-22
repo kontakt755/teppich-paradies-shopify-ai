@@ -12,7 +12,7 @@ import { $, esc } from './helfer.mjs';
 import { darfAnsicht } from './router.mjs';
 
 /** Punkte mit eigenem Platz in der unteren Leiste; alles andere liegt am Handy hinter "Mehr". */
-const UNTEN = ['heute', 'kunden', 'lexikon', 'einkauf'];
+const UNTEN = ['heute', 'einkauf'];
 const BUERO_KEY = 'tp-nav-buero';
 
 // Zaehler kommen aus den Zwischenspeichern der Ansichten. Der Kern kennt keine Ansicht,
@@ -58,8 +58,11 @@ function oeffneMehr() {
 export function aktualisiereNavigation() {
   const view = state.route.view;
   // aria-current braucht den Wert "page" - ein leeres Attribut hebt nichts hervor.
+  const kundenTab = !state.route.params.get('kunde') ? state.route.params.get('tab') : null;
+  const kundenHauptpunkt = ['bestellungen', 'muster'].includes(kundenTab) ? kundenTab : null;
   document.querySelectorAll('[data-nav]').forEach(a => {
-    if (a.dataset.nav === view) a.setAttribute('aria-current', 'page');
+    const tabPasst = view !== 'kunden' || (a.dataset.navTab || null) === kundenHauptpunkt;
+    if (a.dataset.nav === view && tabPasst) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   });
   const freigaben = darfAnsicht('freigaben') ? state.tasks.filter(t => t.status === 'freigabe').length : 0;
@@ -79,7 +82,7 @@ export function aktualisiereNavigation() {
   });
   const mehr = $('#navToggle');
   if (mehr) {
-    if (UNTEN.includes(view)) mehr.removeAttribute('aria-current'); else mehr.setAttribute('aria-current', 'page');
+    if (UNTEN.includes(view) || (view === 'kunden' && kundenHauptpunkt)) mehr.removeAttribute('aria-current'); else mehr.setAttribute('aria-current', 'page');
   }
   schliesseMehr();
 }

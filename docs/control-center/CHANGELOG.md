@@ -2,6 +2,32 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-22 · Bestellungen und Packstation zuerst (#1604)
+
+- **Geaendert:** Direkte Einstiege auf Heute, in der Seitenleiste und am Handy. Bestehende
+  Kundenrouten bleiben erhalten; die beiden Hauptansichten zeigen nur drei Wechsel-Links statt
+  acht Reitern. Bestellliste mit vier Hauptspalten und aufklappbaren Kontakten/Belegen.
+  Arbeitsstand aus bestehenden Versand-/Positionsdaten statt widerspruechlicher Pruefstatus.
+  Claude #1599 vollstaendig integriert: neueste zuerst, manueller Listenhaken ohne Versand,
+  mit der neueren Wichtigkeitssortierung aus #1602 verbunden. Abgehaktes und Versandtes sind
+  getrennt vom fachlichen Abschluss benannt.
+- **Geaendert:** Packbereit / Wartet auf Ware / Zu klaeren / Gepackt. Packbereit nur mit
+  bestaetigtem Bestand oder eingelegten Mustern und eindeutiger Aufkleber-/Adresszuordnung.
+  Ein aufklappbarer Umschlag je Kunde, Suche auch nach Farbnummer, stabile Bestellnummer(n)
+  statt wandernder Listennummer, direkter Wechsel vom Wareneingang zum Umschlag.
+  Packdetails bleiben beim Abhaken offen. Bestehende Bilder, Haken, Druck und Klaerung erhalten.
+  Bereits vorhandene Grossbrief-Vorbereitung wieder am gepackten Umschlag angeschlossen.
+  Pack- und Bestellmarken in Sicherung, Bestellmarken auch in der Browser-Datenkopie.
+- **Getestet:** Dashboard- und Gesamtsuite, Projekt-Guards; Browser auf Datenkopie, fuenf
+  Breiten und Dunkelmodus. Klickprobe: drei Muster abhaken, packen, neu laden; Stand erhalten,
+  kein Shopify-Aufruf. Rollen-Gesamtlauf 455 Kombinationen; zwei 360-px-Ueberstaende in
+  der Lieferantenliste behoben, danach alle 45 betroffenen Rollen-/Breitenkombinationen gruen.
+- **Risiken/Annahmen:** Alte Datenstaende werden nicht automatisch umgebucht. Ein Muster kann
+  physisch vorliegen, obwohl der Eingang fehlt; dann Muster nach Sichtpruefung abhaken oder
+  vorhandenen Wareneingang eintragen. Gepackt ist weiterhin kein Versandnachweis.
+- **Naechste Stufe:** echte Bedienprobe im Laden; Porto/Versand nur ueber die bestehende
+  getrennte Versandaktion. Keine automatischen Bestellungen, Nachrichten oder Portokaeufe.
+
 ## 2026-10-22 · Lieferantenlisten nach überfälligen Posten
 
 - **Geändert:** Bestellen › Je Lieferant: rot überfällig → bernstein überfällig → zu bestellen → Rest,

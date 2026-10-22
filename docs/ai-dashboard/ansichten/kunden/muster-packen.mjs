@@ -15,8 +15,22 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { oeffneEtikettenDruck } from '../../bausteine/etiketten-druck.mjs';
-import { STAND_TEXT, WARTET_AB_TAGEN, aufkleberFuer, musterNachLaden } from '../../lib/muster-packen.mjs';
+import { STAND_TEXT, WARTET_AB_TAGEN, aufkleberFuer, musterNachLaden, umschlagKennung } from '../../lib/muster-packen.mjs';
+import { oeffneGrossbriefVorbereitung } from './muster-grossbrief.mjs';
 import { kunden } from './gemeinsam.mjs';
+
+let packOffen = null;
+let packGebunden = false;
+function bindePackOffen() {
+  if (packGebunden) return;
+  document.addEventListener('toggle', e => {
+    if (e.target.matches?.('details[data-mp-kunde]')) {
+      if (e.target.open) packOffen = e.target.dataset.mpKunde;
+      else if (packOffen === e.target.dataset.mpKunde) packOffen = null;
+    }
+  }, true);
+  packGebunden = true;
+}
 
 const ENDPOINT = '/api/kunden/muster-packen';
 
@@ -25,7 +39,7 @@ export function ensureMusterPacken() {
   kunden.loadingMusterPacken = true;
   fetchEinkauf(ENDPOINT).then(d => {
     kunden.musterPacken = d; kunden.loadingMusterPacken = false;
-    if (state.route.view === 'kunden') render();
+    if (['kunden', 'heute'].includes(state.route.view)) render();
   });
 }
 
@@ -81,11 +95,11 @@ function kundeHtml(k, nr) {
   const pk = esc(k.packSchluessel);
   let aktionen = '';
   if (k.bereich === 'gepackt') {
-    aktionen = `<span class="small muted">Gepackt ${esc(fmtDateTime(k.gepackt.zeit))}${k.gepackt.von ? ` · ${esc(k.gepackt.von)}` : ''}</span>
+    aktionen = `<button type="button" class="btn btn-sm" data-mp-grossbrief="${pk}">Großbrief vorbereiten</button><span class="small muted">Gepackt ${esc(fmtDateTime(k.gepackt.zeit))}${k.gepackt.von ? ` · ${esc(k.gepackt.von)}` : ''}</span>
       ${lesend ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-mp-aktion="gepackt" data-mp-k="${pk}" data-mp-wert="0">Zurücknehmen</button>`}`;
   } else if (k.bereich === 'klaeren') {
     aktionen = `<button type="button" class="btn btn-sm" data-mp-drucken="${pk}"${druckbar ? '' : ' disabled'}>Aufkleber drucken (${k.aufkleber})</button>
-      ${lesend ? '' : `<button type="button" class="btn btn-sm" data-mp-aktion="klaeren" data-mp-k="${pk}" data-mp-wert="0">Fehlendes ist da – wieder packen</button>`}`;
+      ${lesend ? '' : !k.klaeren ? '<a class="btn btn-sm" href="#/lexikon">Zuordnung prüfen</a>' : `<button type="button" class="btn btn-sm" data-mp-aktion="klaeren" data-mp-k="${pk}" data-mp-wert="0">Klärung aufheben – erneut prüfen</button>`}`;
   } else {
     aktionen = `<button type="button" class="btn btn-sm" data-mp-drucken="${pk}"${druckbar ? '' : ' disabled'}>Aufkleber drucken (${k.aufkleber})</button>
       ${lesend ? '' : offen
@@ -93,26 +107,28 @@ function kundeHtml(k, nr) {
            <button type="button" class="btn btn-sm" data-mp-aktion="klaeren" data-mp-k="${pk}" data-mp-wert="1">Fehlt etwas – zu klären (${offen} offen)</button>`
         : `<button type="button" class="btn btn-sm btn-primary" data-mp-aktion="gepackt" data-mp-k="${pk}" data-mp-wert="1">Umschlag gepackt</button>`}`;
   }
-  return `<article class="mp-kunde mp-${k.bereich}" aria-labelledby="mp-k${nr}">
-    <header class="mp-kopf">
+  return `<details class="mp-kunde mp-${k.bereich}" name="mp-umschlag" data-mp-kunde="${pk}" aria-labelledby="mp-k${nr}"${(packOffen ?? state.route.params.get('umschlag')) === k.packSchluessel ? ' open' : ''}>
+    <summary class="mp-kopf">
       <div class="mp-wer">
-        <h3 id="mp-k${nr}">${k.bereich === 'packen' ? `<span class="mp-pos">${nr}</span>` : ''}${esc(k.name)}</h3>
+        <h3 id="mp-k${nr}"><span class="mp-pos">${esc(umschlagKennung(k))}</span>${esc(k.name)}</h3>
         <div class="small muted">${esc(adresseText(k.adresse))}</div>
       </div>
       <div class="mp-meta">
-        <strong class="mp-nr">${mehrere ? 'Bestellungen' : 'Bestellung'} ${esc(nummern)}</strong>
+        <span class="small muted">${k.muster.length} Muster · ${k.bereich === 'packen' ? 'packbereit' : k.bereich === 'warten' ? 'wartet auf Ware' : k.bereich === 'klaeren' ? 'zu klären' : 'gepackt'}</span>
         ${tage === null ? '' : `<span class="${tage >= WARTET_AB_TAGEN && k.bereich !== 'gepackt' ? 'wait-warn' : 'small muted'}">${tage === 0 ? 'seit heute' : `wartet seit ${plural(tage, 'Tag', 'Tagen')}`}</span>`}
-        ${k.bereich === 'packen' ? `<span class="small ${offen ? 'muted' : 'mp-ok'}">${offen ? `${k.muster.length - offen} von ${k.muster.length} abgehakt` : 'alles abgehakt'}</span>` : ''}
+        ${['packen', 'warten'].includes(k.bereich) ? `<span class="small ${offen ? 'muted' : 'mp-ok'}">${offen ? `${k.muster.length - offen} von ${k.muster.length} abgehakt` : 'alles abgehakt'}</span>` : ''}
       </div>
-    </header>
-    ${k.bereich === 'klaeren' ? `<p class="notice warn">Fehlt: ${plural(fehlend.size, 'Muster', 'Muster')}${k.klaeren.notiz ? ` – „${esc(k.klaeren.notiz)}“` : ''}<span class="small muted"> · ${esc(fmtDateTime(k.klaeren.zeit))}${k.klaeren.von ? `, ${esc(k.klaeren.von)}` : ''}</span></p>` : ''}
+    </summary>
+    ${k.klaeren ? `<p class="notice warn">Fehlt: ${plural(fehlend.size, 'Muster', 'Muster')}${k.klaeren.notiz ? ` – „${esc(k.klaeren.notiz)}“` : ''}<span class="small muted"> · ${esc(fmtDateTime(k.klaeren.zeit))}${k.klaeren.von ? `, ${esc(k.klaeren.von)}` : ''}</span></p>` : ''}
     ${k.fehlt.length ? `<p class="notice warn">Für ${esc(k.fehlt.join('; '))} gibt es keinen eindeutigen Aufkleber. Bitte im Lexikon prüfen – bis dahin druckt dieser Kunde nicht mit.</p>` : ''}
     <ul class="mp-liste">${muster.map(m => zeileHtml(m, mehrere, { lesend: lesend || k.bereich === 'gepackt', fehltHervor: fehlend.has(m.lineItemId) })).join('')}</ul>
-    <div class="mp-aktionen">${aktionen}</div>
-  </article>`;
+    ${k.bereich === 'warten' ? '<p class="notice warn">Verfügbarkeit noch nicht vollständig bestätigt. Nur tatsächlich vorliegende Muster abhaken; fehlende Ware unter „Bestellen“ prüfen.</p>' : ''}
+    <div class="mp-aktionen">${aktionen}${k.bereich === 'gepackt' ? `<a class="btn btn-sm" href="#/einkauf?auftrag=${encodeURIComponent(k.bestellungen[0]?.orderId || '')}">Versand prüfen…</a>` : ''}<a class="btn btn-sm btn-ghost" href="#/einkauf?auftrag=${encodeURIComponent(k.bestellungen[0]?.orderId || '')}">Bestellstand prüfen</a></div>
+  </details>`;
 }
 
 export function viewKundenMusterPacken() {
+  bindePackOffen();
   ensureMusterPacken();
   const d = kunden.musterPacken;
   if (!d) return '<p class="muted" role="status">Lade offene Musterbestellungen …</p>';
@@ -125,23 +141,27 @@ export function viewKundenMusterPacken() {
     </div>`;
   if (modus === 'laden') return umschalter + viewNachLaden(d);
   const je = b => d.kunden.filter(k => k.bereich === b);
-  const packen = je('packen'), klaeren = je('klaeren'), gepackt = je('gepackt');
-  const kopf = `<p class="sub mp-hier">Kunde für Kunde: Aufkleber drucken, jedes Muster mit Bild und Farbnummer vergleichen, überkleben, abhaken. Alles abgehakt → „Umschlag gepackt“. Fehlt etwas → „Zu klären“. Porto und Versandbuchung machst du bis auf Weiteres wie gewohnt.</p>`;
+  const warten = je('warten'), packen = je('packen'), klaeren = je('klaeren'), gepackt = je('gepackt');
+  const kopf = `<p class="sub mp-hier">Hier packst du Muster je Umschlag: Farbe prüfen, Aufkleber drucken und eingelegte Muster abhaken. Gepackt ist noch nicht versandt.</p>`;
   if (!d.kunden.length) return kopf + emptyState('Keine offenen Musterbestellungen.', 'Neue bezahlte Musterbestellungen erscheinen hier automatisch, nach Kunde gebündelt.');
+  const suche = (state.route.params.get('mpq') || '').trim().toLowerCase();
+  const passt = k => !suche || [k.name, umschlagKennung(k), ...k.muster.flatMap(m => [m.bestellt.titel, m.bestellt.farbe, m.vorher?.produktname, m.vorher?.farbnummer])].some(v => String(v || '').toLowerCase().includes(suche));
   const druckbar = packen.filter(k => !k.fehlt.length);
   const aufkleber = druckbar.reduce((s, k) => s + k.aufkleber, 0);
   const summe = `<div class="mp-summe">
-      <span class="mp-zahlen"><strong>${packen.length} zu packen</strong> · <span class="${klaeren.length ? 'wait-warn' : ''}">${klaeren.length} zu klären</span> · ${gepackt.length} gepackt</span>
-      ${packen.length ? `<button type="button" class="btn btn-primary" data-mp-alle${aufkleber ? '' : ' disabled'}>Alle drucken (${plural(aufkleber, 'Aufkleber', 'Aufkleber')})</button>` : ''}
+      <span class="mp-zahlen"><strong>${packen.length} packbereit</strong> · <span class="${klaeren.length ? 'wait-warn' : ''}">${klaeren.length} zu klären</span> · ${warten.length} warten auf Ware · ${gepackt.length} gepackt</span>
+      ${packen.length ? `<button type="button" class="btn btn-primary" data-mp-alle${aufkleber ? '' : ' disabled'}>Packbereite drucken (${plural(aufkleber, 'Aufkleber', 'Aufkleber')})</button>` : ''}
     </div>
-    ${druckbar.length < packen.length ? `<p class="small muted">„Alle drucken“ lässt ${packen.length - druckbar.length === 1 ? 'einen Kunden' : `${packen.length - druckbar.length} Kunden`} ohne eindeutige Aufkleber aus.</p>` : ''}`;
-  const bereich = (titel, liste, start, offenAuf = true) => liste.length
-    ? `<details class="mp-bereich"${offenAuf ? ' open' : ''}><summary><h2 class="mp-titel">${titel} <span class="muted">(${liste.length})</span></h2></summary><div class="mp-kunden">${liste.map((k, i) => kundeHtml(k, start + i + 1)).join('')}</div></details>` : '';
+    ${druckbar.length < packen.length ? `<p class="small muted">„Packbereite drucken“ lässt ${packen.length - druckbar.length === 1 ? 'einen Kunden' : `${packen.length - druckbar.length} Kunden`} ohne eindeutige Aufkleber aus.</p>` : ''}`;
+  const bereich = (titel, liste, start, offenAuf = true) => liste.filter(passt).length
+    ? `<details class="mp-bereich"${suche || offenAuf || liste.some(k => k.packSchluessel === (packOffen ?? state.route.params.get('umschlag'))) ? ' open' : ''}><summary><h2 class="mp-titel">${titel} <span class="muted">(${liste.filter(passt).length})</span></h2></summary><div class="mp-kunden">${liste.filter(passt).map((k, i) => kundeHtml(k, start + i + 1)).join('')}</div></details>` : '';
   return `${umschalter}${kopf}${summe}
-    ${packen.length ? '' : '<p class="small muted">Gerade ist nichts zu packen.</p>'}
-    ${bereich('Zu packen', packen, 0)}
-    ${bereich('Zu klären', klaeren, packen.length)}
-    ${bereich('Gepackt', gepackt, packen.length + klaeren.length, false)}`;
+    <div class="toolbar"><input type="search" data-param="mpq" value="${esc(state.route.params.get('mpq') || '')}" placeholder="Kunde, Bestellung, Produkt oder Farbnummer" aria-label="Packstation durchsuchen"></div>
+    ${!d.kunden.some(passt) ? '<p class="small muted">Keine passenden Umschläge gefunden.</p>' : ''}
+    ${bereich('Packbereit', packen, 0)}
+    ${bereich('Wartet auf Ware', warten, packen.length, !packen.length)}
+    ${bereich('Zu klären', klaeren, packen.length + warten.length)}
+    ${bereich('Gepackt – Versand noch separat', gepackt, packen.length + warten.length + klaeren.length, state.route.params.get('mpbereich') === 'gepackt')}`;
 }
 
 /** Wareneingang: ein Paket eines Partnerladens auf die richtigen Umschlaege verteilen. */
@@ -156,11 +176,11 @@ function viewNachLaden(d) {
       ${bildHtml(m)}
       <div class="mp-vorher"><span>${esc(v.produktname || m.bestellt.titel)}</span>${v.farbnummer ? `<span class="mp-farbnr">Farbnr. ${esc(v.farbnummer)}</span>` : '<span class="small muted">keine Farbnummer hinterlegt</span>'}</div>
       <div class="mp-pfeil" aria-hidden="true">→</div>
-      <div class="mp-ziel">${e.umschlag === 'zu klären' ? '<span class="mp-umschlag mp-umschlag-klaeren">zu klären</span>' : `<span class="mp-umschlag">${esc(e.umschlag)}</span>`}
+      <div class="mp-ziel"><a class="mp-umschlag" href="#/kunden?tab=muster&amp;umschlag=${encodeURIComponent(e.packSchluessel)}">${esc(e.umschlag)}</a>
         <span><strong>${esc(e.kunde)}</strong></span><span class="small muted">${esc(e.bestellung)}</span></div>
     </li>`;
   }).join('');
-  return `<p class="sub mp-hier">Paket auspacken, Laden wählen, jedes Muster an Bild und Farbnummer erkennen und auf den Stapel mit der Umschlag-Nummer legen. Die Nummern sind dieselben wie unter „Nach Kunde packen“.</p>
+  return `<p class="sub mp-hier">Paket auspacken, Laden wählen, jedes Muster an Bild und Farbnummer erkennen und auf den Stapel mit der Umschlag-Nummer legen. Die Bestellnummer bleibt auch nach dem Packen anderer Kunden gleich.</p>
     <div class="mp-laeden">${chips}</div>
     <h2 class="mp-titel">${esc(gewaehlt.laden)} <span class="muted">· ${plural(gewaehlt.eintraege.length, 'Muster', 'Muster')}</span></h2>
     <ul class="mp-sortliste">${zeilen}</ul>`;
@@ -203,6 +223,13 @@ export function musterPackenKlick(e) {
     return true;
   }
   const liste = kunden.musterPacken?.kunden || [];
+  const grossbrief = e.target.closest('[data-mp-grossbrief]');
+  if (grossbrief) {
+    e.preventDefault();
+    const k = liste.find(x => x.packSchluessel === grossbrief.dataset.mpGrossbrief);
+    if (k?.gepackt) oeffneGrossbriefVorbereitung(k);
+    return true;
+  }
   const einzeln = e.target.closest('[data-mp-drucken]');
   if (einzeln) {
     e.preventDefault();

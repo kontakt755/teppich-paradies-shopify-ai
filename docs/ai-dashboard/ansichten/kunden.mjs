@@ -7,7 +7,7 @@ import { emptyState } from '../bausteine/karten.mjs';
 import { kunden } from './kunden/gemeinsam.mjs';
 import { ensureKundenRueckrufe, openRueckrufDialog, viewKundenRueckrufe } from './kunden/rueckrufe.mjs';
 import { viewKundenSuche, viewKundenDetail } from './kunden/akte.mjs';
-import { viewKundenBestellungen } from './kunden/bestellungen.mjs';
+import { viewKundenBestellungen, ensureKundenBestellungen } from './kunden/bestellungen.mjs';
 import { viewKundenAngebote, viewKundenWarenkoerbe } from './kunden/angebote.mjs';
 import { fallMarkeSetzen, viewKundenFaelle } from './kunden/faelle.mjs';
 import { ensureServiceanfragen, serviceKlick, serviceNeuAnzahl, viewKundenServiceanfragen } from './kunden/serviceanfragen.mjs';
@@ -28,10 +28,13 @@ export function viewKunden() {
   // Standard ist die Arbeitsansicht: wer wartet auf was. Einen Kunden am
   // Telefon findet man ueber die Schnellsuche oder den Reiter "Suche".
   const tab = ['bestellungen', 'muster', 'rueckrufe', 'service', 'angebote', 'warenkoerbe', 'suche'].includes(tabRaw) ? tabRaw : 'zutun';
+  ensureKundenBestellungen();
   ensureKundenRueckrufe();
   ensureServiceanfragen();
   ensureMusterPacken();
-  const head = `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Hier findest du Kunden am Telefon schnell, ihre Bestellungen und wer zurückgerufen werden möchte.</p></div></div>
+  const titel = tab === 'muster' ? 'Packstation' : tab === 'bestellungen' ? 'Bestellungen' : 'Kunden';
+  const beschreibung = tab === 'muster' ? 'Hier findest du packbereite Umschläge, fehlende Muster und den gemeinsamen Packstand.' : tab === 'bestellungen' ? 'Hier bearbeitest du Kundenbestellungen und siehst den nächsten Schritt.' : 'Hier findest du Kunden am Telefon schnell, ihre Bestellungen und wer zurückgerufen werden möchte.';
+  const head = `<div class="page-head"><div><h1>${titel}</h1><p class="sub">${beschreibung}</p></div></div>
     <div class="tabs no-print" role="tablist">
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'zutun'}" data-param="tab" data-value="">Zu tun${f_badge()}</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'suche'}" data-param="tab" data-value="suche">Suche</button>
@@ -50,7 +53,13 @@ export function viewKunden() {
     : tab === 'warenkoerbe' ? viewKundenWarenkoerbe()
     : tab === 'suche' ? viewKundenSuche()
     : viewKundenFaelle();
-  return head + body;
+  const einfacherKopf = `<div class="page-head"><div><h1>${titel}</h1><p class="sub">${beschreibung}</p></div></div>
+    <nav class="chips no-print" aria-label="Bestellungen und Kunden">
+      <a class="chip" href="#/kunden?tab=bestellungen"${tab === 'bestellungen' ? ' aria-current="page"' : ''}>Bestellungen</a>
+      <a class="chip" href="#/kunden?tab=muster"${tab === 'muster' ? ' aria-current="page"' : ''}>Packstation</a>
+      <a class="chip" href="#/kunden">Kunden &amp; Anfragen</a>
+    </nav>`;
+  return (['bestellungen', 'muster'].includes(tab) ? einfacherKopf : head) + body;
 }
 
 function f_badge() {

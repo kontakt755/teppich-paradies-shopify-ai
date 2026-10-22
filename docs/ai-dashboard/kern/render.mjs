@@ -61,7 +61,7 @@ function zeichne() {
     return;
   }
   main.innerHTML = (state.loadError ? `<div class="notice crit" style="margin-bottom:12px">Aktualisierung fehlgeschlagen: ${esc(state.loadError)} – es wird der letzte geladene Stand gezeigt.</div>` : '') + ansichten[state.route.view]();
-  document.title = `${{ heute: 'Heute', prozesse: 'Vorbereiten', arbeit: 'Technik', freigaben: 'Entscheidungen', bereiche: 'Bereiche', insights: 'Kennzahlen', aktivitaet: 'Verlauf', einkauf: 'Bestellen', kunden: 'Kunden', lexikon: 'Lexikon', ratgeber: 'Ratgeber', hilfe: 'Hilfe', shopwache: 'Shop-Kontrolle', organisation: 'Aufgaben', sonderposten: 'Sonderposten', akquise: 'Genossenschaften', bildrechte: 'Bildrechte' }[state.route.view] || 'Teppich Paradies'} · Teppich Dashboard`;
+  document.title = `${{ heute: 'Heute', prozesse: 'Vorbereiten', arbeit: 'Technik', freigaben: 'Entscheidungen', bereiche: 'Bereiche', insights: 'Kennzahlen', aktivitaet: 'Verlauf', einkauf: 'Bestellen', kunden: !state.route.params.get('kunde') && state.route.params.get('tab') === 'muster' ? 'Packstation' : !state.route.params.get('kunde') && state.route.params.get('tab') === 'bestellungen' ? 'Bestellungen' : 'Kunden', lexikon: 'Lexikon', ratgeber: 'Ratgeber', hilfe: 'Hilfe', shopwache: 'Shop-Kontrolle', organisation: 'Aufgaben', sonderposten: 'Sonderposten', akquise: 'Genossenschaften', bildrechte: 'Bildrechte' }[state.route.view] || 'Teppich Paradies'} · Teppich Dashboard`;
   renderSheet();
   if (lokalerFokus?.id) {
     const feld = document.getElementById(lokalerFokus.id);

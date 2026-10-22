@@ -1190,3 +1190,6 @@ table.tasks td { padding-top: 12px; padding-bottom: 12px; }
 }
 .dialog textarea { width: 100%; }
 .dialog textarea:focus, .dialog input:focus, .dialog select:focus { border-color: var(--accent); outline: 3px solid var(--accent-soft); }
+
+.chips a.chip { color: var(--text-2); }
+.chips a.chip[aria-current="page"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }

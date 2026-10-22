@@ -134,8 +134,8 @@ body.rolle-lesen [data-auftrag-erledigt] { display: none !important; }
   .lf-stufe .btn { flex: 1 1 100%; }
   .lf-posten { align-items: flex-start; flex-wrap: wrap; }
   /* Mit Knopf: Wartezeit und Knopf unter den Text, der Knopf ueber die Breite (Daumen). */
-  .lf-posten:has(.lf-zeilenknopf) .lf-posten-rechts { flex-basis: 100%; flex-direction: row; align-items: center; }
-  .lf-zeilenknopf { min-height: 44px; flex: 1; }
+  .lf-posten:has(.lf-zeilenknopf) .lf-posten-rechts { flex-basis: 100%; flex-direction: row; flex-wrap: wrap; align-items: center; min-width: 0; }
+  .lf-zeilenknopf { min-height: 44px; flex: 1 1 140px; min-width: 0; white-space: normal; }
   .lf-hinweis { margin: 0 15px 10px; }
   .lf-abschnitt, .lf-posten, .lf-rest { padding-left: 15px; padding-right: 15px; }
   .lf-fuss { padding: 12px 15px 14px; }

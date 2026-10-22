@@ -35,6 +35,8 @@ import { einkaufZahlen } from '../lib/auftrags-ablauf.mjs';
 import { belege, ensureBelege, laufStand } from './einkauf/belege.mjs';
 import { hinweisText } from './einkauf/bestellungen.mjs';
 import { kunden } from './kunden/gemeinsam.mjs';
+import { ensureMusterPacken } from './kunden/muster-packen.mjs';
+import { bestellungenOffen } from './kunden/bestellungen.mjs';
 import { ensureKundenBestellungen } from './kunden/bestellungen.mjs';
 import { ensureKundenRueckrufe } from './kunden/rueckrufe.mjs';
 import { ensureKundenFaelle } from './kunden/faelle.mjs';
@@ -151,6 +153,7 @@ function versandFehlerTodo(lauf) {
 }
 
 export function viewHeute() {
+  ensureMusterPacken();
   ensureKundenBestellungen(); ensureEinkaufAuftragsstatus(); ensureKundenRueckrufe(); ensureKundenFaelle();
   ensureServiceanfragen(); ensureHeuteLieferanten(); ensureHeuteAufgaben(); ensureAktualisierung();
   ensureLadenZahlen(); ensureShopifyAbgleich();
@@ -188,6 +191,7 @@ export function viewHeute() {
   if (istMitarbeiter()) {
     return `<div class="heute heute-einfach">
     ${kopf(liste.length, sicht, null)}
+    ${bestellEinstieg()}
     ${todoListe(liste)}
     ${state.route.params.get('mn') ? musterNachfassenBlock(nf.alle) : ''}
   </div>`;
@@ -195,6 +199,7 @@ export function viewHeute() {
 
   return `<div class="heute">
     ${kopf(liste.length, sicht, chips)}
+    ${sicht === 'website' ? '' : bestellEinstieg()}
     ${zahlenZeile(q)}
     ${todoListe(liste)}
     ${hintergrund(nf, wartet, sicht)}
@@ -449,4 +454,18 @@ function kennzahlenBlock() {
       ${kachel('Ø je bezahlter Bestellung', schnittText(z7, geld), schnittText(z30, geld))}
     </div>
   </section>`;
+}
+
+/** Direkte Arbeitswege, mit denselben Zahlen und Filtern wie auf der Zielseite. */
+function bestellEinstieg() {
+  const pack = kunden.musterPacken;
+  const n = bestellungenOffen();
+  const zahlen = pack?.verfuegbar ? pack.zahlen : null;
+  const link = (href, titel, zahl, text) => `<a class="bestell-einstieg" href="${href}"><strong>${esc(titel)}${zahl == null ? '' : ` <span>${zahl}</span>`}</strong><span>${esc(text)}</span></a>`;
+  return `<nav class="bestell-einstiege" aria-label="Bestellungen und Packstation">
+    ${link('#/kunden?tab=bestellungen', 'Bestellungen', n, 'Kundenbestellungen bearbeiten')}
+    ${link('#/einkauf?tab=lieferant&af=bestellt', 'Ware annehmen', null, 'Eingang je Lieferant prüfen')}
+    ${link('#/kunden?tab=muster', 'Muster packen', zahlen?.packen, 'Bestätigt verfügbar und packbereit')}
+    ${link('#/kunden?tab=muster&mpbereich=gepackt', 'Gepackte Umschläge', zahlen?.gepackt, 'Versand separat vorbereiten')}
+  </nav>`;
 }
