@@ -2,6 +2,23 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-22 · Muster packen: Muster sicher erkennen, abhaken, „Zu klären“
+
+- **Geändert:** Je Muster ein Bild genau dieser Farbe (Variantenbild, neu im Lexikon-Export;
+  Produktbild nur bei einfarbigen Produkten, sonst „kein Farbbild“), der Partnerladen mit Namen aus
+  den privaten Stammdaten, der Produktname wie auf dem Lieferantenetikett und die Farbnummer groß.
+  Zwei Muster derselben Kollektion im selben Umschlag tragen „Ähnliches Muster – Farbnummer prüfen“.
+  Die Seite hat drei Bereiche: Zu packen · Zu klären · Gepackt. Die Haken liegen jetzt zentral in
+  `muster-packen.json` statt im Browser. Ist alles abgehakt, heißt der Knopf „Umschlag gepackt“; bleibt
+  etwas offen, „Fehlt etwas – zu klären“ (mit Notiz). Der Kunde wandert mit den nicht abgehakten
+  Mustern nach „Zu klären“, „Fehlendes ist da“ holt ihn zurück, die Haken bleiben. Die Zahl am Reiter
+  zählt nur „zu packen“. `POST /api/kunden/muster-packen` hat dafür `aktion: haken | klaeren`.
+- **Getestet:** `muster-packen.test.mjs` (9), `muster-packen-api.test.mjs` (6), `lexikon.test.mjs`
+  (Variantenbild); `dashboard:test` 686 grün; `dashboard:pruefen` für den Reiter in allen Breiten ohne Befund.
+- **Risiken/Annahmen:** Farbbilder erscheinen erst nach dem nächsten Lexikon-Export. Viele
+  Varianten haben in Shopify kein eigenes Bild, dann steht „kein Farbbild“.
+- **Nächste Stufe:** Teil 3 – Wareneingang nach Partnerladen sortieren.
+
 ## 2026-10-22 · Adressaufkleber ohne Bestellnummer
 
 - **Geändert:** Auf dem gedruckten Adressaufkleber (Kunden → Muster packen) steht keine

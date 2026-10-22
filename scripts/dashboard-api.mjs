@@ -55,7 +55,7 @@ import {
   benutzerDeaktivieren, validiereRolle, BenutzerFehler, ROLLEN, pruefePasswort,
 } from '../operations/lib/benutzer.mjs';
 import { bestellliste } from '../operations/lib/bestellliste.mjs';
-import { leseStammdaten, stammdatenPfad, lieferantenUebersicht, lieferantDetail, bestellmail, LieferantenFehler, lexikonProduktMitSchnellzugriff } from '../operations/lib/lieferanten.mjs';
+import { leseStammdaten, stammdatenPfad, stammdatenFuer, lieferantenUebersicht, lieferantDetail, bestellmail, LieferantenFehler, lexikonProduktMitSchnellzugriff } from '../operations/lib/lieferanten.mjs';
 import {
   FOTO_ART, FotoFehler, passendeProdukte, produktHinweis, pruefeEingang, titelFuer,
 } from '../operations/lib/baustellenfotos.mjs';
@@ -90,7 +90,7 @@ import { suchbegriffe, lexikonTreffer, nurUeberTitel } from '../docs/ai-dashboar
 import { musteretikettenFuerAuftrag } from '../docs/ai-dashboard/lib/bestellungs-musteretiketten.mjs';
 import { musterEtikettenStatus } from '../docs/ai-dashboard/lib/muster-etiketten-status.mjs';
 import { musterPackliste } from '../docs/ai-dashboard/lib/muster-packen.mjs';
-import { musterPackenPfad, leseAlle as leseMusterPacken, setzeGepackt } from '../operations/lib/muster-packen.mjs';
+import { musterPackenPfad, setzeGepackt, setzeHaken, setzeKlaeren, leseStand as leseMusterPackStand } from '../operations/lib/muster-packen.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -1713,33 +1713,63 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const modell = ladeBestellModell(dir);
       if (!modell) return { verfuegbar: false, hinweis: 'Die Bestelldaten fehlen. Bitte „Jetzt aktualisieren“ und danach erneut öffnen.' };
       const status = leseAktuellenStatus(auftragsstatusPfad(dir), modell);
-      let gepackt;
-      try { gepackt = leseMusterPacken(musterPackenPfad(dir)); } catch (e) { throw new ApiError(500, e.message); }
+      let stand;
+      try { stand = leseMusterPackStand(musterPackenPfad(dir)); } catch (e) { throw new ApiError(500, e.message); }
+      // Lieferantennamen nur aus den privaten Stammdaten; ohne Eintrag bleibt das Kuerzel.
+      const stammdaten = leseStammdaten(stammdatenPfad(dir));
       return { verfuegbar: true, ...musterPackliste({
         auftraege: modell.auftraege || [],
         produkte: new Map(this._lexikonProdukte().map(p => [p.handle, p])),
         statusVon: (orderId, lineItemId) => status[positionKey(orderId, lineItemId)]?.status || null,
         schluesselVon: kundenSchluessel,
-        gepackt, jetzt: now(),
+        gepackt: stand.gepackt, haken: stand.haken, klaeren: stand.klaeren,
+        lieferantVon: id => stammdatenFuer(stammdaten, id).name,
+        jetzt: now(),
       }) };
     },
 
-    /** "Gepackt" je Kunde setzen oder zuruecknehmen - nur lokal, ohne Versandbuchung. */
+    /**
+     * Muster packen schreiben - nur lokal, ohne Versandbuchung. `aktion`:
+     *   gepackt  { gepackt: bool }                 Umschlag gepackt / zuruecknehmen (Standard)
+     *   haken    { lineItemIds: [...], an: bool }  Muster ueberklebt und eingelegt
+     *   klaeren  { klaeren: bool, notiz? }         unvollstaendig -> zu klaeren (fehlend = alle
+     *            nicht abgehakten Muster, vom Server bestimmt) bzw. "Fehlendes ist da"
+     */
     kundenMusterPackenSetzen(payload = {}, benutzer = null) {
       if (benutzer?.rolle === 'lesen') throw new ApiError(403, 'Dieser Zugang darf Muster packen nur ansehen.');
       const pk = typeof payload?.packSchluessel === 'string' ? payload.packSchluessel.trim() : '';
       if (!pk) throw new ApiError(400, 'Kein Kunde angegeben.');
-      if (typeof payload.gepackt !== 'boolean') throw new ApiError(400, 'Angabe „gepackt“ fehlt.');
+      const aktion = payload.aktion ?? 'gepackt';
+      if (!['gepackt', 'haken', 'klaeren'].includes(aktion)) throw new ApiError(400, 'Unbekannte Aktion.');
+      const wert = aktion === 'gepackt' ? payload.gepackt : aktion === 'haken' ? payload.an : payload.klaeren;
+      if (typeof wert !== 'boolean') throw new ApiError(400, `Angabe „${aktion === 'haken' ? 'an' : aktion}“ fehlt.`);
       const liste = this.kundenMusterPacken();
       const kunde = (liste.kunden || []).find(k => k.packSchluessel === pk);
       // Nur, was gerade in der Liste steht: eine veraltete Seite darf keinen fremden Stand schreiben.
       if (!kunde) throw new ApiError(409, 'Diese Bestellungen stehen nicht mehr so in der Liste. Bitte neu laden.');
-      const dir = privatDirPath || privatDir();
+      const datei = musterPackenPfad(privatDirPath || privatDir());
       const von = benutzer?.name || benutzer?.kuerzel || 'Inhaber';
+      const nummern = kunde.bestellungen.map(b => b.orderName).join(', ');
       let ergebnis;
-      try { ergebnis = setzeGepackt(musterPackenPfad(dir), pk, { gepackt: payload.gepackt, von, jetzt: now() }); }
-      catch (e) { throw new ApiError(500, e.message); }
-      merke(benutzer, null, payload.gepackt ? 'Muster gepackt' : 'Gepackt zurückgenommen', kunde.bestellungen.map(b => b.orderName).join(', '));
+      try {
+        if (aktion === 'gepackt') {
+          ergebnis = setzeGepackt(datei, pk, { gepackt: wert, von, jetzt: now() });
+          // Gepackt erledigt auch ein "zu klaeren".
+          if (wert && kunde.klaeren) setzeKlaeren(datei, kunde.schluessel, { klaeren: false });
+          merke(benutzer, null, wert ? 'Muster gepackt' : 'Gepackt zurückgenommen', nummern);
+        } else if (aktion === 'haken') {
+          const eigene = new Set(kunde.muster.map(m => m.lineItemId));
+          const ids = Array.isArray(payload.lineItemIds) ? payload.lineItemIds.filter(id => typeof id === 'string') : [];
+          if (!ids.length || ids.some(id => !eigene.has(id))) throw new ApiError(400, 'Dieses Muster gehört nicht zu diesem Kunden.');
+          ergebnis = setzeHaken(datei, ids, { an: wert, von, jetzt: now() });
+        } else {
+          const fehlt = kunde.muster.filter(m => !m.abgehakt).map(m => m.lineItemId);
+          if (wert && !fehlt.length) throw new ApiError(400, 'Alle Muster sind abgehakt – der Umschlag ist vollständig.');
+          const notiz = typeof payload.notiz === 'string' ? payload.notiz : '';
+          ergebnis = setzeKlaeren(datei, kunde.schluessel, { klaeren: wert, fehlt, notiz, von, jetzt: now() });
+          merke(benutzer, null, wert ? 'Muster zu klären' : 'Fehlende Muster sind da', nummern);
+        }
+      } catch (e) { throw e instanceof ApiError ? e : new ApiError(500, e.message); }
       return { ok: true, ...ergebnis };
     },
 

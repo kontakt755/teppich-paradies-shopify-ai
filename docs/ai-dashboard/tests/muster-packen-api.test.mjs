@@ -71,3 +71,35 @@ test('ohne Bestellexport: Hinweis statt Fehler', t => {
   fs.rmSync(path.join(dir, 'bestelluebersicht/orders.json'));
   assert.equal(api.kundenMusterPacken().verfuegbar, false);
 });
+
+test('Haken und zu klaeren: fehlend = nicht abgehakte Muster, "Fehlendes ist da" holt zurueck, Haken bleiben', t => {
+  const { api, dir } = umgebung(t);
+  const laden = { name: 'Laden', rolle: 'mitarbeiter' };
+  const k0 = api.kundenMusterPacken().kunden[0];
+  const [m1, m2] = k0.muster.map(m => m.lineItemId);
+  assert.throws(() => api.kundenMusterPackenSetzen({ packSchluessel: k0.packSchluessel, aktion: 'haken', lineItemIds: ['gid://shopify/LineItem/fremd'], an: true }, laden), e => e.status === 400);
+  api.kundenMusterPackenSetzen({ packSchluessel: k0.packSchluessel, aktion: 'haken', lineItemIds: [m1], an: true }, laden);
+  api.kundenMusterPackenSetzen({ packSchluessel: k0.packSchluessel, aktion: 'klaeren', klaeren: true, notiz: 'zweites fehlt' }, laden);
+  let k = api.kundenMusterPacken().kunden[0];
+  assert.equal(k.bereich, 'klaeren');
+  assert.deepEqual(k.klaeren.fehlt, [m2]);
+  assert.equal(api.kundenMusterPacken().zahlen.klaeren, 1);
+  api.kundenMusterPackenSetzen({ packSchluessel: k0.packSchluessel, aktion: 'klaeren', klaeren: false }, laden);
+  k = api.kundenMusterPacken().kunden[0];
+  assert.equal(k.bereich, 'packen');
+  assert.ok(k.muster[0].abgehakt, 'Haken bleiben nach "Fehlendes ist da"');
+  api.kundenMusterPackenSetzen({ packSchluessel: k0.packSchluessel, aktion: 'haken', lineItemIds: [m2], an: true }, laden);
+  assert.throws(() => api.kundenMusterPackenSetzen({ packSchluessel: k0.packSchluessel, aktion: 'klaeren', klaeren: true }, laden), e => e.status === 400);
+  const roh = JSON.parse(fs.readFileSync(path.join(dir, 'muster-packen.json'), 'utf8'));
+  assert.equal(Object.keys(roh.haken).length, 2);
+});
+
+test('Lieferantenname kommt aus den privaten Stammdaten', t => {
+  const { api, dir } = umgebung(t);
+  assert.equal(api.kundenMusterPacken().kunden[0].muster[0].lieferant, null, 'ohne Lieferant am Artikel kein Name');
+  const produkte = JSON.parse(fs.readFileSync(path.join(dir, 'lexikon/produkte.json'), 'utf8'));
+  produkte.produkte[0].varianten[0].einkauf.lieferant = 'A';
+  fs.writeFileSync(path.join(dir, 'lexikon/produkte.json'), JSON.stringify(produkte));
+  const { api: api2 } = { api: createApi({ root: dir, privatDirPath: dir, now: () => new Date('2026-10-21T12:00:00Z') }) };
+  assert.equal(api2.kundenMusterPacken().kunden[0].muster[0].lieferant, 'Lieferant A');
+});

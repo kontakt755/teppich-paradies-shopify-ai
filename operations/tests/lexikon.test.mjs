@@ -598,3 +598,16 @@ test('Onlineshop-Veröffentlichung bleibt belegtes Admin-Feld; aus dem Handle en
     assert.equal(p.onlineStoreUrl,null);assert.ok(p.shopUrl,'bestehender interner Produktweg bleibt kompatibel');
   }
 });
+
+test('Variantenbild: nur das Bild genau dieser Farbe, sonst kein Feld', async () => {
+  const roh = produkt();
+  roh.variants = [
+    { ...roh.variants[0], image: { url: 'https://cdn.example/nordsee-gruen.jpg' } },
+    { ...roh.variants[0], id: 'gid://shopify/ProductVariant/5002', sku: 'NS-200-BL', selectedOptions: [{ name: 'Farbe', value: 'Blau' }] },
+  ];
+  const [gruen, blau] = aufbereiten({ produkte: [roh] }, { jetzt: JETZT }).produkte[0].varianten;
+  assert.equal(gruen.bild, 'https://cdn.example/nordsee-gruen.jpg');
+  assert.equal(Object.hasOwn(blau, 'bild'), false, 'kein Produktbild einer anderen Farbe als Ersatz');
+  const { BULK_QUERY } = await import('../scripts/lexikon-export.mjs');
+  assert.match(BULK_QUERY, /availableForSale\s+image \{ url \}/);
+});
