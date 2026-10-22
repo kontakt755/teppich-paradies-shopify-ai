@@ -1,17 +1,17 @@
 {%- doc -%}
-  Hinweis im Warenkorb zum Paketvorteil (#1452): Liegen mindestens 3 Pakete
-  Klick- oder Klebevinyl im Warenkorb, aber keine Faventa- oder
-  Nerissa-Leiste, steht oberhalb des Gesamtbetrags der Weg zur Leiste mit
-  -50 %. Nie zwischen Gesamtbetrag und "Zur Kasse". Rein serverseitig;
+  Hinweis im Warenkorb zum Paketvorteil "Sockelleiste inklusive" (#1452):
+  Liegen mindestens 5 Pakete Klick- oder Klebevinyl im Warenkorb, aber noch
+  keine Sockelleiste, steht oberhalb des Gesamtbetrags der Weg zur Leiste.
+  Je 5 Pakete 5 Leisten mit je 11,90 EUR Nachlass (Belmora weiss gratis).
+  Nie zwischen Gesamtbetrag und "Zur Kasse". Rein serverseitig;
   Schalter in snippets/tp-leisten-paket.
 {%- enddoc -%}
 
 {%- liquid
-  assign tcl_leisten = 'faventa-sockelleiste,nerissa-sockelleiste' | split: ','
   assign tcl_pakete = 0
   assign tcl_hat_leiste = false
   for tcl_item in cart.items
-    if tcl_leisten contains tcl_item.product.handle
+    if tcl_item.product.type == 'Sockelleisten'
       assign tcl_hat_leiste = true
       break
     endif
@@ -22,24 +22,20 @@
       assign tcl_pakete = tcl_pakete | plus: tcl_item.quantity
     endif
   endfor
-  assign tcl_faventa = nil
-  if tcl_pakete >= 3 and tcl_hat_leiste == false
-    assign tcl_faventa = all_products['faventa-sockelleiste']
-    assign tcl_nerissa = all_products['nerissa-sockelleiste']
-    assign tcl_stangen = tcl_pakete | divided_by: 3 | times: 2 | at_most: 60
+  assign tcl_weiss = nil
+  if tcl_pakete >= 5 and tcl_hat_leiste == false
+    assign tcl_weiss = all_products['belmora-sockelleiste-eckig-12x58mm']
+    assign tcl_alle = collections['bodenleisten']
+    assign tcl_stangen = tcl_pakete | divided_by: 5 | times: 5 | at_most: 100
   endif
 -%}
 
-{%- if tcl_faventa.available -%}
+{%- if tcl_weiss.available -%}
   <div class="tp-cart-lph" role="note" aria-label="Paketvorteil Sockelleiste">
-    <p class="tp-cart-lph__text"><span class="tp-cart-lph__badge">−50&nbsp;%</span> <strong>Ihr Paketvorteil:</strong> Zu Ihrem Vinylboden erhalten Sie bis zu {{ tcl_stangen }} Sockelleisten (je 2,4&nbsp;m) zum halben Preis.</p>
-    <details>
-      <summary>Aktionsbedingungen</summary>
-      <p class="tp-cart-lph__text">Höchstens 60 rabattierte Stangen pro Bestellung. Nicht mit anderen Produkt- oder Bestellrabatten kombinierbar.</p>
-    </details>
+    <p class="tp-cart-lph__text"><span class="tp-cart-lph__badge">Gratis</span> <strong>Sockelleiste inklusive:</strong> Zu Ihrem Vinylboden gehören {{ tcl_stangen }} Sockelleisten (je 2,4&nbsp;m) – weiß gratis, jede andere mit 11,90&nbsp;€ Nachlass.</p>
     <p class="tp-cart-lph__links">
-      <a href="{{ tcl_faventa.url }}">Faventa wählen</a>
-      {%- if tcl_nerissa.available %} · <a href="{{ tcl_nerissa.url }}">Nerissa wählen</a>{% endif -%}
+      <a href="{{ tcl_weiss.url }}">Weiße Leiste wählen</a>
+      {%- if tcl_alle %} · <a href="{{ tcl_alle.url }}">Leiste im Dekor wählen</a>{% endif -%}
     </p>
   </div>
 {%- endif -%}
