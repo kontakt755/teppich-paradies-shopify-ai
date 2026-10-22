@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>net.teppich-paradies.bestand-lieferant-i</string>
+
+  <!-- Bestandsabgleich Lieferant I (operations/scripts/bestand-abgleich.mjs):
+       laedt die Bestandsdatei des Lieferanten und setzt den Shopify-Bestand
+       der Dropshipping-Teppiche (available = 0 -> ausverkauft). Bricht bei
+       unplausibler Datei ohne Schreiben ab. Doku: domains/lieferanten/lieferant-i.md.
+       Laeuft aus dem Dienst-Checkout ~/tp-dashboard; URL und Vendor stehen dort
+       in .env.local (TP_LIEFERANT_I_BESTAND_URL, TP_LIEFERANT_I_VENDOR).
+       Einrichten: Platzhalter __HOME__ ersetzen, nach ~/Library/LaunchAgents kopieren,
+       launchctl load <datei>. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-lc</string>
+    <string>cd "$HOME/tp-dashboard" &amp;&amp; date &amp;&amp; exec npm run -s bestand:abgleich -- --schreiben</string>
+  </array>
+
+  <!-- Sechsmal taeglich: 6, 9, 12, 15, 18, 21 Uhr Ortszeit. -->
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Hour</key><integer>6</integer><key>Minute</key><integer>10</integer></dict>
+    <dict><key>Hour</key><integer>9</integer><key>Minute</key><integer>10</integer></dict>
+    <dict><key>Hour</key><integer>12</integer><key>Minute</key><integer>10</integer></dict>
+    <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>10</integer></dict>
+    <dict><key>Hour</key><integer>18</integer><key>Minute</key><integer>10</integer></dict>
+    <dict><key>Hour</key><integer>21</integer><key>Minute</key><integer>10</integer></dict>
+  </array>
+
+  <key>StandardOutPath</key>
+  <string>__HOME__/teppich-paradies-analyse/lieferant-i/bestand.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/teppich-paradies-analyse/lieferant-i/bestand.log</string>
+</dict>
+</plist>
