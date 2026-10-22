@@ -1,4 +1,5 @@
 import test from 'node:test';
+import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -57,12 +58,16 @@ test('Kunden bleibt in der Seitenleiste; Bestellungen und Packstation haben eige
 });
 
 test('Weitere Dashboards: keine Adresse im Markup - die Links kommen vom Server', () => {
-  assert.match(seitenleiste, /<div class="nav-dashboards" id="navDashboards" hidden><\/div>/);
+  assert.match(seitenleiste, /<div class="nav-gruppe-menu nav-dashboards" id="navDashboards" hidden><\/div>/);
   assert.ok(!/claude\.ai\/artifact|script\.google\.com/.test(html), 'keine Adresse von Werkbank oder Auftrags-App im oeffentlichen Repository');
 });
 
-test('untere Leiste am Handy: Heute, Bestellungen, Packstation, Einkauf und "Mehr"', () => {
-  assert.deepEqual(links(untereLeiste).map(l => l.nav), ['heute', 'einkauf']);
+test('untere Leiste am Handy: dieselben vier Arbeitswege und Mehr', () => {
+  const direkt = [...untereLeiste.matchAll(/<a href="([^"]+)" data-nav="([^"]+)"([^>]*)>/g)];
+  assert.deepEqual(direkt.map(m => m[2]), ['heute', 'einkauf', 'kunden', 'kunden']);
+  assert.ok(direkt.every(m => !m[3].includes('data-nur-inhaber')));
+  assert.match(direkt[1][1], /tab=lieferant&amp;art=muster&amp;af=offen/);
+  assert.match(untereLeiste, /Muster bestellen/);
   // Diese vier duerfen keinem vorenthalten sein - sonst stuende am Handy ein toter Punkt.
   for (const l of links(untereLeiste)) assert.ok(!l.rest.includes('data-nur-inhaber'), `"${l.nav}" in der unteren Leiste ist dem Inhaber vorbehalten`);
   assert.match(untereLeiste, /<button type="button" id="navToggle"[^>]*aria-controls="side"/, '"Mehr" muss die Seitenleiste als Blatt oeffnen');
@@ -73,4 +78,66 @@ test('Seite nutzt die Safe-Area und folgt ohne eigene Wahl dem Geraet', () => {
   assert.match(html, /prefers-color-scheme/);
   const css = fs.readFileSync(path.join(WURZEL, 'app.css'), 'utf8');
   assert.match(css, /env\(safe-area-inset-bottom\)/);
+});
+
+
+test('vier Hauptwege und vier standardgeschlossene Bereichsgruppen ohne Linkverlust', () => {
+  const nav = teil('<nav class="mainnav"', '</nav>');
+  const haupt = [...nav.matchAll(/<a [^>]*class="nav-haupt"[^>]*>[\s\S]*?<span>([^<]+)<\/span>/g)].map(m => m[1]);
+  assert.deepEqual(haupt, ['Heute', 'Muster bestellen', 'Bestellungen', 'Packstation']);
+  const gruppen = [...nav.matchAll(/<details class="nav-gruppe"([^>]*)>/g)];
+  assert.equal(gruppen.length, 4);
+  assert.ok(gruppen.every(m => !/\bopen\b/.test(m[1])));
+  for (const titel of ['Kunden &amp; Einkauf', 'Shop &amp; Inhalte', 'Verwaltung', 'Weitere Dashboards']) assert.ok(nav.includes(titel));
+  assert.ok(!nav.includes('id="navMore"'));
+});
+
+test('alter Buero-Schalter oeffnet keine Gruppen; nur gewaehlter und aktiver Bereich bleiben offen', () => {
+  const speicher = new Map([['tp-nav-buero', '1']]);
+  const gruppen = ['kunden', 'shop', 'verwaltung', 'dashboards'].map(name => ({
+    dataset: { navGruppe: name }, open: false, aktiv: false,
+    querySelector(sel) { return sel === 'summary' ? { classList: { toggle() {} } } : this.aktiv ? {} : null; },
+  }));
+  const text = fs.readFileSync(path.join(WURZEL, 'kern/navigation.mjs'), 'utf8')
+    .replace(/^import.*;\n/gm, '').replace(/^export /gm, '');
+  const zeichne = vm.runInNewContext(text + '\naktualisiereGruppen', {
+    localStorage: { getItem: k => speicher.get(k) || null },
+    document: { querySelectorAll: () => gruppen },
+  });
+  zeichne();
+  assert.ok(gruppen.every(g => !g.open));
+  speicher.set('tp-nav-gruppe-v2', 'shop');
+  gruppen[2].aktiv = true;
+  zeichne();
+  assert.deepEqual(gruppen.map(g => g.open), [false, true, true, false]);
+});
+
+test('Muster bestellen und allgemeiner Einkauf haben getrennte Aktivmarkierung; Mehr bleibt stabil', () => {
+  const node = dataset => ({ dataset, attrs: {}, setAttribute(k, v) { this.attrs[k] = v; }, removeAttribute(k) { delete this.attrs[k]; } });
+  const muster = node({ nav: 'einkauf', navEinkauf: 'muster' });
+  const einkauf = node({ nav: 'einkauf' });
+  const mehr = node({});
+  const state = { route: { view: 'einkauf', params: new URLSearchParams('tab=lieferant&art=muster&af=offen') }, tasks: [] };
+  const text = fs.readFileSync(path.join(WURZEL, 'kern/navigation.mjs'), 'utf8').replace(/^import.*;\n/gm, '').replace(/^export /gm, '');
+  const zeichne = vm.runInNewContext(text + '\naktualisiereNavigation', {
+    state, URLSearchParams, darfAnsicht: () => false,
+    $: sel => sel === '#navToggle' ? mehr : null,
+    localStorage: { getItem: () => null },
+    document: {
+      body: { classList: { remove() {} } },
+      querySelectorAll: sel => sel === '[data-nav]' ? [muster, einkauf] : [],
+      querySelector: sel => sel === '#tabbar a[aria-current="page"]' && muster.attrs['aria-current'] ? muster : null,
+    },
+  });
+  zeichne();
+  assert.equal(muster.attrs['aria-current'], 'page');
+  assert.equal(einkauf.attrs['aria-current'], undefined);
+  assert.equal(mehr.attrs['aria-current'], undefined);
+  state.route.params.set('art', 'ware');
+  zeichne();
+  assert.equal(muster.attrs['aria-current'], undefined);
+  assert.equal(einkauf.attrs['aria-current'], 'page');
+  assert.equal(mehr.attrs['aria-current'], 'page');
+  zeichne();
+  assert.equal(mehr.attrs['aria-current'], 'page', 'wiederholtes Zeichnen darf Mehr nicht umschalten');
 });

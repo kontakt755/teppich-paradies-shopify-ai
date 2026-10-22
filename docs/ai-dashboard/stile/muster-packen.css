@@ -80,3 +80,10 @@
 .mp-ziel { grid-template-columns: minmax(0, 1fr); }
 .mp-ziel > :not(.mp-umschlag) { grid-column: 1; }
 .mp-umschlag { justify-self: start; grid-row: auto; }
+
+/* Eine Arbeitsliste zur Zeit; Mengen stehen ausschliesslich in der Filterleiste. */
+.mp-arbeitsfilter { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
+.mp-arbeitsfilter .btn { display: flex; justify-content: space-between; gap: 8px; min-height: 44px; white-space: normal; text-align: left; }
+.mp-filterzahl { font-weight: 700; }
+.mp-arbeitsleer { padding: 16px 0; color: var(--text-2); }
+@media (max-width: 760px) { .mp-arbeitsfilter { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

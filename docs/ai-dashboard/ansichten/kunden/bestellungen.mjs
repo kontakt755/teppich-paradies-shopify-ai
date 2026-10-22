@@ -51,7 +51,7 @@ export function ensureKundenBestellungen() {
 // "nicht_fertig" zuerst - das ist die Voreinstellung (Inhabervorgabe: "welcher
 // Kunde ist fertig, welcher nicht" soll sofort sichtbar sein). Muss zu
 // operations/lib/bestellliste.mjs (FILTERCHIPS/wendeFilterAn) passen.
-const BQ_FILTER_LABEL = { nicht_fertig: 'Nicht fertig', alle: 'Alle Bestellungen', pruefen: 'Kontrolle nötig', fertig: 'Abgehakt / versandt', offen: 'Zahlung offen', bezahlt: 'Bezahlt', unerfuellt: 'Unerfüllt', storniert: 'Storniert', beratung: 'Beratung offen', muster: 'Muster', test: 'Testbestellung' };
+const BQ_FILTER_LABEL = { nicht_fertig: 'Offen', alle: 'Alle Bestellungen', pruefen: 'Kontrolle nötig', fertig: 'Abgehakt / versandt', offen: 'Zahlung offen', bezahlt: 'Bezahlt', unerfuellt: 'Unerfüllt', storniert: 'Storniert', beratung: 'Beratung offen', muster: 'Muster', test: 'Testbestellung' };
 const BQ_SORT_LABEL = { wichtigkeit: 'Wichtigkeit', datum: 'Datum', orderName: 'Bestellnr.', kundenname: 'Kunde', gesamtbetrag: 'Betrag', zahlungsstatus: 'Zahlung', fulfillmentstatus: 'Versand', anzahlArtikel: 'Artikel', fortschritt: 'Fortschritt' };
 
 const KANAL_TEXT = { web: 'Onlineshop', pos: 'Ladengeschäft', shopify_draft_order: 'Angebot' };
@@ -304,9 +304,14 @@ export function viewKundenBestellungen() {
       <button type="button" class="btn btn-sm" ${seite <= 1 ? 'disabled' : ''} data-param="bseite" data-value="${seite > 2 ? seite - 1 : ''}">← Zurück</button>
       <span class="small muted">Seite ${seite} von ${seiten}</span>
       <button type="button" class="btn btn-sm" ${seite >= seiten ? 'disabled' : ''} data-param="bseite" data-value="${seite + 1}">Weiter →</button></div>` : '';
-  const chips = `<div class="chips" style="margin:8px 0">
-    ${FILTERCHIPS_KUNDEN.map(f => `<button type="button" class="chip" data-param="bfilter" data-value="${f === 'nicht_fertig' ? '' : f}" aria-pressed="${filter === f}">${esc(BQ_FILTER_LABEL[f])}</button>`).join('')}
-  </div>`;
+  const filterKnopf = f => `<button type="button" class="chip" data-param="bfilter" data-value="${f === 'nicht_fertig' ? '' : f}" aria-pressed="${filter === f}">${esc(BQ_FILTER_LABEL[f])}</button>`;
+  const weitererFilterAktiv = FILTERCHIPS_WEITERE.includes(filter);
+  const chips = `<div class="chips bq-filter-haupt" style="margin:8px 0" role="group" aria-label="Bestellarbeit filtern">
+    ${FILTERCHIPS_KUNDEN.map(filterKnopf).join('')}
+  </div><details class="bq-filter-extra"${weitererFilterAktiv ? ' open' : ''}>
+    <summary>Weitere Filter${weitererFilterAktiv ? ` · ${esc(BQ_FILTER_LABEL[filter])}` : ''}</summary>
+    <div class="chips" role="group" aria-label="Weitere Bestellfilter">${FILTERCHIPS_WEITERE.map(filterKnopf).join('')}</div>
+  </details>`;
   // Kein data-param hier: der generische Handler wuerde vorher greifen und nur
   // die Spalte setzen - die Richtung liesse sich dann nie umschalten.
   const sortHead = (feld, label) => `<th><button type="button" class="th-sort" data-bq-sort-toggle="${feld}" aria-label="Nach ${esc(label)} sortieren${sort === feld ? (dir === 'asc' ? ', aktuell aufsteigend' : ', aktuell absteigend') : ''}">${esc(label)}${sort === feld ? (dir === 'asc' ? ' ↑' : ' ↓') : ''}</button></th>`;
@@ -361,7 +366,8 @@ function neuBadge(z) {
   return !istErledigt(z) && Date.now() - Date.parse(z.datum) < NEU_STUNDEN * 36e5 ? ' <span class="badge bq-neu">Neu</span>' : '';
 }
 
-const FILTERCHIPS_KUNDEN = ['nicht_fertig', 'alle', 'pruefen', 'fertig', 'offen', 'bezahlt', 'unerfuellt', 'storniert', 'beratung', 'muster', 'test'];
+const FILTERCHIPS_KUNDEN = ['nicht_fertig', 'fertig', 'pruefen', 'alle'];
+const FILTERCHIPS_WEITERE = ['offen', 'bezahlt', 'unerfuellt', 'storniert', 'beratung', 'muster', 'test'];
 
 /** Kunden, Reiter Bestellungen: sortieren, aufklappen, Auftragsfluss, fertig. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function kundenKlickBestellungen(e) {

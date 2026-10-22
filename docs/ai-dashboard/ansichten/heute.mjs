@@ -30,8 +30,7 @@ import { istNurLesend } from '../kern/sitzung.mjs';
 import { schnittJeBezahlter } from '../lib/kennzahlen.mjs';
 import { stoerungState } from '../bausteine/karten.mjs';
 import { ensureAktualisierung, aktualisierenButton, aktualisierungHealth } from '../bausteine/aktualisierung.mjs';
-import { einkauf, ensureEinkaufAuftragsstatus, ensureEinkaufKennzahlen, ensureEinkaufBestellungen, anzeigeWert, aktiveAuftraege, afEintragFuer, kundeUndOrt } from './einkauf/auftragsfluss.mjs';
-import { einkaufZahlen } from '../lib/auftrags-ablauf.mjs';
+import { einkauf, ensureEinkaufAuftragsstatus, ensureEinkaufKennzahlen, ensureEinkaufBestellungen, anzeigeWert, kundeUndOrt } from './einkauf/auftragsfluss.mjs';
 import { belege, ensureBelege, laufStand } from './einkauf/belege.mjs';
 import { hinweisText } from './einkauf/bestellungen.mjs';
 import { kunden } from './kunden/gemeinsam.mjs';
@@ -48,8 +47,10 @@ import { heuteDaten, ensureHeuteLieferanten, ensureHeuteAufgaben, ensureHeuteMus
 import { musterNachfassenStand, musterNachfassenBlock } from './heute/muster-nachfassen.mjs';
 import { shopifyAbgleich, ensureShopifyAbgleich, shopifyAbgleichTodos } from './einkauf/shopify-abgleich.mjs';
 import { veralteteQuellen, datenstandTodo } from '../lib/datenstand.mjs';
+import { startBestellarbeit } from '../lib/start-bestellarbeit.mjs';
+import { bestellarbeitBlock } from './heute/bestellarbeit.mjs';
 
-const TODOS_SICHTBAR = 7;      // "eine kurze Liste" - der Rest steht einen Klick weiter
+const TODOS_SICHTBAR = 3;      // Bestellarbeit zuerst, weitere Aufgaben bleiben kurz und vollstaendig erreichbar.
 const SPALTE_SICHTBAR = 8;
 
 /** Sichten mit Chip beim Inhaber; "inhaber" (fruehere Fokus-Sicht) aus alten Links wird "alles". */
@@ -199,8 +200,7 @@ export function viewHeute() {
 
   return `<div class="heute">
     ${kopf(liste.length, sicht, chips)}
-    ${sicht === 'website' ? '' : bestellEinstieg()}
-    ${zahlenZeile(q)}
+    ${bestellEinstieg()}
     ${todoListe(liste)}
     ${hintergrund(nf, wartet, sicht)}
     ${state.route.params.get('mn') ? musterNachfassenBlock(nf.alle) : ''}
@@ -208,22 +208,6 @@ export function viewHeute() {
     ${sicht === 'website' ? '' : ladenUndMontage()}
     ${istInhaber() ? kennzahlenBlock() : ''}
   </div>`;
-}
-
-/**
- * Eine Zeile mit den Zahlen, die den Tag bestimmen - jede fuehrt in die gefilterte Liste.
- * Dieselbe Rechnung wie Einkauf "Je Auftrag" (lib/auftrags-ablauf.mjs einkaufZahlen).
- */
-function zahlenZeile(q) {
-  const teile = [];
-  const d = einkauf.bestellungen;
-  if (darfAnsicht('einkauf') && d?.verfuegbar) {
-    const z = einkaufZahlen(aktiveAuftraege(d), d, afEintragFuer, id => d.kundeInformiert?.[id] || null);
-    teile.push(['Zu bestellen', z.bestellen, '#/einkauf?ab=bestellen'], ['Kunde informieren', z.informieren, '#/einkauf?ab=informieren'], ['Verzug', z.verzug, '#/einkauf?ab=verzug']);
-  }
-  if (darfAnsicht('akquise')) teile.push(['Genossenschaften nachfassen', q.akquise.length, '#/akquise?as=faellig']);
-  if (!teile.length) return '';
-  return `<nav class="heute-zahlen" aria-label="Zahlen des Tages">${teile.map(([l, n, h]) => `<a href="${h}"${n ? '' : ' class="null"'}>${esc(l)} <b>${n}</b></a>`).join('<span aria-hidden="true">·</span>')}</nav>`;
 }
 
 function chipZahlen(q, opt, laden) {
@@ -237,18 +221,10 @@ function kopf(anzahl, sicht, chips) {
     ? `<span class="heute-sicht" role="group" aria-label="Bereich wählen">${INHABER_SICHTEN.map(k => `<a href="#/heute${k === 'laden' ? '' : `?sicht=${k}`}" ${k === sicht ? 'aria-current="true"' : ''}>${esc(SICHT_LABEL[k])} <b>${chips[k]}</b></a>`).join('')}</span>`
     : istMitarbeiter() ? '' : `<span>Bereich ${esc(SICHT_LABEL[sicht] || sicht)}</span>`;
   return `<header class="heute-kopf">
-    <div class="heute-zahl${anzahl ? '' : ' null'}" aria-hidden="true">${anzahl}</div>
     <div class="heute-titel">
-      <h1><span class="visually-hidden">${anzahl} </span>${anzahl === 1 ? 'Sache' : 'Sachen'} heute zu erledigen</h1>
+      <h1 class="visually-hidden">Heute</h1>
       <p><span>${esc(datum)}</span>${umschalter}</p>
     </div>
-    ${/* Direkte Einstiege in den Arbeitsplatz (#1390) - klein im Kopf statt zwischen To-dos und Rest. */ ''}
-    ${istMitarbeiter() ? '' : `<nav class="heute-vorbereiten" aria-label="Vorbereiten">
-      <span>Vorbereiten:</span>
-      <a href="#/prozesse?prozess=email">E-Mail</a>
-      <a href="#/prozesse?prozess=angebot">Angebot</a>
-      <a href="#/prozesse?prozess=recherche">Recherche</a>
-    </nav>`}
   </header>`;
 }
 
@@ -309,7 +285,7 @@ function todoListe(todos) {
   } else if (laedt) inhalt = `<div class="heute-leer">Lade …</div>`;
   else if (fehlen.length) inhalt = `<div class="heute-leer">Gerade nichts zu sehen – aber die Liste ist unvollständig.</div>`;
   else inhalt = `<div class="heute-leer"><strong>Alles erledigt.</strong> Gerade wartet nichts auf dich – schönen Tag!</div>`;
-  return `<section class="heute-todos" aria-label="Heute zu erledigen">${inhalt}</section>
+  return `<h2 class="heute-weitere-titel">Weitere Aufgaben heute <span class="muted">(${todos.length})</span></h2><section class="heute-todos" aria-label="Heute zu erledigen">${inhalt}</section>
     ${fehlen.length ? `<p class="heute-unvollstaendig" role="status"><b>Liste unvollständig:</b> ${esc(fehlen.join(', '))} ${fehlen.length === 1 ? 'konnte' : 'konnten'} nicht geladen werden. ${kunden.bestellungen?.verfuegbar === false && kunden.bestellungen.hinweis ? esc(kunden.bestellungen.hinweis) : ''}</p>` : ''}
     ${stoerung ? stoerungState(stoerung, 'Ein Teil der Daten') : ''}`;
 }
@@ -458,14 +434,8 @@ function kennzahlenBlock() {
 
 /** Direkte Arbeitswege, mit denselben Zahlen und Filtern wie auf der Zielseite. */
 function bestellEinstieg() {
-  const pack = kunden.musterPacken;
-  const n = bestellungenOffen();
-  const zahlen = pack?.verfuegbar ? pack.zahlen : null;
-  const link = (href, titel, zahl, text) => `<a class="bestell-einstieg" href="${href}"><strong>${esc(titel)}${zahl == null ? '' : ` <span>${zahl}</span>`}</strong><span>${esc(text)}</span></a>`;
-  return `<nav class="bestell-einstiege" aria-label="Bestellungen und Packstation">
-    ${link('#/kunden?tab=bestellungen', 'Bestellungen', n, 'Kundenbestellungen bearbeiten')}
-    ${link('#/einkauf?tab=lieferant&af=bestellt', 'Ware annehmen', null, 'Eingang je Lieferant prüfen')}
-    ${link('#/kunden?tab=muster', 'Muster packen', zahlen?.packen, 'Bestätigt verfügbar und packbereit')}
-    ${link('#/kunden?tab=muster&mpbereich=gepackt', 'Gepackte Umschläge', zahlen?.gepackt, 'Versand separat vorbereiten')}
-  </nav>`;
+  return bestellarbeitBlock({
+    arbeit: startBestellarbeit({ daten: einkauf.bestellungen, statusAlle: einkauf.auftragsstatus, lieferanten: heuteDaten.lieferanten }),
+    offeneBestellungen: bestellungenOffen(), pack: kunden.musterPacken, lesend: istNurLesend(),
+  });
 }

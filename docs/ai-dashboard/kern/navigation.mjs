@@ -11,9 +11,7 @@ import { state } from './zustand.mjs';
 import { $, esc } from './helfer.mjs';
 import { darfAnsicht } from './router.mjs';
 
-/** Punkte mit eigenem Platz in der unteren Leiste; alles andere liegt am Handy hinter "Mehr". */
-const UNTEN = ['heute', 'einkauf'];
-const BUERO_KEY = 'tp-nav-buero';
+const GRUPPEN_KEY = 'tp-nav-gruppe-v2';
 
 // Zaehler kommen aus den Zwischenspeichern der Ansichten. Der Kern kennt keine Ansicht,
 // deshalb meldet der Einstieg (app.js) sie hier an: { kunden: () => 4, einkauf: () => null }.
@@ -27,17 +25,17 @@ function setzeZahl(el, n) {
   el.textContent = zahl ? String(zahl) : '';
 }
 
-function bueroGemerkt() {
-  try { return localStorage.getItem(BUERO_KEY) === '1'; } catch { return false; }
+function gemerkteGruppe() {
+  try { return localStorage.getItem(GRUPPEN_KEY); } catch { return null; }
 }
 
-function bueroAnsichten() {
-  return [...document.querySelectorAll('#navMoreMenu [data-nav]')].map(a => a.dataset.nav);
-}
-
-function setzeBuero(offen) {
-  $('#navMore')?.classList.toggle('offen', offen);
-  $('#navMoreKopf')?.setAttribute('aria-expanded', String(offen));
+function aktualisiereGruppen() {
+  const gemerkt = gemerkteGruppe();
+  document.querySelectorAll('[data-nav-gruppe]').forEach(gruppe => {
+    const aktiv = !!gruppe.querySelector('[aria-current="page"]');
+    gruppe.open = aktiv || gruppe.dataset.navGruppe === gemerkt;
+    gruppe.querySelector('summary')?.classList.toggle('current', aktiv);
+  });
 }
 
 export function mehrOffen() { return document.body.classList.contains('nav-offen'); }
@@ -60,19 +58,18 @@ export function aktualisiereNavigation() {
   // aria-current braucht den Wert "page" - ein leeres Attribut hebt nichts hervor.
   const kundenTab = !state.route.params.get('kunde') ? state.route.params.get('tab') : null;
   const kundenHauptpunkt = ['bestellungen', 'muster'].includes(kundenTab) ? kundenTab : null;
+  const musterBestellen = state.route.params.get('tab') === 'lieferant' && state.route.params.get('art') === 'muster' && state.route.params.get('af') === 'offen';
   document.querySelectorAll('[data-nav]').forEach(a => {
     const tabPasst = view !== 'kunden' || (a.dataset.navTab || null) === kundenHauptpunkt;
-    if (a.dataset.nav === view && tabPasst) a.setAttribute('aria-current', 'page');
+    const einkaufPasst = view !== 'einkauf' || Boolean(a.dataset.navEinkauf === 'muster') === musterBestellen;
+    if (a.dataset.nav === view && tabPasst && einkaufPasst) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   });
   const freigaben = darfAnsicht('freigaben') ? state.tasks.filter(t => t.status === 'freigabe').length : 0;
   setzeZahl($('#navFreigaben'), freigaben);
-  // Der Sammelpunkt traegt die Freigaben-Zahl mit, damit sie eingeklappt nicht untergeht,
-  // und steht offen, solange eine seiner Ansichten gezeigt wird.
+  // Entscheidungen bleiben auch in der geschlossenen Verwaltungsgruppe sichtbar.
   setzeZahl($('#navMoreCount'), freigaben);
-  const imBuero = bueroAnsichten().includes(view);
-  $('#navMoreKopf')?.classList.toggle('current', imBuero);
-  setzeBuero(imBuero || bueroGemerkt());
+  aktualisiereGruppen();
   document.querySelectorAll('[data-nav-zahl]').forEach(el => {
     const name = el.dataset.navZahl;
     if (name === 'mehr') { setzeZahl(el, freigaben); return; }
@@ -82,7 +79,8 @@ export function aktualisiereNavigation() {
   });
   const mehr = $('#navToggle');
   if (mehr) {
-    if (UNTEN.includes(view) || (view === 'kunden' && kundenHauptpunkt)) mehr.removeAttribute('aria-current'); else mehr.setAttribute('aria-current', 'page');
+    const untenAktiv = !!document.querySelector('#tabbar a[aria-current="page"]');
+    if (untenAktiv) mehr.removeAttribute('aria-current'); else mehr.setAttribute('aria-current', 'page');
   }
   schliesseMehr();
 }
@@ -127,19 +125,29 @@ export function zeichneDashboards() {
   const urls = state.capabilities?.dashboards || {};
   const links = DASHBOARDS.map(d => ({ ...d, href: sichereUrl(urls[d.key]) })).filter(d => d.href);
   ziel.hidden = !links.length;
+  const gruppe = $('#navDashboardGruppe');
+  if (gruppe) gruppe.hidden = !links.length;
   ziel.innerHTML = links.length
-    ? `<p class="nav-label">Weitere Dashboards</p>${links.map(d => `<a href="${esc(d.href)}" class="nav-extern" target="_blank" rel="noopener" data-dashboard="${d.key}"${d.nichtLesen ? ' data-nicht-lesen' : ''} title="${esc(d.titel)}"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true">${d.icon}</svg><span>${esc(d.text)}</span>${PFEIL}<span class="visually-hidden"> (öffnet in neuem Tab)</span></a>`).join('')}`
+    ? `${links.map(d => `<a href="${esc(d.href)}" class="nav-extern" target="_blank" rel="noopener" data-dashboard="${d.key}"${d.nichtLesen ? ' data-nicht-lesen' : ''} title="${esc(d.titel)}"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true">${d.icon}</svg><span>${esc(d.text)}</span>${PFEIL}<span class="visually-hidden"> (öffnet in neuem Tab)</span></a>`).join('')}`
     : '';
 }
 
-/** Einmal beim Start: "Mehr"-Blatt, Sammelpunkt "Mehr", Schliessen per Schleier. */
+/** Einmal beim Start: mobiles Menueblatt und per Tastatur bedienbare Bereichsgruppen. */
 export function bindeNavigation() {
   $('#navToggle')?.addEventListener('click', () => { if (mehrOffen()) schliesseMehr(); else oeffneMehr(); });
   $('#sideSchleier')?.addEventListener('click', schliesseMehr);
-  $('#navMoreKopf')?.addEventListener('click', () => {
-    const offen = !$('#navMore').classList.contains('offen');
-    setzeBuero(offen);
-    try { localStorage.setItem(BUERO_KEY, offen ? '1' : '0'); } catch {}
+  document.querySelectorAll('[data-nav-gruppe] > summary').forEach(kopf => {
+    kopf.addEventListener('click', e => {
+      e.preventDefault();
+      const gruppe = kopf.parentElement;
+      const offen = !gruppe.open;
+      // Nur eine bewusst gewaehlte Gruppe merken; den alten Buero-Schalter nicht uebernehmen.
+      document.querySelectorAll('[data-nav-gruppe]').forEach(g => { g.open = g === gruppe && offen; });
+      try {
+        if (offen) localStorage.setItem(GRUPPEN_KEY, gruppe.dataset.navGruppe);
+        else localStorage.removeItem(GRUPPEN_KEY);
+      } catch {}
+    });
   });
   // Derselbe Punkt nochmal angetippt aendert die Adresse nicht - das Blatt muss trotzdem zu.
   $('#side')?.addEventListener('click', e => { if (e.target.closest('a[href], #syncChip, #meinPasswortBtn, [data-fehler-melden]')) schliesseMehr(); });

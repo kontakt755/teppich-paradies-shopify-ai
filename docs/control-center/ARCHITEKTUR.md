@@ -613,9 +613,12 @@ To-dos auf „Heute“ („Muster bei Lieferant A bestellen · Kunde · Regalia 
 
 ## 9. Startseite „Heute" (seit 2026-09-23)
 
-`viewHeute()` in `docs/ai-dashboard/ansichten/heute.mjs` ist die Startseite und bleibt primär aufgabenbasiert
-(GitHub Issues, siehe Abschnitt 4). Ergänzend – nur im lokalen Modus, weil die Quellen privat sind –
-zeigt sie zwei weitere Kacheln, die jeweils in den Bereich „Einkauf" (Abschnitt 8) durchklicken:
+`viewHeute()` in `docs/ai-dashboard/ansichten/heute.mjs` ist die betriebliche Startseite.
+Seit #1614 (22.10.2026) steht die Bestellarbeit zuerst: offene Muster nach Lieferant,
+Kundenbestellungen und Packstation. Die bisherige Aufgabenliste bleibt darunter als
+„Weitere Aufgaben heute“ erhalten; Hintergrund und Systemzustand sind nachrangig.
+Der aktuelle Arbeitsablauf steht unter 9c. Die folgenden Quellen beschreiben auch
+weiterhin vorhandene Hintergrundzahlen; sie bilden nicht die Reihenfolge der Startseite ab.
 
 | Kachel | Quelle | Inhalt |
 |---|---|---|
@@ -698,8 +701,10 @@ Kachel zeigt den Hinweis samt Befehl. Der Export selbst laeuft ueber `npm run da
 
 ### 9b. Eine Arbeitsliste (seit 2026-10-19, #1427)
 
-Inhaber 19.10.: „zu unübersichtlich“. „Heute“ ist seither **eine** Liste statt dreier Blöcke (To-dos,
-Muster-Karten, Wer wartet). Oben „N Sachen heute zu erledigen“ – N zählt genau die Zeilen der Liste; der
+Inhaber 19.10.: „zu unübersichtlich“. Die bisherigen Aufgaben wurden zu **einer** Liste statt dreier Blöcke
+(To-dos, Muster-Karten, Wer wartet) zusammengefasst. Seit #1614 steht diese Liste unter der Bestellarbeit
+als „Weitere Aufgaben heute“. Ihre Zahl zählt genau die Zeilen dieser Liste, nicht zusätzlich die
+oben nach Lieferant gruppierten Muster. Der
 Inhaber wählt per Chip *Laden*, *Website* oder *Alles* (Zahl am Chip = Zeilen dieser Sicht, die
 fälligen Muster-Nachfragen und Belege zählen zu Laden). Sieben Zeilen, der Rest hinter „alle anzeigen“.
 Fehlt eine Quelle (Bestellungen, Auftragsfluss, Fälle …), steht „Liste unvollständig“ statt „Alles
@@ -715,6 +720,9 @@ in der Liste – vorher sagte die Warteübersicht „Nachhaken“, während die 
 als eigener Block.
 
 ### 9a. „Heute" mit To-dos (seit 2026-10-01)
+
+**Historischer Aufbau:** Die folgende Darstellung der Reihenfolge ist durch 9b und 9c ersetzt;
+die beschriebenen Quellen und To-do-Regeln bleiben erhalten.
 
 Die Startseite zeigt zuerst, was zu tun ist: „N offene To-dos für dich" – je Zeile Titel, eine Zeile
 Kontext und genau ein Knopf –, darunter „Wer wartet auf was" (wir / Lieferant / Kunde), die Kacheln
@@ -1807,21 +1815,34 @@ Portokauf noch Versandfreigabe oder tatsächliche Einlieferung.
 ## Bestellungen und Packstation priorisieren (#1604, 22.10.2026)
 
 Direkte Navigation verwendet bestehende Kundenrouten (`tab=bestellungen`, `tab=muster`),
-keine zweite Bestell- oder Packdatenbank. Die mobile Leiste fuehrt Heute, Bestellungen,
-Packstation, Bestellen, Mehr; Kunden und Lexikon bleiben im Mehr-Blatt. Heute verlinkt
-Bestellungen, Wareneingang, Packbereites und gepackte Umschlaege.
+keine zweite Bestell- oder Packdatenbank. Seit #1614 fuehren Seitenleiste und mobile Leiste
+in derselben Reihenfolge zu Heute, Muster bestellen, Bestellungen und Packstation. Das mobile
+„Mehr“ oeffnet nur das Menueblatt, keine automatisch aufgeklappte Sammelliste.
+Die restlichen Links bleiben in „Kunden & Einkauf“, „Shop & Inhalte“, „Verwaltung“ und
+„Weitere Dashboards“ erhalten. Die Gruppen sind standardmaessig geschlossen; nur eine bewusst
+gewaehlte Gruppe (`tp-nav-gruppe-v2`) und die Gruppe der aktiven Ansicht oeffnen sich.
+Der alte `tp-nav-buero`-Wert wird nicht uebernommen. Rollenrechte und HTTPS-Pruefung externer
+Dashboardlinks bleiben bestehen. „Muster bestellen“ hat bewusst keinen zusaetzlichen Zahlbadge.
 
 Die Packliste leitet `warten`, `packen`, `klaeren`, `gepackt` aus vorhandenem Status ab:
 alle Muster muessen als geliefert/eigener Bestand belegt oder physisch eingelegt bestaetigt sein,
 sonst wartet der Umschlag auf Ware. Fehlende Aufkleber-/Adresszuordnung ergibt Klaerbedarf.
 Der Packhaken ersetzt keinen Liefer- oder Versandstatus. Nummer des Umschlags = Bestellnummer(n),
 auch in der Wareneingangsansicht; Sortierung und das Abschliessen anderer Kunden aendern sie nicht.
-Kundendetails sind kompakt aufklappbar, eine Suche findet auch Produkte und Farbnummern.
+Kundendetails sind kompakt aufklappbar. Seit #1614 zeigt die Packstation jeweils eine der
+vier Arbeitslisten Packbereit / Wartet auf Ware / Zu klaeren / Gepackt (`mpbereich`), standardmaessig
+Packbereit. Die Suche (`mpq`) durchsucht alle vier Listen, auch Produkte und Farbnummern.
+Ein Direktumschlag (`umschlag`) oeffnet dessen Arbeitsliste und die passende Karte.
+Die Wareneingangsansicht nach Partnerladen (`mp=laden`) bleibt erhalten.
 
 Bestelllisten-Arbeitsstand aus bestehenden Zeitleisten, Positionsstatus und Shopify-Status;
 keine Umschreibung privater Altstaende. Alte technische Pruefstatus sind im Belegdetail,
 nicht als zweiter Hauptstatus. Versand und manueller Listenhaken bleiben unterschiedliche Dinge.
 Die Bestellmarken aus Claude #1599 bleiben lokal und sind in der Browser-Datenkopie enthalten.
+Seit #1614 stehen nur vier Hauptfilter direkt sichtbar: Nicht fertig / Abgehakt oder versandt /
+Kontrolle noetig / Alle Bestellungen. Zahlung offen / Bezahlt / Unerfuellt / Storniert /
+Beratung offen / Muster / Testbestellung bleiben unter „Weitere Filter“ erhalten; ein aktiver
+Zusatzfilter oeffnet diese Gruppe automatisch. Bestehende Such- und Blaetterregeln bleiben erhalten.
 
 
 ## Vollstaendigkeit der Bestell- und Packarbeit (#1608)
@@ -1846,3 +1867,25 @@ Bei Teilrueckerstattung erlaubt eine eigene bewusste Bestaetigung ausschliesslic
 Restumfang. Der Server akzeptiert dafuer nur ein echtes Boolean, alle Musterhaken und vollstaendige
 Angaben. Er speichert `restumfangGeprueft: true` lokal mit der Packmarke. Direktversand oder andere
 Klaergruende werden damit nicht freigegeben; Erstattung und Versand werden dadurch nicht veraendert.
+
+
+### 9c. Bestellarbeit zuerst (#1614, 22.10.2026)
+
+`lib/start-bestellarbeit.mjs` leitet die Startseitenansicht aus den vorhandenen Einkaufsdaten,
+Positionsstaenden und Lieferantenstammdaten ab. `ansichten/heute/bestellarbeit.mjs` zeigt offene
+Muster automatisch nach Lieferant gruppiert. Das ist eine Lesedarstellung ohne zweite Ablage:
+keine neue Datenbank und keine automatisch ausgeloeste Bestellung.
+
+„Bestellung vorbereiten“ verwendet den vorhandenen Lieferantendialog (`data-lf-mail`,
+`data-lf-art=muster`); die Person prueft den vorbereiteten Umfang und bestaetigt einen
+Bestellstand bewusst ueber die bestehende Aktion. Das Oeffnen des Dialogs ist kein Versand
+und kein Bestellnachweis. Lesende Rollen erhalten stattdessen „Ansehen“.
+
+Der direkte Arbeitsweg ist `#/einkauf?tab=lieferant&art=muster&af=offen`.
+`art=muster` und `art=ware` projizieren getrennte Einkaufspositionen in die bestehende
+Lieferantenansicht. Ohne Artfilter bleibt die gesamte Einkaufsansicht erreichbar.
+Musterhinweise werden auf Heute nicht erneut als einzelne Bestell-To-dos wiederholt;
+andere Aufgaben stehen darunter. Packstation und Bestellungen verwenden ihre bestehenden Daten.
+
+Der Umbau startet keine automatischen Nachrichten, Lieferantenbestellungen oder Versandbuchungen.
+Bestehende getrennte Versandaktionen und bewusst bestaetigte Bestellaktionen bleiben erhalten.

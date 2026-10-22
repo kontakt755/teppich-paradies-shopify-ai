@@ -32,14 +32,29 @@ const aufgeklappt = new Set();
 
 const detailLink = id => `#/einkauf?lieferant=${encodeURIComponent(id)}`;
 
+/** Dieselbe Bestelluebersicht nach Art eingrenzen; Quelle und lokale Status bleiben unveraendert. */
+export function bestellartDaten(d, art = '') {
+  if (!d || !['muster', 'ware'].includes(art)) return d;
+  const passt = p => art === 'muster' ? p.istMuster === true : p.istMuster !== true;
+  const auftraege = liste => (liste || []).map(a => {
+    const positionen = (a.positionen || []).filter(passt);
+    return { ...a, positionen, details: a.details ? { ...a.details,
+      positionen: (a.details.positionen || []).filter((_, i) => passt((a.positionen || [])[i] || {})) } : a.details };
+  }).filter(a => a.positionen.length);
+  return { ...d, gruppen: art === 'muster' ? [] : d.gruppen,
+    musterGruppen: art === 'ware' ? [] : d.musterGruppen,
+    auftraege: auftraege(d.auftraege), testauftraege: auftraege(d.testauftraege) };
+}
+
 function karten(d = einkauf.bestellungen || {}) {
+  d = bestellartDaten(d, state.route.params.get('art'));
   const l = einkauf.lieferanten;
   return lieferantenKarten({
     gruppen: d.gruppen, musterGruppen: d.musterGruppen,
     lieferanten: l?.lieferanten || [],
     eintragFuer: afEintragFuer,
     schwellen: l?.schwellen || SCHWELLEN_STANDARD,
-  });
+  }).filter(k => !['muster', 'ware'].includes(state.route.params.get('art')) || k.wareGruppen.length || k.musterGruppen.length);
 }
 
 function kundenNamen() {
@@ -54,8 +69,8 @@ function kundenNamen() {
 /** "Ware im Händlerportal · Muster per E-Mail an …" - oder was fehlt. */
 function wegZeile(k) {
   if (!k.zugeordnet) return '<p class="lf-weg">Diese Artikel haben keinen Lieferanten hinterlegt – erst zuordnen, dann bestellen.</p>';
-  const ware = bestellwegText(k.stammdaten, 'ware');
-  const muster = bestellwegText(k.stammdaten, 'muster');
+  const ware = state.route.params.get('art') === 'muster' ? null : bestellwegText(k.stammdaten, 'ware');
+  const muster = state.route.params.get('art') === 'ware' ? null : bestellwegText(k.stammdaten, 'muster');
   if (!ware && !muster) return `<p class="lf-weg lf-fehlt">Bestellweg nicht hinterlegt · <a href="${detailLink(k.id)}">was fehlt?</a></p>`;
   return `<p class="lf-weg">${[ware ? `Ware ${esc(ware)}` : null, muster ? `Muster ${esc(muster)}` : null].filter(Boolean).join(' · ')}</p>`;
 }
@@ -107,7 +122,7 @@ const musterKnopf = (k, klasse) => `<button type="button" class="${klasse}" data
 /** Nichts zu bestellen, aber ueberfaellig: dann ist Nachhaken der naechste Schritt. */
 function nachhakKnopf(k) {
   if (!k.zugeordnet || k.zahlen.zuBestellen || k.zahlen.musterOffen || !k.ueberfaellig.stufe) return '';
-  const w = k.stammdaten.ware;
+  const w = state.route.params.get('art') === 'muster' ? k.stammdaten.muster : k.stammdaten.ware;
   if (w.telefon) return `<a class="btn" href="${esc(telLink(w.telefon))}">Anrufen</a>`;
   if (w.mail) return `<a class="btn" href="mailto:${esc(w.mail)}">E-Mail schreiben</a>`;
   return '';
@@ -197,7 +212,7 @@ function ruhigeListe(zeilen, max) {
 
 /** Kontakt fuers Nachfassen: Telefon vor Mail, sonst die Detailseite mit Kontakt. */
 function nachfassKnopf(k) {
-  const w = k.stammdaten.ware;
+  const w = state.route.params.get('art') === 'muster' ? k.stammdaten.muster : k.stammdaten.ware;
   if (w.telefon) return `<a class="btn" href="${esc(telLink(w.telefon))}">Anrufen</a>`;
   if (w.mail) return `<a class="btn" href="mailto:${esc(w.mail)}">E-Mail schreiben</a>`;
   return `<a class="btn" href="${detailLink(k.id)}">Kontakt</a>`;
@@ -290,9 +305,9 @@ function karteHtml(k, { gruppeKarte, namen, af, alleGruppen, alleMusterGruppen }
  * Abschnitten "Nachfassen". Ein Auftrag mit Ware von zwei Lieferanten zaehlt einmal - die
  * Summe je Karte zaehlte ihn doppelt (Codex-Audit 2026-10-19).
  */
-export function nachfassenSumme() {
+export function nachfassenSumme(daten) {
   const ids = new Set(); let ohneId = 0; let crit = false;
-  for (const k of karten()) {
+  for (const k of karten(daten)) {
     if (!k.ueberfaellig.stufe) continue;
     crit ||= k.ueberfaellig.stufe === 'crit';
     for (const x of k.ueberfaellig.positionen) { const id = x.pos?.orderId || x.pos?.orderName; if (id) ids.add(id); else ohneId += 1; }
