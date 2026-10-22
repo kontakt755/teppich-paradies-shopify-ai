@@ -6,6 +6,14 @@ const TAG = 864e5;
 const objekt = v => v && typeof v === 'object' && !Array.isArray(v);
 const arten = fn => ({ muster: fn('muster'), ware: fn('ware') });
 
+/** Dieselben harten Kriterien wie lieferanten.mjs: geklaerte Artikelnummer und Menge > 0.
+ * Lieferziel und Kundenanschrift prueft weiterhin der bestehende Vorbereitungsdialog. */
+function musterBlockiert(p) {
+  const nummer = p.grosshaendlerId;
+  return !nummer || nummer === 'UNGEKLAERT' || nummer === '–' || !String(nummer).trim()
+    || !(p.bestellmenge?.menge > 0);
+}
+
 /** Kundenbestellungen zaehlen einmal, auch wenn mehrere Farben noch fehlen. */
 function menge(eintraege, jetzt) {
   const tage = eintraege.map(({ pos }) => {
@@ -59,7 +67,7 @@ export function startBestellarbeit({ daten = null, statusAlle = null, lieferante
       for (const x of k[art].zuBestellen) {
         gesamt[art].push(x);
         if (!k.zugeordnet) nichtZugeordnet[art].push(x);
-        else if (!x.pos.orderId || !x.pos.lineItemId || blockGruende(x.pos).length) blockiert[art].push(x);
+        else if (!x.pos.orderId || !x.pos.lineItemId || (art === 'muster' ? musterBlockiert(x.pos) : blockGruende(x.pos).length)) blockiert[art].push(x);
         else bestellbar[art].push(x);
       }
     }

@@ -1839,7 +1839,7 @@ Bestelllisten-Arbeitsstand aus bestehenden Zeitleisten, Positionsstatus und Shop
 keine Umschreibung privater Altstaende. Alte technische Pruefstatus sind im Belegdetail,
 nicht als zweiter Hauptstatus. Versand und manueller Listenhaken bleiben unterschiedliche Dinge.
 Die Bestellmarken aus Claude #1599 bleiben lokal und sind in der Browser-Datenkopie enthalten.
-Seit #1614 stehen nur vier Hauptfilter direkt sichtbar: Nicht fertig / Abgehakt oder versandt /
+Seit #1614 stehen nur vier Hauptfilter direkt sichtbar: Offen / Abgehakt oder versandt /
 Kontrolle noetig / Alle Bestellungen. Zahlung offen / Bezahlt / Unerfuellt / Storniert /
 Beratung offen / Muster / Testbestellung bleiben unter „Weitere Filter“ erhalten; ein aktiver
 Zusatzfilter oeffnet diese Gruppe automatisch. Bestehende Such- und Blaetterregeln bleiben erhalten.
@@ -1884,8 +1884,8 @@ und kein Bestellnachweis. Lesende Rollen erhalten stattdessen „Ansehen“.
 Der direkte Arbeitsweg ist `#/einkauf?tab=lieferant&art=muster&af=offen`.
 `art=muster` und `art=ware` projizieren getrennte Einkaufspositionen in die bestehende
 Lieferantenansicht. Ohne Artfilter bleibt die gesamte Einkaufsansicht erreichbar.
-Musterhinweise werden auf Heute nicht erneut als einzelne Bestell-To-dos wiederholt;
-andere Aufgaben stehen darunter. Packstation und Bestellungen verwenden ihre bestehenden Daten.
+Weitere Aufgaben und Klaerhinweise bleiben darunter erreichbar. Packstation und
+Bestellungen verwenden ihre bestehenden Daten.
 
 Der Umbau startet keine automatischen Nachrichten, Lieferantenbestellungen oder Versandbuchungen.
 Bestehende getrennte Versandaktionen und bewusst bestaetigte Bestellaktionen bleiben erhalten.

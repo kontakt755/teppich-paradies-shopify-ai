@@ -5,7 +5,7 @@ import { startBestellarbeit } from '../lib/start-bestellarbeit.mjs';
 
 // Synthetische Bestellungen und Lieferanten-Pseudonyme; der echte Renderer braucht kein DOM.
 const position = (id, extra = {}) => ({ orderId: `o-${id}`, lineItemId: `li-${id}`, istMuster: true,
-  orderDatum: '2026-10-18T09:00:00Z', grosshaendlerId: 'TEST-ARTIKEL', ...extra });
+  orderDatum: '2026-10-18T09:00:00Z', grosshaendlerId: 'TEST-ARTIKEL', bestellmenge: { menge: 1, einheit: 'muster' }, ...extra });
 function arbeitFuer(gruppen, extra = {}) {
   return startBestellarbeit({ daten: { verfuegbar: true, gruppen: [], musterGruppen: gruppen },
     statusAlle: {}, jetzt: new Date('2026-10-22T09:00:00Z'), ...extra });
@@ -76,6 +76,18 @@ test('unbekannte und blockierte Muster verlieren ihren Prueflink nicht und erzeu
   assert.equal(ziel.get('art'), 'muster');
   assert.equal(ziel.get('af'), 'offen');
   assert.equal(vorbereiten(html).length, 0);
+});
+
+test('Muster mit fehlenden Bestellangaben bleiben neben vorbereitbaren Mustern sichtbar', () => {
+  const arbeit = arbeitFuer([gruppe('A', [position(1), position(2, { grosshaendlerId: 'UNGEKLAERT' }),
+    position(3, { bestellmenge: { menge: 0 } })])]);
+  const html = bestellarbeitBlock({ arbeit });
+  assert.match(html, /<h3>Muster bestellen <span>3<\/span><\/h3>/);
+  assert.match(html, /1 Kundenbestellung · 1 Musterartikel/);
+  assert.match(html, /2 Musterartikel brauchen Klärung/);
+  assert.equal(vorbereiten(html).length, 1);
+  assert.ok(link(html, 'Fehlende Angaben prüfen'));
+  assert.doesNotMatch(html, /Gerade keine Muster/);
 });
 
 test('lesender Zugang bekommt Lieferantenlinks statt eines schreibenden Bestellmail-Knopfes', () => {

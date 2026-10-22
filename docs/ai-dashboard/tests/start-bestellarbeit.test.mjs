@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { startBestellarbeit } from '../lib/start-bestellarbeit.mjs';
 import { aufbereiten } from '../../../operations/lib/bestelluebersicht.mjs';
+import { bestellmail } from '../../../operations/lib/lieferanten.mjs';
 
 // Ausschliesslich erfundene Artikel und Pseudonyme.
 const JETZT = new Date('2026-10-22T12:00:00Z');
@@ -96,10 +97,42 @@ test('blockierte und nicht zugeordnete Positionen bleiben getrennt sichtbar und 
   }
 });
 
-test('Muster ohne technische Artikelnummer bleiben wie in der vorhandenen Bestellkarte bestellbar', () => {
-  const r = start(daten([gruppe('A', [m('m1', { grosshaendlerId: 'UNGEKLAERT', lieferantUrl: null })])]));
+test('Muster ohne Artikelnummer oder positive Bestellmenge bleiben vollstaendig in der Klaerung statt als vorbereitbar zu zaehlen', () => {
+  const positionen = [
+    ...[undefined, null, '', '  ', 'UNGEKLAERT', '–', 0].map((grosshaendlerId, i) => m(`nr-${i}`, { grosshaendlerId })),
+    ...[undefined, null, '', 'UNGEKLAERT', 0, -1, NaN].map((menge, i) => m(`menge-${i}`, { bestellmenge: { menge } })),
+    m('ohne-bestellmenge', { bestellmenge: null }),
+  ];
+  const r = start(daten([gruppe('A', positionen)]));
+  assert.deepEqual(r.lieferanten, []);
+  assert.equal(r.blockiert.muster.positionen, positionen.length);
+  assert.equal(r.gesamt.muster.positionen, positionen.length, 'keine fehlende Position darf zur falschen Nullmeldung werden');
+  assert.equal(r.gesamt.muster.kunden, 1, 'mehrere fehlende Farben sind eine Kundenbestellung');
+  assert.equal(r.nichtZugeordnet.muster.positionen, 0);
+});
+
+test('Muster mit Artikelnummer und Menge bleiben ohne Produktlink vorbereitbar; Lieferziel bleibt Dialogsache', () => {
+  const r = start(daten([gruppe('A', [m('m1', { grosshaendlerId: 'A-TEST', lieferantUrl: null,
+    bestellmenge: { menge: 2 } })])]));
   assert.equal(r.lieferanten[0].muster.positionen, 1);
   assert.equal(r.blockiert.muster.positionen, 0);
+});
+
+test('Startseiten-Klaerung entspricht den harten Kriterien des echten Muster-Bestellmail-Backends', () => {
+  const faelle = [m('bereit'), m('nummer-als-text', { grosshaendlerId: '123', bestellmenge: { menge: '2' } }),
+    m('nummer-fehlt', { grosshaendlerId: undefined }), m('nummer-null', { grosshaendlerId: null }),
+    m('nummer-leer', { grosshaendlerId: '  ' }), m('nummer-unklar', { grosshaendlerId: 'UNGEKLAERT' }),
+    m('nummer-strich', { grosshaendlerId: '–' }), m('nummer-nullwert', { grosshaendlerId: 0 }),
+    m('menge-fehlt', { bestellmenge: null }), m('menge-null', { bestellmenge: { menge: 0 } }),
+    m('menge-unklar', { bestellmenge: { menge: 'UNGEKLAERT' } })];
+  for (const pos of faelle) {
+    const modell = daten([gruppe('A', [pos])]);
+    const r = start(modell);
+    const mail = bestellmail({ modell, lieferant: 'A', art: 'muster', ziel: 'laden', jetzt: JETZT }).mails[0];
+    assert.equal(r.blockiert.muster.positionen, mail.fehlt.length, pos.lineItemId);
+    assert.equal(r.lieferanten.reduce((n, l) => n + l.muster.positionen, 0), mail.positionen.length, pos.lineItemId);
+    assert.equal(r.gesamt.muster.positionen, 1, 'auch abgelehnte Muster bleiben im Gesamttotal');
+  }
 });
 
 test('aelteste Kundenwartezeit ordnet die Lieferanten; unbekannte Datumswerte werden nicht erfunden', () => {

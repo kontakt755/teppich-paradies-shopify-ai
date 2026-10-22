@@ -9,15 +9,16 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   Gruppe bleibt erreichbar, der alte globale Mehr-Offen-Schalter wird nicht uebernommen.
   Bestehende Rollenrechte, externe Dashboardlinks und mobile Bedienung bleiben erhalten.
 - **Geaendert:** Heute buendelt offene Muster automatisch nach Lieferant und oeffnet zur
-  Vorbereitung den vorhandenen Bestelldialog. Bestellstand wird weiterhin bewusst bestaetigt.
+  Vorbereitung den vorhandenen Bestelldialog. Bestellstand wird weiterhin bewusst bestaetigt. Fehlende Musterartikelnummern und
+  Mengen bleiben als Klaerbedarf sichtbar.
   `art=muster` / `art=ware` trennen die Einkaufsprojektion ohne zweite Datenablage.
   Weitere Aufgaben folgen darunter, System- und Hintergrundinformationen bleiben nachrangig.
 - **Geaendert:** Packstation zeigt jeweils eine der vier Arbeitslisten; Suche beruecksichtigt
   alle Listen, Direktumschlaege oeffnen ihren Bereich. Bestellungen zeigen vier Hauptfilter;
   sieben weitere Filter bleiben gezielt aufklappbar erhalten.
 - **Getestet:** gezielte Regressionen fuer Navigation, Gruppierung und Filter, Gesamtsuite und
-  Projekt-Guards; 24 helle und 24 dunkle Browserkombinationen auf Desktop und Handy mit
-  Inhaber-, Mitarbeiter- und Leserechten. Klickproben auf privater Datenkopie: direkte
+  Projekt-Guards; 24 helle Browserkombinationen auf drei Breiten sowie 24 dunkle Kombinationen
+  auf Desktop und Handy mit Inhaber-, Mitarbeiter- und Leserechten. Klickproben auf privater Datenkopie: direkte
   Mustervorbereitung, Pack-Suche ueber alle Arbeitslisten und Abschlussfilter.
 - **Risiken/Annahmen:** Bestehender Betriebsbestand, keine neue Datenbank. Die Vorbereitung
   bestellt und sendet nichts automatisch; Packstand bleibt von Versandbuchung getrennt.
