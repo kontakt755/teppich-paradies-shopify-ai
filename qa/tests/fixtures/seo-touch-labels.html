@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="de">
+  <meta charset="utf-8">
+  <title>SEO-Prüfer: echte Label-NodeList</title>
+  <style>
+    main { padding: 40px; }
+    main div { margin-bottom: 24px; }
+    input { width: 16px; height: 16px; }
+    #gross-label { display: inline-block; width: 180px; height: 44px; }
+    #klein-label { display: inline-block; width: 100px; height: 20px; }
+  </style>
+  <main>
+    <div><input id="gross" type="checkbox"><label id="gross-label" for="gross">Großes Label</label></div>
+    <div><input id="klein" type="checkbox"><label id="klein-label" for="klein">Kleines Label</label></div>
+  </main>
+  <pre id="ergebnis">Prüfung läuft</pre>
+  <script type="module">
+    import { collectSmallTouchTargets } from '../../seo-dom-evidence.mjs';
+    try {
+      const targets = collectSmallTouchTargets();
+      const labels = document.querySelector('#klein').labels;
+      const passed = labels instanceof NodeList && labels.length === 1 && labels.map === undefined &&
+        targets.length === 1 && targets[0].name === 'Kleines Label';
+      document.querySelector('#ergebnis').textContent = JSON.stringify({ passed, nativeNodeList: labels instanceof NodeList, targets });
+      document.body.dataset.smoke = passed ? 'pass' : 'fail';
+    } catch (error) {
+      document.querySelector('#ergebnis').textContent = String(error);
+      document.body.dataset.smoke = 'fail';
+    }
+  </script>
+</html>

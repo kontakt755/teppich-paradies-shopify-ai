@@ -108,6 +108,17 @@ test('Kleine Checkbox mit großem zugeordnetem Label ist gut bedienbar', () => {
   assert.equal(smallTargets([element({ checkbox: true })]).length, 1);
 });
 
+test('Labelnamen funktionieren mit einer iterierbaren DOM-NodeList ohne Array.map', () => {
+  const label = element({ width: 20, height: 20 });
+  label.textContent = 'Zugeordnetes Label';
+  const target = element({ checkbox: true });
+  target.labels = { length: 1, 0: label, *[Symbol.iterator]() { yield label; } };
+  assert.equal(target.labels.map, undefined);
+  const result = smallTargets([target]);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].name, 'Zugeordnetes Label');
+});
+
 test('44-px-Pseudotrefferfläche zählt; dekorative oder abgeschnittene Fläche zählt nicht', () => {
   const pseudo = { content: '""', position: 'absolute', width: '44px', height: '44px', pointerEvents: 'auto' };
   assert.deepEqual(smallTargets([element({ width: 36, height: 36, pseudo })]), []);
