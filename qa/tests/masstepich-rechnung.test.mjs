@@ -192,3 +192,16 @@ test('Rollenzuschnitt: Verbrauch der 4-m-Rolle und passende Bundle-Variante (25-
   assert.equal(M.rollenZuschnitt('rechteck', 0, 300, 400, v), null);
   assert.equal(M.rollenZuschnitt('rechteck', 200, 300, 0, v), null);
 });
+
+test('Gerichtete Restrolle: feste Quer-/Längsmaße und breitenabhängiges m²-Raster', () => {
+  const v = [200, 300, 325].map(cm => ({ id: cm, cm, available: true }));
+  assert.equal(M.rollenZuschnitt('rechteck', 200, 300, 400, v, 'laengs').verbrauchCm, 300);
+  assert.equal(M.rollenZuschnitt('rechteck', 200, 301, 400, v, 'laengs').variante.cm, 325);
+  assert.equal(M.rollenZuschnitt('rechteck', 500, 300, 400, v, 'laengs'), null);
+  assert.equal(M.rollenZuschnitt('rechteck', 200, 300, 400, v, 'unbekannt'), null);
+  const v5 = [300, 320].map(cm => ({ id: cm, cm, available: true }));
+  assert.equal(M.rollenZuschnitt('rechteck', 200, 301, 500, v5, 'laengs').variante.cm, 320);
+  assert.deepEqual(M.pruefeMasse({ form: 'rechteck', w: 400, l: 100, maxW: 400, maxL: 150, richtung: 'laengs' }), []);
+  assert.notDeepEqual(M.pruefeMasse({ form: 'rechteck', w: 500, l: 300, maxW: 400, maxL: 1000, richtung: 'laengs' }), []);
+  assert.notDeepEqual(M.pruefeMasse({ form: 'rund', w: 200, maxW: 400, maxL: 150, richtung: 'laengs' }), []);
+});

@@ -248,8 +248,11 @@ function istRollenTeppich(li) {
   return !leer(pm?.custom?.zuschnitt_von_rolle);
 }
 
-export function rollenbestand(zeilen = []) {
-  const komponenten = zeilen.filter(istRollenKomponente);
+export function rollenbestand(zeilen = [], ziel = null) {
+  const zielMeta = metafeldMap(ziel?.variant?.product?.metafields);
+  const zielBundle = zielMeta?.custom?.zuschnitt_von_rolle;
+  const zuordnen = !!zielBundle && zeilen.some(z => metafeldMap(z?.variant?.product?.metafields)?.custom?.rollenzuschnitt_richtung === 'laengs');
+  const komponenten = zeilen.filter(istRollenKomponente).filter(z => !zuordnen || z.lineItemGroup?.productId === zielBundle);
   const gebucht = komponenten.reduce((s, z) => s + (Number(z.quantity) || 0), 0);
   // Rollenbreite aus der Rollenware (custom.rollenbreite in m an der Variante).
   let rollenbreiteCm = null;
@@ -260,6 +263,8 @@ export function rollenbestand(zeilen = []) {
   }
   let bedarf = 0;
   for (const z of zeilen.filter(istRollenTeppich)) {
+    const pm = metafeldMap(z?.variant?.product?.metafields);
+    if (zuordnen && pm?.custom?.zuschnitt_von_rolle !== zielBundle) continue;
     const p = propertiesMap(z.customAttributes ?? z.properties);
     const masse = parseMasse(p['Maße']);
     // Ohne Komponente fehlt die Rollenbreite der Ware; dann gilt die interne
@@ -268,7 +273,9 @@ export function rollenbestand(zeilen = []) {
     if (!masse || !(masse.w > 0) || !(masse.l > 0) || !rb) return { bedarf: null, gebucht, rollenbreiteCm };
     const kurz = Math.min(masse.w, masse.l);
     const lang = Math.max(masse.w, masse.l);
-    const cm = lang <= rb ? kurz : lang;
+    const richtung = pm?.custom?.rollenzuschnitt_richtung;
+    if (richtung && (richtung !== 'laengs' || masse.w > rb)) return { bedarf: null, gebucht, rollenbreiteCm };
+    const cm = richtung === 'laengs' ? masse.l : (lang <= rb ? kurz : lang);
     bedarf += Math.ceil((cm * rb) / 10000);
   }
   return { bedarf, gebucht, rollenbreiteCm };
@@ -379,7 +386,7 @@ export function resolveLineItem({ lineItem, variant, alleZeilen = [] } = {}) {
       pruefung = { ...pruefung, status: 'ok' };
     }
     const zeilen = alleZeilen.includes(lineItem) ? alleZeilen : [lineItem, ...alleZeilen];
-    const rb = rollenbestand(zeilen);
+    const rb = rollenbestand(zeilen, lineItem);
     if (rb.bedarf === null) {
       pruefung = { ...pruefung, status: 'unlesbar', hinweis: 'Rollenverbrauch nicht pruefbar – von Hand nachrechnen' };
     } else if (rb.gebucht < rb.bedarf) {

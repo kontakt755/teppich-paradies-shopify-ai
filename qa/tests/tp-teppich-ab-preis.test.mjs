@@ -29,6 +29,7 @@ const engine = new Liquid({ templates: {
   'tp-aktion-aktiv': ohneDoc('snippets/tp-aktion-aktiv.liquid'),
   'tp-rabatt-sichtbar': ohneDoc('snippets/tp-rabatt-sichtbar.liquid'),
   'tp-ist-sonderposten': ohneDoc('snippets/tp-ist-sonderposten.liquid'),
+  'tp-restrolle-freigegeben': ohneDoc('snippets/tp-restrolle-freigegeben.liquid'),
 } });
 engine.registerFilter('divided_by', (a, b) => Math.floor(Number(a) / Number(b)));
 engine.registerFilter('money', (c) => (Number(c) / 100).toFixed(2).replace('.', ',') + ' €');
@@ -171,6 +172,62 @@ test('Text nennt Kettelung nur bei Ketteln, sonst Einfassung', async () => {
   const band = await render(produkt({ einheitCent: 129, art: 'Einfassband', mindest: null }));
   assert.match(band, /inkl\. Einfassband rundum/);
   assert.doesNotMatch(band, /Kettelung/);
+});
+
+function rollenRaummass() {
+  const p = produkt({ einheitCent: 27, art: 'Raummaß', mindest: null });
+  p.metafields.custom.zuschnitt_von_rolle = { value: { id: 60, variants: [{ id: 601, price: 27, available: true }] } };
+  p.metafields.custom.rollenzuschnitt_richtung = { value: 'laengs' };
+  p.metafields.service.einfass_basis = { value: {
+    id: 50, metafields: { custom: { max_roll_laenge_cm: { value: 1000 } } },
+    variants: [{ id: 500, available: true, inventory_management: 'shopify', inventory_policy: 'deny', inventory_quantity: 40,
+      metafields: { custom: { rollenbreite: { value: 4 } } } }],
+  } };
+  p.variants[0].metafields.service.basisvariante = { value: { id: 500 } };
+  return p;
+}
+
+test('Raummaß aus Laengs-Bundle: m2-Preis nennt Zuschnitt ohne Kettelung und braucht keinen Kettelservice', async () => {
+  const p = rollenRaummass();
+  for (const kopf of [false, true]) {
+    const html = await render(p, {}, null, kopf);
+    assert.match(html, /data-tp-ab-m2-cent="2700"/);
+    assert.match(html, /27&nbsp;€<span[^>]*>\/m²/);
+    assert.match(html, /inkl\. Zuschnitt, ohne Kettelung/);
+    assert.doesNotMatch(html, /inkl\. (?:Einfassung|Kettelung)/);
+  }
+  const ab = await render(p, {}, p.variants[0]);
+  assert.equal(abCent(ab), erwartet(27, 0, 0));
+  assert.match(ab, /inkl\. Zuschnitt, ohne Kettelung/);
+});
+
+test('Raummaß ohne Bundle oder Laengs-Freigabe bewirbt keinen belegten Zuschnittpreis', async () => {
+  for (const aendern of [
+    (p) => { delete p.metafields.custom.zuschnitt_von_rolle; },
+    (p) => { p.metafields.custom.rollenzuschnitt_richtung = { value: 'quer' }; },
+    (p) => { delete p.metafields.service.einfass_basis; },
+    (p) => { p.metafields.service.max_laenge_cm = { value: 0 }; },
+    (p) => { delete p.variants[0].metafields.service.einfassen; },
+    (p) => { p.metafields.service.einfass_basis.value.variants[0].inventory_quantity = 0; },
+    (p) => { p.metafields.service.einfass_basis.value.variants[0].inventory_policy = 'continue'; },
+  ]) {
+    const p = rollenRaummass();
+    aendern(p);
+    const html = await render(p, {}, null, true);
+    assert.equal(abCent(html), null);
+    assert.doesNotMatch(html, /data-tp-ab-m2-cent|inkl\. Zuschnitt/);
+  }
+});
+
+test('Freigegebenes Raummaß unterhalb des Beispielmasses zeigt weiter seinen belegten m2-Preis', async () => {
+  const p = rollenRaummass();
+  p.metafields.service.max_breite_cm = { value: 70 };
+  p.metafields.service.max_laenge_cm = { value: 100 };
+  p.metafields.service.einfass_basis.value.variants[0].metafields.custom.rollenbreite = { value: 0.7 };
+  const html = await render(p, {}, null, true);
+  assert.match(html, /data-tp-ab-m2-cent="2700"/);
+  assert.match(html, /inkl\. Zuschnitt, ohne Kettelung/);
+  assert.doesNotMatch(html, /80&nbsp;×&nbsp;150/);
 });
 
 test('Kettelservice-Handle im Snippet = Einstellung im Produkt-Template', () => {

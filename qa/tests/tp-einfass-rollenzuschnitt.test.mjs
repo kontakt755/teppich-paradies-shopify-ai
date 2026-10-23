@@ -46,28 +46,29 @@ const liquidContract = slice(block, '{%- liquid', '\n  <div class="tp-ek') +
 const val = (value) => ({ value });
 function fixture(o = {}) {
   const variant = {
-    id: 'yasmin-mass', price: o.price ?? 57, available: true,
+    id: 'yasmin-mass', price: o.price ?? 57, available: o.available ?? true,
     options: ['Anthrazit'], featured_image: null,
-    metafields: { service: { einfassen: val('Verfügbar') }, custom: { farbcode: val('0') } },
+    metafields: { service: o.freigegeben === false ? {} : { einfassen: val('Verfügbar') }, custom: { farbcode: val('0') } },
   };
   const cms = o.cms ?? [50, 100, 150, 200, 225, 250, 300];
   const zsPreis = o.zsPreis ?? 0;
   const bundle = {
-    variants: cms.map((cm, i) => ({
+    variants: o.bundleDraft ? [] : cms.map((cm, i) => ({
       id: 'zs-' + cm, option1: cm + ' cm',
-      price: Array.isArray(zsPreis) ? zsPreis[i % zsPreis.length] : zsPreis, available: true,
+      price: Array.isArray(zsPreis) ? zsPreis[i % zsPreis.length] : zsPreis, available: o.bundleAvailable ?? true,
     })),
   };
-  const rolle = { metafields: { custom: { rollenbreite: val(4.0) } } };
+  const rolle = { available: o.basisAvailable ?? true, inventory_management: o.management ?? 'shopify', inventory_policy: o.policy ?? 'deny', inventory_quantity: o.stock ?? 48, metafields: { custom: { rollenbreite: val(o.rollWidth ?? 4.0) } } };
+  const basis = { variants: o.zweiRollen ? [rolle, rolle] : [rolle], metafields: { custom: { max_roll_laenge_cm: val(o.basisMax ?? 2000) } } };
   const product = {
     title: 'Yasmin fixture', variants: [variant], selected_or_first_available_variant: variant,
     options_with_values: [{ name: 'Farbe', position: 1 }],
     metafields: {
-      custom: { preis_pro_001_qm: val(true), zuschnitt_von_rolle: val(bundle) },
+      custom: { preis_pro_001_qm: val(true), ...(o.ohneBundle ? {} : { zuschnitt_von_rolle: val(bundle) }), ...(o.richtung === undefined ? {} : { rollenzuschnitt_richtung: val(o.richtung) }) },
       service: {
-        einfassung: val(o.art ?? 'Fertig'), max_breite_cm: val(400), max_laenge_cm: val(1000),
+        einfassung: val(o.art ?? 'Fertig'), max_breite_cm: val(o.maxW ?? 400), max_laenge_cm: val(o.maxL ?? 1000),
         ...(o.mindest ? { mindestpreis: val(o.mindest) } : {}),
-        formen: val(['Rechteck']), einfass_basis: val({ variants: [rolle] }),
+        formen: val(o.formen ?? ['Rechteck']), einfass_basis: val(o.sourceDraft ? null : basis),
       },
     },
   };
@@ -111,6 +112,7 @@ const runnerSource = slice(js, '(function () {', '  function svgEl(') +
 
 async function runCase(o = {}) {
   const data = await dataFor(o);
+  if (!data) return { data, requests: [], ctaHidden: true, ctaDisabled: true };
   const nodes = new Map();
   const q = (s) => {
     if (!nodes.has(s)) nodes.set(s, new Element());
@@ -164,6 +166,64 @@ test('Rollenzuschnitt 0 EUR: Teppich mit voller Menge plus Zuschnittzeile', asyn
   assert.equal(teppich.properties['_Einheit im Zuschnitt'], undefined);
   assert.equal(zs.id, 'zs-200');
   assert.equal(teppich.properties._Rollenzuschnitt, '200');
+});
+
+test('Begrenztes Raummaß: Rechteck ohne Kettelung, 2 x 3 m braucht 3 m volle Rolle', async () => {
+  const r = await runCase({ art: 'Raummaß', richtung: 'laengs', zsPreis: 57, formen: ['Rechteck', 'Rund', 'Oval'] });
+  assert.equal(r.error, null);
+  assert.deepEqual(r.data.formen, ['rechteck']);
+  const items = zeilen(r);
+  assert.equal(items.length, 2);
+  const main = items.find(it => it.id === 'yasmin-mass');
+  assert.equal(main.quantity, 599);
+  assert.equal(main.properties.Einfassung, 'ohne Einfassung');
+  assert.equal(main.properties.Art, 'Raummaß');
+  assert.equal(main.properties['Kante umlaufend'], undefined);
+  assert.equal(main.properties._Rollenzuschnitt, '300');
+  assert.equal(items.find(it => it.id === 'zs-300').quantity, 1);
+  assert.equal(summe(items, { 'yasmin-mass': 57, 'zs-300': 57 }), 34200);
+});
+
+test('Gerichtete Kettelware: 3 m Materialverbrauch und vorhandener Kettelpreis bleiben getrennt', async () => {
+  const r = await runCase({ art: 'Ketteln', richtung: 'laengs', zsPreis: 57 });
+  assert.equal(r.error, null);
+  const items = zeilen(r);
+  assert.equal(items.length, 3);
+  assert.equal(items.find(it => it.id === 'yasmin-mass').properties._Rollenzuschnitt, '300');
+  assert.equal(items.find(it => it.id === 'kettel').quantity, 1000);
+  assert.equal(summe(items, { 'yasmin-mass': 57, 'zs-300': 57, kettel: 19 }), 53200);
+});
+
+test('Neue Restangebote: unvollständige Grenzen, Richtung oder Quelle schalten keinen Kauf frei', async () => {
+  const start = { art: 'Raummaß', richtung: 'laengs', zsPreis: 57 };
+  for (const o of [{ maxW: 0 }, { maxL: 0 }, { basisMax: 0 }, { richtung: '' }, { richtung: 'frei' }, { ohneBundle: true }, { stock: 0 }, { policy: 'continue' }, { management: '' }, { zweiRollen: true }, { basisAvailable: false }, { rollWidth: 5 }, { sourceDraft: true }, { bundleDraft: true }, { freigegeben: false }]) {
+    const r = await runCase({ ...start, ...o });
+    assert.equal(r.data, null, JSON.stringify(o));
+    assert.equal(r.requests.length, 0);
+  }
+});
+
+test('Raummaß-Preishinweis verspricht keine umlaufende Einfassung', async () => {
+  const source = block.match(/<p class="tp-ek__preishinweis">[\s\S]*?<\/p>/)[0];
+  const html = await engine.parseAndRender(source, { tp_ek_art: 'raummass', settings: {} });
+  assert.match(html, /ohne Einfassung/);
+  assert.doesNotMatch(html, /Einfassung rundum|Kettelung rundum|Vom Hersteller/);
+  assert.match(js, /if \(!beispiel && art !== 'raummass'\) lupe\(defs\)/);
+});
+
+test('Neue Restangebote: schmaler oder nicht verfügbarer Bundle-Abgang wird nicht ersatzweise gedreht', async () => {
+  const start = { art: 'Raummaß', richtung: 'laengs', zsPreis: 57 };
+  for (const o of [{ width: 500, length: 300 }, { width: 200, length: 301 }, { bundleAvailable: false }, { available: false }]) {
+    const r = await runCase({ ...start, ...o });
+    assert.equal(r.requests.length, 0);
+    assert.equal(r.ctaDisabled, true);
+  }
+});
+
+test('Gerichteter Zuschnitt: große Breite und kurze Länge werden nicht am alten Max-Langseitentest abgewiesen', async () => {
+  const r = await runCase({ art: 'Raummaß', richtung: 'laengs', maxL: 150, width: 400, length: 100, zsPreis: 57 });
+  assert.equal(r.error, null);
+  assert.equal(zeilen(r).find(it => it.id === 'yasmin-mass').properties._Rollenzuschnitt, '100');
 });
 
 test('Rollenzuschnitt 0,57 EUR: Teppich eine Einheit weniger, Endpreis centgenau gleich', async () => {

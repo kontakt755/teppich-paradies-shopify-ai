@@ -23,7 +23,7 @@ const LINE_ITEM_FELDER = `
           customAttributes { key value }
           # Bundle-Komponente (z. B. Rollenware unter "Zuschnitt von der Rolle"):
           # die Zeile ist ein Bestandsabgang, kein eigener Zuschnitt.
-          lineItemGroup { id title quantity customAttributes { key value } }
+          lineItemGroup { id productId title quantity customAttributes { key value } }
           image { url altText }
           variant {
             id sku title
