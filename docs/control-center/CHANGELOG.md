@@ -2,6 +2,28 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-23 · Gewicht und gemeinsame Rollenmaße im Packdialog (#1629)
+
+- **Geaendert:** Der vorhandene Packstueckdialog berechnet aus Fertigmassen, Form,
+  echter Teppichanzahl und Gesamtgewicht je m² das Materialgewicht; Verpackungsgewicht
+  ergibt das Bruttogewicht. Gesamtdicke, Rollenkern und Verpackungszugabe liefern einen
+  theoretischen Durchmesser und kurze gemeinsame Rollenachse. Belegte Angaben sind
+  vorausgefuellt, fehlende Angaben direkt ergaenzbar. Vorschlaege fuellen die vorhandenen
+  Packfelder, manuelle Korrekturen bleiben moeglich. Neue Zusammenstellung entfernt alte
+  Packwerte; Aenderungen setzen physische Bestaetigungen zurueck. Der fertige Kettler-Verlauf
+  ist aufklappbar, die Packvorbereitung dadurch weiter oben.
+- **Getestet:** Rechen-, Daten-, API- und Bedienregressionen einschliesslich unterschiedlicher
+  Rollenbreiten, Hundertstel-m² statt Stueckzahl, unbekannter Materialwerte, Dezimalkomma,
+  Rundung und manueller Korrekturen. Gesamtsuite und Projekt-Guards gruen. Klickprobe auf
+  isolierter Datenkopie: zwei Rechtecke mit 120/80 × 170 cm ergeben 3,40 m² und mindestens
+  120 cm gemeinsame Achse; synthetische Materialwerte ergeben 122 × 21 × 21 cm und
+  7,30 kg, Speichern schliesst an den bestehenden GLS/GEL-Vergleich an.
+- **Risiken:** Rechenwerte ersetzen weder Messen/Wiegen noch schadloses gemeinsames Rollen.
+  Ohne Gesamtgewicht oder Gesamtdicke bleiben die betroffenen Vorschlaege leer; Polgewicht
+  und Florhoehe werden nicht ersatzweise genutzt. Es gibt keinen neuen Portokauf,
+  Versandnachweis oder Shopify-Schreibweg. Materialeingaben gelten fuer die aktuelle Planung.
+- **Naechste Stufe:** Nach Review den Dienst abgleichen; fertige Rolle im Betrieb messen und wiegen.
+
 ## 2026-10-22 · Bewusste Shopify-Archivierung erhalten (#1626)
 
 - **Geaendert:** Der Shop-Fokus uebernimmt den ausdruecklichen Archivstatus aus `closedAt`.
