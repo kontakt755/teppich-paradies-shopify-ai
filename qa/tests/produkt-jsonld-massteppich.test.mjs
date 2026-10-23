@@ -180,10 +180,84 @@ test('ohne Tag auslauf bleibt es bei InStock', async () => {
   ]);
 });
 
-test('Preisangaben bleiben unveraendert: Preis je m2 mit Bezugsmenge 1 m2', async () => {
+test('ohne Beispielgroesse (Farbe nicht freigegeben, keine Grenzen): Preis je m2 mit Bezugsmenge 1 m2', async () => {
   const [gruppe] = knoten(await rendern(teppich({ tags: ['auslauf'] })));
   const offer = gruppe.hasVariant[0].offers;
   assert.equal(offer.price, 36);
   assert.equal(offer.priceSpecification.price, 36);
   assert.equal(offer.priceSpecification.referenceQuantity.unitCode, 'MTK');
+});
+
+/* ─── #1283: Angebot in Beispielgroesse statt Preis je m2 ─────────────────────── */
+
+const freigegeben = { custom: {}, service: { einfassen: { value: 'Verfügbar' } } };
+const kaufbar = (o = {}) => {
+  const p = teppich({ variants: [
+    { ...variante({ id: 1 }), price: 85, metafields: freigegeben },
+    { ...variante({ id: 2, title: 'Graphit (097)' }), price: 129, compare_at_price: o.alt ?? null, metafields: freigegeben },
+  ] });
+  p.metafields.service.max_breite_cm = { value: 400 };
+  p.metafields.service.max_laenge_cm = { value: 600 };
+  p.metafields.service.mindestpreis = { value: o.mindest ?? 99 };
+  if (o.preisanker) p.metafields.aktion = { klasse: { value: 'preisanker' } };
+  return p;
+};
+// all_products ist in Shopify global - auch in per render eingebundenen Snippets.
+const rendernMass = (p, kettelOk = true) => eng.parseAndRender(tpl, {
+  product_resource: p,
+  request: { origin: 'https://www.teppich-paradies.net' },
+  cart: { currency: { iso_code: 'EUR' } },
+  shop: { name: 'TeppichParadies' },
+  settings: { tp_versand_preis: '4,99 €', tp_versand_frei_ab: 50 },
+}, { globals: { all_products: { kettelservice: { selected_or_first_available_variant: { available: kettelOk, price: 19 } } } } });
+
+test('Teppich nach Mass: Angebot je Farbe als Beispielgroesse mit Endpreis und Mass im Link', async () => {
+  const [gruppe] = knoten(await rendernMass(kaufbar()));
+  const [sand, graphit] = gruppe.hasVariant;
+  // 80 x 150 cm: 120 Einheiten x 0,85 + 460 cm Kante x 0,19 = 189,40 EUR
+  assert.equal(sand.offers.price, 189.4);
+  assert.equal(sand.url, 'https://www.teppich-paradies.net/products/rivena-teppich-nach-mass?variant=1&breite=80&laenge=150');
+  assert.equal(sand.offers.url, sand.url);
+  assert.equal(sand['@id'], `${sand.url}#variant`);
+  assert.equal(sand.name, 'Rivena Teppich nach Maß - Greige (026), 80 x 150 cm');
+  // 120 x 1,29 + 87,40 = 242,20 EUR
+  assert.equal(graphit.offers.price, 242.2);
+  // Grundpreis: Endpreis fuer 1,2 m2, bezogen auf 1 m2 - kein zweiter, abweichender Preis.
+  const [grund] = sand.offers.priceSpecification;
+  assert.equal(grund['@type'], 'UnitPriceSpecification');
+  assert.equal(grund.price, 189.4);
+  assert.equal(grund.referenceQuantity.value, 1.2);
+  assert.equal(grund.referenceQuantity.unitCode, 'MTK');
+  assert.equal(grund.referenceQuantity.valueReference.value, 1);
+  assert.equal(grund.referenceQuantity.valueReference.unitCode, 'MTK');
+  assert.equal(sand.offers.priceSpecification.length, 1, 'ohne Aktion kein Streichpreis');
+  // Die Gruppe selbst bleibt die Produktseite ohne Mass.
+  assert.equal(gruppe.url, 'https://www.teppich-paradies.net/products/rivena-teppich-nach-mass');
+});
+
+test('Teppich nach Mass mit Aktion: StrikethroughPrice zum alten Variantenpreis', async () => {
+  const [gruppe] = knoten(await rendernMass(kaufbar({ preisanker: true, alt: 149 })));
+  const graphit = gruppe.hasVariant[1];
+  assert.equal(graphit.offers.price, 242.2);
+  const streich = graphit.offers.priceSpecification.find((s) => s.priceType === 'https://schema.org/StrikethroughPrice');
+  // 120 x 1,49 + 87,40 = 266,20 EUR
+  assert.equal(streich.price, 266.2);
+  assert.equal(gruppe.hasVariant[0].offers.priceSpecification.length, 1, 'Farbe ohne Vergleichspreis: kein Streichpreis');
+});
+
+test('Teppich nach Mass ohne kaufbaren Kettelservice: Preis je m2 wie bisher', async () => {
+  const [gruppe] = knoten(await rendernMass(kaufbar(), false));
+  const sand = gruppe.hasVariant[0];
+  assert.equal(sand.offers.price, 85);
+  assert.equal(sand.url, 'https://www.teppich-paradies.net/products/rivena-teppich-nach-mass?variant=1');
+  assert.equal(sand.offers.priceSpecification.referenceQuantity.value, 1);
+});
+
+test('Versandfreigrenze bezieht sich auf das beworbene Beispielangebot mit Kettelung', async () => {
+  const p = kaufbar({ mindest: 0 });
+  p.metafields.service.lieferzeit = { value: '5–8 Werktage' };
+  const [gruppe] = knoten(await rendernMass(p));
+  const offer = gruppe.hasVariant[0].offers;
+  assert.equal(offer.price, 189.4);
+  assert.equal(offer.shippingDetails.shippingRate.value, 0, '189,40 EUR liegen ueber 50 EUR; die Mindestflaeche ist hier kein Angebot');
 });

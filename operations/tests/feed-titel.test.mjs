@@ -32,6 +32,17 @@ test('feedZeilen baut die offerId der Shopify-App', () => {
   ]);
 });
 
+test('feedZeilen laesst Teppiche nach Mass aus - sie haben einen eigenen Zusatzfeed (#1283)', () => {
+  const jsonl = [
+    { id: 'gid://shopify/Product/3', title: 'Piumera Teppich nach Maß', productType: 'Teppich nach Maß' },
+    { id: 'gid://shopify/ProductVariant/31', __parentId: 'gid://shopify/Product/3', ...v({ Farbe: 'Sand Hell' }), showUnitPrice: true,
+      unitPriceMeasurement: { quantityUnit: 'M2', quantityValue: 0.01, referenceUnit: 'M2', referenceValue: 1 } },
+    { id: 'gid://shopify/Product/4', title: 'Hestia Teppichboden 400cm', productType: 'Teppichboden' },
+    { id: 'gid://shopify/ProductVariant/41', __parentId: 'gid://shopify/Product/4', ...v({ Farbe: 'Grau', Breite: '400 cm' }) },
+  ].map((o) => JSON.stringify(o)).join('\n');
+  assert.deepEqual(feedZeilen(jsonl).map((z) => z[0]), ['shopify_ZZ_4_41']);
+});
+
 const mess = (quantityValue, quantityUnit = 'M2', referenceValue = 1, referenceUnit = 'M2') => ({ quantityUnit, quantityValue, referenceUnit, referenceValue });
 
 test('grundpreis: Paketware in m², nur wenn Shopify den Grundpreis zeigt', () => {

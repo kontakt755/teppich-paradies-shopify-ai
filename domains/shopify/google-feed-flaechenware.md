@@ -30,6 +30,69 @@ Stand 2026-09-14, Agent 8 (Welle 2, Golden Product Piumera). **Empfehlung, keine
 Dasselbe Muster gilt fuer jedes weitere Produkt mit `custom.preis_pro_001_qm = true`,
 `productType = Service`/`Musterservice` oder Tag `service`.
 
+**Vorbereiteter Endpreisvertrag, 23.10.2026 (#1283/#1290):** Je Farbe eine bestellbare
+Beispielgroesse (80 x 150, 120 x 170, 160 x 230 oder 200 x 300 cm, ohne angehobene
+Mindestpreis-Menge), vollstaendiger Endpreis inklusive Einfassung/Pauschale und
+`?variant=&breite=&laenge=`. Product-JSON-LD, og:price und vorbelegter Konfigurator
+muessen dazu passen. Dies ist eine koordinierte Umstellung, kein Nachweis des Live-Zustands.
+
+Der **bestehende** OAuth-Tagesworkflow `feed-tnm-preise.yml` nutzt
+`operations/scripts/feed-tnm-abruf.mjs` und denselben Rechen-/Seitenabgleich wie
+`scripts/teppich-nach-mass-feed.mjs`. Auf `feed-daten` bleiben die produktiven Namen
+`tp-tnm-preise.txt` (Google-Zusatzquelle) und `tp-tnm-meta.tsv` (eigenstaendiger
+zwoelfspaltiger Meta-Vollkatalog) erhalten. Beide Dateien und `tp-tnm-pruefung.json`
+werden nur gemeinsam nach erfolgreicher Komplettpruefung veroeffentlicht. Nicht
+lieferbare Farben bleiben mit eindeutiger Verfuegbarkeit enthalten.
+Bestandsgebundene Sonderposten verwenden zusaetzlich den vorhandenen Rollenzuschnitt-
+Abgleich: genau eine Rollenbreite, gleicher Bundlepreis (0 oder eine Materialeinheit)
+und eine verfuegbare, ausreichend lange Zuschnittvariante fuer das Beispielmass.
+Eine fehlende Vorher-ID benoetigt einen aktuellen Admin-Nachweis: archiviert, Entwurf, geloescht
+oder andere Produktart. Fehlende aktive TNM-Varianten, fehlende Bilder, Preis- oder
+Vergleichspreisabweichungen und Aenderungen waehrend der Erzeugung brechen ab.
+Der alte schreibende m2-Pfad `feed:titel -- --tnm-aus` ist gesperrt.
+
+Lokal: `npm run -s feed:teppich-nach-mass [-- --theme <id>]` oder
+`--katalog <json>` fuer einen ausdruecklich ueber den bestehenden MCP gelesenen
+Vollkatalog. Format: `{"format":"tp-tnm-katalog-v1","complete":true,"capturedAt":"<ISO>","products":[...]}`.
+Der Export darf hoechstens 30 Minuten alt sein; jedes Produkt enthaelt `id`,
+`productType`, `status`, `updatedAt`, `handle`, `title`, `onlineStoreUrl`,
+`description`, `vendor`, `featuredMedia.preview.image.url` und eine vollstaendige
+`variants`-Liste mit `id`, `price`, `compareAtPrice`, `availableForSale`,
+`selectedOptions`, `image.url`. Keine Tokens oder neue Scopes dafuer suchen.
+Die lokale Ausgabe ist ein Pruef-/Vorbereitungsergebnis und publiziert keinen Kanal.
+
+**Vor dem koordinierten Livewechsel zwingend:**
+
+**Belegter Vorbereitungsstand nach Sortimentsentnahme, 23.10.:** Der vollstaendige
+Seitenlauf pruefte zunaechst 424 Produkte / 4.619 Varianten. Danach wurden drei
+Massprodukte aus einer bestaetigt ausgelaufenen Linie autoritativ als `ARCHIVED`
+gegengelesen. Ein neuer vollstaendiger Adminabruf enthaelt 421 Produkte / 4.616
+Varianten; alle verbleibenden gelesenen Felder einschliesslich Preisen,
+Vergleichspreisen, Verfuegbarkeit und `updatedAt` stimmen mit dem geprueften
+Snapshot ueberein. Der vorhandene Vorher-ID-Guard akzeptiert ausschliesslich
+diese drei belegten Entnahmen. Die vorbereiteten Dateien wurden ohne erneuten
+Massencrawl daraus abgeleitet; Manifest und Abnahme trennen Seitenlauf und
+frischen Adminabgleich. Das ist kein Produktiv- oder Kanalverarbeitungsnachweis.
+
+1. Aktuellen Komplettlauf gegen das Kandidaten-Theme und danach Live pruefen;
+   keine ungeklaerten Auslassungen. Alten Quellen-/Regelstand fuer Ruecknahme sichern.
+2. Die blinde stuendliche Shopify-Flow-Publikation neuer TNM-Produkte anhalten oder
+   durch eine bestaetigte Zulassung nach Feed-Verarbeitung ersetzen. Das Manifest
+   allein erteilt keine Freigabe. Zwischen Import/Preis-/Aktionsaenderung und
+   verarbeitetem Feed darf kein Rohpreis-Angebot neu publiziert werden.
+3. MC: Endpreisquelle fuer Titel, Link, price, sale_price, beide Einheiten und
+   availability verwenden; alte TNM-x100-Regeln entfernen. `feed:titel` ohne TNM
+   neu verarbeiten lassen. Meta bleibt auf derselben Vollkatalogquelle/IDs.
+4. Theme, beide produktiven Feeds und Kanalregeln im selben Cutover umstellen;
+   Quellen sofort neu einlesen lassen. Ein Feed-Commit ist kein Kanal-Ingest.
+   Nach jedem Import und Preis-/Aktionswechsel einschliesslich Aktionsende denselben
+   vorhandenen Workflow ausloesen und die Verarbeitung bestaetigen.
+5. Verarbeitete Artikel und frischen Google-Crawl anhand exakter IDs kontrollieren:
+   Endpreis = Beispiel auf Seite, korrekte sale_price-Leerung, Masse/Link/Einheiten,
+   Verfuegbarkeit und Meta-Gruppierung. Shopify-Rohpreise in `content_for_header`
+   bleiben bestehen; ein erneuter falscher Crawl ist ein offener Fehler.
+   Erst dann die abgesicherte Publikation fuer validierte Produkte oeffnen.
+
 ## Was in den Feed darf - und mit welcher Preislogik
 
 **Meterware-Varianten** (Breite 400cm / 500cm, `custom.rollenbreite > 0`): Preis je m²

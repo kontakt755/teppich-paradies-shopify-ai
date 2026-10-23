@@ -1,0 +1,232 @@
+{%- doc -%}
+  Beispielgroesse eines Teppichs nach Mass fuer Suchmaschinen und Kanaele (#1283).
+  Gibt "Breite|Laenge|Cent|Streich-Cent|Einheiten" aus oder nichts.
+
+  Warum: Der Variantenpreis gilt je 0,01 m2 (custom.preis_pro_001_qm). Google und
+  Meta zeigen aber einen Preis je Artikel. Der Zusatzfeed nennt deshalb je Farbe den
+  Endpreis einer Beispielgroesse und verlinkt die Produktseite mit genau diesem Mass
+  (?variant=&breite=&laenge=, der Konfigurator belegt die Felder damit vor). Das
+  Product-JSON-LD (snippets/tp-product-structured-data) und og:price
+  (snippets/meta-tags) geben denselben Preis aus, sonst meldet das Merchant Center
+  eine Preisabweichung zwischen Feed und Seite.
+
+  Groesse: die erste aus 80 x 150, 120 x 170, 160 x 230, 200 x 300 cm, die fuer diese
+  Farbe bestellbar ist (kuerzere Seite bis zur Breite der Farbe - live wie im
+  Konfigurator -, laengere bis service.max_laenge_cm, beide ab service.min_seite_cm,
+  Versandgewicht) und bei der der Mindestpreis die Menge NICHT
+  anhebt - der Preis gehoert dann wirklich zu diesem Mass (80 x 150 = Einstiegsmass
+  des ab-Preises, snippets/tp-teppich-ab-preis; Marken mit Mindestflaeche bekommen
+  die naechste passende Groesse).
+
+  Rechnung wie assets/tp-masstepich-rechnung.js (summeCent) und der Konfigurator
+  (blocks/tp-einfass-konfigurator.liquid): Flaeche in 0,01-m2-Einheiten aufgerundet
+  mal Variantenpreis, Kettelung je 0,01 lfm (Kettelservice, nur Ketteln ohne
+  service.kante_inklusive), Pauschale je Teppich bei Art "fertig". Kettelservice und
+  Pauschale kommen aus denselben Produkten wie in den Vorlagen (Handles kettelservice
+  und wunschmass-pauschale, wie snippets/tp-teppich-ab-preis; qa/tests prueft das).
+  Streichpreis nur bei sichtbarer Aktion (snippets/tp-rabatt-sichtbar), sonst 0.
+
+  Fail closed - keine Ausgabe, wenn der Konfigurator diese Farbe nicht verkaufen
+  wuerde: Variante nicht freigegeben (service.einfassen) oder ohne Preis, Kettelservice
+  bzw. Pauschale nicht kaufbar, Rollenrest nicht ausreichend, erste Form im
+  Konfigurator nicht Rechteck, kein Mass passt.
+
+  @param {object} product - der Teppich nach Mass
+  @param {object} variant - die Farbe
+  @param {string} [aktion] - Ergebnis von tp-rabatt-sichtbar ("ja"/"nein"); ohne Angabe wird es hier ermittelt
+{%- enddoc -%}
+{%- liquid
+  assign tmbsp_art = product.metafields.service.einfassung.value | strip | downcase
+  assign tmbsp_arten = 'cover,ketteln,einfassband,paspelband,fertig' | split: ','
+  assign tmbsp_ok = false
+  if product.metafields.custom.preis_pro_001_qm.value == true and tmbsp_arten contains tmbsp_art
+    if variant.price > 0 and variant.metafields.service.einfassen.value == 'Verfügbar'
+      assign tmbsp_ok = true
+    endif
+  endif
+  assign tmbsp_richtung = product.metafields.custom.rollenzuschnitt_richtung.value | strip | downcase
+  if tmbsp_richtung != blank
+    capture tmbsp_rest_freigabe
+      render 'tp-restrolle-freigegeben', product: product
+    endcapture
+    assign tmbsp_rest_freigabe = tmbsp_rest_freigabe | strip
+    unless tmbsp_rest_freigabe == 'ja'
+      assign tmbsp_ok = false
+    endunless
+  endif
+  # Rollenrest wie im bestehenden Konfigurator: genau eine Rollenbreite und
+  # gleich bepreiste Zuschnittvarianten (0 oder eine Materialeinheit).
+  assign tmbsp_zs_feld = product.metafields.custom.zuschnitt_von_rolle
+  assign tmbsp_zs_aktiv = false
+  assign tmbsp_zs_rolle = 0
+  if tmbsp_zs_feld != nil and tmbsp_zs_feld != blank
+    assign tmbsp_zs_aktiv = true
+    assign tmbsp_zs = tmbsp_zs_feld.value
+    if tmbsp_zs == blank or tmbsp_zs.variants.size == 0
+      assign tmbsp_ok = false
+    endif
+    for tmbsp_rb_v in product.metafields.service.einfass_basis.value.variants
+      assign tmbsp_rb = tmbsp_rb_v.metafields.custom.rollenbreite.value | times: 100 | round
+      if tmbsp_rb > 0
+        if tmbsp_zs_rolle > 0 and tmbsp_rb != tmbsp_zs_rolle
+          assign tmbsp_ok = false
+        endif
+        assign tmbsp_zs_rolle = tmbsp_rb
+      endif
+    endfor
+    assign tmbsp_zs_preis = nil
+    for tmbsp_zv in tmbsp_zs.variants
+      assign tmbsp_zv_cm = tmbsp_zv.option1 | remove: 'cm' | strip | times: 1
+      if tmbsp_zv_cm <= 0
+        continue
+      endif
+      if tmbsp_zs_preis != nil and tmbsp_zv.price != tmbsp_zs_preis
+        assign tmbsp_ok = false
+      endif
+      assign tmbsp_zs_preis = tmbsp_zv.price
+    endfor
+    if tmbsp_zs_rolle <= 0 or tmbsp_zs_preis == nil
+      assign tmbsp_ok = false
+    elsif tmbsp_zs_preis != 0 and tmbsp_zs_preis != variant.price
+      assign tmbsp_ok = false
+    endif
+  endif
+
+  if tmbsp_ok
+    assign tmbsp_preis = variant.price
+
+    capture tmbsp_max_b
+      render 'tp-teppich-max-breite', product: product, farbe: variant.option1, live: true
+    endcapture
+    assign tmbsp_max_b = tmbsp_max_b | strip | times: 1
+    if tmbsp_max_b <= 0
+      capture tmbsp_max_b
+        render 'tp-teppich-max-breite', product: product, live: true
+      endcapture
+      assign tmbsp_max_b = tmbsp_max_b | strip | times: 1
+    endif
+    assign tmbsp_max_l = product.metafields.service.max_laenge_cm.value | times: 1
+    # Kleinste Seite wie im Konfigurator (blocks/tp-einfass-konfigurator, min_seite_cm).
+    assign tmbsp_min = product.metafields.service.min_seite_cm.value | default: 50 | times: 1 | at_least: 10
+    # Der Konfigurator waehlt die erste Form aus service.formen vor. Nur wenn das das
+    # Rechteck ist, oeffnet der Link genau das Mass, dessen Preis hier steht.
+    assign tmbsp_form = ''
+    for tmbsp_f in product.metafields.service.formen.value
+      assign tmbsp_fk = tmbsp_f | strip | downcase
+      case tmbsp_fk
+        when 'rechteck', 'rund', 'oval', 'schablone', 'skizze'
+          assign tmbsp_form = tmbsp_fk
+          break
+      endcase
+    endfor
+    if tmbsp_form != blank and tmbsp_form != 'rechteck'
+      assign tmbsp_ok = false
+    endif
+    assign tmbsp_kg_qm = product.metafields.service.kg_pro_qm.value | default: 0 | times: 1
+    assign tmbsp_max_kg = product.metafields.service.max_gewicht_kg.value | default: 0 | times: 1
+
+    assign tmbsp_kettel_cent = 0
+    assign tmbsp_ki = product.metafields.service.kante_inklusive.value | append: '' | strip | downcase
+    if tmbsp_art == 'ketteln' and tmbsp_ki != 'true'
+      assign tmbsp_kettel_v = all_products['kettelservice'].selected_or_first_available_variant
+      if tmbsp_kettel_v.available and tmbsp_kettel_v.price > 0
+        assign tmbsp_kettel_cent = tmbsp_kettel_v.price
+      else
+        assign tmbsp_ok = false
+      endif
+    endif
+    assign tmbsp_pauschale_cent = 0
+    if tmbsp_art == 'fertig'
+      assign tmbsp_pauschale_v = all_products['wunschmass-pauschale'].selected_or_first_available_variant
+      if tmbsp_pauschale_v.available and tmbsp_pauschale_v.price > 0
+        assign tmbsp_pauschale_cent = tmbsp_pauschale_v.price
+      else
+        assign tmbsp_ok = false
+      endif
+    endif
+
+    assign tmbsp_mp = product.metafields.service.mindestpreis.value
+    if tmbsp_mp.amount
+      assign tmbsp_mindest_cent = tmbsp_mp.amount | times: 100 | round
+    else
+      assign tmbsp_mindest_cent = tmbsp_mp | times: 100 | round
+    endif
+
+    # Streichpreis wie im Konfigurator: nur bei sichtbarer Aktion und hoeherem Vergleichspreis.
+    assign tmbsp_aktion = aktion
+    if tmbsp_aktion == nil
+      capture tmbsp_aktion
+        render 'tp-rabatt-sichtbar', product: product
+      endcapture
+      assign tmbsp_aktion = tmbsp_aktion | strip
+    endif
+    assign tmbsp_alt_preis = 0
+    if tmbsp_aktion == 'ja' and variant.compare_at_price > tmbsp_preis
+      assign tmbsp_alt_preis = variant.compare_at_price
+    endif
+  endif
+
+  assign tmbsp_ergebnis = ''
+  if tmbsp_ok
+    assign tmbsp_groessen = '80x150,120x170,160x230,200x300' | split: ','
+    for tmbsp_g in tmbsp_groessen
+      assign tmbsp_teile = tmbsp_g | split: 'x'
+      assign tmbsp_w = tmbsp_teile[0] | times: 1
+      assign tmbsp_l = tmbsp_teile[1] | times: 1
+      # Breite ist hier immer die kuerzere Seite (wie pruefeMasse: kuerzere gegen Breite).
+      if tmbsp_w > tmbsp_max_b or tmbsp_l > tmbsp_max_l
+        continue
+      endif
+      if tmbsp_w < tmbsp_min or tmbsp_l < tmbsp_min
+        continue
+      endif
+      if tmbsp_zs_aktiv
+        # TPMass.rollenZuschnitt: lange Seite quer, wenn sie auf die Rolle passt;
+        # kleinste passende Bundlevariante zaehlt, auch wenn sie ausverkauft ist.
+        assign tmbsp_zs_verbrauch = tmbsp_l
+        if tmbsp_richtung != 'laengs' and tmbsp_l <= tmbsp_zs_rolle
+          assign tmbsp_zs_verbrauch = tmbsp_w
+        endif
+        assign tmbsp_zs_cm = 0
+        assign tmbsp_zs_verfuegbar = false
+        for tmbsp_zv in tmbsp_zs.variants
+          assign tmbsp_zv_cm = tmbsp_zv.option1 | remove: 'cm' | strip | times: 1
+          if tmbsp_zv_cm >= tmbsp_zs_verbrauch
+            if tmbsp_zs_cm == 0 or tmbsp_zv_cm < tmbsp_zs_cm
+              assign tmbsp_zs_cm = tmbsp_zv_cm
+              assign tmbsp_zs_verfuegbar = tmbsp_zv.available
+            endif
+          endif
+        endfor
+        unless tmbsp_zs_verfuegbar
+          continue
+        endunless
+      endif
+      # Versandgewicht (cm2 x kg/m2 gegen kg x 10000) ohne Division - ganzzahlig wie float gleich.
+      if tmbsp_kg_qm > 0 and tmbsp_max_kg > 0
+        assign tmbsp_kg = tmbsp_w | times: tmbsp_l | times: tmbsp_kg_qm
+        assign tmbsp_kg_grenze = tmbsp_max_kg | times: 10000
+        if tmbsp_kg > tmbsp_kg_grenze
+          continue
+        endif
+      endif
+      # Flaeche in 0,01-m2-Einheiten, aufgerundet (mengeHundertstelM2).
+      assign tmbsp_einheiten = tmbsp_w | times: tmbsp_l | times: 1.0 | divided_by: 100 | ceil
+      assign tmbsp_kante_cent = tmbsp_w | plus: tmbsp_l | times: 2 | times: tmbsp_kettel_cent
+      assign tmbsp_material_cent = tmbsp_einheiten | times: tmbsp_preis
+      assign tmbsp_rest_cent = tmbsp_mindest_cent | minus: tmbsp_kante_cent
+      # Hebt der Mindestpreis die Menge an, gehoert der Preis nicht zu diesem Mass.
+      if tmbsp_rest_cent > tmbsp_material_cent
+        continue
+      endif
+      assign tmbsp_cent = tmbsp_material_cent | plus: tmbsp_kante_cent | plus: tmbsp_pauschale_cent
+      assign tmbsp_alt_cent = 0
+      if tmbsp_alt_preis > tmbsp_preis
+        assign tmbsp_alt_cent = tmbsp_einheiten | times: tmbsp_alt_preis | plus: tmbsp_kante_cent | plus: tmbsp_pauschale_cent
+      endif
+      assign tmbsp_ergebnis = tmbsp_w | append: '|' | append: tmbsp_l | append: '|' | append: tmbsp_cent | append: '|' | append: tmbsp_alt_cent | append: '|' | append: tmbsp_einheiten
+      break
+    endfor
+  endif
+-%}
+{{- tmbsp_ergebnis -}}
