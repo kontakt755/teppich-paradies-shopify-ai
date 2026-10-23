@@ -28,6 +28,9 @@
       continue
     endif
     assign tas_p = tas_a.prozent.value | plus: 0
+    if tas_p <= 0 or tas_p > 50
+      continue
+    endif
     if tas_p > tas_best
       assign tas_best = tas_p
       assign tas_titel = tas_a.titel.value | default: 'Aktion' | remove: '|' | strip

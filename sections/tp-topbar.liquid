@@ -8,10 +8,13 @@
 <div class="tp-tb" role="region" aria-label="Vorteile">
   <div class="tp-s-wrap tp-tb__wrap">
     {%- liquid
-      capture tp_tb_aktion
-        render 'tp-aktion-shopweit'
-      endcapture
-      assign tp_tb_aktion = tp_tb_aktion | strip
+      assign tp_tb_aktion = ''
+      if section.settings.aktion_zeigen
+        capture tp_tb_aktion
+          render 'tp-aktion-shopweit'
+        endcapture
+        assign tp_tb_aktion = tp_tb_aktion | strip
+      endif
     -%}
     <ul class="tp-tb__list">
       {%- comment -%}
@@ -27,7 +30,7 @@
         -%}
         <li class="tp-tb__item tp-tb__item--aktion" data-tp-aktion="{{ tp_tb_t[0] }}">
           <span class="tp-tb__badge">−{{ tp_tb_t[0] }} %</span>
-          <a href="{{ tp_tb_t[3] }}">{{ tp_tb_t[2] | escape }}: {{ tp_tb_t[4] | escape }} bis {{ tp_tb_ende }}</a>
+          <a href="{{ tp_tb_t[3] | escape }}">{{ tp_tb_t[2] | escape }}: {{ tp_tb_t[4] | escape }} bis {{ tp_tb_ende }}</a>
         </li>
       {%- endif -%}
       {%- for block in section.blocks -%}
@@ -54,15 +57,16 @@
 {% stylesheet %}
   .tp-tb { background: var(--tp-ink, #1d1a17); color: #fff; font-size: var(--tp-fs-sm); }
   .tp-tb__wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 36px; }
-  .tp-tb__list { list-style: none; margin: 0; padding: 0; display: flex; gap: 28px; }
+  .tp-tb__list { list-style: none; margin: 0; padding: 0; display: flex; gap: 28px; min-width: 0; }
   .tp-tb__item { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
   .tp-tb__item svg { width: 15px; height: 15px; color: var(--tp-sand, #e9c8a1); flex: none; }
   .tp-tb__item a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
   .tp-tb__tel { display: flex; align-items: center; gap: 7px; font-weight: 600; color: #fff; text-decoration: none; white-space: nowrap; flex: none; }
   .tp-tb__tel svg { width: 15px; height: 15px; color: var(--tp-sand, #e9c8a1); }
   .tp-tb__zeiten { color: #c9c2b8; font-weight: 400; }
-  .tp-tb__badge { background: var(--tp-sand, #e9c8a1); color: var(--tp-ink, #1d1a17); font-weight: 700; padding: 1px 6px; border-radius: 3px; }
-  .tp-tb__item--aktion a { font-weight: 600; }
+  .tp-tb__badge { background: var(--tp-sand, #e9c8a1); color: var(--tp-ink, #1d1a17); font-weight: 700; padding: 1px 6px; border-radius: 3px; flex: none; }
+  .tp-tb__item--aktion { min-width: 0; white-space: normal; }
+  .tp-tb__item--aktion a { font-weight: 600; overflow-wrap: anywhere; }
   @media (max-width: 1599px) {
     .tp-tb__zeiten { display: none; }
     .tp-tb__list:has(.tp-tb__item--aktion) .tp-tb__item:nth-child(4) { display: none; }
@@ -83,7 +87,7 @@
     { "type": "text", "id": "telefon", "label": "Telefon (fuer tel:-Link)", "default": "03301 573 37 20" },
     { "type": "text", "id": "telefon_anzeige", "label": "Telefon, wie angezeigt", "default": "03301 573 37 20" },
     { "type": "text", "id": "zeiten", "label": "Oeffnungszeiten (nur ab 1600 px)", "default": "Mo–Fr 8:30–18 · Sa 8:30–14:30" },
-    { "type": "checkbox", "id": "aktion_zeigen", "label": "Laufende Aktion (Aktion (TP)) automatisch vorn zeigen", "default": true }
+    { "type": "checkbox", "id": "aktion_zeigen", "label": "Laufende Aktion (Aktion (TP)) automatisch vorn zeigen", "default": false }
   ],
   "blocks": [
     {
