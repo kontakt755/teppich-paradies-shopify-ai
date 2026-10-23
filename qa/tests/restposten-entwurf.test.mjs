@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { planeRestEntwuerfe, bindeRestPlan, REST_ENTWURF_TAG } from '../../operations/lib/restposten-entwurf.mjs';
+import { mkdtempSync, mkdirSync, realpathSync, rmSync, symlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { planeRestEntwuerfe, bindeRestPlan, privaterAusgabeordner, REST_ENTWURF_TAG } from '../../operations/lib/restposten-entwurf.mjs';
 const locationId = 'gid://shopify/Location/1';
 const row = (code = 'TPR0001', breite = 400) => ({
   tprBarcode: code, SumUpItemId: code, nameOriginal: 'Beispiel', colourCodeOriginal: '05',
@@ -68,5 +71,23 @@ test('Verknuepfen erfordert frische, vollstaendige, unveroeffentlichte Drafts oh
   assert.throws(() => bindeRestPlan(plan, live.map((p, i) => i ? p : { ...p, status: 'ACTIVE' })));
   assert.throws(() => bindeRestPlan(plan, live.map((p, i) => i ? p : { ...p, publishedAt: '2026-01-01' })));
   assert.throws(() => bindeRestPlan(plan, live.map((p, i) => i ? p : { ...p, variants: p.variants.map(v => ({ ...v, inventoryQuantity: 1 })) })));
+  for (const inventoryQuantity of [undefined, null, '0', false, NaN]) {
+    assert.throws(() => bindeRestPlan(plan, live.map((p, i) => i ? p : { ...p, variants: p.variants.map(v => ({ ...v, inventoryQuantity })) })), /Bestand 0 ist nicht bestaetigt/);
+  }
   assert.throws(() => bindeRestPlan(plan, [...live, live[0]]));
+});
+test('Private Ausgaben sperren Repository-Root, Unterordner und Symlinks hinein', () => {
+  const temp = mkdtempSync(join(tmpdir(), 'rest-plan-'));
+  try {
+    const repo = join(temp, 'repo');
+    const ausserhalb = join(temp, 'repo-privat');
+    mkdirSync(repo); mkdirSync(ausserhalb);
+    symlinkSync(repo, join(temp, 'link-ins-repo'), 'dir');
+    assert.throws(() => privaterAusgabeordner(repo, repo), /ausserhalb/);
+    assert.throws(() => privaterAusgabeordner(join(repo, 'neu', 'plan'), repo), /ausserhalb/);
+    assert.throws(() => privaterAusgabeordner(join(temp, 'link-ins-repo', 'neu'), repo), /ausserhalb/);
+    assert.equal(privaterAusgabeordner(join(ausserhalb, 'neu'), repo), join(realpathSync(ausserhalb), 'neu'));
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
 });

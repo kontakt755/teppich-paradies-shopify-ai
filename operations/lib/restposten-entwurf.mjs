@@ -1,5 +1,20 @@
 // Ein Entwurfssatz je vorbereiteter Position, noch kein bestaetigtes Reststueck.
 // Dieser Planer schreibt nichts nach Shopify und veroeffentlicht nichts.
+import { existsSync, realpathSync } from 'node:fs';
+import { dirname, relative, resolve, sep } from 'node:path';
+
+export function privaterAusgabeordner(ausgabe, repoRoot) {
+  const root = realpathSync(repoRoot);
+  const ziel = resolve(ausgabe);
+  let vorfahre = ziel;
+  while (!existsSync(vorfahre)) vorfahre = dirname(vorfahre);
+  const kanonisch = resolve(realpathSync(vorfahre), relative(vorfahre, ziel));
+  if (kanonisch === root || kanonisch.startsWith(root + sep)) {
+    throw new Error('Rohdaten/Plan ausserhalb des Repositorys ablegen');
+  }
+  return kanonisch;
+}
+
 export const REST_ENTWURF_TAG = 'rest-vorbereitung-20261023';
 const ROLES = ['quelle', 'zuschnitt', 'raummass', 'kettelteppich'];
 const GID = /^gid:\/\/shopify\/(Product|ProductVariant)\/\d+$/;
@@ -132,7 +147,7 @@ export function bindeRestPlan(plan, liveProducts) {
     if (!live || !GID.test(live.id) || live.status !== 'DRAFT' || !(live.tags ?? []).includes(REST_ENTWURF_TAG)) throw new Error(`${p.key}: gesperrter Entwurf nicht bestaetigt`);
     const variants = live.variants?.nodes ?? live.variants ?? [];
     if (variants.length !== p.input.variants.length) throw new Error(`${p.key}: Variantenzahl weicht ab`);
-    if (variants.some(v => Number(v.inventoryQuantity ?? 0) !== 0)) throw new Error(`${p.key}: Bestand ist nicht 0`);
+    if (variants.some(v => !Number.isSafeInteger(v.inventoryQuantity) || v.inventoryQuantity !== 0)) throw new Error(`${p.key}: Bestand 0 ist nicht bestaetigt`);
     if (live.variants?.pageInfo?.hasNextPage) throw new Error(`${p.key}: unvollstaendiger Varianten-Readback`);
     for (const v of variants) {
       const expected = p.input.variants.find(x => x.optionValues[0].name === v.title);

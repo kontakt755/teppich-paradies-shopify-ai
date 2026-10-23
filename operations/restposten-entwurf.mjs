@@ -2,15 +2,14 @@
 // Rein lokaler Plan. Ausfuehrung/Anlage bleibt beim authentifizierten Shopify-MCP.
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
-import { planeRestEntwuerfe, bindeRestPlan, pruefeRestReadback } from './lib/restposten-entwurf.mjs';
+import { planeRestEntwuerfe, bindeRestPlan, pruefeRestReadback, privaterAusgabeordner } from './lib/restposten-entwurf.mjs';
 const args = process.argv.slice(2);
 const value = key => { const i = args.indexOf(key); return i >= 0 ? args[i + 1] : undefined; };
 if (args.includes('--help') || !value('--input') || !value('--out') || !value('--location')) {
   console.log('node operations/restposten-entwurf.mjs --input <private.json> --out <privater Ordner> --location <Location-GID> [--snapshot <frischer Draft-Readback.json>]');
   process.exit(args.includes('--help') ? 0 : 1);
 }
-const out = resolve(value('--out'));
-if (out.startsWith(resolve(import.meta.dirname, '..') + '/')) throw new Error('Rohdaten/Plan ausserhalb des Repositorys ablegen');
+const out = privaterAusgabeordner(value('--out'), resolve(import.meta.dirname, '..'));
 const input = JSON.parse(readFileSync(value('--input'), 'utf8'));
 const plan = planeRestEntwuerfe(input, { locationId: value('--location') });
 mkdirSync(out, { recursive: true });
