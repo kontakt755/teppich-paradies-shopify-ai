@@ -992,12 +992,16 @@
   }
 
   .cart-items__properties {
-    display: block;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px var(--gap-sm);
     margin-block-start: var(--margin-2xs);
   }
 
   .cart-items__property {
     display: block;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .cart-items__properties dt,
