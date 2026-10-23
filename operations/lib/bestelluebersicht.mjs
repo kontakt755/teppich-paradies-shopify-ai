@@ -531,6 +531,7 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
       datum: order.createdAt,
       offen,
       storniert: !!order.cancelledAt,
+      archiviert: !!order.closedAt,
       testbestellung: istTest,
       bezahlt: order.displayFinancialStatus ?? '–',
       erfuellt: order.displayFulfillmentStatus ?? '–',

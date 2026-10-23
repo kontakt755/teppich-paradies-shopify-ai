@@ -115,6 +115,7 @@ export const BULK_QUERY = `
           edges {
             node {
               id title sku availableForSale
+              image { url }
               price
               selectedOptions { name value }
               einkauf: metafields(namespace: "einkauf", first: 15) {

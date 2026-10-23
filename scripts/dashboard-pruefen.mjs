@@ -60,7 +60,7 @@ import { pruefLauf } from './dashboard-pruefung-lauf.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..');
-const ALLE_ANSICHTEN = ['heute', 'prozesse', 'prozesse?prozess=angebot', 'prozesse?prozess=recherche', 'einkauf', 'einkauf?tab=lieferant', 'einkauf?tab=belege', 'einkauf?tab=musterlager', 'einkauf?tab=produktdaten', 'kunden', 'kunden?tab=bestellungen', 'kunden?tab=service', 'kunden?tab=warenkoerbe', 'organisation', 'fotos', 'social', 'sonderposten', 'bildrechte', 'bildrechte?bl=zu-klein', 'lexikon', 'lexikon?tab=etiketten', 'lexikon?tab=druckliste', 'lexikon?handle=kontura-teppichboden', 'arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet', 'shopwache', 'akquise', 'akquise?as=alle', 'team', 'hilfe'];
+const ALLE_ANSICHTEN = ['heute', 'prozesse', 'prozesse?prozess=angebot', 'prozesse?prozess=recherche', 'einkauf', 'einkauf?tab=lieferant', 'einkauf?tab=belege', 'einkauf?tab=musterlager', 'einkauf?tab=produktdaten', 'einkauf?tab=versandkosten', 'kunden', 'kunden?tab=bestellungen', 'kunden?tab=bestellungen&bart=ware&bsort=wichtigkeit', 'kunden?tab=musterwirkung', 'kunden?tab=muster', 'kunden?tab=service', 'kunden?tab=warenkoerbe', 'organisation', 'fotos', 'social', 'sonderposten', 'bildrechte', 'bildrechte?bl=zu-klein', 'lexikon', 'lexikon?tab=etiketten', 'lexikon?tab=druckliste', 'lexikon?handle=kontura-teppichboden', 'arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet', 'shopwache', 'akquise', 'akquise?as=alle', 'team', 'hilfe'];
 // Fensterbreiten [Breite, Hoehe, Name]. Die Namen "desktop" und "handy" bleiben fuer die
 // beiden Breiten, die es schon immer gab - Screenshots heissen dort wie bisher.
 // Seit das Control Center ueber Tailscale vom Handy aus benutzt wird (auch vom Monteur auf
@@ -69,18 +69,18 @@ const BREITEN = [[1440, 900, 'desktop'], [1024, 768, 'b1024'], [800, 1000, 'b800
 // Grosse Exporte, die das Dashboard nur liest: verlinken statt kopieren.
 const NUR_LESEN = ['einkauf-dryrun', 'einkauf-klaerung', 'lexikon', 'lieferanten', 'bildrechte'];
 // Klein oder beschreibbar: kopieren, damit Klicktests nie die echten Dateien treffen.
-const KOPIEREN = ['verbrauch', 'bestelluebersicht', 'kennzahlen', 'organisation', 'aktualisierung.json', 'sicherungsstand.json', 'auftragsstatus.json', 'auftragsverlauf.json', 'musterherkunft.json', 'musterlager.json', 'muster-druckliste.json', 'mustersperre.json', 'prozesslinks.json',
+const KOPIEREN = ['verbrauch', 'bestelluebersicht', 'kennzahlen', 'organisation', 'aktualisierung.json', 'sicherungsstand.json', 'auftragsstatus.json', 'kettelversand.json', 'auftragsverlauf.json', 'musterherkunft.json', 'musterlager.json', 'muster-druckliste.json', 'mustersperre.json', 'prozesslinks.json',
   // Kunden & Auftraege, Warenkoerbe, Shop-Wache, Bestand und Erfuellung: ohne diese Ordner
   // zeigte die Pruefung leere Ansichten und Klickstrecken liefen gegen nichts.
   'kunden', 'angebote', 'warenkoerbe', 'shopwache', 'bestand', 'erfuellung',
   // Beschreibbare Einzeldateien (Rueckrufe, Fallmarken, Fehlermeldungen): kopieren, damit ein
   // Klick in der Pruefung die echten nie trifft und die Ansicht trotzdem den echten Stand zeigt.
-  'rueckrufe.json', 'serviceanfragen.json', 'lieferbelege', 'fallmarken.json', 'fehlermeldungen.json', 'fehlermeldungen-abgleich.json', 'fehlermeldungen',
+  'rueckrufe.json', 'serviceanfragen.json', 'lieferbelege', 'fallmarken.json', 'bestellmarken.json', 'muster-packen.json', 'muster-grossbrief.json', 'fehlermeldungen.json', 'fehlermeldungen-abgleich.json', 'fehlermeldungen',
   // Upload-Links der Ansicht "Social Media": ein Klick auf "Neuen Link anlegen" schreibt hierhin.
   'social/upload-zugaenge.json', 'social/upload-links.json',
   // Textvorlage fuer "Muster nachfassen" auf Heute. Der Ordner nachfassen/ bleibt bewusst draussen:
   // mit der echten postfach.json schickte ein Klick auf "Jetzt senden" in der Pruefung echte Mails.
-  'muster-nachfassen-texte.md'];
+  'muster-bestellung', 'muster-nachfassen-texte.md', 'versandkosten'];
 
 // Spiegel von ANSICHT_ROLLEN in docs/ai-dashboard/kern/router.mjs: diese Ansichten sieht nur der
 // Inhaber; Mitarbeiter und "lesen" landen dort ohnehin auf "Heute". "social" ist fuer "lesen"
@@ -267,17 +267,17 @@ async function main() {
           fehler.length = 0;
           // Nicht auf "networkidle0" warten: fehlt in einem frischen Worktree issues.json, laedt
           // die Seite weiter nach und der Lauf brach mit "Navigation timeout" ab. Stattdessen
-          // warten, bis nichts mehr "Lade ..." zeigt, hoechstens aber ein paar Sekunden.
+          // warten, bis keine Ladeanzeige mehr steht (auch "werden geladen"), hoechstens aber ein paar Sekunden.
           await seite.goto(`${basis}/#/${ansicht}`, { waitUntil: 'domcontentloaded' });
           // Steht nach 6 s noch "Lade …" da, ist das ein Befund: genau so sah der Fehler aus,
           // wenn eine Ladefunktion nach dem Laden nicht neu zeichnete (Skill, "Fallstricke").
           // Bisher zaehlte das als OK - der Screenshot zeigte es, aber niemand sah hin.
           const fertig = await seite.waitForFunction(() => {
             const main = document.querySelector('#main');
-            return main && !main.querySelector('.skeleton') && !/Lade\b[^.]{0,40}…/.test(main.textContent);
+            return main && !main.querySelector('.skeleton') && !/Lade\b[^.]{0,40}…|\b(?:wird|werden)\s+(?:noch\s+)?geladen\b/g.test(main.textContent);
           }, { timeout: 6000 }).then(() => true, () => false);
           if (!fertig) {
-            const rest = await seite.evaluate(() => (document.querySelector('#main')?.textContent.match(/Lade\b[^.]{0,40}…/) || ['Seite lädt'])[0]).catch(() => 'Seite lädt');
+            const rest = await seite.evaluate(() => (document.querySelector('#main')?.textContent.match(/Lade\b[^.]{0,40}…|\b(?:wird|werden)\s+(?:noch\s+)?geladen\b/g) || ['Seite lädt'])[0]).catch(() => 'Seite lädt');
             fehler.push(`laedt nach 6 s noch: ${rest.replace(/\s+/g, ' ').trim()}`);
           }
           await new Promise(r => setTimeout(r, 700));

@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createApi } from '../../../scripts/dashboard-api.mjs';
-import { leseAkquiseCsv, wendeAenderungAn, faelligeWiedervorlagen, vorlageAusMarkdown, nachrichtFuer, akquiseId, naechsteFirmen, akquiseFortschritt, kontaktTeile, mailtoLink, warumInteressant, kmAbOranienburg, tageBis, titelKurz, richtpreisZeile, angebotsEntwurf, pruefeReferenz, angeschriebenVon } from '../lib/akquise.mjs';
+import { leseAkquiseCsv, wendeAenderungAn, faelligeWiedervorlagen, vorlageAusMarkdown, nachrichtFuer, akquiseId, naechsteFirmen, akquiseFortschritt, kontaktTeile, mailtoLink, warumInteressant, kmAbOranienburg, tageBis, titelKurz, richtpreisZeile, angebotsEntwurf, pruefeReferenz, angeschriebenVon, sichereUrl } from '../lib/akquise.mjs';
 import { ausTed } from '../../../operations/lib/ausschreibungen.mjs';
 import { leiteTodosAb } from '../lib/todos.mjs';
 
@@ -168,6 +168,17 @@ test('Ausschreibung: Land und Kategorie fallen aus dem TED-Titel weg', () => {
   assert.equal(titelKurz('Deutschland – Bauarbeiten – Bundesrat - Anbau - Bodenbelagarbeiten'), 'Bundesrat - Anbau - Bodenbelagarbeiten');
   assert.equal(titelKurz('Sanierung Kita – Bodenbelag'), 'Sanierung Kita – Bodenbelag');
   assert.equal(ausTed({ notices: [{ 'publication-number': '1-2026', 'notice-title': { deu: 'Deutschland – Bodenbelagsarbeiten – Schule Nord' } }] })[0].titel, 'Schule Nord');
+});
+
+test('Ausschreibung: Bekanntmachung nur als http(s)-Link, nie javascript:', () => {
+  assert.equal(sichereUrl('https://vergabe.example/doku'), 'https://vergabe.example/doku');
+  assert.equal(sichereUrl('http://vergabe.example/'), 'http://vergabe.example/');
+  for (const boese of ['javascript:alert(1)', ' JAVASCRIPT:alert(1)', 'java\tscript:alert(1)', 'data:text/html,x', 'vbscript:x', '/relativ', '', null, undefined, 42]) {
+    assert.equal(sichereUrl(boese), null, String(boese));
+  }
+  const todo = link => leiteTodosAb({ shopwache: { ausschreibungen: { geprueftAm: '2026-10-20T04:00:00Z', neu: [{ id: 'a', auftraggeber: 'Amt', frist: '2026-11-02', link }] } } }, { sicht: 'laden', jetzt: new Date('2026-10-20T09:00:00') }).find(t => t.id === 'ausschreibungen');
+  assert.equal(todo('javascript:alert(1)').knopf, undefined);
+  assert.deepEqual(todo('https://vergabe.example/doku').knopf, { text: 'Bekanntmachung', href: 'https://vergabe.example/doku' });
 });
 
 test('Richtpreis: nur sichtbar mit Datei, ohne Freigabe der Hinweis, Entwurf ohne erfundene Preise', () => {

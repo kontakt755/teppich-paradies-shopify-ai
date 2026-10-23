@@ -59,7 +59,7 @@ export function setParam(key, value) {
   if (['psfilter', 'gruppe', 'psq'].includes(key)) p.delete('seite');
   if (key === 'lq') p.delete('lseite');
   if (['bl', 'bg'].includes(key)) p.delete('bs');
-  if (['bq', 'bfilter', 'bsort', 'bdir'].includes(key)) p.delete('bseite');
+  if (['bq', 'bfilter', 'bsort', 'bdir', 'bart'].includes(key)) p.delete('bseite');
   if (key === 'blf') p.delete('bls');
   if (key === 'blq') p.delete('blp');
   if (key !== 'view' && key !== 'task' && p.get('view') && ['status'].includes(key)) p.delete('view');

@@ -11,7 +11,8 @@
        Netzmodus (Passwortschutz) auf der Anmeldeseite. -->
   <link rel="manifest" href="./manifest.webmanifest" crossorigin="use-credentials">
   <meta name="theme-color" content="#0d0c0b">
-  <meta name="description" content="Control Center: Aufgaben, Freigaben, Blocker und naechste Schritte fuer Teppich Paradies">
+  <meta name="description" content="Online-Shop: Warenbestellungen, Muster, Packstation, Versand und Lexikon fuer Teppich Paradies">
+  <meta name="tp-dienstversion" content="__TP_DIENSTVERSION__">
   <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png">
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -38,6 +39,7 @@
   <link rel="stylesheet" href="./stile/sonderposten.css">
   <link rel="stylesheet" href="./stile/akquise.css">
   <link rel="stylesheet" href="./stile/muster.css">
+  <link rel="stylesheet" href="./stile/muster-packen.css">
   <link rel="stylesheet" href="./stile/social.css">
   <link rel="stylesheet" href="./stile/fehler-melden.css">
   <link rel="stylesheet" href="./stile/bildrechte.css">
@@ -45,6 +47,7 @@
   <link rel="stylesheet" href="./stile/verbrauch.css">
   <link rel="stylesheet" href="./stile/prozesse.css">
   <link rel="stylesheet" href="./stile/belege.css">
+  <link rel="stylesheet" href="./stile/versandkosten.css">
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -57,44 +60,52 @@
         <span class="brand-text">Teppich Paradies<small>Control Center</small></span>
       </a>
       <nav class="mainnav" id="mainnav" aria-label="Hauptnavigation">
-        <!-- Reihenfolge nach Wichtigkeit im Tagesgeschaeft; Seltenes darunter. -->
+        <!-- Shop-Kerngeschaeft in Arbeitsreihenfolge; weitere Bereiche bleiben geschlossen. -->
         <a href="#/heute" data-nav="heute" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1z"/></svg><span>Heute</span><span class="nav-count" data-nav-zahl="heute" hidden></span></a>
-        <a href="#/kunden" data-nav="kunden" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.900 1.800 5.500 5M16 6.500h4.500M16 10.500h4.500M17.500 14.500h3"/></svg><span>Kunden</span><span class="nav-count" data-nav-zahl="kunden" hidden></span></a>
-        <a href="#/einkauf" data-nav="einkauf" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.500h11v9H3zM14 10.500h4l3 3v3h-7z"/><circle cx="7" cy="17.500" r="1.700"/><circle cx="17" cy="17.500" r="1.700"/></svg><span>Bestellen</span><span class="nav-count" data-nav-zahl="einkauf" hidden></span></a>
-        <a href="#/akquise" data-nav="akquise" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V8l8-4 8 4v12M9 20v-6h6v6"/></svg><span>Genossenschaften</span></a>
+        <a href="#/kunden?tab=bestellungen&amp;bart=ware&amp;bsort=wichtigkeit" data-nav="kunden" data-nav-tab="bestellungen" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg><span>Bestellungen</span><span class="nav-count" data-nav-zahl="bestellungen" hidden></span></a>
+        <a href="#/einkauf?tab=lieferant&amp;art=muster&amp;af=offen" data-nav="einkauf" data-nav-einkauf="muster" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.500h11v9H3zM14 10.500h4l3 3v3h-7z"/><circle cx="7" cy="17.500" r="1.700"/><circle cx="17" cy="17.500" r="1.700"/></svg><span>Muster bestellen</span></a>
+        <a href="#/kunden?tab=muster" data-nav="kunden" data-nav-tab="muster" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v13H3zM3 7l4-4h10l4 4M12 3v17M3 12h18"/></svg><span>Packstation</span><span class="nav-count" data-nav-zahl="packen" hidden></span></a>
         <a href="#/lexikon" data-nav="lexikon" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.200"/><path d="m16 16 4.500 4.500"/></svg><span>Lexikon</span></a>
-        <!-- "Mehr": alles, was nicht jeden Tag gebraucht wird. Klappt am Rechner auf (Zustand
-             gemerkt), am Handy steht es im "Mehr"-Blatt offen. Inhaber-Punkte tragen weiter
-             data-nur-inhaber je Link, der Sammelpunkt selbst ist fuer alle. -->
-        <div class="nav-more" id="navMore">
-          <button type="button" class="nav-more-kopf" id="navMoreKopf" aria-expanded="false" aria-controls="navMoreMenu"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="1.400"/><circle cx="12" cy="12" r="1.400"/><circle cx="18" cy="12" r="1.400"/></svg><span>Mehr</span><span class="nav-count" id="navMoreCount" hidden></span></button>
-          <div class="nav-more-menu" id="navMoreMenu">
-            <a href="#/prozesse" data-nav="prozesse"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16M10 10v9"/></svg><span>Vorbereiten</span></a>
-            <a href="#/organisation" data-nav="organisation"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.500h11M9 12h11M9 17.500h11M4 6.500l1 1 2-2M4 12l1 1 2-2M4 17.500l1 1 2-2"/></svg><span>Aufgaben</span></a>
-            <a href="#/sonderposten" data-nav="sonderposten"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.500h7.200l8.300 8.300a1.400 1.400 0 0 1 0 2l-4.700 4.700a1.400 1.400 0 0 1-2 0L4.500 11.200V4.500z"/><circle cx="8.300" cy="8.300" r="1.300"/></svg><span>Sonderposten</span></a>
-            <!-- Bildrechte: nur lesend, deshalb auch fuer die Rolle "lesen". -->
-            <a href="#/bildrechte" data-nav="bildrechte"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.500" y="5" width="17" height="14" rx="1.500"/><circle cx="9" cy="10" r="1.600"/><path d="m4 17.500 5-4.500 3.500 3 3-2.500 4.500 4"/></svg><span>Bildrechte</span></a>
-            <!-- Social Media: Upload-Link fuers Team (Geheimnis, nie fuer "lesen") und Kampagnen-Links. -->
-            <a href="#/social" data-nav="social" data-nicht-lesen><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="17.500" cy="6" r="2.500"/><circle cx="6.500" cy="12" r="2.500"/><circle cx="17.500" cy="18" r="2.500"/><path d="m8.700 10.800 6.600-3.600M8.700 13.200l6.600 3.600"/></svg><span>Social Media</span></a>
+        <details class="nav-gruppe" data-nav-gruppe="kunden">
+          <summary class="nav-more-kopf"><span>Kunden &amp; Einkauf</span></summary>
+          <div class="nav-gruppe-menu">
+            <a href="#/kunden" data-nav="kunden"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.900 1.800 5.500 5M16 6.500h4.500M16 10.500h4.500M17.500 14.500h3"/></svg><span>Kunden</span><span class="nav-count" data-nav-zahl="kunden" hidden></span></a>
+            <a href="#/einkauf" data-nav="einkauf"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.500h11v9H3zM14 10.500h4l3 3v3h-7z"/><circle cx="7" cy="17.500" r="1.700"/><circle cx="17" cy="17.500" r="1.700"/></svg><span>Einkauf &amp; Wareneingang</span><span class="nav-count" data-nav-zahl="einkauf" hidden></span></a>
+            <a href="#/akquise" data-nav="akquise"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V8l8-4 8 4v12M9 20v-6h6v6"/></svg><span>Genossenschaften</span></a>
+          </div>
+        </details>
+        <details class="nav-gruppe" data-nav-gruppe="shop">
+          <summary class="nav-more-kopf"><span>Shop &amp; Inhalte</span></summary>
+          <div class="nav-gruppe-menu">
+            <a href="#/sonderposten" data-nav="sonderposten" data-nicht-mitarbeiter><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.500h7.200l8.300 8.300a1.400 1.400 0 0 1 0 2l-4.700 4.700a1.400 1.400 0 0 1-2 0L4.500 11.200V4.500z"/><circle cx="8.300" cy="8.300" r="1.300"/></svg><span>Sonderposten</span></a>
+            <a href="#/bildrechte" data-nav="bildrechte" data-nicht-mitarbeiter><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.500" y="5" width="17" height="14" rx="1.500"/><circle cx="9" cy="10" r="1.600"/><path d="m4 17.500 5-4.500 3.500 3 3-2.500 4.500 4"/></svg><span>Bildrechte</span></a>
+            <a href="#/social" data-nav="social" data-nicht-mitarbeiter data-nicht-lesen><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="17.500" cy="6" r="2.500"/><circle cx="6.500" cy="12" r="2.500"/><circle cx="17.500" cy="18" r="2.500"/><path d="m8.700 10.800 6.600-3.600M8.700 13.200l6.600 3.600"/></svg><span>Social Media</span></a>
             <a href="#/shopwache" data-nav="shopwache" data-nur-inhaber><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.500 5 6v5.500c0 4.200 2.900 7.300 7 9 4.100-1.700 7-4.800 7-9V6z"/><path d="m9 12 2.200 2.200L15.200 10"/></svg><span>Shop-Kontrolle</span></a>
-            <a href="#/arbeit" data-nav="arbeit" data-nur-inhaber>Technik</a>
-            <a href="#/freigaben" data-nav="freigaben" data-nur-inhaber>Entscheidungen<span class="nav-count" id="navFreigaben" hidden></span></a>
             <a href="#/ratgeber" data-nav="ratgeber" data-nur-inhaber>Ratgeber</a>
             <a href="#/bereiche" data-nav="bereiche" data-nur-inhaber>Bereiche</a>
+          </div>
+        </details>
+        <details class="nav-gruppe" data-nav-gruppe="verwaltung">
+          <summary class="nav-more-kopf"><span>Verwaltung</span><span class="nav-count" id="navMoreCount" hidden></span></summary>
+          <div class="nav-gruppe-menu">
+            <a href="#/prozesse" data-nav="prozesse" data-nicht-mitarbeiter><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16M10 10v9"/></svg><span>Vorbereiten</span></a>
+            <a href="#/organisation" data-nav="organisation" data-nicht-mitarbeiter><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.500h11M9 12h11M9 17.500h11M4 6.500l1 1 2-2M4 12l1 1 2-2M4 17.500l1 1 2-2"/></svg><span>Aufgaben</span></a>
+            <a href="#/arbeit" data-nav="arbeit" data-nur-inhaber>Technik</a>
+            <a href="#/freigaben" data-nav="freigaben" data-nur-inhaber>Entscheidungen<span class="nav-count" id="navFreigaben" hidden></span></a>
             <a href="#/insights" data-nav="insights" data-nur-inhaber>Kennzahlen</a>
             <a href="#/aktivitaet" data-nav="aktivitaet" data-nur-inhaber>Verlauf</a>
             <a href="#/team" data-nav="team" data-nur-inhaber>Zugänge</a>
+            <a href="#/hilfe" data-nav="hilfe"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.500"/><path d="M9.700 9.500a2.400 2.400 0 1 1 3.400 2.200c-.700.400-1.100.900-1.100 1.800M12 16.800v.2"/></svg><span>Hilfe</span></a>
           </div>
-        </div>
-        <a href="#/hilfe" data-nav="hilfe"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.500"/><path d="M9.700 9.500a2.400 2.400 0 1 1 3.400 2.200c-.700.400-1.100.900-1.100 1.800M12 16.800v.2"/></svg><span>Hilfe</span></a>
-        <!-- Weitere Dashboards (Werkbank, Laden, Montage): eigene Anwendungen ausserhalb dieses
-             Servers, deshalb neuer Tab und eigene Anmeldung. Die Adressen stehen nicht im
-             Repository (oeffentlich), sondern in .env.local des Dienstes; /api/capabilities
-             liefert sie mit, kern/navigation.mjs fuellt diese Gruppe. Ohne Adresse kein Link. -->
-        <div class="nav-dashboards" id="navDashboards" hidden></div>
+        </details>
+        <details class="nav-gruppe" data-nav-gruppe="dashboards" id="navDashboardGruppe" hidden>
+          <summary class="nav-more-kopf"><span>Weitere Dashboards</span></summary>
+          <div class="nav-gruppe-menu nav-dashboards" id="navDashboards" hidden></div>
+        </details>
       </nav>
       <div class="side-foot">
-        <button type="button" class="sync-chip" id="syncChip" title="Datenstand – hier neu laden">
+            <button type="button" class="side-knopf" data-org-schnell title="Schnell erfassen (Taste n)" aria-label="Erfassen"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Aufgabe erfassen</span></button>
+        <button type="button" class="sync-chip" id="syncChip" data-nicht-mitarbeiter title="Datenstand – hier neu laden">
           <span class="dot" aria-hidden="true"></span><span id="syncChipText">Lade …</span>
         </button>
         <!-- Fuer alle Rollen: Meldung geht ueber den Abgleich in die Werkbank der Technik. -->
@@ -116,13 +127,12 @@
       <header class="topbar" role="banner">
         <div class="topbar-inner">
           <!-- Die Ueberschrift der Seite ist das <h1> der Ansicht; hier steht sie nur sichtbar. -->
-          <p class="seitentitel" id="seitentitel" aria-hidden="true">Heute</p>
+          <div class="topbar-ort"><a class="kopf-start" href="#/heute" aria-label="Zur Shop-Übersicht" title="Zur Shop-Übersicht"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1z"/></svg></a><p class="seitentitel" id="seitentitel" aria-hidden="true">Shop-Übersicht</p></div>
           <div class="topbar-tools">
             <button type="button" class="suchknopf" id="searchBtn" title="Suche und Befehle (⌘K)" aria-label="Suche und Befehle">
-              <svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.200"/><path d="m16 16 4.500 4.500"/></svg><span class="suchknopf-text">Kunde, Produkt oder Aufgabe suchen</span><kbd>⌘K</kbd>
+              <svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.200"/><path d="m16 16 4.500 4.500"/></svg><span class="suchknopf-text">Kunde, Bestellung oder Produkt suchen</span><kbd>⌘K</kbd>
             </button>
-            <!-- Global erreichbar: Erfassen darf nie mehr als einen Klick kosten. -->
-            <button type="button" class="btn btn-primary kopf-erfassen" data-org-schnell title="Schnell erfassen (Taste n)" aria-label="Erfassen"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="lang">Erfassen</span></button>
+            <!-- Shop-Suche und Sitzung bleiben vorn, allgemeine Aufgaben im Nebenbereich. -->
             <button type="button" class="btn btn-ghost kopf-sitzung" id="sessionBtn" title="Angemeldet – abmelden" hidden>
               <svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.500H6a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h8M10 12h10M16.500 8.500 20 12l-3.500 3.500"/></svg><span id="sessionBtnText">Angemeldet</span>
             </button>
@@ -136,6 +146,13 @@
       <div class="notice lesen-hinweis" id="lesenHinweis" hidden>
         <strong>Nur Ansicht.</strong> Dein Zugang darf nichts ändern – Knöpfe zum Bearbeiten sind deshalb ausgeblendet.
       </div>
+      <!-- "Stand: vor 3 Min." bzw. Hinweis bei veralteten Daten (bausteine/datenstand.mjs); ausserhalb
+           von #main, damit das Nachschreiben keine Eingabe stoert. -->
+      <div class="datenstand-leiste" id="datenstandLeiste" hidden></div>
+      <div class="datenstand-leiste warn dienstversion-leiste no-print" id="dienstversionLeiste" role="status" hidden>
+        <span>Neue Version verfügbar. Offene Eingaben bitte zuerst speichern.</span>
+        <button type="button" class="btn btn-sm" id="dienstversionLaden">Neu laden</button>
+      </div>
       <main id="main" class="page" tabindex="-1" aria-live="polite">
         <section class="skeleton" aria-busy="true">
           <div class="sk-line w40"></div>
@@ -148,10 +165,10 @@
 
     <!-- Handy: feste Leiste unten. "Mehr" oeffnet die Seitenleiste als Blatt. -->
     <nav class="tabbar no-print" id="tabbar" aria-label="Schnellnavigation">
-      <a href="#/heute" data-nav="heute"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1z"/></svg><span>Heute</span><span class="nav-count" data-nav-zahl="heute" hidden></span></a>
-      <a href="#/kunden" data-nav="kunden"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.900 1.800 5.500 5M16 6.500h4.500M16 10.500h4.500M17.500 14.500h3"/></svg><span>Kunden</span><span class="nav-count" data-nav-zahl="kunden" hidden></span></a>
-      <a href="#/lexikon" data-nav="lexikon"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.200"/><path d="m16 16 4.500 4.500"/></svg><span>Lexikon</span></a>
-      <a href="#/einkauf" data-nav="einkauf"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.500h11v9H3zM14 10.500h4l3 3v3h-7z"/><circle cx="7" cy="17.500" r="1.700"/><circle cx="17" cy="17.500" r="1.700"/></svg><span>Bestellen</span><span class="nav-count" data-nav-zahl="einkauf" hidden></span></a>
+        <a href="#/kunden?tab=bestellungen&amp;bart=ware&amp;bsort=wichtigkeit" data-nav="kunden" data-nav-tab="bestellungen" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg><span>Bestellungen</span><span class="nav-count" data-nav-zahl="bestellungen" hidden></span></a>
+        <a href="#/einkauf?tab=lieferant&amp;art=muster&amp;af=offen" data-nav="einkauf" data-nav-einkauf="muster" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.500h11v9H3zM14 10.500h4l3 3v3h-7z"/><circle cx="7" cy="17.500" r="1.700"/><circle cx="17" cy="17.500" r="1.700"/></svg><span>Muster bestellen</span></a>
+        <a href="#/kunden?tab=muster" data-nav="kunden" data-nav-tab="muster" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v13H3zM3 7l4-4h10l4 4M12 3v17M3 12h18"/></svg><span>Packstation</span><span class="nav-count" data-nav-zahl="packen" hidden></span></a>
+        <a href="#/lexikon" data-nav="lexikon" class="nav-haupt"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.200"/><path d="m16 16 4.500 4.500"/></svg><span>Lexikon</span></a>
       <button type="button" id="navToggle" aria-expanded="false" aria-controls="side"><svg class="nav-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.500" cy="12" r="1.300"/><circle cx="12" cy="12" r="1.300"/><circle cx="18.500" cy="12" r="1.300"/></svg><span>Mehr</span><span class="nav-count" data-nav-zahl="mehr" hidden></span></button>
     </nav>
   </div>

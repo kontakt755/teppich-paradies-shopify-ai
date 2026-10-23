@@ -3,7 +3,7 @@
  * Quellen ohne Konto: TED-Suche (EU-weit, oberhalb der Schwellenwerte) und die
  * Tagesexporte von oeffentlichevergabe.de (OCDS, auch unterhalb der Schwelle).
  */
-import { titelKurz } from '../../docs/ai-dashboard/lib/akquise.mjs';
+import { titelKurz, sichereUrl } from '../../docs/ai-dashboard/lib/akquise.mjs';
 
 /** CPV: Bodenbelag (Fussboden-/Wandverkleidung, Bodenbelagsarbeiten, Bodenfliesen, Teppichverlegung). */
 export const CPV = ['45432100', '45432110', '45432111', '45432130'];
@@ -32,7 +32,8 @@ export function ausTed(antwort) {
     auftraggeber: erster(ersterText(n['buyer-name'])) || '',
     ort: erster(ersterText(n['buyer-city'])) || '',
     frist: String(erster(n['deadline-receipt-tender-date-lot']) || '').slice(0, 10) || null,
-    link: n.links?.html?.DEU || `https://ted.europa.eu/de/notice/-/detail/${n['publication-number']}`,
+    // Links aus dem Feed nur mit http(s) uebernehmen (sichereUrl), sonst die feste TED-Adresse.
+    link: sichereUrl(n.links?.html?.DEU) || `https://ted.europa.eu/de/notice/-/detail/${n['publication-number']}`,
   }));
 }
 
@@ -54,7 +55,8 @@ export function ausOcds(release) {
     auftraggeber: release.buyer?.name || kaeufer?.name || '',
     ort: kaeufer?.address?.locality || '',
     frist: (t.tenderPeriod?.endDate || '').slice(0, 10) || null,
-    link: (t.documents || []).find(d => d.url)?.url || null,
+    // Erster Dokument-Link mit http(s); javascript: & Co. aus dem Feed fallen weg (sichereUrl).
+    link: (t.documents || []).map(d => sichereUrl(d?.url)).find(Boolean) || null,
   };
 }
 

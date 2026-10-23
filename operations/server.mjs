@@ -6,8 +6,10 @@
  *   npm run operations:band -- --live [--tage 60]
  *
  * Bindet ausschliesslich an 127.0.0.1 (wie scripts/serve-dashboard.mjs).
- * Schreibende Requests nur als POST mit application/json und passendem
- * Host/Origin - ein fremder Tab kann die API nicht per Formular ansprechen.
+ * Jeder API-Request (auch lesend) nur mit passendem Host/Origin - eine per
+ * DNS-Rebinding umgeleitete fremde Seite liest keine Kundendaten mit.
+ * Schreibende Requests nur als POST mit application/json - ein fremder Tab
+ * kann die API nicht per Formular ansprechen.
  *
  * ROLLEN (Stufe 1, ohne Anmeldung): Umgebungsvariable OPS_ROLLE, Standard
  * "leitung". Das ist bewusst nur eine Sichtbarkeitsschranke auf einem
@@ -183,6 +185,9 @@ export function erzeugeHandler({ daten, quelle, rolle = process.env.OPS_ROLLE ||
   }
 
   async function api(req, res, pfad, url) {
+    // Host/Origin vor jedem API-Aufruf pruefen, auch beim Lesen: sonst liest
+    // eine per DNS-Rebinding umgeleitete fremde Seite Kundendaten mit.
+    if (!gleicheHerkunft(req)) { sende(res, 403, { error: 'Nur lokal erlaubt' }); return; }
     // Routing-Regex: nur diese Pfade existieren.
     const m = pfad.match(/^\/api\/(?:(kontext|warteschlange|suche)|auftrag\/([^/]+)(?:\/(freigeben|spaeter|problem))?)$/);
     if (!m) { sende(res, 404, { error: 'Unbekannter API-Pfad' }); return; }
@@ -192,7 +197,6 @@ export function erzeugeHandler({ daten, quelle, rolle = process.env.OPS_ROLLE ||
 
     if (schreibend) {
       if (req.method !== 'POST') { sende(res, 405, { error: 'POST erwartet' }); return; }
-      if (!gleicheHerkunft(req)) { sende(res, 403, { error: 'Nur lokal erlaubt' }); return; }
       if (!darf(rolle, 'auftraege_schreiben')) { verboten(res, 'auftraege_schreiben'); return; }
     } else if (req.method !== 'GET') { sende(res, 405, { error: 'GET erwartet' }); return; }
 

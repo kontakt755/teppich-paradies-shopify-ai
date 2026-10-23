@@ -701,13 +701,15 @@ test('Massteppich: gültiger runder Teppich bleibt ein Stück mit unverändertem
 });
 
 test('Massteppich: Kettelung nur an der Kettelservice-Zeile wird trotzdem bestellt', () => {
-  const mail = bestellmail({ modell: massteppichModell({ mitEinfassungAmTeppich: false }), lieferant: 'A', stammdaten: STAMM, jetzt: JETZT }).mails[0];
+  // Ziel Laden: der Lieferant kettelt selbst (ohne Ziel ginge es nach der Regel zum Kettler).
+  const mail = bestellmail({ modell: massteppichModell({ mitEinfassungAmTeppich: false }), lieferant: 'A', ziel: 'laden', stammdaten: STAMM, jetzt: JETZT }).mails[0];
   assert.match(mail.text, /Einfassung: Gekettelt, umlaufend 11,20 m/);
 });
 
 test('Ware an den Kunden: Anschrift mit Telefon je Kommission statt Ladenanschrift', () => {
-  // Ohne ziel: Standard ist direkt an die Kunden (Inhaber 2026-10-14).
-  const mail = bestellmail({ modell: massteppichModell(), lieferant: 'A', stammdaten: STAMM, jetzt: JETZT }).mails[0];
+  // Standard ist direkt an die Kunden (Inhaber 2026-10-14); gekettelte Massteppiche gingen ohne
+  // ziel nach der Regel zum Kettler, deshalb hier ausdruecklich "kunde".
+  const mail = bestellmail({ modell: massteppichModell(), lieferant: 'A', ziel: 'kunde', stammdaten: STAMM, jetzt: JETZT }).mails[0];
   assert.equal(mail.lieferziel, 'kunde');
   assert.match(mail.text, /direkt an unsere Kunden liefern/);
   assert.match(mail.text, /Kommission #T4 – Lieferanschrift:\n {3}Testkunde 4\n {3}Testweg 4\n {3}00000 Musterstadt\n {3}Deutschland\n {3}Tel\. \+49 000 0000/);
@@ -762,7 +764,7 @@ test('Kettler: Massteppich geht im Fertigmass, aber ungekettelt an die Kettler-A
   assert.match(mail.betreff, /Lieferung an Kettelservice/);
 });
 
-test('Regel unter 2 m: Massteppich kommt ohne Auswahl in eine eigene Kettler-Mail, der Rest bleibt', () => {
+test('Kettler-Regel: gekettelter Massteppich kommt ohne Auswahl in eine eigene Kettler-Mail, der Rest bleibt', () => {
   const m = massteppichModell({ masse: '150 × 230 cm' });
   m.gruppen[0].positionen.push(...modell().gruppen.find(g => g.lieferant === 'A').positionen);
   const r = bestellmail({ modell: m, lieferant: 'A', stammdaten: STAMM_KETTLER, jetzt: JETZT });
@@ -784,11 +786,14 @@ test('Regel unter 2 m: Massteppich kommt ohne Auswahl in eine eigene Kettler-Mai
   const nachher = bestellmail({ modell: m, lieferant: 'A', stammdaten: STAMM_KETTLER, statusAlle, jetzt: JETZT });
   assert.equal(nachher.mails.length, 1);
   assert.equal(nachher.mails[0].lieferziel, 'kunde');
-  // 2 m und mehr: keine Regel.
-  assert.equal(bestellmail({ modell: massteppichModell({ masse: '200 × 300 cm' }), lieferant: 'A', stammdaten: STAMM_KETTLER, jetzt: JETZT }).mails[0].lieferziel, 'kunde');
+  // Auch 2 m und mehr geht zum Kettler (Inhaber 2026-10-19 abends: alle gekettelten).
+  const gross = bestellmail({ modell: massteppichModell({ masse: '400 × 500 cm' }), lieferant: 'A', stammdaten: STAMM_KETTLER, jetzt: JETZT }).mails[0];
+  assert.equal(gross.lieferziel, 'kettler');
+  assert.equal(gross.kettlerAutomatisch, true);
+  assert.match(gross.text, /Fertigmaß: 400 × 500 cm \(Rechteck\)\n {3}Ohne Einfassung/);
 });
 
-test('Regel unter 2 m auch bei Direktversand des Lieferanten: Kettler-Mail statt Lieferung an den Kunden', () => {
+test('Kettler-Regel auch bei Direktversand des Lieferanten: Kettler-Mail statt Lieferung an den Kunden', () => {
   const m = massteppichModell({ masse: '150 × 230 cm', route: 'SUPPLIER_DIRECT' });
   const [kettler] = bestellmail({ modell: m, lieferant: 'A', stammdaten: STAMM_KETTLER, jetzt: JETZT }).mails;
   assert.equal(kettler.lieferziel, 'kettler');
@@ -800,10 +805,10 @@ test('Regel unter 2 m auch bei Direktversand des Lieferanten: Kettler-Mail statt
   assert.equal(kettler.zielWaehlbar, false, 'Umschalten wuerde in den Direktversand zurueckfallen');
   // Ein Ziel fuer andere Gruppen desselben Lieferanten hebt die Regel bei Direktversand nicht auf.
   assert.equal(bestellmail({ modell: m, lieferant: 'A', ziel: 'laden', stammdaten: STAMM_KETTLER, jetzt: JETZT }).mails[0].lieferziel, 'kettler');
-  // 2 m und mehr bleibt Direktversand an den Kunden.
+  // Auch 2 m und mehr geht zum Kettler statt direkt an den Kunden.
   const gross = bestellmail({ modell: massteppichModell({ masse: '200 × 300 cm', route: 'SUPPLIER_DIRECT' }), lieferant: 'A', stammdaten: STAMM_KETTLER, jetzt: JETZT }).mails[0];
-  assert.equal(gross.lieferziel, 'kunde');
-  assert.match(gross.text, /Bitte liefern Sie direkt an unseren Kunden:/);
+  assert.equal(gross.lieferziel, 'kettler');
+  assert.equal(/direkt an unseren Kunden/.test(gross.text), false);
   // Ohne hinterlegten Kettler bleibt es beim Direktversand.
   assert.equal(bestellmail({ modell: m, lieferant: 'A', stammdaten: STAMM_OHNE_KETTLER, jetzt: JETZT }).mails[0].lieferziel, 'kunde');
   // Baustellenlieferungen bleiben, wie sie sind.
@@ -821,17 +826,30 @@ test('Kettler nur fuer Ware, nicht fuer Muster', () => {
   assert.throws(() => bestellmail({ modell: modell(), lieferant: 'A', art: 'muster', ziel: 'kettler', stammdaten: STAMM_KETTLER, jetzt: JETZT }), LieferantenFehler);
 });
 
-test('Kettler-Regel und Vorschlag: unter 2 m automatisch, groesser nur bei Kunden in der Naehe', () => {
+test('Kettler-Regel und Vorschlag: gekettelt mit Fertigmass automatisch, ohne Fertigmass nur bei Kunden in der Naehe', () => {
   assert.equal(kettlerAutomatisch({ ausfuehrung: ['Fertigmaß: 150 × 230 cm', 'Einfassung: Gekettelt'] }), true);
-  assert.equal(kettlerAutomatisch({ ausfuehrung: ['Fertigmaß: 200 × 300 cm', 'Einfassung: Gekettelt'] }), false, 'genau 2 m ist nicht unter 2 m');
+  assert.equal(kettlerAutomatisch({ ausfuehrung: ['Fertigmaß: 400 × 500 cm', 'Einfassung: Gekettelt'] }), true, 'auch ueber 2 m');
+  assert.equal(kettlerAutomatisch({ ausfuehrung: ['Fertigmaß: Ø 300 cm (Rund)', 'Einfassung: Gekettelt'] }), true, 'auch rund');
   assert.equal(kettlerAutomatisch({ ausfuehrung: ['Fertigmaß: 100 × 150 cm'] }), false, 'ohne Einfassung kein Kettler');
+  assert.equal(kettlerAutomatisch({ ausfuehrung: ['Einfassung: Gekettelt'] }), false, 'ohne Fertigmass kann der Lieferant nicht zuschneiden');
+  // Ziel im Dialog von Hand gewaehlt: die gekettelte Position wird fuer den Kettler vorgeschlagen.
   const gross = bestellmail({ modell: massteppichModell(), lieferant: 'A', ziel: 'laden', stammdaten: STAMM_KETTLER, jetzt: JETZT }).mails[0];
-  assert.deepEqual(gross.kettlerVorschlag, [], '250 × 310 cm, Kunde weit weg: kein Vorschlag');
-  const p = { ausfuehrung: ['Fertigmaß: 400 × 500 cm', 'Einfassung: Gekettelt'] };
+  assert.deepEqual(gross.kettlerVorschlag.map(v => [v.orderName, v.grund]), [['#T4', 'gekettelt – Ketteln beim Kettler']]);
+  const p = { ausfuehrung: ['Einfassung: Gekettelt'] };
   assert.match(kettlerGrund(p, { plz: '13585', ort: 'Berlin' }), /in der Nähe \(13585 Berlin\)/);
   assert.match(kettlerGrund(p, { plz: '16515', ort: 'Oranienburg' }), /in der Nähe/);
   assert.equal(kettlerGrund(p, { plz: '80331', ort: 'München' }), null);
   assert.equal(kuerzereSeiteCm(['Fertigmaß: Ø 160 cm (Rund)']), 160);
   assert.equal(kuerzereSeiteCm(['Fertigmaß: 300 × 180 cm']), 180);
   assert.equal(kuerzereSeiteCm([]), null);
+});
+
+test('Uebersicht: Lieferant mit ueberfaelligen Posten steht vor A-Z', () => {
+  const m = modell();
+  const statusAlle = statusFuer(m, [
+    [1, 1, { status: 'bestellt', bestelltAm: '2026-01-18T10:00:00Z' }],
+    [2, 4, { status: 'bestellt', bestelltAm: '2026-01-01T10:00:00Z' }], // Lieferant B, 19 Tage -> Problem
+  ]);
+  const u = lieferantenUebersicht(m, { statusAlle, stammdaten: STAMM, jetzt: JETZT });
+  assert.deepEqual(u.lieferanten.map(l => [l.id, l.ueberfaellig.problem]), [['B', 1], ['A', 0]]);
 });

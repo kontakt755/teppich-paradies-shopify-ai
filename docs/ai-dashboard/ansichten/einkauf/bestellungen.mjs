@@ -20,7 +20,7 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { filtereAuftrag } from '../../lib/vorgangslink.mjs';
 import { beschaffungText } from '../../lib/beschaffung.mjs';
 import { uebernahmeBlock } from './beschaffung.mjs';
-import { lieferantenKartenHtml, nachfassenSumme } from './lieferanten.mjs';
+import { lieferantenKartenHtml, nachfassenSumme, bestellartDaten } from './lieferanten.mjs';
 
 function kopierbutton(id, label = 'Liste kopieren') {
   return `<button type="button" class="btn btn-sm" data-kopieren="${esc(id)}">${esc(label)}</button>`;
@@ -120,7 +120,7 @@ function einkaufGruppeKarte(g, i, praefix, { eingebettet = false } = {}) {
   const ungeklaert = grund => `<span class="badge gap" title="${esc(grund || 'Nicht in Shopify hinterlegt')}">fehlt</span>`;
   const zuBestellen = positionen.filter(p => p.lineItemId && !afEintragFuer(p)?.status && !musterEigen(p));
   // Ab zwei Artikeln lohnt die Sammelaktion; fuer einen reicht der Knopf in der Zeile.
-  const sammel = zuBestellen.length >= 2 ? `<button type="button" class="btn btn-sm" data-af-sammel="${esc(id)}">Alle als bestellt markieren…</button>` : '';
+  const sammel = zuBestellen.length >= 2 && !istNurLesend() ? `<button type="button" class="btn btn-sm" data-af-sammel="${esc(id)}">Alle als bestellt markieren…</button>` : '';
   if (sammel) sammelGruppen.set(id, { titel: unbekannt ? 'Lieferant nicht zugeordnet' : `Lieferant ${g.lieferant}`, positionen: zuBestellen });
   else sammelGruppen.delete(id);
   // Gegenstueck: alles, was in dieser Tabelle schon einen Schritt hat, zurueck auf offen.
@@ -234,7 +234,7 @@ export function einkaufAuftragZeile(a) {
       ${artikel.length ? `<div class="small muted">${esc(artikel.slice(0, 3).join(' · '))}${artikel.length > 3 ? ` · +${artikel.length - 3}` : ''}</div>` : ''}
       ${a.hinweise?.length ? `<ul class="order-issues">${a.hinweise.map(h => `<li>${esc(hinweisText(h))}</li>`).join('')}</ul>` : ''}
     </div>
-    ${offen.length && a.ampel !== 'gruen' ? `<button type="button" class="btn btn-sm btn-ghost" onclick="event.preventDefault()" data-auftrag-erledigt="${esc(a.id)}" title="Z. B. Testbestellung oder anders erledigt – setzt die Artikel im Auftragsfluss auf „Erledigt"">Ohne Einkauf abschließen…</button>` : ''}
+    ${!istNurLesend() && !['muster', 'ware'].includes(state.route.params.get('art')) && offen.length && a.ampel !== 'gruen' ? `<button type="button" class="btn btn-sm btn-ghost" onclick="event.preventDefault()" data-auftrag-erledigt="${esc(a.id)}" title="Z. B. Testbestellung oder anders erledigt – setzt die Artikel im Auftragsfluss auf „Erledigt"">Ohne Einkauf abschließen…</button>` : ''}
   </div>`;
   // Ohne Detaildaten bleibt es bei der Zeile; sonst klappt die volle Bestellung darunter auf.
   if (!detail) return kopf;
@@ -260,7 +260,8 @@ export function viewEinkaufBestellungen() {
   ensureEinkaufBestellungen();
   ensureEinkaufAuftragsstatus();
   const auftragId = state.route.params.get('auftrag');
-  const d = einkauf.bestellungen ? filtereAuftrag(einkauf.bestellungen, auftragId) : null;
+  const art = state.route.params.get('art');
+  const d = einkauf.bestellungen ? bestellartDaten(filtereAuftrag(einkauf.bestellungen, auftragId), art) : null;
   if (!d && einkauf.loadingBestellungen) return `<div class="empty">Lade Bestellübersicht …</div>`;
   if (d?.fehler) return stoerungState(d, 'Die Bestelldaten');
   if (!d || !d.verfuegbar) return emptyState('Keine Bestelldaten verfügbar.', d?.hinweis || 'Quelle fehlt oder ist leer.');
@@ -271,22 +272,23 @@ export function viewEinkaufBestellungen() {
   const af = afNorm(state.route.params.get('af'));
   // Reihenfolge wie in den Karten: Ware, Muster, Nachfassen (Inhaber 2026-10-14). Die Zahl
   // offener Kundenauftraege steht unten bei "Alle offenen Auftraege".
-  const nachfassen = nachfassenSumme();
+  const nachfassen = nachfassenSumme(d);
   // Bestellt und an unseren Kettler unterwegs: dort abholen (bzw. von dort verschicken lassen).
   const zumKettler = ware.filter(p => afEintragFuer(p)?.status === 'bestellt' && istUeberKettler(afEintragFuer(p))).length;
   const abgeschlossen = af === 'erledigt' ? abgeschlosseneAuftraegeKarte(auftragId) : '';
   return `
+    ${['muster', 'ware'].includes(art) ? `<p class="notice">Nur ${art === 'muster' ? 'Muster' : 'Ware'} · <a href="#/einkauf?tab=lieferant">Alle Bestellungen zeigen</a></p>` : ''}
     ${auftragId ? `<p class="no-print"><a href="#/heute">← Zurück zu Heute</a> · <a href="#/einkauf?tab=lieferant">Alle Aufträge</a></p><p class="notice">Nur die ausgewählte Bestellung${aktiv[0]?.name ? ` ${esc(aktiv[0].name)}` : ''}. ${!aktiv.length ? 'Sie ist nicht mehr offen oder nicht in den aktuellen Daten.' : ''}</p>` : ''}
     <div class="band">
-      ${bandItem(ware.filter(p => gruppe(p) === 'offen').length, 'Ware zu bestellen', 'warn')}
-      ${bandItem(muster.filter(p => gruppe(p) === 'offen').length, 'Muster zu bestellen', 'warn')}
+      ${art === 'muster' ? '' : bandItem(ware.filter(p => gruppe(p) === 'offen').length, 'Ware zu bestellen', 'warn')}
+      ${art === 'ware' ? '' : bandItem(muster.filter(p => gruppe(p) === 'offen').length, 'Muster zu bestellen', 'warn')}
       ${bandItem(nachfassen.auftraege, nachfassen.auftraege === 1 ? 'Auftrag nachfassen' : 'Aufträge nachfassen', nachfassen.stufe || 'warn')}
       ${zumKettler ? bandItem(zumKettler, 'Ware unterwegs zum Kettler', 'plain') : ''}
       ${muster.some(p => gruppe(p) === 'eigen') ? bandItem(muster.filter(p => gruppe(p) === 'eigen').length, 'Muster haben wir da', 'plain') : ''}
       ${bandItem(rot, rot === 1 ? 'Auftrag mit Problem' : 'Aufträge mit Problem', 'crit')}
     </div>
     ${klaeren.length ? `<section class="card problem-card"><div class="card-head"><h2>Zuerst klären</h2><span class="more muted">Rot = blockiert, Gelb = vor dem Bestellen prüfen</span></div><div class="rows">${klaeren.map(einkaufAuftragZeile).join('')}</div></section>` : ''}
-    <div class="section-bar"><h2 class="section-title" style="margin:0">Bestellen je Lieferant</h2>${afFilterChips([...ware, ...muster])}</div>
+    <div class="section-bar"><h2 class="section-title" style="margin:0">${art === 'muster' ? 'Muster bestellen je Lieferant' : art === 'ware' ? 'Ware bestellen je Lieferant' : 'Bestellen je Lieferant'}</h2>${afFilterChips([...ware, ...muster])}</div>
     ${abgeschlossen}
     ${lieferantenKartenHtml({ gruppeKarte: einkaufGruppeKarte, daten: d })}
     <details class="card section plain-details"><summary><h2>Alle offenen Aufträge</h2><span class="preview">${aktiv.length}</span></summary>
@@ -306,7 +308,9 @@ export function viewEinkaufBestellungen() {
  * fuer sie keinen Weg zurueck.
  */
 function abgeschlosseneAuftraegeKarte(auftragId) {
-  const liste = alleAuftraege().filter(a => !auftragId || String(a.id) === String(auftragId)).map(a => ({ a, erledigt: erledigtePositionen(a) })).filter(x => x.erledigt.length);
+  const art = state.route.params.get('art');
+  const alle = bestellartDaten({ auftraege: alleAuftraege() }, art).auftraege;
+  const liste = alle.filter(a => !auftragId || String(a.id) === String(auftragId)).map(a => ({ a, erledigt: erledigtePositionen(a) })).filter(x => x.erledigt.length);
   if (!liste.length) return '';
   const zeile = ({ a, erledigt }) => {
     const e = afEintragFuer({ orderId: a.id, lineItemId: erledigt[0].lineItemId });
@@ -316,7 +320,7 @@ function abgeschlosseneAuftraegeKarte(auftragId) {
         <div class="t"><a href="${esc(a.adminUrl || '')}" target="_blank" rel="noopener" title="In Shopify öffnen">${esc(a.name)} ↗</a> <span class="muted small">${fmtDate(a.datum)}</span>${a.testbestellung ? ' <span class="badge plain">Testbestellung</span>' : ''}</div>
         <div class="small muted">${plural(erledigt.length, 'Artikel', 'Artikel')} erledigt${wer}${e?.erledigtNotiz ? ` · Grund: ${esc(e.erledigtNotiz)}` : ''}</div>
       </div>
-      <button type="button" class="btn btn-sm btn-ghost" data-af-reopen="${esc(a.id)}" title="Artikel zurück in die Arbeitsliste holen">Wieder öffnen…</button>
+      ${istNurLesend() ? '' : ['muster', 'ware'].includes(art) ? erledigt.map(p => `<button type="button" class="btn btn-sm btn-ghost" data-af-reopen="${esc(a.id)}" data-af-item="${esc(p.lineItemId)}">${esc(p.titel)} wieder öffnen…</button>`).join('') : `<button type="button" class="btn btn-sm btn-ghost" data-af-reopen="${esc(a.id)}" title="Artikel zurück in die Arbeitsliste holen">Wieder öffnen…</button>`}
     </div>`;
   };
   return `<section class="card section"><div class="card-head"><h3>Abgeschlossene Aufträge</h3><span class="more muted">Versehentlich abgeschlossen? „Wieder öffnen" holt die Artikel zurück.</span></div><div class="rows">${liste.map(zeile).join('')}</div></section>`;

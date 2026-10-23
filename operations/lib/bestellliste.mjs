@@ -12,6 +12,7 @@
 import { kundenSchluessel } from './kundensuche.mjs';
 import { positionKey, STATUS_ORDER, STATUS_LABEL } from './auftragsstatus.mjs';
 import { versandNachzuholen, versandGebucht } from './versand.mjs';
+import { bestellZahlungOffen } from '../../docs/ai-dashboard/lib/bestellarbeit.mjs';
 
 const NICHT_HINTERLEGT = null;
 
@@ -26,16 +27,9 @@ const NICHT_HINTERLEGT = null;
 export function fortschritt(auftrag, statusAlle = {}) {
   const alle = auftrag?.positionen ?? [];
   const positionen = alle.filter(p => p.lineItemId);
-  const gesamt = positionen.length;
-  if (!gesamt) {
-    // Positionen ohne lineItemId lassen sich nicht nachverfolgen. Sie einfach
-    // als "fertig" durchzuwinken versteckte Bestellungen vor dem Filter
-    // "In Arbeit" - deshalb hier ehrlich als unklar melden.
-    if (alle.length) {
-      return { stufe: 'unklar', text: `Nicht nachverfolgbar (${alle.length} Position(en) ohne Kennung)`, erledigt: 0, gesamt: 0, minStufe: 0, unklar: true };
-    }
-    return { stufe: 'keine', text: 'Keine Positionen', erledigt: 0, gesamt: 0, minStufe: 0 };
-  }
+  const gesamt = alle.length;
+  if (!gesamt) return { stufe: 'keine', text: 'Keine Positionen', erledigt: 0, gesamt: 0, minStufe: 0 };
+  const ohneKennung = gesamt - positionen.length;
 
   const stufen = positionen.map(p => {
     const key = positionKey(auftrag.id, p.lineItemId);
@@ -44,6 +38,11 @@ export function fortschritt(auftrag, statusAlle = {}) {
     return i >= 0 ? i + 1 : 0;
   });
   const erledigt = stufen.filter(s => s === 4).length;
+  // Auch neben bekannten Positionen darf eine fehlende Kennung keinen Abschluss erlauben.
+  if (ohneKennung) return {
+    stufe: 'unklar', text: `Nicht nachverfolgbar (${ohneKennung} Position${ohneKennung === 1 ? '' : 'en'} ohne Kennung)`,
+    erledigt, gesamt, minStufe: 0, unklar: true,
+  };
   const minStufe = Math.min(...stufen);
 
   let stufe, text;
@@ -53,7 +52,7 @@ export function fortschritt(auftrag, statusAlle = {}) {
   return { stufe, text, erledigt, gesamt, minStufe };
 }
 
-/** "fertig" heisst: alle Positionen erledigt (oder gar keine Positionen mit Auftragsfluss). */
+/** "fertig" heisst: alle Positionen nachweislich erledigt oder gar keine Positionen. */
 export function istFertig(auftrag, statusAlle = {}) {
   const f = fortschritt(auftrag, statusAlle);
   if (f.unklar) return false;
@@ -68,7 +67,9 @@ export function istFertig(auftrag, statusAlle = {}) {
 export function wasFehlt(auftrag, rueckrufStatus, fortschritt = null) {
   const gruende = [];
   const c = auftrag?.checks || {};
-  const ohneId = (auftrag?.positionen ?? []).filter(p => p.grosshaendlerId === 'UNGEKLAERT' || p.idGrund).length;
+  const ohneKennung = (auftrag?.positionen ?? []).filter(p => !p.lineItemId).length;
+  if (ohneKennung) gruende.push(`${ohneKennung} Position${ohneKennung === 1 ? '' : 'en'} ohne Bestellpositionskennung – Bestelldaten prüfen`);
+  const ohneId = (auftrag?.positionen ?? []).filter(p => !p.eigenleistung && (p.grosshaendlerId === 'UNGEKLAERT' || p.idGrund)).length;
   const massProbleme = (auftrag?.positionen ?? []).filter(p => ['abweichung', 'unlesbar', 'waise'].includes(p.masspruefung?.status)).length;
   if (c.beratung === 'Ja' && c.telefon === 'fehlt') gruende.push('Telefon fehlt trotz Beratung');
   else if (c.beratung === 'Ja' && rueckrufStatus && rueckrufStatus !== 'erledigt') gruende.push('Rückruf offen');
@@ -89,7 +90,7 @@ export function kundenFortschritt(auftraege, statusAlle = {}) {
   const echte = (auftraege || []).filter(a => !a.testbestellung);
   if (!echte.length) return { text: 'Keine Bestellungen', fertig: true, offene: 0, gesamt: 0 };
   const einzeln = echte.map(a => fortschritt(a, statusAlle));
-  const offene = einzeln.filter(f => f.stufe !== 'erledigt' && f.gesamt > 0).length;
+  const offene = einzeln.filter(f => f.unklar || (f.stufe !== 'erledigt' && f.gesamt > 0)).length;
   const fertig = offene === 0;
   return {
     text: fertig ? 'Alle Bestellungen erledigt' : `${offene} von ${echte.length} Bestellung${echte.length === 1 ? '' : 'en'} offen`,
@@ -119,6 +120,9 @@ export function bestellzeile(auftrag, { statusAlle = {}, rueckrufeAlle = {} } = 
   const tags = tagGruppen(d.tags);
   const beratungOffen = auftrag.checks?.beratung === 'Ja';
   const f = fortschritt(auftrag, statusAlle);
+  const waren = (auftrag.positionen || []).filter(p => p.istMuster !== true);
+  const warenAuftrag = { ...auftrag, positionen: waren };
+  const warenFortschritt = fortschritt(warenAuftrag, statusAlle);
   const rueckruf = rueckrufeAlle[auftrag.id];
   return {
     orderId: auftrag.id,
@@ -139,6 +143,7 @@ export function bestellzeile(auftrag, { statusAlle = {}, rueckrufeAlle = {} } = 
     tags: tags,
     testbestellung: !!auftrag.testbestellung,
     storniert: !!auftrag.storniert,
+    archiviert: !!auftrag.archiviert,
     offen: !!auftrag.offen,
     beratungOffen,
     // Der lokal gepflegte Rueckrufstand gehoert an die Zeile: ohne ihn stuende
@@ -148,7 +153,11 @@ export function bestellzeile(auftrag, { statusAlle = {}, rueckrufeAlle = {} } = 
     ampel: auftrag.ampel,
     adminUrl: auftrag.adminUrl,
     fortschritt: f,
-    fertig: f.stufe === 'erledigt' || f.gesamt === 0,
+    warenFortschritt,
+    warenWasFehlt: wasFehlt(warenAuftrag, rueckruf?.status, warenFortschritt),
+    positionsstatus: Object.fromEntries((auftrag.positionen || []).filter(p => p.lineItemId)
+      .map(p => [p.lineItemId, statusAlle[positionKey(auftrag.id, p.lineItemId)] || null])),
+    fertig: istFertig(auftrag, statusAlle),
     wasFehlt: wasFehlt(auftrag, rueckruf?.status, f),
     // Im Auftragsfluss schon beim Kunden, in Shopify aber ohne Sendung: nur ein Hinweis.
     versandHinweis: versandHinweis(auftrag, f, statusAlle),
@@ -215,7 +224,7 @@ export function wendeFilterAn(zeilen, filter) {
   switch (filter) {
     case 'nicht_fertig': return zeilen.filter(z => !z.fertig && !z.testbestellung);
     case 'fertig': return zeilen.filter(z => z.fertig && !z.testbestellung);
-    case 'offen': return zeilen.filter(z => z.offen && !z.testbestellung);
+    case 'offen': return zeilen.filter(bestellZahlungOffen);
     case 'bezahlt': return zeilen.filter(z => z.zahlungsstatus === 'PAID');
     case 'unerfuellt': return zeilen.filter(z => ['UNFULFILLED', 'PARTIALLY_FULFILLED', null].includes(z.fulfillmentstatus));
     case 'storniert': return zeilen.filter(z => z.storniert);

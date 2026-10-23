@@ -16,7 +16,11 @@ import { einkauf } from '../ansichten/einkauf/auftragsfluss.mjs';
 import { lexikon } from '../ansichten/lexikon.mjs';
 import { kunden } from '../ansichten/kunden/gemeinsam.mjs';
 import { shopwache } from '../ansichten/shopwache.mjs';
+import { verwirfMusterwirkung } from '../ansichten/kunden/musterwirkung.mjs';
 import { verwirfHeuteDaten } from '../ansichten/heute/daten.mjs';
+import { verwirfVersandtarif } from '../ansichten/einkauf/versandkosten.mjs';
+import { belege } from '../ansichten/einkauf/belege.mjs';
+import { shopifyAbgleich } from '../ansichten/einkauf/shopify-abgleich.mjs';
 
 // Ohne Eintrag stuende hier der interne Schluessel ('warenkoerbe') - die vier
 // Teile kamen spaeter dazu und fehlten in dieser Liste.
@@ -172,7 +176,8 @@ export async function aktualisierenNow() {
  * (aufgeklappte Zeilen, Entwuerfe) - sonst verlaere der Benutzer beim
  * Aktualisieren seine Arbeit.
  */
-function verwirfDatenspeicher() {
+export function verwirfDatenspeicher() {
+  verwirfVersandtarif();
   Object.assign(einkauf, {
     bestellungen: null, produktstatus: null, produktstatusKey: null,
     auftragsstatus: null, kennzahlen: null, lieferanten: null,
@@ -180,11 +185,15 @@ function verwirfDatenspeicher() {
   Object.assign(kunden, {
     suche: null, sucheKey: null, detail: null, detailKey: null,
     rueckrufe: null, bestellungen: null, angebote: null, faelle: null,
-    warenkoerbe: null, notizen: null, notizenKey: null,
+    warenkoerbe: null, notizen: null, notizenKey: null, musterPacken: null,
   });
   Object.assign(lexikon, { liste: null, listeKey: null, produkt: null, produktKey: null });
   shopwache.daten = null;
+  // Lieferantenpost und Abgleich mit Shopify haengen an denselben Laeufen (bausteine/datenstand.mjs laedt nach).
+  belege.daten = null;
+  shopifyAbgleich.daten = null;
   verwirfHeuteDaten();
+  verwirfMusterwirkung();
 }
 
 function pollAktualisierung() {

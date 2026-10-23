@@ -16,7 +16,7 @@ import { musterText, musterHerkunftText } from '../../lib/bestellinhalt.mjs';
 import { state } from '../../kern/zustand.mjs';
 import { uebernahmeBlock } from './beschaffung.mjs';
 import { $, esc, fmtDate, plural, toast, NICHT_HINTERLEGT } from '../../kern/helfer.mjs';
-import { fetchEinkauf } from '../../kern/api.mjs';
+import { fetchEinkauf, orgSchreiben } from '../../kern/api.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
@@ -32,14 +32,29 @@ const aufgeklappt = new Set();
 
 const detailLink = id => `#/einkauf?lieferant=${encodeURIComponent(id)}`;
 
+/** Dieselbe Bestelluebersicht nach Art eingrenzen; Quelle und lokale Status bleiben unveraendert. */
+export function bestellartDaten(d, art = '') {
+  if (!d || !['muster', 'ware'].includes(art)) return d;
+  const passt = p => art === 'muster' ? p.istMuster === true : p.istMuster !== true;
+  const auftraege = liste => (liste || []).map(a => {
+    const positionen = (a.positionen || []).filter(passt);
+    return { ...a, positionen, details: a.details ? { ...a.details,
+      positionen: (a.details.positionen || []).filter((_, i) => passt((a.positionen || [])[i] || {})) } : a.details };
+  }).filter(a => a.positionen.length);
+  return { ...d, gruppen: art === 'muster' ? [] : d.gruppen,
+    musterGruppen: art === 'ware' ? [] : d.musterGruppen,
+    auftraege: auftraege(d.auftraege), testauftraege: auftraege(d.testauftraege) };
+}
+
 function karten(d = einkauf.bestellungen || {}) {
+  d = bestellartDaten(d, state.route.params.get('art'));
   const l = einkauf.lieferanten;
   return lieferantenKarten({
     gruppen: d.gruppen, musterGruppen: d.musterGruppen,
     lieferanten: l?.lieferanten || [],
     eintragFuer: afEintragFuer,
     schwellen: l?.schwellen || SCHWELLEN_STANDARD,
-  });
+  }).filter(k => !['muster', 'ware'].includes(state.route.params.get('art')) || k.wareGruppen.length || k.musterGruppen.length);
 }
 
 function kundenNamen() {
@@ -54,8 +69,8 @@ function kundenNamen() {
 /** "Ware im Händlerportal · Muster per E-Mail an …" - oder was fehlt. */
 function wegZeile(k) {
   if (!k.zugeordnet) return '<p class="lf-weg">Diese Artikel haben keinen Lieferanten hinterlegt – erst zuordnen, dann bestellen.</p>';
-  const ware = bestellwegText(k.stammdaten, 'ware');
-  const muster = bestellwegText(k.stammdaten, 'muster');
+  const ware = state.route.params.get('art') === 'muster' ? null : bestellwegText(k.stammdaten, 'ware');
+  const muster = state.route.params.get('art') === 'ware' ? null : bestellwegText(k.stammdaten, 'muster');
   if (!ware && !muster) return `<p class="lf-weg lf-fehlt">Bestellweg nicht hinterlegt · <a href="${detailLink(k.id)}">was fehlt?</a></p>`;
   return `<p class="lf-weg">${[ware ? `Ware ${esc(ware)}` : null, muster ? `Muster ${esc(muster)}` : null].filter(Boolean).join(' · ')}</p>`;
 }
@@ -107,7 +122,7 @@ const musterKnopf = (k, klasse) => `<button type="button" class="${klasse}" data
 /** Nichts zu bestellen, aber ueberfaellig: dann ist Nachhaken der naechste Schritt. */
 function nachhakKnopf(k) {
   if (!k.zugeordnet || k.zahlen.zuBestellen || k.zahlen.musterOffen || !k.ueberfaellig.stufe) return '';
-  const w = k.stammdaten.ware;
+  const w = state.route.params.get('art') === 'muster' ? k.stammdaten.muster : k.stammdaten.ware;
   if (w.telefon) return `<a class="btn" href="${esc(telLink(w.telefon))}">Anrufen</a>`;
   if (w.mail) return `<a class="btn" href="mailto:${esc(w.mail)}">E-Mail schreiben</a>`;
   return '';
@@ -197,7 +212,7 @@ function ruhigeListe(zeilen, max) {
 
 /** Kontakt fuers Nachfassen: Telefon vor Mail, sonst die Detailseite mit Kontakt. */
 function nachfassKnopf(k) {
-  const w = k.stammdaten.ware;
+  const w = state.route.params.get('art') === 'muster' ? k.stammdaten.muster : k.stammdaten.ware;
   if (w.telefon) return `<a class="btn" href="${esc(telLink(w.telefon))}">Anrufen</a>`;
   if (w.mail) return `<a class="btn" href="mailto:${esc(w.mail)}">E-Mail schreiben</a>`;
   return `<a class="btn" href="${detailLink(k.id)}">Kontakt</a>`;
@@ -290,9 +305,9 @@ function karteHtml(k, { gruppeKarte, namen, af, alleGruppen, alleMusterGruppen }
  * Abschnitten "Nachfassen". Ein Auftrag mit Ware von zwei Lieferanten zaehlt einmal - die
  * Summe je Karte zaehlte ihn doppelt (Codex-Audit 2026-10-19).
  */
-export function nachfassenSumme() {
+export function nachfassenSumme(daten) {
   const ids = new Set(); let ohneId = 0; let crit = false;
-  for (const k of karten()) {
+  for (const k of karten(daten)) {
     if (!k.ueberfaellig.stufe) continue;
     crit ||= k.ueberfaellig.stufe === 'crit';
     for (const x of k.ueberfaellig.positionen) { const id = x.pos?.orderId || x.pos?.orderName; if (id) ids.add(id); else ohneId += 1; }
@@ -324,7 +339,11 @@ export function lieferantenKartenHtml({ gruppeKarte, daten = einkauf.bestellunge
 
 // ------------------------------------------------------------ Bestellmail-Dialog
 
-const dialog = { lieferant: null, art: 'ware', auftrag: null, ziel: '', daten: null, markiert: new Set(), gesetzt: new Map() };
+// Nur im offenen Dialog, nie dauerhaft: kurze Freigabe fuer den zweiten Legacy-Kopierklick.
+let kopierFreigaben = new WeakMap();
+const KOPIERFREIGABE_MS = 10_000;
+
+const dialog = { lieferant: null, art: 'ware', auftrag: null, ziel: '', daten: null, fehler: null, abruf: 0, prueft: false, markiert: new Set(), gesetzt: new Map() };
 
 /** Kunde · Ort einer Bestellung als kurzer Text (Ort = Stadt der Lieferadresse). */
 function kundeOrtText(orderId) {
@@ -343,11 +362,11 @@ function musterWahlListe(m) {
 const LIEFERZIEL_TEXT = { laden: 'Lieferung in den Laden', kunde: 'Lieferung direkt an den Kunden', baustelle: 'Lieferung direkt an die Baustelle', kettler: 'Lieferung an unseren Kettler' };
 
 /**
- * Ware mit Ketteln, die sich fuer unseren Kettler anbietet (Kunde in der Naehe oder bis 2 m).
+ * Ware mit Ketteln, die sich fuer unseren Kettler anbietet (gekettelt mit Fertigmass oder Kunde in der Naehe).
  * Nur ein Hinweis - umgeschaltet wird mit "Kettler" oben; der Server begruendet je Position.
  */
 function kettlerHinweis(m) {
-  if (m.kettlerAutomatisch) return '<p class="small muted lf-kettler">Nach unserer Regel: Gekettelte Maßteppiche unter 2 m kettelt unser Kettler. Der Lieferant schickt sie ungekettelt im Fertigmaß dorthin, wir holen sie dort ab.</p>';
+  if (m.kettlerAutomatisch) return '<p class="small muted lf-kettler">Nach unserer Regel: Gekettelte Maßteppiche kettelt unser Kettler. Der Lieferant schickt sie ungekettelt im Fertigmaß dorthin, wir holen sie dort ab.</p>';
   const liste = m.kettlerVorschlag || [];
   if (m.art !== 'ware' || !m.kettlerMoeglich || m.lieferziel === 'kettler' || !liste.length) return '';
   return `<div class="notice lf-kettler"><strong>Über unseren Kettler? (${liste.length})</strong>
@@ -356,7 +375,7 @@ function kettlerHinweis(m) {
 }
 
 /**
- * Lieferziel-Knoepfe. Mit Kettler gibt es "Automatisch" (Regel: unter 2 m zum Kettler, Rest
+ * Lieferziel-Knoepfe. Mit Kettler gibt es "Automatisch" (Regel: gekettelt zum Kettler, Rest
  * normal) - die anderen Knoepfe schicken die ganze Bestellung an ein Ziel.
  */
 function zielChips(m) {
@@ -381,6 +400,7 @@ function mailAbschnitt(m, i, mehrere) {
     return `<section class="lf-mail">${kopf}${zielWahl}${kettlerHinweis(m)}${(m.fehlt || []).length ? '' : `<p class="lf-leer">Nichts mehr zu bestellen. ${esc(schon)}</p>`}${fehlt}${ohne}</section>`;
   }
   const fertig = dialog.markiert.has(i);
+  const vorbereitet = !lesend && !dialog.fehler && !!m.vorbereitungStand;
   const n = m.positionen.length;
   const wort = m.art === 'muster' ? 'Muster' : 'Artikel';
   const oeffnen = [];
@@ -408,11 +428,11 @@ function mailAbschnitt(m, i, mehrere) {
         <div class="lf-frage-knoepfe"><button type="button" class="btn btn-primary" data-lf-markieren="${i}">${plural(n, wort, wort)} als bestellt markieren</button><button type="button" class="btn btn-ghost" data-lf-nicht="${i}">Noch nicht</button></div>
       </div>`;
   return `<section class="lf-mail">${kopf}${zielWahl}${kettlerHinweis(m)}
-    ${uebernahmeBlock(m.positionen)}
+    ${uebernahmeBlock(m.positionen).replaceAll('data-einkauf-uebernahme=', 'data-lf-uebernahme=')}
     <dl class="lf-mailkopf"><dt>An</dt><dd>${an}</dd><dt>Betreff</dt><dd>${esc(m.betreff)}</dd></dl>
     <pre class="lf-mailtext" tabindex="0">${esc(m.text)}</pre>
     ${gekuerzt}${fehlt}${ohne}${hinweise}${fertig ? '' : musterWahlListe(m)}
-    ${fertig ? '' : `<div class="lf-mail-knoepfe">${oeffnen.join('')}<button type="button" class="${oeffnen.length ? 'btn' : 'btn btn-primary'}" data-kopiertext="${esc(m.text)}" data-lf-geoeffnet="${i}">Text kopieren</button></div>`}
+    ${fertig || !vorbereitet ? '' : `<div class="lf-mail-knoepfe">${oeffnen.join('')}<button type="button" class="${oeffnen.length ? 'btn' : 'btn btn-primary'}" data-kopiertext="${esc(m.text)}" data-lf-geoeffnet="${i}">Text kopieren</button></div>`}
     ${frage}
   </section>`;
 }
@@ -428,36 +448,194 @@ function zeichneDialog() {
   else inhalt = d.mails.map((m, i) => mailAbschnitt(m, i, d.mails.length > 1)).join('');
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop lf-dialog-boden" data-close-dialog><div class="dialog lf-dialog" role="dialog" aria-modal="true" aria-labelledby="lfTitel">
     <h2 id="lfTitel" class="lf-name">${titel}</h2>
+    <p class="notice warn" data-lf-fehler role="alert"${dialog.fehler ? '' : ' hidden'}>${esc(dialog.fehler || '')}</p>
+    <button type="button" class="btn btn-sm" data-lf-neu${dialog.fehler ? '' : ' hidden'}>Vorbereitung erneut prüfen</button>
     ${inhalt}
-    <div class="actions"><span class="small muted lf-nie">Es wird nichts automatisch gesendet.</span><button type="button" class="btn" data-close-dialog>Schließen</button></div>
+    <div class="actions"><span class="small muted lf-nie">Aus diesem Dialog wird nichts gesendet. Freigegebene kostenlose Muster bestellt die Automatik.</span><button type="button" class="btn" data-close-dialog>Schließen</button></div>
   </div></div>`;
 }
 
 async function ladeDialog() {
-  const q = new URLSearchParams({ lieferant: dialog.lieferant, art: dialog.art });
-  // Aus "Je Auftrag" kommt der Auftrag mit dem Knopf, sonst aus der Adresse (#/einkauf?auftrag=).
-  const auftrag = dialog.auftrag || state.route.params.get('auftrag');
-  if (auftrag) q.set('auftrag', auftrag);
-  if (dialog.ziel) q.set('ziel', dialog.ziel);
-  const fuer = `${dialog.lieferant}|${dialog.art}|${dialog.ziel}`;
-  const daten = await fetchEinkauf(`/api/einkauf/bestellmail?${q}`);
-  // Zwischenzeitlich geschlossen oder umgeschaltet? Dann nichts mehr zeichnen.
-  if (fuer !== `${dialog.lieferant}|${dialog.art}|${dialog.ziel}` || !$('#dialogRoot .lf-dialog')) return;
+  kopierFreigaben = new WeakMap();
+  const abruf = ++dialog.abruf;
+  const payload = vorbereitungsPayload();
+  let daten, fehler = null;
+  try {
+    daten = istNurLesend()
+      ? await fetchEinkauf(`/api/einkauf/bestellmail?${new URLSearchParams(payload)}`)
+      : await orgSchreiben('/api/einkauf/auftragsstatus', { ...payload, aktion: 'bestellVorbereitung' });
+  } catch (e) {
+    fehler = e.message;
+    // Bei einer fremden Uebernahme bleibt die Vorlage lesbar. Oeffnen/Kopieren
+    // wird erst nach einer erfolgreichen eigenen Vorbereitung angeboten.
+    daten = await fetchEinkauf(`/api/einkauf/bestellmail?${new URLSearchParams(payload)}`);
+  }
+  if (abruf !== dialog.abruf || !$('#dialogRoot .lf-dialog')) return;
+  const stand = await fetchEinkauf('/api/einkauf/auftragsstatus');
+  if (abruf !== dialog.abruf || !$('#dialogRoot .lf-dialog')) return;
+  if (stand?.verfuegbar) einkauf.auftragsstatus = stand;
+  dialog.fehler = fehler;
   dialog.daten = daten;
   zeichneDialog();
   $('#dialogRoot .lf-mail-knoepfe .btn-primary, #dialogRoot [data-close-dialog].btn')?.focus();
 }
 
 export function openBestellmailDialog(lieferant, art = 'ware', { auftrag = null } = {}) {
-  Object.assign(dialog, { lieferant, art: art === 'muster' ? 'muster' : 'ware', auftrag: auftrag || null, ziel: '', daten: null, markiert: new Set(), gesetzt: new Map() });
+  Object.assign(dialog, { lieferant, art: art === 'muster' ? 'muster' : 'ware', auftrag: auftrag || state.route.params.get('auftrag') || null, ziel: '', daten: null, fehler: null, prueft: false, markiert: new Set(), gesetzt: new Map() });
   zeichneDialog();
   ladeDialog();
+}
+
+function vorbereitungsPayload() {
+  return { lieferant: dialog.lieferant, art: dialog.art, auftrag: dialog.auftrag || '', ziel: dialog.ziel || '' };
+}
+
+function vorbereitungFehler(text) {
+  kopierFreigaben = new WeakMap();
+  dialog.fehler = text;
+  const hinweis = $('#dialogRoot [data-lf-fehler]');
+  if (hinweis) { hinweis.textContent = text; hinweis.hidden = false; }
+  const neu = $('#dialogRoot [data-lf-neu]');
+  if (neu) neu.hidden = false;
+  document.querySelectorAll('#dialogRoot [data-lf-geoeffnet], #dialogRoot [data-lf-markieren]').forEach(el => {
+    el.setAttribute('aria-disabled', 'true');
+    if (el.tagName === 'A') el.removeAttribute('href'); else el.disabled = true;
+  });
+}
+
+/** Unmittelbar vor der Uebergabe: dieselbe Vorlage und eigene Uebernahme frisch bestaetigen. */
+async function pruefeVorbereitung(i) {
+  if (istNurLesend() || dialog.fehler || dialog.prueft) return false;
+  const m = dialog.daten?.mails?.[i];
+  if (!m?.vorbereitungStand) return false;
+  const abruf = dialog.abruf;
+  dialog.prueft = true;
+  try {
+    await orgSchreiben('/api/einkauf/auftragsstatus', { ...vorbereitungsPayload(), aktion: 'bestellPruefen', mailStand: m.vorbereitungStand });
+    return abruf === dialog.abruf && !!$('#dialogRoot .lf-dialog');
+  } catch (e) {
+    if (abruf === dialog.abruf && $('#dialogRoot .lf-dialog')) vorbereitungFehler(e.message);
+    return false;
+  } finally {
+    if (abruf === dialog.abruf) dialog.prueft = false;
+  }
+}
+
+/** Eine bewusste Freigabe/Übernahme soll auch den offenen Vorbereitungsdialog nachziehen. */
+async function aendereDialogUebernahme(knopf) {
+  if (istNurLesend() || dialog.prueft) return;
+  knopf.disabled = true;
+  kopierFreigaben = new WeakMap();
+  const abruf = ++dialog.abruf;
+  try {
+    const positionen = JSON.parse(knopf.dataset.einkaufPositionen);
+    const aktion = knopf.dataset.lfUebernahme;
+    await orgSchreiben('/api/einkauf/auftragsstatus', { aktion: 'uebernahme', uebernahmeAktion: aktion, positionen });
+    if (abruf !== dialog.abruf || !$('#dialogRoot .lf-dialog')) return;
+    if (aktion !== 'freigeben') { await ladeDialog(); return; }
+    const stand = await fetchEinkauf('/api/einkauf/auftragsstatus');
+    if (abruf !== dialog.abruf || !$('#dialogRoot .lf-dialog')) return;
+    if (stand?.verfuegbar) einkauf.auftragsstatus = stand;
+    dialog.fehler = 'Du hast die Arbeit freigegeben. Für die Übergabe bitte erneut vorbereiten.';
+    zeichneDialog();
+  } catch (e) {
+    if (abruf === dialog.abruf && $('#dialogRoot .lf-dialog')) vorbereitungFehler(e.message);
+  }
+}
+
+/** Legacy: erst im zweiten bewussten Klick kopieren, solange dessen Serverfreigabe noch gilt. */
+function kopiereMitAuswahl(knopf, text) {
+  const feld = document.createElement('textarea');
+  feld.value = text; feld.readOnly = true; feld.rows = 6; feld.className = 'lf-mailtext';
+  feld.setAttribute('aria-label', 'Geprüften Bestelltext manuell kopieren');
+  if (knopf.insertAdjacentElement) knopf.insertAdjacentElement('afterend', feld);
+  else document.body.append(feld);
+  feld.focus?.(); feld.select();
+  let kopiert = false;
+  try { kopiert = document.execCommand('copy'); } catch { /* Sichtbare Auswahl bleibt als manueller Weg. */ }
+  if (kopiert) feld.remove();
+  else toast('Der Browser erlaubt das Kopieren nicht. Der geprüfte Text ist markiert: bitte mit ⌘C oder Strg+C kopieren.', 'warn');
+  return kopiert;
+}
+
+async function kopiereGepruefteVorlage(knopf, i) {
+  const mail = dialog.daten?.mails?.[i];
+  if (!mail?.vorbereitungStand) return false;
+  const abruf = dialog.abruf;
+  const stand = mail.vorbereitungStand;
+  const text = mail.text;
+  const scope = JSON.stringify(vorbereitungsPayload());
+  const gleich = () => abruf === dialog.abruf && !dialog.fehler && !!$('#dialogRoot .lf-dialog')
+    && dialog.daten?.mails?.[i] === mail && mail.vorbereitungStand === stand && mail.text === text
+    && JSON.stringify(vorbereitungsPayload()) === scope;
+  const freigabe = kopierFreigaben.get(knopf);
+  kopierFreigaben.delete(knopf);
+  if (freigabe && freigabe.abruf === abruf && freigabe.stand === stand && freigabe.text === text
+      && freigabe.scope === scope && Date.now() - freigabe.am < KOPIERFREIGABE_MS && gleich()) {
+    const kopiert = kopiereMitAuswahl(knopf, text);
+    knopf.textContent = kopiert ? 'Kopiert' : 'Text markiert – bitte manuell kopieren';
+    return kopiert;
+  }
+  const pruefung = pruefeVorbereitung(i);
+  let schreiben = null;
+  // Safari verlangt clipboard.write im urspruenglichen Klick. Der Promise liefert vorher keinen Text.
+  if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
+    const inhalt = pruefung.then(ok => {
+      if (!ok || !gleich()) throw new Error('Vorbereitung nicht mehr freigegeben');
+      return new Blob([text], { type: 'text/plain' });
+    });
+    // Auch wenn ein Browser den Schreibaufruf sofort ablehnt, bleibt eine verweigerte Pruefung behandelt.
+    void inhalt.catch(() => {});
+    try {
+      schreiben = Promise.resolve(navigator.clipboard.write([new ClipboardItem({ 'text/plain': inhalt })]))
+        .then(() => true, () => false);
+    } catch { /* Ohne passenden API-Zugang folgt ein zweiter bewusster Klick. */ }
+  }
+  if (!await pruefung || !gleich()) return false;
+  if (schreiben && await schreiben) {
+    if (!gleich()) return false;
+    knopf.textContent = 'Kopiert';
+    return true;
+  }
+  if (!gleich()) return false;
+  kopierFreigaben.set(knopf, { abruf, stand, text, scope, am: Date.now() });
+  knopf.textContent = 'Jetzt kopieren';
+  toast('Vorlage geprüft. Bitte innerhalb von 10 Sekunden noch einmal „Jetzt kopieren“ anklicken.', '');
+  return false;
+}
+
+async function uebergebeVorlage(knopf) {
+  const i = Number(knopf.dataset.lfGeoeffnet);
+  if (dialog.prueft || dialog.fehler || istNurLesend()) return;
+  if (knopf.dataset.kopiertext !== undefined) {
+    if (await kopiereGepruefteVorlage(knopf, i)) {
+      const frage = $(`#dialogRoot [data-lf-frage="${i}"]`);
+      if (frage) frage.hidden = false;
+    }
+    return;
+  }
+  const href = knopf.getAttribute('href');
+  // Den neuen Tab im urspruenglichen Klick anlegen, damit die frische Serverpruefung
+  // den Browser-Popupschutz nicht ausloest. Bei Ablehnung bleibt kein leerer Tab zurueck.
+  const fenster = href && knopf.target === '_blank' ? window.open('about:blank', '_blank') : null;
+  if (fenster) fenster.opener = null;
+  const ok = await pruefeVorbereitung(i);
+  if (!ok) { fenster?.close(); return; }
+  if (href) {
+    if (knopf.target === '_blank') {
+      if (!fenster || fenster.closed) { toast('Der Browser hat den neuen Tab nicht geöffnet. Bitte Popups für dieses Dashboard erlauben und erneut klicken.', 'warn'); return; }
+      fenster.location.href = href;
+    } else window.location.href = href;
+  } else return;
+  const frage = $(`#dialogRoot [data-lf-frage="${i}"]`);
+  if (frage) frage.hidden = false;
 }
 
 async function markiereMail(i, knopf) {
   const m = dialog.daten?.mails?.[i];
   if (!m) return;
   knopf.disabled = true;
+  if (!await pruefeVorbereitung(i)) { if (!dialog.fehler) knopf.disabled = false; return; }
   const nr = ($(`#lfNr${i}`)?.value || '').trim() || null;
   // Ware-Mail an den Kettler: vermerken, damit der Auftragsfluss "unterwegs zum Kettler" zeigt.
   // Andere Ware-Mails nehmen einen alten Vermerk zurueck; Muster lassen ihn unberuehrt.
@@ -503,12 +681,13 @@ export function einkaufKlickLieferanten(e) {
   }
   const geoeffnet = e.target.closest('[data-lf-geoeffnet]');
   if (geoeffnet) {
-    // Nach dem Oeffnen (oder Kopieren) fragen, ob bestellt ist. Nur einblenden, nicht neu
-    // zeichnen: der Link (mailto/Portal) und das Kopieren laufen in diesem Klick noch.
-    const frage = $(`#dialogRoot [data-lf-frage="${geoeffnet.dataset.lfGeoeffnet}"]`);
-    if (frage) frage.hidden = false;
-    return false;
+    e.preventDefault();
+    void uebergebeVorlage(geoeffnet);
+    return true;
   }
+  const uebernahme = e.target.closest('[data-lf-uebernahme]');
+  if (uebernahme) { e.preventDefault(); void aendereDialogUebernahme(uebernahme); return true; }
+  if (e.target.closest('[data-lf-neu]')) { e.preventDefault(); dialog.fehler = null; ladeDialog(); return true; }
   const ziel = e.target.closest('[data-lf-ziel]');
   if (ziel) { dialog.ziel = ziel.dataset.lfZiel; dialog.markiert = new Set(); ladeDialog(); return true; }
   const rueck = e.target.closest('[data-lf-rueckgaengig]');

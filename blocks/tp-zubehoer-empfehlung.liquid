@@ -83,6 +83,14 @@
       assign tp_ze_leisten = true
       if tp_ze_belag contains 'zum Vollverkleben'
         assign tp_ze_art = 'klebevinyl'
+        # Die selbstklebende Daemmmatte ist laut Verlegeanleitung nur fuer Boeden
+        # eines Herstellers freigegeben; das sind genau diese Eigenmarken
+        # (docs/zubehoer-empfehlungen.md).
+        assign tp_ze_marke = product.metafields.custom.marke.value | append: ''
+        assign tp_ze_daemm_marken = 'Esterno,Grenvado,Norlando,Ulmavo,Gilardo' | split: ','
+        if tp_ze_daemm_marken contains tp_ze_marke
+          assign tp_ze_art = 'klebevinyl-daemmmatte'
+        endif
       endif
     when 'Kork'
       assign tp_ze_leisten = true
@@ -139,6 +147,8 @@
       assign tp_ze_regeln = 'unterlage|unterlage-fuer-designboeden-1-5-mm-mit-antirutsch-oberflaeche|Für Designböden und Klick-Vinyl.;unterlage|trittschalldaemmung-xps-fuer-laminat-und-parkett|Für Laminat, Parkett und Klick-Vinyl.'
     when 'klebevinyl'
       assign tp_ze_regeln = 'kleber|haftfixierung-fuer-designboeden|Für maßstabile PVC-Designbeläge, später wieder aufnehmbar.;kleber|universal-verlegeband-70-mm|Für Ränder an Wänden und Türen sowie Trittstufen.'
+    when 'klebevinyl-daemmmatte'
+      assign tp_ze_regeln = 'unterlage|selbstklebende-daemmmatte-fuer-klebevinyl-1-8-mm|Ohne Nasskleber verlegen – bis 15 dB leiser, für Fußbodenheizung geeignet.;kleber|haftfixierung-fuer-designboeden|Für maßstabile PVC-Designbeläge, später wieder aufnehmbar.;kleber|universal-verlegeband-70-mm|Für Ränder an Wänden und Türen sowie Trittstufen.'
     when 'vinyl-rolle'
       assign tp_ze_regeln = 'kleber|nass-und-haftklebstoff-fuer-elastische-belaege|Für PVC- und CV-Beläge, auch in stark belasteten Bereichen.;kleber|trockenklebstoff-fuer-bahnenware-rolle-75-cm|Ohne flüssigen Klebstoff – auf bestehendem Kunststein oder Terrazzo.;kleber|universal-verlegeband-70-mm|Für Ränder an Wänden und Türen sowie Trittstufen.'
     when 'kautschuk-bis-2-5mm'

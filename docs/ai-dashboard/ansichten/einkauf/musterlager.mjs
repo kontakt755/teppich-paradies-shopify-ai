@@ -15,6 +15,11 @@
  * Darunter Vorschlaege aus den Bestellungen: eingetroffene Probestuecke ("Rest einlagern?")
  * und Farben, die mehrfach als Muster bestellt wurden. Das Lager selbst ist nur lokal.
  *
+ * Verlegereste (Regel 2026-10-21, operations/lib/reste.mjs): Teppichboden und Vinyl von Lieferant
+ * A oder C, die wir verlegen, hinterlassen Reste - aufheben, beschriften, als "Verlegerest"
+ * einlagern. Ware anderer Hersteller (z. B. direkt bestellt) nur, wenn A oder C sie auch fuehrt:
+ * "Rest prüfen…" gleicht Hersteller, Qualitaet und Farbnummer gegen das Lexikon ab.
+ *
  * "Muster nicht verfuegbar" (Inhaber 2026-10-16, Zeitleiste): die betroffenen Farben sind im Shop
  * gesperrt. Oben "Im Shop sperren", wenn das nicht geklappt hat (Recht fehlt, kein Zugang,
  * kein eigener Muster-Artikel) - mit Link zur Variante in Shopify; darunter "Im Shop gesperrte
@@ -27,18 +32,19 @@ import { istNurLesend } from '../../kern/sitzung.mjs';
 import { render } from '../../kern/render.mjs';
 import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { ladeStandNeu } from './auftragsfluss.mjs';
-import { oeffneEtikettenDruck } from '../../bausteine/etiketten-druck.mjs';
+import { oeffneEtikettenDruck, etikettenFuerBestellung } from '../../bausteine/etiketten-druck.mjs';
 
 export const musterlager = { daten: null, laedt: false, geladenAm: 0 };
 
 /** So lange gilt der geladene Stand; danach beim naechsten Zeichnen still neu holen (Verschicktes zaehlt ab). */
 const FRISCH_MS = 30000;
 
-const ARTEN_STANDARD = { einzel: 'Einzelmuster', probestueck: 'Probestück 2 × 1 m', bahn: 'Bahn 4 m × 20 cm' };
+const ARTEN_STANDARD = { einzel: 'Einzelmuster', probestueck: 'Probestück 2 × 1 m', bahn: 'Bahn 4 m × 20 cm', rest: 'Verlegerest' };
 const ART_HINWEIS = {
   einzel: 'fertige Muster – jedes verschickte zählt ab',
   probestueck: 'z. B. PVC, Linoleum – wir schneiden A5-Muster zu',
   bahn: 'z. B. Teppichboden – wir schneiden A5-Muster zu',
+  rest: 'Rest vom Verlegen – beschriftet, wir schneiden A5-Muster zu',
 };
 
 export function ensureMusterlager({ neu = false } = {}) {
@@ -78,6 +84,7 @@ function bestandVon(e) {
 }
 
 const musterGroesse = () => musterlager.daten?.musterGroesse?.name || 'A5';
+const resteLieferanten = (trenner = ' und ') => (musterlager.daten?.reste?.lieferanten || ['A', 'C']).join(trenner);
 
 const passt = (e, q) => !q || [e.titel, e.farbe, e.ort, e.notiz, e.artLabel].some(v => String(v || '').toLowerCase().includes(q));
 
@@ -94,6 +101,7 @@ function zeileHtml(e) {
       ${e.leer || (zaehlbar(e) && nochDa(e) <= 0)
         ? `<button type="button" class="btn btn-sm" data-ml-wieder="${esc(e.id)}">Wieder da…</button>`
         : `<button type="button" class="btn btn-sm btn-ghost" data-ml-leer="${esc(e.id)}" title="Nichts mehr da – neue Musterbestellungen gehen wieder an den Lieferanten">Ist leer</button>`}
+      ${e.handle ? `<button type="button" class="btn btn-sm btn-ghost" data-ml-etikett-eintrag="${esc(e.id)}" title="Aufkleber für dieses Stück">Etikett</button>` : ''}
       <button type="button" class="btn btn-sm btn-ghost" data-ml-bearbeiten="${esc(e.id)}">Bearbeiten…</button>
     </div>`;
   return `<li class="ml-zeile${b.warn ? ' ml-knapp' : ''}">
@@ -117,14 +125,19 @@ function zeileHtml(e) {
 function vorschlagHtml(v, i) {
   const grund = v.grund === 'eingetroffen'
     ? `Probestück kam am ${fmtDate(v.eingetroffen.am)} vom Lieferanten (${v.eingetroffen.orderName}) – den Rest einlagern?`
-    : `${v.anzahl}× als Muster bestellt (${v.auftraege.join(', ')}) – einlagern spart die nächste Bestellung`;
+    : v.grund === 'verlegerest'
+      ? `Verlegeware kam am ${fmtDate(v.verlegerest.am)} (${v.verlegerest.orderName}) – Rest nach dem Verlegen aufheben, beschriften, einlagern${v.verlegerest.ueber ? ` · gibt es auch bei Lieferant ${v.verlegerest.ueber}` : ''}`
+      : `${v.anzahl}× als Muster bestellt (${v.auftraege.join(', ')}) – einlagern spart die nächste Bestellung`;
   const farbe = v.farbe && !String(v.titel).includes(v.farbe) ? v.farbe : '';
   return `<li class="ml-zeile">
     <div class="ml-was">
       <div class="ml-farbe">${esc(v.titel)}${farbe ? ` <span class="ml-farbe-zusatz">· ${esc(farbe)}</span>` : ''}</div>
       <div class="ml-angaben"><span>${esc(grund)}</span></div>
     </div>
-    ${istNurLesend() ? '' : `<div class="ml-aktionen"><button type="button" class="btn btn-sm" data-ml-vorschlag="${i}">Einlagern…</button></div>`}
+    <div class="ml-aktionen">
+      ${v.handle && v.grund === 'verlegerest' ? `<button type="button" class="btn btn-sm btn-ghost" data-ml-vorschlag-etikett="${i}">Etikett</button>` : ''}
+      ${istNurLesend() ? '' : `<button type="button" class="btn btn-sm" data-ml-vorschlag="${i}">Einlagern…</button>`}
+    </div>
   </li>`;
 }
 
@@ -140,8 +153,10 @@ export function viewEinkaufMusterlager() {
   const leer = d.eintraege.filter(e => bestandVon(e).warn).length;
 
   const kopf = `<div class="ml-kopf">
-    <p class="small muted ml-erklaerung">Muster, die wir selbst da haben. Kommt eine Musterbestellung für eines davon, steht sie automatisch auf „aus dem Musterlager“ – sie geht nicht in die Bestellung an den Lieferanten. Einzelmuster zählen beim Verschicken ab; von Probestück und Bahn schneiden wir A5-Muster zu. Gemischte Bestellungen gehen zusammen raus, sobald die Lieferanten-Muster da sind.</p>
+    <div class="ml-erklaerung"><p class="small muted">Muster, die wir selbst da haben. Kommt eine Musterbestellung für eines davon, steht sie automatisch auf „aus dem Musterlager“ – sie geht nicht in die Bestellung an den Lieferanten. Einzelmuster zählen beim Verschicken ab; von Probestück, Bahn und Verlegerest schneiden wir A5-Muster zu. Gemischte Bestellungen gehen zusammen raus, sobald die Lieferanten-Muster da sind.</p>
+    <p class="small muted"><b>Verlegereste:</b> Teppichboden und Vinyl von Lieferant ${esc(resteLieferanten())} – Rest immer aufheben und beschriften. Ware anderer Hersteller nur, wenn ${esc(resteLieferanten(' oder '))} sie auch führt: „Rest prüfen…“.</p></div>
     <div class="btn-row">${istNurLesend() ? '' : '<button type="button" class="btn btn-primary" data-ml-neu>Muster einlagern…</button>'}
+    <button type="button" class="btn" data-ml-rest-pruefen>Rest prüfen…</button>
     <button type="button" class="btn" data-ml-etikett>Etikett drucken…</button></div>
   </div>`;
   // Eine Zeile mit den drei Zahlen, die vom Normalfall abweichen; 0 faellt weg.
@@ -356,7 +371,7 @@ function oeffneEinlagern(vorgabe = null) {
     const fd = new FormData(form);
     const basis = { aktion: 'einlagern', art: fd.get('art'), anzahl: fd.get('anzahl') || 1, ort: (fd.get('ort') || '').trim(), notiz: (fd.get('notiz') || '').trim() };
     const body = vorgabe
-      ? { ...basis, schluessel: [vorgabe.schluessel], titel: vorgabe.titel, farbe: vorgabe.farbe, handle: vorgabe.handle }
+      ? { ...basis, schluessel: vorgabe.schluesselAlle?.length ? vorgabe.schluesselAlle : [vorgabe.schluessel], titel: vorgabe.titel, farbe: vorgabe.farbe, handle: vorgabe.handle }
       : { ...basis, handle: produkt?.handle, farben: gewaehlteFarben() };
     if (!vorgabe && !body.farben.length) return;
     knopf.disabled = true;
@@ -439,7 +454,20 @@ export function einkaufKlickMusterlager(ev) {
   const v = ev.target.closest('[data-ml-vorschlag]');
   if (v) {
     const x = musterlager.daten?.vorschlaege?.[Number(v.dataset.mlVorschlag)];
-    if (x) oeffneEinlagern({ titel: x.titel, farbe: x.farbe, schluessel: x.schluessel, handle: x.handle, art: x.artVorschlag });
+    if (x) oeffneEinlagern({ titel: x.titel, farbe: x.farbe, schluessel: x.schluessel, schluesselAlle: x.schluesselAlle, handle: x.handle, art: x.artVorschlag });
+    return true;
+  }
+  if (ev.target.closest('[data-ml-rest-pruefen]')) { oeffneRestPruefen(); return true; }
+  const ve = ev.target.closest('[data-ml-vorschlag-etikett]');
+  if (ve) {
+    const x = musterlager.daten?.vorschlaege?.[Number(ve.dataset.mlVorschlagEtikett)];
+    if (x) druckeEtiketten([{ handle: x.handle, titel: x.titel, farbe: x.farbe, sku: x.schluessel }], 'Etikett für den Verlegerest');
+    return true;
+  }
+  const ee = ev.target.closest('[data-ml-etikett-eintrag]');
+  if (ee) {
+    const e = musterlager.daten?.eintraege?.find(x => x.id === ee.dataset.mlEtikettEintrag);
+    if (e) druckeEtiketten([{ handle: e.handle, titel: e.titel, farbe: e.farbe, sku: e.schluessel?.[0] }], 'Etikett');
     return true;
   }
   const finde = id => musterlager.daten?.eintraege?.find(e => e.id === id);
@@ -460,4 +488,89 @@ export function einkaufKlickMusterlager(ev) {
     return true;
   }
   return false;
+}
+
+// -- Verlegereste: Etikett und Pruefung fremder Ware -------------------------
+
+/** Aufkleber fuer Lagerstuecke: dieselben Etiketten wie fuer Muster (Serie, Farbe, Technik aus dem Lexikon). */
+async function druckeEtiketten(stuecke, titel) {
+  const positionen = stuecke.filter(x => x.handle).map(x => ({ istMuster: true, handle: x.handle, titel: x.titel, farbe: x.farbe, musterQuelle: { sku: x.sku || null, produktHandle: x.handle } }));
+  if (!positionen.length) { toast('Ohne Produkt im Lexikon kein Etikett – „Etikett drucken…“ oben füllt es von Hand.'); return; }
+  const etiketten = await etikettenFuerBestellung(positionen);
+  oeffneEtikettenDruck({ etiketten, titel });
+}
+
+/**
+ * "Rest prüfen": Ware direkt vom Hersteller oder von einem anderen Lieferanten - fuehrt A oder C sie auch? Dann den
+ * Rest unter dem A/C-Produkt einlagern und beschriften. Server: GET /api/einkauf/reste-abgleich.
+ */
+function oeffneRestPruefen() {
+  $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog ml-dialog" role="dialog" aria-modal="true" aria-labelledby="mlRestTitel" data-dialog novalidate>
+    <h2 id="mlRestTitel">Rest prüfen</h2>
+    <p class="small muted">Ware von einem anderen Hersteller oder Lieferanten, z. B. direkt beim Hersteller bestellt: Führt Lieferant ${esc(resteLieferanten(' oder '))} sie auch, kommt der Rest beschriftet ins Musterlager. Nur Hersteller eingeben zeigt alles, was es von ihm bei ${esc(resteLieferanten(' und '))} gibt.</p>
+    <div class="field"><label for="mlRestHersteller">Hersteller</label><input id="mlRestHersteller" name="hersteller" maxlength="120" autocomplete="off" placeholder="Name oder Kürzel wie auf dem Lieferschein"></div>
+    <div class="field"><label for="mlRestQualitaet">Qualität</label><input id="mlRestQualitaet" name="qualitaet" maxlength="120" autocomplete="off" placeholder="Name auf Lieferschein oder Etikett"></div>
+    <div class="field"><label for="mlRestFarbe">Farbnummer (optional)</label><input id="mlRestFarbe" name="farbnummer" maxlength="20" autocomplete="off" style="width:9rem"></div>
+    <div class="btn-row"><button type="submit" class="btn">Prüfen</button></div>
+    <div data-ml-rest-ergebnis></div>
+    <p data-ml-meldung hidden></p>
+    <div class="actions"><button type="button" class="btn" data-close-dialog>Schließen</button></div>
+  </form></div>`;
+  const form = $('#dialogRoot form');
+  const ziel = form.querySelector('[data-ml-rest-ergebnis]');
+  let treffer = [];
+  form.querySelector('#mlRestHersteller').focus();
+  form.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const fd = new FormData(form);
+    const q = { hersteller: String(fd.get('hersteller') || '').trim(), qualitaet: String(fd.get('qualitaet') || '').trim(), farbnummer: String(fd.get('farbnummer') || '').trim() };
+    if (!q.hersteller && !q.qualitaet) { zeigeMeldung(form, 'Hersteller oder Qualität angeben.'); return; }
+    form.querySelector('[data-ml-meldung]').hidden = true;
+    ziel.innerHTML = '<p class="small muted">Prüfe …</p>';
+    const d = await fetchEinkauf(`/api/einkauf/reste-abgleich?${new URLSearchParams(q)}`);
+    if (!d?.verfuegbar) { ziel.innerHTML = `<p class="notice crit">${esc(d?.hinweis || d?.error || 'Abgleich nicht möglich.')}</p>`; return; }
+    treffer = d.treffer || [];
+    ziel.innerHTML = treffer.length ? treffer.map(restTrefferHtml).join('') : `<p class="notice">Bei ${esc(resteLieferanten(' und '))} nicht gefunden – den Rest nicht als Muster aufheben.</p>`;
+  });
+  ziel.addEventListener('click', async ev => {
+    const knopf = ev.target.closest('[data-ml-rest-einlagern], [data-ml-rest-etikett]');
+    if (!knopf) return;
+    const t = treffer[Number(knopf.dataset.mlRestEinlagern ?? knopf.dataset.mlRestEtikett)];
+    const box = knopf.closest('[data-ml-rest-treffer]');
+    const farben = [...box.querySelectorAll('input[type=checkbox]:checked')].map(i => i.value);
+    if (!t || !farben.length) { zeigeMeldung(form, 'Mindestens eine Farbe ankreuzen.'); return; }
+    if ('mlRestEtikett' in knopf.dataset) {
+      // Ein Reststueck je Farbe - die Rollenbreiten derselben Farbe sind dasselbe Material.
+      const jeFarbe = new Map();
+      for (const f of t.farben) if (farben.includes(f.farbe) && !jeFarbe.has(f.farbe)) jeFarbe.set(f.farbe, f);
+      druckeEtiketten([...jeFarbe.values()].map(f => ({ handle: t.handle, titel: t.titel, farbe: f.farbe, sku: f.sku })), 'Etikett für den Verlegerest');
+      return;
+    }
+    const ort = String(box.querySelector('input[name=ort]')?.value || '').trim();
+    knopf.disabled = true;
+    const r = await schreibe({ aktion: 'einlagern', art: 'rest', anzahl: 1, handle: t.handle, farben: [...new Set(farben)], ort, notiz: `Verlegerest, geprüft: ${[form.querySelector('#mlRestHersteller').value, form.querySelector('#mlRestQualitaet').value].map(x => x.trim()).filter(Boolean).join(' ')}` });
+    if (!r.ok) { zeigeMeldung(form, r.text); knopf.disabled = false; return; }
+    toast(`${plural(r.anzahl, 'Verlegerest', 'Verlegereste')} eingelagert${ort ? ` · ${ort}` : ''} – jetzt beschriften`);
+    knopf.textContent = 'Eingelagert';
+    nachladen();
+  });
+}
+
+function restTrefferHtml(t, i) {
+  const lesend = istNurLesend();
+  // Farben ohne Namen lassen sich nicht einlagern (Lager ordnet ueber die Farbe zu).
+  const farben = [...new Map(t.farben.filter(f => f.farbe).map(f => [f.farbe, f])).values()];
+  const vorab = t.farbeGefunden || farben.length === 1;
+  return `<section class="ml-gruppe" data-ml-rest-treffer>
+    <h3>${esc(t.titel)} <span class="small muted">${esc([t.produktgruppe, `Lieferant ${t.lieferant}`].filter(Boolean).join(' · '))}</span></h3>
+    <p class="small muted">${esc(t.bezeichnung || '')}${t.hersteller ? ` · ${esc(t.hersteller)}` : ''}</p>
+    ${t.herstellerOffen ? '<p class="small ml-warn">Beim Lieferanten steht kein Hersteller – Qualität am Lieferschein vergleichen.</p>' : ''}
+    ${t.farbeGefunden ? '' : '<p class="small muted">Farbnummer nicht gefunden oder nicht angegeben – passende Farbe ankreuzen.</p>'}
+    <div class="ml-farbliste">${farben.map(f => `<label><input type="checkbox" value="${esc(f.farbe)}"${vorab ? ' checked' : ''}> ${esc(f.farbe)}${f.farbnummer && !String(f.farbe).includes(f.farbnummer) ? ` <span class="muted small">${esc(f.farbnummer)}</span>` : ''}${f.imLager ? ' <span class="muted small">(schon im Lager)</span>' : ''}</label>`).join('')}</div>
+    ${lesend ? '' : `<div class="field"><label>Lagerplatz <input name="ort" maxlength="80" autocomplete="off" placeholder="z. B. Regal B, Fach 3"></label></div>`}
+    <div class="btn-row">
+      <button type="button" class="btn btn-sm btn-ghost" data-ml-rest-etikett="${i}">Etikett</button>
+      ${lesend ? '' : `<button type="button" class="btn btn-sm btn-primary" data-ml-rest-einlagern="${i}">Als Verlegerest einlagern</button>`}
+    </div>
+  </section>`;
 }

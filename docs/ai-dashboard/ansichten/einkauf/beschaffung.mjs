@@ -1,10 +1,11 @@
 /** Manuelle Einkaufsangaben und sichtbare Arbeitsuebernahme im vorhandenen Dialoggeruest. */
 import { state } from '../../kern/zustand.mjs';
 import { $, esc, toast } from '../../kern/helfer.mjs';
+import { fetchEinkauf } from '../../kern/api.mjs';
 import { render } from '../../kern/render.mjs';
 import { istNurLesend } from '../../kern/sitzung.mjs';
 import { personId, uebernahmeText, einheitText, beschaffungsStand } from '../../lib/beschaffung.mjs';
-import { alleAuftraege, afEintragFuer, ladeStandNeu, einkauf, markiereMusterAngekommen } from './auftragsfluss.mjs';
+import { alleAuftraege, afEintragFuer, ladeStandNeu, einkauf, setzeAuftragsstatus } from './auftragsfluss.mjs';
 
 const istMusterPosition = (orderId, lineItemId) => Boolean(alleAuftraege().find(a => a.id === orderId)?.positionen?.find(p => p.lineItemId === lineItemId)?.istMuster);
 
@@ -52,7 +53,48 @@ function openBeschaffung(orderId, lineItemId, eingang) {
     catch (err) { const h = form.querySelector('[data-b-fehler]'); h.textContent = err.message; h.hidden = false; h.focus(); btn.disabled = false; }
   });
 }
+async function oeffneGemischtenWareneingang(orderId) {
+  const root = $('#dialogRoot');
+  const kontext = `${state.route.view}?${state.route.params}`;
+  root.innerHTML = `<div class="dialog-backdrop" data-close-dialog><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="bAuswahl"><h2 id="bAuswahl">Wareneingang je Position bestätigen</h2><p role="status">Aktuellen Positionsstand laden …</p><button type="button" class="btn" data-close-dialog>Schließen</button></div></div>`;
+  const fenster = $('#dialogRoot .dialog');
+  const aktuell = () => $('#dialogRoot .dialog') === fenster && `${state.route.view}?${state.route.params}` === kontext;
+  try {
+    const stand = await fetchEinkauf('/api/einkauf/auftragsstatus');
+    if (!aktuell()) return;
+    if (!stand?.verfuegbar || stand.fehler || !stand.positionen || typeof stand.positionen !== 'object' || Array.isArray(stand.positionen)) throw new Error(stand?.hinweis || 'Der aktuelle Positionsstand ist nicht verfügbar.');
+    einkauf.auftragsstatus = stand;
+    const alle = alleAuftraege().find(a => a.id === orderId)?.positionen || [];
+    if (!alle.length) throw new Error('Die Bestellpositionen sind nicht mehr verfügbar. Bitte die Bestellung aktualisieren.');
+    const muster = alle.filter(p => p.istMuster);
+    const ps = alle.filter(p => !p.istMuster);
+    // Ein einzelner Warenartikel braucht keine zweite Auswahl vor den bestaetigten Mengen.
+    if (!muster.length && ps.length === 1) { openBeschaffung(ps[0].orderId, ps[0].lineItemId, true); return; }
+    fenster.innerHTML = `<h2 id="bAuswahl">Wareneingang je Position bestätigen</h2><p>Nur tatsächlich vorliegende Positionen bestätigen. Fehlende Ware bleibt offen.</p>
+      ${muster.length ? `<p>Muster:</p>${muster.map(p => afEintragFuer(p)?.status === 'bestellt' ? `<p><button type="button" class="btn" data-b-muster-angekommen data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}">${esc(p.titel)} · ${esc(p.farbe || '')} als angekommen bestätigen</button></p>` : `<p class="small muted">${esc(p.titel)} · ${esc(p.farbe || '')} – ${['geliefert', 'raus', 'erledigt'].includes(afEintragFuer(p)?.status) ? 'bereits bestätigt oder abgeschlossen' : 'noch nicht als bestellt erfasst'}</p>`).join('')}` : ''}
+      ${ps.map(p => `<p><button type="button" class="btn" data-beschaffung data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}">${esc(p.titel)} · ${esc(p.farbe || '')}</button></p>`).join('')}
+      <button type="button" class="btn" data-close-dialog>Schließen</button>`;
+  } catch (err) {
+    if (!aktuell()) return;
+    fenster.innerHTML = `<h2 id="bAuswahl">Wareneingang nicht geladen</h2><p class="notice warn" role="alert">${esc(err.message)} Es wurde nichts bestätigt.</p><button type="button" class="btn" data-b-wareneingang-neu="${esc(orderId)}">Positionsstand erneut laden</button><button type="button" class="btn" data-close-dialog>Schließen</button>`;
+  }
+}
+
 export function beschaffungKlick(e) {
+  const neu = e.target.closest('[data-b-wareneingang-neu]');
+  if (neu) { e.preventDefault(); if (!istNurLesend()) void oeffneGemischtenWareneingang(neu.dataset.bWareneingangNeu); return true; }
+  const musterKnopf = e.target.closest('[data-b-muster-angekommen]');
+  if (musterKnopf) {
+    e.preventDefault();
+    if (istNurLesend() || musterKnopf.disabled) return true;
+    musterKnopf.disabled = true;
+    const p = { orderId: musterKnopf.dataset.afOrder, lineItemId: musterKnopf.dataset.afItem };
+    Promise.resolve().then(() => setzeAuftragsstatus(p, 'geliefert')).then(ok => {
+      if (ok) musterKnopf.textContent = 'Angekommen bestätigt';
+      else musterKnopf.disabled = false;
+    }).catch(() => { musterKnopf.disabled = false; toast('Muster konnte nicht bestätigt werden. Bitte erneut prüfen.', 'crit'); });
+    return true;
+  }
   const zs = e.target.closest('[data-zl-schritt="geliefert"]');
   if (zs) {
     // Reine Musterbestellung: ein Klick fuer alle (Zeitleiste setzt den Schritt fuer den ganzen
@@ -60,14 +102,8 @@ export function beschaffungKlick(e) {
     const alle = alleAuftraege().find(a => a.id === zs.dataset.zlOrder)?.positionen || [];
     if (alle.length && alle.every(p => p.istMuster)) return false;
     e.preventDefault(); if (istNurLesend()) return true;
-    const muster = alle.filter(p => p.istMuster && afEintragFuer(p)?.status === 'bestellt');
-    if (muster.length) markiereMusterAngekommen(muster);
-    const ps = alle.filter(p => !p.istMuster);
-    if (ps.length === 1) openBeschaffung(ps[0].orderId, ps[0].lineItemId, true);
-    else {
-      $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="bAuswahl"><h2 id="bAuswahl">Wareneingang je Position bestätigen</h2><p>Die Bestellung ist erst vollständig geliefert, wenn jede benötigte Menge bestätigt ist.</p>${ps.map(p => `<p><button type="button" class="btn" data-beschaffung data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}">${esc(p.titel)} · ${esc(p.farbe || '')}</button></p>`).join('')}<button type="button" class="btn" data-close-dialog>Schließen</button></div></div>`;
-      if (!ps.length) toast('Die Bestellpositionen sind noch nicht geladen. Bitte aktualisieren.', 'crit');
-    }
+    // Der frische Serverstand wird vor der Auswahl gelesen; ein leerer Browsercache ist kein Nullbestand.
+    void oeffneGemischtenWareneingang(zs.dataset.zlOrder);
     return true;
   }
   const b = e.target.closest('[data-beschaffung], [data-af-set][data-af-status="geliefert"]');

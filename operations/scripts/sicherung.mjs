@@ -38,8 +38,12 @@ export const STANDARD_AUFBEWAHRUNG_TAGE = 30;
 /** Relative Pfade unter $TP_PRIVAT_DIR, die die Sicherung umfasst. */
 export const SICHERUNGSPFADE = Object.freeze([
   'auftragsstatus.json',
+  'kettelversand.json',
   'auftragsverlauf.json',
   'musterherkunft.json',
+  // Gemeinsame Packhaken und manuell abgehakte Bestellungen gibt es nur lokal.
+  'muster-packen.json', 'muster-grossbrief.json',
+  'bestellmarken.json',
   // Musterlager: welche Muster wir selbst da haben (operations/lib/musterlager.mjs).
   'musterlager.json',
   // Gemeinsam vorgemerkte Musteretiketten samt Druckauftraegen.
@@ -101,7 +105,7 @@ export function vorhandeneQuellen(privatDir, pfade = SICHERUNGSPFADE) {
  */
 export function sichern({ privatDir = STANDARD_PRIVAT_DIR, ziel = null, jetzt = new Date(), tar = execFileSync } = {}) {
   const zielDir = ziel || path.join(privatDir, 'sicherungen');
-  fs.mkdirSync(zielDir, { recursive: true });
+  fs.mkdirSync(zielDir, { recursive: true, mode: 0o700 });
 
   const quellen = vorhandeneQuellen(privatDir);
   const uebersprungen = SICHERUNGSPFADE.filter((p) => !quellen.includes(p));
@@ -113,8 +117,19 @@ export function sichern({ privatDir = STANDARD_PRIVAT_DIR, ziel = null, jetzt = 
   const tmp = `${archiv}.${process.pid}.tmp`;
   // -C privatDir: Pfade im Archiv sind relativ (auftragsstatus.json, lexikon/...),
   // nicht der volle absolute Pfad des Rechners.
-  tar('tar', ['-czf', tmp, '-C', privatDir, ...quellen]);
-  fs.renameSync(tmp, archiv);
+  try {
+    // Bereits vor tar privat anlegen: das Archiv kann Zugangsdaten enthalten.
+    fs.closeSync(fs.openSync(tmp, 'wx', 0o600));
+    tar('tar', ['-czf', tmp, '-C', privatDir, ...quellen]);
+    const inhalt = String(tar('tar', ['-tzf', tmp], { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }));
+    const eintraege = inhalt.split('\n');
+    const fehlt = quellen.filter(rel => !eintraege.some(e => e === rel || e.startsWith(`${rel}/`)));
+    if (fehlt.length) throw new Error(`Sicherungsarchiv unvollstaendig: ${fehlt.join(', ')}`);
+    fs.chmodSync(tmp, 0o600);
+    fs.renameSync(tmp, archiv);
+  } finally {
+    fs.rmSync(tmp, { force: true });
+  }
 
   const bytes = fs.statSync(archiv).size;
   // Erst nach fertigem Archiv: die Oberflaeche zeigt einen belegten Erfolg, keinen Versuch.

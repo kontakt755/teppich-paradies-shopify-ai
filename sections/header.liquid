@@ -338,7 +338,8 @@
     "@type": ["Organization", "HomeAndConstructionBusiness", "Store"],
     {%- comment -%}
       Feste Kennung des Unternehmens. snippets/tp-ratgeber-structured-data.liquid
-      verweist als author/publisher auf genau diese @id - ohne sie liefe der
+      verweist als author/publisher auf genau diese @id, sections/tp-verlegegebiet.liquid
+      als provider der Verlegung - ohne sie liefe der
       Verweis ins Leere. Bei einer Aenderung beide Stellen anpassen.
     {%- endcomment -%}
     "@id": {{ request.origin | append: '/#organization' | json }},
@@ -346,6 +347,8 @@
     {%- assign tp_schema_marke = shop.name | replace: 'TeppichParadies', 'Teppich Paradies' -%}
     "name": {{ tp_schema_marke | json }},
     {% if tp_schema_marke != shop.name %}"alternateName": {{ shop.name | json }},{% endif %}
+    {%- comment -%} Firmenname wie im Impressum und im Unternehmensprofil (Audit lokales SEO, W4) {%- endcomment -%}
+    "legalName": "Teppich Paradies Oranienburg GmbH",
     {% if settings.logo %}
       "logo": {{ settings.logo | image_url: width: 500 | prepend: "https:" | json }},
       "image": {{ settings.logo | image_url: width: 500 | prepend: "https:" | json }},
@@ -381,11 +384,14 @@
       sections/tp-verlegegebiet.liquid - dort stehen sie als vg_lat/vg_lon und
       als Radius-Einstellung. Wird der Radius dort geaendert, gehoert er auch
       hier nachgezogen; beides beschreibt dieselbe Zusage.
+      Koordinaten = Pin des Google-Unternehmensprofils (Saarlandstrasse 73-81),
+      seit 2026-10-21; vorher 52.7378 / 13.2485, rund 470 m noerdlich
+      (Audit lokales SEO, W1).
     {%- endcomment -%}
     "geo": {
       "@type": "GeoCoordinates",
-      "latitude": 52.7378,
-      "longitude": 13.2485
+      "latitude": 52.73417,
+      "longitude": 13.24482
     },
     "areaServed": { "@type": "Country", "name": "Deutschland", "identifier": "DE" },
     "makesOffer": {
@@ -393,7 +399,7 @@
       "itemOffered": { "@type": "Service", "serviceType": "Bodenverlegung", "name": "Aufmaß, Lieferung und Verlegung vor Ort" },
       "areaServed": {
         "@type": "GeoCircle",
-        "geoMidpoint": { "@type": "GeoCoordinates", "latitude": 52.7378, "longitude": 13.2485 },
+        "geoMidpoint": { "@type": "GeoCoordinates", "latitude": 52.73417, "longitude": 13.24482 },
         "geoRadius": 50000
       }
     },

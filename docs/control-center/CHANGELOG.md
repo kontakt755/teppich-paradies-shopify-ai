@@ -2,6 +2,458 @@
 
 Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste Stufe.
 
+## 2026-10-23 · Gemessene Restlaenge im bestehenden Rollenbestand (#1643)
+
+- **Geaendert:** Inhaber tragen die gemessene Restlaenge direkt bei der vorhandenen Restrolle ein.
+  Feste Breite, Vorschau und konservative Abrundung in volle m²; ausschliesslich physischer Bestand
+  mit atomarer Gegenpruefung, Vorgangs-ID, Protokoll und Read-back. Gebundene, reservierte,
+  zurueckgehaltene oder unbekannte Mengen sperren die Inventur. Der bestehende Ladenknopf
+  verlangt die Buchung vor Zahlung und Zuschnitt.
+- **Getestet:** Nur Attrappen: 12 m Bestand / 10 m Laden / 5 m Online in beiden Reihenfolgen
+  und gleichzeitig; Inventursperren, Dezimallaengen, 4-/5-m-Breite, leere Rolle, falsche Einheit,
+  alter Dialog, gleichzeitige physische Aenderung, erhaltene Onlinebindung, Berechtigungen und
+  Antwortverlust. Shopify-Operationen gegen das aktuelle Schema validiert. 916 Dashboard- und
+  892 Operationstests bestanden; Browser bei 390/1440 px: Inventur speichern, Ladenlaenge
+  abbuchen, gebundene Ware gesperrt, keine JavaScript-Fehler oder Seitenueberlaeufe.
+- **Risiken:** Die bisherigen ganzen m² sind konservativ, nicht zentimetergenau. Getrennte Rollen
+  bleiben getrennte Bestaende. Keine SumUp-Anbindung; das Team muss vor dem Ladenabschluss
+  buchen. Keine echten Produkt- oder Bestandsaenderungen im Test.
+- **Naechste Stufe:** PR-Diff unabhaengig pruefen und bestehenden Dashboard-Dienst aktualisieren;
+  neue Artikel bleiben bis zu bestaetigten Rollendaten und Preisen unveroeffentlicht.
+
+## 2026-10-23 · Offene Servicefolgearbeit und freiwilliges Versionsupdate (#1631)
+
+- **Geaendert:** Kontaktierte Anfragen, Termine und Angebote bleiben auf „Heute“ sichtbar und
+  zaehlen im Kundenreiter/der Navigation mit. Der vorhandene naechste Schritt und ein gezielter
+  Sprung zur bestehenden Anfrage ersetzen die reine Erstkontaktliste. Nur neue Anfragen tragen
+  die vorhandene Alterswarnung. Ein Dienstupdate zeigt einen manuellen Hinweis ausserhalb der
+  Ansicht; offene Eingaben und Dialoge sperren den Neuladen-Knopf bis zum Speichern/Schliessen.
+- **Getestet:** Ableitung mit allen offenen/abgeschlossenen Stati, genaue ID-Spruenge, keine
+  erfundene Ueberfaelligkeit; Versionsfingerabdruck ohne Datenexporte, HTML/GET-Konsistenz,
+  Herkunfts-/Methoden-/Rollenpruefung und Eingabeschutz. Browserpruefung gegen Datenkopie.
+- **Risiken:** Sichtbarkeit ist keine gemeinsame Statussynchronisation mit dem Laden. Dessen
+  vorhandene Wiedervorlage und der aggregierte Zahlenendpunkt bleiben erhalten; eine bestaetigte
+  Service→Laden-Vorgangsverknuepfung braucht weiterhin beide Datenmodelle.
+- **Naechste Stufe:** Nach Review den Dashboard-Dienst abgleichen; vorhandene offene Tabs sehen
+  den neuen Hinweis erstmals nach einem Laden dieser Fassung.
+
+## 2026-10-23 · Gewicht und gemeinsame Rollenmaße im Packdialog (#1629)
+
+- **Geaendert:** Der vorhandene Packstueckdialog berechnet aus Fertigmassen, Form,
+  echter Teppichanzahl und Gesamtgewicht je m² das Materialgewicht; Verpackungsgewicht
+  ergibt das Bruttogewicht. Gesamtdicke, Rollenkern und Verpackungszugabe liefern einen
+  theoretischen Durchmesser und kurze gemeinsame Rollenachse. Belegte Angaben sind
+  vorausgefuellt, fehlende Angaben direkt ergaenzbar. Vorschlaege fuellen die vorhandenen
+  Packfelder, manuelle Korrekturen bleiben moeglich. Neue Zusammenstellung entfernt alte
+  Packwerte; Aenderungen setzen physische Bestaetigungen zurueck. Der fertige Kettler-Verlauf
+  ist aufklappbar, die Packvorbereitung dadurch weiter oben.
+- **Getestet:** Rechen-, Daten-, API- und Bedienregressionen einschliesslich unterschiedlicher
+  Rollenbreiten, Hundertstel-m² statt Stueckzahl, unbekannter Materialwerte, Dezimalkomma,
+  Rundung und manueller Korrekturen. Gesamtsuite und Projekt-Guards gruen. Klickprobe auf
+  isolierter Datenkopie: zwei Rechtecke mit 120/80 × 170 cm ergeben 3,40 m² und mindestens
+  120 cm gemeinsame Achse; synthetische Materialwerte ergeben 122 × 21 × 21 cm und
+  7,30 kg, Speichern schliesst an den bestehenden GLS/GEL-Vergleich an.
+- **Risiken:** Rechenwerte ersetzen weder Messen/Wiegen noch schadloses gemeinsames Rollen.
+  Ohne Gesamtgewicht oder Gesamtdicke bleiben die betroffenen Vorschlaege leer; Polgewicht
+  und Florhoehe werden nicht ersatzweise genutzt. Es gibt keinen neuen Portokauf,
+  Versandnachweis oder Shopify-Schreibweg. Materialeingaben gelten fuer die aktuelle Planung.
+- **Naechste Stufe:** Nach Review den Dienst abgleichen; fertige Rolle im Betrieb messen und wiegen.
+
+## 2026-10-22 · Bewusste Shopify-Archivierung erhalten (#1626)
+
+- **Geaendert:** Der Shop-Fokus uebernimmt den ausdruecklichen Archivstatus aus `closedAt`.
+  Bewusst archivierte Warenauftraege mit geklaertem finanziellem Endzustand stehen unter
+  Fertig/Alle. Offene und unbekannte Zahlungen bleiben sichtbar. Die Anzeige sagt archiviert
+  und leitet daraus keinen Versand ab. Nicht archivierte lokale Abschluesse ohne Versandbeleg
+  bleiben weiterhin zur Kontrolle offen.
+- **Getestet:** Gesamtsuite 3.772 Tests gruen, gezielte Modell-/Projektions-/Filterregressionen
+  fuer Archivierung, Zahlungszustaende und alte Fehlmarker; Syntax und Projekt-Guards gruen.
+  Zwoelf Browserkombinationen der betroffenen Start-/Bestellansichten auf Desktop und Handy
+  mit drei Rollen ohne Fehler oder seitlichen Ueberlauf.
+- **Risiken:** Keine Shopify-Schreibaktion, kein neuer Versandbeleg oder automatischer Abschluss.
+  Vorhandene Bestelldaten und bewusste Archivierung bleiben die Quelle.
+- **Naechste Stufe:** Nach Review den laufenden Dienst mit diesem Anschlussfix abgleichen.
+
+## 2026-10-22 · Shop-Übersicht mit Warenkunden zuerst (#1624)
+
+- **Geaendert:** Heute startet mit offenen Warenbestellungen: zahlende Kunden zuerst,
+  mit Kunde, ganzem Bestellwert, Wartezeit und nächstem Schritt. Gemischte Aufträge nutzen
+  ausschließlich den Warenfortschritt; Muster, Details und bewusste Gesamtbestellaktionen
+  bleiben erhalten. Fehlmengen, offene Versandbuchungen und manuelle Haken ohne Nachweis
+  verschwinden nicht aus der Warenarbeit; auch alte lokale Abschlüsse ohne Versandvermerk
+  bleiben prüfpflichtig. Musterbestellung und Packstation folgen darunter;
+  allgemeine Laden-, Aufgaben- und Technikansichten bleiben gezielt erreichbar.
+- **Geaendert:** Bestellart `bart=ware|muster|alle` ergänzt die vorhandenen Statusfilter.
+  Alte direkte Links ohne Artwahl behalten alle Arten. Warenzahl auf Heute, Navigationszahl
+  und offene Warenliste verwenden denselben Umfang. Vier mobile Hauptwege sind Bestellungen,
+  Muster bestellen, Packstation und Lexikon; Mehr und der Hausknopf erhalten alle weiteren Wege.
+- **Geaendert:** Musterwirkung zeigt rein lesende Beobachtungen zu späteren Warenkäufen,
+  Wiederholungsmustern und jungen oder unklaren Fällen. Die Exportabfrage ergänzt den gegen
+  Admin-API 2026-07 validierten Positionswert nach allen Rabatten. Die Ansicht benennt das
+  Betriebsfenster von 90 Tagen plus älteren offenen Versand-/Zahlungsfällen; keine behauptete
+  vollständige Historie, Kaufursache oder Rentabilität. Versand-/Empfangskontrolle und bestehendes
+  Nachfassen bleiben in den vorhandenen Arbeitswegen. Ein vorhandener Bewertungsablauf wird
+  nicht um eine zweite Sendelogik ergänzt.
+- **Getestet:** gezielte Regressionen für Waren-/Mustertrennung einschließlich gemischter
+  Aufträge, Fortschritt, Zahlengleichheit, Fehler statt Null, Bestellfilter und Renderer;
+  Eigenleistungen ohne Lieferanten-ID-Pflicht; Syntax- und Importprüfungen. Gesamtsuite
+  3.767 Tests grün, Projekt-Guards und Geheimnisprüfung grün. 194 Browserkombinationen
+  aller Ansichten auf Desktop/Handy mit drei Rollen sowie 63 im Dunkelmodus und 24
+  Nachprüfungen der Eigenleistungs-/Versandbeleg-Korrekturen ohne Fehler oder seitlichen Überlauf.
+  Klickprobe auf isolierter Datenkopie: Warenzahl auf Startseite, Navigation und Liste
+  identisch; getrennte Artfilter ergeben zusammen den Gesamtumfang, konkreter Warenauftrag
+  direkt erreichbar.
+  Eine synthetische neue Musterposition erschien direkt auf Heute und in der bestehenden
+  Lieferanten-Vorbereitung; Dialog ohne Senden geschlossen, Datenkopie danach entfernt.
+  Alte Exportwerte erscheinen als unklar statt als erfundene Käufe.
+- **Risiken:** alte Exporte können die neuen Rabattwerte noch nicht enthalten; daraus wird
+  kein Kaufbeleg geraten. Frühere abgeschlossene Käufe außerhalb des Betriebsfensters können
+  fehlen. Der aktuelle Live-/Versandstatus des bestehenden Bewertungs-/Flow-Ablaufs ist über
+  die verfügbare Anbindung technisch nicht lesbar und bleibt ungeprüft. Keine automatische
+  Bestellung, Nachricht, physische Bestätigung oder Versandbuchung durch diesen Umbau.
+- **Naechste Stufe:** Nach PR-Review den Dienst abgleichen und den Bestellexport auffrischen;
+  reguläre Bedienung im Betrieb mit Ware und Drucker sowie Kostenbelege zur Musterbewertung.
+
+## 2026-10-22 · Sichere Mitarbeiterwege und sichtbare offene Arbeit (#1618)
+
+- **Geaendert:** Heute zeigt wartende Umschlaege und notwendige Bestellkontrollen direkt;
+  „Dringendes bearbeiten“ fuehrt in die vorhandene Wichtigkeitssortierung. Unvollstaendige
+  Quellen bleiben sichtbar; geladene Zusatzaufgaben behaupten keinen Gesamtabschluss.
+- **Geaendert:** Zahlung offen verwendet in Browser und Server dieselbe Zahlungsregel, auch
+  nach Versand und bei alten Treffern. Mobile Bestellkarten behalten jeden Kundennamen.
+  Sammelstatus laedt geladene Arbeitslisten einmal nach allen Positionen.
+- **Geaendert:** Gemischter Wareneingang liest den Positionsstand frisch und verlangt eine
+  ausdrueckliche Bestaetigung je Muster. Oeffnen/Abbrechen schreibt nichts; Doppelklicks sind
+  gesperrt. Packfehler erhalten den letzten Stand mit gezieltem lesendem Neuabruf. Alle
+  Bestellungen eines Umschlags und der Partnerladen-Rueckweg bleiben erreichbar.
+- **Geaendert:** Betriebsaufgaben, Rueckrufe, Kundenfaelle und Service-Anfragen sind Teil der
+  lokalen Arbeitsrevision. Aufgabenlisten laden im bestehenden geschuetzten Takt nach;
+  Detailformulare bleiben geschuetzt. Suchpalette bietet direkte Bestell-/Packwege und die
+  Team-Aufgabensuche, ohne Treffer der vorigen Eingabe weiterzuzeigen.
+- **Getestet:** Gesamtsuite, Projekt-Guards, alle Ansichten auf Desktop/Handy mit drei Rollen,
+  betroffene Ansichten im Dunkelmodus. Klickprobe auf isolierter Datenkopie: gemischter
+  Testauftrag beim Abbrechen 4 bestellt / 0 geliefert, nach Einzelbestaetigung 3 / 1;
+  Dringlichkeitseinstieg und Suche direkt zur Packstation. Fehler-, Kontext- und Retryfaelle
+  durch Regressionen abgesichert.
+- **Risiken/Annahmen:** Gemeinsamer Zugang und bestehende Fachablaeufe bleiben erhalten;
+  keine automatische Bestellung, Nachricht, Pack- oder Versandbestaetigung. Details in
+  [Mitarbeiterpruefung](MITARBEITERPRUEFUNG.md).
+- **Naechste Stufe:** regulaere Bedienung im Betrieb mit Ware und Drucker.
+
+## 2026-10-22 · Großbrief-Messwerte bleiben je Umschlag erhalten (#1621)
+
+- **Geändert:** Gewicht und Maße speichern automatisch zentral im privaten Datenordner und
+  erscheinen beim erneuten Öffnen, nach Neuladen und an anderen Arbeitsplätzen wieder.
+  Der Dialog wartet beim Schließen auf ausstehende Speicherung; Fehler lassen die Eingaben
+  stehen. Unvollständige Zahlen sind als Entwurf erlaubt. Geänderte Bestellungen, Muster oder
+  Adressen erhalten einen neuen Messkontext. Versionsprüfung verhindert stilles Überschreiben
+  durch parallele Arbeitsplätze. Bestandsbestätigung und Eignungsprüfung werden neu angefordert.
+- **Getestet:** API-Roundtrip mit neuer Instanz, Rollen, Versionenkonflikte, geänderte Adresse,
+  Menge/Bestellgruppe, unvollständige und ungültige Eingaben, defekte Ablage sowie Dateirechte.
+  Dashboard 811/811, Gesamtlauf 3661/3661; 180 Ansichtsprüfungen ohne Befund. Klickprobe
+  gegen Datenkopie: Schließen/ESC/Neuladen erhält alle Werte, Bestätigung bleibt offen,
+  paralleler Arbeitsplatz erhält Konflikt und kann den gespeicherten Stand neu laden; 390 px.
+- **Risiken:** Gemessene Werte sind keine Versandfreigabe. Bei Speicherfehlern die Meldung
+  beachten; die Vorbereitung bleibt bis zur Klärung offen. Kein Portokauf und keine Versandbuchung.
+- **Nächste Stufe:** physischer Probedruck und Altfallklärung bleiben unabhängig davon offen.
+
+## 2026-10-22 · Aktuelle Arbeitslisten und gemeinsame Bestellvorbereitung (#1616)
+
+- **Geaendert:** Der bestehende Statusabruf liefert eine lokale Arbeitsrevision. Geaenderte
+  Bestell-, Pack- und Einkaufsdaten werden alle 30 Sekunden und bei Tab-Rueckkehr nachgeladen;
+  laufende Eingaben und offene Dialoge bleiben geschuetzt. Bei einem Fehler bleibt der bisherige
+  Stand sichtbar, statt eine leere oder vermeintlich erledigte Liste anzuzeigen.
+- **Geaendert:** Nach Status- und Wareneingangsaktionen werden bereits geladene Bestell- und
+  Packlisten erneut gelesen. Das gilt fuer Einzelaktionen und nach Abschluss einer Sammelaktion.
+- **Geaendert:** Bewusstes Vorbereiten einer Lieferantenbestellung uebernimmt die enthaltenen
+  Positionen gemeinsam. Vor Kopieren, externem Oeffnen und „Als bestellt markieren“ prueft der
+  Server den aktuellen fachlichen Mailabschnitt und die eigene Arbeitsuebernahme erneut.
+  Fremde Uebernahmen blockieren auch den Inhaber, bis er die vorhandene ausdrueckliche
+  Uebernahmeaktion verwendet. Andere unveraenderte Mailabschnitte bleiben getrennt pruefbar.
+- **Getestet:** Gesamtsuite und Projekt-Guards; 60 Browserkombinationen auf Desktop/Handy,
+  drei Rollen und Dunkelmodus. Private Klickprobe mit zwei Zugaengen: fremde Uebernahme
+  blockiert, nach Freigabe weiterarbeiten, alte Vorlage abgewiesen; 3 Muster bestaetigt → 0
+  offen, lokale Wiedereroeffnung ohne Exportwechsel automatisch 0 → 3. Kein echter Versand.
+  Regressionen fuer Teilfehler, geschuetzte Eingaben und getrennte Mailabschnitte.
+  Kopieren beginnt auch bei verzoegerter Serverantwort im Benutzerklick; Inhalte bleiben bis
+  zur Freigabe gesperrt. Aeltere Browser bieten nach Pruefung einen kurzen zweiten Klick.
+  Kopierprobe im Browser sowie Regressionen fuer Gestenverlust, Ablehnung und manuelle Auswahl.
+- **Risiken/Annahmen:** Gleiche Anmeldung bedeutet weiterhin gemeinsame Identitaet. Externe
+  Mailprogramme und Gmail bestaetigen dem Dashboard keinen Versand; mehrfaches externes
+  Absenden kann es nicht ausschliessen. Keine automatischen Kaeufe, Nachrichten oder physischen
+  Pack-/Versandbestaetigungen; keine zweite Beleg- oder Shopify-Automatik.
+- **Naechste Stufe:** regulaere Bedienprobe im Betrieb.
+
+## 2026-10-22 · Ruhige Startseite und vier Arbeitswege (#1614)
+
+- **Geaendert:** Vier Hauptwege Heute / Muster bestellen / Bestellungen / Packstation;
+  weitere Links in vier standardgeschlossenen Bereichsgruppen. Aktive bzw. bewusst gewaehlte
+  Gruppe bleibt erreichbar, der alte globale Mehr-Offen-Schalter wird nicht uebernommen.
+  Bestehende Rollenrechte, externe Dashboardlinks und mobile Bedienung bleiben erhalten.
+- **Geaendert:** Heute buendelt offene Muster automatisch nach Lieferant und oeffnet zur
+  Vorbereitung den vorhandenen Bestelldialog. Bestellstand wird weiterhin bewusst bestaetigt. Fehlende Musterartikelnummern und
+  Mengen bleiben als Klaerbedarf sichtbar.
+  `art=muster` / `art=ware` trennen die Einkaufsprojektion ohne zweite Datenablage.
+  Weitere Aufgaben folgen darunter, System- und Hintergrundinformationen bleiben nachrangig.
+- **Geaendert:** Packstation zeigt jeweils eine der vier Arbeitslisten; Suche beruecksichtigt
+  alle Listen, Direktumschlaege oeffnen ihren Bereich. Bestellungen zeigen vier Hauptfilter;
+  sieben weitere Filter bleiben gezielt aufklappbar erhalten.
+- **Getestet:** gezielte Regressionen fuer Navigation, Gruppierung und Filter, Gesamtsuite und
+  Projekt-Guards; 24 helle Browserkombinationen auf drei Breiten sowie 24 dunkle Kombinationen
+  auf Desktop und Handy mit Inhaber-, Mitarbeiter- und Leserechten. Klickproben auf privater Datenkopie: direkte
+  Mustervorbereitung, Pack-Suche ueber alle Arbeitslisten und Abschlussfilter.
+- **Risiken/Annahmen:** Bestehender Betriebsbestand, keine neue Datenbank. Die Vorbereitung
+  bestellt und sendet nichts automatisch; Packstand bleibt von Versandbuchung getrennt.
+- **Naechste Stufe:** regulaere Bedienprobe der vier Arbeitswege im Betrieb.
+
+## 2026-10-22 · Vollstaendigkeit und sichere Packfaelle (#1608)
+
+- **Geaendert:** Auch Positionen nach der ersten API-Seite werden vollstaendig geladen; defekte,
+  wiederholte oder waehrend des Ladens geaenderte Seiten brechen ab und erhalten den bisherigen
+  Export. Aeltere Bestellungen mit offener Zahlung bleiben im Betriebsfenster. Fehlende
+  Positionskennungen verhindern den Abschluss, auch bei gemischten Auftraegen.
+- **Geaendert:** Bestellfilter „Alle Bestellungen“ und „Kontrolle noetig“; expliziter Abschlussfilter
+  zeigt auch aeltere Treffer seitenweise. Suche erklaert ihren Filter und kann mit einem Klick
+  auf alle echten Bestellungen erweitert werden. Manuelle Haken mit offenem Versand bleiben kontrollierbar.
+- **Geaendert:** Muster je Empfaengeradresse getrennt; unbekannte Kunden nie zusammenlegen.
+  Teilrueckerstattung und Direktversand sichtbar klaeren; Nullmengen nicht erneut packen.
+  Fehlende Adressen fuehren zur Bestellung, fehlende Zuordnung ins Lexikon. Serverseitige
+  Packpruefung verlangt eindeutige Angaben, erledigte Klaerung und eingelegte Muster.
+  Bei Teilrueckerstattung kann nur der ausdruecklich gepruefte Restumfang lokal bestaetigt werden;
+  die Bestaetigung bleibt an der Packmarke erhalten. Direktversand bleibt gesperrt.
+- **Getestet:** gezielte Regressionen, Dashboard-/Gesamtsuite, Projekt-Guards sowie
+  Browserpruefung mit privater Datenkopie auf Desktop und Handy; Klickproben fuer Suche und Filter.
+- **Risiken/Annahmen:** „Alle“ umfasst den aktuellen Betriebs-Export, kein historisches Vollarchiv.
+  Keine Versandbuchung, Nachricht, Erstattung oder Aenderung echter Packstaende durch Tests.
+- **Naechste Stufe:** regulaere Bedien-/Druckprobe im Betrieb.
+
+## 2026-10-22 · Direkte Umschlagwahl und Datumssortierung (#1606)
+
+- **Geaendert:** Ein neuer Umschlag-Direktlink ersetzt die zuvor manuell geoeffnete Karte;
+  auch die Rueckkehr aus dem Wareneingang zum gleichen URL-Ziel waehlt wieder diesen Umschlag.
+  Stille Neuzeichnungen erhalten weiterhin die manuelle Auswahl. „Neueste zuerst“ setzt alte
+  Sortierrichtung und Blaetterseite zurueck, Suche und Filter bleiben erhalten.
+- **Getestet:** zwei gezielte Handler-Regressionstests, Dashboard-/Gesamtsuite, Projekt-Guards
+  und Browserpruefung der betroffenen Ansichten auf Datenkopie.
+- **Risiken/Annahmen:** Nur Navigation und Darstellung; keine Aenderung an Betriebsdaten.
+- **Naechste Stufe:** menschliche Bedien-/Druckprobe wie bei #1604.
+
+## 2026-10-22 · Bestellungen und Packstation zuerst (#1604)
+
+- **Geaendert:** Direkte Einstiege auf Heute, in der Seitenleiste und am Handy. Bestehende
+  Kundenrouten bleiben erhalten; die beiden Hauptansichten zeigen nur drei Wechsel-Links statt
+  acht Reitern. Bestellliste mit vier Hauptspalten und aufklappbaren Kontakten/Belegen.
+  Arbeitsstand aus bestehenden Versand-/Positionsdaten statt widerspruechlicher Pruefstatus.
+  Claude #1599 vollstaendig integriert: neueste zuerst, manueller Listenhaken ohne Versand,
+  mit der neueren Wichtigkeitssortierung aus #1602 verbunden. Abgehaktes und Versandtes sind
+  getrennt vom fachlichen Abschluss benannt.
+- **Geaendert:** Packbereit / Wartet auf Ware / Zu klaeren / Gepackt. Packbereit nur mit
+  bestaetigtem Bestand oder eingelegten Mustern und eindeutiger Aufkleber-/Adresszuordnung.
+  Ein aufklappbarer Umschlag je Kunde, Suche auch nach Farbnummer, stabile Bestellnummer(n)
+  statt wandernder Listennummer, direkter Wechsel vom Wareneingang zum Umschlag.
+  Packdetails bleiben beim Abhaken offen. Bestehende Bilder, Haken, Druck und Klaerung erhalten.
+  Bereits vorhandene Grossbrief-Vorbereitung wieder am gepackten Umschlag angeschlossen.
+  Pack- und Bestellmarken in Sicherung, Bestellmarken auch in der Browser-Datenkopie.
+- **Getestet:** Dashboard- und Gesamtsuite, Projekt-Guards; Browser auf Datenkopie, fuenf
+  Breiten und Dunkelmodus. Klickprobe: drei Muster abhaken, packen, neu laden; Stand erhalten,
+  kein Shopify-Aufruf. Rollen-Gesamtlauf 455 Kombinationen; zwei 360-px-Ueberstaende in
+  der Lieferantenliste behoben, danach alle 45 betroffenen Rollen-/Breitenkombinationen gruen.
+- **Risiken/Annahmen:** Alte Datenstaende werden nicht automatisch umgebucht. Ein Muster kann
+  physisch vorliegen, obwohl der Eingang fehlt; dann Muster nach Sichtpruefung abhaken oder
+  vorhandenen Wareneingang eintragen. Gepackt ist weiterhin kein Versandnachweis.
+- **Naechste Stufe:** echte Bedienprobe im Laden; Porto/Versand nur ueber die bestehende
+  getrennte Versandaktion. Keine automatischen Bestellungen, Nachrichten oder Portokaeufe.
+
+## 2026-10-22 · Lieferantenlisten nach überfälligen Posten
+
+- **Geändert:** Bestellen › Je Lieferant: rot überfällig → bernstein überfällig → zu bestellen → Rest,
+  darin die längste Wartezeit zuerst (vorher: zu bestellen zuerst, dann A–Z). Lieferantenübersicht
+  (`lieferantenUebersicht`): mehr rote, dann mehr bernsteinfarbene Posten, dann älteste offene
+  Bestellung zuerst; ohne offene Posten A–Z. „Nicht zugeordnet“ bleibt hinten.
+- **Getestet:** neuer Fall in `operations/tests/lieferanten.test.mjs`; `dashboard:test` und `npm test`
+  grün; `dashboard:pruefen` für Einkauf ohne Befund.
+- **Risiken/Annahmen:** keine; nur die Reihenfolge.
+- **Nächste Stufe:** –
+
+## 2026-10-22 · Arbeitslisten nach Wichtigkeit
+
+- **Geändert:** Wo eine Arbeitsliste noch alphabetisch oder „neueste zuerst“ stand, steht jetzt das
+  Dringendste oben:
+  - **Kunden › Rückrufe:** „Nicht erreicht“ vor offen vor angerufen, darin die älteste zuerst.
+  - **Kunden › Service-Anfragen (offen):** nach Bearbeitungsstand (neu zuerst), darin wer am längsten wartet.
+  - **Kunden › Angebote:** offene Angebote, das älteste zuerst (Abgeschlossene weiter neueste zuerst).
+  - **Bestellen › nach Kunde:** wer am längsten wartet, zuerst (vorher A–Z), Positionen älteste zuerst.
+  - **Genossenschaften › Alle Firmen:** fällige zuerst, dann nach Wiedervorlage, dann A–Z.
+  - **Heute, Spalten „Wer wartet auf was“:** Rot vor Gelb vor normal, darin die älteste zuerst.
+  Bewusst unverändert: das Auftragsband (Probleme sind dort mit Grund geparkt und stehen absichtlich
+  hinten) sowie Nachschlagelisten (Musterlager-Bestand, Lexikon).
+- **Getestet:** `einkauf-kundengruppen.test.mjs` angepasst und neuer Fall; `dashboard:test` 690 grün,
+  `npm test` grün; `dashboard:pruefen` für Heute, Rückrufe, Service, Angebote, Einkauf, Genossenschaften
+  ohne Befund.
+- **Risiken/Annahmen:** keine; Sortierung allein, keine Daten geändert.
+- **Nächste Stufe:** Lieferantenlisten nach überfälligen Posten statt A–Z.
+
+## 2026-10-22 · Kunden › Bestellungen nach Wichtigkeit
+
+- **Geändert:** Neue Standardsortierung „Wichtigkeit“ (vorher: Kundenname A–Z). Reihenfolge: bezahlt
+  und es fehlt etwas (nicht bestellt, Rückruf, Maßprüfung, ID) → bezahlt und alles unterwegs → noch
+  nicht bezahlt → schon an den Kunden raus, erledigt oder storniert; jeweils die älteste zuerst.
+  Bestellungen eines Kunden bleiben zusammen, der Kunde steht so weit oben wie seine dringendste
+  Bestellung. Am Kunden steht der Grund („wartet seit 12 Tagen · noch nicht bestellt“). Die
+  Spaltenköpfe sortieren wie bisher; „Nach Wichtigkeit sortieren“ führt zurück.
+  `wichtigkeit`/`sortiereNachWichtigkeit` in `lib/kunden-bestellgruppen.mjs`.
+- **Getestet:** neuer Fall in `kunden-bestellgruppen.test.mjs`; `dashboard:test` 689 grün;
+  `dashboard:pruefen` für den Reiter in allen Breiten ohne Befund.
+- **Risiken/Annahmen:** Die Reihenfolge hängt am Auftragsfluss: wo „bestellt“/„raus“ nicht
+  nachgetragen ist, steht eine Bestellung höher als nötig.
+- **Nächste Stufe:** dieselbe Logik für weitere Listen des Dashboards prüfen.
+
+## 2026-10-22 · Muster packen: Wareneingang nach Partnerladen
+
+- **Geändert:** Umschalter „Nach Kunde packen“ / „Wareneingang nach Partnerladen“ (`mp=laden`). Je
+  Partnerladen alle noch nicht eingelegten Muster der offenen Kunden, nach Name und Farbnummer, mit
+  Bild und dem Ziel: Umschlag-Nummer (dieselbe wie in „Zu packen“, „zu klären“ gesondert), Kunde,
+  Bestellung. `musterNachLaden` in `lib/muster-packen.mjs`, rein aus den schon geladenen Daten.
+- **Getestet:** neuer Fall in `muster-packen.test.mjs`; `dashboard:test` 688 grün; `dashboard:pruefen`
+  für beide Ansichten in allen Breiten ohne Befund.
+- **Risiken/Annahmen:** Die Umschlag-Nummer verschiebt sich, sobald ein Kunde gepackt ist – beim
+  Sortieren die Liste nicht zwischendurch neu laden oder nach Namen sortieren.
+- **Nächste Stufe:** weitere Wünsche aus dem Laden sammeln; alte Bestellungen aussortieren.
+
+## 2026-10-22 · Muster packen: Farbbild macht Breiten nicht mehr mehrdeutig
+
+- **Geändert:** Dieselbe SKU in mehreren Breiten trägt je ein eigenes Variantenbild; das galt als
+  Widerspruch, und 40 von 68 offenen Mustern zeigten keine Lieferantenangaben. Das Bild entscheidet
+  jetzt nicht mehr über „mehrdeutig“. Echte Daten danach: 66 von 68 mit Angaben, 65 mit Farbbild.
+- **Getestet:** neuer Fall in `muster-packen.test.mjs`; `dashboard:test` grün.
+- **Risiken/Annahmen:** keine.
+- **Nächste Stufe:** Teil 3 – Wareneingang nach Partnerladen sortieren.
+
+## 2026-10-22 · Muster packen: Muster sicher erkennen, abhaken, „Zu klären“
+
+- **Geändert:** Je Muster ein Bild genau dieser Farbe (Variantenbild, neu im Lexikon-Export;
+  Produktbild nur bei einfarbigen Produkten, sonst „kein Farbbild“), der Partnerladen mit Namen aus
+  den privaten Stammdaten, der Produktname wie auf dem Lieferantenetikett und die Farbnummer groß.
+  Zwei Muster derselben Kollektion im selben Umschlag tragen „Ähnliches Muster – Farbnummer prüfen“.
+  Die Seite hat drei Bereiche: Zu packen · Zu klären · Gepackt. Die Haken liegen jetzt zentral in
+  `muster-packen.json` statt im Browser. Ist alles abgehakt, heißt der Knopf „Umschlag gepackt“; bleibt
+  etwas offen, „Fehlt etwas – zu klären“ (mit Notiz). Der Kunde wandert mit den nicht abgehakten
+  Mustern nach „Zu klären“, „Fehlendes ist da“ holt ihn zurück, die Haken bleiben. Die Zahl am Reiter
+  zählt nur „zu packen“. `POST /api/kunden/muster-packen` hat dafür `aktion: haken | klaeren`.
+- **Getestet:** `muster-packen.test.mjs` (9), `muster-packen-api.test.mjs` (6), `lexikon.test.mjs`
+  (Variantenbild); `dashboard:test` 686 grün; `dashboard:pruefen` für den Reiter in allen Breiten ohne Befund.
+- **Risiken/Annahmen:** Farbbilder erscheinen erst nach dem nächsten Lexikon-Export. Viele
+  Varianten haben in Shopify kein eigenes Bild, dann steht „kein Farbbild“.
+- **Nächste Stufe:** Teil 3 – Wareneingang nach Partnerladen sortieren.
+
+## 2026-10-22 · Adressaufkleber ohne Bestellnummer
+
+- **Geändert:** Auf dem gedruckten Adressaufkleber (Kunden → Muster packen) steht keine
+  Bestellnummer mehr, nur Absender und Empfänger; die Empfängerzeilen bekommen den Platz.
+  Die Zuordnung Umschlag ↔ Bestellung zeigt weiter die Karte in der Packliste und die
+  Druckvorschau. `adressLayout` in `lib/adress-etiketten.mjs`.
+- **Getestet:** `muster-packen.test.mjs` prüft, dass keine Bestellnummer gezeichnet wird;
+  `dashboard:test` grün.
+- **Risiken/Annahmen:** keine.
+- **Nächste Stufe:** Versandschritt, sobald der Versandweg entschieden ist.
+
+## 2026-10-22 · Großbrief ohne Portokauf vorbereiten (#1591)
+
+- **Geändert:** „Großbrief vorbereiten“ je Kunde in Muster packen: gebündelte Bestellnummern,
+  Adresse, Preis und Messfelder für den fertig gepackten Umschlag. Prüft Grenzen, Inland,
+  Gepackt-Status und Bestätigung zum lokalen Bestand/Direktversand. Eingaben bleiben nur im
+  offenen Dialog. Kein Kaufknopf, keine Versandbuchung, keine Nachricht, keine neue API.
+- **Getestet:** Grenzwerte, gedrehte Maße, deutsche Dezimalwerte, ungültige/fehlende Angaben,
+  Ausland, ungepackter Umschlag, fehlende Zuordnung und Tarifende in muster-grossbrief.test.mjs.
+  Dashboard 682/682, Gesamtsuite 3502/3502. Browserklicks gegen Datenkopie: leere Angaben
+  bleiben offen, 501 g abgelehnt, gepackt + 499,5 g/20 mm/250 × 353 mm passend; Änderung
+  verwirft Ergebnis, Esc schließt, erneutes Öffnen leer. Desktop/390 px visuell geprüft;
+  alle 36 Ansichten in fünf Breiten (180 Fälle) ohne JS-Fehler oder Querscrollen.
+- **Risiken:** Gewicht und Maße müssen am realen Umschlag ermittelt werden. Die Bestätigung
+  zum Bestand ersetzt keinen physischen Nachweis. Porto-/Formatstand nach 2026 erneut prüfen.
+- **Nächste Stufe:** Portodruck und Versandbuchung erst mit gesondertem Auftrag verbinden.
+
+## 2026-10-22 · Verlegereste als Mustermaterial
+
+- **Geändert:** Regel vom 21.10.: Teppichboden und Vinyl von Lieferant A und C, den wir verlegen,
+  hinterlassen Reste – aufheben, beschriften, daraus Muster schneiden. Neue Lagerart „Verlegerest“.
+  Vorschläge „Einlagern?“ zeigen gelieferte Verlegeware (Baustelle oder Verlegung gebucht, höchstens
+  45 Tage). Ware anderer Quelle nur, wenn A oder C dieselbe Ware führt (Abgleich Hersteller,
+  Qualität, Farbnummer gegen das Lexikon, `operations/lib/reste.mjs`); der Rest liegt dann unter der
+  A/C-SKU. Neuer Knopf „Rest prüfen…“ für direkt beim Hersteller bestellte Ware, Hersteller allein
+  zeigt alles von ihm bei A/C (C führt Herstellerware oft unter eigenem Namen). „Etikett“ an jedem
+  Lagereintrag, an Verlegerest-Vorschlägen und an Treffern.
+- **Getestet:** `reste.test.mjs` (8 neu), `musterlager-api.test.mjs` (Abgleich + Einlagern als Rest),
+  `operations:test`, `dashboard:test`. Browser mit Datenkopie: „Rest prüfen“ mit Kürzel + Farbnummer
+  findet die Ware bei C, Einlagern, Etikettvorschau, 375 px.
+- **Risiken/Annahmen:** Verlegeaufträge laufen heute fast nie über den Shop (0 von 58 offenen
+  Bestellungen) – der automatische Vorschlag greift selten, der Hauptweg ist „Rest prüfen…“.
+  Online-Muster für C-Ware bleiben aus (Inhaberregel); deren Reste sind Material für Laden/Beratung.
+- **Nächste Stufe:** Hinweis „Rest mitnehmen und beschriften“ im Auftrag für die Monteure.
+## 2026-10-21 · Mitarbeiter-Ansicht einfacher, Daten immer aktuell
+
+- **Geaendert:** Rolle Mitarbeiter: Menue nur Heute, Kunden, Bestellen, Genossenschaften, Lexikon,
+  Hilfe (`data-nicht-mitarbeiter`, Seiten bleiben ueber Links erreichbar). „Heute“ ist fuer
+  Mitarbeiter eine einzige Liste (immer Sicht Laden, ohne Zahlenzeile, Vorbereiten, Hintergrund).
+  To-do-Titel als Satz („Bei … melden: neue Anfrage …“, „Storno vom Lieferanten prüfen“), Leerzustand
+  „Alles erledigt“. Hilfe beginnt mit „In 1 Minute erklärt“ (je Menuepunkt ein Satz, drei Ablaeufe).
+  Neu `lib/datenstand.mjs` (Grenzen je Quelle: Bestellungen/Kunden/Angebote/Warenkoerbe 30 Min.,
+  Kennzahlen 2 Std., Lexikon/Bestand 1 Tag; der Server nutzt dieselben fuer `veraltet`) und
+  `bausteine/datenstand.mjs`: Zeile „Stand: vor 3 Min.“ ueber Heute/Kunden/Bestellen/Lexikon,
+  deutlicher Hinweis fuer alle bei veralteten Quellen, To-do „Daten-Abgleich prüfen“ fuer den Inhaber.
+  Die offene Seite fragt alle 2 Minuten und beim Zurueckkehren den Stand ab und laedt neue Daten
+  (inkl. Lieferantenpost, Shopify-Abgleich) – nicht, solange jemand tippt, ein Dialog offen ist oder
+  ungespeicherte Eingaben stehen.
+- **Getestet:** `dashboard:test` 641/0, `npm test` gruen, `dashboard:pruefen --rollen` 360–1440 px nur OK.
+  Klickstrecke gegen Datenkopie: Mitarbeiter-Menue 6 Punkte, Heute 8 To-dos ohne Hintergrund;
+  Stand auf 130 Min. gesetzt → Hinweis erscheint, getippte Eingabe bleibt erhalten, nach Freigabe
+  neu gezeichnet; Inhaber-To-do erscheint und verschwindet wieder bei frischen Daten.
+- **Risiken:** Ohne laufenden Sync-Dienst steht der Hinweis dauerhaft (gewollt). Ein Mitarbeiter mit
+  ueberwiegend Website-Aufgaben sieht jetzt die Laden-Liste. Lieferantenpost, Shop-Kontrolle und
+  Ausschreibungen haben weiter eigene Hinweise, nicht die neue Zeile.
+- **Naechste Stufe:** Rueckmeldung des Teams.
+## 2026-10-21 · Kunden → Muster packen (#1572)
+
+- **Geändert:** Neuer Reiter „Muster packen“ unter Kunden. Alle offenen, bezahlten, nicht versendeten
+  Musterbestellungen, nach Kunde gebündelt (mehrere Bestellungen = ein Umschlag), wer am längsten
+  wartet zuerst. Je Muster „Auf dem Muster“ (Produktname und Farbnummer des Lieferanten aus dem
+  Lexikon, nur wenn eindeutig) → „Unser Aufkleber“ (Serie · Farbe, SKU), Stand aus Auftragsfluss bzw.
+  Musterlager, Link zur Lieferantenseite. „Aufkleber drucken“ je Kunde und „Alle drucken“: erst die
+  Muster, zuletzt ein Adressaufkleber (Absender, Empfänger, Bestellnummer, `lib/adress-etiketten.mjs`).
+  „Umschlag gepackt“ liegt zentral in `$TP_PRIVAT_DIR/muster-packen.json` (`GET/POST
+  /api/kunden/muster-packen`, Rolle „lesen“ nur lesend) und gilt genau für diese Bestellungen – kommt
+  eine dazu, ist der Kunde wieder offen. Massartikel ohne eigene SKU finden jetzt über belegte
+  Artikelnummer (oder die Muster-SKU der Position) und Farbe genau eine Musterfarbe: bei den echten
+  offenen Musterbestellungen fehlte die Zuordnung vorher bei 25 von 62 Positionen, jetzt bei 1.
+- **Getestet:** `muster-packen.test.mjs` (7), `muster-packen-api.test.mjs` (4), neuer Fall in
+  `server.test.mjs` und `bestellungs-musteretiketten.test.mjs`; `dashboard:test` 655 grün.
+  `dashboard:pruefen --ansichten 'kunden?tab=muster'` in allen fünf Breiten ohne Befund. Klickstrecke
+  (Datenkopie): Zahl am Reiter = Karten, Druckdialog eines Kunden zeigt Muster und danach die Adresse,
+  Gepackt/Zurücknehmen ändert die Zahl, Haken bleiben nach Neuladen, 390 px ohne Querscrollen,
+  0 JS-Fehler. Adressaufkleber 50 × 50 vorab am echten B1 gedruckt (lokale Packliste, gleiche Layoutregeln).
+- **Risiken/Annahmen:** Eine Position bleibt „Zuordnung fehlt“, weil Lexikon und Bestellung die
+  Artikelnummer verschieden schreiben (mit/ohne führende Null) – wird nicht geraten. „Beim
+  Lieferanten bestellt“ wird im Auftragsfluss oft nicht auf „geliefert“ weitergesetzt, deshalb warnt
+  nur „noch nicht bestellt“. Der Druck aus dem Reiter selbst ist am B1 noch nicht ausprobiert.
+  Porto und Versandbuchung sind bewusst nicht enthalten.
+- **Nächste Stufe:** Versandschritt (Briefmarke über Internetmarke, `operations/lib/internetmarke.mjs`,
+  und Versand in Shopify buchen), sobald der Versandweg entschieden ist.
+
+## 2026-10-21 · Alle gekettelten Maßteppiche automatisch zum Kettler
+
+- **Geändert:** Regel des Inhabers vom 19.10. abends umgesetzt: Maßteppiche mit Einfassung gehen
+  ohne Auswahl zum Kettler, **egal wie groß** (bisher nur kürzere Seite unter 2 m). Auch bei
+  Direktversand des Lieferanten; Baustellenlieferungen bleiben, wie sie sind. Ohne Fertigmaß greift
+  die Regel nicht (der Lieferant kann dann nicht zuschneiden). Ein von Hand gewähltes Ziel im Dialog
+  gilt weiter für die ganze Gruppe; dann schlägt der Hinweis „Über unseren Kettler?“ die gekettelten
+  Positionen vor. Der Kettler verschickt bis 200 cm kurze Seite per Paket, darüber per Spedition.
+- **Getestet:** `lieferanten.test.mjs` (neu: 400 × 500, rund 300, ohne Fertigmaß, Direktversand
+  2 × 3 m, Vorschlag bei Ziel Laden), `auftragsverlauf.test.mjs`, `npm test`.
+- **Risiken/Annahmen:** Laut Inhaber lohnt sich der Weg nur, wenn die Ware mit einer ohnehin
+  laufenden Sammellieferung kommt; das prüft die Regel nicht. Wer einen Teppich ausnahmsweise beim
+  Lieferanten ketteln lassen will, wählt im Dialog „Kunden“ oder „Laden“.
+- **Nächste Stufe:** Versand vom Kettler (Paket/Spedition) im Auftragsfluss abbilden.
+
 ## 2026-10-21 · Musteraufkleber auch 50 × 100 mm (zum Ausprobieren)
 
 - **Geändert:** Im Druckfenster „Etikettengröße“ 50 × 50 mm oder 50 × 100 mm; die Wahl merkt sich der
@@ -2119,3 +2571,9 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiken/Annahmen:** Richtpreis-Vorschläge stammen aus Lexware-Artikelpreisen (Abruf 13.10., netto,
   nur Arbeit), `freigegeben: false` bis der Inhaber zustimmt. Fotos zur Referenz weiter über „Fotos“.
 - **Nächste Stufe:** Richtpreise live in Lexware gegenprüfen und freigeben.
+
+## 2026-10-23 – Kostenlose Muster automatisch bestellen (#1648)
+
+- Vorhandene Bestellvorlagen und Firmenpostfach fuer privat freigegebene kostenlose Muster verbunden.
+- Versandnachweis und Bestellt-Status automatisch; Artikel und Farben je Kunde direkt sichtbar.
+- Doppelversand, unklare SMTP-Ausgaenge, alte Anfragen und kostenpflichtige Muster abgesichert.

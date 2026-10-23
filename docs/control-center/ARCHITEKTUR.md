@@ -598,18 +598,27 @@ To-dos auf „Heute“ („Muster bei Lieferant A bestellen · Kunde · Regalia 
   „Bestellt“ ist kein Abgang.
 - **Vorschläge „Einlagern?“:** eingetroffene Probestücke von PVC/Linoleum (Stand „geliefert“, höchstens
   45 Tage) – „den Rest einlagern?“ – und Farben, die in 120 Tagen mindestens zweimal als Muster bestellt
-  wurden. Ein Klick öffnet den Dialog vorbelegt.
+  wurden. Ein Klick öffnet den Dialog vorbelegt. Dazu **Verlegereste** (Regel 2026-10-21,
+  `operations/lib/reste.mjs`): gelieferte Verlegeware Teppichboden/Vinyl von A/C, bei anderer Quelle
+  nur mit A/C-Gegenstück in derselben Farbe – „Rest aufheben, beschriften, einlagern“ (Art `rest`).
+- **Rest prüfen:** Dialog für Ware, die nicht über den Shop läuft (direkt beim Hersteller bestellt):
+  Hersteller, Qualität, Farbnummer → Treffer bei A/C mit Farben, „Als Verlegerest einlagern“ und
+  „Etikett“ (ein Aufkleber je Farbe, Lexikon-Etikett ohne Lieferantennamen).
 - **Endpunkte:** `GET /api/einkauf/musterlager` (Einträge mit Stand verbraucht/reserviert/Rest/reichtNoch,
   offene Bestellungen je Eintrag samt `wartetAufLieferant`, Mustergröße, Vorschläge), `GET /api/einkauf/musterlager-farben?handle=` (Farben eines
-  Lexikon-Produkts samt Schlüssel), `POST /api/einkauf/musterlager` mit `aktion: einlagern | aendern |
+  Lexikon-Produkts samt Schlüssel), `GET /api/einkauf/reste-abgleich?hersteller=&qualitaet=&farbnummer=`
+  (Treffer bei A/C, nur lesend, 400 ohne Hersteller und Qualität), `POST /api/einkauf/musterlager` mit `aktion: einlagern | aendern |
   entfernen` (Schreibpfad: Rolle „lesen“ 403). Ein beschädigtes `musterlager.json` hält keine
   Bestellansicht auf; nur der Reiter meldet den Fehler, und Schreiben verweigert.
 
 ## 9. Startseite „Heute" (seit 2026-09-23)
 
-`viewHeute()` in `docs/ai-dashboard/ansichten/heute.mjs` ist die Startseite und bleibt primär aufgabenbasiert
-(GitHub Issues, siehe Abschnitt 4). Ergänzend – nur im lokalen Modus, weil die Quellen privat sind –
-zeigt sie zwei weitere Kacheln, die jeweils in den Bereich „Einkauf" (Abschnitt 8) durchklicken:
+`viewHeute()` in `docs/ai-dashboard/ansichten/heute.mjs` ist die betriebliche Startseite.
+Seit #1624 (22.10.2026) ist die Shop-Übersicht der direkte Einstieg: zahlende Warenkunden
+zuerst, danach Musterbestellungen und Packstation. Allgemeine Laden- und Tagesaufgaben
+bleiben über die bewusst gewählten Alltagssichten erreichbar; Systemzustand ist nachrangig.
+Der aktuelle Arbeitsablauf steht unter 9f. Die folgenden Quellen beschreiben auch
+weiterhin vorhandene Hintergrundzahlen; sie bilden nicht die Reihenfolge der Startseite ab.
 
 | Kachel | Quelle | Inhalt |
 |---|---|---|
@@ -692,8 +701,10 @@ Kachel zeigt den Hinweis samt Befehl. Der Export selbst laeuft ueber `npm run da
 
 ### 9b. Eine Arbeitsliste (seit 2026-10-19, #1427)
 
-Inhaber 19.10.: „zu unübersichtlich“. „Heute“ ist seither **eine** Liste statt dreier Blöcke (To-dos,
-Muster-Karten, Wer wartet). Oben „N Sachen heute zu erledigen“ – N zählt genau die Zeilen der Liste; der
+Inhaber 19.10.: „zu unübersichtlich“. Die bisherigen Aufgaben wurden zu **einer** Liste statt dreier Blöcke
+(To-dos, Muster-Karten, Wer wartet) zusammengefasst. Seit #1614 steht diese Liste unter der Bestellarbeit
+als „Weitere Aufgaben heute“. Ihre Zahl zählt genau die Zeilen dieser Liste, nicht zusätzlich die
+oben nach Lieferant gruppierten Muster. Der
 Inhaber wählt per Chip *Laden*, *Website* oder *Alles* (Zahl am Chip = Zeilen dieser Sicht, die
 fälligen Muster-Nachfragen und Belege zählen zu Laden). Sieben Zeilen, der Rest hinter „alle anzeigen“.
 Fehlt eine Quelle (Bestellungen, Auftragsfluss, Fälle …), steht „Liste unvollständig“ statt „Alles
@@ -709,6 +720,9 @@ in der Liste – vorher sagte die Warteübersicht „Nachhaken“, während die 
 als eigener Block.
 
 ### 9a. „Heute" mit To-dos (seit 2026-10-01)
+
+**Historischer Aufbau:** Die folgende Darstellung der Reihenfolge ist durch 9b und 9c ersetzt;
+die beschriebenen Quellen und To-do-Regeln bleiben erhalten.
 
 Die Startseite zeigt zuerst, was zu tun ist: „N offene To-dos für dich" – je Zeile Titel, eine Zeile
 Kontext und genau ein Knopf –, darunter „Wer wartet auf was" (wir / Lieferant / Kunde), die Kacheln
@@ -996,6 +1010,37 @@ sagt der Dialog, wie man bis dahin in der Shopify-App abzieht. Der Dialog rechne
 (`lib/sonderposten.mjs`, `rollenRechnung`; ein Test hält Browser und Server gleich). Der Shop zeigt den Rest
 unter dem Preis aus demselben Bestand (`blocks/tp-aktion-hinweis.liquid`, `snippets/tp-rollenrest.liquid`).
 
+**Gemessene Restlaenge (2026-10-23, #1643).** Im vorhandenen Rollenbereich erfasst der Inhaber
+die physisch gemessene Laenge einer einzelnen, durchgehenden Rolle. `POST /api/sonderposten/bestand`
+verlangt genau eine bestandsgefuehrte, nicht ueberverkaufbare m²-Variante mit festem Laengenlimit.
+Der Dialog zeigt Rollenbreite, physischen/freien Bestand und gebundene, reservierte und sonst
+zurueckgehaltene Mengen. Sobald eine davon nicht lesbar oder ungleich 0 ist, bleibt die Inventur
+gesperrt; getrennte Reststuecke werden nie zu einer durchgehenden Rolle addiert.
+
+Laenge (0 bis 100 m, Zentimeter) × feste Rollenbreite wird auf volle m² **abgerundet**. Erfasst wird
+`on_hand`, nicht `available`: eine nach dem Lesen entstandene Onlinebindung bleibt von Shopify
+abgezogen. Der Server liest frisch, vergleicht Item-ID und den vorher angezeigten physischen
+Bestand und setzt mit `changeFromQuantity` und einer stabilen UUID je Dialog. Gleichzeitige
+physische Bestandsaenderungen werden abgelehnt; Antwortverlust bleibt „unklar“. Protokoll und
+Gegenprobe nennen den Vorgang und unterscheiden physisch von frei verfuegbar. Ein unlesbares
+oder abweichendes Ergebnis wird nie als bestaetigte Korrektur gemeldet.
+
+Die Rollenabbuchung im Laden ist **vor Zahlung und Zuschnitt** zu bestaetigen. Erst danach den
+Verkauf abschliessen; bei unklarer Antwort erst den Bestand pruefen. Eine SumUp-Buchung allein
+aendert diesen Shopify-Bestand nicht. Faellt der Ladenverkauf anschliessend aus, prueft der
+Inhaber den physischen Bestand und korrigiert ihn ueber denselben Inventurdialog. Das ist keine
+automatische Kassenanbindung und keine zweite Lagerverwaltung.
+
+API-Nachweis: [Bestandszustaende](https://shopify.dev/docs/apps/build/orders-fulfillment/inventory-management-apps/manage-quantities-states),
+[on_hand mit atomarer Gegenpruefung](https://shopify.dev/docs/api/admin-graphql/2026-10/mutations/inventorySetQuantities).
+
+Die Bestandslaenge ist kein Nachweis fuer eine einzelne bestellbare Warenkorbmenge: 20 m werden
+bei 4/5 m Breite korrekt als 80/100 Einheiten angefragt. Ein separat in Shopify eingestelltes
+[Add-to-cart limit](https://help.shopify.com/en/manual/checkout-settings/add-to-cart-limit)
+kann diese Menge trotzdem begrenzen (Shopify setzt bei kleinen Shops standardmaessig 50).
+Vor dem Start den aktuellen Checkout-Wert lesend pruefen; weder Bestandseinheiten umbauen noch
+Checkout-Einstellungen ohne eigenen Auftrag aendern.
+
 **Tests** sprechen nie echtes Shopify: `tests/_testumgebung.mjs` blendet `.env.local` und die
 `SHOPIFY_*`-Variablen aus, die Tests reichen eine Attrappe (`operations/tests/sonderposten-attrappe.mjs`)
 über `createApi({ shopifyZugang })` bzw. `ersetzeShopifyZugang()` in `serve-dashboard.mjs` hinein.
@@ -1237,7 +1282,9 @@ Hinweise, Einheiten und nichtpositive Sollmengen werden nicht überschrieben.
 
 Aktion `uebernahme` nimmt Positionen und `uebernahmeAktion: nehmen|freigeben|uebernehmen`.
 Person/Rolle kommen ausschließlich aus der Sitzung. Mitarbeiter dürfen keine fremde Übernahme
-freigeben/übernehmen; Inhaber übernimmt bewusst mit eigenem Knopf. Kein automatischer Ablauf.
+freigeben/übernehmen; Inhaber übernimmt bewusst mit eigenem Knopf. Keine automatische Freigabe
+einer bestehenden Übernahme; die bewusste Bestellvorbereitung erwirbt seit #1616 freie Positionen
+gemeinsam über denselben Mechanismus.
 Alle Positionen einer Sammelübernahme werden vor dem einen atomaren Schreibvorgang geprüft.
 Der Endpunkt liegt weiter in der bestehenden Schreib-/Rollenprüfung; Leser erhalten 403.
 
@@ -1278,6 +1325,22 @@ Rein lesend, für alle Rollen (auch „lesen“): `ansichten/bildrechte.mjs`, En
 
 
 ## 20. Kunden › „Service-Anfragen“ (seit 2026-10-16, #1361, Werkbank w-030)
+
+**Offene Folgearbeit (23.10., #1631):** „Heute“ und der Kundenzaehler behalten neben neuen auch
+kontaktierte Anfragen, Termine und Angebote, bis die Anfrage gewonnen/verloren ist. Der vorhandene
+`naechsterSchritt` wird angezeigt, sonst „Nächsten Schritt klären“. Altersfristen gelten weiterhin nur
+fuer neue Anfragen: ein altes Anfragedatum beweist bei einem vereinbarten Termin keinen Verzug.
+„Anfrage öffnen“ springt per `anfrage=S-…` gezielt in die bestehende Serviceansicht (auch lesend).
+Eine fehlende ID meldet „nicht gefunden“ und bietet den Rueckweg zur Liste.
+Wiedervorlagen bleiben ausschliesslich in der vorhandenen Laden-App. Der vorhandene Ladenlink
+oeffnet deren Einstieg; er behauptet keine automatische Zuordnung und keinen gemeinsamen Status.
+Der absichtlich aggregierte Zahlenendpunkt bleibt unveraendert.
+
+**Noch offene Verknuepfung:** Fuer eine echte Service→Laden-Zuordnung braucht die private Anfrage
+eine bestaetigte vorhandene Laden-Vorgangs-ID und die Laden-App einen gezielten Einstieg auf diese
+ID. Statushoheit und Wiedervorlage bleiben dort. Eine Zuordnung darf erst nach Gegenlesen des
+bestehenden Vorgangs gespeichert werden, nie allein anhand eines aehnlichen Namens. Diese
+Schnittstelle und ein Abgleich beider Datenmodelle sind in #1631 bewusst nicht implementiert.
 
 Anfragen für Verlegeservice, Treppe und Aufmaß an einer Stelle, mit Quelle und Status – damit
 messbar wird, was die Serviceseiten und die Werbung bringen (Inhaber 15.10.: im Control Center
@@ -1753,3 +1816,314 @@ NiimBlue-Vorgabe). Gedruckt wird direkt aus dem Browser, ohne Installation:
   Drucken nicht möglich.
 - **Offen:** Hinweis „auch als Klickvinyl“ (gleicher Dekor in anderer Art) – nur mit belegbarer
   Zuordnung, noch nicht gebaut.
+
+## 27. Muster packen (seit 2026-10-21, #1572)
+
+Kunden › Muster packen bündelt alle offenen Musterbestellungen zum Packen. Ohne Porto und ohne
+Versandbuchung – dieser Schritt folgt, wenn der Versandweg entschieden ist.
+
+- **Rechnung:** `lib/muster-packen.mjs` (`musterPackliste`) rechnet rein, ohne Ein-/Ausgabe, und
+  läuft im Server. Auswahl: offen, bezahlt, nicht storniert, keine Testbestellung, nicht erfüllt;
+  je Position nur Muster, deren Auftragsfluss-Status nicht „raus“/„erledigt“ ist. Gruppiert wird
+  mit `kundenSchluessel` (Kundensuche), die Anschrift kommt aus der neuesten Bestellung. Der
+  Aufkleber stammt aus `musteretikettenFuerAuftrag` – keine eigene Zuordnungslogik. „Vorher“ liest
+  `einkauf.produktname/farbnummer/url` der Lexikon-Variante mit derselben SKU bzw. Artikelnummer;
+  widersprüchliche Treffer ergeben nichts statt eines geratenen Namens.
+- **Ablage:** `operations/lib/muster-packen.mjs` schreibt `$TP_PRIVAT_DIR/muster-packen.json`
+  atomar (`{ [packSchluessel]: { zeit, von } }`). Der Schlüssel sind die sortierten Bestell-IDs des
+  Kunden; eine neue Bestellung ergibt einen neuen Schlüssel. Fehlende Datei = nichts gepackt,
+  beschädigte Datei = Fehler 500 statt Überschreiben.
+- **API:** `GET /api/kunden/muster-packen` (nur lesend, angemeldet) und `POST` mit
+  `{ packSchluessel, gepackt }` (Schreibliste in `serve-dashboard.mjs`; Rolle „lesen“ 403, fehlender
+  Schlüssel 400, Schlüssel nicht in der aktuellen Liste 409).
+- **Druck:** derselbe Dialog wie Abschnitt 26 (`oeffneEtikettenDruck`, `allowEditing: false`).
+  Etiketten mit `art: 'adresse'` zeichnet `adressLayout` (`lib/adress-etiketten.mjs`) statt des
+  Musterlayouts: Absender klein mit Linie, Empfänger so groß wie Breite und Höhe erlauben,
+  Inland ohne Land, „Bestellung #…“ unten rechts; passt in 50 × 50 und 50 × 100.
+- **Haken und „Zu klären“ (22.10.):** zentral in `muster-packen.json` (`haken` je Bestellposition,
+  `klaeren` je Kunde mit den nicht abgehakten Positionen und Notiz); Bereiche Zu packen · Zu klären ·
+  Gepackt. Farbbild je Variante aus dem Lexikon-Export, Partnerladen aus den privaten Stammdaten.
+- **Wareneingang (`mp=laden`):** `musterNachLaden` verteilt die noch nicht eingelegten Muster je
+  Partnerladen auf die Umschlag-Nummern aus „Zu packen“.
+
+### Großbrief vorbereiten (#1591)
+
+Je Kunde öffnet „Großbrief vorbereiten“ die Messwerte zum konkreten Umschlag mit derselben
+Lieferanschrift und allen gebündelten Bestellnummern. Gewicht, Dicke und beide Seitenmaße
+speichern automatisch zentral unter `$TP_PRIVAT_DIR/muster-grossbrief.json`. Auch unvollständige
+Zahleingaben bleiben als Entwurf erhalten. Schließen, Esc und Hintergrundklick warten auf
+laufende Speicherung; bei Fehler bleibt der Dialog mit den Eingaben offen. Rolle „lesen“
+sieht die gespeicherten Werte, kann sie nicht ändern. Die Bestätigung zum lokalen Bestand
+und das Prüfergebnis werden nicht gespeichert; beides ist bei jedem Öffnen neu zu prüfen.
+
+`POST /api/kunden/muster-packen`, `aktion: grossbrief`, nutzt die bestehende Schreib-/Rollen-
+und Herkunftsprüfung. Der Server bestimmt aus aktueller Bestellgruppe, Adresse und offenen
+Positionen einen Kontext-Hash; geänderte Inhalte bekommen eigene Messwerte. Der Client sendet
+Kontext und erwartete Version; veraltete Dialoge/Arbeitsplätze erhalten 409 statt fremde Daten
+zu überschreiben. Die Ablage schreibt atomar mit 0600; beschädigte Dateien geben Fehler statt
+leere Daten zurück. Sicherung und Browser-Datenkopie enthalten die neue Datei. Es gibt keine
+Anbindung an Portokauf, Versandbuchung oder Benachrichtigung. Änderung eines Eingabewerts
+verwirft das vorige Prüfergebnis sofort.
+
+`lib/muster-grossbrief.mjs` prüft den tatsächlich gepackten Umschlag: Gewicht, Dicke, beide
+Seitenmaße, vollständige Inlandsadresse, vorhandene Zuordnungen und bewusste Bestätigung des
+lokalen Bestands inklusive Direktversand-Prüfung. Ohne gemeinsamen Gepackt-Status bleibt die
+Prüfung offen. Kein Schätzen aus der Musteranzahl, kein automatischer Wechsel auf Maxibrief.
+Der geprüfte Preis-/Formatstand gilt bis 31.12.2026; danach fordert die Vorschau eine neue
+Prüfung statt eine veraltete Eignung zu bestätigen. Eine passende Vorschau bedeutet weder
+Portokauf noch Versandfreigabe oder tatsächliche Einlieferung.
+
+## Bestellungen und Packstation priorisieren (#1604, 22.10.2026)
+
+Direkte Navigation verwendet bestehende Kundenrouten (`tab=bestellungen`, `tab=muster`),
+keine zweite Bestell- oder Packdatenbank. Seit #1614 fuehren Seitenleiste und mobile Leiste
+in derselben Reihenfolge zu Heute, Muster bestellen, Bestellungen und Packstation. Das mobile
+„Mehr“ oeffnet nur das Menueblatt, keine automatisch aufgeklappte Sammelliste.
+Die restlichen Links bleiben in „Kunden & Einkauf“, „Shop & Inhalte“, „Verwaltung“ und
+„Weitere Dashboards“ erhalten. Die Gruppen sind standardmaessig geschlossen; nur eine bewusst
+gewaehlte Gruppe (`tp-nav-gruppe-v2`) und die Gruppe der aktiven Ansicht oeffnen sich.
+Der alte `tp-nav-buero`-Wert wird nicht uebernommen. Rollenrechte und HTTPS-Pruefung externer
+Dashboardlinks bleiben bestehen. „Muster bestellen“ hat bewusst keinen zusaetzlichen Zahlbadge.
+
+Die Packliste leitet `warten`, `packen`, `klaeren`, `gepackt` aus vorhandenem Status ab:
+alle Muster muessen als geliefert/eigener Bestand belegt oder physisch eingelegt bestaetigt sein,
+sonst wartet der Umschlag auf Ware. Fehlende Aufkleber-/Adresszuordnung ergibt Klaerbedarf.
+Der Packhaken ersetzt keinen Liefer- oder Versandstatus. Nummer des Umschlags = Bestellnummer(n),
+auch in der Wareneingangsansicht; Sortierung und das Abschliessen anderer Kunden aendern sie nicht.
+Kundendetails sind kompakt aufklappbar. Seit #1614 zeigt die Packstation jeweils eine der
+vier Arbeitslisten Packbereit / Wartet auf Ware / Zu klaeren / Gepackt (`mpbereich`), standardmaessig
+Packbereit. Die Suche (`mpq`) durchsucht alle vier Listen, auch Produkte und Farbnummern.
+Ein Direktumschlag (`umschlag`) oeffnet dessen Arbeitsliste und die passende Karte.
+Die Wareneingangsansicht nach Partnerladen (`mp=laden`) bleibt erhalten.
+
+Bestelllisten-Arbeitsstand aus bestehenden Zeitleisten, Positionsstatus und Shopify-Status;
+keine Umschreibung privater Altstaende. Alte technische Pruefstatus sind im Belegdetail,
+nicht als zweiter Hauptstatus. Versand und manueller Listenhaken bleiben unterschiedliche Dinge.
+Die Bestellmarken aus Claude #1599 bleiben lokal und sind in der Browser-Datenkopie enthalten.
+Seit #1614 stehen nur vier Hauptfilter direkt sichtbar: Offen / Abgehakt oder versandt /
+Kontrolle noetig / Alle Bestellungen. Zahlung offen / Bezahlt / Unerfuellt / Storniert /
+Beratung offen / Muster / Testbestellung bleiben unter „Weitere Filter“ erhalten; ein aktiver
+Zusatzfilter oeffnet diese Gruppe automatisch. Bestehende Such- und Blaetterregeln bleiben erhalten.
+
+
+## Vollstaendigkeit der Bestell- und Packarbeit (#1608)
+
+Der Betriebs-Export umfasst die letzten 90 Tage sowie noch offene Versand- und Zahlungsfaelle
+altersunabhaengig. Bestellungen und ihre Positionen werden bis zur letzten Seite gelesen. Fehlende
+Seitendaten, Cursorwiederholungen oder eine waehrend der Positionsabfrage geaenderte Bestellung
+werden als Fehler behandelt; der vorige Export bleibt erhalten. Das ersetzt kein historisches Vollarchiv.
+
+Die Bestellansicht bietet alle echten Exportfaelle einschliesslich Storno und Archiv sowie eine
+separate Kontrolle fuer manuell abgehakte Faelle ohne Versandnachweis, fehlende Positionskennungen
+und offene Versandbuchungen. Explizite Archivfilter verstecken keine alten Treffer.
+
+Die Packstation buendelt nur dieselbe Kundenidentitaet UND Empfaengeradresse. Unbekannte Identitaeten
+bleiben pro Bestellung getrennt. Haken und Packmarken behalten ihre vorhandenen Bestell-/Positions-IDs;
+neu getrennte Umschlaege erben keine Sammelpackmarke. Teilrueckerstattung und Direktversand sind
+Klaerfaelle. Offene Zahlungen und geschlossene Auftraege mit offenen Mustern werden mit Anzahl
+und Link zur Bestellliste sichtbar. Der Server prueft vor einer neuen Packmarke Angaben, Klaerungen
+und alle Positionshaken erneut; Navigation/Druck sind weiterhin von Versandbuchung getrennt.
+
+Bei Teilrueckerstattung erlaubt eine eigene bewusste Bestaetigung ausschliesslich den geprueften
+Restumfang. Der Server akzeptiert dafuer nur ein echtes Boolean, alle Musterhaken und vollstaendige
+Angaben. Er speichert `restumfangGeprueft: true` lokal mit der Packmarke. Direktversand oder andere
+Klaergruende werden damit nicht freigegeben; Erstattung und Versand werden dadurch nicht veraendert.
+
+
+### 9c. Bestellarbeit zuerst (#1614, 22.10.2026)
+
+`lib/start-bestellarbeit.mjs` leitet die Startseitenansicht aus den vorhandenen Einkaufsdaten,
+Positionsstaenden und Lieferantenstammdaten ab. `ansichten/heute/bestellarbeit.mjs` zeigt offene
+Muster automatisch nach Lieferant gruppiert. Das ist eine Lesedarstellung ohne zweite Ablage:
+keine neue Datenbank und keine automatisch ausgeloeste Bestellung.
+
+„Bestellung vorbereiten“ verwendet den vorhandenen Lieferantendialog (`data-lf-mail`,
+`data-lf-art=muster`); die Person prueft den vorbereiteten Umfang und bestaetigt einen
+Bestellstand bewusst ueber die bestehende Aktion. Das Oeffnen des Dialogs ist kein Versand
+und kein Bestellnachweis. Lesende Rollen erhalten stattdessen „Ansehen“.
+
+Der direkte Arbeitsweg ist `#/einkauf?tab=lieferant&art=muster&af=offen`.
+`art=muster` und `art=ware` projizieren getrennte Einkaufspositionen in die bestehende
+Lieferantenansicht. Ohne Artfilter bleibt die gesamte Einkaufsansicht erreichbar.
+Weitere Aufgaben und Klaerhinweise bleiben darunter erreichbar. Packstation und
+Bestellungen verwenden ihre bestehenden Daten.
+
+Der Umbau startet keine automatischen Nachrichten, Lieferantenbestellungen oder Versandbuchungen.
+Bestehende getrennte Versandaktionen und bewusst bestaetigte Bestellaktionen bleiben erhalten.
+
+
+## Kettler und Packstuecke
+
+Der Knopf **Kettler & Versand** in der Waren-Zeitleiste ergaenzt den bestehenden Bestell- und Versandablauf. `kettelversand.json` im Privatverzeichnis fuehrt je Auftrag und Warenposition getrennte Bestaetigungen fuer Eingang beim Kettler und fertiges Ketteln. Weder der alte Status `geliefert` noch ein digitaler Lieferschein beweisen fertiges Ketteln. Beide neuen Schritte erfordern einen Belegvermerk.
+
+Fertige Teppiche derselben Bestellung koennen ein gemeinsames Packstueck bilden. Gemeinsames schadloses Rollen sowie tatsaechlich gemessene Aussenmasse und Bruttogewicht inklusive Verpackung sind ausdruecklich zu bestaetigen. Jede Position darf nur einem Packstueck angehoeren. Der bestehende private GLS/GEL-Tarifrechner prueft die Packstuecke mit Ziel- und Kettler-Abhol-PLZ, Datum, Privatempfang und Warenwert; die guenstigste berechenbare Variante wird vorgeschlagen. Fehlende Tarife und ungeklaerte Zuschlaege bleiben offen.
+
+Die Packhilfe im bestehenden Dialog ergaenzt pro Position belegte Fertigmasse, Form und echte Teppichanzahl aus der Bestellposition sowie Gesamtgewicht und Gesamtdicke aus eindeutig zugeordneten Lexikondaten. Shopify-Flaechenmengen sind keine Stueckzahlen. Fehlende oder widerspruechliche Werte bleiben leer; insbesondere Polgewicht und Florhoehe sind kein Ersatz. Im Dialog lassen sich diese Rechenangaben ergaenzen/aendern. Die Flaeche (Rechteck bzw. Ellipse/Kreis) ergibt mit dem Gesamtgewicht je m² das Nettogewicht, mit eingegebenem Verpackungsgewicht das Bruttogewicht. Ohne Verpackungsgewicht wird kein Bruttogewicht vorgetaeuscht.
+
+Fuer gemeinsames Rollen liegen die kurzen Achsen parallel: laengste kurze Seite als Rollenachse, maximal ueberlappender Querschnitt als Summe aus langer Seite mal Gesamtdicke mal Stueckzahl. Der theoretische Durchmesser ist die Wurzel aus Kernquadrat plus vierfacher Querschnittsflaeche geteilt durch Pi. Kern (Vorgabe 0 cm) und gesamte Verpackungszugabe je Aussenmass (Vorgabe 2 cm) bleiben aenderbar. Aussenmasse werden auf volle cm aufgerundet und fuer den bestehenden Tarifrechner absteigend sortiert. Die benoetigte Dicke wird niemals geraten. Vorschlaege aktualisieren eigene automatische Felder; manuelle Korrekturen bleiben erhalten, ausser bei ausdruecklicher Uebernahme. Eine neue Teppichauswahl leert alte Packwerte und den Warenwert. Jede Aenderung an Rechen-/Packangaben hebt die Mess- und gemeinsame Rollbestaetigung auf. Die Hilfe schreibt nichts; erst die bestehende, physisch bestaetigte Speicheraktion legt ein Packstueck an. Sind alle Teppiche fertig, ist der Kettler-Verlauf platzsparend aufklappbar.
+
+`GET /api/einkauf/kettelversand?orderId=...` liest den Stand. `POST /api/einkauf/auftragsstatus` mit `aktion: kettelversand` und `kettelAktion: angekommen|fertig|paket|paketEntfernen|schein` schreibt ausschliesslich diese private Ablage. Leserollen sind gesperrt; Revision und Dateisperre schuetzen gegen konkurrierende Schreiber. Die Datei wird mit den Betriebsdaten gesichert und fuer Browserproben kopiert.
+
+Optionale HTTPS-Portaladressen stehen privat unter `versandkosten/portale.json` als Objekt mit den Schluesseln `GLS` und `GEL`. Ein Portalaufruf ist keine API-Buchung und erzeugt allein keinen Schein. Erst die Sendungsnummer des tatsaechlich erstellten Scheins wird mit Dienst und Zeitpunkt erfasst. Packstuecke mit Schein sind gegen Aenderung und doppeltes Hinterlegen gesperrt; ohne Schein ist Neuplanung moeglich. Der neue Dialog bucht weder Shopify-Fulfillment noch Kundenmail, Abholung oder Zustellung. Bei tatsaechlicher Uebergabe bleibt der vorhandene Dialog **An Kunden raus** zustaendig; GEL ist dort jetzt ebenfalls waehlbar. Eine direkte GLS/GEL-Label-API ist nicht angebunden.
+
+
+### 9d. Arbeitsstand und abgesicherte Bestellvorbereitung (#1616, 22.10.2026)
+
+`operations/lib/arbeitsstand.mjs` bildet aus den lokalen Arbeitsdateien eine Revision.
+Die bestehenden Antworten fuer Aktualisierung und Aktualisierungsstatus enthalten
+`arbeitsstand: {verfuegbar, kennung}`; Fehler enthalten einen neutralen Hinweis und
+Quellennamen, keine Dateiinhalte. Eine Aenderung ist ein Nachladehinweis, kein Beleg fuer
+Versand, Wareneingang oder eine physische Handlung. Der Browser fragt im vorhandenen
+Statusablauf alle 30 Sekunden sowie bei Tab-Rueckkehr ab und erneuert bereits geladene
+Arbeitslisten. Laufende Eingaben und offene Dialoge werden dabei nicht ueberschrieben.
+Fehler lassen den letzten sichtbaren Datenstand bestehen und werden als Stoerung behandelt.
+Nach Einzel- und abgeschlossenen Sammelaktionen fuer Status oder Wareneingang werden
+bereits geladene Bestell- und Packlisten ebenfalls frisch gelesen.
+
+Der vorhandene Schreibendpunkt `POST /api/einkauf/auftragsstatus` bietet zwei Aktionen:
+
+- `bestellVorbereitung`: `lieferant`, `art`, optional `gruppe`, `ziel`, `auftrag` grenzen die
+  vorhandene Bestellmail-Aufbereitung ein. Nur tatsaechlich in den Mailabschnitten enthaltene
+  Positionen werden gemeinsam ueber `arbeitsuebernahme(..., nehmen)` uebernommen. Eine fremde
+  Position verhindert die ganze Uebernahme mit 409; auch Inhaber erzwingen hier nichts.
+  Fehlende Angaben und leere Abschnitte bleiben in der bestehenden Vorschau sichtbar.
+- `bestellPruefen`: Erzeugt dieselbe Vorlage frisch und vergleicht den uebergebenen
+  `mailStand` mit einem semantischen Mailabschnitt. Zusaetzlich muessen alle enthaltenen
+  Positionen weiter der handelnden Person gehoeren. Ein geaenderter oder fremder Stand
+  liefert 409, ohne automatisch erneut zu uebernehmen. Die Pruefung schreibt keinen
+  Bestell- oder Shopify-Stand. Alternativ kann der gesamte `vorbereitungStand` geprueft werden.
+
+Die Antwort behaelt die bisherige Bestellmail-Form und ergaenzt `vorbereitungStand` sowohl
+fuer die Gesamtvorlage als auch je `mails[]`-Abschnitt. Der Fingerabdruck bindet Parameter,
+Positionskennungen, Mengen, Lieferziel, Empfaenger, Betreff, Text und externen Bestellweg;
+fluechtige Wartezeiten und Uebernahmezeitpunkte sind kein Bestandteil. Nach Bestaetigung
+eines ersten Abschnitts bleibt ein zweiter unveraenderter Abschnitt pruefbar; Indexpositionen
+sind keine Kennung. Der Browser prueft vor Kopieren, externem Oeffnen und Bestellt-Markierung.
+Lesende Rollen erhalten fuer beide Aktionen 403 und behalten den bisherigen Lesepfad.
+
+Beim Kopieren beginnt der Clipboard-Aufruf im urspruenglichen Klick; der Text wird erst
+nach erfolgreicher Serverpruefung als Inhalt freigegeben. Damit bleibt die Benutzeraktivierung
+auch in Browsern mit strenger Gestenbindung erhalten. Ohne diese Schnittstelle bietet der
+Dialog nach der Pruefung einen kurzen zweiten Kopierklick und bei Bedarf manuelle Textauswahl.
+
+Die vorhandene ausdrueckliche Inhaber-Uebernahme und Freigabe bleiben erhalten. Die im Betrieb
+gewünschte gemeinsame Anmeldung bleibt möglich; sie bedeutet eine gemeinsame Identität und
+trennt keine handelnden Personen. Das Dashboard erhaelt keinen verlaesslichen Versandnachweis aus einem externen
+Mailprogramm oder Gmail und kann wiederholtes externes Absenden nicht sicher verhindern.
+Die Automatik veraendert weder finanzielle noch physische Zustaende: keine Kaeufe, kein
+Mailversand, keine Pack- oder Versandbestaetigung. Bestehender Belegabgleich und bestehende
+Shopify-Wege bleiben die einzigen jeweiligen Fachablaeufe.
+
+### 9e. Sichere Mitarbeiterwege (#1618, 22.10.2026)
+
+Die lokale Arbeitsrevision beobachtet zusaetzlich Betriebsaufgaben, Rueckrufe, Fallmarken und
+Service-Anfragen. Bereits geladene Heute-Aufgaben und Service-Anfragen werden im vorhandenen
+geschuetzten Leselauf erneuert; die Aufgabenansicht nutzt denselben Takt mit ihrer eigenen
+kurzen Haltbarkeit. Fremde Filterantworten und geoeffnete Detailformulare werden nicht ersetzt.
+Fehler erhalten den gueltigen Altstand desselben Filters und bieten einen gezielten Neuabruf.
+
+Heute leitet Vollstaendigkeit aus allen benoetigten Quellen ab. Eine ladende oder nicht
+verfuegbare Quelle gilt nicht als leer. Wartende Umschlaege und Bestellkontrollen fuehren
+direkt zu den vorhandenen Listen; „Dringendes bearbeiten“ waehlt `bsort=wichtigkeit`.
+
+Gemischter Wareneingang liest vor der Auswahl den frischen Positionsstand. Ein geoeffneter
+oder abgebrochener Dialog bestaetigt keinen Eingang. Muster werden einzeln ueber die
+vorhandene Statusfunktion bestaetigt, Ware weiterhin ueber vorhandene Mengenangaben.
+Packaktionen unterscheiden Schreibfehler von gespeichertem Stand mit fehlgeschlagenem
+Neuabruf; vorhandene Listen werden dabei nicht vorzeitig geleert. Lesende Wiederholungen
+fuehren keine gespeicherte Schreibaktion erneut aus. Gebuendelte Umschlaege behalten alle
+Bestellreferenzen sowie den Rueckweg zum ausgewaehlten Partnerladen.
+
+Der Zahlungsfilter verwendet `bestellZahlungOffen` gemeinsam in Browser und Server.
+Explizite Zahlungstreffer werden durch Versand oder das 30-Tage-Anzeigearchiv nicht verdeckt.
+Die Suchpalette verlinkt die drei Hauptarbeitswege direkt und uebergibt Team-Aufgabensuchen
+an die vorhandene Aufgabenroute; sie baut keinen zweiten Aufgabenindex auf.
+
+### 9f. Shop-Übersicht und Warenfokus (#1624, 22.10.2026)
+
+Ohne `sicht` zeigt `#/heute` die Shop-Übersicht. Oben steht eine kurze konkrete Liste der
+offenen Warenbestellungen, zahlende Kunden zuerst, mit Kunde, Bestellnummer, Bestellwert,
+Alter und nächstem Schritt. Der direkte Link öffnet die vorhandene Kundenakte zur Bestellung;
+die volle Warenliste bleibt erreichbar. Darunter folgen offene Muster nach Lieferant und
+Packstation aus den bisherigen Quellen. Versand-/Empfangskontrolle, gepackte Umschläge und
+fälliges Nachfassen verweisen in vorhandene Arbeitswege. Lexikon und gemeinsame
+Etiketten-Druckliste bleiben direkt erreichbar. Laden, Aufgaben und Technik sind über
+„Weitere Bereiche“ zugänglich; `sicht=laden|website|alles|inhaber` erhält die Alltagssichten.
+
+**Eine Projektion, keine zweite Verwaltung.** `lib/shop-bestellarbeit.mjs` verwendet die Antwort
+von `/api/kunden/bestellungen`. `operations/lib/bestellliste.mjs` liefert `warenFortschritt` und
+`warenWasFehlt` durch die vorhandenen Helfer `fortschritt()` und `wasFehlt()` auf dem Warenanteil
+sowie `positionsstatus` je Bestellpositionskennung. Ein explizites `null` ist ein noch nicht
+begonnener lokaler Schritt; fehlende oder fehlerhafte Quellen sind unbekannt, keine Null und
+kein Abschluss. Warenpositionen sind die im Bestellmodell nicht als Muster gekennzeichneten
+Positionen. Ein gemischter Auftrag bleibt in beiden Artwahlen auffindbar; sein Warenfortschritt
+wird nicht vom Musterstand bestimmt. Details und bewusste Gesamtbestellaktionen behalten den
+vollständigen Auftrag. Es gibt weder neue Statusablage noch automatische Abschlussmarkierung.
+Fehlmengen, ausstehende Versandbuchung, unklare Angaben und manuelles Abhaken ohne Versandnachweis
+bleiben als Warenarbeit sichtbar. Versandte Aufträge mit ausstehender Zahlung bleiben ebenfalls
+sichtbar. Der angezeigte **Bestellwert** umfasst die ganze Bestellung einschließlich eines
+eventuellen Musteranteils; er ist kein errechneter Warenumsatz oder Zahlungseingang.
+
+**Art und Status sind unabhängig.** Die Bestellansicht verwendet `bart=ware|muster|alle` neben
+`bfilter`, Suche und Sortierung. Ohne `bart` gilt weiterhin alle Arten, damit alte Such- und
+Direktlinks keine Muster verlieren. Ein Artwechsel setzt die Blätterseite zurück. Der
+Haupteinstieg ist `#/kunden?tab=bestellungen&bart=ware&bsort=wichtigkeit`. Die offene Warenliste,
+die Zahl am Hauptmenü (`bestellungenOffen({art: 'ware'})`) und der Startseitenblock verwenden
+dieselbe Projektion und denselben Abschlussumfang. Statusfilter und gezielte Kontrollen bleiben
+erhalten. Mobil stehen Bestellungen, Muster bestellen, Packstation und Lexikon direkt unten;
+Mehr öffnet die bestehende Seitenleiste. Der Hausknopf im Kopf führt zur Shop-Übersicht.
+Rollenrechte und die vorhandene geschützte Datenaktualisierung bleiben erhalten.
+
+Shopify-Archivierung bleibt ein ausdruecklicher bewusster Abschluss: `closedAt` wird als
+`archiviert` durch Auftragsmodell und Bestellzeile weitergereicht. Bei geklaertem finanziellem
+Endzustand erscheint der Auftrag unter Fertig/Alle, ohne daraus Versand abzuleiten. Offene
+oder unbekannte Zahlungen bleiben weiterhin Warenarbeit. Ein bloss lokaler Haken ohne
+Shopify-Archivierung ersetzt dagegen keinen Versandbeleg.
+
+**Musterwirkung als Beobachtung.** `operations/lib/musterwirkung.mjs` liest denselben privaten
+Bestellexport; `/api/kunden/musterwirkung` gibt nur Aggregate, Qualität und Abdeckung aus.
+`#/kunden?tab=musterwirkung` zeigt Musterkunden mit später belegtem Warenkauf, Warenkäufer ohne
+vorher beobachtetes Muster, wiederholte Muster, junge Fälle sowie unklare oder lückenhafte
+Verläufe. Kundenkennung hat Vorrang; E-Mail-Zuordnung erfolgt nur ohne Mehrdeutigkeit.
+Test, Storno und vollständig erstattete Bestellungen ergeben keinen Kaufbeleg. Ein späterer
+Kauf braucht einen strikt späteren Zeitpunkt; ein gemischter Auftrag ist kein Folgekauf.
+Positive Warenwerte müssen aus `LineItem.priceAfterAllDiscountsBeforeTaxesSet` belegt sein.
+Das Feld ist gegen Admin-API **2026-07** validiert und steht in der gemeinsamen Feldliste für
+erste und weitere Positionsseiten. Originalpreise oder `discountedTotalSet` ersetzen diesen
+Beleg nicht. Fehlende Werte, unklare Artikel-/Erstattungszuordnung und fehlende sichere
+Identität bleiben sichtbar unklar; alte Exporte werden nicht mit geschätzten Werten ergänzt.
+
+Das **Betriebsfenster** umfasst die letzten 90 Tage plus ältere offene Versand- und
+Zahlungsfälle, kein historisches Vollarchiv. Deshalb bedeutet „ohne beobachtetes Muster“
+nicht „hat nie Muster bestellt“. Ältere offene Muster vor dem Fenster belegen keine
+lückenlos beobachtete Zwischenzeit; mögliche abgeschlossene Zwischenkäufe können fehlen.
+Eine junge Musterbestellung ist kein Misserfolg. Die angezeigte Beobachtungsdauer bezieht sich
+auf den Exportzeitpunkt; fehlt er, bleibt die Dauer unbekannt. Die Ansicht berechnet weder eine
+scheinbar vollständige Konversionsrate noch Kaufursache oder Rentabilität: Material-/Portokosten,
+Arbeitszeit und Marge fehlen. Bestellte Musteranzahl belegt kein physisches Packen oder Senden.
+Die Analyse trennt deshalb Musterkunden mit mindestens einer vollstaendigen Versandbuchung,
+ohne solche Buchung und mit vollstaendigem Zustellnachweis. Fuer Letzteren muessen alle
+aktiven, vollstaendig bekannten Sendungen eines erfuellten Musterauftrags zugestellt sein;
+Teillieferungen und eine abgeschnittene Sendungsliste genuegen nicht. Fehlende Buchungen
+beweisen keinen unterbliebenen physischen Versand.
+
+**Nacharbeit und technische Prüfgrenze.** Gepackt, Porto vorbereitet, versandt und Empfang
+bestätigt bleiben unterschiedliche Nachweise. Texte sind erst Entwürfe; der bestehende
+Nachfasslauf und seine Fehler werden über die vorhandenen Wege geprüft. Ein bereits
+vorhandener Bewertungs-/Flow-Ablauf für Warenbestellungen wird nicht erneut gebaut. Sein
+aktueller Live-Zustand und konkrete Versandläufe sind über die verfügbare Anbindung aktuell
+technisch nicht lesbar; die Shop-Übersicht behauptet dafür keinen geprüften Versandstatus.
+Der Umbau startet keine zweite Bewertungs-, Nachrichten-, Bestell- oder Versandautomatik.
+
+
+## Kostenlose Muster automatisch bestellen (Inhaber 23.10.2026, #1648)
+
+Der Dashboard-Dienst ruft jede Minute `musterBestellungenAutomatisch()` auf, auch ohne offene Seite. Er verwendet die bestehende Lieferanten-Bestellmail, das Musterlager, den Positionsstatus und das Firmenpostfach. Warenbestellungen und kostenpflichtige Probestuecke bleiben manuell. Pruefinstanzen (`TP_DASHBOARD_DATENKOPIE`) starten den Zeitgeber nie.
+
+Private Freigabe: `$TP_PRIVAT_DIR/muster-bestellung/konfiguration.json` mit `aktiv`, ISO-Zeit `ab` und `lieferanten` je Kuerzel: `kostenlos: true`, `empfaenger`, `lieferziel` sowie `produktgruppen` (exakte Lexikon-Gruppen). Empfaenger und Ziel muessen zu den aktuellen Lieferantenstammdaten passen. Ohne Konfiguration inaktiv. Alte Anfragen werden beim Einschalten nicht nachbestellt; sie erscheinen als Klaerfall.
+
+Voraussetzungen: gueltiger Export, hoechstens 20 Minuten alt, offen und bezahlt (PAID), keine Test-/Stornobestellung, keine bestehende Bearbeitung, bekannte Herstellerartikel-/Farbnummer und Menge. Eigener Bestand wird nicht bestellt. Die kostenlose Lieferantenleistung muss ausdruecklich freigegeben sein; der 0-EUR-Kundenpreis allein reicht nicht. Es werden nur Kundenmengen bestellt, kein Vorrat.
+
+Vor SMTP wird der Versuch dauerhaft in `muster-bestellung/versand.json` reserviert und die Position als von der Automatik uebernommen gesperrt. Eine Prozesssperre schuetzt parallele Laeufe. Erst SMTP-Annahme setzt die vorhandenen Positionen auf Bestellt; Statusnachtrag nach Abbruch sendet nie erneut. Unklarer SMTP-Ausgang bleibt sichtbar und wird nie blind wiederholt. Nach Postfachkontrolle kann der Inhaber die bestehende Arbeitsuebernahme bewusst uebernehmen. Ein Wiedereroeffnen erzeugt keinen zweiten Versand. Aenderungen an Menge oder Artikel nach Versand werden angezeigt. Versandjournal und Konfiguration gehoeren zur Arbeitsstand-Erkennung.
+
+Kunden → Bestellungen zeigt ohne Aufklappen: Muster bestellt, Zeitpunkt, Artikel/Farbe/Menge, Empfaenger und Lieferziel; daneben getrennte Klaerfaelle. Mailbestellung bestaetigt weder physischen Eingang noch Kundenversand. Keine Shopify-Schreibwirkung.

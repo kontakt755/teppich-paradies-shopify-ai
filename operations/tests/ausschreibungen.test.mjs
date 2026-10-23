@@ -29,6 +29,18 @@ test('OCDS: nur passende CPV im Umkreis', () => {
   assert.equal(ausOcds(release('45432100', 'DEB35')), null);
 });
 
+test('Links aus den Feeds: nur http(s), javascript: & Co. fallen weg', () => {
+  const mitDoks = documents => { const r = release('45432100', 'DE40A'); r.tender.documents = documents; return ausOcds(r); };
+  assert.equal(mitDoks([{ url: 'javascript:alert(1)' }]).link, null);
+  assert.equal(mitDoks([{ url: ' JavaScript:alert(1)' }, { url: 'data:text/html,x' }]).link, null);
+  assert.equal(mitDoks([{ url: 'javascript:alert(1)' }, { url: 'https://vergabe.example/doku' }]).link, 'https://vergabe.example/doku');
+  assert.equal(mitDoks([{ url: 'https://vergabe.example/a' }]).link, 'https://vergabe.example/a');
+  assert.equal(mitDoks(undefined).link, null);
+  const ted = deu => ausTed({ notices: [{ 'publication-number': '1-2026', links: { html: { DEU: deu } } }] })[0].link;
+  assert.equal(ted('javascript:alert(1)'), 'https://ted.europa.eu/de/notice/-/detail/1-2026');
+  assert.equal(ted('https://ted.europa.eu/de/notice/-/detail/1-2026'), 'https://ted.europa.eu/de/notice/-/detail/1-2026');
+});
+
 test('bereinigen und neuSeit', () => {
   const a = { id: 'a', titel: 'X', auftraggeber: 'Y', frist: '2026-11-01' };
   const alt = { id: 'b', titel: 'Z', auftraggeber: 'Y', frist: '2026-10-01' };

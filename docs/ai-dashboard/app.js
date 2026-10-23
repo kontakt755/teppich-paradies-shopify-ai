@@ -24,11 +24,13 @@ import { loadCapabilities, loadSession } from './kern/sitzung.mjs';
 import { parseRoute } from './kern/router.mjs';
 import { renderThemeButton } from './kern/thema.mjs';
 import { loadData, loadAgentRuns, refresh, renderSyncChip } from './kern/daten.mjs';
-import { registriereAnsichten, render } from './kern/render.mjs';
+import { registriereAnsichten, registriereNachZeichnen, render } from './kern/render.mjs';
 import { registriereNavZaehler, zeichneDashboards } from './kern/navigation.mjs';
 import { kunden } from './ansichten/kunden/gemeinsam.mjs';
 import { viewEinkauf } from './ansichten/einkauf.mjs';
 import { viewLexikon } from './ansichten/lexikon.mjs';
+import { musterPackenOffen } from './ansichten/kunden/muster-packen.mjs';
+import { bestellungenOffen } from './ansichten/kunden/bestellungen.mjs';
 import { viewKunden } from './ansichten/kunden.mjs';
 import { viewOrganisation } from './ansichten/organisation.mjs';
 import { viewTeam } from './ansichten/team.mjs';
@@ -49,14 +51,18 @@ import { viewHeute } from './ansichten/heute.mjs';
 import { viewProzesse } from './ansichten/prozesse.mjs';
 import { bindEvents } from './ereignisse.mjs';
 import { pruefeAntworten } from './bausteine/fehler-melden.mjs';
+import { starteDatenstand, zeichneDatenstand } from './bausteine/datenstand.mjs';
+import { starteDienstversion } from './bausteine/dienstversion.mjs';
+import { serviceOffenAnzahl } from './ansichten/kunden/serviceanfragen.mjs';
 
 const VIEWS = { heute: viewHeute, prozesse: viewProzesse, fotos: viewFotos, sonderposten: viewSonderposten, akquise: viewAkquise, bildrechte: viewBildrechte, social: viewSocial, team: viewTeam, hilfe: viewHilfe, organisation: viewOrganisation, shopwache: viewShopwache, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
 
 async function init() {
   registriereAnsichten(VIEWS);
+  registriereNachZeichnen(zeichneDatenstand);
   // Zaehler in der Navigation: nur, was ohnehin geladen ist - kein eigener Abruf dafuer.
-  // Kunden: sofort faellige Faelle plus neue Service-Anfragen, bei denen sich noch niemand gemeldet hat.
-  registriereNavZaehler({ kunden: () => (kunden.faelle?.sofort || 0) + (kunden.serviceanfragen?.eintraege || []).filter(e => e.status === 'neu').length });
+  // Kunden: sofort faellige Faelle plus alle noch offenen Service-Anfragen.
+  registriereNavZaehler({ bestellungen: () => bestellungenOffen({ art: 'ware' }), packen: musterPackenOffen, kunden: () => (kunden.faelle?.sofort || 0) + serviceOffenAnzahl() });
   parseRoute();
   bindEvents();
   renderThemeButton();
@@ -72,6 +78,9 @@ async function init() {
   // Antwort auf eine eigene Fehlermeldung? Eine Zeile unten, Zahl am Knopf.
   pruefeAntworten();
   setInterval(() => refresh({ silent: true }), CONFIG.refreshMs);
+  // Betriebsdaten (Bestellungen, Kunden, Lexikon) holt die offene Seite selbst nach.
+  starteDatenstand();
+  starteDienstversion();
 }
 
 init();

@@ -49,6 +49,17 @@
 
     # Erster Durchlauf: groesstes Mass als gemeinsamer Massstab
     assign tp_gf_max = 0
+    assign tp_gf_gruppen_da = ''
+    for tp_gf_wert in tp_gf_option.values
+      capture tp_gf_g
+        render 'tp-groessen-form-gruppe', wert: tp_gf_wert
+      endcapture
+      assign tp_gf_g = tp_gf_g | strip
+      unless tp_gf_gruppen_da contains tp_gf_g
+        assign tp_gf_gruppen_da = tp_gf_gruppen_da | append: tp_gf_g | append: ','
+      endunless
+    endfor
+    assign tp_gf_gruppen_zahl = tp_gf_gruppen_da | split: ',' | size
     for tp_gf_wert in tp_gf_option.values
       assign tp_gf_roh = tp_gf_wert | append: '' | replace: '×', ' x ' | replace: 'x', ' x ' | replace: 'Ø', ' ' | replace: ',', '.'
       assign tp_gf_teile = tp_gf_roh | split: ' '
@@ -94,8 +105,29 @@
         <span class="tp-gf__aktuell" data-tp-gf-aktuell>{{ tp_gf_gewaehlt | escape }}</span>
       </legend>
 
+      {%- comment -%}
+        Gruppen in fester Reihenfolge; Ueberschriften nur, wenn mehr als eine
+        Form vorkommt. Innerhalb der Gruppe gilt die Reihenfolge der Option.
+      {%- endcomment -%}
+      {%- assign tp_gf_reihenfolge = 'rechteck,laeufer,quadrat,rund,fellform' | split: ',' -%}
+      {%- for tp_gf_gruppe in tp_gf_reihenfolge -%}
+      {%- unless tp_gf_gruppen_da contains tp_gf_gruppe -%}{%- continue -%}{%- endunless -%}
+      {%- if tp_gf_gruppen_zahl > 1 -%}
+        <p class="tp-gf__gruppe">
+          {%- case tp_gf_gruppe -%}
+            {%- when 'rechteck' -%}Rechteckig
+            {%- when 'laeufer' -%}Läufer
+            {%- when 'quadrat' -%}Quadratisch
+            {%- when 'rund' -%}Rund
+            {%- when 'fellform' -%}Fellform
+          {%- endcase -%}
+        </p>
+      {%- endif -%}
       <div class="tp-gf__raster">
         {%- for tp_gf_wert in tp_gf_option.values -%}
+          {%- capture tp_gf_g -%}{%- render 'tp-groessen-form-gruppe', wert: tp_gf_wert -%}{%- endcapture -%}
+          {%- assign tp_gf_g = tp_gf_g | strip -%}
+          {%- if tp_gf_g != tp_gf_gruppe -%}{%- continue -%}{%- endif -%}
           {%- liquid
             assign tp_gf_wert_text = tp_gf_wert | append: ''
             assign tp_gf_klein = tp_gf_wert_text | downcase
@@ -144,6 +176,15 @@
               assign tp_gf_formname = 'Fellform'
             else
               assign tp_gf_masse = tp_gf_wert_text
+              if tp_gf_b > 0 and tp_gf_l > 0
+                assign tp_gf_masse = tp_gf_b | append: ' × ' | append: tp_gf_l | append: ' cm'
+              endif
+              assign tp_gf_formname = ''
+              if tp_gf_g == 'laeufer'
+                assign tp_gf_formname = 'Läufer'
+              endif
+            endif
+            if tp_gf_gruppen_zahl > 1
               assign tp_gf_formname = ''
             endif
           -%}
@@ -191,6 +232,7 @@
           </label>
         {%- endfor -%}
       </div>
+      {%- endfor -%}
 
       {%- if block.settings.hinweis != blank -%}
         <p class="tp-gf__hinweis">{{ block.settings.hinweis | escape }}</p>
@@ -295,9 +337,20 @@
     color: #595959;
   }
 
+  .tp-gf__gruppe {
+    margin: 14px 0 6px;
+    font-size: var(--tp-fs-sm);
+    font-weight: 500;
+    color: #595959;
+  }
+
+  .tp-gf__gruppe:first-of-type {
+    margin-top: 0;
+  }
+
   .tp-gf__raster {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
     gap: 10px;
   }
 

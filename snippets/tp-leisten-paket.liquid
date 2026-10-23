@@ -1,14 +1,16 @@
 {%- doc -%}
   Gibt "ja" aus, wenn fuer das Produkt der Paketvorteil "Sockelleiste zum
-  halben Preis" gilt (automatischer Shopify-Rabatt aus #1452: je 3 Pakete
-  Klick- oder Klebevinyl 2 Stangen Faventa oder Nerissa -50 %).
+  inklusive" gilt (automatischer Shopify-Rabatt "Vinyl komplett", #1452,
+  Freigabe 22.10.2026: je 5 Pakete Klick- oder Klebevinyl 5 Leisten aus der
+  Kollektion Bodenleisten mit je 11,90 EUR Nachlass - Belmora weiss gratis,
+  andere Leisten gegen Aufpreis).
   Einziger Schalter fuer Produktseite, Produktkarte und Warenkorb: endet die
   Aktion, lph_aktiv auf false setzen.
 
   @param {product} product
 {%- enddoc -%}
 {%- liquid
-  assign lph_aktiv = false
+  assign lph_aktiv = true
   assign lph_typen = 'Klickvinyl,Klebevinyl' | split: ','
   if lph_aktiv and lph_typen contains product.type
     echo 'ja'

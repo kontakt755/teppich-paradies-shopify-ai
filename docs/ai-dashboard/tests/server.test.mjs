@@ -83,6 +83,15 @@ test('lexikon-API ist GET-only und liefert JSON (verfuegbar:false ohne Export)',
   assert.equal(p.status, 200);
 }));
 
+test('Versandtarife sind nur lesend erreichbar und nie als statische Datei', async () => withServer(async base => {
+  const g=await fetch(`${base}/api/einkauf/versandtarife`);
+  assert.equal(g.status,200);assert.equal((await g.json()).verfuegbar,false);
+  assert.match(g.headers.get('cache-control'),/no-store/);
+  const p=await fetch(`${base}/api/einkauf/versandtarife`,{method:'POST',headers:{'content-type':'application/json'},body:'{}'});
+  assert.equal(p.status,405);
+  assert.notEqual((await fetch(`${base}/versandkosten/tarife.json`)).status,200);
+}));
+
 test('einkauf/kennzahlen ist GET-only und liefert JSON (verfuegbar:false ohne Export)', async () => withServer(async base => {
   const g = await fetch(`${base}/api/einkauf/kennzahlen`);
   assert.equal(g.status, 200);
@@ -251,6 +260,24 @@ test('jede Route im Dispatcher steht auch in der Pfadliste', () => {
   }
 });
 
+test('POST /api/kunden/muster-packen kommt an und verlangt einen Kunden', async () => withServer(async base => {
+  const r = await fetch(`${base}/api/kunden/muster-packen`, {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({}),
+  });
+  assert.notEqual(r.status, 404, 'Route fehlt in der Pfadliste');
+  assert.equal(r.status, 400);
+  assert.match((await r.json()).error, /Kein Kunde angegeben/);
+}));
+
+test('POST /api/kunden/bestellung-abhaken kommt an und verlangt eine Bestellung', async () => withServer(async base => {
+  const r = await fetch(`${base}/api/kunden/bestellung-abhaken`, {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({}),
+  });
+  assert.notEqual(r.status, 404, 'Route fehlt in der Pfadliste');
+  assert.equal(r.status, 400);
+  assert.match((await r.json()).error, /Bestellkennung fehlt/);
+}));
+
 test('POST /api/kunden/fall-marke kommt an und verlangt einen Fall', async () => withServer(async base => {
   const r = await fetch(`${base}/api/kunden/fall-marke`, {
     method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({}),
@@ -258,4 +285,12 @@ test('POST /api/kunden/fall-marke kommt an und verlangt einen Fall', async () =>
   assert.notEqual(r.status, 404, 'Route fehlt in der Pfadliste');
   assert.equal(r.status, 400);
   assert.match((await r.json()).error, /Kein Fall angegeben/);
+}));
+
+test('Musterwirkungs-Route ist erreichbar und rein lesend', async () => withServer(async base => {
+  const r = await fetch(`${base}/api/kunden/musterwirkung`);
+  assert.equal(r.status, 200, 'neuer API-Pfad muss in der Server-Pfadliste stehen');
+  assert.equal(typeof (await r.json()).verfuegbar, 'boolean');
+  const post = await fetch(`${base}/api/kunden/musterwirkung`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+  assert.equal(post.status, 405);
 }));

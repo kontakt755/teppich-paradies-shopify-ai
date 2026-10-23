@@ -48,6 +48,7 @@
   assign vs_bezeichnung = settings.tp_vs_bezeichnung | default: 'Teppichboden und Vinyl von der Rolle'
   assign vs_produkte = section.settings.produkte_link | default: collections['teppichboden'].url | default: '/collections/teppichboden'
   assign vs_produkte_2 = section.settings.produkte_link_2 | default: collections['vinylboden-vinyl-von-der-rolle'].url | default: '/collections/vinylboden-vinyl-von-der-rolle'
+  assign vs_anfrage = section.settings.anfrage_link | default: '/pages/liefer-verlegeservice#tp-anfrage'
   assign vs_bild_alt = section.settings.image.alt | default: 'Teppichboden wird an der Wand passend zugeschnitten'
   assign vs_vertrauen = section.settings.vertrauen | split: '·'
 
@@ -94,7 +95,8 @@
       </div>
 
       <div class="tp-vs__aktionen">
-        <a class="tp-vs-knopf tp-vs-knopf--primaer" href="{{ vs_produkte }}">{{ section.settings.knopf | default: 'Teppichboden entdecken' | escape }}</a>
+        <a class="tp-vs-knopf tp-vs-knopf--primaer" href="{{ vs_anfrage }}">{{ section.settings.anfrage_knopf | default: 'Aufmaß & Verlegung anfragen' | escape }}</a>
+        <a class="tp-vs-knopf tp-vs-knopf--zweit" href="{{ vs_produkte }}">{{ section.settings.knopf | default: 'Teppichboden entdecken' | escape }}</a>
         {%- if section.settings.knopf_2 != blank -%}
           <a class="tp-vs-knopf tp-vs-knopf--zweit" href="{{ vs_produkte_2 }}">{{ section.settings.knopf_2 | escape }}</a>
         {%- endif -%}
@@ -436,6 +438,18 @@
       "id": "sub",
       "label": "Untertitel",
       "default": "Sie wählen den Boden aus, wir bringen ihn zu Ihnen nach Hause und verlegen ihn – in Oranienburg, Berlin und Brandenburg."
+    },
+    {
+      "type": "text",
+      "id": "anfrage_knopf",
+      "label": "Text des Anfrageknopfs",
+      "default": "Aufmaß & Verlegung anfragen"
+    },
+    {
+      "type": "url",
+      "id": "anfrage_link",
+      "label": "Ziel des Anfrageknopfs",
+      "info": "Leer lassen: Anfrageformular auf dieser Serviceseite."
     },
     {
       "type": "text",

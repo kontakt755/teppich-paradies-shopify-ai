@@ -8,7 +8,7 @@
  */
 
 /** Gleiche Liste wie VERSANDDIENSTE in operations/lib/versand.mjs - ein Test haelt beide gleich. */
-export const VERSANDDIENSTE = Object.freeze(['GLS', 'DHL', 'DPD', 'Hermes', 'UPS', 'Deutsche Post (DE)', 'Spedition']);
+export const VERSANDDIENSTE = Object.freeze(['GLS', 'GEL', 'DHL', 'DPD', 'Hermes', 'UPS', 'Deutsche Post (DE)', 'Spedition']);
 
 const SCHRITTE = ['bestellt', 'geliefert', 'raus', 'erledigt'];
 const stufe = s => SCHRITTE.indexOf(s ?? '');

@@ -19,8 +19,7 @@ Grundlage: `audit/tp-operations-v3/` (02 Datenmodell, 05 Entscheidungen,
   und unlesbare Masse heissen `UNGEKLAERT` (D7). Keine Rundungsregeln, die nicht
   in den Rechnern (`blocks/paket-auswahl.liquid`, `blocks/tp-rollware-rechner.liquid`,
   `blocks/tp-zubehoer-menge.liquid`, `assets/tp-masstepich-rechnung.js`) stehen.
-- **Einkauf wird nie automatisch gesendet** (D8). `bestellungAusGruppe` liefert
-  nur den Entwurf.
+- **Waren-Einkauf bleibt ein Entwurf** (D8). Ausnahme nach Inhaberauftrag vom 23.10.2026: explizit freigegebene kostenlose Muster werden durch `lib/muster-bestellautomatik.mjs` bestellt. Private Empfänger-/Produktgruppenfreigabe, Startzeit und Versandjournal sind Pflicht; kostenpflichtige oder unklare Fälle bleiben offen.
 - Shopify-Schreibzugriff nur auf Order-Metafelder `ops.*` und Tags; nie auf
   Produkte, Preise oder Varianten aus diesem Modul. **Einzige Ausnahme:** der
   Angebote-Abgleich setzt und entfernt am Produkt genau den Tag `angebot`
@@ -39,7 +38,8 @@ Grundlage: `audit/tp-operations-v3/` (02 Datenmodell, 05 Entscheidungen,
 | `lib/status.mjs` | Enum `AUFTRAG_STATUS`, Uebergaenge, `ableiten(order)` |
 | `lib/auftragsverlauf.mjs` | Zeitleiste je Auftrag (Muster-/Warenstrecke), `naechsterSchritt`, Ereignisse je Auftrag (privat, nur anhängen) |
 | `lib/musterherkunft.mjs` | Woher kommt ein Muster: Lieferant oder eigener Bestand (verschicken/vorbeibringen); privat, nur anhängen |
-| `lib/musterlager.mjs` | Musterlager (Einzelmuster, Probestück 2 × 1 m, Bahn 4 m × 20 cm, Lagerplatz); ordnet offene Musterpositionen dem Lager zu, Vorschläge zum Einlagern; privat |
+| `lib/musterlager.mjs` | Musterlager (Einzelmuster, Probestück 2 × 1 m, Bahn 4 m × 20 cm, Verlegerest, Lagerplatz); ordnet offene Musterpositionen dem Lager zu, Vorschläge zum Einlagern; privat |
+| `lib/reste.mjs` | Verlegereste als Mustermaterial: Regel (A/C-Ware Teppichboden/Vinyl aufheben, andere Quelle nur mit A/C-Gegenstück), Abgleich Hersteller/Qualität/Farbnummer gegen den Lexikon-Export; rein |
 | `sync/orders.mjs` | `fetchOrdersSince`, `writeOrderState` (mit Gegenlesen) |
 
 ## Start
@@ -352,11 +352,11 @@ Für die Oberfläche:
   Maßzuschnitt)“, darunter das Fertigmaß für den Kettler), ohne
   Einfassungszeile und mit der Kommission ohne Kundennamen. Ist die
   Rollenbreite unbekannt, bleibt es beim Stück nach Maß ohne Einfassung.
-  **Regel ohne `ziel`:** Maßteppiche mit Einfassung und kürzerer Seite unter
-  200 cm kommen in eine eigene Mail an den Kettler (`kettlerAutomatisch:
-  true`), der Rest der Gruppe bleibt in seiner Mail. Ein `ziel` gilt für die
-  ganze Gruppe. `kettlerVorschlag` nennt in den übrigen Mails Kettel-Positionen
-  für den Kettler (unter 2 m bzw. Kunde in Berlin/PLZ 16).
+  **Regel ohne `ziel`:** Maßteppiche mit Einfassung und Fertigmaß kommen in
+  eine eigene Mail an den Kettler, egal wie groß (`kettlerAutomatisch: true`;
+  bis 21.10. nur unter 200 cm), der Rest der Gruppe bleibt in seiner Mail. Ein
+  `ziel` gilt für die ganze Gruppe. `kettlerVorschlag` nennt in den übrigen
+  Mails Kettel-Positionen für den Kettler (gekettelt bzw. Kunde in Berlin/PLZ 16).
 - Nach dem Absenden setzt die Oberfläche den Status wie bisher über
   `POST /api/einkauf/auftragsstatus` (`status: "bestellt"`). Optional
   `ueber: "kettler"` vermerkt den Kettler-Weg an der Position (`ueber: null`
@@ -432,6 +432,14 @@ aufgebraucht, trägt die Position dieselben Felder wie „haben wir da“ (`must
 eigen_versand`) plus `musterHerkunftQuelle: lager` und `musterLager`. Beim Verschicken
 schreibt der Server die Zuordnung als `musterherkunft`-Ereignis mit `lagerId` fest.
 Details und Endpunkte: `docs/control-center/ARCHITEKTUR.md`, Abschnitt 8b.
+
+**Verlegereste (Regel 2026-10-21, `lib/reste.mjs`).** Teppichboden und Vinyl (Rolle, Klebe, Klick)
+von Lieferant A oder C, den wir verlegen (Route `SUPPLIER_TO_SITE` oder Verlegung gebucht, nie
+Direktversand), hinterlässt Reste: aufheben, beschriften, als Art `rest` einlagern – daraus werden
+A5-Muster. Ware anderer Quelle zählt nur, wenn A oder C dieselbe Ware führt: `sucheBeiAC` gleicht
+Hersteller (Name oder Kürzel = Anfangsbuchstaben), Kennwörter der Qualität und Farbnummer gegen die
+aktiven A/C-Varianten im Lexikon ab. Der Rest wird unter der A/C-SKU eingelagert, damit er
+Musterbestellungen dieses Produkts bedient.
 
 ## Zeitleiste je Auftrag und nächster Schritt
 
@@ -774,3 +782,32 @@ Fehlermeldung im Log, bis `.env.local` eingerichtet ist.
 Ersetzt keine geplante Aufgabe, die den Rechner nicht ständig am Laufen hat -
 der Dienst braucht wie die geplante Aufgabe einen eingeschalteten,
 angemeldeten Mac mit diesem Repository.
+
+### Taegliche Betriebssicherung
+
+`npm run daten:sichern` sichert vorhandene lokale Betriebsdaten in ein privates
+Tagesarchiv. Erst nach erfolgreichem Lesen des Archivverzeichnisses und Pruefung
+aller Quellbereiche ersetzt das Archiv den vorherigen Tagesstand und schreibt
+den Erfolgsbeleg. Fehler lassen vorhandenes Archiv und Erfolgsdatum bestehen.
+Archiv und temporaere Archivdatei haben Dateirechte `0600`.
+
+Der mechanische Lauf braucht kein KI-Kontingent. Den bisherigen Claude-Zeitplan
+**Betriebsdaten sichern** zuerst pausieren, danach aus der laufenden, dauerhaften
+Dienst-Arbeitskopie (nicht aus einem kurzlebigen Feature-Worktree) ausfuehren:
+
+```
+bash operations/scripts/dienste-einrichten.sh --nur-sicherung
+```
+
+Der vorhandene Sicherungslauf wird als `net.teppich-paradies.sicherung`
+taeglich um 22:30 Uhr Ortszeit und beim Laden des Benutzer-Dienstes gestartet.
+Der Mac muss angemeldet und verfuegbar sein; launchd holt einen waehrend des
+Schlafs verpassten Kalendertermin beim Aufwachen nach. Es gibt keinen
+endlosen Neustart bei Fehlern. Der Zustand bleibt dann sichtbar alt bis zu
+einem erfolgreichen Lauf. Protokoll: `~/Library/Logs/teppich-paradies-sicherung.log`.
+Erneute Einrichtung mit unveraenderter Vorlage startet keinen zweiten Dienst.
+
+Das Dashboard meldet nach dem taeglichen Solltermin plus 30 Minuten Laufzeit
+einen ausgebliebenen Tag bereits als alt; die Berechnung verwendet Europe/Berlin
+einschliesslich Sommer-/Winterzeit. Der 48-Stunden-Schutz bleibt zusaetzlich.
+Eine Sicherung auf derselben Platte ersetzt keine unabhaengige externe Kopie.

@@ -28,8 +28,11 @@ fi
 # committete ein Workflow sie alle 30 Minuten auf main): fehlt sie oder ist sie
 # aelter als eine Stunde, wird sie im Hintergrund per gh neu erzeugt (~8 s), ohne
 # den Sitzungsstart aufzuhalten. Die Kurzfassung zeigt den vorhandenen Stand.
+# Issue-Titel zeigt sie nur von Repo-Mitgliedern (das Repo ist oeffentlich);
+# fehlt der Datei die Herkunftsangabe (author_association, alter Stand), wird
+# sie ebenfalls neu erzeugt.
 DATEN=docs/ai-dashboard/issues.json
-if command -v gh >/dev/null 2>&1 && { [ ! -f "$DATEN" ] || [ -n "$(find "$DATEN" -mmin +60 2>/dev/null)" ]; }; then
+if command -v gh >/dev/null 2>&1 && { [ ! -f "$DATEN" ] || [ -n "$(find "$DATEN" -mmin +60 2>/dev/null)" ] || ! grep -q '"author_association"' "$DATEN" 2>/dev/null; }; then
   (node scripts/build-dashboard-data.mjs >/dev/null 2>&1 &)
 fi
 node scripts/dashboard-brief.mjs 2>/dev/null | sed 's/^/  /' || true

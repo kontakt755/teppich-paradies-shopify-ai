@@ -8,14 +8,56 @@ function hilfeKarte(titel, inhalt) {
   return `<section class="card" style="margin-bottom:14px"><div class="card-head"><h2>${esc(titel)}</h2></div>${inhalt}</section>`;
 }
 
+/** Je Menuepunkt ein Satz - dieselben Woerter wie im Menue (docs/control-center/BEGRIFFE.md). */
+const MENUE_KURZ = [
+  ['Heute', 'Was heute zu tun ist, das Dringendste oben. Ein Knopf je Zeile führt direkt hin.'],
+  ['Kunden', 'Kunden suchen, Bestellungen und Anfragen ansehen, zurückrufen.'],
+  ['Bestellen', 'Ware und Muster beim Lieferanten bestellen und abhaken, wenn sie da sind.'],
+  ['Genossenschaften', 'Wohnungsgenossenschaften und Hausverwaltungen anschreiben und nachfassen.'],
+  ['Lexikon', 'Alles zu einem Produkt: Preis, Farben, Eigenschaften, wo man es bestellt.'],
+  ['Hilfe', 'Diese Seite.'],
+];
+
+/** Die drei Ablaeufe, die jeden Tag vorkommen - Schritt fuer Schritt, mit den Woertern der Knoepfe. */
+const ABLAEUFE = [
+  ['Kunde bestellt – bis die Ware beim Kunden ist', [
+    'Auf <b>Heute</b> steht „Ware bei … bestellen“ – Knopf drücken.',
+    'Unter <b>Bestellen</b> die Bestellmail öffnen, selbst abschicken, dann <b>Als bestellt markieren</b>.',
+    'Ist die Ware da, steht auf <b>Heute</b> „Ware ist da – an … rausgeben“.',
+    'Kunde anrufen oder schreiben, dann <b>Kunde informiert</b> bzw. <b>Rausgeben</b> drücken.',
+  ]],
+  ['Muster rausgeben', [
+    'Auf <b>Heute</b> steht „Muster ist da – an … rausgeben“ oder „Muster verschicken an …“.',
+    'Muster einpacken oder bereitlegen, dann den Knopf in der Zeile drücken.',
+  ]],
+  ['Genossenschaft anschreiben', [
+    'Links auf <b>Genossenschaften</b>: oben steht „Als Nächstes“ mit der Firma, die jetzt dran ist.',
+    '<b>E-Mail öffnen</b> (der Text steht schon drin) und selbst abschicken – oder <b>Anrufen</b>. Hier wird nie etwas automatisch gesendet.',
+    'Danach <b>Erledigt: angeschrieben</b> drücken. Zum Nachfassen erscheint die Firma rechtzeitig wieder.',
+  ]],
+];
+
+function inEinerMinute() {
+  return `<section class="card hilfe-kurz" style="margin-bottom:14px"><div class="card-head"><h2>In 1 Minute erklärt</h2></div>
+    <ul style="margin:0;padding-left:20px;line-height:1.7">
+      ${MENUE_KURZ.map(([n, t]) => `<li><b>${esc(n)}</b> – ${esc(t)}</li>`).join('')}
+    </ul>
+    ${ABLAEUFE.map(([titel, schritte]) => `<h3 style="margin:16px 0 4px;font-size:1rem">${esc(titel)}</h3>
+      <ol style="margin:0;padding-left:20px;line-height:1.7">${schritte.map(s => `<li>${s}</li>`).join('')}</ol>`).join('')}
+    <p class="small muted" style="margin-top:12px">Die Seite lädt neue Daten von selbst. Oben steht, wie alt sie sind („Stand: vor 3 Min.“). Steht dort ein farbiger Hinweis, sind Daten nicht aktuell – dann dem Inhaber Bescheid geben.</p>
+  </section>`;
+}
+
 export function viewHilfe() {
   return `
     <div class="page-head"><div><h1>So arbeitest du damit</h1><p class="sub">Hier stehen die wichtigsten Handgriffe – in der Reihenfolge, in der sie im Laden vorkommen.</p></div></div>
 
+    ${inEinerMinute()}
+
     ${hilfeKarte('Morgens: Seite „Heute"', `
       <p>Ganz oben steht das Kundengeschäft: offene Aufträge, was noch beim Lieferanten bestellt werden muss, Muster.</p>
       <p><b>Nicht liegen lassen</b> darunter ist Geld, das schon im Haus war: bezahlte Bestellungen ohne Versand, Angebote, auf die jemand wartet, und abgebrochene Warenkörbe. Erscheint der Block nicht, gibt es dort nichts zu tun.</p>
-      <p class="small muted">Rechts oben steht, wann die <b>Aufgaben</b> zuletzt geholt wurden – nur die. Wie alt die Bestell-, Kunden- und Produktdaten sind, steht je Quelle unter <i>Mehr → Kennzahlen → Systemzustand</i>. „Jetzt aktualisieren" holt die Betriebsdaten neu.</p>`)}
+      <p class="small muted">Über der Seite steht, wie alt die Daten sind („Stand: vor 3 Min.“). Die Seite holt neue Daten alle paar Minuten von selbst – auch während sie offen ist; was du gerade tippst, bleibt stehen.</p>`)}
 
     ${hilfeKarte('Ein Kunde ruft an', `
       <ol style="margin:0;padding-left:20px;line-height:1.9">
@@ -81,7 +123,7 @@ Wenn es einen Termin gibt, schreib „heute“, „morgen“ oder das Datum dazu
 
     ${hilfeKarte('Wenn etwas nicht stimmt', `
       <ul style="margin:0;padding-left:20px;line-height:1.9">
-        <li>Daten sehen alt aus? Rechts oben auf den Stand schauen und <b>Jetzt aktualisieren</b> drücken.</li>
+        <li>Daten sehen alt aus? Oben auf „Stand“ schauen. Steht dort ein farbiger Hinweis „Nicht aktuell“, dem Inhaber Bescheid geben.</li>
         <li>Seite leer oder Fehlermeldung? Einmal neu laden (⌘R). Bleibt es: <button type="button" class="btn btn-sm" data-fehler-melden>Fehler melden</button> – auch in der Seitenleiste unten. Die Technik bekommt die Meldung samt Seite, und du siehst dort, wann sie behoben ist.</li>
         <li>Lagerbestand: aktuell führt der Shop keinen echten Bestand – die 999 ist ein Platzhalter, keine Menge.</li>
       </ul>`)}

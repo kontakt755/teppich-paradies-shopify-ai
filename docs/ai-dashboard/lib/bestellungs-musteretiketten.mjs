@@ -1,5 +1,5 @@
 /** Bestellpositionen mit dem aktuellen Produktlexikon verbinden; keine Mengen- oder Produktdaten raten. */
-import { etikettenAusLexikon } from './lexikon-etiketten.mjs';
+import { etikettenAusLexikon, farbeOderAusfuehrung } from './lexikon-etiketten.mjs';
 import { etikett, produktUrl } from './muster-etiketten.mjs';
 
 const text = v => v === null || v === undefined || ['–', '-', 'UNGEKLAERT'].includes(String(v).trim()) ? '' : String(v).trim();
@@ -31,8 +31,15 @@ function lexikon(produkteMap) {
 function istOriginal(p) { return !text(p.handle).startsWith('muster-') && p.handle !== 'kostenloses-muster'; }
 
 /** Der bestehende Helfer ist die einzige Quelle fuer Serie, Farbe, SKU, Technik und QR-Adresse. */
-function kanonisch(produkt, variante, produkte) {
-  const zeilen = etikettenAusLexikon({ ...produkt, varianten: [variante] }, produkte);
+function kanonisch(produkt, variante, produkte, musterSku = '') {
+  let zeilen = etikettenAusLexikon({ ...produkt, varianten: [variante] }, produkte);
+  // Massartikel haben keine eigene SKU; das Lexikon liefert dann alle Farben ihres Musters.
+  // Die eine Zeile gilt nur, wenn Artikelnummer UND Farbe zur Variante passen. Artikelnummer:
+  // belegtes einkauf.artikelnummer, sonst die Muster-SKU der Bestellposition ("M-" + Original-SKU).
+  if (zeilen.length > 1 && !text(variante?.sku)) {
+    const artikel = norm(variante?.einkauf?.artikelnummer) || norm(musterSku), farbe = norm(farbeOderAusfuehrung(variante));
+    zeilen = artikel && farbe ? zeilen.filter(z => norm(z.etikett.sku) === artikel && norm(z.etikett.farbe) === farbe) : [];
+  }
   if (zeilen.length !== 1) return null;
   const zeile = zeilen[0];
   // Bei Mustern bestimmt die belegte Originalreferenz den Zielartikel, nicht der Musterhandle.
@@ -61,8 +68,9 @@ function zuordnung(p, produkte, echteVarianten) {
     if (treffer.length !== 1) return null;
     const { produkt, variante } = treffer[0];
     if ((quellSku && norm(quellSku) !== norm(variante.sku)) || (quellHandle && quellHandle !== produkt.handle)) return null;
-    // Die Quell-ID geht vor einer alten M-Carrier-SKU der Bestellposition.
-    return kanonisch(produkt, variante, produkte);
+    // Die Quell-ID geht vor einer alten M-Carrier-SKU der Bestellposition; die M-SKU hilft nur
+    // bei Massartikeln ohne Artikelnummer, eine Farbe des Musters auszuwaehlen (siehe kanonisch).
+    return kanonisch(produkt, variante, produkte, text(p.sku).match(/^M-(.+)$/i)?.[1]?.trim() || '');
   }
 
   const mSku = text(p.sku).match(/^M-(.+)$/i)?.[1]?.trim() || '';

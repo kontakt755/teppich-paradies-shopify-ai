@@ -43,7 +43,7 @@
 @media (max-width: 640px) {
   .sp-karte { grid-template-columns: 56px minmax(0, 1fr); }
   .sp-karte .sp-bild { width: 56px; height: 56px; }
-  .sp-rechts { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: space-between; }
+  .sp-rechts { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; }
   .sp-rechts .btn { min-height: 44px; padding-inline: 16px; }
   .sp-preis-zusatz { text-align: left; }
 }

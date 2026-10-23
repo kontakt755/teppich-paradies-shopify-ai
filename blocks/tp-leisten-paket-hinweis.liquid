@@ -1,9 +1,9 @@
 {% doc %}
-  Hinweis "Sockelleiste zum halben Preis" auf Klick- und Klebevinyl.
+  Hinweis "Sockelleiste inklusive" auf Klick- und Klebevinyl.
 
-  Gehoert zum automatischen Shopify-Rabatt "Vinyl-Paket: Sockelleiste zum
-  halben Preis" (#1452, Freigabe Inhaber 20.10.2026): je 3 Pakete Klick- oder
-  Klebevinyl 2 Stangen Faventa oder Nerissa mit -50 %. Der Rabatt selbst
+  Gehoert zum automatischen Shopify-Rabatt "Vinyl komplett: Sockelleiste
+  inklusive" (#1452): je 5 Pakete Klick- oder Klebevinyl 5 Sockelleisten mit
+  je 11,90 EUR Nachlass, hoechstens 100 Stangen. Der Rabatt selbst
   laeuft in Shopify, dieser Block erklaert ihn nur. Ob er gilt, entscheidet
   snippets/tp-leisten-paket (ein Schalter fuer Seite, Karte, Warenkorb).
 {% enddoc %}
@@ -12,18 +12,18 @@
   capture lph_gilt
     render 'tp-leisten-paket', product: product
   endcapture
-  assign lph_leiste = all_products['faventa-sockelleiste']
+  assign lph_leiste = collections['bodenleisten']
 -%}
 
 {%- if block.settings.aktiv and lph_gilt contains 'ja' -%}
   <div class="tp-lph" {{ block.shopify_attributes }}>
-    <p class="tp-lph__titel"><span class="tp-lph__badge">−50&nbsp;%</span> Sockelleiste zum halben Preis</p>
+    <p class="tp-lph__titel"><span class="tp-lph__badge">Gratis</span> Sockelleiste inklusive</p>
     <p class="tp-lph__text">
-      Je 3 Pakete erhalten Sie 2 Stangen Faventa oder Nerissa (je 2,4&nbsp;m) zum halben Preis. Legen Sie die Leisten zusätzlich in den Warenkorb; der Rabatt wird automatisch abgezogen.
+      Für je 5 Pakete Klick- oder Klebevinyl erhalten Sie 5 Sockelleisten mit je 11,90&nbsp;€ Nachlass. Die weiße Leiste mit 58&nbsp;mm Höhe (2,4&nbsp;m) ist damit gratis; andere Leisten – auch im Dekor Ihres Bodens – erhalten Sie gegen Aufpreis. Der Rabatt wird im Warenkorb automatisch abgezogen.
     </p>
     <details>
       <summary>Aktionsbedingungen</summary>
-      <p class="tp-lph__text">Höchstens 60 rabattierte Stangen pro Bestellung. Nicht mit anderen Produkt- oder Bestellrabatten kombinierbar.</p>
+      <p class="tp-lph__text">Höchstens 100 rabattierte Stangen pro Bestellung. Nicht mit anderen Produkt- oder Bestellrabatten kombinierbar.</p>
     </details>
     {%- if lph_leiste -%}
       <a class="tp-lph__link" href="{{ lph_leiste.url }}">Passende Sockelleiste wählen</a>

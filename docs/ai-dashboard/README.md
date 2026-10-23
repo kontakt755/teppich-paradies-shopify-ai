@@ -39,6 +39,35 @@ sind (`setup-dashboard.sh`), gilt: `status:blockiert` + `reviewer:mensch` = Wart
 
 ## Betriebsarten
 
+### Versandkosten vergleichen
+
+Unter **Bestellen → Versandkosten** (`#/einkauf?tab=versandkosten`, auch per
+Befehlspalette) vergleicht der interne Rechner Paket- und Speditionskosten.
+Grundtarif, Volumengewicht, PLZ-Zuschlaege und gewaehlte Zusatzleistungen werden
+einzeln ausgewiesen. Ohne vollstaendige Angaben oder passenden Dieselzeitraum
+gibt es keine Gesamtsumme. Die Bruttoanzeige ist eine pauschale Planung.
+
+Vertragsdaten und Inselmatrix liegen ausschliesslich in
+`$TP_PRIVAT_DIR/versandkosten/tarife.json`. `GET /api/einkauf/versandtarife` liest
+sie innerhalb der bestehenden Dashboard-Anmeldung. Im Repository stehen nur
+Rechenlogik und erfundene Testpreise. Keine Versandbuchung und keine Aenderung
+von Shopify-Einstellungen. Fehlt die Datei auf einem zweiten Rechner, meldet
+die Ansicht den fehlenden Tarifstand; sie verwendet keine Ersatzpreise.
+
+Die private Konfiguration (`version: 1`) enthaelt `felder` (Zeile, Label, Typ,
+Startwert, Optionen), `saetze`, aufsteigende Gewichtstabellen `gls`/`gel`,
+`inseln` (PLZ-Zuordnung, Gebietsnamen, Gewichtsmatrix) und `hinweise`.
+Gepflegt wird die Datei ausserhalb des Repos aus den Originalkonditionen.
+Dieselsatz und Von-/Bis-Datum gemeinsam aktualisieren. Die Felder im Browser
+aendern nur den aktuellen Vergleich; „Gespeicherte Tarife neu laden“ verwirft
+diese Anpassung. Beim Abmelden werden Tarif und Eingaben verworfen.
+
+Die private Excel-Datei und Originalbelege sind im gemeinsamen Gedächtnis unter
+`versandkalkulation_gls_gel.md` auffindbar. Bei Aenderungen an der Rechenlogik
+Gewichtsgrenzen, unzulaessige Kombinationen und Zuschlaege gegen diese Quelle
+pruefen. Unterschiedliche Packstuecke nicht als identische Multicolli behandeln.
+
+
 | | ohne lokalen Server (alter Pages-Link, Datei direkt geöffnet) | lokal (`npm run dashboard`) |
 |---|---|---|
 | Datenquelle | keine – Hinweis „Nur lokal im Betrieb“ | `issues.json` + `bodenwissen.json`, beim Start und auf Wunsch frisch über `gh`; Betriebsdaten aus `$TP_PRIVAT_DIR` über `/api/*` |
@@ -65,6 +94,8 @@ docs/ai-dashboard/
   lib/muster-nachfassen.mjs     „Muster nachfassen“ für „Heute“: wer ist dran, Textvorlage füllen – Browser UND Server
   lib/bestellinhalt.mjs         Inhalt einer Bestellung in einer Zeile (Muster mit Farben und Herkunft, Ware) – Bestellliste und To-dos
   lib/muster-etiketten.mjs      Muster-Etiketten 50 × 50 mm: Daten (Serie, Farbe, SKU, Technik) und Layout – testbar ohne Drucker
+  lib/adress-etiketten.mjs      Adressaufkleber (Absender, Empfänger, Bestellnummer) auf derselben Rolle – testbar ohne Drucker
+  lib/muster-packen.mjs         „Muster packen“: offene Musterbestellungen je Kunde, vorher/nachher, Aufkleberreihenfolge – Browser UND Server
   lib/kennzahlen.mjs            „Ø je bezahlter Bestellung“ (ohne kostenlose Muster) für die Kennzahlen auf „Heute“
   lib/verbrauch.mjs             Modellnamen und Tokenzahlen für die Kachel „Claude-Verbrauch“ (Insights)
   lib/serviceanfragen.mjs       Service-Anfragen: Werte, Prüfung, Formular-Mail lesen, Auswertung je Woche/Quelle – Browser UND Server
@@ -124,7 +155,7 @@ ansichten/
   lexikon.mjs  ratgeber.mjs  hilfe.mjs  shopwache.mjs  team.mjs  fotos.mjs  sonderposten.mjs  bildrechte.mjs
   prozesse.mjs       Arbeitsplatz: Aufgabe vorbereiten, kopieren, App oder Projekt separat oeffnen
   einkauf.mjs        + einkauf/{auftragsfluss,belege,bestellungen,lieferanten,musterlager,produktdaten}.mjs
-  kunden.mjs         + kunden/{gemeinsam,akte,rueckrufe,serviceanfragen,bestellungen,angebote,faelle,zeitleiste}.mjs
+  kunden.mjs         + kunden/{gemeinsam,akte,rueckrufe,serviceanfragen,bestellungen,angebote,faelle,zeitleiste,muster-packen}.mjs
   organisation.mjs   + organisation/{gemeinsam,dialoge}.mjs
   insights.mjs       + insights/verbrauch.mjs (Kachel „Claude-Verbrauch“, #671)
 ```
@@ -168,6 +199,14 @@ sobald eine Seite seitlich scrollt.
 es gibt keinen Service Worker. Nach einem Update holt der Browser also beim nächsten Laden alle Module
 neu; alte und neue Fassungen können sich nicht mischen. Versionsanhängsel (`?v=…`) an Modul-Importen
 sind deshalb unnötig – und schädlich, weil dieselbe Datei unter zwei Adressen zweimal ausgeführt würde.
+
+**Bereits offene Seiten (seit 23.10., #1631):** `GET /api/version` liefert fuer alle angemeldeten
+Rollen nur den beim Dienststart eingefrorenen Codefingerabdruck. Die Ausgangsversion steht im
+ausgelieferten HTML (`meta[name=tp-dienstversion]`); Datenexporte aendern sie nicht. Ein anderer
+Dienststand zeigt „Neue Version verfügbar“ ausserhalb von `#main`. Es gibt kein automatisches
+Neuladen. „Neu laden“ ist eine bewusste Aktion und wartet bei offenen Dialogen oder geaenderten
+Text-, Auswahl- und Checkboxfeldern auf Speichern/Schliessen. Die Pruefung laeuft minuetlich und
+beim Zurueckkehren in den Tab. Ein Netzausfall ist kein Update; 401 beendet die Sitzung wie bisher.
 
 Der Browser braucht keinen Token.
 

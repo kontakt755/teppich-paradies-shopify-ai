@@ -34,6 +34,7 @@
  */
 
 import fs from 'node:fs';
+import { musterNachfassen, ERSTE_NACH_TAGEN, ERINNERUNG_NACH_TAGEN } from '../../docs/ai-dashboard/lib/muster-nachfassen.mjs';
 import { beschaffungText, restmenge, beschaffungsStand } from '../../docs/ai-dashboard/lib/beschaffung.mjs';
 import path from 'node:path';
 import os from 'node:os';
@@ -43,11 +44,11 @@ import { kundenSchluessel } from './kundensuche.mjs';
 import { ROUTE } from './route.mjs';
 import { musterOhneLieferant, HERKUNFT } from './musterherkunft.mjs';
 
-/** Nachfassen wird so viele Tage nach "Kunde hat Muster" faellig. */
-export const NACHFASSEN_NACH_TAGEN = 5;
-/** Ab so vielen Tagen seit Versand wird "Kunde hat Muster" als Annahme vorgeschlagen (nie still gesetzt). */
+/** Kompatibler Export: die Frist stammt aus dem vorhandenen Nachfassmodell (ab Versand). */
+export const NACHFASSEN_NACH_TAGEN = ERSTE_NACH_TAGEN;
+/** Historischer Export fuer bestehende Aufrufer; erzeugt keine Empfangsannahme mehr. */
 export const MUSTER_ANGEKOMMEN_ANNAHME_TAGE = 3;
-/** So lange nach dem Nachfassen wartet der Auftrag ruhig auf den Kunden, danach: Ergebnis klaeren. */
+/** Historischer Export; Erinnerungen steuert ausschliesslich das vorhandene Nachfassmodell. */
 export const ERGEBNIS_KLAEREN_NACH_TAGEN = 14;
 /** Ware "an Kunden raus": nach so vielen Tagen wird das Abschliessen faellig. */
 export const WARE_ABSCHLIESSEN_NACH_TAGEN = 7;
@@ -416,29 +417,29 @@ export function naechsterSchritt(stand, { auftrag = null, versand = null, bescha
         return beimLieferanten('Lieferant schickt die Muster an uns', 'geliefert', 'Muster sind angekommen');
       case 'raus':
         if (stand.eigenerBestand) {
-          // Ein Schritt statt zwei: wer vorbeibringt oder aus dem Bestand verschickt, traegt
-          // danach direkt "Kunde hat Muster" ein (der Server setzt "raus" dabei mit).
+          // Persoenliche Uebergabe belegt Empfang; Postversand braucht seinen getrennten Versanddialog.
           const kunde = kundeUndOrt(auftrag);
           return stand.eigenerBestand === 'vorbei'
             ? schritt('wir', `Muster vorbeibringen bei ${kunde.name}`, `Aus eigenem Bestand/Katalog${kunde.ort ? ` · ${kunde.ort}` : ''} – nicht beim Lieferanten bestellen.`, 'kunde_hat_muster', 'Erledigt – Kunde hat Muster', 'faellig', tage, tage)
-            : schritt('wir', `Muster verschicken an ${kunde.name}`, `Aus eigenem Bestand/Katalog${kunde.ort ? ` · ${kunde.ort}` : ''} – nicht beim Lieferanten bestellen.`, 'kunde_hat_muster', 'Erledigt – Kunde hat Muster', 'faellig', tage, tage);
+            : schritt('wir', `Muster verschicken an ${kunde.name}`, `Aus eigenem Bestand/Katalog${kunde.ort ? ` · ${kunde.ort}` : ''} – nicht beim Lieferanten bestellen.`, 'raus', 'Muster sind verschickt…', 'faellig', tage, tage);
         }
         return schritt('wir', `Muster labeln und an den Kunden schicken${teil}`, 'Neu labeln, eintüten, verschicken.', 'raus', 'Muster sind verschickt…', 'faellig', tage, tage);
       case 'kunde_hat_muster':
-        if (tage >= MUSTER_ANGEKOMMEN_ANNAHME_TAGE) {
-          return { ...schritt('wir', `Muster vor ${tageText(tage)} verschickt – sind sie angekommen?`, 'Vermutlich ja. Bestätigen, dann läuft die Frist zum Nachfassen.', 'kunde_hat_muster', 'Ja, Kunde hat Muster', 'faellig', tage - MUSTER_ANGEKOMMEN_ANNAHME_TAGE, tage), annahme: true };
-        }
-        return schritt('kunde', 'Muster sind unterwegs zum Kunden', `Verschickt vor ${tageText(tage)}.`, 'kunde_hat_muster', 'Kunde hat Muster', 'warten', null, tage);
       case 'nachgefasst':
-        if (tage >= NACHFASSEN_NACH_TAGEN) {
-          return schritt('wir', `Nachfassen: Muster liegen seit ${tageText(tage)} beim Kunden`, 'Kunden anrufen und fragen, ob etwas gefällt.', 'nachgefasst', 'Nachgefasst', 'faellig', tage - NACHFASSEN_NACH_TAGEN, tage);
-        }
-        return schritt('kunde', 'Kunde schaut sich die Muster an', `Nachfassen in ${tageText(NACHFASSEN_NACH_TAGEN - tage)}.`, 'nachgefasst', 'Schon nachgefasst', 'warten', null, tage);
-      case 'ergebnis':
-        if (tage >= ERGEBNIS_KLAEREN_NACH_TAGEN) {
-          return schritt('wir', `Seit ${tageText(tage)} keine Rückmeldung – Ergebnis klären`, 'Nochmal nachfassen oder den Auftrag als „kein Interesse“ abschließen.', 'ergebnis', 'Ergebnis eintragen …', 'faellig', tage - ERGEBNIS_KLAEREN_NACH_TAGEN, tage);
-        }
-        return schritt('kunde', 'Kunde überlegt', `Nachgefasst vor ${tageText(tage)}. Ergebnis eintragen, sobald er sich meldet.`, 'ergebnis', 'Ergebnis eintragen …', 'warten', null, tage);
+      case 'ergebnis': {
+        const nach = musterNachfassen([{ orderId: auftrag?.id, orderName: auftrag?.name,
+          auftragsart: 'muster', verlauf, auftrag, email: auftrag?.details?.kunde?.email,
+          telefon: auftrag?.details?.kunde?.telefon, beratungOffen: auftrag?.checks?.beratung === 'Ja' }], { jetzt }).offen[0];
+        if (nach) return { ...schritt('wir', nach.stufe === 'erinnerung' ? 'Muster-Erinnerung im bestehenden Ablauf prüfen' : 'Muster nach Versand nachfassen',
+          'Die Nachfassansicht prüft Kontaktweg, Stoppliste und den Versandlauf. Versand ist kein Empfangsnachweis.',
+          null, 'Nachfragen prüfen', 'faellig', Math.max(0, nach.tage - (nach.stufe === 'erinnerung' ? ERINNERUNG_NACH_TAGEN : ERSTE_NACH_TAGEN)), nach.tage), href: '#/heute?mn=1' };
+        if (aktuell.schritt === 'kunde_hat_muster') return schritt('kunde', 'Muster sind unterwegs – Empfang noch nicht belegt',
+          'Nur tatsächlichen Empfang bestätigen. Die bestehende Nachfassansicht führt ihre Fristen unabhängig vom Empfangsnachweis.',
+          'kunde_hat_muster', 'Empfang bestätigt…', 'warten', null, tage);
+        return { ...schritt('kunde', 'Kunde schaut sich die Muster an',
+          'Nachfragen, Erinnerungen und Stoppliste im bestehenden Ablauf prüfen. Ein Ergebnis erst nach Rückmeldung festhalten.',
+          null, 'Nachfassverlauf prüfen', 'warten', null, tage), href: '#/heute?mn=1' };
+      }
       default:
         return null;
     }

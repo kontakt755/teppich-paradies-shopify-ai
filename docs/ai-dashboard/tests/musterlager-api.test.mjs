@@ -170,3 +170,27 @@ test('Server: /api/einkauf/musterlager - lesen sieht, schreibt nicht (403); mita
     process.env.TP_PRIVAT_DIR = PRIVAT_DIR;
   }
 });
+
+test('Rest pruefen (Regel 2026-10-21): Abgleich gegen A/C, Einlagern als Verlegerest', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-reste-'));
+  fs.mkdirSync(path.join(dir, 'lexikon'), { recursive: true });
+  const v = (sku, farbe, farbnummer) => ({ sku, farbe, einkauf: { lieferant: 'A', produktname: 'Teppichboden Orbis 400 cm Linie 027', farbnummer, hersteller: 'Xantos Yarns Europe NV' } });
+  fs.writeFileSync(path.join(dir, 'lexikon', 'produkte.json'), JSON.stringify({ erstellt: '2026-01-01T00:00:00Z', produkte: [
+    { handle: 'kalvia-teppichboden', titel: 'Kalvia Teppichboden 400cm', produktgruppe: 'Teppichboden', status: 'ACTIVE', varianten: [v('TEPORBIS4_033', 'Sand', '33'), v('TEPORBIS4_098', 'Graphit', '98')] },
+  ] }));
+  const api = createApi({ gh: async () => '', root: dir, privatDirPath: dir, now: () => new Date('2026-01-05T10:00:00Z') });
+
+  const r = api.einkaufResteAbgleich({ hersteller: 'XY', qualitaet: 'Orbis', farbnummer: '033' });
+  assert.equal(r.verfuegbar, true);
+  assert.deepEqual(r.treffer.map(t => [t.handle, t.titel, t.lieferant, t.farbeGefunden]), [['kalvia-teppichboden', 'Kalvia Teppichboden', 'A', true]]);
+  assert.deepEqual(r.treffer[0].farben.map(f => [f.farbe, f.imLager]), [['Sand', false]]);
+  assert.deepEqual(api.einkaufResteAbgleich({ hersteller: 'Quorra Mills', qualitaet: 'Orbis' }).treffer, []);
+  assert.throws(() => api.einkaufResteAbgleich({}), e => e instanceof ApiError && e.status === 400);
+
+  const e = await api.einkaufMusterlagerSetzen({ aktion: 'einlagern', handle: 'kalvia-teppichboden', farben: ['Sand'], art: 'rest', anzahl: 1, ort: 'Reste-Regal' }, MONA);
+  assert.equal(e.eintraege[0].art, 'rest');
+  const lager = api.einkaufMusterlager();
+  assert.equal(lager.arten.rest, 'Verlegerest');
+  assert.deepEqual(lager.reste.lieferanten, ['A', 'C']);
+  assert.equal(api.einkaufResteAbgleich({ qualitaet: 'Orbis', farbnummer: '33' }).treffer[0].farben[0].imLager, true);
+});

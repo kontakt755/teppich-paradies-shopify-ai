@@ -22,6 +22,7 @@ import { syncNow, aktualisierenNow } from './bausteine/aktualisierung.mjs';
 import { openPalette, closePalette } from './bausteine/palette.mjs';
 import { openFehlerMelden } from './bausteine/fehler-melden.mjs';
 import { einkaufKlickStatus, einkaufKlickDialoge } from './ansichten/einkauf/auftragsfluss.mjs';
+import { versandkostenKlick, versandkostenEingabe, verwerfeVersandkosten } from './ansichten/einkauf/versandkosten.mjs';
 import { versandKlick } from './ansichten/einkauf/versand.mjs';
 import { beschaffungKlick } from './ansichten/einkauf/beschaffung.mjs';
 import { einkaufKlickLieferanten } from './ansichten/einkauf/lieferanten.mjs';
@@ -58,7 +59,8 @@ export function bindEvents() {
   window.addEventListener('pagehide', verwerfeProzessKontext);
   window.addEventListener('tp-sitzung-beendet', verwerfeProzessKontext);
   document.addEventListener('click', e => {
-    if (e.target.closest('[data-abmelden]')) { verwerfeProzessKontext(); logout(); return; }
+    if (e.target.closest('[data-abmelden]')) { verwerfeProzessKontext(); verwerfeVersandkosten(); logout(); return; }
+    if (versandkostenKlick(e)) return;
     if (prozesseKlick(e)) return;
     if (e.target.closest('[data-fehler-melden]')) { e.preventDefault(); openFehlerMelden(); return; }
     const open = e.target.closest('[data-open]');
@@ -129,6 +131,7 @@ export function bindEvents() {
     if (a) { if (a.dataset.action === 'sync') syncNow(); if (a.dataset.action === 'refresh') refresh(); if (a.dataset.action === 'aktualisieren') aktualisierenNow(); if (a.dataset.action === 'reload') location.reload(); if (a.dataset.action === 'clear-filters') navigate('arbeit', { mode: state.route.params.get('mode') || '' }); }
   });
   document.addEventListener('change', e => {
+    if (versandkostenEingabe(e)) return;
     if (prozesseEingabe(e)) return;
     if (fotosAenderung(e)) return;
     if (socialEingabe(e)) return;
@@ -141,6 +144,7 @@ export function bindEvents() {
   });
   let qTimer;
   document.addEventListener('input', e => {
+    if (versandkostenEingabe(e)) return;
     if (lexikonEingabe(e)) return;
     if (prozesseEingabe(e)) return;
     if (musterNachfassenEingabe(e)) return;
@@ -198,7 +202,7 @@ export function bindEvents() {
   });
   $('#searchBtn').addEventListener('click', openPalette);
   $('#themeBtn')?.addEventListener('click', toggleTheme);
-  $('#sessionBtn').addEventListener('click', () => { verwerfeProzessKontext(); logout(); });
+  $('#sessionBtn').addEventListener('click', () => { verwerfeProzessKontext(); verwerfeVersandkosten(); logout(); });
   $('#meinPasswortBtn')?.addEventListener('click', openMeinPasswort);
   // Der Chip fuehrt in den Systemzustand - fuer Mitarbeiter gibt es dort nichts,
   // also fuehrt er sie auf die Startseite statt in eine leere Umleitung.

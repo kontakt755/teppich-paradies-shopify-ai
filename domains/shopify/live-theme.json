@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204438208846",
-    "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-21T10:08:00Z",
-    "verifiedBy": "Shopify Admin API role MAIN nach workflow:live am 2026-10-21 gegen 09:06Z; enthaelt main bis 8ca353b (#1570 Karriere Bodenleger, templates/page.karriere.json MD5 identisch). Nachgetragen aus Remote-Session."
-  },
-  "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-21T10:08:00Z",
-    "verifiedBy": "Shopify Admin API role UNPUBLISHED nach workflow:live am 2026-10-21 gegen 09:06Z; naechstes Preview-Ziel."
+    "verifiedAt": "2026-10-23T11:06:45Z",
+    "verifiedBy": "Shopify CLI theme list nach workflow:live (main ebcd5aae, PR #1642/#1644); Rolle live frisch bestaetigt."
+  },
+  "preview": {
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-10-23T11:06:45Z",
+    "verifiedBy": "Shopify CLI theme list nach workflow:live (main ebcd5aae, PR #1642/#1644); Rolle unpublished frisch bestaetigt."
   },
   "fallback": {
     "themeId": "206590509390",
@@ -27,6 +27,30 @@
     "note": "Einziges Ziel fuer Zwischenstaende und Ausprobieren (nur --only-Pushes). Niemals als --theme-id fuer workflow:preview/live verwenden, niemals publishen. Das Preview-Ziel ist ausschliesslich preview.themeId - wer dorthin Zwischenstaende pusht, blockiert den Livegang (PREVIEW_DRIFT/PREVIEW_DIFF, dreimal am 2026-09-21/22)."
   },
   "retired": [
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-10-23",
+      "note": "Durch workflow:live (main ebcd5aae, PR #1642/#1644) abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen frisch per Shopify CLI bestaetigt."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-10-23",
+      "note": "Durch workflow:live (main 5f8cae35, PR #1639) abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen frisch per Shopify CLI bestaetigt."
+    },
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-10-23",
+      "note": "Durch workflow:live (main a36b606d, #1634/#1635/#1636) am 2026-10-23T09:21:02Z abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen frisch per Shopify CLI bestaetigt."
+    },
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-10-21",
+      "note": "Durch workflow:live (main 61a7ccdb, #1574) am 2026-10-21 gegen 12:50Z abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen frisch per Shopify Admin API bestaetigt."
+    },
     {
       "themeId": "204436144462",
       "name": "Kopie von preview-main-2026-09-04",
@@ -910,6 +934,12 @@
       "name": "Kopie von preview-main-2026-09-04",
       "retiredNoticedAt": "2026-10-20",
       "note": "Per workflow:live von main 6ee5d5a2 (#1477/#1478/#1479) abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen frisch per Shopify Admin API bestaetigt."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-10-22",
+      "note": "Durch workflow:live PR #1612 abgeloest; bleibt unpublished als naechstes Preview-Ziel."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",

@@ -70,6 +70,20 @@
   // (Herstellerfarben aus service.bandfarben, z. B. Vorwerk Sand/Anthrazit/Schwarz).
   function bandText(b, trenner) { return [b.nr, b.name].filter(Boolean).join(trenner); }
   function leeren(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+  function musterFarbeAktualisieren(produktId, variante) {
+    document.querySelectorAll('[data-tp-ek-muster]').forEach(function (link) {
+      if (String(link.getAttribute('data-tp-ek-muster')) !== String(produktId)) return;
+      var index = Number(link.getAttribute('data-tp-ek-muster-farbindex'));
+      if (!Number.isInteger(index) || index < 0) return;
+      var farbe = variante && Array.isArray(variante.optionen) ? String(variante.optionen[index] || '') : '';
+      if (farbe === 'Default Title' || /^opc-/i.test(farbe)) farbe = '';
+      var url = new URL(link.href, window.location.href);
+      if (farbe) url.searchParams.set('farbe', farbe);
+      else url.searchParams.delete('farbe');
+      link.href = url.pathname + url.search + url.hash;
+    });
+  }
+
   function svgEl(name, attrs, parent) {
     var el = document.createElementNS(SVG_NS, name);
     Object.keys(attrs || {}).forEach(function (k) { el.setAttribute(k, attrs[k]); });
@@ -753,6 +767,7 @@
 
     function rechnen() {
       target = aktuelleVariante();
+      musterFarbeAktualisieren(d.produkt_id, target);
       maxW = (target && Number(target.max_breite_cm) > 0) ? Number(target.max_breite_cm) : d.max_breite_cm;
       var f = form();
       // Fail closed: fremde oder nicht freigegebene Variante - weder Angebot noch Anfrage.

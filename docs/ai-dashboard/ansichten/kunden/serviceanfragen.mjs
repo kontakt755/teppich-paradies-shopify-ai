@@ -17,7 +17,7 @@ import { emptyState, stoerungState } from '../../bausteine/karten.mjs';
 import { kunden, telLink } from './gemeinsam.mjs';
 import {
   LEISTUNG, LEISTUNG_LABEL, QUELLE, QUELLE_LABEL, STATUS, STATUS_LABEL, ABGESCHLOSSEN, GRENZEN,
-  ausFormularMail, auswertung,
+  ausFormularMail, auswertung, serviceOffen,
 } from '../../lib/serviceanfragen.mjs';
 
 const WOCHEN = 8;
@@ -37,9 +37,9 @@ export function ensureServiceanfragen() {
   });
 }
 
-/** Zahl fuer den Reiter: neue Anfragen, auf die noch niemand reagiert hat. */
-export function serviceNeuAnzahl() {
-  return (kunden.serviceanfragen?.eintraege || []).filter(e => e.status === 'neu').length;
+/** Zahl fuer den Reiter entspricht dessen offener Arbeitsliste. */
+export function serviceOffenAnzahl() {
+  return (kunden.serviceanfragen?.eintraege || []).filter(serviceOffen).length;
 }
 
 /** Kalendertag in lokaler Zeit - ein Anruf um 0:30 gehoert zum heutigen Tag. */
@@ -98,7 +98,7 @@ function zeileHtml(e) {
 }
 
 const FILTER = {
-  offen: { label: 'Offen', passt: e => !ABGESCHLOSSEN.includes(e.status) },
+  offen: { label: 'Offen', passt: serviceOffen },
   gewonnen: { label: 'Gewonnen', passt: e => e.status === 'gewonnen' },
   verloren: { label: 'Verloren', passt: e => e.status === 'verloren' },
   alle: { label: 'Alle', passt: () => true },
@@ -110,9 +110,21 @@ export function viewKundenServiceanfragen() {
   if (!d && kunden.loadingServiceanfragen) return `<div class="empty">Lade Service-Anfragen …</div>`;
   if (d?.fehler) return stoerungState(d, 'Die Service-Anfragen');
   const eintraege = d?.eintraege || [];
+  const anfrage = state.route.params.get('anfrage');
+  if (anfrage) {
+    const e = eintraege.find(x => x.id === anfrage);
+    const laden = state.capabilities.dashboards?.laden;
+    return `<p><a href="#/kunden?tab=service">Alle offenen Service-Anfragen</a></p>
+      ${e ? `<div class="rows">${zeileHtml(e)}</div>
+        ${!ABGESCHLOSSEN.includes(e.status) ? `<p class="small muted">Wiedervorlagen werden in der bestehenden Laden-Ansicht gepflegt. ${laden ? `<a href="${esc(laden)}" target="_blank" rel="noopener">Laden-Ansicht öffnen</a>` : ''}</p>` : ''}`
+        : emptyState('Diese Anfrage wurde nicht gefunden.', 'Zur offenen Liste wechseln und den aktuellen Stand prüfen.')}`;
+  }
   const filterRaw = state.route.params.get('sf');
   const filter = FILTER[filterRaw] ? filterRaw : 'offen';
+  // Offene: neue Anfragen zuerst, dann nach Bearbeitungsstand; darin wer am laengsten wartet (22.10.).
+  // Andere Auswahlen bleiben neueste zuerst.
   const liste = eintraege.filter(FILTER[filter].passt);
+  if (filter === 'offen') liste.sort((a, b) => STATUS.indexOf(a.status) - STATUS.indexOf(b.status) || String(a.datum).localeCompare(String(b.datum)) || String(a.id).localeCompare(String(b.id)));
   const chips = Object.entries(FILTER).map(([k, f]) => {
     const n = eintraege.filter(f.passt).length;
     return `<button type="button" class="chip" aria-pressed="${k === filter}" data-param="sf" data-value="${k === 'offen' ? '' : k}">${esc(f.label)}<span class="c">${n}</span></button>`;

@@ -108,6 +108,26 @@ test('wendeFilterAn "nicht_fertig" und "fertig" schliessen sich aus und Testbest
   assert.ok(fertig.every(z => z.fertig && !z.testbestellung));
 });
 
+test('Zahlungsfilter enthaelt ausstehende Zahlungen unabhaengig von Versand und Archivierung', () => {
+  const orders = [
+    bestellung(1, [zeileA], { displayFinancialStatus: 'PENDING', displayFulfillmentStatus: 'FULFILLED' }),
+    bestellung(2, [zeileA], { displayFinancialStatus: 'AUTHORIZED', closedAt: '2026-01-05T00:00:00Z' }),
+    bestellung(3, [zeileA], { displayFinancialStatus: 'PARTIALLY_PAID' }),
+    bestellung(4, [zeileA], { displayFinancialStatus: 'PAID' }),
+    bestellung(5, [zeileA], { displayFinancialStatus: 'PARTIALLY_REFUNDED' }),
+    bestellung(6, [zeileA], { displayFinancialStatus: 'REFUNDED' }),
+    bestellung(7, [zeileA], { displayFinancialStatus: 'VOIDED' }),
+    bestellung(8, [zeileA], { displayFinancialStatus: 'PENDING', cancelledAt: '2026-01-05T00:00:00Z' }),
+    bestellung(9, [zeileA], { displayFinancialStatus: 'PENDING', tags: ['TESTBESTELLUNG'] }),
+  ];
+  const zeilen = bestellliste(aufbereiten({ orders }));
+  assert.equal(zeilen.find(z => z.orderName === '#T1').offen, false, 'versandt ist im Auftragsmodell geschlossen');
+  assert.equal(zeilen.find(z => z.orderName === '#T2').offen, false, 'archiviert ist im Auftragsmodell geschlossen');
+  const vorher = JSON.stringify(zeilen);
+  assert.deepEqual(wendeFilterAn(zeilen, 'offen').map(z => z.orderName).sort(), ['#T1', '#T2', '#T3']);
+  assert.equal(JSON.stringify(zeilen), vorher, 'Filter aendert keine Status- oder Abschlussdaten');
+});
+
 test('kundenFortschritt: zaehlt offene Bestellungen ueber mehrere Auftraege', () => {
   const auftraege = modell.auftraege.filter(a => a.name === '#T1' || a.name === '#T3');
   const f = kundenFortschritt(auftraege, {});
@@ -182,4 +202,25 @@ test('bestellzeile: an Kunden raus, aber in Shopify unversandt - Hinweis statt "
   const [ohne] = bestellliste(modell);
   assert.equal(ohne.versandHinweis, null);
   assert.ok(ohne.wasFehlt.includes('Noch nicht versendet'));
+});
+
+test('fehlende Kennungen bleiben in Bestellliste und Kundenfortschritt offen, auch neben erledigter Ware', () => {
+  const bekannte = { lineItemId: 'gid://shopify/LineItem/901', titel: 'Bekannte Testware' };
+  const unbekannte = { lineItemId: null, titel: 'Testware ohne Kennung' };
+  for (const positionen of [[unbekannte], [bekannte, unbekannte]]) {
+    const auftrag = { id: 'gid://shopify/Order/901', offen: true, bezahlt: 'PAID', erfuellt: 'UNFULFILLED', positionen };
+    const statusAlle = { [positionKey(auftrag.id, bekannte.lineItemId)]: { status: 'erledigt' } };
+    const f = fortschritt(auftrag, statusAlle);
+    assert.equal(f.unklar, true);
+    assert.equal(f.gesamt, positionen.length, 'unbekannte Positionen gehoeren zur Gesamtmenge');
+    assert.equal(f.erledigt, positionen.includes(bekannte) ? 1 : 0);
+    assert.equal(f.minStufe, 0);
+    assert.equal(istFertig(auftrag, statusAlle), false);
+    const [z] = bestellliste({ auftraege: [auftrag] }, { statusAlle });
+    assert.equal(z.fertig, false, 'Bestellzeile darf das unklare Ergebnis nicht ueberstimmen');
+    assert.ok(z.wasFehlt.some(t => /ohne Bestellpositionskennung.*prüfen/.test(t)));
+    const kunde = kundenFortschritt([auftrag], statusAlle);
+    assert.equal(kunde.fertig, false);
+    assert.equal(kunde.offene, 1);
+  }
 });

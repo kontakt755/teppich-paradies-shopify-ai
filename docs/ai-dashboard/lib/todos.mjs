@@ -14,8 +14,9 @@
 import { musterText, musterHerkunftText } from './bestellinhalt.mjs';
 import { vorgangsLink } from './vorgangslink.mjs';
 import { lieferterminFaellig, beschaffungText, uebernahmeText } from './beschaffung.mjs';
-import { LEISTUNG_LABEL, QUELLE_LABEL } from './serviceanfragen.mjs';
+import { LEISTUNG_LABEL, QUELLE_LABEL, STATUS_LABEL, serviceOffen, serviceLink } from './serviceanfragen.mjs';
 import { verzugWerktage, VERZUG_WERKTAGE, kundenErinnerung } from './auftrags-ablauf.mjs';
+import { sichereUrl } from './akquise.mjs';
 
 const TAG_MS = 86400000;
 const UNGEKLAERT = 'UNGEKLAERT';
@@ -238,7 +239,8 @@ export function werWartet(quellen = {}, opt = {}) {
       });
     }
   }
-  for (const liste of Object.values(spalten)) liste.sort((a, b) => (b.alterTage ?? -1) - (a.alterTage ?? -1));
+  // Rot vor Gelb vor normal, darin das Aelteste zuerst - wie sortiereTodos.
+  for (const liste of Object.values(spalten)) liste.sort((a, b) => (TON_RANG[a.ton] ?? 2) - (TON_RANG[b.ton] ?? 2) || (b.alterTage ?? -1) - (a.alterTage ?? -1));
   return { ...spalten, gesamt: spalten.wir.length + spalten.lieferant.length + spalten.kunde.length };
 }
 
@@ -351,11 +353,11 @@ function ausBestellungen(quellen, k) {
       id: `muster-eigen:${orderId}`, art: 'muster_eigen', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.bestellen), alterTage: tage,
       titel: vorbei ? `Muster vorbeibringen bei ${kundeVon(z)}` : `Muster verschicken an ${kundeVon(z)}`,
       kontext: [ortVon(z), z.orderName, musterKurz(positionen), musterHerkunftText(positionen.map(x => x.p)) || 'aus eigenem Bestand'].filter(Boolean).join(' · '),
-      // Ein Klick traegt "Kunde hat Muster" ein (Zeitleiste); der Server setzt die Uebergabe mit.
+      // Nur persoenliche Uebergabe belegt Empfang; Versand oeffnet den bestehenden Versanddialog.
       // Nur wenn ALLE Muster der Bestellung aus dem eigenen Bestand kommen - sonst stuende
       // "Kunde hat Muster" da, obwohl andere Muster noch beim Lieferanten liegen: dann in die Akte.
       knopf: (z.auftrag?.positionen || []).filter(p => p.istMuster).every(musterEigen)
-        ? { text: 'Erledigt – Kunde hat Muster', schritt: { orderId, aktion: 'kunde_hat_muster' }, href: kundenLink(z) }
+        ? { text: vorbei ? 'Erledigt – Kunde hat Muster' : 'Muster sind verschickt…', schritt: { orderId, aktion: vorbei ? 'kunde_hat_muster' : 'raus' }, href: kundenLink(z) }
         : { text: 'Ansehen', href: kundenLink(z) },
     });
   }
@@ -391,22 +393,22 @@ function ausFaellen(quellen) {
 }
 
 /**
- * Neue Service-Anfragen (Kunden > Service-Anfragen, Status "neu"): jemand will verlegen lassen,
- * eine Treppe oder ein Aufmass - das ist Geld, das morgens auf der Startseite stehen muss.
- * Bis 2026-10-19 erschienen sie nur im Reiter selbst (Codex-Audit Punkt 3).
+ * Offene Service-Anfragen bleiben bis zum Abschluss sichtbar. Nur fuer den Erstkontakt gelten
+ * die bestehenden Altersfristen; kontaktiert/Termin/Angebot ist ohne Wiedervorlage kein Verzug.
  */
 function ausServiceanfragen(quellen, jetzt) {
   return (quellen.serviceanfragen || [])
-    .filter(e => e?.status === 'neu' && e.id)
+    .filter(serviceOffen)
     .map(e => {
       const tage = tageSeit(e.erstelltAm || (e.datum ? `${e.datum}T00:00:00` : null), jetzt);
       const wer = [e.name, e.plz].filter(Boolean).join(', ') || e.telefon || e.email || 'ohne Namen';
+      const neu = e.status === 'neu';
       return {
-        id: `service:${e.id}`, art: 'service', bereich: 'laden', ton: tonNachAlter(tage, ...FRISTEN.service), alterTage: tage,
-        titel: `Neue Anfrage ${LEISTUNG_LABEL[e.leistung] || 'Service'}: ${wer}`,
-        kontext: [QUELLE_LABEL[e.quelle] || null, e.herkunft || null, tage === null ? null : `eingegangen ${vorText(tage)}`,
+        id: `service:${e.id}`, art: 'service', bereich: 'laden', ton: neu ? tonNachAlter(tage, ...FRISTEN.service) : '', alterTage: tage,
+        titel: neu ? `Bei ${wer} melden: neue Anfrage ${LEISTUNG_LABEL[e.leistung] || 'Service'}` : `${wer}: ${e.naechsterSchritt || 'Nächsten Schritt klären'}`,
+        kontext: [neu ? null : `${LEISTUNG_LABEL[e.leistung] || 'Service'} · ${STATUS_LABEL[e.status]}`, QUELLE_LABEL[e.quelle] || null, e.herkunft || null, tage === null ? null : `eingegangen ${vorText(tage)}`,
           e.telefon ? null : (e.email ? 'nur E-Mail' : null)].filter(Boolean).join(' · '),
-        knopf: { text: 'Melden', href: '#/kunden?tab=service' },
+        knopf: { text: 'Anfrage öffnen', href: serviceLink(e.id) },
       };
     });
 }
@@ -580,11 +582,13 @@ function ausAusschreibungen(quellen, jetzt) {
   const neu = d?.neu || [];
   if (!neu.length) return [];
   const naechste = [...neu].sort((x, y) => String(x.frist || '9').localeCompare(String(y.frist || '9')))[0];
+  // Link aus dem Ausschreibungsfeed: nur http(s) wird zum Knopf (heute.mjs setzt ihn als href).
+  const link = sichereUrl(naechste.link);
   return [{
     id: 'ausschreibungen', art: 'ausschreibungen', bereich: 'laden', ton: '', alterTage: tageSeit(d.geprueftAm, jetzt),
     titel: `Ausschreibung Bodenbelag: ${neu.length} neu im Umkreis`,
     kontext: [naechste.auftraggeber, naechste.frist ? `Frist ${naechste.frist}` : null, 'prüfen, ob wir anbieten'].filter(Boolean).join(' · '),
-    knopf: naechste.link ? { text: 'Bekanntmachung', href: naechste.link } : undefined,
+    knopf: link ? { text: 'Bekanntmachung', href: link } : undefined,
   }];
 }
 

@@ -192,3 +192,32 @@ a.heute-hg-knopf { display: inline-flex; align-items: center; text-decoration: n
 .heute-zahlen a b { color: var(--warn); font-variant-numeric: tabular-nums; }
 .heute-zahlen a.null b { color: var(--text-3); font-weight: 500; }
 .heute-zahlen a:hover, .heute-zahlen a:focus-visible { text-decoration: underline; }
+
+.bestell-einstiege { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 12px 0 20px; }
+.bestell-einstieg { display: grid; gap: 4px; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); min-width: 0; }
+.bestell-einstieg > span { color: var(--text-2); font-size: .85rem; }
+.bestell-einstieg strong span { color: var(--accent); }
+@media(max-width: 800px) { .bestell-einstiege { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* Der Shop-Arbeitsplatz priorisiert Auftraege; Nebenbereiche bleiben bewusst zu. */
+.shop-start-kopf { margin-bottom: 22px; }
+.shop-start-kopf h1 { margin-bottom: 6px; }
+.shop-start-kopf p { color: var(--text-2); margin: 0; }
+.shop-start .heute-geschaeft { margin-bottom: 24px; }
+.shop-start .heute-geschaeft-ohne-offen .heute-geschaeft-weiter { grid-template-columns: minmax(0, 1fr); }
+.shop-start .heute-geschaeft-ohne-offen .heute-geschaeft-raster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.shop-nacharbeit { margin: 20px 0; }
+.shop-werkzeuge { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
+.shop-nebenbereiche { margin: 20px 0; border-top: 1px solid var(--line); padding-top: 12px; }
+.shop-nebenbereiche summary { color: var(--text-3); cursor: pointer; min-height: 44px; padding: 10px 0; }
+.topbar-ort { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.kopf-start { display: flex; align-items: center; justify-content: center; min-width: 36px; min-height: 44px; color: var(--text-2); }
+@media (max-width: 850px) {
+  .shop-start .heute-geschaeft-ohne-offen .heute-geschaeft-raster { grid-template-columns: minmax(0, 1fr); }
+}
+
+.shop-musterarbeit { padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.shop-musterarbeit .heute-geschaeft-kopf { margin-bottom: 12px; }
+.shop-packschritte { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.shop-nacharbeit-zeile { border-top: 1px solid var(--line); padding: 10px 0; }
+.shop-nacharbeit-zeile summary { min-height: 36px; cursor: pointer; color: var(--text-2); }
+.shop-nacharbeit-zeile p { margin: 4px 0; }

@@ -27,6 +27,8 @@ let paletteTimer = null;
  */
 function paletteFernSuche(q, fertig) {
   const query = String(q || '').trim();
+  // Ein Treffer zum vorigen Namen darf waehrend des Tippens nicht als neue Auswahl gelten.
+  if (paletteFern.q !== query) { paletteFern.kunden = []; paletteFern.produkte = []; }
   paletteFern.q = query;
   clearTimeout(paletteTimer);
   if (query.length < 2 || state.capabilities.mode !== 'local') {
@@ -49,6 +51,18 @@ function paletteFernSuche(q, fertig) {
 
 function paletteItems(q) {
   const items = [];
+  for (const [label, view, params] of [
+    ['Bestellungen', 'kunden', { tab: 'bestellungen', bart: 'ware', bsort: 'wichtigkeit' }],
+    ['Packstation', 'kunden', { tab: 'muster' }],
+    ['Muster bestellen', 'einkauf', { tab: 'lieferant', art: 'muster', af: 'offen' }],
+    ['Lexikon', 'lexikon', {}],
+    ['Musterwirkung und spätere Käufe', 'kunden', { tab: 'musterwirkung' }],
+  ]) if (darfAnsicht(view)) items.push({ kind: 'Ansicht', label, run: () => navigate(view, params) });
+  const suchtext = String(q || '').trim();
+  if (suchtext.length >= 2 && darfAnsicht('organisation')) items.push({
+    kind: 'Aufgaben', label: `Team-Aufgaben nach „${suchtext}“ durchsuchen`,
+    run: () => navigate('organisation', { ob: 'team-aufgaben', oa: 'alle', og: 'alles', oq: suchtext }),
+  });
   for (const k of paletteFern.kunden) {
     // Ueber den Produktnamen gefunden: sagen, was der Kunde bestellt hat - sonst wirkt der Treffer zufaellig.
     const bestellt = k.trefferProdukt ? `bestellt: ${[k.trefferProdukt.titel, k.trefferProdukt.farbe].filter(Boolean).join(' · ')}` : null;
@@ -58,7 +72,8 @@ function paletteItems(q) {
     const offen = p.offeneBestellungen ? `${p.offeneBestellungen} offene Bestellung${p.offeneBestellungen === 1 ? '' : 'en'}` : null;
     items.push({ kind: 'Produkt', label: p.titel, sub: [offen, p.produktgruppe].filter(Boolean).join(' · ') || undefined, treffer: true, run: () => navigate('lexikon', { handle: p.handle }) });
   }
-  const views = [['heute', 'Heute'], ['einkauf', 'Bestellen beim Lieferanten'], ['kunden', 'Kunden'], ['lexikon', 'Lexikon'], ['arbeit', 'Technik (GitHub)'], ['freigaben', 'Entscheidungen'], ['bereiche', 'Bereiche'], ['insights', 'Kennzahlen'], ['aktivitaet', 'Verlauf'], ['ratgeber', 'Ratgeber'], ['organisation', 'Aufgaben'], ['akquise', 'Genossenschaften & Hausverwaltungen (Aufträge anfragen)'], ['shopwache', 'Shop-Kontrolle'], ['bildrechte', 'Bildrechte (Herkunft, Bildgröße, ALT-Text)'], ['hilfe', 'Hilfe: So arbeitest du damit']];
+  items.push({ kind: 'Ansicht', label: 'Versandkosten GLS und GEL vergleichen', run: () => navigate('einkauf', { tab: 'versandkosten' }) });
+  const views = [['heute', 'Heute'], ['einkauf', 'Bestellen beim Lieferanten'], ['kunden', 'Kunden'], ['arbeit', 'Technik (GitHub)'], ['freigaben', 'Entscheidungen'], ['bereiche', 'Bereiche'], ['insights', 'Kennzahlen'], ['aktivitaet', 'Verlauf'], ['ratgeber', 'Ratgeber'], ['organisation', 'Aufgaben'], ['akquise', 'Genossenschaften & Hausverwaltungen (Aufträge anfragen)'], ['shopwache', 'Shop-Kontrolle'], ['bildrechte', 'Bildrechte (Herkunft, Bildgröße, ALT-Text)'], ['hilfe', 'Hilfe: So arbeitest du damit']];
   for (const [k, l] of views) if (darfAnsicht(k)) items.push({ kind: 'Ansicht', label: l, run: () => navigate(k) });
   items.push({ kind: 'Ansicht', label: 'Vorbereiten: E-Mail, Angebot oder Recherche', run: () => navigate('prozesse') });
   for (const [prozess, label] of [['email', 'E-Mail vorbereiten'], ['angebot', 'Angebot vorbereiten'], ['recherche', 'Recherche starten']]) {

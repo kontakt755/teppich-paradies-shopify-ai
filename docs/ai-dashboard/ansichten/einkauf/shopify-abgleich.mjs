@@ -29,8 +29,10 @@ export function ensureShopifyAbgleich({ neu = false } = {}) {
   shopifyAbgleich.laedt = true;
   fetchEinkauf('/api/einkauf/shopify-abgleich').then(d => {
     const vorher = JSON.stringify(shopifyAbgleich.daten);
-    shopifyAbgleich.daten = d; shopifyAbgleich.am = Date.now(); shopifyAbgleich.laedt = false;
-    if (state.route.view === 'heute' && JSON.stringify(d) !== vorher) render();
+    // Vorhandene Arbeit bei einer Stoerung bewahren; initial muss der Fehler sichtbar bleiben.
+    if ((d?.verfuegbar && !d.fehler) || !shopifyAbgleich.daten?.verfuegbar) shopifyAbgleich.daten = d;
+    shopifyAbgleich.am = Date.now(); shopifyAbgleich.laedt = false;
+    if (state.route.view === 'heute' && JSON.stringify(shopifyAbgleich.daten) !== vorher) render();
   });
 }
 

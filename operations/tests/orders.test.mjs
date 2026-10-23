@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { GraphQLProxy } from '../../workflow/graphql-proxy.mjs';
 import {
   fetchOrdersSince, fetchOrdersRelevant, baueRelevantQuery, wartenBeiThrottle,
-  writeOrderState, normalisiereLineItem, ORDERS_QUERY,
+  writeOrderState, normalisiereLineItem, ORDERS_QUERY, ORDER_LINE_ITEMS_QUERY,
 } from '../sync/orders.mjs';
 import { resolveLineItem } from '../lib/resolve.mjs';
 
@@ -22,7 +22,7 @@ const bestellung = (n, cursor) => ({
   customAttributes: [{ key: 'Beratung', value: 'nein' }],
   shippingAddress: { name: 'Test Kundin', address1: 'Teststrasse 1', zip: '00000', city: 'Teststadt', country: 'Germany' },
   metafields: { nodes: [] },
-  lineItems: { nodes: [{
+  lineItems: { pageInfo: { hasNextPage: false, endCursor: null }, nodes: [{
     id: `gid://shopify/LineItem/${n}`, sku: 'CVEXPGR04_333', quantity: 9,
     customAttributes: [{ key: 'Maße', value: '250 × 350 cm' }],
     variant: {
@@ -170,11 +170,12 @@ test('normalisiereLineItem bleibt fehlerfrei, wenn es kein Bild gibt', () => {
   assert.equal(li.variant.product.featuredImage, null);
 });
 
-test('baueRelevantQuery grenzt ueber created_at (90 Tage) ODER offene Erfuellung ab', () => {
+test('baueRelevantQuery behaelt alte offene Erfuellungen und unbezahlte Bestellungen', () => {
   const jetzt = () => new Date('2026-09-23T12:00:00Z').getTime();
   const q = baueRelevantQuery(90, jetzt);
-  assert.equal(q, "(created_at:>='2026-06-25T12:00:00.000Z') OR (fulfillment_status:unfulfilled) OR (fulfillment_status:partial)");
-  assert.equal(baueRelevantQuery(30, jetzt), "(created_at:>='2026-08-24T12:00:00.000Z') OR (fulfillment_status:unfulfilled) OR (fulfillment_status:partial)");
+  const zahlung = ' OR (financial_status:pending) OR (financial_status:authorized) OR (financial_status:partially_paid)';
+  assert.equal(q, "(created_at:>='2026-06-25T12:00:00.000Z') OR (fulfillment_status:unfulfilled) OR (fulfillment_status:partial)" + zahlung);
+  assert.equal(baueRelevantQuery(30, jetzt), "(created_at:>='2026-08-24T12:00:00.000Z') OR (fulfillment_status:unfulfilled) OR (fulfillment_status:partial)" + zahlung);
 });
 
 test('fetchOrdersRelevant blaettert vollstaendig (kein festes Limit) mit der 90-Tage-ODER-offen-Query', async () => {
@@ -189,7 +190,7 @@ test('fetchOrdersRelevant blaettert vollstaendig (kein festes Limit) mit der 90-
   assert.equal(r.gesammelt, false);
   assert.equal(r.seiten, 3);
   assert.equal(r.orders.length, 4);
-  assert.match(r.query, /^\(created_at:>=.*OR \(fulfillment_status:unfulfilled\) OR \(fulfillment_status:partial\)$/);
+  assert.match(r.query, /^\(created_at:>=.*OR \(fulfillment_status:unfulfilled\) OR \(fulfillment_status:partial\).*financial_status:pending.*financial_status:authorized.*financial_status:partially_paid\)$/);
   for (const v of aufrufe) assert.equal(v.query, r.query);
   await assert.rejects(() => fetchOrdersRelevant(proxy, { tageFenster: 0 }), /tageFenster/);
   await assert.rejects(() => fetchOrdersRelevant(null), /proxy fehlt/);
@@ -247,4 +248,128 @@ test('zu teure Abfrage: Seitengroesse wird halbiert, bis Shopify sie annimmt', a
   assert.deepEqual(aufrufe, [50, 25, 12, 6]);
   assert.equal(r.orders.length, 1);
   assert.equal(r.seiten, 1);
+});
+
+
+const position = n => ({ ...bestellung(1).lineItems.nodes[0], id: `gid://shopify/LineItem/${n}` });
+const verbindung = (nodes, hasNextPage = false, endCursor = null) => ({ nodes, pageInfo: { hasNextPage, endCursor } });
+const mitPositionen = (conn, n = 1) => ({ ...bestellung(n), lineItems: conn });
+const proxyAusSeiten = seiten => ({ execute: async () => seiten.shift() });
+const fetchRelevant = proxy => fetchOrdersRelevant(proxy, { warten: async () => {} });
+
+test('mehr als 50 Bestellpositionen werden ueber alle Seiten geladen und gleich normalisiert', async () => {
+  const aufrufe = [];
+  const o = mitPositionen(verbindung(Array.from({ length: 50 }, (_, i) => position(i)), true, 'li50'));
+  const proxy = { execute: async (query, variablen) => {
+    aufrufe.push({ query, variablen });
+    if (query === ORDERS_QUERY) return { orders: verbindung([o]) };
+    assert.equal(query, ORDER_LINE_ITEMS_QUERY);
+    const weitere = variablen.after === 'li50'
+      ? verbindung(Array.from({ length: 50 }, (_, i) => position(i + 50)), true, 'li100')
+      : verbindung([position(100)]);
+    return { order: { id: o.id, updatedAt: o.updatedAt, lineItems: weitere } };
+  } };
+  const r = await fetchRelevant(proxy);
+  assert.equal(r.orders.length, 1);
+  assert.equal(r.seiten, 1, 'Positionsseiten zaehlen nicht als Bestellseiten');
+  assert.equal(r.orders[0].lineItems.nodes.length, 101);
+  assert.equal(new Set(r.orders[0].lineItems.nodes.map(li => li.id)).size, 101);
+  assert.deepEqual(aufrufe.slice(1).map(a => a.variablen), [
+    { id: o.id, first: 50, after: 'li50' }, { id: o.id, first: 50, after: 'li100' },
+  ]);
+  for (const li of r.orders[0].lineItems.nodes) {
+    assert.equal(resolveLineItem({ lineItem: li, variant: li.variant }).grosshaendlerId, 'A-333');
+  }
+});
+
+test('unvollstaendige Bestellseiten brechen ab statt Erfolg mit ausgelassenen Bestellungen zu melden', async () => {
+  for (const orders of [null, {}, { nodes: [] }, { nodes: [] , pageInfo: {} }, verbindung(null), verbindung([null]), verbindung([{}]), verbindung([], true, 'weiter')]) {
+    await assert.rejects(() => fetchRelevant(proxyAusSeiten([{ orders }])), /unvollstaendige Antwort/);
+  }
+  await assert.rejects(() => fetchRelevant(proxyAusSeiten([
+    { orders: verbindung([bestellung(1)], true, 'c1') }, null,
+  ])), /unvollstaendige Antwort/);
+});
+
+test('wiederholte Bestellcursor und doppelte Bestellungen brechen ab', async () => {
+  await assert.rejects(() => fetchRelevant(proxyAusSeiten([
+    { orders: verbindung([bestellung(1)], true, 'c1') },
+    { orders: verbindung([bestellung(2)], true, 'c1') },
+  ])), /wiederholter endCursor/);
+  await assert.rejects(() => fetchRelevant(proxyAusSeiten([
+    { orders: verbindung([bestellung(1)], true, 'c1') },
+    { orders: verbindung([bestellung(1)]) },
+  ])), /doppelte Bestellkennung/);
+});
+
+test('fehlende Positionsdaten und fehlende Positionscursor ergeben keine Teilbestellung', async () => {
+  for (const conn of [null, {}, { nodes: [] }, verbindung(null), verbindung([null]), verbindung([], true, 'weiter')]) {
+    await assert.rejects(() => fetchRelevant(proxyAusSeiten([{ orders: verbindung([mitPositionen(conn)]) }])), /Bestellpositionen: unvollstaendige Antwort/);
+  }
+  await assert.rejects(() => fetchRelevant(proxyAusSeiten([
+    { orders: verbindung([mitPositionen(verbindung([position(1)], true))]) },
+  ])), /Bestellpositionen: hasNextPage ohne endCursor/);
+});
+
+test('fehlende oder waehrend des Abrufs geaenderte Bestellung verwirft unvollstaendige Positionen', async () => {
+  const o = mitPositionen(verbindung([position(1)], true, 'li1'));
+  for (const nachgeladen of [null, {}, { id: 'andere', updatedAt: o.updatedAt }, { id: o.id }, { id: o.id, updatedAt: '2026-10-22T10:00:00Z' }]) {
+    await assert.rejects(() => fetchRelevant(proxyAusSeiten([
+      { orders: verbindung([o]) }, { order: nachgeladen },
+    ])), /Bestellung fehlt oder wurde waehrend des Abrufs geaendert/);
+  }
+  await assert.rejects(() => fetchRelevant(proxyAusSeiten([
+    { orders: verbindung([o]) }, { order: { id: o.id, updatedAt: o.updatedAt } },
+  ])), /Bestellpositionen: unvollstaendige Antwort/);
+});
+
+test('wiederholte Positionscursor und doppelte Positionen ergeben keine scheinbar vollstaendige Bestellung', async () => {
+  const o = mitPositionen(verbindung([position(1)], true, 'li1'));
+  for (const [conn, meldung] of [
+    [verbindung([position(2)], true, 'li1'), /wiederholter endCursor/],
+    [verbindung([position(1)]), /doppelte Positionskennung/],
+  ]) {
+    await assert.rejects(() => fetchRelevant(proxyAusSeiten([
+      { orders: verbindung([o]) }, { order: { id: o.id, updatedAt: o.updatedAt, lineItems: conn } },
+    ])), meldung);
+  }
+});
+
+test('Kostenlimit beim Nachladen der Positionen verkleinert nur deren Seitengroesse', async () => {
+  const o = mitPositionen(verbindung([position(1)], true, 'li1'));
+  const groessen = [];
+  const proxy = { execute: async (query, variablen) => {
+    if (query === ORDERS_QUERY) return { orders: verbindung([o]) };
+    groessen.push(variablen.first);
+    if (variablen.first > 6) throw new Error('Query cost exceeds the single query max cost limit');
+    return { order: { id: o.id, updatedAt: o.updatedAt, lineItems: verbindung([position(2)]) } };
+  } };
+  const r = await fetchRelevant(proxy);
+  assert.equal(r.orders[0].lineItems.nodes.length, 2);
+  assert.deepEqual(groessen, [50, 25, 12, 6]);
+});
+
+test('Positionsseiten beachten die Throttle-Wartung vor dem naechsten Abruf', async () => {
+  const o = mitPositionen(verbindung([position(1)], true, 'li1'));
+  const ereignisse = [];
+  const proxy = {
+    requestLog: [{ throttleStatus: { maximumAvailable: 1000, currentlyAvailable: 50, restoreRate: 50 } }],
+    execute: async query => {
+      ereignisse.push(query === ORDERS_QUERY ? 'bestellung' : 'positionen');
+      return query === ORDERS_QUERY ? { orders: verbindung([o]) }
+        : { order: { id: o.id, updatedAt: o.updatedAt, lineItems: verbindung([position(2)]) } };
+    },
+  };
+  await fetchOrdersRelevant(proxy, { warten: async ms => ereignisse.push(ms) });
+  assert.deepEqual(ereignisse, ['bestellung', 1000, 'positionen']);
+});
+
+test('Normalisierung behaelt Musterservice-Typ und rabattbereinigten Warenwert als unterschiedliche Belege', () => {
+  const preis = { shopMoney: { amount: '2.00', currencyCode: 'EUR' } };
+  const roh = bestellung(707).lineItems.nodes[0];
+  roh.priceAfterAllDiscountsBeforeTaxesSet = preis;
+  roh.variant.product.productType = 'Musterservice';
+  const p = normalisiereLineItem(roh);
+  assert.equal(p.variant.product.productType, 'Musterservice', 'Muster duerfen ihre Typkennung beim Export nicht verlieren');
+  assert.deepEqual(p.priceAfterAllDiscountsBeforeTaxesSet, preis);
 });

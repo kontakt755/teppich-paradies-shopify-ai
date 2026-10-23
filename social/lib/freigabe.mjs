@@ -75,6 +75,8 @@ export function autoFreigabeMoeglich({ beitrag, inhalt, medien }, env = process.
   if (inhalt.quelle === 'shopify') {
     return ['produkt_farben', 'raumidee', 'produkt_woche', 'produkt_neu', 'produkt_reel'].includes(inhalt.typ) && hinweise.every(h => HARMLOS_SHOP.some(r => r.test(h)));
   }
+  // Tipps aus dem Wissen (Muster, Kundenstimmen): ohne eigenes Foto und ohne Preis - laufen mit, wenn die Pruefung nichts anmerkt (Inhaber 22.10.2026).
+  if (inhalt.quelle === 'wissen') return inhalt.typ === 'tipp' && !hinweise.length;
   if (stufe !== '2' || !['baustelle', 'referenz', 'laden'].includes(inhalt.quelle)) return false;
   // Eigene Fotos nur, wenn jedes verwendete Bild gesichtet ist - auch Referenzbilder der Website.
   if (!medien.length || medien.some(m => m.datenschutz !== 'ok')) return false;

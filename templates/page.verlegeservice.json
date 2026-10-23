@@ -68,6 +68,8 @@
         "color_scheme": "scheme-1",
         "padding-block-start": 24,
         "padding-block-end": 40,
+        "anfrage_knopf": "Aufmaß & Verlegung anfragen",
+        "anfrage_link": "/pages/liefer-verlegeservice#tp-anfrage",
         "knopf": "Teppichboden entdecken",
         "knopf_2": "Vinyl von der Rolle entdecken",
         "produkte_link_2": "shopify://collections/vinylboden-vinyl-von-der-rolle",

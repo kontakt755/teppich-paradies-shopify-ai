@@ -57,6 +57,31 @@ export function rollenRechnung(eingabe, breiteM, bestandQm) {
   };
 }
 
+/** Inventur: nie mehr volle m2 anbieten als tatsaechlich gemessen wurden. */
+export function inventurRechnung(eingabe, breiteM) {
+  if (String(eingabe ?? '').trim() === '') return { ok: false, leer: true, fehler: '' };
+  const laengeM = leseMeter(eingabe);
+  if (laengeM === null || !Number.isFinite(laengeM) || laengeM < 0 || laengeM > 100 || Math.abs(laengeM * 100 - Math.round(laengeM * 100)) > 1e-6) return { ok: false, fehler: 'Bitte 0 bis 100 m mit höchstens zwei Nachkommastellen eingeben.' };
+  const breiteCm = Math.round(Number(breiteM) * 100);
+  if (!(breiteCm > 0) || breiteCm > 1000 || Math.abs(Number(breiteM) * 100 - breiteCm) > 1e-6) return { ok: false, fehler: 'Die Rollenbreite fehlt oder ist nicht eindeutig.' };
+  const flaeche = Math.round(laengeM * 100) * breiteCm;
+  const qm = Math.floor(flaeche / 10000);
+  const verfuegbarM = Math.floor(qm * 10000 / breiteCm) / 100;
+  return { ok: true, laengeM, qm, verfuegbarM, text: `${zahlDe(laengeM)} m × ${zahlDe(breiteCm / 100)} m = ${zahlDe(flaeche / 10000)} m²${flaeche % 10000 ? `, sicher abgerundet auf ${qm} m²` : ''} · ohne gebundene Ware danach ${zahlDe(verfuegbarM)} m online verfügbar` };
+}
+
+/** Inventur kann durch eine zeitgleiche Onlinebestellung weniger frei als physisch vorhanden haben. */
+export function meldungNachInventur(antwort) {
+  if (!antwort?.ok) {
+    const m = meldungNachBuchung(antwort);
+    if (antwort?.verbindung === false || !antwort) m.text = 'Keine Antwort vom Dashboard. Ob die Restlänge gespeichert wurde, ist unklar – bitte neu laden und den Bestand prüfen.';
+    return m;
+  }
+  const er = antwort.ergebnis || {};
+  if (er.gebucht !== true || !er.ok || er.gegenprobe !== 'ok') return { erfolg: false, klasse: 'warn', neuLaden: true, text: 'Die Bestandskorrektur wurde gesendet. Die Gegenprobe ist nicht eindeutig – bitte neu laden und den Bestand in Shopify prüfen.' };
+  return { erfolg: true, klasse: null, neuLaden: true, text: `Restlänge gespeichert: physisch ${er.bestandNachher} m² · jetzt ${zahlDe(er.restLaengeM)} m (${er.verfuegbarNachher} m²) frei verfügbar.` };
+}
+
 /** Rueckmeldung nach einer gebuchten Laenge (ergebnis aus verkaufeVonRolle). */
 function meldungRolle(er) {
   if (er.gegenprobe === 'fehlgeschlagen') {

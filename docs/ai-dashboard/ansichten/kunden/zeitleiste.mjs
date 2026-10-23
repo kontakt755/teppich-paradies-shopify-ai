@@ -1,3 +1,4 @@
+import { oeffneKettelversand } from '../einkauf/kettelversand.mjs';
 /**
  * Kunden: Zeitleiste je Auftrag mit genau einem naechsten Schritt.
  *
@@ -87,7 +88,7 @@ function naechsterKarte(a, kunde, lesend) {
   // Muster noch beim Lieferanten zu bestellen? Oft liegen sie hier - dann gar nicht bestellen.
   const haben = a.auftragsart === 'muster' && n.aktion === 'bestellt' ? `<button type="button" class="btn" data-muster-herkunft="${esc(a.id)}" title="Muster/Katalog selbst vorrätig: verschicken oder vorbeibringen">Haben wir da…</button>` : '';
   const knoepfe = lesend ? '' : `
-    ${n.aktion ? `<div class="zl-knoepfe no-print">
+    ${n.href === '#/heute?mn=1' ? `<div class="zl-knoepfe no-print"><a class="btn" href="${esc(n.href)}">${esc(n.knopf || 'Nachfragen prüfen')}</a></div>` : n.aktion ? `<div class="zl-knoepfe no-print">
       <button type="button" class="btn ${n.stufe === 'warten' ? '' : 'btn-primary'}" data-zl-schritt="${esc(n.aktion)}" data-zl-order="${esc(a.id)}">${esc(n.knopf)}</button>${anruf}${haben}
     </div>` : ''}
     <button type="button" class="zl-anders no-print" data-zl-anders="${esc(a.id)}">Etwas anderes ist passiert …</button>`;
@@ -146,6 +147,7 @@ export function zeitleisteBlock(a, { kontakt = false } = {}) {
     <div class="zl-raster">
       <div class="zl-spalte">
         ${naechsterKarte(a, kunde, lesend)}
+        ${a.auftragsart === 'ware' ? `<p><button type="button" class="btn" data-kettelversand="${esc(a.id)}">Kettler & Versand</button></p>` : ''}
         <div class="card zl-verlauf"><p class="zl-titel">Verlauf</p>
           <ol class="zl-liste">${a.verlauf.map(s => verlaufZeile(s, a.naechsterSchritt)).join('')}</ol>
           ${notizen.length ? `<div class="zl-notizen">${notizen.map(n => `<p><span class="muted">${esc(tagMonat(n.am))}${n.von ? ` · ${esc(n.von)}` : ''}:</span> ${esc(n.text)}</p>`).join('')}</div>` : ''}
@@ -341,6 +343,8 @@ function oeffneDialog(orderId, { nurErgebnis = false } = {}) {
 
 /** Klicks der Zeitleiste. Gibt true zurueck, wenn der Klick damit erledigt ist. */
 export function zeitleisteKlick(e) {
+  const kettler=e.target.closest('[data-kettelversand]');
+  if(kettler){e.preventDefault();void oeffneKettelversand(kettler.dataset.kettelversand);return true;}
   const haupt = e.target.closest('[data-zl-schritt]');
   if (haupt) {
     e.preventDefault();

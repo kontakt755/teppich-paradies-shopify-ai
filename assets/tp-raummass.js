@@ -374,6 +374,10 @@ if (typeof document !== 'undefined') (function () {
   // ---- Rollenware -------------------------------------------------------
   function initRolle(box) {
     if (box.getAttribute('data-tp-rm-init') === '1') return;
+    if (box.hasAttribute('data-rm-nur-finder')) {
+      if (!RM.finderRaum(window.location.search)) return;
+      box.hidden = false;
+    }
     var rechner = box.closest('.tp-kaufweg');
     if (!rechner) return;
     box.setAttribute('data-tp-rm-init', '1');
