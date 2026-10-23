@@ -53,6 +53,18 @@
   Antwortmaschine sie nicht aus dem Fliesstext raten muss.
   Keine lieferant.*- oder einkauf.*-Metafelder.
 
+  Teppich nach Mass, Preis (#1283): Der Variantenpreis gilt je 0,01 m2, kaufbar ist
+  aber nur ein ganzer Teppich. Jede Farbe mit Beispielgroesse
+  (snippets/tp-mass-beispiel) wird deshalb als Angebot GENAU DIESER GROESSE
+  ausgegeben: url mit ?variant=&breite=&laenge= (der Konfigurator belegt das Mass
+  vor und zeigt denselben Endpreis), offers.price = Endpreis inklusive Kante bzw.
+  Pauschale, Name mit Mass, Grundpreis als UnitPriceSpecification mit
+  referenceQuantity = abgerechnete Flaeche und valueReference 1 m2, Streichpreis
+  (StrikethroughPrice) nur bei sichtbarer Aktion. Derselbe Preis steht im
+  Zusatzfeed fuer Google/Meta (scripts/teppich-nach-mass-feed.mjs) - das Merchant
+  Center gleicht Feed und Seite ab. Farben ohne Beispielgroesse behalten den
+  Preis je m2 wie bisher.
+
   Teppich nach Mass (service.einfass_basis): Der Teppich traegt selbst keine
   technischen Merkmale. additionalProperty nimmt je Merkmal den Wert des
   Teppichbodens, aus dem zugeschnitten wird - dieselbe Regel wie die sichtbare
@@ -123,6 +135,21 @@
   assign tp_sd_lfm = false
   if product_resource.metafields.custom.preis_pro_001_lfm.value == true
     assign tp_sd_lfm = true
+  endif
+
+  # Teppich nach Mass mit Einfassung: Angebot je Farbe als Beispielgroesse (#1283).
+  # Zentimetergenaue Rollenware hat auch preis_pro_001_qm, aber keine Einfassung -
+  # sie bleibt beim Preis je m2. Die Aktion einmal je Produkt, nicht je Farbe.
+  assign tp_sd_mass = false
+  if tp_sd_per_001 and product_resource.metafields.service.einfassung.value != blank
+    assign tp_sd_mass = true
+    capture tp_sd_mass_aktion
+      render 'tp-rabatt-sichtbar', product: product_resource
+    endcapture
+    assign tp_sd_mass_aktion = tp_sd_mass_aktion | strip
+    if tp_sd_mass_aktion != 'ja'
+      assign tp_sd_mass_aktion = 'nein'
+    endif
   endif
 
   assign tp_sd_is_roll = false
@@ -319,6 +346,23 @@
         endif
         assign tp_sd_price = tp_sd_cents | times: 1.0 | divided_by: 100 | round: 2
         assign tp_sd_variant_url = tp_sd_product_url | append: '?variant=' | append: tp_sd_variant.id
+        # Teppich nach Mass: Beispielgroesse statt Preis je m2 (#1283).
+        assign tp_sd_bsp = ''
+        if tp_sd_mass and tp_sd_include
+          capture tp_sd_bsp
+            render 'tp-mass-beispiel', product: product_resource, variant: tp_sd_variant, aktion: tp_sd_mass_aktion
+          endcapture
+          assign tp_sd_bsp = tp_sd_bsp | strip
+        endif
+        if tp_sd_bsp != blank
+          assign tp_sd_bsp_teile = tp_sd_bsp | split: '|'
+          assign tp_sd_bsp_w = tp_sd_bsp_teile[0]
+          assign tp_sd_bsp_l = tp_sd_bsp_teile[1]
+          assign tp_sd_price = tp_sd_bsp_teile[2] | times: 1.0 | divided_by: 100 | round: 2
+          assign tp_sd_bsp_alt = tp_sd_bsp_teile[3] | times: 1.0 | divided_by: 100 | round: 2
+          assign tp_sd_bsp_flaeche = tp_sd_bsp_teile[4] | times: 1.0 | divided_by: 100
+          assign tp_sd_variant_url = tp_sd_variant_url | append: '&breite=' | append: tp_sd_bsp_w | append: '&laenge=' | append: tp_sd_bsp_l
+        endif
         assign tp_sd_image = tp_sd_variant.featured_image | default: product_resource.featured_image
 
         assign tp_sd_gtin = tp_sd_variant.barcode | default: '' | strip
@@ -360,7 +404,10 @@
           assign tp_sd_versand_hier = false
         endif
         assign tp_sd_min_cent = tp_sd_variant.price
-        if tp_sd_is_roll
+        if tp_sd_bsp != blank
+          # Das Offer ist jetzt die Beispielgroesse einschliesslich Kante/Pauschale.
+          assign tp_sd_min_cent = tp_sd_bsp_teile[2] | times: 1
+        elsif tp_sd_is_roll
           assign tp_sd_v_breite = tp_sd_variant.metafields.custom.rollenbreite.value | times: 1.0
           if tp_sd_v_breite > 0
             assign tp_sd_min_cent = tp_sd_variant.price | times: tp_sd_v_breite | times: tp_sd_min_laenge_m
@@ -395,6 +442,9 @@
         {%- unless product_resource.has_only_default_variant -%}
           {%- assign tp_sd_name = tp_sd_name | append: ' - ' | append: tp_sd_variant.title -%}
         {%- endunless -%}
+        {%- if tp_sd_bsp != blank -%}
+          {%- assign tp_sd_name = tp_sd_name | append: ', ' | append: tp_sd_bsp_w | append: ' x ' | append: tp_sd_bsp_l | append: ' cm' -%}
+        {%- endif -%}
         {
           "@type": "Product",
           "@id": {{ tp_sd_variant_url | append: '#variant' | json }},
@@ -418,7 +468,38 @@
             "url": {{ tp_sd_variant_url | json }},
             "price": {{ tp_sd_price }},
             "priceCurrency": {{ cart.currency.iso_code | json }},
-            {%- if tp_sd_per_001 or tp_sd_is_roll or tp_sd_is_paket or tp_sd_lfm -%}
+            {%- if tp_sd_bsp != blank -%}
+            {%- comment -%}
+              Teppich nach Mass in Beispielgroesse: price ist der Endpreis, der Grundpreis
+              ergibt sich aus Flaeche (referenceQuantity) und Bezug 1 m2 (valueReference),
+              wie in Googles Beispiel fuer Einheitspreise.
+            {%- endcomment -%}
+            "priceSpecification": [
+              {
+                "@type": "UnitPriceSpecification",
+                "price": {{ tp_sd_price }},
+                "priceCurrency": {{ cart.currency.iso_code | json }},
+                "referenceQuantity": {
+                  "@type": "QuantitativeValue",
+                  "value": {{ tp_sd_bsp_flaeche }},
+                  "unitCode": "MTK",
+                  "valueReference": {
+                    "@type": "QuantitativeValue",
+                    "value": 1,
+                    "unitCode": "MTK"
+                  }
+                }
+              }
+              {%- if tp_sd_bsp_alt > tp_sd_price -%},
+              {
+                "@type": "UnitPriceSpecification",
+                "priceType": "https://schema.org/StrikethroughPrice",
+                "price": {{ tp_sd_bsp_alt }},
+                "priceCurrency": {{ cart.currency.iso_code | json }}
+              }
+              {%- endif -%}
+            ],
+            {%- elsif tp_sd_per_001 or tp_sd_is_roll or tp_sd_is_paket or tp_sd_lfm -%}
             "priceSpecification": {
               "@type": "UnitPriceSpecification",
               "price": {{ tp_sd_price }},

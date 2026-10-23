@@ -21,16 +21,15 @@
  * 13.10.2026); die Spalte free_shipping_threshold traegt diese Grenze je Artikel
  * nach. Aendert sich die Grenze in Shopify, hier GRATIS_AB anpassen.
  *
- * Teppich nach Mass (#1283): Der Variantenpreis gilt je 0,01 m2 (z. B. 0,85 EUR),
- * die App schickt ihn unveraendert - Google zeigte "0,85 EUR". Mit --tnm-aus
- * entsteht eine zweite ergaenzende Quelle "tp-tnm-preise.txt" mit dem Preis je m2
- * (x 100), so wie ihn Seitenkopf und strukturierte Daten nennen
- * (snippets/tp-product-structured-data.liquid); bei Vergleichspreis
- * price = Vergleichspreis je m2, sale_price = Preis je m2. Grundpreis dort und hier
- * "1 sqm" je "1 sqm", sonst rechnete Google 85 EUR je 0,01 m2. Seit 14.10.2026
- * laeuft das automatisch: operations/scripts/feed-tnm-abruf.mjs per GitHub Action
- * (feed-tnm-preise.yml) taeglich auf den Zweig feed-daten, das Merchant Center ruft
- * die Datei von dort ab. --tnm-aus bleibt fuer Pruefungen von Hand.
+ * Teppiche nach Mass (Produktart "Teppich nach Maß") fehlen in tp-feedtitel.txt
+ * bewusst: ihr Variantenpreis gilt je 0,01 m2, Titel, Preis, Link und Grundpreis
+ * kommen aus dem eigenen Zusatzfeed (scripts/teppich-nach-mass-feed.mjs, #1283).
+ * Hier stuende sonst ein Grundpreis neben dem Endpreis einer Beispielgroesse.
+ *
+ * Der fruehere m2-Writer --tnm-aus ist deaktiviert. Der bestehende Tagesjob
+ * operations/scripts/feed-tnm-abruf.mjs schreibt auf feed-daten jetzt ausschliesslich
+ * validierte Beispiel-Endpreise. tnmPreisZeilen bleibt nur als historische reine
+ * Rechenfunktion fuer Bestandspruefungen, ohne schreibenden CLI-Pfad.
  *
  * Ablauf (nach groesseren Importen wiederholen, sonst behalten neue Produkte den Rohtitel):
  *   1. npm run -s feed:titel -- --bulk-query   -> Abfrage per bulkOperationRunQuery (Shopify-MCP) laufen lassen, JSONL laden
@@ -58,6 +57,9 @@ export const BULK_QUERY = `
 }`;
 
 export const FARB_OPTIONEN = ['farbe', 'color', 'dekor'];
+
+/** Produktart mit eigenem Zusatzfeed (scripts/teppich-nach-mass-feed.mjs). */
+export const EIGENER_FEED = 'Teppich nach Maß'; // = TNM_TYP, bleibt fuer Aufrufer
 
 export const GRATIS_AB = 'DE:50.00 EUR';
 
@@ -128,7 +130,7 @@ export function feedZeilen(jsonl) {
   const zeilen = [];
   for (const v of varianten) {
     const p = produkte.get(v.__parentId);
-    if (!p) continue;
+    if (!p || istTnm(p)) continue;
     zeilen.push([`shopify_ZZ_${nummer(p.id)}_${nummer(v.id)}`, feedTitel(p.title, v, farben.get(p.id)?.size ?? 0), ...grundpreis(v, p), GRATIS_AB]);
   }
   return zeilen;
@@ -157,22 +159,18 @@ function main(argv) {
   const o = {};
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--bulk-query') o.bulk = true;
-    else if (argv[i] === '--jsonl' || argv[i] === '--aus' || argv[i] === '--tnm-aus') o[argv[i].slice(2)] = argv[++i];
+    else if (argv[i] === '--tnm-aus') throw new Error('--tnm-aus ist deaktiviert: TNM-Endpreise kommen ausschliesslich aus feed-tnm-abruf.mjs / feed:teppich-nach-mass.');
+    else if (argv[i] === '--jsonl' || argv[i] === '--aus') o[argv[i].slice(2)] = argv[++i];
     else throw new Error(`unbekannte Option: ${argv[i]}`);
   }
   if (o.bulk) { console.log(BULK_QUERY.trim()); return; }
-  if (!o.jsonl || !o.aus) throw new Error('Aufruf: feed:titel -- --jsonl katalog.jsonl --aus tp-feedtitel.txt [--tnm-aus tp-tnm-preise.txt] | --bulk-query');
+  if (!o.jsonl || !o.aus) throw new Error('Aufruf: feed:titel -- --jsonl katalog.jsonl --aus tp-feedtitel.txt | --bulk-query');
   const jsonl = fs.readFileSync(o.jsonl, 'utf8');
   const zeilen = feedZeilen(jsonl);
   fs.writeFileSync(o.aus, ['id\ttitle\tunit_pricing_measure\tunit_pricing_base_measure\tfree_shipping_threshold', ...zeilen.map((z) => z.join('\t'))].join('\n') + '\n');
   console.log(`${zeilen.length} Titel nach ${o.aus}, davon ${zeilen.filter((z) => z[2]).length} mit Grundpreis`);
-  if (o['tnm-aus']) {
-    const tnm = tnmPreisZeilen(jsonl);
-    fs.writeFileSync(o['tnm-aus'], ['id\tprice\tsale_price\tunit_pricing_measure\tunit_pricing_base_measure', ...tnm.map((z) => z.join('\t'))].join('\n') + '\n');
-    console.log(`${tnm.length} Teppich-nach-Mass-Preise je m2 nach ${o['tnm-aus']}, davon ${tnm.filter((z) => z[2]).length} mit Vergleichspreis`);
-  }
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
   try { main(process.argv.slice(2)); } catch (e) { console.error(e.message); process.exit(2); }
 }

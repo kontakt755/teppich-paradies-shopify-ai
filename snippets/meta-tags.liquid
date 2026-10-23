@@ -234,11 +234,24 @@
     des kleinsten kaufbaren Originalpakets. Basis ist die
     gezeigte Variante statt product.price (das waere der kleinste Preis aller
     Varianten inkl. Muster). Dezimalpunkt statt Komma, ohne Tausenderpunkt.
+    Teppich nach Mass mit Einfassung: Endpreis der Beispielgroesse dieser Farbe
+    (snippets/tp-mass-beispiel), wie offers.price im JSON-LD und im Zusatzfeed
+    (#1283); ohne Beispielgroesse bleibt es beim Preis je m2.
   {%- endcomment -%}
   {%- liquid
     assign tp_og_cents = product.selected_or_first_available_variant.price
     if product.metafields.custom.preis_pro_001_qm.value == true or product.metafields.custom.preis_pro_001_lfm.value == true
       assign tp_og_cents = tp_og_cents | times: 100
+      if product.metafields.service.einfassung.value != blank
+        capture tp_og_bsp
+          render 'tp-mass-beispiel', product: product, variant: product.selected_or_first_available_variant
+        endcapture
+        assign tp_og_bsp = tp_og_bsp | strip
+        if tp_og_bsp != blank
+          assign tp_og_bsp_teile = tp_og_bsp | split: '|'
+          assign tp_og_cents = tp_og_bsp_teile[2] | times: 1
+        endif
+      endif
     endif
     assign tp_og_euro = tp_og_cents | divided_by: 100
     assign tp_og_rest = tp_og_cents | modulo: 100

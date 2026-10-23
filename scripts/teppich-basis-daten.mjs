@@ -126,7 +126,7 @@ export const MUTATION_LOESCHEN = `mutation Loeschen($metafields: [MetafieldIdent
 /* ─── Shop lesen ─────────────────────────────────────────────────────── */
 
 /** Minimaler Cookie-Speicher: haelt die Vorschau eines Themes ueber die Weiterleitung hinweg. */
-class Keks {
+export class Keks {
   constructor() { this.werte = new Map(); }
   aufnehmen(antwort) {
     const liste = typeof antwort.headers.getSetCookie === 'function' ? antwort.headers.getSetCookie() : [];
@@ -139,7 +139,7 @@ class Keks {
   kopf() { return [...this.werte].map(([k, v]) => `${k}=${v}`).join('; '); }
 }
 
-async function holen(url, keks, { versuche = 2 } = {}) {
+export async function holen(url, keks, { versuche = 2 } = {}) {
   let ziel = url;
   for (let schritt = 0; schritt < 8; schritt++) {
     let antwort;
