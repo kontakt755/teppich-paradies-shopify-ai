@@ -226,6 +226,11 @@ test('gemeinsamer Rollenbestand nutzt denselben Zuschnittabgleich wie der Konfig
   ] } };
   assert.deepEqual(konfiguratorPreis(daten, 11, 80, 150).fehler, []);
   assert.equal(konfiguratorPreis(daten, 11, 80, 150).summe, 18940);
+  daten.rollenrichtung = 'laengs';
+  daten.zuschnitt.varianten[1].available = false;
+  assert.match(konfiguratorPreis(daten, 11, 80, 150).fehler.join(' '), /Rollenrest reicht/);
+  daten.rollenrichtung = '';
+  daten.zuschnitt.varianten[1].available = true;
   daten.zuschnitt.varianten[0].available = false;
   assert.match(konfiguratorPreis(daten, 11, 80, 150).fehler.join(' '), /Rollenrest reicht/);
   daten.zuschnitt.varianten[0].available = true;

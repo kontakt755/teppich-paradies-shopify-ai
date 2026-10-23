@@ -223,7 +223,7 @@ export function konfiguratorPreis(ek, variantId, w, l) {
     if (ek.zuschnitt.failed || !varianten.length || rollen.length !== 1 || !(preis >= 0) ||
       varianten.some((v) => parseInt(v.price, 10) !== preis) || (preis > 0 && preis !== parseInt(t.price, 10))) {
       fehler.push('Rollenzuschnitt nicht kaufbar oder uneinheitlich bepreist');
-    } else if (!M.rollenZuschnitt('rechteck', w, l, rollen[0], varianten)?.ausreichend) {
+    } else if (!M.rollenZuschnitt('rechteck', w, l, rollen[0], varianten, ek.rollenrichtung || '')?.ausreichend) {
       fehler.push('Rollenrest reicht fuer die Beispielgroesse nicht');
     }
   }
@@ -236,7 +236,7 @@ export function konfiguratorPreis(ek, variantId, w, l) {
   const maxW = Number(t.max_breite_cm) > 0 ? Number(t.max_breite_cm) : ek.max_breite_cm;
   const kgProQm = Number(ek.kg_pro_qm) > 0 ? Number(ek.kg_pro_qm) : 0;
   const maxKg = Number(ek.max_gewicht_kg) > 0 ? Number(ek.max_gewicht_kg) : 0;
-  fehler.push(...M.pruefeMasse({ form: 'rechteck', w, l, maxW, maxL: ek.max_laenge_cm, minW: minCm, minL: minCm, maxKg, kgProQm }));
+  fehler.push(...M.pruefeMasse({ form: 'rechteck', w, l, maxW, maxL: ek.max_laenge_cm, minW: minCm, minL: minCm, maxKg, kgProQm, richtung: ek.rollenrichtung || '' }));
 
   const mindestCent = parseInt(ek.mindestpreis_cent, 10) || 0;
   const flaeche = M.abrechnungsflaecheM2('rechteck', w, l);

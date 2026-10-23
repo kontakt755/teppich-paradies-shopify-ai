@@ -27,6 +27,7 @@ const engine = new Liquid({ templates: {
   'tp-rabatt-sichtbar': ohneDoc('snippets/tp-rabatt-sichtbar.liquid'),
   'tp-ist-sonderposten': ohneDoc('snippets/tp-ist-sonderposten.liquid'),
   'tp-sonderposten-preisbeleg': ohneDoc('snippets/tp-sonderposten-preisbeleg.liquid'),
+  'tp-restrolle-freigegeben': ohneDoc('snippets/tp-restrolle-freigegeben.liquid'),
 } });
 
 const KANDIDATEN = [[80, 150], [120, 170], [160, 230], [200, 300]];
@@ -195,6 +196,22 @@ test('Rollenrest: Beispiel nur mit passendem Bundle, einheitlichem Preis und aus
   assert.equal(await beispiel(p([{ ...bundles[0], available: false }, bundles[1]]), v, { aktion: 'nein' }), '120|170|22648|0|204');
   assert.equal(await beispiel(p(bundles.map((b) => ({ ...b, available: false }))), v, { aktion: 'nein' }), '');
   assert.equal(await beispiel(p(undefined, { Anthrazit: 400, Sand: 500 }), v, { aktion: 'nein' }), '');
+});
+
+test('gerichteter Rollenrest dreht das Beispiel nicht und braucht dieselbe Freigabe wie der Konfigurator', async () => {
+  const bundles = [{ option1: '100 cm', price: 57, available: true }, { option1: '200 cm', price: 57, available: false }];
+  const p = produkt({ mindest: 99, maxL: 600, zs: bundles, rollen: { Anthrazit: 400 } });
+  const v = variante({ preis: 57, farbe: 'Default Title' });
+  p.variants = [v];
+  p.metafields.custom.rollenzuschnitt_richtung = { value: 'laengs' };
+  const basis = p.metafields.service.einfass_basis.value;
+  basis.metafields = { custom: { max_roll_laenge_cm: { value: 600 } } };
+  Object.assign(basis.variants[0], { inventory_management: 'shopify', inventory_policy: 'deny', inventory_quantity: 20 });
+  assert.equal(await beispiel(p, v, { aktion: 'nein' }), '', '100 cm reichen bei fester Laengsrichtung nicht fuer 150 cm');
+  bundles[1].available = true;
+  assert.equal(await beispiel(p, v, { aktion: 'nein' }), '80|150|15580|0|120');
+  basis.variants[0].inventory_quantity = 0;
+  assert.equal(await beispiel(p, v, { aktion: 'nein' }), '', 'fehlende Bestandsfreigabe sperrt auch Suchmaschinenangebot');
 });
 
 test('og:price nennt bei Teppich nach Mass den Endpreis der Beispielgroesse, sonst den Preis je m2', async () => {
