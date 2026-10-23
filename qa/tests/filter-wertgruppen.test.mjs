@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { Liquid } from 'liquidjs';
+import vm from 'node:vm';
 
 // Audit 13.10.2026: Rohwerte neben Bereichsgruppen und doppelte Schreibweisen
 // im Filter (snippets/tp-filter-wertgruppen.liquid).
@@ -113,4 +114,54 @@ test('Preisfilter ist auf Paketware-Kollektionen ausgeblendet', () => {
   }
   assert.ok(!liste.includes('teppichboden'));
   assert.equal((block.match(/tp_preisfilter_aus contains collection\.handle/g) ?? []).length, 2);
+});
+
+
+test('Groessen: normale und geschuetzte Leerzeichen teilen keine Produkte mehr auf', async () => {
+  const filter = { param_name: 'filter.v.option.größe', values: [
+    wert('120 × 170 cm', '120 × 170 cm', 279),
+    wert('120\u00a0×\u00a0170 cm', '120\u00a0×\u00a0170 cm', 12, true),
+    wert('120 × 180 cm'), wert('140 × 200 cm'),
+    wert('140\u202f×\u202f200 cm', '140\u202f×\u202f200 cm', 0),
+    wert('170 × 120 cm'), wert('120 × 170 cm oval'), wert('Ø 120 cm'),
+  ] };
+  assert.deepEqual((await tokens(filter)).split(';').filter(Boolean), [
+    'R11~120\u00a0×\u00a0170 cm', 'X0', 'N', 'R01~140\u202f×\u202f200 cm', 'X3', 'N', 'N', 'N',
+  ]);
+  assert.equal(await tokens(filter, { nur_anzahl: true }), '1');
+  filter.values[0].active = true;
+  assert.equal(await tokens(filter, { nur_anzahl: true }), '1');
+});
+
+test('Groessen: auch die zweite Schreibweise bleibt waehlbar, wenn die erste keine Treffer hat', async () => {
+  const filter = { param_name: 'filter.v.option.größe', values: [
+    wert('120 × 170 cm', '120 × 170 cm', 0), wert('120\u00a0×\u00a0170 cm', '120\u00a0×\u00a0170 cm', 12),
+  ] };
+  assert.equal(await tokens(filter), 'R01~120\u00a0×\u00a0170 cm;X0;');
+});
+
+test('Groessen-Wertgruppen erweitern die bestehende Filter-URL auf Desktop und Mobile, nach Redraw und beim Abwaehlen', async () => {
+  const name = 'filter.v.option.größe';
+  const first = '120 × 170 cm';
+  const second = '120\u00a0×\u00a0170 cm';
+  const source = read('assets/facets.js');
+  const start = source.indexOf('  createURLParameters(');
+  const end = source.indexOf('\n  get sectionId()', start);
+  class Input { constructor() { this.name = name; this.value = first; } }
+  for (const width of [390, 1440]) {
+    const context = vm.createContext({ URL, URLSearchParams, HTMLInputElement: Input,
+      window: { innerWidth: width, location: { href: 'https://shop.example/collections/teppiche' } }, SEARCH_QUERY: 'q' });
+    vm.runInContext(`globalThis.FilterForm = class { ${source.slice(start, end)} };`, context);
+    const form = new context.FilterForm();
+    for (let redraw = 0; redraw < 2; redraw++) {
+      const input = new Input();
+      form.refs = { facetsForm: { querySelectorAll: () => [{ querySelector: () => input, getAttribute: () => second }] } };
+      const data = new URLSearchParams([[name, first], ['sort_by', 'most-relevant'], ['sort_by', 'price-ascending']]);
+      const url = form.createURLParameters(data);
+      assert.deepEqual(url.getAll(name), [first, second]);
+      assert.equal(url.get('sort_by'), width === 390 ? 'most-relevant' : 'price-ascending');
+      const without = form.createURLParameters(new URLSearchParams());
+      assert.deepEqual(without.getAll(name), []);
+    }
+  }
 });
