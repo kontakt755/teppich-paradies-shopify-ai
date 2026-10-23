@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>net.teppich-paradies.sicherung</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>__NODE_PFAD__</string>
+    <string>__REPO_PFAD__/operations/scripts/sicherung.mjs</string>
+  </array>
+  <key>WorkingDirectory</key><string>__REPO_PFAD__</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>TP_PRIVAT_DIR</key><string>__HOME__/teppich-paradies-analyse</string>
+    <key>TZ</key><string>Europe/Berlin</string>
+  </dict>
+  <key>StartCalendarInterval</key>
+  <dict><key>Hour</key><integer>22</integer><key>Minute</key><integer>30</integer></dict>
+  <key>RunAtLoad</key><true/>
+  <key>ProcessType</key><string>Background</string>
+  <key>Umask</key><integer>63</integer>
+  <key>StandardOutPath</key><string>__HOME__/Library/Logs/teppich-paradies-sicherung.log</string>
+  <key>StandardErrorPath</key><string>__HOME__/Library/Logs/teppich-paradies-sicherung.log</string>
+</dict>
+</plist>
