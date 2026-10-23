@@ -183,10 +183,8 @@
   # gekettelten Teppiche nach Mass laut Inhaberentscheidung. Ohne Metafeld keine
   # Angabe (fail closed), nichts wird von anderen Produkten geliehen. Serena
   # gehoert seit 10.10. ebenfalls zum bestaetigten Wert inkl. Ketteln.
-  # Art "fertig" nennt ihre Lieferzeit schon im Hinweistext unten.
-  assign tp_ek_lieferzeit = ''
+  assign tp_ek_lieferzeit = product.metafields.service.lieferzeit.value | strip
   unless tp_ek_art == 'fertig'
-    assign tp_ek_lieferzeit = product.metafields.service.lieferzeit.value | strip
     if tp_ek_lieferzeit == blank and product.handle == 'serena-teppich-nach-mass'
       assign tp_ek_lieferzeit = 'ca. 5–8 Werktage inkl. Ketteln'
     endif
@@ -406,7 +404,7 @@
           Sonst bleibt es bei der einen Zahl (Inhaber 2026-09-20).
         {%- endcomment -%}
         <p class="tp-ek__rechenzeile" data-rechenzeile hidden></p>
-        <p class="tp-ek__preishinweis">{% if tp_ek_art == 'raummass' %}Inklusive Zuschnitt nach Maß, ohne Einfassung.{% elsif tp_ek_art == 'fertig' %}Vom Hersteller nach Ihrem Maß {{ tp_ek_ph[4] }}{% if tp_ek_pauschale_v %}, inklusive Fertigungs- und Versandpauschale{% endif %}. Lieferzeit ca. 14 Tage.{% elsif tp_ek_kante_inkl %}Inklusive Zuschnitt und Kettelung rundum – die Kettelung ist im Quadratmeterpreis bereits enthalten.{% else %}Inklusive Zuschnitt und Einfassung rundum.{% endif %} Inkl. MwSt.; <a href="{{ pages['versand-lieferung'].url | default: '/pages/versand-lieferung' }}">Versand</a> in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos.{% if tp_ek_lieferzeit != blank %}<br>Lieferzeit: {{ tp_ek_lieferzeit | escape }}.{% endif %}</p>
+        <p class="tp-ek__preishinweis">{% if tp_ek_art == 'raummass' %}Inklusive Zuschnitt nach Maß, ohne Einfassung.{% elsif tp_ek_art == 'fertig' %}Vom Hersteller nach Ihrem Maß {{ tp_ek_ph[4] }}{% if tp_ek_pauschale_v %}, inklusive Fertigungs- und Versandpauschale{% endif %}.{% elsif tp_ek_kante_inkl %}Inklusive Zuschnitt und Kettelung rundum – die Kettelung ist im Quadratmeterpreis bereits enthalten.{% else %}Inklusive Zuschnitt und Einfassung rundum.{% endif %} Inkl. MwSt.; <a href="{{ pages['versand-lieferung'].url | default: '/pages/versand-lieferung' }}">Versand</a> in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos.{% if tp_ek_lieferzeit != blank %}<br>Lieferzeit: {{ tp_ek_lieferzeit | escape }}.{% endif %}</p>
         {%- comment -%}
           Keine Rechenaufschluesselung in der Kundenansicht (Entscheidung 2026-09-20):
           sichtbar sind Endpreis und die zwei Hinweise, die den Preis erklaeren muessen.
@@ -418,8 +416,7 @@
           Voraussichtliches Lieferdatum (#165). Die Werktage selbst nennt der
           Preishinweis oben; die Datumszeile rechnet mit genau derselben
           Variable tp_ek_lieferzeit (service.lieferzeit, Serena-Rueckfall),
-          ohne eigenen Wert. Art "fertig" hat dort keinen Wert und bekommt
-          kein Datum.
+          ohne eigenen Wert. Angaben in Wochen bleiben ohne errechnetes Datum.
         {%- endcomment -%}
         {%- render 'tp-lieferzeit', text: tp_ek_lieferzeit, product: product, kontext: 'mass' -%}
       </div>

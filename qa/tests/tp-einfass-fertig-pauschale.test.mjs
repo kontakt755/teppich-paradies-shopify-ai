@@ -61,6 +61,7 @@ function fixture(o = {}) {
         ...(o.kanteInklusive === undefined ? {} : { kante_inklusive: val(o.kanteInklusive) }),
         ...(o.produktwort === undefined ? {} : { produktwort: val(o.produktwort) }),
         ...(o.minSeite === undefined ? {} : { min_seite_cm: val(o.minSeite) }),
+        ...(o.lieferzeit === undefined ? {} : { lieferzeit: val(o.lieferzeit) }),
       },
     },
   };
@@ -158,6 +159,19 @@ test('Fertig: Teppich und Pauschale als zwei Zeilen mit derselben Gruppe', async
   assert.equal(pauschale.id, 'fertig-pauschale');
   assert.equal(pauschale.quantity, 1);
   assert.equal(pauschale.properties._Gruppe, teppich.properties._Gruppe);
+});
+
+test('Fertig: Preishinweis nennt nur die belegte Produktlieferzeit', async () => {
+  const hinweis = slice(block, '<p class="tp-ek__preishinweis">{% if', '\n        {%- comment -%}');
+  const source = slice(block, '{%- liquid', '\n  <div class="tp-ek') + hinweis + '\n{%- endif -%}';
+  const mit = await engine.parseAndRender(source, fixture({ lieferzeit: 'ca. 3 Wochen' }));
+  assert.match(mit, /Lieferzeit: ca\. 3 Wochen\./);
+  assert.equal((mit.match(/Lieferzeit/g) || []).length, 1);
+  assert.doesNotMatch(mit, /14 Tage/);
+  const ohne = await engine.parseAndRender(source, fixture());
+  assert.doesNotMatch(ohne, /Lieferzeit|14 Tage/, 'ohne Produktquelle keine Zusage');
+  const escaped = await engine.parseAndRender(source, fixture({ lieferzeit: '3 Wochen < 4 Wochen' }));
+  assert.match(escaped, /3 Wochen &lt; 4 Wochen/);
 });
 
 test('Fertig: nicht kaufbare Pauschale sperrt den Kauf', async () => {
