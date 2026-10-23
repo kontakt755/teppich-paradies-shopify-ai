@@ -45,7 +45,7 @@ export function collectSmallTouchTargets() {
       const areas = candidates.filter(visible).map(size);
       const adequate = areas.some(rect => rect.width >= 40 && rect.height >= 40);
       const largest = areas.sort((a, b) => b.width * b.height - a.width * a.height)[0];
-      const name = [element.getAttribute('aria-label'), element.getAttribute('title'), ...(element.labels || []).map(label => label.textContent), element.innerText, element.textContent]
+      const name = [element.getAttribute('aria-label'), element.getAttribute('title'), ...Array.from(element.labels || [], label => label.textContent), element.innerText, element.textContent]
         .map(value => String(value || '').replace(/\s+/g, ' ').trim()).find(Boolean) || '';
       return { adequate, name: name.slice(0, 80), tag: element.tagName, width: Math.round(largest.width), height: Math.round(largest.height) };
     })
