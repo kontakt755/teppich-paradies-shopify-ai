@@ -2114,3 +2114,16 @@ vorhandener Bewertungs-/Flow-Ablauf für Warenbestellungen wird nicht erneut geb
 aktueller Live-Zustand und konkrete Versandläufe sind über die verfügbare Anbindung aktuell
 technisch nicht lesbar; die Shop-Übersicht behauptet dafür keinen geprüften Versandstatus.
 Der Umbau startet keine zweite Bewertungs-, Nachrichten-, Bestell- oder Versandautomatik.
+
+
+## Kostenlose Muster automatisch bestellen (Inhaber 23.10.2026, #1648)
+
+Der Dashboard-Dienst ruft jede Minute `musterBestellungenAutomatisch()` auf, auch ohne offene Seite. Er verwendet die bestehende Lieferanten-Bestellmail, das Musterlager, den Positionsstatus und das Firmenpostfach. Warenbestellungen und kostenpflichtige Probestuecke bleiben manuell. Pruefinstanzen (`TP_DASHBOARD_DATENKOPIE`) starten den Zeitgeber nie.
+
+Private Freigabe: `$TP_PRIVAT_DIR/muster-bestellung/konfiguration.json` mit `aktiv`, ISO-Zeit `ab` und `lieferanten` je Kuerzel: `kostenlos: true`, `empfaenger`, `lieferziel` sowie `produktgruppen` (exakte Lexikon-Gruppen). Empfaenger und Ziel muessen zu den aktuellen Lieferantenstammdaten passen. Ohne Konfiguration inaktiv. Alte Anfragen werden beim Einschalten nicht nachbestellt; sie erscheinen als Klaerfall.
+
+Voraussetzungen: gueltiger Export, hoechstens 20 Minuten alt, offen und bezahlt (PAID), keine Test-/Stornobestellung, keine bestehende Bearbeitung, bekannte Herstellerartikel-/Farbnummer und Menge. Eigener Bestand wird nicht bestellt. Die kostenlose Lieferantenleistung muss ausdruecklich freigegeben sein; der 0-EUR-Kundenpreis allein reicht nicht. Es werden nur Kundenmengen bestellt, kein Vorrat.
+
+Vor SMTP wird der Versuch dauerhaft in `muster-bestellung/versand.json` reserviert und die Position als von der Automatik uebernommen gesperrt. Eine Prozesssperre schuetzt parallele Laeufe. Erst SMTP-Annahme setzt die vorhandenen Positionen auf Bestellt; Statusnachtrag nach Abbruch sendet nie erneut. Unklarer SMTP-Ausgang bleibt sichtbar und wird nie blind wiederholt. Nach Postfachkontrolle kann der Inhaber die bestehende Arbeitsuebernahme bewusst uebernehmen. Ein Wiedereroeffnen erzeugt keinen zweiten Versand. Aenderungen an Menge oder Artikel nach Versand werden angezeigt. Versandjournal und Konfiguration gehoeren zur Arbeitsstand-Erkennung.
+
+Kunden → Bestellungen zeigt ohne Aufklappen: Muster bestellt, Zeitpunkt, Artikel/Farbe/Menge, Empfaenger und Lieferziel; daneben getrennte Klaerfaelle. Mailbestellung bestaetigt weder physischen Eingang noch Kundenversand. Keine Shopify-Schreibwirkung.

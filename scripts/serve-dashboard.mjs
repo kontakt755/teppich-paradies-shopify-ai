@@ -710,6 +710,11 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     // niemand das Control Center offen hat (operations/lib/shopify-abgleich.mjs). Prueft nur
     // Groesse und Zeit von orders.json; gerechnet wird erst bei einem neuen Export.
     setInterval(() => { try { api.shopifyAbgleich(); } catch (e) { logFehler('abgleich', String(e?.message || e).split('\n')[0]); } }, 60_000).unref();
+    if (!process.env.TP_DASHBOARD_DATENKOPIE) {
+      const musterLauf = () => api.musterBestellungenAutomatisch().catch(() => logFehler('muster-bestellung', 'Automatische Musterbestellung unterbrochen. Bestellstand prüfen.'));
+      setInterval(musterLauf, 60_000).unref();
+      musterLauf();
+    }
     if (NEUBAU_MINUTEN > 0) {
       setInterval(regelmaessigNeubauen, NEUBAU_MINUTEN * 60_000).unref();
       console.log(`Aufgabendaten (issues.json) werden alle ${NEUBAU_MINUTEN} Minuten neu geholt.`);
