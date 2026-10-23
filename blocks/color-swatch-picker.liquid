@@ -6,7 +6,7 @@
 {% enddoc %}
 
 {% assign color_picker_id = block.id | replace: '_', '' | downcase %}
-{% assign color_option = blank %}
+{% assign color_option = '' %}
 {% assign color_option_index = 0 %}
 
 {% for option in product.options_with_values %}
@@ -17,6 +17,10 @@
     {% break %}
   {% endif %}
 {% endfor %}
+
+{% if color_option == blank and template.suffix == 'wunschmass-fertig' %}
+  {% render 'variant-main-picker', product_resource: product, section: section, product: product, block: block, variant_style: 'dropdowns' %}
+{% endif %}
 
 {% assign selected_variant = product.selected_or_first_available_variant %}
 {%- comment -%}

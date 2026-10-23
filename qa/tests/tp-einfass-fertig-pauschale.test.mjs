@@ -51,7 +51,9 @@ function fixture(o = {}) {
     metafields: { service: { einfassen: val('Verfügbar') }, custom: { farbcode: val('005') } },
   };
   const product = {
-    title: 'Synthetic Wunschmass fixture', variants: [variant], selected_or_first_available_variant: variant,
+    id: 7001, title: 'Synthetic Wunschmass fixture',
+    variants: [variant, ...(o.weitereVarianten || []).map(v => ({ ...variant, ...v }))],
+    selected_or_first_available_variant: variant,
     options_with_values: [{ name: 'Farbe', position: 1 }],
     metafields: {
       custom: { preis_pro_001_qm: val(true) },
@@ -61,6 +63,7 @@ function fixture(o = {}) {
         ...(o.kanteInklusive === undefined ? {} : { kante_inklusive: val(o.kanteInklusive) }),
         ...(o.produktwort === undefined ? {} : { produktwort: val(o.produktwort) }),
         ...(o.minSeite === undefined ? {} : { min_seite_cm: val(o.minSeite) }),
+        ...(o.lieferzeit === undefined ? {} : { lieferzeit: val(o.lieferzeit) }),
       },
     },
   };
@@ -97,6 +100,7 @@ const runnerSource = slice(js, '(function () {', '  function svgEl(') +
     function groessenAufbauen() {}
     function nummerieren() {}
     rechnen();
+    ` + slice(js, "    document.addEventListener('variant:update'", "    window.addEventListener('popstate'") + `
     return {
       calculate: rechnen, add: hinzufuegen,
       state: function () { return stand && JSON.parse(JSON.stringify(stand)); }
@@ -117,13 +121,14 @@ async function runCase(o = {}) {
   q('[data-breite]').value = String(o.width ?? 200);
   q('[data-laenge]').value = String(o.length ?? 300);
   const el = new Element(); el.id = 'audit-root'; el.querySelector = q; el.querySelectorAll = () => [];
-  const requests = [], events = [];
+  const requests = [], events = [], listeners = new Map();
   const context = vm.createContext({
     URLSearchParams, auditBandSelected: false,
     window: { location: { search: '' }, TPZuschnitt: { abgleichen: async () => {} } },
-    document: { querySelectorAll: () => [], querySelector: () => null, dispatchEvent: (e) => events.push(e.type) },
+    document: { querySelectorAll: () => [], querySelector: () => null,
+      dispatchEvent: (e) => events.push(e.type), addEventListener: (name, fn) => listeners.set(name, fn) },
     CustomEvent: class { constructor(type) { this.type = type; } },
-    setTimeout() {},
+    setTimeout(fn) { if (o.variantChange) fn(); },
     fetch: async (url, options) => {
       requests.push({ url, method: options.method, body: JSON.parse(options.body) });
       return { ok: true, json: async () => ({ auditIntercepted: true }) };
@@ -132,6 +137,7 @@ async function runCase(o = {}) {
   vm.runInContext(read(mathFile), context, { filename: mathFile, timeout: 1000 });
   vm.runInContext(runnerSource, context, { filename: jsFile, timeout: 1000 });
   const controller = context.auditInit(el);
+  if (o.variantChange) listeners.get('variant:update')({ detail: { resource: { id: o.variantChange }, data: { productId: 7001 } } });
   controller?.add();
   await new Promise((resolve) => setImmediate(resolve));
   return {
@@ -140,6 +146,7 @@ async function runCase(o = {}) {
     ctaHidden: q('[data-cta]').hidden,
     ctaDisabled: q('[data-cta]').disabled,
     error: q('[data-fehler]').hidden ? null : q('[data-fehler]').textContent,
+    breite: q('[data-breite]').value, laenge: q('[data-laenge]').value,
   };
 }
 
@@ -158,6 +165,38 @@ test('Fertig: Teppich und Pauschale als zwei Zeilen mit derselben Gruppe', async
   assert.equal(pauschale.id, 'fertig-pauschale');
   assert.equal(pauschale.quantity, 1);
   assert.equal(pauschale.properties._Gruppe, teppich.properties._Gruppe);
+});
+
+test('Fertig: Preishinweis nennt nur die belegte Produktlieferzeit', async () => {
+  const hinweis = slice(block, '<p class="tp-ek__preishinweis">{% if', '\n        {%- comment -%}');
+  const source = slice(block, '{%- liquid', '\n  <div class="tp-ek') + hinweis + '\n{%- endif -%}';
+  const mit = await engine.parseAndRender(source, fixture({ lieferzeit: 'ca. 3 Wochen' }));
+  assert.match(mit, /Lieferzeit: ca\. 3 Wochen\./);
+  assert.equal((mit.match(/Lieferzeit/g) || []).length, 1);
+  assert.doesNotMatch(mit, /14 Tage/);
+  const ohne = await engine.parseAndRender(source, fixture());
+  assert.doesNotMatch(ohne, /Lieferzeit|14 Tage/, 'ohne Produktquelle keine Zusage');
+  const escaped = await engine.parseAndRender(source, fixture({ lieferzeit: '3 Wochen < 4 Wochen' }));
+  assert.match(escaped, /3 Wochen &lt; 4 Wochen/);
+});
+
+test('Fertig: Horizon-Wechsel uebernimmt Variante und behaelt die eingegebenen Masse', async () => {
+  const weitereVarianten = [
+    { id: 'qualitaet-anders', options: ['Qualität 2', 'Rücken 1', 'Band 1'], price: 109 },
+    { id: 'ruecken-anders', options: ['Qualität 2', 'Rücken 2', 'Band 1'], price: 119 },
+    { id: 'band-anders', options: ['Qualität 2', 'Rücken 2', 'Band 2'], price: 129 },
+  ];
+  for (const variant of weitereVarianten) {
+    const r = await runCase({ width: 80, length: 150, weitereVarianten, variantChange: variant.id });
+    assert.equal(r.error, null);
+    assert.equal(r.breite, '80'); assert.equal(r.laenge, '150');
+    assert.equal(r.requests.length, 1);
+    const [pauschale, teppich] = r.requests[0].body.items;
+    assert.equal(teppich.id, variant.id);
+    assert.equal(teppich.quantity, 120);
+    assert.equal(pauschale.quantity, 1);
+    assert.equal(r.data.varianten.find(v => v.id === variant.id).price, variant.price);
+  }
 });
 
 test('Fertig: nicht kaufbare Pauschale sperrt den Kauf', async () => {
