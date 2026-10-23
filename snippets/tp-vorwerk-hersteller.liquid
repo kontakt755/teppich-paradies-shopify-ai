@@ -1,0 +1,16 @@
+{% doc %}
+  Herstellerzeile auf den Produktdetailseiten der Marke Vorwerk.
+  @param {product} product - Produkt der aktuellen Detailseite
+  Vorwerk-Logo: https://commons.wikimedia.org/wiki/File:Vorwerk.svg
+{% enddoc %}
+{%- assign tp_hersteller = product.vendor | strip | downcase -%}
+{%- if tp_hersteller == 'vorwerk' -%}
+<div class="tp-vorwerk-hersteller">
+  <img src="{{ 'tp-vorwerk-logo.svg' | asset_url }}" alt="Vorwerk" width="90" height="36" loading="lazy">
+  <span>Vorwerk – heute DAS TEPPICHWERK</span>
+</div>
+{%- endif -%}
+{% stylesheet %}
+  .tp-vorwerk-hersteller { display: flex; align-items: center; gap: 8px 12px; margin-block-start: 8px; font-size: var(--tp-fs-sm); line-height: 1.4; flex-wrap: wrap; }
+  .tp-vorwerk-hersteller img { width: 90px; height: 36px; object-fit: contain; flex: none; }
+{% endstylesheet %}

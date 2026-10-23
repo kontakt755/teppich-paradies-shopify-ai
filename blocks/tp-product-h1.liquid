@@ -16,6 +16,9 @@
   {%- assign tp_h1_display = tp_h1_display | strip -%}
   {% assign product_title = '<h1>' | append: tp_h1_display | append: '</h1>' %}
   {% render 'text', fallback_text: product_title, block: block %}
+  {% if request.page_type == 'product' and closest.product.id == product.id %}
+    {% render 'tp-vorwerk-hersteller', product: closest.product %}
+  {% endif %}
   {% if closest.product.template_suffix == 'einfassung' and closest.product.metafields.service.einfassung.value != blank %}
     <p class="tp-mass-nutzen">Ihr Teppich nach Maß – mit rundum verarbeiteter Kante.</p>
   {% endif %}
