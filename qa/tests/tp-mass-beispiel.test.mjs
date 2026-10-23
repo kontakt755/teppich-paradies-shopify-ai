@@ -49,7 +49,7 @@ function produkt(o = {}) {
   }
   const custom = { preis_pro_001_qm: { value: o.p001 ?? true } };
   if (o.basis) custom.teppich_basis_daten = { value: o.basis };
-  if (o.zs) custom.zuschnitt_von_rolle = { value: { variants: [{}] } };
+  if (o.zs) custom.zuschnitt_von_rolle = { value: { variants: Array.isArray(o.zs) ? o.zs : [{}] } };
   return { type: 'Teppich nach Maß', tags: [], variants: [], metafields: { service, custom, aktion: o.preisanker ? { klasse: { value: 'preisanker' } } : {} } };
 }
 function variante(o = {}) {
@@ -179,6 +179,22 @@ test('fail closed: kein Beispiel, wo der Konfigurator nicht verkauft', async () 
   assert.equal(await beispiel(produkt({ p001: false }), variante(), { aktion: 'nein' }), '', 'kein Preis je 0,01 m2');
   assert.equal(await beispiel(produkt({ art: '' }), variante(), { aktion: 'nein' }), '', 'Rollenware ohne Einfassung');
   assert.equal(await beispiel(produkt({ maxB: 70 }), variante(), { aktion: 'nein' }), '', 'kein Mass passt');
+});
+
+test('Rollenrest: Beispiel nur mit passendem Bundle, einheitlichem Preis und ausreichendem Bestand', async () => {
+  const bundles = [
+    { option1: '100 cm', price: 57, available: true },
+    { option1: '200 cm', price: 57, available: true },
+  ];
+  const p = (zs = bundles, rollen = { Anthrazit: 400 }) => produkt({ mindest: 99, zs, rollen });
+  const v = variante({ preis: 57, farbe: 'Default Title' });
+  assert.equal(await beispiel(p(), v, { aktion: 'nein' }), '80|150|15580|0|120');
+  assert.equal(await beispiel(p(bundles.map((b) => ({ ...b, price: 0 }))), v, { aktion: 'nein' }), '80|150|15580|0|120');
+  assert.equal(await beispiel(p(bundles.map((b) => ({ ...b, price: 58 }))), v, { aktion: 'nein' }), '');
+  assert.equal(await beispiel(p([bundles[0], { ...bundles[1], price: 0 }]), v, { aktion: 'nein' }), '');
+  assert.equal(await beispiel(p([{ ...bundles[0], available: false }, bundles[1]]), v, { aktion: 'nein' }), '120|170|22648|0|204');
+  assert.equal(await beispiel(p(bundles.map((b) => ({ ...b, available: false }))), v, { aktion: 'nein' }), '');
+  assert.equal(await beispiel(p(undefined, { Anthrazit: 400, Sand: 500 }), v, { aktion: 'nein' }), '');
 });
 
 test('og:price nennt bei Teppich nach Mass den Endpreis der Beispielgroesse, sonst den Preis je m2', async () => {

@@ -219,6 +219,24 @@ test('nicht lieferbare Farbe bleibt vollstaendig mit out of stock, niemals in st
   assert.equal(r.zeilen[1].imageLink, 'https://cdn/p.jpg');
 });
 
+test('gemeinsamer Rollenbestand nutzt denselben Zuschnittabgleich wie der Konfigurator', () => {
+  const daten = { ...ek(), rollen: ['', '400'], zuschnitt: { failed: false, varianten: [
+    { id: 31, cm: 100, price: 85, available: true },
+    { id: 32, cm: 200, price: 85, available: true }, null,
+  ] } };
+  assert.deepEqual(konfiguratorPreis(daten, 11, 80, 150).fehler, []);
+  assert.equal(konfiguratorPreis(daten, 11, 80, 150).summe, 18940);
+  daten.zuschnitt.varianten[0].available = false;
+  assert.match(konfiguratorPreis(daten, 11, 80, 150).fehler.join(' '), /Rollenrest reicht/);
+  daten.zuschnitt.varianten[0].available = true;
+  daten.zuschnitt.varianten[1].price = 0;
+  assert.match(konfiguratorPreis(daten, 11, 80, 150).fehler.join(' '), /uneinheitlich/);
+  daten.zuschnitt.varianten[0].price = 0;
+  assert.deepEqual(konfiguratorPreis(daten, 11, 80, 150).fehler, []);
+  daten.rollen.push('500');
+  assert.match(konfiguratorPreis(daten, 11, 80, 150).fehler.join(' '), /nicht kaufbar/);
+});
+
 test('MCP-Katalogdatei muss vollstaendig und aktuell sein', () => {
   const now = Date.now();
   const gut = { format: 'tp-tnm-katalog-v1', complete: true, capturedAt: new Date(now).toISOString(), products: [produkt()] };

@@ -216,7 +216,17 @@ export function konfiguratorPreis(ek, variantId, w, l) {
   if (!kanteInklusive && ek.kettel_service_failed) fehler.push('Kettelservice nicht kaufbar');
   const pauschale = (ek.pauschale && ek.pauschale.id && parseInt(ek.pauschale.price, 10) > 0) ? ek.pauschale : null;
   if (ek.pauschale_failed) fehler.push('Pauschale nicht kaufbar');
-  if (ek.zuschnitt) fehler.push('Sonderposten mit Rollenzuschnitt');
+  if (ek.zuschnitt) {
+    const varianten = (ek.zuschnitt.varianten ?? []).filter(Boolean);
+    const rollen = (ek.rollen ?? []).map(Number).filter((n) => n > 0);
+    const preis = varianten.length ? parseInt(varianten[0].price, 10) : NaN;
+    if (ek.zuschnitt.failed || !varianten.length || rollen.length !== 1 || !(preis >= 0) ||
+      varianten.some((v) => parseInt(v.price, 10) !== preis) || (preis > 0 && preis !== parseInt(t.price, 10))) {
+      fehler.push('Rollenzuschnitt nicht kaufbar oder uneinheitlich bepreist');
+    } else if (!M.rollenZuschnitt('rechteck', w, l, rollen[0], varianten)?.ausreichend) {
+      fehler.push('Rollenrest reicht fuer die Beispielgroesse nicht');
+    }
+  }
   const ersteForm = Array.isArray(ek.formen) ? ek.formen.find(Boolean) : null;
   if (ersteForm && ersteForm !== 'rechteck') fehler.push(`Konfigurator waehlt zuerst ${ersteForm}, nicht Rechteck`);
   const minCm = Number(ek.min_seite_cm) > 0 ? Math.round(Number(ek.min_seite_cm)) : 50;

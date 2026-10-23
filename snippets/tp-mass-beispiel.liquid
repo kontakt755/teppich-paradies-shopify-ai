@@ -28,7 +28,7 @@
 
   Fail closed - keine Ausgabe, wenn der Konfigurator diese Farbe nicht verkaufen
   wuerde: Variante nicht freigegeben (service.einfassen) oder ohne Preis, Kettelservice
-  bzw. Pauschale nicht kaufbar, Sonderposten mit Rollenzuschnitt, erste Form im
+  bzw. Pauschale nicht kaufbar, Rollenrest nicht ausreichend, erste Form im
   Konfigurator nicht Rechteck, kein Mass passt.
 
   @param {object} product - der Teppich nach Mass
@@ -44,10 +44,42 @@
       assign tmbsp_ok = true
     endif
   endif
-  # Sonderposten aus einer begrenzten Rolle: Bestand haengt am Rollenrest - kein Beispiel.
-  assign tmbsp_zs = product.metafields.custom.zuschnitt_von_rolle
-  if tmbsp_zs != nil and tmbsp_zs != blank
-    assign tmbsp_ok = false
+  # Rollenrest wie im bestehenden Konfigurator: genau eine Rollenbreite und
+  # gleich bepreiste Zuschnittvarianten (0 oder eine Materialeinheit).
+  assign tmbsp_zs_feld = product.metafields.custom.zuschnitt_von_rolle
+  assign tmbsp_zs_aktiv = false
+  assign tmbsp_zs_rolle = 0
+  if tmbsp_zs_feld != nil and tmbsp_zs_feld != blank
+    assign tmbsp_zs_aktiv = true
+    assign tmbsp_zs = tmbsp_zs_feld.value
+    if tmbsp_zs == blank or tmbsp_zs.variants.size == 0
+      assign tmbsp_ok = false
+    endif
+    for tmbsp_rb_v in product.metafields.service.einfass_basis.value.variants
+      assign tmbsp_rb = tmbsp_rb_v.metafields.custom.rollenbreite.value | times: 100 | round
+      if tmbsp_rb > 0
+        if tmbsp_zs_rolle > 0 and tmbsp_rb != tmbsp_zs_rolle
+          assign tmbsp_ok = false
+        endif
+        assign tmbsp_zs_rolle = tmbsp_rb
+      endif
+    endfor
+    assign tmbsp_zs_preis = nil
+    for tmbsp_zv in tmbsp_zs.variants
+      assign tmbsp_zv_cm = tmbsp_zv.option1 | remove: 'cm' | strip | times: 1
+      if tmbsp_zv_cm <= 0
+        continue
+      endif
+      if tmbsp_zs_preis != nil and tmbsp_zv.price != tmbsp_zs_preis
+        assign tmbsp_ok = false
+      endif
+      assign tmbsp_zs_preis = tmbsp_zv.price
+    endfor
+    if tmbsp_zs_rolle <= 0 or tmbsp_zs_preis == nil
+      assign tmbsp_ok = false
+    elsif tmbsp_zs_preis != 0 and tmbsp_zs_preis != variant.price
+      assign tmbsp_ok = false
+    endif
   endif
 
   if tmbsp_ok
@@ -137,6 +169,28 @@
       endif
       if tmbsp_w < tmbsp_min or tmbsp_l < tmbsp_min
         continue
+      endif
+      if tmbsp_zs_aktiv
+        # TPMass.rollenZuschnitt: lange Seite quer, wenn sie auf die Rolle passt;
+        # kleinste passende Bundlevariante zaehlt, auch wenn sie ausverkauft ist.
+        assign tmbsp_zs_verbrauch = tmbsp_l
+        if tmbsp_l <= tmbsp_zs_rolle
+          assign tmbsp_zs_verbrauch = tmbsp_w
+        endif
+        assign tmbsp_zs_cm = 0
+        assign tmbsp_zs_verfuegbar = false
+        for tmbsp_zv in tmbsp_zs.variants
+          assign tmbsp_zv_cm = tmbsp_zv.option1 | remove: 'cm' | strip | times: 1
+          if tmbsp_zv_cm >= tmbsp_zs_verbrauch
+            if tmbsp_zs_cm == 0 or tmbsp_zv_cm < tmbsp_zs_cm
+              assign tmbsp_zs_cm = tmbsp_zv_cm
+              assign tmbsp_zs_verfuegbar = tmbsp_zv.available
+            endif
+          endif
+        endfor
+        unless tmbsp_zs_verfuegbar
+          continue
+        endunless
       endif
       # Versandgewicht (cm2 x kg/m2 gegen kg x 10000) ohne Division - ganzzahlig wie float gleich.
       if tmbsp_kg_qm > 0 and tmbsp_max_kg > 0

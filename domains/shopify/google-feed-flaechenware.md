@@ -42,8 +42,11 @@ Der **bestehende** OAuth-Tagesworkflow `feed-tnm-preise.yml` nutzt
 `tp-tnm-preise.txt` (Google-Zusatzquelle) und `tp-tnm-meta.tsv` (eigenstaendiger
 zwoelfspaltiger Meta-Vollkatalog) erhalten. Beide Dateien und `tp-tnm-pruefung.json`
 werden nur gemeinsam nach erfolgreicher Komplettpruefung veroeffentlicht. Nicht
-lieferbare Farben bleiben mit eindeutiger Verfuegbarkeit enthalten. Eine fehlende
-Vorher-ID benoetigt einen aktuellen Admin-Nachweis: archiviert, Entwurf, geloescht
+lieferbare Farben bleiben mit eindeutiger Verfuegbarkeit enthalten.
+Bestandsgebundene Sonderposten verwenden zusaetzlich den vorhandenen Rollenzuschnitt-
+Abgleich: genau eine Rollenbreite, gleicher Bundlepreis (0 oder eine Materialeinheit)
+und eine verfuegbare, ausreichend lange Zuschnittvariante fuer das Beispielmass.
+Eine fehlende Vorher-ID benoetigt einen aktuellen Admin-Nachweis: archiviert, Entwurf, geloescht
 oder andere Produktart. Fehlende aktive TNM-Varianten, fehlende Bilder, Preis- oder
 Vergleichspreisabweichungen und Aenderungen waehrend der Erzeugung brechen ab.
 Der alte schreibende m2-Pfad `feed:titel -- --tnm-aus` ist gesperrt.
