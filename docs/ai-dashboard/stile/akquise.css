@@ -21,6 +21,10 @@
 .akq-antwort textarea { width: 100%; box-sizing: border-box; font: inherit; resize: vertical; }
 .akq-antwort p { margin: 4px 0 0; }
 .akq-fuss { margin: 0; }
+.akq-nachricht { min-width: 0; }
+.akq-nachricht summary { cursor: pointer; }
+.akq-nachricht label { display: block; margin-top: 8px; }
+.akq-nachricht textarea { width: 100%; box-sizing: border-box; font: inherit; resize: vertical; }
 .akq-alle summary { cursor: pointer; padding: 2px 0; }
 .akq-alle[open] summary { margin-bottom: 10px; }
 .akq-tabelle td { vertical-align: top; }

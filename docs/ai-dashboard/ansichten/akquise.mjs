@@ -19,7 +19,7 @@ import {
 } from '../lib/akquise.mjs';
 
 // gewaehlt: Firma, die der Nutzer aus der Liste nach oben geholt hat; antwort: offenes Antwort-Feld.
-export const akquise = { daten: null, laedt: false, gewaehlt: '', antwort: '' };
+export const akquise = { daten: null, laedt: false, gewaehlt: '', antwort: '', entwuerfe: Object.create(null) };
 
 const heute = () => new Date().toLocaleDateString('sv-SE');
 const TYP_LABEL = { genossenschaft: 'Genossenschaft', kommunal: 'kommunal', landeseigen: 'landeseigen', verwaltung: 'Hausverwaltung' };
@@ -63,7 +63,7 @@ function aufgabe(f, faellig) {
 
 function karte(f, d, faellig, restZahl) {
   const k = kontaktTeile(f.kontakt);
-  const nachricht = d.vorlage ? nachrichtFuer(d.vorlage, f.name) : '';
+  const nachricht = akquise.entwuerfe[f.id] ?? (d.vorlage ? nachrichtFuer(d.vorlage, f.name) : '');
   const st = f.status || 'neu';
   const a = aufgabe(f, faellig);
   const meta = [f.ort, typText(f.typ), f.wohnungen ? `${f.wohnungen} Wohnungen` : ''].filter(Boolean).map(esc).join(' · ');
@@ -71,8 +71,8 @@ function karte(f, d, faellig, restZahl) {
     ? `<div class="akq-kontakt">${k.email ? `<span>${esc(k.email)}</span>` : ''}${k.telefon ? `<span>${esc(k.telefon)}</span>` : ''}${f.website ? `<a href="${esc(f.website)}" target="_blank" rel="noopener">${esc(webKurz(f.website))}</a>` : ''}</div>`
     : `<p class="akq-fehlt">Kontakt fehlt – ${f.website ? `<a href="${esc(f.website)}" target="_blank" rel="noopener">Website ansehen</a> und dort E-Mail oder Telefon suchen.` : 'bitte im Internet nach der Firma suchen.'}</p>`;
   const kontaktKnoepfe = [
-    k.email && nachricht && ['neu', 'angeschrieben'].includes(st) ? `<a class="btn btn-lg" href="${esc(mailtoLink(k.email, nachricht))}">E-Mail öffnen</a>` : '',
-    nachricht && ['neu', 'angeschrieben'].includes(st) ? `<button type="button" class="btn btn-lg" data-akq-kopieren="${esc(f.id)}">Text kopieren</button>` : '',
+    k.email && d.vorlage && ['neu', 'angeschrieben'].includes(st) ? `<a class="btn btn-lg" data-akq-mail="${esc(f.id)}" href="${esc(mailtoLink(k.email, nachricht))}">E-Mail öffnen</a>` : '',
+    d.vorlage && ['neu', 'angeschrieben'].includes(st) ? `<button type="button" class="btn btn-lg" data-akq-kopieren="${esc(f.id)}">Text kopieren</button>` : '',
     k.telLink ? `<a class="btn btn-lg" href="tel:${esc(k.telLink)}">Anrufen</a>` : '',
   ].filter(Boolean).join('');
   const id = esc(f.id);
@@ -96,6 +96,7 @@ function karte(f, d, faellig, restZahl) {
     ${kontakt}
     ${f.notiz ? `<p class="akq-notiz-text"><span class="muted">Notiz:</span> ${esc(f.notiz)}</p>` : ''}
     <p class="akq-tun">${esc(a.text)}</p>
+    ${d.vorlage && ['neu', 'angeschrieben'].includes(st) ? `<details class="akq-nachricht"><summary>Nachricht ansehen und anpassen</summary><label for="akq-nachricht">Betreff und Nachricht</label><textarea id="akq-nachricht" data-akq-nachricht="${id}" rows="10">${esc(nachricht)}</textarea><p class="small muted">Änderungen gelten nur für diese Firma in diesem geöffneten Control Center. Kopieren oder „E-Mail öffnen“ versendet nichts.</p></details>` : ''}
     ${kontaktKnoepfe ? `<div class="akq-knoepfe">${kontaktKnoepfe}</div>` : ''}
     ${richtpreisHtml(f, d)}
     ${lesend ? '' : `<div class="akq-knoepfe akq-erledigt">${erledigt}${knopf('kein-interesse', 'Kein Interesse', 'btn-ghost')}${knopf('spaeter', 'Später', 'btn-ghost')}</div>`}
@@ -214,6 +215,13 @@ async function speichere(id, eingabe, meldung) {
 
 const am = w => (w ? ` – wieder dran am ${fmtDate(w)}` : '');
 
+/** Aktuellen Entwurf verwenden, auch wenn das Feld noch keinen change-Event hatte. */
+function aktuellerText(f) {
+  const feld = document.getElementById('akq-nachricht');
+  if (feld?.dataset.akqNachricht === f.id) akquise.entwuerfe[f.id] = feld.value;
+  return akquise.entwuerfe[f.id] ?? nachrichtFuer(akquise.daten?.vorlage || '', f.name);
+}
+
 /** Notiz aus dem Antwort-Feld vor den naechsten Schritt setzen. */
 function mitNotiz(f, schritt) {
   const was = document.getElementById('akq-was')?.value.trim() || '';
@@ -240,10 +248,21 @@ export function akquiseKlick(ev) {
   if (k) {
     const f = akquise.daten?.firmen?.find(x => x.id === k.dataset.akqKopieren);
     if (!f || !akquise.daten.vorlage) { toast('Keine Vorlage gefunden.', 'crit'); return true; }
-    navigator.clipboard.writeText(nachrichtFuer(akquise.daten.vorlage, f.name)).then(
+    const text = aktuellerText(f);
+    if (!text.trim()) { toast('Bitte zuerst eine Nachricht eintragen.', 'crit'); return true; }
+    navigator.clipboard.writeText(text).then(
       () => { k.textContent = 'Kopiert'; setTimeout(() => { k.textContent = 'Text kopieren'; }, 1800); },
       () => toast('Kopieren fehlgeschlagen – Browser erlaubt die Zwischenablage nicht.', 'crit'),
     );
+    return true;
+  }
+  const mail = ev.target.closest('[data-akq-mail]');
+  if (mail) {
+    const f = akquise.daten?.firmen?.find(x => x.id === mail.dataset.akqMail);
+    const email = f && kontaktTeile(f.kontakt).email;
+    const text = f ? aktuellerText(f) : '';
+    if (!email || !text.trim()) { ev.preventDefault(); toast('Bitte zuerst eine Nachricht eintragen.', 'crit'); return true; }
+    mail.href = mailtoLink(email, text);
     return true;
   }
   const b = ev.target.closest('[data-akq-aktion]');
@@ -255,7 +274,9 @@ export function akquiseKlick(ev) {
   switch (b.dataset.akqAktion) {
     case 'antwort-offen': akquise.antwort = id; render(); document.getElementById('akq-was')?.focus(); break;
     case 'antwort-zu': akquise.antwort = ''; render(); break;
-    case 'angeschrieben': speichere(id, { status: 'angeschrieben' }, r => `Gespeichert: angeschrieben${am(r.wiedervorlage)}`); break;
+    case 'angeschrieben':
+      if (!window.confirm(`Haben Sie ${f.name} tatsächlich angeschrieben oder angerufen? Erst bestätigen, wenn der Kontakt erfolgt ist. Kopieren oder „E-Mail öffnen“ reicht dafür nicht.`)) break;
+      speichere(id, { status: 'angeschrieben' }, r => `Gespeichert: angeschrieben${am(r.wiedervorlage)}`); break;
     case 'nachgefasst': speichere(id, { aktion: 'nachgefasst' }, r => `Gespeichert: nachgefasst${am(r.wiedervorlage)}`); break;
     case 'termin': speichere(id, { status: 'termin', notiz: mitNotiz(f, 'Termin vereinbaren'), wiedervorlage: plusTage(tag, SPAETER_TAGE) }, r => `Gespeichert: Termin vereinbaren${am(r.wiedervorlage)}`); break;
     case 'angebot': speichere(id, { status: 'antwort', notiz: mitNotiz(f, 'Angebot schicken'), wiedervorlage: plusTage(tag, SPAETER_TAGE) }, r => `Gespeichert: Angebot schicken${am(r.wiedervorlage)}`); break;
@@ -267,5 +288,10 @@ export function akquiseKlick(ev) {
   return true;
 }
 
-/** Keine Formularfelder mehr ausserhalb der Karte - change bleibt fuer Kompatibilitaet. */
-export function akquiseAenderung() { return false; }
+/** Entwurf pro Firma nur im aktuellen Browserzustand halten; kein API-Schreibvorgang. */
+export function akquiseAenderung(ev) {
+  const id = ev.target.dataset?.akqNachricht;
+  if (!id || !akquise.daten?.firmen?.some(f => f.id === id)) return false;
+  akquise.entwuerfe[id] = ev.target.value;
+  return true;
+}
