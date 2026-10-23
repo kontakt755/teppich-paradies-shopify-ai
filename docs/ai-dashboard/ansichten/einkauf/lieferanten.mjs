@@ -451,7 +451,7 @@ function zeichneDialog() {
     <p class="notice warn" data-lf-fehler role="alert"${dialog.fehler ? '' : ' hidden'}>${esc(dialog.fehler || '')}</p>
     <button type="button" class="btn btn-sm" data-lf-neu${dialog.fehler ? '' : ' hidden'}>Vorbereitung erneut prüfen</button>
     ${inhalt}
-    <div class="actions"><span class="small muted lf-nie">Es wird nichts automatisch gesendet.</span><button type="button" class="btn" data-close-dialog>Schließen</button></div>
+    <div class="actions"><span class="small muted lf-nie">Aus diesem Dialog wird nichts gesendet. Freigegebene kostenlose Muster bestellt die Automatik.</span><button type="button" class="btn" data-close-dialog>Schließen</button></div>
   </div></div>`;
 }
 

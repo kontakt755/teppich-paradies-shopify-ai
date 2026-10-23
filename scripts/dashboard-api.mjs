@@ -19,6 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { createHash } from 'node:crypto';
+import { musterAutomatikLauf, musterAutomatikAnzeige } from '../operations/lib/muster-bestellautomatik.mjs';
 import { vorbereitungStand } from '../operations/lib/bestellvorbereitung.mjs';
 import { arbeitsstand } from '../operations/lib/arbeitsstand.mjs';
 import { personId as bestellPersonId } from '../docs/ai-dashboard/lib/beschaffung.mjs';
@@ -77,7 +78,7 @@ import { rollenware, paketware, stueck as stueckware, formatDe, UNGEKLAERT as ME
 import { ausVariantentitel } from '../operations/lib/resolve.mjs';
 import { ladeEnvLocal, erzeugeProxy, KEIN_ZUGANG, mitHinweis } from '../operations/sync/zugang.mjs';
 import { leseAkquiseCsv, vorlageAusMarkdown, wendeAenderungAn, akquiseId, pruefeReferenz } from '../docs/ai-dashboard/lib/akquise.mjs';
-import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, SonderpostenFehler } from '../operations/lib/sonderposten.mjs';
+import { leseListe as leseSonderposten, verkaufeImLaden, verkaufeVonRolle, korrigiereRollenbestand, SonderpostenFehler } from '../operations/lib/sonderposten.mjs';
 import { ohneUeberholtenFehler } from '../operations/scripts/aktualisieren.mjs';
 import { meldungenPfad, abgleichPfad, meldungAnlegen, alleMeldungen, sichtbareMeldungen, darfMeldungSehen, bildAusUpload, bildDatei, BILDER_MAX, FehlermeldungFehler } from '../operations/lib/fehlermeldungen.mjs';
 import { dashboardLinks } from './weitere-dashboards.mjs';
@@ -1682,7 +1683,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       let katalog = [];
       try { katalog = this._lexikonProdukte(); } catch { /* Optionale Kaufquelle unlesbar: keine Links, Bestellliste bleibt nutzbar. */ }
       const haken = leseBestellmarken(bestellmarkenPfad(dir));
-      return { verfuegbar: true, zeilen: bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, abgehakt: haken[z.orderId] || null, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) })) };
+      const musterAutomatik = musterAutomatikAnzeige(dir, { modell, statusAlle, stammdaten: leseStammdaten(stammdatenPfad(dir)) }, katalog, now());
+      return { verfuegbar: true, musterAutomatik: { aktiv: musterAutomatik.aktiv, hinweis: musterAutomatik.hinweis }, zeilen: bestellliste(modell, { statusAlle, rueckrufeAlle }).map(z => ({ ...z, musterAutomatik: musterAutomatik.auftraege[z.orderId] || null, abgehakt: haken[z.orderId] || null, musterKaufLinks: musterKaufLinks(z.auftrag?.positionen, katalog), ...zeitleistenFelder(zl.get(z.orderId)), ...versandFelder(z.auftrag, statusAlle) })) };
     },
 
     /** Rein lesende Aggregate, ohne Kundennamen oder zweite Bestellablage. */
@@ -2385,6 +2387,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           absenderHinterlegt: !!(stammdaten.absender.firma || stammdaten.absender.kontaktName || stammdaten.absender.lieferanschrift),
         },
       };
+    },
+
+    async musterBestellungenAutomatisch({ probe = false, senden = smtpSenden } = {}) {
+      const dir = privatDirPath || privatDir();
+      return musterAutomatikLauf({ dir, kontext: () => this._lieferantenKontext(), katalog: () => this._lexikonProdukte(), jetzt: now(), probe, senden });
     },
 
     /** Alle Lieferanten mit Stammdaten, offenen Positionen je Stufe und ueberfaelligen Bestellungen. */
@@ -4057,6 +4064,26 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * Dialog. Produkt-ID und inventoryItemId werden gegen den frisch gelesenen Stand
      * geprueft.
      */
+    async sonderpostenBestand(payload = {}, benutzer = null) {
+      if (benutzer && benutzer.rolle !== 'inhaber') throw new ApiError(403, 'Bestandskorrekturen macht der Inhaber.');
+      const persoenlich = Boolean(benutzer?.kuerzel && benutzer?.name);
+      const angegeben = String(payload.verkauftVon ?? '').replace(/\s+/g, ' ').trim().slice(0, 60);
+      if (!persoenlich && !angegeben) throw new ApiError(400, 'Bitte angeben, wer den Bestand geprüft hat.', { grund: 'name-fehlt' });
+      const wer = persoenlich ? benutzer.name : angegeben;
+      const zugang = await shopify();
+      if (zugang?.art === 'sammeln') throw new ApiError(503, 'Kein Zugang zu Shopify eingerichtet – nichts geändert.', { grund: 'kein-zugang' });
+      let r;
+      const { produktId, inventoryItemId, laengeM, erwarteterBestand, operationId } = payload;
+      try { r = await korrigiereRollenbestand(zugang.proxy, { produktId, inventoryItemId, laengeM, erwarteterBestand, operationId }); }
+      catch (e) {
+        if (!(e instanceof SonderpostenFehler)) throw e;
+        if (e.extra?.grund === 'unklar') merke(persoenlich ? benutzer : null, wer, 'sonderposten-rollenbestand-unklar', `${payload.produktId} · Vorgang ${payload.operationId} · Ergebnis unklar, Bestand pruefen`);
+        throw new ApiError(e.status, e.message, e.extra);
+      }
+      merke(persoenlich ? benutzer : null, wer, 'sonderposten-rollenbestand', `${r.titel} · gemessen ${r.laengeM} m bei ${r.breiteM} m Breite · physisch ${r.bestandVorher} → ${r.bestandErwartet} m² · ${payload.produktId} · Vorgang ${r.operationId}${r.ok ? '' : ' · Gegenprobe pruefen'}${persoenlich ? '' : ' · Name im gemeinsamen Zugang angegeben'}`);
+      return r;
+    },
+
     async sonderpostenVerkauft(payload, benutzer) {
       const { produktId, inventoryItemId, laengeM } = payload || {};
       if (!produktId) throw new ApiError(400, 'produktId ist Pflicht', { missing: ['produktId'] });

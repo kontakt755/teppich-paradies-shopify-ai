@@ -19,8 +19,7 @@ Grundlage: `audit/tp-operations-v3/` (02 Datenmodell, 05 Entscheidungen,
   und unlesbare Masse heissen `UNGEKLAERT` (D7). Keine Rundungsregeln, die nicht
   in den Rechnern (`blocks/paket-auswahl.liquid`, `blocks/tp-rollware-rechner.liquid`,
   `blocks/tp-zubehoer-menge.liquid`, `assets/tp-masstepich-rechnung.js`) stehen.
-- **Einkauf wird nie automatisch gesendet** (D8). `bestellungAusGruppe` liefert
-  nur den Entwurf.
+- **Waren-Einkauf bleibt ein Entwurf** (D8). Ausnahme nach Inhaberauftrag vom 23.10.2026: explizit freigegebene kostenlose Muster werden durch `lib/muster-bestellautomatik.mjs` bestellt. Private Empfänger-/Produktgruppenfreigabe, Startzeit und Versandjournal sind Pflicht; kostenpflichtige oder unklare Fälle bleiben offen.
 - Shopify-Schreibzugriff nur auf Order-Metafelder `ops.*` und Tags; nie auf
   Produkte, Preise oder Varianten aus diesem Modul. **Einzige Ausnahme:** der
   Angebote-Abgleich setzt und entfernt am Produkt genau den Tag `angebot`

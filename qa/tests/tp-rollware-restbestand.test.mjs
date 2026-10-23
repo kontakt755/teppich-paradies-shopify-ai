@@ -21,6 +21,7 @@ async function grenze({ limit = 2000, stock = 80, tracked = true, policy = 'deny
 }
 test('80 m2 sind 20 laufende Meter; Verkauf von 8 m2 laesst 18 m uebrig', async () => {
   assert.equal(await grenze(), '2000|true');
+  assert.equal(await grenze({ stock: 100, width: 500 }), '2000|true', '20 m bei 5 m Breite = 100 ganze m2');
   assert.equal(await grenze({ stock: 72 }), '1800|true');
 });
 test('Kein, negativer und knapper Bestand setzen eine echte Obergrenze', async () => {

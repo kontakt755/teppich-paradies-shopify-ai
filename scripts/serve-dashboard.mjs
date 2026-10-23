@@ -298,6 +298,7 @@ function herkunftFehler(req) {
  */
 const RANG = { lesen: 0, mitarbeiter: 1, inhaber: 2 };
 const NUR_INHABER = new Set([
+  'sonderposten/bestand', // Physische Inventur, keine Verkaufsabbuchung.
   'sync',              // GitHub-Issues holen
   'activity',          // Entwicklungsverlauf
   'agent-runs',        // KI-Laeufe
@@ -335,7 +336,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
   // Bestelltabelle, Lexikon samt Mengenhilfe und die neuen Datenarten
   // (Kunden, Angebote, Warenkoerbe, Bestand, Erfuellung) - fehlt einer,
   // antwortet der Server 404.
-  const m = pathname.match(/^\/api\/(?:(capabilities|version|sync|activity|agent-runs|benutzer|protokoll|prozesse\/links|einkauf\/kettelversand|einkauf\/versandtarife|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/shopify-abgleich|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|einkauf\/musterlager|einkauf\/musterlager-farben|einkauf\/reste-abgleich|einkauf\/mustersperre|einkauf\/belege|lexikon\/liste|lexikon\/druckliste|lexikon\/etiketten-status|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/serviceanfragen|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|verbrauch\/claude|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/musteretiketten|kunden\/muster-packen|kunden\/musterwirkung|kunden\/muster-texte|kunden\/nachfassen-abmelden|kunden\/nachfassen-senden|kunden\/bestellung-fertig|kunden\/bestellung-abhaken|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|akquise\/liste|akquise\/aendern|akquise\/referenz|einkauf\/kundentermin|sonderposten\/liste|sonderposten\/verkauft|bildrechte\/liste|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|version|sync|activity|agent-runs|benutzer|protokoll|prozesse\/links|einkauf\/kettelversand|einkauf\/versandtarife|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/shopify-abgleich|einkauf\/kennzahlen|einkauf\/lieferanten|einkauf\/lieferant|einkauf\/bestellmail|einkauf\/musterlager|einkauf\/musterlager-farben|einkauf\/reste-abgleich|einkauf\/mustersperre|einkauf\/belege|lexikon\/liste|lexikon\/druckliste|lexikon\/etiketten-status|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/serviceanfragen|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|verbrauch\/claude|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/musteretiketten|kunden\/muster-packen|kunden\/musterwirkung|kunden\/muster-texte|kunden\/nachfassen-abmelden|kunden\/nachfassen-senden|kunden\/bestellung-fertig|kunden\/bestellung-abhaken|kunden\/faelle|kunden\/fall-marke|org\/liste|org\/zu-kunde|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|social\/zugaenge|social\/link-neu|social\/sperren|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen|akquise\/liste|akquise\/aendern|akquise\/referenz|einkauf\/kundentermin|sonderposten\/liste|sonderposten\/verkauft|sonderposten\/bestand|bildrechte\/liste|laden\/zahlen|fehler\/melden|fehler\/liste|fehler\/bild)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { apiFehler(req, res, pathname, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
   // Host-Pruefung fuer JEDEN Aufruf, nicht nur fuer schreibende: sonst kann
@@ -345,7 +346,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     apiFehler(req, res, pathname, 403, { error: 'Dafür fehlt dir die Berechtigung – das macht der Inhaber.' });
     return;
   }
-  const write = (simple === 'kunden/musteretiketten' && req.method === 'POST') || (simple === 'kunden/muster-packen' && req.method === 'POST') || (simple === 'lexikon/druckliste' && req.method === 'POST') || (simple === 'prozesse/links' && req.method === 'POST') || simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'einkauf/musterlager' && req.method === 'POST') || (simple === 'einkauf/mustersperre' && req.method === 'POST') || (simple === 'einkauf/belege' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || (simple === 'kunden/serviceanfragen' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || simple === 'kunden/bestellung-abhaken' || simple === 'kunden/nachfassen-abmelden' || simple === 'kunden/nachfassen-senden' || simple === 'kunden/fall-marke' || ['org/neu', 'org/aendern', 'org/kommentar', 'org/pruefen', 'org/analyse', 'org/liste-einfuegen', 'org/anhang', 'fotos/neu', 'social/link-neu', 'social/sperren', 'sonderposten/verkauft', 'akquise/aendern', 'akquise/referenz', 'einkauf/kundentermin', 'fehler/melden'].includes(simple) || ['transition', 'assign', 'comment'].includes(taskOp);
+  const write = (simple === 'kunden/musteretiketten' && req.method === 'POST') || (simple === 'kunden/muster-packen' && req.method === 'POST') || (simple === 'lexikon/druckliste' && req.method === 'POST') || (simple === 'prozesse/links' && req.method === 'POST') || simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'einkauf/musterlager' && req.method === 'POST') || (simple === 'einkauf/mustersperre' && req.method === 'POST') || (simple === 'einkauf/belege' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || (simple === 'kunden/serviceanfragen' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || simple === 'kunden/bestellung-abhaken' || simple === 'kunden/nachfassen-abmelden' || simple === 'kunden/nachfassen-senden' || simple === 'kunden/fall-marke' || ['org/neu', 'org/aendern', 'org/kommentar', 'org/pruefen', 'org/analyse', 'org/liste-einfuegen', 'org/anhang', 'fotos/neu', 'social/link-neu', 'social/sperren', 'sonderposten/verkauft', 'sonderposten/bestand', 'akquise/aendern', 'akquise/referenz', 'einkauf/kundentermin', 'fehler/melden'].includes(simple) || ['transition', 'assign', 'comment'].includes(taskOp);
   try {
     // Lesen darf jeder. Einrichtungsziele aendern ausschliesslich der Inhaber
     // oder der bestehende Einzelpasswort-Zugang; kein neues Benutzerkonto noetig.
@@ -495,6 +496,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     // Schreibt nach Shopify (Bestand, Verkaufsfelder) - steht deshalb oben in der write-Liste:
     // Rolle "lesen" bekommt 403, mitarbeiter und inhaber duerfen.
     else if (simple === 'sonderposten/verkauft') result = await api.sonderpostenVerkauft(await readJson(req), benutzer);
+    else if (simple === 'sonderposten/bestand') result = await api.sonderpostenBestand(await readJson(req), benutzer);
     // Fehler melden: `benutzer` aus der Sitzung, nie aus der Anfrage - sonst
     // koennte jemand im Namen eines Kollegen melden oder dessen Meldungen lesen.
     // Bis zu drei Bildschirmfotos als base64 - deshalb die Upload-Grenze.
@@ -708,6 +710,11 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     // niemand das Control Center offen hat (operations/lib/shopify-abgleich.mjs). Prueft nur
     // Groesse und Zeit von orders.json; gerechnet wird erst bei einem neuen Export.
     setInterval(() => { try { api.shopifyAbgleich(); } catch (e) { logFehler('abgleich', String(e?.message || e).split('\n')[0]); } }, 60_000).unref();
+    if (!process.env.TP_DASHBOARD_DATENKOPIE) {
+      const musterLauf = () => api.musterBestellungenAutomatisch().catch(() => logFehler('muster-bestellung', 'Automatische Musterbestellung unterbrochen. Bestellstand prüfen.'));
+      setInterval(musterLauf, 60_000).unref();
+      musterLauf();
+    }
     if (NEUBAU_MINUTEN > 0) {
       setInterval(regelmaessigNeubauen, NEUBAU_MINUTEN * 60_000).unref();
       console.log(`Aufgabendaten (issues.json) werden alle ${NEUBAU_MINUTEN} Minuten neu geholt.`);

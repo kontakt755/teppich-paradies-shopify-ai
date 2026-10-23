@@ -3,14 +3,14 @@
   "live": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-10-23T09:29:20.463738Z",
-    "verifiedBy": "Shopify CLI theme list nach workflow:live (main a36b606d, PR #1634/#1635/#1636); Rolle live bestaetigt."
+    "verifiedAt": "2026-10-23T11:06:45Z",
+    "verifiedBy": "Shopify CLI theme list nach workflow:live (main ebcd5aae, PR #1642/#1644); Rolle live frisch bestaetigt."
   },
   "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-10-23T09:29:20.463738Z",
-    "verifiedBy": "Shopify CLI theme list nach workflow:live (main a36b606d, PR #1634/#1635/#1636); Rolle unpublished bestaetigt."
+    "verifiedAt": "2026-10-23T11:06:45Z",
+    "verifiedBy": "Shopify CLI theme list nach workflow:live (main ebcd5aae, PR #1642/#1644); Rolle unpublished frisch bestaetigt."
   },
   "fallback": {
     "themeId": "206590509390",
@@ -27,6 +27,18 @@
     "note": "Einziges Ziel fuer Zwischenstaende und Ausprobieren (nur --only-Pushes). Niemals als --theme-id fuer workflow:preview/live verwenden, niemals publishen. Das Preview-Ziel ist ausschliesslich preview.themeId - wer dorthin Zwischenstaende pusht, blockiert den Livegang (PREVIEW_DRIFT/PREVIEW_DIFF, dreimal am 2026-09-21/22)."
   },
   "retired": [
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-10-23",
+      "note": "Durch workflow:live (main ebcd5aae, PR #1642/#1644) abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen frisch per Shopify CLI bestaetigt."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-10-23",
+      "note": "Durch workflow:live (main 5f8cae35, PR #1639) abgeloest; bleibt unpublished als naechstes Preview-Ziel. Rollen frisch per Shopify CLI bestaetigt."
+    },
     {
       "themeId": "204438208846",
       "name": "preview-main-2026-09-15",

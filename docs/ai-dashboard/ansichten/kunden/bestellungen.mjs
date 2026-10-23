@@ -1,3 +1,4 @@
+import { musterAutomatikHtml } from '../../bausteine/muster-bestellanzeige.mjs';
 /**
  * Kunden, Reiter "Bestellungen": vollwertige Bestellliste wie im Shopify-Admin,
  * nur uebersichtlicher. Eine Zeile je Bestellung, sortierbar, filterbar,
@@ -218,6 +219,7 @@ function inhaltHtml(z) {
   if (i.ware.anzahl) {
     zeilen.push(`<div class="bq-inhalt-zeile"><span class="bq-art bq-art-ware">${esc(i.ware.anzahl === 1 ? '1 Artikel' : `${i.ware.anzahl} Artikel`)}</span> <span class="bq-was">${esc(i.ware.text)}</span></div>`);
   }
+  if (z.musterAutomatik) zeilen.push(musterAutomatikHtml(z.musterAutomatik));
   return zeilen.join('');
 }
 
@@ -367,6 +369,8 @@ export function viewKundenBestellungen() {
   const pruefLink = new URLSearchParams(params);
   pruefLink.set('bfilter', 'pruefen'); pruefLink.delete('bseite');
   return `
+    ${art !== 'ware' && d.musterAutomatik?.hinweis ? `<p class="notice warn">${esc(d.musterAutomatik.hinweis)}</p>` : ''}
+    ${art !== 'ware' && d.musterAutomatik?.aktiv ? '<p class="small muted">Neue vollständige, kostenlose Muster werden automatisch bestellt. Bestellte Muster und Klärfälle stehen direkt beim Kunden.</p>' : ''}
     ${pruefen && filter !== 'pruefen' ? `<p class="notice warn"><a href="#/kunden?${esc(pruefLink)}">${plural(pruefen, 'Bestellung braucht', 'Bestellungen brauchen')} Kontrolle</a> – etwa ein manueller Haken ohne Versandnachweis oder unklare Artikel.</p>` : ''}
     ${filter === 'pruefen' ? '<p class="notice warn">Hier bleiben auch manuell abgehakte Fälle sichtbar. Prüfe den Versand- und Artikelstand, bevor du einen Fall abschließt.</p>' : ''}
     ${filter === 'alle' ? '<p class="small muted">Alle echten Bestellungen im Betriebsbestand: letzte 90 Tage sowie ältere mit offenem Versand oder offener Zahlung. Ältere vollständig abgeschlossene Bestellungen findest du in Shopify.</p>' : ''}
