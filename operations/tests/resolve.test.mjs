@@ -191,6 +191,36 @@ test('Rollenbestand: Teppich nach Mass ohne Verweis bleibt bei der Flaechenpruef
   assert.equal(r.masspruefung.hinweis, undefined);
 });
 
+const gerichtet = (masse = '200 × 300 cm') => {
+  const t = yTeppich(masse);
+  return { ...t, variant: { ...massVariante, product: { ...massVariante.product, metafields: [...massVariante.product.metafields, mf('custom', 'rollenzuschnitt_richtung', 'laengs')] } } };
+};
+const gerichteteKomponente = (menge) => ({ ...yKomponente(menge), lineItemGroup: { ...yKomponente().lineItemGroup, productId: 'gid://shopify/Product/16134901629262' } });
+
+test('Gerichteter Rollenbestand: 2 x 3 m braucht 12 m², zu kleine gedrehte Komponente warnt', () => {
+  assert.equal(aufloesen([gerichtet(), gerichteteKomponente(12)])[0].masspruefung.status, 'ok');
+  assert.equal(aufloesen([gerichtet(), gerichteteKomponente(8)])[0].masspruefung.status, 'abweichung');
+  assert.equal(aufloesen([gerichtet('500 × 300 cm'), gerichteteKomponente(12)])[0].masspruefung.status, 'unlesbar');
+});
+
+test('Gerichteter Rollenbestand: Komponenten fremder Quellen und unbekannte Parent-Zuordnung gleichen keine Fehlmenge aus', () => {
+  const fremd = { ...gerichteteKomponente(4), lineItemGroup: { ...gerichteteKomponente(4).lineItemGroup, productId: 'gid://shopify/Product/fremd' } };
+  assert.equal(aufloesen([gerichtet(), gerichteteKomponente(8), fremd])[0].masspruefung.status, 'abweichung');
+  assert.notEqual(aufloesen([gerichtet(), yKomponente(12)])[0].masspruefung.status, 'ok');
+});
+
+test('Gemischte alte und gerichtete Quellen werden auch am Altangebot getrennt geprüft', () => {
+  const neu = gerichtet();
+  neu.variant = { ...neu.variant, product: { ...neu.variant.product, metafields: [...neu.variant.product.metafields.filter(f => f.key !== 'zuschnitt_von_rolle'), mf('custom', 'zuschnitt_von_rolle', 'gid://shopify/Product/neu')] } };
+  const k5 = { ...gerichteteKomponente(15), variant: { ...rolleVariante, metafields: [mf('custom', 'rollenbreite', '5.0')] }, lineItemGroup: { ...gerichteteKomponente(15).lineItemGroup, productId: 'gid://shopify/Product/neu' } };
+  const falsch = aufloesen([yTeppich(), gerichteteKomponente(5), neu, k5]);
+  assert.equal(falsch[0].masspruefung.status, 'abweichung');
+  assert.equal(falsch[2].masspruefung.status, 'ok');
+  const korrekt = aufloesen([k5, yTeppich(), gerichteteKomponente(8), neu]);
+  assert.equal(korrekt[1].masspruefung.status, 'ok');
+  assert.equal(korrekt[3].masspruefung.status, 'ok');
+});
+
 test('Rollenbestand: Komponente eines anderen Bundles bleibt normale Position', () => {
   const fremd = { id: 'f', sku: 'SET-1', quantity: 2, customAttributes: [],
     variant: { id: 'gid://shopify/ProductVariant/1', sku: 'SET-1', metafields: [], product: { id: 'gid://shopify/Product/1', handle: 'kleber', metafields: [] } },

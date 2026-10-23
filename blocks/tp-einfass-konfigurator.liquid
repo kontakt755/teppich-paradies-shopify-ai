@@ -5,7 +5,7 @@
 
   Fail closed - der Block rendert nichts, sobald eine Angabe fehlt oder
   unbekannt ist:
-    service.einfassung      Cover | Ketteln | Einfassband | Paspelband | Fertig
+    service.einfassung      Cover | Ketteln | Einfassband | Paspelband | Fertig | Raummaß
                             (Fertig = Wunschmass, vom Hersteller eingefasst;
                             optional service.kg_pro_qm + service.max_gewicht_kg
                             als Gewichtsgrenze, Pauschale je Teppich ueber die
@@ -41,7 +41,9 @@
 {%- liquid
   assign tp_ek_id = block.id | replace: '_', '' | downcase
   assign tp_ek_art = product.metafields.service.einfassung.value | strip | downcase
-  assign tp_ek_arten = 'cover,ketteln,einfassband,paspelband,fertig' | split: ','
+  assign tp_ek_art = tp_ek_art | replace: 'ß', 'ss'
+  assign tp_ek_arten = 'cover,ketteln,einfassband,paspelband,fertig,raummass' | split: ','
+  assign tp_ek_richtung = product.metafields.custom.rollenzuschnitt_richtung.value | strip | downcase
   # Groesste Breite kommt vom Teppichboden (snippets/tp-teppich-max-breite), hier ueber
   # alle Farben; je Farbe steht sie unten an der Variante.
   capture tp_ek_max_b
@@ -99,6 +101,9 @@
     endcase
   endfor
   if tp_ek_formen == blank
+    assign tp_ek_formen = 'rechteck,'
+  endif
+  if tp_ek_art == 'raummass'
     assign tp_ek_formen = 'rechteck,'
   endif
   assign tp_ek_formen = tp_ek_formen | split: ','
@@ -207,6 +212,14 @@
     endif
   endfor
   assign tp_ek_rollen_liste = tp_ek_rollen | split: ','
+
+  capture tp_ek_freigabe
+    render 'tp-restrolle-freigegeben', product: product, erlaube_alt: true
+  endcapture
+  assign tp_ek_freigabe = tp_ek_freigabe | strip
+  unless tp_ek_freigabe == 'ja'
+    assign tp_ek_ok = false
+  endunless
 -%}
 
 {%- if tp_ek_ok and tp_ek_anzahl > 0 -%}
@@ -393,7 +406,7 @@
           Sonst bleibt es bei der einen Zahl (Inhaber 2026-09-20).
         {%- endcomment -%}
         <p class="tp-ek__rechenzeile" data-rechenzeile hidden></p>
-        <p class="tp-ek__preishinweis">{% if tp_ek_art == 'fertig' %}Vom Hersteller nach Ihrem Maß {{ tp_ek_ph[4] }}{% if tp_ek_pauschale_v %}, inklusive Fertigungs- und Versandpauschale{% endif %}. Lieferzeit ca. 14 Tage.{% elsif tp_ek_kante_inkl %}Inklusive Zuschnitt und Kettelung rundum – die Kettelung ist im Quadratmeterpreis bereits enthalten.{% else %}Inklusive Zuschnitt und Einfassung rundum.{% endif %} Inkl. MwSt.; <a href="{{ pages['versand-lieferung'].url | default: '/pages/versand-lieferung' }}">Versand</a> in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos.{% if tp_ek_lieferzeit != blank %}<br>Lieferzeit: {{ tp_ek_lieferzeit | escape }}.{% endif %}</p>
+        <p class="tp-ek__preishinweis">{% if tp_ek_art == 'raummass' %}Inklusive Zuschnitt nach Maß, ohne Einfassung.{% elsif tp_ek_art == 'fertig' %}Vom Hersteller nach Ihrem Maß {{ tp_ek_ph[4] }}{% if tp_ek_pauschale_v %}, inklusive Fertigungs- und Versandpauschale{% endif %}. Lieferzeit ca. 14 Tage.{% elsif tp_ek_kante_inkl %}Inklusive Zuschnitt und Kettelung rundum – die Kettelung ist im Quadratmeterpreis bereits enthalten.{% else %}Inklusive Zuschnitt und Einfassung rundum.{% endif %} Inkl. MwSt.; <a href="{{ pages['versand-lieferung'].url | default: '/pages/versand-lieferung' }}">Versand</a> in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos.{% if tp_ek_lieferzeit != blank %}<br>Lieferzeit: {{ tp_ek_lieferzeit | escape }}.{% endif %}</p>
         {%- comment -%}
           Keine Rechenaufschluesselung in der Kundenansicht (Entscheidung 2026-09-20):
           sichtbar sind Endpreis und die zwei Hinweise, die den Preis erklaeren muessen.
@@ -542,6 +555,7 @@
     <script type="application/json" data-tp-ek-daten>
       {
         "art": {{ tp_ek_art | json }},
+        "rollenrichtung": {{ tp_ek_richtung | json }},
         "max_breite_cm": {{ tp_ek_max_b | json }},
         "max_laenge_cm": {{ tp_ek_max_l | json }},
         "min_seite_cm": {{ tp_ek_min_cm | json }},

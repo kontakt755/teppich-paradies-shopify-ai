@@ -9,6 +9,7 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { runInNewContext } from 'node:vm';
 import { Liquid } from 'liquidjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
@@ -153,4 +154,98 @@ test('Wechsel-Block: eine Einfassart allein zeigt weiter den Weg zur Meterware',
   const html = await engine.parseAndRender(wechsel, { product, block: { id: 'ew_1', shopify_attributes: '' } });
   assert.match(html, /Als Teppichboden von der Rolle bestellen/);
   assert.doesNotMatch(html, /tp-ew__chip/);
+});
+
+function rollenGruppe() {
+  const liste = [produkt(11, 'Raummaß'), produkt(12, 'Ketteln')];
+  const basis = {
+    id: 50, available: true, url: '/products/restrolle',
+    metafields: { custom: { max_roll_laenge_cm: val(600) } },
+    variants: [{ id: 500, available: true, inventory_management: 'shopify', inventory_policy: 'deny', inventory_quantity: 24,
+      metafields: { custom: { rollenbreite: val(4) } } }],
+  };
+  const bundle = { id: 60, variants: [{ id: 601, price: 79, available: true }] };
+  for (const p of liste) {
+    p.metafields.custom = { preis_pro_001_qm: val(true), zuschnitt_von_rolle: val(bundle), rollenzuschnitt_richtung: val('laengs') };
+    p.metafields.service.max_breite_cm = val(400);
+    p.metafields.service.einfass_basis = val(basis);
+    p.metafields.service.einfass_gruppe = val(liste);
+    p.selected_or_first_available_variant = p.variants[0];
+  }
+  return liste;
+}
+
+const renderWechsel = (product) => engine.parseAndRender(wechsel, { product, block: { id: 'ew_1', shopify_attributes: '' } });
+
+test('Wechsel-Block: Laengs-Bundle bietet Raummaß ohne Kettelung und Gekettelt in beide Richtungen', async () => {
+  const liste = rollenGruppe();
+  for (const p of liste) {
+    const html = await renderWechsel(p);
+    assert.match(html, /aria-label="Zuschnitt wählen"/);
+    assert.match(html, /Raummaß ohne Kettelung/);
+    assert.match(html, /Gekettelt/);
+    assert.match(html, /aria-current="page"/);
+    assert.equal((html.match(/data-ew-ziel=/g) || []).length, 1);
+    assert.doesNotMatch(html, /Als Teppichboden von der Rolle bestellen/);
+    assert.match(html, /\['breite', 'laenge'\]/, 'Masse werden beim Wechsel mitgenommen');
+  }
+});
+
+test('Wechsel-Block: Ziel behaelt Quellvariante und eingegebene gerichtete Masse', async () => {
+  const [p] = rollenGruppe();
+  const html = await renderWechsel(p);
+  const json = html.match(/<script type="application\/json" data-ew-daten>([\s\S]*?)<\/script>/)[1];
+  const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  const attribute = { href: '/products/p12', 'data-ew-ziel': '12' };
+  const link = { style: {}, getAttribute: (name) => attribute[name], setAttribute: (name, value) => { attribute[name] = value; } };
+  const nav = { querySelector: (selector) => selector === '[data-ew-daten]' ? { textContent: json } : null,
+    querySelectorAll: () => [link], addEventListener() {} };
+  runInNewContext(script, {
+    document: {
+      getElementById: () => nav, addEventListener() {},
+      querySelector: () => ({ querySelector: (selector) => ({ value: selector === '[data-breite]' ? '123' : '456' }) }),
+    },
+    window: { location: { href: 'https://beispiel.test/products/p11?variant=111', search: '?variant=111' } },
+    URL, URLSearchParams, setTimeout: (fn) => fn(),
+  });
+  const ziel = new URL(attribute.href);
+  assert.equal(ziel.pathname, '/products/p12');
+  assert.equal(ziel.searchParams.get('variant'), '121');
+  assert.equal(ziel.searchParams.get('breite'), '123');
+  assert.equal(ziel.searchParams.get('laenge'), '456');
+  assert.equal(link.style.display, '');
+});
+
+test('Wechsel-Block: Raummaß ohne bestaetigtes Laengs-Bundle bleibt unsichtbar', async () => {
+  for (const aendern of [
+    (p) => { delete p.metafields.custom.zuschnitt_von_rolle; },
+    (p) => { p.metafields.custom.zuschnitt_von_rolle = val({ id: 60, variants: [] }); },
+    (p) => { p.metafields.custom.rollenzuschnitt_richtung = val('quer'); },
+    (p) => { delete p.metafields.service.einfass_basis; },
+    (p) => { p.metafields.custom.preis_pro_001_qm = val(false); },
+    (p) => { p.metafields.service.max_laenge_cm = val(0); },
+    (p) => { delete p.variants[0].metafields.service.einfassen; },
+  ]) {
+    const [p] = rollenGruppe();
+    aendern(p);
+    assert.equal((await renderWechsel(p)).trim(), '');
+  }
+});
+
+test('Wechsel-Block: fremde Rollenquelle, anderes Bundle und gesperrte Entwuerfe sind keine Ziele', async () => {
+  for (const aendern of [
+    (p) => { p.metafields.service.einfass_basis = val({ id: 51 }); },
+    (p) => { p.metafields.custom.zuschnitt_von_rolle = val({ id: 61, variants: [{ id: 611 }] }); },
+    (p) => { p.metafields.custom.rollenzuschnitt_richtung = val('quer'); },
+    (p) => { p.metafields.service.max_laenge_cm = val(0); },
+    (p) => { delete p.variants[0].metafields.service.einfassen; },
+    (p) => { p.variants[0].available = false; },
+    (p) => { p.available = false; },
+    (p) => { p.metafields.service.einfass_basis.value.variants[0].inventory_quantity = 0; },
+    (p) => { p.metafields.service.einfass_basis.value.variants[0].inventory_policy = 'continue'; },
+  ]) {
+    const [p, ziel] = rollenGruppe();
+    aendern(ziel);
+    assert.equal((await renderWechsel(p)).trim(), '');
+  }
 });
