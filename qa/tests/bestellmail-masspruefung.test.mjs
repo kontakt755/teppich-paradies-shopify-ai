@@ -139,6 +139,47 @@ test('Rollenbestand 0,57 EUR – Teppich mit einer Einheit weniger ist ehrlich',
   assert.ok(!/ROLLENBESTAND NICHT|OHNE TEPPICH – NICHTS/.test(html));
   assert.ok(html.includes('Bestandsabgang zum Maßteppich'), 'Komponente bleibt Bestandsabgang (line.groups)');
 });
+
+function gerichteterTeppich(masse = '200 × 300 cm', quelle = 101, breite = 400) {
+  const t = yasmin(599, masse, { '_Einheit im Zuschnitt': '1' });
+  return { ...t, product: { ...t.product, metafields: {
+    ...t.product.metafields,
+    custom: { ...t.product.metafields.custom, rollenzuschnitt_richtung: 'laengs' },
+    service: { ...t.product.metafields.service, max_breite_cm: breite, einfass_basis: { value: { id: quelle } } },
+  } } };
+}
+function gerichteterAbgang(menge, quelle = 101) {
+  const k = komponente057(menge);
+  return { ...k, product: { ...k.product, id: quelle } };
+}
+test('Gerichteter Rollenbestand: Breite quer, Länge längs ohne stille Drehung', async () => {
+  const html = await render([gerichteterTeppich(), yKettel(1000), gerichteterAbgang(12)]);
+  assert.match(html, /300 cm = 12 m² Bestand/);
+  assert.doesNotMatch(html, /ROLLENBESTAND NICHT|NICHT ZUSCHNEIDEN/);
+  const falsch = await render([gerichteterTeppich(), yKettel(1000), gerichteterAbgang(8)]);
+  assert.match(falsch, /ROLLENBESTAND NICHT VOLL ABGEBUCHT/);
+  const zuBreit = await render([gerichteterTeppich('500 × 300 cm'), gerichteterAbgang(12)]);
+  assert.match(zuBreit, /ROLLENBESTAND NICHT PRÜFBAR/);
+});
+
+test('Gerichteter Rollenbestand: Mehrabgang einer fremden Quelle kaschiert keine Fehlmenge', async () => {
+  const t2 = gerichteterTeppich('200 × 300 cm', 102, 500);
+  const korrekt = await render([gerichteterTeppich(), gerichteterAbgang(12), t2, gerichteterAbgang(15, 102)]);
+  assert.doesNotMatch(korrekt, /ROLLENBESTAND NICHT/);
+  const falsch = await render([gerichteterTeppich(), gerichteterAbgang(8), t2, gerichteterAbgang(19, 102)]);
+  assert.match(falsch, /ROLLENBESTAND NICHT VOLL ABGEBUCHT/);
+  assert.match(falsch, /Mehrbestand einer anderen Rolle/);
+});
+
+test('Gemischte alte und gerichtete Quellen: eigener Alt-Abgang bleibt erforderlich', async () => {
+  const alt = yasmin(599, '200 × 300 cm', { '_Einheit im Zuschnitt': '1' });
+  alt.product = { ...alt.product, metafields: { ...alt.product.metafields, service: { ...alt.product.metafields.service, einfass_basis: { value: { id: 101 } } } } };
+  const neu = gerichteterTeppich('200 × 300 cm', 102, 500);
+  const falsch = await render([alt, gerichteterAbgang(5), neu, gerichteterAbgang(18, 102)]);
+  assert.match(falsch, /ROLLENBESTAND NICHT VOLL ABGEBUCHT/);
+  const korrekt = await render([alt, gerichteterAbgang(8), neu, gerichteterAbgang(15, 102)]);
+  assert.doesNotMatch(korrekt, /ROLLENBESTAND NICHT/);
+});
 test('Rollenbestand 0,57 EUR – Komponente ohne line.groups wird trotzdem erkannt', async () => {
   const k = { ...komponente(8, 'preis'), final_price: 7 };
   const html = await render([yasmin(599, '200 × 300 cm', { '_Einheit im Zuschnitt': '1' }), yKettel(1000), k]);

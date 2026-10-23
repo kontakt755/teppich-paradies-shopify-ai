@@ -172,6 +172,16 @@
     assign tp_rz_rb_ref = 0
     assign tp_rz_teppiche = 0
     assign tp_rz_unlesbar = false
+    assign tp_rz_gerichtete_quellen = ','
+    assign tp_rz_gerichtete_bedarfe = ''
+    assign tp_rz_quellen_pruefen = false
+    for tp_rz_vorab in line_items
+      assign tp_rz_vorab_feld = tp_rz_vorab.product.metafields.custom.rollenzuschnitt_richtung
+      assign tp_rz_vorab_richtung = tp_rz_vorab_feld.value | default: tp_rz_vorab_feld | append: '' | strip | downcase
+      if tp_rz_vorab_richtung == 'laengs'
+        assign tp_rz_quellen_pruefen = true
+      endif
+    endfor
   -%}
   {%- capture tp_mp_tabelle -%}
   <p style="margin:0 0 4px;font-weight:bold;">Artikel mit Großhändler-ID</p>
@@ -513,8 +523,30 @@
             else
               assign tp_rz_cm = tp_rz_lang
             endif
+            assign tp_rz_richtung_feld = line.product.metafields.custom.rollenzuschnitt_richtung
+            assign tp_rz_richtung = tp_rz_richtung_feld.value | default: tp_rz_richtung_feld | append: '' | strip | downcase
+            if tp_rz_richtung == 'laengs'
+              assign tp_rz_cm = tp_mp_l
+              if tp_mp_w > tp_rz_rb
+                assign tp_rz_unlesbar = true
+              endif
+            elsif tp_rz_richtung != blank
+              assign tp_rz_unlesbar = true
+            endif
             assign tp_rz_einh = tp_rz_cm | times: tp_rz_rb | plus: 9999 | divided_by: 10000 | floor
             assign tp_rz_bedarf = tp_rz_bedarf | plus: tp_rz_einh
+            if tp_rz_quellen_pruefen
+              assign tp_rz_quelle = line.product.metafields.service.einfass_basis.value.id | append: ''
+              if tp_rz_quelle == blank
+                assign tp_rz_unlesbar = true
+              else
+                assign tp_rz_quell_key = ',' | append: tp_rz_quelle | append: ','
+                unless tp_rz_gerichtete_quellen contains tp_rz_quell_key
+                  assign tp_rz_gerichtete_quellen = tp_rz_gerichtete_quellen | append: tp_rz_quelle | append: ','
+                endunless
+                assign tp_rz_gerichtete_bedarfe = tp_rz_gerichtete_bedarfe | append: tp_rz_quelle | append: ':' | append: tp_rz_einh | append: ';'
+              endif
+            endif
             assign tp_rz_rb_ref = tp_rz_rb
             assign tp_rz_rolle = 'Rolle: ' | append: tp_rz_cm | append: ' cm = ' | append: tp_rz_einh | append: ' m² Bestand'
           else
@@ -587,6 +619,32 @@
   </table>
   {%- endcapture -%}
   {%- liquid
+    assign tp_rz_quell_fehlt = false
+    assign tp_rz_quell_liste = tp_rz_gerichtete_quellen | split: ','
+    assign tp_rz_bedarfs_liste = tp_rz_gerichtete_bedarfe | split: ';'
+    for tp_rz_q_id in tp_rz_quell_liste
+      if tp_rz_q_id == blank
+        continue
+      endif
+      assign tp_rz_q_soll = 0
+      assign tp_rz_q_ist = 0
+      for tp_rz_q_eintrag in tp_rz_bedarfs_liste
+        assign tp_rz_q_teile = tp_rz_q_eintrag | split: ':'
+        if tp_rz_q_teile.first == tp_rz_q_id
+          assign tp_rz_q_menge = tp_rz_q_teile.last | plus: 0
+          assign tp_rz_q_soll = tp_rz_q_soll | plus: tp_rz_q_menge
+        endif
+      endfor
+      for tp_rz_q_line in line_items
+        assign tp_rz_q_line_id = tp_rz_q_line.product.id | append: ''
+        if tp_rz_q_line_id == tp_rz_q_id and tp_rz_q_line.groups.size > 0
+          assign tp_rz_q_ist = tp_rz_q_ist | plus: tp_rz_q_line.quantity
+        endif
+      endfor
+      if tp_rz_q_ist < tp_rz_q_soll
+        assign tp_rz_quell_fehlt = true
+      endif
+    endfor
     if tp_rz_bundle_cm > 0 and tp_rz_rb_ref > 0
       assign tp_rz_bundle_einh = tp_rz_bundle_cm | times: tp_rz_rb_ref | divided_by: 10000 | floor
       assign tp_rz_gebucht = tp_rz_gebucht | plus: tp_rz_bundle_einh
@@ -596,6 +654,8 @@
     assign tp_rz_fall = ''
     if tp_rz_unlesbar
       assign tp_rz_fall = 'unlesbar'
+    elsif tp_rz_quell_fehlt
+      assign tp_rz_fall = 'quell-fehlt'
     elsif tp_rz_teppiche > 0 and tp_rz_gebucht < tp_rz_bedarf
       assign tp_rz_fall = 'fehlt'
     elsif tp_rz_teppiche == 0 and tp_rz_gebucht > 0
@@ -609,6 +669,11 @@
     endif
   -%}
   {%- case tp_rz_fall -%}
+    {%- when 'quell-fehlt' -%}
+      <div style="margin:0 0 16px;padding:12px;border:3px solid #a62020;background:#fde8e8;color:#a62020;font-size:15px;font-weight:bold;">
+        ROLLENBESTAND NICHT VOLL ABGEBUCHT – NICHT ZUSCHNEIDEN.<br>
+        <span style="font-size:13px;font-weight:normal;color:#15171a;">Mindestens eine Rollenquelle hat zu wenig zugeordnete Bundle-Komponenten. Mehrbestand einer anderen Rolle gleicht das nicht aus. Jede Quelle vor dem Zuschnitt einzeln prüfen.</span>
+      </div>
     {%- when 'fehlt' -%}
       <div style="margin:0 0 16px;padding:12px;border:3px solid #a62020;background:#fde8e8;color:#a62020;font-size:15px;font-weight:bold;">
         ROLLENBESTAND NICHT VOLL ABGEBUCHT – NICHT ZUSCHNEIDEN.<br>

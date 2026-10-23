@@ -82,9 +82,11 @@
     var minW = o.minW || 50;
     var minL = o.minL || 50;
     if (!(o.w > 0)) return ['Bitte Maße eingeben.'];
+    if (o.richtung && o.richtung !== 'laengs') return ['Die Zuschnittrichtung ist nicht verfügbar.'];
     if (o.form === 'rund') {
       if (o.w < minW) f.push('Durchmesser mindestens ' + minW + ' cm.');
       if (o.maxW && o.w > o.maxW) f.push('Durchmesser höchstens ' + o.maxW + ' cm.');
+      if (o.richtung === 'laengs' && o.maxL && o.w > o.maxL) f.push('Durchmesser höchstens ' + o.maxL + ' cm entlang der Rolle.');
       return f;
     }
     if (!(o.l > 0)) return ['Bitte die Länge eingeben.'];
@@ -92,7 +94,10 @@
     var lang = Math.max(o.w, o.l);
     if (o.w < minW) f.push('Breite mindestens ' + minW + ' cm.');
     if (o.l < minL) f.push('Länge mindestens ' + minL + ' cm.');
-    if (o.maxW && kurz > o.maxW) {
+    if (o.richtung === 'laengs') {
+      if (o.maxW && o.w > o.maxW) f.push('Breite höchstens ' + o.maxW + ' cm quer zur Rolle.');
+      if (o.maxL && o.l > o.maxL) f.push('Länge höchstens ' + o.maxL + ' cm entlang der Rolle.');
+    } else if (o.maxW && kurz > o.maxW) {
       f.push('Eine Seite darf höchstens ' + o.maxW + ' cm messen.');
     } else if (o.maxL && lang > o.maxL) {
       f.push('Die längere Seite darf höchstens ' + o.maxL + ' cm messen.');
@@ -158,15 +163,16 @@
   // varianten: [{ id, cm, available }] - genommen wird die kleinste Variante,
   // die den Verbrauch deckt (Bundle-Raster 25 cm = 1 m2 bei 4 m Breite).
   // Ergebnis null = Mass passt nicht auf die Rolle.
-  function rollenZuschnitt(form, wCm, lCm, rollenbreiteCm, varianten) {
+  function rollenZuschnitt(form, wCm, lCm, rollenbreiteCm, varianten, richtung) {
     var w = Number(wCm);
     var l = form === 'rund' ? w : Number(lCm);
     var rb = Number(rollenbreiteCm);
     if (!(w > 0) || !(l > 0) || !(rb > 0)) return null;
+    if (richtung && richtung !== 'laengs') return null;
     var kurz = Math.min(w, l);
     var lang = Math.max(w, l);
-    if (kurz > rb + EPS) return null;
-    var verbrauch = lang <= rb + EPS ? kurz : lang;
+    if (richtung === 'laengs' ? w > rb + EPS : kurz > rb + EPS) return null;
+    var verbrauch = richtung === 'laengs' ? l : (lang <= rb + EPS ? kurz : lang);
     var passend = null;
     (varianten || []).forEach(function (v) {
       var cm = v ? Number(v.cm) : 0;

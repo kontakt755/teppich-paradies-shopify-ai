@@ -18,7 +18,7 @@
     return det.resource && det.resource.id ? String(det.resource.id) : 'keine';
   }
 
-  var ART = { cover: 'Cover', ketteln: 'Gekettelt', einfassband: 'Einfassband', paspelband: 'Paspelband', fertig: 'Fertig eingefasst' };
+  var ART = { cover: 'Cover', ketteln: 'Gekettelt', einfassband: 'Einfassband', paspelband: 'Paspelband', fertig: 'Fertig eingefasst', raummass: 'Raummaß' };
   // Vergroesserung in der Kantenlupe und Rand, damit die Kachel auch die
   // aussen liegende Cover-Kontur (stroke-width 9) noch mit abdeckt.
   var LUPE_ZOOM = 3.4;
@@ -37,7 +37,8 @@
     ketteln: 'Garn Ton in Ton',
     einfassband: 'ca. 3 cm breit',
     paspelband: 'ca. 1 cm breit',
-    fertig: 'vom Hersteller eingefasst'
+    fertig: 'vom Hersteller eingefasst',
+    raummass: 'ohne Einfassung'
   };
   var FORM = { rechteck: 'Rechteck', rund: 'Rund', oval: 'Oval', schablone: 'Schablone', skizze: 'Skizze' };
   var ANFRAGE = {
@@ -101,6 +102,9 @@
     var d;
     try { d = JSON.parse(datenEl.textContent); } catch (e) { return; }
     var art = d.art;
+    var rollenRichtung = d.rollenrichtung || '';
+    if (rollenRichtung && rollenRichtung !== 'laengs') return;
+    if (art === 'raummass' && rollenRichtung !== 'laengs') return;
     var varianten = (d.varianten || []).filter(Boolean);
     if (!ART[art] || !varianten.length || !(d.max_breite_cm > 0) || !(d.max_laenge_cm > 0)) return;
 
@@ -117,7 +121,9 @@
     // Matten (service.produktwort = Matte) bekommen eigene Woerter und Fussmatten-Groessen.
     // Matten werden nur zugeschnitten: kein "eingefasst" in Anzeige, Warenkorb und
     // Bestellung, keine umlaufende Kante (die Lieferantenuebersicht liest beides).
-    var W = d.wort === 'matte'
+    var W = art === 'raummass'
+      ? { dieser: 'Dieser Zuschnitt', plural: 'Zuschnitte', eckig: GROESSEN.eckig, art: 'Raummaß', kante: 'ohne Einfassung', rundum: '' }
+      : d.wort === 'matte'
       ? { dieser: 'Diese Matte', plural: 'Matten', eckig: GROESSEN.matte, art: 'Zugeschnitten', kante: 'ohne Einfassung', rundum: '' }
       : { dieser: 'Dieser Teppich', plural: 'Teppiche', eckig: GROESSEN.eckig, art: ART[art], kante: KANTE[art], rundum: ' rundum' };
     var eckigVorschlaege = W.eckig;
@@ -236,6 +242,7 @@
     }
 
     function form() {
+      if (art === 'raummass') return 'rechteck';
       var c = root.querySelector('input[name^="tp-ek-form-"]:checked');
       return c ? c.value : 'rechteck';
     }
@@ -268,7 +275,7 @@
       leeren(groessen);
       var liste = f === 'rund'
         ? GROESSEN.rund.filter(function (x) { return x >= minCm && x <= maxW; }).map(function (x) { return [x, x]; })
-        : eckigVorschlaege.filter(function (p) { return Math.min(p[0], p[1]) >= minCm && Math.min(p[0], p[1]) <= maxW && Math.max(p[0], p[1]) <= maxL; });
+        : eckigVorschlaege.filter(function (p) { return !M.pruefeMasse({ form: 'rechteck', w: p[0], l: p[1], minW: minCm, minL: minCm, maxW: maxW, maxL: maxL, richtung: rollenRichtung }).length; });
       if (groessenWrap) groessenWrap.hidden = liste.length === 0;
       liste.forEach(function (p) {
         var b = document.createElement('button');
@@ -626,6 +633,8 @@
         umriss({ fill: 'none', stroke: 'rgba(0,0,0,.17)', 'stroke-width': kn, 'stroke-dasharray': '0.9 1.7', 'stroke-linecap': 'butt' });
         umriss({ fill: 'none', stroke: 'rgba(255,255,255,.28)', 'stroke-width': kn * 0.31, 'stroke-dasharray': '0.9 1.7' });
         umriss({ fill: 'none', stroke: 'rgba(0,0,0,.26)', 'stroke-width': 0.8 });
+      } else if (art === 'raummass') {
+        umriss({ fill: 'none', stroke: 'rgba(0,0,0,.22)', 'stroke-width': 0.8 });
       } else {
         var px = Math.min(kantePx(art === 'einfassband' ? 11 : 5), Math.max(art === 'einfassband' ? 6 : 3, BAND_CM[art] * s * 2));
         if (!band && bandFest) {
@@ -647,7 +656,7 @@
       svgEl('rect', { x: tx, y: ty, width: tw, height: 21, rx: 10.5, fill: 'rgba(255,255,255,.90)' }, svg);
       var tb = svgEl('text', { x: x + pw / 2, y: ty + 14.5, 'text-anchor': 'middle', 'font-size': 11.5, 'font-weight': 600, fill: beispiel ? '#3b3733' : '#244d31' }, svg);
       tb.textContent = beispiel ? 'Beispielmaß' : 'Ihr Maß';
-      if (!beispiel) lupe(defs);
+      if (!beispiel && art !== 'raummass') lupe(defs);
 
       /*
         Die Legende beantwortet, was der Kunde gerade konfiguriert: welches
@@ -732,7 +741,7 @@
         if (mass) {
           var separat = k.art === 'ketteln' && !k.inkl;
           var maxWk = rolleCm > 0 ? M.maxBreiteCm(rolleCm, k.art) : 0;
-          var probleme = M.pruefeMasse({ form: mass.f, w: mass.w, l: mass.l, maxW: maxWk, maxL: Number(k.max_l) || 0, minW: minCm, minL: minCm });
+          var probleme = M.pruefeMasse({ form: mass.f, w: mass.w, l: mass.l, maxW: maxWk, maxL: Number(k.max_l) || 0, minW: minCm, minL: minCm, richtung: rollenRichtung });
           if (probleme.length) {
             summe.textContent = 'In diesem Maß nicht möglich';
             kachel.classList.add('is-zu-gross');
@@ -792,6 +801,7 @@
       // und liess 500 × 390 unmoeglich aussehen, obwohl es zulaessig ist.
       grenzen.textContent = rund
         ? 'Möglich: Ø ' + minCm + ' bis ' + maxW + ' cm'
+        : rollenRichtung === 'laengs' ? 'Breite quer zur Rolle bis ' + maxW + ' cm; Länge entlang der Rolle bis ' + maxL + ' cm. Der Zuschnitt wird nicht gedreht.'
         : 'Möglich: kürzere Seite bis ' + maxW + ' cm, längere bis ' + maxL + ' cm (Reihenfolge egal)';
       groessenAufbauen(rund ? 'rund' : 'eckig');
 
@@ -810,7 +820,7 @@
       var eingabeFehler = fehlerListe.length > 0;
       var eingegeben = b.wert > 0 && (rund || l.wert > 0);
       if (eingegeben && !fehlerListe.length) {
-        fehlerListe = M.pruefeMasse({ form: f, w: b.wert, l: l.wert, maxW: maxW, maxL: maxL, minW: minCm, minL: minCm, maxKg: maxKg, kgProQm: kgProQm });
+        fehlerListe = M.pruefeMasse({ form: f, w: b.wert, l: l.wert, maxW: maxW, maxL: maxL, minW: minCm, minL: minCm, maxKg: maxKg, kgProQm: kgProQm, richtung: rollenRichtung });
       }
       if (!target.available) fehlerListe.push('Diese Farbe ist derzeit nicht lieferbar.');
       // TP-005: unabhaengig von Mass-/Farbzustand sichtbar - ein ausgefallener
@@ -826,7 +836,7 @@
       // stuende die Meldung schon vor dem ersten Mass da.
       var zs = null;
       if (zuschnitt && !zuschnittFailed && eingegeben && !fehlerListe.length) {
-        zs = M.rollenZuschnitt(f, b.wert, l.wert, zsRolle, zsVarianten);
+        zs = M.rollenZuschnitt(f, b.wert, l.wert, zsRolle, zsVarianten, rollenRichtung);
         if (!zs || !zs.ausreichend) {
           fehlerListe.push(zsMaxCm > 0
             ? 'Für dieses Maß reicht die Rolle nicht mehr: noch ' + fmt(zsMaxCm / 100) + ' m Rollenlänge (' + fmt(zsRolle / 100) + ' m breit) verfügbar.'
@@ -977,6 +987,11 @@
         'Kante umlaufend': fmt(stand.kante) + ' m'
       };
       if (d.wort === 'matte') delete p['Kante umlaufend'];
+      if (art === 'raummass') {
+        p.Art = 'Raummaß';
+        p.Einfassung = 'ohne Einfassung';
+        delete p['Kante umlaufend'];
+      }
       if (target.farbnummer) p['Farbnummer'] = target.farbnummer;
       if (mitBand) p['Bandfarbe'] = bandFest || bandText(band, ' ');
       if (art === 'ketteln') p['Garn'] = 'Ton in Ton';

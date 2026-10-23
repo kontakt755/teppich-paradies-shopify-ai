@@ -78,12 +78,28 @@
   else
     assign tp_ab_m2_cent = tp_ab_rueckfall_cent | times: 100
   endif
-  assign tp_ab_art = product.metafields.service.einfassung.value | strip | downcase
+  assign tp_ab_art = product.metafields.service.einfassung.value | strip | downcase | replace: 'ß', 'ss'
+  assign tp_ab_raummass = false
+  if tp_ab_art == 'raummass'
+    capture tp_ab_freigabe
+      render 'tp-restrolle-freigegeben', product: product
+    endcapture
+    assign tp_ab_freigabe = tp_ab_freigabe | strip
+    assign tp_ab_raum_v = product.variants.first
+    if tp_ab_freigabe == 'ja' and tp_ab_raum_v.metafields.service.einfassen.value == 'Verfügbar' and tp_ab_raum_v.available
+      if tp_ab_raum_v.metafields.service.basisvariante.value.id == product.metafields.service.einfass_basis.value.variants.first.id
+        assign tp_ab_raummass = true
+      endif
+    endif
+  endif
   assign tp_ab_cent = 0
   assign tp_ab_belegt = false
 
   if product.metafields.custom.preis_pro_001_qm.value == true and tp_ab_art != blank and tp_ab_einheit_cent > 0
     assign tp_ab_belegt = true
+    if tp_ab_art == 'raummass' and tp_ab_raummass == false
+      assign tp_ab_belegt = false
+    endif
     # Ohne belegte Grenzen faellt der Konfigurator ganz aus - dann auch kein ab-Preis.
     # Breite aus derselben Quelle wie Karte und Konfigurator.
     capture tp_ab_max_b
@@ -179,6 +195,8 @@
         assign tp_ab_m2_kopf = true
       elsif tp_ab_art == 'ketteln' and tp_ab_kante_inkl
         assign tp_ab_m2_kopf = true
+      elsif tp_ab_raummass
+        assign tp_ab_m2_kopf = true
       endif
     endif
   endif
@@ -221,7 +239,7 @@
         <s class="tp-ab-preis__alt"><span class="visually-hidden">statt </span>{{ tp_ab_m2_alt_cent | money_without_currency | remove: ',00' }}&nbsp;€/m²</s>
       {%- endif -%}
     </span>
-    <span class="tp-ab-preis__grund">inkl. {{ tp_ab_kante_wort }} rundum{% if kopf %} · Endpreis nach Ihrem Maß im Konfigurator{% endif %}</span>
+    <span class="tp-ab-preis__grund">{% if tp_ab_raummass %}inkl. Zuschnitt, ohne Kettelung{% else %}inkl. {{ tp_ab_kante_wort }} rundum{% endif %}{% if kopf %} · Endpreis nach Ihrem Maß im Konfigurator{% endif %}</span>
     {%- comment -%} Lieferzeit nur im Kopf und nur aus service.lieferzeit (belegt) {%- endcomment -%}
     {%- assign tp_ab_lieferzeit = product.metafields.service.lieferzeit.value | strip -%}
     {%- if kopf and tp_ab_lieferzeit != blank -%}
@@ -247,7 +265,7 @@
         <s class="tp-ab-preis__alt" data-tp-ab-alt-cent="{{ tp_ab_alt_cent }}"><span class="visually-hidden">statt </span>{{ tp_ab_alt_cent | money_without_trailing_zeros }}</s>
       {%- endif -%}
     </span>
-    <span class="tp-ab-preis__grund">z.&nbsp;B. {{ tp_ab_breite_cm }}&nbsp;×&nbsp;{{ tp_ab_laenge_cm }}&nbsp;cm, inkl. {% if tp_ab_art == 'ketteln' %}Kettelung{% elsif tp_ab_art == 'fertig' %}{{ tp_ab_inkl_fertig }}{% else %}Einfassung{% endif %}</span>
+    <span class="tp-ab-preis__grund">z.&nbsp;B. {{ tp_ab_breite_cm }}&nbsp;×&nbsp;{{ tp_ab_laenge_cm }}&nbsp;cm, inkl. {% if tp_ab_art == 'ketteln' %}Kettelung{% elsif tp_ab_art == 'fertig' %}{{ tp_ab_inkl_fertig }}{% elsif tp_ab_raummass %}Zuschnitt, ohne Kettelung{% else %}Einfassung{% endif %}</span>
   </span>
 {%- else -%}
   <span class="tp-preis-je-m2">{% if variant == blank or karte %}ab {% endif %}{{ tp_ab_m2_cent | money }}<span class="tp-preis-je-m2__einheit">/m²</span></span>

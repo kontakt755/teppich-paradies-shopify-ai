@@ -20,7 +20,11 @@
     {% render 'tp-vorwerk-hersteller', product: closest.product %}
   {% endif %}
   {% if closest.product.template_suffix == 'einfassung' and closest.product.metafields.service.einfassung.value != blank %}
-    <p class="tp-mass-nutzen">Ihr Teppich nach Maß – mit rundum verarbeiteter Kante.</p>
+    {% if closest.product.metafields.service.einfassung.value == 'Raummaß' %}
+      <p class="tp-mass-nutzen">Passend für Ihren Raum zugeschnitten.</p>
+    {% else %}
+      <p class="tp-mass-nutzen">Ihr Teppich nach Maß – mit rundum verarbeiteter Kante.</p>
+    {% endif %}
   {% endif %}
 {% endif %}
 

@@ -1,0 +1,45 @@
+{% doc %}
+  Gibt nur "ja" aus, wenn ein neues gerichtetes Restrollenangebot seine
+  expliziten Grenzen, eine verfuegbare Rollenquelle und ein positives
+  Zuschnitt-Bundle hat. Keine Rueckfallmasse, keine zweite Bestandsquelle.
+
+  @param {product} product - Raummaß- oder Kettelangebot mit Richtung laengs
+  @param {boolean} [erlaube_alt] - Altangebote ohne Richtungsmarker unveraendert lassen
+{% enddoc %}
+{%- liquid
+  assign trf_richtung = product.metafields.custom.rollenzuschnitt_richtung.value | strip | downcase
+  assign trf_basis = product.metafields.service.einfass_basis.value
+  assign trf_variante = trf_basis.variants.first
+  assign trf_bundle = product.metafields.custom.zuschnitt_von_rolle.value
+  assign trf_breite = product.metafields.service.max_breite_cm.value | times: 1
+  assign trf_laenge = product.metafields.service.max_laenge_cm.value | times: 1
+  assign trf_quellbreite = trf_variante.metafields.custom.rollenbreite.value | times: 100 | round
+  assign trf_quellmax = trf_basis.metafields.custom.max_roll_laenge_cm.value | times: 1
+  assign trf_preis = trf_bundle.variants.first.price | times: 1
+  assign trf_kaufbar = false
+  for trf_bv in trf_bundle.variants
+    if trf_bv.available
+      assign trf_kaufbar = true
+    endif
+    if trf_bv.price != trf_preis
+      assign trf_preis = 0
+    endif
+  endfor
+  assign trf_ok = false
+  assign trf_art = product.metafields.service.einfassung.value | strip | downcase | replace: 'ß', 'ss'
+  if erlaube_alt and trf_richtung == blank and trf_art != 'raummass'
+    assign trf_ok = true
+  endif
+  if trf_richtung == 'laengs' and trf_basis.variants.size == 1 and product.variants.size == 1
+    if trf_breite > 0 and trf_laenge > 0 and trf_quellbreite == trf_breite and trf_quellmax >= trf_laenge
+      if trf_variante.inventory_management == 'shopify' and trf_variante.inventory_policy == 'deny' and trf_variante.inventory_quantity > 0 and trf_variante.available
+        if trf_bundle.variants.size > 0 and trf_preis > 0 and trf_kaufbar
+          assign trf_ok = true
+        endif
+      endif
+    endif
+  endif
+  if trf_ok
+    echo 'ja'
+  endif
+-%}

@@ -101,9 +101,11 @@ export function pruefeDaten(snapshot, konfig, namen = namenSet(konfig.lieferante
   produkte.forEach((p) => (p.variants || []).forEach((v) => variantenProdukt.set(v.id, p)));
 
   for (const p of produkte) {
-    const art = String(mf(p, 'service.einfassung') ?? '').trim().toLowerCase();
+    const art = String(mf(p, 'service.einfassung') ?? '').trim().toLowerCase().replaceAll('ß', 'ss');
     const basisId = mf(p, 'service.einfass_basis');
     const istEinfass = !!mf(p, 'service.einfassung');
+    const richtung = String(mf(p, 'custom.rollenzuschnitt_richtung') ?? '').trim().toLowerCase();
+    const rollenmodus = art === 'raummass' || richtung !== '';
 
     const sichtbar = [p.title, p.handle, p.vendor, p.productType, ...(p.tags || []),
       ...(p.options || []).flatMap((o) => [o.name, ...(o.values || [])]),
@@ -175,17 +177,37 @@ export function pruefeDaten(snapshot, konfig, namen = namenSet(konfig.lieferante
       }
       continue;
     }
-    if (!ARTEN[art]) fehler.push(`${p.title}: service.einfassung "${mf(p, 'service.einfassung')}" unbekannt`);
+    // Raummass aus Restrollen ist ausschliesslich ein vorhandenes Rollenbundle,
+    // keine weitere Art fuer den allgemeinen Einfassprodukt-Planer.
+    if (!ARTEN[art] && art !== 'raummass') fehler.push(`${p.title}: service.einfassung "${mf(p, 'service.einfassung')}" unbekannt`);
+    if (rollenmodus) {
+      const bundleId = mf(p, 'custom.zuschnitt_von_rolle');
+      const bundle = byId.get(bundleId);
+      if (!['raummass', 'ketteln'].includes(art)) fehler.push(`${p.title}: Rollenzuschnitt nur als Raummaß oder Ketteln`);
+      if (richtung !== 'laengs') fehler.push(`${p.title}: Rollenzuschnitt braucht custom.rollenzuschnitt_richtung = laengs`);
+      if (!bundle || !bundle.variants?.length || bundleId === basisId || bundleId === p.id) {
+        fehler.push(`${p.title}: custom.zuschnitt_von_rolle zeigt auf kein separates Bundleprodukt im Snapshot`);
+      }
+    }
     if (mf(p, 'custom.preis_pro_001_qm') !== true) fehler.push(`${p.title}: custom.preis_pro_001_qm fehlt`);
     const basis = byId.get(basisId);
     if (!basis) fehler.push(`${p.title}: service.einfass_basis zeigt auf kein Produkt im Snapshot`);
     const maxB = Number(mf(p, 'service.max_breite_cm'));
     const maxL = Number(mf(p, 'service.max_laenge_cm'));
-    if (basis && ARTEN[art]) {
+    if (basis && (ARTEN[art] || art === 'raummass')) {
       const rollen = [...new Set(rollenJeFarbe(basis).values())];
+      if (rollenmodus && !rollen.length && basis.variants?.length === 1) {
+        const rollenCm = Math.round(Number(mf(basis.variants[0], 'custom.rollenbreite')) * 100);
+        if (rollenCm > 0) rollen.push(rollenCm);
+      }
       if (!rollen.length) fehler.push(`${p.title}: Rollenbreite der Meterware unbekannt`);
       else if (rollen.length > 1) fehler.push(`${p.title}: Farben der Meterware mit verschieden breiten Rollen (${rollen.join(' / ')} cm)`);
       else if (maxB !== maxBreiteCm(rollen[0], art)) fehler.push(`${p.title}: max_breite_cm ${maxB} statt ${maxBreiteCm(rollen[0], art)}`);
+      if (rollenmodus) {
+        if (basis.variants?.length !== 1 || p.variants?.length !== 1) fehler.push(`${p.title}: Rollenzuschnitt braucht genau eine Basis- und Produktvariante`);
+        const basisMaxL = Number(mf(basis, 'custom.max_roll_laenge_cm'));
+        if (!(basisMaxL > 0) || maxL > basisMaxL) fehler.push(`${p.title}: max_laenge_cm ${maxL} ohne passende Grenze der Rollenquelle`);
+      }
     }
     if (!(maxL > 0) || maxL > konfig.max_laenge_cm) fehler.push(`${p.title}: max_laenge_cm ${maxL} ausserhalb 1..${konfig.max_laenge_cm}`);
     for (const f of mf(p, 'service.formen') || []) {
